@@ -16,38 +16,38 @@
         <el-sub-menu index="production">
           <template #title>
             <el-icon><Cpu /></el-icon>
-            <span>数据生产</span>
+            <span>{{ t('menu.production') }}</span>
           </template>
-          <el-menu-item index="/production/dashboard">总览</el-menu-item>
-          <el-menu-item index="/production/cad">CAD 建模</el-menu-item>
-          <el-menu-item index="/production/preprocess">预处理</el-menu-item>
-          <el-menu-item index="/production/solve">求解</el-menu-item>
-          <el-menu-item index="/production/postprocess">后处理</el-menu-item>
-          <el-menu-item index="/production/benchmarks">基准</el-menu-item>
+          <el-menu-item index="/production/dashboard">{{ t('menu.productionChildren.dashboard') }}</el-menu-item>
+          <el-menu-item index="/production/cad">{{ t('menu.productionChildren.cad') }}</el-menu-item>
+          <el-menu-item index="/production/preprocess">{{ t('menu.productionChildren.preprocess') }}</el-menu-item>
+          <el-menu-item index="/production/solve">{{ t('menu.productionChildren.solve') }}</el-menu-item>
+          <el-menu-item index="/production/postprocess">{{ t('menu.productionChildren.postprocess') }}</el-menu-item>
+          <el-menu-item index="/production/benchmarks">{{ t('menu.productionChildren.benchmarks') }}</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="ai4s">
           <template #title>
             <el-icon><MagicStick /></el-icon>
-            <span>AI4S 应用</span>
+            <span>{{ t('menu.ai4s') }}</span>
           </template>
-          <el-menu-item index="/ai4s/apps">应用列表</el-menu-item>
-          <el-menu-item index="/ai4s/run">运行应用</el-menu-item>
-          <el-menu-item index="/ai4s/lineage">血缘追溯</el-menu-item>
+          <el-menu-item index="/ai4s/apps">{{ t('menu.ai4sChildren.apps') }}</el-menu-item>
+          <el-menu-item index="/ai4s/run">{{ t('menu.ai4sChildren.run') }}</el-menu-item>
+          <el-menu-item index="/ai4s/lineage">{{ t('menu.ai4sChildren.lineage') }}</el-menu-item>
         </el-sub-menu>
 
         <el-menu-item index="/data">
           <el-icon><Coin /></el-icon>
-          <span>数据管理</span>
+          <span>{{ t('menu.data') }}</span>
         </el-menu-item>
 
         <el-sub-menu index="misc">
           <template #title>
             <el-icon><Folder /></el-icon>
-            <span>项目</span>
+            <span>{{ t('menu.misc') }}</span>
           </template>
-          <el-menu-item index="/misc/projects">项目列表</el-menu-item>
-          <el-menu-item index="/misc/reports">报告</el-menu-item>
+          <el-menu-item index="/misc/projects">{{ t('menu.miscChildren.projects') }}</el-menu-item>
+          <el-menu-item index="/misc/reports">{{ t('menu.miscChildren.reports') }}</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -55,6 +55,13 @@
     <el-container>
       <el-header class="app-header">
         <span class="header-title">{{ currentTitle }}</span>
+        <el-button
+          class="lang-toggle"
+          text
+          @click="toggleLocale"
+        >
+          {{ t('common.switchTo') }}
+        </el-button>
       </el-header>
       <el-main class="app-main">
         <router-view />
@@ -66,10 +73,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { setLocale } from './i18n'
 
 const route = useRoute()
 const activeMenu = computed(() => route.path)
 const currentTitle = computed(() => (route.meta.title as string) || 'TensorLBM')
+
+const { t, locale } = useI18n()
+
+function toggleLocale() {
+  setLocale(locale.value === 'zh' ? 'en' : 'zh')
+}
 </script>
 
 <style scoped>
@@ -110,6 +125,9 @@ const currentTitle = computed(() => (route.meta.title as string) || 'TensorLBM')
 .header-title {
   font-size: 16px;
   font-weight: 600;
+}
+.lang-toggle {
+  margin-left: auto;
 }
 .app-main {
   background: #f0f2f5;
