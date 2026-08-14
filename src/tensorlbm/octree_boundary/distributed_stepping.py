@@ -64,6 +64,12 @@ __all__ = [
     "split_leaf_bounds",
 ]
 
+_DBG_ROOT_STEP = 0  # debug-only root-step counter (DBG_NAN instrumentation)
+
+
+def _dbg_root_step() -> int:
+    return _DBG_ROOT_STEP
+
 
 def split_leaf_bounds(n_leaf: int, n_shards: int) -> list[tuple[int, int]]:
     base, extra = divmod(n_leaf, n_shards)
@@ -351,6 +357,7 @@ def step_octree_shell_distributed(
 
     fine_transfer = None
     mem_accum = torch.zeros(3, dtype=torch.float64, device=device)
+    dbg_mass_log = []  # (root step tag, substep, stage, value)
     for s in range(n_substeps):
         alpha = s / n_substeps
         parent_t = torch.lerp(l1_old, l1_f, alpha)
@@ -363,6 +370,9 @@ def step_octree_shell_distributed(
             advance(f_local, tau_shell, shell_level, s), f_local.shape,
         )
         octree.f_leaf = populations
+        if os.environ.get("DBG_NAN"):
+            dbg_mass_log.append((s, "collide_in", float(f_in_save.sum().item())))
+            dbg_mass_log.append((s, "post_collide", float(post_collision.sum().item())))
         # 2. all_gather full post-collision (Q, n_leaf).
         #    TCCL 3.1.0 deadlocks on all_gather messages > ~4MB/rank (the
         #    (27, n_leaf) tensor exceeds it for n_leaf > ~40k).  Chunk the
@@ -392,6 +402,12 @@ def step_octree_shell_distributed(
         ghost_vals = _fill_ghost_impl(
             octree.leaf_level, gplan_fill, parent_t, taus,
         )
+        if os.environ.get("DBG_NAN"):
+            dbg_mass_log.append((s, "ghost_vals_sum", float(ghost_vals.sum().item())))
+            n_gh = ghost_plan_local.n_ghost
+            dbg_mass_log.append((s, "ghost_rows", float(n_gh)))
+            dbg_mass_log.append((s, "ghost_leaf_count",
+                                 float(torch.unique(ghost_plan_local.leaf).shape[0])))
         if os.environ.get("DBG_NAN") and not bool(torch.isfinite(ghost_vals).all()):
             nnan = (~torch.isfinite(ghost_vals)).sum().item()
             dd, rr = torch.nonzero(~torch.isfinite(ghost_vals), as_tuple=True)
@@ -401,6 +417,13 @@ def step_octree_shell_distributed(
             octree, full_pc, ghost_vals, ghost_plan_local.slot,
             octree.f_leaf, local_indices,
         )
+        if os.environ.get("DBG_NAN"):
+            dbg_mass_log.append((s, "post_stream", float(out.sum().item())))
+            # mass pulled from ghosts into this rank's leaves
+            src_all = octree.neighbor_table[octree._opp][:, local_indices]
+            gh = src_all == SHELL_OUTSIDE
+            ghost_pulled = float(out[gh].sum().item()) if bool(gh.any()) else 0.0
+            dbg_mass_log.append((s, "ghost_pulled_in", ghost_pulled))
         if os.environ.get("DBG_NAN"):
             for gc in [14775, 30153, 45060, 55123, 55127, 67864, 67868,
                        77931, 83239, 92838, 92841, 108216, 111655]:
@@ -468,6 +491,8 @@ def step_octree_shell_distributed(
             result = bfl_fn(facade, out, post_collision, ghost_plan_local,
                             ghost_vals, substep=s)
             out, substep_force = result
+            if os.environ.get("DBG_NAN"):
+                dbg_mass_log.append((s, "post_bfl", float(out.sum().item())))
             if os.environ.get("DBG_NAN") and not bool(torch.isfinite(out).all()):
                 nnan = (~torch.isfinite(out)).sum().item()
                 dd, ii = torch.nonzero(~torch.isfinite(out), as_tuple=True)
@@ -488,16 +513,22 @@ def step_octree_shell_distributed(
 
     # ---- restriction on rank 0, broadcast the L1 patch ----
     # Reconstruct the full f_leaf on every rank (disjoint local_indices).
-    # NOTE: do NOT re-zero full_f after the scatter below — the 6e8f616 chunked
-    # rewrite accidentally did and killed the shell's state every step
-    # (full_f stayed 0, octree.f_leaf = 0 -> NaN on large shells).
+    # NOTE: do NOT scatter the shard into full_f before the gather-sum below.
+    # The chunked all_gather sum trick reconstructs each chunk as
+    # ``piece_r + sum_r gathered[r]``; if the accumulator already holds the
+    # local shard, every rank's OWN columns are counted twice in its copy of
+    # full_f and the ``full_f[:, local_indices]`` restore doubles the whole
+    # shell's mass every root step (1 -> 2 -> 4 ... -> NaN by step ~4).
+    # Scatter into a scratch buffer and accumulate into a zeroed full_f
+    # instead (the same pattern the substep loop uses for full_pc).
+    scatter_f = torch.zeros(q, n_leaf, dtype=dtype, device=device)
+    scatter_f[:, local_indices] = octree.f_leaf
     full_f = torch.zeros(q, n_leaf, dtype=dtype, device=device)
-    full_f[:, local_indices] = octree.f_leaf
     # TCCL deadlock guard: chunk the leaf gather (<3MB/msg).
     chunk_cols2 = max(1, int(3 * 1024 * 1024 // (q * torch.finfo(dtype).bits // 8)))
     for c0 in range(0, n_leaf, chunk_cols2):
         c1 = min(c0 + chunk_cols2, n_leaf)
-        piece = full_f[:, c0:c1].contiguous()
+        piece = scatter_f[:, c0:c1].contiguous()
         gathered_f = [torch.empty_like(piece) for _ in range(world_size)]
         dist.all_gather(gathered_f, piece)
         for r in range(world_size):
@@ -559,6 +590,28 @@ def step_octree_shell_distributed(
     dist.broadcast(cells, src=0)
     # Restore the per-rank leaf shard for the next root step.
     octree.f_leaf = full_f[:, local_indices].contiguous()
+    if os.environ.get("DBG_NAN"):
+        # Per-root-step global mass summary: all-reduce local sums so rank 0
+        # prints the shell-wide totals.
+        global _DBG_ROOT_STEP
+        _DBG_ROOT_STEP += 1
+
+        def _reduce(v):
+            t = torch.tensor(float(v), dtype=torch.float64, device=device)
+            dist.all_reduce(t, op=dist.ReduceOp.SUM)
+            return float(t.item())
+        if dbg_mass_log:
+            for s, stage, val in dbg_mass_log:
+                dbg_mass_log_sum = _reduce(val)
+                if rank == 0:
+                    print(f"[dbg] RS{_DBG_ROOT_STEP} s{s} {stage} global_sum="
+                          f"{dbg_mass_log_sum:.9g}", flush=True)
+        shard_sum = float(octree.f_leaf.sum().item())
+        shell_sum = _reduce(shard_sum)
+        restr_sum = _reduce(float(restricted.sum().item()) if rank == 0 else 0.0)
+        if rank == 0:
+            print(f"[dbg] RS{_DBG_ROOT_STEP} shell_total={shell_sum:.9g} "
+                  f"restricted_total={restr_sum:.9g}", flush=True)
     # Time-average over the root step's substeps (per-root-step MEM force).
     mem_avg = mem_accum / n_substeps
     return ledger, mem_avg, restricted, cells
