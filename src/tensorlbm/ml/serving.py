@@ -81,6 +81,7 @@ class ModelNotFoundError(KeyError):
 # Families understood by the loader inside :class:`InferenceService`.
 FAMILY_EDDY_MLP = "eddy_viscosity_mlp"
 FAMILY_FLOW_TRANSFORMER = "flow_transformer_ssl"
+FAMILY_FNO = "fno2d"
 
 
 @dataclass(frozen=True)
@@ -283,6 +284,7 @@ class InferenceService:
 
     @staticmethod
     def _load_by_family(family: str, path: str) -> nn.Module:
+        from tensorlbm.ai.fno import load_fno2d as _load_fno
         from tensorlbm.ai.model import load_model as _load_eddy_mlp
         from tensorlbm.ai.transformer import (
             load_flow_transformer_model as _load_transformer,
@@ -290,6 +292,8 @@ class InferenceService:
 
         if family == FAMILY_FLOW_TRANSFORMER:
             model = _load_transformer(path)
+        elif family == FAMILY_FNO:
+            model = _load_fno(path)
         elif family in (FAMILY_EDDY_MLP, ""):
             model = _load_eddy_mlp(path)
         else:
