@@ -1,10 +1,359 @@
 <template>
-  <el-card>
-    <h3>运行应用</h3>
-    <el-empty description="开发中 — 将在后续阶段实现" />
-  </el-card>
+  <div class="app-run">
+    <el-card>
+      <template #header>
+        <span>运行应用</span>
+      </template>
+
+      <el-form label-width="130px" label-position="left">
+        <el-form-item label="应用" required>
+          <el-select
+            v-model="selectedApp"
+            filterable
+            placeholder="请选择应用"
+            style="width: 100%"
+            :loading="loadingApps"
+          >
+            <el-option
+              v-for="app in apps"
+              :key="app.name"
+              :label="`${app.name}（${app.family} v${app.version}）`"
+              :value="app.name"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="运行模式">
+          <el-radio-group v-model="runMode">
+            <el-radio-button value="local">本地全栈</el-radio-button>
+            <el-radio-button value="hpc">HPC 派发</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-form-item v-if="runMode === 'hpc'" label="HPC 参数">
+          <div class="hpc-grid">
+            <div class="hpc-field">
+              <label>partition</label>
+              <el-input v-model="hpcForm.partition" />
+            </div>
+            <div class="hpc-field">
+              <label>nodes</label>
+              <el-input-number v-model="hpcForm.nodes" :min="1" style="width: 100%" />
+            </div>
+            <div class="hpc-field">
+              <label>cpus</label>
+              <el-input-number v-model="hpcForm.cpus" :min="1" style="width: 100%" />
+            </div>
+            <div class="hpc-field">
+              <label>mem</label>
+              <el-input v-model="hpcForm.mem" />
+            </div>
+            <div class="hpc-field">
+              <label>walltime</label>
+              <el-input v-model="hpcForm.walltime" />
+            </div>
+            <div class="hpc-field">
+              <label>backend</label>
+              <el-input v-model="hpcForm.backend" />
+            </div>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="produce_cfg">
+          <el-input
+            v-model="produceCfgText"
+            type="textarea"
+            :rows="5"
+            placeholder='JSON 对象，例如 {"n_samples": 10}'
+          />
+        </el-form-item>
+
+        <el-form-item label="train_cfg">
+          <el-input
+            v-model="trainCfgText"
+            type="textarea"
+            :rows="5"
+            placeholder='JSON 对象，例如 {"epochs": 100, "batch_size": 32}'
+          />
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" :loading="submitting" @click="submit">提交运行</el-button>
+          <el-button @click="reset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 本地全栈 RunReport 结果 -->
+    <el-card v-if="report" class="result-card">
+      <template #header>
+        <div class="card-header">
+          <span>运行结果（RunReport）</span>
+          <el-button text type="primary" @click="goLineage">查看血缘</el-button>
+        </div>
+      </template>
+
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="应用">{{ report.name }}</el-descriptions-item>
+        <el-descriptions-item label="算法家族">{{ report.family }}</el-descriptions-item>
+        <el-descriptions-item label="data_asset_id">{{ report.data_asset_id }}</el-descriptions-item>
+        <el-descriptions-item label="dataset_asset_id">{{ report.dataset_asset_id }}</el-descriptions-item>
+        <el-descriptions-item label="job_id">{{ report.job_id }}</el-descriptions-item>
+        <el-descriptions-item label="model_id">{{ report.model_id }}</el-descriptions-item>
+      </el-descriptions>
+
+      <h4 class="section-title">指标（metrics）</h4>
+      <el-table :data="metricEntries" border size="small">
+        <el-table-column prop="key" label="指标" min-width="180" />
+        <el-table-column label="值" min-width="220">
+          <template #default="{ row }">{{ formatValue(row.value) }}</template>
+        </el-table-column>
+        <template #empty>
+          <el-empty description="无指标" :image-size="60" />
+        </template>
+      </el-table>
+
+      <h4 class="section-title">上游数据（lineage_upstream）</h4>
+      <div class="tag-row">
+        <el-tag v-for="item in report.lineage_upstream" :key="item" type="info" class="lineage-tag">
+          {{ item }}
+        </el-tag>
+        <el-text v-if="!report.lineage_upstream.length" type="info">无上游数据</el-text>
+      </div>
+    </el-card>
+
+    <!-- HPC 派发结果 -->
+    <el-card v-else-if="hpcResult" class="result-card">
+      <template #header>
+        <span>HPC 派发结果</span>
+      </template>
+
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="app_name">{{ hpcResult.app_name }}</el-descriptions-item>
+        <el-descriptions-item label="status">{{ hpcResult.status }}</el-descriptions-item>
+        <el-descriptions-item label="job_id">{{ hpcResult.job_id }}</el-descriptions-item>
+        <el-descriptions-item label="hpc_job_id">{{ hpcResult.hpc_job_id }}</el-descriptions-item>
+        <el-descriptions-item label="backend">{{ hpcResult.backend }}</el-descriptions-item>
+        <el-descriptions-item label="script_cmd">{{ hpcResult.script_cmd }}</el-descriptions-item>
+      </el-descriptions>
+
+      <div class="status-actions">
+        <el-button type="primary" :loading="queryingStatus" @click="queryStatus">查询运行状态</el-button>
+      </div>
+
+      <el-descriptions v-if="statusResult" :column="2" border class="status-result">
+        <el-descriptions-item label="job_id">{{ statusResult.job_id }}</el-descriptions-item>
+        <el-descriptions-item label="app_name">{{ statusResult.app_name }}</el-descriptions-item>
+        <el-descriptions-item label="status">{{ statusResult.status }}</el-descriptions-item>
+        <el-descriptions-item label="scheduler_state">{{ statusResult.scheduler_state ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="hpc_job_id">{{ statusResult.hpc_job_id ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="elapsed">{{ statusResult.elapsed ?? '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
-// placeholder view
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import {
+  getRunStatus,
+  isHpcSubmitResponse,
+  isRunReport,
+  listApps,
+  runApp,
+} from '@/api/apps'
+import type {
+  AppInfo,
+  AppRunRequest,
+  HpcRequest,
+  HpcSubmitResponse,
+  RunReportOut,
+  RunStatusResponse,
+} from '@/api/apps'
+import { useRunHistory } from '@/stores/ai4sRun'
+
+const route = useRoute()
+const router = useRouter()
+const { save } = useRunHistory()
+
+const loadingApps = ref(false)
+const apps = ref<AppInfo[]>([])
+const selectedApp = ref('')
+const runMode = ref<'local' | 'hpc'>('local')
+const produceCfgText = ref('{}')
+const trainCfgText = ref('{}')
+const submitting = ref(false)
+
+const hpcForm = reactive<Required<HpcRequest>>({
+  partition: 'compute',
+  nodes: 1,
+  cpus: 4,
+  mem: '8G',
+  walltime: '02:00:00',
+  backend: 'slurm',
+})
+
+const report = ref<RunReportOut | null>(null)
+const hpcResult = ref<HpcSubmitResponse | null>(null)
+const statusResult = ref<RunStatusResponse | null>(null)
+const queryingStatus = ref(false)
+
+const metricEntries = computed(() =>
+  report.value ? Object.entries(report.value.metrics ?? {}).map(([key, value]) => ({ key, value })) : [],
+)
+
+async function fetchApps() {
+  loadingApps.value = true
+  try {
+    const res = await listApps()
+    apps.value = res.apps ?? []
+    preselectFromRoute()
+  } catch {
+    // 错误提示已由请求拦截器统一处理
+  } finally {
+    loadingApps.value = false
+  }
+}
+
+function preselectFromRoute() {
+  const wanted = Array.isArray(route.params.name) ? route.params.name[0] : route.params.name
+  if (wanted && apps.value.some((app) => app.name === wanted)) {
+    selectedApp.value = wanted
+  }
+}
+
+watch(
+  () => route.params.name,
+  () => preselectFromRoute(),
+)
+
+function parseJsonObject(text: string, field: string): Record<string, unknown> | null {
+  const trimmed = text.trim()
+  if (!trimmed) return {}
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
+      ElMessage.error(`${field} 必须是 JSON 对象`)
+      return null
+    }
+    return parsed as Record<string, unknown>
+  } catch {
+    ElMessage.error(`${field} 不是合法的 JSON`)
+    return null
+  }
+}
+
+async function submit() {
+  if (!selectedApp.value) {
+    ElMessage.warning('请先选择应用')
+    return
+  }
+  const produceCfg = parseJsonObject(produceCfgText.value, 'produce_cfg')
+  const trainCfg = parseJsonObject(trainCfgText.value, 'train_cfg')
+  if (produceCfg === null || trainCfg === null) return
+
+  report.value = null
+  hpcResult.value = null
+  statusResult.value = null
+
+  const body: AppRunRequest = {
+    produce_cfg: produceCfg,
+    train_cfg: trainCfg,
+    hpc: runMode.value === 'hpc' ? { ...hpcForm } : null,
+  }
+
+  submitting.value = true
+  try {
+    const res = await runApp(selectedApp.value, body)
+    if (isRunReport(res)) {
+      report.value = res
+      save(res)
+      ElMessage.success('应用运行完成')
+    } else if (isHpcSubmitResponse(res)) {
+      hpcResult.value = res
+      ElMessage.success('已提交 HPC 派发')
+    }
+  } catch {
+    // 错误提示已由请求拦截器统一处理
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function queryStatus() {
+  if (!hpcResult.value) return
+  queryingStatus.value = true
+  try {
+    statusResult.value = await getRunStatus(hpcResult.value.app_name, hpcResult.value.job_id)
+  } catch {
+    // 错误提示已由请求拦截器统一处理
+  } finally {
+    queryingStatus.value = false
+  }
+}
+
+function reset() {
+  produceCfgText.value = '{}'
+  trainCfgText.value = '{}'
+  report.value = null
+  hpcResult.value = null
+  statusResult.value = null
+}
+
+function goLineage() {
+  router.push('/ai4s/lineage')
+}
+
+function formatValue(value: unknown): string {
+  if (typeof value === 'string') return value
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
+onMounted(fetchApps)
 </script>
+
+<style scoped>
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.result-card {
+  margin-top: 16px;
+}
+.section-title {
+  margin: 16px 0 8px;
+}
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lineage-tag {
+  font-family: monospace;
+}
+.hpc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+.hpc-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #909399;
+}
+.status-actions {
+  margin-top: 16px;
+}
+.status-result {
+  margin-top: 16px;
+}
+</style>
