@@ -160,7 +160,8 @@ def gather_window_chunked(
     all_gather sum assembles the full window.  All messages stay below
     ``max_bytes_per_msg`` (TCCL ~4MB deadlock guard).
 
-    Returns ``(window (Q, n_win), in_slab (n_win,) bool)`` where
+    Returns ``(window (Q, nz_w, ny_w, nx_w), in_slab (n_win,) bool)`` where
+    ``window`` is the box+ring reshaped to 4D (row-major z,y,x) and
     ``in_slab`` marks the cells owned by this rank (reused by the write-back).
     """
     q = slab_field.shape[0]
@@ -185,7 +186,10 @@ def gather_window_chunked(
         dist.all_gather(gathered, piece)
         for r in range(world_size):
             full[:, c0:c1] = full[:, c0:c1] + gathered[r]
-    return full, in_slab
+    # Reshape the flat window (z-major row order) to 4D for downstream
+    # (restriction / reflux / L1 ghost sampling all expect (Q, nz, ny, nx)).
+    wz, wy, wx = win.shape
+    return full.view(q, wz, wy, wx), in_slab
 
 
 def write_window_back(
@@ -202,8 +206,9 @@ def write_window_back(
     """
     wc = win.cells
     if bool(in_slab.any()):
+        flat = window_patch.reshape(window_patch.shape[0], -1)
         coarse_f[:, wc[in_slab, 0], wc[in_slab, 1],
-                 wc[in_slab, 2] - lo + 1] = window_patch[:, in_slab]
+                 wc[in_slab, 2] - lo + 1] = flat[:, in_slab]
 
 
 class L1BlockDistributed:
@@ -377,8 +382,19 @@ class L1BlockDistributed:
     # ghost fill / advance helpers
     # ------------------------------------------------------------------
     def _sample_window(self, parent_t: torch.Tensor) -> torch.Tensor:
-        """Injection 2:1 sampling + neq rescale of the with-ghost L1 grid."""
-        sampled = parent_t[:, self.zc_map, self.yc_map, self.xc_map]
+        """Injection 2:1 sampling + neq rescale of the with-ghost L1 grid.
+
+        ``parent_t`` is the gathered window ``(Q, nz_w, ny_w, nx_w)``.
+        Each L1 cell's coarse parent coordinate maps into the window via
+        ``(z - w.z0, y - w.y0, x - w.x0)``; gather once.
+        """
+        zc = self.zc_map  # (nz_l1+2g, ny_l1+2g, nx_l1+2g) coarse coords
+        yc = self.yc_map
+        xc = self.xc_map
+        zi = (zc - self.win.z0).to(torch.int64)
+        yi = (yc - self.win.y0).to(torch.int64)
+        xi = (xc - self.win.x0).to(torch.int64)
+        sampled = parent_t[:, zi, yi, xi]
         return rescale_nonequilibrium(
             sampled,
             tau_source=self.tau_coarse,
