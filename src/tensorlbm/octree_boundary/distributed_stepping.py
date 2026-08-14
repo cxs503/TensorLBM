@@ -357,12 +357,12 @@ def step_octree_shell_distributed(
 
         # 1. collide this rank's shard (f_leaf is already the local slice).
         f_local = octree.f_leaf.contiguous()
+        f_in_save = f_local.clone()
         from tensorlbm.octree_boundary.stepping import _unpack_shell_advance
         populations, post_collision = _unpack_shell_advance(
             advance(f_local, tau_shell, shell_level, s), f_local.shape,
         )
         octree.f_leaf = populations
-
         # 2. all_gather full post-collision (Q, n_leaf).
         #    TCCL 3.1.0 deadlocks on all_gather messages > ~4MB/rank (the
         #    (27, n_leaf) tensor exceeds it for n_leaf > ~40k).  Chunk the
@@ -392,14 +392,73 @@ def step_octree_shell_distributed(
         ghost_vals = _fill_ghost_impl(
             octree.leaf_level, gplan_fill, parent_t, taus,
         )
+        if os.environ.get("DBG_NAN") and not bool(torch.isfinite(ghost_vals).all()):
+            nnan = (~torch.isfinite(ghost_vals)).sum().item()
+            dd, rr = torch.nonzero(~torch.isfinite(ghost_vals), as_tuple=True)
+            print(f"[dbg] rank{rank} substep{s} ghost_vals NaN: {nnan} elems "
+                  f"rows={torch.unique(rr).tolist()[:10]}", flush=True)
         out = stream_gather_distributed(
             octree, full_pc, ghost_vals, ghost_plan_local.slot,
             octree.f_leaf, local_indices,
         )
+        if os.environ.get("DBG_NAN"):
+            for gc in [14775, 30153, 45060, 55123, 55127, 67864, 67868,
+                       77931, 83239, 92838, 92841, 108216, 111655]:
+                m = (local_indices == gc).nonzero(as_tuple=False)
+                if m.numel():
+                    loc = int(m[0])
+                    ov = out[:, loc]
+                    fv = f_in_save[:, loc]
+                    print(f"[dbg] rank{rank} substep{s} global_col {gc}: "
+                          f"f_in sum={float(fv.sum()):.6g} "
+                          f"stream_out sum={float(ov.sum()):.6g} "
+                          f"out_finite={bool(torch.isfinite(ov).all())}",
+                          flush=True)
         if not bool(torch.isfinite(out).all()):
             nan_elems = (~torch.isfinite(out)).sum().item()
             print(f"[shell] rank{rank} NaN after stream substep {s}: "
                   f"{nan_elems} elems", flush=True)
+            if os.environ.get("DBG_NAN"):
+                bad = ~torch.isfinite(out)
+                dd, ii = torch.nonzero(bad, as_tuple=True)
+                uni = torch.unique(ii)
+                print(f"[dbg] NaN leaves {len(uni)} unique global "
+                      f"{local_indices[uni[:10]].tolist()} dirs "
+                      f"{torch.unique(dd).tolist()}", flush=True)
+                opp_t = octree._opp.to(full_pc.device)
+                for li in uni[:5].tolist():
+                    gi = int(local_indices[li])
+                    src = octree.neighbor_table[opp_t][:, gi]
+                    print(f"[dbg] leaf {gi} host="
+                          f"{octree.leaf_host_cell[gi].tolist()} "
+                          f"q={octree.q_field[:, gi].tolist()}", flush=True)
+                    for d in torch.unique(dd).tolist():
+                        print(f"[dbg]   d={d} src={int(src[d])} "
+                              f"slot={int(ghost_plan_local.slot[d, li])} "
+                              f"fullpc={float(full_pc[d, gi])} "
+                              f"out={float(out[d, li])}", flush=True)
+                # where do NaN leaves get their values? check each branch
+                print(f"[dbg] post_collision finite="
+                      f"{bool(torch.isfinite(post_collision).all())} "
+                      f"full_pc finite={bool(torch.isfinite(full_pc).all())}",
+                      flush=True)
+                if not bool(torch.isfinite(full_pc).all()):
+                    bd, bi = torch.nonzero(~torch.isfinite(full_pc), as_tuple=True)
+                    cols = torch.unique(bi).tolist()[:20]
+                    print(f"[dbg] full_pc NaN cols={cols} "
+                          f"dirs={torch.unique(bd).tolist()}", flush=True)
+                    # collide input at those columns (local col = global - lo)
+                    # NOTE: for interleave, local col != global col; map back.
+                    for gc in cols:
+                        loc = int((local_indices == gc).nonzero(as_tuple=False)[0])
+                        fin = f_in_save[:, loc]
+                        print(f"[dbg]   col {gc} collide-input finite="
+                              f"{bool(torch.isfinite(fin).all())} "
+                              f"sum={float(fin.sum()):.6g} "
+                              f"min={float(fin.min()):.6g} "
+                              f"max={float(fin.max()):.6g} "
+                              f"pc={post_collision[:, loc].tolist()[:6]}",
+                              flush=True)
             raise FloatingPointError("NaN after stream")
         if bfl_fn is not None:
             # BFL needs the full-shell facade (bfl_mask etc. are global);
@@ -409,6 +468,15 @@ def step_octree_shell_distributed(
             result = bfl_fn(facade, out, post_collision, ghost_plan_local,
                             ghost_vals, substep=s)
             out, substep_force = result
+            if os.environ.get("DBG_NAN") and not bool(torch.isfinite(out).all()):
+                nnan = (~torch.isfinite(out)).sum().item()
+                dd, ii = torch.nonzero(~torch.isfinite(out), as_tuple=True)
+                print(f"[dbg] rank{rank} substep{s} BFL-out NaN: {nnan} elems "
+                      f"dirs={torch.unique(dd).tolist()[:10]} "
+                      f"local_leaves={torch.unique(ii).tolist()[:10]} "
+                      f"q_range=[{float(octree.q_field.min())},"
+                      f"{float(octree.q_field.max())}] "
+                      f"bfl_links={int(octree.bfl_mask.sum())}", flush=True)
             if substep_force is not None:
                 sf = torch.as_tensor(substep_force, dtype=torch.float64,
                                      device=device)
@@ -420,11 +488,13 @@ def step_octree_shell_distributed(
 
     # ---- restriction on rank 0, broadcast the L1 patch ----
     # Reconstruct the full f_leaf on every rank (disjoint local_indices).
+    # NOTE: do NOT re-zero full_f after the scatter below — the 6e8f616 chunked
+    # rewrite accidentally did and killed the shell's state every step
+    # (full_f stayed 0, octree.f_leaf = 0 -> NaN on large shells).
     full_f = torch.zeros(q, n_leaf, dtype=dtype, device=device)
     full_f[:, local_indices] = octree.f_leaf
     # TCCL deadlock guard: chunk the leaf gather (<3MB/msg).
     chunk_cols2 = max(1, int(3 * 1024 * 1024 // (q * torch.finfo(dtype).bits // 8)))
-    full_f = torch.zeros(q, n_leaf, dtype=dtype, device=device)
     for c0 in range(0, n_leaf, chunk_cols2):
         c1 = min(c0 + chunk_cols2, n_leaf)
         piece = full_f[:, c0:c1].contiguous()

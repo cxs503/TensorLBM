@@ -315,7 +315,7 @@ def main():
     # sparse coarse field fed to ghost fill).  Dilate the shell band by
     # GHOST_PAD cells so ghost donors just outside the band see the real
     # wake/defect from the coarse field instead of the uniform-inflow fill.
-    GHOST_PAD = 2
+    GHOST_PAD = 6
     shell_mask_full = octree._shell_mask
     import torch.nn.functional as Fnn
     dilated = shell_mask_full.float().unsqueeze(0).unsqueeze(0)
