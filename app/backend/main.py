@@ -27,6 +27,7 @@ for _name, _mod in [
     ("ai_governance", "ai_governance"),
     ("ai_suboff", "ai_suboff"),
     ("ai_transformer", "ai_transformer"),
+    ("apps", "apps"),
     ("benchmarks", "benchmarks"),
     ("cad", "cad"),
     ("cylinder_bench", "cylinder_bench"),
@@ -59,6 +60,7 @@ agent = _router_imports.get("agent")
 ai_governance = _router_imports.get("ai_governance")
 ai_suboff = _router_imports.get("ai_suboff")
 ai_transformer = _router_imports.get("ai_transformer")
+apps = _router_imports.get("apps")
 benchmarks = _router_imports.get("benchmarks")
 cad = _router_imports.get("cad")
 cylinder_bench = _router_imports.get("cylinder_bench")
@@ -169,6 +171,7 @@ _router_registry = [
     (ai_transformer, "/api/ai", "AI Transformer"),
     (ai_governance, "/api/ai/governance", "AI Governance"),
     (ai_suboff, "/api/ai/suboff", "SUBOFF AI"),
+    (apps, "/api/apps", "AI4S Applications"),
     (suboff, "/api/suboff", "SUBOFF Physics"),
     (cylinder_interactive, "/api/cylinder-interactive", "Cylinder Interactive"),
     (cylinder_bench, "/api/cylinder-bench", "Cylinder Benchmark"),

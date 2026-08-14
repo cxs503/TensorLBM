@@ -82,6 +82,8 @@ class ModelNotFoundError(KeyError):
 FAMILY_EDDY_MLP = "eddy_viscosity_mlp"
 FAMILY_FLOW_TRANSFORMER = "flow_transformer_ssl"
 FAMILY_FNO = "fno2d"
+FAMILY_PINN = "pinn"
+FAMILY_GNN = "gnn"
 
 
 @dataclass(frozen=True)
@@ -289,11 +291,19 @@ class InferenceService:
         from tensorlbm.ai.transformer import (
             load_flow_transformer_model as _load_transformer,
         )
+        from tensorlbm.apps.mesh_gnn_flow import load_mesh_gnn as _load_gnn
+        from tensorlbm.apps.physics_informed_lbm import (
+            load_pinn_model as _load_pinn,
+        )
 
         if family == FAMILY_FLOW_TRANSFORMER:
             model = _load_transformer(path)
         elif family == FAMILY_FNO:
             model = _load_fno(path)
+        elif family == FAMILY_PINN:
+            model = _load_pinn(path)
+        elif family == FAMILY_GNN:
+            model = _load_gnn(path)
         elif family in (FAMILY_EDDY_MLP, ""):
             model = _load_eddy_mlp(path)
         else:
