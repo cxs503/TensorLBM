@@ -277,7 +277,7 @@ def step_octree_shell_distributed(
     *,
     tau_coarse: float,
     tau_shell_override: float | None = None,
-    l1_post: torch.Tensor | None = None,
+    l1_post: torch.Tensor | list[torch.Tensor] | None = None,
     shell_level: int = 1,
     reflux: bool = True,
     maximum_reflux_correction_fraction: float = 0.2,

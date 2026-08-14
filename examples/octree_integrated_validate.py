@@ -39,7 +39,21 @@ def main():
     p.add_argument("--hull-type", default="bare_hull")
     p.add_argument("--cx", type=float, default=30.0)
     p.add_argument("--bl", type=float, default=None)
-    p.add_argument("--d-max", type=int, default=1)
+    p.add_argument("--d-max", type=int, default=2)
+    p.add_argument("--l1-block", action="store_true", default=True,
+                   help="enable the L1 middle block (coarse -> L1 2x -> shell "
+                        "leaf three-level hierarchy, design doc "
+                        "L1_MIDDLE_BLOCK_INTEGRATION_DESIGN.md). "
+                        "Pass --no-l1-block for the legacy two-level path.")
+    p.add_argument("--no-l1-block", dest="l1_block", action="store_false")
+    p.add_argument("--shell-margin", type=int, default=6,
+                   help="L1 box: hull-proximity shell thickness in coarse "
+                        "cells (plan_body_shell_box)")
+    p.add_argument("--wake-cells", type=int, default=32,
+                   help="L1 box: downstream wake extension in coarse cells")
+    p.add_argument("--wall-margin", type=int, default=8,
+                   help="L1 box: coarse-cell padding around the shell+wake "
+                        "mask (also raises GHOST_PAD to max(6, pad+2))")
     p.add_argument("--interleave", action="store_true")
     p.add_argument("--u-in", type=float, default=0.06)
     p.add_argument("--reynolds", type=float, default=100.0)
@@ -85,12 +99,17 @@ def main():
     u_in = args.u_in
 
     # ---------------- geometry ----------------
-    from tensorlbm.octree_boundary.geometry import build_octree_shell
+    from tensorlbm.octree_boundary.geometry import (
+        build_octree_shell,
+        sphere_distance_field,
+    )
     from tensorlbm.octree_boundary.geometry_adapters import (
         solid_mask_inside_fn,
         sphere_inside_fn,
     )
-    l1_shape = (nz, ny, nx)
+    from tensorlbm.amr_shell_planning import plan_body_shell_box
+
+    solid_coarse = None  # coarse-frame solid mask (L1 box planning / coarse BB)
 
     if args.geo == "sphere":
         center = (nx * 0.5, ny * 0.5, nz * 0.5)
@@ -101,12 +120,13 @@ def main():
         # (0.02-0.97) and symmetric BFL mask are required for a correct Cd.
         # inside_fn (sphere_inside_fn) has an asymmetric mask + missing
         # self-fluid exclusion (audit P1) — analytic avoids it entirely.
-        octree = build_octree_shell(
-            l1_shape, center=center, radius=radius,
-            bl_thickness_cells=bl, d_max=args.d_max,
-            lattice="D3Q27", device=dev,
-        )
-        solid = octree._solid
+        solid_coarse = None
+        if args.l1_block:
+            # Coarse solid mask for the L1 box planning (same cell-centre
+            # convention as the octree's analytic solid).
+            solid_coarse = sphere_distance_field(
+                (nz, ny, nx), center, radius, dev,
+            ) <= 0.0
     else:
         from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
         L = args.hull
@@ -118,19 +138,97 @@ def main():
             cx=args.cx, cy=ny * 0.5, cz=nz * 0.5,
             length=L, radius=srad, config=config, device="cpu",
         )
-        solid = solid_cpu.bool().to(dev)
         center = (args.cx, ny * 0.5, nz * 0.5)
         bl = args.bl if args.bl is not None else max(2.0, round(srad / 2.0))
-        octree = build_octree_shell(
-            l1_shape, center=center, radius=max(srad, bl * 2),
-            bl_thickness_cells=bl, d_max=args.d_max,
-            lattice="D3Q27", device=dev,
-            # device=dev keeps inside_fn evaluation on the GPU (the default
-            # mask device would be CPU and break _level1_leaves arithmetic).
-            inside_fn=solid_mask_inside_fn(solid_cpu.bool(), device=dev),
+        if args.l1_block:
+            solid_coarse = solid_cpu.bool().to(dev)
+
+    if args.l1_block:
+        # ---- L1 middle-block geometry (design §3a) ----
+        # Body-fitted box: shell band + downstream wake + wall padding,
+        # planned on the COARSE solid mask, in coarse global coordinates.
+        assert solid_coarse is not None, "L1 path requires a coarse solid mask"
+        plan = plan_body_shell_box(
+            solid_coarse, shell_margin=args.shell_margin,
+            wake_cells=args.wake_cells, pad=args.wall_margin,
         )
+        box = plan.box
+        l1_shape = (
+            (box.z1 - box.z0) * 2, (box.y1 - box.y0) * 2,
+            (box.x1 - box.x0) * 2,
+        )
+        # Body centre in L1 physical coordinates and radius in L1 units.
+        center_l1 = (
+            center[0] * 2.0 - box.x0 * 2,
+            center[1] * 2.0 - box.y0 * 2,
+            center[2] * 2.0 - box.z0 * 2,
+        )
+        if args.geo == "sphere":
+            radius_l1 = radius * 2.0
+            octree = build_octree_shell(
+                l1_shape, center=center_l1, radius=radius_l1,
+                bl_thickness_cells=bl, d_max=args.d_max,
+                lattice="D3Q27", device=dev,
+            )
+        else:
+            radius_l1 = max(srad, bl * 2) * 2.0
+
+            def _suboff_inside_l1(centers):
+                # Leaf centres are in L1-local world units; map them back to
+                # the coarse mask frame (mask index = box origin + local/2).
+                coarse = 0.5 * centers + torch.tensor(
+                    (box.x0, box.y0, box.z0), dtype=torch.float64,
+                    device=centers.device,
+                )
+                return solid_mask_inside_fn(
+                    solid_cpu.bool(), device=dev,
+                )(coarse)
+
+            octree = build_octree_shell(
+                l1_shape, center=center_l1, radius=radius_l1,
+                bl_thickness_cells=bl, d_max=args.d_max,
+                lattice="D3Q27", device=dev,
+                # device=dev keeps inside_fn evaluation on the GPU.
+                inside_fn=_suboff_inside_l1,
+            )
+        solid = octree._solid              # L1-frame solid mask
+    else:
+        # ---- legacy two-level path: octree hosted on the coarse grid ----
+        l1_shape = (nz, ny, nx)
+        box = None
+        if args.geo == "sphere":
+            octree = build_octree_shell(
+                l1_shape, center=center, radius=radius,
+                bl_thickness_cells=bl, d_max=args.d_max,
+                lattice="D3Q27", device=dev,
+            )
+            solid = octree._solid
+        else:
+            octree = build_octree_shell(
+                l1_shape, center=center, radius=max(srad, bl * 2),
+                bl_thickness_cells=bl, d_max=args.d_max,
+                lattice="D3Q27", device=dev,
+                # device=dev keeps inside_fn evaluation on the GPU (the
+                # default mask device would be CPU and break
+                # _level1_leaves arithmetic).
+                inside_fn=solid_mask_inside_fn(solid_cpu.bool(), device=dev),
+            )
+            solid = octree._solid
     n_leaf = octree.n_leaf
     q_oct = octree.Q
+    if rank == 0:
+        box_desc = "None" if box is None else (
+            f"z:[{box.z0},{box.z1}) y:[{box.y0},{box.y1}) "
+            f"x:[{box.x0},{box.x1})"
+        )
+        print(
+            f"[geo] l1_block={args.l1_block} box={box_desc} "
+            f"l1_shape={l1_shape} "
+            f"n_leaf_l1={octree.stats.get('n_leaf_l1')} "
+            f"n_leaf_l2={octree.stats.get('n_leaf_l2')} "
+            f"n_interface_links={octree.stats.get('n_interface_links')}",
+            flush=True,
+        )
 
     # ---------------- coarse domain decomposition (x-slab) ----------------
     # Each rank owns nx_local = nx // world_size columns of the coarse field.
@@ -165,24 +263,31 @@ def main():
         lidx = torch.arange(lo_l, hi_l, dtype=torch.int64)
     n_local = lidx.shape[0]
     # Initialise the shell leaves from the uniform inflow equilibrium using
-    # GLOBAL host coordinates (host[lidx] are global (z, y, x)); build a
-    # full-domain equilibrium tensor for that (eq above is the local slab).
+    # GLOBAL host coordinates (host[lidx] are (z, y, x) in the octree's host
+    # grid — coarse for the legacy path, L1 for the L1-block path); build a
+    # full-host equilibrium tensor for that (eq above is the local slab).
+    # The field is spatially uniform, so any in-bounds indexing is exact.
+    oshape = tuple(octree.meta["shape"])
     eq_global = equilibrium27(
-        torch.ones(nz, ny, nx, device=dev),
-        torch.full((nz, ny, nx), u_in, device=dev),
-        torch.zeros(nz, ny, nx, device=dev),
-        torch.zeros(nz, ny, nx, device=dev),
+        torch.ones(oshape, device=dev),
+        torch.full(oshape, u_in, device=dev),
+        torch.zeros(oshape, device=dev),
+        torch.zeros(oshape, device=dev),
     )
     octree.f_leaf = eq_global[:, host[lidx, 0], host[lidx, 1], host[lidx, 2]].clone()
     print(f"[r{rank}] n_leaf={n_leaf} lidx_len={lidx.shape[0]} "
           f"f_leaf_cols={octree.f_leaf.shape[1]}", flush=True)
 
-    # coarse tau + shell tau chain
+    # coarse tau + L1/shell tau chain
     tau_coarse = 0.5 + 3.0 * (u_in * args.radius / args.reynolds) \
         if args.geo == "sphere" else 0.5 + 3.0 * (u_in * args.hull / args.reynolds)
     from tensorlbm.octree_boundary.stepping import _tau_chain
     taus = _tau_chain(tau_coarse, octree.d_max)
-    tau_shell = taus[1]
+    # Legacy two-level (host=coarse, d_max=1): taus = [tau_c, tau_shell].
+    # L1 block (host=L1, d_max=2): taus = [tau_c, tau_l1, tau_shell]; the
+    # shell stepper is handed tau_coarse=tau_l1 and derives its own chain.
+    tau_l1 = taus[1] if args.l1_block else tau_coarse
+    tau_shell = taus[octree.d_max]
 
     # ---------------- coarse operators (domain-decomposed) ----------------
     from tensorlbm.cumulant import collide_cumulant_d3q27
@@ -190,7 +295,15 @@ def main():
     from tensorlbm.d3q27 import OPPOSITE as OPP27
     S27 = [(int(C27[d, 0]), int(C27[d, 1]), int(C27[d, 2])) for d in range(27)]
 
-    solid_local = solid[:, :, lo:hi]          # (nz, ny, nx_local) no halo
+    # Coarse solid mask for the coarse halfway BB: the L1 path keeps the
+    # COARSE solid (octree._solid is L1-shaped there), the legacy path uses
+    # octree._solid directly (coarse-shaped).
+    if args.l1_block:
+        assert solid_coarse is not None, "L1 path requires a coarse solid mask"
+        coarse_solid = solid_coarse
+    else:
+        coarse_solid = solid
+    solid_local = coarse_solid[:, :, lo:hi]   # (nz, ny, nx_local) no halo
     solid_full = torch.zeros(nz, ny, nx_local + 2, dtype=torch.bool, device=dev)
     solid_full[:, :, 1:-1] = solid_local
     # Sponge toward uniform inflow on y/z/x+ faces (inlet x- is driven by the
@@ -325,42 +438,94 @@ def main():
         step_octree_shell_distributed,
     )
 
-    dx_leaf = 2.0 ** (-octree.d_max)
+    # ---------------- L1 middle block (stage 1, design §3b/3d) ----------------
+    from tensorlbm.octree_boundary.l1_block import (
+        L1BlockDistributed,
+        gather_window_chunked,
+        restrict_l1_block_to_coarse,
+        step_l1_block_distributed,
+        write_window_back,
+    )
+
+    def advance_l1(f, tau):
+        f4 = f.view(q, 1, 1, -1)
+        return collide_cumulant_d3q27(f4, tau, C_s=0.0).view_as(f)
+
+    win = None
+    if args.l1_block:
+        assert box is not None, "L1 path requires a planned box"
+        l1_block = L1BlockDistributed(
+            box, (nz, ny, nx), tau_coarse, q=q, ratio=2, ghost=1,
+            device=dev, solid_l1=solid,
+            collide_fn=advance_l1, stream_fn=stream27_roll,
+        )
+        l1_block.initialize_uniform(u_in)
+        win = l1_block.win
+        print(f"[r{rank}] L1 block shape={l1_block.l1_shape} "
+              f"window_cells={win.cells.shape[0]} "
+              f"tau_l1={l1_block.tau_l1:.6f}", flush=True)
+    else:
+        l1_block = None
+
+    # Leaf resolution relative to the COARSE grid: the shell host is the L1
+    # grid (2x) in the L1 path, so a depth-``d_max`` leaf is 2^(1+d_max) x
+    # finer than coarse.  ``radius_leaf`` must use that (design §5 risk 3:
+    # R*2*2^d_max = 8R for d_max=2 -> 16x area vs the legacy 2R).
+    dx_leaf_coarse = 2.0 ** (-(1 + octree.d_max)) if args.l1_block \
+        else 2.0 ** (-octree.d_max)
     if args.geo == "sphere":
-        radius_leaf = args.radius / dx_leaf
+        radius_leaf = args.radius / dx_leaf_coarse
         dynamic_area = 0.5 * u_in ** 2 * math.pi * radius_leaf ** 2
     else:
-        L_leaf = args.hull / dx_leaf
+        L_leaf = args.hull / dx_leaf_coarse
+        radius_leaf = L_leaf
         dynamic_area = 0.5 * u_in ** 2 * L_leaf ** 2
+    if rank == 0:
+        print(f"[area] dx_leaf_coarse={dx_leaf_coarse:.6f} "
+              f"radius_leaf={radius_leaf:.3f} "
+              f"dynamic_area={dynamic_area:.6f}", flush=True)
 
-    # Precompute the shell-region coarse cells once (used every step for the
-    # sparse coarse field fed to ghost fill).  Dilate the shell band by
-    # GHOST_PAD cells so ghost donors just outside the band see the real
-    # wake/defect from the coarse field instead of the uniform-inflow fill.
-    GHOST_PAD = 6
-    shell_mask_full = octree._shell_mask
-    import torch.nn.functional as Fnn
-    dilated = shell_mask_full.float().unsqueeze(0).unsqueeze(0)
-    for _ in range(GHOST_PAD):
-        dilated = Fnn.max_pool3d(dilated, kernel_size=3, stride=1, padding=1)
-    shell_mask_full = (dilated.squeeze(0).squeeze(0) > 0.5)
-    shell_cells = torch.nonzero(
-        shell_mask_full, as_tuple=False,
-    )  # (n_shell, 3) (z, y, x) global
-    n_shell = shell_cells.shape[0]
-    sc_x = shell_cells[:, 2]
-    sc_in = (sc_x >= lo) & (sc_x < hi)   # cells in this rank's x-slab
-    sc_z = shell_cells[sc_in, 0]
-    sc_y = shell_cells[sc_in, 1]
-    sc_xx = sc_x[sc_in] - lo + 1          # local column (with halo)
-    print(f"[r{rank}] n_shell={n_shell} in_rank={int(sc_in.sum())}", flush=True)
+    # Legacy two-level path: precompute the dilated shell-region coarse cells
+    # once (the sparse coarse field fed to the shell ghost fill).  GHOST_PAD
+    # is raised to max(6, wall_margin+2) so the L1 box+ring window stays
+    # inside the dilated band (design §3a).  The L1 path replaces this whole
+    # machinery with the box+1-ring window gather.
+    GHOST_PAD = max(6, args.wall_margin + 2)
+    n_shell = 0
+    shell_cells = torch.zeros((0, 3), dtype=torch.int64, device=dev)
+    sc_x = torch.zeros(0, dtype=torch.int64, device=dev)
+    sc_in = torch.zeros(0, dtype=torch.bool, device=dev)
+    sc_z = torch.zeros(0, dtype=torch.int64, device=dev)
+    sc_y = torch.zeros(0, dtype=torch.int64, device=dev)
+    sc_xx = torch.zeros(0, dtype=torch.int64, device=dev)
+    if not args.l1_block:
+        shell_mask_full = octree._shell_mask
+        import torch.nn.functional as Fnn
+        dilated = shell_mask_full.float().unsqueeze(0).unsqueeze(0)
+        for _ in range(GHOST_PAD):
+            dilated = Fnn.max_pool3d(
+                dilated, kernel_size=3, stride=1, padding=1,
+            )
+        shell_mask_full = (dilated.squeeze(0).squeeze(0) > 0.5)
+        shell_cells = torch.nonzero(
+            shell_mask_full, as_tuple=False,
+        )  # (n_shell, 3) (z, y, x) global
+        n_shell = shell_cells.shape[0]
+        sc_x = shell_cells[:, 2]
+        sc_in = (sc_x >= lo) & (sc_x < hi)   # cells in this rank's x-slab
+        sc_z = shell_cells[sc_in, 0]
+        sc_y = shell_cells[sc_in, 1]
+        sc_xx = sc_x[sc_in] - lo + 1          # local column (with halo)
+        print(f"[r{rank}] n_shell={n_shell} in_rank={int(sc_in.sum())}",
+              flush=True)
 
     # ---------------- main loop ----------------
     from tensorlbm.d3q27 import equilibrium27 as eq27b
     t0 = time.time()
     mem_accum = torch.zeros(3, dtype=torch.float64, device=dev)
     for step in range(1, args.steps + 1):
-        # 1. coarse evolve (domain-decomposed).
+        # 1. coarse evolve (domain-decomposed) — unchanged.
+        coarse_old = coarse_f.clone()
         post = collide_coarse(coarse_f, tau_coarse)
         halo_exchange(post)
         streamed = stream27_roll(post)
@@ -368,91 +533,146 @@ def main():
             streamed = apply_halfway_bounce_back(streamed, post)
         coarse_f = far_field(streamed, u_in)
 
-        # 2. shell ghost from evolved coarse field: build the sparse coarse
-        #    field (only shell-region cells, tiny all-gather) and feed it to
-        #    the shell stepper's ghost fill.
-
-        # 3. shell step: ghost fill needs the *coarse field* (4D, global
-        #    coordinates).  Build a sparse coarse field holding the
-        #    shell-region cells PLUS a ~6-cell dilation buffer so ghost
-        #    donors just outside the band see the real wake/defect, not the
-        #    uniform-inflow fill (audit P1-3: clamping the band exterior to
-        #    uniform inflow corrupts near-wake pressure/shear).
-        sc_local = torch.zeros(q_oct, n_shell, device=dev)
-        if bool(sc_in.any()):
-            sc_local[:, sc_in] = coarse_f[:, sc_z, sc_y, sc_xx]
-        gathered_sc = [torch.empty_like(sc_local) for _ in range(world_size)]
-        # TCCL deadlock guard: chunk the shell gather (<3MB/msg) for big R10.
-        sc_chunk = max(1, int(3 * 1024 * 1024 // (q_oct * 4)))
-        full_sc = torch.zeros(q_oct, n_shell, device=dev)
-        for c0 in range(0, n_shell, sc_chunk):
-            c1 = min(c0 + sc_chunk, n_shell)
-            piece = sc_local[:, c0:c1].contiguous()
-            g_piece = [torch.empty_like(piece) for _ in range(world_size)]
-            dist.all_gather(g_piece, piece)
-            for r in range(world_size):
-                full_sc[:, c0:c1] = full_sc[:, c0:c1] + g_piece[r]
-        # Build the coarse post-collision sparse field for the reflux
-        # observation.  ``l1_post`` is the post-collision (pre-stream)
-        # coarse state, observed on the shell boundary links to pair with
-        # the fine-side transfer accumulated over the shell substeps.
-        # Same sparse-field pattern as ``coarse_sparse`` below: real
-        # post-collision values at the dilated shell cells, uniform inflow
-        # equilibrium elsewhere (the observation_links masks are nonzero
-        # only at the shell boundary + 1-cell border, which lies inside
-        # the 6-cell dilation, so every observed cell has a real value).
-        sc_local_post = torch.zeros(q_oct, n_shell, device=dev)
-        if bool(sc_in.any()):
-            sc_local_post[:, sc_in] = post[:, sc_z, sc_y, sc_xx]
-        full_sc_post = torch.zeros(q_oct, n_shell, device=dev)
-        for c0 in range(0, n_shell, sc_chunk):
-            c1 = min(c0 + sc_chunk, n_shell)
-            piece = sc_local_post[:, c0:c1].contiguous()
-            g_piece = [torch.empty_like(piece) for _ in range(world_size)]
-            dist.all_gather(g_piece, piece)
-            for r in range(world_size):
-                full_sc_post[:, c0:c1] = full_sc_post[:, c0:c1] + g_piece[r]
-        l1_post = eq27b(
-            torch.ones(nz, ny, nx, device=dev),
-            torch.full((nz, ny, nx), u_in, device=dev),
-            torch.zeros(nz, ny, nx, device=dev),
-            torch.zeros(nz, ny, nx, device=dev),
-        )
-        l1_post[:, shell_cells[:, 0], shell_cells[:, 1], shell_cells[:, 2]] = \
-            full_sc_post
-        # Sparse coarse field (4D) with shell-region values; fill the rest
-        # with uniform inflow equilibrium (ghost donors must never see 0).
-        coarse_sparse = eq27b(
-            torch.ones(nz, ny, nx, device=dev),
-            torch.full((nz, ny, nx), u_in, device=dev),
-            torch.zeros(nz, ny, nx, device=dev),
-            torch.zeros(nz, ny, nx, device=dev),
-        )
-        coarse_sparse[:, shell_cells[:, 0], shell_cells[:, 1], shell_cells[:, 2]] = full_sc
-        l1_old = coarse_sparse
-        l1_f = coarse_sparse
-        _ledger, local_mem, restricted, cells = step_octree_shell_distributed(
-            octree, advance_shell, l1_old, l1_f,
-            tau_coarse=tau_coarse, l1_post=l1_post,
-            ghost_plan=None, bfl_fn=bfl_fn, rank=rank, world_size=world_size,
-            reflux=True, interleave=args.interleave,
-        )
-        # ---- bidirectional coupling: shell restriction + reflux -> coarse ----
-        # ``l1_f`` (= ``coarse_sparse``) now carries the fine restriction at
-        # covered cells AND the face-local reflux correction at the exterior
-        # interface cells.  Writing the dilated shell region back to the
-        # per-rank ``coarse_f`` propagates BOTH to the real coarse field:
-        # covered cells get the fine-restricted values, exterior cells get
-        # the reflux correction, and the remaining dilated cells are a no-op
-        # (``l1_f`` still holds the original ``coarse_f`` values there).
-        # ``coarse_f`` is THIS rank's x-slab (Q, nz, ny, nx_local+2) with one
-        # halo column on each x side, so the local x index of a global column
-        # is ``global_x - lo + 1``.  Each rank writes only the cells inside
-        # its own slab [lo, hi); neighbour halo columns are refreshed by
-        # halo_exchange at the start of the next root step.
-        if bool(sc_in.any()):
-            coarse_f[:, sc_z, sc_y, sc_xx] = \
-                l1_f[:, sc_z, sc_y, sc_x[sc_in]]
+        if args.l1_block:
+            # 2. window gather: box + 1-cell ring at the three time points
+            #    old / new / post (chunked all_gather, <3MB/msg).  ``win``
+            #    and ``l1_block`` are guaranteed set in this branch.
+            assert win is not None and l1_block is not None
+            cw_old, _in_slab = gather_window_chunked(
+                coarse_old, win, lo, hi,
+                rank=rank, world_size=world_size)
+            cw_new, in_slab = gather_window_chunked(
+                coarse_f, win, lo, hi,
+                rank=rank, world_size=world_size)
+            cw_post, _in_slab2 = gather_window_chunked(
+                post, win, lo, hi,
+                rank=rank, world_size=world_size)
+            # 3. L1 block stage: 2 time-interpolated substeps (ghost <-
+            #    lerp(coarse_old, coarse_new, s/2); cumulant collide +
+            #    stream27_roll + frozen solid) -> l1_posts.
+            l1_phys_pre, l1_posts_phys, _posts_ghost = \
+                step_l1_block_distributed(l1_block, cw_old, cw_new)
+            # 4. shell stage hosted on the real L1 field: the two lerp
+            #    anchors are the genuine root-step-start / root-step-end L1
+            #    physical slices (design §3c — fixes the old P3 defect where
+            #    l1_old == l1_f).  tau_coarse = tau_l1; l1_post is the list
+            #    of the two L1 post-collision slices.
+            l1_f_phys = l1_block.physical_copy()
+            _ledger_shell, local_mem, _restricted, _cells = \
+                step_octree_shell_distributed(
+                    octree, advance_shell, l1_phys_pre, l1_f_phys,
+                    tau_coarse=l1_block.tau_l1, l1_post=l1_posts_phys,
+                    ghost_plan=None, bfl_fn=bfl_fn, rank=rank,
+                    world_size=world_size, reflux=True,
+                    interleave=args.interleave,
+                )
+            l1_block.set_physical(l1_f_phys)
+            # 5. L1 -> coarse restriction (box interior) + face-local kinetic
+            #    reflux on the box interface (design §3d).
+            ledger_l1c = restrict_l1_block_to_coarse(
+                l1_block, cw_new, cw_post,
+            )
+            if step % args.report_interval == 0 and rank == 0:
+                print(
+                    f"[r{rank}] step={step} l1c_reflux_residual="
+                    f"{ledger_l1c.mass_residual:.3e} "
+                    f"corrected_links={ledger_l1c.shell_cells}",
+                    flush=True,
+                )
+            # 6. window patch write-back to this rank's slab (box restriction
+            #    + ring reflux corrections); halo columns are refreshed by
+            #    the next halo_exchange.
+            write_window_back(coarse_f, cw_new, win, in_slab, lo)
+        else:
+            # ---- legacy two-level path (unchanged) ----
+            # 2. shell ghost from evolved coarse field: build the sparse
+            #    coarse field (only shell-region cells, tiny all-gather) and
+            #    feed it to the shell stepper's ghost fill.
+            #
+            # 3. shell step: ghost fill needs the *coarse field* (4D, global
+            #    coordinates).  Build a sparse coarse field holding the
+            #    shell-region cells PLUS a ~GHOST_PAD-cell dilation buffer so
+            #    ghost donors just outside the band see the real
+            #    wake/defect, not the uniform-inflow fill (audit P1-3:
+            #    clamping the band exterior to uniform inflow corrupts
+            #    near-wake pressure/shear).
+            sc_local = torch.zeros(q_oct, n_shell, device=dev)
+            if bool(sc_in.any()):
+                sc_local[:, sc_in] = coarse_f[:, sc_z, sc_y, sc_xx]
+            # TCCL deadlock guard: chunk the shell gather (<3MB/msg).
+            sc_chunk = max(1, int(3 * 1024 * 1024 // (q_oct * 4)))
+            full_sc = torch.zeros(q_oct, n_shell, device=dev)
+            for c0 in range(0, n_shell, sc_chunk):
+                c1 = min(c0 + sc_chunk, n_shell)
+                piece = sc_local[:, c0:c1].contiguous()
+                g_piece = [torch.empty_like(piece) for _ in range(world_size)]
+                dist.all_gather(g_piece, piece)
+                for r in range(world_size):
+                    full_sc[:, c0:c1] = full_sc[:, c0:c1] + g_piece[r]
+            # Build the coarse post-collision sparse field for the reflux
+            # observation.  ``l1_post`` is the post-collision (pre-stream)
+            # coarse state, observed on the shell boundary links to pair
+            # with the fine-side transfer accumulated over the shell
+            # substeps.  Same sparse-field pattern as ``coarse_sparse``:
+            # real post-collision values at the dilated shell cells, uniform
+            # inflow equilibrium elsewhere (the observation_links masks are
+            # nonzero only at the shell boundary + 1-cell border, which lies
+            # inside the dilation, so every observed cell has a real value).
+            sc_local_post = torch.zeros(q_oct, n_shell, device=dev)
+            if bool(sc_in.any()):
+                sc_local_post[:, sc_in] = post[:, sc_z, sc_y, sc_xx]
+            full_sc_post = torch.zeros(q_oct, n_shell, device=dev)
+            for c0 in range(0, n_shell, sc_chunk):
+                c1 = min(c0 + sc_chunk, n_shell)
+                piece = sc_local_post[:, c0:c1].contiguous()
+                g_piece = [torch.empty_like(piece) for _ in range(world_size)]
+                dist.all_gather(g_piece, piece)
+                for r in range(world_size):
+                    full_sc_post[:, c0:c1] = \
+                        full_sc_post[:, c0:c1] + g_piece[r]
+            l1_post = eq27b(
+                torch.ones(nz, ny, nx, device=dev),
+                torch.full((nz, ny, nx), u_in, device=dev),
+                torch.zeros(nz, ny, nx, device=dev),
+                torch.zeros(nz, ny, nx, device=dev),
+            )
+            l1_post[:, shell_cells[:, 0], shell_cells[:, 1],
+                    shell_cells[:, 2]] = full_sc_post
+            # Sparse coarse field (4D) with shell-region values; fill the
+            # rest with uniform inflow equilibrium (ghost donors must never
+            # see 0).
+            coarse_sparse = eq27b(
+                torch.ones(nz, ny, nx, device=dev),
+                torch.full((nz, ny, nx), u_in, device=dev),
+                torch.zeros(nz, ny, nx, device=dev),
+                torch.zeros(nz, ny, nx, device=dev),
+            )
+            coarse_sparse[:, shell_cells[:, 0], shell_cells[:, 1],
+                          shell_cells[:, 2]] = full_sc
+            l1_old = coarse_sparse
+            l1_f = coarse_sparse
+            _ledger, local_mem, restricted, cells = \
+                step_octree_shell_distributed(
+                    octree, advance_shell, l1_old, l1_f,
+                    tau_coarse=tau_coarse, l1_post=l1_post,
+                    ghost_plan=None, bfl_fn=bfl_fn, rank=rank,
+                    world_size=world_size, reflux=True,
+                    interleave=args.interleave,
+                )
+            # ---- bidirectional coupling: shell restriction + reflux ->
+            # coarse.  ``l1_f`` (= ``coarse_sparse``) now carries the fine
+            # restriction at covered cells AND the face-local reflux
+            # correction at the exterior interface cells.  Writing the
+            # dilated shell region back to the per-rank ``coarse_f``
+            # propagates BOTH to the real coarse field.  ``coarse_f`` is
+            # THIS rank's x-slab (Q, nz, ny, nx_local+2) with one halo
+            # column on each x side, so the local x index of a global column
+            # is ``global_x - lo + 1``.  Each rank writes only the cells
+            # inside its own slab [lo, hi); neighbour halo columns are
+            # refreshed by halo_exchange at the start of the next root step.
+            if bool(sc_in.any()):
+                coarse_f[:, sc_z, sc_y, sc_xx] = \
+                    l1_f[:, sc_z, sc_y, sc_x[sc_in]]
         if step > args.warmup_steps:
             # Only accumulate force after the startup transient (warmup);
             # the initial impact force is unphysical and must not pollute Cd.
