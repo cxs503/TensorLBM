@@ -52,6 +52,26 @@ def main():
     p.add_argument("--sponge-strength", type=float, default=0.2)
     p.add_argument("--report-interval", type=int, default=50)
     p.add_argument("--output", default=None)
+    p.add_argument(
+        "--blockage-correction",
+        choices=("simple", "glauert", "off"), default="simple",
+        help=("Blockage (wind-tunnel) correction for the confined domain. "
+              "The infinite-domain Cd_ref is unfair in a small domain: the "
+              "lateral walls accelerate the flow around the body, so a "
+              "correct solver should compute a HIGHER Cd. 'simple' (default, "
+              "Maskell/Bartz): f=1/(1-beta)^2; 'glauert': "
+              "f=1/(1-1.5*beta); 'off': no correction. beta=D/Ly (D=body "
+              "diameter, Ly=domain width). R6 sphere: D=12, Ly=64 -> "
+              "beta=0.1875 -> simple f=1.5148 -> Cd_ref_blocked=1.654."),
+    )
+    p.add_argument(
+        "--domain-scale",
+        type=float, default=None,
+        help=("Target Ly/D ratio for a recommended larger domain (e.g. 8.0 "
+              "means Ly=8D, beta=12.5%%). If set, prints the recommended ny "
+              "and resulting beta. If unset and beta>12.5%%, prints a "
+              "recommendation to scale to Ly>=8D."),
+    )
     args = p.parse_args()
 
     dist.init_process_group("tccl")
@@ -75,6 +95,7 @@ def main():
     if args.geo == "sphere":
         center = (nx * 0.5, ny * 0.5, nz * 0.5)
         radius = args.radius
+        D_body = 2.0 * radius          # body diameter for blockage ratio
         bl = args.bl if args.bl is not None else max(2.0, round(radius / 2.0))
         # Sphere uses the ANALYTIC path (no inside_fn): the analytic q-field
         # (0.02-0.97) and symmetric BFL mask are required for a correct Cd.
@@ -91,6 +112,7 @@ def main():
         L = args.hull
         config = SuboffConfig()
         srad = config.r_over_l * L
+        D_body = 2.0 * srad            # hull diameter for blockage ratio
         solid_cpu, _ = build_suboff_mask(
             hull_type=args.hull_type, nx=nx, ny=ny, nz=nz,
             cx=args.cx, cy=ny * 0.5, cz=nz * 0.5,
@@ -429,15 +451,96 @@ def main():
         # MEM force x-component sign: +F_x is the drag (matches the validated
         # single-card convention cd = +mem_mean/dynamic_area).
         cd_mem = float(mem_accum[0].item()) / n_samples / dynamic_area
-        ref = (1.0917 if args.geo == "sphere" else 0.004)
+
+        # ---- Blockage (wind-tunnel) correction for the confined domain ----
+        # The infinite-domain reference Cd_ref is unfair in a small domain:
+        # the lateral walls accelerate the flow around the body, so a correct
+        # solver in a confined domain should compute a HIGHER Cd than the
+        # infinite-domain value.  We correct the reference upward by the
+        # standard wind-tunnel factor so the reported error reflects the true
+        # grid/discretisation error rather than a domain-size artefact.
+        #   beta = D / Ly   (D = body diameter, Ly = domain width = ny)
+        #   simple  (Maskell/Bartz):  f = 1 / (1 - beta)^2
+        #   glauert (more conservative): f = 1 / (1 - 1.5*beta)
+        # R6 sphere: D=12, Ly=ny=64 -> beta=0.1875
+        #   simple:  f = 1/(0.8125)^2 = 1.5148 -> Cd_ref_blocked = 1.654
+        Ly = float(ny)
+        beta = D_body / Ly if Ly > 0 else 0.0
+        ref_inf = 1.0917 if args.geo == "sphere" else 0.004
+        bc = args.blockage_correction
+        if bc == "off" or beta <= 0.0:
+            corr_factor = 1.0
+            bc_note = "off"
+        elif bc == "glauert":
+            corr_factor = 1.0 / (1.0 - 1.5 * beta)
+            bc_note = "glauert 1/(1-1.5*beta)"
+        else:  # "simple" (default)
+            corr_factor = 1.0 / (1.0 - beta) ** 2
+            bc_note = "simple 1/(1-beta)^2"
+        ref = ref_inf * corr_factor
+        err_pct = 100.0 * (cd_mem - ref) / ref
+        err_pct_inf = 100.0 * (cd_mem - ref_inf) / ref_inf
+
+        # Domain-scale recommendation: a larger domain lowers beta and thus
+        # the blockage bias.  Ly >= 8D keeps beta <= 12.5% (a common
+        # wind-tunnel rule of thumb).
+        scale_note = ""
+        if args.domain_scale is not None:
+            target_ratio = args.domain_scale
+            ny_rec = int(math.ceil(target_ratio * D_body))
+            beta_rec = D_body / ny_rec if ny_rec > 0 else 0.0
+            corr_rec = (1.0 / (1.0 - beta_rec) ** 2) if beta_rec > 0 else 1.0
+            scale_note = (
+                f"domain_scale={target_ratio:.1f}D -> recommended ny={ny_rec} "
+                f"(beta={beta_rec:.4f}={beta_rec*100:.2f}%, "
+                f"corr_factor={corr_rec:.4f}, "
+                f"Cd_ref_blocked={ref_inf*corr_rec:.4f})"
+            )
+        elif beta > 0.125:
+            ny_rec = int(math.ceil(8.0 * D_body))
+            beta_rec = D_body / ny_rec if ny_rec > 0 else 0.0
+            scale_note = (
+                f"WARNING: beta={beta*100:.2f}% > 12.5% (blockage is large); "
+                f"recommend enlarging the domain to Ly>=8D (ny>={ny_rec}, "
+                f"beta<={beta_rec*100:.2f}%) or pass --domain-scale 8.0"
+            )
+
         result = {
             "geo": args.geo, "n_leaf": n_leaf, "world_size": world_size,
             "steps": args.steps, "warmup": args.warmup_steps,
-            "cd_mem": cd_mem, "ref_Cd": ref,
-            "err_pct": 100.0 * (cd_mem - ref) / ref,
+            "cd_mem": cd_mem,
+            "ref_Cd_inf": ref_inf,
+            "ref_Cd": ref,
+            "blockage_ratio": beta,
+            "blockage_correction": bc_note,
+            "blockage_factor": corr_factor,
+            "err_pct": err_pct,
+            "err_pct_inf_domain": err_pct_inf,
             "per_step_s": (time.time() - t0) / args.steps,
         }
+        if scale_note:
+            result["domain_scale_note"] = scale_note
         print(json.dumps(result, indent=2), flush=True)
+        # Human-readable blockage summary.
+        print(
+            f"[blockage] beta=D/Ly={D_body:.3f}/{Ly:.0f}="
+            f"{beta*100:.2f}%  correction={bc_note}  "
+            f"factor={corr_factor:.4f}",
+            flush=True,
+        )
+        print(
+            f"[blockage] Cd_ref: inf-domain={ref_inf:.4f} -> "
+            f"blocked={ref:.4f}",
+            flush=True,
+        )
+        print(
+            f"[blockage] Cd_mem={cd_mem:.4f}  "
+            f"err vs blocked={err_pct:+.2f}%  "
+            f"err vs inf-domain={err_pct_inf:+.2f}%",
+            flush=True,
+        )
+        if scale_note:
+            print(f"[blockage] {scale_note}", flush=True)
         if args.output:
             with open(args.output, "w") as fh:
                 json.dump(result, fh, indent=2)
