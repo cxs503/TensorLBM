@@ -138,3 +138,27 @@ class AI4SApplication(ABC):
 3. mesh_gnn_flow（P1）—— 图神经网络
 4. generative_flow（P1）—— 生成式流场
 5. 逆问题 + 数据同化 + UQ（P2）
+
+## 8. 实施进度（2026-08 已固化）
+
+已完成的 9 个 AI4S 应用（`src/tensorlbm/apps/`）：
+
+| 应用 | family | 方法 | 状态 |
+|------|--------|------|------|
+| suboff_surrogate | suboff_surrogate | 代理模型（重构）| ✅ |
+| ai_les | eddy_viscosity_mlp | 代理模型（重构）| ✅ |
+| flow_transformer | flow_transformer_ssl | 自监督（重构）| ✅ |
+| neural_operator_fno | fno2d | FNO 神经算子 | ✅ |
+| physics_informed_lbm | pinn | PINN | ✅ |
+| mesh_gnn_flow | gnn | MeshGraphNet GNN | ✅ |
+| generative_flow | diffusion | DDPM 扩散生成 | ✅ |
+| inverse_problem | inverse | 梯度反演 | ✅ |
+| uncertainty_quantification | uq | MC-dropout UQ | ✅ |
+
+配套设施：
+- `apps/base.py` — AI4SApplication SDK + ApplicationRegistry
+- `apps/hpc.py` — 超算全栈（HpcRunSpec + submit_app_hpc）
+- `app/backend/routers/apps.py` — 应用管理 API（/api/apps）
+- 95 个测试全过（12 应用/API 套件 + serving）
+
+剩余 P2 方向：数据同化（DA/EnKF）、科学基础模型、LLM 科学 agent。
