@@ -51,6 +51,7 @@ _BUILTIN_APPS: tuple[tuple[str, str], ...] = (
     ("tensorlbm.apps.suboff_app", "SuboffSurrogateApp"),
     ("tensorlbm.apps.flow_transformer_app", "FlowTransformerApp"),
     ("tensorlbm.apps.physics_informed_lbm", "PhysicsInformedLBM"),
+    ("tensorlbm.apps.inverse_problem", "InverseProblem"),
     ("tensorlbm.apps.mesh_gnn_flow", "MeshGNNFlow"),
 )
 
