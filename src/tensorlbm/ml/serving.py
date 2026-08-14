@@ -84,6 +84,9 @@ FAMILY_FLOW_TRANSFORMER = "flow_transformer_ssl"
 FAMILY_FNO = "fno2d"
 FAMILY_PINN = "pinn"
 FAMILY_GNN = "gnn"
+FAMILY_INVERSE = "inverse"
+FAMILY_DIFFUSION = "diffusion"
+FAMILY_UQ = "uq"
 
 
 @dataclass(frozen=True)
@@ -295,6 +298,15 @@ class InferenceService:
         from tensorlbm.apps.physics_informed_lbm import (
             load_pinn_model as _load_pinn,
         )
+        from tensorlbm.apps.inverse_problem import (
+            load_inverse_model as _load_inverse,
+        )
+        from tensorlbm.apps.generative_flow import (
+            load_diffusion_model as _load_diffusion,
+        )
+        from tensorlbm.apps.uncertainty_quantification import (
+            load_uq_mlp as _load_uq,
+        )
 
         if family == FAMILY_FLOW_TRANSFORMER:
             model = _load_transformer(path)
@@ -302,8 +314,14 @@ class InferenceService:
             model = _load_fno(path)
         elif family == FAMILY_PINN:
             model = _load_pinn(path)
+        elif family == FAMILY_INVERSE:
+            model = _load_inverse(path)
         elif family == FAMILY_GNN:
             model = _load_gnn(path)
+        elif family == FAMILY_DIFFUSION:
+            model = _load_diffusion(path)
+        elif family == FAMILY_UQ:
+            model = _load_uq(path)
         elif family in (FAMILY_EDDY_MLP, ""):
             model = _load_eddy_mlp(path)
         else:
