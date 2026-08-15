@@ -3,46 +3,46 @@
     <el-card>
       <el-tabs v-model="activeTab">
         <!-- 多边形掩码 -->
-        <el-tab-pane label="多边形 → 2D 掩码" name="polygon">
+        <el-tab-pane :label="t('production.preprocess.tabPolygon')" name="polygon">
           <el-form label-width="110px" size="small" class="tab-form">
             <el-row :gutter="12">
               <el-col :span="8">
-                <el-form-item label="网格宽 nx">
+                <el-form-item :label="t('production.fields.meshWideNx')">
                   <el-input-number v-model="poly.nx" :min="10" controls-position="right" style="width: 100%" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
-                <el-form-item label="网格高 ny">
+                <el-form-item :label="t('production.fields.meshHighNy')">
                   <el-input-number v-model="poly.ny" :min="10" controls-position="right" style="width: 100%" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label=" ">
-                  <el-button type="primary" :loading="polyLoading" @click="runPolygon">生成掩码</el-button>
+                  <el-button type="primary" :loading="polyLoading" @click="runPolygon">{{ t('production.preprocess.generateMask') }}</el-button>
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-form-item label="顶点坐标">
+            <el-form-item :label="t('production.preprocess.vertices')">
               <el-input
                 v-model="poly.verticesText"
                 type="textarea"
                 :rows="4"
-                placeholder="每行一个顶点，格式：x,y （像素坐标）"
+                :placeholder="t('production.preprocess.verticesPlaceholder')"
               />
             </el-form-item>
           </el-form>
           <div v-if="polyResult" class="result-block">
             <img :src="polyResult.image" alt="mask" class="result-img" />
             <el-descriptions :column="2" size="small" border class="result-stats">
-              <el-descriptions-item label="障碍网格">{{ polyResult.obstacle_cells }}</el-descriptions-item>
-              <el-descriptions-item label="流体网格">{{ polyResult.fluid_cells }}</el-descriptions-item>
-              <el-descriptions-item label="网格">{{ polyResult.nx }}×{{ polyResult.ny }}</el-descriptions-item>
+              <el-descriptions-item :label="t('production.preprocess.obstacleCells')">{{ polyResult.obstacle_cells }}</el-descriptions-item>
+              <el-descriptions-item :label="t('production.common.fluidCells')">{{ polyResult.fluid_cells }}</el-descriptions-item>
+              <el-descriptions-item :label="t('production.common.mesh')">{{ polyResult.nx }}×{{ polyResult.ny }}</el-descriptions-item>
             </el-descriptions>
           </div>
         </el-tab-pane>
 
         <!-- 随机孔隙率 -->
-        <el-tab-pane label="随机孔隙率掩码" name="porosity">
+        <el-tab-pane :label="t('production.preprocess.tabPorosity')" name="porosity">
           <el-form label-width="120px" size="small" class="tab-form">
             <el-row :gutter="12">
               <el-col :span="6">
@@ -52,135 +52,135 @@
                 <el-form-item label="ny"><el-input-number v-model="poro.ny" :min="16" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="孔隙率">
+                <el-form-item :label="t('production.common.porosity')">
                   <el-input-number v-model="poro.porosity" :min="0.01" :max="0.99" :step="0.05" controls-position="right" style="width: 100%" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="随机种子">
+                <el-form-item :label="t('production.common.seed')">
                   <el-input-number v-model="poro.seed" :min="0" controls-position="right" style="width: 100%" />
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-button type="primary" :loading="poroLoading" @click="runPorosity">生成孔隙率掩码</el-button>
+            <el-button type="primary" :loading="poroLoading" @click="runPorosity">{{ t('production.preprocess.generatePorosityMask') }}</el-button>
           </el-form>
           <div v-if="poroResult" class="result-block">
             <img :src="poroResult.image" alt="porosity" class="result-img" />
             <el-descriptions :column="2" size="small" border class="result-stats">
-              <el-descriptions-item label="目标孔隙率">{{ poroResult.requested_porosity }}</el-descriptions-item>
-              <el-descriptions-item label="实际孔隙率">{{ poroResult.actual_porosity }}</el-descriptions-item>
+              <el-descriptions-item :label="t('production.preprocess.targetPorosity')">{{ poroResult.requested_porosity }}</el-descriptions-item>
+              <el-descriptions-item :label="t('production.preprocess.actualPorosity')">{{ poroResult.actual_porosity }}</el-descriptions-item>
             </el-descriptions>
           </div>
         </el-tab-pane>
 
         <!-- 单位换算 -->
-        <el-tab-pane label="物理单位 → LBM 换算" name="units">
+        <el-tab-pane :label="t('production.preprocess.tabUnits')" name="units">
           <el-form label-width="140px" size="small" class="tab-form">
             <el-row :gutter="12">
               <el-col :span="8">
-                <el-form-item label="特征长度 (m)"><el-input-number v-model="units.phys_length_m" :min="0.001" controls-position="right" style="width: 100%" /></el-form-item>
+                <el-form-item :label="t('production.preprocess.charLengthM')"><el-input-number v-model="units.phys_length_m" :min="0.001" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
               <el-col :span="8">
-                <el-form-item label="特征速度 (m/s)"><el-input-number v-model="units.phys_velocity_ms" :min="0.001" controls-position="right" style="width: 100%" /></el-form-item>
+                <el-form-item :label="t('production.preprocess.charVelocityMs')"><el-input-number v-model="units.phys_velocity_ms" :min="0.001" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
               <el-col :span="8">
-                <el-form-item label="运动粘度 (m²/s)">
+                <el-form-item :label="t('production.common.nuM2s')">
                   <el-input-number v-model="units.phys_nu_m2s" :min="1e-9" :step="1e-7" :precision="9" controls-position="right" style="width: 100%" />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="12">
               <el-col :span="8">
-                <el-form-item label="LBM 长度"><el-input-number v-model="units.lbm_length" :min="10" controls-position="right" style="width: 100%" /></el-form-item>
+                <el-form-item :label="t('production.preprocess.lbmLength')"><el-input-number v-model="units.lbm_length" :min="10" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
               <el-col :span="8">
-                <el-form-item label="LBM 速度"><el-input-number v-model="units.lbm_velocity" :min="0.01" :step="0.01" controls-position="right" style="width: 100%" /></el-form-item>
+                <el-form-item :label="t('production.preprocess.lbmVelocity')"><el-input-number v-model="units.lbm_velocity" :min="0.01" :step="0.01" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label=" ">
-                  <el-button type="primary" :loading="unitsLoading" @click="runUnits">换算</el-button>
+                  <el-button type="primary" :loading="unitsLoading" @click="runUnits">{{ t('production.preprocess.convert') }}</el-button>
                 </el-form-item>
               </el-col>
             </el-row>
           </el-form>
           <el-table v-if="unitsResult" :data="unitsRows" size="small" border class="result-stats">
-            <el-table-column prop="label" label="参数" width="180" />
-            <el-table-column prop="value" label="数值" />
+            <el-table-column prop="label" :label="t('production.common.param')" width="180" />
+            <el-table-column prop="value" :label="t('production.common.value')" />
           </el-table>
         </el-tab-pane>
 
         <!-- Y+ -->
-        <el-tab-pane label="Y+ 首层网格高度" name="yplus">
+        <el-tab-pane :label="t('production.preprocess.tabYplus')" name="yplus">
           <el-form label-width="140px" size="small" class="tab-form">
             <el-row :gutter="12">
               <el-col :span="8">
-                <el-form-item label="雷诺数 Re"><el-input-number v-model="yp.re" :min="1" controls-position="right" style="width: 100%" /></el-form-item>
+                <el-form-item :label="t('production.common.reynoldsRe')"><el-input-number v-model="yp.re" :min="1" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
               <el-col :span="8">
-                <el-form-item label="来流速度 (m/s)"><el-input-number v-model="yp.u_ms" :min="0.001" controls-position="right" style="width: 100%" /></el-form-item>
+                <el-form-item :label="t('production.preprocess.freeStreamVelocityMs')"><el-input-number v-model="yp.u_ms" :min="0.001" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
               <el-col :span="8">
-                <el-form-item label="特征长度 (m)"><el-input-number v-model="yp.l_m" :min="0.001" controls-position="right" style="width: 100%" /></el-form-item>
+                <el-form-item :label="t('production.preprocess.charLengthM')"><el-input-number v-model="yp.l_m" :min="0.001" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="12">
               <el-col :span="8">
-                <el-form-item label="运动粘度 (m²/s)">
+                <el-form-item :label="t('production.common.nuM2s')">
                   <el-input-number v-model="yp.nu_m2s" :min="1e-9" :step="1e-6" :precision="8" controls-position="right" style="width: 100%" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
-                <el-form-item label="目标 y+"><el-input-number v-model="yp.target_yplus" :min="0.01" controls-position="right" style="width: 100%" /></el-form-item>
+                <el-form-item :label="t('production.preprocess.targetYplus')"><el-input-number v-model="yp.target_yplus" :min="0.01" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
               <el-col :span="8">
-                <el-form-item label="沿 L 网格数"><el-input-number v-model="yp.n_cells" :min="1" controls-position="right" style="width: 100%" /></el-form-item>
+                <el-form-item :label="t('production.preprocess.cellsAlongL')"><el-input-number v-model="yp.n_cells" :min="1" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="12">
               <el-col :span="8">
-                <el-form-item label="几何类型">
+                <el-form-item :label="t('production.preprocess.geometryType')">
                   <el-select v-model="yp.geometry" style="width: 100%">
-                    <el-option label="平板" value="flat_plate" />
-                    <el-option label="圆柱" value="cylinder" />
-                    <el-option label="管道" value="channel" />
+                    <el-option :label="t('production.preprocess.geoFlatPlate')" value="flat_plate" />
+                    <el-option :label="t('production.preprocess.geoCylinder')" value="cylinder" />
+                    <el-option :label="t('production.preprocess.geoChannel')" value="channel" />
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label=" ">
-                  <el-button type="primary" :loading="ypLoading" @click="runYPlus">计算</el-button>
+                  <el-button type="primary" :loading="ypLoading" @click="runYPlus">{{ t('production.preprocess.calculate') }}</el-button>
                 </el-form-item>
               </el-col>
             </el-row>
           </el-form>
           <el-table v-if="ypResult" :data="ypRows" size="small" border class="result-stats">
-            <el-table-column prop="label" label="参数" width="220" />
-            <el-table-column prop="value" label="数值" />
+            <el-table-column prop="label" :label="t('production.common.param')" width="220" />
+            <el-table-column prop="value" :label="t('production.common.value')" />
           </el-table>
           <el-alert v-if="ypNote" :title="ypNote" type="info" :closable="false" class="result-stats" />
         </el-tab-pane>
 
         <!-- 流体材料库 -->
-        <el-tab-pane label="流体材料库" name="materials">
+        <el-tab-pane :label="t('production.preprocess.tabMaterials')" name="materials">
           <div class="tab-form">
-            <el-button size="small" :loading="materialsLoading" @click="loadMaterials">加载材料库</el-button>
+            <el-button size="small" :loading="materialsLoading" @click="loadMaterials">{{ t('production.preprocess.loadMaterials') }}</el-button>
             <el-radio-group v-model="materialCategory" size="small" style="margin-left: 12px" @change="loadMaterials">
-              <el-radio-button label="">全部</el-radio-button>
-              <el-radio-button label="liquid">液体</el-radio-button>
-              <el-radio-button label="gas">气体</el-radio-button>
+              <el-radio-button label="">{{ t('production.preprocess.all') }}</el-radio-button>
+              <el-radio-button label="liquid">{{ t('production.preprocess.liquid') }}</el-radio-button>
+              <el-radio-button label="gas">{{ t('production.preprocess.gas') }}</el-radio-button>
             </el-radio-group>
           </div>
           <el-table :data="materials" v-loading="materialsLoading" size="small" border class="result-stats">
-            <el-table-column prop="name" label="名称" min-width="200" />
-            <el-table-column prop="name_zh" label="中文名" width="140" />
-            <el-table-column prop="category" label="类别" width="80" />
-            <el-table-column label="密度 (kg/m³)" width="120">
+            <el-table-column prop="name" :label="t('production.common.name')" min-width="200" />
+            <el-table-column prop="name_zh" :label="t('production.preprocess.nameZh')" width="140" />
+            <el-table-column prop="category" :label="t('production.preprocess.category')" width="80" />
+            <el-table-column :label="t('production.preprocess.density')" width="120">
               <template #default="{ row }">{{ row.density_kg_m3 }}</template>
             </el-table-column>
-            <el-table-column label="运动粘度 (m²/s)" width="150">
+            <el-table-column :label="t('production.common.nuM2s')" width="150">
               <template #default="{ row }">{{ row.kinematic_viscosity_m2_s.toExponential(3) }}</template>
             </el-table-column>
-            <el-table-column label="参考温度 (°C)" width="110">
+            <el-table-column :label="t('production.preprocess.refTemp')" width="110">
               <template #default="{ row }">{{ row.ref_temp_c }}</template>
             </el-table-column>
           </el-table>
@@ -192,6 +192,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   preprocessMaterials,
   preprocessPolygonMask,
@@ -200,6 +201,8 @@ import {
   preprocessYPlus,
   type Material,
 } from '@/api/production'
+
+const { t } = useI18n()
 
 const activeTab = ref('polygon')
 
@@ -258,12 +261,12 @@ const unitsRows = computed(() => {
   const r = unitsResult.value
   if (!r) return []
   return [
-    { label: '雷诺数 Re', value: String(r.reynolds_number) },
-    { label: 'LBM 运动粘度 ν', value: String(r.lbm_nu) },
-    { label: 'LBM 弛豫时间 τ', value: `${r.lbm_tau} ${r.stable ? '（稳定）' : '（不稳定）'}` },
+    { label: t('production.common.reynoldsRe'), value: String(r.reynolds_number) },
+    { label: t('production.preprocess.lbmNu'), value: String(r.lbm_nu) },
+    { label: t('production.preprocess.lbmTau'), value: `${r.lbm_tau} ${r.stable ? t('production.common.stable') : t('production.common.unstable')}` },
     { label: 'dx (m)', value: String(r.dx_m) },
     { label: 'dt (s)', value: String(r.dt_s) },
-    { label: '马赫数 Ma', value: String(r.mach_number) },
+    { label: t('production.preprocess.machMa'), value: String(r.mach_number) },
   ]
 })
 
@@ -293,13 +296,13 @@ const ypRows = computed(() => {
   const r = ypResult.value
   if (!r) return []
   return [
-    { label: '摩擦系数 Cf', value: String(r.c_f) },
-    { label: '摩擦速度 u_τ (m/s)', value: String(r.u_tau_ms) },
-    { label: '首层网格高度 Δy (m)', value: String(r.delta_y_m) },
-    { label: 'LBM 首层高度 Δy_LBM', value: String(r.delta_y_lbm) },
-    { label: '网格尺寸 dx (m)', value: String(r.dx_m) },
-    { label: '边界层厚度 (m)', value: String(r.bl_thickness_m) },
-    { label: '边界层内网格数', value: String(r.cells_inside_bl) },
+    { label: t('production.preprocess.cf'), value: String(r.c_f) },
+    { label: t('production.preprocess.uTau'), value: String(r.u_tau_ms) },
+    { label: t('production.preprocess.deltaY'), value: String(r.delta_y_m) },
+    { label: t('production.preprocess.deltaYLbm'), value: String(r.delta_y_lbm) },
+    { label: t('production.preprocess.dx'), value: String(r.dx_m) },
+    { label: t('production.preprocess.blThickness'), value: String(r.bl_thickness_m) },
+    { label: t('production.preprocess.cellsInsideBl'), value: String(r.cells_inside_bl) },
   ]
 })
 const ypNote = computed(() => (ypResult.value?.note as string) || '')

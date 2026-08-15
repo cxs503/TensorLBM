@@ -13,58 +13,58 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>作业总览</span>
+          <span>{{ t('production.dashboard.title') }}</span>
           <div class="header-actions">
             <el-select
               v-model="statusFilter"
-              placeholder="全部状态"
+              :placeholder="t('production.dashboard.allStatuses')"
               clearable
               style="width: 150px"
               @change="loadJobs"
             >
-              <el-option label="排队中" value="queued" />
-              <el-option label="运行中" value="running" />
-              <el-option label="已完成" value="completed" />
-              <el-option label="失败" value="failed" />
-              <el-option label="已取消" value="cancelled" />
+              <el-option :label="t('production.status.queued')" value="queued" />
+              <el-option :label="t('production.status.running')" value="running" />
+              <el-option :label="t('production.status.completed')" value="completed" />
+              <el-option :label="t('production.status.failed')" value="failed" />
+              <el-option :label="t('production.status.cancelled')" value="cancelled" />
             </el-select>
-            <el-switch v-model="autoRefresh" active-text="自动刷新" />
+            <el-switch v-model="autoRefresh" :active-text="t('production.dashboard.autoRefresh')" />
             <el-button type="primary" :icon="Refresh" :loading="loading" @click="loadJobs">
-              刷新
+              {{ t('production.common.refresh') }}
             </el-button>
           </div>
         </div>
       </template>
 
       <el-table :data="jobs" v-loading="loading" stripe style="width: 100%">
-        <el-table-column prop="name" label="名称" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="job_id" label="作业 ID" width="120">
+        <el-table-column prop="name" :label="t('production.common.name')" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="job_id" :label="t('production.common.jobId')" width="120">
           <template #default="{ row }">
             <el-text class="mono" size="small">{{ row.job_id }}</el-text>
           </template>
         </el-table-column>
-        <el-table-column prop="job_type" label="类型" width="160" show-overflow-tooltip />
-        <el-table-column label="状态" width="110">
+        <el-table-column prop="job_type" :label="t('production.common.type')" width="160" show-overflow-tooltip />
+        <el-table-column :label="t('production.common.status')" width="110">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.status)" disable-transitions>{{ statusLabel(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="资源" width="120">
+        <el-table-column :label="t('production.dashboard.resources')" width="120">
           <template #default="{ row }">
             <span class="muted">{{ row.assigned_resource || '—' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗时" width="110">
+        <el-table-column :label="t('production.common.duration')" width="110">
           <template #default="{ row }">
             <span class="muted">{{ formatDuration(row.total_duration_seconds) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" width="190">
+        <el-table-column :label="t('production.common.createdAt')" width="190">
           <template #default="{ row }">
             <span class="muted">{{ formatTime(row.created_at) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column :label="t('production.common.action')" width="160" fixed="right">
           <template #default="{ row }">
             <el-button
               v-if="['queued', 'running'].includes(row.status)"
@@ -72,7 +72,7 @@
               type="warning"
               @click="onCancel(row)"
             >
-              取消
+              {{ t('production.common.cancel') }}
             </el-button>
             <el-button
               v-if="['completed', 'failed', 'cancelled'].includes(row.status)"
@@ -81,12 +81,12 @@
               plain
               @click="onDelete(row)"
             >
-              删除
+              {{ t('production.common.delete') }}
             </el-button>
           </template>
         </el-table-column>
         <template #empty>
-          <el-empty description="暂无作业" />
+          <el-empty :description="t('production.common.noJobs')" />
         </template>
       </el-table>
     </el-card>
@@ -97,7 +97,10 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import { cancelJob, deleteJob, listJobs, type Job } from '@/api/production'
+
+const { t } = useI18n()
 
 const jobs = ref<Job[]>([])
 const loading = ref(false)
@@ -113,21 +116,21 @@ const summaryCards = computed(() => {
   const failed = jobs.value.filter((j) => j.status === 'failed').length
   const queued = jobs.value.filter((j) => j.status === 'queued').length
   return [
-    { key: 'total', label: '作业总数', value: total, color: '#409eff' },
-    { key: 'running', label: '运行中', value: running, color: '#e6a23c' },
-    { key: 'queued', label: '排队中', value: queued, color: '#909399' },
-    { key: 'completed', label: '已完成', value: completed, color: '#67c23a' },
-    { key: 'failed', label: '失败', value: failed, color: '#f56c6c' },
+    { key: 'total', label: t('production.dashboard.totalJobs'), value: total, color: '#409eff' },
+    { key: 'running', label: t('production.status.running'), value: running, color: '#e6a23c' },
+    { key: 'queued', label: t('production.status.queued'), value: queued, color: '#909399' },
+    { key: 'completed', label: t('production.status.completed'), value: completed, color: '#67c23a' },
+    { key: 'failed', label: t('production.status.failed'), value: failed, color: '#f56c6c' },
   ]
 })
 
 function statusLabel(status: string): string {
   const map: Record<string, string> = {
-    queued: '排队中',
-    running: '运行中',
-    completed: '已完成',
-    failed: '失败',
-    cancelled: '已取消',
+    queued: t('production.status.queued'),
+    running: t('production.status.running'),
+    completed: t('production.status.completed'),
+    failed: t('production.status.failed'),
+    cancelled: t('production.status.cancelled'),
   }
   return map[status] || status
 }
@@ -174,23 +177,29 @@ async function loadJobs() {
 
 async function onCancel(row: Job) {
   try {
-    await ElMessageBox.confirm(`确认取消作业「${row.name}」？`, '提示', { type: 'warning' })
+    await ElMessageBox.confirm(t('production.common.confirmCancel', { name: row.name }), t('production.common.hint'), {
+      type: 'warning',
+    })
   } catch {
     return
   }
   await cancelJob(row.job_id)
-  ElMessage.success('已发送取消请求')
+  ElMessage.success(t('production.common.cancelSent'))
   await loadJobs()
 }
 
 async function onDelete(row: Job) {
   try {
-    await ElMessageBox.confirm(`确认删除作业「${row.name}」？此操作不可恢复。`, '警告', { type: 'error' })
+    await ElMessageBox.confirm(
+      t('production.dashboard.confirmDelete', { name: row.name }),
+      t('production.common.warning'),
+      { type: 'error' },
+    )
   } catch {
     return
   }
   await deleteJob(row.job_id)
-  ElMessage.success('作业已删除')
+  ElMessage.success(t('production.dashboard.jobDeleted'))
   await loadJobs()
 }
 

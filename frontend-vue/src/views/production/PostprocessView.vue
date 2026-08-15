@@ -3,10 +3,10 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>后处理</span>
+          <span>{{ t('production.postprocess.title') }}</span>
           <el-select
             v-model="selectedJobId"
-            placeholder="选择作业"
+            :placeholder="t('production.postprocess.selectJob')"
             filterable
             style="width: 360px"
             @change="onJobChange"
@@ -22,25 +22,25 @@
       </template>
 
       <template v-if="!selectedJobId">
-        <el-empty description="请先选择一个已完成的作业" />
+        <el-empty :description="t('production.postprocess.selectCompletedJob')" />
       </template>
 
       <template v-else>
         <!-- 作业摘要 -->
         <el-descriptions v-if="summary" :column="4" border size="small" class="summary-block">
-          <el-descriptions-item label="作业名称">{{ summary.job_name }}</el-descriptions-item>
-          <el-descriptions-item label="类型">{{ summary.job_type }}</el-descriptions-item>
-          <el-descriptions-item label="状态">{{ summary.status }}</el-descriptions-item>
-          <el-descriptions-item label="耗时">{{ summary.duration_s ?? '—' }}s</el-descriptions-item>
-          <el-descriptions-item label="PNG 快照">{{ summary.png_files }}</el-descriptions-item>
-          <el-descriptions-item label="CSV 文件">{{ summary.csv_files }}</el-descriptions-item>
+          <el-descriptions-item :label="t('production.postprocess.jobName')">{{ summary.job_name }}</el-descriptions-item>
+          <el-descriptions-item :label="t('production.common.type')">{{ summary.job_type }}</el-descriptions-item>
+          <el-descriptions-item :label="t('production.common.status')">{{ summary.status }}</el-descriptions-item>
+          <el-descriptions-item :label="t('production.common.duration')">{{ summary.duration_s ?? '—' }}s</el-descriptions-item>
+          <el-descriptions-item :label="t('production.postprocess.pngSnapshots')">{{ summary.png_files }}</el-descriptions-item>
+          <el-descriptions-item :label="t('production.postprocess.csvFiles')">{{ summary.csv_files }}</el-descriptions-item>
         </el-descriptions>
 
         <el-tabs v-model="activeTab" class="pp-tabs">
           <!-- 快照 -->
-          <el-tab-pane label="快照" name="snapshots">
+          <el-tab-pane :label="t('production.postprocess.snapshots')" name="snapshots">
             <div v-loading="snapshotsLoading" class="snap-grid">
-              <el-empty v-if="!snapshots.length && !snapshotsLoading" description="暂无快照" />
+              <el-empty v-if="!snapshots.length && !snapshotsLoading" :description="t('production.postprocess.noSnapshots')" />
               <div v-for="img in snapshots" :key="img" class="snap-item">
                 <el-image
                   :src="jobFileUrl(selectedJobId, img)"
@@ -55,13 +55,13 @@
           </el-tab-pane>
 
           <!-- 云图查看器 -->
-          <el-tab-pane label="云图查看器" name="viewer">
+          <el-tab-pane :label="t('production.postprocess.viewer')" name="viewer">
             <div class="viewer-toolbar">
               <el-select v-model="viewer.field" size="small" style="width: 200px">
-                <el-option label="速度模" value="velocity_magnitude" />
-                <el-option label="涡量" value="vorticity" />
-                <el-option label="密度" value="density" />
-                <el-option label="压力系数" value="pressure_coeff" />
+                <el-option :label="t('production.postprocess.velocityMagnitude')" value="velocity_magnitude" />
+                <el-option :label="t('production.postprocess.vorticity')" value="vorticity" />
+                <el-option :label="t('production.postprocess.density')" value="density" />
+                <el-option :label="t('production.postprocess.pressureCoeff')" value="pressure_coeff" />
                 <el-option label="ux" value="ux" />
                 <el-option label="uy" value="uy" />
               </el-select>
@@ -72,8 +72,8 @@
               <el-select v-model="viewer.colormap" size="small" style="width: 140px">
                 <el-option v-for="(_, name) in cmaps" :key="name" :label="name" :value="name" />
               </el-select>
-              <el-checkbox v-model="viewer.showArrows" size="small">矢量箭头</el-checkbox>
-              <el-button size="small" type="primary" :loading="viewerLoading" @click="renderField">渲染</el-button>
+              <el-checkbox v-model="viewer.showArrows" size="small">{{ t('production.postprocess.vectorArrows') }}</el-checkbox>
+              <el-button size="small" type="primary" :loading="viewerLoading" @click="renderField">{{ t('production.postprocess.render') }}</el-button>
             </div>
             <div class="viewer-body">
               <canvas ref="fieldCanvas" class="field-canvas"></canvas>
@@ -83,8 +83,8 @@
           </el-tab-pane>
 
           <!-- 收敛曲线 -->
-          <el-tab-pane label="收敛曲线" name="convergence">
-            <el-button size="small" type="primary" :loading="convLoading" @click="loadConvergence">加载收敛数据</el-button>
+          <el-tab-pane :label="t('production.postprocess.convergence')" name="convergence">
+            <el-button size="small" type="primary" :loading="convLoading" @click="loadConvergence">{{ t('production.postprocess.loadConvergence') }}</el-button>
             <el-table v-if="convRows.length" :data="convRows" size="small" border class="conv-table" max-height="400">
               <el-table-column prop="step" label="step" width="120" />
               <el-table-column
@@ -94,32 +94,32 @@
                 :label="col"
               />
             </el-table>
-            <el-empty v-else-if="convLoaded" description="暂无收敛数据" :image-size="60" />
+            <el-empty v-else-if="convLoaded" :description="t('production.postprocess.noConvergence')" :image-size="60" />
           </el-tab-pane>
 
           <!-- 输出文件 -->
-          <el-tab-pane label="输出文件" name="files">
+          <el-tab-pane :label="t('production.postprocess.files')" name="files">
             <el-table :data="files" v-loading="filesLoading" size="small" border>
-              <el-table-column prop="path" label="路径" min-width="260" />
-              <el-table-column label="大小" width="120">
+              <el-table-column prop="path" :label="t('production.postprocess.path')" min-width="260" />
+              <el-table-column :label="t('production.postprocess.size')" width="120">
                 <template #default="{ row }">{{ (row.size / 1024).toFixed(1) }} KB</template>
               </el-table-column>
-              <el-table-column prop="mime" label="类型" width="180" />
-              <el-table-column label="操作" width="100">
+              <el-table-column prop="mime" :label="t('production.postprocess.mime')" width="180" />
+              <el-table-column :label="t('production.common.action')" width="100">
                 <template #default="{ row }">
-                  <el-button size="small" link type="primary" @click="downloadFile(row.path)">下载</el-button>
+                  <el-button size="small" link type="primary" @click="downloadFile(row.path)">{{ t('production.postprocess.download') }}</el-button>
                 </template>
               </el-table-column>
             </el-table>
           </el-tab-pane>
 
           <!-- 运行日志 -->
-          <el-tab-pane label="运行日志" name="logs">
+          <el-tab-pane :label="t('production.postprocess.logs')" name="logs">
             <pre class="log-box">{{ logsText }}</pre>
           </el-tab-pane>
 
           <!-- 元数据 -->
-          <el-tab-pane label="元数据" name="metadata">
+          <el-tab-pane :label="t('production.postprocess.metadata')" name="metadata">
             <pre class="log-box">{{ metadataText }}</pre>
           </el-tab-pane>
         </el-tabs>
@@ -131,6 +131,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   getJobFiles,
   getJobImages,
@@ -146,6 +147,8 @@ import {
   type Job,
   type JobFile,
 } from '@/api/production'
+
+const { t } = useI18n()
 
 const route = useRoute()
 
@@ -471,9 +474,13 @@ function drawField(r: FieldDataResponse) {
     }
   }
 
-  viewerStats.value =
-    `step: ${r.step}  |  网格: ${r.nx_orig}×${r.ny_orig}  |  ` +
-    `min: ${fmin.toExponential(3)}  max: ${fmax.toExponential(3)}`
+  viewerStats.value = t('production.postprocess.viewerStats', {
+    step: r.step,
+    nx: r.nx_orig,
+    ny: r.ny_orig,
+    min: fmin.toExponential(3),
+    max: fmax.toExponential(3),
+  })
 }
 
 // ---------------------------------------------------------------------------
