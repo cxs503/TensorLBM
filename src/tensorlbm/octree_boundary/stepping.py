@@ -358,6 +358,82 @@ def _fill_ghost_impl(
 # ---------------------------------------------------------------------------
 
 
+def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
+    """Corrected live fanout tables, built once and cached on ``octree``.
+
+    The registry ``interface_fanout`` is keyed ``(leaf, direction q)`` with
+    ``neighbor_table[q, leaf] == FANOUT`` — *q is the neighbour-table
+    direction*.  The topology pre-cache ``fanout_pos``/``fanout_pad`` stores
+    rows in the same convention but includes dead keys (registered during the
+    fine-leaf pass whose reverse neighbour never became a FANOUT entry), so it
+    is filtered here to the live rows.
+
+    Returns ``(rowidx, pad)``:
+
+    * ``rowidx``: ``(Q, n_leaf)`` int64 — row index into ``pad`` for every
+      ``(q, i)`` with ``neighbor_table[q, i] == FANOUT``, else -1.
+    * ``pad``: ``(n_live, max_len)`` int64 — member leaf enums (global column
+      space), padded with -1.
+
+    **Pull direction**: streaming / BFL read the member populations along
+    ``opp[q]`` (``src_all[d, i] = neighbor_table[opp[d], i]``), so callers
+    must index the member values with ``opp[q]`` — never ``q`` directly (the
+    original batched prototype indexed with ``q``, a direction-flip bug that
+    only manifests at d_max=2 where fanout groups exist).
+    """
+    rowidx = getattr(octree, "_fanout_rowidx", None)
+    if rowidx is not None:
+        return rowidx, octree._fanout_pad_live
+    nt = octree.neighbor_table
+    fo_pos = octree.fanout_pos
+    fo_pad = octree.fanout_pad
+    rowidx = torch.full((octree.Q, nt.shape[1]), -1, dtype=torch.int64)
+    if fo_pos.shape[0] > 0 and fo_pad.shape[0] > 0:
+        live = nt[fo_pos[:, 0], fo_pos[:, 1]] == FANOUT
+        pos = fo_pos[live]
+        pad = fo_pad[live]
+        rowidx[pos[:, 0], pos[:, 1]] = torch.arange(
+            pos.shape[0], dtype=torch.int64,
+        )
+    else:
+        # Fallback: build from the registry directly (octrees built before
+        # the pre-cache existed).  Live keys are exactly the FANOUT entries.
+        rows = torch.nonzero(nt == FANOUT, as_tuple=False)   # (n_live, 2)
+        if rows.shape[0]:
+            members = [
+                octree.interface_fanout[(int(r[1]), int(r[0]))]
+                for r in rows.tolist()
+            ]
+            max_len = max(len(m) for m in members)
+            pad = torch.full((rows.shape[0], max_len), -1, dtype=torch.int64)
+            for r, m in enumerate(members):
+                pad[r, :len(m)] = torch.tensor(m, dtype=torch.int64)
+            rowidx[rows[:, 0], rows[:, 1]] = torch.arange(
+                rows.shape[0], dtype=torch.int64,
+            )
+        else:
+            pad = torch.empty((0, 0), dtype=torch.int64)
+    octree._fanout_rowidx = rowidx
+    octree._fanout_pad_live = pad
+    return rowidx, pad
+
+
+def _fanout_segment_mean(
+    values: torch.Tensor,
+    d_idx: torch.Tensor,
+    pad: torch.Tensor,
+) -> torch.Tensor:
+    """Masked mean over the padded fanout member table.
+
+    ``values[d_idx[:, None], pad.clamp(min=0)]`` gathered in the population
+    direction ``d_idx``, averaged over the valid (``pad >= 0``) members.
+    Returns ``(n_rows,)`` in ``values.dtype``.
+    """
+    valid = pad >= 0
+    vals = values[d_idx.unsqueeze(1), pad.clamp(min=0)]
+    return (vals * valid).sum(dim=1) / valid.sum(dim=1).clamp_min(1)
+
+
 def stream_gather(
     octree: OctreeGrid,
     plan: ShellGhostPlan,
@@ -408,40 +484,28 @@ def stream_gather(
         d_s = rows_s[:, 0]
         i_s = rows_s[:, 1]
         out[d_s, i_s] = populations[opp[d_s], i_s]
-    # fanout 分支: 纯张量批量 (预缓存 fanout_pos/fanout_pad, 零 Python 循环)
+    # fanout 分支: 纯张量批量 (修正后的预缓存 — 行方向 q 是 neighbour-table
+    # 方向, 拉取/写出方向是 opp[q]; 旧版直接用 fanout_pos[:,0]=q 索引
+    # populations 是方向翻转 bug, 且 fo_mask 过滤后 90% 的 fanout 单元仍走
+    # Python 回退循环)
     fanout_all = src_all == FANOUT
     if bool(fanout_all.any()):
-        # 有 fanout 组的 (d, i) 位置: 用预缓存
-        if octree.fanout_pos.shape[0] > 0:
-            d_fo = octree.fanout_pos[:, 0].to(populations.device)   # (n_fo,)
-            i_fo = octree.fanout_pos[:, 1].to(populations.device)   # (n_fo,)
-            pad_fo = octree.fanout_pad.to(populations.device)       # (n_fo, max_len)
-            # 检查这些位置确实在 fanout_all 中 (预缓存包含全部)
-            fo_mask = fanout_all[d_fo, i_fo]
-            if bool(fo_mask.any()):
-                d_use = d_fo[fo_mask]
-                i_use = i_fo[fo_mask]
-                pad_use = pad_fo[fo_mask]
-                valid_pad = pad_use >= 0
-                # gather: populations[d_use[:,None], pad_use] → (n, max_len)
-                vals = populations[d_use.unsqueeze(1), pad_use.clamp(min=0)]
-                means = (vals * valid_pad).sum(dim=1) / valid_pad.sum(dim=1).clamp_min(1)
-                out[d_use, i_use] = means
-        # 未缓存的 fanout (防御): 回退旧循环
-        remaining = fanout_all.clone()
-        if octree.fanout_pos.shape[0] > 0:
-            remaining[d_fo, i_fo] = False
-        for d in range(q):
-            fmask = remaining[d]
-            if bool(fmask.any()):
-                for i in torch.nonzero(fmask, as_tuple=False).squeeze(1).tolist():
-                    group = octree.interface_fanout.get((int(i), int(opp[d])), [])
-                    if not group:
-                        out[d, i] = f_old[d, i]
-                    else:
-                        out[d, i] = populations[
-                            d, torch.tensor(group, device=populations.device)
-                        ].mean()
+        rows_f = torch.nonzero(fanout_all, as_tuple=False)   # (n_fan, 2) (d, i)
+        d_f, i_f = rows_f[:, 0], rows_f[:, 1]
+        rowidx, pad_live = ensure_fanout_tables(octree)
+        rowidx = rowidx.to(populations.device)
+        pad_live = pad_live.to(populations.device)
+        ridx = rowidx[opp[d_f], i_f]                         # live 行号 / -1
+        has = ridx >= 0
+        if bool(has.any()):
+            means = _fanout_segment_mean(
+                populations, d_f[has], pad_live[ridx[has]],
+            )
+            out[d_f[has], i_f[has]] = means
+        fb = ~has
+        if bool(fb.any()):
+            # 防御: FANOUT 但无注册组 -> 保留旧值 (与旧循环一致)
+            out[d_f[fb], i_f[fb]] = f_old[d_f[fb], i_f[fb]]
     # domain 分支: 检查
     domain_all = src_all == DOMAIN_OUT
     if bool(domain_all.any()):
