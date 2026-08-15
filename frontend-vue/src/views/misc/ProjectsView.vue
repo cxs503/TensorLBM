@@ -4,10 +4,10 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>项目管理</span>
+          <span>{{ t('misc.projects.title') }}</span>
           <div class="header-actions">
-            <el-button :icon="Refresh" :loading="loadingProjects" @click="loadProjects">刷新</el-button>
-            <el-button type="primary" :icon="Plus" @click="openProjectDialog()">新建项目</el-button>
+            <el-button :icon="Refresh" :loading="loadingProjects" @click="loadProjects">{{ t('misc.projects.refresh') }}</el-button>
+            <el-button type="primary" :icon="Plus" @click="openProjectDialog()">{{ t('misc.projects.newProject') }}</el-button>
           </div>
         </div>
       </template>
@@ -21,27 +21,27 @@
         style="width: 100%"
         @current-change="onSelectProject"
       >
-        <el-table-column prop="name" label="项目名称" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="description" label="描述" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="owner" label="负责人" width="120" show-overflow-tooltip />
-        <el-table-column label="标签" min-width="150">
+        <el-table-column prop="name" :label="t('misc.projects.columns.name')" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="description" :label="t('misc.projects.columns.description')" min-width="220" show-overflow-tooltip />
+        <el-table-column prop="owner" :label="t('misc.projects.columns.owner')" width="120" show-overflow-tooltip />
+        <el-table-column :label="t('misc.projects.columns.tags')" min-width="150">
           <template #default="{ row }">
             <el-tag v-for="t in row.tags" :key="t" size="small" class="tag-margin">{{ t }}</el-tag>
             <span v-if="!row.tags || !row.tags.length" class="muted">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" width="175">
+        <el-table-column :label="t('misc.projects.columns.createdAt')" width="175">
           <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="210" align="center" fixed="right">
+        <el-table-column :label="t('misc.projects.columns.actions')" width="210" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" type="primary" :icon="View" @click.stop="selectProject(row)">案例</el-button>
-            <el-button size="small" :icon="Edit" @click.stop="openProjectDialog(row)">编辑</el-button>
-            <el-button size="small" type="danger" :icon="Delete" @click.stop="onDeleteProject(row)">删除</el-button>
+            <el-button size="small" type="primary" :icon="View" @click.stop="selectProject(row)">{{ t('misc.projects.cases') }}</el-button>
+            <el-button size="small" :icon="Edit" @click.stop="openProjectDialog(row)">{{ t('misc.projects.edit') }}</el-button>
+            <el-button size="small" type="danger" :icon="Delete" @click.stop="onDeleteProject(row)">{{ t('misc.projects.delete') }}</el-button>
           </template>
         </el-table-column>
         <template #empty>
-          <el-empty description="暂无项目，点击右上角「新建项目」创建" />
+          <el-empty :description="t('misc.projects.empty')" />
         </template>
       </el-table>
     </el-card>
@@ -51,12 +51,12 @@
       <template #header>
         <div class="card-header">
           <span>
-            案例管理 — <strong>{{ selectedProject.name }}</strong>
+            {{ t('misc.projects.caseManagement') }} — <strong>{{ selectedProject.name }}</strong>
             <span class="muted">（{{ selectedProject.id }}）</span>
           </span>
           <div class="header-actions">
-            <el-button :icon="Refresh" :loading="loadingCases" @click="loadCases">刷新</el-button>
-            <el-button type="primary" :icon="Plus" @click="openCaseDialog()">新建案例</el-button>
+            <el-button :icon="Refresh" :loading="loadingCases" @click="loadCases">{{ t('misc.projects.refresh') }}</el-button>
+            <el-button type="primary" :icon="Plus" @click="openCaseDialog()">{{ t('misc.projects.newCase') }}</el-button>
           </div>
         </div>
       </template>
@@ -69,35 +69,35 @@
         size="small"
         style="width: 100%"
       >
-        <el-table-column prop="name" label="案例名称" min-width="170" show-overflow-tooltip />
-        <el-table-column prop="scenario" label="场景" width="110" />
-        <el-table-column label="状态" width="100">
+        <el-table-column prop="name" :label="t('misc.projects.caseColumns.name')" min-width="170" show-overflow-tooltip />
+        <el-table-column prop="scenario" :label="t('misc.projects.caseColumns.scenario')" width="110" />
+        <el-table-column :label="t('misc.projects.caseColumns.status')" width="100">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.status)" disable-transitions>{{ row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="工作流阶段" width="150">
+        <el-table-column :label="t('misc.projects.caseColumns.workflowStage')" width="150">
           <template #default="{ row }">
             <el-tag :type="stageTagType(row.workflow_stage)" disable-transitions>
               {{ stageLabel(row.workflow_stage) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="配置" width="90" align="center">
+        <el-table-column :label="t('misc.projects.caseColumns.config')" width="90" align="center">
           <template #default="{ row }">
-            <span class="config-hint" :title="JSON.stringify(row.config)">{{ configKeyCount(row.config) }} 项</span>
+            <span class="config-hint" :title="JSON.stringify(row.config)">{{ t('misc.projects.configItemCount', { count: configKeyCount(row.config) }) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="job_id" label="作业 ID" width="110" show-overflow-tooltip>
+        <el-table-column prop="job_id" :label="t('misc.projects.caseColumns.jobId')" width="110" show-overflow-tooltip>
           <template #default="{ row }">
             <span v-if="row.job_id">{{ row.job_id }}</span>
             <span v-else class="muted">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="290" align="center" fixed="right">
+        <el-table-column :label="t('misc.projects.caseColumns.actions')" width="290" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" :icon="Edit" @click="openCaseDialog(row)">编辑</el-button>
-            <el-button size="small" :icon="DocumentCopy" @click="onCloneCase(row)">克隆</el-button>
+            <el-button size="small" :icon="Edit" @click="openCaseDialog(row)">{{ t('misc.projects.edit') }}</el-button>
+            <el-button size="small" :icon="DocumentCopy" @click="onCloneCase(row)">{{ t('misc.projects.clone') }}</el-button>
             <el-button
               size="small"
               type="primary"
@@ -105,13 +105,13 @@
               :disabled="isFinalStage(row.workflow_stage)"
               @click="onAdvanceWorkflow(row)"
             >
-              推进
+              {{ t('misc.projects.advance') }}
             </el-button>
-            <el-button size="small" type="danger" :icon="Delete" @click="onDeleteCase(row)">删除</el-button>
+            <el-button size="small" type="danger" :icon="Delete" @click="onDeleteCase(row)">{{ t('misc.projects.delete') }}</el-button>
           </template>
         </el-table-column>
         <template #empty>
-          <el-empty description="该项目下暂无案例" :image-size="80" />
+          <el-empty :description="t('misc.projects.emptyCases')" :image-size="80" />
         </template>
       </el-table>
     </el-card>
@@ -119,60 +119,60 @@
     <!-- ============================ 项目新建/编辑弹窗 ============================ -->
     <el-dialog
       v-model="projectDialogVisible"
-      :title="editingProject ? '编辑项目' : '新建项目'"
+      :title="editingProject ? t('misc.projects.editProject') : t('misc.projects.newProject')"
       width="520px"
       destroy-on-close
     >
       <el-form ref="projectFormRef" :model="projectForm" :rules="projectRules" label-width="80px">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="projectForm.name" placeholder="项目名称（必填）" maxlength="120" />
+        <el-form-item :label="t('misc.projects.form.name')" prop="name">
+          <el-input v-model="projectForm.name" :placeholder="t('misc.projects.form.namePlaceholder')" maxlength="120" />
         </el-form-item>
-        <el-form-item label="描述">
+        <el-form-item :label="t('misc.projects.form.description')">
           <el-input
             v-model="projectForm.description"
             type="textarea"
             :rows="3"
-            placeholder="项目描述"
+            :placeholder="t('misc.projects.form.descriptionPlaceholder')"
             maxlength="1000"
           />
         </el-form-item>
-        <el-form-item label="负责人">
-          <el-input v-model="projectForm.owner" placeholder="负责人" maxlength="120" />
+        <el-form-item :label="t('misc.projects.form.owner')">
+          <el-input v-model="projectForm.owner" :placeholder="t('misc.projects.form.ownerPlaceholder')" maxlength="120" />
         </el-form-item>
-        <el-form-item label="标签">
-          <el-input v-model="projectForm.tagsText" placeholder="逗号/空格分隔，如：海洋工程, 圆柱绕流" />
+        <el-form-item :label="t('misc.projects.form.tags')">
+          <el-input v-model="projectForm.tagsText" :placeholder="t('misc.projects.form.tagsPlaceholder')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="projectDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="savingProject" @click="submitProject">保存</el-button>
+        <el-button @click="projectDialogVisible = false">{{ t('misc.projects.cancel') }}</el-button>
+        <el-button type="primary" :loading="savingProject" @click="submitProject">{{ t('misc.projects.save') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- ============================ 案例新建/编辑弹窗 ============================ -->
     <el-dialog
       v-model="caseDialogVisible"
-      :title="editingCase ? '编辑案例' : '新建案例'"
+      :title="editingCase ? t('misc.projects.editCase') : t('misc.projects.newCase')"
       width="560px"
       destroy-on-close
     >
       <el-form ref="caseFormRef" :model="caseForm" :rules="caseRules" label-width="100px">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="caseForm.name" placeholder="案例名称（必填）" maxlength="120" />
+        <el-form-item :label="t('misc.projects.form.name')" prop="name">
+          <el-input v-model="caseForm.name" :placeholder="t('misc.projects.form.caseNamePlaceholder')" maxlength="120" />
         </el-form-item>
-        <el-form-item label="描述">
+        <el-form-item :label="t('misc.projects.form.description')">
           <el-input
             v-model="caseForm.description"
             type="textarea"
             :rows="2"
-            placeholder="案例描述"
+            :placeholder="t('misc.projects.form.caseDescriptionPlaceholder')"
             maxlength="1000"
           />
         </el-form-item>
-        <el-form-item label="场景">
-          <el-input v-model="caseForm.scenario" placeholder="如 custom / cylinder / suboff" maxlength="80" />
+        <el-form-item :label="t('misc.projects.form.scenario')">
+          <el-input v-model="caseForm.scenario" :placeholder="t('misc.projects.form.scenarioPlaceholder')" maxlength="80" />
         </el-form-item>
-        <el-form-item label="工作流阶段">
+        <el-form-item :label="t('misc.projects.form.workflowStage')">
           <el-select v-model="caseForm.workflow_stage" style="width: 100%">
             <el-option
               v-for="s in WORKFLOW_STAGES"
@@ -182,13 +182,13 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="editingCase" label="状态">
-          <el-input v-model="caseForm.status" placeholder="如 draft / solved" maxlength="40" />
+        <el-form-item v-if="editingCase" :label="t('misc.projects.form.status')">
+          <el-input v-model="caseForm.status" :placeholder="t('misc.projects.form.statusPlaceholder')" maxlength="40" />
         </el-form-item>
-        <el-form-item v-if="editingCase" label="作业 ID">
-          <el-input v-model="caseForm.job_id" placeholder="关联的求解作业 ID（可留空）" />
+        <el-form-item v-if="editingCase" :label="t('misc.projects.form.jobId')">
+          <el-input v-model="caseForm.job_id" :placeholder="t('misc.projects.form.jobIdPlaceholder')" />
         </el-form-item>
-        <el-form-item label="配置 JSON" prop="configText">
+        <el-form-item :label="t('misc.projects.form.configJson')" prop="configText">
           <el-input
             v-model="caseForm.configText"
             type="textarea"
@@ -198,8 +198,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="caseDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="savingCase" @click="submitCase">保存</el-button>
+        <el-button @click="caseDialogVisible = false">{{ t('misc.projects.cancel') }}</el-button>
+        <el-button type="primary" :loading="savingCase" @click="submitCase">{{ t('misc.projects.save') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -207,6 +207,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import {
@@ -234,20 +235,23 @@ import {
   type SimulationCase,
 } from '@/api/projects'
 
+const { t } = useI18n()
+
 // ---------------------------------------------------------------------------
 // 工作流阶段 / 状态的展示映射
 // ---------------------------------------------------------------------------
 
-const STAGE_LABELS: Record<string, string> = {
-  draft: '草稿',
-  setup: '设置',
-  meshed: '网格',
-  solved: '求解',
-  post_processed: '后处理',
+const STAGE_KEYS: Record<string, string> = {
+  draft: 'misc.projects.stages.draft',
+  setup: 'misc.projects.stages.setup',
+  meshed: 'misc.projects.stages.meshed',
+  solved: 'misc.projects.stages.solved',
+  post_processed: 'misc.projects.stages.postProcessed',
 }
 
 function stageLabel(stage: string): string {
-  return STAGE_LABELS[stage] || stage
+  const key = STAGE_KEYS[stage]
+  return key ? t(key) : stage
 }
 
 function stageTagType(stage: string): 'info' | 'warning' | 'success' | 'primary' {
@@ -333,7 +337,7 @@ const editingProject = ref<Project | null>(null)
 const projectFormRef = ref<FormInstance>()
 const projectForm = reactive({ name: '', description: '', owner: '', tagsText: '' })
 const projectRules: FormRules = {
-  name: [{ required: true, message: '请输入项目名称', trigger: 'blur' }],
+  name: [{ required: true, message: t('misc.projects.messages.enterProjectName'), trigger: 'blur' }],
 }
 
 function openProjectDialog(project?: Project) {
@@ -360,10 +364,10 @@ async function submitProject() {
     }
     if (editingProject.value) {
       await updateProject(editingProject.value.id, payload)
-      ElMessage.success('项目已更新')
+      ElMessage.success(t('misc.projects.messages.projectUpdated'))
     } else {
       await createProject(payload)
-      ElMessage.success('项目已创建')
+      ElMessage.success(t('misc.projects.messages.projectCreated'))
     }
     projectDialogVisible.value = false
     await loadProjects()
@@ -377,16 +381,20 @@ async function submitProject() {
 async function onDeleteProject(project: Project) {
   try {
     await ElMessageBox.confirm(
-      `确定删除项目「${project.name}」？其下所有案例将一并删除。`,
-      '删除确认',
-      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
+      t('misc.projects.messages.confirmDeleteProject', { name: project.name }),
+      t('misc.projects.messages.deleteConfirmTitle'),
+      {
+        type: 'warning',
+        confirmButtonText: t('misc.projects.delete'),
+        cancelButtonText: t('misc.projects.cancel'),
+      },
     )
   } catch {
     return
   }
   try {
     await deleteProject(project.id)
-    ElMessage.success('项目已删除')
+    ElMessage.success(t('misc.projects.messages.projectDeleted'))
     if (selectedProject.value?.id === project.id) {
       selectedProject.value = null
       cases.value = []
@@ -434,7 +442,7 @@ const caseForm = reactive({
   configText: '{}',
 })
 const caseRules: FormRules = {
-  name: [{ required: true, message: '请输入案例名称', trigger: 'blur' }],
+  name: [{ required: true, message: t('misc.projects.messages.enterCaseName'), trigger: 'blur' }],
   configText: [
     {
       validator: (_rule, value: string, callback) => {
@@ -442,7 +450,7 @@ const caseRules: FormRules = {
           JSON.parse(value || '{}')
           callback()
         } catch {
-          callback(new Error('配置必须是合法的 JSON'))
+          callback(new Error(t('misc.projects.messages.invalidConfig')))
         }
       },
       trigger: 'blur',
@@ -479,7 +487,7 @@ async function submitCase() {
 
   const config = parseConfigText(caseForm.configText)
   if (config === null) {
-    ElMessage.warning('配置必须是合法的 JSON 对象')
+    ElMessage.warning(t('misc.projects.messages.invalidConfigObject'))
     return
   }
 
@@ -495,7 +503,7 @@ async function submitCase() {
         config,
         job_id: caseForm.job_id.trim() || null,
       })
-      ElMessage.success('案例已更新')
+      ElMessage.success(t('misc.projects.messages.caseUpdated'))
     } else {
       await createCase(selectedProject.value.id, {
         name: caseForm.name.trim(),
@@ -504,7 +512,7 @@ async function submitCase() {
         workflow_stage: caseForm.workflow_stage,
         config,
       })
-      ElMessage.success('案例已创建')
+      ElMessage.success(t('misc.projects.messages.caseCreated'))
     }
     caseDialogVisible.value = false
     await loadCases()
@@ -518,17 +526,17 @@ async function submitCase() {
 async function onDeleteCase(c: SimulationCase) {
   if (!selectedProject.value) return
   try {
-    await ElMessageBox.confirm(`确定删除案例「${c.name}」？`, '删除确认', {
+    await ElMessageBox.confirm(t('misc.projects.messages.confirmDeleteCase', { name: c.name }), t('misc.projects.messages.deleteConfirmTitle'), {
       type: 'warning',
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+      confirmButtonText: t('misc.projects.delete'),
+      cancelButtonText: t('misc.projects.cancel'),
     })
   } catch {
     return
   }
   try {
     await deleteCase(selectedProject.value.id, c.id)
-    ElMessage.success('案例已删除')
+    ElMessage.success(t('misc.projects.messages.caseDeleted'))
     await loadCases()
   } catch {
     // 错误提示由拦截器处理
@@ -539,9 +547,9 @@ async function onCloneCase(c: SimulationCase) {
   if (!selectedProject.value) return
   let newName = ''
   try {
-    const res = await ElMessageBox.prompt('输入克隆案例名称（留空则自动命名）', `克隆案例「${c.name}」`, {
-      confirmButtonText: '克隆',
-      cancelButtonText: '取消',
+    const res = await ElMessageBox.prompt(t('misc.projects.messages.clonePrompt'), t('misc.projects.messages.cloneTitle', { name: c.name }), {
+      confirmButtonText: t('misc.projects.clone'),
+      cancelButtonText: t('misc.projects.cancel'),
       inputValue: '',
       inputPlaceholder: `${c.name} (copy)`,
     })
@@ -551,7 +559,7 @@ async function onCloneCase(c: SimulationCase) {
   }
   try {
     await cloneCase(selectedProject.value.id, c.id, { name: newName || undefined })
-    ElMessage.success('案例已克隆')
+    ElMessage.success(t('misc.projects.messages.caseCloned'))
     await loadCases()
   } catch {
     // 错误提示由拦截器处理
@@ -562,7 +570,7 @@ async function onAdvanceWorkflow(c: SimulationCase) {
   if (!selectedProject.value) return
   try {
     const updated = await advanceWorkflow(selectedProject.value.id, c.id)
-    ElMessage.success(`工作流已推进至「${stageLabel(updated.workflow_stage)}」`)
+    ElMessage.success(t('misc.projects.messages.workflowAdvanced', { stage: stageLabel(updated.workflow_stage) }))
     await loadCases()
   } catch {
     // 错误提示由拦截器处理（如已处于最终阶段 409）

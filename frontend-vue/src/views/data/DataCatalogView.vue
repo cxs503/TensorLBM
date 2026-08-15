@@ -5,7 +5,7 @@
       <div class="filters">
         <el-select
           v-model="filters.kind"
-          placeholder="资产类型"
+          :placeholder="t('data.filter.kindPlaceholder')"
           clearable
           style="width: 160px"
           @change="handleSearch"
@@ -19,7 +19,7 @@
         </el-select>
         <el-input
           v-model="filters.field_name"
-          placeholder="字段名 (field_name)"
+          :placeholder="t('data.filter.fieldPlaceholder')"
           clearable
           style="width: 200px"
           @keyup.enter="handleSearch"
@@ -27,7 +27,7 @@
         />
         <el-select
           v-model="filters.status"
-          placeholder="状态"
+          :placeholder="t('data.filter.statusPlaceholder')"
           style="width: 140px"
           @change="handleSearch"
         >
@@ -38,11 +38,11 @@
             :value="opt.value"
           />
         </el-select>
-        <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
-        <el-button :icon="Refresh" @click="handleReset">重置</el-button>
+        <el-button type="primary" :icon="Search" @click="handleSearch">{{ t('data.search') }}</el-button>
+        <el-button :icon="Refresh" @click="handleReset">{{ t('data.reset') }}</el-button>
       </div>
       <div class="actions">
-        <el-button type="success" :icon="Plus" @click="openRegister">登记资产</el-button>
+        <el-button type="success" :icon="Plus" @click="openRegister">{{ t('data.registerAsset') }}</el-button>
       </div>
     </div>
 
@@ -55,19 +55,19 @@
       row-key="asset_id"
       @row-click="openDetail"
     >
-      <el-table-column prop="asset_id" label="资产 ID" min-width="180" show-overflow-tooltip />
-      <el-table-column prop="name" label="名称" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="kind" label="类型" width="140">
+      <el-table-column prop="asset_id" :label="t('data.columns.assetId')" min-width="180" show-overflow-tooltip />
+      <el-table-column prop="name" :label="t('data.columns.name')" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="kind" :label="t('data.columns.kind')" width="140">
         <template #default="{ row }">
           <el-tag :type="kindTagType(row.kind)" size="small">{{ row.kind }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="field_name" label="字段名" min-width="120" show-overflow-tooltip>
+      <el-table-column prop="field_name" :label="t('data.columns.fieldName')" min-width="120" show-overflow-tooltip>
         <template #default="{ row }">
           <span>{{ row.field_name || '—' }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="quality_score" label="质量分" width="160">
+      <el-table-column prop="quality_score" :label="t('data.columns.qualityScore')" width="160">
         <template #default="{ row }">
           <el-progress
             :percentage="row.quality_score"
@@ -77,22 +77,22 @@
           />
         </template>
       </el-table-column>
-      <el-table-column prop="status" label="状态" width="110">
+      <el-table-column prop="status" :label="t('data.columns.status')" width="110">
         <template #default="{ row }">
           <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">
             {{ row.status }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="更新时间" width="170">
+      <el-table-column :label="t('data.columns.updatedAt')" width="170">
         <template #default="{ row }">
           <span>{{ formatTime(row.updated_at) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="150" fixed="right">
+      <el-table-column :label="t('data.columns.actions')" width="150" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" size="small" @click.stop="openDetail(row)">详情</el-button>
-          <el-button link type="danger" size="small" @click.stop="handleArchive(row)">归档</el-button>
+          <el-button link type="primary" size="small" @click.stop="openDetail(row)">{{ t('data.detail') }}</el-button>
+          <el-button link type="danger" size="small" @click.stop="handleArchive(row)">{{ t('data.archive') }}</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -113,24 +113,24 @@
     <!-- 登记资产对话框 -->
     <el-dialog
       v-model="registerVisible"
-      title="登记资产"
+      :title="t('data.registerAsset')"
       width="640px"
       :close-on-click-modal="false"
     >
       <el-form :model="registerForm" label-width="120px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="资产 ID" required>
-              <el-input v-model="registerForm.asset_id" placeholder="全局唯一标识" />
+            <el-form-item :label="t('data.form.assetId')" required>
+              <el-input v-model="registerForm.asset_id" :placeholder="t('data.form.assetIdPlaceholder')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="名称" required>
-              <el-input v-model="registerForm.name" placeholder="资产名称" />
+            <el-form-item :label="t('data.form.name')" required>
+              <el-input v-model="registerForm.name" :placeholder="t('data.form.assetNamePlaceholder')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="类型">
+            <el-form-item :label="t('data.form.kind')">
               <el-select v-model="registerForm.kind" style="width: 100%">
                 <el-option
                   v-for="opt in kindOptions.filter((k) => k.value)"
@@ -142,37 +142,37 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="字段名">
+            <el-form-item :label="t('data.form.fieldName')">
               <el-input v-model="registerForm.field_name" placeholder="field_name" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="单位">
+            <el-form-item :label="t('data.form.units')">
               <el-input v-model="registerForm.units" placeholder="units" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="数据类型">
+            <el-form-item :label="t('data.form.dtype')">
               <el-input v-model="registerForm.dtype" placeholder="float32" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="形状">
+            <el-form-item :label="t('data.form.shape')">
               <el-input v-model="registerForm.shape" placeholder="[128, 128]" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="版本">
+            <el-form-item :label="t('data.form.version')">
               <el-input v-model="registerForm.version" placeholder="1.0.0" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="来源 run_id">
+            <el-form-item :label="t('data.form.sourceRunId')">
               <el-input v-model="registerForm.source_run_id" placeholder="source_run_id" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="敏感级别">
+            <el-form-item :label="t('data.form.sensitivityLevel')">
               <el-select v-model="registerForm.sensitivity_level" style="width: 100%">
                 <el-option label="internal" value="internal" />
                 <el-option label="public" value="public" />
@@ -181,7 +181,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="质量分">
+            <el-form-item :label="t('data.form.qualityScore')">
               <el-input-number
                 v-model="registerForm.quality_score"
                 :min="0"
@@ -191,20 +191,20 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="标签">
-              <el-input v-model="registerForm.tags" placeholder="逗号分隔" />
+            <el-form-item :label="t('data.form.tags')">
+              <el-input v-model="registerForm.tags" :placeholder="t('data.form.tagsPlaceholder')" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="描述">
+            <el-form-item :label="t('data.form.description')">
               <el-input v-model="registerForm.description" type="textarea" :rows="2" />
             </el-form-item>
           </el-col>
         </el-row>
       </el-form>
       <template #footer>
-        <el-button @click="registerVisible = false">取消</el-button>
-        <el-button type="primary" :loading="registerLoading" @click="submitRegister">提交</el-button>
+        <el-button @click="registerVisible = false">{{ t('data.cancel') }}</el-button>
+        <el-button type="primary" :loading="registerLoading" @click="submitRegister">{{ t('data.submit') }}</el-button>
       </template>
     </el-dialog>
 
@@ -217,33 +217,33 @@
     >
       <div v-loading="detailLoading" class="detail-body">
         <el-tabs v-model="activeTab">
-          <el-tab-pane label="基本信息" name="info">
+          <el-tab-pane :label="t('data.tabs.info')" name="info">
             <el-descriptions v-if="detailAsset" :column="1" border>
-              <el-descriptions-item label="资产 ID">{{ detailAsset.asset_id }}</el-descriptions-item>
-              <el-descriptions-item label="名称">{{ detailAsset.name }}</el-descriptions-item>
-              <el-descriptions-item label="类型">{{ detailAsset.kind }}</el-descriptions-item>
-              <el-descriptions-item label="字段名">{{ detailAsset.field_name || '—' }}</el-descriptions-item>
-              <el-descriptions-item label="单位">{{ detailAsset.units || '—' }}</el-descriptions-item>
-              <el-descriptions-item label="形状">{{ detailAsset.shape || '—' }}</el-descriptions-item>
-              <el-descriptions-item label="数据类型">{{ detailAsset.dtype || '—' }}</el-descriptions-item>
-              <el-descriptions-item label="质量分">{{ detailAsset.quality_score }}</el-descriptions-item>
-              <el-descriptions-item label="敏感级别">{{ detailAsset.sensitivity_level }}</el-descriptions-item>
-              <el-descriptions-item label="来源 run_id">{{ detailAsset.source_run_id || '—' }}</el-descriptions-item>
-              <el-descriptions-item label="状态">{{ detailAsset.status }}</el-descriptions-item>
-              <el-descriptions-item label="版本">{{ detailAsset.version }}</el-descriptions-item>
-              <el-descriptions-item label="标签">
+              <el-descriptions-item :label="t('data.form.assetId')">{{ detailAsset.asset_id }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.name')">{{ detailAsset.name }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.kind')">{{ detailAsset.kind }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.fieldName')">{{ detailAsset.field_name || '—' }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.units')">{{ detailAsset.units || '—' }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.shape')">{{ detailAsset.shape || '—' }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.dtype')">{{ detailAsset.dtype || '—' }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.qualityScore')">{{ detailAsset.quality_score }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.sensitivityLevel')">{{ detailAsset.sensitivity_level }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.sourceRunId')">{{ detailAsset.source_run_id || '—' }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.status')">{{ detailAsset.status }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.version')">{{ detailAsset.version }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.tags')">
                 <el-tag v-for="t in detailAsset.tags" :key="t" size="small" class="tag-gap">
                   {{ t }}
                 </el-tag>
                 <span v-if="!detailAsset.tags.length">—</span>
               </el-descriptions-item>
-              <el-descriptions-item label="描述">{{ detailAsset.description || '—' }}</el-descriptions-item>
-              <el-descriptions-item label="创建时间">{{ formatTime(detailAsset.created_at) }}</el-descriptions-item>
-              <el-descriptions-item label="更新时间">{{ formatTime(detailAsset.updated_at) }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.description')">{{ detailAsset.description || '—' }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.createdTime')">{{ formatTime(detailAsset.created_at) }}</el-descriptions-item>
+              <el-descriptions-item :label="t('data.form.updatedTime')">{{ formatTime(detailAsset.updated_at) }}</el-descriptions-item>
             </el-descriptions>
           </el-tab-pane>
 
-          <el-tab-pane label="元数据" name="metadata">
+          <el-tab-pane :label="t('data.tabs.metadata')" name="metadata">
             <div class="tab-toolbar">
               <el-input v-model="metaForm.key" placeholder="key" style="width: 160px" />
               <el-input v-model="metaForm.value" placeholder="value" style="width: 200px" />
@@ -256,22 +256,22 @@
                 :precision="2"
                 style="width: 130px"
               />
-              <el-button type="primary" :loading="metaAdding" @click="submitMetadata">添加</el-button>
+              <el-button type="primary" :loading="metaAdding" @click="submitMetadata">{{ t('data.metadata.add') }}</el-button>
             </div>
             <el-table :data="metadata" border size="small" max-height="460">
               <el-table-column prop="key" label="Key" min-width="120" show-overflow-tooltip />
               <el-table-column prop="value" label="Value" min-width="180" show-overflow-tooltip />
-              <el-table-column prop="source" label="来源" width="100" />
-              <el-table-column prop="confidence" label="置信度" width="90" />
-              <el-table-column label="操作" width="80">
+              <el-table-column prop="source" :label="t('data.metadata.source')" width="100" />
+              <el-table-column prop="confidence" :label="t('data.metadata.confidence')" width="90" />
+              <el-table-column :label="t('data.columns.actions')" width="80">
                 <template #default="{ row }">
-                  <el-button link type="danger" size="small" @click="removeMetadata(row)">删除</el-button>
+                  <el-button link type="danger" size="small" @click="removeMetadata(row)">{{ t('data.metadata.delete') }}</el-button>
                 </template>
               </el-table-column>
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane label="血缘" name="lineage">
+          <el-tab-pane :label="t('data.tabs.lineage')" name="lineage">
             <div class="tab-toolbar">
               <el-input v-model="lineageForm.target_id" placeholder="target_id" style="width: 170px" />
               <el-select v-model="lineageForm.relation_type" style="width: 150px">
@@ -280,7 +280,7 @@
                 <el-option label="depends_on" value="depends_on" />
               </el-select>
               <el-input v-model="lineageForm.transformation" placeholder="transformation" style="width: 180px" />
-              <el-button type="primary" :loading="lineageAdding" @click="submitLineage">添加血缘</el-button>
+              <el-button type="primary" :loading="lineageAdding" @click="submitLineage">{{ t('data.lineage.add') }}</el-button>
             </div>
             <el-alert
               v-if="upstream.length"
@@ -289,29 +289,29 @@
               class="upstream-alert"
             >
               <template #title>
-                上游资产：{{ upstream.join('、') }}
+                {{ t('data.lineage.upstream') }}：{{ upstream.join(listSep) }}
               </template>
             </el-alert>
             <el-table :data="lineage" border size="small" max-height="400">
-              <el-table-column prop="source_id" label="源资产" min-width="150" show-overflow-tooltip />
-              <el-table-column prop="relation_type" label="关系" width="120" />
-              <el-table-column prop="target_id" label="目标资产" min-width="150" show-overflow-tooltip />
-              <el-table-column prop="resource_type" label="资源类型" width="100" />
-              <el-table-column prop="transformation" label="变换" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="source_id" :label="t('data.lineage.source')" min-width="150" show-overflow-tooltip />
+              <el-table-column prop="relation_type" :label="t('data.lineage.relation')" width="120" />
+              <el-table-column prop="target_id" :label="t('data.lineage.target')" min-width="150" show-overflow-tooltip />
+              <el-table-column prop="resource_type" :label="t('data.lineage.resourceType')" width="100" />
+              <el-table-column prop="transformation" :label="t('data.lineage.transformation')" min-width="140" show-overflow-tooltip />
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane label="质量报告" name="quality">
+          <el-tab-pane :label="t('data.tabs.quality')" name="quality">
             <div class="tab-toolbar quality-toolbar">
               <el-input
                 v-model="qualityForm.data"
                 type="textarea"
                 :rows="2"
-                placeholder='二维数组 JSON，如 [[1.0, 0.2], [0.9, 0.3]]'
+                :placeholder="t('data.quality.dataPlaceholder')"
                 class="quality-data"
               />
               <div class="quality-options">
-                <el-switch v-model="qualityForm.mass_field" active-text="质量守恒检查" />
+                <el-switch v-model="qualityForm.mass_field" :active-text="t('data.quality.massCheck')" />
                 <el-input-number
                   v-model="qualityForm.mass_tol"
                   :min="0.000001"
@@ -321,11 +321,11 @@
                   style="width: 150px"
                 />
                 <el-button type="primary" :loading="qualityRunning" @click="submitQualityCheck">
-                  运行检查
+                  {{ t('data.quality.run') }}
                 </el-button>
               </div>
             </div>
-            <el-empty v-if="!reports.length" description="暂无质量报告" :image-size="80" />
+            <el-empty v-if="!reports.length" :description="t('data.quality.empty')" :image-size="80" />
             <div v-for="(report, idx) in reports" :key="idx" class="report-card">
               <div class="report-header">
                 <span class="report-time">{{ formatTime(report.created_at) }}</span>
@@ -361,7 +361,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCheck, CircleClose, Plus, Refresh, Search } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
@@ -383,6 +384,8 @@ import {
   type QualityReport,
 } from '@/api/data'
 
+const { t, locale } = useI18n()
+
 // ---------------------------------------------------------------------------
 // 列表 + 过滤 + 分页
 // ---------------------------------------------------------------------------
@@ -391,18 +394,20 @@ const loading = ref(false)
 const assets = ref<Asset[]>([])
 const total = ref(0)
 
-const kindOptions = [
-  { label: '全部类型', value: '' },
+const kindOptions = computed(() => [
+  { label: t('data.kindAll'), value: '' },
   { label: 'field_product', value: 'field_product' },
   { label: 'dataset', value: 'dataset' },
   { label: 'run', value: 'run' },
   { label: 'model', value: 'model' },
-]
+])
 
 const statusOptions = [
   { label: 'active', value: 'active' },
   { label: 'archived', value: 'archived' },
 ]
+
+const listSep = computed(() => (locale.value === 'zh' ? '、' : ', '))
 
 const filters = reactive({
   kind: '',
@@ -520,7 +525,7 @@ function openRegister() {
 
 async function submitRegister() {
   if (!registerForm.asset_id.trim() || !registerForm.name.trim()) {
-    ElMessage.warning('请填写资产 ID 与名称')
+    ElMessage.warning(t('data.messages.fillAssetIdAndName'))
     return
   }
   registerLoading.value = true
@@ -544,7 +549,7 @@ async function submitRegister() {
       status: registerForm.status,
       version: registerForm.version,
     })
-    ElMessage.success('资产已登记')
+    ElMessage.success(t('data.messages.assetRegistered'))
     registerVisible.value = false
     await fetchAssets()
   } finally {
@@ -554,16 +559,16 @@ async function submitRegister() {
 
 async function handleArchive(asset: Asset) {
   try {
-    await ElMessageBox.confirm(`确定归档资产「${asset.name}」吗？`, '归档确认', {
+    await ElMessageBox.confirm(t('data.messages.confirmArchive', { name: asset.name }), t('data.messages.confirmArchiveTitle'), {
       type: 'warning',
-      confirmButtonText: '归档',
-      cancelButtonText: '取消',
+      confirmButtonText: t('data.archive'),
+      cancelButtonText: t('data.cancel'),
     })
   } catch {
     return
   }
   await archiveAsset(asset.asset_id)
-  ElMessage.success('已归档')
+  ElMessage.success(t('data.messages.archived'))
   await fetchAssets()
 }
 
@@ -575,7 +580,9 @@ const drawerVisible = ref(false)
 const detailLoading = ref(false)
 const detailAsset = ref<Asset | null>(null)
 const activeTab = ref('info')
-const drawerTitle = ref('资产详情')
+const drawerTitle = computed(() =>
+  detailAsset.value ? t('data.assetDetailOf', { name: detailAsset.value.name }) : t('data.assetDetail'),
+)
 
 const metadata = ref<MetadataEntry[]>([])
 const lineage = ref<LineageEdge[]>([])
@@ -584,7 +591,6 @@ const reports = ref<QualityReport[]>([])
 
 async function openDetail(asset: Asset) {
   detailAsset.value = asset
-  drawerTitle.value = `资产详情 — ${asset.name}`
   activeTab.value = 'info'
   drawerVisible.value = true
   await loadDetail(asset.asset_id)
@@ -614,7 +620,7 @@ const metaAdding = ref(false)
 async function submitMetadata() {
   if (!detailAsset.value) return
   if (!metaForm.key.trim()) {
-    ElMessage.warning('请输入 key')
+    ElMessage.warning(t('data.messages.enterKey'))
     return
   }
   metaAdding.value = true
@@ -625,7 +631,7 @@ async function submitMetadata() {
       source: metaForm.source || 'manual',
       confidence: metaForm.confidence,
     })
-    ElMessage.success('元数据已添加')
+    ElMessage.success(t('data.messages.metadataAdded'))
     metaForm.key = ''
     metaForm.value = ''
     metadata.value = await listMetadata(detailAsset.value.asset_id)
@@ -637,7 +643,7 @@ async function submitMetadata() {
 async function removeMetadata(entry: MetadataEntry) {
   if (!detailAsset.value) return
   await deleteMetadata(detailAsset.value.asset_id, entry.key)
-  ElMessage.success('元数据已删除')
+  ElMessage.success(t('data.messages.metadataDeleted'))
   metadata.value = await listMetadata(detailAsset.value.asset_id)
 }
 
@@ -653,7 +659,7 @@ const lineageAdding = ref(false)
 async function submitLineage() {
   if (!detailAsset.value) return
   if (!lineageForm.target_id.trim()) {
-    ElMessage.warning('请输入 target_id')
+    ElMessage.warning(t('data.messages.enterTargetId'))
     return
   }
   lineageAdding.value = true
@@ -664,7 +670,7 @@ async function submitLineage() {
       transformation: lineageForm.transformation,
       resource_type: lineageForm.resource_type,
     })
-    ElMessage.success('血缘已添加')
+    ElMessage.success(t('data.messages.lineageAdded'))
     lineageForm.target_id = ''
     lineageForm.transformation = ''
     const lin = await getLineage(detailAsset.value.asset_id)
@@ -698,11 +704,11 @@ async function submitQualityCheck() {
   try {
     data = JSON.parse(qualityForm.data)
   } catch {
-    ElMessage.warning('数据格式错误，请输入合法的 JSON 二维数组')
+    ElMessage.warning(t('data.messages.invalidData'))
     return
   }
   if (!Array.isArray(data)) {
-    ElMessage.warning('数据必须是二维数组')
+    ElMessage.warning(t('data.messages.dataMustBe2d'))
     return
   }
   qualityRunning.value = true
@@ -713,7 +719,7 @@ async function submitQualityCheck() {
       mass_field: qualityForm.mass_field,
       mass_tol: qualityForm.mass_tol,
     })
-    ElMessage.success(`质量检查完成，得分 ${res.overall_score}`)
+    ElMessage.success(t('data.messages.qualityDone', { score: res.overall_score }))
     reports.value = await listQualityReports(detailAsset.value.asset_id)
     await fetchAssets()
   } finally {

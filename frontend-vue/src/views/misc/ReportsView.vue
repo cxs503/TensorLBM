@@ -4,33 +4,33 @@
       <!-- ============================ 左栏：查询 + 摘要 ============================ -->
       <el-col :span="10">
         <el-card>
-          <template #header><span>报告查询</span></template>
+          <template #header><span>{{ t('misc.reports.title') }}</span></template>
           <el-form label-width="70px" size="small">
-            <el-form-item label="作业 ID">
+            <el-form-item :label="t('misc.reports.jobId')">
               <el-input
                 v-model="jobId"
-                placeholder="输入 job_id"
+                :placeholder="t('misc.reports.jobIdPlaceholder')"
                 clearable
                 @keyup.enter="loadReport"
               />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" :icon="Search" :loading="loadingReport" @click="loadReport">
-                查询报告
+                {{ t('misc.reports.query') }}
               </el-button>
               <el-button v-if="reportHtml" :icon="View" @click="reportDialogVisible = true">
-                大图查看
+                {{ t('misc.reports.largeView') }}
               </el-button>
             </el-form-item>
           </el-form>
 
           <div class="recent-jobs">
-            <div class="recent-title">最近作业（点击选择）</div>
+            <div class="recent-title">{{ t('misc.reports.recentJobs') }}</div>
             <el-select
               v-model="jobId"
               filterable
               clearable
-              placeholder="选择最近作业"
+              :placeholder="t('misc.reports.selectRecentJob')"
               style="width: 100%"
               @change="onJobPicked"
             >
@@ -45,19 +45,19 @@
         </el-card>
 
         <el-card v-if="summary" class="summary-card">
-          <template #header><span>报告摘要</span></template>
+          <template #header><span>{{ t('misc.reports.summary') }}</span></template>
           <el-descriptions :column="1" border size="small">
-            <el-descriptions-item label="作业名称">{{ summary.name }}</el-descriptions-item>
-            <el-descriptions-item label="作业类型">{{ summary.job_type }}</el-descriptions-item>
-            <el-descriptions-item label="状态">
+            <el-descriptions-item :label="t('misc.reports.jobName')">{{ summary.name }}</el-descriptions-item>
+            <el-descriptions-item :label="t('misc.reports.jobType')">{{ summary.job_type }}</el-descriptions-item>
+            <el-descriptions-item :label="t('misc.reports.status')">
               <el-tag :type="statusTagType(summary.status)" disable-transitions>
                 {{ statusLabel(summary.status) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ formatTime(summary.created_at) }}</el-descriptions-item>
-            <el-descriptions-item label="诊断快照">{{ summary.diagnostic_steps }}</el-descriptions-item>
-            <el-descriptions-item label="力系数行数">{{ summary.force_rows }}</el-descriptions-item>
-            <el-descriptions-item label="结果图片">{{ summary.image_count }}</el-descriptions-item>
+            <el-descriptions-item :label="t('misc.reports.createdAt')">{{ formatTime(summary.created_at) }}</el-descriptions-item>
+            <el-descriptions-item :label="t('misc.reports.diagnosticSteps')">{{ summary.diagnostic_steps }}</el-descriptions-item>
+            <el-descriptions-item :label="t('misc.reports.forceRows')">{{ summary.force_rows }}</el-descriptions-item>
+            <el-descriptions-item :label="t('misc.reports.resultImages')">{{ summary.image_count }}</el-descriptions-item>
           </el-descriptions>
 
           <div class="kpi-grid">
@@ -73,7 +73,7 @@
 
           <el-alert
             v-if="summary.error"
-            :title="`作业错误：${summary.error}`"
+            :title="t('misc.reports.jobError', { error: summary.error })"
             type="error"
             :closable="false"
             class="error-alert"
@@ -86,29 +86,29 @@
         <el-card>
           <template #header>
             <div class="card-header">
-              <span>HTML 报告预览</span>
+              <span>{{ t('misc.reports.htmlPreview') }}</span>
               <el-button
                 v-if="reportHtml"
                 size="small"
                 :icon="Refresh"
                 @click="loadReport"
               >
-                重新加载
+                {{ t('misc.reports.reload') }}
               </el-button>
             </div>
           </template>
-          <iframe v-if="reportHtml" :srcdoc="reportHtml" class="report-frame" title="HTML 报告" />
-          <el-empty v-else description="查询作业后在此预览 HTML 报告" />
+          <iframe v-if="reportHtml" :srcdoc="reportHtml" class="report-frame" :title="t('misc.reports.htmlReport')" />
+          <el-empty v-else :description="t('misc.reports.previewEmpty')" />
         </el-card>
 
         <el-card class="compare-card">
-          <template #header><span>KPI 对比（多作业）</span></template>
+          <template #header><span>{{ t('misc.reports.kpiCompare') }}</span></template>
           <div class="compare-input">
             <el-input
               v-model="compareIdsText"
               type="textarea"
               :rows="3"
-              placeholder="输入多个 job_id，以逗号 / 空格 / 换行分隔（至少 2 个）"
+              :placeholder="t('misc.reports.comparePlaceholder')"
             />
             <el-button
               type="primary"
@@ -117,13 +117,13 @@
               class="compare-btn"
               @click="loadCompare"
             >
-              对比 KPI
+              {{ t('misc.reports.compareKpi') }}
             </el-button>
           </div>
 
           <el-alert
             v-if="compareResult && compareResult.missing.length"
-            :title="`以下作业未找到：${compareResult.missing.join('、')}`"
+            :title="t('misc.reports.missingJobs', { list: compareResult.missing.join(listSep) })"
             type="warning"
             :closable="false"
             class="missing-alert"
@@ -137,9 +137,9 @@
               class="compare-table"
               max-height="360"
             >
-              <el-table-column prop="name" label="作业" min-width="140" fixed show-overflow-tooltip />
-              <el-table-column prop="job_id" label="ID" width="110" show-overflow-tooltip />
-              <el-table-column label="状态" width="90">
+              <el-table-column prop="name" :label="t('misc.reports.job')" min-width="140" fixed show-overflow-tooltip />
+              <el-table-column prop="job_id" :label="t('misc.reports.id')" width="110" show-overflow-tooltip />
+              <el-table-column :label="t('misc.reports.status')" width="90">
                 <template #default="{ row }">
                   <el-tag :type="statusTagType(row.status)" size="small" disable-transitions>
                     {{ statusLabel(row.status) }}
@@ -157,19 +157,19 @@
               </el-table-column>
             </el-table>
 
-            <el-divider content-position="left">指标统计</el-divider>
+            <el-divider content-position="left">{{ t('misc.reports.metricStats') }}</el-divider>
             <el-table :data="metricSummaryRows" border size="small" max-height="300">
-              <el-table-column prop="metric" label="指标" min-width="150" show-overflow-tooltip />
-              <el-table-column label="最小值" align="center">
+              <el-table-column prop="metric" :label="t('misc.reports.metric')" min-width="150" show-overflow-tooltip />
+              <el-table-column :label="t('misc.reports.min')" align="center">
                 <template #default="{ row }">{{ formatMetric(row.min) }}</template>
               </el-table-column>
-              <el-table-column label="最大值" align="center">
+              <el-table-column :label="t('misc.reports.max')" align="center">
                 <template #default="{ row }">{{ formatMetric(row.max) }}</template>
               </el-table-column>
-              <el-table-column label="均值" align="center">
+              <el-table-column :label="t('misc.reports.mean')" align="center">
                 <template #default="{ row }">{{ formatMetric(row.mean) }}</template>
               </el-table-column>
-              <el-table-column prop="best_job_id" label="最优作业" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="best_job_id" :label="t('misc.reports.bestJob')" min-width="140" show-overflow-tooltip />
             </el-table>
           </template>
         </el-card>
@@ -179,18 +179,19 @@
     <!-- ============================ 报告大图弹窗 ============================ -->
     <el-dialog
       v-model="reportDialogVisible"
-      title="HTML 报告"
+      :title="t('misc.reports.htmlReport')"
       width="90%"
       top="3vh"
       destroy-on-close
     >
-      <iframe v-if="reportHtml" :srcdoc="reportHtml" class="report-frame-dialog" title="HTML 报告" />
+      <iframe v-if="reportHtml" :srcdoc="reportHtml" class="report-frame-dialog" :title="t('misc.reports.htmlReport')" />
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { DataAnalysis, Refresh, Search, View } from '@element-plus/icons-vue'
 import { listJobs, type Job } from '@/api/production'
@@ -201,6 +202,10 @@ import {
   type CompareResponse,
   type ReportSummary,
 } from '@/api/reports'
+
+const { t, locale } = useI18n()
+
+const listSep = computed(() => (locale.value === 'zh' ? '、' : ', '))
 
 // ---------------------------------------------------------------------------
 // 展示辅助
@@ -215,19 +220,21 @@ function formatTime(iso: string | null): string {
 
 function formatMetric(value: number | undefined | null): string {
   if (value === undefined || value === null) return '—'
-  if (typeof value === 'boolean') return value ? '是' : '否'
+  if (typeof value === 'boolean') return value ? t('misc.reports.yes') : t('misc.reports.no')
   return Number(value).toPrecision(4)
 }
 
+const STATUS_KEYS: Record<string, string> = {
+  queued: 'misc.reports.statusLabels.queued',
+  running: 'misc.reports.statusLabels.running',
+  completed: 'misc.reports.statusLabels.completed',
+  failed: 'misc.reports.statusLabels.failed',
+  cancelled: 'misc.reports.statusLabels.cancelled',
+}
+
 function statusLabel(status: string): string {
-  const map: Record<string, string> = {
-    queued: '排队中',
-    running: '运行中',
-    completed: '已完成',
-    failed: '失败',
-    cancelled: '已取消',
-  }
-  return map[status] || status
+  const key = STATUS_KEYS[status]
+  return key ? t(key) : status
 }
 
 function statusTagType(status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
@@ -254,7 +261,7 @@ const reportDialogVisible = ref(false)
 async function loadReport() {
   const id = jobId.value.trim()
   if (!id) {
-    ElMessage.warning('请输入作业 ID')
+    ElMessage.warning(t('misc.reports.messages.enterJobId'))
     return
   }
   loadingReport.value = true
@@ -299,15 +306,15 @@ const kpiItems = computed(() => {
   const k = summary.value?.engineering_kpis
   if (!k) return []
   return [
-    { label: '最新步数', value: k.latest_step ?? '—' },
-    { label: '运行时长 (s)', value: k.runtime_seconds ?? '—' },
-    { label: '尾段均值 Cd', value: k.mean_cd_last === null ? '—' : Number(k.mean_cd_last).toPrecision(4) },
-    { label: '尾段均值 Cl', value: k.mean_cl_last === null ? '—' : Number(k.mean_cl_last).toPrecision(4) },
+    { label: t('misc.reports.kpis.latestStep'), value: k.latest_step ?? '—' },
+    { label: t('misc.reports.kpis.runtime'), value: k.runtime_seconds ?? '—' },
+    { label: t('misc.reports.kpis.meanCd'), value: k.mean_cd_last === null ? '—' : Number(k.mean_cd_last).toPrecision(4) },
+    { label: t('misc.reports.kpis.meanCl'), value: k.mean_cl_last === null ? '—' : Number(k.mean_cl_last).toPrecision(4) },
     {
-      label: '稳态得分',
+      label: t('misc.reports.kpis.steadyScore'),
       value: k.steady_state_score === null ? '—' : Number(k.steady_state_score).toPrecision(4),
     },
-    { label: '稳态判定', value: k.steady_state_detected ? '是' : '否' },
+    { label: t('misc.reports.kpis.steadyDetected'), value: k.steady_state_detected ? t('misc.reports.yes') : t('misc.reports.no') },
   ]
 })
 
@@ -349,7 +356,7 @@ function parseJobIds(text: string): string[] {
 async function loadCompare() {
   const ids = parseJobIds(compareIdsText.value)
   if (ids.length < 2) {
-    ElMessage.warning('请输入至少 2 个作业 ID')
+    ElMessage.warning(t('misc.reports.messages.enterAtLeast2'))
     return
   }
   loadingCompare.value = true

@@ -1,6 +1,10 @@
 import { createI18n } from 'vue-i18n'
-import zh from './zh'
-import en from './en'
+import zhBase from './zh'
+import enBase from './en'
+import production from './modules/production'
+import ai4s from './modules/ai4s'
+import data from './modules/data'
+import misc from './modules/misc'
 
 export type Locale = 'zh' | 'en'
 
@@ -20,14 +24,28 @@ export function setLocale(locale: Locale) {
   localStorage.setItem(STORAGE_KEY, locale)
 }
 
+const messages = {
+  zh: {
+    ...zhBase,
+    production: production.zh,
+    ai4s: ai4s.zh,
+    data: data.zh,
+    misc: misc.zh,
+  },
+  en: {
+    ...enBase,
+    production: production.en,
+    ai4s: ai4s.en,
+    data: data.en,
+    misc: misc.en,
+  },
+}
+
 const i18n = createI18n({
   legacy: false,
   locale: getInitialLocale(),
   fallbackLocale: 'zh',
-  messages: {
-    zh,
-    en,
-  },
+  messages,
 })
 
 export default i18n

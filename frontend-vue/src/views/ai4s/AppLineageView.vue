@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>最近运行血缘链</span>
+          <span>{{ t('ai4s.lineage.title') }}</span>
           <el-tag v-if="lastReport" type="success" effect="plain">
             {{ lastReport.name }} · {{ lastReport.family }}
           </el-tag>
@@ -15,7 +15,7 @@
         type="info"
         :closable="false"
         show-icon
-        title="血缘链来自最近一次本地全栈运行的 RunReport：lineage_upstream → 数据资产 → 数据集 → 任务 → 模型"
+        :title="t('ai4s.lineage.hint')"
       />
 
       <template v-if="lastReport">
@@ -30,28 +30,28 @@
       </template>
       <el-empty
         v-else
-        description="暂无血缘数据，请先在『运行应用』页完成一次本地全栈运行"
+        :description="t('ai4s.lineage.empty')"
       />
     </el-card>
 
     <el-card class="query-card">
       <template #header>
-        <span>按 job_id 查询运行状态</span>
+        <span>{{ t('ai4s.lineage.queryTitle') }}</span>
       </template>
 
       <el-form inline>
-        <el-form-item label="应用">
+        <el-form-item :label="t('ai4s.lineage.app')">
           <el-input
             v-model="queryApp"
-            placeholder="应用名称，如 suboff_surrogate"
+            :placeholder="t('ai4s.lineage.appPlaceholder')"
             style="width: 240px"
           />
         </el-form-item>
         <el-form-item label="job_id">
-          <el-input v-model="queryJobId" placeholder="运行返回的 job_id" style="width: 240px" />
+          <el-input v-model="queryJobId" :placeholder="t('ai4s.lineage.jobIdPlaceholder')" style="width: 240px" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="querying" @click="query">查询</el-button>
+          <el-button type="primary" :loading="querying" @click="query">{{ t('ai4s.lineage.query') }}</el-button>
         </el-form-item>
       </el-form>
 
@@ -69,11 +69,13 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { getRunStatus } from '@/api/apps'
 import type { RunStatusResponse } from '@/api/apps'
 import { useRunHistory } from '@/stores/ai4sRun'
 
+const { t } = useI18n()
 const { lastReport } = useRunHistory()
 
 const queryApp = ref('')
@@ -91,13 +93,13 @@ const lineageSteps = computed<LineageStep[]>(() => {
   const report = lastReport.value
   if (!report) return []
   const steps: LineageStep[] = (report.lineage_upstream ?? []).map((up) => ({
-    title: '上游数据',
+    title: t('ai4s.lineage.steps.upstream'),
     description: up,
   }))
-  steps.push({ title: '数据资产', description: report.data_asset_id })
-  steps.push({ title: '数据集', description: report.dataset_asset_id })
-  steps.push({ title: '任务', description: report.job_id })
-  steps.push({ title: '模型', description: String(report.model_id) })
+  steps.push({ title: t('ai4s.lineage.steps.dataAsset'), description: report.data_asset_id })
+  steps.push({ title: t('ai4s.lineage.steps.dataset'), description: report.dataset_asset_id })
+  steps.push({ title: t('ai4s.lineage.steps.job'), description: report.job_id })
+  steps.push({ title: t('ai4s.lineage.steps.model'), description: String(report.model_id) })
   return steps
 })
 
@@ -105,11 +107,11 @@ async function query() {
   const app = queryApp.value.trim()
   const jobId = queryJobId.value.trim()
   if (!app) {
-    ElMessage.warning('请输入应用名称')
+    ElMessage.warning(t('ai4s.lineage.messages.enterAppName'))
     return
   }
   if (!jobId) {
-    ElMessage.warning('请输入 job_id')
+    ElMessage.warning(t('ai4s.lineage.messages.enterJobId'))
     return
   }
   querying.value = true

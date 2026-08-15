@@ -2,35 +2,35 @@
   <div class="app-run">
     <el-card>
       <template #header>
-        <span>运行应用</span>
+        <span>{{ t('ai4s.run.title') }}</span>
       </template>
 
       <el-form label-width="130px" label-position="left">
-        <el-form-item label="应用" required>
+        <el-form-item :label="t('ai4s.run.app')" required>
           <el-select
             v-model="selectedApp"
             filterable
-            placeholder="请选择应用"
+            :placeholder="t('ai4s.run.selectAppPlaceholder')"
             style="width: 100%"
             :loading="loadingApps"
           >
             <el-option
               v-for="app in apps"
               :key="app.name"
-              :label="`${app.name}（${app.family} v${app.version}）`"
+              :label="t('ai4s.run.appOptionLabel', { name: app.name, family: app.family, version: app.version })"
               :value="app.name"
             />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="运行模式">
+        <el-form-item :label="t('ai4s.run.runMode')">
           <el-radio-group v-model="runMode">
-            <el-radio-button value="local">本地全栈</el-radio-button>
-            <el-radio-button value="hpc">HPC 派发</el-radio-button>
+            <el-radio-button value="local">{{ t('ai4s.run.modes.local') }}</el-radio-button>
+            <el-radio-button value="hpc">{{ t('ai4s.run.modes.hpc') }}</el-radio-button>
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item v-if="runMode === 'hpc'" label="HPC 参数">
+        <el-form-item v-if="runMode === 'hpc'" :label="t('ai4s.run.hpcParams')">
           <div class="hpc-grid">
             <div class="hpc-field">
               <label>partition</label>
@@ -64,7 +64,7 @@
             v-model="produceCfgText"
             type="textarea"
             :rows="5"
-            placeholder='JSON 对象，例如 {"n_samples": 10}'
+            :placeholder="t('ai4s.run.produceCfgPlaceholder')"
           />
         </el-form-item>
 
@@ -73,13 +73,13 @@
             v-model="trainCfgText"
             type="textarea"
             :rows="5"
-            placeholder='JSON 对象，例如 {"epochs": 100, "batch_size": 32}'
+            :placeholder="t('ai4s.run.trainCfgPlaceholder')"
           />
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" :loading="submitting" @click="submit">提交运行</el-button>
-          <el-button @click="reset">重置</el-button>
+          <el-button type="primary" :loading="submitting" @click="submit">{{ t('ai4s.run.submit') }}</el-button>
+          <el-button @click="reset">{{ t('ai4s.run.reset') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -88,44 +88,44 @@
     <el-card v-if="report" class="result-card">
       <template #header>
         <div class="card-header">
-          <span>运行结果（RunReport）</span>
-          <el-button text type="primary" @click="goLineage">查看血缘</el-button>
+          <span>{{ t('ai4s.run.resultTitle') }}</span>
+          <el-button text type="primary" @click="goLineage">{{ t('ai4s.run.viewLineage') }}</el-button>
         </div>
       </template>
 
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="应用">{{ report.name }}</el-descriptions-item>
-        <el-descriptions-item label="算法家族">{{ report.family }}</el-descriptions-item>
+        <el-descriptions-item :label="t('ai4s.run.app')">{{ report.name }}</el-descriptions-item>
+        <el-descriptions-item :label="t('ai4s.run.family')">{{ report.family }}</el-descriptions-item>
         <el-descriptions-item label="data_asset_id">{{ report.data_asset_id }}</el-descriptions-item>
         <el-descriptions-item label="dataset_asset_id">{{ report.dataset_asset_id }}</el-descriptions-item>
         <el-descriptions-item label="job_id">{{ report.job_id }}</el-descriptions-item>
         <el-descriptions-item label="model_id">{{ report.model_id }}</el-descriptions-item>
       </el-descriptions>
 
-      <h4 class="section-title">指标（metrics）</h4>
+      <h4 class="section-title">{{ t('ai4s.run.metricsTitle') }}</h4>
       <el-table :data="metricEntries" border size="small">
-        <el-table-column prop="key" label="指标" min-width="180" />
-        <el-table-column label="值" min-width="220">
+        <el-table-column prop="key" :label="t('ai4s.run.metric')" min-width="180" />
+        <el-table-column :label="t('ai4s.run.value')" min-width="220">
           <template #default="{ row }">{{ formatValue(row.value) }}</template>
         </el-table-column>
         <template #empty>
-          <el-empty description="无指标" :image-size="60" />
+          <el-empty :description="t('ai4s.run.noMetrics')" :image-size="60" />
         </template>
       </el-table>
 
-      <h4 class="section-title">上游数据（lineage_upstream）</h4>
+      <h4 class="section-title">{{ t('ai4s.run.upstreamTitle') }}</h4>
       <div class="tag-row">
         <el-tag v-for="item in report.lineage_upstream" :key="item" type="info" class="lineage-tag">
           {{ item }}
         </el-tag>
-        <el-text v-if="!report.lineage_upstream.length" type="info">无上游数据</el-text>
+        <el-text v-if="!report.lineage_upstream.length" type="info">{{ t('ai4s.run.noUpstream') }}</el-text>
       </div>
     </el-card>
 
     <!-- HPC 派发结果 -->
     <el-card v-else-if="hpcResult" class="result-card">
       <template #header>
-        <span>HPC 派发结果</span>
+        <span>{{ t('ai4s.run.hpcResultTitle') }}</span>
       </template>
 
       <el-descriptions :column="2" border>
@@ -138,7 +138,7 @@
       </el-descriptions>
 
       <div class="status-actions">
-        <el-button type="primary" :loading="queryingStatus" @click="queryStatus">查询运行状态</el-button>
+        <el-button type="primary" :loading="queryingStatus" @click="queryStatus">{{ t('ai4s.run.queryStatus') }}</el-button>
       </div>
 
       <el-descriptions v-if="statusResult" :column="2" border class="status-result">
@@ -156,6 +156,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import {
   getRunStatus,
@@ -176,6 +177,7 @@ import { useRunHistory } from '@/stores/ai4sRun'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const { save } = useRunHistory()
 
 const loadingApps = ref(false)
@@ -235,19 +237,19 @@ function parseJsonObject(text: string, field: string): Record<string, unknown> |
   try {
     const parsed = JSON.parse(trimmed)
     if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
-      ElMessage.error(`${field} 必须是 JSON 对象`)
+      ElMessage.error(t('ai4s.run.messages.mustBeJsonObject', { field }))
       return null
     }
     return parsed as Record<string, unknown>
   } catch {
-    ElMessage.error(`${field} 不是合法的 JSON`)
+    ElMessage.error(t('ai4s.run.messages.invalidJson', { field }))
     return null
   }
 }
 
 async function submit() {
   if (!selectedApp.value) {
-    ElMessage.warning('请先选择应用')
+    ElMessage.warning(t('ai4s.run.messages.selectAppFirst'))
     return
   }
   const produceCfg = parseJsonObject(produceCfgText.value, 'produce_cfg')
@@ -270,10 +272,10 @@ async function submit() {
     if (isRunReport(res)) {
       report.value = res
       save(res)
-      ElMessage.success('应用运行完成')
+      ElMessage.success(t('ai4s.run.messages.runDone'))
     } else if (isHpcSubmitResponse(res)) {
       hpcResult.value = res
-      ElMessage.success('已提交 HPC 派发')
+      ElMessage.success(t('ai4s.run.messages.hpcSubmitted'))
     }
   } catch {
     // 错误提示已由请求拦截器统一处理

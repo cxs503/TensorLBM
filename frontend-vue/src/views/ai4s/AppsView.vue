@@ -3,8 +3,8 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>AI4S 应用列表</span>
-          <el-button :icon="Refresh" :loading="loading" @click="fetchApps">刷新</el-button>
+          <span>{{ t('ai4s.apps.title') }}</span>
+          <el-button :icon="Refresh" :loading="loading" @click="fetchApps">{{ t('ai4s.apps.refresh') }}</el-button>
         </div>
       </template>
 
@@ -13,27 +13,27 @@
         type="info"
         :closable="false"
         show-icon
-        :title="`共发现 ${total} 个已注册的 AI4S 应用`"
+        :title="t('ai4s.apps.summary', { total })"
       />
 
       <el-table v-loading="loading" :data="apps" stripe border style="width: 100%">
         <el-table-column type="index" label="#" width="60" align="center" />
-        <el-table-column prop="name" label="应用名称" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="family" label="算法家族" min-width="180" show-overflow-tooltip>
+        <el-table-column prop="name" :label="t('ai4s.apps.columns.name')" min-width="220" show-overflow-tooltip />
+        <el-table-column prop="family" :label="t('ai4s.apps.columns.family')" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             <el-tag type="success" effect="plain">{{ row.family }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="version" label="版本" width="120" align="center" />
-        <el-table-column label="操作" width="140" align="center" fixed="right">
+        <el-table-column prop="version" :label="t('ai4s.apps.columns.version')" width="120" align="center" />
+        <el-table-column :label="t('ai4s.apps.columns.actions')" width="140" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="small" :icon="VideoPlay" @click="goRun(row.name)">
-              运行
+              {{ t('ai4s.apps.run') }}
             </el-button>
           </template>
         </el-table-column>
         <template #empty>
-          <el-empty description="暂无应用，请确认后端 /api/apps 已就绪" />
+          <el-empty :description="t('ai4s.apps.empty')" />
         </template>
       </el-table>
     </el-card>
@@ -43,11 +43,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Refresh, VideoPlay } from '@element-plus/icons-vue'
 import { listApps } from '@/api/apps'
 import type { AppInfo } from '@/api/apps'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const loading = ref(false)
 const apps = ref<AppInfo[]>([])

@@ -3,10 +3,10 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>CAD 船体建模</span>
+          <span>{{ t('production.cad.title') }}</span>
           <el-select
             v-model="hullType"
-            placeholder="选择船型"
+            :placeholder="t('production.cad.selectHullType')"
             style="width: 260px"
           >
             <el-option
@@ -30,33 +30,33 @@
       <el-form :model="form" label-width="120px" class="param-form">
         <el-row :gutter="16">
           <el-col :span="8">
-            <el-form-item label="船长 L (lu)">
+            <el-form-item :label="t('production.cad.lengthLu')">
               <el-input-number v-model="form.length" :min="20" :step="10" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="船宽 B (lu)">
+            <el-form-item :label="t('production.cad.beamLu')">
               <el-input-number v-model="form.beam" :min="4" :step="1" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="吃水 T (lu)">
+            <el-form-item :label="t('production.cad.draftLu')">
               <el-input-number v-model="form.draft" :min="2" :step="1" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="16">
           <el-col :span="8">
-            <el-form-item label="剖面站数">
+            <el-form-item :label="t('production.cad.nStations')">
               <el-input-number v-model="form.n_stations" :min="3" :max="41" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="16">
             <el-form-item label=" ">
               <el-button type="primary" :icon="View" :loading="previewLoading" @click="generatePreview">
-                生成三视图预览
+                {{ t('production.cad.generatePreview') }}
               </el-button>
-              <el-button :icon="Download" :loading="exportLoading" @click="exportStl">导出 STL</el-button>
+              <el-button :icon="Download" :loading="exportLoading" @click="exportStl">{{ t('production.cad.exportStl') }}</el-button>
             </el-form-item>
           </el-col>
         </el-row>
@@ -66,21 +66,21 @@
     <el-row :gutter="16" class="content-row">
       <el-col :span="12">
         <el-card>
-          <template #header><span>船体三视图</span></template>
+          <template #header><span>{{ t('production.cad.hullViews') }}</span></template>
           <div v-loading="previewLoading" class="preview-body">
             <img v-if="previewImage" :src="previewImage" alt="preview" class="result-img" />
-            <el-empty v-else description="点击「生成三视图预览」" :image-size="80" />
+            <el-empty v-else :description="t('production.cad.clickPreview')" :image-size="80" />
           </div>
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card>
-          <template #header><span>船型统计参数</span></template>
+          <template #header><span>{{ t('production.cad.statsTitle') }}</span></template>
           <el-table v-if="previewStats" :data="statsRows" size="small" border>
-            <el-table-column prop="label" label="参数" width="160" />
-            <el-table-column prop="value" label="数值" />
+            <el-table-column prop="label" :label="t('production.common.param')" width="160" />
+            <el-table-column prop="value" :label="t('production.common.value')" />
           </el-table>
-          <el-empty v-else description="暂无统计数据" :image-size="80" />
+          <el-empty v-else :description="t('production.cad.noStats')" :image-size="80" />
         </el-card>
       </el-col>
     </el-row>
@@ -88,7 +88,7 @@
     <el-row :gutter="16" class="content-row">
       <el-col :span="12">
         <el-card>
-          <template #header><span>体素掩码（3D 网格）</span></template>
+          <template #header><span>{{ t('production.cad.maskTitle') }}</span></template>
           <el-form :model="maskForm" label-width="90px" size="small">
             <el-row :gutter="8">
               <el-col :span="8">
@@ -101,69 +101,69 @@
                 <el-form-item label="nz"><el-input-number v-model="maskForm.nz" :min="10" controls-position="right" style="width: 100%" /></el-form-item>
               </el-col>
             </el-row>
-            <el-button type="primary" size="small" :loading="maskLoading" @click="generateMask">生成体素掩码</el-button>
+            <el-button type="primary" size="small" :loading="maskLoading" @click="generateMask">{{ t('production.cad.generateMask') }}</el-button>
           </el-form>
           <div v-loading="maskLoading" class="mask-body">
             <img v-if="maskImage" :src="maskImage" alt="mask" class="result-img" />
-            <el-empty v-else description="点击「生成体素掩码」" :image-size="60" />
+            <el-empty v-else :description="t('production.cad.clickMask')" :image-size="60" />
           </div>
           <el-descriptions v-if="maskStats" :column="2" size="small" border class="mask-stats">
-            <el-descriptions-item label="Cb（数值）">{{ maskStats.Cb_numerical }}</el-descriptions-item>
-            <el-descriptions-item label="固体网格">{{ maskStats.solid_cells }}</el-descriptions-item>
-            <el-descriptions-item label="流体网格">{{ maskStats.fluid_cells }}</el-descriptions-item>
-            <el-descriptions-item label="网格">{{ maskStats.nx }}×{{ maskStats.ny }}×{{ maskStats.nz }}</el-descriptions-item>
+            <el-descriptions-item :label="t('production.cad.cbNumerical')">{{ maskStats.Cb_numerical }}</el-descriptions-item>
+            <el-descriptions-item :label="t('production.common.solidCells')">{{ maskStats.solid_cells }}</el-descriptions-item>
+            <el-descriptions-item :label="t('production.common.fluidCells')">{{ maskStats.fluid_cells }}</el-descriptions-item>
+            <el-descriptions-item :label="t('production.common.mesh')">{{ maskStats.nx }}×{{ maskStats.ny }}×{{ maskStats.nz }}</el-descriptions-item>
           </el-descriptions>
         </el-card>
       </el-col>
 
       <el-col :span="12">
         <el-card>
-          <template #header><span>LBM 无量纲参数换算</span></template>
+          <template #header><span>{{ t('production.cad.lbmTitle') }}</span></template>
           <el-form :model="lbmForm" label-width="120px" size="small">
-            <el-form-item label="船长 (m)"><el-input-number v-model="lbmForm.length_m" :min="1" controls-position="right" style="width: 100%" /></el-form-item>
-            <el-form-item label="航速 (m/s)"><el-input-number v-model="lbmForm.speed_ms" :min="0.1" :step="0.5" controls-position="right" style="width: 100%" /></el-form-item>
-            <el-form-item label="运动粘度 (m²/s)">
+            <el-form-item :label="t('production.cad.lengthM')"><el-input-number v-model="lbmForm.length_m" :min="1" controls-position="right" style="width: 100%" /></el-form-item>
+            <el-form-item :label="t('production.cad.speedMs')"><el-input-number v-model="lbmForm.speed_ms" :min="0.1" :step="0.5" controls-position="right" style="width: 100%" /></el-form-item>
+            <el-form-item :label="t('production.common.nuM2s')">
               <el-input-number v-model="lbmForm.nu_m2s" :min="1e-8" :step="1e-7" :precision="10" controls-position="right" style="width: 100%" />
             </el-form-item>
-            <el-button type="primary" size="small" :loading="lbmLoading" @click="computeLbm">计算 LBM 参数</el-button>
+            <el-button type="primary" size="small" :loading="lbmLoading" @click="computeLbm">{{ t('production.cad.computeLbm') }}</el-button>
           </el-form>
           <el-table v-if="lbmResult" :data="lbmRows" size="small" border class="lbm-table">
-            <el-table-column prop="label" label="参数" width="140" />
-            <el-table-column prop="value" label="数值" />
+            <el-table-column prop="label" :label="t('production.common.param')" width="140" />
+            <el-table-column prop="value" :label="t('production.common.value')" />
           </el-table>
         </el-card>
       </el-col>
     </el-row>
 
     <el-card class="content-row">
-      <template #header><span>直接提交求解器（CAD → Solver）</span></template>
+      <template #header><span>{{ t('production.cad.solverTitle') }}</span></template>
       <el-form :model="solverForm" label-width="150px" size="small">
         <el-row :gutter="12">
           <el-col :span="6">
-            <el-form-item label="网格 nx"><el-input-number v-model="solverForm.nx" :min="20" controls-position="right" style="width: 100%" /></el-form-item>
+            <el-form-item :label="t('production.fields.meshNx')"><el-input-number v-model="solverForm.nx" :min="20" controls-position="right" style="width: 100%" /></el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="网格 ny"><el-input-number v-model="solverForm.ny" :min="10" controls-position="right" style="width: 100%" /></el-form-item>
+            <el-form-item :label="t('production.fields.meshNy')"><el-input-number v-model="solverForm.ny" :min="10" controls-position="right" style="width: 100%" /></el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="网格 nz"><el-input-number v-model="solverForm.nz" :min="10" controls-position="right" style="width: 100%" /></el-form-item>
+            <el-form-item :label="t('production.fields.meshNz')"><el-input-number v-model="solverForm.nz" :min="10" controls-position="right" style="width: 100%" /></el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="雷诺数 Re"><el-input-number v-model="solverForm.re" :min="1" controls-position="right" style="width: 100%" /></el-form-item>
+            <el-form-item :label="t('production.common.reynoldsRe')"><el-input-number v-model="solverForm.re" :min="1" controls-position="right" style="width: 100%" /></el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="12">
           <el-col :span="6">
-            <el-form-item label="入流速度 u_in"><el-input-number v-model="solverForm.u_in" :min="0.001" :step="0.01" controls-position="right" style="width: 100%" /></el-form-item>
+            <el-form-item :label="t('production.cad.uIn')"><el-input-number v-model="solverForm.u_in" :min="0.001" :step="0.01" controls-position="right" style="width: 100%" /></el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="时间步数"><el-input-number v-model="solverForm.n_steps" :min="1" :step="100" controls-position="right" style="width: 100%" /></el-form-item>
+            <el-form-item :label="t('production.fields.nSteps')"><el-input-number v-model="solverForm.n_steps" :min="1" :step="100" controls-position="right" style="width: 100%" /></el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="输出间隔"><el-input-number v-model="solverForm.output_interval" :min="1" :step="50" controls-position="right" style="width: 100%" /></el-form-item>
+            <el-form-item :label="t('production.fields.outputInterval')"><el-input-number v-model="solverForm.output_interval" :min="1" :step="50" controls-position="right" style="width: 100%" /></el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="计算设备">
+            <el-form-item :label="t('production.common.device')">
               <el-select v-model="solverForm.device" style="width: 100%">
                 <el-option label="cpu" value="cpu" />
                 <el-option label="cuda:0" value="cuda:0" />
@@ -171,10 +171,10 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-button type="primary" :loading="solverLoading" @click="sendToSolver">提交求解作业</el-button>
+        <el-button type="primary" :loading="solverLoading" @click="sendToSolver">{{ t('production.cad.submitJob') }}</el-button>
         <el-tag v-if="solverJobId" type="success" class="job-tag">
-          已提交作业：{{ solverJobId }}
-          <el-button link type="primary" @click="$router.push('/production/dashboard')">前往总览</el-button>
+          {{ t('production.cad.tagSubmitted', { id: solverJobId }) }}
+          <el-button link type="primary" @click="$router.push('/production/dashboard')">{{ t('production.cad.goDashboard') }}</el-button>
         </el-tag>
       </el-form>
     </el-card>
@@ -185,6 +185,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Download, View } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import {
   cadHullMask,
   cadHullTypes,
@@ -193,6 +194,8 @@ import {
   cadSendToSolver,
   type HullTypeItem,
 } from '@/api/production'
+
+const { t } = useI18n()
 
 const hullTypes = ref<HullTypeItem[]>([])
 const hullType = ref('series60')
@@ -211,14 +214,14 @@ const statsRows = computed(() => {
   const s = previewStats.value
   if (!s) return []
   const rows: { label: string; value: string }[] = [
-    { label: '船型', value: String(s.label ?? '') },
+    { label: t('production.cad.hullType'), value: String(s.label ?? '') },
     { label: 'Cb', value: String(s.Cb) },
     { label: 'Cwp', value: String(s.Cwp) },
     { label: 'Cm', value: String(s.Cm) },
     { label: 'Cp', value: String(s.Cp) },
     { label: 'L/B', value: String(s['L/B']) },
     { label: 'B/T', value: String(s['B/T']) },
-    { label: '排水量 (lu³)', value: String(s.displacement_lu3) },
+    { label: t('production.cad.displacementLu3'), value: String(s.displacement_lu3) },
   ]
   return rows
 })
@@ -249,7 +252,7 @@ const lbmRows = computed(() => {
     { label: 'Fr', value: String(r.froude_number) },
     { label: 'dx (m)', value: String(r.dx_m) },
     { label: 'dt (s)', value: String(r.dt_s) },
-    { label: 'τ', value: `${r.lbm_tau} ${r.stable ? '（稳定）' : '（不稳定）'}` },
+    { label: 'τ', value: `${r.lbm_tau} ${r.stable ? t('production.common.stable') : t('production.common.unstable')}` },
     { label: 'Ma', value: String(r.mach_number) },
   ]
 })
@@ -280,9 +283,9 @@ async function loadHullTypes() {
   } catch {
     // 后端不可用时使用内置默认值
     hullTypes.value = [
-      { value: 'wigley', label: 'Wigley Parabolic', description: 'ITTC 基准船型，抛物线横剖面', Cb: 0.4444 },
-      { value: 'series60', label: 'Series 60 (Cb=0.60)', description: 'DTMB Series 60 标准商船船型', Cb: 0.6 },
-      { value: 'kcs', label: 'KCS Approximation (Cb≈0.651)', description: 'KRISO 集装箱船近似船型', Cb: 0.651 },
+      { value: 'wigley', label: 'Wigley Parabolic', description: t('production.cad.wigleyDesc'), Cb: 0.4444 },
+      { value: 'series60', label: 'Series 60 (Cb=0.60)', description: t('production.cad.series60Desc'), Cb: 0.6 },
+      { value: 'kcs', label: 'KCS Approximation (Cb≈0.651)', description: t('production.cad.kcsDesc'), Cb: 0.651 },
     ]
   }
 }
@@ -354,7 +357,7 @@ async function sendToSolver() {
       seed: 0,
     })
     solverJobId.value = r.job_id
-    ElMessage.success(`作业已提交：${r.job_id}`)
+    ElMessage.success(t('production.cad.jobSubmittedMsg', { id: r.job_id }))
   } finally {
     solverLoading.value = false
   }
@@ -383,9 +386,9 @@ async function exportStl() {
     a.download = `${hullType.value}_hull.stl`
     a.click()
     URL.revokeObjectURL(url)
-    ElMessage.success('STL 已导出')
+    ElMessage.success(t('production.cad.stlExported'))
   } catch (e) {
-    ElMessage.error(`STL 导出失败：${(e as Error).message}`)
+    ElMessage.error(t('production.cad.stlExportFailed', { message: (e as Error).message }))
   } finally {
     exportLoading.value = false
   }
