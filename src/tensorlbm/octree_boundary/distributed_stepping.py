@@ -50,6 +50,7 @@ from tensorlbm.octree_boundary.geometry import (
 from tensorlbm.octree_boundary.stepping import (
     _fill_ghost_impl,
     _tau_chain,
+    ensure_fanout_tables,
     restrict_shell_to_block,
     build_shell_coarse_links,
     observe_kinetic_interface_transfer,
@@ -205,6 +206,57 @@ class _LocalShellFacade:
         remapped[sentinel] = nt[sentinel]
         self.neighbor_table = remapped.to(device)
         self.interface_fanout = octree.interface_fanout
+        # Set per substep by the stepper: (Q, n_local) float64 fanout member
+        # means (computed from the all-gathered post-collision state).  BFL's
+        # fanout donor branch reads this instead of the dict.
+        self.fanout_mean: torch.Tensor | None = None
+
+
+def _build_local_fanout_cache(
+    octree: OctreeGrid,
+    local_indices: torch.Tensor,
+    device: torch.device,
+) -> dict:
+    """Static per-rank fanout positions (topology is fixed per root step).
+
+    Returns a dict of tensors on ``device``:
+
+    * ``n``: number of FANOUT cells owned by this rank whose group is live;
+    * ``d`` / ``i``: ``(n,)`` stream directions / LOCAL leaf columns with a
+      FANOUT source (``src_all[d, i] == FANOUT``);
+    * ``pad`` / ``vp``: ``(n, max_len)`` global member enums / valid mask —
+      the member means are ``mean(full_populations[d, members])``;
+    * ``fb_n`` / ``fb_d`` / ``fb_i``: defensive fallback cells (FANOUT but no
+      registered group) whose stream output falls back to ``f_old``.
+    """
+    empty = {"n": 0, "d": None, "i": None, "pad": None, "vp": None,
+             "fb_n": 0, "fb_d": None, "fb_i": None}
+    rowidx, pad_live = ensure_fanout_tables(octree)
+    rowidx = rowidx.to(device)
+    pad_live = pad_live.to(device)
+    opp = octree._opp.to(device)
+    nt = octree.neighbor_table.to(device)
+    src_local = nt[opp][:, local_indices]                 # (Q, n_local)
+    rows = torch.nonzero(src_local == FANOUT, as_tuple=False)
+    if rows.shape[0] == 0:
+        return empty
+    d_f, i_f = rows[:, 0], rows[:, 1]
+    g_f = local_indices[i_f]                              # global leaf enums
+    ridx = rowidx[opp[d_f], g_f]                          # live row / -1
+    has = ridx >= 0
+    cache = dict(empty)
+    cache["n"] = int(has.sum())
+    if cache["n"]:
+        cache["d"] = d_f[has]
+        cache["i"] = i_f[has]
+        cache["pad"] = pad_live[ridx[has]]
+        cache["vp"] = cache["pad"] >= 0
+    fb = ~has
+    cache["fb_n"] = int(fb.sum())
+    if cache["fb_n"]:
+        cache["fb_d"] = d_f[fb]
+        cache["fb_i"] = i_f[fb]
+    return cache
 
 
 def stream_gather_distributed(
@@ -214,6 +266,8 @@ def stream_gather_distributed(
     ghost_slot_local: torch.Tensor,
     f_old: torch.Tensor,
     local_indices: torch.Tensor,
+    fan_cache: dict | None = None,
+    fan_mean: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Pull-stream this rank's leaves from full populations.
 
@@ -224,48 +278,62 @@ def stream_gather_distributed(
     (same-level, cross-level donor, fan-out member) as a global leaf enum,
     so no remote buffer is needed.  ``ghost_slot_local`` is the sliced slot
     table ``(Q, n_local)`` from ``_slice_ghost_plan`` (local ghost row per
-    leaf).  Returns ``(Q, n_local)``.
+    leaf).  ``fan_cache`` is the static per-rank fanout table from
+    ``_build_local_fanout_cache`` (built once per root step).  Returns
+    ``(Q, n_local)``.
+
+    Fully batched: one ``torch.gather`` for all leaf sources, one ``nonzero``
+    per sentinel branch (ghost / solid / fanout) — zero per-direction Python
+    loops and zero per-direction device syncs (each ``bool(...)`` in the old
+    per-direction loop forced a device sync, ~108 per substep).
     """
     q = octree.Q
     n_local = local_indices.shape[0]
+    n_leaf = full_populations.shape[1]
     opp = octree._opp.to(full_populations.device)
-    nt = octree.neighbor_table  # (Q, n_leaf) global
+    nt = octree.neighbor_table.to(full_populations.device)
     out = torch.empty(q, n_local, dtype=full_populations.dtype,
                       device=full_populations.device)
-    for d in range(q):
-        src = nt[opp[d]][local_indices]  # (n_local,) global enums or sentinels
-        valid = src >= 0
-        if bool(valid.any()):
-            src_v = src[valid]
-            if int(src_v.max()) >= full_populations.shape[1] or int(src_v.min()) < 0:
-                print(f"[sg] INVALID src d={d} max={int(src_v.max())} "
-                      f"n_leaf={full_populations.shape[1]}", flush=True)
-                raise IndexError("neighbour index out of range")
-            out[d, valid] = full_populations[d, src_v]
-        ghost_mask = src == SHELL_OUTSIDE
-        if bool(ghost_mask.any()):
-            # slot is indexed by the *same* direction d (plan.slot[d, leaf]);
-            # ghost_vals[d] holds that direction's filled values.
-            slots = ghost_slot_local[d][ghost_mask]
-            out[d, ghost_mask] = ghost_vals[d, slots]
-        solid_mask = src == SOLID
-        if bool(solid_mask.any()):
-            # Bounce-back: take the opposite direction at the same global column.
-            solid_idx = torch.nonzero(solid_mask, as_tuple=False).squeeze(1)
-            global_col = local_indices[solid_idx]
-            out[d, solid_idx] = full_populations[opp[d], global_col]
-        fanout_mask = src == FANOUT
-        if bool(fanout_mask.any()):
-            for i in torch.nonzero(fanout_mask, as_tuple=False).squeeze(1).tolist():
-                group = octree.interface_fanout.get(
-                    (int(local_indices[i]), int(opp[d])), [],
-                )
-                if not group:
-                    out[d, i] = f_old[d, i]
-                else:
-                    g = torch.tensor(group, dtype=torch.int64,
-                                     device=full_populations.device)
-                    out[d, i] = full_populations[d, g].mean()
+    # ---- one batched pass: every source, every direction ------------------
+    src_all = nt[opp][:, local_indices]          # (Q, n_local) enums/sentinels
+    valid = src_all >= 0
+    if bool(valid.any()):
+        if int(src_all.max()) >= n_leaf:
+            raise IndexError("neighbour index out of range")
+        gathered = torch.gather(full_populations, 1, src_all.clamp(min=0))
+        out = torch.where(valid, gathered, torch.zeros_like(gathered))
+    else:
+        out.zero_()
+    # ghost 分支 (SHELL_OUTSIDE): 一次 nonzero 收集所有 (d, i), 批量取 slot
+    ghost_all = src_all == SHELL_OUTSIDE
+    if bool(ghost_all.any()):
+        rows = torch.nonzero(ghost_all, as_tuple=False)    # (n_g, 2) (d, i)
+        d_g, i_g = rows[:, 0], rows[:, 1]
+        slots = ghost_slot_local[d_g, i_g]
+        out[d_g, i_g] = ghost_vals[d_g, slots]
+    # solid 分支 (SOLID): bounce-back, 同全局列取 opp[d] 方向
+    solid_all = src_all == SOLID
+    if bool(solid_all.any()):
+        rows = torch.nonzero(solid_all, as_tuple=False)    # (n_s, 2) (d, i)
+        d_s, i_s = rows[:, 0], rows[:, 1]
+        out[d_s, i_s] = full_populations[opp[d_s], local_indices[i_s]]
+    # fanout 分支: 预缓存位置一次批量 gather + 段均值
+    if fan_cache is not None and fan_cache["n"] > 0:
+        d_f, i_f = fan_cache["d"], fan_cache["i"]
+        if fan_mean is not None:
+            # float64 mean computed once per substep by the stepper
+            # (shared with BFL's upstream donor resolution).
+            out[d_f, i_f] = fan_mean[d_f, i_f].to(full_populations.dtype)
+        else:
+            pad, vp = fan_cache["pad"], fan_cache["vp"]
+            vals = full_populations[d_f.unsqueeze(1), pad.clamp(min=0)]
+            means = (vals * vp).sum(dim=1) / vp.sum(dim=1).clamp_min(1)
+            out[d_f, i_f] = means.to(full_populations.dtype)
+    if fan_cache is not None and fan_cache["fb_n"] > 0:
+        # 防御: FANOUT 但无注册组 -> 保留旧值 (与旧循环一致)
+        out[fan_cache["fb_d"], fan_cache["fb_i"]] = (
+            f_old[fan_cache["fb_d"], fan_cache["fb_i"]]
+        )
     return out
 
 
@@ -335,6 +403,10 @@ def step_octree_shell_distributed(
 
     if ghost_plan is None:
         ghost_plan = build_ghost_plan(octree, tuple(octree.meta["shape"]))
+    # Static per-rank fanout positions (topology is fixed): the rank's
+    # FANOUT cells and their member tables.  Built once per root step, reused
+    # by every substep's stream + BFL donor resolution.
+    fan_cache = _build_local_fanout_cache(octree, local_indices, device)
     # Slice the global ghost plan for this rank's leaves.  For interleaved
     # shards the leaf set is not contiguous, so select ghost rows whose leaf
     # enum belongs to this rank instead of the [lo:hi) slice.
@@ -425,9 +497,25 @@ def step_octree_shell_distributed(
             dd, rr = torch.nonzero(~torch.isfinite(ghost_vals), as_tuple=True)
             print(f"[dbg] rank{rank} substep{s} ghost_vals NaN: {nnan} elems "
                   f"rows={torch.unique(rr).tolist()[:10]}", flush=True)
+        # Fanout member means over the all-gathered post-collision state —
+        # one batched gather per substep (no per-group Python loop).  The
+        # same (d, leaf) cells serve the stream fanout branch and BFL's
+        # upstream donor resolution (identical direction convention), so the
+        # table is computed once and shared.
+        fan_mean_t = None
+        if fan_cache["n"] > 0:
+            _vals = full_pc[fan_cache["d"].unsqueeze(1),
+                            fan_cache["pad"].clamp(min=0)]
+            _means = (
+                _vals.to(torch.float64) * fan_cache["vp"]
+            ).sum(dim=1) / fan_cache["vp"].sum(dim=1).clamp_min(1)
+            fan_mean_t = torch.zeros(q, n_local, dtype=torch.float64,
+                                     device=device)
+            fan_mean_t[fan_cache["d"], fan_cache["i"]] = _means
         out = stream_gather_distributed(
             octree, full_pc, ghost_vals, ghost_plan_local.slot,
             octree.f_leaf, local_indices,
+            fan_cache=fan_cache, fan_mean=fan_mean_t,
         )
         if os.environ.get("DBG_NAN"):
             dbg_mass_log.append((s, "post_stream", float(out.sum().item())))
@@ -500,6 +588,13 @@ def step_octree_shell_distributed(
             # build a lightweight local facade over this rank's leaves so the
             # MEM force is computed only for our columns.
             facade = _LocalShellFacade(octree, local_indices, device)
+            if fan_mean_t is not None:
+                # Precomputed fanout donor means (float64, from full_pc):
+                # bfl_apply_gather's fanout branch reads these instead of the
+                # per-group dict loop (which was both a CPU hotspot AND a
+                # correctness bug — it keyed the global registry with LOCAL
+                # columns, always missing and falling back to fp_d).
+                facade.fanout_mean = fan_mean_t
             result = bfl_fn(facade, out, post_collision, ghost_plan_local,
                             ghost_vals, substep=s)
             out, substep_force = result
@@ -532,22 +627,31 @@ def step_octree_shell_distributed(
             _obs_in = torch.zeros(q, dtype=dtype, device=device)
             _if_links = octree.interface_links
             _leaf_vol = octree.leaf_volume()
-            for _d in range(1, q):
-                _sel = _if_links[:, 1] == _d
-                if bool(_sel.any()):
-                    _li = _if_links[_sel, 0]
-                    _obs_out[_d] = (
-                        full_pc[_d, _li] * _leaf_vol[_li].to(dtype)
-                    ).sum()
-                _gsel = ghost_plan_local.direction == _d
-                if bool(_gsel.any()):
-                    _obs_in[_d] = (
-                        ghost_vals[_d, _gsel]
-                        * ghost_plan_local.volume[_gsel].to(dtype)
-                    ).sum()
+            # Batched per-direction observation (old code: 26-iteration
+            # Python loop with ~52 device-sync ``bool(...)`` per substep).
+            # One scatter_add per side; direction 0 is never a link (rest
+            # direction self-references) but is zeroed for exact equivalence
+            # with the old ``range(1, q)`` loop.
+            if _if_links.shape[0]:
+                _d_l = _if_links[:, 1]
+                _li = _if_links[:, 0]
+                _obs_out.scatter_add_(
+                    0, _d_l,
+                    (full_pc[_d_l, _li] * _leaf_vol[_li].to(dtype)),
+                )
+            if ghost_plan_local.n_ghost:
+                _gdir = ghost_plan_local.direction
+                _grow = torch.arange(ghost_plan_local.n_ghost, device=device)
+                _obs_in.scatter_add_(
+                    0, _gdir,
+                    (ghost_vals[_gdir, _grow]
+                     * ghost_plan_local.volume.to(dtype)),
+                )
+            _obs_out[0] = 0
+            _obs_in[0] = 0
             # outgoing is identical on every rank (full_pc is global);
             # incoming is a per-rank partial — all-reduce to assemble the
-            # global incoming sum.
+            # global incoming sum (one all_reduce per substep).
             dist.all_reduce(_obs_in, op=dist.ReduceOp.SUM)
             _observed = KineticInterfaceTransfer(_obs_out, _obs_in)
             fine_transfer = (

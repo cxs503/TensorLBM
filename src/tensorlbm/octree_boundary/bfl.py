@@ -183,6 +183,7 @@ def bfl_apply_gather(
 
     Q = octree.Q
     device = f.device
+    dtype = f.dtype
     opp = octree._opp.to(device)
     c_vec = octree._c_vec.to(device)
     if Q == 27:
@@ -192,7 +193,10 @@ def bfl_apply_gather(
 
         _W = _W19
 
-    mask = octree.bfl_mask
+    mask = octree.bfl_mask.to(device).clone()
+    # The legacy implementation only processed directions 1..Q-1 (the rest
+    # direction d=0 was never touched); keep that contract exactly.
+    mask[0] = False
     q_field = octree.q_field
     nt = octree.neighbor_table
     # sharded-shell facade hooks (absent on a plain OctreeGrid)
@@ -206,123 +210,174 @@ def bfl_apply_gather(
     f_out = f.clone()
     force = torch.zeros(3, dtype=torch.float64, device=device)
 
-    for d in range(1, Q):
-        m = mask[d]
-        if not bool(m.any()):
-            continue
-        od = int(opp[d].item())
-        idx = torch.nonzero(m, as_tuple=False).squeeze(1)
-        qq = q_field[d, idx].to(torch.float64)
-        if q_min is not None:
-            # High-Re safeguard: clamp tiny q to avoid the 1/(2q) divergence in
-            # the quadratic branch. q_min=0 disables (keeps validated low-Re
-            # results bit-identical).
-            qq = torch.clamp(qq, min=float(q_min))
-        fp_d = f_prev[d, idx].to(torch.float64)
-        fp_opp = f_prev[od, idx].to(torch.float64)
-
-        # ---- upstream donor gather: f_prev[d](x_i - c_d * dx_i) ----------
-        up = nt[od, idx]
-        fp_up = torch.zeros_like(fp_d)
-        valid = up >= 0
+    # ---- batched upstream donor table: all directions in one pass ---------
+    # ``src[d, i] = neighbor_table[opp[d], i]`` — the donor of leaf i along
+    # direction d (identical table to the streamer's ``src_all``).  Only
+    # MASKED cells are examined (the legacy per-direction loop only ever
+    # looked at ``idx = nonzero(mask[d])``): this also keeps the facade's
+    # out-of-shard donor remap (-1, same value as SHELL_OUTSIDE) from being
+    # misread as a ghost cell on unmasked links.
+    src = nt[opp].to(device)                       # (Q, n)
+    fp_d = f_prev.to(torch.float64)
+    fp_opp = f_prev[opp].to(torch.float64)
+    fp_up = torch.zeros_like(fp_d)
+    cells = torch.nonzero(mask, as_tuple=False)    # (n_m, 2) (d, i)
+    if cells.shape[0]:
+        d_c, i_c = cells[:, 0], cells[:, 1]
+        src_m = src[d_c, i_c]                      # (n_m,)
+        valid = src_m >= 0
         if bool(valid.any()):
-            fp_up[valid] = f_prev[d, up[valid]].to(torch.float64)
+            if int(src_m.max()) >= f_prev.shape[1]:
+                raise IndexError("BFL upstream donor index out of range")
+            fp_up[d_c[valid], i_c[valid]] = f_prev[
+                d_c[valid], src_m[valid].clamp(min=0)
+            ].to(torch.float64)
         if remote_values is not None and remote_pos is not None:
-            remote = up == REMOTE
+            remote = src_m == REMOTE
             if bool(remote.any()):
-                slots = remote_pos[od, idx[remote]]
+                d_r = d_c[remote]
+                i_r = i_c[remote]
+                slots = remote_pos[d_r, i_r]
                 if bool((slots < 0).any()):
                     raise RuntimeError(
                         "sharded BFL upstream point is REMOTE but has no "
                         "remote slot (shard plan inconsistency)",
                     )
-                fp_up[remote] = remote_values[slots].to(torch.float64)
-        ghost = up == SHELL_OUTSIDE
+                fp_up[d_r, i_r] = remote_values[slots].to(torch.float64)
+        ghost = src_m == SHELL_OUTSIDE
         if bool(ghost.any()):
             if ghost_plan is None or ghost_vals is None:
                 raise RuntimeError(
                     "BFL upstream point is a ghost cell but no ghost values "
                     "were supplied",
                 )
-            slots = ghost_plan.slot[d, idx[ghost]]
+            d_g = d_c[ghost]
+            i_g = i_c[ghost]
+            slots = ghost_plan.slot[d_g, i_g]
             if bool((slots < 0).any()):
                 bad = torch.nonzero(slots < 0, as_tuple=False).squeeze(1)
-                print(f"[bfl] ghost slot missing: d={d} n_bad={len(bad)} "
-                      f"ghost_plan.slot shape={tuple(ghost_plan.slot.shape)} "
-                      f"idx max={int(idx.max().item())}", flush=True)
+                print(f"[bfl] ghost slot missing: n_bad={len(bad)} "
+                      f"ghost_plan.slot shape={tuple(ghost_plan.slot.shape)}",
+                      flush=True)
                 raise RuntimeError(
                     "BFL upstream ghost cell has no ghost slot "
                     "(shell band too thin)",
                 )
-            fp_up[ghost] = ghost_vals[d, slots].to(torch.float64)
-        fanout = up == FANOUT
+            fp_up[d_g, i_g] = ghost_vals[d_g, slots].to(torch.float64)
+        fanout = src_m == FANOUT
         if bool(fanout.any()):
-            for pos in torch.nonzero(
-                fanout, as_tuple=False,
-            ).squeeze(1).tolist():
-                leaf_i = int(idx[pos].item())
-                if remote_values is not None and fan_off is not None and fan_len is not None:
-                    off = int(fan_off[od, leaf_i].item())
-                    ln = int(fan_len[od, leaf_i].item())
-                    if ln > 0:
-                        fp_up[pos] = remote_values[off:off + ln].to(
-                            torch.float64,
-                        ).mean()
-                        continue
-                group = octree.interface_fanout.get((leaf_i, int(od)), [])
-                if group:
-                    fp_up[pos] = f_prev[
-                        d, torch.tensor(group, device=device)
-                    ].to(torch.float64).mean()
-                else:
-                    fp_up[pos] = fp_d[pos]
-        solid_up = up == SOLID
+            d_f = d_c[fanout]
+            i_f = i_c[fanout]
+            fm = getattr(octree, "fanout_mean", None)
+            if fm is not None:
+                # Distributed facade: float64 member means precomputed by the
+                # stepper from the all-gathered post-collision state (also
+                # fixes the P1 bug where the global-keyed dict was queried
+                # with LOCAL columns and always missed -> fp_d fallback).
+                fp_up[d_f, i_f] = fm[d_f, i_f]
+            elif remote_values is not None and fan_off is not None and fan_len is not None:
+                # Sharded facade: members live in the remote value buffer at
+                # fan_off/fan_len (variable-length segments).
+                offs = fan_off[d_f, i_f]
+                lens = fan_len[d_f, i_f]
+                has = lens > 0
+                if bool(has.any()):
+                    max_ln = int(lens.max())
+                    col = torch.arange(max_ln, device=device)
+                    pad_idx = offs[has].unsqueeze(1) + col.unsqueeze(0)
+                    pad_ok = col.unsqueeze(0) < lens[has].unsqueeze(1)
+                    rv = remote_values[
+                        pad_idx.clamp(max=max(remote_values.shape[0] - 1, 0))
+                    ]
+                    fp_up[d_f[has], i_f[has]] = (
+                        (rv * pad_ok).to(torch.float64).sum(dim=1)
+                        / pad_ok.sum(dim=1).clamp_min(1).to(torch.float64)
+                    )
+                fb = ~has
+                if bool(fb.any()):
+                    fp_up[d_f[fb], i_f[fb]] = fp_d[d_f[fb], i_f[fb]]
+            else:
+                # Plain octree (global columns): corrected live fanout tables.
+                from tensorlbm.octree_boundary.stepping import (
+                    _fanout_segment_mean,
+                    ensure_fanout_tables,
+                )
+                rowidx, pad_live = ensure_fanout_tables(octree)
+                ridx = rowidx[opp[d_f], i_f].to(device)      # live row / -1
+                has = ridx >= 0
+                if bool(has.any()):
+                    fp_up[d_f[has], i_f[has]] = _fanout_segment_mean(
+                        f_prev, d_f[has], pad_live[ridx[has]].to(device),
+                    ).to(torch.float64)
+                fb = ~has
+                if bool(fb.any()):
+                    # defensive: keep the local outgoing population
+                    fp_up[d_f[fb], i_f[fb]] = fp_d[d_f[fb], i_f[fb]]
+        solid_up = src_m == SOLID
         if bool(solid_up.any()):
             # upstream inside the body: degenerate, keep the local outgoing
             # population (defensive; geometry excludes this case)
-            fp_up[solid_up] = fp_d[solid_up]
-        if bool((up == DOMAIN_OUT).any()):
+            fp_up[d_c[solid_up], i_c[solid_up]] = fp_d[d_c[solid_up], i_c[solid_up]]
+        if bool((src_m == DOMAIN_OUT).any()):
             raise RuntimeError("BFL upstream leaves the L1 block")
 
-        # ---- Bouzidi reconstruction --------------------------------------
-        lin = qq < 0.5
-        f_bc_lin = 2.0 * qq * fp_d + (1.0 - 2.0 * qq) * fp_up
-        safe_q = torch.where(lin, torch.ones_like(qq), qq)
-        f_bc_quad = (
-            fp_d / (2.0 * safe_q)
-            + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+    # ---- Bouzidi reconstruction (full-tensor, one pass) ------------------
+    qq = q_field.to(torch.float64)
+    if q_min is not None:
+        # High-Re safeguard: clamp tiny q to avoid the 1/(2q) divergence in
+        # the quadratic branch. q_min=0 disables (keeps validated low-Re
+        # results bit-identical).
+        qq = torch.clamp(qq, min=float(q_min))
+    lin = qq < 0.5
+    safe_q = torch.where(lin, torch.ones_like(qq), qq)
+    f_bc_lin = 2.0 * qq * fp_d + (1.0 - 2.0 * qq) * fp_up
+    f_bc_quad = (
+        fp_d / (2.0 * safe_q)
+        + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+    )
+    f_bc = torch.where(lin, f_bc_lin, f_bc_quad)
+    if wall_velocity is not None:
+        uwx, uwy, uwz = wall_velocity
+        u_stack = torch.stack([uwx, uwy, uwz], dim=0)        # (3, n)
+        c_dot_uw = c_vec.to(torch.float64) @ u_stack.to(torch.float64)
+        rho_w = wall_density.to(torch.float64)
+        moving_base = (
+            _W.to(torch.float64).unsqueeze(1)
+            * rho_w.unsqueeze(0)
+            * c_dot_uw
         )
-        f_bc = torch.where(lin, f_bc_lin, f_bc_quad)
-        if wall_velocity is not None:
-            uwx, uwy, uwz = wall_velocity
-            c_d = c_vec[d]
-            c_dot_uw = (
-                float(c_d[0].item()) * uwx[idx]
-                + float(c_d[1].item()) * uwy[idx]
-                + float(c_d[2].item()) * uwz[idx]
-            )
-            rho_w = wall_density[idx].to(torch.float64)
-            moving_base = float(_W[d].item()) * rho_w * c_dot_uw
-            f_bc = torch.where(
-                lin,
-                f_bc - 6.0 * moving_base,
-                f_bc - (3.0 / safe_q) * moving_base,
-            )
+        f_bc = torch.where(
+            lin,
+            f_bc - 6.0 * moving_base,
+            f_bc - (3.0 / safe_q) * moving_base,
+        )
 
-        if return_force:
-            # Laboratory-frame momentum exchange c_d*(f_d + f_bc), the
-            # impulse that closes the fixed-frame control-volume balance
-            # (identical convention to bouzidi_bounce_back_d3q19).
-            exchange = fp_d + f_bc
-            link = exchange.unsqueeze(1) * c_vec[d].to(torch.float64)
-            if force_weights is not None:
-                link = link * force_weights[idx].unsqueeze(1)
-            if link_sink is not None:
-                link_sink(d, idx, link)
-            else:
-                force += link.sum(dim=0)
+    # Masked write: only the unknown boundary directions opp[d] at masked
+    # leaves (identical positions to the per-direction loop).
+    f_out[opp] = torch.where(mask, f_bc.to(dtype), f_out[opp])
 
-        f_out[od, idx] = f_bc.to(f.dtype)
+    if return_force:
+        # Laboratory-frame momentum exchange c_d*(f_d + f_bc), the impulse
+        # that closes the fixed-frame control-volume balance (identical
+        # convention to bouzidi_bounce_back_d3q19).
+        exchange = fp_d + f_bc
+        link = (
+            exchange.unsqueeze(2) * c_vec.to(torch.float64).unsqueeze(1)
+        ) * mask.unsqueeze(2)
+        if force_weights is not None:
+            link = link * force_weights.to(torch.float64).unsqueeze(0).unsqueeze(2)
+        if link_sink is not None:
+            # per-direction sink hook (global-order assembly by the sharded
+            # stepper); the returned force stays zero there.
+            for d in range(1, Q):
+                idx_d = torch.nonzero(mask[d], as_tuple=False).squeeze(1)
+                if idx_d.numel() == 0:
+                    continue
+                link_sink(d, idx_d, link[d, idx_d])
+        else:
+            # per-direction reduction first (matches the legacy accumulation
+            # order: sum over links of each direction, then over directions)
+            force = link.sum(dim=1).sum(dim=0)
 
     if return_force:
         return f_out, force
