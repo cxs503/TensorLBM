@@ -391,7 +391,7 @@ def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
     if fo_pos.device != dev:
         fo_pos = fo_pos.to(dev)
         fo_pad = fo_pad.to(dev)
-    rowidx = torch.full((octree.Q, nt.shape[1]), -1, dtype=torch.int64)
+    rowidx = torch.full((octree.Q, nt.shape[1]), -1, dtype=torch.int64, device=dev)
     if fo_pos.shape[0] > 0 and fo_pad.shape[0] > 0:
         live = nt[fo_pos[:, 0], fo_pos[:, 1]] == FANOUT
         pos = fo_pos[live]
@@ -409,14 +409,14 @@ def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
                 for r in rows.tolist()
             ]
             max_len = max(len(m) for m in members)
-            pad = torch.full((rows.shape[0], max_len), -1, dtype=torch.int64)
+            pad = torch.full((rows.shape[0], max_len), -1, dtype=torch.int64, device=dev)
             for r, m in enumerate(members):
-                pad[r, :len(m)] = torch.tensor(m, dtype=torch.int64)
+                pad[r, :len(m)] = torch.tensor(m, dtype=torch.int64, device=dev)
             rowidx[rows[:, 0], rows[:, 1]] = torch.arange(
-                rows.shape[0], dtype=torch.int64,
+                rows.shape[0], dtype=torch.int64, device=dev,
             )
         else:
-            pad = torch.empty((0, 0), dtype=torch.int64)
+            pad = torch.empty((0, 0), dtype=torch.int64, device=dev)
     octree._fanout_rowidx = rowidx
     octree._fanout_pad_live = pad
     return rowidx, pad
