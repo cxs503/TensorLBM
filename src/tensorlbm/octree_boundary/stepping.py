@@ -387,6 +387,10 @@ def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
     nt = octree.neighbor_table
     fo_pos = octree.fanout_pos
     fo_pad = octree.fanout_pad
+    dev = nt.device
+    if fo_pos.device != dev:
+        fo_pos = fo_pos.to(dev)
+        fo_pad = fo_pad.to(dev)
     rowidx = torch.full((octree.Q, nt.shape[1]), -1, dtype=torch.int64)
     if fo_pos.shape[0] > 0 and fo_pad.shape[0] > 0:
         live = nt[fo_pos[:, 0], fo_pos[:, 1]] == FANOUT

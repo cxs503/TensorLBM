@@ -468,13 +468,15 @@ def main():
         l1_block = None
 
     # Leaf resolution relative to the COARSE grid: the shell host is the L1
-    # grid (2x) in the L1 path, so a depth-``d_max`` leaf is 2^(1+d_max) x
-    # finer than coarse.  ``radius_leaf`` must use that (design §5 risk 3:
-    # finer than coarse.  ``radius_leaf`` must use that (design §5 risk 3:
-    # legacy: leaf = coarse 2^(1+d_max); L1 path: leaf = coarse 2^(2+d_max)
-    # because the octree is built on the 2x L1 grid).
-    dx_leaf_coarse = 2.0 ** (-(2 + octree.d_max)) if args.l1_block \
-        else 2.0 ** (-(1 + octree.d_max))
+    # Leaf resolution relative to the COARSE grid.  Audit 2026-08: the
+    # previous formulas (2^-(1+d_max) legacy, 2^-(2+d_max) L1) overestimated
+    # the leaf resolution by 2x for d_max=1 (level-1 leaves have dx=0.5 host
+    # cells, not 0.25).  Correct formulas:
+    #   legacy: host = coarse, level-1 leaf dx = 0.5 coarse = 2^-1 -> 2^-d_max
+    #   L1: host = 2x coarse, level-1 leaf dx = 0.5 L1 = 0.25 coarse = 2^-2
+    #       -> 2^-(1+d_max)
+    dx_leaf_coarse = 2.0 ** (-(1 + octree.d_max)) if args.l1_block \
+        else 2.0 ** (-octree.d_max)
     if args.geo == "sphere":
         radius_leaf = args.radius / dx_leaf_coarse
         dynamic_area = 0.5 * u_in ** 2 * math.pi * radius_leaf ** 2
