@@ -410,12 +410,12 @@ async def platform_status() -> dict:
 # Frontend static serving
 # ---------------------------------------------------------------------------
 
-_FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-_STATIC_DIR = _FRONTEND_DIR / "static"
+_FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend-vue" / "dist"
+_ASSETS_DIR = _FRONTEND_DIR / "assets"
 
 # Mount static assets before the SPA fallback so they are served correctly
-if _STATIC_DIR.exists():
-    app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
+if _ASSETS_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=_ASSETS_DIR), name="assets")
 
 
 @app.get("/", include_in_schema=False)
