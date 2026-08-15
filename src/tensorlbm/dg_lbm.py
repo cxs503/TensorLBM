@@ -1094,9 +1094,16 @@ def _run_suboff_real_dg(config: DGLBMSuboffConfig) -> Path:
             uz = uz.masked_fill(obstacle, 0.0)
             speed = torch.sqrt(ux * ux + uy * uy + uz * uz)
             mass = float(rho.sum().item())
-            # DG-solid-interface momentum-exchange force (preserves wall shear).
-            fvec = compute_dg_solid_force(f_dg, topo, C_d, ops)
-            drag_lu = float(fvec[0].item())
+            # Drag from the P0-projected LBM field: after project_band_to_lbm
+            # the obstacle is surrounded by the band's P0 values, and the
+            # standard Ladd momentum exchange on that field is accurate
+            # (validated: Re=16 sphere Cd err 1.9% with far-field BC).
+            # The DG-interface momentum-exchange (compute_dg_solid_force)
+            # overestimates by ~50% (DG polynomial near-wall values exceed
+            # the LBM cell values; see the DG force audit), so the projected
+            # MEM force is used here instead.
+            fxp, fyp, fzp = compute_obstacle_forces_3d(f_lbm, obstacle)
+            drag_lu = float(fxp.item())
             point = DiagnosticPoint(
                 step=step,
                 mass=mass,
