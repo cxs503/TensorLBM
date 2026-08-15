@@ -449,7 +449,7 @@ def write_back_exports(
 
     for g in range(ndim):  # grid dim (0=z .. ndim-1=x)
         v = ndim - 1 - g  # velocity column (x⇒cx)
-        comp = velocities[:, v].to(f_dg.dtype)
+        comp = velocities[:, v].to(device=f_lbm.device, dtype=f_dg.dtype)
         node_axis = n_dims - ndim + g  # node axis for this grid dim
         for sgn, nbr_arr, ext_arr, type_arr, nidx in (
             (+1, topo.nbr_plus[g], topo.ext_plus_idx[g], topo.nbr_type_plus[g], n_node - 1),

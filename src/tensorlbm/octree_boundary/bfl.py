@@ -281,11 +281,22 @@ def bfl_apply_gather(
             raise RuntimeError("BFL upstream leaves the L1 block")
 
         # ---- Bouzidi reconstruction --------------------------------------
+        # Aligned with the verified reference bfl_d3q19.bouzidi_bounce_back_d3q19:
+        #   f_opp = f[opp_d]               (post-stream value streamed FROM the
+        #                                    solid side; in the pull scheme
+        #                                    f[opp_d](x_f) = f_post[opp_d](x_s))
+        #   f_bc_lin  = 2q*f_opp + (1-2q)*fp_d
+        #   f_bc_quad = f_opp/(2q) + (2q-1)/(2q)*fp_opp
+        # The legacy octree formula used fp_d (pre-stream incident) in place
+        # of f_opp, which reconstructs the bounce-back from the wrong source
+        # population and drains shell momentum every substep (octree sphere
+        # Cd=3.0 vs 1.09; see octree VR force audit).
+        f_opp_post = f[od, idx].to(torch.float64)
         lin = qq < 0.5
-        f_bc_lin = 2.0 * qq * fp_d + (1.0 - 2.0 * qq) * fp_up
+        f_bc_lin = 2.0 * qq * f_opp_post + (1.0 - 2.0 * qq) * fp_d
         safe_q = torch.where(lin, torch.ones_like(qq), qq)
         f_bc_quad = (
-            fp_d / (2.0 * safe_q)
+            f_opp_post / (2.0 * safe_q)
             + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
         )
         f_bc = torch.where(lin, f_bc_lin, f_bc_quad)
