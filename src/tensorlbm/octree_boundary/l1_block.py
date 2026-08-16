@@ -10,14 +10,19 @@ bit-identical without any synchronization.
 
 Layout
 ------
-The persistent L1 tensor is ``(Q, nz_l1+2, ny_l1+2, nx_l1+2)`` — a one-cell
-ghost ring, the same layout as ``StaticBlockAMR3D.fine_f``.  ``nz_l1 =
-2*(box.z1-box.z0)`` etc.  The physical interior ``[:, 1:-1, 1:-1, 1:-1]`` is
+The persistent L1 tensor is ``(Q, nz_l1+2g, ny_l1+2g, nx_l1+2g)`` — a
+``g``-cell ghost ring (``g = ghost``, 1 by default, up to 3), the same
+layout as ``StaticBlockAMR3D.fine_f``.  ``nz_l1 =
+2*(box.z1-box.z0)`` etc.  The physical interior ``[:, g:-g, g:-g, g:-g]`` is
 the L1 field handed to the octree shell (``octree.meta["shape"]``); the
 ghost ring is re-filled every substep from the time-lerped coarse window
 (injection 2:1 + non-equilibrium rescale), so the block needs no far-field /
 sponge / bounce-back of its own (it is strictly interior to the coarse
-domain, design §3b).
+domain, design §3b).  The coarse window itself carries a ``g``-cell ring
+around the box (``WindowInfo``), so the outer ghost layers sample genuine
+coarse flow outside the box rather than the box-adjacent ring that the L1
+restriction write-back + box reflux corrections perturb (audit 2026-08,
+SUBOFF L1 force-deficit fix).
 
 Per root step::
 
@@ -109,28 +114,37 @@ def build_window_indices(
     domain_shape: tuple[int, int, int],
     box: BoxRegion,
     device: torch.device,
+    ring: int = 1,
 ) -> WindowInfo:
-    """Box + 1-cell ring cell set, clipped to the coarse domain.
+    """Box + ``ring``-cell ring cell set, clipped to the coarse domain.
 
     The ring must be complete on every side (the coarse reflux correction
     stencil and the L1 ghost donors both live in the ring), which requires
-    the box to keep at least a 1-cell margin from the domain boundary —
-    ``plan_body_shell_box`` with ``pad >= 1`` guarantees this.
+    the box to keep at least a ``ring``-cell margin from the domain
+    boundary — ``plan_body_shell_box`` with ``pad >= ring`` guarantees
+    this.  The L1 ghost depth ``g`` reaches ``ceil(g/2)`` coarse cells
+    beyond the box, so ``ring >= (g + 1) // 2`` keeps every ghost donor on
+    a real coarse cell.  Audit 2026-08 (SUBOFF L1 force-deficit fix):
+    the window ring is widened from 1 to 2-3 cells (``ring`` tracks the
+    L1 ghost depth) so the L1 ghost supply band samples genuine coarse
+    flow outside the box instead of the narrow box-adjacent ring that the
+    L1 restriction write-back + box reflux corrections perturb.
     """
     nz, ny, nx = domain_shape
-    z0 = max(0, box.z0 - 1)
-    z1 = min(nz - 1, box.z1 + 1)
-    y0 = max(0, box.y0 - 1)
-    y1 = min(ny - 1, box.y1 + 1)
-    x0 = max(0, box.x0 - 1)
-    x1 = min(nx - 1, box.x1 + 1)
+    z0 = max(0, box.z0 - ring)
+    z1 = min(nz - 1, box.z1 + ring)
+    y0 = max(0, box.y0 - ring)
+    y1 = min(ny - 1, box.y1 + ring)
+    x0 = max(0, box.x0 - ring)
+    x1 = min(nx - 1, box.x1 + ring)
     if not (box.z0 > z0 and box.z1 < z1 and box.y0 > y0 and box.y1 < y1
             and box.x0 > x0 and box.x1 < x1):
         raise ValueError(
-            "the L1 box must be strictly interior with a 1-cell coarse "
-            f"margin; got box z:[{box.z0},{box.z1}) y:[{box.y0},{box.y1}) "
-            f"x:[{box.x0},{box.x1}) in domain {domain_shape} — enlarge the "
-            "domain or reduce --wake-cells/--shell-margin",
+            "the L1 box must be strictly interior with a "
+            f"{ring}-cell coarse margin; got box z:[{box.z0},{box.z1}) "
+            f"y:[{box.y0},{box.y1}) x:[{box.x0},{box.x1}) in domain "
+            f"{domain_shape} — enlarge the domain or reduce "
+            "--wake-cells/--shell-margin/--wall-margin",
         )
     zz = torch.arange(z0, z1 + 1, device=device)
     yy = torch.arange(y0, y1 + 1, device=device)
@@ -247,8 +261,12 @@ class L1BlockDistributed:
     ) -> None:
         if ratio != 2:
             raise ValueError("the L1 block currently supports ratio=2 only")
-        if ghost != 1:
-            raise ValueError("the L1 block currently supports ghost=1 only")
+        if ghost not in (1, 2, 3):
+            raise ValueError(
+                "the L1 block currently supports ghost 1-3 (ghost-ring "
+                "depth in L1 cells; ghost=3 deepens the coarse supply "
+                "band — audit 2026-08 SUBOFF L1 force-deficit fix)",
+            )
         if q not in (19, 27):
             raise ValueError(f"unsupported lattice Q={q}")
         if collide_fn is None or stream_fn is None:
@@ -281,8 +299,17 @@ class L1BlockDistributed:
             device=self.device,
         )
 
-        # ---- window frame (box + 1-cell ring) ----
-        self.win = build_window_indices(domain_shape, box, self.device)
+        # ---- window frame (box + ring-cell ring) ----
+        # The ring tracks the L1 ghost depth (``ring = ghost``): the outer
+        # L1 ghost layer sits ``ceil(g/2)`` coarse cells beyond the box, so
+        # a ring of at least that width keeps every ghost donor on a real
+        # coarse cell (audit 2026-08: widened from 1 to 2-3 cells for the
+        # SUBOFF L1 force-deficit fix — deeper supply band of genuine
+        # coarse flow outside the box).
+        self.window_ring = ghost
+        self.win = build_window_indices(
+            domain_shape, box, self.device, ring=self.window_ring,
+        )
         w = self.win
         nz_w, ny_w, nx_w = w.shape
         self.window_shape = (nz_w, ny_w, nx_w)
