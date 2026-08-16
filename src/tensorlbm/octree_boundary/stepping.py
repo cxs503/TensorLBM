@@ -568,18 +568,28 @@ def observe_shell_interface_transfer(
     incoming = torch.zeros_like(outgoing)
     links = octree.interface_links
     vol = octree.leaf_volume()
-    for d in range(1, q):
-        sel = links[:, 1] == d
-        if bool(sel.any()):
-            li = links[sel, 0]
-            outgoing[d] = (
-                post_collision[d, li] * vol[li].to(dtype)
-            ).sum()
-        gsel = plan.direction == d
-        if bool(gsel.any()):
-            incoming[d] = (
-                ghost_vals[d, gsel] * plan.volume[gsel].to(dtype)
-            ).sum()
+    # Batched per-direction observation (old code: 26-iteration Python loop
+    # with ~52 device-sync ``bool(...)`` per substep).  One scatter_add per
+    # side; direction 0 is never a link (rest direction self-references)
+    # but is zeroed for exact equivalence with the old ``range(1, q)``
+    # loop.  Mirrors the sharded stepper's vectorised observation
+    # (distributed_stepping.py).
+    if links.shape[0]:
+        d_l = links[:, 1]
+        li = links[:, 0]
+        outgoing.scatter_add_(
+            0, d_l,
+            post_collision[d_l, li] * vol[li].to(dtype),
+        )
+    if plan.n_ghost:
+        gdir = plan.direction
+        grow = torch.arange(plan.n_ghost, device=device)
+        incoming.scatter_add_(
+            0, gdir,
+            ghost_vals[gdir, grow] * plan.volume.to(dtype),
+        )
+    outgoing[0] = 0
+    incoming[0] = 0
     return KineticInterfaceTransfer(outgoing, incoming)
 
 
