@@ -422,13 +422,32 @@ def main():
     from tensorlbm.octree_boundary.bfl import bfl_apply_gather, leaf_force_weights
     leaf_weights = leaf_force_weights(octree).to(dev)[lidx]
 
+    # ---- TEMP DIAGNOSTICS (SUBOFF L1 force-deficit audit) ----
+    # dbg_fx: accumulated x-force (weighted); dbg_nw: weighted link count;
+    # dbg_nraw: raw (unweighted) wall-link count.
+    dbg_fx = torch.zeros(1, dtype=torch.float64, device=dev)
+    dbg_nw = torch.zeros(1, dtype=torch.float64, device=dev)
+    dbg_nraw = torch.zeros(1, dtype=torch.float64, device=dev)
+    dbg_fx_last = torch.zeros(1, dtype=torch.float64, device=dev)
+    dbg_nw_last = torch.zeros(1, dtype=torch.float64, device=dev)
+    dbg_nraw_last = torch.zeros(1, dtype=torch.float64, device=dev)
+    dbg_step_last = 0
+
     def bfl_fn(octree_, out, post, gplan, ghost_vals, *, substep):
-        return bfl_apply_gather(
+        fout, force = bfl_apply_gather(
             octree_, out, post,
             ghost_plan=gplan, ghost_vals=ghost_vals,
             force_weights=leaf_weights, return_force=True,
             q_min=args.q_min,
         )
+        # local BFL mask on the facade is (Q, n_local)
+        mask_loc = octree_.bfl_mask
+        w_leaf = 2.0 ** (-(octree_.d_max
+                           - octree_.leaf_level.to(torch.float64)))
+        dbg_fx[0] += float(force[0].item())
+        dbg_nw[0] += float((mask_loc * w_leaf.unsqueeze(0)).sum().item())
+        dbg_nraw[0] += float(mask_loc.sum().item())
+        return fout, force
 
     def advance_shell(f, tau, level, substep):
         f4 = f.view(q_oct, 1, 1, -1)
@@ -690,6 +709,33 @@ def main():
             if rank == 0:
                 cd_cur = float(glob[0].item()) / max(step - args.warmup_steps, 1) / dynamic_area
                 print(f"[r{rank}] step={step} Cd_mem={cd_cur:.4f}", flush=True)
+
+        # ---- TEMP DIAGNOSTICS: per-report force/link/per-link ----
+        if step % args.report_interval == 0 or step <= 5:
+            gfx = dbg_fx.clone()
+            gnw = dbg_nw.clone()
+            gnr = dbg_nraw.clone()
+            dist.all_reduce(gfx, op=dist.ReduceOp.SUM)
+            dist.all_reduce(gnw, op=dist.ReduceOp.SUM)
+            dist.all_reduce(gnr, op=dist.ReduceOp.SUM)
+            if rank == 0:
+                d_fx = gfx[0].item() - dbg_fx_last[0].item()
+                d_nw = gnw[0].item() - dbg_nw_last[0].item()
+                d_nr = gnr[0].item() - dbg_nraw_last[0].item()
+                n_steps = step - dbg_step_last
+                print(
+                    f"[dbg] step={step} fx_sum={gfx[0].item():.6e} "
+                    f"links_w={gnw[0].item():.0f} links_raw={gnr[0].item():.0f} "
+                    f"per-link_w={gfx[0].item()/max(gnw[0].item(),1.0):.6e} "
+                    f"per-link_raw={gfx[0].item()/max(gnr[0].item(),1.0):.6e} | "
+                    f"Δfx={d_fx:.6e} Δlinks_w={d_nw:.0f} "
+                    f"Δper-link_w={d_fx/max(d_nw,1.0):.6e} (n_steps={n_steps})",
+                    flush=True,
+                )
+                dbg_fx_last[0] = gfx[0].item()
+                dbg_nw_last[0] = gnw[0].item()
+                dbg_nraw_last[0] = gnr[0].item()
+                dbg_step_last = step
         if step % args.report_interval == 0:
             print(f"[r{rank}] step={step}/{args.steps} "
                   f"({(time.time()-t0)/step:.2f}s/step)", flush=True)

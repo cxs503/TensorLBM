@@ -1,0 +1,99 @@
+{
+  "title": "SUBOFF Cd validation: blockage-normalized results",
+  "date": "2026-08-16",
+  "geometry": {
+    "geo": "suboff",
+    "hull": 60,
+    "nx": 128, "ny": 64, "nz": 64,
+    "cx": 40,
+    "r_over_l": 0.05834,
+    "D_body": 7.0008,
+    "Ly": 64,
+    "beta": 0.10939323220536756,
+    "beta_pct": 10.94
+  },
+  "blockage": {
+    "model": "simple 1/(1-beta)^2",
+    "factor": 1.2607472162555848,
+    "ref_Cd_inf": 0.004,
+    "ref_Cd_blocked": 0.005042988865022339
+  },
+  "runs": [
+    {
+      "path": "legacy",
+      "reynolds": 100,
+      "d_max": 1,
+      "steps": 100, "warmup": 30,
+      "n_leaf": 59402,
+      "cd_mem": 0.8000409884119716,
+      "err_pct_blocked": 15766.5,
+      "err_pct_inf": 19901.024710299287,
+      "stable": true,
+      "converged": true,
+      "source": "/tmp/integrated_suboff3.json"
+    },
+    {
+      "path": "legacy",
+      "reynolds": 1000,
+      "d_max": 1,
+      "steps": 300, "warmup": 100,
+      "n_leaf": 57141,
+      "cd_mem": 0.7553051441882193,
+      "err_pct_blocked": 14877.3311899802,
+      "err_pct_inf": 18782.628604705482,
+      "stable": true,
+      "converged": true,
+      "source": "/tmp/suboff_re1e3.json"
+    },
+    {
+      "path": "legacy",
+      "reynolds": 10000,
+      "d_max": 1,
+      "steps": 300, "warmup": 100,
+      "n_leaf": 57141,
+      "cd_mem": 0.7110717940910641,
+      "err_pct_blocked": 14000.205515482816,
+      "err_pct_inf": 17676.794852276606,
+      "stable": true,
+      "converged": true,
+      "source": "/tmp/suboff_re1e4.json"
+    },
+    {
+      "path": "legacy",
+      "reynolds": 100000,
+      "d_max": 1,
+      "steps": null, "warmup": null,
+      "n_leaf": null,
+      "cd_mem": null,
+      "stable": false,
+      "converged": false,
+      "note": "NaN after stream (shell viscosity floor, tau->0.5)",
+      "source": "/tmp/suboff_re1e5.txt"
+    },
+    {
+      "path": "l1",
+      "reynolds": 100,
+      "d_max": 1,
+      "steps": 200, "warmup": 50,
+      "n_leaf": 171136,
+      "cd_mem": 0.2720551905585474,
+      "err_pct_blocked": 5294.721222675994,
+      "err_pct_inf": 6701.379763963684,
+      "stable": true,
+      "converged": false,
+      "note": "numerically stable but Cd much lower than legacy (force decay, under investigation)",
+      "source": "/tmp/suboff_l1.json"
+    },
+    {
+      "path": "l1",
+      "reynolds": 1000,
+      "d_max": 1,
+      "steps": 150, "warmup": 50,
+      "n_leaf": 171136,
+      "cd_mem": null,
+      "stable": null,
+      "converged": null,
+      "source": "/tmp/suboff_l1_re1e3.json"
+    }
+  ]
+}
