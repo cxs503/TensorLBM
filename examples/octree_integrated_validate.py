@@ -516,11 +516,32 @@ def main():
         dx_leaf_levelmean = dx_leaf_coarse
     dx_leaf_old = 2.0 ** (-(1 + octree.d_max)) if args.l1_block \
         else 2.0 ** (-octree.d_max)
+    # ---- FIX (2026-08-16, R10 d2 Cd 9.33 divergence root cause) ----
+    # The dynamic area must be expressed in the lattice that actually
+    # carries the wall force: the BFL wall links all live on the finest
+    # wall-adjacent leaves (level-2 for d_max=2, verified: L1 links == 0,
+    # links_w == links_raw).  The shell-wide count-weighted mean dx
+    # (``dx_leaf_coarse``) mixes in the level-1 outer band (58% of the
+    # leaves for R10 d2) that carries no wall links, shrinking the area
+    # by (dx_wall/dx_count)^2 and inflating Cd by the same factor
+    # (R10 d2: 36.19/14.54 = 2.49x, Cd 9.33 -> 3.75; R6 d2 would be
+    # inflated 2.22x to 6.11 under the count-weighted formula).  The
+    # pre-existing ``dx_leaf_old`` = 2^-(1+d_max) coincides with the
+    # finest leaf dx and is the correct wall-lattice resolution; we take
+    # the wall-link leaf levels directly so the formula stays exact for
+    # any level mix (fallback: finest level when no wall links).
+    wall_lv = octree.leaf_level[octree.bfl_mask.any(dim=0)]
+    if wall_lv.numel():
+        dx_wall_leaf = 2.0 ** (-(1.0 + wall_lv.to(torch.float64))) \
+            if args.l1_block else 2.0 ** (-wall_lv.to(torch.float64))
+        dx_leaf_area = float(dx_wall_leaf.mean().item())
+    else:
+        dx_leaf_area = dx_leaf_old
     if args.geo == "sphere":
-        radius_leaf = args.radius / dx_leaf_coarse
+        radius_leaf = args.radius / dx_leaf_area
         dynamic_area = 0.5 * u_in ** 2 * math.pi * radius_leaf ** 2
     else:
-        L_leaf = args.hull / dx_leaf_coarse
+        L_leaf = args.hull / dx_leaf_area
         radius_leaf = L_leaf
         dynamic_area = 0.5 * u_in ** 2 * L_leaf ** 2
     if rank == 0:
@@ -529,6 +550,9 @@ def main():
         print(f"[area] dx_leaf_coarse(count-weighted mean)={dx_leaf_coarse:.6f} "
               f"dx_leaf(2^-(1+lev_mean))={dx_leaf_levelmean:.6f} "
               f"dx_leaf(old 2^-(1+d_max))={dx_leaf_old:.6f}", flush=True)
+        print(f"[area] dx_leaf_area(wall-link lattice)={dx_leaf_area:.6f} "
+              f"<- FIX (force lives on level-{int(wall_lv.max().item()) if wall_lv.numel() else 0} "
+              f"leaves, n_wall_leaf={int(wall_lv.numel())})", flush=True)
         print(f"[area] radius_leaf={radius_leaf:.3f} "
               f"dynamic_area={dynamic_area:.6f}", flush=True)
 
