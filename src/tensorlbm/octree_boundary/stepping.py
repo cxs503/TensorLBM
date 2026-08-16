@@ -388,12 +388,16 @@ def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
     nt = octree.neighbor_table
     fo_pos = octree.fanout_pos
     fo_pad = octree.fanout_pad
+    # Do all indexing on the CPU: SDAA's advanced-index gather faults with
+    # SDAA_ERROR_MISALIGNED_ADDRESS for large dynamic index tensors (seen at
+    # d_max=2 with ~30k fanout rows).  The tables are static topology, built
+    # once, so the CPU cost is negligible.
     dev = nt.device
-    if fo_pos.device != dev:
-        fo_pos = fo_pos.to(dev)
-        fo_pad = fo_pad.to(dev)
-    rowidx = torch.full((octree.Q, nt.shape[1]), -1, dtype=torch.int64, device=dev)
-    if fo_pos.shape[0] > 0 and fo_pad.shape[0] > 0:
+    nt_c = nt.detach().cpu()
+    fo_pos_c = fo_pos.detach().cpu()
+    fo_pad_c = fo_pad.detach().cpu()
+    rowidx = torch.full((octree.Q, nt.shape[1]), -1, dtype=torch.int64)
+    if fo_pos_c.shape[0] > 0 and fo_pad_c.shape[0] > 0:
         # Defensive bounds guard: an out-of-range (q, leaf) row would make
         # the advanced index ``nt[fo_pos[:, 0], fo_pos[:, 1]]`` (and the
         # scatter into ``rowidx`` below) run out of bounds — on SDAA that
@@ -401,7 +405,7 @@ def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
         # FANOUT links of this table; drop them and warn loudly (they
         # indicate a topology inconsistency worth investigating).
         n_leaf = nt.shape[1]
-        qv, lv = fo_pos[:, 0], fo_pos[:, 1]
+        qv, lv = fo_pos_c[:, 0], fo_pos_c[:, 1]
         ok = (qv >= 0) & (qv < octree.Q) & (lv >= 0) & (lv < n_leaf)
         if not bool(ok.all()):
             warnings.warn(
@@ -410,32 +414,32 @@ def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
                 f"(Q={octree.Q}, n_leaf={n_leaf})",
                 RuntimeWarning,
             )
-            fo_pos = fo_pos[ok]
-            fo_pad = fo_pad[ok]
-        live = nt[fo_pos[:, 0], fo_pos[:, 1]] == FANOUT
-        pos = fo_pos[live]
-        pad = fo_pad[live]
+            fo_pos_c = fo_pos_c[ok]
+            fo_pad_c = fo_pad_c[ok]
+        live = nt_c[fo_pos_c[:, 0], fo_pos_c[:, 1]] == FANOUT
+        pos = fo_pos_c[live]
+        pad = fo_pad_c[live]
         rowidx[pos[:, 0], pos[:, 1]] = torch.arange(
             pos.shape[0], dtype=torch.int64,
         )
     else:
         # Fallback: build from the registry directly (octrees built before
         # the pre-cache existed).  Live keys are exactly the FANOUT entries.
-        rows = torch.nonzero(nt == FANOUT, as_tuple=False)   # (n_live, 2)
+        rows = torch.nonzero(nt_c == FANOUT, as_tuple=False)   # (n_live, 2)
         if rows.shape[0]:
             members = [
                 octree.interface_fanout[(int(r[1]), int(r[0]))]
                 for r in rows.tolist()
             ]
             max_len = max(len(m) for m in members)
-            pad = torch.full((rows.shape[0], max_len), -1, dtype=torch.int64, device=dev)
+            pad = torch.full((rows.shape[0], max_len), -1, dtype=torch.int64)
             for r, m in enumerate(members):
-                pad[r, :len(m)] = torch.tensor(m, dtype=torch.int64, device=dev)
+                pad[r, :len(m)] = torch.tensor(m, dtype=torch.int64)
             rowidx[rows[:, 0], rows[:, 1]] = torch.arange(
-                rows.shape[0], dtype=torch.int64, device=dev,
+                rows.shape[0], dtype=torch.int64,
             )
         else:
-            pad = torch.empty((0, 0), dtype=torch.int64, device=dev)
+            pad = torch.empty((0, 0), dtype=torch.int64)
     octree._fanout_rowidx = rowidx
     octree._fanout_pad_live = pad
     return rowidx, pad
