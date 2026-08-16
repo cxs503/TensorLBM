@@ -84,11 +84,8 @@ def fluid_momentum(
     # control-volume sizes.
     accumulator_dtype = torch.float64 if f.dtype == torch.float32 else f.dtype
     c = _lattice_velocities(f.shape[0], f.device, accumulator_dtype)
-    momentum = torch.zeros(3, device=f.device, dtype=accumulator_dtype)
-    for direction in range(1, f.shape[0]):
-        inventory = f[direction][owned].sum(dtype=accumulator_dtype)
-        momentum = momentum + inventory * c[direction]
-    return momentum
+    inventory = (f * owned).sum(dim=(1, 2, 3), dtype=accumulator_dtype)
+    return (inventory[:, None] * c).sum(dim=0)
 
 
 def fluid_momentum_change(
@@ -113,18 +110,9 @@ def fluid_momentum_change(
     accumulator_dtype = (
         torch.float64 if f_old.dtype == torch.float32 else f_old.dtype
     )
-    # Subtract locally before reduction.  Summing old/new inventories first
-    # and then subtracting loses a small force beneath O(N-cell) float32 totals.
     c = _lattice_velocities(f_old.shape[0], f_old.device, accumulator_dtype)
-    momentum_change = torch.zeros(
-        3, device=f_old.device, dtype=accumulator_dtype,
-    )
-    for direction in range(1, f_old.shape[0]):
-        population_change = (
-            f_new[direction][owned] - f_old[direction][owned]
-        ).sum(dtype=accumulator_dtype)
-        momentum_change = momentum_change + population_change * c[direction]
-    return momentum_change
+    change = ((f_new - f_old) * owned).sum(dim=(1, 2, 3), dtype=accumulator_dtype)
+    return (change[:, None] * c).sum(dim=0)
 
 
 def streaming_momentum_import(
@@ -147,21 +135,43 @@ def streaming_momentum_import(
         f_post_collision.shape[0], f_post_collision.device,
         accumulator_dtype,
     )
-    net = torch.zeros(3, device=f_post_collision.device, dtype=accumulator_dtype)
-    for direction in range(1, f_post_collision.shape[0]):
-        cx, cy, cz = (int(value) for value in c[direction].tolist())
-        # At source x, this is CV(x+c_q).
-        destination_inside = torch.roll(
-            control_volume, shifts=(-cz, -cy, -cx), dims=(0, 1, 2),
-        )
-        incoming = ~control_volume & destination_inside
-        outgoing = control_volume & ~destination_inside
-        scalar_flux = (
-            f_post_collision[direction][incoming].sum(dtype=accumulator_dtype)
-            - f_post_collision[direction][outgoing].sum(dtype=accumulator_dtype)
-        )
-        net = net + scalar_flux * c[direction]
-    return net
+    # Batched over all directions in one pass.  ``torch.roll`` per direction
+    # (26 rolls + 52 mask ops + 52 indexed sums) dominates this observer on
+    # SDAA.  A zero-padded shift replaces the roll on non-periodic axes and
+    # is bitwise-equivalent there because the control volume is strictly
+    # interior (``_validate``), so the periodic wrap never reaches a
+    # control-volume cell; periodic axes keep true wrap-around via modulo
+    # indexing.  One padded gather gives the shifted volume for every
+    # direction at once.
+    q = f_post_collision.shape[0]
+    cv = control_volume
+    nz, ny, nx = cv.shape
+    z = torch.arange(nz, device=cv.device)
+    y = torch.arange(ny, device=cv.device)
+    x = torch.arange(nx, device=cv.device)
+    cv_pad = torch.nn.functional.pad(cv, (1, 1, 1, 1, 1, 1))
+    cz = c[:, 2].to(torch.int64)
+    cy = c[:, 1].to(torch.int64)
+    cx = c[:, 0].to(torch.int64)
+    z_src = z[None, :, None, None] + cz[:, None, None, None]
+    y_src = y[None, None, :, None] + cy[:, None, None, None]
+    x_src = x[None, None, None, :] + cx[:, None, None, None]
+    if "z" in periodic_axes:
+        z_src = z_src % nz
+    if "y" in periodic_axes:
+        y_src = y_src % ny
+    if "x" in periodic_axes:
+        x_src = x_src % nx
+    destination = cv_pad[
+        z_src + 1, y_src + 1, x_src + 1,
+    ]
+    incoming = ~cv & destination
+    outgoing = cv & ~destination
+    flux = (
+        (f_post_collision * incoming).sum(dim=(1, 2, 3), dtype=accumulator_dtype)
+        - (f_post_collision * outgoing).sum(dim=(1, 2, 3), dtype=accumulator_dtype)
+    )
+    return (flux[:, None] * c).sum(dim=0)
 
 
 @dataclass(frozen=True)
