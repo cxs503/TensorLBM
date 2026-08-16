@@ -338,11 +338,18 @@ def bfl_apply_gather(
     f_bc = torch.where(lin, f_bc_lin, f_bc_quad)
     if wall_velocity is not None:
         uwx, uwy, uwz = wall_velocity
+        dev_w = f_bc.device
+        if uwx.device != dev_w:
+            uwx = uwx.to(dev_w)
+            uwy = uwy.to(dev_w)
+            uwz = uwz.to(dev_w)
         u_stack = torch.stack([uwx, uwy, uwz], dim=0)        # (3, n)
         c_dot_uw = c_vec.to(torch.float64) @ u_stack.to(torch.float64)
         rho_w = wall_density.to(torch.float64)
+        if rho_w.device != dev_w:
+            rho_w = rho_w.to(dev_w)
         moving_base = (
-            _W.to(torch.float64).unsqueeze(1)
+            _W.to(torch.float64).unsqueeze(1).to(dev_w)
             * rho_w.unsqueeze(0)
             * c_dot_uw
         )
