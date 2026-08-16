@@ -232,30 +232,44 @@ def _build_local_fanout_cache(
     empty = {"n": 0, "d": None, "i": None, "pad": None, "vp": None,
              "fb_n": 0, "fb_d": None, "fb_i": None}
     rowidx, pad_live = ensure_fanout_tables(octree)
-    rowidx = rowidx.to(device)
+    rowidx = rowidx.detach().cpu()                     # lookups stay on CPU
     pad_live = pad_live.to(device)
-    opp = octree._opp.to(device)
-    nt = octree.neighbor_table.to(device)
-    src_local = nt[opp][:, local_indices]                 # (Q, n_local)
-    rows = torch.nonzero(src_local == FANOUT, as_tuple=False)
+    opp = octree._opp.cpu()
+    # Locate this rank's FANOUT cells on the CPU only.  SDAA's ``nonzero``
+    # kernel faults with SDAA_ERROR_MISALIGNED_ADDRESS when the dynamic
+    # output is large (observed on ``src_local == FANOUT`` for d_max=2), so
+    # the mask -> indices conversion must never run on the device.  The
+    # cache is rebuilt once per root step, so the CPU scan is negligible.
+    rows = torch.nonzero(octree.neighbor_table.cpu() == FANOUT, as_tuple=False)
     if rows.shape[0] == 0:
         return empty
-    d_f, i_f = rows[:, 0], rows[:, 1]
-    g_f = local_indices[i_f]                              # global leaf enums
-    ridx = rowidx[opp[d_f], g_f]                          # live row / -1
+    q_f = rows[:, 0]                                   # neighbour-table direction
+    g_f = rows[:, 1]                                   # global leaf enum
+    # Global enum -> local column map for this rank's shard.
+    idx_cpu = local_indices.detach().cpu()
+    pos_of = torch.full((octree.n_leaf,), -1, dtype=torch.int64)
+    pos_of[idx_cpu] = torch.arange(idx_cpu.shape[0], dtype=torch.int64)
+    i_f = pos_of[g_f]                                  # -1 when not owned here
+    own = i_f >= 0
+    if not bool(own.any()):
+        return empty
+    d_f = opp[q_f[own]]                                # pull direction
+    i_f = i_f[own]
+    g_f = g_f[own]
+    ridx = rowidx[q_f[own], g_f]                       # live row / -1 (CPU)
     has = ridx >= 0
     cache = dict(empty)
     cache["n"] = int(has.sum())
     if cache["n"]:
-        cache["d"] = d_f[has]
-        cache["i"] = i_f[has]
-        cache["pad"] = pad_live[ridx[has]]
+        cache["d"] = d_f[has].to(device)
+        cache["i"] = i_f[has].to(device)
+        cache["pad"] = pad_live[ridx[has].to(device)]
         cache["vp"] = cache["pad"] >= 0
     fb = ~has
     cache["fb_n"] = int(fb.sum())
     if cache["fb_n"]:
-        cache["fb_d"] = d_f[fb]
-        cache["fb_i"] = i_f[fb]
+        cache["fb_d"] = d_f[fb].to(device)
+        cache["fb_i"] = i_f[fb].to(device)
     return cache
 
 

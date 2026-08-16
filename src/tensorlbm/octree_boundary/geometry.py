@@ -490,6 +490,49 @@ def _aabb_sphere_intersect(
     return (min_dist2 <= radius ** 2) & (max_dist2 >= radius ** 2)
 
 
+def _aabb_solid_intersect(
+    centers: torch.Tensor,
+    half: float,
+    solid: torch.Tensor,
+) -> torch.Tensor:
+    """AABB-vs-solid-mask intersection for leaf boxes ``[c-half, c+half]``.
+
+    Returns a bool mask per leaf: True where the leaf box comes within one
+    leaf size (``2*half``) of the solid region — i.e. the box straddles or
+    grazes the body surface.  This is the depth-2 refinement criterion for
+    arbitrary ``inside_fn`` geometries (e.g. a SUBOFF solid mask), mirroring
+    :func:`_aabb_sphere_intersect` for the analytic sphere.
+
+    The solid mask is ``(nz, ny, nx)`` bool over unit cells ``[i, i+1)``
+    per axis (same convention as ``build_shell_cell_mask``).  Leaf centres
+    sit at quarter-integer world positions, so a box either overlaps a
+    solid cell or stands at least one leaf size away from it; the touching
+    test below is therefore exact for "distance to solid < leaf size".
+    """
+    solid = solid.to(device=centers.device)
+    nz, ny, nx = solid.shape
+    lo = centers - half          # (n, 3) box lower corners
+    hi = centers + half          # (n, 3) box upper corners
+    # cell index range touched by the box, closed (touching a face counts):
+    # i in [ceil(lo) - 1, floor(hi)] per axis — at most 2 indices each.
+    i_lo = torch.ceil(lo).to(torch.int64) - 1
+    i_hi = torch.floor(hi).to(torch.int64)
+    refine = torch.zeros(centers.shape[0], dtype=torch.bool, device=centers.device)
+    for dz in (0, 1):
+        for dy in (0, 1):
+            for dx in (0, 1):
+                iz = (i_lo[:, 2] + dz).clamp(0, nz - 1)
+                iy = (i_lo[:, 1] + dy).clamp(0, ny - 1)
+                ix = (i_lo[:, 0] + dx).clamp(0, nx - 1)
+                in_range = (
+                    (i_lo[:, 2] + dz <= i_hi[:, 2])
+                    & (i_lo[:, 1] + dy <= i_hi[:, 1])
+                    & (i_lo[:, 0] + dx <= i_hi[:, 0])
+                )
+                refine |= in_range & solid[iz, iy, ix]
+    return refine
+
+
 def build_octree_shell(
     shape: tuple[int, int, int],
     center: tuple[float, float, float],
@@ -566,15 +609,23 @@ def build_octree_shell(
     # retaining a centre-inside leaf makes it collide as fluid but it cannot
     # carry a BFL link (the q-field correctly regards its centre as solid).
     # That creates a thin, unphysical permeable layer inside the wall.
-    from tensorlbm.octree_boundary.qfield import compute_q_sphere_at_points
+    if inside_fn is not None:
+        # Arbitrary geometry (e.g. SUBOFF solid mask): the analytic sphere
+        # centre/radius are meaningless here, so the depth-2 criterion uses
+        # the solid mask directly — refine a depth-1 leaf when its AABB
+        # comes within one leaf size of the solid region (straddling or
+        # grazing the body surface), mirroring _aabb_sphere_intersect.
+        refine = _aabb_solid_intersect(l1_centers, 0.25, solid)
+    else:
+        from tensorlbm.octree_boundary.qfield import compute_q_sphere_at_points
 
-    l1_dx = torch.full((l1_coords.shape[0],), 0.5, dtype=torch.float64)
-    mask1, _ = compute_q_sphere_at_points(
-        l1_centers, l1_dx, center, radius, device=device, lattice=lattice,
-    )
-    refine = mask1.any(dim=0) | _aabb_sphere_intersect(
-        l1_centers, 0.25, center, radius,
-    )
+        l1_dx = torch.full((l1_coords.shape[0],), 0.5, dtype=torch.float64)
+        mask1, _ = compute_q_sphere_at_points(
+            l1_centers, l1_dx, center, radius, device=device, lattice=lattice,
+        )
+        refine = mask1.any(dim=0) | _aabb_sphere_intersect(
+            l1_centers, 0.25, center, radius,
+        )
 
     # ---- terminal fluid leaves ---------------------------------------------
     l2_coords = l2_centers = None
