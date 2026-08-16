@@ -474,27 +474,47 @@ def main():
     if args.l1_block:
         assert box is not None, "L1 path requires a planned box"
         l1_block = L1BlockDistributed(
-            box, (nz, ny, nx), tau_coarse, q=q, ratio=2, ghost=1,
+            box, (nz, ny, nx), tau_coarse, q=q, ratio=2, ghost=3,
             device=dev, solid_l1=solid,
             collide_fn=advance_l1, stream_fn=stream27_roll,
         )
         l1_block.initialize_uniform(u_in)
         win = l1_block.win
         print(f"[r{rank}] L1 block shape={l1_block.l1_shape} "
+              f"ghost={l1_block.ghost} window_ring={l1_block.window_ring} "
               f"window_cells={win.cells.shape[0]} "
+              f"window_shape={win.shape} "
               f"tau_l1={l1_block.tau_l1:.6f}", flush=True)
     else:
         l1_block = None
 
-    # Leaf resolution relative to the COARSE grid: the shell host is the L1
-    # Leaf resolution relative to the COARSE grid.  Audit 2026-08: the
-    # previous formulas (2^-(1+d_max) legacy, 2^-(2+d_max) L1) overestimated
-    # the leaf resolution by 2x for d_max=1 (level-1 leaves have dx=0.5 host
-    # cells, not 0.25).  Correct formulas:
-    #   legacy: host = coarse, level-1 leaf dx = 0.5 coarse = 2^-1 -> 2^-d_max
-    #   L1: host = 2x coarse, level-1 leaf dx = 0.5 L1 = 0.25 coarse = 2^-2
-    #       -> 2^-(1+d_max)
-    dx_leaf_coarse = 2.0 ** (-(1 + octree.d_max)) if args.l1_block \
+    # Leaf resolution relative to the COARSE grid, from the ACTUAL
+    # leaf-level distribution (audit 2026-08-16).  d_max=2 shells mix
+    # level-1 and level-2 leaves (e.g. SUBOFF L1: ~87k level-1 + ~91k
+    # level-2), and the old formulas (2^-(1+d_max) L1 / 2^-d_max legacy)
+    # assumed every leaf sits at d_max, overestimating the resolved
+    # resolution by 2x on the level-1 fraction.  Correct per-level dx:
+    #   legacy: host = coarse, level-l leaf dx = 2^-l      coarse cells
+    #   L1:     host = 2x coarse, level-l leaf dx = 2^-(1+l) coarse cells
+    # ``dx_leaf_coarse`` is the leaf-count-weighted mean of the per-leaf
+    # dx (the effective shell resolution); ``dx_leaf_levelmean`` is the
+    # alternative 2^-(1+level_mean) form.  Both are printed for audit.
+    lev = octree.leaf_level.to(torch.float64)
+    n_leaf_lv = int(lev.numel())
+    n_l1 = int((lev == 1).sum().item())
+    n_l2 = int((lev == 2).sum().item())
+    level_mean = float(lev.mean().item()) if n_leaf_lv else 0.0
+    if n_leaf_lv:
+        dx_per_leaf = 2.0 ** (-(1.0 + lev)) if args.l1_block \
+            else 2.0 ** (-lev)
+        dx_leaf_coarse = float(dx_per_leaf.mean().item())
+        dx_leaf_levelmean = 2.0 ** (-(1.0 + level_mean)) if args.l1_block \
+            else 2.0 ** (-level_mean)
+    else:
+        dx_leaf_coarse = 2.0 ** (-(1 + octree.d_max)) if args.l1_block \
+            else 2.0 ** (-octree.d_max)
+        dx_leaf_levelmean = dx_leaf_coarse
+    dx_leaf_old = 2.0 ** (-(1 + octree.d_max)) if args.l1_block \
         else 2.0 ** (-octree.d_max)
     if args.geo == "sphere":
         radius_leaf = args.radius / dx_leaf_coarse
@@ -504,15 +524,19 @@ def main():
         radius_leaf = L_leaf
         dynamic_area = 0.5 * u_in ** 2 * L_leaf ** 2
     if rank == 0:
-        print(f"[area] dx_leaf_coarse={dx_leaf_coarse:.6f} "
-              f"radius_leaf={radius_leaf:.3f} "
+        print(f"[area] leaf_level counts: L1={n_l1} L2={n_l2} "
+              f"total={n_leaf_lv} level_mean={level_mean:.4f}", flush=True)
+        print(f"[area] dx_leaf_coarse(count-weighted mean)={dx_leaf_coarse:.6f} "
+              f"dx_leaf(2^-(1+lev_mean))={dx_leaf_levelmean:.6f} "
+              f"dx_leaf(old 2^-(1+d_max))={dx_leaf_old:.6f}", flush=True)
+        print(f"[area] radius_leaf={radius_leaf:.3f} "
               f"dynamic_area={dynamic_area:.6f}", flush=True)
 
     # Legacy two-level path: precompute the dilated shell-region coarse cells
     # once (the sparse coarse field fed to the shell ghost fill).  GHOST_PAD
     # is raised to max(6, wall_margin+2) so the L1 box+ring window stays
     # inside the dilated band (design §3a).  The L1 path replaces this whole
-    # machinery with the box+1-ring window gather.
+    # machinery with the box+ring window gather (ring = L1 ghost depth).
     GHOST_PAD = max(6, args.wall_margin + 2)
     n_shell = 0
     shell_cells = torch.zeros((0, 3), dtype=torch.int64, device=dev)
@@ -557,7 +581,9 @@ def main():
         coarse_f = far_field(streamed, u_in)
 
         if args.l1_block:
-            # 2. window gather: box + 1-cell ring at the three time points
+            # 2. window gather: box + ring-cell ring (ring = L1 ghost
+            #    depth, 3 in the default L1 config — the deepened coarse
+            #    supply band of audit 2026-08) at the three time points
             #    old / new / post (chunked all_gather, <3MB/msg).  ``win``
             #    and ``l1_block`` are guaranteed set in this branch.
             assert win is not None and l1_block is not None
