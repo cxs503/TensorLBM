@@ -263,7 +263,8 @@ def _build_local_fanout_cache(
     if cache["n"]:
         cache["d"] = d_f[has].to(device)
         cache["i"] = i_f[has].to(device)
-        cache["pad"] = pad_live[ridx[has].to(device)]
+        # CPU gather (large index tensors fault on SDAA), then move to device.
+        cache["pad"] = pad_live[ridx[has]].to(device)
         cache["vp"] = cache["pad"] >= 0
     fb = ~has
     cache["fb_n"] = int(fb.sum())
