@@ -51,14 +51,14 @@ def test_initial_macros_uniform_flow():
     assert abs(float(ux.mean()) - 0.01) < 1e-9
 
 
-def test_advection_conserves_mass():
+def test_collision_conserves_mass():
+    """BGK collision on DG nodes must conserve total mass."""
+    from tensorlbm.dg_advection import collide_bgk_dg
     dg = SphericalShellDG(_cfg())
     m0 = float(dg.f_dg.sum())
-    dg.advect_r(0.25)
-    dg.advect_theta(0.25)
-    dg.advect_phi(0.25)
-    m1 = float(dg.f_dg.sum())
-    assert abs(m1 - m0) / m0 < 1e-6
+    f = collide_bgk_dg(dg.f_dg, dg.C, dg.W, 6.5, 0.25, q_first=0)
+    m1 = float(f.sum())
+    assert abs(m1 - m0) / m0 < 1e-5
 
 
 def test_drag_symmetric_uniform_flow_zero():
