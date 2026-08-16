@@ -41,6 +41,7 @@ from dataclasses import dataclass
 
 import torch
 import time as _time
+import warnings
 
 from tensorlbm.d3q19 import C, OPPOSITE, equilibrium3d, macroscopic3d
 from tensorlbm.kinetic_flux_register import (
@@ -393,6 +394,24 @@ def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
         fo_pad = fo_pad.to(dev)
     rowidx = torch.full((octree.Q, nt.shape[1]), -1, dtype=torch.int64, device=dev)
     if fo_pos.shape[0] > 0 and fo_pad.shape[0] > 0:
+        # Defensive bounds guard: an out-of-range (q, leaf) row would make
+        # the advanced index ``nt[fo_pos[:, 0], fo_pos[:, 1]]`` (and the
+        # scatter into ``rowidx`` below) run out of bounds — on SDAA that
+        # surfaces as SDAA_ERROR_MISALIGNED_ADDRESS.  Such rows cannot be
+        # FANOUT links of this table; drop them and warn loudly (they
+        # indicate a topology inconsistency worth investigating).
+        n_leaf = nt.shape[1]
+        qv, lv = fo_pos[:, 0], fo_pos[:, 1]
+        ok = (qv >= 0) & (qv < octree.Q) & (lv >= 0) & (lv < n_leaf)
+        if not bool(ok.all()):
+            warnings.warn(
+                "ensure_fanout_tables: dropping "
+                f"{int((~ok).sum())} fanout_pos row(s) out of range "
+                f"(Q={octree.Q}, n_leaf={n_leaf})",
+                RuntimeWarning,
+            )
+            fo_pos = fo_pos[ok]
+            fo_pad = fo_pad[ok]
         live = nt[fo_pos[:, 0], fo_pos[:, 1]] == FANOUT
         pos = fo_pos[live]
         pad = fo_pad[live]
