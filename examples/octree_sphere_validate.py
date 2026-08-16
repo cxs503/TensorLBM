@@ -608,5 +608,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     import faulthandler
-    faulthandler.dump_traceback_later(600, exit=True)  # 600s 后 dump 卡点
+    faulthandler.dump_traceback_later(3600, exit=True)  # 3600s 后 dump 卡点
     main()
