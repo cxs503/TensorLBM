@@ -174,7 +174,11 @@ def main() -> None:
             out[d] = torch.where(l1_solid, f[OPP27[d]], src)
         return out
 
-    tau_coarse = 0.5 + 3.0 * (u_in * args.radius / args.reynolds)
+    # Re→tau via the shared module (diameter convention L_ref = 2R — the
+    # old inline `u_in * args.radius / args.reynolds` used the bare radius
+    # and silently doubled the Reynolds number).
+    from tensorlbm.lbm_re_tau import tau_from_re
+    tau_coarse = tau_from_re(u_in, 2.0 * args.radius, args.reynolds)
     # shell tau follows the convective chain.
     from tensorlbm.octree_boundary.stepping import _tau_chain
     taus = _tau_chain(tau_coarse, octree.d_max)
