@@ -279,8 +279,8 @@ def main():
           f"f_leaf_cols={octree.f_leaf.shape[1]}", flush=True)
 
     # coarse tau + L1/shell tau chain
-    tau_coarse = 0.5 + 3.0 * (u_in * args.radius / args.reynolds) \
-        if args.geo == "sphere" else 0.5 + 3.0 * (u_in * args.hull / args.reynolds)
+    tau_coarse = 0.5 + 3.0 * (u_in * 2.0 * args.radius / args.reynolds) \
+        if args.geo == "sphere" else 0.5 + 3.0 * (u_in * 2.0 * args.hull / args.reynolds)
     from tensorlbm.octree_boundary.stepping import _tau_chain
     taus = _tau_chain(tau_coarse, octree.d_max)
     # Legacy two-level (host=coarse, d_max=1): taus = [tau_c, tau_shell].
