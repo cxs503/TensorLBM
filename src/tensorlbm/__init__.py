@@ -220,6 +220,7 @@ from .lid_driven_cavity import (
     run_lid_driven_cavity,
     zou_he_moving_lid,
 )
+from .lbm_re_tau import nu_from_re, nu_from_tau, re_from_tau, tau_from_re
 from .logging_config import configure_logging, logger
 from .multiphase import (
     collide_sc_single_component,
@@ -881,6 +882,11 @@ __all__ = [
     "collide_trt",
     "stream",
     "correct_mass",
+    # Re ↔ tau conversion (diameter convention L_ref = 2R)
+    "tau_from_re",
+    "re_from_tau",
+    "nu_from_re",
+    "nu_from_tau",
     # 2D runner
     "CylinderFlowConfig",
     "run_cylinder_flow",
