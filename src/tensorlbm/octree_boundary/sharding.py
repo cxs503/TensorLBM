@@ -142,6 +142,7 @@ def _slice_ghost_plan(
         wz=plan.wz[rows], wy=plan.wy[rows], wx=plan.wx[rows],
         volume=plan.volume[rows],
         slot=slot,
+        lev=plan.lev[rows] if plan.lev is not None else None,
     ), rows
 
 

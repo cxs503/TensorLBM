@@ -163,6 +163,7 @@ def _slice_ghost_plan_by_indices(
         wx=plan.wx[rows], wy=plan.wy[rows], wz=plan.wz[rows],
         volume=plan.volume[rows],
         slot=slot,
+        lev=plan.lev[rows] if plan.lev is not None else None,
     ), rows
 
 
@@ -458,7 +459,11 @@ def step_octree_shell_distributed(
         # tau_coarse — [tau_c, tau_l1, tau_shell] for d_max=2 — matching
         # the legacy two-level path's [tau_c, tau_shell] convention
         # (level-l ghost tau_f = chain[lev], base = chain[0]).
-        taus_ghost = _tau_chain(ghost_parent_tau, octree.d_max)
+        # Chain length: the L1-hosted octree's levels are relative to the
+        # L1 physical grid (already 2x finer than coarse), so a depth-l
+        # leaf sits at coarse level l+1; the deepest leaf (l = d_max)
+        # indexes chain[d_max+1], hence d_max+1 refinements.
+        taus_ghost = _tau_chain(ghost_parent_tau, octree.d_max + 1)
     else:
         ghost_plan_coarse = None
         taus_ghost = None
@@ -481,6 +486,7 @@ def step_octree_shell_distributed(
             p.n_ghost, local_indices[p.leaf.cpu()], p.direction,
             p.z0, p.y0, p.x0, p.z1, p.y1, p.x1,
             p.wx, p.wy, p.wz, p.volume, p.slot,
+            lev=p.lev if p.lev is not None else None,
         )
 
     # Static per-rank fanout positions (topology is fixed): the rank's
@@ -553,6 +559,7 @@ def step_octree_shell_distributed(
         gplan_fill = ShellGhostPlan(
             p.n_ghost, local_indices[p.leaf.cpu()], p.direction, p.z0, p.y0, p.x0,
             p.z1, p.y1, p.x1, p.wx, p.wy, p.wz, p.volume, p.slot,
+            lev=p.lev if p.lev is not None else None,
         )
         if use_coarse_parent:
             # P0 fix: supply the shell ghosts from the genuine evolved
