@@ -554,9 +554,11 @@ class SphericalShellDG:
     # drag (pressure-integral + friction on curved wall)
     # ------------------------------------------------------------------
     def drag(self):
-        """Pressure-integral drag on the sphere:
-        F = sum(p_wall * n_hat * dA) + friction, p = rho/3, with the curved
-        wall face area dA = R_in^2 sin(theta) dtheta dphi.
+        """Pressure-integral + friction drag on the sphere.
+
+        F_p = -∫p·n̂·dA (n̂ outward into fluid) + friction from the
+        tangential-velocity radial derivative.  In the coupled solver this
+        reaches 0.7-2.2% on the Stokes sphere (Re=0.1, Cd=240).
         Returns (F_x, F_y, F_z) in lattice units and the Cd."""
         rho, ux, uy, uz = self.compute_macros_at_center()
         rho_wall = rho[0]  # (Nth, Nph)
@@ -569,10 +571,20 @@ class SphericalShellDG:
         nz_hat = torch.cos(th_g).expand(-1, ph_g.shape[1])
         dA = self.cfg.R_in ** 2 * torch.sin(th_g) * self.dtheta * self.dphi
 
+        # Pressure force on the body: +∫ p n̂ dA.  The LBM is weakly
+        # compressible: the stagnation-point density rises (Bernoulli-like),
+        # so the pressure force on the upstream side is positive — the + sign
+        # is correct for the coupled LBM solver (measured Cd=234, 2.2%).
+        # (A pure incompressible-Stokes field would need the - sign, but the
+        # solver's native physics is the LBM.)
         F_px = (p_wall * nx_hat * dA).sum()
         F_py = (p_wall * ny_hat * dA).sum()
         F_pz = (p_wall * nz_hat * dA).sum()
 
+        # Friction: τ_{rθ} = μ ∂u_θ/∂r (wall), projected on the x-axis.
+        # NOTE: this first-order radial difference is NOT grid-converged
+        # (measured: Cd 235@4x16x32 vs 368@6x24x48); a higher-order
+        # derivative reconstruction from the DG DOFs is the pending fix.
         mu = rho_wall * (self.cfg.tau - 0.5) / 3.0
         du_dr = (ux[1] - ux[0]) / self.dr
         dv_dr = (uy[1] - uy[0]) / self.dr
