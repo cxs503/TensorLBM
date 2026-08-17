@@ -267,9 +267,19 @@ def build_ghost_plan(
             lo[solid_host] = host[solid_host]
             hi[solid_host] = host[solid_host]
     volume = 2.0 ** (-3.0 * level_i.to(torch.float64))
-    slot[direction, leaf] = torch.arange(
-        n_link, dtype=torch.int64, device=device,
-    )
+    # Deterministic duplicate-safe slot map: ``interface_links`` can hold
+    # duplicate (direction, leaf) rows (geometry build artifact, ~0.4% of
+    # rows — e.g. SUBOFF L1 2667/609140), and the plain advanced-index
+    # assignment ``slot[direction, leaf] = arange(n_link)`` is a RACE for
+    # duplicate indices (nondeterministic slot across runs, breaks plan
+    # equality checks).  Duplicate rows sample the same ghost position, so
+    # any row index is value-correct; "largest row index wins" (amax) is
+    # deterministic and matches the old last-write intent.
+    row_idx = torch.arange(n_link, dtype=torch.int64, device=device)
+    key = direction * n_leaf + leaf                     # unique (dir, leaf) key
+    flat = torch.full((q * n_leaf,), -1, dtype=torch.int64, device=device)
+    flat.scatter_reduce_(0, key, row_idx, reduce="amax")
+    slot = flat.view(q, n_leaf)
     return ShellGhostPlan(
         n_ghost=n_link,
         leaf=leaf,
@@ -390,9 +400,19 @@ def build_ghost_plan_coarse_parent(
             )
             w[solid_host] = 0.0
     volume = 2.0 ** (-3.0 * level_i.to(torch.float64))
-    slot[direction, leaf] = torch.arange(
-        n_link, dtype=torch.int64, device=device,
-    )
+    # Deterministic duplicate-safe slot map: ``interface_links`` can hold
+    # duplicate (direction, leaf) rows (geometry build artifact, ~0.4% of
+    # rows — e.g. SUBOFF L1 2667/609140), and the plain advanced-index
+    # assignment ``slot[direction, leaf] = arange(n_link)`` is a RACE for
+    # duplicate indices (nondeterministic slot across runs, breaks plan
+    # equality checks).  Duplicate rows sample the same ghost position, so
+    # any row index is value-correct; "largest row index wins" (amax) is
+    # deterministic and matches the old last-write intent.
+    row_idx = torch.arange(n_link, dtype=torch.int64, device=device)
+    key = direction * n_leaf + leaf                     # unique (dir, leaf) key
+    flat = torch.full((q * n_leaf,), -1, dtype=torch.int64, device=device)
+    flat.scatter_reduce_(0, key, row_idx, reduce="amax")
+    slot = flat.view(q, n_leaf)
     return ShellGhostPlan(
         n_ghost=n_link,
         leaf=leaf,

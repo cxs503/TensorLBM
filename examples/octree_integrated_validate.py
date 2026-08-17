@@ -108,6 +108,16 @@ def main():
     p.add_argument("--wall-margin", type=int, default=8,
                    help="L1 box: coarse-cell padding around the shell+wake "
                         "mask (also raises GHOST_PAD to max(6, pad+2))")
+    p.add_argument(
+        "--window-ring", type=int, default=None,
+        help="coarse-window ring depth (coarse cells) around the L1 box, "
+             "independent of the L1 ghost depth (window ring decoupling "
+             "audit 2026-08-17). Default None = follow ghost (window_ring "
+             "= ghost, pre-decoupling behaviour). A larger value deepens "
+             "the coarse supply band so the outer L1 ghost layers sample "
+             "genuine coarse flow further outside the box; must be >= "
+             "ghost (3 in the L1 path).",
+    )
     p.add_argument("--interleave", action="store_true")
     p.add_argument("--u-in", type=float, default=0.06)
     p.add_argument("--reynolds", type=float, default=100.0)
@@ -116,6 +126,10 @@ def main():
     p.add_argument("--q-min", type=float, default=None)
     p.add_argument("--no-coarse-bb", action="store_true",
                    help="disable coarse halfway BB (wall handled only by shell BFL)")
+    p.add_argument("--far-field-yz-extrapolate", action="store_true",
+                   help="y/z boundaries use zero-gradient extrapolation instead "
+                        "of hard uniform-inflow equilibrium reset (lets lateral "
+                        "flow develop around the body)")
     p.add_argument("--sponge-width", type=int, default=16)
     p.add_argument("--sponge-strength", type=float, default=0.2)
     p.add_argument("--report-interval", type=int, default=50)
@@ -458,22 +472,32 @@ def main():
         if rank == world_size - 1:
             f[:, :, :, -2:-1] = f[:, :, :, -3:-2]  # outlet extrapolation
         # y/z boundary planes (each rank owns the full y/z extent).
-        eq_ff_plane = equilibrium27(
-            torch.ones(1, ny, nx_local + 2, device=dev),
-            torch.full((1, ny, nx_local + 2), u_in, device=dev),
-            torch.zeros(1, ny, nx_local + 2, device=dev),
-            torch.zeros(1, ny, nx_local + 2, device=dev),
-        )
-        f[:, 0, :, :] = eq_ff_plane[:, 0]
-        f[:, -1, :, :] = eq_ff_plane[:, 0]
-        eq_ff_y = equilibrium27(
-            torch.ones(nz, 1, nx_local + 2, device=dev),
-            torch.full((nz, 1, nx_local + 2), u_in, device=dev),
-            torch.zeros(nz, 1, nx_local + 2, device=dev),
-            torch.zeros(nz, 1, nx_local + 2, device=dev),
-        )
-        f[:, :, 0, :] = eq_ff_y[:, :, 0]
-        f[:, :, -1, :] = eq_ff_y[:, :, 0]
+        if getattr(args, "far_field_yz_extrapolate", False):
+            # Zero-gradient extrapolation instead of hard equilibrium reset:
+            # lets the lateral flow develop around the body (the hard reset
+            # pins the side velocity to u_in, over-speeding the flanks and
+            # inflating drag — candidate for the integrated Cd excess).
+            f[:, 0, :, :] = f[:, 1, :, :]
+            f[:, -1, :, :] = f[:, -2, :, :]
+            f[:, :, 0, :] = f[:, :, 1, :]
+            f[:, :, -1, :] = f[:, :, -2, :]
+        else:
+            eq_ff_plane = equilibrium27(
+                torch.ones(1, ny, nx_local + 2, device=dev),
+                torch.full((1, ny, nx_local + 2), u_in, device=dev),
+                torch.zeros(1, ny, nx_local + 2, device=dev),
+                torch.zeros(1, ny, nx_local + 2, device=dev),
+            )
+            f[:, 0, :, :] = eq_ff_plane[:, 0]
+            f[:, -1, :, :] = eq_ff_plane[:, 0]
+            eq_ff_y = equilibrium27(
+                torch.ones(nz, 1, nx_local + 2, device=dev),
+                torch.full((nz, 1, nx_local + 2), u_in, device=dev),
+                torch.zeros(nz, 1, nx_local + 2, device=dev),
+                torch.zeros(nz, 1, nx_local + 2, device=dev),
+            )
+            f[:, :, 0, :] = eq_ff_y[:, :, 0]
+            f[:, :, -1, :] = eq_ff_y[:, :, 0]
         return f
 
     # ---------------- shell advance + BFL (all_gather distributed) ----------------
@@ -533,6 +557,7 @@ def main():
         assert box is not None, "L1 path requires a planned box"
         l1_block = L1BlockDistributed(
             box, (nz, ny, nx), tau_coarse, q=q, ratio=2, ghost=3,
+            window_ring=args.window_ring,
             device=dev, solid_l1=solid,
             collide_fn=advance_l1, stream_fn=stream27_roll,
         )
