@@ -266,6 +266,128 @@ def build_ghost_plan(
             host = octree.leaf_host_cell[leaf]          # (n, 3) (z, y, x)
             lo[solid_host] = host[solid_host]
             hi[solid_host] = host[solid_host]
+    volume = 2.0 ** (-3.0 * level_i.to(torch.float64))
+    slot[direction, leaf] = torch.arange(
+        n_link, dtype=torch.int64, device=device,
+    )
+    return ShellGhostPlan(
+        n_ghost=n_link,
+        leaf=leaf,
+        direction=direction,
+        z0=lo[:, 0], y0=lo[:, 1], x0=lo[:, 2],
+        z1=hi[:, 0], y1=hi[:, 1], x1=hi[:, 2],
+        wz=w[:, 0], wy=w[:, 1], wx=w[:, 2],
+        volume=volume,
+        slot=slot,
+    )
+
+
+def build_ghost_plan_coarse_parent(
+    octree: OctreeGrid,
+    win_shape: tuple[int, int, int],
+    coarse_offset: tuple[int, int, int],
+    *,
+    solid_fallback: bool = True,
+) -> ShellGhostPlan:
+    """ShellGhostPlan whose donor indices index a coarse WINDOW field.
+
+    Identical geometry and row order to :func:`build_ghost_plan` (same
+    leaf/interface rows, same sample positions in the octree's host
+    frame), but the trilinear donor stencil is expressed in the coarse
+    *parent* frame: the octree host grid here is the L1 physical grid
+    (2x coarse spacing), so a sample position ``p`` (L1 world units,
+    origin at the L1 physical grid's first cell) maps to the coarse
+    continuous index ``p / 2 + offset - 0.5``, where ``offset =
+    (box_origin - window_origin)`` in coarse cells.
+
+    The resulting ``z0/y0/x0/z1/y1/x1`` index the coarse window tensor
+    ``(Q, nz_w, ny_w, nx_w)`` directly — the same frame the legacy
+    two-level path feeds ``coarse_sparse`` in, so the shell ghost
+    supply can sample the genuine evolved coarse field (time-lerped
+    ``cw_old``/``cw_new``) with the exact trilinear convention of
+    :func:`_fill_ghost_impl` instead of the 2:1-injected L1 block
+    field (SUBOFF L1 force-deficit P0 fix).
+    """
+    nz_w, ny_w, nx_w = win_shape
+    device = octree.leaf_morton.device
+    q = octree.Q
+    n_leaf = octree.n_leaf
+    links = octree.interface_links                      # (n_link, 2) (i, d)
+    n_link = int(links.shape[0])
+    slot = torch.full((q, n_leaf), -1, dtype=torch.int64, device=device)
+    if n_link == 0:
+        empty = torch.empty(0, dtype=torch.int64, device=device)
+        return ShellGhostPlan(
+            0, empty, empty, empty, empty, empty, empty, empty, empty,
+            empty, empty, empty, empty, slot,
+        )
+    leaf = links[:, 0]
+    d_link = links[:, 1]
+    opp = octree._opp.to(device)
+    c_vec = octree._c_vec.to(device)
+    direction = opp[d_link]                             # filled direction
+    level_i = octree.leaf_level[leaf]
+    dx = 2.0 ** (-level_i.to(torch.float64))
+    if octree._l2_coords is not None and octree._l2_coords.numel() > 0:
+        coords = torch.cat((octree._l1_coords, octree._l2_coords), dim=0)
+    else:
+        coords = octree._l1_coords
+    centers64 = (
+        coords.to(torch.float64) + 0.5
+    ) / (2.0 ** octree.leaf_level.to(torch.float64))[:, None]   # (n, 3) x,y,z
+    # Same ghost-cell position as build_ghost_plan (see its docstring for
+    # the ``c_vec[d_link]`` vs ``c_vec[direction]`` convention).
+    p_xyz = centers64[leaf] + c_vec[d_link].to(torch.float64) * dx[:, None]
+    p = p_xyz[:, [2, 1, 0]]                             # (z, y, x) L1 world
+    # L1 world -> coarse window frame: the L1 physical cell (i, j, k)
+    # sits at global coarse (box.z0 + i/2, ...), the window cell
+    # (zi, yi, xi) at global coarse (win.z0 + zi, ...), hence
+    #     coarse_continuous = p/2 + (box_origin - win_origin) - 0.5
+    # (the -0.5 is the cell-centred sampling convention of build_ghost_plan).
+    oz, oy, ox = (float(o) for o in coarse_offset)
+    off = torch.tensor([oz, oy, ox], dtype=torch.float64, device=device)
+    continuous = p * 0.5 + off - 0.5                    # coarse window coords
+    lo = torch.floor(continuous).to(torch.int64)
+    hi = lo + 1
+    bounds = torch.tensor(
+        [nz_w, ny_w, nx_w], dtype=torch.int64, device=device,
+    )
+    lo = lo.clamp(torch.zeros_like(lo), bounds - 2)
+    hi = hi.clamp(torch.ones_like(hi), bounds - 1)
+    w = (continuous - lo.to(continuous.dtype)).clamp(0.0, 1.0)
+    if octree._solid is not None and bool(
+        (octree._solid[p[:, 0].floor().to(torch.int64).clamp(0, nz_w - 1),
+                       p[:, 1].floor().to(torch.int64).clamp(0, ny_w - 1),
+                       p[:, 2].floor().to(torch.int64).clamp(0, nx_w - 1)]).any()
+    ) and solid_fallback:
+        # Solid-host fallback (same condition as build_ghost_plan): sample
+        # the coarse cell CONTAINING the leaf's own covered L1 host cell —
+        # ``off + host // 2`` is exactly the coarse cell the 2:1 restriction
+        # of the covered L1 cell writes into, i.e. the same local-band fluid
+        # the L1-frame fallback sampled at leaf resolution.
+        cell_p = torch.stack((
+            p[:, 0].floor().to(torch.int64).clamp(0, nz_w - 1),
+            p[:, 1].floor().to(torch.int64).clamp(0, ny_w - 1),
+            p[:, 2].floor().to(torch.int64).clamp(0, nx_w - 1),
+        ), dim=1)
+        solid_host = octree._solid[
+            cell_p[:, 0], cell_p[:, 1], cell_p[:, 2],
+        ]
+        if bool(solid_host.any()):
+            lo = lo.clone()
+            hi = hi.clone()
+            w = w.clone()
+            host = octree.leaf_host_cell[leaf]           # (n, 3) L1 indices
+            oz_i, oy_i, ox_i = (int(o) for o in coarse_offset)
+            off_i = torch.tensor(
+                [oz_i, oy_i, ox_i], dtype=torch.int64, device=device,
+            )
+            lo_c = host // 2 + off_i
+            lo_c = lo_c.clamp(torch.zeros_like(lo_c), bounds - 2)
+            lo[solid_host] = lo_c[solid_host]
+            hi[solid_host] = (lo_c[solid_host] + 1).clamp(
+                torch.ones_like(lo_c[solid_host]), bounds - 1,
+            )
             w[solid_host] = 0.0
     volume = 2.0 ** (-3.0 * level_i.to(torch.float64))
     slot[direction, leaf] = torch.arange(
@@ -1684,6 +1806,7 @@ def build_plane_shell(
 __all__ = [
     "ShellGhostPlan",
     "build_ghost_plan",
+    "build_ghost_plan_coarse_parent",
     "build_plane_shell",
     "build_shell_coarse_links",
     "fill_ghost",

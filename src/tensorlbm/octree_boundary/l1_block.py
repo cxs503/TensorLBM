@@ -122,13 +122,23 @@ def build_window_indices(
     stencil and the L1 ghost donors both live in the ring), which requires
     the box to keep at least a ``ring``-cell margin from the domain
     boundary — ``plan_body_shell_box`` with ``pad >= ring`` guarantees
-    this.  The L1 ghost depth ``g`` reaches ``ceil(g/2)`` coarse cells
-    beyond the box, so ``ring >= (g + 1) // 2`` keeps every ghost donor on
-    a real coarse cell.  Audit 2026-08 (SUBOFF L1 force-deficit fix):
+    this.  Ring completeness is **enforced** here (unlike the old
+    strictly-interior check, which silently accepted a ring clipped by the
+    domain edge): if any side of the ring would be truncated the window
+    cannot supply the ghost donors it was sized for, so we raise instead of
+    silently degrading.  Audit 2026-08 (SUBOFF L1 force-deficit fix):
     the window ring is widened from 1 to 2-3 cells (``ring`` tracks the
     L1 ghost depth) so the L1 ghost supply band samples genuine coarse
     flow outside the box instead of the narrow box-adjacent ring that the
-    L1 restriction write-back + box reflux corrections perturb.
+    L1 restriction write-back + box reflux corrections perturb.  The
+    2026-08-17 de-pollution pass decouples ``window_ring`` from the ghost
+    depth (``L1BlockDistributed(window_ring=...)``) so the supply frame
+    can be deepened to 6-8 cells independently of the ghost depth.
+
+    The high-side convention is inclusive: the window covers
+    ``[box.z0 - ring, box.z1 + ring]``, so the ring extends exactly
+    ``ring`` cells beyond the box on the low side and ``ring`` cells on
+    the high side (plus one buffer cell when ``box.z1 + ring < nz``).
     """
     nz, ny, nx = domain_shape
     z0 = max(0, box.z0 - ring)
@@ -137,14 +147,18 @@ def build_window_indices(
     y1 = min(ny - 1, box.y1 + ring)
     x0 = max(0, box.x0 - ring)
     x1 = min(nx - 1, box.x1 + ring)
-    if not (box.z0 > z0 and box.z1 < z1 and box.y0 > y0 and box.y1 < y1
-            and box.x0 > x0 and box.x1 < x1):
+    if not (
+        box.z0 - ring >= 0 and box.z1 + ring <= nz
+        and box.y0 - ring >= 0 and box.y1 + ring <= ny
+        and box.x0 - ring >= 0 and box.x1 + ring <= nx
+    ):
         raise ValueError(
-            "the L1 box must be strictly interior with a "
-            f"{ring}-cell coarse margin; got box z:[{box.z0},{box.z1}) "
-            f"y:[{box.y0},{box.y1}) x:[{box.x0},{box.x1}) in domain "
-            f"{domain_shape} — enlarge the domain or reduce "
-            "--wake-cells/--shell-margin/--wall-margin",
+            "the L1 window ring must be complete on every side (the box "
+            f"must keep a full {ring}-cell coarse margin to the domain "
+            f"edge); got box z:[{box.z0},{box.z1}) y:[{box.y0},{box.y1}) "
+            f"x:[{box.x0},{box.x1}) with ring={ring} in domain "
+            f"{domain_shape} — reduce --window-ring, shrink --wake-cells "
+            "(wake <= nx-1-ring-te-pad), or enlarge the domain",
         )
     zz = torch.arange(z0, z1 + 1, device=device)
     yy = torch.arange(y0, y1 + 1, device=device)

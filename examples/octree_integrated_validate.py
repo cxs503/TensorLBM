@@ -27,6 +27,60 @@ import time
 import torch
 import torch.distributed as dist
 
+# Wind-tunnel blockage correction knobs.
+#   beta = D / Ly  (D = body diameter, Ly = domain width = ny)
+#   simple           (Maskell/Bartz):   f = 1 / (1 - beta)^2
+#   glauert          (Glauert-type):    f = 1 / sqrt(1 - beta^2)
+#   glauert_classic  (classic Glauert): f = 1 / (1 - 1.5 * beta)
+#   off:             f = 1.0
+# Hard gate: beta >= BLOCKAGE_HARD_GATE auto-escalates 'simple' -> 'glauert'
+# (the conservative higher-order form for severe blockage) and prints an
+# enlarged-domain recommendation (Ly >= 8D keeps beta <= 12.5%).  The classic
+# 1/(1-1.5*beta) form is kept as 'glauert_classic' for reproducibility of
+# pre-2026-08-17 runs.
+BLOCKAGE_HARD_GATE = 0.15    # beta >= 15%: severe blockage -> warn + escalate
+BLOCKAGE_WARN_RATIO = 0.125  # beta > 12.5%: soft advisory (Ly >= 8D rule)
+
+
+def compute_blockage_factor(
+    beta: float,
+    mode: str,
+    hard_gate: float = BLOCKAGE_HARD_GATE,
+) -> tuple[float, str, bool]:
+    """Wind-tunnel blockage correction factor for the confined domain.
+
+    Returns ``(corr_factor, bc_note, escalated)``.
+
+    * ``off``              -> f = 1.0 (never escalated)
+    * ``simple``           -> f = 1/(1-beta)^2     (Maskell/Bartz)
+    * ``glauert``          -> f = 1/sqrt(1-beta^2) (Glauert-type)
+    * ``glauert_classic``  -> f = 1/(1-1.5*beta)   (classic Glauert, legacy)
+
+    Hard gate: when ``beta >= hard_gate`` (default 0.15) the ``simple`` mode
+    is auto-escalated to ``glauert`` and ``escalated`` is True; ``off`` is
+    always respected.
+    """
+    if mode == "off" or beta <= 0.0:
+        return 1.0, "off", False
+    if mode == "glauert":
+        f = 1.0 / math.sqrt(max(1.0 - beta * beta, 1e-12))
+        return f, "glauert 1/sqrt(1-beta^2)", False
+    if mode == "glauert_classic":
+        # Guard the 1-1.5*beta pole (beta >= 2/3 is unphysical here, but
+        # never divide by <= 0).
+        f = 1.0 / max(1.0 - 1.5 * beta, 1e-3)
+        return f, "glauert_classic 1/(1-1.5*beta)", False
+    # "simple" (default): the hard gate auto-escalates to Glauert.
+    if beta >= hard_gate:
+        f = 1.0 / math.sqrt(max(1.0 - beta * beta, 1e-12))
+        return (
+            f,
+            "simple->glauert 1/sqrt(1-beta^2) "
+            "(auto-escalated: beta>=15% hard gate)",
+            True,
+        )
+    return 1.0 / (1.0 - beta) ** 2, "simple 1/(1-beta)^2", False
+
 
 def main():
     p = argparse.ArgumentParser()
@@ -68,15 +122,19 @@ def main():
     p.add_argument("--output", default=None)
     p.add_argument(
         "--blockage-correction",
-        choices=("simple", "glauert", "off"), default="simple",
+        choices=("simple", "glauert", "glauert_classic", "off"),
+        default="simple",
         help=("Blockage (wind-tunnel) correction for the confined domain. "
               "The infinite-domain Cd_ref is unfair in a small domain: the "
               "lateral walls accelerate the flow around the body, so a "
               "correct solver should compute a HIGHER Cd. 'simple' (default, "
               "Maskell/Bartz): f=1/(1-beta)^2; 'glauert': "
-              "f=1/(1-1.5*beta); 'off': no correction. beta=D/Ly (D=body "
-              "diameter, Ly=domain width). R6 sphere: D=12, Ly=64 -> "
-              "beta=0.1875 -> simple f=1.5148 -> Cd_ref_blocked=1.654."),
+              "f=1/sqrt(1-beta^2); 'glauert_classic': f=1/(1-1.5*beta) "
+              "(legacy); 'off': no correction. beta=D/Ly (D=body diameter, "
+              "Ly=domain width). Hard gate: beta>=15%% auto-escalates "
+              "'simple' to 'glauert' and recommends enlarging the domain to "
+              "Ly>=8D. R6 sphere: D=12, Ly=64 -> beta=0.1875 -> simple "
+              "f=1.5148 -> Cd_ref_blocked=1.654."),
     )
     p.add_argument(
         "--domain-scale",
@@ -640,6 +698,7 @@ def main():
             #    l1_old == l1_f).  tau_coarse = tau_l1; l1_post is the list
             #    of the two L1 post-collision slices.
             l1_f_phys = l1_block.physical_copy()
+            assert box is not None, "L1 path requires a planned box"
             _ledger_shell, local_mem, _restricted, _cells = \
                 step_octree_shell_distributed(
                     octree, advance_shell, l1_phys_pre, l1_f_phys,
@@ -647,6 +706,20 @@ def main():
                     ghost_plan=None, bfl_fn=bfl_fn, rank=rank,
                     world_size=world_size, reflux=True,
                     interleave=args.interleave,
+                    # P0 fix (SUBOFF L1 force deficit): supply the shell
+                    # ghosts from the GENUINE evolved coarse field
+                    # (time-lerped cw_old/cw_new, coarse-frame trilinear)
+                    # instead of the L1 block field — the L1 block itself
+                    # is a 2:1 injection of the coarse field, so sampling
+                    # it re-serves the injected low-resolution supply and
+                    # the near-wall band.  The shell host stays L1 (sub-
+                    # steps run on the L1 leaves; restriction/reflux still
+                    # write the L1 field); only the ghost supply changes.
+                    ghost_parent_old=cw_old, ghost_parent_new=cw_new,
+                    ghost_parent_offset=(
+                        box.z0 - win.z0, box.y0 - win.y0, box.x0 - win.x0,
+                    ),
+                    ghost_parent_tau=tau_coarse,
                 )
             l1_block.set_physical(l1_f_phys)
             # 5. L1 -> coarse restriction (box interior) + face-local kinetic
@@ -814,23 +887,22 @@ def main():
         # standard wind-tunnel factor so the reported error reflects the true
         # grid/discretisation error rather than a domain-size artefact.
         #   beta = D / Ly   (D = body diameter, Ly = domain width = ny)
-        #   simple  (Maskell/Bartz):  f = 1 / (1 - beta)^2
-        #   glauert (more conservative): f = 1 / (1 - 1.5*beta)
+        #   simple           (Maskell/Bartz): f = 1 / (1 - beta)^2
+        #   glauert          (Glauert-type):  f = 1 / sqrt(1 - beta^2)
+        #   glauert_classic  (classic Glauert): f = 1 / (1 - 1.5*beta)
+        #   off:             f = 1.0
+        # Hard gate: beta >= 15% auto-escalates 'simple' -> 'glauert' (the
+        # conservative higher-order form for severe blockage) and prints an
+        # enlarged-domain recommendation (Ly >= 8D keeps beta <= 12.5%).
         # R6 sphere: D=12, Ly=ny=64 -> beta=0.1875
-        #   simple:  f = 1/(0.8125)^2 = 1.5148 -> Cd_ref_blocked = 1.654
+        #   simple:  f = 1/(0.8125)^2 = 1.5148 (but the 15% hard gate
+        #   escalates to glauert: f = 1/sqrt(1-0.1875^2) = 1.0181)
         Ly = float(ny)
         beta = D_body / Ly if Ly > 0 else 0.0
         ref_inf = 1.0917 if args.geo == "sphere" else 0.004
-        bc = args.blockage_correction
-        if bc == "off" or beta <= 0.0:
-            corr_factor = 1.0
-            bc_note = "off"
-        elif bc == "glauert":
-            corr_factor = 1.0 / (1.0 - 1.5 * beta)
-            bc_note = "glauert 1/(1-1.5*beta)"
-        else:  # "simple" (default)
-            corr_factor = 1.0 / (1.0 - beta) ** 2
-            bc_note = "simple 1/(1-beta)^2"
+        corr_factor, bc_note, blockage_escalated = compute_blockage_factor(
+            beta, args.blockage_correction,
+        )
         ref = ref_inf * corr_factor
         err_pct = 100.0 * (cd_mem - ref) / ref
         err_pct_inf = 100.0 * (cd_mem - ref_inf) / ref_inf
@@ -850,11 +922,27 @@ def main():
                 f"corr_factor={corr_rec:.4f}, "
                 f"Cd_ref_blocked={ref_inf*corr_rec:.4f})"
             )
-        elif beta > 0.125:
+        elif beta >= BLOCKAGE_HARD_GATE:
+            ny_rec = int(math.ceil(8.0 * D_body))
+            beta_rec = D_body / ny_rec if ny_rec > 0 else 0.0
+            gate_note = (
+                f"HARD GATE: beta={beta*100:.2f}% >= "
+                f"{BLOCKAGE_HARD_GATE*100:.0f}% (severe blockage); recommend "
+                f"enlarging the domain to Ly>=8D (ny>={ny_rec}, "
+                f"beta<={beta_rec*100:.2f}%) or pass --domain-scale 8.0"
+            )
+            if blockage_escalated:
+                gate_note += (
+                    " -> correction auto-escalated simple -> glauert "
+                    "(1/sqrt(1-beta^2))."
+                )
+            scale_note = gate_note
+        elif beta > BLOCKAGE_WARN_RATIO:
             ny_rec = int(math.ceil(8.0 * D_body))
             beta_rec = D_body / ny_rec if ny_rec > 0 else 0.0
             scale_note = (
-                f"WARNING: beta={beta*100:.2f}% > 12.5% (blockage is large); "
+                f"WARNING: beta={beta*100:.2f}% > "
+                f"{BLOCKAGE_WARN_RATIO*100:.1f}% (blockage is large); "
                 f"recommend enlarging the domain to Ly>=8D (ny>={ny_rec}, "
                 f"beta<={beta_rec*100:.2f}%) or pass --domain-scale 8.0"
             )
@@ -868,6 +956,7 @@ def main():
             "blockage_ratio": beta,
             "blockage_correction": bc_note,
             "blockage_factor": corr_factor,
+            "blockage_escalated": blockage_escalated,
             "err_pct": err_pct,
             "err_pct_inf_domain": err_pct_inf,
             "per_step_s": (time.time() - t0) / args.steps,
