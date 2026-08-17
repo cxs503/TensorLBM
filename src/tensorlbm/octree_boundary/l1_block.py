@@ -253,6 +253,14 @@ class L1BlockDistributed:
         domain_shape: coarse domain ``(nz, ny, nx)`` (for the window frame).
         tau_coarse: coarse relaxation time; the L1 tau is the convective
             2:1 refinement of it.
+        window_ring: coarse-window ring depth (in coarse cells) around the
+            box, independent of the L1 ghost depth.  ``None`` follows the
+            ghost depth (``window_ring = ghost``, the pre-decoupling
+            behaviour — regression-safe).  A larger value deepens the
+            coarse supply band so the outer L1 ghost layers sample genuine
+            coarse flow further outside the box (de-pollution audit
+            2026-08-17); must be ``>= ghost`` so every ghost donor still
+            lands on a real coarse window cell.
         solid_l1: L1-frame boolean solid mask ``(nz_l1, ny_l1, nx_l1)``
             (``octree._solid``) used for the frozen-solid mask; ``None``
             disables freezing.
@@ -271,6 +279,7 @@ class L1BlockDistributed:
         q: int = 27,
         ratio: int = 2,
         ghost: int = 1,
+        window_ring: int | None = None,
         device: torch.device | str | None = None,
         solid_l1: torch.Tensor | None = None,
         collide_fn=None,
@@ -285,6 +294,13 @@ class L1BlockDistributed:
                 "the L1 block currently supports ghost 1-3 (ghost-ring "
                 "depth in L1 cells; ghost=3 deepens the coarse supply "
                 "band — audit 2026-08 SUBOFF L1 force-deficit fix)",
+            )
+        if window_ring is not None and window_ring < ghost:
+            raise ValueError(
+                f"window_ring={window_ring} must be >= ghost={ghost}: the "
+                "coarse window ring has to be at least as deep as the L1 "
+                "ghost layer so every ghost donor lands on a real window "
+                "cell (decoupling audit 2026-08-17)",
             )
         if q not in (19, 27):
             raise ValueError(f"unsupported lattice Q={q}")
@@ -319,13 +335,16 @@ class L1BlockDistributed:
         )
 
         # ---- window frame (box + ring-cell ring) ----
-        # The ring tracks the L1 ghost depth (``ring = ghost``): the outer
-        # L1 ghost layer sits ``ceil(g/2)`` coarse cells beyond the box, so
-        # a ring of at least that width keeps every ghost donor on a real
-        # coarse cell (audit 2026-08: widened from 1 to 2-3 cells for the
-        # SUBOFF L1 force-deficit fix — deeper supply band of genuine
-        # coarse flow outside the box).
-        self.window_ring = ghost
+        # The ring defaults to the L1 ghost depth (``ring = ghost``): the
+        # outer L1 ghost layer sits ``ceil(g/2)`` coarse cells beyond the
+        # box, so a ring of at least that width keeps every ghost donor on
+        # a real coarse cell (audit 2026-08: widened from 1 to 2-3 cells
+        # for the SUBOFF L1 force-deficit fix — deeper supply band of
+        # genuine coarse flow outside the box).  ``window_ring`` decouples
+        # the supply frame from the ghost depth (de-pollution audit
+        # 2026-08-17): a caller may deepen the coarse supply band to 6-8
+        # cells without touching the L1 ghost layer.
+        self.window_ring = ghost if window_ring is None else window_ring
         self.win = build_window_indices(
             domain_shape, box, self.device, ring=self.window_ring,
         )
