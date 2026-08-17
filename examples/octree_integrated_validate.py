@@ -27,7 +27,8 @@ import time
 import torch
 import torch.distributed as dist
 
-# Wind-tunnel blockage correction knobs.
+# Wind-tunnel blockage correction knobs and factor live in
+# tensorlbm.drag_normalize (single source of truth, 69d027c semantics):
 #   beta = D / Ly  (D = body diameter, Ly = domain width = ny)
 #   simple           (Maskell/Bartz):   f = 1 / (1 - beta)^2
 #   glauert          (Glauert-type):    f = 1 / sqrt(1 - beta^2)
@@ -38,48 +39,11 @@ import torch.distributed as dist
 # enlarged-domain recommendation (Ly >= 8D keeps beta <= 12.5%).  The classic
 # 1/(1-1.5*beta) form is kept as 'glauert_classic' for reproducibility of
 # pre-2026-08-17 runs.
-BLOCKAGE_HARD_GATE = 0.15    # beta >= 15%: severe blockage -> warn + escalate
-BLOCKAGE_WARN_RATIO = 0.125  # beta > 12.5%: soft advisory (Ly >= 8D rule)
-
-
-def compute_blockage_factor(
-    beta: float,
-    mode: str,
-    hard_gate: float = BLOCKAGE_HARD_GATE,
-) -> tuple[float, str, bool]:
-    """Wind-tunnel blockage correction factor for the confined domain.
-
-    Returns ``(corr_factor, bc_note, escalated)``.
-
-    * ``off``              -> f = 1.0 (never escalated)
-    * ``simple``           -> f = 1/(1-beta)^2     (Maskell/Bartz)
-    * ``glauert``          -> f = 1/sqrt(1-beta^2) (Glauert-type)
-    * ``glauert_classic``  -> f = 1/(1-1.5*beta)   (classic Glauert, legacy)
-
-    Hard gate: when ``beta >= hard_gate`` (default 0.15) the ``simple`` mode
-    is auto-escalated to ``glauert`` and ``escalated`` is True; ``off`` is
-    always respected.
-    """
-    if mode == "off" or beta <= 0.0:
-        return 1.0, "off", False
-    if mode == "glauert":
-        f = 1.0 / math.sqrt(max(1.0 - beta * beta, 1e-12))
-        return f, "glauert 1/sqrt(1-beta^2)", False
-    if mode == "glauert_classic":
-        # Guard the 1-1.5*beta pole (beta >= 2/3 is unphysical here, but
-        # never divide by <= 0).
-        f = 1.0 / max(1.0 - 1.5 * beta, 1e-3)
-        return f, "glauert_classic 1/(1-1.5*beta)", False
-    # "simple" (default): the hard gate auto-escalates to Glauert.
-    if beta >= hard_gate:
-        f = 1.0 / math.sqrt(max(1.0 - beta * beta, 1e-12))
-        return (
-            f,
-            "simple->glauert 1/sqrt(1-beta^2) "
-            "(auto-escalated: beta>=15% hard gate)",
-            True,
-        )
-    return 1.0 / (1.0 - beta) ** 2, "simple 1/(1-beta)^2", False
+from tensorlbm.drag_normalize import (
+    BLOCKAGE_HARD_GATE,   # beta >= 15%: severe blockage -> warn + escalate
+    BLOCKAGE_WARN_RATIO,  # beta > 12.5%: soft advisory (Ly >= 8D rule)
+    compute_blockage_factor,
+)
 
 
 def main():
@@ -126,6 +90,12 @@ def main():
     p.add_argument("--q-min", type=float, default=None)
     p.add_argument("--no-coarse-bb", action="store_true",
                    help="disable coarse halfway BB (wall handled only by shell BFL)")
+    p.add_argument("--coarse-freeze", action="store_true",
+                   help="FREEZE coarse solid cells (torch.where(solid, before, "
+                        "collided), aligning the integrated coarse layer with "
+                        "the single-card root_advance; rho stays 1.0 inside the "
+                        "solid -> coarse layer transparent). Mutually exclusive "
+                        "with --no-coarse-bb (freeze takes precedence).")
     p.add_argument("--far-field-yz-extrapolate", action="store_true",
                    help="y/z boundaries use zero-gradient extrapolation instead "
                         "of hard uniform-inflow equilibrium reset (lets lateral "
@@ -350,9 +320,11 @@ def main():
     print(f"[r{rank}] n_leaf={n_leaf} lidx_len={lidx.shape[0]} "
           f"f_leaf_cols={octree.f_leaf.shape[1]}", flush=True)
 
-    # coarse tau + L1/shell tau chain
-    tau_coarse = 0.5 + 3.0 * (u_in * 2.0 * args.radius / args.reynolds) \
-        if args.geo == "sphere" else 0.5 + 3.0 * (u_in * 2.0 * args.hull / args.reynolds)
+    # coarse tau + L1/shell tau chain (Re convention: L_ref = diameter 2R,
+    # shared tensorlbm.lbm_re_tau.tau_from_re)
+    from tensorlbm.lbm_re_tau import tau_from_re
+    L_ref = 2.0 * args.radius if args.geo == "sphere" else 2.0 * args.hull
+    tau_coarse = tau_from_re(u_in, L_ref, args.reynolds)
     from tensorlbm.octree_boundary.stepping import _tau_chain
     taus = _tau_chain(tau_coarse, octree.d_max)
     # Legacy two-level (host=coarse, d_max=1): taus = [tau_c, tau_shell].
@@ -622,18 +594,23 @@ def main():
     # finest leaf dx and is the correct wall-lattice resolution; we take
     # the wall-link leaf levels directly so the formula stays exact for
     # any level mix (fallback: finest level when no wall links).
-    wall_lv = octree.leaf_level[octree.bfl_mask.any(dim=0)]
-    if wall_lv.numel():
-        dx_wall_leaf = 2.0 ** (-(1.0 + wall_lv.to(torch.float64))) \
-            if args.l1_block else 2.0 ** (-wall_lv.to(torch.float64))
-        dx_leaf_area = float(dx_wall_leaf.mean().item())
-    else:
-        dx_leaf_area = dx_leaf_old
+    # Migrated to the shared tensorlbm.drag_normalize module: the wall-link
+    # selection + fallback is compute_wall_link_dx (dcf899e), the radius is
+    # leaf_radius_from_dx and the reference area is dynamic_area.
+    from tensorlbm.drag_normalize import (
+        compute_wall_link_dx,
+        dynamic_area as _dynamic_area_fn,
+        leaf_radius_from_dx,
+    )
+    wall_lv = octree.leaf_level[octree.bfl_mask.any(dim=0)]  # (diagnostics)
+    dx_leaf_area = compute_wall_link_dx(octree, l1_block=args.l1_block)
     if args.geo == "sphere":
-        radius_leaf = args.radius / dx_leaf_area
-        dynamic_area = 0.5 * u_in ** 2 * math.pi * radius_leaf ** 2
+        radius_leaf = leaf_radius_from_dx(args.radius, dx_leaf_area)
+        dynamic_area = _dynamic_area_fn(u_in, radius_leaf)
     else:
-        L_leaf = args.hull / dx_leaf_area
+        # SUBOFF keeps its own reference-area convention (square L_leaf^2,
+        # no pi): 0.5*u^2*L_leaf^2 — not the sphere dynamic_area.
+        L_leaf = leaf_radius_from_dx(args.hull, dx_leaf_area)
         radius_leaf = L_leaf
         dynamic_area = 0.5 * u_in ** 2 * L_leaf ** 2
     if rank == 0:
@@ -684,15 +661,24 @@ def main():
 
     # ---------------- main loop ----------------
     from tensorlbm.d3q27 import equilibrium27 as eq27b
+    # --coarse-freeze: solid mask expanded over the 27 velocity directions,
+    # aligned with single-card root_advance's torch.where(solid_q, before,
+    # collided) (solid cells keep their pre-collision f -> rho stays 1.0 ->
+    # coarse layer transparent). Mutually exclusive with coarse BB.
+    solid_q_full = solid_full.unsqueeze(0).expand(q, -1, -1, -1)
     t0 = time.time()
     mem_accum = torch.zeros(3, dtype=torch.float64, device=dev)
     for step in range(1, args.steps + 1):
         # 1. coarse evolve (domain-decomposed) — unchanged.
         coarse_old = coarse_f.clone()
+        before = coarse_f
         post = collide_coarse(coarse_f, tau_coarse)
+        if args.coarse_freeze:
+            # freeze solid cells (pre-collision state), matching root_advance
+            post = torch.where(solid_q_full, before, post)
         halo_exchange(post)
         streamed = stream27_roll(post)
-        if not args.no_coarse_bb:
+        if (not args.no_coarse_bb) and (not args.coarse_freeze):
             streamed = apply_halfway_bounce_back(streamed, post)
         coarse_f = far_field(streamed, u_in)
 
