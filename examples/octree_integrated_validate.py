@@ -480,6 +480,15 @@ def main():
         )
         l1_block.initialize_uniform(u_in)
         win = l1_block.win
+        # Match StaticBlockAMR3D: seed the L1 block from the coarse window
+        # (2:1 injection + neq rescale) instead of a pure equilibrium field.
+        # Without this the L1 physical region starts with neq=0 and the shell
+        # BFL never sees coarse non-equilibrium structure (a ~2.7x Cd excess
+        # driver, see l1_block docstring / single-card comparison).
+        cw_seed, _ = gather_window_chunked(
+            coarse_f, win, lo, hi,
+            rank=rank, world_size=world_size)
+        l1_block.initialize_from_window(cw_seed)
         print(f"[r{rank}] L1 block shape={l1_block.l1_shape} "
               f"ghost={l1_block.ghost} window_ring={l1_block.window_ring} "
               f"window_cells={win.cells.shape[0]} "
