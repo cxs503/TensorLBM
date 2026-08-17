@@ -167,6 +167,13 @@ class ShellGhostPlan:
     wx: torch.Tensor
     volume: torch.Tensor          # (n_ghost,) fine-cell volume (2^-3l)
     slot: torch.Tensor            # (Q, n_leaf) int64, -1 = no ghost
+    # Per-row leaf level in the PARENT field's frame (coarse-frame level for
+    # coarse-parent plans built by ``build_ghost_plan_coarse_parent``, i.e.
+    # ``octree.leaf_level[leaf] + 1``; ``None`` for the ordinary L1-frame
+    # plans, where ``_fill_ghost_impl`` falls back to
+    # ``leaf_level[plan.leaf]``).  Drives the neq rescale
+    # ``tau_f / (2^lev * taus[0]) * (1 - 1/tau_f)``.
+    lev: torch.Tensor | None = None  # (n_ghost,) int64, parent-frame level
 
 
 def build_ghost_plan(
@@ -400,6 +407,15 @@ def build_ghost_plan_coarse_parent(
             )
             w[solid_host] = 0.0
     volume = 2.0 ** (-3.0 * level_i.to(torch.float64))
+    # P0 ghost-lev fix: the donor field here is the COARSE parent (coarse
+    # frame, taus[0] = real coarse tau), while ``octree.leaf_level`` is the
+    # L1-hosted octree's level (1 or 2, relative to the L1 physical grid
+    # which already sits 2x finer than coarse).  The rescale in
+    # ``_fill_ghost_impl`` needs the level in the PARENT (coarse) frame,
+    # i.e. ``leaf_level + 1`` — otherwise tau_f and the 2^lev denominator
+    # are one level too coarse and the ghost neq is injected ~2.18x too
+    # strong vs the legacy two-level path (SUBOFF P0 Cd 1.10 -> 1.28).
+    lev = level_i + 1                                # coarse-frame level
     # Deterministic duplicate-safe slot map: ``interface_links`` can hold
     # duplicate (direction, leaf) rows (geometry build artifact, ~0.4% of
     # rows — e.g. SUBOFF L1 2667/609140), and the plain advanced-index
@@ -422,6 +438,7 @@ def build_ghost_plan_coarse_parent(
         wz=w[:, 0], wy=w[:, 1], wx=w[:, 2],
         volume=volume,
         slot=slot,
+        lev=lev,
     )
 
 
@@ -446,7 +463,12 @@ def _fill_ghost_impl(
     taus: list[float],
 ) -> torch.Tensor:
     """Shared ghost-fill body; ``leaf_level`` is the (global or shard-local)
-    per-leaf level array indexed by ``plan.leaf``."""
+    per-leaf level array indexed by ``plan.leaf``.
+
+    The level used for the neq rescale is ``plan.lev`` when the plan carries
+    one (coarse-parent plans: the level in the PARENT field's frame, e.g.
+    ``octree.leaf_level[leaf] + 1`` for a coarse donor), otherwise it falls
+    back to ``leaf_level[plan.leaf]`` (ordinary L1-frame plans — unchanged)."""
     q = parent_t.shape[0]
     if plan.n_ghost == 0:
         return torch.empty(
@@ -475,7 +497,10 @@ def _fill_ghost_impl(
     sampled = torch.lerp(
         torch.lerp(v00, v01, wy), torch.lerp(v10, v11, wy), wz,
     )
-    lev = leaf_level[plan.leaf]
+    if plan.lev is not None:
+        lev = plan.lev                       # parent-frame level (coarse plans)
+    else:
+        lev = leaf_level[plan.leaf]          # L1-frame level (ordinary plans)
     tau_f = torch.tensor(
         taus, dtype=torch.float64, device=sampled.device,
     )[lev.to(device=sampled.device)]
@@ -1322,6 +1347,9 @@ def _merge_shard_ghost_plans(shards) -> ShellGhostPlan:
     leaf = _scatter("leaf", torch.int64, local_leaf=True)
     direction = _scatter("direction", torch.int64)
     slot[direction, leaf] = torch.arange(n_ghost, dtype=torch.int64, device=dev)
+    has_lev = all(
+        getattr(s.ghost_plan, "lev", None) is not None for s in shards
+    )
     return ShellGhostPlan(
         n_ghost=n_ghost,
         leaf=leaf,
@@ -1332,6 +1360,7 @@ def _merge_shard_ghost_plans(shards) -> ShellGhostPlan:
         wz=_scatter("wz", torch.float64), wy=_scatter("wy", torch.float64),
         wx=_scatter("wx", torch.float64), volume=_scatter("volume", torch.float64),
         slot=slot,
+        lev=_scatter("lev", torch.int64) if has_lev else None,
     )
 
 
