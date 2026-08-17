@@ -51,7 +51,7 @@ err_pct_inf_domain = 100 × (Cd_mem − Cd_ref,inf) / Cd_ref,inf         （相�
 | 字段 | 含义 |
 |---|---|
 | `blockage_ratio` | β = D/Ly |
-| `blockage_correction` | 修正模型字符串（`simple 1/(1-beta)^2` / `glauert 1/(1-1.5*beta)` / `off`） |
+| `blockage_correction` | 修正模型字符串（`simple 1/(1-beta)^2` / `glauert 1/sqrt(1-beta^2)` / `glauert_classic 1/(1-1.5*beta)` / `off`；β≥15% 硬门禁时 `simple` 自动升级为 `glauert` 并在 `blockage_escalated` 标记） |
 | `blockage_factor` | 修正因子 f |
 | `ref_Cd_inf` | 无限域参考值 |
 | `ref_Cd` | 修正后参考值 = ref_Cd_inf × f |

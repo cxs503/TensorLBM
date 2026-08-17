@@ -50,6 +50,7 @@ from tensorlbm.octree_boundary.geometry import (
 from tensorlbm.octree_boundary.stepping import (
     _fill_ghost_impl,
     _tau_chain,
+    build_ghost_plan_coarse_parent,
     ensure_fanout_tables,
     restrict_shell_to_block,
     build_shell_coarse_links,
@@ -372,6 +373,10 @@ def step_octree_shell_distributed(
     rank: int = 0,
     world_size: int = 1,
     interleave: bool = False,
+    ghost_parent_old: torch.Tensor | None = None,
+    ghost_parent_new: torch.Tensor | None = None,
+    ghost_parent_offset: tuple[int, int, int] | None = None,
+    ghost_parent_tau: float | None = None,
 ) -> tuple[PopulationRefluxLedger | None, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Advance a distributed octree shell by one L1 root step (all_gather).
 
@@ -385,6 +390,23 @@ def step_octree_shell_distributed(
 
     ``octree.f_leaf`` must be sharded (this rank owns ``[lo:hi)``); topology
     tensors are shared (identical on every rank).
+
+    Ghost supply source (SUBOFF L1 P0 fix)
+    --------------------------------------
+    By default the ghost fill samples the time-lerped ``l1_old``/``l1_f``
+    fields through the L1-frame ghost plan (``parent_t``).  When
+    ``ghost_parent_old``/``ghost_parent_new`` are given (the evolved coarse
+    window fields at the root-step start/end) together with
+    ``ghost_parent_offset`` (the L1 physical origin in window coordinates,
+    ``(box.z0 - win.z0, box.y0 - win.y0, box.x0 - win.x0)``) and
+    ``ghost_parent_tau`` (the real coarse relaxation time), the ghost fill
+    instead samples the time-lerped *coarse* field through a coarse-frame
+    ghost plan (:func:`build_ghost_plan_coarse_parent`) — the genuine
+    evolved coarse supply of the legacy two-level path, skipping the 2:1
+    injection of the L1 block field.  The shell host remains the L1 grid:
+    collide/stream/BFL/restriction/reflux are unchanged, only the ghost
+    values handed to the stream's SHELL_OUTSIDE branch (and to BFL's
+    donor resolution / the reflux incoming observation) change source.
 
     Returns ``(ledger, mem_avg, restricted, cells)`` where ``restricted`` is
     the (Q, n_cells) fine->coarse restriction of the shell leaves and
@@ -418,6 +440,49 @@ def step_octree_shell_distributed(
 
     if ghost_plan is None:
         ghost_plan = build_ghost_plan(octree, tuple(octree.meta["shape"]))
+    # ---- P0 fix: optional coarse-parent ghost supply (see docstring) ----
+    use_coarse_parent = ghost_parent_old is not None
+    if use_coarse_parent:
+        if ghost_parent_new is None or ghost_parent_offset is None \
+                or ghost_parent_tau is None:
+            raise TypeError(
+                "step_octree_shell_distributed: ghost_parent_old/new/offset/"
+                "tau must all be provided together",
+            )
+        _wz, _wy, _wx = ghost_parent_old.shape[1:]
+        ghost_plan_coarse = build_ghost_plan_coarse_parent(
+            octree, (_wz, _wy, _wx), ghost_parent_offset,
+        )
+        # The ghost rescale chain: the sampled parent is the REAL coarse
+        # field (relaxation ghost_parent_tau), so the chain must start at
+        # tau_coarse — [tau_c, tau_l1, tau_shell] for d_max=2 — matching
+        # the legacy two-level path's [tau_c, tau_shell] convention
+        # (level-l ghost tau_f = chain[lev], base = chain[0]).
+        taus_ghost = _tau_chain(ghost_parent_tau, octree.d_max)
+    else:
+        ghost_plan_coarse = None
+        taus_ghost = None
+
+    def _slice_plan(plan):
+        """Per-rank slice of a global ghost plan (contiguous or interleaved)."""
+        if interleave:
+            return _slice_ghost_plan_by_indices(
+                plan, local_indices.cpu(), n_local, slot_device=device,
+            )[0]
+        lo0, hi0 = split_leaf_bounds(n_leaf, world_size)[rank]
+        return _slice_ghost_plan(
+            plan, lo0, hi0, n_local, slot_device=device,
+        )[0]
+
+    def _restore_global(plan_slice):
+        """Map sliced-plan local leaf enums back to global enums."""
+        p = plan_slice
+        return ShellGhostPlan(
+            p.n_ghost, local_indices[p.leaf.cpu()], p.direction,
+            p.z0, p.y0, p.x0, p.z1, p.y1, p.x1,
+            p.wx, p.wy, p.wz, p.volume, p.slot,
+        )
+
     # Static per-rank fanout positions (topology is fixed): the rank's
     # FANOUT cells and their member tables.  Built once per root step, reused
     # by every substep's stream + BFL donor resolution.
@@ -425,15 +490,7 @@ def step_octree_shell_distributed(
     # Slice the global ghost plan for this rank's leaves.  For interleaved
     # shards the leaf set is not contiguous, so select ghost rows whose leaf
     # enum belongs to this rank instead of the [lo:hi) slice.
-    if interleave:
-        ghost_plan_local, _grows = _slice_ghost_plan_by_indices(
-            ghost_plan, local_indices.cpu(), n_local, slot_device=device,
-        )
-    else:
-        lo0, hi0 = split_leaf_bounds(n_leaf, world_size)[rank]
-        ghost_plan_local, _grows = _slice_ghost_plan(
-            ghost_plan, lo0, hi0, n_local, slot_device=device,
-        )
+    ghost_plan_local = _slice_plan(ghost_plan)
 
     if reflux and l1_post is None:
         raise TypeError("reflux-enabled shell stepping requires l1_post")
@@ -491,16 +548,31 @@ def step_octree_shell_distributed(
         # 3. ghost fill (this rank's rows) + stream + BFL.
         # _slice_ghost_plan stores *local* leaf enums in plan.leaf; the fill
         # indexes leaf_level with it, so restore the global enum first.
-        gplan_fill = ghost_plan_local
         from tensorlbm.octree_boundary.stepping import ShellGhostPlan
         p = ghost_plan_local
         gplan_fill = ShellGhostPlan(
             p.n_ghost, local_indices[p.leaf.cpu()], p.direction, p.z0, p.y0, p.x0,
             p.z1, p.y1, p.x1, p.wx, p.wy, p.wz, p.volume, p.slot,
         )
-        ghost_vals = _fill_ghost_impl(
-            octree.leaf_level, gplan_fill, parent_t, taus,
-        )
+        if use_coarse_parent:
+            # P0 fix: supply the shell ghosts from the genuine evolved
+            # coarse field (time-lerped cw_old/cw_new, coarse-frame
+            # trilinear stencil) instead of the 2:1-injected L1 block
+            # field.  Same row order / slot table as the L1-frame plan
+            # (identical leaf/direction rows), so stream, BFL and the
+            # reflux incoming observation stay consistent.
+            assert ghost_parent_old is not None and ghost_parent_new is not None
+            assert ghost_parent_tau is not None and taus_ghost is not None
+            gplan_fill_coarse = _restore_global(_slice_plan(ghost_plan_coarse))
+            ghost_vals = _fill_ghost_impl(
+                octree.leaf_level, gplan_fill_coarse,
+                torch.lerp(ghost_parent_old, ghost_parent_new, alpha),
+                taus_ghost,
+            )
+        else:
+            ghost_vals = _fill_ghost_impl(
+                octree.leaf_level, gplan_fill, parent_t, taus,
+            )
         if os.environ.get("DBG_NAN"):
             dbg_mass_log.append((s, "ghost_vals_sum", float(ghost_vals.sum().item())))
             n_gh = ghost_plan_local.n_ghost
