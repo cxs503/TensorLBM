@@ -326,12 +326,6 @@ def _next_sdaa_card() -> int:
         return card
 
 
-# ── Generic-run job state ───────────────────────────────────────────────────
-
-_generic_jobs: dict[str, dict[str, Any]] = {}
-_generic_jobs_lock = threading.Lock()
-
-
 # ── Request schemas ─────────────────────────────────────────────────────────
 
 class GenericRunGeometry(BaseModel):
@@ -704,24 +698,6 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
     n_solid = int(solid.sum().item())
     n_near = int(mesh.near.sum().item())
 
-    # Store geometry info in job state
-    with _generic_jobs_lock:
-        _generic_jobs[job_id].update({
-            "shape": shape,
-            "device": str(device),
-            "grid": f"{dom['nx']}x{dom['ny']}x{dom['nz']}",
-            "n_solid": n_solid,
-            "n_near": n_near,
-            "Re": Re,
-            "u_in": u_in,
-            "nu": nu,
-            "tau": tau,
-            "collision": collision,
-            "Cs": Cs,
-            "n_steps": n_steps,
-            "warmup": warmup,
-        })
-
     job_manager.push_diagnostic(job_id, {
         "kind": "generic_run_setup",
         "step": 0,
@@ -794,14 +770,11 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
 
         # Divergence guard
         if not torch.isfinite(f).all():
-            with _generic_jobs_lock:
-                _generic_jobs[job_id]["status"] = "diverged"
-                _generic_jobs[job_id]["error"] = f"Diverged at step {step}"
             job_manager.push_diagnostic(job_id, {
                 "kind": "generic_run_diverged", "step": step,
                 "Cd_total": cd_tot, "Cl": cl,
             })
-            break
+            raise RuntimeError(f"Generic-run diverged at step {step}")
 
         # ── Push real-time diagnostics (WebSocket) ──
         if step % 10 == 0 or step == n_steps:
@@ -830,17 +803,6 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
                 "St": st_live,
                 "elapsed_s": time.time() - t0,
             })
-
-            # Update job state
-            with _generic_jobs_lock:
-                _generic_jobs[job_id].update({
-                    "step": step,
-                    "Cd_pressure": cd_p_avg,
-                    "Cd_friction": cd_f_avg,
-                    "Cd_total": cd_tot_avg,
-                    "Cl": cl_avg,
-                    "St": st_live,
-                })
 
         if step % 500 == 0:
             n_avg = min(500, len(cd_tot_hist))
@@ -908,6 +870,7 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
             "Cd_total": cd_tot_hist[-500:],
             "Cl": cl_hist[-500:],
         },
+        "fields_data": fields,
         "fields": list(fields.keys()),
         "modules_used": [
             "drag_pressure.get_near_wall_3d",
@@ -920,14 +883,6 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
             "stl_geometry.read_stl" if geo.source == "stl" else "parametric",
         ],
     }
-
-    # Store final results + field arrays in job state
-    with _generic_jobs_lock:
-        _generic_jobs[job_id].update({
-            "status": "completed",
-            "result": result,
-            "fields_data": fields,
-        })
 
     # Save results to job output directory
     import json
@@ -1051,19 +1006,13 @@ async def generic_run(request: Request) -> dict:
     job_id = job_manager.submit(
         name=f"GenericRun-{shape}-Re{req.physics.Re}",
         job_type="generic_run",
-        config=req.model_dump(),
+        config={
+            **req.model_dump(),
+            "shape": shape,
+            "auto_selected": auto,
+        },
         fn=_run,
     )
-
-    with _generic_jobs_lock:
-        _generic_jobs[job_id] = {
-            "status": "queued",
-            "step": 0,
-            "shape": shape,
-            "Re": req.physics.Re,
-            "auto_params": auto,
-            "request": req.model_dump(),
-        }
 
     return {
         "job_id": job_id,
@@ -1081,34 +1030,24 @@ async def generic_run(request: Request) -> dict:
 @router.get("/generic-run/{job_id}/status")
 def generic_run_status(job_id: str) -> dict:
     """Get the status of a generic-run simulation job."""
-    # Check our internal state first
-    with _generic_jobs_lock:
-        gj = _generic_jobs.get(job_id)
-
-    # Also check job_manager (authoritative for lifecycle)
     jm_job = job_manager.get_job(job_id)
-    if jm_job is None and gj is None:
+    if jm_job is None:
         raise HTTPException(status_code=404, detail="Generic-run job not found")
-
-    if jm_job is not None:
-        status = jm_job.status.value if hasattr(jm_job.status, "value") else str(jm_job.status)
-    else:
-        status = gj.get("status", "unknown") if gj else "unknown"
 
     result: dict[str, Any] = {
         "job_id": job_id,
-        "status": status,
+        "status": jm_job.status.value if hasattr(jm_job.status, "value") else str(jm_job.status),
+        "shape": jm_job.config.get("shape"),
+        "auto_selected": jm_job.config.get("auto_selected"),
+        "logs": jm_job.logs[-20:],
+        "jm_status": jm_job.to_dict(),
     }
-
-    if gj:
-        result.update({
-            k: v for k, v in gj.items()
-            if k not in ("fields_data", "request", "result")
-        })
-
-    if jm_job is not None:
-        result["jm_status"] = jm_job.to_dict()
-        result["logs"] = jm_job.logs[-20:]
+    if jm_job.diagnostics:
+        latest = jm_job.diagnostics[-1]
+        if latest.get("kind", "").startswith("generic_run"):
+            for key in ("step", "Cd_pressure", "Cd_friction", "Cd_total", "Cl", "St", "elapsed_s"):
+                if key in latest:
+                    result[key] = latest[key]
 
     return result
 
@@ -1116,28 +1055,15 @@ def generic_run_status(job_id: str) -> dict:
 @router.get("/generic-run/{job_id}/results")
 def generic_run_results(job_id: str) -> dict:
     """Get the final results of a completed generic-run simulation job."""
-    with _generic_jobs_lock:
-        gj = _generic_jobs.get(job_id)
-
-    if gj is None:
-        # Fallback: check job_manager result
-        jm_job = job_manager.get_job(job_id)
-        if jm_job is None:
-            raise HTTPException(status_code=404, detail="Generic-run job not found")
-        if jm_job.status.value != "completed":
-            raise HTTPException(
-                status_code=409,
-                detail=f"Job not completed (status={jm_job.status.value})",
-            )
-        return jm_job.result or {}
-
-    if gj.get("status") != "completed":
+    jm_job = job_manager.get_job(job_id)
+    if jm_job is None:
+        raise HTTPException(status_code=404, detail="Generic-run job not found")
+    if jm_job.status.value != "completed":
         raise HTTPException(
             status_code=409,
-            detail=f"Job not completed (status={gj.get('status')})",
+            detail=f"Job not completed (status={jm_job.status.value})",
         )
-
-    result = gj.get("result", {})
+    result = jm_job.result or {}
     # Include force history but exclude large field arrays
     serializable = {
         k: v for k, v in result.items()
@@ -1149,16 +1075,15 @@ def generic_run_results(job_id: str) -> dict:
 @router.get("/generic-run/{job_id}/fields/{field_name}")
 def generic_run_field(job_id: str, field_name: str, slice_axis: int = 0):
     """Get a 2-D slice of a recorded output field from a completed job."""
-    with _generic_jobs_lock:
-        gj = _generic_jobs.get(job_id)
-    if gj is None:
+    jm_job = job_manager.get_job(job_id)
+    if jm_job is None:
         raise HTTPException(status_code=404, detail="Generic-run job not found")
-    if gj.get("status") != "completed":
+    if jm_job.status.value != "completed":
         raise HTTPException(
             status_code=409,
-            detail=f"Job not completed (status={gj.get('status')})",
+            detail=f"Job not completed (status={jm_job.status.value})",
         )
-    fields = gj.get("fields_data", {})
+    fields = (jm_job.result or {}).get("fields_data", {})
     if field_name not in fields:
         available = list(fields.keys())
         raise HTTPException(
@@ -1195,21 +1120,18 @@ async def generic_run_ws(ws: WebSocket, job_id: str):
     """
     await ws.accept()
 
-    with _generic_jobs_lock:
-        gj = _generic_jobs.get(job_id)
     jm_job = job_manager.get_job(job_id)
 
-    if gj is None and jm_job is None:
+    if jm_job is None:
         await ws.send_json({"type": "error", "message": "Job not found"})
         await ws.close()
         return
 
     # Send initial status
     initial: dict[str, Any] = {"type": "status", "job_id": job_id}
-    if gj:
-        initial.update({k: v for k, v in gj.items()
-                        if k not in ("fields_data", "request", "result")})
     if jm_job:
+        initial["shape"] = jm_job.config.get("shape")
+        initial["auto_selected"] = jm_job.config.get("auto_selected")
         initial["jm_status"] = jm_job.status.value if hasattr(jm_job.status, "value") else str(jm_job.status)
     await ws.send_json(initial)
 
@@ -1237,15 +1159,11 @@ async def generic_run_ws(ws: WebSocket, job_id: str):
             # Check if job is finished
             jm_status = jm_job.status.value if hasattr(jm_job.status, "value") else str(jm_job.status)
             if jm_status in ("completed", "failed", "cancelled"):
-                with _generic_jobs_lock:
-                    gj = _generic_jobs.get(job_id)
                 final: dict[str, Any] = {"type": "final", "job_id": job_id, "status": jm_status}
-                if gj:
-                    final["Cd_total"] = gj.get("Cd_total")
-                    final["Cd_pressure"] = gj.get("Cd_pressure")
-                    final["Cd_friction"] = gj.get("Cd_friction")
-                    final["Cl"] = gj.get("Cl")
-                    final["St"] = gj.get("St")
+                result = jm_job.result or {}
+                for key in ("Cd_total", "Cd_pressure", "Cd_friction", "Cl", "St"):
+                    if key in result:
+                        final[key] = result[key]
                 if jm_job.error:
                     final["error"] = jm_job.error
                 await ws.send_json(final)
