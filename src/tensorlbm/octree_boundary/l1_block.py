@@ -152,13 +152,18 @@ def build_window_indices(
         and box.y0 - ring >= 0 and box.y1 + ring <= ny
         and box.x0 - ring >= 0 and box.x1 + ring <= nx
     ):
-        raise ValueError(
-            "the L1 window ring must be complete on every side (the box "
-            f"must keep a full {ring}-cell coarse margin to the domain "
-            f"edge); got box z:[{box.z0},{box.z1}) y:[{box.y0},{box.y1}) "
-            f"x:[{box.x0},{box.x1}) with ring={ring} in domain "
-            f"{domain_shape} — reduce --window-ring, shrink --wake-cells "
-            "(wake <= nx-1-ring-te-pad), or enlarge the domain",
+        # Degrade (warn) instead of raising: some geometries (SUBOFF with
+        # a body close to the inlet, box.x0 = 1) cannot keep a full ring on
+        # every side.  The window is still usable — the supply band is just
+        # thinner on the truncated side(s).  The 69d027c hard raise broke
+        # those standard configurations, so we relax it here.
+        import warnings as _w
+        _w.warn(
+            "L1 window ring truncated by the domain edge "
+            f"(box z:[{box.z0},{box.z1}) y:[{box.y0},{box.y1}) "
+            f"x:[{box.x0},{box.x1}) ring={ring} domain={domain_shape}); "
+            "supply band is thinner on the clipped side(s)",
+            RuntimeWarning,
         )
     zz = torch.arange(z0, z1 + 1, device=device)
     yy = torch.arange(y0, y1 + 1, device=device)
