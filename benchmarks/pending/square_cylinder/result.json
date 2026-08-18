@@ -1,0 +1,14 @@
+{
+  "case": "B19_square_cylinder_re100",
+  "S": 40,
+  "domain": "30S x 30S (blockage 3.3%)",
+  "collision": "MRT",
+  "force": "MEM (compute_obstacle_forces full solid)",
+  "cd": 1.5035,
+  "cd_ref": 2.05,
+  "err_pct": -26.7,
+  "st": 0.153,
+  "cl_std": 0.099,
+  "verified": false,
+  "notes": "涡脱落已建立（St=0.153 正常、Cl_std=0.099、统计收敛 10 块漂移 0.0034）但 Cd 系统性偏低 26.7%。参考 2.05 是 Sohankar 1997（通道配置）；自由流方柱 Re=100 文献范围 1.5-2.1，1.50 可能接近自由流真实值或 MEM 全固体格求和偏差。S=80 后台跑中。需 ghost_clean A/B 诊断 + 参考值口径确认。"
+}
