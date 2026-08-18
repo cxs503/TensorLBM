@@ -91,3 +91,13 @@
   分离/涡脱落过渡区流态网格依赖，两档不收敛 → 未达标（pending/naca0012）
 - Blasius：剖面 L2 8%、C_f +48%——前缘台阶效应（壁面 y=0.5 vs 对称面 y=0 差半格）
   → 未达标（pending/blasius_flat_plate，中置薄板是候选修复）
+
+### G17. AMR BFL 移动壁接口缺失（sphere_amr_common.py）——阻塞 B7/B8/B9
+- **现象**：`bfl_sphere_advance()` 以 `wall_velocity=`/`wall_density=`/`return_force=True`
+  调用核心 `bfl_d3q19.bouzidi_bounce_back_d3q19()`，但核心只有静止壁 4 参数版
+  （f, f_prev, fluid_boundary_mask, q_field，单返回值）
+- **波及**：amr_sphere_shell_validate/l2/l3/l4、amr_sphere_nested_shell_validate、
+  amr_sphere_cellwise_validate 全部崩溃；仅 amr_sphere_drag_validate 已适配（静止壁）
+- **修复**：sphere_amr_common.py 内补 D3Q19 移动壁全模板 BFL 副本（镜像已有
+  _bouzidi_bounce_back_d3q27），bfl_sphere_advance 按 lattice 分派
+- **备注**：AMR 机械层 177 测试通过但 shell runner 端到端崩溃（pytest 不覆盖）
