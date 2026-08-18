@@ -17,6 +17,13 @@ out = p.run_full_pipeline(
 )
 p.close()
 ```
+**v0.3 对外演示（闭环）**：
+```bash
+PYTHONPATH=src python examples/suboff_v03_demo.py \
+  --data-dir /abs/path/to/suboff8 \
+  --output-dir outputs/suboff_v03_demo
+```
+固定输入契约：`models/suboff_v0.3.pt` + `data_dir/{p,ux,uy,uz}/*.npy`；固定产物：推理指标、标准命名流场图、`run_metadata.json`。
 **性能（真实数据）**：当前仓库已具备可运行骨架与 checkpoint 训练/推理链路；标准 500k 点级单快照评估支持误差指标回传。公开 README 侧重流程能力展示，精确耗时/误差建议以目标机型复现实测为准。  
 **示例链接**：`src/tensorlbm/ai/suboff_platform_pipeline.py`，`tests/test_suboff_platform_pipeline.py`，`docs/suboff_platform_manual.md`
 

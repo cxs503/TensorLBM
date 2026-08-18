@@ -14,8 +14,10 @@ implementations) so the whole flow is testable without a real LBM run.
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import asdict
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
 
@@ -32,6 +34,8 @@ from tensorlbm.ml.training_job import TrainingJob, TrainingJobRegistry
 # SUBOFF LBM snapshot channels (data_dir/<channel>/*.npy)
 SUBOFF_CHANNELS = ("p", "ux", "uy", "uz")
 _CHANNEL_UNITS = {"p": "lu", "ux": "lu", "uy": "lu", "uz": "lu"}
+_REQUIRED_CKPT_KEYS = {"encoder", "decoder", "n_iter", "enc_optim", "enc_sched"}
+_DEFAULT_V03_CHECKPOINT = Path(__file__).resolve().parents[3] / "models" / "suboff_v0.3.pt"
 
 
 class SuboffPlatformPipeline:
@@ -261,3 +265,88 @@ class SuboffPlatformPipeline:
     def upstream_assets(self, asset_id: str) -> list[str]:
         """Transitive upstream assets of a dataset/model/job asset."""
         return self.catalog.upstream(asset_id)
+
+    def run_checkpoint_inference_demo(
+        self,
+        *,
+        data_dir: str | Path,
+        output_dir: str | Path,
+        checkpoint_path: str | Path | None = None,
+        snap_idx: int = 55,
+        test_set_offset: int = 1250,
+        device: str | None = None,
+        slice_axis: str = "z",
+        slice_index: int = 50,
+        channels: tuple[str, ...] = ("u", "p"),
+        predict_fn: Callable[[Any], dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """One-click v0.3 demo: checkpoint -> inference -> flow-field figures."""
+        from tensorlbm.ai.suboff_inference import (
+            SuboffPredictConfig,
+            render_suboff_flowfield_demo,
+        )
+        from tensorlbm.ai.suboff_utils import default_suboff_device, load_checkpoint
+
+        ckpt_path = Path(checkpoint_path or _DEFAULT_V03_CHECKPOINT).resolve()
+        if not ckpt_path.is_file():
+            raise FileNotFoundError(f"checkpoint not found: {ckpt_path}")
+        ckpt = load_checkpoint(str(ckpt_path), map_location="cpu")
+        missing = sorted(_REQUIRED_CKPT_KEYS.difference(ckpt.keys()))
+        if missing:
+            raise ValueError(f"checkpoint missing required keys: {missing}")
+
+        data_root = Path(data_dir).resolve()
+        for channel in SUBOFF_CHANNELS:
+            ch_dir = data_root / channel
+            if not ch_dir.is_dir():
+                raise ValueError(f"missing channel directory: {ch_dir}")
+            if not any(f.endswith(".npy") for f in os.listdir(ch_dir)):
+                raise ValueError(f"no .npy snapshots under: {ch_dir}")
+
+        out_root = Path(output_dir).resolve()
+        out_root.mkdir(parents=True, exist_ok=True)
+        cfg = SuboffPredictConfig(
+            checkpoint_path=str(ckpt_path),
+            data_dir=str(data_root),
+            snap_idx=int(snap_idx),
+            test_set_offset=int(test_set_offset),
+            device=device or default_suboff_device(),
+        )
+        inference = self.run_inference(cfg, predict_fn=predict_fn)
+        figure_manifest = render_suboff_flowfield_demo(
+            inference,
+            out_root,
+            slice_axis=slice_axis,
+            slice_index=slice_index,
+            channels=channels,
+            file_prefix="suboff_v03",
+        )
+
+        run_metadata = {
+            "demo": "suboff_v0.3_checkpoint_inference_flowfield",
+            "created_at": datetime.now(UTC).isoformat(),
+            "contract": {
+                "checkpoint": str(ckpt_path),
+                "data_dir": str(data_root),
+                "expected_layout": "data_dir/{p,ux,uy,uz}/*.npy",
+                "required_checkpoint_keys": sorted(_REQUIRED_CKPT_KEYS),
+            },
+            "inference": {
+                "snap_idx": int(snap_idx),
+                "test_set_offset": int(test_set_offset),
+                "device": cfg.device,
+                "metrics": {
+                    "mape": float(inference["mape"]),
+                    "rel_l2_avg": float(inference["rel_l2_avg"]),
+                    "mse_avg": float(inference["mse_avg"]),
+                },
+            },
+            "artifacts": {
+                "flowfield_figures": figure_manifest["files"],
+                "figure_manifest": figure_manifest,
+            },
+        }
+        metadata_path = out_root / "run_metadata.json"
+        metadata_path.write_text(json.dumps(run_metadata, indent=2), encoding="utf-8")
+        run_metadata["artifacts"]["run_metadata"] = str(metadata_path)
+        return run_metadata
