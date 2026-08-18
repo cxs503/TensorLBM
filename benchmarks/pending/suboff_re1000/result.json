@@ -1,0 +1,14 @@
+{
+  "case": "B6_suboff_re1000",
+  "module": "GeneralSimEngine PARAMETRIC_SUBOFF",
+  "extrap": "none",
+  "grid": "L=80 格（艇长），resolution=80",
+  "collision": "MRT",
+  "steps": 20000,
+  "device": "cuda:2",
+  "cd_tot": 0.0379,
+  "cd_ref": 0.0436,
+  "err_pct": -9.85,
+  "verified": false,
+  "notes": "历史 +3.8% 是 5000 步未收敛瞬态（25% 窗口 ~5000 步给 0.0431 与历史一致）；收敛后 -9.85% 偏低。参考口径：AFF-8 全尺寸实验 Ct≈0.0031 为不同 Re，Re=1000 用平板 Blasius 类推参考 Cd_tot≈0.0436。需更大网格（L≥128）+ 更久收敛 + 摩擦公式检查。子 agent 中断未写完 result.json，本数据来自 live transcript 补录。"
+}
