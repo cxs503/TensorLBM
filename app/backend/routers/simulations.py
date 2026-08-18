@@ -354,6 +354,26 @@ class GenericRunSolver(BaseModel):
     steps: int = Field(0, description="Total steps (auto-selected if 0)")
     warmup: int = Field(0, description="Warmup steps before force averaging (auto-selected if 0)")
     lattice: str = Field("d3q19", description="Lattice model: 'd3q19' or 'd3q27'")
+    turbulence_model: str = Field(
+        "auto",
+        description="LES model: 'auto', 'smagorinsky', 'wale', 'dynamic_smagorinsky', 'none'",
+    )
+    wall_treatment: str = Field(
+        "auto",
+        description="Wall treatment: 'auto', 'bb', 'bfl', 'wf'",
+    )
+    sponge: bool = Field(True, description="Enable equilibrium-difference sponge layer")
+    sponge_width: int = Field(0, description="Sponge layer width in cells (auto-selected if 0)")
+    sponge_strength: float = Field(0.12, description="Sponge max strength in [0,1]")
+    force_crosscheck: bool = Field(True, description="Enable control-volume force cross-check")
+    force_crosscheck_tolerance_pct: float = Field(
+        35.0,
+        description="Allowed mean mismatch (%) between surface-force and control-volume force",
+    )
+    max_mass_drift_pct: float = Field(
+        1.0,
+        description="Maximum allowed total-mass drift (%) before failing the run",
+    )
 
 
 class GenericRunOutput(BaseModel):
@@ -393,25 +413,54 @@ def _auto_select_params(req: GenericRunRequest, shape: str) -> dict[str, Any]:
     steps = req.solver.steps
     warmup = req.solver.warmup
 
+    turbulence_model = (req.solver.turbulence_model or "auto").strip().lower()
+    if turbulence_model == "auto":
+        if Re >= 2.0e5:
+            turbulence_model = "wale"
+        elif Re >= 1500.0:
+            turbulence_model = "smagorinsky"
+        else:
+            turbulence_model = "none"
+
     if not collision:
-        collision = "mrt_smag" if Re > 1000 else "mrt"
+        if turbulence_model == "none":
+            collision = "mrt"
+        elif turbulence_model == "dynamic_smagorinsky":
+            collision = "mrt_dynsmag"
+        elif turbulence_model == "wale":
+            collision = "mrt_wale"
+        else:
+            collision = "mrt_smag"
     if Cs == 0.0 and "smag" in collision:
         Cs = 0.10 if Re > 1000 else 0.05
+    if "wale" in collision and Cs == 0.0:
+        Cs = 0.50
     if steps == 0:
         if shape == "suboff":
-            steps = 10000  # SUBOFF needs long warmup
+            steps = 12000  # SUBOFF needs long warmup
         elif shape == "cylinder":
-            steps = 5000
+            steps = 8000
+        elif shape == "stl":
+            steps = 6000
         else:
-            steps = 2000
+            steps = 3000
     if warmup == 0:
         warmup = int(steps * 0.5) if shape == "suboff" else int(steps * 0.6)
 
+    wall_treatment = (req.solver.wall_treatment or "auto").strip().lower()
+    if wall_treatment == "auto":
+        wall_treatment = "wf" if Re >= 10000.0 else "bb"
+
+    avg_window = max(50, min(500, int(steps * 0.2)))
+
     return {
         "collision": collision,
+        "turbulence_model": turbulence_model,
         "Cs": Cs,
         "steps": steps,
         "warmup": warmup,
+        "wall_treatment": wall_treatment,
+        "avg_window": avg_window,
     }
 
 
@@ -423,10 +472,13 @@ def _auto_domain(shape: str, params: dict[str, Any]) -> dict[str, Any]:
     if shape == "sphere":
         R = float(params.get("radius", 20.0))
         D = 2.0 * R
-        nx = int(params.get("nx", max(120, int(6 * D))))
-        ny = int(params.get("ny", max(120, int(6 * D))))
-        nz = int(params.get("nz", max(120, int(6 * D))))
-        cx = nx * 0.25
+        upstream = float(params.get("upstream_D", 6.0))
+        downstream = float(params.get("downstream_D", 12.0))
+        lateral = float(params.get("lateral_D", 6.0))
+        nx = int(params.get("nx", max(120, int((upstream + downstream) * D))))
+        ny = int(params.get("ny", max(120, int(lateral * D))))
+        nz = int(params.get("nz", max(120, int(lateral * D))))
+        cx = int(round(upstream * D))
         cy = ny * 0.5
         cz = nz * 0.5
         return {"nx": nx, "ny": ny, "nz": nz, "cx": cx, "cy": cy, "cz": cz,
@@ -436,10 +488,13 @@ def _auto_domain(shape: str, params: dict[str, Any]) -> dict[str, Any]:
         D = 2.0 * R
         length = float(params.get("length", 4.0 * D))
         axis = str(params.get("axis", "z"))
-        nx = int(params.get("nx", max(960, int(10 * D))))
-        ny = int(params.get("ny", max(384, int(4 * D))))
-        nz = int(params.get("nz", 4))
-        cx = nx * 0.25
+        upstream = float(params.get("upstream_D", 10.0))
+        downstream = float(params.get("downstream_D", 20.0))
+        lateral = float(params.get("lateral_D", 7.5))
+        nx = int(params.get("nx", max(480, int((upstream + downstream) * D))))
+        ny = int(params.get("ny", max(240, int(2.0 * lateral * D))))
+        nz = int(params.get("nz", max(4, int(params.get("span_D", 3.141592653589793) * D))))
+        cx = int(round(upstream * D))
         cy = ny * 0.5
         cz = nz * 0.5
         return {"nx": nx, "ny": ny, "nz": nz, "cx": cx, "cy": cy, "cz": cz,
@@ -464,10 +519,13 @@ def _auto_domain(shape: str, params: dict[str, Any]) -> dict[str, Any]:
         b = float(params.get("b", 12.0))
         c = float(params.get("c", 12.0))
         D = 2.0 * max(a, b, c)
-        nx = int(params.get("nx", max(120, int(6 * D))))
-        ny = int(params.get("ny", max(120, int(6 * D))))
-        nz = int(params.get("nz", max(120, int(6 * D))))
-        cx = nx * 0.25
+        upstream = float(params.get("upstream_D", 6.0))
+        downstream = float(params.get("downstream_D", 12.0))
+        lateral = float(params.get("lateral_D", 6.0))
+        nx = int(params.get("nx", max(120, int((upstream + downstream) * D))))
+        ny = int(params.get("ny", max(120, int(lateral * D))))
+        nz = int(params.get("nz", max(120, int(lateral * D))))
+        cx = int(round(upstream * D))
         cy = ny * 0.5
         cz = nz * 0.5
         return {"nx": nx, "ny": ny, "nz": nz, "cx": cx, "cy": cy, "cz": cz,
@@ -618,6 +676,7 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
     Cs = auto["Cs"]
     n_steps = auto["steps"]
     warmup = auto["warmup"]
+    wall_treatment = auto["wall_treatment"]
 
     # ── Auto-select domain ──
     dom = _auto_domain(shape, geo.params)
@@ -648,13 +707,20 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
 
     # ── Collision operator ──
     from tensorlbm.solver3d import collide_mrt3d, correct_mass3d
-    if "smag" in collision:
+    collide_kwargs: dict[str, Any] = {}
+    if "dynsmag" in collision:
+        from tensorlbm.turbulence import collide_dynamic_smagorinsky_mrt3d
+        collide_fn = collide_dynamic_smagorinsky_mrt3d
+    elif "wale" in collision:
+        from tensorlbm.turbulence import collide_wale_mrt3d
+        collide_fn = collide_wale_mrt3d
+        collide_kwargs = {"C_w": Cs}
+    elif "smag" in collision:
         from tensorlbm.turbulence import collide_smagorinsky_mrt3d
         collide_fn = collide_smagorinsky_mrt3d
-        collide_kwargs: dict[str, Any] = {"C_s": Cs}
+        collide_kwargs = {"C_s": Cs}
     else:
         collide_fn = collide_mrt3d
-        collide_kwargs = {}
 
     # ── Far-field BC ──
     from tensorlbm.boundaries3d import far_field_bc_3d
@@ -674,6 +740,14 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
         drag_friction_integration,
     )
     from tensorlbm.postprocess import detect_strouhal
+    from tensorlbm.sponge_layer import (
+        build_anisotropic_sponge_sigma_3d,
+        apply_equilibrium_difference_sponge,
+    )
+    from tensorlbm.control_volume_force import (
+        box_control_volume,
+        observe_control_volume_force,
+    )
 
     job_manager.raise_if_cancelled(job_id)
 
@@ -712,6 +786,7 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
         "tau": tau,
         "collision": collision,
         "Cs": Cs,
+        "wall_treatment": wall_treatment,
         "n_steps": n_steps,
         "elapsed_s": time.time() - t0,
     })
@@ -726,15 +801,75 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
     )
     initial_mass = float(rho0.sum().item())
 
+    # ── Optional outlet sponge (equilibrium-difference damping) ──
+    sponge_sigma = None
+    if sol.sponge:
+        sponge_width = int(sol.sponge_width) if sol.sponge_width > 0 else max(4, int(round(0.06 * nx)))
+        periodic_faces = set(bc_config.get("periodic_faces", []))
+        face_widths: dict[str, int] = {"x+": sponge_width}
+        if "y-" not in periodic_faces:
+            face_widths["y-"] = max(2, sponge_width // 2)
+        if "y+" not in periodic_faces:
+            face_widths["y+"] = max(2, sponge_width // 2)
+        if "z-" not in periodic_faces:
+            face_widths["z-"] = max(2, sponge_width // 2)
+        if "z+" not in periodic_faces:
+            face_widths["z+"] = max(2, sponge_width // 2)
+        sponge_sigma = build_anisotropic_sponge_sigma_3d(
+            (nz, ny, nx),
+            face_widths=face_widths,
+            max_strength=max(0.0, min(1.0, float(sol.sponge_strength))),
+            device=device,
+            dtype=f.dtype,
+        )
+
+    # ── Optional control-volume force cross-check ──
+    cv_mask = None
+    periodic_axes: tuple[str, ...] = ()
+    periodic_faces = set(bc_config.get("periodic_faces", []))
+    if "x-" in periodic_faces or "x+" in periodic_faces:
+        periodic_axes = periodic_axes + ("x",)
+    if "y-" in periodic_faces or "y+" in periodic_faces:
+        periodic_axes = periodic_axes + ("y",)
+    if "z-" in periodic_faces or "z+" in periodic_faces:
+        periodic_axes = periodic_axes + ("z",)
+    if sol.force_crosscheck:
+        pad_x = max(3, int(round(0.12 * nx)))
+        pad_y = max(3, int(round(0.12 * ny)))
+        pad_z = max(1, int(round(0.12 * nz)))
+        if "z" in periodic_axes:
+            pad_z = 0
+        try:
+            cv_mask = box_control_volume(
+                (nz, ny, nx),
+                x0=pad_x,
+                x1=max(pad_x + 1, nx - pad_x),
+                y0=pad_y,
+                y1=max(pad_y + 1, ny - pad_y),
+                z0=pad_z,
+                z1=max(pad_z + 1, nz - pad_z),
+                device=device,
+                periodic_axes=periodic_axes,
+            )
+        except Exception:
+            cv_mask = None
+
     # ── History accumulators ──
     cd_p_hist: list[float] = []
     cd_f_hist: list[float] = []
     cd_tot_hist: list[float] = []
     cl_hist: list[float] = []
+    cd_cv_hist: list[float] = []
+    cv_mismatch_hist: list[float] = []
+    max_mass_drift_pct = 0.0
 
     # ═══ Step 3: Main loop via lbm_step_correct ═══
     for step in range(1, n_steps + 1):
         job_manager.raise_if_cancelled(job_id)
+        f_old = f.clone()
+        f_post_collision = collide_fn(f_old.clone(), tau=tau, **collide_kwargs)
+        sm = solid.unsqueeze(0).expand_as(f_post_collision)
+        f_post_collision = torch.where(sm, f_old, f_post_collision)
 
         f = lbm_step_correct(
             f,
@@ -747,8 +882,19 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
             target_mass=initial_mass,
             step=step,
             mass_interval=200,
+            wall_treatment="wf" if wall_treatment == "wf" else "bb",
+            nu=nu,
+            near_mask=mesh.near,
             **collide_kwargs,
         )
+
+        if sponge_sigma is not None:
+            f = apply_equilibrium_difference_sponge(
+                f,
+                sponge_sigma,
+                rho_target=1.0,
+                velocity_target=(u_in, 0.0, 0.0),
+            )
 
         # ── Force computation (common interface) ──
         if out_cfg.forces:
@@ -768,6 +914,27 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
         cd_tot_hist.append(cd_tot)
         cl_hist.append(cl)
 
+        if cv_mask is not None and out_cfg.forces and step >= warmup:
+            try:
+                cv_res = observe_control_volume_force(
+                    f_old,
+                    f,
+                    f_post_collision,
+                    cv_mask,
+                    solid=solid,
+                    periodic_axes=periodic_axes,
+                )
+                cd_cv = float(cv_res.force_on_body[0].item()) / max(dpS, 1e-30)
+                mismatch_pct = abs(cd_cv - cd_tot) / max(abs(cd_tot), 1e-6) * 100.0
+                cd_cv_hist.append(cd_cv)
+                cv_mismatch_hist.append(mismatch_pct)
+            except Exception:
+                pass
+
+        current_mass = float(f.sum().item())
+        mass_drift_pct = abs(current_mass - initial_mass) / max(initial_mass, 1e-30) * 100.0
+        max_mass_drift_pct = max(max_mass_drift_pct, mass_drift_pct)
+
         # Divergence guard
         if not torch.isfinite(f).all():
             job_manager.push_diagnostic(job_id, {
@@ -775,6 +942,11 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
                 "Cd_total": cd_tot, "Cl": cl,
             })
             raise RuntimeError(f"Generic-run diverged at step {step}")
+        if mass_drift_pct > float(sol.max_mass_drift_pct):
+            raise RuntimeError(
+                f"Generic-run mass drift gate failed at step {step}: "
+                f"{mass_drift_pct:.3f}% > {sol.max_mass_drift_pct:.3f}%"
+            )
 
         # ── Push real-time diagnostics (WebSocket) ──
         if step % 10 == 0 or step == n_steps:
@@ -801,6 +973,8 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
                 "Cd_total": cd_tot_avg,
                 "Cl": cl_avg,
                 "St": st_live,
+                "mass_drift_pct": mass_drift_pct,
+                "cv_force_mismatch_pct": cv_mismatch_hist[-1] if cv_mismatch_hist else None,
                 "elapsed_s": time.time() - t0,
             })
 
@@ -815,11 +989,25 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
     elapsed = time.time() - t0
 
     # ═══ Step 4: Final time-averaged results ═══
-    avg_window = max(1, min(n_steps - warmup, len(cd_tot_hist)))
+    configured_avg_window = int(auto.get("avg_window", 100))
+    avg_window = max(1, min(configured_avg_window, n_steps - warmup, len(cd_tot_hist)))
     cd_p_final = sum(cd_p_hist[-avg_window:]) / avg_window if cd_p_hist else 0.0
     cd_f_final = sum(cd_f_hist[-avg_window:]) / avg_window if cd_f_hist else 0.0
     cd_tot_final = cd_p_final + cd_f_final
     cl_final = sum(cl_hist[-avg_window:]) / avg_window if cl_hist else 0.0
+    cd_cv_final = sum(cd_cv_hist[-avg_window:]) / avg_window if cd_cv_hist else None
+    cv_mismatch_final = (
+        sum(cv_mismatch_hist[-avg_window:]) / avg_window if cv_mismatch_hist else None
+    )
+    force_gate_passed = (
+        cv_mismatch_final is None
+        or cv_mismatch_final <= float(sol.force_crosscheck_tolerance_pct)
+    )
+    if not force_gate_passed:
+        raise RuntimeError(
+            "Generic-run force cross-check gate failed: "
+            f"{cv_mismatch_final:.3f}% > {sol.force_crosscheck_tolerance_pct:.3f}%"
+        )
 
     # ── Final Strouhal number ──
     st_final = 0.0
@@ -854,6 +1042,7 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
         "tau": tau,
         "collision": collision,
         "Cs": Cs,
+        "wall_treatment": wall_treatment,
         "n_steps": n_steps,
         "n_solid": n_solid,
         "n_near": n_near,
@@ -861,14 +1050,19 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
         "Cd_friction": cd_f_final,
         "Cd_total": cd_tot_final,
         "Cl": cl_final,
+        "Cd_control_volume": cd_cv_final,
+        "force_crosscheck_mismatch_pct": cv_mismatch_final,
         "St": st_final,
         "finite": bool(torch.isfinite(f).all().item()),
+        "max_mass_drift_pct": max_mass_drift_pct,
         "elapsed_s": elapsed,
         "forces_history": {
             "Cd_pressure": cd_p_hist[-500:],
             "Cd_friction": cd_f_hist[-500:],
             "Cd_total": cd_tot_hist[-500:],
             "Cl": cl_hist[-500:],
+            "Cd_control_volume": cd_cv_hist[-500:],
+            "force_mismatch_pct": cv_mismatch_hist[-500:],
         },
         "fields_data": fields,
         "fields": list(fields.keys()),
@@ -878,10 +1072,25 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
             "drag_pressure.drag_pressure_integration",
             "drag_pressure.drag_friction_integration",
             "boundaries3d.far_field_bc_3d",
+            "sponge_layer.apply_equilibrium_difference_sponge" if sponge_sigma is not None else "sponge_layer.disabled",
             "lbm_step_correct.lbm_step_correct",
+            "control_volume_force.observe_control_volume_force" if cv_mask is not None else "control_volume_force.disabled",
             "postprocess.detect_strouhal",
             "stl_geometry.read_stl" if geo.source == "stl" else "parametric",
         ],
+        "quality_gates": {
+            "mass_conservation": {
+                "passed": max_mass_drift_pct <= float(sol.max_mass_drift_pct),
+                "max_mass_drift_pct": max_mass_drift_pct,
+                "threshold_pct": float(sol.max_mass_drift_pct),
+            },
+            "force_crosscheck": {
+                "enabled": bool(sol.force_crosscheck and cv_mask is not None),
+                "passed": force_gate_passed,
+                "mismatch_pct": cv_mismatch_final,
+                "threshold_pct": float(sol.force_crosscheck_tolerance_pct),
+            },
+        },
     }
 
     # Save results to job output directory
@@ -972,6 +1181,16 @@ async def generic_run(request: Request) -> dict:
                 steps=solver_raw.get("steps", 0),
                 warmup=solver_raw.get("warmup", 0),
                 lattice=solver_raw.get("lattice", "d3q19"),
+                turbulence_model=solver_raw.get("turbulence_model", "auto"),
+                wall_treatment=solver_raw.get("wall_treatment", "auto"),
+                sponge=solver_raw.get("sponge", True),
+                sponge_width=solver_raw.get("sponge_width", 0),
+                sponge_strength=solver_raw.get("sponge_strength", 0.12),
+                force_crosscheck=solver_raw.get("force_crosscheck", True),
+                force_crosscheck_tolerance_pct=solver_raw.get(
+                    "force_crosscheck_tolerance_pct", 35.0,
+                ),
+                max_mass_drift_pct=solver_raw.get("max_mass_drift_pct", 1.0),
             ),
             output=GenericRunOutput(
                 fields=output_raw.get("fields", ["velocity", "pressure"]),
@@ -1045,7 +1264,17 @@ def generic_run_status(job_id: str) -> dict:
     if jm_job.diagnostics:
         latest = jm_job.diagnostics[-1]
         if latest.get("kind", "").startswith("generic_run"):
-            for key in ("step", "Cd_pressure", "Cd_friction", "Cd_total", "Cl", "St", "elapsed_s"):
+            for key in (
+                "step",
+                "Cd_pressure",
+                "Cd_friction",
+                "Cd_total",
+                "Cl",
+                "St",
+                "mass_drift_pct",
+                "cv_force_mismatch_pct",
+                "elapsed_s",
+            ):
                 if key in latest:
                     result[key] = latest[key]
 
