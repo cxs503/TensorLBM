@@ -3,8 +3,12 @@
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cxs503/TensorLBM/blob/main/notebooks/quickstart.ipynb)
+[![Quick Start](https://img.shields.io/badge/Quick%20Start-Get%20Started-blue)](#installation)
+[![AI4S Apps](https://img.shields.io/badge/AI4S%20Apps-Industry%20Workflows-6f42c1)](docs/AI4S_APPS.md)
+[![Browser Platform](https://img.shields.io/badge/Browser%20Platform-FastAPI%20%2B%20WebUI-0ea5e9)](docs/PLATFORM.md)
+[![HPC Benchmarks](https://img.shields.io/badge/HPC%20Benchmarks-Validated%20Cases-16a34a)](#quantitative-validation-summary)
 
-> **A CPU-first PyTorch Lattice Boltzmann platform for reproducible CFD research.**
+> **An AI4Science Platform for Industrial Fluid Dynamics.**
 > D2Q9 · D3Q19 · D3Q27 · BGK · MRT · TRT · RLBM · Cumulant · LES · RANS · AMR · DG-LBM · AI turbulence closure · Multi-GPU
 
 ```bash
@@ -26,6 +30,19 @@ for _ in range(200):
 ```
 
 ---
+
+## What's new in v0.3
+
+- **Platform 升级可见化**：新增 `app/backend/` FastAPI 服务化平台，覆盖 28 个业务路由与统一作业管理。
+- **AI pipeline 三件套**：SUBOFF、AI-LES、Flow-Transformer 三条 AI4Science 流水线已接入平台骨架。
+- **LLM Agent 集成**：`app/backend/agent_core.py` 提供平台级 agent 编排能力，支持自然语言驱动任务。
+- **库 + 平台双形态**：保留 `src/tensorlbm/` 研究库能力，同时面向浏览器与后端场景提供工程入口。
+
+## 3 个差异化
+
+1. **真实工业 case**：以 SUBOFF 等工业流体场景为核心，覆盖工程导向数据与验证路径。  
+2. **完整闭环**：从几何/数据准备、仿真求解、AI 训练到推理服务形成端到端交付链路。  
+3. **浏览器 + Agent**：浏览器平台与 LLM Agent 协同，降低复杂 CFD+AI 工作流使用门槛。
 
 ## What TensorLBM provides
 
@@ -68,6 +85,8 @@ for _ in range(200):
 
 ## Documentation / 文档
 
+- **[AI4S 应用目录 / AI4S Apps](docs/AI4S_APPS.md)** – 面向工业流体问题的 AI4Science 应用列表、输入输出约定与示例入口。
+- **[Browser Platform 说明](docs/PLATFORM.md)** – 平台架构、用户旅程、部署形态与与库边界说明。
 - **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
   Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
 - **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
