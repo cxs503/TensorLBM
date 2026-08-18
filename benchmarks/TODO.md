@@ -25,7 +25,7 @@
 ### 组 3：spherical_dg（球坐标贴体 DG 壳层）
 | # | 案例 | 物理 | 参考值 | 当前精度 | 状态 |
 |---|------|------|--------|---------|------|
-| B10 | stokes_sphere_dg | Stokes 球 Re=0.1 DG 壳 | Cd=240 (Stokes 理论) | 2.1% (压力积分 4x16x32) | **收敛性未建立** |
+| B10 | stokes_sphere_dg | Stokes 球 Re=0.1 DG 壳 | Cd=240 (Stokes 理论) | 2.15% 单网格但加密恶化 53% | **假结果，移出 verified** |
 | B11 | sphere_re100_dg | 球 Re=100 DG 壳 | Cd=1.09 | 未知 | 待验证 |
 
 ### 组 4：octree_boundary（八叉树 VR，实验性）
@@ -42,7 +42,6 @@
 
 **✅ 已入库（达标 ≤3%，真实模拟无外推）**
 - **B17 Taylor-Green 2D**（128²，Re=100）：γ 误差 **-0.035%**（动能）/-0.0007%（速度），R²=0.9999996 → benchmarks/verified/taylor_green_2d/
-- **B10 Stokes DG 球**（球坐标 DG 壳层 4×16×32，真实模拟）：Cd=234.8 vs 240（**2.15%**）→ benchmarks/verified/stokes_sphere_dg/
 - **B13 Poiseuille 2D**（Zou-He 压力驱动）：H=60 误差 **0.18%**（H=20:1.21%→H=40:0.45%→H=60:0.18% 单调收敛）→ benchmarks/verified/poiseuille_2d/
 
 **🔶 未达标（待继续）**
@@ -57,7 +56,7 @@
 1. **B1 真实模拟**：D40 基线实测 -13~-15%（0.92-0.95 vs 1.09）；需 D60/D80 加密看收敛趋势，目标是真实网格误差 ≤3%（可能需 D≥100 或检查压力/摩擦公式）
 2. **B2 网格加密**：D60 → D80 → D100 扫收敛趋势，真实模拟达标才保存
 3. **B4/B5 圆柱**：D40/D80 扫描（B4 子 agent 进行中），真实模拟收敛后达标
-4. **B10 Stokes DG**：摩擦项 DG 多项式导数修正后测收敛性（进行中）
+4. **B10 Stokes DG**：摩擦项需 DG 弱形式应力张量积分（P1 节点导数/单元均值差分均不收敛），收敛性成立才入库
 5. **B6 SUBOFF**：3.8% 需壁面模型或更细网格，难度高，放后
 
 ## 文件夹结构
@@ -77,7 +76,10 @@ benchmarks/TODO.md            # 本清单 + 状态跟踪
 
 - **精度必须来自真实网格模拟**：|Cd_sim − Cd_ref| / Cd_ref ≤ 3%
 - **禁止任何形式的外推凑精度**（pressure_extrap='none' 必须；不采用 Richardson/外推修正值作为达标依据）。外推结果可作参考，但不作为 benchmark 保存依据
-- 达标 = 真实模拟（无外推、无人工修正）误差 ≤3%
+- 达标 = 真实模拟（无外推、无人工修正）误差 ≤3% **且网格收敛性成立**：
+  - 必须 ≥2 档网格扫描（如 H=40/60、D=60/80），误差单调下降（或 Richardson 收敛到参考值）
+  - **单网格巧合误差、加密反而恶化的结果 = 假结果，不入库**（用户核心标准："那是凑出来的精度"）
+  - 入库时 result.json 必须含网格扫描数据（各档误差）
 - **必须通过共性模块入口运行**，定义为以下之一：
   1. **GeneralSimEngine**（general_sim.py，3D 绕流引擎：sphere/cylinder/suboff/naca/hull）
   2. **库内 solver 共性路径**（solver.py collide/stream、d2q9/d3q19 平衡态、boundaries.py 边界——2D/解析解类案例）
