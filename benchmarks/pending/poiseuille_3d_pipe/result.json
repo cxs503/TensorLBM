@@ -1,0 +1,44 @@
+{
+  "case": "poiseuille_3d_pipe_convergence",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "mode": "velocity",
+  "boundary": "zou_he_velocity_inlet(x=0) + zou_he_pressure_outlet(x=nx-1) + half-way bounce-back at pipe wall (post-streaming)",
+  "driving": "uniform velocity inlet u_in=0.02",
+  "R_list": [
+    20,
+    40
+  ],
+  "L_over_R": 6.0,
+  "tau": 0.8,
+  "u_in": 0.02,
+  "min_steps": 20000,
+  "max_steps": 60000,
+  "extrap": "none",
+  "per_grid": [
+    {
+      "R": 20,
+      "Re": 8.2,
+      "l2_rel_err_shape": 0.015786998424989283,
+      "max_rel_err_central_shape_pct": 15.508007260587972,
+      "l2_rel_err": 0.022763769537808485,
+      "u_max_err_pct": -1.1212214827537557,
+      "n_steps": 20000,
+      "steady": true
+    },
+    {
+      "R": 40,
+      "Re": 16.2,
+      "l2_rel_err_shape": 0.006933582611721084,
+      "max_rel_err_central_shape_pct": 7.532980749797927,
+      "l2_rel_err": 0.011989704604294485,
+      "u_max_err_pct": -0.8107185363769552,
+      "n_steps": 23600,
+      "steady": true
+    }
+  ],
+  "converged": true,
+  "passed_3pct_and_converged": false,
+  "verdict": "not_verified",
+  "notes": "profile shape (normalized by measured center velocity) compared against u(r)=U_max*(1-(r/R_eff)^2), R_eff=R+0.5 (half-way BB wall position)"
+}
