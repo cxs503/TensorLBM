@@ -1,0 +1,24 @@
+{
+  "case": "B31_cylinder_re20_schaefer_turek_2d1",
+  "reference": "Schafer-Turek 2D-1 (Nabh 1998 spectral): Cd=5.57953523384, Cl=0.010618948146",
+  "config": "channel 2.2x0.41, cylinder D=0.1 at (0.2,0.2), Poiseuille inlet, pressure outlet, Re=20",
+  "grids": {
+    "D40": {
+      "nx": 880,
+      "ny": 164,
+      "cd": 5.53723,
+      "err_cd_pct": -0.758,
+      "steps": 100000
+    },
+    "D80": {
+      "nx": 1760,
+      "ny": 328,
+      "cd": 5.39645,
+      "err_cd_pct": -3.281,
+      "steps": 80000
+    }
+  },
+  "verdict": "NOT VERIFIED — D=40 -0.76% 巧合精度，D=80 -3.28% 加密恶化（用户标准：加密恶化=假结果）",
+  "analysis": "Cd 随网格下降 5.54→5.40：half-way BB 有效半径 R_eff=R+0.5 使有效 D 偏大→Cd 偏低；或入口 Poiseuille 剖面/出口 BC 网格依赖。Cl 符号反（-0.014 vs +0.0106）为 y 轴约定或参考符号问题。需：R_eff 修正（用 R-0.5 或精确壁面位置）或检查单位",
+  "verified": false
+}

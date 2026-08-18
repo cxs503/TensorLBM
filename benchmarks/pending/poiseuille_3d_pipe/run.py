@@ -389,13 +389,16 @@ def scan(R_list, tau, u_in, u_max, mode, min_steps, max_steps, out_dir: str,
          "n_steps": r["n_steps"], "steady": r["steady"]}
         for r in cases
     ]
-    # Primary acceptance: profile L2 relative error (radially-averaged profile vs
-    # the parabola, absolute U_max reference) <= 3% at every grid AND strictly
-    # decreasing with grid refinement (convergence).  Max-relative and
-    # per-cell metrics are reported too (staircase near-wall effect).
-    errs = [c["l2_rel_err"] for c in convergence]
+    # Acceptance (strict, per task "剖面最大误差 <=3%"): max relative error of
+    # the radially-averaged profile in the central region <= 3% at every grid
+    # AND decreasing with grid refinement (convergence).  The staircase
+    # half-way bounce-back wall carries an O(1/R) near-wall discretization
+    # error (effective radius ~R+0.23 vs a-priori R+0.5) that keeps this
+    # metric above 3% for R=20/40 -> verdict not_verified; L2 profile errors
+    # are reported separately (they pass <=3%).
+    errs = [c["max_rel_err_central_shape_pct"] for c in convergence]
     converged = len(errs) >= 2 and errs[-1] < errs[0]
-    passed = all(e <= 0.03 for e in errs) and converged
+    passed = all(e <= 3.0 for e in errs) and converged
 
     summary = {
         "case": "poiseuille_3d_pipe_convergence",
@@ -416,12 +419,16 @@ def scan(R_list, tau, u_in, u_max, mode, min_steps, max_steps, out_dir: str,
         "passed_3pct_and_converged": passed,
         "verdict": "verified" if passed else "not_verified",
         "notes": (
-            "profile L2 relative error (radially-averaged u(r) vs parabola, absolute "
-            "U_max reference) is the primary acceptance metric (<=3% + grid convergence); "
-            "max-relative and per-cell errors are larger near the wall due to the "
-            "staircase half-way bounce-back discretization (first-order in 1/R); "
-            "parabola-fit effective radius R_fit = R + ~0.23 (staircase hydraulic radius, "
-            "diagnostic only)."
+            "strict criterion: max relative error of the radially-averaged profile "
+            "(central region, vs a-priori parabola R_eff=R+0.5) <= 3% + grid "
+            "convergence. Not met for R=20/40 (15.5%->7.5% per-cell; 7.1%->4.1% "
+            "radial-profile max): staircase half-way bounce-back wall effective "
+            "radius is R_fit=R+0.23 (geometric constant, identical at both grids "
+            "and driving modes), so near-wall bins deviate from the a-priori "
+            "parabola by up to ~7% (R=20), first-order convergent in 1/R. "
+            "Profile L2 error passes <=3% (2.3%->1.2%) and parabola-shape fit "
+            "residual is <0.3% -> physics validated, but strict max-error "
+            "acceptance not met; see README for full analysis."
         ),
     }
     (out_dir / "result.json").write_text(json.dumps(summary, indent=2))
