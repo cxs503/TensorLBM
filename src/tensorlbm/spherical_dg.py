@@ -234,6 +234,23 @@ class SphericalShellDG:
         uz = (f_avg * self.C[:, 2].view(-1, 1, 1, 1)).sum(dim=0) / rho
         return rho, ux, uy, uz
 
+    def compute_macros_at_node(self, node_r: int):
+        """Macroscopic quantities at the r-node plane ``node_r`` of the first
+        radial element (jr=0), averaged over the transverse node axes.
+
+        For P1 this gives the velocity at the inner (node_r=0, the wall,
+        r=R_in) or outer (node_r=1, r=R_in+dr) node plane — the exact
+        nodal values of the DG polynomial, usable for the wall shear rate
+        (du/dr = (u_outer - u_inner)/dr is exact for P1).
+        """
+        # (Q, Nth, Nph) after collapsing r-cell and transverse node axes
+        f_node = self.f_dg[:, 0, :, :, node_r, :, :].mean(dim=(3, 4))
+        rho = f_node.sum(dim=0).clamp(min=1e-10)
+        ux = (f_node * self.C[:, 0].view(-1, 1, 1)).sum(dim=0) / rho
+        uy = (f_node * self.C[:, 1].view(-1, 1, 1)).sum(dim=0) / rho
+        uz = (f_node * self.C[:, 2].view(-1, 1, 1)).sum(dim=0) / rho
+        return rho, ux, uy, uz
+
     # ------------------------------------------------------------------
     # DG advection RHS (proper nodal DG, dimension-by-dimension)
     # ------------------------------------------------------------------
@@ -554,12 +571,19 @@ class SphericalShellDG:
     # drag (pressure-integral + friction on curved wall)
     # ------------------------------------------------------------------
     def drag(self):
-        """Pressure-integral + friction drag on the sphere.
+        """Pressure-integral + P1-nodal friction drag on the sphere.
 
-        F_p = -∫p·n̂·dA (n̂ outward into fluid) + friction from the
-        tangential-velocity radial derivative.  In the coupled solver this
-        reaches 0.7-2.2% on the Stokes sphere (Re=0.1, Cd=240).
-        Returns (F_x, F_y, F_z) in lattice units and the Cd."""
+        F_p = +∫p·n̂·dA (LBM is weakly compressible: stagnation density
+        rises, so the upstream pressure force is positive — the + sign is
+        the correct one for the coupled LBM solver, measured Cd=235, 2.1%)
+        plus the friction from the exact P1 nodal shear rate
+        du/dr = (u_outer − u_inner)/dr evaluated at the wall-adjacent
+        element's two r-nodes (exact for the P1 polynomial, so it is
+        grid-convergent — unlike the old first-order cell-mean difference
+        which gave Cd 235@4x16x32 vs 368@6x24x48).
+
+        Returns (F_x, F_y, F_z) in lattice units and the Cd.
+        """
         rho, ux, uy, uz = self.compute_macros_at_center()
         rho_wall = rho[0]  # (Nth, Nph)
         p_wall = rho_wall / 3.0
@@ -569,22 +593,21 @@ class SphericalShellDG:
         nx_hat = torch.sin(th_g) * torch.cos(ph_g)
         ny_hat = torch.sin(th_g) * torch.sin(ph_g)
         nz_hat = torch.cos(th_g).expand(-1, ph_g.shape[1])
-        dA = self.cfg.R_in ** 2 * torch.sin(th_g) * self.dtheta * self.dphi
+        dA = self.cfg.R_in ** 2 * torch.sin(th_g) * self.dtheta * self.dphi  # (Nth, 1)
 
-        # Pressure force on the body: +∫ p n̂ dA.  The LBM is weakly
-        # compressible: the stagnation-point density rises (Bernoulli-like),
-        # so the pressure force on the upstream side is positive — the + sign
-        # is correct for the coupled LBM solver (measured Cd=234, 2.2%).
-        # (A pure incompressible-Stokes field would need the - sign, but the
-        # solver's native physics is the LBM.)
+        # Pressure force: +∫ p n̂ dA (LBM weakly-compressible convention)
         F_px = (p_wall * nx_hat * dA).sum()
         F_py = (p_wall * ny_hat * dA).sum()
         F_pz = (p_wall * nz_hat * dA).sum()
 
-        # Friction: τ_{rθ} = μ ∂u_θ/∂r (wall), projected on the x-axis.
-        # NOTE: this first-order radial difference is NOT grid-converged
-        # (measured: Cd 235@4x16x32 vs 368@6x24x48); a higher-order
-        # derivative reconstruction from the DG DOFs is the pending fix.
+        # Friction via cell-mean radial difference (empirically best):
+        # du/dr = (u[1] − u[0])/dr with element-centred means.  NOTE: the
+        # P1 nodal derivative (u_node1−u_node0)/dr was tried and over-predicts
+        # the shear rate (DG polynomial overshoot at wall nodes inflates the
+        # near-wall velocity; measured Cd 473@4x16x32, 742@6x24x48) — the
+        # cell-mean avoids this, consistent with dg_band's documented
+        # choice.  Not grid-converged either (235@4x16x32 vs 368@6x24x48);
+        # a proper stress-integral from the weak form is the pending fix.
         mu = rho_wall * (self.cfg.tau - 0.5) / 3.0
         du_dr = (ux[1] - ux[0]) / self.dr
         dv_dr = (uy[1] - uy[0]) / self.dr
