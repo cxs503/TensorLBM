@@ -56,6 +56,8 @@ def main() -> None:
     ap.add_argument("--u_in", type=float, default=0.06)
     ap.add_argument("--threads", type=int, default=32)
     ap.add_argument("--device", type=str, default="cpu")
+    ap.add_argument("--lateral_ratio", type=float, default=4.5,
+                    help="lateral domain extent in units of D (ny=nz=lateral_ratio*D)")
     ap.add_argument("--compile", action="store_true", help="torch.compile collide+stream (GPU memory reduction + speed)")
     args = ap.parse_args()
 
@@ -68,13 +70,13 @@ def main() -> None:
     nu = U * D / re
     tau = 3.0 * nu + 0.5
 
-    # Domain: >=10D streamwise (4D upstream / 6D downstream), 6D lateral (3D/side)
+    # Domain: >=10D streamwise (4D upstream / 6D downstream), lateral_ratio*D lateral
     nx = 10 * D
-    ny = 6 * D
-    nz = 6 * D
+    ny = int(round(args.lateral_ratio * D))
+    nz = int(round(args.lateral_ratio * D))
     cx = 4.0 * D
-    cy = 3.0 * D
-    cz = 3.0 * D
+    cy = args.lateral_ratio * D / 2.0
+    cz = args.lateral_ratio * D / 2.0
 
     outdir = args.outdir
     os.makedirs(outdir, exist_ok=True)
@@ -143,7 +145,7 @@ def main() -> None:
                 t_last = time.time()
                 print(f"step={step:6d} Cd={cd:.4f} Cd_effD={cd_effd:.4f} rho={rho_m:.5f} "
                       f"u_max={umax:.5f}  [{el:.1f}s]", flush=True)
-        cd_hist.append((step, cd))
+        cd_hist.append((step, cd, cd_effd))
 
     total = time.time() - t0
     logf.close()
@@ -154,7 +156,7 @@ def main() -> None:
     blocks = []
     i = 0
     while i + block <= len(hist):
-        seg = [c for _, c in hist[i:i + block]]
+        seg = [c for _, c, _ in hist[i:i + block]]
         blocks.append((hist[i][0], sum(seg) / len(seg)))
         i += block
     # final steady value: mean over the last two full blocks if drift small
@@ -168,7 +170,8 @@ def main() -> None:
         cd_prev = blocks[-1][1]
         drift_pct = 0.0
         window = block
-    cd_final = sum(c for _, c in hist[-window:]) / window
+    cd_final = sum(c for _, c, _ in hist[-window:]) / window
+    cd_effd_final = sum(e for _, _, e in hist[-window:]) / window
 
     cd_ref_sn = schiller_naumann_cd(re)
     cd_ref_cg = clift_gauvin_cd(re)
