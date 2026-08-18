@@ -42,7 +42,38 @@ SUBOFF 训练/推理数据目录采用统一结构：
 
 `suboff_train.py` 在训练时会对快照执行 `[49:149, :, 49:149]` 裁剪并展平，因此输入快照尺寸需满足对应空间范围。
 
-## 4) 后续计划
+## 4) v0.3 闭环演示（checkpoint → 推理 → 流场图）
+
+目标：固定 `models/suboff_v0.3.pt`，执行真实推理并导出标准化流场图与元数据，形成可复现外部演示。
+
+### 4.1 一键命令
+
+```bash
+PYTHONPATH=src python examples/suboff_v03_demo.py \
+  --data-dir /abs/path/to/suboff8 \
+  --output-dir outputs/suboff_v03_demo
+```
+
+### 4.2 输入契约
+
+- checkpoint：`models/suboff_v0.3.pt`
+- checkpoint 必须包含 keys：`encoder`, `decoder`, `n_iter`, `enc_optim`, `enc_sched`
+- 数据目录：`data_dir/{p,ux,uy,uz}/*.npy`
+
+### 4.3 输出产物（固定命名）
+
+- `outputs/suboff_v03_demo/run_metadata.json`
+- `outputs/suboff_v03_demo/suboff_v03_<channel>_<kind>_slice-<axis><idx>.png`
+  - `channel ∈ {u, p}`（默认）
+  - `kind ∈ {real, pred, abs_error}`
+
+### 4.4 发布成功判据
+
+1. 推理完成且返回指标：`mape` / `rel_l2_avg` / `mse_avg`
+2. 流场图成功生成并可在输出目录定位
+3. `run_metadata.json` 包含 checkpoint、数据路径、指标与图像清单
+
+## 5) 后续计划
 
 - 继续补齐 AI-LES 与 Flow-Transformer 的可下载 checkpoint；
 - 在平台 API 中增加模型版本元数据与可追踪下载入口。
