@@ -1,0 +1,13 @@
+{
+  "case": "B10_stokes_sphere_dg",
+  "physics": "Stokes sphere Re=0.1, Cd_ref=240 (Stokes 理论 24/Re)",
+  "module": "spherical_dg.SphericalShellDG (球坐标贴体 DG 壳层) + LBM 远场耦合",
+  "extrap": "none",
+  "grid": "DG 4x16x32 (LBM 80x50x50, R=10, R_shell=15)",
+  "cd_sim": 234.84,
+  "cd_ref": 240.0,
+  "err_pct": 2.15,
+  "steps": 500,
+  "verified": true,
+  "notes": "单元均值差分摩擦 + 压力积分(+符号, LBM 弱可压缩)。收敛性未建立(6x24x48: 368, 53%)——单网格达标但加密恶化, 力法研究已定案为待修瓶颈"
+}
