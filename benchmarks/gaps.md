@@ -101,3 +101,14 @@
 - **修复**：sphere_amr_common.py 内补 D3Q19 移动壁全模板 BFL 副本（镜像已有
   _bouzidi_bounce_back_d3q27），bfl_sphere_advance 按 lattice 分派
 - **备注**：AMR 机械层 177 测试通过但 shell runner 端到端崩溃（pytest 不覆盖）
+
+### G18. 2D 移动壁反弹 / 自由滑移无库实现（boundaries.py）——B24 发现
+- **现象**：`boundaries.bounce_back_cells` 仅静止壁（无动量注入）；无切向自由
+  （∂u/∂y≈0）边界。Stokes 第一问题（平板突然起动，B24，已 verified）需
+  移动壁 `f_new[opp]=f_pre[i]−2·w_i·ρ_w·(c_i·u_w)/cs²` 与镜面反弹
+  SPECULAR=[0,1,4,3,2,8,7,6,5]，均在 benchmark run.py 内自实现（~15 行），
+  实测误差 ≤0.25%
+- **建议**：`boundaries.py` 增 `bounce_back_moving_wall(f, mask, u_wall)` 与
+  `specular_reflection(f, mask)`（D2Q9 优先；移动壁亦可复用 G17 BFL 模板）
+- **备注**：半无限域截断判据 H≳4δ=4√(νt)：τ=0.8、t=9000 时 H=100 不达标
+  （max_rel 10.5%），H=200 达标（0.094%）；详见 /tmp/stokes1_gap.md
