@@ -63,6 +63,8 @@ def test_generic_run_submission_includes_shape_and_auto_selection(client, monkey
     assert captured["job_type"] == "generic_run"
     assert captured["config"]["shape"] == "sphere"
     assert "auto_selected" in captured["config"]
+    assert captured["config"]["auto_selected"]["turbulence_model"] == "none"
+    assert captured["config"]["auto_selected"]["wall_treatment"] == "bb"
 
 
 def test_generic_run_status_reads_from_job_manager_only(client, monkeypatch):
@@ -76,6 +78,8 @@ def test_generic_run_status_reads_from_job_manager_only(client, monkeypatch):
                 "Cd_total": 0.41,
                 "Cl": 0.02,
                 "St": 0.19,
+                "mass_drift_pct": 0.03,
+                "cv_force_mismatch_pct": 4.2,
             }
         ],
         logs=["line1", "line2"],
@@ -89,6 +93,8 @@ def test_generic_run_status_reads_from_job_manager_only(client, monkeypatch):
     assert body["shape"] == "stl"
     assert body["step"] == 120
     assert body["Cd_total"] == 0.41
+    assert body["mass_drift_pct"] == 0.03
+    assert body["cv_force_mismatch_pct"] == 4.2
 
 
 def test_generic_run_results_excludes_large_field_payload(client, monkeypatch):
@@ -121,3 +127,28 @@ def test_generic_run_field_returns_2d_slice(client, monkeypatch):
     body = r.json()
     assert body["shape"] == [4, 5]
     assert len(body["data"]) == 4
+
+
+def test_generic_run_auto_selection_uses_wale_for_high_re(client, monkeypatch):
+    captured: dict[str, Any] = {}
+
+    def _fake_submit(*, name: str, job_type: str, config: dict[str, Any], fn):  # noqa: ANN001
+        captured["config"] = config
+        return "job_wale"
+
+    monkeypatch.setattr(simulations.job_manager, "submit", _fake_submit)
+
+    r = client.post(
+        "/api/simulations/generic-run",
+        json={
+            "geometry": {"source": "parametric", "shape": "suboff", "params": {"length": 80}},
+            "physics": {"Re": 500000.0, "u_in": 0.08},
+            "solver": {"collision": "", "steps": 0, "warmup": 0},
+            "output": {"fields": ["pressure"], "forces": True, "strouhal": False},
+        },
+    )
+    assert r.status_code == 200, r.text
+    auto = captured["config"]["auto_selected"]
+    assert auto["collision"] == "mrt_wale"
+    assert auto["turbulence_model"] == "wale"
+    assert auto["wall_treatment"] == "wf"
