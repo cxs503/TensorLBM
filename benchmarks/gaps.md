@@ -74,3 +74,20 @@
 ### G14. Blasius 前缘台阶效应（平板边界层）
 - 半程反弹壁面 y=0.5 vs 对称面 y=0 差半格 → 前缘"台阶/钝头"，上游排挤 v≈0.015 → 沿板累积顺压（类 Falkner-Skan），剖面饱满、C_f 系统性 +48%
 - 不随网格/域高收敛；建议：中置薄板（plate_y=50）+ Zou-He 出口（已验证零质量漂移稳态）
+
+### G15. MEM 曲面球平衡背景未扣除（momentum_exchange.py）
+- **现象**：球 Re=200 用 MOMENTUM_EXCHANGE 力法，16000 步收敛后 Cd=2.97（+268%）
+  （4000 步 3.33 → 16000 步 2.97，缓慢下降但远高于参考 0.806）
+- **分析**：`momentum_exchange_standard` 是 Ladd **和形式**（f_i[fluid]+f_opp[solid]），
+  注释明说"flat walls 平衡项抵消"——但**曲面球壁平衡项不抵消**（各 link 权重不同），
+  产生 O(ρU·A) 量级虚假力。Couette/Poiseuille（平坦壁）精确（<0.01%）但球面不适用
+- **修复方向**：MEM 减平衡背景（F -= ρU·Σn̂·dA）或用**差形式**（f_i - f_opp，Lorenz 2014
+  Galilean-invariant 版，文件内已有）——该变体对曲面更鲁棒
+- **影响**：B1/B2/B3 球绕流 benchmark 受阻（压力积分 extrap='none' 低估 -13~25%，
+  MEM 曲面背景 +268%）——两个力法在球面都需修复，**球绕流类暂缓**，优先其他问题
+
+### G16. NACA/Blasius 判定补录
+- NACA α=10° Re=1000：c=60 时 Cl=0.346（1.75% ✅）但 c=90 时 0.394（16% ❌）——
+  分离/涡脱落过渡区流态网格依赖，两档不收敛 → 未达标（pending/naca0012）
+- Blasius：剖面 L2 8%、C_f +48%——前缘台阶效应（壁面 y=0.5 vs 对称面 y=0 差半格）
+  → 未达标（pending/blasius_flat_plate，中置薄板是候选修复）
