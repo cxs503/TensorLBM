@@ -130,6 +130,7 @@ _OPTIONAL_SUBOFF_EXPORTS = {
     # inference
     "SuboffPredictConfig": "tensorlbm.ai.suboff_inference",
     "predict_suboff": "tensorlbm.ai.suboff_inference",
+    "render_suboff_flowfield_demo": "tensorlbm.ai.suboff_inference",
     "SuboffErrorConfig": "tensorlbm.ai.suboff_inference",
     "error_analysis_suboff": "tensorlbm.ai.suboff_inference",
 }
