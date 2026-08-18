@@ -46,11 +46,12 @@
 
 | ny (格) | nx | τ | u L2 误差 | v L2 误差 | u 最大相对误差 | v 最大相对误差 | 步数 | 稳态 |
 |---------|-----|-----|-----------|-----------|----------------|----------------|------|------|
-| 32 | 96 | 0.572 | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
-| 64 | 192 | 0.644 | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
-| 128 | 384 | 0.788 | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
+| 32 | 96 | 0.572 | 0.18% | 3.02% | 1.33% | 2.21% | 20000 | 是 |
+| 64 | 192 | 0.644 | 0.17% | 2.71% | 1.24% | 1.65% | 20000 | 是 |
+| 128 | 384 | 0.788 | 0.16% | 2.55% | 1.19% | 1.49% | 20000 | 是 |
 
-验收网格（ny=64/128）全场 u/v L2 与掩模最大相对误差均 ≤3%，且 64→128 四项指标单调下降（收敛）。
+验收网格（ny=64/128）全场 u/v L2 与掩模最大相对误差均 ≤3%（最大 2.71%→2.55%），
+且 64→128 四项指标单调下降（收敛），verdict = **PASS**。
 残余误差来源：(1) 出口零梯度 BC 影响区（约最后 0.5–1 个周期，v 被压平，全场 v L2 的
 主要贡献）；(2) BGK 的 O(Ma²) 压缩性误差（u L2 ≈0.16% 的底噪）。二者均不随网格细化消失，
 故收敛为"弱收敛"（单调但斜率小）——如实记录。
@@ -59,13 +60,13 @@
 
 | ny (格) | u L2 误差 | v L2 误差 | u 最大相对误差 | v 最大相对误差 | 步数 |
 |---------|-----------|-----------|----------------|----------------|------|
-| 32 | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
-| 64 | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
-| 128 | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
+| 32 | 0.20% | 3.31% | 1.25% | 29.1% | 20000 |
+| 64 | 0.10% | 1.33% | 0.35% | 16.1% | 20000 |
+| 128 | 0.075% | 0.40% | 0.15% | 5.59% | 20000 |
 
 交叉配置 u/v L2 随细化快速收敛（~2–8× 下降），证明内部求解器高度精确；其 v 掩模最大
-相对误差偏高（16%→5.6%）是 v ∝ sin(2πy') 零穿越处的度量伪影（绝对误差与 u 同量级
-~0.5%·U0，见 gaps K4），L2 指标（≤1.3%）为准。
+相对误差偏高（29%→16%→5.6%）是 v ∝ sin(2πy') 零穿越处的度量伪影（绝对误差与 u 同量级
+~0.5%·U0，见 gaps K4），L2 指标为准。
 
 ## 运行
 
