@@ -1155,16 +1155,24 @@ class GeneralSimEngine:
         entry["fz"] = fz_p + fz_f
 
         # Optional: MEM comparison (common module: momentum_exchange.momentum_exchange_standard)
-        if sol.force_method == ForceMethod.BOTH and self.near is not None:
+        if sol.force_method in (ForceMethod.MOMENTUM_EXCHANGE, ForceMethod.BOTH) and self.near is not None:
             fx_mem, fy_mem, fz_mem = momentum_exchange_standard(
                 self.f,
                 self.solid,
                 self.near,
             )
-            entry["cd_mem"] = (fx_p + fx_f) / dpS if dpS > 0 else 0.0
+            entry["cd_mem"] = fx_mem / dpS if dpS > 0 else 0.0
             entry["fx_mem"] = fx_mem
             entry["fy_mem"] = fy_mem
             entry["fz_mem"] = fz_mem
+            if sol.force_method == ForceMethod.MOMENTUM_EXCHANGE:
+                # MEM is the primary force: report it as the total
+                entry["cd_pressure"] = 0.0
+                entry["cd_friction"] = 0.0
+                entry["cd_total"] = entry["cd_mem"]
+                entry["fx"] = fx_mem
+                entry["fy"] = fy_mem
+                entry["fz"] = fz_mem
 
         self.forces_log.append(entry)
 
