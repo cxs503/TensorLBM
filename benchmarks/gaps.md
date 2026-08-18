@@ -58,3 +58,19 @@
 2. **G7/G8**（D3Q27 支持）——高精度碰撞 benchmark 需要
 3. **G3/G4**（EOS 参数）——多相模型可用性
 4. **G10**（通道 3D 化）——湍流 benchmark 需要
+
+### G12. GeneralSimEngine 压力积分系统性低估（extrap='none' 时）
+- **现象**：球 Re=100/200 用 extrap='none' 时 Cd 低估 13-25%（Re=200: Cd=0.607 vs 参考 0.806，-24.6%；D=60/D=80 网格加密不改善——系统性偏差非网格问题）
+- **根因**：`drag_pressure_integration`（drag_pressure.py:755）extrap='none' 时直接取近壁单元（距壁 0.5-1 格）压力积分，无壁面外推 → 压力阻力系统性低估（Cd_p≈0.41 vs 文献 0.55 量级）；叠加 `SurfaceMesh.from_sphere` dA=1.0 单元面积近似
+- **后果**：历史"达标"（0.98% quadratic）全依赖压力外推——已被 benchmark 规则禁用（真实模拟禁外推）→ 球绕流类 benchmark（B1/B2/B3）全部受此阻塞
+- **修复方向**：压力积分用近壁二阶外推（p_wall ≈ p_near + dp/dn·Δ）或改用 Ladd MEM 力（obstacles.compute_obstacle_forces_3d，已验证 2.3%）；SurfaceMesh dA 用真实曲面面积
+- **顺带 bug**：`_sample_forces` 中 cd_mem（ForceMethod.BOTH）错存为 (fx_p+fx_f)/dpS 而非 MEM 力/dpS
+
+### G13. NACA α=10° Re=1000 流态网格依赖（airfoil）
+- c=60 周期涡脱落（Cl=0.346 ±1.75%）vs c=90 近定常分离（Cl=0.394 +16%）——流态定性不同，时均 Cl 不收敛
+- 前缘半径仅 ~0.66 格（次网格），分离点受格子离散影响；St_c≈0.86 疑似数值伪频
+- GeneralSimEngine NACA 无攻角字段（G1 补充）；run_airfoil_benchmark 硬编码通道 BC
+
+### G14. Blasius 前缘台阶效应（平板边界层）
+- 半程反弹壁面 y=0.5 vs 对称面 y=0 差半格 → 前缘"台阶/钝头"，上游排挤 v≈0.015 → 沿板累积顺压（类 Falkner-Skan），剖面饱满、C_f 系统性 +48%
+- 不随网格/域高收敛；建议：中置薄板（plate_y=50）+ Zou-He 出口（已验证零质量漂移稳态）

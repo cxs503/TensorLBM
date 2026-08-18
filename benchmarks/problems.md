@@ -7,14 +7,14 @@
 
 | # | 问题 | 参考基准 | 共性模块入口 | 状态 |
 |---|------|---------|-------------|------|
-| B6 | SUBOFF Re=1000 | 实验 Ct | GeneralSimEngine PARAMETRIC_SUBOFF | 待测 |
-| B18 | NACA 0012 翼型 Re=1000-5000 | 文献 Cl/Cd | GeneralSimEngine PARAMETRIC_NACA + airfoil_benchmark.run_airfoil_benchmark | 待测 |
+| B6 | SUBOFF Re=1000 | 实验 Ct | GeneralSimEngine PARAMETRIC_SUBOFF | 🔶 -9.85% 未达标 |
+| B18 | NACA 0012 翼型 Re=1000 | 文献 Cl/Cd | GeneralSimEngine PARAMETRIC_NACA + airfoil_benchmark.run_airfoil_benchmark | 🔄 子agent跑中 |
 | B19 | 方柱绕流 Re=100 | 文献 Cd≈2.05 | GeneralSimEngine POLYGON_2D | 待测 |
-| B25 | 平板边界层 Blasius | 解析 f'(η) 剖面 | turbulent_channel.run_turbulent_channel | 待测 |
-| B26 | 后向台阶 Re=100-800 | Armaly 1984 再附着长度 | backward_facing_step.run_backward_facing_step | 待测 |
+| B25 | 平板边界层 Blasius | 解析 f'(η) 剖面 | turbulent_channel.run_turbulent_channel | 🔄 子agent跑中 |
+| B26 | 后向台阶 Re=100 | Armaly 1984 再附着长度 | backward_facing_step.run_backward_facing_step | 🔶 12.2% 未达标 |
 | B29 | 空化气泡 | Rayleigh-Plesset | cavitation.run_cavitation_flow | 待测 |
-| B28 | 圆柱涡脱落声学 | 文献 SPL 谱 | acoustics.py | 待测 |
-| B20 | 2D 溃坝波前 | Martin & Moyce 1952 | dam_break.run_dam_break + dambreak_cross_validation | 待测 |
+| B28 | 圆柱涡脱落声学 | Roshko St≈0.184 | acoustics.py | 🔶 St 6.8% 未达标 |
+| B20 | 2D 溃坝波前 | Martin & Moyce 1952 | dam_break.run_dam_break + dambreak_cross_validation | 🔶 多相缺口阻塞 |
 
 ## A. 稳态绕流（GeneralSimEngine）
 
