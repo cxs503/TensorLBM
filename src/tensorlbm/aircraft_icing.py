@@ -137,13 +137,50 @@ density (917 kg/m^3) — consistent with it sitting near the glaze
 boundary.  Colder/slower/smaller-droplet conditions give the fluffy
 100-300 kg/m^3 values (e.g. 20 um, 10 m/s, -30 C -> ~270 kg/m^3).
 
-Phase 2b scope (not in this module)
------------------------------------
-Re = 2.5e6 operation needs cumulant collision + LES (and/or wall models);
-Phase 2a deliberately runs a moderate lattice Reynolds number
-(``Re_lu ~ 400``, ``u_in = 0.05``, ``tau >= 0.53``) where BGK is stable
-and the leading-edge flow field is essentially potential, which is what
-governs the impingement statistics at matched St.
+Phase 2b: Eulerian droplet field + CUMULANT/LES air flow
+--------------------------------------------------------
+The Phase 2a Lagrangian machinery above is kept byte-identical (same
+code path when ``droplet_phase="lagrangian"``, the default).  Phase 2b
+adds, in the same module:
+
+* **Eulerian droplet phase** (``droplet_phase="eulerian" | "both"``):
+  the droplet cloud is carried as a volume-fraction field ``alpha(x,t)``
+  with momentum ``(mx, my) = alpha * u_d`` on the *same* grid as the
+  flow, FENSAP-ICE style.  The discretisation is a donor-cell (first
+  order upwind) finite-volume scheme, fully tensorised
+  (``RimeIcingSimulation._euler_step``): conservative advection of
+  ``alpha`` and ``(mx, my)`` with shared face fluxes, then operator-split
+  drag relaxation ``u_d <- u_f + (u_d - u_f) * exp(-1/tau_eff)`` —
+  unconditionally stable, which removes the high-St stiffness.  Solid
+  cells are perfect absorbers: the outgoing face flux of a fluid cell
+  into a solid neighbour *is* the wall-impingement sink, recorded on the
+  donating fluid cell — exactly the Phase 2a deposit convention, so both
+  phases feed the identical freezer (``_freeze``), unit mapping, rime
+  density and beta normalisation.  ``alpha`` is clipped at zero
+  (positivity) and cells below ``shadow_alpha_frac * alpha_in`` are
+  "shadow region": their velocity is penalized to the local carrier
+  velocity (Bourgault/Habashi shadow treatment) so ``m / alpha`` never
+  blows up in the droplet wake.
+* **Cross-validation**: ``droplet_phase="both"`` runs the Lagrangian and
+  Eulerian droplet phases on the *same* flow/ice trajectory (the
+  Lagrangian arm drives freezing, the Eulerian arm is diagnostic), so
+  beta curves from the two formulations differ by discretisation and
+  inertia resolution only — the Bellosta (2023) comparison protocol.
+* **Collision upgrade**: ``collision="cumulant"`` swaps the BGK collide
+  for ``tensorlbm.cumulant.collide_cumulant_d3q19`` (production-proven
+  on the SUBOFF chain) with optional per-cell Smagorinsky LES
+  (``c_s > 0``, built into the kernel).  ``re_lu_target`` derives the
+  knife-edge relaxation time ``tau_flow = 3 u_in chord_lu / Re + 0.5``
+  (BGK stalls around ``tau - 0.5 ~ 1.7e-2``; CUMULANT is measured
+  stable down to ``tau - 0.5 ~ 9.6e-6`` on this stack, i.e.
+  ``Re_lu ~ 2e6`` at ``chord_lu = 128``).
+* **Drag law**: ``drag_law="schiller-naumann"`` upgrades both phases to
+  ``f_drag = 1 + 0.15 Re_p^0.687`` with the particle Reynolds number
+  built from the physical unit mapping (``re_p_scale``; ``Re_p =
+  |u_f - u_d|_lu * re_p_scale``, ~100 near the IRT leading edge, i.e.
+  a ~4.6x faster relaxation than Stokes).  The default ``"stokes"``
+  keeps Phase 2a trajectories unchanged; both phases always use the
+  *same* law so cross-validation stays meaningful.
 """
 
 from __future__ import annotations
@@ -156,8 +193,10 @@ from typing import Any
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from tensorlbm.compile_utils import compile_step, validate_compile_mode
+from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import C, OPPOSITE, equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 
@@ -172,6 +211,7 @@ __all__ = [
     "seed_counts_total",
     "rime_density_macklin",
     "rime_density_jones",
+    "eulerian_mass_audit_report",
 ]
 
 
@@ -233,6 +273,37 @@ class IcingConfig:
     compile_mode: str | None = None  # flow step: None | "default" |
     #                                      "max-autotune-no-cudagraphs"
 
+    # --- Phase 2b additions (defaults keep Phase 2a byte-identical) ---
+    droplet_phase: str = "lagrangian"  # "lagrangian" | "eulerian" | "both"
+    collision: str = "bgk"  # "bgk" (2a) | "cumulant" (+ optional Smag c_s)
+    c_s: float = 0.0  # Smagorinsky constant (cumulant collision only)
+    re_lu_target: float | None = None  # if set: tau_flow = 3 u L / Re + 0.5
+    rho_air: float = 1.34  # kg/m^3 (Schiller-Naumann Re_p, -10 C air)
+    drag_law: str = "stokes"  # "stokes" (2a) | "schiller-naumann"
+    shadow_alpha_frac: float = 1e-3  # shadow threshold as fraction of alpha_in
+
+    def __post_init__(self) -> None:
+        if self.droplet_phase not in ("lagrangian", "eulerian", "both"):
+            raise ValueError(
+                f"droplet_phase must be 'lagrangian', 'eulerian' or 'both'; "
+                f"got {self.droplet_phase!r}"
+            )
+        if self.collision not in ("bgk", "cumulant"):
+            raise ValueError(f"collision must be 'bgk' or 'cumulant'; got {self.collision!r}")
+        if self.drag_law not in ("stokes", "schiller-naumann"):
+            raise ValueError(f"drag_law must be 'stokes' or 'schiller-naumann'; got {self.drag_law!r}")
+        if self.c_s < 0.0:
+            raise ValueError(f"c_s must be >= 0; got {self.c_s}")
+        if self.collision == "bgk" and self.c_s > 0.0:
+            raise ValueError(
+                "c_s > 0 (Smagorinsky LES) requires collision='cumulant'; "
+                "the Phase 2a BGK path has no SGS coupling"
+            )
+        if self.re_lu_target is not None and self.re_lu_target <= 0.0:
+            raise ValueError(f"re_lu_target must be > 0; got {self.re_lu_target}")
+        if self.shadow_alpha_frac < 0.0:
+            raise ValueError(f"shadow_alpha_frac must be >= 0; got {self.shadow_alpha_frac}")
+
     # ------------------------------------------------------------------
     # lattice-side derived quantities
     @property
@@ -240,8 +311,20 @@ class IcingConfig:
         return self.nx * self.chord_frac
 
     @property
+    def tau_flow(self) -> float:
+        """Relaxation time actually used by the flow step.
+
+        ``re_lu_target`` derives the knife-edge tau from the target lattice
+        Reynolds number (Phase 2b high-Re path); without it this is just
+        ``tau`` (Phase 2a behaviour).
+        """
+        if self.re_lu_target is not None:
+            return 3.0 * self.u_in * self.chord_lu / self.re_lu_target + 0.5
+        return self.tau
+
+    @property
     def nu_lu(self) -> float:
-        return (self.tau - 0.5) / 3.0
+        return (self.tau_flow - 0.5) / 3.0
 
     @property
     def re_lu(self) -> float:
@@ -369,6 +452,37 @@ class IcingConfig:
         # explicit Euler relaxation needs dt/tau << 1; 8 sub-steps margin.
         return max(1, int(math.ceil(8.0 / max(self.tau_d_lu, 1e-12))))
 
+    # ------------------------------------------------------------------
+    # Phase 2b: Eulerian droplet field derived quantities
+    @property
+    def alpha_in(self) -> float:
+        """Inlet droplet volume fraction (accelerated cloud, like 2a LWC)."""
+        return self.lwc_eff / self.rho_water
+
+    @property
+    def shadow_alpha_min(self) -> float:
+        """Shadow-region threshold on alpha [volume fraction]."""
+        return self.shadow_alpha_frac * self.alpha_in
+
+    @property
+    def mass_per_lu3(self) -> float:
+        """kg of water per lattice cell volume (alpha is a volume fraction)."""
+        return self.rho_water * self.dx_phys**3
+
+    @property
+    def re_p_scale(self) -> float:
+        """Schiller-Naumann scale: ``Re_p = |u_f - u_d|_lu * re_p_scale``.
+
+        ``|u|_lu * dx/dt`` converts a lattice velocity difference to m/s
+        (the same unit mapping as ``tau_d_lu``), so ``Re_p`` is the
+        physical particle Reynolds number and invariant across unit
+        systems.  Returns 0 for the Stokes law, which switches the drag
+        factor to exactly 1 inside the step (single code path).
+        """
+        if self.drag_law != "schiller-naumann":
+            return 0.0
+        return self.rho_air * (self.dx_phys / self.dt_phys) * self.mvd / self.mu_air
+
     def mapping_report(self) -> dict[str, Any]:
         """All mapping/physics numbers in one dictionary (printed + JSON)."""
         return {
@@ -408,6 +522,17 @@ class IcingConfig:
             "n_substeps": self.n_substeps,
             "compile_mode": self.compile_mode,
             "uniform_flow": self.uniform_flow,
+            # --- Phase 2b ---
+            "droplet_phase": self.droplet_phase,
+            "collision": self.collision,
+            "c_s": self.c_s,
+            "re_lu_target": self.re_lu_target,
+            "tau_flow": self.tau_flow,
+            "drag_law": self.drag_law,
+            "re_p_scale": self.re_p_scale,
+            "rho_air": self.rho_air,
+            "alpha_in": self.alpha_in,
+            "shadow_alpha_min": self.shadow_alpha_min,
         }
 
 
@@ -746,8 +871,47 @@ class RimeIcingSimulation:
             "two guarded graphs: plain flow step + flow step with the "
             "post-stream/pre-bounce force probe"
         )
-        self._step_plain = compile_step(self._flow_step_plain, cfg.compile_mode, warmup_hint=hint)
-        self._step_probe = compile_step(self._flow_step_probe, cfg.compile_mode, warmup_hint=hint)
+        if cfg.collision == "cumulant":
+            self._step_plain = compile_step(
+                self._flow_step_plain_cumulant, cfg.compile_mode, warmup_hint=hint
+            )
+            self._step_probe = compile_step(
+                self._flow_step_probe_cumulant, cfg.compile_mode, warmup_hint=hint
+            )
+        else:
+            self._step_plain = compile_step(self._flow_step_plain, cfg.compile_mode, warmup_hint=hint)
+            self._step_probe = compile_step(self._flow_step_probe, cfg.compile_mode, warmup_hint=hint)
+
+        # droplet-phase selection (Phase 2b; defaults reproduce Phase 2a)
+        self.use_lagr = cfg.droplet_phase in ("lagrangian", "both")
+        self.use_euler = cfg.droplet_phase in ("eulerian", "both")
+        if self.use_euler:
+            # Eulerian droplet field: alpha (volume fraction) + momentum.
+            # Pure-tensor step compiled through the same shared wrapper.
+            self._step_euler = compile_step(
+                self._euler_step,
+                cfg.compile_mode,
+                warmup_hint="eulerian droplet advection-relaxation step",
+            )
+            self.alpha = torch.zeros((self.ny, self.nx), device=self.dev)
+            self.mx = torch.zeros_like(self.alpha)
+            self.my = torch.zeros_like(self.alpha)
+            self.impact_mass_e = torch.zeros_like(self.alpha)  # kg (all run)
+            self.impact_e_w0: torch.Tensor | None = None
+            self._bflux_acc = torch.zeros(4, dtype=torch.float64, device=self.dev)
+            self._dep_acc = torch.zeros((), dtype=torch.float64, device=self.dev)
+            self._enc_acc = torch.zeros((), dtype=torch.float64, device=self.dev)
+            self.aud_e: dict[str, float] = {
+                "initial_fill": 0.0,
+                "inlet_in": 0.0,
+                "lat_in": 0.0,
+                "deposited": 0.0,
+                "encased": 0.0,
+                "outlet_out": 0.0,
+                "lat_out": 0.0,
+                "airborne": 0.0,
+                "closure_error": 0.0,
+            }
 
         rho0 = torch.ones((1, self.ny, self.nx), device=self.dev)
         u0 = torch.full((1, self.ny, self.nx), cfg.u_in, device=self.dev)
@@ -838,6 +1002,209 @@ class RimeIcingSimulation:
         return f, f_pre
 
     @staticmethod
+    def _flow_step_plain_cumulant(
+        f: torch.Tensor,
+        solid: torch.Tensor,
+        feq_in: torch.Tensor,
+        opp: torch.Tensor,
+        tau: float,
+        c_s: float,
+    ) -> torch.Tensor:
+        """Phase 2b high-Re variant: CUMULANT collision + optional Smag LES.
+
+        Identical chain to :meth:`_flow_step_plain` except the collision;
+        the production-proven ``collide_cumulant_d3q19`` kernel with the
+        built-in per-cell Smagorinsky tau_eff (``c_s > 0``).  A separate
+        compiled variant per compile_utils lesson 2.
+        """
+        f = collide_cumulant_d3q19(f, tau, C_s=c_s)
+        f = stream3d(f)
+        f = torch.where(solid[None, None], f[opp], f)
+        f[:, :, :, 0] = feq_in[:, :, :, 0]
+        f[:, :, :, -1] = f[:, :, :, -2]
+        f[:, :, 0, :] = feq_in[:, :, 0, :]
+        f[:, :, -1, :] = feq_in[:, :, -1, :]
+        return f
+
+    @staticmethod
+    def _flow_step_probe_cumulant(
+        f: torch.Tensor,
+        solid: torch.Tensor,
+        feq_in: torch.Tensor,
+        opp: torch.Tensor,
+        tau: float,
+        c_s: float,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """CUMULANT variant of the force-probe step (see above)."""
+        f = collide_cumulant_d3q19(f, tau, C_s=c_s)
+        f = stream3d(f)
+        f_pre = f.clone()
+        f = torch.where(solid[None, None], f[opp], f)
+        f[:, :, :, 0] = feq_in[:, :, :, 0]
+        f[:, :, :, -1] = f[:, :, :, -2]
+        f[:, :, 0, :] = feq_in[:, :, 0, :]
+        f[:, :, -1, :] = feq_in[:, :, -1, :]
+        return f, f_pre
+
+    @staticmethod
+    def _euler_step(
+        alpha: torch.Tensor,
+        mx: torch.Tensor,
+        my: torch.Tensor,
+        ux: torch.Tensor,
+        uy: torch.Tensor,
+        solid: torch.Tensor,
+        tau_d_lu: float,
+        sn_scale: float,
+        alpha_in: float,
+        u_in: float,
+        shadow_min: float,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """One Eulerian droplet-field step (pure tensors; compile unit).
+
+        Donor-cell finite-volume advection of the droplet volume fraction
+        ``alpha`` and its momentum ``(mx, my) = alpha * u_d`` on the flow
+        grid (FENSAP-ICE style continuity + momentum, one-way coupled),
+        followed by shadow-region penalization and a semi-implicit
+        exponential drag relaxation toward the local carrier velocity
+        ``(ux, uy)``::
+
+            u_d <- u_f + (u_d - u_f) * exp(-f_drag / tau_d_lu)
+            f_drag = 1 + 0.15 Re_p^0.687,  Re_p = |u_f - u_d| * sn_scale
+            (sn_scale = 0 -> Stokes, f_drag = 1 exactly)
+
+        Solid cells are perfect absorbers (rime: everything sticks): the
+        face flux leaving a fluid cell into a solid neighbour is the
+        wall-impingement sink, returned on the *donating fluid cell* in
+        ``impact`` (lattice volume units per step) — the same convention
+        as the Phase 2a Lagrangian deposits, so both phases feed the
+        identical freezer.  Boundary flux sums (raw, positive along the
+        +axis of each face) come back for the mass audit as
+        ``[inlet(x=0), outlet(x=nx-1), bottom(y=0), top(y=ny-1)]``.
+        """
+        eps = 1e-12
+
+        # Droplet-velocity cap: |u_d| <= VEL_CAP * u_in.  Physically the
+        # droplet velocity relaxes toward the carrier field and cannot
+        # exceed it by orders of magnitude; numerically, wake cells with
+        # alpha just above the shadow threshold can carry a wildly wrong
+        # mx/alpha ratio, and the resulting |u_face| > 1 breaks the
+        # donor-cell CFL bound, driving alpha negative (the positivity
+        # clamp then *creates* mass — the Phase 2b production-scale audit
+        # leak).  Capping restores |div u_face| < 1 and with it exact
+        # positivity/conservation of the scheme.
+        u_cap = 4.0 * u_in
+
+        # -- droplet velocity from momentum (shadow-penalized) ----------
+        a_safe = alpha.clamp(min=eps)
+        ud_x = mx / a_safe
+        ud_y = my / a_safe
+        shadow = alpha < shadow_min
+        ud_x = torch.where(shadow, ux, ud_x)
+        ud_y = torch.where(shadow, uy, ud_y)
+        ud_x = ud_x.clamp(-u_cap, u_cap)
+        ud_y = ud_y.clamp(-u_cap, u_cap)
+        mx = alpha * ud_x
+        my = alpha * ud_y
+
+        # ---- x-direction faces (between columns j and j+1) ------------
+        # face velocity: centred between fluid cells, one-sided (fluid
+        # side) at solid faces so the impingement flux is not halved.
+        ul, ur = ud_x[:, :-1], ud_x[:, 1:]
+        uf = 0.5 * (ul + ur)
+        sl, sr = solid[:, :-1], solid[:, 1:]
+        uf = torch.where(sr, ul, uf)
+        uf = torch.where(sl, ur, uf)
+        out = uf >= 0.0
+        al, ar = alpha[:, :-1], alpha[:, 1:]
+        fa = torch.where(out, al * uf, ar * uf)
+        fmx = torch.where(out, mx[:, :-1] * uf, mx[:, 1:] * uf)
+        fmy = torch.where(out, my[:, :-1] * uf, my[:, 1:] * uf)
+        # wall-impingement sinks: fluid -> solid in +x / -x
+        imp_r = fa * ((~sl) & sr)
+        imp_l = fa.neg() * (sl & (~sr))
+
+        # ---- y-direction faces (between rows i and i+1) ---------------
+        vl, vr = ud_y[:-1, :], ud_y[1:, :]
+        vf = 0.5 * (vl + vr)
+        tl, tr = solid[:-1, :], solid[1:, :]
+        vf = torch.where(tr, vl, vf)
+        vf = torch.where(tl, vr, vf)
+        vout = vf >= 0.0
+        ga = torch.where(vout, alpha[:-1, :] * vf, alpha[1:, :] * vf)
+        gmx = torch.where(vout, mx[:-1, :] * vf, mx[1:, :] * vf)
+        gmy = torch.where(vout, my[:-1, :] * vf, my[1:, :] * vf)
+        imp_d = ga * ((~tl) & tr)  # fluid(i) -> solid(i+1): donor row i
+        imp_u = ga.neg() * (tl & (~tr))  # solid(i) <- fluid(i+1): donor row i+1
+
+        impact = (
+            F.pad(imp_r, (0, 1))
+            + F.pad(imp_l, (1, 0))
+            + F.pad(imp_d, (0, 0, 0, 1))
+            + F.pad(imp_u, (0, 0, 1, 0))
+        )
+
+        # ---- x boundary faces: Dirichlet inlet / zero-gradient outlet -
+        in_a = torch.full_like(al[:, :1], alpha_in * u_in)
+        in_mx = torch.full_like(mx[:, :1], alpha_in * u_in * u_in)
+        in_my = torch.zeros_like(my[:, :1])
+        u_end = ud_x[:, -1:]
+        o_end = u_end >= 0.0
+        out_a = torch.where(o_end, alpha[:, -1:] * u_end, torch.full_like(u_end, alpha_in) * u_end)
+        out_mx = torch.where(o_end, mx[:, -1:] * u_end, torch.full_like(u_end, alpha_in * u_in) * u_end)
+        out_my = torch.where(o_end, my[:, -1:] * u_end, torch.zeros_like(u_end))
+
+        flux_a = torch.cat([in_a, fa, out_a], dim=1)
+        flux_mx = torch.cat([in_mx, fmx, out_mx], dim=1)
+        flux_my = torch.cat([in_my, fmy, out_my], dim=1)
+        alpha = alpha - (flux_a[:, 1:] - flux_a[:, :-1])
+        mx = mx - (flux_mx[:, 1:] - flux_mx[:, :-1])
+        my = my - (flux_my[:, 1:] - flux_my[:, :-1])
+
+        # ---- y boundary faces: free-stream cloud ghost (alpha_in, 0) --
+        vb = 0.5 * ud_y[0:1, :]
+        b_a = torch.where(vb >= 0, alpha[0:1, :] * vb, torch.full_like(vb, alpha_in) * vb)
+        b_mx = torch.where(vb >= 0, mx[0:1, :] * vb, torch.full_like(vb, alpha_in * u_in) * vb)
+        b_my = torch.where(vb >= 0, my[0:1, :] * vb, torch.zeros_like(vb))
+        vt = 0.5 * ud_y[-1:, :]
+        t_a = torch.where(vt >= 0, alpha[-1:, :] * vt, torch.full_like(vt, alpha_in) * vt)
+        t_mx = torch.where(vt >= 0, mx[-1:, :] * vt, torch.full_like(vt, alpha_in * u_in) * vt)
+        t_my = torch.where(vt >= 0, my[-1:, :] * vt, torch.zeros_like(vt))
+
+        flux_ay = torch.cat([b_a, ga, t_a], dim=0)
+        flux_mx_y = torch.cat([b_mx, gmx, t_mx], dim=0)
+        flux_my_y = torch.cat([b_my, gmy, t_my], dim=0)
+        alpha = alpha - (flux_ay[1:, :] - flux_ay[:-1, :])
+        mx = mx - (flux_mx_y[1:, :] - flux_mx_y[:-1, :])
+        my = my - (flux_my_y[1:, :] - flux_my_y[:-1, :])
+
+        # ---- positivity + solid void (sinks already accounted) --------
+        alpha = torch.clamp(alpha, min=0.0)
+        fluid = ~solid
+        alpha = torch.where(fluid, alpha, torch.zeros_like(alpha))
+        mx = torch.where(fluid, mx, torch.zeros_like(mx))
+        my = torch.where(fluid, my, torch.zeros_like(my))
+
+        # ---- drag relaxation (exponential integrator, per cell) -------
+        ud_x = mx / alpha.clamp(min=eps)
+        ud_y = my / alpha.clamp(min=eps)
+        shadow = alpha < shadow_min
+        ud_x = torch.where(shadow, ux, ud_x)
+        ud_y = torch.where(shadow, uy, ud_y)
+        du = torch.sqrt((ux - ud_x) ** 2 + (uy - ud_y) ** 2)
+        f_drag = 1.0 + 0.15 * (du * sn_scale).pow(0.687)
+        decay = torch.exp(-f_drag / tau_d_lu)
+        ud_x = ux + (ud_x - ux) * decay
+        ud_y = uy + (ud_y - uy) * decay
+        ud_x = ud_x.clamp(-u_cap, u_cap)
+        ud_y = ud_y.clamp(-u_cap, u_cap)
+        mx = alpha * ud_x
+        my = alpha * ud_y
+
+        bflux = torch.stack((in_a.sum(), out_a.sum(), b_a.sum(), t_a.sum()))
+        return alpha, mx, my, impact, bflux
+
+    @staticmethod
     def _sample_bilinear(field: torch.Tensor, xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
         ny, nx = field.shape
         x0 = torch.floor(xs).long().clamp(0, nx - 2)
@@ -858,12 +1225,22 @@ class RimeIcingSimulation:
         phase has per-step host syncs (mass audit) and dynamic tensor
         shapes (parcel filtering) that structurally reject torch.compile;
         the flow step is the hot path and is the compiled unit.
+        (Phase 2b: the Eulerian droplet step *is* pure tensors and runs
+        compiled through the same shared wrapper — see ``_euler_step``.)
         """
+        tau = self.cfg.tau_flow
+        if self.cfg.collision == "cumulant":
+            if want_force:
+                f, f_pre = self._step_probe(self.f, self.solid, self.feq_in, self.opp, tau, self.cfg.c_s)
+                self.f = f
+                return f_pre
+            self.f = self._step_plain(self.f, self.solid, self.feq_in, self.opp, tau, self.cfg.c_s)
+            return None
         if want_force:
-            f, f_pre = self._step_probe(self.f, self.solid, self.feq_in, self.opp, self.cfg.tau)
+            f, f_pre = self._step_probe(self.f, self.solid, self.feq_in, self.opp, tau)
             self.f = f
             return f_pre
-        self.f = self._step_plain(self.f, self.solid, self.feq_in, self.opp, self.cfg.tau)
+        self.f = self._step_plain(self.f, self.solid, self.feq_in, self.opp, tau)
         return None
 
     def _force_coeffs(self, f_pre: torch.Tensor) -> tuple[float, float]:
@@ -943,6 +1320,7 @@ class RimeIcingSimulation:
         n_sub = cfg.n_substeps
         dt_sub = 1.0 / n_sub
         relax = dt_sub / cfg.tau_d_lu
+        sn_scale = cfg.re_p_scale
         m_p = cfg.m_parcel
         solid = self.solid
         nx, ny = self.nx, self.ny
@@ -951,8 +1329,17 @@ class RimeIcingSimulation:
                 return
             ufx = self._sample_bilinear(ux, self.px, self.py)
             ufy = self._sample_bilinear(uy, self.px, self.py)
-            self.vx += (ufx - self.vx) * relax
-            self.vy += (ufy - self.vy) * relax
+            if sn_scale > 0.0:
+                # Schiller-Naumann: per-parcel f_drag = 1 + 0.15 Re_p^0.687
+                # (same law as the Eulerian phase; Re_p from the physical
+                # unit mapping, invariant across unit systems)
+                du = torch.sqrt((ufx - self.vx) ** 2 + (ufy - self.vy) ** 2)
+                relax_p = (1.0 + 0.15 * (du * sn_scale).pow(0.687)) * dt_sub / cfg.tau_d_lu
+                self.vx += (ufx - self.vx) * relax_p
+                self.vy += (ufy - self.vy) * relax_p
+            else:
+                self.vx += (ufx - self.vx) * relax
+                self.vy += (ufy - self.vy) * relax
             ix = self.px.floor().long().clamp(0, nx - 1)
             iy = self.py.floor().long().clamp(0, ny - 1)
             new_px = self.px + self.vx * dt_sub
@@ -1009,6 +1396,83 @@ class RimeIcingSimulation:
             self.aud["frozen"] += n * cfg.m_cell_ice
         return n
 
+    # -- Eulerian droplet phase (Phase 2b) ------------------------------
+    def _init_eulerian(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
+        """Initialise the alpha cloud (Phase 2b analog of ``_prefill``).
+
+        With ``prefill_cloud`` the exposure window opens with the cloud
+        everywhere at ``alpha_in`` (velocities at the local warmed-up flow
+        value, local equilibrium); otherwise the field starts empty and
+        fills from the inlet.  The initial inventory enters the audit as
+        ``initial_fill``.
+        """
+        cfg = self.cfg
+        if cfg.prefill_cloud:
+            self.alpha = torch.where(
+                self.solid,
+                torch.zeros_like(self.alpha),
+                torch.full_like(self.alpha, cfg.alpha_in),
+            )
+        else:
+            self.alpha = torch.zeros_like(self.alpha)
+        self.mx = self.alpha * ux
+        self.my = self.alpha * uy
+        self.aud_e["initial_fill"] = (
+            float(self.alpha.double().sum().item()) * cfg.mass_per_lu3
+        )
+
+    def _euler_advance(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
+        """One Eulerian droplet step + audit/impact accumulation (eager).
+
+        The compiled unit is :meth:`_euler_step`; everything here is
+        bookkeeping: device-side fp64 audit accumulation (no host sync),
+        impact-mass ledger in kg, and — when the Eulerian phase is the
+        *freezing* phase (``droplet_phase="eulerian"``) — the deposit into
+        the shared water ledger ``m_w`` that ``_freeze`` consumes.  In
+        ``"both"`` mode the Lagrangian arm drives freezing and the
+        Eulerian arm is diagnostic-only (its beta comes from
+        ``impact_mass_e``).
+        """
+        cfg = self.cfg
+        self.alpha, self.mx, self.my, imp, bflux = self._step_euler(
+            self.alpha,
+            self.mx,
+            self.my,
+            ux,
+            uy,
+            self.solid,
+            cfg.tau_d_lu,
+            cfg.re_p_scale,
+            cfg.alpha_in,
+            cfg.u_in,
+            cfg.shadow_alpha_min,
+        )
+        self._bflux_acc += bflux.double()
+        self._dep_acc += imp.double().sum()
+        dm = imp * cfg.mass_per_lu3
+        self.impact_mass_e += dm
+        if cfg.droplet_phase == "eulerian":
+            self.m_w += dm
+
+    def _void_encased(self, prev_solid: torch.Tensor) -> None:
+        """Remove cloud trapped by fresh ice and audit it (encased).
+
+        Parity with Phase 2a: Lagrangian parcels engulfed by fresh ice
+        deposit their mass in place, so the trapped Eulerian cloud water
+        also enters the shared freezer ledger ``m_w`` (when the Eulerian
+        phase is the freezing phase; in ``"both"`` mode the Lagrangian
+        arm owns freezing and its own encased parcels already do this).
+        """
+        newly = self.solid & ~prev_solid
+        enc = self.alpha * newly
+        self._enc_acc += enc.double().sum()
+        if self.cfg.droplet_phase == "eulerian":
+            self.m_w += enc * self.cfg.mass_per_lu3
+        keep = (~newly).to(self.alpha.dtype)
+        self.alpha = self.alpha * keep
+        self.mx = self.mx * keep
+        self.my = self.my * keep
+
     # -- main loop -------------------------------------------------------
     def run(self) -> dict[str, Any]:
         cfg = self.cfg
@@ -1047,13 +1511,26 @@ class RimeIcingSimulation:
         beta_w0 = cfg.steps - int(cfg.beta_window_frac * cfg.steps)
         impact_w0: torch.Tensor | None = None
 
-        if cfg.prefill_cloud and not cfg.disable_droplets:
+        if cfg.prefill_cloud and not cfg.disable_droplets and self.use_lagr:
             if cfg.uniform_flow:
                 ux0, uy0 = ux_c, uy_c
             else:
                 _, ux3, uy3, _ = macroscopic3d(self.f)
                 ux0, uy0 = ux3[0], uy3[0]
             self._prefill(ux0, uy0)
+        if self.use_euler and not cfg.disable_droplets:
+            if cfg.uniform_flow:
+                ux0, uy0 = ux_c, uy_c
+            else:
+                _, ux3, uy3, _ = macroscopic3d(self.f)
+                ux0, uy0 = ux3[0], uy3[0]
+            self._init_eulerian(ux0, uy0)
+            self.log(
+                f"  [icing-e] eulerian cloud: alpha_in={cfg.alpha_in:.3e} "
+                f"shadow_min={cfg.shadow_alpha_min:.3e} "
+                f"drag={cfg.drag_law} (re_p_scale={cfg.re_p_scale:.3e}) "
+                f"init_fill={self.aud_e['initial_fill']:.3e} kg"
+            )
 
         for step in range(1, cfg.steps + 1):
             want_force = (
@@ -1069,11 +1546,19 @@ class RimeIcingSimulation:
                 else:
                     _, ux3, uy3, _ = macroscopic3d(self.f)
                     ux, uy = ux3[0], uy3[0]
-                self._droplet_step(ux, uy)
+                if self.use_lagr:
+                    self._droplet_step(ux, uy)
+                if self.use_euler:
+                    self._euler_advance(ux, uy)
+                prev_solid = self.solid.clone() if self.use_euler else None
                 self._freeze()
+                if self.use_euler:
+                    self._void_encased(prev_solid)
 
             if impact_w0 is None and step >= beta_w0:
                 impact_w0 = self.impact_mass.clone()
+            if self.use_euler and self.impact_e_w0 is None and step >= beta_w0:
+                self.impact_e_w0 = self.impact_mass_e.clone()
 
             if want_force and f_pre is not None:
                 cd, cl = self._force_coeffs(f_pre)
@@ -1093,6 +1578,11 @@ class RimeIcingSimulation:
                     f"cd={cd_s} ice={n_ice:4d} drops={int(self.px.numel()):7d} "
                     f"impacts={self.n_impacts}"
                 )
+                if self.use_euler:
+                    log(
+                        f"  [icing-e] step {step:5d} deposited="
+                        f"{float(self._dep_acc.item()) * cfg.mass_per_lu3:.4e} kg"
+                    )
 
         # ---- final audit ----
         self.aud["airborne"] = float(self.px.numel()) * cfg.m_parcel
@@ -1103,6 +1593,36 @@ class RimeIcingSimulation:
         )
         err = abs(self.aud["seeded"] - accounted) / self.aud["seeded"] if self.aud["seeded"] else 0.0
         self.aud["closure_error"] = err
+
+        # ---- Eulerian alpha-field audit (Phase 2b) ----
+        euler_result: dict[str, Any] | None = None
+        if self.use_euler and not cfg.disable_droplets:
+            mp_lu3 = cfg.mass_per_lu3
+            inlet_raw, outlet_raw, bottom_raw, top_raw = self._bflux_acc.tolist()
+            # face fluxes are positive along +axis: bottom(+y)=in, top(+y)=out
+            self.aud_e["inlet_in"] = max(inlet_raw, 0.0) * mp_lu3
+            outlet_in = max(-outlet_raw, 0.0) * mp_lu3
+            self.aud_e["outlet_out"] = max(outlet_raw, 0.0) * mp_lu3
+            lat_in = (max(bottom_raw, 0.0) + max(-top_raw, 0.0)) * mp_lu3
+            lat_out = (max(-bottom_raw, 0.0) + max(top_raw, 0.0)) * mp_lu3
+            self.aud_e["lat_in"] = lat_in
+            self.aud_e["lat_out"] = lat_out
+            self.aud_e["deposited"] = float(self._dep_acc.item()) * mp_lu3
+            self.aud_e["encased"] = float(self._enc_acc.item()) * mp_lu3
+            self.aud_e["airborne"] = float(self.alpha.double().sum().item()) * mp_lu3
+            inflow = (
+                self.aud_e["initial_fill"] + self.aud_e["inlet_in"]
+                + outlet_in + self.aud_e["lat_in"]
+            )
+            outflow = (
+                self.aud_e["deposited"] + self.aud_e["encased"]
+                + self.aud_e["outlet_out"] + self.aud_e["lat_out"]
+                + self.aud_e["airborne"]
+            )
+            self.aud_e["outlet_in"] = outlet_in
+            self.aud_e["closure_error"] = (
+                abs(inflow - outflow) / inflow if inflow > 0.0 else 0.0
+            )
 
         # ---- beta + metrics ----
         airfoil_np = self.airfoil.cpu().numpy()
@@ -1120,6 +1640,23 @@ class RimeIcingSimulation:
         metrics = ice_shape_metrics(
             airfoil_np, solid_np, cfg.dx_phys, cfg.chord_phys, cfg.chord_lu, stag
         )
+        if euler_result is not None or (self.use_euler and not cfg.disable_droplets):
+            dm_e = self.impact_mass_e.clone()
+            if self.impact_e_w0 is not None:
+                dm_e = dm_e - self.impact_e_w0
+            beta_e = collection_efficiency_curve(
+                s_grid, dm_e.cpu().numpy(), cfg.lwc_eff, cfg.v_inf, cfg.dx_phys,
+                cfg.chord_phys, t_win,
+            )
+            beta_e_grid = (dm_e / (cfg.lwc_eff * cfg.v_inf * cfg.dx_phys**2 * t_win)).cpu().numpy()
+            euler_result = {
+                "alpha": self.alpha.cpu().numpy(),
+                "impact_mass": self.impact_mass_e.cpu().numpy(),
+                "beta": beta_e,
+                "beta_grid": beta_e_grid,
+                "audit": dict(self.aud_e),
+                "alpha_in": cfg.alpha_in,
+            }
         impact_np = self.impact_mass.cpu().numpy()
         if impact_np.any():
             metrics["max_impact_x_frac"] = float(
@@ -1151,6 +1688,7 @@ class RimeIcingSimulation:
             "cl_end": self.cl_end,
             "cd_drift_pct": cd_drift,
             "n_impacts": self.n_impacts,
+            "eulerian": euler_result,
         }
 
 
@@ -1163,6 +1701,26 @@ def mass_audit_report(result: dict[str, Any]) -> str:
         f"trapped = {a['trapped']:.6e} kg",
         f"airborne= {a['airborne']:.6e} kg",
         f"pending = {a['pending']:.6e} kg",
+        f"closure error = {a['closure_error'] * 100:.4f} %",
+    ]
+    return "\n".join(lines)
+
+
+def eulerian_mass_audit_report(result: dict[str, Any]) -> str:
+    """Human-readable alpha-field mass audit (Phase 2b Eulerian phase)."""
+    e = result.get("eulerian")
+    if e is None:
+        return "(eulerian phase not active)"
+    a = e["audit"]
+    lines = [
+        f"initial_fill = {a['initial_fill']:.6e} kg",
+        f"inlet_in     = {a['inlet_in']:.6e} kg",
+        f"lat_in       = {a['lat_in']:.6e} kg",
+        f"deposited    = {a['deposited']:.6e} kg",
+        f"encased      = {a['encased']:.6e} kg",
+        f"outlet_out   = {a['outlet_out']:.6e} kg",
+        f"lat_out      = {a['lat_out']:.6e} kg",
+        f"airborne     = {a['airborne']:.6e} kg",
         f"closure error = {a['closure_error'] * 100:.4f} %",
     ]
     return "\n".join(lines)
@@ -1209,6 +1767,7 @@ def save_icing_artifacts(result: dict[str, Any], out_dir: str) -> dict[str, str]
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     files: dict[str, str] = {}
+    euler = result.get("eulerian")
 
     # --- CSV: beta curve ---
     beta = result["beta"]
@@ -1218,6 +1777,16 @@ def save_icing_artifacts(result: dict[str, Any], out_dir: str) -> dict[str, str]
         for s, b, n in zip(beta["s_over_c"], beta["beta"], beta["n_cells"]):
             fh.write(f"{s:.6f},{b:.6f},{int(n)}\n")
     files["beta_csv"] = str(p)
+
+    # --- CSV: Eulerian beta curve (Phase 2b, when active) ---
+    if euler is not None:
+        be = euler["beta"]
+        p = out / "beta_eulerian.csv"
+        with open(p, "w") as fh:
+            fh.write("s_over_c,beta,n_cells\n")
+            for s, b, n in zip(be["s_over_c"], be["beta"], be["n_cells"]):
+                fh.write(f"{s:.6f},{b:.6f},{int(n)}\n")
+        files["beta_euler_csv"] = str(p)
 
     # --- CSV: ice profile ---
     prof = ice_profile(result["airfoil"], result["ice_only"])
@@ -1246,27 +1815,35 @@ def save_icing_artifacts(result: dict[str, Any], out_dir: str) -> dict[str, str]
         "beta_max": float(beta["beta"].max()) if len(beta["beta"]) else 0.0,
         "n_impacts": result["n_impacts"],
     }
+    if euler is not None:
+        be = euler["beta"]
+        blob["eulerian_audit"] = euler["audit"]
+        blob["beta_euler_max"] = float(be["beta"].max()) if len(be["beta"]) else 0.0
     with open(p, "w") as fh:
         json.dump(blob, fh, indent=2, default=float)
     files["json"] = str(p)
 
     # --- NPZ: everything extract_ice_shape.py needs ---
+    npz_blob = {
+        "airfoil": result["airfoil"],
+        "solid": result["solid"],
+        "m_w": result["m_w"],
+        "impact_mass": result["impact_mass"],
+        "s_grid": result["s_grid"],
+        "beta_grid": result["beta_grid"],
+        "stag": np.array(result["stag"]),
+        "hist_step": np.array(result["history"]["step"], dtype=np.float64),
+        "hist_t": np.array(result["history"]["t_phys"], dtype=np.float64),
+        "hist_cd": np.array([np.nan if v is None else v for v in result["history"]["cd"]]),
+        "hist_cl": np.array([np.nan if v is None else v for v in result["history"]["cl"]]),
+        "hist_ice": np.array(result["history"]["ice_cells"], dtype=np.float64),
+    }
+    if euler is not None:
+        npz_blob["alpha_e"] = euler["alpha"]
+        npz_blob["impact_mass_e"] = euler["impact_mass"]
+        npz_blob["beta_e_grid"] = euler["beta_grid"]
     p = out / "result.npz"
-    np.savez_compressed(
-        p,
-        airfoil=result["airfoil"],
-        solid=result["solid"],
-        m_w=result["m_w"],
-        impact_mass=result["impact_mass"],
-        s_grid=result["s_grid"],
-        beta_grid=result["beta_grid"],
-        stag=np.array(result["stag"]),
-        hist_step=np.array(result["history"]["step"], dtype=np.float64),
-        hist_t=np.array(result["history"]["t_phys"], dtype=np.float64),
-        hist_cd=np.array([np.nan if v is None else v for v in result["history"]["cd"]]),
-        hist_cl=np.array([np.nan if v is None else v for v in result["history"]["cl"]]),
-        hist_ice=np.array(result["history"]["ice_cells"], dtype=np.float64),
-    )
+    np.savez_compressed(p, **npz_blob)
     files["npz"] = str(p)
 
     # --- PNGs ---
@@ -1323,6 +1900,30 @@ def save_icing_artifacts(result: dict[str, Any], out_dir: str) -> dict[str, str]
     fig.savefig(p, dpi=130)
     plt.close(fig)
     files["beta_png"] = str(p)
+
+    # 2b. Eulerian vs Lagrangian beta overlay (cross-validation)
+    if euler is not None and len(euler["beta"]["beta"]):
+        be = euler["beta"]
+        fig, ax = plt.subplots(figsize=(8, 5), constrained_layout=True)
+        if len(beta["s_over_c"]):
+            ax.plot(beta["s_over_c"] * 100, beta["beta"], "o-", ms=3,
+                    label=f"Lagrangian (max {bmax:.3f})")
+        emax = float(be["beta"].max())
+        ax.plot(be["s_over_c"] * 100, be["beta"], "s--", ms=3,
+                label=f"Eulerian (max {emax:.3f})")
+        ax.axhline(1.0, color="k", ls=":", lw=1)
+        ax.set_xlabel("surface arc from LE s/c [% chord] (+ upper)")
+        ax.set_ylabel("collection efficiency beta [-]")
+        ax.set_title(
+            f"beta cross-validation, same flow trajectory "
+            f"(St={cfg.stokes:.3f}, drag={cfg.drag_law})"
+        )
+        ax.legend()
+        ax.grid(alpha=0.3)
+        p = out / "beta_compare.png"
+        fig.savefig(p, dpi=130)
+        plt.close(fig)
+        files["beta_compare_png"] = str(p)
 
     # 3. history (cd drift + ice growth)
     fig, axes = plt.subplots(1, 2, figsize=(11, 4), constrained_layout=True)
