@@ -525,6 +525,12 @@ class TritonFusedSolver3D:
     the current host; if it returns False, instantiate
     ``OptimizedSolver3D`` instead.
 
+    :meth:`step` keeps two persistent internal buffers and ping-pongs
+    between them: consecutive calls that feed the previous output back
+    never alias the kernel's input and output pointers (the pull-stream
+    kernel reads neighbouring cells, so an aliased in-place step would
+    race across thread blocks).
+
     Args:
         nz, ny, nx: Grid size in lattice units.
         tau: Relaxation time τ > 0.5.
@@ -577,9 +583,13 @@ class TritonFusedSolver3D:
 
         # Cache lattice tensors once per device string.
         self._lat = make_lattice_tensors(str(self.device))
-        # Ping-pong buffers for the next step; allocated lazily so the
+        # Ping-pong buffers; step() alternates between them so the fused
+        # kernel never reads and writes through the same pointer (blocks
+        # pull from neighbouring cells, so aliasing input and output is a
+        # cross-block read-after-write race).  Allocated lazily so the
         # caller can shape them on demand.
-        self._buf: torch.Tensor | None = None
+        self._buf_a: torch.Tensor | None = None
+        self._buf_b: torch.Tensor | None = None
 
     # ------------------------------------------------------------------
     # Step
@@ -595,14 +605,30 @@ class TritonFusedSolver3D:
         Returns:
             A fresh tensor holding the post-step distribution.  The
             input ``f`` is not modified.
+
+        The result is one of two persistent internal ping-pong buffers.
+        Calls that feed the previous output back alternate buffers, so
+        the kernel's input and output pointers are always distinct;
+        a first call with a caller-owned ``f`` writes into ``_buf_a``.
         """
-        if self._buf is None or self._buf.shape != f.shape \
-                or self._buf.dtype != f.dtype:
-            self._buf = torch.empty_like(f)
+        if self._buf_a is None or self._buf_a.shape != f.shape \
+                or self._buf_a.dtype != f.dtype \
+                or self._buf_b is None or self._buf_b.shape != f.shape \
+                or self._buf_b.dtype != f.dtype:
+            self._buf_a = torch.empty_like(f)
+            self._buf_b = torch.empty_like(f)
+
+        # Output = the internal buffer that is NOT the input tensor.
+        # The kernel pulls from neighbouring cells, so in-place stepping
+        # (f_ptr == fnew_ptr) would race across thread blocks.
+        if f.data_ptr() == self._buf_a.data_ptr():
+            out = self._buf_b
+        else:
+            out = self._buf_a
 
         return triton_fused(
             f, self.tau,
-            out=self._buf,
+            out=out,
             block_x=self.block_x, block_y=self.block_y,
             num_warps=self.num_warps, num_stages=self.num_stages,
         )
