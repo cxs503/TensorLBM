@@ -220,9 +220,40 @@ class DistributedTritonFusedSolver3D:
         self._buf: torch.Tensor | None = None
         # Async handles from previous halo exchange (list of Work or None).
         self._halo_handles: list | None = None
+        # Buffer whose ghost planes the in-flight halo exchange will fill.
+        # Set by :meth:`_start_halo_exchange`; :meth:`_finalize_halo`
+        # copies the received staging planes into it after the wait.
+        self._halo_target: torch.Tensor | None = None
+        # Persistent contiguous staging planes for the halo exchange.
+        # NCCL point-to-point ops need dense tensors, but the boundary
+        # and ghost planes of the ``(Q, nz_local+2, ny, nx)`` buffer are
+        # strided views (their q-dim stride spans the whole slab).  Sends
+        # copy the owned boundary planes *into* staging before ``isend``;
+        # recvs land *in* staging and are copied out into the ghost
+        # planes once the exchange completes (see :meth:`_finalize_halo`).
+        # Posting ``irecv`` on a ``.contiguous()`` temporary — as an
+        # earlier version of this class did — silently drops the data:
+        # NCCL writes the plane into the temporary, which is then
+        # discarded, so the ghost planes never see the neighbour values.
+        if self._world > 1:
+            self._alloc_halo_staging(torch.float32)
+        else:
+            self._send_left = None
+            self._send_right = None
+            self._recv_left = None
+            self._recv_right = None
 
         # Cache lattice tensors once.
         self._lat = make_lattice_tensors(str(self.device))
+
+    def _alloc_halo_staging(self, dtype: torch.dtype) -> None:
+        """(Re)allocate the four persistent ``(Q, ny, nx)`` staging planes."""
+        shape = (19, self.ny, self.nx)
+        kw = dict(dtype=dtype, device=self.device)
+        self._send_left = torch.empty(shape, **kw)
+        self._send_right = torch.empty(shape, **kw)
+        self._recv_left = torch.empty(shape, **kw)
+        self._recv_right = torch.empty(shape, **kw)
 
     # ------------------------------------------------------------------
     # Properties
@@ -334,29 +365,62 @@ class DistributedTritonFusedSolver3D:
             f[:, -1:, :, :].copy_(f[:, -2:-1, :, :])
             return []
 
+        # Never post onto an exchange that is still in flight — the new
+        # one would overwrite the staging planes the pending recvs are
+        # filling.  Land (wait + copy-back) the previous one first.
+        if self._halo_handles is not None or self._halo_target is not None:
+            self._finalize_halo()
+
+        # Re-allocate staging only if the caller's buffer dtype/device
+        # changed since the staging planes were created.
+        if (self._send_left is None
+                or self._send_left.dtype != f.dtype
+                or self._send_left.device != f.device):
+            self._alloc_halo_staging(f.dtype)
+
+        # Snapshot the two owned boundary planes into dense send staging.
+        # NCCL rejects the strided plane views; the copies run on the
+        # current stream, so they are ordered after whatever kernel
+        # produced ``f``.
+        self._send_left.copy_(f[:, 1, :, :])
+        self._send_right.copy_(f[:, self.nz_local, :, :])
+
         ops = [
             # Send owned plane 1 to left neighbour (becomes their right ghost).
-            dist.P2POp(dist.isend,
-                       f[:, 1:2, :, :].contiguous(),
-                       self.left_neighbor),
-            # Send owned plane nz_local to right neighbour (becomes their left ghost).
-            dist.P2POp(dist.isend,
-                       f[:, self.nz_local:self.nz_local + 1, :, :].contiguous(),
-                       self.right_neighbor),
-            # Receive into right ghost from right neighbour.
-            # NOTE: the recv slice is non-dense (Q-dim stride > slice width),
-            # so .contiguous() is required — NCCL's batch_isend_irecv rejects
-            # non-overlapping-but-non-dense tensors.
-            dist.P2POp(dist.irecv,
-                       f[:, self.nz_with_halo - 1:self.nz_with_halo, :, :].contiguous(),
-                       self.right_neighbor),
-            # Receive into left ghost from left neighbour.  Same contiguous
-            # requirement as the right-ghost recv.
-            dist.P2POp(dist.irecv,
-                       f[:, 0:1, :, :].contiguous(),
-                       self.left_neighbor),
+            dist.P2POp(dist.isend, self._send_left, self.left_neighbor),
+            # Send owned plane nz_local to right neighbour (becomes their
+            # left ghost).
+            dist.P2POp(dist.isend, self._send_right, self.right_neighbor),
+            # Receive the right ghost plane from the right neighbour into
+            # dense staging; :meth:`_finalize_halo` copies it into
+            # ``f[:, nz_local + 1]`` once the wait completes.
+            dist.P2POp(dist.irecv, self._recv_right, self.right_neighbor),
+            # Receive the left ghost plane from the left neighbour into
+            # dense staging; ditto for ``f[:, 0]``.
+            dist.P2POp(dist.irecv, self._recv_left, self.left_neighbor),
         ]
+        # Remember where the received planes must land once the wait
+        # completes (the caller may hand a different buffer each step).
+        self._halo_target = f
         return dist.batch_isend_irecv(ops)
+
+    def _finalize_halo(self) -> None:
+        """Wait for the in-flight halo exchange and land the received
+        planes in the target buffer's ghost planes.
+
+        No-op when nothing is in flight.  This is where the received
+        data actually reaches the ghost planes: NCCL filled the dense
+        staging planes, and the two ``copy_`` calls below write them
+        into the (strided) ghost-plane views.
+        """
+        if self._halo_handles is not None:
+            self._wait(self._halo_handles)
+            self._halo_handles = None
+        target = self._halo_target
+        if target is not None:
+            target[:, 0, :, :].copy_(self._recv_left)
+            target[:, self.nz_with_halo - 1, :, :].copy_(self._recv_right)
+            self._halo_target = None
 
     @staticmethod
     def _wait(handles: list | None) -> None:
@@ -382,6 +446,17 @@ class DistributedTritonFusedSolver3D:
             distribution.  Ghost planes in the output are stale and
             will be overwritten on the *next* step before the kernel
             reads them.
+
+        Note:
+            The kernel is a *pull*-stream step: it reads neighbouring
+            cells, so its input and output buffers must never alias.
+            Feeding the returned buffer straight back
+            (``f = solver.step(f)``) makes every step after the first
+            run aliased in-place, which silently corrupts the result
+            (measured ~2e-4 after 50 steps at n=128).  Ping-pong a
+            second buffer externally by reassigning ``self._buf``
+            between calls — the pattern used by
+            :mod:`tensorlbm.triton_suboff_step_distributed`.
         """
         if f_local.shape != self.local_shape:
             raise ValueError(
@@ -391,10 +466,10 @@ class DistributedTritonFusedSolver3D:
         if self._buf is None or self._buf.dtype != f_local.dtype:
             self._buf = torch.empty_like(f_local)
 
-        # 1. Wait for the previous halo exchange so f_local's ghost
-        #    planes are fresh.
-        self._wait(self._halo_handles)
-        self._halo_handles = None
+        # 1. Wait for the previous halo exchange (this also copies the
+        #    received staging planes into f_local's ghost planes) so the
+        #    kernel reads fresh halos.
+        self._finalize_halo()
 
         # 2. Run the fused collide+stream kernel on the full local
         #    buffer (nz = nz_local+2, including ghost planes).
@@ -415,9 +490,12 @@ class DistributedTritonFusedSolver3D:
         return self._buf
 
     def synchronize(self) -> None:
-        """Wait for any in-flight halo exchange.  Safe to call between steps."""
-        self._wait(self._halo_handles)
-        self._halo_handles = None
+        """Wait for any in-flight halo exchange and copy the received
+        planes into the target buffer's ghost planes.
+
+        Safe to call between steps; a no-op when nothing is in flight.
+        """
+        self._finalize_halo()
 
     # ------------------------------------------------------------------
     # Diagnostics
@@ -431,6 +509,9 @@ class DistributedTritonFusedSolver3D:
         """Bytes of transient memory used per step on this rank.
 
         One scratch buffer of shape ``(Q, nz_local+2, ny, nx)`` plus
-        the caller's input buffer (counted by the caller).
+        the caller's input buffer (counted by the caller).  Excludes
+        the small persistent halo staging planes (``4 * Q*ny*nx``
+        elements), which are allocated once in ``__init__`` and reused
+        every step.
         """
         return 19 * self.nz_with_halo * self.ny * self.nx * 4  # fp32
