@@ -39,7 +39,7 @@
 
 | # | 问题 | 参考基准 | 共性模块 | 备注 |
 |---|------|---------|---------|------|
-| B17 | Taylor-Green 涡衰减 | 解析 e^(−2νk²t) 衰减率 | D3Q19 周期域 | **验证数值耗散**（LBM 弱项） | ✅ 已达标（2D D2Q9 周期域, err≤0.13%, benchmarks/verified/taylor_green_2d/） |
+| B17 | Taylor-Green 涡衰减 | 解析 e^(−2νk²t) 衰减率 | D3Q19 周期域 | **验证数值耗散**（LBM 弱项） | ✅ 已达标（2D D2Q9 周期域 err≤0.13%: taylor_green_2d/；**3D D3Q19 周期域 err +0.31%→+0.25% 收敛: taylor_green_3d/**；注：3D 场 \|κ\|²=3k² → γ_E=6νk²，任务书 e^{−2νk²t} 为 2D 速度率） |
 | B30 | 2D 衰减剪切波 | 解析 γ_vel=νk² 衰减率 | D2Q9 周期域 | **验证 1D 粘性耗散**（纯剪切无涡拉伸） | ✅ 已达标（H=64/128, err 0.051%→0.011% 收敛, benchmarks/verified/shear_wave_decay/） |
 | B18 | 后向台阶 Re=100-800 | Armaly 1984 再附着长度 | backward_facing_step.py | 验证分离流 |
 | B19 | 方柱绕流 Re=100 | 文献 Cd≈2.05, St≈0.14 | PARAMETRIC_CYLINDER(方) | 验证尖锐角处理 |
