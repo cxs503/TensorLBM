@@ -19,6 +19,28 @@
     }
   },
   "verdict": "NOT VERIFIED — D=40 -0.76% 巧合精度，D=80 -3.28% 加密恶化（用户标准：加密恶化=假结果）",
-  "analysis": "Cd 随网格下降 5.54→5.40：half-way BB 有效半径 R_eff=R+0.5 使有效 D 偏大→Cd 偏低；或入口 Poiseuille 剖面/出口 BC 网格依赖。Cl 符号反（-0.014 vs +0.0106）为 y 轴约定或参考符号问题。需：R_eff 修正（用 R-0.5 或精确壁面位置）或检查单位",
-  "verified": false
+  "analysis": "无重整化后两档收敛(4.04→3.95)但 vs 插值参考 -8~-10%——MEM 阶梯偏差平台(与 Re=20 同族但 Re=40 偏差更大); 参考值非官方有不确定性",
+  "verified": false,
+  "no_renorm_results": {
+    "D40": {
+      "cd": 4.03738,
+      "err_pct": -8.43,
+      "steps": 300000,
+      "ref": "log-interp 4.409"
+    },
+    "D80": {
+      "cd": 3.95249,
+      "err_pct": -10.36,
+      "steps": 300000,
+      "ref": "log-interp 4.409"
+    }
+  },
+  "convergence": {
+    "cd": [
+      4.037,
+      3.952
+    ],
+    "grid_converged": true,
+    "ref_not_official": "Re=40 无官方值, 用 Re20(5.5795)->Re100(3.23) 对数插值 4.409"
+  }
 }
