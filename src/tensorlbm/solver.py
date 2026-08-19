@@ -253,6 +253,7 @@ def collide_mrt(
     s_e: float = 1.64,
     s_eps: float = 1.54,
     s_q: float = 1.7,
+    tau_field: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Multi-relaxation-time (MRT) collision step for D2Q9.
 
@@ -278,6 +279,12 @@ def collide_mrt(
         s_e: Relaxation rate for energy moment.
         s_eps: Relaxation rate for energy-square moment.
         s_q: Relaxation rate for heat-flux moments.
+        tau_field: Optional per-cell relaxation time tensor of shape
+            ``(ny, nx)``.  When given, the shear-stress relaxation rate
+            ``s_nu = 1/tau`` is applied cell-wise instead of uniformly,
+            enabling sponge/absorbing layers (τ_eff = τ·(1 + α·σ(x))) and
+            other space-varying viscosity treatments.  All other MRT rates
+            stay uniform.  ``None`` (default) keeps the original behaviour.
 
     Returns:
         Updated distribution tensor of the same shape.
@@ -300,7 +307,18 @@ def collide_mrt(
 
     moments = matrix @ f_flat
     moments_eq = matrix @ feq_flat
-    moments_star = moments - s_vec.unsqueeze(1) * (moments - moments_eq)
+    if tau_field is None:
+        moments_star = moments - s_vec.unsqueeze(1) * (moments - moments_eq)
+    else:
+        # Cell-wise shear relaxation for sponge layers: s_nu = 1/τ_eff(x, y).
+        s_mat = torch.zeros((9, ny, nx), dtype=f.dtype, device=device)
+        s_mat[1] = s_e
+        s_mat[2] = s_eps
+        s_mat[4] = s_q
+        s_mat[6] = s_q
+        s_mat[7] = 1.0 / tau_field
+        s_mat[8] = 1.0 / tau_field
+        moments_star = moments - s_mat.reshape(9, -1) * (moments - moments_eq)
     return (matrix_inv @ moments_star).reshape(9, ny, nx)
 
 

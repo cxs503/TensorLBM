@@ -199,16 +199,31 @@ def lbm_step_correct(
     # ----------------------------------------------------------------
     # Standard LBM step (BB / WF / BFL modes)
     # ----------------------------------------------------------------
-    # 1. Save pre-collision state
-    f_pre = f.clone()
+    # 1. Save pre-collision state.  Only the SOLID cells are needed for the
+    #    NoDynamics restore below; a full-domain clone is a memory hog on
+    #    large grids (4.3 GB at 56M cells) and is one of the allocations
+    #    that pushes MRT past 24 GB.  The BFL path and any custom
+    #    bounce_back_fn still receive the full f_pre.
+    need_full_f_pre = (
+        solid is None or wall_treatment == "bfl" or bounce_back_fn is not None
+    )
+    if need_full_f_pre:
+        f_pre = f.clone()
+        f_pre_solid = None
+    else:
+        f_pre = None
+        f_pre_solid = f[:, solid].clone()
 
     # 2. Collision (all cells)
     f = collide_fn(f, tau=tau, **collide_kwargs)
 
     # 3. NoDynamics: restore solid cells to pre-collision values
-    sm = solid.unsqueeze(0).expand_as(f)
-    for q in range(f.shape[0]):
-        f[q] = torch.where(sm[q], f_pre[q], f[q])
+    if f_pre is not None:
+        sm = solid.unsqueeze(0).expand_as(f)
+        for q in range(f.shape[0]):
+            f[q] = torch.where(sm[q], f_pre[q], f[q])
+    else:
+        f[:, solid] = f_pre_solid
 
     if wall_treatment == "wf":
         # WF mode: collide → NoDynamics → stream → WF → BC

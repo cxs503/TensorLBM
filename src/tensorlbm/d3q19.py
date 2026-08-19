@@ -111,6 +111,43 @@ def equilibrium3d(
     return result
 
 
+def equilibrium3d_low_memory(
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    device: torch.device | None = None,
+    *,
+    out: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """D3Q19 equilibrium with minimal transient memory.
+
+    Bit-identical to :func:`equilibrium3d` (same per-direction scalar
+    arithmetic, same evaluation order), but never materialises
+    ``(19, nz, ny, nx)`` intermediates: each direction's f_eq_q is built
+    from ``(nz, ny, nx)`` temporaries only.  On a 56M-cell grid the
+    vectorised form allocates ~25 GB of transients inside the collision
+    step (OOM on 24 GB GPUs); this form needs ~1 GB.
+    """
+    if not (rho.shape == ux.shape == uy.shape == uz.shape):
+        raise ValueError(
+            "rho, ux, uy, and uz shapes must match: "
+            f"rho={tuple(rho.shape)}, ux={tuple(ux.shape)}, "
+            f"uy={tuple(uy.shape)}, uz={tuple(uz.shape)}"
+        )
+    if device is None:
+        device = rho.device
+    c = _c_on(device)
+    w = _w_on(device, rho.dtype)
+    u_sq = ux * ux + uy * uy + uz * uz
+    if out is None:
+        out = torch.empty((19,) + tuple(rho.shape), dtype=rho.dtype, device=device)
+    for q in range(19):
+        cu = c[q, 0] * ux + c[q, 1] * uy + c[q, 2] * uz
+        out[q] = w[q] * rho * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq)
+    return out
+
+
 def macroscopic3d(
     f: torch.Tensor,
     device: torch.device | None = None,
