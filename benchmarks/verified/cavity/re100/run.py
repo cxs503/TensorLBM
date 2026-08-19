@@ -24,7 +24,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
-sys.path.insert(0, "/srv/tensor/operator-a/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 from tensorlbm.d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
 from tensorlbm.lid_driven_cavity import GHIA_RE100, zou_he_moving_lid
@@ -44,7 +46,7 @@ def stationary_pre_bounce(f_pre, f, wall):
     return torch.where(wall.unsqueeze(0), f_pre[opp], f)
 
 
-def run_case(nx, re, u_lid, steps, device):
+def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
     ny = nx
     tau = 3.0 * u_lid * nx / re + 0.5
     rho0 = torch.ones((ny, nx), device=device)
@@ -61,6 +63,16 @@ def run_case(nx, re, u_lid, steps, device):
     resid_mask = interior.clone()
     resid_mask[-1, :] = False  # 顶行由 lid BC 驱动，不计入稳态残差
 
+    # ---- 整步步进函数（共性 compile 路径；步序号与监测留在编译域外）----
+    def _step(f):
+        f_pre = f
+        f = collide_mrt(f, tau=tau)
+        f = stationary_pre_bounce(f_pre, f, wall_mask)  # V3：三壁 pre-streaming 半程反弹
+        f = stream(f)
+        return zou_he_moving_lid(f, u_lid)
+
+    step_fn = route_step(_step, compile_mode, name=f"cavity_re100[{nx}]")
+
     _, ux_prev, uy_prev = macroscopic(f)
     ux_prev = ux_prev.detach().clone()
     uy_prev = uy_prev.detach().clone()
@@ -68,11 +80,7 @@ def run_case(nx, re, u_lid, steps, device):
 
     t0 = time.time()
     for step in range(1, steps + 1):
-        f_pre = f
-        f = collide_mrt(f, tau=tau)
-        f = stationary_pre_bounce(f_pre, f, wall_mask)  # V3：三壁 pre-streaming 半程反弹
-        f = stream(f)
-        f = zou_he_moving_lid(f, u_lid)
+        f = step_fn(f)
         if step % 10000 == 0 or step == steps:
             _, ux, uy = macroscopic(f)
             du = torch.max(
@@ -132,6 +140,7 @@ def run_case(nx, re, u_lid, steps, device):
 
     return {
         "nx": nx, "re": re, "u_lid": u_lid, "tau": round(tau, 4), "steps": steps,
+        "compile_mode": compile_mode,
         "elapsed_s": round(elapsed, 1), "last_resid": last_resid,
         "u_mid": u_mid, "u_mid_ghia": -0.20581,
         "u_bot": u_bot, "v_mid": v_mid,
@@ -149,14 +158,17 @@ def main():
     ap.add_argument("--steps", type=int, default=100000)
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--out", default="/tmp/cavity_re100_verified.json")
+    add_compile_mode_arg(ap)
     args = ap.parse_args()
+    compile_mode = compile_mode_from_args(args)
 
     device = torch.device(args.device)
     torch.set_num_threads(32)
 
     results = {}
     for nx in args.nx:
-        results[str(nx)] = run_case(nx, args.re, args.u_lid, args.steps, device)
+        results[str(nx)] = run_case(nx, args.re, args.u_lid, args.steps, device,
+                                    compile_mode=compile_mode)
 
     devs = [results[str(nx)]["max_abs_dev_pct"] for nx in args.nx]
     verdict = {
@@ -168,7 +180,13 @@ def main():
     results["verified"] = bool(verdict["pass"])
     results["verified_date"] = "2026-08-19"
 
-    Path(args.out).write_text(json.dumps(results, indent=2), encoding="utf-8")
+    # tolerate both spellings of --out: a file path (historic default,
+    # e.g. /tmp/cavity_re100_verified.json) or a results directory
+    out_path = Path(args.out)
+    if not out_path.suffix:
+        out_path = out_path / "result.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print(f"verdict: {json.dumps(verdict)}", flush=True)
     print("DONE", flush=True)
 
