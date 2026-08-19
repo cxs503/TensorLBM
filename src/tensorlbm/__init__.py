@@ -270,6 +270,15 @@ from .non_newtonian import (
     collide_power_law_bgk,
     strain_rate_magnitude_2d,
 )
+from .powerlaw import (
+    apply_body_force_shift,
+    central_difference,
+    collide_powerlaw_bgk,
+    powerlaw_viscosity,
+    strain_rate_shear_rate_2d,
+    tau_from_viscosity,
+    velocity_gradients_2d,
+)
 from .obstacles import (
     compute_obstacle_forces_3d,
     compute_obstacle_forces_27,
