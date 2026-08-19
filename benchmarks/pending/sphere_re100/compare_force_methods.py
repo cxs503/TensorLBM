@@ -43,7 +43,7 @@ def main():
     p0_method = sys.argv[3] if len(sys.argv) > 3 else "far_field"
     extrap = sys.argv[4] if len(sys.argv) > 4 else "none"
     friction = sys.argv[5] if len(sys.argv) > 5 else "standard"
-    assert friction in ("standard", "lagrange"), friction
+    assert friction in ("standard", "2nd_order", "central", "lagrange"), friction
 
     out_dir = f"/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d{resolution}_{p0_method}_{extrap}_{friction}"
 
@@ -110,7 +110,7 @@ def main():
             "cd_mem_standard", "cd_mem_galilean", "cd_mem_bgsub"]
     means = {k: float(sum(e.get(k, 0.0) for e in recent) / len(recent)) for k in keys}
 
-    # ── Post-run single-frame re-sampling: all p0_methods on steady field ──
+    # ── Post-run single-frame re-sampling: 4 p0_methods × 4 friction formulas ──
     from tensorlbm.drag_pressure import drag_pressure_integration, drag_friction_integration
     dpS = engine._compute_dpS()
     p0_scan = {}
@@ -119,6 +119,12 @@ def main():
             engine.f, engine.mesh, dpS, extrap=extrap, p0_method=pm, solid=engine.solid
         )
         p0_scan[pm] = px
+    friction_scan = {}
+    for ff in ("standard", "2nd_order", "central", "lagrange"):
+        fxf, fyf, fzf = drag_friction_integration(engine.f, engine.mesh, dpS,
+                                                  setup_info["nu_lb"], formula=ff)
+        friction_scan[ff] = fxf
+    p0_scan["friction_scan"] = friction_scan
     fxf, fyf, fzf = drag_friction_integration(engine.f, engine.mesh, dpS, setup_info["nu_lb"],
                                               formula=friction)
     p0_scan["friction"] = fxf
@@ -136,10 +142,13 @@ def main():
         v = means[k]
         ref = cd_ref_sn
         print(f"  {k:18s} = {v:.4f}  (err vs SN {ref:.4f}: {(v-ref)/ref*100:+.2f}%)")
-    print(f"\n[single-frame p0 scan, extrap={extrap}, step={engine.step_count}]")
+    print(f"[single-frame scan, extrap={extrap}, step={engine.step_count}]")
     for pm in ("near_wall", "far_field", "domain_avg", "inlet", "friction"):
         v = p0_scan[pm]
         print(f"  p0={pm:12s} cd = {v:.4f}  (err {(v-cd_ref_sn)/cd_ref_sn*100:+.2f}%)")
+    print("  friction scan (single-frame):")
+    for ff, v in friction_scan.items():
+        print(f"    {ff:10s} cd_f = {v:.4f}  (err {(v-cd_ref_sn)/cd_ref_sn*100:+.2f}% vs SN)")
     print(f"  surface leakage Σn̂dA = ({leak_x:.4f}, {leak_y:.4f}, {leak_z:.4f})")
     print(f"  ρU·Σn̂dA approx = {1.0*u_lb*leak_x:.6f} -> Cd_approx = {1.0*u_lb*leak_x/dpS:.4f}")
 

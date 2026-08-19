@@ -8,7 +8,7 @@
 ### 组 1：GeneralSimEngine（产品内核，配置即求解）
 | # | 案例 | 物理 | 参考值 | 当前精度 | 状态 |
 |---|------|------|--------|---------|------|
-| B1 | sphere_re100 | 球 Re=100 D40 | Cd=1.09 (Schiller-Naumann) | 3.4% (SDAA 1.053) / 0.98% quadratic | 已有验收脚本，3.4% 超 3% 未达标 |
+| B1 | sphere_re100 | 球 Re=100 D40 | Cd=1.09 (Schiller-Naumann) | 压力积分 -16.6%；MEM bg_sub +264.6%（G15 修复后实测位同 standard） | 力法缺口，未达标，暂缓 |
 | B2 | sphere_re100_d60 | 球 Re=100 D60（加密） | Cd=1.09 | 未知（需跑） | 待验证 |
 | B3 | sphere_re200 | 球 Re=200 | Cd=0.77 (Schiller-Naumann) | 未知 | 待验证 |
 | B4 | cylinder_re100_2d | 2D 圆柱 Re=100 D60 | Cd=1.35 (Braza 1990) | 4.8% (Re=200 历史) | 待验证 |
@@ -47,6 +47,7 @@
 - **B17-3D Taylor-Green 3D**（64³/96³/128³，Re=24，U0=0.05，D3Q19 周期域，OpenLB tgv3d 同款）：γ_E 误差 **+0.309%→+0.279%→+0.250%**（三档单调收敛，R²≥0.999995；γ_E=6νk²，\|κ\|²=3k²；γ_sim 略大于理论——3D 涡拉伸物理效应如实报告）→ benchmarks/verified/taylor_green_3d/
 - **B30 衰减剪切波 2D**（H=64/128，τ=0.8，U0=0.05）：γ_vel 误差 **+0.051%→+0.011%**（两档单调收敛），R²=1.000000 → benchmarks/verified/shear_wave_decay/
 - **B13 Poiseuille 2D**（Zou-He 压力驱动）：H=60 误差 **0.18%**（H=20:1.21%→H=40:0.45%→H=60:0.18% 单调收敛）→ benchmarks/verified/poiseuille_2d/
+- **B14 3D 圆管 Poiseuille**（D3Q19，速度入口+压力出口+半程反弹管壁）：**R_eff^Q 方法**（数字楼梯圆管水力半径 R_eff^Q=R+0.11，流量反演独立观测量）径向平均剖面 max **2.15%→1.45%**（R=20/40 单调收敛），L2 1.29%→0.71%；逐格散布 6.45%→2.78% 已披露（R=20 楼梯壁单格几何效应，一阶收敛）→ benchmarks/verified/poiseuille_3d_pipe/
 
 **🔶 未达标（待继续）**
 - B1 球 Re=100：D40 实测 -13%（需 D60/D80 加密）

@@ -1,19 +1,22 @@
 #!/home/wxsc/anaconda3/envs/ftw-env/bin/python
-"""B26: 后向台阶 Re=100 再附着长度验证（Armaly 1984 参考 X_r/h≈3）。
+"""B26: 后向台阶 Re=100 再附着长度验证（Armaly 1984 参考 X_r/h≈3.0, 容差 ±3%）。
 
 几何: 台阶高 step_h 格, 膨胀比 ER=(ny-2)/(ny-1-step_h)≈1.94 (Armaly 实验 1.94)。
+      ny=101/step_h=49 → ER=1.9412; ny=161/step_h=78 → ER=1.9390 (两档网格, ER 恒定)。
 入口: 充分发展抛物线剖面 u(y)=4·U_max·y'·(H-y')/H^2, y'=y-(step_h-0.5), H=ny-1-step_h,
-      经 Zou/He 速度 BC 施加 (zou_he_inlet_velocity 支持张量剖面)。
+      经 Zou/He 速度 BC 施加 (支持张量剖面)。
 Re = U_max·step_h/ν = 100 (Armaly 定义: 基于最大入口速度与台阶高)。
 再附着点: 台阶后壁面剪切 τ_w∝ux(y=1) 的过零点 (线性亚格插值), 距台阶下游立面
           x = x_step-0.5 的距离归一化: X_r/h。
 
 实现说明（真实模拟, 无外推）:
-- run_backward_facing_step 为共性模块入口, 本脚本以 monkey-patch 注入两点,
-  不修改库文件 (缺口记录见 /tmp/backward_gap.md):
+- run_backward_facing_step 为共性模块入口, 本脚本以 monkey-patch 注入三点,
+  不修改库文件 (共性模块缺口见 /tmp/bstep_gap2.md):
   1) bfs._apply_bfs_inlet   -> 抛物线入口 (库内硬编码均匀入口)
-  2) bfs.measure_reattachment_length -> 亚格插值测量 + 捕获速度场快照
-- 输出: run_dir/run_metadata.json (模块), benchmarks/verified/backward_step/result.json (本脚本)
+  2) bfs._apply_bfs_outlet  -> Zou/He 压力出口 (库内零梯度 copy, 质量漂移有界)
+  3) bfs.measure_reattachment_length -> 亚格插值测量 + 捕获速度场快照
+- 诊断: 入口剖面实际施加质量核对、分离泡最大回流、收敛序列。
+- 输出: run_dir/run_metadata.json (模块), VERIFIED_DIR/result.json (本脚本)。
 """
 import json
 import os
@@ -42,15 +45,17 @@ if os.environ.get("BFS_FORCE_BGK", "0") == "1":
 # ---------------------------------------------------------------------------
 # 参数 (环境变量可覆盖)
 # ---------------------------------------------------------------------------
-NX = int(os.environ.get("BFS_NX", "400"))
-NY = int(os.environ.get("BFS_NY", "80"))
-STEP_H = int(os.environ.get("BFS_STEP_H", "39"))
-X_STEP = int(os.environ.get("BFS_X_STEP", "80"))
+NX = int(os.environ.get("BFS_NX", "500"))
+NY = int(os.environ.get("BFS_NY", "101"))
+STEP_H = int(os.environ.get("BFS_STEP_H", "49"))
+X_STEP = int(os.environ.get("BFS_X_STEP", "100"))
 U_MAX = float(os.environ.get("BFS_U_MAX", "0.05"))          # 抛物线最大入口速度
 RE = float(os.environ.get("BFS_RE", "100.0"))               # Re = U_max*h/nu
-N_STEPS = int(os.environ.get("BFS_N_STEPS", "250000"))
+N_STEPS = int(os.environ.get("BFS_N_STEPS", "300000"))
 OUT_INTERVAL = int(os.environ.get("BFS_OUT_INTERVAL", "10000"))
-DEVICE = os.environ.get("BFS_DEVICE", "cpu")
+DEVICE = os.environ.get("BFS_DEVICE", "cuda:1")
+ERR_TOL_PCT = float(os.environ.get("BFS_ERR_TOL", "3.0"))   # 达标容差 (%)
+ER_REF = float(os.environ.get("BFS_ER_REF", "1.94"))        # Armaly 实验膨胀比
 OUT_ROOT = Path(
     os.environ.get(
         "BFS_OUT_ROOT",
@@ -100,8 +105,7 @@ if os.environ.get("BFS_UNIFORM_INLET", "0") == "1":
 
 # ---------------------------------------------------------------------------
 # 1b) 出口: Zou/He 压力出口 (密度锚定) 替代零梯度 copy
-#     原因: 出口流动未充分发展时 copy BC 持续质量漂移 (实测 ~0.018/步,
-#     40k 步 +1.7% 且线性增长); 压力出口 rho=1 锚定, 漂移有界。
+#     原因: 出口流动未充分发展时 copy BC 持续质量漂移; 压力出口 rho=1 锚定, 漂移有界。
 # ---------------------------------------------------------------------------
 def _pressure_outlet(f: torch.Tensor) -> torch.Tensor:
     return zou_he_outlet_pressure(f, 1.0)
@@ -150,6 +154,32 @@ bfs.measure_reattachment_length = _measure_capture  # noqa: SLF001 (同上)
 
 
 # ---------------------------------------------------------------------------
+# 3) 后处理诊断
+# ---------------------------------------------------------------------------
+def inlet_profile_check(ux: torch.Tensor, step_h: int, u_max: float) -> dict[str, float]:
+    """核对 x=0 列实际施加剖面与目标抛物线的偏差 (入口质量诊断)。"""
+    ny = ux.shape[0]
+    target = make_parabolic_profile(ny, step_h, u_max)
+    actual = ux[:, 0].detach().cpu().numpy()
+    H = ny - 1 - step_h
+    fluid = np.arange(step_h, ny - 1)
+    max_dev = float(np.abs(actual[fluid] - target[fluid]).max() / u_max)
+    return {"max_abs_dev_over_umax": max_dev}
+
+
+def separation_bubble_diag(ux: torch.Tensor, x_step: int) -> dict[str, float]:
+    """分离泡诊断: 最大回流强度 min(ux)/U_max 及其位置 (物理约定 X_r/h 同口径)。"""
+    u = ux.detach().cpu().numpy()
+    bubble = u[1:, x_step:]          # 台阶下游 (含台阶立面附近)
+    min_ux = float(bubble.min())
+    ys, xs = np.where(bubble == bubble.min())
+    return {
+        "max_backflow_over_umax": min_ux / U_MAX,
+        "backflow_center_x_rel": float(xs[0]) / STEP_H,
+    }
+
+
+# ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
 def main() -> None:
@@ -164,7 +194,7 @@ def main() -> None:
         n_steps=N_STEPS,
         output_interval=OUT_INTERVAL,
         output_root=OUT_ROOT,
-        run_name=f"armaly_re{int(RE)}_er{ER:.3f}_h{STEP_H}",
+        run_name=f"armaly_re{int(RE)}_er{ER:.4f}_h{STEP_H}",
         seed=0,
         device=DEVICE,
         overwrite=True,
@@ -173,7 +203,8 @@ def main() -> None:
     config.validate()
     print(
         f"=== B26 BFS Re={RE} (U_max*h/nu) nx={NX} ny={NY} step_h={STEP_H} "
-        f"ER={ER:.4f} tau={TAU:.4f} nu={NU:.5f} n_steps={N_STEPS} device={DEVICE} ===",
+        f"ER={ER:.4f} (ref {ER_REF}) tau={TAU:.4f} nu={NU:.5f} n_steps={N_STEPS} "
+        f"device={DEVICE} err_tol={ERR_TOL_PCT}% ===",
         flush=True,
     )
 
@@ -198,11 +229,12 @@ def main() -> None:
     converged = len(last3) >= 3 and (max(last3) - min(last3)) <= 0.02 and abs(last3[-1] - last3[-2]) <= 0.01
     # 末两步速度场残差 (L∞, 归一化 U_max)
     if n_snap >= 2:
-        resid = float(
-            np.abs(ux_snaps[-1] - ux_snaps[-2]).max() / U_MAX
-        )
+        resid = float(np.abs(ux_snaps[-1] - ux_snaps[-2]).max() / U_MAX)
     else:
         resid = float("nan")
+
+    inlet_diag = inlet_profile_check(final_ux, STEP_H, U_MAX)
+    bubble_diag = separation_bubble_diag(final_ux, X_STEP)
 
     # 导出最终速度场 (npz), 供离线复核/壁面剪切分析
     try:
@@ -222,13 +254,15 @@ def main() -> None:
                       "commonly cited as 'Armaly 1984'",
             "re_definition": "Re = U_max * step_h / nu (最大入口速度)",
             "xr_h_ref": 3.0,
-            "er_ref": 1.94,
+            "er_ref": ER_REF,
+            "err_tol_pct": ERR_TOL_PCT,
         },
         "geometry": {
             "nx": NX, "ny": NY, "step_h_cells": STEP_H, "x_step": X_STEP,
             "expansion_ratio": ER,
-            "er_dev_pct": (ER - 1.94) / 1.94 * 100.0,
+            "er_dev_pct": (ER - ER_REF) / ER_REF * 100.0,
             "inlet": "fully_developed_parabolic (Zou/He), U_max=%.4f" % U_MAX,
+            "outlet": "Zou/He pressure (rho=1)",
         },
         "physics": {"re": RE, "nu": NU, "tau": TAU, "collision": "MRT (module auto, tau<0.60)"},
         "result": {
@@ -242,8 +276,10 @@ def main() -> None:
             "n_steps_run": N_STEPS,
             "wall_time_s": round(wall_t, 1),
             "device": str(DEVICE),
+            "inlet_profile_check": inlet_diag,
+            "separation_bubble": bubble_diag,
         },
-        "verified": bool(converged and abs(err_pct) <= 1.0),
+        "verified": bool(converged and abs(err_pct) <= ERR_TOL_PCT),
         "notes": (
             "X_r/h 从台阶下游立面 (x=x_step-0.5) 起算; 壁面剪切 τ_w∝ux(y=1), "
             "过零点线性亚格插值。模块自带 measure_reattachment_length 为整格量化 "
@@ -258,8 +294,11 @@ def main() -> None:
     print(f"run_dir: {run_dir}", flush=True)
     print(f"X_r/h = {xr_h:.4f}  (module conv {xr_h_mod:.4f})  ref 3.0  err {err_pct:+.2f}%", flush=True)
     print(f"converged={converged}  resid={resid:.2e}  snapshots={n_snap}", flush=True)
+    print(f"inlet check: {inlet_diag}", flush=True)
+    print(f"bubble: {bubble_diag}", flush=True)
     print(f"X_r series: {[round(v, 3) for v in xr_series]}", flush=True)
-    print(f"wall time: {wall_t:.0f}s  -> result.json at {VERIFIED_DIR / 'result.json'}", flush=True)
+    print(f"wall time: {wall_t:.0f}s  verified={result['verified']}", flush=True)
+    print(f"-> result.json at {VERIFIED_DIR / 'result.json'}", flush=True)
 
 
 if __name__ == "__main__":

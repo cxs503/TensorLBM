@@ -1,12 +1,44 @@
 {
-  "case": "B1_sphere_re100_d40",
-  "module": "GeneralSimEngine PARAMETRIC_SPHERE",
-  "collision": "MRT (auto)",
-  "force_method": "PRESSURE_FRICTION, extrap=none",
-  "grid": "D=40（140³ 域）",
-  "steps": 12000,
-  "err_pct_vs_sn": -16.54,
-  "err_pct_vs_cg": -17.86,
+  "case": "sphere_re100_g15_bgsub_verify",
+  "module": "GeneralSimEngine PARAMETRIC_SPHERE (D3Q19, MRT auto)",
+  "force_method": "BOTH: pressure+friction (extrap=none, p0=far_field) + MEM all variants",
+  "grid": "D=40 (140x120x120 domain, 33371 obstacle cells, 4302 near-wall cells)",
+  "steps": 16000,
+  "device": "cuda:2",
+  "mem_variant": "all",
+  "diverged": false,
+  "converged": true,
+  "convergence_evidence": "5x1000 window means drift <0.001 for all MEM variants",
+  "Cd_ref_SN": 1.091731,
+  "time_avg_last100": {
+    "cd_pressure": 0.5566,
+    "cd_friction": 0.3543,
+    "cd_total": 0.9109,
+    "cd_mem_standard": 3.9804,
+    "cd_mem_galilean": 7.5344,
+    "cd_mem_bgsub": 3.9804
+  },
+  "err_pct_vs_SN": {
+    "cd_pressure": -49.01,
+    "cd_friction": -67.55,
+    "cd_total": -16.56,
+    "cd_mem_standard": 264.60,
+    "cd_mem_galilean": 590.13,
+    "cd_mem_bgsub": 264.60
+  },
+  "bg_sub_vs_standard": "bit-identical (3.9804 == 3.9804) — G15 fix is a no-op on the direction-symmetric sphere staircase grid",
+  "symmetry_check": {
+    "D40_sum_abs_n_i_minus_n_opp": 0,
+    "D60_sum_abs_n_i_minus_n_opp": 0,
+    "note": "per-direction crossing counts are pairwise equal (axial 1245, diagonal 1434 at D=40) => uniform f^eq background cancels pairwise => bg_sub == standard, grid-independent"
+  },
+  "uniform_flow_unit_test": "bg_sub F=(0,0,0) exactly on f=f^eq(rho0,U0) — module correct, but degenerate on symmetric grids",
+  "window_means_5x1000": {
+    "cd_total": [0.91117, 0.9111, 0.91103, 0.91097, 0.91091],
+    "cd_mem_bgsub": [3.98142, 3.98115, 3.98089, 3.98066, 3.98044],
+    "cd_mem_standard": [3.98142, 3.98115, 3.98089, 3.98066, 3.98044],
+    "cd_mem_galilean": [7.53625, 7.53575, 7.53527, 7.53482, 7.5344]
+  },
   "verified": false,
-  "notes": "压力积分 extrap='none' 系统性低估 ~17%（近壁单元压力无壁面外推，G12 同源）。Cd≈0.90 vs 参考 1.087。与 B3 球 Re=200 (-24.6%) 一致——球绕流系列力法缺口阻塞。子 agent 卡在 wait 挂起未写 final，结果从 /tmp/run_d40_long.log 补录（12000 步）。"
+  "notes": "G15 fix (momentum_exchange_background_subtracted) verified 2026-08-19 for the first time at converged steps: bg_sub == standard (+264.60%), NOT improved. Root cause: sphere staircase grid is exactly direction-symmetric (sum|n_i-n_opp|=0 on D=40 AND D=60), so the uniform-equilibrium background cancels pairwise and subtraction is a no-op. galilean amplifies (+590%). MEM on curved spheres is dead regardless of variant. pressure integration stays -16.6% (G12). Both force paths fail on sphere family; series stays pending/."
 }
