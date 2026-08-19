@@ -45,7 +45,9 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 import numpy as np
 import torch
@@ -220,6 +222,7 @@ def run_case(
     device: torch.device,
     seed: int = 0,
     L_over_R: int = 6,
+    compile_mode: str | None = "default",
 ) -> dict:
     torch.manual_seed(seed)
     nu = (tau - 0.5) / 3.0
@@ -260,6 +263,16 @@ def run_case(
     inlet_bc = zou_he_inlet_velocity_3d if mode == "velocity" else zou_he_inlet_pressure_3d
     inlet_arg = u_in if mode == "velocity" else rho_in
 
+    # ---- 整步步进函数（共性 compile 路径；步序号与稳态监测留在编译域外）----
+    def _step(f):
+        f = collide_bgk3d(f, tau)
+        f = stream3d(f)
+        f = inlet_bc(f, inlet_arg)
+        f = zou_he_outlet_pressure_3d(f, rho_out)
+        return bounce_back_cells_3d(f, wall_mask)
+
+    step_fn = route_step(_step, compile_mode, name=f"poiseuille_3d_pipe[R{R}]")
+
     x_meas = nx // 2                    # mid-pipe measurement plane
     x_dev = nx - 8                      # fully-developed check plane (near outlet)
 
@@ -268,11 +281,7 @@ def run_case(
     step = 0
     steady = False
     for step in range(1, max_steps + 1):
-        f = collide_bgk3d(f, tau)
-        f = stream3d(f)
-        f = inlet_bc(f, inlet_arg)
-        f = zou_he_outlet_pressure_3d(f, rho_out)
-        f = bounce_back_cells_3d(f, wall_mask)
+        f = step_fn(f)
         if step % 200 == 0:
             _, ux, _, _ = macroscopic3d(f)
             umax_hist.append(float(ux[:, :, x_meas].max().item()))
@@ -290,11 +299,7 @@ def run_case(
     acc_dev = torch.zeros((nz, ny), dtype=torch.float32, device=device)
     acc_rho_in = torch.zeros((nz, ny), dtype=torch.float32, device=device)
     for _ in range(400):
-        f = collide_bgk3d(f, tau)
-        f = stream3d(f)
-        f = inlet_bc(f, inlet_arg)
-        f = zou_he_outlet_pressure_3d(f, rho_out)
-        f = bounce_back_cells_3d(f, wall_mask)
+        f = step_fn(f)
         rho, ux, _, _ = macroscopic3d(f)
         acc_meas += ux[:, :, x_meas]
         acc_dev += ux[:, :, x_dev]
@@ -379,6 +384,7 @@ def run_case(
         "Ma": Ma,
         "min_steps": min_steps,
         "n_steps": step,
+        "compile_mode": compile_mode,
         "steady": steady,
         "u_center": prof["u_center"],
         "u_center_pred_from_Q": u_center_pred,
@@ -424,14 +430,15 @@ def run_case(
 
 
 def scan(R_list, tau, u_in, u_max, mode, min_steps, max_steps, out_dir: str,
-         device: torch.device, seed: int = 0) -> dict:
+         device: torch.device, seed: int = 0,
+         compile_mode: str | None = "default") -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cases = []
     for R in R_list:
         p = out_dir / f"case_R{R}.json"
         r = run_case(R, tau, u_in, u_max, mode, min_steps, max_steps, str(p),
-                     device, seed)
+                     device, seed, compile_mode=compile_mode)
         cases.append(r)
         print(
             f"R={r['R']:3d} Re={r['Re']:7.2f} steps={r['n_steps']:6d} steady={r['steady']} "
@@ -548,6 +555,7 @@ def main() -> None:
     p1.add_argument("--max-steps", type=int, default=60000)
     p1.add_argument("--device", type=str, default="cuda:2")
     p1.add_argument("--seed", type=int, default=0)
+    add_compile_mode_arg(p1)
 
     p2 = sub.add_parser("scan")
     p2.add_argument("out_dir", type=str)
@@ -560,12 +568,15 @@ def main() -> None:
     p2.add_argument("--max-steps", type=int, default=60000)
     p2.add_argument("--device", type=str, default="cuda:2")
     p2.add_argument("--seed", type=int, default=0)
+    add_compile_mode_arg(p2)
 
     args = ap.parse_args()
     device = torch.device(args.device)
+    compile_mode = compile_mode_from_args(args)
     if args.mode_cmd == "single":
         r = run_case(args.R, args.tau, args.u_in, args.u_max, args.mode,
-                     args.min_steps, args.max_steps, args.out_json, device, args.seed)
+                     args.min_steps, args.max_steps, args.out_json, device, args.seed,
+                     compile_mode=compile_mode)
         print(json.dumps({k: r[k] for k in
                           ["R", "R_eff", "nx", "ny", "nz", "mode", "Re", "Ma",
                            "n_steps", "steady", "u_max_err_pct", "l2_rel_err",
@@ -575,7 +586,8 @@ def main() -> None:
                            "mass_drift_pct", "finite", "elapsed_s"]}, indent=2))
     else:
         scan(args.R, args.tau, args.u_in, args.u_max, args.mode,
-             args.min_steps, args.max_steps, args.out_dir, device, args.seed)
+             args.min_steps, args.max_steps, args.out_dir, device, args.seed,
+             compile_mode)
 
 
 if __name__ == "__main__":

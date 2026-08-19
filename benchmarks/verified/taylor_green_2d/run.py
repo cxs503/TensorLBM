@@ -31,11 +31,14 @@ import math
 import os
 import sys
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 from tensorlbm.solver import collide_bgk, stream  # noqa: E402
 from tensorlbm.d2q9 import equilibrium, macroscopic  # noqa: E402
@@ -60,6 +63,7 @@ def run_case(
     device: str = "cpu",
     dtype: str = "float32",
     threads: int = 32,
+    compile_mode: str | None = "default",
 ) -> dict:
     torch.set_num_threads(threads)
     dt = torch.float64 if dtype == "float64" else torch.float32
@@ -87,13 +91,18 @@ def run_case(
     umax_theory = u0
 
     # ── 主循环：stream（周期 wrap 内建）→ collide（BGK）──────────────────
+    # 整步步进函数经共性 compile 路径；步序号与采样监测留在编译域外。
+    def _step(f):
+        return collide_bgk(stream(f), tau)
+
+    step_fn = route_step(_step, compile_mode, name=f"taylor_green_2d[N{n}]")
+
     times: list[int] = []
     energies: list[float] = []
     umaxs: list[float] = []
     wall0 = time.time()
     for step in range(1, steps + 1):
-        f = stream(f)
-        f = collide_bgk(f, tau)
+        f = step_fn(f)
         if step % record_every == 0:
             _, uxm, uym = macroscopic(f)
             e = float((0.5 * (uxm * uxm + uym * uym)).mean().item())
@@ -128,6 +137,7 @@ def run_case(
     return {
         "n": n, "re": re, "u0": u0, "nu": nu, "tau": tau, "k": k,
         "steps": steps, "record_every": record_every, "dtype": dtype, "device": device,
+        "compile_mode": compile_mode,
         "gamma_e_theory": gamma_e_theory, "gamma_e_sim": gamma_e_sim,
         "err_e_pct": err_e_pct,
         "gamma_vel_theory": gamma_vel_theory, "gamma_vel_sim": gamma_vel_sim,
@@ -206,7 +216,9 @@ def main() -> None:
     ap.add_argument("--max-steps", type=int, default=200000)
     ap.add_argument("--out", default=HERE)
     ap.add_argument("--scan", action="store_true")
+    add_compile_mode_arg(ap)
     args = ap.parse_args()
+    compile_mode = compile_mode_from_args(args)
 
     if args.scan:
         results = scan(record_every=args.record_every, max_steps=args.max_steps, threads=args.threads)
@@ -218,7 +230,7 @@ def main() -> None:
     steps = args.steps if args.steps > 0 else auto_steps(args.n, args.re, args.u0, args.record_every, cap=args.max_steps)
     res = run_case(args.n, args.re, args.u0, steps,
                    record_every=args.record_every, device=args.device,
-                   dtype=args.dtype, threads=args.threads)
+                   dtype=args.dtype, threads=args.threads, compile_mode=compile_mode)
     save_case(res, args.out)
     print(f"N={args.n} Re={args.re} U0={args.u0} steps={steps} dtype={args.dtype}")
     print(f"  nu={res['nu']:.6f}  tau={res['tau']:.6f}  k={res['k']:.6f}")

@@ -38,7 +38,9 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 import numpy as np
 import torch
@@ -77,6 +79,7 @@ def run_case(
     max_steps: int,
     out_path: str,
     seed: int = 0,
+    compile_mode: str | None = "default",
 ) -> dict:
     """Run one pressure-driven 2D Poiseuille case and return measurements."""
     torch.manual_seed(seed)
@@ -105,19 +108,25 @@ def run_case(
     f = equilibrium(rho0, torch.zeros((ny, nx), device=DEVICE), torch.zeros((ny, nx), device=DEVICE))
     initial_mass = float(f.sum().item())
 
-    col = nx // 2                   # measurement column (mid-channel)
-    t0 = time.time()
-    umax_hist: list[float] = []
-    step = 0
-    steady = False
-    for step in range(1, max_steps + 1):
+    # ---- 整步步进函数（共性 compile 路径；步序号与监测留在编译域外）----
+    def _step(f):
         f_pre = f.clone()
         f = collide_fn(f, tau)
         # pre-streaming half-way bounce-back at wall rows (repo-validated variant)
         f = torch.where(wall.unsqueeze(0), f_pre[OPPOSITE.to(DEVICE)], f)
         f = stream(f)               # periodic gather; boundary columns overwritten below
         f = zou_he_inlet_pressure(f, rho_in)
-        f = zou_he_outlet_pressure(f, rho_out)
+        return zou_he_outlet_pressure(f, rho_out)
+
+    step_fn = route_step(_step, compile_mode, name=f"poiseuille_2d[H{H}]")
+
+    col = nx // 2                   # measurement column (mid-channel)
+    t0 = time.time()
+    umax_hist: list[float] = []
+    step = 0
+    steady = False
+    for step in range(1, max_steps + 1):
+        f = step_fn(f)
         if step % 200 == 0:
             _, ux, _ = macroscopic(f)
             umax_hist.append(float(ux[:, col].max().item()))
@@ -133,12 +142,7 @@ def run_case(
     # Time-average the profile over the last 200 steps (steady, noise-free)
     prof_acc = torch.zeros(ny, device=DEVICE)
     for _ in range(200):
-        f_pre = f.clone()
-        f = collide_fn(f, tau)
-        f = torch.where(wall.unsqueeze(0), f_pre[OPPOSITE.to(DEVICE)], f)
-        f = stream(f)
-        f = zou_he_inlet_pressure(f, rho_in)
-        f = zou_he_outlet_pressure(f, rho_out)
+        f = step_fn(f)
         _, ux, _ = macroscopic(f)
         prof_acc += ux[:, col]
     prof_acc /= 200.0
@@ -189,6 +193,7 @@ def run_case(
         "Ma": Ma,
         "min_steps": min_steps,
         "n_steps": step,
+        "compile_mode": compile_mode,
         "steady": steady,
         "u_max_num": u_max_num,
         "u_max_ana_at_peak_row": u_max_ana_at_row,
@@ -210,13 +215,14 @@ def run_case(
 
 
 def scan(H_list, tau, u_max, collision, min_steps, max_steps, out_dir: str,
-         include_re80: bool = False) -> dict:
+         include_re80: bool = False, compile_mode: str | None = "default") -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cases = []
     for H in H_list:
         p = out_dir / f"case_H{H}.json"
-        r = run_case(H, tau, u_max, collision, min_steps, max_steps, str(p))
+        r = run_case(H, tau, u_max, collision, min_steps, max_steps, str(p),
+                     compile_mode=compile_mode)
         cases.append(r)
         print(
             f"H={r['H_eff']:3d} Re={r['Re']:7.2f} steps={r['n_steps']:6d} "
@@ -272,6 +278,8 @@ def main() -> None:
     p1.add_argument("--min-steps", type=int, default=10000)
     p1.add_argument("--max-steps", type=int, default=60000)
     p1.add_argument("--seed", type=int, default=0)
+    p1.add_argument("--device", default="cpu")
+    add_compile_mode_arg(p1)
 
     p2 = sub.add_parser("scan")
     p2.add_argument("out_dir", type=str)
@@ -282,11 +290,17 @@ def main() -> None:
     p2.add_argument("--min-steps", type=int, default=10000)
     p2.add_argument("--max-steps", type=int, default=60000)
     p2.add_argument("--include-re80", action="store_true")
+    p2.add_argument("--device", default="cpu")
+    add_compile_mode_arg(p2)
 
     args = ap.parse_args()
+    global DEVICE
+    DEVICE = torch.device(args.device)
+    compile_mode = compile_mode_from_args(args)
     if args.mode == "single":
         r = run_case(args.H, args.tau, args.umax, args.collision,
-                     args.min_steps, args.max_steps, args.out_json, args.seed)
+                     args.min_steps, args.max_steps, args.out_json, args.seed,
+                     compile_mode=compile_mode)
         print(json.dumps({k: r[k] for k in
                           ["H_eff", "nx", "ny", "tau", "nu_lb", "delta_rho", "u_max_ana", "Re",
                            "Ma", "n_steps", "steady", "u_max_err_pct", "l2_rel_err",
@@ -295,7 +309,8 @@ def main() -> None:
                          indent=2))
     else:
         scan(args.H, args.tau, args.umax, args.collision,
-             args.min_steps, args.max_steps, args.out_dir, args.include_re80)
+             args.min_steps, args.max_steps, args.out_dir, args.include_re80,
+             compile_mode)
 
 
 if __name__ == "__main__":

@@ -52,7 +52,9 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 import numpy as np
 import torch
@@ -115,6 +117,7 @@ def run_case(
     device: str = "cpu",
     threads: int = 48,
     seed: int = 0,
+    compile_mode: str | None = "default",
 ) -> dict:
     torch.set_num_threads(threads)
     torch.manual_seed(seed)
@@ -134,18 +137,24 @@ def run_case(
     u_in = u_ana[:, 0].contiguous()
     v_in = v_ana[:, 0].contiguous()
 
-    t0 = time.time()
-    l2_hist: list[tuple[int, torch.Tensor]] = []
-    step = 0
-    steady = False
-    for step in range(1, max_steps + 1):
+    # ---- 整步步进函数（共性 compile 路径；步序号与稳态监测留在编译域外）----
+    def _step(f):
         f = collide_bgk(f, tau)
         f = stream(f)
         if outlet == "zerograd":
             f = outlet_zero_gradient(f)
         else:
             f = outlet_analytic_dirichlet(f, u_ana[:, -1], v_ana[:, -1])
-        f = zou_he_inlet_velocity(f, u_in, v_in)
+        return zou_he_inlet_velocity(f, u_in, v_in)
+
+    step_fn = route_step(_step, compile_mode, name=f"kovasznay_2d[ny{ny}]")
+
+    t0 = time.time()
+    l2_hist: list[tuple[int, torch.Tensor]] = []
+    step = 0
+    steady = False
+    for step in range(1, max_steps + 1):
+        f = step_fn(f)
         if step % 500 == 0:
             _, ux, _ = macroscopic(f)
             # 场变化监测：‖u(t)−u(t−2500)‖₂/‖u(t)‖₂（float64 累加）。
@@ -172,13 +181,7 @@ def run_case(
     acc_u = torch.zeros((ny, nx), device=dev, dtype=torch.float64)
     acc_v = torch.zeros((ny, nx), device=dev, dtype=torch.float64)
     for _ in range(100):
-        f = collide_bgk(f, tau)
-        f = stream(f)
-        if outlet == "zerograd":
-            f = outlet_zero_gradient(f)
-        else:
-            f = outlet_analytic_dirichlet(f, u_ana[:, -1], v_ana[:, -1])
-        f = zou_he_inlet_velocity(f, u_in, v_in)
+        f = step_fn(f)
         _, ux, uy = macroscopic(f)
         acc_u += ux.to(torch.float64)
         acc_v += uy.to(torch.float64)
@@ -229,6 +232,7 @@ def run_case(
         "nu_lb": nu,
         "tau": tau,
         "ma_max": ma_max,
+        "compile_mode": compile_mode,
         "min_steps": min_steps,
         "n_steps": step,
         "steady": steady,
@@ -251,13 +255,14 @@ def run_case(
 
 
 def scan(grids, re, u0, xmax, outlet, min_steps, max_steps, out_dir: str,
-         device: str = "cpu") -> dict:
+         device: str = "cpu", compile_mode: str | None = "default") -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cases = []
     for ny in grids:
         p = out_dir / f"case_ny{ny}.json"
-        r = run_case(ny, re, u0, xmax, outlet, min_steps, max_steps, str(p), device=device)
+        r = run_case(ny, re, u0, xmax, outlet, min_steps, max_steps, str(p),
+                     device=device, compile_mode=compile_mode)
         cases.append(r)
         print(
             f"ny={r['ny']:3d} nx={r['nx']:3d} tau={r['tau']:.3f} steps={r['n_steps']:6d} "
@@ -339,6 +344,7 @@ def main() -> None:
     p1.add_argument("--min-steps", type=int, default=20000)
     p1.add_argument("--max-steps", type=int, default=60000)
     p1.add_argument("--device", type=str, default="cpu")
+    add_compile_mode_arg(p1)
 
     p2 = sub.add_parser("scan")
     p2.add_argument("out_dir", type=str)
@@ -350,11 +356,14 @@ def main() -> None:
     p2.add_argument("--min-steps", type=int, default=20000)
     p2.add_argument("--max-steps", type=int, default=60000)
     p2.add_argument("--device", type=str, default="cpu")
+    add_compile_mode_arg(p2)
 
     args = ap.parse_args()
+    compile_mode = compile_mode_from_args(args)
     if args.mode == "single":
         r = run_case(args.ny, args.re, args.u0, args.xmax, args.outlet,
-                     args.min_steps, args.max_steps, args.out_json, device=args.device)
+                     args.min_steps, args.max_steps, args.out_json, device=args.device,
+                     compile_mode=compile_mode)
         print(json.dumps({k: r[k] for k in
                           ["ny", "nx", "re", "lambda", "u0", "nu_lb", "tau", "ma_max",
                            "n_steps", "steady", "u_l2_rel", "v_l2_rel",
@@ -362,7 +371,8 @@ def main() -> None:
                            "elapsed_s"]}, indent=2))
     else:
         s = scan(args.grids, args.re, args.u0, args.xmax, args.outlet,
-                 args.min_steps, args.max_steps, args.out_dir, device=args.device)
+                 args.min_steps, args.max_steps, args.out_dir, device=args.device,
+                 compile_mode=compile_mode)
         print(f"verdict: {s['verdict']}")
 
 

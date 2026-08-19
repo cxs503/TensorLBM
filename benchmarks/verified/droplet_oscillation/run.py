@@ -68,7 +68,9 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 import numpy as np
 import torch
@@ -287,6 +289,7 @@ def run_case(
     device: torch.device,
     max_steps: int,
     sample_interval: int,
+    compile_mode: str | None = "default",
 ) -> tuple[dict, list[dict]]:
     t0 = time.perf_counter()
     rho0 = init_ellipse_rho(L, R0, eps, device)
@@ -300,10 +303,15 @@ def run_case(
     yy = yy - L / 2.0
     rr = torch.sqrt(xx * xx + yy * yy)
 
+    # ---- 整步步进函数（共性 compile 路径；NaN 守卫/测量留在编译域外）----
+    def _step(f):
+        return stream(collide_sc_single_component(f, G=G_LIB, tau=TAU, psi_fn=psi_exp))
+
+    step_fn = route_step(_step, compile_mode, name=f"droplet_oscillation[R{R0:.0f}]")
+
     hist: list[dict] = []
     for step in range(1, max_steps + 1):
-        f = collide_sc_single_component(f, G=G_LIB, tau=TAU, psi_fn=psi_exp)
-        f = stream(f)
+        f = step_fn(f)
         if step % sample_interval == 0:
             rho_cur = f.sum(dim=0)
             if float(rho_cur.min().item()) < 0.0 or not torch.isfinite(rho_cur).all():
@@ -348,6 +356,7 @@ def run_case(
         "R_init": R0,
         "L": L,
         "eps": eps,
+        "compile_mode": compile_mode,
         "max_steps": int(max_steps),
         "sample_interval": int(sample_interval),
         "n_samples": len(hist),
@@ -397,7 +406,9 @@ def main() -> None:
     ap.add_argument("--eps", type=float, default=0.05)
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--out", default="")
+    add_compile_mode_arg(ap)
     args = ap.parse_args()
+    compile_mode = compile_mode_from_args(args)
 
     device = torch.device(args.device)
     if device.type == "cuda" and not torch.cuda.is_available():
@@ -454,7 +465,8 @@ def main() -> None:
         L = int(4 * R0)
         print(f"\n===== R={R0:.0f}  L={L}  steps={args.steps}  device={device} =====", flush=True)
         try:
-            final, hist = run_case(R0, L, args.eps, device, args.steps, args.sample)
+            final, hist = run_case(R0, L, args.eps, device, args.steps, args.sample,
+                                   compile_mode=compile_mode)
         except RuntimeError as e:
             print(f"  FAILED: {e}")
             rows.append({"R_init": R0, "error": str(e)})

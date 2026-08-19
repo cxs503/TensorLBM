@@ -30,11 +30,14 @@ import math
 import os
 import sys
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 from tensorlbm.solver import collide_bgk, stream  # noqa: E402
 from tensorlbm.d2q9 import equilibrium, macroscopic  # noqa: E402
@@ -62,6 +65,7 @@ def run_case(
     device: str = "cpu",
     dtype: str = "float32",
     threads: int = 32,
+    compile_mode: str | None = "default",
 ) -> dict:
     torch.set_num_threads(threads)
     dt = torch.float64 if dtype == "float64" else torch.float32
@@ -88,13 +92,18 @@ def run_case(
     umax0_meas = float(ux0.abs().max().item())  # y=H/4 处 sin 峰值恰在格点上
 
     # ── 主循环：stream（周期 wrap 内建）→ collide（BGK）──────────────────
+    # 整步步进函数经共性 compile 路径；步序号与采样监测留在编译域外。
+    def _step(f):
+        return collide_bgk(stream(f), tau)
+
+    step_fn = route_step(_step, compile_mode, name=f"shear_wave_decay[H{n}]")
+
     times: list[int] = []
     energies: list[float] = []
     umaxs: list[float] = []
     wall0 = time.time()
     for step in range(1, steps + 1):
-        f = stream(f)
-        f = collide_bgk(f, tau)
+        f = step_fn(f)
         if step % record_every == 0:
             _, uxm, uym = macroscopic(f)
             e = float((0.5 * (uxm * uxm + uym * uym)).mean().item())
@@ -130,6 +139,7 @@ def run_case(
     return {
         "H": n, "tau": tau, "u0": u0, "nu": nu, "k": k,
         "steps": steps, "record_every": record_every, "dtype": dtype, "device": device,
+        "compile_mode": compile_mode,
         "gamma_vel_theory": gamma_vel_theory, "gamma_vel_sim": gamma_vel_sim,
         "err_vel_pct": err_vel_pct, "r2_vel": r2_u,
         "gamma_vel_half1": gv_h1, "gamma_vel_half2": gv_h2,
@@ -197,8 +207,10 @@ def main() -> None:
     ap.add_argument("--threads", type=int, default=32)
     ap.add_argument("--out", default=HERE)
     ap.add_argument("--scan", action="store_true")
+    add_compile_mode_arg(ap)
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
+    compile_mode = compile_mode_from_args(args)
 
     if args.scan:
         cases = []
@@ -206,7 +218,8 @@ def main() -> None:
             for u0 in (0.05, 0.10):
                 steps = args.steps or auto_steps(n, args.tau, u0, args.record_every)
                 res = run_case(n, args.tau, u0, steps, record_every=args.record_every,
-                               dtype=args.dtype, device=args.device, threads=args.threads)
+                               dtype=args.dtype, device=args.device, threads=args.threads,
+                               compile_mode=compile_mode)
                 cases.append({k: v for k, v in res.items() if k not in ("times", "energies", "umaxs")})
                 print(f"H={n} U0={u0}: err_vel={res['err_vel_pct']:+.4f}%  "
                       f"err_E={res['err_e_pct']:+.4f}%  R2={res['r2_vel']:.6f}", flush=True)
@@ -224,7 +237,8 @@ def main() -> None:
             steps_list.append(steps)
             print(f"=== H={n}  tau={args.tau}  U0={args.u0}  steps={steps} ===", flush=True)
             res = run_case(n, args.tau, args.u0, steps, record_every=args.record_every,
-                           dtype=args.dtype, device=args.device, threads=args.threads)
+                           dtype=args.dtype, device=args.device, threads=args.threads,
+                           compile_mode=compile_mode)
             case_files.append(save_case(res, args.out))
             results.append(res)
             print(f"  gamma_vel_sim={res['gamma_vel_sim']:.6e} theory={res['gamma_vel_theory']:.6e} "
@@ -254,7 +268,8 @@ def main() -> None:
     # ── 单案例模式 ──────────────────────────────────────────────────────
     steps = args.steps or auto_steps(args.n, args.tau, args.u0, args.record_every)
     res = run_case(args.n, args.tau, args.u0, steps, record_every=args.record_every,
-                   dtype=args.dtype, device=args.device, threads=args.threads)
+                   dtype=args.dtype, device=args.device, threads=args.threads,
+                   compile_mode=compile_mode)
     save_case(res, args.out)
     print(f"H={args.n} tau={args.tau} U0={args.u0} steps={steps} dtype={args.dtype}")
     print(f"  nu={res['nu']:.6f}  k={res['k']:.6f}")

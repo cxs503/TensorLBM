@@ -23,7 +23,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 from tensorlbm.d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
 from tensorlbm.lid_driven_cavity import GHIA_RE1000, zou_he_moving_lid
@@ -39,7 +41,7 @@ def stationary_pre_bounce(f_pre, f, wall):
     return torch.where(wall.unsqueeze(0), f_pre[opp], f)
 
 
-def run_case(nx, re=1000, u_lid=0.06, steps=200000, device=None):
+def run_case(nx, re=1000, u_lid=0.06, steps=200000, device=None, compile_mode="default"):
     device = device or torch.device("cpu")
     ny = nx
     tau = 3 * u_lid * nx / re + 0.5  # 等 Re 配方
@@ -61,13 +63,19 @@ def run_case(nx, re=1000, u_lid=0.06, steps=200000, device=None):
     uy_prev = uy_prev.detach().clone()
     last_resid = None
 
-    t0 = time.time()
-    for step in range(1, steps + 1):
+    # ---- 整步步进函数（共性 compile 路径；步序号与监测留在编译域外）----
+    def _step(f):
         f_pre = f
         f = collide_rlbm(f, tau=tau)
         f = stationary_pre_bounce(f_pre, f, wall_mask)
         f = stream(f)
-        f = zou_he_moving_lid(f, u_lid)
+        return zou_he_moving_lid(f, u_lid)
+
+    step_fn = route_step(_step, compile_mode, name=f"cavity_re1000[{nx}]")
+
+    t0 = time.time()
+    for step in range(1, steps + 1):
+        f = step_fn(f)
         if step % 20000 == 0:
             _, ux, uy = macroscopic(f)
             du = torch.max(
@@ -126,6 +134,7 @@ def run_case(nx, re=1000, u_lid=0.06, steps=200000, device=None):
 
     return {
         "nx": nx, "re": re, "u_lid": u_lid, "tau": tau, "steps": steps,
+        "compile_mode": compile_mode,
         "elapsed_s": round(elapsed, 1), "last_resid": last_resid,
         "u_mid": u_mid, "u_mid_ghia": -0.0608, "u_bot": u_bot, "v_mid": v_mid,
         "primary_vortex": primary_vortex, "vortex_ghia": [0.5313, 0.5625],
@@ -139,11 +148,14 @@ if __name__ == "__main__":
     ap.add_argument("--nx", type=int, nargs="+", default=[192, 256])
     ap.add_argument("--steps", type=int, default=200000)
     ap.add_argument("--device", default="cpu")
+    add_compile_mode_arg(ap)
     args = ap.parse_args()
     device = torch.device(args.device)
+    compile_mode = compile_mode_from_args(args)
     results = {}
     for nx in args.nx:
-        results[str(nx)] = run_case(nx, steps=args.steps, device=device)
+        results[str(nx)] = run_case(nx, steps=args.steps, device=device,
+                                    compile_mode=compile_mode)
     out = Path(__file__).parent / "result.json"
     out.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print("DONE", flush=True)

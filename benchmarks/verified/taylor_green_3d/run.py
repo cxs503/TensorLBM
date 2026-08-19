@@ -50,11 +50,14 @@ import math
 import os
 import sys
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d  # noqa: E402
@@ -83,6 +86,7 @@ def run_case(
     device: str = "cpu",
     dtype: str = "float32",
     threads: int = 32,
+    compile_mode: str | None = "default",
 ) -> dict:
     torch.set_num_threads(threads)
     dt = torch.float64 if dtype == "float64" else torch.float32
@@ -112,6 +116,12 @@ def run_case(
     e0_theory = u0 * u0 / 8.0              # mean(sin²cos²cos²)=1/8，两个分量各半
 
     # ── 主循环：stream（周期模运算内建）→ collide（BGK）───────────────────
+    # 整步步进函数经共性 compile 路径；步序号与采样监测留在编译域外。
+    def _step(f):
+        return collide_bgk3d(stream3d(f), tau)
+
+    step_fn = route_step(_step, compile_mode, name=f"taylor_green_3d[N{n}]")
+
     times: list[int] = [0]              # t=0 占位，循环后填初值
     energies: list[float] = [0.0]
     exs: list[float] = [0.0]
@@ -121,8 +131,7 @@ def run_case(
     wmaxs: list[float] = [0.0]
     wall0 = time.time()
     for step in range(1, steps + 1):
-        f = stream3d(f)
-        f = collide_bgk3d(f, tau)
+        f = step_fn(f)
         if step % record_every == 0:
             _, uxm, uym, uzm = macroscopic3d(f)
             ex = float((0.5 * (uxm * uxm)).mean().item())
@@ -172,6 +181,7 @@ def run_case(
         "n": n, "re": re, "u0": u0, "nu": nu, "tau": tau, "k": k,
         "re_eff": re_eff,
         "steps": steps, "record_every": record_every, "dtype": dtype, "device": device,
+        "compile_mode": compile_mode,
         "gamma_e_theory": gamma_e_theory, "gamma_e_sim": gamma_e_sim,
         "err_e_pct": err_e_pct,
         "gamma_vel_theory": gamma_vel_theory, "gamma_vel_sim": gamma_vel_sim,
@@ -244,8 +254,10 @@ def main() -> None:
     ap.add_argument("--threads", type=int, default=32)
     ap.add_argument("--out", default=HERE)
     ap.add_argument("--scan", action="store_true")
+    add_compile_mode_arg(ap)
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
+    compile_mode = compile_mode_from_args(args)
 
     if args.scan:
         cases = []
@@ -273,7 +285,8 @@ def main() -> None:
             steps = args.steps or auto_steps(n, args.re, args.u0, args.record_every)
             print(f"=== N={n}³  Re={args.re}  U0={args.u0}  steps={steps} ===", flush=True)
             res = run_case(n, args.re, args.u0, steps, record_every=args.record_every,
-                           dtype=args.dtype, device=args.device, threads=args.threads)
+                           dtype=args.dtype, device=args.device, threads=args.threads,
+                           compile_mode=compile_mode)
             case_files.append(save_case(res, args.out))
             results.append(res)
             print(f"  gamma_E_sim={res['gamma_e_sim']:.6e} theory={res['gamma_e_theory']:.6e} "
@@ -319,7 +332,8 @@ def main() -> None:
     # ── 单案例模式 ──────────────────────────────────────────────────────
     steps = args.steps or auto_steps(args.n, args.re, args.u0, args.record_every)
     res = run_case(args.n, args.re, args.u0, steps, record_every=args.record_every,
-                   dtype=args.dtype, device=args.device, threads=args.threads)
+                   dtype=args.dtype, device=args.device, threads=args.threads,
+                   compile_mode=compile_mode)
     save_case(res, args.out)
     print(f"N={args.n}³ Re={args.re} U0={args.u0} steps={steps} dtype={args.dtype} device={args.device}")
     print(f"  nu={res['nu']:.6f}  tau={res['tau']:.6f}  k={res['k']:.6f}  Re_eff={res['re_eff']:.2f}")

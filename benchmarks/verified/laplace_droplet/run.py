@@ -42,7 +42,9 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 import numpy as np
 import torch
@@ -157,6 +159,7 @@ def run_droplet(
     sample_interval: int,
     conv_dp: float = 2e-4,
     conv_r: float = 2e-3,
+    compile_mode: str | None = "default",
 ) -> tuple[dict, list[dict]]:
     t0 = time.perf_counter()
     rho0 = init_rho(dim, L, R, device)
@@ -168,16 +171,19 @@ def run_droplet(
         f = equilibrium3d(rho0, zero, zero, zero)
     rr = _radius_field(dim, L, device)
 
+    # ---- 整步步进函数（共性 compile 路径；dim 分支静态，NaN 守卫/测量留在编译域外）----
+    def _step(f):
+        if dim == 2:
+            return stream(collide_sc_single_component(f, G=G_LIB, tau=TAU, psi_fn=psi_exp))
+        return stream3d(collide_sc_single_component_3d(f, G=G_LIB, tau=TAU, psi_fn=psi_exp))
+
+    step_fn = route_step(_step, compile_mode, name=f"laplace_droplet[{dim}d]")
+
     hist: list[dict] = []
     step = 0
     converged = False
     for step in range(1, max_steps + 1):
-        if dim == 2:
-            f = collide_sc_single_component(f, G=G_LIB, tau=TAU, psi_fn=psi_exp)
-            f = stream(f)
-        else:
-            f = collide_sc_single_component_3d(f, G=G_LIB, tau=TAU, psi_fn=psi_exp)
-            f = stream3d(f)
+        f = step_fn(f)
         if step % sample_interval == 0:
             rho_cur = f.sum(dim=0)
             if float(rho_cur.min().item()) < 0.0 or not torch.isfinite(rho_cur).all():
@@ -200,6 +206,7 @@ def run_droplet(
     tail = hist[-3:]
     final = {
         "step": int(step),
+        "compile_mode": compile_mode,
         "converged": converged,
         "p_in": float(np.mean([s["p_in"] for s in tail])),
         "p_out": float(np.mean([s["p_out"] for s in tail])),
@@ -275,7 +282,9 @@ def main() -> None:
     ap.add_argument("--min-steps", type=int, default=6000)
     ap.add_argument("--sample-interval", type=int, default=1000)
     ap.add_argument("--out", default=str(script_dir))
+    add_compile_mode_arg(ap)
     args = ap.parse_args()
+    compile_mode = compile_mode_from_args(args)
 
     radii = [float(x) for x in args.radii.split(",")]
     out = Path(args.out)
@@ -312,7 +321,7 @@ def main() -> None:
             try:
                 final, hist = run_droplet(
                     dim, R, L, device, args.max_steps, args.min_steps,
-                    args.sample_interval,
+                    args.sample_interval, compile_mode=compile_mode,
                 )
             except RuntimeError as e:
                 print(f"  FAILED: {e}")
