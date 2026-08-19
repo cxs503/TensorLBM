@@ -440,6 +440,17 @@ def far_field_bc_3d(
     streaming handles them).  When ``bc_config`` is ``None`` (legacy), all
     four lateral faces (y±, z±) receive the far-field condition.
 
+    Face labels map to the tensor axes of the ``(Q, nz, ny, nx)`` layout
+    exactly as named (same convention as
+    :func:`tensorlbm.external_open_boundary.non_equilibrium_far_field_bc_3d`
+    and :func:`tensorlbm.triton_fused_obstacle.apply_far_field_bc_6face`):
+    ``"y-"``/``"y+"`` are the dim-2 planes ``f[:, :, 0, :]`` /
+    ``f[:, :, -1, :]`` and ``"z-"``/``"z+"`` are the dim-1 planes
+    ``f[:, 0, :, :]`` / ``f[:, -1, :, :]``.  (Before this fix the y and z
+    labels were swapped relative to the axes; because the legacy
+    ``bc_config=None`` path writes one uniform far-field value on all four
+    lateral planes, the swap never changed any output.)
+
     Args:
         f:              Distribution tensor, shape ``(Q, nz, ny, nx)``.
         u_in:           Free-stream x-velocity in lattice units.
@@ -451,8 +462,10 @@ def far_field_bc_3d(
               Each face is a string like ``"y-"``, ``"y+"``, ``"z-"``,
               ``"z+"``, ``"x-"`` (inlet), ``"x+"`` (outlet).
             - ``periodic_faces``: list of faces to leave untouched.
-              If a face is in neither list it defaults to far-field
-              (backward-compatible).
+              A face listed in neither ``far_field_faces`` nor
+              ``periodic_faces`` is left untouched as well (no far-field
+              write; the streaming scheme's treatment of that plane is
+              preserved).
 
     Validated: sphere Re=100 Cd error ~65% (channel) → ~9% (far-field)
     at the same grid.
@@ -485,15 +498,19 @@ def far_field_bc_3d(
     # Outlet (x+): always zero-gradient unless explicitly periodic
     if "x+" not in periodic:
         f[:, :, :, -1] = f[:, :, :, -2]
-    # Lateral faces
+    # Lateral faces.  Layout is (Q, nz, ny, nx): dim 1 is the z-axis,
+    # dim 2 is the y-axis — the face label names the axis it slices.
+    # ("y±" → f[:, :, 0/-1, :], "z±" → f[:, 0/-1, :, :]; previously these
+    # two branches were swapped, which no legacy caller could observe
+    # because the far-field value is uniform across all four planes.)
     if "y-" in ff and "y-" not in periodic:
-        f[:, 0, :, :] = feq[:, 0, :, :]
-    if "y+" in ff and "y+" not in periodic:
-        f[:, -1, :, :] = feq[:, -1, :, :]
-    if "z-" in ff and "z-" not in periodic:
         f[:, :, 0, :] = feq[:, :, 0, :]
-    if "z+" in ff and "z+" not in periodic:
+    if "y+" in ff and "y+" not in periodic:
         f[:, :, -1, :] = feq[:, :, -1, :]
+    if "z-" in ff and "z-" not in periodic:
+        f[:, 0, :, :] = feq[:, 0, :, :]
+    if "z+" in ff and "z+" not in periodic:
+        f[:, -1, :, :] = feq[:, -1, :, :]
 
     if obstacle_mask is not None:
         f = bounce_back_cells_3d(f, obstacle_mask)
