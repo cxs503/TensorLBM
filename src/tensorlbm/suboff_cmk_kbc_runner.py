@@ -14,7 +14,10 @@ it to the collision kernel:
   initialiser (``torch.full``) requires a Python scalar.
 
 This runner does **not** modify any solver hot path.  Only existing
-operators are composed.
+operators are composed.  The optional ``use_triton_step=True`` switch
+swaps the per-step chain for the fused Triton step from
+:mod:`tensorlbm.backends.triton_backend` (single-GPU CUDA, CM/CUMULANT
+only); the default path is byte-identical to the pre-switch runner.
 """
 
 from __future__ import annotations
@@ -86,6 +89,12 @@ class SuboffCmkKbcConfig:
     device: str = "sdaa:0"
     lattice: str = "D3Q19"
     boundary_type: str = "farfield"
+    # Step-backend switch (opt-in, default off): False keeps the inline
+    # PyTorch 5-op chain (collide/stream/force/BC/mass) below unchanged;
+    # True routes the per-step work through the fused Triton step in
+    # ``tensorlbm.backends.triton_backend``.  Single-GPU CUDA only, and
+    # CM/CUMULANT collisions only (KBC entropy bisection is Triton-less).
+    use_triton_step: bool = False
     # SGS model constants
     C_s: float = 0.1  # Smagorinsky
     C_w: float = 0.5  # WALE
@@ -116,6 +125,12 @@ class SuboffCmkKbcConfig:
             raise ValueError("re must be > 0")
         if self.hull_length <= 0.0:
             raise ValueError("hull_length must be > 0")
+        if self.use_triton_step and self.collision.upper() == "KBC":
+            raise ValueError(
+                "use_triton_step=True does not support KBC: the entropy "
+                "bisection is only implemented in the PyTorch collision "
+                "path; use CM or CUMULANT"
+            )
 
     @property
     def nu(self) -> float:
@@ -248,6 +263,39 @@ def run_suboff_cmk_kbc(
 
     tau_base = config.tau
 
+    # --- 2b. Optional Triton-fused step backend (opt-in; default off) ---
+    # With ``use_triton_step=False`` (default) nothing below changes: the
+    # inline PyTorch chain in the loop is executed exactly as before.
+    triton_state: Any = None
+    solid_int8: torch.Tensor | None = None
+    if config.use_triton_step:
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            raise NotImplementedError(
+                "use_triton_step=True is single-GPU only: the fused Triton "
+                "step has no halo exchange nor force all-reduce.  Keep the "
+                "default PyTorch path for distributed runs (or drive "
+                "tensorlbm.triton_suboff_step_distributed explicitly)."
+            )
+        if device.type != "cuda":
+            raise RuntimeError(
+                f"use_triton_step=True requires a CUDA device; got {device}"
+            )
+        # Local import: Triton/CUDA must not become a hard dependency of
+        # the default import path.
+        from .backends.triton_backend import (
+            TritonStepState,
+            is_available as _triton_is_available,
+            triton_suboff_step,
+        )
+
+        if not _triton_is_available():
+            raise RuntimeError(
+                "use_triton_step=True but tensorlbm.backends.triton_backend "
+                "is unavailable (needs CUDA + the Triton kernels)"
+            )
+        solid_int8 = solid.to(torch.int8)
+        triton_state = TritonStepState(f, device)
+
     # --- 3. Solver loop ---
     force_series: list[dict[str, Any]] = []
     ct_series: list[dict[str, Any]] = []
@@ -255,20 +303,44 @@ def run_suboff_cmk_kbc(
     all_finite = True
 
     for step in range(1, config.n_steps + 1):
-        # Collision with SGS
-        f = _collide_with_sgs(f, config, tau_base)
-        # Streaming (pull scheme)
-        f = stream3d(f)
-        # Force measurement (momentum exchange, before bounce-back)
-        fx_t, fy_t, fz_t = compute_obstacle_forces_3d(f, solid)
+        if triton_state is not None:
+            # Fused Triton path (PR4, opt-in): SGS tau_eff is still
+            # computed in PyTorch with the very same
+            # ``_compute_sgs_tau_eff`` as the default path; collide +
+            # stream + wet-node bounce-back + Ladd force + 6-face BC +
+            # mass correction run fused in one kernel launch (+ small
+            # post-ops).  Collision family KBC was rejected in
+            # ``__post_init__``.
+            tau_eff = _compute_sgs_tau_eff(f, config, tau_base)
+            f, fx_t, fy_t, fz_t = triton_suboff_step(
+                f,
+                solid_int8,
+                config.u_in,
+                step,
+                mass_period=10,
+                initial_mass=initial_mass,
+                nu_lb=config.nu,
+                Cs=config.C_s,
+                collision=config.collision.upper(),
+                state=triton_state,
+                tau_eff=tau_eff,
+            )
+        else:
+            # Collision with SGS
+            f = _collide_with_sgs(f, config, tau_base)
+            # Streaming (pull scheme)
+            f = stream3d(f)
+            # Force measurement (momentum exchange, before bounce-back)
+            fx_t, fy_t, fz_t = compute_obstacle_forces_3d(f, solid)
+            # Far-field BC (includes bounce-back on solid)
+            f = far_field_bc_3d(f, config.u_in, obstacle_mask=solid)
+            # Mass correction every 10 steps
+            if step % 10 == 0:
+                f = correct_mass3d(f, initial_mass)
+
         fx = float(fx_t.item())
         fy = float(fy_t.item())
         fz = float(fz_t.item())
-        # Far-field BC (includes bounce-back on solid)
-        f = far_field_bc_3d(f, config.u_in, obstacle_mask=solid)
-        # Mass correction every 10 steps
-        if step % 10 == 0:
-            f = correct_mass3d(f, initial_mass)
 
         # Record force / Ct
         ct = fx / dynamic_pressure if dynamic_pressure > 0 else 0.0
@@ -307,6 +379,8 @@ def run_suboff_cmk_kbc(
         "force_time_series": force_series,
         "ct_time_series": ct_series,
     }
+    if config.use_triton_step:
+        artifact["step_backend"] = "triton_fused"
     return artifact
 
 
