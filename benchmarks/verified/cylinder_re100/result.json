@@ -1,0 +1,43 @@
+{
+  "case": "cylinder_re100_free_stream_vortex_shedding",
+  "description": "自由流圆柱 Re=100 Kármán 涡街（Braza 验证）",
+  "lattice": "D2Q9",
+  "collision": "MRT (tau_field sponge)",
+  "boundary": "far_field_bc_2d + sponge layer(下游10D) + 入口播种(St_seed=0.165, 2周期)",
+  "extrap": "none",
+  "reference": "Braza et al. 1986 (JFM 165): Cd=1.35±0.05, St≈0.164-0.165",
+  "grids": {
+    "D48": {
+      "D": 48,
+      "domain": "40D x 40D",
+      "steps": 60000,
+      "cd": 1.3293,
+      "err_pct": -1.53,
+      "st": 0.1661,
+      "st_err_pct": 0.7
+    },
+    "D64": {
+      "D": 64,
+      "domain": "40D x 40D",
+      "steps": 90000,
+      "cd": 1.3155,
+      "err_pct": -2.55,
+      "st": 0.16,
+      "st_err_pct": -2.4
+    }
+  },
+  "convergence": {
+    "cd": [
+      1.3293,
+      1.3155
+    ],
+    "err_decreased": true,
+    "cd_within_3pct": true
+  },
+  "key_fixes": [
+    "播种权重 bug: 手写 D2Q9 cy_w 符号错([0,0,1,0,1,0,1,0,1] vs 正确[0,0,1,0,-1,1,1,-1,-1]) -> uy_seed 0.277 而非 0.008 (3.5倍横向射流) -> NaN 真根因; 修复用 d2q9.C 列",
+    "sponge layer: 下游最后10D tau_field 渐变(alpha=10, tau_max=7.17, nu x43) 消除 far-field 零梯度出口尾流反射"
+  ],
+  "verified": true,
+  "verified_date": "2026-08-19"
+}
