@@ -358,6 +358,17 @@ from .momentum_exchange import (
     momentum_exchange_pressure_friction,
     compare_all_methods,
 )
+# Advanced collision common modules (cascaded central moments / entropic KBC)
+from .cascaded_collision import collide_cascaded_d3q19, collide_cascaded_d3q27
+from .entropic_kbc import (
+    collide_kbc_d3q19,
+    collide_kbc_d3q27,
+    collide_natural_kbc_d3q19,
+    discrete_entropy,
+    kbc_decompose_d3q19,
+    kbc_decompose_d3q27,
+    solve_gamma_entropy,
+)
 from .pipeline_flow import (
     PipelineFlowConfig,
     make_pipeline_wall_mask,
