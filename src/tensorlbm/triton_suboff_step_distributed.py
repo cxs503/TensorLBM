@@ -279,4 +279,11 @@ class TritonSuboffDistributedRunner:
 
         # 7. Output buffer shape matches input (V2: Q=19 throughout).
         self._buf = out_local
+        # Repoint the scratch to the buffer this step just consumed so
+        # the next step writes there.  Without this, f_in and out_local
+        # are the same tensor from the second call onward and the kernel
+        # runs in place — V2 is not in-place safe (n=256, 50 steps:
+        # force trajectory silently off by 29% relative vs a true
+        # double-buffered run; values stay finite so nothing flags it).
+        self._dist._buf = f_in
         return self._buf, fx, fy, fz
