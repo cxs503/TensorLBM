@@ -122,6 +122,34 @@ def _fallback_init_distributed(backend: str | None = None) -> tuple[int, int]:
     return rank, world
 
 
+def build_rank_far_field_bc_config(rank: int, world_size: int) -> dict:
+    """Per-rank ``bc_config`` for ``far_field_bc_3d`` on a z-slab decomposition.
+
+    The slab is decomposed along the z-axis (dim 1 of ``(Q, nz, ny, nx)``),
+    so the dim-2 (y-axis) faces exist on every rank's slab and take the
+    far-field condition everywhere, while the dim-1 (z-axis) faces are only
+    far-field on the ranks that own the global z-boundary planes (interior
+    ranks' dim-1 planes are halo-exchanged, not boundary planes — those are
+    listed as periodic so ``far_field_bc_3d`` leaves them untouched).
+
+    Face labels follow the true tensor axes (see ``far_field_bc_3d``):
+    "y±" = dim 2, "z±" = dim 1.  Before the label fix in
+    ``boundaries3d.far_field_bc_3d`` this builder used deliberately swapped
+    labels to compensate; the planes written are identical before and after.
+    """
+    ff = ["y-", "y+"]
+    periodic: list[str] = []
+    if rank == 0 or world_size == 1:
+        ff.append("z-")
+    else:
+        periodic.append("z-")
+    if rank == world_size - 1 or world_size == 1:
+        ff.append("z+")
+    else:
+        periodic.append("z+")
+    return {"far_field_faces": ff, "periodic_faces": periodic}
+
+
 class SuboffTorchDistributedRunner:
     """Z-slab multi-GPU driver for the production SUBOFF PyTorch step.
 
@@ -265,27 +293,11 @@ class SuboffTorchDistributedRunner:
         self.solid = solid.to(self.device)
 
         # --- rank-dependent far-field BC config ------------------------------
-        # ``far_field_bc_3d``'s face labels vs the ``(Q, nz, ny, nx)`` axes:
-        # its "y-" branch writes ``f[:, 0, :, :]`` — dim 1, the *z*-axis
-        # face — and its "z-" branch writes ``f[:, :, 0, :]`` — dim 2, the
-        # *y*-axis face (the labels are swapped relative to the axes; the
-        # legacy bc_config=None call writes all four lateral faces so the
-        # naming never mattered there).  Same global face writes as the
-        # single-GPU call therefore means: the dim-2 (y-axis) faces on
-        # every rank ("z±" in the function's naming), and the dim-1
-        # (z-axis, slab-decomposed) faces only on the ranks that own the
-        # global z-boundary planes ("y±" in the function's naming).
-        ff = ["z-", "z+"]
-        periodic = []
-        if self.rank == 0 or self.world_size == 1:
-            ff.append("y-")
-        else:
-            periodic.append("y-")
-        if self.rank == self.world_size - 1 or self.world_size == 1:
-            ff.append("y+")
-        else:
-            periodic.append("y+")
-        self._bc_config = {"far_field_faces": ff, "periodic_faces": periodic}
+        # Same global face writes as the single-GPU legacy call: the y-axis
+        # (dim 2) faces on every rank, and the z-axis (dim 1, slab-
+        # decomposed) faces only on the ranks that own the global
+        # z-boundary planes.  See build_rank_far_field_bc_config.
+        self._bc_config = build_rank_far_field_bc_config(self.rank, self.world_size)
 
         # --- buffers + initial populations ------------------------------------
         self._bufs = [
