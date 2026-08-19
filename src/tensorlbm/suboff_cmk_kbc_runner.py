@@ -117,6 +117,21 @@ class SuboffCmkKbcConfig:
     # every step; the default 10 only delays NaN/Inf fault detection,
     # it never changes the numerics or the artifact of a finite run.
     check_every: int = 10
+    # Step-backend switch (opt-in, default off): ``None`` keeps the inline
+    # PyTorch 5-op chain (collide/stream/force/BC/mass) eager and
+    # byte-identical to the historical runner; ``"default"`` or
+    # ``"max-autotune-no-cudagraphs"`` wraps that same chain in
+    # ``torch.compile`` as two guarded graphs (with and without the
+    # every-10-step mass correction; the step index never enters the
+    # compiled code object, so no per-step recompiles).  Measured on
+    # RTX 5090 (fp32, force_every=1): CM+Smag 4.9x/3.9x/2.1x at
+    # nx=96/128/256, CUMULANT+Smag 10.0x at nx=128; numerics match eager
+    # to ~2e-6 relative over 110 steps (Inductor reorders fp32 ops).
+    # Modes with cudagraphs are rejected: the LBM step feeds its own
+    # output back, which cudagraph replay overwrites.  CM/CUMULANT only
+    # (KBC's entropy bisection calls ``.item()`` per step) and mutually
+    # exclusive with ``use_triton_step``.  Single-GPU CUDA only.
+    compile_mode: str | None = None
 
     def __post_init__(self) -> None:
         if self.collision.upper() not in {"CM", "CUMULANT", "KBC"}:
@@ -150,6 +165,22 @@ class SuboffCmkKbcConfig:
             raise ValueError("force_every must be >= 1")
         if self.check_every < 1:
             raise ValueError("check_every must be >= 1")
+        if self.compile_mode is not None:
+            if self.compile_mode not in {"default", "max-autotune-no-cudagraphs"}:
+                raise ValueError(
+                    f"compile_mode must be None, 'default', or "
+                    f"'max-autotune-no-cudagraphs'; got {self.compile_mode!r} "
+                    f"(modes with cudagraphs overwrite the step's own input)"
+                )
+            if self.use_triton_step:
+                raise ValueError(
+                    "compile_mode and use_triton_step are mutually exclusive"
+                )
+            if self.collision.upper() == "KBC":
+                raise ValueError(
+                    "compile_mode does not support KBC: the per-step entropy "
+                    "bisection calls .item() and cannot be compiled"
+                )
 
     @property
     def nu(self) -> float:
@@ -292,6 +323,34 @@ def run_suboff_cmk_kbc(
 
     tau_base = config.tau
 
+    # --- 2c. Optional torch.compile step backend (opt-in; default off) ---
+    # ``compile_mode=None`` (default) changes nothing below.  When set,
+    # the *same* default-path chain (SGS collide, stream, momentum-
+    # exchange force, far-field BC incl. bounce-back, mass correction)
+    # is compiled as two whole-step graphs: one for plain steps and one
+    # for steps that also run the every-10-step mass correction.  The
+    # step counter stays outside the compiled code objects.
+    compiled_step: tuple[Any, Any] | None = None
+    if config.compile_mode is not None:
+        if device.type != "cuda":
+            raise RuntimeError(
+                f"compile_mode requires a CUDA device; got {device}"
+            )
+
+        def _make_compiled_step(with_mass: bool):
+            def _step(f: torch.Tensor):
+                f = _collide_with_sgs(f, config, tau_base)
+                f = stream3d(f)
+                fx_c, fy_c, fz_c = compute_obstacle_forces_3d(f, solid)
+                f = far_field_bc_3d(f, config.u_in, obstacle_mask=solid)
+                if with_mass:
+                    f = correct_mass3d(f, initial_mass)
+                return f, fx_c, fy_c, fz_c
+
+            return torch.compile(_step, mode=config.compile_mode)
+
+        compiled_step = (_make_compiled_step(False), _make_compiled_step(True))
+
     # --- 2b. Optional Triton-fused step backend (opt-in; default off) ---
     # With ``use_triton_step=False`` (default) nothing below changes: the
     # inline PyTorch chain in the loop is executed exactly as before.
@@ -359,21 +418,33 @@ def run_suboff_cmk_kbc(
                 tau_eff=tau_eff,
             )
         else:
-            # Collision with SGS
-            f = _collide_with_sgs(f, config, tau_base)
-            # Streaming (pull scheme)
-            f = stream3d(f)
-            # Force measurement (momentum exchange, before bounce-back).
-            # ``force_every`` thins the sampling: on skipped steps the
-            # full-grid reduction (and its host transfer) is skipped.
-            if step % config.force_every == 0:
-                fx_t, fy_t, fz_t = compute_obstacle_forces_3d(f, solid)
+            if compiled_step is not None:
+                # torch.compile backend (opt-in): the whole default-path
+                # chain runs as one guarded graph.  Only the mass-
+                # correction pattern (every 10 steps) selects between the
+                # two compiled variants; forces are produced by the
+                # graph itself (force_every=1 semantics for compiled
+                # steps, matching the Triton step backend).
+                f, fx_t, fy_t, fz_t = (
+                    compiled_step[1](f) if step % 10 == 0 else compiled_step[0](f)
+                )
                 force_this_step = True
-            # Far-field BC (includes bounce-back on solid)
-            f = far_field_bc_3d(f, config.u_in, obstacle_mask=solid)
-            # Mass correction every 10 steps
-            if step % 10 == 0:
-                f = correct_mass3d(f, initial_mass)
+            else:
+                # Collision with SGS
+                f = _collide_with_sgs(f, config, tau_base)
+                # Streaming (pull scheme)
+                f = stream3d(f)
+                # Force measurement (momentum exchange, before bounce-back).
+                # ``force_every`` thins the sampling: on skipped steps the
+                # full-grid reduction (and its host transfer) is skipped.
+                if step % config.force_every == 0:
+                    fx_t, fy_t, fz_t = compute_obstacle_forces_3d(f, solid)
+                    force_this_step = True
+                # Far-field BC (includes bounce-back on solid)
+                f = far_field_bc_3d(f, config.u_in, obstacle_mask=solid)
+                # Mass correction every 10 steps
+                if step % 10 == 0:
+                    f = correct_mass3d(f, initial_mass)
 
         # Accumulate this step's forces on the device (no host sync).
         if force_this_step:
@@ -392,10 +463,11 @@ def run_suboff_cmk_kbc(
 
     # --- 3b. One-shot host transfer + series construction ---
     # The sampled steps are exactly the multiples of ``force_every`` up
-    # to ``completed_steps`` (Triton path: every step), in order.
+    # to ``completed_steps`` (Triton path and compiled path: every step,
+    # because both step backends produce forces on every launch), in order.
     recorded_steps = (
         range(1, completed_steps + 1)
-        if config.use_triton_step
+        if config.use_triton_step or compiled_step is not None
         else range(config.force_every, completed_steps + 1, config.force_every)
     )
     forces_host = force_buf[:force_rows].tolist()
@@ -436,6 +508,8 @@ def run_suboff_cmk_kbc(
     }
     if config.use_triton_step:
         artifact["step_backend"] = "triton_fused"
+    elif config.compile_mode is not None:
+        artifact["step_backend"] = f"torch_compile:{config.compile_mode}"
     return artifact
 
 
