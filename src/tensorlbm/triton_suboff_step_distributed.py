@@ -7,10 +7,11 @@ Wraps :class:`tensorlbm.triton_fused_distributed.DistributedTritonFusedSolver3D`
 *  per-cell force reduction (Ladd momentum-exchange)
 *  mass correction every ``mass_period`` steps
 
-The geometry build (call to ``build_suboff_mask``) is collective: every
-rank builds the full mask and slices it locally.  This is intentional —
-the SUBOFF CAD helper is cheap and the duplication avoids having to
-redesign the geometry API for distributed construction.
+The geometry build is slab-local: every rank builds only the z-planes it
+owns via :func:`build_suboff_solid_slab` (the full-grid CPU build was
+61-82 s per rank at n=1024 and dominated end-to-end setup).  The
+constructor still accepts a full-grid ``solid_int8`` and slices it, so
+legacy callers that already hold the global mask keep working.
 
 Currently the wrapper is a thin façade over the single-GPU path plus a
 slab decomposition in z.  Production slab axis remains z (the existing
@@ -47,7 +48,74 @@ except ImportError:
     )
 
 
-__all__ = ["TritonSuboffDistributedRunner"]
+__all__ = ["TritonSuboffDistributedRunner", "build_suboff_solid_slab"]
+
+
+def build_suboff_solid_slab(
+    hull_type: Any = "bare_hull",
+    nx: int = 200,
+    ny: int = 80,
+    nz: int = 80,
+    *,
+    world_size: int,
+    rank: int,
+    cx: float | None = None,
+    cy: float | None = None,
+    cz: float | None = None,
+    length: float | None = None,
+    radius: float | None = None,
+    config: Any = None,
+    device: str = "cpu",
+) -> tuple[torch.Tensor, dict]:
+    """Build only this rank's z-slab of the SUBOFF obstacle mask.
+
+    Returns ``(mask_slab, stats)`` where ``mask_slab`` has shape
+    ``(nz_local, ny, nx)`` with ``nz_local = nz // world_size``, bitwise
+    identical to slicing the global :func:`build_suboff_mask` result to
+    ``[rank * nz_local : (rank + 1) * nz_local]``.
+
+    Every ``suboff_cad`` predicate references the z axis only through
+    ``(zz - cz)`` (the hull radius profile depends on x alone), so
+    rebuilding with ``nz -> nz_local`` planes and ``cz -> cz - z0``
+    evaluates exactly the same arithmetic on the slab's global
+    coordinates.  That is ``1 / world_size`` of the full-grid geometry
+    work per rank — the full-grid CPU build costs 61-82 s at n=1024
+    (vs ~11 s for 300 simulation steps) and dominates end-to-end setup.
+
+    ``stats`` mirrors ``build_suboff_mask``'s but is computed on the
+    slab (``nz`` / ``solid_cells`` are slab-local; form coefficients
+    are grid-independent).  ``world_size == 1`` reproduces the global
+    build exactly.
+    """
+    if world_size <= 0:
+        raise ValueError(
+            f"world_size must be positive, got {world_size}")
+    if not 0 <= rank < world_size:
+        raise ValueError(
+            f"rank={rank} out of range for world_size={world_size}")
+    if nz % world_size != 0:
+        raise ValueError(
+            f"nz={nz} must be divisible by world_size={world_size} "
+            "(slab decomposition along z)"
+        )
+    try:
+        from tensorlbm.suboff_cad import build_suboff_mask
+    except ImportError:  # pragma: no cover - top-level module layout
+        from suboff_cad import build_suboff_mask  # type: ignore
+
+    nz_local = nz // world_size
+    z0 = rank * nz_local
+    # Re-base the global default cz = nz / 2 onto the slab BEFORE
+    # shrinking nz — otherwise build_suboff_mask would re-derive it as
+    # nz_local / 2 and recentre the geometry inside the slab.
+    cz_slab = (nz / 2.0 if cz is None else float(cz)) - z0
+    return build_suboff_mask(
+        hull_type=hull_type,
+        nx=nx, ny=ny, nz=nz_local,
+        cx=cx, cy=cy, cz=cz_slab,
+        length=length, radius=radius, config=config,
+        device=device,
+    )
 
 
 class TritonSuboffDistributedRunner:
