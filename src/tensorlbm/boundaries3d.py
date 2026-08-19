@@ -385,11 +385,17 @@ def far_field_bc_3d(
     Validated: sphere Re=100 Cd error ~65% (channel) → ~9% (far-field)
     at the same grid.
     """
-    rho1 = torch.ones((f.shape[1], f.shape[2], f.shape[3]), dtype=f.dtype, device=f.device)
+    # The far-field equilibrium is spatially UNIFORM (rho=1, u=(u_in,uy,uz)
+    # everywhere), so only the 19 per-direction values are needed.  Compute
+    # them on a (1,1,1) field and let the face assignments broadcast — the
+    # previous full-domain (19,nz,ny,nx) feq cost 4.3 GB at 56M cells.
     feq = equilibrium3d(
-        rho1, torch.full_like(rho1, u_in), torch.full_like(rho1, uy),
-        torch.full_like(rho1, uz), device=f.device,
-    )
+        torch.ones((1, 1, 1), dtype=f.dtype, device=f.device),
+        torch.full((1, 1, 1), u_in, dtype=f.dtype, device=f.device),
+        torch.full((1, 1, 1), uy, dtype=f.dtype, device=f.device),
+        torch.full((1, 1, 1), uz, dtype=f.dtype, device=f.device),
+        device=f.device,
+    )  # (19, 1, 1, 1)
     f = f.clone()
 
     # Determine which faces get far-field vs periodic treatment

@@ -6,7 +6,13 @@ from typing import Any
 import torch
 
 from .d3q19 import OPPOSITE as _OPPOSITE_3D
-from .d3q19 import C, equilibrium3d, macroscopic3d
+from .d3q19 import (
+    C,
+    equilibrium3d,
+    equilibrium3d_low_memory,
+    macroscopic3d,
+    macroscopic3d_low_memory,
+)
 
 # Cache for streaming index tensors keyed by (nz, ny, nx, device_type, device_index)
 _stream3d_cache: dict[
@@ -146,6 +152,77 @@ def collide_mrt3d(
     moments_eq = matrix @ feq_flat
     moments_star = moments - s_vec.unsqueeze(1) * (moments - moments_eq)
     return (matrix_inv @ moments_star).reshape(19, nz, ny, nx)
+
+
+def collide_mrt3d_low_memory(
+    f: torch.Tensor,
+    tau: float,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """MRT collision with a fraction of :func:`collide_mrt3d`'s peak memory.
+
+    Mathematically identical to :func:`collide_mrt3d` (same moment
+    equations, same relaxation-rate vector) but avoids holding the full
+    set of ``(19, N)`` intermediates simultaneously: moments are relaxed
+    in-place and temporaries are freed eagerly.  ``macroscopic3d_low_memory``
+    and ``equilibrium3d_low_memory`` keep the macroscopic/equilibrium
+    phases free of ``(19, N)`` broadcasts, so on a 56M-cell grid the peak
+    drops from ~31 GB to ~18 GB (fits a 24 GB GPU).
+
+    Values differ from :func:`collide_mrt3d` only by float-association
+    noise (~1e-8 relative; the momentum sums use a different but
+    algebraically identical reduction order).
+    """
+    if s_pi is None:
+        s_pi = s_e
+    device = f.device
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
+
+    s_nu = 1.0 / tau
+    s_vec = torch.tensor(
+        [
+            0.0,
+            s_e,
+            s_eps,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            s_nu,
+            s_nu,
+            s_nu,
+            s_nu,
+            s_nu,
+            s_pi,
+            s_pi,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        dtype=f.dtype,
+        device=device,
+    )
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(19, -1)
+    rho, ux, uy, uz = macroscopic3d_low_memory(f)
+    feq = equilibrium3d_low_memory(rho, ux, uy, uz)
+    feq_flat = feq.reshape(19, -1)
+    moments = matrix @ f_flat
+    moments_eq = matrix @ feq_flat
+    del feq, feq_flat
+    diff = moments - moments_eq
+    del moments_eq
+    moments.sub_(s_vec.unsqueeze(1) * diff)  # in-place → moments_star
+    del diff
+    out = matrix_inv @ moments
+    del moments, rho, ux, uy, uz
+    return out.reshape(19, nz, ny, nx)
 
 
 def stream3d(f: torch.Tensor) -> torch.Tensor:

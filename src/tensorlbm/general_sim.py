@@ -1046,13 +1046,16 @@ class GeneralSimEngine:
         collision = self._auto_collision or sol.collision
         cs = sol.smagorinsky_cs
 
-        from .solver3d import collide_mrt3d, collide_bgk3d
+        from .solver3d import collide_mrt3d_low_memory, collide_bgk3d
         from .turbulence import collide_smagorinsky_mrt3d
 
         if collision == CollisionModel.BGK:
             return collide_bgk3d, {}
         elif collision == CollisionModel.MRT:
-            return collide_mrt3d, {}
+            # Memory-light MRT: mathematically identical to collide_mrt3d
+            # (same moments/relaxation rates; ~1e-8 float-association noise),
+            # but needs ~18 GB instead of ~31 GB peak at 56M cells.
+            return collide_mrt3d_low_memory, {}
         elif collision == CollisionModel.SMAGORINSKY_MRT:
             return collide_smagorinsky_mrt3d, {"C_s": cs}
         elif collision == CollisionModel.SMAGORINSKY_BGK:
@@ -1061,7 +1064,7 @@ class GeneralSimEngine:
             return collide_smagorinsky_bgk3d, {"C_s": cs}
         else:
             # Default to MRT
-            return collide_mrt3d, {}
+            return collide_mrt3d_low_memory, {}
 
     def _build_bc_config(self) -> dict:
         """Build bc_config dict for far_field_bc_3d.
