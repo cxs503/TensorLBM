@@ -74,20 +74,57 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Lattice constants — D3Q19
 # ---------------------------------------------------------------------------
-# Authoritative copy of the constants lives in :mod:`tensorlbm.d3q19`.
-# We mirror the subset we need here as Python tuples so the kernel can
-# reference them without re-importing on every launch.
-_CX: Tuple[int, ...] = (0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, 1, -1, 0, 0, 0, 0)
-_CY: Tuple[int, ...] = (0, 0, 0, 1, -1, 0, 0, 1, 1, -1, -1, 0, 0, 0, 0, 1, -1, 1, -1)
-_CZ: Tuple[int, ...] = (0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, 1, -1, -1, 1, 1, -1, -1)
-_W: Tuple[float, ...] = (
-    1.0 / 3.0,
-    1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0,
-    1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0,
-    1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0,
-    1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0,
-)
+# The authoritative copy of the constants lives in :mod:`tensorlbm.d3q19`;
+# the tuples below are DERIVED from the canonical ``d3q19.C`` / ``d3q19.W``
+# tensors so that the int addressing tables (pull-gather offsets) and the
+# float moment/equilibrium tables built by :func:`make_lattice_tensors`
+# can never drift from the reference lattice again.
+#
+# History: these used to be hand-typed literals, and ``_CY``/``_CZ``
+# carried sign errors on six diagonal directions — q = 8, 10 (cy flipped)
+# and q = 12, 14, 16, 18 (cz flipped), i.e. the lane pairs 8<->10,
+# 12<->14, 16<->18 each held the other direction's lattice velocity.
+# Both the int and the float tables inherited the error.  Because the
+# wrong table is a pure lane permutation of the correct one, the bug was
+# invisible on uniform or mirror-symmetric fields (periodic tests passed,
+# step-1 forces matched) while any z-asymmetric flow streamed from wrong
+# neighbour cells on those six lanes.  See the matching block comment in
+# ``triton_fused_obstacle.py`` and
+# ``tests/test_triton_fused_asymmetric.py``.
+try:
+    from tensorlbm.d3q19 import C as _D3Q19_C
+    from tensorlbm.d3q19 import W as _D3Q19_W
+except ImportError:  # standalone import (module file outside the package)
+    _D3Q19_C = torch.tensor(
+        [
+            [0, 0, 0],
+            [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
+            [1, 1, 0], [-1, -1, 0], [1, -1, 0], [-1, 1, 0],
+            [1, 0, 1], [-1, 0, -1], [1, 0, -1], [-1, 0, 1],
+            [0, 1, 1], [0, -1, -1], [0, 1, -1], [0, -1, 1],
+        ],
+        dtype=torch.int64,
+    )
+    _D3Q19_W = torch.tensor(
+        [1.0 / 3.0] + [1.0 / 18.0] * 6 + [1.0 / 36.0] * 12,
+        dtype=torch.float32,
+    )
+
+_CX: Tuple[int, ...] = tuple(int(v) for v in _D3Q19_C[:, 0].tolist())
+_CY: Tuple[int, ...] = tuple(int(v) for v in _D3Q19_C[:, 1].tolist())
+_CZ: Tuple[int, ...] = tuple(int(v) for v in _D3Q19_C[:, 2].tolist())
+_W: Tuple[float, ...] = tuple(float(v) for v in _D3Q19_W.tolist())
 _Q = 19
+
+# Import-time self-check: guard the D3Q19 invariants so any future drift
+# of the source tables fails loudly instead of corrupting kernels.
+assert _Q == len(_CX) == len(_CY) == len(_CZ) == len(_W) == 19
+assert abs(sum(_W) - 1.0) < 1e-5, "D3Q19 weights must sum to 1"
+for _q in range(_Q):
+    _c2 = _CX[_q] ** 2 + _CY[_q] ** 2 + _CZ[_q] ** 2
+    assert _c2 in (0, 1, 2), f"non-D3Q19 lattice velocity at q={_q}"
+del _q, _c2
+
 _Q_PAD = 32                       # next power of two >= 19
 
 # Recommended block/warp config from sweep at n=256, fp32 on RTX 5090.
@@ -127,7 +164,11 @@ def make_lattice_tensors(device: str) -> dict:
     Returns a dict with int32 tensors (``cxi``, ``cyi``, ``czi``) for
     index arithmetic and float32 tensors (``cxf``, ``cyf``, ``czf``,
     ``w``) for the equilibrium computation.  All tensors have length
-    ``_Q_PAD``; the last 13 entries are zero-padded.
+    ``_Q_PAD``; the last 13 entries are zero-padded.  Direction
+    components and weights derive from the canonical
+    ``tensorlbm.d3q19`` tables (see the lattice-constants block above),
+    so the int and float tables cannot disagree with each other or with
+    the reference lattice.
 
     Cached per device string so repeated solver constructions on the
     same GPU do not re-allocate.
