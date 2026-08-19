@@ -48,13 +48,14 @@
 - **B30 衰减剪切波 2D**（H=64/128，τ=0.8，U0=0.05）：γ_vel 误差 **+0.051%→+0.011%**（两档单调收敛），R²=1.000000 → benchmarks/verified/shear_wave_decay/
 - **B13 Poiseuille 2D**（Zou-He 压力驱动）：H=60 误差 **0.18%**（H=20:1.21%→H=40:0.45%→H=60:0.18% 单调收敛）→ benchmarks/verified/poiseuille_2d/
 - **B14 3D 圆管 Poiseuille**（D3Q19，速度入口+压力出口+半程反弹管壁）：**R_eff^Q 方法**（数字楼梯圆管水力半径 R_eff^Q=R+0.11，流量反演独立观测量）径向平均剖面 max **2.15%→1.45%**（R=20/40 单调收敛），L2 1.29%→0.71%；逐格散布 6.45%→2.78% 已披露（R=20 楼梯壁单格几何效应，一阶收敛）→ benchmarks/verified/poiseuille_3d_pipe/
+- **B15 方腔流 Re=100**（D2Q9 MRT，u_lid=0.06，100k 步，**V3 修复版**：pre-streaming 半程反弹+zou_he_moving_lid，2026-08-19）：max_abs_dev **0.75%→0.73%**（128²/192² 单调收敛，残差 ~4e-7），u(0.5,0.5)=-0.2108/-0.2103 vs Ghia -0.20581，涡心 (0.614,0.740)/(0.614,0.739) vs (0.6172,0.7344)；V0 曾 22.5% 未达标（post-streaming 反弹顶盖动量绕入底壁），V3 修复经验自 Re=400 迁移 → benchmarks/verified/cavity_re100/
+- **B16 方腔流 Re=400**（同 V3 配方，2026-08-19）：max_abs_dev **1.50%→0.83%**（128²/192² 单调收敛）→ benchmarks/verified/cavity_re400/
 
 **🔶 未达标（待继续）**
 - B1 球 Re=100：D40 实测 -13%（需 D60/D80 加密）
 - B4 圆柱 Re=100：4.8%（需加密）
 - backward_step：88%（跑错 Re=200，需重跑 Re=100）
-- B15 方腔流 Re=100：64 网格涡心 y 差 1.3% < 3% 已达标待入库（128 网格确认中）
-- B1/B2/B4/B7/NACA/Blasius/空化/方腔/SUBOFF：子 agent 进行中
+- B1/B2/B4/B7/NACA/Blasius/空化/SUBOFF：子 agent 进行中
 
 ## 达标路线（3% 内，真实模拟，禁外推）
 
