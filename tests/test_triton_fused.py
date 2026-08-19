@@ -171,6 +171,68 @@ def test_class_rejects_bad_dtype(dev: str) -> None:
                              device=dev, dtype=torch.int32)
 
 
+def test_step_no_alias_race_non_equilibrium_blob(dev: str) -> None:
+    """Consecutive step() calls must not alias kernel input and output.
+
+    Regression test for a cross-block read-after-write race: when the
+    solver writes every step into the same internal buffer, feeding the
+    previous output back makes the fused kernel's input pointer equal
+    its output pointer.  Pull-stream blocks then read post-collision
+    populations from neighbours that a concurrently scheduled block has
+    already overwritten, and the trajectory diverges from the race-free
+    reference.  Quasi-equilibrium fields hide this (f ~= feq, and BGK
+    conserves per-cell mass either way); the Gaussian density blob here
+    is strongly non-equilibrium after the first stream.
+    """
+    from tensorlbm.d3q19 import equilibrium3d
+
+    n, sigma, tau, n_steps = 64, 4.0, 0.8, 50
+    solver = TritonFusedSolver3D(nz=n, ny=n, nx=n, tau=tau, device=dev)
+
+    # Non-equilibrium initial state: rho = 1 + 0.5*exp(-r^2/2s^2) blob
+    # plus a small constant drift velocity.
+    c = torch.arange(n, device=dev, dtype=torch.float32) - n // 2
+    Z, Y, X = torch.meshgrid(c, c, c, indexing="ij")
+    r2 = Z * Z + Y * Y + X * X
+    rho = 1.0 + 0.5 * torch.exp(-r2 / (2.0 * sigma * sigma))
+    ux = torch.full_like(rho, 0.03)
+    uy = torch.full_like(rho, 0.02)
+    uz = torch.full_like(rho, 0.01)
+    f0 = equilibrium3d(rho, ux, uy, uz)
+
+    # Direct ping-pong check: consecutive outputs must be distinct tensors.
+    a = solver.step(f0.clone())
+    b = solver.step(a)
+    assert a.data_ptr() != b.data_ptr(), \
+        "consecutive step() outputs must alternate buffers"
+
+    m0 = f0.sum(dtype=torch.float64).item()
+
+    # Candidate under test: feed the returned buffer straight back in.
+    f = f0.clone()
+    for _ in range(n_steps):
+        f = solver.step(f)
+
+    # Race-free reference: every step writes into a brand-new tensor.
+    g = f0.clone()
+    for _ in range(n_steps):
+        g = triton_fused(g, tau)
+
+    # (a) Total mass is conserved (BGK conserves per-cell rho even when
+    # pulls read stale/updated values, so this alone cannot catch the
+    # race — it guards the physics, the allclose below catches the race).
+    m1 = f.sum(dtype=torch.float64).item()
+    rel_mass = abs(m1 - m0) / abs(m0)
+    assert rel_mass < 1e-4, f"relative mass drift after {n_steps} steps = {rel_mass}"
+
+    # (b) The trajectory must match the race-free reference cell by cell.
+    err = (f - g).abs().max().item()
+    rel = err / max(g.abs().max().item(), 1e-12)
+    assert rel < 1e-4, (
+        f"50-step trajectory diverged from race-free reference: "
+        f"max|diff|={err:.3e}, rel={rel:.3e} (input/output aliasing race)")
+
+
 # ---------------------------------------------------------------------------
 # 5. Reduced-precision storage
 # ---------------------------------------------------------------------------
