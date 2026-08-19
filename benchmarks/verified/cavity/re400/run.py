@@ -1,19 +1,25 @@
-#!/home/wxsc/anaconda3/envs/ftw-env/bin/python
-"""方腔流 Re=100（lid-driven cavity）— Ghia 1982 验证（V3 修复版）。
+#!/usr/bin/env python3
+"""方腔流 Re=400（lid-driven cavity）— Ghia 1982 验证（V3 修复版）。
+
+run.py 重建说明（2026-08-19，benchmarks compile 路径接入）：
+本案例 result.json/README 于 2026-08-19 入库，但当时的入口脚本
+（/tmp/cavity_v3_formal.py，旧机器）未随库保存。本脚本按 README 记录的
+V3 口径重建：与 verified/cavity_re100/run.py 同族（等 Re 配方
+tau=3*u_lid*nx/re+0.5，MRT，V3 三静止壁 pre-streaming 半程反弹 +
+zou_he_moving_lid 顶盖），仅换 Ghia Re=400 表值与 Re=400 默认参数。
 
 共性模块路径（库 solver + 库 BC，零手写 collide/stream/equilibrium）：
 - tensorlbm.solver.collide_mrt / stream
 - tensorlbm.d2q9.equilibrium / macroscopic
 - tensorlbm.lid_driven_cavity.zou_he_moving_lid（顶盖动壁 BC）
-- 三静止壁：pre-streaming 半程反弹（V3 关键修复，内联 BC，见下）
+- 三静止壁：pre-streaming 半程反弹（V3 关键修复）
 
-V3 修复背景（2026-08-19，Re=400 案例经验迁移）：
-V0 的 post-streaming bounce_back_cells + 周期 stream 组合使顶盖动量绕入底壁行
-（底部回流过量 2.6 倍）→ Re=100 曾 22.5% 偏差。V3 改为三静止壁 pre-streaming
-半程反弹（流体侧反射，动量不进壁）+ 顶盖 zou_he_moving_lid，Re=400 从 23.6%
-修复到 1.50%→0.83%。Re=100 同根因，本脚本用 V3 正式两档验证。
+V3 修复背景：V0 的 post-streaming bounce_back_cells + 周期 stream 组合使
+顶盖动量绕入底壁行（底部回流过量 2.6 倍）→ Re=400 曾 23.6% 偏差。V3 改为
+三静止壁 pre-streaming 半程反弹（流体侧反射，动量不进壁）+ 顶盖
+zou_he_moving_lid，23.6% → 1.50%（128²）→ 0.83%（192²）单调收敛。
 
-Re 约定：Re = u_lid*H/ν，H = nx（网格节点数，与任务参数 tau=3*u_lid*nx/re+0.5 一致）。
+Re 约定：Re = u_lid*H/ν，H = nx（网格节点数）。
 """
 import argparse
 import json
@@ -21,15 +27,15 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
-import torch
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # <repo>/benchmarks
 
 from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
+import numpy as np
+import torch
+
 from tensorlbm.d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
-from tensorlbm.lid_driven_cavity import GHIA_RE100, zou_he_moving_lid
+from tensorlbm.lid_driven_cavity import GHIA_RE400, zou_he_moving_lid
 from tensorlbm.solver import collide_mrt, stream
 
 CS2 = 1.0 / 3.0
@@ -38,9 +44,7 @@ CS2 = 1.0 / 3.0
 def stationary_pre_bounce(f_pre, f, wall):
     """pre-streaming 半程反弹（三静止壁，V3 关键修复）。
 
-    在 collide 之前用流体侧（碰撞前）分布反射，动量不进入壁面行；
-    与 post-streaming bounce_back_cells + 周期 stream 组合（顶盖动量会
-    经周期环绕被注入底壁行）形成 A/B 对照。
+    在 collide 之前用流体侧（碰撞前）分布反射，动量不进入壁面行。
     """
     opp = OPPOSITE.to(f.device)
     return torch.where(wall.unsqueeze(0), f_pre[opp], f)
@@ -71,7 +75,7 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
         f = stream(f)
         return zou_he_moving_lid(f, u_lid)
 
-    step_fn = route_step(_step, compile_mode, name=f"cavity_re100[{nx}]")
+    step_fn = route_step(_step, compile_mode, name=f"cavity_re400[{nx}]")
 
     _, ux_prev, uy_prev = macroscopic(f)
     ux_prev = ux_prev.detach().clone()
@@ -92,7 +96,7 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
             uy_prev = uy.detach().clone()
     elapsed = time.time() - t0
 
-    # ---- 度量（与 verified/cavity_re400 同口径）----
+    # ---- 度量（与 result.json 同口径）----
     rho, ux, uy = macroscopic(f)
     ux_w = ux.masked_fill(wall_mask, 0.0)
     uy_w = uy.masked_fill(wall_mask, 0.0)
@@ -104,37 +108,37 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
     x_pos = np.linspace(0.0, 1.0, nx)
     u_cl = ux_np[:, x_mid]
     v_cl = uy_np[y_mid, :]
-    u_gi = np.interp(GHIA_RE100["y"], y_pos, u_cl)   # xp 升序（y_pos），安全
-    v_gi = np.interp(GHIA_RE100["x"], x_pos, v_cl)
-    rmse_u = float(np.sqrt(np.mean((u_gi - np.array(GHIA_RE100["u"])) ** 2)))
-    rmse_v = float(np.sqrt(np.mean((v_gi - np.array(GHIA_RE100["v"])) ** 2)))
-    dev = np.concatenate([np.abs(u_gi - np.array(GHIA_RE100["u"])),
-                          np.abs(v_gi - np.array(GHIA_RE100["v"]))])
+    u_gi = np.interp(GHIA_RE400["y"], y_pos, u_cl)
+    v_gi = np.interp(GHIA_RE400["x"], x_pos, v_cl)
+    rmse_u = float(np.sqrt(np.mean((u_gi - np.array(GHIA_RE400["u"])) ** 2)))
+    rmse_v = float(np.sqrt(np.mean((v_gi - np.array(GHIA_RE400["v"])) ** 2)))
+    dev = np.concatenate([np.abs(u_gi - np.array(GHIA_RE400["u"])),
+                          np.abs(v_gi - np.array(GHIA_RE400["v"]))])
     max_abs_dev_pct = 100.0 * float(dev.max())
 
-    u_mid = float(np.interp(0.5, y_pos, u_cl))     # Ghia u(0.5,0.5) = -0.20581
-    u_bot = float(np.interp(0.0625, y_pos, u_cl))  # Ghia u(0.5,0.0625) = -0.04192
+    u_mid = float(np.interp(0.5, y_pos, u_cl))     # Ghia u(0.5,0.5) = -0.1148
     v_mid = float(np.interp(0.5, x_pos, v_cl))
 
-    # 主涡心：内域 argmin(speed²) + 抛物线亚网格细化（主涡物理窗口 x,y∈[0.3,0.9]）
+    # 主涡心：主涡物理窗口 x,y∈[0.3,0.9]
     speed2 = ux_np**2 + uy_np**2
     speed2[: int(0.30 * ny), :] = np.inf
     speed2[int(0.90 * ny):, :] = np.inf
     speed2[:, : int(0.30 * nx)] = np.inf
     speed2[:, int(0.90 * nx):] = np.inf
     iy0, ix0 = np.unravel_index(np.argmin(speed2), speed2.shape)
-    # 抛物线亚网格：i + 0.5*(a-c)/(a-2b+c)
+
     def refine(axis, i):
         a = speed2[i - 1, ix0] if axis == 0 else speed2[iy0, i - 1]
         b = speed2[i, ix0] if axis == 0 else speed2[iy0, i]
         c = speed2[i + 1, ix0] if axis == 0 else speed2[iy0, i + 1]
         denom = a - 2 * b + c
         return i + 0.5 * (a - c) / denom if abs(denom) > 1e-30 else i
+
     vx = refine(1, ix0) / (nx - 1)
     vy = refine(0, iy0) / (ny - 1)
 
-    print(f"[cavity_re100 nx={nx}] steps={steps} t={elapsed:.0f}s resid={last_resid:.2e} "
-          f"u(0.5,0.5)={u_mid:+.4f} u_bot={u_bot:+.4f} v(0.5,0.5)={v_mid:+.4f} "
+    print(f"[cavity_re400 nx={nx}] steps={steps} t={elapsed:.0f}s resid={last_resid:.2e} "
+          f"u(0.5,0.5)={u_mid:+.4f} v(0.5,0.5)={v_mid:+.4f} "
           f"vortex=({vx:.3f},{vy:.3f}) rmse_u={rmse_u:.4f} rmse_v={rmse_v:.4f} "
           f"max_abs_dev={max_abs_dev_pct:.2f}%", flush=True)
 
@@ -142,10 +146,10 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
         "nx": nx, "re": re, "u_lid": u_lid, "tau": round(tau, 4), "steps": steps,
         "compile_mode": compile_mode,
         "elapsed_s": round(elapsed, 1), "last_resid": last_resid,
-        "u_mid": u_mid, "u_mid_ghia": -0.20581,
-        "u_bot": u_bot, "v_mid": v_mid,
+        "u_mid": u_mid, "u_mid_ghia": -0.1148,
+        "v_mid": v_mid,
         "vortex": [round(vx, 4), round(vy, 4)],
-        "vortex_ghia": [0.6172, 0.7344],
+        "vortex_ghia": [0.5547, 0.6055],
         "rmse_u": rmse_u, "rmse_v": rmse_v, "max_abs_dev_pct": max_abs_dev_pct,
     }
 
@@ -153,17 +157,17 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--nx", nargs="+", type=int, default=[128, 192])
-    ap.add_argument("--re", type=float, default=100.0)
+    ap.add_argument("--re", type=float, default=400.0)
     ap.add_argument("--u-lid", type=float, default=0.06)
     ap.add_argument("--steps", type=int, default=100000)
     ap.add_argument("--device", default="cpu")
-    ap.add_argument("--out", default="/tmp/cavity_re100_verified.json")
+    ap.add_argument("--out", default="/tmp/cavity_re400_verified.json")
     add_compile_mode_arg(ap)
     args = ap.parse_args()
-    compile_mode = compile_mode_from_args(args)
 
     device = torch.device(args.device)
     torch.set_num_threads(32)
+    compile_mode = compile_mode_from_args(args)
 
     results = {}
     for nx in args.nx:
@@ -178,10 +182,9 @@ def main():
     }
     results["convergence"] = verdict
     results["verified"] = bool(verdict["pass"])
-    results["verified_date"] = "2026-08-19"
 
     # tolerate both spellings of --out: a file path (historic default,
-    # e.g. /tmp/cavity_re100_verified.json) or a results directory
+    # e.g. /tmp/cavity_re400_verified.json) or a results directory
     out_path = Path(args.out)
     if not out_path.suffix:
         out_path = out_path / "result.json"

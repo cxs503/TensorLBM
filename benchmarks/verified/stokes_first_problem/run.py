@@ -37,7 +37,9 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 import numpy as np
 import torch
@@ -97,6 +99,7 @@ def run_case(
     nx: int = 8,
     dtype: torch.dtype = torch.float32,
     seed: int = 0,
+    compile_mode: str | None = "default",
 ) -> dict:
     """Run one Stokes-first-problem case; return per-step profiles + errors."""
     torch.manual_seed(seed)
@@ -119,8 +122,8 @@ def run_case(
     record_set = set(record_steps)
     profiles: dict[int, np.ndarray] = {}
 
-    t0 = time.time()
-    for step in range(1, max_step + 1):
+    # ---- 整步步进函数（共性 compile 路径；步序号与剖面记录留在编译域外）----
+    def _step(f):
         f_pre = f.clone()
         f = collide_bgk(f, tau)
         # pre-streaming boundary treatment (repo-validated BB variant);
@@ -128,7 +131,13 @@ def run_case(
         # top: free-slip specular reflection (stress-free far field)
         f = torch.where(wall_bottom.unsqueeze(0), moving_wall_replacement(f_pre, U), f)
         f = torch.where(wall_top.unsqueeze(0), specular_replacement(f_pre), f)
-        f = stream(f)                         # periodic in x (and y, cut by BB rows)
+        return stream(f)                      # periodic in x (and y, cut by BB rows)
+
+    step_fn = route_step(_step, compile_mode, name=f"stokes_first_problem[H{H}]")
+
+    t0 = time.time()
+    for step in range(1, max_step + 1):
+        f = step_fn(f)
         if step in record_set:
             _, ux, _ = macroscopic(f)
             profiles[step] = ux[1 : ny - 1, 0].cpu().numpy().astype(np.float64)
@@ -171,6 +180,7 @@ def run_case(
         "Ma": Ma,
         "record_steps": record_steps,
         "max_step": max_step,
+        "compile_mode": compile_mode,
         "mass_drift_pct": (float(f.sum().item()) - initial_mass) / initial_mass * 100.0,
         "finite": bool(torch.isfinite(f).all().item()),
         "elapsed_s": round(elapsed, 1),
@@ -217,6 +227,7 @@ def main() -> None:
     p1.add_argument("--nx", type=int, default=8)
     p1.add_argument("--seed", type=int, default=0)
     p1.add_argument("--device", type=str, default="cpu")
+    add_compile_mode_arg(p1)
 
     p2 = sub.add_parser("scan")
     p2.add_argument("out_dir", type=str)
@@ -226,13 +237,16 @@ def main() -> None:
     p2.add_argument("--steps", type=int, nargs="+", default=[1000, 4000, 9000])
     p2.add_argument("--nx", type=int, default=8)
     p2.add_argument("--device", type=str, default="cpu")
+    add_compile_mode_arg(p2)
 
     args = ap.parse_args()
     global DEVICE
     DEVICE = torch.device(args.device)
+    compile_mode = compile_mode_from_args(args)
 
     if args.mode == "single":
-        r = run_case(args.H, args.tau, args.U, args.steps, args.nx)
+        r = run_case(args.H, args.tau, args.U, args.steps, args.nx,
+                     compile_mode=compile_mode)
         Path(args.out_json).write_text(json.dumps(r, indent=2))
         for s in r["per_step"]:
             print(f"t={s['t_lb']:5d}  max_rel={s['max_rel_err_pct']:6.3f}%  "
@@ -246,7 +260,8 @@ def main() -> None:
         cases = []
         for H in args.H:
             p = out_dir / f"case_H{H}.json"
-            r = run_case(H, args.tau, args.U, args.steps, args.nx)
+            r = run_case(H, args.tau, args.U, args.steps, args.nx,
+                         compile_mode=compile_mode)
             p.write_text(json.dumps(r, indent=2))
             cases.append(r)
             print(f"H={r['H']:3d}: " + "  ".join(

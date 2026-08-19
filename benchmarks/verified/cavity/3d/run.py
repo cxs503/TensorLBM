@@ -31,7 +31,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # <repo>/benchmarks
+
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 from tensorlbm.boundaries3d import zou_he_moving_lid_3d
 from tensorlbm.d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
@@ -46,7 +48,8 @@ def stationary_pre_bounce3d(f_pre, f, wall):
 
 
 def run_case(nx, nz, re=400, u_lid=0.06, steps=100000, device=None,
-             out_path=None, resid_interval=5000, min_resid=1e-9):
+             out_path=None, resid_interval=5000, min_resid=1e-9,
+             compile_mode="default"):
     ny = nx
     tau = 3.0 * u_lid * nx / re + 0.5
     nu = (tau - 0.5) / 3.0
@@ -63,17 +66,23 @@ def run_case(nx, nz, re=400, u_lid=0.06, steps=100000, device=None,
     interior = ~wall
     interior[:, -1, :] = False
 
+    # ---- 整步步进函数（共性 compile 路径；步序号与残差监测留在编译域外）----
+    def _step(f):
+        f_pre = f
+        f = collide_mrt3d(f, tau)
+        f = stationary_pre_bounce3d(f_pre, f, wall)
+        f = stream3d(f)
+        return zou_he_moving_lid_3d(f, u_lid)
+
+    step_fn = route_step(_step, compile_mode, name=f"cavity_3d[{nx}x{nz}]")
+
     _, ux_prev, uy_prev, _ = macroscopic3d(f)
     ux_prev = ux_prev.detach().clone()
     uy_prev = uy_prev.detach().clone()
     last_resid = None
     t0 = time.time()
     for step in range(1, steps + 1):
-        f_pre = f
-        f = collide_mrt3d(f, tau)
-        f = stationary_pre_bounce3d(f_pre, f, wall)
-        f = stream3d(f)
-        f = zou_he_moving_lid_3d(f, u_lid)
+        f = step_fn(f)
         if step % resid_interval == 0:
             _, ux, uy, _ = macroscopic3d(f)
             du = torch.max(
@@ -150,6 +159,7 @@ def run_case(nx, nz, re=400, u_lid=0.06, steps=100000, device=None,
         "nx": nx, "ny": ny, "nz": nz,
         "re": re, "u_lid": u_lid, "tau": round(tau, 6), "nu": round(nu, 8),
         "steps": steps, "n_steps_run": step, "last_resid": last_resid,
+        "compile_mode": compile_mode,
         "elapsed_s": round(elapsed, 1),
         "u_mid_ghia": ghia["u"][ghia["y"].index(0.5)],
         "primary_vortex": primary_vortex,
@@ -181,18 +191,22 @@ def main():
     ap.add_argument("--device96", default="cuda:1")
     ap.add_argument("--device128", default="cuda:2")
     ap.add_argument("--steps", type=int, default=100000)
+    add_compile_mode_arg(ap)
     args = ap.parse_args()
+    compile_mode = compile_mode_from_args(args)
 
     if args.mode == "single":
         run_case(args.nx, args.nz, steps=args.steps,
-                 device=torch.device(args.device), out_path=args.out)
+                 device=torch.device(args.device), out_path=args.out,
+                 compile_mode=compile_mode)
     else:
         out_dir = Path(args.out or "benchmarks/verified/cavity_3d")
         out_dir.mkdir(parents=True, exist_ok=True)
         grids = {}
         for nx, nz, dev in ((96, 24, args.device96), (128, 32, args.device128)):
             r = run_case(nx, nz, steps=args.steps, device=torch.device(dev),
-                         out_path=str(out_dir / f"case_{nx}x{nz}.json"))
+                         out_path=str(out_dir / f"case_{nx}x{nz}.json"),
+                         compile_mode=compile_mode)
             grids[str(nx)] = r
         summary = {
             "case": "cavity_3d_spanwise_re400",

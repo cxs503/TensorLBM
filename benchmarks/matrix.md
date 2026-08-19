@@ -72,3 +72,19 @@ D3Q27 高精度、AMR 网格收敛、壁面函数高 Re。
 - 真实模拟（无外推），误差 ≤3% 才入库 verified/
 - 共性模块路径：GeneralSimEngine / 库 solver / 物理 run_* 入口（禁手写 collide-stream）
 - 每个组合一个 result.json + README.md
+
+### 编译路由标准（2026-08-19 增补）
+
+verified/ 案例（本标准设立时点的全部 15 个）的整步步进链（collide → BC → stream → BC）统一经
+`benchmarks/compile_route.py` 路由——它是 `tensorlbm.compile_utils`
+（`validate_compile_mode` + `compile_step`）在 benchmarks 侧的唯一适配器：
+
+- 统一 CLI 开关 `--compile-mode {eager,default,max-autotune-no-cudagraphs}`，
+  默认 `default`（编译）；`eager` 供 A/B 对拍。
+- 步序号与每 N 步监测（残差、稳态判据、NaN 守卫）留在编译域外的 eager 驱动环。
+- cudagraph 类模式由共享白名单拒绝（与 LBM 反馈环结构性冲突）。
+- 三模式实测矩阵（15 案例误差 / eager 加速比 / 冷编译开销，RTX 5090）见
+  `/nfs/wangxi/triton_bench_20260819/bench_compile_route/FINAL_MATRIX.md`；
+  入库标准不变：误差 ≤3%。
+- 注：main 后续新增的 `cylinder/re200` 与 `sod_shock_tube` 尚未按本标准接入，
+  待后续 PR 以同一矩阵流程补测后接入。
