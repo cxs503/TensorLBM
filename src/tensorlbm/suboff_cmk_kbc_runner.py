@@ -36,6 +36,7 @@ from .obstacles import compute_obstacle_forces_3d
 from .solver3d import correct_mass3d, stream3d
 from .suboff_cad import SuboffHullType, build_suboff_mask
 from .suboff_resistance import _voxel_wetted_area
+from .compile_utils import compile_step, validate_compile_mode
 from .turbulence import (
     _neq_stress_norm_3d,
     _nu_t_to_tau_eff,
@@ -166,12 +167,10 @@ class SuboffCmkKbcConfig:
         if self.check_every < 1:
             raise ValueError("check_every must be >= 1")
         if self.compile_mode is not None:
-            if self.compile_mode not in {"default", "max-autotune-no-cudagraphs"}:
-                raise ValueError(
-                    f"compile_mode must be None, 'default', or "
-                    f"'max-autotune-no-cudagraphs'; got {self.compile_mode!r} "
-                    f"(modes with cudagraphs overwrite the step's own input)"
-                )
+            # Shared whitelist check (see tensorlbm.compile_utils for the
+            # measured lessons behind the two allowed modes and the
+            # cudagraphs rejection).
+            validate_compile_mode(self.compile_mode)
             if self.use_triton_step:
                 raise ValueError(
                     "compile_mode and use_triton_step are mutually exclusive"
@@ -347,7 +346,11 @@ def run_suboff_cmk_kbc(
                     f = correct_mass3d(f, initial_mass)
                 return f, fx_c, fy_c, fz_c
 
-            return torch.compile(_step, mode=config.compile_mode)
+            # Shared wrapper (tensorlbm.compile_utils): validates the
+            # mode and wraps with torch.compile.  Two guarded graphs are
+            # built (plain / with mass correction) so the step index
+            # never enters the compiled code objects.
+            return compile_step(_step, config.compile_mode)
 
         compiled_step = (_make_compiled_step(False), _make_compiled_step(True))
 
