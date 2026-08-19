@@ -57,7 +57,7 @@
 | # | 问题 | 参考基准 | 共性模块 | 备注 |
 |---|------|---------|---------|------|
 | B23 | Laplace 定律（气泡压差） | Δp=σ/R 解析 | multiphase.py | 表面张力验证 |
-| B24 | 静态液滴平衡 | Young-Laplace | multiphase | 形状精度 |
+| B24 | 液滴振荡 m=2 Rayleigh 频率 | ω²=6σ/(ρR³) Rayleigh 1880 | multiphase + d2q9（周期域） | ✅ 已达标（**阻尼修正口径** 2026-08-19: SC94 固有强阻尼 γ≈0.72/R² 压低观测频率，ω₀=√(ω_d²+γ²) 还原后 err **+2.59/−1.50/−2.39%** 三档全 ≤3%，R30/R40 物理量 w₀²R³ 一致 1.8%，benchmarks/verified/droplet_oscillation/） |
 
 ## F. 边界层/湍流（RANS/turbulence 模块）
 
