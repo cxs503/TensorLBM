@@ -82,6 +82,7 @@ import torch.distributed as dist
 
 from .advanced_collision_contract import collide_advanced_3d  # noqa: F401  (re-export convenience)
 from .boundaries3d import far_field_bc_3d
+from .compile_utils import ALLOWED_COMPILE_MODES, compile_step, validate_compile_mode
 from .d3q19 import equilibrium3d
 from .obstacles import compute_obstacle_forces_3d
 from .solver3d import stream3d, stream3d_roll
@@ -102,8 +103,10 @@ __all__ = ["SuboffTorchDistributedRunner"]
 
 # torch.compile modes proven on this step chain (PR #174 / the production
 # ``compile_mode`` knob).  Anything with cudagraphs is rejected: the step
-# consumes its own output buffer.
-_ALLOWED_COMPILE_MODES = ("default", "max-autotune-no-cudagraphs")
+# consumes its own output buffer.  The whitelist now lives in the shared
+# ``tensorlbm.compile_utils`` module (same two string modes; the alias
+# below keeps this module's historical private name working).
+_ALLOWED_COMPILE_MODES = tuple(m for m in ALLOWED_COMPILE_MODES if m is not None)
 
 
 def _fallback_init_distributed(backend: str | None = None) -> tuple[int, int]:
@@ -165,13 +168,10 @@ class SuboffTorchDistributedRunner:
                 "pass a plain config to SuboffTorchDistributedRunner"
             )
         if compile_mode is not None:
-            if compile_mode not in _ALLOWED_COMPILE_MODES:
-                raise ValueError(
-                    f"compile_mode must be None or one of "
-                    f"{_ALLOWED_COMPILE_MODES}; got {compile_mode!r} "
-                    f"(cudagraph-class modes overwrite the step's own "
-                    f"input buffer)"
-                )
+            # Shared whitelist check (tensorlbm.compile_utils): same two
+            # proven modes, cudagraph-class modes rejected with the
+            # structural reason (the step consumes its own output buffer).
+            validate_compile_mode(compile_mode)
         if mass_every < 1:
             raise ValueError("mass_every must be >= 1")
         if stream_impl not in ("auto", "gather", "roll"):
@@ -333,7 +333,11 @@ class SuboffTorchDistributedRunner:
             return fb, fx, fy, fz
 
         self._step_core = _step_core
-        self._core = _step_core if compile_mode is None else torch.compile(_step_core, mode=compile_mode)
+        # Shared wrapper (tensorlbm.compile_utils): mode=None returns the
+        # eager core unchanged, otherwise one whole-step torch.compile
+        # graph (the step counter and the mass-correction branch stay in
+        # the eager driver, i.e. outside the compiled code object).
+        self._core = compile_step(_step_core, compile_mode)
 
         # Dense staging planes for the NCCL halo exchange (see the module
         # docstring: ghost slices of the padded buffer are NOT contiguous,
