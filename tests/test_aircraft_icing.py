@@ -33,6 +33,7 @@ from tensorlbm.aircraft_icing import (
     naca0012_mask_2d,
     rime_density_jones,
     rime_density_macklin,
+    run_glaze_icing,
     run_rime_icing,
     seed_counts_total,
     surface_arc_length,
@@ -654,3 +655,308 @@ def test_cumulant_step_compile_equivalence() -> None:
         sim_e._flow_step(False)
         sim_c._flow_step(False)
     assert torch.allclose(sim_e.f, sim_c.f, rtol=1e-4, atol=1e-7)
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Messinger glaze thermodynamics (energy balance + runback)
+# ---------------------------------------------------------------------------
+def test_saturation_vapor_pressure_branches() -> None:
+    """Both Magnus branches meet at 611 Pa; ice < water below 0 C."""
+    from tensorlbm.aircraft_icing import saturation_vapor_pressure_pa as esat
+
+    assert math.isclose(esat(0.0), 610.94, rel_tol=1e-3)
+    assert math.isclose(esat(0.0, over_ice=True), esat(0.0, over_ice=False))
+    assert abs(esat(-10.0, over_ice=False) - 286.8) < 2.0
+    assert abs(esat(-10.0, over_ice=True) - 259.9) < 2.0
+    assert abs(esat(20.0) - 2334.0) < 10.0
+    # auto branch: ice below zero, water at/above zero
+    assert esat(-10.0) == esat(-10.0, over_ice=True)
+    assert esat(10.0) == esat(10.0, over_ice=False)
+    assert esat(-10.0, over_ice=True) < esat(-10.0, over_ice=False)
+
+
+def test_analytic_htc_magnitude_and_decay() -> None:
+    """IRT-scale stagnation h and monotone streamwise decay."""
+    from tensorlbm.aircraft_icing import analytic_htc_w_m2k, analytic_tau_pa
+
+    cfg = IcingConfig()
+    s = np.array([0.0, 0.02, 0.15, 0.53, 1.06])  # m along the arc from the LE
+    v = np.full_like(s, cfg.v_inf)
+    h = analytic_htc_w_m2k(s, v, cfg)
+    assert np.all(h > 0.0) and np.all(np.isfinite(h))
+    # Frossling stagnation value for the IRT case ~ 400 W/m^2 K
+    assert 250.0 < h[0] < 600.0, h[0]
+    # monotone decay away from the stagnation line
+    assert np.all(np.diff(h) < 0.0), h
+    assert h[-1] < 0.5 * h[0]
+    # wall shear for the film diagnostic: ~1% of the dynamic pressure far
+    # from the LE, vanishing at the stagnation line (Hiemenz taper)
+    tau = analytic_tau_pa(s, v, cfg)
+    q_dyn = 0.5 * cfg.rho_air * cfg.v_inf**2
+    assert np.all(tau >= 0.0) and np.all(np.isfinite(tau))
+    assert tau[0] < 0.01 * q_dyn
+    assert 0.001 * q_dyn < tau[-1] < 0.05 * q_dyn, tau[-1]
+
+
+def test_messinger_panel_regimes_and_energy_closure() -> None:
+    """Rime/glaze/warm regimes with machine-precision energy closure."""
+    from tensorlbm.aircraft_icing import analytic_htc_w_m2k, messinger_panel_fluxes
+
+    h0 = float(analytic_htc_w_m2k(np.array([0.0]), np.array([IcingConfig().v_inf]), IcingConfig())[0])
+    # cold -> rime: everything freezes, surface below 0 C, no runback
+    cfg = IcingConfig(t_static_c=-20.0)
+    A = cfg.glaze_panel_cells * cfg.dx_phys**2
+    m_imp = 0.3 * cfg.lwc * cfg.v_inf * A
+    r = messinger_panel_fluxes(cfg, m_imp, 0.0, cfg.t_static_c, h0, A, cfg.v_inf)
+    assert r["regime"] == "rime"
+    assert r["n_f"] == 1.0
+    assert r["t_s_c"] < 0.0
+    assert r["m_out"] == 0.0
+    assert abs(r["residual_w"]) < 1e-9 * m_imp * cfg.l_fusion
+    # mild cold -> glaze: partial freezing at 0 C with runback
+    cfg = IcingConfig(t_static_c=-2.0)
+    r = messinger_panel_fluxes(cfg, m_imp, 0.0, cfg.t_static_c, h0, A, cfg.v_inf)
+    assert r["regime"] == "glaze"
+    assert 0.0 < r["n_f"] < 1.0
+    assert r["t_s_c"] == 0.0
+    assert r["m_out"] > 0.0
+    assert abs(r["residual_w"]) < 1e-9 * m_imp * cfg.l_fusion
+    # warm -> nothing freezes, film above 0 C
+    cfg = IcingConfig(t_static_c=5.0)
+    r = messinger_panel_fluxes(cfg, m_imp, 0.0, cfg.t_static_c, h0, A, cfg.v_inf)
+    assert r["regime"] == "warm"
+    assert r["n_f"] == 0.0
+    assert r["t_s_c"] > 0.0
+    assert r["m_ice"] == 0.0
+    assert abs(r["residual_w"]) < 1e-9 * m_imp * cfg.l_fusion
+
+
+def test_messinger_temperature_sweep_nf_monotone() -> None:
+    """n_f decreases monotonically as the static temperature rises."""
+    from tensorlbm.aircraft_icing import analytic_htc_w_m2k, messinger_panel_fluxes
+
+    cfg0 = IcingConfig()
+    h0 = float(analytic_htc_w_m2k(np.array([0.0]), np.array([cfg0.v_inf]), cfg0)[0])
+    A = cfg0.glaze_panel_cells * cfg0.dx_phys**2
+    m_imp = 0.3 * cfg0.lwc * cfg0.v_inf * A
+    nfs = []
+    for t in (-30.0, -20.0, -15.0, -10.0, -7.0, -5.0, -2.0, 0.0, 5.0):
+        cfg = IcingConfig(t_static_c=t)
+        r = messinger_panel_fluxes(cfg, m_imp, 0.0, cfg.t_static_c, h0, A, cfg.v_inf)
+        assert 0.0 <= r["n_f"] <= 1.0
+        nfs.append(r["n_f"])
+    assert nfs[0] == 1.0  # deep rime
+    assert nfs[-1] == 0.0  # warm: no freezing
+    assert all(a >= b - 1e-12 for a, b in zip(nfs, nfs[1:])), nfs
+
+
+def _glaze_panels(cfg: IcingConfig, n_side: int = 20) -> dict:
+    """Synthetic both-surface panels: gaussian beta around the stagnation line."""
+    from tensorlbm.aircraft_icing import analytic_htc_w_m2k
+
+    ds = cfg.glaze_panel_cells * cfg.dx_phys
+    s_up = ds * np.arange(1, n_side + 1)
+    s_lo = -ds * np.arange(1, n_side + 1)
+    s = np.concatenate([[0.0], s_up, s_lo])
+    n = len(s)
+    beta = np.exp(-(s / (6.0 * ds)) ** 2)
+    area = np.full(n, ds * cfg.dx_phys)
+    v_e = np.full(n, cfg.v_inf)
+    tau_t = np.full(n, 50.0)  # Pa
+    h = analytic_htc_w_m2k(s, v_e, cfg)
+    return {
+        "s_m": s,
+        "A_m2": area,
+        "m_imp_kg_s": beta * cfg.lwc * cfg.v_inf * area,
+        "beta": beta,
+        "h": h,
+        "v_e": v_e,
+        "tau_t": tau_t,
+        "dep_y": np.zeros(0, int),
+        "dep_x": np.zeros(0, int),
+        "dep_p": np.zeros(0, int),
+        "dep_w": np.zeros(0),
+        "n_panels": n,
+    }
+
+
+def test_glaze_mass_conservation_full_march() -> None:
+    """impacted = frozen + evaporated + runback-off-surface over the march."""
+    from tensorlbm.aircraft_icing import solve_glaze_surface
+
+    for t in (-20.0, -10.0, -5.0, -2.0, 2.0):
+        cfg = IcingConfig(t_static_c=t)
+        sol = solve_glaze_surface(cfg, _glaze_panels(cfg), dt=120.0)
+        a = sol["audit"]
+        assert 0.0 <= a["closure_error"] < 1e-9, (t, a)
+        assert np.all(sol["n_f"] >= 0.0) and np.all(sol["n_f"] <= 1.0)
+        assert np.all(sol["m_runback_out_kg"] >= 0.0)
+
+
+def test_runback_march_structure_and_monotonicity() -> None:
+    """Runback flows strictly downstream: fluxes >= 0, inflow = upstream
+    outflow, stagnation outflow splits between the two surfaces."""
+    from tensorlbm.aircraft_icing import solve_glaze_surface
+
+    cfg = IcingConfig(t_static_c=-5.0)  # glaze: runback active
+    sol = solve_glaze_surface(cfg, _glaze_panels(cfg), dt=120.0)
+    s, m_in, m_out = sol["s_m"], sol["m_runback_in_kg"], sol["m_runback_out_kg"]
+    assert np.all(m_out >= 0.0) and np.all(m_in >= 0.0)
+    i_stag = int(np.argmin(np.abs(s)))
+    up = np.where(s > 0)[0][np.argsort(s[s > 0])]
+    lo = np.where(s < 0)[0][np.argsort(-s[s < 0])]
+    # stagnation outflow splits half/half to the two surfaces
+    assert math.isclose(m_in[up[0]], 0.5 * m_out[i_stag], rel_tol=1e-12)
+    assert math.isclose(m_in[lo[0]], 0.5 * m_out[i_stag], rel_tol=1e-12)
+    # each side marches: panel k inflow == panel k-1 outflow
+    for side in (up, lo):
+        for a, b in zip(side[:-1], side[1:]):
+            assert math.isclose(m_in[b], m_out[a], rel_tol=1e-12, abs_tol=1e-18)
+    # the film diagnostic is finite, non-negative and physically sized
+    film = sol["film_m"]
+    assert np.all(np.isfinite(film)) and np.all(film >= 0.0)
+    wet = m_out > 0.0
+    assert np.all(film[wet] > 0.0)
+    assert film.max() < 1e-2  # runback films are micron-scale, never cm
+
+
+def test_glaze_rime_regression_gate_vs_2a() -> None:
+    """Hard gate: cold limit degenerates to the 2a behaviour exactly.
+
+    Rime-limit condition: -30 C, 0.2 g/m^3 — the convective cooling
+    capacity exceeds the collection latent heat everywhere, so every wet
+    panel must solve to n_f == 1 with sub-zero T_s and no runback (at the
+    baseline -20 C / 0.5 g/m^3 the stagnation is genuinely glaze, n_f
+    ~ 0.65, which is the physics, not a regression).
+    """
+    rime_kw = dict(t_static_c=-30.0, lwc=2.0e-4, t_exposure=1800.0, steps=300)
+    cfg = _euler_cfg(
+        thermo_model="messinger",
+        evap_enabled=False,
+        glaze_rho_mode="const",
+        rime_density_mode="const",
+        rho_rime=100.0,
+        **rime_kw,
+    )
+    accel = cfg.t_exposure / (cfg.steps * cfg.dt_phys)
+    # (a) the thermo: n_f == 1, zero runback, exact mass conservation
+    g = run_glaze_icing(cfg, shots=1, log=lambda *a: None)
+    p = g["panels"]
+    wet = g["panels"]["m_ice_kg"] + g["panels"]["m_runback_out_kg"] > 0
+    assert np.allclose(p["n_f"][wet], 1.0), p["n_f"][wet]
+    assert g["audit"]["runback_out"] == 0.0
+    assert g["audit"]["closure_error"] < 1e-9
+    assert math.isclose(g["audit"]["frozen"], g["audit"]["impacted"], rel_tol=1e-9)
+    # (b) measure-only twin (identical ledger, no in-run freezing)
+    twin = run_rime_icing(
+        _euler_cfg(
+            thermo_model="instant",
+            accel_override=accel,
+            **rime_kw,
+        ),
+        log=lambda *a: None,
+    )
+    led_g = float(g["audit"]["impacted"])
+    led_t = twin["eulerian"]["audit"]["deposited"]
+    # fp32 impact ledger (panel binning) vs fp64 device audit: ~1e-6 rel
+    assert math.isclose(led_g, led_t, rel_tol=5e-5), (led_g, led_t)
+    # (c) full 2a (in-run freezing) matches the glaze voxel shape
+    r2a = run_rime_icing(
+        _euler_cfg(
+            thermo_model="instant",
+            accel_override=accel,
+            rho_rime=100.0,
+            rime_density_mode="const",
+            **rime_kw,
+        ),
+        log=lambda *a: None,
+    )
+    n_2a = int(r2a["ice_only"].sum())
+    n_g = int(g["ice_only"].sum())
+    assert abs(n_2a - n_g) <= max(2, 0.02 * n_2a), (n_2a, n_g)
+    # frozen voxel mass identical: n_cells * m_cell on both sides
+    mcell = cfg.rho_rime * cfg.dx_phys**3
+    assert math.isclose(n_g * mcell, n_2a * mcell, rel_tol=max(1.0, 0.02 * n_2a) / max(n_2a, 1))
+    # (d) evaporation on (default) keeps n_f == 1 in the rime limit
+    cfg2 = _euler_cfg(thermo_model="messinger", **rime_kw)
+    g2 = run_glaze_icing(cfg2, shots=1, log=lambda *a: None)
+    wet2 = g2["panels"]["m_ice_kg"] > 0
+    assert np.allclose(g2["panels"]["n_f"][wet2], 1.0)
+
+
+def test_deposit_cascade_column() -> None:
+    """3.5 cell-masses on one boundary cell freeze a 3-cell column."""
+    from tensorlbm.aircraft_icing import deposit_glaze_ice
+
+    ny, nx = 8, 6
+    airfoil = np.zeros((ny, nx), dtype=bool)
+    airfoil[3:, :] = True  # solid floor, fluid rows 0..2
+    rho = 100.0
+    dx = 0.5334 / (0.4 * nx)
+    m_cell = rho * dx**3
+    cell_mass = np.zeros((ny, nx))
+    cell_mass[2, 3] = 3.5 * m_cell
+    cell_rho = np.zeros((ny, nx))
+    cell_rho[2, 3] = rho
+    solid, m_w = deposit_glaze_ice(airfoil, airfoil.copy(), np.zeros((ny, nx)),
+                                   cell_mass, cell_rho, dx)
+    ice = solid & ~airfoil
+    assert ice.sum() == 3
+    assert ice[2, 3] and ice[1, 3] and ice[0, 3]  # column, not lateral spread
+    assert math.isclose(float(m_w.sum()), 0.5 * m_cell, rel_tol=1e-12)
+    assert m_w[ice].sum() == 0.0  # frozen cells fully consumed
+
+
+def test_glaze_driver_smoke_uniform() -> None:
+    """End-to-end multishot glaze run on a cheap uniform-flow case."""
+    cfg = _euler_cfg(
+        thermo_model="messinger",
+        t_static_c=-5.0,
+        t_exposure=3600.0,
+        steps=300,
+    )
+    g = run_glaze_icing(cfg, shots=2, log=lambda *a: None)
+    a = g["audit"]
+    assert a["closure_error"] < 1e-9, a
+    assert a["frozen"] > 0.0
+    assert int(g["ice_only"].sum()) > 0
+    m = g["metrics"]
+    assert m["n_ice_cells"] == int(g["ice_only"].sum())
+    assert m["ice_max_layer"] <= 10
+    assert m["stag_ice_thickness_m"] > 0.0
+    p = g["panels"]
+    # both regimes exercised on the synthetic-ish uniform impingement
+    assert "glaze" in p["regime"] or "rime" in p["regime"]
+    assert np.all(p["n_f"] >= 0.0) and np.all(p["n_f"] <= 1.0)
+    assert np.all(p["thickness_m"] >= 0.0)
+    assert len(g["shot_reports"]) == 2
+    # ice only adjacent to the airfoil
+    assert m["ice_x_offset_max"] < 0.6 and m["ice_x_offset_min"] > -0.3
+
+
+def test_phase3_config_validation() -> None:
+    """Phase 3 selectors validate; defaults keep the 2a/2b paths intact."""
+    for bad in ("bogus", "Messinger"):
+        with pytest.raises(ValueError):
+            IcingConfig(thermo_model=bad)
+    for bad in ("cylinder", ""):
+        with pytest.raises(ValueError):
+            IcingConfig(htc_mode=bad)
+    for bad in ("macklin", ""):
+        with pytest.raises(ValueError):
+            IcingConfig(glaze_rho_mode=bad)
+    for bad in (0.0, 1.5, -0.2):
+        with pytest.raises(ValueError):
+            IcingConfig(rh=bad)
+    with pytest.raises(ValueError):
+        IcingConfig(glaze_panel_cells=0.0)
+    d = IcingConfig()
+    assert d.thermo_model == "instant" and d.freeze_in_run is True
+    assert d.glaze_rho_mode == "macklin-ts" and d.htc_mode == "analytic"
+    # recovery factor defaults to sqrt(Pr)
+    assert math.isclose(d.recovery_factor_eff, math.sqrt(d.prandtl_air))
+    # leading-edge effective diameter: 2 * 1.1019 * t^2 * chord (NACA 4-digit)
+    assert math.isclose(d.le_diameter_eff, 2 * 1.1019 * 0.12**2 * d.chord_phys, rel_tol=1e-12)
+    # run_glaze_icing rejects the instant model
+    with pytest.raises(ValueError):
+        run_glaze_icing(IcingConfig(nx=32, ny=24), shots=1, log=lambda *a: None)

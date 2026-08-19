@@ -181,13 +181,49 @@ adds, in the same module:
   a ~4.6x faster relaxation than Stokes).  The default ``"stokes"``
   keeps Phase 2a trajectories unchanged; both phases always use the
   *same* law so cross-validation stays meaningful.
+
+Phase 3: Messinger glaze thermodynamics + thin-film runback
+-----------------------------------------------------------
+``thermo_model="messinger"`` + :func:`run_glaze_icing` add the glaze
+(wet-ice) regime on top of the unchanged Phase 2a/2b machinery, in the
+industry-standard multishot sequence (aero -> impingement beta ->
+surface thermodynamics -> geometry update, repeated):
+
+* **Surface energy balance** (:func:`messinger_panel_fluxes`): per
+  arc-length panel, the Messinger control volume with convective heat
+  transfer (Frossling stagnation value with a cylinder-equivalent
+  laminar decay and a turbulent flat-plate envelope, or the
+  Reynolds/Chilton-Colburn analogy from the sampled LBM wall shear),
+  evaporative cooling (Lewis analogy, saturation over ice below 0 C),
+  impingement sensible + kinetic heating and the latent heat of
+  freezing; solved in the classical two-regime way for the film
+  temperature ``T_s`` and the freezing fraction ``n_f`` (rime:
+  ``n_f = 1``, ``T_s < 0``; glaze: ``T_s = 0``, ``n_f < 1``).
+* **Runback** (:func:`solve_glaze_surface`): the unfrozen fraction
+  leaves each panel as a film and feeds the next panel downstream
+  (mass-flux "overflow" model, marching away from the stagnation panel
+  whose outflow splits between the two surfaces); a steady
+  shear-driven Myers film thickness ``h_f = sqrt(2 mu_w q / tau_t)``
+  is reported as a diagnostic.
+* **Glaze ice shape** (:func:`deposit_glaze_ice`): the frozen mass is
+  credited to the panel's deposit cells (impact-share weights) and
+  freezes column-by-column outward from the surface with the local ice
+  density (Macklin at the *Messinger* surface temperature -> 917 kg/m^3
+  in the glaze limit), so the classic features appear: a thinner water
+  cap at the stagnation line with runback ice horns downstream.
+* **Regression guarantee**: the rime limit (cold / small LWC) gives
+  ``n_f = 1`` with zero runback, and the deposit reproduces the Phase
+  2a voxel shape from the same ledger.  The droplet/flow run stays
+  LWC-accelerated (exact for beta); the acceleration is pinned per shot
+  so the ledger equals ``dt_shot`` of *physical* exposure and the
+  thermodynamics always runs at the physical LWC.
 """
 
 from __future__ import annotations
 
 import math
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from heapq import heappop, heappush
 from typing import Any
 
@@ -212,6 +248,14 @@ __all__ = [
     "rime_density_macklin",
     "rime_density_jones",
     "eulerian_mass_audit_report",
+    "saturation_vapor_pressure_pa",
+    "analytic_htc_w_m2k",
+    "analytic_tau_pa",
+    "messinger_panel_fluxes",
+    "build_surface_panels",
+    "solve_glaze_surface",
+    "deposit_glaze_ice",
+    "run_glaze_icing",
 ]
 
 
@@ -282,6 +326,40 @@ class IcingConfig:
     drag_law: str = "stokes"  # "stokes" (2a) | "schiller-naumann"
     shadow_alpha_frac: float = 1e-3  # shadow threshold as fraction of alpha_in
 
+    # --- Phase 3 additions (glaze Messinger thermodynamics; defaults keep
+    #     the Phase 2a/2b paths byte-identical) ---
+    # Surface thermodynamics selector: "instant" is the Phase 2a/2b
+    # everything-freezes-on-impact model; "messinger" routes the surface
+    # energetics through the Phase 3 balance (run_glaze_icing).
+    thermo_model: str = "instant"  # "instant" | "messinger"
+    # False: measure impacts only (the freezer never fires in-run) — used by
+    # the glaze multishot driver; True is the exact 2a/2b behaviour.
+    freeze_in_run: bool = True
+    # Convective heat-transfer correlation: "analytic" = Frossling
+    # stagnation value with a cylinder-equivalent laminar decay and a
+    # turbulent flat-plate envelope; "shear" = Reynolds/Chilton-Colburn
+    # analogy from the LBM wall shear (Frossling floor near the
+    # stagnation line, where tau_w -> 0 breaks the analogy).
+    htc_mode: str = "analytic"  # "analytic" | "shear"
+    glaze_panel_cells: float = 1.0  # arc-length panel width for the thermo [cells]
+    # Ice density used by the glaze deposit: "macklin-ts" = Macklin with the
+    # *Messinger* surface temperature (-> 917 kg/m^3 in the glaze limit,
+    # matches 2a in the rime limit); "const" = cfg.rho_rime.
+    glaze_rho_mode: str = "macklin-ts"  # "macklin-ts" | "const"
+    rh: float = 1.0  # cloud relative humidity (evaporation term)
+    evap_enabled: bool = True
+    p_static: float = 101325.0  # ambient pressure [Pa]
+    recovery_factor: float | None = None  # None -> sqrt(Pr) (laminar)
+    le_diameter: float | None = None  # None -> 2*1.1019*t^2*chord (NACA LE)
+    # thermophysical constants (SI)
+    cp_water: float = 4184.0  # J/kg/K
+    cp_air: float = 1005.0  # J/kg/K
+    l_fusion: float = 3.34e5  # J/kg
+    l_vapor: float = 2.501e6  # J/kg
+    prandtl_air: float = 0.71
+    k_air: float = 0.0235  # W/m/K (analytic htc only)
+    mu_water: float = 1.79e-3  # Pa s at 0 C (runback film diagnostic)
+
     def __post_init__(self) -> None:
         if self.droplet_phase not in ("lagrangian", "eulerian", "both"):
             raise ValueError(
@@ -303,6 +381,21 @@ class IcingConfig:
             raise ValueError(f"re_lu_target must be > 0; got {self.re_lu_target}")
         if self.shadow_alpha_frac < 0.0:
             raise ValueError(f"shadow_alpha_frac must be >= 0; got {self.shadow_alpha_frac}")
+        # --- Phase 3 ---
+        if self.thermo_model not in ("instant", "messinger"):
+            raise ValueError(
+                f"thermo_model must be 'instant' or 'messinger'; got {self.thermo_model!r}"
+            )
+        if self.htc_mode not in ("analytic", "shear"):
+            raise ValueError(f"htc_mode must be 'analytic' or 'shear'; got {self.htc_mode!r}")
+        if self.glaze_rho_mode not in ("macklin-ts", "const"):
+            raise ValueError(
+                f"glaze_rho_mode must be 'macklin-ts' or 'const'; got {self.glaze_rho_mode!r}"
+            )
+        if not 0.0 < self.rh <= 1.0:
+            raise ValueError(f"rh must be in (0, 1]; got {self.rh!r}")
+        if self.glaze_panel_cells <= 0.0:
+            raise ValueError(f"glaze_panel_cells must be > 0; got {self.glaze_panel_cells!r}")
 
     # ------------------------------------------------------------------
     # lattice-side derived quantities
@@ -483,6 +576,23 @@ class IcingConfig:
             return 0.0
         return self.rho_air * (self.dx_phys / self.dt_phys) * self.mvd / self.mu_air
 
+    # ------------------------------------------------------------------
+    # Phase 3: glaze thermodynamics derived quantities
+    @property
+    def recovery_factor_eff(self) -> float:
+        """Thermal recovery factor r (laminar sqrt(Pr) by default)."""
+        return math.sqrt(self.prandtl_air) if self.recovery_factor is None else self.recovery_factor
+
+    @property
+    def le_diameter_eff(self) -> float:
+        """Effective leading-edge cylinder diameter [m] (Frossling htc).
+
+        NACA 4-digit leading-edge radius ``r_le = 1.1019 * t^2 * chord``.
+        """
+        if self.le_diameter is not None:
+            return self.le_diameter
+        return 2.0 * 1.1019 * self.naca_t**2 * self.chord_phys
+
     def mapping_report(self) -> dict[str, Any]:
         """All mapping/physics numbers in one dictionary (printed + JSON)."""
         return {
@@ -533,6 +643,16 @@ class IcingConfig:
             "rho_air": self.rho_air,
             "alpha_in": self.alpha_in,
             "shadow_alpha_min": self.shadow_alpha_min,
+            # --- Phase 3 ---
+            "thermo_model": self.thermo_model,
+            "freeze_in_run": self.freeze_in_run,
+            "htc_mode": self.htc_mode,
+            "glaze_rho_mode": self.glaze_rho_mode,
+            "glaze_panel_cells": self.glaze_panel_cells,
+            "rh": self.rh,
+            "evap_enabled": self.evap_enabled,
+            "le_diameter_eff": self.le_diameter_eff,
+            "recovery_factor_eff": self.recovery_factor_eff,
         }
 
 
@@ -1473,6 +1593,72 @@ class RimeIcingSimulation:
         self.mx = self.mx * keep
         self.my = self.my * keep
 
+    # -- Phase 3: surface stress / edge-velocity sampling -----------------
+    def sample_surface_stress(self) -> dict[str, np.ndarray]:
+        """Per-surface-cell wall shear and outer velocity (physical units).
+
+        Runs one extra force-probe flow step: the post-stream / pre-bounce
+        state ``f_pre`` against the post-bounce-back state gives the
+        momentum-exchange force on every surface cell (the same convention
+        as :meth:`_force_coeffs`, resolved per cell instead of summed).
+        Unit mapping for the 2-D slab: a lattice force corresponds to
+        ``F_phys = F_lu * rho_air * dx**4 / dt**2`` per cell face area
+        ``dx**2``, i.e. ``tau [Pa] = F_lu * rho_air * (dx/dt)**2``; the
+        edge velocity is the mean flow speed over the fluid 4-neighbours,
+        ``v_e [m/s] = |u|_lu * dx/dt``.
+
+        Returns CPU numpy fields ``v_e`` (0 on solid), ``tau_t`` and
+        ``tau_mag`` (Pa, >= 0).  In ``uniform_flow`` runs the momentum
+        exchange vanishes (no boundary layer) and only ``v_e`` is
+        meaningful — the analytic htc does not need the shear.
+        """
+        f_pre = self._flow_step(want_force=True)
+        df = f_pre - self.f
+        surf = self.solid & _dilate4(~self.solid)
+        w = surf[None, None].float()
+        c = C.to(self.dev).float()
+        fx = (df * w * c[:, 0].view(19, 1, 1, 1)).sum(dim=(0, 1))
+        fy = (df * w * c[:, 1].view(19, 1, 1, 1)).sum(dim=(0, 1))
+
+        # edge velocity: mean |u| over fluid 4-neighbours of surface cells
+        _, ux3, uy3, _ = macroscopic3d(self.f)
+        vmag = torch.sqrt(ux3[0] ** 2 + uy3[0] ** 2)
+        fluid = (~self.solid).float()
+        k3 = torch.ones((1, 1, 3, 3), device=self.dev)
+        n_fluid = F.conv2d(fluid[None, None], k3, padding=1)[0, 0]
+        v_sum = F.conv2d((fluid * vmag)[None, None], k3, padding=1)[0, 0]
+        with torch.no_grad():
+            v_e_cell = torch.where(
+                n_fluid > 0, v_sum / n_fluid.clamp_min(1.0), torch.zeros_like(v_sum)
+            )
+        v_e_cell = v_e_cell * surf.float()
+
+        scale_v = self.cfg.dx_phys / self.cfg.dt_phys
+        scale_tau = self.cfg.rho_air * (self.cfg.dx_phys / self.cfg.dt_phys) ** 2
+        fx_np = fx.cpu().numpy()
+        fy_np = fy.cpu().numpy()
+        tau_mag = np.hypot(fx_np, fy_np) * scale_tau
+
+        # tangential component: project the force onto the local surface
+        # plane using the discrete distance-from-airfoil gradient as the
+        # surface normal (voxel faces are axis aligned; per-cell force
+        # direction alone cannot distinguish normal from shear)
+        dist = _bfs_distance_cells(self.airfoil.cpu().numpy())
+        gy, gx = np.gradient(dist.astype(np.float64))
+        gn = np.hypot(gy, gx)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            ny_, nx_ = np.where(gn > 0, gy / np.maximum(gn, 1e-12), 0.0), np.where(
+                gn > 0, gx / np.maximum(gn, 1e-12), 0.0
+            )
+        fn = fx_np * nx_ + fy_np * ny_
+        tau_t = np.abs(np.hypot(fx_np - fn * nx_, fy_np - fn * ny_)) * scale_tau
+        tau_t = np.where(np.isfinite(tau_t), tau_t, 0.0)
+        return {
+            "v_e": (v_e_cell.cpu().numpy() * scale_v),
+            "tau_t": tau_t,
+            "tau_mag": tau_mag,
+        }
+
     # -- main loop -------------------------------------------------------
     def run(self) -> dict[str, Any]:
         cfg = self.cfg
@@ -1551,7 +1737,8 @@ class RimeIcingSimulation:
                 if self.use_euler:
                     self._euler_advance(ux, uy)
                 prev_solid = self.solid.clone() if self.use_euler else None
-                self._freeze()
+                if cfg.freeze_in_run:  # Phase 3: False = measure-only shots
+                    self._freeze()
                 if self.use_euler:
                     self._void_encased(prev_solid)
 
@@ -1729,6 +1916,713 @@ def eulerian_mass_audit_report(result: dict[str, Any]) -> str:
 def run_rime_icing(cfg: IcingConfig, log: Any = print) -> dict[str, Any]:
     """Convenience wrapper: build and run the simulation, return results."""
     return RimeIcingSimulation(cfg, log=log).run()
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Messinger surface energy balance + thin-film runback (glaze)
+# ---------------------------------------------------------------------------
+def saturation_vapor_pressure_pa(t_c: float, over_ice: bool | None = None) -> float:
+    """Saturation vapour pressure [Pa] (Magnus form, e in Pa, T in C).
+
+    Liquid-water branch (Alduchov & Eskridge 1996, a = 17.625,
+    b = 243.04) with an ice branch below 0 C (a = 22.46, b = 272.62);
+    both meet at 611 Pa at 0 C.  ``over_ice=None`` auto-selects (ice for
+    T < 0).  Checks: e_w(-10) = 286.8 Pa, e_i(-10) = 259.9 Pa,
+    e_w(20) = 2334 Pa.
+    """
+    if over_ice is None:
+        over_ice = t_c < 0.0
+    if over_ice and t_c < 0.0:
+        a, b = 22.46, 272.62
+    else:
+        a, b = 17.625, 243.04
+    return 610.94 * math.exp(a * t_c / (b + t_c))
+
+
+def analytic_htc_w_m2k(
+    s_m: np.ndarray, v_e_m: np.ndarray, cfg: IcingConfig
+) -> np.ndarray:
+    """Analytic convective heat-transfer coefficient along the arc [W/m^2 K].
+
+    * stagnation line: Frossling cylinder correlation
+      ``h = 1.14 k/d Re_d^0.5 Pr^0.4`` with the NACA leading-edge
+      effective diameter;
+    * laminar decay away from the leading edge via the classic
+      cylinder-equivalent form ``h_stag * (d/(d+2s))^0.5`` (asymptotic
+      s^-0.5);
+    * turbulent flat plate with running length (Chilton-Colburn,
+      ``Nu = 0.0287 Re_s^0.8 Pr^(1/3)``), capped by the stagnation value,
+      taking over downstream where it exceeds the laminar decay.
+
+    This is the simplified Smith-Spalding-class envelope used by the
+    ``htc_mode="analytic"`` default (the shear-based mode is the
+    Reynolds-analogy alternative); the envelope decays monotonically
+    from the stagnation value, which is what sets the freezing fraction.
+    """
+    s = np.maximum(np.abs(np.asarray(s_m, dtype=np.float64)), 1e-6)
+    d = cfg.le_diameter_eff
+    rho, mu, k, pr = cfg.rho_air, cfg.mu_air, cfg.k_air, cfg.prandtl_air
+    re_d = rho * cfg.v_inf * d / mu
+    h_stag = 1.14 * k / d * re_d**0.5 * pr**0.4
+    h_lam = h_stag * np.sqrt(d / (d + 2.0 * s))
+    re_s = rho * np.maximum(np.asarray(v_e_m, dtype=np.float64), 1e-3) * s / mu
+    h_turb = 0.0287 * k * re_s**0.8 * pr ** (1.0 / 3.0) / s
+    return np.maximum(h_lam, np.minimum(h_turb, h_stag))
+
+
+def analytic_tau_pa(s_m: np.ndarray, v_e_m: np.ndarray, cfg: IcingConfig) -> np.ndarray:
+    """Analytic wall shear along the arc [Pa] for the film diagnostic.
+
+    Local turbulent flat-plate value ``tau = 0.0592 Re_s^(-1/5) rho V_e^2/2``
+    with a stagnation taper ``(1 - exp(-2|s|/d_le))`` so the shear vanishes
+    at the stagnation line (Hiemenz behaviour) and reaches the flat-plate
+    value within ~half a leading-edge diameter.  Used with the default
+    ``htc_mode="analytic"``: the sampled momentum-exchange shear
+    (:meth:`RimeIcingSimulation.sample_surface_stress`) is exact for the
+    *lattice* Reynolds number the flow actually runs at, not the physical
+    one, and would bias the Myers film thickness.
+    """
+    s = np.maximum(np.abs(np.asarray(s_m, dtype=np.float64)), 1e-6)
+    v = np.maximum(np.asarray(v_e_m, dtype=np.float64), 1e-3)
+    rho, mu = cfg.rho_air, cfg.mu_air
+    re_s = rho * v * s / mu
+    tau_fp = 0.0592 * re_s ** (-0.2) * 0.5 * rho * v**2
+    taper = 1.0 - np.exp(-2.0 * s / max(cfg.le_diameter_eff, 1e-9))
+    return tau_fp * taper
+
+
+def messinger_panel_fluxes(
+    cfg: IcingConfig,
+    m_imp: float,
+    m_in: float,
+    t_in_c: float,
+    h: float,
+    area: float,
+    v_e: float,
+) -> dict[str, Any]:
+    """Messinger control volume on one surface panel (all fluxes kg/s).
+
+    Energy balance on the surface film at temperature ``T_s`` (water
+    reference 0 C, steady state, per unit time)::
+
+        m_ice L_f = h A (T_s - T_rec) + m_evap L_v
+                    - m_imp cp_w (T_inf - T_s) - m_in cp_w (T_in - T_s)
+                    - m_imp V_inf^2 / 2
+
+    with ``T_rec = T_inf + r V_e^2/(2 cp_air)`` (r = sqrt(Pr)) and the
+    Chilton-Colburn / Lewis evaporation mass flux::
+
+        m_evap = (h A / cp_air) * 0.622 * max(0, e_sat(T_s) - e_inf) / p
+
+    (surface branch over ice below 0 C, ambient over the liquid-water
+    curve at the cloud relative humidity).  The balance is solved in the
+    classical two-regime way: ``m_ice(T_s)`` is strictly increasing in
+    ``T_s`` while the available water ``m_w - m_evap(T_s)`` decreases, so
+
+    * ``m_ice(0) > avail(0)``  -> rime: n_f = 1, all available water
+      freezes, T_s < 0 from the bisection root;
+    * ``0 <= m_ice(0) <= avail(0)`` -> glaze: T_s = 0 C, n_f < 1, the
+      unfrozen remainder runs back downstream;
+    * ``m_ice(0) < 0`` -> warm: n_f = 0, T_s > 0, everything available
+      runs back.
+
+    Returns a dict with ``t_s_c, m_ice, m_evap, m_out, n_f, regime,
+    residual_w``; ``n_f = m_ice / (m_w - m_evap)`` is the freezing
+    fraction of the water actually available for freezing/runback.
+    """
+    r_rec = cfg.recovery_factor_eff
+    t_inf = cfg.t_static_c
+    t_rec = t_inf + r_rec * v_e**2 / (2.0 * cfg.cp_air)
+    e_inf = cfg.rh * saturation_vapor_pressure_pa(t_inf, over_ice=False)
+
+    def m_evap_of(ts: float) -> float:
+        if not cfg.evap_enabled:
+            return 0.0
+        de = saturation_vapor_pressure_pa(ts) - e_inf
+        if de <= 0.0:
+            return 0.0
+        return (h * area / cfg.cp_air) * 0.622 * de / cfg.p_static
+
+    def m_ice_of(ts: float) -> float:
+        return (
+            h * area * (ts - t_rec)
+            + m_evap_of(ts) * cfg.l_vapor
+            - m_imp * cfg.cp_water * (t_inf - ts)
+            - m_in * cfg.cp_water * (t_in_c - ts)
+            - m_imp * cfg.v_inf**2 / 2.0
+        ) / cfg.l_fusion
+
+    def bisect(f: Any, lo: float, hi: float, it: int = 100) -> float:
+        flo = f(lo)
+        for _ in range(it):
+            mid = 0.5 * (lo + hi)
+            fm = f(mid)
+            if (fm > 0.0) == (flo > 0.0):
+                lo, flo = mid, fm
+            else:
+                hi = mid
+        return 0.5 * (lo + hi)
+
+    m_w = m_imp + m_in
+    if m_w <= 0.0:
+        return {
+            "t_s_c": t_rec,
+            "m_ice": 0.0,
+            "m_evap": 0.0,
+            "m_out": 0.0,
+            "n_f": 0.0,
+            "regime": "dry",
+            "residual_w": 0.0,
+        }
+
+    m0_ice = m_ice_of(0.0)
+    m0_evap = m_evap_of(0.0)
+    avail0 = m_w - m0_evap
+
+    if avail0 <= 0.0:
+        # evaporation alone consumes the inflow (nothing freezes, nothing
+        # runs back); n_f := 0 by the available-water convention
+        t_s, m_ice, m_evap, m_out, n_f, regime = 0.0, 0.0, min(m_w, m0_evap), 0.0, 0.0, "evap"
+    elif m0_ice > avail0:
+        # rime: freeze everything available, surface below 0 C
+        t_s = bisect(lambda ts: m_ice_of(ts) - (m_w - m_evap_of(ts)), t_inf - 5.0, 0.0)
+        m_evap = m_evap_of(t_s)
+        m_ice = max(m_w - m_evap, 0.0)
+        m_out, n_f, regime = 0.0, 1.0, "rime"
+    elif m0_ice < 0.0:
+        # warm: no freezing, film above 0 C, all available water runs back
+        hi = max(t_inf, 0.0) + 10.0
+        while m_ice_of(hi) <= 0.0 and hi < 400.0:
+            hi *= 2.0
+        t_s = bisect(m_ice_of, 0.0, hi)
+        m_evap = m_evap_of(t_s)
+        m_ice, n_f, regime = 0.0, 0.0, "warm"
+        m_out = max(m_w - m_evap, 0.0)
+    else:
+        # glaze: T_s pinned at 0 C, partial freezing, remainder runs back
+        t_s, m_ice, m_evap = 0.0, m0_ice, m0_evap
+        m_out = avail0 - m_ice
+        n_f = m_ice / avail0 if avail0 > 0.0 else 0.0
+        regime = "glaze"
+
+    residual = m_ice * cfg.l_fusion - (
+        h * area * (t_s - t_rec)
+        + m_evap * cfg.l_vapor
+        - m_imp * cfg.cp_water * (t_inf - t_s)
+        - m_in * cfg.cp_water * (t_in_c - t_s)
+        - m_imp * cfg.v_inf**2 / 2.0
+    )
+    return {
+        "t_s_c": t_s,
+        "m_ice": m_ice,
+        "m_evap": m_evap,
+        "m_out": m_out,
+        "n_f": n_f,
+        "regime": regime,
+        "residual_w": residual,
+    }
+
+
+def build_surface_panels(
+    cfg: IcingConfig,
+    s_grid: np.ndarray,
+    impact_mass: np.ndarray,
+    solid: np.ndarray,
+    stress: dict[str, np.ndarray],
+    t_window: float,
+    lwc_accel: float,
+) -> dict[str, Any]:
+    """Bin the surface into arc-length panels with impingement flux + htc.
+
+    Three cell families are mapped onto the arc coordinate ``s_grid``
+    (cells, signed from the stagnation cell, positive on the upper
+    surface): the *impact ledger* cells (fluid), the *deposit targets*
+    (fluid cells adjacent to the current solid, plus the impact cells)
+    and the *surface cells* (solid boundary, carrying the sampled edge
+    velocity and wall shear).  Panel id = round(s / glaze_panel_cells).
+
+    The physical impingement rate per panel is the ledger mass divided by
+    the lattice window time *and* the LWC acceleration — the acceleration
+    cancels exactly, so ``m_imp`` is the real-LWC flux.  ``beta`` is the
+    diagnostic normalisation against ``LWC V A`` with the panel area from
+    its deposit-cell count.
+    """
+    w = cfg.glaze_panel_cells
+    dx = cfg.dx_phys
+    ny, nx = solid.shape
+
+    imp_y, imp_x = np.nonzero(impact_mass > 0)
+    m_imp_cells = impact_mass[imp_y, imp_x] if len(imp_y) else np.zeros(0)
+    p_imp = np.rint(s_grid[imp_y, imp_x] / w).astype(int) if len(imp_y) else np.zeros(0, int)
+
+    bf = ~solid & _dilate4(torch.from_numpy(solid)).numpy()
+    sf = solid & _dilate4(torch.from_numpy(~solid)).numpy()
+
+    # deposit targets: boundary fluid cells union impact cells (unique set —
+    # a cell that is both an impact cell and boundary-adjacent must appear
+    # exactly once or the per-cell credit/density double-counts)
+    dep_mask = bf.copy()
+    dep_mask[imp_y, imp_x] = True
+    dep_y, dep_x = np.nonzero(dep_mask)
+    p_dep = np.rint(s_grid[dep_y, dep_x] / w).astype(int) if len(dep_y) else np.zeros(0, int)
+
+    sf_y, sf_x = np.nonzero(sf)
+    p_sf = np.rint(s_grid[sf_y, sf_x] / w).astype(int) if len(sf_y) else np.zeros(0, int)
+
+    ids = np.unique(np.concatenate([p_imp, p_dep, p_sf]).astype(int))
+    n = len(ids)
+    empty: dict[str, Any] = {
+        "s_m": np.zeros(0), "A_m2": np.zeros(0), "m_imp_kg_s": np.zeros(0),
+        "beta": np.zeros(0), "h": np.zeros(0), "v_e": np.zeros(0),
+        "tau_t": np.zeros(0), "dep_y": np.zeros(0, int), "dep_x": np.zeros(0, int),
+        "dep_p": np.zeros(0, int), "dep_w": np.zeros(0), "n_panels": 0,
+    }
+    if n == 0:
+        return empty
+
+    ii = np.searchsorted(ids, p_imp)
+    di = np.searchsorted(ids, p_dep)
+    si = np.searchsorted(ids, p_sf)
+
+    m_ledger = np.zeros(n)
+    np.add.at(m_ledger, ii, m_imp_cells)
+    n_dep = np.zeros(n, dtype=int)
+    np.add.at(n_dep, di, 1)
+    s_sum = np.zeros(n)
+    np.add.at(s_sum, di, s_grid[dep_y, dep_x] if len(dep_y) else np.zeros(0))
+    n_sf = np.zeros(n, dtype=int)
+    np.add.at(n_sf, si, 1)
+    v_sum = np.zeros(n)
+    if len(sf_y):
+        np.add.at(v_sum, si, stress["v_e"][sf_y, sf_x])
+    tau_sum = np.zeros(n)
+    if len(sf_y):
+        np.add.at(tau_sum, si, stress["tau_t"][sf_y, sf_x])
+
+    # the deposit set (unique union of boundary-fluid and impact cells)
+    # already contains every impact cell, so it is used directly — no
+    # second listing of the impact cells, which would double the per-cell
+    # ice density in the driver's np.add.at credit
+    s_m = np.where(n_dep > 0, s_sum / np.maximum(n_dep, 1), ids * w) * dx
+    area = n_dep * dx * dx
+    m_imp_kgs = m_ledger / (t_window * lwc_accel) if (t_window * lwc_accel) > 0 else np.zeros(n)
+    v_e = np.where(n_sf > 0, v_sum / np.maximum(n_sf, 1), cfg.v_inf)
+    tau_sampled = np.where(n_sf > 0, tau_sum / np.maximum(n_sf, 1), 0.0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        beta = np.where(area > 0, m_imp_kgs / (cfg.lwc * cfg.v_inf * area), 0.0)
+
+    h = analytic_htc_w_m2k(s_m, v_e, cfg)
+    tau_t = analytic_tau_pa(s_m, v_e, cfg)
+    if cfg.htc_mode == "shear":
+        # Reynolds analogy St = (c_f/2) Pr^(-2/3) -> h = tau cp Pr^(-2/3)/V,
+        # with the Frossling stagnation value as the floor over the
+        # leading-edge region (tau_w -> 0 at the stagnation line breaks
+        # the analogy there).  The sampled shear belongs to the lattice
+        # Reynolds number, so this mode is a sensitivity check, not the
+        # default.
+        tau_t = tau_sampled
+        h_shear = tau_t * cfg.cp_air * cfg.prandtl_air ** (-2.0 / 3.0) / np.maximum(v_e, 1e-3)
+        floor = np.where(np.abs(s_m) <= 0.5 * cfg.le_diameter_eff, h, 0.0)
+        h = np.maximum(h_shear, floor)
+
+    # deposit weights: impact-share where the panel collects water,
+    # uniform otherwise (runback ice accretes over the whole panel).
+    # The deposit set contains every impact cell exactly once, so the
+    # per-panel impact mass held by deposit cells equals the ledger and
+    # the weights sum to one per panel.
+    pj = np.searchsorted(ids, p_dep)
+    dep_imp = np.where(
+        impact_mass[dep_y, dep_x] > 0.0,
+        impact_mass[dep_y, dep_x],
+        0.0,
+    )
+    dep_imp_sum = np.zeros(n)
+    np.add.at(dep_imp_sum, pj, dep_imp)
+    wts = np.zeros(len(dep_y))
+    ok = dep_imp_sum[pj] > 0.0
+    wts[ok] = dep_imp[ok] / dep_imp_sum[pj][ok]
+    unif = ~ok
+    wts[unif] = 1.0 / n_dep[pj][unif]
+
+    return {
+        "s_m": s_m,
+        "A_m2": area,
+        "m_imp_kg_s": m_imp_kgs,
+        "beta": beta,
+        "h": h,
+        "v_e": v_e,
+        "tau_t": tau_t,
+        "tau_sampled_pa": tau_sampled,
+        "dep_y": dep_y.astype(int),
+        "dep_x": dep_x.astype(int),
+        "dep_p": pj.astype(int),
+        "dep_w": wts,
+        "n_panels": n,
+    }
+
+
+def solve_glaze_surface(cfg: IcingConfig, panels: dict[str, Any], dt: float) -> dict[str, Any]:
+    """March the Messinger balance + runback from the stagnation panel.
+
+    The panels are ordered away from the stagnation panel (minimum |s|);
+    each panel sees the runback outflow of its upstream neighbour at the
+    upstream film temperature (0 C in the glaze regime).  The stagnation
+    panel's unfrozen water splits equally between the upper and lower
+    surfaces — the mass-flux (LEWICE-style overflow) runback model.  The
+    film thickness diagnostic is the steady shear-driven Myers film
+    ``h_f = sqrt(2 mu_w q / tau_t)`` with the per-unit-span flux
+    ``q = m_out / (rho_w dx)``.
+
+    Mass audit (quasi-steady film, zero storage)::
+
+        impacted = frozen + evaporated + runback_off_surface
+    """
+    n = int(panels.get("n_panels", 0))
+    if n == 0:
+        return {
+            "s_m": np.zeros(0), "n_f": np.zeros(0), "t_s_c": np.zeros(0),
+            "m_ice_kg": np.zeros(0), "m_evap_kg": np.zeros(0),
+            "m_runback_out_kg": np.zeros(0), "m_runback_in_kg": np.zeros(0),
+            "thickness_m": np.zeros(0), "film_m": np.zeros(0),
+            "rho_ice": np.zeros(0), "regime": [],
+            "audit": {"impacted": 0.0, "frozen": 0.0, "evaporated": 0.0,
+                      "runback_out": 0.0, "closure_error": 0.0},
+        }
+    s_m = panels["s_m"]
+    m_imp = panels["m_imp_kg_s"]
+    h, area, v_e, tau_t = panels["h"], panels["A_m2"], panels["v_e"], panels["tau_t"]
+
+    t_s = np.zeros(n)
+    n_f = np.zeros(n)
+    m_ice = np.zeros(n)
+    m_evap = np.zeros(n)
+    m_out = np.zeros(n)
+    m_in = np.zeros(n)
+    regimes: list[str] = []
+    residuals = np.zeros(n)
+
+    i_stag = int(np.argmin(np.abs(s_m)))
+    up = np.array([i for i in range(n) if s_m[i] > 0.0], dtype=int)
+    lo = np.array([i for i in range(n) if s_m[i] < 0.0], dtype=int)
+    up = up[np.argsort(s_m[up])] if len(up) else up
+    lo = lo[np.argsort(-s_m[lo])] if len(lo) else lo
+
+    r0 = messinger_panel_fluxes(cfg, m_imp[i_stag], 0.0, cfg.t_static_c, h[i_stag], area[i_stag], v_e[i_stag])
+    t_s[i_stag], n_f[i_stag] = r0["t_s_c"], r0["n_f"]
+    m_ice[i_stag], m_evap[i_stag], m_out[i_stag] = r0["m_ice"], r0["m_evap"], r0["m_out"]
+    regimes.append(r0["regime"])
+    residuals[i_stag] = r0["residual_w"]
+
+    carry_up = 0.5 * r0["m_out"] if len(up) else r0["m_out"]
+    carry_lo = 0.5 * r0["m_out"] if len(lo) else 0.0
+    t_up, t_lo = r0["t_s_c"], r0["t_s_c"]
+    for side, order, carry, t_in in ((0, up, carry_up, t_up), (1, lo, carry_lo, t_lo)):
+        c, tc = carry, t_in
+        for i in order:
+            ri = messinger_panel_fluxes(cfg, m_imp[i], c, tc, h[i], area[i], v_e[i])
+            t_s[i], n_f[i] = ri["t_s_c"], ri["n_f"]
+            m_ice[i], m_evap[i], m_out[i], m_in[i] = ri["m_ice"], ri["m_evap"], ri["m_out"], c
+            regimes.append(ri["regime"])
+            residuals[i] = ri["residual_w"]
+            c, tc = ri["m_out"], ri["t_s_c"]
+        if side == 0:
+            runback_end_up = c if len(order) else carry
+        else:
+            runback_end_lo = c if len(order) else carry
+    if len(up) == 0 and len(lo) == 0:
+        runback_end_up, runback_end_lo = r0["m_out"], 0.0
+    elif len(up) == 0:
+        runback_end_up = carry_up
+    elif len(lo) == 0:
+        runback_end_lo = carry_lo
+
+    impacted = float(m_imp.sum() * dt)
+    frozen = float(m_ice.sum() * dt)
+    evaporated = float(m_evap.sum() * dt)
+    runback_out = float((runback_end_up + runback_end_lo) * dt)
+    closure = abs(impacted - frozen - evaporated - runback_out) / impacted if impacted > 0 else 0.0
+
+    if cfg.glaze_rho_mode == "const":
+        rho_ice = np.full(n, float(cfg.rho_rime))
+    else:
+        rho_ice = np.array([rime_density_macklin(cfg.mvd, cfg.v_inf, t) for t in t_s])
+    with np.errstate(divide="ignore", invalid="ignore"):
+        thickness = np.where(area > 0, m_ice * dt / (rho_ice * np.maximum(area, 1e-30)), 0.0)
+    q_span = m_out / (cfg.rho_water * cfg.dx_phys)  # m^2/s per unit span
+    with np.errstate(divide="ignore", invalid="ignore"):
+        film = np.where(
+            (m_out > 0.0) & (tau_t > 0.0),
+            np.sqrt(np.maximum(2.0 * cfg.mu_water * q_span / np.maximum(tau_t, 1e-30), 0.0)),
+            0.0,
+        )
+    film = np.where(np.isfinite(film), film, 0.0)
+
+    return {
+        "s_m": s_m,
+        "n_f": n_f,
+        "t_s_c": t_s,
+        "m_ice_kg": m_ice * dt,
+        "m_evap_kg": m_evap * dt,
+        "m_runback_out_kg": m_out * dt,
+        "m_runback_in_kg": m_in * dt,
+        "thickness_m": thickness,
+        "film_m": film,
+        "rho_ice": rho_ice,
+        "regime": regimes,
+        "energy_residual_w": residuals,
+        "audit": {
+            "impacted": impacted,
+            "frozen": frozen,
+            "evaporated": evaporated,
+            "runback_out": runback_out,
+            "closure_error": closure,
+        },
+    }
+
+
+def _bfs_distance_cells(base: np.ndarray) -> np.ndarray:
+    """4-neighbour BFS distance [cells] from the ``base`` set (no wrap).
+
+    Unlike :func:`_layer_depth` (used for interior layer counting) this
+    does not use periodic ``np.roll`` growth, so it stays correct at the
+    domain boundaries — required for the outward-cascade direction of the
+    glaze deposit (the leading edge sits close to the inlet).
+    """
+    ny, nx = base.shape
+    dist = np.full((ny, nx), -1, dtype=np.int32)
+    ys, xs = np.nonzero(base)
+    dist[ys, xs] = 0
+    queue: deque[tuple[int, int]] = deque(zip(ys.tolist(), xs.tolist()))
+    while queue:
+        y, x = queue.popleft()
+        d = dist[y, x] + 1
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            yn, xn = y + dy, x + dx
+            if 0 <= yn < ny and 0 <= xn < nx and dist[yn, xn] < 0:
+                dist[yn, xn] = d
+                queue.append((yn, xn))
+    return dist
+
+
+def deposit_glaze_ice(
+    airfoil: np.ndarray,
+    solid: np.ndarray,
+    m_w: np.ndarray,
+    cell_mass: np.ndarray,
+    cell_rho_ice: np.ndarray,
+    dx_phys: float,
+    max_passes: int = 4096,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Credit water to cells, then freeze columns growing outward.
+
+    Per panel the frozen mass is credited to the panel's deposit cells
+    (impact-share weights); a cell freezes once it holds
+    ``rho_ice dx^3`` and is adjacent to the solid, consuming exactly one
+    cell's worth of ice; the leftover water cascades to the outward
+    4-neighbour (largest distance-from-airfoil), building columns normal
+    to the surface — the same per-cell ledger semantics as the Phase 2a
+    freezer, so in the rime limit the frozen set matches.  Returns the
+    updated ``(solid, m_w)``; the pending sub-cell remainder stays liquid.
+    """
+    solid = solid.copy()
+    cell_rho_ice = cell_rho_ice.copy()
+    m_w = m_w + cell_mass
+    ny, nx = solid.shape
+    dist = _bfs_distance_cells(airfoil)
+    m_cell = np.where(cell_rho_ice > 0.0, cell_rho_ice * dx_phys**3, np.inf)
+
+    for _ in range(max_passes):
+        bf = ~solid & _dilate4(torch.from_numpy(solid)).numpy()
+        cand = bf & (m_w >= m_cell)
+        ys, xs = np.nonzero(cand)
+        if ys.size == 0:
+            break
+        leftover = m_w[ys, xs] - m_cell[ys, xs]
+        rho_src = cell_rho_ice[ys, xs]
+        solid[ys, xs] = True
+        m_w[ys, xs] = 0.0
+        for y, x, lm, lr in zip(ys.tolist(), xs.tolist(), leftover.tolist(), rho_src.tolist()):
+            if lm <= 0.0:
+                continue
+            best, bd = None, -1
+            for dy, dxn in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                yy, xx = y + dy, x + dxn
+                if 0 <= yy < ny and 0 <= xx < nx and not solid[yy, xx]:
+                    d = int(dist[yy, xx])
+                    if d > bd:
+                        bd, best = d, (yy, xx)
+            if best is not None:
+                m_w[best] += lm
+                # the column keeps its panel ice density
+                if cell_rho_ice[best] <= 0.0:
+                    cell_rho_ice[best] = lr
+                    m_cell[best] = lr * dx_phys**3
+    return solid, m_w
+
+
+def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[str, Any]:
+    """Multishot glaze run: flow+droplets -> Messinger+runback -> geometry.
+
+    The industry-standard sequence coupling on top of the Phase 2a/2b
+    machinery: each shot (i) runs a *measure-only* simulation on the
+    current iced geometry (``freeze_in_run=False``), (ii) bins the
+    impingement ledger of the configured droplet phase into surface
+    arc-length panels together with the sampled wall shear / edge
+    velocity, (iii) solves the Messinger balance with thin-film runback
+    at the *physical* LWC for ``dt_shot = t_exposure / shots`` seconds,
+    and (iv) deposits the frozen mass as voxel ice growing outward from
+    the surface.  The droplet run stays LWC-accelerated (exact for the
+    trajectory/beta physics); the acceleration is pinned per shot so the
+    ledger corresponds to exactly ``dt_shot`` of physical cloud exposure
+    — the thermodynamics never sees the acceleration.
+    """
+    if cfg.thermo_model != "messinger":
+        raise ValueError(
+            f"run_glaze_icing requires thermo_model='messinger'; got {cfg.thermo_model!r}"
+        )
+    if shots < 1:
+        raise ValueError(f"shots must be >= 1; got {shots}")
+    dt_shot = cfg.t_exposure / shots
+    accel = dt_shot / (cfg.steps * cfg.dt_phys)
+    log(
+        f"  [glaze] shots={shots} dt_shot={dt_shot:.2f} s "
+        f"accel/shot={accel:.3e} T_inf={cfg.t_static_c:.1f} C LWC={cfg.lwc:.2e} kg/m^3 "
+        f"htc={cfg.htc_mode} rho={cfg.glaze_rho_mode}"
+    )
+
+    totals = {"impacted": 0.0, "frozen": 0.0, "evaporated": 0.0, "runback_out": 0.0}
+    shot_reports: list[dict[str, Any]] = []
+    airfoil_np: np.ndarray | None = None
+    solid_np: np.ndarray | None = None
+    m_w: np.ndarray | None = None
+    res: dict[str, Any] | None = None
+    sol: dict[str, Any] | None = None
+    panels: dict[str, Any] | None = None
+
+    for k in range(shots):
+        shot_cfg = replace(
+            cfg,
+            freeze_in_run=False,
+            beta_window_frac=0.0,  # whole shot is the beta window
+            accel_override=accel,  # ledger == dt_shot of physical exposure
+        )
+        sim = RimeIcingSimulation(shot_cfg, log=log)
+        if solid_np is not None:
+            prev_ice = torch.from_numpy(solid_np & ~airfoil_np).to(sim.dev)
+            sim.solid = sim.airfoil | prev_ice
+        res = sim.run()
+        airfoil_np = res["airfoil"]
+        solid_np = res["solid"]
+        s_grid = res["s_grid"]
+        if cfg.droplet_phase in ("eulerian", "both"):
+            ledger = res["eulerian"]["impact_mass"]
+        else:
+            ledger = res["impact_mass"]
+
+        stress = sim.sample_surface_stress()
+        panels = build_surface_panels(
+            shot_cfg, s_grid, ledger, solid_np, stress,
+            t_window=shot_cfg.steps * shot_cfg.dt_phys, lwc_accel=accel,
+        )
+        sol = solve_glaze_surface(cfg, panels, dt_shot)
+
+        # per-cell credit from the panel solution
+        if m_w is None:
+            m_w = np.zeros_like(solid_np, dtype=np.float64)
+        cell_mass = np.zeros_like(m_w)
+        cell_rho = np.zeros_like(m_w)
+        if panels["n_panels"] > 0:
+            dm = sol["m_ice_kg"][panels["dep_p"]] * panels["dep_w"]
+            np.add.at(cell_mass, (panels["dep_y"], panels["dep_x"]), dm)
+            np.add.at(cell_rho, (panels["dep_y"], panels["dep_x"]),
+                      sol["rho_ice"][panels["dep_p"]])
+        solid_np, m_w = deposit_glaze_ice(
+            airfoil_np, solid_np, m_w, cell_mass, cell_rho, cfg.dx_phys
+        )
+
+        for key in totals:
+            totals[key] += sol["audit"][key]
+        n_ice = int((solid_np & ~airfoil_np).sum())
+        shot_reports.append({
+            "shot": k + 1,
+            "ice_cells": n_ice,
+            "n_f_max": float(sol["n_f"].max()) if len(sol["n_f"]) else 0.0,
+            "t_s_min_c": float(sol["t_s_c"].min()) if len(sol["t_s_c"]) else 0.0,
+            "frozen_kg": sol["audit"]["frozen"],
+            "runback_out_kg": sol["audit"]["runback_out"],
+        })
+        log(
+            f"  [glaze] shot {k + 1}/{shots}: ice={n_ice} cells "
+            f"frozen={sol['audit']['frozen']:.3e} kg "
+            f"runback_out={sol['audit']['runback_out']:.3e} kg "
+            f"n_f_max={shot_reports[-1]['n_f_max']:.3f} "
+            f"T_s_min={shot_reports[-1]['t_s_min_c']:.1f} C"
+        )
+
+    assert res is not None and airfoil_np is not None and solid_np is not None
+    assert sol is not None and panels is not None and m_w is not None
+    impacted = totals["impacted"]
+    closure = (
+        abs(impacted - totals["frozen"] - totals["evaporated"] - totals["runback_out"])
+        / impacted
+        if impacted > 0.0
+        else 0.0
+    )
+    audit = dict(totals)
+    audit["closure_error"] = closure
+
+    ice_only = solid_np & ~airfoil_np
+    metrics = ice_shape_metrics(
+        airfoil_np, solid_np, cfg.dx_phys, cfg.chord_phys, cfg.chord_lu, res["stag"]
+    )
+    if len(sol["thickness_m"]):
+        i_stag = int(np.argmin(np.abs(sol["s_m"])))
+        metrics["stag_ice_thickness_m"] = float(sol["thickness_m"][i_stag])
+        j = int(np.argmax(sol["thickness_m"]))
+        metrics["max_thickness_m"] = float(sol["thickness_m"][j])
+        metrics["max_thickness_s_over_c"] = float(sol["s_m"][j] / cfg.chord_phys)
+        metrics["n_f_stag"] = float(sol["n_f"][i_stag])
+    log(
+        f"  [glaze] done: {int(ice_only.sum())} ice cells "
+        f"({metrics.get('stag_ice_thickness_m', 0.0) * 1e3:.2f} mm at stagnation, "
+        f"max {metrics.get('max_thickness_m', 0.0) * 1e3:.2f} mm at "
+        f"s/c={metrics.get('max_thickness_s_over_c', 0.0):+.3f}); "
+        f"audit closure {closure * 100:.4f} %"
+    )
+    return {
+        "config": cfg,
+        "shots": shots,
+        "dt_shot": dt_shot,
+        "accel_per_shot": accel,
+        "airfoil": airfoil_np,
+        "solid": solid_np,
+        "ice_only": ice_only,
+        "m_w": m_w,
+        "mapping": cfg.mapping_report(),
+        "panels": {
+            "s_over_c": sol["s_m"] / cfg.chord_phys,
+            "beta": panels["beta"],
+            "m_imp_kg_s": panels["m_imp_kg_s"],
+            "h_w_m2k": panels["h"],
+            "v_e_m_s": panels["v_e"],
+            "tau_t_pa": panels["tau_t"],
+            "n_f": sol["n_f"],
+            "t_s_c": sol["t_s_c"],
+            "m_ice_kg": sol["m_ice_kg"],
+            "m_evap_kg": sol["m_evap_kg"],
+            "m_runback_out_kg": sol["m_runback_out_kg"],
+            "thickness_m": sol["thickness_m"],
+            "film_m": sol["film_m"],
+            "rho_ice": sol["rho_ice"],
+            "regime": sol["regime"],
+            "energy_residual_w": sol["energy_residual_w"],
+        },
+        "metrics": metrics,
+        "audit": audit,
+        "shot_reports": shot_reports,
+        "stag": res["stag"],
+        "s_grid": res["s_grid"],
+    }
 
 
 # ---------------------------------------------------------------------------
