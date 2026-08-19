@@ -353,3 +353,304 @@ def test_compile_mode_flow_step_equivalence() -> None:
         sim_e._flow_step(False)
         sim_c._flow_step(False)
     assert torch.allclose(sim_e.f, sim_c.f, rtol=1e-4, atol=1e-7)
+
+
+# ---------------------------------------------------------------------------
+# Phase 2b: Eulerian droplet field + CUMULANT collision
+# ---------------------------------------------------------------------------
+def _euler_cfg(**kw) -> IcingConfig:
+    """Small fast Eulerian-phase config (uniform flow unless overridden).
+
+    ``rho_rime=1e9`` keeps the freezer off so the alpha transport audit is
+    clean; tests that exercise freezing override it.
+    """
+    base = dict(
+        nx=128,
+        ny=64,
+        chord_frac=0.4,
+        cx_frac=0.3,
+        kill_frac=0.5,
+        u_in=0.05,
+        tau=0.55,
+        aoa_deg=4.0,
+        steps=500,
+        warmup_steps=0,
+        uniform_flow=True,
+        mvd=100e-6,
+        accel_override=50.0,
+        rime_density_mode="const",
+        rho_rime=1.0e9,  # nothing freezes: pure transport
+        device="cpu",
+        seed=0,
+        log_every=10**9,
+        droplet_phase="eulerian",
+    )
+    base.update(kw)
+    return IcingConfig(**base)
+
+
+def test_phase2b_config_validation() -> None:
+    for bad_kw in (
+        {"droplet_phase": "euler"},  # not a phase name
+        {"collision": "mrt"},  # only bgk | cumulant
+        {"collision": "bgk", "c_s": 0.1},  # SGS needs cumulant
+        {"drag_law": "clift"},
+        {"re_lu_target": -5.0},
+        {"shadow_alpha_frac": -1.0},
+    ):
+        with pytest.raises(ValueError):
+            IcingConfig(**bad_kw)
+    # accepted combinations construct fine
+    IcingConfig(collision="cumulant", c_s=0.1, re_lu_target=2.0e6, drag_law="schiller-naumann")
+
+
+def test_re_lu_target_and_drag_scales() -> None:
+    cfg = IcingConfig(re_lu_target=2000.0)
+    assert math.isclose(cfg.tau_flow, 3.0 * cfg.u_in * cfg.chord_lu / 2000.0 + 0.5, rel_tol=1e-12)
+    assert math.isclose(cfg.re_lu, 2000.0, rel_tol=1e-9)  # nu_lu follows tau_flow
+    cfg_free = IcingConfig()  # no target: Phase 2a tau semantics
+    assert cfg_free.tau_flow == cfg_free.tau
+    # alpha_in is the accelerated cloud volume fraction (same k as LWC_eff)
+    cfg_a = IcingConfig(nx=100, ny=64, accel_override=25.0)
+    assert math.isclose(cfg_a.alpha_in, cfg_a.lwc_eff / cfg_a.rho_water, rel_tol=1e-12)
+    # Stokes -> sn_scale exactly 0; Schiller-Naumann -> physical Re_p scale
+    assert cfg_a.re_p_scale == 0.0
+    cfg_sn = IcingConfig(drag_law="schiller-naumann")
+    expect = cfg_sn.rho_air * (cfg_sn.dx_phys / cfg_sn.dt_phys) * cfg_sn.mvd / cfg_sn.mu_air
+    assert math.isclose(cfg_sn.re_p_scale, expect, rel_tol=1e-12)
+    # IRT point: |du| ~ V_inf gives Re_p ~ 100 (f_drag ~ 4.6)
+    assert 80.0 < cfg_sn.u_in * cfg_sn.re_p_scale < 120.0
+
+
+def test_eulerian_uniform_frontal_catch_analytic() -> None:
+    """Uniform flow: deposited rate == alpha_in * u_in * H_front exactly.
+
+    Straight trajectories make the catch a pure geometric streamtube: every
+    cell whose right neighbour is solid receives alpha_in*u_in per step.
+    """
+    cfg = _euler_cfg()
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    e = res["eulerian"]
+    assert e is not None
+    h_front = int(res["airfoil"].any(axis=1).sum())
+    analytic = cfg.alpha_in * cfg.u_in * h_front  # lattice volume units / step
+    measured = e["audit"]["deposited"] / cfg.mass_per_lu3 / cfg.steps
+    assert abs(measured - analytic) / analytic < 1e-5, (measured, analytic)
+    # streamtube identity: integrated beta == frontal projection height
+    assert abs(float(e["beta_grid"].sum()) - h_front) < 0.05
+
+
+def test_eulerian_mass_audit_and_positivity() -> None:
+    cfg = _euler_cfg()
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    e = res["eulerian"]
+    a = e["audit"]
+    # conservative FV + device-side fp64 accumulation: closes orders of
+    # magnitude below the Phase 2a Lagrangian 1e-2 gate (measured ~1e-9)
+    assert a["closure_error"] < 1e-6, a
+    # steady state: what enters through the inlet leaves through the outlet
+    assert a["outlet_out"] > 0.9 * a["inlet_in"]
+    alpha = e["alpha"]
+    assert float(alpha.min()) >= 0.0  # positivity preserved
+    # donor-cell FV is positivity-preserving; the only overshoot is a
+    # <=0.2 % boundary artefact at the outlet corner (measured), far from
+    # the airfoil where beta is sampled
+    assert float(alpha.max()) <= cfg.alpha_in * 1.02
+
+
+def test_eulerian_freezer_interface() -> None:
+    """Eulerian deposits freeze through the *same* Phase 2a freezer."""
+    cfg = _euler_cfg(
+        accel_override=2.0e5,
+        rho_rime=100.0,  # low-density rime: cells freeze within budget
+        steps=400,
+    )
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    a = res["audit"]
+    e = res["eulerian"]
+    n_ice = res["metrics"]["n_ice_cells"]
+    assert n_ice >= 5
+    # exact ledger: frozen mass == n_cells * cell ice mass (2a invariant)
+    assert math.isclose(a["frozen"], n_ice * cfg.m_cell_ice, rel_tol=1e-9)
+    # the alpha audit still closes with freezing + encasement
+    assert e["audit"]["closure_error"] < 1e-4, e["audit"]
+    assert e["audit"]["encased"] > 0.0  # trapped cloud was accounted
+    # ice grows on the windward face (upstream of the LE), like Phase 2a
+    ys, xs = np.nonzero(res["ice_only"])
+    assert xs.min() < res["metrics"]["x_le"]
+
+
+def test_eulerian_beta_bounds() -> None:
+    """Beta boundary behaviour on the clean airfoil (uniform flow)."""
+    cfg = _euler_cfg()
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    e = res["eulerian"]
+    b = e["beta"]
+    assert len(b["beta"]) and 0.05 < float(b["beta"].max()) <= 1.5
+    # uniform straight-line catch caps beta at 1 on frontal faces
+    assert float(b["beta"].max()) <= 1.0 + 1e-3
+    # capture height bounded by the geometric projection (2a gate)
+    capture_h = float(e["beta_grid"].sum())
+    proj_h = cfg.chord_lu * (abs(math.sin(math.radians(cfg.aoa_deg)))
+                             + cfg.naca_t * math.cos(math.radians(cfg.aoa_deg)))
+    assert 0.0 < capture_h < proj_h * 1.05, (capture_h, proj_h)
+    # support is local to the leading edge (no far-field impacts)
+    assert abs(b["s_over_c"]).max() < 0.5
+
+
+def test_eulerian_shadow_region_regularisation() -> None:
+    """Huge shadow threshold penalizes u_d := u_f everywhere: still stable."""
+    cfg = _euler_cfg(shadow_alpha_frac=1.0e6)
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    e = res["eulerian"]
+    assert np.isfinite(e["alpha"]).all()
+    assert e["audit"]["closure_error"] < 1e-6, e["audit"]
+    # shadow penalty removes inertia: geometric catch only
+    h_front = int(res["airfoil"].any(axis=1).sum())
+    analytic = cfg.alpha_in * cfg.u_in * h_front
+    measured = e["audit"]["deposited"] / cfg.mass_per_lu3 / cfg.steps
+    assert abs(measured - analytic) / analytic < 1e-5
+
+
+def test_eulerian_drag_law_invariance_in_uniform_flow() -> None:
+    """Drag law is irrelevant when u_d == u_f: SN and Stokes agree."""
+    cfg_s = _euler_cfg(drag_law="stokes")
+    cfg_n = _euler_cfg(drag_law="schiller-naumann")
+    r_s = run_rime_icing(cfg_s, log=lambda *a: None)
+    r_n = run_rime_icing(cfg_n, log=lambda *a: None)
+    h_front = int(r_s["airfoil"].any(axis=1).sum())
+    analytic = cfg_s.alpha_in * cfg_s.u_in * h_front
+    for r in (r_s, r_n):
+        measured = r["eulerian"]["audit"]["deposited"] / cfg_s.mass_per_lu3 / cfg_s.steps
+        assert abs(measured - analytic) / analytic < 1e-5
+
+
+def test_eulerian_lagrangian_cross_validation_uniform() -> None:
+    """Same flow trajectory: L and E capture heights agree (geometry exact).
+
+    Sizing: the Lagrangian arm carries 1/sqrt(N_impacts) Poisson noise, so
+    the config targets ~1000 window impacts (~3 % noise): leading edge near
+    the inlet, high acceleration, ~640 parcels/step with a ~2.4e5 steady
+    inventory (CPU-friendly).
+    """
+    cfg = _euler_cfg(
+        droplet_phase="both",
+        parcel_multiplier=50,
+        accel_override=5.2e3,
+        cx_frac=0.08,
+        kill_frac=0.3,
+        steps=300,
+        nx=96,
+        ny=48,
+    )
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    h_l = float(res["beta_grid"].sum())
+    h_e = float(res["eulerian"]["beta_grid"].sum())
+    # Eulerian is the deterministic answer; both are the geometric frontal
+    # height in uniform flow
+    h_front = int(res["airfoil"].any(axis=1).sum())
+    assert abs(h_e - h_front) < 0.05, (h_e, h_front)
+    assert abs(h_l - h_e) / h_e < 0.08, (h_l, h_e)
+    assert res["audit"]["closure_error"] < 1e-2
+    assert res["eulerian"]["audit"]["closure_error"] < 1e-6
+
+
+def test_eulerian_step_compile_equivalence() -> None:
+    """The compiled Eulerian step matches the eager step exactly."""
+    try:
+        import torch._inductor  # noqa: F401
+    except ImportError:  # pragma: no cover
+        pytest.skip("torch inductor backend unavailable")
+    torch.manual_seed(0)
+    common = dict(nx=64, ny=48, chord_frac=0.4, cx_frac=0.3, aoa_deg=4.0,
+                  warmup_steps=0, uniform_flow=False, droplet_phase="eulerian",
+                  mvd=100e-6, accel_override=1e3, rime_density_mode="const",
+                  rho_rime=1.0e9, device="cpu", log_every=10**9, seed=0,
+                  steps=2)
+    sim_e = RimeIcingSimulation(IcingConfig(compile_mode=None, **common), log=lambda *a: None)
+    sim_c = RimeIcingSimulation(IcingConfig(compile_mode="default", **common), log=lambda *a: None)
+    from tensorlbm.d3q19 import macroscopic3d
+
+    _, ux3, uy3, _ = macroscopic3d(sim_e.f)
+    sim_e._init_eulerian(ux3[0], uy3[0])
+    sim_c._init_eulerian(ux3[0], uy3[0])
+    for _ in range(3):
+        sim_e._flow_step(False)
+        sim_c._flow_step(False)
+        _, uxe, uye, _ = macroscopic3d(sim_e.f)
+        _, uxc, uyc, _ = macroscopic3d(sim_c.f)
+        sim_e._euler_advance(uxe[0], uye[0])
+        sim_c._euler_advance(uxc[0], uyc[0])
+    assert torch.allclose(sim_e.f, sim_c.f, rtol=1e-4, atol=1e-7)
+    assert torch.allclose(sim_e.alpha, sim_c.alpha, rtol=1e-4, atol=1e-12)
+
+
+def test_eulerian_closure_coupled_flow_wake() -> None:
+    """Regression (Phase 2b wake-leak bug): with a real LBM flow the wake/
+    shadow cells used to develop |u_d| = mx/alpha >> 1, breaking the
+    donor-cell CFL bound; the positivity clamp then *created* alpha and the
+    audit leaked ~5% at production scale.  The droplet-velocity cap must
+    keep the field positive and the audit closed on a coupled case."""
+    cfg = _euler_cfg(
+        uniform_flow=False,
+        warmup_steps=300,
+        steps=300,
+        mvd=20e-6,  # strong drag: tau_d_lu ~ O(100), like production
+        accel_override=5.0e4,
+        rho_rime=100.0,  # let ice actually grow + encase cloud water
+        nx=96,
+        ny=48,
+    )
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    e = res["eulerian"]
+    a = e["audit"]
+    # alpha field stays physical: non-negative; near the stagnation line
+    # the droplets converge and alpha legitimately concentrates above
+    # alpha_in (the 1.02 bound only holds in uniform flow), but not by
+    # an unbounded amount
+    alpha_np = e["alpha"]
+    assert float(alpha_np.min()) >= 0.0
+    assert float(alpha_np.max()) <= cfg.alpha_in * 3.0
+    # mass closes: in + initial == out + deposited + encased + airborne
+    assert a["closure_error"] < 1e-3, a
+    assert a["deposited"] > 0.0
+    assert res["audit"]["seeded"] == 0.0  # no stray Lagrangian prefill
+
+
+def test_cumulant_flow_smoke() -> None:
+    """CUMULANT+Smag flow step runs, stays finite, cl0 in a sane band."""
+    cfg = _euler_cfg(
+        uniform_flow=False,
+        collision="cumulant",
+        c_s=0.1,
+        re_lu_target=1000.0,
+        warmup_steps=300,
+        steps=60,
+        nx=64,
+        ny=48,
+    )
+    assert math.isclose(cfg.tau_flow - 0.5, 3.0 * cfg.u_in * cfg.chord_lu / 1000.0, rel_tol=1e-9)
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    assert res["cd0"] is not None and res["cd0"] > 0.0
+    assert res["cl0"] is not None and 0.0 < res["cl0"] < 1.0
+    assert res["eulerian"]["audit"]["closure_error"] < 1e-4
+
+
+def test_cumulant_step_compile_equivalence() -> None:
+    try:
+        import torch._inductor  # noqa: F401
+    except ImportError:  # pragma: no cover
+        pytest.skip("torch inductor backend unavailable")
+    torch.manual_seed(0)
+    common = dict(nx=64, ny=48, chord_frac=0.4, cx_frac=0.3, aoa_deg=4.0,
+                  warmup_steps=0, uniform_flow=False, collision="cumulant",
+                  c_s=0.1, re_lu_target=1000.0, mvd=100e-6, accel_override=1e3,
+                  rime_density_mode="const", rho_rime=1.0e9, device="cpu",
+                  log_every=10**9, seed=0, steps=2, droplet_phase="lagrangian",
+                  disable_droplets=True)
+    sim_e = RimeIcingSimulation(IcingConfig(compile_mode=None, **common), log=lambda *a: None)
+    sim_c = RimeIcingSimulation(IcingConfig(compile_mode="default", **common), log=lambda *a: None)
+    for _ in range(4):
+        sim_e._flow_step(False)
+        sim_c._flow_step(False)
+    assert torch.allclose(sim_e.f, sim_c.f, rtol=1e-4, atol=1e-7)
