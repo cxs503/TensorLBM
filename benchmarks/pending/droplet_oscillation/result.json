@@ -141,5 +141,17 @@
   },
   "model": "SCMP SC94 psi_exp (psi=1-exp(-rho)), physical G_eff=-5.0, tau=1.0; library called with G=+5.0 (backward-gather convention); identical to verified laplace_droplet",
   "pass": false,
-  "physics": "2D droplet, m=2 shape oscillation, R(theta)=R0*(1+eps*cos(2*theta)), eps=0.05; omega^2 = m(m^2-1)*sigma/(rho*R^3), m=2 -> 6*sigma/(rho*R^3); rho = rho_l (task form, vapour neglected) or rho_l+rho_v (exact 2D)"
+  "physics": "2D droplet, m=2 shape oscillation, R(theta)=R0*(1+eps*cos(2*theta)), eps=0.05; omega^2 = m(m^2-1)*sigma/(rho*R^3), m=2 -> 6*sigma/(rho*R^3); rho = rho_l (task form, vapour neglected) or rho_l+rho_v (exact 2D)",
+  "damping_correction": {
+    "observed_err_pct": [
+      -6.0,
+      -8.0
+    ],
+    "damping": "SC94 固有强阻尼 gamma≈0.72/R² (τ无关, R⁻² 标度自洽)",
+    "eigen_freq_err_pct_after_correction": {
+      "R30": -1.1,
+      "R40": -2.0
+    },
+    "conclusion": "阻尼还原后本征频率 -1.1%~-2.0% 达标——SC 模型阻尼是物理的，频率本身准；但观测频率（含阻尼）超 3% 阈值，按规则未达标记录"
+  }
 }

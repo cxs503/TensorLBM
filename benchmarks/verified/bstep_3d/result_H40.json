@@ -1,0 +1,78 @@
+{
+  "case": "bstep_3d",
+  "name": "backward_facing_step_3d_re100_H40",
+  "reference": {
+    "source": "Armaly, Durst, Pereira & Schoenung, JFM 127:473-496 (1983)",
+    "re_definition": "Re = U_max * step_h / nu (最大入口速度, 台阶高)",
+    "xr_h_ref": 3.0,
+    "er_ref": 1.94
+  },
+  "geometry": {
+    "nx": 400,
+    "ny": 82,
+    "nz": 80,
+    "step_h": 40,
+    "x_step": 80,
+    "expansion_ratio": 1.951219512195122,
+    "er_dev_pct": 0.5783253708825754,
+    "spanwise": "periodic, Lz=80 = 2.0H",
+    "inlet": "fully_developed_parabolic (3D Zou/He profile), U_max=0.05",
+    "outlet": "Zou/He pressure (rho=1)"
+  },
+  "physics": {
+    "re": 100.0,
+    "nu": 0.02,
+    "tau": 0.56,
+    "collision": "bgk",
+    "lattice": "D3Q19"
+  },
+  "result": {
+    "xr_h": 3.3955459594726562,
+    "xr_h_err_pct": 13.184865315755209,
+    "xr_planes_mean": 3.3955459594726562,
+    "xr_planes_std": 0.0,
+    "xr_planes_min": 3.3955459594726562,
+    "xr_planes_max": 3.3955459594726562,
+    "xr_series": [
+      1.2003662586212158,
+      2.055009365081787,
+      2.787071943283081,
+      3.3748576641082764,
+      3.5526585578918457,
+      3.51521635055542,
+      3.492872953414917,
+      3.527574062347412,
+      3.4980499744415283,
+      3.3955459594726562
+    ],
+    "steps": [
+      2000,
+      4000,
+      6000,
+      8000,
+      10000,
+      12000,
+      14000,
+      16000,
+      18000,
+      20000
+    ],
+    "converged": false,
+    "n_steps_run": 20000,
+    "wall_time_s": 250.2,
+    "device": "cuda:0",
+    "inlet_profile_check": {
+      "max_abs_dev_over_umax": 6.454392317833957e-07,
+      "flux_ratio": 1.0002975347565441
+    },
+    "spanwise_uniformity": {
+      "max_z_rel_dev_over_umax": 7.078051567077637e-07
+    },
+    "separation_bubble": {
+      "max_backflow_over_umax": -0.09803728200495243,
+      "backflow_x_rel_h": 1.475
+    },
+    "mass_drift_final": -135.25,
+    "finite": true
+  }
+}
