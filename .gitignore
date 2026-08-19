@@ -43,3 +43,23 @@ artifacts/runs/
 
 # One-off octree debug diagnostics (methods captured in tensorlbm-development skill)
 scripts/diag_*.py
+
+# 运行结果目录（不提交）
+results_*/
+results_bench_*/
+
+# 一次性诊断脚本
+diag_*.py
+diagnose_*.py
+profile_*.py
+sphere_check.py
+sphere_focus.py
+stability_bench*.py
+verify_geier_impl.py
+gen_geier.py
+geier_cumulant.py
+tensorlbm_*_bench.py
+tensorlbm_same_grid_bench.py
+naca_*.py
+after.txt
+run_general_sim_acceptance.sh
