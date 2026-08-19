@@ -96,10 +96,10 @@ def nusselt_number_rb(T, H, dT, t_hot, t_cold, mode="grad2"):
         nu_top = 2.0 * (T[-1, :] - t_cold) * H / dT
     elif mode == "grad1":
         nu_bottom = (T[0, :] - T[1, :]) * H / dT
-        nu_top = (T[-1, :] - T[-2, :]) * H / dT
+        nu_top = (T[-2, :] - T[-1, :]) * H / dT
     elif mode == "grad2":
         nu_bottom = (1.5 * T[0, :] - 2.0 * T[1, :] + 0.5 * T[2, :]) * H / dT
-        nu_top = (1.5 * T[-1, :] - 2.0 * T[-2, :] + 0.5 * T[-3, :]) * H / dT
+        nu_top = (2.0 * T[-2, :] - 1.5 * T[-1, :] - 0.5 * T[-3, :]) * H / dT
     else:
         raise ValueError(f"unknown mode: {mode}")
     nb = float(nu_bottom.mean().item())
