@@ -1,0 +1,36 @@
+{
+  "case": "cavity_natural_convection_ra1e4_dvd",
+  "lattice": "D2Q9+D2Q5",
+  "collision": "bgk (Guo force)",
+  "boundary": "速度: pre-streaming 半程反弹(四壁); 温度: 左壁T=1右壁T=0 anti-bounce-back, 上下绝热",
+  "extrap": "none",
+  "reference": "de Vahl Davis 1983 Ra=1e4 Pr=0.71: Nu=2.243, u_max≈0.1926",
+  "grids": {
+    "64": {
+      "nx": 64,
+      "steps": 100000,
+      "nu": 2.1854,
+      "err_pct": 2.567,
+      "u_max": 0.0144,
+      "resid_T": 0.0029
+    },
+    "128": {
+      "nx": 128,
+      "steps": 100000,
+      "nu": 2.392,
+      "err_pct": 6.642,
+      "u_max": 0.0072,
+      "resid_T": 0.0071
+    }
+  },
+  "convergence": {
+    "err_pct": [
+      2.567,
+      6.642
+    ],
+    "err_decreased": false
+  },
+  "analysis": "64² Nu 达标(-2.6%)但 128² 恶化(+6.6%)——加密不收敛。根因: a) Nu 口径不稳(nu_halfway≈0 失效, grad1/grad2 差 2%) b) u_max 随网格减半(0.0144→0.0072) vs 参考 0.1926——速度-温度耦合尺度不对(浮力驱动不足或 τ/τ_T 映射错)。热模型需深度调试(浮力系数/τ_T 映射/速度尺度/Nu 口径),非 quick fix",
+  "verified": false,
+  "verified_date": "2026-08-19"
+}
