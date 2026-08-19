@@ -81,10 +81,18 @@
 - **分析**：`momentum_exchange_standard` 是 Ladd **和形式**（f_i[fluid]+f_opp[solid]），
   注释明说"flat walls 平衡项抵消"——但**曲面球壁平衡项不抵消**（各 link 权重不同），
   产生 O(ρU·A) 量级虚假力。Couette/Poiseuille（平坦壁）精确（<0.01%）但球面不适用
-- **修复方向**：MEM 减平衡背景（F -= ρU·Σn̂·dA）或用**差形式**（f_i - f_opp，Lorenz 2014
-  Galilean-invariant 版，文件内已有）——该变体对曲面更鲁棒
+- **修复实施（2026-08-19, commit 6642c4a）**：新增
+  `momentum_exchange_background_subtracted`（均匀自由流 f^eq 背景闭式减除），
+  `SolverConfig.mem_variant`（standard|galilean|bg_sub|all），均匀流 F=0 单元测试通过
+- **修复实测否决（2026-08-19, G15 后首次收敛验证, D=40 16000 步）**：
+  bg_sub == standard **位相同**（Cd=3.9804, +264.6%）→ 修复对球无效。
+  原因：球阶梯网格逐方向 crossing 计数完全对称（D=40 与 D=60 均实测
+  Σ|n_i−n_opp| = 0），均匀 f^eq 背景逐方向成对抵消 → 减除恒为 0（数学上 no-op）。
+  galilean 变体更差（+590%，放大背景）。**规则：任何背景减除类实现前必查
+  Σ|n_i−n_opp|；=0 ⇒ 减除是死代码**。bg_sub 仅对方向不对称曲面（带攻角翼等）有意义。
 - **影响**：B1/B2/B3 球绕流 benchmark 受阻（压力积分 extrap='none' 低估 -13~25%，
-  MEM 曲面背景 +268%）——两个力法在球面都需修复，**球绕流类暂缓**，优先其他问题
+  MEM 三种变体在球面全部失败）——两个力法在球面都需修复，**球绕流类暂缓**，
+  优先其他问题。完整数据：benchmarks/pending/sphere_re100/README.md + result.json
 
 ### G16. NACA/Blasius 判定补录
 - NACA α=10° Re=1000：c=60 时 Cl=0.346（1.75% ✅）但 c=90 时 0.394（16% ❌）——

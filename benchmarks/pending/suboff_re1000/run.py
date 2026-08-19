@@ -103,7 +103,7 @@ def main() -> None:
             force_method=ForceMethod.PRESSURE_FRICTION,
             pressure_extrap="none",
             p0_method=args.p0,
-            friction_formula="standard",
+            friction_formula=args.friction,
             mass_correction=True,
             mass_correction_interval=200,
             smagorinsky_cs=0.05,
