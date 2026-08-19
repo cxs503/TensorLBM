@@ -75,7 +75,7 @@ D3Q27 高精度、AMR 网格收敛、壁面函数高 Re。
 
 ### 编译路由标准（2026-08-19 增补）
 
-所有 `verified/` 案例的整步步进链（collide → BC → stream → BC）统一经
+verified/ 案例（本标准设立时点的全部 15 个）的整步步进链（collide → BC → stream → BC）统一经
 `benchmarks/compile_route.py` 路由——它是 `tensorlbm.compile_utils`
 （`validate_compile_mode` + `compile_step`）在 benchmarks 侧的唯一适配器：
 
@@ -86,3 +86,5 @@ D3Q27 高精度、AMR 网格收敛、壁面函数高 Re。
 - 三模式实测矩阵（15 案例误差 / eager 加速比 / 冷编译开销，RTX 5090）见
   `/nfs/wangxi/triton_bench_20260819/bench_compile_route/FINAL_MATRIX.md`；
   入库标准不变：误差 ≤3%。
+- 注：main 后续新增的 `cylinder/re200` 与 `sod_shock_tube` 尚未按本标准接入，
+  待后续 PR 以同一矩阵流程补测后接入。
