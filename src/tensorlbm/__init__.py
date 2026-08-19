@@ -265,6 +265,71 @@ from .multiphase_benchmarks import (
     run_two_phase_channel_compare,
 )
 from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
+# Phase-field / free-energy (Cahn-Hilliard) common module
+from .phasefield import (
+    DoubleWellFreeEnergy,
+    FreeEnergyCHValidationConfig,
+    FreeEnergyCHDiagnosticResult,
+    FreeEnergyCollisionOnlyConfig,
+    FreeEnergyCollisionOnlyResult,
+    FreeEnergyCollisionOnlyState,
+    FreeEnergyAdapterStreamLoopConfig,
+    FreeEnergyAdapterStreamLoopResult,
+    StaticDropletDiagnosticResult,
+    central_gradient_3d,
+    collision_then_adapter_stream,
+    diagnose_static_droplet,
+    estimate_droplet_radius,
+    force_minus_phi_grad_mu,
+    force_mu_grad_phi,
+    initialize_free_energy_collision_only_state,
+    initialize_static_droplet,
+    laplacian_3d,
+    periodic_chemical_potential_and_korteweg_force,
+    phase_volume_smoothed,
+    phase_volume_threshold,
+    run_free_energy_adapter_stream_loop,
+    run_free_energy_collision_only,
+    run_closed_periodic_free_energy_diagnostic,
+)
+from .phasefield.ch_validation import free_energy_step_3d
+from .phasefield.evolution_adapter import init_free_energy_g_3d
+from .phasefield.stream_boundary_contract import (
+    stream_d3q19_adapter,
+    stream_free_energy_adapter,
+)
+# Free-surface (VOF) common module
+from .free_surface_common import (
+    bubble_centroid_velocity_3d,
+    free_surface_vof_collide_3d,
+    free_surface_vof_step,
+    gravity_force_3d,
+    guo_force_delta_3d,
+    init_phi_bubble_3d,
+    init_phi_rayleigh_taylor_3d,
+    interface_compression_3d,
+    interface_normal_3d,
+    mean_curvature_3d,
+    mixing_layer_thickness_3d,
+    surface_tension_force_3d,
+    vof_advect_upwind_3d,
+)
+from .free_surface_lbm import (
+    free_surface_step,
+    init_fill_rectangular,
+    init_flags_from_fill,
+    init_mass_from_fill,
+    total_liquid_inventory,
+)
+from .free_surface_lbm_2d import free_surface_step_2d, init_fill_rectangular_2d
+# Cavitation common module
+from .cavitation import (
+    CavitationConfig,
+    apply_cavitation_force,
+    psi_cavitation,
+    run_cavitation_flow,
+    schnerr_sauer_source,
+)
 from .non_newtonian import (
     apparent_viscosity_power_law,
     collide_power_law_bgk,
