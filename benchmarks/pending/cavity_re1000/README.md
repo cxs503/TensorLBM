@@ -1,6 +1,6 @@
-# 方腔流 Re=1000（lid-driven cavity）— 待确认（192² 达标 1.48%，256² 需 200k 步）
+# 方腔流 Re=1000（lid-driven cavity）— ✅ 已入库（迁移至 verified/cavity_re1000/）
 
-**状态：🔶 未确认（MRT 在 Re=1000 失稳 → RLBM 修复；192² 1.48% 达标，256² 需长收敛）**
+**状态：✅ 已入库（2026-08-19，RLBM 200k 步两档 1.14%/1.05% 达标，迁移至 benchmarks/verified/cavity_re1000/）**
 
 ## 物理问题
 
