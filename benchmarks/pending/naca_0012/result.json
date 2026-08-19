@@ -1,0 +1,20 @@
+{
+  "case": "naca0012_alpha5_re1000",
+  "reference": "薄翼理论 Cl=2π·sin(5°)=0.548（对 Re=1000 黏性流可能不适用）；XFOIL Re=1000 层流 Cl≈0.2-0.3",
+  "grids": {
+    "c60": {
+      "cl": 0.2326,
+      "cd": 0.1343,
+      "err_pct_vs_thin": -57.5,
+      "regime": "steady"
+    },
+    "c90": {
+      "cl": 0.2488,
+      "cd": 0.1312,
+      "err_pct_vs_thin": -54.6,
+      "regime": "steady"
+    }
+  },
+  "analysis": "α=5° 稳态无分离，两档 Cl 收敛(0.233→0.249)但 vs 薄翼理论 -55%——薄翼理论(无黏)对 Re=1000 层流不适用，Cl≈0.23-0.25 可能是 Re=1000 真实值(XFOIL 量级)。需 XFOIL/高 Re 数值参考代替薄翼理论；或提高 Re(≥10000) 使黏性效应减弱",
+  "verified": false
+}
