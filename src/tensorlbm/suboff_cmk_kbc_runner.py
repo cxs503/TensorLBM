@@ -102,6 +102,21 @@ class SuboffCmkKbcConfig:
     # ITTC reference
     reference_Ct: float = 0.00405
     reference_source: str = "ITTC-1957"
+    # Loop-policy knobs (zero-risk: they never touch the populations).
+    # Sample the momentum-exchange force every ``force_every`` steps.
+    # The default ``1`` keeps the historical dense per-step series;
+    # N > 1 thins ``force_time_series``/``ct_time_series`` to the steps
+    # that are multiples of N (final ``Ct`` then refers to the last
+    # *sampled* step, which may precede ``steps_completed``) and skips
+    # the full-grid force reduction on the other steps.  Applies to the
+    # default PyTorch path only — the fused Triton step produces forces
+    # on every launch, so its series stays dense regardless.
+    force_every: int = 1
+    # Run the read-only isfinite watchdog every ``check_every`` steps
+    # (plus always on the final step).  The historical runner checked
+    # every step; the default 10 only delays NaN/Inf fault detection,
+    # it never changes the numerics or the artifact of a finite run.
+    check_every: int = 10
 
     def __post_init__(self) -> None:
         if self.collision.upper() not in {"CM", "CUMULANT", "KBC"}:
@@ -131,6 +146,10 @@ class SuboffCmkKbcConfig:
                 "bisection is only implemented in the PyTorch collision "
                 "path; use CM or CUMULANT"
             )
+        if self.force_every < 1:
+            raise ValueError("force_every must be >= 1")
+        if self.check_every < 1:
+            raise ValueError("check_every must be >= 1")
 
     @property
     def nu(self) -> float:
@@ -224,6 +243,16 @@ def run_suboff_cmk_kbc(
     ``Re, collision, turbulence_model, Ct, finite, steps_completed,
     boundary_type, device, reference_Ct, reference_source`` plus
     ``status="diagnostic_only"`` and ``physical_validation=False``.
+
+    Loop-policy knobs (defaults preserve the historical behavior of the
+    default PyTorch path): ``force_every=1`` records the momentum-exchange
+    force on every step; ``force_every=N>1`` records it only on steps that
+    are multiples of N, so ``force_time_series``/``ct_time_series`` become
+    N-times sparser and ``Ct`` refers to the last sampled step.
+    ``check_every`` (default 10) throttles the read-only isfinite watchdog
+    to every N steps plus the final step — the historical runner checked
+    every step; this only delays NaN/Inf fault detection, never the
+    numerics of a finite run.
     """
     if config is None:
         config = SuboffCmkKbcConfig()
@@ -297,12 +326,16 @@ def run_suboff_cmk_kbc(
         triton_state = TritonStepState(f, device)
 
     # --- 3. Solver loop ---
-    force_series: list[dict[str, Any]] = []
-    ct_series: list[dict[str, Any]] = []
+    # Forces are accumulated device-side in ``force_buf`` (one row per
+    # sampled step) and moved to the host once after the loop instead of
+    # three per-step ``.item()`` round-trips.
+    force_buf = torch.empty((config.n_steps, 3), device=device, dtype=f.dtype)
+    force_rows = 0
     completed_steps = 0
     all_finite = True
 
     for step in range(1, config.n_steps + 1):
+        force_this_step = config.use_triton_step  # fused step always returns forces
         if triton_state is not None:
             # Fused Triton path (PR4, opt-in): SGS tau_eff is still
             # computed in PyTorch with the very same
@@ -330,28 +363,50 @@ def run_suboff_cmk_kbc(
             f = _collide_with_sgs(f, config, tau_base)
             # Streaming (pull scheme)
             f = stream3d(f)
-            # Force measurement (momentum exchange, before bounce-back)
-            fx_t, fy_t, fz_t = compute_obstacle_forces_3d(f, solid)
+            # Force measurement (momentum exchange, before bounce-back).
+            # ``force_every`` thins the sampling: on skipped steps the
+            # full-grid reduction (and its host transfer) is skipped.
+            if step % config.force_every == 0:
+                fx_t, fy_t, fz_t = compute_obstacle_forces_3d(f, solid)
+                force_this_step = True
             # Far-field BC (includes bounce-back on solid)
             f = far_field_bc_3d(f, config.u_in, obstacle_mask=solid)
             # Mass correction every 10 steps
             if step % 10 == 0:
                 f = correct_mass3d(f, initial_mass)
 
-        fx = float(fx_t.item())
-        fy = float(fy_t.item())
-        fz = float(fz_t.item())
-
-        # Record force / Ct
-        ct = fx / dynamic_pressure if dynamic_pressure > 0 else 0.0
-        force_series.append({"step": step, "fx": fx, "fy": fy, "fz": fz})
-        ct_series.append({"step": step, "ct": ct})
+        # Accumulate this step's forces on the device (no host sync).
+        if force_this_step:
+            torch.stack((fx_t, fy_t, fz_t), out=force_buf[force_rows])
+            force_rows += 1
 
         completed_steps = step
-        finite = bool(torch.isfinite(f).all().item())
-        all_finite = all_finite and finite
-        if not finite:
-            break
+        # Read-only NaN/Inf watchdog, throttled to every ``check_every``
+        # steps (plus the final step): only fault-detection latency
+        # changes, never the populations.
+        if step % config.check_every == 0 or step == config.n_steps:
+            finite = bool(torch.isfinite(f).all().item())
+            all_finite = all_finite and finite
+            if not finite:
+                break
+
+    # --- 3b. One-shot host transfer + series construction ---
+    # The sampled steps are exactly the multiples of ``force_every`` up
+    # to ``completed_steps`` (Triton path: every step), in order.
+    recorded_steps = (
+        range(1, completed_steps + 1)
+        if config.use_triton_step
+        else range(config.force_every, completed_steps + 1, config.force_every)
+    )
+    forces_host = force_buf[:force_rows].tolist()
+    force_series: list[dict[str, Any]] = [
+        {"step": s, "fx": row[0], "fy": row[1], "fz": row[2]}
+        for s, row in zip(recorded_steps, forces_host)
+    ]
+    ct_series: list[dict[str, Any]] = [
+        {"step": s, "ct": row[0] / dynamic_pressure if dynamic_pressure > 0 else 0.0}
+        for s, row in zip(recorded_steps, forces_host)
+    ]
 
     # --- 4. Build artifact ---
     ct_final = ct_series[-1]["ct"] if ct_series else 0.0
