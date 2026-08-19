@@ -39,7 +39,7 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # <repo>/benchmarks
 
 from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
