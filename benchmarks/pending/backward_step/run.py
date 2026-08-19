@@ -35,12 +35,15 @@ from tensorlbm.backward_facing_step import (
     run_backward_facing_step,
 )
 from tensorlbm.boundaries import zou_he_inlet_velocity, zou_he_outlet_pressure
-from tensorlbm.solver import collide_bgk
+from tensorlbm.solver import collide_bgk, collide_rlbm
 
-# 诊断: 强制 BGK 碰撞 (对照 MRT; τ=0.5585 时模块自动选 MRT)
+# 诊断: 强制 BGK/RLBM 碰撞 (对照 MRT; τ<0.60 时模块自动选 MRT)
 if os.environ.get("BFS_FORCE_BGK", "0") == "1":
     bfs.collide_mrt = collide_bgk  # noqa: SLF001 (模块内 _collide_base 引用模块全局名)
     print(">>> forced BGK collision (BFS_FORCE_BGK=1)", flush=True)
+if os.environ.get("BFS_FORCE_RLBM", "0") == "1":
+    bfs.collide_mrt = collide_rlbm  # noqa: SLF001 (同上; 高 Re 低 τ 时 MRT 线性不稳定则用 RLBM)
+    print(">>> forced RLBM collision (BFS_FORCE_RLBM=1)", flush=True)
 
 # ---------------------------------------------------------------------------
 # 参数 (环境变量可覆盖)
@@ -55,6 +58,7 @@ N_STEPS = int(os.environ.get("BFS_N_STEPS", "300000"))
 OUT_INTERVAL = int(os.environ.get("BFS_OUT_INTERVAL", "10000"))
 DEVICE = os.environ.get("BFS_DEVICE", "cuda:1")
 ERR_TOL_PCT = float(os.environ.get("BFS_ERR_TOL", "3.0"))   # 达标容差 (%)
+XR_REF = float(os.environ.get("BFS_XR_REF", "3.0"))          # 参考再附着长度 X_r/h (Re 相关: 100→3.0, 200→5.5, 400→8.0)
 ER_REF = float(os.environ.get("BFS_ER_REF", "1.94"))        # Armaly 实验膨胀比
 OUT_ROOT = Path(
     os.environ.get(
@@ -222,7 +226,7 @@ def main() -> None:
     final_ux = torch.from_numpy(ux_snaps[-1])
     xr_h = measure_reattach_subcell(final_ux, X_STEP, STEP_H)          # 物理 (距台阶立面)
     xr_h_mod = xr_h - 0.5 / STEP_H                                      # 模块约定 (距 x_step 列)
-    err_pct = (xr_h - 3.0) / 3.0 * 100.0
+    err_pct = (xr_h - XR_REF) / XR_REF * 100.0
 
     # 收敛判据: 最后 3 个快照 X_r/h 极差 ≤ 0.02 且最后两步变化 ≤ 0.01
     last3 = xr_series[-3:]
@@ -253,7 +257,7 @@ def main() -> None:
             "source": "Armaly, Durst, Pereira & Schoenung, JFM 127:473-496 (1983), "
                       "commonly cited as 'Armaly 1984'",
             "re_definition": "Re = U_max * step_h / nu (最大入口速度)",
-            "xr_h_ref": 3.0,
+            "xr_h_ref": XR_REF,
             "er_ref": ER_REF,
             "err_tol_pct": ERR_TOL_PCT,
         },

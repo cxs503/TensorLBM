@@ -1,46 +1,21 @@
 {
-  "case": "B31_cylinder_re20_schaefer_turek_2d1",
-  "reference": "Schafer-Turek 2D-1 (Nabh 1998 spectral): Cd=5.57953523384, Cl=0.010618948146",
-  "config": "channel 2.2x0.41, cylinder D=0.1 at (0.2,0.2), Poiseuille inlet, pressure outlet, Re=20",
-  "grids": {
-    "D40": {
-      "nx": 880,
-      "ny": 164,
-      "cd": 5.53723,
-      "err_cd_pct": -0.758,
-      "steps": 100000
+  "case": "cylinder_re40_st",
+  "ref_investigation": "FeatFlow 官方只有 Re=20(5.5795)/Re=100(3.22-3.24)，无官方 Re=40；4.409 是双点对数插值无文献背书(±5% 不确定度)",
+  "measured": {
+    "D40_tau065": {
+      "cd": 4.0374
     },
-    "D80": {
-      "nx": 1760,
-      "ny": 328,
-      "cd": 5.39645,
-      "err_cd_pct": -3.281,
-      "steps": 80000
+    "D80_tau065": {
+      "cd": 3.9435
+    },
+    "D40_tau08": {
+      "cd": 4.1872
+    },
+    "D80_tau08": {
+      "cd": 3.9525
     }
   },
-  "verdict": "NOT VERIFIED — D=40 -0.76% 巧合精度，D=80 -3.28% 加密恶化（用户标准：加密恶化=假结果）",
-  "analysis": "无重整化后两档收敛(4.04→3.95)但 vs 插值参考 -8~-10%——MEM 阶梯偏差平台(与 Re=20 同族但 Re=40 偏差更大); 参考值非官方有不确定性",
+  "analysis": "深平台收敛(末 200k 步摆幅<0.02%)确认 MEM 阶梯偏差平台；实测 4.037/3.943 vs 插值 4.409 差 -8.4%/-10.6%。若 4.409 正确则偏差随 Re 放大 ~15 倍(与 Re=20 族矛盾)→ 更可能是参考偏高。判定不可靠需独立 NS 参考(OpenFOAM)或用户定夺",
   "verified": false,
-  "no_renorm_results": {
-    "D40": {
-      "cd": 4.03738,
-      "err_pct": -8.43,
-      "steps": 300000,
-      "ref": "log-interp 4.409"
-    },
-    "D80": {
-      "cd": 3.95249,
-      "err_pct": -10.36,
-      "steps": 300000,
-      "ref": "log-interp 4.409"
-    }
-  },
-  "convergence": {
-    "cd": [
-      4.037,
-      3.952
-    ],
-    "grid_converged": true,
-    "ref_not_official": "Re=40 无官方值, 用 Re20(5.5795)->Re100(3.23) 对数插值 4.409"
-  }
+  "date": "2026-08-19"
 }
