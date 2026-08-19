@@ -19,17 +19,56 @@ distributed solver's design); x is the streamwise axis within each
 slab.  When the upstream :mod:`tensorlbm_triton_fused_distributed`
 adds a dedicated x-streamwise variant, only the inner kernel call
 needs to swap.
+
+Multi-rank correctness (4 fixes, validated bitwise vs the single-GPU
+Triton path at 4 ranks — final ``f`` identical bit-for-bit, fx rel at
+scale 3.8e-7; see ``triton_bench_20260819/dist_revalidate``):
+
+1. **BC writes only touch physical faces.**  The stock step called
+   :func:`apply_far_field_bc_6face` on every rank's owned slab, so
+   each *interior* slab interface (z = k*nz_local for k = 1..w-1) was
+   reset to free-stream equilibrium once per step.  Now the z faces
+   are written only by the rank that owns the *global* z boundary
+   (rank 0 writes z-, rank world-1 writes z+); the x inlet/outlet and
+   y faces are interior to every slab and stay per-rank.  At
+   world_size == 1 this reduces exactly to the stock 6-face BC (the
+   single rank owns both global z faces and the ``nz > 4`` guard
+   applies to the same tensor).
+2. **First-step halo exchange at construction.**  ``from_global``
+   pre-fills the ghost planes with the nearest *owned* plane, so the
+   first kernel launch read wrong values wherever a slab interface
+   crosses a solid/fluid boundary (step-1 error concentrated exactly
+   on the interface planes).  ``__init__`` now exchanges + lands the
+   halos once before returning.
+3. **Halo exchange moved after BC + mass correction.**  The exchange
+   used to be posted right after the kernel, so the ghost planes
+   carried pre-BC boundary values and the BC/mass fixes could never
+   reach the neighbours (error resurfacing at the interfaces from
+   step ~4).  The kernel is periodic in z, and the single-GPU
+   reference reads the previous step's post-BC planes through that
+   wrap; posting the exchange after BC + mass reproduces exactly
+   those values in the ghosts.
+4. **Global (mass-bitwise) mass correction.**  The per-rank
+   ``initial_mass_per_rank`` rescale does not reproduce the
+   single-GPU reduction: the scale factor differed per rank and
+   leaked an O(1e-9) step at every interface.  Each mass step now
+   all-gathers the owned slabs, concatenates them in global z order
+   and sums once — bitwise the same reduction order as the
+   single-GPU ``f.sum()`` — then rescales every rank by the same
+   ``initial_mass_global / current`` factor.  When the gathered
+   global tensor cannot fit in GPU memory (production n >= 512
+   cubes), the sum degrades to an all_reduce of the per-rank sums,
+   which differs only in the last ulp of the scale factor.
 """
 from __future__ import annotations
 
 from typing import Any
 
 import torch
+import torch.distributed as dist
 
 try:
     from tensorlbm_triton_fused_obstacle import (
-        apply_far_field_bc_6face,
-        apply_mass_correction,
         triton_fused_obstacle_xfar_les,
     )
     from tensorlbm_triton_fused_distributed import (
@@ -38,8 +77,6 @@ try:
     )
 except ImportError:
     from tensorlbm.triton_fused_obstacle import (  # type: ignore
-        apply_far_field_bc_6face,
-        apply_mass_correction,
         triton_fused_obstacle_xfar_les,
     )
     from tensorlbm.triton_fused_distributed import (  # type: ignore
@@ -49,6 +86,10 @@ except ImportError:
 
 
 __all__ = ["TritonSuboffDistributedRunner", "build_suboff_solid_slab"]
+
+# Mass correction period (steps), matching the single-GPU production
+# runner and the revalidation gates.
+_MASS_EVERY = 10
 
 
 def build_suboff_solid_slab(
@@ -133,6 +174,13 @@ class TritonSuboffDistributedRunner:
         solid_f32: ``float32[NZ, NY, NX]`` obstacle (will be sliced).
         world_size: Number of ranks.
         rank: This rank's index.
+        initial_mass_per_rank: Legacy per-rank mass target.  Kept for
+            signature compatibility; the mass correction now uses the
+            global initial mass (:attr:`initial_mass_global`, fix 4).
+
+    The constructor performs the first halo exchange (fix 2) and
+    captures the global initial mass (fix 4), so the instance is ready
+    to step immediately.
     """
 
     def __init__(
@@ -176,11 +224,14 @@ class TritonSuboffDistributedRunner:
         )
         self.solid_int8_local[1:-1] = solid_local
 
-        # Per-rank initial mass for mass correction.  Default: 1/(world_size)
-        # of the global initial mass when caller passes the global figure,
-        # or computed from f's current sum if not given.
+        # Per-rank initial mass (legacy attribute; the step-time mass
+        # correction uses the global figure below).  Default: the sum of
+        # THIS rank's owned slab (the old default sliced global planes
+        # 1..nz_local on every rank, which was rank-0's slab — not this
+        # rank's).
         if initial_mass_per_rank is None:
-            initial_mass_per_rank = float(f[:, 1:nz_local + 1, :, :].sum().item())
+            initial_mass_per_rank = float(
+                f[:, z0:z1, :, :].sum().item())
         self.initial_mass_per_rank = initial_mass_per_rank
 
         # Underlying slab-decomposed solver (periodic in z for the halo
@@ -204,6 +255,33 @@ class TritonSuboffDistributedRunner:
         self._buf = self._dist.from_global(f)
         self._q_in = f.shape[0]
 
+        # Fix 2 — first-step halo exchange.  ``from_global`` pre-fills
+        # the ghost planes with the nearest OWNED plane, so the first
+        # kernel launch would read wrong values wherever a slab
+        # interface crosses a solid/fluid boundary (measured: step-1
+        # error concentrated exactly on the interface planes at
+        # n=(128,64,64)/w=4).  Exchange + land once now.  At
+        # world_size == 1 this repeats the nearest-owned-plane copy
+        # ``from_global`` already did — a no-op.
+        self._dist._halo_handles = self._dist._start_halo_exchange(
+            self._buf)
+        self._dist.synchronize()
+
+        # Fix 4 — global initial mass, reduced in the single-GPU order
+        # (gather slabs -> concatenate along z -> one sum).  This is
+        # bitwise equal to ``f_global.sum()`` on one GPU, i.e. the mass
+        # target the single-GPU path rescales back to.  When the
+        # gathered global tensor does not fit comfortably in free GPU
+        # memory (production n >= 512 cubes), fall back to an all_reduce
+        # of the per-rank sums — the scale factor then differs by at
+        # most ~1 ulp, which the A/B revalidation measured as
+        # numerically indistinguishable (fx rel 3.390e-5 vs 3.391e-5).
+        self._mass_reduce_gather = self._gather_fits_memory(
+            f.shape[0], nz, ny, nx, f.device)
+        self.initial_mass_global = float(
+            self._current_global_mass(
+                self._buf[:, 1:nz_local + 1, :, :]).item())
+
         # Persistent force buffers.
         self.fx_buf = torch.zeros((), dtype=torch.float32, device=f.device)
         self.fy_buf = torch.zeros((), dtype=torch.float32, device=f.device)
@@ -221,8 +299,145 @@ class TritonSuboffDistributedRunner:
         )
 
         self.nz_local = nz_local
+        self.nz = nz
         self.ny = ny
         self.nx = nx
+
+    # ------------------------------------------------------------------
+    def _gather_fits_memory(
+        self, q: int, nz: int, ny: int, nx: int, device: torch.device,
+    ) -> bool:
+        """Whether the gather-based (bitwise) global mass fits in memory.
+
+        The gather materializes the full global ``(Q, nz, ny, nx)``
+        tensor twice transiently (the all_gather output list plus the
+        concatenated copy), which is only affordable on validation-size
+        grids — at n=512/w=4 that is 2 x 20 GiB against a 31 GiB card.
+
+        The decision must be identical on every rank (a rank-local
+        mismatch would desynchronise the collective sequence and
+        deadlock), so rank 0 decides and the verdict is broadcast.
+        """
+        if self.world_size == 1:
+            return True  # no gather involved; direct owned sum
+        if self.rank == 0:
+            if device.type != "cuda":
+                fits = True  # CPU tensors: host RAM is not the constraint
+            else:
+                global_bytes = q * nz * ny * nx * 4
+                try:
+                    free_bytes, _total = torch.cuda.mem_get_info(device)
+                except (RuntimeError, ValueError):  # pragma: no cover
+                    free_bytes = 0
+                # 2x for the gather list + concatenated copy, 2 GiB headroom.
+                fits = 2 * global_bytes <= max(free_bytes - (2 << 30), 0)
+        else:
+            fits = True  # placeholder; overwritten by the broadcast
+        if not dist.is_available() or not dist.is_initialized():
+            return fits
+        flag = torch.tensor([1 if fits else 0], dtype=torch.int64,
+                            device=device if device.type == "cuda" else "cpu")
+        dist.broadcast(flag, src=0)
+        return bool(flag.item())
+
+    def _current_global_mass(self, owned_full: torch.Tensor) -> torch.Tensor:
+        """Current total mass over all ranks' owned planes.
+
+        Gather mode (validation-size grids, ``_mass_reduce_gather``):
+        all_gather the owned slabs and sum the globally-ordered
+        concatenation in one reduction — bitwise the same order as the
+        single-GPU ``f.sum()`` the mass correction is calibrated
+        against.  All-reduce mode (large grids): sum per rank then
+        ``all_reduce``; differs from the gather tree only in the last
+        ulp of the resulting scale factor.
+
+        Args:
+            owned_full: the caller's owned-plane view of the CURRENT
+                step's output buffer (``out_local[:, 1:-1]``), not the
+                ping-pong input — the mass correction must see the
+                post-kernel, post-BC state.
+
+        Returns a 0-d fp32 tensor on this rank's device (identical on
+        every rank).  Collective when ``world_size > 1``.
+        """
+        # The owned-plane view of the halo-padded buffer is strided; the
+        # contiguous copy both satisfies NCCL's layout requirement and
+        # reproduces the single-GPU tensor layout for the bitwise sum.
+        owned = owned_full.contiguous()
+        if self.world_size == 1:
+            return owned.sum()
+        if self._mass_reduce_gather:
+            parts = [torch.empty_like(owned)
+                     for _ in range(self.world_size)]
+            dist.all_gather(parts, owned)
+            cur = torch.cat(parts, dim=1).sum()
+            del parts
+            return cur
+        cur = owned.sum()
+        dist.all_reduce(cur, op=dist.ReduceOp.SUM)
+        return cur
+
+    def _apply_far_field_bc_owned(self, owned_full: torch.Tensor,
+                                  u_in: float) -> None:
+        """Far-field BC on this rank's owned planes — physical faces only.
+
+        Fix 1: the x inlet/outlet and the y faces are interior to every
+        slab and are written on every rank exactly as
+        :func:`apply_far_field_bc_6face` does, but the z faces are
+        written only by the rank that owns the *global* z boundary
+        (rank 0 writes z-, rank world-1 writes z+).  Writing both z
+        faces on every rank would overwrite every interior slab
+        interface with free-stream values once per step.
+
+        The ``self.nz > 4`` guard mirrors production's
+        ``boundaries3d.far_field_bc_3d`` / ``apply_far_field_bc_6face``
+        (2D-extruded mode keeps the z axis periodic).  At world 1 the
+        single rank owns both global z faces, so this reduces exactly
+        to the stock 6-face BC.
+        """
+        try:
+            from tensorlbm.d3q19 import equilibrium3d
+        except ImportError:  # pragma: no cover - flat module layout
+            from d3q19 import equilibrium3d  # type: ignore
+
+        rho1 = torch.ones((1, 1, 1), dtype=owned_full.dtype,
+                          device=owned_full.device)
+        feq_vec = equilibrium3d(
+            rho1, torch.full_like(rho1, u_in),
+            torch.zeros_like(rho1), torch.zeros_like(rho1))[:, 0, 0, 0]
+        _q, _nzl, ny, nx = owned_full.shape
+        # x inlet (x=0): free-stream equilibrium.
+        owned_full[:, :, :, 0] = feq_vec[:, None, None]
+        # x outlet (x=nx-1): zero-gradient copy from x=nx-2.
+        if nx >= 2:
+            owned_full[:, :, :, -1] = owned_full[:, :, :, -2]
+        # Lateral y± Dirichlet.
+        owned_full[:, :, 0, :] = feq_vec[:, None, None]
+        if ny >= 2:
+            owned_full[:, :, -1, :] = feq_vec[:, None, None]
+        # Global z faces only (see docstring).  Guard on the GLOBAL nz
+        # — the stock helper guarded on the tensor it was handed, which
+        # at world > 1 was the local slab height.
+        if self.nz > 4:
+            if self.rank == 0:
+                owned_full[:, 0, :, :] = feq_vec[:, None, None]
+            if self.rank == self.world_size - 1:
+                owned_full[:, -1, :, :] = feq_vec[:, None, None]
+
+    # ------------------------------------------------------------------
+    def synchronize(self) -> None:
+        """Land any in-flight halo exchange into ``self._buf``'s ghosts.
+
+        The exchange posted at the end of :meth:`step` is asynchronous;
+        until it lands, ``self._buf``'s ghost planes still hold the
+        kernel's (unused, possibly non-finite) output for those rows.
+        :meth:`step` itself lands it before the next kernel launch, so
+        plain step loops need no extra call — but callers that READ
+        ``self._buf`` between steps (e.g. the faithful-tau SGS coupling,
+        which streams the current state to recompute ``tau_eff``) must
+        call this first.
+        """
+        self._dist.synchronize()
 
     # ------------------------------------------------------------------
     def step(
@@ -253,6 +468,19 @@ class TritonSuboffDistributedRunner:
         planes; the caller only reads owned planes ``[:, 1:-1, :, :]``)
         and ``fx, fy, fz`` are scalar force tensors reduced over the
         global obstacle (post-stream, pre-bounce-back).
+
+        Step ordering (fixes 1/3/4, see module docstring): kernel ->
+        BC on physical faces -> global mass correction -> halo
+        exchange.  The opening ``synchronize`` lands the exchange that
+        the PREVIOUS step posted after its BC + mass writes, so this
+        step's kernel reads the neighbours' post-BC boundary planes —
+        the same values the single-GPU kernel reads through its
+        periodic wrap.
+
+        The exchange posted at the end of this step is asynchronous:
+        the ghost planes of the returned ``f_local`` hold stale (kernel
+        garbage) values until the next call to :meth:`step` or
+        :meth:`synchronize`.
         """
         cfg = self.config
         u_in = cfg.u_in
@@ -260,8 +488,10 @@ class TritonSuboffDistributedRunner:
         Cs = cfg.C_s
         delta = 1.0
 
-        # 1. Halo exchange (overlap with kernel compute is handled by
-        #    the upstream class).
+        # 1. Land the halo exchange posted at the END of the previous
+        #    step (fix 3) so the kernel below reads fresh, post-BC
+        #    ghost planes.  No-op on the very first step — __init__
+        #    already exchanged and landed (fix 2).
         self._dist.synchronize()
 
         # 2. V2 kernel accepts Q=19 directly — no padding needed.
@@ -320,9 +550,15 @@ class TritonSuboffDistributedRunner:
                     collision=collision,
                 )
 
-        # Roll halos: copy the new boundary planes from neighbours
-        # (async — overlapped with the BC writes below).
-        self._dist._halo_handles = self._dist._start_halo_exchange(out_local)
+        # Roll halos — FIX 3: the exchange is now posted AFTER the BC and
+        # mass writes (see step 5/6 below), so the ghost planes carry the
+        # post-BC values of the neighbours' boundary planes.  The kernel is
+        # periodic in z; the single-GPU reference reads the previous step's
+        # post-BC planes through that periodic wrap, which is exactly what
+        # the delayed exchange reproduces here.  (The stock order posted
+        # the exchange right after the kernel, so the BC/mass fixes could
+        # never reach the neighbours — measured as fresh 3.7e-9 error
+        # appearing on the z interfaces from step ~4.)
 
         # 4. Owned planes (drop the 2 ghost planes) for BC + mass correction.
         #    V2: out_local is Q=19 throughout.
@@ -336,14 +572,22 @@ class TritonSuboffDistributedRunner:
             fy = torch.zeros((), dtype=torch.float32, device=f_in.device)
             fz = torch.zeros((), dtype=torch.float32, device=f_in.device)
 
-        # 5. BC writes on owned planes.
-        apply_far_field_bc_6face(owned_full, u_in)
+        # 5. BC writes on owned planes — physical faces only (fix 1).
+        self._apply_far_field_bc_owned(owned_full, u_in)
 
-        # 6. Mass correction every 10 steps (per-rank; sum stays consistent
-        #    within rounding).  Uses the per-rank initial mass captured at
-        #    construction time.
-        if step_idx % 10 == 0:
-            apply_mass_correction(owned_full, self.initial_mass_per_rank)
+        # 6. Mass correction (fix 4): rescale every rank by the same
+        #    global factor so the current GLOBAL mass returns to
+        #    ``initial_mass_global``.  The stock per-rank rescale let
+        #    each rank's scale factor differ in the last ulp and leaked
+        #    a persistent interface error.
+        if step_idx % _MASS_EVERY == 0:
+            cur = self._current_global_mass(owned_full)
+            if abs(float(cur.item())) >= 1e-30:
+                owned_full.mul_(self.initial_mass_global / cur)
+
+        # 5b/6b. Halo exchange AFTER BC + mass (fix 3).
+        self._dist.synchronize()
+        self._dist._halo_handles = self._dist._start_halo_exchange(out_local)
 
         # 7. Output buffer shape matches input (V2: Q=19 throughout).
         self._buf = out_local
