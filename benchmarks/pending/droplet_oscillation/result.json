@@ -1,0 +1,145 @@
+{
+  "benchmark": "droplet_oscillation",
+  "cases": {
+    "R20": {
+      "L": 80,
+      "R_eq_mean": 20.379207150521694,
+      "R_eq_std": 0.01766712084399425,
+      "R_init": 20.0,
+      "dt_s": 34.99472053628415,
+      "eps": 0.05,
+      "err_pct_fft_vs_rho_l": -14.454072958774397,
+      "err_pct_fit_vs_rho_l": -5.999999999999997,
+      "err_pct_fit_vs_rho_lv": -2.2421060719763726,
+      "err_pct_omega0_vs_rho_l": 3.014758952746656,
+      "err_pct_omega0_vs_rho_lv": 7.133041263016272,
+      "fft_peak_bin": 3,
+      "fit_window_steps": [
+        550,
+        6050
+      ],
+      "gamma_est_nu_R2": 0.0004013046406639288,
+      "gamma_fit": 0.0019,
+      "mass_drift": 0.0002339428962625059,
+      "max_steps": 30000,
+      "max_u_mean": 0.1391901850431889,
+      "n_samples": 600,
+      "omega_0_fit": 0.004644367865581221,
+      "omega_sim_fft": 0.0038567944886797267,
+      "omega_sim_fit": 0.00423794205609792,
+      "omega_theory_rho_l": 0.004508448995848851,
+      "omega_theory_rho_lv": 0.0043351405045798114,
+      "period_theory_rho_l": 1393.6467536762245,
+      "period_theory_rho_lv": 1449.3613991384557,
+      "rho_in_mean": 1.9567468477799013,
+      "rho_out_mean": 0.15975474760876046,
+      "sample_interval": 50
+    },
+    "R30": {
+      "L": 120,
+      "R_eq_mean": 30.304819656545924,
+      "R_eq_std": 0.0270855527075745,
+      "R_init": 30.0,
+      "dt_s": 58.27147217281163,
+      "eps": 0.05,
+      "err_pct_fft_vs_rho_l": -13.533984501296242,
+      "err_pct_fit_vs_rho_l": -7.999999999999995,
+      "err_pct_fit_vs_rho_lv": -4.32206126193432,
+      "err_pct_omega0_vs_rho_l": -1.1344335992985701,
+      "err_pct_omega0_vs_rho_lv": 2.8179739716356025,
+      "fft_peak_bin": 3,
+      "fit_window_steps": [
+        550,
+        10600
+      ],
+      "gamma_est_nu_R2": 0.00018147856723261954,
+      "gamma_fit": 0.0009000000000000001,
+      "mass_drift": 0.00024980395919314564,
+      "max_steps": 30000,
+      "max_u_mean": 0.1397415831094921,
+      "n_samples": 600,
+      "omega_0_fit": 0.0024580210036885654,
+      "omega_sim_fft": 0.0021497401971043275,
+      "omega_sim_fit": 0.002287327535481996,
+      "omega_theory_rho_l": 0.0024862255820456477,
+      "omega_theory_rho_lv": 0.0023906530237277966,
+      "period_theory_rho_l": 2527.1983976650376,
+      "period_theory_rho_lv": 2628.2297116384043,
+      "rho_in_mean": 1.9490435294585653,
+      "rho_out_mean": 0.1586758022261138,
+      "sample_interval": 50
+    },
+    "R40": {
+      "L": 160,
+      "R_eq_mean": 40.39329390317229,
+      "R_eq_std": 0.04622959208070701,
+      "R_init": 40.0,
+      "dt_s": 66.79240951314569,
+      "eps": 0.05,
+      "err_pct_fft_vs_rho_l": -1.6000222830468196,
+      "err_pct_fit_vs_rho_l": -6.999999999999984,
+      "err_pct_fit_vs_rho_lv": -3.2820836669553475,
+      "err_pct_omega0_vs_rho_l": -1.9859762052790795,
+      "err_pct_omega0_vs_rho_lv": 1.9323887402458508,
+      "fft_peak_bin": 4,
+      "fit_window_steps": [
+        550,
+        16050
+      ],
+      "gamma_est_nu_R2": 0.00010214808062835905,
+      "gamma_fit": 0.0005,
+      "mass_drift": 0.00024077451304168164,
+      "max_steps": 30000,
+      "max_u_mean": 0.13960586617613913,
+      "n_samples": 600,
+      "omega_0_fit": 0.0015835522626198488,
+      "omega_sim_fft": 0.0015897878826174315,
+      "omega_sim_fit": 0.001502543765901161,
+      "omega_theory_rho_l": 0.0016156384579582373,
+      "omega_theory_rho_lv": 0.0015535319854567645,
+      "period_theory_rho_l": 3888.9797876685607,
+      "period_theory_rho_lv": 4044.451846501393,
+      "rho_in_mean": 1.9450223595383083,
+      "rho_out_mean": 0.15813444550014386,
+      "sample_interval": 50
+    }
+  },
+  "constants": {
+    "rho_l": 1.957,
+    "rho_v": 0.1596,
+    "sigma_eff": 0.056112,
+    "sigma_eff_source": "laplace_droplet verified 2D measurement",
+    "tau": 1.0
+  },
+  "convergence": {
+    "err_pct_observed_vs_rho_l_by_R": {
+      "20": 5.999999999999997,
+      "30": 7.999999999999995,
+      "40": 6.999999999999984
+    },
+    "finer_grid_err_le_coarser": false
+  },
+  "criteria": {
+    "pass": "|err|<=3% on every grid AND err(R=30)<=err(R=20) (err vs rho_l form)"
+  },
+  "diagnostics_undamped": {
+    "20": {
+      "err_pct_omega0_vs_rho_l": 3.014758952746656,
+      "gamma_fit": 0.0019,
+      "omega_0_fit": 0.004644367865581221
+    },
+    "30": {
+      "err_pct_omega0_vs_rho_l": -1.1344335992985701,
+      "gamma_fit": 0.0009000000000000001,
+      "omega_0_fit": 0.0024580210036885654
+    },
+    "40": {
+      "err_pct_omega0_vs_rho_l": -1.9859762052790795,
+      "gamma_fit": 0.0005,
+      "omega_0_fit": 0.0015835522626198488
+    }
+  },
+  "model": "SCMP SC94 psi_exp (psi=1-exp(-rho)), physical G_eff=-5.0, tau=1.0; library called with G=+5.0 (backward-gather convention); identical to verified laplace_droplet",
+  "pass": false,
+  "physics": "2D droplet, m=2 shape oscillation, R(theta)=R0*(1+eps*cos(2*theta)), eps=0.05; omega^2 = m(m^2-1)*sigma/(rho*R^3), m=2 -> 6*sigma/(rho*R^3); rho = rho_l (task form, vapour neglected) or rho_l+rho_v (exact 2D)"
+}

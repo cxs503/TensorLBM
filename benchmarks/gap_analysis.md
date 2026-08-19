@@ -11,7 +11,7 @@
 | **3D Poiseuille**（OpenLB poiseuille3d） | 解析抛物线 | 🔶 pending（近壁 staircase 15.5%→7.5%） | R_fit 修正后可达 |
 | **Couette**（平板剪切） | 解析线性 | ✅ verified 0.015% | ✅ |
 | **方腔流 Re=100**（OpenLB cavity2d） | Ghia 1982 | 🔶 pending（顶盖 BC 22.5%） | 角点修复 |
-| **方腔 Re=400/1000** | Ghia 1982 | ❌ **不具备** | 需先过 Re=100 |
+| **方腔 Re=400/1000** | Ghia 1982 | ✅ verified（Re=400 0.83%、Re=1000 1.05%，2026-08-19） | Re=1000 需 RLBM 碰撞（MRT 失稳） |
 | 3D 方腔（OpenLB cavity3d） | 3D Ghia | ❌ 不具备 | — |
 | **后向台阶**（OpenLB bstep2d/3d） | Armaly 1984 | 🔶 pending（12.2%） | 加密/入口 |
 | 3D 后向台阶（OpenLB bstep3d） | Armaly | ❌ 不具备 | — |
