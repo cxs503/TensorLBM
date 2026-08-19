@@ -360,20 +360,32 @@ class TritonSuboffDistributedRunner:
         Returns a 0-d fp32 tensor on this rank's device (identical on
         every rank).  Collective when ``world_size > 1``.
         """
-        # The owned-plane view of the halo-padded buffer is strided; the
-        # contiguous copy both satisfies NCCL's layout requirement and
-        # reproduces the single-GPU tensor layout for the bitwise sum.
-        owned = owned_full.contiguous()
+        # The owned-plane view of the halo-padded buffer is strided.  The
+        # contiguous copy is needed ONLY in the gather branch: NCCL's
+        # all_gather requires a dense operand, and the globally ordered
+        # concatenation must reproduce the single-GPU tensor layout for
+        # the bitwise sum.  The world==1 branch keeps the stock
+        # contiguous+sum order bit-for-bit.  In the all-reduce fallback
+        # branch the strided view is summed directly — torch.sum handles
+        # non-contiguous inputs and all_reduce only ever sees the 0-d
+        # scalar result, so no NCCL layout requirement applies.
+        # Materialising the copy there allocated a full owned-slab
+        # transient on EVERY mass step (9.5 GiB at n=1024/w=8), which
+        # OOMed the stock wrapper at the first mass-correction step on
+        # 31.4 GiB cards (triton_bench_20260819/ac_n1024_fullstack/
+        # perf_oom_repro.json: 20.23 GiB allocated + 9.5 GiB transient).
         if self.world_size == 1:
+            owned = owned_full.contiguous()
             return owned.sum()
         if self._mass_reduce_gather:
+            owned = owned_full.contiguous()
             parts = [torch.empty_like(owned)
                      for _ in range(self.world_size)]
             dist.all_gather(parts, owned)
             cur = torch.cat(parts, dim=1).sum()
             del parts
             return cur
-        cur = owned.sum()
+        cur = owned_full.sum()
         dist.all_reduce(cur, op=dist.ReduceOp.SUM)
         return cur
 
