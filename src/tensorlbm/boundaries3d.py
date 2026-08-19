@@ -312,6 +312,78 @@ def zou_he_outlet_pressure_3d(f: torch.Tensor, rho_out: float = 1.0) -> torch.Te
     return f_new
 
 
+def zou_he_moving_lid_3d(
+    f: torch.Tensor,
+    u_lid: float,
+    uy_lid: float = 0.0,
+    uz_lid: float = 0.0,
+) -> torch.Tensor:
+    """Zou/He moving-wall BC for the top row (y = ny-1) of a D3Q19 cavity.
+
+    Prescribes ``ux = u_lid``, ``uy = uy_lid`` (default 0), ``uz = uz_lid``
+    (default 0) on every cell of the top wall plane (including corners).
+    Standard Zou & He (1997) analytical reconstruction; verified against the
+    Ghia (1982) Re=400 lid-driven cavity (spanwise-periodic 3D ≈ 2D).
+
+    Direction convention (D3Q19, see :data:`d3q19.C`):
+      cy=0  : {0, 1, 2, 5, 6, 11, 12, 13, 14}
+      cy>0  : {3, 7, 10, 15, 17}   known at top wall (streamed from y=ny-2)
+      cy<0  : {4, 8, 9, 16, 18}    unknown at top wall (periodic wrap from y=0)
+
+    With the wall at y = ny-1 and fluid below, the unknown populations are
+    the cy<0 ones (they arrive from outside the domain through the periodic
+    y-wrap of :func:`tensorlbm.solver3d.stream3d`).  Reconstruction
+    (``uy = 0``, ``uz = 0``):
+
+    .. math::
+
+        \\rho &= \\sum_{c_y=0} f_k + 2 \\sum_{c_y>0} f_k \\\\
+        f_4 &= f_3 \\\\
+        f_8 &= \\tfrac{1}{2}(f_7+f_{10}) - \\tfrac{1}{2}\\,d_x, \\quad
+        f_9 = \\tfrac{1}{2}(f_7+f_{10}) + \\tfrac{1}{2}\\,d_x \\\\
+        d_x &= \\rho\\,u_{lid} - [(f_1-f_2+f_{11}-f_{12}+f_{13}-f_{14}) + (f_7-f_{10})] \\\\
+        f_{16} &= f_{15} + \\tfrac{1}{2}\\,S_z, \\quad
+        f_{18} = f_{17} - \\tfrac{1}{2}\\,S_z \\\\
+        S_z &= (f_5-f_6) + (f_{11}-f_{12}-f_{13}+f_{14})
+
+    Exact conservation (numerically verified): ``jy ≡ 0``, ``jz ≡ 0``,
+    ``jx ≡ rho_tot*u_lid`` on the lid plane; mass-neutral at steady state.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        u_lid: Prescribed x-velocity of the lid.
+        uy_lid: Prescribed y-velocity of the lid (default 0).
+        uz_lid: Prescribed z-velocity of the lid (default 0).
+
+    Returns:
+        Updated distribution tensor (same shape, input not modified).
+    """
+    if uy_lid != 0.0 or uz_lid != 0.0:
+        raise NotImplementedError(
+            "zou_he_moving_lid_3d currently supports uy=uz=0 (the Ghia "
+            "cavity case); general uy/uz would need the (1±uy) density "
+            "factor and mixed diagonal pairs."
+        )
+    fl = f[:, :, -1, :]  # (19, nz, nx)
+    f0 = fl[0]; f1 = fl[1]; f2 = fl[2]; f5 = fl[5]; f6 = fl[6]
+    f11 = fl[11]; f12 = fl[12]; f13 = fl[13]; f14 = fl[14]
+    f3 = fl[3]; f7 = fl[7]; f10 = fl[10]; f15 = fl[15]; f17 = fl[17]
+    sum_cy0 = f0 + f1 + f2 + f5 + f6 + f11 + f12 + f13 + f14
+    sum_cyp = f3 + f7 + f10 + f15 + f17
+    rho = sum_cy0 + 2.0 * sum_cyp
+    sx0 = f1 - f2 + f11 - f12 + f13 - f14
+    sxp = f7 - f10
+    dx = rho * u_lid - (sx0 + sxp)          # = f9_new - f8_new
+    sz0 = f5 - f6 + f11 - f12 - f13 + f14   # known z-momentum (cy=0 dirs)
+    f_new = f.clone()
+    f_new[4, :, -1, :] = f3
+    f_new[8, :, -1, :] = 0.5 * (f7 + f10) - 0.5 * dx
+    f_new[9, :, -1, :] = 0.5 * (f7 + f10) + 0.5 * dx
+    f_new[16, :, -1, :] = f15 + 0.5 * sz0
+    f_new[18, :, -1, :] = f17 - 0.5 * sz0
+    return f_new
+
+
 def apply_simple_channel_boundaries_3d(
     f: torch.Tensor,
     u_in: float,
