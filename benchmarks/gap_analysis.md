@@ -74,6 +74,13 @@
 1. **MEM 曲面力修正**（G12/G15）——解锁：球 Re=100/200、圆柱 Re=100/200、方柱（5 个 pending）
 2. **R_eff 修正**（half-way BB 壁面位置）——解锁：圆柱 Re=20、3D Poiseuille（2 个）
 
+### P0.5（2026-08-19 新增）
+- **可压缩 LBM 完全缺失**（库只有等温 D2Q9/D3Q19）——已做可行性验证：
+  - ✅ **D2Q9 等温 Sod 激波管（4:1, Ma=0.70）达标入库** verified/sod_shock_tube/（B31）
+  - ✅ 弱可压缩声学（Ma<0.3）零改造支持（波速 <0.1%）
+  - ❌ γ-law 高 Ma 完整可压缩需新模型（B32：混合 HLBM 或 D2V17/D2V21），
+    规格书见 /tmp/compressible_gap.md
+
 ### P1（新案例，共性模块可达）
 3. **方腔 Re=400/1000**（Ghia 表值齐全，库内 lid_driven_cavity 现成）
 4. **3D Taylor-Green**（OpenLB tgv3d 同款，3D 周期域，湍流前验证）
