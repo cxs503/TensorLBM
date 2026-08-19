@@ -1,0 +1,56 @@
+{
+  "case": "dam_break_3d_martin_moyce",
+  "status": "NOT_VERIFIED",
+  "reason": "tensorlbm.free_surface_lbm mass-conservation/interface-stability defects: interface-cell count explodes (~100x) and pollutes the front measurement; rho_gas=1.0 additionally drifts +48% mass. See /tmp/dambreak_gap.md.",
+  "module": "tensorlbm.free_surface_lbm (D3Q19, free_surface_step), unmodified, commit da550e5",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "extrap": "none",
+  "reference": "Martin & Moyce (1952): T=1 -> X~1.5, T=2 -> X~2.7; H(T=1)~0.8",
+  "grids": {
+    "rho_gas_0.1": {
+      "a": 16,
+      "g": 0.0001,
+      "tau": 0.8,
+      "rho_gas": 0.1,
+      "steps": 400,
+      "elapsed_s": 33.20464873313904,
+      "X_at_T1_sim": 4.75,
+      "X_ref_T1": 1.5,
+      "X_at_T2_sim": 4.75,
+      "X_ref_T2": 2.7,
+      "H_at_T1_sim": 0.90625,
+      "H_ref_T1": 0.8,
+      "final_mass_drift_rel": -0.00372252925749748,
+      "iface_initial": 500,
+      "iface_final": 55548,
+      "iface_growth_x": 111.096
+    },
+    "rho_gas_1.0": {
+      "a": 16,
+      "g": 0.0001,
+      "tau": 0.8,
+      "rho_gas": 1.0,
+      "steps": 400,
+      "elapsed_s": 32.340312480926514,
+      "X_at_T1_sim": 4.875,
+      "X_ref_T1": 1.5,
+      "X_at_T2_sim": 4.875,
+      "X_ref_T2": 2.7,
+      "H_at_T1_sim": 0.9375,
+      "H_ref_T1": 0.8,
+      "final_mass_drift_rel": 0.4785675541047127,
+      "iface_initial": 500,
+      "iface_final": 51837,
+      "iface_growth_x": 103.674
+    }
+  },
+  "convergence": {
+    "err_decreased": false,
+    "pass": false,
+    "note": "both grids fail: front polluted by exploding interface halo"
+  },
+  "verified": false,
+  "verified_date": null,
+  "assessed_date": "2026-08-19"
+}
