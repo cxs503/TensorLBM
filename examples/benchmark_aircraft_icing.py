@@ -38,6 +38,7 @@ if _SRC not in sys.path:
 
 from tensorlbm.aircraft_icing import (  # noqa: E402
     IcingConfig,
+    eulerian_mass_audit_report,
     mass_audit_report,
     run_rime_icing,
     save_icing_artifacts,
@@ -68,6 +69,23 @@ def main() -> None:
     p.add_argument("--compile-mode", default=None,
                    choices=[None, "default", "max-autotune-no-cudagraphs"],
                    help="torch.compile mode for the flow step (shared compile_utils)")
+    p.add_argument("--droplet-phase", default="lagrangian",
+                   choices=["lagrangian", "eulerian", "both"],
+                   help="Phase 2b: droplet formulation (2a Lagrangian default; "
+                        "'both' runs both phases on the same flow trajectory "
+                        "for beta cross-validation)")
+    p.add_argument("--collision", default="bgk", choices=["bgk", "cumulant"],
+                   help="flow collision operator (cumulant enables high Re)")
+    p.add_argument("--c-s", type=float, default=0.0,
+                   help="Smagorinsky constant (cumulant only; 0 disables LES)")
+    p.add_argument("--re-lu", type=float, default=None,
+                   help="target lattice Reynolds number (derives the knife-edge "
+                        "tau; requires --collision cumulant for Re >~ 1e3)")
+    p.add_argument("--drag-law", default="stokes",
+                   choices=["stokes", "schiller-naumann"],
+                   help="droplet drag law (applies to BOTH phases)")
+    p.add_argument("--shadow-frac", type=float, default=1e-3,
+                   help="Eulerian shadow-region threshold (fraction of alpha_in)")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--device", default="cuda")
     p.add_argument("--log-every", type=int, default=250)
@@ -99,10 +117,16 @@ def main() -> None:
         seed=args.seed,
         device=args.device,
         log_every=args.log_every,
+        droplet_phase=args.droplet_phase,
+        collision=args.collision,
+        c_s=args.c_s,
+        re_lu_target=args.re_lu,
+        drag_law=args.drag_law,
+        shadow_alpha_frac=args.shadow_frac,
     )
 
     print("=" * 72)
-    print("  AIRCRAFT ICING — NACA 0012 rime (Phase 2a: LWC/MVD-calibrated)")
+    print("  AIRCRAFT ICING — NACA 0012 rime (Phase 2a/2b: LWC/MVD-calibrated)")
     print("=" * 72)
     r = run_rime_icing(cfg)
     files = save_icing_artifacts(r, args.output)
@@ -110,6 +134,9 @@ def main() -> None:
     print("-" * 72)
     print("  MASS AUDIT [kg]")
     print(mass_audit_report(r))
+    if r.get("eulerian") is not None:
+        print("  EULERIAN ALPHA-FIELD AUDIT [kg]")
+        print(eulerian_mass_audit_report(r))
     print(f"  rho_rime = {cfg.rho_rime_eff:.0f} kg/m^3 "
           f"(mode={cfg.rime_density_mode}, T_s_eff={cfg.t_surface_eff_c:.1f} C, "
           f"R={cfg.rime_R_macklin:.1f})")
@@ -137,6 +164,16 @@ def main() -> None:
         imax = b["beta"].argmax()
         print(f"  BETA: max={b['beta'].max():.3f} at s/c="
               f"{b['s_over_c'][imax] * 100:+.2f} % chord")
+    e = r.get("eulerian")
+    if e is not None and len(e["beta"]["beta"]):
+        be = e["beta"]
+        imax = be["beta"].argmax()
+        print(f"  BETA-E (eulerian): max={be['beta'].max():.3f} at s/c="
+              f"{be['s_over_c'][imax] * 100:+.2f} % chord, "
+              f"capture height={float(e['beta_grid'].sum()):.2f} cells")
+        if len(b["beta"]):
+            print(f"  BETA   (lagrangian): capture height="
+                  f"{float(r['beta_grid'].sum()):.2f} cells")
     if r["cd0"] is not None and r["cd_end"] is not None:
         print(f"  AERO: cd {r['cd0']:.5f} -> {r['cd_end']:.5f} "
               f"({r['cd_drift_pct']:+.1f} %), cl {r['cl0']:.5f} -> {r['cl_end']:.5f}")
