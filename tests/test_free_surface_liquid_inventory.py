@@ -85,10 +85,6 @@ def _advance(f, fill, flags, solid, mass, *, steps: int, gy: float) -> tuple[tor
     return f, fill, flags, mass
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="P0 blocker: ABB/population and interface-mass ledgers have no conservative common flux",
-)
 def test_closed_static_plane_conserves_composite_liquid_inventory() -> None:
     nz, ny, nx = 8, 12, 12
     solid = torch.zeros((nz, ny, nx), dtype=torch.bool)

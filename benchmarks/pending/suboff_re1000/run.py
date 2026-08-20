@@ -32,9 +32,11 @@ sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
 
 import torch
 
+from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.drag_pressure import (
     drag_friction_integration,
     drag_pressure_integration,
+    suboff_smooth_q,
 )
 from tensorlbm.general_sim import (
     CollisionModel,
@@ -74,7 +76,17 @@ def main() -> None:
     ap.add_argument(
         "--friction",
         default="standard",
-        choices=["standard", "2nd_order", "central", "lagrange", "bfl", "bfl_lagrange", "faces"],
+        choices=[
+            "standard",
+            "2nd_order",
+            "central",
+            "lagrange",
+            "bfl",
+            "bfl_smooth",
+            "bfl_lagrange",
+            "faces",
+            "mix50",
+        ],
     )
     ap.add_argument(
         "--p0", default="near_wall", choices=["near_wall", "far_field", "domain_avg", "inlet"]
@@ -197,18 +209,80 @@ def main() -> None:
     final_checks = {}
     f_final = engine.f
     mesh = engine.mesh
+    solid = engine.solid
+
+    # q_smooth: true distance from each near-wall cell centre to the SMOOTH
+    # hull surface (BFL correction; formula='bfl_smooth').
+    # Engine places the hull axis along x at (nx*0.25, ny*0.5, nz*0.5).
+    nz_g, ny_g, nx_g = solid.shape
+    q_smooth = suboff_smooth_q(
+        solid, engine.near, nx_g * 0.25, ny_g * 0.5, nz_g * 0.5, float(L), R_lb
+    )
+    q_near = q_smooth[engine.near]
+    q_stats = {
+        "mean": float(q_near.mean().item()),
+        "min": float(q_near.min().item()),
+        "max": float(q_near.max().item()),
+    }
+
+    # Uniform-field faces/standard ratio (pure geometry): with u = const the
+    # two formulas differ only by stair-face count vs near-cell weighting.
+    # The real flow realises only a fraction of this geometric gain
+    # (SUBOFF L=96: uniform 1.4551 vs actual 1.269) — the interpolation
+    # weight for the ratio-calibrated scheme is derived from it.
+    u_uni = torch.full_like(solid, u_lb, dtype=torch.float32)
+    f_uni = equilibrium3d(
+        torch.ones_like(u_uni), u_uni, torch.zeros_like(u_uni), torch.zeros_like(u_uni)
+    )
+    cd_f_uni_std = drag_friction_integration(f_uni, mesh, dpS_wet, nu_lb, formula="standard")[0]
+    cd_f_uni_faces = drag_friction_integration(
+        f_uni, mesh, dpS_wet, nu_lb, formula="faces", solid=solid
+    )[0]
+    ratio_uniform = cd_f_uni_faces / cd_f_uni_std
+    del f_uni, u_uni
+
     for p0 in ("near_wall", "far_field", "domain_avg", "inlet"):
         fx_p, _, _ = drag_pressure_integration(
-            f_final, mesh, dpS_wet, extrap="none", p0_method=p0, solid=engine.solid
+            f_final, mesh, dpS_wet, extrap="none", p0_method=p0, solid=solid
         )
         row = {"cd_p": fx_p}
-        for formula in ("standard", "2nd_order", "central", "lagrange", "faces"):
+        for formula in (
+            "standard",
+            "2nd_order",
+            "central",
+            "lagrange",
+            "bfl_smooth",
+            "faces",
+            "mix50",
+        ):
+            kwargs = {"solid": solid}
+            if formula == "bfl_smooth":
+                kwargs["q_wall"] = q_smooth
             fx_f, _, _ = drag_friction_integration(
-                f_final, mesh, dpS_wet, nu_lb, formula=formula, solid=engine.solid
+                f_final, mesh, dpS_wet, nu_lb, formula=formula, **kwargs
             )
             row[f"cd_f_{formula}"] = fx_f
         row["cd_tot_standard"] = row["cd_p"] + row["cd_f_standard"]
+        row["cd_tot_mix50"] = row["cd_p"] + row["cd_f_mix50"]
+        # Ratio-calibrated weight: the actual flow realises only
+        # (faces/std - 1) of the uniform-field geometric gain
+        # (uniform_ratio - 1); w = 1 - gain_actual/gain_geometric.
+        gain_actual = row["cd_f_faces"] / row["cd_f_standard"] - 1.0
+        w_ratio = 1.0 - gain_actual / (ratio_uniform - 1.0)
+        row["gain_faces_over_standard"] = gain_actual
+        row["uniform_faces_standard_ratio"] = ratio_uniform
+        row["w_ratio_calibrated"] = w_ratio
+        row["cd_f_weighted_ratio"] = (
+            w_ratio * row["cd_f_standard"] + (1.0 - w_ratio) * row["cd_f_faces"]
+        )
+        row["cd_tot_weighted_ratio"] = row["cd_p"] + row["cd_f_weighted_ratio"]
         final_checks[p0] = row
+
+    # Persist the converged field so later formula studies can recompute
+    # without re-running the simulation (1.8 GB float32).
+    field_path = out_dir / "final_field.pt"
+    torch.save(f_final.cpu(), field_path)
+    print(f"final field saved to {field_path}", flush=True)
 
     cf_ref = 1.328 / math.sqrt(1000.0)
     ref_name = "Blasius Cf=1.328/sqrt(Re)=0.0420 (wetted-area pi*D*L)"
@@ -269,6 +343,8 @@ def main() -> None:
         "window_steps": n_win * 10,
         "convergence_windows": conv,
         "final_field_checks": final_checks,
+        "q_smooth_stats": q_stats,
+        "final_field_saved": True,
         "finite": bool(torch.isfinite(engine.f).all().item()),
         "diverged": run_info.get("diverged", False),
         "solid_cells": int(engine.solid.sum().item()) if engine.solid is not None else None,

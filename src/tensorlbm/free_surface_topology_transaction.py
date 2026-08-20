@@ -645,6 +645,10 @@ def build_topology_transaction(
     flags_before_conversion = cflags.clone() if capture_evidence else None
     f_before_conversion = cf.clone() if capture_evidence else None
 
+    # H2: to_liq conversion reinitializes f at the rho_liquid equilibrium
+    # (neighbor-averaged velocity) instead of inheriting interface
+    # populations that were inflated by ABB gas-pressure reconstruction.
+    cf = _init_new(cf, cflags, to_liq, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
     cflags = torch.where(to_liq, torch.full_like(cflags, liquid_flag), cflags)
     cfill = torch.where(to_liq, torch.ones_like(cfill), cfill)
     cmass = torch.where(to_liq, torch.full_like(cmass, rho_liquid), cmass)
@@ -677,7 +681,10 @@ def build_topology_transaction(
     f_after_conversion = cf.clone() if capture_evidence else None
 
     shifted_flags = torch.stack(all_moving_neighbor_masks(cflags))
-    is_neighbor = ((shifted_flags == liquid_flag) | (shifted_flags == interface_flag)).any(dim=0)
+    # H1: halo promotion requires a directly adjacent LIQUID cell.  A gas
+    # cell neighbouring only interface cells must not self-propagate the
+    # interface layer (quiescent column 743->32291 interface explosion).
+    is_neighbor = (shifted_flags == liquid_flag).any(dim=0)
     to_i = ((gas_mask | to_gas) & is_neighbor & ~solid_mask) | recv_new
     cf = _init_new(cf, cflags, to_i, rho_gas, ux, uy, uz, liquid_flag, interface_flag)
     cflags = torch.where(to_i, torch.full_like(cflags, interface_flag), cflags)

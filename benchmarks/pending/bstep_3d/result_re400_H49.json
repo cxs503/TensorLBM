@@ -1,0 +1,90 @@
+{
+  "case": "bstep_3d_highre",
+  "name": "backward_facing_step_3d_re400_H49",
+  "reference": {
+    "source": "Armaly, Durst, Pereira & Schoenung, JFM 127:473-496 (1983); 2D 数值解 (Erturk 2008 等) Re=200 X_r/h≈5.5",
+    "re_definition": "Re = U_max * step_h / nu (最大入口速度, 台阶高)",
+    "xr_h_ref": 8.0,
+    "er_ref": 1.94,
+    "err_tol_pct": 3.0
+  },
+  "geometry": {
+    "nx": 490,
+    "ny": 101,
+    "nz": 98,
+    "step_h": 49,
+    "x_step": 98,
+    "expansion_ratio": 1.9411764705882353,
+    "er_dev_pct": 0.06064281382656363,
+    "spanwise": "periodic, Lz=98 = 2.0H",
+    "inlet": "fully_developed_parabolic (3D Zou/He profile), U_max=0.075",
+    "outlet": "Zou/He pressure (rho=1)"
+  },
+  "physics": {
+    "re": 400.0,
+    "nu": 0.0091875,
+    "tau": 0.5275625,
+    "collision": "rlbm",
+    "lattice": "D3Q19"
+  },
+  "result": {
+    "xr_h": 0.0,
+    "xr_h_err_pct": -100.0,
+    "xr_planes_mean": 0.0,
+    "xr_planes_std": 0.0,
+    "xr_planes_min": 0.0,
+    "xr_planes_max": 0.0,
+    "xr_series": [
+      0.0,
+      0.014654821716248989,
+      0.02738189697265625,
+      0.0,
+      0.0,
+      4.4838433265686035,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.011860906146466732,
+      0.048060983419418335,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "steps": [
+      2000,
+      4000,
+      6000,
+      8000,
+      10000,
+      12000,
+      14000,
+      16000,
+      18000,
+      20000,
+      22000,
+      24000,
+      26000,
+      28000,
+      30000
+    ],
+    "converged": true,
+    "n_steps_run": 30000,
+    "wall_time_s": 761.9,
+    "ms_per_step": 25.4,
+    "device": "cuda:0",
+    "inlet_profile_check": {
+      "max_abs_dev_over_umax": 4.61930268017922e-07,
+      "flux_ratio": 1.000192118626015
+    },
+    "spanwise_uniformity": {
+      "max_z_rel_dev_over_umax": 1.1920928955078125e-06
+    },
+    "separation_bubble": {
+      "max_backflow_over_umax": -0.17536846299966177,
+      "backflow_x_rel_h": 4.346938775510204
+    },
+    "mass_drift_final": -7373.0,
+    "finite": true
+  }
+}
