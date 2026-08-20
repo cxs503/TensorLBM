@@ -41,6 +41,7 @@ Pass criteria (repo standard, real runs only, no extrapolation):
 
 Usage: python run.py --a 80 --g 2e-4 --steps 10000 --device cuda:2 [--out DIR]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -64,7 +65,7 @@ from tensorlbm.multiphase import collide_sc_single_component, psi_exp  # noqa: E
 from tensorlbm.solver import stream  # noqa: E402
 
 CS2 = 1.0 / 3.0
-G_LIB = 5.0   # library argument (sign-flipped convention, see laplace_droplet)
+G_LIB = 5.0  # library argument (sign-flipped convention, see laplace_droplet)
 G_EFF = -5.0  # physical standard-convention SC94 coupling
 TAU = 1.0
 RHO_L, RHO_V = 1.957, 0.1596  # discrete coexistence (measured)
@@ -160,9 +161,7 @@ def run_case(
     sqrt_geff_a = math.sqrt(g_eff / a)
 
     def _step(f):
-        f = collide_sc_single_component(
-            f, G=G_LIB, tau=TAU, psi_fn=psi_exp, gy=-g, solid_mask=wall
-        )
+        f = collide_sc_single_component(f, G=G_LIB, tau=TAU, psi_fn=psi_exp, gy=-g, solid_mask=wall)
         f = stream(f)
         f = bounce_back_cells(f, wall)
         return f
@@ -174,7 +173,11 @@ def run_case(
         f = step_fn(f)
         if step % sample_interval == 0:
             m = measure(f, a, n_toe)
-            if m["rho_min"] < 0.0 or not math.isfinite(m["rho_min"]) or not math.isfinite(m["rho_max"]):
+            if (
+                m["rho_min"] < 0.0
+                or not math.isfinite(m["rho_min"])
+                or not math.isfinite(m["rho_max"])
+            ):
                 raise RuntimeError(f"a={a:.0f}: NaN/negative rho at step {step}")
             rec = {
                 "step": step,
@@ -200,9 +203,7 @@ def run_case(
     ck = {}
     for Tq, Xref in MM.items():
         x_eff = interp_x(hist, Tq)
-        x_raw = interp_x(
-            [dict(r, T_eff=r["T_raw"]) for r in hist], Tq
-        )  # same curve, raw axis
+        x_raw = interp_x([dict(r, T_eff=r["T_raw"]) for r in hist], Tq)  # same curve, raw axis
         ck[f"T{Tq:g}"] = {
             "X_ref": Xref,
             "X_sim_T_eff": round(x_eff, 6),
@@ -252,12 +253,15 @@ def main() -> None:
     final, hist = run_case(
         args.a, args.g, args.steps, args.sample_interval, device, compile_mode, out
     )
-    print(f"\n  RESULT a={final['a']:.0f}: " + "  ".join(
-        f"T={Tq:g}: X={final['checkpoints'][f'T{Tq:g}']['X_sim_T_eff']:.3f} "
-        f"(err_eff={final['checkpoints'][f'T{Tq:g}']['err_pct_T_eff']:+.2f}%, "
-        f"err_raw={final['checkpoints'][f'T{Tq:g}']['err_pct_T_raw']:+.2f}%)"
-        for Tq in MM
-    ))
+    print(
+        f"\n  RESULT a={final['a']:.0f}: "
+        + "  ".join(
+            f"T={Tq:g}: X={final['checkpoints'][f'T{Tq:g}']['X_sim_T_eff']:.3f} "
+            f"(err_eff={final['checkpoints'][f'T{Tq:g}']['err_pct_T_eff']:+.2f}%, "
+            f"err_raw={final['checkpoints'][f'T{Tq:g}']['err_pct_T_raw']:+.2f}%)"
+            for Tq in MM
+        )
+    )
 
     case_id = f"a{int(args.a)}"
     out.mkdir(parents=True, exist_ok=True)
