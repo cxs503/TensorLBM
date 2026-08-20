@@ -63,7 +63,8 @@ def main() -> None:
     ap.add_argument("--device", default="cuda:2")
     ap.add_argument("--collision", default="mrt", choices=["mrt", "smagorinsky"])
     ap.add_argument("--friction", default="standard",
-                    choices=["standard", "2nd_order", "central", "lagrange"])
+                    choices=["standard", "2nd_order", "central", "lagrange",
+                             "bfl", "bfl_lagrange", "faces"])
     ap.add_argument("--p0", default="near_wall",
                     choices=["near_wall", "far_field", "domain_avg", "inlet"])
     ap.add_argument("--out", default=None)
@@ -160,9 +161,9 @@ def main() -> None:
                                                extrap="none", p0_method=p0,
                                                solid=engine.solid)
         row = {"cd_p": fx_p}
-        for formula in ("standard", "2nd_order", "central", "lagrange"):
+        for formula in ("standard", "2nd_order", "central", "lagrange", "faces"):
             fx_f, _, _ = drag_friction_integration(f_final, mesh, dpS_wet, nu_lb,
-                                                   formula=formula)
+                                                   formula=formula, solid=engine.solid)
             row[f"cd_f_{formula}"] = fx_f
         row["cd_tot_standard"] = row["cd_p"] + row["cd_f_standard"]
         final_checks[p0] = row
@@ -205,7 +206,7 @@ def main() -> None:
         "rescale_frontal_to_wetted": rescale,
         "pressure_extrap": "none",
         "p0_method": args.p0,
-        "friction_formula_primary": "standard",
+        "friction_formula_primary": args.friction,
         "Cd_pressure": cd_p_wet,
         "Cd_friction": cd_f_wet,
         "Cd_total": cd_tot_wet,

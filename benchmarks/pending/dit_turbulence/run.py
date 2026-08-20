@@ -67,7 +67,11 @@ import torch
 _sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
 
 from tensorlbm.solver3d import stream3d  # noqa: E402
-from tensorlbm.turbulence import collide_smagorinsky_bgk3d, collide_smagorinsky_mrt3d  # noqa: E402
+from tensorlbm.turbulence import (  # noqa: E402
+    collide_smagorinsky_bgk3d, collide_smagorinsky_mrt3d,
+    collide_wale_bgk3d, collide_wale_mrt3d,
+    collide_vreman_bgk3d,
+)
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -180,7 +184,7 @@ def velocity_derivative_skewness(ux: torch.Tensor, uy: torch.Tensor,
 def run_case(n: int, u_rms: float, m0: float, tau: float, cs: float,
              steps: int, record_every: int, seed: int,
              collision: str = "bgk", device: str = "cpu",
-             threads: int = 32) -> dict:
+             threads: int = 32, cw: float = 0.325, cv: float = 0.025) -> dict:
     torch.set_num_threads(threads)
     dev = torch.device(device)
 
@@ -199,8 +203,19 @@ def run_case(n: int, u_rms: float, m0: float, tau: float, cs: float,
 
     if collision == "bgk":
         collide = collide_smagorinsky_bgk3d
+        collide_kw = {"C_s": cs}
     elif collision == "mrt":
         collide = collide_smagorinsky_mrt3d
+        collide_kw = {"C_s": cs}
+    elif collision == "wale":
+        collide = collide_wale_bgk3d
+        collide_kw = {"C_w": cw}
+    elif collision == "wale_mrt":
+        collide = collide_wale_mrt3d
+        collide_kw = {"C_w": cw}
+    elif collision == "vreman":
+        collide = collide_vreman_bgk3d
+        collide_kw = {"C_V": cv}
     else:
         raise ValueError(collision)
 
@@ -224,7 +239,7 @@ def run_case(n: int, u_rms: float, m0: float, tau: float, cs: float,
     wall0 = time.time()
     for step in range(1, steps + 1):
         f = stream3d(f)
-        f = collide(f, tau, cs)
+        f = collide(f, tau, **collide_kw)
         if step % record_every == 0:
             _, uxm, uym, uzm = macroscopic3d(f)
             u2 = uxm * uxm + uym * uym + uzm * uzm
@@ -379,10 +394,15 @@ def main() -> None:
     ap.add_argument("--m0", type=float, default=3.0)
     ap.add_argument("--tau", type=float, default=0.501)
     ap.add_argument("--cs", type=float, default=0.12)
+    ap.add_argument("--cw", type=float, default=0.325,
+                    help="WALE constant (Nicoud & Ducros standard Cw=0.325)")
+    ap.add_argument("--cv", type=float, default=0.025,
+                    help="Vreman constant (default 0.025 = 2.5·Cs² for Cs=0.1)")
     ap.add_argument("--steps", type=int, default=15000)
     ap.add_argument("--record-every", type=int, default=100)
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--collision", choices=["bgk", "mrt"], default="bgk")
+    ap.add_argument("--collision", choices=["bgk", "mrt", "wale", "wale_mrt", "vreman"],
+                    default="bgk")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--threads", type=int, default=32)
     ap.add_argument("--out", default=HERE)
@@ -401,11 +421,12 @@ def main() -> None:
         kmin = args.kmin or int(2 * args.m0 + 2)
         kmax = args.kmax or max(kmin + 2, int(round(0.34 * n / 2)))
         print(f"=== N={n}³  u_rms={args.u_rms} m0={args.m0} tau={args.tau} "
-              f"Cs={args.cs} steps={args.steps} {args.collision} ===", flush=True)
+              f"Cs={args.cs} Cw={args.cw} Cv={args.cv} steps={args.steps} "
+              f"{args.collision} ===", flush=True)
         res = run_case(n, args.u_rms, args.m0, args.tau, args.cs,
                        args.steps, args.record_every, args.seed,
                        collision=args.collision, device=args.device,
-                       threads=args.threads)
+                       threads=args.threads, cw=args.cw, cv=args.cv)
         t = np.asarray(res["times"]); E = np.asarray(res["energies"])
         spec_arr = res["spectra"]
         tau_L = res["tau_L"]
@@ -464,7 +485,11 @@ def main() -> None:
                         "E(k)∝k⁴exp(−2(k/m0)²), m0=3, u_rms=0.04, periodic N³ domain, "
                         "D3Q19 + Smagorinsky LES (C_s=0.12, τ=0.501, molecular Re_L≥1000)"),
         "lattice": "D3Q19",
-        "collision": f"smagorinsky_{args.collision}",
+        "collision": {
+            "bgk": "smagorinsky_bgk", "mrt": "smagorinsky_mrt",
+            "wale": "wale_bgk", "wale_mrt": "wale_mrt",
+            "vreman": "vreman_bgk",
+        }.get(args.collision, args.collision),
         "boundary": "periodic (stream3d 模运算, 库内建)",
         "extrap": "none",
         "common_modules": ["solver3d.stream3d", "turbulence.collide_smagorinsky_bgk3d",

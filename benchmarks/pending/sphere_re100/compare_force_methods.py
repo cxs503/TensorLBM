@@ -43,7 +43,8 @@ def main():
     p0_method = sys.argv[3] if len(sys.argv) > 3 else "far_field"
     extrap = sys.argv[4] if len(sys.argv) > 4 else "none"
     friction = sys.argv[5] if len(sys.argv) > 5 else "standard"
-    assert friction in ("standard", "2nd_order", "central", "lagrange"), friction
+    device = sys.argv[6] if len(sys.argv) > 6 else "cuda:0"
+    assert friction in ("standard", "2nd_order", "central", "lagrange", "faces"), friction
 
     out_dir = f"/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d{resolution}_{p0_method}_{extrap}_{friction}"
 
@@ -69,7 +70,7 @@ def main():
             warmup_steps=None,
             snapshot_interval=100000,
             force_sample_interval=10,
-            device="cuda:0",
+            device=device,
             wall_treatment=WallTreatment.AUTO,
             force_method=ForceMethod.BOTH,   # pressure+friction AND all MEM variants
             mem_variant="all",
@@ -120,13 +121,14 @@ def main():
         )
         p0_scan[pm] = px
     friction_scan = {}
-    for ff in ("standard", "2nd_order", "central", "lagrange"):
+    for ff in ("standard", "2nd_order", "central", "lagrange", "faces"):
         fxf, fyf, fzf = drag_friction_integration(engine.f, engine.mesh, dpS,
-                                                  setup_info["nu_lb"], formula=ff)
+                                                  setup_info["nu_lb"], formula=ff,
+                                                  solid=engine.solid)
         friction_scan[ff] = fxf
     p0_scan["friction_scan"] = friction_scan
     fxf, fyf, fzf = drag_friction_integration(engine.f, engine.mesh, dpS, setup_info["nu_lb"],
-                                              formula=friction)
+                                              formula=friction, solid=engine.solid)
     p0_scan["friction"] = fxf
     # rho*U0*sum(n_hat*dA) leakage estimate (task's approximate background)
     from tensorlbm.momentum_exchange import momentum_exchange_standard
