@@ -293,6 +293,59 @@ def test_mass_audit_static_flow() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Task #84 fix 4: pending-water decomposition + freezer leftover cascade
+# ---------------------------------------------------------------------------
+def test_freeze_leftover_cascade_and_pending_split() -> None:
+    """#84 fix 4: stranded sub-cell water cascades off frozen cells.
+
+    A frozen cell can never freeze again (the freeze mask excludes solid
+    cells), so its post-freeze remainder and its engulfed cloud water
+    would strand on the ice as permanently pending mass.  The freezer now
+    cascades both to the outward fluid 4-neighbour (the _deposit_columns
+    rule), and the final audit splits ``pending`` into
+
+    * ``pending_fluid`` — sub-cell water still collecting on fluid cells
+      (legitimate in-transit remainder of the exposure window), and
+    * ``pending_solid`` — what the cascade could not relocate (pockets
+      fully enclosed by ice).
+    """
+    cfg = _small_cfg(beta_window_mode="trailing")
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    a = res["audit"]
+    n_ice = res["metrics"]["n_ice_cells"]
+    assert n_ice >= 5
+    assert math.isclose(a["frozen"], n_ice * cfg.m_cell_ice, rel_tol=1e-9)
+    # decomposition closes on the total
+    assert math.isclose(
+        a["pending"], a["pending_fluid"] + a["pending_solid"],
+        rel_tol=1e-12, abs_tol=1e-15,
+    )
+    # cascade: stranded water is the minority (in this high-accel config
+    # a few fully-enclosed pockets legitimately keep theirs; at production
+    # sizing the cascade relocates everything and pending_solid == 0)
+    assert a["pending_solid"] < a["pending_fluid"], a
+    assert a["closure_error"] < 1e-2
+
+    # unit: one freeze event relocates the full remainder outward
+    sim = RimeIcingSimulation(cfg, log=lambda *a: None)
+    sim.m_w.zero_()
+    y0, x0 = sim.y_le, sim.x_le - 1  # fluid cell just upstream of the LE
+    assert not bool(sim.solid[y0, x0])
+    sim.m_w[y0, x0] = 2.4 * cfg.m_cell_ice
+    before = float(sim.m_w.sum())
+    n = sim._freeze()
+    assert n == 1
+    assert bool(sim.solid[y0, x0])
+    assert float(sim.m_w[y0, x0]) == 0.0  # nothing strands on the ice
+    nz = torch.nonzero(sim.m_w > 0)
+    assert nz.shape[0] == 1
+    yy, xx = nz[0].tolist()
+    assert not bool(sim.solid[yy, xx])  # recipient is fluid -> still freezable
+    assert (yy, xx) != (y0, x0)
+    assert math.isclose(float(sim.m_w.sum()), before - cfg.m_cell_ice, rel_tol=1e-6)
+
+
+# ---------------------------------------------------------------------------
 # Geometry feedback smoke (coupled BGK flow)
 # ---------------------------------------------------------------------------
 def test_geometry_feedback_smoke() -> None:
@@ -1069,14 +1122,22 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
     baseline -20 C / 0.5 g/m^3 the stagnation is genuinely glaze, n_f
     ~ 0.65, which is the physics, not a regression).
 
+    Task #84 fix 4 note: the conservative freezer (water cascade) removed
+    the silent stranding sink this gate was implicitly calibrated on, so
+    the config was moved into the regime the ledger semantics assume
+    (rho_rime 100 -> 800, steps 300 -> 900: same 1800 s window, per-step
+    deposit < 1 cell, stagnation cell fills over ~20 steps, no accretion
+    runaway).  The voxel comparison gets a 2-cell slack (integer
+    granularity at n ~ 15); the exact statement is the *mass* one, now
+    asserted directly on the 2a side: frozen + pending == delivered.
     """
-    rime_kw = dict(t_static_c=-30.0, lwc=2.0e-4, t_exposure=1800.0, steps=300)
+    rime_kw = dict(t_static_c=-30.0, lwc=2.0e-4, t_exposure=1800.0, steps=900)
     cfg = _euler_cfg(
         thermo_model="messinger",
         evap_enabled=False,
         glaze_rho_mode="const",
         rime_density_mode="const",
-        rho_rime=100.0,
+        rho_rime=800.0,  # #84 fix 4: per-step deposit < 1 cell (no runaway)
         **rime_kw,
     )
     accel = cfg.t_exposure / (cfg.steps * cfg.dt_phys)
@@ -1106,7 +1167,7 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
         _euler_cfg(
             thermo_model="instant",
             accel_override=accel,
-            rho_rime=100.0,
+            rho_rime=800.0,
             rime_density_mode="const",
             **rime_kw,
         ),
@@ -1114,10 +1175,17 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
     )
     n_2a = int(r2a["ice_only"].sum())
     n_g = int(g["ice_only"].sum())
-    assert abs(n_2a - n_g) <= max(2, 0.02 * n_2a), (n_2a, n_g)
-    # frozen voxel mass identical: n_cells * m_cell on both sides
-    mcell = cfg.rho_rime * cfg.dx_phys**3
-    assert math.isclose(n_g * mcell, n_2a * mcell, rel_tol=max(1.0, 0.02 * n_2a) / max(n_2a, 1))
+    # integer voxel granularity at n ~ 15: 2-cell slack
+    assert abs(n_2a - n_g) <= 2, (n_2a, n_g)
+    # the exact statement is mass conservation on the 2a side: everything
+    # the ledger delivered (impacts + engulfed cloud) is frozen or still
+    # pending as liquid -- nothing strands silently (#84 fix 4)
+    ae = r2a["eulerian"]["audit"]
+    delivered = ae["deposited"] + ae["encased"]
+    assert math.isclose(
+        r2a["audit"]["frozen"] + r2a["audit"]["pending"], delivered, rel_tol=1e-5
+    ), (r2a["audit"], ae)
+    assert r2a["audit"]["pending_solid"] <= 0.05 * r2a["audit"]["pending"] + 1e-15
     # (d) evaporation on (default) keeps n_f == 1 in the rime limit
     cfg2 = _euler_cfg(thermo_model="messinger", **rime_kw)
     g2 = run_glaze_icing(cfg2, shots=1, log=lambda *a: None)
