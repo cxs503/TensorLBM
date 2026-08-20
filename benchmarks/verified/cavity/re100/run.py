@@ -15,6 +15,7 @@ V0 的 post-streaming bounce_back_cells + 周期 stream 组合使顶盖动量绕
 
 Re 约定：Re = u_lid*H/ν，H = nx（网格节点数，与任务参数 tau=3*u_lid*nx/re+0.5 一致）。
 """
+
 import argparse
 import json
 import sys
@@ -28,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # <repo>/benchmark
 
 from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
-from tensorlbm.d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
+from tensorlbm.d2q9 import OPPOSITE, equilibrium, macroscopic
 from tensorlbm.lid_driven_cavity import GHIA_RE100, zou_he_moving_lid
 from tensorlbm.solver import collide_mrt, stream
 
@@ -83,10 +84,14 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
         f = step_fn(f)
         if step % 10000 == 0 or step == steps:
             _, ux, uy = macroscopic(f)
-            du = torch.max(
-                torch.abs(ux[resid_mask] - ux_prev[resid_mask]),
-                torch.abs(uy[resid_mask] - uy_prev[resid_mask]),
-            ).max().item()
+            du = (
+                torch.max(
+                    torch.abs(ux[resid_mask] - ux_prev[resid_mask]),
+                    torch.abs(uy[resid_mask] - uy_prev[resid_mask]),
+                )
+                .max()
+                .item()
+            )
             last_resid = du
             ux_prev = ux.detach().clone()
             uy_prev = uy.detach().clone()
@@ -104,25 +109,27 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
     x_pos = np.linspace(0.0, 1.0, nx)
     u_cl = ux_np[:, x_mid]
     v_cl = uy_np[y_mid, :]
-    u_gi = np.interp(GHIA_RE100["y"], y_pos, u_cl)   # xp 升序（y_pos），安全
+    u_gi = np.interp(GHIA_RE100["y"], y_pos, u_cl)  # xp 升序（y_pos），安全
     v_gi = np.interp(GHIA_RE100["x"], x_pos, v_cl)
     rmse_u = float(np.sqrt(np.mean((u_gi - np.array(GHIA_RE100["u"])) ** 2)))
     rmse_v = float(np.sqrt(np.mean((v_gi - np.array(GHIA_RE100["v"])) ** 2)))
-    dev = np.concatenate([np.abs(u_gi - np.array(GHIA_RE100["u"])),
-                          np.abs(v_gi - np.array(GHIA_RE100["v"]))])
+    dev = np.concatenate(
+        [np.abs(u_gi - np.array(GHIA_RE100["u"])), np.abs(v_gi - np.array(GHIA_RE100["v"]))]
+    )
     max_abs_dev_pct = 100.0 * float(dev.max())
 
-    u_mid = float(np.interp(0.5, y_pos, u_cl))     # Ghia u(0.5,0.5) = -0.20581
+    u_mid = float(np.interp(0.5, y_pos, u_cl))  # Ghia u(0.5,0.5) = -0.20581
     u_bot = float(np.interp(0.0625, y_pos, u_cl))  # Ghia u(0.5,0.0625) = -0.04192
     v_mid = float(np.interp(0.5, x_pos, v_cl))
 
     # 主涡心：内域 argmin(speed²) + 抛物线亚网格细化（主涡物理窗口 x,y∈[0.3,0.9]）
     speed2 = ux_np**2 + uy_np**2
     speed2[: int(0.30 * ny), :] = np.inf
-    speed2[int(0.90 * ny):, :] = np.inf
+    speed2[int(0.90 * ny) :, :] = np.inf
     speed2[:, : int(0.30 * nx)] = np.inf
-    speed2[:, int(0.90 * nx):] = np.inf
+    speed2[:, int(0.90 * nx) :] = np.inf
     iy0, ix0 = np.unravel_index(np.argmin(speed2), speed2.shape)
+
     # 抛物线亚网格：i + 0.5*(a-c)/(a-2b+c)
     def refine(axis, i):
         a = speed2[i - 1, ix0] if axis == 0 else speed2[iy0, i - 1]
@@ -130,23 +137,36 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
         c = speed2[i + 1, ix0] if axis == 0 else speed2[iy0, i + 1]
         denom = a - 2 * b + c
         return i + 0.5 * (a - c) / denom if abs(denom) > 1e-30 else i
+
     vx = refine(1, ix0) / (nx - 1)
     vy = refine(0, iy0) / (ny - 1)
 
-    print(f"[cavity_re100 nx={nx}] steps={steps} t={elapsed:.0f}s resid={last_resid:.2e} "
-          f"u(0.5,0.5)={u_mid:+.4f} u_bot={u_bot:+.4f} v(0.5,0.5)={v_mid:+.4f} "
-          f"vortex=({vx:.3f},{vy:.3f}) rmse_u={rmse_u:.4f} rmse_v={rmse_v:.4f} "
-          f"max_abs_dev={max_abs_dev_pct:.2f}%", flush=True)
+    print(
+        f"[cavity_re100 nx={nx}] steps={steps} t={elapsed:.0f}s resid={last_resid:.2e} "
+        f"u(0.5,0.5)={u_mid:+.4f} u_bot={u_bot:+.4f} v(0.5,0.5)={v_mid:+.4f} "
+        f"vortex=({vx:.3f},{vy:.3f}) rmse_u={rmse_u:.4f} rmse_v={rmse_v:.4f} "
+        f"max_abs_dev={max_abs_dev_pct:.2f}%",
+        flush=True,
+    )
 
     return {
-        "nx": nx, "re": re, "u_lid": u_lid, "tau": round(tau, 4), "steps": steps,
+        "nx": nx,
+        "re": re,
+        "u_lid": u_lid,
+        "tau": round(tau, 4),
+        "steps": steps,
         "compile_mode": compile_mode,
-        "elapsed_s": round(elapsed, 1), "last_resid": last_resid,
-        "u_mid": u_mid, "u_mid_ghia": -0.20581,
-        "u_bot": u_bot, "v_mid": v_mid,
+        "elapsed_s": round(elapsed, 1),
+        "last_resid": last_resid,
+        "u_mid": u_mid,
+        "u_mid_ghia": -0.20581,
+        "u_bot": u_bot,
+        "v_mid": v_mid,
         "vortex": [round(vx, 4), round(vy, 4)],
         "vortex_ghia": [0.6172, 0.7344],
-        "rmse_u": rmse_u, "rmse_v": rmse_v, "max_abs_dev_pct": max_abs_dev_pct,
+        "rmse_u": rmse_u,
+        "rmse_v": rmse_v,
+        "max_abs_dev_pct": max_abs_dev_pct,
     }
 
 
@@ -167,8 +187,9 @@ def main():
 
     results = {}
     for nx in args.nx:
-        results[str(nx)] = run_case(nx, args.re, args.u_lid, args.steps, device,
-                                    compile_mode=compile_mode)
+        results[str(nx)] = run_case(
+            nx, args.re, args.u_lid, args.steps, device, compile_mode=compile_mode
+        )
 
     devs = [results[str(nx)]["max_abs_dev_pct"] for nx in args.nx]
     verdict = {

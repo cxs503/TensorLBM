@@ -11,7 +11,8 @@ EXAMPLES = Path(__file__).parents[1] / "examples"
 sys.path.insert(0, str(EXAMPLES))
 MODULE_PATH = EXAMPLES / "suboff_static_amr_resistance.py"
 SPEC = importlib.util.spec_from_file_location(
-    "suboff_static_amr_resistance_production", MODULE_PATH,
+    "suboff_static_amr_resistance_production",
+    MODULE_PATH,
 )
 assert SPEC and SPEC.loader
 module = importlib.util.module_from_spec(SPEC)
@@ -23,20 +24,60 @@ def _arguments(tmp_path: Path, *, steps: int, resume: bool = False):
     checkpoint = tmp_path / "amr.ckpt"
     output = tmp_path / f"amr-{steps}.json"
     values = [
-        "--device", "cpu", "--hull-type", "bare_hull",
-        "--nx", "80", "--ny", "40", "--nz", "40",
-        "--hull-length", "24", "--center-x-fraction", "0.35",
-        "--wall-margin", "4", "--wake-cells", "8", "--cv-margin", "3",
-        "--aux-cv-margins", "2,4", "--surface-force-interval", "1",
-        "--steps", str(steps), "--warmup-steps", "2",
-        "--report-interval", "2", "--average-window", "2",
-        "--statistics-window-steps", "2",
-        "--ramp-steps", "2", "--resolved-reynolds", "2000",
-        "--collision-model", "cumulant_smagorinsky",
-        "--wall-law", "musker", "--stress-exchange-distance", "1",
-        "--wall-diagnostic-interval", "1", "--sponge-width", "3",
-        "--checkpoint", str(checkpoint), "--checkpoint-interval", "2",
-        "--output", str(output),
+        "--device",
+        "cpu",
+        "--hull-type",
+        "bare_hull",
+        "--nx",
+        "80",
+        "--ny",
+        "40",
+        "--nz",
+        "40",
+        "--hull-length",
+        "24",
+        "--center-x-fraction",
+        "0.35",
+        "--wall-margin",
+        "4",
+        "--wake-cells",
+        "8",
+        "--cv-margin",
+        "3",
+        "--aux-cv-margins",
+        "2,4",
+        "--surface-force-interval",
+        "1",
+        "--steps",
+        str(steps),
+        "--warmup-steps",
+        "2",
+        "--report-interval",
+        "2",
+        "--average-window",
+        "2",
+        "--statistics-window-steps",
+        "2",
+        "--ramp-steps",
+        "2",
+        "--resolved-reynolds",
+        "2000",
+        "--collision-model",
+        "cumulant_smagorinsky",
+        "--wall-law",
+        "musker",
+        "--stress-exchange-distance",
+        "1",
+        "--wall-diagnostic-interval",
+        "1",
+        "--sponge-width",
+        "3",
+        "--checkpoint",
+        str(checkpoint),
+        "--checkpoint-interval",
+        "2",
+        "--output",
+        str(output),
     ]
     if resume:
         values.append("--resume")
@@ -58,9 +99,9 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert resumed["acceptance"]["physical_validation"] is False
     assert resumed["acceptance"]["numerical_quality_admitted"] is False
     assert resumed["acceptance"]["duration_target_met"] is False
-    assert resumed["geometry"]["surface_area_weighting"][
-        "calibrated_area"
-    ] == pytest.approx(resumed["geometry"]["wetted_area_lu2"], rel=1e-6)
+    assert resumed["geometry"]["surface_area_weighting"]["calibrated_area"] == pytest.approx(
+        resumed["geometry"]["wetted_area_lu2"], rel=1e-6
+    )
     assert state["schema"] == "tensorlbm-suboff-static-amr-checkpoint-v8"
     assert state["step"] == 6
     assert len(state["force_history"]) == 4
@@ -76,16 +117,10 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert len(state["paired_bfl_total_samples"]) == 4
     assert len(state["numerical_momentum_source_samples"]) == 8
     assert len(state["corrected_cv_samples"]) == 8
-    assert resumed["result"]["nested_control_volume_invariance"][
-        "auxiliary_count"
-    ] == 2
-    assert resumed["result"][
-        "source_corrected_cv_vs_bfl_difference_pct"
-    ] < 1.0
+    assert resumed["result"]["nested_control_volume_invariance"]["auxiliary_count"] == 2
+    assert resumed["result"]["source_corrected_cv_vs_bfl_difference_pct"] < 1.0
     assert resumed["configuration"]["wall_viscosity_basis"] == "physical_reynolds"
-    assert resumed["configuration"]["link_force_frame"] == (
-        "laboratory_after_wall_activation"
-    )
+    assert resumed["configuration"]["link_force_frame"] == ("laboratory_after_wall_activation")
     assert resumed["configuration"]["wall_traction_source_scheme"] == (
         "mass_conservative_post_collision_guo_v2"
     )
@@ -111,9 +146,7 @@ def test_underresolved_aff8_records_component_and_area_evidence(
 
     assert geometry["wetted_area_scope"] == "bare_hull_surface_of_revolution"
     assert geometry["force_integration_area_scope"] == "full"
-    assert geometry["force_integration_calibrated_area_lu2"] > geometry[
-        "bare_hull_wetted_area_lu2"
-    ]
+    assert geometry["force_integration_calibrated_area_lu2"] > geometry["bare_hull_wetted_area_lu2"]
     assert resolution["hull_type"] == "full"
     assert geometry["appendage_boundary_links"] > 0
     assert geometry["appendage_halfway_links"] == 0
@@ -123,12 +156,8 @@ def test_underresolved_aff8_records_component_and_area_evidence(
     assert resolution["sail_only_cells"] >= 0
     assert resolution["fin_only_cells"] >= 0
     assert resolution["absolute_reference_resolved"] is False
-    assert result["result"][
-        "source_corrected_cv_vs_bfl_difference_pct"
-    ] < 1.0
-    assert result["acceptance"][
-        "absolute_reference_geometry_target_met"
-    ] is False
+    assert result["result"]["source_corrected_cv_vs_bfl_difference_pct"] < 1.0
+    assert result["acceptance"]["absolute_reference_geometry_target_met"] is False
 
 
 def test_statistics_tail_must_fit_after_warmup(tmp_path: Path) -> None:

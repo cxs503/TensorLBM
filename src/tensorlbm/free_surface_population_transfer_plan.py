@@ -27,7 +27,7 @@ class PopulationTransferPlanError(ValueError):
 
 class Phase(str, Enum):
     G = "G"
-    I = "I"
+    I = "I"  # noqa: E741
     L = "L"
     S = "S"
 

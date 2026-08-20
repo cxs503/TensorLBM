@@ -133,7 +133,9 @@ class TauRecovery:
         self.tau_star = tau_star
         self.f0 = shear_wave_f0(grid, 0.05, device, dtype)
         with torch.no_grad():
-            self.target = macroscopic(rollout(self.f0, torch.tensor(tau_star, device=device, dtype=dtype), steps))[1]
+            self.target = macroscopic(
+                rollout(self.f0, torch.tensor(tau_star, device=device, dtype=dtype), steps)
+            )[1]
 
     def loss(self, tau: torch.Tensor) -> torch.Tensor:
         ux = macroscopic(rollout(self.f0, tau, self.steps))[1]
@@ -219,9 +221,7 @@ class InitialFieldShaping:
         rho, _ux, _uy = macroscopic(rollout(f0, self.tau, self.steps))
         return ((self._normalise(rho) - self.target) ** 2).mean()
 
-    def run(
-        self, lr: float, iters: int, device, dtype, log_every: int = 20
-    ) -> list[float]:
+    def run(self, lr: float, iters: int, device, dtype, log_every: int = 20) -> list[float]:
         f0 = self.f_init.clone()
         print(
             f"initial-field shaping: grid={f0.shape[-1]} steps={self.steps} "

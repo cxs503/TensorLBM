@@ -18,8 +18,6 @@ Test matrix
 
 from __future__ import annotations
 
-import copy
-
 import pytest
 import torch
 
@@ -27,10 +25,7 @@ from tensorlbm import collide_sc_single_component_27, collide_sc_two_component_2
 from tensorlbm.d3q27 import equilibrium27, macroscopic27
 from tensorlbm.turbulence import (
     _neq_stress_norm_27,
-    _nu_t_to_tau_eff,
     _smagorinsky_tau,
-    _vreman_nu_t_3d,
-    _wale_nu_t_3d,
 )
 
 DEVICE = torch.device("cpu")

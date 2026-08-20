@@ -12,7 +12,6 @@ from pathlib import Path
 
 import torch
 
-
 # ── Device helpers ──────────────────────────────────────────────────────────
 
 
@@ -25,7 +24,7 @@ def default_suboff_device() -> str:
     try:
         import torch_sdaa  # noqa: F401
 
-        if torch.sdaa.is_available():
+        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
             return "sdaa:0"
     except ImportError:
         pass
@@ -59,8 +58,8 @@ def build_suboff_model(device: torch.device | str | None = None):
     Returns:
         (encoder, decoder) tuple of nn.Module on the specified device.
     """
-    from tensorlbm.ai.nn.encoder_module import IrregSTEncoder2D
     from tensorlbm.ai.nn.decoder_module import IrregSTDecoder2D
+    from tensorlbm.ai.nn.encoder_module import IrregSTEncoder2D
 
     if device is None:
         device = torch.device(default_suboff_device())

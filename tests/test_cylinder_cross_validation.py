@@ -19,10 +19,9 @@ import pytest
 from tensorlbm.cylinder_cross_validation import (
     D2Q9_COLLISION_FAMILIES,
     D2Q9_TURBULENCE_MODELS,
-    run_single_combination,
     run_cross_validation_matrix,
+    run_single_combination,
 )
-
 
 # ---------------------------------------------------------------------------
 # Matrix dimension sanity

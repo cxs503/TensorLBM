@@ -55,9 +55,8 @@ _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from tensorlbm.d3q19 import C, OPPOSITE, equilibrium3d, macroscopic3d  # noqa: E402
+from tensorlbm.d3q19 import OPPOSITE, C, equilibrium3d, macroscopic3d  # noqa: E402
 from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
-
 
 # --------------------------------------------------------------------------- #
 # Helpers
@@ -274,7 +273,7 @@ def run_cylinder_aeroacoustics(
 
     # --- Header -------------------------------------------------------------
     print(f"\n{'─' * 64}")
-    print(f"  CYLINDER AEROACOUSTICS  —  D3Q19 BGK")
+    print("  CYLINDER AEROACOUSTICS  —  D3Q19 BGK")
     print(f"  Grid: {nx} × {ny} × {nz}   Device: {device}")
     print(f"  Cylinder: centre=({cx},{cy})  R={R}  D={D}")
     print(f"  Re={Re:.0f}  U={U_in:.4f}  ν={nu:.5f}  τ={tau:.4f}  Ma={Ma:.4f}")
@@ -406,9 +405,9 @@ def run_cylinder_aeroacoustics(
 
     # --- Report -------------------------------------------------------------
     print(f"\n{'─' * 64}")
-    print(f"  AEROACOUSTIC ANALYSIS")
+    print("  AEROACOUSTIC ANALYSIS")
     print(f"{'─' * 64}")
-    print(f"  Strouhal number measurements:")
+    print("  Strouhal number measurements:")
     print(f"    St (near-wake pressure FFT) = {St_nw:.4f}")
     print(f"    St (lift-force Cl FFT)      = {St_cl:.4f}  ← primary")
     print(f"    St (reference, Williamson)  = {St_ref:.4f}")
@@ -427,7 +426,7 @@ def run_cylinder_aeroacoustics(
     # p'_amp = (ρ₀ U² D) / (4π r) · sin(θ)
     # θ = 90° for monitors directly above cylinder → sin θ = 1
     # LBM pressure: p' = c_s² · δρ = δρ / 3
-    print(f"\n  Curle far-field pressure (θ=90°, sin θ=1):")
+    print("\n  Curle far-field pressure (θ=90°, sin θ=1):")
     print(f"    p'_Curle(r) = ρ₀U²D / (4πr) = {U_in**2 * D / (4 * math.pi):.6e} / r")
     print(f"  {'r':>6s}  {'δρ_lbm':>14s}  {'p_lbm':>14s}  {'p_Curle':>14s}  {'ratio':>8s}")
     for r in far_r:
@@ -438,7 +437,7 @@ def run_cylinder_aeroacoustics(
         print(f"  {r:6d}  {p_lbm_drho:14.6e}  {p_lbm_press:14.6e}  {p_curle:14.6e}  {ratio:8.2f}")
 
     # --- Pressure decay -----------------------------------------------------
-    print(f"\n  Pressure decay (perpendicular to flow, θ=90°):")
+    print("\n  Pressure decay (perpendicular to flow, θ=90°):")
     if len(far_r) >= 2:
         rs = np.array(far_r, dtype=float)
         ps = np.array([ff_amps[r] * cs2 for r in far_r])
@@ -447,8 +446,8 @@ def run_cylinder_aeroacoustics(
             log_p = np.log(ps)
             alpha = float(np.polyfit(log_r, log_p, 1)[0])
             print(f"    Fitted:  p ~ r^({alpha:.2f})")
-            print(f"    (2D acoustic far-field: r^(−0.5),  3D Curle: r^(−1))")
-            print(f"    Near-field hydrodynamic decays faster than r^(−1).")
+            print("    (2D acoustic far-field: r^(−0.5),  3D Curle: r^(−1))")
+            print("    Near-field hydrodynamic decays faster than r^(−1).")
 
     # --- Vorticity snapshot -------------------------------------------------
     rho, ux, uy, uz = macroscopic3d(f)

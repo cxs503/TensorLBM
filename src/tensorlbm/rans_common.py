@@ -104,7 +104,7 @@ def collide_rans_mrt3d(
 
     rho, ux, uy, uz = macroscopic3d(f)
     feq = equilibrium3d(rho, ux, uy, uz)
-    f_neq = f - feq
+    f - feq
     tau_eff = _nu_t_to_tau_eff(tau, nu_t)
     s_nu_flat = (1.0 / tau_eff).reshape(-1)  # (N,)
 
@@ -212,7 +212,7 @@ def collide_rans_mrt27(
 
     rho, ux, uy, uz = macroscopic27(f)
     feq = equilibrium27(rho, ux, uy, uz)
-    f_neq = f - feq
+    f - feq
     tau_eff = _nu_t_to_tau_eff(tau, nu_t)
     s_nu_flat = (1.0 / tau_eff).reshape(-1)  # (N,)
 

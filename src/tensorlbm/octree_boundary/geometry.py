@@ -29,23 +29,25 @@ The Morton code is rooted at the whole L1 block: with ``K`` bits per axis
 ``1 << (3*(K+l)) | interleave(coords, K+l)``, so parent/child relations are
 plain ``>> 3`` shifts and codes are unique across levels.
 """
+
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any
 
 import torch
 
-from tensorlbm.boundaries3d import sphere_mask  # noqa: F401  (documented reference; the shell builder uses the centre-based solid mask)
+from tensorlbm.boundaries3d import (
+    sphere_mask,  # noqa: F401  (documented reference; the shell builder uses the centre-based solid mask)
+)
 
 # Sentinel values for neighbor_table (see design doc §3.1):
-SHELL_OUTSIDE = -1   # neighbour leaves the shell -> L1 block interface
-SOLID = -2           # neighbour is inside the body (solid / dropped leaf)
-DOMAIN_OUT = -3      # neighbour is outside the L1 block (should not happen)
-FANOUT = -4          # coarse -> fine cross-level link, consult interface_fanout
-REMOTE = -5          # sharded shell: source leaf lives on another device,
-                     # consult the shard's remote_pos table (sharding.py)
+SHELL_OUTSIDE = -1  # neighbour leaves the shell -> L1 block interface
+SOLID = -2  # neighbour is inside the body (solid / dropped leaf)
+DOMAIN_OUT = -3  # neighbour is outside the L1 block (should not happen)
+FANOUT = -4  # coarse -> fine cross-level link, consult interface_fanout
+REMOTE = -5  # sharded shell: source leaf lives on another device,
+# consult the shard's remote_pos table (sharding.py)
 
 # ---------------------------------------------------------------------------
 # Morton (Z-order) codec — uint64, 3 bits per level, root bit 1
@@ -96,7 +98,9 @@ def morton_decode(bits: int, k: int) -> tuple[int, int, int, int]:
 
 
 def morton_encode_batch(
-    level: torch.Tensor, coords: torch.Tensor, k: int,
+    level: torch.Tensor,
+    coords: torch.Tensor,
+    k: int,
 ) -> torch.Tensor:
     """Vectorised Morton encode for ``(n, 3)`` int64 coordinates.
 
@@ -110,7 +114,7 @@ def morton_encode_batch(
     width = int(level.max().item()) + k
     m = torch.zeros(n, dtype=torch.int64, device=coords.device)
     for i in range(width):
-        bit = (torch.tensor(1, dtype=torch.int64, device=coords.device) << i)
+        (torch.tensor(1, dtype=torch.int64, device=coords.device) << i)
         m |= ((x >> i) & 1) << (3 * i)
         m |= ((y >> i) & 1) << (3 * i + 1)
         m |= ((z >> i) & 1) << (3 * i + 2)
@@ -187,11 +191,7 @@ def sphere_distance_field(
         torch.arange(nx, device=device, dtype=torch.float64) + 0.5,
         indexing="ij",
     )
-    return (
-        (xx - center[0]) ** 2
-        + (yy - center[1]) ** 2
-        + (zz - center[2]) ** 2
-    ).sqrt() - radius
+    return ((xx - center[0]) ** 2 + (yy - center[1]) ** 2 + (zz - center[2]) ** 2).sqrt() - radius
 
 
 def build_shell_cell_mask(
@@ -260,20 +260,20 @@ class OctreeGrid:
     n_leaf: int
     d_max: int
     Q: int
-    level_start: torch.Tensor          # (3,) int64: [start_l1, start_l2, n_leaf]
-    leaf_morton: torch.Tensor          # (n_leaf,) int64
-    leaf_level: torch.Tensor           # (n_leaf,) int64  (1 or 2)
-    leaf_center: torch.Tensor          # (n_leaf, 3) float32, world units
-    leaf_box: torch.Tensor             # (n_leaf, 2, 3) float32
-    neighbor_table: torch.Tensor       # (Q, n_leaf) int64
-    q_field: torch.Tensor              # (Q, n_leaf) float32
-    bfl_mask: torch.Tensor             # (Q, n_leaf) bool
-    interface_links: torch.Tensor      # (n_link, 2) int64 (leaf i, direction d)
-    interface_fanout: dict             # {(i, d): list[int]} coarse->fine leaves
-    cross_level_donor: torch.Tensor    # (Q, n_leaf) int64, -1 = none
-    leaf_host_cell: torch.Tensor       # (n_leaf, 3) int64 (z, y, x) in L1 block
-    f_leaf: torch.Tensor               # (Q, n_leaf) float32 (SoA populations)
-    morton_to_index: dict = field(default_factory=dict)   # int -> leaf enum
+    level_start: torch.Tensor  # (3,) int64: [start_l1, start_l2, n_leaf]
+    leaf_morton: torch.Tensor  # (n_leaf,) int64
+    leaf_level: torch.Tensor  # (n_leaf,) int64  (1 or 2)
+    leaf_center: torch.Tensor  # (n_leaf, 3) float32, world units
+    leaf_box: torch.Tensor  # (n_leaf, 2, 3) float32
+    neighbor_table: torch.Tensor  # (Q, n_leaf) int64
+    q_field: torch.Tensor  # (Q, n_leaf) float32
+    bfl_mask: torch.Tensor  # (Q, n_leaf) bool
+    interface_links: torch.Tensor  # (n_link, 2) int64 (leaf i, direction d)
+    interface_fanout: dict  # {(i, d): list[int]} coarse->fine leaves
+    cross_level_donor: torch.Tensor  # (Q, n_leaf) int64, -1 = none
+    leaf_host_cell: torch.Tensor  # (n_leaf, 3) int64 (z, y, x) in L1 block
+    f_leaf: torch.Tensor  # (Q, n_leaf) float32 (SoA populations)
+    morton_to_index: dict = field(default_factory=dict)  # int -> leaf enum
     meta: dict = field(default_factory=dict)
     stats: dict = field(default_factory=dict)
     checks: dict = field(default_factory=dict)
@@ -296,7 +296,8 @@ class OctreeGrid:
 
     def leaf_indices(self, level: int) -> torch.Tensor:
         return torch.arange(
-            int(self.level_start[level - 1]), int(self.level_start[level]),
+            int(self.level_start[level - 1]),
+            int(self.level_start[level]),
         )
 
     def level_of(self) -> torch.Tensor:
@@ -338,15 +339,15 @@ def _level1_leaves(
     child = torch.arange(8, dtype=torch.int64, device=device)
     bx, by, bz = child & 1, (child >> 1) & 1, (child >> 2) & 1
     cells = shell_cells[:, [2, 1, 0]].repeat_interleave(8, dim=0)  # (x,y,z)
-    offs = torch.stack([bx, by, bz], dim=1).repeat(n, 1)           # (8N, 3)
-    coords = 2 * cells + offs                                      # level-1 coords
-    centers = (coords.to(torch.float64) + 0.5) / 2.0               # world units
+    offs = torch.stack([bx, by, bz], dim=1).repeat(n, 1)  # (8N, 3)
+    coords = 2 * cells + offs  # level-1 coords
+    centers = (coords.to(torch.float64) + 0.5) / 2.0  # world units
     dist2 = (
         (centers[:, 0] - center[0]) ** 2
         + (centers[:, 1] - center[1]) ** 2
         + (centers[:, 2] - center[2]) ** 2
     )
-    inside = dist2 <= radius ** 2
+    inside = dist2 <= radius**2
     return coords, centers, inside
 
 
@@ -369,7 +370,7 @@ def _level2_leaves(
         + (centers[:, 1] - center[1]) ** 2
         + (centers[:, 2] - center[2]) ** 2
     )
-    inside = dist2 <= radius ** 2
+    inside = dist2 <= radius**2
     return coords, centers, inside
 
 
@@ -379,7 +380,9 @@ def _level2_leaves(
 
 
 def analytic_shell_volume(
-    radius: float, delta_mask: float, dx: float = 1.0,
+    radius: float,
+    delta_mask: float,
+    dx: float = 1.0,
 ) -> float:
     """Analytic volume of the shell region covered by the leaf set.
 
@@ -391,11 +394,13 @@ def analytic_shell_volume(
     """
     r_in = max(0.0, radius)
     r_out = radius + delta_mask
-    return 4.0 / 3.0 * math.pi * (r_out ** 3 - r_in ** 3)
+    return 4.0 / 3.0 * math.pi * (r_out**3 - r_in**3)
 
 
 def cell_saving_report(
-    n_leaf: int, shell_cells: torch.Tensor, d_max: int,
+    n_leaf: int,
+    shell_cells: torch.Tensor,
+    d_max: int,
 ) -> dict:
     """Leaf count vs the same region resolved as a rectangular box.
 
@@ -423,8 +428,10 @@ def cell_saving_report(
 
 
 def _aabb_sphere_intersect(
-    centers: torch.Tensor, half: float,
-    center: tuple[float, float, float], radius: float,
+    centers: torch.Tensor,
+    half: float,
+    center: tuple[float, float, float],
+    radius: float,
 ) -> torch.Tensor:
     """AABB-vs-sphere intersection for leaf boxes ``[c-half, c+half]``.
 
@@ -437,7 +444,7 @@ def _aabb_sphere_intersect(
     d = (centers - c).abs()
     min_dist2 = ((d - half).clamp(min=0.0) ** 2).sum(dim=1)
     max_dist2 = ((d + half) ** 2).sum(dim=1)
-    return (min_dist2 <= radius ** 2) & (max_dist2 >= radius ** 2)
+    return (min_dist2 <= radius**2) & (max_dist2 >= radius**2)
 
 
 def build_octree_shell(
@@ -479,11 +486,11 @@ def build_octree_shell(
         raise ValueError(f"radius must be positive, got {radius}")
 
     if lattice == "D3Q27":
-        from tensorlbm.d3q27 import C, OPPOSITE
+        from tensorlbm.d3q27 import OPPOSITE, C
 
         Q = 27
     else:
-        from tensorlbm.d3q19 import C, OPPOSITE
+        from tensorlbm.d3q19 import OPPOSITE, C
 
         Q = 19
     c_vec = C.to(device)
@@ -491,7 +498,12 @@ def build_octree_shell(
     k = _axis_bits(shape)
 
     solid, shell_mask, delta_mask = build_shell_cell_mask(
-        shape, center, radius, bl_thickness_cells, transition, device,
+        shape,
+        center,
+        radius,
+        bl_thickness_cells,
+        transition,
+        device,
     )
     if not bool(shell_mask.any()):
         raise ValueError(
@@ -501,7 +513,10 @@ def build_octree_shell(
 
     # ---- depth-1 leaves ---------------------------------------------------
     l1_coords, l1_centers, l1_inside = _level1_leaves(
-        shell_cells, center, radius, device,
+        shell_cells,
+        center,
+        radius,
+        device,
     )
     # Refine every depth-1 box crossed by the analytic surface *before*
     # discarding centre-inside leaves.  A crossed parent can have its centre
@@ -514,17 +529,28 @@ def build_octree_shell(
 
     l1_dx = torch.full((l1_coords.shape[0],), 0.5, dtype=torch.float64)
     mask1, _ = compute_q_sphere_at_points(
-        l1_centers, l1_dx, center, radius, device=device, lattice=lattice,
+        l1_centers,
+        l1_dx,
+        center,
+        radius,
+        device=device,
+        lattice=lattice,
     )
     refine = mask1.any(dim=0) | _aabb_sphere_intersect(
-        l1_centers, 0.25, center, radius,
+        l1_centers,
+        0.25,
+        center,
+        radius,
     )
 
     # ---- terminal fluid leaves ---------------------------------------------
     l2_coords = l2_centers = None
     if d_max >= 2 and bool(refine.any()):
         l2_coords, l2_centers, l2_inside = _level2_leaves(
-            l1_coords[refine], center, radius, device,
+            l1_coords[refine],
+            center,
+            radius,
+            device,
         )
         keep2 = ~l2_inside
         l2_coords, l2_centers = l2_coords[keep2], l2_centers[keep2]
@@ -562,16 +588,21 @@ def build_octree_shell(
     centers64 = torch.cat(parts_centers)
     order = torch.argsort(morton, stable=True)
     morton, level, coords, centers64 = (
-        morton[order], level[order], coords[order], centers64[order],
+        morton[order],
+        level[order],
+        coords[order],
+        centers64[order],
     )
     n_leaf = int(morton.shape[0])
     level_start = torch.tensor(
-        [0, n1, n_leaf], dtype=torch.int64,
+        [0, n1, n_leaf],
+        dtype=torch.int64,
     )
     centers = centers64.to(torch.float32)
-    dx = (2.0 ** (-level.to(torch.float32))).unsqueeze(1)     # (n, 1)
+    dx = (2.0 ** (-level.to(torch.float32))).unsqueeze(1)  # (n, 1)
     leaf_box = torch.stack(
-        [centers - 0.5 * dx, centers + 0.5 * dx], dim=1,
+        [centers - 0.5 * dx, centers + 0.5 * dx],
+        dim=1,
     ).to(torch.float32)
     # host L1 cell in (z, y, x) block-index order
     host_cell = torch.floor(centers64)[:, [2, 1, 0]].to(torch.int64)
@@ -624,12 +655,12 @@ def build_octree_shell(
     grid._delta_mask = delta_mask
     grid._shell_mask = shell_mask
 
+    from tensorlbm.octree_boundary.qfield import compute_leaf_q_field
     from tensorlbm.octree_boundary.topology import (
         build_interface_registry,
         build_neighbor_table,
         run_topology_checks,
     )
-    from tensorlbm.octree_boundary.qfield import compute_leaf_q_field
 
     build_neighbor_table(grid)
     build_interface_registry(grid)
@@ -649,9 +680,7 @@ def build_octree_shell(
         "analytic_shell_volume": float(vol_analytic),
         "volume_error": float(vol_err),
         "n_interface_links": int(grid.interface_links.shape[0]),
-        "n_cross_level_donor": int(
-            (grid.cross_level_donor >= 0).sum().item()
-        ),
+        "n_cross_level_donor": int((grid.cross_level_donor >= 0).sum().item()),
         "n_fanout_groups": len(grid.interface_fanout),
         **saving,
     }

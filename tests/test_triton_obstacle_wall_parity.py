@@ -20,6 +20,7 @@ production PyTorch chain (miniature version of the n=96/128 validation).
 Requires CUDA.  Run:
   CUDA_VISIBLE_DEVICES=0 pytest tests/test_triton_obstacle_wall_parity.py -q
 """
+
 from __future__ import annotations
 
 import sys
@@ -30,9 +31,8 @@ import torch
 sys.path.insert(0, "/nfs/wangxi/TensorLBM/src")
 
 from tensorlbm.advanced_collision_contract import collide_advanced_3d
-from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d, \
-    sphere_mask
-from tensorlbm.d3q19 import C, OPPOSITE, W, equilibrium3d, macroscopic3d
+from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d, sphere_mask
+from tensorlbm.d3q19 import OPPOSITE, C, W, equilibrium3d
 from tensorlbm.obstacles import compute_obstacle_forces_3d
 from tensorlbm.solver3d import correct_mass3d, stream3d
 from tensorlbm.suboff_cmk_kbc_runner import (
@@ -47,8 +47,7 @@ from tensorlbm.triton_fused_obstacle import (
     triton_fused_obstacle_xfar_les,
 )
 
-pytestmark = pytest.mark.skipif(
-    not torch.cuda.is_available(), reason="requires CUDA")
+pytestmark = pytest.mark.skipif(not torch.cuda.is_available(), reason="requires CUDA")
 
 DEV = "cuda:0"
 NX, NY, NZ = 32, 16, 16
@@ -62,14 +61,14 @@ def _make_case():
     rho0 = torch.ones((NZ, NY, NX), device=DEV)
     ux0 = torch.full_like(rho0, U_IN)
     ux0[solid] = 0.0
-    f0 = equilibrium3d(rho0, ux0, torch.zeros_like(rho0),
-                       torch.zeros_like(rho0))
+    f0 = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0))
     return solid, f0
 
 
 # ---------------------------------------------------------------------------
 # 1. lattice tables
 # ---------------------------------------------------------------------------
+
 
 def test_lattice_tables_match_canonical_d3q19():
     lat = _lattice_tensors_canonical(DEV)
@@ -78,8 +77,9 @@ def test_lattice_tables_match_canonical_d3q19():
         got = lat[key][:19]  # tables are zero-padded to 32 kernel lanes
         assert got.shape == (19,), got.shape
         col = {"cxi": 0, "cyi": 1, "czi": 2}[key]
-        assert torch.equal(got.to(torch.int64), c_ref[:, col].to(torch.int64)), \
+        assert torch.equal(got.to(torch.int64), c_ref[:, col].to(torch.int64)), (
             f"{key} disagrees with d3q19.C (wrong-sign lanes?)"
+        )
     for key in ("cxf", "cyf", "czf"):
         col = {"cxf": 0, "cyf": 1, "czf": 2}[key]
         assert torch.allclose(lat[key][:19], C.to(DEV).float()[:, col]), key
@@ -89,6 +89,7 @@ def test_lattice_tables_match_canonical_d3q19():
 # ---------------------------------------------------------------------------
 # 2. single-step exact parity of the wall gather (whole domain, incl. walls)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("collision", ["BGK", "CM"])
 def test_single_step_parity_full_way_bb(collision):
@@ -103,8 +104,7 @@ def test_single_step_parity_full_way_bb(collision):
     f_eff_ref = bounce_back_cells_3d(stream3d(f0), solid)
     ref = collide_advanced_3d("d3q19", collision, f_eff_ref, tau=TAU)
 
-    out = triton_fused_obstacle_xfar_les(
-        f0.clone(), NU, solid_i8, 0.0, 1.0, collision=collision)
+    out = triton_fused_obstacle_xfar_les(f0.clone(), NU, solid_i8, 0.0, 1.0, collision=collision)
     torch.cuda.synchronize()
 
     d = (out - ref).abs()
@@ -131,12 +131,17 @@ def test_gather_addressing_bitwise_canary():
     z_i = torch.arange(NZ, device=DEV).view(NZ, 1, 1)
     y_i = torch.arange(NY, device=DEV).view(1, NY, 1)
     x_i = torch.arange(NX, device=DEV).view(1, 1, NX)
-    f_canary = (q_i.view(19, 1, 1, 1).float() * 2**18
-                + z_i.float() * 2**12 + y_i.float() * 2**6 + x_i.float())
+    f_canary = (
+        q_i.view(19, 1, 1, 1).float() * 2**18
+        + z_i.float() * 2**12
+        + y_i.float() * 2**6
+        + x_i.float()
+    )
 
     nu_huge = 1e9  # omega = 1/(3*nu+0.5) ~ 3e-10 -> output ~ f_eff
     out = triton_fused_obstacle_xfar_les(
-        f_canary.clone(), nu_huge, solid_i8, 0.0, 1.0, collision="BGK")
+        f_canary.clone(), nu_huge, solid_i8, 0.0, 1.0, collision="BGK"
+    )
     torch.cuda.synchronize()
     got = out.round().to(torch.int64)
 
@@ -146,22 +151,23 @@ def test_gather_addressing_bitwise_canary():
     for q in range(19):
         cx, cy, cz = int(C[q, 0]), int(C[q, 1]), int(C[q, 2])
         src_pull = f_canary[q].roll(shifts=(cz, cy, cx), dims=(0, 1, 2))
-        src_refl = f_canary[int(opp[q])].roll(shifts=(-cz, -cy, -cx),
-                                              dims=(0, 1, 2))
+        src_refl = f_canary[int(opp[q])].roll(shifts=(-cz, -cy, -cx), dims=(0, 1, 2))
         # roll(shifts=c) moves element at x-c_q to x  (pull);
         # reflected lane reads the cell at x+c_q.
         ref[q] = torch.where(solid, src_refl, src_pull)
 
-    mism = (got != ref.round().to(torch.int64))
+    mism = got != ref.round().to(torch.int64)
     n_bad = int(mism.sum().item())
     assert n_bad == 0, (
         f"{n_bad}/{mism.numel()} lanes with wrong gather address; "
-        f"per-q bad = {[int(mism[q].sum().item()) for q in range(19)]}")
+        f"per-q bad = {[int(mism[q].sum().item()) for q in range(19)]}"
+    )
 
 
 # ---------------------------------------------------------------------------
 # 3. force sampling phase (Ladd, post-stream pre-BB) parity
 # ---------------------------------------------------------------------------
+
 
 def test_force_buffer_matches_production_ladd():
     solid, f0 = _make_case()
@@ -170,8 +176,8 @@ def test_force_buffer_matches_production_ladd():
     fy = torch.zeros((), device=DEV)
     fz = torch.zeros((), device=DEV)
     triton_fused_obstacle_xfar_les(
-        f0.clone(), NU, solid_i8, 0.0, 1.0, collision="BGK",
-        fx_buf=fx, fy_buf=fy, fz_buf=fz)
+        f0.clone(), NU, solid_i8, 0.0, 1.0, collision="BGK", fx_buf=fx, fy_buf=fy, fz_buf=fz
+    )
     torch.cuda.synchronize()
 
     # production: force sampled on the streamed state (collide then stream),
@@ -182,8 +188,7 @@ def test_force_buffer_matches_production_ladd():
     # fx strictly relative; transverse components are ~0 by symmetry, so
     # compare them against the fx scale
     scale = max(abs(float(fx_r)), 1e-30)
-    for got, want, name in ((fx, fx_r, "fx"), (fy, fy_r, "fy"),
-                            (fz, fz_r, "fz")):
+    for got, want, name in ((fx, fx_r, "fx"), (fy, fy_r, "fy"), (fz, fz_r, "fz")):
         diff = abs(float(got) - float(want))
         lim = 1e-5 * scale if name == "fx" else 1e-4 * scale
         assert diff < lim, (name, float(got), float(want), diff, lim)
@@ -193,18 +198,28 @@ def test_force_buffer_matches_production_ladd():
 # 4. multi-step trajectory vs production chain (mini validation b)
 # ---------------------------------------------------------------------------
 
+
 def test_multistep_force_trajectory_parity():
     n_steps = 30
     cfg = SuboffCmkKbcConfig(
-        re=90.0, collision="CM", turbulence_model="smagorinsky",
-        nx=NX, ny=NY, nz=NZ, n_steps=n_steps, u_in=U_IN, hull_length=9.0,
-        device=DEV, use_triton_step=False)
+        re=90.0,
+        collision="CM",
+        turbulence_model="smagorinsky",
+        nx=NX,
+        ny=NY,
+        nz=NZ,
+        n_steps=n_steps,
+        u_in=U_IN,
+        hull_length=9.0,
+        device=DEV,
+        use_triton_step=False,
+    )
     solid, f0 = _make_case()
     solid_i8 = solid.to(torch.int8)
     mass0 = float(f0.sum().item())
 
-    h = f0.clone()                      # production chain
-    b = f0.clone()                      # fixed triton path
+    h = f0.clone()  # production chain
+    b = f0.clone()  # fixed triton path
     scale = 0.0
     for step in range(1, n_steps + 1):
         h = _collide_with_sgs(h, cfg, cfg.tau)
@@ -214,14 +229,22 @@ def test_multistep_force_trajectory_parity():
         if step % 10 == 0:
             h = correct_mass3d(h, mass0)
 
-        tau_eff = _compute_sgs_tau_eff(
-            bounce_back_cells_3d(stream3d(b), solid), cfg, cfg.tau)
+        tau_eff = _compute_sgs_tau_eff(bounce_back_cells_3d(stream3d(b), solid), cfg, cfg.tau)
         fx = torch.zeros((), device=DEV)
         fy = torch.zeros((), device=DEV)
         fz = torch.zeros((), device=DEV)
         b = triton_fused_obstacle_xfar_les(
-            b, cfg.nu, solid_i8, cfg.C_s, 1.0, collision="CM",
-            tau_eff=tau_eff, fx_buf=fx, fy_buf=fy, fz_buf=fz)
+            b,
+            cfg.nu,
+            solid_i8,
+            cfg.C_s,
+            1.0,
+            collision="CM",
+            tau_eff=tau_eff,
+            fx_buf=fx,
+            fy_buf=fy,
+            fz_buf=fz,
+        )
         apply_far_field_bc_6face(b, U_IN)
         if step % 10 == 0:
             b = apply_mass_correction(b, mass0)
@@ -241,12 +264,12 @@ def test_multistep_force_trajectory_parity():
 # 5. misc invariants
 # ---------------------------------------------------------------------------
 
+
 def test_obstacle_mask_and_shape_unchanged():
     solid, f0 = _make_case()
     solid_i8 = solid.to(torch.int8)
     before = solid_i8.clone()
-    out = triton_fused_obstacle_xfar_les(
-        f0.clone(), NU, solid_i8, 0.0, 1.0, collision="BGK")
+    out = triton_fused_obstacle_xfar_les(f0.clone(), NU, solid_i8, 0.0, 1.0, collision="BGK")
     assert out.shape == (19, NZ, NY, NX)
     assert out.dtype == torch.float32
     assert torch.equal(solid_i8, before)

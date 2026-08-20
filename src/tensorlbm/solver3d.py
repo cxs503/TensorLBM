@@ -20,6 +20,7 @@ _stream3d_cache: dict[
     tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
 ] = {}
 
+
 def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
     """Compute and return (M, M_inv) as nested Python lists (float64 precision)."""
     import numpy as np
@@ -145,9 +146,7 @@ def collide_mrt3d(
     matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
 
     s_nu = 1.0 / tau
-    s_vec = _mrt3d_s_vec(
-        s_e, s_eps, s_q, s_pi, s_nu, dtype=f.dtype, device=device
-    )
+    s_vec = _mrt3d_s_vec(s_e, s_eps, s_q, s_pi, s_nu, dtype=f.dtype, device=device)
 
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
     f_flat = f.reshape(19, -1)
@@ -189,9 +188,7 @@ def collide_mrt3d_low_memory(
     matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
 
     s_nu = 1.0 / tau
-    s_vec = _mrt3d_s_vec(
-        s_e, s_eps, s_q, s_pi, s_nu, dtype=f.dtype, device=device
-    )
+    s_vec = _mrt3d_s_vec(s_e, s_eps, s_q, s_pi, s_nu, dtype=f.dtype, device=device)
 
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
     f_flat = f.reshape(19, -1)
@@ -244,25 +241,25 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
 
 # D3Q19 velocity shifts for roll-based streaming (matches C matrix order)
 _D3Q19_SHIFTS: list[tuple[int, int, int]] = [
-    (0, 0, 0),       #  0: rest
-    (1, 0, 0),       #  1: +x
-    (-1, 0, 0),      #  2: -x
-    (0, 1, 0),       #  3: +y
-    (0, -1, 0),      #  4: -y
-    (0, 0, 1),       #  5: +z
-    (0, 0, -1),      #  6: -z
-    (1, 1, 0),       #  7: +x+y
-    (-1, -1, 0),     #  8: -x-y
-    (1, -1, 0),      #  9: +x-y
-    (-1, 1, 0),      # 10: -x+y
-    (1, 0, 1),       # 11: +x+z
-    (-1, 0, -1),     # 12: -x-z
-    (1, 0, -1),      # 13: +x-z
-    (-1, 0, 1),      # 14: -x+z
-    (0, 1, 1),       # 15: +y+z
-    (0, -1, -1),     # 16: -y-z
-    (0, 1, -1),      # 17: +y-z
-    (0, -1, 1),      # 18: -y+z
+    (0, 0, 0),  #  0: rest
+    (1, 0, 0),  #  1: +x
+    (-1, 0, 0),  #  2: -x
+    (0, 1, 0),  #  3: +y
+    (0, -1, 0),  #  4: -y
+    (0, 0, 1),  #  5: +z
+    (0, 0, -1),  #  6: -z
+    (1, 1, 0),  #  7: +x+y
+    (-1, -1, 0),  #  8: -x-y
+    (1, -1, 0),  #  9: +x-y
+    (-1, 1, 0),  # 10: -x+y
+    (1, 0, 1),  # 11: +x+z
+    (-1, 0, -1),  # 12: -x-z
+    (1, 0, -1),  # 13: +x-z
+    (-1, 0, 1),  # 14: -x+z
+    (0, 1, 1),  # 15: +y+z
+    (0, -1, -1),  # 16: -y-z
+    (0, 1, -1),  # 17: +y-z
+    (0, -1, 1),  # 18: -y+z
 ]
 
 
@@ -301,6 +298,7 @@ def correct_mass3d(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     if current.abs() < 1e-30:
         return f
     return f * (target_mass / current)
+
 
 def collide_trt3d(
     f: torch.Tensor,
@@ -386,13 +384,17 @@ def collide_rlbm3d(f: torch.Tensor, tau: float) -> torch.Tensor:
     h_xz = cx * cz
     h_yz = cy * cz
     w_view = w.view(19, 1, 1, 1)
-    fneq_reg = (9.0 / 2.0) * w_view * (
-        h_xx * pi_xx
-        + h_yy * pi_yy
-        + h_zz * pi_zz
-        + 2.0 * h_xy * pi_xy
-        + 2.0 * h_xz * pi_xz
-        + 2.0 * h_yz * pi_yz
+    fneq_reg = (
+        (9.0 / 2.0)
+        * w_view
+        * (
+            h_xx * pi_xx
+            + h_yy * pi_yy
+            + h_zz * pi_zz
+            + 2.0 * h_xy * pi_xy
+            + 2.0 * h_xz * pi_xz
+            + 2.0 * h_yz * pi_yz
+        )
     )
 
     return feq + (1.0 - 1.0 / tau) * fneq_reg

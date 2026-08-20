@@ -17,7 +17,7 @@ from typing import ClassVar, Sequence
 
 import torch
 
-from ..boundary_registry import BCPhase, BCKind, BoundaryCondition
+from ..boundary_registry import BCKind, BCPhase, BoundaryCondition
 from .base import CaseBase, CaseUnits
 from .registry import register_case
 
@@ -48,9 +48,7 @@ class LidCavityCase(CaseBase):
     ) -> None:
         self.u_lid = float(u_lid)
         self.span = span
-        super().__init__(
-            resolution, re, device=device, dtype=dtype, collision=collision
-        )
+        super().__init__(resolution, re, device=device, dtype=dtype, collision=collision)
 
     @classmethod
     def default_params(cls) -> dict:

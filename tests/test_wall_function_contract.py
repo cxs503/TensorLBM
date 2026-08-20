@@ -4,10 +4,10 @@ import pytest
 
 from tensorlbm.wall_function_contract import (
     WITHHELD_UNVERIFIED_COMBINATION,
+    ValidationLevel,
     WallFunctionCapability,
     WallFunctionCompatibilityError,
     WallFunctionRequest,
-    ValidationLevel,
     assess_wall_function,
     require_wall_function,
     wall_function_capability_matrix,

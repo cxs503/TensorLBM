@@ -156,8 +156,7 @@ class FlowTransformerApp(AI4SApplication):
         seed = int(cfg.get("seed", 0))
         g = torch.Generator().manual_seed(seed)
         return [
-            (torch.rand((ny, nx), generator=g), torch.rand((ny, nx), generator=g))
-            for _ in range(n)
+            (torch.rand((ny, nx), generator=g), torch.rand((ny, nx), generator=g)) for _ in range(n)
         ]
 
     @staticmethod

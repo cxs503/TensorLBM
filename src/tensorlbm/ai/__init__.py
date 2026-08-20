@@ -11,7 +11,6 @@ from __future__ import annotations
 import importlib
 
 from ..backends import get_backend, set_backend  # re-export for convenience
-
 from .database import (
     LBMDatabase,
     connect,
@@ -98,7 +97,7 @@ __all__ = [
 ]
 
 # SUBOFF 3D surrogate modules
-from tensorlbm.ai.nn import encoder_module, decoder_module, attention_module
+from tensorlbm.ai.nn import attention_module, decoder_module, encoder_module
 from tensorlbm.ai.suboff_coord import coord_ori27, coord_ori28, coord_ori28_addition
 from tensorlbm.ai.suboff_dataset import (
     CylinderDatasetMultiRe14,

@@ -60,9 +60,7 @@ class TestValidateCompileMode:
         with pytest.raises(ValueError, match="compile_mode"):
             validate_compile_mode(mode)
 
-    @pytest.mark.parametrize(
-        "mode", ["reduce-overhead", "max-autotune", "cudagraphs"]
-    )
+    @pytest.mark.parametrize("mode", ["reduce-overhead", "max-autotune", "cudagraphs"])
     def test_cudagraph_modes_carry_reason(self, mode: str) -> None:
         """Cudagraph-class rejections must state the structural reason."""
         with pytest.raises(ValueError, match="cudagraph replay overwrites"):
@@ -105,9 +103,7 @@ class TestCompileStepWrapper:
             compile_step(_double_plus_one, "reduce-overhead")
 
     def test_warmup_hint_is_informational(self) -> None:
-        compiled = compile_step(
-            _double_plus_one, "default", warmup_hint="one guarded graph"
-        )
+        compiled = compile_step(_double_plus_one, "default", warmup_hint="one guarded graph")
         assert compiled is not _double_plus_one
 
 

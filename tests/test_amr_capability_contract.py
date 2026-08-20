@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from tensorlbm.amr_capability_contract import (
-    LocalRefinementWithheldError,
     REQUIRED_FRONTEND_METADATA,
     WITHHELD_NO_COUPLED_AMR_PHYSICS_CONTRACT,
     WITHHELD_NO_D3Q27_LOCAL_REFINEMENT,
@@ -14,6 +13,7 @@ from tensorlbm.amr_capability_contract import (
     WITHHELD_UNKNOWN_LATTICE,
     WITHHELD_UNKNOWN_PATH,
     WITHHELD_UNKNOWN_PHYSICS,
+    LocalRefinementWithheldError,
     local_refinement_capability_matrix,
     require_local_refinement_capability,
 )

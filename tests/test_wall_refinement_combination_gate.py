@@ -1,7 +1,13 @@
 """TDD specification for the fail-closed wall/refinement combination gate."""
 
 from typing import Any
+
 from tensorlbm.wall_refinement_combination_gate import (
+    WITHHELD_D3Q27_WALL_FUNCTION,
+    WITHHELD_REFINEMENT_IBM,
+    WITHHELD_REFINEMENT_MULTIPHASE,
+    WITHHELD_UNSUPPORTED_COLLISION,
+    WITHHELD_WALL_FUNCTION_WITH_REFINEMENT,
     CollisionFamily,
     CombinationEvidence,
     GateStatus,
@@ -12,11 +18,6 @@ from tensorlbm.wall_refinement_combination_gate import (
     RefinementType,
     WallRefinementCombination,
     WallTreatment,
-    WITHHELD_D3Q27_WALL_FUNCTION,
-    WITHHELD_REFINEMENT_IBM,
-    WITHHELD_REFINEMENT_MULTIPHASE,
-    WITHHELD_UNSUPPORTED_COLLISION,
-    WITHHELD_WALL_FUNCTION_WITH_REFINEMENT,
     assess_wall_refinement_combination,
 )
 

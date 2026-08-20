@@ -1,4 +1,5 @@
 """Equivalence and contract tests for bounded-memory collision tiling."""
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -52,7 +53,9 @@ def test_one_large_chunk_delegates_without_changing_values() -> None:
 def test_invalid_chunk_size_is_rejected(chunk_cells: int) -> None:
     with pytest.raises(ValueError, match="positive integer"):
         collide_in_z_chunks(
-            _state(), lambda slab: slab, chunk_cells=chunk_cells,
+            _state(),
+            lambda slab: slab,
+            chunk_cells=chunk_cells,
         )
 
 
@@ -122,11 +125,13 @@ def test_compiled_executor_passes_tensor_tau_and_reuses_callable() -> None:
     assert diagnostics["collision_calls"] == 2
     assert diagnostics["minimum_tau"] == pytest.approx(0.71)
     assert diagnostics["maximum_tau"] == pytest.approx(0.73)
-    assert diagnostics["input_signatures"] == [{
-        "device": "cpu",
-        "dtype": "torch.float32",
-        "shape_qzyx": list(state.shape),
-    }]
+    assert diagnostics["input_signatures"] == [
+        {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "shape_qzyx": list(state.shape),
+        }
+    ]
 
 
 @pytest.mark.parametrize("tau", (0.5, float("nan"), float("inf")))

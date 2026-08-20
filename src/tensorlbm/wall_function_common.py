@@ -126,8 +126,6 @@ def compute_u_tau(
         u_tau = u_tau_vis.clone()
         turb = (y_plus > yp_thresh) & (u_mag > 1e-10)
         if bool(turb.any()):
-            from math import log as _log, exp as _exp
-
             u_tau_g = u_tau_vis[turb].clone()
             um = u_mag[turb]
             for _ in range(8):
@@ -252,11 +250,13 @@ def _apply_body_force(
     recomputing macroscopic fields from *f*.
     """
     if lattice == "D3Q19":
-        from .d3q19 import C as C_LAT, W as W_LAT
+        from .d3q19 import C as C_LAT
+        from .d3q19 import W as W_LAT
 
         q = 19
     elif lattice == "D3Q27":
-        from .d3q27 import C as C_LAT, W as W_LAT
+        from .d3q27 import C as C_LAT
+        from .d3q27 import W as W_LAT
 
         q = 27
     else:

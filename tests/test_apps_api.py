@@ -85,6 +85,7 @@ def demo_app():
 # Listing
 # ---------------------------------------------------------------------------
 
+
 def test_list_apps_includes_registered_app(client, demo_app):
     resp = client.get("/api/apps")
     assert resp.status_code == 200
@@ -100,6 +101,7 @@ def test_list_apps_includes_registered_app(client, demo_app):
 # ---------------------------------------------------------------------------
 # Running
 # ---------------------------------------------------------------------------
+
 
 def test_run_app_returns_run_report(client, demo_app):
     resp = client.post(
@@ -126,6 +128,7 @@ def test_run_unknown_app_returns_404(client, demo_app):
 # ---------------------------------------------------------------------------
 # Status query
 # ---------------------------------------------------------------------------
+
 
 def test_get_run_status_after_run(client, demo_app):
     client.post("/api/apps/demo_app/run", json={})

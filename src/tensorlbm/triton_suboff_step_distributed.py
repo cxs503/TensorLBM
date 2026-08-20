@@ -60,6 +60,7 @@ scale 3.8e-7; see ``triton_bench_20260819/dist_revalidate``):
    cubes), the sum degrades to an all_reduce of the per-rank sums,
    which differs only in the last ulp of the scale factor.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -68,20 +69,20 @@ import torch
 import torch.distributed as dist
 
 try:
-    from tensorlbm_triton_fused_obstacle import (
-        triton_fused_obstacle_xfar_les,
-    )
     from tensorlbm_triton_fused_distributed import (
         DistributedTritonFusedSolver3D,
         init_distributed,
     )
-except ImportError:
-    from tensorlbm.triton_fused_obstacle import (  # type: ignore
+    from tensorlbm_triton_fused_obstacle import (
         triton_fused_obstacle_xfar_les,
     )
+except ImportError:
     from tensorlbm.triton_fused_distributed import (  # type: ignore
         DistributedTritonFusedSolver3D,
         init_distributed,
+    )
+    from tensorlbm.triton_fused_obstacle import (  # type: ignore
+        triton_fused_obstacle_xfar_les,
     )
 
 
@@ -129,15 +130,12 @@ def build_suboff_solid_slab(
     build exactly.
     """
     if world_size <= 0:
-        raise ValueError(
-            f"world_size must be positive, got {world_size}")
+        raise ValueError(f"world_size must be positive, got {world_size}")
     if not 0 <= rank < world_size:
-        raise ValueError(
-            f"rank={rank} out of range for world_size={world_size}")
+        raise ValueError(f"rank={rank} out of range for world_size={world_size}")
     if nz % world_size != 0:
         raise ValueError(
-            f"nz={nz} must be divisible by world_size={world_size} "
-            "(slab decomposition along z)"
+            f"nz={nz} must be divisible by world_size={world_size} (slab decomposition along z)"
         )
     try:
         from tensorlbm.suboff_cad import build_suboff_mask
@@ -152,9 +150,15 @@ def build_suboff_solid_slab(
     cz_slab = (nz / 2.0 if cz is None else float(cz)) - z0
     return build_suboff_mask(
         hull_type=hull_type,
-        nx=nx, ny=ny, nz=nz_local,
-        cx=cx, cy=cy, cz=cz_slab,
-        length=length, radius=radius, config=config,
+        nx=nx,
+        ny=ny,
+        nz=nz_local,
+        cx=cx,
+        cy=cy,
+        cz=cz_slab,
+        length=length,
+        radius=radius,
+        config=config,
         device=device,
     )
 
@@ -205,8 +209,7 @@ class TritonSuboffDistributedRunner:
         Q, nz, ny, nx = f.shape
         if nz % world_size != 0:
             raise ValueError(
-                f"nz={nz} must be divisible by world_size={world_size} "
-                "(slab decomposition along z)"
+                f"nz={nz} must be divisible by world_size={world_size} (slab decomposition along z)"
             )
 
         # Slice the obstacle to this rank's slab.  Note: the global mask
@@ -220,7 +223,8 @@ class TritonSuboffDistributedRunner:
         # cells are always fluid.
         self.solid_int8_local = torch.zeros(
             (nz_local + 2, *solid_local.shape[1:]),
-            dtype=solid_int8.dtype, device=solid_int8.device,
+            dtype=solid_int8.dtype,
+            device=solid_int8.device,
         )
         self.solid_int8_local[1:-1] = solid_local
 
@@ -230,8 +234,7 @@ class TritonSuboffDistributedRunner:
         # 1..nz_local on every rank, which was rank-0's slab — not this
         # rank's).
         if initial_mass_per_rank is None:
-            initial_mass_per_rank = float(
-                f[:, z0:z1, :, :].sum().item())
+            initial_mass_per_rank = float(f[:, z0:z1, :, :].sum().item())
         self.initial_mass_per_rank = initial_mass_per_rank
 
         # Underlying slab-decomposed solver (periodic in z for the halo
@@ -239,7 +242,9 @@ class TritonSuboffDistributedRunner:
         # halo-exchanging scratch buffer; the BC + force + mass are
         # applied here.
         self._dist = DistributedTritonFusedSolver3D(
-            nz_global=nz, ny=ny, nx=nx,
+            nz_global=nz,
+            ny=ny,
+            nx=nx,
             # Standard LBM tau = 3*nu + 0.5.  The upstream class's
             # ``step`` method is not actually invoked here (we call
             # ``triton_fused_obstacle_xfar_les`` directly), so this
@@ -263,8 +268,7 @@ class TritonSuboffDistributedRunner:
         # n=(128,64,64)/w=4).  Exchange + land once now.  At
         # world_size == 1 this repeats the nearest-owned-plane copy
         # ``from_global`` already did — a no-op.
-        self._dist._halo_handles = self._dist._start_halo_exchange(
-            self._buf)
+        self._dist._halo_handles = self._dist._start_halo_exchange(self._buf)
         self._dist.synchronize()
 
         # Fix 4 — global initial mass, reduced in the single-GPU order
@@ -276,11 +280,10 @@ class TritonSuboffDistributedRunner:
         # of the per-rank sums — the scale factor then differs by at
         # most ~1 ulp, which the A/B revalidation measured as
         # numerically indistinguishable (fx rel 3.390e-5 vs 3.391e-5).
-        self._mass_reduce_gather = self._gather_fits_memory(
-            f.shape[0], nz, ny, nx, f.device)
+        self._mass_reduce_gather = self._gather_fits_memory(f.shape[0], nz, ny, nx, f.device)
         self.initial_mass_global = float(
-            self._current_global_mass(
-                self._buf[:, 1:nz_local + 1, :, :]).item())
+            self._current_global_mass(self._buf[:, 1 : nz_local + 1, :, :]).item()
+        )
 
         # Persistent force buffers.
         self.fx_buf = torch.zeros((), dtype=torch.float32, device=f.device)
@@ -295,7 +298,8 @@ class TritonSuboffDistributedRunner:
         # before each step.
         self.tau_eff_buf = torch.zeros(
             self._buf.shape[1:],  # (nz_local+2, ny, nx)
-            dtype=torch.float32, device=f.device,
+            dtype=torch.float32,
+            device=f.device,
         )
 
         self.nz_local = nz_local
@@ -305,7 +309,12 @@ class TritonSuboffDistributedRunner:
 
     # ------------------------------------------------------------------
     def _gather_fits_memory(
-        self, q: int, nz: int, ny: int, nx: int, device: torch.device,
+        self,
+        q: int,
+        nz: int,
+        ny: int,
+        nx: int,
+        device: torch.device,
     ) -> bool:
         """Whether the gather-based (bitwise) global mass fits in memory.
 
@@ -335,8 +344,9 @@ class TritonSuboffDistributedRunner:
             fits = True  # placeholder; overwritten by the broadcast
         if not dist.is_available() or not dist.is_initialized():
             return fits
-        flag = torch.tensor([1 if fits else 0], dtype=torch.int64,
-                            device=device if device.type == "cuda" else "cpu")
+        flag = torch.tensor(
+            [1 if fits else 0], dtype=torch.int64, device=device if device.type == "cuda" else "cpu"
+        )
         dist.broadcast(flag, src=0)
         return bool(flag.item())
 
@@ -379,8 +389,7 @@ class TritonSuboffDistributedRunner:
             return owned.sum()
         if self._mass_reduce_gather:
             owned = owned_full.contiguous()
-            parts = [torch.empty_like(owned)
-                     for _ in range(self.world_size)]
+            parts = [torch.empty_like(owned) for _ in range(self.world_size)]
             dist.all_gather(parts, owned)
             cur = torch.cat(parts, dim=1).sum()
             del parts
@@ -389,8 +398,7 @@ class TritonSuboffDistributedRunner:
         dist.all_reduce(cur, op=dist.ReduceOp.SUM)
         return cur
 
-    def _apply_far_field_bc_owned(self, owned_full: torch.Tensor,
-                                  u_in: float) -> None:
+    def _apply_far_field_bc_owned(self, owned_full: torch.Tensor, u_in: float) -> None:
         """Far-field BC on this rank's owned planes — physical faces only.
 
         Fix 1: the x inlet/outlet and the y faces are interior to every
@@ -412,11 +420,10 @@ class TritonSuboffDistributedRunner:
         except ImportError:  # pragma: no cover - flat module layout
             from d3q19 import equilibrium3d  # type: ignore
 
-        rho1 = torch.ones((1, 1, 1), dtype=owned_full.dtype,
-                          device=owned_full.device)
+        rho1 = torch.ones((1, 1, 1), dtype=owned_full.dtype, device=owned_full.device)
         feq_vec = equilibrium3d(
-            rho1, torch.full_like(rho1, u_in),
-            torch.zeros_like(rho1), torch.zeros_like(rho1))[:, 0, 0, 0]
+            rho1, torch.full_like(rho1, u_in), torch.zeros_like(rho1), torch.zeros_like(rho1)
+        )[:, 0, 0, 0]
         _q, _nzl, ny, nx = owned_full.shape
         # x inlet (x=0): free-stream equilibrium.
         owned_full[:, :, :, 0] = feq_vec[:, None, None]
@@ -515,7 +522,8 @@ class TritonSuboffDistributedRunner:
         if self._dist._buf is None:
             self._dist._buf = torch.empty(
                 (self._q_in, *self._buf.shape[1:]),
-                dtype=f_in.dtype, device=f_in.device,
+                dtype=f_in.dtype,
+                device=f_in.device,
             )
         out_local = self._dist._buf
 
@@ -534,30 +542,50 @@ class TritonSuboffDistributedRunner:
             self.fz_buf.zero_()
             if use_external_tau:
                 triton_fused_obstacle_xfar_les(
-                    f_in, nu_lb, self.solid_int8_local, Cs, delta,
+                    f_in,
+                    nu_lb,
+                    self.solid_int8_local,
+                    Cs,
+                    delta,
                     out=out_local,
                     collision=collision,
                     tau_eff=self.tau_eff_buf,
-                    fx_buf=self.fx_buf, fy_buf=self.fy_buf, fz_buf=self.fz_buf,
+                    fx_buf=self.fx_buf,
+                    fy_buf=self.fy_buf,
+                    fz_buf=self.fz_buf,
                 )
             else:
                 triton_fused_obstacle_xfar_les(
-                    f_in, nu_lb, self.solid_int8_local, Cs, delta,
+                    f_in,
+                    nu_lb,
+                    self.solid_int8_local,
+                    Cs,
+                    delta,
                     out=out_local,
                     collision=collision,
-                    fx_buf=self.fx_buf, fy_buf=self.fy_buf, fz_buf=self.fz_buf,
+                    fx_buf=self.fx_buf,
+                    fy_buf=self.fy_buf,
+                    fz_buf=self.fz_buf,
                 )
         else:
             if use_external_tau:
                 triton_fused_obstacle_xfar_les(
-                    f_in, nu_lb, self.solid_int8_local, Cs, delta,
+                    f_in,
+                    nu_lb,
+                    self.solid_int8_local,
+                    Cs,
+                    delta,
                     out=out_local,
                     collision=collision,
                     tau_eff=self.tau_eff_buf,
                 )
             else:
                 triton_fused_obstacle_xfar_les(
-                    f_in, nu_lb, self.solid_int8_local, Cs, delta,
+                    f_in,
+                    nu_lb,
+                    self.solid_int8_local,
+                    Cs,
+                    delta,
                     out=out_local,
                     collision=collision,
                 )
@@ -574,7 +602,7 @@ class TritonSuboffDistributedRunner:
 
         # 4. Owned planes (drop the 2 ghost planes) for BC + mass correction.
         #    V2: out_local is Q=19 throughout.
-        owned_full = out_local[:, 1:self.nz_local + 1, :, :]
+        owned_full = out_local[:, 1 : self.nz_local + 1, :, :]
         if compute_force:
             fx = self.fx_buf
             fy = self.fy_buf

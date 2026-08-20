@@ -79,7 +79,7 @@ _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from tensorlbm.d3q19 import C, W, OPPOSITE, equilibrium3d, macroscopic3d
+from tensorlbm.d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 # =========================================================================== #
@@ -460,7 +460,7 @@ def run_stefan_freezing(
 
     if not quiet:
         print(f"\n{'─' * 64}")
-        print(f"  Stefan freezing  —  D3Q19 BGK + D2Q5 thermal + Stefan condition")
+        print("  Stefan freezing  —  D3Q19 BGK + D2Q5 thermal + Stefan condition")
         print(f"  Grid: {nx} × {ny} × {nz}  (1-D in x)")
         print(f"  τ = {tau:.4f}   τ_T = {tau_T:.4f}   ν = {nu:.6f}   α = {alpha:.6f}")
         print(

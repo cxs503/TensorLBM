@@ -11,15 +11,14 @@ from __future__ import annotations
 import pytest
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.multi_gpu import (
     DomainDecomposition,
     MultiDeviceSolver3D,
     auto_decompose,
     halo_exchange_3d,
 )
-from tensorlbm.solver3d import collide_bgk3d, stream3d
-
+from tensorlbm.solver3d import collide_bgk3d
 
 # --------------------------------------------------------------------------- #
 # Device-availability helpers

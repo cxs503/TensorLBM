@@ -15,6 +15,7 @@ Usage pattern (see examples/amr_sphere_shell_l3_validate.py):
         amr, configuration=config_signature, path=checkpoint_path,
     )
 """
+
 from __future__ import annotations
 
 import json
@@ -54,9 +55,7 @@ def save_amr_checkpoint(
         "schema": CHECKPOINT_SCHEMA,
         "configuration": configuration,
         "step": int(step),
-        "level_populations": [
-            level.detach().cpu() for level in amr.level_populations
-        ],
+        "level_populations": [level.detach().cpu() for level in amr.level_populations],
         "force_samples": [float(value) for value in force_samples],
     }
     if extra:
@@ -83,7 +82,8 @@ def resume_amr_checkpoint(
     if not checkpoint.exists():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint}")
     state = torch.load(
-        checkpoint, map_location=map_location or amr.level_populations[0].device,
+        checkpoint,
+        map_location=map_location or amr.level_populations[0].device,
         weights_only=True,
     )
     if state.get("schema") != CHECKPOINT_SCHEMA:

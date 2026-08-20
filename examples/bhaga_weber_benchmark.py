@@ -16,12 +16,18 @@ Based on verified phase-field + Fakhari framework:
   - Gas mass conservation
 """
 
-import sys, math, torch, numpy as np
+import math
+import sys
+
+import numpy as np
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import equilibrium3d, C as C3D, W as W3D
-from tensorlbm.solver3d import stream3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.solver3d import stream3d
 
 
 def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000, device="sdaa:0"):
@@ -109,7 +115,7 @@ def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000, device="sdaa:0"):
     # Actual initial gas volume
     V0 = float((phi < 0).float().mul(fluid_mask.float()).sum())
 
-    print(f"=== Bhaga & Weber Case B ===", flush=True)
+    print("=== Bhaga & Weber Case B ===", flush=True)
     print(f"Eo={Eo:.2f}  Mo={Mo:.6f}  Re_ref={Re_ref:.1f}  v_ref={v_ref:.5f}", flush=True)
     print(f"Grid: {nx}×{ny}×{nz}  R0={R0}  d={d}", flush=True)
     print(f"ρ_l={rho_liq} ρ_g={rho_gas0} σ={sigma} ν_l={nu_l:.4f} τ={tau_f:.4f}", flush=True)
@@ -308,7 +314,7 @@ if __name__ == "__main__":
     print()
     print("=" * 60)
     print("=== BHAGA & WEBER CASE B SUMMARY ===")
-    print(f"Eo=10.0  Mo=0.001  Re_ref=7.0")
+    print("Eo=10.0  Mo=0.001  Re_ref=7.0")
     print(f"Bubble: cy {cy[0]:.1f} → {cy[-1]:.1f} (rise {cy[-1] - cy[0]:.1f} cells)")
     v_final = v[-1]
     Re_final = 1.0 * abs(v_final) * 20.0 / 0.0849

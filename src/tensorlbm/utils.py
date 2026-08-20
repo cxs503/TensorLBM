@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 import torch
 
 try:  # Optional accelerator plugin.
-    import torch_sdaa  # type: ignore # noqa: F401
+    import torch_sdaa  # noqa: F401
 except (ImportError, ModuleNotFoundError):  # pragma: no cover - depends on environment
-    torch_sdaa = None  # type: ignore[assignment]
+    torch_sdaa = None
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -48,7 +48,7 @@ def configure_cpu_threads(device: torch.device | str, num_threads: int | None = 
     if resolved.type == "cpu" and num_threads is not None and current != num_threads:
         torch.set_num_threads(num_threads)
         current = torch.get_num_threads()
-    return current
+    return int(current)
 
 
 def is_sdaa_available() -> bool:
@@ -74,8 +74,7 @@ def default_device_name() -> str:
         from tensorlbm.hardware import probe
 
         profile = probe()
-        others = [name for name in ("npu", "mlu", "musa", "mps")
-                  if profile.has_backend(name)]
+        others = [name for name in ("npu", "mlu", "musa", "mps") if profile.has_backend(name)]
         if others:
             return others[0]
     except Exception:  # pragma: no cover - probe must never break defaults
@@ -87,7 +86,7 @@ def synchronize_device(device: torch.device | str) -> None:
     """Synchronize the active accelerator stream for timing-critical code."""
     resolved = device if isinstance(device, torch.device) else torch.device(device)
     if resolved.type == "sdaa":
-        torch.sdaa.synchronize()
+        torch.sdaa.synchronize()  # type: ignore[attr-defined]
     elif resolved.type == "cuda":
         torch.cuda.synchronize(resolved)
     else:

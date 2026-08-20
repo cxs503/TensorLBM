@@ -17,15 +17,22 @@ Usage:
 """
 
 from __future__ import annotations
-import sys, time, math, argparse, torch
+
+import argparse
+import math
+import sys
+import time
+
+import torch
 
 sys.path.insert(0, "src")
-from tensorlbm.d3q27 import equilibrium27, macroscopic27, C as C27, correct_mass27
 from tensorlbm.cumulant import collide_cumulant_d3q27
-from tensorlbm.propeller_cad import PropellerGeometryConfig, KP505_PRESET, build_propeller_mask
+from tensorlbm.d3q27 import C as C27
 
 # D3Q27 velocity shifts — MUST match C27 ordering from d3q27.py
 from tensorlbm.d3q27 import C as _C27_REF
+from tensorlbm.d3q27 import correct_mass27, equilibrium27, macroscopic27
+from tensorlbm.propeller_cad import KP505_PRESET, build_propeller_mask
 
 _C27_SHIFTS = [
     (int(_C27_REF[q, 0].item()), int(_C27_REF[q, 1].item()), int(_C27_REF[q, 2].item()))
@@ -134,7 +141,7 @@ def run_openwater(J=0.5, device="sdaa:0", n_steps=2000, warmup=500):
         m = build_propeller_mask(nx, ny, nz, cx, cy, cz, angle_deg=ang, config=cfg, device="cpu")
         masks.append(m.to(dev))
     mask_0 = masks[0]
-    print(f"Done pre-computing masks.", flush=True)
+    print("Done pre-computing masks.", flush=True)
 
     # Precompute opposite mapping for D3Q27
     opp_map = torch.zeros(27, dtype=torch.long, device=dev)
@@ -252,7 +259,7 @@ def run_openwater(J=0.5, device="sdaa:0", n_steps=2000, warmup=500):
     kt_sim = avg_thrust / (rho_ref * n_rev**2 * D**4)
     ct_sim = kt_sim * 8 / (math.pi * J**2) if J > 0 else 0
 
-    print(f"\n=== Final ===", flush=True)
+    print("\n=== Final ===", flush=True)
     print(
         f"KT_sim={kt_sim:.4f} KT_exp={kt_exp:.3f} error={abs(kt_sim - kt_exp) / kt_exp * 100:.1f}%",
         flush=True,

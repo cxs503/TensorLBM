@@ -58,8 +58,7 @@ class TestNormalizeCompileMode:
     def test_proven_modes_pass_through(self) -> None:
         assert cr.normalize_compile_mode("default") == "default"
         assert (
-            cr.normalize_compile_mode("max-autotune-no-cudagraphs")
-            == "max-autotune-no-cudagraphs"
+            cr.normalize_compile_mode("max-autotune-no-cudagraphs") == "max-autotune-no-cudagraphs"
         )
 
     @pytest.mark.parametrize(
@@ -101,7 +100,7 @@ class TestArgparsePlumbing:
         ap = argparse.ArgumentParser()
         cr.add_compile_mode_arg(ap)
         args = ap.parse_args([])
-        assert args.compile_mode == "default"      # new benchmark standard
+        assert args.compile_mode == "default"  # new benchmark standard
         assert cr.compile_mode_from_args(args) == "default"
 
     def test_roundtrip_eager_and_autotune(self) -> None:
@@ -134,9 +133,11 @@ def _make_step(device: torch.device):
     y = torch.arange(ny, device=device, dtype=torch.float32)
     x = torch.arange(nx, device=device, dtype=torch.float32)
     yy, xx = torch.meshgrid(y, x, indexing="ij")
-    f0 = equilibrium(torch.ones((ny, nx), device=device),
-                     0.05 * torch.sin(2 * torch.pi * yy / ny),
-                     torch.zeros((ny, nx), device=device))
+    f0 = equilibrium(
+        torch.ones((ny, nx), device=device),
+        0.05 * torch.sin(2 * torch.pi * yy / ny),
+        torch.zeros((ny, nx), device=device),
+    )
 
     def _step(f):
         return collide_bgk(stream(f), tau)

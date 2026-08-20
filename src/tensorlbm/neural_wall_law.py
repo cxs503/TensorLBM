@@ -11,10 +11,10 @@ Models:
   3: gradient    u+ = y+ (linear)
 """
 
+import copy
+
 import torch
 import torch.nn as nn
-import math
-import copy
 
 _KAPPA = 0.41
 _B_LOG = 5.0

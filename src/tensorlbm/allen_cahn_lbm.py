@@ -24,7 +24,10 @@ Reference:
 from __future__ import annotations
 
 import torch
-from .d3q19 import C as C3D, W as W3D, OPPOSITE as OPP
+
+from .d3q19 import OPPOSITE as OPP
+from .d3q19 import C as C3D
+from .d3q19 import W as W3D
 from .d3q19 import equilibrium3d, macroscopic3d
 
 
@@ -50,7 +53,7 @@ def _phase_field_equilibrium(phi, ux, uy, uz, device):
 
 def _interface_normal(phi, device):
     """Compute interface normal from phase field gradient."""
-    c = C3D.to(device).float()
+    C3D.to(device).float()
     # Gradient via finite differences (central)
     grad_x = torch.zeros_like(phi)
     grad_y = torch.zeros_like(phi)

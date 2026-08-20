@@ -19,17 +19,28 @@ Usage:
   collision: auto|mrt|smag_mrt       (default auto; smag_mrt = MRT+Smagorinsky)
   cs:        float                   (Smagorinsky constant, default 0.05)
 """
-import sys, os, time, json, math
+
+import json
+import math
+import sys
+import time
 
 sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
 
-import torch
 
 from tensorlbm.general_sim import (
-    GeneralSimConfig, GeneralSimEngine,
-    GeometryConfig, PhysicsConfig, SolverConfig, OutputConfig,
-    GeometrySource, LatticeModel, CollisionModel, WallTreatment,
-    ForceMethod, OutputFormat,
+    CollisionModel,
+    ForceMethod,
+    GeneralSimConfig,
+    GeneralSimEngine,
+    GeometryConfig,
+    GeometrySource,
+    LatticeModel,
+    OutputConfig,
+    OutputFormat,
+    PhysicsConfig,
+    SolverConfig,
+    WallTreatment,
 )
 
 
@@ -65,22 +76,22 @@ def main():
         name=f"sphere_re100_d40_generalsim_{extrap}_{tag}",
         geometry=GeometryConfig(
             source=GeometrySource.PARAMETRIC_SPHERE,
-            sphere_radius=0.5,          # m  → D = 1.0 m = reference_length
+            sphere_radius=0.5,  # m  → D = 1.0 m = reference_length
             sphere_center=(0.0, 0.0, 0.0),
         ),
         physics=PhysicsConfig(
-            density=1000.0,             # kg/m^3 (water)
-            viscosity=1.0e-6,           # m^2/s (water)
-            inlet_velocity=1.0e-4,      # m/s → Re = 1e-4*1.0/1e-6 = 100
-            reference_length=1.0,       # m (sphere diameter)
+            density=1000.0,  # kg/m^3 (water)
+            viscosity=1.0e-6,  # m^2/s (water)
+            inlet_velocity=1.0e-4,  # m/s → Re = 1e-4*1.0/1e-6 = 100
+            reference_length=1.0,  # m (sphere diameter)
         ),
         solver=SolverConfig(
             lattice=LatticeModel.D3Q19,
-            collision=collision,                # Re<1000 → MRT (auto)
-            resolution=40,                      # D = 40 cells, R = 20
+            collision=collision,  # Re<1000 → MRT (auto)
+            resolution=40,  # D = 40 cells, R = 20
             domain_padding=tuple([pad] * 6) if pad > 0 else None,
             max_steps=n_steps,
-            warmup_steps=None,                  # auto (reported only)
+            warmup_steps=None,  # auto (reported only)
             snapshot_interval=500,
             force_sample_interval=10,
             device="cuda:0",
@@ -111,23 +122,42 @@ def main():
     setup_info = engine.setup()
     t_setup = time.time() - t0
     print("\n[setup] %.1f s" % t_setup)
-    for k in ("Re", "tau", "u_lb", "nu_lb", "Ma", "domain_lu", "obstacle_cells",
-              "near_wall_cells", "total_cells", "device", "auto_collision",
-              "auto_wall_treatment", "auto_warmup", "status"):
+    for k in (
+        "Re",
+        "tau",
+        "u_lb",
+        "nu_lb",
+        "Ma",
+        "domain_lu",
+        "obstacle_cells",
+        "near_wall_cells",
+        "total_cells",
+        "device",
+        "auto_collision",
+        "auto_wall_treatment",
+        "auto_warmup",
+        "status",
+    ):
         print(f"  {k:22s} = {setup_info[k]}")
-    R_lb = config.geometry.sphere_radius / (config.physics.reference_length / config.solver.resolution)
-    print(f"  sphere R_lb            = {R_lb}  (D = {2*R_lb:.0f} cells)")
-    print(f"  sphere centre (lu)     = "
-          f"({(config.geometry.sphere_center[0]-engine.domain_phys[0])/(config.physics.reference_length/config.solver.resolution):.1f}, "
-          f"{(config.geometry.sphere_center[1]-engine.domain_phys[2])/(config.physics.reference_length/config.solver.resolution):.1f}, "
-          f"{(config.geometry.sphere_center[2]-engine.domain_phys[4])/(config.physics.reference_length/config.solver.resolution):.1f})")
+    R_lb = config.geometry.sphere_radius / (
+        config.physics.reference_length / config.solver.resolution
+    )
+    print(f"  sphere R_lb            = {R_lb}  (D = {2 * R_lb:.0f} cells)")
+    print(
+        f"  sphere centre (lu)     = "
+        f"({(config.geometry.sphere_center[0] - engine.domain_phys[0]) / (config.physics.reference_length / config.solver.resolution):.1f}, "
+        f"{(config.geometry.sphere_center[1] - engine.domain_phys[2]) / (config.physics.reference_length / config.solver.resolution):.1f}, "
+        f"{(config.geometry.sphere_center[2] - engine.domain_phys[4]) / (config.physics.reference_length / config.solver.resolution):.1f})"
+    )
 
     # ── Phase 2: run ────────────────────────────────────────────────
     t0 = time.time()
     run_info = engine.run(steps=n_steps)
     t_run = time.time() - t0
-    print(f"\n[run] {t_run:.1f} s for {run_info['steps']} steps "
-          f"({t_run/max(run_info['steps'],1)*1000:.1f} ms/step), diverged={run_info['diverged']}")
+    print(
+        f"\n[run] {t_run:.1f} s for {run_info['steps']} steps "
+        f"({t_run / max(run_info['steps'], 1) * 1000:.1f} ms/step), diverged={run_info['diverged']}"
+    )
 
     # ── Phase 3: results ────────────────────────────────────────────
     res = engine.results()
@@ -143,15 +173,19 @@ def main():
     print(f"  Cl          = {cd.get('Cl'):.4f}")
     print(f"  St          = {cd.get('St')}")
     print(f"  ref Schiller-Naumann Cd = {cd_ref:.4f}  → err = {err:+.2f}%")
-    print(f"  ref Clift-Gauvin    Cd = {cd_ref_cg:.4f}  → err = {(cd_tot-cd_ref_cg)/cd_ref_cg*100:+.2f}%")
+    print(
+        f"  ref Clift-Gauvin    Cd = {cd_ref_cg:.4f}  → err = {(cd_tot - cd_ref_cg) / cd_ref_cg * 100:+.2f}%"
+    )
     print(f"  files: {len(res['saved_files'])} saved to {res['output_dir']}")
 
     # last-1000-step window mean from force log (steps 2000..3000)
     if engine.forces_log:
         recent = engine.forces_log[-100:]
         cd_win = sum(e["cd_total"] for e in recent) / len(recent)
-        print(f"  Cd_total (last {len(recent)} samples, steps "
-              f"{recent[0]['step']}..{recent[-1]['step']}) = {cd_win:.4f}")
+        print(
+            f"  Cd_total (last {len(recent)} samples, steps "
+            f"{recent[0]['step']}..{recent[-1]['step']}) = {cd_win:.4f}"
+        )
 
     summary = {
         "engine": "GeneralSimEngine",

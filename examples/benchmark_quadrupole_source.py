@@ -63,7 +63,6 @@ if _SRC not in sys.path:
 from tensorlbm.d3q19 import C, W, equilibrium3d, macroscopic3d  # noqa: E402
 from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 
-
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
@@ -187,7 +186,7 @@ def run_quadrupole_source(
     print("=" * 64)
     print(f"  网格: {nx} × {ny} × {nz}   设备: {device}")
     print(f"  声速 cs={cs:.4f}  波长 λ={lam:.1f}  波数 k={k:.4f}")
-    print(f"  源类型: 力源 (Guo forcing, 四点 → 纯四极子)")
+    print("  源类型: 力源 (Guo forcing, 四点 → 纯四极子)")
     print(f"  源A ({src_a[0]},{src_a[1]}):  Fx = +{force_amp}·sin({omega}·t)")
     print(f"  源B ({src_b[0]},{src_b[1]}):  Fx = -{force_amp}·sin({omega}·t)")
     print(f"  源C ({src_c[0]},{src_c[1]}):  Fy = -{force_amp}·sin({omega}·t)")
@@ -296,7 +295,7 @@ def run_quadrupole_source(
     print(f"  指向性验证: {'PASS' if dir_pass else 'FAIL'}")
 
     # Directivity at all radii (supplementary)
-    print(f"\n  各半径指向性误差 (补充):")
+    print("\n  各半径指向性误差 (补充):")
     for r in monitor_r:
         ref = amplitudes[(r, 0)]
         errs = []
@@ -310,7 +309,7 @@ def run_quadrupole_source(
     # Validation 2: Radial decay (|H_2^(1)(kr)|)
     # ----------------------------------------------------------------------- #
     print("\n  --- 验证2: 径向衰减 (|H₂⁽¹⁾(kr)| 衰减) ---")
-    print(f"  固定 θ=0°, 比较 |p'(r,0°)| 衰减与 |H₂⁽¹⁾(kr)| 衰减")
+    print("  固定 θ=0°, 比较 |p'(r,0°)| 衰减与 |H₂⁽¹⁾(kr)| 衰减")
     print(f"  {'r':>5s}  {'|H2(kr)|':>12s}  {'归一化H2':>10s}  {'归一化测量':>12s}  {'误差':>8s}")
 
     h2_ref = abs(hankel1(2, k * monitor_r[0]))

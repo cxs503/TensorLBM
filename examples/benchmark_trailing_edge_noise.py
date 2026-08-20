@@ -37,7 +37,12 @@ Setup (2D D3Q19 BGK):
 """
 
 from __future__ import annotations
-import argparse, math, os, sys
+
+import argparse
+import math
+import os
+import sys
+
 import numpy as np
 import torch
 
@@ -45,7 +50,7 @@ _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, OPPOSITE
+from tensorlbm.d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 CS = 1.0 / math.sqrt(3.0)
@@ -237,7 +242,7 @@ def run_te_noise(
     print(f"  误差: {abs(St_lbm - St_expected) / St_expected * 100:.1f}%", flush=True)
 
     # === Far-field decay ===
-    print(f"\n  远场压力衰减 (1/√r):", flush=True)
+    print("\n  远场压力衰减 (1/√r):", flush=True)
     far_amps = {}
     for r in far_r:
         arr = np.array(far_hists[r], dtype=np.float64)
@@ -257,7 +262,7 @@ def run_te_noise(
         alpha = 0
 
     # === Verification ===
-    print(f"\n  验证:", flush=True)
+    print("\n  验证:", flush=True)
     checks = []
 
     # 1. Vortex shedding detected
@@ -272,7 +277,7 @@ def run_te_noise(
     st_ok = st_err < 25.0
     checks.append(
         (
-            f"Strouhal 数 (err<25%)",
+            "Strouhal 数 (err<25%)",
             st_ok,
             f"St_lbm={St_lbm:.4f} vs St_ref={St_expected}, err={st_err:.1f}%",
         )

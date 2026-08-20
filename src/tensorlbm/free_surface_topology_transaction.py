@@ -8,11 +8,11 @@ ABB, or mass-exchange arithmetic.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import io
 import pickle
 import weakref
+from dataclasses import dataclass
 from typing import Mapping
 
 import torch

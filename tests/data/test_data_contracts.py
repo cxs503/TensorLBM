@@ -1,22 +1,20 @@
 """Tests for cold-path, evidence-gated ML data product contracts."""
 
 import ast
-from dataclasses import FrozenInstanceError
 import json
+from dataclasses import FrozenInstanceError
 from pathlib import Path
 from types import MappingProxyType
 
 import pytest
 
+from tensorlbm.data.contracts import DatasetManifest, DatasetSampleRef, FieldProduct
 from tensorlbm.runtime import (
     ArtifactManifest,
     MetricEvidence,
     RunManifest,
     ValidationStatus,
 )
-
-from tensorlbm.data.contracts import DatasetManifest, DatasetSampleRef, FieldProduct
-
 
 _CODE_SHA = "a" * 40
 

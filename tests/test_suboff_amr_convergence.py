@@ -26,9 +26,7 @@ def _record(coarse_length: float) -> dict[str, object]:
             "les_model": "smagorinsky",
             "collision_model": "cumulant_smagorinsky",
             "wall_law": "musker",
-            "wall_traction_source_scheme": (
-                "mass_conservative_post_collision_guo_v2"
-            ),
+            "wall_traction_source_scheme": ("mass_conservative_post_collision_guo_v2"),
             "wall_distance": 0.5,
             "wall_viscosity_basis": "physical_reynolds",
             "pressure_reference": "near_wall",
@@ -87,7 +85,8 @@ def test_equivalent_monotonic_sequence_is_admitted(
 
     assert result["configuration_identity"]["admitted"] is True
     assert result["spatial_convergence"]["observed_order"] == pytest.approx(
-        2.0, rel=2e-5,
+        2.0,
+        rel=2e-5,
     )
     assert result["experiment"]["extrapolated_error_pct"] < 1e-8
     assert result["physical_validation"] is True
@@ -123,9 +122,7 @@ def test_unscaled_domain_fails_equivalence(records: list[dict[str, object]]) -> 
     records[1]["configuration"]["coarse_shape_zyx"][2] += 1
     result = assess_suboff_amr_convergence(records)
 
-    assert result["configuration_identity"][
-        "scaled_configuration_invariant"
-    ] is False
+    assert result["configuration_identity"]["scaled_configuration_invariant"] is False
     assert result["admitted"] is False
 
 
@@ -144,9 +141,7 @@ def test_underresolved_coarse_member_fails_geometry_admission() -> None:
     underresolved = [_record(length) for length in (60.0, 90.0, 120.0)]
     result = assess_suboff_amr_convergence(underresolved)
 
-    assert result["geometry_resolution"][
-        "source_convergence_members_admitted"
-    ] is False
+    assert result["geometry_resolution"]["source_convergence_members_admitted"] is False
     assert result["admitted"] is False
 
 
@@ -166,12 +161,8 @@ def test_aff8_requires_measured_component_resolution(
                 "absolute_reference_resolved": absolute,
             },
         }
-        record["acceptance"][
-            "geometry_convergence_member_target_met"
-        ] = True
-        record["acceptance"][
-            "absolute_reference_geometry_target_met"
-        ] = absolute
+        record["acceptance"]["geometry_convergence_member_target_met"] = True
+        record["acceptance"]["absolute_reference_geometry_target_met"] = absolute
     measured = assess_suboff_amr_convergence(records)
     assert measured["geometry_resolution"]["admitted"] is True
     assert measured["admitted"] is True

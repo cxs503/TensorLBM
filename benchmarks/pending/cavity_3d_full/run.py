@@ -33,6 +33,7 @@ Re=1000, u_lid=0.06（等 Re 配方；64³ tau=0.51152, 96³ tau=0.51728）。
   run.py single 64 out.json [--threads 48] [--steps 100000]
   run.py both out_dir [--threads64 48] [--threads96 32]
 """
+
 import argparse
 import json
 import sys
@@ -64,9 +65,17 @@ def stationary_pre_bounce3d(f_pre, f, wall):
     return torch.where(wall.unsqueeze(0), f_pre[opp], f)
 
 
-def run_case(nx, re=1000, u_lid=0.06, steps=100000, device=None,
-             out_path=None, resid_interval=5000, min_resid=1e-9,
-             threads=48):
+def run_case(
+    nx,
+    re=1000,
+    u_lid=0.06,
+    steps=100000,
+    device=None,
+    out_path=None,
+    resid_interval=5000,
+    min_resid=1e-9,
+    threads=48,
+):
     torch.set_num_threads(threads)
     nz = nx
     ny = nx
@@ -79,11 +88,11 @@ def run_case(nx, re=1000, u_lid=0.06, steps=100000, device=None,
 
     # 5 静止壁（顶盖 y=ny-1 不在 mask 中，由 Zou-He 处理）
     wall = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
-    wall[:, :, 0] = True     # x=0
-    wall[:, :, -1] = True    # x=nx-1
-    wall[:, 0, :] = True     # y=0（底壁）
-    wall[0, :, :] = True     # z=0（新：有限展向）
-    wall[-1, :, :] = True    # z=nz-1（新：有限展向）
+    wall[:, :, 0] = True  # x=0
+    wall[:, :, -1] = True  # x=nx-1
+    wall[:, 0, :] = True  # y=0（底壁）
+    wall[0, :, :] = True  # z=0（新：有限展向）
+    wall[-1, :, :] = True  # z=nz-1（新：有限展向）
     interior = ~wall
     interior[:, -1, :] = False  # 顶盖行不计残差
 
@@ -101,17 +110,20 @@ def run_case(nx, re=1000, u_lid=0.06, steps=100000, device=None,
         f = zou_he_moving_lid_3d(f, u_lid)
         if step % resid_interval == 0:
             _, ux, uy, uz = macroscopic3d(f)
-            du = torch.max(
-                torch.abs(ux[interior] - ux_prev[interior]),
-                torch.abs(uy[interior] - uy_prev[interior]),
-                torch.abs(uz[interior] - uz_prev[interior]),
-            ).max().item()
+            du = (
+                torch.max(
+                    torch.abs(ux[interior] - ux_prev[interior]),
+                    torch.abs(uy[interior] - uy_prev[interior]),
+                    torch.abs(uz[interior] - uz_prev[interior]),
+                )
+                .max()
+                .item()
+            )
             last_resid = du
             ux_prev = ux.detach().clone()
             uy_prev = uy.detach().clone()
             uz_prev = uz.detach().clone()
-            print(f"  step {step:7d} resid={du:.2e} t={time.time()-t0:.0f}s",
-                  flush=True)
+            print(f"  step {step:7d} resid={du:.2e} t={time.time() - t0:.0f}s", flush=True)
             if du < min_resid:
                 break
     elapsed = time.time() - t0
@@ -130,33 +142,33 @@ def run_case(nx, re=1000, u_lid=0.06, steps=100000, device=None,
     x_pos = np.linspace(0.0, 1.0, nx)
 
     # 展向对称性：中心平面两侧 u 剖面应镜像对称，uz 中心平面应为 0
-    u_cl_mid = ux_np[z0, :, x_mid]        # u(x=0.5) 垂直中线（中心平面）
-    v_cl_mid = uy_np[z0, y_mid, :]        # v(y=0.5) 水平中线（中心平面）
-    u_cl_mid2 = ux_np[z0 + 1, :, x_mid]   # 相邻 z 层（对称性检查）
+    u_cl_mid = ux_np[z0, :, x_mid]  # u(x=0.5) 垂直中线（中心平面）
+    v_cl_mid = uy_np[z0, y_mid, :]  # v(y=0.5) 水平中线（中心平面）
+    u_cl_mid2 = ux_np[z0 + 1, :, x_mid]  # 相邻 z 层（对称性检查）
     u_cl_midm1 = ux_np[z0 - 1, :, x_mid]
     span_symmetry = {
         "uz_midplane_max_abs": round(float(np.abs(uz_np[z0]).max()), 6),
         "uz_global_max_abs": round(float(np.abs(uz_np).max()), 6),
-        "u_midplane_asym_adjacent": round(
-            float(np.abs(u_cl_mid - u_cl_mid2).max()), 6),
-        "u_midplane_asym_adjacent_m1": round(
-            float(np.abs(u_cl_mid - u_cl_midm1).max()), 6),
-        "u_center_std_over_z": round(
-            float(ux_np[:, :, x_mid].std(axis=0).mean()), 6),
+        "u_midplane_asym_adjacent": round(float(np.abs(u_cl_mid - u_cl_mid2).max()), 6),
+        "u_midplane_asym_adjacent_m1": round(float(np.abs(u_cl_mid - u_cl_midm1).max()), 6),
+        "u_center_std_over_z": round(float(ux_np[:, :, x_mid].std(axis=0).mean()), 6),
     }
 
     # 2D Ghia 对比（3D 修正量：中心平面 vs 2D）
     def metrics2d(u_cl, v_cl, tag):
         u_gi = np.interp(ghia["y"], y_pos, u_cl)
         v_gi = np.interp(ghia["x"], x_pos, v_cl)
-        dev = np.concatenate([np.abs(u_gi - np.array(ghia["u"])),
-                              np.abs(v_gi - np.array(ghia["v"]))])
+        dev = np.concatenate(
+            [np.abs(u_gi - np.array(ghia["u"])), np.abs(v_gi - np.array(ghia["v"]))]
+        )
         return {
             f"max_abs_dev_pct_vs2d_{tag}": round(100.0 * float(dev.max()), 4),
-            f"rmse_u_vs2d_{tag}": round(float(np.sqrt(
-                np.mean((u_gi - np.array(ghia["u"])) ** 2))), 5),
-            f"rmse_v_vs2d_{tag}": round(float(np.sqrt(
-                np.mean((v_gi - np.array(ghia["v"])) ** 2))), 5),
+            f"rmse_u_vs2d_{tag}": round(
+                float(np.sqrt(np.mean((u_gi - np.array(ghia["u"])) ** 2))), 5
+            ),
+            f"rmse_v_vs2d_{tag}": round(
+                float(np.sqrt(np.mean((v_gi - np.array(ghia["v"])) ** 2))), 5
+            ),
             f"u_mid_{tag}": round(float(np.interp(0.5, y_pos, u_cl)), 5),
             f"v_mid_{tag}": round(float(np.interp(0.5, x_pos, v_cl)), 5),
         }
@@ -167,16 +179,14 @@ def run_case(nx, re=1000, u_lid=0.06, steps=100000, device=None,
     # 3D 参考锚点：u_min(x=0.5, z=0.5) vs Ku/iD3Q14 -0.2751
     u_min_3d = float(u_cl_mid.min())
     u_min_idx = int(np.argmin(u_cl_mid))
-    u_min_err_pct = 100.0 * abs(u_min_3d - REF_U_MIN_3D_RE1000) / abs(
-        REF_U_MIN_3D_RE1000)
+    u_min_err_pct = 100.0 * abs(u_min_3d - REF_U_MIN_3D_RE1000) / abs(REF_U_MIN_3D_RE1000)
     m["u_min_3d_mid"] = round(u_min_3d, 5)
     m["u_min_y_mid"] = round(float(y_pos[u_min_idx]), 4)
     m["u_min_ref_ku"] = REF_U_MIN_3D_RE1000
     m["u_min_err_pct_vs_3d_ref"] = round(u_min_err_pct, 3)
     # 3D 修正量（vs 2D Ghia）：中心平面 u_min 相对 2D 的减弱
     m["u_min_2d_ghia"] = -0.38289
-    m["u_min_3d_correction_pct"] = round(
-        100.0 * (u_min_3d - (-0.38289)) / abs(-0.38289), 3)
+    m["u_min_3d_correction_pct"] = round(100.0 * (u_min_3d - (-0.38289)) / abs(-0.38289), 3)
 
     # 涡心：中心平面主涡区域 [0.3,0.8]²（与 2D/展向周期版同款度量）
     speed2 = ux_np[z0] ** 2 + uy_np[z0] ** 2
@@ -184,21 +194,31 @@ def run_case(nx, re=1000, u_lid=0.06, steps=100000, device=None,
     speed2[:, 0] = speed2[:, -1] = np.inf
     xg = np.linspace(0.0, 1.0, nx)
     yg = np.linspace(0.0, 1.0, ny)
-    in_region = ((xg[None, :] >= 0.3) & (xg[None, :] <= 0.8)
-                 & (yg[:, None] >= 0.3) & (yg[:, None] <= 0.8))
-    iy1, ix1 = np.unravel_index(np.argmin(np.where(in_region, speed2, np.inf)),
-                                speed2.shape)
+    in_region = (
+        (xg[None, :] >= 0.3) & (xg[None, :] <= 0.8) & (yg[:, None] >= 0.3) & (yg[:, None] <= 0.8)
+    )
+    iy1, ix1 = np.unravel_index(np.argmin(np.where(in_region, speed2, np.inf)), speed2.shape)
     primary_vortex = [round(ix1 / (nx - 1), 4), round(iy1 / (ny - 1), 4)]
 
     result = {
         "case": "cavity_3d_full_re1000",
-        "lattice": "D3Q19", "collision": "rlbm",
-        "boundary": ("V3-3D: pre-streaming 半程反弹(5 静止壁 x0/xN/y0/z0/zN) + "
-                     "boundaries3d.zou_he_moving_lid_3d(顶盖整层含角点)"),
+        "lattice": "D3Q19",
+        "collision": "rlbm",
+        "boundary": (
+            "V3-3D: pre-streaming 半程反弹(5 静止壁 x0/xN/y0/z0/zN) + "
+            "boundaries3d.zou_he_moving_lid_3d(顶盖整层含角点)"
+        ),
         "extrap": "none",
-        "nx": nx, "ny": ny, "nz": nz,
-        "re": re, "u_lid": u_lid, "tau": round(tau, 6), "nu": round(nu, 8),
-        "steps": steps, "n_steps_run": step, "last_resid": last_resid,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
+        "re": re,
+        "u_lid": u_lid,
+        "tau": round(tau, 6),
+        "nu": round(nu, 8),
+        "steps": steps,
+        "n_steps_run": step,
+        "last_resid": last_resid,
         "elapsed_s": round(elapsed, 1),
         "primary_vortex_midplane": primary_vortex,
         "primary_vortex_2d_ghia": GHIA_RE1000_VORTEX,
@@ -212,12 +232,14 @@ def run_case(nx, re=1000, u_lid=0.06, steps=100000, device=None,
     if out_path:
         Path(out_path).write_text(json.dumps(result, indent=2))
     resid_str = f"{last_resid:.2e}" if last_resid is not None else "n/a"
-    print(f"[nx={nx} nz={nz}] steps={step} resid={resid_str} t={elapsed:.0f}s "
-          f"u_min_3d={m['u_min_3d_mid']} (ref {REF_U_MIN_3D_RE1000}, "
-          f"err {m['u_min_err_pct_vs_3d_ref']}%) "
-          f"u_min_3dcorr={m['u_min_3d_correction_pct']}% "
-          f"vortex={primary_vortex} mass_drift={result['mass_drift']}",
-          flush=True)
+    print(
+        f"[nx={nx} nz={nz}] steps={step} resid={resid_str} t={elapsed:.0f}s "
+        f"u_min_3d={m['u_min_3d_mid']} (ref {REF_U_MIN_3D_RE1000}, "
+        f"err {m['u_min_err_pct_vs_3d_ref']}%) "
+        f"u_min_3dcorr={m['u_min_3d_correction_pct']}% "
+        f"vortex={primary_vortex} mass_drift={result['mass_drift']}",
+        flush=True,
+    )
     return result
 
 
@@ -234,33 +256,41 @@ def main():
     args = ap.parse_args()
 
     if args.mode == "single":
-        run_case(args.nx, steps=args.steps,
-                 device=torch.device(args.device), out_path=args.out,
-                 threads=args.threads)
+        run_case(
+            args.nx,
+            steps=args.steps,
+            device=torch.device(args.device),
+            out_path=args.out,
+            threads=args.threads,
+        )
     else:
         out_dir = Path(args.out or "benchmarks/verified/cavity_3d_full")
         out_dir.mkdir(parents=True, exist_ok=True)
         grids = {}
         for nx, threads in ((64, args.threads64), (96, args.threads96)):
-            r = run_case(nx, steps=args.steps,
-                         out_path=str(out_dir / f"case_{nx}3.json"),
-                         threads=threads)
+            r = run_case(
+                nx, steps=args.steps, out_path=str(out_dir / f"case_{nx}3.json"), threads=threads
+            )
             grids[str(nx)] = r
         summary = {
             "case": "cavity_3d_full_re1000",
-            "description": "全 3D 方腔（5 壁固定 + 顶盖移动，Lz=H 立方腔）"
-                           "Re=1000",
-            "lattice": "D3Q19", "collision": "rlbm",
-            "boundary": ("V3-3D: pre-streaming 半程反弹(5 静止壁) + "
-                         "zou_he_moving_lid_3d(顶盖)"),
+            "description": "全 3D 方腔（5 壁固定 + 顶盖移动，Lz=H 立方腔）Re=1000",
+            "lattice": "D3Q19",
+            "collision": "rlbm",
+            "boundary": ("V3-3D: pre-streaming 半程反弹(5 静止壁) + zou_he_moving_lid_3d(顶盖)"),
             "extrap": "none",
-            "reference": ("Ku, Hirsh & Taylor 1987 3D 立方腔 Re=1000 "
-                          "(u_min(x=0.5,z=0.5)=-0.2751, 经 arXiv:1503.03337 "
-                          "97³ 收敛值); 2D Ghia 1982 Re=1000 用于 3D 修正量"),
+            "reference": (
+                "Ku, Hirsh & Taylor 1987 3D 立方腔 Re=1000 "
+                "(u_min(x=0.5,z=0.5)=-0.2751, 经 arXiv:1503.03337 "
+                "97³ 收敛值); 2D Ghia 1982 Re=1000 用于 3D 修正量"
+            ),
             "grids": {
                 k: {
-                    "nx": v["nx"], "nz": v["nz"], "tau": v["tau"],
-                    "steps": v["n_steps_run"], "last_resid": v["last_resid"],
+                    "nx": v["nx"],
+                    "nz": v["nz"],
+                    "tau": v["tau"],
+                    "steps": v["n_steps_run"],
+                    "last_resid": v["last_resid"],
                     "u_min_3d_mid": v["u_min_3d_mid"],
                     "u_min_err_pct_vs_3d_ref": v["u_min_err_pct_vs_3d_ref"],
                     "u_min_3d_correction_pct": v["u_min_3d_correction_pct"],
@@ -275,15 +305,17 @@ def main():
                 for k, v in grids.items()
             },
             "convergence": {
-                "u_min_3d": [grids["64"]["u_min_3d_mid"],
-                             grids["96"]["u_min_3d_mid"]],
+                "u_min_3d": [grids["64"]["u_min_3d_mid"], grids["96"]["u_min_3d_mid"]],
                 "u_min_err_pct_vs_3d_ref": [
                     grids["64"]["u_min_err_pct_vs_3d_ref"],
-                    grids["96"]["u_min_err_pct_vs_3d_ref"]],
+                    grids["96"]["u_min_err_pct_vs_3d_ref"],
+                ],
                 "grid_dev_pct": round(
-                    100.0 * abs(grids["96"]["u_min_3d_mid"]
-                                - grids["64"]["u_min_3d_mid"])
-                    / abs(grids["96"]["u_min_3d_mid"]), 3),
+                    100.0
+                    * abs(grids["96"]["u_min_3d_mid"] - grids["64"]["u_min_3d_mid"])
+                    / abs(grids["96"]["u_min_3d_mid"]),
+                    3,
+                ),
             },
         }
         (out_dir / "result.json").write_text(json.dumps(summary, indent=2))

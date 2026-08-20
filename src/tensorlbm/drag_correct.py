@@ -12,8 +12,9 @@ Both methods require knowing which directions cross the wall for each
 individual near-wall cell — the wall normal varies across the surface.
 """
 
-import torch
 from typing import Tuple
+
+import torch
 
 
 def get_wall_normal(solid: torch.Tensor, near: torch.Tensor) -> torch.Tensor:
@@ -179,8 +180,6 @@ def total_drag_bounce_back(
 
 # ── Test ──
 if __name__ == "__main__":
-    import time
-
     print("Drag computation module compiled OK.")
     print("Key fix: wall-normal aware momentum exchange + pressure integration.")
     print("Previous: uniform sum over 9 pairs → over-counted + wrong sign.")

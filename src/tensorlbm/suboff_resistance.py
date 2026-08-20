@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import math
+import argparse
 import hashlib
 import json
-import argparse
+import math
 from dataclasses import dataclass, field
 
 import torch
@@ -24,14 +24,14 @@ from .boundaries3d import (
 )
 from .d3q19 import C, equilibrium3d, macroscopic3d
 from .obstacles import compute_obstacle_forces_3d
+from .rans_ke import KESolver
 from .solver3d import stream3d
 from .suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask, suboff_statistics
 from .turbulence import collide_smagorinsky_mrt3d
 from .utils import resolve_device
-from .rans_ke import KESolver
-from .wall_model import apply_wall_model_bounce_back
 from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
 from .wall_function_contract import WallFunctionCapability
+from .wall_model import apply_wall_model_bounce_back
 
 
 @dataclass(frozen=True)
@@ -532,6 +532,7 @@ def _export_snapshot(
 ) -> None:
     """Export a single flow-field snapshot as 4 NPY files (p, ux, uy, uz)."""
     import os
+
     import numpy as np
 
     base = config.snapshot_dir

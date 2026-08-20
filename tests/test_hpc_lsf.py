@@ -8,6 +8,7 @@ exercised end-to-end without a cluster.
 The ``bjobs -l`` fixtures reproduce output captured from the SWA/Sunway LSF
 cluster (psn002) where this backend was validated live.
 """
+
 from __future__ import annotations
 
 import sys
@@ -50,11 +51,19 @@ class FakeRun:
         self.calls.append({"argv": list(argv), **kwargs})
         program = argv[0]
         if program == "bsub":
-            return type("Result", (), {"returncode": 0, "stdout": _PSN002_SUBMIT_OUTPUT, "stderr": ""})()
+            return type(
+                "Result", (), {"returncode": 0, "stdout": _PSN002_SUBMIT_OUTPUT, "stderr": ""}
+            )()
         if program == "bjobs":
-            return type("Result", (), {"returncode": 0, "stdout": _PSN002_BJOBS_L_DONE, "stderr": ""})()
+            return type(
+                "Result", (), {"returncode": 0, "stdout": _PSN002_BJOBS_L_DONE, "stderr": ""}
+            )()
         if program == "bkill":
-            return type("Result", (), {"returncode": 0, "stdout": "Job <57245099> is being terminated", "stderr": ""})()
+            return type(
+                "Result",
+                (),
+                {"returncode": 0, "stdout": "Job <57245099> is being terminated", "stderr": ""},
+            )()
         raise AssertionError(f"unexpected program {program!r}")
 
 
@@ -63,7 +72,8 @@ def fake_bins(monkeypatch, tmp_path):
     run = FakeRun()
     monkeypatch.setattr(hpc_scheduler.subprocess, "run", run)
     monkeypatch.setattr(
-        hpc_scheduler.shutil, "which",
+        hpc_scheduler.shutil,
+        "which",
         lambda name: f"/usr/sw-mpp/bin/{name}" if name in _LSF_BINS else None,
     )
     monkeypatch.setenv("TENSORLBM_HPC_LOG_DIR", str(tmp_path / "hpc_logs"))
@@ -75,10 +85,14 @@ def fake_bins(monkeypatch, tmp_path):
 # Script building
 # ---------------------------------------------------------------------------
 
+
 def test_build_lsf_script_has_directives_and_command(tmp_path) -> None:
     script = hpc_scheduler._build_lsf_script(
-        "job42", "echo hi",
-        queue="q_sw_share", cpus=4, log_dir=tmp_path,
+        "job42",
+        "echo hi",
+        queue="q_sw_share",
+        cpus=4,
+        log_dir=tmp_path,
     )
     lines = script.splitlines()
     assert lines[0] == "#!/bin/bash"
@@ -93,8 +107,11 @@ def test_build_lsf_script_has_directives_and_command(tmp_path) -> None:
 
 def test_build_lsf_script_extra_options(tmp_path) -> None:
     script = hpc_scheduler._build_lsf_script(
-        "job43", "true",
-        queue="q", cpus=1, log_dir=tmp_path,
+        "job43",
+        "true",
+        queue="q",
+        cpus=1,
+        log_dir=tmp_path,
         extra_options=["-W 30"],
     )
     assert "#BSUB -W 30" in script.splitlines()
@@ -103,6 +120,7 @@ def test_build_lsf_script_extra_options(tmp_path) -> None:
 # ---------------------------------------------------------------------------
 # Submission
 # ---------------------------------------------------------------------------
+
 
 def test_submit_lsf_builds_argv_and_parses_job_id(fake_bins) -> None:
     result = hpc_scheduler.submit_lsf("job44", "echo hello", queue="q_sw_share", cpus=1)
@@ -141,9 +159,15 @@ def test_submit_lsf_rejects_missing_binary(monkeypatch) -> None:
 
 def test_submit_lsf_raises_on_bsub_failure(fake_bins, monkeypatch) -> None:
     def failing(argv, **kwargs):
-        return type("Result", (), {
-            "returncode": 1, "stdout": "", "stderr": "Job submit failed, Queue is closed",
-        })()
+        return type(
+            "Result",
+            (),
+            {
+                "returncode": 1,
+                "stdout": "",
+                "stderr": "Job submit failed, Queue is closed",
+            },
+        )()
 
     monkeypatch.setattr(hpc_scheduler.subprocess, "run", failing)
     with pytest.raises(RuntimeError, match="Queue is closed"):
@@ -162,6 +186,7 @@ def test_submit_lsf_unparseable_output(fake_bins, monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 # Status mapping
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize(
     ("raw", "expected"),
@@ -196,9 +221,15 @@ def test_query_lsf_status_uses_bjobs_l(fake_bins) -> None:
 
 def test_query_lsf_status_job_not_found(fake_bins, monkeypatch) -> None:
     def none(argv, **kwargs):
-        return type("Result", (), {
-            "returncode": 0, "stdout": "", "stderr": "No match record found!",
-        })()
+        return type(
+            "Result",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "",
+                "stderr": "No match record found!",
+            },
+        )()
 
     monkeypatch.setattr(hpc_scheduler.subprocess, "run", none)
     status = hpc_scheduler.query_lsf_status("1")
@@ -214,6 +245,7 @@ def test_query_lsf_status_without_bjobs(monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 # Cancellation
 # ---------------------------------------------------------------------------
+
 
 def test_cancel_lsf_invokes_bkill(fake_bins) -> None:
     result = hpc_scheduler.cancel_lsf("57245099")
@@ -231,11 +263,15 @@ def test_cancel_lsf_missing_binary(monkeypatch) -> None:
 # Dispatcher
 # ---------------------------------------------------------------------------
 
+
 def test_submit_hpc_job_dispatches_lsf(fake_bins, monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("TENSORLBM_HPC_MODE", "lsf")
     result = hpc_scheduler.submit_hpc_job(
-        "job48", str(tmp_path), solver_cmd="echo dispatched",
-        partition="q_sw_share", cpus=1,
+        "job48",
+        str(tmp_path),
+        solver_cmd="echo dispatched",
+        partition="q_sw_share",
+        cpus=1,
     )
     assert result["backend"] == "lsf"
     assert result["hpc_job_id"] == "57245099"

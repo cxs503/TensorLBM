@@ -29,21 +29,21 @@ Usage:
 """
 
 import sys
-import math
-import torch
+
 import numpy as np
+import torch
 
 sys.path.insert(0, "src")
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C, W
-from tensorlbm.solver3d import collide_bgk3d, stream3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import C, W, equilibrium3d, macroscopic3d
 from tensorlbm.drag_momentum import drag_momentum_exchange_vec
 from tensorlbm.drag_pressure import (
     SurfaceMesh,
     drag_friction_integration,
     get_near_wall_2d,
 )
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 
 # ---------------------------------------------------------------------------
@@ -304,7 +304,11 @@ def main():
     print("║" + " 100% analytical: Couette + Poiseuille ".center(66) + "║")
     print("╚" + "═" * 66 + "╝")
 
-    device = "sdaa:4" if torch.sdaa.is_available() else "cpu"
+    device = (
+        "sdaa:4"
+        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available()
+        else "cpu"
+    )
     print(f"\n  Device: {device}")
 
     results = []

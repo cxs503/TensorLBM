@@ -38,13 +38,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from tensorlbm.ai.fno import FNO2d, FNO2dArch, save_fno2d
+from tensorlbm.d2q9 import equilibrium, macroscopic
 from tensorlbm.data.catalog import (
     AssetRecord,
     FieldDataCatalog,
     LineageRecord,
     QualityCheck,
 )
-from tensorlbm.d2q9 import equilibrium, macroscopic
 from tensorlbm.ml.model_registry import ModelAssetRegistry
 from tensorlbm.ml.serving import FAMILY_FNO, InferenceService, ModelRegistry
 from tensorlbm.ml.training_job import TrainingJobRegistry
@@ -158,11 +158,15 @@ class FlagshipRunReport:
 # Stage 1: data production / loading
 # ---------------------------------------------------------------------------
 
+
 def _git_sha() -> str:
     try:
         out = subprocess.run(  # noqa: S603 - fixed argv
             ["git", "rev-parse", "--short=12", "HEAD"],
-            capture_output=True, text=True, timeout=10, check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
         ).stdout.strip()
         return out or "unknown"
     except Exception:
@@ -170,7 +174,11 @@ def _git_sha() -> str:
 
 
 def _initial_distribution(
-    nx: int, ny: int, seed: int, device: torch.device, mean_u: float = 0.05,
+    nx: int,
+    ny: int,
+    seed: int,
+    device: torch.device,
+    mean_u: float = 0.05,
 ) -> torch.Tensor:
     """Seed-dependent superposition of low-wavenumber sinusoids.
 
@@ -255,9 +263,7 @@ def add_stationary_roughness(
         torch.sin(2.0 * torch.pi * xx / l1) * torch.sin(2.0 * torch.pi * yy / l2)
         + 0.7 * torch.sin(2.0 * torch.pi * (xx + yy) / l3)
     )
-    return [
-        (ux + pattern, uy + 0.8 * pattern) for ux, uy in snapshots
-    ]
+    return [(ux + pattern, uy + 0.8 * pattern) for ux, uy in snapshots]
 
 
 def write_snapshots_hdf5(
@@ -275,13 +281,14 @@ def write_snapshots_hdf5(
         import h5py
     except ImportError as exc:  # pragma: no cover - depends on environment
         raise RuntimeError(
-            "The provisional HDF5 snapshot writer requires h5py "
-            "(pip install h5py)"
+            "The provisional HDF5 snapshot writer requires h5py (pip install h5py)"
         ) from exc
-    arr = np.stack([
-        np.stack([np.asarray(ux, dtype=np.float32), np.asarray(uy, dtype=np.float32)])
-        for ux, uy in snapshots
-    ])
+    arr = np.stack(
+        [
+            np.stack([np.asarray(ux, dtype=np.float32), np.asarray(uy, dtype=np.float32)])
+            for ux, uy in snapshots
+        ]
+    )
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     with h5py.File(p, "w") as h5:
@@ -390,15 +397,19 @@ def try_load_pilot_dataset(
                     ux_plane = velocity[z, :, :, 0]
                     if float(ux_plane.std()) <= float(plane_std_threshold):
                         continue  # undisturbed free-stream plane: no content
-                    snaps.append((
-                        torch.from_numpy(ux_plane.copy()),
-                        torch.from_numpy(velocity[z, :, :, 1].copy()),
-                    ))
+                    snaps.append(
+                        (
+                            torch.from_numpy(ux_plane.copy()),
+                            torch.from_numpy(velocity[z, :, :, 1].copy()),
+                        )
+                    )
             elif velocity.ndim == 3 and velocity.shape[-1] == 2:  # (ny, nx, 2)
-                snaps = [(
-                    torch.from_numpy(velocity[..., 0].copy()),
-                    torch.from_numpy(velocity[..., 1].copy()),
-                )]
+                snaps = [
+                    (
+                        torch.from_numpy(velocity[..., 0].copy()),
+                        torch.from_numpy(velocity[..., 1].copy()),
+                    )
+                ]
             else:
                 continue
             by_case.setdefault(case, []).extend(snaps)
@@ -409,9 +420,7 @@ def try_load_pilot_dataset(
         summary_path = root / "summary.json"
         if summary_path.is_file():
             try:
-                dataset_id = str(
-                    json.loads(summary_path.read_text()).get("dataset_id", dataset_id)
-                )
+                dataset_id = str(json.loads(summary_path.read_text()).get("dataset_id", dataset_id))
             except (json.JSONDecodeError, OSError):
                 pass
         info = {
@@ -430,6 +439,7 @@ def try_load_pilot_dataset(
 # ---------------------------------------------------------------------------
 # Stage 2: dataset construction
 # ---------------------------------------------------------------------------
+
 
 def _coarsen_mean(field: torch.Tensor, factor: int) -> torch.Tensor:
     """Block-average a 2-D field by an integer factor."""
@@ -463,9 +473,13 @@ def build_super_resolution_dataset(
             raise ValueError(f"ux/uy shape mismatch: {ux.shape} vs {uy.shape}")
         ny, nx = ux.shape
         fine = torch.stack([ux, uy], dim=0)  # (2, ny, nx)
-        coarse = torch.stack([
-            _coarsen_mean(ux, factor), _coarsen_mean(uy, factor),
-        ], dim=0).unsqueeze(0)  # (1, 2, cy, cx)
+        coarse = torch.stack(
+            [
+                _coarsen_mean(ux, factor),
+                _coarsen_mean(uy, factor),
+            ],
+            dim=0,
+        ).unsqueeze(0)  # (1, 2, cy, cx)
         up = F.interpolate(coarse, size=(ny, nx), mode="bilinear", align_corners=False)
         inputs.append(up[0])
         targets.append(fine)
@@ -523,8 +537,10 @@ def _pairs_subset(pairs: Mapping[str, Any]) -> dict[str, Any]:
 # Stage 5 helper: inference post-processing
 # ---------------------------------------------------------------------------
 
+
 def prediction_error_metrics(
-    pred: Any, target: Any,
+    pred: Any,
+    target: Any,
 ) -> dict[str, float]:
     """Field-level error metrics of a prediction against its reference."""
     p = torch.as_tensor(pred, dtype=torch.float32)
@@ -548,6 +564,7 @@ def prediction_error_metrics(
 # Training loop
 # ---------------------------------------------------------------------------
 
+
 def _train_fno(
     model: FNO2d,
     train: Mapping[str, Any],
@@ -565,7 +582,9 @@ def _train_fno(
     model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr=float(learning_rate))
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=max(1, int(epochs)), eta_min=float(lr_min),
+        optimizer,
+        T_max=max(1, int(epochs)),
+        eta_min=float(lr_min),
     )
     loss_fn = nn.MSELoss()
     X, Y = train["inputs"], train["targets"]
@@ -594,10 +613,11 @@ def _train_fno(
 # The full loop
 # ---------------------------------------------------------------------------
 
+
 def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport:
     """Run the closed loop: data -> dataset -> job -> model asset -> serving -> lineage."""
     cfg = config or FlagshipConfig()
-    t_start = time.perf_counter()
+    time.perf_counter()
     workdir = Path(cfg.workdir)
     workdir.mkdir(parents=True, exist_ok=True)
 
@@ -631,31 +651,43 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
         # published at this path yet).
         snapshots = []
         for seed in cfg.seeds:
-            snapshots.extend(produce_velocity_snapshots(
-                nx=cfg.nx, ny=cfg.ny, n_steps=cfg.n_steps,
-                sample_every=cfg.sample_every, seed=seed,
-                tau=cfg.tau, c_s=cfg.c_s, device=device,
-            ))
+            snapshots.extend(
+                produce_velocity_snapshots(
+                    nx=cfg.nx,
+                    ny=cfg.ny,
+                    n_steps=cfg.n_steps,
+                    sample_every=cfg.sample_every,
+                    seed=seed,
+                    tau=cfg.tau,
+                    c_s=cfg.c_s,
+                    device=device,
+                )
+            )
         if cfg.roughness_amplitude > 0:
             snapshots = add_stationary_roughness(
-                snapshots, amplitude=cfg.roughness_amplitude,
+                snapshots,
+                amplitude=cfg.roughness_amplitude,
             )
         data_source = "provisional_solver"
     data_path = workdir / "velocity_snapshots.h5"
-    write_snapshots_hdf5(data_path, snapshots, attrs={
-        "source": data_source,
-        "task": cfg.task,
-        "git_sha": _git_sha(),
-        "n_snapshots": len(snapshots),
-        "downsample_factor": int(cfg.downsample_factor),
-        "stationary_roughness": (
-            float(cfg.roughness_amplitude) if data_source == "provisional_solver" else 0.0
-        ),
-        "pilot_dataset_id": pilot_info["dataset_id"] if pilot_info else "",
-        "pilot_products": pilot_info["n_products"] if pilot_info else 0,
-        "nx": int(snapshots[0][0].shape[1]),
-        "ny": int(snapshots[0][0].shape[0]),
-    })
+    write_snapshots_hdf5(
+        data_path,
+        snapshots,
+        attrs={
+            "source": data_source,
+            "task": cfg.task,
+            "git_sha": _git_sha(),
+            "n_snapshots": len(snapshots),
+            "downsample_factor": int(cfg.downsample_factor),
+            "stationary_roughness": (
+                float(cfg.roughness_amplitude) if data_source == "provisional_solver" else 0.0
+            ),
+            "pilot_dataset_id": pilot_info["dataset_id"] if pilot_info else "",
+            "pilot_products": pilot_info["n_products"] if pilot_info else 0,
+            "nx": int(snapshots[0][0].shape[1]),
+            "ny": int(snapshots[0][0].shape[0]),
+        },
+    )
     phase_times["data"] = time.perf_counter() - t0
 
     catalog = FieldDataCatalog.open(workdir / "platform.db")
@@ -673,51 +705,64 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
             train, val = split_train_val(pairs, cfg.val_fraction, cfg.seed)
 
         product_asset_id = f"{cfg.prefix}:u"
-        catalog.register_asset(AssetRecord(
-            asset_id=product_asset_id,
-            name="Flagship 2-D velocity snapshots",
-            kind="field_product",
-            field_name="u",
-            units="lu",
-            shape=str(tuple(int(v) for v in pairs["inputs"].shape)),
-            dtype="float32",
-            source_run_id=data_source,
-            description=(
-                f"pilot={pilot_info['dataset_id']} nx={pilot_info['nx']} "
-                f"products={pilot_info['n_products']} cases={pilot_info['cases']}"
-                if pilot_info else "provisional in-process solver run"
-            ),
-            tags=(cfg.prefix, cfg.task, "flagship"),
-        ))
-        finite = all(
-            bool(torch.isfinite(ux).all() and torch.isfinite(uy).all())
-            for ux, uy in snapshots
+        catalog.register_asset(
+            AssetRecord(
+                asset_id=product_asset_id,
+                name="Flagship 2-D velocity snapshots",
+                kind="field_product",
+                field_name="u",
+                units="lu",
+                shape=str(tuple(int(v) for v in pairs["inputs"].shape)),
+                dtype="float32",
+                source_run_id=data_source,
+                description=(
+                    f"pilot={pilot_info['dataset_id']} nx={pilot_info['nx']} "
+                    f"products={pilot_info['n_products']} cases={pilot_info['cases']}"
+                    if pilot_info
+                    else "provisional in-process solver run"
+                ),
+                tags=(cfg.prefix, cfg.task, "flagship"),
+            )
         )
-        variance = float(torch.stack(
-            [torch.as_tensor(ux).float().var() for ux, _ in snapshots[:5]]
-        ).mean().item())
-        catalog.record_quality(product_asset_id, [
-            QualityCheck("all_finite", finite, "ux/uy finite in every snapshot"),
-            QualityCheck("nonzero_variance", variance > 0.0, f"mean var={variance:.3e}"),
-            QualityCheck("shape_consistent", bool(len(snapshots) > 1),
-                         f"n_snapshots={len(snapshots)}"),
-        ])
+        finite = all(
+            bool(torch.isfinite(ux).all() and torch.isfinite(uy).all()) for ux, uy in snapshots
+        )
+        variance = float(
+            torch.stack([torch.as_tensor(ux).float().var() for ux, _ in snapshots[:5]])
+            .mean()
+            .item()
+        )
+        catalog.record_quality(
+            product_asset_id,
+            [
+                QualityCheck("all_finite", finite, "ux/uy finite in every snapshot"),
+                QualityCheck("nonzero_variance", variance > 0.0, f"mean var={variance:.3e}"),
+                QualityCheck(
+                    "shape_consistent", bool(len(snapshots) > 1), f"n_snapshots={len(snapshots)}"
+                ),
+            ],
+        )
 
         dataset_asset_id = f"{cfg.prefix}:dataset"
-        catalog.register_asset(AssetRecord(
-            asset_id=dataset_asset_id,
-            name="Flagship super-resolution dataset",
-            kind="dataset",
-            description=(
-                f"coarse(x{cfg.downsample_factor})->fine pairs; "
-                f"n={pairs['n_samples']}"
-            ),
-            tags=(cfg.prefix, cfg.task),
-        ))
-        catalog.add_lineage(LineageRecord(
-            source_id=product_asset_id, target_id=dataset_asset_id,
-            relation_type="derived_from", resource_type="product",
-        ))
+        catalog.register_asset(
+            AssetRecord(
+                asset_id=dataset_asset_id,
+                name="Flagship super-resolution dataset",
+                kind="dataset",
+                description=(
+                    f"coarse(x{cfg.downsample_factor})->fine pairs; n={pairs['n_samples']}"
+                ),
+                tags=(cfg.prefix, cfg.task),
+            )
+        )
+        catalog.add_lineage(
+            LineageRecord(
+                source_id=product_asset_id,
+                target_id=dataset_asset_id,
+                relation_type="derived_from",
+                resource_type="product",
+            )
+        )
         phase_times["dataset"] = time.perf_counter() - t0
 
         # ---- stage 3: training job -----------------------------------------
@@ -725,28 +770,38 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
         arch = FNO2dArch(**{**_ARCH_DEFAULTS, **dict(cfg.arch)})
         jobs = TrainingJobRegistry.open(workdir / "platform.db")
         try:
-            job = jobs.create_job({
-                "task": cfg.task,
-                "arch": asdict(arch),
-                "epochs": cfg.epochs,
-                "batch_size": cfg.batch_size,
-                "learning_rate": cfg.learning_rate,
-                "dataset_asset_id": dataset_asset_id,
-                "data_source": data_source,
-            })
+            job = jobs.create_job(
+                {
+                    "task": cfg.task,
+                    "arch": asdict(arch),
+                    "epochs": cfg.epochs,
+                    "batch_size": cfg.batch_size,
+                    "learning_rate": cfg.learning_rate,
+                    "dataset_asset_id": dataset_asset_id,
+                    "data_source": data_source,
+                }
+            )
             jobs.update_status(job.job_id, "running")
             model = FNO2d(arch)
             ckpt_path = workdir / "flagship_fno2d.pt"
             loss_history = _train_fno(
-                model, train, ckpt_path,
-                epochs=cfg.epochs, batch_size=cfg.batch_size,
-                learning_rate=cfg.learning_rate, lr_min=cfg.lr_min,
-                seed=cfg.seed, device=device,
+                model,
+                train,
+                ckpt_path,
+                epochs=cfg.epochs,
+                batch_size=cfg.batch_size,
+                learning_rate=cfg.learning_rate,
+                lr_min=cfg.lr_min,
+                seed=cfg.seed,
+                device=device,
             )
-            jobs.record_metrics(job.job_id, {
-                "train_loss_first": loss_history[0],
-                "train_loss_final": loss_history[-1],
-            })
+            jobs.record_metrics(
+                job.job_id,
+                {
+                    "train_loss_first": loss_history[0],
+                    "train_loss_final": loss_history[-1],
+                },
+            )
             job = jobs.update_status(job.job_id, "completed")
         finally:
             jobs.close()
@@ -757,24 +812,27 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
         store_root = workdir / "model_store"
         registry = ModelAssetRegistry.open(store_root)
         try:
-            model_id = registry.register(ckpt_path, meta={
-                "task": cfg.task,
-                "name": cfg.model_name,
-                "family": FAMILY_FNO,
-                "metrics": {
-                    "train_loss_first": loss_history[0],
-                    "train_loss_final": loss_history[-1],
-                    "n_train_samples": train["n_samples"],
+            model_id = registry.register(
+                ckpt_path,
+                meta={
+                    "task": cfg.task,
+                    "name": cfg.model_name,
+                    "family": FAMILY_FNO,
+                    "metrics": {
+                        "train_loss_first": loss_history[0],
+                        "train_loss_final": loss_history[-1],
+                        "n_train_samples": train["n_samples"],
+                    },
+                    "arch": asdict(arch),
+                    "dataset_product_id": product_asset_id,
+                    "training_job_id": job.job_id,
+                    "tags": (cfg.prefix, cfg.task, "flagship"),
+                    "description": (
+                        f"FNO2d super-resolution (x{cfg.downsample_factor}) trained "
+                        f"on {data_source}"
+                    ),
                 },
-                "arch": asdict(arch),
-                "dataset_product_id": product_asset_id,
-                "training_job_id": job.job_id,
-                "tags": (cfg.prefix, cfg.task, "flagship"),
-                "description": (
-                    f"FNO2d super-resolution (x{cfg.downsample_factor}) trained "
-                    f"on {data_source}"
-                ),
-            })
+            )
             asset = registry.get_model(model_id)
             assert asset is not None
 
@@ -809,7 +867,8 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
                 all_rel_l2: list[float] = []
                 for i in range(n_val_samples):
                     pred = svc.predict(
-                        serving_model_id, val_src["inputs"][i].unsqueeze(0),
+                        serving_model_id,
+                        val_src["inputs"][i].unsqueeze(0),
                     )[0]
                     all_rel_l2.append(
                         prediction_error_metrics(pred, val_src["targets"][i])["relative_l2"]
@@ -833,53 +892,81 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
                         np.max(np.abs(pred - pred_asset))
                     )
                     errors["bilinear_relative_l2"] = prediction_error_metrics(
-                        x, y,
+                        x,
+                        y,
                     )["relative_l2"]
                     val_errors.append({"val_index": int(val_src["indices"][i]), **errors})
                 baseline_src = val if val["n_samples"] else train
                 baseline = prediction_error_metrics(
-                    baseline_src["inputs"][show_idx[0]], baseline_src["targets"][show_idx[0]],
+                    baseline_src["inputs"][show_idx[0]],
+                    baseline_src["targets"][show_idx[0]],
                 )
             finally:
                 serving.close()
             phase_times["serving"] = time.perf_counter() - t0
-            registry.record_metrics(model_id, {
-                "val_mean_relative_l2": val_mean_relative_l2,
-                "n_val_samples": n_val_samples,
-            })
+            registry.record_metrics(
+                model_id,
+                {
+                    "val_mean_relative_l2": val_mean_relative_l2,
+                    "n_val_samples": n_val_samples,
+                },
+            )
         finally:
             registry.close()
 
         # ---- stage 6: lineage closure ---------------------------------------
         t0 = time.perf_counter()
         job_asset_id = f"{cfg.prefix}:job:{job.job_id}"
-        catalog.register_asset(AssetRecord(
-            asset_id=job_asset_id, name=f"flagship training job {job.job_id}",
-            kind="run", tags=(cfg.prefix,),
-        ))
-        catalog.add_lineage(LineageRecord(
-            source_id=dataset_asset_id, target_id=job_asset_id,
-            relation_type="trained_on", resource_type="dataset",
-        ))
-        catalog.register_asset(AssetRecord(
-            asset_id=model_id, name=cfg.model_name, kind="model",
-            description=f"asset-registry checkpoint for job {job.job_id}",
-            tags=(cfg.prefix, cfg.task),
-        ))
-        catalog.add_lineage(LineageRecord(
-            source_id=job_asset_id, target_id=model_id,
-            relation_type="produced_model", resource_type="run",
-        ))
+        catalog.register_asset(
+            AssetRecord(
+                asset_id=job_asset_id,
+                name=f"flagship training job {job.job_id}",
+                kind="run",
+                tags=(cfg.prefix,),
+            )
+        )
+        catalog.add_lineage(
+            LineageRecord(
+                source_id=dataset_asset_id,
+                target_id=job_asset_id,
+                relation_type="trained_on",
+                resource_type="dataset",
+            )
+        )
+        catalog.register_asset(
+            AssetRecord(
+                asset_id=model_id,
+                name=cfg.model_name,
+                kind="model",
+                description=f"asset-registry checkpoint for job {job.job_id}",
+                tags=(cfg.prefix, cfg.task),
+            )
+        )
+        catalog.add_lineage(
+            LineageRecord(
+                source_id=job_asset_id,
+                target_id=model_id,
+                relation_type="produced_model",
+                resource_type="run",
+            )
+        )
         serving_asset_id = f"{cfg.prefix}:serving:{serving_model_id}"
-        catalog.register_asset(AssetRecord(
-            asset_id=serving_asset_id,
-            name=f"flagship serving endpoint (model {serving_model_id})",
-            kind="run", tags=(cfg.prefix,),
-        ))
-        catalog.add_lineage(LineageRecord(
-            source_id=model_id, target_id=serving_asset_id,
-            relation_type="served_by", resource_type="model",
-        ))
+        catalog.register_asset(
+            AssetRecord(
+                asset_id=serving_asset_id,
+                name=f"flagship serving endpoint (model {serving_model_id})",
+                kind="run",
+                tags=(cfg.prefix,),
+            )
+        )
+        catalog.add_lineage(
+            LineageRecord(
+                source_id=model_id,
+                target_id=serving_asset_id,
+                relation_type="served_by",
+                resource_type="model",
+            )
+        )
         upstream = catalog.upstream(serving_asset_id)
         phase_times["lineage"] = time.perf_counter() - t0
     finally:
@@ -923,14 +1010,17 @@ def print_report(report: FlagshipRunReport) -> None:
     print(f"device         : {report.device}   git {report.git_sha}")
     print(f"data           : {report.data_source}")
     if report.pilot:
-        print(f"  pilot        : dataset {report.pilot['dataset_id']} nx={report.pilot['nx']}"
-              f" products={report.pilot['n_products']} cases={report.pilot['cases']}")
+        print(
+            f"  pilot        : dataset {report.pilot['dataset_id']} nx={report.pilot['nx']}"
+            f" products={report.pilot['n_products']} cases={report.pilot['cases']}"
+        )
     print(f"  hdf5         : {report.data_path}")
-    print(f"  product      : {report.product_asset_id} -> dataset {report.dataset_asset_id}"
-          f"  (train {report.n_train} / val {report.n_val})")
+    print(
+        f"  product      : {report.product_asset_id} -> dataset {report.dataset_asset_id}"
+        f"  (train {report.n_train} / val {report.n_val})"
+    )
     print(f"training job   : {report.job_id} [{report.job_status}]")
-    print(f"  loss         : epoch1 {h[0]:.6e} -> final {h[-1]:.6e} "
-          f"({len(h)} epochs)")
+    print(f"  loss         : epoch1 {h[0]:.6e} -> final {h[-1]:.6e} ({len(h)} epochs)")
     print(f"model asset    : {report.model_id}")
     print(f"  store        : {report.model_store}")
     print(f"  checkpoint   : {report.ckpt_path}")
@@ -943,11 +1033,12 @@ def print_report(report: FlagshipRunReport) -> None:
             f"max|err| {e['max_abs_error']:.3e}  "
             f"serving==asset (max diff {e['serving_vs_asset_max_abs_diff']:.1e})"
         )
-    print(f"held-out mean rel-L2 over all {report.n_val} val samples: "
-          f"{report.val_mean_relative_l2:.4f}")
+    print(
+        f"held-out mean rel-L2 over all {report.n_val} val samples: "
+        f"{report.val_mean_relative_l2:.4f}"
+    )
     print(f"lineage upstream of {report.serving_asset_id}:")
     for node in report.lineage_upstream:
         print(f"  <- {node}")
-    print(f"phase times    : "
-          + ", ".join(f"{k} {v:.1f}s" for k, v in report.phase_times.items()))
+    print("phase times    : " + ", ".join(f"{k} {v:.1f}s" for k, v in report.phase_times.items()))
     print("=" * 72)

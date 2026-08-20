@@ -238,9 +238,9 @@ def test_initial_amplitude_gradient_matches_fd() -> None:
     """Gradient w.r.t. a scalar initial-condition parameter (perturbation amplitude)."""
     n, steps = 32, 10
     with torch.no_grad():
-        target = macroscopic(
-            rollout2d(shear_wave_f0(n, 0.05, torch.float64, DEVICE), 0.9, steps)
-        )[1]
+        target = macroscopic(rollout2d(shear_wave_f0(n, 0.05, torch.float64, DEVICE), 0.9, steps))[
+            1
+        ]
 
     def loss_at(a_val: float) -> float:
         a = torch.tensor(a_val, dtype=torch.float64, device=DEVICE)
@@ -264,9 +264,9 @@ def test_initial_field_gradient_matches_fd_entries() -> None:
     # Target from a *different* amplitude so the evaluated f0 does not sit
     # exactly at the loss minimum (where every gradient is identically 0).
     with torch.no_grad():
-        target = macroscopic(
-            rollout2d(shear_wave_f0(n, 0.06, torch.float64, DEVICE), 0.8, steps)
-        )[1]
+        target = macroscopic(rollout2d(shear_wave_f0(n, 0.06, torch.float64, DEVICE), 0.8, steps))[
+            1
+        ]
 
     f0 = shear_wave_f0(n, 0.05, torch.float64, DEVICE).requires_grad_(True)
     ux = macroscopic(rollout2d(f0, 0.8, steps))[1]
@@ -278,12 +278,8 @@ def test_initial_field_gradient_matches_fd_entries() -> None:
         f_plus, f_minus = f0.detach().clone(), f0.detach().clone()
         f_plus[q, i, j] += eps
         f_minus[q, i, j] -= eps
-        l_plus = float(
-            ((macroscopic(rollout2d(f_plus, 0.8, steps))[1] - target) ** 2).mean()
-        )
-        l_minus = float(
-            ((macroscopic(rollout2d(f_minus, 0.8, steps))[1] - target) ** 2).mean()
-        )
+        l_plus = float(((macroscopic(rollout2d(f_plus, 0.8, steps))[1] - target) ** 2).mean())
+        l_minus = float(((macroscopic(rollout2d(f_minus, 0.8, steps))[1] - target) ** 2).mean())
         fd = (l_plus - l_minus) / (2.0 * eps)
         denom = max(abs(float(g_ad[q, i, j])), abs(fd), 1e-30)
         assert abs(float(g_ad[q, i, j]) - fd) / denom < 1e-6, (q, i, j)
@@ -337,9 +333,9 @@ def test_checkpointed_steps_match_plain_autograd() -> None:
     n, steps = 24, 10
     tau0 = 0.8
     with torch.no_grad():
-        target = macroscopic(
-            rollout2d(shear_wave_f0(n, 0.05, torch.float64, DEVICE), 0.9, steps)
-        )[1]
+        target = macroscopic(rollout2d(shear_wave_f0(n, 0.05, torch.float64, DEVICE), 0.9, steps))[
+            1
+        ]
 
     def loss_and_grad(use_checkpoint: bool):
         f0 = shear_wave_f0(n, 0.05, torch.float64, DEVICE).requires_grad_(True)
@@ -351,9 +347,7 @@ def test_checkpointed_steps_match_plain_autograd() -> None:
         f = f0
         for _ in range(steps):
             if use_checkpoint:
-                f = torch.utils.checkpoint.checkpoint(
-                    one_step, f, tau, use_reentrant=False
-                )
+                f = torch.utils.checkpoint.checkpoint(one_step, f, tau, use_reentrant=False)
             else:
                 f = one_step(f, tau)
         ux = macroscopic(f)[1]

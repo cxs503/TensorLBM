@@ -59,6 +59,7 @@ Pass criteria (real simulation only, no extrapolation):
 Usage: python run.py [--radii 20,30,40] [--steps 30000] [--sample 50]
                      [--eps 0.05] [--out DIR] [--device cpu]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -70,10 +71,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
 
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
-
 import numpy as np
 import torch
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 torch.set_num_threads(32)
 
@@ -82,17 +82,15 @@ from tensorlbm.multiphase import collide_sc_single_component, psi_exp  # noqa: E
 from tensorlbm.solver import stream  # noqa: E402
 
 CS2 = 1.0 / 3.0
-G_LIB = 5.0   # library argument (sign-flipped convention, G>0 attractive)
+G_LIB = 5.0  # library argument (sign-flipped convention, G>0 attractive)
 G_EFF = -5.0  # physical standard-convention SC94 coupling
 TAU = 1.0
 RHO_L, RHO_V = 1.957, 0.1596  # discrete coexistence (measured, laplace_droplet)
-SIGMA_EFF = 0.056112          # measured 2D surface tension (laplace_droplet)
+SIGMA_EFF = 0.056112  # measured 2D surface tension (laplace_droplet)
 W_INT = 4.0
 
 
-def init_ellipse_rho(
-    L: int, R0: float, eps: float, device: torch.device
-) -> torch.Tensor:
+def init_ellipse_rho(L: int, R0: float, eps: float, device: torch.device) -> torch.Tensor:
     """Elliptically perturbed droplet: R(theta) = R0*(1 + eps*cos(2*theta)).
 
     tanh interface profile (width W_INT=4), liquid inside, vapour outside,
@@ -115,7 +113,7 @@ def _interface_extent(rho: torch.Tensor, mid: float, L: int, axis: int) -> float
     """Sub-grid interface position (mid-level crossing) along a centre line."""
     if axis == 0:  # along x at y = L/2
         line = rho[L // 2, :]
-    else:          # along y at x = L/2
+    else:  # along y at x = L/2
         line = rho[:, L // 2]
     cross = (line[:-1] - mid) * (line[1:] - mid) < 0
     idx = torch.nonzero(cross).flatten().tolist()
@@ -135,8 +133,12 @@ def _interface_extent(rho: torch.Tensor, mid: float, L: int, axis: int) -> float
 
 
 def measure_osc(
-    f: torch.Tensor, R_guess: float, xx: torch.Tensor, yy: torch.Tensor,
-    rr: torch.Tensor, L: int,
+    f: torch.Tensor,
+    R_guess: float,
+    xx: torch.Tensor,
+    yy: torch.Tensor,
+    rr: torch.Tensor,
+    L: int,
 ) -> dict:
     """Self-consistent liquid-core measurement -> quadrupole + interface radii."""
     rho, ux, uy = macroscopic(f)
@@ -340,11 +342,10 @@ def run_case(
     omega_theory_rho = math.sqrt(6.0 * SIGMA_EFF / (RHO_L * R_eq_mean**3))
 
     fft_Q = fft_peak(hist_np["Q"][start:end], dt)
-    fit_Q = damped_sine_fit(steps[start:end], hist_np["Q"][start:end],
-                            omega_theory_rho)
-    fit_X = damped_sine_fit(steps[start:end],
-                            hist_np["R_x"][start:end] - hist_np["R_y"][start:end],
-                            omega_theory_rho)
+    fit_Q = damped_sine_fit(steps[start:end], hist_np["Q"][start:end], omega_theory_rho)
+    fit_X = damped_sine_fit(
+        steps[start:end], hist_np["R_x"][start:end] - hist_np["R_y"][start:end], omega_theory_rho
+    )
     w_d = fit_Q["omega_fit"]
     g = fit_Q["gamma_fit"]
     omega0 = math.sqrt(w_d**2 + g**2)  # damped-oscillator eigenfrequency
@@ -465,8 +466,9 @@ def main() -> None:
         L = int(4 * R0)
         print(f"\n===== R={R0:.0f}  L={L}  steps={args.steps}  device={device} =====", flush=True)
         try:
-            final, hist = run_case(R0, L, args.eps, device, args.steps, args.sample,
-                                   compile_mode=compile_mode)
+            final, hist = run_case(
+                R0, L, args.eps, device, args.steps, args.sample, compile_mode=compile_mode
+            )
         except RuntimeError as e:
             print(f"  FAILED: {e}")
             rows.append({"R_init": R0, "error": str(e)})
@@ -497,8 +499,10 @@ def main() -> None:
             )
             (out / f"hist_R{int(R0)}.json").write_text(
                 json.dumps(
-                    [{k: (round(v, 8) if isinstance(v, float) else v) for k, v in h.items()}
-                     for h in hist],
+                    [
+                        {k: (round(v, 8) if isinstance(v, float) else v) for k, v in h.items()}
+                        for h in hist
+                    ],
                     indent=1,
                 ),
                 encoding="utf-8",

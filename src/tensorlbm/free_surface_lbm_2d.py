@@ -9,8 +9,7 @@ from __future__ import annotations
 
 import torch
 
-from .d2q9 import C as C2D, equilibrium, macroscopic
-from .boundaries import bounce_back_cells
+from .d2q9 import equilibrium, macroscopic
 from .solver import stream as _stream2d
 
 GAS = 0

@@ -67,7 +67,8 @@ import torch
 from .boundaries_d3q27 import bounce_back_cells_27
 from .d3q27 import (
     C as C27,
-    OPPOSITE as OPPOSITE27,
+)
+from .d3q27 import (
     collide_mrt27,
     equilibrium27,
     macroscopic27,

@@ -1,4 +1,5 @@
 """Fail-closed grid-convergence assessment for production SUBOFF AMR runs."""
+
 from __future__ import annotations
 
 import math
@@ -89,39 +90,33 @@ def assess_suboff_amr_convergence(
         resolution = float(configuration["fine_hull_length_cells"])
         resistance = float(result["mean_resistance_n"])
         parsed.append((resolution, resistance, configuration, result, acceptance))
-        source_numerical_quality_admitted &= (
-            acceptance.get("numerical_quality_admitted") is True
-        )
+        source_numerical_quality_admitted &= acceptance.get("numerical_quality_admitted") is True
         if configuration.get("hull_type") == "full":
             geometry = record.get("geometry")
-            measured = (
-                geometry.get("geometry_resolution")
-                if isinstance(geometry, dict) else None
-            )
+            measured = geometry.get("geometry_resolution") if isinstance(geometry, dict) else None
             convergence_resolved = (
                 isinstance(measured, dict)
                 and measured.get("convergence_member_resolved") is True
                 and acceptance.get(
                     "geometry_convergence_member_target_met",
-                ) is True
+                )
+                is True
             )
             absolute_resolved = (
                 isinstance(measured, dict)
                 and measured.get("absolute_reference_resolved") is True
                 and acceptance.get(
                     "absolute_reference_geometry_target_met",
-                ) is True
+                )
+                is True
             )
         else:
             diameter = resolution / 8.57
-            convergence_resolved = (
-                diameter >= MIN_CONVERGENCE_DIAMETER_CELLS
-            )
-            absolute_resolved = (
-                diameter >= MIN_ABSOLUTE_REFERENCE_DIAMETER_CELLS
-            )
+            convergence_resolved = diameter >= MIN_CONVERGENCE_DIAMETER_CELLS
+            absolute_resolved = diameter >= MIN_ABSOLUTE_REFERENCE_DIAMETER_CELLS
         geometry_resolution_by_fine_length[resolution] = (
-            convergence_resolved, absolute_resolved,
+            convergence_resolved,
+            absolute_resolved,
         )
 
     parsed.sort(key=lambda item: item[0])
@@ -129,15 +124,13 @@ def assess_suboff_amr_convergence(
     if len(set(resolutions)) != len(resolutions):
         raise ValueError("fine-grid hull resolutions must be unique")
     source_geometry_convergence_admitted = all(
-        geometry_resolution_by_fine_length[resolution][0]
-        for resolution in resolutions
+        geometry_resolution_by_fine_length[resolution][0] for resolution in resolutions
     )
-    finest_absolute_reference_geometry_admitted = (
-        geometry_resolution_by_fine_length[resolutions[-1]][1]
-    )
+    finest_absolute_reference_geometry_admitted = geometry_resolution_by_fine_length[
+        resolutions[-1]
+    ][1]
     geometry_resolution_admitted = (
-        source_geometry_convergence_admitted
-        and finest_absolute_reference_geometry_admitted
+        source_geometry_convergence_admitted and finest_absolute_reference_geometry_admitted
     )
     baseline = parsed[0][2]
     required_fields_present = all(
@@ -159,18 +152,18 @@ def assess_suboff_amr_convergence(
     )
 
     coarse_lengths = [
-        float(configuration["coarse_hull_length_cells"])
-        for _, _, configuration, _, _ in parsed
+        float(configuration["coarse_hull_length_cells"]) for _, _, configuration, _, _ in parsed
     ]
     fine_to_coarse = [
-        resolution / coarse
-        for resolution, coarse in zip(resolutions, coarse_lengths, strict=True)
+        resolution / coarse for resolution, coarse in zip(resolutions, coarse_lengths, strict=True)
     ]
     domain_ratios = {
         axis: [
             float(configuration["coarse_shape_zyx"][index]) / coarse
             for coarse, (_, _, configuration, _, _) in zip(
-                coarse_lengths, parsed, strict=True,
+                coarse_lengths,
+                parsed,
+                strict=True,
             )
         ]
         for axis, index in (("z", 0), ("y", 1), ("x", 2))
@@ -179,44 +172,55 @@ def assess_suboff_amr_convergence(
         "wall_margin_over_coarse_length": [
             float(configuration["wall_margin"]) / coarse
             for coarse, (_, _, configuration, _, _) in zip(
-                coarse_lengths, parsed, strict=True,
+                coarse_lengths,
+                parsed,
+                strict=True,
             )
         ],
         "wake_cells_over_coarse_length": [
             float(configuration["wake_cells"]) / coarse
             for coarse, (_, _, configuration, _, _) in zip(
-                coarse_lengths, parsed, strict=True,
+                coarse_lengths,
+                parsed,
+                strict=True,
             )
         ],
         "sponge_width_over_coarse_length": [
             float(configuration["sponge_width"]) / coarse
             for coarse, (_, _, configuration, _, _) in zip(
-                coarse_lengths, parsed, strict=True,
+                coarse_lengths,
+                parsed,
+                strict=True,
             )
         ],
         "cv_margin_over_fine_length": [
             float(configuration["cv_margin"]) / resolution
             for resolution, (_, _, configuration, _, _) in zip(
-                resolutions, parsed, strict=True,
+                resolutions,
+                parsed,
+                strict=True,
             )
         ],
         "exchange_distance_over_fine_length": [
             float(configuration["stress_exchange_distance"]) / resolution
             for resolution, (_, _, configuration, _, _) in zip(
-                resolutions, parsed, strict=True,
+                resolutions,
+                parsed,
+                strict=True,
             )
         ],
     }
     auxiliary_margin_counts = [
-        len(configuration["aux_cv_margins"])
-        for _, _, configuration, _, _ in parsed
+        len(configuration["aux_cv_margins"]) for _, _, configuration, _, _ in parsed
     ]
     if len(set(auxiliary_margin_counts)) == 1:
         for index in range(auxiliary_margin_counts[0]):
             mesh_ratios[f"aux_cv_margin_{index}_over_fine_length"] = [
                 float(configuration["aux_cv_margins"][index]) / resolution
                 for resolution, (_, _, configuration, _, _) in zip(
-                    resolutions, parsed, strict=True,
+                    resolutions,
+                    parsed,
+                    strict=True,
                 )
             ]
     else:
@@ -225,12 +229,18 @@ def assess_suboff_amr_convergence(
         field: [
             float(configuration[field]) / resolution
             for resolution, (_, _, configuration, _, _) in zip(
-                resolutions, parsed, strict=True,
+                resolutions,
+                parsed,
+                strict=True,
             )
         ]
         for field in (
-            "steps", "warmup_steps", "average_window", "ramp_steps",
-            "report_interval", "wall_diagnostic_interval",
+            "steps",
+            "warmup_steps",
+            "average_window",
+            "ramp_steps",
+            "report_interval",
+            "wall_diagnostic_interval",
             "surface_force_interval",
             "statistics_window_steps_resolved",
         )
@@ -252,16 +262,14 @@ def assess_suboff_amr_convergence(
     resistance_values = [item[1] for item in parsed]
     spatial = assess_spatial_convergence(resolutions, resistance_values)
     experimental_values = {
-        float(result["experimental_resistance_n"])
-        for _, _, _, result, _ in parsed
+        float(result["experimental_resistance_n"]) for _, _, _, result, _ in parsed
     }
     reference_invariant = len(experimental_values) == 1
-    experimental = (
-        next(iter(experimental_values)) if reference_invariant else math.nan
-    )
+    experimental = next(iter(experimental_values)) if reference_invariant else math.nan
     extrapolated_experiment_error = (
         abs(spatial.extrapolated_value - experimental) / abs(experimental) * 100.0
-        if reference_invariant and experimental != 0.0 else math.inf
+        if reference_invariant and experimental != 0.0
+        else math.inf
     )
     spatial_admitted = spatial.meets(
         maximum_finest_error_pct=maximum_finest_discretisation_error_pct,
@@ -280,8 +288,7 @@ def assess_suboff_amr_convergence(
         and source_numerical_quality_admitted
         and geometry_resolution_admitted
         and spatial_admitted
-        and extrapolated_experiment_error
-        <= maximum_extrapolated_experiment_error_pct
+        and extrapolated_experiment_error <= maximum_extrapolated_experiment_error_pct
     )
     return {
         "schema": "tensorlbm-suboff-amr-convergence-v1",
@@ -312,20 +319,12 @@ def assess_suboff_amr_convergence(
         "experiment": {
             "resistance_n": experimental,
             "extrapolated_error_pct": extrapolated_experiment_error,
-            "maximum_extrapolated_error_pct": (
-                maximum_extrapolated_experiment_error_pct
-            ),
+            "maximum_extrapolated_error_pct": (maximum_extrapolated_experiment_error_pct),
         },
-        "source_numerical_quality_admitted": (
-            source_numerical_quality_admitted
-        ),
+        "source_numerical_quality_admitted": (source_numerical_quality_admitted),
         "geometry_resolution": {
-            "source_convergence_members_admitted": (
-                source_geometry_convergence_admitted
-            ),
-            "finest_absolute_reference_admitted": (
-                finest_absolute_reference_geometry_admitted
-            ),
+            "source_convergence_members_admitted": (source_geometry_convergence_admitted),
+            "finest_absolute_reference_admitted": (finest_absolute_reference_geometry_admitted),
             "admitted": geometry_resolution_admitted,
         },
         "physical_validation": admitted,

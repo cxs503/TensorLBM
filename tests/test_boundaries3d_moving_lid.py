@@ -8,6 +8,7 @@ reconstruction — numerically verified here):
   * the BC is mass-neutral at steady state (driven cavity converges without
     systematic mass drift; regression smoke in the benchmark run.py)
 """
+
 from __future__ import annotations
 
 import pytest
@@ -73,9 +74,7 @@ class TestZouHeMovingLid3D:
         f = _perturbed_lid_field(seed=5)
         # symmetrise across y so that Σcy>0 = Σcy<0 at the lid row
         f_sym = f.clone()
-        f_sym[:, :, -1, :] = 0.5 * (
-            f[:, :, -1, :] + f[:, :, -1, :][_D3Q19_MIRROR_Y, :, :]
-        )
+        f_sym[:, :, -1, :] = 0.5 * (f[:, :, -1, :] + f[:, :, -1, :][_D3Q19_MIRROR_Y, :, :])
         f_out = zou_he_moving_lid_3d(f_sym, u_lid=0.0)
         m0 = f_sym[:, :, -1, :].sum()
         m1 = f_out[:, :, -1, :].sum()

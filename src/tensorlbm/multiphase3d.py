@@ -26,11 +26,11 @@ if TYPE_CHECKING:
 
 from .d3q19 import C, W, equilibrium3d, macroscopic3d
 from .multiphase import (
+    psi_carnahan_starling,
     psi_exp,
     psi_linear,
-    psi_power,
-    psi_carnahan_starling,
     psi_peng_robinson,
+    psi_power,
 )  # re-export for convenience
 from .phasefield.free_energy import DoubleWellFreeEnergy, force_minus_phi_grad_mu
 from .solver3d import _get_d3q19_mrt_matrices

@@ -18,12 +18,18 @@ RP equation (spherical, no σ, no μ):
   ρ_l (R·R̈ + 3/2·Ṙ²) = p_gas0·(R0/R)^(3γ) - p_inf
 """
 
-import sys, math, torch, numpy as np
+import math
+import sys
+
+import numpy as np
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import equilibrium3d, C as C3D, W as W3D, macroscopic3d
-from tensorlbm.solver3d import stream3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.solver3d import stream3d
 
 
 # ============================================================
@@ -141,7 +147,7 @@ def run_pf_csf_bubble(
         phi, torch.zeros_like(phi), torch.zeros_like(phi), torch.zeros_like(phi), c, w
     )
 
-    print(f"=== Phase-Field + CSF Bubble ===", flush=True)
+    print("=== Phase-Field + CSF Bubble ===", flush=True)
     print(f"Grid: {nx}x{ny}x{nz} R0={R0} p_ratio={p_ratio} gamma={gamma}", flush=True)
     print(f"Uniform ρ={rho_liq} (no density contrast)", flush=True)
     print(

@@ -21,10 +21,10 @@ import torch
 
 from tensorlbm.data.catalog import AssetRecord, FieldDataCatalog, LineageRecord
 
-
 # ---------------------------------------------------------------------------
 # Value types
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True, slots=True)
 class DataProduct:
@@ -74,6 +74,7 @@ class RunReport:
 # ---------------------------------------------------------------------------
 # The application base class
 # ---------------------------------------------------------------------------
+
 
 class AI4SApplication(ABC):
     """Base class for every AI4S application on the platform.
@@ -136,48 +137,60 @@ class AI4SApplication(ABC):
 
             # 2. register field product + quality
             data_asset_id = f"{prefix}:{product.field_name}"
-            catalog.register_asset(AssetRecord(
-                asset_id=data_asset_id,
-                name=product.name,
-                kind="field_product",
-                field_name=product.field_name,
-                units=product.units,
-                shape=str(product.shape),
-                dtype=product.dtype,
-                source_run_id=run_id,
-                tags=(prefix, self.name),
-            ))
+            catalog.register_asset(
+                AssetRecord(
+                    asset_id=data_asset_id,
+                    name=product.name,
+                    kind="field_product",
+                    field_name=product.field_name,
+                    units=product.units,
+                    shape=str(product.shape),
+                    dtype=product.dtype,
+                    source_run_id=run_id,
+                    tags=(prefix, self.name),
+                )
+            )
             from tensorlbm.data.catalog import QualityCheck
-            catalog.record_quality(data_asset_id, [
-                QualityCheck("registered", True, product.field_name),
-            ])
+
+            catalog.record_quality(
+                data_asset_id,
+                [
+                    QualityCheck("registered", True, product.field_name),
+                ],
+            )
 
             # 3. dataset + lineage (data -> dataset)
             dataset = self.make_dataset(product)
             dataset_asset_id = f"{prefix}:dataset"
-            catalog.register_asset(AssetRecord(
-                asset_id=dataset_asset_id,
-                name=f"{self.name} dataset",
-                kind="dataset",
-                description=f"field={product.field_name}",
-                tags=(prefix, self.name),
-            ))
-            catalog.add_lineage(LineageRecord(
-                source_id=data_asset_id, target_id=dataset_asset_id,
-                relation_type="derived_from", resource_type="product",
-            ))
+            catalog.register_asset(
+                AssetRecord(
+                    asset_id=dataset_asset_id,
+                    name=f"{self.name} dataset",
+                    kind="dataset",
+                    description=f"field={product.field_name}",
+                    tags=(prefix, self.name),
+                )
+            )
+            catalog.add_lineage(
+                LineageRecord(
+                    source_id=data_asset_id,
+                    target_id=dataset_asset_id,
+                    relation_type="derived_from",
+                    resource_type="product",
+                )
+            )
 
             # 4. training job (state machine)
             arch_cfg = dict(train_cfg.get("arch") or {})
             model = self.build_model(arch_cfg)
             job = training.create_job(
-                dict(train_cfg), dataset_id=None,
+                dict(train_cfg),
+                dataset_id=None,
             )
             training.update_status(job.job_id, "running")
             result = self.train(dataset, model, train_cfg)
             numeric_metrics = {
-                k: v for k, v in result.metrics.items()
-                if isinstance(v, (int, float))
+                k: v for k, v in result.metrics.items() if isinstance(v, (int, float))
             }
             if numeric_metrics:
                 training.record_metrics(job.job_id, numeric_metrics)
@@ -192,19 +205,29 @@ class AI4SApplication(ABC):
                 family=self.family,
             )
             job_asset_id = f"{prefix}:job:{job.job_id}"
-            catalog.register_asset(AssetRecord(
-                asset_id=job_asset_id, name=f"training job {job.job_id}",
-                kind="run",
-            ))
-            catalog.add_lineage(LineageRecord(
-                source_id=dataset_asset_id, target_id=job_asset_id,
-                relation_type="trained_on", resource_type="dataset",
-            ))
+            catalog.register_asset(
+                AssetRecord(
+                    asset_id=job_asset_id,
+                    name=f"training job {job.job_id}",
+                    kind="run",
+                )
+            )
+            catalog.add_lineage(
+                LineageRecord(
+                    source_id=dataset_asset_id,
+                    target_id=job_asset_id,
+                    relation_type="trained_on",
+                    resource_type="dataset",
+                )
+            )
 
             return RunReport(
-                name=self.name, family=self.family,
-                data_asset_id=data_asset_id, dataset_asset_id=dataset_asset_id,
-                job_id=job.job_id, model_id=model_id,
+                name=self.name,
+                family=self.family,
+                data_asset_id=data_asset_id,
+                dataset_asset_id=dataset_asset_id,
+                job_id=job.job_id,
+                model_id=model_id,
                 metrics=numeric_metrics,
                 lineage_upstream=tuple(catalog.upstream(job_asset_id)),
             )
@@ -218,19 +241,23 @@ class AI4SApplication(ABC):
 # Helpers (lazy imports so the SDK stays light)
 # ---------------------------------------------------------------------------
 
+
 def _open_training(db_path: str | Path):
     from tensorlbm.ml.training_job import TrainingJobRegistry
+
     return TrainingJobRegistry.open(db_path)
 
 
 def _open_serving(db_path: str | Path):
     from tensorlbm.ml.serving import ModelRegistry
+
     return ModelRegistry.open(db_path)
 
 
 # ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
+
 
 class ApplicationRegistry:
     """Discovery registry for AI4S applications (name -> class)."""

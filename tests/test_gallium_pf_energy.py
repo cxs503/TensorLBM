@@ -1,6 +1,7 @@
 """Energy and phase-volume regression tests for the Gallium PF Stefan closure."""
-from pathlib import Path
+
 import sys
+from pathlib import Path
 
 import torch
 
@@ -9,7 +10,6 @@ from benchmark_gallium_pf import (  # noqa: E402
     conservative_phase_field_update,
     interface_stefan_phase_source,
     phase_field_update_with_energy_closure,
-    phase_increment_to_temperature,
 )
 
 
@@ -27,13 +27,21 @@ def test_interface_stefan_source_survives_conservative_pf_update_and_preserves_e
     cp, latent_heat, melting_temperature = 1.0, 8.0, 0.15
 
     delta_phi, latent_temperature_increment = interface_stefan_phase_source(
-        phi, temperature, cp=cp, latent_heat=latent_heat,
-        melting_temperature=melting_temperature, thermal_diffusivity=0.1,
+        phi,
+        temperature,
+        cp=cp,
+        latent_heat=latent_heat,
+        melting_temperature=melting_temperature,
+        thermal_diffusivity=0.1,
     )
     phi_after_source = phi + delta_phi
     phi_after_pf = conservative_phase_field_update(
-        phi_after_source, ux=torch.zeros_like(phi), uy=torch.zeros_like(phi),
-        mobility=0.1, interface_mobility=0.02, interface_width=4.0,
+        phi_after_source,
+        ux=torch.zeros_like(phi),
+        uy=torch.zeros_like(phi),
+        mobility=0.1,
+        interface_mobility=0.02,
+        interface_width=4.0,
     )
 
     # The conservative transport/sharpening closure cannot alter total phase.
@@ -64,12 +72,18 @@ def test_pf_flux_energy_closure_preserves_cellwise_enthalpy():
     cp, latent_heat = 1.0, 8.0
 
     phi_next, temperature_increment = phase_field_update_with_energy_closure(
-        phi, ux=torch.zeros_like(phi), uy=torch.zeros_like(phi),
-        mobility=0.1, interface_mobility=0.02, interface_width=4.0,
-        cp=cp, latent_heat=latent_heat,
+        phi,
+        ux=torch.zeros_like(phi),
+        uy=torch.zeros_like(phi),
+        mobility=0.1,
+        interface_mobility=0.02,
+        interface_width=4.0,
+        cp=cp,
+        latent_heat=latent_heat,
     )
 
     enthalpy_before = cp * temperature + latent_heat * (phi + 1.0) / 2.0
-    enthalpy_after = (cp * (temperature + temperature_increment)
-                      + latent_heat * (phi_next + 1.0) / 2.0)
+    enthalpy_after = (
+        cp * (temperature + temperature_increment) + latent_heat * (phi_next + 1.0) / 2.0
+    )
     assert torch.allclose(enthalpy_after, enthalpy_before, atol=1e-11)

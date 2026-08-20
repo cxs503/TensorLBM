@@ -1,26 +1,33 @@
 """Fail-closed contract tests for audited boundary-condition capabilities."""
+
 from __future__ import annotations
 
 import pytest
 
 from tensorlbm.boundary_capability_contract import (
-    BoundaryConditionCapability,
-    BoundaryConditionWithheldError,
     WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE,
-    WITHHELD_NO_COUPLED_BC_PHYSICS_CONTRACT,
     WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE,
     WITHHELD_UNKNOWN_BACKEND,
     WITHHELD_UNKNOWN_BOUNDARY,
     WITHHELD_UNKNOWN_COLLISION,
     WITHHELD_UNKNOWN_LATTICE,
     WITHHELD_UNKNOWN_PHYSICS,
+    BoundaryConditionCapability,
+    BoundaryConditionWithheldError,
     boundary_capability_matrix,
     require_boundary_condition_capability,
 )
 
 _AUDITED_BOUNDARIES = (
-    "periodic", "zou_he_inlet", "zou_he_outlet", "wall_bounce_back",
-    "wall_free_slip", "farfield", "sponge", "nscbc", "bouzidi_interpolated",
+    "periodic",
+    "zou_he_inlet",
+    "zou_he_outlet",
+    "wall_bounce_back",
+    "wall_free_slip",
+    "farfield",
+    "sponge",
+    "nscbc",
+    "bouzidi_interpolated",
 )
 _AUDITED_LATTICES = ("D2Q9", "D3Q19", "D3Q27")
 _AUDITED_COLLISIONS = ("bgk", "mrt", "trt", "smagorinsky", "kbc", "cascaded")
@@ -31,6 +38,7 @@ _AUDITED_BACKENDS = ("torch_cpu", "torch_cuda")
 # ---------------------------------------------------------------------------
 # Matrix structure
 # ---------------------------------------------------------------------------
+
 
 def test_matrix_covers_all_boundary_kinds_and_lattices() -> None:
     matrix = boundary_capability_matrix()
@@ -59,6 +67,7 @@ def test_matrix_has_27_entries() -> None:
 # ---------------------------------------------------------------------------
 # Implementation status correctness (audited from source, not docstrings)
 # ---------------------------------------------------------------------------
+
 
 def test_periodic_has_mechanics_tests_but_no_physical_validation() -> None:
     matrix = boundary_capability_matrix()
@@ -120,7 +129,10 @@ def test_farfield_is_implementation_only_and_docstring_not_trusted() -> None:
     for lattice in ("D2Q9", "D3Q19"):
         cap = matrix["farfield"][lattice]
         assert cap.implementation_status == "IMPLEMENTATION_ONLY"
-        assert "not trusted" in cap.verification_evidence.lower() or "no test" in cap.verification_evidence.lower()
+        assert (
+            "not trusted" in cap.verification_evidence.lower()
+            or "no test" in cap.verification_evidence.lower()
+        )
     assert matrix["farfield"]["D3Q27"].implementation_status == "NO_IMPLEMENTATION"
 
 
@@ -162,6 +174,7 @@ def test_bouzidi_d3q27_is_mechanics_tested_not_physics_validated() -> None:
 # Fail-closed: no combination is AVAILABLE
 # ---------------------------------------------------------------------------
 
+
 def test_no_combination_is_available() -> None:
     """Every (kind, lattice) cell must be withheld — fail-closed."""
     matrix = boundary_capability_matrix()
@@ -194,34 +207,59 @@ def test_implementation_cells_carry_composition_withhold_code() -> None:
 # require_boundary_condition_capability — fail-closed dispatcher
 # ---------------------------------------------------------------------------
 
+
 def test_require_raises_for_implemented_single_phase_combination() -> None:
     """Even an implemented, mechanics-tested BC is withheld for complete composition."""
-    with pytest.raises(BoundaryConditionWithheldError, match="WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE"):
+    with pytest.raises(
+        BoundaryConditionWithheldError, match="WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE"
+    ):
         require_boundary_condition_capability(
-            "wall_bounce_back", "D3Q19", "bgk", "single_phase", "torch_cpu",
+            "wall_bounce_back",
+            "D3Q19",
+            "bgk",
+            "single_phase",
+            "torch_cpu",
         )
 
 
 def test_require_raises_for_physics_validated_combination() -> None:
     """Physics-validated BCs are still withheld — validation is not a composition contract."""
-    with pytest.raises(BoundaryConditionWithheldError, match="WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE"):
+    with pytest.raises(
+        BoundaryConditionWithheldError, match="WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE"
+    ):
         require_boundary_condition_capability(
-            "wall_bounce_back", "D2Q9", "bgk", "single_phase", "torch_cpu",
+            "wall_bounce_back",
+            "D2Q9",
+            "bgk",
+            "single_phase",
+            "torch_cpu",
         )
 
 
 def test_require_d3q27_bouzidi_still_withholds_complete_composition() -> None:
-    with pytest.raises(BoundaryConditionWithheldError, match="WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE"):
+    with pytest.raises(
+        BoundaryConditionWithheldError, match="WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE"
+    ):
         require_boundary_condition_capability(
-            "bouzidi_interpolated", "D3Q27", "mrt", "single_phase", "torch_cpu",
+            "bouzidi_interpolated",
+            "D3Q27",
+            "mrt",
+            "single_phase",
+            "torch_cpu",
         )
 
 
 def test_require_raises_for_coupled_physics() -> None:
     """Non-single-phase physics has no audited BC coupling contract."""
-    with pytest.raises(BoundaryConditionWithheldError, match="WITHHELD_NO_COUPLED_BC_PHYSICS_CONTRACT"):
+    with pytest.raises(
+        BoundaryConditionWithheldError, match="WITHHELD_NO_COUPLED_BC_PHYSICS_CONTRACT"
+    ):
         require_boundary_condition_capability(
-            "zou_he_inlet", "D3Q19", "mrt", "turbulence", "torch_cpu",
+            "zou_he_inlet",
+            "D3Q19",
+            "mrt",
+            "turbulence",
+            "torch_cpu",
         )
 
 
@@ -230,13 +268,25 @@ def test_require_raises_for_coupled_physics() -> None:
     (
         ("unknown_bc", "D3Q19", "bgk", "single_phase", "torch_cpu", WITHHELD_UNKNOWN_BOUNDARY),
         ("periodic", "D9Q99", "bgk", "single_phase", "torch_cpu", WITHHELD_UNKNOWN_LATTICE),
-        ("periodic", "D2Q9", "unknown_collision", "single_phase", "torch_cpu", WITHHELD_UNKNOWN_COLLISION),
+        (
+            "periodic",
+            "D2Q9",
+            "unknown_collision",
+            "single_phase",
+            "torch_cpu",
+            WITHHELD_UNKNOWN_COLLISION,
+        ),
         ("periodic", "D2Q9", "bgk", "unknown_physics", "torch_cpu", WITHHELD_UNKNOWN_PHYSICS),
         ("periodic", "D2Q9", "bgk", "single_phase", "unknown_backend", WITHHELD_UNKNOWN_BACKEND),
     ),
 )
 def test_require_rejects_unknown_inputs_before_matrix_lookup(
-    kind: str, lattice: str, collision: str, physics: str, backend: str, withheld_code: str,
+    kind: str,
+    lattice: str,
+    collision: str,
+    physics: str,
+    backend: str,
+    withheld_code: str,
 ) -> None:
     with pytest.raises(BoundaryConditionWithheldError, match=withheld_code):
         require_boundary_condition_capability(kind, lattice, collision, physics, backend)
@@ -244,7 +294,13 @@ def test_require_rejects_unknown_inputs_before_matrix_lookup(
 
 def test_require_returns_capability_for_no_implementation_before_physics_check() -> None:
     """A missing implementation is reported before the physics-coupling check."""
-    with pytest.raises(BoundaryConditionWithheldError, match="WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE"):
+    with pytest.raises(
+        BoundaryConditionWithheldError, match="WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE"
+    ):
         require_boundary_condition_capability(
-            "farfield", "D3Q27", "bgk", "turbulence", "torch_cpu",
+            "farfield",
+            "D3Q27",
+            "bgk",
+            "turbulence",
+            "torch_cpu",
         )

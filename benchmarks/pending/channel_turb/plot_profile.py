@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """Plot u+ vs y+ for B26 channel cases (semilog) with DNS + log-law reference."""
+
 from __future__ import annotations
 
 import csv
 import json
-import math
 import sys
 from pathlib import Path
 
@@ -34,11 +34,15 @@ def main() -> None:
     fig, ax = plt.subplots(figsize=(7, 5.2), constrained_layout=True)
 
     yp_log = np.logspace(0, 2.6, 200)
-    ax.plot(yp_log, np.log(yp_log) / KAPPA + B_LOG, "--", color="tab:gray",
-            label=f"log law u+=(1/{KAPPA})ln(y+)+{B_LOG}")
+    ax.plot(
+        yp_log,
+        np.log(yp_log) / KAPPA + B_LOG,
+        "--",
+        color="tab:gray",
+        label=f"log law u+=(1/{KAPPA})ln(y+)+{B_LOG}",
+    )
     ax.plot(yp_log, yp_log, ":", color="tab:gray", label="u+=y+")
-    ax.plot(dns_yp, dns_up, "-", color="black", lw=1.6,
-            label="DNS MKM1999 Re_tau=178.12")
+    ax.plot(dns_yp, dns_up, "-", color="black", lw=1.6, label="DNS MKM1999 Re_tau=178.12")
 
     colors = ["tab:red", "tab:blue", "tab:green"]
     for i, res in enumerate(cases):
@@ -51,8 +55,14 @@ def main() -> None:
         ax.plot(yp, up, "o-", ms=4, lw=1.2, color=colors[i % len(colors)], label=label)
         ax.axvspan(30, 100, color="orange", alpha=0.12)
         err = res["errors"]["rms_vs_dns"]
-        ax.text(0.02, 0.98 - 0.05 * i, f"{label}: RMS(DNS)={err:.2f}",
-                transform=ax.transAxes, fontsize=8, color=colors[i % len(colors)])
+        ax.text(
+            0.02,
+            0.98 - 0.05 * i,
+            f"{label}: RMS(DNS)={err:.2f}",
+            transform=ax.transAxes,
+            fontsize=8,
+            color=colors[i % len(colors)],
+        )
 
     ax.set_xscale("log")
     ax.set_xlim(1, 400)

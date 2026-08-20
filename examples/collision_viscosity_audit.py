@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Audit recovered D3Q19 viscosity with periodic shear-wave decay."""
+
 from __future__ import annotations
 
 import argparse
@@ -17,8 +18,13 @@ def main() -> None:
     parser.add_argument(
         "--collision-model",
         choices=(
-            "bgk", "cumulant", "cumulant_wale", "cumulant_vreman",
-            "planar_cumulant_d2q9", "entropic_kbc", "natural_kbc",
+            "bgk",
+            "cumulant",
+            "cumulant_wale",
+            "cumulant_vreman",
+            "planar_cumulant_d2q9",
+            "entropic_kbc",
+            "natural_kbc",
         ),
         required=True,
     )
@@ -41,22 +47,24 @@ def main() -> None:
     )
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
-    result = run_collision_viscosity_audit(CollisionViscosityAuditConfig(
-        collision_model=args.collision_model,
-        tau=args.tau,
-        wavelength_cells=args.wavelength_cells,
-        transverse_cells=args.transverse_cells,
-        amplitude=args.amplitude,
-        steps=args.steps,
-        fit_start_step=args.fit_start_step,
-        maximum_relative_error_pct=args.maximum_relative_error_pct,
-        kbc_max_iterations=args.kbc_max_iterations,
-        wale_cw=args.wale_cw,
-        vreman_cv=args.vreman_cv,
-        device=args.device,
-        dtype=args.dtype,
-        natural_kbc_compute_dtype=args.natural_kbc_compute_dtype,
-    ))
+    result = run_collision_viscosity_audit(
+        CollisionViscosityAuditConfig(
+            collision_model=args.collision_model,
+            tau=args.tau,
+            wavelength_cells=args.wavelength_cells,
+            transverse_cells=args.transverse_cells,
+            amplitude=args.amplitude,
+            steps=args.steps,
+            fit_start_step=args.fit_start_step,
+            maximum_relative_error_pct=args.maximum_relative_error_pct,
+            kbc_max_iterations=args.kbc_max_iterations,
+            wale_cw=args.wale_cw,
+            vreman_cv=args.vreman_cv,
+            device=args.device,
+            dtype=args.dtype,
+            natural_kbc_compute_dtype=args.natural_kbc_compute_dtype,
+        )
+    )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2), encoding="utf-8")

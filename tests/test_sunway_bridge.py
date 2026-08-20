@@ -6,6 +6,7 @@ cluster (``force_history_*.csv`` under
 ``step,F_x,F_y,F_z,C_D,C_L,C_S,Re,C_F_ITTC,wet_nodes`` with one row per
 force-sampling phase, ~100 lattice steps apart.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -46,6 +47,7 @@ def csv_path(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Parsing
 # ---------------------------------------------------------------------------
+
 
 def test_parse_swlbm_force_csv(csv_path: Path) -> None:
     history = parse_swlbm_force_csv(csv_path)
@@ -89,6 +91,7 @@ def test_parse_tolerates_trailing_blank_line(csv_path: Path) -> None:
 # Conversion + registration
 # ---------------------------------------------------------------------------
 
+
 def _metadata(**overrides) -> dict[str, object]:
     base: dict[str, object] = {
         "run_id": "swlbm-suboff-geshan",
@@ -117,9 +120,9 @@ def test_convert_swlbm_csv_round_trip(csv_path: Path, tmp_path: Path) -> None:
     arrays = load_product_arrays(product)
     assert set(arrays) == {"force_lattice", "force_coefficients", "wet_nodes"}
 
-    expected_force = np.array(
-        [row.split(",")[1:4] for row in _ROWS], dtype=np.float64
-    ).astype(np.float32)
+    expected_force = np.array([row.split(",")[1:4] for row in _ROWS], dtype=np.float64).astype(
+        np.float32
+    )
     np.testing.assert_allclose(arrays["force_lattice"], expected_force, rtol=1e-6)
     assert arrays["force_coefficients"].shape == (4, 3)
     assert arrays["wet_nodes"].dtype == np.int32
@@ -127,15 +130,14 @@ def test_convert_swlbm_csv_round_trip(csv_path: Path, tmp_path: Path) -> None:
 
 
 def test_convert_records_lineage_quality_and_metrics(
-    csv_path: Path, tmp_path: Path,
+    csv_path: Path,
+    tmp_path: Path,
 ) -> None:
     catalog = FieldDataCatalog.open(tmp_path / "catalog.db")
     product_id = convert_swlbm_csv(catalog, csv_path, _metadata())
 
     lineage = catalog.get_lineage(product_id)
-    assert any(
-        SWLBM_BRIDGE_SCHEMA in record.transformation for record in lineage
-    )
+    assert any(SWLBM_BRIDGE_SCHEMA in record.transformation for record in lineage)
     assert catalog.get_quality_reports(product_id), "bridge must record quality checks"
 
     product = load_product(catalog, product_id)
@@ -152,8 +154,7 @@ def test_convert_binds_source_csv_artifact(csv_path: Path, tmp_path: Path) -> No
     product = load_product(catalog, product_id)
     assert product.source_artifact_id == "swlbm:source_csv"
     artifact = next(
-        a for a in product.run_manifest.artifacts
-        if a.artifact_id == "swlbm:source_csv"
+        a for a in product.run_manifest.artifacts if a.artifact_id == "swlbm:source_csv"
     )
     assert artifact.media_type == "text/csv"
     assert artifact.verify_integrity()
@@ -173,7 +174,9 @@ def test_convert_requires_core_metadata(csv_path: Path, tmp_path: Path) -> None:
     catalog = FieldDataCatalog.open(tmp_path / "catalog.db")
     with pytest.raises(ValueError, match="code_sha"):
         convert_swlbm_csv(
-            catalog, csv_path, {"run_id": "x", "case": "y"},
+            catalog,
+            csv_path,
+            {"run_id": "x", "case": "y"},
         )
 
 

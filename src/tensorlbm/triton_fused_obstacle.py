@@ -63,32 +63,29 @@ try:
     # Local / pre-deployment path: files live at the repo root with
     # underscore-separated names.
     from tensorlbm_triton_fused import (
+        _CX,
+        _CY,
+        _CZ,
+        _Q,  # noqa: F401
+        _Q_PAD,
+        _W,  # noqa: F401
         DEFAULT_BLOCK_X,
         DEFAULT_BLOCK_Y,
         DEFAULT_NUM_STAGES,
         DEFAULT_NUM_WARPS,
-        _CX,
-        _CY,
-        _CZ,
-        _Q,
-        _Q_PAD,
-        _W,
-        make_lattice_tensors,
+        make_lattice_tensors,  # noqa: F401
     )
 except ImportError:
     # Deployed path: modules live inside the ``tensorlbm`` package.
     from tensorlbm.triton_fused import (
+        _CX,
+        _CY,
+        _CZ,
+        _Q_PAD,
         DEFAULT_BLOCK_X,
         DEFAULT_BLOCK_Y,
         DEFAULT_NUM_STAGES,
         DEFAULT_NUM_WARPS,
-        _CX,
-        _CY,
-        _CZ,
-        _Q,
-        _Q_PAD,
-        _W,
-        make_lattice_tensors,
     )
 
 
@@ -109,8 +106,8 @@ __all__ = [
 # index whose lattice vector is -c_q; the naive 18-q formula is WRONG
 # for this lattice ordering (verified by direct comparison).
 try:
-    from tensorlbm.d3q19 import C as _D3Q19_C  # type: ignore
     from tensorlbm.d3q19 import OPPOSITE as _D3Q19_OPPOSITE  # type: ignore
+    from tensorlbm.d3q19 import C as _D3Q19_C  # type: ignore
     from tensorlbm.d3q19 import W as _D3Q19_W  # type: ignore
 except ImportError:
     # Fallback for pre-deployment where d3q19 isn't importable.
@@ -121,10 +118,24 @@ except ImportError:
     _D3Q19_C = torch.tensor(
         [
             [0, 0, 0],
-            [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
-            [1, 1, 0], [-1, -1, 0], [1, -1, 0], [-1, 1, 0],
-            [1, 0, 1], [-1, 0, -1], [1, 0, -1], [-1, 0, 1],
-            [0, 1, 1], [0, -1, -1], [0, 1, -1], [0, -1, 1],
+            [1, 0, 0],
+            [-1, 0, 0],
+            [0, 1, 0],
+            [0, -1, 0],
+            [0, 0, 1],
+            [0, 0, -1],
+            [1, 1, 0],
+            [-1, -1, 0],
+            [1, -1, 0],
+            [-1, 1, 0],
+            [1, 0, 1],
+            [-1, 0, -1],
+            [1, 0, -1],
+            [-1, 0, 1],
+            [0, 1, 1],
+            [0, -1, -1],
+            [0, 1, -1],
+            [0, -1, 1],
         ],
         dtype=torch.float32,
     )
@@ -212,17 +223,19 @@ def _solid_box_for(obstacle: torch.Tensor):
     _version, shape, device): production obstacle masks are static for a
     run, and the cache is bounded to 8 entries.
     """
-    key = (obstacle.data_ptr(), obstacle._version,
-           tuple(obstacle.shape), obstacle.device.index)
+    key = (obstacle.data_ptr(), obstacle._version, tuple(obstacle.shape), obstacle.device.index)
     box = _SOLID_BOX_CACHE.get(key)
     if box is None:
         idx = torch.nonzero(obstacle > 0)
         if idx.numel() == 0:
             box = _SOLID_BOX_EMPTY
         else:
-            z0 = int(idx[:, 0].min().item()); z1 = int(idx[:, 0].max().item()) + 1
-            y0 = int(idx[:, 1].min().item()); y1 = int(idx[:, 1].max().item()) + 1
-            x0 = int(idx[:, 2].min().item()); x1 = int(idx[:, 2].max().item()) + 1
+            z0 = int(idx[:, 0].min().item())
+            z1 = int(idx[:, 0].max().item()) + 1
+            y0 = int(idx[:, 1].min().item())
+            y1 = int(idx[:, 1].max().item()) + 1
+            x0 = int(idx[:, 2].min().item())
+            x1 = int(idx[:, 2].max().item()) + 1
             box = (z0, y0, x0, z1 - z0, y1 - y0, x1 - x0)
         _SOLID_BOX_CACHE[key] = box
         while len(_SOLID_BOX_CACHE) > 8:
@@ -262,8 +275,12 @@ def _lattice_tensors_canonical(device: str) -> dict:
         return t
 
     lat = {
-        "cxi": _pad_i(c[:, 0]), "cyi": _pad_i(c[:, 1]), "czi": _pad_i(c[:, 2]),
-        "cxf": _pad_f(c[:, 0]), "cyf": _pad_f(c[:, 1]), "czf": _pad_f(c[:, 2]),
+        "cxi": _pad_i(c[:, 0]),
+        "cyi": _pad_i(c[:, 1]),
+        "czi": _pad_i(c[:, 2]),
+        "cxf": _pad_f(c[:, 0]),
+        "cyf": _pad_f(c[:, 1]),
+        "czf": _pad_f(c[:, 2]),
         "w": _pad_f(w),
     }
     _LATTICE_CACHE[key] = lat
@@ -272,8 +289,15 @@ def _lattice_tensors_canonical(device: str) -> dict:
 
 @triton.jit
 def _smagorinsky_omega(
-    pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz,
-    rho_safe, tau_mol, Cs_delta_sq,
+    pi_xx,
+    pi_yy,
+    pi_zz,
+    pi_xy,
+    pi_xz,
+    pi_yz,
+    rho_safe,
+    tau_mol,
+    Cs_delta_sq,
 ):
     """Per-cell relaxation rate from the production Smagorinsky closure.
 
@@ -291,15 +315,17 @@ def _smagorinsky_omega(
     strain-inversion form the BGK branch used before 2026-08-20, which
     omitted the clamps and diverged from the production tau semantics.)
     """
-    pi_norm_sq = (pi_xx * pi_xx + pi_yy * pi_yy + pi_zz * pi_zz
-                  + 2.0 * (pi_xy * pi_xy + pi_xz * pi_xz + pi_yz * pi_yz))
+    pi_norm_sq = (
+        pi_xx * pi_xx
+        + pi_yy * pi_yy
+        + pi_zz * pi_zz
+        + 2.0 * (pi_xy * pi_xy + pi_xz * pi_xz + pi_yz * pi_yz)
+    )
     pi_norm = tl.sqrt(pi_norm_sq)
     disc = tau_mol * tau_mol + 18.0 * Cs_delta_sq * pi_norm / rho_safe
     tau_eff = 0.5 * (tau_mol + tl.sqrt(tl.maximum(disc, 0.0)))
     tau_eff = tl.minimum(tl.maximum(tau_eff, _TAU_EFF_MIN_K), _TAU_EFF_MAX_K)
     return 1.0 / tau_eff
-
-
 
 
 def _ensure_collision_tables() -> None:
@@ -314,10 +340,10 @@ def _ensure_collision_tables() -> None:
         return
 
     from tensorlbm.cascaded_collision import (  # type: ignore
+        _D3Q19_ORDER_BOUNDS,
+        _D3Q19_SHIFT_GROUPS,
         _M19_DATA,
         _M19_INV_DATA,
-        _D3Q19_SHIFT_GROUPS,
-        _D3Q19_ORDER_BOUNDS,
     )
 
     M = np.asarray(_M19_DATA, dtype=np.float32)
@@ -385,17 +411,29 @@ def _dispatch_collision(collision: str) -> int:
 # Kernel
 # ---------------------------------------------------------------------------
 
+
 @triton.jit
 def _fused_collide_stream_obstacle_les_kernel(
-    f_ptr, fnew_ptr,
+    f_ptr,
+    fnew_ptr,
     obstacle_ptr,
     opp_ptr,
-    cxi_ptr, cyi_ptr, czi_ptr,
-    cxf_ptr, cyf_ptr, czf_ptr, w_ptr,
+    cxi_ptr,
+    cyi_ptr,
+    czi_ptr,
+    cxf_ptr,
+    cyf_ptr,
+    czf_ptr,
+    w_ptr,
     nu_lb,
     Cs_delta_sq,
-    nz, ny, nx,
-    stride_q, stride_z, stride_y, stride_x,
+    nz,
+    ny,
+    nx,
+    stride_q,
+    stride_z,
+    stride_y,
+    stride_x,
     Q_PAD: tl.constexpr,
     BLOCK_X: tl.constexpr,
     BLOCK_Y: tl.constexpr,
@@ -436,30 +474,35 @@ def _fused_collide_stream_obstacle_les_kernel(
     src_x = offs_x[None, None, :] - cx_i
     src_x = tl.where(src_x < 0, src_x + nx, tl.where(src_x >= nx, src_x - nx, src_x))
 
-    src_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
-                + src_z.to(tl.int64) * stride_z
-                + src_y.to(tl.int64) * stride_y
-                + src_x.to(tl.int64) * stride_x)
+    src_offs = (
+        offs_q.to(tl.int64)[:, None, None] * stride_q
+        + src_z.to(tl.int64) * stride_z
+        + src_y.to(tl.int64) * stride_y
+        + src_x.to(tl.int64) * stride_x
+    )
     f_in = tl.load(f_ptr + src_offs, mask=rw_mask, other=0.0)
 
     # Load obstacle at source cell (does src belong to the wall?).
     # src_obst_offs is (Q_PAD, BY, BX) — one source cell per (q, y, x).
     # Mask must match: replicate spatial mask along the q-axis.
-    src_obst_offs = (src_z.to(tl.int64) * stride_z
-                     + src_y.to(tl.int64) * stride_y
-                     + src_x.to(tl.int64) * stride_x)
+    src_obst_offs = (
+        src_z.to(tl.int64) * stride_z
+        + src_y.to(tl.int64) * stride_y
+        + src_x.to(tl.int64) * stride_x
+    )
     src_obst_mask = mask_q[:, None, None] & spatial_mask[None, :, :]
-    src_obst = tl.load(obstacle_ptr + src_obst_offs,
-                       mask=src_obst_mask, other=0)
+    src_obst = tl.load(obstacle_ptr + src_obst_offs, mask=src_obst_mask, other=0)
     src_is_wall = src_obst > 0  # (Q_PAD, BY, BX)
 
     # Load f at OWN cell at OPPOSITE direction for bounce-back.
     # f_own_opp[q] = f_pre[OPPOSITE[q], own_cell]
     opp_q = tl.load(opp_ptr + offs_q, mask=mask_q, other=0)
-    rev_offs = (opp_q.to(tl.int64)[:, None, None] * stride_q
-                + pid_z.to(tl.int64) * stride_z
-                + offs_y.to(tl.int64)[None, :, None] * stride_y
-                + offs_x.to(tl.int64)[None, None, :] * stride_x)
+    rev_offs = (
+        opp_q.to(tl.int64)[:, None, None] * stride_q
+        + pid_z.to(tl.int64) * stride_z
+        + offs_y.to(tl.int64)[None, :, None] * stride_y
+        + offs_x.to(tl.int64)[None, None, :] * stride_x
+    )
     f_own_opp = tl.load(f_ptr + rev_offs, mask=rw_mask, other=0.0)
 
     # Wet-node bounce-back: if src is wall, use f_own_opp (the population
@@ -481,8 +524,7 @@ def _fused_collide_stream_obstacle_les_kernel(
     usq = ux * ux + uy * uy + uz * uz
 
     cu = cx_b * ux[None, :, :] + cy_b * uy[None, :, :] + cz_b * uz[None, :, :]
-    feq = (rho_safe[None, :, :] * w_b
-           * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :]))
+    feq = rho_safe[None, :, :] * w_b * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :])
 
     # ----- LES Smagorinsky -----
     # fneq = f_eff - feq
@@ -499,8 +541,7 @@ def _fused_collide_stream_obstacle_les_kernel(
     g12 = prefactor * tl.sum(fneq * (cy_b * cz_b), axis=0)
 
     # |S| = sqrt(2 * Σ_ij S_ij²); S_ij is symmetric so S_ij = grad_u_ij here.
-    S_sq = (2.0 * (g00 * g00 + g11 * g11 + g22 * g22)
-            + 4.0 * (g01 * g01 + g02 * g02 + g12 * g12))
+    S_sq = 2.0 * (g00 * g00 + g11 * g11 + g22 * g22) + 4.0 * (g01 * g01 + g02 * g02 + g12 * g12)
     S_mag = tl.sqrt(S_sq + 1e-20)
 
     nu_t = Cs_delta_sq * S_mag
@@ -516,10 +557,12 @@ def _fused_collide_stream_obstacle_les_kernel(
     # at fluid neighbours already populated what those directions
     # should expose — so the wasted writes are harmless.
     # Single-expression offset pattern (matches prod triton_fused.py).
-    dst_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
-                + pid_z.to(tl.int64) * stride_z
-                + offs_y.to(tl.int64)[None, :, None] * stride_y
-                + offs_x.to(tl.int64)[None, None, :] * stride_x)
+    dst_offs = (
+        offs_q.to(tl.int64)[:, None, None] * stride_q
+        + pid_z.to(tl.int64) * stride_z
+        + offs_y.to(tl.int64)[None, :, None] * stride_y
+        + offs_x.to(tl.int64)[None, None, :] * stride_x
+    )
     tl.store(fnew_ptr + dst_offs, f_post, mask=rw_mask)
 
 
@@ -543,19 +586,33 @@ def _fused_collide_stream_obstacle_les_kernel(
 # implements production full-way bounce-back.
 # ---------------------------------------------------------------------------
 
+
 @triton.jit
 def _fused_collide_stream_obstacle_xfar_les_kernel(
-    f_ptr, fnew_ptr,
+    f_ptr,
+    fnew_ptr,
     obstacle_ptr,
     opp_ptr,
-    cxi_ptr, cyi_ptr, czi_ptr,
-    cxf_ptr, cyf_ptr, czf_ptr, w_ptr,
+    cxi_ptr,
+    cyi_ptr,
+    czi_ptr,
+    cxf_ptr,
+    cyf_ptr,
+    czf_ptr,
+    w_ptr,
     nu_lb,
     Cs_delta_sq,
-    nz, ny, nx,
-    stride_q, stride_z, stride_y, stride_x,
+    nz,
+    ny,
+    nx,
+    stride_q,
+    stride_z,
+    stride_y,
+    stride_x,
     tau_eff_ptr,
-    tau_eff_stride_z, tau_eff_stride_y, tau_eff_stride_x,
+    tau_eff_stride_z,
+    tau_eff_stride_y,
+    tau_eff_stride_x,
     Q_PAD: tl.constexpr,
     BLOCK_Y: tl.constexpr,
     BLOCK_Z: tl.constexpr,
@@ -607,27 +664,32 @@ def _fused_collide_stream_obstacle_xfar_les_kernel(
 
     # Layout: f is (Q, nz, ny, nx) — axis 1 = nz, axis 2 = ny, axis 3 = nx.
     # Tile is (BLOCK_Z, BLOCK_Y) over (nz, ny); src_x is per-pid (scalar).
-    src_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
-                + src_z.to(tl.int64) * stride_z
-                + src_y.to(tl.int64) * stride_y
-                + src_x.to(tl.int64) * stride_x)
+    src_offs = (
+        offs_q.to(tl.int64)[:, None, None] * stride_q
+        + src_z.to(tl.int64) * stride_z
+        + src_y.to(tl.int64) * stride_y
+        + src_x.to(tl.int64) * stride_x
+    )
     f_in = tl.load(f_ptr + src_offs, mask=rw_mask, other=0.0)
 
     # Wall mask at source cell.
-    src_obst_offs = (src_z.to(tl.int64) * stride_z
-                     + src_y.to(tl.int64) * stride_y
-                     + src_x.to(tl.int64) * stride_x)
+    src_obst_offs = (
+        src_z.to(tl.int64) * stride_z
+        + src_y.to(tl.int64) * stride_y
+        + src_x.to(tl.int64) * stride_x
+    )
     src_obst_mask = mask_q[:, None, None] & spatial_mask[None, :, :]
-    src_obst = tl.load(obstacle_ptr + src_obst_offs,
-                       mask=src_obst_mask, other=0)
+    src_obst = tl.load(obstacle_ptr + src_obst_offs, mask=src_obst_mask, other=0)
     src_is_wall = src_obst > 0
 
     # Wet-node bounce-back: own cell at OPPOSITE direction.
     opp_q = tl.load(opp_ptr + offs_q, mask=mask_q, other=0)
-    rev_offs = (opp_q.to(tl.int64)[:, None, None] * stride_q
-                + offs_z.to(tl.int64)[None, None, :] * stride_z
-                + offs_y.to(tl.int64)[None, :, None] * stride_y
-                + pid_x.to(tl.int64) * stride_x)
+    rev_offs = (
+        opp_q.to(tl.int64)[:, None, None] * stride_q
+        + offs_z.to(tl.int64)[None, None, :] * stride_z
+        + offs_y.to(tl.int64)[None, :, None] * stride_y
+        + pid_x.to(tl.int64) * stride_x
+    )
     f_own_opp = tl.load(f_ptr + rev_offs, mask=rw_mask, other=0.0)
 
     f_eff = tl.where(src_is_wall, f_own_opp, f_in)
@@ -645,8 +707,7 @@ def _fused_collide_stream_obstacle_xfar_les_kernel(
     uz = tl.sum(cz_b * f_eff, axis=0) / rho_safe
     usq = ux * ux + uy * uy + uz * uz
     cu = cx_b * ux[None, :, :] + cy_b * uy[None, :, :] + cz_b * uz[None, :, :]
-    feq = (rho_safe[None, :, :] * w_b
-           * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :]))
+    feq = rho_safe[None, :, :] * w_b * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :])
 
     # === Per-cell effective tau (Phase 3 — external SGS coupling) ===
     # When USE_EXTERNAL_TAU is True, the kernel loads omega_eff from the
@@ -658,9 +719,11 @@ def _fused_collide_stream_obstacle_xfar_les_kernel(
         # tau_eff_ptr is unused when USE_EXTERNAL_TAU is False — pass a
         # placeholder pointer in Python (e.g., obstacle_ptr) to satisfy
         # Triton's signature check.
-        tau_offs = (offs_z[None, None, :] * tau_eff_stride_z
-                    + offs_y[None, :, None] * tau_eff_stride_y
-                    + pid_x * tau_eff_stride_x)
+        tau_offs = (
+            offs_z[None, None, :] * tau_eff_stride_z
+            + offs_y[None, :, None] * tau_eff_stride_y
+            + pid_x * tau_eff_stride_x
+        )
         tau_eff = tl.load(
             tau_eff_ptr + tau_offs,
             mask=spatial_mask[None, :, :],
@@ -697,8 +760,9 @@ def _fused_collide_stream_obstacle_xfar_les_kernel(
             g01 = prefactor * tl.sum(fneq * (cx_b * cy_b), axis=0)
             g02 = prefactor * tl.sum(fneq * (cx_b * cz_b), axis=0)
             g12 = prefactor * tl.sum(fneq * (cy_b * cz_b), axis=0)
-            S_sq = (2.0 * (g00 * g00 + g11 * g11 + g22 * g22)
-                    + 4.0 * (g01 * g01 + g02 * g02 + g12 * g12))
+            S_sq = 2.0 * (g00 * g00 + g11 * g11 + g22 * g22) + 4.0 * (
+                g01 * g01 + g02 * g02 + g12 * g12
+            )
             S_mag = tl.sqrt(S_sq + 1e-20)
             nu_t = Cs_delta_sq * S_mag
             tau_eff = 3.0 * (nu_lb + nu_t) + 0.5
@@ -902,16 +966,32 @@ def _fused_collide_stream_obstacle_xfar_les_kernel(
         h_xz = cx_b * cz_b
         h_yz = cy_b * cz_b
         # Regularised non-equilibrium from relaxed Π
-        fneq_reg = 4.5 * w_b * (
-            h_xx * pi_xx_s + h_yy * pi_yy_s + h_zz * pi_zz_s
-            + 2.0 * h_xy * pi_xy_s + 2.0 * h_xz * pi_xz_s + 2.0 * h_yz * pi_yz_s
+        fneq_reg = (
+            4.5
+            * w_b
+            * (
+                h_xx * pi_xx_s
+                + h_yy * pi_yy_s
+                + h_zz * pi_zz_s
+                + 2.0 * h_xy * pi_xy_s
+                + 2.0 * h_xz * pi_xz_s
+                + 2.0 * h_yz * pi_yz_s
+            )
         )
         # Higher-order residual: fneq minus the 2nd-order-Hermite projection
         # of the UNRELAXED stress (so the residual carries the >2nd-order
         # modes).
-        fneq_ho_unrel = 4.5 * w_b * (
-            h_xx * pi_xx + h_yy * pi_yy + h_zz * pi_zz
-            + 2.0 * h_xy * pi_xy + 2.0 * h_xz * pi_xz + 2.0 * h_yz * pi_yz
+        fneq_ho_unrel = (
+            4.5
+            * w_b
+            * (
+                h_xx * pi_xx
+                + h_yy * pi_yy
+                + h_zz * pi_zz
+                + 2.0 * h_xy * pi_xy
+                + 2.0 * h_xz * pi_xz
+                + 2.0 * h_yz * pi_yz
+            )
         )
         fneq_ho = fneq - fneq_ho_unrel
         fneq_ho_s = (1.0 - omega_even) * fneq_ho
@@ -920,10 +1000,12 @@ def _fused_collide_stream_obstacle_xfar_les_kernel(
         # Unreachable: validated by ``_dispatch_collision``.
         f_post = f_eff
 
-    dst_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
-                + offs_z.to(tl.int64)[None, None, :] * stride_z
-                + offs_y.to(tl.int64)[None, :, None] * stride_y
-                + pid_x.to(tl.int64) * stride_x)
+    dst_offs = (
+        offs_q.to(tl.int64)[:, None, None] * stride_q
+        + offs_z.to(tl.int64)[None, None, :] * stride_z
+        + offs_y.to(tl.int64)[None, :, None] * stride_y
+        + pid_x.to(tl.int64) * stride_x
+    )
     tl.store(fnew_ptr + dst_offs, f_post, mask=rw_mask)
 
 
@@ -942,21 +1024,39 @@ def _fused_collide_stream_obstacle_xfar_les_kernel(
 # actual loads/stores are masked to lanes 0..18.
 # ---------------------------------------------------------------------------
 
+
 @triton.jit
 def _fused_v2_kernel_xfar_les(
-    f_ptr, fnew_ptr,
+    f_ptr,
+    fnew_ptr,
     obstacle_ptr,
     opp_ptr,
-    cxi_ptr, cyi_ptr, czi_ptr,
-    cxf_ptr, cyf_ptr, czf_ptr, w_ptr,
+    cxi_ptr,
+    cyi_ptr,
+    czi_ptr,
+    cxf_ptr,
+    cyf_ptr,
+    czf_ptr,
+    w_ptr,
     nu_lb,
     Cs_delta_sq,
-    nz, ny, nx,
-    box_off_x, box_off_y, box_off_z,
-    stride_q, stride_z, stride_y, stride_x,
+    nz,
+    ny,
+    nx,
+    box_off_x,
+    box_off_y,
+    box_off_z,
+    stride_q,
+    stride_z,
+    stride_y,
+    stride_x,
     tau_eff_ptr,
-    tau_eff_stride_z, tau_eff_stride_y, tau_eff_stride_x,
-    fx_buf_ptr, fy_buf_ptr, fz_buf_ptr,
+    tau_eff_stride_z,
+    tau_eff_stride_y,
+    tau_eff_stride_x,
+    fx_buf_ptr,
+    fy_buf_ptr,
+    fz_buf_ptr,
     BLOCK_X: tl.constexpr,
     BLOCK_Y: tl.constexpr,
     BLOCK_Z: tl.constexpr,
@@ -1018,9 +1118,9 @@ def _fused_v2_kernel_xfar_les(
     offs_q = tl.arange(0, 32)
 
     mask_q = offs_q < 19
-    spatial_mask = ((offs_z < nz)[:, None, None]
-                    & (offs_y < ny)[None, :, None]
-                    & (offs_x < nx)[None, None, :])
+    spatial_mask = (
+        (offs_z < nz)[:, None, None] & (offs_y < ny)[None, :, None] & (offs_x < nx)[None, None, :]
+    )
     rw_mask = mask_q[:, None, None, None] & spatial_mask[None, :, :, :]
 
     # Lattice constants: (32,) shape with 19 active lanes.
@@ -1030,20 +1130,19 @@ def _fused_v2_kernel_xfar_les(
 
     # Source coords per-q per-axis: src_x:(32, BX), src_y:(32, BY), src_z:(32, BZ).
     src_x = offs_x[None, :] - cx_i[:, None]
-    src_x = tl.where(src_x < 0, src_x + nx,
-                     tl.where(src_x >= nx, src_x - nx, src_x))
+    src_x = tl.where(src_x < 0, src_x + nx, tl.where(src_x >= nx, src_x - nx, src_x))
     src_y = offs_y[None, :] - cy_i[:, None]
-    src_y = tl.where(src_y < 0, src_y + ny,
-                     tl.where(src_y >= ny, src_y - ny, src_y))
+    src_y = tl.where(src_y < 0, src_y + ny, tl.where(src_y >= ny, src_y - ny, src_y))
     src_z = offs_z[None, :] - cz_i[:, None]
-    src_z = tl.where(src_z < 0, src_z + nz,
-                     tl.where(src_z >= nz, src_z - nz, src_z))
+    src_z = tl.where(src_z < 0, src_z + nz, tl.where(src_z >= nz, src_z - nz, src_z))
 
     # 4-D source offsets: (32, BZ, BY, BX).  Inner dim BX has stride_x=1 → coalesced.
-    src_offs = (offs_q[:, None, None, None].to(tl.int64) * stride_q
-                + src_z[:, :, None, None].to(tl.int64) * stride_z
-                + src_y[:, None, :, None].to(tl.int64) * stride_y
-                + src_x[:, None, None, :].to(tl.int64) * stride_x)
+    src_offs = (
+        offs_q[:, None, None, None].to(tl.int64) * stride_q
+        + src_z[:, :, None, None].to(tl.int64) * stride_z
+        + src_y[:, None, :, None].to(tl.int64) * stride_y
+        + src_x[:, None, None, :].to(tl.int64) * stride_x
+    )
     f_in = tl.load(f_ptr + src_offs, mask=rw_mask, other=0.0)
 
     # Own-cell wall mask (1 = this destination cell is solid).  Loaded
@@ -1051,11 +1150,12 @@ def _fused_v2_kernel_xfar_les(
     # (WALL_IN_KERNEL) and/or the fused force (COMPUTE_FORCE) — the
     # solid-free main pass of the split mode loads no obstacle at all.
     if WALL_IN_KERNEL | COMPUTE_FORCE:
-        own_obst_offs = (offs_z[:, None, None].to(tl.int64) * stride_z
-                         + offs_y[None, :, None].to(tl.int64) * stride_y
-                         + offs_x[None, None, :].to(tl.int64) * stride_x)
-        own_obst = tl.load(obstacle_ptr + own_obst_offs,
-                           mask=spatial_mask, other=0)
+        own_obst_offs = (
+            offs_z[:, None, None].to(tl.int64) * stride_z
+            + offs_y[None, :, None].to(tl.int64) * stride_y
+            + offs_x[None, None, :].to(tl.int64) * stride_x
+        )
+        own_obst = tl.load(obstacle_ptr + own_obst_offs, mask=spatial_mask, other=0)
         own_is_wall = (own_obst > 0)[None, :, :, :]
 
     # === Full-way bounce-back gather (production ``bounce_back_cells_3d``) ===
@@ -1095,18 +1195,17 @@ def _fused_v2_kernel_xfar_les(
     if WALL_IN_KERNEL:
         opp_q = tl.load(opp_ptr + offs_q, mask=mask_q, other=0)
         rsrc_x = offs_x[None, :] + cx_i[:, None]
-        rsrc_x = tl.where(rsrc_x < 0, rsrc_x + nx,
-                          tl.where(rsrc_x >= nx, rsrc_x - nx, rsrc_x))
+        rsrc_x = tl.where(rsrc_x < 0, rsrc_x + nx, tl.where(rsrc_x >= nx, rsrc_x - nx, rsrc_x))
         rsrc_y = offs_y[None, :] + cy_i[:, None]
-        rsrc_y = tl.where(rsrc_y < 0, rsrc_y + ny,
-                          tl.where(rsrc_y >= ny, rsrc_y - ny, rsrc_y))
+        rsrc_y = tl.where(rsrc_y < 0, rsrc_y + ny, tl.where(rsrc_y >= ny, rsrc_y - ny, rsrc_y))
         rsrc_z = offs_z[None, :] + cz_i[:, None]
-        rsrc_z = tl.where(rsrc_z < 0, rsrc_z + nz,
-                          tl.where(rsrc_z >= nz, rsrc_z - nz, rsrc_z))
-        refl_offs = (opp_q[:, None, None, None].to(tl.int64) * stride_q
-                     + rsrc_z[:, :, None, None].to(tl.int64) * stride_z
-                     + rsrc_y[:, None, :, None].to(tl.int64) * stride_y
-                     + rsrc_x[:, None, None, :].to(tl.int64) * stride_x)
+        rsrc_z = tl.where(rsrc_z < 0, rsrc_z + nz, tl.where(rsrc_z >= nz, rsrc_z - nz, rsrc_z))
+        refl_offs = (
+            opp_q[:, None, None, None].to(tl.int64) * stride_q
+            + rsrc_z[:, :, None, None].to(tl.int64) * stride_z
+            + rsrc_y[:, None, :, None].to(tl.int64) * stride_y
+            + rsrc_x[:, None, None, :].to(tl.int64) * stride_x
+        )
         f_refl = tl.load(f_ptr + refl_offs, mask=rw_mask, other=0.0)
         f_eff = tl.where(own_is_wall, f_refl, f_in)
     else:
@@ -1131,11 +1230,10 @@ def _fused_v2_kernel_xfar_les(
     uy = tl.sum(cy_b * f_eff, axis=0) / rho_safe
     uz = tl.sum(cz_b * f_eff, axis=0) / rho_safe
     usq = ux * ux + uy * uy + uz * uz
-    cu = (cx_b * ux[None, :, :, :]
-          + cy_b * uy[None, :, :, :]
-          + cz_b * uz[None, :, :, :])
-    feq = (rho_safe[None, :, :, :] * w_b
-           * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :, :]))
+    cu = cx_b * ux[None, :, :, :] + cy_b * uy[None, :, :, :] + cz_b * uz[None, :, :, :]
+    feq = (
+        rho_safe[None, :, :, :] * w_b * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :, :])
+    )
 
     tau_mol = 3.0 * nu_lb + 0.5
 
@@ -1175,9 +1273,11 @@ def _fused_v2_kernel_xfar_les(
         pi_yz = tl.sum(cy_b * cz_b * fneq, axis=0)
 
     if USE_EXTERNAL_TAU:
-        tau_offs = (offs_z[None, :, None, None] * tau_eff_stride_z
-                    + offs_y[None, None, :, None] * tau_eff_stride_y
-                    + offs_x[None, None, None, :] * tau_eff_stride_x)
+        tau_offs = (
+            offs_z[None, :, None, None] * tau_eff_stride_z
+            + offs_y[None, None, :, None] * tau_eff_stride_y
+            + offs_x[None, None, None, :] * tau_eff_stride_x
+        )
         tau_eff_loaded = tl.load(
             tau_eff_ptr + tau_offs,
             mask=spatial_mask[None, :, :, :],
@@ -1186,8 +1286,8 @@ def _fused_v2_kernel_xfar_les(
         omega = 1.0 / tau_eff_loaded
     elif USE_SMAG:
         omega = _smagorinsky_omega(
-            pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz,
-            rho_safe, tau_mol, Cs_delta_sq)
+            pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz, rho_safe, tau_mol, Cs_delta_sq
+        )
     else:
         omega = 1.0 / tau_mol
 
@@ -1342,13 +1442,29 @@ def _fused_v2_kernel_xfar_les(
         h_xy = cx_b * cy_b
         h_xz = cx_b * cz_b
         h_yz = cy_b * cz_b
-        fneq_reg = 4.5 * w_b * (
-            h_xx * pi_xx_s + h_yy * pi_yy_s + h_zz * pi_zz_s
-            + 2.0 * h_xy * pi_xy_s + 2.0 * h_xz * pi_xz_s + 2.0 * h_yz * pi_yz_s
+        fneq_reg = (
+            4.5
+            * w_b
+            * (
+                h_xx * pi_xx_s
+                + h_yy * pi_yy_s
+                + h_zz * pi_zz_s
+                + 2.0 * h_xy * pi_xy_s
+                + 2.0 * h_xz * pi_xz_s
+                + 2.0 * h_yz * pi_yz_s
+            )
         )
-        fneq_ho_unrel = 4.5 * w_b * (
-            h_xx * pi_xx + h_yy * pi_yy + h_zz * pi_zz
-            + 2.0 * h_xy * pi_xy + 2.0 * h_xz * pi_xz + 2.0 * h_yz * pi_yz
+        fneq_ho_unrel = (
+            4.5
+            * w_b
+            * (
+                h_xx * pi_xx
+                + h_yy * pi_yy
+                + h_zz * pi_zz
+                + 2.0 * h_xy * pi_xy
+                + 2.0 * h_xz * pi_xz
+                + 2.0 * h_yz * pi_yz
+            )
         )
         fneq_ho = fneq - fneq_ho_unrel
         fneq_ho_s = (1.0 - omega_even) * fneq_ho
@@ -1373,12 +1489,9 @@ def _fused_v2_kernel_xfar_les(
         # cells.  Reuses the own-cell wall mask loaded above (the force
         # guard implies the mask was loaded).
         own_is_wall_f = own_is_wall.to(tl.float32)
-        fx_cell = tl.sum(cx_i[:, None, None, None].to(tl.float32) * f_in,
-                         axis=0)
-        fy_cell = tl.sum(cy_i[:, None, None, None].to(tl.float32) * f_in,
-                         axis=0)
-        fz_cell = tl.sum(cz_i[:, None, None, None].to(tl.float32) * f_in,
-                         axis=0)
+        fx_cell = tl.sum(cx_i[:, None, None, None].to(tl.float32) * f_in, axis=0)
+        fy_cell = tl.sum(cy_i[:, None, None, None].to(tl.float32) * f_in, axis=0)
+        fz_cell = tl.sum(cz_i[:, None, None, None].to(tl.float32) * f_in, axis=0)
 
         # Mask fluid cells (multiply by 0) and apply Ladd ×2 — matches
         # ``compute_obstacle_forces_3d`` exactly.
@@ -1392,10 +1505,12 @@ def _fused_v2_kernel_xfar_les(
         tl.atomic_add(fz_buf_ptr, tl.sum(fz_cell))
 
     # === Write output (32, BZ, BY, BX) — same shape as f_eff ===
-    dst_offs = (offs_q[:, None, None, None].to(tl.int64) * stride_q
-                + offs_z[None, :, None, None].to(tl.int64) * stride_z
-                + offs_y[None, None, :, None].to(tl.int64) * stride_y
-                + offs_x[None, None, None, :].to(tl.int64) * stride_x)
+    dst_offs = (
+        offs_q[:, None, None, None].to(tl.int64) * stride_q
+        + offs_z[None, :, None, None].to(tl.int64) * stride_z
+        + offs_y[None, None, :, None].to(tl.int64) * stride_y
+        + offs_x[None, None, None, :].to(tl.int64) * stride_x
+    )
     tl.store(fnew_ptr + dst_offs, f_post, mask=rw_mask)
 
 
@@ -1414,14 +1529,24 @@ def _fused_v2_kernel_xfar_les(
 # See the public wrapper's docstring for the precision implication.
 # ---------------------------------------------------------------------------
 
+
 @triton.jit
 def _obstacle_force_reduction_kernel(
     f_ptr,
     obstacle_ptr,
-    cxi_ptr, cyi_ptr, czi_ptr,
-    fx_buf_ptr, fy_buf_ptr, fz_buf_ptr,
-    nz, ny, nx,
-    stride_q, stride_z, stride_y, stride_x,
+    cxi_ptr,
+    cyi_ptr,
+    czi_ptr,
+    fx_buf_ptr,
+    fy_buf_ptr,
+    fz_buf_ptr,
+    nz,
+    ny,
+    nx,
+    stride_q,
+    stride_z,
+    stride_y,
+    stride_x,
     BLOCK: tl.constexpr,
     Q_PAD: tl.constexpr,
 ):
@@ -1463,10 +1588,12 @@ def _obstacle_force_reduction_kernel(
     cx_q = tl.load(cxi_ptr + offs_q, mask=mask_q, other=0)[:, None]
     cy_q = tl.load(cyi_ptr + offs_q, mask=mask_q, other=0)[:, None]
     cz_q = tl.load(czi_ptr + offs_q, mask=mask_q, other=0)[:, None]
-    f_offs = (offs_q.to(tl.int64)[:, None] * stride_q
-              + z.to(tl.int64)[None, :] * stride_z
-              + y.to(tl.int64)[None, :] * stride_y
-              + x.to(tl.int64)[None, :] * stride_x)
+    f_offs = (
+        offs_q.to(tl.int64)[:, None] * stride_q
+        + z.to(tl.int64)[None, :] * stride_z
+        + y.to(tl.int64)[None, :] * stride_y
+        + x.to(tl.int64)[None, :] * stride_x
+    )
     cell_mask = mask_q[:, None] & mask[None, :]
     f_vals = tl.load(f_ptr + f_offs, mask=cell_mask, other=0.0)
     fx_local = tl.sum(cx_q * f_vals, axis=0)
@@ -1484,6 +1611,7 @@ def _obstacle_force_reduction_kernel(
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def triton_fused_obstacle_les(
     f: torch.Tensor,
@@ -1520,9 +1648,7 @@ def triton_fused_obstacle_les(
         )
     Q, nz, ny, nx = f.shape
     if Q != _Q_PAD:
-        raise ValueError(
-            f"Expected Q={_Q_PAD} (padded D3Q19), got Q={Q}"
-        )
+        raise ValueError(f"Expected Q={_Q_PAD} (padded D3Q19), got Q={Q}")
     if out is None:
         out = torch.empty_like(f)
 
@@ -1530,15 +1656,31 @@ def triton_fused_obstacle_les(
     grid = (triton.cdiv(ny, block_y), triton.cdiv(nx, block_x), nz)
     opp = _OPPOSITE.to(f.device)
     _fused_collide_stream_obstacle_les_kernel[grid](
-        f, out,
-        obstacle, opp,
-        lat["cxi"], lat["cyi"], lat["czi"],
-        lat["cxf"], lat["cyf"], lat["czf"], lat["w"],
-        nu_lb, Cs * Cs * delta * delta,
-        nz, ny, nx,
-        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
-        Q_PAD=_Q_PAD, BLOCK_X=block_x, BLOCK_Y=block_y,
-        num_warps=num_warps, num_stages=num_stages,
+        f,
+        out,
+        obstacle,
+        opp,
+        lat["cxi"],
+        lat["cyi"],
+        lat["czi"],
+        lat["cxf"],
+        lat["cyf"],
+        lat["czf"],
+        lat["w"],
+        nu_lb,
+        Cs * Cs * delta * delta,
+        nz,
+        ny,
+        nx,
+        f.stride(0),
+        f.stride(1),
+        f.stride(2),
+        f.stride(3),
+        Q_PAD=_Q_PAD,
+        BLOCK_X=block_x,
+        BLOCK_Y=block_y,
+        num_warps=num_warps,
+        num_stages=num_stages,
     )
     return out
 
@@ -1647,9 +1789,7 @@ def triton_fused_obstacle_xfar_les(
         )
     Q, nz, ny, nx = f.shape
     if Q != 19:
-        raise ValueError(
-            f"Expected Q=19 (production D3Q19), got Q={Q}"
-        )
+        raise ValueError(f"Expected Q=19 (production D3Q19), got Q={Q}")
     if out is None:
         out = torch.empty_like(f)
     if block_z is None:
@@ -1663,23 +1803,16 @@ def triton_fused_obstacle_xfar_les(
                 f"f's spatial shape {(nz, ny, nx)}"
             )
         if tau_eff.dtype != torch.float32:
-            raise ValueError(
-                f"tau_eff must be float32, got {tau_eff.dtype}"
-            )
+            raise ValueError(f"tau_eff must be float32, got {tau_eff.dtype}")
         if tau_eff.device != f.device:
-            raise ValueError(
-                f"tau_eff device {tau_eff.device} does not match "
-                f"f device {f.device}"
-            )
+            raise ValueError(f"tau_eff device {tau_eff.device} does not match f device {f.device}")
 
     # Force-fusion dispatch: when all three scalar buffers are supplied
     # the kernel computes the Ladd force via ``tl.atomic_add``; otherwise
     # the fused-force block is constexpr-eliminated.  When the buffers
     # are not supplied, pass ``fx_buf`` etc. through as a placeholder
     # tensor — Triton requires non-null pointers even when unused.
-    compute_force = (
-        fx_buf is not None and fy_buf is not None and fz_buf is not None
-    )
+    compute_force = fx_buf is not None and fy_buf is not None and fz_buf is not None
     if not compute_force:
         # ``tl.atomic_add`` requires fp32 pointers.  The output buffer
         # ``out`` is always fp32 (Q, nz, ny, nx) and is unused after this
@@ -1725,8 +1858,7 @@ def triton_fused_obstacle_xfar_les(
     Hermite_cum_tuple = _to_f32_tuple(_CUMULANT_HERMITE)
 
     lat = _lattice_tensors_canonical(str(f.device))
-    grid = (triton.cdiv(nx, block_x), triton.cdiv(ny, block_y),
-            triton.cdiv(nz, block_z))
+    grid = (triton.cdiv(nx, block_x), triton.cdiv(ny, block_y), triton.cdiv(nz, block_z))
     opp = _OPPOSITE.to(f.device)
 
     # When USE_EXTERNAL_TAU is False, ``tau_eff_ptr`` is unused — pass a
@@ -1734,7 +1866,9 @@ def triton_fused_obstacle_xfar_les(
     tau_eff_ptr_arg = tau_eff if use_external_tau else obstacle
     if use_external_tau:
         tau_eff_sz, tau_eff_sy, tau_eff_sx = (
-            tau_eff.stride(0), tau_eff.stride(1), tau_eff.stride(2),
+            tau_eff.stride(0),
+            tau_eff.stride(1),
+            tau_eff.stride(2),
         )
     else:
         tau_eff_sz, tau_eff_sy, tau_eff_sx = 1, 1, 1  # ignored
@@ -1746,7 +1880,9 @@ def triton_fused_obstacle_xfar_les(
     use_smag = (not use_external_tau) and (Cs * Cs * delta * delta > 0.0)
 
     common = dict(
-        BLOCK_X=block_x, BLOCK_Y=block_y, BLOCK_Z=block_z,
+        BLOCK_X=block_x,
+        BLOCK_Y=block_y,
+        BLOCK_Z=block_z,
         COLLISION=collision_tag,
         M_CM=M_cm_tuple,
         M_INV_CM=M_inv_cm_tuple,
@@ -1756,32 +1892,25 @@ def triton_fused_obstacle_xfar_les(
         SHIFT_Z=shift_z_flat,
         USE_EXTERNAL_TAU=use_external_tau,
         USE_SMAG=use_smag,
-        num_warps=num_warps, num_stages=num_stages,
+        num_warps=num_warps,
+        num_stages=num_stages,
     )
 
     if wall not in ("fused", "split"):
-        raise ValueError(
-            f"wall must be 'fused' or 'split', got {wall!r}"
-        )
+        raise ValueError(f"wall must be 'fused' or 'split', got {wall!r}")
     if wall == "split":
         if solid_box is None:
             solid_box = _solid_box_for(obstacle)
-        elif (len(solid_box) != 6
-                or any(not isinstance(v, int) or v < 0 for v in solid_box)):
+        elif len(solid_box) != 6 or any(not isinstance(v, int) or v < 0 for v in solid_box):
             raise ValueError(
-                "solid_box must be (oz, oy, ox, nz_b, ny_b, nx_b) "
-                f"ints >= 0, got {solid_box!r}"
+                f"solid_box must be (oz, oy, ox, nz_b, ny_b, nx_b) ints >= 0, got {solid_box!r}"
             )
         else:
             oz_b, oy_b, ox_b, nz_b, ny_b, nx_b = solid_box
-            if (oz_b + nz_b > nz or oy_b + ny_b > ny or ox_b + nx_b > nx):
-                raise ValueError(
-                    f"solid_box {solid_box!r} exceeds obstacle shape "
-                    f"{(nz, ny, nx)}"
-                )
+            if oz_b + nz_b > nz or oy_b + ny_b > ny or ox_b + nx_b > nx:
+                raise ValueError(f"solid_box {solid_box!r} exceeds obstacle shape {(nz, ny, nx)}")
             outside = torch.ones_like(obstacle, dtype=torch.bool)
-            outside[oz_b:oz_b + nz_b, oy_b:oy_b + ny_b,
-                    ox_b:ox_b + nx_b] = False
+            outside[oz_b : oz_b + nz_b, oy_b : oy_b + ny_b, ox_b : ox_b + nx_b] = False
             if bool(((obstacle > 0) & outside).sum() > 0):
                 raise ValueError(
                     "solid_box does not cover all solid cells — cells "
@@ -1791,17 +1920,36 @@ def triton_fused_obstacle_xfar_les(
     if wall == "fused":
         # Single launch: every tile runs the full-way gather.
         _fused_v2_kernel_xfar_les[grid](
-            f, out,
-            obstacle, opp,
-            lat["cxi"], lat["cyi"], lat["czi"],
-            lat["cxf"], lat["cyf"], lat["czf"], lat["w"],
-            nu_lb, Cs * Cs * delta * delta,
-            nz, ny, nx,
-            0, 0, 0,
-            f.stride(0), f.stride(1), f.stride(2), f.stride(3),
+            f,
+            out,
+            obstacle,
+            opp,
+            lat["cxi"],
+            lat["cyi"],
+            lat["czi"],
+            lat["cxf"],
+            lat["cyf"],
+            lat["czf"],
+            lat["w"],
+            nu_lb,
+            Cs * Cs * delta * delta,
+            nz,
+            ny,
+            nx,
+            0,
+            0,
+            0,
+            f.stride(0),
+            f.stride(1),
+            f.stride(2),
+            f.stride(3),
             tau_eff_ptr_arg,
-            tau_eff_sz, tau_eff_sy, tau_eff_sx,
-            fx_buf, fy_buf, fz_buf,
+            tau_eff_sz,
+            tau_eff_sy,
+            tau_eff_sx,
+            fx_buf,
+            fy_buf,
+            fz_buf,
             WALL_IN_KERNEL=True,
             COMPUTE_FORCE=compute_force,
             **common,
@@ -1814,17 +1962,36 @@ def triton_fused_obstacle_xfar_les(
     # covers).  Solid cells' relaxed values written here are garbage by
     # construction and are overwritten by the fixup pass below.
     _fused_v2_kernel_xfar_les[grid](
-        f, out,
-        obstacle, opp,
-        lat["cxi"], lat["cyi"], lat["czi"],
-        lat["cxf"], lat["cyf"], lat["czf"], lat["w"],
-        nu_lb, Cs * Cs * delta * delta,
-        nz, ny, nx,
-        0, 0, 0,
-        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
+        f,
+        out,
+        obstacle,
+        opp,
+        lat["cxi"],
+        lat["cyi"],
+        lat["czi"],
+        lat["cxf"],
+        lat["cyf"],
+        lat["czf"],
+        lat["w"],
+        nu_lb,
+        Cs * Cs * delta * delta,
+        nz,
+        ny,
+        nx,
+        0,
+        0,
+        0,
+        f.stride(0),
+        f.stride(1),
+        f.stride(2),
+        f.stride(3),
         tau_eff_ptr_arg,
-        tau_eff_sz, tau_eff_sy, tau_eff_sx,
-        fx_buf, fy_buf, fz_buf,
+        tau_eff_sz,
+        tau_eff_sy,
+        tau_eff_sx,
+        fx_buf,
+        fy_buf,
+        fz_buf,
         WALL_IN_KERNEL=False,
         COMPUTE_FORCE=False,
         **common,
@@ -1842,17 +2009,36 @@ def triton_fused_obstacle_xfar_les(
     tz0, tz1 = oz_b // block_z, (oz_b + nz_b - 1) // block_z + 1
     grid_box = (tx1 - tx0, ty1 - ty0, tz1 - tz0)
     _fused_v2_kernel_xfar_les[grid_box](
-        f, out,
-        obstacle, opp,
-        lat["cxi"], lat["cyi"], lat["czi"],
-        lat["cxf"], lat["cyf"], lat["czf"], lat["w"],
-        nu_lb, Cs * Cs * delta * delta,
-        nz, ny, nx,
-        tx0 * block_x, ty0 * block_y, tz0 * block_z,
-        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
+        f,
+        out,
+        obstacle,
+        opp,
+        lat["cxi"],
+        lat["cyi"],
+        lat["czi"],
+        lat["cxf"],
+        lat["cyf"],
+        lat["czf"],
+        lat["w"],
+        nu_lb,
+        Cs * Cs * delta * delta,
+        nz,
+        ny,
+        nx,
+        tx0 * block_x,
+        ty0 * block_y,
+        tz0 * block_z,
+        f.stride(0),
+        f.stride(1),
+        f.stride(2),
+        f.stride(3),
         tau_eff_ptr_arg,
-        tau_eff_sz, tau_eff_sy, tau_eff_sx,
-        fx_buf, fy_buf, fz_buf,
+        tau_eff_sz,
+        tau_eff_sy,
+        tau_eff_sx,
+        fx_buf,
+        fy_buf,
+        fz_buf,
         WALL_IN_KERNEL=True,
         COMPUTE_FORCE=compute_force,
         **common,
@@ -1918,9 +2104,7 @@ def triton_obstacle_force_reduction(
             f"f's spatial shape {tuple(f.shape[1:])}"
         )
     if f.shape[0] != 19:
-        raise ValueError(
-            f"Expected Q=19 (production D3Q19), got Q={f.shape[0]}"
-        )
+        raise ValueError(f"Expected Q=19 (production D3Q19), got Q={f.shape[0]}")
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
     total = nz * ny * nx
 
@@ -1937,13 +2121,25 @@ def triton_obstacle_force_reduction(
     lat = _lattice_tensors_canonical(str(f.device))
     grid = (triton.cdiv(total, block),)
     _obstacle_force_reduction_kernel[grid](
-        f, obstacle,
-        lat["cxi"], lat["cyi"], lat["czi"],
-        fx_buf, fy_buf, fz_buf,
-        nz, ny, nx,
-        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
-        BLOCK=block, Q_PAD=_Q_PAD,
-        num_warps=num_warps, num_stages=num_stages,
+        f,
+        obstacle,
+        lat["cxi"],
+        lat["cyi"],
+        lat["czi"],
+        fx_buf,
+        fy_buf,
+        fz_buf,
+        nz,
+        ny,
+        nx,
+        f.stride(0),
+        f.stride(1),
+        f.stride(2),
+        f.stride(3),
+        BLOCK=block,
+        Q_PAD=_Q_PAD,
+        num_warps=num_warps,
+        num_stages=num_stages,
     )
     return fx_buf, fy_buf, fz_buf
 
@@ -1951,6 +2147,7 @@ def triton_obstacle_force_reduction(
 # ---------------------------------------------------------------------------
 # Wetted-area drag normalization (production Ct convention)
 # ---------------------------------------------------------------------------
+
 
 def _voxel_wetted_area(mask: torch.Tensor, dx: float) -> float:
     """Wetted surface area of a voxelized obstacle, in lattice units.
@@ -2057,6 +2254,7 @@ def obstacle_drag_coefficient(
 # Boundary-condition helpers (PyTorch, host-side)
 # ---------------------------------------------------------------------------
 
+
 def apply_inflow_zou_he(
     f: torch.Tensor,
     vel: torch.Tensor,
@@ -2082,9 +2280,7 @@ def apply_inflow_zou_he(
     """
     Q, nz, ny, nx = f.shape
     if vel.shape != (3, ny, nx):
-        raise ValueError(
-            f"vel shape {tuple(vel.shape)} does not match (3, {ny}, {nx})"
-        )
+        raise ValueError(f"vel shape {tuple(vel.shape)} does not match (3, {ny}, {nx})")
     if not (0 <= plane < nz):
         raise ValueError(f"plane={plane} out of range [0, {nz})")
 
@@ -2115,10 +2311,10 @@ def apply_inflow_zou_he(
     # Vectorised non-equilibrium bounce-back (no Python loop).
     # in_q and out_q are tensors on f.device.  OPPOSITE is also on device.
     opp_t = _OPPOSITE.to(f.device)
-    in_opp = opp_t[in_q]                                    # (n_in,)
+    in_opp = opp_t[in_q]  # (n_in,)
     # f[:, plane] for the incoming and opp directions:
-    f_in_pl = f[in_q, plane]                                # (n_in, ny, nx)
-    f_opp_pl = f[in_opp, plane]                             # (n_in, ny, nx)
+    f[in_q, plane]  # (n_in, ny, nx)
+    f_opp_pl = f[in_opp, plane]  # (n_in, ny, nx)
     # Per-direction cx,cy,cz and weights as device tensors indexed by in_q.
     cxq = _CX_T.to(f.device)[in_q]
     cyq = _CY_T.to(f.device)[in_q]
@@ -2129,16 +2325,18 @@ def apply_inflow_zou_he(
     czop = _CZ_T.to(f.device)[in_opp]
     wop = _W_T.to(f.device)[in_opp]
     # cu = 3 * c . u, with u = (vel[0], vel[1], vel[2])  (ny, nx each).
-    cu_q = 3.0 * (cxq[:, None, None] * vel[0][None]
-                  + cyq[:, None, None] * vel[1][None]
-                  + czq[:, None, None] * vel[2][None])      # (n_in, ny, nx)
-    cu_op = 3.0 * (cxop[:, None, None] * vel[0][None]
-                   + cyop[:, None, None] * vel[1][None]
-                   + czop[:, None, None] * vel[2][None])
-    feq_q = (wq[:, None, None] * rho[None]
-             * (1.0 + cu_q + 0.5 * cu_q * cu_q - 1.5 * usq[None]))
-    feq_op = (wop[:, None, None] * rho[None]
-              * (1.0 + cu_op + 0.5 * cu_op * cu_op - 1.5 * usq[None]))
+    cu_q = 3.0 * (
+        cxq[:, None, None] * vel[0][None]
+        + cyq[:, None, None] * vel[1][None]
+        + czq[:, None, None] * vel[2][None]
+    )  # (n_in, ny, nx)
+    cu_op = 3.0 * (
+        cxop[:, None, None] * vel[0][None]
+        + cyop[:, None, None] * vel[1][None]
+        + czop[:, None, None] * vel[2][None]
+    )
+    feq_q = wq[:, None, None] * rho[None] * (1.0 + cu_q + 0.5 * cu_q * cu_q - 1.5 * usq[None])
+    feq_op = wop[:, None, None] * rho[None] * (1.0 + cu_op + 0.5 * cu_op * cu_op - 1.5 * usq[None])
     f[in_q, plane] = feq_q + f_opp_pl - feq_op
 
 
@@ -2176,6 +2374,7 @@ def apply_outflow_zero_gradient(
 # ---------------------------------------------------------------------------
 # Production-style BC writes (6-face far-field) and mass correction
 # ---------------------------------------------------------------------------
+
 
 def apply_far_field_bc_6face(
     f: torch.Tensor,
@@ -2234,24 +2433,26 @@ def apply_far_field_bc_6face(
         )
         feq_vec = feq[:, 0, 0, 0].contiguous()  # shape (Q,)
     elif feq_vec.dim() != 1:
-        raise ValueError(
-            f"feq_vec must be 1-D shape (Q,), got shape "
-            f"{tuple(feq_vec.shape)}"
-        )
+        raise ValueError(f"feq_vec must be 1-D shape (Q,), got shape {tuple(feq_vec.shape)}")
 
     # Pad feq_vec from Q_phys → Q if f's buffer is _Q_PAD wide.
     # Use the caller's pre-allocated scratch (1-D, shape (Q,)) when
     # provided to avoid per-step allocation.
     if feq_vec.shape[0] < Q:
-        if feq_pad_buf is None or feq_pad_buf.shape != (Q,) or \
-                feq_pad_buf.dtype != f.dtype or \
-                feq_pad_buf.device != f.device:
+        if (
+            feq_pad_buf is None
+            or feq_pad_buf.shape != (Q,)
+            or feq_pad_buf.dtype != f.dtype
+            or feq_pad_buf.device != f.device
+        ):
             feq_pad_buf = torch.zeros(
-                (Q,), dtype=f.dtype, device=f.device,
+                (Q,),
+                dtype=f.dtype,
+                device=f.device,
             )
         else:
             feq_pad_buf.zero_()
-        feq_pad_buf[:feq_vec.shape[0]] = feq_vec
+        feq_pad_buf[: feq_vec.shape[0]] = feq_vec
         feq_vec = feq_pad_buf
     elif feq_vec.shape[0] > Q:
         feq_vec = feq_vec[:Q]
@@ -2290,6 +2491,7 @@ def _compute_uniform_equilibrium_vec(
     function can avoid the per-step full-grid equilibrium computation.
     """
     from tensorlbm.d3q19 import equilibrium3d
+
     rho1 = torch.ones((1, 1, 1), dtype=dtype, device=device)
     feq = equilibrium3d(
         rho1,
@@ -2322,8 +2524,11 @@ def apply_mass_correction(
 # SUBOFF geometry (Darpa Suboff, hull + sail + stern appendages)
 # ---------------------------------------------------------------------------
 
+
 def create_suboff_obstacle_torch(
-    nx: int, ny: int, nz: int,
+    nx: int,
+    ny: int,
+    nz: int,
     *,
     device: str | torch.device = "cuda:0",
     dx: float = 1.0,
@@ -2353,10 +2558,12 @@ def create_suboff_obstacle_torch(
     # a sideways hull, not the slender along-stream hull the SUBOFF benchmark
     # expects.
     g = torch.arange(nx, dtype=torch.float32, device=dev)
-    X, Y, Z = torch.meshgrid(torch.arange(nz, dtype=torch.float32, device=dev),
-                             torch.arange(ny, dtype=torch.float32, device=dev),
-                             g,
-                             indexing="ij")
+    X, Y, Z = torch.meshgrid(
+        torch.arange(nz, dtype=torch.float32, device=dev),
+        torch.arange(ny, dtype=torch.float32, device=dev),
+        g,
+        indexing="ij",
+    )
     cx, cy, cz = nz // 2, ny // 2, nx // 2
     x_local = (X - cx) * dx
     y_local = (Y - cy) * dx
@@ -2372,9 +2579,12 @@ def create_suboff_obstacle_torch(
     # Nose: 0 <= x_ft <= 3.333333 (parabolic).
     m1 = (x_ft >= 0) & (x_ft <= 3.333333)
     tmp = 0.3 * x_ft - 1.0
-    a1 = (1.126395101 * x_ft * tmp ** 4
-          + 0.442874707 * x_ft ** 2 * tmp ** 3
-          + 1.0 - tmp ** 4 * (1.2 * x_ft + 1.0))
+    a1 = (
+        1.126395101 * x_ft * tmp**4
+        + 0.442874707 * x_ft**2 * tmp**3
+        + 1.0
+        - tmp**4 * (1.2 * x_ft + 1.0)
+    )
     R1 = 0.8333333 * torch.sqrt(torch.clamp(a1, min=0))
     R = torch.where(m1, R1, R)
 
@@ -2387,11 +2597,14 @@ def create_suboff_obstacle_torch(
     r1 = 0.1175
     k0, k1 = 10.0, 44.6244
     ksi = (13.979167 - x_ft) / 3.333333
-    a3 = (r1 * r1 + r1 * k0 * ksi ** 2
-          + (20 - 20 * r1 * r1 - 4 * r1 * k0 - k1 / 3) * ksi ** 3
-          + (-45 + 45 * r1 * r1 + 6 * r1 * k0 + k1) * ksi ** 4
-          + (36 - 36 * r1 * r1 - 4 * r1 * k0 - k1) * ksi ** 5
-          + (-10 + 10 * r1 * r1 + r1 * k0 + k1 / 3) * ksi ** 6)
+    a3 = (
+        r1 * r1
+        + r1 * k0 * ksi**2
+        + (20 - 20 * r1 * r1 - 4 * r1 * k0 - k1 / 3) * ksi**3
+        + (-45 + 45 * r1 * r1 + 6 * r1 * k0 + k1) * ksi**4
+        + (36 - 36 * r1 * r1 - 4 * r1 * k0 - k1) * ksi**5
+        + (-10 + 10 * r1 * r1 + r1 * k0 + k1 / 3) * ksi**6
+    )
     R3 = 0.8333333 * torch.sqrt(torch.clamp(a3, min=0))
     R = torch.where(m3, R3, R)
 
@@ -2402,12 +2615,12 @@ def create_suboff_obstacle_torch(
     R = torch.where(m4, R4, R)
 
     # Convert R back to lattice units.
-    R_lx = R / ft_per_lx / dx
+    R / ft_per_lx / dx
     # NOTE: y_local, z_local are in METRES.  Compare against R (also in metres),
     # not R_lx (lattice units).  Comparing m^2 to lx^2 inflated the cross-section
     # radius by 1/dx ≈ 23.5x, turning the slender SUBOFF hull into a solid
     # prism filling the entire y-z plane.  See BUG_REPORT_SUBOFF_unit_mismatch.md.
-    hull = ((y_local ** 2 + z_local ** 2) < R ** 2).to(torch.int8)
+    hull = ((y_local**2 + z_local**2) < R**2).to(torch.int8)
 
     obstacle = hull
 
@@ -2416,18 +2629,23 @@ def create_suboff_obstacle_torch(
         sail_x_lo, sail_x_hi = 9.5, 11.0
         sail_y_max = 0.18  # ft
         sail_z_max = 0.32
-        m_sail = ((x_ft >= sail_x_lo) & (x_ft <= sail_x_hi)
-                  & (y_local.abs() <= (sail_y_max / ft_per_lx))
-                  & (z_local <= sail_z_max / ft_per_lx))
+        m_sail = (
+            (x_ft >= sail_x_lo)
+            & (x_ft <= sail_x_hi)
+            & (y_local.abs() <= (sail_y_max / ft_per_lx))
+            & (z_local <= sail_z_max / ft_per_lx)
+        )
         obstacle = torch.clamp(obstacle + m_sail.to(torch.int8), 0, 1)
 
     # Stern appendages: simple flat plates.
     if with_stern:
         stern_x_lo, stern_x_hi = 12.0, 13.5
         stern_thickness = 0.04 / ft_per_lx
-        m_stern = ((x_ft >= stern_x_lo) & (x_ft <= stern_x_hi)
-                   & ((y_local.abs() < stern_thickness)
-                      | (z_local.abs() < stern_thickness)))
+        m_stern = (
+            (x_ft >= stern_x_lo)
+            & (x_ft <= stern_x_hi)
+            & ((y_local.abs() < stern_thickness) | (z_local.abs() < stern_thickness))
+        )
         obstacle = torch.clamp(obstacle + m_stern.to(torch.int8), 0, 1)
 
     # The meshgrid now produces shape (nz, ny, nx) directly because the

@@ -36,6 +36,7 @@ Usage:
         [--u-max U] [--min-steps N] [--max-steps N] [--device cuda:2] [--seed 0]
     run.py scan out_dir [--R 20 40] [--mode ...] [--min-steps N] [--max-steps N]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,18 +48,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
 
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
-
 import numpy as np
 import torch
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
-from tensorlbm.d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import collide_bgk3d, stream3d
 from tensorlbm.boundaries3d import (
     bounce_back_cells_3d,
     zou_he_inlet_velocity_3d,
     zou_he_outlet_pressure_3d,
 )
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 CS2 = 1.0 / 3.0
 
@@ -74,9 +74,15 @@ def zou_he_inlet_pressure_3d(f: torch.Tensor, rho_in: float) -> torch.Tensor:
     """
     device = f.device
     sum_cx0 = (
-        f[0, :, :, 0] + f[3, :, :, 0] + f[4, :, :, 0]
-        + f[5, :, :, 0] + f[6, :, :, 0]
-        + f[15, :, :, 0] + f[16, :, :, 0] + f[17, :, :, 0] + f[18, :, :, 0]
+        f[0, :, :, 0]
+        + f[3, :, :, 0]
+        + f[4, :, :, 0]
+        + f[5, :, :, 0]
+        + f[6, :, :, 0]
+        + f[15, :, :, 0]
+        + f[16, :, :, 0]
+        + f[17, :, :, 0]
+        + f[18, :, :, 0]
     )
     sum_cx_neg = f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0] + f[12, :, :, 0] + f[14, :, :, 0]
     ux_in = 1.0 - (sum_cx0 + 2.0 * sum_cx_neg) / rho_in  # (nz, ny)
@@ -86,8 +92,11 @@ def zou_he_inlet_pressure_3d(f: torch.Tensor, rho_in: float) -> torch.Tensor:
     uy_field = torch.zeros_like(rho_field)
     uz_field = torch.zeros_like(rho_field)
     feq = equilibrium3d(
-        rho_field.unsqueeze(-1), ux_field.unsqueeze(-1),
-        uy_field.unsqueeze(-1), uz_field.unsqueeze(-1), device=device,
+        rho_field.unsqueeze(-1),
+        ux_field.unsqueeze(-1),
+        uy_field.unsqueeze(-1),
+        uz_field.unsqueeze(-1),
+        device=device,
     )  # (19, nz, ny, 1)
 
     f_new = f
@@ -99,33 +108,33 @@ def zou_he_inlet_pressure_3d(f: torch.Tensor, rho_in: float) -> torch.Tensor:
 
 def pipe_setup(R: int, L_over_R: int, device: torch.device):
     """Build the pipe geometry: domain (nz, ny, nx), axis, fluid/wall masks."""
-    ny = nz = 2 * R + 3          # cross-section with 1-cell solid margin each side
-    nx = L_over_R * R            # pipe length (flow along +x)
-    yc = zc = R + 1              # pipe axis position in (y, z)
+    ny = nz = 2 * R + 3  # cross-section with 1-cell solid margin each side
+    nx = L_over_R * R  # pipe length (flow along +x)
+    yc = zc = R + 1  # pipe axis position in (y, z)
 
     iz = torch.arange(nz, device=device, dtype=torch.float32).view(-1, 1)
     iy = torch.arange(ny, device=device, dtype=torch.float32).view(1, -1)
-    d2 = (iy - yc) ** 2 + (iz - zc) ** 2          # (nz, ny) distance² from axis
+    d2 = (iy - yc) ** 2 + (iz - zc) ** 2  # (nz, ny) distance² from axis
     d = torch.sqrt(d2)
-    fluid2d = d <= R                               # fluid cross-section
-    wall2d = ~fluid2d                              # solid (bounce-back) cells
+    fluid2d = d <= R  # fluid cross-section
+    wall2d = ~fluid2d  # solid (bounce-back) cells
     wall_mask = wall2d.unsqueeze(-1).expand(nz, ny, nx).contiguous()
     return ny, nz, nx, yc, zc, d, fluid2d, wall_mask
 
 
 def radial_profile(
-    ux_plane: torch.Tensor,   # (nz, ny) time-averaged ux at measurement plane
-    d: torch.Tensor,          # (nz, ny) distance from axis
+    ux_plane: torch.Tensor,  # (nz, ny) time-averaged ux at measurement plane
+    d: torch.Tensor,  # (nz, ny) distance from axis
     R: int,
     R_eff: float,
-    U_max_ref: float,         # reference peak velocity for the analytic parabola
+    U_max_ref: float,  # reference peak velocity for the analytic parabola
     u_in: float,
 ) -> dict:
     """Bin the plane by radius and compare with u(r) = U_max_ref*(1-(r/R_eff)^2)."""
     d_np = d.cpu().numpy()
     u_np = ux_plane.cpu().numpy().astype(np.float64)
     fluid = d_np <= R
-    bin_idx = np.floor(d_np).astype(int)          # bin k: k <= d < k+1 (k=0..R)
+    bin_idx = np.floor(d_np).astype(int)  # bin k: k <= d < k+1 (k=0..R)
 
     u_num, u_ana, cells, d_avg = [], [], [], []
     for k in range(R + 1):
@@ -133,7 +142,7 @@ def radial_profile(
         if m.sum() == 0:
             continue
         u_num.append(float(u_np[m].mean()))
-        u_ana.append(float((U_max_ref * (1.0 - d_np[m] ** 2 / R_eff ** 2)).mean()))
+        u_ana.append(float((U_max_ref * (1.0 - d_np[m] ** 2 / R_eff**2)).mean()))
         cells.append(int(m.sum()))
         d_avg.append(float(d_np[m].mean()))
 
@@ -142,10 +151,15 @@ def radial_profile(
     l2_rel = float(np.linalg.norm(u_num - u_ana) / np.linalg.norm(u_ana))
 
     # Per-cell central-region max relative error (|u| > 20% of U_max_ref)
-    mask_c = fluid & (U_max_ref * (1.0 - d_np ** 2 / R_eff ** 2) > 0.2 * abs(U_max_ref))
+    mask_c = fluid & (U_max_ref * (1.0 - d_np**2 / R_eff**2) > 0.2 * abs(U_max_ref))
     if mask_c.sum() > 0:
-        max_rel = float(np.max(np.abs(u_np[mask_c] - U_max_ref * (1.0 - d_np[mask_c] ** 2 / R_eff ** 2))
-                               / (U_max_ref * (1.0 - d_np[mask_c] ** 2 / R_eff ** 2))) * 100.0)
+        max_rel = float(
+            np.max(
+                np.abs(u_np[mask_c] - U_max_ref * (1.0 - d_np[mask_c] ** 2 / R_eff**2))
+                / (U_max_ref * (1.0 - d_np[mask_c] ** 2 / R_eff**2))
+            )
+            * 100.0
+        )
     else:
         max_rel = float("nan")
 
@@ -162,13 +176,19 @@ def radial_profile(
         max_rel_bin = float("nan")
 
     # Center (axis) velocity: cells with d < 0.5  (only the axis cell itself)
-    u_center = float(u_np[fluid & (d_np < 0.5)].mean()) if (fluid & (d_np < 0.5)).any() else float(u_np[fluid].max())
+    u_center = (
+        float(u_np[fluid & (d_np < 0.5)].mean())
+        if (fluid & (d_np < 0.5)).any()
+        else float(u_np[fluid].max())
+    )
     u_max_err_pct = (u_center - U_max_ref) / abs(U_max_ref) * 100.0
 
     # Flow-rate diagnostics
     Q = float(u_np[fluid].sum())
-    Q_ana = float(np.pi * R_eff ** 2 * U_max_ref / 2.0)      # integral of parabola
-    R_eff_from_Q = float(math.sqrt(2.0 * Q / (math.pi * U_max_ref))) if U_max_ref > 0 else float("nan")
+    Q_ana = float(np.pi * R_eff**2 * U_max_ref / 2.0)  # integral of parabola
+    R_eff_from_Q = (
+        float(math.sqrt(2.0 * Q / (math.pi * U_max_ref))) if U_max_ref > 0 else float("nan")
+    )
     N_cells = int(fluid.sum())
 
     # Weighted parabola fit: u(r) = A*(1 - (r/R_fit)^2)  ->  u = a + b*r^2
@@ -181,10 +201,16 @@ def radial_profile(
     a_fit, b_fit = float(beta[0]), float(beta[1])
     if b_fit < 0 and a_fit > 0:
         R_fit = math.sqrt(-a_fit / b_fit)
-        u_fit = a_fit * (1.0 - np.array(d_avg) ** 2 / R_fit ** 2)
-        l2_fit = float(np.linalg.norm(np.sqrt(w) * (u_num - u_fit)) / np.linalg.norm(np.sqrt(w) * u_fit))
+        u_fit = a_fit * (1.0 - np.array(d_avg) ** 2 / R_fit**2)
+        l2_fit = float(
+            np.linalg.norm(np.sqrt(w) * (u_num - u_fit)) / np.linalg.norm(np.sqrt(w) * u_fit)
+        )
         mask_f = u_fit > 0.2 * abs(a_fit)
-        max_rel_fit = float(np.max(np.abs(u_num[mask_f] - u_fit[mask_f]) / u_fit[mask_f]) * 100.0) if mask_f.sum() else float("nan")
+        max_rel_fit = (
+            float(np.max(np.abs(u_num[mask_f] - u_fit[mask_f]) / u_fit[mask_f]) * 100.0)
+            if mask_f.sum()
+            else float("nan")
+        )
     else:
         R_fit, l2_fit, max_rel_fit = float("nan"), float("nan"), float("nan")
 
@@ -226,31 +252,31 @@ def run_case(
 ) -> dict:
     torch.manual_seed(seed)
     nu = (tau - 0.5) / 3.0
-    R_eff = R + 0.5                      # half-way BB wall position
+    R_eff = R + 0.5  # half-way BB wall position
     ny, nz, nx, yc, zc, d, fluid2d, wall_mask = pipe_setup(R, L_over_R, device)
 
     rho_out = 1.0
     if mode == "pressure":
         # Target U_max from imposed density difference:
         #   U_max = dp*R_eff^2/(4*nu*L),  dp = (rho_in-rho_out)*cs2,  L = nx
-        delta_rho = 4.0 * nu * nx * u_max_target / (CS2 * R_eff ** 2)
+        delta_rho = 4.0 * nu * nx * u_max_target / (CS2 * R_eff**2)
         rho_in = 1.0 + delta_rho / 2.0
         rho_out = 1.0 - delta_rho / 2.0
-        u_max_ana = delta_rho * CS2 * R_eff ** 2 / (4.0 * nu * nx)
+        u_max_ana = delta_rho * CS2 * R_eff**2 / (4.0 * nu * nx)
         U_max_init = u_max_ana
     else:
         rho_in = 1.0
-        u_max_ana = 2.0 * u_in            # mass-conservation value (nominal)
+        u_max_ana = 2.0 * u_in  # mass-conservation value (nominal)
         U_max_init = 2.0 * u_in
 
-    Re = (u_max_ana / 2.0) * 2.0 * R_eff / nu      # U_mean*D/nu, D = 2*R_eff
+    Re = (u_max_ana / 2.0) * 2.0 * R_eff / nu  # U_mean*D/nu, D = 2*R_eff
     Ma = u_max_ana / math.sqrt(CS2)
 
     # --- initial condition: rest density + Poiseuille profile (parabola init) ---
-    d3 = d.unsqueeze(-1)                            # (nz, ny, 1)
+    d3 = d.unsqueeze(-1)  # (nz, ny, 1)
     ux0 = torch.where(
         fluid2d.unsqueeze(-1),
-        U_max_init * (1.0 - d3 ** 2 / R_eff ** 2),
+        U_max_init * (1.0 - d3**2 / R_eff**2),
         torch.zeros_like(d3),
     )
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
@@ -273,8 +299,8 @@ def run_case(
 
     step_fn = route_step(_step, compile_mode, name=f"poiseuille_3d_pipe[R{R}]")
 
-    x_meas = nx // 2                    # mid-pipe measurement plane
-    x_dev = nx - 8                      # fully-developed check plane (near outlet)
+    x_meas = nx // 2  # mid-pipe measurement plane
+    x_dev = nx - 8  # fully-developed check plane (near outlet)
 
     t0 = time.time()
     umax_hist: list[float] = []
@@ -329,18 +355,28 @@ def run_case(
 
     # --- fully-developed check: profile at x_dev vs x_meas (normalized) ---
     fd_dev = radial_profile(acc_dev, d, R, R_eff, prof["u_center"], u_in)
-    fd_max_dev = float(np.max(np.abs(np.array(prof["bins"]) - np.array(fd_dev["bins"]))
-                              / np.maximum(np.abs(np.array(prof["bins"])), 1e-12)))
+    fd_max_dev = float(
+        np.max(
+            np.abs(np.array(prof["bins"]) - np.array(fd_dev["bins"]))
+            / np.maximum(np.abs(np.array(prof["bins"])), 1e-12)
+        )
+    )
 
     # --- pressure diagnostics ---
     rho_in_meas = float(acc_rho_in[fluid2d].mean().item())
     dp_meas = (rho_in_meas - rho_out) * CS2
-    u_max_dp = dp_meas * R_eff ** 2 / (4.0 * nu * nx)
-    u_max_dp_err_pct = (prof["u_center"] - u_max_dp) / abs(u_max_dp) * 100.0 if u_max_dp > 0 else float("nan")
+    u_max_dp = dp_meas * R_eff**2 / (4.0 * nu * nx)
+    u_max_dp_err_pct = (
+        (prof["u_center"] - u_max_dp) / abs(u_max_dp) * 100.0 if u_max_dp > 0 else float("nan")
+    )
     # R_eff^Q-consistent version (Hagen-Poiseuille dp -> U_max with the
     # hydraulic radius instead of the flat-wall midpoint)
-    u_max_dp_Q = dp_meas * R_eff_Q ** 2 / (4.0 * nu * nx)
-    u_max_dp_Q_err_pct = (prof["u_center"] - u_max_dp_Q) / abs(u_max_dp_Q) * 100.0 if u_max_dp_Q > 0 else float("nan")
+    u_max_dp_Q = dp_meas * R_eff_Q**2 / (4.0 * nu * nx)
+    u_max_dp_Q_err_pct = (
+        (prof["u_center"] - u_max_dp_Q) / abs(u_max_dp_Q) * 100.0
+        if u_max_dp_Q > 0
+        else float("nan")
+    )
 
     mass_drift_pct = (float(f.sum().item()) - initial_mass) / initial_mass * 100.0
 
@@ -355,24 +391,32 @@ def run_case(
         "mode": mode,
         "boundary": (
             "zou_he_velocity_inlet(x=0) + zou_he_pressure_outlet(x=nx-1) + "
-            "half-way bounce-back at pipe wall (post-streaming)" if mode == "velocity"
+            "half-way bounce-back at pipe wall (post-streaming)"
+            if mode == "velocity"
             else "zou_he_pressure_inlet(x=0, mirror of library outlet) + zou_he_pressure_outlet + "
-                 "half-way bounce-back at pipe wall (post-streaming)"
+            "half-way bounce-back at pipe wall (post-streaming)"
         ),
-        "driving": f"uniform velocity inlet u_in={u_in}" if mode == "velocity"
-                   else f"pressure difference (rho_in={rho_in:.6f}, rho_out={rho_out:.6f})",
+        "driving": f"uniform velocity inlet u_in={u_in}"
+        if mode == "velocity"
+        else f"pressure difference (rho_in={rho_in:.6f}, rho_out={rho_out:.6f})",
         "R": R,
         "R_eff": R_eff,
-        "R_eff_note": ("R + 0.5: flat-wall a-priori half-way bounce-back midpoint "
-                       "(reference only; the circular staircase pipe's hydraulic radius is R_eff_Q)"),
+        "R_eff_note": (
+            "R + 0.5: flat-wall a-priori half-way bounce-back midpoint "
+            "(reference only; the circular staircase pipe's hydraulic radius is R_eff_Q)"
+        ),
         "R_eff_Q": R_eff_Q,
         "R_eff_Q_minus_R": R_eff_Q - float(R),
-        "R_eff_Q_note": ("R_eff^Q = sqrt(2*Q/(pi*U_max)) from the measured flow rate Q: "
-                         "hydraulic radius of the digital staircase pipe (independent integral "
-                         "observable, NOT fitted to the profile; same value at both grids and, "
-                         "per prior runs, both driving modes). Used for the analytic profile "
-                         "comparison."),
-        "ny": ny, "nz": nz, "nx": nx,
+        "R_eff_Q_note": (
+            "R_eff^Q = sqrt(2*Q/(pi*U_max)) from the measured flow rate Q: "
+            "hydraulic radius of the digital staircase pipe (independent integral "
+            "observable, NOT fitted to the profile; same value at both grids and, "
+            "per prior runs, both driving modes). Used for the analytic profile "
+            "comparison."
+        ),
+        "ny": ny,
+        "nz": nz,
+        "nx": nx,
         "L_over_R": float(nx / R),
         "tau": tau,
         "nu_lb": nu,
@@ -429,16 +473,37 @@ def run_case(
     return result
 
 
-def scan(R_list, tau, u_in, u_max, mode, min_steps, max_steps, out_dir: str,
-         device: torch.device, seed: int = 0,
-         compile_mode: str | None = "default") -> dict:
+def scan(
+    R_list,
+    tau,
+    u_in,
+    u_max,
+    mode,
+    min_steps,
+    max_steps,
+    out_dir: str,
+    device: torch.device,
+    seed: int = 0,
+    compile_mode: str | None = "default",
+) -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cases = []
     for R in R_list:
         p = out_dir / f"case_R{R}.json"
-        r = run_case(R, tau, u_in, u_max, mode, min_steps, max_steps, str(p),
-                     device, seed, compile_mode=compile_mode)
+        r = run_case(
+            R,
+            tau,
+            u_in,
+            u_max,
+            mode,
+            min_steps,
+            max_steps,
+            str(p),
+            device,
+            seed,
+            compile_mode=compile_mode,
+        )
         cases.append(r)
         print(
             f"R={r['R']:3d} Re={r['Re']:7.2f} steps={r['n_steps']:6d} steady={r['steady']} "
@@ -449,21 +514,27 @@ def scan(R_list, tau, u_in, u_max, mode, min_steps, max_steps, out_dir: str,
             flush=True,
         )
     convergence = [
-        {"R": r["R"], "Re": r["Re"], "R_eff_Q": r["R_eff_Q"],
-         "l2_rel_err_Q": r["l2_rel_err_Q"],
-         "max_rel_bin_central_Q_pct": r["max_rel_bin_central_Q_pct"],
-         "max_rel_err_central_Q_pct": r["max_rel_err_central_Q_pct"],
-         "l2_rel_err_Q_shape": r["l2_rel_err_Q_shape"],
-         "max_rel_bin_central_Q_shape_pct": r["max_rel_bin_central_Q_shape_pct"],
-         "max_rel_err_central_Q_shape_pct": r["max_rel_err_central_Q_shape_pct"],
-         "u_center_pred_err_pct": r["u_center_pred_err_pct"],
-         "Q_ratio_Q": r["Q_ratio_Q"],
-         "u_max_err_pct": r["u_max_err_pct"],
-         "R_fit": r["R_fit"], "l2_fit_rel_err": r["l2_fit_rel_err"],
-         # reference (old a-priori R+0.5) metrics, kept for disclosure:
-         "l2_rel_err_shape_R05": r["l2_rel_err_shape"],
-         "max_rel_err_central_shape_R05_pct": r["max_rel_err_central_shape_pct"],
-         "n_steps": r["n_steps"], "steady": r["steady"]}
+        {
+            "R": r["R"],
+            "Re": r["Re"],
+            "R_eff_Q": r["R_eff_Q"],
+            "l2_rel_err_Q": r["l2_rel_err_Q"],
+            "max_rel_bin_central_Q_pct": r["max_rel_bin_central_Q_pct"],
+            "max_rel_err_central_Q_pct": r["max_rel_err_central_Q_pct"],
+            "l2_rel_err_Q_shape": r["l2_rel_err_Q_shape"],
+            "max_rel_bin_central_Q_shape_pct": r["max_rel_bin_central_Q_shape_pct"],
+            "max_rel_err_central_Q_shape_pct": r["max_rel_err_central_Q_shape_pct"],
+            "u_center_pred_err_pct": r["u_center_pred_err_pct"],
+            "Q_ratio_Q": r["Q_ratio_Q"],
+            "u_max_err_pct": r["u_max_err_pct"],
+            "R_fit": r["R_fit"],
+            "l2_fit_rel_err": r["l2_fit_rel_err"],
+            # reference (old a-priori R+0.5) metrics, kept for disclosure:
+            "l2_rel_err_shape_R05": r["l2_rel_err_shape"],
+            "max_rel_err_central_shape_R05_pct": r["max_rel_err_central_shape_pct"],
+            "n_steps": r["n_steps"],
+            "steady": r["steady"],
+        }
         for r in cases
     ]
     # Acceptance ("剖面最大误差 <=3%", R_eff^Q method): the digital staircase
@@ -574,20 +645,65 @@ def main() -> None:
     device = torch.device(args.device)
     compile_mode = compile_mode_from_args(args)
     if args.mode_cmd == "single":
-        r = run_case(args.R, args.tau, args.u_in, args.u_max, args.mode,
-                     args.min_steps, args.max_steps, args.out_json, device, args.seed,
-                     compile_mode=compile_mode)
-        print(json.dumps({k: r[k] for k in
-                          ["R", "R_eff", "nx", "ny", "nz", "mode", "Re", "Ma",
-                           "n_steps", "steady", "u_max_err_pct", "l2_rel_err",
-                           "max_rel_err_central_pct", "l2_rel_err_shape",
-                           "max_rel_err_central_shape_pct", "u_max_dp_err_pct",
-                           "Q_ratio", "R_eff_from_Q", "fd_max_rel_dev_pct",
-                           "mass_drift_pct", "finite", "elapsed_s"]}, indent=2))
+        r = run_case(
+            args.R,
+            args.tau,
+            args.u_in,
+            args.u_max,
+            args.mode,
+            args.min_steps,
+            args.max_steps,
+            args.out_json,
+            device,
+            args.seed,
+            compile_mode=compile_mode,
+        )
+        print(
+            json.dumps(
+                {
+                    k: r[k]
+                    for k in [
+                        "R",
+                        "R_eff",
+                        "nx",
+                        "ny",
+                        "nz",
+                        "mode",
+                        "Re",
+                        "Ma",
+                        "n_steps",
+                        "steady",
+                        "u_max_err_pct",
+                        "l2_rel_err",
+                        "max_rel_err_central_pct",
+                        "l2_rel_err_shape",
+                        "max_rel_err_central_shape_pct",
+                        "u_max_dp_err_pct",
+                        "Q_ratio",
+                        "R_eff_from_Q",
+                        "fd_max_rel_dev_pct",
+                        "mass_drift_pct",
+                        "finite",
+                        "elapsed_s",
+                    ]
+                },
+                indent=2,
+            )
+        )
     else:
-        scan(args.R, args.tau, args.u_in, args.u_max, args.mode,
-             args.min_steps, args.max_steps, args.out_dir, device, args.seed,
-             compile_mode)
+        scan(
+            args.R,
+            args.tau,
+            args.u_in,
+            args.u_max,
+            args.mode,
+            args.min_steps,
+            args.max_steps,
+            args.out_dir,
+            device,
+            args.seed,
+            compile_mode,
+        )
 
 
 if __name__ == "__main__":

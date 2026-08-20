@@ -38,6 +38,7 @@ Re = U_max·step_h/ν = 100 (Armaly 定义)。ν = U_max·H/Re, τ = 3ν + 0.5�
     python run.py --h 40 [--steps 300000] [--quick N] [--device cuda:0] [--mrt]
     python run.py --scan [--steps ...] [--device0 cuda:0] [--device1 cuda:1]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,11 +53,12 @@ sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
 import numpy as np
 import torch
 
-import tensorlbm.d3q19 as _d3q19
 import tensorlbm.boundaries3d as _b3d
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import stream3d_roll, collide_bgk3d, collide_mrt3d
+import tensorlbm.d3q19 as _d3q19
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.solver3d import collide_bgk3d, collide_mrt3d, stream3d_roll
+
 
 # ---------------------------------------------------------------------------
 # 全局性能 patch (基准脚本内, 不改库): C/OPPOSITE 常驻 fp32 CUDA
@@ -79,8 +81,8 @@ _OUTLET_DIRS = [2, 8, 10, 12, 14]
 _OUTLET_OPP = [1, 7, 9, 11, 13]
 
 CS2 = 1.0 / 3.0
-X_R_REF = 3.0          # Armaly Re=100 X_r/h 参考值
-ER_REF = 1.94          # Armaly 实验膨胀比
+X_R_REF = 3.0  # Armaly Re=100 X_r/h 参考值
+ER_REF = 1.94  # Armaly 实验膨胀比
 
 
 # ---------------------------------------------------------------------------
@@ -100,19 +102,24 @@ def grid_dims(h: int) -> tuple[int, int, int, int]:
 
 
 def make_bfs_solid_mask_3d(
-    nz: int, ny: int, nx: int, step_h: int, x_step: int, device: torch.device,
+    nz: int,
+    ny: int,
+    nx: int,
+    step_h: int,
+    x_step: int,
+    device: torch.device,
 ) -> torch.Tensor:
     """3D 后向台阶固体掩码 (nz, ny, nx): 顶壁 + 台阶后底壁 + 台阶块。z 向无壁 (周期)。"""
     solid = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
-    solid[:, -1, :] = True                              # top wall (y=ny-1)
-    solid[:, 0, x_step:] = True                         # bottom wall after step
+    solid[:, -1, :] = True  # top wall (y=ny-1)
+    solid[:, 0, x_step:] = True  # bottom wall after step
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=device),
         torch.arange(ny, device=device),
         torch.arange(nx, device=device),
         indexing="ij",
     )
-    solid |= (xx < x_step) & (yy < step_h)              # step solid block
+    solid |= (xx < x_step) & (yy < step_h)  # step solid block
     return solid
 
 
@@ -139,18 +146,23 @@ def inlet_bc(f: torch.Tensor, ux_field: torch.Tensor) -> torch.Tensor:
     f[d] = feq[d] - feq[opp] + f[opp]。逐方向 setitem 便于 torch.compile。
     """
     sum_cx0 = (
-        f[0, :, :, 0] + f[3, :, :, 0] + f[4, :, :, 0]
-        + f[5, :, :, 0] + f[6, :, :, 0]
-        + f[15, :, :, 0] + f[16, :, :, 0] + f[17, :, :, 0] + f[18, :, :, 0]
+        f[0, :, :, 0]
+        + f[3, :, :, 0]
+        + f[4, :, :, 0]
+        + f[5, :, :, 0]
+        + f[6, :, :, 0]
+        + f[15, :, :, 0]
+        + f[16, :, :, 0]
+        + f[17, :, :, 0]
+        + f[18, :, :, 0]
     )
-    sum_cx_neg = (
-        f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0]
-        + f[12, :, :, 0] + f[14, :, :, 0]
-    )
-    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - ux_field)   # (nz, ny)
+    sum_cx_neg = f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0] + f[12, :, :, 0] + f[14, :, :, 0]
+    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - ux_field)  # (nz, ny)
     feq = equilibrium3d(
-        rho.unsqueeze(-1), ux_field.unsqueeze(-1),
-        torch.zeros_like(rho).unsqueeze(-1), torch.zeros_like(rho).unsqueeze(-1),
+        rho.unsqueeze(-1),
+        ux_field.unsqueeze(-1),
+        torch.zeros_like(rho).unsqueeze(-1),
+        torch.zeros_like(rho).unsqueeze(-1),
         device=f.device,
     )  # (19, nz, ny, 1)
     for d, od in zip(_INLET_DIRS, _INLET_OPP):
@@ -163,19 +175,26 @@ def outlet_pressure_bc(f: torch.Tensor, rho_out: float = 1.0) -> torch.Tensor:
     boundaries3d.zou_he_outlet_pressure_3d: ux_out = -1 + (sum_cx0+2·sum_cx_pos)/rho_out。
     """
     sum_cx0 = (
-        f[0, :, :, -1] + f[3, :, :, -1] + f[4, :, :, -1]
-        + f[5, :, :, -1] + f[6, :, :, -1]
-        + f[15, :, :, -1] + f[16, :, :, -1] + f[17, :, :, -1] + f[18, :, :, -1]
+        f[0, :, :, -1]
+        + f[3, :, :, -1]
+        + f[4, :, :, -1]
+        + f[5, :, :, -1]
+        + f[6, :, :, -1]
+        + f[15, :, :, -1]
+        + f[16, :, :, -1]
+        + f[17, :, :, -1]
+        + f[18, :, :, -1]
     )
     sum_cx_pos = (
-        f[1, :, :, -1] + f[7, :, :, -1] + f[9, :, :, -1]
-        + f[11, :, :, -1] + f[13, :, :, -1]
+        f[1, :, :, -1] + f[7, :, :, -1] + f[9, :, :, -1] + f[11, :, :, -1] + f[13, :, :, -1]
     )
-    ux_out = -1.0 + (sum_cx0 + 2.0 * sum_cx_pos) / rho_out   # (nz, ny)
+    ux_out = -1.0 + (sum_cx0 + 2.0 * sum_cx_pos) / rho_out  # (nz, ny)
     rho_field = torch.full_like(ux_out, rho_out)
     feq = equilibrium3d(
-        rho_field.unsqueeze(-1), ux_out.unsqueeze(-1),
-        torch.zeros_like(rho_field).unsqueeze(-1), torch.zeros_like(rho_field).unsqueeze(-1),
+        rho_field.unsqueeze(-1),
+        ux_out.unsqueeze(-1),
+        torch.zeros_like(rho_field).unsqueeze(-1),
+        torch.zeros_like(rho_field).unsqueeze(-1),
         device=f.device,
     )
     for d, od in zip(_OUTLET_DIRS, _OUTLET_OPP):
@@ -198,7 +217,9 @@ def _zero_crossing_col(row: np.ndarray, x_step: int) -> float | None:
 
 
 def measure_reattach_3d(
-    ux: torch.Tensor, x_step: int, step_h: int,
+    ux: torch.Tensor,
+    x_step: int,
+    step_h: int,
 ) -> dict[str, float]:
     """X_r/h: 距台阶下游立面 x=x_step-0.5 的归一化再附着长度。
 
@@ -231,7 +252,7 @@ def inlet_profile_check(ux: torch.Tensor, step_h: int, u_max: float) -> dict[str
     """核对 x=0 列实际施加剖面 (展向平均) 与目标抛物线的偏差。"""
     ny = ux.shape[1]
     target = make_parabolic_profile(ny, step_h, u_max)
-    actual = ux[:, :, 0].mean(dim=0).detach().cpu().numpy()   # mean over z
+    actual = ux[:, :, 0].mean(dim=0).detach().cpu().numpy()  # mean over z
     fluid = np.arange(step_h, ny - 1)
     dev = np.abs(actual[fluid] - target[fluid]).max() / u_max
     q_num = float(actual[fluid].sum())
@@ -239,8 +260,7 @@ def inlet_profile_check(ux: torch.Tensor, step_h: int, u_max: float) -> dict[str
     return {"max_abs_dev_over_umax": float(dev), "flux_ratio": q_num / q_ana}
 
 
-def spanwise_uniformity(ux: torch.Tensor, solid: torch.Tensor,
-                        u_max: float) -> dict[str, float]:
+def spanwise_uniformity(ux: torch.Tensor, solid: torch.Tensor, u_max: float) -> dict[str, float]:
     """展向均匀性: 下游区 (x 从 0.6·nx 到 nx-2) 流体场 ux 的 z 向相对散布。"""
     u = ux.detach().cpu().numpy()
     s = solid.detach().cpu().numpy()
@@ -252,10 +272,11 @@ def spanwise_uniformity(ux: torch.Tensor, solid: torch.Tensor,
     return {"max_z_rel_dev_over_umax": float(rel_dev)}
 
 
-def separation_bubble_diag(ux: torch.Tensor, x_step: int, step_h: int,
-                           u_max: float) -> dict[str, float]:
+def separation_bubble_diag(
+    ux: torch.Tensor, x_step: int, step_h: int, u_max: float
+) -> dict[str, float]:
     """分离泡诊断: 台阶下游最大回流强度及其位置 (展向平均场, 距台阶立面归一化)。"""
-    u = ux.detach().cpu().numpy().mean(axis=0)   # mean over z
+    u = ux.detach().cpu().numpy().mean(axis=0)  # mean over z
     bubble = u[1:, x_step:]
     min_ux = float(bubble.min())
     ys, xs = np.where(bubble == bubble.min())
@@ -268,9 +289,18 @@ def separation_bubble_diag(ux: torch.Tensor, x_step: int, step_h: int,
 # ---------------------------------------------------------------------------
 # 单档模拟
 # ---------------------------------------------------------------------------
-def run_case(h: int, steps: int, out_interval: int, device: torch.device,
-             u_max: float, re: float, use_mrt: bool, out_dir: Path,
-             quick: int = 0, do_compile: bool = True) -> dict:
+def run_case(
+    h: int,
+    steps: int,
+    out_interval: int,
+    device: torch.device,
+    u_max: float,
+    re: float,
+    use_mrt: bool,
+    out_dir: Path,
+    quick: int = 0,
+    do_compile: bool = True,
+) -> dict:
     nx, ny, nz, x_step = grid_dims(h)
     er = (ny - 2) / (ny - 1 - h)
     nu = u_max * h / re
@@ -354,8 +384,7 @@ def run_case(h: int, steps: int, out_interval: int, device: torch.device,
     steps_arr = [d["step"] for d in diagnostics]
     last3 = xr_series[-3:]
     converged = (
-        len(last3) >= 3 and (max(last3) - min(last3)) <= 0.02
-        and abs(last3[-1] - last3[-2]) <= 0.01
+        len(last3) >= 3 and (max(last3) - min(last3)) <= 0.02 and abs(last3[-1] - last3[-2]) <= 0.01
     )
 
     inlet_diag = inlet_profile_check(ux_f, h, u_max)
@@ -380,7 +409,11 @@ def run_case(h: int, steps: int, out_interval: int, device: torch.device,
             "er_ref": ER_REF,
         },
         "geometry": {
-            "nx": nx, "ny": ny, "nz": nz, "step_h": h, "x_step": x_step,
+            "nx": nx,
+            "ny": ny,
+            "nz": nz,
+            "step_h": h,
+            "x_step": x_step,
             "expansion_ratio": er,
             "er_dev_pct": (er - ER_REF) / ER_REF * 100.0,
             "spanwise": f"periodic, Lz={nz} = {nz / h:.1f}H",
@@ -388,7 +421,9 @@ def run_case(h: int, steps: int, out_interval: int, device: torch.device,
             "outlet": "Zou/He pressure (rho=1)",
         },
         "physics": {
-            "re": re, "nu": nu, "tau": tau,
+            "re": re,
+            "nu": nu,
+            "tau": tau,
             "collision": "mrt" if use_mrt else "bgk",
             "lattice": "D3Q19",
         },
@@ -431,7 +466,9 @@ def main() -> None:
     ap.add_argument("--re", type=float, default=100.0)
     ap.add_argument("--out", default="/tmp/bstep3d_runs")
     ap.add_argument("--verified", default="/home/wxsc/cxs/TensorLBM/benchmarks/verified/bstep_3d")
-    ap.add_argument("--scan", action="store_true", help="run H=40 and H=60, write convergence summary")
+    ap.add_argument(
+        "--scan", action="store_true", help="run H=40 and H=60, write convergence summary"
+    )
     ap.add_argument("--device0", default="cuda:0")
     ap.add_argument("--device1", default="cuda:1")
     args = ap.parse_args()
@@ -446,17 +483,31 @@ def main() -> None:
     cases = []
     for h, device in jobs:
         steps = args.quick if args.quick else args.steps
-        print(f"=== B3D BFS Re={args.re} H={h} steps={steps} device={device} "
-              f"collision={'mrt' if args.mrt else 'bgk'} "
-              f"compile={'on' if not args.no_compile else 'off'} ===", flush=True)
-        r = run_case(h, steps, args.interval, device, args.u_max, args.re,
-                     args.mrt, Path(args.out), quick=args.quick,
-                     do_compile=not args.no_compile)
+        print(
+            f"=== B3D BFS Re={args.re} H={h} steps={steps} device={device} "
+            f"collision={'mrt' if args.mrt else 'bgk'} "
+            f"compile={'on' if not args.no_compile else 'off'} ===",
+            flush=True,
+        )
+        r = run_case(
+            h,
+            steps,
+            args.interval,
+            device,
+            args.u_max,
+            args.re,
+            args.mrt,
+            Path(args.out),
+            quick=args.quick,
+            do_compile=not args.no_compile,
+        )
         cases.append(r)
-        print(f"H={h}: X_r/h = {r['result']['xr_h']:.4f} "
-              f"err {r['result']['xr_h_err_pct']:+.2f}% "
-              f"converged={r['result']['converged']} wall={r['result']['wall_time_s']:.0f}s",
-              flush=True)
+        print(
+            f"H={h}: X_r/h = {r['result']['xr_h']:.4f} "
+            f"err {r['result']['xr_h_err_pct']:+.2f}% "
+            f"converged={r['result']['converged']} wall={r['result']['wall_time_s']:.0f}s",
+            flush=True,
+        )
 
     vdir = Path(args.verified)
     vdir.mkdir(parents=True, exist_ok=True)
@@ -490,9 +541,12 @@ def main() -> None:
         }
         with (vdir / "result.json").open("w", encoding="utf-8") as fh:
             json.dump(summary, fh, indent=2, ensure_ascii=False, default=float)
-        print(f"=== scan summary: xr_h = {[round(v, 4) for v in xrs]}, "
-              f"err% = {[round(v, 2) for v in errs]}, "
-              f"grid_converged={grid_converged}, verified={passed} ===", flush=True)
+        print(
+            f"=== scan summary: xr_h = {[round(v, 4) for v in xrs]}, "
+            f"err% = {[round(v, 2) for v in errs]}, "
+            f"grid_converged={grid_converged}, verified={passed} ===",
+            flush=True,
+        )
         print(f"-> {vdir / 'result.json'}", flush=True)
     else:
         h = cases[0]["geometry"]["step_h"]

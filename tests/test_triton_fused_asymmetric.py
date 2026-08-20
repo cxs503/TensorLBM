@@ -23,6 +23,7 @@ Two layers of defence:
      pull-BGK reference built directly from the canonical tables, on
      three initial fields that each break the z mirror symmetry.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -47,6 +48,7 @@ def dev() -> str:
 # 1. Table-level regression — module tables must equal canonical d3q19
 # ---------------------------------------------------------------------------
 
+
 def test_lattice_tables_match_canonical_d3q19(dev: str) -> None:
     """_CX/_CY/_CZ/_W tuples and the padded kernel tensors follow d3q19."""
     import tensorlbm.triton_fused as tf
@@ -56,22 +58,26 @@ def test_lattice_tables_match_canonical_d3q19(dev: str) -> None:
         ref = tuple(int(v) for v in C[q].tolist())
         assert got == ref, (
             f"lattice lane q={q}: module tuple {got} != canonical d3q19.C "
-            f"{ref} (sign/permutation drift in the hand-maintained tables)")
+            f"{ref} (sign/permutation drift in the hand-maintained tables)"
+        )
 
     lat = make_lattice_tensors(dev)
     cdev = C.to(dev)
     for key, col in (("cxi", 0), ("cyi", 1), ("czi", 2)):
         assert torch.equal(lat[key][:19], cdev[:, col].to(torch.int32)), (
-            f"int addressing table {key} != canonical d3q19.C[:, {col}]")
+            f"int addressing table {key} != canonical d3q19.C[:, {col}]"
+        )
     for key, col in (("cxf", 0), ("cyf", 1), ("czf", 2)):
         assert torch.equal(lat[key][:19], cdev[:, col].to(torch.float32)), (
-            f"float moment table {key} != canonical d3q19.C[:, {col}]")
+            f"float moment table {key} != canonical d3q19.C[:, {col}]"
+        )
     assert torch.equal(lat["w"][:19], W.to(dev)), "weights != canonical d3q19.W"
 
 
 # ---------------------------------------------------------------------------
 # 2. Eager reference step (pull-BGK from canonical tables)
 # ---------------------------------------------------------------------------
+
 
 def _eager_step(f: torch.Tensor, tau: float) -> torch.Tensor:
     """One periodic pull-stream + BGK collide step in eager PyTorch.
@@ -107,14 +113,14 @@ def _eager_step(f: torch.Tensor, tau: float) -> torch.Tensor:
     uz = (cz * f_in).sum(dim=0) / rho_safe
     usq = ux * ux + uy * uy + uz * uz
     cu = cx * ux + cy * uy + cz * uz
-    feq = (rho_safe.unsqueeze(0) * w
-           * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq.unsqueeze(0)))
+    feq = rho_safe.unsqueeze(0) * w * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq.unsqueeze(0))
     return f_in - (1.0 / tau) * (f_in - feq)
 
 
 # ---------------------------------------------------------------------------
 # 3. Initial fields that break the z mirror symmetry
 # ---------------------------------------------------------------------------
+
 
 def _field_shear_yz(n: int, dev: str) -> torch.Tensor:
     """Shear with transverse components: ux(z), uy(z), uz(y).
@@ -145,10 +151,9 @@ def _field_blob_offcentre(n: int, dev: str) -> torch.Tensor:
     r2 = (Z - z0) ** 2 + (Y - y0) ** 2 + (X - x0) ** 2
     rho = 1.0 + 0.4 * torch.exp(-r2 / (2.0 * sigma * sigma))
     drift = 0.02
-    return equilibrium3d(rho,
-                         torch.full_like(rho, drift),
-                         torch.full_like(rho, -drift),
-                         torch.full_like(rho, drift))
+    return equilibrium3d(
+        rho, torch.full_like(rho, drift), torch.full_like(rho, -drift), torch.full_like(rho, drift)
+    )
 
 
 def _field_random(n: int, dev: str) -> torch.Tensor:
@@ -168,6 +173,7 @@ _FIELD_BUILDERS = {
 # ---------------------------------------------------------------------------
 # 4. N-step trajectory parity on asymmetric fields
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("field", sorted(_FIELD_BUILDERS))
 def test_triton_matches_eager_on_asymmetric_fields(field: str, dev: str) -> None:
@@ -197,7 +203,8 @@ def test_triton_matches_eager_on_asymmetric_fields(field: str, dev: str) -> None
     assert torch.allclose(f_tri, f_ref, rtol=1e-4, atol=1e-6), (
         f"{n_steps}-step trajectory on '{field}' diverged from the canonical "
         f"eager reference: max|diff|={diff:.3e}, rel={rel:.3e} "
-        f"(z-asymmetric fields expose wrong-neighbour streaming)")
+        f"(z-asymmetric fields expose wrong-neighbour streaming)"
+    )
 
 
 @pytest.mark.parametrize("field", sorted(_FIELD_BUILDERS))
@@ -215,4 +222,5 @@ def test_asymmetric_fields_actually_break_symmetry(field: str, dev: str) -> None
     delta = (f0 - f0[perm]).abs().max().item()
     assert delta > 0.0, (
         f"field '{field}' is invariant under the buggy lane permutation "
-        f"(max|delta|={delta:.3e}); the parity test would be vacuous for it")
+        f"(max|delta|={delta:.3e}); the parity test would be vacuous for it"
+    )

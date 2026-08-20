@@ -22,11 +22,11 @@ Output: JSON with time-averaged Cd_p / Cd_f / Cd for all 7 formulas,
 face/cell counts, q_smooth stats, and a per-cell decomposition of the
 faces-vs-standard difference on the final field (u_t check).
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 import time
 from pathlib import Path
@@ -35,15 +35,15 @@ sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
 
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import collide_bgk3d, stream3d_roll
 from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.drag_pressure import (
     SurfaceMesh,
     drag_friction_integration,
     drag_pressure_integration,
     get_near_wall_2d,
 )
+from tensorlbm.solver3d import collide_bgk3d, stream3d_roll
 
 REF_CD = 1.54
 
@@ -55,7 +55,7 @@ def cylinder3d_mask(nx, ny, nz, cx, cy, radius, device):
         torch.arange(nx, device=device, dtype=torch.float32),
         indexing="ij",
     )
-    return (xx - cx) ** 2 + (yy - cy) ** 2 <= radius ** 2
+    return (xx - cx) ** 2 + (yy - cy) ** 2 <= radius**2
 
 
 def face_counts(solid):
@@ -110,7 +110,7 @@ def main() -> int:
     u_in = 0.08
     nu = u_in * D / Re
     tau = 3.0 * nu + 0.5
-    dpS = 0.5 * u_in ** 2 * (D * nz)
+    dpS = 0.5 * u_in**2 * (D * nz)
 
     tag = f"[cyl3d D={D} {nx}x{ny}x{nz}]"
     print(f"{tag} Re={Re} u_in={u_in} nu={nu:.6f} tau={tau:.6f}", flush=True)
@@ -126,9 +126,12 @@ def main() -> int:
     q = smooth_q(solid, cx, cy, R, near)
     q_half = torch.full_like(solid, 0.5, dtype=torch.float32) * near.float()
     q_vals = q[near]
-    print(f"{tag} near={n_near} faces={n_faces} ratio={ratio:.4f} "
-          f"q_smooth mean={float(q_vals.mean()):.4f} min={float(q_vals.min()):.4f} "
-          f"max={float(q_vals.max()):.4f}", flush=True)
+    print(
+        f"{tag} near={n_near} faces={n_faces} ratio={ratio:.4f} "
+        f"q_smooth mean={float(q_vals.mean()):.4f} min={float(q_vals.min()):.4f} "
+        f"max={float(q_vals.max()):.4f}",
+        flush=True,
+    )
 
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=dev)
     ux0 = torch.full_like(rho0, u_in)
@@ -138,15 +141,14 @@ def main() -> int:
     f = equilibrium3d(rho0, ux0, uy0, uz0)
     del rho0, ux0, uy0, uz0
     im0 = float(f.sum().item())
-    print(f"{tag} init done ({time.time()-t0:.0f}s)", flush=True)
+    print(f"{tag} init done ({time.time() - t0:.0f}s)", flush=True)
 
     bc_config = {
         "far_field_faces": ["y-", "y+"],
         "periodic_faces": ["z-", "z+"],
     }
 
-    FORMULAS = ["standard", "lagrange", "bfl_smooth", "bfl_lag_exact",
-                "faces", "dA_scale", "u05"]
+    FORMULAS = ["standard", "lagrange", "bfl_smooth", "bfl_lag_exact", "faces", "dA_scale", "u05"]
     hist = {k: [] for k in FORMULAS}
     cd_p_hist, cd_tot_hist, mass_hist = [], [], []
     sample_interval = 100
@@ -164,31 +166,41 @@ def main() -> int:
                 f, mesh, dpS, extrap="none", p0_method="far_field", solid=solid
             )
             cd_p_hist.append(fx_p)
-            hist["standard"].append(drag_friction_integration(
-                f, mesh, dpS, nu, formula="standard")[0])
-            hist["lagrange"].append(drag_friction_integration(
-                f, mesh, dpS, nu, formula="lagrange")[0])
-            hist["bfl_smooth"].append(drag_friction_integration(
-                f, mesh, dpS, nu, q_wall=q, formula="bfl")[0])
-            hist["bfl_lag_exact"].append(drag_friction_integration(
-                f, mesh, dpS, nu, q_wall=q, formula="bfl_lagrange")[0])
-            hist["faces"].append(drag_friction_integration(
-                f, mesh, dpS, nu, formula="faces", solid=solid)[0])
-            hist["dA_scale"].append(drag_friction_integration(
-                f, mesh, dpS, nu, formula="standard")[0] * ratio)
-            hist["u05"].append(drag_friction_integration(
-                f, mesh, dpS, nu, q_wall=q_half, formula="bfl")[0])
+            hist["standard"].append(
+                drag_friction_integration(f, mesh, dpS, nu, formula="standard")[0]
+            )
+            hist["lagrange"].append(
+                drag_friction_integration(f, mesh, dpS, nu, formula="lagrange")[0]
+            )
+            hist["bfl_smooth"].append(
+                drag_friction_integration(f, mesh, dpS, nu, q_wall=q, formula="bfl")[0]
+            )
+            hist["bfl_lag_exact"].append(
+                drag_friction_integration(f, mesh, dpS, nu, q_wall=q, formula="bfl_lagrange")[0]
+            )
+            hist["faces"].append(
+                drag_friction_integration(f, mesh, dpS, nu, formula="faces", solid=solid)[0]
+            )
+            hist["dA_scale"].append(
+                drag_friction_integration(f, mesh, dpS, nu, formula="standard")[0] * ratio
+            )
+            hist["u05"].append(
+                drag_friction_integration(f, mesh, dpS, nu, q_wall=q_half, formula="bfl")[0]
+            )
             cd_tot_hist.append(fx_p + hist["standard"][-1])
             mass_hist.append(float(f.sum().item()))
 
         if step % 5000 == 0:
             n_avg = min(200, len(cd_tot_hist))
             cd = sum(cd_tot_hist[-n_avg:]) / n_avg
-            print(f"{tag} step={step} Cd={cd:.4f} "
-                  f"(Cd_p={sum(cd_p_hist[-n_avg:])/n_avg:.4f} "
-                  f"Cd_f_std={sum(hist['standard'][-n_avg:])/n_avg:.4f} "
-                  f"Cd_f_faces={sum(hist['faces'][-n_avg:])/n_avg:.4f}) "
-                  f"({time.time()-t0:.0f}s)", flush=True)
+            print(
+                f"{tag} step={step} Cd={cd:.4f} "
+                f"(Cd_p={sum(cd_p_hist[-n_avg:]) / n_avg:.4f} "
+                f"Cd_f_std={sum(hist['standard'][-n_avg:]) / n_avg:.4f} "
+                f"Cd_f_faces={sum(hist['faces'][-n_avg:]) / n_avg:.4f}) "
+                f"({time.time() - t0:.0f}s)",
+                flush=True,
+            )
 
         if not torch.isfinite(f).all():
             print(f"{tag} DIVERGED at step {step}", flush=True)
@@ -203,15 +215,24 @@ def main() -> int:
         cd_f[k] = sum(hist[k][-win:]) / win
     cd_tot = {k: cd_p + v for k, v in cd_f.items()}
     half = win // 2
-    drift = (sum(cd_tot_hist[-half:]) / half -
-             sum(cd_tot_hist[-2 * half:-half]) / half) / REF_CD * 100.0
+    drift = (
+        (sum(cd_tot_hist[-half:]) / half - sum(cd_tot_hist[-2 * half : -half]) / half)
+        / REF_CD
+        * 100.0
+    )
 
-    print(f"{tag} === FINAL (win={win} samples) === Cd_p={cd_p:.4f} drift={drift:+.3f}% "
-          f"({elapsed:.0f}s)", flush=True)
+    print(
+        f"{tag} === FINAL (win={win} samples) === Cd_p={cd_p:.4f} drift={drift:+.3f}% "
+        f"({elapsed:.0f}s)",
+        flush=True,
+    )
     for k in FORMULAS:
         err = (cd_tot[k] - REF_CD) / REF_CD * 100.0
-        print(f"  {k:14s} Cd_f={cd_f[k]:.4f}  Cd={cd_tot[k]:.4f}  err={err:+.2f}% "
-              f"(vs std {100.0*(cd_f[k]/cd_f['standard']-1.0):+.1f}%)", flush=True)
+        print(
+            f"  {k:14s} Cd_f={cd_f[k]:.4f}  Cd={cd_tot[k]:.4f}  err={err:+.2f}% "
+            f"(vs std {100.0 * (cd_f[k] / cd_f['standard'] - 1.0):+.1f}%)",
+            flush=True,
+        )
 
     # --- per-cell u_t diagnostic on the final field -------------------
     diag = {}
@@ -251,15 +272,26 @@ def main() -> int:
 
     res = {
         "case": "cylinder_3d_re40_d20_formula_compare",
-        "lattice": "D3Q19", "collision": "bgk",
-        "Re": Re, "u_in": u_in, "nu": nu, "tau": tau,
-        "D_cells": D, "nx": nx, "ny": ny, "nz": nz,
-        "n_near_cells": n_near, "n_wall_faces": n_faces,
+        "lattice": "D3Q19",
+        "collision": "bgk",
+        "Re": Re,
+        "u_in": u_in,
+        "nu": nu,
+        "tau": tau,
+        "D_cells": D,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
+        "n_near_cells": n_near,
+        "n_wall_faces": n_faces,
         "face_cell_ratio": ratio,
-        "q_smooth_mean": float(q_vals.mean()), "q_smooth_min": float(q_vals.min()),
+        "q_smooth_mean": float(q_vals.mean()),
+        "q_smooth_min": float(q_vals.min()),
         "q_smooth_max": float(q_vals.max()),
-        "n_steps": a.steps, "n_finished": step,
-        "sample_interval": sample_interval, "avg_window_samples": win,
+        "n_steps": a.steps,
+        "n_finished": step,
+        "sample_interval": sample_interval,
+        "avg_window_samples": win,
         "cd_pressure": cd_p,
         "cd_friction": cd_f,
         "cd_total": cd_tot,

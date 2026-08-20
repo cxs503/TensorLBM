@@ -15,6 +15,7 @@ from tensorlbm.dam_break_3d import (
 )
 
 
+@pytest.mark.slow
 def test_free_surface_dam_break_caller_writes_a_101_step_quality_curve(tmp_path) -> None:
     """The real public caller must retain state and publish every step's budget."""
     config = DamBreak3DConfig(

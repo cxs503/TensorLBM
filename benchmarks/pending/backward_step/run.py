@@ -18,6 +18,7 @@ Re = U_max·step_h/ν = 100 (Armaly 定义: 基于最大入口速度与台阶高
 - 诊断: 入口剖面实际施加质量核对、分离泡最大回流、收敛序列。
 - 输出: run_dir/run_metadata.json (模块), VERIFIED_DIR/result.json (本脚本)。
 """
+
 import json
 import os
 import sys
@@ -52,14 +53,16 @@ NX = int(os.environ.get("BFS_NX", "500"))
 NY = int(os.environ.get("BFS_NY", "101"))
 STEP_H = int(os.environ.get("BFS_STEP_H", "49"))
 X_STEP = int(os.environ.get("BFS_X_STEP", "100"))
-U_MAX = float(os.environ.get("BFS_U_MAX", "0.05"))          # 抛物线最大入口速度
-RE = float(os.environ.get("BFS_RE", "100.0"))               # Re = U_max*h/nu
+U_MAX = float(os.environ.get("BFS_U_MAX", "0.05"))  # 抛物线最大入口速度
+RE = float(os.environ.get("BFS_RE", "100.0"))  # Re = U_max*h/nu
 N_STEPS = int(os.environ.get("BFS_N_STEPS", "300000"))
 OUT_INTERVAL = int(os.environ.get("BFS_OUT_INTERVAL", "10000"))
 DEVICE = os.environ.get("BFS_DEVICE", "cuda:1")
-ERR_TOL_PCT = float(os.environ.get("BFS_ERR_TOL", "3.0"))   # 达标容差 (%)
-XR_REF = float(os.environ.get("BFS_XR_REF", "3.0"))          # 参考再附着长度 X_r/h (Re 相关: 100→3.0, 200→5.5, 400→8.0)
-ER_REF = float(os.environ.get("BFS_ER_REF", "1.94"))        # Armaly 实验膨胀比
+ERR_TOL_PCT = float(os.environ.get("BFS_ERR_TOL", "3.0"))  # 达标容差 (%)
+XR_REF = float(
+    os.environ.get("BFS_XR_REF", "3.0")
+)  # 参考再附着长度 X_r/h (Re 相关: 100→3.0, 200→5.5, 400→8.0)
+ER_REF = float(os.environ.get("BFS_ER_REF", "1.94"))  # Armaly 实验膨胀比
 OUT_ROOT = Path(
     os.environ.get(
         "BFS_OUT_ROOT",
@@ -70,7 +73,7 @@ VERIFIED_DIR = Path(
     os.environ.get("BFS_VERIFIED_DIR", "/home/wxsc/cxs/TensorLBM/benchmarks/verified/backward_step")
 )
 
-ER = (NY - 2) / (NY - 1 - STEP_H)   # 下游/上游通道高度比 (格)
+ER = (NY - 2) / (NY - 1 - STEP_H)  # 下游/上游通道高度比 (格)
 NU = U_MAX * STEP_H / RE
 TAU = 3.0 * NU + 0.5
 
@@ -121,7 +124,7 @@ bfs._apply_bfs_outlet = _pressure_outlet  # noqa: SLF001 (同上)
 # ---------------------------------------------------------------------------
 # 2) 亚格插值再附着长度测量 + 速度场快照捕获
 # ---------------------------------------------------------------------------
-_captured: dict[str, list] = {"ux": []}   # 每次诊断点捕获 ux (按序 -> step=(i+1)*OUT_INTERVAL)
+_captured: dict[str, list] = {"ux": []}  # 每次诊断点捕获 ux (按序 -> step=(i+1)*OUT_INTERVAL)
 
 
 def _zero_crossing_col(row: np.ndarray, x_step: int) -> float | None:
@@ -174,7 +177,7 @@ def inlet_profile_check(ux: torch.Tensor, step_h: int, u_max: float) -> dict[str
 def separation_bubble_diag(ux: torch.Tensor, x_step: int) -> dict[str, float]:
     """分离泡诊断: 最大回流强度 min(ux)/U_max 及其位置 (物理约定 X_r/h 同口径)。"""
     u = ux.detach().cpu().numpy()
-    bubble = u[1:, x_step:]          # 台阶下游 (含台阶立面附近)
+    bubble = u[1:, x_step:]  # 台阶下游 (含台阶立面附近)
     min_ux = float(bubble.min())
     ys, xs = np.where(bubble == bubble.min())
     return {
@@ -219,18 +222,18 @@ def main() -> None:
     ux_snaps = _captured["ux"]
     n_snap = len(ux_snaps)
     steps_arr = [(i + 1) * OUT_INTERVAL for i in range(n_snap)]
-    xr_series = [
-        measure_reattach_subcell(torch.from_numpy(u), X_STEP, STEP_H) for u in ux_snaps
-    ]
+    xr_series = [measure_reattach_subcell(torch.from_numpy(u), X_STEP, STEP_H) for u in ux_snaps]
 
     final_ux = torch.from_numpy(ux_snaps[-1])
-    xr_h = measure_reattach_subcell(final_ux, X_STEP, STEP_H)          # 物理 (距台阶立面)
-    xr_h_mod = xr_h - 0.5 / STEP_H                                      # 模块约定 (距 x_step 列)
+    xr_h = measure_reattach_subcell(final_ux, X_STEP, STEP_H)  # 物理 (距台阶立面)
+    xr_h_mod = xr_h - 0.5 / STEP_H  # 模块约定 (距 x_step 列)
     err_pct = (xr_h - XR_REF) / XR_REF * 100.0
 
     # 收敛判据: 最后 3 个快照 X_r/h 极差 ≤ 0.02 且最后两步变化 ≤ 0.01
     last3 = xr_series[-3:]
-    converged = len(last3) >= 3 and (max(last3) - min(last3)) <= 0.02 and abs(last3[-1] - last3[-2]) <= 0.01
+    converged = (
+        len(last3) >= 3 and (max(last3) - min(last3)) <= 0.02 and abs(last3[-1] - last3[-2]) <= 0.01
+    )
     # 末两步速度场残差 (L∞, 归一化 U_max)
     if n_snap >= 2:
         resid = float(np.abs(ux_snaps[-1] - ux_snaps[-2]).max() / U_MAX)
@@ -245,7 +248,9 @@ def main() -> None:
         np.savez(
             run_dir / "final_ux.npz",
             ux=ux_snaps[-1],
-            solid=np.asarray(bfs.make_bfs_solid_mask(NY, NX, STEP_H, X_STEP, torch.device("cpu")).numpy()),
+            solid=np.asarray(
+                bfs.make_bfs_solid_mask(NY, NX, STEP_H, X_STEP, torch.device("cpu")).numpy()
+            ),
         )
     except Exception as exc:  # noqa: BLE001
         print(f"npz dump failed: {exc}", flush=True)
@@ -255,14 +260,17 @@ def main() -> None:
         "name": "backward_facing_step_re100",
         "reference": {
             "source": "Armaly, Durst, Pereira & Schoenung, JFM 127:473-496 (1983), "
-                      "commonly cited as 'Armaly 1984'",
+            "commonly cited as 'Armaly 1984'",
             "re_definition": "Re = U_max * step_h / nu (最大入口速度)",
             "xr_h_ref": XR_REF,
             "er_ref": ER_REF,
             "err_tol_pct": ERR_TOL_PCT,
         },
         "geometry": {
-            "nx": NX, "ny": NY, "step_h_cells": STEP_H, "x_step": X_STEP,
+            "nx": NX,
+            "ny": NY,
+            "step_h_cells": STEP_H,
+            "x_step": X_STEP,
             "expansion_ratio": ER,
             "er_dev_pct": (ER - ER_REF) / ER_REF * 100.0,
             "inlet": "fully_developed_parabolic (Zou/He), U_max=%.4f" % U_MAX,
@@ -296,7 +304,10 @@ def main() -> None:
         json.dump(result, fh, indent=2, ensure_ascii=False, default=float)
 
     print(f"run_dir: {run_dir}", flush=True)
-    print(f"X_r/h = {xr_h:.4f}  (module conv {xr_h_mod:.4f})  ref 3.0  err {err_pct:+.2f}%", flush=True)
+    print(
+        f"X_r/h = {xr_h:.4f}  (module conv {xr_h_mod:.4f})  ref 3.0  err {err_pct:+.2f}%",
+        flush=True,
+    )
     print(f"converged={converged}  resid={resid:.2e}  snapshots={n_snap}", flush=True)
     print(f"inlet check: {inlet_diag}", flush=True)
     print(f"bubble: {bubble_diag}", flush=True)

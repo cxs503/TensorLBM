@@ -13,21 +13,20 @@ using the entropic KBC collision operator.  They check:
 
 from __future__ import annotations
 
-import math
-
 import pytest
 import torch
 
-from tensorlbm.d3q19 import C as C19, W as W19, equilibrium3d, macroscopic3d
+from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import W as W19
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.entropic_kbc import (
+    _kbc_decompose,
+    _lattice_constants,
+    collide_kbc_d3q19,
     discrete_entropy,
     kbc_decompose_d3q19,
     solve_gamma_entropy,
-    collide_kbc_d3q19,
-    _kbc_decompose,
-    _lattice_constants,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -100,7 +99,7 @@ class TestKBCDecomposition:
         f_neq_2 = s + k  # second-order projection
 
         p = _lattice_constants(C19, W19, f_neq.device, f_neq.dtype)
-        cx, cy, cz = p["cx"], p["cy"], p["cz"]
+        cx, cy, _cz = p["cx"], p["cy"], p["cz"]
 
         # Original stress
         pi_xx = (cx * cx * f_neq).sum(0)
@@ -308,7 +307,7 @@ class TestAdmissibilityDomainBug:
         """Verify that gamma_init can fall outside the natural admissibility domain."""
         f, feq, tau = strong_neq_case
         p = _lattice_constants(C19, W19, f.device, f.dtype)
-        w = p["w"]
+        p["w"]
         f_neq = f - feq
         s, k, h = _kbc_decompose(f_neq, p)
 
@@ -355,7 +354,7 @@ class TestAdmissibilityDomainBug:
         gamma_init = torch.full(feq.shape[1:], 1.0 - 1.0 / tau, dtype=f.dtype)
 
         # Expanded domain (what the code does)
-        gamma_lower_exp = torch.minimum(gamma_lower_nat, gamma_init)
+        torch.minimum(gamma_lower_nat, gamma_init)
         gamma_upper_exp = torch.maximum(gamma_upper_nat, gamma_init)
 
         # dH/dgamma at expanded upper
@@ -379,8 +378,8 @@ class TestAdmissibilityDomainBug:
         H_after = discrete_entropy(f_star, w)
         violations = (H_after > H_before + 1e-10).sum().item()
         assert violations > 0, (
-            f"Expected H-theorem violations with strong non-equilibrium, got 0. "
-            f"This indicates the admissibility domain expansion bug is present."
+            "Expected H-theorem violations with strong non-equilibrium, got 0. "
+            "This indicates the admissibility domain expansion bug is present."
         )
 
     def test_negative_populations_with_strong_neq(self, strong_neq_case):
@@ -389,8 +388,8 @@ class TestAdmissibilityDomainBug:
         f_star = collide_kbc_d3q19(f, tau=tau)
         neg_count = (f_star < 0).sum().item()
         assert neg_count > 0, (
-            f"Expected negative populations due to admissibility domain expansion, "
-            f"got 0 negative cells."
+            "Expected negative populations due to admissibility domain expansion, "
+            "got 0 negative cells."
         )
 
 

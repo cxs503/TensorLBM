@@ -56,21 +56,25 @@ try:
     from tensorlbm_triton_fused import (
         DEFAULT_BLOCK_X,
         DEFAULT_BLOCK_Y,
-        DEFAULT_NUM_WARPS,
         DEFAULT_NUM_STAGES,
-        is_available as _single_is_available,
+        DEFAULT_NUM_WARPS,
         make_lattice_tensors,
         triton_fused,
+    )
+    from tensorlbm_triton_fused import (
+        is_available as _single_is_available,
     )
 except ImportError:
     from tensorlbm.triton_fused import (
         DEFAULT_BLOCK_X,
         DEFAULT_BLOCK_Y,
-        DEFAULT_NUM_WARPS,
         DEFAULT_NUM_STAGES,
-        is_available as _single_is_available,
+        DEFAULT_NUM_WARPS,
         make_lattice_tensors,
         triton_fused,
+    )
+    from tensorlbm.triton_fused import (
+        is_available as _single_is_available,
     )
 
 
@@ -86,6 +90,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Availability
 # ---------------------------------------------------------------------------
+
 
 def distributed_is_available() -> bool:
     """True iff torch.distributed can be used (always True with PyTorch)."""
@@ -109,6 +114,7 @@ def init_distributed(backend: str | None = None) -> tuple[int, int]:
     if backend is None:
         backend = "nccl" if torch.cuda.is_available() else "gloo"
     import os
+
     rank = int(os.environ.get("RANK", "0"))
     world = int(os.environ.get("WORLD_SIZE", "1"))
     if world == 1:
@@ -137,6 +143,7 @@ def world_size() -> int:
 # ---------------------------------------------------------------------------
 # Distributed solver
 # ---------------------------------------------------------------------------
+
 
 class DistributedTritonFusedSolver3D:
     """Periodic D3Q19 step on a slab-decomposed multi-GPU domain.
@@ -310,14 +317,16 @@ class DistributedTritonFusedSolver3D:
         buf = self.allocate(dtype=f_global.dtype)
         z0, z1 = self.z_start_global, self.z_end_global
         # Owned planes go to local indices [1, nz_local+1).
-        buf[:, 1:self.nz_local + 1, :, :].copy_(f_global[:, z0:z1, :, :])
+        buf[:, 1 : self.nz_local + 1, :, :].copy_(f_global[:, z0:z1, :, :])
         # Pre-fill halos with copies of nearest owned planes so the first
         # kernel launch is safe even before the first halo exchange.
         buf[:, 0:1, :, :].copy_(buf[:, 1:2, :, :])
         buf[:, -1:, :, :].copy_(buf[:, -2:-1, :, :])
         return buf
 
-    def to_global(self, f_local: torch.Tensor, f_global: torch.Tensor | None = None) -> torch.Tensor:
+    def to_global(
+        self, f_local: torch.Tensor, f_global: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """Gather this rank's owned planes into the global tensor.
 
         If ``f_global`` is None, allocates a fresh one of shape
@@ -329,7 +338,8 @@ class DistributedTritonFusedSolver3D:
         if f_global is None:
             f_global = torch.empty(
                 (19, self.nz_global, self.ny, self.nx),
-                dtype=f_local.dtype, device=self.device,
+                dtype=f_local.dtype,
+                device=self.device,
             )
         elif f_global.shape != (19, self.nz_global, self.ny, self.nx):
             raise ValueError(
@@ -337,7 +347,7 @@ class DistributedTritonFusedSolver3D:
                 f"expected (19, {self.nz_global}, {self.ny}, {self.nx})"
             )
         z0, z1 = self.z_start_global, self.z_end_global
-        f_global[:, z0:z1, :, :].copy_(f_local[:, 1:self.nz_local + 1, :, :])
+        f_global[:, z0:z1, :, :].copy_(f_local[:, 1 : self.nz_local + 1, :, :])
         return f_global
 
     # ------------------------------------------------------------------
@@ -373,9 +383,11 @@ class DistributedTritonFusedSolver3D:
 
         # Re-allocate staging only if the caller's buffer dtype/device
         # changed since the staging planes were created.
-        if (self._send_left is None
-                or self._send_left.dtype != f.dtype
-                or self._send_left.device != f.device):
+        if (
+            self._send_left is None
+            or self._send_left.dtype != f.dtype
+            or self._send_left.device != f.device
+        ):
             self._alloc_halo_staging(f.dtype)
 
         # Snapshot the two owned boundary planes into dense send staging.
@@ -460,8 +472,7 @@ class DistributedTritonFusedSolver3D:
         """
         if f_local.shape != self.local_shape:
             raise ValueError(
-                f"f_local shape {tuple(f_local.shape)} does not match "
-                f"expected {self.local_shape}"
+                f"f_local shape {tuple(f_local.shape)} does not match expected {self.local_shape}"
             )
         if self._buf is None or self._buf.dtype != f_local.dtype:
             self._buf = torch.empty_like(f_local)
@@ -474,9 +485,13 @@ class DistributedTritonFusedSolver3D:
         # 2. Run the fused collide+stream kernel on the full local
         #    buffer (nz = nz_local+2, including ghost planes).
         triton_fused(
-            f_local, self.tau, out=self._buf,
-            block_x=self.block_x, block_y=self.block_y,
-            num_warps=self.num_warps, num_stages=self.num_stages,
+            f_local,
+            self.tau,
+            out=self._buf,
+            block_x=self.block_x,
+            block_y=self.block_y,
+            num_warps=self.num_warps,
+            num_stages=self.num_stages,
         )
 
         # 3. Start async halo exchange on the post-step buffer so the

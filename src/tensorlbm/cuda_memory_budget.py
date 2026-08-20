@@ -1,4 +1,5 @@
 """Fail-fast CUDA memory budgeting for production LBM campaigns."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -86,9 +87,7 @@ def plan_hierarchy_device_memory(
             device=device,
             level_indices=tuple(levels),
             allocated_cells=cells_by_device[device],
-            estimated_peak_gib=(
-                cells_by_device[device] * bytes_per_cell / 2**30
-            ),
+            estimated_peak_gib=(cells_by_device[device] * bytes_per_cell / 2**30),
         )
         for device, levels in levels_by_device.items()
     )

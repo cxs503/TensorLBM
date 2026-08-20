@@ -1,16 +1,28 @@
 #!/home/wxsc/anaconda3/envs/ftw-env/bin/python
 """B2: sphere Re=100 D60 网格加密 — 验证 GeneralSimEngine 收敛趋势"""
-import sys, os, time, json, math
+
+import json
+import math
+import os
+import sys
+import time
 
 sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
 
-import torch
 
 from tensorlbm.general_sim import (
-    GeneralSimConfig, GeneralSimEngine,
-    GeometryConfig, PhysicsConfig, SolverConfig, OutputConfig,
-    GeometrySource, LatticeModel, CollisionModel, WallTreatment,
-    ForceMethod, OutputFormat,
+    CollisionModel,
+    ForceMethod,
+    GeneralSimConfig,
+    GeneralSimEngine,
+    GeometryConfig,
+    GeometrySource,
+    LatticeModel,
+    OutputConfig,
+    OutputFormat,
+    PhysicsConfig,
+    SolverConfig,
+    WallTreatment,
 )
 
 
@@ -23,7 +35,7 @@ def clift_gauvin_cd(re):
 
 
 def main():
-    resolution = int(sys.argv[1]) if len(sys.argv) > 1 else 60   # D cells
+    resolution = int(sys.argv[1]) if len(sys.argv) > 1 else 60  # D cells
     extrap = sys.argv[2] if len(sys.argv) > 2 else "quadratic"
     n_steps = int(sys.argv[3]) if len(sys.argv) > 3 else 4000
 
@@ -44,7 +56,7 @@ def main():
         ),
         solver=SolverConfig(
             lattice=LatticeModel.D3Q19,
-            collision=CollisionModel.AUTO,       # Re<1000 -> MRT
+            collision=CollisionModel.AUTO,  # Re<1000 -> MRT
             resolution=resolution,
             domain_padding=None,
             max_steps=n_steps,
@@ -74,20 +86,33 @@ def main():
     engine.setup()
     t0 = time.time()
     summary = engine.run()
-    print(f"run time: {time.time()-t0:.0f}s")
+    print(f"run time: {time.time() - t0:.0f}s")
 
     # last-100-sample mean of cd_total from the forces log
-    recent = engine.forces_log[-min(100, len(engine.forces_log)):]
+    recent = engine.forces_log[-min(100, len(engine.forces_log)) :]
     cd_tot = float(sum(e.get("cd_total", 0.0) for e in recent) / max(len(recent), 1))
     cd_ref = schiller_naumann_cd(config.reynolds_number)
     cd_ref_cg = clift_gauvin_cd(config.reynolds_number)
     err = (cd_tot - cd_ref) / cd_ref * 100.0 if cd_tot else float("nan")
     err_cg = (cd_tot - cd_ref_cg) / cd_ref_cg * 100.0 if cd_tot else float("nan")
-    print(f"  Cd_total = {cd_tot:.4f}  (ref SN {cd_ref:.4f}, err {err:+.2f}%; CG {cd_ref_cg:.4f}, err {err_cg:+.2f}%)")
+    print(
+        f"  Cd_total = {cd_tot:.4f}  (ref SN {cd_ref:.4f}, err {err:+.2f}%; CG {cd_ref_cg:.4f}, err {err_cg:+.2f}%)"
+    )
     with open(os.path.join(out_dir, "bench_result.json"), "w") as fh:
-        json.dump({"case": "B2", "resolution": resolution, "extrap": extrap,
-                   "cd_total": cd_tot, "cd_ref_sn": cd_ref, "err_pct_sn": err,
-                   "cd_ref_cg": cd_ref_cg, "err_pct_cg": err_cg}, fh, indent=2)
+        json.dump(
+            {
+                "case": "B2",
+                "resolution": resolution,
+                "extrap": extrap,
+                "cd_total": cd_tot,
+                "cd_ref_sn": cd_ref,
+                "err_pct_sn": err,
+                "cd_ref_cg": cd_ref_cg,
+                "err_pct_cg": err_cg,
+            },
+            fh,
+            indent=2,
+        )
 
 
 if __name__ == "__main__":
