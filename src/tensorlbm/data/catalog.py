@@ -246,6 +246,40 @@ class FieldDataCatalog:
         rows = self._conn.execute(query, args).fetchall()
         return [_row_to_asset(r) for r in rows]
 
+    def find_assets_by_metadata(
+        self,
+        key: str,
+        value: object,
+        *,
+        kind: str | None = None,
+        status: str | None = "active",
+        limit: int = 50,
+    ) -> list[AssetRecord]:
+        """Return assets having an ``asset_metadata`` row ``(key, str(value))``.
+
+        Metadata values are stored (and compared) as text via ``str()``, so
+        numeric values must be passed the same way they were registered
+        (e.g. ``find_assets_by_metadata("nx", "128")`` after registering
+        ``nx=128`` produced the row ``"128"``).
+        """
+        if not isinstance(key, str) or not key:
+            raise ValueError("key must be a non-empty string")
+        query = (
+            "SELECT a.* FROM assets a JOIN asset_metadata m ON m.asset_id = a.asset_id "
+            "WHERE m.key = ? AND m.value = ?"
+        )
+        args: list[Any] = [key, str(value)]
+        if kind is not None:
+            query += " AND a.kind = ?"
+            args.append(kind)
+        if status is not None:
+            query += " AND a.status = ?"
+            args.append(status)
+        query += " ORDER BY a.updated_at DESC LIMIT ?"
+        args.append(limit)
+        rows = self._conn.execute(query, args).fetchall()
+        return [_row_to_asset(r) for r in rows]
+
     def count_assets(
         self,
         kind: str | None = None,
