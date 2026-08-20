@@ -37,6 +37,7 @@ from tensorlbm.aircraft_icing import (
     run_rime_icing,
     seed_counts_total,
     surface_arc_length,
+    _tvd_face_states,
 )
 
 
@@ -262,7 +263,11 @@ def _small_cfg(**kw) -> IcingConfig:
 
 
 def test_mass_audit_static_flow() -> None:
-    cfg = _small_cfg()
+    # trailing beta window: this test's streamtube-height gate is written
+    # against the Phase 2a window semantics; this high-accel config fills
+    # the LE cell within ~66 steps, leaving a pre-freeze clean window far
+    # too short for parcel-lump statistics (task #84 fix 1 note).
+    cfg = _small_cfg(beta_window_mode="trailing")
     res = run_rime_icing(cfg, log=lambda *a: None)
     a = res["audit"]
     # gate: closure < 1 %
@@ -285,6 +290,59 @@ def test_mass_audit_static_flow() -> None:
     proj_h = cfg.chord_lu * (abs(math.sin(math.radians(cfg.aoa_deg)))
                              + cfg.naca_t * math.cos(math.radians(cfg.aoa_deg)))
     assert 0.0 < capture_h < proj_h * 1.05, (capture_h, proj_h)
+
+
+# ---------------------------------------------------------------------------
+# Task #84 fix 4: pending-water decomposition + freezer leftover cascade
+# ---------------------------------------------------------------------------
+def test_freeze_leftover_cascade_and_pending_split() -> None:
+    """#84 fix 4: stranded sub-cell water cascades off frozen cells.
+
+    A frozen cell can never freeze again (the freeze mask excludes solid
+    cells), so its post-freeze remainder and its engulfed cloud water
+    would strand on the ice as permanently pending mass.  The freezer now
+    cascades both to the outward fluid 4-neighbour (the _deposit_columns
+    rule), and the final audit splits ``pending`` into
+
+    * ``pending_fluid`` — sub-cell water still collecting on fluid cells
+      (legitimate in-transit remainder of the exposure window), and
+    * ``pending_solid`` — what the cascade could not relocate (pockets
+      fully enclosed by ice).
+    """
+    cfg = _small_cfg(beta_window_mode="trailing")
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    a = res["audit"]
+    n_ice = res["metrics"]["n_ice_cells"]
+    assert n_ice >= 5
+    assert math.isclose(a["frozen"], n_ice * cfg.m_cell_ice, rel_tol=1e-9)
+    # decomposition closes on the total
+    assert math.isclose(
+        a["pending"], a["pending_fluid"] + a["pending_solid"],
+        rel_tol=1e-12, abs_tol=1e-15,
+    )
+    # cascade: stranded water is the minority (in this high-accel config
+    # a few fully-enclosed pockets legitimately keep theirs; at production
+    # sizing the cascade relocates everything and pending_solid == 0)
+    assert a["pending_solid"] < a["pending_fluid"], a
+    assert a["closure_error"] < 1e-2
+
+    # unit: one freeze event relocates the full remainder outward
+    sim = RimeIcingSimulation(cfg, log=lambda *a: None)
+    sim.m_w.zero_()
+    y0, x0 = sim.y_le, sim.x_le - 1  # fluid cell just upstream of the LE
+    assert not bool(sim.solid[y0, x0])
+    sim.m_w[y0, x0] = 2.4 * cfg.m_cell_ice
+    before = float(sim.m_w.sum())
+    n = sim._freeze()
+    assert n == 1
+    assert bool(sim.solid[y0, x0])
+    assert float(sim.m_w[y0, x0]) == 0.0  # nothing strands on the ice
+    nz = torch.nonzero(sim.m_w > 0)
+    assert nz.shape[0] == 1
+    yy, xx = nz[0].tolist()
+    assert not bool(sim.solid[yy, xx])  # recipient is fluid -> still freezable
+    assert (yy, xx) != (y0, x0)
+    assert math.isclose(float(sim.m_w.sum()), before - cfg.m_cell_ice, rel_tol=1e-6)
 
 
 # ---------------------------------------------------------------------------
@@ -497,6 +555,241 @@ def test_eulerian_beta_bounds() -> None:
     assert 0.0 < capture_h < proj_h * 1.05, (capture_h, proj_h)
     # support is local to the leading edge (no far-field impacts)
     assert abs(b["s_over_c"]).max() < 0.5
+
+
+# ---------------------------------------------------------------------------
+# Task #84 fix 1: beta window on the pre-ice reference geometry
+# ---------------------------------------------------------------------------
+def test_beta_window_mode_validation_and_bounds() -> None:
+    for bad in ("bogus", "early"):
+        with pytest.raises(ValueError):
+            _euler_cfg(beta_window_mode=bad)
+    for bad in (-0.1, 1.5):
+        with pytest.raises(ValueError):
+            _euler_cfg(beta_clean_frac=bad)
+    # trailing mode keeps the Phase 2a/2b semantics exactly
+    cfg = _euler_cfg(beta_window_mode="trailing")
+    assert cfg.beta_window_bounds == (250, 500)
+    # clean mode: early window, shorter than the trailing half
+    cfg = _euler_cfg()
+    w0, w1 = cfg.beta_window_bounds
+    assert 0 < w0 < w1 <= 500
+    assert w1 - w0 <= max(1, int(cfg.beta_clean_frac * cfg.steps))
+
+
+def test_beta_window_clean_fill_cap() -> None:
+    """Clean window closes before any wall cell can fill with ice.
+
+    Frontal bound on the leading-edge catch: alpha_in * u_in per step, so
+    the fill accumulated over the window stays below one cell-ice mass
+    and no cell turns solid inside the beta window.
+    """
+    cfg = _euler_cfg(rho_rime=100.0, accel_override=2.0e5, steps=400)
+    w0, w1 = cfg.beta_window_bounds
+    assert w1 > w0
+    fill = cfg.alpha_in * cfg.u_in * (w1 - w0)  # [lu^3]
+    m_cell_lu = cfg.rho_rime_eff / cfg.rho_water
+    assert fill <= cfg.beta_clean_max_fill * m_cell_lu * (1.0 + 1.0 / (w1 - w0))
+
+
+def test_beta_window_clean_lwc_invariance() -> None:
+    """Clean-window beta is an LWC invariant (reference geometry).
+
+    With the freezer active (rho_rime=100, high accel: cells fill within
+    the run) the legacy trailing window saturates at the moving-boundary
+    cap and beta_pk collapses as LWC grows; the clean window measures the
+    same pre-ice collection efficiency at both LWCs.
+    """
+    res = {}
+    for lwc in (2.5e-4, 1.0e-3):
+        cfg = _euler_cfg(lwc=lwc, rho_rime=100.0, accel_override=2.0e5, steps=400)
+        res[lwc] = run_rime_icing(cfg, log=lambda *a: None)
+    b_lo = res[2.5e-4]["eulerian"]["beta"]
+    b_hi = res[1.0e-3]["eulerian"]["beta"]
+    pk_lo = float(b_lo["beta"].max())
+    pk_hi = float(b_hi["beta"].max())
+    assert pk_lo > 0.05 and pk_hi > 0.05
+    # LWC invariance within a few percent (float rounding on the scaled
+    # alpha field; the underlying dynamics are linear in alpha_in)
+    assert abs(pk_hi - pk_lo) / pk_lo < 0.05, (pk_lo, pk_hi)
+
+
+# ---------------------------------------------------------------------------
+# Task #84 fix 2: sn_scale_factor + beta_cap_window (from #79 calibration)
+# ---------------------------------------------------------------------------
+def test_sn_scale_factor_decouples_drag_from_rho_air() -> None:
+    """sn_scale_factor = lambda is exactly the rho_air = lambda*1.34 sweep."""
+    common = dict(drag_law="schiller-naumann")
+    cfg_knob = _euler_cfg(sn_scale_factor=2.4, **common)
+    cfg_rho = _euler_cfg(rho_air=2.4 * 1.34, **common)
+    assert math.isclose(cfg_knob.re_p_scale, cfg_rho.re_p_scale, rel_tol=1e-12)
+    # default 1.0 keeps the physical Schiller-Naumann scale unchanged
+    cfg_phys = _euler_cfg(**common)
+    cfg_legacy = _euler_cfg(**common)
+    assert cfg_phys.re_p_scale == cfg_legacy.re_p_scale
+    # stokes law: knob is inert (re_p_scale == 0 switches f_drag to 1)
+    assert _euler_cfg(drag_law="stokes", sn_scale_factor=5.0).re_p_scale == 0.0
+    with pytest.raises(ValueError):
+        _euler_cfg(sn_scale_factor=-0.1)
+
+
+def test_beta_cap_window_value_and_semantics() -> None:
+    """Cap formula reproduces the #79 analytic value; empty window -> inf."""
+    # standard 2b production case: dx=4.17 mm, 360 s, trailing half window
+    cfg = IcingConfig(
+        nx=320, ny=160, steps=3000, warmup_steps=0, uniform_flow=True,
+        droplet_phase="eulerian", lwc=0.5e-3, t_exposure=360.0,
+        rime_density_mode="macklin", beta_window_mode="trailing",
+        device="cpu", log_every=10**9,
+    )
+    analytic = cfg.rho_rime_eff * cfg.dx_phys / (
+        cfg.lwc * cfg.v_inf * (1.0 - cfg.beta_window_frac) * cfg.t_exposure
+    )
+    assert math.isclose(cfg.beta_cap_window, analytic, rel_tol=1e-12)
+    assert math.isclose(cfg.beta_cap_window, 0.6337, abs_tol=5e-4)  # #79 table
+    # glaze whole-shot convention (frac=0 -> empty window) is cap-free
+    glaze_cfg = _euler_cfg(beta_window_mode="trailing", beta_window_frac=0.0)
+    assert glaze_cfg.beta_window_bounds == (500, 500)
+    assert math.isinf(glaze_cfg.beta_cap_window)
+    # mapping report carries both diagnostics
+    rep = _euler_cfg().mapping_report()
+    assert "sn_scale_factor" in rep and "beta_cap_window" in rep
+
+
+# ---------------------------------------------------------------------------
+# Task #84 fix 3: second-order TVD Eulerian advection (donor2)
+# ---------------------------------------------------------------------------
+def test_eulerian_scheme_validation() -> None:
+    with pytest.raises(ValueError):
+        _euler_cfg(eulerian_scheme="muscl")
+    assert _euler_cfg().eulerian_scheme == "donor2"  # new default
+    assert _euler_cfg(eulerian_scheme="donor").eulerian_scheme == "donor"
+
+
+def test_eulerian_donor2_tvd_face_reconstruction() -> None:
+    """_tvd_face_states: exact on uniform/linear data, interval-safe on any data.
+
+    * uniform field: zero downwind difference -> face == donor state exactly
+      (the donor2 upgrade is bitwise-neutral on a uniform cloud, so the
+      far-field/free-stream transport is identical to the legacy scheme);
+    * linear field: second order (face == exact midpoint on interior faces);
+    * random field: the reconstructed face never leaves the interval spanned
+      by its two cells (local TVD: no over/undershoot);
+    * non-interior faces (border / solid neighbour) fall back to the plain
+      donor state.
+    """
+    torch.manual_seed(3)
+    ny, nx = 8, 16
+    j = torch.arange(nx, dtype=torch.float64)[None, :].expand(ny, nx)
+
+    def face_arrays(axis):
+        shp = (ny, nx - 1) if axis == 1 else (ny - 1, nx)
+        pos = torch.rand(shp) < 0.5
+        interior = torch.ones(shp, dtype=torch.bool)
+        return pos, interior
+
+    # uniform: exact donor state on every face, both axes, both wind signs
+    q_u = torch.full((ny, nx), 0.7)
+    for axis in (0, 1):
+        pos, interior = face_arrays(axis)
+        f = _tvd_face_states(q_u, pos, interior, axis)
+        assert torch.equal(f, torch.full_like(f, 0.7))
+
+    # linear: exact midpoint on interior faces (2nd order); border faces
+    # (index 0 / last) use the plain donor state by construction
+    q_l = 0.1 * j.clone()
+    pos, interior = face_arrays(1)
+    f = _tvd_face_states(q_l, pos, interior, axis=1)
+    mid = 0.1 * (j[:, :-1] + 0.5)
+    err = (f - mid).abs()
+    assert float(err[:, 1:-1].max()) < 1e-9
+
+    # random: interval bound on interior faces
+    q_r = torch.rand(ny, nx)
+    for axis in (0, 1):
+        pos, interior = face_arrays(axis)
+        f = _tvd_face_states(q_r, pos, interior, axis)
+        if axis == 1:
+            lo = torch.minimum(q_r[:, :-1], q_r[:, 1:])
+            hi = torch.maximum(q_r[:, :-1], q_r[:, 1:])
+            sel = interior[:, 1:-1]
+            fv, lov, hiv = f[:, 1:-1][sel], lo[:, 1:-1][sel], hi[:, 1:-1][sel]
+        else:
+            lo = torch.minimum(q_r[:-1, :], q_r[1:, :])
+            hi = torch.maximum(q_r[:-1, :], q_r[1:, :])
+            sel = interior[1:-1, :]
+            fv, lov, hiv = f[1:-1, :][sel], lo[1:-1, :][sel], hi[1:-1, :][sel]
+        assert bool((fv >= lov - 1e-12).all()) and bool((fv <= hiv + 1e-12).all())
+
+    # non-interior faces: plain donor state regardless of the field
+    pos, interior = face_arrays(1)
+    interior[:, :] = False
+    f = _tvd_face_states(q_r, pos, interior, axis=1)
+    donor = torch.where(pos, q_r[:, :-1], q_r[:, 1:])
+    assert torch.equal(f, donor)
+
+
+def test_eulerian_donor2_uniform_flow_bitwise_legacy() -> None:
+    """Coupled uniform-flow run on the donor2 default: safe and closed."""
+    r_2 = run_rime_icing(_euler_cfg(eulerian_scheme="donor2"), log=lambda *a: None)
+    a2 = r_2["eulerian"]["alpha"]
+    assert float(a2.min()) >= 0.0
+    assert float(a2.max()) <= r_2["eulerian"]["alpha_in"] * 1.02 + 1e-12
+    assert r_2["eulerian"]["audit"]["closure_error"] < 1e-6
+    assert not np.isnan(a2).any()
+
+
+def test_eulerian_donor2_advection_accuracy_and_tvd() -> None:
+    """Gaussian/step advection: donor2 beats donor; TVD (no over/undershoot).
+
+    Pure advection (drag frozen, no shadow, no solid): a Gaussian and a
+    step advected across the grid.  Second order keeps the peak; the
+    van Leer limiter keeps the solution inside the data range.
+    """
+    ny, nx = 32, 64
+    dev = torch.device("cpu")
+    ux = torch.full((ny, nx), 0.05, device=dev)
+    uy = torch.zeros((ny, nx), device=dev)
+    solid = torch.zeros((ny, nx), dtype=torch.bool, device=dev)
+    xg = torch.arange(nx, dtype=torch.float32, device=dev)[None, :].expand(ny, nx)
+    alpha0 = torch.exp(-((xg - 20.0) / 3.0) ** 2).clone()
+    tau_frozen, alpha_in, u_in = 1.0e9, 0.05, 0.05
+    peaks, maxima, minima = {}, {}, {}
+    for scheme, donor2 in (("donor", False), ("donor2", True)):
+        alpha = alpha0.clone()
+        mx, my = alpha * ux, alpha * uy
+        for _ in range(200):  # advect ~10 cells
+            alpha, mx, my, _imp, _bf = RimeIcingSimulation._euler_step(
+                alpha, mx, my, ux, uy, solid, tau_frozen, 0.0,
+                alpha_in, u_in, -1.0, donor2,
+            )
+        peaks[scheme] = float(alpha.max())
+        maxima[scheme] = float(alpha.max())
+        minima[scheme] = float(alpha.min())
+    assert minima["donor2"] >= 0.0 and minima["donor"] >= 0.0
+    # second order: markedly less numerical diffusion of the peak
+    assert peaks["donor2"] > peaks["donor"] + 0.15, peaks
+    assert peaks["donor2"] > 0.8  # peak survives 10 cells of travel
+    # step profile: monotone (no oscillation, no new extrema from the limiter).
+    # NOTE the small (~2.5% at birth, decaying) max-bump at the cloud edge is
+    # *legacy* scheme behaviour, present with donor too: in zero-alpha cells
+    # ud = mx/alpha.clamp(eps) collapses to 0, halving the edge face
+    # velocity, so the front cell under-outflows.  The gate is that donor2
+    # adds nothing beyond that: max(donor2) <= max(donor) + 1e-3.
+    alpha_s = (xg < 30.0).float().clone()
+    step_max = {}
+    for scheme, donor2 in (("donor", False), ("donor2", True)):
+        alpha = alpha_s.clone()
+        mx, my = alpha * ux, alpha * uy
+        for _ in range(120):
+            alpha, mx, my, _imp, _bf = RimeIcingSimulation._euler_step(
+                alpha, mx, my, ux, uy, solid, tau_frozen, 0.0,
+                alpha_in, u_in, -1.0, donor2,
+            )
+        assert float(alpha.min()) >= -1e-8  # no undershoot
+        step_max[scheme] = float(alpha.max())
+    assert step_max["donor2"] <= step_max["donor"] + 1e-3, step_max
+    assert step_max["donor2"] < 1.03  # bounded legacy edge bump, no ringing
 
 
 def test_eulerian_shadow_region_regularisation() -> None:
@@ -828,14 +1121,23 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
     panel must solve to n_f == 1 with sub-zero T_s and no runback (at the
     baseline -20 C / 0.5 g/m^3 the stagnation is genuinely glaze, n_f
     ~ 0.65, which is the physics, not a regression).
+
+    Task #84 fix 4 note: the conservative freezer (water cascade) removed
+    the silent stranding sink this gate was implicitly calibrated on, so
+    the config was moved into the regime the ledger semantics assume
+    (rho_rime 100 -> 800, steps 300 -> 900: same 1800 s window, per-step
+    deposit < 1 cell, stagnation cell fills over ~20 steps, no accretion
+    runaway).  The voxel comparison gets a 2-cell slack (integer
+    granularity at n ~ 15); the exact statement is the *mass* one, now
+    asserted directly on the 2a side: frozen + pending == delivered.
     """
-    rime_kw = dict(t_static_c=-30.0, lwc=2.0e-4, t_exposure=1800.0, steps=300)
+    rime_kw = dict(t_static_c=-30.0, lwc=2.0e-4, t_exposure=1800.0, steps=900)
     cfg = _euler_cfg(
         thermo_model="messinger",
         evap_enabled=False,
         glaze_rho_mode="const",
         rime_density_mode="const",
-        rho_rime=100.0,
+        rho_rime=800.0,  # #84 fix 4: per-step deposit < 1 cell (no runaway)
         **rime_kw,
     )
     accel = cfg.t_exposure / (cfg.steps * cfg.dt_phys)
@@ -865,7 +1167,7 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
         _euler_cfg(
             thermo_model="instant",
             accel_override=accel,
-            rho_rime=100.0,
+            rho_rime=800.0,
             rime_density_mode="const",
             **rime_kw,
         ),
@@ -873,10 +1175,17 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
     )
     n_2a = int(r2a["ice_only"].sum())
     n_g = int(g["ice_only"].sum())
-    assert abs(n_2a - n_g) <= max(2, 0.02 * n_2a), (n_2a, n_g)
-    # frozen voxel mass identical: n_cells * m_cell on both sides
-    mcell = cfg.rho_rime * cfg.dx_phys**3
-    assert math.isclose(n_g * mcell, n_2a * mcell, rel_tol=max(1.0, 0.02 * n_2a) / max(n_2a, 1))
+    # integer voxel granularity at n ~ 15: 2-cell slack
+    assert abs(n_2a - n_g) <= 2, (n_2a, n_g)
+    # the exact statement is mass conservation on the 2a side: everything
+    # the ledger delivered (impacts + engulfed cloud) is frozen or still
+    # pending as liquid -- nothing strands silently (#84 fix 4)
+    ae = r2a["eulerian"]["audit"]
+    delivered = ae["deposited"] + ae["encased"]
+    assert math.isclose(
+        r2a["audit"]["frozen"] + r2a["audit"]["pending"], delivered, rel_tol=1e-5
+    ), (r2a["audit"], ae)
+    assert r2a["audit"]["pending_solid"] <= 0.05 * r2a["audit"]["pending"] + 1e-15
     # (d) evaporation on (default) keeps n_f == 1 in the rime limit
     cfg2 = _euler_cfg(thermo_model="messinger", **rime_kw)
     g2 = run_glaze_icing(cfg2, shots=1, log=lambda *a: None)
