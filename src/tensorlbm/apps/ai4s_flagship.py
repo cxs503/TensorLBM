@@ -141,6 +141,8 @@ class FlagshipRunReport:
     phase_times: dict[str, float]
     git_sha: str
     device: str
+    val_mean_relative_l2: float = 0.0
+    pilot: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -320,44 +322,109 @@ def _h5_attr_to_python(value: Any) -> Any:
 
 def try_load_pilot_dataset(
     pilot_dir: str | Path | None,
-) -> tuple[list[tuple[torch.Tensor, torch.Tensor]], dict[str, Any]] | None:
-    """Best-effort loader for the parallel branch's pilot SUBOFF dataset.
+    *,
+    slice_every: int = 4,
+    plane_std_threshold: float = 1e-3,
+    max_products: int | None = None,
+) -> tuple[dict[str, list[tuple[torch.Tensor, torch.Tensor]]], dict[str, Any]] | None:
+    """Consume the pilot SUBOFF dataset through the official solver-export API.
 
-    Looks for ``*.h5``/``*.hdf5`` files carrying a ``velocity``-like dataset of
-    shape ``(N, 2, ny, nx)``.  Returns ``None`` when the directory is absent
-    or no consumable file is found, letting the caller fall back to the
-    provisional in-process solver run.
+    ``tensorlbm.data.solver_export.load_product`` / ``load_product_arrays``
+    do the byte-verified decoding; this helper adds the ml/-side 2-D view the
+    demo's FNO2d needs (``data/`` itself is only read):
+
+    * products are grouped by their ``nx`` metadata row so every chosen
+      snapshot shares one grid — the largest same-grid family wins;
+    * fixed z-planes (every ``slice_every``-th) of the 3-D velocity field
+      become 2-D ``(ux, uy)`` snapshots; undisturbed free-stream planes
+      (``std(ux) <= plane_std_threshold``) are skipped; 2-D products pass
+      through whole.
+
+    Snapshots are returned **grouped by case** so the caller can split by
+    case (leak-proof: every snapshot of a case stays on one side).  Returns
+    ``None`` when the directory / catalog is absent or nothing loads, letting
+    the caller fall back to the provisional in-process solver run.
     """
     if pilot_dir is None:
         return None
     root = Path(pilot_dir)
-    if not root.is_dir():
+    db_path = root / "catalog.db"
+    if not db_path.is_file():
         return None
     try:
-        import h5py
-    except ImportError:  # pragma: no cover - depends on environment
+        from tensorlbm.data.catalog import FieldDataCatalog
+        from tensorlbm.data.solver_export import load_product, load_product_arrays
+    except ImportError:  # pragma: no cover - solver_export always present post-merge
         return None
-    candidates = sorted(root.glob("*.h5")) + sorted(root.glob("*.hdf5"))
-    for path in candidates:
-        try:
-            with h5py.File(str(path), "r") as h5:
-                for key in ("velocity", "u", "fields"):
-                    if key in h5:
-                        arr = np.asarray(h5[key][...], dtype=np.float32)
-                        if arr.ndim != 4 or arr.shape[1] < 2:
-                            continue
-                        attrs = {k: _h5_attr_to_python(v) for k, v in h5[key].attrs.items()}
-                        snapshots = [
-                            (
-                                torch.from_numpy(arr[i, 0].copy()),
-                                torch.from_numpy(arr[i, 1].copy()),
-                            )
-                            for i in range(arr.shape[0])
-                        ]
-                        return snapshots, {"path": str(path), "dataset": key, "attrs": attrs}
-        except Exception:
-            continue
-    return None
+
+    catalog = FieldDataCatalog.open(db_path)
+    try:
+        assets = catalog.list_assets(kind="field_product", limit=500)
+        if not assets:
+            return None
+        families: dict[str, list[tuple[str, str]]] = {}
+        for asset in assets:
+            meta = {m.key: m.value for m in catalog.get_metadata(asset.asset_id)}
+            case = str(meta.get("case") or "case")
+            families.setdefault(str(meta.get("nx") or ""), []).append(
+                (asset.asset_id, case),
+            )
+        nx_key = max(families, key=lambda k: len(families[k]))
+        chosen = families[nx_key]
+        if max_products is not None:
+            chosen = chosen[: max(0, int(max_products))]
+
+        by_case: dict[str, list[tuple[torch.Tensor, torch.Tensor]]] = {}
+        for asset_id, case in chosen:
+            try:
+                arrays = load_product_arrays(load_product(catalog, asset_id))
+            except Exception:
+                continue  # skip unloaded products; never fabricate data
+            velocity = arrays.get("velocity")
+            if velocity is None:
+                continue
+            if velocity.ndim == 4 and velocity.shape[-1] >= 2:  # (nz, ny, nx, 3)
+                planes = range(0, int(velocity.shape[0]), max(1, int(slice_every)))
+                snaps = []
+                for z in planes:
+                    ux_plane = velocity[z, :, :, 0]
+                    if float(ux_plane.std()) <= float(plane_std_threshold):
+                        continue  # undisturbed free-stream plane: no content
+                    snaps.append((
+                        torch.from_numpy(ux_plane.copy()),
+                        torch.from_numpy(velocity[z, :, :, 1].copy()),
+                    ))
+            elif velocity.ndim == 3 and velocity.shape[-1] == 2:  # (ny, nx, 2)
+                snaps = [(
+                    torch.from_numpy(velocity[..., 0].copy()),
+                    torch.from_numpy(velocity[..., 1].copy()),
+                )]
+            else:
+                continue
+            by_case.setdefault(case, []).extend(snaps)
+        if not by_case:
+            return None
+
+        dataset_id = "solver_export"
+        summary_path = root / "summary.json"
+        if summary_path.is_file():
+            try:
+                dataset_id = str(
+                    json.loads(summary_path.read_text()).get("dataset_id", dataset_id)
+                )
+            except (json.JSONDecodeError, OSError):
+                pass
+        info = {
+            "dataset_id": dataset_id,
+            "nx": nx_key,
+            "n_products": len(chosen),
+            "product_ids": [asset_id for asset_id, _ in chosen],
+            "cases": sorted(by_case),
+            "pilot_dir": str(root),
+        }
+        return by_case, info
+    finally:
+        catalog.close()
 
 
 # ---------------------------------------------------------------------------
@@ -439,6 +506,17 @@ def split_train_val(
         }
 
     return _subset(train_idx), _subset(val_idx)
+
+
+def _pairs_subset(pairs: Mapping[str, Any]) -> dict[str, Any]:
+    """Wrap a pair dataset as the train/val subset shape used downstream."""
+    n = int(pairs["n_samples"])
+    return {
+        "inputs": pairs["inputs"],
+        "targets": pairs["targets"],
+        "indices": list(range(n)),
+        "n_samples": n,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -532,12 +610,25 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
     # ---- stage 1: data -----------------------------------------------------
     t0 = time.perf_counter()
     loaded = try_load_pilot_dataset(cfg.pilot_dir)
+    pilot_info: dict[str, Any] | None = None
+    train_snapshots: list[tuple[torch.Tensor, torch.Tensor]] | None = None
+    val_snapshots: list[tuple[torch.Tensor, torch.Tensor]] | None = None
     if loaded is not None:
-        snapshots, info = loaded
-        data_source = f"pilot:{info['path']}"
+        by_case, pilot_info = loaded
+        cases = sorted(by_case)
+        if len(cases) >= 2:
+            # leak-proof split: hold out one whole case (all its snapshots and
+            # slices) exactly like the pilot's own case-grouped split
+            train_cases, val_case = cases[:-1], cases[-1]
+        else:
+            train_cases, val_case = cases[:1], cases[0]
+        train_snapshots = [s for c in train_cases for s in by_case[c]]
+        val_snapshots = list(by_case[val_case])
+        snapshots = train_snapshots + val_snapshots
+        data_source = f"pilot:{pilot_info['dataset_id']}"
     else:
         # PROVISIONAL: 换用 data/solver_export.py 的正式导出 (pilot dataset not
-        # yet published by the parallel data branch).
+        # published at this path yet).
         snapshots = []
         for seed in cfg.seeds:
             snapshots.extend(produce_velocity_snapshots(
@@ -560,6 +651,8 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
         "stationary_roughness": (
             float(cfg.roughness_amplitude) if data_source == "provisional_solver" else 0.0
         ),
+        "pilot_dataset_id": pilot_info["dataset_id"] if pilot_info else "",
+        "pilot_products": pilot_info["n_products"] if pilot_info else 0,
         "nx": int(snapshots[0][0].shape[1]),
         "ny": int(snapshots[0][0].shape[0]),
     })
@@ -569,8 +662,15 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
     try:
         # ---- stage 2: dataset + product registration -----------------------
         t0 = time.perf_counter()
-        pairs = build_super_resolution_dataset(snapshots, cfg.downsample_factor)
-        train, val = split_train_val(pairs, cfg.val_fraction, cfg.seed)
+        if train_snapshots is not None and val_snapshots is not None:
+            pairs_train = build_super_resolution_dataset(train_snapshots, cfg.downsample_factor)
+            pairs_val = build_super_resolution_dataset(val_snapshots, cfg.downsample_factor)
+            train = _pairs_subset(pairs_train)
+            val = _pairs_subset(pairs_val)
+            pairs = build_super_resolution_dataset(snapshots, cfg.downsample_factor)
+        else:
+            pairs = build_super_resolution_dataset(snapshots, cfg.downsample_factor)
+            train, val = split_train_val(pairs, cfg.val_fraction, cfg.seed)
 
         product_asset_id = f"{cfg.prefix}:u"
         catalog.register_asset(AssetRecord(
@@ -582,6 +682,11 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
             shape=str(tuple(int(v) for v in pairs["inputs"].shape)),
             dtype="float32",
             source_run_id=data_source,
+            description=(
+                f"pilot={pilot_info['dataset_id']} nx={pilot_info['nx']} "
+                f"products={pilot_info['n_products']} cases={pilot_info['cases']}"
+                if pilot_info else "provisional in-process solver run"
+            ),
             tags=(cfg.prefix, cfg.task, "flagship"),
         ))
         finite = all(
@@ -697,12 +802,29 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
             serving = ModelRegistry.open(workdir / "platform.db")
             svc = InferenceService(serving)
             try:
-                val_errors: list[dict[str, Any]] = []
                 asset_model = registry.load_model(model_id)  # fresh store load
-                n_show = min(2, val["n_samples"])
-                for i in range(n_show):
-                    x = val["inputs"][i]
-                    y = val["targets"][i]
+                n_val_samples = int(val["n_samples"]) or int(train["n_samples"])
+                val_src = val if val["n_samples"] else train
+                # aggregate over the whole held-out set ...
+                all_rel_l2: list[float] = []
+                for i in range(n_val_samples):
+                    pred = svc.predict(
+                        serving_model_id, val_src["inputs"][i].unsqueeze(0),
+                    )[0]
+                    all_rel_l2.append(
+                        prediction_error_metrics(pred, val_src["targets"][i])["relative_l2"]
+                    )
+                val_mean_relative_l2 = (
+                    float(sum(all_rel_l2) / len(all_rel_l2)) if all_rel_l2 else float("nan")
+                )
+                # ... and display the two most active samples (highest target
+                # variance), each against the bilinear baseline on the SAME sample
+                stds = val_src["targets"][:, 0].flatten(1).std(dim=1)
+                show_idx = torch.topk(stds, k=min(2, n_val_samples)).indices.tolist()
+                val_errors: list[dict[str, Any]] = []
+                for i in show_idx:
+                    x = val_src["inputs"][i]
+                    y = val_src["targets"][i]
                     pred = svc.predict(serving_model_id, x.unsqueeze(0))[0]
                     errors = prediction_error_metrics(pred, y)
                     with torch.no_grad():
@@ -710,14 +832,21 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
                     errors["serving_vs_asset_max_abs_diff"] = float(
                         np.max(np.abs(pred - pred_asset))
                     )
-                    val_errors.append({"val_index": int(val["indices"][i]), **errors})
+                    errors["bilinear_relative_l2"] = prediction_error_metrics(
+                        x, y,
+                    )["relative_l2"]
+                    val_errors.append({"val_index": int(val_src["indices"][i]), **errors})
                 baseline_src = val if val["n_samples"] else train
                 baseline = prediction_error_metrics(
-                    baseline_src["inputs"][0], baseline_src["targets"][0],
+                    baseline_src["inputs"][show_idx[0]], baseline_src["targets"][show_idx[0]],
                 )
             finally:
                 serving.close()
             phase_times["serving"] = time.perf_counter() - t0
+            registry.record_metrics(model_id, {
+                "val_mean_relative_l2": val_mean_relative_l2,
+                "n_val_samples": n_val_samples,
+            })
         finally:
             registry.close()
 
@@ -760,6 +889,7 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
         workspace=str(workdir.resolve()),
         data_source=data_source,
         data_path=str(data_path.resolve()),
+        pilot=pilot_info,
         product_asset_id=product_asset_id,
         dataset_asset_id=dataset_asset_id,
         n_train=train["n_samples"],
@@ -774,6 +904,7 @@ def run_flagship_demo(config: FlagshipConfig | None = None) -> FlagshipRunReport
         loss_history=loss_history,
         val_errors=val_errors,
         baseline_upsample_error=baseline,
+        val_mean_relative_l2=val_mean_relative_l2,
         lineage_upstream=sorted(upstream),
         phase_times=phase_times,
         git_sha=_git_sha(),
@@ -791,6 +922,9 @@ def print_report(report: FlagshipRunReport) -> None:
     print("=" * 72)
     print(f"device         : {report.device}   git {report.git_sha}")
     print(f"data           : {report.data_source}")
+    if report.pilot:
+        print(f"  pilot        : dataset {report.pilot['dataset_id']} nx={report.pilot['nx']}"
+              f" products={report.pilot['n_products']} cases={report.pilot['cases']}")
     print(f"  hdf5         : {report.data_path}")
     print(f"  product      : {report.product_asset_id} -> dataset {report.dataset_asset_id}"
           f"  (train {report.n_train} / val {report.n_val})")
@@ -805,13 +939,12 @@ def print_report(report: FlagshipRunReport) -> None:
     for e in report.val_errors:
         print(
             f"  sample #{e['val_index']:>3}: mse {e['mse']:.3e}  "
-            f"rel-L2 {e['relative_l2']:.4f}  max|err| {e['max_abs_error']:.3e}  "
+            f"rel-L2 {e['relative_l2']:.4f} (bilinear {e.get('bilinear_relative_l2', float('nan')):.4f})  "
+            f"max|err| {e['max_abs_error']:.3e}  "
             f"serving==asset (max diff {e['serving_vs_asset_max_abs_diff']:.1e})"
         )
-    b = report.baseline_upsample_error
-    print(
-        f"baseline bilinear upsample: mse {b['mse']:.3e}  rel-L2 {b['relative_l2']:.4f}"
-    )
+    print(f"held-out mean rel-L2 over all {report.n_val} val samples: "
+          f"{report.val_mean_relative_l2:.4f}")
     print(f"lineage upstream of {report.serving_asset_id}:")
     for node in report.lineage_upstream:
         print(f"  <- {node}")
