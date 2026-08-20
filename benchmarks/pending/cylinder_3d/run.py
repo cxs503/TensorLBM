@@ -73,6 +73,37 @@ REF_CD = 1.54          # Tritton 1959 (task window 1.52-1.55)
 REF_CD_DC = 1.522      # Dennis & Chang 1970
 
 
+def face_counts(solid):
+    """Per-cell wall-face counts (nfx, nfy, nfz) with verified slicing."""
+    fluid = ~solid
+    nfx = torch.zeros_like(solid, dtype=torch.float32)
+    nfy = torch.zeros_like(solid, dtype=torch.float32)
+    nfz = torch.zeros_like(solid, dtype=torch.float32)
+    nfx[:, :, 1:-1] += (solid[:, :, 2:] & fluid[:, :, 1:-1]).float()
+    nfx[:, :, 1:-1] += (solid[:, :, :-2] & fluid[:, :, 1:-1]).float()
+    nfy[:, 1:-1, :] += (solid[:, 2:, :] & fluid[:, 1:-1, :]).float()
+    nfy[:, 1:-1, :] += (solid[:, :-2, :] & fluid[:, 1:-1, :]).float()
+    nfz[1:-1, :, :] += (solid[2:, :, :] & fluid[1:-1, :, :]).float()
+    nfz[1:-1, :, :] += (solid[:-2, :, :] & fluid[1:-1, :, :]).float()
+    return nfx, nfy, nfz
+
+
+def smooth_q(solid, cx, cy, R, near):
+    """q_smooth = distance from near-wall cell center to the smooth
+    cylinder surface along the radial, clamped to [0.05, 1.0]."""
+    nz, ny, nx = solid.shape
+    dev = solid.device
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=dev, dtype=torch.float32),
+        torch.arange(ny, device=dev, dtype=torch.float32),
+        torch.arange(nx, device=dev, dtype=torch.float32),
+        indexing="ij",
+    )
+    r_c = torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
+    q = (r_c - R).clamp(0.05, 1.0)
+    return q * near.float()
+
+
 def cylinder3d_mask(nx, ny, nz, cx, cy, radius, device):
     """Boolean mask for a z-axis extruded circular cylinder, shape (nz,ny,nx).
 
@@ -97,6 +128,7 @@ def run_case(
     n_steps: int = 50000,
     lateral_D: float | None = None,
     sample_interval: int = 100,
+    formula: str = "standard",
 ) -> dict:
     dev = torch.device(device)
     R = D_cells / 2.0
@@ -124,6 +156,11 @@ def run_case(
     near = get_near_wall_2d(solid, axis="z")
     n_near = int(near.sum().item())
     mesh = SurfaceMesh.from_cylinder(solid, near, cx, cy, R, axis="z")
+    # friction-formula machinery (q_smooth for BFL variants, dA_scale ratio)
+    q_wall = smooth_q(solid, cx, cy, R, near) if formula in ("bfl", "bfl_lagrange") else None
+    nfx, nfy, nfz = face_counts(solid)
+    dA_ratio = float((nfx + nfy + nfz).sum().item()) / float(near.sum().item())
+    print(f"{tag} formula={formula} faces/near ratio={dA_ratio:.4f}", flush=True)
     print(f"{tag} solid={n_solid} near={n_near} "
           f"(blockage {100.0*D_cells/nx:.1f}% lateral, "
           f"Lz={nz} cells = {nz/D_cells:.1f}D)", flush=True)
@@ -160,7 +197,14 @@ def run_case(
             fx_p, fy_p, _ = drag_pressure_integration(
                 f, mesh, dpS, extrap="none", p0_method="far_field", solid=solid
             )
-            fx_f, fy_f, _ = drag_friction_integration(f, mesh, dpS, nu)
+            if formula == "dA_scale":
+                fx_f, fy_f, _ = drag_friction_integration(f, mesh, dpS, nu)
+                fx_f *= dA_ratio
+                fy_f *= dA_ratio
+            else:
+                fx_f, fy_f, _ = drag_friction_integration(
+                    f, mesh, dpS, nu, q_wall=q_wall, formula=formula, solid=solid
+                )
             cd_p_hist.append(fx_p)
             cd_f_hist.append(fx_f)
             cd_tot_hist.append(fx_p + fx_f)
@@ -228,6 +272,9 @@ def run_case(
         "blockage_pct": 100.0 * D_cells / nx,
         "cx": cx, "cy": cy,
         "n_solid_cells": n_solid, "n_near_cells": n_near,
+        "n_wall_faces": int((nfx + nfy + nfz).sum().item()),
+        "face_cell_ratio": dA_ratio,
+        "friction_formula": formula,
         "n_steps": n_steps, "n_finished": step,
         "sample_interval": sample_interval, "avg_window_samples": win,
         "cd_pressure": cd_p, "cd_friction": cd_f, "cd_total": cd,
@@ -248,7 +295,7 @@ def run_case(
             "drag_pressure.SurfaceMesh.from_cylinder",
             "drag_pressure.get_near_wall_2d",
             "drag_pressure.drag_pressure_integration (extrap=none, p0=far_field)",
-            "drag_pressure.drag_friction_integration (standard)",
+            f"drag_pressure.drag_friction_integration ({formula})",
             "momentum_exchange.* (diagnostic only)",
         ],
     }
@@ -262,10 +309,15 @@ def main() -> int:
     ap.add_argument("--steps", type=int, default=50000)
     ap.add_argument("--lateral", type=float, default=None,
                     help="lateral domain in diameters (default 16 for D=40, 12 for D=60)")
+    ap.add_argument("--formula", default="standard",
+                    choices=["standard", "lagrange", "bfl", "bfl_lagrange",
+                             "faces", "dA_scale"],
+                    help="friction formula (default standard)")
     a = ap.parse_args()
 
     if a.mode == "single":
-        r = run_case(int(a.arg), a.device, a.steps, lateral_D=a.lateral)
+        r = run_case(int(a.arg), a.device, a.steps, lateral_D=a.lateral,
+                     formula=a.formula)
         print(json.dumps(r, indent=2))
         out_path = a.arg if a.arg.endswith(".json") else f"/tmp/cyl3d_d{a.arg}.json"
         Path(out_path).write_text(json.dumps(r, indent=2))
@@ -275,7 +327,7 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     per_grid = []
     for D in (40, 60):
-        r = run_case(D, a.device, a.steps, lateral_D=a.lateral)
+        r = run_case(D, a.device, a.steps, lateral_D=a.lateral, formula=a.formula)
         per_grid.append(r)
         print(json.dumps(r, indent=2))
         (out_dir / f"case_D{D}.json").write_text(json.dumps(r, indent=2))
@@ -291,7 +343,8 @@ def main() -> int:
                     "y+- far-field, z+- periodic) + half-way bounce-back "
                     "(NoDynamics + BB pre-stream)",
         "force": "drag_pressure_integration(extrap=none, p0=far_field) + "
-                 "drag_friction_integration(standard); MEM diagnostic only",
+                 f"drag_friction_integration({a.formula}); MEM diagnostic only",
+        "friction_formula": a.formula,
         "extrap": "none",
         "ref_cd": REF_CD, "ref_cd_window": "1.52-1.55",
         "per_grid": per_grid,
