@@ -35,6 +35,7 @@ compile 路径（tensorlbm.compile_utils，lesson 2 双变体）：
 用法：
     run.py --D 32 48 --device cuda:0 [--compile-mode default|eager] [--out DIR]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -58,16 +59,16 @@ from tensorlbm.boundaries import (
 from tensorlbm.d2q9 import equilibrium
 from tensorlbm.solver import collide_mrt, stream
 
-REF_CD = 1.6        # Okajima 1982（任务口径，自由流方柱 Re=100 文献 1.5-1.7）
-REF_ST = 0.14       # Okajima 1982（方柱 Re=100 St 文献 0.13-0.15）
+REF_CD = 1.6  # Okajima 1982（任务口径，自由流方柱 Re=100 文献 1.5-1.7）
+REF_ST = 0.14  # Okajima 1982（方柱 Re=100 St 文献 0.13-0.15）
 
 # 域/播种参数（与 cylinder_re100 完全同口径，仅 St_seed 换方柱值）
-DOMAIN_D = 40.0     # 域边长 = 40D
-SQUARE_X_D = 10.0   # 方块中心距入口 10D
-SPONGE_D = 10.0     # sponge 宽 10D（下游）
-SPONGE_ALPHA = 10.0 # τ_eff = τ·(1 + α·σ)，collide_mrt docstring 公式
-ST_SEED = 0.14      # 播种 Strouhal（方柱文献 St 0.13-0.15 中值）
-SEED_AMPL = 0.10    # 播种 uy 振幅（× u_in）
+DOMAIN_D = 40.0  # 域边长 = 40D
+SQUARE_X_D = 10.0  # 方块中心距入口 10D
+SPONGE_D = 10.0  # sponge 宽 10D（下游）
+SPONGE_ALPHA = 10.0  # τ_eff = τ·(1 + α·σ)，collide_mrt docstring 公式
+ST_SEED = 0.14  # 播种 Strouhal（方柱文献 St 0.13-0.15 中值）
+SEED_AMPL = 0.10  # 播种 uy 振幅（× u_in）
 SEED_PERIODS = 2.0  # 播种持续 2 个 St_seed 周期
 
 
@@ -109,9 +110,10 @@ def run_case(
     tau = 0.5 + 3.0 * nu
 
     mask = square_mask(nx, ny, SQUARE_X_D * D, ny / 2.0, D, device)
-    sigma = make_sponge_strength(ny, nx, int(nx - SPONGE_D * D), int(SPONGE_D * D),
-                                 power=2.0, device=device)
-    tau_field = tau * (1.0 + SPONGE_ALPHA * sigma)   # τ_eff = τ·(1 + α·σ)
+    sigma = make_sponge_strength(
+        ny, nx, int(nx - SPONGE_D * D), int(SPONGE_D * D), power=2.0, device=device
+    )
+    tau_field = tau * (1.0 + SPONGE_ALPHA * sigma)  # τ_eff = τ·(1 + α·σ)
 
     # 初值：自由流平衡态（固体格内分布由首步 BB 覆盖，同 cylinder 口径）
     rho0 = torch.ones((ny, nx), device=device)
@@ -119,7 +121,7 @@ def run_case(
 
     # ---- 整步步进函数（共性 compile 路径，双变体：播种期 / 自由流期）----
     def _forces_and_farfield(f):
-        fx, fy = compute_obstacle_forces(f, mask)   # post-stream, pre-bounce-back
+        fx, fy = compute_obstacle_forces(f, mask)  # post-stream, pre-bounce-back
         return far_field_bc_2d(f, u_in, mask), fx, fy
 
     def _step_plain(f):
@@ -137,8 +139,7 @@ def run_case(
         return f, fx, fy
 
     step_plain = route_step(_step_plain, compile_mode, name=f"square_re100[D{D}]plain")
-    step_seeded = route_step(_step_seeded, compile_mode, name=f"square_re100[D{D}]seed",
-                             quiet=True)
+    step_seeded = route_step(_step_seeded, compile_mode, name=f"square_re100[D{D}]seed", quiet=True)
 
     omega_seed = 2.0 * math.pi * ST_SEED * u_in / D
     seed_steps = int(round(SEED_PERIODS / (ST_SEED * u_in / D)))
@@ -163,8 +164,8 @@ def run_case(
     fx_np = torch.stack(fx_hist).detach().cpu().numpy().astype(np.float64)
     fy_np = torch.stack(fy_hist).detach().cpu().numpy().astype(np.float64)
 
-    q_dyn = 0.5 * 1.0 * u_in * u_in * D          # 动压尺度（rho=1，D 为边长格数）
-    w0 = int(warmup_frac * steps)                # 稳态分析窗起点
+    q_dyn = 0.5 * 1.0 * u_in * u_in * D  # 动压尺度（rho=1，D 为边长格数）
+    w0 = int(warmup_frac * steps)  # 稳态分析窗起点
     cd_series = fx_np / q_dyn
     cd_mean = float(cd_series[w0:].mean())
     cl_series = fy_np / q_dyn
@@ -175,7 +176,7 @@ def run_case(
     st_cross = float("nan")
     if cl_w.size >= 256:
         spec = np.abs(np.fft.rfft(cl_w * np.hanning(cl_w.size)))
-        k = int(np.argmax(spec[1:])) + 1          # 跳过 DC
+        k = int(np.argmax(spec[1:])) + 1  # 跳过 DC
         delta = 0.0
         if 0 < k < spec.size - 1:
             a, b, c = spec[k - 1], spec[k], spec[k + 1]
@@ -201,37 +202,65 @@ def run_case(
 
     result = {
         "case": "square_cylinder_re100_free_stream_vortex_shedding",
-        "D": D, "nx": nx, "ny": ny,
-        "re": re, "u_in": u_in, "nu_lb": nu, "tau": round(tau, 6),
-        "sponge": {"x0": int(nx - SPONGE_D * D), "width": int(SPONGE_D * D),
-                   "alpha": SPONGE_ALPHA, "power": 2.0},
-        "seed": {"st_seed": ST_SEED, "ampl_frac": SEED_AMPL,
-                 "periods": SEED_PERIODS, "steps": seed_steps},
-        "steps": steps, "warmup_frac": warmup_frac, "analyze_from": w0,
+        "D": D,
+        "nx": nx,
+        "ny": ny,
+        "re": re,
+        "u_in": u_in,
+        "nu_lb": nu,
+        "tau": round(tau, 6),
+        "sponge": {
+            "x0": int(nx - SPONGE_D * D),
+            "width": int(SPONGE_D * D),
+            "alpha": SPONGE_ALPHA,
+            "power": 2.0,
+        },
+        "seed": {
+            "st_seed": ST_SEED,
+            "ampl_frac": SEED_AMPL,
+            "periods": SEED_PERIODS,
+            "steps": seed_steps,
+        },
+        "steps": steps,
+        "warmup_frac": warmup_frac,
+        "analyze_from": w0,
         "compile_mode": compile_mode,
-        "cd": round(cd_mean, 4), "cd_ref": REF_CD, "err_pct": round(err_cd, 2),
+        "cd": round(cd_mean, 4),
+        "cd_ref": REF_CD,
+        "err_pct": round(err_cd, 2),
         "st": round(st_val, 4) if math.isfinite(st_val) else None,
-        "st_ref": REF_ST, "st_err_pct": round(err_st, 2) if math.isfinite(err_st) else None,
+        "st_ref": REF_ST,
+        "st_err_pct": round(err_st, 2) if math.isfinite(err_st) else None,
         "st_crossing": round(st_cross, 4) if math.isfinite(st_cross) else None,
         "cl_amp": float(np.abs(cl_w).max()),
         "finite": True,
         "elapsed_s": round(elapsed, 1),
     }
-    print(f"[square_re100 D={D}] steps={steps} t={elapsed:.0f}s Cd={cd_mean:.4f} "
-          f"({err_cd:+.2f}%) St={st_val:.4f} ({err_st:+.2f}%) "
-          f"cl_amp={result['cl_amp']:.4f} seed_steps={seed_steps}", flush=True)
+    print(
+        f"[square_re100 D={D}] steps={steps} t={elapsed:.0f}s Cd={cd_mean:.4f} "
+        f"({err_cd:+.2f}%) St={st_val:.4f} ({err_st:+.2f}%) "
+        f"cl_amp={result['cl_amp']:.4f} seed_steps={seed_steps}",
+        flush=True,
+    )
     if out_path:
         Path(out_path).write_text(json.dumps(result, indent=2))
     return result
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="square cylinder Re=100 free-stream vortex shedding (Okajima)")
+    ap = argparse.ArgumentParser(
+        description="square cylinder Re=100 free-stream vortex shedding (Okajima)"
+    )
     ap.add_argument("--D", type=int, nargs="+", default=[32, 48])
     ap.add_argument("--re", type=float, default=100.0)
     ap.add_argument("--u-in", type=float, default=0.05)
-    ap.add_argument("--steps", type=int, nargs="+", default=None,
-                    help="per-D step counts; default 60000 (D=32) / 90000 (D=48)")
+    ap.add_argument(
+        "--steps",
+        type=int,
+        nargs="+",
+        default=None,
+        help="per-D step counts; default 60000 (D=32) / 90000 (D=48)",
+    )
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--warmup-frac", type=float, default=0.5)
     ap.add_argument("--out", default="")
@@ -248,9 +277,16 @@ def main() -> None:
         out.mkdir(parents=True, exist_ok=True)
     grids = {}
     for D, steps in zip(args.D, steps_list):
-        grids[str(D)] = run_case(D, args.re, args.u_in, steps, device,
-                                 compile_mode=compile_mode, warmup_frac=args.warmup_frac,
-                                 out_path=str(out / f"case_D{D}.json") if out else None)
+        grids[str(D)] = run_case(
+            D,
+            args.re,
+            args.u_in,
+            steps,
+            device,
+            compile_mode=compile_mode,
+            warmup_frac=args.warmup_frac,
+            out_path=str(out / f"case_D{D}.json") if out else None,
+        )
 
     cds = [g["cd"] for g in grids.values()]
     summary = {
@@ -260,7 +296,9 @@ def main() -> None:
         "convergence": {
             "cd": cds,
             "err_decreased": abs(grids[str(args.D[-1])]["err_pct"])
-                             <= abs(grids[str(args.D[0])]["err_pct"]) if len(cds) > 1 else None,
+            <= abs(grids[str(args.D[0])]["err_pct"])
+            if len(cds) > 1
+            else None,
             "cd_within_3pct": all(abs(g["err_pct"]) <= 3.0 for g in grids.values()),
             "st_within_3pct": all(abs(g["st_err_pct"]) <= 3.0 for g in grids.values()),
         },

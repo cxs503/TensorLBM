@@ -862,7 +862,6 @@ def free_surface_step(
 
     # ---- 4. Mass exchange (standard Körner, independent mass variable) ----
     # (no .any() sync — multicard-safe under TCCL; torch.where handles empty masks)
-    rho_new = f.sum(dim=0)
     iface_mask = flags == INTERFACE
     # Receiver gate: an interface cell with fill≈0 is a halo about to be
     # downgraded to gas by to_gas in this same step.  It must NOT receive
@@ -877,7 +876,6 @@ def free_surface_step(
     # itself: f_bar(q)^*(x).  Sampling it at x-c_q mixes two different links.
     f_opp_nb = f_post[_OPP.to(device)]  # (19, nz, ny, nx)
     from_liq = recv_19 & (neighbor_flags == LIQUID)
-    from_gas = recv_19 & (neighbor_flags == GAS)
     from_iface = recv_19 & (neighbor_flags == INTERFACE)
     mass_delta_liquid = torch.where(from_liq, f - f_opp_nb, torch.zeros_like(f))
     mass_delta_interface = torch.where(from_iface, (f - f_opp_nb) * 0.5, torch.zeros_like(f))

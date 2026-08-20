@@ -49,6 +49,7 @@ Usage:
         [--max-steps N] [--device cuda:2]
     run.py summarize out_dir [--R 30 45]   # re-aggregate from case JSONs
 """
+
 from __future__ import annotations
 
 import argparse
@@ -81,15 +82,13 @@ CS2 = 1.0 / 3.0
 def annulus_geom_factor(R_o: float, a: float) -> float:
     """Phi = R_o^4 - a^4 - (R_o^2-a^2)^2/ln(R_o/a)  (Q = pi*G/(8 nu) * Phi)."""
     ln = math.log(R_o / a)
-    return R_o ** 4 - a ** 4 - (R_o ** 2 - a ** 2) ** 2 / ln
+    return R_o**4 - a**4 - (R_o**2 - a**2) ** 2 / ln
 
 
 def annulus_u(r: np.ndarray, G: float, R_o: float, a: float, nu: float) -> np.ndarray:
     """Exact annular Poiseuille profile u(r), u(a)=u(R_o)=0."""
     ln = math.log(R_o / a)
-    return G / (4.0 * nu) * (
-        R_o ** 2 - r ** 2 + (R_o ** 2 - a ** 2) / ln * np.log(r / R_o)
-    )
+    return G / (4.0 * nu) * (R_o**2 - r**2 + (R_o**2 - a**2) / ln * np.log(r / R_o))
 
 
 def annulus_peak(r_star: float, G: float, R_o: float, a: float, nu: float) -> float:
@@ -109,23 +108,23 @@ def annulus_setup(R_o: int, a: float, L_over_R: int, device: torch.device):
 
     iz = torch.arange(nz, device=device, dtype=torch.float32).view(-1, 1)
     iy = torch.arange(ny, device=device, dtype=torch.float32).view(1, -1)
-    d2 = (iy - yc) ** 2 + (iz - zc) ** 2          # (nz, ny)
+    d2 = (iy - yc) ** 2 + (iz - zc) ** 2  # (nz, ny)
     d = torch.sqrt(d2)
-    fluid2d = (d <= R_o) & (d >= a)               # annular fluid cross-section
-    wall2d = ~fluid2d                             # solid cells (outer wall + inner column)
+    fluid2d = (d <= R_o) & (d >= a)  # annular fluid cross-section
+    wall2d = ~fluid2d  # solid cells (outer wall + inner column)
     wall_mask = wall2d.unsqueeze(-1).expand(nz, ny, nx).contiguous()
     return ny, nz, nx, yc, zc, d, fluid2d, wall_mask
 
 
 def annular_profile(
-    ux_plane: torch.Tensor,   # (nz, ny) time-averaged ux at measurement plane
-    d: torch.Tensor,          # (nz, ny) distance from axis
+    ux_plane: torch.Tensor,  # (nz, ny) time-averaged ux at measurement plane
+    d: torch.Tensor,  # (nz, ny) distance from axis
     R_o: int,
     a: float,
-    G_ref: float,             # gradient used for the analytic profile
+    G_ref: float,  # gradient used for the analytic profile
     nu: float,
-    U_max_ref: float,         # peak velocity used for the central-region mask
-    Q_nom: float,             # nominal flow rate (u_in * pi*(Ro^2-a^2))
+    U_max_ref: float,  # peak velocity used for the central-region mask
+    Q_nom: float,  # nominal flow rate (u_in * pi*(Ro^2-a^2))
 ) -> dict:
     """Bin the annular plane by radius (bin k: k<=d<k+1, k=floor(a)..R_o) and
     compare with the exact annular Poiseuille profile (per-cell average of the
@@ -153,8 +152,9 @@ def annular_profile(
     # Per-cell central-region max relative error (|u_ana| > 20% of U_max_ref)
     mask_c = fluid & (np.abs(u_ana_cell) > 0.2 * abs(U_max_ref))
     if mask_c.sum() > 0:
-        max_rel = float(np.max(np.abs(u_np[mask_c] - u_ana_cell[mask_c])
-                               / np.abs(u_ana_cell[mask_c])) * 100.0)
+        max_rel = float(
+            np.max(np.abs(u_np[mask_c] - u_ana_cell[mask_c]) / np.abs(u_ana_cell[mask_c])) * 100.0
+        )
     else:
         max_rel = float("nan")
 
@@ -217,17 +217,17 @@ def run_case(
 
     # --- nominal analytic reference (nominal geometry + mass-conservation G) ---
     Phi = annulus_geom_factor(float(R_o), a)
-    A_nom = math.pi * (float(R_o) ** 2 - a ** 2)
-    G_nom = 8.0 * nu * u_in * (float(R_o) ** 2 - a ** 2) / Phi   # u_mean = u_in
-    r_star = math.sqrt((float(R_o) ** 2 - a ** 2) / (2.0 * math.log(R_o / a)))
+    A_nom = math.pi * (float(R_o) ** 2 - a**2)
+    G_nom = 8.0 * nu * u_in * (float(R_o) ** 2 - a**2) / Phi  # u_mean = u_in
+    r_star = math.sqrt((float(R_o) ** 2 - a**2) / (2.0 * math.log(R_o / a)))
     U_max_nom = annulus_peak(r_star, G_nom, float(R_o), a, nu)
 
     rho_out = 1.0
-    Re = u_in * 2.0 * (R_o - a) / nu        # Re = u_mean*D_h/nu, D_h = 2(R_o-a)
+    Re = u_in * 2.0 * (R_o - a) / nu  # Re = u_mean*D_h/nu, D_h = 2(R_o-a)
     Ma = U_max_nom / math.sqrt(CS2)
 
     # --- initial condition: rest density + annular Poiseuille profile ---
-    d3 = d.unsqueeze(-1)                             # (nz, ny, 1)
+    d3 = d.unsqueeze(-1)  # (nz, ny, 1)
     u_ana_cell = annulus_u(d.cpu().numpy(), G_nom, float(R_o), a, nu)
     ux0_np = np.where(fluid2d.cpu().numpy(), u_ana_cell, 0.0).astype(np.float32)
     ux0 = torch.from_numpy(ux0_np).to(device).view(nz, ny, 1).expand(nz, ny, nx)
@@ -248,8 +248,8 @@ def run_case(
 
     step_fn = route_step(_step, compile_mode, name=f"poiseuille_3d_annulus[Ro{R_o}]")
 
-    x_meas = nx // 2                    # mid-pipe measurement plane
-    x_dev = nx - 8                      # fully-developed check plane (near outlet)
+    x_meas = nx // 2  # mid-pipe measurement plane
+    x_dev = nx - 8  # fully-developed check plane (near outlet)
 
     t0 = time.time()
     umax_hist: list[float] = []
@@ -308,12 +308,18 @@ def run_case(
 
     # --- fully-developed check: profile at x_dev vs x_meas (normalized) ---
     fd_dev = annular_profile(acc_dev, d, R_o, a, G_nom, nu, U_max_nom, Q_nom)
-    fd_max_dev = float(np.max(np.abs(np.array(prof["bins"]) - np.array(fd_dev["bins"]))
-                              / np.maximum(np.abs(np.array(prof["bins"])), 1e-12)))
+    fd_max_dev = float(
+        np.max(
+            np.abs(np.array(prof["bins"]) - np.array(fd_dev["bins"]))
+            / np.maximum(np.abs(np.array(prof["bins"])), 1e-12)
+        )
+    )
 
     # --- pressure diagnostics ---
     u_max_dp = annulus_peak(r_star, G_meas, float(R_o), a, nu)
-    u_max_dp_err_pct = (prof["u_center"] - u_max_dp) / abs(u_max_dp) * 100.0 if u_max_dp > 0 else float("nan")
+    u_max_dp_err_pct = (
+        (prof["u_center"] - u_max_dp) / abs(u_max_dp) * 100.0 if u_max_dp > 0 else float("nan")
+    )
 
     mass_drift_pct = (float(f.sum().item()) - initial_mass) / initial_mass * 100.0
 
@@ -330,7 +336,9 @@ def run_case(
         "R_o": R_o,
         "a": a,
         "a_ratio": a_ratio,
-        "ny": ny, "nz": nz, "nx": nx,
+        "ny": ny,
+        "nz": nz,
+        "nx": nx,
         "L_over_R": float(nx / R_o),
         "tau": tau,
         "nu_lb": nu,
@@ -397,7 +405,9 @@ def build_summary(cases: list[dict], out_dir: str) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
     convergence = [
         {
-            "R_o": c["R_o"], "a": c["a"], "Re": c["Re"],
+            "R_o": c["R_o"],
+            "a": c["a"],
+            "Re": c["Re"],
             "l2_rel_err": c["l2_rel_err"],
             "max_rel_bin_central_pct": c["max_rel_bin_central_pct"],
             "max_rel_err_central_pct": c["max_rel_err_central_pct"],
@@ -412,7 +422,8 @@ def build_summary(cases: list[dict], out_dir: str) -> dict:
             "bin_inner_err_pct": c["bin_inner_err_pct"],
             "bin_outer_err_pct": c["bin_outer_err_pct"],
             "G_Q": c["G_Q"],
-            "n_steps": c["n_steps"], "steady": c["steady"],
+            "n_steps": c["n_steps"],
+            "steady": c["steady"],
         }
         for c in cases
     ]
@@ -491,16 +502,35 @@ def build_summary(cases: list[dict], out_dir: str) -> dict:
     return summary
 
 
-def scan(R_o_list, a_ratio, tau, u_in, min_steps, max_steps, out_dir: str,
-         device: torch.device, seed: int = 0,
-         compile_mode: str | None = "default") -> dict:
+def scan(
+    R_o_list,
+    a_ratio,
+    tau,
+    u_in,
+    min_steps,
+    max_steps,
+    out_dir: str,
+    device: torch.device,
+    seed: int = 0,
+    compile_mode: str | None = "default",
+) -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cases = []
     for R_o in R_o_list:
         p = out_dir / f"case_Ro{R_o}.json"
-        r = run_case(R_o, a_ratio, tau, u_in, min_steps, max_steps, str(p),
-                     device, seed, compile_mode=compile_mode)
+        r = run_case(
+            R_o,
+            a_ratio,
+            tau,
+            u_in,
+            min_steps,
+            max_steps,
+            str(p),
+            device,
+            seed,
+            compile_mode=compile_mode,
+        )
         cases.append(r)
         print(
             f"R_o={r['R_o']:3d} a={r['a']:.1f} Re={r['Re']:7.2f} steps={r['n_steps']:6d} "
@@ -512,8 +542,10 @@ def scan(R_o_list, a_ratio, tau, u_in, min_steps, max_steps, out_dir: str,
             flush=True,
         )
     summary = build_summary(cases, str(out_dir))
-    print(f"verdict={summary['verdict']} "
-          f"max_bin: {' -> '.join(f'{e:.2f}%' for e in [c['max_rel_bin_central_pct'] for c in summary['per_grid']])}")
+    print(
+        f"verdict={summary['verdict']} "
+        f"max_bin: {' -> '.join(f'{e:.2f}%' for e in [c['max_rel_bin_central_pct'] for c in summary['per_grid']])}"
+    )
     return summary
 
 
@@ -564,22 +596,64 @@ def main() -> None:
         return
     compile_mode = compile_mode_from_args(args)
     if args.mode_cmd == "single":
-        r = run_case(args.R_o, args.a_ratio, args.tau, args.u_in,
-                     args.min_steps, args.max_steps, args.out_json, device,
-                     args.seed, compile_mode=compile_mode)
-        print(json.dumps({k: r[k] for k in
-                          ["R_o", "a", "nx", "ny", "nz", "Re", "Ma",
-                           "n_steps", "steady", "u_peak_err_pct", "l2_rel_err",
-                           "max_rel_bin_central_pct", "max_rel_err_central_pct",
-                           "l2_rel_err_shape", "max_rel_bin_central_shape_pct",
-                           "max_rel_bin_central_dp_pct", "Q_ratio",
-                           "bin_inner_err_pct", "bin_outer_err_pct",
-                           "fd_max_rel_dev_pct", "mass_drift_pct", "finite",
-                           "elapsed_s"]}, indent=2))
+        r = run_case(
+            args.R_o,
+            args.a_ratio,
+            args.tau,
+            args.u_in,
+            args.min_steps,
+            args.max_steps,
+            args.out_json,
+            device,
+            args.seed,
+            compile_mode=compile_mode,
+        )
+        print(
+            json.dumps(
+                {
+                    k: r[k]
+                    for k in [
+                        "R_o",
+                        "a",
+                        "nx",
+                        "ny",
+                        "nz",
+                        "Re",
+                        "Ma",
+                        "n_steps",
+                        "steady",
+                        "u_peak_err_pct",
+                        "l2_rel_err",
+                        "max_rel_bin_central_pct",
+                        "max_rel_err_central_pct",
+                        "l2_rel_err_shape",
+                        "max_rel_bin_central_shape_pct",
+                        "max_rel_bin_central_dp_pct",
+                        "Q_ratio",
+                        "bin_inner_err_pct",
+                        "bin_outer_err_pct",
+                        "fd_max_rel_dev_pct",
+                        "mass_drift_pct",
+                        "finite",
+                        "elapsed_s",
+                    ]
+                },
+                indent=2,
+            )
+        )
     else:
-        scan(args.R, args.a_ratio, args.tau, args.u_in,
-             args.min_steps, args.max_steps, args.out_dir, device, args.seed,
-             compile_mode)
+        scan(
+            args.R,
+            args.a_ratio,
+            args.tau,
+            args.u_in,
+            args.min_steps,
+            args.max_steps,
+            args.out_dir,
+            device,
+            args.seed,
+            compile_mode,
+        )
 
 
 if __name__ == "__main__":
