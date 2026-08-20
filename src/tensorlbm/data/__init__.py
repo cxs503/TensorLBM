@@ -30,3 +30,19 @@ __all__ += [
     "FieldDataCatalog", "AssetRecord", "LineageRecord", "QualityCheck", "MetadataRecord",
     "check_field_product", "validate_field_product",
 ]
+
+from .sunway_bridge import (
+    SWLBM_BRIDGE_SCHEMA,
+    SWLBM_FORCE_COLUMNS,
+    SwlbmForceHistory,
+    convert_swlbm_csv,
+    parse_swlbm_force_csv,
+)
+
+__all__ += [
+    "SWLBM_BRIDGE_SCHEMA",
+    "SWLBM_FORCE_COLUMNS",
+    "SwlbmForceHistory",
+    "convert_swlbm_csv",
+    "parse_swlbm_force_csv",
+]
