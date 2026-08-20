@@ -77,7 +77,10 @@ def test_cast_boundaries() -> None:
 
 @pytest.fixture(scope="module")
 def dev() -> str:
-    from tensorlbm.triton_fused import is_available
+    try:
+        from tensorlbm.triton_fused import is_available
+    except ModuleNotFoundError:
+        pytest.skip("precision wiring tests require CUDA + triton")
 
     if not is_available():
         pytest.skip("precision wiring tests require CUDA + triton")

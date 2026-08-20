@@ -34,10 +34,17 @@ import torch
 
 from tensorlbm.d3q19 import C as C_D3Q19
 from tensorlbm.d3q27 import C as C_D3Q27
-from tensorlbm.triton_fused_distributed import (
-    DistributedTritonFusedSolver3D,
-    crossing_face_indices,
-)
+
+try:
+    from tensorlbm.triton_fused_distributed import (
+        DistributedTritonFusedSolver3D,
+        crossing_face_indices,
+    )
+except ModuleNotFoundError:
+    pytest.skip(
+        "selective-halo tests require triton (triton_fused_distributed imports it at module level)",
+        allow_module_level=True,
+    )
 
 
 def _cz(C: torch.Tensor) -> list[int]:
