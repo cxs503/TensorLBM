@@ -35,10 +35,24 @@ C = torch.tensor(
 
 _W_VALUES = (
     1 / 3,
-    1 / 18, 1 / 18, 1 / 18, 1 / 18, 1 / 18, 1 / 18,
-    1 / 36, 1 / 36, 1 / 36, 1 / 36,
-    1 / 36, 1 / 36, 1 / 36, 1 / 36,
-    1 / 36, 1 / 36, 1 / 36, 1 / 36,
+    1 / 18,
+    1 / 18,
+    1 / 18,
+    1 / 18,
+    1 / 18,
+    1 / 18,
+    1 / 36,
+    1 / 36,
+    1 / 36,
+    1 / 36,
+    1 / 36,
+    1 / 36,
+    1 / 36,
+    1 / 36,
+    1 / 36,
+    1 / 36,
+    1 / 36,
+    1 / 36,
 )
 W = torch.tensor(_W_VALUES, dtype=torch.float32)
 # Retain exact binary64 representations of the rational Python literals for
@@ -192,13 +206,7 @@ def macroscopic3d_low_memory(
     p13_14 = f[13] - f[14]
     p15_16 = f[15] - f[16]
     p17_18 = f[17] - f[18]
-    ux = (
-        f[1] - f[2] + p78 + p9_10 + p11_12 + p13_14
-    ) / rho_safe
-    uy = (
-        f[3] - f[4] + p78 - p9_10 + p15_16 + p17_18
-    ) / rho_safe
-    uz = (
-        f[5] - f[6] + p11_12 - p13_14 + p15_16 - p17_18
-    ) / rho_safe
+    ux = (f[1] - f[2] + p78 + p9_10 + p11_12 + p13_14) / rho_safe
+    uy = (f[3] - f[4] + p78 - p9_10 + p15_16 + p17_18) / rho_safe
+    uz = (f[5] - f[6] + p11_12 - p13_14 + p15_16 - p17_18) / rho_safe
     return rho, ux, uy, uz

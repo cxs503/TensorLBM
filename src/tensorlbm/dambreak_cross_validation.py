@@ -25,7 +25,7 @@ interpreted as the model-appropriate constant (C_s, C_w, or C_V).
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
@@ -34,7 +34,6 @@ import torch
 from .d3q19 import equilibrium3d
 from .d3q27 import equilibrium27
 from .free_surface_lbm import (
-    GAS,
     INTERFACE,
     LIQUID,
     free_surface_step,

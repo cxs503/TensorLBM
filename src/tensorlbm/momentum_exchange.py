@@ -42,11 +42,12 @@ Yu, D.; Mei, R.; Luo, L.-S.; Shyy, W. (2003). "Viscous flow computation
 Caiazzo, A. (2007). "Analysis of correction in Galilean-invariant LBM."
     *J. Comput. Phys.* 225(2).
 """
+
 from __future__ import annotations
 
 import torch
 
-from .d3q19 import C, OPPOSITE, W
+from .d3q19 import OPPOSITE, C, W
 
 
 # ---------------------------------------------------------------------------
@@ -347,7 +348,7 @@ def momentum_exchange_bfl(
         if per_direction:
             weight = crossing.float() * inv_q[i]
         else:
-            weight = (crossing.float() * inv_q)
+            weight = crossing.float() * inv_q
         contrib = ((f[i] + f_opp_solid) * weight).sum()
         fx = fx + float(ci[0].item()) * contrib
         fy = fy + float(ci[1].item()) * contrib
@@ -388,8 +389,8 @@ def momentum_exchange_stress(
         ``(fx, fy, fz)`` — friction drag coefficient components.
     """
     from .drag_pressure import drag_friction_integration
-    return drag_friction_integration(f, mesh, dpS, nu, q_wall=q_wall,
-                                     formula=formula)
+
+    return drag_friction_integration(f, mesh, dpS, nu, q_wall=q_wall, formula=formula)
 
 
 # ---------------------------------------------------------------------------
@@ -431,7 +432,7 @@ def momentum_exchange_pressure_friction(
         Dict with keys: ``cd_p_x, cd_p_y, cd_p_z, cd_f_x, cd_f_y,
         cd_f_z, cd_tot_x, cd_tot_y, cd_tot_z``.
     """
-    from .drag_pressure import drag_pressure_integration, drag_friction_integration
+    from .drag_pressure import drag_friction_integration, drag_pressure_integration
 
     px, py, pz = drag_pressure_integration(
         f, mesh, dpS, extrap=extrap, p0_method=p0_method, solid=solid
@@ -440,9 +441,15 @@ def momentum_exchange_pressure_friction(
         f, mesh, dpS, nu, q_wall=q_wall, formula=friction_formula, solid=solid
     )
     return {
-        "cd_p_x": px, "cd_p_y": py, "cd_p_z": pz,
-        "cd_f_x": fx, "cd_f_y": fy, "cd_f_z": fz,
-        "cd_tot_x": px + fx, "cd_tot_y": py + fy, "cd_tot_z": pz + fz,
+        "cd_p_x": px,
+        "cd_p_y": py,
+        "cd_p_z": pz,
+        "cd_f_x": fx,
+        "cd_f_y": fy,
+        "cd_f_z": fz,
+        "cd_tot_x": px + fx,
+        "cd_tot_y": py + fy,
+        "cd_tot_z": pz + fz,
     }
 
 
@@ -496,15 +503,21 @@ def compare_all_methods(
         cd_bfl = float("nan")
 
     # Stress integration (friction only)
-    cd_stress = momentum_exchange_stress(
-        f, mesh, dpS, nu, formula=friction_formula, q_wall=q_wall
-    )[0]
+    cd_stress = momentum_exchange_stress(f, mesh, dpS, nu, formula=friction_formula, q_wall=q_wall)[
+        0
+    ]
 
     # Pressure + friction
     pf = momentum_exchange_pressure_friction(
-        f, mesh, dpS, nu,
-        extrap=extrap, p0_method=p0_method, solid=solid,
-        friction_formula=friction_formula, q_wall=q_wall,
+        f,
+        mesh,
+        dpS,
+        nu,
+        extrap=extrap,
+        p0_method=p0_method,
+        solid=solid,
+        friction_formula=friction_formula,
+        q_wall=q_wall,
     )
 
     return {

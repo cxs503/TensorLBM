@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Assess an exact three-grid nested SUBOFF sequence."""
+
 from __future__ import annotations
 
 import argparse
@@ -14,9 +15,7 @@ def main() -> None:
     parser.add_argument("records", nargs="+", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    records = [
-        json.loads(path.read_text(encoding="utf-8")) for path in args.records
-    ]
+    records = [json.loads(path.read_text(encoding="utf-8")) for path in args.records]
     result = assess_suboff_nested_convergence(records)
     rendered = json.dumps(result, indent=2, allow_nan=False)
     if args.output is not None:

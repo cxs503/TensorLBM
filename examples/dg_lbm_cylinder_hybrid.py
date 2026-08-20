@@ -22,20 +22,28 @@ import torch
 from tensorlbm import (
     C as _C2D_unused,  # noqa: F401  (ensure package import side-effects)
 )
-from tensorlbm.d2q9 import (
-    C as C2D,
-    OPPOSITE as OPP2D,
-    W as W2D,
-    equilibrium as eq2d,
-    macroscopic as mac2d,
-)
-from tensorlbm.dg_advection import equilibrium_dg, get_ops
-from tensorlbm.dg_band import build_band_topology, hybrid_step
 from tensorlbm.boundaries import (
     apply_simple_channel_boundaries,
     compute_obstacle_forces,
     make_channel_wall_mask,
 )
+from tensorlbm.d2q9 import (
+    OPPOSITE as OPP2D,
+)
+from tensorlbm.d2q9 import (
+    C as C2D,
+)
+from tensorlbm.d2q9 import (
+    W as W2D,
+)
+from tensorlbm.d2q9 import (
+    equilibrium as eq2d,
+)
+from tensorlbm.d2q9 import (
+    macroscopic as mac2d,
+)
+from tensorlbm.dg_advection import get_ops
+from tensorlbm.dg_band import build_band_topology, hybrid_step
 from tensorlbm.solver import correct_mass
 
 

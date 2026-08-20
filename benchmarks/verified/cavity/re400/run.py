@@ -21,6 +21,7 @@ zou_he_moving_lid，23.6% → 1.50%（128²）→ 0.83%（192²）单调收敛�
 
 Re 约定：Re = u_lid*H/ν，H = nx（网格节点数）。
 """
+
 import argparse
 import json
 import sys
@@ -29,12 +30,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # <repo>/benchmarks
 
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
-
 import numpy as np
 import torch
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
-from tensorlbm.d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
+from tensorlbm.d2q9 import OPPOSITE, equilibrium, macroscopic
 from tensorlbm.lid_driven_cavity import GHIA_RE400, zou_he_moving_lid
 from tensorlbm.solver import collide_mrt, stream
 
@@ -87,10 +87,14 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
         f = step_fn(f)
         if step % 10000 == 0 or step == steps:
             _, ux, uy = macroscopic(f)
-            du = torch.max(
-                torch.abs(ux[resid_mask] - ux_prev[resid_mask]),
-                torch.abs(uy[resid_mask] - uy_prev[resid_mask]),
-            ).max().item()
+            du = (
+                torch.max(
+                    torch.abs(ux[resid_mask] - ux_prev[resid_mask]),
+                    torch.abs(uy[resid_mask] - uy_prev[resid_mask]),
+                )
+                .max()
+                .item()
+            )
             last_resid = du
             ux_prev = ux.detach().clone()
             uy_prev = uy.detach().clone()
@@ -112,19 +116,20 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
     v_gi = np.interp(GHIA_RE400["x"], x_pos, v_cl)
     rmse_u = float(np.sqrt(np.mean((u_gi - np.array(GHIA_RE400["u"])) ** 2)))
     rmse_v = float(np.sqrt(np.mean((v_gi - np.array(GHIA_RE400["v"])) ** 2)))
-    dev = np.concatenate([np.abs(u_gi - np.array(GHIA_RE400["u"])),
-                          np.abs(v_gi - np.array(GHIA_RE400["v"]))])
+    dev = np.concatenate(
+        [np.abs(u_gi - np.array(GHIA_RE400["u"])), np.abs(v_gi - np.array(GHIA_RE400["v"]))]
+    )
     max_abs_dev_pct = 100.0 * float(dev.max())
 
-    u_mid = float(np.interp(0.5, y_pos, u_cl))     # Ghia u(0.5,0.5) = -0.1148
+    u_mid = float(np.interp(0.5, y_pos, u_cl))  # Ghia u(0.5,0.5) = -0.1148
     v_mid = float(np.interp(0.5, x_pos, v_cl))
 
     # 主涡心：主涡物理窗口 x,y∈[0.3,0.9]
     speed2 = ux_np**2 + uy_np**2
     speed2[: int(0.30 * ny), :] = np.inf
-    speed2[int(0.90 * ny):, :] = np.inf
+    speed2[int(0.90 * ny) :, :] = np.inf
     speed2[:, : int(0.30 * nx)] = np.inf
-    speed2[:, int(0.90 * nx):] = np.inf
+    speed2[:, int(0.90 * nx) :] = np.inf
     iy0, ix0 = np.unravel_index(np.argmin(speed2), speed2.shape)
 
     def refine(axis, i):
@@ -137,20 +142,31 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
     vx = refine(1, ix0) / (nx - 1)
     vy = refine(0, iy0) / (ny - 1)
 
-    print(f"[cavity_re400 nx={nx}] steps={steps} t={elapsed:.0f}s resid={last_resid:.2e} "
-          f"u(0.5,0.5)={u_mid:+.4f} v(0.5,0.5)={v_mid:+.4f} "
-          f"vortex=({vx:.3f},{vy:.3f}) rmse_u={rmse_u:.4f} rmse_v={rmse_v:.4f} "
-          f"max_abs_dev={max_abs_dev_pct:.2f}%", flush=True)
+    print(
+        f"[cavity_re400 nx={nx}] steps={steps} t={elapsed:.0f}s resid={last_resid:.2e} "
+        f"u(0.5,0.5)={u_mid:+.4f} v(0.5,0.5)={v_mid:+.4f} "
+        f"vortex=({vx:.3f},{vy:.3f}) rmse_u={rmse_u:.4f} rmse_v={rmse_v:.4f} "
+        f"max_abs_dev={max_abs_dev_pct:.2f}%",
+        flush=True,
+    )
 
     return {
-        "nx": nx, "re": re, "u_lid": u_lid, "tau": round(tau, 4), "steps": steps,
+        "nx": nx,
+        "re": re,
+        "u_lid": u_lid,
+        "tau": round(tau, 4),
+        "steps": steps,
         "compile_mode": compile_mode,
-        "elapsed_s": round(elapsed, 1), "last_resid": last_resid,
-        "u_mid": u_mid, "u_mid_ghia": -0.1148,
+        "elapsed_s": round(elapsed, 1),
+        "last_resid": last_resid,
+        "u_mid": u_mid,
+        "u_mid_ghia": -0.1148,
         "v_mid": v_mid,
         "vortex": [round(vx, 4), round(vy, 4)],
         "vortex_ghia": [0.5547, 0.6055],
-        "rmse_u": rmse_u, "rmse_v": rmse_v, "max_abs_dev_pct": max_abs_dev_pct,
+        "rmse_u": rmse_u,
+        "rmse_v": rmse_v,
+        "max_abs_dev_pct": max_abs_dev_pct,
     }
 
 
@@ -171,8 +187,9 @@ def main():
 
     results = {}
     for nx in args.nx:
-        results[str(nx)] = run_case(nx, args.re, args.u_lid, args.steps, device,
-                                    compile_mode=compile_mode)
+        results[str(nx)] = run_case(
+            nx, args.re, args.u_lid, args.steps, device, compile_mode=compile_mode
+        )
 
     devs = [results[str(nx)]["max_abs_dev_pct"] for nx in args.nx]
     verdict = {

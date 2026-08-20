@@ -1,6 +1,7 @@
 """Regression tests for the interface-limited Gallium Stefan closure."""
-from pathlib import Path
+
 import sys
+from pathlib import Path
 
 import torch
 
@@ -34,8 +35,12 @@ def test_interface_stefan_source_is_local_and_enthalpy_conservative():
     cp, latent_heat, tm, alpha = 1.0, 8.0, 0.15, 0.1
 
     delta_phi, delta_temperature = interface_stefan_phase_source(
-        phi, temperature, cp=cp, latent_heat=latent_heat,
-        melting_temperature=tm, thermal_diffusivity=alpha,
+        phi,
+        temperature,
+        cp=cp,
+        latent_heat=latent_heat,
+        melting_temperature=tm,
+        thermal_diffusivity=alpha,
     )
 
     # Only the solid cell adjacent to the liquid may melt.  In particular,
@@ -71,17 +76,21 @@ def test_interface_equilibrium_consumes_only_front_superheat_conservatively():
     phi = -torch.ones((1, 5, 8), dtype=torch.float64)
     phi[:, :, :2] = 1.0
     temperature = torch.full_like(phi, 0.15)
-    temperature[:, :, 2] = 0.55       # superheated interface solid
-    temperature[:, :, 5:] = 0.95      # forbidden remote superheated bulk
+    temperature[:, :, 2] = 0.55  # superheated interface solid
+    temperature[:, :, 5:] = 0.95  # forbidden remote superheated bulk
     delta_phi, delta_temperature = interface_equilibrium_phase_source(
-        phi, temperature, cp=1.0, latent_heat=8.0, melting_temperature=0.15)
+        phi, temperature, cp=1.0, latent_heat=8.0, melting_temperature=0.15
+    )
 
     assert torch.all(delta_phi[:, 1:-1, 2] > 0.0)
     assert torch.count_nonzero(delta_phi[:, :, 3:]) == 0
-    assert torch.allclose(temperature + delta_temperature,
-                          torch.where(delta_phi != 0, torch.full_like(temperature, 0.15), temperature))
-    assert torch.allclose(delta_temperature + 4.0 * delta_phi,
-                          torch.zeros_like(delta_temperature), atol=1e-12)
+    assert torch.allclose(
+        temperature + delta_temperature,
+        torch.where(delta_phi != 0, torch.full_like(temperature, 0.15), temperature),
+    )
+    assert torch.allclose(
+        delta_temperature + 4.0 * delta_phi, torch.zeros_like(delta_temperature), atol=1e-12
+    )
 
 
 def test_interface_stefan_source_uses_isothermal_front_not_cell_average_superheat():
@@ -89,12 +98,11 @@ def test_interface_stefan_source_uses_isothermal_front_not_cell_average_superhea
     phi = -torch.ones((1, 5, 7), dtype=torch.float64)
     phi[:, :, :3] = 1.0
     base = torch.full_like(phi, 0.10)
-    base[:, :, 1] = 0.65   # liquid one-sided stencil
-    base[:, :, 4] = 0.05   # solid one-sided stencil
+    base[:, :, 1] = 0.65  # liquid one-sided stencil
+    base[:, :, 4] = 0.05  # solid one-sided stencil
     hot_front = base.clone()
     hot_front[:, :, 3] = 0.90  # only the volume-average front-cell value differs
-    common = dict(cp=1.0, latent_heat=8.0, melting_temperature=0.15,
-                  thermal_diffusivity=0.1)
+    common = dict(cp=1.0, latent_heat=8.0, melting_temperature=0.15, thermal_diffusivity=0.1)
     d_base, _ = interface_stefan_phase_source(phi, base, **common)
     d_hot, _ = interface_stefan_phase_source(phi, hot_front, **common)
     assert torch.allclose(d_base, d_hot, atol=1e-14)
@@ -113,17 +121,20 @@ def test_interface_stefan_source_uses_conductivity_weighted_flux_jump():
     temperature = torch.full_like(phi, 0.15)
     temperature[:, :, 2] = 0.35
     temperature[:, :, 4] = 0.05
-    common = dict(cp=1.0, latent_heat=8.0, melting_temperature=0.15,
-                  thermal_diffusivity=0.1)
+    common = dict(cp=1.0, latent_heat=8.0, melting_temperature=0.15, thermal_diffusivity=0.1)
     base, _ = interface_stefan_phase_source(phi, temperature, **common)
     weighted, _ = interface_stefan_phase_source(
-        phi, temperature, solid_conductivity_ratio=1.5, **common)
+        phi, temperature, solid_conductivity_ratio=1.5, **common
+    )
 
     # The solid stencil is 0.10 below Tm, so weighting it more reduces Δφ by
     # 2*(α cp/L)*(0.5*0.10).
     expected = -2.0 * 0.1 / 8.0 * 0.5 * 0.10
-    assert torch.allclose(weighted[:, 1:-1, 3] - base[:, 1:-1, 3],
-                          torch.full_like(base[:, 1:-1, 3], expected), atol=1e-14)
+    assert torch.allclose(
+        weighted[:, 1:-1, 3] - base[:, 1:-1, 3],
+        torch.full_like(base[:, 1:-1, 3], expected),
+        atol=1e-14,
+    )
 
 
 def test_stefan_nondimensional_diagnostic_reports_lattice_and_gau_viskanta_scales():
@@ -133,8 +144,13 @@ def test_stefan_nondimensional_diagnostic_reports_lattice_and_gau_viskanta_scale
     lattice time in the source before comparison with Gau--Viskanta data.
     """
     d = stefan_nondimensional_diagnostic(
-        nx=40, tau_T=0.8, steps=8000, cp=1.0, latent_heat=18.52,
-        T_hot=1.0, T_melt=0.148,
+        nx=40,
+        tau_T=0.8,
+        steps=8000,
+        cp=1.0,
+        latent_heat=18.52,
+        T_hot=1.0,
+        T_melt=0.148,
     )
     assert abs(d["alpha"] - 0.1) < 1e-14
     assert abs(d["Ste"] - 0.046004319654427646) < 1e-14

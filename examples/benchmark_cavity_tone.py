@@ -27,7 +27,12 @@ Validation:
 """
 
 from __future__ import annotations
-import argparse, math, os, sys
+
+import argparse
+import math
+import os
+import sys
+
 import numpy as np
 import torch
 
@@ -35,7 +40,7 @@ _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C, W, OPPOSITE
+from tensorlbm.d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 CS = 1.0 / math.sqrt(3.0)
@@ -158,7 +163,7 @@ def run_cavity_tone(
     print(f"  τ={tau}  ν={nu:.4f}  Re={Re:.0f}  cs={cs:.4f}", flush=True)
     print(f"  腔体起始: x={cx_start}  尾缘: x={cx_start + L}", flush=True)
     print(f"  监测点: ({mon_x}, {mon_y})", flush=True)
-    print(f"  Rossiter 频率 (LBM):", flush=True)
+    print("  Rossiter 频率 (LBM):", flush=True)
     for n, freq in enumerate(rossiter_freqs, 1):
         print(f"    f_{n} = {freq:.6f}  (周期 = {1 / freq:.0f} 步)", flush=True)
     print(f"  步数: {steps}", flush=True)
@@ -238,7 +243,7 @@ def run_cavity_tone(
         )
 
     # === Verification ===
-    print(f"\n  验证:", flush=True)
+    print("\n  验证:", flush=True)
     checks = []
 
     # 1. Oscillation detected
@@ -267,12 +272,12 @@ def run_cavity_tone(
         )
     else:
         checks.append(("Rossiter 模式检测", False, "无峰值"))
-        print(f"    [FAIL] 未检测到振荡峰值", flush=True)
+        print("    [FAIL] 未检测到振荡峰值", flush=True)
 
     all_pass = all(c[1] for c in checks)
     print(f"\n  {'PASS' if all_pass else 'FAIL'} — Rossiter 腔体鸣音基准测试", flush=True)
     if not all_pass:
-        print(f"  注: Rossiter 公式为半经验公式, 实际频率受马赫数和腔体几何影响", flush=True)
+        print("  注: Rossiter 公式为半经验公式, 实际频率受马赫数和腔体几何影响", flush=True)
 
     return {"p_history": p_history, "freqs": freqs, "fft": fft_vals, "all_pass": all_pass}
 

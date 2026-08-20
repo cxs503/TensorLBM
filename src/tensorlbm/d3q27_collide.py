@@ -15,11 +15,7 @@ Validated: SUBOFF bare_hull 200³ → Ct=0.00393 (2.9% vs ref 0.00405)
 
 from __future__ import annotations
 
-import torch
-
 # Re-export for convenience
-from .cumulant import collide_cumulant_d3q27
-from .cascaded_collision import collide_cascaded_d3q27
 
 
 def suboff_config_d3q27(

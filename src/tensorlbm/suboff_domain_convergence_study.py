@@ -20,9 +20,9 @@ solver hot path.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from hashlib import sha256
-import json
 from math import isfinite, pi
 from pathlib import Path
 from typing import Any

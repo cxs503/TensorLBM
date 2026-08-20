@@ -20,10 +20,10 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 import sys
 import time
 
-import os
 import torch
 
 from tensorlbm.boundaries3d import (
@@ -32,8 +32,8 @@ from tensorlbm.boundaries3d import (
     sphere_mask,
 )
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import collide_bgk3d, stream3d
 from tensorlbm.obstacles import compute_obstacle_forces_3d
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sphere_drag_reference as REF  # noqa: E402
@@ -87,8 +87,10 @@ def run(
     beta = REF.blockage_ratio(D, ny)
 
     ref_cd = REF.cd_reference(re)
-    print(f"[setup] Re={re:.3f} D={D} grid={nx}x{ny}x{nz} tau={tau:.3f} "
-          f"u_in={u_in:.4f} blockage(beta)={beta*100:.3f}%  ref Cd={ref_cd:.4f}")
+    print(
+        f"[setup] Re={re:.3f} D={D} grid={nx}x{ny}x{nz} tau={tau:.3f} "
+        f"u_in={u_in:.4f} blockage(beta)={beta * 100:.3f}%  ref Cd={ref_cd:.4f}"
+    )
 
     cd_hist = []
     t0 = time.time()
@@ -105,20 +107,30 @@ def run(
             rho, ux, uy, uz = macroscopic3d(f)
             um = float(torch.sqrt(ux * ux + uy * uy + uz * uz).max().item())
             avg = sum(cd_hist) / max(len(cd_hist), 1) if cd_hist else float("nan")
-            print(f"  step {step:5d}  max|u|={um:.4f}  Cd(avg)={avg:.4f}  "
-                  f"t={time.time()-t0:.1f}s")
+            print(
+                f"  step {step:5d}  max|u|={um:.4f}  Cd(avg)={avg:.4f}  t={time.time() - t0:.1f}s"
+            )
 
     cd_mean = sum(cd_hist) / max(len(cd_hist), 1)
     cd_std = (sum((c - cd_mean) ** 2 for c in cd_hist) / max(len(cd_hist), 1)) ** 0.5
     cd_corr = REF.blockage_correction(cd_mean, beta)
     err_raw = abs(cd_mean - ref_cd) / ref_cd * 100
     err_corr = abs(cd_corr - ref_cd) / ref_cd * 100
-    print(f"[RESULT] Re={re:.3f}  Cd(raw)={cd_mean:.4f}+/-{cd_std:.4f}  "
-          f"Cd(corr)={cd_corr:.4f}  ref={ref_cd:.4f}  "
-          f"err_raw={err_raw:.2f}%  err_corr={err_corr:.2f}%  "
-          f"PASS={'YES' if err_corr < 1.0 else 'NO'}")
-    return {"re": re, "cd": cd_mean, "cd_corr": cd_corr, "ref": ref_cd,
-            "err_raw": err_raw, "err_corr": err_corr, "pass": err_corr < 1.0}
+    print(
+        f"[RESULT] Re={re:.3f}  Cd(raw)={cd_mean:.4f}+/-{cd_std:.4f}  "
+        f"Cd(corr)={cd_corr:.4f}  ref={ref_cd:.4f}  "
+        f"err_raw={err_raw:.2f}%  err_corr={err_corr:.2f}%  "
+        f"PASS={'YES' if err_corr < 1.0 else 'NO'}"
+    )
+    return {
+        "re": re,
+        "cd": cd_mean,
+        "cd_corr": cd_corr,
+        "ref": ref_cd,
+        "err_raw": err_raw,
+        "err_corr": err_corr,
+        "pass": err_corr < 1.0,
+    }
 
 
 if __name__ == "__main__":
@@ -133,5 +145,14 @@ if __name__ == "__main__":
     ap.add_argument("--nz", type=int, default=None)
     ap.add_argument("--device", type=str, default="cuda")
     a = ap.parse_args()
-    run(re=a.re, D=a.D, steps=a.steps, u_in=a.u_in, blockage=a.blockage,
-        nx=a.nx, ny=a.ny, nz=a.nz, device=a.device)
+    run(
+        re=a.re,
+        D=a.D,
+        steps=a.steps,
+        u_in=a.u_in,
+        blockage=a.blockage,
+        nx=a.nx,
+        ny=a.ny,
+        nz=a.nz,
+        device=a.device,
+    )

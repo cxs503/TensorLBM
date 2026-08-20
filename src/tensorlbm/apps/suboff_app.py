@@ -212,7 +212,11 @@ class SuboffSurrogateApp(AI4SApplication):
         """
         from tensorlbm.ai.suboff_inference import SuboffPredictConfig, predict_suboff
 
-        cfg = _to_config_fields(SuboffPredictConfig, sample) if isinstance(sample, Mapping) else sample
+        cfg = (
+            _to_config_fields(SuboffPredictConfig, sample)
+            if isinstance(sample, Mapping)
+            else sample
+        )
         if not isinstance(cfg, SuboffPredictConfig):
             cfg = SuboffPredictConfig(**cfg)  # type: ignore[arg-type]
 

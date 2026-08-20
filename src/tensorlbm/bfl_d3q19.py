@@ -5,8 +5,8 @@ directions with c_z=0 (8 directions) and setting q=0.5 for z-containing
 directions (10 directions, no intersection with extruded cylinder).
 """
 
-import math
 import torch
+
 from .d3q19 import C
 
 

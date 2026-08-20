@@ -27,19 +27,21 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, ClassVar, Sequence
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Sequence
 
 import torch
 
 from ..boundary_registry import (
     BoundaryCondition,
-    boundary_condition_registry,
     apply_boundary_conditions,
+    boundary_condition_registry,
     build_bc_mask,
     check_bc_consistency,
 )
 from ..unit_converter import LBMUnitConverter  # noqa: F401  (re-exported for case authors)
 
+if TYPE_CHECKING:
+    from ..boundary_registry import BCPhase
 __all__ = ["CaseBase", "CaseUnits"]
 
 
@@ -176,13 +178,13 @@ class CaseBase(ABC):
             if bc not in boundary_condition_registry:
                 boundary_condition_registry.register(bc)
         check_bc_consistency(
-            self._bcs, self.resolution, device=self.device,
+            self._bcs,
+            self.resolution,
+            device=self.device,
             strict_overlap=self.strict_bc_overlap,
         )
         self._bc_masks = {
-            phase: build_bc_mask(
-                self.resolution, self._bcs, phase=phase, device=self.device
-            )
+            phase: build_bc_mask(self.resolution, self._bcs, phase=phase, device=self.device)
             for phase in (BCPhase.PRE_STREAMING, BCPhase.POST_STREAMING)
         }
         # A same-phase overlap shadows the earlier BC's cells (last wins);
@@ -222,14 +224,19 @@ class CaseBase(ABC):
     def pre_boundaries(self, f: torch.Tensor, f_pre: torch.Tensor) -> torch.Tensor:
         """Apply PRE_STREAMING BCs (between collision and streaming)."""
         return apply_boundary_conditions(
-            f, self.bcs, phase="pre_streaming",
-            bc_mask=self.bc_mask_for("pre_streaming"), f_pre=f_pre,
+            f,
+            self.bcs,
+            phase="pre_streaming",
+            bc_mask=self.bc_mask_for("pre_streaming"),
+            f_pre=f_pre,
         )
 
     def post_boundaries(self, f: torch.Tensor) -> torch.Tensor:
         """Apply POST_STREAMING BCs (after streaming)."""
         return apply_boundary_conditions(
-            f, self.bcs, phase="post_streaming",
+            f,
+            self.bcs,
+            phase="post_streaming",
             bc_mask=self.bc_mask_for("post_streaming"),
         )
 

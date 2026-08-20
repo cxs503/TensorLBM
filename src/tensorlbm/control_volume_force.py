@@ -13,6 +13,7 @@ Both terms are evaluated in lattice units over one time step.  The control
 volume must be strictly interior and its outer shell must contain fluid only;
 physical boundary conditions and sponge forcing must remain outside it.
 """
+
 from __future__ import annotations
 
 import math
@@ -49,15 +50,18 @@ def _validate(
     if not set(periodic_axes) <= {"x", "y", "z"}:
         raise ValueError("periodic_axes may contain only x, y, z")
     touches_nonperiodic = (
-        ("z" not in periodic_axes and (
-            bool(control_volume[0].any()) or bool(control_volume[-1].any())
-        ))
-        or ("y" not in periodic_axes and (
-            bool(control_volume[:, 0].any()) or bool(control_volume[:, -1].any())
-        ))
-        or ("x" not in periodic_axes and (
-            bool(control_volume[:, :, 0].any()) or bool(control_volume[:, :, -1].any())
-        ))
+        (
+            "z" not in periodic_axes
+            and (bool(control_volume[0].any()) or bool(control_volume[-1].any()))
+        )
+        or (
+            "y" not in periodic_axes
+            and (bool(control_volume[:, 0].any()) or bool(control_volume[:, -1].any()))
+        )
+        or (
+            "x" not in periodic_axes
+            and (bool(control_volume[:, :, 0].any()) or bool(control_volume[:, :, -1].any()))
+        )
     )
     if touches_nonperiodic:
         raise ValueError("control volume must be strictly interior")
@@ -110,19 +114,19 @@ def fluid_momentum_change(
         if solid.device != f_old.device:
             raise ValueError("solid and populations must share a device")
         owned = owned & ~solid
-    accumulator_dtype = (
-        torch.float64 if f_old.dtype == torch.float32 else f_old.dtype
-    )
+    accumulator_dtype = torch.float64 if f_old.dtype == torch.float32 else f_old.dtype
     # Subtract locally before reduction.  Summing old/new inventories first
     # and then subtracting loses a small force beneath O(N-cell) float32 totals.
     c = _lattice_velocities(f_old.shape[0], f_old.device, accumulator_dtype)
     momentum_change = torch.zeros(
-        3, device=f_old.device, dtype=accumulator_dtype,
+        3,
+        device=f_old.device,
+        dtype=accumulator_dtype,
     )
     for direction in range(1, f_old.shape[0]):
-        population_change = (
-            f_new[direction][owned] - f_old[direction][owned]
-        ).sum(dtype=accumulator_dtype)
+        population_change = (f_new[direction][owned] - f_old[direction][owned]).sum(
+            dtype=accumulator_dtype
+        )
         momentum_change = momentum_change + population_change * c[direction]
     return momentum_change
 
@@ -140,11 +144,11 @@ def streaming_momentum_import(
     """
     _validate(f_post_collision, control_volume, periodic_axes)
     accumulator_dtype = (
-        torch.float64 if f_post_collision.dtype == torch.float32
-        else f_post_collision.dtype
+        torch.float64 if f_post_collision.dtype == torch.float32 else f_post_collision.dtype
     )
     c = _lattice_velocities(
-        f_post_collision.shape[0], f_post_collision.device,
+        f_post_collision.shape[0],
+        f_post_collision.device,
         accumulator_dtype,
     )
     net = torch.zeros(3, device=f_post_collision.device, dtype=accumulator_dtype)
@@ -152,14 +156,15 @@ def streaming_momentum_import(
         cx, cy, cz = (int(value) for value in c[direction].tolist())
         # At source x, this is CV(x+c_q).
         destination_inside = torch.roll(
-            control_volume, shifts=(-cz, -cy, -cx), dims=(0, 1, 2),
+            control_volume,
+            shifts=(-cz, -cy, -cx),
+            dims=(0, 1, 2),
         )
         incoming = ~control_volume & destination_inside
         outgoing = control_volume & ~destination_inside
-        scalar_flux = (
-            f_post_collision[direction][incoming].sum(dtype=accumulator_dtype)
-            - f_post_collision[direction][outgoing].sum(dtype=accumulator_dtype)
-        )
+        scalar_flux = f_post_collision[direction][incoming].sum(
+            dtype=accumulator_dtype
+        ) - f_post_collision[direction][outgoing].sum(dtype=accumulator_dtype)
         net = net + scalar_flux * c[direction]
     return net
 
@@ -200,15 +205,10 @@ def assess_nested_control_volume_invariance(
 ) -> NestedControlVolumeAssessment:
     """Compare independently enclosed force balances without selecting one."""
     auxiliary = tuple(float(value) for value in auxiliary_forces)
-    finite = math.isfinite(primary_force) and all(
-        math.isfinite(value) for value in auxiliary
-    )
+    finite = math.isfinite(primary_force) and all(math.isfinite(value) for value in auxiliary)
     if finite:
         denominator = max(abs(primary_force), 1e-30)
-        differences = tuple(
-            abs(value - primary_force) / denominator * 100.0
-            for value in auxiliary
-        )
+        differences = tuple(abs(value - primary_force) / denominator * 100.0 for value in auxiliary)
         maximum = max(differences, default=math.inf)
     else:
         differences = tuple(math.inf for _ in auxiliary)
@@ -234,11 +234,16 @@ def observe_control_volume_force(
     if f_old.shape != f_new.shape or f_old.shape != f_post_collision.shape:
         raise ValueError("all population tensors must have the same shape")
     change = fluid_momentum_change(
-        f_old, f_new, control_volume,
-        solid=solid, periodic_axes=periodic_axes,
+        f_old,
+        f_new,
+        control_volume,
+        solid=solid,
+        periodic_axes=periodic_axes,
     )
     imported = streaming_momentum_import(
-        f_post_collision, control_volume, periodic_axes=periodic_axes,
+        f_post_collision,
+        control_volume,
+        periodic_axes=periodic_axes,
     )
     return ControlVolumeForceResult(imported - change, imported, change)
 

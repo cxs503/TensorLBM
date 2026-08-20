@@ -8,7 +8,6 @@ import pytest
 import torch
 
 from tensorlbm.d3q19 import equilibrium3d
-from tensorlbm.solver3d import collide_mrt3d, stream3d
 from tensorlbm.models.contracts import ModelComposition
 from tensorlbm.models.torch_execution import (
     PlanPerformanceSample,
@@ -16,6 +15,7 @@ from tensorlbm.models.torch_execution import (
     compile_torch_d3q19_mrt_plan,
     measure_plan_overhead,
 )
+from tensorlbm.solver3d import collide_mrt3d, stream3d
 
 
 def _composition(**overrides: object) -> ModelComposition:

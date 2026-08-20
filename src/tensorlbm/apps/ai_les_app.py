@@ -31,17 +31,17 @@ from typing import Any, Callable, Mapping
 
 import torch
 
+from tensorlbm.ai.dataset import EddyViscosityDataset, extract_les_samples_2d
+from tensorlbm.ai.inference import predict_nu_t_2d
+from tensorlbm.ai.model import EddyViscosityMLP, ModelArch
+from tensorlbm.ai.pipeline import _run_les_smoke
+from tensorlbm.ai.train import TrainConfig, train_eddy_viscosity_model
 from tensorlbm.apps.base import (
     AI4SApplication,
     DataProduct,
     Prediction,
     TrainingResult,
 )
-from tensorlbm.ai.dataset import EddyViscosityDataset, extract_les_samples_2d
-from tensorlbm.ai.inference import predict_nu_t_2d
-from tensorlbm.ai.model import EddyViscosityMLP, ModelArch
-from tensorlbm.ai.pipeline import _run_les_smoke
-from tensorlbm.ai.train import TrainConfig, train_eddy_viscosity_model
 
 __all__ = ["AILesApp"]
 
@@ -49,6 +49,7 @@ __all__ = ["AILesApp"]
 # ---------------------------------------------------------------------------
 # The application
 # ---------------------------------------------------------------------------
+
 
 class AILesApp(AI4SApplication):
     """AI-LES eddy-viscosity MLP as a platform application.
@@ -165,10 +166,7 @@ class AILesApp(AI4SApplication):
             features=features,
             targets=targets,
             c_s=c_s,
-            description=(
-                f"strain-rate samples from {product.name} "
-                f"({len(snapshots)} frames)"
-            ),
+            description=(f"strain-rate samples from {product.name} ({len(snapshots)} frames)"),
         )
 
     def train(
@@ -217,6 +215,7 @@ class AILesApp(AI4SApplication):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _train_config_from(cfg: Mapping[str, Any]) -> TrainConfig:
     """Assemble a :class:`TrainConfig` from a run's training configuration.

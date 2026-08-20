@@ -1,4 +1,5 @@
 """Canonical sphere drag with BFL and an independent control-volume force."""
+
 from __future__ import annotations
 
 import hashlib
@@ -87,11 +88,13 @@ class SphereBFLControlVolumeConfig:
         if min(cx, self.nx - cx, self.ny / 2, self.nz / 2) <= self.radius + self.cv_margin + 2:
             raise ValueError("sphere/control volume does not fit the domain")
         if self.far_field_mode not in {
-            "non_equilibrium_extrapolation", "legacy_hard_equilibrium",
+            "non_equilibrium_extrapolation",
+            "legacy_hard_equilibrium",
         }:
             raise ValueError("unknown far_field_mode")
         if self.collision_model not in {
-            "cumulant_d3q19_cs0", "natural_kbc_d3q19",
+            "cumulant_d3q19_cs0",
+            "natural_kbc_d3q19",
         }:
             raise ValueError("unknown collision_model")
         if self.collision_chunk_cells < 0:
@@ -103,7 +106,9 @@ class SphereBFLControlVolumeConfig:
         if self.projected_pressure_interval < 0:
             raise ValueError("projected_pressure_interval must be non-negative")
         if self.projected_pressure_reconstruction not in {
-            "local", "linear", "quadratic",
+            "local",
+            "linear",
+            "quadratic",
         }:
             raise ValueError("unknown projected_pressure_reconstruction")
         if not 0 <= self.statistics_window_steps <= self.steps - self.warmup_steps:
@@ -147,8 +152,10 @@ def run_sphere_bfl_control_volume(
     shape = (config.nz, config.ny, config.nx)
     estimated_peak_gib = math.prod(shape) * 1000.0 / 2**30
     memory_budget = require_cuda_memory_budget(
-        device, estimated_peak_gib=estimated_peak_gib,
-        reserve_gib=1.0, label="sphere benchmark",
+        device,
+        estimated_peak_gib=estimated_peak_gib,
+        reserve_gib=1.0,
+        label="sphere benchmark",
     )
     cx, cy, cz = (
         config.nx * config.center_x_fraction,
@@ -156,11 +163,23 @@ def run_sphere_bfl_control_volume(
         config.nz / 2.0,
     )
     solid = sphere_mask(
-        config.nx, config.ny, config.nz, cx, cy, cz, config.radius,
+        config.nx,
+        config.ny,
+        config.nz,
+        cx,
+        cy,
+        cz,
+        config.radius,
         device=device,
     )
     bfl_mask, bfl_q = compute_q_sphere(
-        config.nx, config.ny, config.nz, cx, cy, cz, config.radius,
+        config.nx,
+        config.ny,
+        config.nz,
+        cx,
+        cy,
+        cz,
+        config.radius,
         device=device,
     )
     rho = torch.ones(shape, device=device)
@@ -182,8 +201,10 @@ def run_sphere_bfl_control_volume(
     if config.sponge_inlet:
         sponge_faces = ("x-",) + sponge_faces
     sigma = build_sponge_sigma_3d(
-        shape, width=config.sponge_width,
-        max_strength=config.sponge_strength, device=device,
+        shape,
+        width=config.sponge_width,
+        max_strength=config.sponge_strength,
+        device=device,
         faces=sponge_faces,
     )
     forces: list[float] = []
@@ -195,9 +216,7 @@ def run_sphere_bfl_control_volume(
     checkpoint_signature = {
         "schema_version": 3,
         "bfl_link_fraction_convention": "ray_parameter_q_equals_t_v2",
-        "bfl_population_reconstruction": (
-            "post_collision_outgoing_and_upstream_v2"
-        ),
+        "bfl_population_reconstruction": ("post_collision_outgoing_and_upstream_v2"),
         "shape_zyx": list(shape),
         "radius": config.radius,
         "center_x_fraction": config.center_x_fraction,
@@ -226,7 +245,8 @@ def run_sphere_bfl_control_volume(
             source_configuration.setdefault("compile_natural_kbc", False)
         if source_configuration != checkpoint_signature:
             shared_target = {
-                key: value for key, value in checkpoint_signature.items()
+                key: value
+                for key, value in checkpoint_signature.items()
                 if key not in {"schema_version", "statistics_window_steps"}
             }
             v2_compatible = (
@@ -235,8 +255,7 @@ def run_sphere_bfl_control_volume(
                 and isinstance(source_configuration, dict)
                 and source_configuration.get("schema_version") == 2
                 and all(
-                    source_configuration.get(key) == value
-                    for key, value in shared_target.items()
+                    source_configuration.get(key) == value for key, value in shared_target.items()
                 )
             )
             if not v2_compatible:
@@ -272,17 +291,20 @@ def run_sphere_bfl_control_volume(
         if checkpoint is None:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
-        atomic_torch_save({
-            "schema": "tensorlbm-sphere-checkpoint-v3",
-            "configuration": checkpoint_signature,
-            "step": step,
-            "populations": f.detach().cpu(),
-            "drag_force_history": torch.tensor(forces, dtype=torch.float64),
-            "bfl_drag_history": torch.tensor(bfl_forces, dtype=torch.float64),
-            "open_boundary_history": open_boundary_history,
-            "projected_pressure_samples": projected_pressure_samples,
-            "migration_provenance": migration_provenance,
-        }, checkpoint)
+        atomic_torch_save(
+            {
+                "schema": "tensorlbm-sphere-checkpoint-v3",
+                "configuration": checkpoint_signature,
+                "step": step,
+                "populations": f.detach().cpu(),
+                "drag_force_history": torch.tensor(forces, dtype=torch.float64),
+                "bfl_drag_history": torch.tensor(bfl_forces, dtype=torch.float64),
+                "open_boundary_history": open_boundary_history,
+                "projected_pressure_samples": projected_pressure_samples,
+                "migration_provenance": migration_provenance,
+            },
+            checkpoint,
+        )
 
     def apply_outer(
         state: torch.Tensor,
@@ -343,12 +365,18 @@ def run_sphere_bfl_control_volume(
             (1.0 - activation) * uz_post,
         )
         f, bfl_force = bouzidi_bounce_back_d3q19(
-            f, post, bfl_mask, bfl_q,
-            wall_velocity=wall_velocity, wall_density=rho_post,
+            f,
+            post,
+            bfl_mask,
+            bfl_q,
+            wall_velocity=wall_velocity,
+            wall_density=rho_post,
             return_force=True,
         )
         f = apply_equilibrium_difference_sponge(
-            f, sigma, velocity_target=(config.lattice_speed, 0.0, 0.0),
+            f,
+            sigma,
+            velocity_target=(config.lattice_speed, 0.0, 0.0),
         )
         f = apply_outer(
             f,
@@ -357,60 +385,67 @@ def run_sphere_bfl_control_volume(
             records=step_boundary_records,
         )
         if collect_boundary_diagnostics:
-            open_boundary_history.append({
-                "step": step,
-                "stages": step_boundary_records,
-                "mass_delta": sum(
-                    float(record["mass_delta"])
-                    for record in step_boundary_records
-                ),
-                "momentum_delta": [
-                    sum(
-                        float(record["momentum_delta"][axis])
-                        for record in step_boundary_records
-                    )
-                    for axis in range(3)
-                ],
-                "finite": all(
-                    bool(record["finite"])
-                    for record in step_boundary_records
-                ),
-            })
-        cv_force = float(observe_control_volume_force(
-            old, f, post, cv, solid=solid,
-        ).force_on_body[0].item())
+            open_boundary_history.append(
+                {
+                    "step": step,
+                    "stages": step_boundary_records,
+                    "mass_delta": sum(
+                        float(record["mass_delta"]) for record in step_boundary_records
+                    ),
+                    "momentum_delta": [
+                        sum(
+                            float(record["momentum_delta"][axis])
+                            for record in step_boundary_records
+                        )
+                        for axis in range(3)
+                    ],
+                    "finite": all(bool(record["finite"]) for record in step_boundary_records),
+                }
+            )
+        cv_force = float(
+            observe_control_volume_force(
+                old,
+                f,
+                post,
+                cv,
+                solid=solid,
+            )
+            .force_on_body[0]
+            .item()
+        )
         if (
             config.projected_pressure_interval > 0
             and step > config.warmup_steps
             and step % config.projected_pressure_interval == 0
         ):
             pressure = (f.sum(dim=0) - 1.0) / 3.0
-            projected_force, projected_diagnostics = (
-                integrate_bfl_projected_pressure(
-                    pressure,
-                    bfl_mask,
-                    bfl_q,
-                    solid=solid,
-                    reconstruction=config.projected_pressure_reconstruction,
-                )
+            projected_force, projected_diagnostics = integrate_bfl_projected_pressure(
+                pressure,
+                bfl_mask,
+                bfl_q,
+                solid=solid,
+                reconstruction=config.projected_pressure_reconstruction,
             )
-            projected_pressure_samples.append({
-                "step": step,
-                "pressure_force_x": projected_force[0],
-                "paired_control_volume_force_x": cv_force,
-                "diagnostics": asdict(projected_diagnostics),
-            })
+            projected_pressure_samples.append(
+                {
+                    "step": step,
+                    "pressure_force_x": projected_force[0],
+                    "paired_control_volume_force_x": cv_force,
+                    "diagnostics": asdict(projected_diagnostics),
+                }
+            )
         if step > config.warmup_steps:
             forces.append(cv_force)
             bfl_forces.append(bfl_force[0])
         if not bool(torch.isfinite(f).all()):
             raise FloatingPointError(f"sphere benchmark diverged at step {step}")
         if config.report_interval and step % config.report_interval == 0:
-            recent = forces[-min(len(forces), config.report_interval):]
+            recent = forces[-min(len(forces), config.report_interval) :]
             recent_cd = sum(recent) / len(recent) / dynamic_area if recent else math.nan
             print(f"sphere step={step}/{config.steps} recent_Cd={recent_cd:.6f}", flush=True)
         if (
-            checkpoint is not None and config.checkpoint_interval
+            checkpoint is not None
+            and config.checkpoint_interval
             and step % config.checkpoint_interval == 0
         ):
             save_checkpoint(step)
@@ -428,17 +463,15 @@ def run_sphere_bfl_control_volume(
     reference = schiller_naumann_cd(config.reynolds)
     cd_history = [force / dynamic_area for force in selected_forces]
     stationarity = assess_force_stationarity(
-        cd_history, block_size=max(1, len(cd_history) // 8),
+        cd_history,
+        block_size=max(1, len(cd_history) // 8),
     )
     observer_difference = abs(cd - cd_bfl) / max(abs(cd), 1e-30) * 100.0
     reference_error = abs(cd - reference) / reference * 100.0
     statistics_convective_times = (
         len(selected_forces) * config.lattice_speed / (2.0 * config.radius)
     )
-    duration_acceptable = (
-        statistics_convective_times
-        >= config.minimum_statistics_convective_times
-    )
+    duration_acceptable = statistics_convective_times >= config.minimum_statistics_convective_times
     numerical_quality_admitted = (
         math.isfinite(cd)
         and stationarity.meets(1.0)
@@ -454,7 +487,8 @@ def run_sphere_bfl_control_volume(
     )
     statistics_start_step = config.steps - statistics_window + 1
     selected_projected_samples = [
-        sample for sample in projected_pressure_samples
+        sample
+        for sample in projected_pressure_samples
         if int(sample["step"]) >= statistics_start_step
     ]
     projected_pressure_observer: dict[str, object] = {
@@ -472,37 +506,39 @@ def run_sphere_bfl_control_volume(
     }
     if selected_projected_samples:
         projected_mean = sum(
-            float(sample["pressure_force_x"])
-            for sample in selected_projected_samples
+            float(sample["pressure_force_x"]) for sample in selected_projected_samples
         ) / len(selected_projected_samples)
         projected_paired_cv_mean = sum(
-            float(sample["paired_control_volume_force_x"])
-            for sample in selected_projected_samples
+            float(sample["paired_control_volume_force_x"]) for sample in selected_projected_samples
         ) / len(selected_projected_samples)
         usable_fractions = [
             float(sample["diagnostics"]["usable_links"])
             / max(float(sample["diagnostics"]["requested_links"]), 1.0)
             for sample in selected_projected_samples
         ]
-        projected_pressure_observer.update({
-            "mean_pressure_force": projected_mean,
-            "paired_control_volume_mean_force": projected_paired_cv_mean,
-            "mean_force_difference_pct": (
-                abs(projected_mean - projected_paired_cv_mean)
-                / max(abs(projected_paired_cv_mean), 1.0e-30)
-                * 100.0
-            ),
-            "minimum_usable_link_fraction": min(usable_fractions),
-            "maximum_fallback_cells": max(
-                int(sample["diagnostics"]["fallback_cells"])
-                for sample in selected_projected_samples
-            ),
-        })
+        projected_pressure_observer.update(
+            {
+                "mean_pressure_force": projected_mean,
+                "paired_control_volume_mean_force": projected_paired_cv_mean,
+                "mean_force_difference_pct": (
+                    abs(projected_mean - projected_paired_cv_mean)
+                    / max(abs(projected_paired_cv_mean), 1.0e-30)
+                    * 100.0
+                ),
+                "minimum_usable_link_fraction": min(usable_fractions),
+                "maximum_fallback_cells": max(
+                    int(sample["diagnostics"]["fallback_cells"])
+                    for sample in selected_projected_samples
+                ),
+            }
+        )
     return {
         "schema": "tensorlbm-sphere-bfl-control-volume-v3",
-        "configuration": checkpoint_signature | {
+        "configuration": checkpoint_signature
+        | {
             "tau": config.tau,
-            "steps": config.steps, "warmup_steps": config.warmup_steps,
+            "steps": config.steps,
+            "warmup_steps": config.warmup_steps,
             "device": config.device,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
@@ -510,13 +546,9 @@ def run_sphere_bfl_control_volume(
             "checkpoint_interval": config.checkpoint_interval,
             "statistics_window_steps_resolved": statistics_window,
             "projected_pressure_interval": config.projected_pressure_interval,
-            "projected_pressure_reconstruction": (
-                config.projected_pressure_reconstruction
-            ),
+            "projected_pressure_reconstruction": (config.projected_pressure_reconstruction),
             "statistics_convective_times": statistics_convective_times,
-            "minimum_statistics_convective_times": (
-                config.minimum_statistics_convective_times
-            ),
+            "minimum_statistics_convective_times": (config.minimum_statistics_convective_times),
             "migration_provenance": migration_provenance,
         },
         "result": {
@@ -529,9 +561,7 @@ def run_sphere_bfl_control_volume(
             "finite": math.isfinite(cd),
             "collision_execution": natural_kbc_executor.diagnostics(),
             "open_boundary_population_delta": open_boundary_history,
-            "open_boundary_population_delta_audit": (
-                open_boundary_audit.to_dict()
-            ),
+            "open_boundary_population_delta_audit": (open_boundary_audit.to_dict()),
             "projected_bfl_pressure_observer": projected_pressure_observer,
         },
         "runtime": {
@@ -548,17 +578,12 @@ def run_sphere_bfl_control_volume(
             "force_observer_target_met": observer_difference <= 1.0,
             "duration_target_met": duration_acceptable,
             "numerical_quality_admitted": numerical_quality_admitted,
-            "admitted": (
-                reference_error <= 5.0 and numerical_quality_admitted
-            ),
+            "admitted": (reference_error <= 5.0 and numerical_quality_admitted),
         },
         "measured_peak_allocated_gib": (
-            torch.cuda.max_memory_allocated(device) / 2**30
-            if device.type == "cuda" else None
+            torch.cuda.max_memory_allocated(device) / 2**30 if device.type == "cuda" else None
         ),
-        "cuda_memory_preflight": (
-            memory_budget.to_dict() if memory_budget is not None else None
-        ),
+        "cuda_memory_preflight": (memory_budget.to_dict() if memory_budget is not None else None),
     }
 
 

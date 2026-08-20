@@ -1,4 +1,5 @@
 """Fail-closed three-grid convergence for nested SUBOFF trajectories."""
+
 from __future__ import annotations
 
 import math
@@ -72,9 +73,15 @@ def assess_suboff_nested_convergence(
         result = record.get("result")
         acceptance = record.get("acceptance")
         geometry = record.get("geometry")
-        if not all(isinstance(value, dict) for value in (
-            configuration, result, acceptance, geometry,
-        )):
+        if not all(
+            isinstance(value, dict)
+            for value in (
+                configuration,
+                result,
+                acceptance,
+                geometry,
+            )
+        ):
             raise ValueError("each record needs configuration/result/acceptance/geometry")
         statistics = result.get("statistics")
         resolution = geometry.get("resolution")
@@ -88,14 +95,16 @@ def assess_suboff_nested_convergence(
         mean_resistance = statistics.get("mean_resistance_n")
         if mean_resistance is None:
             raise ValueError("each record needs a finite mean resistance")
-        parsed.append((
-            finest_length,
-            float(mean_resistance),
-            configuration,
-            result,
-            acceptance,
-            geometry,
-        ))
+        parsed.append(
+            (
+                finest_length,
+                float(mean_resistance),
+                configuration,
+                result,
+                acceptance,
+                geometry,
+            )
+        )
         conservative_observer_quality = acceptance.get(
             "conservative_force_observer_target_met",
         )
@@ -141,18 +150,32 @@ def assess_suboff_nested_convergence(
         for _, _, configuration, result, _, geometry in parsed
         for field in (
             *_IDENTITY_FIELDS,
-            "nx", "ny", "nz", "hull_length",
-            "outer_wall_margin", "outer_wake_cells", "sponge_width",
-            "inner_wall_margin", "inner_wake_cells", "cv_margin",
-            "aux_cv_margins", "stress_exchange_distance",
-            "steps", "warmup_steps", "statistics_window_steps",
-            "ramp_steps", "report_interval", "wall_diagnostic_interval",
+            "nx",
+            "ny",
+            "nz",
+            "hull_length",
+            "outer_wall_margin",
+            "outer_wake_cells",
+            "sponge_width",
+            "inner_wall_margin",
+            "inner_wake_cells",
+            "cv_margin",
+            "aux_cv_margins",
+            "stress_exchange_distance",
+            "steps",
+            "warmup_steps",
+            "statistics_window_steps",
+            "ramp_steps",
+            "report_interval",
+            "wall_diagnostic_interval",
             "resolved_wall_normal_ramp_steps",
             "resolved_wall_shear_ramp_steps",
             "surface_force_interval",
             "force_samples_per_root_step",
-            "health_interval", "resolved_reynolds_start",
-            "viscosity_ramp_start_step", "viscosity_ramp_end_step",
+            "health_interval",
+            "resolved_reynolds_start",
+            "viscosity_ramp_start_step",
+            "viscosity_ramp_end_step",
         )
     ) and all(
         "statistics_window_steps_resolved" in result["statistics"]
@@ -167,8 +190,7 @@ def assess_suboff_nested_convergence(
 
     coarse_lengths = [float(item[2]["hull_length"]) for item in parsed]
     finest_ratios = [
-        resolution / coarse
-        for resolution, coarse in zip(resolutions, coarse_lengths, strict=True)
+        resolution / coarse for resolution, coarse in zip(resolutions, coarse_lengths, strict=True)
     ]
     domain_ratios = {
         field: [
@@ -217,7 +239,9 @@ def assess_suboff_nested_convergence(
             f"margin_{index}_over_coarse_length": [
                 values[index] / coarse
                 for values, coarse in zip(
-                    auxiliary_margins, coarse_lengths, strict=True,
+                    auxiliary_margins,
+                    coarse_lengths,
+                    strict=True,
                 )
             ]
             for index in range(next(iter(auxiliary_counts)))
@@ -226,10 +250,17 @@ def assess_suboff_nested_convergence(
         auxiliary_cv_ratios = {"margin_count_mismatch": [math.inf]}
     time_ratios: dict[str, list[float]] = {}
     for field in (
-        "steps", "warmup_steps", "statistics_window_steps", "ramp_steps",
-        "resolved_wall_normal_ramp_steps", "resolved_wall_shear_ramp_steps",
-        "report_interval", "wall_diagnostic_interval", "surface_force_interval",
-        "health_interval", "viscosity_ramp_start_step",
+        "steps",
+        "warmup_steps",
+        "statistics_window_steps",
+        "ramp_steps",
+        "resolved_wall_normal_ramp_steps",
+        "resolved_wall_shear_ramp_steps",
+        "report_interval",
+        "wall_diagnostic_interval",
+        "surface_force_interval",
+        "health_interval",
+        "viscosity_ramp_start_step",
         "viscosity_ramp_end_step",
     ):
         time_ratios[field] = [
@@ -241,9 +272,7 @@ def assess_suboff_nested_convergence(
         for coarse, item in zip(coarse_lengths, parsed, strict=True)
     ]
     physical_duration_groups = {
-        field: [
-            float(item[3]["statistics"][field]) for item in parsed
-        ]
+        field: [float(item[3]["statistics"][field]) for item in parsed]
         for field in (
             "target_reynolds_convective_times",
             "fully_physical_convective_times",
@@ -260,14 +289,12 @@ def assess_suboff_nested_convergence(
         *time_ratios.values(),
         *physical_duration_groups.values(),
     ]
-    scaled_configuration_invariant = (
-        all(all(math.isfinite(value) for value in values) for values in ratio_groups)
-        and all(_spread(values) <= 1.0e-12 for values in ratio_groups)
-    )
+    scaled_configuration_invariant = all(
+        all(math.isfinite(value) for value in values) for values in ratio_groups
+    ) and all(_spread(values) <= 1.0e-12 for values in ratio_groups)
 
     geometry_convergence_members = all(
-        item[5]["resolution"].get("convergence_member_resolved") is True
-        for item in parsed
+        item[5]["resolution"].get("convergence_member_resolved") is True for item in parsed
     )
     finest_absolute_geometry = (
         parsed[-1][5]["resolution"].get("absolute_reference_resolved") is True
@@ -282,14 +309,14 @@ def assess_suboff_nested_convergence(
         minimum_order=minimum_order,
     )
     experimental_values = {
-        float(item[3]["statistics"]["experimental_resistance_n"])
-        for item in parsed
+        float(item[3]["statistics"]["experimental_resistance_n"]) for item in parsed
     }
     reference_invariant = len(experimental_values) == 1
     experimental = next(iter(experimental_values)) if reference_invariant else math.nan
     extrapolated_error = (
         abs(spatial.extrapolated_value - experimental) / abs(experimental) * 100.0
-        if reference_invariant and experimental != 0.0 else math.inf
+        if reference_invariant and experimental != 0.0
+        else math.inf
     )
     provenance_admitted = (
         schema_valid
@@ -308,9 +335,7 @@ def assess_suboff_nested_convergence(
     )
     return {
         "schema": "tensorlbm-suboff-nested-convergence-v1",
-        "hull_type": (
-            normalized_hull_types[0] if hull_type_invariant else None
-        ),
+        "hull_type": (normalized_hull_types[0] if hull_type_invariant else None),
         "fine_hull_resolutions": resolutions,
         "mean_resistances_n": resistances,
         "configuration_identity": {
@@ -341,9 +366,7 @@ def assess_suboff_nested_convergence(
         "experiment": {
             "resistance_n": experimental,
             "extrapolated_error_pct": extrapolated_error,
-            "maximum_extrapolated_error_pct": (
-                maximum_extrapolated_experiment_error_pct
-            ),
+            "maximum_extrapolated_error_pct": (maximum_extrapolated_experiment_error_pct),
         },
         "source_numerical_quality_admitted": source_quality,
         "geometry_resolution": {

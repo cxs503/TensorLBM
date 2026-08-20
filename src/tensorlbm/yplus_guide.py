@@ -48,11 +48,14 @@ def estimate_exchange_yplus(
     this API accepts the actual finest-level body resolution and the declared
     wall-normal exchange distance, so it remains valid under local refinement.
     """
-    if min(
-        physical_reynolds,
-        characteristic_length_cells,
-        exchange_distance_cells,
-    ) <= 0.0:
+    if (
+        min(
+            physical_reynolds,
+            characteristic_length_cells,
+            exchange_distance_cells,
+        )
+        <= 0.0
+    ):
         raise ValueError("Reynolds number, length and exchange distance must be positive")
     cf = ittc57_friction_coefficient(physical_reynolds)
     return (
@@ -81,10 +84,7 @@ def estimate_bfl_exchange_yplus_bounds(
     """
     if requested_exchange_distance_cells <= 0.0:
         raise ValueError("requested exchange distance must be positive")
-    if not (
-        0.0 <= minimum_bfl_wall_distance_cells
-        <= maximum_bfl_wall_distance_cells
-    ):
+    if not (0.0 <= minimum_bfl_wall_distance_cells <= maximum_bfl_wall_distance_cells):
         raise ValueError("BFL wall-distance bounds must be ordered and non-negative")
     minimum_effective_distance = max(
         requested_exchange_distance_cells,
@@ -140,18 +140,14 @@ def plan_exchange_yplus_refinement(
         exchange_distance_cells=minimum_exchange_distance_cells,
     )
     required_characteristic_cells = (
-        characteristic_length_cells
-        * current_minimum_yplus
-        / target_maximum_yplus
+        characteristic_length_cells * current_minimum_yplus / target_maximum_yplus
     )
     resolution_ratio = required_characteristic_cells / characteristic_length_cells
     additional_levels = max(
         0,
         math.ceil(math.log(max(resolution_ratio, 1.0), refinement_ratio)),
     )
-    planned_characteristic_cells = (
-        characteristic_length_cells * refinement_ratio**additional_levels
-    )
+    planned_characteristic_cells = characteristic_length_cells * refinement_ratio**additional_levels
     return {
         "physical_reynolds": physical_reynolds,
         "current_characteristic_length_cells": characteristic_length_cells,
@@ -252,9 +248,12 @@ def yplus_recommendation(
 # Grid quality metrics — blockage ratio, domain scales, pressure convergence
 # ---------------------------------------------------------------------------
 
+
 def grid_quality_metrics(
     *,
-    nx: int, ny: int, nz: int,
+    nx: int,
+    ny: int,
+    nz: int,
     hull_length: float,
     u_in: float = 0.06,
     re: float = 2e6,
@@ -297,9 +296,7 @@ def grid_quality_metrics(
             raise ValueError(f"{name} must be finite and positive")
     if re <= 100.0:
         raise ValueError("re must exceed 100 for the ITTC-1957 estimate")
-    if hull_radius is not None and (
-        not math.isfinite(hull_radius) or hull_radius <= 0.0
-    ):
+    if hull_radius is not None and (not math.isfinite(hull_radius) or hull_radius <= 0.0):
         raise ValueError("hull_radius must be finite and positive")
     nu = u_in * hull_length / re
     # All geometric inputs are already lattice-cell counts.  The lattice
@@ -326,7 +323,7 @@ def grid_quality_metrics(
     # Blockage ratio: hull cross-section / domain cross-section
     # SUBOFF diameter ≈ hull_length / 8.57
     r_hull = hull_radius if hull_radius is not None else hull_length / (2 * 8.57)
-    hull_area = math.pi * r_hull ** 2
+    hull_area = math.pi * r_hull**2
     domain_area = ny * nz
     blockage = hull_area / max(domain_area, 1e-12)
 
@@ -341,11 +338,7 @@ def grid_quality_metrics(
     # Quality tier combines the wall-model regime and domain adequacy.  The
     # two-percent blockage target is a preflight gate, not an empirical drag
     # correction; formal domain convergence still needs multiple CFD boxes.
-    if (
-        yp_regime == "log_law"
-        and domain_aspect >= 2.0
-        and blockage < 0.02
-    ):
+    if yp_regime == "log_law" and domain_aspect >= 2.0 and blockage < 0.02:
         tier = "recommended"
     elif yp_regime == "log_law" and blockage < 0.05:
         tier = "acceptable"
@@ -367,10 +360,20 @@ def grid_quality_metrics(
         "transverse_domain_diameters": min(ny, nz) / (2.0 * r_hull),
         "pressure_settle_steps_est": int(pressure_steps),
         "quality_tier": tier,
-        "parameters": {"nx": nx, "ny": ny, "nz": nz, "hull_length": hull_length,
-                       "u_in": u_in, "re": re, "dx": dx, "y_first": y,
-                       "dx_lu": dx, "y_first_lu": y,
-                       "nu": nu, "u_tau_est": u_tau},
+        "parameters": {
+            "nx": nx,
+            "ny": ny,
+            "nz": nz,
+            "hull_length": hull_length,
+            "u_in": u_in,
+            "re": re,
+            "dx": dx,
+            "y_first": y,
+            "dx_lu": dx,
+            "y_first_lu": y,
+            "nu": nu,
+            "u_tau_est": u_tau,
+        },
     }
 
 
@@ -419,6 +422,7 @@ def recommend_grid(
 # ---------------------------------------------------------------------------
 # Extend DragMonitor with y+ tracking
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DragMonitor:
@@ -478,9 +482,11 @@ class DragMonitor:
 
         sf = _std(self._fric, af) if n > 1 else 0.0
         sp = _std(self._pres, ap) if n > 1 else 0.0
-        st = math.sqrt(
-            sum((self._fric[i] + self._pres[i] - at) ** 2 for i in range(n)) / (n - 1)
-        ) if n > 1 else 0.0
+        st = (
+            math.sqrt(sum((self._fric[i] + self._pres[i] - at) ** 2 for i in range(n)) / (n - 1))
+            if n > 1
+            else 0.0
+        )
 
         win_n = max(1, int(n * self.window_frac))
         if win_n < 2:
@@ -524,8 +530,7 @@ class DragMonitor:
         """Return Ct components averaged over the *last* `window` samples (sliding window)."""
         n = min(window, len(self._fric))
         if n == 0:
-            return {"Ct_fric_slide": 0.0, "Ct_pres_slide": 0.0,
-                    "Ct_total_slide": 0.0, "n_slide": 0}
+            return {"Ct_fric_slide": 0.0, "Ct_pres_slide": 0.0, "Ct_total_slide": 0.0, "n_slide": 0}
         af = sum(self._fric[-n:]) / n
         ap = sum(self._pres[-n:]) / n
         return {

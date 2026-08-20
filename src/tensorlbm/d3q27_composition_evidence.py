@@ -31,7 +31,6 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
-from math import isfinite
 from types import FunctionType
 from typing import Any
 
@@ -44,7 +43,7 @@ D3Q27_COMPOSITION_EVIDENCE_VERSION = "d3q27-composition-evidence-r1"
 #: SHA-256 of ``inspect.getsource(collide_mrt27)``.  Matches the value locked
 #: by ``tests/test_d3q19_d3q27_mrt_consistency.py`` so that both evidence
 #: artifacts bind to the same collision implementation.
-EXPECTED_SOURCE_SHA256 = "4b1b55bf7b2aae49857f22d261e75666765764f5eeeb37050f105a17bafc10b5"
+EXPECTED_SOURCE_SHA256 = "a08a00d413b432c97b0c3a779c42b83161877e676303571a88adde9121eff76f"
 
 _PROBE_SHAPE = (2, 3, 4)
 _PROBE_SEED = 2718

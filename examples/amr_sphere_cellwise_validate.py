@@ -41,6 +41,7 @@ c. **Body-fitted drag measurement** — the coarse-grid control-volume force
 This is a validation runner: status=measured_candidate, physical_validation
 is only set when the run passes all gates.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,9 +53,9 @@ import torch
 from torch.nn.functional import conv3d
 
 from tensorlbm.adaptive_refinement import (
-    AMRPatch3D,
     AdaptationSchedule,
     AdaptiveSolver3D,
+    AMRPatch3D,
     boundary_layer_indicator_3d,
     nonequilibrium_indicator_3d,
     vorticity_indicator_3d,
@@ -117,6 +118,7 @@ def parser() -> argparse.ArgumentParser:
             "boundary_layer and nonequilibrium (sphere + wake refinement)."
         ),
     )
+
     def _parse_bool(value: str) -> bool:
         return value.lower() in ("1", "true", "yes", "on")
 
@@ -152,7 +154,14 @@ def main() -> None:
     shape = (args.nz, args.ny, args.nx)
     cx, cy, cz = args.nx * 0.5, args.ny / 2.0, args.nz / 2.0
     solid, solid_q = build_sphere_geometry(
-        args.nx, args.ny, args.nz, cx, cy, cz, args.radius, device,
+        args.nx,
+        args.ny,
+        args.nz,
+        cx,
+        cy,
+        cz,
+        args.radius,
+        device,
     )
     shape_q = (19, *shape)
 
@@ -175,19 +184,26 @@ def main() -> None:
         # elsewhere) so the exact coarsen level is immaterial — patches that
         # carry the sphere surface always keep local max = 1.0.
         coarsen_threshold=min(
-            args.coarsen_threshold, args.refine_threshold * 0.5,
+            args.coarsen_threshold,
+            args.refine_threshold * 0.5,
         ),
         tau=tau,
     )
     solver = AdaptiveSolver3D(f, schedule=schedule, mask=solid)
 
     cv = build_control_volume(
-        shape, (cx, cy, cz), args.radius, args.cv_margin, device,
+        shape,
+        (cx, cy, cz),
+        args.radius,
+        args.cv_margin,
+        device,
     )
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sigma = build_sponge_sigma_3d(
-        shape, width=args.sponge_width,
-        max_strength=args.sponge_strength, device=device,
+        shape,
+        width=args.sponge_width,
+        max_strength=args.sponge_strength,
+        device=device,
         faces=sponge_faces,
     )
     dynamic_area = 0.5 * args.lattice_speed**2 * math.pi * args.radius**2
@@ -230,9 +246,14 @@ def main() -> None:
         for q in solver.patches:
             if q.level == p.parent_level:
                 b, pb = q.box, p.box
-                if (b.x0 <= pb.x0 and b.x1 >= pb.x1
-                        and b.y0 <= pb.y0 and b.y1 >= pb.y1
-                        and b.z0 <= pb.z0 and b.z1 >= pb.z1):
+                if (
+                    b.x0 <= pb.x0
+                    and b.x1 >= pb.x1
+                    and b.y0 <= pb.y0
+                    and b.y1 >= pb.y1
+                    and b.z0 <= pb.z0
+                    and b.z1 >= pb.z1
+                ):
                     parent = q
                     break
         if parent is None:
@@ -251,8 +272,14 @@ def main() -> None:
             cyf = (cy - gy) * r
             czf = (cz - gz) * r
             local_solid = sphere_mask(
-                nx_f, ny_f, nz_f, cxf, cyf, czf,
-                args.radius * r, device=device,
+                nx_f,
+                ny_f,
+                nz_f,
+                cxf,
+                cyf,
+                czf,
+                args.radius * r,
+                device=device,
             )
             entry: dict[str, object] = {
                 "solid": local_solid,
@@ -261,8 +288,14 @@ def main() -> None:
             }
             if bool(local_solid.any()):
                 bfl_mask, bfl_q = compute_q_sphere(
-                    nx_f, ny_f, nz_f, cxf, cyf, czf,
-                    args.radius * r, device=device,
+                    nx_f,
+                    ny_f,
+                    nz_f,
+                    cxf,
+                    cyf,
+                    czf,
+                    args.radius * r,
+                    device=device,
                 )
                 entry["bfl_mask"] = bfl_mask
                 entry["bfl_q"] = bfl_q
@@ -273,7 +306,7 @@ def main() -> None:
         cover = torch.zeros(shape, dtype=torch.bool, device=device)
         for p in solver.patches:
             b = p.box
-            cover[b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = True
+            cover[b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1] = True
         total = int(solid.sum().item())
         if total == 0:
             return 1.0
@@ -292,7 +325,7 @@ def main() -> None:
             if entry.get("bfl_mask") is None:
                 continue
             b = p.box
-            cover[b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = True
+            cover[b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1] = True
         total = int(surface_cells.sum().item())
         if total == 0:
             return 1.0
@@ -310,7 +343,9 @@ def main() -> None:
         value, far above refine_threshold.
         """
         return torch.where(
-            surface_cells, torch.ones_like(bl), bl,
+            surface_cells,
+            torch.ones_like(bl),
+            bl,
         )
 
     def collide_fn(state: torch.Tensor) -> torch.Tensor:
@@ -338,16 +373,20 @@ def main() -> None:
             state = bounce_back_cells_3d(state, solid)
             if args.far_field_mode == "non_equilibrium_extrapolation":
                 state = non_equilibrium_far_field_bc_3d(
-                    state, u_in=args.lattice_speed,
+                    state,
+                    u_in=args.lattice_speed,
                 )
             else:
                 state = far_field_bc_3d(state, u_in=args.lattice_speed)
             state = apply_equilibrium_difference_sponge(
-                state, sigma, velocity_target=(args.lattice_speed, 0.0, 0.0),
+                state,
+                sigma,
+                velocity_target=(args.lattice_speed, 0.0, 0.0),
             )
             if args.far_field_mode == "non_equilibrium_extrapolation":
                 state = non_equilibrium_far_field_bc_3d(
-                    state, u_in=args.lattice_speed,
+                    state,
+                    u_in=args.lattice_speed,
                 )
             else:
                 state = far_field_bc_3d(state, u_in=args.lattice_speed)
@@ -375,7 +414,10 @@ def main() -> None:
                             (1.0 - activation) * uz_post,
                         )
                         state, bfl_force = bouzidi_bounce_back_d3q19(
-                            state, post, entry["bfl_mask"], entry["bfl_q"],
+                            state,
+                            post,
+                            entry["bfl_mask"],
+                            entry["bfl_q"],
                             wall_velocity=wall_velocity,
                             wall_density=rho_post,
                             return_force=True,
@@ -423,7 +465,7 @@ def main() -> None:
             n = max(1, bfl_count.get(pid, 1))
             total_bfl_fine += force_sum[0] / n
             fine_ratio = max(fine_ratio, int(p.ratio))
-        total_bfl_coarse = total_bfl_fine / float(fine_ratio ** 2)
+        total_bfl_coarse = total_bfl_fine / float(fine_ratio**2)
         if current_step > args.warmup_steps:
             # observe_control_volume_force's third argument must be the
             # post-collision, pre-stream state (streaming_momentum_import
@@ -431,9 +473,17 @@ def main() -> None:
             # collide is deterministic and side-effect free on the coarse
             # grid, so recompute it from the pre-step state.
             post_collide = collide_fn(before)
-            cv_force = float(observe_control_volume_force(
-                before, solver.coarse_f, post_collide, cv, solid=solid,
-            ).force_on_body[0].item())
+            cv_force = float(
+                observe_control_volume_force(
+                    before,
+                    solver.coarse_f,
+                    post_collide,
+                    cv,
+                    solid=solid,
+                )
+                .force_on_body[0]
+                .item()
+            )
             # Body-fitted drag: the fine BFL surface force.  The coarse CV
             # force already contains the coarse plain-BB sphere's surface
             # momentum sink (resolution garbage at R=7, Cd≈14); adding it
@@ -451,24 +501,36 @@ def main() -> None:
             rho, ux, uy, uz = macroscopic3d(solver.coarse_f)
             if args.indicator == "nonequilibrium":
                 indicator = nonequilibrium_indicator_3d(
-                    solver.coarse_f, rho, ux, uy, uz,
+                    solver.coarse_f,
+                    rho,
+                    ux,
+                    uy,
+                    uz,
                 )
             elif args.indicator == "vorticity":
                 indicator = vorticity_indicator_3d(ux, uy, uz)
             elif args.indicator == "boundary_layer":
                 indicator = _body_fitted_indicator(
                     boundary_layer_indicator_3d(
-                        solid, args.reynolds, char_length=2.0 * args.radius,
+                        solid,
+                        args.reynolds,
+                        char_length=2.0 * args.radius,
                     )
                 )
             else:  # bl+neq: element-wise max — body-fitted sphere + wake
                 bl = _body_fitted_indicator(
                     boundary_layer_indicator_3d(
-                        solid, args.reynolds, char_length=2.0 * args.radius,
+                        solid,
+                        args.reynolds,
+                        char_length=2.0 * args.radius,
                     )
                 )
                 neq = nonequilibrium_indicator_3d(
-                    solver.coarse_f, rho, ux, uy, uz,
+                    solver.coarse_f,
+                    rho,
+                    ux,
+                    uy,
+                    uz,
                 )
                 indicator = torch.maximum(bl, neq)
             solver.adapt(indicator)
@@ -480,7 +542,7 @@ def main() -> None:
             # Collision, FH interface rescale and restriction all read
             # patch.tau, so overriding it here fixes all three.
             for p in solver.patches:
-                p.tau = 0.5 + (2.0 ** p.level) * (tau - 0.5)
+                p.tau = 0.5 + (2.0**p.level) * (tau - 0.5)
             _build_patch_data()
             patch_by_id = {id(p): p for p in solver.patches}
             coverage = _solid_coverage()
@@ -488,8 +550,7 @@ def main() -> None:
             surface_coverage = _surface_coverage()
             surface_coverages.append(surface_coverage)
             bfl_active = sum(
-                1 for p in solver.patches
-                if patch_data.get(id(p), {}).get("bfl_mask") is not None
+                1 for p in solver.patches if patch_data.get(id(p), {}).get("bfl_mask") is not None
             )
             print(
                 f"  adapt@{current_step}: indicator={args.indicator} "
@@ -502,31 +563,32 @@ def main() -> None:
                 flush=True,
             )
         if args.report_interval and current_step % args.report_interval == 0:
-            recent = forces[-min(len(forces), args.report_interval):]
-            recent_cv = cv_forces[-min(len(cv_forces), args.report_interval):]
-            recent_bfl = bfl_forces[-min(len(bfl_forces), args.report_interval):]
+            recent = forces[-min(len(forces), args.report_interval) :]
+            recent_cv = cv_forces[-min(len(cv_forces), args.report_interval) :]
+            recent_bfl = bfl_forces[-min(len(bfl_forces), args.report_interval) :]
+
             def _cd(seq):
-                return (sum(seq) / len(seq) / dynamic_area if seq else math.nan)
+                return sum(seq) / len(seq) / dynamic_area if seq else math.nan
+
             print(
                 f"step={current_step}/{args.steps} recent_Cd(total)="
                 f"{_cd(recent):.6f} (cv={_cd(recent_cv):.6f} "
                 f"bfl={_cd(recent_bfl):.6f}) "
                 f"patches={len(solver.patches)} "
-                f"steps/s={current_step/(time.time()-started):.2f}",
+                f"steps/s={current_step / (time.time() - started):.2f}",
                 flush=True,
             )
         if not bool(torch.isfinite(solver.coarse_f).all()):
-            raise FloatingPointError(
-                f"adaptive sphere diverged at step {current_step}"
-            )
+            raise FloatingPointError(f"adaptive sphere diverged at step {current_step}")
         for p in solver.patches:
             if not bool(torch.isfinite(p.f).all()):
-                raise FloatingPointError(
-                    f"patch diverged at step {current_step}"
-                )
+                raise FloatingPointError(f"patch diverged at step {current_step}")
 
     summary = summarize_force_history(
-        forces, dynamic_area, args.reynolds, args.statistics_window_steps,
+        forces,
+        dynamic_area,
+        args.reynolds,
+        args.statistics_window_steps,
     )
     cd = summary["cd"]
     reference = summary["reference_cd"]
@@ -552,7 +614,7 @@ def main() -> None:
         mean_bfl_force_fine += force_sum[0] / max(1, bfl_count.get(pid, 1))
         dynamic_area_fine = max(
             dynamic_area_fine,
-            0.5 * args.lattice_speed ** 2 * math.pi * (args.radius * p.ratio) ** 2,
+            0.5 * args.lattice_speed**2 * math.pi * (args.radius * p.ratio) ** 2,
         )
     result = {
         **common_schema_fields("sphere-cellwise-amr-cv-v1"),
@@ -597,20 +659,18 @@ def main() -> None:
             "dynamic_area_lu2": dynamic_area,
             "dynamic_area_fine_lu2": dynamic_area_fine,
             "stationarity": stationarity_dict,
-            "mean_patch_count": (
-                sum(patch_counts) / len(patch_counts) if patch_counts else 0.0
-            ),
+            "mean_patch_count": (sum(patch_counts) / len(patch_counts) if patch_counts else 0.0),
             "max_patch_count": max(patch_counts, default=0),
             "sphere_solid_covered_fraction": (
                 sum(coverages) / len(coverages) if coverages else 0.0
             ),
             "max_sphere_solid_covered_fraction": max(coverages, default=0.0),
             "sphere_surface_covered_fraction": (
-                sum(surface_coverages) / len(surface_coverages)
-                if surface_coverages else 0.0
+                sum(surface_coverages) / len(surface_coverages) if surface_coverages else 0.0
             ),
             "max_sphere_surface_covered_fraction": max(
-                surface_coverages, default=0.0,
+                surface_coverages,
+                default=0.0,
             ),
             "wall_time_s": time.time() - started,
         },

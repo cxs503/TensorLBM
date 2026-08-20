@@ -13,9 +13,9 @@ from dataclasses import dataclass
 from typing import Mapping
 
 from tensorlbm.free_surface_transaction_contract import (
+    D3Q19,
     CellConversion,
     CellState,
-    D3Q19,
     OwnershipEvidence,
     PopulationTransferEvidence,
     RoundoffResidualEvidence,

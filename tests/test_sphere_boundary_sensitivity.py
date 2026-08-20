@@ -41,9 +41,12 @@ def _record(sponge_inlet: bool, cd: float) -> dict[str, object]:
 
 
 def test_sphere_inlet_sponge_pair_admits_small_matched_change() -> None:
-    result = assess_sphere_inlet_sponge_pair([
-        _record(True, 1.1756), _record(False, 1.1652),
-    ])
+    result = assess_sphere_inlet_sponge_pair(
+        [
+            _record(True, 1.1756),
+            _record(False, 1.1652),
+        ]
+    )
 
     assert result["configuration_identity"]["admitted"] is True
     assert result["boundary_sensitivity"]["drag_change_pct"] < 1.0
@@ -54,9 +57,12 @@ def test_sphere_inlet_sponge_pair_admits_small_matched_change() -> None:
 def test_sphere_inlet_sponge_pair_rejects_changed_collision() -> None:
     enabled = copy.deepcopy(_record(True, 1.1756))
     enabled["configuration"]["compile_natural_kbc"] = False
-    result = assess_sphere_inlet_sponge_pair([
-        _record(False, 1.1652), enabled,
-    ])
+    result = assess_sphere_inlet_sponge_pair(
+        [
+            _record(False, 1.1652),
+            enabled,
+        ]
+    )
 
     assert result["configuration_identity"]["identity_fields_equal"] is False
     assert result["admitted_as_boundary_sensitivity"] is False
@@ -64,17 +70,23 @@ def test_sphere_inlet_sponge_pair_rejects_changed_collision() -> None:
 
 def test_sphere_inlet_sponge_pair_requires_both_switch_states() -> None:
     with pytest.raises(ValueError, match="disabled and one enabled"):
-        assess_sphere_inlet_sponge_pair([
-            _record(False, 1.1652), _record(False, 1.1653),
-        ])
+        assess_sphere_inlet_sponge_pair(
+            [
+                _record(False, 1.1652),
+                _record(False, 1.1653),
+            ]
+        )
 
 
 def test_sphere_inlet_sponge_pair_rejects_numerically_bad_source() -> None:
     disabled = _record(False, 1.1652)
     disabled["acceptance"]["numerical_quality_admitted"] = False
-    result = assess_sphere_inlet_sponge_pair([
-        disabled, _record(True, 1.1756),
-    ])
+    result = assess_sphere_inlet_sponge_pair(
+        [
+            disabled,
+            _record(True, 1.1756),
+        ]
+    )
 
     assert result["source_numerical_quality_admitted"] is False
     assert result["admitted_as_boundary_sensitivity"] is False

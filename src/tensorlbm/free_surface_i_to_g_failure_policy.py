@@ -24,7 +24,6 @@ from .free_surface_topology_mutation_replay_contract import (
 )
 from .free_surface_topology_transaction import TopologyTransactionError
 
-
 WITHHELD = "WITHHELD"
 STOPPED_AND_REPORTED = "STOPPED_AND_REPORTED"
 FALLBACK_NOT_PHYSICAL = "FALLBACK_NOT_PHYSICAL"

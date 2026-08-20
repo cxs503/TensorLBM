@@ -25,7 +25,7 @@ class CellState(str, Enum):
     """The complete R1 state vocabulary; no implicit state aliases exist."""
 
     G = "G"
-    I = "I"
+    I = "I"  # noqa: E741
     L = "L"
     S = "S"
 

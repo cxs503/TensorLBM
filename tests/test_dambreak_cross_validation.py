@@ -15,8 +15,8 @@ import torch
 
 from tensorlbm.dambreak_cross_validation import (
     CrossValidationConfig,
-    run_single_dambreak,
     run_dambreak_cross_validation,
+    run_single_dambreak,
 )
 
 
