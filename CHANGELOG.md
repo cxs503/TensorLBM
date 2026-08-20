@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Parameter-sweep execution chain** (`tensorlbm.scan_runner`, new module): the
+  execution layer of the AI4S scale-out data loop — `ScanPlan` builds a
+  serializable sweep from the DoE generators (LHS / Sobol / factorial / CCD over
+  named case parameters, seed-deterministic, persisted as `plan.json` in the
+  dataset directory); `ScanExecutor` runs it with case-level GPU parallelism
+  (card pool dealt round-robin to spawn-worker processes, one case per card at a
+  time; serial in-process mode for CPU/debug). Every point is a
+  registry-instantiated case with parameter overrides stepped by the case's own
+  verified chain (bit-identical to `tensorlbm.cases.run_case`), with a
+  `FieldSampleReporter` landing each snapshot as a PASS-gated catalog product,
+  a `ThroughputReporter` recording MLUPS and an optional `EarlyStopReporter`.
+  Sweeps resume by product existence (finished points skipped, half-done points
+  reset), and finalise into a leakage-safe `FieldDatasetR2` (point-granularity
+  train/val/test) registered with `plan -> run -> product -> dataset` lineage
+  readable via `catalog.upstream`.
 - **Unified reporter/callback protocol** (`tensorlbm.reporters`, new module): a
   lettuce-derived (MIT, attribution in the file header) hook point between the
   step loops and diagnostics/data. A `Reporter` is anything with `interval` +
