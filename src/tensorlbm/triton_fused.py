@@ -38,7 +38,12 @@ for the inner periodic step and then apply BCs separately.
 
 D3Q19 only.  Reduced-precision storage (``fp16``, ``bf16``) keeps
 compute in ``fp32`` in registers; tested rel error vs ``fp32``
-reference is ~2e-4 (fp16) and ~1.5e-3 (bf16).
+reference is ~2e-4 (fp16) and ~1.5e-3 (bf16).  Storage precision can
+also be selected through the compute/store tiers of
+:mod:`tensorlbm.precision` (``PrecisionPolicy``, e.g. ``FP32FP16``)
+via the ``precision=`` argument of :class:`TritonFusedSolver3D`; the
+fp32-compute tiers map to the storage dtypes above, fp64-compute
+tiers raise ``NotImplementedError``.
 
 The module raises :class:`ImportError` at import time if Triton is
 not installed or no CUDA device is visible; check :func:`is_available`
@@ -120,6 +125,14 @@ _CY: Tuple[int, ...] = tuple(int(v) for v in _D3Q19_C[:, 1].tolist())
 _CZ: Tuple[int, ...] = tuple(int(v) for v in _D3Q19_C[:, 2].tolist())
 _W: Tuple[float, ...] = tuple(float(v) for v in _D3Q19_W.tolist())
 _Q = 19
+
+# Compute/store precision tiers (FP32FP32, FP32FP16, ...).  Imported
+# lazily-tolerantly so standalone module use (outside the package)
+# keeps working; the policy only parameterises the storage dtype here.
+try:
+    from tensorlbm.precision import PrecisionPolicy as _PrecisionPolicy
+except ImportError:  # standalone import (module file outside the package)
+    _PrecisionPolicy = None  # type: ignore[assignment]
 
 # Import-time self-check: guard the D3Q19 invariants so any future drift
 # of the source tables fails loudly instead of corrupting kernels.
@@ -584,7 +597,18 @@ class TritonFusedSolver3D:
             does not run on CPU.
         dtype: Storage dtype of the distribution.  fp32 is the
             default; fp16 and bf16 are supported with reduced
-            precision (see module docstring).
+            precision (see module docstring).  Mutually consistent
+            with ``precision`` (a conflicting explicit pair raises).
+        precision: Optional :class:`tensorlbm.precision.PrecisionPolicy`
+            tier (enum or exact name string, e.g. ``"FP32FP16"``).
+            The policy fixes the storage dtype to its ``store_dtype``
+            and documents the cast boundary: the kernel loads are
+            widened to the compute dtype (fp32 registers) and stores
+            are narrowed to the storage dtype, so the *kernel itself*
+            is the ``cast_to_compute``/``cast_to_store`` boundary.  The
+            fused Triton kernel computes in fp32 registers, so only
+            fp32-compute tiers are accepted here; ``FP64*`` tiers raise
+            ``NotImplementedError`` (use the eager paths for fp64).
         block_x, block_y: Tile shape per program.  Defaults are
             tuned for RTX 5090 / Ada-class GPUs at n=64..512.
         num_warps, num_stages: Triton scheduling hints.
@@ -597,8 +621,9 @@ class TritonFusedSolver3D:
         nx: int,
         tau: float,
         device: str | torch.device = "cuda:0",
-        dtype: torch.dtype = torch.float32,
+        dtype: torch.dtype | None = None,
         *,
+        precision: "object | None" = None,
         block_x: int = DEFAULT_BLOCK_X,
         block_y: int = DEFAULT_BLOCK_Y,
         num_warps: int = DEFAULT_NUM_WARPS,
@@ -610,6 +635,31 @@ class TritonFusedSolver3D:
                 "Check tensorlbm.triton_fused.is_available() first and "
                 "fall back to tensorlbm.perf_solver.OptimizedSolver3D if False."
             )
+        if precision is not None:
+            if _PrecisionPolicy is None:
+                raise RuntimeError(
+                    "precision= requires the tensorlbm package "
+                    "(tensorlbm.precision); standalone module import "
+                    "cannot resolve the policy."
+                )
+            policy = _PrecisionPolicy.parse(precision)
+            if policy.compute_dtype != torch.float32:
+                raise NotImplementedError(
+                    f"{policy.name}: the fused Triton kernel computes in "
+                    f"fp32 registers, so fp64-compute tiers are not "
+                    f"available here; use an eager solver for fp64."
+                )
+            if dtype is not None and dtype != policy.store_dtype:
+                raise ValueError(
+                    f"dtype={dtype} conflicts with precision={policy.name} "
+                    f"(store dtype {policy.store_dtype}); pass only one."
+                )
+            dtype = policy.store_dtype
+            self.precision_policy = policy
+        else:
+            self.precision_policy = None
+        if dtype is None:
+            dtype = torch.float32
         if dtype not in (torch.float32, torch.float16, torch.bfloat16):
             raise ValueError(
                 f"Unsupported dtype {dtype}; use float32, float16, or bfloat16.")
@@ -658,7 +708,22 @@ class TritonFusedSolver3D:
         Calls that feed the previous output back alternate buffers, so
         the kernel's input and output pointers are always distinct;
         a first call with a caller-owned ``f`` writes into ``_buf_a``.
+
+        The input's dtype must equal the solver's storage dtype (the
+        ``cast_to_store`` side of the precision boundary): the internal
+        buffers are allocated from the first input, so an fp32 input to
+        an ``FP32FP16`` solver would silently run the whole trajectory
+        in fp32 instead of raising.
         """
+        if f.dtype != self.dtype:
+            policy = (f" (precision {self.precision_policy.name})"
+                      if self.precision_policy is not None else "")
+            raise ValueError(
+                f"step() input dtype {f.dtype} does not match the solver's "
+                f"storage dtype {self.dtype}{policy}; store the initial "
+                f"distribution in the storage dtype first (e.g. "
+                f"precision.cast_to_store(f, policy) or f.to(dtype))"
+            )
         if self._buf_a is None or self._buf_a.shape != f.shape \
                 or self._buf_a.dtype != f.dtype \
                 or self._buf_b is None or self._buf_b.shape != f.shape \
