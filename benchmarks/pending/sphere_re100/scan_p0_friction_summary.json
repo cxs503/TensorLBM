@@ -21,6 +21,25 @@
     "single_frame_p0_scan": {"near_wall": 0.5575, "far_field": 0.5575, "domain_avg": 0.5575, "inlet": 0.5575},
     "single_frame_friction_scan": {"standard": 0.3741, "2nd_order": -0.0182, "central": 0.5794, "lagrange": 0.368}
   },
+  "faces_retest_2026-08-20": {
+    "module": "GeneralSimEngine + formula='faces' (edd3e80 per-wall-face shear, dA=1/face, staircase inner-corner double faces included; solid mask passed)",
+    "grid_D40": "140x120x120 domain, 5000 steps, cuda:1, time-avg last 100 samples",
+    "grid_D60": "210x180x180 domain, 8000 steps, cuda:1, time-avg last 100 samples",
+    "D40_faces": {"cd_pressure": 0.5564, "cd_friction": 0.4137, "cd_total": 0.9700, "err_pct": -11.15},
+    "D60_faces": {"cd_pressure": 0.5498, "cd_friction": 0.4396, "cd_total": 0.9894, "err_pct": -9.37,
+                  "window_means_5x1000_cd_total": [1.00994, 0.99708, 0.99248, 0.99023, 0.98943],
+                  "single_frame_friction_scan": {"standard": 0.3741, "2nd_order": -0.0182, "central": 0.5794, "lagrange": 0.368, "faces": 0.4405}},
+    "face_geometry_D40": {"wall_faces_total": 7470, "faces_per_axis": 2490, "near_cells": 4302,
+                          "faces_over_near": 1.7364, "flow_direction_faces_y_plus_z": 4980,
+                          "flow_effective_faces_over_near": 1.158,
+                          "measured_cd_f_faces_over_standard": 1.166},
+    "verdict": "not_verified",
+    "verdict_reason": "faces formula is CORRECT and converges (D40 -11.15% -> D60 -9.37%, window drift 0.08%), but only recovers +16% of friction (not the +40% 2D-cylinder extrapolation): on a 3D sphere the flow-direction friction comes only from y/z faces (4980 of 7470 wall faces); x faces (stagnation/wake staircase) contribute no Cd_x shear. Pressure term cd_p=-49% (G12 extrap='none') dominates residual. Both grids >3% hard gate -> stays pending/.",
+    "raw_outputs": [
+      "/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d40_far_field_none_faces/force_compare.json",
+      "/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d60_far_field_none_faces/force_compare.json"
+    ]
+  },
   "verdict": "not_verified",
   "verdict_reason": "best combo (p0=any, friction=central) gives D40 +2.05% but D60 +3.35% (>3%) — error INCREASES with refinement (+2.05% -> +3.35%), i.e. the D40 'pass' is a coincidental cancellation, not a converged result. Repo hard rule: refinement-worsening = fake result, do not save.",
   "physical_analysis": {

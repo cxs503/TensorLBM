@@ -13,7 +13,8 @@ Usage:
     steps:      total steps (default 4000)
     p0_method:  near_wall|far_field|domain_avg|inlet (default far_field)
     extrap:     none|linear|quadratic (default none)
-    friction:   standard|lagrange (default standard)
+    friction:   standard|lagrange|faces (default standard; 'faces' = per-wall-face
+                shear, staircase-exact, requires solid — wired in GeneralSimEngine)
 """
 import sys, os, time, json, math
 
