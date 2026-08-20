@@ -25,6 +25,7 @@ A navigable index of the documentation in this directory, grouped by topic.
 | Document | Description |
 |---|---|
 | [development_workflow.md](development_workflow.md) | Single entry-point for setup, CI checks, platform startup, and output naming |
+| [differentiable_path.md](differentiable_path.md) | The differentiable reference path: eager-solver autograd contract, memory/checkpointing, relation to adjoint surrogate and Triton path |
 | [platform_user_manual.md](platform_user_manual.md) | Web-platform UI guide: preprocess, solver, postprocess, jobs, AI agent |
 | [platform_test_report.md](platform_test_report.md) | Platform smoke-test report |
 | [observability.md](observability.md) | Job lifecycle, output schema, and failure-triage checklist |
