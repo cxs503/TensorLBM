@@ -47,32 +47,34 @@ from tensorlbm.data.catalog import FieldDataCatalog
 from tensorlbm.data.solver_export import load_product, load_product_arrays
 
 
-def canonical_planes(
+def canonical_plane_pairs(
     velocity: np.ndarray,
     *,
     grid: int,
     min_activity: float,
     max_planes: int,
-) -> list[torch.Tensor]:
-    """Active spanwise planes of a 3-D velocity field, resampled to (grid, grid).
+) -> list[tuple[torch.Tensor, torch.Tensor]]:
+    """Active spanwise planes of a 3-D velocity field as (ux, uy) pairs.
 
-    ``velocity`` is ``(nz, ny, nx, 3)``; a plane is kept when its velocity
+    '''velocity''' is (nz, ny, nx, 3); a plane is kept when its velocity
     magnitude has non-negligible variation (free-stream planes carry no
-    learnable content).
+    learnable content), then resampled to the canonical fine grid (the
+    sweep varies resolution, so planes are canonicalised before pairing).
     """
-    mag = np.linalg.norm(velocity.astype(np.float32), axis=-1)  # (nz, ny, nx)
-    planes = []
+    mag = np.linalg.norm(velocity.astype(np.float32), axis=-1)
+    planes: list[tuple[torch.Tensor, torch.Tensor]] = []
     for z in range(mag.shape[0]):
-        plane = mag[z]
-        activity = float(plane.std())
-        if activity <= min_activity:
+        if float(mag[z].std()) <= min_activity:
             continue
-        t = torch.from_numpy(plane.copy())[None, None]  # (1, 1, ny, nx)
-        if plane.shape != (grid, grid):
-            t = torch.nn.functional.interpolate(
-                t, size=(grid, grid), mode="bilinear", align_corners=False
-            )
-        planes.append(t[0, 0])
+        pair = []
+        for comp in (0, 1):  # ux, uy
+            t = torch.from_numpy(velocity[z, :, :, comp].copy())[None, None]
+            if tuple(t.shape[-2:]) != (grid, grid):
+                t = torch.nn.functional.interpolate(
+                    t, size=(grid, grid), mode="bilinear", align_corners=False
+                )
+            pair.append(t[0, 0])
+        planes.append((pair[0], pair[1]))
         if len(planes) >= max_planes:
             break
     return planes
@@ -110,7 +112,7 @@ def load_scan_pairs(
                     activity_threshold = min_activity_scale * float(
                         np.linalg.norm(velocity.astype(np.float32), axis=-1).std()
                     )
-                planes = canonical_planes(
+                planes = canonical_plane_pairs(
                     velocity,
                     grid=grid,
                     min_activity=activity_threshold,
@@ -147,8 +149,8 @@ def train_fno(
     grid: int,
 ) -> tuple[FNO2d, list[float]]:
     arch = FNO2dArch(
-        in_channels=1,
-        out_channels=1,
+        in_channels=2,
+        out_channels=2,
         width=24,
         n_layers=4,
         modes_x=min(20, grid // 2 + 1),
