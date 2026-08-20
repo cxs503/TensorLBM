@@ -36,9 +36,13 @@ the periodic-only kernel cannot do, in a single Triton launch:
 
 Measured on RTX 5090 at n=256 with the SUBOFF obstacle (≈ 8% of cells
 are walls) the fused obstacle+LES kernel hits 6.1 GLUPS, ≈ 71% of
-the periodic-kernel ceiling — i.e. the wall overhead is small because
-the obstacle mask is mostly 0 and the bounce-back path adds only a
-single ``tl.where`` per population read.
+the periodic-kernel ceiling.  At production shapes the full-way
+bounce-back reflected gather dominates instead: it is a second
+fully-scattered 19-lane load per cell and at the n=1024 w8 slab shape
+it nearly doubles kernel time (26.6 → 52.5 ms/step in AC's phase
+profile) — ``triton_fused_obstacle_xfar_les(..., wall="split")``
+compiles it out of solid-free tiles (see that function and the kernel
+for the two-pass scheme and its bitwise gate).
 
 Limitations
 -----------
@@ -167,6 +171,67 @@ _W_T = _D3Q19_W.float()
 
 _LATTICE_CACHE: dict = {}
 
+# Clamp bounds for the kernel-internal Smagorinsky tau_eff — must match
+# ``tensorlbm.turbulence._smagorinsky_tau`` (tau > 0.5 for stability,
+# tau <= 1.0 matching the explicit-sgorsinsky production cap).  Constexpr
+# so the clamps fold into the kernel as literals.
+_TAU_EFF_MIN_K = tl.constexpr(0.5001)
+_TAU_EFF_MAX_K = tl.constexpr(1.0)
+
+# D3Q19 moment transform matrices and the Hermite polynomial table for
+# CUMULANT reconstruction.  Imported lazily so that the kernel module
+# remains importable on hosts without the tensorlbm package (the pre-deploy
+# path is the production one — these tables only resolve when the kernel is
+# invoked from inside the runner).
+_CM_TABLES: dict[str, np.ndarray] | None = None
+_CUMULANT_HERMITE: np.ndarray | None = None
+_CM_SHIFT_X: tuple[tuple[int, int, int], ...] | None = None
+_CM_SHIFT_Y: tuple[tuple[int, int, int], ...] | None = None
+_CM_SHIFT_Z: tuple[tuple[int, int, int], ...] | None = None
+_CM_ORDER_BOUNDS: dict[str, tuple[int, int]] | None = None
+
+
+# Solid-cell bounding box for the ``wall="split"`` fixup launch (stores
+# are unrestricted there, so the fixup only needs the tiles that
+# intersect the solids' axis-aligned bounding box).  Scanning a full
+# production mask costs a device→host sync per first use — the helper
+# below computes the box once and reuses; in-place mask edits bump the
+# tensor's ``_version`` and force a recompute.
+_SOLID_BOX_CACHE: dict = {}
+
+# Empty-box sentinel (a box tuple is always truthy and non-empty when
+# valid, so ``None`` is free to mean "not computed yet").
+_SOLID_BOX_EMPTY = "empty"
+
+
+def _solid_box_for(obstacle: torch.Tensor):
+    """Bounding box ``(oz, oy, ox, nz_b, ny_b, nx_b)`` of all solid cells.
+
+    Returns ``None`` when the mask has no solid cells (the split-wall
+    fixup launch is skipped entirely then).  Cached per (data_ptr,
+    _version, shape, device): production obstacle masks are static for a
+    run, and the cache is bounded to 8 entries.
+    """
+    key = (obstacle.data_ptr(), obstacle._version,
+           tuple(obstacle.shape), obstacle.device.index)
+    box = _SOLID_BOX_CACHE.get(key)
+    if box is None:
+        idx = torch.nonzero(obstacle > 0)
+        if idx.numel() == 0:
+            box = _SOLID_BOX_EMPTY
+        else:
+            z0 = int(idx[:, 0].min().item()); z1 = int(idx[:, 0].max().item()) + 1
+            y0 = int(idx[:, 1].min().item()); y1 = int(idx[:, 1].max().item()) + 1
+            x0 = int(idx[:, 2].min().item()); x1 = int(idx[:, 2].max().item()) + 1
+            box = (z0, y0, x0, z1 - z0, y1 - y0, x1 - x0)
+        _SOLID_BOX_CACHE[key] = box
+        while len(_SOLID_BOX_CACHE) > 8:
+            _SOLID_BOX_CACHE.pop(next(iter(_SOLID_BOX_CACHE)))
+    if box == _SOLID_BOX_EMPTY:
+        return None
+    return box
+
+
 def _lattice_tensors_canonical(device: str) -> dict:
     """Padded D3Q19 lattice constants from canonical ``d3q19.C``/``W``.
 
@@ -205,38 +270,6 @@ def _lattice_tensors_canonical(device: str) -> dict:
     return lat
 
 
-# ---------------------------------------------------------------------------
-# Phase 2 — collision-family dispatch (BGK / CM / CUMULANT)
-# ---------------------------------------------------------------------------
-# The fused kernel can now apply any of three collision families inside the
-# stream+BB+BC+force fusion.  KBC stays on PyTorch (entropic bisection loop
-# doesn't map to a Triton kernel).  All three families share the same stream,
-# bounce-back, macroscopic, and far-field BC scaffolding; only the collide
-# stage differs and is selected by the ``COLLISION: tl.constexpr`` tag.
-
-# Hermite projection factor: 1 / (2 * cs^4) with cs^2 = 1/3 → 9/2.
-_HERMITE_FACTOR: float = 9.0 / 2.0
-
-# Effective-tau clamp bounds for the kernel-internal Smagorinsky branch,
-# mirroring ``tensorlbm.turbulence._TAU_EFF_MAX`` and the min clamp inside
-# ``tensorlbm.turbulence._smagorinsky_tau`` (the semantic reference for the
-# internal closure — see ``_smagorinsky_omega`` below).  Keep in sync.
-_TAU_EFF_MIN_K = tl.constexpr(0.5001)
-_TAU_EFF_MAX_K = tl.constexpr(1.0)
-
-# D3Q19 moment transform matrices and the Hermite polynomial table for
-# CUMULANT reconstruction.  Imported lazily so that the kernel module
-# remains importable on hosts without the tensorlbm package (the pre-deploy
-# path is the production one — these tables only resolve when the kernel is
-# invoked from inside the runner).
-_CM_TABLES: dict[str, np.ndarray] | None = None
-_CUMULANT_HERMITE: np.ndarray | None = None
-_CM_SHIFT_X: tuple[tuple[int, int, int], ...] | None = None
-_CM_SHIFT_Y: tuple[tuple[int, int, int], ...] | None = None
-_CM_SHIFT_Z: tuple[tuple[int, int, int], ...] | None = None
-_CM_ORDER_BOUNDS: dict[str, tuple[int, int]] | None = None
-
-
 @triton.jit
 def _smagorinsky_omega(
     pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz,
@@ -265,6 +298,7 @@ def _smagorinsky_omega(
     tau_eff = 0.5 * (tau_mol + tl.sqrt(tl.maximum(disc, 0.0)))
     tau_eff = tl.minimum(tl.maximum(tau_eff, _TAU_EFF_MIN_K), _TAU_EFF_MAX_K)
     return 1.0 / tau_eff
+
 
 
 
@@ -918,6 +952,7 @@ def _fused_v2_kernel_xfar_les(
     nu_lb,
     Cs_delta_sq,
     nz, ny, nx,
+    box_off_x, box_off_y, box_off_z,
     stride_q, stride_z, stride_y, stride_x,
     tau_eff_ptr,
     tau_eff_stride_z, tau_eff_stride_y, tau_eff_stride_x,
@@ -935,6 +970,7 @@ def _fused_v2_kernel_xfar_les(
     USE_EXTERNAL_TAU: tl.constexpr,
     USE_SMAG: tl.constexpr,
     COMPUTE_FORCE: tl.constexpr,
+    WALL_IN_KERNEL: tl.constexpr,
 ):
     """Pull-stream + collide (BGK/CM/CUMULANT) + full-way bounce-back.
 
@@ -961,14 +997,24 @@ def _fused_v2_kernel_xfar_les(
     from ``Cs > 0``; with ``Cs == 0`` the molecular omega is used so
     the no-LES path stays bitwise-identical to the historical kernel.
 
+    ``WALL_IN_KERNEL`` (wrapper-managed): keep the full-way reflected
+    gather in this launch.  ``False`` prunes the gather and the obstacle
+    load — the wrapper's ``wall="split"`` mode uses that for the
+    solid-free main pass and relaunches with ``True`` on the solids'
+    bounding-box tiles only.
     """
     pid_x = tl.program_id(0)
     pid_y = tl.program_id(1)
     pid_z = tl.program_id(2)
 
-    offs_x = pid_x * BLOCK_X + tl.arange(0, BLOCK_X)
-    offs_y = pid_y * BLOCK_Y + tl.arange(0, BLOCK_Y)
-    offs_z = pid_z * BLOCK_Z + tl.arange(0, BLOCK_Z)
+    # Tile origin: the ``wall="split"`` fixup launch covers only the
+    # tiles that intersect the solids' bounding box, so the program ids
+    # start at that box's first tile (box_off_* = its cell coordinate;
+    # 0 for the full-domain main pass).  Integer-only arithmetic — the
+    # per-cell floating-point sequence is unchanged.
+    offs_x = pid_x * BLOCK_X + box_off_x + tl.arange(0, BLOCK_X)
+    offs_y = pid_y * BLOCK_Y + box_off_y + tl.arange(0, BLOCK_Y)
+    offs_z = pid_z * BLOCK_Z + box_off_z + tl.arange(0, BLOCK_Z)
     offs_q = tl.arange(0, 32)
 
     mask_q = offs_q < 19
@@ -1000,13 +1046,17 @@ def _fused_v2_kernel_xfar_les(
                 + src_x[:, None, None, :].to(tl.int64) * stride_x)
     f_in = tl.load(f_ptr + src_offs, mask=rw_mask, other=0.0)
 
-    # Own-cell wall mask (1 = this destination cell is solid).
-    own_obst_offs = (offs_z[:, None, None].to(tl.int64) * stride_z
-                     + offs_y[None, :, None].to(tl.int64) * stride_y
-                     + offs_x[None, None, :].to(tl.int64) * stride_x)
-    own_obst = tl.load(obstacle_ptr + own_obst_offs,
-                       mask=spatial_mask, other=0)
-    own_is_wall = (own_obst > 0)[None, :, :, :]
+    # Own-cell wall mask (1 = this destination cell is solid).  Loaded
+    # only by launches that need it: the full-way gather pass
+    # (WALL_IN_KERNEL) and/or the fused force (COMPUTE_FORCE) — the
+    # solid-free main pass of the split mode loads no obstacle at all.
+    if WALL_IN_KERNEL | COMPUTE_FORCE:
+        own_obst_offs = (offs_z[:, None, None].to(tl.int64) * stride_z
+                         + offs_y[None, :, None].to(tl.int64) * stride_y
+                         + offs_x[None, None, :].to(tl.int64) * stride_x)
+        own_obst = tl.load(obstacle_ptr + own_obst_offs,
+                           mask=spatial_mask, other=0)
+        own_is_wall = (own_obst > 0)[None, :, :, :]
 
     # === Full-way bounce-back gather (production ``bounce_back_cells_3d``) ===
     # Production chain (collide-order): collide -> stream -> force ->
@@ -1025,32 +1075,45 @@ def _fused_v2_kernel_xfar_les(
     # (fluid x, all q):  f_eff = stream(b)[q, x - c_q]
     # (solid x, all q):  f_eff = BB(stream(b))[q, x]
     #                 = stream(b)[opp(q), x - c_{opp(q)}] = b[opp(q), x + c_q]
-    # Note b[opp(q), x + c_q] == f_in[opp(q), x]: the solid cell's value in
-    # lane q is the plain pull of lane opp(q) at the SAME cell — a pure lane
-    # swap of the pulled state; implemented here as a second gather at the
-    # reflected source (same load count as the previous wet-node code).
     # The wall test at the SOURCE is intentionally absent: with full-way BB
     # the reflection lives entirely inside the solid cells; fluid cells
     # adjacent to the wall pull whatever the solid cells store (the
     # previous step's bounced incoming momentum), which is what makes the
     # wall exchange momentum with the fluid.
     #
-    opp_q = tl.load(opp_ptr + offs_q, mask=mask_q, other=0)
-    rsrc_x = offs_x[None, :] + cx_i[:, None]
-    rsrc_x = tl.where(rsrc_x < 0, rsrc_x + nx,
-                      tl.where(rsrc_x >= nx, rsrc_x - nx, rsrc_x))
-    rsrc_y = offs_y[None, :] + cy_i[:, None]
-    rsrc_y = tl.where(rsrc_y < 0, rsrc_y + ny,
-                      tl.where(rsrc_y >= ny, rsrc_y - ny, rsrc_y))
-    rsrc_z = offs_z[None, :] + cz_i[:, None]
-    rsrc_z = tl.where(rsrc_z < 0, rsrc_z + nz,
-                      tl.where(rsrc_z >= nz, rsrc_z - nz, rsrc_z))
-    refl_offs = (opp_q[:, None, None, None].to(tl.int64) * stride_q
-                 + rsrc_z[:, :, None, None].to(tl.int64) * stride_z
-                 + rsrc_y[:, None, :, None].to(tl.int64) * stride_y
-                 + rsrc_x[:, None, None, :].to(tl.int64) * stride_x)
-    f_refl = tl.load(f_ptr + refl_offs, mask=rw_mask, other=0.0)
-    f_eff = tl.where(own_is_wall, f_refl, f_in)
+    # PERF (2026-08-20): the reflected gather is a SECOND fully-scattered
+    # 19-lane load per cell — at n=1024 w8 it nearly doubled kernel time
+    # (26.6 -> 52.5 ms/step) while production solids occupy well under 1%
+    # of the domain.  ``WALL_IN_KERNEL=False`` (the ``wall="split"``
+    # main pass of the wrapper) prunes this whole block — and the obstacle
+    # load above — so solid-free tiles run at the periodic-kernel cost;
+    # the wrapper then relaunches this SAME kernel with
+    # ``WALL_IN_KERNEL=True`` on just the tiles that intersect the
+    # solids' bounding box.  The fixup pass is this exact code; the main
+    # pass is this code minus the gather, which at FLUID cells is a
+    # no-op select of ``f_in`` (``f_eff = where(wall, refl, f_in)``).
+    if WALL_IN_KERNEL:
+        opp_q = tl.load(opp_ptr + offs_q, mask=mask_q, other=0)
+        rsrc_x = offs_x[None, :] + cx_i[:, None]
+        rsrc_x = tl.where(rsrc_x < 0, rsrc_x + nx,
+                          tl.where(rsrc_x >= nx, rsrc_x - nx, rsrc_x))
+        rsrc_y = offs_y[None, :] + cy_i[:, None]
+        rsrc_y = tl.where(rsrc_y < 0, rsrc_y + ny,
+                          tl.where(rsrc_y >= ny, rsrc_y - ny, rsrc_y))
+        rsrc_z = offs_z[None, :] + cz_i[:, None]
+        rsrc_z = tl.where(rsrc_z < 0, rsrc_z + nz,
+                          tl.where(rsrc_z >= nz, rsrc_z - nz, rsrc_z))
+        refl_offs = (opp_q[:, None, None, None].to(tl.int64) * stride_q
+                     + rsrc_z[:, :, None, None].to(tl.int64) * stride_z
+                     + rsrc_y[:, None, :, None].to(tl.int64) * stride_y
+                     + rsrc_x[:, None, None, :].to(tl.int64) * stride_x)
+        f_refl = tl.load(f_ptr + refl_offs, mask=rw_mask, other=0.0)
+        f_eff = tl.where(own_is_wall, f_refl, f_in)
+    else:
+        # Solid-free main pass: every cell takes the plain pull.  Solid
+        # cells' (garbage) relaxation here is overwritten afterwards by
+        # the fixup launch over the solid bounding box.
+        f_eff = f_in
 
     # === Macroscopic + equilibrium (post-stream moments). ===
     cx_b = tl.load(cxf_ptr + offs_q, mask=mask_q, other=0.0)
@@ -1293,10 +1356,6 @@ def _fused_v2_kernel_xfar_les(
     else:
         f_post = f_eff
 
-    # Float mask (BZ, BY, BX) — 1.0 at solid cells, 0.0 at fluid cells.
-    # Reuses the own-cell wall mask already loaded for the BB guard.
-    own_is_wall_f = own_is_wall.to(tl.float32)
-
     # === Ladd (1994) momentum-exchange force reduction ===
     # Production PyTorch order is: collide → stream → **sample force
     # pre-bounce-back** → bounce-back → BC.  Inside the fused kernel
@@ -1310,6 +1369,10 @@ def _fused_v2_kernel_xfar_les(
     # (the pulled collided values sitting at the solid cells, pre-BB),
     # with zero extra reads.
     if COMPUTE_FORCE:
+        # Float mask (BZ, BY, BX) — 1.0 at solid cells, 0.0 at fluid
+        # cells.  Reuses the own-cell wall mask loaded above (the force
+        # guard implies the mask was loaded).
+        own_is_wall_f = own_is_wall.to(tl.float32)
         fx_cell = tl.sum(cx_i[:, None, None, None].to(tl.float32) * f_in,
                          axis=0)
         fy_cell = tl.sum(cy_i[:, None, None, None].to(tl.float32) * f_in,
@@ -1498,6 +1561,8 @@ def triton_fused_obstacle_xfar_les(
     fx_buf: torch.Tensor | None = None,
     fy_buf: torch.Tensor | None = None,
     fz_buf: torch.Tensor | None = None,
+    wall: str = "fused",
+    solid_box: tuple | None = None,
 ) -> torch.Tensor:
     """X-streamwise fused collide + stream + BB + LES Smagorinsky (V2).
 
@@ -1531,6 +1596,28 @@ def triton_fused_obstacle_xfar_les(
             family.  Useful for WALE and Vreman SGS coupling — pass the
             output of
             :func:`tensorlbm.suboff_cmk_kbc_runner._compute_sgs_tau_eff`.
+        wall: ``"fused"`` (default) — one launch; every tile runs the
+            full-way bounce-back reflected gather (historical
+            behaviour).  ``"split"`` — the same kernel is launched
+            twice: a main pass over the whole grid with the gather
+            (and the obstacle load) compiled out — solid-free tiles
+            then run at the periodic-kernel cost — followed by a
+            fixup pass over just the tiles that intersect the solids'
+            bounding box, which re-does those tiles with the full-way
+            gather (and the fused force, when requested).  At n=1024/w8
+            the always-on reflected gather nearly doubled kernel time
+            (26.6 → 52.5 ms/step) while production solids occupy well
+            under 1% of the domain, so ``"split"`` recovers most of
+            that cost.  Both passes share every constexpr except the
+            gather/force guards, and the fixup pass runs the exact
+            historical gather code, so BGK and CUMULANT results are
+            bit-for-bit those of ``wall="fused"``.
+        solid_box: Optional ``(oz, oy, ox, nz_b, ny_b, nx_b)`` bounding
+            box of the solid cells — the ``wall="split"`` fixup window.
+            Built and cached from ``obstacle`` on first use when
+            omitted (production obstacles are static; the cache is keyed
+            on the tensor's ``data_ptr`` and ``_version``, so in-place
+            mask edits recompute).
         fx_buf, fy_buf, fz_buf: Optional scalar ``torch.float32``
             tensors.  When all three are supplied, the kernel computes
             the Ladd (1994) full-way momentum-exchange force in the same
@@ -1658,17 +1745,7 @@ def triton_fused_obstacle_xfar_les(
     # to the historical kernel.
     use_smag = (not use_external_tau) and (Cs * Cs * delta * delta > 0.0)
 
-    _fused_v2_kernel_xfar_les[grid](
-        f, out,
-        obstacle, opp,
-        lat["cxi"], lat["cyi"], lat["czi"],
-        lat["cxf"], lat["cyf"], lat["czf"], lat["w"],
-        nu_lb, Cs * Cs * delta * delta,
-        nz, ny, nx,
-        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
-        tau_eff_ptr_arg,
-        tau_eff_sz, tau_eff_sy, tau_eff_sx,
-        fx_buf, fy_buf, fz_buf,
+    common = dict(
         BLOCK_X=block_x, BLOCK_Y=block_y, BLOCK_Z=block_z,
         COLLISION=collision_tag,
         M_CM=M_cm_tuple,
@@ -1679,8 +1756,106 @@ def triton_fused_obstacle_xfar_les(
         SHIFT_Z=shift_z_flat,
         USE_EXTERNAL_TAU=use_external_tau,
         USE_SMAG=use_smag,
-        COMPUTE_FORCE=compute_force,
         num_warps=num_warps, num_stages=num_stages,
+    )
+
+    if wall not in ("fused", "split"):
+        raise ValueError(
+            f"wall must be 'fused' or 'split', got {wall!r}"
+        )
+    if wall == "split":
+        if solid_box is None:
+            solid_box = _solid_box_for(obstacle)
+        elif (len(solid_box) != 6
+                or any(not isinstance(v, int) or v < 0 for v in solid_box)):
+            raise ValueError(
+                "solid_box must be (oz, oy, ox, nz_b, ny_b, nx_b) "
+                f"ints >= 0, got {solid_box!r}"
+            )
+        else:
+            oz_b, oy_b, ox_b, nz_b, ny_b, nx_b = solid_box
+            if (oz_b + nz_b > nz or oy_b + ny_b > ny or ox_b + nx_b > nx):
+                raise ValueError(
+                    f"solid_box {solid_box!r} exceeds obstacle shape "
+                    f"{(nz, ny, nx)}"
+                )
+            outside = torch.ones_like(obstacle, dtype=torch.bool)
+            outside[oz_b:oz_b + nz_b, oy_b:oy_b + ny_b,
+                    ox_b:ox_b + nx_b] = False
+            if bool(((obstacle > 0) & outside).sum() > 0):
+                raise ValueError(
+                    "solid_box does not cover all solid cells — cells "
+                    "outside the box would silently lose bounce-back"
+                )
+
+    if wall == "fused":
+        # Single launch: every tile runs the full-way gather.
+        _fused_v2_kernel_xfar_les[grid](
+            f, out,
+            obstacle, opp,
+            lat["cxi"], lat["cyi"], lat["czi"],
+            lat["cxf"], lat["cyf"], lat["czf"], lat["w"],
+            nu_lb, Cs * Cs * delta * delta,
+            nz, ny, nx,
+            0, 0, 0,
+            f.stride(0), f.stride(1), f.stride(2), f.stride(3),
+            tau_eff_ptr_arg,
+            tau_eff_sz, tau_eff_sy, tau_eff_sx,
+            fx_buf, fy_buf, fz_buf,
+            WALL_IN_KERNEL=True,
+            COMPUTE_FORCE=compute_force,
+            **common,
+        )
+        return out
+
+    # --- wall == "split": gather-free main pass + bounding-box fixup ---
+    # Main pass: no obstacle load, no reflected gather, no force (the
+    # force lives only at solid cells, all of which the fixup pass
+    # covers).  Solid cells' relaxed values written here are garbage by
+    # construction and are overwritten by the fixup pass below.
+    _fused_v2_kernel_xfar_les[grid](
+        f, out,
+        obstacle, opp,
+        lat["cxi"], lat["cyi"], lat["czi"],
+        lat["cxf"], lat["cyf"], lat["czf"], lat["w"],
+        nu_lb, Cs * Cs * delta * delta,
+        nz, ny, nx,
+        0, 0, 0,
+        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
+        tau_eff_ptr_arg,
+        tau_eff_sz, tau_eff_sy, tau_eff_sx,
+        fx_buf, fy_buf, fz_buf,
+        WALL_IN_KERNEL=False,
+        COMPUTE_FORCE=False,
+        **common,
+    )
+    if solid_box is None:
+        # No solid cells anywhere: the plain pull IS the full result.
+        return out
+
+    oz_b, oy_b, ox_b, nz_b, ny_b, nx_b = solid_box
+    # Fixup grid = the BLOCK-aligned tiles covering [oz_b, oz_b+nz_b) etc.
+    # (tile indices, then relaunch the SAME kernel with pid 0 mapped to
+    # the first box tile via the box_off_* origin offsets).
+    tx0, tx1 = ox_b // block_x, (ox_b + nx_b - 1) // block_x + 1
+    ty0, ty1 = oy_b // block_y, (oy_b + ny_b - 1) // block_y + 1
+    tz0, tz1 = oz_b // block_z, (oz_b + nz_b - 1) // block_z + 1
+    grid_box = (tx1 - tx0, ty1 - ty0, tz1 - tz0)
+    _fused_v2_kernel_xfar_les[grid_box](
+        f, out,
+        obstacle, opp,
+        lat["cxi"], lat["cyi"], lat["czi"],
+        lat["cxf"], lat["cyf"], lat["czf"], lat["w"],
+        nu_lb, Cs * Cs * delta * delta,
+        nz, ny, nx,
+        tx0 * block_x, ty0 * block_y, tz0 * block_z,
+        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
+        tau_eff_ptr_arg,
+        tau_eff_sz, tau_eff_sy, tau_eff_sx,
+        fx_buf, fy_buf, fz_buf,
+        WALL_IN_KERNEL=True,
+        COMPUTE_FORCE=compute_force,
+        **common,
     )
     return out
 
