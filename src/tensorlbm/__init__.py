@@ -775,6 +775,19 @@ from .reporters import (
     ThroughputReporter,
     dispatch,
 )
+from .scan_runner import (
+    EarlyStopSpec,
+    PointOutcome,
+    ScanExecutor,
+    ScanPlan,
+    ScanPoint,
+    ScanVariable,
+    assign_points_to_gpus,
+    git_code_sha,
+    open_catalog,
+    run_scan_point,
+    split_points,
+)
 from .amr_interface_filter import (
     InterfaceFilterControlVolumeClearance,
     assess_interface_filter_control_volume_clearance,
@@ -1318,6 +1331,18 @@ __all__ = [
     "ThroughputReporter",
     "EarlyStopReporter",
     "FieldSampleReporter",
+    # Parameter-sweep execution chain (DoE -> cases -> reporters -> catalog)
+    "ScanPlan",
+    "ScanExecutor",
+    "ScanPoint",
+    "ScanVariable",
+    "EarlyStopSpec",
+    "PointOutcome",
+    "assign_points_to_gpus",
+    "split_points",
+    "run_scan_point",
+    "open_catalog",
+    "git_code_sha",
     # Pre-processing geometry
     "poly_to_mask_2d",
     "poly_to_mask_and_q_2d",
