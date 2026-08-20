@@ -307,7 +307,19 @@ class IcingConfig:
     # first ~x_le/u_in steps of the window would collect nothing and the
     # leading-edge flux would be underestimated).
     prefill_cloud: bool = True
-    beta_window_frac: float = 0.5  # trailing fraction of steps used for beta
+    beta_window_frac: float = 0.5  # trailing mode: trailing fraction of steps
+    # Beta measurement window (task #84 fix 1).  "clean" (default) measures
+    # beta on the *pre-ice reference geometry*: an early window that opens
+    # after the cloud has settled (0.5 * tau_d_lu, capped at steps/4) and
+    # closes before the first wall cell can fill with ice, so the window
+    # beta is an LWC invariant (the Phase 2a/2b trailing window measured
+    # collection on the iced geometry, where a filled cell stops collecting
+    # and pins the per-cell beta at the moving-boundary cap
+    # ``beta_cap_window`` -- at LWC 1.0 the peak collapsed -55%).
+    # "trailing" keeps the legacy Phase 2a/2b behaviour exactly.
+    beta_window_mode: str = "clean"  # "clean" | "trailing"
+    beta_clean_frac: float = 0.2  # clean mode: window length as fraction of steps
+    beta_clean_max_fill: float = 0.5  # clean mode: max expected LE fill [cells]
     disable_droplets: bool = False  # clean-airfoil twin for A/B cd drift
     uniform_flow: bool = False  # True: static uniform field (tests, no LBM)
     device: str = "cpu"
@@ -323,8 +335,19 @@ class IcingConfig:
     c_s: float = 0.0  # Smagorinsky constant (cumulant collision only)
     re_lu_target: float | None = None  # if set: tau_flow = 3 u L / Re + 0.5
     rho_air: float = 1.34  # kg/m^3 (Schiller-Naumann Re_p, -10 C air)
+    # Calibration multiplier on the Schiller-Naumann particle Reynolds
+    # number (task #84 fix 2, from the #79 calibration report): decouples
+    # the drag-correction strength from the physical air density.
+    # 1.0 = physical Schiller-Naumann (rho_air = 1.34 kg/m^3 IRT air);
+    # sn_scale_factor = lambda is exactly the rho_air = lambda*1.34 sweep
+    # of report #79 (single knob, no lie about the air density).
+    sn_scale_factor: float = 1.0
     drag_law: str = "stokes"  # "stokes" (2a) | "schiller-naumann"
     shadow_alpha_frac: float = 1e-3  # shadow threshold as fraction of alpha_in
+    # Eulerian advection scheme (task #84 fix 3): "donor2" = second-order
+    # TVD donor-cell (van Leer limiter; default) or "donor" = the Phase 2b
+    # first-order upwind scheme (exact legacy fallback).
+    eulerian_scheme: str = "donor2"  # "donor2" | "donor"
 
     # --- Phase 3 additions (glaze Messinger thermodynamics; defaults keep
     #     the Phase 2a/2b paths byte-identical) ---
@@ -381,6 +404,27 @@ class IcingConfig:
             raise ValueError(f"re_lu_target must be > 0; got {self.re_lu_target}")
         if self.shadow_alpha_frac < 0.0:
             raise ValueError(f"shadow_alpha_frac must be >= 0; got {self.shadow_alpha_frac}")
+        if self.sn_scale_factor < 0.0:
+            raise ValueError(f"sn_scale_factor must be >= 0; got {self.sn_scale_factor}")
+        if self.eulerian_scheme not in ("donor", "donor2"):
+            raise ValueError(
+                f"eulerian_scheme must be 'donor' or 'donor2'; "
+                f"got {self.eulerian_scheme!r}"
+            )
+        # --- task #84 fix 1 ---
+        if self.beta_window_mode not in ("clean", "trailing"):
+            raise ValueError(
+                f"beta_window_mode must be 'clean' or 'trailing'; "
+                f"got {self.beta_window_mode!r}"
+            )
+        if not 0.0 <= self.beta_window_frac <= 1.0:
+            raise ValueError(f"beta_window_frac must be in [0, 1]; got {self.beta_window_frac}")
+        if not 0.0 < self.beta_clean_frac <= 1.0:
+            raise ValueError(f"beta_clean_frac must be in (0, 1]; got {self.beta_clean_frac}")
+        if not 0.0 < self.beta_clean_max_fill <= 1.0:
+            raise ValueError(
+                f"beta_clean_max_fill must be in (0, 1]; got {self.beta_clean_max_fill}"
+            )
         # --- Phase 3 ---
         if self.thermo_model not in ("instant", "messinger"):
             raise ValueError(
@@ -558,6 +602,49 @@ class IcingConfig:
         return self.shadow_alpha_frac * self.alpha_in
 
     @property
+    def beta_window_bounds(self) -> tuple[int, int]:
+        """Step range ``(w0, w1)`` over which the beta ledger is differenced.
+
+        ``"trailing"`` (Phase 2a/2b legacy): the trailing
+        ``beta_window_frac`` fraction of the run, on the *iced* geometry.
+        ``"clean"`` (default, task #84 fix 1): an early window on the
+        pre-ice reference geometry.  It opens after the cloud has settled
+        (``0.5 * tau_d_lu``, capped at a quarter of the run so short test
+        runs still get a window) and closes before the first wall cell
+        can fill with ice: with the frontal bound ``alpha_in * u_in`` on
+        the per-step leading-edge catch, the *cumulative* fill up to
+        ``w1`` stays below one cell-ice mass, so no cell turns solid
+        before the window closes and the per-cell ledger never saturates
+        at the moving-boundary cap (see ``beta_cap_window``).  The window
+        length is the smaller of ``beta_clean_frac * steps`` and
+        ``beta_clean_max_fill`` cell-ice masses of in-window catch.
+        """
+        if self.beta_window_mode == "trailing":
+            w0 = self.steps - int(self.beta_window_frac * self.steps)
+            return w0, self.steps
+        settle = max(1, min(int(math.ceil(0.5 * self.tau_d_lu)), self.steps // 4))
+        n_nominal = max(1, int(self.beta_clean_frac * self.steps))
+        fill_rate = self.alpha_in * self.u_in  # frontal bound on LE catch [lu^3/step]
+        m_cell_lu = self.rho_rime_eff / self.rho_water  # cell ice mass [lu^3]
+        if fill_rate > 0.0:
+            # steps until the LE donor accumulates one cell of ice
+            n_freeze = m_cell_lu / fill_rate
+            # keep at least a minimum window before the first freeze (the
+            # prefill starts the cloud in local equilibrium, so opening
+            # earlier only shortens the coupled-flow settling)
+            min_len = max(2, self.steps // 50)
+            horizon = max(1, int(n_freeze))
+            settle = max(1, min(settle, horizon - min_len))
+            # in-window catch stays below beta_clean_max_fill cells ...
+            n_cap = int(self.beta_clean_max_fill * m_cell_lu / fill_rate)
+            n_nominal = min(n_nominal, max(1, n_cap))
+            # ... and the cumulative catch up to w1 stays below one cell
+            n_nominal = min(n_nominal, max(1, horizon - settle))
+        w0 = min(settle, max(1, self.steps - 1))
+        w1 = min(self.steps, w0 + n_nominal)
+        return w0, w1
+
+    @property
     def mass_per_lu3(self) -> float:
         """kg of water per lattice cell volume (alpha is a volume fraction)."""
         return self.rho_water * self.dx_phys**3
@@ -574,7 +661,39 @@ class IcingConfig:
         """
         if self.drag_law != "schiller-naumann":
             return 0.0
-        return self.rho_air * (self.dx_phys / self.dt_phys) * self.mvd / self.mu_air
+        return (
+            self.sn_scale_factor * self.rho_air
+            * (self.dx_phys / self.dt_phys) * self.mvd / self.mu_air
+        )
+
+    @property
+    def beta_cap_window(self) -> float:
+        """Moving-boundary cap on the window beta (Eulerian-driven freezing).
+
+        A fluid cell adjacent to the wall stops collecting once the rime
+        freezer has filled it, so the per-cell impact mass recorded over
+        the beta window cannot exceed one cell of ice::
+
+            beta_cap = m_cell_ice / (lwc_eff * V * dx^2 * t_win)
+
+        evaluated on the *actual* ledger window (``beta_window_bounds``).
+        In ``"trailing"`` mode this reduces to
+        ``rho_rime*dx / (LWC*V*(1-beta_window_frac)*t_exposure)`` (task
+        #79: at t_exposure=360 s this is 0.634 @ dx=4.17 mm, 0.228 @
+        1.50 mm, 0.122 @ 0.80 mm -- the window beta of fine-grid 360 s
+        runs saturates at the cap and no longer measures the collection
+        efficiency; the standard dx=4.17 mm case ran at 93% of its cap).
+        The ``"clean"`` window (#84 fix 1) closes before the first fill,
+        so beta_pk/cap stays small there by construction.  ``inf`` when
+        the window is empty (glaze whole-shot convention).
+        """
+        w0, w1 = self.beta_window_bounds
+        t_win = (w1 - w0) * self.dt_phys
+        if t_win <= 0.0:
+            return float("inf")
+        return self.m_cell_ice / (
+            self.lwc_eff * self.v_inf * self.dx_phys**2 * t_win
+        )
 
     # ------------------------------------------------------------------
     # Phase 3: glaze thermodynamics derived quantities
@@ -628,6 +747,8 @@ class IcingConfig:
             "inlet_area": self.inlet_area,
             "t_exposure_target": self.t_exposure,
             "t_equiv": self.t_equiv,
+            "beta_window_mode": self.beta_window_mode,
+            "beta_window_bounds": list(self.beta_window_bounds),
             "steps_realtime": self.t_exposure / self.dt_phys,
             "n_substeps": self.n_substeps,
             "compile_mode": self.compile_mode,
@@ -640,7 +761,10 @@ class IcingConfig:
             "tau_flow": self.tau_flow,
             "drag_law": self.drag_law,
             "re_p_scale": self.re_p_scale,
+            "sn_scale_factor": self.sn_scale_factor,
             "rho_air": self.rho_air,
+            "beta_cap_window": self.beta_cap_window,
+            "eulerian_scheme": self.eulerian_scheme,
             "alpha_in": self.alpha_in,
             "shadow_alpha_min": self.shadow_alpha_min,
             # --- Phase 3 ---
@@ -751,6 +875,50 @@ def _dilate4(mask: torch.Tensor) -> torch.Tensor:
         | torch.roll(mask, 1, 1)
         | torch.roll(mask, -1, 1)
     )
+
+
+def _tvd_face_states(
+    q: torch.Tensor,
+    pos: torch.Tensor,
+    interior: torch.Tensor,
+    axis: int,
+) -> torch.Tensor:
+    """van-Leer-limited MUSCL face states for the donor2 scheme (#84 fix 3).
+
+    Reconstructs the advected field ``q`` at the faces between cells along
+    ``axis`` from the *donor* side (``pos`` = face velocity is positive),
+    giving a second-order TVD donor-cell flux.  The correction is written
+    on the downwind difference ``d_dn``::
+
+        face = q_donor + 0.5 * phi(r) * d_dn,
+        r    = d_up / d_dn,   phi = (r + |r|)/(1 + |r|)   (van Leer)
+
+    With ``phi`` in [0, 2] the correction lies in ``[d_dn, 0]``, so the
+    face state never leaves the interval spanned by its two cells: no
+    over/undershoot (TVD), and a vanishing downwind difference collapses
+    to the first-order donor state regardless of the upwind slope.  On
+    non-interior faces (domain border, either neighbour solid) the plain
+    upwind donor state is returned, so wall-impingement fluxes and
+    boundary fluxes keep the exact first-order semantics.
+    """
+    if axis == 1:  # faces between columns j (left/donor-) and j+1
+        ql, qr = q[:, :-1], q[:, 1:]
+        qll = F.pad(q[:, :-2], (1, 0))  # column j-1 (dummy at j=0, masked)
+        qrr = F.pad(q[:, 2:], (0, 1))  # column j+2 (dummy at last face)
+    else:  # faces between rows i (donor-) and i+1
+        ql, qr = q[:-1, :], q[1:, :]
+        qll = F.pad(q[:-2, :], (0, 0, 1, 0))
+        qrr = F.pad(q[2:, :], (0, 0, 0, 1))
+    d_dn = qr - ql  # downwind difference (across the face, from the donor)
+    d_safe = torch.where(d_dn.abs() < 1e-12, torch.ones_like(d_dn), d_dn)
+    r_p = (ql - qll) / d_safe  # donor = left cell (positive face velocity)
+    r_m = (qrr - qr) / d_safe  # donor = right cell
+    phi_p = (r_p + r_p.abs()) / (1.0 + r_p.abs())
+    phi_m = (r_m + r_m.abs()) / (1.0 + r_m.abs())
+    face_p = ql + 0.5 * phi_p * d_dn
+    face_m = qr - 0.5 * phi_m * d_dn
+    face = torch.where(pos, face_p, face_m)
+    return torch.where(interior, face, torch.where(pos, ql, qr))
 
 
 # ---------------------------------------------------------------------------
@@ -1018,6 +1186,7 @@ class RimeIcingSimulation:
             self.my = torch.zeros_like(self.alpha)
             self.impact_mass_e = torch.zeros_like(self.alpha)  # kg (all run)
             self.impact_e_w0: torch.Tensor | None = None
+            self.impact_e_w1: torch.Tensor | None = None
             self._bflux_acc = torch.zeros(4, dtype=torch.float64, device=self.dev)
             self._dep_acc = torch.zeros((), dtype=torch.float64, device=self.dev)
             self._enc_acc = torch.zeros((), dtype=torch.float64, device=self.dev)
@@ -1065,7 +1234,11 @@ class RimeIcingSimulation:
             "trapped": 0.0,
             "airborne": 0.0,
             "pending": 0.0,
+            "pending_fluid": 0.0,
+            "pending_solid": 0.0,
         }
+        # cached BFS distance-from-airfoil for the freezer water cascade
+        self._dist_np: np.ndarray | None = None
         self.n_impacts = 0
         self._seed_carry = 0.0
         self.history: dict[str, list[Any]] = {
@@ -1179,12 +1352,13 @@ class RimeIcingSimulation:
         alpha_in: float,
         u_in: float,
         shadow_min: float,
+        donor2: bool = False,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """One Eulerian droplet-field step (pure tensors; compile unit).
 
-        Donor-cell finite-volume advection of the droplet volume fraction
-        ``alpha`` and its momentum ``(mx, my) = alpha * u_d`` on the flow
-        grid (FENSAP-ICE style continuity + momentum, one-way coupled),
+        Finite-volume advection of the droplet volume fraction ``alpha``
+        and its momentum ``(mx, my) = alpha * u_d`` on the flow grid
+        (FENSAP-ICE style continuity + momentum, one-way coupled),
         followed by shadow-region penalization and a semi-implicit
         exponential drag relaxation toward the local carrier velocity
         ``(ux, uy)``::
@@ -1192,6 +1366,17 @@ class RimeIcingSimulation:
             u_d <- u_f + (u_d - u_f) * exp(-f_drag / tau_d_lu)
             f_drag = 1 + 0.15 Re_p^0.687,  Re_p = |u_f - u_d| * sn_scale
             (sn_scale = 0 -> Stokes, f_drag = 1 exactly)
+
+        ``donor2`` (task #84 fix 3, default via ``eulerian_scheme``)
+        upgrades the interior face states from first-order upwind to the
+        van-Leer-limited second-order MUSCL reconstruction
+        (``_tvd_face_states``): TVD, so alpha stays positivity-safe and
+        free of over/undershoot, while the numerical diffusion that
+        smeared the Eulerian beta support along the surface (the Phase 2b
+        diffusion tail) shrinks to second order.  Domain-border and
+        wall faces keep the first-order donor state, so boundary fluxes
+        and the wall-impingement ledger semantics are unchanged.  With
+        ``donor2=False`` this is the exact Phase 2b scheme.
 
         Solid cells are perfect absorbers (rime: everything sticks): the
         face flux leaving a fluid cell into a solid neighbour is the
@@ -1237,9 +1422,24 @@ class RimeIcingSimulation:
         uf = torch.where(sl, ur, uf)
         out = uf >= 0.0
         al, ar = alpha[:, :-1], alpha[:, 1:]
-        fa = torch.where(out, al * uf, ar * uf)
-        fmx = torch.where(out, mx[:, :-1] * uf, mx[:, 1:] * uf)
-        fmy = torch.where(out, my[:, :-1] * uf, my[:, 1:] * uf)
+        if donor2:
+            # TVD MUSCL face states on fluid-fluid interior faces; border
+            # and wall faces fall back to the plain donor state inside
+            # _tvd_face_states
+            border = torch.zeros_like(sl)
+            border[:, 0] = True
+            border[:, -1] = True
+            interior = ~(sl | sr) & ~border
+            ax = _tvd_face_states(alpha, out, interior, axis=1)
+            mxf = _tvd_face_states(mx, out, interior, axis=1)
+            myf = _tvd_face_states(my, out, interior, axis=1)
+        else:
+            ax = torch.where(out, al, ar)
+            mxf = torch.where(out, mx[:, :-1], mx[:, 1:])
+            myf = torch.where(out, my[:, :-1], my[:, 1:])
+        fa = ax * uf
+        fmx = mxf * uf
+        fmy = myf * uf
         # wall-impingement sinks: fluid -> solid in +x / -x
         imp_r = fa * ((~sl) & sr)
         imp_l = fa.neg() * (sl & (~sr))
@@ -1251,9 +1451,21 @@ class RimeIcingSimulation:
         vf = torch.where(tr, vl, vf)
         vf = torch.where(tl, vr, vf)
         vout = vf >= 0.0
-        ga = torch.where(vout, alpha[:-1, :] * vf, alpha[1:, :] * vf)
-        gmx = torch.where(vout, mx[:-1, :] * vf, mx[1:, :] * vf)
-        gmy = torch.where(vout, my[:-1, :] * vf, my[1:, :] * vf)
+        if donor2:
+            border = torch.zeros_like(tl)
+            border[0, :] = True
+            border[-1, :] = True
+            interior = ~(tl | tr) & ~border
+            ay = _tvd_face_states(alpha, vout, interior, axis=0)
+            mxg = _tvd_face_states(mx, vout, interior, axis=0)
+            myg = _tvd_face_states(my, vout, interior, axis=0)
+        else:
+            ay = torch.where(vout, alpha[:-1, :], alpha[1:, :])
+            mxg = torch.where(vout, mx[:-1, :], mx[1:, :])
+            myg = torch.where(vout, my[:-1, :], my[1:, :])
+        ga = ay * vf
+        gmx = mxg * vf
+        gmy = myg * vf
         imp_d = ga * ((~tl) & tr)  # fluid(i) -> solid(i+1): donor row i
         imp_u = ga.neg() * (tl & (~tr))  # solid(i) <- fluid(i+1): donor row i+1
 
@@ -1274,6 +1486,20 @@ class RimeIcingSimulation:
         out_mx = torch.where(o_end, mx[:, -1:] * u_end, torch.full_like(u_end, alpha_in * u_in) * u_end)
         out_my = torch.where(o_end, my[:, -1:] * u_end, torch.zeros_like(u_end))
 
+        # boundary inflow that would enter a *solid* border cell (accretion
+        # reaching the domain border) impinges on the ice instead of being
+        # destroyed by the solid void below -- credited to the impact
+        # ledger so the scheme stays conservative (#84 fix 4).  The raw
+        # boundary fluxes keep feeding the mass audit (the impinged mass
+        # entered the domain and is accounted as deposited).
+        imp_border = torch.zeros_like(alpha)
+        zero1 = torch.zeros_like(in_a)
+        imp_border[:, :1] = torch.where(solid[:, :1], in_a, zero1)
+        in_a = in_a - imp_border[:, :1]
+        oi = torch.where((~o_end) & solid[:, -1:], out_a, torch.zeros_like(out_a))
+        imp_border[:, -1:] = oi
+        out_a = out_a - oi
+
         flux_a = torch.cat([in_a, fa, out_a], dim=1)
         flux_mx = torch.cat([in_mx, fmx, out_mx], dim=1)
         flux_my = torch.cat([in_my, fmy, out_my], dim=1)
@@ -1290,6 +1516,14 @@ class RimeIcingSimulation:
         t_a = torch.where(vt >= 0, alpha[-1:, :] * vt, torch.full_like(vt, alpha_in) * vt)
         t_mx = torch.where(vt >= 0, mx[-1:, :] * vt, torch.full_like(vt, alpha_in * u_in) * vt)
         t_my = torch.where(vt >= 0, my[-1:, :] * vt, torch.zeros_like(vt))
+
+        # same border-ice rule for the lateral inflows (#84 fix 4)
+        bi = torch.where((vb < 0) & solid[0:1, :], b_a, torch.zeros_like(b_a))
+        imp_border[0:1, :] = bi
+        b_a = b_a - bi
+        ti = torch.where((vt > 0) & solid[-1:, :], t_a, torch.zeros_like(t_a))
+        imp_border[-1:, :] = ti
+        t_a = t_a - ti
 
         flux_ay = torch.cat([b_a, ga, t_a], dim=0)
         flux_mx_y = torch.cat([b_mx, gmx, t_mx], dim=0)
@@ -1321,7 +1555,15 @@ class RimeIcingSimulation:
         mx = alpha * ud_x
         my = alpha * ud_y
 
-        bflux = torch.stack((in_a.sum(), out_a.sum(), b_a.sum(), t_a.sum()))
+        impact = impact + imp_border
+        # raw boundary fluxes for the audit: the border-ice impingement
+        # mass entered the domain (it is accounted as deposited)
+        bflux = torch.stack((
+            in_a.sum() + imp_border[:, :1].sum(),
+            out_a.sum() + imp_border[:, -1:].sum(),
+            b_a.sum() + imp_border[0:1, :].sum(),
+            t_a.sum() + imp_border[-1:, :].sum(),
+        ))
         return alpha, mx, my, impact, bflux
 
     @staticmethod
@@ -1480,8 +1722,25 @@ class RimeIcingSimulation:
                 self.n_impacts += n_hit
                 vals = torch.full((n_hit,), m_p, device=self.dev)
                 flat = dep_iy * nx + dep_ix
-                self.m_w.view(-1).index_add_(0, flat, vals)
                 self.impact_mass.view(-1).index_add_(0, flat, vals)
+                # water ledger: a deposit credits its origin cell only if
+                # that cell is still fluid.  Parcels whose origin turned
+                # solid (the ice froze under them mid-flight, or they were
+                # engulfed and kept drifting) would credit a solid cell,
+                # where water can never freeze again -- cascade that water
+                # to the outward fluid neighbour instead (#84 fix 4).
+                origin_solid = solid[dep_iy, dep_ix]
+                self.m_w.view(-1).index_add_(
+                    0, flat[~origin_solid], vals[~origin_solid])
+                flat_s = flat[origin_solid]
+                if flat_s.numel():
+                    uniq, inv = torch.unique(flat_s, return_inverse=True)
+                    tot = torch.zeros(
+                        uniq.numel(), dtype=torch.float64, device=self.dev
+                    ).index_add_(0, inv, vals[origin_solid].double())
+                    ys, xs = uniq // nx, uniq % nx
+                    self._cascade_water(
+                        list(zip(ys.tolist(), xs.tolist())), tot.tolist())
 
             left = (
                 (new_px >= self.kill_x)
@@ -1511,10 +1770,56 @@ class RimeIcingSimulation:
         freeze = (self.m_w >= cfg.m_cell_ice) & (~self.solid)
         n = int(freeze.sum().item())
         if n > 0:
-            self.m_w[freeze] -= cfg.m_cell_ice
+            leftover = self.m_w[freeze] - cfg.m_cell_ice
+            self.m_w[freeze] = 0.0
             self.solid |= freeze
             self.aud["frozen"] += n * cfg.m_cell_ice
+            # task #84 fix 4: the freshly frozen cells can never freeze
+            # again (the freeze mask excludes solid cells), so their
+            # sub-cell remainders would strand on the ice as permanently
+            # pending water.  Cascade each remainder to the outward fluid
+            # 4-neighbour -- the same rule the glaze freezer
+            # (_deposit_columns) uses -- so the water stays in play and
+            # the ledger stays conservative.
+            cells = [tuple(c) for c in torch.nonzero(freeze).tolist()]
+            self._cascade_water(cells, leftover.tolist())
         return n
+
+    def _cascade_water(self, cells: list[tuple[int, int]], masses: list[float]) -> None:
+        """Move stranded water off solid cells to the outward fluid neighbour.
+
+        Used by :meth:`_freeze` (post-freeze sub-cell remainders) and
+        :meth:`_void_encased` (cloud engulfed by fresh ice): both credit
+        water to cells that just turned solid, where it could never reach
+        ``m_cell_ice`` again.  The recipient is the fluid 4-neighbour with
+        the largest BFS distance from the airfoil (the outward growth
+        direction, identical to ``_deposit_columns``).  A cell fully
+        enclosed by ice keeps its water in place -- it stays audited as
+        ``pending_solid`` (sub-cell water buried by the accretion).
+        """
+        if not cells:
+            return
+        if self._dist_np is None:
+            self._dist_np = _bfs_distance_cells(self.airfoil.cpu().numpy())
+        dist = self._dist_np
+        ny, nx = self.m_w.shape
+        solid_cpu = self.solid.cpu()
+        for (y, x), m in zip(cells, masses):
+            if m <= 0.0:
+                continue
+            best, bd = None, -1
+            for dy, dxn in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                yy, xx = y + dy, x + dxn
+                if 0 <= yy < ny and 0 <= xx < nx and not bool(solid_cpu[yy, xx]):
+                    d = int(dist[yy, xx])
+                    if d > bd:
+                        bd, best = d, (yy, xx)
+            if best is not None:
+                self.m_w[best] += m
+            else:
+                # fully enclosed pocket: keep the water in place (it
+                # stays audited as pending_solid instead of vanishing)
+                self.m_w[y, x] += m
 
     # -- Eulerian droplet phase (Phase 2b) ------------------------------
     def _init_eulerian(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
@@ -1566,13 +1871,25 @@ class RimeIcingSimulation:
             cfg.alpha_in,
             cfg.u_in,
             cfg.shadow_alpha_min,
+            cfg.eulerian_scheme == "donor2",
         )
         self._bflux_acc += bflux.double()
         self._dep_acc += imp.double().sum()
         dm = imp * cfg.mass_per_lu3
         self.impact_mass_e += dm
         if cfg.droplet_phase == "eulerian":
-            self.m_w += dm
+            on_solid = imp * self.solid.to(imp.dtype)
+            if cfg.freeze_in_run and bool((on_solid > 0.0).any()):
+                # border-ice impingement (accretion reaching a domain
+                # border) credits *solid* cells: cascade that water
+                # outward so it stays freezable (#84 fix 4)
+                self.m_w += (imp - on_solid) * cfg.mass_per_lu3
+                idx = torch.nonzero(on_solid)
+                vals = on_solid[idx[:, 0], idx[:, 1]] * cfg.mass_per_lu3
+                self._cascade_water(
+                    [tuple(c) for c in idx.tolist()], vals.tolist())
+            else:
+                self.m_w += dm
 
     def _void_encased(self, prev_solid: torch.Tensor) -> None:
         """Remove cloud trapped by fresh ice and audit it (encased).
@@ -1586,8 +1903,12 @@ class RimeIcingSimulation:
         newly = self.solid & ~prev_solid
         enc = self.alpha * newly
         self._enc_acc += enc.double().sum()
-        if self.cfg.droplet_phase == "eulerian":
-            self.m_w += enc * self.cfg.mass_per_lu3
+        if self.cfg.droplet_phase == "eulerian" and self.cfg.freeze_in_run:
+            # engulfed cloud water joins the ledger, cascaded off the
+            # (now solid) cell so it can still freeze (#84 fix 4)
+            enc_kg = enc * self.cfg.mass_per_lu3
+            cells = [tuple(c) for c in torch.nonzero(enc > 0).tolist()]
+            self._cascade_water(cells, enc_kg[enc > 0].tolist())
         keep = (~newly).to(self.alpha.dtype)
         self.alpha = self.alpha * keep
         self.mx = self.mx * keep
@@ -1683,6 +2004,12 @@ class RimeIcingSimulation:
         )
 
         # ---- flow warmup on the clean airfoil ----
+        beta_w0_log, beta_w1_log = cfg.beta_window_bounds
+        log(
+            f"  [icing] beta window: mode={cfg.beta_window_mode} "
+            f"steps [{beta_w0_log}, {beta_w1_log}) "
+            f"({'pre-ice reference geometry' if cfg.beta_window_mode == 'clean' else 'iced geometry (legacy)'})"
+        )
         if not cfg.uniform_flow:
             for _ in range(cfg.warmup_steps):
                 last = _ == cfg.warmup_steps - 1
@@ -1694,8 +2021,12 @@ class RimeIcingSimulation:
 
         ux_c = torch.full((self.ny, self.nx), cfg.u_in, device=self.dev)
         uy_c = torch.zeros((self.ny, self.nx), device=self.dev)
-        beta_w0 = cfg.steps - int(cfg.beta_window_frac * cfg.steps)
+        # beta window (task #84 fix 1): "clean" = early pre-ice window on the
+        # reference geometry (LWC-invariant beta), "trailing" = Phase 2a/2b
+        # legacy window on the iced geometry.
+        beta_w0, beta_w1 = cfg.beta_window_bounds
         impact_w0: torch.Tensor | None = None
+        impact_w1: torch.Tensor | None = None
 
         if cfg.prefill_cloud and not cfg.disable_droplets and self.use_lagr:
             if cfg.uniform_flow:
@@ -1715,12 +2046,14 @@ class RimeIcingSimulation:
                 f"  [icing-e] eulerian cloud: alpha_in={cfg.alpha_in:.3e} "
                 f"shadow_min={cfg.shadow_alpha_min:.3e} "
                 f"drag={cfg.drag_law} (re_p_scale={cfg.re_p_scale:.3e}) "
+                f"scheme={cfg.eulerian_scheme} "
                 f"init_fill={self.aud_e['initial_fill']:.3e} kg"
             )
 
         for step in range(1, cfg.steps + 1):
             want_force = (
-                step == 1 or step == cfg.steps or step % cfg.log_every == 0 or step == beta_w0
+                step == 1 or step == cfg.steps or step % cfg.log_every == 0
+                or step == beta_w0 or step == beta_w1
             )
             if cfg.uniform_flow:
                 f_pre = None
@@ -1746,6 +2079,12 @@ class RimeIcingSimulation:
                 impact_w0 = self.impact_mass.clone()
             if self.use_euler and self.impact_e_w0 is None and step >= beta_w0:
                 self.impact_e_w0 = self.impact_mass_e.clone()
+            # clean mode ends the ledger window before the run does: the
+            # run keeps freezing (ice shape) while beta stays pre-ice.
+            if impact_w1 is None and step >= beta_w1:
+                impact_w1 = self.impact_mass.clone()
+            if self.use_euler and self.impact_e_w1 is None and step >= beta_w1:
+                self.impact_e_w1 = self.impact_mass_e.clone()
 
             if want_force and f_pre is not None:
                 cd, cl = self._force_coeffs(f_pre)
@@ -1774,6 +2113,12 @@ class RimeIcingSimulation:
         # ---- final audit ----
         self.aud["airborne"] = float(self.px.numel()) * cfg.m_parcel
         self.aud["pending"] = float(self.m_w.double().sum().item())
+        # #84 fix 4 decomposition: water still on *fluid* cells is the
+        # legitimate sub-cell/in-transit remainder (it keeps collecting and
+        # would freeze at longer exposure); water on *solid* cells is what
+        # the cascade could not relocate (pockets fully enclosed by ice).
+        self.aud["pending_solid"] = float(self.m_w[self.solid].double().sum().item())
+        self.aud["pending_fluid"] = self.aud["pending"] - self.aud["pending_solid"]
         accounted = (
             self.aud["frozen"] + self.aud["exited"] + self.aud["trapped"]
             + self.aud["airborne"] + self.aud["pending"]
@@ -1816,10 +2161,12 @@ class RimeIcingSimulation:
         solid_np = self.solid.cpu().numpy()
         s_grid, stag, _surf = surface_arc_length(airfoil_np)
         dm = self.impact_mass.clone()
+        if impact_w1 is not None:
+            dm = impact_w1.clone()
         if impact_w0 is not None:
             dm = dm - impact_w0
         # lattice time of the beta window (acceleration cancels, see docstring)
-        t_win = (cfg.steps - beta_w0) * cfg.dt_phys
+        t_win = (beta_w1 - beta_w0) * cfg.dt_phys
         beta = collection_efficiency_curve(
             s_grid, dm.cpu().numpy(), cfg.lwc_eff, cfg.v_inf, cfg.dx_phys,
             cfg.chord_phys, t_win,
@@ -1829,6 +2176,8 @@ class RimeIcingSimulation:
         )
         if euler_result is not None or (self.use_euler and not cfg.disable_droplets):
             dm_e = self.impact_mass_e.clone()
+            if self.impact_e_w1 is not None:
+                dm_e = self.impact_e_w1.clone()
             if self.impact_e_w0 is not None:
                 dm_e = dm_e - self.impact_e_w0
             beta_e = collection_efficiency_curve(
@@ -1887,7 +2236,9 @@ def mass_audit_report(result: dict[str, Any]) -> str:
         f"exited  = {a['exited']:.6e} kg",
         f"trapped = {a['trapped']:.6e} kg",
         f"airborne= {a['airborne']:.6e} kg",
-        f"pending = {a['pending']:.6e} kg",
+        f"pending = {a['pending']:.6e} kg "
+        f"(fluid/in-transit {a.get('pending_fluid', 0.0):.6e} kg, "
+        f"on-ice {a.get('pending_solid', 0.0):.6e} kg)",
         f"closure error = {a['closure_error'] * 100:.4f} %",
     ]
     return "\n".join(lines)
@@ -2503,7 +2854,8 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         shot_cfg = replace(
             cfg,
             freeze_in_run=False,
-            beta_window_frac=0.0,  # whole shot is the beta window
+            beta_window_mode="trailing",  # glaze: whole shot is the beta window
+            beta_window_frac=0.0,
             accel_override=accel,  # ledger == dt_shot of physical exposure
         )
         sim = RimeIcingSimulation(shot_cfg, log=log)

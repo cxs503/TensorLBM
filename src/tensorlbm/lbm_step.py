@@ -19,15 +19,28 @@ Key optimisations (all internal to ``LBMStepExecutor``):
      rest direction (``q=0``) is a plain copy, not ``torch.roll``.
   e. **Skip rest direction** — ``q=0`` has zero velocity vector.
 
+Reporter hook (backward compatible): ``run(f, n_steps, reporters=...)``
+dispatches :mod:`tensorlbm.reporters` reporters after every completed
+step (see :func:`tensorlbm.reporters.dispatch`).  With no reporters —
+the default — ``run`` executes the original fast path unchanged, so
+existing callers keep bit-identical behaviour and zero added overhead.
+
 Numerical equivalence: every internal optimised method produces results
 that are ``allclose(atol=1e-6)`` with the original standalone functions.
 """
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import torch
+
+from .reporters import StepContext, dispatch
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from collections.abc import Sequence
+
+    from .reporters import Reporter
 
 # ---------------------------------------------------------------------------
 # Lattice dispatch helpers
@@ -111,6 +124,10 @@ class LBMStepExecutor:
         Extra keyword arguments forwarded to *boundary_fn*.
     force_kwargs : dict
         Extra keyword arguments forwarded to *force_fn*.
+    reporters : sequence of Reporter, optional
+        Reporters dispatched by :meth:`run` after every completed step
+        (see :mod:`tensorlbm.reporters`).  Empty/None (the default) keeps
+        :meth:`run` on the original reporter-free fast path.
     """
 
     def __init__(
@@ -138,6 +155,8 @@ class LBMStepExecutor:
         # Extra kwargs forwarded to callbacks
         boundary_kwargs: dict[str, Any] | None = None,
         force_kwargs: dict[str, Any] | None = None,
+        # Reporter protocol (see tensorlbm.reporters)
+        reporters: Sequence[Reporter] | None = None,
     ):
         if lattice not in _LATTICE_Q:
             raise ValueError(f"Unsupported lattice {lattice!r}; supported: {list(_LATTICE_Q)}")
@@ -160,6 +179,11 @@ class LBMStepExecutor:
         self._target_mass = target_mass
         self._boundary_kwargs = boundary_kwargs or {}
         self._force_kwargs = force_kwargs or {}
+
+        # -- Reporter protocol (tensorlbm.reporters) ----------------------
+        # Empty by default: run() then stays on the original fast path.
+        self.reporters: list[Reporter] = list(reporters) if reporters else []
+        self._report_step = 0
 
         # -- Lattice constants -------------------------------------------
         C, W, OPPOSITE, macro_fn, eq_fn = _get_lattice_constants(lattice, device, dtype)
@@ -584,12 +608,77 @@ class LBMStepExecutor:
     # Public: run multiple steps
     # ------------------------------------------------------------------
 
-    def run(self, f: torch.Tensor, n_steps: int) -> tuple[torch.Tensor, list[dict[str, Any]]]:
-        """Execute *n_steps* timesteps, returning final *f* and diagnostics list."""
+    def run(
+        self,
+        f: torch.Tensor,
+        n_steps: int,
+        *,
+        reporters: Sequence[Reporter] | None = None,
+    ) -> tuple[torch.Tensor, list[dict[str, Any]]]:
+        """Execute *n_steps* timesteps, returning final *f* and diagnostics list.
+
+        With *reporters* given (or registered at construction time) the
+        breakable reporting loop of :mod:`tensorlbm.reporters` runs: after
+        every completed step a :class:`~tensorlbm.reporters.StepContext`
+        is dispatched to the reporters whose ``interval`` divides the
+        current step, and a reporter setting ``ctx.stop = True`` (e.g.
+        :class:`~tensorlbm.reporters.EarlyStopReporter`) ends the run
+        early.  The per-call *reporters* argument overrides the
+        constructor list for this call only.
+
+        With no reporters — the default — the original fast path below is
+        executed verbatim: zero added overhead, bit-identical behaviour.
+        """
+        active = self.reporters if reporters is None else list(reporters)
+        if not active:
+            diags: list[dict[str, Any]] = []
+            for _ in range(n_steps):
+                f, diag = self.step(f)
+                diags.append(diag)
+            # Keep the reporter step counter honest across mixed usage
+            # (one O(1) bookkeeping add; the loop body is untouched).
+            self._report_step += int(n_steps)
+            return f, diags
+        return self._run_reported(f, n_steps, active)
+
+    def _run_reported(
+        self,
+        f: torch.Tensor,
+        n_steps: int,
+        reporters: Sequence[Reporter],
+    ) -> tuple[torch.Tensor, list[dict[str, Any]]]:
+        """Reporting main loop: step → dispatch → honour ``ctx.stop``.
+
+        The step counter persists across ``run()`` calls
+        (``self._report_step``) so interval cadence and reporter-visible
+        step labels stay monotonic for executors that are driven in
+        chunks.  Reporters see the freshly returned (cloned) ``f``, and
+        ``ctx.macroscopic_fn`` reuses this executor's pre-allocated
+        buffers — valid only inside the callback.
+        """
         diags: list[dict[str, Any]] = []
+        ctx = StepContext(
+            step=self._report_step,
+            f=f,
+            lattice=self.lattice,
+            num_cells=self.nx * self.ny * self.nz,
+            num_steps=int(n_steps),
+            macroscopic_fn=self._compute_macroscopic_inplace,
+        )
+        step = self._report_step
         for _ in range(n_steps):
             f, diag = self.step(f)
+            step += 1
             diags.append(diag)
+            ctx.step = step
+            ctx.f = f
+            ctx.diag = diag
+            ctx.num_steps = n_steps
+            ctx.stop = False
+            dispatch(ctx, reporters)
+            if ctx.stop:
+                break
+        self._report_step = step
         return f, diags
 
 

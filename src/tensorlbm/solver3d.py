@@ -60,6 +60,35 @@ def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
 _M_D3Q19_DATA, _M_D3Q19_INV_DATA = _build_d3q19_mrt_matrices()
 
 
+def _mrt3d_s_vec(
+    s_e: float,
+    s_eps: float,
+    s_q: float,
+    s_pi: float,
+    s_nu,
+    *,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> torch.Tensor:
+    """Build the 19-entry D3Q19 MRT relaxation-rate vector.
+
+    When *s_nu* (= 1/tau) is a tensor the shear-stress entries (indices
+    9–13) stay connected to the autograd graph: ``torch.tensor([...])`` on a
+    list containing a tensor silently detaches it (scalar conversion), which
+    would block dLoss/dtau on the differentiable reference path (see
+    docs/differentiable_path.md).  For Python-float *s_nu* the result is
+    identical to the previous literal construction.
+    """
+    head = [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, 0.0, s_q]
+    tail = [s_pi, s_pi, 1.0, 1.0, 1.0]
+    if isinstance(s_nu, torch.Tensor):
+        head_t = torch.tensor(head, dtype=dtype, device=device)
+        tail_t = torch.tensor(tail, dtype=dtype, device=device)
+        s_nu_t = s_nu.to(device=device, dtype=dtype)
+        return torch.cat([head_t, s_nu_t.expand(5), tail_t])
+    return torch.tensor(head + [s_nu] * 5 + tail, dtype=dtype, device=device)
+
+
 @functools.cache
 def _get_d3q19_mrt_matrices(device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
     matrix = torch.tensor(_M_D3Q19_DATA, dtype=torch.float32, device=device)
@@ -116,30 +145,8 @@ def collide_mrt3d(
     matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
 
     s_nu = 1.0 / tau
-    s_vec = torch.tensor(
-        [
-            0.0,
-            s_e,
-            s_eps,
-            0.0,
-            s_q,
-            0.0,
-            s_q,
-            0.0,
-            s_q,
-            s_nu,
-            s_nu,
-            s_nu,
-            s_nu,
-            s_nu,
-            s_pi,
-            s_pi,
-            1.0,
-            1.0,
-            1.0,
-        ],
-        dtype=f.dtype,
-        device=device,
+    s_vec = _mrt3d_s_vec(
+        s_e, s_eps, s_q, s_pi, s_nu, dtype=f.dtype, device=device
     )
 
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
@@ -182,30 +189,8 @@ def collide_mrt3d_low_memory(
     matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
 
     s_nu = 1.0 / tau
-    s_vec = torch.tensor(
-        [
-            0.0,
-            s_e,
-            s_eps,
-            0.0,
-            s_q,
-            0.0,
-            s_q,
-            0.0,
-            s_q,
-            s_nu,
-            s_nu,
-            s_nu,
-            s_nu,
-            s_nu,
-            s_pi,
-            s_pi,
-            1.0,
-            1.0,
-            1.0,
-        ],
-        dtype=f.dtype,
-        device=device,
+    s_vec = _mrt3d_s_vec(
+        s_e, s_eps, s_q, s_pi, s_nu, dtype=f.dtype, device=device
     )
 
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
