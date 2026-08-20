@@ -293,11 +293,24 @@ def collide_mrt(
     matrix, matrix_inv = _get_d2q9_mrt_matrices(device, f.dtype)
 
     s_nu = 1.0 / tau
-    s_vec = torch.tensor(
-        [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, s_nu, s_nu],
-        dtype=f.dtype,
-        device=device,
-    )
+    if isinstance(tau, torch.Tensor):
+        # Differentiable reference path: ``torch.tensor([...])`` would
+        # silently detach a tensor *tau* from the autograd graph (scalar
+        # conversion).  Keep the shear-rate entries graph-connected so
+        # loss.backward() can reach tau.  See docs/differentiable_path.md.
+        s_head = torch.tensor(
+            [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q],
+            dtype=f.dtype,
+            device=device,
+        )
+        s_nu_t = s_nu.to(device=device, dtype=f.dtype)
+        s_vec = torch.cat([s_head, s_nu_t.expand(2)])
+    else:
+        s_vec = torch.tensor(
+            [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, s_nu, s_nu],
+            dtype=f.dtype,
+            device=device,
+        )
 
     ny, nx = f.shape[1], f.shape[2]
     f_flat = f.reshape(9, -1)
