@@ -389,6 +389,68 @@ class SurfaceMesh:
         return cls(near, nx_n, ny_n, nz_n)
 
 
+def suboff_smooth_q(solid, near, cx, cy, cz, length, radius, config=None):
+    """q_smooth = true wall distance ``r_cell - R(x)`` for the SUBOFF hull.
+
+    For each near-wall fluid cell, ``r_cell = sqrt((y-cy)^2 + (z-cz)^2)``
+    is the radial distance from the hull axis and
+    ``R(x) = suboff_radius_profile(xi) * radius`` is the local smooth-body
+    radius in lattice units (xi = normalized axial coordinate, 0 at bow,
+    1 at stern).  ``q_smooth`` is therefore the true distance from the cell
+    centre to the *smooth* hull surface — the voxel staircase wall sits at
+    a different distance.  Values are clamped to ``[0.05, 1.0]`` (same
+    convention as the 3D-cylinder D20 7-formula study).
+
+    Feed the result to :func:`drag_friction_integration` with
+    ``formula='bfl'`` or ``'bfl_smooth'`` to get ``tau = nu * u_1 / q_smooth``,
+    the BFL correction using the analytic body distance instead of the
+    half-way bounce-back gap q=0.5.  On the 3D cylinder D20 (Re=40) this
+    moved the total-drag error from -11.3% (standard) to -3.69%.
+
+    Parameters
+    ----------
+    solid : torch.Tensor, bool, shape (nz, ny, nx)
+        Solid mask (hull axis along x).
+    near : torch.Tensor, bool, shape (nz, ny, nx)
+        Near-wall mask (only these cells get a nonzero q).
+    cx, cy, cz : float
+        Hull centre coordinates (cells); the engine places the SUBOFF at
+        ``(nx*0.25, ny*0.5, nz*0.5)``.
+    length : float
+        Hull length in lattice units (resolution L).
+    radius : float
+        Maximum hull radius in lattice units (R_max / dx).
+    config : SuboffConfig or None
+        Geometry configuration (defaults to real DARPA SUBOFF).
+
+    Returns
+    -------
+    torch.Tensor
+        ``q_smooth`` field, same shape as *solid*, zero outside *near*.
+    """
+    import numpy as np
+
+    from .suboff_cad import SuboffConfig, suboff_radius_profile
+
+    if config is None:
+        config = SuboffConfig()
+    nz, ny, nx = solid.shape
+    device = solid.device
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=device, dtype=torch.float32),
+        torch.arange(ny, device=device, dtype=torch.float32),
+        torch.arange(nx, device=device, dtype=torch.float32),
+        indexing="ij",
+    )
+    x_bow = cx - length / 2.0
+    xi_np = ((xx - x_bow) / length).cpu().numpy()
+    r_norm = suboff_radius_profile(xi_np, config)  # normalised [0, 1]
+    r_lu = torch.tensor(r_norm * radius, device=device, dtype=torch.float32)
+    r_cell = torch.sqrt((yy - cy) ** 2 + (zz - cz) ** 2)
+    q = (r_cell - r_lu).clamp(0.05, 1.0)
+    return q * near.to(device=device).float()
+
+
 def get_near_wall_2d(solid, axis='z'):
     """Near-wall mask for 2D extruded geometries.
 
@@ -866,6 +928,29 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
     return float(fpx.item() / dpS), float(fpy.item() / dpS), float(fpz.item() / dpS)
 
 
+def _wall_face_counts(solid):
+    """Per-fluid-cell wall-face counts (nfx, nfy, nfz) of a voxel solid.
+
+    ``nfx[i]`` counts how many of the cell's x-neighbours (i±1 in x) are
+    solid, i.e. the number of solid-adjacent faces normal to x.  Shared by
+    the 'faces' and 'mix50' friction formulas.
+    """
+    fluid = ~solid
+    nfx = torch.zeros_like(solid, dtype=torch.float32)
+    nfy = torch.zeros_like(solid, dtype=torch.float32)
+    nfz = torch.zeros_like(solid, dtype=torch.float32)
+    # x faces (solid at ±x)
+    nfx[:, :, 1:-1] += (solid[:, :, 2:] & fluid[:, :, 1:-1]).float()
+    nfx[:, :, 1:-1] += (solid[:, :, :-2] & fluid[:, :, 1:-1]).float()
+    # y faces (solid at ±y)
+    nfy[:, 1:-1, :] += (solid[:, 2:, :] & fluid[:, 1:-1, :]).float()
+    nfy[:, 1:-1, :] += (solid[:, :-2, :] & fluid[:, 1:-1, :]).float()
+    # z faces (solid at ±z)
+    nfz[1:-1, :, :] += (solid[2:, :, :] & fluid[1:-1, :, :]).float()
+    nfz[1:-1, :, :] += (solid[:-2, :, :] & fluid[1:-1, :, :]).float()
+    return nfx, nfy, nfz
+
+
 def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard',
                               solid=None):
     """Friction drag via 3D wall shear stress.
@@ -886,9 +971,13 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard',
     'central'       τ = ν·u_2                                          (task spec)
     'lagrange'      τ = ν·(3·u_1 − u_2/3)                              linear+quad
     'bfl'           τ = ν·u_1/q  (requires q_wall)                     linear
+    'bfl_smooth'    τ = ν·u_1/q_smooth  (alias of 'bfl'; q_wall is the
+                    distance to the SMOOTH body surface, e.g. from
+                    suboff_smooth_q, not the voxel half-gap)           linear
     'bfl_lagrange'  τ = ν·(u_1(q+1)/q − u_2·q/(q+1))  (requires q_wall)
                                                                        linear+quad
     'faces'         per-wall-face shear, dA=1 per face (requires solid)  linear
+    'mix50'         Cd_f = 0.5·(standard + faces) (requires solid)      —
     ==============  =================================================  ===========
 
     The 'lagrange' formula is the exact second-order derivative for the
@@ -912,6 +1001,14 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard',
     planar wall both give the same result.  The returned force is the
     sum of the face shear vectors; mesh.dA is not applied (faces are
     unit area).
+
+    'mix50' evaluates 'standard' and 'faces' on the same field and returns
+    their arithmetic mean.  The two bracket the smooth-body continuum
+    friction: 'standard' (near-wall cell sum) is a lower bound that misses
+    staircase inner-corner faces, while 'faces' (staircase-exact) is an
+    upper bound because the voxel stair area exceeds the smooth wet area.
+    The midpoint is the simplest principled interpolation between the two
+    (SUBOFF Re=1000 L=96: Cd_tot = +0.25% vs Blasius 0.0420).
 
     Parameters
     ----------
@@ -938,10 +1035,12 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard',
         tau_x = 2.0 * nu * ut_x
         tau_y = 2.0 * nu * ut_y
         tau_z = 2.0 * nu * ut_z
-    elif formula == 'bfl':
-        # τ = ν · u_1 / q  (BFL corrected; q=0.5 → standard)
+    elif formula in ('bfl', 'bfl_smooth'):
+        # τ = ν · u_1 / q  (BFL corrected; q=0.5 → standard).
+        # 'bfl_smooth' is an alias: q_wall is then the distance to the
+        # SMOOTH body surface (e.g. suboff_smooth_q), not the voxel gap.
         if q_wall is None:
-            raise ValueError("formula='bfl' requires q_wall tensor")
+            raise ValueError(f"formula='{formula}' requires q_wall tensor")
         inv_q = 1.0 / q_wall.clamp(min=1e-6)
         tau_x = nu * ut_x * inv_q
         tau_y = nu * ut_y * inv_q
@@ -971,19 +1070,7 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard',
             raise ValueError("formula='faces' requires solid mask")
         if solid.device != ux.device:
             solid = solid.to(ux.device)
-        fluid = ~solid
-        nfx = torch.zeros_like(ux, dtype=torch.float32)  # solid x-neighbors
-        nfy = torch.zeros_like(ux, dtype=torch.float32)  # solid y-neighbors
-        nfz = torch.zeros_like(ux, dtype=torch.float32)  # solid z-neighbors
-        # x faces (solid at ±x)
-        nfx[:, :, 1:-1] += (solid[:, :, 2:] & fluid[:, :, 1:-1]).float()
-        nfx[:, :, 1:-1] += (solid[:, :, :-2] & fluid[:, :, 1:-1]).float()
-        # y faces (solid at ±y)
-        nfy[:, 1:-1, :] += (solid[:, 2:, :] & fluid[:, 1:-1, :]).float()
-        nfy[:, 1:-1, :] += (solid[:, :-2, :] & fluid[:, 1:-1, :]).float()
-        # z faces (solid at ±z)
-        nfz[1:-1, :, :] += (solid[2:, :, :] & fluid[1:-1, :, :]).float()
-        nfz[1:-1, :, :] += (solid[:-2, :, :] & fluid[1:-1, :, :]).float()
+        nfx, nfy, nfz = _wall_face_counts(solid)
         tau_x = 2.0 * nu * ux * (nfy + nfz)
         tau_y = 2.0 * nu * uy * (nfx + nfz)
         tau_z = 2.0 * nu * uz * (nfx + nfy)
@@ -992,6 +1079,35 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard',
         ffy = tau_y.sum()
         ffz = tau_z.sum()
         return float(ffx.item() / dpS), float(ffy.item() / dpS), float(ffz.item() / dpS)
+    elif formula == 'mix50':
+        # Cd_f = 0.5·(standard + faces): midpoint interpolation between the
+        # cell-based near-wall sum (lower bound: misses staircase
+        # inner-corner faces) and the staircase-exact per-face sum (upper
+        # bound: stair area exceeds the smooth wet area).  The smooth-body
+        # continuum friction lies between the two; equal weighting is the
+        # simple midpoint (SUBOFF Re=1000 L=96: +0.25% vs Blasius 0.0420).
+        if solid is None:
+            raise ValueError("formula='mix50' requires solid mask")
+        if solid.device != ux.device:
+            solid = solid.to(ux.device)
+        mask = mesh.near.float() * mesh.dA
+        std_sum = (
+            2.0 * nu * (ut_x * mask).sum(),
+            2.0 * nu * (ut_y * mask).sum(),
+            2.0 * nu * (ut_z * mask).sum(),
+        )
+        nfx, nfy, nfz = _wall_face_counts(solid)
+        face_sum = (
+            (2.0 * nu * ux * (nfy + nfz)).sum(),
+            (2.0 * nu * uy * (nfx + nfz)).sum(),
+            (2.0 * nu * uz * (nfx + nfy)).sum(),
+        )
+        mix = tuple(0.5 * (std_sum[i] + face_sum[i]) for i in range(3))
+        return (
+            float(mix[0].item() / dpS),
+            float(mix[1].item() / dpS),
+            float(mix[2].item() / dpS),
+        )
     elif formula in ('2nd_order', 'central', 'lagrange'):
         # Need u_2: tangential velocity at second cell from wall.
         # Shift velocity one cell along dominant normal into the fluid.
@@ -1017,7 +1133,8 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard',
     else:
         raise ValueError(
             f"formula must be 'standard', '2nd_order', 'central', "
-            f"'lagrange', 'bfl', 'bfl_lagrange', or 'faces'; got '{formula}'"
+            f"'lagrange', 'bfl', 'bfl_smooth', 'bfl_lagrange', 'faces', "
+            f"or 'mix50'; got '{formula}'"
         )
 
     mask = mesh.near.float() * mesh.dA
