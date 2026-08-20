@@ -35,6 +35,7 @@ for _name, _mod in [
     ("cylinder_device_sim", "cylinder_device_sim"),
     ("cylinder_interactive", "cylinder_interactive"),
     ("data_catalog", "data_catalog"),
+    ("generic_sim", "generic_sim"),
     ("jobs", "jobs"),
     ("marine", "marine"),
     ("notifications", "notifications"),
@@ -68,6 +69,7 @@ cylinder_compare = _router_imports.get("cylinder_compare")
 cylinder_device_sim = _router_imports.get("cylinder_device_sim")
 cylinder_interactive = _router_imports.get("cylinder_interactive")
 data_catalog = _router_imports.get("data_catalog")
+generic_sim = _router_imports.get("generic_sim")
 jobs = _router_imports.get("jobs")
 marine = _router_imports.get("marine")
 notifications = _router_imports.get("notifications")
@@ -165,6 +167,7 @@ _router_registry = [
     (cad, "/api/cad", "CAD"),
     (preprocess, "/api/preprocess", "Pre-processing"),
     (solver, "/api/solve", "Solver"),
+    (generic_sim, "/api/sim", "Generic Simulation"),
     (postprocess, "/api/postprocess", "Post-processing"),
     (benchmarks, "/api/benchmarks", "Benchmarks"),
     (agent, "/api/agent", "LLM Agent"),
