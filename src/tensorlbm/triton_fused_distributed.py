@@ -12,6 +12,21 @@ Halo exchange protocol (slab along z, periodic in z)::
                        ghost plane 0   ghost plane nz_local+1
                        (from rank r-1) (from rank r+1)
 
+The exchange is **selective**: only the populations that actually cross
+the face are staged and transferred.  In a pull-stream step the ghost
+plane ``z=0`` is read only at lanes with ``cz=+1`` and the ghost plane
+``z=nz_local+1`` only at lanes with ``cz=-1``, so each face needs just
+``n_cross`` of the ``Q`` directions (D3Q19: 5 of 19; D3Q27 would be 9
+of 27).  The crossing tables are generated from the lattice constants
+by :func:`crossing_face_indices` — never hand-typed.  This cuts the
+staging volume and NCCL wire bytes per face by ``Q / n_cross`` (3.8x
+for D3Q19) compared with the previous full-``Q`` planes; the same
+observation is made independently by FluidX3D's ``transfers`` tables
+(D3Q19=5/D3Q27=9 per face) and XLB's ``left/right_indices`` ring
+exchange.  An opt-in ``halo_dtype`` narrows the wire format further
+(fp16 transport halves the bytes again at ~1e-3 halo round-trip
+error; fp32 remains the default).
+
 Each step:
 
   1.  Wait for the previous step's halo exchange (if any) so the
@@ -58,6 +73,7 @@ try:
         DEFAULT_BLOCK_Y,
         DEFAULT_NUM_WARPS,
         DEFAULT_NUM_STAGES,
+        _CZ as _CZ_TUPLE,
         is_available as _single_is_available,
         make_lattice_tensors,
         triton_fused,
@@ -68,6 +84,7 @@ except ImportError:
         DEFAULT_BLOCK_Y,
         DEFAULT_NUM_WARPS,
         DEFAULT_NUM_STAGES,
+        _CZ as _CZ_TUPLE,
         is_available as _single_is_available,
         make_lattice_tensors,
         triton_fused,
@@ -80,7 +97,34 @@ __all__ = [
     "distributed_is_available",
     "world_size",
     "rank",
+    "crossing_face_indices",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Selective halo exchange: crossing-direction tables
+# ---------------------------------------------------------------------------
+def crossing_face_indices(cz, sign: int) -> tuple[int, ...]:
+    """Direction indices whose lattice velocity crosses a slab face.
+
+    ``cz`` is the per-direction z-component of the lattice velocities
+    (e.g. ``tensorlbm.d3q19.C[:, 2]``).  Returns the tuple of q indices
+    with ``cz[q] == sign``.  For the D3Q19 z-slab this is 5 directions
+    per face (D3Q27 would be 9), because a pull-stream step only reads
+    the ghost plane ``z=0`` at lanes with ``cz = +1`` and the ghost
+    plane ``z=nz_local+1`` at lanes with ``cz = -1``:
+
+        f_new[q](z=1)             = f_old[q](z=1-cz)  -> needs cz=+1 for z=0
+        f_new[q](z=nz_local)      = f_old[q](z-cz)    -> needs cz=-1 for z=nz_local+1
+
+    The table is *generated* from the lattice constants — never
+    hand-typed.  (The hand-copied-lane-signs lesson is recorded in
+    ``triton_fused.py``: a pure lane permutation passes every
+    symmetric-field test and silently corrupts asymmetric streaming.)
+    """
+    if sign not in (+1, -1):
+        raise ValueError(f"sign must be +1 or -1, got {sign}")
+    return tuple(q for q in range(len(cz)) if int(cz[q]) == sign)
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +205,11 @@ class DistributedTritonFusedSolver3D:
         block_x, block_y: Tile shape for the Triton kernel.  Defaults
             are tuned for RTX 5090 / Ada-class GPUs at n=64..512.
         num_warps, num_stages: Triton scheduling hints.
+        halo_dtype: Wire/staging dtype of the halo exchange.  fp32
+            (default) is bit-exact; ``torch.float16`` halves the halo
+            bytes at the cost of a ~1e-3 round-trip error on the
+            exchanged populations (compute buffers stay fp32 either
+            way — the cast happens at the staging boundary).
     """
 
     def __init__(
@@ -175,6 +224,7 @@ class DistributedTritonFusedSolver3D:
         block_y: int = DEFAULT_BLOCK_Y,
         num_warps: int = DEFAULT_NUM_WARPS,
         num_stages: int = DEFAULT_NUM_STAGES,
+        halo_dtype: torch.dtype = torch.float32,
     ) -> None:
         if not _single_is_available():
             raise RuntimeError(
@@ -224,19 +274,46 @@ class DistributedTritonFusedSolver3D:
         # Set by :meth:`_start_halo_exchange`; :meth:`_finalize_halo`
         # copies the received staging planes into it after the wait.
         self._halo_target: torch.Tensor | None = None
+
+        # --- Selective halo exchange: crossing-direction tables -------
+        # Generated from the lattice constants (d3q19.C -> triton_fused
+        # ``_CZ``); never hand-typed.  ``_cross_up`` are the lanes that
+        # cross the +z face (they are sent right and received into the
+        # left ghost), ``_cross_dn`` cross the -z face (sent left,
+        # received into the right ghost).
+        self._cross_up: tuple[int, ...] = crossing_face_indices(_CZ_TUPLE, +1)
+        self._cross_dn: tuple[int, ...] = crossing_face_indices(_CZ_TUPLE, -1)
+        if len(self._cross_up) != len(self._cross_dn):
+            raise RuntimeError(
+                f"asymmetric crossing tables: {len(self._cross_up)} up vs "
+                f"{len(self._cross_dn)} down — lattice constants corrupted?"
+            )
+        self.n_cross = len(self._cross_up)
+        self._halo_dtype = torch.float32 if halo_dtype is None else halo_dtype
+        if self._halo_dtype.itemsize not in (2, 4):
+            raise ValueError(
+                f"halo_dtype must be fp32 or fp16, got {self._halo_dtype}"
+            )
+        # Device-side index tensors for the gather/scatter below.
+        self._idx_up = torch.tensor(
+            self._cross_up, dtype=torch.int64, device=self.device)
+        self._idx_dn = torch.tensor(
+            self._cross_dn, dtype=torch.int64, device=self.device)
+
         # Persistent contiguous staging planes for the halo exchange.
         # NCCL point-to-point ops need dense tensors, but the boundary
         # and ghost planes of the ``(Q, nz_local+2, ny, nx)`` buffer are
         # strided views (their q-dim stride spans the whole slab).  Sends
-        # copy the owned boundary planes *into* staging before ``isend``;
-        # recvs land *in* staging and are copied out into the ghost
-        # planes once the exchange completes (see :meth:`_finalize_halo`).
-        # Posting ``irecv`` on a ``.contiguous()`` temporary — as an
-        # earlier version of this class did — silently drops the data:
-        # NCCL writes the plane into the temporary, which is then
-        # discarded, so the ghost planes never see the neighbour values.
+        # gather ONLY the crossing directions of the owned boundary
+        # planes into staging before ``isend``; recvs land *in* staging
+        # and are scattered out into the ghost planes once the exchange
+        # completes (see :meth:`_finalize_halo`).  Posting ``irecv`` on a
+        # ``.contiguous()`` temporary — as an earlier version of this
+        # class did — silently drops the data: NCCL writes the plane into
+        # the temporary, which is then discarded, so the ghost planes
+        # never see the neighbour values.
         if self._world > 1:
-            self._alloc_halo_staging(torch.float32)
+            self._alloc_halo_staging(self._halo_dtype)
         else:
             self._send_left = None
             self._send_right = None
@@ -247,9 +324,17 @@ class DistributedTritonFusedSolver3D:
         self._lat = make_lattice_tensors(str(self.device))
 
     def _alloc_halo_staging(self, dtype: torch.dtype) -> None:
-        """(Re)allocate the four persistent ``(Q, ny, nx)`` staging planes."""
-        shape = (19, self.ny, self.nx)
+        """(Re)allocate the four persistent ``(n_cross, ny, nx)`` staging planes.
+
+        Only the crossing directions are staged: D3Q19 packs 5 of the 19
+        lanes per face (the ``cz = ±1`` subsets from
+        :func:`crossing_face_indices`), a 3.8x reduction in staging
+        volume and NCCL wire bytes versus the previous full-``Q``
+        ``(19, ny, nx)`` planes.
+        """
+        shape = (self.n_cross, self.ny, self.nx)
         kw = dict(dtype=dtype, device=self.device)
+        self._halo_dtype = dtype
         self._send_left = torch.empty(shape, **kw)
         self._send_right = torch.empty(shape, **kw)
         self._recv_left = torch.empty(shape, **kw)
@@ -347,11 +432,16 @@ class DistributedTritonFusedSolver3D:
     def _start_halo_exchange(self, f: torch.Tensor) -> list | None:
         """Post async NCCL send/recv to populate ``f``'s ghost planes.
 
-        Sends owned plane 1 to left neighbour (where it becomes the
-        right ghost) and owned plane ``nz_local`` to right neighbour
-        (where it becomes the left ghost).  Returns a list of Work
-        handles (empty list if single rank), to be awaited by the
-        caller before the *next* step's reads.
+        Sends the crossing lanes of owned plane 1 to the left neighbour
+        (where they become the right ghost) and the crossing lanes of
+        owned plane ``nz_local`` to the right neighbour (where they
+        become the left ghost).  Only the lanes a pull-stream step
+        actually reads from a ghost plane are exchanged: ``cz=+1`` to
+        the right (5 of 19 directions in D3Q19), ``cz=-1`` to the left.
+        The remaining lanes of the ghost planes are never read by owned
+        cells, so the kernel's own (garbage) writes there are harmless.
+        Returns a list of Work handles (empty list if single rank), to
+        be awaited by the caller before the *next* step's reads.
 
         Periodic in z: rank 0's left neighbour is ``world_size - 1``,
         rank ``world_size - 1``'s right neighbour is 0.
@@ -360,7 +450,8 @@ class DistributedTritonFusedSolver3D:
             # Single-rank: halo is just a copy of the nearest owned plane.
             # Periodic wrap in the kernel would do the same thing, but
             # doing it explicitly here keeps the rest of the code path
-            # the same.
+            # the same.  (Full-plane copy: the self-wrap is not on the
+            # multi-GPU hot path.)
             f[:, 0:1, :, :].copy_(f[:, 1:2, :, :])
             f[:, -1:, :, :].copy_(f[:, -2:-1, :, :])
             return []
@@ -371,32 +462,51 @@ class DistributedTritonFusedSolver3D:
         if self._halo_handles is not None or self._halo_target is not None:
             self._finalize_halo()
 
-        # Re-allocate staging only if the caller's buffer dtype/device
-        # changed since the staging planes were created.
+        # Re-allocate staging only if it is missing or was allocated for
+        # a different device.  The staging dtype is the *wire* dtype
+        # (``halo_dtype``), which may legitimately differ from ``f.dtype``
+        # — the gather/scatter below cast at the staging boundary.
         if (self._send_left is None
-                or self._send_left.dtype != f.dtype
                 or self._send_left.device != f.device):
-            self._alloc_halo_staging(f.dtype)
+            self._alloc_halo_staging(self._halo_dtype)
 
-        # Snapshot the two owned boundary planes into dense send staging.
-        # NCCL rejects the strided plane views; the copies run on the
-        # current stream, so they are ordered after whatever kernel
-        # produced ``f``.
-        self._send_left.copy_(f[:, 1, :, :])
-        self._send_right.copy_(f[:, self.nz_local, :, :])
+        # Gather ONLY the crossing directions of the two owned boundary
+        # planes into dense send staging.  NCCL rejects the strided plane
+        # views; the gathers run on the current stream, so they are
+        # ordered after whatever kernel produced ``f``.
+        #   send_right: my LAST owned plane (z=nz_local, adjacent to the
+        #     +z face) -> right neighbour's LEFT ghost, read there by
+        #     their z=1 cells pulling with cz=+1  => idx_up lanes.
+        #   send_left: my FIRST owned plane (z=1, adjacent to the -z
+        #     face) -> left neighbour's RIGHT ghost, read there by their
+        #     z=nz_local cells pulling with cz=-1  => idx_dn lanes.
+        plane_to_right = f[:, self.nz_local, :, :]
+        if plane_to_right.dtype == self._halo_dtype:
+            torch.index_select(plane_to_right, 0, self._idx_up,
+                               out=self._send_right)
+        else:
+            self._send_right.copy_(plane_to_right[self._idx_up])
+        plane_to_left = f[:, 1, :, :]
+        if plane_to_left.dtype == self._halo_dtype:
+            torch.index_select(plane_to_left, 0, self._idx_dn,
+                               out=self._send_left)
+        else:
+            self._send_left.copy_(plane_to_left[self._idx_dn])
 
         ops = [
-            # Send owned plane 1 to left neighbour (becomes their right ghost).
+            # Send crossing lanes of owned plane 1 to left neighbour
+            # (becomes their right ghost).
             dist.P2POp(dist.isend, self._send_left, self.left_neighbor),
-            # Send owned plane nz_local to right neighbour (becomes their
-            # left ghost).
+            # Send crossing lanes of owned plane nz_local to right
+            # neighbour (becomes their left ghost).
             dist.P2POp(dist.isend, self._send_right, self.right_neighbor),
-            # Receive the right ghost plane from the right neighbour into
-            # dense staging; :meth:`_finalize_halo` copies it into
-            # ``f[:, nz_local + 1]`` once the wait completes.
+            # Receive the right ghost plane's crossing lanes from the
+            # right neighbour into dense staging; :meth:`_finalize_halo`
+            # scatters them into ``f[cz=-1, nz_local + 1]`` once the
+            # wait completes.
             dist.P2POp(dist.irecv, self._recv_right, self.right_neighbor),
-            # Receive the left ghost plane from the left neighbour into
-            # dense staging; ditto for ``f[:, 0]``.
+            # Receive the left ghost plane's crossing lanes from the
+            # left neighbour; ditto for ``f[cz=+1, 0]``.
             dist.P2POp(dist.irecv, self._recv_left, self.left_neighbor),
         ]
         # Remember where the received planes must land once the wait
@@ -406,20 +516,33 @@ class DistributedTritonFusedSolver3D:
 
     def _finalize_halo(self) -> None:
         """Wait for the in-flight halo exchange and land the received
-        planes in the target buffer's ghost planes.
+        lanes in the target buffer's ghost planes.
 
         No-op when nothing is in flight.  This is where the received
         data actually reaches the ghost planes: NCCL filled the dense
-        staging planes, and the two ``copy_`` calls below write them
-        into the (strided) ghost-plane views.
+        staging planes, and the two scatter ``copy_`` calls below write
+        them into the (strided, direction-subset) ghost-plane views:
+        the left ghost (z=0) receives the ``cz=+1`` lanes, the right
+        ghost (z=nz_local+1) the ``cz=-1`` lanes.  ``copy_`` upcasts
+        the staging dtype (possibly fp16) to the buffer dtype here.
         """
         if self._halo_handles is not None:
             self._wait(self._halo_handles)
             self._halo_handles = None
         target = self._halo_target
         if target is not None:
-            target[:, 0, :, :].copy_(self._recv_left)
-            target[:, self.nz_with_halo - 1, :, :].copy_(self._recv_right)
+            # NOTE: the scatter must go through ``index_copy_`` on the
+            # basic-slice view.  ``target[idx, 0, :, :].copy_(...)`` would
+            # copy into the *temporary* that advanced-index getitem
+            # returns, silently discarding the received data.
+            recv_left = self._recv_left
+            recv_right = self._recv_right
+            if recv_left.dtype != target.dtype:
+                recv_left = recv_left.to(target.dtype)
+                recv_right = recv_right.to(target.dtype)
+            target[:, 0, :, :].index_copy_(0, self._idx_up, recv_left)
+            target[:, self.nz_with_halo - 1, :, :].index_copy_(
+                0, self._idx_dn, recv_right)
             self._halo_target = None
 
     @staticmethod
@@ -505,13 +628,44 @@ class DistributedTritonFusedSolver3D:
         """Owned cells on this rank (excluding ghost planes)."""
         return self.nz_local * self.ny * self.nx
 
+    @property
+    def staging_shape(self) -> tuple[int, int, int]:
+        """Shape of one staging plane: ``(n_cross, ny, nx)``."""
+        return (self.n_cross, self.ny, self.nx)
+
+    def staging_bytes(self) -> int:
+        """Bytes of persistent halo staging on this rank (4 planes).
+
+        Selective exchange stages ``n_cross`` of ``Q`` directions per
+        plane: D3Q19 packs 5 lanes instead of 19, so the staging is
+        3.8x smaller (per plane, fp32 wire) than the previous
+        ``(19, ny, nx)`` allocation.  Returns 0 when no staging has
+        been allocated (single-rank runs never allocate it).
+        """
+        if self._send_left is None:
+            return 0
+        return 4 * self.n_cross * self.ny * self.nx * self._halo_dtype.itemsize
+
+    def halo_bytes_per_step(self) -> int:
+        """NCCL wire bytes this rank *sends* per step.
+
+        Two faces per rank, each carrying ``n_cross * ny * nx`` elements
+        of ``halo_dtype`` (received bytes are symmetric).  Before the
+        selective exchange this was ``2 * 19 * ny * nx * 4`` for D3Q19;
+        it is now ``2 * n_cross * ny * nx * itemsize`` — a 3.8x cut at
+        fp32, 7.6x with the opt-in fp16 wire.
+        """
+        if self._send_left is None:
+            return 0
+        return 2 * self.n_cross * self.ny * self.nx * self._halo_dtype.itemsize
+
     def transient_memory_bytes(self) -> int:
         """Bytes of transient memory used per step on this rank.
 
         One scratch buffer of shape ``(Q, nz_local+2, ny, nx)`` plus
         the caller's input buffer (counted by the caller).  Excludes
-        the small persistent halo staging planes (``4 * Q*ny*nx``
-        elements), which are allocated once in ``__init__`` and reused
-        every step.
+        the small persistent halo staging planes (``4 * n_cross*ny*nx``
+        elements, see :meth:`staging_bytes`), which are allocated once
+        in ``__init__`` and reused every step.
         """
         return 19 * self.nz_with_halo * self.ny * self.nx * 4  # fp32
