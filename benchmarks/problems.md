@@ -31,7 +31,7 @@
 | # | 问题 | 参考基准 | 共性模块 | 备注 |
 |---|------|---------|---------|------|
 | B13 | 2D Poiseuille 流 | 解析抛物线剖面 u=Δp/2νL(y²−Hy) | D2Q9+Zou-He 入口 | **解析解，最易 3%** |
-| B14 | 3D 管道流 | 解析圆管剖面 | D3Q19+压力驱动 | ✅ 已达标（**R_eff^Q 方法** 2026-08-19: 数字楼梯圆管水力半径 R_eff^Q=R+0.11，径向平均剖面 max 2.15%→1.45% 单调收敛，benchmarks/verified/poiseuille_3d_pipe/） |
+| B14 | 3D 管道流 | 解析圆管剖面 | D3Q19+压力驱动 | ✅ 已达标（**R_eff^Q 方法** 2026-08-19: 数字楼梯圆管水力半径 R_eff^Q=R+0.11，径向平均剖面 max 2.15%→1.45% 单调收敛，benchmarks/verified/poiseuille_3d_pipe/）；椭圆管扩展 2026-08-20：s^Q 单尺度 a=20 5.11% 未达标（各向异性楼梯壁，记录 benchmarks/verified/poiseuille_3d_ellipse/，not_verified） |
 | B15 | 方腔流 Re=100 | Ghia 1982 涡心/中线剖面 | D2Q9 或 D3Q19 | 经典基准，验证对流+耗散 |
 | B16 | 方腔流 Re=400/1000 | Ghia 1982 | 同上 | 高阶验证 |
 
