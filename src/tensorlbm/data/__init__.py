@@ -3,6 +3,12 @@
 from .contracts import DatasetManifest, DatasetSampleRef, FieldProduct
 from .field_dataset_r2 import FieldDatasetR2, FieldSampleRefR2
 from .field_r2 import FieldDataProductR2
+from .solver_export import (
+    load_product,
+    load_product_arrays,
+    register_product,
+    save_fields_hdf5,
+)
 
 __all__ = [
     "DatasetManifest",
@@ -11,6 +17,10 @@ __all__ = [
     "FieldDatasetR2",
     "FieldProduct",
     "FieldSampleRefR2",
+    "load_product",
+    "load_product_arrays",
+    "register_product",
+    "save_fields_hdf5",
 ]
 
 from .catalog import FieldDataCatalog, AssetRecord, LineageRecord, QualityCheck, MetadataRecord
