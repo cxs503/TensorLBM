@@ -344,6 +344,10 @@ class IcingConfig:
     sn_scale_factor: float = 1.0
     drag_law: str = "stokes"  # "stokes" (2a) | "schiller-naumann"
     shadow_alpha_frac: float = 1e-3  # shadow threshold as fraction of alpha_in
+    # Eulerian advection scheme (task #84 fix 3): "donor2" = second-order
+    # TVD donor-cell (van Leer limiter; default) or "donor" = the Phase 2b
+    # first-order upwind scheme (exact legacy fallback).
+    eulerian_scheme: str = "donor2"  # "donor2" | "donor"
 
     # --- Phase 3 additions (glaze Messinger thermodynamics; defaults keep
     #     the Phase 2a/2b paths byte-identical) ---
@@ -402,6 +406,11 @@ class IcingConfig:
             raise ValueError(f"shadow_alpha_frac must be >= 0; got {self.shadow_alpha_frac}")
         if self.sn_scale_factor < 0.0:
             raise ValueError(f"sn_scale_factor must be >= 0; got {self.sn_scale_factor}")
+        if self.eulerian_scheme not in ("donor", "donor2"):
+            raise ValueError(
+                f"eulerian_scheme must be 'donor' or 'donor2'; "
+                f"got {self.eulerian_scheme!r}"
+            )
         # --- task #84 fix 1 ---
         if self.beta_window_mode not in ("clean", "trailing"):
             raise ValueError(
@@ -755,6 +764,7 @@ class IcingConfig:
             "sn_scale_factor": self.sn_scale_factor,
             "rho_air": self.rho_air,
             "beta_cap_window": self.beta_cap_window,
+            "eulerian_scheme": self.eulerian_scheme,
             "alpha_in": self.alpha_in,
             "shadow_alpha_min": self.shadow_alpha_min,
             # --- Phase 3 ---
@@ -865,6 +875,50 @@ def _dilate4(mask: torch.Tensor) -> torch.Tensor:
         | torch.roll(mask, 1, 1)
         | torch.roll(mask, -1, 1)
     )
+
+
+def _tvd_face_states(
+    q: torch.Tensor,
+    pos: torch.Tensor,
+    interior: torch.Tensor,
+    axis: int,
+) -> torch.Tensor:
+    """van-Leer-limited MUSCL face states for the donor2 scheme (#84 fix 3).
+
+    Reconstructs the advected field ``q`` at the faces between cells along
+    ``axis`` from the *donor* side (``pos`` = face velocity is positive),
+    giving a second-order TVD donor-cell flux.  The correction is written
+    on the downwind difference ``d_dn``::
+
+        face = q_donor + 0.5 * phi(r) * d_dn,
+        r    = d_up / d_dn,   phi = (r + |r|)/(1 + |r|)   (van Leer)
+
+    With ``phi`` in [0, 2] the correction lies in ``[d_dn, 0]``, so the
+    face state never leaves the interval spanned by its two cells: no
+    over/undershoot (TVD), and a vanishing downwind difference collapses
+    to the first-order donor state regardless of the upwind slope.  On
+    non-interior faces (domain border, either neighbour solid) the plain
+    upwind donor state is returned, so wall-impingement fluxes and
+    boundary fluxes keep the exact first-order semantics.
+    """
+    if axis == 1:  # faces between columns j (left/donor-) and j+1
+        ql, qr = q[:, :-1], q[:, 1:]
+        qll = F.pad(q[:, :-2], (1, 0))  # column j-1 (dummy at j=0, masked)
+        qrr = F.pad(q[:, 2:], (0, 1))  # column j+2 (dummy at last face)
+    else:  # faces between rows i (donor-) and i+1
+        ql, qr = q[:-1, :], q[1:, :]
+        qll = F.pad(q[:-2, :], (0, 0, 1, 0))
+        qrr = F.pad(q[2:, :], (0, 0, 0, 1))
+    d_dn = qr - ql  # downwind difference (across the face, from the donor)
+    d_safe = torch.where(d_dn.abs() < 1e-12, torch.ones_like(d_dn), d_dn)
+    r_p = (ql - qll) / d_safe  # donor = left cell (positive face velocity)
+    r_m = (qrr - qr) / d_safe  # donor = right cell
+    phi_p = (r_p + r_p.abs()) / (1.0 + r_p.abs())
+    phi_m = (r_m + r_m.abs()) / (1.0 + r_m.abs())
+    face_p = ql + 0.5 * phi_p * d_dn
+    face_m = qr - 0.5 * phi_m * d_dn
+    face = torch.where(pos, face_p, face_m)
+    return torch.where(interior, face, torch.where(pos, ql, qr))
 
 
 # ---------------------------------------------------------------------------
@@ -1294,12 +1348,13 @@ class RimeIcingSimulation:
         alpha_in: float,
         u_in: float,
         shadow_min: float,
+        donor2: bool = False,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """One Eulerian droplet-field step (pure tensors; compile unit).
 
-        Donor-cell finite-volume advection of the droplet volume fraction
-        ``alpha`` and its momentum ``(mx, my) = alpha * u_d`` on the flow
-        grid (FENSAP-ICE style continuity + momentum, one-way coupled),
+        Finite-volume advection of the droplet volume fraction ``alpha``
+        and its momentum ``(mx, my) = alpha * u_d`` on the flow grid
+        (FENSAP-ICE style continuity + momentum, one-way coupled),
         followed by shadow-region penalization and a semi-implicit
         exponential drag relaxation toward the local carrier velocity
         ``(ux, uy)``::
@@ -1307,6 +1362,17 @@ class RimeIcingSimulation:
             u_d <- u_f + (u_d - u_f) * exp(-f_drag / tau_d_lu)
             f_drag = 1 + 0.15 Re_p^0.687,  Re_p = |u_f - u_d| * sn_scale
             (sn_scale = 0 -> Stokes, f_drag = 1 exactly)
+
+        ``donor2`` (task #84 fix 3, default via ``eulerian_scheme``)
+        upgrades the interior face states from first-order upwind to the
+        van-Leer-limited second-order MUSCL reconstruction
+        (``_tvd_face_states``): TVD, so alpha stays positivity-safe and
+        free of over/undershoot, while the numerical diffusion that
+        smeared the Eulerian beta support along the surface (the Phase 2b
+        diffusion tail) shrinks to second order.  Domain-border and
+        wall faces keep the first-order donor state, so boundary fluxes
+        and the wall-impingement ledger semantics are unchanged.  With
+        ``donor2=False`` this is the exact Phase 2b scheme.
 
         Solid cells are perfect absorbers (rime: everything sticks): the
         face flux leaving a fluid cell into a solid neighbour is the
@@ -1352,9 +1418,24 @@ class RimeIcingSimulation:
         uf = torch.where(sl, ur, uf)
         out = uf >= 0.0
         al, ar = alpha[:, :-1], alpha[:, 1:]
-        fa = torch.where(out, al * uf, ar * uf)
-        fmx = torch.where(out, mx[:, :-1] * uf, mx[:, 1:] * uf)
-        fmy = torch.where(out, my[:, :-1] * uf, my[:, 1:] * uf)
+        if donor2:
+            # TVD MUSCL face states on fluid-fluid interior faces; border
+            # and wall faces fall back to the plain donor state inside
+            # _tvd_face_states
+            border = torch.zeros_like(sl)
+            border[:, 0] = True
+            border[:, -1] = True
+            interior = ~(sl | sr) & ~border
+            ax = _tvd_face_states(alpha, out, interior, axis=1)
+            mxf = _tvd_face_states(mx, out, interior, axis=1)
+            myf = _tvd_face_states(my, out, interior, axis=1)
+        else:
+            ax = torch.where(out, al, ar)
+            mxf = torch.where(out, mx[:, :-1], mx[:, 1:])
+            myf = torch.where(out, my[:, :-1], my[:, 1:])
+        fa = ax * uf
+        fmx = mxf * uf
+        fmy = myf * uf
         # wall-impingement sinks: fluid -> solid in +x / -x
         imp_r = fa * ((~sl) & sr)
         imp_l = fa.neg() * (sl & (~sr))
@@ -1366,9 +1447,21 @@ class RimeIcingSimulation:
         vf = torch.where(tr, vl, vf)
         vf = torch.where(tl, vr, vf)
         vout = vf >= 0.0
-        ga = torch.where(vout, alpha[:-1, :] * vf, alpha[1:, :] * vf)
-        gmx = torch.where(vout, mx[:-1, :] * vf, mx[1:, :] * vf)
-        gmy = torch.where(vout, my[:-1, :] * vf, my[1:, :] * vf)
+        if donor2:
+            border = torch.zeros_like(tl)
+            border[0, :] = True
+            border[-1, :] = True
+            interior = ~(tl | tr) & ~border
+            ay = _tvd_face_states(alpha, vout, interior, axis=0)
+            mxg = _tvd_face_states(mx, vout, interior, axis=0)
+            myg = _tvd_face_states(my, vout, interior, axis=0)
+        else:
+            ay = torch.where(vout, alpha[:-1, :], alpha[1:, :])
+            mxg = torch.where(vout, mx[:-1, :], mx[1:, :])
+            myg = torch.where(vout, my[:-1, :], my[1:, :])
+        ga = ay * vf
+        gmx = mxg * vf
+        gmy = myg * vf
         imp_d = ga * ((~tl) & tr)  # fluid(i) -> solid(i+1): donor row i
         imp_u = ga.neg() * (tl & (~tr))  # solid(i) <- fluid(i+1): donor row i+1
 
@@ -1595,8 +1688,8 @@ class RimeIcingSimulation:
                 self.n_impacts += n_hit
                 vals = torch.full((n_hit,), m_p, device=self.dev)
                 flat = dep_iy * nx + dep_ix
-                self.m_w.view(-1).index_add_(0, flat, vals)
                 self.impact_mass.view(-1).index_add_(0, flat, vals)
+                self.m_w.view(-1).index_add_(0, flat, vals)
 
             left = (
                 (new_px >= self.kill_x)
@@ -1681,6 +1774,7 @@ class RimeIcingSimulation:
             cfg.alpha_in,
             cfg.u_in,
             cfg.shadow_alpha_min,
+            cfg.eulerian_scheme == "donor2",
         )
         self._bflux_acc += bflux.double()
         self._dep_acc += imp.double().sum()
@@ -1840,6 +1934,7 @@ class RimeIcingSimulation:
                 f"  [icing-e] eulerian cloud: alpha_in={cfg.alpha_in:.3e} "
                 f"shadow_min={cfg.shadow_alpha_min:.3e} "
                 f"drag={cfg.drag_law} (re_p_scale={cfg.re_p_scale:.3e}) "
+                f"scheme={cfg.eulerian_scheme} "
                 f"init_fill={self.aud_e['initial_fill']:.3e} kg"
             )
 

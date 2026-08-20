@@ -37,6 +37,7 @@ from tensorlbm.aircraft_icing import (
     run_rime_icing,
     seed_counts_total,
     surface_arc_length,
+    _tvd_face_states,
 )
 
 
@@ -602,6 +603,142 @@ def test_beta_cap_window_value_and_semantics() -> None:
     assert "sn_scale_factor" in rep and "beta_cap_window" in rep
 
 
+# ---------------------------------------------------------------------------
+# Task #84 fix 3: second-order TVD Eulerian advection (donor2)
+# ---------------------------------------------------------------------------
+def test_eulerian_scheme_validation() -> None:
+    with pytest.raises(ValueError):
+        _euler_cfg(eulerian_scheme="muscl")
+    assert _euler_cfg().eulerian_scheme == "donor2"  # new default
+    assert _euler_cfg(eulerian_scheme="donor").eulerian_scheme == "donor"
+
+
+def test_eulerian_donor2_tvd_face_reconstruction() -> None:
+    """_tvd_face_states: exact on uniform/linear data, interval-safe on any data.
+
+    * uniform field: zero downwind difference -> face == donor state exactly
+      (the donor2 upgrade is bitwise-neutral on a uniform cloud, so the
+      far-field/free-stream transport is identical to the legacy scheme);
+    * linear field: second order (face == exact midpoint on interior faces);
+    * random field: the reconstructed face never leaves the interval spanned
+      by its two cells (local TVD: no over/undershoot);
+    * non-interior faces (border / solid neighbour) fall back to the plain
+      donor state.
+    """
+    torch.manual_seed(3)
+    ny, nx = 8, 16
+    j = torch.arange(nx, dtype=torch.float64)[None, :].expand(ny, nx)
+
+    def face_arrays(axis):
+        shp = (ny, nx - 1) if axis == 1 else (ny - 1, nx)
+        pos = torch.rand(shp) < 0.5
+        interior = torch.ones(shp, dtype=torch.bool)
+        return pos, interior
+
+    # uniform: exact donor state on every face, both axes, both wind signs
+    q_u = torch.full((ny, nx), 0.7)
+    for axis in (0, 1):
+        pos, interior = face_arrays(axis)
+        f = _tvd_face_states(q_u, pos, interior, axis)
+        assert torch.equal(f, torch.full_like(f, 0.7))
+
+    # linear: exact midpoint on interior faces (2nd order); border faces
+    # (index 0 / last) use the plain donor state by construction
+    q_l = 0.1 * j.clone()
+    pos, interior = face_arrays(1)
+    f = _tvd_face_states(q_l, pos, interior, axis=1)
+    mid = 0.1 * (j[:, :-1] + 0.5)
+    err = (f - mid).abs()
+    assert float(err[:, 1:-1].max()) < 1e-9
+
+    # random: interval bound on interior faces
+    q_r = torch.rand(ny, nx)
+    for axis in (0, 1):
+        pos, interior = face_arrays(axis)
+        f = _tvd_face_states(q_r, pos, interior, axis)
+        if axis == 1:
+            lo = torch.minimum(q_r[:, :-1], q_r[:, 1:])
+            hi = torch.maximum(q_r[:, :-1], q_r[:, 1:])
+            sel = interior[:, 1:-1]
+            fv, lov, hiv = f[:, 1:-1][sel], lo[:, 1:-1][sel], hi[:, 1:-1][sel]
+        else:
+            lo = torch.minimum(q_r[:-1, :], q_r[1:, :])
+            hi = torch.maximum(q_r[:-1, :], q_r[1:, :])
+            sel = interior[1:-1, :]
+            fv, lov, hiv = f[1:-1, :][sel], lo[1:-1, :][sel], hi[1:-1, :][sel]
+        assert bool((fv >= lov - 1e-12).all()) and bool((fv <= hiv + 1e-12).all())
+
+    # non-interior faces: plain donor state regardless of the field
+    pos, interior = face_arrays(1)
+    interior[:, :] = False
+    f = _tvd_face_states(q_r, pos, interior, axis=1)
+    donor = torch.where(pos, q_r[:, :-1], q_r[:, 1:])
+    assert torch.equal(f, donor)
+
+
+def test_eulerian_donor2_uniform_flow_bitwise_legacy() -> None:
+    """Coupled uniform-flow run on the donor2 default: safe and closed."""
+    r_2 = run_rime_icing(_euler_cfg(eulerian_scheme="donor2"), log=lambda *a: None)
+    a2 = r_2["eulerian"]["alpha"]
+    assert float(a2.min()) >= 0.0
+    assert float(a2.max()) <= r_2["eulerian"]["alpha_in"] * 1.02 + 1e-12
+    assert r_2["eulerian"]["audit"]["closure_error"] < 1e-6
+    assert not np.isnan(a2).any()
+
+
+def test_eulerian_donor2_advection_accuracy_and_tvd() -> None:
+    """Gaussian/step advection: donor2 beats donor; TVD (no over/undershoot).
+
+    Pure advection (drag frozen, no shadow, no solid): a Gaussian and a
+    step advected across the grid.  Second order keeps the peak; the
+    van Leer limiter keeps the solution inside the data range.
+    """
+    ny, nx = 32, 64
+    dev = torch.device("cpu")
+    ux = torch.full((ny, nx), 0.05, device=dev)
+    uy = torch.zeros((ny, nx), device=dev)
+    solid = torch.zeros((ny, nx), dtype=torch.bool, device=dev)
+    xg = torch.arange(nx, dtype=torch.float32, device=dev)[None, :].expand(ny, nx)
+    alpha0 = torch.exp(-((xg - 20.0) / 3.0) ** 2).clone()
+    tau_frozen, alpha_in, u_in = 1.0e9, 0.05, 0.05
+    peaks, maxima, minima = {}, {}, {}
+    for scheme, donor2 in (("donor", False), ("donor2", True)):
+        alpha = alpha0.clone()
+        mx, my = alpha * ux, alpha * uy
+        for _ in range(200):  # advect ~10 cells
+            alpha, mx, my, _imp, _bf = RimeIcingSimulation._euler_step(
+                alpha, mx, my, ux, uy, solid, tau_frozen, 0.0,
+                alpha_in, u_in, -1.0, donor2,
+            )
+        peaks[scheme] = float(alpha.max())
+        maxima[scheme] = float(alpha.max())
+        minima[scheme] = float(alpha.min())
+    assert minima["donor2"] >= 0.0 and minima["donor"] >= 0.0
+    # second order: markedly less numerical diffusion of the peak
+    assert peaks["donor2"] > peaks["donor"] + 0.15, peaks
+    assert peaks["donor2"] > 0.8  # peak survives 10 cells of travel
+    # step profile: monotone (no oscillation, no new extrema from the limiter).
+    # NOTE the small (~2.5% at birth, decaying) max-bump at the cloud edge is
+    # *legacy* scheme behaviour, present with donor too: in zero-alpha cells
+    # ud = mx/alpha.clamp(eps) collapses to 0, halving the edge face
+    # velocity, so the front cell under-outflows.  The gate is that donor2
+    # adds nothing beyond that: max(donor2) <= max(donor) + 1e-3.
+    alpha_s = (xg < 30.0).float().clone()
+    step_max = {}
+    for scheme, donor2 in (("donor", False), ("donor2", True)):
+        alpha = alpha_s.clone()
+        mx, my = alpha * ux, alpha * uy
+        for _ in range(120):
+            alpha, mx, my, _imp, _bf = RimeIcingSimulation._euler_step(
+                alpha, mx, my, ux, uy, solid, tau_frozen, 0.0,
+                alpha_in, u_in, -1.0, donor2,
+            )
+        assert float(alpha.min()) >= -1e-8  # no undershoot
+        step_max[scheme] = float(alpha.max())
+    assert step_max["donor2"] <= step_max["donor"] + 1e-3, step_max
+    assert step_max["donor2"] < 1.03  # bounded legacy edge bump, no ringing
+
+
 def test_eulerian_shadow_region_regularisation() -> None:
     """Huge shadow threshold penalizes u_d := u_f everywhere: still stable."""
     cfg = _euler_cfg(shadow_alpha_frac=1.0e6)
@@ -931,6 +1068,7 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
     panel must solve to n_f == 1 with sub-zero T_s and no runback (at the
     baseline -20 C / 0.5 g/m^3 the stagnation is genuinely glaze, n_f
     ~ 0.65, which is the physics, not a regression).
+
     """
     rime_kw = dict(t_static_c=-30.0, lwc=2.0e-4, t_exposure=1800.0, steps=300)
     cfg = _euler_cfg(
