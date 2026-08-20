@@ -214,7 +214,8 @@ class SolverConfig:
     pressure_extrap: str = "none"
     # p0 method for pressure drag: 'near_wall', 'far_field', 'domain_avg', 'inlet'
     p0_method: str = "near_wall"
-    # Friction formula: 'standard', '2nd_order', 'central', 'lagrange', 'bfl'
+    # Friction formula: 'standard', '2nd_order', 'central', 'lagrange', 'bfl',
+    # 'bfl_lagrange', or 'faces' (per-wall-face shear, staircase-exact; requires solid mask)
     friction_formula: str = "standard"
     # Mass correction
     mass_correction: bool = True
@@ -1147,6 +1148,7 @@ class GeneralSimEngine:
             dpS,
             nu_lb,
             formula=sol.friction_formula,
+            solid=self.solid,
         )
 
         cd_p = fx_p

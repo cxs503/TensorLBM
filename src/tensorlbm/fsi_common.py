@@ -385,6 +385,7 @@ def fsi_step_drag(
         dpS,
         nu,
         formula=friction_formula,
+        solid=solid,
     )
     cd_p = (fx_p, fy_p, fz_p)
     cd_f = (fx_f, fy_f, fz_f)
