@@ -53,7 +53,6 @@ first if you want a graceful fallback.
 from __future__ import annotations
 
 import functools
-import math
 import time
 from typing import TYPE_CHECKING, Tuple
 
@@ -108,10 +107,24 @@ except ImportError:  # standalone import (module file outside the package)
     _D3Q19_C = torch.tensor(
         [
             [0, 0, 0],
-            [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
-            [1, 1, 0], [-1, -1, 0], [1, -1, 0], [-1, 1, 0],
-            [1, 0, 1], [-1, 0, -1], [1, 0, -1], [-1, 0, 1],
-            [0, 1, 1], [0, -1, -1], [0, 1, -1], [0, -1, 1],
+            [1, 0, 0],
+            [-1, 0, 0],
+            [0, 1, 0],
+            [0, -1, 0],
+            [0, 0, 1],
+            [0, 0, -1],
+            [1, 1, 0],
+            [-1, -1, 0],
+            [1, -1, 0],
+            [-1, 1, 0],
+            [1, 0, 1],
+            [-1, 0, -1],
+            [1, 0, -1],
+            [-1, 0, 1],
+            [0, 1, 1],
+            [0, -1, -1],
+            [0, 1, -1],
+            [0, -1, 1],
         ],
         dtype=torch.int64,
     )
@@ -143,7 +156,7 @@ for _q in range(_Q):
     assert _c2 in (0, 1, 2), f"non-D3Q19 lattice velocity at q={_q}"
 del _q, _c2
 
-_Q_PAD = 32                       # next power of two >= 19
+_Q_PAD = 32  # next power of two >= 19
 
 # Recommended block/warp config from sweep at n=256, fp32 on RTX 5090.
 # 77% of achievable bandwidth; alternative configs are within 2%.
@@ -156,6 +169,7 @@ DEFAULT_NUM_STAGES: int = 2
 # ---------------------------------------------------------------------------
 # Availability
 # ---------------------------------------------------------------------------
+
 
 @functools.lru_cache(maxsize=1)
 def is_available() -> bool:
@@ -174,6 +188,7 @@ def is_available() -> bool:
 # ---------------------------------------------------------------------------
 # Lattice-tensor cache (one set per device + dtype)
 # ---------------------------------------------------------------------------
+
 
 @functools.lru_cache(maxsize=8)
 def make_lattice_tensors(device: str) -> dict:
@@ -204,9 +219,13 @@ def make_lattice_tensors(device: str) -> dict:
         return t
 
     return {
-        "cxi": _i(_CX), "cyi": _i(_CY), "czi": _i(_CZ),
-        "cxf": _f(_CX), "cyf": _f(_CY), "czf": _f(_CZ),
-        "w":   _f(_W),
+        "cxi": _i(_CX),
+        "cyi": _i(_CY),
+        "czi": _i(_CZ),
+        "cxf": _f(_CX),
+        "cyf": _f(_CY),
+        "czf": _f(_CZ),
+        "w": _f(_W),
     }
 
 
@@ -214,13 +233,23 @@ def make_lattice_tensors(device: str) -> dict:
 # Triton kernels
 # ---------------------------------------------------------------------------
 
+
 @triton.jit
 def _collide_only_kernel(
-    f_ptr, fnew_ptr,
-    cxf_ptr, cyf_ptr, czf_ptr, w_ptr,
+    f_ptr,
+    fnew_ptr,
+    cxf_ptr,
+    cyf_ptr,
+    czf_ptr,
+    w_ptr,
     tau_inv,
-    nz, ny, nx,
-    stride_q, stride_z, stride_y, stride_x,
+    nz,
+    ny,
+    nx,
+    stride_q,
+    stride_z,
+    stride_y,
+    stride_x,
     Q_PAD: tl.constexpr,
     BLOCK_X: tl.constexpr,
     BLOCK_Y: tl.constexpr,
@@ -238,9 +267,11 @@ def _collide_only_kernel(
     spatial_mask = (offs_y < ny)[:, None] & (offs_x < nx)[None, :]
     load_mask = mask_q[:, None, None] & spatial_mask[None, :, :]
 
-    base = (pid_z.to(tl.int64) * stride_z
-            + offs_y.to(tl.int64)[:, None] * stride_y
-            + offs_x.to(tl.int64)[None, :] * stride_x)
+    base = (
+        pid_z.to(tl.int64) * stride_z
+        + offs_y.to(tl.int64)[:, None] * stride_y
+        + offs_x.to(tl.int64)[None, :] * stride_x
+    )
     offs = offs_q.to(tl.int64)[:, None, None] * stride_q + base[None, :, :]
 
     f = tl.load(f_ptr + offs, mask=load_mask, other=0.0)
@@ -258,17 +289,24 @@ def _collide_only_kernel(
     usq = ux * ux + uy * uy + uz * uz
 
     cu = cx_b * ux[None, :, :] + cy_b * uy[None, :, :] + cz_b * uz[None, :, :]
-    feq = (rho_safe[None, :, :] * w_b
-           * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :]))
+    feq = rho_safe[None, :, :] * w_b * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :])
     tl.store(fnew_ptr + offs, f - tau_inv * (f - feq), mask=load_mask)
 
 
 @triton.jit
 def _stream_pull_kernel(
-    f_ptr, fnew_ptr,
-    cxi_ptr, cyi_ptr, czi_ptr,
-    nz, ny, nx,
-    stride_q, stride_z, stride_y, stride_x,
+    f_ptr,
+    fnew_ptr,
+    cxi_ptr,
+    cyi_ptr,
+    czi_ptr,
+    nz,
+    ny,
+    nx,
+    stride_q,
+    stride_z,
+    stride_y,
+    stride_x,
     Q_PAD: tl.constexpr,
     BLOCK_X: tl.constexpr,
     BLOCK_Y: tl.constexpr,
@@ -298,27 +336,42 @@ def _stream_pull_kernel(
     src_x = offs_x[None, None, :] - cx_i
     src_x = tl.where(src_x < 0, src_x + nx, tl.where(src_x >= nx, src_x - nx, src_x))
 
-    src_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
-                + src_z.to(tl.int64) * stride_z
-                + src_y.to(tl.int64) * stride_y
-                + src_x.to(tl.int64) * stride_x)
+    src_offs = (
+        offs_q.to(tl.int64)[:, None, None] * stride_q
+        + src_z.to(tl.int64) * stride_z
+        + src_y.to(tl.int64) * stride_y
+        + src_x.to(tl.int64) * stride_x
+    )
     f_in = tl.load(f_ptr + src_offs, mask=rw_mask, other=0.0)
 
-    dst_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
-                + pid_z.to(tl.int64) * stride_z
-                + offs_y.to(tl.int64)[None, :, None] * stride_y
-                + offs_x.to(tl.int64)[None, None, :] * stride_x)
+    dst_offs = (
+        offs_q.to(tl.int64)[:, None, None] * stride_q
+        + pid_z.to(tl.int64) * stride_z
+        + offs_y.to(tl.int64)[None, :, None] * stride_y
+        + offs_x.to(tl.int64)[None, None, :] * stride_x
+    )
     tl.store(fnew_ptr + dst_offs, f_in, mask=rw_mask)
 
 
 @triton.jit
 def _fused_collide_stream_kernel(
-    f_ptr, fnew_ptr,
-    cxi_ptr, cyi_ptr, czi_ptr,
-    cxf_ptr, cyf_ptr, czf_ptr, w_ptr,
+    f_ptr,
+    fnew_ptr,
+    cxi_ptr,
+    cyi_ptr,
+    czi_ptr,
+    cxf_ptr,
+    cyf_ptr,
+    czf_ptr,
+    w_ptr,
     tau_inv,
-    nz, ny, nx,
-    stride_q, stride_z, stride_y, stride_x,
+    nz,
+    ny,
+    nx,
+    stride_q,
+    stride_z,
+    stride_y,
+    stride_x,
     Q_PAD: tl.constexpr,
     BLOCK_X: tl.constexpr,
     BLOCK_Y: tl.constexpr,
@@ -348,10 +401,12 @@ def _fused_collide_stream_kernel(
     src_x = offs_x[None, None, :] - cx_i
     src_x = tl.where(src_x < 0, src_x + nx, tl.where(src_x >= nx, src_x - nx, src_x))
 
-    src_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
-                + src_z.to(tl.int64) * stride_z
-                + src_y.to(tl.int64) * stride_y
-                + src_x.to(tl.int64) * stride_x)
+    src_offs = (
+        offs_q.to(tl.int64)[:, None, None] * stride_q
+        + src_z.to(tl.int64) * stride_z
+        + src_y.to(tl.int64) * stride_y
+        + src_x.to(tl.int64) * stride_x
+    )
     f_in = tl.load(f_ptr + src_offs, mask=rw_mask, other=0.0)
 
     # --- 2. BGK collision ---
@@ -368,26 +423,38 @@ def _fused_collide_stream_kernel(
     usq = ux * ux + uy * uy + uz * uz
 
     cu = cx_b * ux[None, :, :] + cy_b * uy[None, :, :] + cz_b * uz[None, :, :]
-    feq = (rho_safe[None, :, :] * w_b
-           * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :]))
+    feq = rho_safe[None, :, :] * w_b * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :])
     f_post = f_in - tau_inv * (f_in - feq)
 
     # --- 3. store at own cell ---
-    dst_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
-                + pid_z.to(tl.int64) * stride_z
-                + offs_y.to(tl.int64)[None, :, None] * stride_y
-                + offs_x.to(tl.int64)[None, None, :] * stride_x)
+    dst_offs = (
+        offs_q.to(tl.int64)[:, None, None] * stride_q
+        + pid_z.to(tl.int64) * stride_z
+        + offs_y.to(tl.int64)[None, :, None] * stride_y
+        + offs_x.to(tl.int64)[None, None, :] * stride_x
+    )
     tl.store(fnew_ptr + dst_offs, f_post, mask=rw_mask)
 
 
 @triton.jit
 def _fused_collide_stream_anydtype(
-    f_ptr, fnew_ptr,
-    cxi_ptr, cyi_ptr, czi_ptr,
-    cxf_ptr, cyf_ptr, czf_ptr, w_ptr,
+    f_ptr,
+    fnew_ptr,
+    cxi_ptr,
+    cyi_ptr,
+    czi_ptr,
+    cxf_ptr,
+    cyf_ptr,
+    czf_ptr,
+    w_ptr,
     tau_inv,
-    nz, ny, nx,
-    stride_q, stride_z, stride_y, stride_x,
+    nz,
+    ny,
+    nx,
+    stride_q,
+    stride_z,
+    stride_y,
+    stride_x,
     Q_PAD: tl.constexpr,
     BLOCK_X: tl.constexpr,
     BLOCK_Y: tl.constexpr,
@@ -422,10 +489,12 @@ def _fused_collide_stream_anydtype(
     src_x = offs_x[None, None, :] - cx_i
     src_x = tl.where(src_x < 0, src_x + nx, tl.where(src_x >= nx, src_x - nx, src_x))
 
-    src_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
-                + src_z.to(tl.int64) * stride_z
-                + src_y.to(tl.int64) * stride_y
-                + src_x.to(tl.int64) * stride_x)
+    src_offs = (
+        offs_q.to(tl.int64)[:, None, None] * stride_q
+        + src_z.to(tl.int64) * stride_z
+        + src_y.to(tl.int64) * stride_y
+        + src_x.to(tl.int64) * stride_x
+    )
     f_in = tl.load(f_ptr + src_offs, mask=rw_mask, other=0.0).to(tl.float32)
 
     cx_b = tl.load(cxf_ptr + offs_q, mask=mask_q, other=0.0)[:, None, None]
@@ -441,21 +510,22 @@ def _fused_collide_stream_anydtype(
     usq = ux * ux + uy * uy + uz * uz
 
     cu = cx_b * ux[None, :, :] + cy_b * uy[None, :, :] + cz_b * uz[None, :, :]
-    feq = (rho_safe[None, :, :] * w_b
-           * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :]))
+    feq = rho_safe[None, :, :] * w_b * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :])
     f_post = f_in - tau_inv * (f_in - feq)
 
-    dst_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
-                + pid_z.to(tl.int64) * stride_z
-                + offs_y.to(tl.int64)[None, :, None] * stride_y
-                + offs_x.to(tl.int64)[None, None, :] * stride_x)
-    tl.store(fnew_ptr + dst_offs,
-             f_post.to(fnew_ptr.dtype.element_ty), mask=rw_mask)
+    dst_offs = (
+        offs_q.to(tl.int64)[:, None, None] * stride_q
+        + pid_z.to(tl.int64) * stride_z
+        + offs_y.to(tl.int64)[None, :, None] * stride_y
+        + offs_x.to(tl.int64)[None, None, :] * stride_x
+    )
+    tl.store(fnew_ptr + dst_offs, f_post.to(fnew_ptr.dtype.element_ty), mask=rw_mask)
 
 
 # ---------------------------------------------------------------------------
 # Public entry points
 # ---------------------------------------------------------------------------
+
 
 def _grid(ny: int, nx: int, nz: int, by: int, bx: int):
     return (triton.cdiv(ny, by), triton.cdiv(nx, bx), nz)
@@ -480,12 +550,25 @@ def triton_collide(
         out = torch.empty_like(f)
     lat = make_lattice_tensors(str(f.device))
     _collide_only_kernel[_grid(ny, nx, nz, block_y, block_x)](
-        f, out,
-        lat["cxf"], lat["cyf"], lat["czf"], lat["w"], 1.0 / tau,
-        nz, ny, nx,
-        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
-        Q_PAD=_Q_PAD, BLOCK_X=block_x, BLOCK_Y=block_y,
-        num_warps=num_warps, num_stages=num_stages,
+        f,
+        out,
+        lat["cxf"],
+        lat["cyf"],
+        lat["czf"],
+        lat["w"],
+        1.0 / tau,
+        nz,
+        ny,
+        nx,
+        f.stride(0),
+        f.stride(1),
+        f.stride(2),
+        f.stride(3),
+        Q_PAD=_Q_PAD,
+        BLOCK_X=block_x,
+        BLOCK_Y=block_y,
+        num_warps=num_warps,
+        num_stages=num_stages,
     )
     return out
 
@@ -511,12 +594,23 @@ def triton_stream(
         out = torch.empty_like(f)
     lat = make_lattice_tensors(str(f.device))
     _stream_pull_kernel[_grid(ny, nx, nz, block_y, block_x)](
-        f, out,
-        lat["cxi"], lat["cyi"], lat["czi"],
-        nz, ny, nx,
-        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
-        Q_PAD=_Q_PAD, BLOCK_X=block_x, BLOCK_Y=block_y,
-        num_warps=num_warps, num_stages=num_stages,
+        f,
+        out,
+        lat["cxi"],
+        lat["cyi"],
+        lat["czi"],
+        nz,
+        ny,
+        nx,
+        f.stride(0),
+        f.stride(1),
+        f.stride(2),
+        f.stride(3),
+        Q_PAD=_Q_PAD,
+        BLOCK_X=block_x,
+        BLOCK_Y=block_y,
+        num_warps=num_warps,
+        num_stages=num_stages,
     )
     return out
 
@@ -547,13 +641,28 @@ def triton_fused(
         out = torch.empty_like(f)
     lat = make_lattice_tensors(str(f.device))
     _fused_collide_stream_anydtype[_grid(ny, nx, nz, block_y, block_x)](
-        f, out,
-        lat["cxi"], lat["cyi"], lat["czi"],
-        lat["cxf"], lat["cyf"], lat["czf"], lat["w"], 1.0 / tau,
-        nz, ny, nx,
-        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
-        Q_PAD=_Q_PAD, BLOCK_X=block_x, BLOCK_Y=block_y,
-        num_warps=num_warps, num_stages=num_stages,
+        f,
+        out,
+        lat["cxi"],
+        lat["cyi"],
+        lat["czi"],
+        lat["cxf"],
+        lat["cyf"],
+        lat["czf"],
+        lat["w"],
+        1.0 / tau,
+        nz,
+        ny,
+        nx,
+        f.stride(0),
+        f.stride(1),
+        f.stride(2),
+        f.stride(3),
+        Q_PAD=_Q_PAD,
+        BLOCK_X=block_x,
+        BLOCK_Y=block_y,
+        num_warps=num_warps,
+        num_stages=num_stages,
     )
     return out
 
@@ -562,6 +671,7 @@ def triton_fused(
 # Solver class — drop-in alternative to perf_solver.OptimizedSolver3D for
 # the periodic case.
 # ---------------------------------------------------------------------------
+
 
 class TritonFusedSolver3D:
     """Periodic D3Q19 LBM step powered by a single fused Triton kernel.
@@ -661,16 +771,14 @@ class TritonFusedSolver3D:
         if dtype is None:
             dtype = torch.float32
         if dtype not in (torch.float32, torch.float16, torch.bfloat16):
-            raise ValueError(
-                f"Unsupported dtype {dtype}; use float32, float16, or bfloat16.")
+            raise ValueError(f"Unsupported dtype {dtype}; use float32, float16, or bfloat16.")
 
         self.nz, self.ny, self.nx = int(nz), int(ny), int(nx)
-        self._Q = _Q                    # lattice size (D3Q19), used by diagnostics
+        self._Q = _Q  # lattice size (D3Q19), used by diagnostics
         self.tau = float(tau)
         self.device = torch.device(device)
         if self.device.type != "cuda":
-            raise RuntimeError(
-                f"TritonFusedSolver3D requires a CUDA device, got {self.device}.")
+            raise RuntimeError(f"TritonFusedSolver3D requires a CUDA device, got {self.device}.")
         self.dtype = dtype
         self.block_x = block_x
         self.block_y = block_y
@@ -716,18 +824,25 @@ class TritonFusedSolver3D:
         in fp32 instead of raising.
         """
         if f.dtype != self.dtype:
-            policy = (f" (precision {self.precision_policy.name})"
-                      if self.precision_policy is not None else "")
+            policy = (
+                f" (precision {self.precision_policy.name})"
+                if self.precision_policy is not None
+                else ""
+            )
             raise ValueError(
                 f"step() input dtype {f.dtype} does not match the solver's "
                 f"storage dtype {self.dtype}{policy}; store the initial "
                 f"distribution in the storage dtype first (e.g. "
                 f"precision.cast_to_store(f, policy) or f.to(dtype))"
             )
-        if self._buf_a is None or self._buf_a.shape != f.shape \
-                or self._buf_a.dtype != f.dtype \
-                or self._buf_b is None or self._buf_b.shape != f.shape \
-                or self._buf_b.dtype != f.dtype:
+        if (
+            self._buf_a is None
+            or self._buf_a.shape != f.shape
+            or self._buf_a.dtype != f.dtype
+            or self._buf_b is None
+            or self._buf_b.shape != f.shape
+            or self._buf_b.dtype != f.dtype
+        ):
             self._buf_a = torch.empty_like(f)
             self._buf_b = torch.empty_like(f)
 
@@ -740,10 +855,13 @@ class TritonFusedSolver3D:
             out = self._buf_a
 
         return triton_fused(
-            f, self.tau,
+            f,
+            self.tau,
             out=out,
-            block_x=self.block_x, block_y=self.block_y,
-            num_warps=self.num_warps, num_stages=self.num_stages,
+            block_x=self.block_x,
+            block_y=self.block_y,
+            num_warps=self.num_warps,
+            num_stages=self.num_stages,
         )
 
     # ------------------------------------------------------------------
@@ -823,8 +941,12 @@ class TritonFusedSolver3D:
         :meth:`step` invocation including the Python-side overhead.
         """
         f = torch.zeros(
-            _Q, self.nz, self.ny, self.nx,
-            dtype=self.dtype, device=self.device,
+            _Q,
+            self.nz,
+            self.ny,
+            self.nx,
+            dtype=self.dtype,
+            device=self.device,
         )
         # Need non-trivial content so the compiler doesn't optimise the
         # kernel body away.
