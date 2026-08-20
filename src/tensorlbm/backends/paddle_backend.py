@@ -226,8 +226,26 @@ def to_numpy(t) -> np.ndarray:
     return t.numpy()
 
 
+def _place(obj, device_str: str):
+    """Move a paddle tensor/module by device-name probe, not a CUDA literal.
+
+    Paddle exposes per-device placement methods (``cuda``/``npu``/``xpu``/
+    ``mlu``...) alongside ``cpu``; resolving the method from the device
+    string keeps this backend usable on any paddle build instead of
+    silently dropping to CPU for non-CUDA accelerators.  See
+    ``tensorlbm.hardware`` for the torch-side capability probe.
+    """
+    base = str(device_str).split(":")[0]
+    if base in ("", "cpu"):
+        return obj.cpu()
+    # paddle calls CUDA devices "gpu"; both spellings share .cuda()
+    method_name = "cuda" if base in ("cuda", "gpu") else base
+    placer = getattr(obj, method_name, None)
+    return placer() if callable(placer) else obj.cpu()
+
+
 def to_device(t, device_str: str):
-    return t.cuda() if "cuda" in device_str else t.cpu()
+    return _place(t, device_str)
 
 
 def clone(t):
@@ -344,9 +362,7 @@ def build_eddy_viscosity_mlp(
             return self.net((x - m) / s)
 
     model = _EddyViscosityMLP()
-    if "cuda" in device:
-        model = model.cuda()
-    return model
+    return _place(model, device)
 
 
 # ---------------------------------------------------------------------------
@@ -409,9 +425,7 @@ def build_flow_transformer(
             return pd.where(mask_expanded, mt, x)
 
     model = _FlowTransformer()
-    if "cuda" in device:
-        model = model.cuda()
-    return model
+    return _place(model, device)
 
 
 # ---------------------------------------------------------------------------
