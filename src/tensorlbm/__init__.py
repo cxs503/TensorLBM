@@ -742,6 +742,16 @@ from .general_sim import (
     SolverConfig,
 )
 from .lbm_step import LBMStepExecutor
+from .reporters import (
+    CallbackReporter,
+    EarlyStopReporter,
+    FieldSampleReporter,
+    Reporter,
+    ReporterBase,
+    StepContext,
+    ThroughputReporter,
+    dispatch,
+)
 from .amr_interface_filter import (
     InterfaceFilterControlVolumeClearance,
     assess_interface_filter_control_volume_clearance,
@@ -1276,6 +1286,15 @@ __all__ = [
     "LBMSimulation",
     # Common timestep executor
     "LBMStepExecutor",
+    # Reporter/callback protocol
+    "Reporter",
+    "ReporterBase",
+    "StepContext",
+    "dispatch",
+    "CallbackReporter",
+    "ThroughputReporter",
+    "EarlyStopReporter",
+    "FieldSampleReporter",
     # Pre-processing geometry
     "poly_to_mask_2d",
     "poly_to_mask_and_q_2d",

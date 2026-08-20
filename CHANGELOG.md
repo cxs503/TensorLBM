@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Unified reporter/callback protocol** (`tensorlbm.reporters`, new module): a
+  lettuce-derived (MIT, attribution in the file header) hook point between the
+  step loops and diagnostics/data. A `Reporter` is anything with `interval` +
+  `__call__(ctx)`; the dispatcher fires reporters on positive multiples of
+  their interval (`steps=100, interval=25` → exactly 4 fires); the lightweight
+  tensor-first `StepContext` carries the population handle, a persistent step
+  counter, per-step diagnostics, cell count, optional unit converter, and a
+  `stop` flag for early termination. Built-ins: `CallbackReporter` (wrap any
+  callable), `ThroughputReporter` (MLUPS, device-synced), `EarlyStopReporter`
+  (steady-state change-threshold early stop), and `FieldSampleReporter`
+  (sample → `solver_export.save_fields_hdf5` + `register_product`, one hop
+  from the solver loop to a PASS-gated catalog product). Hooks:
+  `LBMStepExecutor.run(..., reporters=...)` (with no reporters the original
+  fast path runs verbatim — bit-identical output, zero added overhead) and the
+  new `TritonFusedSolver3D.run(...)` multi-step driver with the same contract.
+
+### Added
 - **Real DG-LBM solver** (`tensorlbm.dg_advection`, `tensorlbm.dg_band`): a genuine
   nodal Discontinuous-Galerkin Lattice Boltzmann hybrid.  Dimension-by-dimension
   P1-Lobatto DG advection (upwind flux, SSP-RK3, sub-cycled) with method-of-lines
