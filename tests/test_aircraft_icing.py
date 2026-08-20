@@ -560,6 +560,48 @@ def test_beta_window_clean_lwc_invariance() -> None:
     assert abs(pk_hi - pk_lo) / pk_lo < 0.05, (pk_lo, pk_hi)
 
 
+# ---------------------------------------------------------------------------
+# Task #84 fix 2: sn_scale_factor + beta_cap_window (from #79 calibration)
+# ---------------------------------------------------------------------------
+def test_sn_scale_factor_decouples_drag_from_rho_air() -> None:
+    """sn_scale_factor = lambda is exactly the rho_air = lambda*1.34 sweep."""
+    common = dict(drag_law="schiller-naumann")
+    cfg_knob = _euler_cfg(sn_scale_factor=2.4, **common)
+    cfg_rho = _euler_cfg(rho_air=2.4 * 1.34, **common)
+    assert math.isclose(cfg_knob.re_p_scale, cfg_rho.re_p_scale, rel_tol=1e-12)
+    # default 1.0 keeps the physical Schiller-Naumann scale unchanged
+    cfg_phys = _euler_cfg(**common)
+    cfg_legacy = _euler_cfg(**common)
+    assert cfg_phys.re_p_scale == cfg_legacy.re_p_scale
+    # stokes law: knob is inert (re_p_scale == 0 switches f_drag to 1)
+    assert _euler_cfg(drag_law="stokes", sn_scale_factor=5.0).re_p_scale == 0.0
+    with pytest.raises(ValueError):
+        _euler_cfg(sn_scale_factor=-0.1)
+
+
+def test_beta_cap_window_value_and_semantics() -> None:
+    """Cap formula reproduces the #79 analytic value; empty window -> inf."""
+    # standard 2b production case: dx=4.17 mm, 360 s, trailing half window
+    cfg = IcingConfig(
+        nx=320, ny=160, steps=3000, warmup_steps=0, uniform_flow=True,
+        droplet_phase="eulerian", lwc=0.5e-3, t_exposure=360.0,
+        rime_density_mode="macklin", beta_window_mode="trailing",
+        device="cpu", log_every=10**9,
+    )
+    analytic = cfg.rho_rime_eff * cfg.dx_phys / (
+        cfg.lwc * cfg.v_inf * (1.0 - cfg.beta_window_frac) * cfg.t_exposure
+    )
+    assert math.isclose(cfg.beta_cap_window, analytic, rel_tol=1e-12)
+    assert math.isclose(cfg.beta_cap_window, 0.6337, abs_tol=5e-4)  # #79 table
+    # glaze whole-shot convention (frac=0 -> empty window) is cap-free
+    glaze_cfg = _euler_cfg(beta_window_mode="trailing", beta_window_frac=0.0)
+    assert glaze_cfg.beta_window_bounds == (500, 500)
+    assert math.isinf(glaze_cfg.beta_cap_window)
+    # mapping report carries both diagnostics
+    rep = _euler_cfg().mapping_report()
+    assert "sn_scale_factor" in rep and "beta_cap_window" in rep
+
+
 def test_eulerian_shadow_region_regularisation() -> None:
     """Huge shadow threshold penalizes u_d := u_f everywhere: still stable."""
     cfg = _euler_cfg(shadow_alpha_frac=1.0e6)
