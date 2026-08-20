@@ -1234,7 +1234,11 @@ class RimeIcingSimulation:
             "trapped": 0.0,
             "airborne": 0.0,
             "pending": 0.0,
+            "pending_fluid": 0.0,
+            "pending_solid": 0.0,
         }
+        # cached BFS distance-from-airfoil for the freezer water cascade
+        self._dist_np: np.ndarray | None = None
         self.n_impacts = 0
         self._seed_carry = 0.0
         self.history: dict[str, list[Any]] = {
@@ -1482,6 +1486,20 @@ class RimeIcingSimulation:
         out_mx = torch.where(o_end, mx[:, -1:] * u_end, torch.full_like(u_end, alpha_in * u_in) * u_end)
         out_my = torch.where(o_end, my[:, -1:] * u_end, torch.zeros_like(u_end))
 
+        # boundary inflow that would enter a *solid* border cell (accretion
+        # reaching the domain border) impinges on the ice instead of being
+        # destroyed by the solid void below -- credited to the impact
+        # ledger so the scheme stays conservative (#84 fix 4).  The raw
+        # boundary fluxes keep feeding the mass audit (the impinged mass
+        # entered the domain and is accounted as deposited).
+        imp_border = torch.zeros_like(alpha)
+        zero1 = torch.zeros_like(in_a)
+        imp_border[:, :1] = torch.where(solid[:, :1], in_a, zero1)
+        in_a = in_a - imp_border[:, :1]
+        oi = torch.where((~o_end) & solid[:, -1:], out_a, torch.zeros_like(out_a))
+        imp_border[:, -1:] = oi
+        out_a = out_a - oi
+
         flux_a = torch.cat([in_a, fa, out_a], dim=1)
         flux_mx = torch.cat([in_mx, fmx, out_mx], dim=1)
         flux_my = torch.cat([in_my, fmy, out_my], dim=1)
@@ -1498,6 +1516,14 @@ class RimeIcingSimulation:
         t_a = torch.where(vt >= 0, alpha[-1:, :] * vt, torch.full_like(vt, alpha_in) * vt)
         t_mx = torch.where(vt >= 0, mx[-1:, :] * vt, torch.full_like(vt, alpha_in * u_in) * vt)
         t_my = torch.where(vt >= 0, my[-1:, :] * vt, torch.zeros_like(vt))
+
+        # same border-ice rule for the lateral inflows (#84 fix 4)
+        bi = torch.where((vb < 0) & solid[0:1, :], b_a, torch.zeros_like(b_a))
+        imp_border[0:1, :] = bi
+        b_a = b_a - bi
+        ti = torch.where((vt > 0) & solid[-1:, :], t_a, torch.zeros_like(t_a))
+        imp_border[-1:, :] = ti
+        t_a = t_a - ti
 
         flux_ay = torch.cat([b_a, ga, t_a], dim=0)
         flux_mx_y = torch.cat([b_mx, gmx, t_mx], dim=0)
@@ -1529,7 +1555,15 @@ class RimeIcingSimulation:
         mx = alpha * ud_x
         my = alpha * ud_y
 
-        bflux = torch.stack((in_a.sum(), out_a.sum(), b_a.sum(), t_a.sum()))
+        impact = impact + imp_border
+        # raw boundary fluxes for the audit: the border-ice impingement
+        # mass entered the domain (it is accounted as deposited)
+        bflux = torch.stack((
+            in_a.sum() + imp_border[:, :1].sum(),
+            out_a.sum() + imp_border[:, -1:].sum(),
+            b_a.sum() + imp_border[0:1, :].sum(),
+            t_a.sum() + imp_border[-1:, :].sum(),
+        ))
         return alpha, mx, my, impact, bflux
 
     @staticmethod
@@ -1689,7 +1723,24 @@ class RimeIcingSimulation:
                 vals = torch.full((n_hit,), m_p, device=self.dev)
                 flat = dep_iy * nx + dep_ix
                 self.impact_mass.view(-1).index_add_(0, flat, vals)
-                self.m_w.view(-1).index_add_(0, flat, vals)
+                # water ledger: a deposit credits its origin cell only if
+                # that cell is still fluid.  Parcels whose origin turned
+                # solid (the ice froze under them mid-flight, or they were
+                # engulfed and kept drifting) would credit a solid cell,
+                # where water can never freeze again -- cascade that water
+                # to the outward fluid neighbour instead (#84 fix 4).
+                origin_solid = solid[dep_iy, dep_ix]
+                self.m_w.view(-1).index_add_(
+                    0, flat[~origin_solid], vals[~origin_solid])
+                flat_s = flat[origin_solid]
+                if flat_s.numel():
+                    uniq, inv = torch.unique(flat_s, return_inverse=True)
+                    tot = torch.zeros(
+                        uniq.numel(), dtype=torch.float64, device=self.dev
+                    ).index_add_(0, inv, vals[origin_solid].double())
+                    ys, xs = uniq // nx, uniq % nx
+                    self._cascade_water(
+                        list(zip(ys.tolist(), xs.tolist())), tot.tolist())
 
             left = (
                 (new_px >= self.kill_x)
@@ -1719,10 +1770,56 @@ class RimeIcingSimulation:
         freeze = (self.m_w >= cfg.m_cell_ice) & (~self.solid)
         n = int(freeze.sum().item())
         if n > 0:
-            self.m_w[freeze] -= cfg.m_cell_ice
+            leftover = self.m_w[freeze] - cfg.m_cell_ice
+            self.m_w[freeze] = 0.0
             self.solid |= freeze
             self.aud["frozen"] += n * cfg.m_cell_ice
+            # task #84 fix 4: the freshly frozen cells can never freeze
+            # again (the freeze mask excludes solid cells), so their
+            # sub-cell remainders would strand on the ice as permanently
+            # pending water.  Cascade each remainder to the outward fluid
+            # 4-neighbour -- the same rule the glaze freezer
+            # (_deposit_columns) uses -- so the water stays in play and
+            # the ledger stays conservative.
+            cells = [tuple(c) for c in torch.nonzero(freeze).tolist()]
+            self._cascade_water(cells, leftover.tolist())
         return n
+
+    def _cascade_water(self, cells: list[tuple[int, int]], masses: list[float]) -> None:
+        """Move stranded water off solid cells to the outward fluid neighbour.
+
+        Used by :meth:`_freeze` (post-freeze sub-cell remainders) and
+        :meth:`_void_encased` (cloud engulfed by fresh ice): both credit
+        water to cells that just turned solid, where it could never reach
+        ``m_cell_ice`` again.  The recipient is the fluid 4-neighbour with
+        the largest BFS distance from the airfoil (the outward growth
+        direction, identical to ``_deposit_columns``).  A cell fully
+        enclosed by ice keeps its water in place -- it stays audited as
+        ``pending_solid`` (sub-cell water buried by the accretion).
+        """
+        if not cells:
+            return
+        if self._dist_np is None:
+            self._dist_np = _bfs_distance_cells(self.airfoil.cpu().numpy())
+        dist = self._dist_np
+        ny, nx = self.m_w.shape
+        solid_cpu = self.solid.cpu()
+        for (y, x), m in zip(cells, masses):
+            if m <= 0.0:
+                continue
+            best, bd = None, -1
+            for dy, dxn in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                yy, xx = y + dy, x + dxn
+                if 0 <= yy < ny and 0 <= xx < nx and not bool(solid_cpu[yy, xx]):
+                    d = int(dist[yy, xx])
+                    if d > bd:
+                        bd, best = d, (yy, xx)
+            if best is not None:
+                self.m_w[best] += m
+            else:
+                # fully enclosed pocket: keep the water in place (it
+                # stays audited as pending_solid instead of vanishing)
+                self.m_w[y, x] += m
 
     # -- Eulerian droplet phase (Phase 2b) ------------------------------
     def _init_eulerian(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
@@ -1781,7 +1878,18 @@ class RimeIcingSimulation:
         dm = imp * cfg.mass_per_lu3
         self.impact_mass_e += dm
         if cfg.droplet_phase == "eulerian":
-            self.m_w += dm
+            on_solid = imp * self.solid.to(imp.dtype)
+            if cfg.freeze_in_run and bool((on_solid > 0.0).any()):
+                # border-ice impingement (accretion reaching a domain
+                # border) credits *solid* cells: cascade that water
+                # outward so it stays freezable (#84 fix 4)
+                self.m_w += (imp - on_solid) * cfg.mass_per_lu3
+                idx = torch.nonzero(on_solid)
+                vals = on_solid[idx[:, 0], idx[:, 1]] * cfg.mass_per_lu3
+                self._cascade_water(
+                    [tuple(c) for c in idx.tolist()], vals.tolist())
+            else:
+                self.m_w += dm
 
     def _void_encased(self, prev_solid: torch.Tensor) -> None:
         """Remove cloud trapped by fresh ice and audit it (encased).
@@ -1795,8 +1903,12 @@ class RimeIcingSimulation:
         newly = self.solid & ~prev_solid
         enc = self.alpha * newly
         self._enc_acc += enc.double().sum()
-        if self.cfg.droplet_phase == "eulerian":
-            self.m_w += enc * self.cfg.mass_per_lu3
+        if self.cfg.droplet_phase == "eulerian" and self.cfg.freeze_in_run:
+            # engulfed cloud water joins the ledger, cascaded off the
+            # (now solid) cell so it can still freeze (#84 fix 4)
+            enc_kg = enc * self.cfg.mass_per_lu3
+            cells = [tuple(c) for c in torch.nonzero(enc > 0).tolist()]
+            self._cascade_water(cells, enc_kg[enc > 0].tolist())
         keep = (~newly).to(self.alpha.dtype)
         self.alpha = self.alpha * keep
         self.mx = self.mx * keep
@@ -2001,6 +2113,12 @@ class RimeIcingSimulation:
         # ---- final audit ----
         self.aud["airborne"] = float(self.px.numel()) * cfg.m_parcel
         self.aud["pending"] = float(self.m_w.double().sum().item())
+        # #84 fix 4 decomposition: water still on *fluid* cells is the
+        # legitimate sub-cell/in-transit remainder (it keeps collecting and
+        # would freeze at longer exposure); water on *solid* cells is what
+        # the cascade could not relocate (pockets fully enclosed by ice).
+        self.aud["pending_solid"] = float(self.m_w[self.solid].double().sum().item())
+        self.aud["pending_fluid"] = self.aud["pending"] - self.aud["pending_solid"]
         accounted = (
             self.aud["frozen"] + self.aud["exited"] + self.aud["trapped"]
             + self.aud["airborne"] + self.aud["pending"]
@@ -2118,7 +2236,9 @@ def mass_audit_report(result: dict[str, Any]) -> str:
         f"exited  = {a['exited']:.6e} kg",
         f"trapped = {a['trapped']:.6e} kg",
         f"airborne= {a['airborne']:.6e} kg",
-        f"pending = {a['pending']:.6e} kg",
+        f"pending = {a['pending']:.6e} kg "
+        f"(fluid/in-transit {a.get('pending_fluid', 0.0):.6e} kg, "
+        f"on-ice {a.get('pending_solid', 0.0):.6e} kg)",
         f"closure error = {a['closure_error'] * 100:.4f} %",
     ]
     return "\n".join(lines)
