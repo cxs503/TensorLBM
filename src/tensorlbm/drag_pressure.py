@@ -866,7 +866,8 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
     return float(fpx.item() / dpS), float(fpy.item() / dpS), float(fpz.item() / dpS)
 
 
-def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard'):
+def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard',
+                              solid=None):
     """Friction drag via 3D wall shear stress.
 
     Multiple friction formulas are supported via the *formula* parameter.
@@ -885,7 +886,9 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
     'central'       τ = ν·u_2                                          (task spec)
     'lagrange'      τ = ν·(3·u_1 − u_2/3)                              linear+quad
     'bfl'           τ = ν·u_1/q  (requires q_wall)                     linear
-    'bfl_lagrange'  τ = ν·(3·u_1 − u_2/3)/(2·q)  (requires q_wall)    linear+quad
+    'bfl_lagrange'  τ = ν·(u_1(q+1)/q − u_2·q/(q+1))  (requires q_wall)
+                                                                       linear+quad
+    'faces'         per-wall-face shear, dA=1 per face (requires solid)  linear
     ==============  =================================================  ===========
 
     The 'lagrange' formula is the exact second-order derivative for the
@@ -894,6 +897,22 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
     and quadratic velocity profiles and is expected to converge best
     under grid refinement for smooth boundary layers.
 
+    'bfl_lagrange' is the exact second-order Lagrange derivative on the
+    non-uniform grid with the wall at 0, u_1 at distance q and u_2 at
+    q+1 (q = actual fractional wall distance, e.g. from a Bouzidi
+    intersection or the analytic body distance).  It reduces to 'lagrange'
+    when q=0.5.
+
+    'faces' integrates over the voxel staircase wall faces instead of
+    near-wall cells: every fluid-solid face contributes its own shear
+    (half-way BB: τ = 2ν·u_t with u_t tangential to the face), with dA=1
+    per face.  This is the exact discrete friction of the voxelized body.
+    Cells with two wall faces (staircase inner corners) then contribute
+    both faces, which the cell-based 'standard' formula misses.  On a
+    planar wall both give the same result.  The returned force is the
+    sum of the face shear vectors; mesh.dA is not applied (faces are
+    unit area).
+
     Parameters
     ----------
     q_wall : torch.Tensor or None, shape (nz, ny, nx)
@@ -901,7 +920,9 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
         Used when formula='bfl' or formula='bfl_lagrange'.
     formula : str
         Friction formula: 'standard' (default), '2nd_order', 'central',
-        'lagrange', 'bfl', or 'bfl_lagrange'.
+        'lagrange', 'bfl', 'bfl_lagrange', or 'faces'.
+    solid : torch.Tensor or None, shape (nz, ny, nx), bool
+        Solid mask.  Required for formula='faces'.
 
     Verified on Couette flow: Cf error = 0.00% (standard, q_wall=None).
     """
@@ -926,19 +947,51 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
         tau_y = nu * ut_y * inv_q
         tau_z = nu * ut_z * inv_q
     elif formula == 'bfl_lagrange':
-        # τ = ν·(3·u_1 − u_2/3) / (2·q)  [2nd-order Lagrange with BFL wall distance]
-        # Reduces to 'lagrange' when q=0.5: τ = ν·(3·u_1 − u_2/3).
-        # Combines non-uniform-grid 2nd-order accuracy (Lagrange) with the
-        # actual BFL wall distance q, giving 2nd-order friction for BFL.
+        # τ = ν·[u_1·(q+1)/q − u_2·q/(q+1)]  [exact 2nd-order Lagrange
+        # derivative at the wall for samples at 0 (wall, u=0), q (u_1),
+        # q+1 (u_2) — see docstring; reduces to 'lagrange' at q=0.5]
         if q_wall is None:
             raise ValueError("formula='bfl_lagrange' requires q_wall tensor")
         ut2_x = _shift_along_normal_dominant(ut_x, mesh, steps=1)
         ut2_y = _shift_along_normal_dominant(ut_y, mesh, steps=1)
         ut2_z = _shift_along_normal_dominant(ut_z, mesh, steps=1)
-        inv_2q = 1.0 / (2.0 * q_wall.clamp(min=1e-6))
-        tau_x = nu * (3.0 * ut_x - ut2_x / 3.0) * inv_2q
-        tau_y = nu * (3.0 * ut_y - ut2_y / 3.0) * inv_2q
-        tau_z = nu * (3.0 * ut_z - ut2_z / 3.0) * inv_2q
+        q_c = q_wall.clamp(min=1e-6)
+        coeff1 = (q_c + 1.0) / q_c
+        coeff2 = q_c / (q_c + 1.0)
+        tau_x = nu * (coeff1 * ut_x - coeff2 * ut2_x)
+        tau_y = nu * (coeff1 * ut_y - coeff2 * ut2_y)
+        tau_z = nu * (coeff1 * ut_z - coeff2 * ut2_z)
+    elif formula == 'faces':
+        # Staircase-exact: integrate over fluid-solid wall faces.  For each
+        # face the half-way BB shear is τ = 2ν·u_t with u_t tangential to
+        # the (axis-aligned) face, dA = 1 per face.  Per cell the three
+        # force components receive 2ν·u_x from every y/z-face, 2ν·u_y from
+        # every x/z-face, and 2ν·u_z from every x/y-face.
+        if solid is None:
+            raise ValueError("formula='faces' requires solid mask")
+        if solid.device != ux.device:
+            solid = solid.to(ux.device)
+        fluid = ~solid
+        nfx = torch.zeros_like(ux, dtype=torch.float32)  # solid x-neighbors
+        nfy = torch.zeros_like(ux, dtype=torch.float32)  # solid y-neighbors
+        nfz = torch.zeros_like(ux, dtype=torch.float32)  # solid z-neighbors
+        # x faces (solid at ±x)
+        nfx[:, :, 1:-1] += (solid[:, :, 2:] & fluid[:, :, 1:-1]).float()
+        nfx[:, :, 1:-1] += (solid[:, :, :-2] & fluid[:, :, 1:-1]).float()
+        # y faces (solid at ±y)
+        nfy[:, 1:-1, :] += (solid[:, 2:, :] & fluid[:, 1:-1, :]).float()
+        nfy[:, 1:-1, :] += (solid[:, :-2, :] & fluid[:, 1:-1, :]).float()
+        # z faces (solid at ±z)
+        nfz[1:-1, :, :] += (solid[2:, :, :] & fluid[1:-1, :, :]).float()
+        nfz[1:-1, :, :] += (solid[:-2, :, :] & fluid[1:-1, :, :]).float()
+        tau_x = 2.0 * nu * ux * (nfy + nfz)
+        tau_y = 2.0 * nu * uy * (nfx + nfz)
+        tau_z = 2.0 * nu * uz * (nfx + nfy)
+        # unit face area; mesh.dA intentionally not applied
+        ffx = tau_x.sum()
+        ffy = tau_y.sum()
+        ffz = tau_z.sum()
+        return float(ffx.item() / dpS), float(ffy.item() / dpS), float(ffz.item() / dpS)
     elif formula in ('2nd_order', 'central', 'lagrange'):
         # Need u_2: tangential velocity at second cell from wall.
         # Shift velocity one cell along dominant normal into the fluid.
@@ -964,7 +1017,7 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
     else:
         raise ValueError(
             f"formula must be 'standard', '2nd_order', 'central', "
-            f"'lagrange', 'bfl', or 'bfl_lagrange'; got '{formula}'"
+            f"'lagrange', 'bfl', 'bfl_lagrange', or 'faces'; got '{formula}'"
         )
 
     mask = mesh.near.float() * mesh.dA
