@@ -83,6 +83,29 @@ from .boundaries_d3q27 import (
     zou_he_inlet_velocity_27,
     zou_he_outlet_pressure_27,
 )
+from .boundary_registry import (
+    BC_ID_NONE,
+    BCKind,
+    BCPhase,
+    BoundaryCondition,
+    BoundaryConditionRegistry,
+    apply_boundary_conditions,
+    boundary_condition_registry,
+    build_bc_mask,
+    check_bc_consistency,
+    check_bc_overlaps,
+    derive_missing_mask,
+)
+from .cases import (
+    CaseBase,
+    CaseRunResult,
+    CaseUnits,
+    ExportSpec,
+    get_case,
+    list_cases,
+    register_case,
+    run_case,
+)
 from .checkpoint import load_checkpoint, save_checkpoint
 from .chunked_collision import (
     NaturalKBCCollisionExecutor,
@@ -1425,4 +1448,25 @@ __all__ = [
     # Collision physical-property audit
     "CollisionViscosityAuditConfig",
     "run_collision_viscosity_audit",
+    # Case registry (lettuce ExtFlow pattern) + integer-id BC registry (XLB)
+    "CaseBase",
+    "CaseUnits",
+    "CaseRunResult",
+    "ExportSpec",
+    "get_case",
+    "list_cases",
+    "register_case",
+    "run_case",
+    "BC_ID_NONE",
+    "BCKind",
+    "BCPhase",
+    "BoundaryCondition",
+    "BoundaryConditionRegistry",
+    "apply_boundary_conditions",
+    "boundary_condition_registry",
+    "build_bc_mask",
+    "check_bc_consistency",
+    "check_bc_overlaps",
+    "derive_missing_mask",
 ]
+
