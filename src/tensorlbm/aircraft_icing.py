@@ -335,6 +335,13 @@ class IcingConfig:
     c_s: float = 0.0  # Smagorinsky constant (cumulant collision only)
     re_lu_target: float | None = None  # if set: tau_flow = 3 u L / Re + 0.5
     rho_air: float = 1.34  # kg/m^3 (Schiller-Naumann Re_p, -10 C air)
+    # Calibration multiplier on the Schiller-Naumann particle Reynolds
+    # number (task #84 fix 2, from the #79 calibration report): decouples
+    # the drag-correction strength from the physical air density.
+    # 1.0 = physical Schiller-Naumann (rho_air = 1.34 kg/m^3 IRT air);
+    # sn_scale_factor = lambda is exactly the rho_air = lambda*1.34 sweep
+    # of report #79 (single knob, no lie about the air density).
+    sn_scale_factor: float = 1.0
     drag_law: str = "stokes"  # "stokes" (2a) | "schiller-naumann"
     shadow_alpha_frac: float = 1e-3  # shadow threshold as fraction of alpha_in
 
@@ -393,6 +400,8 @@ class IcingConfig:
             raise ValueError(f"re_lu_target must be > 0; got {self.re_lu_target}")
         if self.shadow_alpha_frac < 0.0:
             raise ValueError(f"shadow_alpha_frac must be >= 0; got {self.shadow_alpha_frac}")
+        if self.sn_scale_factor < 0.0:
+            raise ValueError(f"sn_scale_factor must be >= 0; got {self.sn_scale_factor}")
         # --- task #84 fix 1 ---
         if self.beta_window_mode not in ("clean", "trailing"):
             raise ValueError(
@@ -643,7 +652,39 @@ class IcingConfig:
         """
         if self.drag_law != "schiller-naumann":
             return 0.0
-        return self.rho_air * (self.dx_phys / self.dt_phys) * self.mvd / self.mu_air
+        return (
+            self.sn_scale_factor * self.rho_air
+            * (self.dx_phys / self.dt_phys) * self.mvd / self.mu_air
+        )
+
+    @property
+    def beta_cap_window(self) -> float:
+        """Moving-boundary cap on the window beta (Eulerian-driven freezing).
+
+        A fluid cell adjacent to the wall stops collecting once the rime
+        freezer has filled it, so the per-cell impact mass recorded over
+        the beta window cannot exceed one cell of ice::
+
+            beta_cap = m_cell_ice / (lwc_eff * V * dx^2 * t_win)
+
+        evaluated on the *actual* ledger window (``beta_window_bounds``).
+        In ``"trailing"`` mode this reduces to
+        ``rho_rime*dx / (LWC*V*(1-beta_window_frac)*t_exposure)`` (task
+        #79: at t_exposure=360 s this is 0.634 @ dx=4.17 mm, 0.228 @
+        1.50 mm, 0.122 @ 0.80 mm -- the window beta of fine-grid 360 s
+        runs saturates at the cap and no longer measures the collection
+        efficiency; the standard dx=4.17 mm case ran at 93% of its cap).
+        The ``"clean"`` window (#84 fix 1) closes before the first fill,
+        so beta_pk/cap stays small there by construction.  ``inf`` when
+        the window is empty (glaze whole-shot convention).
+        """
+        w0, w1 = self.beta_window_bounds
+        t_win = (w1 - w0) * self.dt_phys
+        if t_win <= 0.0:
+            return float("inf")
+        return self.m_cell_ice / (
+            self.lwc_eff * self.v_inf * self.dx_phys**2 * t_win
+        )
 
     # ------------------------------------------------------------------
     # Phase 3: glaze thermodynamics derived quantities
@@ -711,7 +752,9 @@ class IcingConfig:
             "tau_flow": self.tau_flow,
             "drag_law": self.drag_law,
             "re_p_scale": self.re_p_scale,
+            "sn_scale_factor": self.sn_scale_factor,
             "rho_air": self.rho_air,
+            "beta_cap_window": self.beta_cap_window,
             "alpha_in": self.alpha_in,
             "shadow_alpha_min": self.shadow_alpha_min,
             # --- Phase 3 ---
