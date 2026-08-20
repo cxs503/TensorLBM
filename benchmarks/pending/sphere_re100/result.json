@@ -22,9 +22,9 @@
     "cd_pressure": -49.01,
     "cd_friction": -67.55,
     "cd_total": -16.56,
-    "cd_mem_standard": 264.60,
+    "cd_mem_standard": 264.6,
     "cd_mem_galilean": 590.13,
-    "cd_mem_bgsub": 264.60
+    "cd_mem_bgsub": 264.6
   },
   "bg_sub_vs_standard": "bit-identical (3.9804 == 3.9804) — G15 fix is a no-op on the direction-symmetric sphere staircase grid",
   "symmetry_check": {
@@ -34,11 +34,49 @@
   },
   "uniform_flow_unit_test": "bg_sub F=(0,0,0) exactly on f=f^eq(rho0,U0) — module correct, but degenerate on symmetric grids",
   "window_means_5x1000": {
-    "cd_total": [0.91117, 0.9111, 0.91103, 0.91097, 0.91091],
-    "cd_mem_bgsub": [3.98142, 3.98115, 3.98089, 3.98066, 3.98044],
-    "cd_mem_standard": [3.98142, 3.98115, 3.98089, 3.98066, 3.98044],
-    "cd_mem_galilean": [7.53625, 7.53575, 7.53527, 7.53482, 7.5344]
+    "cd_total": [
+      0.91117,
+      0.9111,
+      0.91103,
+      0.91097,
+      0.91091
+    ],
+    "cd_mem_bgsub": [
+      3.98142,
+      3.98115,
+      3.98089,
+      3.98066,
+      3.98044
+    ],
+    "cd_mem_standard": [
+      3.98142,
+      3.98115,
+      3.98089,
+      3.98066,
+      3.98044
+    ],
+    "cd_mem_galilean": [
+      7.53625,
+      7.53575,
+      7.53527,
+      7.53482,
+      7.5344
+    ]
   },
   "verified": false,
-  "notes": "G15 fix (momentum_exchange_background_subtracted) verified 2026-08-19 for the first time at converged steps: bg_sub == standard (+264.60%), NOT improved. Root cause: sphere staircase grid is exactly direction-symmetric (sum|n_i-n_opp|=0 on D=40 AND D=60), so the uniform-equilibrium background cancels pairwise and subtraction is a no-op. galilean amplifies (+590%). MEM on curved spheres is dead regardless of variant. pressure integration stays -16.6% (G12). Both force paths fail on sphere family; series stays pending/."
+  "notes": "G15 fix (momentum_exchange_background_subtracted) verified 2026-08-19 for the first time at converged steps: bg_sub == standard (+264.60%), NOT improved. Root cause: sphere staircase grid is exactly direction-symmetric (sum|n_i-n_opp|=0 on D=40 AND D=60), so the uniform-equilibrium background cancels pairwise and subtraction is a no-op. galilean amplifies (+590%). MEM on curved spheres is dead regardless of variant. pressure integration stays -16.6% (G12). Both force paths fail on sphere family; series stays pending/.",
+  "faces_retest_verdict": {
+    "date": "2026-08-20",
+    "D40": {
+      "cd_f_standard": 0.3549,
+      "cd_f_faces": 0.4137,
+      "cd_total": "~0.97 (-11%)"
+    },
+    "D60": {
+      "cd_f_standard": 0.3741,
+      "cd_f_faces": 0.4396
+    },
+    "face_ratio": 1.158,
+    "analysis": "faces 只 +16.6%（球面/单元比 1.158 远小于圆柱 1.40——球面积缺失少）；球的主因是压力 -49% 亏缺（G12，extrap='none' 近壁压力无外推），faces 摩擦救不了 → 球系列维持死路，除非解决压力外推"
+  }
 }
