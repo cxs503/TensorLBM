@@ -50,11 +50,16 @@ from __future__ import annotations
 import functools
 import math
 import time
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 import torch
 import triton
 import triton.language as tl
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from collections.abc import Sequence
+
+    from .reporters import Reporter
 
 
 __all__ = [
@@ -631,6 +636,8 @@ class TritonFusedSolver3D:
         # caller can shape them on demand.
         self._buf_a: torch.Tensor | None = None
         self._buf_b: torch.Tensor | None = None
+        # Reporter step counter (tensorlbm.reporters); see run().
+        self._report_step = 0
 
     # ------------------------------------------------------------------
     # Step
@@ -673,6 +680,61 @@ class TritonFusedSolver3D:
             block_x=self.block_x, block_y=self.block_y,
             num_warps=self.num_warps, num_stages=self.num_stages,
         )
+
+    # ------------------------------------------------------------------
+    # Multi-step driver with the unified reporter hook
+    # ------------------------------------------------------------------
+
+    def run(
+        self,
+        f: torch.Tensor,
+        n_steps: int,
+        *,
+        reporters: Sequence[Reporter] | None = None,
+    ) -> tuple[torch.Tensor, list[dict]]:
+        """Advance *n_steps* steps, dispatching reporters after each one.
+
+        Same contract as :meth:`tensorlbm.lbm_step.LBMStepExecutor.run`:
+        with no reporters this is a plain ``step`` loop (no behaviour
+        change); with reporters, a
+        :class:`~tensorlbm.reporters.StepContext` is dispatched after
+        every completed step and ``ctx.stop = True`` ends the run early.
+        Per-step diagnostics are empty dicts — the fused kernel reports
+        nothing Python-side — kept for API symmetry with the executor.
+
+        The step counter persists across ``run()`` calls so reporter
+        intervals and export step labels stay monotonic.
+        """
+        if not reporters:
+            for _ in range(n_steps):
+                f = self.step(f)
+            self._report_step = getattr(self, "_report_step", 0) + int(n_steps)
+            return f, [{} for _ in range(n_steps)]
+
+        from .reporters import StepContext, dispatch
+
+        ctx = StepContext(
+            step=getattr(self, "_report_step", 0),
+            f=f,
+            lattice="D3Q19",
+            num_cells=self.grid_size_cells(),
+            num_steps=int(n_steps),
+        )
+        step = ctx.step
+        diags: list[dict] = []
+        for _ in range(n_steps):
+            f = self.step(f)
+            step += 1
+            diags.append({})
+            ctx.step = step
+            ctx.f = f
+            ctx.num_steps = n_steps
+            ctx.stop = False
+            dispatch(ctx, reporters)
+            if ctx.stop:
+                break
+        self._report_step = step
+        return f, diags
 
     # ------------------------------------------------------------------
     # Diagnostics
