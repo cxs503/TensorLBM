@@ -1,4 +1,4 @@
-"""Issue #83: kernel-internal Smagorinsky closure tests (CM/CUMULANT no-op fix).
+"""Issue #83: kernel-internal Smagorinsky closure + split-wall mode tests.
 
 Guards three properties of
 ``tensorlbm.triton_fused_obstacle.triton_fused_obstacle_xfar_les``:
@@ -17,6 +17,19 @@ Guards three properties of
    faithful external chain
    ``_smagorinsky_tau(tau0, _neq_stress_norm_3d(h - feq), rho)`` on the
    same post-stream, pre-bounce-back state ``h = BB(stream(f))``.
+3. **wall="split" reproduces wall="fused"** — same wrapper, one step
+   and multi-step (far-field BC + mass correction), all three families
+   x Cs in {0, 0.1}, forces included.  BGK is bit-for-bit identical in
+   every configuration, and so are CM/CUMULANT whenever the LES closure
+   is active (Cs > 0 — the production configurations).  For CM/CUMULANT
+   at Cs = 0 the split main pass compiles the reflected gather out, and
+   Triton's binary specialization can re-schedule the CM/CUMULANT
+   cascade reductions by 1 ULP on ~0.1% of lanes (measured: 1.5e-07 on
+   2071/2.1M lanes CM, 3e-08 on 11.5k/2.1M CUMULANT); those two cases
+   are therefore asserted to the 1-ULP bound instead of exact bits.
+   The default wall="fused" mode never specializes anything away and
+   stays bitwise the historical kernel for all families.
+
 Requires CUDA.  Run:
   CUDA_VISIBLE_DEVICES=0 pytest tests/test_triton_kernel_smag_split_wall.py -q
 """
@@ -131,3 +144,88 @@ def test_internal_smag_tau_matches_external_chain():
         "external tau_eff never exceeds the molecular tau — probe setup "
         "does not exercise the closure"
     )
+
+
+# ---------------------------------------------------------------------------
+# 3. wall="split" must be bitwise-identical to wall="fused"
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("collision", ["BGK", "CM", "CUMULANT"])
+@pytest.mark.parametrize("cs", [0.0, 0.1])
+def test_split_wall_bitwise_single_step(collision, cs):
+    solid_i8, f0 = _make_case()
+    fx = torch.zeros((), device=DEV)
+    fy = torch.zeros_like(fx)
+    fz = torch.zeros_like(fx)
+
+    fx.zero_(); fy.zero_(); fz.zero_()
+    a, fxa, fya, fza = triton_fused_obstacle_xfar_les(
+        f0.clone(), NU_RE1E5, solid_i8, cs, 1.0, collision=collision,
+        wall="fused", fx_buf=fx, fy_buf=fy, fz_buf=fz), fx.item(), \
+        fy.item(), fz.item()
+
+    fx.zero_(); fy.zero_(); fz.zero_()
+    b, fxb, fyb, fzb = triton_fused_obstacle_xfar_les(
+        f0.clone(), NU_RE1E5, solid_i8, cs, 1.0, collision=collision,
+        wall="split", fx_buf=fx, fy_buf=fy, fz_buf=fz), fx.item(), \
+        fy.item(), fz.item()
+    torch.cuda.synchronize()
+
+    exact = torch.equal(a, b)
+    maxd = float((a - b).abs().max()) if not exact else 0.0
+    if collision == "BGK" or cs > 0.0:
+        assert exact, (
+            f"{collision} Cs={cs}: wall='split' is not bitwise-identical "
+            f"to wall='fused' (max diff {maxd:.3e})"
+        )
+    else:
+        # CM/CUMULANT at Cs=0: Triton binary specialization may re-schedule
+        # the cascade by 1 ULP on a small lane subset (see module docstring).
+        n_bad = int((a != b).sum())
+        assert maxd <= 3e-07, (
+            f"{collision} Cs={cs}: split vs fused max diff {maxd:.3e} "
+            "exceeds the 1-ULP codegen-noise bound"
+        )
+        assert n_bad <= 0.02 * a.numel(), (
+            f"{collision} Cs={cs}: {n_bad}/{a.numel()} lanes differ — "
+            "far more than the ~0.1% codegen-noise population"
+        )
+    # Force scalars are accumulated with atomic_add (non-deterministic
+    # ORDER, same terms); compare with tight tolerance, not exact bits.
+    assert abs(fxa - fxb) <= 1e-5 * (1.0 + abs(fxa))
+    assert abs(fya - fyb) <= 1e-5 * (1.0 + abs(fya))
+    assert abs(fza - fzb) <= 1e-5 * (1.0 + abs(fza))
+
+
+@pytest.mark.parametrize("collision", ["BGK", "CM", "CUMULANT"])
+def test_split_wall_trajectory_bitwise(collision):
+    """40-step trajectory with the LES closure active (Cs=0.1; BGK, CM
+    and the production CUMULANT), far-field BC every step + mass
+    correction every 10 — must stay bit-for-bit on every step."""
+    solid_i8, f0 = _make_case()
+    m0 = float(f0.sum().item())
+    fa = f0.clone()
+    fb = f0.clone()
+    fx = torch.zeros((), device=DEV)
+    fy = torch.zeros_like(fx)
+    fz = torch.zeros_like(fx)
+    for s in range(1, 41):
+        fx.zero_(); fy.zero_(); fz.zero_()
+        fa = triton_fused_obstacle_xfar_les(
+            fa, NU_RE1E5, solid_i8, CS, 1.0, collision=collision,
+            wall="fused", fx_buf=fx, fy_buf=fy, fz_buf=fz)
+        fx.zero_(); fy.zero_(); fz.zero_()
+        fb = triton_fused_obstacle_xfar_les(
+            fb, NU_RE1E5, solid_i8, CS, 1.0, collision=collision,
+            wall="split", fx_buf=fx, fy_buf=fy, fz_buf=fz)
+        assert torch.equal(fa, fb), (
+            f"trajectory diverged at step {s} "
+            f"(max diff {float((fa - fb).abs().max()):.3e})"
+        )
+        apply_far_field_bc_6face(fa, U_IN)
+        apply_far_field_bc_6face(fb, U_IN)
+        if s % 10 == 0:
+            fa = apply_mass_correction(fa, m0)
+            fb = apply_mass_correction(fb, m0)
+    torch.cuda.synchronize()
+    assert torch.equal(fa, fb)
