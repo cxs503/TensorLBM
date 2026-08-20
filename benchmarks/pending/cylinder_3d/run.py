@@ -155,7 +155,11 @@ def run_case(
     n_near = int(near.sum().item())
     mesh = SurfaceMesh.from_cylinder(solid, near, cx, cy, R, axis="z")
     # friction-formula machinery (q_smooth for BFL variants, dA_scale ratio)
-    q_wall = smooth_q(solid, cx, cy, R, near) if formula in ("bfl", "bfl_lagrange") else None
+    q_wall = (
+        smooth_q(solid, cx, cy, R, near)
+        if formula in ("bfl", "bfl_lagrange", "bfl_smooth")
+        else None
+    )
     nfx, nfy, nfz = face_counts(solid)
     dA_ratio = float((nfx + nfy + nfz).sum().item()) / float(near.sum().item())
     print(f"{tag} formula={formula} faces/near ratio={dA_ratio:.4f}", flush=True)
@@ -203,8 +207,11 @@ def run_case(
                 fx_f *= dA_ratio
                 fy_f *= dA_ratio
             else:
+                # 'bfl_smooth' = library formula='bfl' with analytic q_wall
+                # (q_smooth = r_c - R, clamped [0.05,1]); see run_compare_d20.py
+                friction_formula = "bfl" if formula == "bfl_smooth" else formula
                 fx_f, fy_f, _ = drag_friction_integration(
-                    f, mesh, dpS, nu, q_wall=q_wall, formula=formula, solid=solid
+                    f, mesh, dpS, nu, q_wall=q_wall, formula=friction_formula, solid=solid
                 )
             cd_p_hist.append(fx_p)
             cd_f_hist.append(fx_f)
@@ -339,8 +346,9 @@ def main() -> int:
     ap.add_argument(
         "--formula",
         default="standard",
-        choices=["standard", "lagrange", "bfl", "bfl_lagrange", "faces", "dA_scale"],
-        help="friction formula (default standard)",
+        choices=["standard", "lagrange", "bfl", "bfl_lagrange", "bfl_smooth", "faces", "dA_scale"],
+        help="friction formula (default standard); 'bfl_smooth' = "
+        "formula='bfl' with analytic q_smooth=r_c-R",
     )
     a = ap.parse_args()
 

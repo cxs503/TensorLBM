@@ -862,16 +862,23 @@ def free_surface_step(
 
     # ---- 4. Mass exchange (standard Körner, independent mass variable) ----
     # (no .any() sync — multicard-safe under TCCL; torch.where handles empty masks)
-    f.sum(dim=0)
+    rho_new = f.sum(dim=0)
     iface_mask = flags == INTERFACE
+    # Receiver gate: an interface cell with fill≈0 is a halo about to be
+    # downgraded to gas by to_gas in this same step.  It must NOT receive
+    # liquid mass, otherwise mass exchange pumps it every step and the
+    # subsequent to_gas conversion misbooks/destroys that mass (the
+    # fill≈0-receiver mass source; batch-16 root cause).  Gate every
+    # exchange receiver on fill > 1e-3.
+    recv_ok = iface_mask & (fill > 1.0e-3)
+    recv_19 = recv_ok.unsqueeze(0)
     # neighbor_flags always computed in anti-bounce-back above (no None check)
     # For pull link q at x, the opposing outgoing population belongs to x
     # itself: f_bar(q)^*(x).  Sampling it at x-c_q mixes two different links.
     f_opp_nb = f_post[_OPP.to(device)]  # (19, nz, ny, nx)
-    iface_19 = iface_mask.unsqueeze(0)
-    from_liq = iface_19 & (neighbor_flags == LIQUID)
-    iface_19 & (neighbor_flags == GAS)
-    from_iface = iface_19 & (neighbor_flags == INTERFACE)
+    from_liq = recv_19 & (neighbor_flags == LIQUID)
+    from_gas = recv_19 & (neighbor_flags == GAS)
+    from_iface = recv_19 & (neighbor_flags == INTERFACE)
     mass_delta_liquid = torch.where(from_liq, f - f_opp_nb, torch.zeros_like(f))
     mass_delta_interface = torch.where(from_iface, (f - f_opp_nb) * 0.5, torch.zeros_like(f))
     # A L/I credit at interface target x is paired link-by-link with a debit

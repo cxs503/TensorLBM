@@ -19,6 +19,7 @@ from tensorlbm.drag_pressure import (
     drag_friction_integration,
     get_near_wall_2d,
     get_near_wall_3d,
+    suboff_smooth_q,
 )
 
 
@@ -146,3 +147,134 @@ def test_standard_regression_values(cylinder_setup):
     nxc = s["mesh"].nx_n[0][n0]
     expected = 2.0 * s["nu"] * 0.1 * (1.0 - nxc**2).sum() * s["solid"].shape[0]
     assert f_std[0] == pytest.approx(expected.item(), rel=1e-5)
+
+
+def test_bfl_smooth_is_bfl_alias(cylinder_setup):
+    """'bfl_smooth' is an alias of 'bfl' — same q_wall semantics."""
+    s = cylinder_setup
+    q_q = torch.full_like(s["solid"], 0.25, dtype=torch.float32)
+    f_bfl = drag_friction_integration(s["f"], s["mesh"], s["dpS"], s["nu"],
+                                      q_wall=q_q, formula="bfl")
+    f_sm = drag_friction_integration(s["f"], s["mesh"], s["dpS"], s["nu"],
+                                     q_wall=q_q, formula="bfl_smooth")
+    assert f_sm[0] == pytest.approx(f_bfl[0], rel=1e-6)
+    assert f_sm[1] == pytest.approx(f_bfl[1], rel=1e-6)
+    assert f_sm[2] == pytest.approx(f_bfl[2], rel=1e-6)
+    with pytest.raises(ValueError, match="q_wall"):
+        drag_friction_integration(s["f"], s["mesh"], s["dpS"], s["nu"],
+                                  formula="bfl_smooth")
+
+
+def test_mix50_midpoint_of_standard_and_faces(cylinder_setup):
+    """'mix50' == 0.5 * (standard + faces) componentwise on the cylinder."""
+    s = cylinder_setup
+    f_std = drag_friction_integration(s["f"], s["mesh"], s["dpS"], s["nu"],
+                                      formula="standard")
+    f_fc = drag_friction_integration(s["f"], s["mesh"], s["dpS"], s["nu"],
+                                     formula="faces", solid=s["solid"])
+    f_mx = drag_friction_integration(s["f"], s["mesh"], s["dpS"], s["nu"],
+                                     formula="mix50", solid=s["solid"])
+    for i in range(3):
+        assert f_mx[i] == pytest.approx(0.5 * (f_std[i] + f_fc[i]),
+                                        abs=1e-9, rel=1e-6)
+    with pytest.raises(ValueError, match="solid"):
+        drag_friction_integration(s["f"], s["mesh"], s["dpS"], s["nu"],
+                                  formula="mix50")
+
+
+def test_mix50_planar_equals_standard():
+    """On a planar wall faces == standard, so mix50 == standard too."""
+    nz, ny, nx = 8, 24, 24
+    slab = torch.zeros((nz, ny, nx), dtype=torch.bool)
+    slab[:, 10:13, :] = True
+    near = get_near_wall_3d(slab)
+    mesh = SurfaceMesh.from_gradient(slab, near)
+    rho = torch.ones((nz, ny, nx))
+    f = equilibrium3d(rho, torch.full_like(rho, 0.1),
+                      torch.zeros_like(rho), torch.zeros_like(rho))
+    nu, dpS = 0.05, 1.0
+    f_std = drag_friction_integration(f, mesh, dpS, nu, formula="standard")
+    f_mx = drag_friction_integration(f, mesh, dpS, nu, formula="mix50",
+                                     solid=slab)
+    assert f_mx[0] == pytest.approx(f_std[0], rel=1e-6)
+    assert f_mx[1] == pytest.approx(f_std[1], rel=1e-6)
+    assert f_mx[2] == pytest.approx(f_std[2], rel=1e-6)
+
+
+def test_suboff_smooth_q_geometry():
+    """suboff_smooth_q = r_cell - R(x) at near-wall cells, clamped to
+    [0.05, 1.0], zero outside the near-wall mask.
+
+    At the parallel midbody (xi in [0.233, 0.745]) the local radius is
+    R_max, so q_smooth = r_cell - R_max exactly.
+    """
+    from tensorlbm.suboff_cad import build_suboff_mask
+
+    L = 80
+    R_lb = 4.6667  # 0.254 m / (4.356 m / 80)
+    nx, ny, nz = 192, 48, 48
+    solid, _ = build_suboff_mask(
+        hull_type="bare_hull", nx=nx, ny=ny, nz=nz,
+        cx=nx * 0.25, cy=ny * 0.5, cz=nz * 0.5,
+        length=L, radius=R_lb, config=None, device="cpu",
+    )
+    near = get_near_wall_3d(solid)
+    cx, cy, cz = nx * 0.25, ny * 0.5, nz * 0.5
+    q = suboff_smooth_q(solid, near, cx, cy, cz, float(L), R_lb)
+
+    # zero outside near
+    assert bool((q[~near] == 0.0).all())
+    # in-range at near cells
+    q_near = q[near]
+    assert q_near.numel() > 0
+    assert bool((q_near >= 0.05).all())
+    assert bool((q_near <= 1.0).all())
+    # midbody cells: hull axis along x at (cy, cz); radius R_max there
+    x_mid = int(cx)  # xi = 0.5
+    yy, zz = torch.meshgrid(
+        torch.arange(ny, dtype=torch.float32),
+        torch.arange(nz, dtype=torch.float32),
+        indexing="ij",
+    )
+    r_cell = torch.sqrt((yy - cy) ** 2 + (zz - cz) ** 2)
+    mid_near = near[:, :, x_mid]
+    if mid_near.any():
+        expected = (r_cell - R_lb).clamp(0.05, 1.0)
+        q_mid = q[:, :, x_mid]
+        assert bool(torch.allclose(q_mid[mid_near], expected[mid_near], atol=1e-4))
+
+
+def test_suboff_bfl_smooth_differs_from_standard():
+    """On the curved SUBOFF hull bfl_smooth (analytic wall distance) differs
+    from standard (q=0.5): curved staircase cells have q_smooth != 0.5."""
+    from tensorlbm.suboff_cad import build_suboff_mask
+
+    L = 80
+    R_lb = 4.6667
+    nx, ny, nz = 192, 48, 48
+    solid, _ = build_suboff_mask(
+        hull_type="bare_hull", nx=nx, ny=ny, nz=nz,
+        cx=nx * 0.25, cy=ny * 0.5, cz=nz * 0.5,
+        length=L, radius=R_lb, config=None, device="cpu",
+    )
+    near = get_near_wall_3d(solid)
+    mesh = SurfaceMesh.from_suboff(solid, near, nx * 0.25, ny * 0.5, nz * 0.5,
+                                   float(L), R_lb)
+    cx, cy, cz = nx * 0.25, ny * 0.5, nz * 0.5
+    q = suboff_smooth_q(solid, near, cx, cy, cz, float(L), R_lb)
+    rho = torch.ones((nz, ny, nx))
+    ux = torch.full_like(rho, 0.05)
+    uy = torch.zeros_like(rho)
+    uz = torch.zeros_like(rho)
+    f = equilibrium3d(rho, ux, uy, uz)
+    nu, dpS = 0.05, 1.0
+    f_std = drag_friction_integration(f, mesh, dpS, nu, formula="standard")
+    f_bs = drag_friction_integration(f, mesh, dpS, nu, q_wall=q,
+                                     formula="bfl_smooth")
+    # uniform field: q_smooth != 0.5 on the staircase => values differ
+    assert f_bs[0] != pytest.approx(f_std[0], rel=1e-6)
+    # sanity: bfl_smooth with a q=0.5 field reproduces standard
+    q_half = torch.full_like(solid, 0.5, dtype=torch.float32) * near.float()
+    f_half = drag_friction_integration(f, mesh, dpS, nu, q_wall=q_half,
+                                       formula="bfl_smooth")
+    assert f_half[0] == pytest.approx(f_std[0], rel=1e-6)
