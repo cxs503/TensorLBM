@@ -61,7 +61,7 @@
 ## 三、优先级
 
 **P0（本月）**：A1 收口；A2+A3（fp16 生产链 + 选择性 halo）；D1 PyPI；D2 测试清账；#185/#186 合并。
-**P1（1-3 月）**：A4 GPU STL 体素化；B1 scan_runner 数据 campaign；C2 评测基准 v1；A6 可微参考路径 + solver-in-the-loop 示范；A7 checkpoint；Reporter/注册表（进行中）吸纳 82 worker。
+**P1（1-3 月）**：国产硬件 P1a/P1b（见第五节：LSF+神威桥、可移植性门禁）；A4 GPU STL 体素化；B1 scan_runner 数据 campaign；C2 评测基准 v1；A6 可微参考路径 + solver-in-the-loop 示范；A7 checkpoint；Reporter/注册表（进行中）吸纳 82 worker。
 **P2（3-6 月）**：A5 AMR 生产化；B3 ML 反哺主循环；D4 多节点 HPC 验证；C1 模型 zoo + D5 平台 paper。
 **卡位研究**：B4 foundation-model 接口。
 
@@ -71,3 +71,35 @@
 - **lettuce**（MIT，可抄实现）：Reporter 协议、ExtFlow 案例注册、UnitConversion Ma 锚点、六阶差分初始化、conftest 自动发现测试矩阵。
 - **XLB**（Apache-2.0，可抄实现）：BC 整数 id registry、"流一遍"掩码推导、PrecisionPolicy 五档、选择性 halo（与 FluidX3D 交叉验证）、手写分段 checkpoint 反传、solver-in-the-loop 范式。反面教材：无测试 CI、文档停滞。
 - **性能口径**：FluidX3D 19.1 GLUPS@5090 vs 我们 8.6，差距主因是内存格式（77 vs 153 B/格/步）与工况（空箱 D3Q19 vs 带障碍 D3Q27），双方都在 roofline 上（82%/77%）——A2/A3 落地后差距预期基本消除。
+
+## 五、国产硬件 HPC+AI 维度（2026-08-20 追加）
+
+原则：**不是全栈适配每一款芯片，而是每层有明确的可移植性边界，用 L0 契约层钉住跨硬件闭环。**
+
+### 分层可移植性边界
+
+| 层 | 内容 | 可移植性策略 |
+|---|---|---|
+| L0 数据/契约 | NPY/HDF5/SQLite、FieldDataProductR2、lineage | 天然全平台（含神威 lustre）；SWLBM↔TensorLBM 桥梁的通用语 |
+| L1 eager 路径 | solver3d gather/roll、可微参考路径（#193） | 可移植基线：torch 插件跑哪它跑哪（CUDA/NPU/MLU/SDAA/MUSA）；零 CUDA 硬编码门禁 |
+| L2 加速层 | Triton 融合内核 | CUDA 专属（ROCm 理论可试）；不追求一份代码全平台，追求"同一契约多实现"（XLB Operator.register_backend 范式）；昇腾走 torchair/torch_npu 图模式另立项 |
+| L3 分布式 | z-slab + collectives | collective 库可插拔：NCCL（现状）→ HCCL/RCCL/MCCL 探测点已入 hardware.py；halo 流量已降 3.8-7.6×（#190），国产互联上收益更大 |
+| L4 平台/AI4S | FastAPI/Vue、ai/ 训练、ml/ 服务 | ai/ 层已有 npu/sdaa 设备处理痕迹；FNO/Transformer 纯 torch 基本免费可移植，缺测试矩阵 |
+| L5 调度 | hpc_scheduler | 已有 slurm+pbs；**LSF（神威）落地中**；后续按中心扩展 |
+
+### 硬件版图（按可达性）
+
+- **Tier A 已有**：神威 psn002（SWLBM C 线 + LSF，BGK 已验证）、无锡超算 x86+3090、5090 NVIDIA 集群
+- **Tier B 高概率可达**：昇腾 910B（国产智算中心主力）、海光 DCU（ROCm 系）
+- **Tier C 探测就绪**：天数 sdaa（仓库已有痕迹）、寒武纪/摩尔线程（hardware.py import 试探覆盖）
+
+### 国产化优先级（并入主 P0-P2）
+
+- **P1a** LSF 后端 + 神威数据桥规范（进行中）：神威变成 AI4S 闭环的数据生成节点——SWLBM 千核产数据 → L0 契约 → GPU（任意国产/NVIDIA）训练 → serving → 回注
+- **P1b** 可移植性门禁：hardware.py 能力探测 + eager CPU 门禁测试 + 静态无 `.cuda()` 扫描 + hardware profile 入 benchmark 记录
+- **P2** 昇腾/海光实测（拿到硬件后）：HCCL 插拔、torchair 降级路由、PrecisionPolicy 厂商组合验证矩阵
+- **P2** compile_utils 厂商路由：NVIDIA 档（现状）/ CPU inductor 档 / torchair 档，探测降级
+
+### 国产 HPC+AI 样板叙事
+
+数据在神威 HPC 生成（SWLBM 百核千核、成本低）→ 大盘/对象存储 → NVIDIA 或国产 GPU 训练 → 模型入库 → serving 回注求解器。闭环每一环都可替换硬件，L0 契约层保证互操作——这是对"国产 HPC 算力和 AI 算力异构协同"最直接的工程回答。
