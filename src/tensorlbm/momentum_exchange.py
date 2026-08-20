@@ -437,7 +437,7 @@ def momentum_exchange_pressure_friction(
         f, mesh, dpS, extrap=extrap, p0_method=p0_method, solid=solid
     )
     fx, fy, fz = drag_friction_integration(
-        f, mesh, dpS, nu, q_wall=q_wall, formula=friction_formula
+        f, mesh, dpS, nu, q_wall=q_wall, formula=friction_formula, solid=solid
     )
     return {
         "cd_p_x": px, "cd_p_y": py, "cd_p_z": pz,
