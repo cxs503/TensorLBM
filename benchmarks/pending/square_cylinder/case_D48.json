@@ -1,0 +1,36 @@
+{
+  "case": "square_cylinder_re100_free_stream_vortex_shedding",
+  "D": 48,
+  "nx": 1920,
+  "ny": 1920,
+  "re": 100.0,
+  "u_in": 0.05,
+  "nu_lb": 0.024000000000000004,
+  "tau": 0.572,
+  "sponge": {
+    "x0": 1440,
+    "width": 480,
+    "alpha": 10.0,
+    "power": 2.0
+  },
+  "seed": {
+    "st_seed": 0.14,
+    "ampl_frac": 0.1,
+    "periods": 2.0,
+    "steps": 13714
+  },
+  "steps": 90000,
+  "warmup_frac": 0.5,
+  "analyze_from": 45000,
+  "compile_mode": "default",
+  "cd": 1.4844,
+  "cd_ref": 1.6,
+  "err_pct": -7.23,
+  "st": 0.148,
+  "st_ref": 0.14,
+  "st_err_pct": 5.74,
+  "st_crossing": 0.1468,
+  "cl_amp": 0.29525397406684023,
+  "finite": true,
+  "elapsed_s": 553.2
+}

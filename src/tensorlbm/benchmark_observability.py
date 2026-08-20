@@ -14,6 +14,16 @@ from typing import Any
 import torch
 
 
+def hardware_profile_snapshot() -> dict[str, Any] | None:
+    """Best-effort hardware profile for benchmark records; never raises."""
+    try:
+        from tensorlbm.hardware import probe as hardware_probe
+
+        return hardware_probe().to_dict()
+    except Exception as error:  # pragma: no cover - probe is guarded anyway
+        return {"probe_error": f"hardware probe failed: {error}"}
+
+
 def resolve_benchmark_device(requested: str) -> dict[str, Any]:
     """Resolve and validate a requested torch device before a benchmark starts."""
     device = torch.device(requested)
@@ -37,20 +47,36 @@ def resolve_benchmark_device(requested: str) -> dict[str, Any]:
             metadata["available"] = sdaa.is_available()
             metadata["device_count"] = sdaa.device_count() if metadata["available"] else 0
     else:
-        metadata["available"] = False
-        metadata["reason"] = f"unsupported benchmark device type: {device.type}"
+        # Generic torch-plugin accelerator (npu/mlu/musa/...): trust the
+        # tensorlbm.hardware probe rather than a hardcoded device list.
+        from tensorlbm.hardware import probe as hardware_probe
+
+        info = hardware_probe().backend(device.type)
+        if info is not None and info.available:
+            metadata["available"] = True
+            metadata["device_count"] = info.device_count
+        else:
+            metadata["available"] = False
+            metadata["reason"] = (
+                f"unsupported or unavailable benchmark device type: {device.type}; "
+                f"probed backends: {hardware_probe().available_backends or ('cpu',)}"
+            )
     if not metadata["available"]:
         raise RuntimeError(f"Requested device is unavailable: {metadata}")
     # Availability alone is insufficient: an installation can report a backend
     # but fail only at its first allocation. Verify placement before a long run.
-    probe = torch.empty(1, device=device)
-    if probe.device != device:
+    placement = torch.empty(1, device=device)
+    if placement.device != device:
         raise RuntimeError(
             f"Requested device did not honor allocation: requested={device}, "
-            f"allocated={probe.device}"
+            f"allocated={placement.device}"
         )
-    metadata["allocation_device"] = str(probe.device)
+    metadata["allocation_device"] = str(placement.device)
     metadata["device_asserted"] = True
+    # Document the full host capability snapshot alongside the resolved
+    # device so benchmark records are self-describing across heterogeneous
+    # (CUDA/NPU/MLU/SDAA/MUSA/CPU) hosts.
+    metadata["hardware_profile"] = hardware_profile_snapshot()
     return metadata
 
 
@@ -150,6 +176,8 @@ class BenchmarkReporter:
         benchmark: str,
         requested_steps: int,
         device_metadata: dict[str, Any],
+        *,
+        hardware_profile: dict[str, Any] | None = None,
         precision: dict[str, Any] | None = None,
     ) -> None:
         self.output_dir = Path(output_dir)
@@ -163,6 +191,13 @@ class BenchmarkReporter:
         self.status_path = self.output_dir / "run_status.json"
         self.progress_path = self.output_dir / "progress.csv"
         self.started_at = time.time()
+        # Full host capability snapshot (tensorlbm.hardware.probe); probed
+        # lazily once and never allowed to break status writing.
+        self.hardware_profile = (
+            hardware_profile
+            if hardware_profile is not None
+            else hardware_profile_snapshot()
+        )
 
     def _status(self, state: str, **extra: Any) -> None:
         payload: dict[str, Any] = {
@@ -170,6 +205,7 @@ class BenchmarkReporter:
             "state": state,
             "requested_steps": self.requested_steps,
             "device": self.device_metadata,
+            "hardware": self.hardware_profile,
             "started_unix_seconds": self.started_at,
             "updated_unix_seconds": time.time(),
         }

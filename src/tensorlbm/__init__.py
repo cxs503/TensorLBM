@@ -83,6 +83,29 @@ from .boundaries_d3q27 import (
     zou_he_inlet_velocity_27,
     zou_he_outlet_pressure_27,
 )
+from .boundary_registry import (
+    BC_ID_NONE,
+    BCKind,
+    BCPhase,
+    BoundaryCondition,
+    BoundaryConditionRegistry,
+    apply_boundary_conditions,
+    boundary_condition_registry,
+    build_bc_mask,
+    check_bc_consistency,
+    check_bc_overlaps,
+    derive_missing_mask,
+)
+from .cases import (
+    CaseBase,
+    CaseRunResult,
+    CaseUnits,
+    ExportSpec,
+    get_case,
+    list_cases,
+    register_case,
+    run_case,
+)
 from .checkpoint import load_checkpoint, save_checkpoint
 from .chunked_collision import (
     NaturalKBCCollisionExecutor,
@@ -742,6 +765,29 @@ from .general_sim import (
     SolverConfig,
 )
 from .lbm_step import LBMStepExecutor
+from .reporters import (
+    CallbackReporter,
+    EarlyStopReporter,
+    FieldSampleReporter,
+    Reporter,
+    ReporterBase,
+    StepContext,
+    ThroughputReporter,
+    dispatch,
+)
+from .scan_runner import (
+    EarlyStopSpec,
+    PointOutcome,
+    ScanExecutor,
+    ScanPlan,
+    ScanPoint,
+    ScanVariable,
+    assign_points_to_gpus,
+    git_code_sha,
+    open_catalog,
+    run_scan_point,
+    split_points,
+)
 from .amr_interface_filter import (
     InterfaceFilterControlVolumeClearance,
     assess_interface_filter_control_volume_clearance,
@@ -1276,6 +1322,27 @@ __all__ = [
     "LBMSimulation",
     # Common timestep executor
     "LBMStepExecutor",
+    # Reporter/callback protocol
+    "Reporter",
+    "ReporterBase",
+    "StepContext",
+    "dispatch",
+    "CallbackReporter",
+    "ThroughputReporter",
+    "EarlyStopReporter",
+    "FieldSampleReporter",
+    # Parameter-sweep execution chain (DoE -> cases -> reporters -> catalog)
+    "ScanPlan",
+    "ScanExecutor",
+    "ScanPoint",
+    "ScanVariable",
+    "EarlyStopSpec",
+    "PointOutcome",
+    "assign_points_to_gpus",
+    "split_points",
+    "run_scan_point",
+    "open_catalog",
+    "git_code_sha",
     # Pre-processing geometry
     "poly_to_mask_2d",
     "poly_to_mask_and_q_2d",
@@ -1425,4 +1492,25 @@ __all__ = [
     # Collision physical-property audit
     "CollisionViscosityAuditConfig",
     "run_collision_viscosity_audit",
+    # Case registry (lettuce ExtFlow pattern) + integer-id BC registry (XLB)
+    "CaseBase",
+    "CaseUnits",
+    "CaseRunResult",
+    "ExportSpec",
+    "get_case",
+    "list_cases",
+    "register_case",
+    "run_case",
+    "BC_ID_NONE",
+    "BCKind",
+    "BCPhase",
+    "BoundaryCondition",
+    "BoundaryConditionRegistry",
+    "apply_boundary_conditions",
+    "boundary_condition_registry",
+    "build_bc_mask",
+    "check_bc_consistency",
+    "check_bc_overlaps",
+    "derive_missing_mask",
 ]
+

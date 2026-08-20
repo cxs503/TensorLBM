@@ -19,7 +19,8 @@ import torch
 def default_suboff_device() -> str:
     """Return the best available device string for SUBOFF models.
 
-    Priority: SDAA (LoongArch accelerator) > CUDA > CPU.
+    Priority: SDAA (LoongArch accelerator) > CUDA > any other probed
+    torch-plugin accelerator (NPU/MLU/MUSA, via ``tensorlbm.hardware``) > CPU.
     """
     try:
         import torch_sdaa  # noqa: F401
@@ -30,6 +31,14 @@ def default_suboff_device() -> str:
         pass
     if torch.cuda.is_available():
         return "cuda:0"
+    try:
+        from tensorlbm.hardware import probe
+
+        for name in ("npu", "mlu", "musa"):
+            if probe().has_backend(name):
+                return f"{name}:0"
+    except Exception:  # pragma: no cover - probe must not break training
+        pass
     return "cpu"
 
 
