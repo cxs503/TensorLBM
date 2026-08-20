@@ -24,7 +24,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fast path runs verbatim — bit-identical output, zero added overhead) and the
   new `TritonFusedSolver3D.run(...)` multi-step driver with the same contract.
 
-### Added
+- **Case + boundary-condition registries** (`tensorlbm.cases`, `tensorlbm.boundary_registry`):
+  a lettuce-``ExtFlow``-style named case registry (`register_case` / `get_case` / `list_cases`)
+  with the three benchmark-aligned cases `cavity` (verified Ghia Re=400 MRT), `poiseuille`
+  (verified 3-D pipe) and `suboff_n128` (ai4s pilot grid) built in, plus an XLB-style
+  integer-id boundary registry (`BoundaryCondition`, `boundary_condition_registry`, id 0
+  reserved for solid/no-BC, branch-free `bc_mask == id` application, `check_bc_overlaps`,
+  per-phase masks, and missing-direction masks derived programmatically from the lattice
+  constants — no hand-transcribed q-index tables).  `run_case(...)` reproduces the verified
+  benchmark/worker step chains bit-exactly (max|Δf| = 0 on GPU for cavity 96×96×24 × 200
+  steps MRT and SUBOFF n=128 × 20 steps BGK + mass correction; ≤ 1e-6 in the CPU eager
+  tests) and chains opt-in into the solver-export catalog via `ExportSpec`.
 - **Real DG-LBM solver** (`tensorlbm.dg_advection`, `tensorlbm.dg_band`): a genuine
   nodal Discontinuous-Galerkin Lattice Boltzmann hybrid.  Dimension-by-dimension
   P1-Lobatto DG advection (upwind flux, SSP-RK3, sub-cycled) with method-of-lines
