@@ -180,3 +180,6 @@ tests/test_aircraft_icing.py::test_cumulant_step_compile_equivalence
 tests/test_aircraft_icing.py::test_eulerian_step_compile_equivalence
 tests/test_bench_compile_route.py::TestRoutedStepNumerics::test_default_mode_matches_eager_cpu
 tests/test_compile_utils.py::TestCompileStepWrapper::test_default_mode_wraps_and_matches_eager
+
+# batch 6 (2026-08-20): torchrun restart test flaky under full-suite load — passed in backfill2 run, failed in final run on identical commit bedfae220; passes standalone.
+tests/test_multi_gpu_d3q19_checkpoint.py::test_three_rank_20_step_restart_across_independent_torchrun_jobs_is_exact_and_fail_closed
