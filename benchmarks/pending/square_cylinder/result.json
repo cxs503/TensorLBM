@@ -1,14 +1,56 @@
 {
-  "case": "B19_square_cylinder_re100",
-  "S": 40,
-  "domain": "30S x 30S (blockage 3.3%)",
-  "collision": "MRT",
-  "force": "MEM (compute_obstacle_forces full solid)",
-  "cd": 1.5035,
-  "cd_ref": 2.05,
-  "err_pct": -26.7,
-  "st": 0.153,
-  "cl_std": 0.099,
+  "case": "square_cylinder_re100_free_stream_vortex_shedding",
+  "description": "自由流方柱（正置）Re=100 涡脱落 — Okajima 口径验证（播种+sponge 工程链复用 cylinder_re100）",
+  "lattice": "D2Q9",
+  "collision": "MRT (tau_field sponge)",
+  "boundary": "far_field_bc_2d + sponge layer(下游10D) + 入口播种(St_seed=0.14, 2周期, 10%振幅)",
+  "mask": "square_mask (half-way BB, 有效边长=D 精确)",
+  "domain": "40D x 40D (blockage 2.5%)",
+  "extrap": "none",
+  "reference": "Okajima 1982: St≈0.14 (文献 0.13-0.15), Cd≈1.6 (自由流; Sohankar 1997 的 2.05 为通道配置不适用)",
+  "grids": {
+    "D32": {
+      "D": 32,
+      "nx": 1280,
+      "ny": 1280,
+      "steps": 60000,
+      "u_in": 0.05,
+      "nu_lb": 0.016,
+      "tau": 0.548,
+      "cd": 1.4816,
+      "err_pct": -7.4,
+      "st": 0.1482,
+      "st_err_pct": 5.88,
+      "st_crossing": 0.1473,
+      "cl_amp": 0.2906
+    },
+    "D48": {
+      "D": 48,
+      "nx": 1920,
+      "ny": 1920,
+      "steps": 90000,
+      "u_in": 0.05,
+      "nu_lb": 0.024,
+      "tau": 0.572,
+      "cd": 1.4844,
+      "err_pct": -7.23,
+      "st": 0.148,
+      "st_err_pct": 5.74,
+      "st_crossing": 0.1468,
+      "cl_amp": 0.2953
+    }
+  },
+  "convergence": {
+    "cd": [1.4816, 1.4844],
+    "cd_span_pct": 0.19,
+    "st": [0.1482, 0.148],
+    "st_span_pct": 0.14,
+    "err_decreased": true,
+    "cd_within_3pct": false,
+    "st_within_3pct": false
+  },
   "verified": false,
-  "notes": "涡脱落已建立（St=0.153 正常、Cl_std=0.099、统计收敛 10 块漂移 0.0034）但 Cd 系统性偏低 26.7%。参考 2.05 是 Sohankar 1997（通道配置）；自由流方柱 Re=100 文献范围 1.5-2.1，1.50 可能接近自由流真实值或 MEM 全固体格求和偏差。S=80 后台跑中。需 ghost_clean A/B 诊断 + 参考值口径确认。"
+  "verified_date": null,
+  "run_date": "2026-08-20",
+  "notes": "真实模拟（无外推）。涡脱落充分建立（cl_amp≈0.29-0.30），两档网格收敛良好（Cd 差 0.2%、St 差 0.1%），但相对 Okajima 口径参考（Cd≈1.6, St≈0.14）双双超 3% 容差：Cd -7.4%/-7.2%、St +5.9%/+5.7%。St=0.148 与 2D 数值文献主流（Sohankar 1998 ≈0.148-0.15、Sharma & Eswaran 2004 ≈0.149）一致，略高于 Okajima 实验值 0.14；播种频率 0.14 ≠ 最终 0.148，证明播种仅触发未锁定频率。Cd=1.48 位于自由流低阻塞 2D 数值文献范围（~1.5-1.65）下沿。历史对比：B19 S=40（30S 域, u=0.06）Cd=1.5035、St=0.153 → 本次 40D 域+加密网格 Cd 1.48、St 0.148（St 随网格加密下降，与 Okajima 曲线/2D 文献趋势一致）。"
 }
