@@ -1,7 +1,7 @@
 # TensorLBM 软件说明书 / Software Manual
 
 **版本 / Version:** 0.3.0+  
-**适用范围 / Scope:** 船舶与海洋工程 Benchmark 测试及仿真 / Ship & Ocean Engineering Benchmarks
+**适用范围 / Scope:** AI4S 集成平台能力、工程仿真与定量验证 / AI4S integrated platform capabilities, engineering simulation, and quantitative validation
 
 ---
 
@@ -41,9 +41,15 @@
 
 ## 1. 简介 / Introduction
 
-**TensorLBM** 是一个基于 PyTorch 的格子 Boltzmann 方法（LBM）仿真平台，聚焦于可重复的科学研究实验，提供模块化、可扩展的求解器内核。
+**TensorLBM** 是一个面向 AI4S 的综合性平台：以 PyTorch LBM 求解器为数据生产内核，向上集成数据管理、模型训练、模型服务与应用编排能力，并通过定量 benchmark 提供工程可验证性。
 
-TensorLBM is a PyTorch-based Lattice Boltzmann Method (LBM) simulation platform focused on reproducible scientific research. It provides modular, extensible solver kernels that run on CPU (default) and GPU (via PyTorch device abstraction).
+TensorLBM is an AI4S-integrated platform: PyTorch LBM solvers serve as the data-production core, while upper layers provide data management, model training, model serving, and application orchestration with quantitative benchmark evidence.
+
+### 平台定位 / Platform Positioning
+
+- **基础设施层 / Infrastructure**：LBM/HPC 仿真与多设备执行（CPU/GPU/多 GPU）。
+- **平台层 / Platform**：数据目录、训练作业、模型服务、作业治理与可观测性。
+- **应用层 / Application**：基于 `AI4SApplication` 的神经算子/PINN/GNN/生成式/反问题/UQ 应用开发。
 
 ### 主要特性 / Key Features
 
@@ -58,6 +64,7 @@ TensorLBM is a PyTorch-based Lattice Boltzmann Method (LBM) simulation platform 
 | **LES 湍流模型** | Smagorinsky、动态 Smagorinsky（Germano）、WALE、Vreman |
 | **RANS 湍流模型** | k-ε、k-ω SST |
 | **AI 湍流模型** | MLP 涡粘模型、Transformer 自监督流场模型、AI 嵌入 LBM 碰撞 |
+| **AI4S 应用框架** | `AI4SApplication` SDK + `/api/apps` 应用管理与运行接口 |
 | **共轭传热（CHT）** | 流体–固体导热耦合与界面边界条件 |
 | **气动声学（FWH）** | Ffowcs Williams–Hawkings 远场求解器、SPL 频谱、OASPL |
 | **边界条件** | 反弹、Zou-He 进口速度/出口压力 BC、Bouzidi 插值反弹、移动壁、海绵层、粗糙壁面 |
