@@ -33,6 +33,7 @@ rho_light=1/19≈0.05263）；界面单模扰动 λ=64（=nx，一个波长）�
     python run.py --device cuda:2 --grid 64 --steps 5000
     python run.py --device cuda:2 --grid 96 --steps 3000
 """
+
 import argparse
 import json
 import math
@@ -127,9 +128,7 @@ def spurious_flow_scan(device, nz=16, ny=64, nx=64, steps=200):
     interface_frac, amplitude, wavelength, tau = 0.5, 2.0, float(nx), 1.0
     solid = make_closed_box(nz, ny, nx, device)
     for tag, rho_g in (("dr07", 0.3), ("dr01", 0.9), ("dr001", 0.99), ("dr0", 1.0)):
-        phi = init_phi_rayleigh_taylor_3d(
-            nz, ny, nx, interface_frac, amplitude, wavelength, device
-        )
+        phi = init_phi_rayleigh_taylor_3d(nz, ny, nx, interface_frac, amplitude, wavelength, device)
         phi = phi.masked_fill(solid, 0.0)
         f = equilibrium3d(
             torch.ones((nz, ny, nx), device=device),
@@ -141,16 +140,22 @@ def spurious_flow_scan(device, nz=16, ny=64, nx=64, steps=200):
         umax_hist = []
         for step in range(steps):
             f, phi = free_surface_vof_step(
-                f, phi, tau=tau, gy=0.0,
-                rho_liquid=1.0, rho_gas=rho_g, solid=solid,
+                f,
+                phi,
+                tau=tau,
+                gy=0.0,
+                rho_liquid=1.0,
+                rho_gas=rho_g,
+                solid=solid,
             )
             if step % 50 == 0:
                 _, ux_, uy_, uz_ = macroscopic3d(f)
-                umax_hist.append(
-                    float(torch.max(torch.sqrt(ux_**2 + uy_**2 + uz_**2)))
-                )
-        out[tag] = {"rho_gas": rho_g, "umax_plateau": float(np.median(umax_hist[-3:])),
-                    "umax_hist": [round(u, 4) for u in umax_hist]}
+                umax_hist.append(float(torch.max(torch.sqrt(ux_**2 + uy_**2 + uz_**2))))
+        out[tag] = {
+            "rho_gas": rho_g,
+            "umax_plateau": float(np.median(umax_hist[-3:])),
+            "umax_hist": [round(u, 4) for u in umax_hist],
+        }
     return out
 
 
@@ -159,11 +164,11 @@ def run_rt(device, grid, steps, sample=50):
     # 网格：grid 为横向格数 nx；nz=grid, ny=2*grid, nx=grid（任务书 64×128×64 例）
     nz, ny, nx = grid, 2 * grid, grid
     interface_frac = 0.5
-    wavelength = float(nx)          # λ = nx，一个波长（任务书 λ=64 @ nx=64）
-    amplitude = 0.01 * wavelength   # a0 = 0.01λ（任务书）
+    wavelength = float(nx)  # λ = nx，一个波长（任务书 λ=64 @ nx=64）
+    amplitude = 0.01 * wavelength  # a0 = 0.01λ（任务书）
     tau = 0.8
     rho_heavy = 1.0
-    rho_light = 1.0 / 19.0          # Atwood = (1−1/19)/(1+1/19) = 0.9
+    rho_light = 1.0 / 19.0  # Atwood = (1−1/19)/(1+1/19) = 0.9
     atwood = (rho_heavy - rho_light) / (rho_heavy + rho_light)
     gy = -1.0e-4
     g = abs(gy)
@@ -173,9 +178,7 @@ def run_rt(device, grid, steps, sample=50):
     visc_corr = nu * k * k / gamma_theory  # 粘性阻尼量级 νk²/γ
 
     solid = make_closed_box(nz, ny, nx, device)
-    phi = init_phi_rayleigh_taylor_3d(
-        nz, ny, nx, interface_frac, amplitude, wavelength, device
-    )
+    phi = init_phi_rayleigh_taylor_3d(nz, ny, nx, interface_frac, amplitude, wavelength, device)
     phi = phi.masked_fill(solid, 0.0)
     f = equilibrium3d(
         torch.ones((nz, ny, nx), device=device),
@@ -191,8 +194,13 @@ def run_rt(device, grid, steps, sample=50):
     for step in range(steps + 1):
         t_step = time.time()
         f, phi = free_surface_vof_step(
-            f, phi, tau=tau, gy=gy,
-            rho_liquid=rho_heavy, rho_gas=rho_light, solid=solid,
+            f,
+            phi,
+            tau=tau,
+            gy=gy,
+            rho_liquid=rho_heavy,
+            rho_gas=rho_light,
+            solid=solid,
         )
         if step == 1:
             first_step_ms = (time.time() - t_step) * 1e3
@@ -206,8 +214,10 @@ def run_rt(device, grid, steps, sample=50):
             phmin.append(float(phi.min()))
             phmax.append(float(phi.max()))
             if step % 500 == 0:
-                print(f"  step={step:6d} a={a:+.4f} umax={umaxs[-1]:.4f} "
-                      f"mix={mixes[-1]:.0f} ({time.time()-t0:.0f}s)")
+                print(
+                    f"  step={step:6d} a={a:+.4f} umax={umaxs[-1]:.4f} "
+                    f"mix={mixes[-1]:.0f} ({time.time() - t0:.0f}s)"
+                )
     elapsed = time.time() - t0
 
     # γ_sim 拟合：窗口 [200, 2000]（线性期应有 exp 增长；被伪流动破坏则拟合失败）
@@ -288,9 +298,11 @@ def main():
     out_path = args.out or f"/tmp/rt_vof_result_g{args.grid}.json"
     with open(out_path, "w") as fh:
         json.dump(result, fh, indent=2)
-    print(f"RESULT {args.grid}: gamma_theory={result['theory']['gamma_theory']:.6e} "
-          f"gamma_sim_lin={result['fits']['gamma_sim_lin_window_200_2000']} "
-          f"err_pct={result['err_pct']} verified={result['verified']}")
+    print(
+        f"RESULT {args.grid}: gamma_theory={result['theory']['gamma_theory']:.6e} "
+        f"gamma_sim_lin={result['fits']['gamma_sim_lin_window_200_2000']} "
+        f"err_pct={result['err_pct']} verified={result['verified']}"
+    )
     print(f"written: {out_path}")
 
 

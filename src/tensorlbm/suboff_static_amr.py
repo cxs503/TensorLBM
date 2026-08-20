@@ -1,4 +1,5 @@
 """SUBOFF planning helpers for the generic static block-AMR runtime."""
+
 from __future__ import annotations
 
 import math
@@ -41,9 +42,12 @@ def count_suboff_appendage_boundary_links(
     if bool((bare_hull & ~solid).any()):
         raise ValueError("bare_hull must be a subset of solid")
     touches_boundary = (
-        bool(solid[0].any()) or bool(solid[-1].any())
-        or bool(solid[:, 0].any()) or bool(solid[:, -1].any())
-        or bool(solid[:, :, 0].any()) or bool(solid[:, :, -1].any())
+        bool(solid[0].any())
+        or bool(solid[-1].any())
+        or bool(solid[:, 0].any())
+        or bool(solid[:, -1].any())
+        or bool(solid[:, :, 0].any())
+        or bool(solid[:, :, -1].any())
     )
     if touches_boundary:
         raise ValueError("SUBOFF geometry must be interior for link counting")
@@ -55,10 +59,14 @@ def count_suboff_appendage_boundary_links(
     for direction in range(1, 19):
         dcx, dcy, dcz = (int(value) for value in C[direction].tolist())
         full_neighbor = torch.roll(
-            solid, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
+            solid,
+            shifts=(-dcz, -dcy, -dcx),
+            dims=(0, 1, 2),
         )
         bare_neighbor = torch.roll(
-            bare_hull, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
+            bare_hull,
+            shifts=(-dcz, -dcy, -dcx),
+            dims=(0, 1, 2),
         )
         count += int((fluid & full_neighbor & ~bare_neighbor).sum().item())
     return count
@@ -94,18 +102,29 @@ def apply_suboff_appendage_halfway_links(
     nz, ny, nx = solid.shape
     cx, cy, cz = center
     bare, _ = build_suboff_mask(
-        "bare_hull", nx, ny, nz,
-        cx=cx, cy=cy, cz=cz, length=length,
-        config=config, device=solid.device,
+        "bare_hull",
+        nx,
+        ny,
+        nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        length=length,
+        config=config,
+        device=solid.device,
     )
     count = 0
     for direction in range(1, 19):
         dcx, dcy, dcz = (int(value) for value in C[direction].tolist())
         full_neighbor = torch.roll(
-            solid, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
+            solid,
+            shifts=(-dcz, -dcy, -dcx),
+            dims=(0, 1, 2),
         )
         bare_neighbor = torch.roll(
-            bare, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
+            bare,
+            shifts=(-dcz, -dcy, -dcx),
+            dims=(0, 1, 2),
         )
         halfway = link_mask[direction] & full_neighbor & ~bare_neighbor
         count += int(halfway.sum().item())
@@ -141,19 +160,11 @@ class SuboffGeometryResolution:
             "sail_only_cells": self.sail_only_cells,
             "fin_only_cells": self.fin_only_cells,
             "sail_max_thickness_cells": self.sail_max_thickness_cells,
-            "vertical_fin_max_thickness_cells": (
-                self.vertical_fin_max_thickness_cells
-            ),
-            "horizontal_fin_max_thickness_cells": (
-                self.horizontal_fin_max_thickness_cells
-            ),
+            "vertical_fin_max_thickness_cells": (self.vertical_fin_max_thickness_cells),
+            "horizontal_fin_max_thickness_cells": (self.horizontal_fin_max_thickness_cells),
             "appendage_halfway_links": self.appendage_halfway_links,
-            "minimum_convergence_diameter_cells": (
-                MIN_CONVERGENCE_DIAMETER_CELLS
-            ),
-            "minimum_absolute_reference_diameter_cells": (
-                MIN_ABSOLUTE_REFERENCE_DIAMETER_CELLS
-            ),
+            "minimum_convergence_diameter_cells": (MIN_CONVERGENCE_DIAMETER_CELLS),
+            "minimum_absolute_reference_diameter_cells": (MIN_ABSOLUTE_REFERENCE_DIAMETER_CELLS),
             "minimum_convergence_appendage_thickness_cells": (
                 MIN_CONVERGENCE_APPENDAGE_THICKNESS_CELLS
             ),
@@ -239,17 +250,25 @@ def assess_suboff_geometry_resolution(
         vertical_thickness = int(vertical_fins.sum(dim=0).max().item())
         horizontal_thickness = int(horizontal_fins.sum(dim=1).max().item())
         measured_thicknesses = (
-            sail_thickness, vertical_thickness, horizontal_thickness,
+            sail_thickness,
+            vertical_thickness,
+            horizontal_thickness,
         )
-        appendages_present = (
-            sail_cells > 0 and fin_cells > 0 and appendage_halfway_links > 0
+        appendages_present = sail_cells > 0 and fin_cells > 0 and appendage_halfway_links > 0
+        appendages_resolved_for_convergence = (
+            appendages_present
+            and min(
+                measured_thicknesses,
+            )
+            >= MIN_CONVERGENCE_APPENDAGE_THICKNESS_CELLS
         )
-        appendages_resolved_for_convergence = appendages_present and min(
-            measured_thicknesses,
-        ) >= MIN_CONVERGENCE_APPENDAGE_THICKNESS_CELLS
-        appendages_resolved_for_reference = appendages_present and min(
-            measured_thicknesses,
-        ) >= MIN_ABSOLUTE_REFERENCE_APPENDAGE_THICKNESS_CELLS
+        appendages_resolved_for_reference = (
+            appendages_present
+            and min(
+                measured_thicknesses,
+            )
+            >= MIN_ABSOLUTE_REFERENCE_APPENDAGE_THICKNESS_CELLS
+        )
 
     return SuboffGeometryResolution(
         hull_type=hull_type,
@@ -264,12 +283,10 @@ def assess_suboff_geometry_resolution(
         horizontal_fin_max_thickness_cells=horizontal_thickness,
         appendage_halfway_links=appendage_halfway_links,
         convergence_member_resolved=(
-            diameter >= MIN_CONVERGENCE_DIAMETER_CELLS
-            and appendages_resolved_for_convergence
+            diameter >= MIN_CONVERGENCE_DIAMETER_CELLS and appendages_resolved_for_convergence
         ),
         absolute_reference_resolved=(
-            diameter >= MIN_ABSOLUTE_REFERENCE_DIAMETER_CELLS
-            and appendages_resolved_for_reference
+            diameter >= MIN_ABSOLUTE_REFERENCE_DIAMETER_CELLS and appendages_resolved_for_reference
         ),
     )
 
@@ -345,9 +362,7 @@ class SuboffNestedStaticAMRPlan:
 
     @property
     def allocated_cells_by_level(self) -> tuple[int, ...]:
-        return self.outer.allocated_cells_by_level + (
-            self.additional_allocated_cells,
-        )
+        return self.outer.allocated_cells_by_level + (self.additional_allocated_cells,)
 
     @property
     def fine_origin_coarse_xyz(self) -> tuple[float, float, float]:
@@ -442,8 +457,12 @@ def build_fine_suboff_mask(
     nz_f, ny_f, nx_f = plan.fine_physical_shape
     return build_suboff_mask(
         hull_type,
-        nx_f, ny_f, nz_f,
-        cx=local_cx, cy=local_cy, cz=local_cz,
+        nx_f,
+        ny_f,
+        nz_f,
+        cx=local_cx,
+        cy=local_cy,
+        cz=local_cz,
         length=plan.coarse_hull_length * r,
         radius=config.r_over_l * plan.coarse_hull_length * r,
         config=config,
@@ -478,12 +497,8 @@ def plan_nested_suboff_static_amr(
     if indices.numel() == 0:
         raise ValueError("outer_fine_solid contains no SUBOFF cells")
 
-    z_min, y_min, x_min = (
-        int(indices[:, axis].min().item()) + ghost for axis in range(3)
-    )
-    z_max, y_max, x_max = (
-        int(indices[:, axis].max().item()) + 1 + ghost for axis in range(3)
-    )
+    z_min, y_min, x_min = (int(indices[:, axis].min().item()) + ghost for axis in range(3))
+    z_max, y_max, x_max = (int(indices[:, axis].max().item()) + 1 + ghost for axis in range(3))
     parent_shape = tuple(size + 2 * ghost for size in outer.fine_physical_shape)
     nz, ny, nx = parent_shape
     coordinates = (
@@ -495,11 +510,7 @@ def plan_nested_suboff_static_amr(
         z_max + wall_margin,
     )
     x0, x1, y0, y1, z0, z1 = coordinates
-    if not (
-        0 < x0 < x1 < nx - 1
-        and 0 < y0 < y1 < ny - 1
-        and 0 < z0 < z1 < nz - 1
-    ):
+    if not (0 < x0 < x1 < nx - 1 and 0 < y0 < y1 < ny - 1 and 0 < z0 < z1 < nz - 1):
         raise ValueError(
             "outer block lacks the requested interior margin for a nested block",
         )

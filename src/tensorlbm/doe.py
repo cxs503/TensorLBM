@@ -43,7 +43,7 @@ from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 __all__ = [
@@ -375,7 +375,6 @@ def central_composite(
     # Coded units: centre=0, factorial=±1, axial=±alpha → scale to [0,1]
     # Actual range in coded = [-alpha, alpha]
     span = 2.0 * alpha
-    centre_coded = 0.0
 
     def to_unit(coded: float) -> float:
         return (coded + alpha) / span

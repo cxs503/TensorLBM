@@ -14,11 +14,7 @@ from tensorlbm.yplus_guide import (
 
 def test_exchange_yplus_uses_finest_body_resolution() -> None:
     reynolds = 13_213_381.41322709
-    expected = (
-        2.109375 / 180.0
-        * reynolds
-        * math.sqrt(ittc57_friction_coefficient(reynolds) / 2.0)
-    )
+    expected = 2.109375 / 180.0 * reynolds * math.sqrt(ittc57_friction_coefficient(reynolds) / 2.0)
 
     estimate = estimate_exchange_yplus(
         physical_reynolds=reynolds,

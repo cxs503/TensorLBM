@@ -28,6 +28,7 @@ Coordinate conventions (mirroring examples/amr_sphere_drag_validate.py):
   * BFL q-fields are computed on each level's with-ghost tensor using that
     level's fine centre (same convention as the single-level reference).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -37,7 +38,6 @@ import time
 
 import torch
 
-from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.evidence_io import common_schema_fields, write_evidence
 from tensorlbm.refinement import BoxRegion
@@ -69,7 +69,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--nx", type=int, default=160)
     p.add_argument("--ny", type=int, default=112)
     p.add_argument("--nz", type=int, default=112)
-    p.add_argument("--radius", type=float, default=8.0)      # coarse-grid sphere radius
+    p.add_argument("--radius", type=float, default=8.0)  # coarse-grid sphere radius
     p.add_argument("--reynolds", type=float, default=100.0)
     p.add_argument("--lattice-speed", type=float, default=0.06)
     p.add_argument("--steps", type=int, default=3000)
@@ -85,9 +85,9 @@ def parser() -> argparse.ArgumentParser:
         choices=("injection", "trilinear"),
         default="injection",
     )
-    p.add_argument("--wall-margin", type=int, default=16)    # L1 block margin
-    p.add_argument("--wake-cells", type=int, default=45)     # L1 wake extension
-    p.add_argument("--l2-margin", type=int, default=8)       # L2 shell thickness
+    p.add_argument("--wall-margin", type=int, default=16)  # L1 block margin
+    p.add_argument("--wake-cells", type=int, default=45)  # L1 wake extension
+    p.add_argument("--l2-margin", type=int, default=8)  # L2 shell thickness
     p.add_argument("--output", required=True)
     return p
 
@@ -106,7 +106,14 @@ def main() -> None:
     # level 0 (root) geometry
     # ------------------------------------------------------------------
     solid_coarse, solid_coarse_q = build_sphere_geometry(
-        args.nx, args.ny, args.nz, cx, cy, cz, args.radius, device,
+        args.nx,
+        args.ny,
+        args.nz,
+        cx,
+        cy,
+        cz,
+        args.radius,
+        device,
     )
     indices = solid_coarse.nonzero(as_tuple=False)
     z_min, y_min, x_min = (int(indices[:, a].min().item()) for a in range(3))
@@ -134,10 +141,19 @@ def main() -> None:
     # level 1 (interface 0): L1 block, sphere at R*2
     # ------------------------------------------------------------------
     s1, fc1, radius1, l1 = build_fine_block_geometry(
-        box1, (cx, cy, cz), args.radius, RATIO, GHOST, device,
+        box1,
+        (cx, cy, cz),
+        args.radius,
+        RATIO,
+        GHOST,
+        device,
     )
     l1_solid, l1_solid_g, solid_q1, bfl_mask1, bfl_q1 = (
-        l1.solid, l1.solid_g, l1.solid_q, l1.bfl_mask, l1.bfl_q,
+        l1.solid,
+        l1.solid_g,
+        l1.solid_q,
+        l1.bfl_mask,
+        l1.bfl_q,
     )
 
     # ------------------------------------------------------------------
@@ -149,25 +165,44 @@ def main() -> None:
     c1_w = tuple(value + GHOST for value in fc1)
     s1g = l1_solid_g.shape  # (nz, ny, nx) of the L1 with-ghost tensor
     box2, s2, fc2, l2 = build_l2_shell_geometry(
-        c1_w, s1g, radius1, args.l2_margin, RATIO, GHOST, device,
+        c1_w,
+        s1g,
+        radius1,
+        args.l2_margin,
+        RATIO,
+        GHOST,
+        device,
     )
     x0_2, x1_2, y0_2, y1_2, z0_2, z1_2 = (
-        box2.x0, box2.x1, box2.y0, box2.y1, box2.z0, box2.z1,
+        box2.x0,
+        box2.x1,
+        box2.y0,
+        box2.y1,
+        box2.z0,
+        box2.z1,
     )
     radius2 = args.radius * RATIO * RATIO
     l2_solid, l2_solid_g, solid_q2, bfl_mask2, bfl_q2 = (
-        l2.solid, l2.solid_g, l2.solid_q, l2.bfl_mask, l2.bfl_q,
+        l2.solid,
+        l2.solid_g,
+        l2.solid_q,
+        l2.bfl_mask,
+        l2.bfl_q,
     )
 
     # ------------------------------------------------------------------
     # tau chain: interface i+1's tau_coarse must equal interface i's tau_fine
     # ------------------------------------------------------------------
     config1 = StaticBlockAMRConfig(
-        box1, tau_coarse=tau_coarse, reflux=True,
+        box1,
+        tau_coarse=tau_coarse,
+        reflux=True,
         ghost_interpolation=args.ghost_interpolation,
     )
     config2 = StaticBlockAMRConfig(
-        box2, tau_coarse=config1.tau_fine, reflux=True,
+        box2,
+        tau_coarse=config1.tau_fine,
+        reflux=True,
         ghost_interpolation=args.ghost_interpolation,
     )
     tau_fine2 = config2.tau_fine
@@ -183,12 +218,18 @@ def main() -> None:
     # control volume on the finest level (L2 with-ghost tensor)
     # ------------------------------------------------------------------
     cv = build_control_volume(
-        l2_solid_g.shape, fc2, radius2, args.cv_margin, device,
+        l2_solid_g.shape,
+        fc2,
+        radius2,
+        args.cv_margin,
+        device,
     )
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sigma = build_sponge_sigma_3d(
-        shape, width=args.sponge_width,
-        max_strength=args.sponge_strength, device=device,
+        shape,
+        width=args.sponge_width,
+        max_strength=args.sponge_strength,
+        device=device,
         faces=sponge_faces,
     )
     dynamic_area = 0.5 * args.lattice_speed**2 * math.pi * radius2**2
@@ -209,7 +250,10 @@ def main() -> None:
     started = time.time()
 
     def advance(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         nonlocal max_reflux_residual
         level_index = level_index_of(f, level_shapes)
@@ -220,24 +264,39 @@ def main() -> None:
         if level_index == 0:
             # root: coarse sphere frozen, far-field + sponge (patch-free region)
             out, post_collision, _collided = root_advance(
-                f, tau, solid_coarse_q, sigma, args.lattice_speed,
+                f,
+                tau,
+                solid_coarse_q,
+                sigma,
+                args.lattice_speed,
             )
             return AMRAdvanceResult(out, post_collision)
 
         if level_index == 1:
             solid_q, bfl_mask, bfl_q, solid_g = (
-                solid_q1, bfl_mask1, bfl_q1, l1_solid_g,
+                solid_q1,
+                bfl_mask1,
+                bfl_q1,
+                l1_solid_g,
             )
         else:
             solid_q, bfl_mask, bfl_q, solid_g = (
-                solid_q2, bfl_mask2, bfl_q2, l2_solid_g,
+                solid_q2,
+                bfl_mask2,
+                bfl_q2,
+                l2_solid_g,
             )
         out, post_collision, cv_force = fine_sphere_advance(
-            f, tau,
-            solid_q=solid_q, bfl_mask=bfl_mask, bfl_q=bfl_q,
-            step=current_step, ramp_steps=args.ramp_steps,
+            f,
+            tau,
+            solid_q=solid_q,
+            bfl_mask=bfl_mask,
+            bfl_q=bfl_q,
+            step=current_step,
+            ramp_steps=args.ramp_steps,
             sample_cv=(level_index == 2 and substep == 0),
-            cv=cv, solid_g=solid_g,
+            cv=cv,
+            solid_g=solid_g,
         )
         if level_index == 2 and substep == 0:
             # one control-volume sample per root step, on the finest level
@@ -255,12 +314,9 @@ def main() -> None:
             reflux_residual_by_level[index] = max(reflux_residual_by_level[index], residual)
         max_reflux_residual = max(max_reflux_residual, *reflux_residual_by_level)
         if current_step % args.report_interval == 0:
-            if not all(
-                bool(torch.isfinite(level).all())
-                for level in amr.level_populations
-            ):
+            if not all(bool(torch.isfinite(level).all()) for level in amr.level_populations):
                 raise FloatingPointError(f"non-finite populations at step {current_step}")
-            recent = force_samples[-min(len(force_samples), args.report_interval):]
+            recent = force_samples[-min(len(force_samples), args.report_interval) :]
             recent_cd = sum(recent) / len(recent) / dynamic_area if recent else math.nan
             elapsed = time.time() - started
             print(
@@ -275,7 +331,10 @@ def main() -> None:
         raise FloatingPointError("non-finite populations at end of run")
 
     summary = summarize_force_history(
-        force_samples, dynamic_area, args.reynolds, args.statistics_window_steps,
+        force_samples,
+        dynamic_area,
+        args.reynolds,
+        args.statistics_window_steps,
     )
     cd = summary["cd"]
     reference = summary["reference_cd"]

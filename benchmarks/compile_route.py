@@ -153,7 +153,11 @@ def route_step(
         warmup_hint=warmup_hint or f"benchmark {name!r}: one whole-step graph per grid shape",
     )
     if not quiet:
-        routed = "eager (compile_step passthrough)" if canonical is None else f"torch.compile(mode={canonical!r})"
+        routed = (
+            "eager (compile_step passthrough)"
+            if canonical is None
+            else f"torch.compile(mode={canonical!r})"
+        )
         print(f"[compile_route] {name}: mode={mode!r} -> {routed}", flush=True)
     return wrapped
 

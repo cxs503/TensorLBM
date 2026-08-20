@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from tensorlbm.d3q19 import C, OPPOSITE
+from tensorlbm.d3q19 import OPPOSITE, C
 from tensorlbm.free_surface_lbm import INTERFACE, LIQUID
 from tensorlbm.paired_link_mass_accounting import paired_liquid_interface_transfers
 

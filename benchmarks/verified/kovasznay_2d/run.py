@@ -43,6 +43,7 @@ max|N-S 残差| ≈ 1e-3，纯差分截断；恒等式 λ=ν(λ²−4π²) 成�
     run.py scan <out_dir> [--grids 32 64 128] [--xmax 3.0] [--outlet zerograd]
         [--re 40] [--u0 0.03] ...   → summary.json + result.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -54,14 +55,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
 
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
-
 import numpy as np
 import torch
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
+from tensorlbm.boundaries import zou_he_inlet_velocity
 from tensorlbm.d2q9 import equilibrium, macroscopic
 from tensorlbm.solver import collide_bgk, stream
-from tensorlbm.boundaries import zou_he_inlet_velocity
 
 CS2 = 1.0 / 3.0
 TWOPI = 2.0 * math.pi
@@ -73,8 +73,13 @@ def kov_lambda(re: float) -> float:
 
 
 def analytic_field(
-    nx: int, ny: int, u0: float, lam: float, xmax: float,
-    device: torch.device, dtype: torch.dtype,
+    nx: int,
+    ny: int,
+    u0: float,
+    lam: float,
+    xmax: float,
+    device: torch.device,
+    dtype: torch.dtype,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """解析 u/v 场（晶格坐标：x'=i/nx·xmax，y'=j/ny，y 周期 1）。"""
     y = torch.arange(ny, device=device, dtype=dtype)
@@ -95,8 +100,9 @@ def outlet_zero_gradient(f: torch.Tensor) -> torch.Tensor:
     return f
 
 
-def outlet_analytic_dirichlet(f: torch.Tensor, u_ana_col: torch.Tensor,
-                              v_ana_col: torch.Tensor) -> torch.Tensor:
+def outlet_analytic_dirichlet(
+    f: torch.Tensor, u_ana_col: torch.Tensor, v_ana_col: torch.Tensor
+) -> torch.Tensor:
     """解析 Dirichlet 出口：整列设为平衡态 f_eq(ρ=1, u_ana, v_ana)。"""
     ny = u_ana_col.shape[0]
     rho_c = torch.ones((ny, 1), device=f.device, dtype=f.dtype)
@@ -126,7 +132,7 @@ def run_case(
     nx = int(round(ny * xmax))
 
     lam = kov_lambda(re)
-    nu = u0 * ny / re          # Re = U0·ny/ν（特征长度 = y 周期 = ny 格）
+    nu = u0 * ny / re  # Re = U0·ny/ν（特征长度 = y 周期 = ny 格）
     tau = 0.5 + 3.0 * nu
     ma_max = 2.0 * u0 / math.sqrt(CS2)
 
@@ -163,7 +169,7 @@ def run_case(
             # 在 ~2000 步即收敛（实测 2000–40000 步误差完全平坦）。故阈值取 5e-5。
             l2_hist.append((step, ux.double()))
             if step >= min_steps and len(l2_hist) >= 5:
-                u_prev = l2_hist[-5][1]                    # 2500 步前的 u 场
+                u_prev = l2_hist[-5][1]  # 2500 步前的 u 场
                 num = float(((ux.double() - u_prev) ** 2).sum().sqrt().item())
                 den = float((ux.double() ** 2).sum().sqrt().item())
                 if num / max(den, 1e-12) < 5e-5:
@@ -217,9 +223,11 @@ def run_case(
         "config": f"xmax={xmax} outlet={outlet}",
         "lattice": "D2Q9",
         "collision": "bgk",
-        "boundary": ("zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet"
-                     if outlet == "zerograd" else
-                     "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"),
+        "boundary": (
+            "zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet"
+            if outlet == "zerograd"
+            else "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"
+        ),
         "driving": "analytic Navier-Stokes solution (Kovasznay 1948), steady-state verification",
         "extrap": "none",
         "ny": ny,
@@ -254,15 +262,35 @@ def run_case(
     return result
 
 
-def scan(grids, re, u0, xmax, outlet, min_steps, max_steps, out_dir: str,
-         device: str = "cpu", compile_mode: str | None = "default") -> dict:
+def scan(
+    grids,
+    re,
+    u0,
+    xmax,
+    outlet,
+    min_steps,
+    max_steps,
+    out_dir: str,
+    device: str = "cpu",
+    compile_mode: str | None = "default",
+) -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cases = []
     for ny in grids:
         p = out_dir / f"case_ny{ny}.json"
-        r = run_case(ny, re, u0, xmax, outlet, min_steps, max_steps, str(p),
-                     device=device, compile_mode=compile_mode)
+        r = run_case(
+            ny,
+            re,
+            u0,
+            xmax,
+            outlet,
+            min_steps,
+            max_steps,
+            str(p),
+            device=device,
+            compile_mode=compile_mode,
+        )
         cases.append(r)
         print(
             f"ny={r['ny']:3d} nx={r['nx']:3d} tau={r['tau']:.3f} steps={r['n_steps']:6d} "
@@ -283,19 +311,23 @@ def scan(grids, re, u0, xmax, outlet, min_steps, max_steps, out_dir: str,
             "u_max_rel_decreases": c128["u_max_rel_pct"] < c64["u_max_rel_pct"],
             "v_max_rel_decreases": c128["v_max_rel_pct"] < c64["v_max_rel_pct"],
         }
-        errs_64 = max(c64["u_l2_rel"], c64["v_l2_rel"],
-                      c64["u_max_rel_pct"] / 100.0, c64["v_max_rel_pct"] / 100.0)
-        errs_128 = max(c128["u_l2_rel"], c128["v_l2_rel"],
-                       c128["u_max_rel_pct"] / 100.0, c128["v_max_rel_pct"] / 100.0)
+        errs_64 = max(
+            c64["u_l2_rel"],
+            c64["v_l2_rel"],
+            c64["u_max_rel_pct"] / 100.0,
+            c64["v_max_rel_pct"] / 100.0,
+        )
+        errs_128 = max(
+            c128["u_l2_rel"],
+            c128["v_l2_rel"],
+            c128["u_max_rel_pct"] / 100.0,
+            c128["v_max_rel_pct"] / 100.0,
+        )
         max_err = max(errs_64, errs_128) * 100.0
         finite = all(r["finite"] for r in cases)
         min_steps_ok = all(r["n_steps"] >= min_steps for r in cases)
         conv_ok = all(conv.values())
-        verdict = (
-            "PASS"
-            if (finite and min_steps_ok and max_err <= 3.0 and conv_ok)
-            else "FAIL"
-        )
+        verdict = "PASS" if (finite and min_steps_ok and max_err <= 3.0 and conv_ok) else "FAIL"
         conv["max_err_pct"] = round(max_err, 4)
         conv["max_err_pct_64"] = round(errs_64 * 100.0, 4)
         conv["max_err_pct_128"] = round(errs_128 * 100.0, 4)
@@ -305,9 +337,11 @@ def scan(grids, re, u0, xmax, outlet, min_steps, max_steps, out_dir: str,
         "config": f"xmax={xmax} outlet={outlet}",
         "lattice": "D2Q9",
         "collision": "bgk",
-        "boundary": ("zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet"
-                     if outlet == "zerograd" else
-                     "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"),
+        "boundary": (
+            "zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet"
+            if outlet == "zerograd"
+            else "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"
+        ),
         "extrap": "none",
         "re": re,
         "lambda": kov_lambda(re),
@@ -316,11 +350,28 @@ def scan(grids, re, u0, xmax, outlet, min_steps, max_steps, out_dir: str,
         "min_steps": min_steps,
         "max_steps": max_steps,
         "per_grid": [
-            {k: r[k] for k in
-             ["ny", "nx", "tau", "nu_lb", "n_steps", "steady", "u_l2_rel", "v_l2_rel",
-              "u_l2_rel_interior", "v_l2_rel_interior", "u_max_rel_pct", "v_max_rel_pct",
-              "max_abs_err_u_over_u0", "max_abs_err_v_over_u0", "mass_drift_pct",
-              "finite", "elapsed_s"]}
+            {
+                k: r[k]
+                for k in [
+                    "ny",
+                    "nx",
+                    "tau",
+                    "nu_lb",
+                    "n_steps",
+                    "steady",
+                    "u_l2_rel",
+                    "v_l2_rel",
+                    "u_l2_rel_interior",
+                    "v_l2_rel_interior",
+                    "u_max_rel_pct",
+                    "v_max_rel_pct",
+                    "max_abs_err_u_over_u0",
+                    "max_abs_err_v_over_u0",
+                    "mass_drift_pct",
+                    "finite",
+                    "elapsed_s",
+                ]
+            }
             for r in cases
         ],
         "convergence_64_to_128": conv,
@@ -361,18 +412,57 @@ def main() -> None:
     args = ap.parse_args()
     compile_mode = compile_mode_from_args(args)
     if args.mode == "single":
-        r = run_case(args.ny, args.re, args.u0, args.xmax, args.outlet,
-                     args.min_steps, args.max_steps, args.out_json, device=args.device,
-                     compile_mode=compile_mode)
-        print(json.dumps({k: r[k] for k in
-                          ["ny", "nx", "re", "lambda", "u0", "nu_lb", "tau", "ma_max",
-                           "n_steps", "steady", "u_l2_rel", "v_l2_rel",
-                           "u_max_rel_pct", "v_max_rel_pct", "mass_drift_pct",
-                           "elapsed_s"]}, indent=2))
+        r = run_case(
+            args.ny,
+            args.re,
+            args.u0,
+            args.xmax,
+            args.outlet,
+            args.min_steps,
+            args.max_steps,
+            args.out_json,
+            device=args.device,
+            compile_mode=compile_mode,
+        )
+        print(
+            json.dumps(
+                {
+                    k: r[k]
+                    for k in [
+                        "ny",
+                        "nx",
+                        "re",
+                        "lambda",
+                        "u0",
+                        "nu_lb",
+                        "tau",
+                        "ma_max",
+                        "n_steps",
+                        "steady",
+                        "u_l2_rel",
+                        "v_l2_rel",
+                        "u_max_rel_pct",
+                        "v_max_rel_pct",
+                        "mass_drift_pct",
+                        "elapsed_s",
+                    ]
+                },
+                indent=2,
+            )
+        )
     else:
-        s = scan(args.grids, args.re, args.u0, args.xmax, args.outlet,
-                 args.min_steps, args.max_steps, args.out_dir, device=args.device,
-                 compile_mode=compile_mode)
+        s = scan(
+            args.grids,
+            args.re,
+            args.u0,
+            args.xmax,
+            args.outlet,
+            args.min_steps,
+            args.max_steps,
+            args.out_dir,
+            device=args.device,
+            compile_mode=compile_mode,
+        )
         print(f"verdict: {s['verdict']}")
 
 

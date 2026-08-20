@@ -49,8 +49,7 @@ def main() -> None:
             blob = json.load(fh)
         mp = blob["mapping"]
         dx_phys, chord_phys = mp["dx_phys"], mp["chord_phys"]
-        print("  (mapping from icing_metrics.json: dx="
-              f"{dx_phys:.4e} m, chord={chord_phys} m)")
+        print(f"  (mapping from icing_metrics.json: dx={dx_phys:.4e} m, chord={chord_phys} m)")
     if dx_phys is None:
         dx_phys, chord_phys = 1.0, chord_lu
 
@@ -60,18 +59,23 @@ def main() -> None:
     print(f"  ICE SHAPE METRICS — {npz}")
     print("=" * 60)
     print(f"  chord            : {chord_lu:.0f} cells")
-    print(f"  ice cells        : {m['n_ice_cells']} "
-          f"({m['ice_area_pct_chord2']:.2f} % chord^2)")
+    print(f"  ice cells        : {m['n_ice_cells']} ({m['ice_area_pct_chord2']:.2f} % chord^2)")
     if "upper_horn_pct_chord" in m:
-        print(f"  upper horn       : {m['upper_horn_cells']} cells "
-              f"({m['upper_horn_pct_chord']:.2f} % chord)")
+        print(
+            f"  upper horn       : {m['upper_horn_cells']} cells "
+            f"({m['upper_horn_pct_chord']:.2f} % chord)"
+        )
     if "lower_horn_pct_chord" in m:
-        print(f"  lower horn       : {m['lower_horn_cells']} cells "
-              f"({m['lower_horn_pct_chord']:.2f} % chord)")
+        print(
+            f"  lower horn       : {m['lower_horn_cells']} cells "
+            f"({m['lower_horn_pct_chord']:.2f} % chord)"
+        )
     if "horn_symmetry_pct" in m:
         print(f"  horn symmetry    : {m['horn_symmetry_pct']:+.1f} %")
-    print(f"  ice x extent     : LE + {m.get('ice_x_offset_min', 0):.3f} .. "
-          f"{m.get('ice_x_offset_max', 0):.3f} chord")
+    print(
+        f"  ice x extent     : LE + {m.get('ice_x_offset_min', 0):.3f} .. "
+        f"{m.get('ice_x_offset_max', 0):.3f} chord"
+    )
     print(f"  max layer depth  : {m.get('ice_max_layer', 0)} cells")
     print("=" * 60)
     if js.exists():

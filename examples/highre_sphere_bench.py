@@ -8,23 +8,28 @@ LBM high-Re constraints:
     proportionally larger sphere on the same grid — this is the only way
     to keep the boundary layer resolved at high Re.
 """
-import sys, os, time, json, math
+
+import json
+import math
+import sys
+import time
+
 sys.path.insert(0, "/DATA/cxs_host/TensorLBM/src")
 
 import torch
+
+from tensorlbm.boundaries3d import far_field_bc_3d
 from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.obstacles import compute_obstacle_forces_3d
 from tensorlbm.solver3d import stream3d
 from tensorlbm.turbulence import collide_smagorinsky_mrt3d
-from tensorlbm.boundaries3d import far_field_bc_3d
-from tensorlbm.obstacles import compute_obstacle_forces_3d
 
 
 def clift_gauvin_cd(re):
-    return 24.0 / re * (1.0 + 0.1315 * re**(0.82 - 0.05 * math.log10(re)))
+    return 24.0 / re * (1.0 + 0.1315 * re ** (0.82 - 0.05 * math.log10(re)))
 
 
-def run_sphere(re, nx=128, ny=96, nz=96, u_in=0.02, tau0=0.55,
-               n_steps=2000, device="cuda:0"):
+def run_sphere(re, nx=128, ny=96, nz=96, u_in=0.02, tau0=0.55, n_steps=2000, device="cuda:0"):
     """Sphere drag at target Re: choose D from Re = u·D/ν with fixed tau."""
     dev = torch.device(device)
     cs2 = 1.0 / 3.0
@@ -43,26 +48,28 @@ def run_sphere(re, nx=128, ny=96, nz=96, u_in=0.02, tau0=0.55,
         re_actual = re
     cx, cy, cz = nx * 0.3, ny / 2.0, nz / 2.0
 
-    zz, yy, xx = torch.meshgrid(torch.arange(nz, device=dev),
-                                torch.arange(ny, device=dev),
-                                torch.arange(nx, device=dev), indexing="ij")
-    solid = ((xx - cx)**2 + (yy - cy)**2 + (zz - cz)**2).sqrt() < radius
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=dev),
+        torch.arange(ny, device=dev),
+        torch.arange(nx, device=dev),
+        indexing="ij",
+    )
+    solid = ((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2).sqrt() < radius
 
     A = math.pi * radius**2
     dyn_p = 0.5 * u_in**2 * A
     rho0 = torch.ones(nz, ny, nx, device=dev)
     ux0 = torch.full_like(rho0, u_in)
     ux0[solid] = 0.0
-    f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0),
-                      device=dev)
+    f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0), device=dev)
     initial_mass = float(f.sum().item())
     cd_ref = clift_gauvin_cd(re) if re < 2e5 else 0.2
 
-    print(f"\n{'='*64}")
+    print(f"\n{'=' * 64}")
     print(f"Sphere Re={re:.0e} (实际 {re_actual:.0e})  grid {nx}x{ny}x{nz}")
     print(f"D={D:.1f}  r={radius:.1f}  u={u_in}  tau={tau0}")
     print(f"nu={nu:.6f}  ref_Cd={cd_ref:.4f}")
-    print(f"{'='*64}")
+    print(f"{'=' * 64}")
 
     cd_list = []
     t0 = time.time()
@@ -81,14 +88,24 @@ def run_sphere(re, nx=128, ny=96, nz=96, u_in=0.02, tau0=0.55,
         if step % 400 == 0 or step == n_steps:
             cd_avg = sum(cd_list) / max(len(cd_list), 1)
             el = time.time() - t0
-            print(f"  step {step:5d}: Cd={cd_avg:.4f} (ref {cd_ref:.4f}, "
-                  f"err {abs(cd_avg-cd_ref)/cd_ref*100:.1f}%), {el:.0f}s")
+            print(
+                f"  step {step:5d}: Cd={cd_avg:.4f} (ref {cd_ref:.4f}, "
+                f"err {abs(cd_avg - cd_ref) / cd_ref * 100:.1f}%), {el:.0f}s"
+            )
 
     cd_avg = sum(cd_list) / max(len(cd_list), 1)
     err = abs(cd_avg - cd_ref) / cd_ref * 100
     print(f"\n  FINAL: Cd={cd_avg:.4f}  ref={cd_ref:.4f}  err={err:.1f}%")
-    return {"re": re, "re_actual": re_actual, "cd": cd_avg, "cd_ref": cd_ref,
-            "err_pct": err, "tau": tau0, "D": D, "steps": n_steps}
+    return {
+        "re": re,
+        "re_actual": re_actual,
+        "cd": cd_avg,
+        "cd_ref": cd_ref,
+        "err_pct": err,
+        "tau": tau0,
+        "D": D,
+        "steps": n_steps,
+    }
 
 
 def _correct_mass(f, target_mass):
@@ -107,8 +124,10 @@ if __name__ == "__main__":
     print("SUMMARY (sphere drag, MRT+Smag, tau=0.55, u=0.02)")
     print("=" * 64)
     for r in results:
-        print(f"  Re={r['re']:>5}: Cd={r['cd']:.4f} ref={r['cd_ref']:.4f} "
-              f"err={r['err_pct']:.1f}%  D={r['D']:.1f}")
+        print(
+            f"  Re={r['re']:>5}: Cd={r['cd']:.4f} ref={r['cd_ref']:.4f} "
+            f"err={r['err_pct']:.1f}%  D={r['D']:.1f}"
+        )
     with open("/tmp/highre_sphere_results2.json", "w") as fp:
         json.dump(results, fp, indent=2)
     print("\nsaved /tmp/highre_sphere_results2.json")

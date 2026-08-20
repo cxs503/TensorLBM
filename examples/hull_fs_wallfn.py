@@ -14,12 +14,11 @@ import math
 
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C as C3D, W as W3D
-from tensorlbm.multiphase3d import color_gradient_step_3d
-from tensorlbm.obstacles import compute_obstacle_forces_3d, wigley_hull_mask
-from tensorlbm.boundaries3d import bounce_back_cells_3d
-from tensorlbm.solver3d import stream3d
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.ibm import ibm_apply_body_force_3d
+from tensorlbm.multiphase3d import color_gradient_step_3d
+from tensorlbm.obstacles import wigley_hull_mask
+from tensorlbm.solver3d import stream3d
 
 _KAPPA = 0.41
 _B_LOG = 5.0
@@ -293,7 +292,7 @@ def run(
     cf = (sum(fric) / max(len(fric), 1)) / dyn_p_S if fric else 0.0
     cp = (sum(pres) / max(len(pres), 1)) / dyn_p_S if pres else 0.0
     print(f"\nFinal: Cf(surface)={cf:.5f}  Cp(surface)={cp:.5f}  Ct(surface)={cf + cp:.5f}")
-    print(f"  Use Ct_CV for reliable total drag (friction+pressure+wave).")
+    print("  Use Ct_CV for reliable total drag (friction+pressure+wave).")
     return {"Cf": cf, "Cp": cp, "Ct": cf + cp}
 
 

@@ -14,12 +14,11 @@ from __future__ import annotations
 import json
 import sqlite3
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Sequence
 
 from tensorlbm.data.contracts import FieldProduct
-
 
 # ---------------------------------------------------------------------------
 # Schema
@@ -88,6 +87,7 @@ _VALID_STATUS = {"active", "archived"}
 # Records
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True, slots=True)
 class AssetRecord:
     asset_id: str
@@ -135,6 +135,7 @@ class QualityCheck:
 # ---------------------------------------------------------------------------
 # Catalog
 # ---------------------------------------------------------------------------
+
 
 def _now() -> float:
     return time.time()
@@ -194,32 +195,46 @@ class FieldDataCatalog:
                 status, version, created_at, updated_at)
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
-                rec.asset_id, rec.name, rec.description, rec.kind,
-                rec.field_name, rec.units, rec.shape, rec.dtype,
-                _encode_json(list(rec.tags)), rec.quality_score,
-                rec.sensitivity_level, rec.source_run_id, rec.status,
-                rec.version, now, now,
+                rec.asset_id,
+                rec.name,
+                rec.description,
+                rec.kind,
+                rec.field_name,
+                rec.units,
+                rec.shape,
+                rec.dtype,
+                _encode_json(list(rec.tags)),
+                rec.quality_score,
+                rec.sensitivity_level,
+                rec.source_run_id,
+                rec.status,
+                rec.version,
+                now,
+                now,
             ),
         )
         self._conn.commit()
 
     def register_field_product(self, product: FieldProduct, name: str) -> None:
         """Register a FieldProduct (from data/contracts.py) as an asset."""
-        self.register_asset(AssetRecord(
-            asset_id=product.product_id,
-            name=name,
-            kind="field_product",
-            field_name=product.field_name,
-            units=product.units,
-            shape=json.dumps(list(product.shape)),
-            dtype=product.dtype,
-            source_run_id=product.run_manifest.run_id,
-            quality_score=_quality_from_status(product.quality_status),
-        ))
+        self.register_asset(
+            AssetRecord(
+                asset_id=product.product_id,
+                name=name,
+                kind="field_product",
+                field_name=product.field_name,
+                units=product.units,
+                shape=json.dumps(list(product.shape)),
+                dtype=product.dtype,
+                source_run_id=product.run_manifest.run_id,
+                quality_score=_quality_from_status(product.quality_status),
+            )
+        )
 
     def get_asset(self, asset_id: str) -> AssetRecord | None:
         row = self._conn.execute(
-            "SELECT * FROM assets WHERE asset_id = ?", (asset_id,),
+            "SELECT * FROM assets WHERE asset_id = ?",
+            (asset_id,),
         ).fetchone()
         return _row_to_asset(row) if row else None
 
@@ -320,12 +335,21 @@ class FieldDataCatalog:
         new_status = status if status is not None else cur.status
         new_score = quality_score if quality_score is not None else cur.quality_score
         rec = AssetRecord(
-            asset_id=asset_id, name=new_name, kind=cur.kind,
-            description=new_desc, field_name=cur.field_name, units=cur.units,
-            shape=cur.shape, dtype=cur.dtype, tags=new_tags,
-            quality_score=new_score, sensitivity_level=cur.sensitivity_level,
-            source_run_id=cur.source_run_id, status=new_status,
-            version=cur.version, created_at=cur.created_at,
+            asset_id=asset_id,
+            name=new_name,
+            kind=cur.kind,
+            description=new_desc,
+            field_name=cur.field_name,
+            units=cur.units,
+            shape=cur.shape,
+            dtype=cur.dtype,
+            tags=new_tags,
+            quality_score=new_score,
+            sensitivity_level=cur.sensitivity_level,
+            source_run_id=cur.source_run_id,
+            status=new_status,
+            version=cur.version,
+            created_at=cur.created_at,
             updated_at=cur.updated_at,
         )
         self.register_asset(rec)
@@ -361,8 +385,7 @@ class FieldDataCatalog:
             "WHERE asset_id = ? ORDER BY id",
             (asset_id,),
         ).fetchall()
-        return [MetadataRecord(r["key"], r["value"], r["source"], r["confidence"])
-                for r in rows]
+        return [MetadataRecord(r["key"], r["value"], r["source"], r["confidence"]) for r in rows]
 
     def delete_metadata(self, asset_id: str, key: str) -> None:
         self._conn.execute(
@@ -378,21 +401,32 @@ class FieldDataCatalog:
             """INSERT INTO lineage (source_id, target_id, relation_type,
                                     transformation, resource_type, created_at)
                VALUES (?,?,?,?,?,?)""",
-            (rec.source_id, rec.target_id, rec.relation_type,
-             rec.transformation, rec.resource_type, _now()),
+            (
+                rec.source_id,
+                rec.target_id,
+                rec.relation_type,
+                rec.transformation,
+                rec.resource_type,
+                _now(),
+            ),
         )
         self._conn.commit()
 
     def get_lineage(self, asset_id: str) -> list[LineageRecord]:
         rows = self._conn.execute(
-            "SELECT * FROM lineage WHERE source_id = ? OR target_id = ? "
-            "ORDER BY id",
+            "SELECT * FROM lineage WHERE source_id = ? OR target_id = ? ORDER BY id",
             (asset_id, asset_id),
         ).fetchall()
-        return [LineageRecord(
-            r["source_id"], r["target_id"], r["relation_type"],
-            r["transformation"], r["resource_type"],
-        ) for r in rows]
+        return [
+            LineageRecord(
+                r["source_id"],
+                r["target_id"],
+                r["relation_type"],
+                r["transformation"],
+                r["resource_type"],
+            )
+            for r in rows
+        ]
 
     def upstream(self, asset_id: str) -> list[str]:
         """All transitive upstream assets (source side of the lineage graph)."""
@@ -404,7 +438,8 @@ class FieldDataCatalog:
                 continue
             seen.add(cur)
             rows = self._conn.execute(
-                "SELECT source_id FROM lineage WHERE target_id = ?", (cur,),
+                "SELECT source_id FROM lineage WHERE target_id = ?",
+                (cur,),
             ).fetchall()
             frontier.extend(r["source_id"] for r in rows)
         seen.discard(asset_id)
@@ -422,9 +457,7 @@ class FieldDataCatalog:
         total = len(checks)
         score = round(100 * passed / total) if total else 0
         if status is None:
-            status = "passed" if passed == total else (
-                "warning" if passed > 0 else "failed"
-            )
+            status = "passed" if passed == total else ("warning" if passed > 0 else "failed")
         self._conn.execute(
             """INSERT INTO quality_reports (asset_id, checks, overall_score,
                                             status, created_at)
@@ -432,7 +465,9 @@ class FieldDataCatalog:
             (
                 asset_id,
                 _encode_json([_quality_check_to_dict(c) for c in checks]),
-                score, status, _now(),
+                score,
+                status,
+                _now(),
             ),
         )
         self._conn.execute(
@@ -462,6 +497,7 @@ class FieldDataCatalog:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _quality_from_status(status: Any) -> int:
     """Map a ValidationStatus enum to a 0-100 score."""

@@ -33,18 +33,14 @@ from dataclasses import dataclass, field
 
 import torch
 
-from .d3q19 import C as C3D, OPPOSITE as OPP3D, W as W3D
+from .d3q19 import OPPOSITE as OPP3D
+from .d3q19 import C as C3D
+from .d3q19 import W as W3D
 from .dg_advection import (
     _Ops,
-    collide_bgk_dg,
-    dg_advect,
-    dg_lbm_step,
-    dg_rhs,
     get_ops,
     macroscopic_dg,
-    nodal_from_mean,
 )
-
 
 # ---------------------------------------------------------------------------
 # Grid / geometry helpers
@@ -60,16 +56,30 @@ def _spherical_unit_vectors(theta: torch.Tensor, phi: torch.Tensor) -> tuple:
     ct = torch.cos(theta)
     sp = torch.sin(phi)
     cp = torch.cos(phi)
-    er = torch.stack([st[:, None] * cp[None, :],
-                      st[:, None] * sp[None, :],
-                      ct[:, None].expand(-1, phi.shape[0])], dim=0)
-    et = torch.stack([ct[:, None] * cp[None, :],
-                      ct[:, None] * sp[None, :],
-                      -st[:, None].expand(-1, phi.shape[0])], dim=0)
-    ep = torch.stack([-sp[None, :].expand(theta.shape[0], -1),
-                      cp[None, :].expand(theta.shape[0], -1),
-                      torch.zeros(theta.shape[0], phi.shape[0],
-                                  dtype=theta.dtype, device=theta.device)], dim=0)
+    er = torch.stack(
+        [
+            st[:, None] * cp[None, :],
+            st[:, None] * sp[None, :],
+            ct[:, None].expand(-1, phi.shape[0]),
+        ],
+        dim=0,
+    )
+    et = torch.stack(
+        [
+            ct[:, None] * cp[None, :],
+            ct[:, None] * sp[None, :],
+            -st[:, None].expand(-1, phi.shape[0]),
+        ],
+        dim=0,
+    )
+    ep = torch.stack(
+        [
+            -sp[None, :].expand(theta.shape[0], -1),
+            cp[None, :].expand(theta.shape[0], -1),
+            torch.zeros(theta.shape[0], phi.shape[0], dtype=theta.dtype, device=theta.device),
+        ],
+        dim=0,
+    )
     return er, et, ep
 
 
@@ -77,14 +87,14 @@ def _spherical_unit_vectors(theta: torch.Tensor, phi: torch.Tensor) -> tuple:
 class SphericalShellConfig:
     """Configuration for the spherical-shell DG-LBM near-wall solver."""
 
-    R_in: float          # sphere radius (lattice units)
-    R_out: float         # outer shell radius
-    Nr: int              # radial elements
-    Ntheta: int          # polar elements
-    Nphi: int            # azimuthal elements
-    u_in: float = 0.1    # freestream velocity (lattice units)
-    tau: float = 0.6     # BGK relaxation time (lattice units)
-    degree: int = 1      # DG polynomial degree (1 = P1, 2 = P2, ...)
+    R_in: float  # sphere radius (lattice units)
+    R_out: float  # outer shell radius
+    Nr: int  # radial elements
+    Ntheta: int  # polar elements
+    Nphi: int  # azimuthal elements
+    u_in: float = 0.1  # freestream velocity (lattice units)
+    tau: float = 0.6  # BGK relaxation time (lattice units)
+    degree: int = 1  # DG polynomial degree (1 = P1, 2 = P2, ...)
     device: str = "cpu"
     dtype: torch.dtype = torch.float64
 
@@ -122,26 +132,31 @@ class SphericalShellDG:
 
         # element centres (staggered, avoiding boundaries)
         dr = cfg.dr
-        self.r_c = torch.linspace(R_in + dr / 2.0, R_out - dr / 2.0, Nr,
-                                  device=self.device, dtype=self.dtype)
-        self.theta_c = torch.linspace(math.pi / (2.0 * Nth),
-                                      math.pi - math.pi / (2.0 * Nth), Nth,
-                                      device=self.device, dtype=self.dtype)
-        self.phi_c = torch.linspace(math.pi / Nph,
-                                    2.0 * math.pi - math.pi / Nph, Nph,
-                                    device=self.device, dtype=self.dtype)
+        self.r_c = torch.linspace(
+            R_in + dr / 2.0, R_out - dr / 2.0, Nr, device=self.device, dtype=self.dtype
+        )
+        self.theta_c = torch.linspace(
+            math.pi / (2.0 * Nth),
+            math.pi - math.pi / (2.0 * Nth),
+            Nth,
+            device=self.device,
+            dtype=self.dtype,
+        )
+        self.phi_c = torch.linspace(
+            math.pi / Nph, 2.0 * math.pi - math.pi / Nph, Nph, device=self.device, dtype=self.dtype
+        )
         self.dr = cfg.dr
         self.dtheta = cfg.dtheta
         self.dphi = cfg.dphi
 
         # lattice velocities / weights / opposites
-        self.C = C3D.to(device=self.device, dtype=self.dtype)          # (Q, 3)
-        self.W = W3D.to(device=self.device, dtype=self.dtype)          # (Q,)
-        self.OPP = OPP3D.to(device=self.device, dtype=torch.long)      # (Q,)
+        self.C = C3D.to(device=self.device, dtype=self.dtype)  # (Q, 3)
+        self.W = W3D.to(device=self.device, dtype=self.dtype)  # (Q,)
+        self.OPP = OPP3D.to(device=self.device, dtype=torch.long)  # (Q,)
 
         # spherical components of each lattice velocity at every (theta, phi)
         er, et, ep = _spherical_unit_vectors(self.theta_c, self.phi_c)
-        self.c_ir = torch.einsum("qi,iab->qab", self.C, er)   # (Q, Nth, Nph)
+        self.c_ir = torch.einsum("qi,iab->qab", self.C, er)  # (Q, Nth, Nph)
         self.c_it = torch.einsum("qi,iab->qab", self.C, et)
         self.c_ip = torch.einsum("qi,iab->qab", self.C, ep)
 
@@ -161,10 +176,12 @@ class SphericalShellDG:
 
         c_hat = torch.zeros(Q, 3, Nr, Nth, Nph, device=self.device, dtype=self.dtype)
         c_hat[:, 0] = self.c_ir.view(Q, 1, Nth, Nph).expand(Q, Nr, Nth, Nph)
-        c_hat[:, 1] = (self.c_it.view(Q, 1, Nth, Nph) /
-                       self.r_c.view(1, Nr, 1, 1)).expand(Q, Nr, Nth, Nph)
-        c_hat[:, 2] = (self.c_ip.view(Q, 1, Nth, Nph) /
-                       r_sin_t.view(1, Nr, Nth, 1)).expand(Q, Nr, Nth, Nph)
+        c_hat[:, 1] = (self.c_it.view(Q, 1, Nth, Nph) / self.r_c.view(1, Nr, 1, 1)).expand(
+            Q, Nr, Nth, Nph
+        )
+        c_hat[:, 2] = (self.c_ip.view(Q, 1, Nth, Nph) / r_sin_t.view(1, Nr, Nth, 1)).expand(
+            Q, Nr, Nth, Nph
+        )
         # zero phi-velocity near poles
         # Zero theta-velocity near the poles too: at the poles the polar
         # angle is degenerate (θ→0 or π) and the θ-convection would
@@ -197,8 +214,7 @@ class SphericalShellDG:
         self.ops_ph = get_ops(deg, cfg.dphi, dtype=cfg.dtype, device=cfg.device)
 
         # DG field: (Q, Nr, Nth, Nph, n_r, n_th, n_ph)
-        self.f_dg = torch.zeros(Q, Nr, Nth, Nph, n, n, n,
-                                device=self.device, dtype=self.dtype)
+        self.f_dg = torch.zeros(Q, Nr, Nth, Nph, n, n, n, device=self.device, dtype=self.dtype)
         self._initialize()
 
     # ------------------------------------------------------------------
@@ -208,20 +224,25 @@ class SphericalShellDG:
         """Set f_dg to equilibrium for uniform flow u_in along x."""
         # Use nodal_from_mean to seed all DOFs from the cell-mean equilibrium.
         from .d3q19 import equilibrium3d
+
         rho0 = torch.ones(1, 1, 1, device=self.device, dtype=self.dtype)
         u0 = torch.full((1, 1, 1), self.cfg.u_in, device=self.device, dtype=self.dtype)
         uz = torch.zeros((1, 1, 1), device=self.device, dtype=self.dtype)
         feq = equilibrium3d(rho0, u0, uz.clone(), uz.clone())  # (19, 1, 1, 1)
         # broadcast to (Q, Nr, Nth, Nph)
         feq_cells = feq.squeeze(-1).squeeze(-1).squeeze(-1)  # (Q,)
-        feq_cells = feq_cells.view(19, 1, 1, 1).expand(19, self.cfg.Nr,
-                                                         self.cfg.Ntheta,
-                                                         self.cfg.Nphi)
+        feq_cells = feq_cells.view(19, 1, 1, 1).expand(
+            19, self.cfg.Nr, self.cfg.Ntheta, self.cfg.Nphi
+        )
         # expand to nodal DOFs
         n = self.cfg.degree + 1
-        self.f_dg = feq_cells.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).expand(
-            19, self.cfg.Nr, self.cfg.Ntheta, self.cfg.Nphi, n, n, n
-        ).contiguous()
+        self.f_dg = (
+            feq_cells.unsqueeze(-1)
+            .unsqueeze(-1)
+            .unsqueeze(-1)
+            .expand(19, self.cfg.Nr, self.cfg.Ntheta, self.cfg.Nphi, n, n, n)
+            .contiguous()
+        )
 
     def compute_macros_at_center(self):
         """Macroscopic quantities at element centres (cell-mean of all DOFs)."""
@@ -254,12 +275,17 @@ class SphericalShellDG:
     # ------------------------------------------------------------------
     # DG advection RHS (proper nodal DG, dimension-by-dimension)
     # ------------------------------------------------------------------
-    def _rhs_axis(self, f: torch.Tensor, axis: int,
-                  c_along: torch.Tensor, ops: _Ops,
-                  periodic: bool = False,
-                  wall_f: torch.Tensor | None = None,
-                  wall_q_mask: torch.Tensor | None = None,
-                  lbm_boundary: torch.Tensor | None = None) -> torch.Tensor:
+    def _rhs_axis(
+        self,
+        f: torch.Tensor,
+        axis: int,
+        c_along: torch.Tensor,
+        ops: _Ops,
+        periodic: bool = False,
+        wall_f: torch.Tensor | None = None,
+        wall_q_mask: torch.Tensor | None = None,
+        lbm_boundary: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         """DG RHS along one axis using explicit neighbour lookup.
 
         Neighbour types:
@@ -274,7 +300,7 @@ class SphericalShellDG:
         conservation: the flux leaving cell j enters cell j+1 exactly.
         """
         n = ops.n_node
-        cell_axis = 1 + axis      # in f: (Q, Nr, Nth, Nph, n_r, n_th, n_ph)
+        cell_axis = 1 + axis  # in f: (Q, Nr, Nth, Nph, n_r, n_th, n_ph)
         node_axis = 4 + axis
         Ax = ops.Ax
         face_lift = ops.face_lift
@@ -290,7 +316,7 @@ class SphericalShellDG:
         vol = torch.einsum(ein, Ax, f)
 
         # --- Surface term: neighbour face values ---
-        inner_left = f.select(node_axis, 0)    # (Q, Nr, Nth, Nph, n_th, n_ph) for axis=0
+        inner_left = f.select(node_axis, 0)  # (Q, Nr, Nth, Nph, n_th, n_ph) for axis=0
         inner_right = f.select(node_axis, p_last)
 
         if periodic:
@@ -338,11 +364,17 @@ class SphericalShellDG:
                     # feq at u=0: f = w * rho
                     feq_wall = self.W.view(-1, 1, 1) * rho_wall.unsqueeze(0)  # (Q, Nth, Nph)
                     active_q = torch.nonzero(wall_q_mask, as_tuple=False).squeeze(-1)
-                    ghost_full = feq_wall[active_q].unsqueeze(-1).unsqueeze(-1)  # (Q_a, Nth, Nph, 1, 1)
+                    ghost_full = (
+                        feq_wall[active_q].unsqueeze(-1).unsqueeze(-1)
+                    )  # (Q_a, Nth, Nph, 1, 1)
                     # broadcast over transverse node DOFs (n_th, n_ph)
                     ghost_full = ghost_full.expand(
-                        f.shape[0], self.cfg.Ntheta, self.cfg.Nphi,
-                        self.cfg.degree + 1, self.cfg.degree + 1)
+                        f.shape[0],
+                        self.cfg.Ntheta,
+                        self.cfg.Nphi,
+                        self.cfg.degree + 1,
+                        self.cfg.degree + 1,
+                    )
                     sl0_vec = [slice(None)] * left_ext.ndim
                     sl0_vec[cell_axis] = 0
                     left_ext[tuple(sl0_vec)] = ghost_full
@@ -357,12 +389,18 @@ class SphericalShellDG:
                     # sub is (Q_active, Nr, Nth, Nph, n_th, n_ph) here
                     # (node_r removed).  lbm_boundary[nonzero] gives the
                     # active-Q subset: (Q_active, Nth, Nph).
-                    active_q = torch.nonzero(wall_q_mask, as_tuple=False).squeeze(-1) \
-                        if wall_q_mask is not None else torch.arange(f.shape[0], device=f.device)
+                    active_q = (
+                        torch.nonzero(wall_q_mask, as_tuple=False).squeeze(-1)
+                        if wall_q_mask is not None
+                        else torch.arange(f.shape[0], device=f.device)
+                    )
                     lbm_sub = lbm_boundary[active_q]  # (Q_active, Nth, Nph)
                     # broadcast to (Q_active, Nth, Nph, n_th, n_ph)
-                    ghost = lbm_sub.unsqueeze(-1).unsqueeze(-1).expand_as(
-                        right_ext.select(cell_axis, -1))
+                    ghost = (
+                        lbm_sub.unsqueeze(-1)
+                        .unsqueeze(-1)
+                        .expand_as(right_ext.select(cell_axis, -1))
+                    )
                     slN_local = list(slN)
                     right_ext[tuple(slN_local)] = ghost
                 else:
@@ -373,8 +411,7 @@ class SphericalShellDG:
                 right_ext[tuple(slN)] = inner_right.select(cell_axis, -1)
 
         # Upwind selection
-        c_for_inner = c_along.view(*c_along.shape,
-                                   *[1] * (inner_left.ndim - c_along.ndim))
+        c_for_inner = c_along.view(*c_along.shape, *[1] * (inner_left.ndim - c_along.ndim))
         c_for_f = c_along.view(*c_along.shape, 1, 1, 1)
         pos = c_for_inner > 0.0
         uL = torch.where(pos, left_ext, inner_left)
@@ -390,8 +427,7 @@ class SphericalShellDG:
 
         return c_for_f * vol - c_for_f * surf
 
-    def _wall_ghost_left(self, inner_right: torch.Tensor,
-                         cell_axis: int) -> torch.Tensor:
+    def _wall_ghost_left(self, inner_right: torch.Tensor, cell_axis: int) -> torch.Tensor:
         """Ghost values for the inner wall (r=R_in): specular bounce-back.
 
         For the DG weak form, the wall ghost must be the specular reflection
@@ -416,8 +452,7 @@ class SphericalShellDG:
         left_ext[tuple(sl)] = inner_right.select(cell_axis, 0)
         return left_ext
 
-    def _dg_rhs(self, f: torch.Tensor,
-                lbm_boundary: torch.Tensor | None = None) -> torch.Tensor:
+    def _dg_rhs(self, f: torch.Tensor, lbm_boundary: torch.Tensor | None = None) -> torch.Tensor:
         """Full DG advection RHS on the spherical shell (all three axes).
 
         For the radial axis (axis=0), the inner wall ghost uses specular
@@ -426,11 +461,13 @@ class SphericalShellDG:
         zero-gradient.  Theta poles use zero-gradient; phi is periodic.
         """
         rhs = torch.zeros_like(f)
-        Q = f.shape[0]
+        f.shape[0]
 
-        for axis, ops, periodic in [(0, self.ops_r, False),
-                                     (1, self.ops_th, False),
-                                     (2, self.ops_ph, True)]:
+        for axis, ops, periodic in [
+            (0, self.ops_r, False),
+            (1, self.ops_th, False),
+            (2, self.ops_ph, True),
+        ]:
             c_along = self.c_hat[:, axis]  # (Q, Nr, Nth, Nph)
             nonzero = c_along.abs().amax(dim=(1, 2, 3)) > 0  # (Q,)
             if not bool(nonzero.any()):
@@ -440,9 +477,16 @@ class SphericalShellDG:
             wall_f = f if axis == 0 else None
             wall_mask = nonzero if axis == 0 else None
             ext_boundary = lbm_boundary if axis == 0 else None
-            rhs_sub = self._rhs_axis(sub, axis, c_sub, ops, periodic=periodic,
-                                     wall_f=wall_f, wall_q_mask=wall_mask,
-                                     lbm_boundary=ext_boundary)
+            rhs_sub = self._rhs_axis(
+                sub,
+                axis,
+                c_sub,
+                ops,
+                periodic=periodic,
+                wall_f=wall_f,
+                wall_q_mask=wall_mask,
+                lbm_boundary=ext_boundary,
+            )
             rhs[nonzero] = rhs[nonzero] + rhs_sub
 
         return rhs
@@ -463,9 +507,9 @@ class SphericalShellDG:
                 oi = int(self.OPP[i])
                 # inner radial face: jr=0, node_r=0
                 f[i, 0, :, :, 0, :, :] = (
-                    feq_wall[i].unsqueeze(-1).unsqueeze(-1) +
-                    f[oi, 0, :, :, -1, :, :] -
-                    feq_wall[oi].unsqueeze(-1).unsqueeze(-1)
+                    feq_wall[i].unsqueeze(-1).unsqueeze(-1)
+                    + f[oi, 0, :, :, -1, :, :]
+                    - feq_wall[oi].unsqueeze(-1).unsqueeze(-1)
                 )
 
     def _macros_from_field(self, f: torch.Tensor):
@@ -483,7 +527,7 @@ class SphericalShellDG:
         For incoming populations (c_ir < 0), set the inner-face DOF to
         the reflected value: f[i, ..., 0, :, :] = f_eq[i] + f[opp] - f_eq[opp].
         """
-        n = self.cfg.degree + 1
+        self.cfg.degree + 1
         rho, ux, uy, uz = self.compute_macros_at_center()
         rho_wall = rho[0]  # (Nth, Nph) first radial element
         feq_wall = self.W.view(-1, 1, 1) * rho_wall.unsqueeze(0)  # (Q, Nth, Nph) u=0
@@ -495,9 +539,9 @@ class SphericalShellDG:
                 # inner radial face: node index 0 along the r-node axis (axis 4)
                 # f_dg[i, 0, jt, jp, 0, :, :] = feq[i] + f[opp, 0, jt, jp, -1, :, :] - feq[opp]
                 self.f_dg[i, 0, :, :, 0, :, :] = (
-                    feq_wall[i].unsqueeze(-1).unsqueeze(-1) +
-                    self.f_dg[oi, 0, :, :, -1, :, :] -
-                    feq_wall[oi].unsqueeze(-1).unsqueeze(-1)
+                    feq_wall[i].unsqueeze(-1).unsqueeze(-1)
+                    + self.f_dg[oi, 0, :, :, -1, :, :]
+                    - feq_wall[oi].unsqueeze(-1).unsqueeze(-1)
                 )
 
     def apply_outer_bc(self, lbm_f_at_shell):
@@ -509,8 +553,10 @@ class SphericalShellDG:
             if bool(c_out[i]):
                 # outer radial face: node index -1 along the r-node axis
                 self.f_dg[i, -1, :, :, -1, :, :] = (
-                    lbm_f_at_shell[i].unsqueeze(-1).unsqueeze(-1).expand(
-                        self.cfg.Ntheta, self.cfg.Nphi, n, n)
+                    lbm_f_at_shell[i]
+                    .unsqueeze(-1)
+                    .unsqueeze(-1)
+                    .expand(self.cfg.Ntheta, self.cfg.Nphi, n, n)
                 )
 
     # ------------------------------------------------------------------
@@ -541,8 +587,8 @@ class SphericalShellDG:
             adv = self._dg_rhs(f, lbm_boundary)
             rho, us = macroscopic_dg(f, self.C, q_first=0)
             from .dg_advection import equilibrium_dg
-            feq = equilibrium_dg(rho, us, self.C, self.W, q_first=0,
-                                 ndim_field=f.ndim)
+
+            feq = equilibrium_dg(rho, us, self.C, self.W, q_first=0, ndim_field=f.ndim)
             coll = -(f - feq) / tau
             return adv + coll
 
@@ -593,7 +639,7 @@ class SphericalShellDG:
         nx_hat = torch.sin(th_g) * torch.cos(ph_g)
         ny_hat = torch.sin(th_g) * torch.sin(ph_g)
         nz_hat = torch.cos(th_g).expand(-1, ph_g.shape[1])
-        dA = self.cfg.R_in ** 2 * torch.sin(th_g) * self.dtheta * self.dphi  # (Nth, 1)
+        dA = self.cfg.R_in**2 * torch.sin(th_g) * self.dtheta * self.dphi  # (Nth, 1)
 
         # Pressure force: +∫ p n̂ dA (LBM weakly-compressible convention)
         F_px = (p_wall * nx_hat * dA).sum()
@@ -617,6 +663,6 @@ class SphericalShellDG:
         F_fz = (mu * dw_dr * dA).sum()
 
         F = torch.stack([F_px + F_fx, F_py + F_fy, F_pz + F_fz])
-        A_ref = math.pi * self.cfg.R_in ** 2
-        cd = 2.0 * float(F[0]) / (self.cfg.u_in ** 2 * A_ref)
+        A_ref = math.pi * self.cfg.R_in**2
+        cd = 2.0 * float(F[0]) / (self.cfg.u_in**2 * A_ref)
         return F, cd

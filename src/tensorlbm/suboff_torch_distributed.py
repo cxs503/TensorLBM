@@ -207,7 +207,11 @@ class SuboffTorchDistributedRunner:
 
         # --- process group -------------------------------------------------
         init = init_distributed or _fallback_init_distributed
-        if not (dist.is_available() and dist.is_initialized()) and world_size is not None and world_size > 1:
+        if (
+            not (dist.is_available() and dist.is_initialized())
+            and world_size is not None
+            and world_size > 1
+        ):
             init("nccl")
         env_rank = int(os.environ.get("RANK", "0"))
         env_world = int(os.environ.get("WORLD_SIZE", "1"))
@@ -228,9 +232,7 @@ class SuboffTorchDistributedRunner:
         if self.world_size > 1 and not (dist.is_available() and dist.is_initialized()):
             # world_size passed explicitly without torchrun env: caller
             # must have set MASTER_ADDR/MASTER_PORT.
-            dist.init_process_group(
-                backend="nccl", rank=self.rank, world_size=self.world_size
-            )
+            dist.init_process_group(backend="nccl", rank=self.rank, world_size=self.world_size)
 
         self.config = config
         self.compile_mode = compile_mode
@@ -241,8 +243,7 @@ class SuboffTorchDistributedRunner:
         nz, ny, nx = config.nz, config.ny, config.nx
         if nz % self.world_size != 0:
             raise ValueError(
-                f"nz={nz} must be divisible by world_size={self.world_size} "
-                f"(z-slab decomposition)"
+                f"nz={nz} must be divisible by world_size={self.world_size} (z-slab decomposition)"
             )
         self.nz, self.ny, self.nx = nz, ny, nx
         self.nz_local = nz // self.world_size
@@ -273,9 +274,14 @@ class SuboffTorchDistributedRunner:
         if build_suboff_solid_slab is not None:
             solid, _stats = build_suboff_solid_slab(
                 hull_type="bare_hull",
-                nx=nx, ny=ny, nz=nz,
-                world_size=self.world_size, rank=self.rank,
-                cx=nx * 0.35, cy=ny / 2.0, cz=nz / 2.0,
+                nx=nx,
+                ny=ny,
+                nz=nz,
+                world_size=self.world_size,
+                rank=self.rank,
+                cx=nx * 0.35,
+                cy=ny / 2.0,
+                cz=nz / 2.0,
                 length=config.hull_length,
                 device=str(self.device),
             )
@@ -284,8 +290,12 @@ class SuboffTorchDistributedRunner:
 
             solid_full, _ = build_suboff_mask(
                 hull_type=SuboffHullType.BARE_HULL,
-                nx=nx, ny=ny, nz=nz,
-                cx=nx * 0.35, cy=ny / 2.0, cz=nz / 2.0,
+                nx=nx,
+                ny=ny,
+                nz=nz,
+                cx=nx * 0.35,
+                cy=ny / 2.0,
+                cz=nz / 2.0,
                 length=config.hull_length,
                 device="cpu",
             )
@@ -432,7 +442,9 @@ class SuboffTorchDistributedRunner:
     # ------------------------------------------------------------------
     # Step
     # ------------------------------------------------------------------
-    def step(self, step_idx: int, compute_force: bool = True) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def step(
+        self, step_idx: int, compute_force: bool = True
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Advance the slab by one production step.
 
         Runs the full production chain (collide+SGS → stream → force →
@@ -496,7 +508,12 @@ class SuboffTorchDistributedRunner:
             fx, fy, fz = self.step(step, compute_force=(step % force_every == 0))
             if step % force_every == 0:
                 forces.append(
-                    {"step": step, "fx": float(fx.item()), "fy": float(fy.item()), "fz": float(fz.item())}
+                    {
+                        "step": step,
+                        "fx": float(fx.item()),
+                        "fy": float(fy.item()),
+                        "fz": float(fz.item()),
+                    }
                 )
             completed = step
             if step % self.check_every == 0 or step == n_steps:

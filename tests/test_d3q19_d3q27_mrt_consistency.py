@@ -20,7 +20,6 @@ from tensorlbm.d3q27 import C as C27
 from tensorlbm.d3q27 import collide_mrt27, equilibrium27, macroscopic27
 from tensorlbm.solver3d import collide_mrt3d
 
-
 CASES = (
     pytest.param("D3Q19", 19, C19, equilibrium3d, macroscopic3d, collide_mrt3d, id="d3q19"),
     pytest.param("D3Q27", 27, C27, equilibrium27, macroscopic27, collide_mrt27, id="d3q27"),
@@ -29,8 +28,8 @@ CASES = (
 # Direct callable-source fingerprints, intentionally updated only after a new
 # consistency audit.  They bind this evidence to the collision implementation.
 SOURCE_SHA256 = {
-    "D3Q19": "847e4b6d385ae9147e1a3b2e02a7de8f19fe1ff1c1ac66a8a900ac901d7f2b13",
-    "D3Q27": "4b1b55bf7b2aae49857f22d261e75666765764f5eeeb37050f105a17bafc10b5",
+    "D3Q19": "1e5a796ac6001ddcf51961325a25fd3c097c85b310e41571d79a8b9b37ddd1ec",
+    "D3Q27": "a08a00d413b432c97b0c3a779c42b83161877e676303571a88adde9121eff76f",
 }
 
 

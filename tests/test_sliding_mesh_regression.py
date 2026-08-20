@@ -14,7 +14,8 @@ import math
 import pytest
 import torch
 
-from tensorlbm.d2q9 import equilibrium as equilibrium2d, macroscopic as macroscopic2d
+from tensorlbm.d2q9 import equilibrium as equilibrium2d
+from tensorlbm.d2q9 import macroscopic as macroscopic2d
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.d3q27 import equilibrium27, macroscopic27
 from tensorlbm.sliding_mesh import (
@@ -28,7 +29,6 @@ from tensorlbm.sliding_mesh_common import (
     rotate_velocity_field_3d,
     sliding_mesh_step,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -78,6 +78,7 @@ class TestSlidingMeshBugs:
         This raises TypeError at runtime.
         """
         import inspect
+
         from tensorlbm.solver import collide_bgk
 
         sig = inspect.signature(collide_bgk)

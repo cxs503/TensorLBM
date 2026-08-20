@@ -7,12 +7,11 @@ import json
 import threading
 from pathlib import Path
 
-import tensorlbm.suboff_campaign_lifecycle as lifecycle
-
 import pytest
-
-from tensorlbm.suboff_campaign_lifecycle import materialize_suboff_campaign_lifecycle
 from test_suboff_campaign_artifact import _short_completed_campaign
+
+import tensorlbm.suboff_campaign_lifecycle as lifecycle
+from tensorlbm.suboff_campaign_lifecycle import materialize_suboff_campaign_lifecycle
 
 
 def _load_json(path: Path) -> dict[str, object]:

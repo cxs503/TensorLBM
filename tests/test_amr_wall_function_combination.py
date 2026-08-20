@@ -12,12 +12,15 @@ import pytest
 import torch
 
 from tensorlbm.amr_common import (
+    SUPPORTED_LATTICES,
     AMRPatch3D,
     coarsen,
     halo_exchange,
     refine,
-    SUPPORTED_LATTICES,
 )
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q27 import equilibrium27, macroscopic27
+from tensorlbm.refinement import BoxRegion
 from tensorlbm.wall_function_common import (
     compute_u_tau,
     compute_y_plus,
@@ -29,15 +32,11 @@ from tensorlbm.wall_refinement_combination_gate import (
     GateStatus,
     GeometryOwnership,
     Lattice,
-    PhysicsModel,
     RefinementType,
     WallRefinementCombination,
     WallTreatment,
     assess_wall_refinement_combination,
 )
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.d3q27 import equilibrium27, macroscopic27
-from tensorlbm.refinement import BoxRegion
 
 
 def _make_equilibrium(lattice: str, nz: int = 6, ny: int = 8, nx: int = 10) -> torch.Tensor:
@@ -116,7 +115,7 @@ class TestAmrWallFunctionCombination:
         """End-to-end: refine → wall function → coarsen roundtrip."""
         q = _q_for(lattice)
         f = _make_equilibrium(lattice, nz=4, ny=6, nx=8)
-        mask = _make_channel_mask(nz=4, ny=6, nx=8)
+        _make_channel_mask(nz=4, ny=6, nx=8)
 
         # Step 1: Refine the coarse field
         f_fine = refine(f, lattice=lattice, tau_c=1.0, tau_f=0.75, ratio=2)
@@ -154,7 +153,7 @@ class TestAmrWallFunctionCombination:
         """AMRPatch3D can hold a wall-function-corrected distribution."""
         q = _q_for(lattice)
         f = _make_equilibrium(lattice, nz=4, ny=6, nx=8)
-        mask = _make_channel_mask(nz=4, ny=6, nx=8)
+        _make_channel_mask(nz=4, ny=6, nx=8)
 
         # Refine and create a patch
         f_fine = refine(f, lattice=lattice, tau_c=1.0, tau_f=0.75, ratio=2)
@@ -193,7 +192,7 @@ class TestAmrWallFunctionCombination:
     @pytest.mark.parametrize("lattice", SUPPORTED_LATTICES)
     def test_halo_exchange_preserves_wall_correction(self, lattice: str) -> None:
         """Halo exchange after wall function should preserve interior correction."""
-        q = _q_for(lattice)
+        _q_for(lattice)
         f = _make_equilibrium(lattice, nz=4, ny=6, nx=8)
         parent_f = _make_equilibrium(lattice, nz=8, ny=12, nx=16)
 

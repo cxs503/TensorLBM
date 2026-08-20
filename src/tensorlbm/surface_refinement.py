@@ -17,12 +17,12 @@ Usage:
 
 from __future__ import annotations
 
-import torch
-import torch.nn.functional as F
 from dataclasses import dataclass
 
-from .refinement import BoxRegion, _coarse_to_fine_3d, _fine_to_coarse_3d
+import torch
+import torch.nn.functional as F
 
+from .refinement import BoxRegion, _coarse_to_fine_3d, _fine_to_coarse_3d
 
 # ---------------------------------------------------------------------------
 # Surface extraction

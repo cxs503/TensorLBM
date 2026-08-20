@@ -1,4 +1,5 @@
 """Two-by-two transverse-domain and inlet-sponge sphere audit."""
+
 from __future__ import annotations
 
 import math
@@ -79,15 +80,16 @@ def assess_sphere_domain_inlet_factorial(
         configuration["shape_zyx"][0] == configuration["shape_zyx"][1]
         for _, _, configuration, _ in parsed
     )
-    references = {
-        float(result["cd_reference_schiller_naumann"])
-        for _, _, _, result in parsed
-    }
+    references = {float(result["cd_reference_schiller_naumann"]) for _, _, _, result in parsed}
     reference_invariant = len(references) == 1
     reference = next(iter(references)) if reference_invariant else math.nan
     provenance_admitted = (
-        schema_valid and required_present and identity_equal
-        and streamwise_fixed and transverse_isotropic and reference_invariant
+        schema_valid
+        and required_present
+        and identity_equal
+        and streamwise_fixed
+        and transverse_isotropic
+        and reference_invariant
     )
 
     cd = {
@@ -111,12 +113,13 @@ def assess_sphere_domain_inlet_factorial(
             "sponge_inlet": enabled,
             "cd_control_volume": cd[(width, enabled)],
             "reference_error_pct": (
-                abs(cd[(width, enabled)] - reference)
-                / max(abs(reference), 1.0e-30)
-                * 100.0
-            ) if reference_invariant else math.inf,
+                abs(cd[(width, enabled)] - reference) / max(abs(reference), 1.0e-30) * 100.0
+            )
+            if reference_invariant
+            else math.inf,
         }
-        for width in widths for enabled in (False, True)
+        for width in widths
+        for enabled in (False, True)
     ]
     return {
         "schema": "tensorlbm-sphere-domain-inlet-factorial-v1",

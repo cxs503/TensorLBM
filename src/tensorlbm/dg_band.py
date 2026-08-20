@@ -27,7 +27,7 @@ from dataclasses import dataclass
 
 import torch
 
-from .dg_advection import _Ops, collide_bgk_dg, equilibrium_dg, get_ops, macroscopic_dg
+from .dg_advection import _Ops, equilibrium_dg, macroscopic_dg
 
 
 @dataclass
@@ -235,7 +235,6 @@ def dg_rhs_band(
     """
     ndim = topo.ndim
     n_node = ops.n_node
-    device = f_dg.device
     n_dims = f_dg.ndim
     # Layout: f_dg = (Q, n_band, *nodes) with node axes in (z, y, x) order, so the
     # x-node axis is LAST.  Lattice velocity columns are (cx, cy, cz) = v=0,1,2.

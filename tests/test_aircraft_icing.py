@@ -29,15 +29,14 @@ import torch
 from tensorlbm.aircraft_icing import (
     IcingConfig,
     RimeIcingSimulation,
+    _tvd_face_states,
     ice_shape_metrics,
     naca0012_mask_2d,
-    rime_density_jones,
     rime_density_macklin,
     run_glaze_icing,
     run_rime_icing,
     seed_counts_total,
     surface_arc_length,
-    _tvd_face_states,
 )
 
 
@@ -80,9 +79,7 @@ def test_parcel_scaling_keeps_mass_flux() -> None:
     assert math.isclose(cfg.m_parcel, n * cfg.m_droplet, rel_tol=1e-12)
     assert math.isclose(cfg.parcels_per_step * n, cfg.droplets_per_step, rel_tol=1e-9)
     # explicit multiplier keeps the target under control and is honoured
-    cfg2 = IcingConfig(
-        nx=100, ny=64, chord_frac=0.4, accel_override=25.0, parcel_multiplier=7
-    )
+    cfg2 = IcingConfig(nx=100, ny=64, chord_frac=0.4, accel_override=25.0, parcel_multiplier=7)
     assert cfg2.effective_parcel_multiplier == 7
     assert cfg2.parcels_per_step == cfg.droplets_per_step / 7
 
@@ -223,8 +220,7 @@ def test_ice_shape_metrics_synthetic() -> None:
     ice[33, 40] = True  # 2 layers
     ice[34, 40] = True  # 3 layers -> upper horn
     ice[27, 45] = True  # 1 layer below -> lower horn
-    m = ice_shape_metrics(af, ice, dx_phys=0.01, chord_phys=0.4, chord_lu=40.0,
-                          stag=(30, 20))
+    m = ice_shape_metrics(af, ice, dx_phys=0.01, chord_phys=0.4, chord_lu=40.0, stag=(30, 20))
     assert m["n_ice_cells"] == 5
     assert m["upper_horn_cells"] == 3
     assert m["lower_horn_cells"] == 1
@@ -287,8 +283,9 @@ def test_mass_audit_static_flow() -> None:
     b = res["beta"]
     assert len(b["beta"]) and 0.05 < float(b["beta"].max()) <= 1.5
     capture_h = float(res["beta_grid"].sum())
-    proj_h = cfg.chord_lu * (abs(math.sin(math.radians(cfg.aoa_deg)))
-                             + cfg.naca_t * math.cos(math.radians(cfg.aoa_deg)))
+    proj_h = cfg.chord_lu * (
+        abs(math.sin(math.radians(cfg.aoa_deg))) + cfg.naca_t * math.cos(math.radians(cfg.aoa_deg))
+    )
     assert 0.0 < capture_h < proj_h * 1.05, (capture_h, proj_h)
 
 
@@ -317,8 +314,10 @@ def test_freeze_leftover_cascade_and_pending_split() -> None:
     assert math.isclose(a["frozen"], n_ice * cfg.m_cell_ice, rel_tol=1e-9)
     # decomposition closes on the total
     assert math.isclose(
-        a["pending"], a["pending_fluid"] + a["pending_solid"],
-        rel_tol=1e-12, abs_tol=1e-15,
+        a["pending"],
+        a["pending_fluid"] + a["pending_solid"],
+        rel_tol=1e-12,
+        abs_tol=1e-15,
     )
     # cascade: stranded water is the minority (in this high-accel config
     # a few fully-enclosed pockets legitimately keep theirs; at production
@@ -401,9 +400,7 @@ def test_compile_mode_flow_step_equivalence() -> None:
     except ImportError:  # pragma: no cover
         pytest.skip("torch inductor backend unavailable")
     torch.manual_seed(0)
-    sim_e = RimeIcingSimulation(
-        _small_cfg(uniform_flow=False), log=lambda *a: None
-    )
+    sim_e = RimeIcingSimulation(_small_cfg(uniform_flow=False), log=lambda *a: None)
     torch.manual_seed(0)
     sim_c = RimeIcingSimulation(
         _small_cfg(uniform_flow=False, compile_mode="default"), log=lambda *a: None
@@ -550,8 +547,9 @@ def test_eulerian_beta_bounds() -> None:
     assert float(b["beta"].max()) <= 1.0 + 1e-3
     # capture height bounded by the geometric projection (2a gate)
     capture_h = float(e["beta_grid"].sum())
-    proj_h = cfg.chord_lu * (abs(math.sin(math.radians(cfg.aoa_deg)))
-                             + cfg.naca_t * math.cos(math.radians(cfg.aoa_deg)))
+    proj_h = cfg.chord_lu * (
+        abs(math.sin(math.radians(cfg.aoa_deg))) + cfg.naca_t * math.cos(math.radians(cfg.aoa_deg))
+    )
     assert 0.0 < capture_h < proj_h * 1.05, (capture_h, proj_h)
     # support is local to the leading edge (no far-field impacts)
     assert abs(b["s_over_c"]).max() < 0.5
@@ -637,13 +635,23 @@ def test_beta_cap_window_value_and_semantics() -> None:
     """Cap formula reproduces the #79 analytic value; empty window -> inf."""
     # standard 2b production case: dx=4.17 mm, 360 s, trailing half window
     cfg = IcingConfig(
-        nx=320, ny=160, steps=3000, warmup_steps=0, uniform_flow=True,
-        droplet_phase="eulerian", lwc=0.5e-3, t_exposure=360.0,
-        rime_density_mode="macklin", beta_window_mode="trailing",
-        device="cpu", log_every=10**9,
+        nx=320,
+        ny=160,
+        steps=3000,
+        warmup_steps=0,
+        uniform_flow=True,
+        droplet_phase="eulerian",
+        lwc=0.5e-3,
+        t_exposure=360.0,
+        rime_density_mode="macklin",
+        beta_window_mode="trailing",
+        device="cpu",
+        log_every=10**9,
     )
-    analytic = cfg.rho_rime_eff * cfg.dx_phys / (
-        cfg.lwc * cfg.v_inf * (1.0 - cfg.beta_window_frac) * cfg.t_exposure
+    analytic = (
+        cfg.rho_rime_eff
+        * cfg.dx_phys
+        / (cfg.lwc * cfg.v_inf * (1.0 - cfg.beta_window_frac) * cfg.t_exposure)
     )
     assert math.isclose(cfg.beta_cap_window, analytic, rel_tol=1e-12)
     assert math.isclose(cfg.beta_cap_window, 0.6337, abs_tol=5e-4)  # #79 table
@@ -752,7 +760,7 @@ def test_eulerian_donor2_advection_accuracy_and_tvd() -> None:
     uy = torch.zeros((ny, nx), device=dev)
     solid = torch.zeros((ny, nx), dtype=torch.bool, device=dev)
     xg = torch.arange(nx, dtype=torch.float32, device=dev)[None, :].expand(ny, nx)
-    alpha0 = torch.exp(-((xg - 20.0) / 3.0) ** 2).clone()
+    alpha0 = torch.exp(-(((xg - 20.0) / 3.0) ** 2)).clone()
     tau_frozen, alpha_in, u_in = 1.0e9, 0.05, 0.05
     peaks, maxima, minima = {}, {}, {}
     for scheme, donor2 in (("donor", False), ("donor2", True)):
@@ -760,8 +768,18 @@ def test_eulerian_donor2_advection_accuracy_and_tvd() -> None:
         mx, my = alpha * ux, alpha * uy
         for _ in range(200):  # advect ~10 cells
             alpha, mx, my, _imp, _bf = RimeIcingSimulation._euler_step(
-                alpha, mx, my, ux, uy, solid, tau_frozen, 0.0,
-                alpha_in, u_in, -1.0, donor2,
+                alpha,
+                mx,
+                my,
+                ux,
+                uy,
+                solid,
+                tau_frozen,
+                0.0,
+                alpha_in,
+                u_in,
+                -1.0,
+                donor2,
             )
         peaks[scheme] = float(alpha.max())
         maxima[scheme] = float(alpha.max())
@@ -783,8 +801,18 @@ def test_eulerian_donor2_advection_accuracy_and_tvd() -> None:
         mx, my = alpha * ux, alpha * uy
         for _ in range(120):
             alpha, mx, my, _imp, _bf = RimeIcingSimulation._euler_step(
-                alpha, mx, my, ux, uy, solid, tau_frozen, 0.0,
-                alpha_in, u_in, -1.0, donor2,
+                alpha,
+                mx,
+                my,
+                ux,
+                uy,
+                solid,
+                tau_frozen,
+                0.0,
+                alpha_in,
+                u_in,
+                -1.0,
+                donor2,
             )
         assert float(alpha.min()) >= -1e-8  # no undershoot
         step_max[scheme] = float(alpha.max())
@@ -856,11 +884,24 @@ def test_eulerian_step_compile_equivalence() -> None:
     except ImportError:  # pragma: no cover
         pytest.skip("torch inductor backend unavailable")
     torch.manual_seed(0)
-    common = dict(nx=64, ny=48, chord_frac=0.4, cx_frac=0.3, aoa_deg=4.0,
-                  warmup_steps=0, uniform_flow=False, droplet_phase="eulerian",
-                  mvd=100e-6, accel_override=1e3, rime_density_mode="const",
-                  rho_rime=1.0e9, device="cpu", log_every=10**9, seed=0,
-                  steps=2)
+    common = dict(
+        nx=64,
+        ny=48,
+        chord_frac=0.4,
+        cx_frac=0.3,
+        aoa_deg=4.0,
+        warmup_steps=0,
+        uniform_flow=False,
+        droplet_phase="eulerian",
+        mvd=100e-6,
+        accel_override=1e3,
+        rime_density_mode="const",
+        rho_rime=1.0e9,
+        device="cpu",
+        log_every=10**9,
+        seed=0,
+        steps=2,
+    )
     sim_e = RimeIcingSimulation(IcingConfig(compile_mode=None, **common), log=lambda *a: None)
     sim_c = RimeIcingSimulation(IcingConfig(compile_mode="default", **common), log=lambda *a: None)
     from tensorlbm.d3q19 import macroscopic3d
@@ -936,12 +977,28 @@ def test_cumulant_step_compile_equivalence() -> None:
     except ImportError:  # pragma: no cover
         pytest.skip("torch inductor backend unavailable")
     torch.manual_seed(0)
-    common = dict(nx=64, ny=48, chord_frac=0.4, cx_frac=0.3, aoa_deg=4.0,
-                  warmup_steps=0, uniform_flow=False, collision="cumulant",
-                  c_s=0.1, re_lu_target=1000.0, mvd=100e-6, accel_override=1e3,
-                  rime_density_mode="const", rho_rime=1.0e9, device="cpu",
-                  log_every=10**9, seed=0, steps=2, droplet_phase="lagrangian",
-                  disable_droplets=True)
+    common = dict(
+        nx=64,
+        ny=48,
+        chord_frac=0.4,
+        cx_frac=0.3,
+        aoa_deg=4.0,
+        warmup_steps=0,
+        uniform_flow=False,
+        collision="cumulant",
+        c_s=0.1,
+        re_lu_target=1000.0,
+        mvd=100e-6,
+        accel_override=1e3,
+        rime_density_mode="const",
+        rho_rime=1.0e9,
+        device="cpu",
+        log_every=10**9,
+        seed=0,
+        steps=2,
+        droplet_phase="lagrangian",
+        disable_droplets=True,
+    )
     sim_e = RimeIcingSimulation(IcingConfig(compile_mode=None, **common), log=lambda *a: None)
     sim_c = RimeIcingSimulation(IcingConfig(compile_mode="default", **common), log=lambda *a: None)
     for _ in range(4):
@@ -995,7 +1052,9 @@ def test_messinger_panel_regimes_and_energy_closure() -> None:
     """Rime/glaze/warm regimes with machine-precision energy closure."""
     from tensorlbm.aircraft_icing import analytic_htc_w_m2k, messinger_panel_fluxes
 
-    h0 = float(analytic_htc_w_m2k(np.array([0.0]), np.array([IcingConfig().v_inf]), IcingConfig())[0])
+    h0 = float(
+        analytic_htc_w_m2k(np.array([0.0]), np.array([IcingConfig().v_inf]), IcingConfig())[0]
+    )
     # cold -> rime: everything freezes, surface below 0 C, no runback
     cfg = IcingConfig(t_static_c=-20.0)
     A = cfg.glaze_panel_cells * cfg.dx_phys**2
@@ -1052,7 +1111,7 @@ def _glaze_panels(cfg: IcingConfig, n_side: int = 20) -> dict:
     s_lo = -ds * np.arange(1, n_side + 1)
     s = np.concatenate([[0.0], s_up, s_lo])
     n = len(s)
-    beta = np.exp(-(s / (6.0 * ds)) ** 2)
+    beta = np.exp(-((s / (6.0 * ds)) ** 2))
     area = np.full(n, ds * cfg.dx_phys)
     v_e = np.full(n, cfg.v_inf)
     tau_t = np.full(n, 50.0)  # Pa
@@ -1207,8 +1266,9 @@ def test_deposit_cascade_column() -> None:
     cell_mass[2, 3] = 3.5 * m_cell
     cell_rho = np.zeros((ny, nx))
     cell_rho[2, 3] = rho
-    solid, m_w = deposit_glaze_ice(airfoil, airfoil.copy(), np.zeros((ny, nx)),
-                                   cell_mass, cell_rho, dx)
+    solid, m_w = deposit_glaze_ice(
+        airfoil, airfoil.copy(), np.zeros((ny, nx)), cell_mass, cell_rho, dx
+    )
     ice = solid & ~airfoil
     assert ice.sum() == 3
     assert ice[2, 3] and ice[1, 3] and ice[0, 3]  # column, not lateral spread

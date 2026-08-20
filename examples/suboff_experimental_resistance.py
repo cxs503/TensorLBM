@@ -77,8 +77,7 @@ PRIMARY_SOURCE = {
 TowTankPoint = SuboffTowTankResistancePoint
 TOW_TANK_POINTS = {
     hull_type: tuple(
-        point for point in SUBOFF_TOW_TANK_RESISTANCE_TABLE14
-        if point.hull_type == hull_type
+        point for point in SUBOFF_TOW_TANK_RESISTANCE_TABLE14 if point.hull_type == hull_type
     )
     for hull_type in ("bare_hull", "full")
 }
@@ -113,7 +112,11 @@ def smooth_ramp_factor(step: int, ramp_steps: int) -> float:
 
 
 def build_far_field_sponge(
-    nx: int, ny: int, nz: int, width: int, strength: float,
+    nx: int,
+    ny: int,
+    nz: int,
+    width: int,
+    strength: float,
     device: torch.device,
 ) -> torch.Tensor:
     """Quadratic target-field sponge at all six far-field faces."""
@@ -144,7 +147,9 @@ def build_far_field_sponge(
 
 
 def project_no_penetration(
-    f: torch.Tensor, solid: torch.Tensor, near: torch.Tensor,
+    f: torch.Tensor,
+    solid: torch.Tensor,
+    near: torch.Tensor,
 ) -> torch.Tensor:
     """Remove near-wall normal velocity while preserving tangential flow."""
     rho, ux, uy, uz = macroscopic3d(f)
@@ -157,9 +162,17 @@ def project_no_penetration(
     ux_target = ux + near_f * (ux_wall - ux)
     uy_target = uy + near_f * (uy_wall - uy)
     uz_target = uz + near_f * (uz_wall - uz)
-    return f + equilibrium3d(
-        rho, ux_target, uy_target, uz_target, device=f.device,
-    ) - equilibrium3d(rho, ux, uy, uz, device=f.device)
+    return (
+        f
+        + equilibrium3d(
+            rho,
+            ux_target,
+            uy_target,
+            uz_target,
+            device=f.device,
+        )
+        - equilibrium3d(rho, ux, uy, uz, device=f.device)
+    )
 
 
 def run_case(args: argparse.Namespace) -> dict:
@@ -173,9 +186,9 @@ def run_case(args: argparse.Namespace) -> dict:
         raise ValueError("stress-exchange-distance must be non-negative")
     if args.resume and not args.checkpoint:
         raise ValueError("resume requires --checkpoint")
-    aux_cv_margins = tuple(sorted({
-        int(value) for value in args.aux_cv_margins.split(",") if value.strip()
-    }))
+    aux_cv_margins = tuple(
+        sorted({int(value) for value in args.aux_cv_margins.split(",") if value.strip()})
+    )
     if any(margin < 1 for margin in aux_cv_margins):
         raise ValueError("aux-cv-margins must contain positive integers")
     point = experimental_point(args.hull_type, args.speed_knots)
@@ -207,14 +220,28 @@ def run_case(args: argparse.Namespace) -> dict:
     )
     started = time.time()
     solid, geometry = build_suboff_mask(
-        args.hull_type, args.nx, args.ny, args.nz,
-        cx=cx, cy=cy, cz=cz, length=length_lu, radius=radius_lu,
-        config=SuboffConfig(), device=device,
+        args.hull_type,
+        args.nx,
+        args.ny,
+        args.nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        length=length_lu,
+        radius=radius_lu,
+        config=SuboffConfig(),
+        device=device,
     )
     near = get_near_wall_3d(solid)
     if args.hull_type == "bare_hull":
         pressure_mesh = SurfaceMesh.from_suboff(
-            solid, near, cx, cy, cz, length_lu, radius_lu,
+            solid,
+            near,
+            cx,
+            cy,
+            cz,
+            length_lu,
+            radius_lu,
             config=SuboffConfig(),
         )
         pressure_method = "analytical SUBOFF normals"
@@ -232,14 +259,30 @@ def run_case(args: argparse.Namespace) -> dict:
     if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}:
         print(f"{tag} building BFL link-distance field", flush=True)
         bfl_mask, bfl_q = compute_q_suboff(
-            args.nx, args.ny, args.nz, cx, cy, cz, length_lu,
-            hull_type=args.hull_type, config=SuboffConfig(), device=device,
+            args.nx,
+            args.ny,
+            args.nz,
+            cx,
+            cy,
+            cz,
+            length_lu,
+            hull_type=args.hull_type,
+            config=SuboffConfig(),
+            device=device,
         )
         if args.hull_type == "full":
             bare, _ = build_suboff_mask(
-                "bare_hull", args.nx, args.ny, args.nz,
-                cx=cx, cy=cy, cz=cz, length=length_lu, radius=radius_lu,
-                config=SuboffConfig(), device=device,
+                "bare_hull",
+                args.nx,
+                args.ny,
+                args.nz,
+                cx=cx,
+                cy=cy,
+                cz=cz,
+                length=length_lu,
+                radius=radius_lu,
+                config=SuboffConfig(),
+                device=device,
             )
             bfl_q, appendage_link_diagnostics = refine_q_suboff_appendages(
                 bfl_mask,
@@ -254,93 +297,103 @@ def run_case(args: argparse.Namespace) -> dict:
             print(
                 f"{tag} BFL links={int(bfl_mask.sum().item())} "
                 f"appendage_boundary_links={appendage_links} "
-                f"scheme={SUBOFF_APPENDAGE_LINK_SCHEME}", flush=True,
+                f"scheme={SUBOFF_APPENDAGE_LINK_SCHEME}",
+                flush=True,
             )
         else:
             print(f"{tag} BFL links={int(bfl_mask.sum().item())}", flush=True)
         if args.hull_type == "bare_hull":
-            wall_area_weight, surface_area_diagnostics = (
-                bfl_surface_area_weights(
-                    bfl_mask,
-                    (
-                        pressure_mesh.nx_n, pressure_mesh.ny_n,
-                        pressure_mesh.nz_n,
-                    ),
-                    reference_area=float(geometry["wetted_area_lu2"]),
-                    boundary_mask=near,
-                )
+            wall_area_weight, surface_area_diagnostics = bfl_surface_area_weights(
+                bfl_mask,
+                (
+                    pressure_mesh.nx_n,
+                    pressure_mesh.ny_n,
+                    pressure_mesh.nz_n,
+                ),
+                reference_area=float(geometry["wetted_area_lu2"]),
+                boundary_mask=near,
             )
         else:
             assert bare is not None
             bare_near = get_near_wall_3d(bare)
             bare_surface = SurfaceMesh.from_gradient(bare, bare_near)
             bare_bfl_mask, _ = compute_q_suboff(
-                args.nx, args.ny, args.nz, cx, cy, cz, length_lu,
-                hull_type="bare_hull", config=SuboffConfig(), device=device,
+                args.nx,
+                args.ny,
+                args.nz,
+                cx,
+                cy,
+                cz,
+                length_lu,
+                hull_type="bare_hull",
+                config=SuboffConfig(),
+                device=device,
             )
             _, bare_area_diagnostics = bfl_surface_area_weights(
                 bare_bfl_mask,
                 (
-                    bare_surface.nx_n, bare_surface.ny_n,
+                    bare_surface.nx_n,
+                    bare_surface.ny_n,
                     bare_surface.nz_n,
                 ),
                 reference_area=float(geometry["wetted_area_lu2"]),
                 boundary_mask=bare_near,
             )
-            wall_area_weight, surface_area_diagnostics = (
-                bfl_surface_area_weights(
-                    bfl_mask,
-                    (
-                        pressure_mesh.nx_n, pressure_mesh.ny_n,
-                        pressure_mesh.nz_n,
-                    ),
-                    calibration_factor=(
-                        bare_area_diagnostics.calibration_factor
-                    ),
-                    boundary_mask=near,
-                )
+            wall_area_weight, surface_area_diagnostics = bfl_surface_area_weights(
+                bfl_mask,
+                (
+                    pressure_mesh.nx_n,
+                    pressure_mesh.ny_n,
+                    pressure_mesh.nz_n,
+                ),
+                calibration_factor=(bare_area_diagnostics.calibration_factor),
+                boundary_mask=near,
             )
 
     rho0 = torch.ones((args.nz, args.ny, args.nx), device=device)
     ux0 = torch.full_like(rho0, args.lattice_speed)
-    if not (
-        args.boundary in {"bfl_wall_model", "bfl_spalding"}
-        and args.ramp_steps > 0
-    ):
+    if not (args.boundary in {"bfl_wall_model", "bfl_spalding"} and args.ramp_steps > 0):
         ux0[solid] = 0.0
     zeros = torch.zeros_like(rho0)
     f = equilibrium3d(rho0, ux0, zeros, zeros, device=device)
     free_stream_f = equilibrium3d(
-        rho0, torch.full_like(rho0, args.lattice_speed), zeros, zeros,
+        rho0,
+        torch.full_like(rho0, args.lattice_speed),
+        zeros,
+        zeros,
         device=device,
     )
     if args.sponge_mode == "equilibrium_difference":
         outlet_width = args.outlet_sponge_width or args.sponge_width
         face_widths = {
             "x+": outlet_width,
-            "y-": args.sponge_width, "y+": args.sponge_width,
-            "z-": args.sponge_width, "z+": args.sponge_width,
+            "y-": args.sponge_width,
+            "y+": args.sponge_width,
+            "z-": args.sponge_width,
+            "z+": args.sponge_width,
         }
         if args.sponge_inlet:
             face_widths["x-"] = args.sponge_width
         sponge = build_anisotropic_sponge_sigma_3d(
-            (args.nz, args.ny, args.nx), face_widths=face_widths,
-            max_strength=args.sponge_strength, device=device,
+            (args.nz, args.ny, args.nx),
+            face_widths=face_widths,
+            max_strength=args.sponge_strength,
+            device=device,
         )
     else:
         sponge = build_far_field_sponge(
-            args.nx, args.ny, args.nz, args.sponge_width,
-            args.sponge_strength, device,
+            args.nx,
+            args.ny,
+            args.nz,
+            args.sponge_width,
+            args.sponge_strength,
+            device,
         )
     initial_mass = float(rho0.sum().item())
     solid_mask = solid.unsqueeze(0).expand(19, args.nz, args.ny, args.nx)
     body_indices = solid.nonzero(as_tuple=False)
-    z_min, y_min, x_min = (
-        int(body_indices[:, axis].min().item()) for axis in range(3)
-    )
-    z_max, y_max, x_max = (
-        int(body_indices[:, axis].max().item()) + 1 for axis in range(3)
-    )
+    z_min, y_min, x_min = (int(body_indices[:, axis].min().item()) for axis in range(3))
+    z_max, y_max, x_max = (int(body_indices[:, axis].max().item()) + 1 for axis in range(3))
     cv = box_control_volume(
         (args.nz, args.ny, args.nx),
         x0=max(1, x_min - args.cv_margin),
@@ -355,8 +408,7 @@ def run_case(args: argparse.Namespace) -> dict:
         raise RuntimeError("control volume does not contain the complete body")
     if args.sponge_width > 0 and float(sponge[cv].max().item()) > 0.0:
         raise ValueError(
-            "control volume overlaps the sponge; enlarge the domain or "
-            "reduce cv-margin"
+            "control volume overlaps the sponge; enlarge the domain or reduce cv-margin"
         )
     auxiliary_cvs: dict[int, torch.Tensor] = {}
     for margin in aux_cv_margins:
@@ -364,9 +416,12 @@ def run_case(args: argparse.Namespace) -> dict:
             continue
         candidate = box_control_volume(
             (args.nz, args.ny, args.nx),
-            x0=max(1, x_min - margin), x1=min(args.nx - 1, x_max + margin),
-            y0=max(1, y_min - margin), y1=min(args.ny - 1, y_max + margin),
-            z0=max(1, z_min - margin), z1=min(args.nz - 1, z_max + margin),
+            x0=max(1, x_min - margin),
+            x1=min(args.nx - 1, x_max + margin),
+            y0=max(1, y_min - margin),
+            y1=min(args.ny - 1, y_max + margin),
+            z0=max(1, z_min - margin),
+            z1=min(args.nz - 1, z_max + margin),
             device=device,
         )
         if bool(solid[candidate.logical_not() & solid].any()):
@@ -376,8 +431,10 @@ def run_case(args: argparse.Namespace) -> dict:
         auxiliary_cvs[margin] = candidate
 
     force_scale = force_scale_newton(
-        rho_water=args.rho_water, dx_m=dx_m,
-        speed_mps=point.speed_mps, lattice_speed=args.lattice_speed,
+        rho_water=args.rho_water,
+        dx_m=dx_m,
+        speed_mps=point.speed_mps,
+        lattice_speed=args.lattice_speed,
     )
     block_p: list[float] = []
     block_f: list[float] = []
@@ -411,7 +468,8 @@ def run_case(args: argparse.Namespace) -> dict:
     checkpoint = Path(args.checkpoint) if args.checkpoint else None
     checkpoint_signature = {
         "grid_nx_ny_nz": [args.nx, args.ny, args.nz],
-        "hull_type": args.hull_type, "hull_length": args.hull_length,
+        "hull_type": args.hull_type,
+        "hull_length": args.hull_length,
         "speed_knots": args.speed_knots,
         "center_x_fraction": args.center_x_fraction,
         "lattice_speed": args.lattice_speed,
@@ -443,19 +501,15 @@ def run_case(args: argparse.Namespace) -> dict:
         "rho_water": args.rho_water,
         "nu_water": args.nu_water,
         "stress_exchange_distance": (
-            args.stress_exchange_distance
-            if args.stress_exchange_distance > 0.0 else None
+            args.stress_exchange_distance if args.stress_exchange_distance > 0.0 else None
         ),
         "surface_area_weighting": (
-            "bfl_axial_projection_calibrated_v1"
-            if bfl_mask is not None else None
+            "bfl_axial_projection_calibrated_v1" if bfl_mask is not None else None
         ),
         "wall_diagnostic_interval": args.wall_diagnostic_interval,
     }
     if args.hull_type == "full" and bfl_mask is not None:
-        checkpoint_signature["appendage_link_scheme"] = (
-            SUBOFF_APPENDAGE_LINK_SCHEME
-        )
+        checkpoint_signature["appendage_link_scheme"] = SUBOFF_APPENDAGE_LINK_SCHEME
     start_step = 0
     if args.resume:
         assert checkpoint is not None
@@ -483,8 +537,7 @@ def run_case(args: argparse.Namespace) -> dict:
         ]
         auxiliary_cv_samples = {
             int(margin): [
-                (int(sample_step), float(value))
-                for sample_step, value in samples.tolist()
+                (int(sample_step), float(value)) for sample_step, value in samples.tolist()
             ]
             for margin, samples in state["auxiliary_cv_samples"].items()
         }
@@ -495,36 +548,42 @@ def run_case(args: argparse.Namespace) -> dict:
         if checkpoint is None:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
-        atomic_torch_save({
-            "schema": "tensorlbm-suboff-direct-checkpoint-v4",
-            "configuration": checkpoint_signature,
-            "step": step,
-            "populations": f.detach().cpu(),
-            "pressure_history": torch.tensor(all_p, dtype=torch.float64),
-            "bfl_pressure_history": torch.tensor(all_p_voxel, dtype=torch.float64),
-            "friction_history": torch.tensor(all_f, dtype=torch.float64),
-            "control_volume_history": torch.tensor(all_cv, dtype=torch.float64),
-            "bfl_total_history": torch.tensor(all_bfl_total, dtype=torch.float64),
-            "pending_pressure_block": torch.tensor(block_p, dtype=torch.float64),
-            "pending_friction_block": torch.tensor(block_f, dtype=torch.float64),
-            "surface_pressure_samples": torch.tensor(
-                surface_pressure_samples, dtype=torch.float64,
-            ).reshape(-1, 2),
-            "primary_cv_samples": torch.tensor(
-                primary_cv_samples, dtype=torch.float64,
-            ).reshape(-1, 2),
-            "auxiliary_cv_samples": {
-                str(margin): torch.tensor(samples, dtype=torch.float64).reshape(-1, 2)
-                for margin, samples in auxiliary_cv_samples.items()
+        atomic_torch_save(
+            {
+                "schema": "tensorlbm-suboff-direct-checkpoint-v4",
+                "configuration": checkpoint_signature,
+                "step": step,
+                "populations": f.detach().cpu(),
+                "pressure_history": torch.tensor(all_p, dtype=torch.float64),
+                "bfl_pressure_history": torch.tensor(all_p_voxel, dtype=torch.float64),
+                "friction_history": torch.tensor(all_f, dtype=torch.float64),
+                "control_volume_history": torch.tensor(all_cv, dtype=torch.float64),
+                "bfl_total_history": torch.tensor(all_bfl_total, dtype=torch.float64),
+                "pending_pressure_block": torch.tensor(block_p, dtype=torch.float64),
+                "pending_friction_block": torch.tensor(block_f, dtype=torch.float64),
+                "surface_pressure_samples": torch.tensor(
+                    surface_pressure_samples,
+                    dtype=torch.float64,
+                ).reshape(-1, 2),
+                "primary_cv_samples": torch.tensor(
+                    primary_cv_samples,
+                    dtype=torch.float64,
+                ).reshape(-1, 2),
+                "auxiliary_cv_samples": {
+                    str(margin): torch.tensor(samples, dtype=torch.float64).reshape(-1, 2)
+                    for margin, samples in auxiliary_cv_samples.items()
+                },
+                "snapshots": snapshots,
+                "wall_applicability": wall_applicability,
             },
-            "snapshots": snapshots,
-            "wall_applicability": wall_applicability,
-        }, checkpoint)
+            checkpoint,
+        )
 
     def apply_outer_boundary(state: torch.Tensor) -> torch.Tensor:
         if args.far_field_mode == "non_equilibrium_extrapolation":
             return non_equilibrium_far_field_bc_3d(
-                state, u_in=args.lattice_speed,
+                state,
+                u_in=args.lattice_speed,
             )
         return far_field_bc_3d(state, u_in=args.lattice_speed)
 
@@ -547,30 +606,33 @@ def run_case(args: argparse.Namespace) -> dict:
         if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}:
             collect_wall_diagnostics = step % args.wall_diagnostic_interval == 0
             wall_result = bfl_wall_function_3d(
-                f, f_post_collision, solid, nu_lu,
-                bfl_mask, bfl_q, y_val=args.wall_distance,
-                wall_law=args.wall_law, near_mask=near,
-                apply_bfl=True, use_guo=True,
+                f,
+                f_post_collision,
+                solid,
+                nu_lu,
+                bfl_mask,
+                bfl_q,
+                y_val=args.wall_distance,
+                wall_law=args.wall_law,
+                near_mask=near,
+                apply_bfl=True,
+                use_guo=True,
                 bfl_wall_mode=(
-                    "spalding_exchange" if args.boundary == "bfl_spalding"
-                    else (
-                        "wall_model_slip"
-                        if args.boundary == "bfl_wall_model" else "stationary"
-                    )
+                    "spalding_exchange"
+                    if args.boundary == "bfl_spalding"
+                    else ("wall_model_slip" if args.boundary == "bfl_wall_model" else "stationary")
                 ),
                 wall_activation=(
-                    ramp_factor
-                    if args.boundary in {"bfl_wall_model", "bfl_spalding"}
-                    else 1.0
+                    ramp_factor if args.boundary in {"bfl_wall_model", "bfl_spalding"} else 1.0
                 ),
                 exchange_distance=args.exchange_distance,
                 stress_exchange_distance=(
-                    args.stress_exchange_distance
-                    if args.stress_exchange_distance > 0.0 else None
+                    args.stress_exchange_distance if args.stress_exchange_distance > 0.0 else None
                 ),
                 nonequilibrium_scale=args.wall_nonequilibrium_scale,
                 wall_normals=(
-                    pressure_mesh.nx_n, pressure_mesh.ny_n,
+                    pressure_mesh.nx_n,
+                    pressure_mesh.ny_n,
                     pressure_mesh.nz_n,
                 ),
                 area_weight=wall_area_weight,
@@ -585,19 +647,20 @@ def run_case(args: argparse.Namespace) -> dict:
                 )
                 if wall_diagnostics.y_plus_mean is not None:
                     wall_applicability["y_plus_mean_sum"] = (
-                        float(wall_applicability["y_plus_mean_sum"])
-                        + wall_diagnostics.y_plus_mean
+                        float(wall_applicability["y_plus_mean_sum"]) + wall_diagnostics.y_plus_mean
                     )
                 if wall_diagnostics.y_plus_min is not None:
                     current_min = wall_applicability["y_plus_min"]
                     wall_applicability["y_plus_min"] = (
-                        wall_diagnostics.y_plus_min if current_min is None
+                        wall_diagnostics.y_plus_min
+                        if current_min is None
                         else min(float(current_min), wall_diagnostics.y_plus_min)
                     )
                 if wall_diagnostics.y_plus_max is not None:
                     current_max = wall_applicability["y_plus_max"]
                     wall_applicability["y_plus_max"] = (
-                        wall_diagnostics.y_plus_max if current_max is None
+                        wall_diagnostics.y_plus_max
+                        if current_max is None
                         else max(float(current_max), wall_diagnostics.y_plus_max)
                     )
             else:
@@ -606,13 +669,18 @@ def run_case(args: argparse.Namespace) -> dict:
             if args.boundary == "projected_wall":
                 f = project_no_penetration(f, solid, near)
             f, friction_lu, pressure_voxel_lu = wall_function_3d(
-                f, solid, nu_lu, y_val=args.wall_distance,
-                wall_law=args.wall_law, near_mask=near,
+                f,
+                solid,
+                nu_lu,
+                y_val=args.wall_distance,
+                wall_law=args.wall_law,
+                near_mask=near,
             )
         if args.sponge_width > 0 and args.sponge_strength > 0.0:
             if args.sponge_mode == "equilibrium_difference":
                 f = apply_equilibrium_difference_sponge(
-                    f, sponge,
+                    f,
+                    sponge,
                     velocity_target=(args.lattice_speed, 0.0, 0.0),
                 )
             else:
@@ -621,9 +689,17 @@ def run_case(args: argparse.Namespace) -> dict:
         # Re-assert outer faces because the wall-force operation computes and
         # updates the full tensor, while the physical far field is prescribed.
         f = apply_outer_boundary(f)
-        cv_force_lu = float(observe_control_volume_force(
-            f_step_old, f, f_post_collision, cv, solid=solid,
-        ).force_on_body[0].item())
+        cv_force_lu = float(
+            observe_control_volume_force(
+                f_step_old,
+                f,
+                f_post_collision,
+                cv,
+                solid=solid,
+            )
+            .force_on_body[0]
+            .item()
+        )
         if force_method == "bfl_momentum":
             pressure_lu = pressure_voxel_lu
         elif force_method == "control_volume":
@@ -631,7 +707,10 @@ def run_case(args: argparse.Namespace) -> dict:
             pressure_lu = cv_force_lu - friction_lu
         else:
             pressure_lu = drag_pressure_integration(
-                f, pressure_mesh, 1.0, extrap="none",
+                f,
+                pressure_mesh,
+                1.0,
+                extrap="none",
                 p0_method=args.pressure_reference,
                 solid=solid,
             )[0]
@@ -649,17 +728,32 @@ def run_case(args: argparse.Namespace) -> dict:
                 pressure_lu
                 if force_method == "surface_pressure"
                 else drag_pressure_integration(
-                    f, pressure_mesh, 1.0, extrap="none",
-                    p0_method=args.pressure_reference, solid=solid,
+                    f,
+                    pressure_mesh,
+                    1.0,
+                    extrap="none",
+                    p0_method=args.pressure_reference,
+                    solid=solid,
                 )[0]
             )
-            surface_pressure_samples.append((
-                step, surface_pressure_lu,
-            ))
+            surface_pressure_samples.append(
+                (
+                    step,
+                    surface_pressure_lu,
+                )
+            )
             for margin, auxiliary_cv in auxiliary_cvs.items():
-                auxiliary_force = float(observe_control_volume_force(
-                    f_step_old, f, f_post_collision, auxiliary_cv, solid=solid,
-                ).force_on_body[0].item())
+                auxiliary_force = float(
+                    observe_control_volume_force(
+                        f_step_old,
+                        f,
+                        f_post_collision,
+                        auxiliary_cv,
+                        solid=solid,
+                    )
+                    .force_on_body[0]
+                    .item()
+                )
                 auxiliary_cv_samples[margin].append((step, auxiliary_force))
         block_p.append(pressure_lu)
         block_f.append(friction_lu)
@@ -679,34 +773,34 @@ def run_case(args: argparse.Namespace) -> dict:
                 "friction_force_lu": fr_lu,
                 "predicted_resistance_n": predicted_n,
                 "control_volume_resistance_n": (
-                    sum(all_cv[-len(block_p):]) / len(block_p) * force_scale
+                    sum(all_cv[-len(block_p) :]) / len(block_p) * force_scale
                 ),
                 "bfl_link_plus_wall_stress_n": (
-                    sum(all_bfl_total[-len(block_p):]) / len(block_p) * force_scale
+                    sum(all_bfl_total[-len(block_p) :]) / len(block_p) * force_scale
                 ),
                 "surface_pressure_plus_wall_stress_n": (
                     (surface_pressure_samples[-1][1] + fr_lu) * force_scale
-                    if surface_pressure_samples else math.nan
+                    if surface_pressure_samples
+                    else math.nan
                 ),
                 "error_pct": abs(predicted_n - point.resistance_n) / point.resistance_n * 100.0,
                 "elapsed_s": time.time() - started,
                 "wall_stress_diagnostics": (
-                    asdict(wall_diagnostics)
-                    if wall_diagnostics is not None
-                    else None
+                    asdict(wall_diagnostics) if wall_diagnostics is not None else None
                 ),
             }
             snapshots.append(snapshot)
             print(
-                f"{tag} step={step}/{args.steps} Rp={p_lu*force_scale:.3f} N "
-                f"Rf={fr_lu*force_scale:.3f} N Rt={predicted_n:.3f} N "
+                f"{tag} step={step}/{args.steps} Rp={p_lu * force_scale:.3f} N "
+                f"Rf={fr_lu * force_scale:.3f} N Rt={predicted_n:.3f} N "
                 f"err={snapshot['error_pct']:.2f}% ({snapshot['elapsed_s']:.1f}s)",
                 flush=True,
             )
             block_p.clear()
             block_f.clear()
         if (
-            checkpoint is not None and args.checkpoint_interval
+            checkpoint is not None
+            and args.checkpoint_interval
             and step % args.checkpoint_interval == 0
         ):
             save_checkpoint(step)
@@ -717,30 +811,21 @@ def run_case(args: argparse.Namespace) -> dict:
     f_final = sum(all_f[-window:]) / window if window else math.nan
     predicted_n = (p_final + f_final) * force_scale
     surface_window = [
-        value for sample_step, value in surface_pressure_samples
-        if sample_step > completed - window
+        value for sample_step, value in surface_pressure_samples if sample_step > completed - window
     ]
     primary_cv_window = [
-        value for sample_step, value in primary_cv_samples
-        if sample_step > completed - window
+        value for sample_step, value in primary_cv_samples if sample_step > completed - window
     ]
     primary_cv_paired_final = (
-        sum(primary_cv_window) / len(primary_cv_window)
-        if primary_cv_window else math.nan
+        sum(primary_cv_window) / len(primary_cv_window) if primary_cv_window else math.nan
     )
     surface_pressure_final = (
-        sum(surface_window) / len(surface_window)
-        if surface_window else math.nan
+        sum(surface_window) / len(surface_window) if surface_window else math.nan
     )
     auxiliary_cv_final: dict[int, float] = {}
     for margin, samples in auxiliary_cv_samples.items():
-        selected = [
-            value for sample_step, value in samples
-            if sample_step > completed - window
-        ]
-        auxiliary_cv_final[margin] = (
-            sum(selected) / len(selected) if selected else math.nan
-        )
+        selected = [value for sample_step, value in samples if sample_step > completed - window]
+        auxiliary_cv_final[margin] = sum(selected) / len(selected) if selected else math.nan
     auxiliary_items = list(auxiliary_cv_final.items())
     nested_cv_assessment = assess_nested_control_volume_invariance(
         primary_cv_paired_final,
@@ -749,7 +834,8 @@ def run_case(args: argparse.Namespace) -> dict:
     auxiliary_cv_difference_pct = {
         str(margin): difference
         for (margin, _), difference in zip(
-            auxiliary_items, nested_cv_assessment.differences_pct,
+            auxiliary_items,
+            nested_cv_assessment.differences_pct,
             strict=True,
         )
     }
@@ -758,7 +844,9 @@ def run_case(args: argparse.Namespace) -> dict:
         [
             (pressure + friction) * force_scale
             for pressure, friction in zip(
-                all_p[-window:], all_f[-window:], strict=True,
+                all_p[-window:],
+                all_f[-window:],
+                strict=True,
             )
         ],
         block_size=args.report_interval,
@@ -770,9 +858,7 @@ def run_case(args: argparse.Namespace) -> dict:
     )
     finite = not diverged and math.isfinite(predicted_n)
     reference_area_m2 = float(geometry["wetted_area_lu2"]) * dx_m**2
-    dynamic_pressure_area = (
-        0.5 * args.rho_water * point.speed_mps**2 * reference_area_m2
-    )
+    dynamic_pressure_area = 0.5 * args.rho_water * point.speed_mps**2 * reference_area_m2
     experimental_ct = point.resistance_n / dynamic_pressure_area
     predicted_ct = predicted_n / dynamic_pressure_area
     ittc_cf = 0.075 / (math.log10(re) - 2.0) ** 2
@@ -781,10 +867,7 @@ def run_case(args: argparse.Namespace) -> dict:
         wall_applicability["maximum_rejected_fraction"],
     )
     exchange_sampling_acceptable = (
-        (
-            wall_samples > 0
-            and maximum_exchange_rejected_fraction <= 0.01
-        )
+        (wall_samples > 0 and maximum_exchange_rejected_fraction <= 0.01)
         if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}
         else True
     )
@@ -794,8 +877,7 @@ def run_case(args: argparse.Namespace) -> dict:
         and surface_area_diagnostics.calibrated_area > 0.0
     )
     production_boundary_acceptable = (
-        args.boundary == "bfl_wall_model"
-        and force_method == "control_volume"
+        args.boundary == "bfl_wall_model" and force_method == "control_volume"
     )
     result = {
         "schema": "tensorlbm-suboff-experimental-resistance-v4",
@@ -813,58 +895,60 @@ def run_case(args: argparse.Namespace) -> dict:
             ),
         },
         "configuration": {
-            "hull_type": args.hull_type, "device": str(device),
+            "hull_type": args.hull_type,
+            "device": str(device),
             "grid_nx_ny_nz": [args.nx, args.ny, args.nz],
             "center_x_fraction": args.center_x_fraction,
-            "hull_length_lu": length_lu, "hull_radius_lu": radius_lu,
-            "dx_m": dx_m, "reynolds_number": re,
-            "lattice_speed": args.lattice_speed, "wall_nu_lu": nu_lu,
+            "hull_length_lu": length_lu,
+            "hull_radius_lu": radius_lu,
+            "dx_m": dx_m,
+            "reynolds_number": re,
+            "lattice_speed": args.lattice_speed,
+            "wall_nu_lu": nu_lu,
             "resolved_reynolds_number": resolved_re,
-            "collision_nu_lu": collision_nu_lu, "tau": tau,
+            "collision_nu_lu": collision_nu_lu,
+            "tau": tau,
             "collision": (
                 f"D3Q19 cumulant+Smagorinsky(Cs={args.cs_smag})"
-                if args.collision_model == "cumulant_smagorinsky" else
-                (
+                if args.collision_model == "cumulant_smagorinsky"
+                else (
                     f"D3Q19 MRT+WALE(Cw={args.cw_wale})"
-                    if args.les_model == "wale" else
-                    f"D3Q19 MRT+Smagorinsky(Cs={args.cs_smag})"
+                    if args.les_model == "wale"
+                    else f"D3Q19 MRT+Smagorinsky(Cs={args.cs_smag})"
                 )
             ),
             "wall_treatment": (
                 f"{args.wall_law}(exchange_y={args.stress_exchange_distance})"
-                if args.stress_exchange_distance > 0.0
-                and args.boundary != "bfl_spalding"
+                if args.stress_exchange_distance > 0.0 and args.boundary != "bfl_spalding"
                 else f"{args.wall_law}(y={args.wall_distance})"
             ),
             "stress_exchange_distance": (
-                args.stress_exchange_distance
-                if args.stress_exchange_distance > 0.0 else None
+                args.stress_exchange_distance if args.stress_exchange_distance > 0.0 else None
             ),
             "pressure_force_method": (
                 "conservative BFL link momentum exchange"
-                if force_method == "bfl_momentum" else
-                (
+                if force_method == "bfl_momentum"
+                else (
                     "discrete internal control-volume momentum balance"
-                    if force_method == "control_volume" else
-                    f"{pressure_method}; p0={args.pressure_reference}"
+                    if force_method == "control_volume"
+                    else f"{pressure_method}; p0={args.pressure_reference}"
                 )
             ),
             "boundary": (
-                "far_field + target sponge + NoDynamics + BFL + Spalding "
-                "exchange wall model"
-                if args.boundary == "bfl_spalding" else
-                (
+                "far_field + target sponge + NoDynamics + BFL + Spalding exchange wall model"
+                if args.boundary == "bfl_spalding"
+                else (
                     "far_field + target sponge + NoDynamics + BFL slip + Guo wall stress"
-                    if args.boundary == "bfl_wall_model" else
-                    (
+                    if args.boundary == "bfl_wall_model"
+                    else (
                         "far_field + target sponge + NoDynamics + stationary "
                         "BFL + Guo wall function"
-                        if args.boundary == "bfl_wall" else
-                        (
+                        if args.boundary == "bfl_wall"
+                        else (
                             "far_field + target sponge + NoDynamics + "
                             "normal-velocity projection + wall function"
-                            if args.boundary == "projected_wall" else
-                            "far_field + target sponge + NoDynamics + legacy "
+                            if args.boundary == "projected_wall"
+                            else "far_field + target sponge + NoDynamics + legacy "
                             "wall-function body force"
                         )
                     )
@@ -876,31 +960,33 @@ def run_case(args: argparse.Namespace) -> dict:
             "sponge_mode": args.sponge_mode,
             "sponge_inlet_enabled": args.sponge_inlet,
             "far_field_mode": args.far_field_mode,
-            "steps_requested": args.steps, "steps_completed": completed,
+            "steps_requested": args.steps,
+            "steps_completed": completed,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
             "wall_activation_ramp_steps": (
-                args.ramp_steps
-                if args.boundary in {"bfl_wall_model", "bfl_spalding"} else 0
+                args.ramp_steps if args.boundary in {"bfl_wall_model", "bfl_spalding"} else 0
             ),
             "average_window": window,
             "surface_force_interval": args.surface_force_interval,
             "wall_diagnostic_interval": args.wall_diagnostic_interval,
             "appendage_link_scheme": (
                 SUBOFF_APPENDAGE_LINK_SCHEME
-                if args.hull_type == "full" and bfl_mask is not None else None
+                if args.hull_type == "full" and bfl_mask is not None
+                else None
             ),
         },
-        "geometry": geometry | {
+        "geometry": geometry
+        | {
             "appendage_boundary_links": appendage_links,
             "appendage_halfway_links": 0,
             "appendage_link_intersection": (
                 appendage_link_diagnostics.to_dict()
-                if appendage_link_diagnostics is not None else None
+                if appendage_link_diagnostics is not None
+                else None
             ),
             "surface_area_weighting": (
-                vars(surface_area_diagnostics)
-                if surface_area_diagnostics is not None else None
+                vars(surface_area_diagnostics) if surface_area_diagnostics is not None else None
             ),
         },
         "result": {
@@ -914,27 +1000,20 @@ def run_case(args: argparse.Namespace) -> dict:
             "bfl_link_plus_wall_stress_n_diagnostic": (
                 sum(all_bfl_total[-window:]) / window * force_scale
             ),
-            "surface_pressure_resistance_n_diagnostic": (
-                surface_pressure_final * force_scale
-            ),
+            "surface_pressure_resistance_n_diagnostic": (surface_pressure_final * force_scale),
             "surface_pressure_plus_wall_stress_n_diagnostic": (
                 (surface_pressure_final + f_final) * force_scale
             ),
             "surface_pressure_samples_in_window": len(surface_window),
             "auxiliary_control_volume_resistance_n": {
-                str(margin): value * force_scale
-                for margin, value in auxiliary_cv_final.items()
+                str(margin): value * force_scale for margin, value in auxiliary_cv_final.items()
             },
-            "paired_primary_control_volume_resistance_n": (
-                primary_cv_paired_final * force_scale
-            ),
+            "paired_primary_control_volume_resistance_n": (primary_cv_paired_final * force_scale),
             "paired_control_volume_samples_in_window": len(primary_cv_window),
             "auxiliary_control_volume_difference_pct": auxiliary_cv_difference_pct,
             "nested_control_volume_invariance": {
                 "auxiliary_count": nested_cv_assessment.auxiliary_count,
-                "maximum_difference_pct": (
-                    nested_cv_assessment.maximum_difference_pct
-                ),
+                "maximum_difference_pct": (nested_cv_assessment.maximum_difference_pct),
                 "finite": nested_cv_assessment.finite,
             },
             "friction_resistance_n": f_final * force_scale,
@@ -944,39 +1023,34 @@ def run_case(args: argparse.Namespace) -> dict:
             "last_three_block_drift_pct": drift_pct,
             "maximum_stationarity_metric_pct": drift_pct,
             "force_stationarity": force_stationarity.to_dict(),
-            "finite": finite, "diverged": diverged,
+            "finite": finite,
+            "diverged": diverged,
             "wall_stress_applicability": {
                 "samples": wall_samples,
                 "y_plus_min": wall_applicability["y_plus_min"],
                 "y_plus_mean": (
                     float(wall_applicability["y_plus_mean_sum"]) / wall_samples
-                    if wall_samples else None
+                    if wall_samples
+                    else None
                 ),
                 "y_plus_max": wall_applicability["y_plus_max"],
-                "maximum_rejected_fraction": (
-                    maximum_exchange_rejected_fraction
-                ),
+                "maximum_rejected_fraction": (maximum_exchange_rejected_fraction),
             },
         },
         "coefficients": {
             "reference_wetted_area_m2": reference_area_m2,
             "area_note": (
                 "Analytical bare-body wetted area; full appendage area is not yet included."
-                if args.hull_type == "full" else
-                "Analytical bare-body wetted area from the DARPA profile."
+                if args.hull_type == "full"
+                else "Analytical bare-body wetted area from the DARPA profile."
             ),
             "experimental_ct": experimental_ct,
             "predicted_ct": predicted_ct,
-            "predicted_friction_cf": (
-                f_final * force_scale / dynamic_pressure_area
-            ),
-            "predicted_pressure_ct": (
-                p_final * force_scale / dynamic_pressure_area
-            ),
+            "predicted_friction_cf": (f_final * force_scale / dynamic_pressure_area),
+            "predicted_pressure_ct": (p_final * force_scale / dynamic_pressure_area),
             "ittc_1957_cf_context_only": ittc_cf,
             "wall_model_vs_ittc_friction_error_pct": (
-                abs(f_final * force_scale / dynamic_pressure_area - ittc_cf)
-                / ittc_cf * 100.0
+                abs(f_final * force_scale / dynamic_pressure_area - ittc_cf) / ittc_cf * 100.0
             ),
             "experimental_ct_over_ittc_cf": experimental_ct / ittc_cf,
         },
@@ -1001,7 +1075,8 @@ def run_case(args: argparse.Namespace) -> dict:
                 and force_stationarity.meets(args.drift_target)
                 and exchange_sampling_acceptable
                 and nested_cv_assessment.meets(
-                    1.0, minimum_auxiliary_count=2,
+                    1.0,
+                    minimum_auxiliary_count=2,
                 )
                 and surface_area_acceptable
                 and production_boundary_acceptable
@@ -1043,7 +1118,8 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--mass-interval", type=int, default=200)
     p.add_argument("--cv-margin", type=int, default=8)
     p.add_argument(
-        "--aux-cv-margins", default="4,12",
+        "--aux-cv-margins",
+        default="4,12",
         help="Comma-separated nested control-volume margins sampled independently.",
     )
     p.add_argument("--ramp-steps", type=int, default=1000)
@@ -1057,14 +1133,18 @@ def parser() -> argparse.ArgumentParser:
         default="mrt_les",
     )
     p.add_argument(
-        "--resolved-reynolds", type=float, default=0.0,
+        "--resolved-reynolds",
+        type=float,
+        default=0.0,
         help="Optional bulk-flow Re for wall-model sensitivity; 0 uses physical Re.",
     )
     p.add_argument("--wall-law", choices=("log", "reichardt", "musker"), default="log")
     p.add_argument("--wall-distance", type=float, default=0.5)
     p.add_argument("--exchange-distance", type=float, default=3.0)
     p.add_argument(
-        "--stress-exchange-distance", type=float, default=0.0,
+        "--stress-exchange-distance",
+        type=float,
+        default=0.0,
         help=(
             "Wall-normal velocity sampling distance for BFL slip + Guo stress; "
             "0 keeps the legacy boundary-node stress input."
@@ -1082,12 +1162,15 @@ def parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--sponge-width", type=int, default=12)
     p.add_argument(
-        "--outlet-sponge-width", type=int, default=0,
+        "--outlet-sponge-width",
+        type=int,
+        default=0,
         help="Independent x+ sponge thickness; 0 uses --sponge-width.",
     )
     p.add_argument("--sponge-strength", type=float, default=0.2)
     p.add_argument(
-        "--sponge-inlet", action="store_true",
+        "--sponge-inlet",
+        action="store_true",
         help="Also damp the prescribed inlet; disabled by default to avoid upstream reflection.",
     )
     p.add_argument(
@@ -1111,7 +1194,9 @@ def parser() -> argparse.ArgumentParser:
         default="auto",
     )
     p.add_argument(
-        "--surface-force-interval", type=int, default=50,
+        "--surface-force-interval",
+        type=int,
+        default=50,
         help="Cadence for the independent surface-pressure force observer.",
     )
     p.add_argument("--checkpoint", default=None)

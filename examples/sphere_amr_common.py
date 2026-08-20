@@ -16,6 +16,7 @@ Coordinate conventions (mirroring ``examples/amr_sphere_drag_validate.py``):
   more level applies the same formula with the parent coordinate already in
   the parent's with-ghost fine grid (:func:`fine_center_l2`).
 """
+
 from __future__ import annotations
 
 import math
@@ -46,7 +47,7 @@ from tensorlbm.sponge_layer import apply_equilibrium_difference_sponge
 class FineSphere:
     """Sphere geometry on one fine level (physical, with-ghost, BFL)."""
 
-    solid: torch.Tensor    # (nz, ny, nx) physical cells, no ghost
+    solid: torch.Tensor  # (nz, ny, nx) physical cells, no ghost
     solid_g: torch.Tensor  # with one-cell ghost layer
     solid_q: torch.Tensor  # (19, nz+2, ny+2, nx+2) collision freeze mask
     bfl_mask: torch.Tensor
@@ -64,10 +65,16 @@ def ramp_activation(step: int, steps: int) -> float:
 # Geometry assembly
 # ---------------------------------------------------------------------------
 
+
 def build_sphere_geometry(
-    nx: int, ny: int, nz: int,
-    cx: float, cy: float, cz: float,
-    radius: float, device: torch.device,
+    nx: int,
+    ny: int,
+    nz: int,
+    cx: float,
+    cy: float,
+    cz: float,
+    radius: float,
+    device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Coarse-grid sphere mask and its D3Q19 freeze mask ``(solid, solid_q)``.
 
@@ -99,19 +106,27 @@ def build_fine_sphere(
     solid = sphere_mask(nx, ny, nz, *fine_center, radius, device=device)
     solid_g = torch.zeros(
         (nz + 2 * ghost, ny + 2 * ghost, nx + 2 * ghost),
-        dtype=torch.bool, device=device,
+        dtype=torch.bool,
+        device=device,
     )
     solid_g[ghost:-ghost, ghost:-ghost, ghost:-ghost] = solid
     solid_q = solid_g.unsqueeze(0).expand(19, *solid_g.shape).contiguous()
     bfl_mask, bfl_q = compute_q_sphere(
-        nx + 2 * ghost, ny + 2 * ghost, nz + 2 * ghost,
-        *fine_center, radius, device=device,
+        nx + 2 * ghost,
+        ny + 2 * ghost,
+        nz + 2 * ghost,
+        *fine_center,
+        radius,
+        device=device,
     )
     return FineSphere(solid, solid_g, solid_q, bfl_mask, bfl_q)
 
 
 def fine_center_l1(
-    center: float, box_origin: float, ratio: int, ghost: int = 1,
+    center: float,
+    box_origin: float,
+    ratio: int,
+    ghost: int = 1,
 ) -> float:
     """Sphere-centre coordinate on a level's fine with-ghost grid.
 
@@ -126,8 +141,10 @@ def fine_center_l1(
 
 
 def fine_center_l2(
-    parent_fine_center: float, box2_origin: float,
-    ratio: int, ghost: int = 1,
+    parent_fine_center: float,
+    box2_origin: float,
+    ratio: int,
+    ghost: int = 1,
 ) -> float:
     """Sphere-centre coordinate on the L2 fine grid, from the L1 with-ghost centre.
 
@@ -204,7 +221,8 @@ def build_l2_shell_geometry(
 
 
 def distinct_level_shapes(
-    level_populations: Sequence[torch.Tensor], expected: int,
+    level_populations: Sequence[torch.Tensor],
+    expected: int,
 ) -> tuple[torch.Size, ...]:
     """Population shapes of a nested solver, asserted pairwise distinct."""
     shapes = tuple(level.shape for level in level_populations)
@@ -253,16 +271,22 @@ def l2_shell_box(
     """
     half2 = int(math.floor(radius1 + l2_margin))
     x0_2, x1_2 = _clamp_axis(
-        int(math.floor(c1_w[0] - half2)), int(math.ceil(c1_w[0] + half2)),
-        parent_shape[2], "x",
+        int(math.floor(c1_w[0] - half2)),
+        int(math.ceil(c1_w[0] + half2)),
+        parent_shape[2],
+        "x",
     )
     y0_2, y1_2 = _clamp_axis(
-        int(math.floor(c1_w[1] - half2)), int(math.ceil(c1_w[1] + half2)),
-        parent_shape[1], "y",
+        int(math.floor(c1_w[1] - half2)),
+        int(math.ceil(c1_w[1] + half2)),
+        parent_shape[1],
+        "y",
     )
     z0_2, z1_2 = _clamp_axis(
-        int(math.floor(c1_w[2] - half2)), int(math.ceil(c1_w[2] + half2)),
-        parent_shape[0], "z",
+        int(math.floor(c1_w[2] - half2)),
+        int(math.ceil(c1_w[2] + half2)),
+        parent_shape[0],
+        "z",
     )
     return BoxRegion(x0_2, x1_2, y0_2, y1_2, z0_2, z1_2)
 
@@ -280,6 +304,7 @@ def build_control_volume(
     :func:`~tensorlbm.control_volume_force.box_control_volume` and an
     enclosure guard verifies the volume fully contains the sphere.
     """
+
     def _cv_lo(centre: float) -> int:
         return int(max(1, math.floor(centre - radius) - margin))
 
@@ -289,9 +314,12 @@ def build_control_volume(
     nz, ny, nx = shape
     cv = box_control_volume(
         tuple(shape),
-        x0=_cv_lo(center[0]), x1=_cv_hi(center[0], nx),
-        y0=_cv_lo(center[1]), y1=_cv_hi(center[1], ny),
-        z0=_cv_lo(center[2]), z1=_cv_hi(center[2], nz),
+        x0=_cv_lo(center[0]),
+        x1=_cv_hi(center[0], nx),
+        y0=_cv_lo(center[1]),
+        y1=_cv_hi(center[1], ny),
+        z0=_cv_lo(center[2]),
+        z1=_cv_hi(center[2], nz),
         device=device,
     )
     cv_bounds = {
@@ -302,8 +330,7 @@ def build_control_volume(
     for name, (cv0, cv1) in cv_bounds.items():
         axis = 0 if name == "x" else 1 if name == "y" else 2
         centre = center[axis]
-        if cv0 > math.floor(centre - radius) or \
-           cv1 < math.ceil(centre + radius) + 1:
+        if cv0 > math.floor(centre - radius) or cv1 < math.ceil(centre + radius) + 1:
             raise ValueError(
                 f"control volume does not enclose the sphere along {name} "
                 f"(cv=[{cv0},{cv1})); enlarge the refined block or shrink "
@@ -316,17 +343,22 @@ def build_control_volume(
 # Advance pieces shared by the static-block runners
 # ---------------------------------------------------------------------------
 
+
 def _collide(f: torch.Tensor, tau: float, collision: str) -> torch.Tensor:
     """Dispatch D3Q19 collision operator by name."""
     if collision == "cascaded":
         from tensorlbm.cascaded_collision import collide_cascaded_d3q19
+
         return collide_cascaded_d3q19(f, tau)
     return collide_cumulant_d3q19(f, tau, C_s=0.0)
 
 
 def root_advance(
-    f: torch.Tensor, tau: float,
-    solid_q: torch.Tensor, sigma: torch.Tensor, lattice_speed: float,
+    f: torch.Tensor,
+    tau: float,
+    solid_q: torch.Tensor,
+    sigma: torch.Tensor,
+    lattice_speed: float,
     *,
     collision: str = "cumulant",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -343,16 +375,21 @@ def root_advance(
     out = stream3d(post_collision)
     out = non_equilibrium_far_field_bc_3d(out, u_in=lattice_speed)
     out = apply_equilibrium_difference_sponge(
-        out, sigma, velocity_target=(lattice_speed, 0.0, 0.0),
+        out,
+        sigma,
+        velocity_target=(lattice_speed, 0.0, 0.0),
     )
     out = non_equilibrium_far_field_bc_3d(out, u_in=lattice_speed)
     return out, post_collision, collided
 
 
 def bfl_sphere_advance(
-    out: torch.Tensor, post_collision: torch.Tensor,
-    bfl_mask: torch.Tensor, bfl_q: torch.Tensor,
-    step: int, ramp_steps: int,
+    out: torch.Tensor,
+    post_collision: torch.Tensor,
+    bfl_mask: torch.Tensor,
+    bfl_q: torch.Tensor,
+    step: int,
+    ramp_steps: int,
 ) -> torch.Tensor:
     """Bouzidi BFL curved-wall reconstruction after streaming (ramped wall)."""
     rho_post, ux_post, uy_post, uz_post = macroscopic3d(post_collision)
@@ -363,18 +400,26 @@ def bfl_sphere_advance(
         (1.0 - activation) * uz_post,
     )
     out, _bfl_force = bouzidi_bounce_back_d3q19(
-        out, post_collision, bfl_mask, bfl_q,
-        wall_velocity=wall_velocity, wall_density=rho_post,
+        out,
+        post_collision,
+        bfl_mask,
+        bfl_q,
+        wall_velocity=wall_velocity,
+        wall_density=rho_post,
         return_force=True,
     )
     return out
 
 
 def fine_sphere_advance(
-    f: torch.Tensor, tau: float,
+    f: torch.Tensor,
+    tau: float,
     *,
-    solid_q: torch.Tensor, bfl_mask: torch.Tensor, bfl_q: torch.Tensor,
-    step: int, ramp_steps: int,
+    solid_q: torch.Tensor,
+    bfl_mask: torch.Tensor,
+    bfl_q: torch.Tensor,
+    step: int,
+    ramp_steps: int,
     sample_cv: bool = False,
     cv: torch.Tensor | None = None,
     solid_g: torch.Tensor | None = None,
@@ -404,14 +449,23 @@ def cv_force_from(
     solid: torch.Tensor,
 ) -> float:
     """Streamwise control-volume force on the body over one LBM step."""
-    return float(observe_control_volume_force(
-        f_before, f_after, f_post_collision, cv, solid=solid,
-    ).force_on_body[0].item())
+    return float(
+        observe_control_volume_force(
+            f_before,
+            f_after,
+            f_post_collision,
+            cv,
+            solid=solid,
+        )
+        .force_on_body[0]
+        .item()
+    )
 
 
 # ---------------------------------------------------------------------------
 # Final statistics
 # ---------------------------------------------------------------------------
+
 
 def summarize_force_history(
     force_samples: list[float],
@@ -427,7 +481,8 @@ def summarize_force_history(
     reference = schiller_naumann_cd(reynolds)
     cd_history = [f_ / dynamic_area for f_ in selected]
     stationarity = assess_force_stationarity(
-        cd_history, block_size=max(1, len(cd_history) // 8),
+        cd_history,
+        block_size=max(1, len(cd_history) // 8),
     )
     reference_error = abs(cd - reference) / reference * 100.0
     return {

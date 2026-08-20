@@ -20,8 +20,8 @@ import time
 from pathlib import Path
 
 from tensorlbm.dam_break_3d import (
-    DamBreak3DConfig,
     _KOSHIZUKA_FRONT,
+    DamBreak3DConfig,
     run_dam_break_3d,
 )
 
@@ -140,7 +140,7 @@ def main() -> None:
     ok = math.isfinite(rmse) and rmse < tol
 
     print(f"\n{'=' * 70}")
-    print(f"  RESULTS")
+    print("  RESULTS")
     print(f"{'=' * 70}")
     if front_series:
         final = front_series[-1]
