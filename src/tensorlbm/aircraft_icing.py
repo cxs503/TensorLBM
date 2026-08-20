@@ -307,7 +307,19 @@ class IcingConfig:
     # first ~x_le/u_in steps of the window would collect nothing and the
     # leading-edge flux would be underestimated).
     prefill_cloud: bool = True
-    beta_window_frac: float = 0.5  # trailing fraction of steps used for beta
+    beta_window_frac: float = 0.5  # trailing mode: trailing fraction of steps
+    # Beta measurement window (task #84 fix 1).  "clean" (default) measures
+    # beta on the *pre-ice reference geometry*: an early window that opens
+    # after the cloud has settled (0.5 * tau_d_lu, capped at steps/4) and
+    # closes before the first wall cell can fill with ice, so the window
+    # beta is an LWC invariant (the Phase 2a/2b trailing window measured
+    # collection on the iced geometry, where a filled cell stops collecting
+    # and pins the per-cell beta at the moving-boundary cap
+    # ``beta_cap_window`` -- at LWC 1.0 the peak collapsed -55%).
+    # "trailing" keeps the legacy Phase 2a/2b behaviour exactly.
+    beta_window_mode: str = "clean"  # "clean" | "trailing"
+    beta_clean_frac: float = 0.2  # clean mode: window length as fraction of steps
+    beta_clean_max_fill: float = 0.5  # clean mode: max expected LE fill [cells]
     disable_droplets: bool = False  # clean-airfoil twin for A/B cd drift
     uniform_flow: bool = False  # True: static uniform field (tests, no LBM)
     device: str = "cpu"
@@ -381,6 +393,20 @@ class IcingConfig:
             raise ValueError(f"re_lu_target must be > 0; got {self.re_lu_target}")
         if self.shadow_alpha_frac < 0.0:
             raise ValueError(f"shadow_alpha_frac must be >= 0; got {self.shadow_alpha_frac}")
+        # --- task #84 fix 1 ---
+        if self.beta_window_mode not in ("clean", "trailing"):
+            raise ValueError(
+                f"beta_window_mode must be 'clean' or 'trailing'; "
+                f"got {self.beta_window_mode!r}"
+            )
+        if not 0.0 <= self.beta_window_frac <= 1.0:
+            raise ValueError(f"beta_window_frac must be in [0, 1]; got {self.beta_window_frac}")
+        if not 0.0 < self.beta_clean_frac <= 1.0:
+            raise ValueError(f"beta_clean_frac must be in (0, 1]; got {self.beta_clean_frac}")
+        if not 0.0 < self.beta_clean_max_fill <= 1.0:
+            raise ValueError(
+                f"beta_clean_max_fill must be in (0, 1]; got {self.beta_clean_max_fill}"
+            )
         # --- Phase 3 ---
         if self.thermo_model not in ("instant", "messinger"):
             raise ValueError(
@@ -558,6 +584,49 @@ class IcingConfig:
         return self.shadow_alpha_frac * self.alpha_in
 
     @property
+    def beta_window_bounds(self) -> tuple[int, int]:
+        """Step range ``(w0, w1)`` over which the beta ledger is differenced.
+
+        ``"trailing"`` (Phase 2a/2b legacy): the trailing
+        ``beta_window_frac`` fraction of the run, on the *iced* geometry.
+        ``"clean"`` (default, task #84 fix 1): an early window on the
+        pre-ice reference geometry.  It opens after the cloud has settled
+        (``0.5 * tau_d_lu``, capped at a quarter of the run so short test
+        runs still get a window) and closes before the first wall cell
+        can fill with ice: with the frontal bound ``alpha_in * u_in`` on
+        the per-step leading-edge catch, the *cumulative* fill up to
+        ``w1`` stays below one cell-ice mass, so no cell turns solid
+        before the window closes and the per-cell ledger never saturates
+        at the moving-boundary cap (see ``beta_cap_window``).  The window
+        length is the smaller of ``beta_clean_frac * steps`` and
+        ``beta_clean_max_fill`` cell-ice masses of in-window catch.
+        """
+        if self.beta_window_mode == "trailing":
+            w0 = self.steps - int(self.beta_window_frac * self.steps)
+            return w0, self.steps
+        settle = max(1, min(int(math.ceil(0.5 * self.tau_d_lu)), self.steps // 4))
+        n_nominal = max(1, int(self.beta_clean_frac * self.steps))
+        fill_rate = self.alpha_in * self.u_in  # frontal bound on LE catch [lu^3/step]
+        m_cell_lu = self.rho_rime_eff / self.rho_water  # cell ice mass [lu^3]
+        if fill_rate > 0.0:
+            # steps until the LE donor accumulates one cell of ice
+            n_freeze = m_cell_lu / fill_rate
+            # keep at least a minimum window before the first freeze (the
+            # prefill starts the cloud in local equilibrium, so opening
+            # earlier only shortens the coupled-flow settling)
+            min_len = max(2, self.steps // 50)
+            horizon = max(1, int(n_freeze))
+            settle = max(1, min(settle, horizon - min_len))
+            # in-window catch stays below beta_clean_max_fill cells ...
+            n_cap = int(self.beta_clean_max_fill * m_cell_lu / fill_rate)
+            n_nominal = min(n_nominal, max(1, n_cap))
+            # ... and the cumulative catch up to w1 stays below one cell
+            n_nominal = min(n_nominal, max(1, horizon - settle))
+        w0 = min(settle, max(1, self.steps - 1))
+        w1 = min(self.steps, w0 + n_nominal)
+        return w0, w1
+
+    @property
     def mass_per_lu3(self) -> float:
         """kg of water per lattice cell volume (alpha is a volume fraction)."""
         return self.rho_water * self.dx_phys**3
@@ -628,6 +697,8 @@ class IcingConfig:
             "inlet_area": self.inlet_area,
             "t_exposure_target": self.t_exposure,
             "t_equiv": self.t_equiv,
+            "beta_window_mode": self.beta_window_mode,
+            "beta_window_bounds": list(self.beta_window_bounds),
             "steps_realtime": self.t_exposure / self.dt_phys,
             "n_substeps": self.n_substeps,
             "compile_mode": self.compile_mode,
@@ -1018,6 +1089,7 @@ class RimeIcingSimulation:
             self.my = torch.zeros_like(self.alpha)
             self.impact_mass_e = torch.zeros_like(self.alpha)  # kg (all run)
             self.impact_e_w0: torch.Tensor | None = None
+            self.impact_e_w1: torch.Tensor | None = None
             self._bflux_acc = torch.zeros(4, dtype=torch.float64, device=self.dev)
             self._dep_acc = torch.zeros((), dtype=torch.float64, device=self.dev)
             self._enc_acc = torch.zeros((), dtype=torch.float64, device=self.dev)
@@ -1683,6 +1755,12 @@ class RimeIcingSimulation:
         )
 
         # ---- flow warmup on the clean airfoil ----
+        beta_w0_log, beta_w1_log = cfg.beta_window_bounds
+        log(
+            f"  [icing] beta window: mode={cfg.beta_window_mode} "
+            f"steps [{beta_w0_log}, {beta_w1_log}) "
+            f"({'pre-ice reference geometry' if cfg.beta_window_mode == 'clean' else 'iced geometry (legacy)'})"
+        )
         if not cfg.uniform_flow:
             for _ in range(cfg.warmup_steps):
                 last = _ == cfg.warmup_steps - 1
@@ -1694,8 +1772,12 @@ class RimeIcingSimulation:
 
         ux_c = torch.full((self.ny, self.nx), cfg.u_in, device=self.dev)
         uy_c = torch.zeros((self.ny, self.nx), device=self.dev)
-        beta_w0 = cfg.steps - int(cfg.beta_window_frac * cfg.steps)
+        # beta window (task #84 fix 1): "clean" = early pre-ice window on the
+        # reference geometry (LWC-invariant beta), "trailing" = Phase 2a/2b
+        # legacy window on the iced geometry.
+        beta_w0, beta_w1 = cfg.beta_window_bounds
         impact_w0: torch.Tensor | None = None
+        impact_w1: torch.Tensor | None = None
 
         if cfg.prefill_cloud and not cfg.disable_droplets and self.use_lagr:
             if cfg.uniform_flow:
@@ -1720,7 +1802,8 @@ class RimeIcingSimulation:
 
         for step in range(1, cfg.steps + 1):
             want_force = (
-                step == 1 or step == cfg.steps or step % cfg.log_every == 0 or step == beta_w0
+                step == 1 or step == cfg.steps or step % cfg.log_every == 0
+                or step == beta_w0 or step == beta_w1
             )
             if cfg.uniform_flow:
                 f_pre = None
@@ -1746,6 +1829,12 @@ class RimeIcingSimulation:
                 impact_w0 = self.impact_mass.clone()
             if self.use_euler and self.impact_e_w0 is None and step >= beta_w0:
                 self.impact_e_w0 = self.impact_mass_e.clone()
+            # clean mode ends the ledger window before the run does: the
+            # run keeps freezing (ice shape) while beta stays pre-ice.
+            if impact_w1 is None and step >= beta_w1:
+                impact_w1 = self.impact_mass.clone()
+            if self.use_euler and self.impact_e_w1 is None and step >= beta_w1:
+                self.impact_e_w1 = self.impact_mass_e.clone()
 
             if want_force and f_pre is not None:
                 cd, cl = self._force_coeffs(f_pre)
@@ -1816,10 +1905,12 @@ class RimeIcingSimulation:
         solid_np = self.solid.cpu().numpy()
         s_grid, stag, _surf = surface_arc_length(airfoil_np)
         dm = self.impact_mass.clone()
+        if impact_w1 is not None:
+            dm = impact_w1.clone()
         if impact_w0 is not None:
             dm = dm - impact_w0
         # lattice time of the beta window (acceleration cancels, see docstring)
-        t_win = (cfg.steps - beta_w0) * cfg.dt_phys
+        t_win = (beta_w1 - beta_w0) * cfg.dt_phys
         beta = collection_efficiency_curve(
             s_grid, dm.cpu().numpy(), cfg.lwc_eff, cfg.v_inf, cfg.dx_phys,
             cfg.chord_phys, t_win,
@@ -1829,6 +1920,8 @@ class RimeIcingSimulation:
         )
         if euler_result is not None or (self.use_euler and not cfg.disable_droplets):
             dm_e = self.impact_mass_e.clone()
+            if self.impact_e_w1 is not None:
+                dm_e = self.impact_e_w1.clone()
             if self.impact_e_w0 is not None:
                 dm_e = dm_e - self.impact_e_w0
             beta_e = collection_efficiency_curve(
@@ -2503,7 +2596,8 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         shot_cfg = replace(
             cfg,
             freeze_in_run=False,
-            beta_window_frac=0.0,  # whole shot is the beta window
+            beta_window_mode="trailing",  # glaze: whole shot is the beta window
+            beta_window_frac=0.0,
             accel_override=accel,  # ledger == dt_shot of physical exposure
         )
         sim = RimeIcingSimulation(shot_cfg, log=log)

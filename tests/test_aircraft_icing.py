@@ -262,7 +262,11 @@ def _small_cfg(**kw) -> IcingConfig:
 
 
 def test_mass_audit_static_flow() -> None:
-    cfg = _small_cfg()
+    # trailing beta window: this test's streamtube-height gate is written
+    # against the Phase 2a window semantics; this high-accel config fills
+    # the LE cell within ~66 steps, leaving a pre-freeze clean window far
+    # too short for parcel-lump statistics (task #84 fix 1 note).
+    cfg = _small_cfg(beta_window_mode="trailing")
     res = run_rime_icing(cfg, log=lambda *a: None)
     a = res["audit"]
     # gate: closure < 1 %
@@ -497,6 +501,63 @@ def test_eulerian_beta_bounds() -> None:
     assert 0.0 < capture_h < proj_h * 1.05, (capture_h, proj_h)
     # support is local to the leading edge (no far-field impacts)
     assert abs(b["s_over_c"]).max() < 0.5
+
+
+# ---------------------------------------------------------------------------
+# Task #84 fix 1: beta window on the pre-ice reference geometry
+# ---------------------------------------------------------------------------
+def test_beta_window_mode_validation_and_bounds() -> None:
+    for bad in ("bogus", "early"):
+        with pytest.raises(ValueError):
+            _euler_cfg(beta_window_mode=bad)
+    for bad in (-0.1, 1.5):
+        with pytest.raises(ValueError):
+            _euler_cfg(beta_clean_frac=bad)
+    # trailing mode keeps the Phase 2a/2b semantics exactly
+    cfg = _euler_cfg(beta_window_mode="trailing")
+    assert cfg.beta_window_bounds == (250, 500)
+    # clean mode: early window, shorter than the trailing half
+    cfg = _euler_cfg()
+    w0, w1 = cfg.beta_window_bounds
+    assert 0 < w0 < w1 <= 500
+    assert w1 - w0 <= max(1, int(cfg.beta_clean_frac * cfg.steps))
+
+
+def test_beta_window_clean_fill_cap() -> None:
+    """Clean window closes before any wall cell can fill with ice.
+
+    Frontal bound on the leading-edge catch: alpha_in * u_in per step, so
+    the fill accumulated over the window stays below one cell-ice mass
+    and no cell turns solid inside the beta window.
+    """
+    cfg = _euler_cfg(rho_rime=100.0, accel_override=2.0e5, steps=400)
+    w0, w1 = cfg.beta_window_bounds
+    assert w1 > w0
+    fill = cfg.alpha_in * cfg.u_in * (w1 - w0)  # [lu^3]
+    m_cell_lu = cfg.rho_rime_eff / cfg.rho_water
+    assert fill <= cfg.beta_clean_max_fill * m_cell_lu * (1.0 + 1.0 / (w1 - w0))
+
+
+def test_beta_window_clean_lwc_invariance() -> None:
+    """Clean-window beta is an LWC invariant (reference geometry).
+
+    With the freezer active (rho_rime=100, high accel: cells fill within
+    the run) the legacy trailing window saturates at the moving-boundary
+    cap and beta_pk collapses as LWC grows; the clean window measures the
+    same pre-ice collection efficiency at both LWCs.
+    """
+    res = {}
+    for lwc in (2.5e-4, 1.0e-3):
+        cfg = _euler_cfg(lwc=lwc, rho_rime=100.0, accel_override=2.0e5, steps=400)
+        res[lwc] = run_rime_icing(cfg, log=lambda *a: None)
+    b_lo = res[2.5e-4]["eulerian"]["beta"]
+    b_hi = res[1.0e-3]["eulerian"]["beta"]
+    pk_lo = float(b_lo["beta"].max())
+    pk_hi = float(b_hi["beta"].max())
+    assert pk_lo > 0.05 and pk_hi > 0.05
+    # LWC invariance within a few percent (float rounding on the scaled
+    # alpha field; the underlying dynamics are linear in alpha_in)
+    assert abs(pk_hi - pk_lo) / pk_lo < 0.05, (pk_lo, pk_hi)
 
 
 def test_eulerian_shadow_region_regularisation() -> None:
