@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 import torch
 
@@ -28,6 +29,50 @@ from tensorlbm.apps.ai4s_flagship import (
     try_load_pilot_dataset,
     write_snapshots_hdf5,
 )
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _make_mini_pilot(
+    root: Path,
+    cases: tuple[str, ...] = ("case-a", "case-b"),
+    steps: tuple[int, ...] = (1, 2),
+    nz: int = 6,
+    ny: int = 12,
+    nx: int = 16,
+) -> None:
+    """Build a miniature solver-export pilot catalog via the official API."""
+    from tensorlbm.data.catalog import FieldDataCatalog
+    from tensorlbm.data.solver_export import register_product, save_fields_hdf5
+
+    rng = np.random.default_rng(0)
+    catalog = FieldDataCatalog.open(root / "catalog.db")
+    try:
+        for case in cases:
+            for step in steps:
+                arrays = {
+                    "rho": np.ones((nz, ny, nx), dtype=np.float32),
+                    "ux": (
+                        0.05 + 0.01 * rng.standard_normal((nz, ny, nx))
+                    ).astype(np.float32),
+                    "uy": (
+                        0.01 * rng.standard_normal((nz, ny, nx))
+                    ).astype(np.float32),
+                    "uz": np.zeros((nz, ny, nx), dtype=np.float32),
+                    "solid_mask": np.zeros((nz, ny, nx), dtype=np.int8),
+                }
+                h5 = save_fields_hdf5(
+                    root / f"{case}_{step}.h5", arrays, {"step": step},
+                )
+                register_product(catalog, h5, metadata={
+                    "run_id": case, "case": case, "step": step,
+                    "code_sha": "a" * 40, "nx": nx,
+                })
+    finally:
+        catalog.close()
+    (root / "summary.json").write_text(json.dumps({"dataset_id": "mini-pilot"}))
 
 
 # ---------------------------------------------------------------------------
@@ -73,18 +118,25 @@ class TestDataProduction:
     def test_try_load_pilot_dataset_absent(self, tmp_path):
         assert try_load_pilot_dataset(tmp_path / "does_not_exist") is None
         assert try_load_pilot_dataset(None) is None
+        # a directory without a solver-export catalog is not a pilot dataset
+        assert try_load_pilot_dataset(tmp_path) is None
 
-    def test_try_load_pilot_dataset_consumes_h5(self, tmp_path):
-        snapshots = produce_velocity_snapshots(
-            nx=12, ny=12, n_steps=2, sample_every=2, seed=9,
-        )
-        write_snapshots_hdf5(tmp_path / "pilot.h5", snapshots, attrs={"k": "v"})
-        loaded = try_load_pilot_dataset(tmp_path)
+    def test_try_load_pilot_dataset_consumes_solver_export(self, tmp_path):
+        _make_mini_pilot(tmp_path, cases=("case-a", "case-b"))
+        loaded = try_load_pilot_dataset(tmp_path, slice_every=2)
         assert loaded is not None
-        pilots, info = loaded
-        assert len(pilots) == len(snapshots)
-        assert info["dataset"] == "velocity"
-        assert info["path"].endswith("pilot.h5")
+        by_case, info = loaded
+        assert set(by_case) == {"case-a", "case-b"}
+        assert info["dataset_id"] == "mini-pilot"
+        assert info["nx"] == "16"
+        assert info["n_products"] == 4
+        assert len(info["product_ids"]) == 4
+        # 3-D (6, 12, 16, 3) products yield 2-D z-plane slices every 2nd plane
+        ux, uy = by_case["case-a"][0]
+        assert ux.shape == (12, 16)
+        assert uy.shape == (12, 16)
+        assert len(by_case["case-a"]) == 3 * 2  # 3 planes x 2 steps
+        assert torch.isfinite(ux).all()
 
 
 class TestStationaryRoughness:
@@ -283,18 +335,25 @@ class TestMicroEndToEnd:
         assert data["serving_model_id"] == report.serving_model_id
 
     def test_run_flagship_demo_uses_pilot_when_present(self, tmp_path):
-        # a pilot-style h5 in the pilot dir must be picked up instead of the solver
-        snapshots = produce_velocity_snapshots(
-            nx=12, ny=12, n_steps=4, sample_every=2, seed=42,
-        )
-        write_snapshots_hdf5(tmp_path / "pilot_data.h5", snapshots, attrs={})
+        # a published solver-export pilot catalog must be consumed instead of
+        # the provisional in-process solver run
+        _make_mini_pilot(tmp_path, cases=("case-a", "case-b", "case-c"))
         cfg = FlagshipConfig(
             workdir=tmp_path / "run2",
             device="cpu",
             pilot_dir=tmp_path,
-            nx=16, ny=16, epochs=1, batch_size=2,
+            epochs=1, batch_size=4,
             arch=dict(width=8, n_layers=2, modes_x=6, modes_y=6, mlp_hidden=16),
         )
         report = run_flagship_demo(cfg)
-        assert report.data_source.startswith("pilot:")
-        assert report.n_train + report.n_val == len(snapshots)
+        assert report.data_source == "pilot:mini-pilot"
+        assert report.pilot is not None
+        assert report.pilot["dataset_id"] == "mini-pilot"
+        assert report.pilot["n_products"] == 6
+        # leak-proof case-level split: one whole held-out case (2 planes x 2
+        # steps with the default slice_every=4 over nz=6), two train cases
+        assert report.n_val == 2 * 2
+        assert report.n_train == 2 * 2 * 2
+        assert report.job_status == "completed"
+        assert report.model_id.startswith("mdl_")
+        assert report.val_errors
