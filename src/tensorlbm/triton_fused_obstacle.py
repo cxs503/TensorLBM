@@ -15,14 +15,19 @@ the periodic-only kernel cannot do, in a single Triton launch:
      halfway reflection at fluid boundary cells; it is not on the
      production SUBOFF path.
 
-  2. **LES Smagorinsky** eddy-viscosity.  After the BGK equilibrium
-     is computed, the kernel derives the strain-rate tensor ``S_ij``
-     from the non-equilibrium populations (``f - f_eq``) using the
-     standard ``S_ij = -1/(2τ_mol) * Σ_q fneq_q c_qi c_qj / ρ``,
-     forms ``|S| = sqrt(2 S_ij S_ij)``, and uses ``ν_t = (Cs·Δ)²·|S|``
-     to replace the constant τ with a per-cell effective τ.  The
-     molecular τ stays fixed; only the additional eddy viscosity
-     varies per cell.
+  2. **LES Smagorinsky** eddy-viscosity.  For every collision family
+     (BGK / CM / CUMULANT) the kernel computes the non-equilibrium
+     stress ``Π_ij = Σ_q (f−f_eq) c_qi c_qj`` from the post-stream
+     state and applies the production self-consistent closure
+     (Hou et al. 1994) — identical semantics to the external chain
+     ``tensorlbm.turbulence._neq_stress_norm_3d`` +
+     ``_smagorinsky_tau``: ``τ_eff = ½(τ₀ + √(τ₀² + 18·Cs²Δ²·|Π|/ρ))``
+     clamped to ``[0.5001, 1.0]``, ``ω = 1/τ_eff``.  (2026-08-20 fix:
+     the CM/CUMULANT branches previously ignored ``Cs`` entirely — they
+     silently ran the constant molecular ω — and the BGK branch used a
+     different, unclamped strain-inversion closure.  The no-LES path
+     ``Cs == 0`` is unchanged and bitwise-identical to the historical
+     kernel.)
 
   3. **Inflow / outflow BC helpers** (in PyTorch, on host).  These
      apply the Zou-He velocity inlet on the leftmost z-plane and the
@@ -162,7 +167,6 @@ _W_T = _D3Q19_W.float()
 
 _LATTICE_CACHE: dict = {}
 
-
 def _lattice_tensors_canonical(device: str) -> dict:
     """Padded D3Q19 lattice constants from canonical ``d3q19.C``/``W``.
 
@@ -213,6 +217,13 @@ def _lattice_tensors_canonical(device: str) -> dict:
 # Hermite projection factor: 1 / (2 * cs^4) with cs^2 = 1/3 → 9/2.
 _HERMITE_FACTOR: float = 9.0 / 2.0
 
+# Effective-tau clamp bounds for the kernel-internal Smagorinsky branch,
+# mirroring ``tensorlbm.turbulence._TAU_EFF_MAX`` and the min clamp inside
+# ``tensorlbm.turbulence._smagorinsky_tau`` (the semantic reference for the
+# internal closure — see ``_smagorinsky_omega`` below).  Keep in sync.
+_TAU_EFF_MIN_K = tl.constexpr(0.5001)
+_TAU_EFF_MAX_K = tl.constexpr(1.0)
+
 # D3Q19 moment transform matrices and the Hermite polynomial table for
 # CUMULANT reconstruction.  Imported lazily so that the kernel module
 # remains importable on hosts without the tensorlbm package (the pre-deploy
@@ -224,6 +235,37 @@ _CM_SHIFT_X: tuple[tuple[int, int, int], ...] | None = None
 _CM_SHIFT_Y: tuple[tuple[int, int, int], ...] | None = None
 _CM_SHIFT_Z: tuple[tuple[int, int, int], ...] | None = None
 _CM_ORDER_BOUNDS: dict[str, tuple[int, int]] | None = None
+
+
+@triton.jit
+def _smagorinsky_omega(
+    pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz,
+    rho_safe, tau_mol, Cs_delta_sq,
+):
+    """Per-cell relaxation rate from the production Smagorinsky closure.
+
+    Mirrors ``tensorlbm.turbulence._smagorinsky_tau`` (Hou et al. 1994
+    self-consistent form) evaluated on the cell's post-stream
+    non-equilibrium stress:
+
+        |Pi_neq| = sqrt(pi_xx^2+pi_yy^2+pi_zz^2
+                        + 2 pi_xy^2+2 pi_xz^2+2 pi_yz^2)
+        disc      = tau_mol^2 + 18 Cs^2 Delta^2 |Pi_neq| / rho
+        tau_eff   = 0.5 (tau_mol + sqrt(disc)),  clamped to [0.5001, 1.0]
+        omega     = 1 / tau_eff
+
+    (Hou et al. 1994 self-consistent closure — NOT the explicit
+    strain-inversion form the BGK branch used before 2026-08-20, which
+    omitted the clamps and diverged from the production tau semantics.)
+    """
+    pi_norm_sq = (pi_xx * pi_xx + pi_yy * pi_yy + pi_zz * pi_zz
+                  + 2.0 * (pi_xy * pi_xy + pi_xz * pi_xz + pi_yz * pi_yz))
+    pi_norm = tl.sqrt(pi_norm_sq)
+    disc = tau_mol * tau_mol + 18.0 * Cs_delta_sq * pi_norm / rho_safe
+    tau_eff = 0.5 * (tau_mol + tl.sqrt(tl.maximum(disc, 0.0)))
+    tau_eff = tl.minimum(tl.maximum(tau_eff, _TAU_EFF_MIN_K), _TAU_EFF_MAX_K)
+    return 1.0 / tau_eff
+
 
 
 def _ensure_collision_tables() -> None:
@@ -891,6 +933,7 @@ def _fused_v2_kernel_xfar_les(
     SHIFT_Y: tl.constexpr,
     SHIFT_Z: tl.constexpr,
     USE_EXTERNAL_TAU: tl.constexpr,
+    USE_SMAG: tl.constexpr,
     COMPUTE_FORCE: tl.constexpr,
 ):
     """Pull-stream + collide (BGK/CM/CUMULANT) + full-way bounce-back.
@@ -911,6 +954,13 @@ def _fused_v2_kernel_xfar_les(
     * 1 = CM — cascaded central moments (D3Q19 moment matrix + 1-D
       binomial shifts + per-mode relaxation)
     * 2 = CUMULANT — non-equilibrium stress + Hermite reconstruction
+
+    ``USE_SMAG`` (only read when ``USE_EXTERNAL_TAU`` is False): apply
+    the kernel-internal Smagorinsky LES closure (production ``_smagorinsky_tau``
+    semantics — see :func:`_smagorinsky_omega`).  The wrapper sets it
+    from ``Cs > 0``; with ``Cs == 0`` the molecular omega is used so
+    the no-LES path stays bitwise-identical to the historical kernel.
+
     """
     pid_x = tl.program_id(0)
     pid_y = tl.program_id(1)
@@ -984,6 +1034,7 @@ def _fused_v2_kernel_xfar_les(
     # adjacent to the wall pull whatever the solid cells store (the
     # previous step's bounced incoming momentum), which is what makes the
     # wall exchange momentum with the fluid.
+    #
     opp_q = tl.load(opp_ptr + offs_q, mask=mask_q, other=0)
     rsrc_x = offs_x[None, :] + cx_i[:, None]
     rsrc_x = tl.where(rsrc_x < 0, rsrc_x + nx,
@@ -1000,16 +1051,6 @@ def _fused_v2_kernel_xfar_les(
                  + rsrc_x[:, None, None, :].to(tl.int64) * stride_x)
     f_refl = tl.load(f_ptr + refl_offs, mask=rw_mask, other=0.0)
     f_eff = tl.where(own_is_wall, f_refl, f_in)
-
-    # NOTE (perf, 2026-08-19): the second (reflected) gather is live for
-    # every tile, which costs ~1.9x kernel time vs the old wet-node
-    # gather (the old second gather read the OWN tile with uniform
-    # addresses; this one is scattered like the main pull).  Tile-skipping
-    # branches and masked loads were measured SLOWER (Triton 3.6 register
-    # allocator cliff: 255 regs / 180 spills vs 159 / 0 before).  If this
-    # matters, the reflected values can instead be produced by a tiny
-    # fix-up kernel over solid cells only (they are a pure lane swap of
-    # the pulled state, f_eff[q, solid] = f_in[opp(q), solid]).
 
     # === Macroscopic + equilibrium (post-stream moments). ===
     cx_b = tl.load(cxf_ptr + offs_q, mask=mask_q, other=0.0)
@@ -1035,6 +1076,41 @@ def _fused_v2_kernel_xfar_les(
 
     tau_mol = 3.0 * nu_lb + 0.5
 
+    # === Relaxation rate omega (per-cell (BZ,BY,BX); scalar for plain) ===
+    # ONE definition shared by all three collision families:
+    #   * external tau_eff tensor -> omega = 1/tau_eff per cell;
+    #   * internal Smagorinsky (USE_SMAG, i.e. Cs > 0 and no external
+    #     tensor) -> the production Hou-et-al closure via
+    #     ``_smagorinsky_omega``, evaluated on this cell's post-stream
+    #     non-equilibrium stress — semantically identical to the external
+    #     chain ``_neq_stress_norm_3d`` + ``_smagorinsky_tau`` run on the
+    #     same state.  (2026-08-20 fix: before this, the CM and CUMULANT
+    #     branches silently used the constant molecular omega — Cs was
+    #     ignored — so "CUMULANT + kernel-internal Smag" ran Re=1e5 at
+    #     molecular viscosity only and diverged: n=320 at ~step 4800,
+    #     n=1024 at ~step 7974, 12 cells, while the faithful external-tau
+    #     chain held 60k steps.  The old BGK-only closure (explicit
+    #     strain inversion, no clamps) is replaced by the same production
+    #     closure for cross-family consistency.);
+    #   * Cs == 0 -> molecular omega, bitwise-identical to the
+    #     historical no-LES kernel.
+    fneq = f_eff - feq
+    # Non-equilibrium stress components pi_ij = sum_q c_i c_j fneq.
+    # NB: lanes 19..31 carry f_eff = feq = 0 exactly (masked loads), so
+    # the sums need no explicit q-mask.  The CUMULANT branch reuses the
+    # six components verbatim and the Smagorinsky closure needs them for
+    # |Pi_neq|, so they are materialised only when one of those is
+    # compiled — pruning them from the plain BGK/CM no-LES variants
+    # saves ~18 ms/step at the n=1024 w8 slab shape (the historical
+    # kernel computed them unconditionally).
+    if (COLLISION == 2) | USE_SMAG:
+        pi_xx = tl.sum(cx_b * cx_b * fneq, axis=0)
+        pi_yy = tl.sum(cy_b * cy_b * fneq, axis=0)
+        pi_zz = tl.sum(cz_b * cz_b * fneq, axis=0)
+        pi_xy = tl.sum(cx_b * cy_b * fneq, axis=0)
+        pi_xz = tl.sum(cx_b * cz_b * fneq, axis=0)
+        pi_yz = tl.sum(cy_b * cz_b * fneq, axis=0)
+
     if USE_EXTERNAL_TAU:
         tau_offs = (offs_z[None, :, None, None] * tau_eff_stride_z
                     + offs_y[None, None, :, None] * tau_eff_stride_y
@@ -1044,34 +1120,19 @@ def _fused_v2_kernel_xfar_les(
             mask=spatial_mask[None, :, :, :],
             other=tau_mol,
         )
-        omega_eff = 1.0 / tau_eff_loaded
+        omega = 1.0 / tau_eff_loaded
+    elif USE_SMAG:
+        omega = _smagorinsky_omega(
+            pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz,
+            rho_safe, tau_mol, Cs_delta_sq)
     else:
-        omega_eff = None  # sentinel
+        omega = 1.0 / tau_mol
 
     # === Collision-family dispatch ===
     if COLLISION == 0:
-        if USE_EXTERNAL_TAU:
-            f_post = f_eff - omega_eff * (f_eff - feq)
-        else:
-            fneq = f_eff - feq
-            prefactor = -0.5 / tau_mol / rho_safe
-            g00 = prefactor * tl.sum(fneq * (cx_b * cx_b), axis=0)
-            g11 = prefactor * tl.sum(fneq * (cy_b * cy_b), axis=0)
-            g22 = prefactor * tl.sum(fneq * (cz_b * cz_b), axis=0)
-            g01 = prefactor * tl.sum(fneq * (cx_b * cy_b), axis=0)
-            g02 = prefactor * tl.sum(fneq * (cx_b * cz_b), axis=0)
-            g12 = prefactor * tl.sum(fneq * (cy_b * cz_b), axis=0)
-            S_sq = (2.0 * (g00 * g00 + g11 * g11 + g22 * g22)
-                    + 4.0 * (g01 * g01 + g02 * g02 + g12 * g12))
-            S_mag = tl.sqrt(S_sq + 1e-20)
-            nu_t = Cs_delta_sq * S_mag
-            tau_eff_l = 3.0 * (nu_lb + nu_t) + 0.5
-            omega_eff_local = 1.0 / tau_eff_l
-            f_post = f_eff - omega_eff_local[None, :, :, :] * (f_eff - feq)
+        f_post = f_eff - omega * (f_eff - feq)
     elif COLLISION == 1:
         # ---- CM (cascaded central moments) ----
-        fneq = f_eff - feq
-
         idx_mq = tl.arange(0, 32)
         idx_mm = tl.arange(0, 32)
         M_2d = tl.zeros((32, 32), dtype=tl.float32)
@@ -1125,10 +1186,8 @@ def _fused_v2_kernel_xfar_les(
             m_neq = tl.where((idx_row == i1)[:, None, None, None], m_i1_new[None, :, :, :], m_neq)
             m_neq = tl.where((idx_row == i2)[:, None, None, None], m_i2_new[None, :, :, :], m_neq)
 
-        if USE_EXTERNAL_TAU:
-            omega = omega_eff
-        else:
-            omega = 1.0 / (3.0 * nu_lb + 0.5)
+        # omega (external tau_eff, internal Smagorinsky, or molecular) is
+        # computed once before the family dispatch and used element-wise.
 
         # Trace/deviatoric split at indices 4..6.
         m4 = tl.sum(m_neq * (idx_row == 4).to(tl.float32)[:, None, None, None], axis=0)
@@ -1198,18 +1257,11 @@ def _fused_v2_kernel_xfar_les(
         f_post = feq + fneq_star
     elif COLLISION == 2:
         # ---- CUMULANT ----
-        fneq = f_eff - feq
-        mq = mask_q[:, None, None, None].to(tl.float32)
-        pi_xx = tl.sum(cx_b * cx_b * fneq * mq, axis=0)
-        pi_yy = tl.sum(cy_b * cy_b * fneq * mq, axis=0)
-        pi_zz = tl.sum(cz_b * cz_b * fneq * mq, axis=0)
-        pi_xy = tl.sum(cx_b * cy_b * fneq * mq, axis=0)
-        pi_xz = tl.sum(cx_b * cz_b * fneq * mq, axis=0)
-        pi_yz = tl.sum(cy_b * cz_b * fneq * mq, axis=0)
-        if USE_EXTERNAL_TAU:
-            omega = omega_eff
-        else:
-            omega = 1.0 / (3.0 * nu_lb + 0.5)
+        # fneq and the six pi_ab components are computed once above the
+        # family dispatch (shared with the internal-Smagorinsky closure);
+        # masked lanes contribute exact zeros so no explicit q-mask is
+        # needed.  omega likewise comes from the unified dispatch
+        # (external tau_eff / internal Smagorinsky / molecular).
         omega_b = 1.0
         omega_even = 1.0
         trace = pi_xx + pi_yy + pi_zz
@@ -1474,10 +1526,10 @@ def triton_fused_obstacle_xfar_les(
         block_y, block_z: Y/Z axis tile sizes.  ``block_z`` defaults to
             ``block_y`` if None.  Default 4.
         tau_eff: Optional ``[NZ, NY, NX]`` per-cell effective relaxation
-            time (lattice units).  When supplied, BGK skips its internal
-            |S|-based Smagorinsky LES and CM/CUMULANT use
-            ``omega_eff = 1/tau_eff`` element-wise.  Useful for WALE and
-            Vreman SGS coupling — pass the output of
+            time (lattice units).  When supplied, the kernel uses
+            ``omega = 1/tau_eff`` element-wise for every collision
+            family.  Useful for WALE and Vreman SGS coupling — pass the
+            output of
             :func:`tensorlbm.suboff_cmk_kbc_runner._compute_sgs_tau_eff`.
         fx_buf, fy_buf, fz_buf: Optional scalar ``torch.float32``
             tensors.  When all three are supplied, the kernel computes
@@ -1600,6 +1652,12 @@ def triton_fused_obstacle_xfar_les(
     else:
         tau_eff_sz, tau_eff_sy, tau_eff_sx = 1, 1, 1  # ignored
 
+    # Kernel-internal Smagorinsky is active only when the caller asks for
+    # LES (Cs > 0) and supplies no external tau_eff tensor.  With Cs == 0
+    # the molecular omega is used, keeping the no-LES path bitwise equal
+    # to the historical kernel.
+    use_smag = (not use_external_tau) and (Cs * Cs * delta * delta > 0.0)
+
     _fused_v2_kernel_xfar_les[grid](
         f, out,
         obstacle, opp,
@@ -1620,6 +1678,7 @@ def triton_fused_obstacle_xfar_les(
         SHIFT_Y=shift_y_flat,
         SHIFT_Z=shift_z_flat,
         USE_EXTERNAL_TAU=use_external_tau,
+        USE_SMAG=use_smag,
         COMPUTE_FORCE=compute_force,
         num_warps=num_warps, num_stages=num_stages,
     )
