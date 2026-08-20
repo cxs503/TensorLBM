@@ -9,6 +9,7 @@ Regression matrix: {FP32FP32, FP32FP16} x {D3Q19 periodic Triton
 kernel}.  D3Q27 is not covered because the fused Triton kernel is
 D3Q19-only; the eager solvers are out of scope for this wiring.
 """
+
 from __future__ import annotations
 
 import json
@@ -22,10 +23,10 @@ from tensorlbm.precision import (
     cast_to_store,
 )
 
-
 # ---------------------------------------------------------------------------
 # 1. Enum surface (CPU)
 # ---------------------------------------------------------------------------
+
 
 def test_policy_tiers_and_dtypes() -> None:
     expected = {
@@ -45,8 +46,7 @@ def test_policy_tiers_and_dtypes() -> None:
 def test_policy_parse() -> None:
     assert PrecisionPolicy.parse(None) is PrecisionPolicy.FP32FP32
     assert PrecisionPolicy.parse("FP32FP16") is PrecisionPolicy.FP32FP16
-    assert (PrecisionPolicy.parse(PrecisionPolicy.FP64FP32)
-            is PrecisionPolicy.FP64FP32)
+    assert PrecisionPolicy.parse(PrecisionPolicy.FP64FP32) is PrecisionPolicy.FP64FP32
     with pytest.raises(ValueError, match="Unknown precision policy"):
         PrecisionPolicy.parse("FP16FP16")
     with pytest.raises(TypeError):
@@ -74,6 +74,7 @@ def test_cast_boundaries() -> None:
 # 2. Triton fused solver wiring (GPU)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="module")
 def dev() -> str:
     from tensorlbm.triton_fused import is_available
@@ -95,20 +96,18 @@ def _initial_field(n: int, dev: str, seed: int = 0) -> torch.Tensor:
 def test_solver_accepts_policy_and_maps_store_dtype(dev: str) -> None:
     from tensorlbm.triton_fused import TritonFusedSolver3D
 
-    solver = TritonFusedSolver3D(
-        8, 8, 8, tau=0.6, device=dev, precision="FP32FP32")
+    solver = TritonFusedSolver3D(8, 8, 8, tau=0.6, device=dev, precision="FP32FP32")
     assert solver.dtype == torch.float32
     assert solver.precision_policy is PrecisionPolicy.FP32FP32
 
-    solver16 = TritonFusedSolver3D(
-        8, 8, 8, tau=0.6, device=dev, precision="FP32FP16")
+    solver16 = TritonFusedSolver3D(8, 8, 8, tau=0.6, device=dev, precision="FP32FP16")
     assert solver16.dtype == torch.float16
     assert solver16.precision_policy is PrecisionPolicy.FP32FP16
 
     # Explicit dtype consistent with the tier is accepted.
     solver_eq = TritonFusedSolver3D(
-        8, 8, 8, tau=0.6, device=dev,
-        dtype=torch.float16, precision="FP32FP16")
+        8, 8, 8, tau=0.6, device=dev, dtype=torch.float16, precision="FP32FP16"
+    )
     assert solver_eq.dtype == torch.float16
 
 
@@ -116,12 +115,9 @@ def test_solver_rejects_fp64_compute_and_dtype_conflict(dev: str) -> None:
     from tensorlbm.triton_fused import TritonFusedSolver3D
 
     with pytest.raises(NotImplementedError, match="fp64"):
-        TritonFusedSolver3D(
-            8, 8, 8, tau=0.6, device=dev, precision="FP64FP64")
+        TritonFusedSolver3D(8, 8, 8, tau=0.6, device=dev, precision="FP64FP64")
     with pytest.raises(ValueError, match="conflicts"):
-        TritonFusedSolver3D(
-            8, 8, 8, tau=0.6, device=dev,
-            dtype=torch.float32, precision="FP32FP16")
+        TritonFusedSolver3D(8, 8, 8, tau=0.6, device=dev, dtype=torch.float32, precision="FP32FP16")
 
 
 @pytest.mark.parametrize("policy", ["FP32FP32", "FP32FP16"])
@@ -153,13 +149,13 @@ def test_precision_matrix_vs_fp32_reference(policy: str, dev: str) -> None:
         f = solver.step(f)
 
     if policy == "FP32FP32":
-        assert torch.equal(f, g), (
-            "FP32FP32 tier must be bit-identical to the dtype-only default")
+        assert torch.equal(f, g), "FP32FP32 tier must be bit-identical to the dtype-only default"
     else:
         assert f.dtype == torch.float16
         max_rel = ((f.float() - g).abs().max() / g.abs().max()).item()
         assert max_rel < 5e-3, (
-            f"FP32FP16 vs fp32 reference max rel err {max_rel:.3e} (expect ~2e-4)")
+            f"FP32FP16 vs fp32 reference max rel err {max_rel:.3e} (expect ~2e-4)"
+        )
         m0 = f0.sum(dtype=torch.float64).item()
         m1 = f.sum(dtype=torch.float64).item()
         rel_mass = abs(m1 - m0) / abs(m0)
@@ -170,8 +166,7 @@ def test_step_rejects_input_dtype_mismatch(dev: str) -> None:
     """An fp32 input to an FP32FP16 solver must raise, not silently run fp32."""
     from tensorlbm.triton_fused import TritonFusedSolver3D
 
-    solver = TritonFusedSolver3D(
-        8, 8, 8, tau=0.6, device=dev, precision="FP32FP16")
+    solver = TritonFusedSolver3D(8, 8, 8, tau=0.6, device=dev, precision="FP32FP16")
     f32 = _initial_field(8, dev, seed=3)
     with pytest.raises(ValueError, match="storage dtype"):
         solver.step(f32)
@@ -180,6 +175,7 @@ def test_step_rejects_input_dtype_mismatch(dev: str) -> None:
 # ---------------------------------------------------------------------------
 # 3. Benchmark observability (CPU)
 # ---------------------------------------------------------------------------
+
 
 def test_reporter_records_precision_and_bytes_per_cell(tmp_path) -> None:
     from tensorlbm.benchmark_observability import (
@@ -195,8 +191,7 @@ def test_reporter_records_precision_and_bytes_per_cell(tmp_path) -> None:
         "store_dtype": "float16",
     }
     assert precision_policy_metadata(None)["tier"] == "FP32FP32"
-    assert precision_policy_metadata(
-        PrecisionPolicy.FP64FP32)["compute_dtype"] == "float64"
+    assert precision_policy_metadata(PrecisionPolicy.FP64FP32)["compute_dtype"] == "float64"
 
     # FluidX3D-style bytes/cell/step: D3Q19 fused step = 2 passes over f.
     assert step_bytes_per_cell(19, torch.float32) == 152
@@ -204,17 +199,14 @@ def test_reporter_records_precision_and_bytes_per_cell(tmp_path) -> None:
     with pytest.raises(ValueError):
         step_bytes_per_cell(0, torch.float32)
 
-    reporter = BenchmarkReporter(
-        tmp_path, "unit", 10, {"resolved": "cpu"}, precision=meta)
+    reporter = BenchmarkReporter(tmp_path, "unit", 10, {"resolved": "cpu"}, precision=meta)
     reporter.start()
     payload = json.loads((tmp_path / "run_status.json").read_text())
     assert payload["precision"]["tier"] == "FP32FP16"
     assert payload["precision"]["store_dtype"] == "float16"
 
     # Backward compatibility: no precision arg -> field simply absent.
-    reporter2 = BenchmarkReporter(tmp_path / "plain", "unit", 10,
-                                  {"resolved": "cpu"})
+    reporter2 = BenchmarkReporter(tmp_path / "plain", "unit", 10, {"resolved": "cpu"})
     reporter2.start()
-    payload2 = json.loads(
-        (tmp_path / "plain" / "run_status.json").read_text())
+    payload2 = json.loads((tmp_path / "plain" / "run_status.json").read_text())
     assert "precision" not in payload2
