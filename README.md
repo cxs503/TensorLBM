@@ -4,7 +4,7 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cxs503/TensorLBM/blob/main/notebooks/quickstart.ipynb)
 
-> **A CPU-first PyTorch Lattice Boltzmann platform for reproducible CFD research.**
+> **An AI4S integrated platform built on PyTorch Lattice Boltzmann solvers.**
 > D2Q9 · D3Q19 · D3Q27 · BGK · MRT · TRT · RLBM · Cumulant · LES · RANS · AMR · DG-LBM · AI turbulence closure · Multi-GPU
 
 ```bash
@@ -63,7 +63,7 @@ for _ in range(200):
 2. **Composable solver core**: isolate lattice math, solver stepping, and boundary logic.
 3. **Reproducible runs**: parameterized CLI + deterministic run folder layout + metadata snapshot.
 4. **Fast feedback loops**: smoke tests and CI on push/PR.
-5. **CPU-first defaults, GPU-ready shape**: default to CPU, but keep interfaces ready for device scaling.
+5. **HPC + AI co-design**: support CPU/GPU/HPC execution while keeping AI training and serving in the same platform loop.
 6. **Multi-backend**: PyTorch is the default; Paddle and MindSpore backends are selectable at runtime.
 
 ## Documentation / 文档
@@ -72,6 +72,7 @@ for _ in range(200):
   Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
 - **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
 - **[HPC + AI: AI Turbulence Models](docs/ai_turbulence.md)** – Agent-driven 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范 (`tensorlbm.ai`).
+- **[AI4S integrated platform architecture](docs/plans/ai4s-integrated-platform-architecture.md)** – three-layer architecture (infrastructure/platform/application) and AI4S app framework.
 - **[Accuracy-recommendation evidence gate](docs/accuracy_recommendation_evidence_gate.md)** – fail-closed physical-evidence admission before an accuracy recommendation.
 - **[Development Workflow](docs/development_workflow.md)** – single entrypoint for setup, checks, platform startup, and output naming conventions.
 - **[Observability Notes](docs/observability.md)** – job lifecycle, output schema, and failure-triage checklist.
@@ -256,6 +257,8 @@ GitHub Actions runs the same test command on every push and pull request.
 - Backend dispatch: `tensorlbm.backends` — `torch` (default), `paddle`, `mindspore`
 
 ## Quantitative validation summary
+
+The platform-level evidence spans CFD physics benchmarks, engineering workflows, and AI surrogate efficiency gains.
 
 | Benchmark | Parameter | TensorLBM | Reference | Error |
 |-----------|-----------|-----------|-----------|-------|
