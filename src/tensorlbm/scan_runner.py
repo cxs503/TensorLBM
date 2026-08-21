@@ -84,9 +84,11 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from collections.abc import Callable
 
     from .data.catalog import FieldDataCatalog
+from .scan_drag import DragSurveySpec
 
 __all__ = [
     "SCAN_PLAN_SCHEMA",
+    "DragSurveySpec",
     "EarlyStopSpec",
     "PointOutcome",
     "ScanExecutor",
@@ -253,6 +255,12 @@ class ScanPlan:
         (e.g. ``{"span": 16}``); DoE params override them.
     early_stop:
         Optional per-point truncation spec.
+    drag_survey:
+        Optional per-point drag time-history spec
+        (:class:`tensorlbm.scan_drag.DragSurveySpec`): a control-volume
+        force observer sampled every ``interval`` steps into a
+        ``drag_history.json`` sidecar.  ``None`` (default) keeps the
+        run bit-identical to a survey-less plan.
     points:
         The design matrix as :class:`ScanPoint` entries (deterministic
         given ``method``/``n_points``/``seed``).
@@ -269,6 +277,7 @@ class ScanPlan:
     code_sha: str
     fixed_params: dict[str, Any] = field(default_factory=dict)
     early_stop: EarlyStopSpec | None = None
+    drag_survey: DragSurveySpec | None = None
     points: tuple[ScanPoint, ...] = field(default_factory=tuple)
     created_at: str = ""
 
@@ -307,6 +316,7 @@ class ScanPlan:
         code_sha: str,
         fixed_params: Mapping[str, Any] | None = None,
         early_stop: EarlyStopSpec | Mapping[str, Any] | None = None,
+        drag_survey: DragSurveySpec | Mapping[str, Any] | None = None,
         created_at: str = "",
     ) -> ScanPlan:
         """Build a plan by running the DoE generator over *variables*.
@@ -346,6 +356,8 @@ class ScanPlan:
         )
         if isinstance(early_stop, Mapping):
             early_stop = EarlyStopSpec.from_dict(early_stop)
+        if isinstance(drag_survey, Mapping):
+            drag_survey = DragSurveySpec.from_dict(drag_survey)
         return cls(
             scan_id=scan_id,
             case=case,
@@ -358,6 +370,7 @@ class ScanPlan:
             code_sha=code_sha,
             fixed_params=dict(fixed_params or {}),
             early_stop=early_stop,  # type: ignore[arg-type]
+            drag_survey=drag_survey,  # type: ignore[arg-type]
             points=points,
             created_at=created_at or time.strftime("%Y-%m-%dT%H:%M:%S"),
         )
@@ -378,6 +391,7 @@ class ScanPlan:
             "code_sha": self.code_sha,
             "fixed_params": dict(self.fixed_params),
             "early_stop": self.early_stop.to_dict() if self.early_stop else None,
+            "drag_survey": self.drag_survey.to_dict() if self.drag_survey else None,
             "points": [
                 {
                     "index": p.index,
@@ -416,6 +430,7 @@ class ScanPlan:
             code_sha=_validate_code_sha(data["code_sha"]),
             fixed_params=dict(data.get("fixed_params") or {}),
             early_stop=EarlyStopSpec.from_dict(data.get("early_stop")),
+            drag_survey=DragSurveySpec.from_dict(data.get("drag_survey")),
             points=points,
             created_at=str(data.get("created_at", "")),
         )
@@ -432,22 +447,29 @@ class ScanPlan:
         return cls.from_dict(json.loads(Path(path).read_text(encoding="utf-8")))
 
     def plan_digest(self) -> str:
-        """Stable sha256 of the design matrix (plan-level provenance)."""
-        payload = json.dumps(
-            {
-                "scan_id": self.scan_id,
-                "case": self.case,
-                "variables": [v.to_dict() for v in self.variables],
-                "method": self.method,
-                "seed": self.seed,
-                "steps": self.steps,
-                "snapshot_every": self.snapshot_every,
-                "points": [p.params for p in self.points],
-            },
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-        return sha256(payload).hexdigest()
+        """Stable sha256 of the design matrix (plan-level provenance).
+
+        ``drag_survey`` participates in the digest only when enabled: it
+        is a plan parameter that changes physics outputs (the drag
+        sidecar), so toggling it intentionally changes resume identity —
+        while survey-less plans keep their pre-feature digest and old
+        checkpoints still resume.
+        """
+        payload = {
+            "scan_id": self.scan_id,
+            "case": self.case,
+            "variables": [v.to_dict() for v in self.variables],
+            "method": self.method,
+            "seed": self.seed,
+            "steps": self.steps,
+            "snapshot_every": self.snapshot_every,
+            "points": [p.params for p in self.points],
+        }
+        if self.drag_survey is not None:
+            payload["drag_survey"] = self.drag_survey.to_dict()
+        return sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -567,6 +589,8 @@ class PointOutcome:
     params: dict[str, float] = field(default_factory=dict)
     device: str = ""
     error: str | None = None
+    drag_final: float | None = None
+    drag_mean_tail: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -586,6 +610,8 @@ class PointOutcome:
             params=dict(data.get("params") or {}),
             device=str(data.get("device", "")),
             error=data.get("error"),
+            drag_final=data.get("drag_final"),
+            drag_mean_tail=data.get("drag_mean_tail"),
         )
 
 
@@ -673,6 +699,14 @@ def run_scan_point(
     resumes from the last checkpoint (merging the pre-interruption
     catalog products into its final status) instead of restarting from
     step 0.
+
+    With ``plan.drag_survey`` set, a :class:`DragSurveyObserver`
+    (:mod:`tensorlbm.scan_drag`) samples the exact control-volume force
+    every ``interval`` steps — in phase with ``dispatch``, i.e. on the
+    post-mass-correction state — appending to ``drag_history.json`` and
+    reporting ``drag_final``/``drag_mean_tail`` in the outcome.  The
+    populations and field products are bit-identical with and without
+    the survey (sampling steps decompose the case's own step chain).
     """
     from .cases import get_case
     from .reporters import (
@@ -741,6 +775,28 @@ def run_scan_point(
     if mass_every > 0:
         from .solver3d import correct_mass3d
 
+    drag: DragSurveyObserver | None = None
+    if plan.drag_survey is not None:
+        from .cases.base import CaseBase
+        from .scan_drag import DragSurveyObserver
+
+        if type(case).make_step is not CaseBase.make_step:
+            # The drag observer needs the post-collision/pre-streaming
+            # state, obtained by decomposing the default step chain; an
+            # overridden make_step cannot be guaranteed equivalent.
+            raise ValueError(
+                "drag_survey requires the default CaseBase.make_step chain; "
+                f"case {type(case).__name__} overrides it"
+            )
+        drag = DragSurveyObserver(
+            plan.drag_survey,
+            case=case,
+            scan_id=plan.scan_id,
+            point_id=point.point_id,
+            run_id=point.run_id,
+            point_dir=point_dir,
+        )
+
     nz, ny, nx = case.resolution
     if checkpoint_every < 0:
         raise ValueError(f"checkpoint_every must be >= 0, got {checkpoint_every}")
@@ -756,6 +812,12 @@ def run_scan_point(
                 initial_mass = float(mass_target)
             start_step = int(prior.step)
             say(f"[{point.point_id}] resuming from checkpoint at step {start_step}")
+    if drag is not None and start_step > 0:
+        reloaded = drag.resume_from_sidecar(start_step)
+        say(
+            f"[{point.point_id}] drag history: {reloaded} sample(s) reloaded "
+            f"up to step {start_step}"
+        )
     ctx = StepContext(
         step=start_step,
         f=f,
@@ -771,9 +833,33 @@ def run_scan_point(
     t0 = time.perf_counter()
     completed = start_step
     for step in range(start_step + 1, plan.steps + 1):
-        f = step_fn(f)
+        f_pre = f
+        f_post_collision = None
+        if drag is not None and step % drag.interval == 0:
+            # The case's own chain (case.make_step), decomposed on sampling
+            # steps to expose the post-collision/pre-streaming state the
+            # control-volume observer integrates over; bit-identical to
+            # step_fn(f_pre).
+            f_post_collision = case.pre_boundaries(case.collide(f_pre), f_pre)
+            f = case.post_boundaries(case.stream(f_post_collision))
+        else:
+            f = step_fn(f_pre)
         if mass_every > 0 and step % mass_every == 0:
-            f = correct_mass3d(f, initial_mass)
+            f_corrected = correct_mass3d(f, initial_mass)
+            if drag is not None:
+                # The rescale injects artificial momentum inside the
+                # control volume; report it so the observer attributes
+                # only the true body force (see scan_drag).
+                drag.note_mass_correction(f, f_corrected, step=step)
+            f = f_corrected
+        if f_post_collision is not None:
+            # Same phase as dispatch below: post-BCs, post mass correction.
+            drag.sample(
+                step,
+                f_old=f_pre,
+                f_post_collision=f_post_collision,
+                f_new=f,
+            )
         ctx.step = step
         ctx.f = f
         dispatch(ctx, reporters)
@@ -823,6 +909,11 @@ def run_scan_point(
 
         case_checkpoint_path(point_dir).unlink(missing_ok=True)
 
+    drag_summary = (
+        drag.summary() if drag is not None else {"drag_final": None, "drag_mean_tail": None}
+    )
+    if drag is not None:
+        drag.write()
     outcome = PointOutcome(
         point_id=point.point_id,
         status="completed",
@@ -835,6 +926,8 @@ def run_scan_point(
         early_stop_reason=early.reason if early is not None else None,
         params=dict(point.params),
         device=str(device),
+        drag_final=drag_summary["drag_final"],
+        drag_mean_tail=drag_summary["drag_mean_tail"],
     )
     status_path.write_text(json.dumps(outcome.to_dict(), indent=2), encoding="utf-8")
     say(
@@ -842,6 +935,11 @@ def run_scan_point(
         f"{completed}/{plan.steps} steps in {elapsed:.1f}s "
         f"({throughput.mean_mlups or 0.0:.1f} MLUPS mean)"
         + (f", early stop: {early.reason}" if early is not None and early.stopped else "")
+        + (
+            f", drag_x={outcome.drag_final:.6g} (tail mean {outcome.drag_mean_tail:.6g})"
+            if outcome.drag_final is not None
+            else ""
+        )
     )
     return outcome
 
