@@ -57,7 +57,11 @@ def bouzidi_bounce_back(
     opp = int(OPPOSITE[direction].item())
     f_out = f.clone()
 
-    q_cell = q[fluid_nodes]
+    # q_field is float32 by construction (see compute_q_circle /
+    # compute_q_sphere); promote it to the population dtype so the
+    # interpolation weights are not rounded to float32 in float64 runs
+    # (exact identity for float32 runs).
+    q_cell = q[fluid_nodes].to(dtype=f.dtype)
     mask_lin = q_cell < 0.5
     mask_quad = ~mask_lin
 
@@ -252,7 +256,11 @@ def bouzidi_bounce_back_3d(
     opp = int(OPPOSITE3D[direction].item())
     f_out = f.clone()
 
-    q_cell = q[fluid_nodes]
+    # q_field is float32 by construction (see compute_q_circle /
+    # compute_q_sphere); promote it to the population dtype so the
+    # interpolation weights are not rounded to float32 in float64 runs
+    # (exact identity for float32 runs).
+    q_cell = q[fluid_nodes].to(dtype=f.dtype)
     mask_lin = q_cell < 0.5
     mask_quad = ~mask_lin
 
