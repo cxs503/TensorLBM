@@ -23,15 +23,20 @@ __all__ = [
     "save_fields_hdf5",
 ]
 
-from .catalog import FieldDataCatalog, AssetRecord, LineageRecord, QualityCheck, MetadataRecord
+from .catalog import AssetRecord, FieldDataCatalog, LineageRecord, MetadataRecord, QualityCheck
 from .quality import check_field_product, validate_field_product
 
 __all__ += [
-    "FieldDataCatalog", "AssetRecord", "LineageRecord", "QualityCheck", "MetadataRecord",
-    "check_field_product", "validate_field_product",
+    "FieldDataCatalog",
+    "AssetRecord",
+    "LineageRecord",
+    "QualityCheck",
+    "MetadataRecord",
+    "check_field_product",
+    "validate_field_product",
 ]
 
-from .sunway_bridge import (
+from .sunway_bridge import (  # noqa: E402
     SWLBM_BRIDGE_SCHEMA,
     SWLBM_FORCE_COLUMNS,
     SwlbmForceHistory,

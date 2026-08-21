@@ -19,6 +19,7 @@ GPUs are available; it pins ``CUDA_VISIBLE_DEVICES`` (default ``6,7``,
 override with ``AR_TEST_GPUS``) so it never lands on GPUs reserved by
 other users.
 """
+
 from __future__ import annotations
 
 import json
@@ -33,10 +34,17 @@ import torch
 
 from tensorlbm.d3q19 import C as C_D3Q19
 from tensorlbm.d3q27 import C as C_D3Q27
-from tensorlbm.triton_fused_distributed import (
-    DistributedTritonFusedSolver3D,
-    crossing_face_indices,
-)
+
+try:
+    from tensorlbm.triton_fused_distributed import (
+        DistributedTritonFusedSolver3D,
+        crossing_face_indices,
+    )
+except ModuleNotFoundError:
+    pytest.skip(
+        "selective-halo tests require triton (triton_fused_distributed imports it at module level)",
+        allow_module_level=True,
+    )
 
 
 def _cz(C: torch.Tensor) -> list[int]:
@@ -47,13 +55,16 @@ def _cz(C: torch.Tensor) -> list[int]:
 # 1. Crossing tables are generated from the lattice constants
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "lattice,per_face,q",
     [(C_D3Q19, 5, 19), (C_D3Q27, 9, 27)],
     ids=["D3Q19", "D3Q27"],
 )
 def test_crossing_tables_generated_from_lattice_constants(
-    lattice: torch.Tensor, per_face: int, q: int,
+    lattice: torch.Tensor,
+    per_face: int,
+    q: int,
 ) -> None:
     """Per-face table = cz=±1 subsets; union = the full cz≠0 set."""
     cz = _cz(lattice)
@@ -77,6 +88,7 @@ def test_crossing_face_indices_rejects_bad_sign() -> None:
 # 2. Solver wiring: tables + staging volume (single process, GPU)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="module")
 def dev() -> str:
     from tensorlbm.triton_fused import is_available
@@ -87,8 +99,7 @@ def dev() -> str:
 
 
 def test_solver_tables_come_from_d3q19_constants(dev: str) -> None:
-    solver = DistributedTritonFusedSolver3D(
-        nz_global=8, ny=8, nx=8, tau=0.6, device=dev)
+    solver = DistributedTritonFusedSolver3D(nz_global=8, ny=8, nx=8, tau=0.6, device=dev)
     cz = _cz(C_D3Q19)
     assert solver._cross_up == tuple(i for i in range(19) if cz[i] == +1)
     assert solver._cross_dn == tuple(i for i in range(19) if cz[i] == -1)
@@ -98,7 +109,8 @@ def test_solver_tables_come_from_d3q19_constants(dev: str) -> None:
 
 @pytest.mark.parametrize("wire", [torch.float32, torch.float16])
 def test_staging_volume_selective_vs_legacy_full_q(
-    dev: str, wire: torch.dtype,
+    dev: str,
+    wire: torch.dtype,
 ) -> None:
     """Staging must be (n_cross, ny, nx), not (19, ny, nx).
 
@@ -107,11 +119,11 @@ def test_staging_volume_selective_vs_legacy_full_q(
     """
     ny = nx = 64
     solver = DistributedTritonFusedSolver3D(
-        nz_global=8, ny=ny, nx=nx, tau=0.6, device=dev, halo_dtype=wire)
+        nz_global=8, ny=ny, nx=nx, tau=0.6, device=dev, halo_dtype=wire
+    )
     solver._alloc_halo_staging(wire)
     assert solver.staging_shape == (5, ny, nx)
-    for plane in (solver._send_left, solver._send_right,
-                  solver._recv_left, solver._recv_right):
+    for plane in (solver._send_left, solver._send_right, solver._recv_left, solver._recv_right):
         assert plane.shape == (5, ny, nx)
         assert plane.dtype == wire
     legacy_staging = 4 * 19 * ny * nx * 4
@@ -129,8 +141,8 @@ def test_staging_volume_selective_vs_legacy_full_q(
 def test_solver_rejects_unsupported_halo_dtype(dev: str) -> None:
     with pytest.raises(ValueError, match="halo_dtype"):
         DistributedTritonFusedSolver3D(
-            nz_global=8, ny=8, nx=8, tau=0.6, device=dev,
-            halo_dtype=torch.float64)
+            nz_global=8, ny=8, nx=8, tau=0.6, device=dev, halo_dtype=torch.float64
+        )
 
 
 def test_single_rank_ghost_fill_keeps_working(dev: str) -> None:
@@ -138,8 +150,7 @@ def test_single_rank_ghost_fill_keeps_working(dev: str) -> None:
     from tensorlbm.d3q19 import equilibrium3d
 
     n = 8
-    solver = DistributedTritonFusedSolver3D(
-        nz_global=n, ny=n, nx=n, tau=0.6, device=dev)
+    solver = DistributedTritonFusedSolver3D(nz_global=n, ny=n, nx=n, tau=0.6, device=dev)
     rho = torch.ones((n, n, n), device=dev)
     u = torch.zeros((3, n, n, n), device=dev)
     f0 = equilibrium3d(rho, u[0], u[1], u[2])
@@ -232,7 +243,8 @@ def _visible_gpu_count(gpus: str) -> int:
 
 @pytest.mark.parametrize("transport", ["fp32", "fp16"])
 def test_two_rank_selective_halo_matches_single_rank(
-    tmp_path: Path, transport: str,
+    tmp_path: Path,
+    transport: str,
 ) -> None:
     torchrun = shutil.which("torchrun")
     if torchrun is None:
@@ -249,9 +261,19 @@ def test_two_rank_selective_halo_matches_single_rank(
     env["AR_HALO_DTYPE"] = transport
     env["CUDA_VISIBLE_DEVICES"] = gpus
     result = subprocess.run(
-        [sys.executable, "-m", "torch.distributed.run",
-         "--standalone", "--nproc_per_node=2", str(worker)],
-        cwd=root, env=env, capture_output=True, text=True, timeout=600,
+        [
+            sys.executable,
+            "-m",
+            "torch.distributed.run",
+            "--standalone",
+            "--nproc_per_node=2",
+            str(worker),
+        ],
+        cwd=root,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=600,
     )
     metrics = None
     for line in result.stdout.splitlines():

@@ -47,7 +47,6 @@ from .utils import (
     resolve_device,
 )
 
-
 # The moving-wall implementation is qualified only below this value.  Equal
 # Mach numbers above it are not low-Mach comparison evidence.
 LOW_MACH_TIP_GATE = 0.004
@@ -1044,9 +1043,12 @@ def _require_resolution_sensitivity_contract(
         j_values = tuple(
             v / (config.rpm * config.geometry.diameter) for v in config.inflow_velocities
         )
-        same = lambda a, b: math.isclose(
-            a, b, rel_tol=_SENSITIVITY_MATCH_TOL, abs_tol=_SENSITIVITY_MATCH_TOL
-        )
+
+        def same(a, b):
+            return math.isclose(
+                a, b, rel_tol=_SENSITIVITY_MATCH_TOL, abs_tol=_SENSITIVITY_MATCH_TOL
+            )
+
         if len(j_values) != len(base_j) or not all(same(a, b) for a, b in zip(j_values, base_j)):
             raise ValueError("resolution sensitivity requires matched advance ratios J")
         if not same(config.re_d, baseline.re_d):
@@ -1300,7 +1302,6 @@ def _run_single_speed(
             momentum_after_boundary - momentum_after_streaming - open_face_delta
         )
 
-        momentum_before_wall = momentum_after_boundary
         f, wall_reaction = moving_wall_bounce_back_3d_with_reaction(
             f,
             mask,
@@ -1482,7 +1483,7 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
     device = resolve_device(config.device)
 
     tip_ma = config.tip_ma
-    print(f"Propeller Open-Water Benchmark (fixed-RPM variable-inflow)")
+    print("Propeller Open-Water Benchmark (fixed-RPM variable-inflow)")
     print(f"  Device:     {device}     Blades: {config.geometry.n_blades}")
     print(
         f"  Diameter:   {config.geometry.diameter} lu   "

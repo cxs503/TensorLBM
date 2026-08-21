@@ -1,4 +1,5 @@
 """Resolution-sequence convergence and discretisation uncertainty evidence."""
+
 from __future__ import annotations
 
 import math
@@ -45,10 +46,10 @@ def _linear_fit(x: tuple[float, ...], y: tuple[float, ...]) -> tuple[float, floa
     denominator = sum((value - mean_x) ** 2 for value in x)
     if denominator <= 1e-30:
         return mean_y, 0.0, math.inf
-    slope = sum(
-        (x_value - mean_x) * (y_value - mean_y)
-        for x_value, y_value in zip(x, y, strict=True)
-    ) / denominator
+    slope = (
+        sum((x_value - mean_x) * (y_value - mean_y) for x_value, y_value in zip(x, y, strict=True))
+        / denominator
+    )
     intercept = mean_y - slope * mean_x
     residual = sum(
         (value - (intercept + slope * coordinate)) ** 2
@@ -76,16 +77,24 @@ def assess_spatial_convergence(
     if not 0.0 < minimum_order_search < maximum_order_search:
         raise ValueError("invalid observed-order search interval")
     finite = all(math.isfinite(value) for value in phi)
-    differences = tuple(
-        right - left for left, right in zip(phi, phi[1:], strict=False)
+    differences = tuple(right - left for left, right in zip(phi, phi[1:], strict=False))
+    monotonic = (
+        finite
+        and (
+            all(value >= 0.0 for value in differences) or all(value <= 0.0 for value in differences)
+        )
+        and any(abs(value) > 0.0 for value in differences)
     )
-    monotonic = finite and (
-        all(value >= 0.0 for value in differences)
-        or all(value <= 0.0 for value in differences)
-    ) and any(abs(value) > 0.0 for value in differences)
     if not finite:
         return SpatialConvergenceAssessment(
-            n, phi, False, math.nan, math.nan, math.inf, math.inf, False,
+            n,
+            phi,
+            False,
+            math.nan,
+            math.nan,
+            math.inf,
+            math.inf,
+            False,
         )
 
     def fit(order: float) -> tuple[float, float, float]:
@@ -93,8 +102,7 @@ def assess_spatial_convergence(
 
     grid_points = 400
     orders = [
-        minimum_order_search
-        + index * (maximum_order_search - minimum_order_search) / grid_points
+        minimum_order_search + index * (maximum_order_search - minimum_order_search) / grid_points
         for index in range(grid_points + 1)
     ]
     best_index = min(range(len(orders)), key=lambda index: fit(orders[index])[2])
@@ -112,9 +120,7 @@ def assess_spatial_convergence(
             x2 = left + golden * (right - left)
     observed_order = 0.5 * (left + right)
     extrapolated, _, residual = fit(observed_order)
-    finest_error = (
-        abs(phi[-1] - extrapolated) / max(abs(extrapolated), 1e-30) * 100.0
-    )
+    finest_error = abs(phi[-1] - extrapolated) / max(abs(extrapolated), 1e-30) * 100.0
     fit_rms = math.sqrt(residual / len(phi))
     fit_rms_pct = fit_rms / max(abs(extrapolated), 1e-30) * 100.0
     return SpatialConvergenceAssessment(

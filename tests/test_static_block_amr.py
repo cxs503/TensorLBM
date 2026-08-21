@@ -1,4 +1,5 @@
 """Conservation and scheduling tests for the production static block AMR."""
+
 from __future__ import annotations
 
 import pytest
@@ -73,17 +74,28 @@ def test_interface_filter_is_composed_into_the_fine_advance() -> None:
     solver = StaticBlockAMR3D(_uniform_equilibrium((8, 9, 11)), config)
     initial = solver.fine_f.clone()
     c = C19.to(dtype=initial.dtype)
-    moments = torch.stack((
-        torch.ones(19, dtype=initial.dtype),
-        c[:, 0], c[:, 1], c[:, 2],
-        c[:, 0].square(), c[:, 1].square(), c[:, 2].square(),
-        c[:, 0] * c[:, 1], c[:, 0] * c[:, 2], c[:, 1] * c[:, 2],
-    ))
+    moments = torch.stack(
+        (
+            torch.ones(19, dtype=initial.dtype),
+            c[:, 0],
+            c[:, 1],
+            c[:, 2],
+            c[:, 0].square(),
+            c[:, 1].square(),
+            c[:, 2].square(),
+            c[:, 0] * c[:, 1],
+            c[:, 0] * c[:, 2],
+            c[:, 1] * c[:, 2],
+        )
+    )
     _, _, right = torch.linalg.svd(moments, full_matrices=True)
     kinetic_mode = right[-1] / torch.linalg.vector_norm(right[-1])
 
     def add_kinetic_mode(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         del tau, substep
         out = f.clone()
@@ -108,7 +120,10 @@ def test_single_interface_accepts_a_convectively_scaled_dynamic_tau_pair() -> No
     observed: list[float] = []
 
     def identity(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         del level, substep
         observed.append(tau)
@@ -129,7 +144,10 @@ def test_restriction_regularization_is_an_explicit_common_option() -> None:
     solver = StaticBlockAMR3D(_uniform_equilibrium((8, 9, 11)), config)
 
     def identity(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         del tau, level, substep
         return AMRAdvanceResult(f.clone(), f.clone())
@@ -142,12 +160,20 @@ def test_restriction_regularization_is_an_explicit_common_option() -> None:
 def test_prolongation_regularization_removes_only_coarse_ghost_modes() -> None:
     equilibrium = _uniform_equilibrium((8, 9, 11))
     c = C19.to(dtype=equilibrium.dtype)
-    moments = torch.stack((
-        torch.ones(19, dtype=equilibrium.dtype),
-        c[:, 0], c[:, 1], c[:, 2],
-        c[:, 0].square(), c[:, 1].square(), c[:, 2].square(),
-        c[:, 0] * c[:, 1], c[:, 0] * c[:, 2], c[:, 1] * c[:, 2],
-    ))
+    moments = torch.stack(
+        (
+            torch.ones(19, dtype=equilibrium.dtype),
+            c[:, 0],
+            c[:, 1],
+            c[:, 2],
+            c[:, 0].square(),
+            c[:, 1].square(),
+            c[:, 2].square(),
+            c[:, 0] * c[:, 1],
+            c[:, 0] * c[:, 2],
+            c[:, 1] * c[:, 2],
+        )
+    )
     _, _, right = torch.linalg.svd(moments, full_matrices=True)
     kinetic_mode = right[-1] / torch.linalg.vector_norm(right[-1])
     perturbed_parent = equilibrium + 1.0e-3 * kinetic_mode[:, None, None, None]
@@ -159,7 +185,9 @@ def test_prolongation_regularization_removes_only_coarse_ghost_modes() -> None:
     regularized = StaticBlockAMR3D(
         equilibrium.clone(),
         StaticBlockAMRConfig(
-            box, tau_coarse=0.56, regularize_prolongation=True,
+            box,
+            tau_coarse=0.56,
+            regularize_prolongation=True,
         ),
     )
     reference = regularized.fine_f.clone()
@@ -173,16 +201,22 @@ def test_prolongation_regularization_removes_only_coarse_ghost_modes() -> None:
 
     assert torch.linalg.vector_norm(raw_ghost - reference_ghost) > 1.0e-3
     torch.testing.assert_close(
-        regularized_ghost, reference_ghost, rtol=0.0, atol=2.0e-8,
+        regularized_ghost,
+        reference_ghost,
+        rtol=0.0,
+        atol=2.0e-8,
     )
     torch.testing.assert_close(
-        raw_ghost.sum(dim=0), regularized_ghost.sum(dim=0),
-        rtol=0.0, atol=2.0e-8,
+        raw_ghost.sum(dim=0),
+        regularized_ghost.sum(dim=0),
+        rtol=0.0,
+        atol=2.0e-8,
     )
     torch.testing.assert_close(
         torch.einsum("qn,qd->dn", raw_ghost, c),
         torch.einsum("qn,qd->dn", regularized_ghost, c),
-        rtol=0.0, atol=2.0e-8,
+        rtol=0.0,
+        atol=2.0e-8,
     )
 
 
@@ -251,7 +285,9 @@ def test_uniform_moving_equilibrium_survives_nested_step_exactly() -> None:
     assert torch.allclose(solver.coarse_f, coarse_before, rtol=0.0, atol=1e-8)
     assert torch.allclose(solver.fine_f, fine_before, rtol=0.0, atol=1e-8)
     assert [(level, substep) for level, substep, _ in calls] == [
-        (0, -1), (1, 0), (1, 1),
+        (0, -1),
+        (1, 0),
+        (1, 1),
     ]
     assert [tau for _, _, tau in calls] == pytest.approx([0.56, 0.62, 0.62])
     assert ledger.mass_residual == pytest.approx(0.0, abs=1e-14)
@@ -267,7 +303,10 @@ def test_crossing_link_reflux_preserves_uniform_moving_equilibrium() -> None:
     before = solver.coarse_f.clone()
 
     def identity(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         del tau, level, substep
         return AMRAdvanceResult(f.clone(), f.clone())
@@ -420,7 +459,8 @@ def test_cell_centered_trilinear_ghost_fill_is_exact_for_linear_density() -> Non
     solver._fill_ghost(parent)
 
     torch.testing.assert_close(
-        solver.fine_f[:, 1:-1, 1:-1, 1:-1], interior_before,
+        solver.fine_f[:, 1:-1, 1:-1, 1:-1],
+        interior_before,
     )
     plan = solver._ghost_sampling_plan
     filled_density = solver.fine_f.reshape(19, -1)[:, plan.target_flat].sum(dim=0)
@@ -484,7 +524,9 @@ def test_face_local_interface_remains_finite_over_repeated_pulse_crossing() -> N
     """A smooth convected perturbation may cross the interface repeatedly."""
     shape = (12, 14, 18)
     z, y, x = torch.meshgrid(
-        torch.arange(shape[0]), torch.arange(shape[1]), torch.arange(shape[2]),
+        torch.arange(shape[0]),
+        torch.arange(shape[1]),
+        torch.arange(shape[2]),
         indexing="ij",
     )
     rho = 1.0 + 1e-3 * torch.exp(
@@ -504,7 +546,10 @@ def test_face_local_interface_remains_finite_over_repeated_pulse_crossing() -> N
     maximum_residual = 0.0
 
     def advance(
-        state: torch.Tensor, tau: float, level: int, substep: int,
+        state: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         del level, substep
         post = collide_mrt3d(state, tau=tau)

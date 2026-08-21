@@ -8,9 +8,10 @@ Outputs: Cp_min, Cp_max, Cp_mean, Cp_rms, and sampled distribution.
 """
 
 from __future__ import annotations
-import torch
+
 import math
-from typing import Optional
+
+import torch
 
 
 def compute_cp_field(f, u_in, rho_ref=1.0):
@@ -155,7 +156,7 @@ def print_cp_report(f, solid, u_in, geometry_type="generic", cx=None, cy=None, r
     cp_surface, near_wall = compute_cp_surface(f, solid, u_in, rho_ref)
     stats = cp_statistics(cp_surface, near_wall)
 
-    print(f"  Cp statistics:", flush=True)
+    print("  Cp statistics:", flush=True)
     print(f"    Cp_min={stats['Cp_min']:.4f}  Cp_max={stats['Cp_max']:.4f}", flush=True)
     print(f"    Cp_mean={stats['Cp_mean']:.4f}  Cp_rms={stats['Cp_rms']:.4f}", flush=True)
     print(f"    n_points={stats['n_points']}", flush=True)
@@ -166,7 +167,7 @@ def print_cp_report(f, solid, u_in, geometry_type="generic", cx=None, cy=None, r
             # Sample at 10 stations
             n = len(x_vals)
             step = max(n // 10, 1)
-            print(f"  Cp profile (x, upper, lower):", flush=True)
+            print("  Cp profile (x, upper, lower):", flush=True)
             for i in range(0, n, step):
                 print(
                     f"    x={x_vals[i]:4d}  Cp_up={cp_upper[i]:.3f}  Cp_lo={cp_lower[i]:.3f}",
@@ -176,7 +177,7 @@ def print_cp_report(f, solid, u_in, geometry_type="generic", cx=None, cy=None, r
     if geometry_type in ("cylinder", "sphere") and cx is not None and cy is not None:
         angles, cp_vals = cp_profile_angular(f, solid, u_in, cx, cy, rho_ref)
         if angles:
-            print(f"  Cp vs angle:", flush=True)
+            print("  Cp vs angle:", flush=True)
             for a, c in zip(angles, cp_vals):
                 print(f"    θ={a:5.1f}°  Cp={c:.3f}", flush=True)
 

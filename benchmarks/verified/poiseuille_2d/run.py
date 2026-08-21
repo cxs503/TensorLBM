@@ -29,6 +29,7 @@ Usage:
         [--min-steps N] [--max-steps N] [--seed 0]
     run.py scan out_dir [--max-steps N] [--include-re80]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -40,14 +41,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
 
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
-
 import numpy as np
 import torch
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
+from tensorlbm.boundaries import zou_he_outlet_pressure
 from tensorlbm.d2q9 import OPPOSITE, equilibrium, macroscopic
 from tensorlbm.solver import collide_bgk, collide_mrt, stream
-from tensorlbm.boundaries import zou_he_outlet_pressure
 
 CS2 = 1.0 / 3.0
 DEVICE = torch.device("cpu")
@@ -83,8 +83,8 @@ def run_case(
 ) -> dict:
     """Run one pressure-driven 2D Poiseuille case and return measurements."""
     torch.manual_seed(seed)
-    ny = H + 2                      # wall rows at y=0 and y=ny-1
-    nx = 3 * H                      # L = 3H
+    ny = H + 2  # wall rows at y=0 and y=ny-1
+    nx = 3 * H  # L = 3H
     nu = (tau - 0.5) / 3.0
     # u_max = dp*H^2/(8*nu*L), dp = d_rho*cs2, L = nx = 3H  =>  d_rho = 24*nu*u_max/(cs2*H)
     delta_rho = 24.0 * nu * u_max_target / (CS2 * H)
@@ -105,7 +105,9 @@ def run_case(
     # Initial condition: rest + linear density ramp rho_in -> rho_out
     xx = torch.arange(nx, device=DEVICE, dtype=torch.float32)
     rho0 = (rho_out + (rho_in - rho_out) * (1.0 - xx / (nx - 1))).view(1, nx).expand(ny, nx)
-    f = equilibrium(rho0, torch.zeros((ny, nx), device=DEVICE), torch.zeros((ny, nx), device=DEVICE))
+    f = equilibrium(
+        rho0, torch.zeros((ny, nx), device=DEVICE), torch.zeros((ny, nx), device=DEVICE)
+    )
     initial_mass = float(f.sum().item())
 
     # ---- 整步步进函数（共性 compile 路径；步序号与监测留在编译域外）----
@@ -114,13 +116,13 @@ def run_case(
         f = collide_fn(f, tau)
         # pre-streaming half-way bounce-back at wall rows (repo-validated variant)
         f = torch.where(wall.unsqueeze(0), f_pre[OPPOSITE.to(DEVICE)], f)
-        f = stream(f)               # periodic gather; boundary columns overwritten below
+        f = stream(f)  # periodic gather; boundary columns overwritten below
         f = zou_he_inlet_pressure(f, rho_in)
         return zou_he_outlet_pressure(f, rho_out)
 
     step_fn = route_step(_step, compile_mode, name=f"poiseuille_2d[H{H}]")
 
-    col = nx // 2                   # measurement column (mid-channel)
+    col = nx // 2  # measurement column (mid-channel)
     t0 = time.time()
     umax_hist: list[float] = []
     step = 0
@@ -131,7 +133,7 @@ def run_case(
             _, ux, _ = macroscopic(f)
             umax_hist.append(float(ux[:, col].max().item()))
             if step >= min_steps and len(umax_hist) >= 10:
-                recent = umax_hist[-10:]                # drift over last 2000 steps
+                recent = umax_hist[-10:]  # drift over last 2000 steps
                 mean = sum(recent) / len(recent)
                 drift = (max(recent) - min(recent)) / max(abs(mean), 1e-12)
                 if drift < 1e-5:
@@ -148,7 +150,7 @@ def run_case(
     prof_acc /= 200.0
 
     rho, ux, _ = macroscopic(f)
-    u_num = prof_acc[1 : ny - 1].cpu().numpy()          # H fluid rows
+    u_num = prof_acc[1 : ny - 1].cpu().numpy()  # H fluid rows
     y_phys = np.arange(1, ny - 1, dtype=np.float64) - 0.5
     u_ana = 4.0 * u_max_ana * (y_phys / H) * (1.0 - y_phys / H)
 
@@ -214,15 +216,25 @@ def run_case(
     return result
 
 
-def scan(H_list, tau, u_max, collision, min_steps, max_steps, out_dir: str,
-         include_re80: bool = False, compile_mode: str | None = "default") -> dict:
+def scan(
+    H_list,
+    tau,
+    u_max,
+    collision,
+    min_steps,
+    max_steps,
+    out_dir: str,
+    include_re80: bool = False,
+    compile_mode: str | None = "default",
+) -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cases = []
     for H in H_list:
         p = out_dir / f"case_H{H}.json"
-        r = run_case(H, tau, u_max, collision, min_steps, max_steps, str(p),
-                     compile_mode=compile_mode)
+        r = run_case(
+            H, tau, u_max, collision, min_steps, max_steps, str(p), compile_mode=compile_mode
+        )
         cases.append(r)
         print(
             f"H={r['H_eff']:3d} Re={r['Re']:7.2f} steps={r['n_steps']:6d} "
@@ -254,10 +266,15 @@ def scan(H_list, tau, u_max, collision, min_steps, max_steps, out_dir: str,
         "max_steps": max_steps,
         "per_grid": cases,
         "convergence": [
-            {"H": r["H_eff"], "Re": r["Re"], "l2_rel_err": r["l2_rel_err"],
-             "u_max_err_pct": r["u_max_err_pct"],
-             "max_rel_err_central_pct": r["max_rel_err_central_pct"],
-             "n_steps": r["n_steps"], "collision": r["collision"]}
+            {
+                "H": r["H_eff"],
+                "Re": r["Re"],
+                "l2_rel_err": r["l2_rel_err"],
+                "u_max_err_pct": r["u_max_err_pct"],
+                "max_rel_err_central_pct": r["max_rel_err_central_pct"],
+                "n_steps": r["n_steps"],
+                "collision": r["collision"],
+            }
             for r in cases
         ],
     }
@@ -298,19 +315,56 @@ def main() -> None:
     DEVICE = torch.device(args.device)
     compile_mode = compile_mode_from_args(args)
     if args.mode == "single":
-        r = run_case(args.H, args.tau, args.umax, args.collision,
-                     args.min_steps, args.max_steps, args.out_json, args.seed,
-                     compile_mode=compile_mode)
-        print(json.dumps({k: r[k] for k in
-                          ["H_eff", "nx", "ny", "tau", "nu_lb", "delta_rho", "u_max_ana", "Re",
-                           "Ma", "n_steps", "steady", "u_max_err_pct", "l2_rel_err",
-                           "max_rel_err_central_pct", "rho_slope_ratio", "mass_drift_pct",
-                           "elapsed_s"]},
-                         indent=2))
+        r = run_case(
+            args.H,
+            args.tau,
+            args.umax,
+            args.collision,
+            args.min_steps,
+            args.max_steps,
+            args.out_json,
+            args.seed,
+            compile_mode=compile_mode,
+        )
+        print(
+            json.dumps(
+                {
+                    k: r[k]
+                    for k in [
+                        "H_eff",
+                        "nx",
+                        "ny",
+                        "tau",
+                        "nu_lb",
+                        "delta_rho",
+                        "u_max_ana",
+                        "Re",
+                        "Ma",
+                        "n_steps",
+                        "steady",
+                        "u_max_err_pct",
+                        "l2_rel_err",
+                        "max_rel_err_central_pct",
+                        "rho_slope_ratio",
+                        "mass_drift_pct",
+                        "elapsed_s",
+                    ]
+                },
+                indent=2,
+            )
+        )
     else:
-        scan(args.H, args.tau, args.umax, args.collision,
-             args.min_steps, args.max_steps, args.out_dir, args.include_re80,
-             compile_mode)
+        scan(
+            args.H,
+            args.tau,
+            args.umax,
+            args.collision,
+            args.min_steps,
+            args.max_steps,
+            args.out_dir,
+            args.include_re80,
+            compile_mode,
+        )
 
 
 if __name__ == "__main__":

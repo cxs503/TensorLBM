@@ -15,6 +15,7 @@ These tests pin TensorLBM's portability contract:
 4. The ``tensorlbm.hardware`` capability probe produces serialisable
    profiles and actionable ``require()`` failures with degradation advice.
 """
+
 from __future__ import annotations
 
 import json
@@ -42,6 +43,7 @@ _CODE_SHA = "b" * 40
 # ---------------------------------------------------------------------------
 # Gate 1: eager solver path on CPU
 # ---------------------------------------------------------------------------
+
 
 def test_stream3d_gather_and_roll_agree_on_cpu() -> None:
     """The two eager streaming kernels must be numerically identical."""
@@ -91,6 +93,7 @@ def test_collide_bgk3d_preserves_mass_on_cpu() -> None:
 # ---------------------------------------------------------------------------
 # Gate 2: core data chain on CPU
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def registered_product(tmp_path: Path) -> tuple[FieldDataCatalog, str, Path]:
@@ -152,6 +155,7 @@ def test_data_chain_quality_and_lineage_recorded(
 # Gate 3: static scan — no bare .cuda() anywhere in src/tensorlbm
 # ---------------------------------------------------------------------------
 
+
 def test_no_bare_cuda_calls_in_src() -> None:
     """Device placement must be device-parameter driven, not CUDA literal.
 
@@ -174,6 +178,7 @@ def test_no_bare_cuda_calls_in_src() -> None:
 # ---------------------------------------------------------------------------
 # Gate 4: hardware capability probe
 # ---------------------------------------------------------------------------
+
 
 def test_probe_reports_cpu_and_serialises() -> None:
     profile = hardware.probe(refresh=True)
@@ -283,6 +288,7 @@ def test_require_cpu_always_passes() -> None:
 # Gate 5: observability records carry the hardware profile
 # ---------------------------------------------------------------------------
 
+
 def test_resolve_benchmark_device_embeds_hardware_profile() -> None:
     from tensorlbm.benchmark_observability import resolve_benchmark_device
 
@@ -302,6 +308,4 @@ def test_benchmark_reporter_status_contains_hardware(tmp_path: Path) -> None:
     reporter.finish(1, "COMPLETED", None, {"metric": 1.0})
     status = json.loads((tmp_path / "run_status.json").read_text())
     assert status["hardware"]["default_device"]
-    assert any(
-        entry["name"] == "cpu" for entry in status["hardware"]["backends"]
-    )
+    assert any(entry["name"] == "cpu" for entry in status["hardware"]["backends"])

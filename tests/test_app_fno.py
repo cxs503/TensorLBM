@@ -10,8 +10,8 @@ deterministic; one test exercises the real Adam+MSE loop on a tiny grid.
 
 from __future__ import annotations
 
-import torch
 import pytest
+import torch
 
 from tensorlbm.ai.fno import FNO2d, load_fno2d
 from tensorlbm.apps.base import DataProduct, TrainingResult
@@ -19,10 +19,10 @@ from tensorlbm.apps.neural_operator_fno import NeuralOperatorFNO
 from tensorlbm.ml.serving import FAMILY_FNO, InferenceService, ModelRegistry
 from tensorlbm.ml.training_job import TrainingJobRegistry
 
-
 # ---------------------------------------------------------------------------
 # Mock collaborators
 # ---------------------------------------------------------------------------
+
 
 def _mock_velocity_snapshots(nx: int, ny: int, seed: int):
     """Deterministic turbulent-looking velocity fields (no solver run)."""
@@ -61,6 +61,7 @@ def app():
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 def test_class_identity():
     assert NeuralOperatorFNO.name == "neural_operator_fno"
@@ -142,7 +143,14 @@ def test_make_dataset_shapes(app):
 
 def test_build_model_and_infer(app):
     model = app.build_model(
-        {"in_channels": 2, "out_channels": 2, "width": 8, "n_layers": 2, "modes_x": 8, "modes_y": 8},
+        {
+            "in_channels": 2,
+            "out_channels": 2,
+            "width": 8,
+            "n_layers": 2,
+            "modes_x": 8,
+            "modes_y": 8,
+        },
     )
     assert isinstance(model, FNO2d)
 
@@ -174,7 +182,14 @@ def test_train_default_fn_writes_real_checkpoint(tmp_path):
         ),
     )
     model = app.build_model(
-        {"in_channels": 2, "out_channels": 2, "width": 8, "n_layers": 2, "modes_x": 8, "modes_y": 8},
+        {
+            "in_channels": 2,
+            "out_channels": 2,
+            "width": 8,
+            "n_layers": 2,
+            "modes_x": 8,
+            "modes_y": 8,
+        },
     )
     out_path = tmp_path / "fno_model.pt"
     result = app.train(
@@ -200,7 +215,14 @@ def test_serving_loads_fno_family(tmp_path):
     """InferenceService loads and predicts a model registered under fno2d."""
     app = NeuralOperatorFNO()
     model = app.build_model(
-        {"in_channels": 2, "out_channels": 2, "width": 8, "n_layers": 2, "modes_x": 8, "modes_y": 8},
+        {
+            "in_channels": 2,
+            "out_channels": 2,
+            "width": 8,
+            "n_layers": 2,
+            "modes_x": 8,
+            "modes_y": 8,
+        },
     )
     from tensorlbm.ai.fno import save_fno2d
 

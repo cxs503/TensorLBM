@@ -33,6 +33,7 @@ Guards three properties of
 Requires CUDA.  Run:
   CUDA_VISIBLE_DEVICES=0 pytest tests/test_triton_kernel_smag_split_wall.py -q
 """
+
 from __future__ import annotations
 
 import sys
@@ -46,15 +47,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from tensorlbm.boundaries3d import bounce_back_cells_3d, sphere_mask
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import stream3d
-from tensorlbm.turbulence import _neq_stress_norm_3d, _smagorinsky_tau
 from tensorlbm.triton_fused_obstacle import (
     apply_far_field_bc_6face,
     apply_mass_correction,
     triton_fused_obstacle_xfar_les,
 )
+from tensorlbm.turbulence import _neq_stress_norm_3d, _smagorinsky_tau
 
-pytestmark = pytest.mark.skipif(
-    not torch.cuda.is_available(), reason="requires CUDA")
+pytestmark = pytest.mark.skipif(not torch.cuda.is_available(), reason="requires CUDA")
 
 DEV = "cuda:0"
 NX, NY, NZ = 32, 16, 16
@@ -69,8 +69,7 @@ def _make_case():
     rho0 = torch.ones((NZ, NY, NX), device=DEV)
     ux0 = torch.full_like(rho0, U_IN)
     ux0[solid] = 0.0
-    f0 = equilibrium3d(rho0, ux0, torch.zeros_like(rho0),
-                       torch.zeros_like(rho0))
+    f0 = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0))
     # Non-equilibrium perturbation so the SGS term is active somewhere.
     f0 = f0 + 0.02 * torch.randn_like(f0)
     return solid.to(torch.int8), f0
@@ -80,13 +79,16 @@ def _make_case():
 # 1. internal Smagorinsky must not be a no-op (regression: issue #83a)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize("collision", ["BGK", "CM", "CUMULANT"])
 def test_internal_smag_changes_solution(collision):
     solid_i8, f0 = _make_case()
     out_cs0 = triton_fused_obstacle_xfar_les(
-        f0.clone(), NU_RE1E5, solid_i8, 0.0, 1.0, collision=collision)
+        f0.clone(), NU_RE1E5, solid_i8, 0.0, 1.0, collision=collision
+    )
     out_cs1 = triton_fused_obstacle_xfar_les(
-        f0.clone(), NU_RE1E5, solid_i8, CS, 1.0, collision=collision)
+        f0.clone(), NU_RE1E5, solid_i8, CS, 1.0, collision=collision
+    )
     torch.cuda.synchronize()
     assert not torch.equal(out_cs0, out_cs1), (
         f"{collision}: Cs={CS} changed nothing — internal Smagorinsky "
@@ -94,8 +96,7 @@ def test_internal_smag_changes_solution(collision):
     )
     diff = (out_cs0 - out_cs1).abs().max()
     assert float(diff) > 1e-6, (
-        f"{collision}: max |Cs=0 - Cs=0.1| = {float(diff):.3e} too small "
-        "for an active LES closure"
+        f"{collision}: max |Cs=0 - Cs=0.1| = {float(diff):.3e} too small for an active LES closure"
     )
 
 
@@ -103,33 +104,31 @@ def test_internal_smag_changes_solution(collision):
 # 2. internal tau_eff parity vs the faithful external chain (BGK probe)
 # ---------------------------------------------------------------------------
 
+
 def test_internal_smag_tau_matches_external_chain():
     solid_i8, f0 = _make_case()
     solid = solid_i8.bool()
-    out = triton_fused_obstacle_xfar_les(
-        f0.clone(), NU_RE1E5, solid_i8, CS, 1.0, collision="BGK")
+    out = triton_fused_obstacle_xfar_les(f0.clone(), NU_RE1E5, solid_i8, CS, 1.0, collision="BGK")
     torch.cuda.synchronize()
 
     h = bounce_back_cells_3d(stream3d(f0), solid)
     rho, ux, uy, uz = macroscopic3d(h)
     feq = equilibrium3d(rho, ux, uy, uz)
     tau0 = 3.0 * NU_RE1E5 + 0.5
-    tau_ext = _smagorinsky_tau(
-        tau0, _neq_stress_norm_3d(h - feq), rho, CS)
+    tau_ext = _smagorinsky_tau(tau0, _neq_stress_norm_3d(h - feq), rho, CS)
 
     # BGK writes out = h - omega*(h - feq)  ->  recover omega per cell/vel.
     fneq = h - feq
     omega_k = (h - out) / fneq
     tau_k = 1.0 / omega_k
-    tau_k = torch.where(torch.isfinite(tau_k), tau_k,
-                        torch.full_like(tau_k, 1e30))
+    tau_k = torch.where(torch.isfinite(tau_k), tau_k, torch.full_like(tau_k, 1e30))
 
     # The probe (h - out)/(h - feq) amplifies the fp32 rounding of the
     # stored ``out`` by 1/|fneq|, so parity is asserted on
     # well-conditioned lanes with a bar safely above that noise floor
     # (measured 2.3e-5 at |fneq| > 1e-3) and far below any real closure
     # discrepancy (a missing factor or wrong clamp is O(1)).
-    rel = ((tau_k - tau_ext[None]).abs() / tau_ext.clamp(min=1e-6)[None])
+    rel = (tau_k - tau_ext[None]).abs() / tau_ext.clamp(min=1e-6)[None]
     probe_ok = fneq.abs() > 1e-3
     worst = rel[probe_ok]
     assert float(worst.max()) < 1e-4, (
@@ -150,6 +149,7 @@ def test_internal_smag_tau_matches_external_chain():
 # 3. wall="split" must be bitwise-identical to wall="fused"
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize("collision", ["BGK", "CM", "CUMULANT"])
 @pytest.mark.parametrize("cs", [0.0, 0.1])
 def test_split_wall_bitwise_single_step(collision, cs):
@@ -158,17 +158,47 @@ def test_split_wall_bitwise_single_step(collision, cs):
     fy = torch.zeros_like(fx)
     fz = torch.zeros_like(fx)
 
-    fx.zero_(); fy.zero_(); fz.zero_()
-    a, fxa, fya, fza = triton_fused_obstacle_xfar_les(
-        f0.clone(), NU_RE1E5, solid_i8, cs, 1.0, collision=collision,
-        wall="fused", fx_buf=fx, fy_buf=fy, fz_buf=fz), fx.item(), \
-        fy.item(), fz.item()
+    fx.zero_()
+    fy.zero_()
+    fz.zero_()
+    a, fxa, fya, fza = (
+        triton_fused_obstacle_xfar_les(
+            f0.clone(),
+            NU_RE1E5,
+            solid_i8,
+            cs,
+            1.0,
+            collision=collision,
+            wall="fused",
+            fx_buf=fx,
+            fy_buf=fy,
+            fz_buf=fz,
+        ),
+        fx.item(),
+        fy.item(),
+        fz.item(),
+    )
 
-    fx.zero_(); fy.zero_(); fz.zero_()
-    b, fxb, fyb, fzb = triton_fused_obstacle_xfar_les(
-        f0.clone(), NU_RE1E5, solid_i8, cs, 1.0, collision=collision,
-        wall="split", fx_buf=fx, fy_buf=fy, fz_buf=fz), fx.item(), \
-        fy.item(), fz.item()
+    fx.zero_()
+    fy.zero_()
+    fz.zero_()
+    b, fxb, fyb, fzb = (
+        triton_fused_obstacle_xfar_les(
+            f0.clone(),
+            NU_RE1E5,
+            solid_i8,
+            cs,
+            1.0,
+            collision=collision,
+            wall="split",
+            fx_buf=fx,
+            fy_buf=fy,
+            fz_buf=fz,
+        ),
+        fx.item(),
+        fy.item(),
+        fz.item(),
+    )
     torch.cuda.synchronize()
 
     exact = torch.equal(a, b)
@@ -210,17 +240,38 @@ def test_split_wall_trajectory_bitwise(collision):
     fy = torch.zeros_like(fx)
     fz = torch.zeros_like(fx)
     for s in range(1, 41):
-        fx.zero_(); fy.zero_(); fz.zero_()
+        fx.zero_()
+        fy.zero_()
+        fz.zero_()
         fa = triton_fused_obstacle_xfar_les(
-            fa, NU_RE1E5, solid_i8, CS, 1.0, collision=collision,
-            wall="fused", fx_buf=fx, fy_buf=fy, fz_buf=fz)
-        fx.zero_(); fy.zero_(); fz.zero_()
+            fa,
+            NU_RE1E5,
+            solid_i8,
+            CS,
+            1.0,
+            collision=collision,
+            wall="fused",
+            fx_buf=fx,
+            fy_buf=fy,
+            fz_buf=fz,
+        )
+        fx.zero_()
+        fy.zero_()
+        fz.zero_()
         fb = triton_fused_obstacle_xfar_les(
-            fb, NU_RE1E5, solid_i8, CS, 1.0, collision=collision,
-            wall="split", fx_buf=fx, fy_buf=fy, fz_buf=fz)
+            fb,
+            NU_RE1E5,
+            solid_i8,
+            CS,
+            1.0,
+            collision=collision,
+            wall="split",
+            fx_buf=fx,
+            fy_buf=fy,
+            fz_buf=fz,
+        )
         assert torch.equal(fa, fb), (
-            f"trajectory diverged at step {s} "
-            f"(max diff {float((fa - fb).abs().max()):.3e})"
+            f"trajectory diverged at step {s} (max diff {float((fa - fb).abs().max()):.3e})"
         )
         apply_far_field_bc_6face(fa, U_IN)
         apply_far_field_bc_6face(fb, U_IN)

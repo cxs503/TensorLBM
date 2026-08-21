@@ -55,7 +55,7 @@ signature must match
 from __future__ import annotations
 
 import torch
-from .d3q19 import macroscopic3d
+
 from .boundaries3d import bounce_back_cells_3d
 
 
@@ -204,9 +204,7 @@ def lbm_step_correct(
     #    large grids (4.3 GB at 56M cells) and is one of the allocations
     #    that pushes MRT past 24 GB.  The BFL path and any custom
     #    bounce_back_fn still receive the full f_pre.
-    need_full_f_pre = (
-        solid is None or wall_treatment == "bfl" or bounce_back_fn is not None
-    )
+    need_full_f_pre = solid is None or wall_treatment == "bfl" or bounce_back_fn is not None
     if need_full_f_pre:
         f_pre = f.clone()
         f_pre_solid = None

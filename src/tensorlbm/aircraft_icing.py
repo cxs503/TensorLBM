@@ -233,7 +233,7 @@ import torch.nn.functional as F
 
 from tensorlbm.compile_utils import compile_step, validate_compile_mode
 from tensorlbm.cumulant import collide_cumulant_d3q19
-from tensorlbm.d3q19 import C, OPPOSITE, equilibrium3d, macroscopic3d
+from tensorlbm.d3q19 import OPPOSITE, C, equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 __all__ = [
@@ -392,7 +392,9 @@ class IcingConfig:
         if self.collision not in ("bgk", "cumulant"):
             raise ValueError(f"collision must be 'bgk' or 'cumulant'; got {self.collision!r}")
         if self.drag_law not in ("stokes", "schiller-naumann"):
-            raise ValueError(f"drag_law must be 'stokes' or 'schiller-naumann'; got {self.drag_law!r}")
+            raise ValueError(
+                f"drag_law must be 'stokes' or 'schiller-naumann'; got {self.drag_law!r}"
+            )
         if self.c_s < 0.0:
             raise ValueError(f"c_s must be >= 0; got {self.c_s}")
         if self.collision == "bgk" and self.c_s > 0.0:
@@ -408,14 +410,12 @@ class IcingConfig:
             raise ValueError(f"sn_scale_factor must be >= 0; got {self.sn_scale_factor}")
         if self.eulerian_scheme not in ("donor", "donor2"):
             raise ValueError(
-                f"eulerian_scheme must be 'donor' or 'donor2'; "
-                f"got {self.eulerian_scheme!r}"
+                f"eulerian_scheme must be 'donor' or 'donor2'; got {self.eulerian_scheme!r}"
             )
         # --- task #84 fix 1 ---
         if self.beta_window_mode not in ("clean", "trailing"):
             raise ValueError(
-                f"beta_window_mode must be 'clean' or 'trailing'; "
-                f"got {self.beta_window_mode!r}"
+                f"beta_window_mode must be 'clean' or 'trailing'; got {self.beta_window_mode!r}"
             )
         if not 0.0 <= self.beta_window_frac <= 1.0:
             raise ValueError(f"beta_window_frac must be in [0, 1]; got {self.beta_window_frac}")
@@ -662,8 +662,11 @@ class IcingConfig:
         if self.drag_law != "schiller-naumann":
             return 0.0
         return (
-            self.sn_scale_factor * self.rho_air
-            * (self.dx_phys / self.dt_phys) * self.mvd / self.mu_air
+            self.sn_scale_factor
+            * self.rho_air
+            * (self.dx_phys / self.dt_phys)
+            * self.mvd
+            / self.mu_air
         )
 
     @property
@@ -691,9 +694,7 @@ class IcingConfig:
         t_win = (w1 - w0) * self.dt_phys
         if t_win <= 0.0:
             return float("inf")
-        return self.m_cell_ice / (
-            self.lwc_eff * self.v_inf * self.dx_phys**2 * t_win
-        )
+        return self.m_cell_ice / (self.lwc_eff * self.v_inf * self.dx_phys**2 * t_win)
 
     # ------------------------------------------------------------------
     # Phase 3: glaze thermodynamics derived quantities
@@ -1167,8 +1168,12 @@ class RimeIcingSimulation:
                 self._flow_step_probe_cumulant, cfg.compile_mode, warmup_hint=hint
             )
         else:
-            self._step_plain = compile_step(self._flow_step_plain, cfg.compile_mode, warmup_hint=hint)
-            self._step_probe = compile_step(self._flow_step_probe, cfg.compile_mode, warmup_hint=hint)
+            self._step_plain = compile_step(
+                self._flow_step_plain, cfg.compile_mode, warmup_hint=hint
+            )
+            self._step_probe = compile_step(
+                self._flow_step_probe, cfg.compile_mode, warmup_hint=hint
+            )
 
         # droplet-phase selection (Phase 2b; defaults reproduce Phase 2a)
         self.use_lagr = cfg.droplet_phase in ("lagrangian", "both")
@@ -1242,7 +1247,12 @@ class RimeIcingSimulation:
         self.n_impacts = 0
         self._seed_carry = 0.0
         self.history: dict[str, list[Any]] = {
-            "step": [], "t_phys": [], "cd": [], "cl": [], "ice_cells": [], "drops_alive": []
+            "step": [],
+            "t_phys": [],
+            "cd": [],
+            "cl": [],
+            "ice_cells": [],
+            "drops_alive": [],
         }
         self.cd0 = self.cl0 = None
         self.cd_end = self.cl_end = None
@@ -1483,7 +1493,9 @@ class RimeIcingSimulation:
         u_end = ud_x[:, -1:]
         o_end = u_end >= 0.0
         out_a = torch.where(o_end, alpha[:, -1:] * u_end, torch.full_like(u_end, alpha_in) * u_end)
-        out_mx = torch.where(o_end, mx[:, -1:] * u_end, torch.full_like(u_end, alpha_in * u_in) * u_end)
+        out_mx = torch.where(
+            o_end, mx[:, -1:] * u_end, torch.full_like(u_end, alpha_in * u_in) * u_end
+        )
         out_my = torch.where(o_end, my[:, -1:] * u_end, torch.zeros_like(u_end))
 
         # boundary inflow that would enter a *solid* border cell (accretion
@@ -1558,12 +1570,14 @@ class RimeIcingSimulation:
         impact = impact + imp_border
         # raw boundary fluxes for the audit: the border-ice impingement
         # mass entered the domain (it is accounted as deposited)
-        bflux = torch.stack((
-            in_a.sum() + imp_border[:, :1].sum(),
-            out_a.sum() + imp_border[:, -1:].sum(),
-            b_a.sum() + imp_border[0:1, :].sum(),
-            t_a.sum() + imp_border[-1:, :].sum(),
-        ))
+        bflux = torch.stack(
+            (
+                in_a.sum() + imp_border[:, :1].sum(),
+                out_a.sum() + imp_border[:, -1:].sum(),
+                b_a.sum() + imp_border[0:1, :].sum(),
+                t_a.sum() + imp_border[-1:, :].sum(),
+            )
+        )
         return alpha, mx, my, impact, bflux
 
     @staticmethod
@@ -1593,7 +1607,9 @@ class RimeIcingSimulation:
         tau = self.cfg.tau_flow
         if self.cfg.collision == "cumulant":
             if want_force:
-                f, f_pre = self._step_probe(self.f, self.solid, self.feq_in, self.opp, tau, self.cfg.c_s)
+                f, f_pre = self._step_probe(
+                    self.f, self.solid, self.feq_in, self.opp, tau, self.cfg.c_s
+                )
                 self.f = f
                 return f_pre
             self.f = self._step_plain(self.f, self.solid, self.feq_in, self.opp, tau, self.cfg.c_s)
@@ -1730,8 +1746,7 @@ class RimeIcingSimulation:
                 # where water can never freeze again -- cascade that water
                 # to the outward fluid neighbour instead (#84 fix 4).
                 origin_solid = solid[dep_iy, dep_ix]
-                self.m_w.view(-1).index_add_(
-                    0, flat[~origin_solid], vals[~origin_solid])
+                self.m_w.view(-1).index_add_(0, flat[~origin_solid], vals[~origin_solid])
                 flat_s = flat[origin_solid]
                 if flat_s.numel():
                     uniq, inv = torch.unique(flat_s, return_inverse=True)
@@ -1739,8 +1754,7 @@ class RimeIcingSimulation:
                         uniq.numel(), dtype=torch.float64, device=self.dev
                     ).index_add_(0, inv, vals[origin_solid].double())
                     ys, xs = uniq // nx, uniq % nx
-                    self._cascade_water(
-                        list(zip(ys.tolist(), xs.tolist())), tot.tolist())
+                    self._cascade_water(list(zip(ys.tolist(), xs.tolist())), tot.tolist())
 
             left = (
                 (new_px >= self.kill_x)
@@ -1842,9 +1856,7 @@ class RimeIcingSimulation:
             self.alpha = torch.zeros_like(self.alpha)
         self.mx = self.alpha * ux
         self.my = self.alpha * uy
-        self.aud_e["initial_fill"] = (
-            float(self.alpha.double().sum().item()) * cfg.mass_per_lu3
-        )
+        self.aud_e["initial_fill"] = float(self.alpha.double().sum().item()) * cfg.mass_per_lu3
 
     def _euler_advance(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
         """One Eulerian droplet step + audit/impact accumulation (eager).
@@ -1886,8 +1898,7 @@ class RimeIcingSimulation:
                 self.m_w += (imp - on_solid) * cfg.mass_per_lu3
                 idx = torch.nonzero(on_solid)
                 vals = on_solid[idx[:, 0], idx[:, 1]] * cfg.mass_per_lu3
-                self._cascade_water(
-                    [tuple(c) for c in idx.tolist()], vals.tolist())
+                self._cascade_water([tuple(c) for c in idx.tolist()], vals.tolist())
             else:
                 self.m_w += dm
 
@@ -1968,8 +1979,9 @@ class RimeIcingSimulation:
         gy, gx = np.gradient(dist.astype(np.float64))
         gn = np.hypot(gy, gx)
         with np.errstate(invalid="ignore", divide="ignore"):
-            ny_, nx_ = np.where(gn > 0, gy / np.maximum(gn, 1e-12), 0.0), np.where(
-                gn > 0, gx / np.maximum(gn, 1e-12), 0.0
+            ny_, nx_ = (
+                np.where(gn > 0, gy / np.maximum(gn, 1e-12), 0.0),
+                np.where(gn > 0, gx / np.maximum(gn, 1e-12), 0.0),
             )
         fn = fx_np * nx_ + fy_np * ny_
         tau_t = np.abs(np.hypot(fx_np - fn * nx_, fy_np - fn * ny_)) * scale_tau
@@ -2052,8 +2064,11 @@ class RimeIcingSimulation:
 
         for step in range(1, cfg.steps + 1):
             want_force = (
-                step == 1 or step == cfg.steps or step % cfg.log_every == 0
-                or step == beta_w0 or step == beta_w1
+                step == 1
+                or step == cfg.steps
+                or step % cfg.log_every == 0
+                or step == beta_w0
+                or step == beta_w1
             )
             if cfg.uniform_flow:
                 f_pre = None
@@ -2120,10 +2135,15 @@ class RimeIcingSimulation:
         self.aud["pending_solid"] = float(self.m_w[self.solid].double().sum().item())
         self.aud["pending_fluid"] = self.aud["pending"] - self.aud["pending_solid"]
         accounted = (
-            self.aud["frozen"] + self.aud["exited"] + self.aud["trapped"]
-            + self.aud["airborne"] + self.aud["pending"]
+            self.aud["frozen"]
+            + self.aud["exited"]
+            + self.aud["trapped"]
+            + self.aud["airborne"]
+            + self.aud["pending"]
         )
-        err = abs(self.aud["seeded"] - accounted) / self.aud["seeded"] if self.aud["seeded"] else 0.0
+        err = (
+            abs(self.aud["seeded"] - accounted) / self.aud["seeded"] if self.aud["seeded"] else 0.0
+        )
         self.aud["closure_error"] = err
 
         # ---- Eulerian alpha-field audit (Phase 2b) ----
@@ -2143,18 +2163,20 @@ class RimeIcingSimulation:
             self.aud_e["encased"] = float(self._enc_acc.item()) * mp_lu3
             self.aud_e["airborne"] = float(self.alpha.double().sum().item()) * mp_lu3
             inflow = (
-                self.aud_e["initial_fill"] + self.aud_e["inlet_in"]
-                + outlet_in + self.aud_e["lat_in"]
+                self.aud_e["initial_fill"]
+                + self.aud_e["inlet_in"]
+                + outlet_in
+                + self.aud_e["lat_in"]
             )
             outflow = (
-                self.aud_e["deposited"] + self.aud_e["encased"]
-                + self.aud_e["outlet_out"] + self.aud_e["lat_out"]
+                self.aud_e["deposited"]
+                + self.aud_e["encased"]
+                + self.aud_e["outlet_out"]
+                + self.aud_e["lat_out"]
                 + self.aud_e["airborne"]
             )
             self.aud_e["outlet_in"] = outlet_in
-            self.aud_e["closure_error"] = (
-                abs(inflow - outflow) / inflow if inflow > 0.0 else 0.0
-            )
+            self.aud_e["closure_error"] = abs(inflow - outflow) / inflow if inflow > 0.0 else 0.0
 
         # ---- beta + metrics ----
         airfoil_np = self.airfoil.cpu().numpy()
@@ -2168,8 +2190,13 @@ class RimeIcingSimulation:
         # lattice time of the beta window (acceleration cancels, see docstring)
         t_win = (beta_w1 - beta_w0) * cfg.dt_phys
         beta = collection_efficiency_curve(
-            s_grid, dm.cpu().numpy(), cfg.lwc_eff, cfg.v_inf, cfg.dx_phys,
-            cfg.chord_phys, t_win,
+            s_grid,
+            dm.cpu().numpy(),
+            cfg.lwc_eff,
+            cfg.v_inf,
+            cfg.dx_phys,
+            cfg.chord_phys,
+            t_win,
         )
         metrics = ice_shape_metrics(
             airfoil_np, solid_np, cfg.dx_phys, cfg.chord_phys, cfg.chord_lu, stag
@@ -2181,8 +2208,13 @@ class RimeIcingSimulation:
             if self.impact_e_w0 is not None:
                 dm_e = dm_e - self.impact_e_w0
             beta_e = collection_efficiency_curve(
-                s_grid, dm_e.cpu().numpy(), cfg.lwc_eff, cfg.v_inf, cfg.dx_phys,
-                cfg.chord_phys, t_win,
+                s_grid,
+                dm_e.cpu().numpy(),
+                cfg.lwc_eff,
+                cfg.v_inf,
+                cfg.dx_phys,
+                cfg.chord_phys,
+                t_win,
             )
             beta_e_grid = (dm_e / (cfg.lwc_eff * cfg.v_inf * cfg.dx_phys**2 * t_win)).cpu().numpy()
             euler_result = {
@@ -2290,9 +2322,7 @@ def saturation_vapor_pressure_pa(t_c: float, over_ice: bool | None = None) -> fl
     return 610.94 * math.exp(a * t_c / (b + t_c))
 
 
-def analytic_htc_w_m2k(
-    s_m: np.ndarray, v_e_m: np.ndarray, cfg: IcingConfig
-) -> np.ndarray:
+def analytic_htc_w_m2k(s_m: np.ndarray, v_e_m: np.ndarray, cfg: IcingConfig) -> np.ndarray:
     """Analytic convective heat-transfer coefficient along the arc [W/m^2 K].
 
     * stagnation line: Frossling cylinder correlation
@@ -2523,10 +2553,18 @@ def build_surface_panels(
     ids = np.unique(np.concatenate([p_imp, p_dep, p_sf]).astype(int))
     n = len(ids)
     empty: dict[str, Any] = {
-        "s_m": np.zeros(0), "A_m2": np.zeros(0), "m_imp_kg_s": np.zeros(0),
-        "beta": np.zeros(0), "h": np.zeros(0), "v_e": np.zeros(0),
-        "tau_t": np.zeros(0), "dep_y": np.zeros(0, int), "dep_x": np.zeros(0, int),
-        "dep_p": np.zeros(0, int), "dep_w": np.zeros(0), "n_panels": 0,
+        "s_m": np.zeros(0),
+        "A_m2": np.zeros(0),
+        "m_imp_kg_s": np.zeros(0),
+        "beta": np.zeros(0),
+        "h": np.zeros(0),
+        "v_e": np.zeros(0),
+        "tau_t": np.zeros(0),
+        "dep_y": np.zeros(0, int),
+        "dep_x": np.zeros(0, int),
+        "dep_p": np.zeros(0, int),
+        "dep_w": np.zeros(0),
+        "n_panels": 0,
     }
     if n == 0:
         return empty
@@ -2631,13 +2669,24 @@ def solve_glaze_surface(cfg: IcingConfig, panels: dict[str, Any], dt: float) -> 
     n = int(panels.get("n_panels", 0))
     if n == 0:
         return {
-            "s_m": np.zeros(0), "n_f": np.zeros(0), "t_s_c": np.zeros(0),
-            "m_ice_kg": np.zeros(0), "m_evap_kg": np.zeros(0),
-            "m_runback_out_kg": np.zeros(0), "m_runback_in_kg": np.zeros(0),
-            "thickness_m": np.zeros(0), "film_m": np.zeros(0),
-            "rho_ice": np.zeros(0), "regime": [],
-            "audit": {"impacted": 0.0, "frozen": 0.0, "evaporated": 0.0,
-                      "runback_out": 0.0, "closure_error": 0.0},
+            "s_m": np.zeros(0),
+            "n_f": np.zeros(0),
+            "t_s_c": np.zeros(0),
+            "m_ice_kg": np.zeros(0),
+            "m_evap_kg": np.zeros(0),
+            "m_runback_out_kg": np.zeros(0),
+            "m_runback_in_kg": np.zeros(0),
+            "thickness_m": np.zeros(0),
+            "film_m": np.zeros(0),
+            "rho_ice": np.zeros(0),
+            "regime": [],
+            "audit": {
+                "impacted": 0.0,
+                "frozen": 0.0,
+                "evaporated": 0.0,
+                "runback_out": 0.0,
+                "closure_error": 0.0,
+            },
         }
     s_m = panels["s_m"]
     m_imp = panels["m_imp_kg_s"]
@@ -2658,7 +2707,9 @@ def solve_glaze_surface(cfg: IcingConfig, panels: dict[str, Any], dt: float) -> 
     up = up[np.argsort(s_m[up])] if len(up) else up
     lo = lo[np.argsort(-s_m[lo])] if len(lo) else lo
 
-    r0 = messinger_panel_fluxes(cfg, m_imp[i_stag], 0.0, cfg.t_static_c, h[i_stag], area[i_stag], v_e[i_stag])
+    r0 = messinger_panel_fluxes(
+        cfg, m_imp[i_stag], 0.0, cfg.t_static_c, h[i_stag], area[i_stag], v_e[i_stag]
+    )
     t_s[i_stag], n_f[i_stag] = r0["t_s_c"], r0["n_f"]
     m_ice[i_stag], m_evap[i_stag], m_out[i_stag] = r0["m_ice"], r0["m_evap"], r0["m_out"]
     regimes.append(r0["regime"])
@@ -2873,8 +2924,13 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
 
         stress = sim.sample_surface_stress()
         panels = build_surface_panels(
-            shot_cfg, s_grid, ledger, solid_np, stress,
-            t_window=shot_cfg.steps * shot_cfg.dt_phys, lwc_accel=accel,
+            shot_cfg,
+            s_grid,
+            ledger,
+            solid_np,
+            stress,
+            t_window=shot_cfg.steps * shot_cfg.dt_phys,
+            lwc_accel=accel,
         )
         sol = solve_glaze_surface(cfg, panels, dt_shot)
 
@@ -2886,8 +2942,7 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         if panels["n_panels"] > 0:
             dm = sol["m_ice_kg"][panels["dep_p"]] * panels["dep_w"]
             np.add.at(cell_mass, (panels["dep_y"], panels["dep_x"]), dm)
-            np.add.at(cell_rho, (panels["dep_y"], panels["dep_x"]),
-                      sol["rho_ice"][panels["dep_p"]])
+            np.add.at(cell_rho, (panels["dep_y"], panels["dep_x"]), sol["rho_ice"][panels["dep_p"]])
         solid_np, m_w = deposit_glaze_ice(
             airfoil_np, solid_np, m_w, cell_mass, cell_rho, cfg.dx_phys
         )
@@ -2895,14 +2950,16 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         for key in totals:
             totals[key] += sol["audit"][key]
         n_ice = int((solid_np & ~airfoil_np).sum())
-        shot_reports.append({
-            "shot": k + 1,
-            "ice_cells": n_ice,
-            "n_f_max": float(sol["n_f"].max()) if len(sol["n_f"]) else 0.0,
-            "t_s_min_c": float(sol["t_s_c"].min()) if len(sol["t_s_c"]) else 0.0,
-            "frozen_kg": sol["audit"]["frozen"],
-            "runback_out_kg": sol["audit"]["runback_out"],
-        })
+        shot_reports.append(
+            {
+                "shot": k + 1,
+                "ice_cells": n_ice,
+                "n_f_max": float(sol["n_f"].max()) if len(sol["n_f"]) else 0.0,
+                "t_s_min_c": float(sol["t_s_c"].min()) if len(sol["t_s_c"]) else 0.0,
+                "frozen_kg": sol["audit"]["frozen"],
+                "runback_out_kg": sol["audit"]["runback_out"],
+            }
+        )
         log(
             f"  [glaze] shot {k + 1}/{shots}: ice={n_ice} cells "
             f"frozen={sol['audit']['frozen']:.3e} kg "
@@ -2915,8 +2972,7 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
     assert sol is not None and panels is not None and m_w is not None
     impacted = totals["impacted"]
     closure = (
-        abs(impacted - totals["frozen"] - totals["evaporated"] - totals["runback_out"])
-        / impacted
+        abs(impacted - totals["frozen"] - totals["evaporated"] - totals["runback_out"]) / impacted
         if impacted > 0.0
         else 0.0
     )
@@ -3006,7 +3062,6 @@ def save_icing_artifacts(result: dict[str, Any], out_dir: str) -> dict[str, str]
     without it.
     """
     import json
-    import os
     from pathlib import Path
 
     cfg = result["config"]
@@ -3040,11 +3095,9 @@ def save_icing_artifacts(result: dict[str, Any], out_dir: str) -> dict[str, str]
     p = out / "ice_profile.csv"
     with open(p, "w") as fh:
         fh.write("x_lu,x_over_c,upper_cells,lower_cells\n")
-        for x, u, l in zip(prof["x"], prof["upper_cells"], prof["lower_cells"]):
-            if u or l:
-                fh.write(
-                    f"{int(x)},{(x - x_le) / cfg.chord_lu:.6f},{int(u)},{int(l)}\n"
-                )
+        for x, u, lo in zip(prof["x"], prof["upper_cells"], prof["lower_cells"]):
+            if u or lo:
+                fh.write(f"{int(x)},{(x - x_le) / cfg.chord_lu:.6f},{int(u)},{int(lo)}\n")
     files["profile_csv"] = str(p)
 
     # --- JSON: mapping + audit + metrics ---
@@ -3152,11 +3205,15 @@ def save_icing_artifacts(result: dict[str, Any], out_dir: str) -> dict[str, str]
         be = euler["beta"]
         fig, ax = plt.subplots(figsize=(8, 5), constrained_layout=True)
         if len(beta["s_over_c"]):
-            ax.plot(beta["s_over_c"] * 100, beta["beta"], "o-", ms=3,
-                    label=f"Lagrangian (max {bmax:.3f})")
+            ax.plot(
+                beta["s_over_c"] * 100,
+                beta["beta"],
+                "o-",
+                ms=3,
+                label=f"Lagrangian (max {bmax:.3f})",
+            )
         emax = float(be["beta"].max())
-        ax.plot(be["s_over_c"] * 100, be["beta"], "s--", ms=3,
-                label=f"Eulerian (max {emax:.3f})")
+        ax.plot(be["s_over_c"] * 100, be["beta"], "s--", ms=3, label=f"Eulerian (max {emax:.3f})")
         ax.axhline(1.0, color="k", ls=":", lw=1)
         ax.set_xlabel("surface arc from LE s/c [% chord] (+ upper)")
         ax.set_ylabel("collection efficiency beta [-]")

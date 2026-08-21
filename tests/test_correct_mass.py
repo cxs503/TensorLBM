@@ -1,14 +1,12 @@
 """Tests for correct_mass and correct_mass3d functions."""
 
-import pytest
 import torch
 
+from tensorlbm import equilibrium as equilibrium2d
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.d3q27 import correct_mass27, equilibrium27
 from tensorlbm.solver import correct_mass
 from tensorlbm.solver3d import correct_mass3d
-from tensorlbm.d3q27 import correct_mass27, equilibrium27
-from tensorlbm.d3q19 import equilibrium3d
-from tensorlbm import equilibrium as equilibrium2d
-
 
 # ---------------------------------------------------------------------------
 # correct_mass (D2Q9)

@@ -10,9 +10,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from tensorlbm.ai.suboff_train import SuboffTrainConfig
 from tensorlbm.apps.base import DataProduct, Prediction, RunReport, TrainingResult
 from tensorlbm.apps.suboff_app import SuboffSurrogateApp
-from tensorlbm.ai.suboff_train import SuboffTrainConfig
 
 
 @pytest.fixture
@@ -31,6 +31,7 @@ def field_data_dir(tmp_path):
 # ---------------------------------------------------------------------------
 # Injected mocks
 # ---------------------------------------------------------------------------
+
 
 def _fake_train(cfg):
     assert isinstance(cfg, SuboffTrainConfig)
@@ -58,6 +59,7 @@ def app():
 # Identity
 # ---------------------------------------------------------------------------
 
+
 def test_identity():
     app = SuboffSurrogateApp()
     assert app.name == "suboff_surrogate"
@@ -74,6 +76,7 @@ def test_is_aifour_s_application():
 # ---------------------------------------------------------------------------
 # produce_data / make_dataset
 # ---------------------------------------------------------------------------
+
 
 def test_produce_data(app, field_data_dir):
     product = app.produce_data({"data_dir": str(field_data_dir)})
@@ -103,6 +106,7 @@ def test_make_dataset(app, field_data_dir):
 # ---------------------------------------------------------------------------
 # train / infer wrapping
 # ---------------------------------------------------------------------------
+
 
 def test_train_converts_cfg_and_returns_result(app, field_data_dir):
     product = app.produce_data({"data_dir": str(field_data_dir)})
@@ -135,6 +139,7 @@ def test_infer_wraps_predict(app):
 # ---------------------------------------------------------------------------
 # run() full-stack closed loop + lineage
 # ---------------------------------------------------------------------------
+
 
 def test_run_closed_loop(app, field_data_dir, tmp_path):
     db_path = tmp_path / "platform.db"
@@ -223,9 +228,7 @@ def test_run_passes_arch_to_build_fn(field_data_dir, tmp_path):
         seen["arch"] = arch
         return object()
 
-    app = SuboffSurrogateApp(
-        train_fn=_fake_train, predict_fn=_fake_predict, build_fn=_build
-    )
+    app = SuboffSurrogateApp(train_fn=_fake_train, predict_fn=_fake_predict, build_fn=_build)
     app.run(
         tmp_path / "platform.db",
         {"data_dir": str(field_data_dir)},
@@ -236,8 +239,8 @@ def test_run_passes_arch_to_build_fn(field_data_dir, tmp_path):
 
 def test_default_train_fn_is_real_suboff_train():
     """The un-injected app resolves to the real train/predict implementations."""
-    import tensorlbm.ai.suboff_train as st
     import tensorlbm.ai.suboff_inference as si
+    import tensorlbm.ai.suboff_train as st
 
     app = SuboffSurrogateApp()
     assert app._train_fn is None  # resolves lazily inside train()

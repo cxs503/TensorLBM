@@ -19,6 +19,7 @@ This wave implements the one fully-specified converter — the SWLBM
 Field (lattice) dumps are spec'd but intentionally left as a documented
 TODO stub (:func:`convert_swlbm_field_dump`).
 """
+
 from __future__ import annotations
 
 import csv as _csv
@@ -43,7 +44,6 @@ from tensorlbm.data.field_r2 import (
     ArrayRole,
     AxisSemantic,
     AxisSpec,
-    BlobRef,
     ByteOrder,
     FieldDataProductR2,
     MemoryOrder,
@@ -77,7 +77,16 @@ SWLBM_BRIDGE_SCHEMA = "sunway.swlbm.bridge.v1"
 
 #: Column contract of the SWLBM ``force_history`` CSV (order as emitted).
 SWLBM_FORCE_COLUMNS: tuple[str, ...] = (
-    "step", "F_x", "F_y", "F_z", "C_D", "C_L", "C_S", "Re", "C_F_ITTC", "wet_nodes",
+    "step",
+    "F_x",
+    "F_y",
+    "F_z",
+    "C_D",
+    "C_L",
+    "C_S",
+    "Re",
+    "C_F_ITTC",
+    "wet_nodes",
 )
 
 _FLOAT32_NPY = ArrayEncoding("NPY", "float32", MemoryOrder.C, ByteOrder.LITTLE)
@@ -91,16 +100,17 @@ _CSV_ARTIFACT_ID = "swlbm:source_csv"
 # Parsing
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True, slots=True)
 class SwlbmForceHistory:
     """Parsed SWLBM force-history time series (lattice units)."""
 
-    steps: np.ndarray            # (N,) int64
-    force_xyz: np.ndarray        # (N, 3) float64, F_x/F_y/F_z
-    coefficients: np.ndarray     # (N, 3) float64, C_D/C_L/C_S
-    reynolds: np.ndarray         # (N,) float64
-    cf_ittc: np.ndarray          # (N,) float64
-    wet_nodes: np.ndarray        # (N,) int64
+    steps: np.ndarray  # (N,) int64
+    force_xyz: np.ndarray  # (N, 3) float64, F_x/F_y/F_z
+    coefficients: np.ndarray  # (N, 3) float64, C_D/C_L/C_S
+    reynolds: np.ndarray  # (N,) float64
+    cf_ittc: np.ndarray  # (N,) float64
+    wet_nodes: np.ndarray  # (N,) int64
     csv_path: str
     csv_sha256: str
 
@@ -163,7 +173,9 @@ def parse_swlbm_force_csv(csv_path: str | Path) -> SwlbmForceHistory:
     if not np.all(wet_nodes == np.floor(wet_nodes)) or wet_nodes.min() < 0:
         raise ValueError(f"SWLBM force CSV {path.name}: 'wet_nodes' must be non-negative integers")
 
-    floats = {name: array(name) for name in SWLBM_FORCE_COLUMNS if name not in ("step", "wet_nodes")}
+    floats = {
+        name: array(name) for name in SWLBM_FORCE_COLUMNS if name not in ("step", "wet_nodes")
+    }
     for name, values in floats.items():
         if not np.all(np.isfinite(values)):
             raise ValueError(
@@ -186,6 +198,7 @@ def parse_swlbm_force_csv(csv_path: str | Path) -> SwlbmForceHistory:
 # ---------------------------------------------------------------------------
 # Conversion: force-history CSV -> R2 product
 # ---------------------------------------------------------------------------
+
 
 def convert_swlbm_csv(
     catalog: FieldDataCatalog,
@@ -224,9 +237,7 @@ def convert_swlbm_csv(
     case = str(metadata["case"])
     product_id = f"{run_id}:forces"
     if catalog.get_asset(product_id) is not None:
-        raise ValueError(
-            f"product {product_id!r} is already registered; use a fresh run_id"
-        )
+        raise ValueError(f"product {product_id!r} is already registered; use a fresh run_id")
 
     csv_abs = Path(history.csv_path)
     csv_bytes = csv_abs.read_bytes()
@@ -411,6 +422,7 @@ def convert_swlbm_csv(
 # ---------------------------------------------------------------------------
 # Field dumps (spec'd, TODO in this wave)
 # ---------------------------------------------------------------------------
+
 
 def convert_swlbm_field_dump(*_args: Any, **_kwargs: Any) -> str:
     """SWLBM lattice field-dump converter — specified, not yet implemented.

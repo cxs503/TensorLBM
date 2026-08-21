@@ -16,7 +16,6 @@ from typing import Any
 
 import numpy as np
 
-
 # ---------------------------------------------------------------------------
 # Lazy import guard – paddle is only needed when this backend is active.
 # ---------------------------------------------------------------------------

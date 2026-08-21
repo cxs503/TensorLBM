@@ -42,7 +42,6 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 from uuid import uuid4
 
-import torch
 from torch import nn
 
 __all__ = [
@@ -98,22 +97,24 @@ _STAGE_TRANSITIONS: dict[str, frozenset[str]] = {
 
 # Keys accepted by :meth:`ModelAssetRegistry.register`.  Fail closed on
 # anything else so a typo cannot silently drop lineage metadata.
-_ALLOWED_META_KEYS = frozenset({
-    "model_id",
-    "task",
-    "name",
-    "family",
-    "framework",
-    "metrics",
-    "arch",
-    "dataset_product_id",
-    "training_job_id",
-    "tags",
-    "description",
-    "git_sha",
-    "stage",
-    "copy",
-})
+_ALLOWED_META_KEYS = frozenset(
+    {
+        "model_id",
+        "task",
+        "name",
+        "family",
+        "framework",
+        "metrics",
+        "arch",
+        "dataset_product_id",
+        "training_job_id",
+        "tags",
+        "description",
+        "git_sha",
+        "stage",
+        "copy",
+    }
+)
 
 _CHECKPOINT_FILENAME = "checkpoint"
 
@@ -121,6 +122,7 @@ _CHECKPOINT_FILENAME = "checkpoint"
 # ---------------------------------------------------------------------------
 # Records
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True, slots=True)
 class ModelAsset:
@@ -177,6 +179,7 @@ class ModelAsset:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _now() -> str:
     return datetime.now(UTC).isoformat()
 
@@ -218,13 +221,19 @@ def _capture_git_sha() -> tuple[str, bool]:
     try:
         sha = subprocess.run(  # noqa: S603 - fixed argv, repo-local
             ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=10, check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
         ).stdout.strip()
         if not sha:
             return "unknown", False
         status = subprocess.run(  # noqa: S603
             ["git", "-C", str(repo_root), "status", "--porcelain"],
-            capture_output=True, text=True, timeout=10, check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
         ).stdout
         return sha[:12], bool(status.strip())
     except Exception:
@@ -288,6 +297,7 @@ def _load_by_family(family: str, path: str) -> nn.Module:
 # Registry
 # ---------------------------------------------------------------------------
 
+
 class ModelAssetRegistry:
     """Registry for model checkpoint assets with a directory-store convention.
 
@@ -346,7 +356,9 @@ class ModelAssetRegistry:
             raise TypeError("meta must be a mapping")
         unknown = sorted(set(meta) - _ALLOWED_META_KEYS)
         if unknown:
-            raise ValueError(f"unsupported meta keys: {unknown}; allowed: {sorted(_ALLOWED_META_KEYS)}")
+            raise ValueError(
+                f"unsupported meta keys: {unknown}; allowed: {sorted(_ALLOWED_META_KEYS)}"
+            )
 
         task = _require_text(meta.get("task"), "meta['task']")
         name = _require_text(meta.get("name"), "meta['name']")
@@ -404,14 +416,26 @@ class ModelAssetRegistry:
             artifact_relpath = ""
 
         asset = ModelAsset(
-            model_id=model_id, name=name, task=task, family=family,
-            framework=framework, stage=stage,
-            checkpoint_path=checkpoint_path, artifact_relpath=artifact_relpath,
-            original_path=str(src.resolve()), metrics=metrics, arch=arch,
+            model_id=model_id,
+            name=name,
+            task=task,
+            family=family,
+            framework=framework,
+            stage=stage,
+            checkpoint_path=checkpoint_path,
+            artifact_relpath=artifact_relpath,
+            original_path=str(src.resolve()),
+            metrics=metrics,
+            arch=arch,
             dataset_product_id=dataset_product_id,
-            training_job_id=training_job_id, serving_model_id=None,
-            git_sha=git_sha, git_dirty=git_dirty, tags=tags,
-            description=description, created_at=now, updated_at=now,
+            training_job_id=training_job_id,
+            serving_model_id=None,
+            git_sha=git_sha,
+            git_dirty=git_dirty,
+            tags=tags,
+            description=description,
+            created_at=now,
+            updated_at=now,
         )
         self._insert(asset)
         self._write_sidecar(asset)
@@ -426,14 +450,26 @@ class ModelAssetRegistry:
             " git_dirty, tags, description, created_at, updated_at) "
             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
-                asset.model_id, asset.name, asset.task, asset.family,
-                asset.framework, asset.stage, asset.checkpoint_path,
-                asset.artifact_relpath, asset.original_path,
-                _encode_json(asset.metrics), _encode_json(asset.arch),
-                asset.dataset_product_id, asset.training_job_id,
-                asset.serving_model_id, asset.git_sha,
-                int(asset.git_dirty), _encode_json(list(asset.tags)),
-                asset.description, asset.created_at, asset.updated_at,
+                asset.model_id,
+                asset.name,
+                asset.task,
+                asset.family,
+                asset.framework,
+                asset.stage,
+                asset.checkpoint_path,
+                asset.artifact_relpath,
+                asset.original_path,
+                _encode_json(asset.metrics),
+                _encode_json(asset.arch),
+                asset.dataset_product_id,
+                asset.training_job_id,
+                asset.serving_model_id,
+                asset.git_sha,
+                int(asset.git_dirty),
+                _encode_json(list(asset.tags)),
+                asset.description,
+                asset.created_at,
+                asset.updated_at,
             ),
         )
         self._conn.commit()
@@ -522,9 +558,7 @@ class ModelAssetRegistry:
         asset = self._require_model(model_id)
         ckpt = Path(asset.checkpoint_path)
         if not ckpt.is_file():
-            raise FileNotFoundError(
-                f"checkpoint for {model_id!r} is missing on disk: {ckpt}"
-            )
+            raise FileNotFoundError(f"checkpoint for {model_id!r} is missing on disk: {ckpt}")
         model = _load_by_family(asset.family, str(ckpt))
         if not isinstance(model, nn.Module):
             raise TypeError(

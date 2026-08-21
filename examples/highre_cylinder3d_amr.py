@@ -7,30 +7,41 @@ a 2:1 fine block wraps the near-cylinder region (equivalent D_f = 2·D_c).
 Reference for 3D cylinder (Luo et al. 2007 / Schlanderer & Sandberg 2011):
   Re=1000: Cd ≈ 1.0, St ≈ 0.20 (3D, spanwise 2π-4π)
 """
-import sys, os, time, json, math
+
+import json
+import sys
+import time
+
 sys.path.insert(0, "/DATA/cxs_host/TensorLBM/src")
 
 import torch
-from tensorlbm.d3q19 import equilibrium3d, C as C19
-from tensorlbm.solver3d import stream3d, collide_mrt3d
-from tensorlbm.turbulence import collide_smagorinsky_mrt3d
-from tensorlbm.boundaries3d import far_field_bc_3d
-from tensorlbm.obstacles import compute_obstacle_forces_3d
+
+from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.solver3d import stream3d
 from tensorlbm.static_block_amr import (
-    StaticBlockAMR3D, StaticBlockAMRConfig, AMRAdvanceResult, BoxRegion,
+    AMRAdvanceResult,
+    BoxRegion,
+    StaticBlockAMR3D,
+    StaticBlockAMRConfig,
 )
+from tensorlbm.turbulence import collide_smagorinsky_mrt3d
 
 
 def cylinder_mask_3d(nz, ny, nx, cx, cy, radius, device):
     """Cylinder along z: solid where (x-cx)²+(y-cy)² < r²."""
-    zz, yy, xx = torch.meshgrid(torch.arange(nz, device=device),
-                                torch.arange(ny, device=device),
-                                torch.arange(nx, device=device), indexing="ij")
-    return ((xx - cx)**2 + (yy - cy)**2).sqrt() < radius
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=device),
+        torch.arange(ny, device=device),
+        torch.arange(nx, device=device),
+        indexing="ij",
+    )
+    return ((xx - cx) ** 2 + (yy - cy) ** 2).sqrt() < radius
 
 
-def run(re=1000, nx=240, ny=96, nz=48, D_c=20, u_in=0.1,
-        n_steps=6000, device="cuda:0", tau_coarse=0.51):
+def run(
+    re=1000, nx=240, ny=96, nz=48, D_c=20, u_in=0.1, n_steps=6000, device="cuda:0", tau_coarse=0.51
+):
     """3D cylinder, coarse grid + 2:1 fine block around the body."""
     dev = torch.device(device)
     radius = D_c / 2.0
@@ -43,8 +54,12 @@ def run(re=1000, nx=240, ny=96, nz=48, D_c=20, u_in=0.1,
     solid = cylinder_mask_3d(nz, ny, nx, cx, cy, radius, dev)
     # surface for diagnostics
     fluid = ~solid
-    surf = solid & (torch.roll(fluid, 1, dims=1) | torch.roll(fluid, -1, dims=1)
-                    | torch.roll(fluid, 1, dims=2) | torch.roll(fluid, -1, dims=2))
+    surf = solid & (
+        torch.roll(fluid, 1, dims=1)
+        | torch.roll(fluid, -1, dims=1)
+        | torch.roll(fluid, 1, dims=2)
+        | torch.roll(fluid, -1, dims=2)
+    )
 
     # fine block: wrap the cylinder with 1.5D margin in x,y; full span z
     pad = int(1.5 * D_c)
@@ -53,13 +68,12 @@ def run(re=1000, nx=240, ny=96, nz=48, D_c=20, u_in=0.1,
     y0 = int(max(1, cy - radius - pad))
     y1 = int(min(ny - 2, cy + radius + pad))
     box = BoxRegion(x0, x1, y0, y1, 1, nz - 2)
-    print(f"fine block box: x[{x0},{x1}] y[{y0},{y1}] z[1,{nz-2}]")
+    print(f"fine block box: x[{x0},{x1}] y[{y0},{y1}] z[1,{nz - 2}]")
 
     rho0 = torch.ones(nz, ny, nx, device=dev)
     ux0 = torch.full_like(rho0, u_in)
     ux0[solid] = 0.0
-    f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0),
-                      device=dev)
+    f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0), device=dev)
 
     config = StaticBlockAMRConfig(box, tau_coarse=tau, reflux=True)
     solver = StaticBlockAMR3D(f, config)
@@ -90,9 +104,12 @@ def run(re=1000, nx=240, ny=96, nz=48, D_c=20, u_in=0.1,
     # interior solid cells carry spurious post-stream populations.
     fluid_f = ~solid_f
     surf_f = solid_f & (
-        torch.roll(fluid_f, 1, dims=0) | torch.roll(fluid_f, -1, dims=0)
-        | torch.roll(fluid_f, 1, dims=1) | torch.roll(fluid_f, -1, dims=1)
-        | torch.roll(fluid_f, 1, dims=2) | torch.roll(fluid_f, -1, dims=2)
+        torch.roll(fluid_f, 1, dims=0)
+        | torch.roll(fluid_f, -1, dims=0)
+        | torch.roll(fluid_f, 1, dims=1)
+        | torch.roll(fluid_f, -1, dims=1)
+        | torch.roll(fluid_f, 1, dims=2)
+        | torch.roll(fluid_f, -1, dims=2)
     )
 
     # MEM force accumulator: computed inside advance AFTER stream, BEFORE BB
@@ -119,12 +136,16 @@ def run(re=1000, nx=240, ny=96, nz=48, D_c=20, u_in=0.1,
             # divided by ratio³: the fine grid has ratio³× more solid
             # cells than the parent (volume correction, cf.
             # octree_boundary.force.convert_leaf_force_to_l1).
-            fx = 2.0 * (cdev[:, 0].view(19, 1, 1, 1)
-                        * out * surf_f.unsqueeze(0)).sum().item() / (r ** 3)
+            fx = (
+                2.0
+                * (cdev[:, 0].view(19, 1, 1, 1) * out * surf_f.unsqueeze(0)).sum().item()
+                / (r**3)
+            )
             force_holder["fx"] = fx
             force_holder["valid"] = True
         # bounce-back on solid cells (post-stream, keeps body physical)
         from tensorlbm.boundaries3d import bounce_back_cells_3d
+
         m = solid_f if level == 1 else solid
         out = bounce_back_cells_3d(out, m)
         return AMRAdvanceResult(out, fb2)

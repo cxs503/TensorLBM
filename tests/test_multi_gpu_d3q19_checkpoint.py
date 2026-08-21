@@ -8,7 +8,6 @@ from pathlib import Path
 
 import torch
 
-
 _WORKER = r"""
 import hashlib
 import json

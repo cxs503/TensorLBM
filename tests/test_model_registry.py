@@ -22,8 +22,13 @@ from tensorlbm.ml.model_registry import (
 from tensorlbm.ml.serving import FAMILY_FNO
 
 _TINY_ARCH = FNO2dArch(
-    in_channels=2, out_channels=2, width=8, n_layers=2,
-    modes_x=6, modes_y=6, mlp_hidden=16,
+    in_channels=2,
+    out_channels=2,
+    width=8,
+    n_layers=2,
+    modes_x=6,
+    modes_y=6,
+    mlp_hidden=16,
 )
 
 
@@ -62,8 +67,8 @@ def _meta(**overrides):
 # register -> list -> get -> load
 # ---------------------------------------------------------------------------
 
-class TestCrudLoop:
 
+class TestCrudLoop:
     def test_register_returns_id_and_lists(self, store, ckpt):
         model_id = store.register(ckpt, _meta())
         assert model_id.startswith("mdl_")
@@ -94,9 +99,7 @@ class TestCrudLoop:
         model_id = store.register(ckpt, _meta())
         asset = store.get_model(model_id)
         dest = Path(asset.checkpoint_path)
-        assert dest == (
-            tmp_path / "store" / "flow_super_resolution" / model_id / "checkpoint.pt"
-        )
+        assert dest == (tmp_path / "store" / "flow_super_resolution" / model_id / "checkpoint.pt")
         assert dest.is_file()
         # arch companion travels with the weights (load_fno2d needs it)
         assert dest.with_suffix(dest.suffix + ".json").is_file()
@@ -116,9 +119,7 @@ class TestCrudLoop:
         model = store.load_model(model_id)
         assert isinstance(model, FNO2d)
         assert not model.training  # eval mode
-        for (k1, p1), (k2, p2) in zip(
-            model.state_dict().items(), reference.state_dict().items()
-        ):
+        for (k1, p1), (k2, p2) in zip(model.state_dict().items(), reference.state_dict().items()):
             assert k1 == k2
             assert torch.equal(p1, p2)
         x = torch.randn(1, 2, 16, 16)
@@ -149,15 +150,21 @@ class TestCrudLoop:
 # Filters
 # ---------------------------------------------------------------------------
 
-class TestFilters:
 
+class TestFilters:
     def test_filter_by_task_name_dataset_tag(self, store, ckpt):
         a = store.register(ckpt, _meta(name="fno-a"))
-        b = store.register(ckpt, _meta(
-            name="mlp-b", task="turbulence_closure",
-            family="eddy_viscosity_mlp", dataset_product_id="other:u",
-            training_job_id="job_other999", tags=("closure",),
-        ))
+        b = store.register(
+            ckpt,
+            _meta(
+                name="mlp-b",
+                task="turbulence_closure",
+                family="eddy_viscosity_mlp",
+                dataset_product_id="other:u",
+                training_job_id="job_other999",
+                tags=("closure",),
+            ),
+        )
         assert [m.model_id for m in store.list_models(task="flow_super_resolution")] == [a]
         assert [m.model_id for m in store.list_models(task="turbulence_closure")] == [b]
         assert [m.model_id for m in store.list_models(name_contains="mlp")] == [b]
@@ -176,8 +183,8 @@ class TestFilters:
 # Fail-closed validation
 # ---------------------------------------------------------------------------
 
-class TestValidation:
 
+class TestValidation:
     def test_missing_task_raises(self, store, ckpt):
         meta = _meta()
         del meta["task"]
@@ -224,8 +231,8 @@ class TestValidation:
 # Lifecycle updates
 # ---------------------------------------------------------------------------
 
-class TestLifecycle:
 
+class TestLifecycle:
     def test_record_metrics_merges(self, store, ckpt):
         model_id = store.register(ckpt, _meta())
         updated = store.record_metrics(model_id, {"val_relative_l2": 0.12})
@@ -273,8 +280,8 @@ class TestLifecycle:
 # Custom family loaders
 # ---------------------------------------------------------------------------
 
-class TestCustomLoader:
 
+class TestCustomLoader:
     def test_register_family_loader(self, store, ckpt):
         seen: list[str] = []
 

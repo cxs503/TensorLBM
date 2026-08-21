@@ -13,20 +13,19 @@ import sys
 from pathlib import Path
 
 import torch
-import torch_sdaa
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from tensorlbm.d2q9 import equilibrium
 from tensorlbm.free_surface_lbm_2d import (
     GAS,
-    LIQUID,
     INTERFACE,
+    LIQUID,
     SOLID,
+    free_surface_step_2d,
     init_fill_rectangular_2d,
     init_flags_from_fill_2d,
-    free_surface_step_2d,
 )
-from tensorlbm.d2q9 import equilibrium
 
 # ---------- Martin and Moyce (1952) reference ----------
 REF_T = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]

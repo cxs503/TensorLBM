@@ -57,6 +57,7 @@ dev = [
     "pyyaml",
     "build",
     "ruff",
+    "pytest-timeout",
 ]
 
 [tool.setuptools]
@@ -73,20 +74,26 @@ version = {attr = "tensorlbm._version.__version__"}
 # an editable install of the sibling /root/TensorLBM checkout wins import
 # resolution and pytest can validate different code from the working tree.
 pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "slow: long-running simulation campaigns, excluded from CI (run on the GPU dev server)",
+]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "UP", "B", "C4", "SIM", "TCH", "ANN"]
+select = ["E4", "E7", "E9", "F", "I"]
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN"]
 "app/tests/**" = ["ANN"]
+"benchmarks/**" = ["E402", "E701", "E702", "E731", "E741", "F841"]
+"examples/**" = ["E402", "E701", "E702", "E731", "E741", "F841"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 ignore_missing_imports = true

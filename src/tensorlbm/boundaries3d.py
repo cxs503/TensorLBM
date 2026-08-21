@@ -11,11 +11,11 @@ from .d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
 
 # Directions with cx > 0 (unknown at x=0 inlet) and their cx<0 opposites
 _D3Q19_INLET_DIRS: list[int] = [1, 7, 9, 11, 13]
-_D3Q19_INLET_OPP: list[int] = [2, 8, 10, 12, 14]   # OPPOSITE[inlet_dirs]
+_D3Q19_INLET_OPP: list[int] = [2, 8, 10, 12, 14]  # OPPOSITE[inlet_dirs]
 
 # Directions with cx < 0 (unknown at x=nx-1 outlet) and their cx>0 opposites
 _D3Q19_OUTLET_DIRS: list[int] = [2, 8, 10, 12, 14]
-_D3Q19_OUTLET_OPP: list[int] = [1, 7, 9, 11, 13]   # OPPOSITE[outlet_dirs]
+_D3Q19_OUTLET_OPP: list[int] = [1, 7, 9, 11, 13]  # OPPOSITE[outlet_dirs]
 
 # Directions with cz > 0 (unknown at z=0 bottom inlet) and their cz<0 opposites
 _D3Q19_ZINLET_DIRS: list[int] = [5, 11, 14, 15, 18]
@@ -46,7 +46,7 @@ def sphere_mask(
         torch.arange(nx, device=device, dtype=torch.float32),
         indexing="ij",
     )
-    return (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2 <= radius ** 2
+    return (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2 <= radius**2
 
 
 def make_channel_wall_mask_3d(
@@ -61,9 +61,9 @@ def make_channel_wall_mask_3d(
     Returns a tensor of shape (nz, ny, nx).
     """
     wall_mask = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
-    wall_mask[:, 0, :] = True   # bottom (y=0)
+    wall_mask[:, 0, :] = True  # bottom (y=0)
     wall_mask[:, -1, :] = True  # top    (y=ny-1)
-    wall_mask[0, :, :] = True   # front  (z=0)
+    wall_mask[0, :, :] = True  # front  (z=0)
     wall_mask[-1, :, :] = True  # back   (z=nz-1)
     wall_mask[obstacle_mask] = False
     return wall_mask
@@ -232,19 +232,24 @@ def zou_he_inlet_velocity_3d(
     #
     # Step 1: Determine rho from mass + x-momentum balance at x=0 only
     sum_cx0 = (
-        f[0, :, :, 0] + f[3, :, :, 0] + f[4, :, :, 0]
-        + f[5, :, :, 0] + f[6, :, :, 0]
-        + f[15, :, :, 0] + f[16, :, :, 0] + f[17, :, :, 0] + f[18, :, :, 0]
+        f[0, :, :, 0]
+        + f[3, :, :, 0]
+        + f[4, :, :, 0]
+        + f[5, :, :, 0]
+        + f[6, :, :, 0]
+        + f[15, :, :, 0]
+        + f[16, :, :, 0]
+        + f[17, :, :, 0]
+        + f[18, :, :, 0]
     )  # cx=0 directions at x=0  → shape (nz, ny)
     sum_cx_neg = (
-        f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0]
-        + f[12, :, :, 0] + f[14, :, :, 0]
+        f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0] + f[12, :, :, 0] + f[14, :, :, 0]
     )  # cx<0 directions at x=0 → shape (nz, ny)
     rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - u_in)  # (nz, ny)
 
     # Step 2: Compute equilibrium at (rho, u_in, uy_in, uz_in) for the inlet plane only.
     # Unsqueeze to (nz, ny, 1) so equilibrium3d produces (19, nz, ny, 1).
-    rho3 = rho.unsqueeze(-1)               # (nz, ny, 1)
+    rho3 = rho.unsqueeze(-1)  # (nz, ny, 1)
     ux_field = torch.full_like(rho3, u_in)
     uy_field = torch.full_like(rho3, uy_in)
     uz_field = torch.full_like(rho3, uz_in)
@@ -278,19 +283,23 @@ def zou_he_outlet_pressure_3d(f: torch.Tensor, rho_out: float = 1.0) -> torch.Te
     # Directions with cx < 0 (unknown at outlet): 2,8,10,12,14
     # Their opposites (cx > 0, known): 1,7,9,11,13
     sum_cx0 = (
-        f[0, :, :, -1] + f[3, :, :, -1] + f[4, :, :, -1]
-        + f[5, :, :, -1] + f[6, :, :, -1]
-        + f[15, :, :, -1] + f[16, :, :, -1]
-        + f[17, :, :, -1] + f[18, :, :, -1]
+        f[0, :, :, -1]
+        + f[3, :, :, -1]
+        + f[4, :, :, -1]
+        + f[5, :, :, -1]
+        + f[6, :, :, -1]
+        + f[15, :, :, -1]
+        + f[16, :, :, -1]
+        + f[17, :, :, -1]
+        + f[18, :, :, -1]
     )
     sum_cx_pos = (
-        f[1, :, :, -1] + f[7, :, :, -1] + f[9, :, :, -1]
-        + f[11, :, :, -1] + f[13, :, :, -1]
+        f[1, :, :, -1] + f[7, :, :, -1] + f[9, :, :, -1] + f[11, :, :, -1] + f[13, :, :, -1]
     )
     ux_out = -1.0 + (sum_cx0 + 2.0 * sum_cx_pos) / rho_out
 
     rho_field = torch.full_like(f[0, :, :, -1], rho_out)  # (nz, ny)
-    ux_field = ux_out                                       # (nz, ny)
+    ux_field = ux_out  # (nz, ny)
     uy_field = torch.zeros_like(rho_field)
     uz_field = torch.zeros_like(rho_field)
     # Unsqueeze to (nz, ny, 1) so equilibrium3d produces (19, nz, ny, 1)
@@ -365,16 +374,27 @@ def zou_he_moving_lid_3d(
             "factor and mixed diagonal pairs."
         )
     fl = f[:, :, -1, :]  # (19, nz, nx)
-    f0 = fl[0]; f1 = fl[1]; f2 = fl[2]; f5 = fl[5]; f6 = fl[6]
-    f11 = fl[11]; f12 = fl[12]; f13 = fl[13]; f14 = fl[14]
-    f3 = fl[3]; f7 = fl[7]; f10 = fl[10]; f15 = fl[15]; f17 = fl[17]
+    f0 = fl[0]
+    f1 = fl[1]
+    f2 = fl[2]
+    f5 = fl[5]
+    f6 = fl[6]
+    f11 = fl[11]
+    f12 = fl[12]
+    f13 = fl[13]
+    f14 = fl[14]
+    f3 = fl[3]
+    f7 = fl[7]
+    f10 = fl[10]
+    f15 = fl[15]
+    f17 = fl[17]
     sum_cy0 = f0 + f1 + f2 + f5 + f6 + f11 + f12 + f13 + f14
     sum_cyp = f3 + f7 + f10 + f15 + f17
     rho = sum_cy0 + 2.0 * sum_cyp
     sx0 = f1 - f2 + f11 - f12 + f13 - f14
     sxp = f7 - f10
-    dx = rho * u_lid - (sx0 + sxp)          # = f9_new - f8_new
-    sz0 = f5 - f6 + f11 - f12 - f13 + f14   # known z-momentum (cy=0 dirs)
+    dx = rho * u_lid - (sx0 + sxp)  # = f9_new - f8_new
+    sz0 = f5 - f6 + f11 - f12 - f13 + f14  # known z-momentum (cy=0 dirs)
     f_new = f.clone()
     f_new[4, :, -1, :] = f3
     f_new[8, :, -1, :] = 0.5 * (f7 + f10) - 0.5 * dx
@@ -548,8 +568,7 @@ def zou_he_inlet_velocity_z(
     # At z=0: f[q, 0, :, :] has shape (ny, nx) for each direction q.
     # cz=0 directions: 0,1,2,3,4,7,8,9,10
     sum_cz0 = (
-        f[0, 0] + f[1, 0] + f[2, 0] + f[3, 0] + f[4, 0]
-        + f[7, 0] + f[8, 0] + f[9, 0] + f[10, 0]
+        f[0, 0] + f[1, 0] + f[2, 0] + f[3, 0] + f[4, 0] + f[7, 0] + f[8, 0] + f[9, 0] + f[10, 0]
     )  # (ny, nx)
     # cz<0 directions: 6,12,13,16,17
     sum_cz_neg = f[6, 0] + f[12, 0] + f[13, 0] + f[16, 0] + f[17, 0]  # (ny, nx)
@@ -566,9 +585,7 @@ def zou_he_inlet_velocity_z(
     # Vectorised update: no Python loop, no .item()
     f_new = f
     f_new[_D3Q19_ZINLET_DIRS, 0, :, :] = (
-        feq[_D3Q19_ZINLET_DIRS, 0]
-        - feq[_D3Q19_ZINLET_OPP, 0]
-        + f[_D3Q19_ZINLET_OPP, 0]
+        feq[_D3Q19_ZINLET_DIRS, 0] - feq[_D3Q19_ZINLET_OPP, 0] + f[_D3Q19_ZINLET_OPP, 0]
     )
     return f_new
 
@@ -590,8 +607,15 @@ def zou_he_outlet_pressure_z(f: torch.Tensor, rho_out: float = 1.0) -> torch.Ten
     device = f.device
     # At z=nz-1: cz>0 directions are known (streaming outward).
     sum_cz0 = (
-        f[0, -1] + f[1, -1] + f[2, -1] + f[3, -1] + f[4, -1]
-        + f[7, -1] + f[8, -1] + f[9, -1] + f[10, -1]
+        f[0, -1]
+        + f[1, -1]
+        + f[2, -1]
+        + f[3, -1]
+        + f[4, -1]
+        + f[7, -1]
+        + f[8, -1]
+        + f[9, -1]
+        + f[10, -1]
     )  # (ny, nx)
     sum_cz_pos = f[5, -1] + f[11, -1] + f[14, -1] + f[15, -1] + f[18, -1]  # (ny, nx)
 
@@ -606,9 +630,7 @@ def zou_he_outlet_pressure_z(f: torch.Tensor, rho_out: float = 1.0) -> torch.Ten
     # Vectorised update: no Python loop, no .item()
     f_new = f
     f_new[_D3Q19_ZOUTLET_DIRS, -1, :, :] = (
-        feq[_D3Q19_ZOUTLET_DIRS, 0]
-        - feq[_D3Q19_ZOUTLET_OPP, 0]
-        + f[_D3Q19_ZOUTLET_OPP, -1]
+        feq[_D3Q19_ZOUTLET_DIRS, 0] - feq[_D3Q19_ZOUTLET_OPP, 0] + f[_D3Q19_ZOUTLET_OPP, -1]
     )
     return f_new
 
@@ -640,9 +662,9 @@ def make_tank_wall_mask_3d(
         Boolean tensor of shape ``(nz, ny, nx)``.
     """
     wall_mask = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
-    wall_mask[:, :, 0] = True   # left wall  (x = 0)
+    wall_mask[:, :, 0] = True  # left wall  (x = 0)
     wall_mask[:, :, -1] = True  # right wall (x = nx−1)
-    wall_mask[:, 0, :] = True   # front wall (y = 0)
+    wall_mask[:, 0, :] = True  # front wall (y = 0)
     wall_mask[:, -1, :] = True  # back wall  (y = ny−1)
     wall_mask[obstacle_mask] = False
     return wall_mask
@@ -708,10 +730,10 @@ def apply_zou_he_channel_boundaries_3d(
     return f
 
 
-
 # ---------------------------------------------------------------------------
 # P1.3 New boundary conditions — 3-D (D3Q19)
 # ---------------------------------------------------------------------------
+
 
 def porous_jump_3d(
     f: torch.Tensor,
@@ -840,7 +862,7 @@ def nscbc_outlet_3d(
     f: torch.Tensor,
     rho_target: float = 1.0,
     sigma: float = 0.25,
-    c_s: float = 1.0 / 3.0 ** 0.5,
+    c_s: float = 1.0 / 3.0**0.5,
 ) -> torch.Tensor:
     """Non-Reflecting (NSCBC) outlet boundary condition (3-D, D3Q19).
 
@@ -861,9 +883,9 @@ def nscbc_outlet_3d(
     rho, ux, uy, uz = macroscopic3d(f)
 
     rho_out = rho[:, :, -1]
-    ux_out  = ux[:, :, -1]
-    uy_out  = uy[:, :, -1]
-    uz_out  = uz[:, :, -1]
+    ux_out = ux[:, :, -1]
+    uy_out = uy[:, :, -1]
+    uz_out = uz[:, :, -1]
 
     L1 = sigma * c_s * (rho_out - rho_target)
     rho_corrected = (rho_out - L1).clamp(min=1e-6)

@@ -29,6 +29,7 @@
     run.py single H out.json [--tau 0.8] [--U 0.05] [--steps 1000 4000 9000] [--nx 8]
     run.py scan out_dir [--H 100 200] ...
 """
+
 from __future__ import annotations
 
 import argparse
@@ -39,10 +40,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
 
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
-
 import numpy as np
 import torch
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 try:
     from scipy.special import erfc
@@ -53,11 +53,12 @@ except ImportError:  # no scipy in ftw-env: erfc via stdlib math.erf
         x = np.asarray(x, dtype=np.float64)
         return 1.0 - np.array([_erf(v) for v in x.ravel()]).reshape(x.shape)
 
-from tensorlbm.d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
+
+from tensorlbm.d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
 from tensorlbm.solver import collide_bgk, stream
 
 CS2 = 1.0 / 3.0
-DEVICE = torch.device("cpu")   # overridden by --device
+DEVICE = torch.device("cpu")  # overridden by --device
 
 # Specular (free-slip) reflection mapping for the far-field top wall:
 # flips c_y, keeps c_x  ->  f_new[j] = f_pre[SPECULAR[j]]
@@ -83,8 +84,8 @@ def moving_wall_replacement(f_pre: torch.Tensor, U: float) -> torch.Tensor:
 
     Returns a tensor of f-pre shape; apply with torch.where on the wall mask.
     """
-    rho_w = f_pre.sum(dim=0)                                   # (ny, nx) local density
-    cx = C[:, 0].to(f_pre.device).float()                       # (9,)
+    rho_w = f_pre.sum(dim=0)  # (ny, nx) local density
+    cx = C[:, 0].to(f_pre.device).float()  # (9,)
     w = W.to(f_pre.device).float()
     mom = 2.0 * w.view(9, 1, 1) * rho_w.unsqueeze(0) * (cx.view(9, 1, 1) * U) / CS2
     opp = OPPOSITE.to(f_pre.device)
@@ -103,7 +104,7 @@ def run_case(
 ) -> dict:
     """Run one Stokes-first-problem case; return per-step profiles + errors."""
     torch.manual_seed(seed)
-    ny = H + 2                                # wall rows at y=0 and y=ny-1
+    ny = H + 2  # wall rows at y=0 and y=ny-1
     nu = (tau - 0.5) / 3.0
     Ma = U / np.sqrt(CS2)
 
@@ -131,7 +132,7 @@ def run_case(
         # top: free-slip specular reflection (stress-free far field)
         f = torch.where(wall_bottom.unsqueeze(0), moving_wall_replacement(f_pre, U), f)
         f = torch.where(wall_top.unsqueeze(0), specular_replacement(f_pre), f)
-        return stream(f)                      # periodic in x (and y, cut by BB rows)
+        return stream(f)  # periodic in x (and y, cut by BB rows)
 
     step_fn = route_step(_step, compile_mode, name=f"stokes_first_problem[H{H}]")
 
@@ -144,26 +145,28 @@ def run_case(
     elapsed = time.time() - t0
 
     # Analytic comparison (y measured from the wall at y = i - 0.5, half-way BB)
-    y_phys = np.arange(1, ny - 1, dtype=np.float64) - 0.5     # fluid rows 1..H
+    y_phys = np.arange(1, ny - 1, dtype=np.float64) - 0.5  # fluid rows 1..H
     per_step: list[dict] = []
     for step in record_steps:
         u_num = profiles[step]
         u_ana = U * erfc(y_phys / (2.0 * np.sqrt(nu * step)))
-        mask = u_ana > 0.05 * U               # meaningful region (avoid erfc tail blow-up)
+        mask = u_ana > 0.05 * U  # meaningful region (avoid erfc tail blow-up)
         rel = np.divide(np.abs(u_num - u_ana), u_ana, out=np.zeros_like(u_ana), where=mask)
-        per_step.append({
-            "t_lb": step,
-            "delta_lb": float(np.sqrt(nu * step)),
-            "max_rel_err_pct": float(np.max(rel[mask]) * 100.0),
-            "l2_rel_err": float(np.linalg.norm(u_num - u_ana) / np.linalg.norm(u_ana)),
-            "max_abs_err_over_U_pct": float(np.max(np.abs(u_num - u_ana)) / U * 100.0),
-            "u_wall_num": float(u_num[0]),
-            "u_top_num": float(u_num[-1]),
-            "u_top_ana": float(u_ana[-1]),
-            "y_profile": [round(float(v), 8) for v in y_phys],
-            "u_profile": [round(float(v), 8) for v in u_num],
-            "u_analytic": [round(float(v), 8) for v in u_ana],
-        })
+        per_step.append(
+            {
+                "t_lb": step,
+                "delta_lb": float(np.sqrt(nu * step)),
+                "max_rel_err_pct": float(np.max(rel[mask]) * 100.0),
+                "l2_rel_err": float(np.linalg.norm(u_num - u_ana) / np.linalg.norm(u_ana)),
+                "max_abs_err_over_U_pct": float(np.max(np.abs(u_num - u_ana)) / U * 100.0),
+                "u_wall_num": float(u_num[0]),
+                "u_top_num": float(u_num[-1]),
+                "u_top_ana": float(u_ana[-1]),
+                "y_profile": [round(float(v), 8) for v in y_phys],
+                "u_profile": [round(float(v), 8) for v in u_num],
+                "u_analytic": [round(float(v), 8) for v in u_ana],
+            }
+        )
 
     result = {
         "case": "B24_stokes_first_problem",
@@ -194,24 +197,33 @@ def compare_grids(r_lo: dict, r_hi: dict, U: float, tol_pct: float = 3.0) -> dic
     rows = []
     for slo, shi in zip(r_lo["per_step"], r_hi["per_step"]):
         t = slo["t_lb"]
-        y_lo = np.array(slo["y_profile"]); y_hi = np.array(shi["y_profile"])
-        u_lo = np.array(slo["u_profile"]); u_hi = np.array(shi["u_profile"])
+        y_lo = np.array(slo["y_profile"])
+        y_hi = np.array(shi["y_profile"])
+        u_lo = np.array(slo["u_profile"])
+        u_hi = np.array(shi["u_profile"])
         # common y range: coarse H=100 covers y<=99.5; interpolate coarse onto fine y
         mask = y_hi <= y_lo[-1]
-        y_hi_c = y_hi[mask]; u_hi_c = u_hi[mask]
+        y_hi_c = y_hi[mask]
+        u_hi_c = u_hi[mask]
         u_lo_i = np.interp(y_hi_c, y_lo, u_lo)
         diff = np.abs(u_lo_i - u_hi_c) / U * 100.0
-        rows.append({
-            "t_lb": t,
-            "max_profile_diff_over_U_pct": float(np.max(diff)),
-            "mean_profile_diff_over_U_pct": float(np.mean(diff)),
-        })
+        rows.append(
+            {
+                "t_lb": t,
+                "max_profile_diff_over_U_pct": float(np.max(diff)),
+                "mean_profile_diff_over_U_pct": float(np.mean(diff)),
+            }
+        )
     # convergence: refined (H=200) max-rel error must not exceed coarse's
     err_lo = [s["max_rel_err_pct"] for s in r_lo["per_step"]]
     err_hi = [s["max_rel_err_pct"] for s in r_hi["per_step"]]
     converged = all(eh <= max(el, tol_pct) for el, eh in zip(err_lo, err_hi))
-    return {"rows": rows, "converged": converged,
-            "max_rel_err_H100": err_lo, "max_rel_err_H200": err_hi}
+    return {
+        "rows": rows,
+        "converged": converged,
+        "max_rel_err_H100": err_lo,
+        "max_rel_err_H200": err_hi,
+    }
 
 
 def main() -> None:
@@ -245,14 +257,17 @@ def main() -> None:
     compile_mode = compile_mode_from_args(args)
 
     if args.mode == "single":
-        r = run_case(args.H, args.tau, args.U, args.steps, args.nx,
-                     compile_mode=compile_mode)
+        r = run_case(args.H, args.tau, args.U, args.steps, args.nx, compile_mode=compile_mode)
         Path(args.out_json).write_text(json.dumps(r, indent=2))
         for s in r["per_step"]:
-            print(f"t={s['t_lb']:5d}  max_rel={s['max_rel_err_pct']:6.3f}%  "
-                  f"l2_rel={s['l2_rel_err']:.5f}  max_abs/U={s['max_abs_err_over_U_pct']:.4f}%")
-        print(f"H={r['H']} ny={r['ny']} nu={r['nu_lb']:.4f} mass_drift={r['mass_drift_pct']:.2e}% "
-              f"finite={r['finite']} elapsed={r['elapsed_s']}s")
+            print(
+                f"t={s['t_lb']:5d}  max_rel={s['max_rel_err_pct']:6.3f}%  "
+                f"l2_rel={s['l2_rel_err']:.5f}  max_abs/U={s['max_abs_err_over_U_pct']:.4f}%"
+            )
+        print(
+            f"H={r['H']} ny={r['ny']} nu={r['nu_lb']:.4f} mass_drift={r['mass_drift_pct']:.2e}% "
+            f"finite={r['finite']} elapsed={r['elapsed_s']}s"
+        )
 
     else:
         out_dir = Path(args.out_dir)
@@ -260,13 +275,14 @@ def main() -> None:
         cases = []
         for H in args.H:
             p = out_dir / f"case_H{H}.json"
-            r = run_case(H, args.tau, args.U, args.steps, args.nx,
-                         compile_mode=compile_mode)
+            r = run_case(H, args.tau, args.U, args.steps, args.nx, compile_mode=compile_mode)
             p.write_text(json.dumps(r, indent=2))
             cases.append(r)
-            print(f"H={r['H']:3d}: " + "  ".join(
-                f"t{s['t_lb']}={s['max_rel_err_pct']:.3f}%" for s in r["per_step"]),
-                flush=True)
+            print(
+                f"H={r['H']:3d}: "
+                + "  ".join(f"t{s['t_lb']}={s['max_rel_err_pct']:.3f}%" for s in r["per_step"]),
+                flush=True,
+            )
         conv = compare_grids(cases[0], cases[1], args.U)
         tol = 3.0
         passed = all(s["max_rel_err_pct"] <= tol for r in cases for s in r["per_step"])
@@ -282,10 +298,25 @@ def main() -> None:
             "record_steps": args.steps,
             "H_list": args.H,
             "tol_max_rel_pct": tol,
-            "per_grid": [{k: r[k] for k in
-                          ["H", "ny", "nx", "tau", "nu_lb", "U", "Ma",
-                           "mass_drift_pct", "finite", "elapsed_s", "per_step"]}
-                         for r in cases],
+            "per_grid": [
+                {
+                    k: r[k]
+                    for k in [
+                        "H",
+                        "ny",
+                        "nx",
+                        "tau",
+                        "nu_lb",
+                        "U",
+                        "Ma",
+                        "mass_drift_pct",
+                        "finite",
+                        "elapsed_s",
+                        "per_step",
+                    ]
+                }
+                for r in cases
+            ],
             "convergence": conv,
             "passed": passed and conv["converged"],
             "status": "VERIFIED" if (passed and conv["converged"]) else "NOT_PASSED",
@@ -293,7 +324,9 @@ def main() -> None:
         (out_dir / "result.json").write_text(json.dumps(summary, indent=2))
         print(f"\nstatus={summary['status']}  passed_3pct={passed}  converged={conv['converged']}")
         for row in conv["rows"]:
-            print(f"  t={row['t_lb']:5d}  profile_diff_H100vsH200 = {row['max_profile_diff_over_U_pct']:.3f}% U")
+            print(
+                f"  t={row['t_lb']:5d}  profile_diff_H100vsH200 = {row['max_profile_diff_over_U_pct']:.3f}% U"
+            )
 
 
 if __name__ == "__main__":

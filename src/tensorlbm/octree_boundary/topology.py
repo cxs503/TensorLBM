@@ -18,6 +18,7 @@ Topology checks verify the P1 acceptance criteria: neighbour-table symmetry
 (same-level reciprocity plus donor<->fanout one-to-one correspondence) and
 2:1 balance (leaf-neighbour depth difference <= 1).
 """
+
 from __future__ import annotations
 
 import torch
@@ -45,17 +46,22 @@ def _classify_targets(
     ``DOMAIN_OUT / SOLID / SHELL_OUTSIDE``.
     """
     nz, ny, nx = shape
-    bound = torch.tensor(
-        [nx, ny, nz], dtype=torch.int64, device=target.device,
-    ) << lvl
+    bound = (
+        torch.tensor(
+            [nx, ny, nz],
+            dtype=torch.int64,
+            device=target.device,
+        )
+        << lvl
+    )
     out_of_bounds = ((target < 0) | (target >= bound)).any(dim=1)
-    world = (target.to(torch.float64) + 0.5) / (2 ** lvl)
+    world = (target.to(torch.float64) + 0.5) / (2**lvl)
     dist2 = (
         (world[:, 0] - center[0]) ** 2
         + (world[:, 1] - center[1]) ** 2
         + (world[:, 2] - center[2]) ** 2
     )
-    inside = dist2 <= radius ** 2
+    inside = dist2 <= radius**2
     return torch.where(
         out_of_bounds,
         torch.full_like(out_of_bounds, DOMAIN_OUT, dtype=torch.int64),
@@ -84,19 +90,24 @@ def build_neighbor_table(grid) -> None:
 
     # sorted Morton lookup tables (position -> leaf enum)
     l1_morton = morton_encode_batch(
-        torch.full((n1,), 1, dtype=torch.int64), l1_coords, k,
+        torch.full((n1,), 1, dtype=torch.int64),
+        l1_coords,
+        k,
     )
     l1_sorted, l1_order = torch.sort(l1_morton)
     if n2:
         l2_morton = morton_encode_batch(
-            torch.full((n2,), 2, dtype=torch.int64), l2_coords, k,
+            torch.full((n2,), 2, dtype=torch.int64),
+            l2_coords,
+            k,
         )
         l2_sorted, l2_order = torch.sort(l2_morton)
         # refined depth-1 parent coordinates (parents of depth-2 leaves)
         refined_parents = torch.unique(l2_coords >> 1, dim=0)
         ref_morton = morton_encode_batch(
             torch.full((refined_parents.shape[0],), 1, dtype=torch.int64),
-            refined_parents, k,
+            refined_parents,
+            k,
         )
         ref_sorted, _ = torch.sort(ref_morton)
     else:
@@ -111,8 +122,9 @@ def build_neighbor_table(grid) -> None:
     def _hit(sorted_m: torch.Tensor, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """searchsorted membership: returns (hit_mask, order_positions)."""
         if sorted_m.shape[0] == 0:
-            return torch.zeros(q.shape[0], dtype=torch.bool, device=q.device), \
-                torch.zeros(q.shape[0], dtype=torch.int64, device=q.device)
+            return torch.zeros(q.shape[0], dtype=torch.bool, device=q.device), torch.zeros(
+                q.shape[0], dtype=torch.int64, device=q.device
+            )
         p = torch.searchsorted(sorted_m, q)
         pm = p.clamp(max=sorted_m.shape[0] - 1)
         hit = (p < sorted_m.shape[0]) & (sorted_m[pm] == q)
@@ -122,7 +134,8 @@ def build_neighbor_table(grid) -> None:
         c_d = c_vec[d]
         cd = torch.tensor(
             [int(c_d[0]), int(c_d[1]), int(c_d[2])],
-            dtype=torch.int64, device=device,
+            dtype=torch.int64,
+            device=device,
         )
         od = int(opp[d].item())
         # Morton lattice bounds per level (columns (x, y, z)):
@@ -134,23 +147,32 @@ def build_neighbor_table(grid) -> None:
         # bits silently truncated by the interleave, so either can collide
         # with the code of a legitimate leaf far away.  Zero the hits and let
         # ``_classify_targets`` (geometric, bounds-aware) decide instead.
-        bound1 = torch.tensor(
-            [shape[2], shape[1], shape[0]], dtype=torch.int64, device=device,
-        ) << 1
+        bound1 = (
+            torch.tensor(
+                [shape[2], shape[1], shape[0]],
+                dtype=torch.int64,
+                device=device,
+            )
+            << 1
+        )
         bound2 = bound1 << 1
 
         # ---- depth-2 leaves (first: donor links define the fanout groups) --
         if n2:
             i2 = torch.arange(n2, dtype=torch.int64, device=device) + n1
-            target2 = l2_coords + cd                       # (n2, 3)
+            target2 = l2_coords + cd  # (n2, 3)
             inb2 = ((target2 >= 0) & (target2 < bound2)).all(dim=1)
-            parent = target2 >> 1                          # depth-1 coord
+            parent = target2 >> 1  # depth-1 coord
             q_parent = morton_encode_batch(
-                torch.full((n2,), 1, dtype=torch.int64), parent, k,
+                torch.full((n2,), 1, dtype=torch.int64),
+                parent,
+                k,
             )
             hit_p, p_p = _hit(l1_sorted, q_parent)
             q2 = morton_encode_batch(
-                torch.full((n2,), 2, dtype=torch.int64), target2, k,
+                torch.full((n2,), 2, dtype=torch.int64),
+                target2,
+                k,
             )
             hit2, p2 = _hit(l2_sorted, q2)
             hit_p = hit_p & inb2
@@ -185,15 +207,18 @@ def build_neighbor_table(grid) -> None:
                 for ii in donor_idx.tolist():
                     j_leaf = int(nbr2[ii].item())
                     grid._fanout_groups.setdefault(
-                        (j_leaf, od), [],
+                        (j_leaf, od),
+                        [],
                     ).append(int(i2[ii].item()))
 
         # ---- depth-1 leaves ------------------------------------------------
         if n1:
-            target1 = l1_coords + cd                       # (n1, 3)
+            target1 = l1_coords + cd  # (n1, 3)
             inb1 = ((target1 >= 0) & (target1 < bound1)).all(dim=1)
             q1 = morton_encode_batch(
-                torch.full((n1,), 1, dtype=torch.int64), target1, k,
+                torch.full((n1,), 1, dtype=torch.int64),
+                target1,
+                k,
             )
             hit1, p1 = _hit(l1_sorted, q1)
             hit_ref, p_ref = _hit(ref_sorted, q1)
@@ -236,7 +261,7 @@ def build_interface_registry(grid) -> None:
     nt = grid.neighbor_table
     links = torch.nonzero(nt == SHELL_OUTSIDE, as_tuple=False)  # (n, 2) (d, i)
     if links.shape[0]:
-        links = links[:, [1, 0]].contiguous()                  # (i, d)
+        links = links[:, [1, 0]].contiguous()  # (i, d)
     grid.interface_links = links.to(torch.int64)
     grid.interface_fanout = dict(grid._fanout_groups)
 
@@ -255,7 +280,6 @@ def check_neighbor_symmetry(grid) -> dict:
     nt = grid.neighbor_table
     opp = grid._opp
     level = grid.leaf_level
-    n_leaf = grid.n_leaf
     device = nt.device
     opp_idx = opp.to(device)
 
@@ -283,7 +307,7 @@ def check_neighbor_symmetry(grid) -> dict:
                 if fg is None or int(i) not in fg:
                     viol_donor += 1
         # fanout: coarse -> fine must be the fine leaf's donor
-        fo = (nbr == FANOUT)
+        fo = nbr == FANOUT
         if bool(fo.any()):
             idx = torch.nonzero(fo, as_tuple=False).squeeze(1)
             for i in idx.tolist():
@@ -310,11 +334,10 @@ def check_balance_21(grid) -> dict:
     """
     nt = grid.neighbor_table
     level = grid.leaf_level
-    n_leaf = grid.n_leaf
     viol = 0
     for d in range(1, grid.Q):
         nbr = nt[d]
-        valid = (nbr >= 0)
+        valid = nbr >= 0
         if not bool(valid.any()):
             continue
         i = torch.nonzero(valid, as_tuple=False).squeeze(1)
@@ -327,7 +350,6 @@ def check_balance_21(grid) -> dict:
 def check_no_dangling(grid) -> dict:
     """No dangling leaves: every leaf has at least one fluid/shell link."""
     nt = grid.neighbor_table
-    n_leaf = grid.n_leaf
     fluid_links = (nt[1:] >= 0) | (nt[1:] == FANOUT)
     dangling = int((~fluid_links.any(dim=0)).sum().item())
     return {"no_dangling": dangling == 0, "dangling_leaves": int(dangling)}
@@ -339,15 +361,27 @@ def check_interface_links(grid) -> dict:
     links = grid.interface_links
     expected = int((nt == SHELL_OUTSIDE).sum().item())
     complete = links.shape[0] == expected
-    host = grid.leaf_host_cell[links[:, 0]] if links.shape[0] else torch.empty(
-        (0, 3), dtype=torch.int64,
+    host = (
+        grid.leaf_host_cell[links[:, 0]]
+        if links.shape[0]
+        else torch.empty(
+            (0, 3),
+            dtype=torch.int64,
+        )
     )
     nz, ny, nx = grid.meta["shape"]
     in_block = (
-        (host[:, 0] >= 0) & (host[:, 0] < nz)
-        & (host[:, 1] >= 0) & (host[:, 1] < ny)
-        & (host[:, 2] >= 0) & (host[:, 2] < nx)
-    ) if links.shape[0] else torch.tensor([], dtype=torch.bool)
+        (
+            (host[:, 0] >= 0)
+            & (host[:, 0] < nz)
+            & (host[:, 1] >= 0)
+            & (host[:, 1] < ny)
+            & (host[:, 2] >= 0)
+            & (host[:, 2] < nx)
+        )
+        if links.shape[0]
+        else torch.tensor([], dtype=torch.bool)
+    )
     return {
         "complete": complete,
         "n_links": int(links.shape[0]),

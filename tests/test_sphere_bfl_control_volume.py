@@ -57,9 +57,19 @@ def test_unknown_projected_pressure_reconstruction_is_rejected() -> None:
 
 def test_short_sphere_composition_is_finite() -> None:
     cfg = SphereBFLControlVolumeConfig(
-        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
-        reynolds=20.0, lattice_speed=0.04, steps=4, warmup_steps=2,
-        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        nx=48,
+        ny=32,
+        nz=32,
+        radius=4.0,
+        center_x_fraction=0.35,
+        reynolds=20.0,
+        lattice_speed=0.04,
+        steps=4,
+        warmup_steps=2,
+        ramp_steps=2,
+        sponge_width=3,
+        cv_margin=2,
+        device="cpu",
         report_interval=1,
     )
     result = run_sphere_bfl_control_volume(cfg)
@@ -88,9 +98,19 @@ def test_short_sphere_composition_is_finite() -> None:
 
 def test_short_natural_kbc_sphere_composition_is_finite() -> None:
     cfg = SphereBFLControlVolumeConfig(
-        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
-        reynolds=20.0, lattice_speed=0.04, steps=4, warmup_steps=2,
-        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        nx=48,
+        ny=32,
+        nz=32,
+        radius=4.0,
+        center_x_fraction=0.35,
+        reynolds=20.0,
+        lattice_speed=0.04,
+        steps=4,
+        warmup_steps=2,
+        ramp_steps=2,
+        sponge_width=3,
+        cv_margin=2,
+        device="cpu",
         collision_model="natural_kbc_d3q19",
         collision_chunk_cells=512,
     )
@@ -105,9 +125,19 @@ def test_short_natural_kbc_sphere_composition_is_finite() -> None:
 
 def test_projected_pressure_is_paired_but_never_used_for_acceptance() -> None:
     cfg = SphereBFLControlVolumeConfig(
-        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
-        reynolds=20.0, lattice_speed=0.04, steps=4, warmup_steps=2,
-        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        nx=48,
+        ny=32,
+        nz=32,
+        radius=4.0,
+        center_x_fraction=0.35,
+        reynolds=20.0,
+        lattice_speed=0.04,
+        steps=4,
+        warmup_steps=2,
+        ramp_steps=2,
+        sponge_width=3,
+        cv_margin=2,
+        device="cpu",
         projected_pressure_interval=1,
     )
 
@@ -116,9 +146,7 @@ def test_projected_pressure_is_paired_but_never_used_for_acceptance() -> None:
     observer = result["result"]["projected_bfl_pressure_observer"]
     assert observer["enabled"] is True
     assert observer["used_for_acceptance"] is False
-    assert observer["scope"] == (
-        "candidate_diagnostic_only_not_an_acceptance_gate"
-    )
+    assert observer["scope"] == ("candidate_diagnostic_only_not_an_acceptance_gate")
     assert observer["samples"] == 2
     assert observer["mean_pressure_force"] is not None
     assert observer["paired_control_volume_mean_force"] is not None
@@ -129,10 +157,21 @@ def test_projected_pressure_is_paired_but_never_used_for_acceptance() -> None:
 def test_v3_checkpoint_requires_complete_physics_identity(tmp_path) -> None:
     checkpoint = tmp_path / "sphere.ckpt"
     base = SphereBFLControlVolumeConfig(
-        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
-        reynolds=20.0, lattice_speed=0.04, steps=2, warmup_steps=1,
-        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
-        checkpoint_interval=1, checkpoint_path=str(checkpoint),
+        nx=48,
+        ny=32,
+        nz=32,
+        radius=4.0,
+        center_x_fraction=0.35,
+        reynolds=20.0,
+        lattice_speed=0.04,
+        steps=2,
+        warmup_steps=1,
+        ramp_steps=2,
+        sponge_width=3,
+        cv_margin=2,
+        device="cpu",
+        checkpoint_interval=1,
+        checkpoint_path=str(checkpoint),
     )
     run_sphere_bfl_control_volume(base)
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
@@ -151,10 +190,21 @@ def test_v3_checkpoint_requires_complete_physics_identity(tmp_path) -> None:
 def test_projected_pressure_history_survives_resume(tmp_path) -> None:
     checkpoint = tmp_path / "sphere-projected.ckpt"
     base = SphereBFLControlVolumeConfig(
-        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
-        reynolds=20.0, lattice_speed=0.04, steps=2, warmup_steps=1,
-        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
-        checkpoint_interval=1, checkpoint_path=str(checkpoint),
+        nx=48,
+        ny=32,
+        nz=32,
+        radius=4.0,
+        center_x_fraction=0.35,
+        reynolds=20.0,
+        lattice_speed=0.04,
+        steps=2,
+        warmup_steps=1,
+        ramp_steps=2,
+        sponge_width=3,
+        cv_margin=2,
+        device="cpu",
+        checkpoint_interval=1,
+        checkpoint_path=str(checkpoint),
         projected_pressure_interval=1,
     )
     run_sphere_bfl_control_volume(base)
@@ -171,10 +221,21 @@ def test_projected_pressure_history_survives_resume(tmp_path) -> None:
 def test_pre_correction_bfl_checkpoint_is_rejected(tmp_path) -> None:
     checkpoint = tmp_path / "legacy-bfl.ckpt"
     base = SphereBFLControlVolumeConfig(
-        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
-        reynolds=20.0, lattice_speed=0.04, steps=2, warmup_steps=1,
-        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
-        checkpoint_interval=1, checkpoint_path=str(checkpoint),
+        nx=48,
+        ny=32,
+        nz=32,
+        radius=4.0,
+        center_x_fraction=0.35,
+        reynolds=20.0,
+        lattice_speed=0.04,
+        steps=2,
+        warmup_steps=1,
+        ramp_steps=2,
+        sponge_width=3,
+        cv_margin=2,
+        device="cpu",
+        checkpoint_interval=1,
+        checkpoint_path=str(checkpoint),
     )
     run_sphere_bfl_control_volume(base)
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
@@ -189,10 +250,21 @@ def test_pre_correction_bfl_checkpoint_is_rejected(tmp_path) -> None:
 def test_v2_checkpoint_migration_is_explicit_and_hashed(tmp_path) -> None:
     checkpoint = tmp_path / "sphere-v2.ckpt"
     base = SphereBFLControlVolumeConfig(
-        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
-        reynolds=20.0, lattice_speed=0.04, steps=2, warmup_steps=1,
-        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
-        checkpoint_interval=1, checkpoint_path=str(checkpoint),
+        nx=48,
+        ny=32,
+        nz=32,
+        radius=4.0,
+        center_x_fraction=0.35,
+        reynolds=20.0,
+        lattice_speed=0.04,
+        steps=2,
+        warmup_steps=1,
+        ramp_steps=2,
+        sponge_width=3,
+        cv_margin=2,
+        device="cpu",
+        checkpoint_interval=1,
+        checkpoint_path=str(checkpoint),
     )
     run_sphere_bfl_control_volume(base)
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
@@ -205,9 +277,14 @@ def test_v2_checkpoint_migration_is_explicit_and_hashed(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="configuration"):
         run_sphere_bfl_control_volume(replace(base, steps=4, resume=True))
-    migrated = run_sphere_bfl_control_volume(replace(
-        base, steps=4, resume=True, allow_v2_checkpoint=True,
-    ))
+    migrated = run_sphere_bfl_control_volume(
+        replace(
+            base,
+            steps=4,
+            resume=True,
+            allow_v2_checkpoint=True,
+        )
+    )
 
     provenance = migrated["configuration"]["migration_provenance"]
     assert provenance["source_schema"] == "tensorlbm-sphere-checkpoint-v2"

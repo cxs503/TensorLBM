@@ -20,7 +20,6 @@ from tensorlbm.fsi_common import (
 from tensorlbm.sixdof import SixDOFBody
 from tensorlbm.sixdof_common import RigidBodyState
 
-
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
