@@ -157,6 +157,15 @@ def bfl_bounce_back_common(
     q = q_field
     mask = fluid_boundary_mask
 
+    # The compute_q_* helpers store q as float32.  Promote it to the
+    # population dtype before forming the interpolation coefficients: with
+    # float64 populations, leaving 1/(2q) and (2q-1) in float32 rounds the
+    # quadratic-branch weights to ~1e-7 relative accuracy, which both breaks
+    # exact 2-D/3-D planar equivalence and silently degrades the second-order
+    # accuracy the BFL interpolation exists to provide.  The promotion is an
+    # exact identity for float32 runs.
+    q = q.to(dtype=f.dtype)
+
     mask_lin = (q < 0.5) & mask  # linear regime
     mask_quad = (~mask_lin) & mask  # quadratic regime
 
