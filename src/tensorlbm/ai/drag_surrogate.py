@@ -1,0 +1,546 @@
+"""Field-to-drag surrogate modelling: predict C_D from LBM plane snapshots.
+
+Pairs a scan campaign's exported field snapshots (``tensorlbm.solver-export/v1``,
+one ``fields.h5`` per point) with exact drag labels from the control-volume
+observer (``tensorlbm.drag-history/v1`` sidecars / ``status.json:
+drag_mean_tail``, see :mod:`tensorlbm.scan_drag`), joined on the Reynolds
+number.  The labels are the *measured* C_D of PR #204 — not the wake-survey
+estimator.
+
+The surrogate (:class:`FNODragRegressor`) reuses the Fourier layer of
+:class:`tensorlbm.ai.fno.SpectralConv2d` with a global-pool scalar head: a
+plane snapshot ``(C, ny, nx)`` → C_D.  Two cheap baselines are provided so the
+surrogate's value is measured against the strongest prior on a single-parameter
+sweep — a power-law fit ``C_D = a·Re^b`` (the physics scaling) and the
+train-mean.
+
+With ``N`` scan points per split this is a small-``N`` regime: snapshots from
+the same point share one trajectory and one label, so effective sample size is
+the number of *points*, not (point, step) rows.  Keep ``PlaneSampleSpec.steps``
+short (one step per point is the clean choice) and read metrics accordingly.
+"""
+
+from __future__ import annotations
+
+import csv
+import json
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+
+import numpy as np
+import torch
+from torch import nn
+from torch.utils.data import DataLoader, Dataset
+
+from .fno import SpectralConv2d, _get_activation
+
+STUDY_SCHEMA = "tensorlbm.drag-surrogate-study/v1"
+
+DEFAULT_CHANNELS: tuple[str, ...] = ("ux", "uy", "rho")
+
+
+# ---------------------------------------------------------------------------
+# Data loading
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class PlaneSampleSpec:
+    """How to turn a 3-D snapshot into plane samples for the surrogate."""
+
+    plane: int | str = "center"
+    """Lateral (z) index of the extracted plane, or ``"center"`` for nz // 2."""
+
+    channels: tuple[str, ...] = DEFAULT_CHANNELS
+    """Field datasets read from each snapshot group (e.g. ux, uy, rho)."""
+
+    steps: tuple[int, ...] = (4000,)
+    """Snapshot steps used as samples; one (point, step) row per entry."""
+
+
+@dataclass
+class DragSplit:
+    """A materialised train/val/test split of plane samples."""
+
+    x: np.ndarray  # (N, C, ny, nx) float32
+    cd: np.ndarray  # (N,) float64 — exact C_D (per point, repeated per step)
+    re: np.ndarray  # (N,) float64
+    point_id: list[str] = field(default_factory=list)
+    step: list[int] = field(default_factory=list)
+
+    def __len__(self) -> int:  # pragma: no cover - trivial
+        return int(self.x.shape[0])
+
+
+def iter_point_ids(fields_dir: str | Path) -> tuple[str, ...]:
+    """Sorted point ids under ``<fields_dir>/points`` that export fields."""
+    root = Path(fields_dir) / "points"
+    return tuple(
+        p.name for p in sorted(root.iterdir()) if p.is_dir() and (p / "fields.h5").is_file()
+    )
+
+
+def read_plane_snapshot(
+    h5_path: str | Path, step: int, channels: tuple[str, ...], plane: int | str
+) -> np.ndarray:
+    """Read one snapshot's channels at a lateral plane → ``(C, ny, nx)``.
+
+    Raises:
+        KeyError: if ``step`` is not an exported snapshot (message lists the
+            available steps).
+    """
+    import h5py
+
+    with h5py.File(h5_path, "r") as f:
+        key = f"step_{step:06d}"
+        if key not in f:
+            available = sorted(int(k.removeprefix("step_")) for k in f.keys())
+            raise KeyError(f"no snapshot at step {step} in {h5_path}; have {available}")
+        plane_idx = f[key]["ux"].shape[0] // 2 if plane == "center" else int(plane)
+        return np.stack(
+            [np.asarray(f[key][name][plane_idx], dtype=np.float32) for name in channels]
+        )
+
+
+def load_exact_cd(
+    drag_dir: str | Path,
+    fields_dir: str | Path,
+    *,
+    tail_fraction: float = 0.25,
+    rho: float = 1.0,
+) -> dict[float, float]:
+    """Exact C_D per Reynolds number from a drag-observer campaign.
+
+    ``force_x`` tail mean (last ``tail_fraction`` of samples; falls back to
+    ``status.json:drag_mean_tail``) normalised by ``rho * u_in^2 * S_proj``.
+    ``u_in`` comes from the paired fields campaign's snapshot attributes and
+    ``S_proj`` from its solid mask (:func:`tensorlbm.drag_survey.projected_area`),
+    matching the benchmark convention.
+    """
+    import h5py
+
+    from ..drag_survey import projected_area
+
+    drag_root = Path(drag_dir) / "points"
+    fields_root = Path(fields_dir) / "points"
+    out: dict[float, float] = {}
+    for pd in sorted(drag_root.iterdir()):
+        if not pd.is_dir() or not (pd / "status.json").is_file():
+            continue
+        re = float(json.loads((pd / "status.json").read_text())["params"]["re"])
+        history_path = pd / "drag_history.json"
+        if history_path.is_file():
+            samples = json.loads(history_path.read_text())["samples"]
+            fx = np.asarray([s["force_x"] for s in samples], dtype=np.float64)
+            tail = fx[int(len(fx) * (1.0 - tail_fraction)) :]
+            force = float(tail.mean())
+        else:
+            force = float(json.loads((pd / "status.json").read_text())["drag_mean_tail"])
+
+        fh5 = fields_root / pd.name / "fields.h5"
+        with h5py.File(fh5, "r") as f:
+            last_key = sorted(f.keys())[-1]
+            u_in = float(f[last_key].attrs["u_in"])
+            mask = np.asarray(f[last_key]["solid_mask"])
+        cd = 2.0 * force / (rho * u_in**2 * projected_area(mask))
+        if re in out:
+            raise ValueError(f"duplicate Re {re} in {drag_dir}")
+        out[re] = cd
+    return out
+
+
+def build_drag_split(
+    fields_dir: str | Path,
+    cd_by_re: dict[float, float],
+    point_ids: tuple[str, ...] | list[str],
+    spec: PlaneSampleSpec | None = None,
+) -> DragSplit:
+    """Materialise ``(point, step)`` plane samples with exact-C_D labels."""
+    spec = spec or PlaneSampleSpec()
+    root = Path(fields_dir) / "points"
+    xs, cds, res, pids, steps = [], [], [], [], []
+    for pid in point_ids:
+        h5 = root / pid / "fields.h5"
+        with_batch = read_plane_snapshot(h5, spec.steps[0], spec.channels, spec.plane)
+        re = float(_snapshot_attr(h5, "re"))
+        if re not in cd_by_re:
+            raise KeyError(f"no exact C_D for Re={re} (point {pid})")
+        for step in spec.steps:
+            plane = (
+                with_batch
+                if step == spec.steps[0]
+                else read_plane_snapshot(h5, step, spec.channels, spec.plane)
+            )
+            xs.append(plane)
+            cds.append(cd_by_re[re])
+            res.append(re)
+            pids.append(pid)
+            steps.append(step)
+    return DragSplit(
+        x=np.stack(xs),
+        cd=np.asarray(cds, dtype=np.float64),
+        re=np.asarray(res, dtype=np.float64),
+        point_id=pids,
+        step=steps,
+    )
+
+
+def _snapshot_attr(h5_path: str | Path, name: str) -> float:
+    import h5py
+
+    with h5py.File(h5_path, "r") as f:
+        key = sorted(f.keys())[0]
+        return float(f[key].attrs[name])
+
+
+# ---------------------------------------------------------------------------
+# Normalisation + torch dataset
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class DragNorm:
+    """Train-split statistics; everything downstream un-normalises through it."""
+
+    channel_mean: list[float]
+    channel_std: list[float]
+    target_mean: float
+    target_std: float
+    transform: str = "log10"  # "log10" | "identity"
+
+    def encode_target(self, cd: np.ndarray) -> np.ndarray:
+        y = np.log10(cd) if self.transform == "log10" else np.asarray(cd, dtype=np.float64)
+        return (y - self.target_mean) / self.target_std
+
+    def decode_target(self, y: np.ndarray) -> np.ndarray:
+        y = np.asarray(y, dtype=np.float64) * self.target_std + self.target_mean
+        return 10.0**y if self.transform == "log10" else y
+
+
+def fit_norm(split: DragSplit, transform: str = "log10") -> DragNorm:
+    """Fit channel/target statistics on a (train) split only."""
+    c_mean = split.x.reshape(split.x.shape[0], split.x.shape[1], -1).mean(axis=(0, 2))
+    c_std = split.x.reshape(split.x.shape[0], split.x.shape[1], -1).std(axis=(0, 2))
+    y = np.log10(split.cd) if transform == "log10" else split.cd
+    return DragNorm(
+        channel_mean=[float(v) for v in c_mean],
+        channel_std=[float(max(v, 1e-8)) for v in c_std],
+        target_mean=float(y.mean()),
+        target_std=float(max(y.std(), 1e-8)),
+        transform=transform,
+    )
+
+
+class DragPlaneDataset(Dataset):
+    """Normalised (plane, target) pairs; targets are standardised C_D."""
+
+    def __init__(self, split: DragSplit, norm: DragNorm) -> None:
+        mean = torch.as_tensor(norm.channel_mean).view(1, -1, 1, 1)
+        std = torch.as_tensor(norm.channel_std).view(1, -1, 1, 1)
+        self.x = torch.as_tensor((split.x - mean.numpy()) / std.numpy(), dtype=torch.float32)
+        self.y = torch.as_tensor(norm.encode_target(split.cd), dtype=torch.float32)
+        self.cd = split.cd
+        self.re = split.re
+
+    def __len__(self) -> int:
+        return int(self.y.shape[0])
+
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.x[idx], self.y[idx]
+
+
+# ---------------------------------------------------------------------------
+# Model
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class FNODragArch:
+    """Hyper-parameters for :class:`FNODragRegressor`."""
+
+    in_channels: int = 3
+    width: int = 32
+    n_layers: int = 4
+    modes_y: int = 12
+    modes_x: int = 12
+    mlp_hidden: int = 128
+    activation: str = "gelu"
+
+
+class FNODragRegressor(nn.Module):
+    """Fourier-encoder plane → scalar regressor (FNO2d body + pool head).
+
+    Maps ``(B, in_channels, ny, nx)`` plane snapshots to one scalar per sample
+    (standardised C_D) via the FNO2d Fourier-layer stack followed by global
+    spatial mean pooling and a two-layer MLP head.
+    """
+
+    def __init__(self, arch: FNODragArch | None = None) -> None:
+        super().__init__()
+        self.arch = arch or FNODragArch()
+        a = self.arch
+        self._act = _get_activation(a.activation)
+        self.lift = nn.Conv2d(a.in_channels, a.width, kernel_size=1)
+        self.spectral = nn.ModuleList(
+            [SpectralConv2d(a.width, a.width, a.modes_y, a.modes_x) for _ in range(a.n_layers)]
+        )
+        self.pointwise = nn.ModuleList(
+            [nn.Conv2d(a.width, a.width, kernel_size=1) for _ in range(a.n_layers)]
+        )
+        self.head = nn.Sequential(
+            nn.Linear(a.width, a.mlp_hidden),
+            nn.GELU(),
+            nn.Linear(a.mlp_hidden, 1),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.lift(x)
+        for spec, pw in zip(self.spectral, self.pointwise):
+            x = self._act(spec(x) + pw(x))
+        x = x.mean(dim=(2, 3))  # global pool over the plane
+        return self.head(x).squeeze(-1)
+
+
+# ---------------------------------------------------------------------------
+# Training / evaluation
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class DragTrainConfig:
+    epochs: int = 400
+    batch_size: int = 32
+    lr: float = 1e-3
+    weight_decay: float = 1e-4
+    patience: int = 60
+    seed: int = 0
+    device: str | None = None  # None → cuda if available else cpu
+
+
+@dataclass
+class DragTrainResult:
+    model: FNODragRegressor
+    norm: DragNorm
+    history: dict[str, list[float]]
+    best_epoch: int
+
+
+def _resolve_device(device: str | None) -> torch.device:
+    if device is not None:
+        return torch.device(device)
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def train_drag_surrogate(
+    train_split: DragSplit,
+    val_split: DragSplit,
+    arch: FNODragArch | None = None,
+    config: DragTrainConfig | None = None,
+    transform: str = "log10",
+) -> DragTrainResult:
+    """Train the surrogate; normalisation is fitted on ``train_split`` only."""
+    arch = arch or FNODragArch(in_channels=train_split.x.shape[1])
+    config = config or DragTrainConfig()
+    if arch.in_channels != train_split.x.shape[1]:
+        raise ValueError(
+            f"arch.in_channels={arch.in_channels} != data channels {train_split.x.shape[1]}"
+        )
+    torch.manual_seed(config.seed)
+    norm = fit_norm(train_split, transform)
+    train_ds = DragPlaneDataset(train_split, norm)
+    val_ds = DragPlaneDataset(val_split, norm)
+    device = _resolve_device(config.device)
+    model = FNODragRegressor(arch).to(device)
+    opt = torch.optim.Adam(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
+    batch = min(config.batch_size, len(train_ds))
+    train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True)
+    val_loader = DataLoader(val_ds, batch_size=min(config.batch_size, len(val_ds)))
+
+    history: dict[str, list[float]] = {"train": [], "val": []}
+    best_val, best_epoch, best_state = float("inf"), -1, None
+    for epoch in range(config.epochs):
+        model.train()
+        losses = []
+        for xb, yb in train_loader:
+            loss = nn.functional.mse_loss(model(xb.to(device)), yb.to(device))
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+            losses.append(loss.item())
+        model.eval()
+        with torch.no_grad():
+            val_losses = [
+                float(nn.functional.mse_loss(model(xb.to(device)), yb.to(device)))
+                for xb, yb in val_loader
+            ]
+        history["train"].append(float(np.mean(losses)))
+        history["val"].append(float(np.mean(val_losses)))
+        if history["val"][-1] < best_val - 1e-12:
+            best_val, best_epoch = history["val"][-1], epoch
+            best_state = {k: v.detach().to("cpu").clone() for k, v in model.state_dict().items()}
+        elif epoch - best_epoch >= config.patience:
+            break
+    if best_state is not None:
+        model.load_state_dict(best_state)
+    return DragTrainResult(model=model, norm=norm, history=history, best_epoch=best_epoch)
+
+
+@torch.no_grad()
+def predict_cd(
+    model: FNODragRegressor,
+    split: DragSplit,
+    norm: DragNorm,
+    *,
+    device: str | None = None,
+    batch_size: int = 64,
+) -> np.ndarray:
+    """Predict raw (un-normalised) C_D for a split."""
+    device = _resolve_device(device)
+    model = model.to(device).eval()
+    ds = DragPlaneDataset(split, norm)
+    loader = DataLoader(ds, batch_size=min(batch_size, len(ds)))
+    ys = [model(xb.to(device)).cpu().numpy() for xb, _ in loader]
+    return norm.decode_target(np.concatenate(ys))
+
+
+def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
+    """MAE / RMSE / R² / MAPE between true and predicted C_D values."""
+    y_true = np.asarray(y_true, dtype=np.float64)
+    y_pred = np.asarray(y_pred, dtype=np.float64)
+    err = y_pred - y_true
+    ss_res = float(np.sum(err**2))
+    ss_tot = float(np.sum((y_true - y_true.mean()) ** 2))
+    return {
+        "mae": float(np.mean(np.abs(err))),
+        "rmse": float(np.sqrt(np.mean(err**2))),
+        "r2": 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan"),
+        "mape": float(np.mean(np.abs(err) / np.abs(y_true)) * 100.0),
+        "n": int(y_true.size),
+    }
+
+
+def power_law_fit(re: np.ndarray, cd: np.ndarray) -> tuple[float, float]:
+    """Least-squares power law ``C_D = a·Re^b`` → ``(log10_a, b)``."""
+    exponent, log10_a = np.polyfit(
+        np.log10(np.asarray(re, dtype=np.float64)), np.log10(np.asarray(cd, dtype=np.float64)), 1
+    )
+    return float(log10_a), float(exponent)
+
+
+def power_law_predict(coeffs: tuple[float, float], re: np.ndarray) -> np.ndarray:
+    """Evaluate a :func:`power_law_fit` result at ``re``."""
+    log10_a, exponent = coeffs
+    return 10.0 ** (log10_a + exponent * np.log10(np.asarray(re, dtype=np.float64)))
+
+
+# ---------------------------------------------------------------------------
+# Persistence
+# ---------------------------------------------------------------------------
+
+
+def save_drag_regressor(model: FNODragRegressor, norm: DragNorm, path: str | Path) -> Path:
+    """Serialize model weights + arch + normalisation (``.pt`` + ``.pt.json``)."""
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(model.state_dict(), p)
+    meta = {
+        "model_class": "FNODragRegressor",
+        "arch": asdict(model.arch),
+        "norm": asdict(norm),
+        "format_version": 1,
+    }
+    p.with_suffix(p.suffix + ".json").write_text(json.dumps(meta, indent=2))
+    return p
+
+
+def load_drag_regressor(path: str | Path) -> tuple[FNODragRegressor, DragNorm]:
+    """Load a surrogate saved by :func:`save_drag_regressor` (eval mode)."""
+    p = Path(path)
+    meta = json.loads(p.with_suffix(p.suffix + ".json").read_text())
+    model = FNODragRegressor(FNODragArch(**meta["arch"]))
+    model.load_state_dict(torch.load(p, map_location="cpu", weights_only=True))
+    model.eval()
+    return model, DragNorm(**meta["norm"])
+
+
+# ---------------------------------------------------------------------------
+# Study orchestrator
+# ---------------------------------------------------------------------------
+
+
+def run_drag_surrogate_study(
+    fields_dir: str | Path,
+    drag_dir: str | Path,
+    out_dir: str | Path,
+    *,
+    spec: PlaneSampleSpec | None = None,
+    arch: FNODragArch | None = None,
+    config: DragTrainConfig | None = None,
+    transform: str = "log10",
+) -> dict:
+    """End-to-end study: splits → train → FNO vs baselines → artefacts.
+
+    Splits come from ``<fields_dir>/dataset.json:split_points`` (the campaign's
+    own point-level split, so no test point is ever seen in training or in the
+    normalisation statistics).  Writes ``model.pt(.json)``, ``metrics.json``
+    and ``predictions.csv`` under ``out_dir``; returns the metrics summary.
+    """
+    spec = spec or PlaneSampleSpec()
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    split_points = json.loads((Path(fields_dir) / "dataset.json").read_text())["split_points"]
+    cd_by_re = load_exact_cd(drag_dir, fields_dir)
+    splits = {
+        name: build_drag_split(fields_dir, cd_by_re, pids, spec)
+        for name, pids in split_points.items()
+    }
+    result = train_drag_surrogate(splits["train"], splits["val"], arch, config, transform)
+    save_drag_regressor(result.model, result.norm, out / "model.pt")
+
+    coeffs = power_law_fit(splits["train"].re, splits["train"].cd)
+    cd_mean = float(splits["train"].cd.mean())
+    metrics: dict[str, dict[str, dict[str, float]]] = {}
+    predictions: dict[str, dict[str, np.ndarray]] = {}
+    for name, split in splits.items():
+        preds = {
+            "fno": predict_cd(result.model, split, result.norm),
+            "power_law": power_law_predict(coeffs, split.re),
+            "mean": np.full(len(split), cd_mean),
+        }
+        predictions[name] = preds
+        metrics[name] = {k: regression_metrics(split.cd, v) for k, v in preds.items()}
+
+    with open(out / "predictions.csv", "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(
+            ["split", "point_id", "step", "re", "cd_true", "cd_fno", "cd_power_law", "cd_mean"]
+        )
+        for name, split in splits.items():
+            for i, pid in enumerate(split.point_id):
+                writer.writerow(
+                    [
+                        name,
+                        pid,
+                        split.step[i],
+                        float(split.re[i]),
+                        float(split.cd[i]),
+                        float(predictions[name]["fno"][i]),
+                        float(predictions[name]["power_law"][i]),
+                        cd_mean,
+                    ]
+                )
+
+    summary = {
+        "schema": STUDY_SCHEMA,
+        "fields_dir": str(fields_dir),
+        "drag_dir": str(drag_dir),
+        "spec": asdict(spec),
+        "arch": asdict(result.model.arch),
+        "config": asdict(config or DragTrainConfig()),
+        "power_law": {"log10_a": coeffs[0], "exponent": coeffs[1]},
+        "best_epoch": result.best_epoch,
+        "n_points": {k: len(v.point_id) for k, v in splits.items()},
+        "metrics": metrics,
+    }
+    (out / "metrics.json").write_text(json.dumps(summary, indent=2))
+    return summary
