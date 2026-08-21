@@ -2,6 +2,10 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+[![CI](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml/badge.svg)](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://github.com/cxs503/TensorLBM)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
+
 TensorLBM 是一个面向 **AI4S（AI for Science）** 的综合平台，以 PyTorch LBM 求解器为核心，提供从仿真数据生产、模型训练到推理服务的闭环能力，并保持可复现的工程与科研工作流。
 
 ## 文档
