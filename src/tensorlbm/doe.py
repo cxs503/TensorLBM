@@ -321,10 +321,14 @@ def full_factorial(variables: list[DoEVariable]) -> list[list[float]]:
     factor_levels: list[list[float]] = []
     for var in variables:
         if var.levels is not None:
-            # Normalise to [0, 1]
-            lo, hi = min(var.levels), max(var.levels)
-            span = hi - lo if hi != lo else 1.0
-            factor_levels.append([(v - lo) / span for v in var.levels])
+            # Encode the level INDEX as u = i / (n - 1), not the linear
+            # value: generate_doe maps units back to levels with the
+            # nearest-level rule round(u * (n - 1)), which recovers the
+            # index exactly only under this encoding.  Encoding the value
+            # instead collapses non-uniformly spaced levels (e.g.
+            # log-spaced Re) onto the nearest uniform slot.
+            n = len(var.levels)
+            factor_levels.append([i / (n - 1) for i in range(n)])
         else:
             factor_levels.append([0.0, 1.0])  # 2-level factor
 
