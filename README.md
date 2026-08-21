@@ -2,6 +2,9 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+[![CI](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml/badge.svg)](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://github.com/cxs503/TensorLBM)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cxs503/TensorLBM/blob/main/notebooks/quickstart.ipynb)
 
 > **An AI4S integrated platform built on PyTorch Lattice Boltzmann solvers.**
