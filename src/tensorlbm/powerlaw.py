@@ -256,16 +256,20 @@ def collide_powerlaw_bgk(
         raise ValueError(msg)
 
     rho, ux, uy = macroscopic(f)
-    tau = tau_field if tau_field is not None else tau_from_viscosity(
-        powerlaw_viscosity(
-            strain_rate_shear_rate_2d(ux, uy),
-            consistency_index=consistency_index,
-            flow_index=flow_index,
-            nu_min=nu_min,
-            nu_max=nu_max,
-        ),
-        tau_min=tau_min,
-        tau_max=tau_max,
+    tau = (
+        tau_field
+        if tau_field is not None
+        else tau_from_viscosity(
+            powerlaw_viscosity(
+                strain_rate_shear_rate_2d(ux, uy),
+                consistency_index=consistency_index,
+                flow_index=flow_index,
+                nu_min=nu_min,
+                nu_max=nu_max,
+            ),
+            tau_min=tau_min,
+            tau_max=tau_max,
+        )
     )
 
     feq = equilibrium(rho, ux, uy)
@@ -368,16 +372,20 @@ def collide_powerlaw_bgk_forced(
         raise ValueError(msg)
 
     rho, ux, uy = macroscopic(f)
-    tau = tau_field if tau_field is not None else tau_from_viscosity(
-        powerlaw_viscosity(
-            strain_rate_shear_rate_2d(ux, uy),
-            consistency_index=consistency_index,
-            flow_index=flow_index,
-            nu_min=nu_min,
-            nu_max=nu_max,
-        ),
-        tau_min=tau_min,
-        tau_max=tau_max,
+    tau = (
+        tau_field
+        if tau_field is not None
+        else tau_from_viscosity(
+            powerlaw_viscosity(
+                strain_rate_shear_rate_2d(ux, uy),
+                consistency_index=consistency_index,
+                flow_index=flow_index,
+                nu_min=nu_min,
+                nu_max=nu_max,
+            ),
+            tau_min=tau_min,
+            tau_max=tau_max,
+        )
     )
     ux_star = ux + 0.5 * ax
     feq = equilibrium(rho, ux_star, uy)

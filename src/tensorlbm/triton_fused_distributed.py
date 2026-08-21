@@ -69,25 +69,33 @@ import torch.distributed as dist
 
 try:
     from tensorlbm_triton_fused import (
+        _CZ as _CZ_TUPLE,
+    )
+    from tensorlbm_triton_fused import (
         DEFAULT_BLOCK_X,
         DEFAULT_BLOCK_Y,
-        DEFAULT_NUM_WARPS,
         DEFAULT_NUM_STAGES,
-        _CZ as _CZ_TUPLE,
-        is_available as _single_is_available,
+        DEFAULT_NUM_WARPS,
         make_lattice_tensors,
         triton_fused,
     )
+    from tensorlbm_triton_fused import (
+        is_available as _single_is_available,
+    )
 except ImportError:
+    from tensorlbm.triton_fused import (
+        _CZ as _CZ_TUPLE,
+    )
     from tensorlbm.triton_fused import (
         DEFAULT_BLOCK_X,
         DEFAULT_BLOCK_Y,
-        DEFAULT_NUM_WARPS,
         DEFAULT_NUM_STAGES,
-        _CZ as _CZ_TUPLE,
-        is_available as _single_is_available,
+        DEFAULT_NUM_WARPS,
         make_lattice_tensors,
         triton_fused,
+    )
+    from tensorlbm.triton_fused import (
+        is_available as _single_is_available,
     )
 
 
@@ -131,6 +139,7 @@ def crossing_face_indices(cz, sign: int) -> tuple[int, ...]:
 # Availability
 # ---------------------------------------------------------------------------
 
+
 def distributed_is_available() -> bool:
     """True iff torch.distributed can be used (always True with PyTorch)."""
     try:
@@ -153,6 +162,7 @@ def init_distributed(backend: str | None = None) -> tuple[int, int]:
     if backend is None:
         backend = "nccl" if torch.cuda.is_available() else "gloo"
     import os
+
     rank = int(os.environ.get("RANK", "0"))
     world = int(os.environ.get("WORLD_SIZE", "1"))
     if world == 1:
@@ -181,6 +191,7 @@ def world_size() -> int:
 # ---------------------------------------------------------------------------
 # Distributed solver
 # ---------------------------------------------------------------------------
+
 
 class DistributedTritonFusedSolver3D:
     """Periodic D3Q19 step on a slab-decomposed multi-GPU domain.
@@ -291,14 +302,10 @@ class DistributedTritonFusedSolver3D:
         self.n_cross = len(self._cross_up)
         self._halo_dtype = torch.float32 if halo_dtype is None else halo_dtype
         if self._halo_dtype.itemsize not in (2, 4):
-            raise ValueError(
-                f"halo_dtype must be fp32 or fp16, got {self._halo_dtype}"
-            )
+            raise ValueError(f"halo_dtype must be fp32 or fp16, got {self._halo_dtype}")
         # Device-side index tensors for the gather/scatter below.
-        self._idx_up = torch.tensor(
-            self._cross_up, dtype=torch.int64, device=self.device)
-        self._idx_dn = torch.tensor(
-            self._cross_dn, dtype=torch.int64, device=self.device)
+        self._idx_up = torch.tensor(self._cross_up, dtype=torch.int64, device=self.device)
+        self._idx_dn = torch.tensor(self._cross_dn, dtype=torch.int64, device=self.device)
 
         # Persistent contiguous staging planes for the halo exchange.
         # NCCL point-to-point ops need dense tensors, but the boundary
@@ -395,14 +402,16 @@ class DistributedTritonFusedSolver3D:
         buf = self.allocate(dtype=f_global.dtype)
         z0, z1 = self.z_start_global, self.z_end_global
         # Owned planes go to local indices [1, nz_local+1).
-        buf[:, 1:self.nz_local + 1, :, :].copy_(f_global[:, z0:z1, :, :])
+        buf[:, 1 : self.nz_local + 1, :, :].copy_(f_global[:, z0:z1, :, :])
         # Pre-fill halos with copies of nearest owned planes so the first
         # kernel launch is safe even before the first halo exchange.
         buf[:, 0:1, :, :].copy_(buf[:, 1:2, :, :])
         buf[:, -1:, :, :].copy_(buf[:, -2:-1, :, :])
         return buf
 
-    def to_global(self, f_local: torch.Tensor, f_global: torch.Tensor | None = None) -> torch.Tensor:
+    def to_global(
+        self, f_local: torch.Tensor, f_global: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """Gather this rank's owned planes into the global tensor.
 
         If ``f_global`` is None, allocates a fresh one of shape
@@ -414,7 +423,8 @@ class DistributedTritonFusedSolver3D:
         if f_global is None:
             f_global = torch.empty(
                 (19, self.nz_global, self.ny, self.nx),
-                dtype=f_local.dtype, device=self.device,
+                dtype=f_local.dtype,
+                device=self.device,
             )
         elif f_global.shape != (19, self.nz_global, self.ny, self.nx):
             raise ValueError(
@@ -422,7 +432,7 @@ class DistributedTritonFusedSolver3D:
                 f"expected (19, {self.nz_global}, {self.ny}, {self.nx})"
             )
         z0, z1 = self.z_start_global, self.z_end_global
-        f_global[:, z0:z1, :, :].copy_(f_local[:, 1:self.nz_local + 1, :, :])
+        f_global[:, z0:z1, :, :].copy_(f_local[:, 1 : self.nz_local + 1, :, :])
         return f_global
 
     # ------------------------------------------------------------------
@@ -466,8 +476,7 @@ class DistributedTritonFusedSolver3D:
         # a different device.  The staging dtype is the *wire* dtype
         # (``halo_dtype``), which may legitimately differ from ``f.dtype``
         # — the gather/scatter below cast at the staging boundary.
-        if (self._send_left is None
-                or self._send_left.device != f.device):
+        if self._send_left is None or self._send_left.device != f.device:
             self._alloc_halo_staging(self._halo_dtype)
 
         # Gather ONLY the crossing directions of the two owned boundary
@@ -482,14 +491,12 @@ class DistributedTritonFusedSolver3D:
         #     z=nz_local cells pulling with cz=-1  => idx_dn lanes.
         plane_to_right = f[:, self.nz_local, :, :]
         if plane_to_right.dtype == self._halo_dtype:
-            torch.index_select(plane_to_right, 0, self._idx_up,
-                               out=self._send_right)
+            torch.index_select(plane_to_right, 0, self._idx_up, out=self._send_right)
         else:
             self._send_right.copy_(plane_to_right[self._idx_up])
         plane_to_left = f[:, 1, :, :]
         if plane_to_left.dtype == self._halo_dtype:
-            torch.index_select(plane_to_left, 0, self._idx_dn,
-                               out=self._send_left)
+            torch.index_select(plane_to_left, 0, self._idx_dn, out=self._send_left)
         else:
             self._send_left.copy_(plane_to_left[self._idx_dn])
 
@@ -541,8 +548,7 @@ class DistributedTritonFusedSolver3D:
                 recv_left = recv_left.to(target.dtype)
                 recv_right = recv_right.to(target.dtype)
             target[:, 0, :, :].index_copy_(0, self._idx_up, recv_left)
-            target[:, self.nz_with_halo - 1, :, :].index_copy_(
-                0, self._idx_dn, recv_right)
+            target[:, self.nz_with_halo - 1, :, :].index_copy_(0, self._idx_dn, recv_right)
             self._halo_target = None
 
     @staticmethod
@@ -583,8 +589,7 @@ class DistributedTritonFusedSolver3D:
         """
         if f_local.shape != self.local_shape:
             raise ValueError(
-                f"f_local shape {tuple(f_local.shape)} does not match "
-                f"expected {self.local_shape}"
+                f"f_local shape {tuple(f_local.shape)} does not match expected {self.local_shape}"
             )
         if self._buf is None or self._buf.dtype != f_local.dtype:
             self._buf = torch.empty_like(f_local)
@@ -597,9 +602,13 @@ class DistributedTritonFusedSolver3D:
         # 2. Run the fused collide+stream kernel on the full local
         #    buffer (nz = nz_local+2, including ghost planes).
         triton_fused(
-            f_local, self.tau, out=self._buf,
-            block_x=self.block_x, block_y=self.block_y,
-            num_warps=self.num_warps, num_stages=self.num_stages,
+            f_local,
+            self.tau,
+            out=self._buf,
+            block_x=self.block_x,
+            block_y=self.block_y,
+            num_warps=self.num_warps,
+            num_stages=self.num_stages,
         )
 
         # 3. Start async halo exchange on the post-step buffer so the

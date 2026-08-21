@@ -22,6 +22,7 @@
     python run.py --n 64 --steps 1000  # 单案例
     python run.py --scan               # H×U0 扫描 → scan_summary.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -39,15 +40,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmark
 
 from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
-from tensorlbm.solver import collide_bgk, stream  # noqa: E402
 from tensorlbm.d2q9 import equilibrium, macroscopic  # noqa: E402
+from tensorlbm.solver import collide_bgk, stream  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CANONICAL = dict(n=128, tau=0.8, u0=0.05, dtype="float32")
 
 
-def auto_steps(n: int, tau: float, u0: float, record_every: int,
-               cap: int = 10000, min_steps: int = 2000) -> int:
+def auto_steps(
+    n: int, tau: float, u0: float, record_every: int, cap: int = 10000, min_steps: int = 2000
+) -> int:
     """按速度振幅目标衰减 u_max/U0 → e^-3 自动确定步数（任务范围 2000–10000）。"""
     nu = (tau - 0.5) / 3.0
     k = 2.0 * math.pi / n
@@ -73,8 +75,8 @@ def run_case(
     L = float(n)
     k = 2.0 * math.pi / L
     nu = (tau - 0.5) / 3.0
-    gamma_vel_theory = nu * k * k          # 速度衰减率 νk²
-    gamma_e_theory = 2.0 * nu * k * k      # 动能衰减率 2νk²（E ∝ u²）
+    gamma_vel_theory = nu * k * k  # 速度衰减率 νk²
+    gamma_e_theory = 2.0 * nu * k * k  # 动能衰减率 2νk²（E ∝ u²）
 
     # ── 初始场：纯剪切波 u = U0·sin(ky)，v=0，周期域 x,y ∈ [0,N) ────────
     y, x = torch.meshgrid(
@@ -85,10 +87,10 @@ def run_case(
     ux0 = u0 * torch.sin(k * y)
     uy0 = torch.zeros_like(ux0)
     rho = torch.ones_like(ux0)
-    f = equilibrium(rho, ux0, uy0)        # feq 初值即可（瞬态 ~10τ 内消失）
+    f = equilibrium(rho, ux0, uy0)  # feq 初值即可（瞬态 ~10τ 内消失）
 
     mass0 = float(f.sum().item())
-    e0_theory = u0 * u0 / 4.0             # 0.5·mean(sin²) = 1/4
+    e0_theory = u0 * u0 / 4.0  # 0.5·mean(sin²) = 1/4
     umax0_meas = float(ux0.abs().max().item())  # y=H/4 处 sin 峰值恰在格点上
 
     # ── 主循环：stream（周期 wrap 内建）→ collide（BGK）──────────────────
@@ -137,20 +139,36 @@ def run_case(
     mass_end = float(f.sum().item())
 
     return {
-        "H": n, "tau": tau, "u0": u0, "nu": nu, "k": k,
-        "steps": steps, "record_every": record_every, "dtype": dtype, "device": device,
+        "H": n,
+        "tau": tau,
+        "u0": u0,
+        "nu": nu,
+        "k": k,
+        "steps": steps,
+        "record_every": record_every,
+        "dtype": dtype,
+        "device": device,
         "compile_mode": compile_mode,
-        "gamma_vel_theory": gamma_vel_theory, "gamma_vel_sim": gamma_vel_sim,
-        "err_vel_pct": err_vel_pct, "r2_vel": r2_u,
-        "gamma_vel_half1": gv_h1, "gamma_vel_half2": gv_h2,
-        "gamma_e_theory": gamma_e_theory, "gamma_e_sim": gamma_e_sim,
-        "err_e_pct": err_e_pct, "r2_e": r2_e,
-        "e0_theory": e0_theory, "e0_meas": energies[0],
-        "umax0_theory": u0, "umax0_meas": umax0_meas,
+        "gamma_vel_theory": gamma_vel_theory,
+        "gamma_vel_sim": gamma_vel_sim,
+        "err_vel_pct": err_vel_pct,
+        "r2_vel": r2_u,
+        "gamma_vel_half1": gv_h1,
+        "gamma_vel_half2": gv_h2,
+        "gamma_e_theory": gamma_e_theory,
+        "gamma_e_sim": gamma_e_sim,
+        "err_e_pct": err_e_pct,
+        "r2_e": r2_e,
+        "e0_theory": e0_theory,
+        "e0_meas": energies[0],
+        "umax0_theory": u0,
+        "umax0_meas": umax0_meas,
         "mass_drift_rel": (mass_end - mass0) / mass0,
         "n_samples": len(times),
         "wall_sec": wall,
-        "times": times, "energies": energies, "umaxs": umaxs,
+        "times": times,
+        "energies": energies,
+        "umaxs": umaxs,
     }
 
 
@@ -162,8 +180,11 @@ def save_case(res: dict, out_dir: str, tag: str = "") -> str:
         json.dump(keep, fh, indent=2, ensure_ascii=False)
     hist = np.column_stack([res["times"], res["energies"], res["umaxs"]])
     np.savetxt(
-        os.path.join(out_dir, f"energy_history_H{res['H']}{tag}.csv"), hist,
-        header="step,energy,umax", delimiter=",", comments="",
+        os.path.join(out_dir, f"energy_history_H{res['H']}{tag}.csv"),
+        hist,
+        header="step,energy,umax",
+        delimiter=",",
+        comments="",
     )
     return name
 
@@ -180,23 +201,27 @@ def judge(cases: list[dict], tol_pct: float = 3.0) -> dict:
     expo = all(r2 >= 0.999 for r2 in r2s)
     verified = bool(within and converged and expo and len(hs) >= 2)
     return {
-        "grids": hs, "err_vel_pct_per_grid": dict(zip(hs, errs)),
+        "grids": hs,
+        "err_vel_pct_per_grid": dict(zip(hs, errs)),
         "err_e_pct_per_grid": dict(zip(hs, errs_e)),
         "r2_vel_per_grid": dict(zip(hs, r2s)),
         "converged_monotone": converged,
-        "within_tol": within, "exponential_r2_ok": expo,
+        "within_tol": within,
+        "exponential_r2_ok": expo,
         "tol_pct": tol_pct,
         "verified": verified,
         "judgment": (
             "PASS: 两档网格 γ 偏差≤3% 且随 H 收敛 → 保存 verified/"
-            if verified else
-            "FAIL: 未达 ≤3% 或未收敛（见各案例 err_vel_pct 与收敛趋势）→ 不保存 verified/"
+            if verified
+            else "FAIL: 未达 ≤3% 或未收敛（见各案例 err_vel_pct 与收敛趋势）→ 不保存 verified/"
         ),
     }
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="2D decaying shear wave benchmark (viscous dissipation)")
+    ap = argparse.ArgumentParser(
+        description="2D decaying shear wave benchmark (viscous dissipation)"
+    )
     ap.add_argument("--n", type=int, default=0, help="网格 H（0=完整 benchmark 的 64/128 两档）")
     ap.add_argument("--tau", type=float, default=CANONICAL["tau"])
     ap.add_argument("--u0", type=float, default=CANONICAL["u0"])
@@ -217,12 +242,25 @@ def main() -> None:
         for n in (64, 128):
             for u0 in (0.05, 0.10):
                 steps = args.steps or auto_steps(n, args.tau, u0, args.record_every)
-                res = run_case(n, args.tau, u0, steps, record_every=args.record_every,
-                               dtype=args.dtype, device=args.device, threads=args.threads,
-                               compile_mode=compile_mode)
-                cases.append({k: v for k, v in res.items() if k not in ("times", "energies", "umaxs")})
-                print(f"H={n} U0={u0}: err_vel={res['err_vel_pct']:+.4f}%  "
-                      f"err_E={res['err_e_pct']:+.4f}%  R2={res['r2_vel']:.6f}", flush=True)
+                res = run_case(
+                    n,
+                    args.tau,
+                    u0,
+                    steps,
+                    record_every=args.record_every,
+                    dtype=args.dtype,
+                    device=args.device,
+                    threads=args.threads,
+                    compile_mode=compile_mode,
+                )
+                cases.append(
+                    {k: v for k, v in res.items() if k not in ("times", "energies", "umaxs")}
+                )
+                print(
+                    f"H={n} U0={u0}: err_vel={res['err_vel_pct']:+.4f}%  "
+                    f"err_E={res['err_e_pct']:+.4f}%  R2={res['r2_vel']:.6f}",
+                    flush=True,
+                )
         with open(os.path.join(args.out, "scan_summary.json"), "w") as fh:
             json.dump(cases, fh, indent=2, ensure_ascii=False)
         print(f"\nscan done -> {os.path.join(args.out, 'scan_summary.json')}")
@@ -236,46 +274,96 @@ def main() -> None:
             steps = args.steps or auto_steps(n, args.tau, args.u0, args.record_every)
             steps_list.append(steps)
             print(f"=== H={n}  tau={args.tau}  U0={args.u0}  steps={steps} ===", flush=True)
-            res = run_case(n, args.tau, args.u0, steps, record_every=args.record_every,
-                           dtype=args.dtype, device=args.device, threads=args.threads,
-                           compile_mode=compile_mode)
+            res = run_case(
+                n,
+                args.tau,
+                args.u0,
+                steps,
+                record_every=args.record_every,
+                dtype=args.dtype,
+                device=args.device,
+                threads=args.threads,
+                compile_mode=compile_mode,
+            )
             case_files.append(save_case(res, args.out))
             results.append(res)
-            print(f"  gamma_vel_sim={res['gamma_vel_sim']:.6e} theory={res['gamma_vel_theory']:.6e} "
-                  f"err_vel={res['err_vel_pct']:+.4f}%  err_E={res['err_e_pct']:+.4f}%  "
-                  f"R2={res['r2_vel']:.6f}  wall={res['wall_sec']:.1f}s", flush=True)
+            print(
+                f"  gamma_vel_sim={res['gamma_vel_sim']:.6e} theory={res['gamma_vel_theory']:.6e} "
+                f"err_vel={res['err_vel_pct']:+.4f}%  err_E={res['err_e_pct']:+.4f}%  "
+                f"R2={res['r2_vel']:.6f}  wall={res['wall_sec']:.1f}s",
+                flush=True,
+            )
         verdict = judge(results)
         out = {
             "benchmark": "shear_wave_decay",
             "description": "2D decaying shear wave: u=U0·sin(2πy/H)·e^{-νk²t}, viscous dissipation check",
-            "lattice": "D2Q9", "collision": "bgk", "boundary": "periodic (stream mod wrap, 库内建)",
-            "extrap": "none", "common_modules": ["solver.collide_bgk", "solver.stream", "d2q9.equilibrium", "d2q9.macroscopic"],
+            "lattice": "D2Q9",
+            "collision": "bgk",
+            "boundary": "periodic (stream mod wrap, 库内建)",
+            "extrap": "none",
+            "common_modules": [
+                "solver.collide_bgk",
+                "solver.stream",
+                "d2q9.equilibrium",
+                "d2q9.macroscopic",
+            ],
             "formula": "gamma_vel_theory = nu·k², nu=(tau-1/2)/3, k=2π/H; gamma_e_theory = 2·gamma_vel_theory",
-            "cases": [{k: v for k, v in r.items() if k not in ("times", "energies", "umaxs")} for r in results],
+            "cases": [
+                {k: v for k, v in r.items() if k not in ("times", "energies", "umaxs")}
+                for r in results
+            ],
             "case_files": case_files,
             "convergence": verdict,
         }
         with open(os.path.join(args.out, "result.json"), "w") as fh:
             json.dump(out, fh, indent=2, ensure_ascii=False)
         print("\n=== 判定 ===")
-        print(f"  err_vel: " + ", ".join(f"H{h}={e:+.4f}%" for h, e in zip(verdict["grids"], verdict["err_vel_pct_per_grid"].values())))
-        print(f"  err_E:   " + ", ".join(f"H{h}={e:+.4f}%" for h, e in zip(verdict["grids"], verdict["err_e_pct_per_grid"].values())))
-        print(f"  converged_monotone={verdict['converged_monotone']}  within_tol={verdict['within_tol']}  r2_ok={verdict['exponential_r2_ok']}")
+        print(
+            "  err_vel: "
+            + ", ".join(
+                f"H{h}={e:+.4f}%"
+                for h, e in zip(verdict["grids"], verdict["err_vel_pct_per_grid"].values())
+            )
+        )
+        print(
+            "  err_E:   "
+            + ", ".join(
+                f"H{h}={e:+.4f}%"
+                for h, e in zip(verdict["grids"], verdict["err_e_pct_per_grid"].values())
+            )
+        )
+        print(
+            f"  converged_monotone={verdict['converged_monotone']}  within_tol={verdict['within_tol']}  r2_ok={verdict['exponential_r2_ok']}"
+        )
         print(f"  {verdict['judgment']}")
         print(f"  -> {os.path.join(args.out, 'result.json')}")
         return
 
     # ── 单案例模式 ──────────────────────────────────────────────────────
     steps = args.steps or auto_steps(args.n, args.tau, args.u0, args.record_every)
-    res = run_case(args.n, args.tau, args.u0, steps, record_every=args.record_every,
-                   dtype=args.dtype, device=args.device, threads=args.threads,
-                   compile_mode=compile_mode)
+    res = run_case(
+        args.n,
+        args.tau,
+        args.u0,
+        steps,
+        record_every=args.record_every,
+        dtype=args.dtype,
+        device=args.device,
+        threads=args.threads,
+        compile_mode=compile_mode,
+    )
     save_case(res, args.out)
     print(f"H={args.n} tau={args.tau} U0={args.u0} steps={steps} dtype={args.dtype}")
     print(f"  nu={res['nu']:.6f}  k={res['k']:.6f}")
-    print(f"  gamma_vel_theory={res['gamma_vel_theory']:.6e}  gamma_vel_sim={res['gamma_vel_sim']:.6e}  err_vel={res['err_vel_pct']:+.4f}%")
-    print(f"  gamma_e_theory={res['gamma_e_theory']:.6e}  gamma_e_sim={res['gamma_e_sim']:.6e}  err_E={res['err_e_pct']:+.4f}%")
-    print(f"  R2_vel={res['r2_vel']:.6f}  mass_drift_rel={res['mass_drift_rel']:.2e}  wall={res['wall_sec']:.1f}s")
+    print(
+        f"  gamma_vel_theory={res['gamma_vel_theory']:.6e}  gamma_vel_sim={res['gamma_vel_sim']:.6e}  err_vel={res['err_vel_pct']:+.4f}%"
+    )
+    print(
+        f"  gamma_e_theory={res['gamma_e_theory']:.6e}  gamma_e_sim={res['gamma_e_sim']:.6e}  err_E={res['err_e_pct']:+.4f}%"
+    )
+    print(
+        f"  R2_vel={res['r2_vel']:.6f}  mass_drift_rel={res['mass_drift_rel']:.2e}  wall={res['wall_sec']:.1f}s"
+    )
     print(f"  -> {os.path.join(args.out, f'case_H{args.n}.json')}")
 
 

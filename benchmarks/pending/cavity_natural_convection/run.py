@@ -20,10 +20,10 @@ Nu 口径：壁面热通量积分 Nu = −∂T/∂x·L/ΔT 沿整壁平均——
 - halfway：一阶差分取在 half-way 壁面位置（与 ABB 几何一致）
 判定：真实模拟（无外推），Nu 相对 2.243 误差 ≤3%，且 ≥2 档网格收敛。
 """
+
 import argparse
 import json
 import sys
-import time
 from pathlib import Path
 
 import torch
@@ -37,7 +37,12 @@ NU_DE_VAHL_DAVIS_1E4 = 2.243  # de Vahl Davis 1983, Ra=1e4, Pr=0.71
 
 def run_case(nx, ra, pr, tau, steps, device):
     res = simulate_natural_convection(
-        nx=nx, ra=ra, pr=pr, tau=tau, steps=steps, device=device,
+        nx=nx,
+        ra=ra,
+        pr=pr,
+        tau=tau,
+        steps=steps,
+        device=device,
         report_every=10000,
     )
     nu = res["nu_grad2"]
@@ -48,16 +53,29 @@ def run_case(nx, ra, pr, tau, steps, device):
         f"Nu_grad2={nu:.4f} Nu_grad1={res['nu_grad1']:.4f} "
         f"Nu_halfway={res['nu_halfway']:.4f} "
         f"Nu_left={res['nu_left_grad2']:.4f} Nu_right={res['nu_right_grad2']:.4f} "
-        f"err={err_pct:.2f}% u_max={res['u_max']:.4f}", flush=True
+        f"err={err_pct:.2f}% u_max={res['u_max']:.4f}",
+        flush=True,
     )
     return {
-        "nx": nx, "ra": ra, "pr": pr, "tau": tau, "tau_T": round(res["tau_T"], 6),
-        "steps": steps, "elapsed_s": res["elapsed_s"],
-        "last_resid_u": res["last_resid_u"], "last_resid_T": res["last_resid_T"],
-        "nu": nu, "nu_grad1": res["nu_grad1"], "nu_halfway": res["nu_halfway"],
-        "nu_left": res["nu_left_grad2"], "nu_right": res["nu_right_grad2"],
-        "nu_ref": NU_DE_VAHL_DAVIS_1E4, "err_pct": round(err_pct, 3),
-        "u_max": res["u_max"], "T_min": res["T_min"], "T_max": res["T_max"],
+        "nx": nx,
+        "ra": ra,
+        "pr": pr,
+        "tau": tau,
+        "tau_T": round(res["tau_T"], 6),
+        "steps": steps,
+        "elapsed_s": res["elapsed_s"],
+        "last_resid_u": res["last_resid_u"],
+        "last_resid_T": res["last_resid_T"],
+        "nu": nu,
+        "nu_grad1": res["nu_grad1"],
+        "nu_halfway": res["nu_halfway"],
+        "nu_left": res["nu_left_grad2"],
+        "nu_right": res["nu_right_grad2"],
+        "nu_ref": NU_DE_VAHL_DAVIS_1E4,
+        "err_pct": round(err_pct, 3),
+        "u_max": res["u_max"],
+        "T_min": res["T_min"],
+        "T_max": res["T_max"],
         "nu_history": res["nu_history"],
     }
 
@@ -87,7 +105,8 @@ def main():
     err_decreased = devs[-1] < devs[0]
     # 网格收敛（Richardson 意义上的稳定）：两档 Nu 相对差 < 5%
     grid_stable = (
-        100.0 * abs(grids[str(args.nx[-1])]["nu"] - grids[str(args.nx[0])]["nu"])
+        100.0
+        * abs(grids[str(args.nx[-1])]["nu"] - grids[str(args.nx[0])]["nu"])
         / grids[str(args.nx[0])]["nu"]
         < 5.0
     )
@@ -95,8 +114,11 @@ def main():
         "err_pct": devs,
         "err_decreased": err_decreased,
         "grid_stable_pct": round(
-            100.0 * abs(grids[str(args.nx[-1])]["nu"] - grids[str(args.nx[0])]["nu"])
-            / grids[str(args.nx[0])]["nu"], 2),
+            100.0
+            * abs(grids[str(args.nx[-1])]["nu"] - grids[str(args.nx[0])]["nu"])
+            / grids[str(args.nx[0])]["nu"],
+            2,
+        ),
         "pass": all(d <= 3.0 for d in devs) and err_decreased and grid_stable,
     }
     results["convergence"] = verdict

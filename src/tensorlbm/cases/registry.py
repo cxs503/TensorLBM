@@ -54,8 +54,7 @@ def register_case(
         if key in case_registry:
             existing = case_registry[key].__name__
             raise ValueError(
-                f"case name {key!r} is already registered by {existing}; "
-                "case names must be unique"
+                f"case name {key!r} is already registered by {existing}; case names must be unique"
             )
         case_registry[key] = cls  # type: ignore[assignment]
         return cls

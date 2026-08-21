@@ -21,12 +21,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import torch
-from tensorlbm.d3q27 import equilibrium27, correct_mass27, stream27
+
+from tensorlbm.boundaries_d3q27 import far_field_bc_27
 from tensorlbm.cumulant_smag import collide_cumulant_smag_d3q27
+from tensorlbm.d3q27 import correct_mass27, equilibrium27, stream27
 from tensorlbm.suboff_cad import SuboffHullType, build_suboff_mask
 from tensorlbm.suboff_resistance import _voxel_wetted_area
 from tensorlbm.wall_model import wall_function_d3q27
-from tensorlbm.boundaries_d3q27 import far_field_bc_27
 
 
 def run(

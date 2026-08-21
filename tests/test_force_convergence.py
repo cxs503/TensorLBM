@@ -23,11 +23,7 @@ def test_reference_crossing_does_not_hide_oscillation() -> None:
 
 
 def test_resolved_periodic_force_can_converge_in_mean() -> None:
-    samples = [
-        value
-        for block in range(100)
-        for value in [8.0 if block % 2 == 0 else 12.0] * 10
-    ]
+    samples = [value for block in range(100) for value in [8.0 if block % 2 == 0 else 12.0] * 10]
     report = assess_force_stationarity(samples, block_size=10)
 
     assert report.relative_range_pct == pytest.approx(40.0)

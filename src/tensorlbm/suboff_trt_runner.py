@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -34,20 +34,20 @@ import torch
 from .advanced_collision_contract import collide_advanced_3d
 from .d3q27 import (
     OPPOSITE,
+    correct_mass27,
     equilibrium27,
     macroscopic27,
     stream27,
-    correct_mass27,
 )
 from .obstacles import compute_obstacle_forces_27
 from .suboff_cad import SuboffHullType, build_suboff_mask
 from .suboff_resistance import _voxel_wetted_area
 from .turbulence import (
     _neq_stress_norm_27,
-    _smagorinsky_tau,
     _nu_t_to_tau_eff,
-    _wale_nu_t_3d,
+    _smagorinsky_tau,
     _vreman_nu_t_3d,
+    _wale_nu_t_3d,
 )
 
 __all__ = [

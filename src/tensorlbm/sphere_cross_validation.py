@@ -27,7 +27,7 @@ import json
 import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import torch
 
@@ -45,11 +45,11 @@ from .boundaries_d3q27 import (
 )
 from .d3q19 import equilibrium3d, macroscopic3d
 from .d3q27 import equilibrium27, macroscopic27, stream27
-from .obstacles import compute_obstacle_forces_27, compute_obstacle_forces_3d
+from .obstacles import compute_obstacle_forces_3d, compute_obstacle_forces_27
 from .solver3d import stream3d
 from .turbulence import (
-    _neq_stress_norm_27,
     _neq_stress_norm_3d,
+    _neq_stress_norm_27,
     _nu_t_to_tau_eff,
     _smagorinsky_tau,
     _wale_nu_t_3d,

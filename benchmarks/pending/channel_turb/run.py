@@ -21,6 +21,7 @@ run_turbulent_channel（D2Q9 + Smagorinsky LES + 体积力驱动 + 上下壁
   run.py analyze <run_dir> [--out result.json] [--wall-offset 0.5]
   run.py scan --out-root <dir> --steps 100000 --avg-start 60000 [--grids "128x32 256x64"]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -164,7 +165,11 @@ def analyze_run(
         },
         "u_tau_target": u_tau,
         "u_tau_force_balance": u_tau_meas,
-        "comparison_window": {"y_plus_min": y_plus_min, "y_plus_max": y_plus_max, "n_points": n_pts},
+        "comparison_window": {
+            "y_plus_min": y_plus_min,
+            "y_plus_max": y_plus_max,
+            "n_points": n_pts,
+        },
         "errors": {
             "rms_vs_dns": rms_dns,
             "rms_vs_loglaw": rms_log,
@@ -251,8 +256,10 @@ def cmd_scan(args: argparse.Namespace) -> int:
         res["run_dir"] = str(run_dir)
         res["elapsed_s"] = round(elapsed, 1)
         results.append(res)
-        print(f"[{grid}] rms_vs_dns={res.get('errors', {}).get('rms_vs_dns')} "
-              f"rms_vs_loglaw={res.get('errors', {}).get('rms_vs_loglaw')} steady={res.get('steady_state')}")
+        print(
+            f"[{grid}] rms_vs_dns={res.get('errors', {}).get('rms_vs_dns')} "
+            f"rms_vs_loglaw={res.get('errors', {}).get('rms_vs_loglaw')} steady={res.get('steady_state')}"
+        )
 
     v = verdict(results)
     summary = {

@@ -15,7 +15,6 @@ Covers:
 
 from __future__ import annotations
 
-import math
 import sys
 from pathlib import Path
 
@@ -27,7 +26,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from tensorlbm.d2q9 import OPPOSITE, equilibrium, macroscopic
 from tensorlbm.powerlaw import (
-    apply_body_force_shift,
     central_difference,
     collide_powerlaw_bgk,
     collide_powerlaw_bgk_forced,
@@ -78,8 +76,9 @@ def _run_powerlaw_channel(
     hist = []
     steady = False
     for step in range(1, n_steps + 1):
-        f = collide_powerlaw_bgk_forced(f, fx, K, n, nu_min=nu_min, nu_max=nu_max,
-                                        tau_field=tau_eff)
+        f = collide_powerlaw_bgk_forced(
+            f, fx, K, n, nu_min=nu_min, nu_max=nu_max, tau_field=tau_eff
+        )
         f = torch.where(wall.unsqueeze(0), f_pre[opp], f)  # pre-streaming BB
         f = stream(f)
         rho, ux, uy = macroscopic(f)
@@ -102,10 +101,10 @@ def _run_powerlaw_channel(
     _, ux_f, _ = macroscopic(f)
     if steady:
         profs = []
-        rho0_avg = ux_f
         for _ in range(100):
-            f = collide_powerlaw_bgk_forced(f, fx, K, n, nu_min=nu_min, nu_max=nu_max,
-                                            tau_field=tau_eff)
+            f = collide_powerlaw_bgk_forced(
+                f, fx, K, n, nu_min=nu_min, nu_max=nu_max, tau_field=tau_eff
+            )
             f = torch.where(wall.unsqueeze(0), f_pre[opp], f)
             f = stream(f)
             _, ux_a, _ = macroscopic(f)
@@ -215,8 +214,7 @@ def test_powerlaw_viscosity_monotonicity():
 
 def test_powerlaw_viscosity_clamping():
     gamma = torch.tensor([1e-12, 1.0])
-    nu = powerlaw_viscosity(gamma, consistency_index=1.0, flow_index=0.5,
-                            nu_min=0.01, nu_max=0.3)
+    nu = powerlaw_viscosity(gamma, consistency_index=1.0, flow_index=0.5, nu_min=0.01, nu_max=0.3)
     assert float(nu.min().item()) >= 0.01 - 1e-6
     assert float(nu.max().item()) <= 0.3 + 1e-6
 
@@ -273,12 +271,12 @@ def test_collide_powerlaw_bgk_mass_and_shape():
 def test_collide_powerlaw_bgk_tau_field_equivalent():
     torch.manual_seed(3)
     ny, nx = 12, 10
-    f = equilibrium(torch.ones(ny, nx), 0.02 * torch.rand(ny, nx),
-                    0.01 * torch.rand(ny, nx)) + 0.001 * torch.randn(9, ny, nx)
+    f = equilibrium(
+        torch.ones(ny, nx), 0.02 * torch.rand(ny, nx), 0.01 * torch.rand(ny, nx)
+    ) + 0.001 * torch.randn(9, ny, nx)
     K, n = 0.004, 0.6
     rho, ux, uy = macroscopic(f)
-    tau_eff = tau_from_viscosity(powerlaw_viscosity(
-        strain_rate_shear_rate_2d(ux, uy), K, n))
+    tau_eff = tau_from_viscosity(powerlaw_viscosity(strain_rate_shear_rate_2d(ux, uy), K, n))
     f_internal = collide_powerlaw_bgk(f, K, n)
     f_external = collide_powerlaw_bgk(f, K, n, tau_field=tau_eff)
     assert torch.allclose(f_internal, f_external, atol=1e-6)
@@ -298,7 +296,6 @@ def test_powerlaw_channel_newtonian_regression():
     K = nu_w * gamma_w ** (1.0 - n)
     fx = nu_w * gamma_w / Hh
     ux, _ = _run_powerlaw_channel(H, n, K, fx, n_steps=40000)
-    nu = K
     u_ana, _ = _powerlaw_analytic_profile(H, 1.0, U_max)
     u_num = ux[1:-1, H // 2].cpu().numpy().astype(np.float64)
     l2 = float(np.linalg.norm(u_num - u_ana) / np.linalg.norm(u_ana))

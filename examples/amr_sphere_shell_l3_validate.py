@@ -28,13 +28,13 @@ Coordinate conventions (mirroring examples/amr_sphere_drag_validate.py):
   * BFL q-fields are computed on each level's with-ghost tensor using that
     level's fine centre (same convention as the single-level reference).
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import math
 import time
-from dataclasses import asdict
 from pathlib import Path
 
 import torch
@@ -45,8 +45,6 @@ from tensorlbm.amr_checkpoint import (
     save_amr_checkpoint,
 )
 from tensorlbm.amr_shell_planning import plan_body_shell_box
-from tensorlbm.cascaded_collision import collide_cascaded_d3q19
-from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.d3q27 import equilibrium27
 from tensorlbm.evidence_io import common_schema_fields, write_evidence
@@ -85,7 +83,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--nx", type=int, default=160)
     p.add_argument("--ny", type=int, default=112)
     p.add_argument("--nz", type=int, default=112)
-    p.add_argument("--radius", type=float, default=8.0)      # coarse-grid sphere radius
+    p.add_argument("--radius", type=float, default=8.0)  # coarse-grid sphere radius
     p.add_argument("--reynolds", type=float, default=100.0)
     p.add_argument(
         "--resolved-reynolds",
@@ -111,10 +109,10 @@ def parser() -> argparse.ArgumentParser:
         choices=("injection", "trilinear"),
         default="injection",
     )
-    p.add_argument("--wall-margin", type=int, default=16)    # L1 block margin
-    p.add_argument("--wake-cells", type=int, default=45)     # L1 wake extension
-    p.add_argument("--l2-margin", type=int, default=8)       # L2 shell thickness
-    p.add_argument("--shell-margin", type=int, default=8)    # L1 body-fitted shell thickness
+    p.add_argument("--wall-margin", type=int, default=16)  # L1 block margin
+    p.add_argument("--wake-cells", type=int, default=45)  # L1 wake extension
+    p.add_argument("--l2-margin", type=int, default=8)  # L2 shell thickness
+    p.add_argument("--shell-margin", type=int, default=8)  # L1 body-fitted shell thickness
     p.add_argument(
         "--collision",
         choices=("cumulant", "cascaded"),
@@ -135,13 +133,13 @@ def parser() -> argparse.ArgumentParser:
         choices=("D3Q19", "D3Q27"),
         default="D3Q19",
         help="lattice stencil (D3Q19 keeps the legacy path; D3Q27 uses the "
-             "D3Q27 equilibrium/collision/stream/BFL kernels)",
+        "D3Q27 equilibrium/collision/stream/BFL kernels)",
     )
     p.add_argument("--checkpoint", default=None, help="checkpoint .ckpt path")
-    p.add_argument("--checkpoint-interval", type=int, default=0,
-                   help="save every N root steps (0=off)")
-    p.add_argument("--resume", action="store_true",
-                   help="resume from --checkpoint")
+    p.add_argument(
+        "--checkpoint-interval", type=int, default=0, help="save every N root steps (0=off)"
+    )
+    p.add_argument("--resume", action="store_true", help="resume from --checkpoint")
     p.add_argument("--output", required=True)
     return p
 
@@ -160,7 +158,14 @@ def main() -> None:
     # level 0 (root) geometry
     # ------------------------------------------------------------------
     solid_coarse, solid_coarse_q = build_sphere_geometry(
-        args.nx, args.ny, args.nz, cx, cy, cz, args.radius, device,
+        args.nx,
+        args.ny,
+        args.nz,
+        cx,
+        cy,
+        cz,
+        args.radius,
+        device,
         lattice=args.lattice,
     )
 
@@ -169,7 +174,10 @@ def main() -> None:
     # ---- fine cells far from the body while keeping the sphere surface and
     # ---- wake refined.
     plan = plan_body_shell_box(
-        solid_coarse, args.shell_margin, args.wake_cells, pad=args.wall_margin,
+        solid_coarse,
+        args.shell_margin,
+        args.wake_cells,
+        pad=args.wall_margin,
     )
     box1 = plan.box
     x0, x1, y0, y1, z0, z1 = box1.x0, box1.x1, box1.y0, box1.y1, box1.z0, box1.z1
@@ -204,11 +212,20 @@ def main() -> None:
     # level 1 (interface 0): L1 block, sphere at R*2
     # ------------------------------------------------------------------
     s1, fc1, radius1, l1 = build_fine_block_geometry(
-        box1, (cx, cy, cz), args.radius, RATIO, GHOST, device1,
+        box1,
+        (cx, cy, cz),
+        args.radius,
+        RATIO,
+        GHOST,
+        device1,
         lattice=args.lattice,
     )
     l1_solid, l1_solid_g, solid_q1, bfl_mask1, bfl_q1 = (
-        l1.solid, l1.solid_g, l1.solid_q, l1.bfl_mask, l1.bfl_q,
+        l1.solid,
+        l1.solid_g,
+        l1.solid_q,
+        l1.bfl_mask,
+        l1.bfl_q,
     )
 
     # ------------------------------------------------------------------
@@ -220,15 +237,30 @@ def main() -> None:
     c1_w = tuple(value + GHOST for value in fc1)
     s1g = l1_solid_g.shape  # (nz, ny, nx) of the L1 with-ghost tensor
     box2, s2, fc2, l2 = build_l2_shell_geometry(
-        c1_w, s1g, radius1, args.l2_margin, RATIO, GHOST, device2,
+        c1_w,
+        s1g,
+        radius1,
+        args.l2_margin,
+        RATIO,
+        GHOST,
+        device2,
         lattice=args.lattice,
     )
     x0_2, x1_2, y0_2, y1_2, z0_2, z1_2 = (
-        box2.x0, box2.x1, box2.y0, box2.y1, box2.z0, box2.z1,
+        box2.x0,
+        box2.x1,
+        box2.y0,
+        box2.y1,
+        box2.z0,
+        box2.z1,
     )
     radius2 = args.radius * RATIO * RATIO
     l2_solid, l2_solid_g, solid_q2, bfl_mask2, bfl_q2 = (
-        l2.solid, l2.solid_g, l2.solid_q, l2.bfl_mask, l2.bfl_q,
+        l2.solid,
+        l2.solid_g,
+        l2.solid_q,
+        l2.bfl_mask,
+        l2.bfl_q,
     )
 
     # ------------------------------------------------------------------
@@ -238,30 +270,51 @@ def main() -> None:
     c2_w = tuple(value + GHOST for value in fc2)
     s2g = l2_solid_g.shape  # (nz, ny, nx) of the L2 with-ghost tensor
     box3, s3, fc3, l3 = build_l2_shell_geometry(
-        c2_w, s2g, radius2, args.l2_margin, RATIO, GHOST, device3,
+        c2_w,
+        s2g,
+        radius2,
+        args.l2_margin,
+        RATIO,
+        GHOST,
+        device3,
         lattice=args.lattice,
     )
     x0_3, x1_3, y0_3, y1_3, z0_3, z1_3 = (
-        box3.x0, box3.x1, box3.y0, box3.y1, box3.z0, box3.z1,
+        box3.x0,
+        box3.x1,
+        box3.y0,
+        box3.y1,
+        box3.z0,
+        box3.z1,
     )
     radius3 = args.radius * RATIO * RATIO * RATIO
     l3_solid, l3_solid_g, solid_q3, bfl_mask3, bfl_q3 = (
-        l3.solid, l3.solid_g, l3.solid_q, l3.bfl_mask, l3.bfl_q,
+        l3.solid,
+        l3.solid_g,
+        l3.solid_q,
+        l3.bfl_mask,
+        l3.bfl_q,
     )
 
     # ------------------------------------------------------------------
     # tau chain: interface i+1's tau_coarse must equal interface i's tau_fine
     # ------------------------------------------------------------------
     config1 = StaticBlockAMRConfig(
-        box1, tau_coarse=tau_coarse, reflux=True,
+        box1,
+        tau_coarse=tau_coarse,
+        reflux=True,
         ghost_interpolation=args.ghost_interpolation,
     )
     config2 = StaticBlockAMRConfig(
-        box2, tau_coarse=config1.tau_fine, reflux=True,
+        box2,
+        tau_coarse=config1.tau_fine,
+        reflux=True,
         ghost_interpolation=args.ghost_interpolation,
     )
     config3 = StaticBlockAMRConfig(
-        box3, tau_coarse=config2.tau_fine, reflux=True,
+        box3,
+        tau_coarse=config2.tau_fine,
+        reflux=True,
         ghost_interpolation=args.ghost_interpolation,
     )
     tau_fine3 = config3.tau_fine
@@ -278,12 +331,18 @@ def main() -> None:
     # control volume on the finest level (L3 with-ghost tensor)
     # ------------------------------------------------------------------
     cv = build_control_volume(
-        l3_solid_g.shape, fc3, radius3, args.cv_margin, device3,
+        l3_solid_g.shape,
+        fc3,
+        radius3,
+        args.cv_margin,
+        device3,
     )
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sigma = build_sponge_sigma_3d(
-        shape, width=args.sponge_width,
-        max_strength=args.sponge_strength, device=device,
+        shape,
+        width=args.sponge_width,
+        max_strength=args.sponge_strength,
+        device=device,
         faces=sponge_faces,
     )
     dynamic_area = 0.5 * args.lattice_speed**2 * math.pi * radius3**2
@@ -306,7 +365,10 @@ def main() -> None:
     started = time.time()
 
     def advance(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         nonlocal max_reflux_residual
         level_index = level_index_of(f, level_shapes)
@@ -317,34 +379,56 @@ def main() -> None:
         if level_index == 0:
             # root: coarse sphere frozen, far-field + sponge (patch-free region)
             out, post_collision, _collided = root_advance(
-                f, tau, solid_coarse_q, sigma, args.lattice_speed,
-                collision=args.collision, lattice=args.lattice,
-                les_model=args.les_model, cs_smag=args.cs_smag,
+                f,
+                tau,
+                solid_coarse_q,
+                sigma,
+                args.lattice_speed,
+                collision=args.collision,
+                lattice=args.lattice,
+                les_model=args.les_model,
+                cs_smag=args.cs_smag,
                 cw_wale=args.cw_wale,
             )
             return AMRAdvanceResult(out, post_collision)
 
         if level_index == 1:
             solid_q, bfl_mask, bfl_q, solid_g = (
-                solid_q1, bfl_mask1, bfl_q1, l1_solid_g,
+                solid_q1,
+                bfl_mask1,
+                bfl_q1,
+                l1_solid_g,
             )
         elif level_index == 2:
             solid_q, bfl_mask, bfl_q, solid_g = (
-                solid_q2, bfl_mask2, bfl_q2, l2_solid_g,
+                solid_q2,
+                bfl_mask2,
+                bfl_q2,
+                l2_solid_g,
             )
         else:
             solid_q, bfl_mask, bfl_q, solid_g = (
-                solid_q3, bfl_mask3, bfl_q3, l3_solid_g,
+                solid_q3,
+                bfl_mask3,
+                bfl_q3,
+                l3_solid_g,
             )
         out, post_collision, cv_force = fine_sphere_advance(
-            f, tau,
-            solid_q=solid_q, bfl_mask=bfl_mask, bfl_q=bfl_q,
-            step=current_step, ramp_steps=args.ramp_steps,
+            f,
+            tau,
+            solid_q=solid_q,
+            bfl_mask=bfl_mask,
+            bfl_q=bfl_q,
+            step=current_step,
+            ramp_steps=args.ramp_steps,
             sample_cv=(level_index == 3 and substep == 0),
-            cv=cv, solid_g=solid_g,
-            collision=args.collision, lattice=args.lattice,
-                les_model=args.les_model, cs_smag=args.cs_smag,
-                cw_wale=args.cw_wale,
+            cv=cv,
+            solid_g=solid_g,
+            collision=args.collision,
+            lattice=args.lattice,
+            les_model=args.les_model,
+            cs_smag=args.cs_smag,
+            cw_wale=args.cw_wale,
         )
         if level_index == 3 and substep == 0:
             # one control-volume sample per root step, on the finest level
@@ -355,24 +439,34 @@ def main() -> None:
         return AMRAdvanceResult(out, post_collision)
 
     checkpoint_signature = build_checkpoint_signature(
-        shape=shape, radius=args.radius, reynolds=args.reynolds,
-        lattice_speed=args.lattice_speed, steps=args.steps,
-        warmup_steps=args.warmup_steps, ramp_steps=args.ramp_steps,
-        shell_margin=args.shell_margin, wake_cells=args.wake_cells,
+        shape=shape,
+        radius=args.radius,
+        reynolds=args.reynolds,
+        lattice_speed=args.lattice_speed,
+        steps=args.steps,
+        warmup_steps=args.warmup_steps,
+        ramp_steps=args.ramp_steps,
+        shell_margin=args.shell_margin,
+        wake_cells=args.wake_cells,
         l2_margin=args.l2_margin,
         ghost_interpolation=args.ghost_interpolation,
-        collision=args.collision, lattice=args.lattice,
-        les_model=args.les_model, cs_smag=args.cs_smag,
+        collision=args.collision,
+        lattice=args.lattice,
+        les_model=args.les_model,
+        cs_smag=args.cs_smag,
         cw_wale=args.cw_wale,
         tau_chain=[tau_coarse, config1.tau_fine, config2.tau_fine, tau_fine3],
-        ratio=RATIO, ghost=GHOST,
+        ratio=RATIO,
+        ghost=GHOST,
     )
     checkpoint_path = Path(args.checkpoint) if args.checkpoint else None
     start_step = 0
     if args.resume:
         assert checkpoint_path is not None, "--resume requires --checkpoint"
         start_step, force_samples = resume_amr_checkpoint(
-            amr, configuration=checkpoint_signature, path=checkpoint_path,
+            amr,
+            configuration=checkpoint_signature,
+            path=checkpoint_path,
         )
         print(f"resumed from checkpoint at step {start_step}", flush=True)
 
@@ -389,17 +483,17 @@ def main() -> None:
             and current_step % args.checkpoint_interval == 0
         ):
             save_amr_checkpoint(
-                amr, step=current_step, force_samples=force_samples,
-                configuration=checkpoint_signature, path=checkpoint_path,
+                amr,
+                step=current_step,
+                force_samples=force_samples,
+                configuration=checkpoint_signature,
+                path=checkpoint_path,
             )
             print(f"checkpoint saved at step {current_step}", flush=True)
         if current_step % args.report_interval == 0:
-            if not all(
-                bool(torch.isfinite(level).all())
-                for level in amr.level_populations
-            ):
+            if not all(bool(torch.isfinite(level).all()) for level in amr.level_populations):
                 raise FloatingPointError(f"non-finite populations at step {current_step}")
-            recent = force_samples[-min(len(force_samples), args.report_interval):]
+            recent = force_samples[-min(len(force_samples), args.report_interval) :]
             recent_cd = sum(recent) / len(recent) / dynamic_area if recent else math.nan
             elapsed = time.time() - started
             print(
@@ -414,7 +508,10 @@ def main() -> None:
         raise FloatingPointError("non-finite populations at end of run")
 
     summary = summarize_force_history(
-        force_samples, dynamic_area, args.reynolds, args.statistics_window_steps,
+        force_samples,
+        dynamic_area,
+        args.reynolds,
+        args.statistics_window_steps,
     )
     cd = summary["cd"]
     reference = summary["reference_cd"]

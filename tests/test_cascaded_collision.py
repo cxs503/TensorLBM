@@ -13,7 +13,6 @@ import torch
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.d3q27 import equilibrium27, macroscopic27
 
-
 # ---------------------------------------------------------------------------
 # Test states
 # ---------------------------------------------------------------------------
@@ -186,7 +185,7 @@ class TestCascadedD3Q19:
         c = C19.to(device=f.device, dtype=f.dtype)
         cx = c[:, 0].view(19, 1, 1, 1)
         cy = c[:, 1].view(19, 1, 1, 1)
-        cz = c[:, 2].view(19, 1, 1, 1)
+        c[:, 2].view(19, 1, 1, 1)
         pi_xy_before = (cx * cy * f_neq).sum(0)
 
         tau = 0.83
@@ -369,7 +368,7 @@ class TestCascadedD3Q27:
         c = C27.to(device=f.device, dtype=f.dtype)
         cx = c[:, 0].view(27, 1, 1, 1)
         cy = c[:, 1].view(27, 1, 1, 1)
-        cz = c[:, 2].view(27, 1, 1, 1)
+        c[:, 2].view(27, 1, 1, 1)
         pi_xy_before = (cx * cy * f_neq).sum(0)
 
         tau = 0.83

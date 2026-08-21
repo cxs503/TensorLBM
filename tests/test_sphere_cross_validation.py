@@ -15,16 +15,15 @@ from pathlib import Path
 import pytest
 
 from tensorlbm.sphere_cross_validation import (
-    SCHEMA_VERSION,
-    LATTICES,
     COLLISION_FAMILIES,
+    LATTICES,
+    SCHEMA_VERSION,
     TURBULENCE_MODELS,
     SphereCrossValidationConfig,
+    _schiller_naumann,
     run_sphere_cross_validation,
     write_sphere_cross_validation_evidence,
-    _schiller_naumann,
 )
-
 
 # ---------------------------------------------------------------------------
 # Shared fixture — run the full matrix once and reuse across all tests

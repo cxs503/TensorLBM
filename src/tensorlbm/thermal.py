@@ -22,22 +22,21 @@
 
 格子排列：分布张量 (Q, ny, nx)，与 solver.py 一致。
 """
+
 from __future__ import annotations
 
 from typing import Any
 
 import torch
 
-from .d2q9 import C, W, OPPOSITE, equilibrium, macroscopic
+from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
 from .solver import stream
 
 CS2 = 1.0 / 3.0
 
 # ── D2Q5 温度格子 ────────────────────────────────────────────────────────────
 # 方向：0:(0,0) 1:(1,0) 2:(-1,0) 3:(0,1) 4:(0,-1)
-C5 = torch.tensor(
-    [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]], dtype=torch.int64
-)
+C5 = torch.tensor([[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]], dtype=torch.int64)
 W5 = torch.tensor([1.0 / 3.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0], dtype=torch.float32)
 OPPOSITE5 = torch.tensor([0, 2, 1, 4, 3], dtype=torch.int64)
 
@@ -49,9 +48,7 @@ W_D2Q5 = W5
 _stream5_cache: dict[tuple[Any, ...], tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = {}
 
 
-def temperature_equilibrium(
-    T: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor
-) -> torch.Tensor:
+def temperature_equilibrium(T: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     """D2Q5 温度平衡分布 g_eq = w_i·T·(1 + 3·c_i·u)（advection-diffusion 一阶展开）。"""
     device = T.device
     c = C5.to(device)
@@ -64,7 +61,9 @@ def temperature_equilibrium(
 equilibrium_thermal = temperature_equilibrium
 
 
-def temperature_collision(g: torch.Tensor, tau_T: float, ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
+def temperature_collision(
+    g: torch.Tensor, tau_T: float, ux: torch.Tensor, uy: torch.Tensor
+) -> torch.Tensor:
     """D2Q5 温度 BGK 碰撞：g_new = g − (g − g_eq)/τ_T。
 
     热扩散率 α = (τ_T − 1/2)/3。零阶矩（温度）守恒。
@@ -110,9 +109,7 @@ def macroscopic_thermal(g: torch.Tensor) -> torch.Tensor:
     return g.sum(dim=0)
 
 
-def apply_temperature_boundaries(
-    g: torch.Tensor, t_hot: float, t_cold: float
-) -> torch.Tensor:
+def apply_temperature_boundaries(g: torch.Tensor, t_hot: float, t_cold: float) -> torch.Tensor:
     """post-streaming 温度边界（壁面位于 half-way 位置）。
 
     - 左壁 x=0（壁面 x=−0.5，T=T_hot）：anti-bounce-back
@@ -192,7 +189,7 @@ def collide_bgk_force(f: torch.Tensor, tau: float, F: torch.Tensor) -> torch.Ten
     cy = c[:, 1].view(9, 1, 1)
     fxv = fx.unsqueeze(0)
     fyv = fy.unsqueeze(0)
-    cF = cx * fxv + cy * fyv          # (9, ny, nx) c_i·F
+    cF = cx * fxv + cy * fyv  # (9, ny, nx) c_i·F
     uF = ux_star * fx + uy_star * fy  # (ny, nx)     u*·F
     cu = cx * ux_star + cy * uy_star  # (9, ny, nx)  c_i·u*
     Fi = w * (1.0 - 0.5 / tau) * (3.0 * (cF - uF.unsqueeze(0)) + 9.0 * cu * cF)
@@ -223,7 +220,11 @@ def cavity_wall_mask(ny: int, nx: int, device: torch.device) -> torch.Tensor:
 
 
 def nusselt_number(
-    T: torch.Tensor, H: float, dT: float, t_hot: float = 1.0, t_cold: float = 0.0,
+    T: torch.Tensor,
+    H: float,
+    dT: float,
+    t_hot: float = 1.0,
+    t_cold: float = 0.0,
     mode: str = "grad2",
 ) -> dict[str, float]:
     """壁面平均 Nusselt 数：Nu = −∂T/∂n·H/ΔT，沿整壁（含角点）平均。
@@ -261,7 +262,7 @@ def thermal_params(nx: int, ra: float, pr: float, tau: float) -> dict[str, float
     alpha = nu / pr
     tau_T = 3.0 * alpha + 0.5
     H = float(nx)
-    g_beta = ra * nu * alpha / (H ** 3)  # ΔT = 1
+    g_beta = ra * nu * alpha / (H**3)  # ΔT = 1
     return {"nu": nu, "alpha": alpha, "tau_T": tau_T, "H": H, "g_beta": g_beta}
 
 
@@ -284,9 +285,7 @@ def simulate_natural_convection(
     device = torch.device(device)
     ny = nx
     p = thermal_params(nx, ra, pr, tau)
-    nu_lat, alpha_lat, tau_T, H, g_beta = (
-        p["nu"], p["alpha"], p["tau_T"], p["H"], p["g_beta"]
-    )
+    nu_lat, alpha_lat, tau_T, H, g_beta = (p["nu"], p["alpha"], p["tau_T"], p["H"], p["g_beta"])
     dT = t_hot - t_cold
 
     # 初始场：静止、均匀密度；温度线性分布（x 方向 T_cold→T_hot）加速收敛
@@ -294,7 +293,12 @@ def simulate_natural_convection(
     u0 = torch.zeros((ny, nx), device=device)
     f = equilibrium(rho0, u0, u0)
     if seed_t == "linear":
-        T0 = torch.linspace(t_cold, t_hot, nx, device=device).unsqueeze(0).expand(ny, nx).contiguous()
+        T0 = (
+            torch.linspace(t_cold, t_hot, nx, device=device)
+            .unsqueeze(0)
+            .expand(ny, nx)
+            .contiguous()
+        )
     else:
         T0 = torch.full((ny, nx), 0.5 * (t_hot + t_cold), device=device)
     g = temperature_equilibrium(T0, u0, u0)
@@ -334,16 +338,18 @@ def simulate_natural_convection(
 
         if step % report_every == 0 or step == steps:
             rho, ux, uy, T = _macros()
-            du = torch.max(
-                torch.abs(ux[resid_mask] - ux_prev[resid_mask]),
-                torch.abs(uy[resid_mask] - uy_prev[resid_mask]),
-            ).max().item()
+            du = (
+                torch.max(
+                    torch.abs(ux[resid_mask] - ux_prev[resid_mask]),
+                    torch.abs(uy[resid_mask] - uy_prev[resid_mask]),
+                )
+                .max()
+                .item()
+            )
             dT_res = torch.max(torch.abs(T[resid_mask] - T_prev[resid_mask])).item()
             last_resid_u, last_resid_T = du, dT_res
             nu_cur = nusselt_number(T, H, dT, t_hot, t_cold, mode="grad2")
-            nu_history.append(
-                {"step": step, "resid_u": du, "resid_T": dT_res, **nu_cur}
-            )
+            nu_history.append({"step": step, "resid_u": du, "resid_T": dT_res, **nu_cur})
             ux_prev = ux.detach().clone()
             uy_prev = uy.detach().clone()
             T_prev = T.detach().clone()
@@ -358,27 +364,52 @@ def simulate_natural_convection(
     nu_halfway = nusselt_number(T_cpu, H, dT, t_hot, t_cold, mode="halfway")
 
     return {
-        "nx": nx, "ra": ra, "pr": pr, "tau": tau, "tau_T": tau_T,
-        "nu": nu_lat, "alpha": alpha_lat, "g_beta": g_beta, "H": H,
-        "steps": steps, "elapsed_s": round(elapsed, 1),
-        "last_resid_u": last_resid_u, "last_resid_T": last_resid_T,
-        "nu_grad2": nu_grad2["nu"], "nu_left_grad2": nu_grad2["nu_left"],
+        "nx": nx,
+        "ra": ra,
+        "pr": pr,
+        "tau": tau,
+        "tau_T": tau_T,
+        "nu": nu_lat,
+        "alpha": alpha_lat,
+        "g_beta": g_beta,
+        "H": H,
+        "steps": steps,
+        "elapsed_s": round(elapsed, 1),
+        "last_resid_u": last_resid_u,
+        "last_resid_T": last_resid_T,
+        "nu_grad2": nu_grad2["nu"],
+        "nu_left_grad2": nu_grad2["nu_left"],
         "nu_right_grad2": nu_grad2["nu_right"],
         "nu_grad1": nu_grad1["nu"],
         "nu_halfway": nu_halfway["nu"],
         "u_max": float(u_mag.max().item()),
-        "T_min": float(T_cpu.min().item()), "T_max": float(T_cpu.max().item()),
+        "T_min": float(T_cpu.min().item()),
+        "T_max": float(T_cpu.max().item()),
         "nu_history": nu_history,
     }
 
 
 __all__ = [
-    "CS2", "C5", "W5", "OPPOSITE5",
-    "C_D2Q5", "W_D2Q5",
-    "temperature_equilibrium", "temperature_collision", "temperature_stream",
-    "equilibrium_thermal", "collide_thermal_bgk", "stream_thermal",
-    "macroscopic_thermal", "apply_buoyancy_force",
-    "apply_temperature_boundaries", "buoyancy_force", "collide_bgk_force",
-    "pre_streaming_bounce_back", "cavity_wall_mask", "nusselt_number",
-    "thermal_params", "simulate_natural_convection",
+    "CS2",
+    "C5",
+    "W5",
+    "OPPOSITE5",
+    "C_D2Q5",
+    "W_D2Q5",
+    "temperature_equilibrium",
+    "temperature_collision",
+    "temperature_stream",
+    "equilibrium_thermal",
+    "collide_thermal_bgk",
+    "stream_thermal",
+    "macroscopic_thermal",
+    "apply_buoyancy_force",
+    "apply_temperature_boundaries",
+    "buoyancy_force",
+    "collide_bgk_force",
+    "pre_streaming_bounce_back",
+    "cavity_wall_mask",
+    "nusselt_number",
+    "thermal_params",
+    "simulate_natural_convection",
 ]

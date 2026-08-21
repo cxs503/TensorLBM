@@ -203,7 +203,9 @@ class TestRelaxationBehaviour:
         (("C_w", 0.5), ("C_v", 0.025)),
     )
     def test_gradient_sgs_preserves_mass_and_momentum(
-        self, coefficient_name: str, coefficient: float,
+        self,
+        coefficient_name: str,
+        coefficient: float,
     ) -> None:
         z, y, x = torch.meshgrid(
             torch.arange(4, dtype=torch.float64),
@@ -220,7 +222,9 @@ class TestRelaxationBehaviour:
         populations[2] -= 1.0e-4
 
         output = collide_cumulant_d3q19(
-            populations, tau=0.55, **{coefficient_name: coefficient},
+            populations,
+            tau=0.55,
+            **{coefficient_name: coefficient},
         )
         before = macroscopic3d(populations)
         after = macroscopic3d(output)
@@ -234,7 +238,10 @@ class TestRelaxationBehaviour:
         (("wale", 0.5, "C_w"), ("vreman", 0.025, "C_v")),
     )
     def test_gradient_sgs_diagnostic_matches_collision_parameterisation(
-        self, model: str, coefficient: float, coefficient_name: str,
+        self,
+        model: str,
+        coefficient: float,
+        coefficient_name: str,
     ) -> None:
         z, y, x = torch.meshgrid(
             torch.arange(4, dtype=torch.float64),
@@ -250,7 +257,10 @@ class TestRelaxationBehaviour:
             0.0003 * x,
         )
         effective = gradient_sgs_effective_tau_d3q19(
-            populations, tau=0.55, model=model, coefficient=coefficient,
+            populations,
+            tau=0.55,
+            model=model,
+            coefficient=coefficient,
         )
 
         assert effective.shape == rho.shape
@@ -258,7 +268,9 @@ class TestRelaxationBehaviour:
         assert bool((effective >= 0.55).all())
         assert bool((effective > 0.55).any())
         output = collide_cumulant_d3q19(
-            populations, tau=0.55, **{coefficient_name: coefficient},
+            populations,
+            tau=0.55,
+            **{coefficient_name: coefficient},
         )
         assert torch.isfinite(output).all()
 
@@ -268,14 +280,20 @@ class TestRelaxationBehaviour:
         populations = equilibrium3d(rho, zero, zero, zero)
         with pytest.raises(ValueError, match="only one"):
             collide_cumulant_d3q19(
-                populations, tau=0.55, C_s=0.1, C_w=0.5,
+                populations,
+                tau=0.55,
+                C_s=0.1,
+                C_w=0.5,
             )
 
     @pytest.mark.parametrize(
-        ("model", "coefficient"), (("wale", 0.5), ("vreman", 0.025)),
+        ("model", "coefficient"),
+        (("wale", 0.5), ("vreman", 0.025)),
     )
     def test_gradient_sgs_summary_is_halo_chunk_invariant(
-        self, model: str, coefficient: float,
+        self,
+        model: str,
+        coefficient: float,
     ) -> None:
         torch.manual_seed(7)
         rho = torch.ones((7, 5, 6), dtype=torch.float64)
@@ -308,10 +326,13 @@ class TestRelaxationBehaviour:
         assert one_plane["effective_tau_minimum"] >= 0.55
 
     @pytest.mark.parametrize(
-        ("model", "coefficient"), (("wale", 0.5), ("vreman", 0.025)),
+        ("model", "coefficient"),
+        (("wale", 0.5), ("vreman", 0.025)),
     )
     def test_gradient_sgs_uses_wall_velocity_inside_solid(
-        self, model: str, coefficient: float,
+        self,
+        model: str,
+        coefficient: float,
     ) -> None:
         z, y, x = torch.meshgrid(
             torch.arange(5, dtype=torch.float64),
@@ -330,7 +351,10 @@ class TestRelaxationBehaviour:
         solid_mask[1:4, 1:4, 4:] = True
 
         unmasked = gradient_sgs_effective_tau_d3q19(
-            populations, tau=0.55, model=model, coefficient=coefficient,
+            populations,
+            tau=0.55,
+            model=model,
+            coefficient=coefficient,
         )
         masked = gradient_sgs_effective_tau_d3q19(
             populations,
@@ -379,11 +403,15 @@ class TestRelaxationBehaviour:
     def test_smagorinsky_tau_diagnostic_rejects_invalid_input(self) -> None:
         with pytest.raises(ValueError, match="shape"):
             smagorinsky_effective_tau_d3q19(
-                torch.zeros((9, 2, 3, 4)), tau=0.55, C_s=0.1,
+                torch.zeros((9, 2, 3, 4)),
+                tau=0.55,
+                C_s=0.1,
             )
         with pytest.raises(ValueError, match="greater"):
             smagorinsky_effective_tau_d3q19(
-                torch.zeros((19, 2, 3, 4)), tau=0.5, C_s=0.1,
+                torch.zeros((19, 2, 3, 4)),
+                tau=0.5,
+                C_s=0.1,
             )
 
     def test_smagorinsky_tau_summary_is_chunk_invariant(self) -> None:
@@ -394,10 +422,16 @@ class TestRelaxationBehaviour:
         populations[2] -= 1.0e-3
 
         small = summarize_smagorinsky_effective_tau_d3q19(
-            populations, tau=0.55, C_s=0.1, chunk_cells=5,
+            populations,
+            tau=0.55,
+            C_s=0.1,
+            chunk_cells=5,
         )
         large = summarize_smagorinsky_effective_tau_d3q19(
-            populations, tau=0.55, C_s=0.1, chunk_cells=100,
+            populations,
+            tau=0.55,
+            C_s=0.1,
+            chunk_cells=100,
         )
 
         assert small == pytest.approx(large)

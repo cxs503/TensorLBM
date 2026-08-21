@@ -30,10 +30,10 @@ from tensorlbm.apps.ai4s_flagship import (
     write_snapshots_hdf5,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_mini_pilot(
     root: Path,
@@ -54,22 +54,27 @@ def _make_mini_pilot(
             for step in steps:
                 arrays = {
                     "rho": np.ones((nz, ny, nx), dtype=np.float32),
-                    "ux": (
-                        0.05 + 0.01 * rng.standard_normal((nz, ny, nx))
-                    ).astype(np.float32),
-                    "uy": (
-                        0.01 * rng.standard_normal((nz, ny, nx))
-                    ).astype(np.float32),
+                    "ux": (0.05 + 0.01 * rng.standard_normal((nz, ny, nx))).astype(np.float32),
+                    "uy": (0.01 * rng.standard_normal((nz, ny, nx))).astype(np.float32),
                     "uz": np.zeros((nz, ny, nx), dtype=np.float32),
                     "solid_mask": np.zeros((nz, ny, nx), dtype=np.int8),
                 }
                 h5 = save_fields_hdf5(
-                    root / f"{case}_{step}.h5", arrays, {"step": step},
+                    root / f"{case}_{step}.h5",
+                    arrays,
+                    {"step": step},
                 )
-                register_product(catalog, h5, metadata={
-                    "run_id": case, "case": case, "step": step,
-                    "code_sha": "a" * 40, "nx": nx,
-                })
+                register_product(
+                    catalog,
+                    h5,
+                    metadata={
+                        "run_id": case,
+                        "case": case,
+                        "step": step,
+                        "code_sha": "a" * 40,
+                        "nx": nx,
+                    },
+                )
     finally:
         catalog.close()
     (root / "summary.json").write_text(json.dumps({"dataset_id": "mini-pilot"}))
@@ -79,11 +84,15 @@ def _make_mini_pilot(
 # Stage 1: data
 # ---------------------------------------------------------------------------
 
-class TestDataProduction:
 
+class TestDataProduction:
     def test_produce_velocity_snapshots_public_solver(self):
         snapshots = produce_velocity_snapshots(
-            nx=16, ny=16, n_steps=4, sample_every=2, seed=3,
+            nx=16,
+            ny=16,
+            n_steps=4,
+            sample_every=2,
+            seed=3,
         )
         assert len(snapshots) == 2
         ux, uy = snapshots[0]
@@ -101,10 +110,15 @@ class TestDataProduction:
 
     def test_hdf5_roundtrip(self, tmp_path):
         snapshots = produce_velocity_snapshots(
-            nx=12, ny=12, n_steps=2, sample_every=2, seed=1,
+            nx=12,
+            ny=12,
+            n_steps=2,
+            sample_every=2,
+            seed=1,
         )
         path = write_snapshots_hdf5(
-            tmp_path / "snap.h5", snapshots,
+            tmp_path / "snap.h5",
+            snapshots,
             attrs={"source": "test", "n_snapshots": len(snapshots)},
         )
         assert path.is_file()
@@ -140,11 +154,14 @@ class TestDataProduction:
 
 
 class TestStationaryRoughness:
-
     @pytest.fixture
     def snapshots(self):
         return produce_velocity_snapshots(
-            nx=24, ny=24, n_steps=4, sample_every=2, seed=1,
+            nx=24,
+            ny=24,
+            n_steps=4,
+            sample_every=2,
+            seed=1,
         )
 
     def test_pattern_is_stationary_and_deterministic(self, snapshots):
@@ -156,7 +173,9 @@ class TestStationaryRoughness:
         assert torch.allclose(delta_a, delta_b)
         # uy receives the same fixed pattern scaled by 0.8
         assert torch.allclose(
-            rough[0][1] - snapshots[0][1], 0.8 * delta_a, atol=1e-6,
+            rough[0][1] - snapshots[0][1],
+            0.8 * delta_a,
+            atol=1e-6,
         )
         # ... deterministic across calls, and actually perturbs the fields
         assert torch.allclose(rough[0][0], rough_again[0][0])
@@ -175,13 +194,16 @@ class TestStationaryRoughness:
         # must degrade (this is what makes the task FNO-relevant)
         smooth = build_super_resolution_dataset(snapshots, factor=4)
         rough = build_super_resolution_dataset(
-            add_stationary_roughness(snapshots, amplitude=0.014), factor=4,
+            add_stationary_roughness(snapshots, amplitude=0.014),
+            factor=4,
         )
         err_smooth = prediction_error_metrics(
-            smooth["inputs"][0], smooth["targets"][0],
+            smooth["inputs"][0],
+            smooth["targets"][0],
         )
         err_rough = prediction_error_metrics(
-            rough["inputs"][0], rough["targets"][0],
+            rough["inputs"][0],
+            rough["targets"][0],
         )
         assert err_rough["relative_l2"] > err_smooth["relative_l2"]
 
@@ -190,12 +212,16 @@ class TestStationaryRoughness:
 # Stage 2: dataset
 # ---------------------------------------------------------------------------
 
-class TestDatasetConstruction:
 
+class TestDatasetConstruction:
     @pytest.fixture
     def snapshots(self):
         return produce_velocity_snapshots(
-            nx=16, ny=16, n_steps=4, sample_every=2, seed=5,
+            nx=16,
+            ny=16,
+            n_steps=4,
+            sample_every=2,
+            seed=5,
         )
 
     def test_build_super_resolution_shapes(self, snapshots):
@@ -242,8 +268,8 @@ class TestDatasetConstruction:
 # Stage 5 helper: inference post-processing
 # ---------------------------------------------------------------------------
 
-class TestPredictionErrors:
 
+class TestPredictionErrors:
     def test_known_values(self):
         target = torch.ones(2, 4, 4)
         pred = torch.zeros(2, 4, 4)
@@ -274,15 +300,20 @@ class TestPredictionErrors:
 # The whole loop (micro configuration, CPU, seconds)
 # ---------------------------------------------------------------------------
 
-class TestMicroEndToEnd:
 
+class TestMicroEndToEnd:
     def test_run_flagship_demo(self, tmp_path):
         cfg = FlagshipConfig(
             workdir=tmp_path / "run",
             device="cpu",
             pilot_dir=None,
-            nx=16, ny=16, n_steps=4, sample_every=2, seeds=(1, 2),
-            epochs=2, batch_size=2,
+            nx=16,
+            ny=16,
+            n_steps=4,
+            sample_every=2,
+            seeds=(1, 2),
+            epochs=2,
+            batch_size=2,
             arch=dict(width=8, n_layers=2, modes_x=6, modes_y=6, mlp_hidden=16),
         )
         report = run_flagship_demo(cfg)
@@ -302,8 +333,7 @@ class TestMicroEndToEnd:
         assert report.model_id.startswith("mdl_")
         assert Path(report.ckpt_path).is_file()
         store_sidecar = (
-            Path(report.model_store)
-            / "flow_super_resolution" / report.model_id / "meta.json"
+            Path(report.model_store) / "flow_super_resolution" / report.model_id / "meta.json"
         )
         assert store_sidecar.is_file()
         meta = json.loads(store_sidecar.read_text())
@@ -342,7 +372,8 @@ class TestMicroEndToEnd:
             workdir=tmp_path / "run2",
             device="cpu",
             pilot_dir=tmp_path,
-            epochs=1, batch_size=4,
+            epochs=1,
+            batch_size=4,
             arch=dict(width=8, n_layers=2, modes_x=6, modes_y=6, mlp_hidden=16),
         )
         report = run_flagship_demo(cfg)

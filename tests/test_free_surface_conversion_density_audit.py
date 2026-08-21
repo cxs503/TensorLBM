@@ -19,7 +19,6 @@ from tensorlbm.free_surface_topology_transaction import (
     build_topology_transaction,
 )
 
-
 I_TO_L = {
     "conversion_cells": (
         {

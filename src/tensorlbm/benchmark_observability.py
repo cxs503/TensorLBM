@@ -1,4 +1,5 @@
 """Durable, machine-readable execution status for long-running benchmarks."""
+
 from __future__ import annotations
 
 import csv
@@ -81,7 +82,9 @@ def resolve_benchmark_device(requested: str) -> dict[str, Any]:
 
 
 def assert_benchmark_tensor_device(
-    tensor: torch.Tensor, expected: torch.device, label: str,
+    tensor: torch.Tensor,
+    expected: torch.device,
+    label: str,
 ) -> None:
     """Fail fast if primary simulation state is not on its requested device.
 
@@ -91,8 +94,7 @@ def assert_benchmark_tensor_device(
     """
     if tensor.device != expected:
         raise RuntimeError(
-            f"Device assertion failed for {label}: expected {expected}, "
-            f"got {tensor.device}"
+            f"Device assertion failed for {label}: expected {expected}, got {tensor.device}"
         )
 
 
@@ -194,9 +196,7 @@ class BenchmarkReporter:
         # Full host capability snapshot (tensorlbm.hardware.probe); probed
         # lazily once and never allowed to break status writing.
         self.hardware_profile = (
-            hardware_profile
-            if hardware_profile is not None
-            else hardware_profile_snapshot()
+            hardware_profile if hardware_profile is not None else hardware_profile_snapshot()
         )
 
     def _status(self, state: str, **extra: Any) -> None:
@@ -231,12 +231,14 @@ class BenchmarkReporter:
             csv.DictWriter(
                 handle,
                 fieldnames=["step", "elapsed_seconds", "tip_y", "tip_x"],
-            ).writerow({
-                "step": step,
-                "elapsed_seconds": elapsed_seconds,
-                "tip_y": tip_y,
-                "tip_x": tip_x,
-            })
+            ).writerow(
+                {
+                    "step": step,
+                    "elapsed_seconds": elapsed_seconds,
+                    "tip_y": tip_y,
+                    "tip_x": tip_x,
+                }
+            )
             handle.flush()
             os.fsync(handle.fileno())
         self._status("RUNNING", completed_steps=step, elapsed_seconds=elapsed_seconds)

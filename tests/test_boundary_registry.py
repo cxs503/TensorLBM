@@ -12,6 +12,7 @@ Coverage:
   * application equivalence: registry dispatch (with and without the
     ``bc_mask == id`` field) reproduces the direct boundaries3d calls.
 """
+
 from __future__ import annotations
 
 import warnings
@@ -19,6 +20,12 @@ import warnings
 import pytest
 import torch
 
+from tensorlbm.boundaries3d import (
+    _D3Q19_INLET_DIRS,
+    _D3Q19_OUTLET_DIRS,
+    bounce_back_cells_3d,
+    zou_he_inlet_velocity_3d,
+)
 from tensorlbm.boundary_registry import (
     BC_ID_NONE,
     BCKind,
@@ -34,13 +41,7 @@ from tensorlbm.boundary_registry import (
     derive_missing_mask_reference,
     face_cells,
 )
-from tensorlbm.boundaries3d import (
-    _D3Q19_INLET_DIRS,
-    _D3Q19_OUTLET_DIRS,
-    bounce_back_cells_3d,
-    zou_he_inlet_velocity_3d,
-)
-from tensorlbm.d3q19 import C, OPPOSITE, equilibrium3d
+from tensorlbm.d3q19 import OPPOSITE, C, equilibrium3d
 
 
 @pytest.fixture()
@@ -58,8 +59,10 @@ def _mask(value: float | None = None, nz=5, ny=6, nx=7):
 
 class TestRegistryIds:
     def test_ids_start_at_one_and_increment(self, registry):
-        ids = [registry.register(BoundaryCondition(BCKind.BOUNCE_BACK, mask=_mask(0.2)))
-               for _ in range(3)]
+        ids = [
+            registry.register(BoundaryCondition(BCKind.BOUNCE_BACK, mask=_mask(0.2)))
+            for _ in range(3)
+        ]
         assert ids == [1, 2, 3]
         assert all(i != BC_ID_NONE for i in ids)
 
@@ -140,12 +143,8 @@ class TestBCMasks:
         earlier phase (a combined last-wins field would hide them)."""
         wall = _mask(0.0)
         wall[:, :, 0] = True  # x=0 plane (crosses the lid plane)
-        pre = BoundaryCondition(
-            BCKind.BOUNCE_BACK, phase="pre_streaming", mask=wall, name="walls"
-        )
-        lid = BoundaryCondition(
-            BCKind.MOVING_LID, face="y+", params={"u_lid": 0.05}, name="lid"
-        )
+        pre = BoundaryCondition(BCKind.BOUNCE_BACK, phase="pre_streaming", mask=wall, name="walls")
+        lid = BoundaryCondition(BCKind.MOVING_LID, face="y+", params={"u_lid": 0.05}, name="lid")
         registry.register(pre)
         registry.register(lid)
         combined = build_bc_mask((5, 6, 7), [pre, lid])
@@ -252,9 +251,7 @@ class TestOverlapChecks:
             check_bc_consistency([a], (5, 6, 7))
 
     def test_plane_bc_must_cover_its_face(self, registry):
-        bc = BoundaryCondition(
-            BCKind.ZOU_HE_INLET_VELOCITY, face="x-", params={"u_in": 0.05}
-        )
+        bc = BoundaryCondition(BCKind.ZOU_HE_INLET_VELOCITY, face="x-", params={"u_in": 0.05})
         registry.register(bc)
         check_bc_consistency([bc], (5, 6, 7))  # face-derived cells match
 
@@ -276,7 +273,9 @@ class TestMissingMask:
         torch.manual_seed(0)
         nz, ny, nx = 5, 6, 7
         solid = torch.rand((nz, ny, nx)) < 0.2
-        fast = derive_missing_mask((nz, ny, nx), solid_mask=solid, periodic=periodic, lattice=lattice)
+        fast = derive_missing_mask(
+            (nz, ny, nx), solid_mask=solid, periodic=periodic, lattice=lattice
+        )
         ref = derive_missing_mask_reference(
             (nz, ny, nx), solid_mask=solid, periodic=periodic, lattice=lattice
         )
@@ -402,9 +401,7 @@ class TestApplicationEquivalence:
     def test_pre_bounce_requires_f_pre(self):
         wall = _mask(0.3)
         reg = BoundaryConditionRegistry()
-        bc = BoundaryCondition(
-            BCKind.BOUNCE_BACK, phase=BCPhase.PRE_STREAMING, mask=wall
-        )
+        bc = BoundaryCondition(BCKind.BOUNCE_BACK, phase=BCPhase.PRE_STREAMING, mask=wall)
         reg.register(bc)
         with pytest.raises(ValueError, match="f_pre"):
             apply_boundary_conditions(_random_f(), [bc], phase="pre_streaming")
@@ -413,9 +410,7 @@ class TestApplicationEquivalence:
     def test_zou_he_inlet_dispatch_matches_direct_call(self):
         f = _random_f(seed=5)
         reg = BoundaryConditionRegistry()
-        bc = BoundaryCondition(
-            BCKind.ZOU_HE_INLET_VELOCITY, face="x-", params={"u_in": 0.05}
-        )
+        bc = BoundaryCondition(BCKind.ZOU_HE_INLET_VELOCITY, face="x-", params={"u_in": 0.05})
         reg.register(bc)
         out = apply_boundary_conditions(f, [bc], phase="post_streaming")
         torch.testing.assert_close(out, zou_he_inlet_velocity_3d(f, 0.05), rtol=0, atol=0)
@@ -450,7 +445,8 @@ class TestApplicationEquivalence:
         torch.testing.assert_close(
             only_pre,
             torch.where(wall.unsqueeze(0), f[OPPOSITE], f),
-            rtol=0, atol=0,
+            rtol=0,
+            atol=0,
         )
         torch.testing.assert_close(only_post, bounce_back_cells_3d(f, wall), rtol=0, atol=0)
         reg.reset()

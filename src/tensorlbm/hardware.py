@@ -17,6 +17,7 @@ records so every run documents the hardware it actually used.
 The probe is deliberately cheap and side-effect free: unknown vendor
 plugins are only ``importlib``-probed, never assumed.
 """
+
 from __future__ import annotations
 
 import importlib
@@ -47,8 +48,8 @@ __all__ = [
 #: maps a torch device type to the pip package(s) that register it.
 _PLUGIN_ACCELERATORS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("sdaa", ("torch_sdaa",)),  # Hygon / LoongArch DCU-class
-    ("npu", ("torch_npu",)),    # Huawei Ascend (HCCL ecosystem)
-    ("mlu", ("torch_mlu",)),    # Cambricon
+    ("npu", ("torch_npu",)),  # Huawei Ascend (HCCL ecosystem)
+    ("mlu", ("torch_mlu",)),  # Cambricon
     ("musa", ("torch_musa",)),  # Moore Threads
 )
 
@@ -63,6 +64,7 @@ _KNOWN_COLLECTIVES = ("nccl", "gloo", "mpi", "hccl", "rccl")
 # ---------------------------------------------------------------------------
 # Errors
 # ---------------------------------------------------------------------------
+
 
 class HardwareCapabilityError(RuntimeError):
     """A requested capability is absent on this host, with a degradation hint.
@@ -83,6 +85,7 @@ class HardwareCapabilityError(RuntimeError):
 # ---------------------------------------------------------------------------
 # Probe result datatypes (plain, serialisable data)
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True, slots=True)
 class BackendInfo:
@@ -174,6 +177,7 @@ class HardwareProfile:
 # Individual probes (each must never raise)
 # ---------------------------------------------------------------------------
 
+
 def _probe_plugin_backend(name: str, plugins: tuple[str, ...]) -> BackendInfo:
     plugin = None
     for candidate in plugins:
@@ -231,18 +235,12 @@ def _probe_collectives() -> tuple[CollectiveInfo, ...]:
     for name in ("nccl", "gloo", "mpi"):
         try:
             checker = getattr(distributed, f"is_{name}_available", None) if distributed else None
-            results.append(
-                CollectiveInfo(name, bool(checker and checker()), "torch.distributed")
-            )
+            results.append(CollectiveInfo(name, bool(checker and checker()), "torch.distributed"))
         except Exception:  # pragma: no cover
             results.append(CollectiveInfo(name, False, "torch.distributed"))
     # Vendor collectives ship inside the plugin, not torch.distributed.
-    results.append(
-        CollectiveInfo("hccl", _plugin_importable("torch_npu"), "torch_npu plugin")
-    )
-    results.append(
-        CollectiveInfo("rccl", _plugin_importable("torch_musa"), "torch_musa plugin")
-    )
+    results.append(CollectiveInfo("hccl", _plugin_importable("torch_npu"), "torch_npu plugin"))
+    results.append(CollectiveInfo("rccl", _plugin_importable("torch_musa"), "torch_musa plugin"))
     return tuple(results)
 
 
@@ -352,10 +350,14 @@ DEGRADATION_ADVICE: dict[str, str] = {
         "fabrics, or the vendor collective (hccl on Ascend, rccl on "
         "ROCm/MUSA-class hardware); fused multi-GPU kernels stay disabled"
     ),
-    "hccl": ("HCCL is unavailable (torch_npu plugin missing) -> multi-NPU "
-             "collectives degrade to gloo over the host fabric"),
-    "rccl": ("RCCL is unavailable (torch_musa plugin missing) -> multi-MUSA "
-             "collectives degrade to gloo over the host fabric"),
+    "hccl": (
+        "HCCL is unavailable (torch_npu plugin missing) -> multi-NPU "
+        "collectives degrade to gloo over the host fabric"
+    ),
+    "rccl": (
+        "RCCL is unavailable (torch_musa plugin missing) -> multi-MUSA "
+        "collectives degrade to gloo over the host fabric"
+    ),
     "cuda": (
         "CUDA is unavailable -> the eager torch path runs on any available "
         "backend (npu/mlu/sdaa/musa/cpu); Triton fused kernels are "

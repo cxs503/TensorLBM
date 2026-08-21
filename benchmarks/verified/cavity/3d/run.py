@@ -22,6 +22,7 @@
   run.py single 96 24 out.json [--device cuda:1] [--steps 100000]
   run.py both out_dir [--device96 cuda:1] [--device128 cuda:2]
 """
+
 import argparse
 import json
 import sys
@@ -47,9 +48,18 @@ def stationary_pre_bounce3d(f_pre, f, wall):
     return torch.where(wall.unsqueeze(0), f_pre[opp], f)
 
 
-def run_case(nx, nz, re=400, u_lid=0.06, steps=100000, device=None,
-             out_path=None, resid_interval=5000, min_resid=1e-9,
-             compile_mode="default"):
+def run_case(
+    nx,
+    nz,
+    re=400,
+    u_lid=0.06,
+    steps=100000,
+    device=None,
+    out_path=None,
+    resid_interval=5000,
+    min_resid=1e-9,
+    compile_mode="default",
+):
     ny = nx
     tau = 3.0 * u_lid * nx / re + 0.5
     nu = (tau - 0.5) / 3.0
@@ -59,9 +69,9 @@ def run_case(nx, nz, re=400, u_lid=0.06, steps=100000, device=None,
     mass0 = float(rho0.sum().item())
 
     wall = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
-    wall[:, :, 0] = True    # x=0
-    wall[:, :, -1] = True   # x=nx-1
-    wall[:, 0, :] = True    # y=0（底壁）
+    wall[:, :, 0] = True  # x=0
+    wall[:, :, -1] = True  # x=nx-1
+    wall[:, 0, :] = True  # y=0（底壁）
     # 顶盖 y=ny-1 不在静止壁 mask 中
     interior = ~wall
     interior[:, -1, :] = False
@@ -85,10 +95,14 @@ def run_case(nx, nz, re=400, u_lid=0.06, steps=100000, device=None,
         f = step_fn(f)
         if step % resid_interval == 0:
             _, ux, uy, _ = macroscopic3d(f)
-            du = torch.max(
-                torch.abs(ux[interior] - ux_prev[interior]),
-                torch.abs(uy[interior] - uy_prev[interior]),
-            ).max().item()
+            du = (
+                torch.max(
+                    torch.abs(ux[interior] - ux_prev[interior]),
+                    torch.abs(uy[interior] - uy_prev[interior]),
+                )
+                .max()
+                .item()
+            )
             last_resid = du
             ux_prev = ux.detach().clone()
             uy_prev = uy.detach().clone()
@@ -115,16 +129,17 @@ def run_case(nx, nz, re=400, u_lid=0.06, steps=100000, device=None,
         "uz_max_abs": round(float(np.abs(uz_np).max()), 6),
     }
 
-    u_cl_mid = ux_np[z0, :, x_mid]            # u(x=0.5) 垂直中线（z 中间层）
-    v_cl_mid = uy_np[z0, y_mid, :]            # v(y=0.5) 水平中线（z 中间层）
+    u_cl_mid = ux_np[z0, :, x_mid]  # u(x=0.5) 垂直中线（z 中间层）
+    v_cl_mid = uy_np[z0, y_mid, :]  # v(y=0.5) 水平中线（z 中间层）
     u_cl_avg = ux_np[:, :, x_mid].mean(axis=0)
     v_cl_avg = uy_np[:, y_mid, :].mean(axis=0)
 
     def metrics(u_cl, v_cl, tag):
         u_gi = np.interp(ghia["y"], y_pos, u_cl)
         v_gi = np.interp(ghia["x"], x_pos, v_cl)
-        dev = np.concatenate([np.abs(u_gi - np.array(ghia["u"])),
-                              np.abs(v_gi - np.array(ghia["v"]))])
+        dev = np.concatenate(
+            [np.abs(u_gi - np.array(ghia["u"])), np.abs(v_gi - np.array(ghia["v"]))]
+        )
         return {
             f"max_abs_dev_pct_{tag}": round(100.0 * float(dev.max()), 4),
             f"rmse_u_{tag}": round(float(np.sqrt(np.mean((u_gi - np.array(ghia["u"])) ** 2))), 5),
@@ -144,21 +159,30 @@ def run_case(nx, nz, re=400, u_lid=0.06, steps=100000, device=None,
     speed2[:, 0] = speed2[:, -1] = np.inf
     xg = np.linspace(0.0, 1.0, nx)
     yg = np.linspace(0.0, 1.0, ny)
-    in_region = ((xg[None, :] >= 0.3) & (xg[None, :] <= 0.8)
-                 & (yg[:, None] >= 0.3) & (yg[:, None] <= 0.8))
-    iy1, ix1 = np.unravel_index(np.argmin(np.where(in_region, speed2, np.inf)),
-                                speed2.shape)
+    in_region = (
+        (xg[None, :] >= 0.3) & (xg[None, :] <= 0.8) & (yg[:, None] >= 0.3) & (yg[:, None] <= 0.8)
+    )
+    iy1, ix1 = np.unravel_index(np.argmin(np.where(in_region, speed2, np.inf)), speed2.shape)
     primary_vortex = [round(ix1 / (nx - 1), 4), round(iy1 / (ny - 1), 4)]
 
     result = {
         "case": "cavity_3d_spanwise_re400",
-        "lattice": "D3Q19", "collision": "mrt",
-        "boundary": ("V3-3D: pre-streaming 半程反弹(三静止壁) + "
-                     "boundaries3d.zou_he_moving_lid_3d(顶盖)"),
+        "lattice": "D3Q19",
+        "collision": "mrt",
+        "boundary": (
+            "V3-3D: pre-streaming 半程反弹(三静止壁) + boundaries3d.zou_he_moving_lid_3d(顶盖)"
+        ),
         "extrap": "none",
-        "nx": nx, "ny": ny, "nz": nz,
-        "re": re, "u_lid": u_lid, "tau": round(tau, 6), "nu": round(nu, 8),
-        "steps": steps, "n_steps_run": step, "last_resid": last_resid,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
+        "re": re,
+        "u_lid": u_lid,
+        "tau": round(tau, 6),
+        "nu": round(nu, 8),
+        "steps": steps,
+        "n_steps_run": step,
+        "last_resid": last_resid,
         "compile_mode": compile_mode,
         "elapsed_s": round(elapsed, 1),
         "u_mid_ghia": ghia["u"][ghia["y"].index(0.5)],
@@ -174,10 +198,12 @@ def run_case(nx, nz, re=400, u_lid=0.06, steps=100000, device=None,
     if out_path:
         Path(out_path).write_text(json.dumps(result, indent=2))
     resid_str = f"{last_resid:.2e}" if last_resid is not None else "n/a"
-    print(f"[nx={nx} nz={nz}] steps={step} resid={resid_str} t={elapsed:.0f}s "
-          f"max_dev_mid={m['max_abs_dev_pct_mid']}% u_mid={m['u_mid_mid']} "
-          f"primary_vortex={primary_vortex} mass_drift={result['mass_drift']}",
-          flush=True)
+    print(
+        f"[nx={nx} nz={nz}] steps={step} resid={resid_str} t={elapsed:.0f}s "
+        f"max_dev_mid={m['max_abs_dev_pct_mid']}% u_mid={m['u_mid_mid']} "
+        f"primary_vortex={primary_vortex} mass_drift={result['mass_drift']}",
+        flush=True,
+    )
     return result
 
 
@@ -196,36 +222,51 @@ def main():
     compile_mode = compile_mode_from_args(args)
 
     if args.mode == "single":
-        run_case(args.nx, args.nz, steps=args.steps,
-                 device=torch.device(args.device), out_path=args.out,
-                 compile_mode=compile_mode)
+        run_case(
+            args.nx,
+            args.nz,
+            steps=args.steps,
+            device=torch.device(args.device),
+            out_path=args.out,
+            compile_mode=compile_mode,
+        )
     else:
         out_dir = Path(args.out or "benchmarks/verified/cavity_3d")
         out_dir.mkdir(parents=True, exist_ok=True)
         grids = {}
         for nx, nz, dev in ((96, 24, args.device96), (128, 32, args.device128)):
-            r = run_case(nx, nz, steps=args.steps, device=torch.device(dev),
-                         out_path=str(out_dir / f"case_{nx}x{nz}.json"),
-                         compile_mode=compile_mode)
+            r = run_case(
+                nx,
+                nz,
+                steps=args.steps,
+                device=torch.device(dev),
+                out_path=str(out_dir / f"case_{nx}x{nz}.json"),
+                compile_mode=compile_mode,
+            )
             grids[str(nx)] = r
         summary = {
             "case": "cavity_3d_spanwise_re400",
             "grids": {
                 k: {
-                    "nx": v["nx"], "nz": v["nz"], "tau": v["tau"],
-                    "steps": v["n_steps_run"], "last_resid": v["last_resid"],
-                    "u_mid": v["u_mid_mid"], "u_mid_ghia": v["u_mid_ghia"],
-                    "rmse_u": v["rmse_u_mid"], "rmse_v": v["rmse_v_mid"],
+                    "nx": v["nx"],
+                    "nz": v["nz"],
+                    "tau": v["tau"],
+                    "steps": v["n_steps_run"],
+                    "last_resid": v["last_resid"],
+                    "u_mid": v["u_mid_mid"],
+                    "u_mid_ghia": v["u_mid_ghia"],
+                    "rmse_u": v["rmse_u_mid"],
+                    "rmse_v": v["rmse_v_mid"],
                     "max_abs_dev_pct": v["max_abs_dev_pct_mid"],
                     "primary_vortex": v["primary_vortex"],
                 }
                 for k, v in grids.items()
             },
             "convergence": {
-                "max_abs_dev": [grids[str(k)]["max_abs_dev_pct_mid"]
-                                for k in (96, 128)],
-                "err_decreased": (grids["96"]["max_abs_dev_pct_mid"]
-                                  >= grids["128"]["max_abs_dev_pct_mid"]),
+                "max_abs_dev": [grids[str(k)]["max_abs_dev_pct_mid"] for k in (96, 128)],
+                "err_decreased": (
+                    grids["96"]["max_abs_dev_pct_mid"] >= grids["128"]["max_abs_dev_pct_mid"]
+                ),
             },
         }
         (out_dir / "result.json").write_text(json.dumps(summary, indent=2))

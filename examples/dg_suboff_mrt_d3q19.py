@@ -17,18 +17,28 @@ Usage:
 """
 
 from __future__ import annotations
-import math, time, argparse, torch
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C as C19
-from tensorlbm.solver3d import collide_mrt3d, correct_mass3d
+
+import argparse
+import math
+import time
+
+import torch
+
+from tensorlbm.cumulant import collide_cumulant_d3q27
+from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.d3q27 import (
+    C as C27,
+)
+from tensorlbm.d3q27 import (
+    W as W27,
+)
+from tensorlbm.d3q27 import (
+    correct_mass27,
     equilibrium27,
     macroscopic27,
-    C as C27,
-    W as W27,
-    OPPOSITE as OPPOSITE27,
-    correct_mass27,
 )
-from tensorlbm.cumulant import collide_cumulant_d3q27
+from tensorlbm.solver3d import collide_mrt3d, correct_mass3d
 from tensorlbm.suboff_cad import build_suboff_mask
 from tensorlbm.suboff_resistance import _voxel_wetted_area
 

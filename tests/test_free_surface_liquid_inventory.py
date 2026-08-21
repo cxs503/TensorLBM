@@ -3,6 +3,7 @@
 The inventory intentionally combines compressible bulk liquid density with the
 bounded interface fill mass; it is not the legacy ``mass.sum()`` accumulator.
 """
+
 from __future__ import annotations
 
 import math
@@ -71,8 +72,15 @@ def _closed_gravity_wave_state() -> tuple[torch.Tensor, ...]:
 def _advance(f, fill, flags, solid, mass, *, steps: int, gy: float) -> tuple[torch.Tensor, ...]:
     for _ in range(steps):
         f, fill, flags, mass, _ = free_surface_step(
-            f, fill, flags, solid, mass=mass, tau=0.8, gy=gy,
-            rho_liquid=1.0, rho_gas=0.001,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=0.8,
+            gy=gy,
+            rho_liquid=1.0,
+            rho_gas=0.001,
         )
     return f, fill, flags, mass
 
@@ -93,7 +101,10 @@ def test_closed_static_plane_conserves_composite_liquid_inventory() -> None:
     assert _inventory(f, fill, flags) == pytest.approx(initial, abs=1.0e-5 * initial)
 
 
-@pytest.mark.xfail(strict=True, reason="P0 blocker: liquid/interface link flux updates only the interface mass field")
+@pytest.mark.xfail(
+    strict=True,
+    reason="P0 blocker: liquid/interface link flux updates only the interface mass field",
+)
 def test_closed_dam_break_conserves_composite_liquid_inventory() -> None:
     f, fill, flags, solid, mass = _closed_dam_break_state()
     initial = _inventory(f, fill, flags)

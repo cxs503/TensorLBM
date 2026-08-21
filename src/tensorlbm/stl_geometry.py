@@ -25,14 +25,13 @@ solid-mask gradient.
 
 from __future__ import annotations
 
-import struct
 from pathlib import Path
 
 import numpy as np
 import torch
 
-from .preprocess_geo import _voxelize_triangles, _write_stl_binary
 from .drag_pressure import SurfaceMesh, get_near_wall_3d
+from .preprocess_geo import _voxelize_triangles, _write_stl_binary
 
 __all__ = [
     "read_stl",
@@ -384,9 +383,9 @@ def _ray_triangle_intersections_count(
             # dot product of (vertex - origin) with rd is positive) **and**
             # the origin's non-ray coordinates fall within the triangle's
             # bounding box (expanded by a small tolerance).
-            tri_xmin, tri_xmax = tri_min[ti, 0], tri_max[ti, 0]
-            tri_ymin, tri_ymax = tri_min[ti, 1], tri_max[ti, 1]
-            tri_zmin, tri_zmax = tri_min[ti, 2], tri_max[ti, 2]
+            _tri_xmin, _tri_xmax = tri_min[ti, 0], tri_max[ti, 0]
+            _tri_ymin, _tri_ymax = tri_min[ti, 1], tri_max[ti, 1]
+            _tri_zmin, _tri_zmax = tri_min[ti, 2], tri_max[ti, 2]
 
             # Determine which components are "along the ray" vs "perpendicular"
             # For a general ray direction, the perpendicular coordinates are
@@ -490,7 +489,7 @@ def _orient_normals_raycast(
     normals : (N, 3) float64
         Normals oriented to point toward the cell (outward from solid).
     """
-    n_near = len(normals)
+    len(normals)
 
     # Direction from nearest triangle centroid to cell — this is the
     # "toward cell" direction.  For external flow, near-wall cells are
@@ -562,7 +561,7 @@ def mirror_stl(vertices, faces, face_normals, axis=1):
     normals_full : np.ndarray, shape (2M, 3)
     """
     n_v = len(vertices)
-    n_f = len(faces)
+    len(faces)
 
     # Mirrored vertices: negate the mirror axis coordinate
     vertices_mir = vertices.copy().astype(np.float64)

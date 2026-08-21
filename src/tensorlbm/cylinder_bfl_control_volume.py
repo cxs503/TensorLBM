@@ -1,4 +1,5 @@
 """Canonical unconfined cylinder drag using BFL and control-volume force."""
+
 from __future__ import annotations
 
 import math
@@ -35,8 +36,7 @@ from .sponge_layer import apply_equilibrium_difference_sponge, build_sponge_sigm
 CYLINDER_RE100_VISCOUS_CD_REFERENCE = 0.3452411832993384
 CYLINDER_RE100_PRESSURE_CD_REFERENCE = 1.0047587444752417
 CYLINDER_RE100_CD_REFERENCE = (
-    CYLINDER_RE100_VISCOUS_CD_REFERENCE
-    + CYLINDER_RE100_PRESSURE_CD_REFERENCE
+    CYLINDER_RE100_VISCOUS_CD_REFERENCE + CYLINDER_RE100_PRESSURE_CD_REFERENCE
 )
 CYLINDER_RE100_ST_REFERENCE = 0.164
 
@@ -108,7 +108,8 @@ class CylinderBFLControlVolumeConfig:
         if min(cx, self.nx - cx, self.ny / 2) <= self.radius + self.cv_margin + 2:
             raise ValueError("cylinder/control volume does not fit")
         if self.far_field_mode not in {
-            "non_equilibrium_extrapolation", "legacy_hard_equilibrium",
+            "non_equilibrium_extrapolation",
+            "legacy_hard_equilibrium",
         }:
             raise ValueError("unknown far_field_mode")
         if self.collision_model not in {
@@ -157,9 +158,8 @@ def estimate_strouhal_from_lift(
     index = torch.arange(count, dtype=torch.float64)
     centered_index = index - index.mean()
     slope = (
-        (centered_index * (signal - signal.mean())).sum()
-        / centered_index.square().sum().clamp_min(1e-30)
-    )
+        centered_index * (signal - signal.mean())
+    ).sum() / centered_index.square().sum().clamp_min(1e-30)
     detrended = signal - signal.mean() - slope * centered_index
     window = torch.hann_window(count, periodic=True, dtype=torch.float64)
     spectrum = torch.fft.rfft(detrended * window).abs().square()
@@ -168,7 +168,8 @@ def estimate_strouhal_from_lift(
     peak_bin = float(peak)
     if 0 < peak < spectrum.numel() - 1:
         left, center, right = (
-            float(spectrum[peak - 1]), float(spectrum[peak]),
+            float(spectrum[peak - 1]),
+            float(spectrum[peak]),
             float(spectrum[peak + 1]),
         )
         denominator = left - 2.0 * center + right
@@ -191,8 +192,10 @@ def run_cylinder_bfl_control_volume(
     shape = (config.nz, config.ny, config.nx)
     estimated_peak_gib = math.prod(shape) * 1000.0 / 2**30
     memory_budget = require_cuda_memory_budget(
-        device, estimated_peak_gib=estimated_peak_gib,
-        reserve_gib=1.0, label="cylinder benchmark",
+        device,
+        estimated_peak_gib=estimated_peak_gib,
+        reserve_gib=1.0,
+        label="cylinder benchmark",
     )
     cx, cy = config.nx * config.center_x_fraction, config.ny / 2.0
     yy, xx = torch.meshgrid(
@@ -203,7 +206,13 @@ def run_cylinder_bfl_control_volume(
     cross_section = (xx - cx).square() + (yy - cy).square() <= config.radius**2
     solid = cross_section.unsqueeze(0).expand(shape)
     bfl_mask, bfl_q = compute_q_cylinder_d3q19(
-        config.nx, config.ny, config.nz, cx, cy, config.radius, device,
+        config.nx,
+        config.ny,
+        config.nz,
+        cx,
+        cy,
+        config.radius,
+        device,
     )
     rho = torch.ones(shape, device=device)
     ux = torch.full_like(rho, config.lattice_speed)
@@ -216,14 +225,19 @@ def run_cylinder_bfl_control_volume(
         x1=int(math.ceil(cx + config.radius)) + config.cv_margin + 1,
         y0=int(math.floor(cy - config.radius)) - config.cv_margin,
         y1=int(math.ceil(cy + config.radius)) + config.cv_margin + 1,
-        z0=0, z1=config.nz, periodic_axes=("z",), device=device,
+        z0=0,
+        z1=config.nz,
+        periodic_axes=("z",),
+        device=device,
     )
     sponge_faces = ("x+", "y-", "y+")
     if config.sponge_inlet:
         sponge_faces = ("x-",) + sponge_faces
     sigma = build_sponge_sigma_3d(
-        shape, width=config.sponge_width,
-        max_strength=config.sponge_strength, device=device,
+        shape,
+        width=config.sponge_width,
+        max_strength=config.sponge_strength,
+        device=device,
         faces=sponge_faces,
     )
     forces: list[float] = []
@@ -234,9 +248,7 @@ def run_cylinder_bfl_control_volume(
     checkpoint_signature = {
         "schema_version": 4,
         "bfl_link_fraction_convention": "ray_parameter_q_equals_t_v2",
-        "bfl_population_reconstruction": (
-            "post_collision_outgoing_and_upstream_v2"
-        ),
+        "bfl_population_reconstruction": ("post_collision_outgoing_and_upstream_v2"),
         "shape_zyx": list(shape),
         "radius": config.radius,
         "center_x_fraction": config.center_x_fraction,
@@ -277,24 +289,29 @@ def run_cylinder_bfl_control_volume(
         if checkpoint is None:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
-        atomic_torch_save({
-            "schema": "tensorlbm-cylinder-checkpoint-v4",
-            "configuration": checkpoint_signature,
-            "step": step,
-            "populations": f.detach().cpu(),
-            "drag_force_history": torch.tensor(forces, dtype=torch.float64),
-            "bfl_drag_history": torch.tensor(bfl_forces, dtype=torch.float64),
-            "lift_force_history": torch.tensor(lift_forces, dtype=torch.float64),
-        }, checkpoint)
+        atomic_torch_save(
+            {
+                "schema": "tensorlbm-cylinder-checkpoint-v4",
+                "configuration": checkpoint_signature,
+                "step": step,
+                "populations": f.detach().cpu(),
+                "drag_force_history": torch.tensor(forces, dtype=torch.float64),
+                "bfl_drag_history": torch.tensor(bfl_forces, dtype=torch.float64),
+                "lift_force_history": torch.tensor(lift_forces, dtype=torch.float64),
+            },
+            checkpoint,
+        )
 
     def apply_outer(state: torch.Tensor) -> torch.Tensor:
         if config.far_field_mode == "non_equilibrium_extrapolation":
             return non_equilibrium_far_field_bc_3d(
-                state, u_in=config.lattice_speed,
+                state,
+                u_in=config.lattice_speed,
                 faces=("x-", "x+", "y-", "y+"),
             )
         return far_field_bc_3d(
-            state, u_in=config.lattice_speed,
+            state,
+            u_in=config.lattice_speed,
             bc_config={
                 "far_field_faces": ["y-", "y+"],
                 "periodic_faces": ["z-", "z+"],
@@ -326,20 +343,31 @@ def run_cylinder_bfl_control_volume(
         rho_post, ux_post, uy_post, uz_post = macroscopic3d(post)
         activation = _ramp(step, config.ramp_steps)
         f, bfl_force = bouzidi_bounce_back_d3q19(
-            f, post, bfl_mask, bfl_q,
+            f,
+            post,
+            bfl_mask,
+            bfl_q,
             wall_velocity=(
                 (1.0 - activation) * ux_post,
                 (1.0 - activation) * uy_post,
                 (1.0 - activation) * uz_post,
             ),
-            wall_density=rho_post, return_force=True,
+            wall_density=rho_post,
+            return_force=True,
         )
         f = apply_equilibrium_difference_sponge(
-            f, sigma, velocity_target=(config.lattice_speed, 0.0, 0.0),
+            f,
+            sigma,
+            velocity_target=(config.lattice_speed, 0.0, 0.0),
         )
         f = apply_outer(f)
         cv_vector = observe_control_volume_force(
-            old, f, post, cv, solid=solid, periodic_axes=("z",),
+            old,
+            f,
+            post,
+            cv,
+            solid=solid,
+            periodic_axes=("z",),
         ).force_on_body
         cv_force = float(cv_vector[0].item())
         if step > config.warmup_steps:
@@ -349,15 +377,18 @@ def run_cylinder_bfl_control_volume(
         if not bool(torch.isfinite(f).all()):
             raise FloatingPointError(f"cylinder benchmark diverged at step {step}")
         if config.report_interval and step % config.report_interval == 0:
-            recent = forces[-min(len(forces), config.report_interval):]
+            recent = forces[-min(len(forces), config.report_interval) :]
             recent_cd = (
-                sum(recent) / len(recent)
+                sum(recent)
+                / len(recent)
                 / (0.5 * config.lattice_speed**2 * (2.0 * config.radius) * config.nz)
-                if recent else math.nan
+                if recent
+                else math.nan
             )
             print(f"cylinder step={step}/{config.steps} recent_Cd={recent_cd:.6f}", flush=True)
         if (
-            checkpoint is not None and config.checkpoint_interval
+            checkpoint is not None
+            and config.checkpoint_interval
             and step % config.checkpoint_interval == 0
         ):
             save_checkpoint(step)
@@ -371,9 +402,7 @@ def run_cylinder_bfl_control_volume(
     selected_lift_forces = lift_forces[-statistics_window:]
     mean_force = sum(selected_forces) / len(selected_forces)
     mean_bfl = sum(selected_bfl_forces) / len(selected_bfl_forces)
-    denominator = (
-        0.5 * config.lattice_speed**2 * (2.0 * config.radius) * config.nz
-    )
+    denominator = 0.5 * config.lattice_speed**2 * (2.0 * config.radius) * config.nz
     cd, cd_bfl = mean_force / denominator, mean_bfl / denominator
     cd_history = [force / denominator for force in selected_forces]
     cy_history = [force / denominator for force in selected_lift_forces]
@@ -382,14 +411,15 @@ def run_cylinder_bfl_control_volume(
         block_size=max(1, len(cd_history) // 8),
     )
     strouhal, shedding_cycles = estimate_strouhal_from_lift(
-        cy_history, lattice_speed=config.lattice_speed,
+        cy_history,
+        lattice_speed=config.lattice_speed,
         diameter=2.0 * config.radius,
     )
     reference_error = abs(cd - CYLINDER_RE100_CD_REFERENCE) / CYLINDER_RE100_CD_REFERENCE * 100.0
     strouhal_error = (
-        abs(strouhal - CYLINDER_RE100_ST_REFERENCE)
-        / CYLINDER_RE100_ST_REFERENCE * 100.0
-        if math.isfinite(strouhal) else math.inf
+        abs(strouhal - CYLINDER_RE100_ST_REFERENCE) / CYLINDER_RE100_ST_REFERENCE * 100.0
+        if math.isfinite(strouhal)
+        else math.inf
     )
     observer_difference = abs(cd - cd_bfl) / max(abs(cd), 1e-30) * 100.0
     numerical_quality_admitted = (
@@ -400,21 +430,13 @@ def run_cylinder_bfl_control_volume(
     )
     domain_clearance_diameters = config.domain_clearance_diameters
     domain_reference_adequate = config.domain_reference_adequate
-    numerical_quality_admitted = (
-        numerical_quality_admitted and domain_reference_adequate
-    )
+    numerical_quality_admitted = numerical_quality_admitted and domain_reference_adequate
     final_rho, final_ux, final_uy, final_uz = macroscopic3d(f)
-    final_speed = torch.sqrt(
-        final_ux.square() + final_uy.square() + final_uz.square()
-    )
+    final_speed = torch.sqrt(final_ux.square() + final_uy.square() + final_uz.square())
     maximum_plane_spread = maximum_planar_plane_spread(f)
     planar_mode = config.collision_model == "planar_cumulant_d2q9"
-    planar_extrusion_target_met = (
-        not planar_mode or maximum_plane_spread <= 1.0e-6
-    )
-    numerical_quality_admitted = (
-        numerical_quality_admitted and planar_extrusion_target_met
-    )
+    planar_extrusion_target_met = not planar_mode or maximum_plane_spread <= 1.0e-6
+    numerical_quality_admitted = numerical_quality_admitted and planar_extrusion_target_met
     steps_advanced = config.steps - start_step
     collision_execution = natural_kbc_executor.diagnostics()
     if planar_mode:
@@ -426,23 +448,24 @@ def run_cylinder_bfl_control_volume(
     invocation_elapsed_seconds = time.perf_counter() - invocation_started
     return {
         "schema": "tensorlbm-cylinder-bfl-control-volume-v4",
-        "configuration": checkpoint_signature | {
+        "configuration": checkpoint_signature
+        | {
             "tau": config.tau,
-            "steps": config.steps, "warmup_steps": config.warmup_steps,
+            "steps": config.steps,
+            "warmup_steps": config.warmup_steps,
             "device": config.device,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
             "report_interval": config.report_interval,
             "checkpoint_interval": config.checkpoint_interval,
             "statistics_window_steps_resolved": statistics_window,
-            "statistics_window_steps_requested": (
-                config.statistics_window_steps
-            ),
+            "statistics_window_steps_requested": (config.statistics_window_steps),
             "minimum_shedding_cycles": config.minimum_shedding_cycles,
             "domain_clearance_diameters": domain_clearance_diameters,
         },
         "result": {
-            "cd_control_volume": cd, "cd_bfl_link": cd_bfl,
+            "cd_control_volume": cd,
+            "cd_bfl_link": cd_bfl,
             "observer_difference_pct": observer_difference,
             "cd_reference": CYLINDER_RE100_CD_REFERENCE,
             "cd_reference_components": {
@@ -459,13 +482,12 @@ def run_cylinder_bfl_control_volume(
             "drag_stationarity": stationarity.to_dict(),
             "density_mean": float(final_rho.mean().item()),
             "density_min_max": [
-                float(final_rho.min().item()), float(final_rho.max().item()),
+                float(final_rho.min().item()),
+                float(final_rho.max().item()),
             ],
             "relative_mass_drift": float(final_rho.mean().item() - 1.0),
             "maximum_speed": float(final_speed.max().item()),
-            "maximum_final_d2q9_marginal_plane_spread": (
-                maximum_plane_spread
-            ),
+            "maximum_final_d2q9_marginal_plane_spread": (maximum_plane_spread),
             "finite": math.isfinite(cd),
             "collision_execution": collision_execution,
         },
@@ -484,23 +506,16 @@ def run_cylinder_bfl_control_volume(
             "strouhal_target_met": strouhal_error <= 5.0,
             "stationarity_target_met": stationarity.meets(1.0),
             "force_observer_target_met": observer_difference <= 1.0,
-            "cycle_target_met": (
-                shedding_cycles >= config.minimum_shedding_cycles
-            ),
+            "cycle_target_met": (shedding_cycles >= config.minimum_shedding_cycles),
             "domain_reference_target_met": domain_reference_adequate,
             "planar_extrusion_target": 1.0e-6,
-            "planar_extrusion_target_met": (
-                planar_extrusion_target_met
-            ),
+            "planar_extrusion_target_met": (planar_extrusion_target_met),
             "numerical_quality_admitted": numerical_quality_admitted,
             "admitted": (
-                reference_error <= 5.0 and strouhal_error <= 5.0
-                and numerical_quality_admitted
+                reference_error <= 5.0 and strouhal_error <= 5.0 and numerical_quality_admitted
             ),
         },
-        "cuda_memory_preflight": (
-            memory_budget.to_dict() if memory_budget is not None else None
-        ),
+        "cuda_memory_preflight": (memory_budget.to_dict() if memory_budget is not None else None),
     }
 
 

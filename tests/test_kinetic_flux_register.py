@@ -26,10 +26,7 @@ def test_each_diagonal_link_is_counted_once() -> None:
     inside = _box((8, 9, 10))
     links = build_kinetic_interface_links(inside, q=19)
     for direction in range(1, 19):
-        crossings = (
-            links.outgoing_origins[direction]
-            & links.incoming_origins[direction]
-        )
+        crossings = links.outgoing_origins[direction] & links.incoming_origins[direction]
         assert not bool(crossings.any())
     # The same origin/direction cannot be duplicated by crossing two faces.
     assert links.outgoing_origins.dtype is torch.bool
@@ -48,7 +45,8 @@ def test_uniform_equilibrium_has_zero_total_net_mass_and_momentum_flux() -> None
 
 def test_fine_substep_volume_scaling_matches_coarse_inventory_units() -> None:
     transfer = KineticInterfaceTransfer(
-        outgoing=torch.tensor([8.0]), incoming=torch.tensor([4.0]),
+        outgoing=torch.tensor([8.0]),
+        incoming=torch.tensor([4.0]),
     )
     integrated = transfer.scaled(1.0 / 8.0) + transfer.scaled(1.0 / 8.0)
     assert integrated.outgoing.item() == pytest.approx(2.0)
@@ -62,12 +60,14 @@ def test_reflux_projection_preserves_only_conserved_moments() -> None:
     c = C19.to(dtype=mismatch.dtype)
 
     assert projected.sum().item() == pytest.approx(
-        mismatch.sum().item(), abs=2e-14,
+        mismatch.sum().item(),
+        abs=2e-14,
     )
     assert torch.allclose(
         (projected[:, None] * c).sum(dim=0),
         (mismatch[:, None] * c).sum(dim=0),
-        rtol=0.0, atol=2e-14,
+        rtol=0.0,
+        atol=2e-14,
     )
     assert not torch.allclose(projected, mismatch)
 
@@ -85,7 +85,8 @@ def test_active_reflux_projection_uses_only_crossing_directions() -> None:
     assert projected[0].item() == 0.0
     assert projected[7].item() == 0.0
     assert projected.sum().item() == pytest.approx(
-        mismatch.sum().item(), abs=2e-14,
+        mismatch.sum().item(),
+        abs=2e-14,
     )
     torch.testing.assert_close(
         (projected[:, None] * c).sum(dim=0),
@@ -105,7 +106,8 @@ def test_population_inventory_moments_are_explicit() -> None:
 
     assert mass.item() == pytest.approx(6.0)
     torch.testing.assert_close(
-        momentum, torch.tensor([2.0, 0.0, 0.0], dtype=torch.float64),
+        momentum,
+        torch.tensor([2.0, 0.0, 0.0], dtype=torch.float64),
     )
 
 
@@ -140,12 +142,8 @@ def test_reflux_is_local_to_exterior_interface_links_and_conservative() -> None:
     assert not bool(changed[inside].any())
     assert bool(changed.any())
     c = C19.to(dtype=corrected.dtype)
-    expected_momentum = (
-        (fine.net_outgoing - base.net_outgoing)[:, None] * c
-    ).sum(dim=0)
-    actual_momentum = (
-        (corrected - before).sum(dim=(1, 2, 3))[:, None] * c
-    ).sum(dim=0)
+    expected_momentum = ((fine.net_outgoing - base.net_outgoing)[:, None] * c).sum(dim=0)
+    actual_momentum = ((corrected - before).sum(dim=(1, 2, 3))[:, None] * c).sum(dim=0)
     assert torch.allclose(actual_momentum, expected_momentum, atol=2e-14)
 
 
@@ -191,7 +189,10 @@ def test_crossing_link_reflux_changes_only_actual_stream_links() -> None:
     actual_mass, actual_momentum = conserved_population_moments(actual_inventory)
     assert actual_mass.item() == pytest.approx(expected_mass.item(), abs=2e-14)
     torch.testing.assert_close(
-        actual_momentum, expected_momentum, rtol=0.0, atol=2e-14,
+        actual_momentum,
+        expected_momentum,
+        rtol=0.0,
+        atol=2e-14,
     )
     assert report.mass_residual == pytest.approx(0.0, abs=2e-14)
 

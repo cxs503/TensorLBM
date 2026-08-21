@@ -31,12 +31,12 @@ import torch
 
 from .advanced_collision_contract import collide_advanced_3d
 from .boundaries3d import far_field_bc_3d
+from .compile_utils import compile_step, validate_compile_mode
 from .d3q19 import equilibrium3d, macroscopic3d
 from .obstacles import compute_obstacle_forces_3d
 from .solver3d import correct_mass3d, stream3d
 from .suboff_cad import SuboffHullType, build_suboff_mask
 from .suboff_resistance import _voxel_wetted_area
-from .compile_utils import compile_step, validate_compile_mode
 from .turbulence import (
     _neq_stress_norm_3d,
     _nu_t_to_tau_eff,
@@ -172,9 +172,7 @@ class SuboffCmkKbcConfig:
             # cudagraphs rejection).
             validate_compile_mode(self.compile_mode)
             if self.use_triton_step:
-                raise ValueError(
-                    "compile_mode and use_triton_step are mutually exclusive"
-                )
+                raise ValueError("compile_mode and use_triton_step are mutually exclusive")
             if self.collision.upper() == "KBC":
                 raise ValueError(
                     "compile_mode does not support KBC: the per-step entropy "
@@ -332,9 +330,7 @@ def run_suboff_cmk_kbc(
     compiled_step: tuple[Any, Any] | None = None
     if config.compile_mode is not None:
         if device.type != "cuda":
-            raise RuntimeError(
-                f"compile_mode requires a CUDA device; got {device}"
-            )
+            raise RuntimeError(f"compile_mode requires a CUDA device; got {device}")
 
         def _make_compiled_step(with_mass: bool):
             def _step(f: torch.Tensor):
@@ -368,15 +364,15 @@ def run_suboff_cmk_kbc(
                 "tensorlbm.triton_suboff_step_distributed explicitly)."
             )
         if device.type != "cuda":
-            raise RuntimeError(
-                f"use_triton_step=True requires a CUDA device; got {device}"
-            )
+            raise RuntimeError(f"use_triton_step=True requires a CUDA device; got {device}")
         # Local import: Triton/CUDA must not become a hard dependency of
         # the default import path.
         from .backends.triton_backend import (
             TritonStepState,
-            is_available as _triton_is_available,
             triton_suboff_step,
+        )
+        from .backends.triton_backend import (
+            is_available as _triton_is_available,
         )
 
         if not _triton_is_available():
@@ -428,9 +424,7 @@ def run_suboff_cmk_kbc(
                 # two compiled variants; forces are produced by the
                 # graph itself (force_every=1 semantics for compiled
                 # steps, matching the Triton step backend).
-                f, fx_t, fy_t, fz_t = (
-                    compiled_step[1](f) if step % 10 == 0 else compiled_step[0](f)
-                )
+                f, fx_t, fy_t, fz_t = compiled_step[1](f) if step % 10 == 0 else compiled_step[0](f)
                 force_this_step = True
             else:
                 # Collision with SGS

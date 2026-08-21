@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import torch
+
 from tensorlbm.boundaries import (
     apply_simple_channel_boundaries,
     bounce_back_cells,

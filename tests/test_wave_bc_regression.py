@@ -30,35 +30,42 @@ from __future__ import annotations
 
 import ast
 import inspect
-import math
 import textwrap
 
 import pytest
 import torch
 
-from tensorlbm.d3q19 import C as C19, OPPOSITE as OPP19, equilibrium3d, macroscopic3d
-from tensorlbm.d3q27 import C as C27, OPPOSITE as OPP27, equilibrium27, macroscopic27
+from tensorlbm.d3q19 import OPPOSITE as OPP19
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q27 import OPPOSITE as OPP27
+from tensorlbm.d3q27 import C as C27
+from tensorlbm.d3q27 import equilibrium27, macroscopic27
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 from tensorlbm.wave_bc import (
     airy_wave_velocity_3d as orig_airy,
+)
+from tensorlbm.wave_bc import (
     zou_he_inlet_velocity_profile_3d as orig_zou_he_19,
 )
 from tensorlbm.wave_bc_common import (
-    WaveParams,
-    _airy_wave_velocity_3d as common_airy,
-    _D3Q19_CX0,
-    _D3Q19_CX_NEG,
     _D3Q19_INLET_DIRS,
     _D3Q19_INLET_OPP,
     _D3Q27_CX0,
     _D3Q27_CX_NEG,
     _D3Q27_INLET_DIRS,
     _D3Q27_INLET_OPP,
+    WaveParams,
     wave_bc_3d,
+)
+from tensorlbm.wave_bc_common import (
+    _airy_wave_velocity_3d as common_airy,
+)
+from tensorlbm.wave_bc_common import (
     zou_he_inlet_velocity_profile_19 as common_zou_he_19,
+)
+from tensorlbm.wave_bc_common import (
     zou_he_inlet_velocity_profile_27 as common_zou_he_27,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

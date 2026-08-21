@@ -7,15 +7,15 @@ single-node probes; it does not make accuracy, physics, or ranking claims.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 from hashlib import sha256
-import json
 from pathlib import Path
 from typing import Any, Literal
 
 import torch
 
-from .advanced_collision_contract import collision_capability_matrix, collide_advanced_3d
+from .advanced_collision_contract import collide_advanced_3d, collision_capability_matrix
 from .d3q19 import C as C19
 from .d3q19 import equilibrium3d, macroscopic3d
 from .d3q27 import C as C27

@@ -8,10 +8,12 @@ These guard the exact properties that broke during the sphere-drag case study:
         give RHS ~ 0.  This is the property that was violated by the per-face
         area scaling bug and caused the coupled run to blow up.
 """
-import torch
-import pytest
 
-from tensorlbm.d3q19 import C as C3D, OPPOSITE as OPP3D, W as W3D
+import pytest
+import torch
+
+from tensorlbm.d3q19 import OPPOSITE as OPP3D
+from tensorlbm.d3q19 import C as C3D
 from tensorlbm.dg_advection import get_ops
 from tensorlbm.dg_band import build_band_topology, dg_rhs_band
 from tensorlbm.dg_curv import (
@@ -53,8 +55,9 @@ def test_t1_affine_reproduces_cartesian(dg_ops):
         n_phys[a, 1, :, a] = 1.0
         n_phys[a, 0, :, a] = -1.0
     specular = OPP3D.unsqueeze(0).expand(n_b, 19).clone()
-    geo = PrismGeometry(contrav=contrav, face_J=face_J, n_phys=n_phys,
-                        specular=specular, detJ=torch.ones(n_b))
+    geo = PrismGeometry(
+        contrav=contrav, face_J=face_J, n_phys=n_phys, specular=specular, detJ=torch.ones(n_b)
+    )
     got = dg_rhs_band_geo(f_dg, C3D, dg_ops, topo, geo, ext_field=ext)
     err = (got - ref).abs().max().item()
     assert err < 1e-5, f"curvilinear operator must reproduce Cartesian, got {err}"
@@ -62,8 +65,9 @@ def test_t1_affine_reproduces_cartesian(dg_ops):
 
 def test_t2_mass_conservation_periodic(dg_ops):
     nz, ny, nx = 8, 16, 16
-    topo = build_band_topology(torch.ones(nz, ny, nx, dtype=torch.bool),
-                               solid_mask=None, periodic=True)
+    topo = build_band_topology(
+        torch.ones(nz, ny, nx, dtype=torch.bool), solid_mask=None, periodic=True
+    )
     torch.manual_seed(0)
     f_dg = torch.rand(19, topo.n_band, 2, 2, 2, dtype=torch.float64) + 0.1
     geo = PrismGeometry(
@@ -83,14 +87,25 @@ def test_t3_sphere_topology_geometry(dg_ops):
     radius = 5.0
     cx, cy, cz = nx * 0.25, ny * 0.5, nz * 0.5
     solid = torch.zeros(nz, ny, nx, dtype=torch.bool)
-    r = torch.sqrt(((torch.arange(nx) - cx) ** 2).reshape(1, 1, nx) +
-                   ((torch.arange(ny) - cy) ** 2).reshape(1, ny, 1) +
-                   ((torch.arange(nz) - cz) ** 2).reshape(nz, 1, 1))
+    r = torch.sqrt(
+        ((torch.arange(nx) - cx) ** 2).reshape(1, 1, nx)
+        + ((torch.arange(ny) - cy) ** 2).reshape(1, ny, 1)
+        + ((torch.arange(nz) - cz) ** 2).reshape(nz, 1, 1)
+    )
     solid = r <= radius
     topo, geo, meta = make_sphere_prism_topology(
-        solid, center=(cx, cy, cz), R=radius, n_layers=3, first_height=0.5,
-        n_az=16, n_stream=12, polar_cap=0.985, vel=C3D,
-        dtype=torch.float64, device="cpu")
+        solid,
+        center=(cx, cy, cz),
+        R=radius,
+        n_layers=3,
+        first_height=0.5,
+        n_az=16,
+        n_stream=12,
+        polar_cap=0.985,
+        vel=C3D,
+        dtype=torch.float64,
+        device="cpu",
+    )
     assert topo.n_band > 0
     assert torch.isfinite(geo.contrav).all()
     assert (geo.detJ > 0).all()
@@ -99,7 +114,7 @@ def test_t3_sphere_topology_geometry(dg_ops):
     # wall normal must align with sphere radial direction
     cx_t = torch.tensor([cx, cy, cz], dtype=torch.float64)
     nrm = geo.n_phys[0, 1]  # radial + face normal
-    center_b = (topo.band_coords[:, [2, 1, 0]].double() + 0.0)
+    center_b = topo.band_coords[:, [2, 1, 0]].double() + 0.0
     radial = (center_b - cx_t).double()
     radial = radial / (radial.norm(dim=-1, keepdim=True) + 1e-30)
     align = (nrm * radial).sum(dim=-1).abs().min().item()
@@ -120,14 +135,25 @@ def test_t4_uniform_field_conservative(dg_ops):
     nz, ny, nx = 32, 32, 64
     radius = 5.0
     cx, cy, cz = nx * 0.25, ny * 0.5, nz * 0.5
-    r = torch.sqrt(((torch.arange(nx) - cx) ** 2).reshape(1, 1, nx) +
-                   ((torch.arange(ny) - cy) ** 2).reshape(1, ny, 1) +
-                   ((torch.arange(nz) - cz) ** 2).reshape(nz, 1, 1))
+    r = torch.sqrt(
+        ((torch.arange(nx) - cx) ** 2).reshape(1, 1, nx)
+        + ((torch.arange(ny) - cy) ** 2).reshape(1, ny, 1)
+        + ((torch.arange(nz) - cz) ** 2).reshape(nz, 1, 1)
+    )
     solid = r <= radius
     topo, geo, _ = make_sphere_prism_topology(
-        solid, center=(cx, cy, cz), R=radius, n_layers=1, first_height=1.0,
-        n_az=24, n_stream=16, polar_cap=0.985, vel=C3D,
-        dtype=torch.float64, device="cpu")
+        solid,
+        center=(cx, cy, cz),
+        R=radius,
+        n_layers=1,
+        first_height=1.0,
+        n_az=24,
+        n_stream=16,
+        polar_cap=0.985,
+        vel=C3D,
+        dtype=torch.float64,
+        device="cpu",
+    )
     f_dg = torch.full((19, topo.n_band, 2, 2, 2), 0.1, dtype=torch.float64)
     ext = torch.full((19, nz * ny * nx), 0.1, dtype=torch.float64)
     rhs = dg_rhs_band_geo(f_dg, C3D, dg_ops, topo, geo, ext_field=ext)

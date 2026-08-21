@@ -26,6 +26,7 @@ U=0.05, nu=0.01 (tau=0.53), Ma~0.087。
         [--min-steps N] [--max-steps N] [--seed 0] [--device cpu]
     run.py scan <out_dir> [--min-steps N] [--max-steps N]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -40,9 +41,9 @@ sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
 import numpy as np
 import torch
 
+from tensorlbm.boundaries import zou_he_inlet_velocity
 from tensorlbm.d2q9 import OPPOSITE, equilibrium, macroscopic
 from tensorlbm.solver import collide_bgk, stream
-from tensorlbm.boundaries import zou_he_inlet_velocity
 from tensorlbm.utils import get_reproducibility_metadata
 
 CS2 = 1.0 / 3.0
@@ -56,7 +57,9 @@ GRIDS = {
 # ---------------------------------------------------------------------------
 # Blasius 参考解：f''' + f*f'' = 0 的 RK4 打靶解（自洽标准解，非外推）
 # ---------------------------------------------------------------------------
-def blasius_ode_solution(eta_max: float = 15.0, n: int = 30001) -> tuple[np.ndarray, np.ndarray, float]:
+def blasius_ode_solution(
+    eta_max: float = 15.0, n: int = 30001
+) -> tuple[np.ndarray, np.ndarray, float]:
     """Solve Blasius ODE by RK4 shooting on f''(0); return (eta, f', f''(0))."""
     h = eta_max / n
 
@@ -95,7 +98,9 @@ def blasius_ode_solution(eta_max: float = 15.0, n: int = 30001) -> tuple[np.ndar
 # ---------------------------------------------------------------------------
 # 边界条件（库函数 + 标准镜面反射/零梯度，均为教材公式）
 # ---------------------------------------------------------------------------
-def apply_bc(f: torch.Tensor, u_in: float, le: int, plate_end: int, ny: int, nx: int) -> torch.Tensor:
+def apply_bc(
+    f: torch.Tensor, u_in: float, le: int, plate_end: int, ny: int, nx: int
+) -> torch.Tensor:
     """Post-stream boundary treatment.
 
     - inlet  (x=0):      Zou-He 均匀速度入口 (库函数)
@@ -176,7 +181,9 @@ def run_case(
             _, ux, _ = macroscopic(f)
             prof = [float(ux[y, meas_x]) for y in prof_rows]
             if prev_prof is not None:
-                rel = max(abs(a - b) for a, b in zip(prof, prev_prof, strict=True)) / max(u_in, 1e-12)
+                rel = max(abs(a - b) for a, b in zip(prof, prev_prof, strict=True)) / max(
+                    u_in, 1e-12
+                )
                 if step >= min_steps and rel < 1e-5:
                     steady = True
                     break
@@ -211,15 +218,17 @@ def run_case(
     eta_cut = 5.5
     sel = (eta_phys > 0.0) & (eta_phys <= eta_cut)
     eta_s = eta_phys[sel]
-    u_s = (u_num[sel] / u_in)
+    u_s = u_num[sel] / u_in
     blas_s = fp_interp[sel]
     l2_rel = float(np.linalg.norm(u_s - blas_s) / np.linalg.norm(blas_s))
     max_abs = float(np.max(np.abs(u_s - blas_s)))
     mask_strong = blas_s > 0.05
-    max_rel_strong = float(np.max(np.abs(u_s[mask_strong] - blas_s[mask_strong]) / blas_s[mask_strong]) * 100.0)
+    max_rel_strong = float(
+        np.max(np.abs(u_s[mask_strong] - blas_s[mask_strong]) / blas_s[mask_strong]) * 100.0
+    )
 
     # ---- 壁面摩擦 C_f
-    tau_w1 = 2.0 * nu * float(prof_acc[1].item())          # u(1)/(0.5), rho=1
+    tau_w1 = 2.0 * nu * float(prof_acc[1].item())  # u(1)/(0.5), rho=1
     cf_num = 2.0 * tau_w1 / (u_in * u_in)
     cf_err_pct = (cf_num - cf_blasius) / cf_blasius * 100.0
     # 交叉验证：前 4 个流体点的线性拟合斜率（距壁 0.5..3.5）
@@ -237,12 +246,21 @@ def run_case(
         "collision": "bgk",
         "boundary": "zou_he_velocity_inlet + zero-gradient outlet + top symmetry (specular) + pre-streaming half-way bounce-back plate",
         "extrap": "none",
-        "nx": nx, "ny": ny, "le": le, "plate_len": plate_len, "plate_end": plate_end,
-        "meas_x": meas_x, "x_prime": x_prime,
-        "u_in": u_in, "nu": nu, "tau": tau,
+        "nx": nx,
+        "ny": ny,
+        "le": le,
+        "plate_len": plate_len,
+        "plate_end": plate_end,
+        "meas_x": meas_x,
+        "x_prime": x_prime,
+        "u_in": u_in,
+        "nu": nu,
+        "tau": tau,
         "Ma": u_in / math.sqrt(CS2),
         "re_x": re_x,
-        "n_steps": step, "steady": steady, "min_steps": min_steps,
+        "n_steps": step,
+        "steady": steady,
+        "min_steps": min_steps,
         "elapsed_s": round(elapsed, 1),
         "mass_drift_pct": mass_drift_pct,
         "finite": bool(torch.isfinite(f).all().item()),
@@ -295,18 +313,46 @@ def main() -> None:
 
     args = ap.parse_args()
     if args.mode == "single":
-        r = run_case(GRIDS[args.grid], args.U, args.nu, args.min_steps, args.max_steps,
-                     args.out_json, args.seed, args.device)
-        print(json.dumps({k: r[k] for k in
-                          ["grid", "nx", "ny", "u_in", "nu", "tau", "re_x", "n_steps", "steady",
-                           "mass_drift_pct", "finite", "elapsed_s"]} | {
-                              "profile_l2": r["profile"]["l2_rel_err"],
-                              "profile_max_abs": r["profile"]["max_abs_err"],
-                              "profile_max_rel_pct": r["profile"]["max_rel_err_strong_pct"],
-                              "cf_err_pct": r["cf"]["cf_err_pct"],
-                              "cf_fit_err_pct": r["cf"]["cf_fit_err_pct"],
-                              "u_top": r["freestream"]["u_over_U_top"]},
-                          indent=2))
+        r = run_case(
+            GRIDS[args.grid],
+            args.U,
+            args.nu,
+            args.min_steps,
+            args.max_steps,
+            args.out_json,
+            args.seed,
+            args.device,
+        )
+        print(
+            json.dumps(
+                {
+                    k: r[k]
+                    for k in [
+                        "grid",
+                        "nx",
+                        "ny",
+                        "u_in",
+                        "nu",
+                        "tau",
+                        "re_x",
+                        "n_steps",
+                        "steady",
+                        "mass_drift_pct",
+                        "finite",
+                        "elapsed_s",
+                    ]
+                }
+                | {
+                    "profile_l2": r["profile"]["l2_rel_err"],
+                    "profile_max_abs": r["profile"]["max_abs_err"],
+                    "profile_max_rel_pct": r["profile"]["max_rel_err_strong_pct"],
+                    "cf_err_pct": r["cf"]["cf_err_pct"],
+                    "cf_fit_err_pct": r["cf"]["cf_fit_err_pct"],
+                    "u_top": r["freestream"]["u_over_U_top"],
+                },
+                indent=2,
+            )
+        )
     else:
         out_dir = Path(args.out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -331,22 +377,40 @@ def main() -> None:
             "collision": "bgk",
             "boundary": "zou_he_velocity_inlet + zero-gradient outlet + top symmetry + pre-streaming BB plate",
             "extrap": "none",
-            "U": args.U, "nu": args.nu,
-            "min_steps": args.min_steps, "max_steps": args.max_steps,
-            "criteria": {"profile_l2_err_le_3pct": True, "cf_err_le_3pct": True, "grid_convergence": converged},
+            "U": args.U,
+            "nu": args.nu,
+            "min_steps": args.min_steps,
+            "max_steps": args.max_steps,
+            "criteria": {
+                "profile_l2_err_le_3pct": True,
+                "cf_err_le_3pct": True,
+                "grid_convergence": converged,
+            },
             "per_grid": [
-                {"grid": r["grid"], "nx": r["nx"], "ny": r["ny"], "plate_len": r["plate_len"],
-                 "meas_x": r["meas_x"], "x_prime": r["x_prime"], "re_x": r["re_x"],
-                 "n_steps": r["n_steps"], "steady": r["steady"],
-                 "profile_l2_rel_err": r["profile"]["l2_rel_err"],
-                 "profile_max_rel_pct": r["profile"]["max_rel_err_strong_pct"],
-                 "cf_err_pct": r["cf"]["cf_err_pct"], "cf_fit_err_pct": r["cf"]["cf_fit_err_pct"],
-                 "u_top": r["freestream"]["u_over_U_top"], "mass_drift_pct": r["mass_drift_pct"]}
+                {
+                    "grid": r["grid"],
+                    "nx": r["nx"],
+                    "ny": r["ny"],
+                    "plate_len": r["plate_len"],
+                    "meas_x": r["meas_x"],
+                    "x_prime": r["x_prime"],
+                    "re_x": r["re_x"],
+                    "n_steps": r["n_steps"],
+                    "steady": r["steady"],
+                    "profile_l2_rel_err": r["profile"]["l2_rel_err"],
+                    "profile_max_rel_pct": r["profile"]["max_rel_err_strong_pct"],
+                    "cf_err_pct": r["cf"]["cf_err_pct"],
+                    "cf_fit_err_pct": r["cf"]["cf_fit_err_pct"],
+                    "u_top": r["freestream"]["u_over_U_top"],
+                    "mass_drift_pct": r["mass_drift_pct"],
+                }
                 for r in cases
             ],
             "verdict": {
                 "pass": pass_profile and pass_cf and converged,
-                "profile_pass": pass_profile, "cf_pass": pass_cf, "converged": converged,
+                "profile_pass": pass_profile,
+                "cf_pass": pass_cf,
+                "converged": converged,
             },
         }
         (out_dir / "summary.json").write_text(json.dumps(summary, indent=2))

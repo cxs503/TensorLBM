@@ -14,15 +14,14 @@ from __future__ import annotations
 import pytest
 import torch
 
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.d3q27 import equilibrium27
 from tensorlbm.wall_function_common import (
     SUPPORTED_LATTICES,
     compute_u_tau,
     compute_y_plus,
     wall_function,
 )
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.d3q27 import equilibrium27, macroscopic27
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -95,7 +94,7 @@ class TestWallFunctionShape:
 
     @pytest.mark.parametrize("lattice", SUPPORTED_LATTICES)
     def test_returns_same_shape(self, lattice: str) -> None:
-        q = _q_for(lattice)
+        _q_for(lattice)
         f = _make_equilibrium(lattice)
         mask = _make_channel_mask()
         u_tau = torch.full_like(mask, 0.01, dtype=torch.float32)

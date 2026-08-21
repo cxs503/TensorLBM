@@ -1,4 +1,5 @@
 """Axial contribution profiles for wall-model shear force diagnostics."""
+
 from __future__ import annotations
 
 import torch
@@ -76,38 +77,40 @@ def summarize_axial_wall_shear(
             torch.tensor((0.5, 0.95), device=coordinate.device, dtype=torch.float64),
         )
         area_sum = bin_area.sum()
-        result.append({
-            "bin": index,
-            "normalized_x_lower": index / bins,
-            "normalized_x_upper": (index + 1) / bins,
-            "sample_count": count,
-            "area_sum_lu2": float(area_sum.item()),
-            "signed_shear_x_sum_lu": float(signed_sum.item()),
-            "absolute_shear_x_sum_lu": float(absolute_sum.item()),
-            "signed_shear_x_fraction": float(
-                (signed_sum / total_signed.abs().clamp_min(tiny)).item(),
-            ),
-            "absolute_shear_x_fraction": float(
-                (absolute_sum / total_absolute.clamp_min(tiny)).item(),
-            ),
-            "mean_signed_shear_x_per_area_lu": float(
-                (signed_sum / area_sum.clamp_min(tiny)).item(),
-            ),
-            "median_y_plus": float(y_plus_quantiles[0].item()),
-            "percentile95_y_plus": float(y_plus_quantiles[1].item()),
-            "median_tangential_speed_lu": float(
-                tangential_speed_quantiles[0].item(),
-            ),
-            "percentile95_tangential_speed_lu": float(
-                tangential_speed_quantiles[1].item(),
-            ),
-            "median_friction_velocity_lu": float(
-                friction_velocity_quantiles[0].item(),
-            ),
-            "percentile95_friction_velocity_lu": float(
-                friction_velocity_quantiles[1].item(),
-            ),
-        })
+        result.append(
+            {
+                "bin": index,
+                "normalized_x_lower": index / bins,
+                "normalized_x_upper": (index + 1) / bins,
+                "sample_count": count,
+                "area_sum_lu2": float(area_sum.item()),
+                "signed_shear_x_sum_lu": float(signed_sum.item()),
+                "absolute_shear_x_sum_lu": float(absolute_sum.item()),
+                "signed_shear_x_fraction": float(
+                    (signed_sum / total_signed.abs().clamp_min(tiny)).item(),
+                ),
+                "absolute_shear_x_fraction": float(
+                    (absolute_sum / total_absolute.clamp_min(tiny)).item(),
+                ),
+                "mean_signed_shear_x_per_area_lu": float(
+                    (signed_sum / area_sum.clamp_min(tiny)).item(),
+                ),
+                "median_y_plus": float(y_plus_quantiles[0].item()),
+                "percentile95_y_plus": float(y_plus_quantiles[1].item()),
+                "median_tangential_speed_lu": float(
+                    tangential_speed_quantiles[0].item(),
+                ),
+                "percentile95_tangential_speed_lu": float(
+                    tangential_speed_quantiles[1].item(),
+                ),
+                "median_friction_velocity_lu": float(
+                    friction_velocity_quantiles[0].item(),
+                ),
+                "percentile95_friction_velocity_lu": float(
+                    friction_velocity_quantiles[1].item(),
+                ),
+            }
+        )
     return result
 
 

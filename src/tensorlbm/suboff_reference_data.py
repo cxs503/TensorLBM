@@ -44,10 +44,9 @@ tradition.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from math import isfinite, log10
 from numbers import Real
-from typing import Sequence
 
 __all__ = [
     "SuboffReferenceDatum",
@@ -114,8 +113,7 @@ def get_tow_tank_resistance_points(
     if hull_type not in {"bare_hull", "full"}:
         raise ValueError("hull_type must be bare_hull or full")
     return tuple(
-        point for point in SUBOFF_TOW_TANK_RESISTANCE_TABLE14
-        if point.hull_type == hull_type
+        point for point in SUBOFF_TOW_TANK_RESISTANCE_TABLE14 if point.hull_type == hull_type
     )
 
 

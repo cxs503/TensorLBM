@@ -8,10 +8,10 @@ from typing import Any, cast
 
 import pytest
 
+import tensorlbm.suboff_resistance as suboff
 from tensorlbm.marine_reference_manifest import build_marine_reference_manifest
 from tensorlbm.marine_resistance_artifact import build_marine_resistance_artifact
 from tensorlbm.marine_run_provenance import build_marine_run_provenance
-import tensorlbm.suboff_resistance as suboff
 
 
 def test_d3q19_face_integrated_momentum_flux_has_outward_face_signs():

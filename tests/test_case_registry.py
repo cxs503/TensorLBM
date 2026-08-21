@@ -12,12 +12,12 @@ Coverage:
     raising;
   * opt-in solver_export integration registers FieldDataProductR2 assets.
 """
+
 from __future__ import annotations
 
 import pytest
 import torch
 
-from tensorlbm.boundary_registry import BoundaryCondition, boundary_condition_registry
 from tensorlbm.boundaries3d import (
     bounce_back_cells_3d,
     far_field_bc_3d,
@@ -73,6 +73,7 @@ class TestCaseRegistryCrud:
 
     def test_duplicate_name_rejected(self):
         with pytest.raises(ValueError, match="already registered"):
+
             @register_case("cavity")
             class DuplicateCavity(CaseBase):
                 name = "cavity"
@@ -93,6 +94,7 @@ class TestCaseRegistryCrud:
 
     def test_requires_name(self):
         with pytest.raises(ValueError, match="name"):
+
             @register_case()
             class Anonymous(CaseBase):
                 name = ""
@@ -229,8 +231,12 @@ def _direct_suboff_chain(n, re, u_in, steps, mass_every=10):
     tau = 3.0 * nu + 0.5
     solid, _stats = build_suboff_mask(
         hull_type="bare_hull",
-        nx=nx, ny=ny, nz=nz,
-        cx=nx * 0.35, cy=ny / 2.0, cz=nz / 2.0,
+        nx=nx,
+        ny=ny,
+        nz=nz,
+        cx=nx * 0.35,
+        cy=ny / 2.0,
+        cz=nz / 2.0,
         length=hull_length,
         device="cpu",
     )
@@ -268,7 +274,11 @@ class TestRegistryMatchesDirectPaths:
         steps = 20
         direct = _direct_suboff_chain(n=32, re=60.0, u_in=0.05, steps=steps)
         result = run_case(
-            "suboff_n128", steps=steps, resolution=32, re=60.0, u_in=0.05,
+            "suboff_n128",
+            steps=steps,
+            resolution=32,
+            re=60.0,
+            u_in=0.05,
             collision="bgk",
         )
         torch.testing.assert_close(result.f, direct, rtol=0, atol=ATOL)
@@ -330,9 +340,7 @@ class TestRunner:
         from tensorlbm.data.catalog import FieldDataCatalog
 
         catalog = FieldDataCatalog.open(tmp_path / "catalog.db")
-        export = ExportSpec(
-            h5_path=tmp_path / "run.h5", catalog=catalog, code_sha="not-a-sha"
-        )
+        export = ExportSpec(h5_path=tmp_path / "run.h5", catalog=catalog, code_sha="not-a-sha")
         with pytest.raises(ValueError, match="code_sha"):
             run_case("poiseuille", steps=1, resolution=5, re=50.0, export=export)
         catalog.close()

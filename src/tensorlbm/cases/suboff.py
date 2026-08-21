@@ -16,7 +16,7 @@ from typing import ClassVar, Sequence
 
 import torch
 
-from ..boundary_registry import BCPhase, BCKind, BoundaryCondition
+from ..boundary_registry import BCKind, BCPhase, BoundaryCondition
 from .base import CaseBase, CaseUnits
 from .registry import register_case
 
@@ -49,9 +49,7 @@ class SuboffChannelCase(CaseBase):
     ) -> None:
         self.u_in = float(u_in)
         self.hull_type = hull_type
-        super().__init__(
-            resolution, re, device=device, dtype=dtype, collision=collision
-        )
+        super().__init__(resolution, re, device=device, dtype=dtype, collision=collision)
 
     @classmethod
     def default_params(cls) -> dict:

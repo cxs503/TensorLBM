@@ -42,7 +42,9 @@ def test_laminar_pressure_gradient_solution_matches_analytic_shear() -> None:
     expected_tau = nu * speed / distance - 0.5 * acceleration * distance
     assert torch.all(result.attached)
     assert result.shear_stress_over_density == pytest.approx(
-        expected_tau, rel=2e-12, abs=2e-14,
+        expected_tau,
+        rel=2e-12,
+        abs=2e-14,
     )
     assert result.residual == pytest.approx(torch.zeros(3), abs=2e-13)
 
@@ -144,7 +146,8 @@ def test_duprat_uses_gradient_magnitude_separately_from_signed_ode_source() -> N
     assert bool(without_crossflow.attached.item())
     assert bool(with_crossflow.attached.item())
     assert with_crossflow.friction_velocity.item() != pytest.approx(
-        without_crossflow.friction_velocity.item(), rel=1.0e-4,
+        without_crossflow.friction_velocity.item(),
+        rel=1.0e-4,
     )
 
 
@@ -166,11 +169,19 @@ def test_invalid_quadrature_and_iteration_contracts_are_rejected() -> None:
     value = torch.tensor((0.05,))
     with pytest.raises(ValueError, match="quadrature_points"):
         pressure_gradient_equilibrium_velocity(
-            value, 1.0, 0.0, 1.0e-4, quadrature_points=8.5,
+            value,
+            1.0,
+            0.0,
+            1.0e-4,
+            quadrature_points=8.5,
         )
     with pytest.raises(ValueError, match="iterations"):
         solve_pressure_gradient_equilibrium_wall_shear(
-            value, 1.0, 0.0, 1.0e-4, iterations=True,
+            value,
+            1.0,
+            0.0,
+            1.0e-4,
+            iterations=True,
         )
     with pytest.raises(ValueError, match="eddy_viscosity_model"):
         pressure_gradient_equilibrium_velocity(

@@ -39,6 +39,7 @@ Per-leaf substep weights ``2^-(d_max - d_leaf)`` (``leaf_force_weights``)
 are applied when supplied; the accumulation into a per-root-step force is
 the responsibility of :mod:`tensorlbm.octree_boundary.force`.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -86,13 +87,12 @@ def leaf_force_weights(octree: OctreeGrid) -> torch.Tensor:
     force (its own convective time step is ``2^-d`` root units).  The weight
     corrects the lockstep over-sampling: ``sum_substeps w = 2**d``.
     """
-    return 2.0 ** (
-        -(octree.d_max - octree.leaf_level.to(torch.float64))
-    )
+    return 2.0 ** (-(octree.d_max - octree.leaf_level.to(torch.float64)))
 
 
 def leaf_macroscopic(
-    octree: OctreeGrid, f_prev: torch.Tensor,
+    octree: OctreeGrid,
+    f_prev: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Per-leaf ``(rho, ux, uy, uz)`` from the pre-stream populations."""
     if octree.Q == 27:
@@ -241,35 +241,42 @@ def bfl_apply_gather(
         if bool(ghost.any()):
             if ghost_plan is None or ghost_vals is None:
                 raise RuntimeError(
-                    "BFL upstream point is a ghost cell but no ghost values "
-                    "were supplied",
+                    "BFL upstream point is a ghost cell but no ghost values were supplied",
                 )
             slots = ghost_plan.slot[d, idx[ghost]]
             if bool((slots < 0).any()):
                 raise RuntimeError(
-                    "BFL upstream ghost cell has no ghost slot "
-                    "(shell band too thin)",
+                    "BFL upstream ghost cell has no ghost slot (shell band too thin)",
                 )
             fp_up[ghost] = ghost_vals[d, slots].to(torch.float64)
         fanout = up == FANOUT
         if bool(fanout.any()):
-            for pos in torch.nonzero(
-                fanout, as_tuple=False,
-            ).squeeze(1).tolist():
+            for pos in (
+                torch.nonzero(
+                    fanout,
+                    as_tuple=False,
+                )
+                .squeeze(1)
+                .tolist()
+            ):
                 leaf_i = int(idx[pos].item())
                 if remote_values is not None and fan_off is not None and fan_len is not None:
                     off = int(fan_off[od, leaf_i].item())
                     ln = int(fan_len[od, leaf_i].item())
                     if ln > 0:
-                        fp_up[pos] = remote_values[off:off + ln].to(
-                            torch.float64,
-                        ).mean()
+                        fp_up[pos] = (
+                            remote_values[off : off + ln]
+                            .to(
+                                torch.float64,
+                            )
+                            .mean()
+                        )
                         continue
                 group = octree.interface_fanout.get((leaf_i, int(od)), [])
                 if group:
-                    fp_up[pos] = f_prev[
-                        d, torch.tensor(group, device=device)
-                    ].to(torch.float64).mean()
+                    fp_up[pos] = (
+                        f_prev[d, torch.tensor(group, device=device)].to(torch.float64).mean()
+                    )
                 else:
                     fp_up[pos] = fp_d[pos]
         solid_up = up == SOLID
@@ -295,10 +302,7 @@ def bfl_apply_gather(
         lin = qq < 0.5
         f_bc_lin = 2.0 * qq * f_opp_post + (1.0 - 2.0 * qq) * fp_d
         safe_q = torch.where(lin, torch.ones_like(qq), qq)
-        f_bc_quad = (
-            f_opp_post / (2.0 * safe_q)
-            + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
-        )
+        f_bc_quad = f_opp_post / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
         f_bc = torch.where(lin, f_bc_lin, f_bc_quad)
         if wall_velocity is not None:
             uwx, uwy, uwz = wall_velocity

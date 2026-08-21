@@ -51,11 +51,14 @@ def _artifacts(tmp_path: Path, *, offset: float = 0.0) -> tuple[Path, Path]:
         for step in range(1, 81)
     ]
     checkpoint_path = tmp_path / "sphere.ckpt"
-    torch.save({
-        "step": 80,
-        "configuration": configuration,
-        "projected_pressure_samples": samples,
-    }, checkpoint_path)
+    torch.save(
+        {
+            "step": 80,
+            "configuration": configuration,
+            "projected_pressure_samples": samples,
+        },
+        checkpoint_path,
+    )
     return result_path, checkpoint_path
 
 

@@ -57,7 +57,8 @@ def test_flat_plate_checkpoint_audit_is_read_only(tmp_path: Path) -> None:
     # At zero gradient Duprat has alpha=1 but its denominator is 1+A+, so
     # it approaches, rather than bitwise duplicates, the classic damping law.
     assert candidate["van_driest"]["shear_force_x_lu"] == pytest.approx(
-        candidate["duprat"]["shear_force_x_lu"], rel=0.02,
+        candidate["duprat"]["shear_force_x_lu"],
+        rel=0.02,
     )
     restored = torch.load(checkpoint, map_location="cpu", weights_only=True)
     assert torch.equal(restored["populations"], populations)

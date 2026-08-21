@@ -30,10 +30,10 @@ route); the default keeps it eager.
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import json
-from pathlib import Path
 import sys
+from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -160,8 +160,7 @@ def run_config(
     tau = config.tau
     if tau <= 0.505:
         raise ValueError(
-            f"{config.case}: tau={tau:.4f} too close to the stability limit; "
-            f"lower Re or raise u_in"
+            f"{config.case}: tau={tau:.4f} too close to the stability limit; lower Re or raise u_in"
         )
 
     solid, _stats = build_suboff_mask(
@@ -306,7 +305,12 @@ def main() -> int:
     if args.n_steps is not None:
         sweep = tuple(
             PilotConfig(
-                cfg.case, cfg.nx, cfg.u_in, cfg.re, cfg.collision, args.n_steps,
+                cfg.case,
+                cfg.nx,
+                cfg.u_in,
+                cfg.re,
+                cfg.collision,
+                args.n_steps,
                 min(cfg.snapshot_every, args.n_steps),
             )
             for cfg in sweep

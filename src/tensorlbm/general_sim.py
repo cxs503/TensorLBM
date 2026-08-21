@@ -34,21 +34,17 @@ from typing import Any, Literal
 import numpy as np
 import torch
 
-from .unit_converter import LBMUnitConverter
-from .io import save_vtk_binary, save_hdf5
-
-# ── Common interface module imports (the 9 modules) ──────────────────────
-# 1. Geometry (stl_geometry.py)
-from .stl_geometry import read_stl, voxelize_stl, make_sphere_stl, make_cylinder_stl, make_naca_stl
+# 7. Boundary conditions (boundaries3d.py)
+from .boundaries3d import far_field_bc_3d
 
 # 2 + 3 + 5. Near-wall, SurfaceMesh, force integration (drag_pressure.py)
 from .drag_pressure import (
-    get_near_wall_3d,
     SurfaceMesh,
-    drag_pressure_integration,
     drag_friction_integration,
-    drag_total,
+    drag_pressure_integration,
+    get_near_wall_3d,
 )
+from .io import save_hdf5, save_vtk_binary
 
 # 4. Main loop (lbm_step_correct.py)
 from .lbm_step_correct import lbm_step_correct
@@ -56,14 +52,15 @@ from .lbm_step_correct import lbm_step_correct
 # 6. Strouhal (postprocess.py)
 from .postprocess import detect_strouhal
 
-# 7. Boundary conditions (boundaries3d.py)
-from .boundaries3d import far_field_bc_3d, bounce_back_cells_3d
+# ── Common interface module imports (the 9 modules) ──────────────────────
+# 1. Geometry (stl_geometry.py)
+from .stl_geometry import make_naca_stl, read_stl, voxelize_stl
+from .unit_converter import LBMUnitConverter
 
 # 8. Wall function (wall_model.py)
 from .wall_model import wall_function_3d
 
 # 9. Momentum exchange (momentum_exchange.py)
-from .momentum_exchange import momentum_exchange_standard
 
 
 # ── Enums ──────────────────────────────────────────────────────────────────
@@ -531,7 +528,7 @@ class GeneralSimEngine:
         cfg = self.config
         sol = cfg.solver
         n_steps = steps or sol.max_steps
-        device = torch.device(sol.device)
+        torch.device(sol.device)
         tau = self.uc.tau
         nu_lb = self.uc.nu_lb
         u_in = self.uc.u_lb
@@ -710,7 +707,6 @@ class GeneralSimEngine:
         st = None
         if self.forces_log and len(self.forces_log) > 20:
             cl_hist = [e.get("cl", 0.0) for e in self.forces_log]
-            D = cfg.physics.reference_length
             u_in_lb = self.uc.u_lb if self.uc else 0.05
             st = detect_strouhal(
                 cl_hist,
@@ -898,7 +894,7 @@ class GeneralSimEngine:
 
     def _build_suboff_solid(self, nx, ny, nz, device):
         """Boolean solid mask for SUBOFF hull (via suboff_cad.build_suboff_mask)."""
-        from .suboff_cad import build_suboff_mask, SuboffConfig
+        from .suboff_cad import SuboffConfig, build_suboff_mask
 
         geo = self.config.geometry
         length_lb = geo.suboff_length / (
@@ -1047,7 +1043,7 @@ class GeneralSimEngine:
         collision = self._auto_collision or sol.collision
         cs = sol.smagorinsky_cs
 
-        from .solver3d import collide_mrt3d_low_memory, collide_bgk3d
+        from .solver3d import collide_bgk3d, collide_mrt3d_low_memory
         from .turbulence import collide_smagorinsky_mrt3d
 
         if collision == CollisionModel.BGK:
@@ -1073,7 +1069,6 @@ class GeneralSimEngine:
         Determines far-field and periodic faces based on geometry axis.
         """
         geo = self.config.geometry
-        sol = self.config.solver
 
         # For 2D extruded geometries (cylinder along z, naca along z),
         # make z-direction periodic
@@ -1165,17 +1160,24 @@ class GeneralSimEngine:
         entry["fz"] = fz_p + fz_f
 
         # Optional: MEM comparison (common module: momentum_exchange)
-        if sol.force_method in (ForceMethod.MOMENTUM_EXCHANGE, ForceMethod.BOTH) and self.near is not None:
+        if (
+            sol.force_method in (ForceMethod.MOMENTUM_EXCHANGE, ForceMethod.BOTH)
+            and self.near is not None
+        ):
             from .momentum_exchange import (
-                momentum_exchange_standard,
-                momentum_exchange_galilean,
                 momentum_exchange_background_subtracted,
+                momentum_exchange_galilean,
+                momentum_exchange_standard,
             )
 
             variant = getattr(sol, "mem_variant", "standard")
             tau = self.uc.tau if self.uc is not None else 1.0
             u_in = self.uc.u_lb if self.uc is not None else 0.05
-            rho0 = float(self._initial_mass) / float((~self.solid).sum()) if self._initial_mass else 1.0
+            rho0 = (
+                float(self._initial_mass) / float((~self.solid).sum())
+                if self._initial_mass
+                else 1.0
+            )
 
             def _norm(fvec):
                 return fvec[0] / dpS if dpS > 0 else 0.0
@@ -1201,7 +1203,9 @@ class GeneralSimEngine:
                     entry["fy"] = me_std[1]
                     entry["fz"] = me_std[2]
             elif variant == "galilean":
-                fx_mem, fy_mem, fz_mem = momentum_exchange_galilean(self.f, self.solid, self.near, tau)
+                fx_mem, fy_mem, fz_mem = momentum_exchange_galilean(
+                    self.f, self.solid, self.near, tau
+                )
                 entry["cd_mem"] = _norm((fx_mem, fy_mem, fz_mem))
                 entry["fx_mem"] = fx_mem
                 entry["fy_mem"] = fy_mem

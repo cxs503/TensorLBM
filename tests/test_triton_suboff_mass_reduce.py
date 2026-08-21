@@ -56,13 +56,11 @@ def _runner_shell(world_size: int, gather: bool, rank: int = 0):
     return runner
 
 
-def _halo_owned_view(seed: int, nz_local: int = 5, ny: int = 7,
-                     nx: int = 9, q: int = 19):
+def _halo_owned_view(seed: int, nz_local: int = 5, ny: int = 7, nx: int = 9, q: int = 19):
     """A halo-padded buffer and its (strided) owned-plane view."""
     gen = torch.Generator().manual_seed(seed)
-    buf = torch.randn((q, nz_local + 2, ny, nx), generator=gen,
-                      dtype=torch.float32)
-    owned = buf[:, 1:nz_local + 1, :, :]
+    buf = torch.randn((q, nz_local + 2, ny, nx), generator=gen, dtype=torch.float32)
+    owned = buf[:, 1 : nz_local + 1, :, :]
     assert not owned.is_contiguous(), "fixture must exercise the strided view"
     return buf, owned
 
@@ -97,8 +95,7 @@ def test_world1_mass_branch_keeps_stock_contiguous_sum_bitwise():
     assert torch.equal(cur, expected)
 
 
-def test_world1_mass_branch_still_pays_one_contiguous_copy(
-        contiguous_calls):
+def test_world1_mass_branch_still_pays_one_contiguous_copy(contiguous_calls):
     """The world==1 branch keeps its exact original statement sequence."""
     _buf, owned = _halo_owned_view(seed=102)
     runner = _runner_shell(world_size=1, gather=True)
@@ -107,7 +104,8 @@ def test_world1_mass_branch_still_pays_one_contiguous_copy(
 
 
 def test_all_reduce_branch_sums_strided_view_without_contiguous_transient(
-        monkeypatch, contiguous_calls):
+    monkeypatch, contiguous_calls
+):
     """all_reduce fallback: no dense copy of the owned slab at all.
 
     Pre-fix this branch materialised ``owned_full.contiguous()`` — the
@@ -134,7 +132,8 @@ def test_all_reduce_branch_sums_strided_view_without_contiguous_transient(
     assert tuple(owned.shape) not in contiguous_calls
     assert not contiguous_calls, (
         "all_reduce branch must not materialise any dense copy: "
-        f"got calls for shapes {contiguous_calls}")
+        f"got calls for shapes {contiguous_calls}"
+    )
     # The collective operand is the 0-d fp32 scalar, never the slab.
     assert seen["ndim"] == 0 and seen["dtype"] == torch.float32
     assert seen["contiguous"]
@@ -143,8 +142,7 @@ def test_all_reduce_branch_sums_strided_view_without_contiguous_transient(
     assert cur.ndim == 0 and cur.dtype == torch.float32
 
 
-def test_gather_branch_passes_dense_operand_and_global_order_sum(
-        monkeypatch, contiguous_calls):
+def test_gather_branch_passes_dense_operand_and_global_order_sum(monkeypatch, contiguous_calls):
     """gather branch: NCCL operand stays dense, global-z concatenation sum.
 
     all_gather requires a contiguous tensor, and the globally ordered
@@ -157,8 +155,7 @@ def test_gather_branch_passes_dense_operand_and_global_order_sum(
     operands: list[torch.Tensor] = []
 
     def fake_all_gather(parts, tensor, **kwargs):
-        assert tensor.is_contiguous(), (
-            "all_gather operand must be contiguous (NCCL requirement)")
+        assert tensor.is_contiguous(), "all_gather operand must be contiguous (NCCL requirement)"
         operands.append(tensor.clone())
         for part in parts:  # every rank contributes the same slab here
             part.copy_(tensor)
@@ -173,8 +170,7 @@ def test_gather_branch_passes_dense_operand_and_global_order_sum(
     assert torch.equal(cur, expected)
 
 
-def test_gather_fits_memory_flips_to_all_reduce_when_gather_would_oom(
-        monkeypatch):
+def test_gather_fits_memory_flips_to_all_reduce_when_gather_would_oom(monkeypatch):
     """Branch selection: gather only while the global tensor fits.
 
     Mirrors the n=1024/w=8 decision: an 80.5 GiB global (Q,nz,ny,nx)
@@ -185,31 +181,26 @@ def test_gather_fits_memory_flips_to_all_reduce_when_gather_would_oom(
     runner = _runner_shell(world_size=8, gather=True, rank=0)
     q = 19
     n_val = 64
-    fits_bytes = q * n_val ** 3 * 4
+    fits_bytes = q * n_val**3 * 4
     device = torch.device("cuda")
 
     monkeypatch.setattr(
-        torch.cuda, "mem_get_info",
-        lambda dev: (2 * fits_bytes + (2 << 30) + (1 << 30), 100 << 30))
+        torch.cuda, "mem_get_info", lambda dev: (2 * fits_bytes + (2 << 30) + (1 << 30), 100 << 30)
+    )
     assert runner._gather_fits_memory(q, n_val, n_val, n_val, device) is True
 
     # n=1024 cube: global = 80.5 GiB, free-after-steady ~11.4 GiB.
     n_prod = 1024
-    monkeypatch.setattr(
-        torch.cuda, "mem_get_info",
-        lambda dev: (11_400_000_000, 31_400_000_000))
-    assert runner._gather_fits_memory(
-        q, n_prod, n_prod, n_prod, device) is False
+    monkeypatch.setattr(torch.cuda, "mem_get_info", lambda dev: (11_400_000_000, 31_400_000_000))
+    assert runner._gather_fits_memory(q, n_prod, n_prod, n_prod, device) is False
 
     # CPU tensors are never gather-constrained (host RAM).
     cpu = torch.device("cpu")
-    assert runner._gather_fits_memory(
-        q, n_prod, n_prod, n_prod, cpu) is True
+    assert runner._gather_fits_memory(q, n_prod, n_prod, n_prod, cpu) is True
 
     # world==1 never gathers.
     single = _runner_shell(world_size=1, gather=True, rank=0)
-    assert single._gather_fits_memory(
-        q, n_prod, n_prod, n_prod, device) is True
+    assert single._gather_fits_memory(q, n_prod, n_prod, n_prod, device) is True
 
 
 _RANK_WORKER = r"""
@@ -298,16 +289,26 @@ def test_torchrun_gloo_three_rank_mass_reduce_branches(tmp_path: Path) -> None:
     worker.write_text(_RANK_WORKER)
     root = Path(__file__).resolve().parents[1]
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(root / "src") + os.pathsep + env.get(
-        "PYTHONPATH", "")
+    env["PYTHONPATH"] = str(root / "src") + os.pathsep + env.get("PYTHONPATH", "")
     result = subprocess.run(
-        [sys.executable, "-m", "torch.distributed.run", "--standalone",
-         "--nproc_per_node=3", str(worker)],
-        cwd=root, env=env, capture_output=True, text=True, timeout=600)
-    assert result.returncode == 0, (
-        "worker failed:\n" + result.stdout + "\n" + result.stderr)
-    line = next((l for l in result.stdout.splitlines()
-                 if l.startswith("MASS_REDUCE_METRICS=")), None)
+        [
+            sys.executable,
+            "-m",
+            "torch.distributed.run",
+            "--standalone",
+            "--nproc_per_node=3",
+            str(worker),
+        ],
+        cwd=root,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+    assert result.returncode == 0, "worker failed:\n" + result.stdout + "\n" + result.stderr
+    line = next(
+        (ln for ln in result.stdout.splitlines() if ln.startswith("MASS_REDUCE_METRICS=")), None
+    )
     assert line is not None, "no metrics line:\n" + result.stdout
     metrics = json.loads(line.split("=", 1)[1])
 

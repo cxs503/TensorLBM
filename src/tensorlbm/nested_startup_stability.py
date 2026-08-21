@@ -4,6 +4,7 @@ The assessment is deliberately independent of geometry and force accuracy.
 It answers only whether a nested-grid startup remained numerically admissible
 while reaching the requested collision Reynolds number.
 """
+
 from __future__ import annotations
 
 import math
@@ -33,10 +34,7 @@ class NestedStartupAssessment:
 
 
 def _finite_values(values: list[Any]) -> list[float]:
-    return [
-        float(value) for value in values
-        if value is not None and math.isfinite(float(value))
-    ]
+    return [float(value) for value in values if value is not None and math.isfinite(float(value))]
 
 
 def assess_nested_startup(
@@ -58,40 +56,31 @@ def assess_nested_startup(
     payload = result.get("result", {})
     health = payload.get("population_health", [])
     levels = [level for record in health for level in record.get("levels", [])]
-    interfaces = [
-        interface
-        for record in health
-        for interface in record.get("interfaces", [])
-    ]
-    populations = _finite_values([
-        level.get("minimum_population") for level in levels
-    ])
-    densities_min = _finite_values([
-        level.get("minimum_density") for level in levels
-    ])
-    densities_max = _finite_values([
-        level.get("maximum_density") for level in levels
-    ])
+    interfaces = [interface for record in health for interface in record.get("interfaces", [])]
+    populations = _finite_values([level.get("minimum_population") for level in levels])
+    densities_min = _finite_values([level.get("minimum_density") for level in levels])
+    densities_max = _finite_values([level.get("maximum_density") for level in levels])
     speeds = _finite_values([level.get("maximum_speed") for level in levels])
-    reflux = _finite_values([
-        interface.get("maximum_reflux_residual") for interface in interfaces
-    ])
-    transfer_limiter = _finite_values([
-        interface.get("restriction_limited_fraction")
-        for interface in interfaces
-    ])
+    reflux = _finite_values([interface.get("maximum_reflux_residual") for interface in interfaces])
+    transfer_limiter = _finite_values(
+        [interface.get("restriction_limited_fraction") for interface in interfaces]
+    )
 
     target = float(result.get("configuration", {}).get("resolved_reynolds", 0.0))
     step_records = payload.get("steps", [])
-    target_steps = sum(
-        math.isclose(
-            float(record.get("collision_resolved_reynolds", math.nan)),
-            target,
-            rel_tol=1.0e-12,
-            abs_tol=0.0,
+    target_steps = (
+        sum(
+            math.isclose(
+                float(record.get("collision_resolved_reynolds", math.nan)),
+                target,
+                rel_tol=1.0e-12,
+                abs_tol=0.0,
+            )
+            for record in step_records
         )
-        for record in step_records
-    ) if target > 0.0 else 0
+        if target > 0.0
+        else 0
+    )
     target_reached = target_steps > 0 or any(
         bool(record.get("target_reynolds_reached")) for record in health
     )
@@ -104,9 +93,7 @@ def assess_nested_startup(
     maximum_reflux_seen = max(reflux) if reflux else None
     maximum_transfer_limiter = max(transfer_limiter) if transfer_limiter else None
     collision_limiter = payload.get("maximum_positivity_limited_fraction")
-    maximum_collision_limiter = (
-        float(collision_limiter) if collision_limiter is not None else None
-    )
+    maximum_collision_limiter = float(collision_limiter) if collision_limiter is not None else None
 
     reasons: list[str] = []
     if not health or not levels:
@@ -123,15 +110,9 @@ def assess_nested_startup(
         reasons.append("weakly_compressible_speed_gate_failed")
     if maximum_reflux_seen is None or maximum_reflux_seen > maximum_reflux_residual:
         reasons.append("reflux_residual_gate_failed")
-    if (
-        maximum_transfer_limiter is None
-        or maximum_transfer_limiter > maximum_limited_fraction
-    ):
+    if maximum_transfer_limiter is None or maximum_transfer_limiter > maximum_limited_fraction:
         reasons.append("transfer_limiter_gate_failed")
-    if (
-        maximum_collision_limiter is None
-        or maximum_collision_limiter > maximum_limited_fraction
-    ):
+    if maximum_collision_limiter is None or maximum_collision_limiter > maximum_limited_fraction:
         reasons.append("collision_limiter_gate_failed")
     if require_target_reynolds and not target_reached:
         reasons.append("target_reynolds_not_reached")

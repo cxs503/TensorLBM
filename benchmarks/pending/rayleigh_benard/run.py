@@ -32,6 +32,7 @@ Nu 口径：壁面平均 Nu = −∂T/∂y·H/ΔT（底部/顶部热通量）—
 ≥2 档网格收敛（Nu 相对差 <5%），且亚临界 Ra=1500 的 u_max 比超临界
 低 3 个数量级以上（验证 Ra_c≈1708 附近的转变）。
 """
+
 import argparse
 import json
 import math
@@ -46,13 +47,20 @@ sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
 from tensorlbm.d2q9 import equilibrium, macroscopic  # noqa: E402
 from tensorlbm.solver import stream  # noqa: E402
 from tensorlbm.thermal import (  # noqa: E402
-    W5, buoyancy_force, collide_bgk_force, pre_streaming_bounce_back,
-    temperature_collision, temperature_equilibrium, temperature_stream,
+    W5,
+    buoyancy_force,
+    collide_bgk_force,
+    pre_streaming_bounce_back,
+    temperature_collision,
+    temperature_equilibrium,
+    temperature_stream,
 )
 
-NU_REF_1E4 = 2.24   # Ra=1e4, Pr=0.71 刚-刚 2D 稳态（Clever-Busse 2.16 与常见 2D 数值 2.2-2.3 的中值）
-NU_REF_1E5 = 4.22   # Clever & Busse (1974)，Ra=1e5
-RA_CRIT = 1707.76   # Chandrasekhar (1961)，刚-刚边界
+NU_REF_1E4 = (
+    2.24  # Ra=1e4, Pr=0.71 刚-刚 2D 稳态（Clever-Busse 2.16 与常见 2D 数值 2.2-2.3 的中值）
+)
+NU_REF_1E5 = 4.22  # Clever & Busse (1974)，Ra=1e5
+RA_CRIT = 1707.76  # Chandrasekhar (1961)，刚-刚边界
 
 
 def rb_params(nx, ny, ra, pr, tau):
@@ -61,7 +69,7 @@ def rb_params(nx, ny, ra, pr, tau):
     alpha = nu / pr
     tau_T = 3.0 * alpha + 0.5
     H = float(ny)
-    g_beta = ra * nu * alpha / (H ** 3)  # ΔT = 1
+    g_beta = ra * nu * alpha / (H**3)  # ΔT = 1
     return {"nu": nu, "alpha": alpha, "tau_T": tau_T, "H": H, "g_beta": g_beta}
 
 
@@ -74,7 +82,7 @@ def apply_rb_temperature_boundaries(g, t_hot, t_cold):
     """
     g = g.clone()
     w = W5.to(g.device)
-    g[3, 0, :] = -g[4, 0, :] + 2.0 * w[3] * t_hot    # 底部（热）
+    g[3, 0, :] = -g[4, 0, :] + 2.0 * w[3] * t_hot  # 底部（热）
     g[4, -1, :] = -g[3, -1, :] + 2.0 * w[4] * t_cold  # 顶部（冷）
     return g
 
@@ -107,9 +115,20 @@ def nusselt_number_rb(T, H, dT, t_hot, t_cold, mode="grad2"):
     return {"nu_bottom": nb, "nu_top": nt, "nu": 0.5 * (nb + nt)}
 
 
-def simulate_rb(nx, ny, ra, pr=0.71, tau=0.6, t_hot=1.0, t_cold=0.0,
-                steps=300000, device="cpu", amp=0.01, report_every=20000,
-                nu_mode="grad2"):
+def simulate_rb(
+    nx,
+    ny,
+    ra,
+    pr=0.71,
+    tau=0.6,
+    t_hot=1.0,
+    t_cold=0.0,
+    steps=300000,
+    device="cpu",
+    amp=0.01,
+    report_every=20000,
+    nu_mode="grad2",
+):
     """RB 双分布 LBM 主循环。初始场：线性温度 + 单 roll 扰动（波长=域宽，
     垂直半波——线性稳定性最不稳定模，加速收敛）。"""
     device = torch.device(device)
@@ -122,8 +141,11 @@ def simulate_rb(nx, ny, ra, pr=0.71, tau=0.6, t_hot=1.0, t_cold=0.0,
     x = torch.arange(nx, device=device).float()
     T_lin = t_hot - dT * (y + 0.5) / H
     T0 = T_lin.view(ny, 1).expand(ny, nx).clone()
-    pert = amp * torch.sin(2.0 * math.pi * x / nx).view(1, nx) * \
-        torch.sin(math.pi * (y + 0.5) / H).view(ny, 1)
+    pert = (
+        amp
+        * torch.sin(2.0 * math.pi * x / nx).view(1, nx)
+        * torch.sin(math.pi * (y + 0.5) / H).view(ny, 1)
+    )
     T0 = T0 + pert
 
     rho0 = torch.ones((ny, nx), device=device)
@@ -160,13 +182,14 @@ def simulate_rb(nx, ny, ra, pr=0.71, tau=0.6, t_hot=1.0, t_cold=0.0,
 
         if step % report_every == 0 or step == steps:
             rho, ux, uy, T = _macros()
-            du = max(torch.abs(ux[interior] - ux_prev[interior]).max().item(),
-                     torch.abs(uy[interior] - uy_prev[interior]).max().item())
+            du = max(
+                torch.abs(ux[interior] - ux_prev[interior]).max().item(),
+                torch.abs(uy[interior] - uy_prev[interior]).max().item(),
+            )
             dTres = torch.abs(T[interior] - T_prev[interior]).max().item()
-            um = float((ux ** 2 + uy ** 2).sqrt().max().item())
+            um = float((ux**2 + uy**2).sqrt().max().item())
             nu_cur = nusselt_number_rb(T, H, dT, t_hot, t_cold, mode=nu_mode)
-            hist.append({"step": step, "resid_u": du, "resid_T": dTres,
-                         "u_max": um, **nu_cur})
+            hist.append({"step": step, "resid_u": du, "resid_T": dTres, "u_max": um, **nu_cur})
             ux_prev, uy_prev, T_prev = ux.clone(), uy.clone(), T.clone()
 
     elapsed = time.time() - t0
@@ -179,16 +202,28 @@ def simulate_rb(nx, ny, ra, pr=0.71, tau=0.6, t_hot=1.0, t_cold=0.0,
     nu_hw = nusselt_number_rb(T_cpu, H, dT, t_hot, t_cold, mode="halfway")
 
     return {
-        "nx": nx, "ny": ny, "ra": ra, "pr": pr, "tau": tau, "tau_T": tau_T,
-        "nu_lat": nu_lat, "alpha": alpha_lat, "g_beta": g_beta, "H": H,
-        "steps": steps, "elapsed_s": round(elapsed, 1),
+        "nx": nx,
+        "ny": ny,
+        "ra": ra,
+        "pr": pr,
+        "tau": tau,
+        "tau_T": tau_T,
+        "nu_lat": nu_lat,
+        "alpha": alpha_lat,
+        "g_beta": g_beta,
+        "H": H,
+        "steps": steps,
+        "elapsed_s": round(elapsed, 1),
         "last_resid_u": hist[-1]["resid_u"] if hist else None,
         "last_resid_T": hist[-1]["resid_T"] if hist else None,
-        "nu_grad2": nu_g2["nu"], "nu_bottom_grad2": nu_g2["nu_bottom"],
+        "nu_grad2": nu_g2["nu"],
+        "nu_bottom_grad2": nu_g2["nu_bottom"],
         "nu_top_grad2": nu_g2["nu_top"],
-        "nu_grad1": nu_g1["nu"], "nu_halfway": nu_hw["nu"],
+        "nu_grad1": nu_g1["nu"],
+        "nu_halfway": nu_hw["nu"],
         "u_max": float(u_mag.max().item()),
-        "T_min": float(T_cpu.min().item()), "T_max": float(T_cpu.max().item()),
+        "T_min": float(T_cpu.min().item()),
+        "T_max": float(T_cpu.max().item()),
         "nu_history": hist,
     }
 
@@ -210,12 +245,39 @@ def main():
     device = torch.device(args.device)
     torch.set_num_threads(32)
 
-    res = simulate_rb(args.nx, ny, args.ra, pr=args.pr, tau=args.tau,
-                      steps=args.steps, device=device, amp=args.amp)
-    key = {k: res[k] for k in
-           ["nx", "ny", "ra", "pr", "tau", "tau_T", "steps", "elapsed_s",
-            "last_resid_u", "last_resid_T", "u_max", "T_min", "T_max",
-            "nu_grad2", "nu_bottom_grad2", "nu_top_grad2", "nu_grad1", "nu_halfway"]}
+    res = simulate_rb(
+        args.nx,
+        ny,
+        args.ra,
+        pr=args.pr,
+        tau=args.tau,
+        steps=args.steps,
+        device=device,
+        amp=args.amp,
+    )
+    key = {
+        k: res[k]
+        for k in [
+            "nx",
+            "ny",
+            "ra",
+            "pr",
+            "tau",
+            "tau_T",
+            "steps",
+            "elapsed_s",
+            "last_resid_u",
+            "last_resid_T",
+            "u_max",
+            "T_min",
+            "T_max",
+            "nu_grad2",
+            "nu_bottom_grad2",
+            "nu_top_grad2",
+            "nu_grad1",
+            "nu_halfway",
+        ]
+    }
     key["nu_ref_1e4"] = NU_REF_1E4
     key["nu_ref_1e5"] = NU_REF_1E5
     if abs(args.ra - 1e4) < 1:

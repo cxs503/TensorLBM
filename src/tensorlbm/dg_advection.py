@@ -264,7 +264,6 @@ def _rhs_along_axis(
     vol = torch.einsum(ein, Ax, f)  # (..., n_node, ...)
 
     # --- Surface term: gather the four face traces, choose upwind ---
-    ncell_dim = n_dims
     # Move node axis to the end for easy index_select, then restore.
     inner_left = f.select(node_axis, 0)  # u_e[0]  (node axis removed)
     inner_right = f.select(node_axis, p_last)  # u_e[p]

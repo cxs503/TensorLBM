@@ -52,11 +52,11 @@ _LATTICE_Q = {"D3Q19": 19, "D3Q27": 27}
 def _get_lattice_constants(lattice: str, device: torch.device, dtype: torch.dtype):
     """Return (C, W, OPPOSITE, macroscopic_fn, equilibrium_fn) for *lattice*."""
     if lattice == "D3Q19":
-        from .d3q19 import C, W, OPPOSITE, macroscopic3d, equilibrium3d
+        from .d3q19 import OPPOSITE, C, W, equilibrium3d, macroscopic3d
 
         return C, W, OPPOSITE, macroscopic3d, equilibrium3d
     if lattice == "D3Q27":
-        from .d3q27 import C, W, OPPOSITE, macroscopic27, equilibrium27
+        from .d3q27 import OPPOSITE, C, W, equilibrium27, macroscopic27
 
         return C, W, OPPOSITE, macroscopic27, equilibrium27
     raise ValueError(f"Unsupported lattice {lattice!r}; supported: D3Q19, D3Q27")
@@ -193,16 +193,20 @@ class LBMStepExecutor:
         del W
         weights_by_squared_speed = (
             (1.0 / 3.0, 1.0 / 18.0, 1.0 / 36.0)
-            if self.Q == 19 else (
-                8.0 / 27.0, 2.0 / 27.0, 1.0 / 54.0, 1.0 / 216.0,
+            if self.Q == 19
+            else (
+                8.0 / 27.0,
+                2.0 / 27.0,
+                1.0 / 54.0,
+                1.0 / 216.0,
             )
         )
         speed_weights = torch.tensor(
-            weights_by_squared_speed, device=device, dtype=dtype,
+            weights_by_squared_speed,
+            device=device,
+            dtype=dtype,
         )
-        self._W = speed_weights[
-            self._C.square().sum(dim=1).to(torch.long)
-        ]
+        self._W = speed_weights[self._C.square().sum(dim=1).to(torch.long)]
         self._OPPOSITE = OPPOSITE.to(device)
 
         # Pre-compute float lattice vectors and views (avoid per-step alloc)

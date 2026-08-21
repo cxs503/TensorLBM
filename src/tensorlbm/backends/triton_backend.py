@@ -20,6 +20,7 @@ The step fuses (one Triton kernel launch + small post-ops):
 The implementation reuses the lattice tables and Triton kernels from
 ``tensorlbm_triton_fused_obstacle`` (the canonical kernel module).
 """
+
 from __future__ import annotations
 
 import torch
@@ -48,7 +49,6 @@ except ImportError:
 # ``far_field_bc_3d``.  Forces interior solid cells to be symmetric
 # (f[1]=f[2], f[3]=f[4], ...) so that the *next* collide gives u=0 at
 # solid cells, enforcing no-slip at the fluid-solid interface.
-from tensorlbm.d3q19 import OPPOSITE as _OPPOSITE_Q19
 
 # Production Q for D3Q19 (matches production SUBOFF runner).
 _PROD_Q = 19
@@ -86,8 +86,15 @@ class TritonStepState:
     """
 
     __slots__ = (
-        "f_buf", "f_buf_alt", "feq_pad_buf", "feq_vec_buf", "feq_vec_u",
-        "fx_buf", "fy_buf", "fz_buf", "tau_eff_buf",
+        "f_buf",
+        "f_buf_alt",
+        "feq_pad_buf",
+        "feq_vec_buf",
+        "feq_vec_u",
+        "fx_buf",
+        "fy_buf",
+        "fz_buf",
+        "tau_eff_buf",
     )
 
     def __init__(
@@ -100,7 +107,9 @@ class TritonStepState:
         # can match the production layout.
         spatial = f.shape[1:]
         self.f_buf = torch.empty(
-            (_PROD_Q, *spatial), dtype=f.dtype, device=device,
+            (_PROD_Q, *spatial),
+            dtype=f.dtype,
+            device=device,
         )
         # Second half of the ping-pong pair.  The kernel streams from
         # neighbour cells, so its input and output MUST be distinct
@@ -111,14 +120,18 @@ class TritonStepState:
         # :func:`triton_suboff_step` picks whichever of the two is not
         # currently aliased to ``f``.
         self.f_buf_alt = torch.empty(
-            (_PROD_Q, *spatial), dtype=f.dtype, device=device,
+            (_PROD_Q, *spatial),
+            dtype=f.dtype,
+            device=device,
         )
         # Persistent 1-D scratch for ``apply_far_field_bc_6face`` when
         # the cache (``feq_vec_buf``) is shorter than f's Q-channel count
         # (currently always 1-D shape ``(Q,)`` since ``feq_vec_buf`` is
         # also 1-D).  Allocated once; reused per step.
         self.feq_pad_buf = torch.zeros(
-            (_PROD_Q,), dtype=f.dtype, device=device,
+            (_PROD_Q,),
+            dtype=f.dtype,
+            device=device,
         )
         # Persistent cached equilibrium ``(Q,)`` vector for the BC.  The
         # actual equilibrium for the runner is computed lazily on the
@@ -134,7 +147,9 @@ class TritonStepState:
         # (Phase 3 — external tau_eff for CM/CUMULANT/BGK).  Shape
         # ``(nz, ny, nx)``, fp32, allocated once per runner.
         self.tau_eff_buf = torch.zeros(
-            spatial, dtype=torch.float32, device=device,
+            spatial,
+            dtype=torch.float32,
+            device=device,
         )
 
 
@@ -200,15 +215,10 @@ def triton_suboff_step(
         lateral, vertical).
     """
     if not f.is_cuda:
-        raise RuntimeError(
-            "triton_suboff_step requires a CUDA tensor; got "
-            f"device={f.device!r}"
-        )
+        raise RuntimeError(f"triton_suboff_step requires a CUDA tensor; got device={f.device!r}")
     Q_in = f.shape[0]
     if Q_in != _PROD_Q:
-        raise ValueError(
-            f"Input Q={Q_in} does not match production D3Q19 (Q={_PROD_Q})"
-        )
+        raise ValueError(f"Input Q={Q_in} does not match production D3Q19 (Q={_PROD_Q})")
     if obstacle_int8.shape != f.shape[1:]:
         raise ValueError(
             f"obstacle_int8 shape {tuple(obstacle_int8.shape)} does not "
@@ -236,11 +246,7 @@ def triton_suboff_step(
     # Ping-pong: never let the kernel stream out of the buffer it is
     # writing into.  Callers loop with ``f = triton_suboff_step(f, ...)``,
     # so ``f`` alternates between the two state buffers.
-    out = (
-        state.f_buf_alt
-        if f.data_ptr() == state.f_buf.data_ptr()
-        else state.f_buf
-    )
+    out = state.f_buf_alt if f.data_ptr() == state.f_buf.data_ptr() else state.f_buf
 
     # 1. Fused collide + pull-stream + wet-node bounce-back + LES Smag +
     #    Ladd (1994) wet-node momentum-exchange force reduction.
@@ -261,9 +267,17 @@ def triton_suboff_step(
         state.fy_buf.zero_()
         state.fz_buf.zero_()
         triton_fused_obstacle_xfar_les(
-            f_in, nu_lb, obstacle_int8, Cs, delta,
-            collision=collision, out=out, tau_eff=tau_eff,
-            fx_buf=state.fx_buf, fy_buf=state.fy_buf, fz_buf=state.fz_buf,
+            f_in,
+            nu_lb,
+            obstacle_int8,
+            Cs,
+            delta,
+            collision=collision,
+            out=out,
+            tau_eff=tau_eff,
+            fx_buf=state.fx_buf,
+            fy_buf=state.fy_buf,
+            fz_buf=state.fz_buf,
         )
         fx = state.fx_buf
         fy = state.fy_buf
@@ -273,8 +287,14 @@ def triton_suboff_step(
         # the fp32 placeholder, kernel prunes the force block entirely.
         # Return zero scalars so the call signature is consistent.
         triton_fused_obstacle_xfar_les(
-            f_in, nu_lb, obstacle_int8, Cs, delta,
-            collision=collision, out=out, tau_eff=tau_eff,
+            f_in,
+            nu_lb,
+            obstacle_int8,
+            Cs,
+            delta,
+            collision=collision,
+            out=out,
+            tau_eff=tau_eff,
         )
         fx = torch.zeros((), dtype=torch.float32, device=f.device)
         fy = torch.zeros((), dtype=torch.float32, device=f.device)
@@ -291,11 +311,17 @@ def triton_suboff_step(
     #    to compute a value that's the same everywhere.
     if state.feq_vec_buf is None or state.feq_vec_u != (u_in, 0.0, 0.0):
         state.feq_vec_buf = _compute_uniform_equilibrium_vec(
-            u_in, 0.0, 0.0, _PROD_Q, f.device, f.dtype,
+            u_in,
+            0.0,
+            0.0,
+            _PROD_Q,
+            f.device,
+            f.dtype,
         )
         state.feq_vec_u = (u_in, 0.0, 0.0)
     apply_far_field_bc_6face(
-        out, u_in,
+        out,
+        u_in,
         feq_pad_buf=state.feq_pad_buf,
         feq_vec=state.feq_vec_buf,
     )

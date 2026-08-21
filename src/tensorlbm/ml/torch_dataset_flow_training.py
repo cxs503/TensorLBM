@@ -6,9 +6,9 @@ and transformer optimization to the existing components.  It is smoke-only.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 from hashlib import sha256
-import json
 from pathlib import Path
 from typing import Any, Mapping
 

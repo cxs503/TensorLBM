@@ -14,6 +14,7 @@ The runtime is collision/boundary agnostic.  A caller provides an ``advance``
 callback and may therefore compose D3Q19/D3Q27, MRT/cumulant, wall models and
 problem-specific physical boundaries without teaching this module about them.
 """
+
 from __future__ import annotations
 
 import math
@@ -50,7 +51,8 @@ class AMRAdvanceResult:
 
 
 Advance3D = Callable[
-    [torch.Tensor, float, int, int], torch.Tensor | AMRAdvanceResult,
+    [torch.Tensor, float, int, int],
+    torch.Tensor | AMRAdvanceResult,
 ]
 _SUPPORTED_Q = {19: "D3Q19", 27: "D3Q27"}
 
@@ -99,7 +101,8 @@ class StaticBlockAMRConfig:
                 "maximum_reflux_correction_fraction must lie in (0,1]",
             )
         if self.reflux_correction_stencil not in (
-            "exterior_cells", "crossing_links",
+            "exterior_cells",
+            "crossing_links",
         ):
             raise ValueError(
                 "reflux_correction_stencil must be exterior_cells or crossing_links",
@@ -108,9 +111,7 @@ class StaticBlockAMRConfig:
             raise ValueError("interface_filter_width must be non-negative")
         if not 0.0 <= self.interface_filter_strength <= 1.0:
             raise ValueError("interface_filter_strength must lie in [0,1]")
-        if (self.interface_filter_width == 0) != (
-            self.interface_filter_strength == 0.0
-        ):
+        if (self.interface_filter_width == 0) != (self.interface_filter_strength == 0.0):
             raise ValueError(
                 "interface filter width and strength must both be zero or positive",
             )
@@ -159,18 +160,13 @@ def _merge_reflux_ledgers(
     elif current.raw_kinetic_mismatch is not None:
         raw = current.raw_kinetic_mismatch
     return PopulationRefluxLedger(
-        replacement_mismatch=(
-            previous.replacement_mismatch + current.replacement_mismatch
-        ),
+        replacement_mismatch=(previous.replacement_mismatch + current.replacement_mismatch),
         applied_shell_correction=(
-            previous.applied_shell_correction
-            + current.applied_shell_correction
+            previous.applied_shell_correction + current.applied_shell_correction
         ),
         shell_cells=previous.shell_cells + current.shell_cells,
         residual=previous.residual + current.residual,
-        limited_directions=(
-            previous.limited_directions + current.limited_directions
-        ),
+        limited_directions=(previous.limited_directions + current.limited_directions),
         raw_kinetic_mismatch=raw,
         restriction_limited_fraction=max(
             previous.restriction_limited_fraction,
@@ -218,11 +214,7 @@ def _validate_parent_and_box(f: torch.Tensor, config: StaticBlockAMRConfig) -> N
         raise TypeError("coarse populations must be floating point")
     nz, ny, nx = f.shape[1:]
     b = config.box
-    if not (
-        0 < b.x0 < b.x1 < nx - 1
-        and 0 < b.y0 < b.y1 < ny - 1
-        and 0 < b.z0 < b.z1 < nz - 1
-    ):
+    if not (0 < b.x0 < b.x1 < nx - 1 and 0 < b.y0 < b.y1 < ny - 1 and 0 < b.z0 < b.z1 < nz - 1):
         raise ValueError("fine block must be strictly interior with a coarse-cell margin")
 
 
@@ -321,20 +313,26 @@ class StaticBlockAMR3D:
             self.fine_solid = None
             self.fine_solid_with_ghost = None
         coarse_owned = torch.zeros(
-            coarse_f.shape[1:], dtype=torch.bool, device=coarse_f.device,
+            coarse_f.shape[1:],
+            dtype=torch.bool,
+            device=coarse_f.device,
         )
         b = config.box
-        coarse_owned[b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = True
+        coarse_owned[b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1] = True
         fine_owned = torch.zeros(
-            self.fine_f.shape[1:], dtype=torch.bool, device=self.fine_f.device,
+            self.fine_f.shape[1:],
+            dtype=torch.bool,
+            device=self.fine_f.device,
         )
         g = config.ghost
         fine_owned[g:-g, g:-g, g:-g] = True
         self.coarse_interface_links = build_kinetic_interface_links(
-            coarse_owned, q=coarse_f.shape[0],
+            coarse_owned,
+            q=coarse_f.shape[0],
         )
         self.fine_interface_links = build_kinetic_interface_links(
-            fine_owned, q=coarse_f.shape[0],
+            fine_owned,
+            q=coarse_f.shape[0],
         )
         self.last_reflux: PopulationRefluxLedger | None = None
 
@@ -342,11 +340,14 @@ class StaticBlockAMR3D:
         self,
         diagnostic: PositivityDiagnostics,
     ) -> None:
-        if not all(math.isfinite(value) for value in (
-            diagnostic.minimum_population_before,
-            diagnostic.minimum_population_after,
-            diagnostic.minimum_alpha,
-        )):
+        if not all(
+            math.isfinite(value)
+            for value in (
+                diagnostic.minimum_population_before,
+                diagnostic.minimum_population_after,
+                diagnostic.minimum_alpha,
+            )
+        ):
             raise FloatingPointError("non-finite coarse-to-fine AMR prolongation")
         self.last_prolongation_positivity = diagnostic
         self._maximum_prolongation_limited_fraction = max(
@@ -415,19 +416,25 @@ class StaticBlockAMR3D:
             for z, y, x in regions
         ]
         local = torch.cat(coordinates, dim=0)
-        target_flat = (
-            (local[:, 0] * ny + local[:, 1]) * nx + local[:, 2]
-        ).to(device=self.fine_f.device)
+        target_flat = ((local[:, 0] * ny + local[:, 1]) * nx + local[:, 2]).to(
+            device=self.fine_f.device
+        )
         b, r, g = self.config.box, self.config.ratio, self.config.ghost
-        global_fine = torch.stack((
-            b.z0 * r - g + local[:, 0],
-            b.y0 * r - g + local[:, 1],
-            b.x0 * r - g + local[:, 2],
-        ), dim=1)
+        global_fine = torch.stack(
+            (
+                b.z0 * r - g + local[:, 0],
+                b.y0 * r - g + local[:, 1],
+                b.x0 * r - g + local[:, 2],
+            ),
+            dim=1,
+        )
         if self.config.ghost_interpolation == "injection":
             donor = torch.div(global_fine, r, rounding_mode="floor")
             return _GhostSamplingPlan(
-                target_flat, donor[:, 0], donor[:, 1], donor[:, 2],
+                target_flat,
+                donor[:, 0],
+                donor[:, 1],
+                donor[:, 2],
             )
 
         # Coarse cell centres are at i+1/2.  Express a fine cell centre in
@@ -438,9 +445,15 @@ class StaticBlockAMR3D:
         upper = lower + 1
         return _GhostSamplingPlan(
             target_flat,
-            lower[:, 0], lower[:, 1], lower[:, 2],
-            upper[:, 0], upper[:, 1], upper[:, 2],
-            weight[:, 0], weight[:, 1], weight[:, 2],
+            lower[:, 0],
+            lower[:, 1],
+            lower[:, 2],
+            upper[:, 0],
+            upper[:, 1],
+            upper[:, 2],
+            weight[:, 0],
+            weight[:, 1],
+            weight[:, 2],
         )
 
     def _fill_ghost(
@@ -454,9 +467,17 @@ class StaticBlockAMR3D:
         if self.config.ghost_interpolation == "injection":
             sampled = parent_time_state[:, plan.z0, plan.y0, plan.x0]
         else:
-            assert all(value is not None for value in (
-                plan.z1, plan.y1, plan.x1, plan.wz, plan.wy, plan.wx,
-            ))
+            assert all(
+                value is not None
+                for value in (
+                    plan.z1,
+                    plan.y1,
+                    plan.x1,
+                    plan.wz,
+                    plan.wy,
+                    plan.wx,
+                )
+            )
             z1, y1, x1 = plan.z1, plan.y1, plan.x1
             wz, wy, wx = plan.wz, plan.wy, plan.wx
             assert z1 is not None and y1 is not None and x1 is not None
@@ -466,19 +487,23 @@ class StaticBlockAMR3D:
             wz = wz.unsqueeze(0)
             v00 = torch.lerp(
                 parent_time_state[:, plan.z0, plan.y0, plan.x0],
-                parent_time_state[:, plan.z0, plan.y0, x1], wx,
+                parent_time_state[:, plan.z0, plan.y0, x1],
+                wx,
             )
             v01 = torch.lerp(
                 parent_time_state[:, plan.z0, y1, plan.x0],
-                parent_time_state[:, plan.z0, y1, x1], wx,
+                parent_time_state[:, plan.z0, y1, x1],
+                wx,
             )
             v10 = torch.lerp(
                 parent_time_state[:, z1, plan.y0, plan.x0],
-                parent_time_state[:, z1, plan.y0, x1], wx,
+                parent_time_state[:, z1, plan.y0, x1],
+                wx,
             )
             v11 = torch.lerp(
                 parent_time_state[:, z1, y1, plan.x0],
-                parent_time_state[:, z1, y1, x1], wx,
+                parent_time_state[:, z1, y1, x1],
+                wx,
             )
             sampled = torch.lerp(
                 torch.lerp(v00, v01, wy),
@@ -488,9 +513,7 @@ class StaticBlockAMR3D:
         sampled = sampled.to(device=self.fine_f.device)
         sampled = rescale_nonequilibrium(
             sampled[:, None, None, :],
-            tau_source=(
-                self.config.tau_coarse if tau_source is None else tau_source
-            ),
+            tau_source=(self.config.tau_coarse if tau_source is None else tau_source),
             tau_target=(self.config.tau_fine if tau_target is None else tau_target),
             spatial_ratio=float(self.config.ratio),
             regularize=self.config.regularize_prolongation,
@@ -513,9 +536,7 @@ class StaticBlockAMR3D:
         restricted = rescale_nonequilibrium(
             restricted,
             tau_source=(self.config.tau_fine if tau_source is None else tau_source),
-            tau_target=(
-                self.config.tau_coarse if tau_target is None else tau_target
-            ),
+            tau_target=(self.config.tau_coarse if tau_target is None else tau_target),
             spatial_ratio=1.0 / self.config.ratio,
             regularize=self.config.regularize_restriction,
         )
@@ -523,11 +544,14 @@ class StaticBlockAMR3D:
         if self.config.enforce_transfer_positivity:
             restricted, diagnostic = limit_nonequilibrium_for_positivity(restricted)
             self.last_restriction_positivity = diagnostic
-            if not all(math.isfinite(value) for value in (
-                diagnostic.minimum_population_before,
-                diagnostic.minimum_population_after,
-                diagnostic.minimum_alpha,
-            )):
+            if not all(
+                math.isfinite(value)
+                for value in (
+                    diagnostic.minimum_population_before,
+                    diagnostic.minimum_population_after,
+                    diagnostic.minimum_alpha,
+                )
+            ):
                 raise FloatingPointError("non-finite fine-to-coarse AMR restriction")
         return restricted.to(device=self.coarse_f.device)
 
@@ -539,11 +563,16 @@ class StaticBlockAMR3D:
 
     def _replace_without_reflux(self, restricted: torch.Tensor) -> PopulationRefluxLedger:
         b = self.config.box
-        old_patch = self.coarse_f[:, b.z0:b.z1, b.y0:b.y1, b.x0:b.x1]
+        old_patch = self.coarse_f[:, b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1]
         mismatch = old_patch.sum(dim=(1, 2, 3)) - restricted.sum(dim=(1, 2, 3))
-        self.coarse_f[:, b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = restricted
+        self.coarse_f[:, b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1] = restricted
         return PopulationRefluxLedger(
-            mismatch, torch.zeros_like(mismatch), 0, mismatch, 0, mismatch,
+            mismatch,
+            torch.zeros_like(mismatch),
+            0,
+            mismatch,
+            0,
+            mismatch,
         )
 
     @staticmethod
@@ -583,25 +612,25 @@ class StaticBlockAMR3D:
         fine calls use 0 and 1.
         """
         tau_coarse, tau_fine = (
-            (self.config.tau_coarse, self.config.tau_fine)
-            if tau_pair is None else tau_pair
+            (self.config.tau_coarse, self.config.tau_fine) if tau_pair is None else tau_pair
         )
         self._reset_prolongation_positivity()
-        if abs(
-            tau_fine - convective_refined_tau(tau_coarse, self.config.ratio)
-        ) > 1.0e-12:
+        if abs(tau_fine - convective_refined_tau(tau_coarse, self.config.ratio)) > 1.0e-12:
             raise ValueError("dynamic tau_pair must preserve convective scaling")
         coarse_old = self.coarse_f.clone()
         coarse_new, coarse_post = self._unpack_advance(
             advance(self.coarse_f, tau_coarse, 0, -1),
-            self.coarse_f.shape, require_flux_state=self.config.reflux,
+            self.coarse_f.shape,
+            require_flux_state=self.config.reflux,
         )
         self.coarse_f = coarse_new
         coarse_transfer = (
             observe_kinetic_interface_transfer(
-                coarse_post, self.coarse_interface_links,
+                coarse_post,
+                self.coarse_interface_links,
             )
-            if coarse_post is not None else None
+            if coarse_post is not None
+            else None
         )
         fine_transfer: KineticInterfaceTransfer | None = None
 
@@ -609,16 +638,20 @@ class StaticBlockAMR3D:
             alpha_start = substep / self.config.ratio
             parent_start = torch.lerp(coarse_old, self.coarse_f, alpha_start)
             self._fill_ghost(
-                parent_start, tau_source=tau_coarse, tau_target=tau_fine,
+                parent_start,
+                tau_source=tau_coarse,
+                tau_target=tau_fine,
             )
             fine_new, fine_post = self._unpack_advance(
                 advance(self.fine_f, tau_fine, 1, substep),
-                self.fine_f.shape, require_flux_state=self.config.reflux,
+                self.fine_f.shape,
+                require_flux_state=self.config.reflux,
             )
             fine_new = self._filter_fine_interface(fine_new)
             if fine_post is not None:
                 observed = observe_kinetic_interface_transfer(
-                    fine_post, self.fine_interface_links,
+                    fine_post,
+                    self.fine_interface_links,
                     cell_volume=1.0 / self.config.ratio**3,
                 )
                 fine_transfer = observed if fine_transfer is None else fine_transfer + observed
@@ -626,11 +659,14 @@ class StaticBlockAMR3D:
             alpha_end = (substep + 1) / self.config.ratio
             parent_end = torch.lerp(coarse_old, self.coarse_f, alpha_end)
             self._fill_ghost(
-                parent_end, tau_source=tau_coarse, tau_target=tau_fine,
+                parent_end,
+                tau_source=tau_coarse,
+                tau_target=tau_fine,
             )
 
         restricted = self._restrict_physical(
-            tau_source=tau_fine, tau_target=tau_coarse,
+            tau_source=tau_fine,
+            tau_target=tau_coarse,
         )
         if not self.config.reflux:
             self.last_reflux = self._replace_without_reflux(restricted)
@@ -638,13 +674,13 @@ class StaticBlockAMR3D:
         if coarse_transfer is None or fine_transfer is None:
             raise RuntimeError("missing interface transfer for reflux")
         b = self.config.box
-        self.coarse_f[:, b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = restricted
+        self.coarse_f[:, b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1] = restricted
         self.coarse_f, report = apply_face_local_reflux(
-            self.coarse_f, self.coarse_interface_links,
-            coarse_transfer, fine_transfer,
-            maximum_correction_fraction=(
-                self.config.maximum_reflux_correction_fraction
-            ),
+            self.coarse_f,
+            self.coarse_interface_links,
+            coarse_transfer,
+            fine_transfer,
+            maximum_correction_fraction=(self.config.maximum_reflux_correction_fraction),
             correction_stencil=self.config.reflux_correction_stencil,
         )
         self.last_reflux = PopulationRefluxLedger(
@@ -656,11 +692,13 @@ class StaticBlockAMR3D:
             report.raw_kinetic_mismatch,
             (
                 self.last_restriction_positivity.limited_fraction
-                if self.last_restriction_positivity is not None else 0.0
+                if self.last_restriction_positivity is not None
+                else 0.0
             ),
             (
                 self.last_restriction_positivity.minimum_alpha
-                if self.last_restriction_positivity is not None else 1.0
+                if self.last_restriction_positivity is not None
+                else 1.0
             ),
             self._maximum_prolongation_limited_fraction,
             self._minimum_prolongation_alpha,
@@ -744,9 +782,7 @@ class NestedStaticBlockAMR3D:
 
     @property
     def level_populations(self) -> tuple[torch.Tensor, ...]:
-        return (self.coarse_f,) + tuple(
-            interface.fine_f for interface in self.interfaces
-        )
+        return (self.coarse_f,) + tuple(interface.fine_f for interface in self.interfaces)
 
     @property
     def level_devices(self) -> tuple[torch.device, ...]:
@@ -815,7 +851,8 @@ class NestedStaticBlockAMR3D:
         assert coarse_post is not None
         interface.coarse_f = coarse_new
         coarse_transfer = observe_kinetic_interface_transfer(
-            coarse_post, interface.coarse_interface_links,
+            coarse_post,
+            interface.coarse_interface_links,
         )
         fine_transfer: KineticInterfaceTransfer | None = None
 
@@ -827,7 +864,9 @@ class NestedStaticBlockAMR3D:
             )
             alpha_start = local_substep / config.ratio
             parent_start = torch.lerp(
-                coarse_old, interface.coarse_f, alpha_start,
+                coarse_old,
+                interface.coarse_f,
+                alpha_start,
             )
             interface._fill_ghost(
                 parent_start,
@@ -866,9 +905,7 @@ class NestedStaticBlockAMR3D:
                 interface.fine_interface_links,
                 cell_volume=1.0 / config.ratio**3,
             )
-            fine_transfer = (
-                observed if fine_transfer is None else fine_transfer + observed
-            )
+            fine_transfer = observed if fine_transfer is None else fine_transfer + observed
             alpha_end = (local_substep + 1) / config.ratio
             parent_end = torch.lerp(coarse_old, interface.coarse_f, alpha_end)
             interface._fill_ghost(
@@ -889,9 +926,7 @@ class NestedStaticBlockAMR3D:
             tau_target=tau_coarse,
         )
         box = config.box
-        interface.coarse_f[
-            :, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1
-        ] = restricted
+        interface.coarse_f[:, box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1] = restricted
         interface.coarse_f, report = apply_face_local_reflux(
             interface.coarse_f,
             interface.coarse_interface_links,
@@ -909,11 +944,13 @@ class NestedStaticBlockAMR3D:
             report.raw_kinetic_mismatch,
             (
                 interface.last_restriction_positivity.limited_fraction
-                if interface.last_restriction_positivity is not None else 0.0
+                if interface.last_restriction_positivity is not None
+                else 0.0
             ),
             (
                 interface.last_restriction_positivity.minimum_alpha
-                if interface.last_restriction_positivity is not None else 1.0
+                if interface.last_restriction_positivity is not None
+                else 1.0
             ),
             interface._maximum_prolongation_limited_fraction,
             interface._minimum_prolongation_alpha,
@@ -940,29 +977,26 @@ class NestedStaticBlockAMR3D:
             )
         if len(tau_by_level) != len(self.interfaces) + 1:
             raise ValueError("tau_by_level must contain one value per hierarchy level")
-        for level, (coarse_tau, fine_tau, interface) in enumerate(zip(
-            tau_by_level[:-1],
-            tau_by_level[1:],
-            self.interfaces,
-            strict=True,
-        )):
+        for level, (coarse_tau, fine_tau, interface) in enumerate(
+            zip(
+                tau_by_level[:-1],
+                tau_by_level[1:],
+                self.interfaces,
+                strict=True,
+            )
+        ):
             expected = convective_refined_tau(coarse_tau, interface.config.ratio)
             if abs(fine_tau - expected) > 1.0e-12:
                 raise ValueError(
-                    "dynamic tau chain violates convective scaling at "
-                    f"interface {level}",
+                    f"dynamic tau chain violates convective scaling at interface {level}",
                 )
-        ledgers: list[PopulationRefluxLedger | None] = [
-            None for _ in self.interfaces
-        ]
+        ledgers: list[PopulationRefluxLedger | None] = [None for _ in self.interfaces]
         for interface in self.interfaces:
             interface._reset_prolongation_positivity()
         self._advance_interface(0, advance, -1, ledgers, tau_by_level)
         if any(ledger is None for ledger in ledgers):
             raise RuntimeError("nested AMR did not produce every reflux ledger")
-        self.last_reflux = tuple(
-            ledger for ledger in ledgers if ledger is not None
-        )
+        self.last_reflux = tuple(ledger for ledger in ledgers if ledger is not None)
         return self.last_reflux
 
 

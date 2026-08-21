@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from tensorlbm.apps.base import DataProduct, TrainingResult
+from tensorlbm.apps.base import TrainingResult
 from tensorlbm.apps.inverse_problem import (
     InverseProblem,
     ParametricChannelFlow,
@@ -28,10 +28,10 @@ from tensorlbm.apps.inverse_problem import (
 from tensorlbm.ml.serving import FAMILY_INVERSE, InferenceService, ModelRegistry
 from tensorlbm.ml.training_job import TrainingJobRegistry
 
-
 # ---------------------------------------------------------------------------
 # Mock collaborators
 # ---------------------------------------------------------------------------
+
 
 def _mock_train_fn(dataset, model, cfg):
     """Return a fixed TrainingResult without running the inversion loop."""
@@ -56,6 +56,7 @@ def app():
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 def test_class_identity():
     assert InverseProblem.name == "inverse_problem"

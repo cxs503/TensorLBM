@@ -15,6 +15,7 @@ macroscopic uses d3q19.macroscopic3d; see /tmp/d3q27_gap.md):
 
 No hand-written collide/stream/equilibrium in this script (grep-checkable).
 """
+
 import argparse
 import json
 import math
@@ -40,7 +41,7 @@ from tensorlbm.obstacles import compute_obstacle_forces_27
 
 
 def schiller_naumann_cd(re: float) -> float:
-    return 24.0 / re * (1.0 + 0.15 * re ** 0.687)
+    return 24.0 / re * (1.0 + 0.15 * re**0.687)
 
 
 def clift_gauvin_cd(re: float) -> float:
@@ -56,9 +57,17 @@ def main() -> None:
     ap.add_argument("--u_in", type=float, default=0.06)
     ap.add_argument("--threads", type=int, default=32)
     ap.add_argument("--device", type=str, default="cpu")
-    ap.add_argument("--lateral_ratio", type=float, default=4.5,
-                    help="lateral domain extent in units of D (ny=nz=lateral_ratio*D)")
-    ap.add_argument("--compile", action="store_true", help="torch.compile collide+stream (GPU memory reduction + speed)")
+    ap.add_argument(
+        "--lateral_ratio",
+        type=float,
+        default=4.5,
+        help="lateral domain extent in units of D (ny=nz=lateral_ratio*D)",
+    )
+    ap.add_argument(
+        "--compile",
+        action="store_true",
+        help="torch.compile collide+stream (GPU memory reduction + speed)",
+    )
     args = ap.parse_args()
 
     torch.set_num_threads(args.threads)
@@ -112,9 +121,15 @@ def main() -> None:
     else:
         stream_fn = stream27
 
-    print(f"=== D3Q27 sphere Re=100 | D={D} grid {nx}x{ny}x{nz} | collision={args.collision} | "
-          f"tau={tau:.4f} nu={nu:.5f} | U={U} | n_solid={n_solid} ===", flush=True)
-    print(f"ref: Cd_SN(100)={schiller_naumann_cd(100):.4f}  Cd_CG(100)={clift_gauvin_cd(100):.4f}", flush=True)
+    print(
+        f"=== D3Q27 sphere Re=100 | D={D} grid {nx}x{ny}x{nz} | collision={args.collision} | "
+        f"tau={tau:.4f} nu={nu:.5f} | U={U} | n_solid={n_solid} ===",
+        flush=True,
+    )
+    print(
+        f"ref: Cd_SN(100)={schiller_naumann_cd(100):.4f}  Cd_CG(100)={clift_gauvin_cd(100):.4f}",
+        flush=True,
+    )
 
     t0 = time.time()
     t_last = t0
@@ -137,14 +152,19 @@ def main() -> None:
             uy = uy.masked_fill(obstacle, 0.0)
             uz = uz.masked_fill(obstacle, 0.0)
             umax = float(torch.sqrt(ux * ux + uy * uy + uz * uz).max().item())
-            logf.write(f"{step},{fx.item():.8e},{fy.item():.8e},{fz.item():.8e},"
-                       f"{cd:.6f},{cd_effd:.6f},{rho_m:.6f},{umax:.6f}\n")
+            logf.write(
+                f"{step},{fx.item():.8e},{fy.item():.8e},{fz.item():.8e},"
+                f"{cd:.6f},{cd_effd:.6f},{rho_m:.6f},{umax:.6f}\n"
+            )
             logf.flush()
             if step % 500 == 0 or step == args.steps:
                 el = time.time() - t_last
                 t_last = time.time()
-                print(f"step={step:6d} Cd={cd:.4f} Cd_effD={cd_effd:.4f} rho={rho_m:.5f} "
-                      f"u_max={umax:.5f}  [{el:.1f}s]", flush=True)
+                print(
+                    f"step={step:6d} Cd={cd:.4f} Cd_effD={cd_effd:.4f} rho={rho_m:.5f} "
+                    f"u_max={umax:.5f}  [{el:.1f}s]",
+                    flush=True,
+                )
         cd_hist.append((step, cd, cd_effd))
 
     total = time.time() - t0
@@ -156,7 +176,7 @@ def main() -> None:
     blocks = []
     i = 0
     while i + block <= len(hist):
-        seg = [c for _, c, _ in hist[i:i + block]]
+        seg = [c for _, c, _ in hist[i : i + block]]
         blocks.append((hist[i][0], sum(seg) / len(seg)))
         i += block
     # final steady value: mean over the last two full blocks if drift small
@@ -206,8 +226,11 @@ def main() -> None:
     }
     with open(os.path.join(outdir, "result.json"), "w") as fh:
         json.dump(result, fh, indent=2)
-    print(f"\nCd_final = {cd_final:.4f}  (SN ref {cd_ref_sn:.4f}, err {err_sn:+.2f}%; "
-          f"CG ref {cd_ref_cg:.4f}, err {err_cg:+.2f}%)  drift={drift_pct:.3f}%  [{total:.0f}s]", flush=True)
+    print(
+        f"\nCd_final = {cd_final:.4f}  (SN ref {cd_ref_sn:.4f}, err {err_sn:+.2f}%; "
+        f"CG ref {cd_ref_cg:.4f}, err {err_cg:+.2f}%)  drift={drift_pct:.3f}%  [{total:.0f}s]",
+        flush=True,
+    )
     print(f"blocks: {blocks}", flush=True)
 
 

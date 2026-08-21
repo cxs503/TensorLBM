@@ -48,9 +48,19 @@ def test_reference_domain_requires_unconfined_clearance() -> None:
 
 def test_short_periodic_cylinder_composition_is_finite() -> None:
     cfg = CylinderBFLControlVolumeConfig(
-        nx=56, ny=40, nz=3, radius=4, center_x_fraction=0.35,
-        reynolds=20, lattice_speed=0.04, steps=4, warmup_steps=2,
-        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        nx=56,
+        ny=40,
+        nz=3,
+        radius=4,
+        center_x_fraction=0.35,
+        reynolds=20,
+        lattice_speed=0.04,
+        steps=4,
+        warmup_steps=2,
+        ramp_steps=2,
+        sponge_width=3,
+        cv_margin=2,
+        device="cpu",
     )
     artifact = run_cylinder_bfl_control_volume(cfg)
     result = artifact["result"]
@@ -59,9 +69,7 @@ def test_short_periodic_cylinder_composition_is_finite() -> None:
     assert math.isfinite(result["cd_bfl_link"])
     assert result["drag_stationarity"]["sufficiently_sampled"] is False
     assert artifact["schema"] == "tensorlbm-cylinder-bfl-control-volume-v4"
-    assert artifact["configuration"]["link_force_frame"] == (
-        "laboratory_after_wall_activation"
-    )
+    assert artifact["configuration"]["link_force_frame"] == ("laboratory_after_wall_activation")
     assert artifact["configuration"]["bfl_link_fraction_convention"] == (
         "ray_parameter_q_equals_t_v2"
     )
@@ -70,9 +78,19 @@ def test_short_periodic_cylinder_composition_is_finite() -> None:
 
 def test_short_natural_kbc_cylinder_composition_is_finite() -> None:
     cfg = CylinderBFLControlVolumeConfig(
-        nx=56, ny=40, nz=3, radius=4, center_x_fraction=0.35,
-        reynolds=20, lattice_speed=0.04, steps=4, warmup_steps=2,
-        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        nx=56,
+        ny=40,
+        nz=3,
+        radius=4,
+        center_x_fraction=0.35,
+        reynolds=20,
+        lattice_speed=0.04,
+        steps=4,
+        warmup_steps=2,
+        ramp_steps=2,
+        sponge_width=3,
+        cv_margin=2,
+        device="cpu",
         collision_model="natural_kbc_d3q19",
         collision_chunk_cells=56 * 40,
     )
@@ -86,9 +104,19 @@ def test_short_natural_kbc_cylinder_composition_is_finite() -> None:
 
 def test_short_planar_cumulant_cylinder_is_finite_and_extruded() -> None:
     cfg = CylinderBFLControlVolumeConfig(
-        nx=56, ny=40, nz=3, radius=4, center_x_fraction=0.35,
-        reynolds=20, lattice_speed=0.04, steps=4, warmup_steps=2,
-        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        nx=56,
+        ny=40,
+        nz=3,
+        radius=4,
+        center_x_fraction=0.35,
+        reynolds=20,
+        lattice_speed=0.04,
+        steps=4,
+        warmup_steps=2,
+        ramp_steps=2,
+        sponge_width=3,
+        cv_margin=2,
+        device="cpu",
         collision_model="planar_cumulant_d2q9",
     )
     artifact = run_cylinder_bfl_control_volume(cfg)
@@ -117,7 +145,9 @@ def test_strouhal_estimator_recovers_synthetic_lift_frequency() -> None:
     frequency = target * speed / diameter
     lift = [math.sin(2.0 * math.pi * frequency * step) for step in range(20000)]
     estimated, cycles = estimate_strouhal_from_lift(
-        lift, lattice_speed=speed, diameter=diameter,
+        lift,
+        lattice_speed=speed,
+        diameter=diameter,
     )
     assert estimated == pytest.approx(target, rel=0.02)
     assert cycles == pytest.approx(12.8, rel=0.02)
@@ -127,7 +157,9 @@ def test_cylinder_cli_help() -> None:
     source_root = Path(__file__).parents[1] / "src"
     completed = subprocess.run(
         [sys.executable, "examples/cylinder_bfl_cv_validate.py", "--help"],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
         env=os.environ | {"PYTHONPATH": str(source_root)},
     )
     assert "--far-field-mode" in completed.stdout
@@ -138,19 +170,35 @@ def test_cylinder_cli_help() -> None:
 def test_cylinder_checkpoint_can_resume(tmp_path) -> None:
     checkpoint = tmp_path / "cylinder.ckpt"
     common = {
-        "nx": 48, "ny": 36, "nz": 3, "radius": 4,
-        "center_x_fraction": 0.35, "reynolds": 20,
-        "lattice_speed": 0.04, "warmup_steps": 2,
-        "ramp_steps": 2, "sponge_width": 3, "cv_margin": 2,
-        "report_interval": 0, "checkpoint_interval": 2,
-        "checkpoint_path": str(checkpoint), "device": "cpu",
+        "nx": 48,
+        "ny": 36,
+        "nz": 3,
+        "radius": 4,
+        "center_x_fraction": 0.35,
+        "reynolds": 20,
+        "lattice_speed": 0.04,
+        "warmup_steps": 2,
+        "ramp_steps": 2,
+        "sponge_width": 3,
+        "cv_margin": 2,
+        "report_interval": 0,
+        "checkpoint_interval": 2,
+        "checkpoint_path": str(checkpoint),
+        "device": "cpu",
     }
-    run_cylinder_bfl_control_volume(CylinderBFLControlVolumeConfig(
-        **common, steps=4,
-    ))
-    resumed = run_cylinder_bfl_control_volume(CylinderBFLControlVolumeConfig(
-        **common, steps=6, resume=True,
-    ))
+    run_cylinder_bfl_control_volume(
+        CylinderBFLControlVolumeConfig(
+            **common,
+            steps=4,
+        )
+    )
+    resumed = run_cylinder_bfl_control_volume(
+        CylinderBFLControlVolumeConfig(
+            **common,
+            steps=6,
+            resume=True,
+        )
+    )
     assert checkpoint.exists()
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
     assert state["schema"] == "tensorlbm-cylinder-checkpoint-v4"
@@ -158,6 +206,10 @@ def test_cylinder_checkpoint_can_resume(tmp_path) -> None:
     assert resumed["result"]["finite"] is True
     assert resumed["configuration"]["statistics_window_steps_requested"] == 0
     with pytest.raises(ValueError, match="configuration"):
-        run_cylinder_bfl_control_volume(CylinderBFLControlVolumeConfig(
-            **(common | {"sponge_width": 4}), steps=6, resume=True,
-        ))
+        run_cylinder_bfl_control_volume(
+            CylinderBFLControlVolumeConfig(
+                **(common | {"sponge_width": 4}),
+                steps=6,
+                resume=True,
+            )
+        )

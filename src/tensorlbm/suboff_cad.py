@@ -231,7 +231,6 @@ def suboff_radius_profile(
 
     # SUBOFF 真实参数 (ft → normalized)
     L_ft = 14.291667  # 总长 (ft)
-    Rmax_ft = 0.8333333  # 最大半径 (ft)
     BOW_END = 3.333333 / L_ft  # 0.2333
     MID_END = 10.645833 / L_ft  # 0.7449
     STERN_END = 13.979167 / L_ft  # 0.9781
@@ -446,29 +445,31 @@ def suboff_sail_contains_points(
     half1 = zmax * torch.sqrt(
         torch.clamp(2.094759 * a1 + 0.2071781 * b1 + c1, min=0.0),
     )
-    body1 = (
-        (z_ft <= y_tmp) & (z_ft > 0.0)
-        & (y_ft > -half1) & (y_ft < half1) & m1
+    body1 = (z_ft <= y_tmp) & (z_ft > 0.0) & (y_ft > -half1) & (y_ft < half1) & m1
+    cap_half1 = torch.sqrt(
+        torch.clamp(
+            half1.square() - (2.0 * (z_ft - y_tmp)).square(),
+            min=0.0,
+        )
     )
-    cap_half1 = torch.sqrt(torch.clamp(
-        half1.square() - (2.0 * (z_ft - y_tmp)).square(), min=0.0,
-    ))
     cap1 = (
-        (z_ft > y_tmp) & (z_ft < y_tmp + half1 / 2.0)
-        & (y_ft > -cap_half1) & (y_ft < cap_half1) & m1
+        (z_ft > y_tmp)
+        & (z_ft < y_tmp + half1 / 2.0)
+        & (y_ft > -cap_half1)
+        & (y_ft < cap_half1)
+        & m1
     )
 
     m2 = (x_ft > _SAIL_X1_END) & (x_ft <= _SAIL_X2_END)
-    body2 = (
-        (z_ft <= y_tmp) & (z_ft > 0.0)
-        & (y_ft > -zmax) & (y_ft < zmax) & m2
+    body2 = (z_ft <= y_tmp) & (z_ft > 0.0) & (y_ft > -zmax) & (y_ft < zmax) & m2
+    cap_half2 = torch.sqrt(
+        torch.clamp(
+            zmax**2 - (2.0 * (z_ft - y_tmp)).square(),
+            min=0.0,
+        )
     )
-    cap_half2 = torch.sqrt(torch.clamp(
-        zmax**2 - (2.0 * (z_ft - y_tmp)).square(), min=0.0,
-    ))
     cap2 = (
-        (z_ft > y_tmp) & (z_ft < y_tmp + zmax / 2.0)
-        & (y_ft > -cap_half2) & (y_ft < cap_half2) & m2
+        (z_ft > y_tmp) & (z_ft < y_tmp + zmax / 2.0) & (y_ft > -cap_half2) & (y_ft < cap_half2) & m2
     )
 
     m3 = (x_ft <= _SAIL_X3_END) & (x_ft > _SAIL_X2_END)
@@ -477,18 +478,22 @@ def suboff_sail_contains_points(
     half3 = zmax * (
         2.238361 * e3 * f3.pow(4)
         + 3.106529 * e3.square() * f3.pow(3)
-        + 1.0 - f3.pow(4) * (4.0 * e3 + 1.0)
+        + 1.0
+        - f3.pow(4) * (4.0 * e3 + 1.0)
     )
-    body3 = (
-        (z_ft <= y_tmp) & (z_ft > 0.0)
-        & (y_ft > -half3) & (y_ft < half3) & m3
+    body3 = (z_ft <= y_tmp) & (z_ft > 0.0) & (y_ft > -half3) & (y_ft < half3) & m3
+    cap_half3 = torch.sqrt(
+        torch.clamp(
+            half3.square() - (2.0 * (z_ft - y_tmp)).square(),
+            min=0.0,
+        )
     )
-    cap_half3 = torch.sqrt(torch.clamp(
-        half3.square() - (2.0 * (z_ft - y_tmp)).square(), min=0.0,
-    ))
     cap3 = (
-        (z_ft > y_tmp) & (z_ft < y_tmp + half3 / 2.0)
-        & (y_ft > -cap_half3) & (y_ft < cap_half3) & m3
+        (z_ft > y_tmp)
+        & (z_ft < y_tmp + half3 / 2.0)
+        & (y_ft > -cap_half3)
+        & (y_ft < cap_half3)
+        & m3
     )
     return body1 | cap1 | body2 | cap2 | body3 | cap3
 
@@ -521,18 +526,19 @@ def suboff_fins_contain_points(
         a, b, c, d, e = _NACA_COEFFS
         return (
             a * torch.sqrt(torch.clamp(s, min=0.0))
-            - b * s - c * s.square() + d * s.pow(3) - e * s.pow(4)
+            - b * s
+            - c * s.square()
+            + d * s.pow(3)
+            - e * s.pow(4)
         )
 
     z_half = naca_half_thickness(s_y)
     y_half = naca_half_thickness(s_z)
     fins_y = (
-        (y_ft > _FIN_R_INNER) & (y_ft < _FIN_R_OUTER)
-        & (z_ft < z_half) & (s_y > 0.0) & (s_y < 1.0)
+        (y_ft > _FIN_R_INNER) & (y_ft < _FIN_R_OUTER) & (z_ft < z_half) & (s_y > 0.0) & (s_y < 1.0)
     )
     fins_z = (
-        (z_ft > _FIN_R_INNER) & (z_ft < _FIN_R_OUTER)
-        & (y_ft < y_half) & (s_z > 0.0) & (s_z < 1.0)
+        (z_ft > _FIN_R_INNER) & (z_ft < _FIN_R_OUTER) & (y_ft < y_half) & (s_z > 0.0) & (s_z < 1.0)
     )
     return fins_y | fins_z
 
@@ -547,9 +553,17 @@ def suboff_appendages_contain_points(
 ) -> torch.Tensor:
     """Evaluate the union of continuous AFF-8 sail and fin geometry."""
     return suboff_sail_contains_points(
-        x, y, z, center=center, length=length,
+        x,
+        y,
+        z,
+        center=center,
+        length=length,
     ) | suboff_fins_contain_points(
-        x, y, z, center=center, length=length,
+        x,
+        y,
+        z,
+        center=center,
+        length=length,
     )
 
 
@@ -853,9 +867,18 @@ def suboff_statistics(
     meridional_metric = np.sqrt(
         1.0 + np.square((radius / length) * drho_dxi),
     )
-    wetted_bare = 2.0 * math.pi * radius * length * float(np.trapezoid(
-        r_norm * meridional_metric, xi_int,
-    ))
+    wetted_bare = (
+        2.0
+        * math.pi
+        * radius
+        * length
+        * float(
+            np.trapezoid(
+                r_norm * meridional_metric,
+                xi_int,
+            )
+        )
+    )
 
     # Prismatic coefficient (Cp = V / (A_max * L))
     a_max = math.pi * radius**2
@@ -965,13 +988,13 @@ def generate_suboff_previews(
     _inv = 1.0 / _ftlu  # ft → lu
 
     # Sail dimensions (lattice units)
-    sail_x0 = _SAIL_X1_START * _inv
-    sail_x1 = _SAIL_X3_END * _inv
-    sail_body_h = _SAIL_YTMP * _inv  # rectangular body height
-    sail_cap_h = (_SAIL_ZMAX / 2) * _inv  # max cap height above body
+    _SAIL_X1_START * _inv
+    _SAIL_X3_END * _inv
+    _SAIL_YTMP * _inv  # rectangular body height
+    (_SAIL_ZMAX / 2) * _inv  # max cap height above body
 
     # Fin dimensions (lattice units)
-    fin_r_in = _FIN_R_INNER * _inv
+    _FIN_R_INNER * _inv
     fin_r_out = _FIN_R_OUTER * _inv
     # Hull radius at fin axial location (stern taper)
     xi_fin = _FIN_H / _SUBOFF_L_FT
@@ -1079,7 +1102,7 @@ def generate_suboff_previews(
         ytmp_lu = _SAIL_YTMP * _inv
         z_bot = radius
         z_top_body = z_bot + ytmp_lu
-        z_top_cap = z_bot + ytmp_lu + zmax_lu / 2
+        z_bot + ytmp_lu + zmax_lu / 2
         # Rectangular body
         ax.add_patch(
             mpatches.Rectangle(
@@ -1104,7 +1127,7 @@ def generate_suboff_previews(
         t_fc = _naca4_thickness_np(s_fc) * _inv  # half-thickness (lu)
         # Top fin (extends in z, thickness in y) — show airfoil cross-section
         cy_mid = _FIN_SWEEP_K * ((_FIN_R_INNER + _FIN_R_OUTER) / 2) + _FIN_SWEEP_C
-        x_mid_ft = _FIN_H + (s_fc - 1) * cy_mid
+        _FIN_H + (s_fc - 1) * cy_mid
         # Scale airfoil to fit in the cross-section view
         fin_scale = (fin_r_out - r_hull_fin) / max(t_fc.max(), 1e-8) * 0.3
         fin_y = t_fc * fin_scale

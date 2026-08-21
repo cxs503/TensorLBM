@@ -33,6 +33,7 @@ Usage: python run.py [--dims 2,3] [--device2d cpu] [--device3d cuda:0]
                      [--radii 15,25,40] [--max-steps N] [--min-steps N]
                      [--out DIR]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -44,10 +45,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
 
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
-
 import numpy as np
 import torch
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
 torch.set_num_threads(32)
 
@@ -59,7 +59,7 @@ from tensorlbm.solver import stream  # noqa: E402
 from tensorlbm.solver3d import stream3d  # noqa: E402
 
 CS2 = 1.0 / 3.0
-G_LIB = 5.0   # library argument (sign-flipped convention)
+G_LIB = 5.0  # library argument (sign-flipped convention)
 G_EFF = -5.0  # physical standard-convention SC94 coupling used in the EOS
 TAU = 1.0
 RHO_L, RHO_V = 1.957, 0.1596  # discrete coexistence (measured)
@@ -84,9 +84,7 @@ def init_rho(dim: int, L: int, R: float, device: torch.device) -> torch.Tensor:
         ys = torch.arange(L, dtype=torch.float32, device=device)
         xs = torch.arange(L, dtype=torch.float32, device=device)
         zz, yy, xx = torch.meshgrid(zs, ys, xs, indexing="ij")
-        r = torch.sqrt(
-            (xx - L / 2.0) ** 2 + (yy - L / 2.0) ** 2 + (zz - L / 2.0) ** 2
-        )
+        r = torch.sqrt((xx - L / 2.0) ** 2 + (yy - L / 2.0) ** 2 + (zz - L / 2.0) ** 2)
     rho = RHO_V + 0.5 * (RHO_L - RHO_V) * (1.0 + torch.tanh((R - r) / W_INT))
     return rho.clamp(min=1e-3)
 
@@ -187,19 +185,13 @@ def run_droplet(
         if step % sample_interval == 0:
             rho_cur = f.sum(dim=0)
             if float(rho_cur.min().item()) < 0.0 or not torch.isfinite(rho_cur).all():
-                raise RuntimeError(
-                    f"dim={dim} R={R}: NaN/negative rho at step {step}"
-                )
+                raise RuntimeError(f"dim={dim} R={R}: NaN/negative rho at step {step}")
             m = measure(dim, f, R, rr, device)
             m["step"] = step
             hist.append(m)
             if len(hist) >= 2:
-                d_dp = abs(hist[-1]["dp"] - hist[-2]["dp"]) / max(
-                    abs(hist[-1]["dp"]), 1e-12
-                )
-                d_r = abs(hist[-1]["R_eq"] - hist[-2]["R_eq"]) / max(
-                    hist[-1]["R_eq"], 1e-12
-                )
+                d_dp = abs(hist[-1]["dp"] - hist[-2]["dp"]) / max(abs(hist[-1]["dp"]), 1e-12)
+                d_r = abs(hist[-1]["R_eq"] - hist[-2]["R_eq"]) / max(hist[-1]["R_eq"], 1e-12)
                 if d_dp < conv_dp and d_r < conv_r and step >= min_steps:
                     converged = True
                     break
@@ -320,18 +312,30 @@ def main() -> None:
             print(f"  R={R:.0f}  L={L}", flush=True)
             try:
                 final, hist = run_droplet(
-                    dim, R, L, device, args.max_steps, args.min_steps,
-                    args.sample_interval, compile_mode=compile_mode,
+                    dim,
+                    R,
+                    L,
+                    device,
+                    args.max_steps,
+                    args.min_steps,
+                    args.sample_interval,
+                    compile_mode=compile_mode,
                 )
             except RuntimeError as e:
                 print(f"  FAILED: {e}")
                 rows.append(
                     {
-                        "R_init": R, "R_eq": float("nan"), "dp": float("nan"),
-                        "p_in": float("nan"), "p_out": float("nan"),
-                        "rho_in": float("nan"), "rho_out": float("nan"),
-                        "max_u": float("nan"), "step": 0,
-                        "mass_drift": float("nan"), "converged": False,
+                        "R_init": R,
+                        "R_eq": float("nan"),
+                        "dp": float("nan"),
+                        "p_in": float("nan"),
+                        "p_out": float("nan"),
+                        "rho_in": float("nan"),
+                        "rho_out": float("nan"),
+                        "max_u": float("nan"),
+                        "step": 0,
+                        "mass_drift": float("nan"),
+                        "converged": False,
                         "error": str(e),
                     }
                 )

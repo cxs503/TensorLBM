@@ -246,9 +246,7 @@ def test_torch_tensor_inputs_match_numpy_export(tmp_path):
     import torch
 
     fields = _fields(seed=3)
-    torch_fields = {
-        name: torch.from_numpy(arr.copy()) for name, arr in fields.items()
-    }
+    torch_fields = {name: torch.from_numpy(arr.copy()) for name, arr in fields.items()}
     path_numpy = save_fields_hdf5(tmp_path / "numpy.h5", fields, _metadata())
     path_torch = save_fields_hdf5(tmp_path / "torch.h5", torch_fields, _metadata())
     arrays_numpy, attrs_numpy = read_snapshot(path_numpy, 100)
@@ -289,9 +287,7 @@ def test_exact_decimal_metrics_payload_satisfies_evidence_check():
 
 def test_two_dimensional_export_registers_velocity_pair(tmp_path, catalog):
     fields = _fields(nz=1)
-    fields_2d = {
-        name: arr[0] for name, arr in fields.items() if name != "uz"
-    }
+    fields_2d = {name: arr[0] for name, arr in fields.items() if name != "uz"}
     metadata = _metadata(nz=1)
     h5 = save_fields_hdf5(tmp_path / "run2d.h5", fields_2d, metadata)
     product_id = register_product(catalog, h5, metadata)

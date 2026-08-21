@@ -6,6 +6,7 @@ implements the five-method interface (produce data / build model / make
 dataset / train / infer) and inherits the full-stack pipeline for free.
 """
 
+from .ai_les_app import AILesApp
 from .base import (
     AI4SApplication,
     ApplicationRegistry,
@@ -15,7 +16,6 @@ from .base import (
     TrainingResult,
     registry,
 )
-from .ai_les_app import AILesApp
 from .flow_transformer_app import FlowTransformerApp
 from .generative_flow import GenerativeFlow
 from .inverse_problem import InverseProblem

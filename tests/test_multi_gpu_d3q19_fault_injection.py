@@ -6,7 +6,6 @@ import os
 import subprocess
 from pathlib import Path
 
-
 _WORKER = r"""
 import os
 import torch

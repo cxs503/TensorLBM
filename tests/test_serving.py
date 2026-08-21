@@ -35,9 +35,7 @@ def registry(tmp_path):
 
 
 def _save_mlp(tmp_path: Path) -> Path:
-    model = EddyViscosityMLP(
-        ModelArch(in_features=3, hidden_features=8, n_hidden_layers=1)
-    )
+    model = EddyViscosityMLP(ModelArch(in_features=3, hidden_features=8, n_hidden_layers=1))
     return save_model(model, tmp_path / "eddy.pt")
 
 
@@ -59,6 +57,7 @@ def _register_mlp(registry: ModelRegistry, path: Path, **kwargs: Any) -> int:
 # ---------------------------------------------------------------------------
 # ModelRegistry
 # ---------------------------------------------------------------------------
+
 
 def test_register_and_get_model(registry, tmp_path):
     path = _save_mlp(tmp_path)
@@ -112,6 +111,7 @@ def test_register_model_metadata_roundtrip(registry, tmp_path):
 # ---------------------------------------------------------------------------
 # InferenceService
 # ---------------------------------------------------------------------------
+
 
 def test_inference_service_load_and_predict(registry, tmp_path):
     path = _save_mlp(tmp_path)
@@ -198,6 +198,7 @@ def test_inference_service_unsupported_family(registry, tmp_path):
 # ---------------------------------------------------------------------------
 # ONNX export
 # ---------------------------------------------------------------------------
+
 
 def test_infer_io_shapes(tmp_path):
     model = EddyViscosityMLP(ModelArch(in_features=3, hidden_features=8, n_hidden_layers=1))

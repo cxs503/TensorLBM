@@ -5,9 +5,10 @@ from the collision inside the wall function.
 """
 
 import torch
-from .turbulence import collide_smagorinsky_mrt3d, _neq_stress_norm_3d
-from .d3q19 import macroscopic3d, equilibrium3d
+
+from .d3q19 import equilibrium3d, macroscopic3d
 from .ibm import ibm_apply_body_force_3d
+from .turbulence import _neq_stress_norm_3d
 
 _KAPPA = 0.41
 _B_LOG = 5.0
@@ -46,7 +47,7 @@ def fused_step(
     feq = equilibrium3d(rho, ux, uy, uz)
     f_neq = f - feq
     pi_norm = _neq_stress_norm_3d(f_neq)
-    from .turbulence import _smagorinsky_tau, _get_d3q19_mrt_matrices
+    from .turbulence import _get_d3q19_mrt_matrices, _smagorinsky_tau
 
     tau_eff = _smagorinsky_tau(tau, pi_norm, rho, Cs)
     s_nu_field = 1.0 / tau_eff

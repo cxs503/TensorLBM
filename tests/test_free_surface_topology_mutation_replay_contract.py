@@ -9,14 +9,8 @@ import pytest
 import torch
 
 from tensorlbm.d3q19 import equilibrium3d
-from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID, SOLID
-from tensorlbm.free_surface_topology_transaction import (
-    ReplayEvidence,
-    TopologyTransactionError,
-    build_topology_transaction,
-    restore_strict_failure_invocation,
-)
 from tensorlbm.free_surface_i_to_g_failed_residual_audit import audit_failed_i_to_g_residual
+from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID, SOLID
 from tensorlbm.free_surface_topology_mutation_replay_contract import (
     AVAILABLE_REPLAYED_EXACT,
     MISSING_INPUT_WITHHELD,
@@ -24,6 +18,12 @@ from tensorlbm.free_surface_topology_mutation_replay_contract import (
     WITHHELD,
     audit_strict_failure_replay,
     audit_topology_mutation_replay,
+)
+from tensorlbm.free_surface_topology_transaction import (
+    ReplayEvidence,
+    TopologyTransactionError,
+    build_topology_transaction,
+    restore_strict_failure_invocation,
 )
 
 

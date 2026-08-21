@@ -44,6 +44,7 @@ Usage:
     run.py single D_cells out.json [--shift 0] [--device cuda:1] [--steps 300000]
     run.py verify out_dir [--device cuda:1] [--steps 300000]   # D=40 and D=80
 """
+
 from __future__ import annotations
 
 import argparse
@@ -57,8 +58,6 @@ sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
 
 import torch
 
-from tensorlbm.d2q9 import equilibrium
-from tensorlbm.solver import collide_mrt, stream
 from tensorlbm.boundaries import (
     bounce_back_cells,
     compute_obstacle_forces,
@@ -67,6 +66,8 @@ from tensorlbm.boundaries import (
     zou_he_inlet_velocity,
     zou_he_outlet_pressure,
 )
+from tensorlbm.d2q9 import equilibrium
+from tensorlbm.solver import collide_mrt, stream
 
 REF_CD = 5.57953523384
 REF_CL = 0.010618948146
@@ -92,12 +93,12 @@ def run_case(
     ny = int(round(ly / dx))
     cx = round(0.2 / dx)
     cy = round(0.2 / dx)
-    radius = 0.05 / dx                # physical radius in cells
+    radius = 0.05 / dx  # physical radius in cells
     mask_radius = radius + shift
 
     tau = 0.8
     nu_lb = (tau - 0.5) / 3.0
-    U_char_lb = 20.0 * nu_lb / D_cells          # U_mean, lattice units (Re=20)
+    U_char_lb = 20.0 * nu_lb / D_cells  # U_mean, lattice units (Re=20)
     y_phys = torch.arange(ny, device=dev) * dx
     u_profile = 4.0 * 1.5 * y_phys * (0.41 - y_phys) / 0.41**2
     u_lb = U_char_lb * u_profile
@@ -105,10 +106,14 @@ def run_case(
     solid = cylinder_mask(nx, ny, cx, cy, mask_radius, dev)
     wall = make_channel_wall_mask(ny, nx, solid, dev)
     fluid = ~solid
-    surface = solid & (torch.roll(fluid, 1, 0) | torch.roll(fluid, -1, 0)
-                       | torch.roll(fluid, 1, 1) | torch.roll(fluid, -1, 1))
+    surface = solid & (
+        torch.roll(fluid, 1, 0)
+        | torch.roll(fluid, -1, 0)
+        | torch.roll(fluid, 1, 1)
+        | torch.roll(fluid, -1, 1)
+    )
 
-    dyn_p = 0.5 * U_char_lb**2 * D_cells        # 0.5*rho*U^2*D (physical D)
+    dyn_p = 0.5 * U_char_lb**2 * D_cells  # 0.5*rho*U^2*D (physical D)
 
     rho0 = torch.ones((ny, nx), dtype=torch.float32, device=dev)
     ux0 = torch.zeros_like(rho0)
@@ -117,7 +122,7 @@ def run_case(
     uy0 = torch.zeros_like(rho0)
     f = equilibrium(rho0, ux0, uy0)
 
-    wall_axis = math.floor(mask_radius) + 0.5   # half-way BB wall on the axes
+    wall_axis = math.floor(mask_radius) + 0.5  # half-way BB wall on the axes
     t0 = time.time()
     cd_list, cl_list = [], []
     for step in range(1, n_steps + 1):
@@ -135,22 +140,31 @@ def run_case(
         if step % resid_interval == 0:
             cd = sum(cd_list[-1000:]) / min(len(cd_list), 1000)
             cl = sum(cl_list[-1000:]) / min(len(cl_list), 1000)
-            print(f"  step {step}: Cd={cd:.4f} Cl={cl:.4f} ({time.time()-t0:.0f}s)")
+            print(f"  step {step}: Cd={cd:.4f} Cl={cl:.4f} ({time.time() - t0:.0f}s)")
 
     win = min(len(cd_list), 50000)
     cd = sum(cd_list[-win:]) / win
     cl = sum(cl_list[-win:]) / win
     return {
-        "D_cells": D_cells, "nx": nx, "ny": ny, "tau": tau,
-        "shift": shift, "radius_phys_cells": radius, "mask_radius": mask_radius,
-        "wall_axis_pos": wall_axis, "D_eff_axis": 2.0 * wall_axis,
-        "n_steps": n_steps, "avg_window": win,
+        "D_cells": D_cells,
+        "nx": nx,
+        "ny": ny,
+        "tau": tau,
+        "shift": shift,
+        "radius_phys_cells": radius,
+        "mask_radius": mask_radius,
+        "wall_axis_pos": wall_axis,
+        "D_eff_axis": 2.0 * wall_axis,
+        "n_steps": n_steps,
+        "avg_window": win,
         "n_solid_cells": int(solid.sum().item()),
         "n_surface_cells": int(surface.sum().item()),
-        "cd": cd, "cl": cl,
+        "cd": cd,
+        "cl": cl,
         "err_cd_pct": (cd - REF_CD) / REF_CD * 100,
         "err_cl_pct": (cl - REF_CL) / REF_CL * 100,
-        "ref_cd": REF_CD, "ref_cl": REF_CL,
+        "ref_cd": REF_CD,
+        "ref_cl": REF_CL,
         "wall_s": time.time() - t0,
     }
 
@@ -182,17 +196,18 @@ def main() -> int:
     ok = all(abs(r["err_cd_pct"]) <= 3.0 for r in per_grid)
     res = {
         "case": "B32_cylinder_re20_st",
-        "lattice": "D2Q9", "collision": "mrt", "tau": 0.8,
+        "lattice": "D2Q9",
+        "collision": "mrt",
+        "tau": 0.8,
         "boundary": "zou_he_velocity_inlet(profile) + zou_he_pressure_outlet(rho=1) "
-                    "+ half-way bounce-back (pre-collision skip at solid, post-streaming swap)",
+        "+ half-way bounce-back (pre-collision skip at solid, post-streaming swap)",
         "force": "ladd_momentum_exchange (post-stream, pre-bounce-back)",
         "mask_shift": a.shift,
         "extrap": "none",
-        "ref_cd": REF_CD, "ref_cl": REF_CL,
+        "ref_cd": REF_CD,
+        "ref_cl": REF_CL,
         "per_grid": per_grid,
-        "converged": all(
-            abs(r["err_cd_pct"]) <= 3.0 for r in per_grid
-        ) and len(per_grid) >= 2,
+        "converged": all(abs(r["err_cd_pct"]) <= 3.0 for r in per_grid) and len(per_grid) >= 2,
         "verdict": "verified" if ok else "not_verified",
     }
     (out_dir / "result.json").write_text(json.dumps(res, indent=2))

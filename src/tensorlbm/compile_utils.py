@@ -100,9 +100,7 @@ _CUDAGRAPH_CLASS_MODES = frozenset({"reduce-overhead", "max-autotune"})
 
 
 def _is_cudagraph_class(mode: object) -> bool:
-    return isinstance(mode, str) and (
-        "cudagraph" in mode.lower() or mode in _CUDAGRAPH_CLASS_MODES
-    )
+    return isinstance(mode, str) and ("cudagraph" in mode.lower() or mode in _CUDAGRAPH_CLASS_MODES)
 
 
 def validate_compile_mode(mode: str | None) -> None:

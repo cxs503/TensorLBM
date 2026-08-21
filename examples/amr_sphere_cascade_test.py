@@ -28,6 +28,7 @@ Coordinate conventions (mirroring examples/amr_sphere_drag_validate.py):
   * BFL q-fields are computed on each level's with-ghost tensor using that
     level's fine centre (same convention as the single-level reference).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -41,12 +42,12 @@ import torch
 
 from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19
 from tensorlbm.boundaries3d import sphere_mask
+from tensorlbm.cascaded_collision import collide_cascaded_d3q19
 from tensorlbm.control_volume_force import (
     box_control_volume,
     observe_control_volume_force,
 )
 from tensorlbm.cumulant import collide_cumulant_d3q19
-from tensorlbm.cascaded_collision import collide_cascaded_d3q19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
@@ -80,7 +81,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--nx", type=int, default=160)
     p.add_argument("--ny", type=int, default=112)
     p.add_argument("--nz", type=int, default=112)
-    p.add_argument("--radius", type=float, default=8.0)      # coarse-grid sphere radius
+    p.add_argument("--radius", type=float, default=8.0)  # coarse-grid sphere radius
     p.add_argument("--reynolds", type=float, default=100.0)
     p.add_argument("--lattice-speed", type=float, default=0.06)
     p.add_argument("--steps", type=int, default=3000)
@@ -96,10 +97,10 @@ def parser() -> argparse.ArgumentParser:
         choices=("injection", "trilinear"),
         default="injection",
     )
-    p.add_argument("--wall-margin", type=int, default=16)    # L1 block margin
-    p.add_argument("--wake-cells", type=int, default=45)     # L1 wake extension
-    p.add_argument("--l2-margin", type=int, default=8)       # L2 shell thickness
-    p.add_argument("--shell-margin", type=int, default=8)    # L1 body-fitted shell thickness
+    p.add_argument("--wall-margin", type=int, default=16)  # L1 block margin
+    p.add_argument("--wake-cells", type=int, default=45)  # L1 wake extension
+    p.add_argument("--l2-margin", type=int, default=8)  # L2 shell thickness
+    p.add_argument("--shell-margin", type=int, default=8)  # L1 body-fitted shell thickness
     p.add_argument(
         "--collision",
         choices=("cumulant", "cascaded"),
@@ -135,7 +136,14 @@ def main() -> None:
     # level 0 (root) geometry
     # ------------------------------------------------------------------
     solid_coarse = sphere_mask(
-        args.nx, args.ny, args.nz, cx, cy, cz, args.radius, device=device,
+        args.nx,
+        args.ny,
+        args.nz,
+        cx,
+        cy,
+        cz,
+        args.radius,
+        device=device,
     )
     solid_coarse_q = solid_coarse.unsqueeze(0).expand(19, *shape).contiguous()
 
@@ -144,10 +152,12 @@ def main() -> None:
     # ---- fine cells far from the body while keeping the sphere surface and
     # ---- wake refined.
     shell_mask = HullProximityRegion(
-        solid_coarse, margin=args.shell_margin,
+        solid_coarse,
+        margin=args.shell_margin,
     ).expand_mask()
     wake_mask = WakeRegion(
-        solid_coarse, extend_x=args.wake_cells,
+        solid_coarse,
+        extend_x=args.wake_cells,
     ).expand_mask()
     shell_idx = shell_mask.nonzero(as_tuple=False)
     if shell_idx.numel() == 0:
@@ -157,9 +167,9 @@ def main() -> None:
     sz0, sy0 = int(shell_idx[:, 0].min().item()), int(shell_idx[:, 1].min().item())
     sz1, sy1 = int(shell_idx[:, 0].max().item()), int(shell_idx[:, 1].max().item())
     wake_mask[:sz0, :, :] = False
-    wake_mask[sz1 + 1:, :, :] = False
+    wake_mask[sz1 + 1 :, :, :] = False
     wake_mask[:, :sy0, :] = False
-    wake_mask[:, sy1 + 1:, :] = False
+    wake_mask[:, sy1 + 1 :, :] = False
     refine_mask = shell_mask | wake_mask
     r_indices = refine_mask.nonzero(as_tuple=False)
     if r_indices.numel() == 0:
@@ -202,17 +212,31 @@ def main() -> None:
     )
     radius1 = args.radius * RATIO
     l1_solid = sphere_mask(
-        s1[2], s1[1], s1[0],
-        fc1[0], fc1[1], fc1[2], radius1, device=device,
+        s1[2],
+        s1[1],
+        s1[0],
+        fc1[0],
+        fc1[1],
+        fc1[2],
+        radius1,
+        device=device,
     )
     l1_solid_g = torch.zeros(
-        tuple(size + 2 * GHOST for size in s1), dtype=torch.bool, device=device,
+        tuple(size + 2 * GHOST for size in s1),
+        dtype=torch.bool,
+        device=device,
     )
     l1_solid_g[GHOST:-GHOST, GHOST:-GHOST, GHOST:-GHOST] = l1_solid
     solid_q1 = l1_solid_g.unsqueeze(0).expand(19, *l1_solid_g.shape).contiguous()
     bfl_mask1, bfl_q1 = compute_q_sphere(
-        l1_solid_g.shape[2], l1_solid_g.shape[1], l1_solid_g.shape[0],
-        fc1[0], fc1[1], fc1[2], radius1, device=device,
+        l1_solid_g.shape[2],
+        l1_solid_g.shape[1],
+        l1_solid_g.shape[0],
+        fc1[0],
+        fc1[1],
+        fc1[2],
+        radius1,
+        device=device,
     )
 
     # ------------------------------------------------------------------
@@ -225,16 +249,22 @@ def main() -> None:
     s1g = l1_solid_g.shape  # (nz, ny, nx) of the L1 with-ghost tensor
     half2 = int(math.floor(radius1 + args.l2_margin))
     x0_2, x1_2 = _clamp_axis(
-        int(math.floor(c1_w[0] - half2)), int(math.ceil(c1_w[0] + half2)),
-        s1g[2], "x",
+        int(math.floor(c1_w[0] - half2)),
+        int(math.ceil(c1_w[0] + half2)),
+        s1g[2],
+        "x",
     )
     y0_2, y1_2 = _clamp_axis(
-        int(math.floor(c1_w[1] - half2)), int(math.ceil(c1_w[1] + half2)),
-        s1g[1], "y",
+        int(math.floor(c1_w[1] - half2)),
+        int(math.ceil(c1_w[1] + half2)),
+        s1g[1],
+        "y",
     )
     z0_2, z1_2 = _clamp_axis(
-        int(math.floor(c1_w[2] - half2)), int(math.ceil(c1_w[2] + half2)),
-        s1g[0], "z",
+        int(math.floor(c1_w[2] - half2)),
+        int(math.ceil(c1_w[2] + half2)),
+        s1g[0],
+        "z",
     )
     box2 = BoxRegion(x0_2, x1_2, y0_2, y1_2, z0_2, z1_2)
     s2 = (
@@ -249,28 +279,46 @@ def main() -> None:
     )
     radius2 = args.radius * RATIO * RATIO
     l2_solid = sphere_mask(
-        s2[2], s2[1], s2[0],
-        fc2[0], fc2[1], fc2[2], radius2, device=device,
+        s2[2],
+        s2[1],
+        s2[0],
+        fc2[0],
+        fc2[1],
+        fc2[2],
+        radius2,
+        device=device,
     )
     l2_solid_g = torch.zeros(
-        tuple(size + 2 * GHOST for size in s2), dtype=torch.bool, device=device,
+        tuple(size + 2 * GHOST for size in s2),
+        dtype=torch.bool,
+        device=device,
     )
     l2_solid_g[GHOST:-GHOST, GHOST:-GHOST, GHOST:-GHOST] = l2_solid
     solid_q2 = l2_solid_g.unsqueeze(0).expand(19, *l2_solid_g.shape).contiguous()
     bfl_mask2, bfl_q2 = compute_q_sphere(
-        l2_solid_g.shape[2], l2_solid_g.shape[1], l2_solid_g.shape[0],
-        fc2[0], fc2[1], fc2[2], radius2, device=device,
+        l2_solid_g.shape[2],
+        l2_solid_g.shape[1],
+        l2_solid_g.shape[0],
+        fc2[0],
+        fc2[1],
+        fc2[2],
+        radius2,
+        device=device,
     )
 
     # ------------------------------------------------------------------
     # tau chain: interface i+1's tau_coarse must equal interface i's tau_fine
     # ------------------------------------------------------------------
     config1 = StaticBlockAMRConfig(
-        box1, tau_coarse=tau_coarse, reflux=True,
+        box1,
+        tau_coarse=tau_coarse,
+        reflux=True,
         ghost_interpolation=args.ghost_interpolation,
     )
     config2 = StaticBlockAMRConfig(
-        box2, tau_coarse=config1.tau_fine, reflux=True,
+        box2,
+        tau_coarse=config1.tau_fine,
+        reflux=True,
         ghost_interpolation=args.ghost_interpolation,
     )
     tau_fine2 = config2.tau_fine
@@ -304,8 +352,10 @@ def main() -> None:
     )
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sigma = build_sponge_sigma_3d(
-        shape, width=args.sponge_width,
-        max_strength=args.sponge_strength, device=device,
+        shape,
+        width=args.sponge_width,
+        max_strength=args.sponge_strength,
+        device=device,
         faces=sponge_faces,
     )
     dynamic_area = 0.5 * args.lattice_speed**2 * math.pi * radius2**2
@@ -335,7 +385,10 @@ def main() -> None:
         raise ValueError(f"advance received unexpected population shape {tuple(f.shape)}")
 
     def advance(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         nonlocal max_reflux_residual
         level_index = _level_index(f)
@@ -354,7 +407,9 @@ def main() -> None:
             out = stream3d(post_collision)
             out = non_equilibrium_far_field_bc_3d(out, u_in=args.lattice_speed)
             out = apply_equilibrium_difference_sponge(
-                out, sigma, velocity_target=(args.lattice_speed, 0.0, 0.0),
+                out,
+                sigma,
+                velocity_target=(args.lattice_speed, 0.0, 0.0),
             )
             out = non_equilibrium_far_field_bc_3d(out, u_in=args.lattice_speed)
             return AMRAdvanceResult(out, post_collision)
@@ -379,15 +434,27 @@ def main() -> None:
             (1.0 - activation) * uz_post,
         )
         out, _bfl_force = bouzidi_bounce_back_d3q19(
-            out, post_collision, bfl_mask, bfl_q,
-            wall_velocity=wall_velocity, wall_density=rho_post,
+            out,
+            post_collision,
+            bfl_mask,
+            bfl_q,
+            wall_velocity=wall_velocity,
+            wall_density=rho_post,
             return_force=True,
         )
         if level_index == 2 and substep == 0:
             # one control-volume sample per root step, on the finest level
-            cv_force = float(observe_control_volume_force(
-                before, out, post_collision, cv, solid=solid_g,
-            ).force_on_body[0].item())
+            cv_force = float(
+                observe_control_volume_force(
+                    before,
+                    out,
+                    post_collision,
+                    cv,
+                    solid=solid_g,
+                )
+                .force_on_body[0]
+                .item()
+            )
             if not math.isfinite(cv_force):
                 raise FloatingPointError(f"non-finite control-volume force at step {current_step}")
             force_samples.append(cv_force)
@@ -401,12 +468,9 @@ def main() -> None:
             reflux_residual_by_level[index] = max(reflux_residual_by_level[index], residual)
         max_reflux_residual = max(max_reflux_residual, *reflux_residual_by_level)
         if current_step % args.report_interval == 0:
-            if not all(
-                bool(torch.isfinite(level).all())
-                for level in amr.level_populations
-            ):
+            if not all(bool(torch.isfinite(level).all()) for level in amr.level_populations):
                 raise FloatingPointError(f"non-finite populations at step {current_step}")
-            recent = force_samples[-min(len(force_samples), args.report_interval):]
+            recent = force_samples[-min(len(force_samples), args.report_interval) :]
             recent_cd = sum(recent) / len(recent) / dynamic_area if recent else math.nan
             elapsed = time.time() - started
             print(
@@ -427,12 +491,11 @@ def main() -> None:
     reference = schiller_naumann_cd(args.reynolds)
     cd_history = [f_ / dynamic_area for f_ in selected]
     stationarity = assess_force_stationarity(
-        cd_history, block_size=max(1, len(cd_history) // 8),
+        cd_history,
+        block_size=max(1, len(cd_history) // 8),
     )
     stationarity_dict = (
-        asdict(stationarity)
-        if hasattr(stationarity, "__dataclass_fields__")
-        else stationarity
+        asdict(stationarity) if hasattr(stationarity, "__dataclass_fields__") else stationarity
     )
     reference_error = abs(cd - reference) / reference * 100.0
     result = {
