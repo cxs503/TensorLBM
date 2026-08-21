@@ -615,6 +615,33 @@ def _purge_products(catalog: FieldDataCatalog, product_ids: Sequence[str]) -> No
     conn.commit()
 
 
+def _point_identity(plan: ScanPlan, point: ScanPoint) -> dict[str, str]:
+    """Identity recorded in (and re-checked against) a point checkpoint."""
+    return {
+        "scan_id": plan.scan_id,
+        "point_id": point.point_id,
+        "run_id": point.run_id,
+        "case": plan.case,
+        "plan_digest": plan.plan_digest(),
+    }
+
+
+def _point_resume_step(plan: ScanPlan, point: ScanPoint, out_dir: str | Path) -> int | None:
+    """Last checkpointed step for *point*, or ``None`` when it must restart.
+
+    ``None`` covers "no checkpoint", "corrupt checkpoint" and "checkpoint
+    from a different plan/point" — all three fall back to a fresh rerun.
+    """
+    from .checkpoint import load_case_checkpoint
+
+    prior = load_case_checkpoint(
+        _point_paths(Path(out_dir), point)[0], identity=_point_identity(plan, point)
+    )
+    if prior is None or prior.step < 0 or prior.step >= plan.steps:
+        return None
+    return int(prior.step)
+
+
 def run_scan_point(
     plan: ScanPlan,
     point: ScanPoint,
@@ -623,6 +650,7 @@ def run_scan_point(
     device: str = "cpu",
     *,
     log: Callable[..., None] | None = None,
+    checkpoint_every: int = 0,
 ) -> PointOutcome:
     """Run one sweep point to registered catalog products.
 
@@ -638,6 +666,13 @@ def run_scan_point(
     optional :class:`~tensorlbm.reporters.EarlyStopReporter` truncates
     steady points.  Like ``run_case``, the final step is always exported
     even when it is not a sampling multiple.
+
+    With ``checkpoint_every > 0`` a unified solver checkpoint
+    (:mod:`tensorlbm.checkpoint`) is written into the point directory
+    every *checkpoint_every* steps; a rerun of an interrupted point then
+    resumes from the last checkpoint (merging the pre-interruption
+    catalog products into its final status) instead of restarting from
+    step 0.
     """
     from .cases import get_case
     from .reporters import (
@@ -707,8 +742,22 @@ def run_scan_point(
         from .solver3d import correct_mass3d
 
     nz, ny, nx = case.resolution
+    if checkpoint_every < 0:
+        raise ValueError(f"checkpoint_every must be >= 0, got {checkpoint_every}")
+    start_step = 0
+    if checkpoint_every > 0:
+        from .checkpoint import load_case_checkpoint
+
+        prior = load_case_checkpoint(point_dir, identity=_point_identity(plan, point))
+        if prior is not None and 0 <= prior.step < plan.steps:
+            f = prior.populations.to(device=f.device, dtype=f.dtype)
+            mass_target = prior.state.get("mass_target")
+            if isinstance(mass_target, (int, float)):
+                initial_mass = float(mass_target)
+            start_step = int(prior.step)
+            say(f"[{point.point_id}] resuming from checkpoint at step {start_step}")
     ctx = StepContext(
-        step=0,
+        step=start_step,
         f=f,
         lattice=case.lattice,
         num_cells=nz * ny * nx,
@@ -720,8 +769,8 @@ def run_scan_point(
         f"grid={nz}x{ny}x{nx} steps={plan.steps} device={device}"
     )
     t0 = time.perf_counter()
-    completed = 0
-    for step in range(1, plan.steps + 1):
+    completed = start_step
+    for step in range(start_step + 1, plan.steps + 1):
         f = step_fn(f)
         if mass_every > 0 and step % mass_every == 0:
             f = correct_mass3d(f, initial_mass)
@@ -729,6 +778,22 @@ def run_scan_point(
         ctx.f = f
         dispatch(ctx, reporters)
         completed = step
+        if checkpoint_every > 0 and step % checkpoint_every == 0 and step < plan.steps:
+            from .checkpoint import save_case_checkpoint
+
+            save_case_checkpoint(
+                point_dir,
+                f=f,
+                step=step,
+                lattice=case.lattice,
+                grid=(nz, ny, nx),
+                identity=_point_identity(plan, point),
+                state_extra={"mass_target": initial_mass},
+                metadata={
+                    "device": str(device),
+                    "params": {k: float(v) for k, v in point.params.items()},
+                },
+            )
         if ctx.stop:
             break
     if completed not in field_reporter.exported_steps:
@@ -739,11 +804,30 @@ def run_scan_point(
         field_reporter(ctx)
     elapsed = time.perf_counter() - t0
 
+    product_ids = list(field_reporter.product_ids)
+    exported_steps = list(field_reporter.exported_steps)
+    if start_step > 0:
+        # A resumed point already registered its pre-interruption products;
+        # fold them back in so status.json (and is_point_complete) stay honest.
+        prior_assets = catalog.find_assets_by_metadata(
+            "point_id", point.point_id, kind="field_product", limit=10_000
+        )
+        prior_ids = {asset.asset_id for asset in prior_assets}
+        prior_steps = {
+            int(pid.rsplit(":", 1)[-1]) for pid in prior_ids if pid.rsplit(":", 1)[-1].isdigit()
+        }
+        product_ids = sorted(set(product_ids) | prior_ids)
+        exported_steps = sorted(set(exported_steps) | prior_steps)
+    if checkpoint_every > 0:
+        from .checkpoint import case_checkpoint_path
+
+        case_checkpoint_path(point_dir).unlink(missing_ok=True)
+
     outcome = PointOutcome(
         point_id=point.point_id,
         status="completed",
-        product_ids=list(field_reporter.product_ids),
-        exported_steps=list(field_reporter.exported_steps),
+        product_ids=product_ids,
+        exported_steps=exported_steps,
         completed_steps=completed,
         elapsed_s=elapsed,
         mean_mlups=throughput.mean_mlups,
@@ -780,6 +864,9 @@ class ScanExecutor:
             finalisation queries).
         catalog_timeout: SQLite busy timeout for worker connections.
         split_ratios, split_seed: dataset finalisation split.
+        checkpoint_every: write a unified per-point checkpoint every N
+            steps (0 disables — the default keeps today's reset-on-rerun
+            behaviour).  Interrupted points then resume mid-run.
     """
 
     def __init__(
@@ -792,6 +879,7 @@ class ScanExecutor:
         catalog_timeout: float = 120.0,
         split_ratios: Sequence[float] = (0.7, 0.15, 0.15),
         split_seed: int | None = None,
+        checkpoint_every: int = 0,
     ) -> None:
         self.plan = plan
         self.out_dir = Path(out_dir)
@@ -800,6 +888,9 @@ class ScanExecutor:
         self.catalog_timeout = float(catalog_timeout)
         self.split_ratios = tuple(float(r) for r in split_ratios)
         self.split_seed = plan.seed if split_seed is None else int(split_seed)
+        if checkpoint_every < 0:
+            raise ValueError(f"checkpoint_every must be >= 0, got {checkpoint_every}")
+        self.checkpoint_every = int(checkpoint_every)
         self._catalog: FieldDataCatalog | None = None
         self.dataset: dict[str, Any] | None = None
 
@@ -920,10 +1011,20 @@ class ScanExecutor:
         catalog = self.catalog()
         outcomes: list[PointOutcome] = []
         for point in points:
-            self._reset_point(point)
+            if self.checkpoint_every <= 0 or (
+                _point_resume_step(self.plan, point, self.out_dir) is None
+            ):
+                self._reset_point(point)
             try:
                 outcomes.append(
-                    run_scan_point(self.plan, point, self.out_dir, catalog, self.serial_device)
+                    run_scan_point(
+                        self.plan,
+                        point,
+                        self.out_dir,
+                        catalog,
+                        self.serial_device,
+                        checkpoint_every=self.checkpoint_every,
+                    )
                 )
             except Exception as error:  # noqa: BLE001 - record, keep sweeping
                 outcomes.append(
@@ -963,6 +1064,7 @@ class ScanExecutor:
                     str(outcome_path),
                     str(log_path),
                     self.catalog_timeout,
+                    self.checkpoint_every,
                 ),
                 name=f"scan-{self.plan.scan_id}-gpu{gpu}",
             )
@@ -1195,6 +1297,7 @@ def _gpu_worker_entry(
     outcome_path: str,
     log_path: str,
     catalog_timeout: float,
+    checkpoint_every: int = 0,
 ) -> None:
     """Run this card's points sequentially; report outcomes as JSON."""
     plan = ScanPlan.from_dict(plan_dict)
@@ -1239,17 +1342,27 @@ def _gpu_worker_entry(
                     )
                     print(f"[gpu{gpu}] {point.point_id}: already complete, skipping", flush=True)
                     continue
-                # Reset any half-finished attempt before rerunning.
-                stale = catalog.find_assets_by_metadata(
-                    "point_id", point.point_id, kind="field_product", limit=10_000
-                )
-                if stale:
-                    _purge_products(catalog, [asset.asset_id for asset in stale])
-                point_dir = _point_paths(root, point)[0]
-                if point_dir.exists():
-                    shutil.rmtree(point_dir)
+                # Reset any half-finished attempt before rerunning — unless
+                # checkpointing left a resumable in-run state for this point.
+                if checkpoint_every <= 0 or _point_resume_step(plan, point, root) is None:
+                    stale = catalog.find_assets_by_metadata(
+                        "point_id", point.point_id, kind="field_product", limit=10_000
+                    )
+                    if stale:
+                        _purge_products(catalog, [asset.asset_id for asset in stale])
+                    point_dir = _point_paths(root, point)[0]
+                    if point_dir.exists():
+                        shutil.rmtree(point_dir)
                 try:
-                    outcome = run_scan_point(plan, point, root, catalog, device, log=print)
+                    outcome = run_scan_point(
+                        plan,
+                        point,
+                        root,
+                        catalog,
+                        device,
+                        log=print,
+                        checkpoint_every=checkpoint_every,
+                    )
                     outcomes.append(outcome.to_dict())
                 except Exception as error:  # noqa: BLE001 - keep the card busy
                     print(
