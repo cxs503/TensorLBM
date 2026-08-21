@@ -7,11 +7,9 @@ import pytest
 from tensorlbm.physics_capability_contract import (
     IMPLEMENTED,
     NO_IMPLEMENTATION,
-    PhysicsCapability,
-    PhysicsWithheldError,
     VERIFICATION_CONTRACT_TESTED,
-    WITHHELD_NO_IMPLEMENTATION,
     WITHHELD_NO_PHYSICS_VALIDATION,
+    PhysicsWithheldError,
     physics_capability_matrix,
     require_physics_capability,
 )

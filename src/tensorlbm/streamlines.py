@@ -152,7 +152,6 @@ def trace_streamlines_2d(
         List of :class:`Streamline` objects, one per seed point.
     """
     ny, nx = ux.shape
-    device = ux.device
     lines: list[Streamline] = []
 
     for x0, y0 in seeds:

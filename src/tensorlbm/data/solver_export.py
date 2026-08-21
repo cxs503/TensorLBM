@@ -64,14 +64,14 @@ expects.  All array values are in lattice units by default
 from __future__ import annotations
 
 import base64
+import json
+import math
+import platform
+import re
 from decimal import Decimal
 from hashlib import sha256
 from io import BytesIO
-import json
-import math
 from pathlib import Path
-import platform
-import re
 from typing import Any, Mapping
 from urllib.parse import urlparse
 
@@ -314,9 +314,7 @@ def _evidence_payload(metrics: Mapping[str, Any]) -> bytes:
 
 def _spatial_axes(shape: tuple[int, ...]) -> tuple[AxisSpec, ...]:
     names = _SPATIAL_AXIS_NAMES[len(shape)]
-    return tuple(
-        AxisSpec(name, AxisSemantic.SPATIAL, length) for name, length in zip(names, shape)
-    )
+    return tuple(AxisSpec(name, AxisSemantic.SPATIAL, length) for name, length in zip(names, shape))
 
 
 def _write_npy(path: Path, arr: np.ndarray) -> bytes:
@@ -420,9 +418,7 @@ def register_product(
     group_name = snapshot_group(step)
     arrays, attrs = read_snapshot(h5_path, step)
     if "step" in attrs and int(attrs["step"]) != step:
-        raise ValueError(
-            f"metadata step {step} does not match HDF5 snapshot step {attrs['step']}"
-        )
+        raise ValueError(f"metadata step {step} does not match HDF5 snapshot step {attrs['step']}")
     if "run_id" in attrs and str(attrs["run_id"]) != str(metadata["run_id"]):
         raise ValueError(
             f"metadata run_id {metadata['run_id']!r} does not match HDF5 "
@@ -466,8 +462,7 @@ def register_product(
     product_id = f"{run_id}:{step:06d}"
     if catalog.get_asset(product_id) is not None:
         raise ValueError(
-            f"product {product_id!r} is already registered; use a fresh "
-            f"run_id for a new export"
+            f"product {product_id!r} is already registered; use a fresh run_id for a new export"
         )
 
     h5_abs = Path(h5_path).resolve()
@@ -480,12 +475,14 @@ def register_product(
     units_rho = str(metadata.get("rho_units", _DEFAULT_UNITS))
 
     # --- Blobs + array manifests (canonical order first) ---
-    ordered: list[tuple[str, ArrayRole, np.ndarray, str]] = [(
-        _VELOCITY_ID,
-        ArrayRole.FEATURE,
-        velocity,
-        units_velocity,
-    )]
+    ordered: list[tuple[str, ArrayRole, np.ndarray, str]] = [
+        (
+            _VELOCITY_ID,
+            ArrayRole.FEATURE,
+            velocity,
+            units_velocity,
+        )
+    ]
     if "rho" in arrays:
         ordered.append(
             ("rho", ArrayRole.TARGET, np.ascontiguousarray(arrays["rho"].astype("<f4")), units_rho)
@@ -497,9 +494,7 @@ def register_product(
         if name in {"ux", "uy", "uz", "rho", "solid_mask"}:
             continue
         if name in {_VELOCITY_ID, "rho", "solid_mask"}:
-            raise ValueError(
-                f"dataset {name!r} collides with a canonical registered array id"
-            )
+            raise ValueError(f"dataset {name!r} collides with a canonical registered array id")
         arr = arrays[name]
         if arr.dtype.kind == "f":
             arr = arr.astype("<f4")
@@ -704,8 +699,7 @@ def load_product_arrays(product: FieldDataProductR2) -> dict[str, np.ndarray]:
     payloads = {array.array_id: _read_blob(array.blob_ref) for array in product.arrays}
     product.validate_for_use(payloads)
     return {
-        array_id: np.load(BytesIO(data), allow_pickle=False)
-        for array_id, data in payloads.items()
+        array_id: np.load(BytesIO(data), allow_pickle=False) for array_id, data in payloads.items()
     }
 
 

@@ -91,14 +91,22 @@ BC_ID_NONE = 0
 
 _FACE_AXIS: dict[str, int] = {
     # layout is (Q, nz, ny, nx): dim 1 = z, dim 2 = y, dim 3 = x
-    "x-": 3, "x+": 3,
-    "y-": 2, "y+": 2,
-    "z-": 1, "z+": 1,
+    "x-": 3,
+    "x+": 3,
+    "y-": 2,
+    "y+": 2,
+    "z-": 1,
+    "z+": 1,
 }
 
 #: Periodicity axis key for each face label.
 _FACE_PERIOD_KEY: dict[str, str] = {
-    "x-": "x", "x+": "x", "y-": "y", "y+": "y", "z-": "z", "z+": "z",
+    "x-": "x",
+    "x+": "x",
+    "y-": "y",
+    "y+": "y",
+    "z-": "z",
+    "z+": "z",
 }
 
 
@@ -243,7 +251,9 @@ class BoundaryCondition:
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
         target = "mask" if self.mask is not None else (self.face or "-")
-        return f"BoundaryCondition({self.name}, kind={self.kind.value}, id={self.id}, target={target})"
+        return (
+            f"BoundaryCondition({self.name}, kind={self.kind.value}, id={self.id}, target={target})"
+        )
 
 
 class BoundaryConditionRegistry:
@@ -393,7 +403,7 @@ def check_bc_overlaps(
         cells_a = bc_a.cells(shape, device)
         if not bool(cells_a.any()):
             raise ValueError(f"boundary condition {bc_a.name!r} selects no cells")
-        for bc_b in bcs[i + 1:]:
+        for bc_b in bcs[i + 1 :]:
             if bc_a.phase is not bc_b.phase:
                 continue  # fixed pipeline order: pre always precedes post
             overlap = cells_a & bc_b.cells(shape, device)
@@ -440,14 +450,14 @@ def check_bc_consistency(
             expected = face_cells(bc.face or "", shape, device)
             if not bool(torch.equal(bc.cells(shape, device), expected)):
                 raise ValueError(
-                    f"plane BC {bc.name!r} ({bc.kind.value}) must cover exactly face "
-                    f"{bc.face!r}"
+                    f"plane BC {bc.name!r} ({bc.kind.value}) must cover exactly face {bc.face!r}"
                 )
 
 
 # ---------------------------------------------------------------------------
 # Missing-direction masks ("stream a boolean field once", XLB method)
 # ---------------------------------------------------------------------------
+
 
 def _lattice_c(lattice: str, device: torch.device) -> torch.Tensor:
     if lattice.upper() == "D3Q19":
@@ -562,9 +572,7 @@ def derive_missing_mask(
     return missing
 
 
-def _pull_source_index(
-    coord: torch.Tensor, shift: int, n: int, is_periodic: bool
-) -> torch.Tensor:
+def _pull_source_index(coord: torch.Tensor, shift: int, n: int, is_periodic: bool) -> torch.Tensor:
     """Padded-coordinate pull-source index for one axis.
 
     Non-periodic: ``coord - shift + 1`` — out-of-bounds sources land on
@@ -614,7 +622,7 @@ def derive_missing_mask_reference(
     c = _lattice_c(lattice, device)
     q_n = c.shape[0]
     missing = torch.empty((q_n, nz, ny, nx), dtype=torch.bool, device=device)
-    extents = ((nz, periodic_by_axis["z"]), (ny, periodic_by_axis["y"]), (nx, periodic_by_axis["x"]))
+    ((nz, periodic_by_axis["z"]), (ny, periodic_by_axis["y"]), (nx, periodic_by_axis["x"]))
 
     def _source(coord: torch.Tensor, shift: int, n: int, is_periodic: bool) -> torch.Tensor:
         src = coord - shift

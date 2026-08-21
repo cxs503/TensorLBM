@@ -10,12 +10,17 @@ Re = 4.3e6 (based on length)
 """
 
 from __future__ import annotations
-import sys, math, torch
+
+import math
+import sys
+
+import torch
 
 sys.path.insert(0, "src")
 from tensorlbm.cp_measurement import print_cp_report
-from tensorlbm.d3q27 import equilibrium27, macroscopic27, C as C27, correct_mass27
 from tensorlbm.cumulant import collide_cumulant_d3q27
+from tensorlbm.d3q27 import C as C27
+from tensorlbm.d3q27 import correct_mass27, equilibrium27, macroscopic27
 
 KAPPA = 0.41
 B_CONST = 5.0

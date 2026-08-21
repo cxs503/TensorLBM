@@ -47,8 +47,8 @@ from .d3q19 import equilibrium3d, macroscopic3d  # noqa: F401
 from .solver3d import (  # noqa: F401
     collide_bgk3d,
     collide_mrt3d,
-    collide_trt3d,
     collide_rlbm3d,
+    collide_trt3d,
     correct_mass3d,
     stream3d,
 )
@@ -65,7 +65,7 @@ from .turbulence import (  # noqa: F401
 #  RANS k-epsilon collision (from rans_ke)                           #
 # ------------------------------------------------------------------ #
 try:
-    from .rans_ke import KESolver, collide_rans_ke, C_MU, C_E1, C_E2  # noqa: F401
+    from .rans_ke import C_E1, C_E2, C_MU, KESolver, collide_rans_ke  # noqa: F401
 except ImportError:  # pragma: no cover
     pass
 

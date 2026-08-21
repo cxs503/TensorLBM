@@ -10,10 +10,9 @@
 7. Guo 力格式矩注入（ΣF_i 等于修正的动量注入）
 8. 自然对流方腔冒烟测试（左热右冷 → 逆时针环流，热端在上）
 """
+
 import math
 
-import numpy as np
-import pytest
 import torch
 
 from tensorlbm.d2q9 import equilibrium
@@ -23,10 +22,8 @@ from tensorlbm.thermal import (
     W5,
     apply_temperature_boundaries,
     buoyancy_force,
-    cavity_wall_mask,
     collide_bgk_force,
     nusselt_number,
-    pre_streaming_bounce_back,
     simulate_natural_convection,
     temperature_collision,
     temperature_equilibrium,
@@ -177,7 +174,6 @@ def test_cavity_smoke_inverse_circulation():
     assert res["u_max"] > 1e-4  # 有流动
 
     # 直接验证近左壁上升流（y 方向速度为正，排除角点）
-    import torch as _t
 
     # 重新短跑并用宏观量检查（复用 simulate 的内部行为：T 场左热右冷）
     assert res["nu_left_grad2"] > 0 and res["nu_right_grad2"] > 0

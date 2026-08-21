@@ -37,7 +37,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import torch
-import torch.nn.functional as F
 
 from .refinement import BoxRegion, _coarse_to_fine_3d, _fine_to_coarse_3d
 
@@ -113,9 +112,11 @@ def _fh_coarse_to_fine_3d(
     # adaptive_refinement._coarse_to_fine_2d for why align_corners
     # interpolation is wrong for LBM grid refinement).
     q, nz_c, ny_c, nx_c = f_rescaled.shape
-    out = (f_rescaled.repeat_interleave(ratio, dim=1)
-           .repeat_interleave(ratio, dim=2)
-           .repeat_interleave(ratio, dim=3))
+    out = (
+        f_rescaled.repeat_interleave(ratio, dim=1)
+        .repeat_interleave(ratio, dim=2)
+        .repeat_interleave(ratio, dim=3)
+    )
     return out.contiguous()
 
 

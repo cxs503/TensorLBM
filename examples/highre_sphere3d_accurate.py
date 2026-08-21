@@ -5,15 +5,21 @@ Establishes the 3D baseline (history: Re=100 Cd=1.0651, 2.3% error at
 80x40x40 BGK) and pushes to Re=500/1000 with MRT+Smag + far-field BC.
 Uniform grid (no AMR) to isolate the drag physics from AMR errors.
 """
-import sys, os, time, json, math
+
+import json
+import math
+import sys
+import time
+
 sys.path.insert(0, "/DATA/cxs_host/TensorLBM/src")
 
 import torch
-from tensorlbm.d3q19 import equilibrium3d, C as C19
+
+from tensorlbm.boundaries3d import far_field_bc_3d
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.obstacles import compute_obstacle_forces_3d
 from tensorlbm.solver3d import stream3d
 from tensorlbm.turbulence import collide_smagorinsky_mrt3d
-from tensorlbm.boundaries3d import far_field_bc_3d, bounce_back_cells_3d
-from tensorlbm.obstacles import compute_obstacle_forces_3d
 
 
 def schiller_naumann_cd(re):
@@ -21,11 +27,22 @@ def schiller_naumann_cd(re):
 
 
 def clift_gauvin_cd(re):
-    return 24.0 / re * (1.0 + 0.1315 * re**(0.82 - 0.05 * math.log10(re)))
+    return 24.0 / re * (1.0 + 0.1315 * re ** (0.82 - 0.05 * math.log10(re)))
 
 
-def run_sphere(re, nx, ny, nz, radius, u_in, n_steps, device="cuda:0",
-               collision="smag", cs=0.12, n_warmup_frac=0.3):
+def run_sphere(
+    re,
+    nx,
+    ny,
+    nz,
+    radius,
+    u_in,
+    n_steps,
+    device="cuda:0",
+    collision="smag",
+    cs=0.12,
+    n_warmup_frac=0.3,
+):
     """3D sphere, uniform grid, MEM drag via compute_obstacle_forces_3d.
 
     IMPORTANT (from calibration): the sphere MUST be centred (cx=0.5*nx)
@@ -37,18 +54,20 @@ def run_sphere(re, nx, ny, nz, radius, u_in, n_steps, device="cuda:0",
     tau = 3.0 * nu + 0.5
 
     cx, cy, cz = nx * 0.5, ny / 2.0, nz / 2.0
-    zz, yy, xx = torch.meshgrid(torch.arange(nz, device=dev),
-                                torch.arange(ny, device=dev),
-                                torch.arange(nx, device=dev), indexing="ij")
-    solid = ((xx - cx)**2 + (yy - cy)**2 + (zz - cz)**2).sqrt() < radius
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=dev),
+        torch.arange(ny, device=dev),
+        torch.arange(nx, device=dev),
+        indexing="ij",
+    )
+    solid = ((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2).sqrt() < radius
 
     A = math.pi * radius**2
     dyn_p = 0.5 * u_in**2 * A
     rho0 = torch.ones(nz, ny, nx, device=dev)
     ux0 = torch.full_like(rho0, u_in)
     ux0[solid] = 0.0
-    f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0),
-                      device=dev)
+    f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0), device=dev)
     initial_mass = float(f.sum().item())
     cd_ref = clift_gauvin_cd(re) if re < 2e5 else 0.2
 
@@ -61,6 +80,7 @@ def run_sphere(re, nx, ny, nz, radius, u_in, n_steps, device="cuda:0",
             col = collide_smagorinsky_mrt3d(f, tau, C_s=cs)
         else:
             from tensorlbm.solver3d import collide_bgk3d
+
             col = collide_bgk3d(f, tau)
         f = col
         f = stream3d(f)
@@ -75,14 +95,24 @@ def run_sphere(re, nx, ny, nz, radius, u_in, n_steps, device="cuda:0",
         if step % 1000 == 0 or step == n_steps:
             cd_avg = sum(cd_list) / max(len(cd_list), 1)
             el = time.time() - t0
-            print(f"  step {step:5d}: Cd={cd_avg:.4f} (ref {cd_ref:.4f}, "
-                  f"err {abs(cd_avg-cd_ref)/cd_ref*100:.1f}%), {el:.0f}s")
+            print(
+                f"  step {step:5d}: Cd={cd_avg:.4f} (ref {cd_ref:.4f}, "
+                f"err {abs(cd_avg - cd_ref) / cd_ref * 100:.1f}%), {el:.0f}s"
+            )
 
     cd_avg = sum(cd_list) / max(len(cd_list), 1)
     err = abs(cd_avg - cd_ref) / cd_ref * 100
     print(f"\n  FINAL: Cd={cd_avg:.4f} ref={cd_ref:.4f} err={err:.1f}% tau={tau:.5f}")
-    return {"re": re, "grid": [nx, ny, nz], "radius": radius, "tau": tau,
-            "cd": cd_avg, "cd_ref": cd_ref, "err_pct": err, "steps": n_steps}
+    return {
+        "re": re,
+        "grid": [nx, ny, nz],
+        "radius": radius,
+        "tau": tau,
+        "cd": cd_avg,
+        "cd_ref": cd_ref,
+        "err_pct": err,
+        "steps": n_steps,
+    }
 
 
 if __name__ == "__main__":
@@ -115,8 +145,10 @@ if __name__ == "__main__":
     print("SUMMARY (3D sphere, uniform grid, MRT+Smag)")
     print("=" * 70)
     for r in results:
-        print(f"  Re={r['re']:>5}: Cd={r['cd']:.4f} ref={r['cd_ref']:.4f} "
-              f"err={r['err_pct']:.1f}%  grid={r['grid']} r={r['radius']} tau={r['tau']:.5f}")
+        print(
+            f"  Re={r['re']:>5}: Cd={r['cd']:.4f} ref={r['cd_ref']:.4f} "
+            f"err={r['err_pct']:.1f}%  grid={r['grid']} r={r['radius']} tau={r['tau']:.5f}"
+        )
 
     with open("/tmp/sphere3d_accurate.json", "w") as fp:
         json.dump(results, fp, indent=2)

@@ -6,13 +6,13 @@ records evidence after a run and never participates in solver timesteps.
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from enum import Enum
 from hashlib import sha256 as _sha256
-import json
 from math import isfinite
-import re
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 

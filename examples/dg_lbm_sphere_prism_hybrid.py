@@ -22,20 +22,22 @@ import math
 import sys
 
 import torch
-import torch.nn.functional as F
 
-from tensorlbm.d3q19 import C as C3D, OPPOSITE as OPP3D, W as W3D, equilibrium3d, macroscopic3d
-from tensorlbm.dg_advection import equilibrium_dg, get_ops
+from tensorlbm.boundaries3d import (
+    apply_simple_channel_boundaries_3d,
+    make_channel_wall_mask_3d,
+    sphere_mask,
+)
+from tensorlbm.d3q19 import OPPOSITE as OPP3D
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.dg_advection import get_ops
 from tensorlbm.dg_curv import (
     compute_dg_solid_force_geo,
     hybrid_step_geo,
     init_dg_from_lbm,
     make_sphere_prism_topology,
-)
-from tensorlbm.boundaries3d import (
-    apply_simple_channel_boundaries_3d,
-    make_channel_wall_mask_3d,
-    sphere_mask,
 )
 from tensorlbm.obstacles import compute_obstacle_forces_3d
 from tensorlbm.solver3d import correct_mass3d
@@ -69,13 +71,23 @@ def run(
 
     # ---- body-fitted prism band (curvilinear) ----
     topo, geo, meta = make_sphere_prism_topology(
-        solid, center=(cx, cy, cz), R=radius,
-        n_layers=n_layers, first_height=first_height, growth=growth,
-        n_az=n_az, n_stream=n_stream, polar_cap=polar_cap,
-        vel=C, dtype=dtype, device=device,
+        solid,
+        center=(cx, cy, cz),
+        R=radius,
+        n_layers=n_layers,
+        first_height=first_height,
+        growth=growth,
+        n_az=n_az,
+        n_stream=n_stream,
+        polar_cap=polar_cap,
+        vel=C,
+        dtype=dtype,
+        device=device,
     )
-    print(f"[prism band] n_band={topo.n_band}  n_az={meta['n_az']}  "
-          f"n_stream={meta['n_stream']}  n_layers={meta['n_layers']}")
+    print(
+        f"[prism band] n_band={topo.n_band}  n_az={meta['n_az']}  "
+        f"n_stream={meta['n_stream']}  n_layers={meta['n_layers']}"
+    )
     if topo.n_band == 0:
         print("  -> no band elements built; abort")
         return False
@@ -94,8 +106,17 @@ def run(
 
     for step in range(1, n_steps + 1):
         f_lbm, f_dg = hybrid_step_geo(
-            f_lbm, f_dg, C, W, ops, topo, geo, tau_lbm=tau_lbm,
-            dt=1.0, n_substeps=16, scheme="rk3",
+            f_lbm,
+            f_dg,
+            C,
+            W,
+            ops,
+            topo,
+            geo,
+            tau_lbm=tau_lbm,
+            dt=1.0,
+            n_substeps=16,
+            scheme="rk3",
         )
         f_lbm = apply_simple_channel_boundaries_3d(f_lbm, u_in, wall_mask, solid)
         if step % 10 == 0:
@@ -115,15 +136,17 @@ def run(
             re = u_in * (2.0 * radius) / nu
             area = math.pi * radius * radius
             dyn = 0.5 * u_in * u_in * area
-            ref_cd = 24.0 / re * (1.0 + 0.15 * re ** 0.687) if re > 1e-6 else 100.0
+            ref_cd = 24.0 / re * (1.0 + 0.15 * re**0.687) if re > 1e-6 else 100.0
             cd_dg = abs(drag) / dyn
             cd_st = abs(float(fxc)) / dyn
             err_dg = abs(cd_dg - ref_cd) / ref_cd * 100
             err_st = abs(cd_st - ref_cd) / ref_cd * 100
-            print(f"step {step:3d}: max|u|={ms:.4f} "
-                  f"Cd(DG curved)={cd_dg:.3f} Cd(staircase)={cd_st:.3f} "
-                  f"ref(S-N)={ref_cd:.3f}  err_DG={err_dg:.0f}% err_st={err_st:.0f}%  "
-                  f"[Re={re:.2f}]")
+            print(
+                f"step {step:3d}: max|u|={ms:.4f} "
+                f"Cd(DG curved)={cd_dg:.3f} Cd(staircase)={cd_st:.3f} "
+                f"ref(S-N)={ref_cd:.3f}  err_DG={err_dg:.0f}% err_st={err_st:.0f}%  "
+                f"[Re={re:.2f}]"
+            )
             if not math.isfinite(ms) or ms > 5.0 or not math.isfinite(drag):
                 print("  -> UNSTABLE")
                 return False

@@ -33,6 +33,7 @@ Usage:
         [--max-steps N] [--seed 0] [--device D]
     run.py scan out_dir [--H ...] [--tau T] [--u0 U]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -44,12 +45,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
 
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
-
 import numpy as np
 import torch
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
-from tensorlbm.d3q19 import C, OPPOSITE, W_EXACT64, equilibrium3d, macroscopic3d  # noqa: E402
+from tensorlbm.d3q19 import OPPOSITE, W_EXACT64, C, equilibrium3d, macroscopic3d  # noqa: E402
 from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 
 CS2 = 1.0 / 3.0
@@ -83,8 +83,8 @@ def moving_wall_bounce_back3d(
     c = C.to(DEVICE)
     w = W_EXACT64.to(device=DEVICE, dtype=f.dtype)
     f_new = torch.where(wall.unsqueeze(0), f_pre[opp], f)
-    rho_w = torch.clamp(f_pre.sum(dim=0), min=1e-12)          # (nz, ny, nx) at wall cells
-    cu = c[:, 0].view(19, 1, 1, 1) * u_wall.unsqueeze(0)      # c_q . (u_wall, 0, 0)
+    rho_w = torch.clamp(f_pre.sum(dim=0), min=1e-12)  # (nz, ny, nx) at wall cells
+    cu = c[:, 0].view(19, 1, 1, 1) * u_wall.unsqueeze(0)  # c_q . (u_wall, 0, 0)
     injection = (2.0 * w.view(19, 1, 1, 1) * rho_w.unsqueeze(0) * cu) / CS2
     return f_new + injection * wall.unsqueeze(0)
 
@@ -101,27 +101,31 @@ def run_case(
 ) -> dict:
     """Run one 3D Couette case and return measurements."""
     torch.manual_seed(seed)
-    ny = H + 2                      # wall rows at y=0 and y=ny-1
-    nx = 8                          # periodic in x
-    nz = 8                          # periodic in z (spanwise)
+    ny = H + 2  # wall rows at y=0 and y=ny-1
+    nx = 8  # periodic in x
+    nz = 8  # periodic in z (spanwise)
     nu = (tau - 0.5) / 3.0
-    H_eff = ny - 2.0                # effective gap (walls at y=0.5 .. ny-1.5)
+    H_eff = ny - 2.0  # effective gap (walls at y=0.5 .. ny-1.5)
     Re = U0 * H / nu
     Ma = U0 / math.sqrt(CS2)
 
     wall = torch.zeros((nz, ny, nx), dtype=torch.bool, device=DEVICE)
-    wall[:, 0, :] = True            # bottom wall (y=0): stationary (u_wall = 0)
-    wall[:, -1, :] = True           # top wall (y=ny-1): moving at U0
+    wall[:, 0, :] = True  # bottom wall (y=0): stationary (u_wall = 0)
+    wall[:, -1, :] = True  # top wall (y=ny-1): moving at U0
     u_wall = torch.zeros((nz, ny, nx), device=DEVICE)
-    u_wall[:, -1, :] = U0           # per-wall velocity field (+x)
+    u_wall[:, -1, :] = U0  # per-wall velocity field (+x)
 
     # Initial condition: equilibrium at the analytic linear ramp (fluid rows),
     # walls at rest.  The steady state is unique and independent of the IC;
     # the ramp only shortens the diffusive transient (k=1 vorticity mode
     # decays on the scale H^2/(pi^2*nu) ~ 6.5e3 steps at H=80).
     yy = torch.arange(ny, device=DEVICE, dtype=torch.float32)
-    u0 = (torch.clamp(U0 * (yy - 0.5) / H_eff, min=0.0, max=U0)
-          .view(1, ny, 1).expand(nz, ny, nx).clone())
+    u0 = (
+        torch.clamp(U0 * (yy - 0.5) / H_eff, min=0.0, max=U0)
+        .view(1, ny, 1)
+        .expand(nz, ny, nx)
+        .clone()
+    )
     u0[0, :, :] = 0.0
     u0[-1, :, :] = 0.0
     f = equilibrium3d(
@@ -138,11 +142,11 @@ def run_case(
         f = collide_bgk3d(f, tau)
         # pre-streaming half-way bounce-back: bottom wall fixed, top wall moving
         f = moving_wall_bounce_back3d(f_pre, f, wall, u_wall)
-        return stream3d(f)          # periodic in x and z
+        return stream3d(f)  # periodic in x and z
 
     step_fn = route_step(_step, compile_mode, name=f"couette_3d[H{H}]")
 
-    z0, x0 = nz // 2, nx // 2       # measurement line through the domain
+    z0, x0 = nz // 2, nx // 2  # measurement line through the domain
     t0 = time.time()
     u_top_hist: list[float] = []
     step = 0
@@ -153,7 +157,7 @@ def run_case(
             _, ux, _, _ = macroscopic3d(f)
             u_top_hist.append(float(ux[z0, ny - 2, x0].item()))
             if step >= min_steps and len(u_top_hist) >= 10:
-                recent = u_top_hist[-10:]                # drift over last 2000 steps
+                recent = u_top_hist[-10:]  # drift over last 2000 steps
                 mean = sum(recent) / len(recent)
                 drift = (max(recent) - min(recent)) / max(abs(mean), 1e-12)
                 if drift < 1e-5:
@@ -170,7 +174,7 @@ def run_case(
     prof_acc /= 200.0
 
     rho, ux, uy, uz = macroscopic3d(f)
-    u_num = prof_acc[1 : ny - 1].cpu().numpy()          # H fluid rows
+    u_num = prof_acc[1 : ny - 1].cpu().numpy()  # H fluid rows
     y_phys = np.arange(1, ny - 1, dtype=np.float64) - 0.5
     u_ana = U0 * (y_phys / H_eff)
 
@@ -194,7 +198,7 @@ def run_case(
 
     # Spanwise homogeneity check (3D): uz should vanish, ux must be z-uniform
     uz_max = float(torch.abs(uz).max().item())
-    ux_z_std = float(ux[z0, :, x0].std().item())       # std along the measurement line
+    ux_z_std = float(ux[z0, :, x0].std().item())  # std along the measurement line
     ux_spanwise_std = float(ux.std(dim=0).mean().item())  # mean over y,x of std over z
 
     # Momentum-balance check: total fluid x-momentum (should stay ~ 0.5*rho*U0*H_eff*nx*nz)
@@ -242,15 +246,15 @@ def run_case(
     return result
 
 
-def scan(H_list, tau, U0, min_steps, max_steps, out_dir: str,
-         compile_mode: str | None = "default") -> dict:
+def scan(
+    H_list, tau, U0, min_steps, max_steps, out_dir: str, compile_mode: str | None = "default"
+) -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cases = []
     for H in H_list:
         p = out_dir / f"case_H{H}.json"
-        r = run_case(H, tau, U0, min_steps, max_steps, str(p),
-                     compile_mode=compile_mode)
+        r = run_case(H, tau, U0, min_steps, max_steps, str(p), compile_mode=compile_mode)
         cases.append(r)
         print(
             f"H={r['H_eff']:3d} Re={r['Re']:7.2f} steps={r['n_steps']:6d} "
@@ -274,12 +278,16 @@ def scan(H_list, tau, U0, min_steps, max_steps, out_dir: str,
         "max_steps": max_steps,
         "per_grid": cases,
         "convergence": [
-            {"H": r["H_eff"], "Re": r["Re"], "l2_rel_err": r["l2_rel_err"],
-             "max_abs_err": r["max_abs_err"],
-             "max_rel_err_masked_pct": r["max_rel_err_masked_pct"],
-             "u_top_row_err_pct": r["u_top_row_err_pct"],
-             "tau_err_pct": r["tau_err_pct"],
-             "n_steps": r["n_steps"]}
+            {
+                "H": r["H_eff"],
+                "Re": r["Re"],
+                "l2_rel_err": r["l2_rel_err"],
+                "max_abs_err": r["max_abs_err"],
+                "max_rel_err_masked_pct": r["max_rel_err_masked_pct"],
+                "u_top_row_err_pct": r["u_top_row_err_pct"],
+                "tau_err_pct": r["tau_err_pct"],
+                "n_steps": r["n_steps"],
+            }
             for r in cases
         ],
     }
@@ -317,18 +325,47 @@ def main() -> None:
     DEVICE = torch.device(args.device)
     compile_mode = compile_mode_from_args(args)
     if args.mode == "single":
-        r = run_case(args.H, args.tau, args.u0,
-                     args.min_steps, args.max_steps, args.out_json, args.seed,
-                     compile_mode=compile_mode)
-        print(json.dumps({k: r[k] for k in
-                          ["H_eff", "nx", "ny", "nz", "tau", "nu_lb", "U0", "Re", "Ma",
-                           "n_steps", "steady", "l2_rel_err", "max_abs_err",
-                           "max_rel_err_masked_pct", "u_top_row_err_pct",
-                           "tau_err_pct", "uz_max", "mass_drift_pct", "elapsed_s"]},
-                         indent=2))
+        r = run_case(
+            args.H,
+            args.tau,
+            args.u0,
+            args.min_steps,
+            args.max_steps,
+            args.out_json,
+            args.seed,
+            compile_mode=compile_mode,
+        )
+        print(
+            json.dumps(
+                {
+                    k: r[k]
+                    for k in [
+                        "H_eff",
+                        "nx",
+                        "ny",
+                        "nz",
+                        "tau",
+                        "nu_lb",
+                        "U0",
+                        "Re",
+                        "Ma",
+                        "n_steps",
+                        "steady",
+                        "l2_rel_err",
+                        "max_abs_err",
+                        "max_rel_err_masked_pct",
+                        "u_top_row_err_pct",
+                        "tau_err_pct",
+                        "uz_max",
+                        "mass_drift_pct",
+                        "elapsed_s",
+                    ]
+                },
+                indent=2,
+            )
+        )
     else:
-        scan(args.H, args.tau, args.u0,
-             args.min_steps, args.max_steps, args.out_dir, compile_mode)
+        scan(args.H, args.tau, args.u0, args.min_steps, args.max_steps, args.out_dir, compile_mode)
 
 
 if __name__ == "__main__":

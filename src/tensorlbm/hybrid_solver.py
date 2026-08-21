@@ -18,11 +18,10 @@ Usage:
       ct = solver.drag_coefficient()
 """
 
-import torch
-import torch.nn.functional as F
-import math, time
+import time
 from dataclasses import dataclass
-from typing import Optional
+
+import torch
 
 
 @dataclass
@@ -168,10 +167,10 @@ class HybridSolver:
 
     def step(self, f: torch.Tensor, tau: float, C_s: float = 0.05) -> torch.Tensor:
         """One complete LBM + prism-layer time step."""
-        from .turbulence import collide_smagorinsky_mrt3d
-        from .solver3d import stream3d
-        from .wall_model import wall_function_3d
         from .boundaries3d import far_field_bc_3d
+        from .solver3d import stream3d
+        from .turbulence import collide_smagorinsky_mrt3d
+        from .wall_model import wall_function_3d
 
         # 1. LBM bulk step
         f = collide_smagorinsky_mrt3d(f, tau=tau, C_s=C_s)

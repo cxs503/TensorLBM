@@ -8,17 +8,17 @@ the five developer-implemented methods.
 
 from __future__ import annotations
 
-import torch
 import pytest
+import torch
 
 from tensorlbm.ai.transformer import FlowFieldTransformer
 from tensorlbm.apps.base import DataProduct, Prediction, TrainingResult
 from tensorlbm.apps.flow_transformer_app import FlowTransformerApp
 
-
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
 # ---------------------------------------------------------------------------
+
 
 def _fake_train(snapshots, out_path, arch=None, config=None):
     """Mock of ``train_flow_transformer_self_supervised`` for fast tests."""
@@ -38,15 +38,13 @@ def _fake_train(snapshots, out_path, arch=None, config=None):
 
 def _snapshots(n=4, shape=(8, 8), seed=0):
     g = torch.Generator().manual_seed(seed)
-    return [
-        (torch.rand(shape, generator=g), torch.rand(shape, generator=g))
-        for _ in range(n)
-    ]
+    return [(torch.rand(shape, generator=g), torch.rand(shape, generator=g)) for _ in range(n)]
 
 
 # ---------------------------------------------------------------------------
 # run() full-stack loop
 # ---------------------------------------------------------------------------
+
 
 def test_run_full_loop(tmp_path):
     app = FlowTransformerApp(train_fn=_fake_train)
@@ -82,6 +80,7 @@ def test_run_full_loop(tmp_path):
 
     # training job reached completed status
     from tensorlbm.ml.training_job import TrainingJobRegistry
+
     training = TrainingJobRegistry.open(db_path)
     try:
         job = training.get_job(report.job_id)
@@ -93,6 +92,7 @@ def test_run_full_loop(tmp_path):
 
     # serving registered the model under the supported family
     from tensorlbm.ml.serving import ModelRegistry
+
     serving = ModelRegistry.open(db_path)
     try:
         model = serving.get_model(report.model_id)
@@ -120,6 +120,7 @@ def test_run_with_generated_data(tmp_path):
 # ---------------------------------------------------------------------------
 # Individual developer-implemented methods
 # ---------------------------------------------------------------------------
+
 
 def test_produce_data_returns_dataproduct():
     app = FlowTransformerApp()

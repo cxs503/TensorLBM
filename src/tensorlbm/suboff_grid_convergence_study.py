@@ -12,14 +12,12 @@ converged or that the Ct values are physically validated.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from hashlib import sha256
-import json
-from math import isfinite, pi, sqrt
+from math import isfinite, pi
 from pathlib import Path
 from typing import Any
-
-import torch
 
 from .backends.contracts import DeviceSpec
 from .full_wet import FullyWettedFlowConfig, VoxelBodyGeometry

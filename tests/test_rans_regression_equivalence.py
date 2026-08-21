@@ -73,10 +73,10 @@ from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.d3q27 import equilibrium27, macroscopic27
 from tensorlbm.rans_common import (
     collide_rans_3d,
-    collide_rans_bgk27,
     collide_rans_bgk3d,
-    collide_rans_mrt27,
+    collide_rans_bgk27,
     collide_rans_mrt3d,
+    collide_rans_mrt27,
 )
 from tensorlbm.solver3d import stream3d
 from tensorlbm.turbulence import _nu_t_to_tau_eff
@@ -378,8 +378,6 @@ class TestSaEquivalence:
 
         This proves BUG-1 was a real correctness bug, not a no-op.
         """
-        from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-        from tensorlbm.solver3d import _get_d3q19_mrt_matrices
         from tensorlbm.turbulence import collide_smagorinsky_mrt3d
 
         f = _non_equilibrium_f3d19()

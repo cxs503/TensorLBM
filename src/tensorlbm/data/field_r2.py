@@ -6,15 +6,14 @@ This module never reads a URI, starts training, or materializes an array.
 from __future__ import annotations
 
 import ast
+import re
 from dataclasses import dataclass
 from enum import Enum
 from hashlib import sha256
-import re
 from types import MappingProxyType
 from typing import Any, Mapping
 
 from tensorlbm.runtime import RunManifest, ValidationStatus, validate_run_manifest
-
 
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _FILE_URI = re.compile(r"file:///[^\n]+\Z")

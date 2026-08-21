@@ -18,6 +18,7 @@ defects: interface-cell counts explode ~100x and the front position is polluted
 (rho_gas=0.1: X~4.75 at T=1.6 vs reference ~2.1; rho_gas=1.0: +48% mass drift).
 See /tmp/dambreak_gap.md and benchmarks/pending/dam_break_3d_mm/README.md.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -62,7 +63,9 @@ def build_domain(a: int, g: float, device: torch.device):
     zero = torch.zeros((nz, ny, nx), device=device)
     f = equilibrium3d(
         torch.where(active, torch.ones((nz, ny, nx), device=device), zero),
-        zero, zero, zero,
+        zero,
+        zero,
+        zero,
     )
     return f, fill, flags, mass, solid, (nx, ny, nz)
 
@@ -79,8 +82,17 @@ def measure(f, fill, flags, mass, a: int):
     return front, h, int((flags == INTERFACE).sum().item())
 
 
-def run(a: int, g: float, steps: int, out_interval: int, tau: float,
-        rho_gas: float, device: str, outdir: Path, run_name: str) -> dict:
+def run(
+    a: int,
+    g: float,
+    steps: int,
+    out_interval: int,
+    tau: float,
+    rho_gas: float,
+    device: str,
+    outdir: Path,
+    run_name: str,
+) -> dict:
     t0 = time.time()
     dev = torch.device(device)
     f, fill, flags, mass, solid, (nx, ny, nz) = build_domain(a, g, dev)
@@ -90,22 +102,32 @@ def run(a: int, g: float, steps: int, out_interval: int, tau: float,
     series = []
     for step in range(1, steps + 1):
         f, fill, flags, mass, df = free_surface_step(
-            f, fill, flags, solid,
-            mass=mass, tau=tau, gy=-g, rho_liquid=1.0, rho_gas=rho_gas,
-            surface_tension=0.0, paired_liquid_interface_debit=True,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=tau,
+            gy=-g,
+            rho_liquid=1.0,
+            rho_gas=rho_gas,
+            surface_tension=0.0,
+            paired_liquid_interface_debit=True,
         )
         if step % out_interval == 0 or step == steps:
             front, h, iface = measure(f, fill, flags, mass, a)
-            series.append({
-                "step": step,
-                "T": step * t_scale,
-                "front": front,
-                "X": front / a,
-                "h": h,
-                "H": h / (2 * a),
-                "mass_drift_rel": (float(mass.sum().item()) - m0) / m0,
-                "iface_cells": iface,
-            })
+            series.append(
+                {
+                    "step": step,
+                    "T": step * t_scale,
+                    "front": front,
+                    "X": front / a,
+                    "h": h,
+                    "H": h / (2 * a),
+                    "mass_drift_rel": (float(mass.sum().item()) - m0) / m0,
+                    "iface_cells": iface,
+                }
+            )
     elapsed = time.time() - t0
 
     def interp(key, T_target):
@@ -120,42 +142,63 @@ def run(a: int, g: float, steps: int, out_interval: int, tau: float,
     checks = []
     for T_ref, X_ref in [(1.0, 1.5), (2.0, 2.7)]:
         X_sim = interp("X", T_ref)
-        checks.append({"T": T_ref, "kind": "X", "ref": X_ref, "sim": X_sim,
-                       "err_pct": abs(X_sim - X_ref) / X_ref * 100.0})
+        checks.append(
+            {
+                "T": T_ref,
+                "kind": "X",
+                "ref": X_ref,
+                "sim": X_sim,
+                "err_pct": abs(X_sim - X_ref) / X_ref * 100.0,
+            }
+        )
     H_sim = interp("H", 1.0)
-    checks.append({"T": 1.0, "kind": "H", "ref": 0.8, "sim": H_sim,
-                   "err_pct": abs(H_sim - 0.8) / 0.8 * 100.0})
+    checks.append(
+        {"T": 1.0, "kind": "H", "ref": 0.8, "sim": H_sim, "err_pct": abs(H_sim - 0.8) / 0.8 * 100.0}
+    )
 
     max_err = max(c["err_pct"] for c in checks)
     final = series[-1]
     result = {
         "case": "dam_break_3d_martin_moyce",
         "status": "NOT_VERIFIED",
-        "reason": ("tensorlbm.free_surface_lbm mass-conservation/interface-stability "
-                   "defects: interface-cell explosion + front pollution / mass drift; "
-                   "see /tmp/dambreak_gap.md"),
+        "reason": (
+            "tensorlbm.free_surface_lbm mass-conservation/interface-stability "
+            "defects: interface-cell explosion + front pollution / mass drift; "
+            "see /tmp/dambreak_gap.md"
+        ),
         "module": "tensorlbm.free_surface_lbm (D3Q19, free_surface_step) — unmodified",
         "lattice": "D3Q19",
         "collision": "bgk",
         "reference": "Martin & Moyce (1952): T=1 X~1.5, T=2 X~2.7, H(T=1)~0.8",
-        "config": {"a": a, "g": g, "tau": tau, "rho_gas": rho_gas, "steps": steps,
-                   "domain": {"nx": nx, "ny": ny, "nz": nz, "cells": nx * ny * nz},
-                   "T_max": steps * t_scale},
+        "config": {
+            "a": a,
+            "g": g,
+            "tau": tau,
+            "rho_gas": rho_gas,
+            "steps": steps,
+            "domain": {"nx": nx, "ny": ny, "nz": nz, "cells": nx * ny * nz},
+            "T_max": steps * t_scale,
+        },
         "elapsed_s": elapsed,
         "checks": checks,
         "max_err_pct": max_err,
-        "final": {"mass_drift_rel": final["mass_drift_rel"],
-                  "iface_cells": final["iface_cells"],
-                  "iface_initial": iface0,
-                  "iface_growth": final["iface_cells"] / max(iface0, 1)},
+        "final": {
+            "mass_drift_rel": final["mass_drift_rel"],
+            "iface_cells": final["iface_cells"],
+            "iface_initial": iface0,
+            "iface_growth": final["iface_cells"] / max(iface0, 1),
+        },
         "series": series,
     }
     outdir.mkdir(parents=True, exist_ok=True)
     (outdir / f"{run_name}_result.json").write_text(
-        json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    print(f"[{run_name}] T_max={result['config']['T_max']:.2f} elapsed={elapsed:.1f}s "
-          f"max_err={max_err:.1f}% drift={final['mass_drift_rel']:+.2%} "
-          f"iface={iface0}->{final['iface_cells']} X(T=1)~{interp('X',1.0):.2f}")
+        json.dumps(result, indent=2) + "\n", encoding="utf-8"
+    )
+    print(
+        f"[{run_name}] T_max={result['config']['T_max']:.2f} elapsed={elapsed:.1f}s "
+        f"max_err={max_err:.1f}% drift={final['mass_drift_rel']:+.2%} "
+        f"iface={iface0}->{final['iface_cells']} X(T=1)~{interp('X', 1.0):.2f}"
+    )
     return result
 
 
@@ -170,5 +213,14 @@ if __name__ == "__main__":
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--outdir", default="outputs")
     args = ap.parse_args()
-    run(args.a, args.g, args.steps, args.interval, args.tau, args.rho_gas,
-        args.device, Path(args.outdir), f"a{args.a}_g{args.g:.0e}_rg{args.rho_gas}")
+    run(
+        args.a,
+        args.g,
+        args.steps,
+        args.interval,
+        args.tau,
+        args.rho_gas,
+        args.device,
+        Path(args.outdir),
+        f"a{args.a}_g{args.g:.0e}_rg{args.rho_gas}",
+    )

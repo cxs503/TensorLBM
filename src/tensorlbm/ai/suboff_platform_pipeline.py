@@ -43,6 +43,7 @@ class SuboffPlatformPipeline:
         self.training = TrainingJobRegistry.open(self.db_path)
         # serving registry shares the same SQLite ledger
         from tensorlbm.ml.serving import ModelRegistry
+
         self.serving = ModelRegistry.open(self.db_path)
 
     def close(self) -> None:
@@ -75,59 +76,71 @@ class SuboffPlatformPipeline:
             ch_dir = data_dir / channel
             if not ch_dir.is_dir():
                 continue
-            npy_files = sorted(
-                f for f in os.listdir(ch_dir) if f.endswith(".npy")
-            )
+            npy_files = sorted(f for f in os.listdir(ch_dir) if f.endswith(".npy"))
             if not npy_files:
                 continue
             sample = np.load(ch_dir / npy_files[0])
             shapes[channel] = tuple(sample.shape)
             asset_id = f"{name_prefix}:{channel}"
-            self.catalog.register_asset(AssetRecord(
-                asset_id=asset_id,
-                name=f"SUBOFF {channel}",
-                kind="field_product",
-                field_name=channel,
-                units=_CHANNEL_UNITS.get(channel, "lu"),
-                shape=str(sample.shape),
-                dtype=str(sample.dtype),
-                source_run_id=run_id,
-                tags=(name_prefix, "suboff"),
-            ))
+            self.catalog.register_asset(
+                AssetRecord(
+                    asset_id=asset_id,
+                    name=f"SUBOFF {channel}",
+                    kind="field_product",
+                    field_name=channel,
+                    units=_CHANNEL_UNITS.get(channel, "lu"),
+                    shape=str(sample.shape),
+                    dtype=str(sample.dtype),
+                    source_run_id=run_id,
+                    tags=(name_prefix, "suboff"),
+                )
+            )
             finite = bool(np.isfinite(sample).all())
-            self.catalog.record_quality(asset_id, [
-                QualityCheck("finiteness", finite,
-                             f"{channel}: {sample.shape} npy snapshots={len(npy_files)}"),
-            ])
+            self.catalog.record_quality(
+                asset_id,
+                [
+                    QualityCheck(
+                        "finiteness",
+                        finite,
+                        f"{channel}: {sample.shape} npy snapshots={len(npy_files)}",
+                    ),
+                ],
+            )
             asset_ids.append(asset_id)
 
         if not asset_ids:
             raise ValueError(f"no SUBOFF channel npy found under {data_dir}")
 
         dataset_asset_id = f"{name_prefix}:dataset"
-        self.catalog.register_asset(AssetRecord(
-            asset_id=dataset_asset_id,
-            name=f"SUBOFF dataset",
-            kind="dataset",
-            description=f"channels={list(shapes)}",
-            tags=(name_prefix, "suboff"),
-        ))
+        self.catalog.register_asset(
+            AssetRecord(
+                asset_id=dataset_asset_id,
+                name="SUBOFF dataset",
+                kind="dataset",
+                description=f"channels={list(shapes)}",
+                tags=(name_prefix, "suboff"),
+            )
+        )
         # lineage: each channel product -> dataset
         for asset_id in asset_ids:
-            self.catalog.add_lineage(LineageRecord(
-                source_id=asset_id, target_id=dataset_asset_id,
-                relation_type="derived_from", resource_type="product",
-            ))
+            self.catalog.add_lineage(
+                LineageRecord(
+                    source_id=asset_id,
+                    target_id=dataset_asset_id,
+                    relation_type="derived_from",
+                    resource_type="product",
+                )
+            )
 
         # dataset record in the shared ledger (int key for training jobs)
         from tensorlbm.ai.database import insert_dataset
+
         dataset_id = insert_dataset(
             self.training._conn,
             name=f"{name_prefix}-dataset",
             path=str(data_dir),
             n_samples=sum(
-                len([f for f in os.listdir(data_dir / c) if f.endswith(".npy")])
-                for c in shapes
+                len([f for f in os.listdir(data_dir / c) if f.endswith(".npy")]) for c in shapes
             ),
             metadata={"task": "suboff-surrogate", "channels": list(shapes)},
         )
@@ -160,10 +173,16 @@ class SuboffPlatformPipeline:
         """
         if train_fn is None:
             from tensorlbm.ai.suboff_train import train_suboff
+
             train_fn = train_suboff
 
-        config = asdict(train_cfg) if hasattr(train_cfg, "__dataclass_fields__") \
-            else dict(train_cfg) if isinstance(train_cfg, dict) else {"cfg": str(train_cfg)}
+        config = (
+            asdict(train_cfg)
+            if hasattr(train_cfg, "__dataclass_fields__")
+            else dict(train_cfg)
+            if isinstance(train_cfg, dict)
+            else {"cfg": str(train_cfg)}
+        )
         job = self.training.create_job(config, dataset_id=dataset_id)
         self.training.update_status(job.job_id, "running")
 
@@ -192,19 +211,30 @@ class SuboffPlatformPipeline:
         # lineage: product -> dataset -> job
         if dataset_asset_id is not None:
             job_asset_id = f"job:{job.job_id}"
-            self.catalog.register_asset(AssetRecord(
-                asset_id=job_asset_id, name=f"training job {job.job_id}",
-                kind="run",
-            ))
-            for pid in (product_asset_ids or []):
-                self.catalog.add_lineage(LineageRecord(
-                    source_id=pid, target_id=dataset_asset_id,
-                    relation_type="derived_from", resource_type="product",
-                ))
-            self.catalog.add_lineage(LineageRecord(
-                source_id=dataset_asset_id, target_id=job_asset_id,
-                relation_type="trained_on", resource_type="dataset",
-            ))
+            self.catalog.register_asset(
+                AssetRecord(
+                    asset_id=job_asset_id,
+                    name=f"training job {job.job_id}",
+                    kind="run",
+                )
+            )
+            for pid in product_asset_ids or []:
+                self.catalog.add_lineage(
+                    LineageRecord(
+                        source_id=pid,
+                        target_id=dataset_asset_id,
+                        relation_type="derived_from",
+                        resource_type="product",
+                    )
+                )
+            self.catalog.add_lineage(
+                LineageRecord(
+                    source_id=dataset_asset_id,
+                    target_id=job_asset_id,
+                    relation_type="trained_on",
+                    resource_type="dataset",
+                )
+            )
 
         self.training.update_status(job.job_id, "completed")
         return job, model_id
@@ -223,6 +253,7 @@ class SuboffPlatformPipeline:
         :func:`tensorlbm.ai.suboff_inference.predict_suboff`)."""
         if predict_fn is None:
             from tensorlbm.ai.suboff_inference import predict_suboff
+
             predict_fn = predict_suboff
         return predict_fn(predict_cfg)
 

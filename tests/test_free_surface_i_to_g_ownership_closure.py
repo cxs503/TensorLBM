@@ -10,7 +10,6 @@ import torch
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID, SOLID
 from tensorlbm.free_surface_topology_transaction import (
-    IToGOwnershipTransaction,
     TopologyTransactionError,
     build_i_to_g_ownership_transaction,
     build_topology_transaction,
@@ -347,8 +346,8 @@ def test_default_step_does_not_construct_i_to_g_proposal_and_matches_explicit_di
 
 @pytest.mark.parametrize("invalid", [None, 0, 1, "false", "true"])
 def test_i_to_g_ownership_opt_in_requires_strict_bool(invalid: object) -> None:
-    from tensorlbm.free_surface_lbm import free_surface_step
     from tensorlbm.free_surface_closure_experiment import _conversion_state
+    from tensorlbm.free_surface_lbm import free_surface_step
 
     f, fill, flags, solid = _conversion_state()
     with pytest.raises(ValueError, match="enable_i_to_g_ownership_closure must be bool"):

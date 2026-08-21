@@ -7,8 +7,8 @@ import torch
 from tensorlbm.free_surface_population_transfer_plan import (
     D3Q19,
     WITHHELD_UNSPECIFIED_TRANSFER_POLICY,
-    IToGPopulationTransferEvent,
     IndependentMassLedger,
+    IToGPopulationTransferEvent,
     Phase,
     PopulationTransferEvidence,
     plan_i_to_g_population_transfer,
@@ -62,7 +62,7 @@ def test_complete_conservative_evidence_still_returns_empty_unspecified_plan() -
 
 
 def test_direct_donor_copy_with_donor_zeroing_has_nonzero_population_residual() -> None:
-    evidence = _evidence()
+    _evidence()
     donor_before = torch.arange(19, dtype=torch.float64).reshape(1, 19)
     report = validate_i_to_g_population_transfer(
         _event(),

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools  # retained for compatibility; internal cache functions use explicit dicts
 from typing import Any, cast
 
 import torch
@@ -292,8 +291,8 @@ def collide_mrt(
     device = f.device
     matrix, matrix_inv = _get_d2q9_mrt_matrices(device, f.dtype)
 
-    s_nu = 1.0 / tau
     if isinstance(tau, torch.Tensor):
+        s_nu = 1.0 / tau
         # Differentiable reference path: ``torch.tensor([...])`` would
         # silently detach a tensor *tau* from the autograd graph (scalar
         # conversion).  Keep the shear-rate entries graph-connected so
@@ -306,6 +305,7 @@ def collide_mrt(
         s_nu_t = s_nu.to(device=device, dtype=f.dtype)
         s_vec = torch.cat([s_head, s_nu_t.expand(2)])
     else:
+        s_nu = 1.0 / tau
         s_vec = torch.tensor(
             [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, s_nu, s_nu],
             dtype=f.dtype,

@@ -29,6 +29,7 @@ Conventions
   be fully enclosed.  Any violation raises ``ValueError`` — the CV is
   never silently moved.
 """
+
 from __future__ import annotations
 
 import math
@@ -47,7 +48,9 @@ def substep_force_weights(octree) -> torch.Tensor:
 
 
 def convert_leaf_force_to_l1(
-    leaf_force: torch.Tensor, dx_leaf: float, dt_leaf: float,
+    leaf_force: torch.Tensor,
+    dx_leaf: float,
+    dt_leaf: float,
 ) -> torch.Tensor:
     """Convert a leaf-lattice force to L1 lattice units.
 
@@ -75,7 +78,9 @@ class ShellForceLedger:
         self.d_max = int(octree.d_max)
         self.n_substeps = 1 << self.d_max
         self._accum = torch.zeros(
-            3, dtype=dtype, device=octree.f_leaf.device,
+            3,
+            dtype=dtype,
+            device=octree.f_leaf.device,
         )
         self.cv_force: torch.Tensor | None = None
         self.cv_samples = 0
@@ -84,7 +89,9 @@ class ShellForceLedger:
     def add_substep_force(self, force: torch.Tensor) -> None:
         """Accumulate one substep's (already per-leaf weighted) MEM force."""
         f = torch.as_tensor(
-            force, dtype=self._accum.dtype, device=self._accum.device,
+            force,
+            dtype=self._accum.dtype,
+            device=self._accum.device,
         )
         if f.shape != (3,):
             raise ValueError(f"force must be (3,), got {tuple(f.shape)}")
@@ -153,12 +160,18 @@ class ShellForceLedger:
                 summed = summed + post
             f_post_collision = summed
         result = observe_control_volume_force(
-            f_old, f_new, f_post_collision, control_volume, solid=solid,
+            f_old,
+            f_new,
+            f_post_collision,
+            control_volume,
+            solid=solid,
         )
         force = result.force_on_body
         if wall_mom_l1 is not None:
             w = torch.as_tensor(
-                wall_mom_l1, dtype=self._accum.dtype, device=self._accum.device,
+                wall_mom_l1,
+                dtype=self._accum.dtype,
+                device=self._accum.device,
             )
             if w.shape != (3,):
                 raise ValueError(f"wall_mom_l1 must be (3,), got {tuple(w.shape)}")
@@ -181,7 +194,9 @@ class ShellForceLedger:
         (see :attr:`mem_force`).
         """
         return convert_leaf_force_to_l1(
-            self.mem_force, dx_leaf, dt_leaf,
+            self.mem_force,
+            dx_leaf,
+            dt_leaf,
         )
 
     def deviation_pct(
@@ -195,13 +210,13 @@ class ShellForceLedger:
         if self.cv_force is None or self.substep_count != self.n_substeps:
             return None
         mem_l1 = convert_leaf_force_to_l1(
-            self.mem_force, dx_leaf, dt_leaf,
+            self.mem_force,
+            dx_leaf,
+            dt_leaf,
         )
         cv = self.cv_force
         return (
-            abs(float(mem_l1[axis]) - float(cv[axis]))
-            / max(abs(float(cv[axis])), 1.0e-30)
-            * 100.0
+            abs(float(mem_l1[axis]) - float(cv[axis])) / max(abs(float(cv[axis])), 1.0e-30) * 100.0
         )
 
     def reset(self) -> None:
@@ -216,9 +231,12 @@ def _cv_surface(cv: torch.Tensor) -> torch.Tensor:
     """Outer one-cell shell of a (box) control-volume mask."""
     interior = cv.clone()
     for shift in (
-        (1, 0, 0), (-1, 0, 0),
-        (0, 1, 0), (0, -1, 0),
-        (0, 0, 1), (0, 0, -1),
+        (1, 0, 0),
+        (-1, 0, 0),
+        (0, 1, 0),
+        (0, -1, 0),
+        (0, 0, 1),
+        (0, 0, -1),
     ):
         interior &= torch.roll(cv, shift, dims=(0, 1, 2))
     return cv & ~interior
@@ -286,7 +304,12 @@ def build_shell_control_volume(
         )
     cv = box_control_volume(
         (int(nz), int(ny), int(nx)),
-        x0=x0, x1=x1, y0=y0, y1=y1, z0=z0, z1=z1,
+        x0=x0,
+        x1=x1,
+        y0=y0,
+        y1=y1,
+        z0=z0,
+        z1=z1,
         device=device,
     )
     surface = _cv_surface(cv)
@@ -295,8 +318,7 @@ def build_shell_control_volume(
     covered_g[ghost:-ghost, ghost:-ghost, ghost:-ghost] = covered
     if bool((surface & covered_g).any()):
         raise ValueError(
-            "CV surface intersects the shell interface (fail-closed) — "
-            "increase --cv-margin",
+            "CV surface intersects the shell interface (fail-closed) — increase --cv-margin",
         )
     if bool((covered_g & ~cv).any()):
         raise ValueError(

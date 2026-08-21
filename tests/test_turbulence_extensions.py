@@ -93,13 +93,16 @@ class TestNuTHelpers:
         field = 2.0 * x - 3.0 * y + 4.0 * z + 1.0
 
         torch.testing.assert_close(
-            _nonperiodic_derivative(field, 2), torch.full_like(field, 2.0),
+            _nonperiodic_derivative(field, 2),
+            torch.full_like(field, 2.0),
         )
         torch.testing.assert_close(
-            _nonperiodic_derivative(field, 1), torch.full_like(field, -3.0),
+            _nonperiodic_derivative(field, 1),
+            torch.full_like(field, -3.0),
         )
         torch.testing.assert_close(
-            _nonperiodic_derivative(field, 0), torch.full_like(field, 4.0),
+            _nonperiodic_derivative(field, 0),
+            torch.full_like(field, 4.0),
         )
 
     def test_nonperiodic_derivative_does_not_wrap_opposite_face(self) -> None:
@@ -118,7 +121,8 @@ class TestNuTHelpers:
 
         assert bool((_nonperiodic_derivative(singleton, 0) == 0.0).all())
         torch.testing.assert_close(
-            _nonperiodic_derivative(pair, 0), torch.full_like(pair, 2.0),
+            _nonperiodic_derivative(pair, 0),
+            torch.full_like(pair, 2.0),
         )
 
     def test_wale_nu_t_2d_nonnegative(self) -> None:

@@ -14,6 +14,7 @@
 运行：两档 192²/256²，各 200k 步（Re=1000 收敛慢，100k 残差 ~1e-2，200k 才 ~1e-3）。
      默认 CPU（32 线程）；--device cuda:1 可选（2026-08-19 正式重跑即 GPU 版）。
 """
+
 import argparse
 import json
 import sys
@@ -27,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # <repo>/benchmark
 
 from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
-from tensorlbm.d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
+from tensorlbm.d2q9 import OPPOSITE, equilibrium, macroscopic
 from tensorlbm.lid_driven_cavity import GHIA_RE1000, zou_he_moving_lid
 from tensorlbm.solver import collide_rlbm, stream
 
@@ -78,15 +79,21 @@ def run_case(nx, re=1000, u_lid=0.06, steps=200000, device=None, compile_mode="d
         f = step_fn(f)
         if step % 20000 == 0:
             _, ux, uy = macroscopic(f)
-            du = torch.max(
-                torch.abs(ux[resid_mask] - ux_prev[resid_mask]),
-                torch.abs(uy[resid_mask] - uy_prev[resid_mask]),
-            ).max().item()
+            du = (
+                torch.max(
+                    torch.abs(ux[resid_mask] - ux_prev[resid_mask]),
+                    torch.abs(uy[resid_mask] - uy_prev[resid_mask]),
+                )
+                .max()
+                .item()
+            )
             last_resid = du
             ux_prev = ux.detach().clone()
             uy_prev = uy.detach().clone()
-            print(f"  step {step}/{steps} resid={last_resid:.2e} t={time.time()-t0:.0f}s",
-                  flush=True)
+            print(
+                f"  step {step}/{steps} resid={last_resid:.2e} t={time.time() - t0:.0f}s",
+                flush=True,
+            )
     elapsed = time.time() - t0
 
     rho, ux, uy = macroscopic(f)
@@ -105,8 +112,7 @@ def run_case(nx, re=1000, u_lid=0.06, steps=200000, device=None, compile_mode="d
     v_gi = np.interp(ghia["x"], x_pos, v_cl)
     rmse_u = float(np.sqrt(np.mean((u_gi - np.array(ghia["u"])) ** 2)))
     rmse_v = float(np.sqrt(np.mean((v_gi - np.array(ghia["v"])) ** 2)))
-    dev = np.concatenate([np.abs(u_gi - np.array(ghia["u"])),
-                          np.abs(v_gi - np.array(ghia["v"]))])
+    dev = np.concatenate([np.abs(u_gi - np.array(ghia["u"])), np.abs(v_gi - np.array(ghia["v"]))])
     max_abs_dev_pct = 100.0 * float(dev.max())
 
     u_mid = float(np.interp(0.5, y_pos, u_cl))
@@ -120,26 +126,43 @@ def run_case(nx, re=1000, u_lid=0.06, steps=200000, device=None, compile_mode="d
     iy0, ix0 = np.unravel_index(np.argmin(speed2), speed2.shape)
     sub_vortex = [round(ix0 / (nx - 1), 4), round(iy0 / (ny - 1), 4)]
     x_lo, x_hi, y_lo, y_hi = 0.2, 0.85, 0.2, 0.9
-    in_reg = ((x_pos[None, :] >= x_lo) & (x_pos[None, :] <= x_hi)
-              & (y_pos[:, None] >= y_lo) & (y_pos[:, None] <= y_hi))
+    in_reg = (
+        (x_pos[None, :] >= x_lo)
+        & (x_pos[None, :] <= x_hi)
+        & (y_pos[:, None] >= y_lo)
+        & (y_pos[:, None] <= y_hi)
+    )
     iy1, ix1 = np.unravel_index(np.argmin(np.where(in_reg, speed2, np.inf)), speed2.shape)
     primary_vortex = [round(ix1 / (nx - 1), 4), round(iy1 / (ny - 1), 4)]
 
     resid_str = "n/a" if last_resid is None else f"{last_resid:.2e}"
-    print(f"[cavity_re1000 nx={nx}] steps={steps} t={elapsed:.0f}s resid={resid_str} "
-          f"u(0.5,0.5)={u_mid:+.4f} u_bot={u_bot:+.4f} v(0.5,0.5)={v_mid:+.4f} "
-          f"primary_vortex={primary_vortex} sub_vortex={sub_vortex} "
-          f"rmse_u={rmse_u:.4f} rmse_v={rmse_v:.4f} max_abs_dev={max_abs_dev_pct:.2f}%",
-          flush=True)
+    print(
+        f"[cavity_re1000 nx={nx}] steps={steps} t={elapsed:.0f}s resid={resid_str} "
+        f"u(0.5,0.5)={u_mid:+.4f} u_bot={u_bot:+.4f} v(0.5,0.5)={v_mid:+.4f} "
+        f"primary_vortex={primary_vortex} sub_vortex={sub_vortex} "
+        f"rmse_u={rmse_u:.4f} rmse_v={rmse_v:.4f} max_abs_dev={max_abs_dev_pct:.2f}%",
+        flush=True,
+    )
 
     return {
-        "nx": nx, "re": re, "u_lid": u_lid, "tau": tau, "steps": steps,
+        "nx": nx,
+        "re": re,
+        "u_lid": u_lid,
+        "tau": tau,
+        "steps": steps,
         "compile_mode": compile_mode,
-        "elapsed_s": round(elapsed, 1), "last_resid": last_resid,
-        "u_mid": u_mid, "u_mid_ghia": -0.0608, "u_bot": u_bot, "v_mid": v_mid,
-        "primary_vortex": primary_vortex, "vortex_ghia": [0.5313, 0.5625],
+        "elapsed_s": round(elapsed, 1),
+        "last_resid": last_resid,
+        "u_mid": u_mid,
+        "u_mid_ghia": -0.0608,
+        "u_bot": u_bot,
+        "v_mid": v_mid,
+        "primary_vortex": primary_vortex,
+        "vortex_ghia": [0.5313, 0.5625],
         "sub_vortex": sub_vortex,
-        "rmse_u": rmse_u, "rmse_v": rmse_v, "max_abs_dev_pct": max_abs_dev_pct,
+        "rmse_u": rmse_u,
+        "rmse_v": rmse_v,
+        "max_abs_dev_pct": max_abs_dev_pct,
     }
 
 
@@ -154,8 +177,7 @@ if __name__ == "__main__":
     compile_mode = compile_mode_from_args(args)
     results = {}
     for nx in args.nx:
-        results[str(nx)] = run_case(nx, steps=args.steps, device=device,
-                                    compile_mode=compile_mode)
+        results[str(nx)] = run_case(nx, steps=args.steps, device=device, compile_mode=compile_mode)
     out = Path(__file__).parent / "result.json"
     out.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print("DONE", flush=True)

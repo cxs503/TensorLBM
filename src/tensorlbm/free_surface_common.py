@@ -45,7 +45,6 @@ from __future__ import annotations
 
 import functools
 import math
-from typing import Any
 
 import torch
 
@@ -70,7 +69,9 @@ __all__ = [
     "bubble_centroid_velocity_3d",
 ]
 
-from .d3q19 import C as _C19, W as _W19, equilibrium3d, macroscopic3d
+from .d3q19 import C as _C19
+from .d3q19 import W as _W19
+from .d3q19 import equilibrium3d, macroscopic3d
 
 _CS2 = 1.0 / 3.0  # lattice speed of sound squared
 

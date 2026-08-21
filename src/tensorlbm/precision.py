@@ -62,7 +62,6 @@ import enum
 
 import torch
 
-
 __all__ = [
     "PrecisionPolicy",
     "cast_to_compute",
@@ -132,8 +131,7 @@ class PrecisionPolicy(enum.Enum):
                     f"Unknown precision policy {value!r}; valid names: {valid}"
                 ) from None
         raise TypeError(
-            f"precision policy must be PrecisionPolicy, str, or None, "
-            f"got {type(value).__name__}"
+            f"precision policy must be PrecisionPolicy, str, or None, got {type(value).__name__}"
         )
 
 

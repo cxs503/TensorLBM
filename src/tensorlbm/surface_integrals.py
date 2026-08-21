@@ -33,10 +33,7 @@ Functions
 
 from __future__ import annotations
 
-import math
-
 import torch
-
 
 # ---------------------------------------------------------------------------
 # Mass / volume flow rate
@@ -702,9 +699,9 @@ def surface_force_decomposed_2d(
     cx_b = cx.view(9, 1, 1)
     cy_b = cy.view(9, 1, 1)
     # σ_xx, σ_xy stress components at fluid cells
-    sigma_xx = sigma_prefactor * (f_neq * cx_b * cx_b).sum(0)  # (ny, nx)
-    sigma_yy = sigma_prefactor * (f_neq * cy_b * cy_b).sum(0)
-    sigma_xy = sigma_prefactor * (f_neq * cx_b * cy_b).sum(0)
+    sigma_prefactor * (f_neq * cx_b * cx_b).sum(0)  # (ny, nx)
+    sigma_prefactor * (f_neq * cy_b * cy_b).sum(0)
+    sigma_prefactor * (f_neq * cx_b * cy_b).sum(0)
 
     # Pressure (EOS: p = rho / 3 in LBM)
     p_field = rho / 3.0
@@ -734,7 +731,7 @@ def surface_force_decomposed_2d(
 
         # Pressure component: p * n_hat contribution (normal direction)
         # n̂ = (cx_q, cy_q) points from fluid to solid
-        p_f = p_field[yf_, xf_]
+        p_field[yf_, xf_]
         # Weight by equilibrium fraction: f_eq part of contribution
         f_eq_contrib = f_eq[q, yf_, xf_] + f_eq[q_opp, y_n[is_solid_nbr], x_n[is_solid_nbr]]
         fx_pressure += float((f_eq_contrib * cx[q]).sum())

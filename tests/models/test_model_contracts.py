@@ -5,8 +5,8 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from tensorlbm.models.contracts import (
-    CompatibilityGate,
     ComparisonClass,
+    CompatibilityGate,
     ModelComposition,
     PhysicsCapability,
 )

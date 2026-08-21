@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import math
+
 import torch
+
 from tensorlbm.boundaries3d import (
     apply_simple_channel_boundaries_3d,
     make_channel_wall_mask_3d,
     sphere_mask,
 )
 from tensorlbm.d3q19 import equilibrium3d
-from tensorlbm.solver3d import collide_bgk3d, stream3d
 from tensorlbm.obstacles import compute_obstacle_forces_3d
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 
 def _run_sphere_drag(

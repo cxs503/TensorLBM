@@ -15,13 +15,10 @@ results to physical units when a scale factor is supplied.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Literal
 
 import torch
-import torch.nn.functional as F
-
 
 # ---------------------------------------------------------------------------
 # Data containers

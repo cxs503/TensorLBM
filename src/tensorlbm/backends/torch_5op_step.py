@@ -10,6 +10,7 @@ exists only so that the SUBOFF runner can dispatch the per-step work
 through ``tensorlbm.backends.get_step_impl()`` rather than reaching
 into the kernel functions directly.
 """
+
 from __future__ import annotations
 
 import torch
@@ -17,7 +18,6 @@ import torch
 from ..boundaries3d import far_field_bc_3d
 from ..obstacles import compute_obstacle_forces_3d
 from ..solver3d import correct_mass3d, stream3d
-
 
 __all__ = ["step_torch_5op"]
 

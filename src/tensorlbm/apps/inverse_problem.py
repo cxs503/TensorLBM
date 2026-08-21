@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, cast
 
@@ -57,6 +57,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Architecture
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class InverseArch:
@@ -135,6 +136,7 @@ class ParametricChannelFlow(nn.Module):
 # Persistence
 # ---------------------------------------------------------------------------
 
+
 def save_inverse_model(model: nn.Module, path: str | Path) -> Path:
     """Serialize a :class:`ParametricChannelFlow` to a ``.pt`` + JSON sidecar."""
     p = Path(path)
@@ -169,6 +171,7 @@ def load_inverse_model(path: str | Path) -> ParametricChannelFlow:
 # Physics helpers
 # ---------------------------------------------------------------------------
 
+
 def _couette_poiseuille(
     coords: torch.Tensor,
     *,
@@ -186,6 +189,7 @@ def _couette_poiseuille(
 # ---------------------------------------------------------------------------
 # The application
 # ---------------------------------------------------------------------------
+
 
 class InverseProblem(AI4SApplication):
     """Recover unknown physical parameters (``nu`` / ``U_w``) from flow data.
@@ -244,12 +248,18 @@ class InverseProblem(AI4SApplication):
         device = torch.device(str(cfg.get("device", "cpu")))
 
         field_fn = self._field_fn or _couette_poiseuille
-        coords = torch.linspace(
-            y0, y1, n_points, device=device, dtype=torch.float32
-        ).unsqueeze(-1)
-        obs = field_fn(
-            coords, nu=nu_true, u_wall=u_wall_true, G=G, H=H,
-        ).detach().clone()
+        coords = torch.linspace(y0, y1, n_points, device=device, dtype=torch.float32).unsqueeze(-1)
+        obs = (
+            field_fn(
+                coords,
+                nu=nu_true,
+                u_wall=u_wall_true,
+                G=G,
+                H=H,
+            )
+            .detach()
+            .clone()
+        )
         if noise > 0.0:
             g = torch.Generator(device="cpu").manual_seed(int(seed))
             obs = obs + float(noise) * torch.randn(obs.shape, generator=g).to(obs)
@@ -384,6 +394,7 @@ class InverseProblem(AI4SApplication):
 # Default inversion loop
 # ---------------------------------------------------------------------------
 
+
 def _train_inverse(
     dataset: Mapping[str, Any],
     model: ParametricChannelFlow,
@@ -451,6 +462,7 @@ def _train_inverse(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _to_coords(sample: Any) -> torch.Tensor:
     """Normalise a coordinate sample into a ``float32`` tensor of shape ``(...,)``."""

@@ -177,7 +177,10 @@ class NeuralOperatorFNO(AI4SApplication):
             coarse_uy = _coarsen_mean(uy, factor)
             coarse = torch.stack([coarse_ux, coarse_uy], dim=0).unsqueeze(0)  # (1, 2, cy, cx)
             up = F.interpolate(
-                coarse, size=(ny, nx), mode="bilinear", align_corners=False,
+                coarse,
+                size=(ny, nx),
+                mode="bilinear",
+                align_corners=False,
             )
             inputs.append(up[0])  # (2, ny, nx)
             targets.append(fine[0])  # (2, ny, nx)
@@ -261,6 +264,7 @@ class NeuralOperatorFNO(AI4SApplication):
 # Default training loop
 # ---------------------------------------------------------------------------
 
+
 def _train_fno2d(
     dataset: Mapping[str, Any],
     model: FNO2d,
@@ -313,6 +317,7 @@ def _train_fno2d(
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _coerce_training_result(
     result: Any,
     *,
@@ -324,7 +329,11 @@ def _coerce_training_result(
     if isinstance(result, Mapping):
         return TrainingResult(
             model_path=str(result.get("model_path") or result.get("path") or out_path),
-            metrics={"train_loss": float(result.get("train_loss", result.get("final_train_loss", float("nan"))))},
+            metrics={
+                "train_loss": float(
+                    result.get("train_loss", result.get("final_train_loss", float("nan")))
+                )
+            },
             arch=dict(result.get("arch") or {}),
         )
     raise TypeError(
