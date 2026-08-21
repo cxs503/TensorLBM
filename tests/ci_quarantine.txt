@@ -8,14 +8,6 @@ tests/test_amr_wall_function_combination.py::TestAmrWallFunctionCombination::tes
 tests/test_beamforming.py::test_clean_sc
 tests/test_beamforming.py::test_damas
 tests/test_beamforming.py::test_das_two_sources
-tests/test_d3q27_sc_sgs_coupling.py::TestCrossModelConsistency::test_smagorinsky_and_wale_differ
-tests/test_d3q27_sc_sgs_coupling.py::TestCrossModelConsistency::test_wale_and_vreman_differ_for_sheared_flow
-tests/test_d3q27_sc_sgs_coupling.py::TestSingleComponentSmagorinsky::test_sgs_differs_from_no_sgs
-tests/test_d3q27_sc_sgs_coupling.py::TestSingleComponentVreman::test_sheared_flow_differs_from_no_sgs
-tests/test_d3q27_sc_sgs_coupling.py::TestSingleComponentWALE::test_sheared_flow_differs_from_no_sgs
-tests/test_d3q27_sc_sgs_coupling.py::TestTwoComponentSmagorinsky::test_sgs_differs_from_no_sgs
-tests/test_d3q27_sc_sgs_coupling.py::TestTwoComponentVreman::test_sheared_flow_differs_from_no_sgs
-tests/test_d3q27_sc_sgs_coupling.py::TestTwoComponentWALE::test_sheared_flow_differs_from_no_sgs
 tests/test_dam_break_3d.py::test_fs_runner_does_not_rebuild_mass_from_fill_between_steps
 
 # --- batch 2 (2026-08-19): 102 verified identical failures on stock main @ 2a6da29 (ci-cpu venv run pytest_mainref2.log) ---
