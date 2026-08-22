@@ -18,11 +18,12 @@ Everything is built from out-of-place torch ops that keep the autograd graph:
 * the solid is applied with ``torch.where`` selections only — no in-place
   boundary overwrites (the pattern documented as gradient-hostile in
   ``docs/differentiable_path.md``);
-* the boundary conditions follow the same discipline: the inlet and outlet
-  planes are *reconstructed* from candidate tensors selected with
-  ``torch.where`` and re-assembled with ``torch.cat``, so gradients cross
-  the boundary overwrites exactly (see :class:`InletSpec` /
-  :class:`OutletSpec`);
+* the boundary conditions follow the same discipline: the boundary planes
+  (inlet/outlet on x, and the four lateral walls) are *reconstructed* from
+  candidate tensors selected with ``torch.where`` and re-assembled with
+  ``torch.cat`` — the free-slip wall is a pure index-level population swap —
+  so gradients cross the boundary overwrites exactly (see :class:`InletSpec`
+  / :class:`OutletSpec` / :class:`WallSpec`);
 * the collision operator is a slot: the default is single-component BGK
   (:func:`tensorlbm.solver3d.collide_bgk3d`); any callable
   ``f, tau -> f`` built from differentiable ops drops in, e.g.
@@ -39,11 +40,22 @@ frozen-field surrogate (``tensorlbm/adjoint.py``) and no hand-derived adjoint.
 Scope (deliberate): single-component D3Q19 BGK-family collision, stationary
 solid mask.  The default lattice stays fully periodic; passing
 ``inlet``/``outlet`` replaces the periodic wrap on the x planes with a
-differentiable velocity inlet and a zero-gradient outlet (the SUBOFF
-production phase order) — the lateral y/z planes remain periodic in this
-first version, which is acceptable for wake-type campaigns on wide domains.
-Multi-component/free-surface/distributed paths and memory-format
-optimisations are out of scope for this module.
+differentiable velocity inlet and a zero-gradient or convective outlet, and
+``walls`` replaces the periodic wrap on the four lateral planes with
+free-slip (specular reflection) or free-stream faces (the SUBOFF production
+phase order) — a fully bounded, gradient-connected box (A6++).  With all
+boundary arguments ``None`` the operator stays bit-for-bit the original
+periodic chain.
+
+Known limits of the bounded box (updated by A6++): the inlet pins the
+*normal* velocity only (Zou/He tangential reconstruction and turbulent /
+synthetic inflow are not wired); the convective outlet uses a single uniform
+convective speed on the outlet plane alone (no sponge/NSCBC pressure
+relaxation); one :class:`WallSpec` drives all four lateral faces (no
+per-face control), and on the edge/corner lines the later-applied closure
+wins on doubly-unknown directions (last write wins, not a corner-consistent
+reflection).  Multi-component/free-surface/distributed paths and
+memory-format optimisations are out of scope for this module.
 """
 
 from __future__ import annotations
@@ -72,9 +84,43 @@ _INCOMING_X = (1, 7, 9, 11, 13)  # c_x = +1: unknown at the inlet plane
 _OUTGOING_X = (2, 8, 10, 12, 14)  # c_x = -1: unknown at the outlet plane
 _NO_SHIFT_X = (0, 3, 4, 5, 6, 15, 16, 17, 18)  # c_x = 0
 
+# Lateral (y/z) boundary machinery.  After streaming, the plane y = 0 holds,
+# for the c_y = +1 directions, values wrapped around from y = ny - 1 — those
+# are the unknowns the lateral closure must supply (symmetrically c_y = -1 on
+# y = ny - 1, c_z = +1 on z = 0, c_z = -1 on z = nz - 1).  The mirror tables
+# negate one transverse velocity component: FLIP[axis][q] is the index of
+# (c_q with c_q[axis] negated), i.e. the specular-reflection partner of q
+# about the plane normal to *axis*.  They are derived from the lattice table
+# (not transcribed), so they cannot drift from ``d3q19.C``.
+_C_LIST = C3D.tolist()
+
+
+def _mirror_table(axis: int) -> tuple[int, ...]:
+    """Specular-reflection index table negating velocity component *axis*."""
+    table = []
+    for q in range(19):
+        mirrored = list(_C_LIST[q])
+        mirrored[axis] = -mirrored[axis]
+        table.append(_C_LIST.index(mirrored))
+    return tuple(table)
+
+
+def _directions_with(axis: int, sign: int) -> tuple[int, ...]:
+    """Direction indices with c_q[axis] == *sign*."""
+    return tuple(q for q in range(19) if _C_LIST[q][axis] == sign)
+
+
+_FLIP_Y = _mirror_table(1)
+_FLIP_Z = _mirror_table(2)
+_IN_Y_POS = _directions_with(1, +1)  # c_y = +1: unknown at y = 0
+_IN_Y_NEG = _directions_with(1, -1)  # c_y = -1: unknown at y = ny - 1
+_IN_Z_POS = _directions_with(2, +1)  # c_z = +1: unknown at z = 0
+_IN_Z_NEG = _directions_with(2, -1)  # c_z = -1: unknown at z = nz - 1
+
 __all__ = [
     "InletSpec",
     "OutletSpec",
+    "WallSpec",
     "differentiable_step",
     "obstacle_force",
     "rollout",
@@ -134,16 +180,108 @@ class InletSpec:
 
 @dataclass(frozen=True)
 class OutletSpec:
-    """Differentiable zero-gradient (copy) outlet on the plane x = nx - 1.
+    """Differentiable outlet on the plane x = nx - 1 (two closures).
 
-    After streaming, the five unknown (outgoing, c_x = -1) populations on
-    the outlet plane would wrap around from the inlet; they are replaced by
-    the values of the fully interior neighbour plane x = nx - 2, i.e. a
-    zero-gradient extrapolation of the distribution.  The known (c_x >= 0)
-    populations keep their streamed interior values.  The condition carries
-    gradients (the copied plane is graph-connected); a convective outlet is
-    a possible future extension of this marker.
+    ``method="copy"`` (default) — zero-gradient: after streaming, the five
+    unknown (outgoing, c_x = -1) populations on the outlet plane would wrap
+    around from the inlet; they are replaced by the values of the fully
+    interior neighbour plane x = nx - 2.  The known (c_x >= 0) populations
+    keep their streamed interior values.
+
+    ``method="convective"`` — first-order upwind convective condition on the
+    same five unknown populations, discretising
+    ``df/dt + U_c df/dx = 0`` with the upwind neighbour x = nx - 2 and the
+    *previous step's* outlet face as the time level:
+
+    .. math:: f_{out}^{n+1} = f_{out}^{n} + U_c\\,
+        \\big(f_{out-1}^{n} - f_{out}^{n}\\big)
+        = (1 - U_c)\\,f_{out}^{n} + U_c\\,f_{out-1}^{n},
+
+    with the Courant number ``U_c = u_conv`` (lattice units, dt = dx = 1, so
+    U_c = u_conv·dt/dx).  The scheme is a convex combination for
+    ``0 < U_c < 1`` — the upwind CFL bound; ``U_c = 1`` degenerates to the
+    plain copy, ``U_c -> 0`` freezes the plane (nothing convects out).
+    Applying the condition only to the unknown directions leaves the known
+    (c_x >= 0) streamed populations untouched.
+
+    The time recursion makes the outlet depend on its own previous state, so
+    the caller supplies the history: :func:`differentiable_step` takes the
+    previous post-boundary outlet face as ``outlet_prev`` (``None`` seeds it
+    from the step input's own outlet plane ``f[..., -1:]``, i.e. the initial
+    condition on the first step), and :func:`rollout` chains the faces
+    automatically (the faces stay in the autograd graph, so gradients flow
+    through the recursion — including w.r.t. ``u_conv`` itself).
+
+    ``u_conv``: the convective speed.  ``None`` (default) resolves it from
+    ``inlet.ux`` at call time (the standard choice ``U_c = u_in`` — one
+    physical outflow speed; an explicit float/0-dim tensor overrides it, and
+    a tensor with ``requires_grad=True`` makes ``U_c`` itself a learnable
+    parameter).  ``u_conv`` is ignored by ``method="copy"``.  A convective
+    outlet without either source raises ``ValueError``.
     """
+
+    method: str = "copy"
+    u_conv: float | torch.Tensor | None = None
+
+    def __post_init__(self) -> None:
+        if self.method not in ("copy", "convective"):
+            raise ValueError(f"outlet method must be 'copy' or 'convective', got {self.method!r}")
+
+
+@dataclass(frozen=True)
+class WallSpec:
+    """Differentiable lateral boundaries on y = 0, y = ny-1, z = 0, z = nz-1.
+
+    One spec drives all four lateral faces with the same *method*:
+
+    ``"periodic"`` (default) — no-op: the planes keep the periodic wrap of
+    :func:`tensorlbm.solver3d.stream3d` (identical to passing ``None``).
+
+    ``"free-slip"`` — on-node specular reflection: after streaming, the five
+    unknown populations on each face (the ones that wrapped around the
+    domain, e.g. c_y = +1 on y = 0) are replaced by the face's *mirror
+    partner* populations, ``f[q] = f[FLIP[q]]`` with FLIP the index table
+    negating the face-normal velocity component.  This is a pure
+    index-level population swap: no arithmetic reconstruction, no division,
+    unconditionally stable, and autograd-transparent.  Chosen over a Zou/He
+    rebuild because specular reflection is *exact* for its target — the
+    reflected pairs cancel, so the wall-normal velocity on the face is
+    zero to machine precision and the tangential momentum is untouched,
+    with none of the non-equilibrium extrapolation error a closure rebuild
+    would inject.  Cost of the on-node placement (shared with on-node
+    bounce-back): the effective wall sits on the plane nodes themselves
+    (first-order wall placement), not half-way between nodes.
+
+    ``"freestream"`` — the whole face is (re)set to the Dirichlet
+    equilibrium ``f_eq(rho0, u_inf)`` (the same construction as the
+    ``"equilibrium"`` inlet).  Stronger than free-slip (pins rho and the
+    full velocity on the face, absorbing outgoing populations); use for
+    far-field/wind-tunnel sides, at the price of some acoustic reflection.
+
+    Edge/corner policy: the faces are closed in the order y = 0, y = ny - 1,
+    z = 0, z = nz - 1 *before* the inlet/outlet closures; on the edge and
+    corner lines a direction can be unknown for two closures at once, and
+    the later application wins (last write wins) — e.g. at a corner the
+    z closure wins over the y closure, and the inlet/outlet closures win
+    over the walls.  Away from those measure-zero lines the closures touch
+    disjoint direction sets, so the order is irrelevant there.
+
+    ``rho0``/``ux``/``uy``/``uz`` are read by ``"freestream"`` only; they
+    accept floats or 0-dim tensors (graph-connected, e.g. a learnable
+    free-stream speed shared with the inlet).
+    """
+
+    method: str = "periodic"
+    rho0: float | torch.Tensor = 1.0
+    ux: float | torch.Tensor = 0.0
+    uy: float | torch.Tensor = 0.0
+    uz: float | torch.Tensor = 0.0
+
+    def __post_init__(self) -> None:
+        if self.method not in ("periodic", "free-slip", "freestream"):
+            raise ValueError(
+                f"wall method must be 'periodic', 'free-slip' or 'freestream', got {self.method!r}"
+            )
 
 
 def _collide_skip_solid(
@@ -213,17 +351,98 @@ def _apply_inlet(f_str: torch.Tensor, inlet: InletSpec) -> torch.Tensor:
     return torch.cat([plane_new, f_str[..., 1:]], dim=-1)
 
 
-def _apply_outlet(f_str: torch.Tensor) -> torch.Tensor:
-    """Zero-gradient outlet on x = nx - 1 of the post-stream state (out-of-place).
+def _apply_walls(f_str: torch.Tensor, walls: WallSpec) -> torch.Tensor:
+    """Close the four lateral planes of the post-stream state (out-of-place).
 
-    Only the unknown outgoing (c_x = -1) populations are copied from x = nx-2;
-    the known ones keep their streamed interior values.
+    ``"periodic"`` is a bit-exact no-op (returns *f_str* itself).  Free-slip
+    rebuilds each face with ``torch.where(unknown_selector, plane[FLIP],
+    plane)``; freestream rebuilds each face from a broadcast equilibrium.
+    Faces are closed y = 0, y = ny - 1, z = 0, z = nz - 1 (see
+    :class:`WallSpec` for the edge/corner last-write-wins policy).
     """
-    plane_new = torch.where(
-        _dir_selector(_OUTGOING_X, f_str.device),
-        f_str[..., -2:-1],
-        f_str[..., -1:],
-    )
+    if walls.method == "periodic":
+        return f_str
+    device, dtype = f_str.device, f_str.dtype
+    nz, ny, nx = f_str.shape[1], f_str.shape[2], f_str.shape[3]
+
+    if walls.method == "free-slip":
+        flip_y = torch.tensor(_FLIP_Y, device=device)
+        flip_z = torch.tensor(_FLIP_Z, device=device)
+        # y = 0: unknown c_y = +1 directions take their mirror partner
+        plane = f_str[:, :, :1]
+        plane_new = torch.where(_dir_selector(_IN_Y_POS, device), plane[flip_y], plane)
+        f = torch.cat([plane_new, f_str[:, :, 1:]], dim=2)
+        # y = ny - 1: unknown c_y = -1 directions
+        plane = f[:, :, -1:]
+        plane_new = torch.where(_dir_selector(_IN_Y_NEG, device), plane[flip_y], plane)
+        f = torch.cat([f[:, :, :-1], plane_new], dim=2)
+        # z = 0 / z = nz - 1: same construction on axis 1
+        plane = f[:, :1]
+        plane_new = torch.where(_dir_selector(_IN_Z_POS, device), plane[flip_z], plane)
+        f = torch.cat([plane_new, f[:, 1:]], dim=1)
+        plane = f[:, -1:]
+        plane_new = torch.where(_dir_selector(_IN_Z_NEG, device), plane[flip_z], plane)
+        f = torch.cat([f[:, :-1], plane_new], dim=1)
+        return f
+
+    # "freestream": whole faces reset to f_eq(rho0, u_inf) (0-dim broadcast)
+    rho = _scalar(walls.rho0, dtype, device)
+    ux = _scalar(walls.ux, dtype, device)
+    uy = _scalar(walls.uy, dtype, device)
+    uz = _scalar(walls.uz, dtype, device)
+    feq = equilibrium3d(rho, ux, uy, uz, device)  # (19, 1, 1, 1)
+    y_face = feq.expand(19, nz, 1, nx)
+    z_face = feq.expand(19, 1, ny, nx)
+    f = torch.cat([y_face, f_str[:, :, 1:]], dim=2)
+    f = torch.cat([f[:, :, :-1], y_face], dim=2)
+    f = torch.cat([z_face, f[:, 1:, :]], dim=1)
+    f = torch.cat([f[:, :-1, :], z_face], dim=1)
+    return f
+
+
+def _resolve_u_conv(outlet: OutletSpec, inlet: InletSpec | None) -> float | torch.Tensor:
+    """Convective speed: explicit ``u_conv`` > ``inlet.ux`` > error."""
+    if outlet.u_conv is not None:
+        u_c = outlet.u_conv
+    elif inlet is not None:
+        u_c = inlet.ux
+    else:
+        raise ValueError(
+            "convective outlet needs a convective speed: pass OutletSpec("
+            "method='convective', u_conv=...) or an inlet to derive U_c from"
+        )
+    value = u_c.detach().item() if isinstance(u_c, torch.Tensor) else float(u_c)
+    if not 0.0 < value < 1.0:
+        raise ValueError(
+            "convective outlet Courant number must satisfy 0 < U_c < 1 (upwind "
+            f"CFL bound), got {value!r}"
+        )
+    return u_c
+
+
+def _apply_outlet(
+    f_str: torch.Tensor,
+    outlet: OutletSpec,
+    inlet: InletSpec | None,
+    f_prev: torch.Tensor,
+) -> torch.Tensor:
+    """Outlet on x = nx - 1 of the post-stream state (out-of-place).
+
+    Only the unknown outgoing (c_x = -1) populations are touched:
+    ``method="copy"`` takes the interior neighbour plane x = nx - 2
+    (zero gradient); ``method="convective"`` takes the upwind recursion
+    ``f_prev + U_c * (neighbour - f_prev)`` with *f_prev* the previous
+    post-boundary outlet face (see :class:`OutletSpec`).  The known ones
+    keep their streamed interior values.
+    """
+    sel = _dir_selector(_OUTGOING_X, f_str.device)
+    neighbour = f_str[..., -2:-1]
+    if outlet.method == "copy":
+        candidate = neighbour
+    else:
+        u_c = _scalar(_resolve_u_conv(outlet, inlet), f_str.dtype, f_str.device)
+        candidate = f_prev + u_c * (neighbour - f_prev)
+    plane_new = torch.where(sel, candidate, f_str[..., -1:])
     return torch.cat([f_str[..., :-1], plane_new], dim=-1)
 
 
@@ -236,6 +455,8 @@ def differentiable_step(
     return_probe: bool = False,
     inlet: InletSpec | None = None,
     outlet: OutletSpec | None = None,
+    walls: WallSpec | None = None,
+    outlet_prev: torch.Tensor | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """One autograd-clean D3Q19 step: collide (fluid) -> stream -> BC -> bounce-back.
 
@@ -245,8 +466,12 @@ def differentiable_step(
     1. BGK collision with relaxation time *tau*, skipped inside the solid
        mask (NoDynamics), see :func:`_collide_skip_solid`;
     2. periodic gather streaming (:func:`tensorlbm.solver3d.stream3d`);
-    3. if given, the inlet/outlet conditions on the x planes
-       (:func:`_apply_inlet`, :func:`_apply_outlet`);
+    3. if given, the boundary conditions, applied in the order lateral walls
+       (:func:`_apply_walls`, all four y/z planes) -> inlet ->
+       outlet (:func:`_apply_inlet`, :func:`_apply_outlet`) — the lateral
+       closures clean the edge sources the x closures read, and the
+       streamwise (driving) conditions win on doubly-unknown edge
+       directions;
     4. full-way bounce-back on the solid: ``f_new = where(mask, f_bc[opp],
        f_bc)`` — the reflected populations leave the solid on the next
        streaming step.
@@ -261,8 +486,8 @@ def differentiable_step(
     the boundaries before bounce-back also keeps the force probe (below) on
     the boundary-conditioned state, matching the production sampling phase.
 
-    With ``inlet=None, outlet=None`` (default) the operator is bit-for-bit
-    the original periodic chain.
+    With ``inlet=None, outlet=None, walls=None`` (default) the operator is
+    bit-for-bit the original periodic chain.
 
     Args:
         f: Distribution tensor of shape ``(19, nz, ny, nx)`` (the state
@@ -273,8 +498,8 @@ def differentiable_step(
         mask: Boolean solid mask of shape ``(nz, ny, nx)``; ``None`` gives
             the plain periodic collide->stream chain (identical operator
             order to the rollouts in ``tests/test_autograd.py``).  The
-            inlet/outlet planes are assumed fluid; if the mask is True
-            there, bounce-back (applied last) wins over the boundary value.
+            boundary planes are assumed fluid; if the mask is True there,
+            bounce-back (applied last) wins over the boundary value.
         collide: Optional replacement collision operator ``f, tau -> f``.
             Must be built from differentiable ops (e.g.
             ``functools.partial(collide_smagorinsky_bgk3d, C_s=cs)`` with a
@@ -284,20 +509,40 @@ def differentiable_step(
             point for :func:`obstacle_force`.
         inlet: :class:`InletSpec` velocity inlet on x = 0 (``None``: the
             plane stays periodic).
-        outlet: :class:`OutletSpec` zero-gradient outlet on x = nx - 1
-            (``None``: the plane stays periodic).
+        outlet: :class:`OutletSpec` zero-gradient or convective outlet on
+            x = nx - 1 (``None``: the plane stays periodic).
+        walls: :class:`WallSpec` lateral closure shared by all four y/z
+            planes (``None`` or ``method="periodic"``: they stay periodic,
+            bit-for-bit).
+        outlet_prev: Previous step's post-boundary outlet face, shape
+            ``(19, nz, ny, 1)`` — the time history the convective outlet
+            recurses on (the faces stay in the autograd graph when chained
+            through :func:`rollout`).  ``None`` seeds the recursion from
+            this step's input state ``f[..., -1:]`` (the initial condition
+            on the first step of a rollout).  Unused by the zero-gradient
+            copy outlet.
 
     Returns:
         The stepped distribution ``f_new``; with ``return_probe=True`` a
         tuple ``(f_new, f_probe)``.  Macroscopic observables computed on
         ``f_new`` should exclude the solid cells (they hold reflected
-        populations): mask with ``~mask``.
+        populations): mask with ``~mask``.  For a manually chained
+        convective outlet, ``f_probe[..., -1:]`` is the outlet face to feed
+        into the next step's ``outlet_prev``.
     """
     f_str = stream3d(_collide_skip_solid(f, tau, mask, collide))
+    if walls is not None:
+        f_str = _apply_walls(f_str, walls)
     if inlet is not None:
         f_str = _apply_inlet(f_str, inlet)
     if outlet is not None:
-        f_str = _apply_outlet(f_str)
+        f_prev = f[..., -1:] if outlet_prev is None else outlet_prev
+        if f_prev.shape != f_str[..., -1:].shape:
+            raise ValueError(
+                "outlet_prev must be the previous outlet face of shape "
+                f"{tuple(f_str[..., -1:].shape)}, got {tuple(f_prev.shape)}"
+            )
+        f_str = _apply_outlet(f_str, outlet, inlet, f_prev)
     probe = f_str
     if mask is None:
         return (probe, probe) if return_probe else probe
@@ -342,6 +587,7 @@ def rollout(
     return_probes: bool = False,
     inlet: InletSpec | None = None,
     outlet: OutletSpec | None = None,
+    walls: WallSpec | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, list[torch.Tensor]]:
     """Roll out :func:`differentiable_step` for *n_steps*, keeping the graph.
 
@@ -351,6 +597,14 @@ def rollout(
     so activation memory stays near-flat while gradients remain identical
     (the strategy quantified in ``examples/differentiable_lbm.py`` and the
     transparent analogue of XLB's segmented checkpoint-replay adjoint).
+
+    A convective outlet recurses on its own previous face, so the loop
+    chains the history internally: step *k* receives the post-boundary
+    outlet face of step *k-1* (the first step seeds from the initial
+    condition's outlet plane, i.e. from ``f[..., -1:]``).  The chained faces
+    stay in the autograd graph — also under ``checkpoint=True`` — so
+    gradients flow through the outlet recursion, including w.r.t. the
+    convective speed ``u_conv``.
 
     Args:
         f: Initial distribution, shape ``(19, nz, ny, nx)``.
@@ -364,42 +618,80 @@ def rollout(
             states for :func:`obstacle_force` (usable together with
             ``checkpoint``; the probes stay in the autograd graph).
         inlet: :class:`InletSpec` velocity inlet on x = 0 (default periodic).
-        outlet: :class:`OutletSpec` zero-gradient outlet on x = nx - 1
-            (default periodic).
+        outlet: :class:`OutletSpec` zero-gradient or convective outlet on
+            x = nx - 1 (default periodic).
+        walls: :class:`WallSpec` lateral closure on the four y/z planes
+            (default ``None``: periodic, bit-for-bit).
 
     Returns:
         The final distribution; with ``return_probes=True`` a tuple
         ``(f_final, probes)`` with one probe per step.
     """
     probes: list[torch.Tensor] | None = [] if return_probes else None
+    convective = outlet is not None and outlet.method == "convective"
+    outlet_face: torch.Tensor | None = None  # chained history, graph-connected
     for _ in range(n_steps):
-        if checkpoint:
-            out = _checkpoint(
-                differentiable_step,
-                f,
-                tau,
-                mask,
-                use_reentrant=False,
-                collide=collide,
-                return_probe=return_probes,
-                inlet=inlet,
-                outlet=outlet,
-            )
-        else:
-            out = differentiable_step(
-                f,
-                tau,
-                mask,
-                collide=collide,
-                return_probe=return_probes,
-                inlet=inlet,
-                outlet=outlet,
-            )
-        if return_probes:
+        out = _step_for_rollout(
+            f,
+            tau,
+            mask,
+            collide=collide,
+            checkpoint=checkpoint,
+            need_probe=return_probes or convective,
+            inlet=inlet,
+            outlet=outlet,
+            walls=walls,
+            outlet_prev=outlet_face,
+        )
+        if return_probes or convective:
             f, probe = out
-            probes.append(probe)
+            if return_probes:
+                probes.append(probe)
+            if convective:
+                outlet_face = probe[..., -1:]
         else:
             f = out
     if return_probes:
         return f, probes
     return f
+
+
+def _step_for_rollout(
+    f: torch.Tensor,
+    tau: float | torch.Tensor,
+    mask: torch.Tensor | None,
+    *,
+    collide: CollideFn | None,
+    checkpoint: bool,
+    need_probe: bool,
+    inlet: InletSpec | None,
+    outlet: OutletSpec | None,
+    walls: WallSpec | None,
+    outlet_prev: torch.Tensor | None,
+) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+    """One rollout step, optionally wrapped in gradient checkpointing."""
+    if not checkpoint:
+        return differentiable_step(
+            f,
+            tau,
+            mask,
+            collide=collide,
+            return_probe=need_probe,
+            inlet=inlet,
+            outlet=outlet,
+            walls=walls,
+            outlet_prev=outlet_prev,
+        )
+    return _checkpoint(
+        differentiable_step,
+        f,
+        tau,
+        mask,
+        use_reentrant=False,
+        collide=collide,
+        return_probe=need_probe,
+        inlet=inlet,
+        outlet=outlet,
+        walls=walls,
+        outlet_prev=outlet_prev,
+    )
