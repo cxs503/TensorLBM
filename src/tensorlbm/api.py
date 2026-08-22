@@ -8,6 +8,7 @@ For experimental features and rapid-evolution interfaces, use
 from __future__ import annotations
 
 from ._version import __version__
+from .autograd_path import differentiable_step, obstacle_force, rollout
 from .boundaries import (
     apply_simple_channel_boundaries,
     apply_zou_he_channel_boundaries,
@@ -72,6 +73,9 @@ __all__ = [
     "collide_trt3d",
     "stream3d",
     "correct_mass3d",
+    "differentiable_step",
+    "obstacle_force",
+    "rollout",
     "DiagnosticPoint",
     "resolve_device",
     "prepare_run_dir",
