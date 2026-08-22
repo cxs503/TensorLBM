@@ -128,9 +128,37 @@ paradigm only, no XLB code).
 
 | Function | Signature | Role |
 |---|---|---|
-| `differentiable_step` | `(f, tau=0.9, mask=None, *, collide=None, return_probe=False)` | one autograd-clean D3Q19 step: collision skipped inside the solid (NoDynamics, `torch.where`) → periodic gather streaming (`solver3d.stream3d`) → full-way bounce-back (`where(mask, f[opp], f)`) |
-| `rollout` | `(f, n_steps, tau=0.9, mask=None, *, collide=None, checkpoint=False, return_probes=False)` | unrolls the step, optionally per-step gradient-checkpointed (`use_reentrant=False`, identical gradients, near-flat activation memory) |
+| `differentiable_step` | `(f, tau=0.9, mask=None, *, collide=None, return_probe=False, inlet=None, outlet=None, walls=None, outlet_prev=None)` | one autograd-clean D3Q19 step: collision skipped inside the solid (NoDynamics, `torch.where`) → periodic gather streaming (`solver3d.stream3d`) → boundary conditions (lateral walls → inlet → outlet, post-stream / pre-bounce-back) → full-way bounce-back (`where(mask, f[opp], f)`) |
+| `rollout` | `(f, n_steps, tau=0.9, mask=None, *, collide=None, checkpoint=False, return_probes=False, inlet=None, outlet=None, walls=None)` | unrolls the step, optionally per-step gradient-checkpointed (`use_reentrant=False`, identical gradients, near-flat activation memory); chains the convective outlet's face history internally |
 | `obstacle_force` | `(f_probe, mask)` | differentiable Ladd wet-node momentum-exchange force `F_α = 2·Σ_{x∈solid} Σ_q c_{qα} f[q,x]` on the post-stream / pre-bounce-back probe |
+
+Boundary specs (all fields accept floats or graph-connected 0-dim tensors;
+all default `None` = fully periodic, bit-for-bit the original chain):
+
+* `InletSpec(ux, uy, uz, rho0, method="equilibrium"|"zouhe")` — velocity
+  inlet on x = 0: whole-plane Dirichlet equilibrium, or Zou/He
+  non-equilibrium closure of the five unknown (c_x = +1) populations with
+  the plane density from the known streamed moments (pins the *normal*
+  velocity; requires u_x < 1 in lattice units).
+* `OutletSpec(method="copy"|"convective", u_conv=None)` — outlet on
+  x = nx-1 acting on the five unknown (c_x = -1) populations:
+  `"copy"` = zero gradient from x = nx-2; `"convective"` = first-order
+  upwind `f_out^{n+1} = f_out^n + U_c (f_{out-1}^n - f_out^n)` (a convex
+  combination, stable for 0 < U_c < 1, the upwind CFL bound; U_c = 1
+  degenerates to the copy). `u_conv=None` derives U_c from `inlet.ux`;
+  an explicit tensor makes the Courant number itself learnable. The
+  recursion on the previous outlet face is chained automatically inside
+  `rollout` (seeded from the initial condition; single steps take
+  `outlet_prev`).
+* `WallSpec(method="periodic"|"free-slip"|"freestream", rho0, ux, uy, uz)` —
+  one spec drives all four lateral faces. `"free-slip"` is on-node specular
+  reflection: the unknown populations on each face take their mirror
+  partner (`f[q] = f[FLIP[q]]`, index-level swap) — wall-normal velocity
+  cancels pairwise to machine precision, tangential momentum untouched,
+  no closure arithmetic. `"freestream"` resets whole faces to
+  `f_eq(rho0, u_inf)` (the equilibrium-inlet construction). Faces close in
+  the order y=0, y=ny-1, z=0, z=nz-1 *before* the inlet/outlet; on
+  edge/corner lines the later closure wins (last write wins).
 
 `tau` may be a graph-connected 0-dim tensor; `collide` is a slot — the
 default is single-component BGK (`collide_bgk3d`), and any differentiable
@@ -168,12 +196,51 @@ Both scalar parameters are recovered to ≤1e-3 absolute through the discrete
 dynamics; the eddy viscosity of the LES closure is identified from the flow
 itself because the sub-grid model is inside the backward graph.
 
+### Bounded box (A6+, merged; A6++ lateral walls + convective outlet): measured gradients
+
+Full box = Zou/He inlet (`u_in` = 0.08) + convective outlet (`U_c` derived
+from `u_in`) + free-slip walls, 8×10×20 grid, sphere r=2, 10-step rollout,
+loss = MSE of final `ux` on fluid cells, fp64, central differences
+(ε = 1e-5, `tests/test_autograd_path.py` §8):
+
+| gradient | autograd | finite difference | relative error |
+|---|---|---|---|
+| dLoss/dτ | -6.115089e-05 | -6.115089e-05 | **9.6e-10** |
+| dLoss/du_in (U_c derived from u_in) | -3.167887e-03 | -3.167887e-03 | **7.3e-09** |
+| dLoss/dU_c (explicit learnable Courant number) | -7.515991e-05 | -7.515991e-05 | **3.3e-09** |
+
+Element-wise `dLoss/df0` matches central differences (<1e-6 relative, or
+<1e-12 absolute for the ~1e-8-gradient corner-line entry) at interior,
+wall-plane (mirrored), corner-line and outlet-plane (convective seed)
+entries. Checkpointed rollouts reproduce the plain gradients exactly with
+the convective history chained; CPU↔CUDA fp32 parity holds for the full box.
+
+Physics sanity (300 steps, fp64, same grid, τ = 0.55): all populations
+finite, ρ ∈ [0.94, 1.07], mean `ux` = 0.087 sustained, drag window-stable
+(0.287 → 0.289 over windows [50,100) → [250,300)). Free-slip faces carry
+|u_n| ≤ 2.5e-13 (machine precision, pairwise cancellation of the mirrored
+pairs); the summed mean |u_n| over the four faces is **2.0e-17** with
+free-slip walls vs **6.6e-3** with the periodic wrap — the side pollution
+of the periodic baseline, quantitatively.
+
 ### Known limits of this module
 
-* Periodic lattice + **stationary** mask only. Zou/He, NSCBC and
-  overwrite-style boundary helpers are not part of the chain (gradient-hostile
-  in-place writes, see audit above); moving obstacles and BFL interpolated
-  bounce-back (`bfl_boundary.py`) are not wired for autograd.
+* **Stationary** mask only; moving obstacles and BFL interpolated
+  bounce-back (`bfl_boundary.py`) are not wired for autograd. In-place
+  overwrite boundary helpers stay out of the chain (gradient-hostile, see
+  audit above); NSCBC / sponge pressure relaxation is not differentiable
+  here.
+* The bounded box is closed but minimal: the inlet pins the **normal**
+  velocity only (no Zou/He tangential reconstruction, no turbulent /
+  synthetic inflow); the convective outlet uses one uniform `U_c` on the
+  outlet plane alone (first-order upwind, 0 < U_c < 1; no sponge, no
+  per-direction convective speeds); one `WallSpec` drives all four lateral
+  faces (no per-face or axis-specific control, e.g. no lid); on the
+  edge/corner lines the later-applied closure wins on doubly-unknown
+  directions (last write wins, measured corner-line |u_n| ~ 1e-3 vs
+  machine-zero face interiors); free-slip walls are on-node (wall on the
+  plane nodes, first-order wall placement — the slip analogue of on-node
+  bounce-back).
 * The Smagorinsky path keeps main's *absolute* `tau_eff` clamp semantics
   (`torch.clamp(tau_eff, 0.5001, 1.0)` in `turbulence.py`); gradient is zero
   in clamped cells (a.e. differentiability of `clamp`).
@@ -184,9 +251,13 @@ itself because the sub-grid model is inside the backward graph.
 
 ### Entry points (new)
 
-* `tests/test_autograd_path.py` — 13 cases: value contract vs manual
+* `tests/test_autograd_path.py` — 40 cases: value contract vs manual
   composition, gradient existence through the masked chain, per-dtype FD
   cross-checks (τ, f0 entries, drag probe), τ and C_s solver-in-the-loop
-  recovery, checkpoint-vs-plain gradient equality, CPU↔CUDA parity.
+  recovery, checkpoint-vs-plain gradient equality, CPU↔CUDA parity, the
+  bounded inlet/outlet contract of A6+ (§7), and the A6++ full-box contract
+  (§8: default-path bitwise identity, wall/outlet value contracts, FD
+  through all six faces incl. dU_c, checkpoint/CUDA consistency, and the
+  300-step sphere physics vs the periodic-sides baseline).
 * `examples/solver_in_the_loop.py` — the four identification runs above
   (`--mode {tau,cs}`, `--observable {field,drag}`).
