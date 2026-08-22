@@ -115,3 +115,78 @@ simulated quantity. The two are complementary:
 1. **Learned collision operators** — any `nn.Module` that maps (f, macroscopic) → f can be dropped into the collide slot and trained end to end against downstream losses (lettuce's `LearnedMRT` pattern; neural bulk-viscosity C&F 2024).
 2. **Solver-in-the-loop correction training** — train a coarse-grid solver + NN correction against fine-grid references by backprop through the solver (Um et al., NeurIPS 2020; XLB paper §6.1), instead of the current offline FNO pipeline in `apps/neural_operator_fno.py`.
 3. **Parameter inverse problems** — τ/ω fields, initial conditions, force terms identified from observations, as demonstrated by the example.
+
+## Implementation progress (2026-08-22): packaged step chain + solver-in-the-loop demos
+
+Roadmap item **A6** turns the audited property above into a packaged,
+importable composition contract: `tensorlbm.autograd_path` (exported via
+`tensorlbm.api`). It is the TensorLBM counterpart of XLB's
+solver-in-the-loop demos (Um et al., NeurIPS 2020; XLB, Apache-2.0 —
+paradigm only, no XLB code).
+
+### API
+
+| Function | Signature | Role |
+|---|---|---|
+| `differentiable_step` | `(f, tau=0.9, mask=None, *, collide=None, return_probe=False)` | one autograd-clean D3Q19 step: collision skipped inside the solid (NoDynamics, `torch.where`) → periodic gather streaming (`solver3d.stream3d`) → full-way bounce-back (`where(mask, f[opp], f)`) |
+| `rollout` | `(f, n_steps, tau=0.9, mask=None, *, collide=None, checkpoint=False, return_probes=False)` | unrolls the step, optionally per-step gradient-checkpointed (`use_reentrant=False`, identical gradients, near-flat activation memory) |
+| `obstacle_force` | `(f_probe, mask)` | differentiable Ladd wet-node momentum-exchange force `F_α = 2·Σ_{x∈solid} Σ_q c_{qα} f[q,x]` on the post-stream / pre-bounce-back probe |
+
+`tau` may be a graph-connected 0-dim tensor; `collide` is a slot — the
+default is single-component BGK (`collide_bgk3d`), and any differentiable
+`f, tau -> f` callable drops in (e.g.
+`functools.partial(collide_smagorinsky_bgk3d, C_s=cs)` to make the
+Smagorinsky constant learnable). Layout stays `(19, nz, ny, nx)`, fp32/fp64.
+
+### Gradient cross-checks (measured, `tests/test_autograd_path.py`)
+
+12-step masked rollout (10×12×16 grid, centred sphere r=2.5), loss = MSE of
+final `ux` on fluid cells vs a reference rollout, gradient w.r.t. `tau`
+compared to the central difference of the same discrete loss:
+
+| dtype | FD ε | relative error |
+|---|---|---|
+| float64 | 1e-5 | **8.7e-10** |
+| float32 | 5e-3 | **2.2e-4** |
+
+Element-wise `dLoss/df0` (obstacle-adjacent, far-fluid and inside-sphere
+entries) and `d(Σ_k F_x,k)/dtau` (drag probe accumulated over 8 steps) agree
+with central differences to <1e-6 in float64. Checkpointed rollouts return
+bit-identical gradients (rtol 1e-10). CPU↔CUDA fp32 parity: rollout loss and
+`dLoss/dtau` agree to <1e-5 / <1e-3.
+
+### Solver-in-the-loop identification (12×16×24 grid, sphere r=3.5, K=15 steps, Adam + cosine lr decay, fp64; `examples/solver_in_the_loop.py`)
+
+| mode | observable | initial loss | final loss | reduction | parameter error |
+|---|---|---|---|---|---|
+| τ (BGK), truth 0.85, guess 0.60 | final `ux` field | 1.94e-4 | 2.29e-9 | ×8.5e4 | **1.0e-3** |
+| τ (BGK) | accumulated obstacle drag | 5.39e-2 | 2.47e-7 | ×2.2e5 | **5.9e-4** |
+| C_s (Smagorinsky BGK), truth 0.12, guess 0.03 | final `ux` field | 2.75e-8 | 1.13e-13 | ×2.4e5 | **1.2e-4** |
+| C_s (Smagorinsky BGK) | accumulated obstacle drag | 2.94e-3 | 6.99e-9 | ×4.2e5 | **9.0e-5** |
+
+Both scalar parameters are recovered to ≤1e-3 absolute through the discrete
+dynamics; the eddy viscosity of the LES closure is identified from the flow
+itself because the sub-grid model is inside the backward graph.
+
+### Known limits of this module
+
+* Periodic lattice + **stationary** mask only. Zou/He, NSCBC and
+  overwrite-style boundary helpers are not part of the chain (gradient-hostile
+  in-place writes, see audit above); moving obstacles and BFL interpolated
+  bounce-back (`bfl_boundary.py`) are not wired for autograd.
+* The Smagorinsky path keeps main's *absolute* `tau_eff` clamp semantics
+  (`torch.clamp(tau_eff, 0.5001, 1.0)` in `turbulence.py`); gradient is zero
+  in clamped cells (a.e. differentiability of `clamp`).
+* Full-way bounce-back places the effective wall at the solid-cell centre
+  (first-order geometry), consistent with the production SUBOFF convention.
+* Multi-component, free-surface and distributed paths, and memory-format
+  optimisations are deliberate non-goals (A2/A3 territory).
+
+### Entry points (new)
+
+* `tests/test_autograd_path.py` — 13 cases: value contract vs manual
+  composition, gradient existence through the masked chain, per-dtype FD
+  cross-checks (τ, f0 entries, drag probe), τ and C_s solver-in-the-loop
+  recovery, checkpoint-vs-plain gradient equality, CPU↔CUDA parity.
+* `examples/solver_in_the_loop.py` — the four identification runs above
+  (`--mode {tau,cs}`, `--observable {field,drag}`).
