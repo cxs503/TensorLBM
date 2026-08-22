@@ -1,18 +1,22 @@
 # SUBOFF field-to-drag surrogate: plane snapshot → C_D (FNO encoder)
 
-Date: 2026-08-22 (v1 pilot + v1.1 two-parameter addendum) · Module:
-`tensorlbm.ai.drag_surrogate` · Run: `/nfs/wangxi/runs/fno_drag_20260822`
+Date: 2026-08-22 (v1 pilot + v1.1 two-parameter addendum + v1.2 data-scale
+experiment) · Module: `tensorlbm.ai.drag_surrogate` · Run:
+`/nfs/wangxi/runs/fno_drag_20260822`
 
 First closed AI4S loop over the B1 campaign: LBM Re sweep → exported fields +
 exact drag labels → Fourier-encoder surrogate predicting C_D directly from a
 flow-field snapshot — no Reynolds number input, no wake-survey post-processing.
 
-> **v1.1 addendum (read first).** The pilot numbers below (0.41 % MAPE on the
-> single-parameter sweep) do **not** transfer: on the Re × u_in grid the same
-> model mispredicts by ~60 % MAPE, and retrained surrogates lose to the
-> fitted power-law prior. See the v1.1 addendum section — the
-> pilot's residual error reflected field *magnitude* (velocity scale) as a
-> Re proxy, not shape understanding.
+> **Read the addenda first (v1.1, v1.2).** The pilot numbers below (0.41 %
+> MAPE on the single-parameter sweep) do **not** transfer: on the Re × u_in
+> grid the same model mispredicts by ~60 % MAPE, and at N=24 retrained
+> surrogates lose to the fitted power-law prior (v1.1) — the pilot's
+> residual error reflected field *magnitude* (velocity scale) as a Re proxy,
+> not shape understanding. At N=40 (LHS) with u_in-normalized inputs the
+> surrogate finally overtakes the physics prior (v1.2: 1.15 % vs 1.56 %
+> test MAPE). The short version: **scale-invariant inputs + data scale**,
+> not architecture, decide this race.
 
 ## Task
 
@@ -177,3 +181,63 @@ points over (Re, u_in), scale-invariant inputs by default, then hull/geometry
 parameters. API hardened along the way: labels now join per point
 (`load_exact_cd_per_point` / `cd_by_point`) — Re-keyed joins collapse on
 multi-parameter grids (regression-tested).
+
+## v1.2: The data-scale experiment — N=40 LHS, and the surrogate finally wins
+
+Campaign: **40-point Latin hypercube** over the same box (log-uniform Re ∈
+[50, 800] × uniform u_in ∈ [0.06, 0.14]), constructed as explicit points
+(the DoE layer samples linearly; log-Re is what we want). Continuous u_in
+coverage — the surrogate can no longer memorise four discrete u_in slices.
+τ ∈ [0.530, 0.963]; the box corner (τ = 0.5173) re-smoked before launch.
+Dataset `/nfs/wangxi/datasets/scan_suboff_re_uin_lhs40_20260822` (~7 min on
+8 GPUs), campaign split 28/6/6. Inputs are now scale-invariant by
+construction: `PlaneSampleSpec(velocity_scale=True)` divides the velocity
+channels by the point's u_in inside `build_drag_split` (the v1.1 ad-hoc
+normalisation, productised; `DragSplit.u_in` carries the inflow velocity).
+
+### Results (step-500 input, same protocol throughout)
+
+| model | val MAPE % | test MAPE % |
+|---|---|---|
+| power law in Re (2 params) | 2.96 | 1.91 |
+| + log u_in correction (3 params) | 1.87 | 1.56 |
+| FNO, raw inputs | 0.81 | 3.57 |
+| **FNO, u_in-normalized** | **0.65** | **1.15** |
+| grid-24 model transferred (zero-shot) | 3.87 | 3.49 |
+
+### Findings
+
+1. **At N=40 the surrogate overtakes the physics prior.** Normalized FNO
+   1.15 % test MAPE vs 1.56 % (3-param) / 1.91 % (2-param) — the first
+   honest win, after losing 5.37 vs 2.57 % at N=24 (v1.1). The v1.1
+   reading ("data scale is the binding constraint") is confirmed by
+   experiment, not just argument.
+2. **Scale invariance is the difference between memorising and learning.**
+   Raw inputs: val 0.81 % but test 3.57 % — the model fits the velocity
+   *scale* (a Re proxy) and generalises poorly to unseen u_in. Normalized:
+   val 0.65 %, test 1.15 % — the val→test gap nearly closes. The channel
+   statistics can no longer do the work; the wake shape must.
+3. **Cross-check on the physics:** the 3-param fit's u_in exponent is
+   −0.0655 (C_D ∝ u_in^−0.066), independently reproducing the measured
+   similarity violation of −6.2 % per e-fold (v1.1, Finding 1) from a
+   different estimator on different data.
+4. **Zero-shot transfer from the 24-point grid: 3.5 %** — the normalized
+   representation carries to continuous u_in — but retraining on LHS40 is
+   3× better (1.15 %). Training-set design (LHS coverage) matters as much
+   as N.
+
+### Caveats
+
+- 6 val / 6 test points, 1 seed, 1 geometry — the win margin (1.15 vs
+  1.56 %) is one split; k-fold over the 40 points is the obvious tighten.
+- best_epoch 592 of 600 for the normalized model — at the schedule cap; a
+  longer run may still be improving.
+- Raw-input numbers use the same early-stop protocol; their val/test gap
+  is the finding, not a tuning artifact.
+
+### Next
+
+Hull/geometry parameters (where no closed-form prior exists — the actual
+value case for the surrogate), k-fold + multi-seed error bars, 3-D /
+multi-plane encoders. The data pipeline for all of it is now one
+`run_drag_surrogate_study` call with `velocity_scale=True`.

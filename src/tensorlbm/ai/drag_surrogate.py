@@ -57,6 +57,18 @@ class PlaneSampleSpec:
     steps: tuple[int, ...] = (4000,)
     """Snapshot steps used as samples; one (point, step) row per entry."""
 
+    velocity_scale: bool = False
+    """Divide velocity channels (ux/uy/uz) by the point's ``u_in``.
+
+    Scale-invariant inputs: at fixed u_in the raw velocity magnitude is a
+    perfect Re proxy (the v1 pilot exploited this without saying so), so a
+    surrogate trained on raw channels learns the velocity *scale*, not the
+    wake *shape*, and fails to transfer across u_in levels (59.6 % MAPE on
+    the Re × u_in grid vs 5.4 % after retraining; see
+    ``docs/drag_surrogate_fno_20260822.md`` v1.1). Default keeps raw
+    channels; labels are unaffected either way.
+    """
+
 
 @dataclass
 class DragSplit:
@@ -65,6 +77,7 @@ class DragSplit:
     x: np.ndarray  # (N, C, ny, nx) float32
     cd: np.ndarray  # (N,) float64 — exact C_D (per point, repeated per step)
     re: np.ndarray  # (N,) float64
+    u_in: np.ndarray | None = None  # (N,) float64, from snapshot attrs
     point_id: list[str] = field(default_factory=list)
     step: list[int] = field(default_factory=list)
 
@@ -175,8 +188,11 @@ def load_exact_cd_per_point(
 
 
 def _point_re(drag_dir: str | Path, point_id: str) -> float:
-    return float(json.loads((Path(drag_dir) / "points" / point_id / "status.json").read_text())
-                 ["params"]["re"])
+    return float(
+        json.loads((Path(drag_dir) / "points" / point_id / "status.json").read_text())["params"][
+            "re"
+        ]
+    )
 
 
 def build_drag_split(
@@ -191,17 +207,25 @@ def build_drag_split(
 
     Labels join either by point id (``cd_by_point`` — required when Re
     repeats across points, e.g. a Re × u_in grid) or by Reynolds number
-    (``cd_by_re``, single-parameter campaigns).
+    (``cd_by_re``, single-parameter campaigns). With
+    ``spec.velocity_scale`` the velocity channels are divided by the
+    point's ``u_in`` (scale-invariant inputs); ``split.u_in`` carries the
+    per-row inflow velocity either way.
     """
     if cd_by_re is None and cd_by_point is None:
         raise ValueError("provide cd_by_re or cd_by_point")
     spec = spec or PlaneSampleSpec()
+    vel_idx = tuple(i for i, ch in enumerate(spec.channels) if ch in ("ux", "uy", "uz"))
     root = Path(fields_dir) / "points"
-    xs, cds, res, pids, steps = [], [], [], [], []
+    xs, cds, res, u_ins, pids, steps = [], [], [], [], [], []
     for pid in point_ids:
         h5 = root / pid / "fields.h5"
         with_batch = read_plane_snapshot(h5, spec.steps[0], spec.channels, spec.plane)
         re = float(_snapshot_attr(h5, "re"))
+        u_in = float(_snapshot_attr(h5, "u_in"))
+        if spec.velocity_scale and vel_idx:
+            with_batch = with_batch.copy()
+            with_batch[list(vel_idx)] /= np.float32(u_in)
         if cd_by_point is not None:
             if pid not in cd_by_point:
                 raise KeyError(f"no exact C_D for point {pid}")
@@ -216,15 +240,20 @@ def build_drag_split(
                 if step == spec.steps[0]
                 else read_plane_snapshot(h5, step, spec.channels, spec.plane)
             )
+            if spec.velocity_scale and vel_idx and step != spec.steps[0]:
+                plane = plane.copy()
+                plane[list(vel_idx)] /= np.float32(u_in)
             xs.append(plane)
             cds.append(cd)
             res.append(re)
+            u_ins.append(u_in)
             pids.append(pid)
             steps.append(step)
     return DragSplit(
         x=np.stack(xs),
         cd=np.asarray(cds, dtype=np.float64),
         re=np.asarray(res, dtype=np.float64),
+        u_in=np.asarray(u_ins, dtype=np.float64),
         point_id=pids,
         step=steps,
     )
@@ -483,9 +512,7 @@ def power_law_predict(coeffs: tuple[float, float], re: np.ndarray) -> np.ndarray
 # ---------------------------------------------------------------------------
 
 
-def save_drag_regressor(
-    model: FNODragRegressor, norm: DragNorm, path: str | Path
-) -> Path:
+def save_drag_regressor(model: FNODragRegressor, norm: DragNorm, path: str | Path) -> Path:
     """Serialize model weights + arch + normalisation (``.pt`` + ``.pt.json``)."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
