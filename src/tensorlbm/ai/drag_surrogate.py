@@ -69,6 +69,18 @@ class PlaneSampleSpec:
     channels; labels are unaffected either way.
     """
 
+    param_names: tuple[str, ...] = ()
+    """Per-point scalar conditioning parameters read from snapshot attrs.
+
+    Geometry-axis campaigns store e.g. ``sail_scale`` / ``fin_scale`` as
+    snapshot attributes; naming them here feeds them to the surrogate head
+    as extra scalar inputs (log10 + train-split standardisation, see
+    :class:`ParamNorm`).  The wake plane alone may under-determine these
+    (similar wakes, different appendage scales at the resolution of the
+    plane sample), so conditioning is the explicit route.  Empty (default)
+    keeps the plane-only model of B1-ML/B1-3 unchanged.
+    """
+
 
 @dataclass
 class DragSplit:
@@ -78,6 +90,8 @@ class DragSplit:
     cd: np.ndarray  # (N,) float64 — exact C_D (per point, repeated per step)
     re: np.ndarray  # (N,) float64
     u_in: np.ndarray | None = None  # (N,) float64, from snapshot attrs
+    params: np.ndarray | None = None  # (N, K) raw attr values, columns = spec.param_names
+    param_names: tuple[str, ...] = ()  # column labels for ``params``
     point_id: list[str] = field(default_factory=list)
     step: list[int] = field(default_factory=list)
 
@@ -210,19 +224,23 @@ def build_drag_split(
     (``cd_by_re``, single-parameter campaigns). With
     ``spec.velocity_scale`` the velocity channels are divided by the
     point's ``u_in`` (scale-invariant inputs); ``split.u_in`` carries the
-    per-row inflow velocity either way.
+    per-row inflow velocity either way.  ``spec.param_names`` collects the
+    named snapshot attrs per point into ``split.params`` (geometry
+    conditioning, see :class:`ParamNorm`).
     """
     if cd_by_re is None and cd_by_point is None:
         raise ValueError("provide cd_by_re or cd_by_point")
     spec = spec or PlaneSampleSpec()
     vel_idx = tuple(i for i, ch in enumerate(spec.channels) if ch in ("ux", "uy", "uz"))
     root = Path(fields_dir) / "points"
-    xs, cds, res, u_ins, pids, steps = [], [], [], [], [], []
+    xs, cds, res, u_ins, pids, steps, prm = [], [], [], [], [], [], []
     for pid in point_ids:
         h5 = root / pid / "fields.h5"
         with_batch = read_plane_snapshot(h5, spec.steps[0], spec.channels, spec.plane)
         re = float(_snapshot_attr(h5, "re"))
         u_in = float(_snapshot_attr(h5, "u_in"))
+        if spec.param_names:
+            prm.append([float(_snapshot_attr(h5, name)) for name in spec.param_names])
         if spec.velocity_scale and vel_idx:
             with_batch = with_batch.copy()
             with_batch[list(vel_idx)] /= np.float32(u_in)
@@ -254,6 +272,8 @@ def build_drag_split(
         cd=np.asarray(cds, dtype=np.float64),
         re=np.asarray(res, dtype=np.float64),
         u_in=np.asarray(u_ins, dtype=np.float64),
+        params=np.asarray(prm, dtype=np.float64) if prm else None,
+        param_names=tuple(spec.param_names),
         point_id=pids,
         step=steps,
     )
@@ -305,21 +325,67 @@ def fit_norm(split: DragSplit, transform: str = "log10") -> DragNorm:
     )
 
 
-class DragPlaneDataset(Dataset):
-    """Normalised (plane, target) pairs; targets are standardised C_D."""
+@dataclass
+class ParamNorm:
+    """Train-split statistics for the scalar conditioning parameters.
 
-    def __init__(self, split: DragSplit, norm: DragNorm) -> None:
+    Each column is log10-transformed (all conditioning params are positive
+    scale factors — sail/fin scale, u_in, ...; the log map is what makes
+    the standardisation uniform across magnitudes) and then standardised.
+    """
+
+    mean: list[float]  # per column, of log10(params)
+    std: list[float]  # per column, of log10(params)
+    names: tuple[str, ...] = ()
+
+    def encode(self, params: np.ndarray) -> np.ndarray:
+        p = np.log10(np.asarray(params, dtype=np.float64))
+        return (p - np.asarray(self.mean)) / np.asarray(self.std)
+
+    def decode(self, z: np.ndarray) -> np.ndarray:
+        z = np.asarray(z, dtype=np.float64) * np.asarray(self.std) + np.asarray(self.mean)
+        return 10.0**z
+
+
+def fit_param_norm(split: DragSplit) -> ParamNorm | None:
+    """Fit :class:`ParamNorm` on a (train) split; ``None`` if no params."""
+    if split.params is None:
+        return None
+    p = np.log10(split.params)
+    return ParamNorm(
+        mean=[float(v) for v in p.mean(axis=0)],
+        std=[float(max(v, 1e-8)) for v in p.std(axis=0)],
+        names=tuple(split.param_names),
+    )
+
+
+class DragPlaneDataset(Dataset):
+    """Normalised (plane, target) pairs; targets are standardised C_D.
+
+    When ``split.params`` is set (geometry conditioning) items are
+    ``(plane, params, target)`` with params standardised by *pnorm*
+    (fit on the train split); otherwise the B1-ML/B1-3 two-tuple.
+    """
+
+    def __init__(self, split: DragSplit, norm: DragNorm, pnorm: ParamNorm | None = None) -> None:
         mean = torch.as_tensor(norm.channel_mean).view(1, -1, 1, 1)
         std = torch.as_tensor(norm.channel_std).view(1, -1, 1, 1)
         self.x = torch.as_tensor((split.x - mean.numpy()) / std.numpy(), dtype=torch.float32)
         self.y = torch.as_tensor(norm.encode_target(split.cd), dtype=torch.float32)
         self.cd = split.cd
         self.re = split.re
+        self.p = (
+            torch.as_tensor(pnorm.encode(split.params), dtype=torch.float32)
+            if split.params is not None and pnorm is not None
+            else None
+        )
 
     def __len__(self) -> int:
         return int(self.y.shape[0])
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx: int):
+        if self.p is not None:
+            return self.x[idx], self.p[idx], self.y[idx]
         return self.x[idx], self.y[idx]
 
 
@@ -339,6 +405,8 @@ class FNODragArch:
     modes_x: int = 12
     mlp_hidden: int = 128
     activation: str = "gelu"
+    n_params: int = 0
+    """Scalar conditioning inputs concatenated after pooling (B1-7)."""
 
 
 class FNODragRegressor(nn.Module):
@@ -346,7 +414,10 @@ class FNODragRegressor(nn.Module):
 
     Maps ``(B, in_channels, ny, nx)`` plane snapshots to one scalar per sample
     (standardised C_D) via the FNO2d Fourier-layer stack followed by global
-    spatial mean pooling and a two-layer MLP head.
+    spatial mean pooling and a two-layer MLP head.  With
+    ``arch.n_params > 0`` a ``(B, n_params)`` conditioning vector
+    (standardised ``ParamNorm`` output) is concatenated between pooling and
+    the head — the geometry-aware variant of B1-7.
     """
 
     def __init__(self, arch: FNODragArch | None = None) -> None:
@@ -362,16 +433,20 @@ class FNODragRegressor(nn.Module):
             [nn.Conv2d(a.width, a.width, kernel_size=1) for _ in range(a.n_layers)]
         )
         self.head = nn.Sequential(
-            nn.Linear(a.width, a.mlp_hidden),
+            nn.Linear(a.width + a.n_params, a.mlp_hidden),
             nn.GELU(),
             nn.Linear(a.mlp_hidden, 1),
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, p: torch.Tensor | None = None) -> torch.Tensor:
         x = self.lift(x)
         for spec, pw in zip(self.spectral, self.pointwise):
             x = self._act(spec(x) + pw(x))
         x = x.mean(dim=(2, 3))  # global pool over the plane
+        if self.arch.n_params:
+            if p is None:
+                raise ValueError("arch.n_params > 0 requires conditioning input p")
+            x = torch.cat([x, p.to(x.dtype)], dim=1)
         return self.head(x).squeeze(-1)
 
 
@@ -397,6 +472,7 @@ class DragTrainResult:
     norm: DragNorm
     history: dict[str, list[float]]
     best_epoch: int
+    pnorm: ParamNorm | None = None  # set when geometry conditioning was used
 
 
 def _resolve_device(device: str | None) -> torch.device:
@@ -421,8 +497,15 @@ def train_drag_surrogate(
         )
     torch.manual_seed(config.seed)
     norm = fit_norm(train_split, transform)
-    train_ds = DragPlaneDataset(train_split, norm)
-    val_ds = DragPlaneDataset(val_split, norm)
+    pnorm = fit_param_norm(train_split)
+    if pnorm is not None and arch.n_params != train_split.params.shape[1]:
+        raise ValueError(
+            f"arch.n_params={arch.n_params} != conditioning columns {train_split.params.shape[1]}"
+        )
+    if pnorm is None and arch.n_params:
+        raise ValueError("arch.n_params > 0 but the splits carry no params (spec.param_names?)")
+    train_ds = DragPlaneDataset(train_split, norm, pnorm)
+    val_ds = DragPlaneDataset(val_split, norm, pnorm)
     device = _resolve_device(config.device)
     model = FNODragRegressor(arch).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
@@ -430,23 +513,25 @@ def train_drag_surrogate(
     train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=min(config.batch_size, len(val_ds)))
 
+    def _batch_loss(batch) -> torch.Tensor:
+        xb, pb, yb = batch if len(batch) == 3 else (batch[0], None, batch[1])
+        pred = model(xb.to(device), pb.to(device) if pb is not None else None)
+        return nn.functional.mse_loss(pred, yb.to(device))
+
     history: dict[str, list[float]] = {"train": [], "val": []}
     best_val, best_epoch, best_state = float("inf"), -1, None
     for epoch in range(config.epochs):
         model.train()
         losses = []
-        for xb, yb in train_loader:
-            loss = nn.functional.mse_loss(model(xb.to(device)), yb.to(device))
+        for batch in train_loader:
+            loss = _batch_loss(batch)
             opt.zero_grad()
             loss.backward()
             opt.step()
             losses.append(loss.item())
         model.eval()
         with torch.no_grad():
-            val_losses = [
-                float(nn.functional.mse_loss(model(xb.to(device)), yb.to(device)))
-                for xb, yb in val_loader
-            ]
+            val_losses = [float(_batch_loss(batch)) for batch in val_loader]
         history["train"].append(float(np.mean(losses)))
         history["val"].append(float(np.mean(val_losses)))
         if history["val"][-1] < best_val - 1e-12:
@@ -456,7 +541,9 @@ def train_drag_surrogate(
             break
     if best_state is not None:
         model.load_state_dict(best_state)
-    return DragTrainResult(model=model, norm=norm, history=history, best_epoch=best_epoch)
+    return DragTrainResult(
+        model=model, norm=norm, history=history, best_epoch=best_epoch, pnorm=pnorm
+    )
 
 
 @torch.no_grad()
@@ -464,16 +551,25 @@ def predict_cd(
     model: FNODragRegressor,
     split: DragSplit,
     norm: DragNorm,
+    pnorm: ParamNorm | None = None,
     *,
     device: str | None = None,
     batch_size: int = 64,
 ) -> np.ndarray:
-    """Predict raw (un-normalised) C_D for a split."""
+    """Predict raw (un-normalised) C_D for a split.
+
+    ``pnorm`` is required when the model was trained with conditioning
+    (``arch.n_params > 0``); it comes back from :func:`train_drag_surrogate`
+    or :func:`load_drag_regressor`.
+    """
     device = _resolve_device(device)
     model = model.to(device).eval()
-    ds = DragPlaneDataset(split, norm)
+    ds = DragPlaneDataset(split, norm, pnorm)
     loader = DataLoader(ds, batch_size=min(batch_size, len(ds)))
-    ys = [model(xb.to(device)).cpu().numpy() for xb, _ in loader]
+    ys = []
+    for batch in loader:
+        xb, pb = (batch[0], batch[1]) if len(batch) == 3 else (batch[0], None)
+        ys.append(model(xb.to(device), pb.to(device) if pb is not None else None).cpu().numpy())
     return norm.decode_target(np.concatenate(ys))
 
 
@@ -512,8 +608,13 @@ def power_law_predict(coeffs: tuple[float, float], re: np.ndarray) -> np.ndarray
 # ---------------------------------------------------------------------------
 
 
-def save_drag_regressor(model: FNODragRegressor, norm: DragNorm, path: str | Path) -> Path:
-    """Serialize model weights + arch + normalisation (``.pt`` + ``.pt.json``)."""
+def save_drag_regressor(
+    model: FNODragRegressor,
+    norm: DragNorm,
+    path: str | Path,
+    pnorm: ParamNorm | None = None,
+) -> Path:
+    """Serialize model weights + arch + normalisations (``.pt`` + ``.pt.json``)."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), p)
@@ -521,20 +622,27 @@ def save_drag_regressor(model: FNODragRegressor, norm: DragNorm, path: str | Pat
         "model_class": "FNODragRegressor",
         "arch": asdict(model.arch),
         "norm": asdict(norm),
+        "param_norm": asdict(pnorm) if pnorm is not None else None,
         "format_version": 1,
     }
     p.with_suffix(p.suffix + ".json").write_text(json.dumps(meta, indent=2))
     return p
 
 
-def load_drag_regressor(path: str | Path) -> tuple[FNODragRegressor, DragNorm]:
-    """Load a surrogate saved by :func:`save_drag_regressor` (eval mode)."""
+def load_drag_regressor(path: str | Path) -> tuple[FNODragRegressor, DragNorm, ParamNorm | None]:
+    """Load a surrogate saved by :func:`save_drag_regressor` (eval mode).
+
+    Returns ``(model, norm, pnorm)``; ``pnorm`` is ``None`` for artifacts
+    without conditioning (the pre-B1-7 format).
+    """
     p = Path(path)
     meta = json.loads(p.with_suffix(p.suffix + ".json").read_text())
     model = FNODragRegressor(FNODragArch(**meta["arch"]))
     model.load_state_dict(torch.load(p, map_location="cpu", weights_only=True))
     model.eval()
-    return model, DragNorm(**meta["norm"])
+    raw = meta.get("param_norm")
+    pnorm = ParamNorm(**raw) if raw else None
+    return model, DragNorm(**meta["norm"]), pnorm
 
 
 # ---------------------------------------------------------------------------
@@ -569,7 +677,7 @@ def run_drag_surrogate_study(
         for name, pids in split_points.items()
     }
     result = train_drag_surrogate(splits["train"], splits["val"], arch, config, transform)
-    save_drag_regressor(result.model, result.norm, out / "model.pt")
+    save_drag_regressor(result.model, result.norm, out / "model.pt", result.pnorm)
 
     coeffs = power_law_fit(splits["train"].re, splits["train"].cd)
     cd_mean = float(splits["train"].cd.mean())
@@ -577,17 +685,28 @@ def run_drag_surrogate_study(
     predictions: dict[str, dict[str, np.ndarray]] = {}
     for name, split in splits.items():
         preds = {
-            "fno": predict_cd(result.model, split, result.norm),
+            "fno": predict_cd(result.model, split, result.norm, result.pnorm),
             "power_law": power_law_predict(coeffs, split.re),
             "mean": np.full(len(split), cd_mean),
         }
         predictions[name] = preds
         metrics[name] = {k: regression_metrics(split.cd, v) for k, v in preds.items()}
 
+    param_cols = list(spec.param_names)
     with open(out / "predictions.csv", "w", newline="") as fh:
         writer = csv.writer(fh)
         writer.writerow(
-            ["split", "point_id", "step", "re", "cd_true", "cd_fno", "cd_power_law", "cd_mean"]
+            [
+                "split",
+                "point_id",
+                "step",
+                "re",
+                *param_cols,
+                "cd_true",
+                "cd_fno",
+                "cd_power_law",
+                "cd_mean",
+            ]
         )
         for name, split in splits.items():
             for i, pid in enumerate(split.point_id):
@@ -597,6 +716,7 @@ def run_drag_surrogate_study(
                         pid,
                         split.step[i],
                         float(split.re[i]),
+                        *(float(split.params[i, j]) for j in range(len(param_cols))),
                         float(split.cd[i]),
                         float(predictions[name]["fno"][i]),
                         float(predictions[name]["power_law"][i]),
@@ -612,6 +732,7 @@ def run_drag_surrogate_study(
         "arch": asdict(result.model.arch),
         "config": asdict(config or DragTrainConfig()),
         "power_law": {"log10_a": coeffs[0], "exponent": coeffs[1]},
+        "param_norm": asdict(result.pnorm) if result.pnorm else None,
         "best_epoch": result.best_epoch,
         "n_points": {k: len(v.point_id) for k, v in splits.items()},
         "metrics": metrics,
