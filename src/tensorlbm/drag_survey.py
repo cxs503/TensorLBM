@@ -25,6 +25,20 @@ the frontal projection of the solid, and an equivalent skin-friction
 ``Cf_equiv = C_D * S_proj / S_wet`` for comparison against ITTC-1957 /
 Blasius lines (both far outside their validity range at lattice Re —
 use as scaling context only).
+
+Caveat
+------
+``plane_drag`` is a momentum-deficit *estimator*, not an exact force
+measurement: it depends on a far-field reference state, neglects the
+static-pressure term, and assumes a developed far-field wake.  In
+confining configurations it can be severely biased -- on the
+``suboff_n128`` Re sweep (Re 50-800; see
+``docs/benchmarks/suboff_cd_re_20260821.md``) it underestimated C_D by a
+factor 2.9-7.9 that grows with Re and shifted the log-log slope from
+-0.70 to -0.89.  For quantitative drag use the exact control-volume
+observer in :mod:`tensorlbm.scan_drag`
+(``ScanPlan(drag_survey=DragSurveySpec(...))``); keep this module for
+post-hoc surveys of legacy snapshot-only datasets, read as qualitative.
 """
 
 from __future__ import annotations
