@@ -244,8 +244,11 @@ class ScanPlan:
         Swept parameters (continuous ranges or discrete levels).
     method, n_points, seed:
         DoE sampler settings forwarded to
-        :func:`tensorlbm.doe.generate_doe`.  ``n_points`` is the request;
-        the realised count is ``len(points)`` (factorial/CCD derive it).
+        :func:`tensorlbm.doe.generate_doe`.  ``n_points`` is the request
+        passed to the sampler (ignored by ``full_factorial`` /
+        ``central_composite``, which derive their count from the level
+        structure); after construction it is always reconciled to the
+        realised count ``len(points)``.
     steps:
         LBM steps per point.
     snapshot_every:
@@ -298,6 +301,13 @@ class ScanPlan:
         _validate_code_sha(self.code_sha)
         if self.points and self.points[-1].index != len(self.points) - 1:
             raise ValueError("points must be indexed 0..n-1 in order")
+        # ``n_points`` is metadata about the realised design matrix, not
+        # the sampler request: ``full_factorial``/``central_composite``
+        # ignore the request and derive their count from the levels.
+        # Reconcile so ``plan.n_points``/``plan.json`` never disagree
+        # with ``len(points)`` (also heals legacy plans on ``from_dict``).
+        if self.points:
+            object.__setattr__(self, "n_points", len(self.points))
 
     # -- construction ------------------------------------------------------
 
@@ -324,6 +334,15 @@ class ScanPlan:
         Determinism: identical ``(variables, method, n_points, seed)``
         yields the identical design matrix (LHS seeds ``random.Random``;
         Sobol is a fixed low-discrepancy sequence).
+
+        ``n_points`` is the sampler *request*: authoritative for
+        ``latin_hypercube``/``sobol``, ignored by ``full_factorial`` and
+        ``central_composite`` (their count is the product of level
+        counts / the CCD construction).  The stored ``plan.n_points``
+        always equals ``len(plan.points)`` — a mismatching request is
+        silently reconciled to the realised count rather than rejected,
+        mirroring :func:`tensorlbm.doe.generate_doe`'s documented
+        "ignored" contract for ``n_samples``.
         """
         from .doe import DoEVariable, generate_doe
 
