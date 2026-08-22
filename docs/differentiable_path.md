@@ -150,8 +150,9 @@ all default `None` = fully periodic, bit-for-bit the original chain):
   recursion on the previous outlet face is chained automatically inside
   `rollout` (seeded from the initial condition; single steps take
   `outlet_prev`).
-* `WallSpec(method="periodic"|"free-slip"|"freestream", rho0, ux, uy, uz)` —
-  one spec drives all four lateral faces. `"free-slip"` is on-node specular
+* `WallSpec(method="periodic"|"free-slip"|"freestream", rho0, ux, uy, uz,
+  overrides=None)` — the spec's own method drives every lateral face that is
+  not overridden (all four by default). `"free-slip"` is on-node specular
   reflection: the unknown populations on each face take their mirror
   partner (`f[q] = f[FLIP[q]]`, index-level swap) — wall-normal velocity
   cancels pairwise to machine precision, tangential momentum untouched,
@@ -159,6 +160,35 @@ all default `None` = fully periodic, bit-for-bit the original chain):
   `f_eq(rho0, u_inf)` (the equilibrium-inlet construction). Faces close in
   the order y=0, y=ny-1, z=0, z=nz-1 *before* the inlet/outlet; on
   edge/corner lines the later closure wins (last write wins).
+
+  Per-face control (A6+++): `overrides` maps face keys to their own
+  `WallSpec`; unlisted faces keep the spec itself as their default closure.
+  Face keys are the outward normals of the lateral box:
+
+  | key | plane | | key | plane |
+  |---|---|---|---|---|
+  | `"-y"` | y = 0 | | `"-z"` | z = 0 |
+  | `"+y"` | y = ny-1 | | `"+z"` | z = nz-1 |
+
+  Typical layouts: `WallSpec(method="free-slip",
+  overrides={"+z": WallSpec(method="freestream", ux=u_inf)})` — slip walls
+  with a far-field top (wind-tunnel floor); `WallSpec(method="periodic",
+  overrides={"+y": WallSpec(...)})` single-face patches; asymmetric
+  top/bottom closures (`"-z"` / `"+z"` with different methods or
+  free-stream values). Override
+  specs may not nest `overrides` (fails at construction); a face overridden
+  to `"periodic"` is a no-op like the shared default. The face order,
+  edge/corner last-write-wins policy and the inlet/outlet phase are
+  unchanged; `overrides=None` (or absent) keeps the A6++ shared-closure
+  operator **bit-for-bit** (verified `torch.equal` against base 79b17f3 on
+  18 fp64/fp32 configs: plain rollouts, uniform free-slip/free-stream and
+  the full bounded box incl. checkpointing and probes).
+
+  `WallSpec.to_dict()` / `WallSpec.from_dict()` serialise the spec
+  (tensor fields flattened to their numeric value — the graph is not
+  serialisable); payloads without an `"overrides"` key (pre-A6+++)
+  load unchanged, missing numeric fields fall back to the defaults, and
+  unknown keys are ignored.
 
 `tau` may be a graph-connected 0-dim tensor; `collide` is a slot — the
 default is single-component BGK (`collide_bgk3d`), and any differentiable
@@ -223,6 +253,26 @@ pairs); the summed mean |u_n| over the four faces is **2.0e-17** with
 free-slip walls vs **6.6e-3** with the periodic wrap — the side pollution
 of the periodic baseline, quantitatively.
 
+Per-face walls (A6+++, same grid/loss, walls = free-slip with a
+`"+z"` free-stream override carrying the learnable far-field speed
+`u_inf` = 0.06 and a periodic `"-z"` face, `tests/test_autograd_path.py`
+§9): explicit per-face replicas of one closure reproduce the shared-spec
+operator `torch.equal`-exactly; the mixed box matches an independent
+face-by-face replay built from the hand-derived mirror tables; on an
+asymmetric initial field (uy(z), uz(y), phase-shifted so no mirror symmetry
+can fake a pass) the slip faces hold |u_n| < 1e-14 with tangential momentum
+retained at its O(amplitude) level, the free-stream face sits at its own
+`(rho0, u_inf)` to 1e-12 and the periodic face keeps the wrap (equal to the
+fully periodic chain off the edge lines). Gradient through the override:
+
+| gradient | autograd | finite difference | relative error |
+|---|---|---|---|
+| dLoss/du_inf (free-stream `"+z"` override) | 2.626131e-04 | 2.626131e-04 | **1.4e-09** |
+
+Checkpointed rollouts reproduce the plain gradients with the mixed walls
+active, and `to_dict`/`from_dict` round-trip the spec (including nested
+per-face overrides) while pre-A6+++ payloads load unchanged.
+
 ### Known limits of this module
 
 * **Stationary** mask only; moving obstacles and BFL interpolated
@@ -234,8 +284,10 @@ of the periodic baseline, quantitatively.
   velocity only (no Zou/He tangential reconstruction, no turbulent /
   synthetic inflow); the convective outlet uses one uniform `U_c` on the
   outlet plane alone (first-order upwind, 0 < U_c < 1; no sponge, no
-  per-direction convective speeds); one `WallSpec` drives all four lateral
-  faces (no per-face or axis-specific control, e.g. no lid); on the
+  per-direction convective speeds); per-face wall control (A6+++) lets each
+  lateral face pick one of the three existing closures independently — no
+  new physics (no moving wall/lid method, no per-face parameters beyond
+  the free-stream values); on the
   edge/corner lines the later-applied closure wins on doubly-unknown
   directions (last write wins, measured corner-line |u_n| ~ 1e-3 vs
   machine-zero face interiors); free-slip walls are on-node (wall on the
@@ -251,13 +303,17 @@ of the periodic baseline, quantitatively.
 
 ### Entry points (new)
 
-* `tests/test_autograd_path.py` — 40 cases: value contract vs manual
+* `tests/test_autograd_path.py` — 49 cases: value contract vs manual
   composition, gradient existence through the masked chain, per-dtype FD
   cross-checks (τ, f0 entries, drag probe), τ and C_s solver-in-the-loop
   recovery, checkpoint-vs-plain gradient equality, CPU↔CUDA parity, the
-  bounded inlet/outlet contract of A6+ (§7), and the A6++ full-box contract
+  bounded inlet/outlet contract of A6+ (§7), the A6++ full-box contract
   (§8: default-path bitwise identity, wall/outlet value contracts, FD
   through all six faces incl. dU_c, checkpoint/CUDA consistency, and the
-  300-step sphere physics vs the periodic-sides baseline).
+  300-step sphere physics vs the periodic-sides baseline), and the A6+++
+  per-face wall contract (§9: uniform-override bitwise identity, mixed
+  value/physics contracts on an asymmetric field, dU_inf FD cross-check,
+  checkpoint equality, to_dict/from_dict round-trip incl. pre-A6+++ payloads
+  and spec validation).
 * `examples/solver_in_the_loop.py` — the four identification runs above
   (`--mode {tau,cs}`, `--observable {field,drag}`).
