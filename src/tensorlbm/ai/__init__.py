@@ -29,6 +29,25 @@ from .dataset import (
     save_dataset_pt,
     strain_rate_tensor_2d,
 )
+from .drag_surrogate import (
+    DragNorm,
+    DragSplit,
+    DragTrainConfig,
+    FNODragArch,
+    FNODragRegressor,
+    PlaneSampleSpec,
+    build_drag_split,
+    load_drag_regressor,
+    load_exact_cd,
+    load_exact_cd_per_point,
+    power_law_fit,
+    power_law_predict,
+    predict_cd,
+    regression_metrics,
+    run_drag_surrogate_study,
+    save_drag_regressor,
+    train_drag_surrogate,
+)
 from .fno import FNO2d, FNO2dArch, load_fno2d, save_fno2d
 from .inference import collide_ai_les_bgk, predict_nu_t_2d, predict_tau_eff_2d
 from .model import EddyViscosityMLP, load_model, save_model
@@ -74,6 +93,24 @@ __all__ = [
     "FNO2d",
     "save_fno2d",
     "load_fno2d",
+    # field-to-drag surrogate
+    "FNODragArch",
+    "FNODragRegressor",
+    "DragNorm",
+    "DragSplit",
+    "DragTrainConfig",
+    "PlaneSampleSpec",
+    "build_drag_split",
+    "load_exact_cd",
+    "load_exact_cd_per_point",
+    "power_law_fit",
+    "power_law_predict",
+    "predict_cd",
+    "regression_metrics",
+    "run_drag_surrogate_study",
+    "save_drag_regressor",
+    "load_drag_regressor",
+    "train_drag_surrogate",
     # train
     "TrainConfig",
     "train_eddy_viscosity_model",
