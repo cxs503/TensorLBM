@@ -1123,27 +1123,22 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula="standard",
         # bound: stair area exceeds the smooth wet area).  The smooth-body
         # continuum friction lies between the two; equal weighting is the
         # simple midpoint (SUBOFF Re=1000 L=96: +0.25% vs Blasius 0.0420).
+        # Implemented by delegating to the 'standard' and 'faces' code
+        # paths and averaging their returned values, so the documented
+        # identity mix50 == 0.5·(standard + faces) holds exactly
+        # (componentwise).  A duplicated inline sum with a different
+        # multiplication order is only equal up to floating-point
+        # re-association, which is visible on components whose exact value
+        # is 0 by symmetry (cancellation residues of order 1e-9 vs terms
+        # of order 1e-2).
         if solid is None:
             raise ValueError("formula='mix50' requires solid mask")
-        if solid.device != ux.device:
-            solid = solid.to(ux.device)
-        mask = mesh.near.float() * mesh.dA
-        std_sum = (
-            2.0 * nu * (ut_x * mask).sum(),
-            2.0 * nu * (ut_y * mask).sum(),
-            2.0 * nu * (ut_z * mask).sum(),
-        )
-        nfx, nfy, nfz = _wall_face_counts(solid)
-        face_sum = (
-            (2.0 * nu * ux * (nfy + nfz)).sum(),
-            (2.0 * nu * uy * (nfx + nfz)).sum(),
-            (2.0 * nu * uz * (nfx + nfy)).sum(),
-        )
-        mix = tuple(0.5 * (std_sum[i] + face_sum[i]) for i in range(3))
+        f_std = drag_friction_integration(f, mesh, dpS, nu, formula="standard")
+        f_fc = drag_friction_integration(f, mesh, dpS, nu, formula="faces", solid=solid)
         return (
-            float(mix[0].item() / dpS),
-            float(mix[1].item() / dpS),
-            float(mix[2].item() / dpS),
+            0.5 * (f_std[0] + f_fc[0]),
+            0.5 * (f_std[1] + f_fc[1]),
+            0.5 * (f_std[2] + f_fc[2]),
         )
     elif formula in ("2nd_order", "central", "lagrange"):
         # Need u_2: tangential velocity at second cell from wall.
