@@ -343,19 +343,14 @@ class WallSpec:
             return
         bad_keys = sorted(set(self.overrides) - set(_FACE_KEYS))
         if bad_keys:
-            raise ValueError(
-                f"wall overrides keys must be among {_FACE_KEYS}, got {bad_keys!r}"
-            )
+            raise ValueError(f"wall overrides keys must be among {_FACE_KEYS}, got {bad_keys!r}")
         for key, spec in self.overrides.items():
             if not isinstance(spec, WallSpec):
                 raise ValueError(
-                    f"wall override for face {key!r} must be a WallSpec, "
-                    f"got {type(spec).__name__}"
+                    f"wall override for face {key!r} must be a WallSpec, got {type(spec).__name__}"
                 )
             if spec.overrides is not None:
-                raise ValueError(
-                    f"wall override for face {key!r} cannot carry nested overrides"
-                )
+                raise ValueError(f"wall override for face {key!r} cannot carry nested overrides")
 
     def to_dict(self) -> dict[str, object]:
         """Plain-Python payload of this spec (JSON-compatible types).
@@ -374,9 +369,7 @@ class WallSpec:
             "uz": _number(self.uz),
         }
         if self.overrides is not None:
-            payload["overrides"] = {
-                key: spec.to_dict() for key, spec in self.overrides.items()
-            }
+            payload["overrides"] = {key: spec.to_dict() for key, spec in self.overrides.items()}
         return payload
 
     @classmethod
@@ -389,15 +382,11 @@ class WallSpec:
         unknown extra keys are ignored.
         """
         kwargs = {
-            name: payload[name]
-            for name in ("method", "rho0", "ux", "uy", "uz")
-            if name in payload
+            name: payload[name] for name in ("method", "rho0", "ux", "uy", "uz") if name in payload
         }
         overrides = payload.get("overrides")
         if overrides is not None:
-            kwargs["overrides"] = {
-                key: cls.from_dict(spec) for key, spec in overrides.items()
-            }
+            kwargs["overrides"] = {key: cls.from_dict(spec) for key, spec in overrides.items()}
         return cls(**kwargs)
 
 
@@ -547,19 +536,14 @@ def _apply_walls_per_face(f_str: torch.Tensor, walls: WallSpec) -> torch.Tensor:
     resolved = [(key, walls.overrides.get(key, walls)) for key in _FACE_KEYS]
     if all(spec.method == "periodic" for _key, spec in resolved):
         return f_str  # every face keeps the periodic wrap: bit-exact no-op
-    flips = {
-        table: torch.tensor(table, device=f_str.device)
-        for table in set(_FACE_FLIP.values())
-    }
+    flips = {table: torch.tensor(table, device=f_str.device) for table in set(_FACE_FLIP.values())}
     f = f_str
     for key, spec in resolved:
         f = _close_face(f, key, spec, flips[_FACE_FLIP[key]])
     return f
 
 
-def _close_face(
-    f: torch.Tensor, key: str, spec: WallSpec, flip: torch.Tensor
-) -> torch.Tensor:
+def _close_face(f: torch.Tensor, key: str, spec: WallSpec, flip: torch.Tensor) -> torch.Tensor:
     """Close one lateral face *key* of the current chain state per *spec*.
 
     ``"periodic"`` returns *f* unchanged (no-op).  ``"free-slip"`` mirrors
@@ -577,9 +561,7 @@ def _close_face(
         plane = f[:, :, -1:] if dim == 2 else f[:, -1:]
 
     if spec.method == "free-slip":
-        plane_new = torch.where(
-            _dir_selector(_FACE_UNKNOWN[key], f.device), plane[flip], plane
-        )
+        plane_new = torch.where(_dir_selector(_FACE_UNKNOWN[key], f.device), plane[flip], plane)
     else:  # "freestream": whole face reset to f_eq(rho0, u_inf) of this spec
         device, dtype = f.device, f.dtype
         feq = equilibrium3d(
