@@ -83,8 +83,13 @@ def _write_campaign(fields_dir: Path, drag_dir: Path, *, with_sidecar: bool = Tr
         )
         if with_sidecar:
             samples = [
-                {"step": 25 * (i + 1), "force_x": force, "force_y": 0.0, "force_z": 0.0,
-                 "force_abs": force}
+                {
+                    "step": 25 * (i + 1),
+                    "force_x": force,
+                    "force_y": 0.0,
+                    "force_z": 0.0,
+                    "force_abs": force,
+                }
                 for i in range(40)
             ]
             (drag_dir / "points" / point_id / "drag_history.json").write_text(
@@ -102,15 +107,11 @@ def campaign(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def _tiny_arch() -> FNODragArch:
-    return FNODragArch(
-        in_channels=3, width=8, n_layers=2, modes_y=4, modes_x=6, mlp_hidden=16
-    )
+    return FNODragArch(in_channels=3, width=8, n_layers=2, modes_y=4, modes_x=6, mlp_hidden=16)
 
 
 def _tiny_config() -> DragTrainConfig:
-    return DragTrainConfig(
-        epochs=15, batch_size=4, lr=5e-3, patience=100, seed=0, device="cpu"
-    )
+    return DragTrainConfig(epochs=15, batch_size=4, lr=5e-3, patience=100, seed=0, device="cpu")
 
 
 def test_load_exact_cd_matches_power_law(campaign) -> None:
@@ -192,11 +193,29 @@ def test_per_point_join_when_re_repeats(campaign) -> None:
     assert set(per_point) == set(POINT_IDS)
     assert per_point["p0000"] != per_point["p0001"]  # same Re, distinct labels
     split = build_drag_split(
-        fields_dir, point_ids=["p0000", "p0001"], spec=PlaneSampleSpec(steps=(500,)),
+        fields_dir,
+        point_ids=["p0000", "p0001"],
+        spec=PlaneSampleSpec(steps=(500,)),
         cd_by_point=per_point,
     )
     assert split.cd[0] == per_point["p0000"]
     assert split.cd[1] == per_point["p0001"]
+
+
+def test_velocity_scale_divides_velocity_channels_only(campaign) -> None:
+    """velocity_scale=True: ux/uy divided by u_in, rho untouched, labels equal."""
+    fields_dir, drag_dir = campaign
+    cd_by_re = load_exact_cd(drag_dir, fields_dir)
+    raw = build_drag_split(fields_dir, cd_by_re, POINT_IDS[:3], PlaneSampleSpec(steps=(500,)))
+    scaled = build_drag_split(
+        fields_dir, cd_by_re, POINT_IDS[:3], PlaneSampleSpec(steps=(500,), velocity_scale=True)
+    )
+    assert raw.u_in is not None and scaled.u_in is not None
+    assert np.all(raw.u_in == pytest.approx(0.1))
+    np.testing.assert_allclose(scaled.x[:, :2], raw.x[:, :2] / np.float32(0.1), rtol=1e-5)
+    np.testing.assert_array_equal(scaled.x[:, 2:], raw.x[:, 2:])  # rho bitwise untouched
+    np.testing.assert_array_equal(scaled.cd, raw.cd)
+    np.testing.assert_array_equal(scaled.re, raw.re)
 
 
 def test_power_law_fit_recovers_exponent() -> None:
