@@ -588,6 +588,7 @@ def rollout(
     inlet: InletSpec | None = None,
     outlet: OutletSpec | None = None,
     walls: WallSpec | None = None,
+    probe_start: int = 0,
 ) -> torch.Tensor | tuple[torch.Tensor, list[torch.Tensor]]:
     """Roll out :func:`differentiable_step` for *n_steps*, keeping the graph.
 
@@ -622,15 +623,30 @@ def rollout(
             x = nx - 1 (default periodic).
         walls: :class:`WallSpec` lateral closure on the four y/z planes
             (default ``None``: periodic, bit-for-bit).
+        probe_start: First step (0-based) whose probe is collected when
+            ``return_probes=True`` — probes of the startup transient are
+            never materialised.  Default 0 collects every probe
+            (bit-for-bit the historical behaviour).  A windowed observable
+            (e.g. :func:`tensorlbm.autograd_calib.bounded_drag` measuring
+            drag only past the transient) sets ``probe_start`` to its window
+            start, which keeps probe memory proportional to the window
+            instead of the rollout — on long production-scale rollouts that
+            is the difference between the window's few hundred tensors and
+            thousands.
 
     Returns:
         The final distribution; with ``return_probes=True`` a tuple
-        ``(f_final, probes)`` with one probe per step.
+        ``(f_final, probes)`` where ``probes`` holds the probes of steps
+        ``probe_start .. n_steps - 1`` (``n_steps - probe_start`` entries).
     """
+    if return_probes and not 0 <= probe_start < n_steps:
+        raise ValueError(
+            f"probe_start must be in [0, {n_steps}) when return_probes=True, got {probe_start}"
+        )
     probes: list[torch.Tensor] | None = [] if return_probes else None
     convective = outlet is not None and outlet.method == "convective"
     outlet_face: torch.Tensor | None = None  # chained history, graph-connected
-    for _ in range(n_steps):
+    for step in range(n_steps):
         out = _step_for_rollout(
             f,
             tau,
@@ -645,7 +661,7 @@ def rollout(
         )
         if return_probes or convective:
             f, probe = out
-            if return_probes:
+            if return_probes and step >= probe_start:
                 probes.append(probe)
             if convective:
                 outlet_face = probe[..., -1:]
