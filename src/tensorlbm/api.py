@@ -11,11 +11,18 @@ from ._version import __version__
 from .autograd_calib import (
     BoxCase,
     CalibResult,
+    DragHistory,
     DragTarget,
+    HullCase,
     bounded_drag,
     calibrate,
+    cd_from_force,
     cs_power,
+    drag_targets_from_sidecars,
+    evaluate,
+    load_drag_history,
     synthetic_targets,
+    windowed_cd,
 )
 from .autograd_path import differentiable_step, obstacle_force, rollout
 from .boundaries import (
@@ -94,11 +101,18 @@ __all__ = [
     # closure calibration (solver-in-the-loop)
     "BoxCase",
     "CalibResult",
+    "DragHistory",
     "DragTarget",
+    "HullCase",
     "bounded_drag",
     "calibrate",
+    "cd_from_force",
     "cs_power",
+    "drag_targets_from_sidecars",
+    "evaluate",
+    "load_drag_history",
     "synthetic_targets",
+    "windowed_cd",
     "DiagnosticPoint",
     "resolve_device",
     "prepare_run_dir",
