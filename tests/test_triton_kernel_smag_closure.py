@@ -280,3 +280,88 @@ def test_split_wall_trajectory_bitwise(collision):
             fb = apply_mass_correction(fb, m0)
     torch.cuda.synchronize()
     assert torch.equal(fa, fb)
+
+
+# ---------------------------------------------------------------------------
+# 4. the tau0 >= 1.0 regime: closure must be active and match the CPU chain
+# ---------------------------------------------------------------------------
+# Before 2026-08-22 the upper clamp was an absolute tau_eff <= 1.0, on both
+# the CPU helpers (_TAU_EFF_MAX) and the kernel (_TAU_EFF_MAX_K).  Because
+# tau_eff >= tau_mol always, every run at molecular tau >= 1.0 (omega <= 1)
+# collapsed to exactly the no-SGS collision.  These tests pin the fixed
+# regime: tau_mol = 1.0 exactly.
+
+
+def _tau_one_case():
+    """Same probe setup as _make_case but at nu_lb = 1/6 (tau_mol = 1.0)."""
+    solid = sphere_mask(NX, NY, NZ, 12.0, 8.0, 8.0, 4.5, DEV)
+    rho0 = torch.ones((NZ, NY, NX), device=DEV)
+    ux0 = torch.full_like(rho0, U_IN)
+    ux0[solid] = 0.0
+    f0 = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0))
+    torch.manual_seed(20260822)
+    f0 = f0 + 0.05 * torch.randn_like(f0)
+    return solid.to(torch.int8), f0
+
+
+NU_TAU_ONE = 1.0 / 6.0  # tau_mol = 3*nu + 0.5 = 1.0
+
+
+@pytest.mark.parametrize("collision", ["BGK", "CM", "CUMULANT"])
+def test_smag_active_at_molecular_tau_one(collision):
+    """tau_mol = 1.0: Cs > 0 must change the solution (was a silent no-op)."""
+    solid_i8, f0 = _tau_one_case()
+    out_cs0 = triton_fused_obstacle_xfar_les(
+        f0.clone(), NU_TAU_ONE, solid_i8, 0.0, 1.0, collision=collision
+    )
+    out_cs1 = triton_fused_obstacle_xfar_les(
+        f0.clone(), NU_TAU_ONE, solid_i8, CS, 1.0, collision=collision
+    )
+    torch.cuda.synchronize()
+    assert not torch.equal(out_cs0, out_cs1), (
+        f"{collision}: Cs={CS} changed nothing at tau_mol=1.0 — the absolute "
+        "tau_eff<=1.0 clamp disabled the SGS closure (regression)"
+    )
+    # Magnitude bar (as in test #1): Cs=0 binary specialisation alone can
+    # reshuffle reductions by ~1 ULP, so require a physically meaningful
+    # change, not just any bit flip.
+    diff = (out_cs0 - out_cs1).abs().max()
+    assert float(diff) > 1e-6, (
+        f"{collision}: max |Cs=0 - Cs=0.1| = {float(diff):.3e} at tau_mol=1.0 "
+        "too small for an active LES closure"
+    )
+
+
+def test_internal_smag_tau_matches_external_chain_at_tau_one():
+    """BGK probe at tau_mol = 1.0: kernel tau_eff must equal the CPU
+    ``_smagorinsky_tau`` chain, which must itself exceed tau_mol."""
+    solid_i8, f0 = _tau_one_case()
+    solid = solid_i8.bool()
+    out = triton_fused_obstacle_xfar_les(f0.clone(), NU_TAU_ONE, solid_i8, CS, 1.0, collision="BGK")
+    torch.cuda.synchronize()
+
+    h = bounce_back_cells_3d(stream3d(f0), solid)
+    rho, ux, uy, uz = macroscopic3d(h)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    tau0 = 3.0 * NU_TAU_ONE + 0.5
+    tau_ext = _smagorinsky_tau(tau0, _neq_stress_norm_3d(h - feq), rho, CS)
+
+    # The CPU chain must be active in this regime (it returned exactly
+    # tau0 = 1.0 before the clamp fix).
+    strong = (h - feq).abs().amax(0) > 1e-2
+    assert strong.any() and float(tau_ext[strong].min()) > tau0, (
+        "CPU tau_eff chain still clamped to the molecular tau at tau0 = 1.0"
+    )
+
+    fneq = h - feq
+    omega_k = (h - out) / fneq
+    tau_k = 1.0 / omega_k
+    tau_k = torch.where(torch.isfinite(tau_k), tau_k, torch.full_like(tau_k, 1e30))
+
+    rel = (tau_k - tau_ext[None]).abs() / tau_ext.clamp(min=1e-6)[None]
+    probe_ok = fneq.abs() > 1e-3
+    worst = rel[probe_ok]
+    assert float(worst.max()) < 1e-4, (
+        f"kernel-internal tau_eff deviates from the CPU chain at tau0=1.0: "
+        f"max rel diff {float(worst.max()):.3e} over {int(probe_ok.sum())} lanes"
+    )
