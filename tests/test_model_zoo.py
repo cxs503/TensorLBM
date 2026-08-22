@@ -218,12 +218,14 @@ class TestLoaderFamilies:
         src = _save_tiny_drag(tmp_path)
         zoo.register(src, "drag-rt", "drag-surrogate", _LOADER_DRAG)
         result = zoo.load("drag-rt")
-        assert isinstance(result, tuple) and len(result) == 2
-        model, norm = result
+        # (model, norm, pnorm) — pnorm is None for plane-only artifacts
+        assert isinstance(result, tuple) and len(result) == 3
+        model, norm, pnorm = result
         assert isinstance(model, FNODragRegressor)
         assert not model.training
         assert norm.channel_mean == [0.1, 0.2, 0.3]
         assert norm.target_std == pytest.approx(0.2)
+        assert pnorm is None
         with torch.no_grad():
             assert tuple(model(torch.randn(2, 3, 8, 8)).shape) == (2,)
 
