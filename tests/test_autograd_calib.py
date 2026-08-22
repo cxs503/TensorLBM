@@ -9,7 +9,6 @@ import torch
 
 from tensorlbm.autograd_calib import (
     BoxCase,
-    DragTarget,
     bounded_drag,
     calibrate,
     cs_power,
