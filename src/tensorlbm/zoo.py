@@ -703,8 +703,8 @@ class ModelZoo:
            first when in doubt.
 
         Returns whatever the loader returns (e.g. a bare ``nn.Module`` for
-        eddy-viscosity/FNO entries, a ``(model, norm)`` tuple for drag
-        surrogates).
+        eddy-viscosity/FNO entries, a ``(model, norm[, pnorm])`` tuple for
+        drag surrogates — ``pnorm`` carries the B1-7 conditioning stats).
 
         Raises:
             KeyError: No entry with this id.
