@@ -179,6 +179,52 @@ class TestScanPlan:
         assert loaded.n_points == len(loaded.points) == 2
         assert loaded.to_dict() == plan.to_dict()
 
+    def test_categorical_params_roundtrip(self):
+        """String sweep params (e.g. hull_type) survive plan serialisation.
+
+        DoE rows are floats, but directly-constructed points may carry
+        categoricals; metadata/plan writes must not float()-cast them
+        (the B1-4 hull campaign passes hull_type this way).
+        """
+        points = tuple(
+            ScanPoint(
+                index=i,
+                point_id=f"p{i:04d}",
+                run_id=f"hull-p{i:04d}",
+                params={"hull_type": hull, "re": re},
+            )
+            for i, (hull, re) in enumerate(
+                [("bare_hull", 800.0), ("with_sail", 200.0), ("full", 50.0)]
+            )
+        )
+        plan = ScanPlan(
+            scan_id="hull-scan",
+            case="suboff_n128",
+            variables=(ScanVariable(name="re", low=50.0, high=800.0),),
+            method="lhs",
+            n_points=len(points),
+            seed=0,
+            steps=30,
+            snapshot_every=10,
+            code_sha=CODE_SHA,
+            points=points,
+        )
+        data = plan.to_dict()
+        assert data["points"][0]["params"]["hull_type"] == "bare_hull"
+        loaded = ScanPlan.from_dict(data)
+        assert [pp.params["hull_type"] for pp in loaded.points] == [
+            "bare_hull",
+            "with_sail",
+            "full",
+        ]
+        assert loaded.points[2].params["re"] == 50.0
+        # the metadata helper passes numerics through as floats, categoricals verbatim
+        from tensorlbm.scan_runner import _param_meta
+
+        assert _param_meta(800) == 800.0 and isinstance(_param_meta(800), float)
+        assert _param_meta("with_sail") == "with_sail"
+        assert _param_meta(True) is True
+
     def test_lhs_n_points_authoritative(self):
         plan = ScanPlan.generate(
             scan_id="lhs7",

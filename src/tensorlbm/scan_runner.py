@@ -433,7 +433,7 @@ class ScanPlan:
                 index=int(p["index"]),
                 point_id=str(p["point_id"]),
                 run_id=str(p["run_id"]),
-                params={k: float(v) for k, v in p["params"].items()},
+                params={k: _param_meta(v) for k, v in p["params"].items()},
             )
             for p in data["points"]
         )
@@ -557,6 +557,13 @@ def open_catalog(db_path: str | Path, *, timeout: float = 120.0) -> FieldDataCat
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute(f"PRAGMA busy_timeout = {int(timeout * 1000)}")
     return FieldDataCatalog(conn)
+
+
+def _param_meta(value: Any) -> Any:
+    """Numeric sweep params become floats for metadata; categoricals pass."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return value
+    return float(value)
 
 
 def coerce_case_params(case_name: str, params: Mapping[str, Any]) -> dict[str, Any]:
@@ -755,7 +762,8 @@ def run_scan_point(
             "device": str(device),
         }
     )
-    metadata.update({k: float(v) for k, v in point.params.items()})
+    # sweep params may be categorical (e.g. hull_type) — cast numerics only
+    metadata.update({k: _param_meta(v) for k, v in point.params.items()})
 
     field_reporter = FieldSampleReporter(
         h5_path,
@@ -896,7 +904,7 @@ def run_scan_point(
                 state_extra={"mass_target": initial_mass},
                 metadata={
                     "device": str(device),
-                    "params": {k: float(v) for k, v in point.params.items()},
+                    "params": {k: _param_meta(v) for k, v in point.params.items()},
                 },
             )
         if ctx.stop:
