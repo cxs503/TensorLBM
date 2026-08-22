@@ -238,7 +238,30 @@ dist.destroy_process_group()
 
 
 def _visible_gpu_count(gpus: str) -> int:
-    return len([g for g in gpus.split(",") if g.strip()])
+    """Probe how many of the *requested* GPUs truly exist.
+
+    Counting the comma-separated tokens (the previous implementation) made
+    the default ``"6,7"`` always report 2, so CPU-only CI runners launched
+    the two-rank worker and failed instead of skipping.  Ask CUDA itself,
+    in a subprocess with ``CUDA_VISIBLE_DEVICES`` set to the request, so
+    the parent process's CUDA state cannot leak in.
+    """
+    env = dict(os.environ, CUDA_VISIBLE_DEVICES=gpus)
+    try:
+        out = subprocess.run(
+            [sys.executable, "-c", "import torch; print(torch.cuda.device_count())"],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return 0
+    try:
+        return int(out.stdout.strip() or 0)
+    except ValueError:
+        return 0
 
 
 @pytest.mark.parametrize("transport", ["fp32", "fp16"])
