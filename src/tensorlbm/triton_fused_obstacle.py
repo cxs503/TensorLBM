@@ -187,7 +187,12 @@ _LATTICE_CACHE: dict = {}
 # tau <= 1.0 matching the explicit-sgorsinsky production cap).  Constexpr
 # so the clamps fold into the kernel as literals.
 _TAU_EFF_MIN_K = tl.constexpr(0.5001)
-_TAU_EFF_MAX_K = tl.constexpr(1.0)
+# Cap the eddy-viscosity increment, not tau_eff absolutely: the historical
+# absolute 1.0 cap made the closure a silent no-op whenever the molecular
+# tau_mol >= 1.0.  Mirrors tensorlbm.turbulence._tau_eff_max (same formula:
+# max(1.0, tau_mol + 0.5) => nu_t <= 1/6).
+_TAU_EFF_FLOOR_K = tl.constexpr(1.0)
+_TAU_EFF_HEADROOM_K = tl.constexpr(0.5)
 
 # D3Q19 moment transform matrices and the Hermite polynomial table for
 # CUMULANT reconstruction.  Imported lazily so that the kernel module
@@ -308,7 +313,8 @@ def _smagorinsky_omega(
         |Pi_neq| = sqrt(pi_xx^2+pi_yy^2+pi_zz^2
                         + 2 pi_xy^2+2 pi_xz^2+2 pi_yz^2)
         disc      = tau_mol^2 + 18 Cs^2 Delta^2 |Pi_neq| / rho
-        tau_eff   = 0.5 (tau_mol + sqrt(disc)),  clamped to [0.5001, 1.0]
+        tau_eff   = 0.5 (tau_mol + sqrt(disc)),
+                   clamped to [0.5001, max(1.0, tau_mol + 0.5)]
         omega     = 1 / tau_eff
 
     (Hou et al. 1994 self-consistent closure — NOT the explicit
@@ -324,7 +330,8 @@ def _smagorinsky_omega(
     pi_norm = tl.sqrt(pi_norm_sq)
     disc = tau_mol * tau_mol + 18.0 * Cs_delta_sq * pi_norm / rho_safe
     tau_eff = 0.5 * (tau_mol + tl.sqrt(tl.maximum(disc, 0.0)))
-    tau_eff = tl.minimum(tl.maximum(tau_eff, _TAU_EFF_MIN_K), _TAU_EFF_MAX_K)
+    tau_eff_cap = tl.maximum(_TAU_EFF_FLOOR_K, tau_mol + _TAU_EFF_HEADROOM_K)
+    tau_eff = tl.minimum(tl.maximum(tau_eff, _TAU_EFF_MIN_K), tau_eff_cap)
     return 1.0 / tau_eff
 
 

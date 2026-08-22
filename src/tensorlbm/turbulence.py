@@ -73,14 +73,32 @@ from .solver3d import _get_d3q19_mrt_matrices
 # ---------------------------------------------------------------------------
 # Stability constants
 # ---------------------------------------------------------------------------
-# Upper bound on the effective relaxation time.  Without an upper clamp the
-# Smagorinsky/WALE/Vreman eddy viscosity can push tau_eff arbitrarily large in
-# high-strain regions, over-dissipating the resolved wake (drag under-predicted)
-# and occasionally destabilising the collision.  tau_eff in (0.5, 1.0) keeps the
-# BGK omega = 1/tau_eff in the stable interval (0.5, 2.0) with controlled
-# dissipation; values above 1.0 are permitted for MRT stress modes but clamped
-# here to keep resolved-scale fidelity at high Re.
-_TAU_EFF_MAX = 1.0
+# Lower bound: BGK stability requires omega = 1/tau_eff < 2, i.e. tau_eff > 0.5.
+_TAU_EFF_MIN = 0.5001
+
+# Upper bound: cap the eddy-viscosity *increment*, not tau_eff absolutely.
+# tau_eff >= tau always holds (eddy viscosity only adds dissipation), so the
+# historical absolute cap tau_eff <= 1.0 silently discarded the entire
+# Smagorinsky/WALE/Vreman correction in every run with molecular tau >= 1.0 —
+# a standard operating point (omega <= 1) where SGS-on and SGS-off produced
+# bit-identical output.  Capping the increment instead bounds the eddy
+# viscosity at nu_t <= _TAU_EFF_HEADROOM/3 (= 1/6), which preserves the
+# over-dissipation guard of the tuned high-Re regime (tau ~ 0.51, cap
+# ~ 1.01 vs the historical 1.0) while keeping every SGS model active at any
+# molecular tau.
+_TAU_EFF_HEADROOM = 0.5
+_TAU_EFF_FLOOR = 1.0
+
+
+def _tau_eff_max(tau: float) -> float:
+    """Upper clamp for tau_eff at molecular relaxation time *tau*.
+
+    ``max(_TAU_EFF_FLOOR, tau + _TAU_EFF_HEADROOM)``: never below ``tau``
+    (so the SGS model can never be clamped into a no-op) while still
+    bounding the maximum eddy viscosity.
+    """
+    return max(_TAU_EFF_FLOOR, tau + _TAU_EFF_HEADROOM)
+
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -171,7 +189,7 @@ def _smagorinsky_tau(
     rho_safe = torch.clamp(rho, min=1e-12)
     discriminant = tau**2 + 18.0 * C_s**2 * pi_norm / rho_safe
     tau_eff = 0.5 * (tau + torch.sqrt(torch.clamp(discriminant, min=0.0)))
-    return torch.clamp(tau_eff, min=0.5001, max=_TAU_EFF_MAX)
+    return torch.clamp(tau_eff, min=_TAU_EFF_MIN, max=_tau_eff_max(tau))
 
 
 # ---------------------------------------------------------------------------
@@ -843,7 +861,7 @@ def _nu_t_to_tau_eff(tau: float, nu_t: torch.Tensor) -> torch.Tensor:
     Returns:
         Effective per-cell :math:`\\tau_{\\rm eff}` tensor, same shape as *nu_t*.
     """
-    return torch.clamp(tau + 3.0 * nu_t, min=0.5001, max=_TAU_EFF_MAX)
+    return torch.clamp(tau + 3.0 * nu_t, min=_TAU_EFF_MIN, max=_tau_eff_max(tau))
 
 
 # ---------------------------------------------------------------------------
@@ -1548,7 +1566,7 @@ def collide_dynamic_smagorinsky_bgk(
 
     nu = (tau - 0.5) / 3.0
     nu_t = (cs**2) * s_mag
-    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=0.5001, max=_TAU_EFF_MAX)
+    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=_TAU_EFF_MIN, max=_tau_eff_max(tau))
     return f - f_neq / tau_eff.unsqueeze(0)
 
 
@@ -1612,7 +1630,7 @@ def collide_dynamic_smagorinsky_bgk3d(
 
     nu = (tau - 0.5) / 3.0
     nu_t = (cs**2) * s_mag
-    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=0.5001, max=_TAU_EFF_MAX)
+    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=_TAU_EFF_MIN, max=_tau_eff_max(tau))
     return f - f_neq / tau_eff.unsqueeze(0)
 
 
@@ -1698,7 +1716,7 @@ def collide_dynamic_smagorinsky_mrt3d(
 
     nu = (tau - 0.5) / 3.0
     nu_t = (cs**2) * s_mag
-    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=0.5001, max=_TAU_EFF_MAX)
+    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=_TAU_EFF_MIN, max=_tau_eff_max(tau))
 
     # ---- MRT collision with per-cell stress relaxation rate ----
     M, M_inv = _get_d3q19_mrt_matrices(device)
@@ -1807,7 +1825,7 @@ def collide_dynamic_smagorinsky_bgk27(
 
     nu = (tau - 0.5) / 3.0
     nu_t = (cs**2) * s_mag
-    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=0.5001, max=_TAU_EFF_MAX)
+    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=_TAU_EFF_MIN, max=_tau_eff_max(tau))
     return f - f_neq / tau_eff.unsqueeze(0)
 
 
@@ -1894,7 +1912,7 @@ def collide_dynamic_smagorinsky_mrt27(
 
     nu = (tau - 0.5) / 3.0
     nu_t = (cs**2) * s_mag
-    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=0.5001, max=_TAU_EFF_MAX)
+    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=_TAU_EFF_MIN, max=_tau_eff_max(tau))
 
     # ---- MRT collision with per-cell stress relaxation rate ----
     M, M_inv = _get_d3q27_mrt_matrices(device)
