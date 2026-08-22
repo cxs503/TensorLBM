@@ -344,15 +344,18 @@ def test_powerlaw_channel_profile_shapes_differ_from_newtonian():
     ux_thin, _ = _run_powerlaw_channel(H, 0.5, K, fx2, n_steps=40000)
     ux_thick, _ = _run_powerlaw_channel(H, 1.5, 1.0, 6.25e-6, n_steps=6000)
 
-    def _shape(u):
-        col = u[1:-1, H // 2].cpu().numpy()
-        return (col - col.min()) / (col.max() - col.min())
+    def _midhalf_flatness(u):
+        # plug-likeness: mean of the central half of the channel over u_max.
+        # Analytic values: n=1 -> 0.917, n=0.5 -> 0.938, n=1.5 -> 0.882, so the
+        # ordering below carries ~0.02-0.05 margins instead of the old
+        # max-deviation-from-linear-ramp metric, which saturated at ~1.0 for
+        # every profile and flipped on last-bit noise between CPUs.
+        col = u[:, H // 2].cpu().numpy().astype(np.float64)
+        core = col[H // 4 : 3 * H // 4]
+        return float(core.mean() / col.max())
 
-    shape_newt, shape_thin, shape_thick = _shape(ux_newt), _shape(ux_thin), _shape(ux_thick)
-    y = np.linspace(0.0, 1.0, H)
-    # plug-likeness: deviation from linear ramp between wall and centre
-    dev_newt = float(np.max(np.abs(shape_newt - y)))
-    dev_thin = float(np.max(np.abs(shape_thin - y)))
-    dev_thick = float(np.max(np.abs(shape_thick - y)))
-    assert dev_thin > dev_newt, "shear-thinning profile should be flatter than Newtonian"
-    assert dev_thick < dev_newt, "shear-thickening profile should be rounder than Newtonian"
+    flat_newt = _midhalf_flatness(ux_newt)
+    flat_thin = _midhalf_flatness(ux_thin)
+    flat_thick = _midhalf_flatness(ux_thick)
+    assert flat_thin > flat_newt, "shear-thinning profile should be flatter than Newtonian"
+    assert flat_thick < flat_newt, "shear-thickening profile should be rounder than Newtonian"
