@@ -129,7 +129,15 @@ def _neq_stress_norm_2d(f_neq: torch.Tensor) -> torch.Tensor:
     pi_yy = (cy * cy * f_neq).sum(0)
     pi_xy = (cx * cy * f_neq).sum(0)
 
-    return torch.sqrt(pi_xx**2 + pi_yy**2 + 2.0 * pi_xy**2)
+    # Clamp away from exactly zero: cells with zero non-equilibrium stress
+    # (an equilibrium Dirichlet inlet plane, or the first collision of an
+    # equilibrium initialisation) otherwise hit a 0/0 NaN in the sqrt
+    # backward pass and poison dLoss/dC_s on the differentiable path.  The
+    # clamp lifts the forward value by at most sqrt(1e-30) = 1e-15, and
+    # wherever the stress is zero because f_neq itself is zero the collision
+    # output f - f_neq/tau_eff is bit-for-bit unchanged.
+    radicand = pi_xx**2 + pi_yy**2 + 2.0 * pi_xy**2
+    return torch.sqrt(torch.clamp(radicand, min=1e-30))
 
 
 def _neq_stress_norm_3d(f_neq: torch.Tensor) -> torch.Tensor:
@@ -450,7 +458,15 @@ def _neq_stress_norm_27(f_neq: torch.Tensor) -> torch.Tensor:
     pi_xz = (cx * cz * f_neq).sum(0)
     pi_yz = (cy * cz * f_neq).sum(0)
 
-    return torch.sqrt(pi_xx**2 + pi_yy**2 + pi_zz**2 + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2))
+    # Clamp away from exactly zero: cells with zero non-equilibrium stress
+    # (an equilibrium Dirichlet inlet plane, or the first collision of an
+    # equilibrium initialisation) otherwise hit a 0/0 NaN in the sqrt
+    # backward pass and poison dLoss/dC_s on the differentiable path.  The
+    # clamp lifts the forward value by at most sqrt(1e-30) = 1e-15, and
+    # wherever the stress is zero because f_neq itself is zero the collision
+    # output f - f_neq/tau_eff is bit-for-bit unchanged.
+    radicand = pi_xx**2 + pi_yy**2 + pi_zz**2 + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2)
+    return torch.sqrt(torch.clamp(radicand, min=1e-30))
 
 
 def collide_smagorinsky_bgk27(
