@@ -84,8 +84,9 @@ def convergence_table(dataset: str, u_in: float, ref_area: float) -> list[dict]:
     for path in sorted(glob.glob(f"{dataset}/points/p*/drag_history.json")):
         status = json.loads(Path(path).with_name("status.json").read_text())
         history = load_drag_history(path)
-        tail = windowed_cd(history, int(history.steps[-1] * 0.75), int(history.steps[-1]) + 1,
-                           u_in, ref_area)
+        tail = windowed_cd(
+            history, int(history.steps[-1] * 0.75), int(history.steps[-1]) + 1, u_in, ref_area
+        )
         row = {"re": float(status["params"]["re"]), "cd_tail": tail, "n": len(history.steps)}
         for lo, hi in CONV_WINDOWS:
             row[f"dev_{lo}"] = 100.0 * (windowed_cd(history, lo, hi, u_in, ref_area) / tail - 1.0)
@@ -94,8 +95,10 @@ def convergence_table(dataset: str, u_in: float, ref_area: float) -> list[dict]:
     print("C_D window convergence vs the 4000-step tail mean (deviation, %):")
     print("  Re      tail C_D  " + "  ".join(f"[{lo},{hi})" for lo, hi in CONV_WINDOWS))
     for r in rows[::4]:  # every 4th point keeps the table readable
-        print(f"  {r['re']:6.1f}  {r['cd_tail']:9.4f}  "
-              + "  ".join(f"{r[f'dev_{lo}']:+8.2f}%" for lo, _ in CONV_WINDOWS))
+        print(
+            f"  {r['re']:6.1f}  {r['cd_tail']:9.4f}  "
+            + "  ".join(f"{r[f'dev_{lo}']:+8.2f}%" for lo, _ in CONV_WINDOWS)
+        )
     early = max(abs(r[f"dev_{lo}"]) for r in rows for lo, _ in CONV_WINDOWS[:2])
     late = max(abs(r["dev_1000"]) for r in rows)
     print(f"  worst deviation: early windows {early:.2f}%  vs [1000,1200) {late:.2f}%")
@@ -112,10 +115,24 @@ def powerlaw_baseline(train: list[DragTarget], heldout: list[DragTarget]) -> dic
     def pred(re: float) -> float:
         return float(a * re**b)
 
-    rows = [{"re": t.re, "target": t.cd, "pred": pred(t.re),
-             "rel_err_pct": 100.0 * abs(pred(t.re) - t.cd) / t.cd} for t in train]
-    held = [{"re": t.re, "target": t.cd, "pred": pred(t.re),
-             "rel_err_pct": 100.0 * abs(pred(t.re) - t.cd) / t.cd} for t in heldout]
+    rows = [
+        {
+            "re": t.re,
+            "target": t.cd,
+            "pred": pred(t.re),
+            "rel_err_pct": 100.0 * abs(pred(t.re) - t.cd) / t.cd,
+        }
+        for t in train
+    ]
+    held = [
+        {
+            "re": t.re,
+            "target": t.cd,
+            "pred": pred(t.re),
+            "rel_err_pct": 100.0 * abs(pred(t.re) - t.cd) / t.cd,
+        }
+        for t in heldout
+    ]
     print(f"power-law baseline (train-only fit): C_D = {a:.4f} Re^{b:+.4f}")
     for tag, rr in (("train", rows), ("held-out", held)):
         print("  " + "  ".join(f"Re {r['re']:g}: {r['rel_err_pct']:.2f}%" for r in rr))
@@ -128,12 +145,20 @@ def bgk_floor(case: HullCase, mask: torch.Tensor, targets: list[DragTarget]) -> 
     with torch.no_grad():
         for t in targets:
             cd = float(bounded_drag(case, re=t.re, cs=None, mask=mask))
-            rows.append({"re": t.re, "target": t.cd, "cd_bgk": cd,
-                         "rel_err_pct": 100.0 * (cd - t.cd) / t.cd})
+            rows.append(
+                {
+                    "re": t.re,
+                    "target": t.cd,
+                    "cd_bgk": cd,
+                    "rel_err_pct": 100.0 * (cd - t.cd) / t.cd,
+                }
+            )
     print("BGK floor (C_s = 0, no SGS term):")
     for r in rows:
-        print(f"  Re {r['re']:6.1f}: BGK {r['cd_bgk']:7.4f} vs campaign {r['target']:7.4f} "
-              f"-> {r['rel_err_pct']:+.2f}%")
+        print(
+            f"  Re {r['re']:6.1f}: BGK {r['cd_bgk']:7.4f} vs campaign {r['target']:7.4f} "
+            f"-> {r['rel_err_pct']:+.2f}%"
+        )
     return rows
 
 
@@ -148,12 +173,20 @@ def sensitivity(case: HullCase, mask: torch.Tensor, closure, res: tuple[float, .
             dn = float(bounded_drag(case, re=re, cs=max(1e-6, cs - eps), mask=mask))
             grad = (up - dn) / ((cs + eps) - max(1e-6, cs - eps))
             mid = 0.5 * (up + dn)
-            rows.append({"re": re, "cs": cs, "dcd_dcs": grad,
-                         "elasticity": grad * cs / mid if mid else float("nan")})
+            rows.append(
+                {
+                    "re": re,
+                    "cs": cs,
+                    "dcd_dcs": grad,
+                    "elasticity": grad * cs / mid if mid else float("nan"),
+                }
+            )
     print("dC_D/dC_s at the identified closure (finite differences):")
     for r in rows:
-        print(f"  Re {r['re']:6.1f}: C_s {r['cs']:.5f}  dC_D/dC_s {r['dcd_dcs']:+8.4f}  "
-              f"dlnC_D/dlnC_s {r['elasticity']:+.4f}")
+        print(
+            f"  Re {r['re']:6.1f}: C_s {r['cs']:.5f}  dC_D/dC_s {r['dcd_dcs']:+8.4f}  "
+            f"dlnC_D/dlnC_s {r['elasticity']:+.4f}"
+        )
     return rows
 
 
@@ -173,17 +206,31 @@ def main() -> None:
     args = parser.parse_args()
 
     u_in = 0.1
-    case = HullCase(nz=64, ny=64, nx=128, u_in=u_in, steps=args.steps,
-                    window_start=args.window_start, checkpoint_block=args.checkpoint_block,
-                    device=args.device)
+    case = HullCase(
+        nz=64,
+        ny=64,
+        nx=128,
+        u_in=u_in,
+        steps=args.steps,
+        window_start=args.window_start,
+        checkpoint_block=args.checkpoint_block,
+        device=args.device,
+    )
     mask = case.make_mask()
     ref_area = case.ref_area(mask)
-    print(f"hull {case.nz}x{case.ny}x{case.nx} L={case.hull_length} solid={int(mask.sum())} "
-          f"S_proj={ref_area:.0f} tau(Re)=0.5+{3 * u_in * case.hull_length:.2f}/Re")
+    print(
+        f"hull {case.nz}x{case.ny}x{case.nx} L={case.hull_length} solid={int(mask.sum())} "
+        f"S_proj={ref_area:.0f} tau(Re)=0.5+{3 * u_in * case.hull_length:.2f}/Re"
+    )
     print(f"rollout {args.steps} steps, window [{args.window_start}, {args.steps})")
 
-    report: dict = {"dataset": args.dataset, "train_re": TRAIN_RE, "heldout_re": HELDOUT_RE,
-                    "steps": args.steps, "window_start": args.window_start}
+    report: dict = {
+        "dataset": args.dataset,
+        "train_re": TRAIN_RE,
+        "heldout_re": HELDOUT_RE,
+        "steps": args.steps,
+        "window_start": args.window_start,
+    }
 
     report["convergence"] = convergence_table(args.dataset, u_in, ref_area)
 
@@ -208,18 +255,29 @@ def main() -> None:
     report["fits"] = {}
     for kind in args.kinds.split(","):
         t0 = time.time()
-        result = calibrate(train, case, kind=kind, cs0=args.cs0, iters=args.iters, lr=args.lr,
-                           log_every=max(1, args.iters // 8))
+        result = calibrate(
+            train,
+            case,
+            kind=kind,
+            cs0=args.cs0,
+            iters=args.iters,
+            lr=args.lr,
+            log_every=max(1, args.iters // 8),
+        )
         elapsed = time.time() - t0
         ev_train = evaluate(result, train, case)
         ev_held = evaluate(result, heldout, case)
-        print(f"[{kind}] identified {result.params} (re_ref {result.re_ref:.1f}) "
-              f"loss {result.loss_history[0]:.4e} -> {result.loss_history[-1]:.4e} "
-              f"in {elapsed:.0f}s")
+        print(
+            f"[{kind}] identified {result.params} (re_ref {result.re_ref:.1f}) "
+            f"loss {result.loss_history[0]:.4e} -> {result.loss_history[-1]:.4e} "
+            f"in {elapsed:.0f}s"
+        )
         for tag, ev in (("train", ev_train), ("held-out", ev_held)):
             for re, row in ev.items():
-                print(f"  {tag} Re {re:>6}: target {row['target']:.4f} pred {row['pred']:.4f} "
-                      f"err {row['rel_err_pct']:.2f}%")
+                print(
+                    f"  {tag} Re {re:>6}: target {row['target']:.4f} pred {row['pred']:.4f} "
+                    f"err {row['rel_err_pct']:.2f}%"
+                )
         report["fits"][kind] = {
             "params": result.params,
             "re_ref": result.re_ref,
@@ -228,11 +286,15 @@ def main() -> None:
             "train": ev_train,
             "heldout": ev_held,
             "sensitivity": sensitivity(case, mask, result.closure, TRAIN_RE),
-            "cs_curve": [{"re": re, "cs": float(result.closure(re).detach())}
-                         for re in (50.0, 100.0, 150.0) + TRAIN_RE + HELDOUT_RE + (1000.0,)],
+            "cs_curve": [
+                {"re": re, "cs": float(result.closure(re).detach())}
+                for re in (50.0, 100.0, 150.0) + TRAIN_RE + HELDOUT_RE + (1000.0,)
+            ],
         }
-        print("  C_s(Re): " + ", ".join(f"{r['re']:g}->{r['cs']:.5f}"
-                                        for r in report["fits"][kind]["cs_curve"]))
+        print(
+            "  C_s(Re): "
+            + ", ".join(f"{r['re']:g}->{r['cs']:.5f}" for r in report["fits"][kind]["cs_curve"])
+        )
 
     if args.out:
         Path(args.out).write_text(json.dumps(report, indent=1))

@@ -43,16 +43,19 @@ solid mask.  The default lattice stays fully periodic; passing
 differentiable velocity inlet and a zero-gradient or convective outlet, and
 ``walls`` replaces the periodic wrap on the four lateral planes with
 free-slip (specular reflection) or free-stream faces (the SUBOFF production
-phase order) — a fully bounded, gradient-connected box (A6++).  With all
-boundary arguments ``None`` the operator stays bit-for-bit the original
-periodic chain.
+phase order) — a fully bounded, gradient-connected box (A6++), whose four
+lateral faces can since A6+++ each carry their own closure through
+``WallSpec.overrides``.  With all boundary arguments ``None`` the operator
+stays bit-for-bit the original periodic chain.
 
-Known limits of the bounded box (updated by A6++): the inlet pins the
+Known limits of the bounded box (updated by A6+++): the inlet pins the
 *normal* velocity only (Zou/He tangential reconstruction and turbulent /
 synthetic inflow are not wired); the convective outlet uses a single uniform
 convective speed on the outlet plane alone (no sponge/NSCBC pressure
-relaxation); one :class:`WallSpec` drives all four lateral faces (no
-per-face control), and on the edge/corner lines the later-applied closure
+relaxation); per-face wall control lets each lateral face pick one of the
+three existing closures independently — no new physics (no moving-wall/lid
+method, no per-face parameters beyond the free-stream values) — and on the
+edge/corner lines the later-applied closure
 wins on doubly-unknown directions (last write wins, not a corner-consistent
 reflection).  Multi-component/free-surface/distributed paths and
 memory-format optimisations are out of scope for this module.
@@ -60,7 +63,7 @@ memory-format optimisations are out of scope for this module.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
 import torch
@@ -116,6 +119,31 @@ _IN_Y_POS = _directions_with(1, +1)  # c_y = +1: unknown at y = 0
 _IN_Y_NEG = _directions_with(1, -1)  # c_y = -1: unknown at y = ny - 1
 _IN_Z_POS = _directions_with(2, +1)  # c_z = +1: unknown at z = 0
 _IN_Z_NEG = _directions_with(2, -1)  # c_z = -1: unknown at z = nz - 1
+
+# Per-face (A6+++) lateral-wall machinery.  The four lateral faces are named
+# by their outward normal; ``_FACE_KEYS`` doubles as the *closure order* —
+# faces are closed y = 0, y = ny - 1, z = 0, z = nz - 1, so on the
+# edge/corner lines the later face wins (last write wins, unchanged from
+# the shared-spec A6++ semantics).
+#
+# ========= ============ ============== ======================= ====================
+# face key  plane        tensor axis    unknown directions       mirror table
+# ========= ============ ============== ======================= ====================
+# ``"-y"``  y = 0        dim 2, first   c_y = +1 (wrapped)       ``_FLIP_Y``
+# ``"+y"``  y = ny - 1   dim 2, last    c_y = -1 (wrapped)       ``_FLIP_Y``
+# ``"-z"``  z = 0        dim 1, first   c_z = +1 (wrapped)       ``_FLIP_Z``
+# ``"+z"``  z = nz - 1   dim 1, last    c_z = -1 (wrapped)       ``_FLIP_Z``
+# ========= ============ ============== ======================= ====================
+_FACE_KEYS = ("-y", "+y", "-z", "+z")
+_FACE_AXIS_DIM = {"-y": 2, "+y": 2, "-z": 1, "+z": 1}  # dim of the face normal
+_FACE_AT_START = {"-y": True, "+y": False, "-z": True, "+z": False}
+_FACE_UNKNOWN = {
+    "-y": _IN_Y_POS,
+    "+y": _IN_Y_NEG,
+    "-z": _IN_Z_POS,
+    "+z": _IN_Z_NEG,
+}
+_FACE_FLIP = {"-y": _FLIP_Y, "+y": _FLIP_Y, "-z": _FLIP_Z, "+z": _FLIP_Z}
 
 __all__ = [
     "InletSpec",
@@ -232,7 +260,8 @@ class OutletSpec:
 class WallSpec:
     """Differentiable lateral boundaries on y = 0, y = ny-1, z = 0, z = nz-1.
 
-    One spec drives all four lateral faces with the same *method*:
+    The spec's own *method* drives every lateral face that is not overridden
+    (all four by default):
 
     ``"periodic"`` (default) — no-op: the planes keep the periodic wrap of
     :func:`tensorlbm.solver3d.stream3d` (identical to passing ``None``).
@@ -258,17 +287,44 @@ class WallSpec:
     full velocity on the face, absorbing outgoing populations); use for
     far-field/wind-tunnel sides, at the price of some acoustic reflection.
 
+    Per-face overrides (A6+++): ``overrides`` maps face keys to their own
+    :class:`WallSpec`; faces not listed fall back to this spec (the default
+    closure).  Keys are the four outward normals of the lateral box,
+
+    ========= =========== =========
+    key       plane       comment
+    ========= =========== =========
+    ``"-y"``  y = 0       lower y
+    ``"+y"``  y = ny - 1  upper y
+    ``"-z"``  z = 0       lower z
+    ``"+z"``  z = nz - 1  upper z
+    ========= =========== =========
+
+    so e.g. ``WallSpec(method="free-slip", overrides={"+z":
+    WallSpec(method="freestream", ux=0.05)})`` closes the y faces (and z = 0)
+    with free-slip while the top plane z = nz - 1 is a far-field free-stream
+    face — the wind-tunnel-floor layout.  Override specs may not carry
+    ``overrides`` of their own (fail loudly at construction).  ``None`` (or
+    absent) keeps the A6++ behaviour — one closure shared by all four faces
+    — bit-for-bit.
+
     Edge/corner policy: the faces are closed in the order y = 0, y = ny - 1,
     z = 0, z = nz - 1 *before* the inlet/outlet closures; on the edge and
     corner lines a direction can be unknown for two closures at once, and
     the later application wins (last write wins) — e.g. at a corner the
     z closure wins over the y closure, and the inlet/outlet closures win
     over the walls.  Away from those measure-zero lines the closures touch
-    disjoint direction sets, so the order is irrelevant there.
+    disjoint direction sets, so the order is irrelevant there.  A face
+    overridden to ``"periodic"`` is a no-op like the shared default.
 
     ``rho0``/``ux``/``uy``/``uz`` are read by ``"freestream"`` only; they
     accept floats or 0-dim tensors (graph-connected, e.g. a learnable
     free-stream speed shared with the inlet).
+
+    Serialisation (A6+++): :meth:`to_dict` emits a plain-Python payload
+    (tensor fields flattened to their numeric value — the autograd graph is
+    not serialisable), :meth:`from_dict` rebuilds the spec.  Payloads
+    written before per-face control (no ``"overrides"`` key) load unchanged.
     """
 
     method: str = "periodic"
@@ -276,12 +332,62 @@ class WallSpec:
     ux: float | torch.Tensor = 0.0
     uy: float | torch.Tensor = 0.0
     uz: float | torch.Tensor = 0.0
+    overrides: Mapping[str, WallSpec] | None = None
 
     def __post_init__(self) -> None:
         if self.method not in ("periodic", "free-slip", "freestream"):
             raise ValueError(
                 f"wall method must be 'periodic', 'free-slip' or 'freestream', got {self.method!r}"
             )
+        if self.overrides is None:
+            return
+        bad_keys = sorted(set(self.overrides) - set(_FACE_KEYS))
+        if bad_keys:
+            raise ValueError(f"wall overrides keys must be among {_FACE_KEYS}, got {bad_keys!r}")
+        for key, spec in self.overrides.items():
+            if not isinstance(spec, WallSpec):
+                raise ValueError(
+                    f"wall override for face {key!r} must be a WallSpec, got {type(spec).__name__}"
+                )
+            if spec.overrides is not None:
+                raise ValueError(f"wall override for face {key!r} cannot carry nested overrides")
+
+    def to_dict(self) -> dict[str, object]:
+        """Plain-Python payload of this spec (JSON-compatible types).
+
+        Tensor fields (learnable free-stream values) are flattened with
+        ``.item()``: the payload stores the *numeric value*, not the graph.
+        The ``"overrides"`` key is emitted only when per-face overrides are
+        present, so specs without overrides serialise to exactly the
+        pre-A6+++ payload shape.
+        """
+        payload: dict[str, object] = {
+            "method": self.method,
+            "rho0": _number(self.rho0),
+            "ux": _number(self.ux),
+            "uy": _number(self.uy),
+            "uz": _number(self.uz),
+        }
+        if self.overrides is not None:
+            payload["overrides"] = {key: spec.to_dict() for key, spec in self.overrides.items()}
+        return payload
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, object]) -> WallSpec:
+        """Rebuild a :class:`WallSpec` from :meth:`to_dict` output.
+
+        Tolerates older/checkpoint payloads: the ``"overrides"`` key is
+        optional (absent means ``None`` — the shared-closure A6++ spec),
+        missing numeric fields fall back to the dataclass defaults, and
+        unknown extra keys are ignored.
+        """
+        kwargs = {
+            name: payload[name] for name in ("method", "rho0", "ux", "uy", "uz") if name in payload
+        }
+        overrides = payload.get("overrides")
+        if overrides is not None:
+            kwargs["overrides"] = {key: cls.from_dict(spec) for key, spec in overrides.items()}
+        return cls(**kwargs)
 
 
 def _collide_skip_solid(
@@ -309,6 +415,11 @@ def _scalar(value: float | torch.Tensor, dtype: torch.dtype, device: torch.devic
     if isinstance(value, torch.Tensor):
         return value.to(device=device, dtype=dtype)
     return torch.tensor(value, dtype=dtype, device=device)
+
+
+def _number(value: float | torch.Tensor) -> float:
+    """Numeric value of a spec field (tensors flattened, graph dropped)."""
+    return float(value.item()) if isinstance(value, torch.Tensor) else float(value)
 
 
 def _dir_selector(indices: tuple[int, ...], device: torch.device) -> torch.Tensor:
@@ -354,14 +465,28 @@ def _apply_inlet(f_str: torch.Tensor, inlet: InletSpec) -> torch.Tensor:
 def _apply_walls(f_str: torch.Tensor, walls: WallSpec) -> torch.Tensor:
     """Close the four lateral planes of the post-stream state (out-of-place).
 
-    ``"periodic"`` is a bit-exact no-op (returns *f_str* itself).  Free-slip
-    rebuilds each face with ``torch.where(unknown_selector, plane[FLIP],
-    plane)``; freestream rebuilds each face from a broadcast equilibrium.
-    Faces are closed y = 0, y = ny - 1, z = 0, z = nz - 1 (see
-    :class:`WallSpec` for the edge/corner last-write-wins policy).
+    ``"periodic"`` with no overrides is a bit-exact no-op (returns *f_str*
+    itself).  Without overrides the shared A6++ closure runs unchanged
+    (:func:`_apply_walls_uniform`, bit-for-bit the pre-A6+++ operator); with
+    ``WallSpec.overrides`` each face is closed by its own resolved spec
+    (:func:`_apply_walls_per_face`).  In both branches the faces close in
+    the order y = 0, y = ny - 1, z = 0, z = nz - 1 (see :class:`WallSpec`
+    for the edge/corner last-write-wins policy).
     """
-    if walls.method == "periodic":
+    if walls.method == "periodic" and walls.overrides is None:
         return f_str
+    if walls.overrides is None:
+        return _apply_walls_uniform(f_str, walls)
+    return _apply_walls_per_face(f_str, walls)
+
+
+def _apply_walls_uniform(f_str: torch.Tensor, walls: WallSpec) -> torch.Tensor:
+    """Shared-spec closure of all four lateral planes (the A6++ operator).
+
+    Free-slip rebuilds each face with ``torch.where(unknown_selector,
+    plane[FLIP], plane)``; freestream rebuilds each face from a broadcast
+    equilibrium.  Faces are closed y = 0, y = ny - 1, z = 0, z = nz - 1.
+    """
     device, dtype = f_str.device, f_str.dtype
     nz, ny, nx = f_str.shape[1], f_str.shape[2], f_str.shape[3]
 
@@ -398,6 +523,63 @@ def _apply_walls(f_str: torch.Tensor, walls: WallSpec) -> torch.Tensor:
     f = torch.cat([z_face, f[:, 1:, :]], dim=1)
     f = torch.cat([f[:, :-1, :], z_face], dim=1)
     return f
+
+
+def _apply_walls_per_face(f_str: torch.Tensor, walls: WallSpec) -> torch.Tensor:
+    """Per-face closure: each lateral plane follows its own resolved spec.
+
+    Faces not listed in ``walls.overrides`` use *walls* itself (the default
+    closure), in the fixed order ``_FACE_KEYS`` — the same y = 0, y = ny-1,
+    z = 0, z = nz-1 sequence and edge/corner last-write-wins semantics as
+    the shared-spec path.  Faces resolved to ``"periodic"`` are no-ops.
+    """
+    resolved = [(key, walls.overrides.get(key, walls)) for key in _FACE_KEYS]
+    if all(spec.method == "periodic" for _key, spec in resolved):
+        return f_str  # every face keeps the periodic wrap: bit-exact no-op
+    flips = {table: torch.tensor(table, device=f_str.device) for table in set(_FACE_FLIP.values())}
+    f = f_str
+    for key, spec in resolved:
+        f = _close_face(f, key, spec, flips[_FACE_FLIP[key]])
+    return f
+
+
+def _close_face(f: torch.Tensor, key: str, spec: WallSpec, flip: torch.Tensor) -> torch.Tensor:
+    """Close one lateral face *key* of the current chain state per *spec*.
+
+    ``"periodic"`` returns *f* unchanged (no-op).  ``"free-slip"`` mirrors
+    the face's unknown directions within the face plane; ``"freestream"``
+    resets the whole face to ``f_eq(rho0, u_inf)`` of this spec (0-dim
+    broadcast, graph-connected).  Reading the face from the current chain
+    state keeps the sequential face order meaningful on the edge lines.
+    """
+    if spec.method == "periodic":
+        return f
+    dim, at_start = _FACE_AXIS_DIM[key], _FACE_AT_START[key]
+    if at_start:
+        plane = f[:, :, :1] if dim == 2 else f[:, :1]
+    else:
+        plane = f[:, :, -1:] if dim == 2 else f[:, -1:]
+
+    if spec.method == "free-slip":
+        plane_new = torch.where(_dir_selector(_FACE_UNKNOWN[key], f.device), plane[flip], plane)
+    else:  # "freestream": whole face reset to f_eq(rho0, u_inf) of this spec
+        device, dtype = f.device, f.dtype
+        feq = equilibrium3d(
+            _scalar(spec.rho0, dtype, device),
+            _scalar(spec.ux, dtype, device),
+            _scalar(spec.uy, dtype, device),
+            _scalar(spec.uz, dtype, device),
+            device,
+        )  # (19, 1, 1, 1)
+        face_shape = list(f.shape)
+        face_shape[dim] = 1
+        plane_new = feq.expand(*face_shape)
+
+    if at_start:
+        interior = f[:, :, 1:] if dim == 2 else f[:, 1:]
+        return torch.cat([plane_new, interior], dim=dim)
+    interior = f[:, :, :-1] if dim == 2 else f[:, :-1]
+    return torch.cat([interior, plane_new], dim=dim)
 
 
 def _resolve_u_conv(outlet: OutletSpec, inlet: InletSpec | None) -> float | torch.Tensor:
@@ -511,9 +693,11 @@ def differentiable_step(
             plane stays periodic).
         outlet: :class:`OutletSpec` zero-gradient or convective outlet on
             x = nx - 1 (``None``: the plane stays periodic).
-        walls: :class:`WallSpec` lateral closure shared by all four y/z
-            planes (``None`` or ``method="periodic"``: they stay periodic,
-            bit-for-bit).
+        walls: :class:`WallSpec` lateral closure for the four y/z planes:
+            without ``overrides`` the spec is shared by all faces (``None``
+            or ``method="periodic"``: they stay periodic, bit-for-bit);
+            ``WallSpec.overrides`` gives individual faces their own closure
+            (unlisted faces keep the shared spec).
         outlet_prev: Previous step's post-boundary outlet face, shape
             ``(19, nz, ny, 1)`` — the time history the convective outlet
             recurses on (the faces stay in the autograd graph when chained
@@ -622,7 +806,9 @@ def rollout(
         outlet: :class:`OutletSpec` zero-gradient or convective outlet on
             x = nx - 1 (default periodic).
         walls: :class:`WallSpec` lateral closure on the four y/z planes
-            (default ``None``: periodic, bit-for-bit).
+            (default ``None``: periodic, bit-for-bit); ``WallSpec.overrides``
+            closes individual faces with their own spec (unlisted faces keep
+            the shared one).
         probe_start: First step (0-based) whose probe is collected when
             ``return_probes=True`` — probes of the startup transient are
             never materialised.  Default 0 collects every probe
