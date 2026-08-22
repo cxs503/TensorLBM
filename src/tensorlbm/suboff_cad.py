@@ -97,6 +97,56 @@ _FIN_SWEEP_C = 0.88859  # Sweep intercept
 # from the standard 0.2843/0.1015 closure)
 _NACA_COEFFS = (0.2969, 0.126, 0.3516, 0.2852, 0.1045)
 
+# Appendage scale anchors (ft).  ``sail_scale`` / ``fin_scale`` stretch the
+# appendage's OWN dimensions (length x height x width together) about these
+# fixed anchors, so a scaled appendage never detaches from the hull:
+# - sail: axial centre of the 3-segment footprint, and the parallel-midbody
+#   deck plane the sail grows out of;
+# - fins: the common trailing edge x = _FIN_H and the root radius the span
+#   grows outward from (buried inside the stern taper).
+_SAIL_X_CENTER = 0.5 * (_SAIL_X1_START + _SAIL_X3_END)
+_SAIL_Z_DECK = _SUBOFF_RMAX_FT
+
+
+def _sail_unscaled_frame(
+    x_ft: torch.Tensor,
+    y_ft: torch.Tensor,
+    z_ft: torch.Tensor,
+    scale: float,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Inverse sail similarity: query coords -> unscaled DARPA sail frame.
+
+    ``sail_scale = s`` makes the sail ``s`` times longer (about
+    ``_SAIL_X_CENTER``), ``s`` times taller (about the deck plane
+    ``_SAIL_Z_DECK``, so it keeps growing out of the hull face) and
+    ``s`` times wider (about the centreplane).  Evaluating the original
+    predicate at the inversely-mapped coordinates produces exactly that
+    solid.  ``scale == 1.0`` returns the inputs untouched, so the
+    default path stays bit-identical with the pre-scale code.
+    """
+    if scale == 1.0:
+        return x_ft, y_ft, z_ft
+    inv = 1.0 / scale
+    return (
+        _SAIL_X_CENTER + (x_ft - _SAIL_X_CENTER) * inv,
+        y_ft * inv,
+        _SAIL_Z_DECK + (z_ft - _SAIL_Z_DECK) * inv,
+    )
+
+
+def _fin_chord_frame(x_ft: torch.Tensor, scale: float) -> torch.Tensor:
+    """Inverse fin chord scale about the common trailing edge ``_FIN_H``."""
+    if scale == 1.0:
+        return x_ft
+    return _FIN_H + (x_ft - _FIN_H) / scale
+
+
+def _fin_span_frame(r_ft: torch.Tensor, scale: float) -> torch.Tensor:
+    """Inverse fin span scale about the root radius ``_FIN_R_INNER``."""
+    if scale == 1.0:
+        return r_ft
+    return _FIN_R_INNER + (r_ft - _FIN_R_INNER) / scale
+
 
 def _ft_per_lu(length: float) -> float:
     """Feet-per-lattice-unit conversion factor.
@@ -168,6 +218,36 @@ class SuboffConfig:
         Default 0.12.
     fin_thickness_frac :
         Thickness of each fin as fraction of L.  Default 0.015.
+    sail_scale :
+        Isotropic multiplier on the sail's OWN dimensions (axial length,
+        height above the deck plane, transverse width — all together).
+        The sail stays anchored at its DARPA axial centre and grows out
+        of the hull deck, so it never detaches.  ``1.0`` = exact DARPA
+        geometry (bit-identical masks).  Default 1.0.
+    fin_scale :
+        Isotropic multiplier on each cruciform fin's OWN dimensions
+        (chord, radial span, NACA thickness — all together).  The
+        trailing edge stays at the DARPA axial position and the span
+        grows outward from the root radius buried in the hull.
+        ``1.0`` = exact DARPA geometry (bit-identical masks).
+        Default 1.0.
+
+    Notes
+    -----
+    **Which fields actually parameterise the geometry (verified
+    2026-08-23).**  The mask builders, point predicates, statistics,
+    mesh/STL export and :func:`suboff_radius_profile` read ONLY
+    ``r_over_l`` and the two ``*_scale`` fields.  The ``bow_fraction`` /
+    ``stern_fraction`` / ``stern_exponent`` triple documents the DARPA
+    profile but is not consumed by it (the profile uses the hard-coded
+    Groves et al. ft polynomials).  Likewise ``sail_x_frac`` …
+    ``fin_thickness_frac`` are *descriptive metadata only* — the sail
+    and fin solids come from the DARPA offset-table ft constants
+    (``_SAIL_ZMAX`` … ``_FIN_SWEEP_C``), NOT from these fractions.  The
+    ``*_scale`` fields are the one supported way to sweep appendage
+    size; they multiply those ft constants' dimensions about the
+    module-level anchors (``_SAIL_X_CENTER``, ``_SAIL_Z_DECK``,
+    ``_FIN_H``, ``_FIN_R_INNER``).
     """
 
     # --- Main body ---
@@ -187,6 +267,16 @@ class SuboffConfig:
     fin_length_frac: float = 0.060  # real: chord 0.504–0.854 ft ≈ 0.06 L
     fin_span_frac: float = 0.052  # real: 0.075–0.825 ft radial span ≈ 0.052 L
     fin_thickness_frac: float = 0.008  # real: max NACA 0015 thickness ≈ 0.15*c/L
+
+    # --- Appendage size multipliers (the scannable geometry axis) ---
+    sail_scale: float = 1.0  # 1.0 = exact DARPA sail (bit-identical mask)
+    fin_scale: float = 1.0  # 1.0 = exact DARPA fins (bit-identical mask)
+
+    def __post_init__(self) -> None:
+        for name in ("sail_scale", "fin_scale"):
+            value = float(getattr(self, name))
+            if not (value > 0.0) or not math.isfinite(value):
+                raise ValueError(f"SuboffConfig.{name} must be finite and positive, got {value!r}")
 
     # --- Metadata (read-only) ---
     _label: str = field(default="DARPA SUBOFF-inspired", init=False, repr=False)
@@ -423,8 +513,14 @@ def suboff_sail_contains_points(
     *,
     center: tuple[float, float, float],
     length: float,
+    scale: float = 1.0,
 ) -> torch.Tensor:
-    """Evaluate the continuous DARPA sail predicate at arbitrary points."""
+    """Evaluate the continuous DARPA sail predicate at arbitrary points.
+
+    ``scale`` multiplies the sail's own (length, height, width) about its
+    DARPA anchors — see :func:`_sail_unscaled_frame`; ``1.0`` (default)
+    reproduces the exact DARPA solid.
+    """
     if x.shape != y.shape or x.shape != z.shape:
         raise ValueError("point coordinate tensors must have matching shapes")
     if length <= 0.0:
@@ -434,6 +530,7 @@ def suboff_sail_contains_points(
     x_ft = (x - (cx - length / 2.0)) * ftlu
     y_ft = (y - cy) * ftlu
     z_ft = (z - cz) * ftlu
+    x_ft, y_ft, z_ft = _sail_unscaled_frame(x_ft, y_ft, z_ft, float(scale))
     zmax = _SAIL_ZMAX
     y_tmp = _SAIL_YTMP
 
@@ -505,8 +602,14 @@ def suboff_fins_contain_points(
     *,
     center: tuple[float, float, float],
     length: float,
+    scale: float = 1.0,
 ) -> torch.Tensor:
-    """Evaluate the continuous swept NACA cruciform-fin predicate."""
+    """Evaluate the continuous swept NACA cruciform-fin predicate.
+
+    ``scale`` multiplies each fin's own (chord, span, thickness) about its
+    DARPA anchors — see :func:`_fin_chord_frame` / :func:`_fin_span_frame`;
+    ``1.0`` (default) reproduces the exact DARPA solid.
+    """
     if x.shape != y.shape or x.shape != z.shape:
         raise ValueError("point coordinate tensors must have matching shapes")
     if length <= 0.0:
@@ -517,10 +620,15 @@ def suboff_fins_contain_points(
     y_ft = (y - cy).abs() * ftlu
     z_ft = (z - cz).abs() * ftlu
 
-    y_chord = _FIN_SWEEP_K * y_ft + _FIN_SWEEP_C
-    z_chord = _FIN_SWEEP_K * z_ft + _FIN_SWEEP_C
-    s_y = (x_ft - _FIN_H) / y_chord + 1.0
-    s_z = (x_ft - _FIN_H) / z_chord + 1.0
+    scale_f = float(scale)
+    x_chord = _fin_chord_frame(x_ft, scale_f)
+    y_span = _fin_span_frame(y_ft, scale_f)
+    z_span = _fin_span_frame(z_ft, scale_f)
+
+    y_chord = _FIN_SWEEP_K * y_span + _FIN_SWEEP_C
+    z_chord = _FIN_SWEEP_K * z_span + _FIN_SWEEP_C
+    s_y = (x_chord - _FIN_H) / y_chord + 1.0
+    s_z = (x_chord - _FIN_H) / z_chord + 1.0
 
     def naca_half_thickness(s: torch.Tensor) -> torch.Tensor:
         a, b, c, d, e = _NACA_COEFFS
@@ -532,13 +640,21 @@ def suboff_fins_contain_points(
             - e * s.pow(4)
         )
 
-    z_half = naca_half_thickness(s_y)
-    y_half = naca_half_thickness(s_z)
+    z_half = naca_half_thickness(s_y) * scale_f
+    y_half = naca_half_thickness(s_z) * scale_f
     fins_y = (
-        (y_ft > _FIN_R_INNER) & (y_ft < _FIN_R_OUTER) & (z_ft < z_half) & (s_y > 0.0) & (s_y < 1.0)
+        (y_span > _FIN_R_INNER)
+        & (y_span < _FIN_R_OUTER)
+        & (z_ft < z_half)
+        & (s_y > 0.0)
+        & (s_y < 1.0)
     )
     fins_z = (
-        (z_ft > _FIN_R_INNER) & (z_ft < _FIN_R_OUTER) & (y_ft < y_half) & (s_z > 0.0) & (s_z < 1.0)
+        (z_span > _FIN_R_INNER)
+        & (z_span < _FIN_R_OUTER)
+        & (y_ft < y_half)
+        & (s_z > 0.0)
+        & (s_z < 1.0)
     )
     return fins_y | fins_z
 
@@ -550,20 +666,28 @@ def suboff_appendages_contain_points(
     *,
     center: tuple[float, float, float],
     length: float,
+    sail_scale: float = 1.0,
+    fin_scale: float = 1.0,
 ) -> torch.Tensor:
-    """Evaluate the union of continuous AFF-8 sail and fin geometry."""
+    """Evaluate the union of continuous AFF-8 sail and fin geometry.
+
+    ``sail_scale`` / ``fin_scale`` mirror :class:`SuboffConfig` and default
+    to the exact DARPA geometry.
+    """
     return suboff_sail_contains_points(
         x,
         y,
         z,
         center=center,
         length=length,
+        scale=sail_scale,
     ) | suboff_fins_contain_points(
         x,
         y,
         z,
         center=center,
         length=length,
+        scale=fin_scale,
     )
 
 
@@ -611,6 +735,10 @@ def _add_sail_mask(
     x_ft = (xx - x_bow) * ftlu
     y_ft = (yy - cy) * ftlu  # transverse
     z_ft = (zz - cz) * ftlu  # vertical (up)
+
+    # Optional appendage scale (config.sail_scale): evaluate the exact
+    # DARPA predicate in the inversely-scaled frame (identity at 1.0).
+    x_ft, y_ft, z_ft = _sail_unscaled_frame(x_ft, y_ft, z_ft, float(config.sail_scale))
 
     Zmax = _SAIL_ZMAX  # 0.109375 ft — max half-thickness
     y_tmp = _SAIL_YTMP  # 1.507813 ft — sail height boundary
@@ -692,12 +820,20 @@ def _add_fin_masks(
     y_ft = torch.abs(yy - cy) * ftlu
     z_ft = torch.abs(zz - cz) * ftlu
 
-    h = _FIN_H  # 13.146284 ft
-    cy_val = _FIN_SWEEP_K * y_ft + _FIN_SWEEP_C  # sweep for y-fins
-    cz_val = _FIN_SWEEP_K * z_ft + _FIN_SWEEP_C  # sweep for z-fins
+    # Optional appendage scale (config.fin_scale): chord × scale about the
+    # common trailing edge, span × scale about the root radius (buried in
+    # the hull), NACA thickness × scale.  All identities at scale 1.0.
+    scale = float(config.fin_scale)
+    x_chord = _fin_chord_frame(x_ft, scale)
+    y_span = _fin_span_frame(y_ft, scale)
+    z_span = _fin_span_frame(z_ft, scale)
 
-    s = (x_ft - h) / cy_val + 1.0  # chord parameter for y-fins
-    sz = (x_ft - h) / cz_val + 1.0  # chord parameter for z-fins
+    h = _FIN_H  # 13.146284 ft
+    cy_val = _FIN_SWEEP_K * y_span + _FIN_SWEEP_C  # sweep for y-fins
+    cz_val = _FIN_SWEEP_K * z_span + _FIN_SWEEP_C  # sweep for z-fins
+
+    s = (x_chord - h) / cy_val + 1.0  # chord parameter for y-fins
+    sz = (x_chord - h) / cz_val + 1.0  # chord parameter for z-fins
 
     # --- Fins extending in y (thickness in z) — port/starboard ---
     mask_s = (s > 0) & (s < 1)
@@ -707,8 +843,9 @@ def _add_fin_masks(
     d = _NACA_COEFFS[3] * s * s * s
     e = _NACA_COEFFS[4] * s * s * s * s
     z_suboff = a - b - c + d - e
+    z_bound = z_suboff * scale  # fin_v thickness (in z) scales with the fin
     fin_v = (
-        (y_ft > _FIN_R_INNER) & (y_ft < _FIN_R_OUTER) & (z_ft > -z_suboff) & (z_ft < z_suboff)
+        (y_span > _FIN_R_INNER) & (y_span < _FIN_R_OUTER) & (z_ft > -z_bound) & (z_ft < z_bound)
     ) & mask_s
 
     # --- Fins extending in z (thickness in y) — top/bottom ---
@@ -719,8 +856,9 @@ def _add_fin_masks(
     d_h = _NACA_COEFFS[3] * sz * sz * sz
     e_h = _NACA_COEFFS[4] * sz * sz * sz * sz
     y_suboff = a_h - b_h - c_h + d_h - e_h
+    y_bound = y_suboff * scale  # fin_h thickness (in y) scales with the fin
     fin_h = (
-        (z_ft > _FIN_R_INNER) & (z_ft < _FIN_R_OUTER) & (y_ft > -y_suboff) & (y_ft < y_suboff)
+        (z_span > _FIN_R_INNER) & (z_span < _FIN_R_OUTER) & (y_ft > -y_bound) & (y_ft < y_bound)
     ) & mask_sz
 
     fins = fin_v | fin_h
@@ -784,6 +922,7 @@ def build_suboff_mask(
 
     # Build bare hull mask
     mask = suboff_hull_mask(nx, ny, nz, cx, cy, cz, length, radius, dev, config)
+    bare_solid = int(mask.sum().item())
 
     # Add sail
     if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
@@ -800,6 +939,8 @@ def build_suboff_mask(
     stats = {
         **stats_form,
         "solid_cells": solid,
+        "bare_hull_solid_cells": bare_solid,
+        "appendage_solid_cells": solid - bare_solid,
         "fluid_cells": total - solid,
         "total_cells": total,
         "nx": nx,
@@ -817,6 +958,45 @@ def build_suboff_mask(
 # ---------------------------------------------------------------------------
 # Statistics
 # ---------------------------------------------------------------------------
+
+
+def _sail_own_dimensions_ft() -> tuple[float, float]:
+    """Sail own (above-deck) volume and wetted-area proxy at scale 1 (ft).
+
+    Quadrature of the 3-segment DARPA half-width ``w(x)``: the exposed
+    cross-section is a rectangle of height ``y_tmp - deck`` plus the
+    half-ellipse cap (semi-axes ``w`` and ``w/2``, area ``pi*w^2/4``).
+    The wetted-area proxy counts the two profile sides over the full
+    local height (with the taper slope metric, mirroring the bare-hull
+    meridional treatment) plus a crown strip of width ``2*w``.  Cap end
+    faces are neglected; the value is a scale-aware proxy, not a
+    certificate for ITTC towing comparisons.
+    """
+    x = np.linspace(_SAIL_X1_START, _SAIL_X3_END, 4001)
+    w = np.maximum(_sail_half_thickness_np(x), 0.0)
+    h_body = max(_SAIL_YTMP - _SAIL_Z_DECK, 0.0)
+    section = 2.0 * w * h_body + 0.25 * math.pi * w * w
+    volume = float(np.trapezoid(section, x))
+    dw = np.gradient(w, x, edge_order=2)
+    h_own = h_body + 0.5 * w
+    sides = 2.0 * float(np.trapezoid(h_own * np.sqrt(1.0 + dw * dw), x))
+    crown = 2.0 * float(np.trapezoid(w, x))
+    return volume, sides + crown
+
+
+def _fins_own_dimensions_ft() -> tuple[float, float]:
+    """All-four-fin own volume and wetted-area proxy at scale 1 (ft).
+
+    Per fin: section area ``2 * cy(r) * ∫ naca(s) ds`` integrated over
+    the span (volume) and two side faces of planform ``∫ cy(r) dr``
+    (wetted-area proxy; edges and root fairing neglected).
+    """
+    s = np.linspace(0.0, 1.0, 4001)
+    t_int = float(np.trapezoid(_naca4_thickness_np(s), s))
+    r = np.linspace(_FIN_R_INNER, _FIN_R_OUTER, 2001)
+    chord = _FIN_SWEEP_K * r + _FIN_SWEEP_C
+    planform = float(np.trapezoid(chord, r))
+    return 4.0 * 2.0 * t_int * planform, 4.0 * 2.0 * planform
 
 
 def suboff_statistics(
@@ -890,6 +1070,33 @@ def suboff_statistics(
         SuboffHullType.FULL: "SUBOFF Full Appendage (AFF-8 inspired)",
     }
 
+    # Appendage own dimensions: similarity scaling gives EXACT s^3 (volume)
+    # and s^2 (wetted area) laws about the scale-1 quadrature.
+    appendage: dict[str, float | str] = {
+        "sail_scale": config.sail_scale,
+        "fin_scale": config.fin_scale,
+    }
+    own_volume = 0.0
+    own_wetted = 0.0
+    lu3_per_ft3 = (length / _SUBOFF_L_FT) ** 3
+    lu2_per_ft2 = (length / _SUBOFF_L_FT) ** 2
+    if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
+        v1, a1 = _sail_own_dimensions_ft()
+        own_volume += v1 * config.sail_scale**3 * lu3_per_ft3
+        own_wetted += a1 * config.sail_scale**2 * lu2_per_ft2
+        appendage["sail_own_volume_lu3"] = round(v1 * config.sail_scale**3 * lu3_per_ft3, 3)
+        appendage["sail_own_wetted_area_lu2"] = round(a1 * config.sail_scale**2 * lu2_per_ft2, 3)
+    if hull_type == SuboffHullType.FULL:
+        v1, a1 = _fins_own_dimensions_ft()
+        own_volume += v1 * config.fin_scale**3 * lu3_per_ft3
+        own_wetted += a1 * config.fin_scale**2 * lu2_per_ft2
+        appendage["fin_own_volume_lu3"] = round(v1 * config.fin_scale**3 * lu3_per_ft3, 3)
+        appendage["fin_own_wetted_area_lu2"] = round(a1 * config.fin_scale**2 * lu2_per_ft2, 3)
+    if hull_type is not SuboffHullType.BARE_HULL:
+        appendage["appendage_own_volume_lu3"] = round(own_volume, 3)
+        appendage["appendage_own_wetted_area_lu2"] = round(own_wetted, 3)
+        appendage["appendage_wetted_area_method"] = "own_dimension_quadrature_scaled"
+
     return {
         "hull_type": hull_type.value,
         "label": _labels[hull_type],
@@ -903,6 +1110,7 @@ def suboff_statistics(
         "wetted_area_method": "profile_meridional_metric_quadrature",
         "bare_hull_wetted_area_lu2": round(wetted_bare, 2),
         "prismatic_coefficient": round(float(cp), 4),
+        **appendage,
     }
 
 
@@ -1423,11 +1631,14 @@ def _real_sail_triangles(
     length: float,
     n_axial: int = 30,
     n_arc: int = 12,
+    scale: float = 1.0,
 ) -> None:
     """Append surface triangles for the real SUBOFF sail.
 
     Works in lattice units: hull from x=0 to x=length, centred at y=z=0.
     The sail sits on +z (vertical up) with thickness in y (transverse).
+    ``scale`` multiplies the sail's own dimensions about the DARPA
+    anchors, matching the voxel predicate exactly.
     """
     ftlu = _ft_per_lu(length)
     inv = 1.0 / ftlu  # ft → lu
@@ -1435,6 +1646,12 @@ def _real_sail_triangles(
     x_ft_arr = np.linspace(_SAIL_X1_START, _SAIL_X3_END, n_axial)
     z_tmp_arr = _sail_half_thickness_np(x_ft_arr)
     outlines = [_sail_cross_section_pts(zt, n_arc) for zt in z_tmp_arr]
+    if scale != 1.0:
+        x_ft_arr = _SAIL_X_CENTER + (x_ft_arr - _SAIL_X_CENTER) * scale
+        outlines = [
+            [(y_ft * scale, _SAIL_Z_DECK + (z_ft - _SAIL_Z_DECK) * scale) for y_ft, z_ft in o]
+            for o in outlines
+        ]
 
     for i in range(n_axial - 1):
         p0_list = outlines[i]
@@ -1519,11 +1736,14 @@ def _real_fin_triangles(
     length: float,
     n_chord: int = 20,
     n_span: int = 10,
+    scale: float = 1.0,
 ) -> None:
     """Append surface triangles for the 4 real SUBOFF cruciform stern fins.
 
     Each fin is a swept NACA 4-digit airfoil.  Works in lattice units:
-    hull from x=0 to x=length, centred at y=z=0.
+    hull from x=0 to x=length, centred at y=z=0.  ``scale`` multiplies
+    each fin's own dimensions about the DARPA anchors, matching the
+    voxel predicate exactly.
     """
     ftlu = _ft_per_lu(length)
     inv = 1.0 / ftlu
@@ -1536,6 +1756,13 @@ def _real_fin_triangles(
     cy_arr = _FIN_SWEEP_K * r_arr + _FIN_SWEEP_C
     # x_ft[i, j] = h + (s_j - 1) * cy_i  → (n_span, n_chord)
     x_ft = h + (s_arr[None, :] - 1.0) * cy_arr[:, None]
+
+    if scale != 1.0:
+        # Forward similarity into query space (chord about the trailing
+        # edge, span about the root radius, thickness × scale).
+        x_ft = h + (x_ft - h) * scale
+        r_arr = _FIN_R_INNER + (r_arr - _FIN_R_INNER) * scale
+        t_arr = t_arr * scale
 
     x_lu = x_ft * inv
     r_lu = r_arr * inv
@@ -1612,11 +1839,11 @@ def _build_suboff_triangles(
 
     # ---- Sail (real DARPA 3-segment polynomial + arc top) ----
     if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
-        _real_sail_triangles(triangles, length)
+        _real_sail_triangles(triangles, length, scale=float(config.sail_scale))
 
     # ---- Cruciform fins (real swept NACA 4-digit) ----
     if hull_type == SuboffHullType.FULL:
-        _real_fin_triangles(triangles, length)
+        _real_fin_triangles(triangles, length, scale=float(config.fin_scale))
 
     return triangles
 
@@ -1625,6 +1852,8 @@ def suboff_appendage_triangles(
     length: float,
     *,
     center: tuple[float, float, float] | None = None,
+    sail_scale: float = 1.0,
+    fin_scale: float = 1.0,
 ) -> np.ndarray:
     """Return the continuous AFF-8 sail/fin CAD triangles.
 
@@ -1632,13 +1861,14 @@ def suboff_appendage_triangles(
     ``y=z=0``.  Supplying a solver-grid ``center`` translates the mesh so the
     hull midpoint and transverse/vertical axis coincide with that center.
     The bare axisymmetric body is deliberately excluded because it already
-    has an analytic link-intersection routine.
+    has an analytic link-intersection routine.  ``sail_scale`` /
+    ``fin_scale`` mirror :class:`SuboffConfig` (default: exact DARPA).
     """
     if length <= 0.0 or not math.isfinite(length):
         raise ValueError("length must be finite and positive")
     triangles: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
-    _real_sail_triangles(triangles, length)
-    _real_fin_triangles(triangles, length)
+    _real_sail_triangles(triangles, length, scale=float(sail_scale))
+    _real_fin_triangles(triangles, length, scale=float(fin_scale))
     result = np.asarray(triangles, dtype=np.float64)
     if result.ndim != 3 or result.shape[1:] != (3, 3):
         raise RuntimeError("SUBOFF appendage tessellation is malformed")
