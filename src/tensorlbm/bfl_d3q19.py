@@ -353,7 +353,10 @@ def bouzidi_bounce_back_d3q19(
             continue
         od = int(OPP19[d].item())
         cx, cy, cz = (int(v) for v in C19[d].tolist())
-        q_cell = q_field[d][mask_d]
+        # Promote float32 q to the population dtype, mirroring
+        # bfl_bounce_back_common so the force ledger stays bit-consistent
+        # with the populations it accounts for (identity for float32 runs).
+        q_cell = q_field[d][mask_d].to(dtype=f.dtype)
         lin = q_cell < 0.5
         fp_d = f_prev[d][mask_d]
         fp_od = f_prev[od][mask_d]
