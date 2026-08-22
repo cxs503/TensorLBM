@@ -8,6 +8,15 @@ For experimental features and rapid-evolution interfaces, use
 from __future__ import annotations
 
 from ._version import __version__
+from .autograd_calib import (
+    BoxCase,
+    CalibResult,
+    DragTarget,
+    bounded_drag,
+    calibrate,
+    cs_power,
+    synthetic_targets,
+)
 from .autograd_path import differentiable_step, obstacle_force, rollout
 from .boundaries import (
     apply_simple_channel_boundaries,
@@ -82,6 +91,14 @@ __all__ = [
     "differentiable_step",
     "obstacle_force",
     "rollout",
+    # closure calibration (solver-in-the-loop)
+    "BoxCase",
+    "CalibResult",
+    "DragTarget",
+    "bounded_drag",
+    "calibrate",
+    "cs_power",
+    "synthetic_targets",
     "DiagnosticPoint",
     "resolve_device",
     "prepare_run_dir",
