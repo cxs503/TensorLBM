@@ -20,6 +20,7 @@ from tensorlbm.data.solver_export import read_snapshot
 from tensorlbm.scan_runner import (
     ScanExecutor,
     ScanPlan,
+    ScanPoint,
     ScanVariable,
     assign_points_to_gpus,
     coerce_case_params,
@@ -115,6 +116,80 @@ class TestScanPlan:
             code_sha=CODE_SHA,
         )
         assert len(plan.points) == 4
+
+    def test_factorial_n_points_reconciled_to_len_points(self):
+        """``plan.n_points`` records the realised count, not the request."""
+        plan = ScanPlan.generate(
+            scan_id="fac22-default-request",
+            case="cavity",
+            variables=[
+                ScanVariable(name="re", levels=[100.0, 400.0]),
+                ScanVariable(name="u_lid", levels=[0.05, 0.08]),
+            ],
+            method="full_factorial",  # request left at the default 16
+            code_sha=CODE_SHA,
+        )
+        assert len(plan.points) == 4
+        assert plan.n_points == 4 == len(plan.points)
+        assert plan.to_dict()["n_points"] == 4
+
+    def test_factorial_three_variables_product_count(self):
+        plan = ScanPlan.generate(
+            scan_id="fac234",
+            case="cavity",
+            variables=[
+                ScanVariable(name="a", levels=[1.0, 2.0]),
+                ScanVariable(name="b", levels=[1.0, 2.0, 3.0]),
+                ScanVariable(name="c", levels=[1.0, 2.0, 3.0, 4.0]),
+            ],
+            method="full_factorial",
+            code_sha=CODE_SHA,
+        )
+        assert plan.n_points == len(plan.points) == 24
+
+    def test_direct_construction_reconciles_n_points(self):
+        points = tuple(
+            ScanPoint(
+                index=i,
+                point_id=f"p{i:04d}",
+                run_id=f"manual-p{i:04d}",
+                params={"re": 100.0},
+            )
+            for i in range(3)
+        )
+        plan = ScanPlan(
+            scan_id="manual",
+            case="cavity",
+            variables=(ScanVariable(name="re", levels=[100.0, 400.0]),),
+            method="full_factorial",
+            n_points=16,  # mismatching request -> reconciled to len(points)
+            seed=0,
+            steps=30,
+            snapshot_every=10,
+            code_sha=CODE_SHA,
+            points=points,
+        )
+        assert plan.n_points == 3 == len(plan.points)
+
+    def test_from_dict_heals_legacy_mismatched_n_points(self):
+        plan = _tiny_plan()
+        data = plan.to_dict()
+        data["n_points"] = 16  # legacy plan.json written before reconciliation
+        loaded = ScanPlan.from_dict(data)
+        assert loaded.n_points == len(loaded.points) == 2
+        assert loaded.to_dict() == plan.to_dict()
+
+    def test_lhs_n_points_authoritative(self):
+        plan = ScanPlan.generate(
+            scan_id="lhs7",
+            case="cavity",
+            variables=[ScanVariable(name="re", low=100.0, high=1000.0)],
+            method="latin_hypercube",
+            n_points=7,
+            seed=3,
+            code_sha=CODE_SHA,
+        )
+        assert plan.n_points == len(plan.points) == 7
 
     def test_rejects_bad_code_sha(self):
         with pytest.raises(ValueError, match="40 lowercase hex"):
