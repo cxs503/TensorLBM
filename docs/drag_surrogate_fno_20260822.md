@@ -1,10 +1,18 @@
 # SUBOFF field-to-drag surrogate: plane snapshot → C_D (FNO encoder)
 
-Date: 2026-08-22 · Module: `tensorlbm.ai.drag_surrogate` · Run: `/nfs/wangxi/runs/fno_drag_20260822`
+Date: 2026-08-22 (v1 pilot + v1.1 two-parameter addendum) · Module:
+`tensorlbm.ai.drag_surrogate` · Run: `/nfs/wangxi/runs/fno_drag_20260822`
 
 First closed AI4S loop over the B1 campaign: LBM Re sweep → exported fields +
 exact drag labels → Fourier-encoder surrogate predicting C_D directly from a
 flow-field snapshot — no Reynolds number input, no wake-survey post-processing.
+
+> **v1.1 addendum (read first).** The pilot numbers below (0.41 % MAPE on the
+> single-parameter sweep) do **not** transfer: on the Re × u_in grid the same
+> model mispredicts by ~60 % MAPE, and retrained surrogates lose to the
+> fitted power-law prior. See the v1.1 addendum section — the
+> pilot's residual error reflected field *magnitude* (velocity scale) as a
+> Re proxy, not shape understanding.
 
 ## Task
 
@@ -119,3 +127,53 @@ CPU and GPU venvs).
 - k-fold over the 24 points + multi-seed ensembles to tighten the error bars.
 - Multi-plane / 3-D encoder; conditioning on geometry tokens for
   multi-hull generalisation.
+
+## v1.1: Two-parameter generalization (Re × u_in grid, same day)
+
+Campaign: 24-point full factorial (6 log Re levels × u_in ∈ {0.06, 0.085,
+0.11, 0.14}) via `ScanPlan.generate` — the #201 doe fix exercised in
+production, with level round-trip asserted at launch. Same observer, same
+protocol; τ ∈ [0.517, 1.145], worst corner smoked first (no NaN). Dataset
+`/nfs/wangxi/datasets/scan_suboff_re_uin_20260822` (~4 min on 8 GPUs).
+
+### Finding 1 — u_in-similarity is violated at 3.7–8.3 %
+
+At fixed Re, C_D falls monotonically with u_in (−6.2 % per e-fold; steepest at
+Re=50). Incompressible similarity says ~0; the residual is the τ-dependence of
+lattice errors (τ = 0.5 + 230.4·u/Re co-varies with u) plus a Ma² term at
+u=0.14. A useful solver-fidelity fact in its own right, now on record.
+
+### Finding 2 — the single-parameter model does not transfer
+
+| u_in slice | 0.06 | 0.085 | 0.11 | 0.14 | all 24 |
+|---|---|---|---|---|---|
+| pilot model MAPE % | 128.6 | 41.5 | 18.9 | 49.3 | **59.6** |
+
+The pilot model keyed on field magnitude (the velocity scale is a perfect Re
+proxy at fixed u_in), not on wake shape. Scale-normalized inputs
+(ux, uy → /u_in) fix the val split (3.67 % → 1.88 %) but not the test.
+
+### Finding 3 — at 24 points the physics prior wins
+
+| model (step-500 input) | val MAPE % | test MAPE % |
+|---|---|---|
+| power law in Re (2 params) | 1.93 | **2.57** |
+| + log u_in correction (3 params) | 3.50 | 4.05 |
+| FNO, raw inputs | 3.67 | 5.48 |
+| FNO, u_in-normalized inputs | 1.88 | 5.37 |
+
+The u_in effect (4–8 %) sits at or below the FNO noise floor for 17 training
+points; residual correlation on test is effectively noise. Parametric
+baselines dominate — and the 3-param fit does not beat the 2-param one
+(small-N): data scale, not architecture, is the binding constraint.
+
+### Reading
+
+The pilot's 0.41 % was single-parameter luck; the honest state is: **the
+loop works end-to-end (campaign → dataset → labels → study → retrain, ~30 min
+including two retrainings), but surrogate value needs more data and a richer
+parameter space** where closed-form priors do not exist. Next: LHS 32–48
+points over (Re, u_in), scale-invariant inputs by default, then hull/geometry
+parameters. API hardened along the way: labels now join per point
+(`load_exact_cd_per_point` / `cd_by_point`) — Re-keyed joins collapse on
+multi-parameter grids (regression-tested).

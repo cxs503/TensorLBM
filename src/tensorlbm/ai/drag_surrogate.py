@@ -116,6 +116,34 @@ def load_exact_cd(
     ``u_in`` comes from the paired fields campaign's snapshot attributes and
     ``S_proj`` from its solid mask (:func:`tensorlbm.drag_survey.projected_area`),
     matching the benchmark convention.
+
+    Raises:
+        ValueError: if two points share a Reynolds number — use
+            :func:`load_exact_cd_per_point` for multi-parameter campaigns
+            where Re repeats across points.
+    """
+    per_point = load_exact_cd_per_point(drag_dir, fields_dir, tail_fraction=tail_fraction, rho=rho)
+    out: dict[float, float] = {}
+    for pd, cd in per_point.items():
+        re = _point_re(drag_dir, pd)
+        if re in out:
+            raise ValueError(f"duplicate Re {re} in {drag_dir}")
+        out[re] = cd
+    return out
+
+
+def load_exact_cd_per_point(
+    drag_dir: str | Path,
+    fields_dir: str | Path,
+    *,
+    tail_fraction: float = 0.25,
+    rho: float = 1.0,
+) -> dict[str, float]:
+    """Exact C_D per point id — the join that works when Re repeats.
+
+    Same physics as :func:`load_exact_cd`, keyed by ``point_id`` so
+    multi-parameter campaigns (e.g. a Re × u_in grid) keep one label per
+    point instead of collapsing onto the last point at each Re.
     """
     import h5py
 
@@ -123,11 +151,11 @@ def load_exact_cd(
 
     drag_root = Path(drag_dir) / "points"
     fields_root = Path(fields_dir) / "points"
-    out: dict[float, float] = {}
+    out: dict[str, float] = {}
     for pd in sorted(drag_root.iterdir()):
         if not pd.is_dir() or not (pd / "status.json").is_file():
             continue
-        re = float(json.loads((pd / "status.json").read_text())["params"]["re"])
+        status = json.loads((pd / "status.json").read_text())
         history_path = pd / "drag_history.json"
         if history_path.is_file():
             samples = json.loads(history_path.read_text())["samples"]
@@ -135,27 +163,38 @@ def load_exact_cd(
             tail = fx[int(len(fx) * (1.0 - tail_fraction)) :]
             force = float(tail.mean())
         else:
-            force = float(json.loads((pd / "status.json").read_text())["drag_mean_tail"])
+            force = float(status["drag_mean_tail"])
 
         fh5 = fields_root / pd.name / "fields.h5"
         with h5py.File(fh5, "r") as f:
             last_key = sorted(f.keys())[-1]
             u_in = float(f[last_key].attrs["u_in"])
             mask = np.asarray(f[last_key]["solid_mask"])
-        cd = 2.0 * force / (rho * u_in**2 * projected_area(mask))
-        if re in out:
-            raise ValueError(f"duplicate Re {re} in {drag_dir}")
-        out[re] = cd
+        out[pd.name] = 2.0 * force / (rho * u_in**2 * projected_area(mask))
     return out
+
+
+def _point_re(drag_dir: str | Path, point_id: str) -> float:
+    return float(json.loads((Path(drag_dir) / "points" / point_id / "status.json").read_text())
+                 ["params"]["re"])
 
 
 def build_drag_split(
     fields_dir: str | Path,
-    cd_by_re: dict[float, float],
-    point_ids: tuple[str, ...] | list[str],
+    cd_by_re: dict[float, float] | None = None,
+    point_ids: tuple[str, ...] | list[str] = (),
     spec: PlaneSampleSpec | None = None,
+    *,
+    cd_by_point: dict[str, float] | None = None,
 ) -> DragSplit:
-    """Materialise ``(point, step)`` plane samples with exact-C_D labels."""
+    """Materialise ``(point, step)`` plane samples with exact-C_D labels.
+
+    Labels join either by point id (``cd_by_point`` — required when Re
+    repeats across points, e.g. a Re × u_in grid) or by Reynolds number
+    (``cd_by_re``, single-parameter campaigns).
+    """
+    if cd_by_re is None and cd_by_point is None:
+        raise ValueError("provide cd_by_re or cd_by_point")
     spec = spec or PlaneSampleSpec()
     root = Path(fields_dir) / "points"
     xs, cds, res, pids, steps = [], [], [], [], []
@@ -163,8 +202,14 @@ def build_drag_split(
         h5 = root / pid / "fields.h5"
         with_batch = read_plane_snapshot(h5, spec.steps[0], spec.channels, spec.plane)
         re = float(_snapshot_attr(h5, "re"))
-        if re not in cd_by_re:
-            raise KeyError(f"no exact C_D for Re={re} (point {pid})")
+        if cd_by_point is not None:
+            if pid not in cd_by_point:
+                raise KeyError(f"no exact C_D for point {pid}")
+            cd = cd_by_point[pid]
+        else:
+            if re not in cd_by_re:
+                raise KeyError(f"no exact C_D for Re={re} (point {pid})")
+            cd = cd_by_re[re]
         for step in spec.steps:
             plane = (
                 with_batch
@@ -172,7 +217,7 @@ def build_drag_split(
                 else read_plane_snapshot(h5, step, spec.channels, spec.plane)
             )
             xs.append(plane)
-            cds.append(cd_by_re[re])
+            cds.append(cd)
             res.append(re)
             pids.append(pid)
             steps.append(step)
@@ -438,7 +483,9 @@ def power_law_predict(coeffs: tuple[float, float], re: np.ndarray) -> np.ndarray
 # ---------------------------------------------------------------------------
 
 
-def save_drag_regressor(model: FNODragRegressor, norm: DragNorm, path: str | Path) -> Path:
+def save_drag_regressor(
+    model: FNODragRegressor, norm: DragNorm, path: str | Path
+) -> Path:
     """Serialize model weights + arch + normalisation (``.pt`` + ``.pt.json``)."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -489,9 +536,9 @@ def run_drag_surrogate_study(
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     split_points = json.loads((Path(fields_dir) / "dataset.json").read_text())["split_points"]
-    cd_by_re = load_exact_cd(drag_dir, fields_dir)
+    cd_by_point = load_exact_cd_per_point(drag_dir, fields_dir)
     splits = {
-        name: build_drag_split(fields_dir, cd_by_re, pids, spec)
+        name: build_drag_split(fields_dir, point_ids=pids, spec=spec, cd_by_point=cd_by_point)
         for name, pids in split_points.items()
     }
     result = train_drag_surrogate(splits["train"], splits["val"], arch, config, transform)

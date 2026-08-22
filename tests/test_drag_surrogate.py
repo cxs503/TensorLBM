@@ -9,13 +9,14 @@ import numpy as np
 import pytest
 
 from tensorlbm.ai.drag_surrogate import (
-    FNODragArch,
     DragTrainConfig,
+    FNODragArch,
     PlaneSampleSpec,
     build_drag_split,
     fit_norm,
     load_drag_regressor,
     load_exact_cd,
+    load_exact_cd_per_point,
     power_law_fit,
     power_law_predict,
     predict_cd,
@@ -82,13 +83,8 @@ def _write_campaign(fields_dir: Path, drag_dir: Path, *, with_sidecar: bool = Tr
         )
         if with_sidecar:
             samples = [
-                {
-                    "step": 25 * (i + 1),
-                    "force_x": force,
-                    "force_y": 0.0,
-                    "force_z": 0.0,
-                    "force_abs": force,
-                }
+                {"step": 25 * (i + 1), "force_x": force, "force_y": 0.0, "force_z": 0.0,
+                 "force_abs": force}
                 for i in range(40)
             ]
             (drag_dir / "points" / point_id / "drag_history.json").write_text(
@@ -106,11 +102,15 @@ def campaign(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def _tiny_arch() -> FNODragArch:
-    return FNODragArch(in_channels=3, width=8, n_layers=2, modes_y=4, modes_x=6, mlp_hidden=16)
+    return FNODragArch(
+        in_channels=3, width=8, n_layers=2, modes_y=4, modes_x=6, mlp_hidden=16
+    )
 
 
 def _tiny_config() -> DragTrainConfig:
-    return DragTrainConfig(epochs=15, batch_size=4, lr=5e-3, patience=100, seed=0, device="cpu")
+    return DragTrainConfig(
+        epochs=15, batch_size=4, lr=5e-3, patience=100, seed=0, device="cpu"
+    )
 
 
 def test_load_exact_cd_matches_power_law(campaign) -> None:
@@ -177,6 +177,26 @@ def test_norm_fitted_on_train_split_only(campaign) -> None:
     test.x = test.x * 3.0 + 1.0
     norm2 = fit_norm(train, "log10")
     assert norm2.channel_mean == norm.channel_mean
+
+
+def test_per_point_join_when_re_repeats(campaign) -> None:
+    """Multi-parameter campaigns repeat Re across points; labels join by pid."""
+    fields_dir, drag_dir = campaign
+    st_path = drag_dir / "points" / "p0001" / "status.json"
+    status = json.loads(st_path.read_text())
+    status["params"]["re"] = RE_LEVELS[0]  # duplicate p0000's Re, keep own label
+    st_path.write_text(json.dumps(status))
+    with pytest.raises(ValueError, match="duplicate Re"):
+        load_exact_cd(drag_dir, fields_dir)
+    per_point = load_exact_cd_per_point(drag_dir, fields_dir)
+    assert set(per_point) == set(POINT_IDS)
+    assert per_point["p0000"] != per_point["p0001"]  # same Re, distinct labels
+    split = build_drag_split(
+        fields_dir, point_ids=["p0000", "p0001"], spec=PlaneSampleSpec(steps=(500,)),
+        cd_by_point=per_point,
+    )
+    assert split.cd[0] == per_point["p0000"]
+    assert split.cd[1] == per_point["p0001"]
 
 
 def test_power_law_fit_recovers_exponent() -> None:
