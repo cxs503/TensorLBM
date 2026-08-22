@@ -474,3 +474,127 @@ class TestInterpolatedBCWithCollision:
             # Mass should not explode
             mass = f.sum().item()
             assert mass < 1e6, f"Mass explosion at step {step}: {mass}"
+
+
+# ---------------------------------------------------------------------------
+# Quadratic-branch dtype regression (float64 populations vs float32 q_field)
+# ---------------------------------------------------------------------------
+class TestBFLQuadraticBranchFloat64:
+    """q_field is float32 by construction; the interpolation weights must be
+    formed in the population dtype.
+
+    Before the fix, ``bfl_bounce_back_common`` kept ``1/(2q)`` and
+    ``(2q-1)/(2q)`` in float32 (and the 2-D routine rounded its
+    ``(2q-1)/(2q)`` coefficient to float32), so float64 runs carried ~1e-7
+    relative errors on every curved-wall link and the exact planar
+    D2Q9/D3Q19 equivalence (tests/test_planar_d3q19.py) failed at ~6e-10.
+    """
+
+    RTOL = 1e-15
+
+    def test_common_quadratic_branch_matches_float64_reference(self) -> None:
+        from tensorlbm.bfl_common import bfl_bounce_back_common
+
+        torch.manual_seed(20260822)
+        shape = (19, 2, 3, 3)
+        f = 0.3 + 0.2 * torch.rand(shape, dtype=torch.float64)
+        f_prev = 0.3 + 0.2 * torch.rand(shape, dtype=torch.float64)
+
+        mask = torch.zeros(shape, dtype=torch.bool)
+        q_field = torch.full(shape, 0.5, dtype=torch.float32)
+        # Non-representable q values force the quadratic branch and make any
+        # float32 rounding of the weights visible against the float64 truth.
+        q_values = {1: 0.7, 3: 0.5857864376269049, 7: 0.9, 11: 0.61}
+        for d, qv in q_values.items():
+            mask[d, 0, 1, 1] = True
+            q_field[d, 0, 1, 1] = qv
+
+        f_out = bfl_bounce_back_common(f, f_prev, mask, q_field, lattice="D3Q19")
+
+        for d, qv in q_values.items():
+            od = int(OPP3D[d].item())
+            # q_field stores float32; the promotion is exact from the stored
+            # float32 value, so the reference must use the same datum.
+            q64 = torch.tensor(qv, dtype=torch.float32).to(torch.float64)
+            fp_d = f_prev[d, 0, 1, 1]
+            fp_opp = f_prev[od, 0, 1, 1]
+            expected = fp_d / (2.0 * q64) + (2.0 * q64 - 1.0) / (2.0 * q64) * fp_opp
+            torch.testing.assert_close(
+                f_out[od, 0, 1, 1],
+                expected,
+                rtol=self.RTOL,
+                atol=0.0,
+            )
+
+    def test_bouzidi_2d_quadratic_branch_matches_float64_reference(self) -> None:
+        from tensorlbm.d2q9 import OPPOSITE as OPP2D
+        from tensorlbm.interpolated_bc import bouzidi_bounce_back
+
+        torch.manual_seed(20260823)
+        shape2d = (9, 3, 3)
+        f = 0.3 + 0.2 * torch.rand(shape2d, dtype=torch.float64)
+        f_prev = 0.3 + 0.2 * torch.rand(shape2d, dtype=torch.float64)
+
+        d = 5  # (1, 1) diagonal
+        mask2d = torch.zeros(shape2d[1:], dtype=torch.bool)
+        mask2d[1, 1] = True
+        q2d = torch.full(shape2d[1:], 0.5, dtype=torch.float32)
+        q2d[1, 1] = 0.5857864376269049  # 2 - sqrt(2): not float32-representable
+
+        f_out = bouzidi_bounce_back(f, f_prev, mask2d, q2d, d)
+
+        od = int(OPP2D[d].item())
+        q64 = torch.tensor(0.5857864376269049, dtype=torch.float32).to(torch.float64)
+        fp_d = f_prev[d, 1, 1]
+        fp_opp = f_prev[od, 1, 1]
+        expected = fp_d / (2.0 * q64) + (2.0 * q64 - 1.0) / (2.0 * q64) * fp_opp
+        torch.testing.assert_close(
+            f_out[od, 1, 1],
+            expected,
+            rtol=self.RTOL,
+            atol=0.0,
+        )
+
+    def test_planar_d3q19_bfl_matches_2d_bitwise(self) -> None:
+        """End-to-end pin: the lifted D3Q19 BFL marginal equals the 2-D BFL
+        field bit-for-bit on float64 extruded data (linear and quadratic
+        links mixed)."""
+        from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19, compute_q_cylinder_d3q19
+        from tensorlbm.cumulant import collide_cumulant_d2q9
+        from tensorlbm.d2q9 import equilibrium
+        from tensorlbm.interpolated_bc import bouzidi_bounce_back, compute_q_circle
+        from tensorlbm.planar_d3q19 import (
+            collide_planar_cumulant_d3q19,
+            lift_d2q9_to_d3q19,
+            marginalize_d3q19_to_d2q9,
+        )
+        from tensorlbm.solver import stream
+        from tensorlbm.solver3d import stream3d
+
+        ny = nx = 11
+        rho = torch.ones((ny, nx), dtype=torch.float64)
+        ux = torch.full_like(rho, 0.03)
+        uy = torch.zeros_like(rho)
+        d2 = equilibrium(rho, ux, uy)
+        d3 = lift_d2q9_to_d3q19(d2[:, None].expand(-1, 3, -1, -1).clone())
+        tau = 0.68
+        d2_post = collide_cumulant_d2q9(d2, tau)
+        d3_post = collide_planar_cumulant_d3q19(d3, tau)
+
+        d2s = stream(d2_post)
+        d3s = stream3d(d3_post)
+        d2_mask, d2_q = compute_q_circle(nx, ny, 5.0, 5.0, 2.0, torch.device("cpu"))
+        for direction in range(1, 9):
+            d2s = bouzidi_bounce_back(d2s, d2_post, d2_mask[direction], d2_q[direction], direction)
+        d3_mask, d3_q = compute_q_cylinder_d3q19(nx, ny, 3, 5.0, 5.0, 2.0, torch.device("cpu"))
+        d3s = bouzidi_bounce_back_d3q19(d3s, d3_post, d3_mask, d3_q)
+
+        # Ulp-level agreement: the residual (max ~1.4e-16 relative) is the
+        # unavoidable lift/marginalize round-trip (0.5a + 0.25a + 0.25a) on
+        # the multi-direction marginals, versus ~6e-10 before the fix.
+        torch.testing.assert_close(
+            marginalize_d3q19_to_d2q9(d3s),
+            d2s[:, None].expand(-1, 3, -1, -1),
+            rtol=1e-14,
+            atol=1e-15,
+        )
