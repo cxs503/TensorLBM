@@ -23,7 +23,14 @@ admit gradients; this file pins down the *composition contract* of
    lateral closures exactly where claimed, passes the FD cross-checks
    through *all six* faces — including the learnable Courant number and the
    convective outlet's own time recursion — and beats the periodic-sides
-   baseline quantitatively on wall-normal pollution.
+   baseline quantitatively on wall-normal pollution;
+8. the A6+++ per-face lateral control (``WallSpec.overrides`` with face keys
+   "-y"/"+y"/"-z"/"+z") reproduces the shared-spec operator bit-for-bit when
+   every face resolves to the same closure, applies each face's own method
+   exactly where claimed (mixed free-slip / free-stream / periodic, on an
+   asymmetric field, edge last-write-wins), keeps the freestream override
+   velocity in the autograd graph (FD cross-check) and round-trips through
+   ``to_dict`` / ``from_dict`` while loading pre-A6+++ payloads unchanged.
 """
 
 from __future__ import annotations
@@ -1321,3 +1328,372 @@ def test_bounded_box_sphere_physics() -> None:
     # cross-domain normal flow at the glued planes, free-slip reflects it
     assert metric_periodic > 1e-3
     assert metric_slip < 1e-10 * metric_periodic
+
+# ---------------------------------------------------------------------------
+# 9. A6+++ per-face lateral walls: WallSpec.overrides with face keys
+# ---------------------------------------------------------------------------
+
+FACE_KEYS = ("-y", "+y", "-z", "+z")
+
+
+def asymmetric_flow_f0(
+    amplitude: float,
+    dtype: torch.dtype,
+    device: torch.device,
+    seed: int = 37,
+) -> torch.Tensor:
+    """Asymmetric equilibrium field u = (u0 + a*sin(2pi z/nz + 0.7),
+    a*cos(2pi z/nz + 0.3), a*sin(2pi y/ny + 1.1)) plus deterministic noise.
+
+    Every component is O(a) at every lateral face (so the free-slip normal
+    cancellation and the free-stream reset act on a non-trivial field) and
+    the phase offsets break the z / y mirror symmetries of the box, so no
+    symmetric cancellation can fake a passing face assertion.
+    """
+    zz, yy, _xx = torch.meshgrid(
+        torch.arange(NZ, dtype=dtype, device=device),
+        torch.arange(NY, dtype=dtype, device=device),
+        torch.arange(NX, dtype=dtype, device=device),
+        indexing="ij",
+    )
+    ux = 0.06 + amplitude * torch.sin(TWO_PI * zz / NZ + 0.7)
+    uy = amplitude * torch.cos(TWO_PI * zz / NZ + 0.3)
+    uz = amplitude * torch.sin(TWO_PI * yy / NY + 1.1)
+    f = equilibrium3d(torch.ones_like(ux), ux, uy, uz)
+    gen = torch.Generator(device="cpu").manual_seed(seed)
+    noise = torch.rand((19, NZ, NY, NX), generator=gen, dtype=torch.float64).to(dtype) - 0.5
+    return f + 0.03 * noise.to(device)
+
+
+def _manual_face_close(
+    f: torch.Tensor, key: str, spec: WallSpec, dtype: torch.dtype, device: torch.device
+) -> torch.Tensor:
+    """Independent single-face closure using the hand-derived test tables.
+
+    Replays the documented policy only: the face is read from the current
+    chain state, closed by its own spec (mirror swap / equilibrium reset /
+    periodic no-op), and the result is re-assembled with torch.cat.
+    """
+    if spec.method == "periodic":
+        return f
+    y_axis = key in ("-y", "+y")
+    at_start = key in ("-y", "-z")
+    dim = 2 if y_axis else 1
+    if y_axis:
+        plane = f[:, :, :1] if at_start else f[:, :, -1:]
+    else:
+        plane = f[:, :1] if at_start else f[:, -1:]
+    if spec.method == "free-slip":
+        flip = FLIP_Y if y_axis else FLIP_Z
+        unk = {"-y": UNK_Y0, "+y": UNK_Y1, "-z": UNK_Z0, "+z": UNK_Z1}[key]
+        plane_new = plane.clone()
+        for q in unk:
+            plane_new[q] = plane[flip[q]]
+    else:  # "freestream"
+        feq = equilibrium3d(
+            torch.tensor(float(spec.rho0), dtype=dtype, device=device),
+            torch.tensor(float(spec.ux), dtype=dtype, device=device),
+            torch.tensor(float(spec.uy), dtype=dtype, device=device),
+            torch.tensor(float(spec.uz), dtype=dtype, device=device),
+            device,
+        )
+        face_shape = list(f.shape)
+        face_shape[dim] = 1
+        plane_new = feq.expand(*face_shape)
+    if at_start:
+        interior = f[:, 1:] if dim == 1 else f[:, :, 1:]
+        return torch.cat([plane_new, interior], dim=dim)
+    interior = f[:, :-1] if dim == 1 else f[:, :, :-1]
+    return torch.cat([interior, plane_new], dim=dim)
+
+
+def _manual_walls(
+    f_str: torch.Tensor, walls: WallSpec, dtype: torch.dtype, device: torch.device
+) -> torch.Tensor:
+    """Close the four faces in the documented order (y0, y1, z0, z1)."""
+    f = f_str
+    for key in FACE_KEYS:
+        spec = walls if walls.overrides is None else walls.overrides.get(key, walls)
+        f = _manual_face_close(f, key, spec, dtype, device)
+    return f
+
+
+def _perface_walls(u_fs: float | torch.Tensor) -> WallSpec:
+    """The mixed-spec layout of section 9: free-slip default, periodic -z,
+    free-stream +z with a (learnable) far-field speed."""
+    return WallSpec(
+        method="free-slip",
+        overrides={
+            "-z": WallSpec(method="periodic"),
+            "+z": WallSpec(method="freestream", rho0=1.03, ux=u_fs, uy=-0.02),
+        },
+    )
+
+
+def test_perface_default_path_bitwise_unchanged() -> None:
+    """overrides=None / absent / empty: bit-for-bit the shared-spec operator."""
+    dtype = torch.float64
+    f0 = nonequilibrium_f(dtype, DEVICE)
+
+    # the shared-spec result is pinned by section 8; here: no-ops are exact
+    plain = differentiable_step(f0, 0.8, None)
+    assert torch.equal(differentiable_step(f0, 0.8, None, walls=WallSpec()), plain)
+    assert torch.equal(
+        differentiable_step(f0, 0.8, None, walls=WallSpec(overrides={})), plain
+    )
+    # all faces overridden to periodic: the wrap survives bit-for-bit
+    all_periodic = WallSpec(overrides={key: WallSpec() for key in FACE_KEYS})
+    assert torch.equal(differentiable_step(f0, 0.8, None, walls=all_periodic), plain)
+    # and a fully periodic box with one face overridden stays a no-op
+    assert torch.equal(
+        differentiable_step(f0, 0.8, None, walls=WallSpec(overrides={"+y": WallSpec()})),
+        plain,
+    )
+
+
+def test_perface_uniform_overrides_equal_shared_spec() -> None:
+    """Explicit per-face replicas of one closure == the shared spec operator
+    (the per-face loop and the batched path agree bit-for-bit)."""
+    dtype, device = torch.float64, DEVICE
+    f = nonequilibrium_f(dtype, device)
+    closures = [
+        ("free-slip", {}),
+        ("freestream", {"rho0": 1.02, "ux": 0.05, "uy": 0.01}),
+    ]
+    for method, fields in closures:
+        shared = WallSpec(method=method, **fields)
+        out_shared = differentiable_step(f, 0.7, None, walls=shared)
+        replicas = {key: WallSpec(method=method, **fields) for key in FACE_KEYS}
+        # all four faces listed, three listed (one uses the default), empty dict
+        for overrides in (replicas, {k: v for k, v in replicas.items() if k != "-z"}, {}):
+            walls = WallSpec(method=method, **fields, overrides=overrides)
+            assert torch.equal(differentiable_step(f, 0.7, None, walls=walls), out_shared)
+
+
+def test_perface_wall_value_contract() -> None:
+    """Mixed methods applied exactly where claimed, edge last-write-wins."""
+    dtype, device = torch.float64, DEVICE
+    f = nonequilibrium_f(dtype, device)
+    walls = _perface_walls(0.1)
+    out = differentiable_step(f, 0.7, None, walls=walls)
+
+    f_str = stream3d(collide_bgk3d(f, 0.7))
+    manual = _manual_walls(f_str, walls, dtype, device)
+    # the full post-boundary state matches the independent face-by-face replay
+    assert torch.equal(out, manual)
+    # interior planes untouched in every direction
+    assert torch.equal(out[:, 1:-1, 1:-1, :], f_str[:, 1:-1, 1:-1, :])
+    # the periodic -z face keeps the wrap: untouched off the y-edge lines
+    # (those carry the earlier y closures — last write wins there)
+    assert torch.equal(out[:, 0, 1:-1, :], f_str[:, 0, 1:-1, :])
+    # the free-stream +z face is fully reset *including* its edge lines (the
+    # z closure runs last: last write wins over the y closures there)
+    feq = equilibrium3d(
+        torch.tensor(1.03, dtype=dtype, device=device),
+        torch.tensor(0.1, dtype=dtype, device=device),
+        torch.tensor(-0.02, dtype=dtype, device=device),
+        torch.tensor(0.0, dtype=dtype, device=device),
+        device,
+    )
+    assert torch.equal(out[:, -1:, :, :], feq.expand(19, 1, NY, NX))
+
+    # freestream default with free-slip y overrides (the complementary mix)
+    walls2 = WallSpec(
+        method="freestream",
+        rho0=1.01,
+        ux=0.04,
+        overrides={"-y": WallSpec(method="free-slip"), "+y": WallSpec(method="free-slip")},
+    )
+    out2 = differentiable_step(f, 0.7, None, walls=walls2)
+    assert torch.equal(out2, _manual_walls(f_str, walls2, dtype, device))
+
+
+def test_perface_wall_asymmetric_physics() -> None:
+    """Asymmetric field, one method per face, each asserted on its own."""
+    dtype, device = torch.float64, DEVICE
+    f = asymmetric_flow_f0(0.05, dtype, device)
+    tau = 0.7
+    walls = _perface_walls(0.1)
+    out = differentiable_step(f, tau, None, walls=walls)
+    f_str = stream3d(collide_bgk3d(f, tau))
+    plain = differentiable_step(f, tau, None)  # fully periodic reference
+
+    rho, ux, uy, uz = macroscopic3d(out)
+
+    # free-slip faces (-y, +y): wall-normal velocity machine zero, tangential
+    # momentum retained at its O(amplitude) level (not wiped by the closure)
+    assert float(uy[1:-1, 0, :].abs().max()) < 1e-14
+    assert float(uy[1:-1, -1, :].abs().max()) < 1e-14
+    assert float(uz[1:-1, 0, :].abs().mean()) > 1e-3
+    assert float(ux[1:-1, -1, :].abs().mean()) > 1e-3
+    for q in range(19):  # exact mirror replay on both faces, off the z edges
+        expected = f_str[FLIP_Y[q], :, 0, :] if q in UNK_Y0 else f_str[q, :, 0, :]
+        assert torch.equal(out[q, 1:-1, 0, :], expected[1:-1, :]), q
+        expected = f_str[FLIP_Y[q], :, -1, :] if q in UNK_Y1 else f_str[q, :, -1, :]
+        assert torch.equal(out[q, 1:-1, -1, :], expected[1:-1, :]), q
+
+    # free-stream face (+z): the whole plane sits at its own far field
+    rho_f, ux_f, uy_f, uz_f = macroscopic3d(out[:, -1:, :, :])
+    assert torch.allclose(rho_f, torch.full_like(rho_f, 1.03), atol=1e-12)
+    assert torch.allclose(ux_f, torch.full_like(ux_f, 0.1), atol=1e-12)
+    assert torch.allclose(uy_f, torch.full_like(uy_f, -0.02), atol=1e-12)
+    assert torch.allclose(uz_f, torch.full_like(uz_f, 0.0), atol=1e-12)
+
+    # periodic face (-z): keeps the wrap — off the y-edge lines it matches the
+    # fully periodic chain exactly (the two ends of the axis stay glued)
+    assert torch.equal(out[:, 0, 1:-1, :], plain[:, 0, 1:-1, :])
+    assert torch.equal(out[:, 0, 1:-1, :], f_str[:, 0, 1:-1, :])
+
+
+def test_perface_wall_uinf_gradient_matches_finite_difference() -> None:
+    """Learnable free-stream speed on the +z override: dLoss/du_inf == FD
+    through the overrides path (gradient crosses the face reset)."""
+    steps, tau0, eps, u_fs_val = 10, 0.7, 1e-5, 0.06
+    dtype = torch.float64
+    mask = make_bounded_mask(DEVICE)
+    inlet, outlet = InletSpec(ux=U_IN), OutletSpec(method="convective")
+    f0 = uniform_flow_f0(U_IN, dtype, DEVICE)
+    with torch.no_grad():
+        target = ux_fluid(
+            rollout(
+                f0, steps, 0.85, mask, inlet=inlet, outlet=outlet, walls=_perface_walls(u_fs_val)
+            ),
+            mask,
+        )
+
+    def loss_of(u_val: float) -> float:
+        return float(
+            field_loss(
+                rollout(
+                    f0, steps, tau0, mask, inlet=inlet, outlet=outlet, walls=_perface_walls(u_val)
+                ),
+                target,
+                mask,
+            )
+        )
+
+    u_fs = torch.tensor(u_fs_val, dtype=dtype, device=DEVICE, requires_grad=True)
+    loss = field_loss(
+        rollout(f0, steps, tau0, mask, inlet=inlet, outlet=outlet, walls=_perface_walls(u_fs)),
+        target,
+        mask,
+    )
+    (g_ad,) = torch.autograd.grad(loss, u_fs)
+
+    fd = (loss_of(u_fs_val + eps) - loss_of(u_fs_val - eps)) / (2.0 * eps)
+    denom = max(abs(float(g_ad)), abs(fd), 1e-30)
+    assert abs(float(g_ad) - fd) / denom < 1e-6
+    assert float(g_ad) != 0.0
+
+
+def test_perface_wall_checkpoint_gradients_equal() -> None:
+    """checkpoint=True reproduces plain gradients with mixed per-face walls."""
+    steps = 8
+    dtype = torch.float64
+    mask = make_bounded_mask(DEVICE)
+    walls = _perface_walls(0.06)
+    with torch.no_grad():
+        target = ux_fluid(
+            rollout(
+                uniform_flow_f0(U_IN, dtype, DEVICE),
+                steps,
+                0.9,
+                mask,
+                inlet=InletSpec(ux=U_IN),
+                outlet=OutletSpec(method="convective"),
+                walls=walls,
+            ),
+            mask,
+        )
+
+    def loss_and_grads(use_checkpoint: bool):
+        f0 = uniform_flow_f0(U_IN, dtype, DEVICE).requires_grad_(True)
+        tau = torch.tensor(0.7, dtype=dtype, device=DEVICE, requires_grad=True)
+        f, probes = rollout(
+            f0,
+            steps,
+            tau,
+            mask,
+            checkpoint=use_checkpoint,
+            inlet=InletSpec(ux=U_IN),
+            outlet=OutletSpec(method="convective"),
+            walls=walls,
+            return_probes=True,
+        )
+        loss = field_loss(f, target, mask) + sum(obstacle_force(p, mask)[0] for p in probes)
+        g_f0, g_tau = torch.autograd.grad(loss, [f0, tau])
+        return loss.detach(), g_f0, g_tau
+
+    loss_plain, g_f0_p, g_tau_p = loss_and_grads(False)
+    loss_ckpt, g_f0_c, g_tau_c = loss_and_grads(True)
+
+    assert torch.allclose(loss_plain, loss_ckpt, rtol=1e-12)
+    assert torch.allclose(g_f0_p, g_f0_c, rtol=1e-10, atol=1e-14)
+    assert torch.allclose(g_tau_p, g_tau_c, rtol=1e-10)
+
+
+def test_wallspec_to_dict_from_dict_roundtrip() -> None:
+    """to_dict/from_dict: exact roundtrip incl. nested per-face overrides."""
+    spec = WallSpec(
+        method="free-slip",
+        overrides={
+            "+z": WallSpec(method="freestream", rho0=1.03, ux=0.1, uy=-0.02),
+            "-z": WallSpec(method="periodic"),
+        },
+    )
+    payload = spec.to_dict()
+    assert set(payload) == {"method", "rho0", "ux", "uy", "uz", "overrides"}
+    assert payload["overrides"]["+z"] == {
+        "method": "freestream",
+        "rho0": 1.03,
+        "ux": 0.1,
+        "uy": -0.02,
+        "uz": 0.0,
+    }
+    assert WallSpec.from_dict(payload) == spec
+
+    # specs without overrides serialise to the pre-A6+++ payload shape
+    plain = WallSpec(method="freestream", rho0=1.02, ux=0.05)
+    assert plain.to_dict() == {
+        "method": "freestream",
+        "rho0": 1.02,
+        "ux": 0.05,
+        "uy": 0.0,
+        "uz": 0.0,
+    }
+    assert WallSpec.from_dict(plain.to_dict()) == plain
+
+    # tensor fields flatten to numeric values (the graph is not serialisable)
+    t = WallSpec(method="freestream", ux=torch.tensor(0.07, dtype=torch.float64))
+    payload_t = t.to_dict()
+    assert isinstance(payload_t["ux"], float) and payload_t["ux"] == 0.07
+    assert WallSpec.from_dict(payload_t) == WallSpec(method="freestream", ux=0.07)
+
+
+def test_wallspec_old_payload_without_overrides_loads() -> None:
+    """Pre-A6+++ payloads (no overrides key) and partial payloads load."""
+    old = {"method": "freestream", "rho0": 1.02, "ux": 0.05, "uy": 0.0, "uz": 0.0}
+    spec = WallSpec.from_dict(old)
+    assert spec == WallSpec(method="freestream", rho0=1.02, ux=0.05)
+    assert spec.overrides is None
+    # missing numeric fields fall back to the dataclass defaults
+    assert WallSpec.from_dict({"method": "free-slip"}) == WallSpec(method="free-slip")
+    # unknown extra keys are ignored (forward compatibility)
+    assert WallSpec.from_dict({"method": "free-slip", "engine": "bgk"}) == WallSpec(
+        method="free-slip"
+    )
+
+
+def test_perface_wall_spec_validation() -> None:
+    """Malformed per-face specs fail loudly; valid no-ops construct."""
+    with pytest.raises(ValueError, match="overrides keys"):
+        WallSpec(method="free-slip", overrides={"x+": WallSpec()})
+    with pytest.raises(ValueError, match="overrides keys"):
+        WallSpec(method="free-slip", overrides={"-y": WallSpec(), "top": WallSpec()})
+    with pytest.raises(ValueError, match="must be a WallSpec"):
+        WallSpec(method="free-slip", overrides={"+y": "free-slip"})
+    with pytest.raises(ValueError, match="nested overrides"):
+        WallSpec(method="free-slip", overrides={"+y": WallSpec(overrides={"-y": WallSpec()})})
+    # valid constructions: empty mapping and periodic override specs
+    assert WallSpec(method="free-slip", overrides={}).overrides == {}
+    assert WallSpec(overrides={"+z": WallSpec(method="periodic")}).overrides is not None
