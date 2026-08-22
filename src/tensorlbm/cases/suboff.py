@@ -23,7 +23,14 @@ from .registry import register_case
 
 @register_case("suboff_n128")
 class SuboffChannelCase(CaseBase):
-    """SUBOFF bare hull in a free-stream channel (D3Q19)."""
+    """SUBOFF bare hull in a free-stream channel (D3Q19).
+
+    ``hull_type`` selects the DARPA configuration (bare_hull / with_sail /
+    full) and ``sail_scale`` / ``fin_scale`` multiply the appendages' own
+    dimensions about their DARPA anchors (1.0 = exact geometry), so the
+    geometry axis is scannable as plain numeric sweep params. All three
+    flow through :class:`~tensorlbm.suboff_cad.SuboffConfig`.
+    """
 
     name: ClassVar[str] = "suboff_n128"
     lattice: ClassVar[str] = "D3Q19"
@@ -43,12 +50,16 @@ class SuboffChannelCase(CaseBase):
         *,
         u_in: float = 0.10,
         hull_type: str = "bare_hull",
+        sail_scale: float = 1.0,
+        fin_scale: float = 1.0,
         device=None,
         dtype: torch.dtype = torch.float32,
         collision: str | None = None,
     ) -> None:
         self.u_in = float(u_in)
         self.hull_type = hull_type
+        self.sail_scale = float(sail_scale)
+        self.fin_scale = float(fin_scale)
         super().__init__(resolution, re, device=device, dtype=dtype, collision=collision)
 
     @classmethod
@@ -74,7 +85,7 @@ class SuboffChannelCase(CaseBase):
         return CaseUnits.from_reference(re=re, u_lb=self.u_in, n_ref=self.hull_length)
 
     def build_solid(self) -> torch.Tensor:
-        from ..suboff_cad import build_suboff_mask
+        from ..suboff_cad import SuboffConfig, build_suboff_mask
 
         nz, ny, nx = self.resolution
         solid, _stats = build_suboff_mask(
@@ -86,6 +97,7 @@ class SuboffChannelCase(CaseBase):
             cy=ny / 2.0,
             cz=nz / 2.0,
             length=self.hull_length,
+            config=SuboffConfig(sail_scale=self.sail_scale, fin_scale=self.fin_scale),
             device=str(self.device),
         )
         return solid
@@ -122,4 +134,7 @@ class SuboffChannelCase(CaseBase):
     def metadata(self) -> dict:
         meta = super().metadata()
         meta["hull_length"] = self.hull_length
+        meta["hull_type"] = self.hull_type
+        meta["sail_scale"] = self.sail_scale
+        meta["fin_scale"] = self.fin_scale
         return meta
