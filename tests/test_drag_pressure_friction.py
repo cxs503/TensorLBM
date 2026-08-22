@@ -33,6 +33,25 @@ def _cylinder_mask(nx, ny, nz, cx, cy, radius):
     return (xx - cx) ** 2 + (yy - cy) ** 2 <= radius**2
 
 
+@pytest.fixture(autouse=True)
+def _single_thread_reductions():
+    """Pin torch to one thread for the duration of each test.
+
+    The sums asserted here are float32/int32 parallel reductions, and the
+    tests tighten them to abs=1e-9 / rel=1e-5.  On loaded many-core
+    machines torch's default thread pool has been observed (2026-08-22,
+    96-core shared server, load ~50) to return nondeterministic partial
+    sums: an int32 masked face-count sum of 84 came back as 42 and force
+    sums shifted by ~3e-5 relative — failures unrelated to the code under
+    test.  With one thread the file is deterministic (30/30 runs green);
+    on low-core CI runners this fixture is a no-op in effect.
+    """
+    prev = torch.get_num_threads()
+    torch.set_num_threads(1)
+    yield
+    torch.set_num_threads(prev)
+
+
 @pytest.fixture(scope="module")
 def cylinder_setup():
     R = 10.0
@@ -167,7 +186,16 @@ def test_bfl_smooth_is_bfl_alias(cylinder_setup):
 
 
 def test_mix50_midpoint_of_standard_and_faces(cylinder_setup):
-    """'mix50' == 0.5 * (standard + faces) componentwise on the cylinder."""
+    """'mix50' == 0.5 * (standard + faces) componentwise on the cylinder.
+
+    mix50 delegates to the 'standard' and 'faces' code paths and averages
+    the returned values, so this identity holds exactly (bitwise on the
+    returned floats).  It must NOT be a re-derived inline sum with a
+    different multiplication order: on components whose exact value is 0
+    by symmetry (here y and z: uy = uz = 0 on a symmetric cylinder) both
+    formulas reduce to cancellation residues of order 1e-9 from terms of
+    order 1e-2, and float32 re-association moves them by more than 1e-9.
+    """
     s = cylinder_setup
     f_std = drag_friction_integration(s["f"], s["mesh"], s["dpS"], s["nu"], formula="standard")
     f_fc = drag_friction_integration(
@@ -178,6 +206,29 @@ def test_mix50_midpoint_of_standard_and_faces(cylinder_setup):
     )
     for i in range(3):
         assert f_mx[i] == pytest.approx(0.5 * (f_std[i] + f_fc[i]), abs=1e-9, rel=1e-6)
+    # transverse components are 0 by symmetry, up to the ~1e-9 float32
+    # cancellation noise of the underlying sums
+    assert abs(f_mx[1]) < 1e-6
+    assert abs(f_mx[2]) < 1e-6
+    # lock the drag (x) component against the geometric derivation:
+    #   standard x = 2*nu*u * sum_near (1 - nx^2) * nz_layers
+    #     (near-wall cell sum; same derivation as
+    #     test_standard_regression_values)
+    #   faces x = 2*nu*u * n_y_faces_layer * nz_layers
+    #     (per-face sum over y-normal wall faces; same derivation as
+    #     test_faces_counts_staircase_faces)
+    #   mix50 x = 0.5 * (standard x + faces x)
+    n0 = s["near"][0]
+    nz_layers = s["solid"].shape[0]
+    nxc = s["mesh"].nx_n[0][n0]
+    std_x = 2.0 * s["nu"] * 0.1 * (1.0 - nxc**2).sum().item() * nz_layers
+    s0 = s["solid"][0]
+    f0 = ~s0
+    nfy = torch.zeros_like(s0, dtype=torch.int32)
+    nfy[1:-1, :] += (s0[2:, :] & f0[1:-1, :]).int()
+    nfy[1:-1, :] += (s0[:-2, :] & f0[1:-1, :]).int()
+    faces_x = 2.0 * s["nu"] * 0.1 * int(nfy[n0].sum()) * nz_layers
+    assert f_mx[0] == pytest.approx(0.5 * (std_x + faces_x), rel=1e-5)
     with pytest.raises(ValueError, match="solid"):
         drag_friction_integration(s["f"], s["mesh"], s["dpS"], s["nu"], formula="mix50")
 
