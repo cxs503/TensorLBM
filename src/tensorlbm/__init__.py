@@ -104,6 +104,16 @@ from .amr_interface_validation import (
     AMRInterfaceValidationConfig,
     run_amr_interface_validation,
 )
+from .autograd_calib import (
+    BoxCase,
+    CalibResult,
+    DragTarget,
+    bounded_drag,
+    calibrate,
+    cs_power,
+    evaluate,
+    synthetic_targets,
+)
 from .autograd_path import (
     differentiable_step,
     obstacle_force,
@@ -1431,6 +1441,15 @@ __all__ = [
     "stream_thermal",
     "macroscopic_thermal",
     "differentiable_step",
+    # Closure calibration (solver-in-the-loop)
+    "BoxCase",
+    "CalibResult",
+    "DragTarget",
+    "bounded_drag",
+    "calibrate",
+    "cs_power",
+    "synthetic_targets",
+    "evaluate",
     "obstacle_force",
     "rollout",
     "apply_buoyancy_force",
