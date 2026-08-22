@@ -1,6 +1,6 @@
 # SUBOFF field-to-drag surrogate: plane snapshot → C_D (FNO encoder)
 
-Date: 2026-08-22 (v1 pilot + v1.1 two-parameter addendum + v1.2 data-scale
+Date: 2026-08-22 (v1 pilot + v1.1 two-parameter addendum + v1.2 data-scale experiment + v1.3 geometry
 experiment) · Module: `tensorlbm.ai.drag_surrogate` · Run:
 `/nfs/wangxi/runs/fno_drag_20260822`
 
@@ -241,3 +241,50 @@ Hull/geometry parameters (where no closed-form prior exists — the actual
 value case for the surrogate), k-fold + multi-seed error bars, 3-D /
 multi-plane encoders. The data pipeline for all of it is now one
 `run_drag_surrogate_study` call with `velocity_scale=True`.
+## v1.3: Geometry conditioning (B1-7, 2026-08-22 evening)
+
+The B1-6 campaign (`scan_suboff_geo_lhs_20260822`, 78 points: 64 LHS over
+log-Re 50–800 × sail/fin scale 1–3 + 14 scale anchors) adds a third input
+axis the plane snapshot under-determines: two appendage scales that vary the
+geometry while the wake differs only subtly at the plane's resolution.
+
+**API**: `PlaneSampleSpec(param_names=("sail_scale", "fin_scale"))` collects
+the named snapshot attrs per point; `FNODragArch(n_params=K)` concatenates
+them (log10 + train-split standardisation, `ParamNorm`) to the pooled
+features before the MLP head. `n_params=0` (default) is the v1.2 model
+unchanged; saved artifacts carry `param_norm` (older artifacts load with
+`pnorm=None`).
+
+Results on the campaign's own 55/12/11 point split (test = 11 points,
+3 seeds, same protocol as v1.2; regression baselines refit on this split's
+train points):
+
+| model | test MAPE |
+|---|---|
+| power law (Re only) = M1 | 10.34 % |
+| M2: + log sail + log fin | 7.99 % |
+| M3: + quadratics + interaction | 3.64 % |
+| FNO plane-only (step 500) | 4.26 % ± 0.60 % |
+| FNO plane + params (step 500) | 3.48 % ± 0.31 % |
+| **FNO plane + params (step 1000)** | **3.36 % ± 0.09 %** |
+| FNO plane + params (step 4000) | 3.40 % ± 0.15 % |
+
+Findings:
+
+1. **The plane alone carries most of the geometry signal** (4.26 % vs M2's
+   7.99 %) — the wake shape does encode the appendage scales at n128.
+2. **Conditioning pays in accuracy and stability**: 4.26 ± 0.60 → 3.36 ±
+   0.09; every conditioned seed beats M3's 3.64 %, while plane-only seeds
+   straddle it. The variance collapse says the geometry inputs removed the
+   main irreducible ambiguity of the field-only model.
+3. **Step choice is flat** (500/1000/4000 within noise), consistent with
+   v1.2's "early snapshots already decide C_D" — the surrogate-acceleration
+   story survives the geometry axis.
+4. Against the full-78-point fits of the B1-6 report (M2 4.18 %, M3 2.61 %
+   on all points) note the split difference: on held-out points M3 gives
+   back most of its in-sample edge (3.64 %), and the conditioned FNO is the
+   best held-out model.
+
+Runs: `/nfs/wangxi/runs/b17_geo_20260822/` (per-variant `model.pt(.json)`,
+`metrics.json`, `predictions.csv`, `aggregate.json`; study script
+`/nfs/wangxi/tmp/b17_study.py`).

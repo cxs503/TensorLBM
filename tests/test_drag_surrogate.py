@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 
 import numpy as np
 import pytest
+import torch
 
 from tensorlbm.ai.drag_surrogate import (
     DragTrainConfig,
     FNODragArch,
+    FNODragRegressor,
     PlaneSampleSpec,
     build_drag_split,
     fit_norm,
+    fit_param_norm,
     load_drag_regressor,
     load_exact_cd,
     load_exact_cd_per_point,
@@ -60,13 +64,17 @@ def _snapshot_fields(re: float, u_in: float) -> dict[str, np.ndarray]:
 POINT_IDS = sorted({pid for pids in SPLIT_POINTS.values() for pid in pids})
 
 
-def _write_campaign(fields_dir: Path, drag_dir: Path, *, with_sidecar: bool = True) -> None:
+def _write_campaign(
+    fields_dir: Path, drag_dir: Path, *, with_sidecar: bool = True, with_geometry: bool = False
+) -> None:
     import h5py
 
     mask = _solid_mask()
     s_proj = int((mask.max(axis=2) > 0).sum())  # projected (z, y) columns
     u_in = 0.1
-    for point_id, re in zip(POINT_IDS, RE_LEVELS):
+    for i, (point_id, re) in enumerate(zip(POINT_IDS, RE_LEVELS)):
+        sail = 1.0 + 0.25 * (i % 3)
+        fin = 1.0 + 0.5 * (i % 2)
         (fields_dir / "points" / point_id).mkdir(parents=True, exist_ok=True)
         (drag_dir / "points" / point_id).mkdir(parents=True, exist_ok=True)
         with h5py.File(fields_dir / "points" / point_id / "fields.h5", "w") as f:
@@ -76,10 +84,15 @@ def _write_campaign(fields_dir: Path, drag_dir: Path, *, with_sidecar: bool = Tr
                 for name, arr in fields.items():
                     grp.create_dataset(name, data=arr)
                 grp.create_dataset("solid_mask", data=mask)
-                grp.attrs.update({"re": re, "u_in": u_in, "nx": NX, "ny": NY, "nz": NZ})
-        force = POWER_A * re**POWER_B * u_in**2 * s_proj / 2.0  # rho = 1
+                attrs = {"re": re, "u_in": u_in, "nx": NX, "ny": NY, "nz": NZ}
+                if with_geometry:
+                    attrs.update({"sail_scale": sail, "fin_scale": fin})
+                grp.attrs.update(attrs)
+        geo_gain = 1.0 + 0.3 * (sail - 1.0) + 0.5 * (fin - 1.0) if with_geometry else 1.0
+        force = POWER_A * re**POWER_B * u_in**2 * s_proj / 2.0 * geo_gain  # rho = 1
+        params = {"re": re, "sail_scale": sail, "fin_scale": fin} if with_geometry else {"re": re}
         (drag_dir / "points" / point_id / "status.json").write_text(
-            json.dumps({"params": {"re": re}, "drag_final": force, "drag_mean_tail": force})
+            json.dumps({"params": params, "drag_final": force, "drag_mean_tail": force})
         )
         if with_sidecar:
             samples = [
@@ -259,7 +272,8 @@ def test_save_load_roundtrip(campaign, tmp_path: Path) -> None:
     result = train_drag_surrogate(train, val, _tiny_arch(), _tiny_config())
     path = save_drag_regressor(result.model, result.norm, tmp_path / "model.pt")
     assert path.is_file() and path.with_suffix(".pt.json").is_file()
-    model2, norm2 = load_drag_regressor(path)
+    model2, norm2, pnorm2 = load_drag_regressor(path)
+    assert pnorm2 is None  # plane-only artifact keeps the legacy shape
     test = build_drag_split(fields_dir, cd_by_re, SPLIT_POINTS["test"], spec)
     np.testing.assert_allclose(
         predict_cd(result.model, test, result.norm, device="cpu"),
@@ -289,3 +303,139 @@ def test_study_end_to_end(campaign, tmp_path: Path) -> None:
     assert (out / "metrics.json").is_file()
     rows = (out / "predictions.csv").read_text().strip().splitlines()
     assert len(rows) == 1 + sum(len(v) for v in SPLIT_POINTS.values())
+
+
+# ---------------------------------------------------------------------------
+# B1-7: geometry conditioning (scalar params into the surrogate head)
+# ---------------------------------------------------------------------------
+
+GEO_SPEC = PlaneSampleSpec(steps=(500,), param_names=("sail_scale", "fin_scale"))
+
+
+@pytest.fixture()
+def campaign_geo(tmp_path: Path) -> tuple[Path, Path]:
+    fields_dir = tmp_path / "fields_geo"
+    drag_dir = tmp_path / "drag_geo"
+    _write_campaign(fields_dir, drag_dir, with_geometry=True)
+    return fields_dir, drag_dir
+
+
+def _geo_splits(campaign_geo):
+    fields_dir, drag_dir = campaign_geo
+    cd_by_point = load_exact_cd_per_point(drag_dir, fields_dir)
+    splits = {
+        name: build_drag_split(fields_dir, point_ids=pids, spec=GEO_SPEC, cd_by_point=cd_by_point)
+        for name, pids in SPLIT_POINTS.items()
+    }
+    return splits
+
+
+def test_param_collection_and_names(campaign_geo) -> None:
+    splits = _geo_splits(campaign_geo)
+    train = splits["train"]
+    assert train.params is not None
+    assert train.params.shape == (len(SPLIT_POINTS["train"]), 2)
+    assert train.param_names == ("sail_scale", "fin_scale")
+    assert train.params.min() >= 1.0
+    # plane-only spec keeps the legacy split untouched
+    fields_dir, drag_dir = campaign_geo
+    cd_by_point = load_exact_cd_per_point(drag_dir, fields_dir)
+    plain = build_drag_split(
+        fields_dir,
+        point_ids=SPLIT_POINTS["train"],
+        spec=PlaneSampleSpec(steps=(500,)),
+        cd_by_point=cd_by_point,
+    )
+    assert plain.params is None
+    assert plain.param_names == ()
+
+
+def test_param_norm_roundtrip_train_statistics(campaign_geo) -> None:
+    fields_dir, drag_dir = campaign_geo
+    train = _geo_splits(campaign_geo)["train"]
+    pnorm = fit_param_norm(train)
+    assert pnorm is not None
+    assert pnorm.names == ("sail_scale", "fin_scale")
+    z = pnorm.encode(train.params)
+    np.testing.assert_allclose(z.mean(axis=0), 0.0, atol=1e-12)
+    np.testing.assert_allclose(z.std(axis=0), 1.0, atol=1e-6)
+    np.testing.assert_allclose(pnorm.decode(z), train.params, rtol=1e-12)
+    plain = build_drag_split(
+        fields_dir,
+        point_ids=SPLIT_POINTS["train"],
+        spec=PlaneSampleSpec(steps=(500,)),
+        cd_by_point=load_exact_cd_per_point(drag_dir, fields_dir),
+    )
+    assert fit_param_norm(plain) is None
+
+
+def test_train_with_conditioning_predicts_and_roundtrips(campaign_geo, tmp_path: Path) -> None:
+    splits = _geo_splits(campaign_geo)
+    arch = dataclasses.replace(_tiny_arch(), n_params=2)
+    result = train_drag_surrogate(splits["train"], splits["val"], arch, _tiny_config())
+    assert result.pnorm is not None
+    assert result.pnorm.names == ("sail_scale", "fin_scale")
+    assert result.history["train"][-1] < result.history["train"][0]
+
+    test = splits["test"]
+    preds = predict_cd(result.model, test, result.norm, result.pnorm, device="cpu")
+    assert preds.shape == (len(test),)
+    assert np.all(np.isfinite(preds))
+
+    path = save_drag_regressor(result.model, result.norm, tmp_path / "geo.pt", result.pnorm)
+    model2, norm2, pnorm2 = load_drag_regressor(path)
+    assert pnorm2 is not None
+    assert tuple(pnorm2.names) == result.pnorm.names  # JSON round-trip lists
+    np.testing.assert_allclose(pnorm2.mean, result.pnorm.mean)
+    np.testing.assert_allclose(
+        preds, predict_cd(model2, test, norm2, pnorm2, device="cpu"), rtol=1e-6
+    )
+
+
+def test_train_rejects_param_mismatch(campaign_geo) -> None:
+    splits = _geo_splits(campaign_geo)
+    bad = dataclasses.replace(_tiny_arch(), n_params=3)
+    with pytest.raises(ValueError, match="n_params"):
+        train_drag_surrogate(splits["train"], splits["val"], bad, _tiny_config())
+    # plane-only splits with a conditioning arch → the other validation branch
+    fields_dir, drag_dir = campaign_geo
+    cd_by_point = load_exact_cd_per_point(drag_dir, fields_dir)
+    plain = {
+        name: build_drag_split(
+            fields_dir,
+            point_ids=pids,
+            spec=PlaneSampleSpec(steps=(500,)),
+            cd_by_point=cd_by_point,
+        )
+        for name, pids in SPLIT_POINTS.items()
+    }
+    wants_params = dataclasses.replace(_tiny_arch(), n_params=2)
+    with pytest.raises(ValueError, match="no params"):
+        train_drag_surrogate(plain["train"], plain["val"], wants_params, _tiny_config())
+
+
+def test_forward_requires_conditioning_when_nparams_set() -> None:
+    model = FNODragRegressor(dataclasses.replace(_tiny_arch(), n_params=2))
+    x = torch.randn(2, 3, 8, 16)
+    with pytest.raises(ValueError, match="conditioning"):
+        model(x)
+    assert tuple(model(x, torch.randn(2, 2)).shape) == (2,)
+
+
+def test_study_with_geometry_params(campaign_geo, tmp_path: Path) -> None:
+    fields_dir, drag_dir = campaign_geo
+    out = tmp_path / "study_geo"
+    summary = run_drag_surrogate_study(
+        fields_dir,
+        drag_dir,
+        out,
+        spec=GEO_SPEC,
+        arch=dataclasses.replace(_tiny_arch(), n_params=2),
+        config=_tiny_config(),
+    )
+    assert summary["param_norm"] is not None
+    assert tuple(summary["param_norm"]["names"]) == ("sail_scale", "fin_scale")
+    header = (out / "predictions.csv").read_text().strip().splitlines()[0]
+    assert (
+        header == "split,point_id,step,re,sail_scale,fin_scale,cd_true,cd_fno,cd_power_law,cd_mean"
+    )

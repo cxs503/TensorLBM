@@ -191,8 +191,15 @@ def test_bounded_drag_custom_mask_equals_default_sphere() -> None:
 def test_hull_bounded_drag_gradient_matches_fd() -> None:
     """Gradients through the production-hull rollout (blocked checkpointing)."""
     case = HullCase(
-        nz=16, ny=16, nx=32, u_in=0.05, steps=60, window_start=40, checkpoint=True,
-        checkpoint_block=17, dtype=torch.float64,
+        nz=16,
+        ny=16,
+        nx=32,
+        u_in=0.05,
+        steps=60,
+        window_start=40,
+        checkpoint=True,
+        checkpoint_block=17,
+        dtype=torch.float64,
     )
     mask = case.make_mask()
     cs = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
@@ -210,10 +217,28 @@ def test_hull_bounded_drag_gradient_matches_fd() -> None:
 
 def test_bounded_drag_blocked_checkpoint_matches_plain() -> None:
     """Block-level checkpointing: same windowed C_D and gradient (fp grouping)."""
-    plain = HullCase(nz=16, ny=16, nx=32, u_in=0.05, steps=60, window_start=40,
-                     checkpoint=False, checkpoint_block=1, dtype=torch.float64)
-    blocked = HullCase(nz=16, ny=16, nx=32, u_in=0.05, steps=60, window_start=40,
-                       checkpoint=True, checkpoint_block=17, dtype=torch.float64)
+    plain = HullCase(
+        nz=16,
+        ny=16,
+        nx=32,
+        u_in=0.05,
+        steps=60,
+        window_start=40,
+        checkpoint=False,
+        checkpoint_block=1,
+        dtype=torch.float64,
+    )
+    blocked = HullCase(
+        nz=16,
+        ny=16,
+        nx=32,
+        u_in=0.05,
+        steps=60,
+        window_start=40,
+        checkpoint=True,
+        checkpoint_block=17,
+        dtype=torch.float64,
+    )
     mask = plain.make_mask()
     outs = []
     for case in (plain, blocked):
@@ -229,8 +254,7 @@ def test_hull_freestream_walls_differ_from_periodic() -> None:
     """HullCase default closes the sides; periodic sides change the drag."""
     freestream = bounded_drag(HULL, re=30.0, cs=0.1)
     periodic = bounded_drag(
-        HullCase(nz=16, ny=16, nx=32, u_in=0.05, steps=60, window_start=40,
-                 wall_method="periodic"),
+        HullCase(nz=16, ny=16, nx=32, u_in=0.05, steps=60, window_start=40, wall_method="periodic"),
         re=30.0,
         cs=0.1,
     )
@@ -361,8 +385,15 @@ def test_drag_targets_from_sidecars(tmp_path) -> None:
         )
     # ... but without them a missing status.json is an explicit error
     orphan = tmp_path / "lonely.json"
-    orphan.write_text(json.dumps({"schema": "tensorlbm.drag-history/v1", "samples": [
-        {"step": 25, "force_x": 1.0, "force_y": 0.0, "force_z": 0.0, "force_abs": 1.0}
-    ]}))
+    orphan.write_text(
+        json.dumps(
+            {
+                "schema": "tensorlbm.drag-history/v1",
+                "samples": [
+                    {"step": 25, "force_x": 1.0, "force_y": 0.0, "force_z": 0.0, "force_abs": 1.0}
+                ],
+            }
+        )
+    )
     with pytest.raises(ValueError, match="status.json"):
         drag_targets_from_sidecars([orphan], u_in=0.1, ref_area=69.0)
