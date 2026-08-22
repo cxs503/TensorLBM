@@ -12,7 +12,12 @@ admit gradients; this file pins down the *composition contract* of
 4. solver-in-the-loop identification converges: a scalar ``tau`` (BGK) and a
    Smagorinsky ``C_s`` are recovered from a target observable by gradient
    descent through the solver;
-5. per-step checkpointing returns identical gradients.
+5. per-step checkpointing returns identical gradients;
+6. the bounded-domain extension (velocity inlet + zero-gradient outlet)
+   applies the boundary planes exactly where claimed, keeps gradients
+   flowing *through the boundary overwrites* back to ``tau`` / ``C_s`` /
+   ``f0`` / ``u_in`` (FD cross-checks), is checkpoint- and CUDA-consistent,
+   and drives a physical wake with a stabilised drag.
 """
 
 from __future__ import annotations
@@ -23,7 +28,13 @@ import math
 import pytest
 import torch
 
-from tensorlbm.autograd_path import differentiable_step, obstacle_force, rollout
+from tensorlbm.autograd_path import (
+    InletSpec,
+    OutletSpec,
+    differentiable_step,
+    obstacle_force,
+    rollout,
+)
 from tensorlbm.boundaries3d import sphere_mask
 from tensorlbm.d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
@@ -385,3 +396,394 @@ def test_cuda_parity_masked_rollout() -> None:
 
     assert torch.allclose(loss_cpu, loss_cuda.cpu(), rtol=1e-5, atol=1e-7)
     assert torch.allclose(g_cpu, g_cuda.cpu(), rtol=1e-3, atol=1e-8)
+
+
+# ---------------------------------------------------------------------------
+# 7. Bounded domain: differentiable inlet / zero-gradient outlet
+# ---------------------------------------------------------------------------
+
+# Small bounded case: sphere obstacle downstream of the inlet plane, uniform
+# inflow (the SUBOFF production phase order: x=0 velocity inlet, x=nx-1
+# zero-gradient outlet, lateral planes periodic in this first version).
+BNZ, BNY, BNX = 8, 10, 20
+BCX, BRADIUS = 6.0, 2.0
+U_IN = 0.08
+UNK_OUT = [2, 8, 10, 12, 14]  # c_x = -1: overwritten by the outlet copy
+UNK_IN = [1, 7, 9, 11, 13]  # c_x = +1: reconstructed by the inlet closure
+
+
+def make_bounded_mask(device) -> torch.Tensor:
+    return sphere_mask(BNX, BNY, BNZ, cx=BCX, cy=BNY / 2, cz=BNZ / 2, radius=BRADIUS, device=device)
+
+
+def uniform_flow_f0(
+    u: float,
+    dtype: torch.dtype,
+    device: torch.device,
+    seed: int = 23,
+) -> torch.Tensor:
+    """Uniform equilibrium inflow plus deterministic off-equilibrium noise."""
+    ones_f = torch.ones(BNZ, BNY, BNX, dtype=dtype, device=device)
+    zeros_f = torch.zeros_like(ones_f)
+    f0 = equilibrium3d(ones_f, u * ones_f, zeros_f, zeros_f)
+    gen = torch.Generator(device="cpu").manual_seed(seed)
+    noise = torch.rand((19, BNZ, BNY, BNX), generator=gen, dtype=torch.float64).to(dtype) - 0.5
+    return f0 + 0.02 * noise.to(device)
+
+
+@pytest.mark.parametrize("method", ["equilibrium", "zouhe"])
+def test_bounded_step_value_contract(method) -> None:
+    """Planes after the step: inlet closure, zero-gradient outlet, interior streamed."""
+    dtype, device = torch.float64, DEVICE
+    mask = make_bounded_mask(device)
+    f = uniform_flow_f0(U_IN, dtype, device)
+    inlet = InletSpec(ux=U_IN, method=method)
+    out = differentiable_step(f, 0.55, mask, inlet=inlet, outlet=OutletSpec())
+
+    f_str = stream3d(torch.where(mask.unsqueeze(0), f, collide_bgk3d(f, 0.55)))
+    # fluid interior planes (1 .. nx-2) are untouched by the boundary pass
+    assert torch.equal(
+        out[:, :, :, 1:-1][:, ~mask[:, :, 1:-1]], f_str[:, :, :, 1:-1][:, ~mask[:, :, 1:-1]]
+    )
+    # outlet: unknown outgoing directions copied from x=nx-2, known ones streamed
+    assert torch.equal(out[UNK_OUT, ..., -1], f_str[UNK_OUT, ..., -2])
+    known = [q for q in range(19) if q not in UNK_OUT]
+    assert torch.equal(out[known, ..., -1], f_str[known, ..., -1])
+
+    ones2 = torch.ones(BNZ, BNY, dtype=dtype, device=device)
+    zeros2 = torch.zeros_like(ones2)
+    rho_p, ux_p, _uy_p, _uz_p = macroscopic3d(out[..., :1])
+    if method == "equilibrium":
+        exp = equilibrium3d(ones2, U_IN * ones2, zeros2, zeros2)[:, 0].unsqueeze(-1)
+        assert torch.equal(out[..., :1], exp)
+    else:
+        rho_zh = (
+            f_str[(0, 3, 4, 5, 6, 15, 16, 17, 18), ..., 0].sum(dim=0)
+            + 2.0 * f_str[UNK_OUT, ..., 0].sum(dim=0)
+        ) / (1.0 - U_IN)
+        # the Zou/He closure pins the normal velocity and the plane density
+        assert torch.allclose(ux_p[..., 0], torch.full_like(ux_p[..., 0], U_IN), atol=1e-12)
+        assert torch.allclose(rho_p[..., 0], rho_zh, atol=1e-12)
+        feq = equilibrium3d(rho_zh, U_IN * ones2, zeros2, zeros2)
+        for q, q_opp in zip(UNK_IN, UNK_OUT, strict=True):
+            cand = feq[q] + f_str[q_opp, ..., 0] - feq[q_opp]
+            assert torch.allclose(out[q, ..., 0], cand, atol=1e-14)
+
+
+@pytest.mark.parametrize("method", ["equilibrium", "zouhe"])
+def test_bounded_tau_gradient_matches_finite_difference(method) -> None:
+    """dLoss/dtau through a bounded rollout == central FD (gradient crosses the BCs)."""
+    steps, tau_eval, eps = 10, 0.7, 1e-5
+    dtype = torch.float64
+    mask = make_bounded_mask(DEVICE)
+    inlet = InletSpec(ux=U_IN, method=method)
+    f0 = uniform_flow_f0(U_IN, dtype, DEVICE)
+    with torch.no_grad():
+        target = ux_fluid(rollout(f0, steps, 0.85, mask, inlet=inlet, outlet=OutletSpec()), mask)
+
+    def loss_of(tau_val: float) -> float:
+        tau = torch.tensor(tau_val, dtype=dtype, device=DEVICE)
+        return float(
+            field_loss(
+                rollout(f0, steps, tau, mask, inlet=inlet, outlet=OutletSpec()), target, mask
+            )
+        )
+
+    tau = torch.tensor(tau_eval, dtype=dtype, device=DEVICE, requires_grad=True)
+    loss = field_loss(rollout(f0, steps, tau, mask, inlet=inlet, outlet=OutletSpec()), target, mask)
+    (g_ad,) = torch.autograd.grad(loss, tau)
+
+    fd = (loss_of(tau_eval + eps) - loss_of(tau_eval - eps)) / (2.0 * eps)
+    denom = max(abs(float(g_ad)), abs(fd), 1e-30)
+    assert abs(float(g_ad) - fd) / denom < 1e-6
+    assert float(g_ad) != 0.0
+
+
+def test_bounded_cs_gradient_matches_finite_difference() -> None:
+    """d(accumulated drag)/dC_s through the bounded solver == central FD."""
+    steps, tau0, cs_eval, eps = 8, 0.55, 0.1, 1e-5
+    dtype = torch.float64
+    mask = make_bounded_mask(DEVICE)
+    inlet = InletSpec(ux=U_IN)
+    f0 = uniform_flow_f0(U_IN, dtype, DEVICE)
+
+    def drag_sum(cs_val: float) -> float:
+        cs = torch.tensor(cs_val, dtype=dtype, device=DEVICE)
+        _f, probes = rollout(
+            f0,
+            steps,
+            tau0,
+            mask,
+            collide=functools.partial(collide_smagorinsky_bgk3d, C_s=cs),
+            inlet=inlet,
+            outlet=OutletSpec(),
+            return_probes=True,
+        )
+        return float(sum(obstacle_force(p, mask)[0] for p in probes))
+
+    cs = torch.tensor(cs_eval, dtype=dtype, device=DEVICE, requires_grad=True)
+    _f, probes = rollout(
+        f0,
+        steps,
+        tau0,
+        mask,
+        collide=functools.partial(collide_smagorinsky_bgk3d, C_s=cs),
+        inlet=inlet,
+        outlet=OutletSpec(),
+        return_probes=True,
+    )
+    loss = sum(obstacle_force(p, mask)[0] for p in probes)
+    (g_ad,) = torch.autograd.grad(loss, cs)
+
+    fd = (drag_sum(cs_eval + eps) - drag_sum(cs_eval - eps)) / (2.0 * eps)
+    denom = max(abs(float(g_ad)), abs(fd), 1e-30)
+    assert abs(float(g_ad) - fd) / denom < 1e-6
+    assert float(g_ad) != 0.0
+
+
+@pytest.mark.parametrize("method", ["equilibrium", "zouhe"])
+def test_bounded_f0_boundary_entry_gradients_match_fd(method) -> None:
+    """Element-wise dLoss/df0 on and next to the boundary planes vs central FD.
+
+    The entries on the inlet/outlet planes are overwritten after streaming,
+    so their gradient must flow through the collision phase that precedes
+    the overwrite (and, for Zou/He, through the closure itself).
+    """
+    steps, tau0 = 8, 0.7
+    dtype = torch.float64
+    mask = make_bounded_mask(DEVICE)
+    inlet = InletSpec(ux=U_IN, method=method)
+    f0 = uniform_flow_f0(U_IN, dtype, DEVICE)
+    with torch.no_grad():
+        target = ux_fluid(rollout(f0, steps, 0.9, mask, inlet=inlet, outlet=OutletSpec()), mask)
+
+    f0 = f0.requires_grad_(True)
+    loss = field_loss(
+        rollout(f0, steps, tau0, mask, inlet=inlet, outlet=OutletSpec()), target, mask
+    )
+    (g_ad,) = torch.autograd.grad(loss, f0)
+
+    cz, cy = round(BNZ / 2), round(BNY / 2)
+    entries = [
+        (0, 2, 3, 4),  # far interior
+        (1, cz, cy, 0),  # incoming direction, inlet plane (overwritten by the closure)
+        (2, cz, cy, 0),  # outgoing direction, inlet plane
+        (2, cz, cy, BNX - 1),  # unknown direction, outlet plane (overwritten by the copy)
+        (7, cz, cy, BNX - 2),  # source plane of the zero-gradient copy
+    ]
+    eps = 1e-6
+    for q, iz, iy, ix in entries:
+        f_plus, f_minus = f0.detach().clone(), f0.detach().clone()
+        f_plus[q, iz, iy, ix] += eps
+        f_minus[q, iz, iy, ix] -= eps
+        l_plus = float(
+            field_loss(
+                rollout(f_plus, steps, tau0, mask, inlet=inlet, outlet=OutletSpec()), target, mask
+            )
+        )
+        l_minus = float(
+            field_loss(
+                rollout(f_minus, steps, tau0, mask, inlet=inlet, outlet=OutletSpec()), target, mask
+            )
+        )
+        fd = (l_plus - l_minus) / (2.0 * eps)
+        denom = max(abs(float(g_ad[q, iz, iy, ix])), abs(fd), 1e-30)
+        assert abs(float(g_ad[q, iz, iy, ix]) - fd) / denom < 1e-6, (q, iz, iy, ix)
+
+
+@pytest.mark.parametrize("method", ["equilibrium", "zouhe"])
+def test_bounded_uin_gradient_matches_finite_difference(method) -> None:
+    """The learnable inlet velocity u_in: autograd gradient vs central FD."""
+    steps, tau0, eps = 10, 0.7, 1e-5
+    dtype = torch.float64
+    mask = make_bounded_mask(DEVICE)
+    f0 = uniform_flow_f0(U_IN, dtype, DEVICE)
+    with torch.no_grad():
+        target = ux_fluid(
+            rollout(f0, steps, 0.85, mask, inlet=InletSpec(ux=U_IN), outlet=OutletSpec()), mask
+        )
+
+    def loss_of(u_val: float) -> float:
+        return float(
+            field_loss(
+                rollout(
+                    f0,
+                    steps,
+                    tau0,
+                    mask,
+                    inlet=InletSpec(ux=u_val, method=method),
+                    outlet=OutletSpec(),
+                ),
+                target,
+                mask,
+            )
+        )
+
+    u_in = torch.tensor(U_IN, dtype=dtype, device=DEVICE, requires_grad=True)
+    loss = field_loss(
+        rollout(
+            f0, steps, tau0, mask, inlet=InletSpec(ux=u_in, method=method), outlet=OutletSpec()
+        ),
+        target,
+        mask,
+    )
+    (g_ad,) = torch.autograd.grad(loss, u_in)
+
+    fd = (loss_of(U_IN + eps) - loss_of(U_IN - eps)) / (2.0 * eps)
+    denom = max(abs(float(g_ad)), abs(fd), 1e-30)
+    assert abs(float(g_ad) - fd) / denom < 1e-6
+    assert float(g_ad) != 0.0
+
+
+def test_bounded_rollout_checkpoint_gradients_equal() -> None:
+    """checkpoint=True reproduces plain gradients with both boundary conditions active."""
+    steps = 8
+    dtype = torch.float64
+    mask = make_bounded_mask(DEVICE)
+    with torch.no_grad():
+        target = ux_fluid(
+            rollout(
+                uniform_flow_f0(U_IN, dtype, DEVICE),
+                steps,
+                0.9,
+                mask,
+                inlet=InletSpec(ux=U_IN),
+                outlet=OutletSpec(),
+            ),
+            mask,
+        )
+
+    def loss_and_grads(use_checkpoint: bool):
+        f0 = uniform_flow_f0(U_IN, dtype, DEVICE).requires_grad_(True)
+        tau = torch.tensor(0.7, dtype=dtype, device=DEVICE, requires_grad=True)
+        u_in = torch.tensor(U_IN, dtype=dtype, device=DEVICE, requires_grad=True)
+        inlet = InletSpec(ux=u_in, method="zouhe")
+        f, probes = rollout(
+            f0,
+            steps,
+            tau,
+            mask,
+            checkpoint=use_checkpoint,
+            inlet=inlet,
+            outlet=OutletSpec(),
+            return_probes=True,
+        )
+        loss = field_loss(f, target, mask) + sum(obstacle_force(p, mask)[0] for p in probes)
+        g_f0, g_tau, g_u = torch.autograd.grad(loss, [f0, tau, u_in])
+        return loss.detach(), g_f0, g_tau, g_u
+
+    loss_plain, g_f0_p, g_tau_p, g_u_p = loss_and_grads(False)
+    loss_ckpt, g_f0_c, g_tau_c, g_u_c = loss_and_grads(True)
+
+    assert torch.allclose(loss_plain, loss_ckpt, rtol=1e-12)
+    assert torch.allclose(g_f0_p, g_f0_c, rtol=1e-10, atol=1e-14)
+    assert torch.allclose(g_tau_p, g_tau_c, rtol=1e-10)
+    assert torch.allclose(g_u_p, g_u_c, rtol=1e-10)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="no CUDA device")
+def test_bounded_cuda_parity() -> None:
+    """Same fp32 bounded rollout (Zou/He inlet + outlet) and gradients on CPU/CUDA."""
+    dtype, steps = torch.float32, 10
+    mask_cpu = make_bounded_mask(torch.device("cpu"))
+    mask_cuda = make_bounded_mask(torch.device("cuda"))
+
+    def run(f0: torch.Tensor, mask: torch.Tensor, tau: torch.Tensor, u_in: torch.Tensor):
+        inlet = InletSpec(ux=u_in, method="zouhe")
+        f, probes = rollout(
+            f0, steps, tau, mask, inlet=inlet, outlet=OutletSpec(), return_probes=True
+        )
+        loss = ((macroscopic3d(f)[1][~mask]) ** 2).mean() + sum(
+            obstacle_force(p, mask)[0] for p in probes
+        )
+        g_tau, g_u = torch.autograd.grad(loss, [tau, u_in])
+        return loss.detach(), g_tau, g_u
+
+    f0_cpu = uniform_flow_f0(U_IN, dtype, torch.device("cpu"))
+    tau_cpu = torch.tensor(0.7, dtype=dtype, requires_grad=True)
+    u_cpu = torch.tensor(U_IN, dtype=dtype, requires_grad=True)
+    loss_c, g_tau_c, g_u_c = run(f0_cpu, mask_cpu, tau_cpu, u_cpu)
+
+    tau_cuda = torch.tensor(0.7, dtype=dtype, device="cuda", requires_grad=True)
+    u_cuda = torch.tensor(U_IN, dtype=dtype, device="cuda", requires_grad=True)
+    loss_g, g_tau_g, g_u_g = run(f0_cpu.to("cuda"), mask_cuda, tau_cuda, u_cuda)
+
+    assert torch.allclose(loss_c, loss_g.cpu(), rtol=1e-5, atol=1e-7)
+    assert torch.allclose(g_tau_c, g_tau_g.cpu(), rtol=1e-3, atol=1e-8)
+    assert torch.allclose(g_u_c, g_u_g.cpu(), rtol=1e-3, atol=1e-8)
+
+
+def test_bounded_wake_physics() -> None:
+    """Inlet-driven bounded campaign: sustained flow, wake deficit, stable drag."""
+    steps, tau = 300, 0.55
+    dtype = torch.float64
+    mask = make_bounded_mask(DEVICE)
+    fluid = ~mask
+    ones_f = torch.ones(BNZ, BNY, BNX, dtype=dtype, device=DEVICE)
+    zeros_f = torch.zeros_like(ones_f)
+    f = equilibrium3d(ones_f, U_IN * ones_f, zeros_f, zeros_f)
+    inlet, outlet = InletSpec(ux=U_IN), OutletSpec()
+
+    drags = []
+    for _ in range(steps):
+        f, probe = differentiable_step(f, tau, mask, return_probe=True, inlet=inlet, outlet=outlet)
+        drags.append(obstacle_force(probe, mask)[0].detach())
+    rho, ux, _uy, _uz = macroscopic3d(f)
+
+    assert torch.isfinite(f).all()
+    assert 0.85 < float(rho.min()) < float(rho.max()) < 1.15
+    # the equilibrium inlet pins the inflow velocity exactly
+    assert torch.allclose(ux[..., 0], torch.full_like(ux[..., 0], U_IN), atol=1e-10)
+    # the drive sustains the flow (an undriven periodic box would decay)
+    assert float(ux[fluid].mean()) > 0.9 * U_IN
+    # momentum-exchange drag: positive, window-average converged
+    w_early = float(torch.stack(drags[50:100]).mean())
+    w_late = float(torch.stack(drags[250:300]).mean())
+    assert w_late > 0.0
+    assert abs(w_late - w_early) < 0.05 * w_late
+    # wake: centre-line momentum deficit just behind the sphere, recovering downstream
+    # (measured profile: near ~0.13*u_in, recovering to ~0.66*u_in before the outlet)
+    cz, cy = round(BNZ / 2), round(BNY / 2)
+    back = round(BCX + BRADIUS)
+    near_wake = float(ux[cz, cy, back + 1 : back + 3].mean())
+    far_wake = float(ux[cz, cy, -4:-1].mean())
+    assert near_wake < 0.4 * U_IN
+    assert far_wake > 0.6 * U_IN
+
+
+def test_bounded_tau_recovery_from_drag() -> None:
+    """Campaign-style identification: recover tau from measured accumulated drag."""
+    steps, tau_star = 12, 0.85
+    dtype = torch.float64
+    mask = make_bounded_mask(DEVICE)
+    ones_f = torch.ones(BNZ, BNY, BNX, dtype=dtype, device=DEVICE)
+    zeros_f = torch.zeros_like(ones_f)
+    f0 = equilibrium3d(ones_f, U_IN * ones_f, zeros_f, zeros_f)
+    inlet, outlet = InletSpec(ux=U_IN), OutletSpec()
+
+    with torch.no_grad():
+        _f, probes = rollout(
+            f0, steps, tau_star, mask, inlet=inlet, outlet=outlet, return_probes=True
+        )
+        drag_true = sum(obstacle_force(p, mask)[0] for p in probes)
+
+    tau = torch.tensor(0.65, dtype=dtype, device=DEVICE, requires_grad=True)
+    optim = torch.optim.Adam([tau], lr=0.05)
+    loss0 = None
+    for it in range(100):
+        # cosine learning-rate decay as in examples/solver_in_the_loop.py
+        for group in optim.param_groups:
+            group["lr"] = 0.05 * 0.5 * (1.0 + math.cos(math.pi * it / 100))
+        _f, probes = rollout(f0, steps, tau, mask, inlet=inlet, outlet=outlet, return_probes=True)
+        loss = (sum(obstacle_force(p, mask)[0] for p in probes) - drag_true) ** 2
+        optim.zero_grad()
+        loss.backward()
+        optim.step()
+        with torch.no_grad():
+            tau.clamp_(0.5005, 5.0)
+        if loss0 is None:
+            loss0 = loss.detach().item()
+
+    assert math.isfinite(loss.detach().item())
+    assert loss.detach().item() < 1e-2 * loss0
+    assert abs(tau.detach().item() - tau_star) < 5e-3
