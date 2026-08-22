@@ -33,6 +33,12 @@ ray-triangle geometry; no third-party source was consulted):
    (Möller–Trumbore along the spacing-scaled lattice velocity, taking
    the minimum fraction in ``(0, 1]``).
 
+For large meshes the steps above cost ``O(rays x triangles)`` /
+``O(links x triangles)``; passing ``accelerate=True`` to
+:func:`voxelize_stl` routes them through the uniform spatial hash grid
+of :mod:`tensorlbm.voxel_accel`, which returns bit-identical tensors at
+a cost that scales with the mesh *surface* (target: 10^6 triangles).
+
 Robustness notes
 ----------------
 * Asymmetric sub-cell perturbation of the ray origin (``+1.3e-4`` cells
@@ -586,6 +592,7 @@ def voxelize_stl(
     spacing=None,
     check_watertight: bool = True,
     use_triton: bool | None = None,
+    accelerate: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Voxelize an STL triangle mesh into LBM solid mask + BFL q-field.
 
@@ -606,6 +613,13 @@ def voxelize_stl(
             (ray parity assumes a closed surface).
         use_triton: Force the GPU kernel path (``True``) or the reference
             path (``False``); ``None`` auto-selects.
+        accelerate: Route through the uniform spatial-hash-grid
+            implementation of :mod:`tensorlbm.voxel_accel` (pure torch,
+            any device, bit-identical to the reference path; overrides
+            the Triton kernels).  Default ``False`` keeps the historical
+            brute-force behaviour unchanged — see
+            ``docs/benchmarks/voxel_accel_benchmark.md`` for when to
+            turn this on (anything from ~10^5 triangles up).
 
     Returns:
         ``(solid_mask, fluid_boundary_mask, q_field)``:
@@ -624,6 +638,17 @@ def voxelize_stl(
     """
     dims, org, spc = _validate_grid(shape, origin, spacing)
     dev = torch.device(device)
+    if accelerate:
+        from . import voxel_accel
+
+        return voxel_accel.voxelize_stl_accelerated(
+            path_or_mesh,
+            shape,
+            device=dev,
+            origin=origin,
+            spacing=spacing,
+            check_watertight=check_watertight,
+        )
     triangles = _coerce_mesh(path_or_mesh, dev)
 
     if check_watertight:
