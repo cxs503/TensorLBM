@@ -99,6 +99,7 @@ A navigable index of the documentation in this directory, grouped by topic.
 | Document | Description |
 |---|---|
 | [ai_turbulence.md](ai_turbulence.md) | End-to-end AI turbulence workflow: data generation → SQLite → MLP/FNO2d training → embedded collision |
+| [model_zoo.md](model_zoo.md) | Model zoo: manifest-driven registry of trained artifacts (provenance, metrics, loader reuse) |
 | [benchmarks/ai_fno2d/](benchmarks/ai_fno2d/) | FNO2d 2D cylinder surrogate: loss curves, speed comparison (LBM vs inference) |
 
 ---

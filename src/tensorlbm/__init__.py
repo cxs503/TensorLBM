@@ -947,6 +947,12 @@ from .yplus_guide import (
     recommend_grid,
     yplus_recommendation,
 )
+from .zoo import KNOWN_TASKS, ModelInfo, ModelZoo, ZooValidation, resolve_zoo_root
+from .zoo import info as zoo_info
+from .zoo import list_models as zoo_list_models
+from .zoo import load as zoo_load
+from .zoo import register as zoo_register
+from .zoo import validate as zoo_validate
 
 __all__ = [
     "__version__",
@@ -1771,6 +1777,17 @@ __all__ = [
     "plan_exchange_yplus_refinement",
     "recommend_grid",
     "yplus_recommendation",
+    # Model zoo (training-artifact registry)
+    "KNOWN_TASKS",
+    "ModelInfo",
+    "ModelZoo",
+    "ZooValidation",
+    "resolve_zoo_root",
+    "zoo_register",
+    "zoo_load",
+    "zoo_list_models",
+    "zoo_info",
+    "zoo_validate",
     "BoundaryType",
     "CollisionModel",
     "GeneralSimConfig",
