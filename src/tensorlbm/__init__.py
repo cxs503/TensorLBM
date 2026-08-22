@@ -104,6 +104,11 @@ from .amr_interface_validation import (
     AMRInterfaceValidationConfig,
     run_amr_interface_validation,
 )
+from .autograd_path import (
+    differentiable_step,
+    obstacle_force,
+    rollout,
+)
 from .backends import get_backend, set_backend
 from .backward_facing_step import (
     BackwardFacingStepConfig,
@@ -1419,6 +1424,9 @@ __all__ = [
     "collide_thermal_bgk",
     "stream_thermal",
     "macroscopic_thermal",
+    "differentiable_step",
+    "obstacle_force",
+    "rollout",
     "apply_buoyancy_force",
     "C_D3Q7",
     "W_D3Q7",
