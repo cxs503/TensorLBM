@@ -33,6 +33,9 @@ Before reading any MAPE, the mask itself:
 | with_sail | 4 121 | +28 cells (0.7 %) |
 | full | 4 157 | +36 further (0.9 %) |
 
+At n256 the deltas scale up but not relatively: sail +232 cells ≈ 0.7 % of
+the hull — self-similar, so refinement alone cannot create the axis.
+
 At 0.6·128 = 76.8-cell hull length the sail and stern appendages are
 sub-voxel-thick features. Mean C_D per hull confirms it: 8.23 / 8.20 / 8.14 —
 a ~1 % spread, i.e. the hulls are nearly drag-identical as voxelised, and the
@@ -67,10 +70,15 @@ inductive bias when the families are near-degenerate.
 ## Reading
 
 This is a **negative result with a diagnosed cause**, and the cause is
-actionable: the experiment needs a geometry axis that survives voxelisation —
-either n256 (appendages ≥ 2–3 cells), or exaggerated appendage scale, or hull
-families that actually separate in C_D (sail-on-hull at higher Re where
-appendage drag is form-dominated, not viscous-dominated). What the campaign
+actionable — but not by refinement: the sail predicate is faithful to the
+DARPA drawing (constants in model feet; sail top 1.5625 ft vs hull radius
+0.833 ft ⇒ protrusion 0.046·L, length 0.085·L, halfwidth 0.0076·L), and the
+voxelised geometry is **self-similar under refinement** — at n256 the sail
+adds 232 cells but that is still 0.7 % of the ~33 k-cell hull, exactly as at
+n128 (28/4 093). Doubling resolution doubles the appendage and the hull
+together. The axis has to come from **different hull families or exaggerated
+appendage scale** (`SuboffConfig`), or from regimes where appendage drag is
+form-dominated rather than viscous-dominated. What the campaign
 *did* establish:
 
 1. the scan chain runs mixed categorical+numeric sweep axes end-to-end
@@ -107,7 +115,7 @@ on this campaign, decisive on four of five folds", not a knockout.
 
 ## Reproduce
 
-- campaign: `hull_campaign_launcher.py (repo root)` (launcher, assertions on
+- campaign: `/nfs/wangxi/tmp/b14_launch_scan.py` (launcher, assertions on
   per-hull counts and τ floor)
-- analysis: `hull_campaign_analysis.py (repo root)` (split + LOHO + mask audit)
-- k-fold: `drag_surrogate_kfold.py (repo root)`
+- analysis: `/nfs/wangxi/tmp/b14_analyze.py` (split + LOHO + mask audit)
+- k-fold: `/nfs/wangxi/tmp/b13_kfold.py`
