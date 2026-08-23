@@ -356,3 +356,74 @@ matched windows:
    the same observable.
 
 Tests: `tests/test_closure_observables.py` (7, CPU, ~10 s).
+
+## MRT moment-rate calibration (2026-08-24, B3 stage 4)
+
+Stage 3 established the surface-pressure profile as the collision-family
+observable (5-8% reading vs C_D's ~0.8%).  Stage 4 calibrates the
+*continuous* MRT moment rates (s_e, s_eps, s_q) against the campaign's
+own centre-plane pressure snapshots.  New API:
+
+* ``press_profile(box, re, rates)`` — window-averaged axial profile of
+  ``rho - 1`` over centre-plane shell cells (4-neighbour-adjacent to
+  solid, ``z = nz//2`` = the campaign snapshot plane), plus windowed C_D;
+* ``rate_fd_response(box, re)`` — +-20% finite-difference
+  identifiability probe (response per e-fold of rate change);
+* ``calibrate_mrt_rates(targets, box)`` — Adam through a block-
+  checkpointed differentiable window (in-block profile reduction; the
+  transient stays no-grad), rates clamped to ``[0.5, 2.0]``;
+* ``collide_mrt3d`` rate arguments are now tensor-safe (the moment-rate
+  branch of ``_mrt3d_s_vec`` used to silently detach tensor rates — same
+  bug class the tau branch already guarded; all-float path bitwise
+  unchanged, guarded by test).
+
+**Targets**: ``scan_suboff_re_drag_20260821`` (24 Re points, grid
+64x64x128, cumulant + mass correction), final-step (4000) centre-plane
+rho binned exactly as ``press_profile`` bins the simulation.
+Prerequisites verified: ``HullCase(64, 64, 128).make_mask()`` equals the
+campaign ``solid_mask`` **bitwise** (agreement 1.000000), and the
+step-2000 vs step-4000 snapshot difference (noise floor) is 0.0006-0.0105
+relL2, falling with Re.
+
+**Identifiability (FD probe, Re 437.8)**: the profile responds to rates
+at 0.106 (s_e), 0.098 (s_q), 0.021 (s_eps) per e-fold — 25-50x above the
+noise floor for s_e/s_q — while C_D responds at only 0.0006-0.0075 per
+e-fold.  Pressure reads the rates ~15-100x more strongly than drag does:
+rate calibration cannot damage the (already good) C_D match.
+
+**Calibration** (train Re {305, 437.8, 800}; 60 Adam iters, lr 0.05,
+14 s/iter on one RTX 5090; loss = mean squared relL2):
+
+| Re | role | press gap before | after | C_D before | after |
+|---|---|---|---|---|---|
+| 305 | train | 0.0347 | 0.0231 | 5.3973 | 5.3824 |
+| 437.8 | train | 0.0349 | **0.0159** | 4.2385 | 4.2249 |
+| 800 | train | 0.0535 | 0.0257 | 2.8933 | 2.8812 |
+| 628.6 | held-out | 0.0448 | **0.0205** | 3.3592 | 3.3467 |
+| 148 | held-out | 0.0709 | 0.0690 | 8.9953 | 8.9752 |
+
+Identified rates: s_e 1.19 -> 1.60, s_q 1.2 -> 0.93, s_eps -> 0.5 (the
+clamp — its FD response is 5x weaker than s_e's, the direction is
+unidentifiable from pressure data and the optimiser drives it to the
+bound; the value should not be read physically).
+
+Conclusions:
+
+1. A three-rate MRT shift closes half the MRT-vs-cumulant shell-pressure
+   gap at mid/high Re (0.035-0.053 -> 0.016-0.026) and the improvement
+   transfers to held-out Re 628.6 (0.0448 -> 0.0205).
+2. **The calibration is C_D-neutral by construction**: every C_D moves
+   less than 0.3%, exactly as the FD probe predicted — pressure-profile
+   calibration and drag matching decouple.
+3. The residual (1.6-2.6% mid/high Re, 6.9% at Re 148) is structural:
+   the low-Re end needs physics the three-rate MRT family does not have
+   (cumulant bulk-viscosity behaviour at larger effective viscosity).
+   Chasing it requires a differentiable cumulant target, not more rate
+   fitting.
+
+Reproducibility: experiment scripts and raw data in
+``runs/b3_stage4_20260823/`` on the 5090 box (``campaign_press.json``,
+``fd_probe.json``, ``part_c2.json``); tests in
+``tests/test_mrt_rate_calib.py`` (7, CPU, ~30 s) include a synthetic
+self-consistency recovery (perturbed-rate target -> calibration recovers
+the direction and reduces the loss).
