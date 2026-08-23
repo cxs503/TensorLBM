@@ -100,7 +100,7 @@ def collide_rans_mrt3d(
         s_pi = s_e
 
     device = f.device
-    M, M_inv = _get_d3q19_mrt_matrices(device)
+    M, M_inv = _get_d3q19_mrt_matrices(device, f.dtype)
 
     rho, ux, uy, uz = macroscopic3d(f)
     feq = equilibrium3d(rho, ux, uy, uz)

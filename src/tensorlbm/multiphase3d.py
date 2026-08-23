@@ -917,7 +917,7 @@ def collide_cg_mrt_3d(
     if s_pi is None:
         s_pi = s_e
 
-    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device, f_r.dtype)
 
     if C_s > 0.0:
         feq = equilibrium3d(rho, ux, uy, uz)
@@ -1027,7 +1027,7 @@ def collide_sc_mrt_3d(
     if s_pi is None:
         s_pi = s_e
 
-    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device, f1.dtype)
 
     if C_s > 0.0:
         feq1 = equilibrium3d(rho1, ux1, uy1, uz1)

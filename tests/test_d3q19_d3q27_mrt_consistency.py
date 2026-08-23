@@ -28,8 +28,8 @@ CASES = (
 # Direct callable-source fingerprints, intentionally updated only after a new
 # consistency audit.  They bind this evidence to the collision implementation.
 SOURCE_SHA256 = {
-    "D3Q19": "1e5a796ac6001ddcf51961325a25fd3c097c85b310e41571d79a8b9b37ddd1ec",
-    "D3Q27": "a08a00d413b432c97b0c3a779c42b83161877e676303571a88adde9121eff76f",
+    "D3Q19": "d1b45c86a5c40fbbdc019962939aae9aedcde7f9849af086ff9a2929a57b4e54",
+    "D3Q27": "3e3d756dbc79847ea7729e74abb0ee8a227285ab6a9e02f5aeab064b8cf41ff0",
 }
 
 
@@ -109,11 +109,40 @@ def test_mrt_evidence_is_bound_to_the_direct_collision_source(
     assert _source_sha256(collision) == SOURCE_SHA256[lattice]
 
 
-def test_d3q27_mrt_documented_float32_only_matrix_limitation() -> None:
-    """D3Q27's cached transform is float32; float64 populations cannot multiply it."""
-    feq, _ = _case_state(27, equilibrium27)
-    with pytest.raises(RuntimeError, match="same dtype"):
-        collide_mrt27(feq.double(), tau=0.8)
+def test_mrt_matrices_follow_population_dtype() -> None:
+    """Both cached transforms are dtype-aware since the 2026-08-23 re-audit.
+
+    float64 populations used to fail inside ``matrix @ f`` (float32 cached
+    matrices); the builders now take the population dtype, so the fp64
+    differentiable calibration path runs on both lattices.  float32 stays
+    the default and bit-identical.
+    """
+    from tensorlbm.d3q27 import _get_d3q27_mrt_matrices
+    from tensorlbm.solver3d import _get_d3q19_mrt_matrices
+
+    device = torch.device("cpu")
+    for q, builder in ((19, _get_d3q19_mrt_matrices), (27, _get_d3q27_mrt_matrices)):
+        m32, _ = builder(device)
+        assert m32.dtype is torch.float32
+        m64, _ = builder(device, torch.float64)
+        assert m64.dtype is torch.float64
+
+
+@pytest.mark.parametrize("lattice,q,directions,equilibrium,macroscopic,collision", CASES)
+def test_mrt_accepts_float64_populations(
+    lattice, q, directions, equilibrium, macroscopic, collision
+) -> None:
+    feq, perturbed = _case_state(q, equilibrium)
+    f64 = perturbed.double()
+    out = collision(f64, tau=0.8)
+    assert out.dtype is torch.float64
+    assert torch.isfinite(out).all()
+    rho_before, ux_b, uy_b, uz_b = macroscopic(f64)
+    rho_after, ux_a, uy_a, uz_a = macroscopic(out)
+    torch.testing.assert_close(rho_after, rho_before, rtol=0.0, atol=1.0e-10)
+    momentum_before = torch.stack((rho_before * ux_b, rho_before * uy_b, rho_before * uz_b))
+    momentum_after = torch.stack((rho_after * ux_a, rho_after * uy_a, rho_after * uz_a))
+    torch.testing.assert_close(momentum_after, momentum_before, rtol=0.0, atol=1.0e-12)
 
 
 def test_audit_document_is_present() -> None:
