@@ -64,7 +64,7 @@ import numpy as np
 import torch
 
 from tensorlbm.autograd_path import InletSpec, OutletSpec, WallSpec, obstacle_force, rollout
-from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.scan_drag import DRAG_HISTORY_SCHEMA
 from tensorlbm.solver3d import collide_mrt3d
 from tensorlbm.turbulence import (
@@ -591,6 +591,256 @@ def _blocked_window_force(
             force_sum = force_sum + block_sum
             n_probes += n - max(0, box.window_start - start)
     return force_sum / n_probes
+
+
+# ---------------------------------------------------------------------------
+# Field observables: what does the closure actually move? (B3-next)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ClosureObservables:
+    """Window-mean *field* observables of one bounded rollout (B3-next).
+
+    Produced by :func:`bounded_observables`.  Every entry is the mean over
+    the case window ``[window_start, steps)`` of quantities read on the
+    post-stream / pre-bounce-back probe state — the same sampling phase as
+    the drag observable — so entries are directly comparable across
+    closures.  Motivation: windowed C_D is closure-blind at production
+    resolution (``|d ln C_D / d ln C_s| ~ 0.004-0.03``, and the
+    collision-family axis moves it only ~0.2-0.8%), while the surface
+    pressure profile reads the collision axis at 5-8% with a ~33x
+    signal-to-drift ratio (``docs/closure_calibration.md``, "Observable
+    swap").
+    """
+
+    cd: float
+    #: ``(press_bins,)`` mean ``rho - 1`` on solid-adjacent wet cells, binned axially
+    press_profile: torch.Tensor
+    #: ``(nx,)`` mean ``ux`` on the centreline ``(z=nz/2, y=ny/2)``
+    centerline_ux: torch.Tensor
+    #: per wake plane, the mean deficit ``u_in - ux`` on its wet disk cells
+    wake_deficit: list[torch.Tensor]
+    #: per wake plane, the mean cross-flow ``uy`` on the same cells
+    wake_cross: list[torch.Tensor]
+    #: mean over the window of the per-step minimum ``ux`` in the wake slab
+    wake_min_ux: float
+    #: the x indices of the wake planes (rows of the two wake matrices)
+    planes: tuple[int, ...]
+    #: cells per pressure bin (diagnostics; bins past the body are empty)
+    press_counts: torch.Tensor
+
+
+def _default_wake_planes(mask: torch.Tensor) -> tuple[int, ...]:
+    """Geometric default probe planes: 20/45/70 % into the wake.
+
+    The body tail is read from *mask* itself (last x with any solid cell),
+    so the rule works for any case geometry.
+    """
+    nx = mask.shape[2]
+    tail = int(mask.any(dim=(0, 1)).nonzero(as_tuple=True)[0][-1]) + 1
+    span = nx - 1 - tail
+    return tuple(min(nx - 2, tail + max(1, round(f * span))) for f in (0.2, 0.45, 0.7))
+
+
+def _solid_adjacent_wet(mask: torch.Tensor) -> torch.Tensor:
+    """Wet cells with at least one of their 6 face neighbours solid."""
+    wet = ~mask
+    adj = torch.zeros_like(wet)
+    adj[1:] |= mask[:-1]
+    adj[:-1] |= mask[1:]
+    adj[:, 1:] |= mask[:, :-1]
+    adj[:, :-1] |= mask[:, 1:]
+    adj[:, :, 1:] |= mask[:, :, :-1]
+    adj[:, :, :-1] |= mask[:, :, 1:]
+    return wet & adj
+
+
+@torch.no_grad()
+def bounded_observables(
+    box: BoxCase | HullCase,
+    re: float,
+    cs: float | torch.Tensor | None = None,
+    mask: torch.Tensor | None = None,
+    *,
+    collision: str = "bgk",
+    sgs: str = "smagorinsky",
+    plane_xs: Sequence[int] | None = None,
+    wake_radius: float = 20.0,
+    press_bins: int = 32,
+    chunk: int = 40,
+) -> ClosureObservables:
+    """One no-grad bounded rollout returning window-mean field observables.
+
+    The same rollout configuration as :func:`bounded_drag` (identical
+    inlet/outlet/walls/collision wiring; ``cs=None`` is the zero-SGS
+    floor), but instead of reducing the probe states to the windowed drag
+    scalar it accumulates the *fields* a closure could be identified from:
+
+    - ``cd`` — the drag observable itself (control; known closure-blind);
+    - ``press_profile`` — axial surface-pressure proxy ``rho - 1`` on
+      solid-adjacent wet cells.  In lattice units ``p = c_s^2 rho``, so
+      this is the gauge pressure profile ``C_p`` up to a constant.  The
+      collision axis moves it 5-8% on the production hull (vs 0.2-0.8% for
+      C_D) with the response steady across the window halves (drift
+      ~0.002 absolute vs ~0.05 response);
+    - ``centerline_ux`` — mean streamwise velocity on the centreline;
+    - ``wake_deficit`` / ``wake_cross`` — ``u_in - ux`` and ``uy`` on the
+      (z, y) planes at *plane_xs*, restricted to wet cells within
+      *wake_radius* of the body axis.  The deficit is the smooth part of
+      the wake; the cross-flow field is phase-sensitive (shedding) and
+      needs long windows to be usable;
+    - ``wake_min_ux`` — per-step minimum ``ux`` over the wet wake slab
+      ``[tail, nx-1)``, window-averaged.  Zero means no recirculation.
+
+    Args:
+        box: Domain and rollout configuration (see :func:`bounded_drag`).
+        re: Reynolds number (sets ``tau`` via the case's relation).
+        cs: Sub-grid constant (or ``None`` for the zero-SGS floor).
+        mask: Pre-built solid mask (defaults to ``box.make_mask()``).
+        collision: Collision family, ``"bgk"`` or ``"mrt"``.
+        sgs: Sub-grid model the constant *cs* feeds.
+        plane_xs: Wake-plane x indices.  ``None`` picks three planes at
+            20/45/70 % into the wake of the *actual* mask.
+        wake_radius: Lateral radius (cells) of the wake sampling disk.
+        press_bins: Number of axial bins for the pressure profile.
+        chunk: Probe-processing chunk (memory: ~``chunk`` probe states).
+
+    Returns:
+        :class:`ClosureObservables` with window-mean values.
+    """
+    device = torch.device(box.device)
+    mask = _case_mask(box) if mask is None else mask
+    nz, ny, nx = box.nz, box.ny, box.nx
+    cy, cz = ny // 2, nz // 2
+    tau = box.tau_of_re(re)
+    inlet = InletSpec(
+        ux=torch.as_tensor(box.u_in, dtype=box.dtype, device=device),
+        method=box.inlet_method,
+    )
+    walls = None if box.wall_method == "periodic" else WallSpec(method=box.wall_method, ux=box.u_in)
+    collide = _make_collide(cs, collision, sgs, box.dtype, device)
+
+    rho0 = torch.ones((nz, ny, nx), dtype=box.dtype, device=device)
+    u0 = torch.zeros((3, nz, ny, nx), dtype=box.dtype, device=device)
+    u0[0] = box.u_in
+    f = equilibrium3d(rho0, u0[0], u0[1], u0[2])
+
+    planes = tuple(int(x) for x in plane_xs) if plane_xs is not None else _default_wake_planes(mask)
+    yy, zz = torch.meshgrid(
+        torch.arange(ny, device=device), torch.arange(nz, device=device), indexing="ij"
+    )
+    disk = ((yy - cy) ** 2 + (zz - cz) ** 2) <= wake_radius**2
+    adj = _solid_adjacent_wet(mask)
+    adj_idx = adj.nonzero(as_tuple=False)
+    n_bins = min(press_bins, nx)
+    bin_w = max(1, nx // n_bins)
+    tail = int(mask.any(dim=(0, 1)).nonzero(as_tuple=True)[0][-1]) + 1
+
+    def process(p: torch.Tensor, acc: dict) -> None:
+        rho, ux, uy, _uz = macroscopic3d(p)
+        acc["fx"] += float(obstacle_force(p, mask)[0])
+        prof = torch.zeros(n_bins, dtype=torch.float64, device=device)
+        xs = (adj_idx[:, 2] // bin_w).long()
+        vals = (rho[adj_idx[:, 0], adj_idx[:, 1], adj_idx[:, 2]] - 1.0).double()
+        prof.scatter_add_(0, xs, vals)
+        acc["press"] = acc["press"] + prof
+        acc["cl"] = acc["cl"] + ux[cz, cy, :].double()
+        for i, xp in enumerate(planes):
+            wet_disk = disk & ~mask[:, :, xp].T  # both (ny, nz)
+            d = (box.u_in - ux[:, :, xp]).T[wet_disk].double()
+            c = uy[:, :, xp].T[wet_disk].double()
+            acc["wdef"][i] = acc["wdef"][i] + d
+            acc["wcross"][i] = acc["wcross"][i] + c
+        wk, wm = ux[:, :, tail : nx - 1], ~mask[:, :, tail : nx - 1]
+        acc["minux"] += float(wk[wm].min()) if wm.any() else 0.0
+
+    acc: dict = {
+        "fx": 0.0,
+        "minux": 0.0,
+        "press": torch.zeros(n_bins, dtype=torch.float64, device=device),
+        "cl": torch.zeros(nx, dtype=torch.float64, device=device),
+        "wdef": [0 for _ in planes],
+        "wcross": [0 for _ in planes],
+    }
+    f = rollout(
+        f,
+        box.window_start,
+        tau,
+        mask,
+        collide=collide,
+        inlet=inlet,
+        outlet=OutletSpec(),
+        walls=walls,
+    )
+    n_probe = 0
+    while n_probe < box.steps - box.window_start:
+        n = min(chunk, box.steps - box.window_start - n_probe)
+        _f, probes = rollout(
+            f,
+            n,
+            tau,
+            mask,
+            collide=collide,
+            inlet=inlet,
+            outlet=OutletSpec(),
+            walls=walls,
+            return_probes=True,
+            probe_start=0,
+        )
+        f = _f
+        for p in probes:
+            process(p, acc)
+        n_probe += n
+        del probes
+
+    n = float(n_probe)
+    press_counts = torch.zeros(n_bins, dtype=torch.float64, device=device)
+    press_counts.scatter_add_(
+        0,
+        (adj_idx[:, 2] // bin_w).long(),
+        torch.ones(len(adj_idx), dtype=torch.float64, device=device),
+    )
+    return ClosureObservables(
+        cd=acc["fx"] / n / (0.5 * box.u_in**2 * box.ref_area(mask)),
+        press_profile=acc["press"] / n,
+        centerline_ux=acc["cl"] / n,
+        wake_deficit=[v / n for v in acc["wdef"]],
+        wake_cross=[v / n for v in acc["wcross"]],
+        wake_min_ux=acc["minux"] / n,
+        planes=planes,
+        press_counts=press_counts,
+    )
+
+
+def observable_response(
+    a: ClosureObservables, b: ClosureObservables, ref: ClosureObservables
+) -> dict[str, float]:
+    """Relative response ``||a_k - b_k|| / ||ref_k||`` per observable.
+
+    The identifiability metric of the observable swap: for a vector
+    observable the relative L2 distance between the two runs, normalised
+    by the reference run's norm; for the scalars the relative absolute
+    difference.  Divide by ``ln(cs_hi/cs_lo)`` to express per e-fold of a
+    parameter sweep (the experiment tables in ``docs/closure_calibration.md``
+    report exactly that).
+    """
+    out: dict[str, float] = {}
+
+    def vec(key: str, ka: torch.Tensor, kb: torch.Tensor, kr: torch.Tensor) -> None:
+        nr = float(torch.linalg.norm(kr.double()))
+        out[key] = float(torch.linalg.norm(ka.double() - kb.double())) / nr if nr else 0.0
+
+    out["cd"] = abs(a.cd - b.cd) / abs(ref.cd) if ref.cd else 0.0
+    out["wake_min_ux"] = (
+        abs(a.wake_min_ux - b.wake_min_ux) / abs(ref.wake_min_ux) if ref.wake_min_ux else 0.0
+    )
+    vec("press_profile", a.press_profile, b.press_profile, ref.press_profile)
+    vec("centerline_ux", a.centerline_ux, b.centerline_ux, ref.centerline_ux)
+    for i, xp in enumerate(ref.planes):
+        vec(f"wake_deficit@{xp}", a.wake_deficit[i], b.wake_deficit[i], ref.wake_deficit[i])
+        vec(f"wake_cross@{xp}", a.wake_cross[i], b.wake_cross[i], ref.wake_cross[i])
+    return out
 
 
 @torch.no_grad()
