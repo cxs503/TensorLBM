@@ -317,3 +317,183 @@ per-face overrides) while pre-A6+++ payloads load unchanged.
   and spec validation).
 * `examples/solver_in_the_loop.py` — the four identification runs above
   (`--mode {tau,cs}`, `--observable {field,drag}`).
+
+## Inverse design (2026-08-23): soft solids, geometry in the autograd graph
+
+The one thing the masked chain above cannot do is differentiate a loss with
+respect to **the shape itself** — `sphere_mask` is a boolean grid, a
+discrete object with no gradient. The opt-in soft-solid path
+(`src/tensorlbm/soft_geometry.py`) closes that gap:
+
+```python
+from tensorlbm import SoftGeometry                       # exported in api.__all__
+from tensorlbm.autograd_path import differentiable_step, rollout, obstacle_force
+
+radius = torch.tensor(2.9, dtype=torch.float64, requires_grad=True)
+geom = SoftGeometry(kind="sphere",                        # or "ellipsoid", "box"
+                    center=(7.0, 8.0, 6.0),
+                    size=(radius,),                       # any entry may be a
+                    epsilon=0.25)                         # 0-dim graph tensor
+f, probes = rollout(f0, K, tau, None, soft=geom, inlet=..., outlet=...,
+                    return_probes=True, probe_start=...)
+solid = geom.solid_weight(nz, ny, nx, ...)                # 1 - w
+loss = sum(obstacle_force(p, solid)[0] for p in probes)   # soft drag
+loss.backward()                                           # d(loss)/d(radius)
+```
+
+`SoftGeometry` is a frozen dataclass: an analytic signed distance function
+`phi(x; params)` (negative inside the solid) blurred by a temperature
+`epsilon` into the fluid weight `w(x) = sigmoid(phi/epsilon)` — 1 in the
+fluid, 0 in the solid, transition band `~6*epsilon` wide. Three shapes:
+`sphere` (exact SDF `|p-c| - r`), `box` (the standard axis-aligned SDF
+`length(max(q,0)) + min(max(qx,qy,qz),0)`, `q = |p-c| - h`), and
+`ellipsoid` (the normalised-radius surrogate `(t-1)*min(a,b,c)` with
+`t = sqrt(sum ((p_i-c_i)/a_i)^2)` — exact zero set, distance measured in
+units of the shortest semi-axis; the exact ellipsoid SDF needs an iterative
+closest-point projection and is deliberately not reproduced).
+
+### The three soft operators (and their hard-limit contract)
+
+Each mask-dependent operator of the step chain becomes a convex homotopy in
+`w` (`s = 1 - w` is the solid weight):
+
+| phase | hard-mask operator | soft operator |
+|-------|--------------------|---------------|
+| collision (NoDynamics skip) | `where(mask, f, collide(f))` | `w*collide(f) + (1-w)*f` |
+| full-way bounce-back | `where(mask, f_str[opp], f_str)` | `w*f_str + (1-w)*f_str[opp]` |
+| momentum-exchange force | `2 sum_{x in solid} sum_q c_q f` | `2 sum_x s(x) sum_q c_q f` |
+
+Full-way bounce-back reflects populations **on the wet node itself**, so the
+weight is sampled at the same node — no link-wise mask shift (a half-way
+link scheme would need the weight at `x + c_q`; the existing hard
+implementation needs none either, for the same reason).
+
+The soft force is *derived*, not asserted: per node the soft bounce-back
+changes the field momentum by `sum_q c_q (f_post - f_str) = -2 s sum_q c_q
+f_str` (relabel `q -> opp` with `c_opp = -c_q`), so by action-reaction the
+momentum handed to the body is exactly `2 s sum_q c_q f_probe` — the soft
+force above. Assumption: `s(x)` is read as the node's solid occupancy.
+`obstacle_force` needs no signature change: passing the float field
+`1 - w` as its mask argument realises the soft form.
+
+**Bitwise hard limit.** Beyond `|phi/epsilon| = 30` the weight is clipped to
+*exactly* 0/1 (the logistic tail there is ~1e-13 — no physics change, but a
+blend weight of 1e-28 is not zero: the homotopies would collide/bounce
+deep-solid cells at O(1) instead of freezing them). At black/white weights
+every blend collapses onto its `torch.where` selection, so at a saturating
+temperature (e.g. `epsilon = 1e-3` for a sphere whose closest node is
+~0.064 from the surface) the **whole chain** — final state, every probe,
+accumulated drag — is `torch.equal` to the hard-mask chain of the same
+parameters (`test_soft_chain_hard_limit_bitwise`). The default `soft=None`
+path is untouched: `test_soft_none_default_path_bitwise_unchanged` replays
+the original chain by hand, and the env-gated
+`test_default_path_bitwise_vs_baseline_artifacts` compares against the
+frozen `baseline.pt` artefacts generated at the pre-feature commit 02275f55
+(`scripts/gen_autograd_inverse_baseline.py --check /nfs/wangxi/tmp/inv_base`,
+sha256 3e47242b71c64ae4...). The action-reaction identity itself is verified
+to machine precision in a periodic box (`F = -d(momentum)/dt`, rel 5.6e-15).
+
+### Measured gradient accuracy (fp64, 5-step rollout, Zou/He inlet + convective outlet, 8x10x20)
+
+| derivative | autograd | central FD | rel error |
+|------------|----------|------------|-----------|
+| d(drag)/d(radius), sphere r=2.3 | +1.465125260e+01 | +1.465125260e+01 | 3.4e-11 |
+| d(drag)/d(b), ellipsoid (2.3, b, 1.5), b=1.8 | +5.423418179e+00 | +5.423418179e+00 | 1.0e-10 |
+| d(drag)/d(hx), box (hx, 1.7, 1.4), hx=2.2 | +3.804437524e+00 | +3.804437524e+00 | 7.3e-11 |
+| d(drag)/d(cx), sphere, cx=6.3 | +2.313765523e-01 | +2.313765357e-01 | 7.2e-08 |
+| d(drag)/d(epsilon), sphere, eps=0.5 | +4.020864986e+01 | +4.020864986e+01 | 8.4e-11 |
+
+(FD step 1e-5; the centre derivative uses 1e-4 — its signal is smaller, so
+the quotient is round-off dominated there. All five are pinned in
+`tests/test_autograd_inverse.py` at rel < 1e-6 / 1e-5.) Note the same fd64
+lesson as the tau audits: keep geometry parameters in fp64 when learning
+them — the SDF divides by `epsilon`, and fp32 blends show up at the 1e-3
+level in the drag.
+
+### Soft -> hard C_D convergence (12x16x26, sphere r=2.3, u_in=0.08, tau=0.55, 400 steps, window [300,400), fp64)
+
+| epsilon | C_D(soft) | C_D(hard) = 4.511620 | rel err |
+|--------:|----------:|--------------------:|--------:|
+| 0.5     | 17.072033 |               4.511620 | +2.78   |
+| 0.25    |  6.869165 |               4.511620 | +0.522  |
+| 0.125   |  5.000857 |               4.511620 | +0.108  |
+| 0.0625  |  4.672132 |               4.511620 | +0.0356 |
+| 0.02    |  4.502984 |               4.511620 | -0.0019 |
+
+Monotone convergence (`test_soft_to_hard_cd_convergence` also pins this);
+`epsilon <= 0.02` lattice units lands within 1%. The epsilon bias is
+**window-dependent**: it is a boundary-layer artefact of the smeared
+interface, and during the startup transient the soft sphere reads
+substantially "fatter" than the hard one (measured on the same grid: the
+soft campaign overestimates the window drag of the same sphere by ~1.6x in
+the window [30,60), versus +0.5% in the steady window [300,400)).
+
+### Solver-in-the-loop demos (`examples/inverse_design.py`)
+
+Bounded box, equilibrium inlet `u_in = 0.08`, zero-gradient outlet, Adam +
+cosine lr decay (5% floor), normalised loss `((drag - drag*)/drag*)^2`,
+window-mean momentum-exchange drag over the probe window, fp64:
+
+* **sphere radius** (12x16x26, truth r* = 2.3 hidden, guess 2.9, eps 0.25,
+  K = 60 with window [30,60), 120 iters, lr 0.02): loss 3.287e-01 ->
+  4.630e-06, recovered radius 2.2973 (abs err 2.7e-03), endpoint C_D error
+  **2.1e-03**. The test-suite version (`test_inverse_design_radius_recovery`,
+  10x13x22, r* = 2.0, guess 2.6, 150 iters) recovers radius 2.000753,
+  endpoint C_D error 6.2e-04.
+* **ellipsoid semi-axis** (same grid, learn b of (2.0, b, 1.6), truth
+  b* = 2.2, guess 2.6): recovered b = 2.2015 (abs err 1.5e-03), endpoint
+  C_D error 7.5e-04. The window-drag observable is **multi-modal** in b —
+  it has an interior minimum near b = c (the round cross-section, ~1.6
+  here), and b = 0.8 and b = 2.2 give the same window drag to 7e-4 — so the
+  guess must start on the truth branch; descending from below the minimum
+  finds the twin solution on the slender branch instead.
+* **hard reference** (`--target hard --iters 400 --lr 0.05`): the target
+  drag comes from the hard-mask campaign of the same sphere; the optimiser
+  matches the target C_D to **1.5e-07** — but at radius 1.6901 vs truth
+  2.3, i.e. shifted down by the exact amount that compensates the
+  startup-window epsilon bias above (~1.6x drag at the same radius).  The
+  visible cost of fitting a hard-sphere target with an eps = 0.25 model in
+  the transient regime; the default self-consistent soft target has no such
+  bias.
+
+### Known limits of the inverse-design path
+
+* **Analytic SDFs only**: sphere / ellipsoid / box with centre, size and
+  epsilon parameters. No voxelised/imported geometry, no level-set advection
+  — a generic mask has no gradient by construction. The ellipsoid SDF is a
+  surrogate (distance in units of the shortest semi-axis), so `epsilon` is
+  exactly lattice-units only along the shortest axis.
+* **Epsilon boundary-layer bias**: the smeared interface thickens the
+  obstacle by `O(epsilon)`; C_D converges to the hard value monotonically
+  but only reaches 1% at `epsilon <= 0.02`, while gradients need the band
+  wide enough to cover nodes (`~0.25` is the practical optimum). Fitting a
+  *hard*-reference observable with a soft model biases the recovered
+  parameter; self-consistent soft targets (the default demo) do not.
+* **Multi-modal observables**: drag-vs-size is monotone for the sphere but
+  not for the ellipsoid semi-axis (interior minimum near the round
+  cross-section); gradient descent finds the solution on the branch it
+  starts from.
+* **Static shapes**: the weight is recomputed from the SDF every step, but
+  the parameters are constant across the rollout — no moving/shape-morphing
+  control within one optimisation iteration.
+* sqrt arguments are clamped at 1e-30 in the sphere/ellipsoid SDFs: values
+  are unchanged to ~1e-15 but the (meaningless) gradient at the exact
+  centre node is zeroed — inf * 0 = NaN otherwise.
+
+### Entry points (inverse design)
+
+* `src/tensorlbm/soft_geometry.py` — `SoftGeometry` (sdf / fluid_weight /
+  solid_weight / hard_mask).
+* `tensorlbm.autograd_path.differentiable_step(..., soft=geom)` /
+  `rollout(..., soft=geom)` — opt-in soft chain (mutually exclusive with
+  `mask`; default `None` keeps the hard chain bit-for-bit).
+* `tests/test_autograd_inverse.py` — 19 cases: SDF/weight value contracts,
+  soft-step manual replay (BCs incl. per-face walls), default-path bitwise
+  identity (in-test + env-gated vs `baseline.pt`), saturated-eps bitwise
+  hard limit (state/probes/drag), action-reaction balance, FD gradient
+  cross-checks for all five parameters, checkpoint equality, CUDA parity,
+  the C_D convergence table and the radius-recovery optimisation.
+* `scripts/gen_autograd_inverse_baseline.py` — baseline artefact
+  generator/checker (5 configs, CPU-deterministic, `torch.equal`).
+* `examples/inverse_design.py` — the demos above
+  (`--param {radius,semi-axis}`, `--target {soft,hard}`, `--eps`, `--iters`).
