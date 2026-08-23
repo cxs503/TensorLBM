@@ -379,7 +379,7 @@ def collide_smagorinsky_mrt3d(
         s_pi = s_e
 
     device = f.device
-    M, M_inv = _get_d3q19_mrt_matrices(device)
+    M, M_inv = _get_d3q19_mrt_matrices(device, f.dtype)
 
     # Compute per-cell effective tau
     rho, ux, uy, uz = macroscopic3d(f)
@@ -529,7 +529,7 @@ def collide_smagorinsky_mrt27(
         s_pi = s_e
 
     device = f.device
-    M, M_inv = _get_d3q27_mrt_matrices(device)
+    M, M_inv = _get_d3q27_mrt_matrices(device, f.dtype)
 
     rho, ux, uy, uz = macroscopic27(f)
     feq = equilibrium27(rho, ux, uy, uz)
@@ -1097,7 +1097,7 @@ def collide_wale_mrt3d(
         s_pi = s_e
 
     device = f.device
-    M, M_inv = _get_d3q19_mrt_matrices(device)
+    M, M_inv = _get_d3q19_mrt_matrices(device, f.dtype)
 
     rho, ux, uy, uz = macroscopic3d(f)
     feq = equilibrium3d(rho, ux, uy, uz)
@@ -1172,7 +1172,7 @@ def collide_wale_mrt27(
         s_pi = s_e
 
     device = f.device
-    M, M_inv = _get_d3q27_mrt_matrices(device)
+    M, M_inv = _get_d3q27_mrt_matrices(device, f.dtype)
 
     rho, ux, uy, uz = macroscopic27(f)
     feq = equilibrium27(rho, ux, uy, uz)
@@ -1260,7 +1260,7 @@ def collide_vreman_mrt3d(
         s_pi = s_e
 
     device = f.device
-    M, M_inv = _get_d3q19_mrt_matrices(device)
+    M, M_inv = _get_d3q19_mrt_matrices(device, f.dtype)
 
     rho, ux, uy, uz = macroscopic3d(f)
     feq = equilibrium3d(rho, ux, uy, uz)
@@ -1335,7 +1335,7 @@ def collide_vreman_mrt27(
         s_pi = s_e
 
     device = f.device
-    M, M_inv = _get_d3q27_mrt_matrices(device)
+    M, M_inv = _get_d3q27_mrt_matrices(device, f.dtype)
 
     rho, ux, uy, uz = macroscopic27(f)
     feq = equilibrium27(rho, ux, uy, uz)
@@ -1743,7 +1743,7 @@ def collide_dynamic_smagorinsky_mrt3d(
     tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=_TAU_EFF_MIN, max=_tau_eff_max(tau))
 
     # ---- MRT collision with per-cell stress relaxation rate ----
-    M, M_inv = _get_d3q19_mrt_matrices(device)
+    M, M_inv = _get_d3q19_mrt_matrices(device, f.dtype)
     s_nu_flat = (1.0 / tau_eff).reshape(-1)  # (N,)
 
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
@@ -1939,7 +1939,7 @@ def collide_dynamic_smagorinsky_mrt27(
     tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=_TAU_EFF_MIN, max=_tau_eff_max(tau))
 
     # ---- MRT collision with per-cell stress relaxation rate ----
-    M, M_inv = _get_d3q27_mrt_matrices(device)
+    M, M_inv = _get_d3q27_mrt_matrices(device, f.dtype)
     s_nu_flat = (1.0 / tau_eff).reshape(-1)  # (N,)
 
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]

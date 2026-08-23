@@ -476,7 +476,7 @@ def _collide_mrt3d_with_tau_eff(
     """
     if s_pi is None:
         s_pi = s_e
-    M, M_inv = _get_d3q19_mrt_matrices(device)
+    M, M_inv = _get_d3q19_mrt_matrices(device, f.dtype)
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
     f_flat = f.reshape(19, -1)
     feq_flat = feq.reshape(19, -1)
