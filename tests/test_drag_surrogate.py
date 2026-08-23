@@ -341,7 +341,9 @@ def test_param_collection_and_names(campaign_geo) -> None:
     fields_dir, drag_dir = campaign_geo
     cd_by_point = load_exact_cd_per_point(drag_dir, fields_dir)
     plain = build_drag_split(
-        fields_dir, point_ids=SPLIT_POINTS["train"], spec=PlaneSampleSpec(steps=(500,)),
+        fields_dir,
+        point_ids=SPLIT_POINTS["train"],
+        spec=PlaneSampleSpec(steps=(500,)),
         cd_by_point=cd_by_point,
     )
     assert plain.params is None
@@ -434,4 +436,6 @@ def test_study_with_geometry_params(campaign_geo, tmp_path: Path) -> None:
     assert summary["param_norm"] is not None
     assert tuple(summary["param_norm"]["names"]) == ("sail_scale", "fin_scale")
     header = (out / "predictions.csv").read_text().strip().splitlines()[0]
-    assert header == "split,point_id,step,re,sail_scale,fin_scale,cd_true,cd_fno,cd_power_law,cd_mean"
+    assert (
+        header == "split,point_id,step,re,sail_scale,fin_scale,cd_true,cd_fno,cd_power_law,cd_mean"
+    )
