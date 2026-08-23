@@ -39,6 +39,7 @@ from .d3q19 import OPPOSITE as OPPOSITE3D
 from .d3q19 import C as C3D
 from .d3q19 import W as W3D
 from .d3q19 import equilibrium3d, macroscopic3d
+from .soft_geometry import SoftGeometry
 from .solver import collide_bgk, collide_mrt, collide_rlbm, collide_trt, correct_mass, stream
 from .solver3d import (
     collide_bgk3d,
@@ -98,6 +99,7 @@ __all__ = [
     "differentiable_step",
     "obstacle_force",
     "rollout",
+    "SoftGeometry",
     # closure calibration (solver-in-the-loop)
     "BoxCase",
     "CalibResult",

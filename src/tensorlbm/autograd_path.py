@@ -28,7 +28,15 @@ Everything is built from out-of-place torch ops that keep the autograd graph:
   (:func:`tensorlbm.solver3d.collide_bgk3d`); any callable
   ``f, tau -> f`` built from differentiable ops drops in, e.g.
   :func:`tensorlbm.turbulence.collide_smagorinsky_bgk3d` to learn the
-  Smagorinsky constant ``C_s`` through the solver.
+  Smagorinsky constant ``C_s`` through the solver;
+* the obstacle can optionally be a **soft solid** (inverse design): passing
+  ``soft=SoftGeometry(...)`` (:mod:`tensorlbm.soft_geometry`) replaces the
+  boolean mask by a differentiable SDF-blurred weight field, so centre /
+  radius / axis parameters stay in the autograd graph — the soft collision
+  skip, soft full-way bounce-back and soft momentum-exchange force are the
+  convex homotopies of the hard operators below and degenerate to them
+  bit-for-bit at black/white weights.  ``soft=None`` (default) keeps the
+  hard-mask chain bit-for-bit unchanged.
 
 This is the TensorLBM counterpart of the solver-in-the-loop paradigm of
 Autodesk XLB (JAX, Apache-2.0, Ataei & Salehipour, CPC 300:109187, 2024) and
@@ -38,7 +46,10 @@ backward graph, so ``d(loss)/d(tau)``, ``d(loss)/d(C_s)``, ``d(loss)/df0`` and
 frozen-field surrogate (``tensorlbm/adjoint.py``) and no hand-derived adjoint.
 
 Scope (deliberate): single-component D3Q19 BGK-family collision, stationary
-solid mask.  The default lattice stays fully periodic; passing
+solid mask — the boolean hard mask, or (opt-in, ``soft=``) a differentiable
+*soft solid* whose SDF parameters move through the graph while the geometry
+itself stays stationary during a rollout (:mod:`tensorlbm.soft_geometry`).
+The default lattice stays fully periodic; passing
 ``inlet``/``outlet`` replaces the periodic wrap on the x planes with a
 differentiable velocity inlet and a zero-gradient or convective outlet, and
 ``walls`` replaces the periodic wrap on the four lateral planes with
@@ -71,6 +82,7 @@ from torch.utils.checkpoint import checkpoint as _checkpoint
 
 from .d3q19 import OPPOSITE, equilibrium3d
 from .d3q19 import C as C3D
+from .soft_geometry import SoftGeometry
 from .solver3d import collide_bgk3d, stream3d
 
 CollideFn = Callable[..., torch.Tensor]
@@ -410,6 +422,72 @@ def _collide_skip_solid(
     return torch.where(mask.unsqueeze(0), f, f_col)
 
 
+def _soft_differentiable_step(
+    f: torch.Tensor,
+    tau: float | torch.Tensor,
+    *,
+    collide: CollideFn | None,
+    return_probe: bool,
+    inlet: InletSpec | None,
+    outlet: OutletSpec | None,
+    walls: WallSpec | None,
+    outlet_prev: torch.Tensor | None,
+    soft: SoftGeometry,
+) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+    """One step against a soft solid (the differentiable-geometry chain).
+
+    Same phase order as :func:`differentiable_step` (collide -> stream ->
+    boundary conditions -> bounce-back), with the three mask-dependent
+    operators replaced by their convex homotopies in the fluid weight
+    ``w(x) = sigmoid(phi(x)/epsilon)`` computed from the geometry's SDF:
+
+    * collision (soft NoDynamics skip) — ``w * collide(f) + (1 - w) * f``:
+      the fluid collides, the solid is frozen (``w`` is the *fluid* weight,
+      ``w -> 1`` in the fluid);
+    * full-way bounce-back — ``w * f_str + (1 - w) * f_str[opp]``, the
+      continuous blend of ``where(mask, f_str[opp], f_str)``.  Full-way
+      bounce-back reflects populations *on the wet node itself*, so the
+      weight is sampled at the same node — no link-wise mask shift (the
+      half-way link scheme would need the weight at ``x + c_q``);
+    * momentum-exchange force — :func:`obstacle_force` called with the
+      solid weight ``1 - w`` (see its docstring for the derivation).
+
+    Hard-limit contract: at black/white weights (``w in {0, 1}``) every
+    blend collapses onto the corresponding ``torch.where`` selection, so the
+    operator degenerates to the hard-mask chain — verified ``torch.equal``
+    in ``tests/test_autograd_inverse.py`` at a saturating temperature, and
+    quantitatively by the soft->hard C_D convergence table there.  The
+    default ``soft=None`` path never enters this function.
+
+    The weight is recomputed from the SDF on every call, so the autograd
+    graph (and gradient checkpointing, which replays the forward) always
+    sees the parameters of *this* step — one ``(nz, ny, nx)`` intermediate
+    per step, negligible against the populations.
+    """
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    w = soft.fluid_weight(nz, ny, nx, dtype=f.dtype, device=f.device).unsqueeze(0)
+
+    f_col = collide_bgk3d(f, tau) if collide is None else collide(f, tau)
+    f_str = stream3d(w * f_col + (1.0 - w) * f)
+
+    if walls is not None:
+        f_str = _apply_walls(f_str, walls)
+    if inlet is not None:
+        f_str = _apply_inlet(f_str, inlet)
+    if outlet is not None:
+        f_prev = f[..., -1:] if outlet_prev is None else outlet_prev
+        if f_prev.shape != f_str[..., -1:].shape:
+            raise ValueError(
+                "outlet_prev must be the previous outlet face of shape "
+                f"{tuple(f_str[..., -1:].shape)}, got {tuple(f_prev.shape)}"
+            )
+        f_str = _apply_outlet(f_str, outlet, inlet, f_prev)
+    probe = f_str
+    opp = OPPOSITE.to(probe.device)
+    f_new = w * probe + (1.0 - w) * probe[opp]
+    return (f_new, probe) if return_probe else f_new
+
+
 def _scalar(value: float | torch.Tensor, dtype: torch.dtype, device: torch.device):
     """Coerce a Python float or 0-dim tensor to *dtype/device* (graph kept)."""
     if isinstance(value, torch.Tensor):
@@ -639,6 +717,7 @@ def differentiable_step(
     outlet: OutletSpec | None = None,
     walls: WallSpec | None = None,
     outlet_prev: torch.Tensor | None = None,
+    soft: SoftGeometry | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """One autograd-clean D3Q19 step: collide (fluid) -> stream -> BC -> bounce-back.
 
@@ -705,15 +784,38 @@ def differentiable_step(
             this step's input state ``f[..., -1:]`` (the initial condition
             on the first step of a rollout).  Unused by the zero-gradient
             copy outlet.
+        soft: :class:`tensorlbm.soft_geometry.SoftGeometry` soft solid
+            (inverse design): replaces ``mask`` by the SDF-blurred weight
+            field ``w = sigmoid(phi/epsilon)`` so the geometric parameters
+            stay in the autograd graph (see
+            :func:`_soft_differentiable_step` for the three soft operators
+            and their hard-limit contract).  Mutually exclusive with
+            ``mask``; ``None`` (default) runs the hard-mask chain above
+            bit-for-bit unchanged.
 
     Returns:
         The stepped distribution ``f_new``; with ``return_probe=True`` a
         tuple ``(f_new, f_probe)``.  Macroscopic observables computed on
         ``f_new`` should exclude the solid cells (they hold reflected
-        populations): mask with ``~mask``.  For a manually chained
-        convective outlet, ``f_probe[..., -1:]`` is the outlet face to feed
-        into the next step's ``outlet_prev``.
+        populations): mask with ``~mask`` (or ``w > 0.5`` in the soft
+        chain).  For a manually chained convective outlet,
+        ``f_probe[..., -1:]`` is the outlet face to feed into the next
+        step's ``outlet_prev``.
     """
+    if soft is not None:
+        if mask is not None:
+            raise ValueError("pass either mask (hard solid) or soft (SoftGeometry), not both")
+        return _soft_differentiable_step(
+            f,
+            tau,
+            collide=collide,
+            return_probe=return_probe,
+            inlet=inlet,
+            outlet=outlet,
+            walls=walls,
+            outlet_prev=outlet_prev,
+            soft=soft,
+        )
     f_str = stream3d(_collide_skip_solid(f, tau, mask, collide))
     if walls is not None:
         f_str = _apply_walls(f_str, walls)
@@ -747,10 +849,22 @@ def obstacle_force(f_probe: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     lattice units, force on the full obstacle).  The result carries
     autograd gradients w.r.t. everything ``f_probe`` depends on.
 
+    **Soft solids** (inverse design): *mask* may also be a float solid-weight
+    field of shape ``(nz, ny, nx)``, e.g. ``1 - geom.fluid_weight(...)`` —
+    the same formula then reads as the continuous momentum-exchange force
+    :math:`F_\\alpha = 2 \\sum_x s(x) \\sum_q c_{q,\\alpha} f[q, x]` with
+    :math:`s` the node solid occupancy.  It is exactly the momentum the soft
+    bounce-back extracts from the field per step (per-node action-reaction,
+    derivation in :mod:`tensorlbm.soft_geometry`), and a boolean mask (or a
+    saturated weight, :math:`s \\in \\{0, 1\\}`) reproduces the hard
+    wet-node force bit-for-bit — the key hard-limit cross-check.
+
     Args:
         f_probe: Post-stream / pre-bounce-back distribution, shape
             ``(19, nz, ny, nx)``.
-        mask: Boolean solid mask of shape ``(nz, ny, nx)``.
+        mask: Boolean solid mask of shape ``(nz, ny, nx)``, or a float
+            solid-weight field of the same shape (soft solid; values in
+            ``[0, 1]``, graph-connected).
 
     Returns:
         Force vector ``(fx, fy, fz)`` as a tensor of shape ``(3,)``.
@@ -773,6 +887,7 @@ def rollout(
     outlet: OutletSpec | None = None,
     walls: WallSpec | None = None,
     probe_start: int = 0,
+    soft: SoftGeometry | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, list[torch.Tensor]]:
     """Roll out :func:`differentiable_step` for *n_steps*, keeping the graph.
 
@@ -819,6 +934,15 @@ def rollout(
             instead of the rollout — on long production-scale rollouts that
             is the difference between the window's few hundred tensors and
             thousands.
+        soft: :class:`tensorlbm.soft_geometry.SoftGeometry` soft solid
+            (inverse design): every step runs against the SDF-blurred weight
+            field so geometric parameters stay in the autograd graph (see
+            :func:`_soft_differentiable_step`).  Mutually exclusive with
+            ``mask``; ``None`` (default) keeps the hard-mask chain
+            bit-for-bit.  The soft force observable pairs the collected
+            probes with the solid weight: ``obstacle_force(probe, 1 - w)``
+            — the weight is recomputed from the geometry (graph-connected)
+            wherever the loss needs it.
 
     Returns:
         The final distribution; with ``return_probes=True`` a tuple
@@ -844,6 +968,7 @@ def rollout(
             outlet=outlet,
             walls=walls,
             outlet_prev=outlet_face,
+            soft=soft,
         )
         if return_probes or convective:
             f, probe = out
@@ -870,6 +995,7 @@ def _step_for_rollout(
     outlet: OutletSpec | None,
     walls: WallSpec | None,
     outlet_prev: torch.Tensor | None,
+    soft: SoftGeometry | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """One rollout step, optionally wrapped in gradient checkpointing."""
     if not checkpoint:
@@ -883,6 +1009,7 @@ def _step_for_rollout(
             outlet=outlet,
             walls=walls,
             outlet_prev=outlet_prev,
+            soft=soft,
         )
     return _checkpoint(
         differentiable_step,
@@ -896,4 +1023,5 @@ def _step_for_rollout(
         outlet=outlet,
         walls=walls,
         outlet_prev=outlet_prev,
+        soft=soft,
     )
