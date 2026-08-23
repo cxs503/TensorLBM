@@ -99,8 +99,15 @@ suppressing `to_gas` for young cells (breaks emptying semantics).
 
 > **UPDATE 2026-08-23 — Route D was executed and failed acceptance §4.1;
 > see §7.** The fall-through applies: **A is now the only candidate
-> route** (B remains the fallback). The original recommendation is kept
-> below for the record.
+> route** (B remains the fallback).
+>
+> **UPDATE 2026-08-24 — Route A was executed and failed all five §4
+> criteria; see §8.** The closure machinery as shipped cannot take a
+> single timestep on a fill=0-born envelope. **B (envelope born at
+> epsilon > 0) is now the only untried route** and deserves first
+> examination, because it dissolves the birth-synchrony that defeats
+> both D and A. The original recommendation is kept below for the
+> record.
 
 **D first, A as the destination.** (superseded by §7) Run the batch-16 reproduction with G
 removed and H1+H2 kept: if the halo stays bounded (§4.4), land D and treat
@@ -111,10 +118,16 @@ if A's strict closure cannot be made local/exact in reasonable time.
 
 ## 6. Decisions needed from the owner
 
-1. Route: ~~D-first~~ (executed, failed §4.1 — §7) → **A now the only
-   candidate**; B fallback still allowed?
-2. If A: is promoting `enable_i_to_g_ownership_closure` to default an
-   acceptable breaking change, and in which minor version?
+1. Route: ~~D-first~~ (executed, failed §4.1 — §7) → ~~A now the only
+   candidate~~ (executed, failed all of §4 — §8) → **B first, with a
+   closure redesign as A-prime**; both still allowed?
+2. ~~If A: is promoting `enable_i_to_g_ownership_closure` to default an
+   acceptable breaking change?~~ Informed by §8: the closure needs a
+   redesign before any versioning question exists — legal-receiver set
+   must include recv_new promotion or the conversion wave must be
+   de-synchronised, the exchange end needs a fill-approx-0 guard, and a
+   negative-donor policy is required (donor mass is already net -1.94
+   before booking).
 3. Halo bound K for §4.4.
 4. Should the batch-16 reproduction become a permanent regression test
    (adds runtime to the free-surface suite)?
@@ -175,3 +188,61 @@ hunk-reverse Arm P.
 **Verdict: Route D fails acceptance §4.1/§4.3. Per §3's own fall-through,
 the redesign goes to Route A** (B stays the fallback). The four owner
 decisions in §6 stand, with item 1 resolved by this measurement.
+
+## 8. Evidence: Route A executed (2026-08-23/24)
+
+Four arms, harness `runs/fs_route_a_20260823/run_arm.py` (Route D harness
++ `--closure` kwarg + `TopologyTransactionError` capture + per-step i->g
+donor-mass bookkeeping); Arm P reuses the Route D pre-456fdb1 data:
+
+| measurement | Arm 0 (G on, closure off) | Arm A (G off, closure on) | Arm C (G on, closure on) | Arm P |
+|---|---|---|---|---|
+| static 4 configs, 200 steps | +0.0000% drift, 4/4 | **WITHHELD at step 1, 0 steps run** | **WITHHELD at step 1, 0 steps run** | +75.1..+86.8% drift |
+| dam-break g=1e-2, 400 steps | front 10->10 frozen | WITHHELD at step 1 | WITHHELD at step 1 | front 10->31, K=19.4 |
+| i->g conversions | 0 | 0 (aborts first) | 0 (aborts first) | 7088 |
+
+Every closure-enabled run — all 4 static configs and the dam-break, in
+*both* gate configurations — aborts on the first `free_surface_step` with
+`TopologyTransactionError: WITHHELD: ... I->G donor has no legal INTERFACE
+receiver` (raise site `free_surface_topology_transaction.py:342`). The
+"0.0000% drift / ledger exact" static rows for A and C are vacuous:
+`steps_run == 0`.
+
+**Step-1 forensics** (builder spy, `probe_withheld.py`): the envelope is
+born at `fill = 0` (272 interface cells, interface mass 0.0), so
+`to_gas = (I|L) & (fill <= 0.01)` flags **all 272 interface cells as
+donors on the very first step**, regardless of gate G. The closure's
+legal receiver set `I & ~to_gas & ~to_liq` is then empty, every donor has
+zero legal receivers, and the all-or-nothing policy withholds the entire
+candidate. 272/272 donors *do* have plain INTERFACE neighbours — the
+failure is **synchrony, not isolation**, which is why Arm C (gate G
+untouched) fails identically to Arm A.
+
+**The exchange end is also diseased**: at the failing step-1 candidate
+the donor mass is already net **-1.9433** (per-cell min -1.375e-2) —
+i.e. the mass-exchange step drives empty envelope cells negative *before*
+any booking, and the legacy path books +1.94 back on the conversion end
+(1006.06 -> 1008.0). Arm D's +35..+82% drift is the residue of these two
+mutually-cancelling errors once G stops sealing. Section 2 located the
+pathology at the to_gas booking end only; this is the other half.
+
+Independent re-check (2026-08-24, separate harness): envelope 272 cells
+born fill min=max=0; 272/272 cells match the to_gas predicate at step 1;
+closure OFF runs 2 steps with mass 1008.0000 -> 1008.0000 exact; closure
+ON raises the WITHHELD error at step 1.
+
+Reproducibility gaps (recorded, none qualitative): the closure flag is a
+plain bool kwarg with no transaction-recorder precondition (`ownership_
+ledger`/`runtime_ledger` are optional diagnostics; the repo's own
+`run_free_surface_closure_experiment` is self-declared
+DIAGNOSTIC_NOT_PHYSICAL_CLOSURE); the static 4 configs are the Route D
+substitutes (456fdb1's originals do not exist in the repo); Arm P was not
+re-run.
+
+**Verdict: Route A fails acceptance §4 on all five criteria — it cannot
+take a single timestep.** Per §3's fall-through the remaining routes are
+**B (envelope born at epsilon > 0)** — which dissolves the birth-synchrony
+mechanism that defeats both D and A — and a redesigned closure (receiver
+set including recv_new promotion / de-synchronised conversion wave /
+fill-approx-0 guard at the exchange end / negative-donor policy) before
+any versioning question in §6.2 can exist.
