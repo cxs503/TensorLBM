@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import functools
-from typing import Any
+from collections.abc import Sequence
+from typing import Any, Union
 
 import torch
 
@@ -61,12 +62,15 @@ def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
 _M_D3Q19_DATA, _M_D3Q19_INV_DATA = _build_d3q19_mrt_matrices()
 
 
+Rate = Union[float, torch.Tensor]
+
+
 def _mrt3d_s_vec(
-    s_e: float,
-    s_eps: float,
-    s_q: float,
-    s_pi: float,
-    s_nu,
+    s_e: Rate,
+    s_eps: Rate,
+    s_q: Rate,
+    s_pi: Rate,
+    s_nu: Rate,
     *,
     dtype: torch.dtype,
     device: torch.device,
@@ -77,16 +81,20 @@ def _mrt3d_s_vec(
     9–13) stay connected to the autograd graph: ``torch.tensor([...])`` on a
     list containing a tensor silently detaches it (scalar conversion), which
     would block dLoss/dtau on the differentiable reference path (see
-    docs/differentiable_path.md).  For Python-float *s_nu* the result is
+    docs/differentiable_path.md).  The same guard covers the moment rates
+    *s_e/s_eps/s_q/s_pi* (B3 stage 4: rate calibration against pressure
+    profiles needs dLoss/ds_e etc.).  For all-float inputs the result is
     identical to the previous literal construction.
     """
     head = [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, 0.0, s_q]
     tail = [s_pi, s_pi, 1.0, 1.0, 1.0]
-    if isinstance(s_nu, torch.Tensor):
-        head_t = torch.tensor(head, dtype=dtype, device=device)
-        tail_t = torch.tensor(tail, dtype=dtype, device=device)
-        s_nu_t = s_nu.to(device=device, dtype=dtype)
-        return torch.cat([head_t, s_nu_t.expand(5), tail_t])
+    if isinstance(s_nu, torch.Tensor) or any(isinstance(v, torch.Tensor) for v in head + tail):
+
+        def _stack(vals: Sequence[Rate]) -> torch.Tensor:
+            return torch.stack([torch.as_tensor(v, dtype=dtype, device=device) for v in vals])
+
+        s_nu_t = torch.as_tensor(s_nu, dtype=dtype, device=device)
+        return torch.cat([_stack(head), s_nu_t.expand(5), _stack(tail)])
     return torch.tensor(head + [s_nu] * 5 + tail, dtype=dtype, device=device)
 
 
@@ -115,11 +123,11 @@ def collide_bgk3d(f: torch.Tensor, tau: float) -> torch.Tensor:
 
 def collide_mrt3d(
     f: torch.Tensor,
-    tau: float,
-    s_e: float = 1.19,
-    s_eps: float = 1.4,
-    s_q: float = 1.2,
-    s_pi: float | None = None,
+    tau: Rate,
+    s_e: Rate = 1.19,
+    s_eps: Rate = 1.4,
+    s_q: Rate = 1.2,
+    s_pi: Rate | None = None,
 ) -> torch.Tensor:
     """Multi-relaxation-time (MRT) collision step for D3Q19.
 
