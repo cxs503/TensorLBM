@@ -66,14 +66,22 @@ import torch
 from tensorlbm.autograd_path import InletSpec, OutletSpec, WallSpec, obstacle_force, rollout
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.scan_drag import DRAG_HISTORY_SCHEMA
-from tensorlbm.turbulence import collide_smagorinsky_bgk3d
+from tensorlbm.solver3d import collide_mrt3d
+from tensorlbm.turbulence import (
+    collide_smagorinsky_bgk3d,
+    collide_smagorinsky_mrt3d,
+    collide_wale_bgk3d,
+    collide_wale_mrt3d,
+)
 
 __all__ = [
     "BoxCase",
     "CalibResult",
+    "COLLISION_FAMILIES",
     "DragHistory",
     "DragTarget",
     "HullCase",
+    "SGS_MODELS",
     "bounded_drag",
     "calibrate",
     "cd_from_force",
@@ -160,6 +168,56 @@ class BoxCase:
 def _check_wall_method(method: str) -> None:
     if method not in ("periodic", "free-slip", "freestream"):
         raise ValueError("wall_method must be 'periodic', 'free-slip' or 'freestream'")
+
+
+#: Available collision families.  ``"bgk"`` is the historical calibration
+#: path; ``"mrt"`` (:func:`tensorlbm.solver3d.collide_mrt3d` rates) brackets
+#: production drag that sits below the BGK zero-SGS floor.
+COLLISION_FAMILIES = ("bgk", "mrt")
+
+#: Available sub-grid models.  ``"smagorinsky"`` reads the closure constant
+#: as ``C_s``; ``"wale"`` reads it as ``C_w`` (near-wall vanishing eddy
+#: viscosity, so a different C_D response — and identifiability — at the
+#: same tau).
+SGS_MODELS = ("smagorinsky", "wale")
+
+
+def _check_families(collision: str, sgs: str) -> None:
+    if collision not in COLLISION_FAMILIES:
+        raise ValueError(f"collision must be one of {COLLISION_FAMILIES}, got {collision!r}")
+    if sgs not in SGS_MODELS:
+        raise ValueError(f"sgs must be one of {SGS_MODELS}, got {sgs!r}")
+
+
+def _make_collide(
+    cs: float | torch.Tensor | None,
+    collision: str,
+    sgs: str,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> Callable[..., torch.Tensor] | None:
+    """Collision operator for the (collision family, SGS model) axes.
+
+    ``cs=None`` means *no* sub-grid model: plain ``collide_bgk3d`` (the
+    historical default, returned as ``None`` so the rollout's fast path is
+    bit-for-bit unchanged) or ``collide_mrt3d`` under ``collision="mrt"``.
+    A non-None *cs* selects the SGS kernel — the constant lands in ``C_s``
+    for Smagorinsky and ``C_w`` for WALE — as a 0-dim tensor of *dtype* on
+    *device* so it stays in the autograd graph.
+    """
+    _check_families(collision, sgs)
+    if cs is None:
+        if collision == "bgk":
+            return None
+        return lambda f, t: collide_mrt3d(f, t)
+    const = torch.as_tensor(cs, dtype=dtype, device=device)
+    if collision == "bgk":
+        if sgs == "smagorinsky":
+            return lambda f, t, _c=const: collide_smagorinsky_bgk3d(f, t, C_s=_c)
+        return lambda f, t, _c=const: collide_wale_bgk3d(f, t, C_w=_c)
+    if sgs == "smagorinsky":
+        return lambda f, t, _c=const: collide_smagorinsky_mrt3d(f, t, C_s=_c)
+    return lambda f, t, _c=const: collide_wale_mrt3d(f, t, C_w=_c)
 
 
 @dataclass(frozen=True)
@@ -398,11 +456,14 @@ def bounded_drag(
     re: float,
     cs: float | torch.Tensor | None = None,
     mask: torch.Tensor | None = None,
+    *,
+    collision: str = "bgk",
+    sgs: str = "smagorinsky",
 ) -> torch.Tensor:
     """One differentiable bounded rollout; returns the scalar windowed C_D.
 
-    The full map — inlet Dirichlet value, (optional) Smagorinsky collision
-    with constant *cs*, streaming, momentum-exchange drag — is autograd-
+    The full map — inlet Dirichlet value, (optional) SGS collision with
+    constant *cs*, streaming, momentum-exchange drag — is autograd-
     connected, so gradients flow to ``cs`` (tensor) and, when the inlet
     velocity is a tensor, through the boundary condition as well.
 
@@ -416,9 +477,15 @@ def bounded_drag(
     Args:
         box: Domain and rollout configuration.
         re: Reynolds number (sets ``tau`` via the case's relation).
-        cs: Smagorinsky constant; a 0-dim tensor stays in the graph.
-            ``None`` runs plain BGK.
+        cs: Sub-grid constant (Smagorinsky ``C_s`` or WALE ``C_w``
+            depending on *sgs*); a 0-dim tensor stays in the graph.
+            ``None`` runs the collision family without any sub-grid model
+            — the zero-SGS "floor".
         mask: Pre-built solid mask (defaults to ``box.make_mask()``).
+        collision: Collision family, ``"bgk"`` (historical default) or
+            ``"mrt"`` (:func:`tensorlbm.solver3d.collide_mrt3d` rates).
+        sgs: Sub-grid model the constant *cs* feeds, ``"smagorinsky"``
+            (historical default) or ``"wale"``.
 
     Returns:
         0-dim tensor: mean x-force over the window ``[window_start, steps)``
@@ -432,10 +499,7 @@ def bounded_drag(
         method=box.inlet_method,
     )
     walls = None if box.wall_method == "periodic" else WallSpec(method=box.wall_method, ux=box.u_in)
-    collide = None
-    if cs is not None:
-        collide_cs = torch.as_tensor(cs, dtype=box.dtype, device=device)
-        collide = lambda f, t, _cs=collide_cs: collide_smagorinsky_bgk3d(f, t, C_s=_cs)  # noqa: E731
+    collide = _make_collide(cs, collision, sgs, box.dtype, device)
 
     rho0 = torch.ones((box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
     u = torch.zeros((3, box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
@@ -534,9 +598,18 @@ def synthetic_targets(
     box: BoxCase | HullCase,
     re_values: Sequence[float],
     closure: ClosureFn,
+    *,
+    collision: str = "bgk",
+    sgs: str = "smagorinsky",
 ) -> list[DragTarget]:
     """Produce verification-mode observations with a known ground truth."""
-    return [DragTarget(re=re, cd=float(bounded_drag(box, re, cs=closure(re)))) for re in re_values]
+    return [
+        DragTarget(
+            re=re,
+            cd=float(bounded_drag(box, re, cs=closure(re), collision=collision, sgs=sgs)),
+        )
+        for re in re_values
+    ]
 
 
 def _closure_parameters(
@@ -591,6 +664,8 @@ class CalibResult:
     eval: dict[str, dict[str, float]] = field(default_factory=dict)
     closure: ClosureFn | None = None
     re_ref: float = 1.0
+    collision: str = "bgk"
+    sgs: str = "smagorinsky"
 
     def cs(self, re: float) -> float:
         """Evaluate the identified closure at ``re``."""
@@ -606,6 +681,9 @@ def calibrate(
     iters: int = 150,
     lr: float = 0.03,
     log_every: int = 0,
+    *,
+    collision: str = "bgk",
+    sgs: str = "smagorinsky",
 ) -> CalibResult:
     """Identify a closure from drag observations by backprop through rollouts.
 
@@ -619,6 +697,10 @@ def calibrate(
         iters: Adam iterations (cosine-decayed learning rate).
         lr: Peak learning rate.
         log_every: Print progress every n iterations (0: silent).
+        collision: Collision family of the rollouts (see
+            :func:`bounded_drag`).
+        sgs: Sub-grid model the closure constant feeds (see
+            :func:`bounded_drag`).
 
     Returns:
         :class:`CalibResult` with identified parameters, the loss history and
@@ -627,6 +709,7 @@ def calibrate(
     """
     if not targets:
         raise ValueError("targets must be non-empty")
+    _check_families(collision, sgs)
     device = torch.device(box.device)
     mask = box.make_mask()
     # centre the power law at the geometric mean of the training Re so the
@@ -641,7 +724,9 @@ def calibrate(
             group["lr"] = lr * 0.5 * (1.0 + math.cos(math.pi * it / iters))
         residuals = []
         for tgt in targets:
-            cd_pred = bounded_drag(box, tgt.re, cs=closure(tgt.re), mask=mask)
+            cd_pred = bounded_drag(
+                box, tgt.re, cs=closure(tgt.re), mask=mask, collision=collision, sgs=sgs
+            )
             residuals.append(tgt.weight * (cd_pred - tgt.cd) ** 2)
         loss = torch.stack(residuals).sum()
         optim.zero_grad()
@@ -669,6 +754,8 @@ def calibrate(
         loss_history=history,
         closure=closure,
         re_ref=re_ref,
+        collision=collision,
+        sgs=sgs,
     )
 
 
@@ -676,18 +763,35 @@ def evaluate(
     result: CalibResult,
     targets: Sequence[DragTarget],
     box: BoxCase | HullCase,
+    *,
+    collision: str | None = None,
+    sgs: str | None = None,
 ) -> dict[str, dict[str, float]]:
     """Predict C_D at each target Re and compare against the observation.
 
     Fills ``result.eval`` and returns it: ``{re: {target, pred, abs_err,
     rel_err_pct}}``.  Use with held-out Re to measure closure extrapolation.
+    By default the (collision, sgs) axes recorded in *result* — i.e. the
+    ones :func:`calibrate` identified the closure under — are reused, so
+    an evaluation cannot silently switch families.
     """
     assert result.closure is not None
+    _collision = result.collision if collision is None else collision
+    _sgs = result.sgs if sgs is None else sgs
     mask = box.make_mask()
     out: dict[str, dict[str, float]] = {}
     with torch.no_grad():
         for tgt in targets:
-            cd_pred = float(bounded_drag(box, tgt.re, cs=result.closure(tgt.re), mask=mask))
+            cd_pred = float(
+                bounded_drag(
+                    box,
+                    tgt.re,
+                    cs=result.closure(tgt.re),
+                    mask=mask,
+                    collision=_collision,
+                    sgs=_sgs,
+                )
+            )
             out[f"{tgt.re:g}"] = {
                 "target": tgt.cd,
                 "pred": cd_pred,
