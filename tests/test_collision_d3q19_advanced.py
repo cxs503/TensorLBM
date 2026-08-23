@@ -21,31 +21,47 @@ def _state():
     return feq + 1.0e-3 * torch.randn_like(feq)
 
 
+_LEGACY_SNAPSHOT = Path(__file__).with_name("_legacy_snapshots") / (
+    "cg_advanced_collision_base_10ac615.py"
+)
+_LEGACY_PINNED_REV = "10ac615daf0623685be217a197eabac6b7cf3786"
+
+
 @pytest.fixture(scope="module")
 def legacy_cg_module():
-    """Load the base revision under a separate module name for exact replay."""
-    source = subprocess.check_output(
-        [
-            "git",
-            "show",
-            "10ac615daf0623685be217a197eabac6b7cf3786:src/tensorlbm/cg_advanced_collision.py",
-        ],
-        text=True,
+    """Load the base revision under a separate module name for exact replay.
+
+    The base source is vendored at ``tests/_legacy_snapshots/`` so the replay
+    also runs in checkouts without git history (CI's shallow clone cannot
+    ``git show`` the pinned revision — that dependency kept the suite red on
+    main).  ``test_vendored_legacy_snapshot_matches_pinned_rev`` guards the
+    snapshot against the pinned revision wherever the history exists.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "tensorlbm._legacy_cg_advanced_collision",
+        _LEGACY_SNAPSHOT,
     )
-    path = Path(__file__).with_name("_legacy_cg_advanced_collision.py")
-    path.write_text(source)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("could not load base CG collision module")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_vendored_legacy_snapshot_matches_pinned_rev():
+    """The vendored base snapshot is byte-identical to the pinned revision."""
     try:
-        spec = importlib.util.spec_from_file_location(
-            "tensorlbm._legacy_cg_advanced_collision",
-            path,
+        source = subprocess.run(
+            ["git", "show", f"{_LEGACY_PINNED_REV}:src/tensorlbm/cg_advanced_collision.py"],
+            capture_output=True,
+            text=True,
+            check=False,
         )
-        if spec is None or spec.loader is None:
-            raise RuntimeError("could not load base CG collision module")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        yield module
-    finally:
-        path.unlink(missing_ok=True)
+    except OSError:
+        source = None
+    if source is None or source.returncode != 0:
+        pytest.skip(f"pinned revision {_LEGACY_PINNED_REV[:8]} not in this clone's history")
+    assert _LEGACY_SNAPSHOT.read_text() == source.stdout
 
 
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
