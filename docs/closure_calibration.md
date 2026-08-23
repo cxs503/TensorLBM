@@ -427,3 +427,11 @@ Reproducibility: experiment scripts and raw data in
 ``tests/test_mrt_rate_calib.py`` (7, CPU, ~30 s) include a synthetic
 self-consistency recovery (perturbed-rate target -> calibration recovers
 the direction and reduces the loss).
+
+Probe-degeneracy note (2026-08-24): the direction-sum (and any conserved
+projection) of the s_q-mode derivative annihilates exactly —
+d(Σ_q f_q)/ds_q measures ~1e-34 while the forward sensitivity is real
+(s_q 1.2 -> 0.5 moves one collide by 7.5% relL2).  Rate-identifiability
+probes must therefore read non-conserved observables: the shell-pressure
+profile and the drag used here do, and the gradient-flow test projects
+onto a seeded random direction.
