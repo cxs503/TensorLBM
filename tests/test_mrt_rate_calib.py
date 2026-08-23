@@ -42,8 +42,20 @@ def test_rate_gradients_flow():
     rho = torch.ones((nz, ny, nx)) + 0.01 * torch.randn(nz, ny, nx)
     u = 0.01 * torch.randn(3, nz, ny, nx)
     f = equilibrium3d(rho, u[0], u[1], u[2])
+    # Push f off the equilibrium manifold so every moment family carries a
+    # mismatch (a pure 2nd-order-Hermite equilibrium leaves the q-moment
+    # mismatch at machine zero on some torch builds).
+    f = f + 0.02 * torch.randn_like(f)
     rates = {k: torch.tensor(v, requires_grad=True) for k, v in DEFAULT_MRT_RATES.items()}
-    collide_mrt3d(f, 0.7, s_e=rates["s_e"], s_eps=rates["s_eps"], s_q=rates["s_q"]).sum().backward()
+    out = collide_mrt3d(f, 0.7, s_e=rates["s_e"], s_eps=rates["s_eps"], s_q=rates["s_q"])
+    # A plain out.sum() is a degenerate probe: the direction-sum of the
+    # s_q-mode derivative annihilates exactly (measured grad ~1e-34 while
+    # the forward sensitivity is real — s_q 1.2 -> 0.5 moves one collide
+    # by 7.5% relL2).  Conserved projections (density, momentum) see no
+    # relaxation at all, so backprop through a seeded random-direction
+    # projection instead.
+    w = torch.randn(19)
+    (w.view(-1, 1, 1, 1) * out).sum().backward()
     for k, r in rates.items():
         assert r.grad is not None
         assert torch.isfinite(r.grad)
