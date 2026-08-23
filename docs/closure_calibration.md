@@ -12,14 +12,20 @@ bounded path (A6+ velocity inlet / zero-gradient outlet), module
 | Object | Role |
 |---|---|
 | `BoxCase` | bounded calibration domain: sphere at `cx=0.3·nx` in a uniform inflow, house relation `tau = 0.5 + 3·u_in·2r/Re` |
+| `HullCase` | real-geometry domain: the *production* SUBOFF voxel mask (`suboff_n128` placement, production `tau = 0.5 + 3·u_in·L/Re`, free-stream lateral faces) |
 | `DragTarget(re, cd, weight)` | one drag observation |
 | `bounded_drag(box, re, cs=…)` | one differentiable bounded rollout; windowed momentum-exchange C_D over `[window_start, steps)` |
 | `synthetic_targets(box, re_values, closure)` | verification-mode observations with known ground truth |
 | `calibrate(targets, box, kind=…)` | Adam through the rollouts; `kind="scalar"` (one C_s) or `"power"` (`C_s(Re)=c0·(Re/re_ref)^b`, log-space c0) |
 | `evaluate(result, targets, box)` | per-Re predicted vs observed C_D |
 | `cs_power(c0, b, re_ref)` | closure factory (truth or initial guess) |
+| `load_drag_history(path)` | read one `drag_history.json` sidecar (`tensorlbm.drag-history/v1`, schema-checked) |
+| `windowed_cd(history, lo, hi, …)` | C_D of the samples in a step window — the convergence probe |
+| `drag_targets_from_sidecars(…)` | campaign sidecars → `DragTarget` rows (tail mean, `2F/(ρ u² S_proj)`) |
 
-Exports live in `tensorlbm` and `tensorlbm.api`.
+Exports live in `tensorlbm` and `tensorlbm.api`. Both case classes work with
+`bounded_drag`/`calibrate`/`evaluate` interchangeably (the mask, τ relation,
+C_D reference area and lateral closure are case decisions, not arguments).
 
 ## Identifiability (measured, 2026-08-22)
 
@@ -72,6 +78,127 @@ at tau 0.590/0.551/0.533, held-out Re 90; 60 Adam iterations each):
 *parameter-level* recovery is looser (b -0.84 vs truth -1.0) because
 d ln C_D / d ln C_s ~ 0.1 — many closures fit drag almost equally well, which
 is the same insensitivity that sets the identifiability regime.
+
+## Real observations (2026-08-22, B3-real)
+
+`examples/closure_calibration_real.py` upgrades every ingredient of the loop
+to the real campaign: geometry, observations and rollout length, against the
+exact-drag dataset `/nfs/wangxi/datasets/scan_suboff_re_drag_20260821`
+(24 log-spaced Re 50→800, `suboff_n128` bare hull, cumulant collision,
+u_in = 0.1, 4000 steps; `docs/benchmarks/suboff_cd_re_20260821.md`).
+
+**Geometry** — `HullCase` builds the *production* mask
+(`suboff_cad.build_suboff_mask`, hull centred `cx = 0.35·nx`, `L = 0.6·nx`):
+4093 solid cells at 64×64×128, matching the dataset sidecars cell for cell.
+The τ relation is the production one (`tau = 0.5 + 23.04/Re` at u_in = 0.1)
+and the lateral planes take free-stream faces (the campaign far-field
+condition); the calibration rollout differs from the measured point only in
+the collision model (Smagorinsky-BGK vs cumulant) and the outlet plane
+(zero-gradient vs far-field).
+
+**The C_D normalisation is the one place this task can silently go wrong**:
+the data side divides by `S_proj` = the number of (y,z) columns containing
+solid = **69 cells²** — not `π·r_max²` = 63.1 (a 9% bookkeeping bias, and
+`C_D` errors of that size dwarf everything else in this study). `HullCase`
+computes the projection of the very mask it simulates, so the two sides
+agree by construction; `test_hull_case_production_conventions` pins 4093
+cells / 69 columns to the dataset values.
+
+**Rollout length from data, not guesswork** — the sidecars sample from step
+25, so windowed C_D convergence is measurable directly on the campaign
+histories (deviation of a 200-step window mean from the 4000-step tail mean
+the report uses):
+
+| window (steps) | worst deviation over all 24 Re |
+|---|---|
+| [400, 500) | +7.8% |
+| [700, 800) | +1.7% |
+| **[1000, 1200)** | **+0.52%** |
+| [2000, 2400) | +0.1% |
+
+Windowed C_D is converged (a slow monotone relaxation; within-window
+fluctuation ≤ 0.1%, no resolved shedding) well before 4000 steps, so the
+calibration rolls out **1200 steps with window [1000, 1200)** — 3.3× cheaper
+for a ≤ 0.5% systematic offset, an order below the model mismatch below.
+
+**Production-scale identifiability collapses** — the τ ≤ 0.58 rule from the
+sphere study transfers as a *necessary* condition but not a sufficient one.
+On the real hull the C_D response to C_s is an order of magnitude weaker
+(12.5× C_s sweep, 0.02 → 0.25, window [1000, 1200)):
+
+| Re | τ | C_s 0.02→0.25 C_D change | d ln C_D/d ln C_s |
+|---|---|---|---|
+| 305 | 0.576 | +2.5% | 0.010 |
+| 437.8 | 0.553 | +3.9% | 0.015 |
+| 800 | 0.529 | +7.8% | 0.030 |
+| 148 (held-out, τ 0.66) | 0.656 | +1.0% | 0.004 |
+
+At the same τ the sphere domain gave 13–18%: the production hull's drag is
+pressure-dominated and barely reads the SGS term, so *parameter* recovery
+from drag is effectively ill-posed at production scale even in the
+"identifiable" τ band (drag-level fitting remains meaningful).
+
+**Model mismatch is one-sided and out of the family's reach** — the campaign
+drag sits *below* the calibration path even with the SGS term switched off:
+
+| Re | campaign C_D | BGK floor (C_s → 0) | offset |
+|---|---|---|---|
+| 305 | 5.232 | 5.443 | +4.0% |
+| 437.8 | 4.116 | 4.269 | +3.7% |
+| 800 | 2.813 | 2.900 | +3.1% |
+| 628.6 (held-out) | 3.265 | 3.375 | +3.4% |
+| 148 (held-out) | 8.671 | 9.067 | +4.6% |
+
+and any C_s > 0 only *adds* drag (the sweep table above). The cumulant-vs-BGK
+difference (plus the outlet-plane treatment) is therefore **not absorbable
+by the Smagorinsky closure**: the family is one-sided, the target is below
+its zero-SGS limit, and the calibration is structurally infeasible — the
+identified parameters slide toward the C_s → 0 edge of the family and the
+loss stalls at the floor. That is the headline result of the real-data run,
+not a failure of the optimiser: a control verification run at the same scale
+(targets produced by the calibration solver itself, truth
+`cs_power(0.10, −0.6, re_ref = 437.8)`) fits its train C_D to **0.01–0.09%**
+and held-out Re 628.6 to **0.07%** in the same budget (identified
+c0 = 0.0925 at re_ref 474.5, b = −0.686; parameter recovery loosens toward
+the ends, C_s(800) 0.0696 → 0.0647, i.e. −7% — the elasticity 0.013 at
+work), so the machinery works at production scale and the residual against
+real data is model error.
+
+**Calibration runs** (RTX 5090, fp32, 1200 steps, window [1000, 1200), train
+Re {305, 437.8, 800}, held-out {628.6, 148}, 40 Adam iterations, lr 0.15;
+artifacts in `/nfs/wangxi/runs/b3_real_20260822/`):
+
+| model | identified | train err 305 / 437.8 / 800 | held-out 628.6 / 148 |
+|---|---|---|---|
+| power closure | c0 = 0.0162 (re_ref 474.5), b = +0.10 | 4.04 / 3.73 / 3.13% | 3.39 / 4.58% |
+| scalar closure | C_s = 0.0162 | 4.04 / 3.73 / 3.13% | 3.39 / 4.58% |
+| C_D = a·Re^b (no solver) | a = 205.6, b = −0.642 | 0.30 / 0.48 / 0.18% | **0.39** / 4.27% |
+
+Both closure fits slide to the C_s → 0 edge (loss 0.103 → 0.0760 and stall,
+exactly the floor Σ(BGK residual)² = 0.0760) and land *on* the BGK floor at
+every Re — the Re-dependence the power closure is supposed to capture is
+unidentifiable here (scalar and power fits are indistinguishable), and the
+finite-difference sensitivity at the identified closure collapses to
+d ln C_D/d ln C_s = 0.0002–0.0007 (dC_D/dC_s = 0.07–0.12). The identified
+C_s ≈ 0.016 is a boundary artifact of a structurally infeasible fit, not a
+physical constant.
+
+**Reading** — the closure calibration is *worse* than a two-parameter
+power-law fit to the same three training points (train err ≤ 0.5%, held-out
+628.6 0.4%, held-out 148 4.3%), because its best attainable drag is the BGK
+floor, +3.1–4.6% above the campaign. Solver-in-the-loop calibration against
+this dataset needs either a collision model that brackets the campaign
+(cumulant in the loop) or an observable the closure actually moves.
+
+**Cost / memory** — per-step gradient checkpointing retains ~3 population
+tensors per step (37 MiB/step at this scale → ~47 GiB for 1200 steps, OOM on
+a 32 GB card). `HullCase` therefore checkpoints *blocks* of steps
+(`checkpoint_block`, default 25) and reduces the window probes to a scalar
+inside each block: peak ≈ 9 GiB for any rollout length, one training
+iteration (3 rollouts, forward+backward) ≈ 42 s. Measured on the runs above:
+power fit 1694 s and scalar fit 1698 s (40 iterations each), the
+verification control 1250 s — ≈ 80 min of single-GPU work for the whole
+study (the two long fits ran in parallel on two idle cards).
 
 ## Honest caveats
 

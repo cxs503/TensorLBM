@@ -1329,6 +1329,7 @@ def test_bounded_box_sphere_physics() -> None:
     assert metric_periodic > 1e-3
     assert metric_slip < 1e-10 * metric_periodic
 
+
 # ---------------------------------------------------------------------------
 # 9. A6+++ per-face lateral walls: WallSpec.overrides with face keys
 # ---------------------------------------------------------------------------
@@ -1438,9 +1439,7 @@ def test_perface_default_path_bitwise_unchanged() -> None:
     # the shared-spec result is pinned by section 8; here: no-ops are exact
     plain = differentiable_step(f0, 0.8, None)
     assert torch.equal(differentiable_step(f0, 0.8, None, walls=WallSpec()), plain)
-    assert torch.equal(
-        differentiable_step(f0, 0.8, None, walls=WallSpec(overrides={})), plain
-    )
+    assert torch.equal(differentiable_step(f0, 0.8, None, walls=WallSpec(overrides={})), plain)
     # all faces overridden to periodic: the wrap survives bit-for-bit
     all_periodic = WallSpec(overrides={key: WallSpec() for key in FACE_KEYS})
     assert torch.equal(differentiable_step(f0, 0.8, None, walls=all_periodic), plain)
