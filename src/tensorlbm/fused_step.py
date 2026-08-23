@@ -52,7 +52,7 @@ def fused_step(
     tau_eff = _smagorinsky_tau(tau, pi_norm, rho, Cs)
     s_nu_field = 1.0 / tau_eff
 
-    M, M_inv = _get_d3q19_mrt_matrices(f.device)
+    M, M_inv = _get_d3q19_mrt_matrices(f.device, f.dtype)
     nz, ny, nx = f.shape[1:]
     N = nz * ny * nx
     f_flat = f.reshape(19, N)
