@@ -272,3 +272,87 @@ model at this resolution.**
    conclusion is an **observable the closure moves** (wake profile,
    separation point, surface pressure distribution — all reachable through
    the same differentiable rollouts) rather than another closure family.
+
+
+## Observable swap (2026-08-23, B3-next stage 3)
+
+Instrument: `tensorlbm.autograd_calib.bounded_observables` (one no-grad
+windowed rollout returning window-mean field observables at the production
+probe phase) + `observable_response(a, b, ref)` (relative L2 per
+observable).  Production hull `n128`, window `[1000, 1200)`, probe planes
+x = 90/100/112 (library defaults derive (93, 103, 114) from the mask and
+reproduce the same structure).  Full data: `obs_probe.json` /
+`obs_analysis.json` (agent-of-record archive under
+`runs/b3_obs_20260823`).
+
+Metrics: `S_smag` = response per e-fold of `C_s` (central 0.05->0.2,
+divided by ln 4); `G_sgs` = effect of switching SGS on at `C_s = 0.1` vs
+the floor; `G_coll` = collision-family step (bgk -> mrt, both floors).
+
+| Re | observable | S_smag | G_sgs | G_coll |
+|---|---|---|---|---|
+| 305 | **cd** (control) | 0.011 | 0.004 | 0.008 |
+| 305 | press_profile | 0.005 | 0.002 | **0.062** |
+| 305 | wake_deficit@100 | 0.008 | 0.003 | 0.006 |
+| 305 | wake_cross@112 | 0.007 | 0.003 | 0.030 |
+| 437.8 | **cd** (control) | 0.017 | 0.006 | 0.007 |
+| 437.8 | press_profile | 0.007 | 0.003 | **0.052** |
+| 437.8 | wake_deficit@100 | 0.014 | 0.005 | 0.006 |
+| 437.8 | wake_cross@112 | 0.014 | 0.005 | 0.041 |
+| 800 | **cd** (control) | 0.034 | 0.014 | 0.002 |
+| 800 | press_profile | 0.013 | 0.005 | **0.083** |
+| 800 | wake_deficit@100 | 0.030 | 0.012 | 0.006 |
+| 800 | wake_cross@112 | 0.036 | 0.014 | 0.063 |
+
+Scalar wake-deficit depth (`wake_min_ux`), bgk -> mrt floor: -1.1% (305),
+-5.9% (437.8), -15.1% (800) — the largest collision response measured,
+but a min-statistic (non-smooth; use the profile norms for gradients).
+
+**Steadiness (robustness)**: splitting the window in halves, the pressure
+response is identical in both (G_coll 0.0524 / 0.0525) while the
+within-family cross-half drift is ~0.0016 — signal-to-drift ~33x, i.e. a
+steady-state effect, not shedding phase.  The cross-flow field is the
+opposite: cross-half drift 0.076 exceeds its response (~0.04) — phase
+contaminated at 100-step averaging; usable only with long windows.
+
+**WALE** (Re 437.8, C_w 0.15/0.3/0.45): every observable <= 0.0033
+(press) — dead on all fields, not just drag, confirming the family-level
+verdict of stage 2.
+
+**Recirculation** is exactly zero at all three Re on the bare hull (no
+separation): a separation-point observable needs sail/fin geometry or
+higher Re — not available in this campaign regime.
+
+### Measurement reconciliation (matched windows)
+
+The stage-1 table above mixes BGK floors quoted from #224 with MRT
+floors re-measured at the current default window.  Re-measuring the BGK
+floor at the same window `[1000, 1200)` (both via `bounded_drag` and the
+new instrument, agreeing to 7 digits) gives 5.340 / 4.195 / 2.857
+(Re 305 / 437.8 / 800) instead of 5.443 / 4.269 / 2.900.  Consequences at
+matched windows:
+
+- the collision-family axis moves C_D by only ~0.8% (not ~2.7%);
+- BGK-floor-to-campaign shrinks to +1.5-2.1% (MRT stays +1.2-1.3%);
+- the remaining cumulant-vs-MRT gap is unchanged.
+
+### Conclusions
+
+1. **Surface pressure is the calibration observable**: the collision
+   axis moves it 5.2-8.3% vs 0.2-0.8% for drag (7-37x amplification),
+   steady across the window (33x SNR), and available in the campaign
+   data (the center-plane snapshots carry `rho`, whose near-surface cut
+   is the same profile).
+2. Wake deficit inherits drag's blindness (G_coll ~0.6%, S_smag tracks
+   drag's own); cross-flow reads the collision axis (3-6%) but is
+   phase-noisy at practical window lengths.
+3. **No observable rescues the SGS constant** at these Re/resolution
+   (S_smag <= 0.036 everywhere, same order as drag's own response);
+   WALE is dead on every field.  Identifying `C_s` needs higher Re or
+   bluffer geometry, not a better observable on this campaign.
+4. Next (stage 4): calibrate *continuous* MRT relaxation rates against
+   the campaign pressure profiles (the profile Jacobian w.r.t. rates is
+   the same autograd rollout away); a differentiable cumulant targets
+   the same observable.
+
+Tests: `tests/test_closure_observables.py` (7, CPU, ~10 s).
