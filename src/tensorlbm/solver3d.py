@@ -91,9 +91,18 @@ def _mrt3d_s_vec(
 
 
 @functools.cache
-def _get_d3q19_mrt_matrices(device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
-    matrix = torch.tensor(_M_D3Q19_DATA, dtype=torch.float32, device=device)
-    matrix_inv = torch.tensor(_M_D3Q19_INV_DATA, dtype=torch.float32, device=device)
+def _get_d3q19_mrt_matrices(
+    device: torch.device, dtype: torch.dtype | None = None
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Moment matrix and inverse for the D3Q19 MRT collision.
+
+    Built at *dtype* (default float32, the historical behaviour).  Pass the
+    distribution's dtype so fp64 domains — e.g. the differentiable
+    calibration path — do not crash on ``matrix @ f``.
+    """
+    _dtype = torch.float32 if dtype is None else dtype
+    matrix = torch.tensor(_M_D3Q19_DATA, dtype=_dtype, device=device)
+    matrix_inv = torch.tensor(_M_D3Q19_INV_DATA, dtype=_dtype, device=device)
     return matrix, matrix_inv
 
 
@@ -143,7 +152,7 @@ def collide_mrt3d(
     if s_pi is None:
         s_pi = s_e
     device = f.device
-    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device, f.dtype)
 
     s_nu = 1.0 / tau
     s_vec = _mrt3d_s_vec(s_e, s_eps, s_q, s_pi, s_nu, dtype=f.dtype, device=device)
@@ -185,7 +194,7 @@ def collide_mrt3d_low_memory(
     if s_pi is None:
         s_pi = s_e
     device = f.device
-    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device, f.dtype)
 
     s_nu = 1.0 / tau
     s_vec = _mrt3d_s_vec(s_e, s_eps, s_q, s_pi, s_nu, dtype=f.dtype, device=device)
