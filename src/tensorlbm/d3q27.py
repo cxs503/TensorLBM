@@ -634,9 +634,15 @@ _M_D3Q27_DATA, _M_D3Q27_INV_DATA = _build_d3q27_mrt_matrices()
 
 
 @functools.cache
-def _get_d3q27_mrt_matrices(device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
-    matrix = torch.tensor(_M_D3Q27_DATA, dtype=torch.float32, device=device)
-    matrix_inv = torch.tensor(_M_D3Q27_INV_DATA, dtype=torch.float32, device=device)
+def _get_d3q27_mrt_matrices(
+    device: torch.device, dtype: torch.dtype | None = None
+) -> tuple[torch.Tensor, torch.Tensor]:
+    matrix = torch.tensor(
+        _M_D3Q27_DATA, dtype=torch.float32 if dtype is None else dtype, device=device
+    )
+    matrix_inv = torch.tensor(
+        _M_D3Q27_INV_DATA, dtype=torch.float32 if dtype is None else dtype, device=device
+    )
     return matrix, matrix_inv
 
 
@@ -677,7 +683,7 @@ def collide_mrt27(
         s_pi = s_e
 
     device = f.device
-    matrix, matrix_inv = _get_d3q27_mrt_matrices(device)
+    matrix, matrix_inv = _get_d3q27_mrt_matrices(device, f.dtype)
 
     s_nu = 1.0 / tau
     s_vec = torch.tensor(

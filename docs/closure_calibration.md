@@ -210,3 +210,65 @@ study (the two long fits ran in parallel on two idle cards).
   use a flow-field observable instead (the path is differentiable end to end).
 - The bounded box keeps lateral planes periodic (A6++ adds free-slip walls on
   a separate branch); the drag window must exclude the initial transient.
+
+## Closure families (2026-08-23, B3-next): which axis moves the observable
+
+The "Real observations" section closed on a prescription: either put *a
+collision model that brackets the campaign* in the loop, or find *an
+observable the closure actually moves*. The calibration API now exposes both
+axes explicitly — `collision ∈ {bgk, mrt} × sgs ∈ {smagorinsky, wale}` on
+`bounded_drag` / `synthetic_targets` / `calibrate` / `evaluate` (the four
+kernels already existed in `turbulence.py`; `collide_mrt3d` and the MRT-SGS
+kernels gained dtype-aware moment matrices so the fp64 calibration path runs
+them — see the 2026-08-23 re-audit in `d3q19-d3q27-mrt-consistency-audit.md`).
+`CalibResult` records the family it was identified under and `evaluate`
+reuses it, so an evaluation cannot silently switch families.
+
+### Experiment (HullCase n128, GPU, `runs/b3_famil_20260823/`)
+
+**Stage 1 — collision axis (no-SGS floors, 1200-step windowed C_D):**
+
+| Re | BGK floor | MRT floor | campaign (cumulant) | MRT gap to campaign |
+|---|---|---|---|---|
+| 305 | 5.443 | 5.295 | 5.232 | +1.2% |
+| 437.8 | 4.269 | 4.166 | 4.116 | +1.2% |
+| 800 | 2.900 | 2.850 | 2.813 | +1.3% |
+| 628.6 (held-out) | 3.375 | 3.306 | 3.265 | +1.3% |
+| 148 (held-out) | 9.067 | 8.785 | 8.671 | +1.3% |
+
+The collision axis moves windowed C_D by **~2.7%** (BGK→MRT), uniformly
+across the whole Re range, cutting the floor-to-campaign gap from 3–5% to
+**+1.2–1.3%**. The campaign is now bracketed by the two no-SGS families
+(MRT below, BGK above), and the remaining ~1.2% is the cumulant-vs-MRT
+difference. Adding any SGS model on top only *raises* C_D (see stage 2),
+so `(mrt, *)` families approach but cannot cross the campaign from above;
+matching it exactly needs cumulant-in-the-loop (a differentiable cumulant
+transform, substantially more work) or a residual model-error term.
+
+**Stage 2 — SGS axis (WALE sweep at Re 437.8):**
+
+| C_w | 0.10 | 0.20 | 0.30 | 0.45 | 0.60 |
+|---|---|---|---|---|---|
+| C_D (bgk+wale) | 4.196 | 4.196 | 4.198 | 4.201 | 4.205 |
+| C_D (mrt+wale) | 4.166 | 4.167 | 4.168 | 4.171 | 4.174 |
+
+Identifiability `d ln C_D / d ln C_w` at C_w=0.3: **0.0009 (bgk)**,
+**0.0011 (mrt)** — an order of magnitude *weaker* than Smagorinsky's already
+collapsed 0.004–0.03. WALE's near-wall vanishing design (nu_t → 0 at walls)
+removes the only region where the sub-grid stress could act on a
+pressure-dominated hull drag. **Changing the SGS family does not fix the
+identifiability collapse; the drag observable itself barely reads any SGS
+model at this resolution.**
+
+### Conclusions
+
+1. The **collision** axis is the identifiable lever on drag (~2.7%); the SGS
+   axis is not (~0.1%), for either Smagorinsky or WALE.
+2. The one-sided floor mismatch shrank from 3–5% to 1.2% via MRT; the rest
+   is genuinely the campaign's cumulant collision, which the differentiable
+   path does not yet implement.
+3. Calibrating a closure constant against hull *drag* at n128 is therefore
+   bounded whatever the SGS family: the next step that can change this
+   conclusion is an **observable the closure moves** (wake profile,
+   separation point, surface pressure distribution — all reachable through
+   the same differentiable rollouts) rather than another closure family.
