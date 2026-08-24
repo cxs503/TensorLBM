@@ -435,3 +435,145 @@ d(Σ_q f_q)/ds_q measures ~1e-34 while the forward sensitivity is real
 probes must therefore read non-conserved observables: the shell-pressure
 profile and the drag used here do, and the gradient-flow test projects
 onto a seeded random direction.
+
+## D3Q27 collision families (2026-08-24, B3 stage 5): closing the low-Re residual?
+
+Stage 4 left the held-out Re = 148 shell-pressure residual essentially
+untouched (0.0709 -> 0.0690) and concluded it is *structural* — the
+campaign (``scan_suboff_re_drag_20260821``) was produced by a D3Q19
+**cumulant** collision, and the three-rate D3Q19 MRT family cannot
+represent its low-Re behaviour.  Stage 5 swaps the family instead of
+fitting more rates: the repo's two D3Q27 operators, made differentiable
+and calibrated with the same machinery.
+
+### D3Q27 inventory and differentiation points
+
+| piece | where | rates | differentiation |
+|---|---|---|---|
+| cumulant (central-moment/cascaded legacy) | ``cumulant.py:935 collide_cumulant_d3q27`` | ``omega_b, omega_odd, omega_even`` | forward already tensor-safe, but backward dies: the nonlinear transforms (``_central_to_cumulant`` 470, ``_cumulant_to_central`` 580, ``_relax_cumulants_d3q27`` 818) build outputs by ``clone`` + per-index assignment and the 6th-order correction reads slices that later assignments modify (in-place-modified error).  Rewritten autograd-clean, same arithmetic order, bitwise-equal (guarded by test) |
+| MRT | ``d3q27.py:649 collide_mrt27`` | ``s_e, s_eps, s_q`` (``s_pi`` follows ``s_e``) | the ``s_vec`` literal ``torch.tensor([...])`` silently detaches tensor rates (same bug class stage 4 fixed in ``_mrt3d_s_vec``); head/qblock/tail construction with a tensor branch (``d3q27.py:688``), all-float path bitwise unchanged, ``SOURCE_SHA256`` pins re-derived (f917e2f8...) |
+| Geier cumulant | ``cumulant.py:1050 collide_cumulant_geier_d3q27`` | same three rates | same in-place pattern; not needed here (production-adjacent family is the legacy operator above) |
+
+New stage-5 API in ``autograd_calib.py`` (stage-4 surface untouched):
+
+* ``collide_cumulant27_diffable`` (1538) — bitwise-equal differentiable
+  cumulant; internal no-inplace transforms ``_central_to_cumulant_diffable``
+  (1407) / ``_relax_cumulants_diffable`` (1506) / ``_cumulant_to_central_diffable``
+  (1459);
+* ``step27`` (1628) / ``rollout27`` (1657) — the D3Q27 bounded step
+  collide (NoDynamics in solid) -> ``stream27_roll`` -> free-stream faces
+  (equilibrium inlet, zero-gradient outlet, Dirichlet lateral = the
+  ``far_field_bc_27`` closure without the bounce-back) -> full-way
+  bounce-back, probe post-stream / post-BC / pre-bounce (production
+  sampling phase);
+* ``obstacle_force27`` (1588) — Ladd momentum-exchange force on the 27
+  stencil;
+* ``press_profile27`` (1708) — the D3Q27 counterpart of ``press_profile``
+  (same window, same centre-plane shell binning, fp64 profile + windowed
+  C_D), ``family="cumulant" | "mrt"``;
+* ``rate_fd_response27`` (1761) and ``calibrate_collision27`` (1809) —
+  the FD identifiability probe and the block-checkpointed Adam
+  calibration, mirroring ``rate_fd_response`` / ``calibrate_mrt_rates``
+  (defaults = production rates: ``CUMULANT27_RATES`` = all-ones,
+  ``MRT27_RATES`` = 1.19/1.4/1.2).
+
+### FD identifiability (profile response per e-fold of rate, +-20%)
+
+| rate | cumulant@148 | cumulant@437.8 | mrt@148 | mrt@437.8 |
+|---|---|---|---|---|
+| omega_b / s_e | 0.082 | 0.054 | 0.084 | 0.095 |
+| omega_odd / s_q | 0.246 | 0.269 | 0.208 | 0.230 |
+| omega_even / s_eps | 0.107 | 0.102 | 0.016 | 0.023 |
+
+Noise floor (step-2000 vs step-4000 campaign snapshots): 0.0105 at
+Re 148, 0.0006-0.006 mid/high Re.  Every cumulant rate is identifiable
+(10-45x floor); the strongest D3Q27 axis is the odd/3rd-order rate
+(0.21-0.27), not the bulk rate.  **Caveat the stage-4 family did not
+have**: D3Q27 ghost rates move C_D at 0.001-0.035 per e-fold — up to
+5x the D3Q19 response — so a D3Q27 rate calibration is *not* automatically
+C_D-neutral.
+
+### Baselines (same differentiable pipeline, campaign step-4000 targets)
+
+| Re | D3Q19-MRT default | D3Q19-MRT stage-4 rates | D3Q27-cumulant default | D3Q27-MRT default |
+|---|---|---|---|---|
+| 148 | 0.0709 | 0.0690 | **0.0664** | 0.0971 |
+| 305 | 0.0347 | 0.0231 | 0.0443 | 0.1041 |
+| 437.8 | 0.0349 | 0.0159 | 0.0608 | 0.1235 |
+| 628.6 | 0.0448 | 0.0205 | 0.0798 | 0.1455 |
+| 800 | 0.0535 | 0.0257 | 0.0917 | 0.1597 |
+
+(D3Q19 columns reproduce the stage-4 table exactly — pipeline cross-check.)
+### Calibration (train Re {305, 437.8, 800}, 60 Adam iters, lr 0.05, block 25)
+
+The stage-4 bounds (0.5, 2.0) are *unstable* for both D3Q27 families:
+rates above ~1.6 over-relax the ghost modes and the bounded rollout
+diverges (cumulant at iter 30 of the first attempt, MRT at iter 8).
+``calibrate_collision27`` therefore carries a NaN guard — a non-finite
+loss reverts to the last finite rates and stops — and the run below
+clamps cumulant rates to [0.6, 1.6] and MRT rates to [0.7, 1.6].
+Identified rates: cumulant ``omega_b 1.0 -> 1.6 (bound), omega_odd
+1.0 -> 1.05, omega_even 1.0 -> 1.6 (bound)``; MRT ``s_e 1.19 -> 1.57,
+s_eps 1.4 -> 1.00, s_q 1.2 -> 0.83`` (guard-stopped at iter 8; its
+identified rates still diverge at Re = 800 — the after-eval there is
+NaN, kept as evidence that D3Q27-MRT rates do not extrapolate in Re).
+
+| Re | role | cumulant27 before | after | mrt27 before | after |
+|---|---|---|---|---|---|
+| 305 | train | 0.0443 | 0.0327 | 0.1041 | 0.0633 |
+| 437.8 | train | 0.0608 | 0.0271 | 0.1235 | 0.0502 |
+| 800 | train | 0.0917 | 0.0420 | 0.1597 | NaN (diverged) |
+| 628.6 | held-out | 0.0798 | 0.0346 | 0.1455 | 0.0490 |
+| 148 | held-out | 0.0664 | **0.0792** | 0.0971 | **0.1097** |
+
+(Stage-4 D3Q19-MRT reference, same protocol: 0.0709 -> 0.0690,
+0.0347 -> 0.0231, 0.0349 -> 0.0159, 0.0448 -> 0.0205, 0.0535 -> 0.0257
+at Re 148/305/437.8/628.6/800.)
+
+C_D moves −1.2 % to −3.1 % under the cumulant calibration (5.55 -> 5.48,
+4.41 -> 4.33, 3.10 -> 3.00, 3.55 -> 3.46, 9.12 -> 9.06): as the FD probe
+predicted, D3Q27 rate calibration is *not* C_D-neutral — the stage-4
+decoupling was a property of the D3Q19 family, not of the observable.
+
+### The Re = 148 question: the residual is NOT collision-family-structural
+
+Three independent lines of evidence:
+
+1. **No family closes it.**  After calibration the Re = 148 gap is
+   0.069 (D3Q19-MRT, stage 4), 0.079 (D3Q27-cumulant), 0.110 (D3Q27-MRT)
+   — the two D3Q27 families are *worse* than the D3Q19 family they were
+   supposed to fix, and "higher isotropy order" is not the answer.
+2. **Longer rollouts make it bigger, not smaller** (diag_transient.json):
+   D3Q19-MRT at Re 148 goes 0.0709 (window [1000,1200)) -> 0.0914
+   ([2000,4000)) -> 0.0919 ([3800,4000)); D3Q27-cumulant 0.0664 -> 0.0888
+   -> 0.0893.  Our rollouts are stationary by step 2000 (the two long
+   windows agree to 5e-4), so this is not a transient effect: the
+   calibration window is *closer* to the campaign only because both are
+   still drifting.
+3. **Half of it is the mass correction** (diag_samefamily.json): rolling
+   the campaign's *own* operator (``collide_cumulant_d3q19``, default
+   rates) through the calibration pipeline gives Re 148 gap 0.068 without
+   and **0.040 with** the campaign's ``correct_mass3d`` every 10 steps
+   (Re 305: 0.030 -> 0.031, i.e. the effect is low-Re-specific, as
+   expected for a density-field observable at large tau).  The remaining
+   ~0.04 is pipeline definition, not physics: it persists at the same
+   magnitude across Re and across families (it is also the floor under
+   the stage-4 mid/high-Re residuals).
+
+Conclusion: the stage-4 "structural" reading was wrong in attribution —
+the low-Re residual is dominated by solver/observation bookkeeping
+(periodic mass correction ~0.03, other pipeline differences ~0.03-0.04:
+initialisation inside the solid, exact mass-correction phase,
+window-mean vs final-snapshot sampling), with the collision family
+contributing almost nothing at Re 148 (D3Q19-MRT and D3Q27-cumulant sit
+at the same gap under the same pipeline).  Any further closure work
+should align the mass correction and sampling definitions first — the
+D3Q27 machinery built here (differentiable cumulant/MRT, FD probe,
+guarded calibration) is the instrument for that, not more families.
+
+Reproducibility: scripts and raw JSON in ``runs/b3_stage5_20260824/``
+on the 5090 box (``part_ab.json``, ``part_c27.json`` first diverged
+attempt, ``part_c27b.json`` bounded run, ``diag_transient.json``,
+``diag_samefamily.json``); tests in ``tests/test_collision27_calib.py``
+(11, CPU, ~40 s) — bitwise equivalence of the diffable cumulant, tensor
+rates, end-to-end gradient flow through ``step27``, NaN guard.

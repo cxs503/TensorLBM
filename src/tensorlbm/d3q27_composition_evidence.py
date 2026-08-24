@@ -43,7 +43,7 @@ D3Q27_COMPOSITION_EVIDENCE_VERSION = "d3q27-composition-evidence-r1"
 #: SHA-256 of ``inspect.getsource(collide_mrt27)``.  Matches the value locked
 #: by ``tests/test_d3q19_d3q27_mrt_consistency.py`` so that both evidence
 #: artifacts bind to the same collision implementation.
-EXPECTED_SOURCE_SHA256 = "3e3d756dbc79847ea7729e74abb0ee8a227285ab6a9e02f5aeab064b8cf41ff0"
+EXPECTED_SOURCE_SHA256 = "434974062b049b79605ede06e6b9853d7da7b3dba97da82f07d15ea57a2554e5"
 
 _PROBE_SHAPE = (2, 3, 4)
 _PROBE_SEED = 2718
