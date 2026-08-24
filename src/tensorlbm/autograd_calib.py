@@ -1338,7 +1338,7 @@ def calibrate_mrt_rates(
         opt.zero_grad(set_to_none=True)
         losses = [((diff_profile(re) - t) ** 2).sum() / tnorm[re] for re, t in tgt.items()]
         total = torch.stack(losses).mean()
-        total.backward()
+        torch.autograd.backward(total)
         opt.step()
         with torch.no_grad():
             for r in rates.values():
@@ -1673,7 +1673,7 @@ def rollout27(
     """
     if return_probes and not 0 <= probe_start < max(n_steps, 1):
         raise ValueError(f"probe_start must be in [0, {n_steps}) when return_probes=True")
-    probes: list[torch.Tensor] | None = [] if return_probes else None
+    probes: list[torch.Tensor] = []
     for step in range(n_steps):
         if return_probes:
             f, probe = step27(f, tau, mask, collide, u_in, return_probe=True)
@@ -1900,7 +1900,7 @@ def calibrate_collision27(
                 f"reverted to last finite rates {last_good}"
             )
             break
-        total.backward()
+        torch.autograd.backward(total)
         opt.step()
         with torch.no_grad():
             for r in rates.values():

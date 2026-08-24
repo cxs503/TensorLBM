@@ -29,7 +29,7 @@ CASES = (
 # consistency audit.  They bind this evidence to the collision implementation.
 SOURCE_SHA256 = {
     "D3Q19": "e9762d1577b9e54fa5661c68fbb9db35cb25d4496017ce9ef06f35c395c3b87a",
-    "D3Q27": "f917e2f8e3ad50ef1647a03360899cd3c9c83e43bf63a227f79b05797ea0d2b6",
+    "D3Q27": "434974062b049b79605ede06e6b9853d7da7b3dba97da82f07d15ea57a2554e5",
 }
 
 
