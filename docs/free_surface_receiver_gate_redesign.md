@@ -99,8 +99,23 @@ suppressing `to_gas` for young cells (breaks emptying semantics).
 
 > **UPDATE 2026-08-23 — Route D was executed and failed acceptance §4.1;
 > see §7.** The fall-through applies: **A is now the only candidate
-> route** (B remains the fallback). The original recommendation is kept
-> below for the record.
+> route** (B remains the fallback).
+>
+> **UPDATE 2026-08-24 — Route A was executed and failed all five §4
+> criteria; see §8.** The closure machinery as shipped cannot take a
+> single timestep on a fill=0-born envelope. **B (envelope born at
+> epsilon > 0) is now the only untried route** and deserves first
+> examination, because it dissolves the birth-synchrony that defeats
+> both D and A. The original recommendation is kept below for the
+> record.
+>
+> **UPDATE 2026-08-24 (later) — Route B was executed and failed; see
+> §9.** A dense epsilon sweep over [0, 0.05] shows **no epsilon lets the
+> closure execute even one transaction**: below the mechanical boundary
+> 0.02375 the step-1 candidate is still WITHHELD, above it no cell ever
+> becomes a donor so the closure is never invoked. **All three routes
+> D/A/B are now executed and dead; the only live line is the closure
+> redesign (A-prime) of §6.2.**
 
 **D first, A as the destination.** (superseded by §7) Run the batch-16 reproduction with G
 removed and H1+H2 kept: if the halo stays bounded (§4.4), land D and treat
@@ -111,10 +126,19 @@ if A's strict closure cannot be made local/exact in reasonable time.
 
 ## 6. Decisions needed from the owner
 
-1. Route: ~~D-first~~ (executed, failed §4.1 — §7) → **A now the only
-   candidate**; B fallback still allowed?
-2. If A: is promoting `enable_i_to_g_ownership_closure` to default an
-   acceptable breaking change, and in which minor version?
+1. Route: ~~D-first~~ (executed, failed §4.1 — §7) → ~~A now the only
+   candidate~~ (executed, failed all of §4 — §8) → ~~B first~~
+   (executed, failed all of §4 — §9) → **only the closure redesign
+   (A-prime) remains**; confirm it as the work item.
+2. ~~If A: is promoting `enable_i_to_g_ownership_closure` to default an
+   acceptable breaking change?~~ Informed by §8/§9: the closure needs a
+   redesign before any versioning question exists — legal-receiver set
+   must include recv_new promotion or the conversion wave must be
+   de-synchronised, the exchange end needs a fill-approx-0 guard, a
+   negative-donor policy is required (donor mass is already net -1.94
+   before booking), and the all-or-nothing withholding policy needs a
+   partial-commit answer (§9: even the best epsilon leaves 16-32 donors
+   with legal receivers and still withholds).
 3. Halo bound K for §4.4.
 4. Should the batch-16 reproduction become a permanent regression test
    (adds runtime to the free-surface suite)?
@@ -175,3 +199,140 @@ hunk-reverse Arm P.
 **Verdict: Route D fails acceptance §4.1/§4.3. Per §3's own fall-through,
 the redesign goes to Route A** (B stays the fallback). The four owner
 decisions in §6 stand, with item 1 resolved by this measurement.
+
+## 8. Evidence: Route A executed (2026-08-23/24)
+
+Four arms, harness `runs/fs_route_a_20260823/run_arm.py` (Route D harness
++ `--closure` kwarg + `TopologyTransactionError` capture + per-step i->g
+donor-mass bookkeeping); Arm P reuses the Route D pre-456fdb1 data:
+
+| measurement | Arm 0 (G on, closure off) | Arm A (G off, closure on) | Arm C (G on, closure on) | Arm P |
+|---|---|---|---|---|
+| static 4 configs, 200 steps | +0.0000% drift, 4/4 | **WITHHELD at step 1, 0 steps run** | **WITHHELD at step 1, 0 steps run** | +75.1..+86.8% drift |
+| dam-break g=1e-2, 400 steps | front 10->10 frozen | WITHHELD at step 1 | WITHHELD at step 1 | front 10->31, K=19.4 |
+| i->g conversions | 0 | 0 (aborts first) | 0 (aborts first) | 7088 |
+
+Every closure-enabled run — all 4 static configs and the dam-break, in
+*both* gate configurations — aborts on the first `free_surface_step` with
+`TopologyTransactionError: WITHHELD: ... I->G donor has no legal INTERFACE
+receiver` (raise site `free_surface_topology_transaction.py:342`). The
+"0.0000% drift / ledger exact" static rows for A and C are vacuous:
+`steps_run == 0`.
+
+**Step-1 forensics** (builder spy, `probe_withheld.py`): the envelope is
+born at `fill = 0` (272 interface cells, interface mass 0.0), so
+`to_gas = (I|L) & (fill <= 0.01)` flags **all 272 interface cells as
+donors on the very first step**, regardless of gate G. The closure's
+legal receiver set `I & ~to_gas & ~to_liq` is then empty, every donor has
+zero legal receivers, and the all-or-nothing policy withholds the entire
+candidate. 272/272 donors *do* have plain INTERFACE neighbours — the
+failure is **synchrony, not isolation**, which is why Arm C (gate G
+untouched) fails identically to Arm A.
+
+**The exchange end is also diseased**: at the failing step-1 candidate
+the donor mass is already net **-1.9433** (per-cell min -1.375e-2) —
+i.e. the mass-exchange step drives empty envelope cells negative *before*
+any booking, and the legacy path books +1.94 back on the conversion end
+(1006.06 -> 1008.0). Arm D's +35..+82% drift is the residue of these two
+mutually-cancelling errors once G stops sealing. Section 2 located the
+pathology at the to_gas booking end only; this is the other half.
+
+Independent re-check (2026-08-24, separate harness): envelope 272 cells
+born fill min=max=0; 272/272 cells match the to_gas predicate at step 1;
+closure OFF runs 2 steps with mass 1008.0000 -> 1008.0000 exact; closure
+ON raises the WITHHELD error at step 1.
+
+Reproducibility gaps (recorded, none qualitative): the closure flag is a
+plain bool kwarg with no transaction-recorder precondition (`ownership_
+ledger`/`runtime_ledger` are optional diagnostics; the repo's own
+`run_free_surface_closure_experiment` is self-declared
+DIAGNOSTIC_NOT_PHYSICAL_CLOSURE); the static 4 configs are the Route D
+substitutes (456fdb1's originals do not exist in the repo); Arm P was not
+re-run.
+
+**Verdict: Route A fails acceptance §4 on all five criteria — it cannot
+take a single timestep.** Per §3's fall-through the remaining routes were
+**B (envelope born at epsilon > 0)** — which dissolves the birth-synchrony
+mechanism that defeats both D and A — and a redesigned closure (receiver
+set including recv_new promotion / de-synchronised conversion wave /
+fill-approx-0 guard at the exchange end / negative-donor policy) before
+any versioning question in §6.2 can exist. *(B was executed the same day
+and also failed; see §9.)*
+
+## 9. Evidence: Route B executed (2026-08-24)
+
+Patch: `init_flags_from_fill(..., envelope_fill_epsilon=0.0)` — the single
+promotion site splits out an `envelope` mask and sets `fill[envelope] = eps`
+in place (+14/-2, one function; `runs/fs_route_b_20260824/route_b.diff`).
+Mass is booked once by the caller (`init_mass_from_fill` at eps-rho), no
+double entry. Default eps=0 is the bit-exact legacy path: the patched
+worktree (exp/fs-route-b @ a3bf9038) passes **246 / 20 xfailed**, identical
+to clean main. Runtime birth paths were audited and already never born at
+zero (`to_iface` requires fill > 0.01, `recv_new` is born from redistributed
+positive mass), so init is the only zero-born site.
+
+**Lead question — does eps>0 survive step 1?** No. eps = 1e-6 and 1e-3
+both abort with the same WITHHELD as Route A, same signature (272 donors /
+0 legal receivers / 0 donors with legal neighbours). Cause is mechanical:
+`recv_ok = iface_mask & (fill > 1.0e-3)` (`free_surface_lbm.py:872` in the
+run baseline) is a *strict* comparison and float32(1e-3) rounds to
+9.9999997e-4, so a 1e-3-born envelope is still G-excluded — dynamically
+identical to Arm C.
+
+**Full epsilon sweep (0 to 0.05, 22 points, `probe_step1_boundary.json`)**
+— no epsilon executes a single closure transaction:
+
+| epsilon range | step-1 outcome | donors | legal receivers |
+|---|---|---|---|
+| 0 — 2e-3 | WITHHELD | 272 | 0 |
+| 5e-3 — 2.35e-2 | WITHHELD | 256 → 112 | 16 → 160 |
+| ≥ 2.4e-2 | "ok" — closure never invoked | 0 | — |
+
+The survival boundary is exactly mechanical: **0.01 (the `to_gas` line,
+`free_surface_lbm.py:1014`) + 1.375e-2 (max per-cell step-1 exchange debit)
+= 0.02375**; measured WITHHELD at 0.0235, ok at 0.024. In the middle band
+the surviving receivers are spatially *anticorrelated* with the donors
+(outflow cells empty into donors, inflow cells survive), so at best 16-32
+donors have a legal neighbour and the all-or-nothing policy still withholds
+the whole candidate — the block is **structural, not a fill-value problem**.
+
+**§4 battery on the surviving epsilon (2.4e-2 / 5e-2, closure on):**
+1. static 4 configs: 3 steps then step-4 WITHHELD, already +6.2 … +11.1% drift;
+2. dam break: front frozen 11 → 11, zero conversions, `topology_changed` never;
+3. ledger: 1014.53 → 1070.76 (+5.54e-2 rel) in 3 steps;
+4. halo bound K: vacuous (<= 3 steps);
+5. test surface: unchanged (246 / 20 xfailed).
+
+**The pump chain re-ignites the moment G stops binding.** At eps = 2.4e-2
+the step-1 exchange books the familiar -1.9433 liquid delta, then step 2
+flips to **+21.4869 per step** with `exchange_interface_delta = 0`
+throughout — exactly the unpaired interface credit the G gate exists to
+kill (Route A gap 2, §8). umax reaches 3.7e11 on step 2 (the Route D
+transient signature).
+
+**Diagnostic arms (closure off, eps alone on the legacy path):** eps = 1e-3
+injects 0.272 of mass that step-1 `to_gas` misbooking consumes *exactly*
+(total back to 1008.000, bit-exact), after which the column stays frozen;
+eps = 2.4e-2 does unfreeze (first change step 4, g_to_i = 176, front → 12,
+K = 1.41) but drifts +4.1 … +34.1% — Route D's disease at lower amplitude.
+
+Independent re-check (2026-08-24, separate scripts): boundary sweep
+reproduced dense; arm 0 reproduces the Route A/D arm 0 field-for-field
+(front frozen at 10 for 500 steps, `topology_changed` never); pump
+arithmetic 1012.58 → 1034.07 = +21.487/step and 1070.7559/1014.5283 =
++5.54e-2 both re-derived from the raw JSON.
+
+Reproducibility notes: harness `runs/fs_route_b_20260824/run_arm.py`
+(Route A harness + `--epsilon`), step-1 spy `probe_step1.py`; worktree
+restored clean @ a3bf9038 after diff archival; no pushes, no commits.
+
+**Verdict: Route B fails acceptance §4 on all five criteria and comes off
+the fallback list.** The epsilon sweep proves the fill value is not the
+lever: below the boundary the closure withholds, above it the closure is
+dead code. A geometric-reconstruction epsilon (per-cell Koerner fill) only
+reshapes the epsilon landscape — it cannot fix the donor/receiver
+anticorrelation and still needs the exchange-end paired booking. With
+D, A and B all executed and dead, the only live line is the §6.2 closure
+redesign (receiver set with recv_new promotion / de-synchronised
+conversion wave / fill-approx-0 exchange guard / negative-donor policy /
+partial-commit answer to all-or-nothing).
