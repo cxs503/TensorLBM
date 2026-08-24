@@ -34,6 +34,13 @@ Also provides the two v3 training companions:
   small-N multi-campaign corpora;
 - :func:`force_tail_bins` — the auxiliary head's target: log10 mean force
   in ``n_bins`` uniform bins over the tail of the drag history.
+
+B4-g4 adds the *resolution channel* for cross-grid corpora
+(:func:`condition_v4`): ``log10(n / n_production)`` appended to the v3
+vector, where ``n`` is the ``suboff_n128`` case's integer ``resolution``
+(the streamwise cell count; production ``n = 128``).  The first 8 columns
+of :func:`condition_v4` are bit-identical to :func:`condition_v3`, so v3
+models/protocols are unchanged by the addition.
 """
 
 from __future__ import annotations
@@ -57,15 +64,19 @@ from .fno import SpectralConv2d
 
 __all__ = [
     "COND_V3_CHANNEL_NAMES",
+    "COND_V4_CHANNEL_NAMES",
     "CondFNODrag",
     "GEOMETRY_CHANNEL_NAMES",
     "PRODUCTION_GRID",
     "QuotaSampler",
+    "RESOLUTION_CHANNEL_NAME",
     "SuboffGeometryFeatures",
     "SuboffGrid",
     "condition_v3",
+    "condition_v4",
     "force_tail_bins",
     "geometry_channels",
+    "resolution_channel",
     "suboff_geometry_features",
 ]
 
@@ -270,6 +281,56 @@ def condition_v3(
         [np.log10(re), np.log10(u_in), np.log10(sail_scale), np.log10(fin_scale)], axis=1
     )
     return np.concatenate([logs, geometry], axis=1)
+
+
+#: Name of the resolution channel (B4 g4): log10(n / n_production).
+RESOLUTION_CHANNEL_NAME = "log10_res_ratio"
+
+#: Full v4 condition vector: v3 + the resolution channel.
+COND_V4_CHANNEL_NAMES = COND_V3_CHANNEL_NAMES + (RESOLUTION_CHANNEL_NAME,)
+
+
+def resolution_channel(resolution: "int | float | np.ndarray") -> np.ndarray:
+    """log10 of the grid ratio n / n_production (scalar or 1-D array).
+
+    ``n`` is the ``suboff_n128`` case's integer ``resolution`` (streamwise
+    cell count; the case maps it to the grid ``(n/2, n/2, n)`` in
+    ``(nz, ny, nx)`` order and scales the hull placement/length with it).
+    Production ``n = 128`` maps to exactly ``0.0`` — the mother corpus is
+    encoded as "reference resolution", so a v4 model reproduces the v3
+    encoding there.
+    """
+    n = np.asarray(resolution, dtype=np.float64)
+    if n.ndim > 1:
+        raise ValueError(f"resolution must be a scalar or 1-D array, got shape {n.shape}")
+    if not np.isfinite(n).all() or not (n > 0.0).all():
+        raise ValueError(f"resolution must be finite and positive, got {resolution!r}")
+    return np.log10(n / float(_PRODUCTION_RESOLUTION))
+
+
+def condition_v4(
+    re: np.ndarray,
+    u_in: np.ndarray,
+    sail_scale: np.ndarray,
+    fin_scale: np.ndarray,
+    geometry: np.ndarray,
+    resolution: "int | float | np.ndarray",
+) -> np.ndarray:
+    """Assemble the (N, 9) v4 condition vector: v3 + resolution channel.
+
+    The first 8 columns are :func:`condition_v3` verbatim (bit-identical);
+    the 9th is :func:`resolution_channel` of *resolution* (scalar
+    broadcast or per-point 1-D array).
+    """
+    base = condition_v3(re, u_in, sail_scale, fin_scale, geometry)
+    col = resolution_channel(resolution)
+    if col.ndim == 0:
+        col = np.full(base.shape[0], float(col))
+    if col.shape != (base.shape[0],):
+        raise ValueError(
+            f"resolution must be scalar or length-{base.shape[0]} array, got shape {col.shape}"
+        )
+    return np.concatenate([base, col[:, None]], axis=1)
 
 
 class CondFNODrag(nn.Module):
