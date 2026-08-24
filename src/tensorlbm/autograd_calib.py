@@ -55,7 +55,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -1050,3 +1050,302 @@ def evaluate(
             }
     result.eval = out
     return out
+
+
+# ---------------------------------------------------------------------------
+# B3 stage 4: MRT moment-rate calibration against shell-pressure profiles
+# ---------------------------------------------------------------------------
+
+DEFAULT_MRT_RATES: dict[str, float] = {"s_e": 1.19, "s_eps": 1.4, "s_q": 1.2}
+"""Geier-style default moment rates used by :func:`press_profile` etc."""
+
+
+def _rate_collide(
+    tau: float | torch.Tensor, rates: Mapping[str, float | torch.Tensor]
+) -> Callable[..., torch.Tensor]:
+    def collide(f: torch.Tensor, _tau: float | torch.Tensor) -> torch.Tensor:
+        return collide_mrt3d(f, tau, s_e=rates["s_e"], s_eps=rates["s_eps"], s_q=rates["s_q"])
+
+    return collide
+
+
+def _plane_shell(
+    mask: torch.Tensor, bins: int
+) -> tuple[int, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Centre-plane shell indexing for the axial pressure profile.
+
+    Returns ``(cz, ays, axs, bin_idx)`` for the cells of the z=cz plane
+    that are wet and 4-neighbour-adjacent to solid, binned along x.
+    """
+    cz = mask.shape[0] // 2
+    smask = mask[cz]
+    adj = torch.zeros_like(smask)
+    adj[:, 1:] |= smask[:, :-1]
+    adj[:, :-1] |= smask[:, 1:]
+    adj[1:, :] |= smask[:-1, :]
+    adj[:-1, :] |= smask[1:, :]
+    adj &= ~smask
+    ays, axs = adj.nonzero(as_tuple=True)
+    nx = mask.shape[2]
+    bin_idx = torch.minimum(axs // (nx // bins), torch.as_tensor(bins - 1, device=mask.device))
+    return cz, ays, axs, bin_idx.long()
+
+
+def press_profile(
+    box: BoxCase | HullCase,
+    re: float,
+    rates: Mapping[str, float] | None = None,
+    *,
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+    chunk: int = 20,
+) -> tuple[torch.Tensor, float]:
+    """Window-averaged shell-pressure axial profile and windowed C_D.
+
+    Runs the MRT family with moment *rates* (defaults = Geier values) over
+    the case's window ``[window_start, steps)`` and reduces the centre
+    plane (``z = nz//2``, the campaign snapshot convention) to *bins*
+    axial means of ``rho - 1`` over shell cells — the cells adjacent
+    (4-neighbourhood, in-plane) to solid.  ``rho`` is phase-invariant
+    under collision and bounce-back, so any sub-step sampling agrees;
+    measured equal to the probe-phase profile within 1e-4 relL2.
+
+    Returns ``(profile, cd)``: fp64 tensor of shape ``(bins,)`` (empty
+    bins are exactly zero) and the windowed drag coefficient.
+    """
+    device = torch.device(box.device)
+    mask = _case_mask(box) if mask is None else mask
+    rates = dict(DEFAULT_MRT_RATES) if rates is None else dict(rates)
+    tau = box.tau_of_re(re)
+    inlet = InletSpec(
+        ux=torch.as_tensor(box.u_in, dtype=box.dtype, device=device),
+        method=box.inlet_method,
+    )
+    walls = None if box.wall_method == "periodic" else WallSpec(method=box.wall_method, ux=box.u_in)
+    collide = _rate_collide(tau, rates)
+    cz, ays, axs, bin_idx = _plane_shell(mask, bins)
+    counts = torch.bincount(bin_idx, minlength=bins).clamp(min=1).double()
+
+    rho0 = torch.ones((box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+    u = torch.zeros((3, box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+    u[0] = box.u_in
+    with torch.no_grad():
+        f = equilibrium3d(rho0, u[0], u[1], u[2])
+        f = rollout(
+            f,
+            box.window_start,
+            tau,
+            mask,
+            collide=collide,
+            inlet=inlet,
+            outlet=OutletSpec(),
+            walls=walls,
+        )
+        n_p = 0
+        fx = 0.0
+        prof = torch.zeros(bins, dtype=torch.float64, device=device)
+        while n_p < box.steps - box.window_start:
+            n = min(chunk, box.steps - box.window_start - n_p)
+            f, probes = rollout(
+                f,
+                n,
+                tau,
+                mask,
+                collide=collide,
+                inlet=inlet,
+                outlet=OutletSpec(),
+                walls=walls,
+                return_probes=True,
+                probe_start=0,
+            )
+            for p in probes:
+                fx += float(obstacle_force(p, mask)[0])
+                rho = macroscopic3d(p)[0]
+                prof = prof.index_add(0, bin_idx, (rho[cz][ays, axs] - 1.0).double())
+            n_p += n
+            del probes
+    n_avg = float(n_p)
+    return prof / n_avg / counts, fx / n_avg / (0.5 * box.u_in**2 * box.ref_area(mask))
+
+
+def rate_fd_response(
+    box: BoxCase | HullCase,
+    re: float,
+    rates: Mapping[str, float] | None = None,
+    *,
+    frac: float = 0.2,
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+) -> dict[str, dict[str, float]]:
+    """Finite-difference identifiability probe of the MRT moment rates.
+
+    Varies each rate by +-``frac`` in ratio around its value and reports
+    the profile's and C_D's response *per e-fold* of rate change:
+    ``relL2(p_hi, p_lo)/ln(hi/lo)``.  A rate whose profile response is at
+    the measurement noise floor cannot be identified from pressure data.
+    """
+    base = dict(DEFAULT_MRT_RATES) if rates is None else dict(rates)
+    p_ref, cd_ref = press_profile(box, re, base, mask=mask, bins=bins)
+    out: dict[str, dict[str, float]] = {}
+    for name, val in base.items():
+        lo, hi = dict(base), dict(base)
+        lo[name], hi[name] = val * (1.0 - frac), val * (1.0 + frac)
+        p_lo, cd_lo = press_profile(box, re, lo, mask=mask, bins=bins)
+        p_hi, cd_hi = press_profile(box, re, hi, mask=mask, bins=bins)
+        dl = abs(math.log((1.0 + frac) / (1.0 - frac)))
+        out[name] = {
+            "press_per_efold": float(
+                torch.linalg.vector_norm(p_hi - p_lo) / torch.linalg.vector_norm(p_ref)
+            )
+            / dl,
+            "cd_per_efold": abs(math.log(cd_hi / cd_lo)) / dl,
+        }
+    return out
+
+
+@dataclass(frozen=True)
+class RateCalibResult:
+    """Outcome of :func:`calibrate_mrt_rates`."""
+
+    rates: dict[str, float]
+    loss_history: list[float] = field(default_factory=list)
+    eval: dict[str, dict[str, float]] = field(default_factory=dict)
+    rate0: dict[str, float] = field(default_factory=lambda: dict(DEFAULT_MRT_RATES))
+
+    def collide(self, re: float, box: BoxCase | HullCase) -> Callable[..., torch.Tensor]:
+        """Collision operator with the identified rates at *re*."""
+        return _rate_collide(box.tau_of_re(re), self.rates)
+
+
+def calibrate_mrt_rates(
+    targets: Mapping[float, torch.Tensor],
+    box: BoxCase | HullCase,
+    *,
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+    iters: int = 15,
+    lr: float = 0.03,
+    bounds: tuple[float, float] = (0.5, 2.0),
+    block: int = 25,
+    log_every: int = 0,
+) -> RateCalibResult:
+    """Identify MRT moment rates from shell-pressure profiles by backprop.
+
+    The transient up to ``window_start`` runs no-grad; the window itself is
+    differentiated through a block-checkpointed rollout (in-block profile
+    reduction — memory holds only the block-boundary states, not the
+    window).  Loss = mean over targets of the squared relative L2 between
+    simulated and target profiles; Adam on the raw rates, clipped to
+    *bounds* after every step (rates stay physical).
+
+    Args:
+        targets: ``{re: profile}`` shell-pressure targets, e.g. from
+            campaign centre-plane snapshots binned the same way
+            (:func:`press_profile` defines the binning).
+        box: Domain and rollout configuration (MRT family, no SGS).
+        mask: Pre-built solid mask (defaults to ``box.make_mask()``).
+        bins: Axial bin count (must match the targets' binning).
+        iters: Adam iterations.
+        lr: Adam learning rate.
+        bounds: ``(lo, hi)`` clamp for every rate after each step.
+        block: Checkpoint block size in window steps; the window length
+            ``steps - window_start`` must be divisible by it.
+        log_every: Print loss every n iterations (0: silent).
+
+    Returns:
+        :class:`RateCalibResult`; ``eval`` holds, per target Re, the
+        profile gap and C_D before (default rates) and after calibration.
+    """
+    from torch.utils.checkpoint import checkpoint
+
+    device = torch.device(box.device)
+    mask = _case_mask(box) if mask is None else mask
+    window = box.steps - box.window_start
+    if window % block:
+        raise ValueError(f"window {window} not divisible by block {block}")
+    cz, ays, axs, bin_idx = _plane_shell(mask, bins)
+    counts = torch.bincount(bin_idx, minlength=bins).clamp(min=1).double()
+    inlet = InletSpec(
+        ux=torch.as_tensor(box.u_in, dtype=box.dtype, device=device),
+        method=box.inlet_method,
+    )
+    walls = None if box.wall_method == "periodic" else WallSpec(method=box.wall_method, ux=box.u_in)
+    tgt = {re: t.to(device=device, dtype=torch.float64) for re, t in targets.items()}
+    tnorm = {re: float(torch.linalg.vector_norm(t) ** 2) for re, t in tgt.items()}
+
+    rates = {
+        k: torch.tensor(v, dtype=box.dtype, device=device, requires_grad=True)
+        for k, v in DEFAULT_MRT_RATES.items()
+    }
+
+    def diff_profile(re: float) -> torch.Tensor:
+        tau = box.tau_of_re(re)
+        collide = _rate_collide(tau, rates)
+        rho0 = torch.ones((box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+        u = torch.zeros((3, box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+        u[0] = box.u_in
+        with torch.no_grad():
+            f = equilibrium3d(rho0, u[0], u[1], u[2])
+            f = rollout(
+                f,
+                box.window_start,
+                tau,
+                mask,
+                collide=collide,
+                inlet=inlet,
+                outlet=OutletSpec(),
+                walls=walls,
+            ).detach()
+
+        def run_block(f: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+            acc = torch.zeros(bins, dtype=box.dtype, device=device)
+            for _ in range(block):
+                f = rollout(
+                    f,
+                    1,
+                    tau,
+                    mask,
+                    collide=collide,
+                    inlet=inlet,
+                    outlet=OutletSpec(),
+                    walls=walls,
+                )
+                rho = macroscopic3d(f)[0]
+                acc = acc.index_add(0, bin_idx, rho[cz][ays, axs] - 1.0)
+            return f, acc
+
+        total = torch.zeros(bins, dtype=box.dtype, device=device)
+        for _ in range(window // block):
+            f, acc = checkpoint(run_block, f, use_reentrant=False)
+            total = total + acc
+        return (total.double() / window) / counts
+
+    opt = torch.optim.Adam(rates.values(), lr=lr)
+    hist: list[float] = []
+    for it in range(iters):
+        opt.zero_grad(set_to_none=True)
+        losses = [((diff_profile(re) - t) ** 2).sum() / tnorm[re] for re, t in tgt.items()]
+        total = torch.stack(losses).mean()
+        total.backward()
+        opt.step()
+        with torch.no_grad():
+            for r in rates.values():
+                r.clamp_(*bounds)
+        hist.append(float(total.detach()))
+        if log_every and it % log_every == 0:
+            cur = {k: round(float(v.detach()), 4) for k, v in rates.items()}
+            print(f"it{it:02d} loss={hist[-1]:.6f} {cur}")
+
+    final = {k: float(v.detach()) for k, v in rates.items()}
+    evaluation: dict[str, dict[str, float]] = {}
+    for re, t in tgt.items():
+        p0, cd0 = press_profile(box, re, DEFAULT_MRT_RATES, mask=mask, bins=bins)
+        p1, cd1 = press_profile(box, re, final, mask=mask, bins=bins)
+        n = torch.linalg.vector_norm(t)
+        evaluation[f"{re:g}"] = {
+            "press_before": float(torch.linalg.vector_norm(p0 - t) / n),
+            "press_after": float(torch.linalg.vector_norm(p1 - t) / n),
+            "cd_before": cd0,
+            "cd_after": cd1,
+        }
+    return RateCalibResult(rates=final, loss_history=hist, eval=evaluation)
