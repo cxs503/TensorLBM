@@ -648,11 +648,11 @@ def _get_d3q27_mrt_matrices(
 
 def collide_mrt27(
     f: torch.Tensor,
-    tau: float,
-    s_e: float = 1.19,
-    s_eps: float = 1.4,
-    s_q: float = 1.2,
-    s_pi: float | None = None,
+    tau: float | torch.Tensor,
+    s_e: float | torch.Tensor = 1.19,
+    s_eps: float | torch.Tensor = 1.4,
+    s_q: float | torch.Tensor = 1.2,
+    s_pi: float | torch.Tensor | None = None,
 ) -> torch.Tensor:
     """D3Q27 multi-relaxation-time (MRT) collision step.
 
