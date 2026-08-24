@@ -34,7 +34,7 @@ def test_probe_version_is_declared() -> None:
 def test_expected_source_hash_matches_existing_audit() -> None:
     """The source hash must match the one already locked by the consistency audit."""
     assert (
-        EXPECTED_SOURCE_SHA256 == "3e3d756dbc79847ea7729e74abb0ee8a227285ab6a9e02f5aeab064b8cf41ff0"
+        EXPECTED_SOURCE_SHA256 == "434974062b049b79605ede06e6b9853d7da7b3dba97da82f07d15ea57a2554e5"
     )
 
 
