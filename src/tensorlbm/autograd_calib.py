@@ -85,7 +85,22 @@ __all__ = [
     "HullCase",
     "MRT27_RATES",
     "SGS_MODELS",
+    "CAMPAIGN_SEMANTICS",
+    "CampaignCollision27CalibResult",
+    "CampaignObservables",
+    "CampaignRateCalibResult",
+    "CampaignSemantics",
+    "LEGACY27_SEMANTICS",
+    "LEGACY_SEMANTICS",
     "bounded_drag",
+    "calibrate_collision27_campaign",
+    "calibrate_mrt_rates_campaign",
+    "campaign_chain19",
+    "campaign_chain27",
+    "campaign_rollout19",
+    "campaign_rollout27",
+    "press_profile27_campaign",
+    "press_profile_campaign",
     "calibrate",
     "calibrate_collision27",
     "cd_from_force",
@@ -1924,3 +1939,782 @@ def calibrate_collision27(
             "cd_after": cd1,
         }
     return Collision27CalibResult(family=family, rates=final, loss_history=hist, eval=evaluation)
+
+
+# ---------------------------------------------------------------------------
+# B3 stage 6: campaign-semantics alignment knobs (pipeline-definition residual)
+# ---------------------------------------------------------------------------
+#
+# Stage 5 (``runs/b3_stage5_20260824/diag_samefamily.json``) rolled the
+# campaign's *own* D3Q19 cumulant operator through the calibration pipeline
+# and showed that half the low-Re residual is the periodic mass correction
+# (Re 148: 0.068 -> 0.040) while the rest persists across Re and across
+# collision families: it is *pipeline definition*, not physics.  Stage 6
+# enumerates the definitions that differ between the campaign chain
+# (``scan_runner.run_scan_point`` on the ``suboff_n128`` case) and the
+# differentiable calibration chain (``press_profile`` / ``press_profile27``),
+# pins each one behind a switch (:class:`CampaignSemantics`) and re-runs the
+# diagnosis and the calibration under the fully aligned semantics.
+#
+# The definitional differences (campaign side, file:line):
+#
+# 1. initialisation inside the solid — campaign ``initial_pu`` sets
+#    ``ux = 0`` inside the hull (``cases/suboff.py:124``); the calibration
+#    chain initialises free-stream equilibrium everywhere;
+# 2. collision inside the solid — the campaign collides *every* cell
+#    (``cases/base.py:245`` -> ``collide_advanced_3d`` has no solid skip);
+#    the calibration chain is NoDynamics in the solid
+#    (``autograd_path._collide_skip_solid``; ``step27`` same);
+# 3. outlet closure — the campaign's ``far_field_bc_3d`` copies the whole
+#    outlet plane (all populations, ``boundaries3d.py:546``); the
+#    calibration outlet replaces only the unknown outgoing directions
+#    (``autograd_path._apply_outlet``).  The D3Q27 chain already uses the
+#    full-plane copy (``_far_field_faces27``);
+# 4. mass correction — the campaign rescales every 10th step at absolute
+#    step numbers, post-step (``scan_runner.py:874``: ``step % mass_every
+#    == 0`` on the 1-indexed loop; interval from ``cases/suboff.py:44``),
+#    from step 10 (transient included); the stage-5 diagnosis corrected
+#    every 20 steps, window only;
+# 5. observation readout — the campaign observable is a *snapshot export*
+#    (``FieldSampleReporter`` dispatched post-correction,
+#    ``scan_runner.py:892``; the final step is always exported); the
+#    calibration observable is the window mean over per-step probes.
+#
+# Everything below is additive: the stage-4/5 surface is untouched and the
+# historical behaviour is exactly ``CampaignSemantics()`` with all defaults
+# (verified bitwise by ``tests/test_campaign_semantics.py``).
+
+
+@dataclass(frozen=True)
+class CampaignSemantics:
+    """Pipeline-definition switches aligning a rollout with the campaign chain.
+
+    Every field names one definitional axis; the default of each field is the
+    *historical calibration-pipeline* behaviour, the campaign value is
+    :data:`CAMPAIGN_SEMANTICS`.  The knobs are independent so the residual
+    can be decomposed by switching them on one at a time (or all at once).
+
+    Attributes:
+        init_solid: ``"freestream"`` (legacy — equilibrium at ``u_in``
+            everywhere, solid included) or ``"rest"`` (campaign — ``ux = 0``
+            inside the solid, ``rho = 1`` everywhere).
+        collide_solid: ``False`` (legacy — NoDynamics inside the solid) or
+            ``True`` (campaign — collide every cell).
+        outlet: ``"unknown"`` (legacy — only the outgoing directions of the
+            outlet plane are copied) or ``"full"`` (campaign — the whole
+            outlet plane is copied from the interior neighbour).
+        mass_every: mass-correction interval in solver steps (0 = never);
+            corrections land at solver steps ``s`` with
+            ``s % mass_every == mass_phase`` and ``s >= mass_first``
+            (campaign: 10/0/10 — every 10th step from step 10, post-step,
+            ``scan_runner.py:874``).
+        mass_phase: phase of the correction grid (see ``mass_every``).
+        mass_first: first correctable step (see ``mass_every``).
+        observe_frames: campaign snapshot readout.  Empty (legacy) reads the
+            window mean over per-step probes; otherwise the profile is the
+            mean of the post-correction states at exactly these solver steps
+            — the ``FieldSampleReporter`` export definition.
+    """
+
+    init_solid: str = "freestream"
+    collide_solid: bool = False
+    outlet: str = "unknown"
+    mass_every: int = 0
+    mass_phase: int = 0
+    mass_first: int = 1
+    observe_frames: tuple[int, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.init_solid not in ("freestream", "rest"):
+            raise ValueError(f"init_solid must be 'freestream' or 'rest', got {self.init_solid!r}")
+        if not isinstance(self.collide_solid, bool):
+            raise ValueError("collide_solid must be a bool")
+        if self.outlet not in ("unknown", "full"):
+            raise ValueError(f"outlet must be 'unknown' or 'full', got {self.outlet!r}")
+        for name, value in (("mass_every", self.mass_every), ("mass_first", self.mass_first)):
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError(
+                    f"CampaignSemantics.{name} must be a non-negative int, got {value!r}"
+                )
+        if not 0 <= self.mass_phase < max(self.mass_every, 1):
+            raise ValueError(
+                f"mass_phase must be in [0, {max(self.mass_every, 1)}), got {self.mass_phase}"
+            )
+        if self.mass_every and self.mass_first < 1:
+            raise ValueError("mass_first must be >= 1 (solver steps are 1-indexed)")
+        if any(isinstance(s, bool) or not isinstance(s, int) or s < 1 for s in self.observe_frames):
+            raise ValueError(f"observe_frames must be positive ints, got {self.observe_frames!r}")
+
+    def correct_at(self, step: int) -> bool:
+        """Whether the mass correction lands after solver step *step*."""
+        return (
+            self.mass_every > 0
+            and step >= self.mass_first
+            and step % self.mass_every == self.mass_phase
+        )
+
+    def with_frames(self, *steps: int) -> CampaignSemantics:
+        """Copy with the campaign snapshot readout at *steps* (no args: window)."""
+        from dataclasses import replace
+
+        return replace(self, observe_frames=tuple(steps))
+
+
+#: Fully campaign-aligned semantics (``scan_runner`` + ``suboff_n128``).
+CAMPAIGN_SEMANTICS = CampaignSemantics(
+    init_solid="rest",
+    collide_solid=True,
+    outlet="full",
+    mass_every=10,
+    mass_phase=0,
+    mass_first=10,
+)
+
+#: The historical D3Q19 calibration-pipeline semantics (all defaults).
+LEGACY_SEMANTICS = CampaignSemantics()
+
+#: The historical D3Q27 bounded-chain semantics (its outlet is the production
+#: full-plane copy already, so only that value is legal on the 27 chain).
+LEGACY27_SEMANTICS = CampaignSemantics(outlet="full")
+
+
+def _initial_f19(
+    box: BoxCase | HullCase, mask: torch.Tensor, sem: CampaignSemantics
+) -> torch.Tensor:
+    """Initial D3Q19 populations under *sem* (campaign or legacy initialisation)."""
+    device = torch.device(box.device)
+    rho0 = torch.ones((box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+    u = torch.zeros((3, box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+    u[0] = box.u_in
+    if sem.init_solid == "rest":
+        # campaign cases/suboff.py:124 — ux = 0 inside the hull, rho = 1 everywhere
+        u[0] = torch.where(mask, torch.zeros_like(u[0]), u[0])
+    return equilibrium3d(rho0, u[0], u[1], u[2])
+
+
+def _initial_f27(
+    box: BoxCase | HullCase, mask: torch.Tensor, sem: CampaignSemantics
+) -> torch.Tensor:
+    """Initial D3Q27 populations under *sem*."""
+    from tensorlbm.d3q27 import equilibrium27
+
+    device = torch.device(box.device)
+    rho0 = torch.ones((box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+    u = torch.zeros((3, box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+    u[0] = box.u_in
+    if sem.init_solid == "rest":
+        u[0] = torch.where(mask, torch.zeros_like(u[0]), u[0])
+    return equilibrium27(rho0, u[0], u[1], u[2])
+
+
+def campaign_chain19(
+    box: BoxCase | HullCase,
+    collide: Callable[..., torch.Tensor],
+    mask: torch.Tensor,
+    sem: CampaignSemantics,
+    tau: float | torch.Tensor = 0.9,
+) -> Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]:
+    """Build the one-step D3Q19 closure ``(f) -> (f_new, probe)`` under *sem*.
+
+    With all-legacy knobs the closure is bit-for-bit
+    :func:`tensorlbm.autograd_path.differentiable_step` at the same boundary
+    specs (guarded by test); with ``sem.outlet == "full"`` the boundary step
+    is the production ``far_field_bc_3d`` face closure without the obstacle
+    bounce-back (so the probe keeps the production sampling phase) and the
+    bounce-back is the production :func:`bounce_back_cells_3d`.
+    """
+    from tensorlbm.autograd_path import _apply_inlet, _apply_outlet, _apply_walls
+    from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d
+    from tensorlbm.d3q19 import OPPOSITE
+    from tensorlbm.solver3d import stream3d
+
+    device = torch.device(box.device)
+    inlet = InletSpec(
+        ux=torch.as_tensor(box.u_in, dtype=box.dtype, device=device),
+        method=box.inlet_method,
+    )
+    walls = None if box.wall_method == "periodic" else WallSpec(method=box.wall_method, ux=box.u_in)
+    outlet = OutletSpec()
+    opp = OPPOSITE.to(device=device)
+
+    def collided(f: torch.Tensor) -> torch.Tensor:
+        f_col = collide(f, tau)
+        if sem.collide_solid or mask is None:
+            return f_col
+        return torch.where(mask.unsqueeze(0), f, f_col)
+
+    if sem.outlet == "full":
+        bc_config = {"far_field_faces": ["y-", "y+", "z-", "z+"], "periodic_faces": []}
+
+        def step(f: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+            probe = far_field_bc_3d(
+                stream3d(collided(f)), box.u_in, obstacle_mask=None, bc_config=bc_config
+            )
+            return bounce_back_cells_3d(probe, mask), probe
+
+    else:
+
+        def step(f: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+            f_str = stream3d(collided(f))
+            if walls is not None:
+                f_str = _apply_walls(f_str, walls)
+            f_str = _apply_inlet(f_str, inlet)
+            f_str = _apply_outlet(f_str, outlet, inlet, f[..., -1:])
+            return torch.where(mask.unsqueeze(0), f_str[opp], f_str), f_str
+
+    return step
+
+
+def campaign_chain27(
+    box: BoxCase | HullCase,
+    collide: Callable[..., torch.Tensor],
+    mask: torch.Tensor,
+    sem: CampaignSemantics,
+    tau: float | torch.Tensor = 0.9,
+) -> Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]:
+    """D3Q27 counterpart of :func:`campaign_chain19`.
+
+    The D3Q27 bounded chain (:func:`step27`) already uses the production
+    full-plane outlet copy (``_far_field_faces27``), so only the
+    collide-in-solid knob applies on top of it; ``sem.outlet`` must be
+    ``"full"`` (the unknown-directions outlet has no counterpart on the
+    27-stencil chain here).
+    """
+    from tensorlbm.boundaries_d3q27 import bounce_back_cells_27
+    from tensorlbm.d3q27 import stream27_roll
+
+    if sem.outlet != "full":
+        raise ValueError(
+            "the D3Q27 bounded chain only implements the production full-copy outlet; "
+            f"got sem.outlet={sem.outlet!r}"
+        )
+
+    def step(f: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        f_col = collide(f, tau)
+        if not sem.collide_solid:
+            f_col = torch.where(mask.unsqueeze(0), f, f_col)
+        probe = _far_field_faces27(stream27_roll(f_col), box.u_in)
+        return bounce_back_cells_27(probe, mask), probe
+
+    return step
+
+
+def _shell_acc(
+    rho: torch.Tensor,
+    cz: int,
+    ays: torch.Tensor,
+    axs: torch.Tensor,
+    bin_idx: torch.Tensor,
+    bins: int,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> torch.Tensor:
+    """Binned centre-plane shell profile of ``rho - 1`` for one state."""
+    out = torch.zeros(bins, dtype=dtype, device=device)
+    return out.index_add(0, bin_idx, rho[cz][ays, axs] - 1.0)
+
+
+@dataclass(frozen=True)
+class CampaignObservables:
+    """Readouts of one :func:`campaign_rollout19` / :func:`campaign_rollout27` run.
+
+    ``window_profile`` / ``window_cd`` are the historical observable
+    (per-step probe mean over ``(window_start, steps]``, Ladd momentum
+    exchange on the pre-bounce probe); ``frames`` holds the campaign
+    snapshot profiles (post-step, post-mass-correction states — the
+    ``FieldSampleReporter`` export phase).
+    """
+
+    window_profile: torch.Tensor
+    window_cd: float
+    frames: dict[int, torch.Tensor]
+    m0: float
+    n_window: int
+
+
+def _run_campaign(
+    box: BoxCase | HullCase,
+    collide: Callable[..., torch.Tensor],
+    mask: torch.Tensor,
+    sem: CampaignSemantics,
+    chain: Callable[..., Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]],
+    initial_f: Callable[[BoxCase | HullCase, torch.Tensor, CampaignSemantics], torch.Tensor],
+    macroscopic: Callable[[torch.Tensor], tuple[torch.Tensor, ...]],
+    force: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+    *,
+    bins: int = 32,
+    chunk: int = 20,
+) -> CampaignObservables:
+    """Shared driver: roll the *sem* chain over ``[1, box.steps]`` and read it out."""
+    from tensorlbm.solver3d import correct_mass3d
+
+    device = torch.device(box.device)
+    cz, ays, axs, bin_idx = _plane_shell(mask, bins)
+    counts = torch.bincount(bin_idx, minlength=bins).clamp(min=1).double()
+    frames = sorted(sem.observe_frames)
+    for s in frames:
+        if s > box.steps:
+            raise ValueError(f"observe frame {s} is beyond box.steps={box.steps}")
+    step = chain(box, collide, mask, sem)
+    with torch.no_grad():
+        f = initial_f(box, mask, sem)
+        m0 = float(f.sum())  # campaign initial mass (scan_runner.py:802)
+        prof = torch.zeros(bins, dtype=torch.float64, device=device)
+        frame_profs = {s: torch.zeros(bins, dtype=torch.float64, device=device) for s in frames}
+        fx = 0.0
+        n_w = 0
+        s = 0
+        while s < box.steps:
+            n = min(chunk, box.steps - s)
+            for _ in range(n):
+                f, probe = step(f)
+                s += 1
+                if s > box.window_start:
+                    fx += float(force(probe, mask)[0])
+                    rho = macroscopic(probe)[0]
+                    prof = prof.index_add(0, bin_idx, (rho[cz][ays, axs] - 1.0).double())
+                    n_w += 1
+                if sem.correct_at(s):
+                    f = correct_mass3d(f, m0)
+                if s in frame_profs:
+                    # campaign export phase: post-step, post-correction, post-bounce
+                    rho = macroscopic(f)[0]
+                    frame_profs[s] = frame_profs[s].index_add(
+                        0, bin_idx, (rho[cz][ays, axs] - 1.0).double()
+                    )
+    window_profile = prof / n_w / counts
+    cd = fx / n_w / (0.5 * box.u_in**2 * box.ref_area(mask))
+    return CampaignObservables(
+        window_profile=window_profile,
+        window_cd=cd,
+        frames={s: p / counts for s, p in frame_profs.items()},
+        m0=m0,
+        n_window=n_w,
+    )
+
+
+def campaign_rollout19(
+    box: BoxCase | HullCase,
+    collide: Callable[..., torch.Tensor],
+    sem: CampaignSemantics = LEGACY_SEMANTICS,
+    *,
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+    chunk: int = 20,
+) -> CampaignObservables:
+    """Run the D3Q19 *sem* chain and collect window + snapshot observables."""
+    mask = _case_mask(box) if mask is None else mask
+    return _run_campaign(
+        box,
+        collide,
+        mask,
+        sem,
+        campaign_chain19,
+        _initial_f19,
+        macroscopic3d,
+        obstacle_force,
+        bins=bins,
+        chunk=chunk,
+    )
+
+
+def campaign_rollout27(
+    box: BoxCase | HullCase,
+    collide: Callable[..., torch.Tensor],
+    sem: CampaignSemantics = LEGACY27_SEMANTICS,
+    *,
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+    chunk: int = 20,
+) -> CampaignObservables:
+    """Run the D3Q27 *sem* chain and collect window + snapshot observables."""
+    from tensorlbm.d3q27 import macroscopic27
+
+    mask = _case_mask(box) if mask is None else mask
+    return _run_campaign(
+        box,
+        collide,
+        mask,
+        sem,
+        campaign_chain27,
+        _initial_f27,
+        macroscopic27,
+        obstacle_force27,
+        bins=bins,
+        chunk=chunk,
+    )
+
+
+def _sem_profile(out: CampaignObservables, sem: CampaignSemantics) -> torch.Tensor:
+    """The *sem*-selected profile of a finished run (window mean or frames)."""
+    if sem.observe_frames:
+        return torch.stack([out.frames[s] for s in sem.observe_frames]).mean(dim=0)
+    return out.window_profile
+
+
+def press_profile_campaign(
+    box: BoxCase | HullCase,
+    re: float,
+    rates: Mapping[str, float] | None = None,
+    sem: CampaignSemantics = CAMPAIGN_SEMANTICS,
+    *,
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+    chunk: int = 20,
+) -> tuple[torch.Tensor, float]:
+    """D3Q19-MRT shell-pressure profile and windowed C_D under *sem*.
+
+    The stage-6 counterpart of :func:`press_profile`: same MRT family and
+    rates, same shell binning, but the chain definitions (initialisation,
+    collide-in-solid, outlet, mass correction, snapshot readout) follow
+    *sem* — :data:`CAMPAIGN_SEMANTICS` reproduces the production campaign
+    pipeline definition.  Returns the *sem*-selected profile (window mean,
+    or the mean of the campaign snapshot frames) and the windowed Ladd C_D
+    (kept in the historical convention so C_D-neutrality comparisons stay
+    like-for-like).
+    """
+    rates = dict(DEFAULT_MRT_RATES) if rates is None else dict(rates)
+    collide = _rate_collide(box.tau_of_re(re), rates)
+    out = campaign_rollout19(box, collide, sem, mask=mask, bins=bins, chunk=chunk)
+    return _sem_profile(out, sem), out.window_cd
+
+
+def press_profile27_campaign(
+    box: BoxCase | HullCase,
+    re: float,
+    rates: Mapping[str, float] | None = None,
+    sem: CampaignSemantics = CAMPAIGN_SEMANTICS,
+    *,
+    family: str = "cumulant",
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+    chunk: int = 20,
+) -> tuple[torch.Tensor, float]:
+    """D3Q27 counterpart of :func:`press_profile_campaign`."""
+    rates = _default27_rates(family) if rates is None else dict(rates)
+    collide = _rate27_collide(box.tau_of_re(re), rates, family)
+    out = campaign_rollout27(box, collide, sem, mask=mask, bins=bins, chunk=chunk)
+    return _sem_profile(out, sem), out.window_cd
+
+
+def _diff_campaign_profile(
+    box: BoxCase | HullCase,
+    re: float,
+    rates: dict[str, torch.Tensor],
+    sem: CampaignSemantics,
+    mask: torch.Tensor,
+    bins: int,
+    block: int,
+    chain: Callable[..., Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]],
+    collide_of: Callable[[float, dict[str, torch.Tensor]], Callable[..., torch.Tensor]],
+    initial_f: Callable[[BoxCase | HullCase, torch.Tensor, CampaignSemantics], torch.Tensor],
+    macroscopic: Callable[[torch.Tensor], tuple[torch.Tensor, ...]],
+) -> torch.Tensor:
+    """Differentiable *sem* profile at *re* (block-checkpointed window).
+
+    Mirrors the ``diff_profile`` closure of :func:`calibrate_mrt_rates` /
+    :func:`calibrate_collision27`: no-grad transient (with the *sem* mass
+    corrections), then the window ``(window_start, steps]`` differentiated
+    through ``block``-step checkpoints.  The readout follows ``sem``: the
+    per-step probe mean (legacy) or the campaign snapshot frames listed in
+    ``sem.observe_frames`` (each must fall inside the window; the final-step
+    frame is the campaign export definition).
+    """
+    from functools import partial
+
+    from torch.utils.checkpoint import checkpoint
+
+    from tensorlbm.solver3d import correct_mass3d
+
+    device = torch.device(box.device)
+    cz, ays, axs, bin_idx = _plane_shell(mask, bins)
+    counts = torch.bincount(bin_idx, minlength=bins).clamp(min=1).double()
+    window = box.steps - box.window_start
+    frames = sorted(sem.observe_frames)
+    for s in frames:
+        if not box.window_start < s <= box.steps:
+            raise ValueError(
+                f"observe frame {s} must lie inside the differentiable window "
+                f"({box.window_start}, {box.steps}]"
+            )
+    step = chain(box, collide_of(re, rates), mask, sem)
+
+    with torch.no_grad():
+        f = initial_f(box, mask, sem)
+        m0 = float(f.sum())
+        for s in range(1, box.window_start + 1):
+            f, _probe = step(f)
+            if sem.correct_at(s):
+                f = correct_mass3d(f, m0)
+        f = f.detach()
+
+    def run_block(f: torch.Tensor, s0: int) -> tuple[torch.Tensor, torch.Tensor]:
+        acc = torch.zeros(bins, dtype=box.dtype, device=device)
+        for k in range(block):
+            f, probe = step(f)
+            s = s0 + k + 1
+            if sem.correct_at(s):
+                f = correct_mass3d(f, m0)
+            if frames:
+                if s in frames:
+                    rho = macroscopic(f)[0]  # post-correction export state
+                    acc = acc + _shell_acc(rho, cz, ays, axs, bin_idx, bins, box.dtype, device)
+            else:
+                rho = macroscopic(probe)[0]
+                acc = acc + _shell_acc(rho, cz, ays, axs, bin_idx, bins, box.dtype, device)
+        return f, acc
+
+    total = torch.zeros(bins, dtype=box.dtype, device=device)
+    for b in range(window // block):
+        f, acc = checkpoint(
+            partial(run_block, s0=box.window_start + b * block), f, use_reentrant=False
+        )
+        total = total + acc
+    n_avg = float(len(frames)) if frames else float(window)
+    return (total.double() / n_avg) / counts
+
+
+@dataclass(frozen=True)
+class CampaignRateCalibResult:
+    """Outcome of :func:`calibrate_mrt_rates_campaign` (stage 6)."""
+
+    sem: CampaignSemantics
+    rates: dict[str, float]
+    loss_history: list[float] = field(default_factory=list)
+    eval: dict[str, dict[str, float]] = field(default_factory=dict)
+
+
+def _evaluate_campaign(
+    box: BoxCase | HullCase,
+    sem: CampaignSemantics,
+    mask: torch.Tensor,
+    bins: int,
+    targets: Mapping[float, torch.Tensor],
+    final_rates: Mapping[str, float],
+    press: Callable[..., tuple[torch.Tensor, float]],
+) -> dict[str, dict[str, float]]:
+    """Before/after evaluation: frame + window profile gaps and C_D, per Re."""
+    sem_win = sem.with_frames()
+    evaluation: dict[str, dict[str, float]] = {}
+    for re, t in targets.items():
+        n = torch.linalg.vector_norm(t)
+        p0, cd0 = press(box, re, None, sem, mask=mask, bins=bins)
+        p1, cd1 = press(box, re, dict(final_rates), sem, mask=mask, bins=bins)
+        w0, _ = press(box, re, None, sem_win, mask=mask, bins=bins)
+        w1, _ = press(box, re, dict(final_rates), sem_win, mask=mask, bins=bins)
+        evaluation[f"{re:g}"] = {
+            "press_before": float(torch.linalg.vector_norm(p0 - t) / n),
+            "press_after": float(torch.linalg.vector_norm(p1 - t) / n),
+            "window_before": float(torch.linalg.vector_norm(w0 - t) / n),
+            "window_after": float(torch.linalg.vector_norm(w1 - t) / n),
+            "cd_before": cd0,
+            "cd_after": cd1,
+        }
+    return evaluation
+
+
+def calibrate_mrt_rates_campaign(
+    targets: Mapping[float, torch.Tensor],
+    box: BoxCase | HullCase,
+    sem: CampaignSemantics = CAMPAIGN_SEMANTICS,
+    *,
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+    iters: int = 15,
+    lr: float = 0.03,
+    bounds: tuple[float, float] = (0.5, 2.0),
+    block: int = 25,
+    log_every: int = 0,
+) -> CampaignRateCalibResult:
+    """Stage-6 :func:`calibrate_mrt_rates` under campaign semantics *sem*.
+
+    Same protocol (Adam on the raw rates, clamped to *bounds*, loss = mean
+    squared relative L2 against the targets, block-checkpointed
+    differentiable window) on the *sem* chain; ``sem.observe_frames``
+    selects the export definition the loss reads — pass the campaign
+    snapshot step(s) to fit the production observable definition.
+    """
+    device = torch.device(box.device)
+    mask = _case_mask(box) if mask is None else mask
+    window = box.steps - box.window_start
+    if window % block:
+        raise ValueError(f"window {window} not divisible by block {block}")
+    tgt = {re: t.to(device=device, dtype=torch.float64) for re, t in targets.items()}
+    tnorm = {re: float(torch.linalg.vector_norm(t) ** 2) for re, t in tgt.items()}
+
+    rates = {
+        k: torch.tensor(v, dtype=box.dtype, device=device, requires_grad=True)
+        for k, v in DEFAULT_MRT_RATES.items()
+    }
+
+    def _collide_of(re: float, r: dict[str, torch.Tensor]) -> Callable[..., torch.Tensor]:
+        return _rate_collide(box.tau_of_re(re), r)
+
+    def diff_profile(re: float) -> torch.Tensor:
+        return _diff_campaign_profile(
+            box,
+            re,
+            rates,
+            sem,
+            mask,
+            bins,
+            block,
+            campaign_chain19,
+            _collide_of,
+            _initial_f19,
+            macroscopic3d,
+        )
+
+    opt = torch.optim.Adam(rates.values(), lr=lr)
+    hist: list[float] = []
+    for it in range(iters):
+        opt.zero_grad(set_to_none=True)
+        losses = [((diff_profile(re) - t) ** 2).sum() / tnorm[re] for re, t in tgt.items()]
+        total = torch.stack(losses).mean()
+        if not math.isfinite(float(total.detach())):
+            print(f"mrt-campaign: rollout diverged at iter {it}; stopping", flush=True)
+            break
+        torch.autograd.backward(total)
+        opt.step()
+        with torch.no_grad():
+            for r in rates.values():
+                r.clamp_(*bounds)
+        hist.append(float(total.detach()))
+        if log_every and it % log_every == 0:
+            cur = {k: round(float(v.detach()), 4) for k, v in rates.items()}
+            print(f"mrt-camp it{it:02d} loss={hist[-1]:.6f} {cur}", flush=True)
+
+    final = {k: float(v.detach()) for k, v in rates.items()}
+
+    def _press(
+        b: BoxCase | HullCase,
+        re: float,
+        r: Mapping[str, float] | None,
+        s: CampaignSemantics,
+        *,
+        mask: torch.Tensor | None = None,
+        bins: int = 32,
+    ) -> tuple[torch.Tensor, float]:
+        return press_profile_campaign(
+            b, re, None if r is None else dict(r), s, mask=mask, bins=bins
+        )
+
+    evaluation = _evaluate_campaign(box, sem, mask, bins, tgt, final, _press)
+    return CampaignRateCalibResult(sem=sem, rates=final, loss_history=hist, eval=evaluation)
+
+
+@dataclass(frozen=True)
+class CampaignCollision27CalibResult:
+    """Outcome of :func:`calibrate_collision27_campaign` (stage-6 control)."""
+
+    family: str
+    sem: CampaignSemantics
+    rates: dict[str, float]
+    loss_history: list[float] = field(default_factory=list)
+    eval: dict[str, dict[str, float]] = field(default_factory=dict)
+
+
+def calibrate_collision27_campaign(
+    targets: Mapping[float, torch.Tensor],
+    box: BoxCase | HullCase,
+    sem: CampaignSemantics = CAMPAIGN_SEMANTICS,
+    *,
+    family: str = "cumulant",
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+    iters: int = 15,
+    lr: float = 0.03,
+    bounds: tuple[float, float] = (0.6, 1.6),
+    block: int = 25,
+    log_every: int = 0,
+) -> CampaignCollision27CalibResult:
+    """Stage-6 :func:`calibrate_collision27` under campaign semantics *sem*.
+
+    The D3Q27 control: same guarded protocol (NaN revert-and-stop, tighter
+    default bounds — 27-stencil ghost-rate calibration is not C_D-neutral,
+    stage 5) on the *sem* chain.  Only the knobs expressible on the 27 chain
+    apply (initialisation, collide-in-solid, mass correction, snapshot
+    readout; the outlet is the production full copy either way).
+    """
+    from tensorlbm.d3q27 import macroscopic27
+
+    if family not in COLLISION27_FAMILIES:
+        raise ValueError(f"family must be one of {COLLISION27_FAMILIES}, got {family!r}")
+    device = torch.device(box.device)
+    mask = _case_mask(box) if mask is None else mask
+    window = box.steps - box.window_start
+    if window % block:
+        raise ValueError(f"window {window} not divisible by block {block}")
+    tgt = {re: t.to(device=device, dtype=torch.float64) for re, t in targets.items()}
+    tnorm = {re: float(torch.linalg.vector_norm(t) ** 2) for re, t in tgt.items()}
+    defaults = _default27_rates(family)
+
+    rates = {
+        k: torch.tensor(v, dtype=box.dtype, device=device, requires_grad=True)
+        for k, v in defaults.items()
+    }
+
+    def _collide_of(re: float, r: dict[str, torch.Tensor]) -> Callable[..., torch.Tensor]:
+        return _rate27_collide(box.tau_of_re(re), r, family)
+
+    def diff_profile(re: float) -> torch.Tensor:
+        return _diff_campaign_profile(
+            box,
+            re,
+            rates,
+            sem,
+            mask,
+            bins,
+            block,
+            campaign_chain27,
+            _collide_of,
+            _initial_f27,
+            macroscopic27,
+        )
+
+    opt = torch.optim.Adam(rates.values(), lr=lr)
+    hist: list[float] = []
+    last_good = dict(defaults)
+    for it in range(iters):
+        opt.zero_grad(set_to_none=True)
+        losses = [((diff_profile(re) - t) ** 2).sum() / tnorm[re] for re, t in tgt.items()]
+        total = torch.stack(losses).mean()
+        if not math.isfinite(float(total.detach())):
+            with torch.no_grad():
+                for k, r in rates.items():
+                    r.fill_(last_good[k])
+            print(
+                f"{family}-campaign: rollout diverged at iter {it}; "
+                f"reverted to last finite rates {last_good}",
+                flush=True,
+            )
+            break
+        torch.autograd.backward(total)
+        opt.step()
+        with torch.no_grad():
+            for r in rates.values():
+                r.clamp_(*bounds)
+            last_good = {k: float(v.detach()) for k, v in rates.items()}
+        hist.append(float(total.detach()))
+        if log_every and it % log_every == 0:
+            cur = {k: round(float(v.detach()), 4) for k, v in rates.items()}
+            print(f"{family}-camp it{it:02d} loss={hist[-1]:.6f} {cur}", flush=True)
+
+    final = {k: float(v.detach()) for k, v in rates.items()}
+
+    def _press(
+        b: BoxCase | HullCase,
+        re: float,
+        r: Mapping[str, float] | None,
+        s: CampaignSemantics,
+        *,
+        mask: torch.Tensor | None = None,
+        bins: int = 32,
+    ) -> tuple[torch.Tensor, float]:
+        rr = None if r is None else dict(r)
+        return press_profile27_campaign(b, re, rr, s, family=family, mask=mask, bins=bins)
+
+    evaluation = _evaluate_campaign(box, sem, mask, bins, tgt, final, _press)
+    return CampaignCollision27CalibResult(
+        family=family, sem=sem, rates=final, loss_history=hist, eval=evaluation
+    )
