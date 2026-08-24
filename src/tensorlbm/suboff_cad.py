@@ -1313,7 +1313,7 @@ def suboff_statistics(
         nodes_v = _variant_nodes_ft(config)
         k_sail_axial = (nodes_v[2] - nodes_v[1]) / (_HULL_NODES_FT[2] - _HULL_NODES_FT[1])
         k_fin_axial = (nodes_v[3] - nodes_v[2]) / (_HULL_NODES_FT[3] - _HULL_NODES_FT[2])
-    appendage: dict[str, float | str] = {
+    appendage: dict[str, float | str | dict[str, float]] = {
         "sail_scale": config.sail_scale,
         "fin_scale": config.fin_scale,
     }
