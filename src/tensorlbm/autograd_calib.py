@@ -76,19 +76,31 @@ from tensorlbm.turbulence import (
 
 __all__ = [
     "BoxCase",
+    "CUMULANT27_RATES",
+    "COLLISION27_FAMILIES",
     "CalibResult",
-    "COLLISION_FAMILIES",
+    "Collision27CalibResult",
     "DragHistory",
     "DragTarget",
     "HullCase",
+    "MRT27_RATES",
     "SGS_MODELS",
     "bounded_drag",
     "calibrate",
+    "calibrate_collision27",
     "cd_from_force",
+    "collide_cumulant27_diffable",
     "cs_power",
     "drag_targets_from_sidecars",
     "evaluate",
     "load_drag_history",
+    "obstacle_force27",
+    "press_profile",
+    "press_profile27",
+    "rate_fd_response",
+    "rate_fd_response27",
+    "rollout27",
+    "step27",
     "synthetic_targets",
     "windowed_cd",
 ]
@@ -1349,3 +1361,566 @@ def calibrate_mrt_rates(
             "cd_after": cd1,
         }
     return RateCalibResult(rates=final, loss_history=hist, eval=evaluation)
+
+
+# ---------------------------------------------------------------------------
+# B3 stage 5: differentiable D3Q27 collision families (cumulant / MRT)
+# ---------------------------------------------------------------------------
+#
+# Stage 4 (``calibrate_mrt_rates``) left the held-out Re = 148 shell-pressure
+# residual essentially untouched (0.0709 -> 0.0690) and concluded the residual
+# is *structural*: the production campaign (``scan_suboff_re_drag_20260821``)
+# runs a D3Q19 cumulant collision, and the three-rate D3Q19 MRT family cannot
+# represent its low-Re behaviour.  Stage 5 swaps the collision family instead
+# of fitting more rates: the two D3Q27 operators of the repo —
+#
+# * ``cumulant`` — :func:`tensorlbm.cumulant.collide_cumulant_d3q27`, the
+#   central-moment/cumulant operator with bulk (``omega_b``), 3rd-order
+#   (``omega_odd``) and >=4th-order (``omega_even``) ghost-mode rates.  This
+#   is the family the stage-4 conclusions named ("chasing it requires a
+#   differentiable cumulant target"): same operator class as production, one
+#   isotropy order up.
+# * ``mrt`` — :func:`tensorlbm.d3q27.collide_mrt27` with rates
+#   ``s_e / s_eps / s_q`` (``s_pi`` follows ``s_e``, the historical default),
+#   the D3Q27 analogue of the stage-4 family.
+#
+# The stage-4 API above is untouched; everything here is new surface.
+
+#: Production-default D3Q27 cumulant rates (``collide_cumulant_d3q27`` defaults).
+CUMULANT27_RATES: dict[str, float] = {"omega_b": 1.0, "omega_odd": 1.0, "omega_even": 1.0}
+
+#: D3Q27 MRT rates at the historical defaults of :func:`tensorlbm.d3q27.collide_mrt27`.
+MRT27_RATES: dict[str, float] = {"s_e": 1.19, "s_eps": 1.4, "s_q": 1.2}
+
+#: Supported D3Q27 collision families for the stage-5 calibration path.
+COLLISION27_FAMILIES: tuple[str, ...] = ("cumulant", "mrt")
+
+
+def _default27_rates(family: str) -> dict[str, float]:
+    if family == "cumulant":
+        return dict(CUMULANT27_RATES)
+    if family == "mrt":
+        return dict(MRT27_RATES)
+    raise ValueError(f"family must be one of {COLLISION27_FAMILIES}, got {family!r}")
+
+
+def _central_to_cumulant_diffable(k: torch.Tensor) -> torch.Tensor:
+    """Autograd-clean rewrite of :func:`tensorlbm.cumulant._central_to_cumulant`.
+
+    The original builds its output with ``clone`` + per-index assignment;
+    the saved-for-backward slice views of that clone are then modified by
+    later assignments (6th order reads the 4th-order results), which aborts
+    backward with an in-place-modified error.  This version writes the same
+    arithmetic in static-index form (read-only component access + one
+    ``torch.cat``), so gradients flow; for float and tensor inputs the result
+    is bitwise identical to the original (guarded by test).
+    """
+    k200, k020, k002 = k[4], k[5], k[6]
+    k110, k101, k011 = k[7], k[8], k[9]
+    c17 = k[17] - k200 * k020 - 2.0 * k110 * k110
+    c18 = k[18] - k200 * k002 - 2.0 * k101 * k101
+    c19 = k[19] - k020 * k002 - 2.0 * k011 * k011
+    c20 = k[20] - k200 * k011 - 2.0 * k101 * k110
+    c21 = k[21] - k020 * k101 - 2.0 * k110 * k011
+    c22 = k[22] - k002 * k110 - 2.0 * k101 * k011
+    c23 = k[23] - k200 * k[13] - 2.0 * k110 * k[16]
+    c24 = k[24] - k200 * k[15] - 2.0 * k101 * k[16]
+    c25 = k[25] - k020 * k[14] - 2.0 * k011 * k[16]
+    c26 = (
+        k[26]
+        - k200 * c19
+        - k020 * c18
+        - k002 * c17
+        - 2.0 * (k110 * c22 + k101 * c21 + k011 * c20)
+        + 2.0 * k200 * k020 * k002
+        + 4.0 * k110 * k101 * k011
+        + 2.0 * k110 * k110 * k002
+        + 2.0 * k101 * k101 * k020
+        + 2.0 * k011 * k011 * k200
+    )
+    return torch.cat(
+        [
+            k[0:17],
+            c17[None],
+            c18[None],
+            c19[None],
+            c20[None],
+            c21[None],
+            c22[None],
+            c23[None],
+            c24[None],
+            c25[None],
+            c26[None],
+        ],
+        dim=0,
+    )
+
+
+def _cumulant_to_central_diffable(C: torch.Tensor) -> torch.Tensor:
+    """Autograd-clean inverse of :func:`_central_to_cumulant_diffable`.
+
+    Same arithmetic as :func:`tensorlbm.cumulant._cumulant_to_central` in
+    static-index form (bitwise identical, guarded by test).
+    """
+    C200, C020, C002 = C[4], C[5], C[6]
+    C110, C101, C011 = C[7], C[8], C[9]
+    k17 = C[17] + C200 * C020 + 2.0 * C110 * C110
+    k18 = C[18] + C200 * C002 + 2.0 * C101 * C101
+    k19 = C[19] + C020 * C002 + 2.0 * C011 * C011
+    k20 = C[20] + C200 * C011 + 2.0 * C101 * C110
+    k21 = C[21] + C020 * C101 + 2.0 * C110 * C011
+    k22 = C[22] + C002 * C110 + 2.0 * C101 * C011
+    k23 = C[23] + C200 * C[13] + 2.0 * C110 * C[16]
+    k24 = C[24] + C200 * C[15] + 2.0 * C101 * C[16]
+    k25 = C[25] + C020 * C[14] + 2.0 * C011 * C[16]
+    k26 = (
+        C[26]
+        + C200 * C[19]
+        + C020 * C[18]
+        + C002 * C[17]
+        + 2.0 * (C110 * C[22] + C101 * C[21] + C011 * C[20])
+        - 2.0 * C200 * C020 * C002
+        - 4.0 * C110 * C101 * C011
+        - 2.0 * C110 * C110 * C002
+        - 2.0 * C101 * C101 * C020
+        - 2.0 * C011 * C011 * C200
+    )
+    return torch.cat(
+        [
+            C[0:17],
+            k17[None],
+            k18[None],
+            k19[None],
+            k20[None],
+            k21[None],
+            k22[None],
+            k23[None],
+            k24[None],
+            k25[None],
+            k26[None],
+        ],
+        dim=0,
+    )
+
+
+def _relax_cumulants_diffable(
+    C: torch.Tensor,
+    omega_shear: float | torch.Tensor,
+    omega_bulk: float | torch.Tensor,
+    omega_3: float | torch.Tensor,
+    omega_46: float | torch.Tensor,
+) -> torch.Tensor:
+    """Autograd-clean rewrite of :func:`tensorlbm.cumulant._relax_cumulants_d3q27`.
+
+    Same trace/deviatoric split and per-order rates, written without
+    index assignment so tensor rates keep their gradients.  ``omega_4/5/6``
+    share one rate here (the production default ties them to ``omega_even``).
+    """
+    Cxx, Cyy, Czz = C[4], C[5], C[6]
+    Cxy, Cxz, Cyz = C[7], C[8], C[9]
+    trace = Cxx + Cyy + Czz
+    trace_s = (1.0 - omega_bulk) * trace
+    n4 = (1.0 - omega_shear) * (Cxx - trace / 3.0) + trace_s / 3.0
+    n5 = (1.0 - omega_shear) * (Cyy - trace / 3.0) + trace_s / 3.0
+    n6 = (1.0 - omega_shear) * (Czz - trace / 3.0) + trace_s / 3.0
+    n7 = (1.0 - omega_shear) * Cxy
+    n8 = (1.0 - omega_shear) * Cxz
+    n9 = (1.0 - omega_shear) * Cyz
+    n3 = (1.0 - omega_3) * C[10:17]
+    n46 = (1.0 - omega_46) * C[17:26]
+    n26 = (1.0 - omega_46) * C[26]
+    return torch.cat(
+        [C[0:4], n4[None], n5[None], n6[None], n7[None], n8[None], n9[None], n3, n46, n26[None]],
+        dim=0,
+    )
+
+
+def collide_cumulant27_diffable(
+    f: torch.Tensor,
+    tau: float | torch.Tensor,
+    omega_b: float | torch.Tensor = 1.0,
+    omega_odd: float | torch.Tensor = 1.0,
+    omega_even: float | torch.Tensor = 1.0,
+) -> torch.Tensor:
+    """Differentiable D3Q27 cumulant collision (stage-5 calibration family).
+
+    Mirrors :func:`tensorlbm.cumulant.collide_cumulant_d3q27` (``C_s = 0``)
+    with the nonlinear transforms rewritten in autograd-safe form, so the
+    ghost-mode rates — and everything else in the chain — carry gradients.
+    Bitwise identical to the original for float rates (guarded by test);
+    unlike it, backward through the operator works.
+
+    Args:
+        f: Distribution tensor, shape ``(27, nz, ny, nx)``.
+        tau: Shear relaxation time (sets ``omega_shear = 1/tau``).
+        omega_b: Bulk (trace) relaxation rate.
+        omega_odd: 3rd-order ghost-mode rate.
+        omega_even: 4th/5th/6th-order ghost-mode rate.
+
+    Returns:
+        Post-collision distribution, shape ``(27, nz, ny, nx)``.
+    """
+    from tensorlbm.cumulant import _get_matrices, _to_central, _to_raw
+    from tensorlbm.d3q27 import equilibrium27, macroscopic27
+
+    omega = 1.0 / tau
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    f_neq = f - feq
+    M, M_inv = _get_matrices(f.device, f.dtype)
+    nz, ny, nx = f_neq.shape[1], f_neq.shape[2], f_neq.shape[3]
+    m_neq = (M @ f_neq.reshape(27, -1)).reshape(27, nz, ny, nx)
+    k_neq = _to_central(m_neq, ux, uy, uz)
+    C_neq = _central_to_cumulant_diffable(k_neq)
+    C_star = _relax_cumulants_diffable(
+        C_neq,
+        omega_shear=omega,
+        omega_bulk=omega_b,
+        omega_3=omega_odd,
+        omega_46=omega_even,
+    )
+    k_star = _cumulant_to_central_diffable(C_star)
+    m_star = _to_raw(k_star, ux, uy, uz)
+    f_neq_star = (M_inv @ m_star.reshape(27, -1)).reshape(27, nz, ny, nx)
+    return feq + f_neq_star
+
+
+def obstacle_force27(f_probe: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    """Momentum-exchange force on the bounce-back obstacle, D3Q27 (Ladd).
+
+    Same convention as :func:`tensorlbm.autograd_path.obstacle_force`:
+    ``F_alpha = 2 sum_{x in solid} sum_q c_{q,alpha} f[q, x]`` on the
+    post-stream / pre-bounce-back probe state.
+    """
+    from tensorlbm.d3q27 import C as C27
+
+    c = C27.to(device=f_probe.device, dtype=f_probe.dtype)
+    momentum = (f_probe * mask.to(dtype=f_probe.dtype)).sum(dim=(1, 2, 3))
+    return 2.0 * torch.matmul(momentum, c)
+
+
+def _far_field_faces27(f: torch.Tensor, u_in: float) -> torch.Tensor:
+    """Free-stream faces without bounce-back: the probe keeps its phase.
+
+    Applies exactly the six-plane closure of
+    :func:`tensorlbm.boundaries_d3q27.far_field_bc_27` — equilibrium inlet
+    (x = 0), zero-gradient outlet (x = nx-1), equilibrium lateral faces —
+    but stops before the obstacle bounce-back so the returned state is the
+    post-stream / post-BC / pre-bounce-back probe (the production sampling
+    phase).
+    """
+    from tensorlbm.d3q27 import equilibrium27
+
+    rho1 = torch.ones((f.shape[1], f.shape[2], f.shape[3]), dtype=f.dtype, device=f.device)
+    feq = equilibrium27(
+        rho1, torch.full_like(rho1, u_in), torch.zeros_like(rho1), torch.zeros_like(rho1)
+    )
+    out = f.clone()
+    out[:, :, :, 0] = feq[:, :, :, 0]  # inlet (free stream)
+    out[:, :, :, -1] = out[:, :, :, -2]  # outlet (zero gradient)
+    out[:, 0, :, :] = feq[:, 0, :, :]  # y- lateral
+    out[:, -1, :, :] = feq[:, -1, :, :]  # y+ lateral
+    out[:, :, 0, :] = feq[:, :, 0, :]  # z- lateral
+    out[:, :, -1, :] = feq[:, :, -1, :]  # z+ lateral
+    return out
+
+
+def step27(
+    f: torch.Tensor,
+    tau: float | torch.Tensor,
+    mask: torch.Tensor,
+    collide: Callable[..., torch.Tensor],
+    u_in: float,
+    *,
+    return_probe: bool = False,
+) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+    """One autograd-clean D3Q27 bounded step.
+
+    The D3Q27 counterpart of
+    :func:`tensorlbm.autograd_path.differentiable_step` with the HullCase
+    boundary set: collide (NoDynamics inside the solid) -> stream
+    (:func:`tensorlbm.d3q27.stream27_roll`) -> free-stream faces ->
+    full-way bounce-back, with the probe returned between the faces and the
+    bounce-back (the production sampling phase).
+    """
+    from tensorlbm.boundaries_d3q27 import bounce_back_cells_27
+    from tensorlbm.d3q27 import stream27_roll
+
+    f_col = torch.where(mask.unsqueeze(0), f, collide(f, tau))
+    fs = stream27_roll(f_col)
+    fs = _far_field_faces27(fs, u_in)
+    if return_probe:
+        return bounce_back_cells_27(fs, mask), fs
+    return bounce_back_cells_27(fs, mask)
+
+
+def rollout27(
+    f: torch.Tensor,
+    n_steps: int,
+    tau: float | torch.Tensor,
+    mask: torch.Tensor,
+    collide: Callable[..., torch.Tensor],
+    u_in: float,
+    *,
+    return_probes: bool = False,
+    probe_start: int = 0,
+) -> torch.Tensor | tuple[torch.Tensor, list[torch.Tensor]]:
+    """Roll out :func:`step27` for *n_steps*, keeping the autograd graph.
+
+    With ``return_probes=True`` collects the per-step pre-bounce-back probe
+    states from step ``probe_start`` on (windowed observables; see
+    :func:`tensorlbm.autograd_path.rollout` for the D3Q19 semantics).
+    """
+    if return_probes and not 0 <= probe_start < max(n_steps, 1):
+        raise ValueError(f"probe_start must be in [0, {n_steps}) when return_probes=True")
+    probes: list[torch.Tensor] | None = [] if return_probes else None
+    for step in range(n_steps):
+        if return_probes:
+            f, probe = step27(f, tau, mask, collide, u_in, return_probe=True)
+            if step >= probe_start:
+                probes.append(probe)
+        else:
+            f = step27(f, tau, mask, collide, u_in)
+    if return_probes:
+        return f, probes
+    return f
+
+
+def _rate27_collide(
+    tau: float | torch.Tensor, rates: Mapping[str, Any], family: str
+) -> Callable[..., torch.Tensor]:
+    if family == "cumulant":
+        return lambda f, _t: collide_cumulant27_diffable(
+            f,
+            tau,
+            omega_b=rates["omega_b"],
+            omega_odd=rates["omega_odd"],
+            omega_even=rates["omega_even"],
+        )
+    from tensorlbm.d3q27 import collide_mrt27
+
+    return lambda f, _t: collide_mrt27(
+        f, tau, s_e=rates["s_e"], s_eps=rates["s_eps"], s_q=rates["s_q"], s_pi=rates["s_e"]
+    )
+
+
+@torch.no_grad()
+def press_profile27(
+    box: BoxCase | HullCase,
+    re: float,
+    rates: Mapping[str, float] | None = None,
+    *,
+    family: str = "cumulant",
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+    chunk: int = 20,
+) -> tuple[torch.Tensor, float]:
+    """D3Q27 shell-pressure profile and windowed C_D (stage-5 observable).
+
+    The exact D3Q27 counterpart of :func:`press_profile`: same case window,
+    same centre-plane shell binning (``_plane_shell``), same fp64 profile
+    reduction on the post-stream / pre-bounce-back probe — only the
+    collision family and the 27-population rollout change.
+
+    Returns:
+        ``(profile, cd)``: fp64 tensor ``(bins,)`` of window-mean ``rho - 1``
+        over shell cells, and the windowed drag coefficient
+        (``obstacle_force27`` normalisation).
+    """
+    from tensorlbm.d3q27 import equilibrium27, macroscopic27
+
+    rates = _default27_rates(family) if rates is None else dict(rates)
+    device = torch.device(box.device)
+    mask = _case_mask(box) if mask is None else mask
+    tau = box.tau_of_re(re)
+    collide = _rate27_collide(tau, rates, family)
+    cz, ays, axs, bin_idx = _plane_shell(mask, bins)
+    counts = torch.bincount(bin_idx, minlength=bins).clamp(min=1).double()
+
+    rho0 = torch.ones((box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+    u = torch.zeros((3, box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+    u[0] = box.u_in
+    f = equilibrium27(rho0, u[0], u[1], u[2])
+    f = rollout27(f, box.window_start, tau, mask, collide, box.u_in)
+    n_p = 0
+    fx = 0.0
+    prof = torch.zeros(bins, dtype=torch.float64, device=device)
+    while n_p < box.steps - box.window_start:
+        n = min(chunk, box.steps - box.window_start - n_p)
+        f, probes = rollout27(f, n, tau, mask, collide, box.u_in, return_probes=True, probe_start=0)
+        for p in probes:
+            fx += float(obstacle_force27(p, mask)[0])
+            rho = macroscopic27(p)[0]
+            prof = prof.index_add(0, bin_idx, (rho[cz][ays, axs] - 1.0).double())
+        n_p += n
+        del probes
+    n_avg = float(n_p)
+    return prof / n_avg / counts, fx / n_avg / (0.5 * box.u_in**2 * box.ref_area(mask))
+
+
+def rate_fd_response27(
+    box: BoxCase | HullCase,
+    re: float,
+    rates: Mapping[str, float] | None = None,
+    *,
+    family: str = "cumulant",
+    frac: float = 0.2,
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+) -> dict[str, dict[str, float]]:
+    """Finite-difference identifiability probe of the D3Q27 rates.
+
+    Same protocol as :func:`rate_fd_response`: each rate varied by
+    +-``frac`` in ratio, profile and C_D response per e-fold of rate change.
+    """
+    base = _default27_rates(family) if rates is None else dict(rates)
+    p_ref, cd_ref = press_profile27(box, re, base, family=family, mask=mask, bins=bins)
+    out: dict[str, dict[str, float]] = {}
+    for name, val in base.items():
+        lo, hi = dict(base), dict(base)
+        lo[name], hi[name] = val * (1.0 - frac), val * (1.0 + frac)
+        p_lo, cd_lo = press_profile27(box, re, lo, family=family, mask=mask, bins=bins)
+        p_hi, cd_hi = press_profile27(box, re, hi, family=family, mask=mask, bins=bins)
+        dl = abs(math.log((1.0 + frac) / (1.0 - frac)))
+        out[name] = {
+            "press_per_efold": float(
+                torch.linalg.vector_norm(p_hi - p_lo) / torch.linalg.vector_norm(p_ref)
+            )
+            / dl,
+            "cd_per_efold": abs(math.log(cd_hi / cd_lo)) / dl,
+        }
+    return out
+
+
+@dataclass(frozen=True)
+class Collision27CalibResult:
+    """Outcome of :func:`calibrate_collision27`."""
+
+    family: str
+    rates: dict[str, float]
+    loss_history: list[float] = field(default_factory=list)
+    eval: dict[str, dict[str, float]] = field(default_factory=dict)
+
+    def collide(self, re: float, box: BoxCase | HullCase) -> Callable[..., torch.Tensor]:
+        """Collision operator with the identified rates at *re*."""
+        return _rate27_collide(box.tau_of_re(re), self.rates, self.family)
+
+
+def calibrate_collision27(
+    targets: Mapping[float, torch.Tensor],
+    box: BoxCase | HullCase,
+    *,
+    family: str = "cumulant",
+    mask: torch.Tensor | None = None,
+    bins: int = 32,
+    iters: int = 15,
+    lr: float = 0.03,
+    bounds: tuple[float, float] = (0.5, 2.0),
+    block: int = 25,
+    log_every: int = 0,
+) -> Collision27CalibResult:
+    """Identify D3Q27 collision rates from shell-pressure profiles by backprop.
+
+    The stage-5 counterpart of :func:`calibrate_mrt_rates` with the D3Q27
+    ``family`` (``"cumulant"`` or ``"mrt"``) in place of the D3Q19 MRT:
+    no-grad transient, block-checkpointed differentiable window, in-block
+    profile reduction, Adam on the raw rates clamped to *bounds* after every
+    step.  Loss = mean over targets of the squared relative L2 between
+    simulated and target profiles (non-conserved observable; see the
+    probe-degeneracy note in ``docs/closure_calibration.md``).
+
+    Returns:
+        :class:`Collision27CalibResult`; ``eval`` holds, per target Re, the
+        profile gap and C_D before (family-default rates) and after
+        calibration.
+    """
+    from torch.utils.checkpoint import checkpoint
+
+    from tensorlbm.d3q27 import equilibrium27, macroscopic27
+
+    if family not in COLLISION27_FAMILIES:
+        raise ValueError(f"family must be one of {COLLISION27_FAMILIES}, got {family!r}")
+    device = torch.device(box.device)
+    mask = _case_mask(box) if mask is None else mask
+    window = box.steps - box.window_start
+    if window % block:
+        raise ValueError(f"window {window} not divisible by block {block}")
+    cz, ays, axs, bin_idx = _plane_shell(mask, bins)
+    counts = torch.bincount(bin_idx, minlength=bins).clamp(min=1).double()
+    defaults = _default27_rates(family)
+    tgt = {re: t.to(device=device, dtype=torch.float64) for re, t in targets.items()}
+    tnorm = {re: float(torch.linalg.vector_norm(t) ** 2) for re, t in tgt.items()}
+
+    rates = {
+        k: torch.tensor(v, dtype=box.dtype, device=device, requires_grad=True)
+        for k, v in defaults.items()
+    }
+
+    def diff_profile(re: float) -> torch.Tensor:
+        tau = box.tau_of_re(re)
+        collide = _rate27_collide(tau, rates, family)
+        rho0 = torch.ones((box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+        u = torch.zeros((3, box.nz, box.ny, box.nx), dtype=box.dtype, device=device)
+        u[0] = box.u_in
+        with torch.no_grad():
+            f = equilibrium27(rho0, u[0], u[1], u[2])
+            f = rollout27(f, box.window_start, tau, mask, collide, box.u_in).detach()
+
+        def run_block(f: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+            acc = torch.zeros(bins, dtype=box.dtype, device=device)
+            for _ in range(block):
+                f, probe = step27(f, tau, mask, collide, box.u_in, return_probe=True)
+                rho = macroscopic27(probe)[0]
+                acc = acc.index_add(0, bin_idx, rho[cz][ays, axs] - 1.0)
+            return f, acc
+
+        total = torch.zeros(bins, dtype=box.dtype, device=device)
+        for _ in range(window // block):
+            f, acc = checkpoint(run_block, f, use_reentrant=False)
+            total = total + acc
+        return (total.double() / window) / counts
+
+    opt = torch.optim.Adam(rates.values(), lr=lr)
+    hist: list[float] = []
+    # D3Q27 rates beyond ~1.6-1.9 over-relax the ghost modes and the bounded
+    # rollout diverges (NaN loss, measured on the HullCase n128 campaign
+    # points); the guard reverts to the last finite rates and stops instead
+    # of poisoning the result.  ``loss_history`` records only finite losses.
+    last_good = dict(defaults)
+    for it in range(iters):
+        opt.zero_grad(set_to_none=True)
+        losses = [((diff_profile(re) - t) ** 2).sum() / tnorm[re] for re, t in tgt.items()]
+        total = torch.stack(losses).mean()
+        if not math.isfinite(float(total.detach())):
+            with torch.no_grad():
+                for k, r in rates.items():
+                    r.fill_(last_good[k])
+            print(
+                f"{family}: rollout diverged at iter {it}; "
+                f"reverted to last finite rates {last_good}"
+            )
+            break
+        total.backward()
+        opt.step()
+        with torch.no_grad():
+            for r in rates.values():
+                r.clamp_(*bounds)
+            last_good = {k: float(v.detach()) for k, v in rates.items()}
+        hist.append(float(total.detach()))
+        if log_every and it % log_every == 0:
+            cur = {k: round(float(v.detach()), 4) for k, v in rates.items()}
+            print(f"{family} it{it:02d} loss={hist[-1]:.6f} {cur}")
+
+    final = {k: float(v.detach()) for k, v in rates.items()}
+    evaluation: dict[str, dict[str, float]] = {}
+    for re, t in tgt.items():
+        p0, cd0 = press_profile27(box, re, defaults, family=family, mask=mask, bins=bins)
+        p1, cd1 = press_profile27(box, re, final, family=family, mask=mask, bins=bins)
+        n = torch.linalg.vector_norm(t)
+        evaluation[f"{re:g}"] = {
+            "press_before": float(torch.linalg.vector_norm(p0 - t) / n),
+            "press_after": float(torch.linalg.vector_norm(p1 - t) / n),
+            "cd_before": cd0,
+            "cd_after": cd1,
+        }
+    return Collision27CalibResult(family=family, rates=final, loss_history=hist, eval=evaluation)
