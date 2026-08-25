@@ -31,7 +31,7 @@ from tensorlbm.ai.drag_cond import (
     geometry_channels,
     suboff_geometry_features,
 )
-from tensorlbm.suboff_cad import build_suboff_mask
+from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 
 HULLS = ("bare_hull", "with_sail", "full")
 
@@ -289,3 +289,70 @@ class TestCondFNODrag:
             loss.backward()
             opt.step()
         assert torch.isfinite(loss)
+
+
+class TestSubStarBareEquivalence:
+    """B4 v4 data-closure premise: the sail-disappearance scale s*.
+
+    The sail scales down by similarity about the deck plane; below the
+    largest scale that still captures a voxel centre (measured s* = 0.133
+    at 0.001 resolution, threshold in (0.1333, 0.1335) on the production
+    grid) the with_sail design is bit-identical to the bare hull - the
+    physical basis for the G2b sub-s* bare-equivalent anchors
+    (docs/drag_surrogate_fno_g2_20260824.md, v4 section).
+    """
+
+    LADDER = {
+        0.02: 0,
+        0.05: 0,
+        0.13: 0,
+        0.133: 0,
+        0.134: 1,
+        0.15: 1,
+        0.29: 1,
+        0.30: 2,
+        0.35: 3,
+        0.40: 5,
+    }
+
+    def test_voxel_ladder_pinned(self):
+        for s, v_sail in self.LADDER.items():
+            assert feats("with_sail", s, 1.0).v_sail == v_sail, (
+                f"sail_scale={s}: net sail voxels drifted from {v_sail}"
+            )
+
+    def test_s_star_boundary(self):
+        # 0.133 is bare-equivalent, the next 0.001 step up is not
+        assert feats("with_sail", 0.133, 1.0).v_sail == 0
+        assert feats("with_sail", 0.134, 1.0).v_sail > 0
+
+    def test_below_substar_is_bit_bare(self):
+        bare_ch = geometry_channels(feats("bare_hull", 1.0, 1.0))
+        bare_mask, _ = build_suboff_mask(
+            hull_type="bare_hull",
+            nx=PRODUCTION_GRID.nx,
+            ny=PRODUCTION_GRID.ny,
+            nz=PRODUCTION_GRID.nz,
+            cx=PRODUCTION_GRID.cx,
+            cy=PRODUCTION_GRID.cy,
+            cz=PRODUCTION_GRID.cz,
+            length=PRODUCTION_GRID.length,
+            device="cpu",
+        )
+        for s in (0.13, 0.05, 0.02):
+            f = feats("with_sail", s, 1.0)
+            assert np.array_equal(geometry_channels(f), bare_ch)
+            assert f.v_solid == f.v_bare and f.aproj == f.aproj_bare
+            mask, _ = build_suboff_mask(
+                hull_type="with_sail",
+                nx=PRODUCTION_GRID.nx,
+                ny=PRODUCTION_GRID.ny,
+                nz=PRODUCTION_GRID.nz,
+                cx=PRODUCTION_GRID.cx,
+                cy=PRODUCTION_GRID.cy,
+                cz=PRODUCTION_GRID.cz,
+                length=PRODUCTION_GRID.length,
+                device="cpu",
+                config=SuboffConfig(sail_scale=s),
+            )
+            assert torch.equal(mask, bare_mask)
