@@ -577,3 +577,206 @@ attempt, ``part_c27b.json`` bounded run, ``diag_transient.json``,
 ``diag_samefamily.json``); tests in ``tests/test_collision27_calib.py``
 (11, CPU, ~40 s) — bitwise equivalence of the diffable cumulant, tensor
 rates, end-to-end gradient flow through ``step27``, NaN guard.
+
+
+
+## Pipeline-definition decomposition (2026-08-24, B3 stage 6): the residual was bookkeeping
+
+Stage 5 established that the Re = 148 residual is *not* collision-family
+structural: replaying the campaign's own ``collide_cumulant_d3q19``
+through the calibration pipeline left ~0.04 of "pipeline definition"
+error.  Stage 6 enumerates every definitional difference between the
+campaign chain and the calibration chain, adds each as an explicit
+backward-compatible knob, decomposes the residual knob by knob, and
+recalibrates under full alignment.
+
+### The five definitional differences
+
+| # | knob | campaign | calibration (legacy) | campaign source |
+|---|---|---|---|---|
+| 1 | solid-interior init | ``u = 0`` inside solid (``initial_pu``) | free-stream everywhere | ``cases/suboff.py:124`` |
+| 2 | collision in solid | collide **all** cells (``make_step``) | NoDynamics in solid | ``cases/base.py:245`` |
+| 3 | outlet closure | full 19-direction copy of column ``-2`` | unknown directions only | ``boundaries3d.py:546`` |
+| 4 | mass correction | ``correct_mass3d`` every 10 steps from step 10, post-step | none (stage-5 emulation: every 20 in-window) | ``scan_runner.py:874``, ``cases/suboff.py:44`` |
+| 5 | observation | snapshot frames, read **after** the correction (dispatch is post-correction) | window mean | ``scan_runner.py:892`` |
+
+The inlet and lateral far-field planes were checked and are
+value-identical between the two chains — no knob needed there.
+
+### New API (all backward compatible; legacy behaviour is the default)
+
+``CampaignSemantics`` frozen dataclass (``init_solid``, ``collide_solid``,
+``outlet``, ``mass_every``/``mass_phase``/``mass_first``,
+``observe_frames``) with a ``correct_at(step)`` predicate;
+``LEGACY_SEMANTICS`` (default, stage-≤5 behaviour) and
+``CAMPAIGN_SEMANTICS`` constants; ``campaign_chain19/27`` differentiable
+chains, ``campaign_rollout19/27`` + ``CampaignObservables`` drivers (the
+driver calls the *production* ``correct_mass3d`` for bitwise fidelity and
+records snapshot frames after it), ``press_profile_campaign`` /
+``press_profile27_campaign`` model wrappers, and
+``calibrate_mrt_rates_campaign`` / ``calibrate_collision27_campaign``.
+The legacy branch of ``campaign_chain19`` is bitwise-equal to
+``differentiable_step`` (guarded by test), so every stage ≤5 result is
+reproduced exactly by the new code path.
+
+### Baseline reproduction (bitwise)
+
+The stage-5 ``masscorr_short`` diagnosis rerun through the new driver:
+Re 148 gap **0.03951411826416663**, cd 9.009332186933875; Re 305 gap
+0.031186426113420554, cd 5.405033719712408 — identical to
+``diag_samefamily.json`` to every digit.
+
+### Decomposition (same family: ``collide_cumulant_d3q19``, default rates, 4000 steps)
+
+relL2 against the campaign step-4000 snapshot (``f4000``); ``win`` is the
+legacy window-mean readout of the same trajectory; cd = window C_D.
+``init_solid`` rows differ only in the 4th decimal (null knob) and are
+folded away; ``outlet`` without mass correction moves nothing.
+
+| config (Re 148 / Re 305) | f4000 148 | f4000 305 | cd 148 | cd 305 |
+|---|---|---|---|---|
+| legacy plain (coll=0, mass=0) | 0.0900 | 0.0367 | 8.9695 | 5.3872 |
+| + mass alone | 0.0411 | 0.0285 | 8.9856 | 5.3904 |
+| + collide-solid alone | 0.0906 | 0.0331 | 8.6494 | 5.2278 |
+| collide-solid + mass (outlet unknown) | 0.00025 | 0.00020 | 8.6709 | 5.2325 |
+| **full alignment** (outlet full, init rest) | **0.0000097** | **0.0000195** | 8.6702 | 5.2321 |
+
+Findings:
+
+1. **Two knobs dominate and they interact.**  Neither mass correction
+   alone (0.090 → 0.041) nor collide-in-solid alone (0.090 → 0.091)
+   closes the gap; together they close it to 2e-4.  The interaction is
+   mechanical: the campaign rescales *all* populations including the
+   ones sitting inside the solid, and those populations are only
+   meaningful if the solid cells were collided — under legacy NoDynamics
+   the rescaled bounced-back populations stream out unrelaxed.  Stage 5
+   saw mass correction as a ~0.03 partial fix because it ran with
+   NoDynamics; with the campaign's collide-everywhere semantics the same
+   correction is exact.
+2. **The observation knob (window vs snapshot) is the remaining floor.**
+   Under full alignment the *snapshot* readout reproduces the campaign
+   to fp32 noise (0.0000054–0.0000257 relL2 at all five calibration Re),
+   while the legacy window-mean readout of the same trajectory sits at
+   0.0084 (Re 148) falling to 0.0003–0.0012 (Re ≥ 437.8) — a pure
+   definition-of-observable floor, not physics.
+3. **The solid-interior initialisation is a null knob** (4th-decimal
+   shifts; cd identical to 5 decimals) and the outlet closure only
+   matters once mass correction is on (2e-4 → 1e-5).  The task's three
+   hypothesised factors were therefore right but incomplete: the two
+   *dominant* knobs (collide-in-solid, mass-correction semantics) were
+   both pipeline definitions the stage ≤5 chain silently made
+   differently.
+
+### C_D closure: the "+3–4.6% model error" was a definitional error
+
+Under full alignment the window C_D of the *same-family, default-rate*
+replay matches the campaign's reported C_D to four significant digits at
+all five calibration Reynolds numbers:
+
+| Re | campaign C_D | aligned replay C_D | legacy (NoDynamics) C_D | legacy offset |
+|---|---|---|---|---|
+| 305 | 5.232 | 5.2321 | 5.3872 | +3.0% |
+| 437.8 | 4.116 | 4.1159 | — | — |
+| 628.6 | 3.265 | 3.2654 | — | — |
+| 800 | 2.813 | 2.8130 | — | — |
+| 148 | 8.671 | 8.6702 | 8.9695 | +3.4% |
+
+B3-real attributed the calibration chain's +3–4.6% C_D offset to
+"collision-family model error" and stages 4–5 chased it through MRT
+rates and D3Q27 families.  It was knob 2: collide-in-solid moves Re 148
+C_D from 8.9695 to 8.6494 (−3.6%) on its own, and the aligned chain
+lands on the campaign value.  The collision family was never the
+problem.
+
+### Recalibration under full alignment
+
+**D3Q19-MRT** (train Re {305, 437.8, 800}, 60 Adam iters, lr 0.05,
+block 25 — the stage-4 protocol verbatim, under ``CAMPAIGN_SEMANTICS``
+with the campaign snapshot readout; loss 0.001722 → 0.000392).  The
+"legacy" columns are stage 4's numbers on the same targets:
+
+| Re | role | legacy before | legacy after (s4) | aligned before | aligned after (s6) |
+|---|---|---|---|---|---|
+| 305 | train | 0.0347 | 0.0231 | 0.0302 | **0.0109** |
+| 437.8 | train | 0.0349 | 0.0159 | 0.0383 | 0.0158 |
+| 800 | train | 0.0535 | 0.0257 | 0.0528 | 0.0284 |
+| 628.6 | held-out | 0.0448 | 0.0205 | 0.0469 | 0.0232 |
+| 148 | held-out | 0.0709 | 0.0690 | 0.0173 | **0.0163** |
+
+Identified rates: s_e 1.19 → **1.094**, s_q 1.2 → 1.137, s_eps → 0.5
+(the clamp, as in stage 4 — its direction stays unidentifiable from
+pressure data).  Note how much smaller the rate shift is than stage 4's
+(s_e 1.595, s_q 0.935): a large part of stage 4's "rate correction" was
+compensating the pipeline definitional error.
+
+Two readings:
+
+1. **Re 148: the target is met.**  0.069 → 0.0163 (≤ 0.02), and
+   alignment *alone* — before any recalibration, default MRT rates —
+   already lands at 0.0173.  The stage-4/5 "structural low-Re residual"
+   was ~75% pipeline definition (collide-in-solid + mass-correction
+   semantics); what remains (0.016) is the MRT family's true
+   expressiveness gap at low Re — cf. the same-family cumulant at
+   0.0000097 under the same aligned semantics.
+2. **Mid/high Re: unchanged by alignment.**  0.011–0.028 after
+   calibration, the same level stage 4 reached — exactly the
+   family-expressiveness floor the decomposition predicts (the
+   definitional offset there was small to begin with).
+
+C_D neutrality (aligned chain, calibration before → after; the ≤0.3%
+precedent line holds at every Re):
+
+| Re | cd before | cd after | Δ |
+|---|---|---|---|
+| 305 | 5.2136 | 5.2236 | +0.19% |
+| 437.8 | 4.1005 | 4.1079 | +0.18% |
+| 800 | 2.8003 | 2.8052 | +0.18% |
+| 628.6 | 3.2518 | 3.2575 | +0.18% |
+| 148 | 8.6368 | 8.6564 | +0.23% |
+
+(And the aligned-chain C_D itself sits within 0.4% of the campaign
+values at all five Re even *before* calibration — see the closure table
+above; the MRT family never had a drag problem once the solid cells were
+collided.)
+
+**D3Q27-cumulant control** (same protocol, stage-5 bounds (0.6, 1.6);
+loss 0.003096 → 0.000658; rates omega_b → 1.6 — the clamp, the known
+27-ghost-rate divergence — omega_odd 1.164, omega_even 1.445):
+
+| Re | 27-cumulant before | 27-cumulant after | 19-MRT after (above) |
+|---|---|---|---|
+| 305 | 0.0316 | 0.0242 | 0.0109 |
+| 437.8 | 0.0492 | 0.0232 | 0.0158 |
+| 800 | 0.0766 | 0.0291 | 0.0284 |
+
+Stage 5's ordering survives alignment: the 27 family does not beat the
+19 family it was supposed to fix (and, as in stage 5, its calibration is
+*not* C_D-neutral — C_D moves −1.0% to −2.2%, versus the 19-MRT run's
+≤ +0.23%).  With the definitional confounder removed, the honest
+conclusion is that no available alternative family outperforms the
+campaign's own; the 19-MRT residuals above are the family-expressiveness
+floor of this calibration set.
+
+### Conclusions
+
+1. The stage-4/5 residual decomposition is now complete: **0.090 →
+   0.00001 at Re 148 is entirely pipeline definition** (collide-in-solid
+   + mass-correction semantics + outlet + observation), with the
+   collision family contributing nothing — the campaign is reproduced
+   bitwise-to-fp32 by its own family under aligned semantics.
+2. Under alignment the *family* question becomes cleanly measurable: the
+   MRT residual after recalibration is pure family expressiveness, no
+   longer confounded by a 0.03–0.09 definitional offset.
+3. Any future closure work must run under ``CAMPAIGN_SEMANTICS`` (or
+   justify the deviation); the legacy pipeline is retained only for
+   backward compatibility of the stage ≤5 results.
+
+Reproducibility: scripts and raw JSON in ``runs/b3_stage6_20260824/`` on
+the 5090 box (``baseline_repro.json``, ``decomp_samefamily.json``,
+``calib19_aligned.json``, ``calib27_aligned.json``); semantic regression
+tests in ``tests/test_campaign_semantics.py`` (13, CPU, ~60 s) — bitwise
+init-rest equality against the production case, legacy-chain equality
+against ``differentiable_step``, campaign BC equality against
+``far_field_bc_3d`` + ``bounce_back_cells_3d``, the mass-correction
+step-grid (every 10 from step 10, 1-indexed, post-step), frame-readout
+selection, and end-to-end frame-is-post-correction.
