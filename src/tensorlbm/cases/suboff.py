@@ -29,7 +29,11 @@ class SuboffChannelCase(CaseBase):
     full) and ``sail_scale`` / ``fin_scale`` multiply the appendages' own
     dimensions about their DARPA anchors (1.0 = exact geometry), so the
     geometry axis is scannable as plain numeric sweep params. All three
-    flow through :class:`~tensorlbm.suboff_cad.SuboffConfig`.
+    flow through :class:`~tensorlbm.suboff_cad.SuboffConfig`.  The four
+    hull-form multipliers (``l_over_d_mult`` / ``nose_len_mult`` /
+    ``stern_len_mult`` / ``sail_x_mult``, all default 1.0 = exact mother
+    geometry) parameterise the lines plan itself and flow through the
+    same config.
     """
 
     name: ClassVar[str] = "suboff_n128"
@@ -52,6 +56,10 @@ class SuboffChannelCase(CaseBase):
         hull_type: str = "bare_hull",
         sail_scale: float = 1.0,
         fin_scale: float = 1.0,
+        l_over_d_mult: float = 1.0,
+        nose_len_mult: float = 1.0,
+        stern_len_mult: float = 1.0,
+        sail_x_mult: float = 1.0,
         device=None,
         dtype: torch.dtype = torch.float32,
         collision: str | None = None,
@@ -60,6 +68,10 @@ class SuboffChannelCase(CaseBase):
         self.hull_type = hull_type
         self.sail_scale = float(sail_scale)
         self.fin_scale = float(fin_scale)
+        self.l_over_d_mult = float(l_over_d_mult)
+        self.nose_len_mult = float(nose_len_mult)
+        self.stern_len_mult = float(stern_len_mult)
+        self.sail_x_mult = float(sail_x_mult)
         super().__init__(resolution, re, device=device, dtype=dtype, collision=collision)
 
     @classmethod
@@ -97,7 +109,14 @@ class SuboffChannelCase(CaseBase):
             cy=ny / 2.0,
             cz=nz / 2.0,
             length=self.hull_length,
-            config=SuboffConfig(sail_scale=self.sail_scale, fin_scale=self.fin_scale),
+            config=SuboffConfig(
+                sail_scale=self.sail_scale,
+                fin_scale=self.fin_scale,
+                l_over_d_mult=self.l_over_d_mult,
+                nose_len_mult=self.nose_len_mult,
+                stern_len_mult=self.stern_len_mult,
+                sail_x_mult=self.sail_x_mult,
+            ),
             device=str(self.device),
         )
         return solid
@@ -137,4 +156,8 @@ class SuboffChannelCase(CaseBase):
         meta["hull_type"] = self.hull_type
         meta["sail_scale"] = self.sail_scale
         meta["fin_scale"] = self.fin_scale
+        meta["l_over_d_mult"] = self.l_over_d_mult
+        meta["nose_len_mult"] = self.nose_len_mult
+        meta["stern_len_mult"] = self.stern_len_mult
+        meta["sail_x_mult"] = self.sail_x_mult
         return meta

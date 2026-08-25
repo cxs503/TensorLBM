@@ -24,6 +24,14 @@ Real SUBOFF dimensions:
 The geometry works internally in feet (matching the DARPA offset tables)
 and converts to lattice units via ``ft_per_lu = L_ft / length``.
 
+Beyond the appendage-size axes (``sail_scale`` / ``fin_scale``), the
+2026-08-24 hull-form extension parameterises the **lines plan itself**
+through four multipliers on :class:`SuboffConfig`
+(``l_over_d_mult`` / ``nose_len_mult`` / ``stern_len_mult`` /
+``sail_x_mult``), all continuous axial deformations about the DARPA
+mother hull implemented as piecewise-linear inverse-frame maps (default
+1.0 = bit-identical mother geometry) — see the ``_HULL_NODES_FT`` block.
+
 Public API
 ----------
 - :class:`SuboffHullType`         – model variant enum.
@@ -106,6 +114,95 @@ _NACA_COEFFS = (0.2969, 0.126, 0.3516, 0.2852, 0.1045)
 #   grows outward from (buried inside the stern taper).
 _SAIL_X_CENTER = 0.5 * (_SAIL_X1_START + _SAIL_X3_END)
 _SAIL_Z_DECK = _SUBOFF_RMAX_FT
+
+
+# --------------------------------------------------------------------------- #
+# Hull-form (lines-plan) variant axes — 2026-08-24
+# --------------------------------------------------------------------------- #
+# The four new SuboffConfig multipliers below deform the MOTHER hull along
+# continuous similarity/affine axes while keeping every predicate analytic:
+#
+#   l_over_d_mult  — length/length: L' = L * m with the DIAMETER fixed (ft),
+#                    the parallel midbody absorbing the length change.
+#   nose_len_mult  — entrance (bow) segment length x n; midbody absorbs.
+#   stern_len_mult — stern taper AND stern cap length x s (tail shape stays
+#                    similar); midbody absorbs.
+#   sail_x_mult    — sail axial centre x k about the DARPA centre (pure
+#                    translation in the mother ft frame).
+#
+# Implementation follows the established inverse-frame pattern of
+# ``_sail_unscaled_frame``: query coordinates are mapped back to the MOTHER
+# ft frame by a piecewise-linear axial map and every DARPA predicate is then
+# evaluated untouched, so all hull/sail/fin incidence relations (sail rooted
+# in the deck, fins buried in the taper) hold by construction.  Radial (ft)
+# dimensions are never rescaled — the axes are pure axial deformations, so
+# the lattice radius shrinks as radius / l_over_d_mult (diameter fixed in ft,
+# hull length fixed in lattice units).
+#
+# Mother axial nodes (ft): bow tip, midbody start, taper start, cap start,
+# stern tip.
+_HULL_NODES_FT = (0.0, _BOW_END_FT, _MID_END_FT, _STERN_END_FT, _SUBOFF_L_FT)
+
+
+def _hull_lines_is_mother(config: SuboffConfig) -> bool:
+    """True when no hull-form (lines) axis is active."""
+    return (
+        config.l_over_d_mult == 1.0 and config.nose_len_mult == 1.0 and config.stern_len_mult == 1.0
+    )
+
+
+def _variant_nodes_ft(config: SuboffConfig) -> tuple[float, float, float, float, float]:
+    """Variant axial nodes (ft) for the hull-form multipliers.
+
+    The bow node scales with ``nose_len_mult``; taper and cap nodes keep the
+    stern tip at ``L' = L * l_over_d_mult`` and their own lengths scale with
+    ``stern_len_mult``; the midbody absorbs the remainder.
+    """
+    total = _SUBOFF_L_FT * config.l_over_d_mult
+    return (
+        0.0,
+        _BOW_END_FT * config.nose_len_mult,
+        total - (_SUBOFF_L_FT - _MID_END_FT) * config.stern_len_mult,
+        total - (_SUBOFF_L_FT - _STERN_END_FT) * config.stern_len_mult,
+        total,
+    )
+
+
+def _pw_map_torch(
+    x: torch.Tensor,
+    src: tuple[float, ...],
+    dst: tuple[float, ...],
+) -> torch.Tensor:
+    """Piecewise-linear map x ∈ src-node intervals → dst-node intervals."""
+    if len(src) != len(dst) or len(src) < 2:
+        raise ValueError("node tuples must have equal length >= 2")
+    lo = torch.full_like(x, dst[0])
+    out = torch.where(x < src[0], lo, torch.full_like(x, dst[-1]))
+    for a, b, c, d in zip(src[:-1], src[1:], dst[:-1], dst[1:]):
+        seg = (x >= a) & (x <= b)
+        out = torch.where(seg, c + (x - a) * ((d - c) / (b - a)), out)
+    return out
+
+
+def _pw_map_np(x: np.ndarray, src: tuple[float, ...], dst: tuple[float, ...]) -> np.ndarray:
+    """Numpy mirror of :func:`_pw_map_torch`."""
+    if len(src) != len(dst) or len(src) < 2:
+        raise ValueError("node tuples must have equal length >= 2")
+    out = np.where(x < src[0], dst[0], dst[-1]).astype(float)
+    for a, b, c, d in zip(src[:-1], src[1:], dst[:-1], dst[1:]):
+        seg = (x >= a) & (x <= b)
+        out = np.where(seg, c + (x - a) * ((d - c) / (b - a)), out)
+    return out
+
+
+def _axial_ft_to_mother(x_ft: torch.Tensor, config: SuboffConfig) -> torch.Tensor:
+    """Variant-frame axial ft coords → mother-frame axial ft coords."""
+    return _pw_map_torch(x_ft, _variant_nodes_ft(config), _HULL_NODES_FT)
+
+
+def _sail_x_shift_ft(config: SuboffConfig) -> float:
+    """Sail axial translation (ft, mother frame) from ``sail_x_mult``."""
+    return (config.sail_x_mult - 1.0) * _SAIL_X_CENTER
 
 
 def _sail_unscaled_frame(
@@ -231,22 +328,45 @@ class SuboffConfig:
         grows outward from the root radius buried in the hull.
         ``1.0`` = exact DARPA geometry (bit-identical masks).
         Default 1.0.
+    l_over_d_mult :
+        Length multiplier ``m`` with the DIAMETER fixed in feet:
+        ``L' = L*m`` and the lattice radius becomes ``radius / m``.  The
+        parallel midbody absorbs the length change (naval "parallel-body
+        insertion" parameterisation).  ``1.0`` = exact DARPA geometry
+        (bit-identical masks).  Default 1.0.
+    nose_len_mult :
+        Multiplier on the bow/entrance segment length (bow → parallel
+        midbody node); the midbody absorbs.  Default 1.0.
+    stern_len_mult :
+        Multiplier on the stern taper AND stern cap lengths (the tail
+        shape stays similar); the midbody absorbs.  Default 1.0.
+    sail_x_mult :
+        Multiplier on the sail axial centre about the DARPA centre — a
+        pure translation in the mother ft frame.  The constructor rejects
+        values that would move the sail footprint outside the supported
+        window (front half of the bow segment / stern taper), where its
+        base would leave the hull deck.  Default 1.0.
 
     Notes
     -----
     **Which fields actually parameterise the geometry (verified
-    2026-08-23).**  The mask builders, point predicates, statistics,
-    mesh/STL export and :func:`suboff_radius_profile` read ONLY
-    ``r_over_l`` and the two ``*_scale`` fields.  The ``bow_fraction`` /
-    ``stern_fraction`` / ``stern_exponent`` triple documents the DARPA
-    profile but is not consumed by it (the profile uses the hard-coded
-    Groves et al. ft polynomials).  Likewise ``sail_x_frac`` …
-    ``fin_thickness_frac`` are *descriptive metadata only* — the sail
-    and fin solids come from the DARPA offset-table ft constants
-    (``_SAIL_ZMAX`` … ``_FIN_SWEEP_C``), NOT from these fractions.  The
-    ``*_scale`` fields are the one supported way to sweep appendage
-    size; they multiply those ft constants' dimensions about the
-    module-level anchors (``_SAIL_X_CENTER``, ``_SAIL_Z_DECK``,
+    2026-08-23; hull-form axes added 2026-08-24).**  The mask builders,
+    point predicates, statistics, mesh/STL export and
+    :func:`suboff_radius_profile` read ``r_over_l``, the two
+    ``*_scale`` fields and the four hull-form multipliers
+    (``l_over_d_mult`` / ``nose_len_mult`` / ``stern_len_mult`` /
+    ``sail_x_mult``; all default 1.0 = bit-identical mother geometry —
+    they re-map query coordinates into the mother ft frame, so every
+    DARPA predicate is evaluated untouched, see ``_HULL_NODES_FT``).
+    The ``bow_fraction`` / ``stern_fraction`` / ``stern_exponent``
+    triple documents the DARPA profile but is not consumed by it (the
+    profile uses the hard-coded Groves et al. ft polynomials).  Likewise
+    ``sail_x_frac`` … ``fin_thickness_frac`` are *descriptive metadata
+    only* — the sail and fin solids come from the DARPA offset-table ft
+    constants (``_SAIL_ZMAX`` … ``_FIN_SWEEP_C``), NOT from these
+    fractions.  The ``*_scale`` fields are the supported way to sweep
+    appendage size; they multiply those ft constants' dimensions about
+    the module-level anchors (``_SAIL_X_CENTER``, ``_SAIL_Z_DECK``,
     ``_FIN_H``, ``_FIN_R_INNER``).
     """
 
@@ -272,11 +392,51 @@ class SuboffConfig:
     sail_scale: float = 1.0  # 1.0 = exact DARPA sail (bit-identical mask)
     fin_scale: float = 1.0  # 1.0 = exact DARPA fins (bit-identical mask)
 
+    # --- Hull-form (lines) multipliers: 1.0 = exact DARPA mother hull ---
+    # l_over_d_mult: L' = L*m with diameter fixed; midbody absorbs.  The
+    #   lattice radius becomes radius/l_over_d_mult (hull length in lattice
+    #   units is unchanged, the DIAMETER is fixed in feet).
+    # nose_len_mult: bow/entrance segment length multiplier; midbody absorbs.
+    # stern_len_mult: stern taper + cap length multiplier (tail stays
+    #   similar); midbody absorbs.
+    # sail_x_mult: sail axial centre multiplier about the DARPA centre
+    #   (translation in the mother ft frame; the sail must stay inside the
+    #   parallel midbody so it keeps growing out of the full-radius deck).
+    l_over_d_mult: float = 1.0
+    nose_len_mult: float = 1.0
+    stern_len_mult: float = 1.0
+    sail_x_mult: float = 1.0
+
     def __post_init__(self) -> None:
         for name in ("sail_scale", "fin_scale"):
             value = float(getattr(self, name))
             if not (value > 0.0) or not math.isfinite(value):
                 raise ValueError(f"SuboffConfig.{name} must be finite and positive, got {value!r}")
+        for name in ("l_over_d_mult", "nose_len_mult", "stern_len_mult", "sail_x_mult"):
+            value = float(getattr(self, name))
+            if not (value > 0.0) or not math.isfinite(value):
+                raise ValueError(f"SuboffConfig.{name} must be finite and positive, got {value!r}")
+        nodes = _variant_nodes_ft(self)
+        if not (nodes[0] < nodes[1] < nodes[2] < nodes[3] < nodes[4]):
+            raise ValueError(
+                "hull-form multipliers collapse the segment layout "
+                f"(nodes {nodes}); keep the midbody length positive"
+            )
+        shift = _sail_x_shift_ft(self)
+        # The mother sail front edge (3.033 ft) already reaches slightly
+        # ahead of the midbody start (3.333 ft) — the DARPA sail straddles
+        # the bow/midbody node — so the allowed window is: never enter the
+        # aft half of the bow segment (where the deck radius drops well
+        # below R_max) and never enter the stern taper.
+        x1 = _SAIL_X1_START + shift
+        x3 = _SAIL_X3_END + shift
+        if not (0.5 * _BOW_END_FT <= x1 and x3 <= _MID_END_FT):
+            raise ValueError(
+                f"sail_x_mult={self.sail_x_mult!r} moves the sail footprint "
+                f"[{x1:.3f}, {x3:.3f}] ft outside the supported window "
+                f"[{0.5 * _BOW_END_FT:.3f}, {_MID_END_FT:.3f}] ft (bow-front / "
+                "stern taper); the sail base would leave the hull deck"
+            )
 
     # --- Metadata (read-only) ---
     _label: str = field(default="DARPA SUBOFF-inspired", init=False, repr=False)
@@ -478,6 +638,10 @@ def suboff_hull_mask(
     if radius <= 0.0:
         radius = config.r_over_l * length
 
+    # Hull-form variant: diameter fixed in ft => lattice radius shrinks by m.
+    if config.l_over_d_mult != 1.0:
+        radius = radius / config.l_over_d_mult
+
     # Build coordinate grids
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=device, dtype=torch.float32),
@@ -491,7 +655,14 @@ def suboff_hull_mask(
     x_bow = cx - length / 2.0
     xi_t = (xx - x_bow) / length  # 0 at bow, 1 at stern
 
-    xi_np = xi_t.cpu().numpy()
+    if _hull_lines_is_mother(config):
+        xi_mother = xi_t
+    else:
+        # Piecewise-linear axial map: variant ft frame -> mother ft frame.
+        x_ft_var = xi_t * _variant_nodes_ft(config)[-1]
+        xi_mother = _axial_ft_to_mother(x_ft_var, config) / _SUBOFF_L_FT
+
+    xi_np = xi_mother.cpu().numpy()
     r_norm = suboff_radius_profile(xi_np, config)  # normalised [0, 1]
 
     # Actual radius in lattice units
@@ -514,12 +685,17 @@ def suboff_sail_contains_points(
     center: tuple[float, float, float],
     length: float,
     scale: float = 1.0,
+    config: SuboffConfig | None = None,
 ) -> torch.Tensor:
     """Evaluate the continuous DARPA sail predicate at arbitrary points.
 
     ``scale`` multiplies the sail's own (length, height, width) about its
     DARPA anchors — see :func:`_sail_unscaled_frame`; ``1.0`` (default)
-    reproduces the exact DARPA solid.
+    reproduces the exact DARPA solid.  ``config`` additionally enables the
+    hull-form axes (``l_over_d_mult`` / ``nose_len_mult`` /
+    ``stern_len_mult`` re-map the query axially into the mother ft frame,
+    ``sail_x_mult`` translates the sail along the axis); ``None`` (default)
+    is the exact mother geometry.
     """
     if x.shape != y.shape or x.shape != z.shape:
         raise ValueError("point coordinate tensors must have matching shapes")
@@ -530,6 +706,13 @@ def suboff_sail_contains_points(
     x_ft = (x - (cx - length / 2.0)) * ftlu
     y_ft = (y - cy) * ftlu
     z_ft = (z - cz) * ftlu
+    if config is not None:
+        if config.l_over_d_mult != 1.0:
+            x_ft = x_ft * config.l_over_d_mult
+        if not _hull_lines_is_mother(config):
+            x_ft = _axial_ft_to_mother(x_ft, config)
+        if config.sail_x_mult != 1.0:
+            x_ft = x_ft - _sail_x_shift_ft(config)
     x_ft, y_ft, z_ft = _sail_unscaled_frame(x_ft, y_ft, z_ft, float(scale))
     zmax = _SAIL_ZMAX
     y_tmp = _SAIL_YTMP
@@ -603,12 +786,17 @@ def suboff_fins_contain_points(
     center: tuple[float, float, float],
     length: float,
     scale: float = 1.0,
+    config: SuboffConfig | None = None,
 ) -> torch.Tensor:
     """Evaluate the continuous swept NACA cruciform-fin predicate.
 
     ``scale`` multiplies each fin's own (chord, span, thickness) about its
     DARPA anchors — see :func:`_fin_chord_frame` / :func:`_fin_span_frame`;
-    ``1.0`` (default) reproduces the exact DARPA solid.
+    ``1.0`` (default) reproduces the exact DARPA solid.  ``config``
+    additionally enables the hull-form axes (axial query re-map into the
+    mother ft frame; the fins ride the deformed stern, so e.g. a stretched
+    taper carries them aft); ``None`` (default) is the exact mother
+    geometry.
     """
     if x.shape != y.shape or x.shape != z.shape:
         raise ValueError("point coordinate tensors must have matching shapes")
@@ -619,6 +807,11 @@ def suboff_fins_contain_points(
     x_ft = (x - (cx - length / 2.0)) * ftlu
     y_ft = (y - cy).abs() * ftlu
     z_ft = (z - cz).abs() * ftlu
+    if config is not None:
+        if config.l_over_d_mult != 1.0:
+            x_ft = x_ft * config.l_over_d_mult
+        if not _hull_lines_is_mother(config):
+            x_ft = _axial_ft_to_mother(x_ft, config)
 
     scale_f = float(scale)
     x_chord = _fin_chord_frame(x_ft, scale_f)
@@ -668,11 +861,14 @@ def suboff_appendages_contain_points(
     length: float,
     sail_scale: float = 1.0,
     fin_scale: float = 1.0,
+    config: SuboffConfig | None = None,
 ) -> torch.Tensor:
     """Evaluate the union of continuous AFF-8 sail and fin geometry.
 
     ``sail_scale`` / ``fin_scale`` mirror :class:`SuboffConfig` and default
-    to the exact DARPA geometry.
+    to the exact DARPA geometry.  ``config`` (optional) enables the
+    hull-form axes on top — the sail/fin predicates then see the deformed
+    axial frame exactly as the voxel builders do.
     """
     return suboff_sail_contains_points(
         x,
@@ -681,6 +877,7 @@ def suboff_appendages_contain_points(
         center=center,
         length=length,
         scale=sail_scale,
+        config=config,
     ) | suboff_fins_contain_points(
         x,
         y,
@@ -688,6 +885,7 @@ def suboff_appendages_contain_points(
         center=center,
         length=length,
         scale=fin_scale,
+        config=config,
     )
 
 
@@ -735,6 +933,15 @@ def _add_sail_mask(
     x_ft = (xx - x_bow) * ftlu
     y_ft = (yy - cy) * ftlu  # transverse
     z_ft = (zz - cz) * ftlu  # vertical (up)
+
+    # Hull-form variant: axial query re-map into the mother ft frame
+    # (identity when no hull-form axis is active).
+    if config.l_over_d_mult != 1.0:
+        x_ft = x_ft * config.l_over_d_mult
+    if not _hull_lines_is_mother(config):
+        x_ft = _axial_ft_to_mother(x_ft, config)
+    if config.sail_x_mult != 1.0:
+        x_ft = x_ft - _sail_x_shift_ft(config)
 
     # Optional appendage scale (config.sail_scale): evaluate the exact
     # DARPA predicate in the inversely-scaled frame (identity at 1.0).
@@ -819,6 +1026,13 @@ def _add_fin_masks(
     x_ft = (xx - x_bow) * ftlu
     y_ft = torch.abs(yy - cy) * ftlu
     z_ft = torch.abs(zz - cz) * ftlu
+
+    # Hull-form variant: axial query re-map into the mother ft frame
+    # (identity when no hull-form axis is active).
+    if config.l_over_d_mult != 1.0:
+        x_ft = x_ft * config.l_over_d_mult
+    if not _hull_lines_is_mother(config):
+        x_ft = _axial_ft_to_mother(x_ft, config)
 
     # Optional appendage scale (config.fin_scale): chord × scale about the
     # common trailing edge, span × scale about the root radius (buried in
@@ -952,6 +1166,10 @@ def build_suboff_mask(
         "length": length,
         "radius": radius,
     }
+    if config.l_over_d_mult != 1.0:
+        # Diameter fixed in ft under the hull-form variant: the effective
+        # lattice radius (and L/D) the mask actually voxelises with.
+        stats["radius_effective"] = radius / config.l_over_d_mult
     return mask, stats
 
 
@@ -1030,14 +1248,25 @@ def suboff_statistics(
     if config is None:
         config = SuboffConfig()
 
-    diameter = 2.0 * radius
+    # Hull-form variant: diameter fixed in ft => effective lattice radius.
+    radius_eff = radius / config.l_over_d_mult if config.l_over_d_mult != 1.0 else radius
+    diameter = 2.0 * radius_eff
     l_d = length / diameter if diameter > 0 else float("nan")
 
-    # Volume of bare hull (numerical integration)
+    # Volume of bare hull (numerical integration).  Under a hull-form
+    # variant the mother profile is evaluated on the deformed xi grid
+    # (piecewise-linear axial map); the mother path is untouched.
     xi_int = np.linspace(0.0, 1.0, 2000)
-    r_norm = suboff_radius_profile(xi_int, config)
+    if _hull_lines_is_mother(config):
+        r_norm = suboff_radius_profile(xi_int, config)
+    else:
+        nodes_v = _variant_nodes_ft(config)
+        x_ft_var = xi_int * nodes_v[-1]
+        u_ft_m = _pw_map_np(x_ft_var, nodes_v, _HULL_NODES_FT)
+        r_norm = suboff_radius_profile(u_ft_m / _SUBOFF_L_FT, config)
+
     # V = pi * R_max^2 * L * integral of rho^2 dxi over [0,1]
-    vol_bare = math.pi * radius**2 * length * float(np.trapezoid(r_norm**2, xi_int))
+    vol_bare = math.pi * radius_eff**2 * length * float(np.trapezoid(r_norm**2, xi_int))
 
     # Exact surface-of-revolution metric for r(x)=R*rho(x/L):
     # A = 2*pi*R*L integral rho*sqrt(1 + (R/L * d rho/d xi)^2) dxi.
@@ -1045,12 +1274,12 @@ def suboff_statistics(
     # reference area low by about 1.16% for the standard SUBOFF profile.
     drho_dxi = np.gradient(r_norm, xi_int, edge_order=2)
     meridional_metric = np.sqrt(
-        1.0 + np.square((radius / length) * drho_dxi),
+        1.0 + np.square((radius_eff / length) * drho_dxi),
     )
     wetted_bare = (
         2.0
         * math.pi
-        * radius
+        * radius_eff
         * length
         * float(
             np.trapezoid(
@@ -1061,7 +1290,7 @@ def suboff_statistics(
     )
 
     # Prismatic coefficient (Cp = V / (A_max * L))
-    a_max = math.pi * radius**2
+    a_max = math.pi * radius_eff**2
     cp = vol_bare / (a_max * length) if (a_max * length) > 0 else float("nan")
 
     _labels = {
@@ -1071,8 +1300,20 @@ def suboff_statistics(
     }
 
     # Appendage own dimensions: similarity scaling gives EXACT s^3 (volume)
-    # and s^2 (wetted area) laws about the scale-1 quadrature.
-    appendage: dict[str, float | str] = {
+    # and s^2 (wetted area) laws about the scale-1 quadrature.  Under a
+    # hull-form variant the appendages ride the axial deformation, so their
+    # axial extent is stretched by the segment ratio (sail sits fully in the
+    # midbody, fins fully in the taper) — applied as k_axial on volumes and
+    # sqrt(k_axial) on areas (geometric mean of the two face orientations),
+    # a documented proxy, not a certificate.
+    if _hull_lines_is_mother(config) and config.sail_x_mult == 1.0:
+        k_sail_axial = 1.0
+        k_fin_axial = 1.0
+    else:
+        nodes_v = _variant_nodes_ft(config)
+        k_sail_axial = (nodes_v[2] - nodes_v[1]) / (_HULL_NODES_FT[2] - _HULL_NODES_FT[1])
+        k_fin_axial = (nodes_v[3] - nodes_v[2]) / (_HULL_NODES_FT[3] - _HULL_NODES_FT[2])
+    appendage: dict[str, float | str | dict[str, float]] = {
         "sail_scale": config.sail_scale,
         "fin_scale": config.fin_scale,
     }
@@ -1082,26 +1323,43 @@ def suboff_statistics(
     lu2_per_ft2 = (length / _SUBOFF_L_FT) ** 2
     if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
         v1, a1 = _sail_own_dimensions_ft()
-        own_volume += v1 * config.sail_scale**3 * lu3_per_ft3
-        own_wetted += a1 * config.sail_scale**2 * lu2_per_ft2
-        appendage["sail_own_volume_lu3"] = round(v1 * config.sail_scale**3 * lu3_per_ft3, 3)
-        appendage["sail_own_wetted_area_lu2"] = round(a1 * config.sail_scale**2 * lu2_per_ft2, 3)
+        own_volume += v1 * config.sail_scale**3 * lu3_per_ft3 * k_sail_axial
+        own_wetted += a1 * config.sail_scale**2 * lu2_per_ft2 * math.sqrt(k_sail_axial)
+        appendage["sail_own_volume_lu3"] = round(
+            v1 * config.sail_scale**3 * lu3_per_ft3 * k_sail_axial, 3
+        )
+        appendage["sail_own_wetted_area_lu2"] = round(
+            a1 * config.sail_scale**2 * lu2_per_ft2 * math.sqrt(k_sail_axial), 3
+        )
     if hull_type == SuboffHullType.FULL:
         v1, a1 = _fins_own_dimensions_ft()
-        own_volume += v1 * config.fin_scale**3 * lu3_per_ft3
-        own_wetted += a1 * config.fin_scale**2 * lu2_per_ft2
-        appendage["fin_own_volume_lu3"] = round(v1 * config.fin_scale**3 * lu3_per_ft3, 3)
-        appendage["fin_own_wetted_area_lu2"] = round(a1 * config.fin_scale**2 * lu2_per_ft2, 3)
+        own_volume += v1 * config.fin_scale**3 * lu3_per_ft3 * k_fin_axial
+        own_wetted += a1 * config.fin_scale**2 * lu2_per_ft2 * math.sqrt(k_fin_axial)
+        appendage["fin_own_volume_lu3"] = round(
+            v1 * config.fin_scale**3 * lu3_per_ft3 * k_fin_axial, 3
+        )
+        appendage["fin_own_wetted_area_lu2"] = round(
+            a1 * config.fin_scale**2 * lu2_per_ft2 * math.sqrt(k_fin_axial), 3
+        )
     if hull_type is not SuboffHullType.BARE_HULL:
         appendage["appendage_own_volume_lu3"] = round(own_volume, 3)
         appendage["appendage_own_wetted_area_lu2"] = round(own_wetted, 3)
-        appendage["appendage_wetted_area_method"] = "own_dimension_quadrature_scaled"
+        appendage["appendage_wetted_area_method"] = "own_dimension_quadrature_scaled" + (
+            "" if k_sail_axial == 1.0 and k_fin_axial == 1.0 else "+approx_axial_stretch"
+        )
+    if not (_hull_lines_is_mother(config) and config.sail_x_mult == 1.0):
+        appendage["hull_form_variant"] = {
+            "l_over_d_mult": config.l_over_d_mult,
+            "nose_len_mult": config.nose_len_mult,
+            "stern_len_mult": config.stern_len_mult,
+            "sail_x_mult": config.sail_x_mult,
+        }
 
     return {
         "hull_type": hull_type.value,
         "label": _labels[hull_type],
         "L_D_ratio": round(l_d, 3),
-        "r_over_l": round(radius / length, 5) if length > 0 else None,
+        "r_over_l": round(radius_eff / length, 5) if length > 0 else None,
         "bow_fraction": config.bow_fraction,
         "stern_fraction": config.stern_fraction,
         "displacement_lu3": round(vol_bare, 2),
@@ -1161,6 +1419,13 @@ def generate_suboff_previews(
         config = SuboffConfig()
     if radius is None:
         radius = config.r_over_l * length
+    if not _hull_lines_is_mother(config) or config.sail_x_mult != 1.0:
+        raise NotImplementedError(
+            "generate_suboff_previews draws the mother DARPA lines from the "
+            "offset-table constants; hull-form variants are supported by the "
+            "mask builders, predicates, statistics and STL/mesh export, but "
+            "not by this matplotlib preview"
+        )
 
     n_pts = 400
     xi = np.linspace(0.0, 1.0, n_pts)
@@ -1632,13 +1897,16 @@ def _real_sail_triangles(
     n_axial: int = 30,
     n_arc: int = 12,
     scale: float = 1.0,
+    config: SuboffConfig | None = None,
 ) -> None:
     """Append surface triangles for the real SUBOFF sail.
 
     Works in lattice units: hull from x=0 to x=length, centred at y=z=0.
     The sail sits on +z (vertical up) with thickness in y (transverse).
     ``scale`` multiplies the sail's own dimensions about the DARPA
-    anchors, matching the voxel predicate exactly.
+    anchors, matching the voxel predicate exactly.  ``config`` applies the
+    hull-form axes (axial piecewise-linear map + sail translation) on top,
+    matching the voxel predicate.
     """
     ftlu = _ft_per_lu(length)
     inv = 1.0 / ftlu  # ft → lu
@@ -1652,6 +1920,14 @@ def _real_sail_triangles(
             [(y_ft * scale, _SAIL_Z_DECK + (z_ft - _SAIL_Z_DECK) * scale) for y_ft, z_ft in o]
             for o in outlines
         ]
+    if config is not None and (not _hull_lines_is_mother(config) or config.sail_x_mult != 1.0):
+        # Mother ft → variant ft (axial map + un-translate), then express in
+        # units of `inv` (mother ft→lu) by dividing by m: x_lu below becomes
+        # x_ft_variant * length / L' as required.
+        x_ft_arr = x_ft_arr + _sail_x_shift_ft(config)
+        x_ft_arr = _pw_map_np(x_ft_arr, _HULL_NODES_FT, _variant_nodes_ft(config)) * (
+            1.0 / config.l_over_d_mult
+        )
 
     for i in range(n_axial - 1):
         p0_list = outlines[i]
@@ -1737,13 +2013,15 @@ def _real_fin_triangles(
     n_chord: int = 20,
     n_span: int = 10,
     scale: float = 1.0,
+    config: SuboffConfig | None = None,
 ) -> None:
     """Append surface triangles for the 4 real SUBOFF cruciform stern fins.
 
     Each fin is a swept NACA 4-digit airfoil.  Works in lattice units:
     hull from x=0 to x=length, centred at y=z=0.  ``scale`` multiplies
     each fin's own dimensions about the DARPA anchors, matching the
-    voxel predicate exactly.
+    voxel predicate exactly.  ``config`` applies the hull-form axial map
+    on top (the fins ride the deformed stern).
     """
     ftlu = _ft_per_lu(length)
     inv = 1.0 / ftlu
@@ -1763,6 +2041,12 @@ def _real_fin_triangles(
         x_ft = h + (x_ft - h) * scale
         r_arr = _FIN_R_INNER + (r_arr - _FIN_R_INNER) * scale
         t_arr = t_arr * scale
+    if config is not None and not _hull_lines_is_mother(config):
+        # Mother ft → variant ft axial map, expressed in units of `inv`
+        # (see _real_sail_triangles).
+        x_ft = _pw_map_np(x_ft, _HULL_NODES_FT, _variant_nodes_ft(config)) * (
+            1.0 / config.l_over_d_mult
+        )
 
     x_lu = x_ft * inv
     r_lu = r_arr * inv
@@ -1795,11 +2079,20 @@ def _build_suboff_triangles(
     triangles: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
 
     # ---- Hull surface of revolution ----
+    # Mother stations, mapped forward into the variant frame when a
+    # hull-form axis is active (diameter fixed in ft => radius / m, axial
+    # stations follow the piecewise-linear node map).
     xi_arr = np.linspace(0.0, 1.0, n_axial)
-    r_arr = suboff_radius_profile(xi_arr, config) * radius
+    radius_eff = radius / config.l_over_d_mult if config.l_over_d_mult != 1.0 else radius
+    r_arr = suboff_radius_profile(xi_arr, config) * radius_eff
     theta_arr = np.linspace(0.0, 2 * math.pi, n_circ, endpoint=False)
 
-    X = xi_arr[:, None] * length * np.ones((1, n_circ))
+    if _hull_lines_is_mother(config):
+        x_axial_lu = xi_arr * length
+    else:
+        x_ft_var = _pw_map_np(xi_arr * _SUBOFF_L_FT, _HULL_NODES_FT, _variant_nodes_ft(config))
+        x_axial_lu = x_ft_var * (length / _variant_nodes_ft(config)[-1])
+    X = x_axial_lu[:, None] * np.ones((1, n_circ))
     Y = r_arr[:, None] * np.cos(theta_arr[None, :])
     Z = r_arr[:, None] * np.sin(theta_arr[None, :])
 
@@ -1839,11 +2132,11 @@ def _build_suboff_triangles(
 
     # ---- Sail (real DARPA 3-segment polynomial + arc top) ----
     if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
-        _real_sail_triangles(triangles, length, scale=float(config.sail_scale))
+        _real_sail_triangles(triangles, length, scale=float(config.sail_scale), config=config)
 
     # ---- Cruciform fins (real swept NACA 4-digit) ----
     if hull_type == SuboffHullType.FULL:
-        _real_fin_triangles(triangles, length, scale=float(config.fin_scale))
+        _real_fin_triangles(triangles, length, scale=float(config.fin_scale), config=config)
 
     return triangles
 
@@ -1854,6 +2147,7 @@ def suboff_appendage_triangles(
     center: tuple[float, float, float] | None = None,
     sail_scale: float = 1.0,
     fin_scale: float = 1.0,
+    config: SuboffConfig | None = None,
 ) -> np.ndarray:
     """Return the continuous AFF-8 sail/fin CAD triangles.
 
@@ -1862,13 +2156,16 @@ def suboff_appendage_triangles(
     hull midpoint and transverse/vertical axis coincide with that center.
     The bare axisymmetric body is deliberately excluded because it already
     has an analytic link-intersection routine.  ``sail_scale`` /
-    ``fin_scale`` mirror :class:`SuboffConfig` (default: exact DARPA).
+    ``fin_scale`` mirror :class:`SuboffConfig` (default: exact DARPA);
+    ``config`` additionally applies the hull-form axes to the appendage
+    mesh (axial map + sail translation), consistent with the voxel
+    predicates.
     """
     if length <= 0.0 or not math.isfinite(length):
         raise ValueError("length must be finite and positive")
     triangles: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
-    _real_sail_triangles(triangles, length, scale=float(sail_scale))
-    _real_fin_triangles(triangles, length, scale=float(fin_scale))
+    _real_sail_triangles(triangles, length, scale=float(sail_scale), config=config)
+    _real_fin_triangles(triangles, length, scale=float(fin_scale), config=config)
     result = np.asarray(triangles, dtype=np.float64)
     if result.ndim != 3 or result.shape[1:] != (3, 3):
         raise RuntimeError("SUBOFF appendage tessellation is malformed")
