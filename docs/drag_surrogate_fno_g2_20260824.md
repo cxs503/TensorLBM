@@ -1,10 +1,11 @@
-# Drag surrogate conditioning: G2 interaction data (v2) → physics-geometry encoding (v3)
+# Drag surrogate conditioning: G2 interaction data (v2) → physics-geometry encoding (v3) → G2b bare closure (v4)
 
-Date: 2026-08-24 (v2 campaign + protocol; v3 same day) · Module:
+Date: 2026-08-24 (v2 campaign + protocol; v3, v4 same day) · Module:
 `tensorlbm.ai.drag_cond` (new) + `tensorlbm.ai.fno.SpectralConv2d` · Runs:
-`/nfs/wangxi/runs/b4_v2_20260824` (v2, report.md there) and
-`/nfs/wangxi/runs/b4_v3_20260824` (v3) · Dataset:
-`/nfs/wangxi/datasets/scan_suboff_hull_scale_g2_20260824` (G2, 48 points;
+`/nfs/wangxi/runs/b4_v2_20260824` (v2, report.md there),
+`/nfs/wangxi/runs/b4_v3_20260824` (v3) and `/nfs/wangxi/runs/b4_v4_20260824`
+(v4) · Datasets: `scan_suboff_hull_scale_g2_20260824` (G2, 48 points) and
+`scan_suboff_hull_scale_g2b_20260824` (G2b, 36 points; v4 —
 launcher/preflight/validate scripts archived in the dataset directory)
 
 > **Short version.** v2 added the missing hull×appendage-scale interaction
@@ -28,6 +29,29 @@ launcher/preflight/validate scripts archived in the dataset directory)
 > C: 3.40–3.65 %, no outliers) and matches the 2.3–2.5 % C_D offset
 > between G2's nearest anchors (sail = 0.4) and the true bare curve — a
 > data-coverage floor at the extrapolation corner, not encoding noise.
+>
+> **v4 addendum.** The floor was data, and the data closed it. The sail
+> scales down by similarity about the deck plane; below **s\* = 0.133**
+> (capture threshold in (0.1333, 0.1335))
+> the `with_sail` voxel mask is **bit-identical to the bare hull** (the
+> sub-voxel bump still exists continuously but captures no voxel centre),
+> so `with_sail` runs at sail ≤ 0.13 are *physically bare simulations*
+> — verified bit-for-bit against the hull_re bare twins (160/160 force
+> samples equal, C_D identical to 6 decimals). G2b (36 pts: a 1/1/2/3/5
+> net-sail-voxel ladder at sail ∈ {0.15…0.40} × 6 re + 6 sub-s\* points,
+> every re an exact hull_re bare twin) puts certified bare-equivalent
+> anchors on the train side of `loho::bare_hull`. Result: the geometry
+> arms go 2.37/3.14 → **2.02 ± 0.49 / 2.13 ± 0.59**, under the
+> recomputed power-geo line (2.00 → 2.53 on the 274-pt corpus); the
+> per-point bias halves (C_full +3.55 % → +1.80 %); `R4_nooh` collapses
+> to **0.23 ± 0.18**; nothing regresses materially (random 0.56/0.65,
+> full 7.48/8.42 vs 11.66). The R4×geometry log10-ensemble passes all
+> three LOHO lines on fold means (0.92 / 3.74 / 7.95 vs 2.53 / 4.70 /
+> 11.66) but not per-seed. One v3 statement is corrected: the sail=0.4
+> anchors sit **2.3–2.6 % below** the bare C_D(Re) curve (an A_proj
+> 69→71 normalisation effect), not above — the v3 over-prediction was
+> extrapolation past the last anchor, not interpolation of a positive
+> offset.
 
 ## 1. G2 — the hull × scale interaction campaign (v2 recap)
 
@@ -277,3 +301,195 @@ Seeds: split 0 / val 1 / model 0 (+1, 2 on LOHO folds); quota-sampler RNG
 Worktree `exp/b4-v3` (from origin/main 4c787e6e). Datasets read-only
 (only the G2 launcher/preflight/validate scripts were archived into the
 G2 directory, per campaign convention).
+
+## 7. v4 — G2b: closing the bare-fold data floor (same day)
+
+Run `/nfs/wangxi/runs/b4_v4_20260824` · dataset
+`/nfs/wangxi/datasets/scan_suboff_hull_scale_g2b_20260824` (36 pts) ·
+worktree `exp/b4-v4` (from origin/main ca9e0c4d; `scan_runner` /
+`scan_drag` / `suboff_cad` byte-identical to the b16_scan tree G2 ran
+on, verified by diff). Training/protocol byte-identical to v3 — the only
+change is the corpus (238 → 274) and the arms actually rerun
+(`B_encoding`, `C_full`, `R4_nooh` + prediction-level ensembles; the
+238-pt corpus arm *is* v3).
+
+### 7.1 s\* preflight: the sail-disappearance scale
+
+The sail shrinks by similarity about `(x_center, centreplane, deck
+plane)`. Sweeping `sail_scale` 0.40 → 0.02 (0.005 step + 0.001
+refinement) on the production grid, the net sail voxel count is a
+perfectly monotone staircase:
+
+| sail_scale | ≤ 0.1333 | 0.134–0.290 | 0.295–0.320 | 0.325–0.385 | ≥ 0.390 |
+|---|---|---|---|---|---|
+| net sail voxels | **0** | 1 | 2 | 3 | 5 |
+| A_proj | 69 | 70 | 70 | 70 | 71 |
+
+**s\* = 0.133** at 0.001 sweep resolution (the voxel-capture threshold
+itself lies in (0.1333, 0.1335) — 4-decimal probe): below it the
+`with_sail` mask, A_proj and all four
+geometry channels equal the bare hull exactly (solid 4093, `sail_frac`
+0, `log_aproj_ratio` 0, `solid_frac` 1) — pinned by the new
+`TestSubStarBareEquivalence` in `tests/test_drag_cond.py`. The
+continuous predicate never becomes empty (sub-voxel probe at 1/8 lu:
+bump volume 0.004 → 1.35 lu³, z-extent 0 → 1.5 lu over s = 0.02 → 0.4),
+so the disappearance is **voxel quantisation, not geometric
+submergence** — which is exactly what makes sub-s\* runs *physically
+identical* to bare runs rather than merely similar.
+
+### 7.2 G2b campaign and bit-identity certification
+
+Design (36 pts, deterministic grid — no LHS): stratum M = 5 sail levels
+{0.15, 0.20 (1 vox), 0.30 (2), 0.35 (3), 0.40 (5, the G2 anchor
+geometry)} × 6 re log-spread over [60, 703.5]; stratum V = 2 sub-s\*
+levels {0.13, 0.05} (both below s\* = 0.133 by ≥ 3.3e-3) × 3 re.
+**Every re value is copied exactly
+from a `hull_re` bare_hull point** (asserted at launch), so every G2b
+point has a same-re bare twin — the ladder measures the physical
+sail increment directly, and the sub-s\* points can be certified
+against existing runs. Chain identical to G2 (suboff_n128, cumulant,
+4 000 steps, `DragSurveySpec(margin=4, interval=25)`, u_in = 0.1, tau =
+0.5 + 23.04/re ∈ [0.533, 0.884]); smoke 3 pts @300 steps first, then
+the 6 sub-s\* points @4 000 **before** committing the remaining 30
+(the task's verification gate).
+
+**Bit-identity (the premise, certified)**: all 6 sub-s\* points match
+their bare twins with mask XOR = 0, **160/160 force samples exactly
+equal, max |ΔF| = 0.0, C_D identical to 6 decimals** (e.g. re 195.44:
+7.111814 vs 7.111814). The solver is bit-deterministic across the
+campaign vintages — a sub-s\* `with_sail` point *is* the bare point,
+relabelled. These are certified free bare anchors on the train side of
+`loho::bare_hull` (they carry `hull = with_sail`), at 3 of the 14 held
+re values.
+
+Validation: 36/36 completed @4 000 steps (226 s on 8 GPUs + 54 s
+verify), max tail drift 5.1e-5, C_D ∈ [2.974, 17.121], all within
+[0.5, 1.5]× of the bare twin. The measured ladder vs same-re bare
+twins:
+
+| sail (net vox) | C_D offset vs bare twin (re 60 → 703) |
+|---|---|
+| ≤ 0.13 (0) | +0.00 % (bit-identical) |
+| 0.15–0.29 (1) | −1.38 % … −1.34 % |
+| 0.30 (2) | −1.36 % … −1.31 % |
+| 0.35 (3) | −1.34 % … −1.29 % |
+| 0.40 (5) | −2.57 % … −2.30 % |
+
+**Correction to v3 finding 4.** The nearest anchors sit *below* the
+bare C_D(Re) curve — the +1 voxel already adds an A_proj column
+(69 → 70, +1.45 %) while adding ~0.01 % force, and the 5-voxel anchor
+adds +2.9 % area for +0.33 % force. v3's "2.3–2.5 % above" reading of
+the anchor offset had the sign wrong (the underlying G2 numbers — e.g.
+anchor 6.82 vs bare 7.11 at re ≈ 200 — already pointed down). The v3
+uniform **over**-prediction (+2.1–3.0 %) of the bare fold was therefore
+*extrapolation past the last anchor* (the with_sail family's C_D
+decreases with sail near the corner), not interpolation of a positive
+offset; both stories predict a uniform bias, which is why v3 could not
+distinguish them from inside the corpus.
+
+### 7.3 v4 results (274-pt corpus; power-geo lines refit on it)
+
+Power-geo reference moves with the corpus: **2.00 → 2.53 / 5.16 → 4.70
+/ 10.25 → 11.66** (bare / with_sail / full). MAPE %, mean ± std over
+model seeds (bare and full folds: seeds 0–4; with_sail: 0–2; random:
+seed 0):
+
+| fold (power-geo) | B_encoding | C_full | R4_nooh | E2(R4+B) | E2(R4+C) |
+|---|---|---|---|---|---|
+| **random** (5.32) | 0.65 | **0.56** | 2.55 | 1.38* | 1.33 |
+| **loho::bare_hull** (2.53) | 2.02 ± 0.49 ✓ | 2.13 ± 0.59 ✓ | **0.23 ± 0.18** ✓ | 0.92 ± 0.32 ✓ | 0.98 ± 0.32 ✓ |
+| **loho::with_sail** (4.70) | 1.58 ± 0.29 ✓ | 1.39 ± 0.45 ✓ | 6.25 ± 1.92 ✗ | 3.74 ± 1.13 ✓ | 3.50 ± 1.44 ✓ |
+| **loho::full** (11.66) | 7.48 ± 4.28 ✓ | 8.42 ± 4.85 ✓ | 10.64 ± 1.55 ✓ | 7.95 ± 3.56 ✓ | 8.19 ± 3.93 ✓ |
+
+\* E2(R4+B) cells are recomputed post-hoc from `preds_v4.npz` with the
+same log10-mean pairing; the in-sweep ensemble arm (`E2_r4_cfull` in
+`metrics_v4.json`) pairs R4+C_full.
+
+**Bare fold (the judgement).** v3: B 2.37 ± 0.60, C 3.14 ± 0.38 —
+no geometry arm under the 2.00 line. v4: **B 2.02 ± 0.49, C_full 2.13
+± 0.59, both under the recomputed 2.53 line** (B ties the old 2.00
+line within one std). Per-point signed error (same 14 held points,
+seed 0): B +2.54 % → +2.08 %, C_full **+3.55 % → +1.80 %** (range
++1.39…+2.27), R4 −0.50 % → −0.37 %. The residual is still uniform —
+but it now sits *below* the 1-voxel anchor offset rather than above
+the extrapolation edge, and it persists even at the 3 re values that
+have bit-identical training twins (C_full: +1.39/+1.67/+2.20 at re
+60/195/613), i.e. what remains is model bias at the (log sail = 0,
+geometry = bare) input combination — training never shows bare
+geometry with log sail > −0.89 — not a coverage hole.
+
+**R4 collapse.** The 4-log arm goes 0.71 ± 0.40 → **0.23 ± 0.18**
+(seeds 0.06–0.48): the ladder densifies log-sail → C_D along the exact
+row the fold holds. Its with_sail weakness worsens (2.49 → 6.25, and
+8.68 on the g2b slice alone): log-sail cannot represent the quantised
+ladder, where sail 0.15/0.20/0.30 map to near-identical masks.
+
+**Non-regression.** random: 0.65 / 0.56 (geo-scaled 0.67 / 0.65) vs
+v3 0.66 / 0.77 — holds. full (5 seeds): 7.48 / 8.42 vs v3 7.86 / 9.79
+(medians improve; bimodality persists, seeds 1–2 in the 10–14 basin).
+with_sail: the fold's held set grew 36 → 72 (all G2b with_sail points
+are held by definition), so like-for-like numbers are computed on the
+v3-era subset: **B 0.89 → 0.74** (improves), C_full 1.05 → 1.77 (mild
+regression; on the full 72-pt held set 1.39 ± 0.45, still 3.3 pp under
+its line). The g2b slice is the hardest for every arm (B 2.1 %,
+C 1.75 %, power-geo 4.23 %) — the near-bare corner is intrinsically
+the regime that needs the geometry channels.
+
+**Ensemble (prediction-level, log10 mean).** E2(R4+geo) passes all
+three LOHO lines on fold means: 0.92 / 3.74 / 7.95 (R4+B) vs 2.53 /
+4.70 / 11.66. Per-seed it does not sweep: with_sail seed 1 = 5.01 ✗,
+full seed 2 = 11.96 ✗ (R4+B; R4+C fails 2 of 5 on full). The ensemble
+averages away part of the geometry arms' seed bimodality but inherits
+both partners' bad seeds, and R4's with_sail weakness caps the gain
+there. Verdict: means pass, single-seed reliability does not — the
+v3 deploy picture (geometry arm primary, R4 as bare-corner specialist)
+is unchanged, now with both beating their lines on the closed corpus.
+
+### 7.4 v4 anomalies & handling
+
+| # | anomaly | handling |
+|---|---|---|
+| 1 | GitHub unreachable from the 5090 during setup (`Empty reply`); the `ca9e0c4d` objects present locally were an interrupted fetch's leftovers with a missing tree. | Retried fetches left the objects complete (fsck-clean); worktree `reset --hard ca9e0c4d` then succeeded. `gh-proxy.com` mirror confirmed as working fallback for future fetches. Recorded; no repo state touched beyond the mandated `fetch` + `worktree add`. |
+| 2 | v3 §4-4 sign error (anchors below, not above, the bare C_D curve). | Corrected in §7.2 with the direct same-re twin ladder; v3 numbers unchanged (they measured |error|). |
+| 3 | `ScanPlan` requires contiguous point indices 0..n-1, breaking naive subset launches with global ids. | Subsets carry local indices but global `point_id`/`run_id`; resume-by-point-id across phases verified (verify 6 pts → full 36 skipped them). |
+| 4 | `ScanVariable` demands low < high; fin_scale is a pinned no-op on with_sail. | Removed from the plan's variables tuple (documented in `method`); per-point params still carry `fin_scale: 1.0`. |
+| 5 | First preflight run printed a wrong "monotonicity VIOLATIONS" flag (test inequality reversed; the ladder itself is monotone). | Check direction fixed; preflight re-run clean and re-archived. No data affected. |
+| 6 | `loho::with_sail` held set grows 36 → 72 with G2b (all with_sail held by definition), making raw v3→v4 fold deltas non-comparable. | Like-for-like evaluation on the v3-era subset added (`analyze_v4.py` §4); both readings reported. |
+| 7 | Preflight refinement bug, caught by the new unit test: the 0.001 refinement seeded from `min(zeros)` (smallest zero scale) instead of `max(zeros)`, so it swept 0.021–0.024 and the reported s\* stayed the coarse-grid 0.130; and the summary line read the pre-refinement zero list. True s\* = 0.133 (threshold in (0.1333, 0.1335)). | Fixed both lines, re-ran (s\* = 0.133, ladder PASS, no nonzero xor below s\*), re-archived script + output into the dataset dir. **No campaign impact**: sub levels 0.13/0.05 remain below the true boundary by ≥ 3.3e-3, main levels ≥ 0.15 above it, and the bare-equivalence certification was always the empirical bit-identity of the runs, not the s\* label. |
+
+### 7.5 v4 reproducibility
+
+```
+# s* preflight (mask-only, ~3 s)
+cd /nfs/wangxi/runs/b4_v4_20260824 && PYTHONPATH=/nfs/wangxi/worktrees/b4_v4/src \
+  /nfs/wangxi/venvs/tensorlbm/bin/python g2b_preflight.py
+# G2b campaign: smoke -> verify (bit-identity gate) -> all
+cd /nfs/wangxi/runs/b4_v4_20260824 && PYTHONPATH=/nfs/wangxi/worktrees/b4_v4/src \
+  /nfs/wangxi/venvs/tensorlbm/bin/python g2b_launch.py --smoke
+cd /nfs/wangxi/runs/b4_v4_20260824 && PYTHONPATH=/nfs/wangxi/worktrees/b4_v4/src \
+  /nfs/wangxi/venvs/tensorlbm/bin/python g2b_launch.py --subset verify
+cd /nfs/wangxi/runs/b4_v4_20260824 && PYTHONPATH=/nfs/wangxi/worktrees/b4_v4/src \
+  /nfs/wangxi/venvs/tensorlbm/bin/python g2b_validate.py --subset verify
+cd /nfs/wangxi/runs/b4_v4_20260824 && PYTHONPATH=/nfs/wangxi/worktrees/b4_v4/src \
+  /nfs/wangxi/venvs/tensorlbm/bin/python g2b_launch.py --subset all
+cd /nfs/wangxi/runs/b4_v4_20260824 && PYTHONPATH=/nfs/wangxi/worktrees/b4_v4/src \
+  /nfs/wangxi/venvs/tensorlbm/bin/python g2b_validate.py
+# cache (274 pts) + sweep + analysis
+cd /nfs/wangxi/runs/b4_v4_20260824 && PYTHONPATH=/nfs/wangxi/worktrees/b4_v4/src \
+  /nfs/wangxi/venvs/tensorlbm/bin/python build_cache_v4.py
+cd /nfs/wangxi/runs/b4_v4_20260824 && CUDA_VISIBLE_DEVICES=2 \
+  PYTHONPATH=/nfs/wangxi/worktrees/b4_v4/src \
+  /nfs/wangxi/venvs/tensorlbm/bin/python train_fno_v4.py
+cd /nfs/wangxi/runs/b4_v4_20260824 && /nfs/wangxi/venvs/tensorlbm/bin/python analyze_v4.py
+# unit tests incl. the sub-s* ladder pin (both venvs)
+cd /nfs/wangxi/worktrees/b4_v4 && TMPDIR=/nfs/wangxi/tmp \
+  /nfs/wangxi/venvs/tensorlbm/bin/python -m pytest tests/test_drag_cond.py \
+  --basetemp=/nfs/wangxi/tmp/pt_b4v4
+```
+
+Seeds as v3 (split 0 / val 1 / model 0–4 on bare+full, 0–2 on
+with_sail); G2b is a deterministic grid (seed 20260824 recorded for
+provenance only). Artifacts: `cache_v4.npz` / `cache_v4_meta.json`,
+`metrics_v4.json` (67 rows), `preds_v4.npz`, `train_v4.log`,
+`analyze_v4.py`. Datasets read-only; the three campaign scripts are
+archived in the G2b dataset directory per convention.
