@@ -483,6 +483,58 @@ class ModelEnsembleBackend:
                 outs.append(10.0 ** (z.double().cpu().numpy() * y_s + y_m))
         return np.stack(outs, axis=0)  # (M, N)
 
+    def predict_batch(
+        self,
+        fields: np.ndarray,
+        cond: np.ndarray,
+        counts: np.ndarray,
+    ) -> np.ndarray:
+        """Batched multi-geometry variant of :meth:`predict` (B4-P3a sweep).
+
+        ``fields`` is ``(G, 5, ny, nx)`` (one reference field per geometry),
+        ``cond`` the ``(N, 8)`` condition rows of all geometries
+        concatenated and ``counts`` the per-geometry row counts
+        (``counts.sum() == N``).  Row ``n`` is evaluated on the field of the
+        geometry it belongs to (``torch.repeat_interleave`` expansion), so a
+        whole slider sweep runs as **one forward per ensemble member**
+        instead of one per geometry).  Same normalisation and de-scaling as
+        :meth:`predict`; ``G == 1`` reproduces it bit-identically, and at
+        ``G > 1`` individual rows match a per-geometry :meth:`predict` call
+        only to float32 batch-kernel noise (measured max rel ~2e-8).
+        """
+        fields = np.asarray(fields, dtype=np.float32)
+        cond = np.asarray(cond, dtype=np.float64)
+        counts = np.asarray(counts, dtype=np.int64)
+        if fields.ndim != 4 or fields.shape[1] != 5:
+            raise ValueError(f"fields must be (G, 5, ny, nx), got {fields.shape}")
+        if cond.ndim != 2 or cond.shape[1] != 8:
+            raise ValueError(f"cond must be (N, 8), got {cond.shape}")
+        if counts.ndim != 1 or counts.size != fields.shape[0] or not (counts > 0).all():
+            raise ValueError(
+                f"counts must be positive with one entry per field, got {counts!r} "
+                f"for {fields.shape[0]} fields"
+            )
+        if int(counts.sum()) != cond.shape[0]:
+            raise ValueError(f"counts sum {int(counts.sum())} != condition rows {cond.shape[0]}")
+        x = torch.from_numpy(fields).to(self.device)
+        p = torch.from_numpy(cond.astype(np.float32)).to(self.device)
+        reps = torch.as_tensor(counts, device=self.device)
+        xn = torch.repeat_interleave(x, reps, dim=0)  # (N, 5, ny, nx)
+        outs = []
+        with torch.no_grad():
+            for model, norm in zip(self._models, self._norms):
+                ch_m = torch.as_tensor(norm["ch_mean"], dtype=torch.float32, device=self.device)
+                ch_s = torch.as_tensor(norm["ch_std"], dtype=torch.float32, device=self.device)
+                p_m = torch.as_tensor(norm["p_mean"], dtype=torch.float32, device=self.device)
+                p_s = torch.as_tensor(norm["p_std"], dtype=torch.float32, device=self.device)
+                y_m = float(norm["y_mean"])
+                y_s = float(norm["y_std"])
+                x_norm = (xn - ch_m.view(1, -1, 1, 1)) / ch_s.view(1, -1, 1, 1)
+                p_norm = (p - p_m) / p_s
+                z = model(x_norm, p_norm)
+                outs.append(10.0 ** (z.double().cpu().numpy() * y_s + y_m))
+        return np.stack(outs, axis=0)  # (M, N)
+
 
 @dataclass(frozen=True)
 class ReplayDesign:

@@ -38,6 +38,7 @@ for _name, _mod in [
     ("cylinder_interactive", "cylinder_interactive"),
     ("data_catalog", "data_catalog"),
     ("drag_surrogate", "drag_surrogate"),
+    ("drag_echo", "drag_echo"),
     ("generic_sim", "generic_sim"),
     ("jobs", "jobs"),
     ("marine", "marine"),
@@ -73,6 +74,7 @@ cylinder_compare = _router_imports.get("cylinder_compare")
 cylinder_device_sim = _router_imports.get("cylinder_device_sim")
 cylinder_interactive = _router_imports.get("cylinder_interactive")
 data_catalog = _router_imports.get("data_catalog")
+drag_echo = _router_imports.get("drag_echo")
 drag_surrogate = _router_imports.get("drag_surrogate")
 generic_sim = _router_imports.get("generic_sim")
 jobs = _router_imports.get("jobs")
@@ -187,6 +189,7 @@ _router_registry = [
     (cylinder_compare, "/api/cylinder-compare", "Cylinder Compare"),
     (data_catalog, "/api/data", "Data Catalog"),
     (drag_surrogate, "/api/drag", "Drag Surrogate"),
+    (drag_echo, "/api/drag/echo", "Drag Echo"),
     (simulations, "", "Simulations"),
     (orchestration, "/api/orchestration", "Orchestration"),
     (projects, "/api/projects", "Projects"),
