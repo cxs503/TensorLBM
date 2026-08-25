@@ -1,4 +1,5 @@
 """TensorLBM Platform – FastAPI application entry point."""
+
 from __future__ import annotations
 
 import asyncio
@@ -20,6 +21,7 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from . import job_manager  # noqa: E402
 from .middleware import install_production_middleware  # noqa: E402
+
 # Import routers; skip any that are incomplete (under active development)
 _router_imports: dict[str, object] = {}
 for _name, _mod in [
@@ -35,6 +37,7 @@ for _name, _mod in [
     ("cylinder_device_sim", "cylinder_device_sim"),
     ("cylinder_interactive", "cylinder_interactive"),
     ("data_catalog", "data_catalog"),
+    ("drag_surrogate", "drag_surrogate"),
     ("generic_sim", "generic_sim"),
     ("jobs", "jobs"),
     ("marine", "marine"),
@@ -55,6 +58,7 @@ for _name, _mod in [
         _router_imports[_name] = __import__(f"backend.routers.{_mod}", fromlist=[_mod])
     except Exception as e:
         import logging
+
         logging.warning(f"Router {_mod} not available, skipping: {e}")
 
 agent = _router_imports.get("agent")
@@ -69,6 +73,7 @@ cylinder_compare = _router_imports.get("cylinder_compare")
 cylinder_device_sim = _router_imports.get("cylinder_device_sim")
 cylinder_interactive = _router_imports.get("cylinder_interactive")
 data_catalog = _router_imports.get("data_catalog")
+drag_surrogate = _router_imports.get("drag_surrogate")
 generic_sim = _router_imports.get("generic_sim")
 jobs = _router_imports.get("jobs")
 marine = _router_imports.get("marine")
@@ -89,6 +94,7 @@ try:
 except ImportError:
     streaming_hub = None
     import logging
+
     logging.warning("xflow_streaming service not available")
 
 try:
@@ -180,6 +186,7 @@ _router_registry = [
     (cylinder_bench, "/api/cylinder-bench", "Cylinder Benchmark"),
     (cylinder_compare, "/api/cylinder-compare", "Cylinder Compare"),
     (data_catalog, "/api/data", "Data Catalog"),
+    (drag_surrogate, "/api/drag", "Drag Surrogate"),
     (simulations, "", "Simulations"),
     (orchestration, "/api/orchestration", "Orchestration"),
     (projects, "/api/projects", "Projects"),
@@ -322,6 +329,7 @@ async def push_field_slice_http(
     """
     if not job_manager.get_job(job_id):
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="Job not found")
 
     ny = len(data)
@@ -342,6 +350,7 @@ async def push_field_slice_http(
 # Platform status
 # ---------------------------------------------------------------------------
 
+
 @app.get("/api/health", tags=["Platform"])
 async def health() -> dict:
     """Lightweight liveness/readiness probe used by external monitors.
@@ -361,15 +370,13 @@ async def platform_status() -> dict:
 
         sdaa_ok = torch.sdaa.is_available()
         n_sdaas = torch.sdaa.device_count() if sdaa_ok else 0
-        sdaa_names = (
-            [torch.sdaa.get_device_name(i) for i in range(n_sdaas)] if sdaa_ok else []
-        )
+        sdaa_names = [torch.sdaa.get_device_name(i) for i in range(n_sdaas)] if sdaa_ok else []
         cuda_ok = torch.cuda.is_available()
         n_gpus = torch.cuda.device_count() if cuda_ok else 0
-        gpu_names = (
-            [torch.cuda.get_device_name(i) for i in range(n_gpus)] if cuda_ok else []
+        gpu_names = [torch.cuda.get_device_name(i) for i in range(n_gpus)] if cuda_ok else []
+        devices = (
+            ["cpu"] + [f"sdaa:{i}" for i in range(n_sdaas)] + [f"cuda:{i}" for i in range(n_gpus)]
         )
-        devices = ["cpu"] + [f"sdaa:{i}" for i in range(n_sdaas)] + [f"cuda:{i}" for i in range(n_gpus)]
     except Exception:
         sdaa_ok = False
         n_sdaas = 0
