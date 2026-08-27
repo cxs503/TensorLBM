@@ -101,6 +101,8 @@ __all__ = [
     "corpus_cond_v3",
     "corpus_design_keys",
     "corpus_param_keys",
+    "corpus_point_keys",
+    "default_fresh_re_grid",
     "eval_loop",
     "fit_stats",
     "honest_verdict",
@@ -336,11 +338,24 @@ class FlaggedQuery:
 
 @dataclass(frozen=True)
 class AcquisitionPoint:
-    """One proposed design point to label (the loop's ask)."""
+    """One proposed design point to label (the loop's ask).
+
+    ``guard_score`` / ``floor_pass`` are recorded by
+    :func:`propose_acquisition`: the candidate's channel-space Mahalanobis
+    score against the existing cloud and whether it clears the exclusion
+    floor.  The floor is a hard filter in the default (cached-Re) mode and
+    ADVISORY in fresh-Re mode — G1 of the 2026-08-27 campaign measured
+    that it over-rejects genuinely-new fresh-Re corner points, so
+    ``floor_pass=False`` points are retained there (and every point still
+    carries its score for triage).  Both stay ``None`` for hand-built
+    points.
+    """
 
     params: dict[str, Any]
     re: float
     strategy: str
+    guard_score: float | None = None
+    floor_pass: bool | None = None
 
     @property
     def key(self) -> str:
@@ -416,6 +431,55 @@ def _exclusion_floor(existing_cond: np.ndarray, guard: EnvelopeMahalanobisGuardr
     return float(np.quantile(own, 0.10))
 
 
+def _corpus_re_window(existing_cond: np.ndarray) -> tuple[float, float]:
+    """(min, max) Reynolds of the existing cloud (cond_v3 channel 0).
+
+    Channel 0 of ``condition_v3`` is ``log10(re)``, so the window is the
+    cloud's own Re span.  Values are rounded to 9 significant digits (the
+    :func:`point_param_key` discipline) so the log round-trip recovers the
+    corpus Re values bitwise.
+    """
+    cond = np.asarray(existing_cond, dtype=np.float64)
+    if cond.ndim != 2 or cond.shape[1] < 1:
+        raise ValueError(f"existing_cond must be (N, D>=1) to read the Re window, got {cond.shape}")
+    res = 10.0 ** cond[:, 0]
+    lo = float(f"{res.min():.9g}")
+    hi = float(f"{res.max():.9g}")
+    if not (math.isfinite(lo) and math.isfinite(hi) and lo > 0.0 and hi > 0.0):
+        raise ValueError(f"existing_cond Re window not finite/positive: ({lo}, {hi})")
+    return lo, hi
+
+
+def default_fresh_re_grid(existing_cond: np.ndarray, n_levels: int = 8) -> list[float]:
+    """Default fresh-Re grid: log-spaced levels spanning the corpus Re window.
+
+    The window is recovered from the existing cloud itself (channel 0,
+    see :func:`_corpus_re_window`): fresh-Re candidates add coverage
+    INSIDE the served operating range — within the family windows the
+    2026-08-27 campaign measured log-log interpolation error at <= 0.03 %,
+    while outside-window extrapolation is untested and out of scope.
+    """
+    lo, hi = _corpus_re_window(existing_cond)
+    if hi <= lo:
+        raise ValueError(
+            f"corpus Re window is degenerate ({lo}, {hi}); pass an explicit fresh_re_grid"
+        )
+    n = int(n_levels)
+    if n < 1:
+        raise ValueError(f"n_levels must be >= 1, got {n_levels}")
+    return [float(v) for v in np.geomspace(lo, hi, n)]
+
+
+def _validated_fresh_re_grid(grid: Sequence[float]) -> list[float]:
+    """Sorted, de-duplicated, strictly positive user fresh-Re grid."""
+    vals = [float(v) for v in grid]
+    if not vals:
+        raise ValueError("fresh_re_grid must contain at least one Re level")
+    if not all(math.isfinite(v) and v > 0.0 for v in vals):
+        raise ValueError("fresh_re_grid entries must be finite and positive")
+    return sorted(set(vals))
+
+
 def _product(levels: list[list[float]]) -> list[tuple[float, ...]]:
     """Cartesian product of axis anchor levels (deterministic order)."""
     out: list[tuple[float, ...]] = [()]
@@ -436,6 +500,9 @@ def propose_acquisition(
     seed: int = 0,
     n_candidates: int | None = None,
     n_re_levels: int = 8,
+    fresh_re: bool = False,
+    fresh_re_grid: Sequence[float] | None = None,
+    labeled_keys: Sequence[str] | None = None,
 ) -> list[AcquisitionPoint]:
     """Propose ``budget`` new design points given flagged queries.
 
@@ -460,6 +527,35 @@ def propose_acquisition(
     existing cloud's 10th-percentile score (duplicates add nothing), and
     candidate keys are unique.  Returns exactly ``budget`` points when the
     candidate pool suffices (fewer otherwise — never silently padded).
+
+    Fresh-Re mode (``fresh_re=True``, G1 of the 2026-08-27 campaign):
+    candidate Re levels come from a GRID — ``fresh_re_grid`` when given,
+    else :func:`default_fresh_re_grid` (log-spaced over the corpus Re
+    window recovered from ``existing_cond``) — crossed with the same
+    geometry arm/corner machinery, NOT restricted to the flagged (cached)
+    rows' Re values.  This is the mode for real-labeling campaigns, where
+    labels come from fresh simulations rather than the family cache (the
+    family-Re consistency rule above exists only because the ORACLE is a
+    cache whose Re values never coincide across families).  In fresh-Re
+    mode the Mahalanobis exclusion floor becomes ADVISORY: below-floor
+    candidates are retained with ``floor_pass=False`` and their
+    ``guard_score`` recorded (the floor over-rejected 10 of 24
+    exact-key-proven-new points in the campaign), while the default mode
+    keeps the hard floor.
+
+    ``labeled_keys`` (both modes — a pure safety property) are
+    :func:`point_param_key` strings that must never be (re-)proposed:
+    pass ``corpus_point_keys(index)`` for the corpus rows plus the keys of
+    every point labeled in earlier rounds, and repeated calls never
+    re-propose an already-labeled point.  Without it the default
+    behaviour is unchanged: cached-Re candidates carry moved hull-form
+    axes by construction (coverage) or continuous axes (envelope_shell),
+    so corpus-key collisions are rare but possible — the all-mother
+    ``max_disagreement`` combo at a corpus Re is an exact corpus
+    duplicate that the floor alone drops only when it scores below the
+    corpus's own 10th percentile.
+
+    Every returned point carries ``guard_score`` and ``floor_pass``.
     """
     if strategy not in STRATEGY_NAMES:
         raise ValueError(f"strategy must be one of {STRATEGY_NAMES}, got {strategy!r}")
@@ -470,6 +566,16 @@ def propose_acquisition(
     existing_cond = np.asarray(existing_cond, dtype=np.float64)
     if existing_cond.ndim != 2 or existing_cond.shape[0] < 2:
         raise ValueError(f"existing_cond must be (N>=2, D), got {existing_cond.shape}")
+    if fresh_re_grid is not None and not fresh_re:
+        raise ValueError("fresh_re_grid requires fresh_re=True")
+    fresh_levels: list[float] | None = None
+    if fresh_re:
+        fresh_levels = (
+            _validated_fresh_re_grid(fresh_re_grid)
+            if fresh_re_grid is not None
+            else default_fresh_re_grid(existing_cond, n_re_levels)
+        )
+    blocked = set(labeled_keys) if labeled_keys is not None else set()
     guard = EnvelopeMahalanobisGuardrail(existing_cond)
     floor = _exclusion_floor(existing_cond, guard)
     ranges = dict(axis_ranges) if axis_ranges else _flagged_axis_ranges(queries)
@@ -477,17 +583,32 @@ def propose_acquisition(
     u_in = float(queries[0].params.get("u_in", 0.1))
     rng = np.random.default_rng(seed)
 
+    def re_levels_for(shape: dict[str, Any]) -> list[float]:
+        if fresh_levels is not None:
+            return fresh_levels
+        return _eligible_re_levels(shape, queries, n_re_levels)
+
     def accept(cands: list[AcquisitionPoint]) -> list[AcquisitionPoint]:
         seen: set[str] = set()
         out: list[AcquisitionPoint] = []
         for p in cands:
-            if p.key in seen:
+            if p.key in seen or p.key in blocked:
                 continue
             cond = hullform_condition_rows(p.params, [p.re], grid=grid, u_in=u_in)
-            if float(guard.row_scores(cond)[0]) < floor:
+            score = float(guard.row_scores(cond)[0])
+            passes = score >= floor
+            if not fresh_re and not passes:
                 continue
             seen.add(p.key)
-            out.append(p)
+            out.append(
+                AcquisitionPoint(
+                    params=p.params,
+                    re=p.re,
+                    strategy=p.strategy,
+                    guard_score=score,
+                    floor_pass=passes,
+                )
+            )
         return out
 
     if strategy == "envelope_shell":
@@ -497,10 +618,20 @@ def propose_acquisition(
         # axis multipliers are sampled LINEARLY, Re in log space
         ax_lo = np.array([ranges[a][0] for a in HULLFORM_AXES])
         ax_hi = np.array([ranges[a][1] for a in HULLFORM_AXES])
+        if fresh_levels is None:
+            re_col = 10.0 ** (
+                math.log10(re_lo) + u[:, -1] * (math.log10(re_hi) - math.log10(re_lo))
+            )
+        else:
+            # fresh-Re mode: Re drawn from the (grid) levels, not the
+            # flagged window — same LHS axes, discrete fresh Re values
+            re_col = np.asarray(fresh_levels, dtype=np.float64)[
+                rng.integers(0, len(fresh_levels), n_cand)
+            ]
         pts = np.column_stack(
             [
                 ax_lo + u[:, : dim - 1] * (ax_hi - ax_lo),
-                10.0 ** (math.log10(re_lo) + u[:, -1] * (math.log10(re_hi) - math.log10(re_lo))),
+                re_col,
             ]
         )
         band_lo = min(q.score for q in queries)
@@ -545,7 +676,7 @@ def propose_acquisition(
                 strategy=strategy,
             )
             for combo in combos
-            for re in _eligible_re_levels(shape_by_combo[combo], queries, n_re_levels)
+            for re in re_levels_for(shape_by_combo[combo])
         ]
         cands = accept(cands)
         if not cands:
@@ -556,7 +687,8 @@ def propose_acquisition(
         order = sorted(range(len(cands)), key=lambda i: (-float(stds[i]), cands[i].key))
         return [cands[i] for i in order[:budget]]
 
-    # coverage: family corners x flagged Re levels, round-robin over corners
+    # coverage: family corners x Re levels (own-family flagged levels, or
+    # the fresh-Re grid), round-robin over corners
     corners: list[dict[str, float]] = []
     for axis in HULLFORM_AXES:
         for extreme in ranges[axis]:
@@ -567,7 +699,7 @@ def propose_acquisition(
             if shape not in corners:
                 corners.append(shape)
     corners.sort(key=lambda s: tuple(s[a] for a in HULLFORM_AXES))
-    per_corner = [_eligible_re_levels(shape, queries, n_re_levels) for shape in corners]
+    per_corner = [re_levels_for(shape) for shape in corners]
     cands = []
     for j in range(max(len(lev) for lev in per_corner)):
         for shape, lev in zip(corners, per_corner):
@@ -707,6 +839,28 @@ def corpus_param_keys(index: dict[str, np.ndarray]) -> list[str]:
         for r, u, s, f, h in zip(
             index["re"], index["uin"], index["sail"], index["fin"], index["hull"]
         )
+    ]
+
+
+def corpus_point_keys(index: dict[str, np.ndarray]) -> list[str]:
+    """Row-aligned point keys (:func:`point_param_key` layout) of a corpus.
+
+    ``cache_v4`` rows carry no hull-form axes, so every row keys at the
+    mother axes (all 1.0): a candidate whose axes are all mother AND whose
+    Re equals a corpus row's Re is an EXACT corpus duplicate.  Feed these
+    keys (plus earlier acquisition rounds' keys) as ``labeled_keys`` of
+    :func:`propose_acquisition` so no already-labeled point is re-proposed.
+    """
+    return [
+        point_param_key(
+            {
+                "hull_type": HULL_ORDER[int(h)],
+                "sail_scale": float(s),
+                "fin_scale": float(f),
+            },
+            float(r),
+        )
+        for h, s, f, r in zip(index["hull"], index["sail"], index["fin"], index["re"])
     ]
 
 
