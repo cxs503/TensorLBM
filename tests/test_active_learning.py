@@ -34,6 +34,8 @@ from tensorlbm.ai.active_learning import (
     corpus_cond_v3,
     corpus_design_keys,
     corpus_param_keys,
+    corpus_point_keys,
+    default_fresh_re_grid,
     eval_loop,
     fit_stats,
     honest_verdict,
@@ -41,6 +43,7 @@ from tensorlbm.ai.active_learning import (
     hullform_condition_rows,
     hullform_geo_block,
     labels_from_cache,
+    point_param_key,
     predict_design,
     propose_acquisition,
     retrain_ensemble,
@@ -504,6 +507,256 @@ class TestProposeAcquisition:
                 budget=2,
                 existing_cond=existing,
                 grid=TEST_GRID,
+            )
+
+
+class TestFreshReAcquisition:
+    """Fresh-Re mode + exact-key dedup (G1, 2026-08-27 real-label campaign).
+
+    The cached-Re mode can only propose flagged (cached) Re values and the
+    Mahalanobis floor over-rejects fresh-Re corner points — 10 of 24
+    exact-key-proven-new campaign points scored below it.  Fresh-Re mode
+    draws Re from a grid crossed with the same geometry arms, keeps the
+    floor advisory (score/floor-pass recorded per point), and
+    ``labeled_keys`` excludes already-labeled keys in BOTH modes.
+    """
+
+    FRESH_GRID = [137.0, 211.0, 389.0]  # neither flagged nor cached Re values
+
+    def _existing(self) -> np.ndarray:
+        return np.asarray(corpus_cond_v3(make_corpus()))
+
+    def test_fresh_re_levels_come_from_grid_not_cache(self) -> None:
+        existing = self._existing()
+        queries = flagged_queries(existing)
+        pts = propose_acquisition(
+            queries,
+            strategy="coverage",
+            budget=6,
+            existing_cond=existing,
+            grid=TEST_GRID,
+            fresh_re=True,
+            fresh_re_grid=self.FRESH_GRID,
+        )
+        assert len(pts) == 6
+        assert len({p.key for p in pts}) == len(pts)  # unique keys
+        for p in pts:
+            assert p.re in self.FRESH_GRID, p.re
+            assert p.re not in {q.re for q in queries}  # not the flagged Re set
+            assert p.re not in set(RES)  # not a cached corpus Re either
+            assert p.guard_score is not None and p.floor_pass is not None
+
+    def test_fresh_re_default_grid_spans_corpus_window(self) -> None:
+        corpus = make_corpus()  # cached Re = RES[:5] = 80 .. 450
+        existing = np.asarray(corpus_cond_v3(corpus))
+        queries = flagged_queries(existing)
+        # .9g discipline: the log round-trip recovers the corpus Re bitwise
+        assert default_fresh_re_grid(existing, 8) == [
+            float(v) for v in np.geomspace(float(corpus["re"].min()), float(corpus["re"].max()), 8)
+        ]
+        pts = propose_acquisition(
+            queries,
+            strategy="coverage",
+            budget=8,
+            existing_cond=existing,
+            grid=TEST_GRID,
+            fresh_re=True,
+        )
+        assert pts
+        expected = set(default_fresh_re_grid(existing, 8))
+        for p in pts:
+            assert p.re in expected
+        assert any(p.re not in {q.re for q in queries} for p in pts)  # genuinely fresh
+
+    def test_fresh_re_all_strategies_on_grid(self) -> None:
+        existing = self._existing()
+        queries = flagged_queries(existing)
+        shell = propose_acquisition(
+            queries,
+            strategy="envelope_shell",
+            budget=4,
+            existing_cond=existing,
+            grid=TEST_GRID,
+            seed=3,
+            n_candidates=96,
+            fresh_re=True,
+            fresh_re_grid=self.FRESH_GRID,
+        )
+        assert shell and all(p.re in self.FRESH_GRID for p in shell)
+
+        def std_fn(pts: list[AcquisitionPoint]) -> np.ndarray:
+            return np.array([p.re for p in pts])  # favour the highest grid Re
+
+        md = propose_acquisition(
+            queries,
+            strategy="max_disagreement",
+            budget=4,
+            existing_cond=existing,
+            grid=TEST_GRID,
+            member_std_fn=std_fn,
+            fresh_re=True,
+            fresh_re_grid=self.FRESH_GRID,
+        )
+        assert len(md) == 4
+        assert [p.re for p in md] == [389.0] * 4  # top-std picks all land on 389
+        assert len({p.key for p in md}) == 4  # ...at distinct geometry arms
+
+    def test_exact_key_dedup_in_both_modes(self) -> None:
+        existing = self._existing()
+        queries = flagged_queries(existing)
+        common: dict[str, Any] = dict(
+            strategy="coverage", budget=5, existing_cond=existing, grid=TEST_GRID
+        )
+        first = propose_acquisition(queries, **common)
+        assert len(first) == 5
+        blocked = [p.key for p in first]
+        # old mode: dedup is the safety property (the floor already shrank
+        # the cached-Re pool, so a full-budget REFILL is not guaranteed —
+        # only that no blocked key is ever re-proposed)
+        again = propose_acquisition(queries, labeled_keys=blocked, **common)
+        assert not ({p.key for p in again} & {p.key for p in first})
+        # fresh mode: floor is advisory, so the pool = corners x grid and
+        # the refill is exactly budget again, all disjoint from the blocked
+        fresh = propose_acquisition(
+            queries,
+            labeled_keys=blocked,
+            fresh_re=True,
+            fresh_re_grid=self.FRESH_GRID,
+            **common,
+        )
+        assert len(fresh) == 5
+        assert not ({p.key for p in fresh} & {p.key for p in first})
+
+    def test_corpus_point_keys_exclude_corpus_duplicates(self) -> None:
+        corpus = make_corpus()
+        existing = np.asarray(corpus_cond_v3(corpus))
+        queries = flagged_queries(existing)  # flagged Re values ARE corpus Re values
+        keys = corpus_point_keys(corpus)
+        assert len(keys) == len(corpus["cd"])
+        i = 5  # first with_sail(1,1) row of the default 6x5 corpus
+        assert corpus["re"][i] == RES[0]
+        assert keys[i] == point_param_key(
+            {"hull_type": "with_sail", "sail_scale": 1.0, "fin_scale": 1.0},
+            float(corpus["re"][i]),
+        )
+        corpus_keys = set(keys)
+
+        def std_fn(pts: list[AcquisitionPoint]) -> np.ndarray:
+            # favour the all-mother combo — exactly the corpus duplicates
+            return np.array(
+                [
+                    1.0 if all(abs(p.params[a] - 1.0) < 1e-9 for a in HULLFORM_AXES) else 0.0
+                    for p in pts
+                ]
+            )
+
+        common: dict[str, Any] = dict(
+            strategy="max_disagreement",
+            budget=6,
+            existing_cond=existing,
+            grid=TEST_GRID,
+            member_std_fn=std_fn,
+        )
+        raw = propose_acquisition(queries, **common)
+        dedup = propose_acquisition(queries, labeled_keys=keys, **common)
+        assert not ({p.key for p in dedup} & corpus_keys)  # safety property
+        removed = {p.key for p in raw} - {p.key for p in dedup}
+        assert removed <= corpus_keys  # ...and only corpus keys were dropped
+
+    def test_floor_advisory_in_fresh_mode_hard_in_old_mode(self) -> None:
+        queries = flagged_queries(self._existing())
+        # dense tight cloud exactly AT the blunt shape / re=200 candidate
+        blunt = _family_params({"l_over_d_mult": 0.75})
+        cloud_row = hullform_condition_rows(blunt, [200.0], grid=TEST_GRID)[0]
+        rng = np.random.default_rng(0)
+        cloud = cloud_row[None, :] + rng.normal(0.0, 1e-6, (30, 8))
+        guard = EnvelopeMahalanobisGuardrail(cloud)
+        floor = _exclusion_floor(cloud, guard)
+
+        old_pts = propose_acquisition(
+            queries, strategy="coverage", budget=6, existing_cond=cloud, grid=TEST_GRID
+        )
+        assert old_pts
+        assert not any(
+            abs(p.params["l_over_d_mult"] - 0.75) < 1e-9 and abs(p.re - 200.0) < 1e-9
+            for p in old_pts
+        ), "old mode: the in-cloud candidate is hard-dropped"
+        assert all(p.floor_pass for p in old_pts)  # survivors all cleared the floor
+
+        fresh_pts = propose_acquisition(
+            queries,
+            strategy="coverage",
+            budget=6,
+            existing_cond=cloud,
+            grid=TEST_GRID,
+            fresh_re=True,
+            fresh_re_grid=[150.0, 200.0, 300.0],
+        )
+        below = [
+            p
+            for p in fresh_pts
+            if abs(p.params["l_over_d_mult"] - 0.75) < 1e-9 and abs(p.re - 200.0) < 1e-9
+        ]
+        assert below, "fresh mode must RETAIN the below-floor in-cloud candidate"
+        for p in below:
+            assert p.floor_pass is False
+            assert p.guard_score is not None and p.guard_score < floor
+        assert any(p.floor_pass for p in fresh_pts)  # advisory, not inverted
+
+    def test_default_path_bitwise_unchanged(self) -> None:
+        existing = self._existing()
+        queries = flagged_queries(existing)
+        common: dict[str, Any] = dict(
+            strategy="coverage", budget=5, existing_cond=existing, grid=TEST_GRID
+        )
+        implicit = propose_acquisition(queries, **common)
+        explicit = propose_acquisition(
+            queries,
+            fresh_re=False,
+            fresh_re_grid=None,
+            labeled_keys=None,
+            **common,
+        )
+        assert [p.key for p in implicit] == [p.key for p in explicit]
+        assert [p.guard_score for p in implicit] == [p.guard_score for p in explicit]
+        assert [p.floor_pass for p in implicit] == [p.floor_pass for p in explicit]
+        assert implicit == explicit  # dataclass equality: defaults are inert
+
+    def test_fresh_re_arg_validation(self) -> None:
+        queries = flagged_queries(self._existing())
+        existing = self._existing()
+        with pytest.raises(ValueError, match="fresh_re_grid requires fresh_re"):
+            propose_acquisition(
+                queries,
+                strategy="coverage",
+                budget=2,
+                existing_cond=existing,
+                grid=TEST_GRID,
+                fresh_re_grid=[100.0],
+            )
+        with pytest.raises(ValueError, match="finite and positive"):
+            propose_acquisition(
+                queries,
+                strategy="coverage",
+                budget=2,
+                existing_cond=existing,
+                grid=TEST_GRID,
+                fresh_re=True,
+                fresh_re_grid=[100.0, -1.0],
+            )
+        # a cloud at a single Re cannot define a window: ask for a grid
+        row = hullform_condition_rows(_family_params({}), [200.0], grid=TEST_GRID)[0]
+        noise = np.random.default_rng(0).normal(0.0, 1e-6, (30, 8))
+        noise[:, 0] = 0.0  # identical log-Re column -> degenerate window
+        one_re_cloud = row[None, :] + noise
+        with pytest.raises(ValueError, match="degenerate"):
+            propose_acquisition(
+                queries,
+                strategy="coverage",
+                budget=2,
+                existing_cond=one_re_cloud,
+                grid=TEST_GRID,
+                fresh_re=True,
             )
 
 
