@@ -18,18 +18,18 @@ Usage: PYTHONPATH=src python tests/test_wall_function_poiseuille.py
 """
 
 from __future__ import annotations
+
 import sys
-import math
-import torch
+
 import numpy as np
+import torch
 
 sys.path.insert(0, "src")
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C, W
-from tensorlbm.solver3d import stream3d, collide_bgk3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import C, W, equilibrium3d, macroscopic3d
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 from tensorlbm.wall_model import wall_function_3d
-from tensorlbm.ibm import ibm_apply_body_force_3d
 
 
 def run_poiseuille_bounceback(device, n_steps=3000):

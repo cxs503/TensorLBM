@@ -14,16 +14,15 @@ from tensorlbm.backends.contracts import DeviceSpec
 from tensorlbm.backends.torch_backend import TorchBackend
 from tensorlbm.boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.models.contracts import ModelComposition
-from tensorlbm.models.torch_execution import measure_plan_overhead
-from tensorlbm.solver3d import collide_mrt3d, stream3d
-
 from tensorlbm.full_wet import (
     D3Q19PopulationSnapshot,
     FullyWettedFlowConfig,
     VoxelBodyGeometry,
     run_fully_wetted_flow,
 )
+from tensorlbm.models.contracts import ModelComposition
+from tensorlbm.models.torch_execution import measure_plan_overhead
+from tensorlbm.solver3d import collide_mrt3d, stream3d
 
 
 def _composition(**overrides: object) -> ModelComposition:

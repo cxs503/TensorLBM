@@ -30,7 +30,7 @@ Williamson, C.H.K. (1996). "Vortex dynamics in the cylinder wake."
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Sequence
 
 import torch

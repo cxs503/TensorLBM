@@ -1,11 +1,12 @@
 """Regression tests for sparse-leaf LES direction and shard context."""
+
 from __future__ import annotations
 
 import torch
 
+from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.octree_boundary.geometry import SOLID
 from tensorlbm.octree_boundary.les import _gradient, leaf_les_collide
-from tensorlbm.d3q19 import equilibrium3d
 
 
 def test_sparse_gradient_uses_spatial_axis_not_rest_direction() -> None:
@@ -32,9 +33,11 @@ def test_leaf_les_supports_d3q19() -> None:
     nt = torch.full((19, n), SOLID, dtype=torch.int64)
     centers = torch.zeros((n, 3), dtype=torch.float32)
     out = leaf_les_collide(
-        f, 0.51, nt, leaf_level=torch.ones(n, dtype=torch.int64),
+        f,
+        0.51,
+        nt,
+        leaf_level=torch.ones(n, dtype=torch.int64),
         leaf_center=centers,
     )
     assert out.shape == f.shape
     assert bool(torch.isfinite(out).all())
-

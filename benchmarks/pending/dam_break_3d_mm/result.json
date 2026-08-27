@@ -1,0 +1,19 @@
+{
+  "case": "dam_break_3d_mm",
+  "fix_attempt": {
+    "date": "2026-08-19",
+    "implemented": "free_surface_lbm.py(3处: f_exchange pre-ABB冻结/配对保守交换/to_iface阈值0.1) + free_surface_topology_transaction.py(halo to_i仅邻接LIQUID)",
+    "evidence": "静止水柱漂移 +34.9% → 修复后 ~0.25%/步级(未达 <0.1% 目标)",
+    "regression": "2 测试失败(test_static_plane paired残差0.515 + test_dam_break clamp仍+11.36造质量) → 已回滚(测试恢复)",
+    "status": "修复设计有效但未完成(paired交换残差+clamp造质量残留)，已回滚保留干净基线；修复代码在子agent /tmp 诊断脚本(ab_*.py)可复用"
+  },
+  "verified": false,
+  "fix_progress_2": {
+    "date": "2026-08-20",
+    "H1": "halo to_i 收紧为仅邻接 LIQUID（终结界面层自播散）",
+    "H2": "to_liq 转换时 _init_new 以 rho_liquid 平衡态重初始化 f",
+    "evidence": "paired 残差 0.515 → -3.8e-6（完美配对！）；test_static_plane 4 步漂移 +149.7 → +0.000002",
+    "remaining": "clamp 仍 +9.87 造质量（cmass.clamp(0,rho_liquid) 负质量补零）——最后一步：clamp 对称化/截断到邻居可吸收量（build_topology_transaction ~631 行）",
+    "status": "配对修复成功，clamp 残留"
+  }
+}

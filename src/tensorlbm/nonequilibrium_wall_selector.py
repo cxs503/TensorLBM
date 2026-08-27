@@ -96,17 +96,12 @@ class NonequilibriumWallSelector:
                 "y_plus_upper_bound": self.y_plus_upper_bound,
             },
             "initialized": initialized,
-            "active": (
-                self._active.detach().to(device="cpu").clone()
-                if initialized else None
-            ),
+            "active": (self._active.detach().to(device="cpu").clone() if initialized else None),
             "enter_count": (
-                self._enter_count.detach().to(device="cpu").clone()
-                if initialized else None
+                self._enter_count.detach().to(device="cpu").clone() if initialized else None
             ),
             "exit_count": (
-                self._exit_count.detach().to(device="cpu").clone()
-                if initialized else None
+                self._exit_count.detach().to(device="cpu").clone() if initialized else None
             ),
         }
 
@@ -134,18 +129,28 @@ class NonequilibriumWallSelector:
         if not isinstance(initialized, bool):
             raise ValueError("selector checkpoint lacks initialized flag")
         if not initialized:
-            if any(state.get(key) is not None for key in (
-                "active", "enter_count", "exit_count",
-            )):
+            if any(
+                state.get(key) is not None
+                for key in (
+                    "active",
+                    "enter_count",
+                    "exit_count",
+                )
+            ):
                 raise ValueError("uninitialised selector checkpoint contains state")
             self.reset()
             return
         active = state.get("active")
         enter_count = state.get("enter_count")
         exit_count = state.get("exit_count")
-        if not all(isinstance(value, torch.Tensor) for value in (
-            active, enter_count, exit_count,
-        )):
+        if not all(
+            isinstance(value, torch.Tensor)
+            for value in (
+                active,
+                enter_count,
+                exit_count,
+            )
+        ):
             raise ValueError("initialised selector checkpoint lacks tensors")
         assert isinstance(active, torch.Tensor)
         assert isinstance(enter_count, torch.Tensor)
@@ -166,12 +171,22 @@ class NonequilibriumWallSelector:
             raise ValueError("selector exit counter exceeds configured limit")
         target = torch.device(device) if device is not None else active.device
         self._active = active.detach().to(device=target).clone()
-        self._enter_count = enter_count.detach().to(
-            device=target, dtype=torch.int32,
-        ).clone()
-        self._exit_count = exit_count.detach().to(
-            device=target, dtype=torch.int32,
-        ).clone()
+        self._enter_count = (
+            enter_count.detach()
+            .to(
+                device=target,
+                dtype=torch.int32,
+            )
+            .clone()
+        )
+        self._exit_count = (
+            exit_count.detach()
+            .to(
+                device=target,
+                dtype=torch.int32,
+            )
+            .clone()
+        )
 
     def update(
         self,

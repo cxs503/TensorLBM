@@ -53,26 +53,24 @@ import torch.nn.functional as F
 from .boundaries3d import (
     apply_simple_channel_boundaries_3d,
     far_field_bc_3d,
+    free_slip_y_walls_3d,
+    free_slip_z_walls_3d,
     make_channel_wall_mask_3d,
     sphere_mask,
 )
 from .checkpoint import load_checkpoint, save_checkpoint
 from .cylinder_flow import _maybe_compile
-from .d3q19 import C, OPPOSITE, W, equilibrium3d, macroscopic3d
-from .dg_advection import equilibrium_dg, get_ops
-from .dg_band import build_band_topology, compute_dg_solid_force, hybrid_step, project_band_to_lbm
+from .d3q19 import OPPOSITE, C, W, equilibrium3d, macroscopic3d
+from .dg_advection import get_ops
+from .dg_band import build_band_topology, hybrid_step, project_band_to_lbm
+from .logging_config import configure_logging, logger
+from .obstacles import compute_obstacle_forces_3d
 from .physics import (
-    collide_smagorinsky_bgk3d,
     collide_dynamic_smagorinsky_bgk3d,
     collide_mrt3d,
+    collide_smagorinsky_bgk3d,
     collide_smagorinsky_mrt3d,
 )
-from .wall_model import apply_wall_model_bounce_back, wall_function_3d
-from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
-from .wall_function_contract import WallFunctionCapability
-from .boundaries3d import free_slip_y_walls_3d, free_slip_z_walls_3d
-from .obstacles import compute_obstacle_forces_3d
-from .logging_config import configure_logging, logger
 from .solver3d import correct_mass3d, stream3d
 from .suboff_cad import SuboffHullType, build_suboff_mask
 from .suboff_resistance import _voxel_wetted_area
@@ -83,6 +81,9 @@ from .utils import (
     prepare_run_dir,
     resolve_device,
 )
+from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
+from .wall_function_contract import WallFunctionCapability
+from .wall_model import apply_wall_model_bounce_back, wall_function_3d
 
 try:
     from tqdm import tqdm as _tqdm
@@ -1094,9 +1095,16 @@ def _run_suboff_real_dg(config: DGLBMSuboffConfig) -> Path:
             uz = uz.masked_fill(obstacle, 0.0)
             speed = torch.sqrt(ux * ux + uy * uy + uz * uz)
             mass = float(rho.sum().item())
-            # DG-solid-interface momentum-exchange force (preserves wall shear).
-            fvec = compute_dg_solid_force(f_dg, topo, C_d, ops)
-            drag_lu = float(fvec[0].item())
+            # Drag from the P0-projected LBM field: after project_band_to_lbm
+            # the obstacle is surrounded by the band's P0 values, and the
+            # standard Ladd momentum exchange on that field is accurate
+            # (validated: Re=16 sphere Cd err 1.9% with far-field BC).
+            # The DG-interface momentum-exchange (compute_dg_solid_force)
+            # overestimates by ~50% (DG polynomial near-wall values exceed
+            # the LBM cell values; see the DG force audit), so the projected
+            # MEM force is used here instead.
+            fxp, fyp, fzp = compute_obstacle_forces_3d(f_lbm, obstacle)
+            drag_lu = float(fxp.item())
             point = DiagnosticPoint(
                 step=step,
                 mass=mass,
@@ -1284,11 +1292,11 @@ def _run_suboff_wall_function_d3q27(config: DGLBMSuboffConfig) -> Path:
     SUBOFF Re=2M, 160³-256³, Ct 0.0035-0.0039 (4.4%-14.7% error
     vs AFF-8 0.004).
     """
-    from .d3q27 import equilibrium27, macroscopic27, correct_mass27, stream27
+    from .boundaries_d3q27 import far_field_bc_27
     from .cumulant import collide_cumulant_d3q27
     from .cumulant_smag import collide_cumulant_smag_d3q27
+    from .d3q27 import correct_mass27, equilibrium27, macroscopic27, stream27
     from .wall_model import wall_function_d3q27
-    from .boundaries_d3q27 import far_field_bc_27
 
     configure_logging()
     config.validate()

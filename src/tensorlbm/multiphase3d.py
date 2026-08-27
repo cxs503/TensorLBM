@@ -26,11 +26,11 @@ if TYPE_CHECKING:
 
 from .d3q19 import C, W, equilibrium3d, macroscopic3d
 from .multiphase import (
+    psi_carnahan_starling,
     psi_exp,
     psi_linear,
-    psi_power,
-    psi_carnahan_starling,
     psi_peng_robinson,
+    psi_power,
 )  # re-export for convenience
 from .phasefield.free_energy import DoubleWellFreeEnergy, force_minus_phi_grad_mu
 from .solver3d import _get_d3q19_mrt_matrices
@@ -917,7 +917,7 @@ def collide_cg_mrt_3d(
     if s_pi is None:
         s_pi = s_e
 
-    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device, f_r.dtype)
 
     if C_s > 0.0:
         feq = equilibrium3d(rho, ux, uy, uz)
@@ -1027,7 +1027,7 @@ def collide_sc_mrt_3d(
     if s_pi is None:
         s_pi = s_e
 
-    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device, f1.dtype)
 
     if C_s > 0.0:
         feq1 = equilibrium3d(rho1, ux1, uy1, uz1)

@@ -17,13 +17,13 @@ from .free_surface_topology_transaction import (
     ReplayEvidence,
     StrictFailureReplayEvidence,
     TopologyTransactionError,
+    _replay_tensor_records,
     build_topology_transaction,
     is_trusted_replay_evidence,
     is_trusted_strict_failure_evidence,
     restore_i_to_g_ownership,
     restore_replay_payload,
     restore_strict_failure_invocation,
-    _replay_tensor_records,
 )
 
 AVAILABLE_REPLAYED_EXACT = "AVAILABLE_REPLAYED_EXACT"

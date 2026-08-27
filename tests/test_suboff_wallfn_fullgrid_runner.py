@@ -19,8 +19,8 @@ from typing import Any
 import pytest
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.d3q27 import equilibrium27, macroscopic27
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.d3q27 import equilibrium27
 from tensorlbm.suboff_wallfn_fullgrid_runner import (
     COLLISION_FAMILIES,
     COMBINATIONS,
@@ -31,7 +31,6 @@ from tensorlbm.suboff_wallfn_fullgrid_runner import (
     run_suboff_wallfn_fullgrid,
     write_artifact,
 )
-
 
 # --------------------------------------------------------------------------- #
 # Small-grid config factory

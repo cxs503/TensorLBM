@@ -11,7 +11,6 @@ import torch
 
 from ..d3q19 import C
 
-
 D3Q19_MOVING_Q = tuple(range(1, 19))
 
 

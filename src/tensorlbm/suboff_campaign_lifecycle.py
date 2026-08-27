@@ -17,7 +17,6 @@ from typing import Mapping
 
 from .suboff_campaign_artifact import build_suboff_campaign_audit_artifact
 
-
 _STATUS_SCHEMA = "suboff-d3q27-campaign-lifecycle-v1"
 
 

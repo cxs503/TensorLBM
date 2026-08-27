@@ -1,0 +1,57 @@
+{
+  "case": "cavity_re1000_ghia",
+  "description": "方腔流 Re=1000，D2Q9 RLBM（正则化 BGK），Ghia(1982) 验证，V3 BC + 200k 步长收敛（2026-08-19）",
+  "lattice": "D2Q9",
+  "collision": "rlbm",
+  "boundary": "V3: pre-streaming 半程反弹(三静止壁) + zou_he_moving_lid(顶盖)",
+  "extrap": "none",
+  "reference": "Ghia 1982 Re=1000 中线表值 + 涡心 (0.5313, 0.5625)；u(0.5,0.5)=-0.0608",
+  "grids": {
+    "192": {
+      "nx": 192,
+      "re": 1000,
+      "u_lid": 0.06,
+      "tau": 0.53456,
+      "steps": 200000,
+      "elapsed_s": 200.7,
+      "last_resid": 1.140497624874115e-05,
+      "u_mid": -0.06428406760096556,
+      "u_mid_ghia": -0.0608,
+      "u_bot": -0.1907163308933377,
+      "v_mid": 0.02557643037289387,
+      "primary_vortex": [0.5288, 0.5654],
+      "vortex_ghia": [0.5313, 0.5625],
+      "sub_vortex": [0.9895, 0.0052],
+      "rmse_u": 0.007047036936485296,
+      "rmse_v": 0.004761853659048851,
+      "max_abs_dev_pct": 1.1372549364864843
+    },
+    "256": {
+      "nx": 256,
+      "re": 1000,
+      "u_lid": 0.06,
+      "tau": 0.54608,
+      "steps": 200000,
+      "elapsed_s": 201.1,
+      "last_resid": 2.3838132619857788e-05,
+      "u_mid": -0.06349378265440464,
+      "u_mid_ghia": -0.0608,
+      "u_bot": -0.1934295305982232,
+      "v_mid": 0.025638536550104618,
+      "primary_vortex": [0.5294, 0.5647],
+      "vortex_ghia": [0.5313, 0.5625],
+      "sub_vortex": [0.9961, 0.0039],
+      "rmse_u": 0.00534508088813882,
+      "rmse_v": 0.0037849422580964573,
+      "max_abs_dev_pct": 1.0464570283889807
+    }
+  },
+  "convergence": {
+    "max_abs_dev_pct": [1.1372549364864843, 1.0464570283889807],
+    "err_decreased": true,
+    "pass": true
+  },
+  "key_fix": "MRT 在 Re=1000 硬性失稳：V3 BC + collide_mrt + 等 Re 配方(tau=0.5346@192²)于 step 80~271 NaN 发散；tau 扫描 tau>=0.56 才稳，即 MRT 稳定上限约 Re~576。改用库内 collide_rlbm(Latt & Chopard 2006 正则化 BGK，滤除高阶鬼矩、专为 tau->0.5 低粘稳定设计)后稳定。256² 100k 步曾 2.98% 且残差 9.6e-4 未收敛 → 200k 步长收敛后 1.05%（残差 2.4e-5），两档单调收敛达标",
+  "verified": true,
+  "verified_date": "2026-08-19"
+}

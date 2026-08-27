@@ -42,7 +42,6 @@ if _SRC not in sys.path:
 from tensorlbm.d3q19 import C, W  # noqa: E402
 from tensorlbm.solver3d import stream3d  # noqa: E402
 
-
 # --------------------------------------------------------------------------- #
 # Single simulation
 # --------------------------------------------------------------------------- #
@@ -237,7 +236,7 @@ def run_superposition_benchmark(
     print(f"  源B ({src_b[0]},{src_b[1]}):  ρ += {delta_rho}·sin({omega}·t+π/2)")
     print(f"  τ={tau}  步数={steps}  吸收层宽度=50")
     print(f"  监测点数: {len(monitor_pts)}")
-    print(f"  软密度源 (加性, 保持速度) — 保证线性叠加")
+    print("  软密度源 (加性, 保持速度) — 保证线性叠加")
     print("-" * 70)
 
     # --- Run three simulations ----------------------------------------------

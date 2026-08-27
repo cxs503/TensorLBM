@@ -11,8 +11,8 @@ from __future__ import annotations
 import pytest
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.d3q27 import equilibrium27, macroscopic27
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.d3q27 import equilibrium27
 from tensorlbm.passive_scalar_common import (
     passive_scalar_step,
     scalar_collide_bgk_3d,
@@ -249,8 +249,8 @@ class TestComposability:
     @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])
     def test_compose_with_collision(self, lattice: str) -> None:
         """passive_scalar_step should compose with collision + streaming."""
-        from tensorlbm.solver3d import collide_bgk3d, stream3d
         from tensorlbm.d3q27 import collide_bgk27, stream27
+        from tensorlbm.solver3d import collide_bgk3d, stream3d
 
         f = _f3d19() if lattice == "D3Q19" else _f3d27()
         g = _g_scalar()
@@ -277,7 +277,6 @@ class TestComposability:
         g_thermal = _g_scalar()  # reuse for thermal
         phi = scalar_macroscopic_3d(g_scalar)
         T = scalar_macroscopic_3d(g_thermal)
-        tau = 0.7
         for _ in range(3):
             f, g_thermal, T = thermal_step(f, g_thermal, tau_T=0.8, lattice=lattice)
             g_scalar, phi = passive_scalar_step(f, g_scalar, tau_d=TAU_D, lattice=lattice)

@@ -1,4 +1,5 @@
 """TensorLBM Platform – FastAPI application entry point."""
+
 from __future__ import annotations
 
 import asyncio
@@ -9,7 +10,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -20,6 +21,7 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from . import job_manager  # noqa: E402
 from .middleware import install_production_middleware  # noqa: E402
+
 # Import routers; skip any that are incomplete (under active development)
 _router_imports: dict[str, object] = {}
 for _name, _mod in [
@@ -27,6 +29,7 @@ for _name, _mod in [
     ("ai_governance", "ai_governance"),
     ("ai_suboff", "ai_suboff"),
     ("ai_transformer", "ai_transformer"),
+    ("apps", "apps"),
     ("benchmarks", "benchmarks"),
     ("cad", "cad"),
     ("cylinder_bench", "cylinder_bench"),
@@ -34,6 +37,9 @@ for _name, _mod in [
     ("cylinder_device_sim", "cylinder_device_sim"),
     ("cylinder_interactive", "cylinder_interactive"),
     ("data_catalog", "data_catalog"),
+    ("drag_surrogate", "drag_surrogate"),
+    ("drag_echo", "drag_echo"),
+    ("generic_sim", "generic_sim"),
     ("jobs", "jobs"),
     ("marine", "marine"),
     ("notifications", "notifications"),
@@ -53,12 +59,14 @@ for _name, _mod in [
         _router_imports[_name] = __import__(f"backend.routers.{_mod}", fromlist=[_mod])
     except Exception as e:
         import logging
+
         logging.warning(f"Router {_mod} not available, skipping: {e}")
 
 agent = _router_imports.get("agent")
 ai_governance = _router_imports.get("ai_governance")
 ai_suboff = _router_imports.get("ai_suboff")
 ai_transformer = _router_imports.get("ai_transformer")
+apps = _router_imports.get("apps")
 benchmarks = _router_imports.get("benchmarks")
 cad = _router_imports.get("cad")
 cylinder_bench = _router_imports.get("cylinder_bench")
@@ -66,6 +74,9 @@ cylinder_compare = _router_imports.get("cylinder_compare")
 cylinder_device_sim = _router_imports.get("cylinder_device_sim")
 cylinder_interactive = _router_imports.get("cylinder_interactive")
 data_catalog = _router_imports.get("data_catalog")
+drag_echo = _router_imports.get("drag_echo")
+drag_surrogate = _router_imports.get("drag_surrogate")
+generic_sim = _router_imports.get("generic_sim")
 jobs = _router_imports.get("jobs")
 marine = _router_imports.get("marine")
 notifications = _router_imports.get("notifications")
@@ -85,6 +96,7 @@ try:
 except ImportError:
     streaming_hub = None
     import logging
+
     logging.warning("xflow_streaming service not available")
 
 try:
@@ -163,17 +175,21 @@ _router_registry = [
     (cad, "/api/cad", "CAD"),
     (preprocess, "/api/preprocess", "Pre-processing"),
     (solver, "/api/solve", "Solver"),
+    (generic_sim, "/api/sim", "Generic Simulation"),
     (postprocess, "/api/postprocess", "Post-processing"),
     (benchmarks, "/api/benchmarks", "Benchmarks"),
     (agent, "/api/agent", "LLM Agent"),
     (ai_transformer, "/api/ai", "AI Transformer"),
     (ai_governance, "/api/ai/governance", "AI Governance"),
     (ai_suboff, "/api/ai/suboff", "SUBOFF AI"),
+    (apps, "/api/apps", "AI4S Applications"),
     (suboff, "/api/suboff", "SUBOFF Physics"),
     (cylinder_interactive, "/api/cylinder-interactive", "Cylinder Interactive"),
     (cylinder_bench, "/api/cylinder-bench", "Cylinder Benchmark"),
     (cylinder_compare, "/api/cylinder-compare", "Cylinder Compare"),
     (data_catalog, "/api/data", "Data Catalog"),
+    (drag_surrogate, "/api/drag", "Drag Surrogate"),
+    (drag_echo, "/api/drag/echo", "Drag Echo"),
     (simulations, "", "Simulations"),
     (orchestration, "/api/orchestration", "Orchestration"),
     (projects, "/api/projects", "Projects"),
@@ -316,6 +332,7 @@ async def push_field_slice_http(
     """
     if not job_manager.get_job(job_id):
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="Job not found")
 
     ny = len(data)
@@ -336,6 +353,7 @@ async def push_field_slice_http(
 # Platform status
 # ---------------------------------------------------------------------------
 
+
 @app.get("/api/health", tags=["Platform"])
 async def health() -> dict:
     """Lightweight liveness/readiness probe used by external monitors.
@@ -355,15 +373,13 @@ async def platform_status() -> dict:
 
         sdaa_ok = torch.sdaa.is_available()
         n_sdaas = torch.sdaa.device_count() if sdaa_ok else 0
-        sdaa_names = (
-            [torch.sdaa.get_device_name(i) for i in range(n_sdaas)] if sdaa_ok else []
-        )
+        sdaa_names = [torch.sdaa.get_device_name(i) for i in range(n_sdaas)] if sdaa_ok else []
         cuda_ok = torch.cuda.is_available()
         n_gpus = torch.cuda.device_count() if cuda_ok else 0
-        gpu_names = (
-            [torch.cuda.get_device_name(i) for i in range(n_gpus)] if cuda_ok else []
+        gpu_names = [torch.cuda.get_device_name(i) for i in range(n_gpus)] if cuda_ok else []
+        devices = (
+            ["cpu"] + [f"sdaa:{i}" for i in range(n_sdaas)] + [f"cuda:{i}" for i in range(n_gpus)]
         )
-        devices = ["cpu"] + [f"sdaa:{i}" for i in range(n_sdaas)] + [f"cuda:{i}" for i in range(n_gpus)]
     except Exception:
         sdaa_ok = False
         n_sdaas = 0
@@ -407,17 +423,41 @@ async def platform_status() -> dict:
 # Frontend static serving
 # ---------------------------------------------------------------------------
 
-_FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-_STATIC_DIR = _FRONTEND_DIR / "static"
+_FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend-vue" / "dist"
+_ASSETS_DIR = _FRONTEND_DIR / "assets"
 
 # Mount static assets before the SPA fallback so they are served correctly
-if _STATIC_DIR.exists():
-    app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
+if _ASSETS_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=_ASSETS_DIR), name="assets")
 
 
 @app.get("/", include_in_schema=False)
 async def root() -> FileResponse:
     return FileResponse(_FRONTEND_DIR / "index.html")
+
+
+_DEMO_PAGE = _REPO_ROOT / "demos" / "echo_slider.html"
+
+
+@app.get("/demo", include_in_schema=False)  # type: ignore[untyped-decorator]
+async def demo_page() -> FileResponse:
+    """Serve the drag-echo slider demo (``demos/echo_slider.html``).
+
+    Registered before the SPA catch-all so ``/demo`` is not swallowed by
+    ``spa_fallback``.  The page targets ``/api/drag/echo/*`` with relative
+    URLs, so same-origin serving needs no ``?api=`` override.  ``demos/``
+    ships with the source checkout (not the tensorlbm wheel), hence the
+    explicit existence check: a clear 404 beats a bare 500 from FileResponse.
+    """
+    if not _DEMO_PAGE.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"demo page not found at {_DEMO_PAGE}; demos/ ships with the "
+                "source checkout, not the tensorlbm wheel"
+            ),
+        )
+    return FileResponse(_DEMO_PAGE, media_type="text/html")
 
 
 @app.get("/{full_path:path}", include_in_schema=False)

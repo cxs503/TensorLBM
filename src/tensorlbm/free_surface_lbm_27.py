@@ -20,32 +20,29 @@ from __future__ import annotations
 
 import torch
 
-from .d3q27 import C as C27
-from .d3q27 import W as W27
-from .d3q27 import OPPOSITE as OPP27
-from .d3q27 import (
-    _get_d3q27_mrt_matrices,
-    collide_bgk27,
-    collide_mrt27,
-    equilibrium27,
-    macroscopic27,
-    stream27,
-)
 from .boundaries_d3q27 import bounce_back_cells_27
 from .core.d3q27_stencil import (
     D3Q27_MOVING_Q,
     all_moving_neighbor_masks_27,
     assert_no_direct_phase_links_27,
-    moving_tensor_shifts_27,
     roll_from_pull_source_27,
     roll_to_neighbor_27,
 )
+from .d3q27 import OPPOSITE as OPP27
+from .d3q27 import C as C27
+from .d3q27 import W as W27
+from .d3q27 import (
+    _get_d3q27_mrt_matrices,
+    collide_mrt27,
+    equilibrium27,
+    macroscopic27,
+)
 from .turbulence import (
     _neq_stress_norm_27,
-    _smagorinsky_tau,
-    _wale_nu_t_3d,
-    _vreman_nu_t_3d,
     _nu_t_to_tau_eff,
+    _smagorinsky_tau,
+    _vreman_nu_t_3d,
+    _wale_nu_t_3d,
 )
 
 GAS = 0
@@ -540,12 +537,12 @@ def free_surface_step_27(
     f = bounce_back_cells_27(f, solid_mask)
 
     # ---- 4. Mass exchange (standard Körner, independent mass variable) ----
-    rho_new = f.sum(dim=0)
+    f.sum(dim=0)
     iface_mask = flags == INTERFACE
     f_opp_nb = f_post[_OPP.to(device)]  # (27, nz, ny, nx)
     iface_27 = iface_mask.unsqueeze(0)
     from_liq = iface_27 & (neighbor_flags == LIQUID)
-    from_gas = iface_27 & (neighbor_flags == GAS)
+    iface_27 & (neighbor_flags == GAS)
     from_iface = iface_27 & (neighbor_flags == INTERFACE)
     mass_delta_liquid = torch.where(from_liq, f - f_opp_nb, torch.zeros_like(f))
     mass_delta_interface = torch.where(

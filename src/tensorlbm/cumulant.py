@@ -97,9 +97,11 @@ Lycett-Brown, D., & Luo, K. H. (2016).
     eddy simulation of compressible flow at high Reynolds numbers.
     *Physical Review E*, 94(5), 053313.
 """
+
 from __future__ import annotations
 
 import math
+
 import torch
 
 from .d2q9 import equilibrium, macroscopic
@@ -109,6 +111,7 @@ from .d3q27 import equilibrium27, macroscopic27
 # ---------------------------------------------------------------------------
 # D2Q9 cumulant collision
 # ---------------------------------------------------------------------------
+
 
 def collide_cumulant_d2q9(
     f: torch.Tensor,
@@ -145,7 +148,6 @@ def collide_cumulant_d2q9(
     Returns:
         Post-collision distribution tensor of shape ``(9, ny, nx)``.
     """
-    device = f.device
     omega = 1.0 / tau
     cs2 = 1.0 / 3.0
 
@@ -164,14 +166,14 @@ def collide_cumulant_d2q9(
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = (f[i] for i in range(9))
 
     m00 = rho
-    m10 = rho * ux   # = f1 - f3 + f5 - f6 - f7 + f8
-    m01 = rho * uy   # = f2 - f4 + f5 + f6 - f7 - f8
+    m10 = rho * ux  # = f1 - f3 + f5 - f6 - f7 + f8
+    m01 = rho * uy  # = f2 - f4 + f5 + f6 - f7 - f8
     m20 = f1 + f3 + f5 + f6 + f7 + f8
     m02 = f2 + f4 + f5 + f6 + f7 + f8
-    m11 = f5 - f6 + f7 - f8             # = Σ cx cy f
-    m21 = f5 + f6 - f7 - f8             # = Σ cx² cy f  (cx²=1 for all corners; cy: +,+,−,−)
-    m12 = f5 - f6 - f7 + f8             # = Σ cx cy² f  (cy²=1 for all corners; cx: +,−,−,+)
-    m22 = f5 + f6 + f7 + f8             # = Σ cx² cy² f
+    m11 = f5 - f6 + f7 - f8  # = Σ cx cy f
+    m21 = f5 + f6 - f7 - f8  # = Σ cx² cy f  (cx²=1 for all corners; cy: +,+,−,−)
+    m12 = f5 - f6 - f7 + f8  # = Σ cx cy² f  (cy²=1 for all corners; cx: +,−,−,+)
+    m22 = f5 + f6 + f7 + f8  # = Σ cx² cy² f
 
     # ------------------------------------------------------------------
     # Central moments  κ_{pq} = Σ_i f_i (cx_i − ux)^p (cy_i − uy)^q
@@ -189,9 +191,15 @@ def collide_cumulant_d2q9(
     k11 = m11 - ux * uy * m00
     k21 = m21 - uy * m20 - 2.0 * ux * m11 + 2.0 * ux2 * uy * m00
     k12 = m12 - ux * m02 - 2.0 * uy * m11 + 2.0 * ux * uy2 * m00
-    k22 = (m22 - 2.0 * ux * m12 - 2.0 * uy * m21
-           + ux2 * m02 + 4.0 * ux * uy * m11 + uy2 * m20
-           - 3.0 * ux2 * uy2 * m00)
+    k22 = (
+        m22
+        - 2.0 * ux * m12
+        - 2.0 * uy * m21
+        + ux2 * m02
+        + 4.0 * ux * uy * m11
+        + uy2 * m20
+        - 3.0 * ux2 * uy2 * m00
+    )
 
     # ------------------------------------------------------------------
     # Equilibrium central moments (Maxwell-Boltzmann):
@@ -211,20 +219,24 @@ def collide_cumulant_d2q9(
     f5e, f6e, f7e, f8e = feq[5], feq[6], feq[7], feq[8]
     f1e, f3e, f2e, f4e = feq[1], feq[3], feq[2], feq[4]
     m22_eq_v = f5e + f6e + f7e + f8e
-    m21_eq_v = f5e + f6e - f7e - f8e   # physical m21 = Σ cx² cy feq
-    m12_eq_v = f5e - f6e - f7e + f8e   # physical m12 = Σ cx cy² feq
+    m21_eq_v = f5e + f6e - f7e - f8e  # physical m21 = Σ cx² cy feq
+    m12_eq_v = f5e - f6e - f7e + f8e  # physical m12 = Σ cx cy² feq
     m11_eq_v = f5e - f6e + f7e - f8e
     m20_eq_v = f1e + f3e + m22_eq_v
     m02_eq_v = f2e + f4e + m22_eq_v
     # Central-moment equilibria via the same forward-shift used for the
     # non-equilibrium part (guarantees f_eq is an exact fixed point).
-    k21_eq = (m21_eq_v - uy * m20_eq_v - 2.0 * ux * m11_eq_v
-              + 2.0 * ux2 * uy * rho)
-    k12_eq = (m12_eq_v - ux * m02_eq_v - 2.0 * uy * m11_eq_v
-              + 2.0 * ux * uy2 * rho)
-    k22_eq = (m22_eq_v - 2.0 * ux * m12_eq_v - 2.0 * uy * m21_eq_v
-              + ux2 * m02_eq_v + 4.0 * ux * uy * m11_eq_v + uy2 * m20_eq_v
-              - 3.0 * ux2 * uy2 * rho)
+    k21_eq = m21_eq_v - uy * m20_eq_v - 2.0 * ux * m11_eq_v + 2.0 * ux2 * uy * rho
+    k12_eq = m12_eq_v - ux * m02_eq_v - 2.0 * uy * m11_eq_v + 2.0 * ux * uy2 * rho
+    k22_eq = (
+        m22_eq_v
+        - 2.0 * ux * m12_eq_v
+        - 2.0 * uy * m21_eq_v
+        + ux2 * m02_eq_v
+        + 4.0 * ux * uy * m11_eq_v
+        + uy2 * m20_eq_v
+        - 3.0 * ux2 * uy2 * rho
+    )
 
     # ------------------------------------------------------------------
     # Relaxation in central-moment space
@@ -232,12 +244,12 @@ def collide_cumulant_d2q9(
     # Shear / off-diagonal stress: relax at omega
     k20_s = k20 - omega * (k20 - k20_eq)
     k02_s = k02 - omega * (k02 - k02_eq)
-    k11_s = k11 - omega * k11            # k11_eq = 0
+    k11_s = k11 - omega * k11  # k11_eq = 0
 
     # Bulk mode (trace): relax at omega_b independently then redistribute
-    T_eq = k20_eq + k02_eq              # = 2 ρ/3
-    T    = k20    + k02
-    T_s  = T - omega_b * (T - T_eq)
+    T_eq = k20_eq + k02_eq  # = 2 ρ/3
+    T = k20 + k02
+    T_s = T - omega_b * (T - T_eq)
     delta = 0.5 * (T_s - (k20_s + k02_s))
     k20_s = k20_s + delta
     k02_s = k02_s + delta
@@ -264,9 +276,15 @@ def collide_cumulant_d2q9(
     m11_s = k11_s + ux * uy * m00
     m21_s = k21_s + uy * m20_s + 2.0 * ux * m11_s - 2.0 * ux2 * uy * m00
     m12_s = k12_s + ux * m02_s + 2.0 * uy * m11_s - 2.0 * ux * uy2 * m00
-    m22_s = (k22_s + 2.0 * ux * m12_s + 2.0 * uy * m21_s
-             - ux2 * m02_s - 4.0 * ux * uy * m11_s - uy2 * m20_s
-             + 3.0 * ux2 * uy2 * m00)
+    m22_s = (
+        k22_s
+        + 2.0 * ux * m12_s
+        + 2.0 * uy * m21_s
+        - ux2 * m02_s
+        - 4.0 * ux * uy * m11_s
+        - uy2 * m20_s
+        + 3.0 * ux2 * uy2 * m00
+    )
 
     # ------------------------------------------------------------------
     # Recover populations from raw moments (exact D2Q9 inverse)
@@ -301,43 +319,43 @@ def collide_cumulant_d2q9(
 # On D3Q27, cx ∈ {−1, 0, 1}, so cx³ = cx and cx⁴ = cx².
 # Independent monomials are products of {1, cx, cx²} across three dimensions.
 _D3Q27_DEGREES: list[tuple[int, int, int]] = [
-    (0, 0, 0),   #  0  mass
-    (1, 0, 0),   #  1  jx
-    (0, 1, 0),   #  2  jy
-    (0, 0, 1),   #  3  jz
-    (2, 0, 0),   #  4  Pxx
-    (0, 2, 0),   #  5  Pyy
-    (0, 0, 2),   #  6  Pzz
-    (1, 1, 0),   #  7  Pxy
-    (1, 0, 1),   #  8  Pxz
-    (0, 1, 1),   #  9  Pyz
-    (2, 1, 0),   # 10  (3rd order)
-    (2, 0, 1),   # 11
-    (1, 2, 0),   # 12
-    (0, 2, 1),   # 13
-    (1, 0, 2),   # 14
-    (0, 1, 2),   # 15
-    (1, 1, 1),   # 16
-    (2, 2, 0),   # 17  (4th order)
-    (2, 0, 2),   # 18
-    (0, 2, 2),   # 19
-    (2, 1, 1),   # 20  (4th order, mixed)
-    (1, 2, 1),   # 21
-    (1, 1, 2),   # 22
-    (2, 2, 1),   # 23  (5th order)
-    (2, 1, 2),   # 24
-    (1, 2, 2),   # 25
-    (2, 2, 2),   # 26  (6th order)
+    (0, 0, 0),  #  0  mass
+    (1, 0, 0),  #  1  jx
+    (0, 1, 0),  #  2  jy
+    (0, 0, 1),  #  3  jz
+    (2, 0, 0),  #  4  Pxx
+    (0, 2, 0),  #  5  Pyy
+    (0, 0, 2),  #  6  Pzz
+    (1, 1, 0),  #  7  Pxy
+    (1, 0, 1),  #  8  Pxz
+    (0, 1, 1),  #  9  Pyz
+    (2, 1, 0),  # 10  (3rd order)
+    (2, 0, 1),  # 11
+    (1, 2, 0),  # 12
+    (0, 2, 1),  # 13
+    (1, 0, 2),  # 14
+    (0, 1, 2),  # 15
+    (1, 1, 1),  # 16
+    (2, 2, 0),  # 17  (4th order)
+    (2, 0, 2),  # 18
+    (0, 2, 2),  # 19
+    (2, 1, 1),  # 20  (4th order, mixed)
+    (1, 2, 1),  # 21
+    (1, 1, 2),  # 22
+    (2, 2, 1),  # 23  (5th order)
+    (2, 1, 2),  # 24
+    (1, 2, 2),  # 25
+    (2, 2, 2),  # 26  (6th order)
 ]
 
 # Order boundaries for relaxation grouping
 _ORDER_BOUNDS = {
-    "conserved": (0, 4),    # indices 0-3
-    "second":    (4, 10),   # indices 4-9
-    "third":     (10, 17),  # indices 10-16
-    "fourth":    (17, 23),  # indices 17-22
-    "fifth":     (23, 26),  # indices 23-25
-    "sixth":     (26, 27),  # index 26
+    "conserved": (0, 4),  # indices 0-3
+    "second": (4, 10),  # indices 4-9
+    "third": (10, 17),  # indices 10-16
+    "fourth": (17, 23),  # indices 17-22
+    "fifth": (23, 26),  # indices 23-25
+    "sixth": (26, 27),  # index 26
 }
 
 
@@ -417,7 +435,10 @@ def _unshift_1d(
 
 
 def _to_central(
-    m: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    m: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
 ) -> torch.Tensor:
     """Shift D3Q27 raw moments → central moments (x, then y, then z)."""
     x_g, y_g, z_g = _SHIFT_GROUPS
@@ -428,7 +449,10 @@ def _to_central(
 
 
 def _to_raw(
-    k: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    k: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
 ) -> torch.Tensor:
     """Unshift D3Q27 central moments → raw moments (z, then y, then x)."""
     x_g, y_g, z_g = _SHIFT_GROUPS
@@ -441,6 +465,7 @@ def _to_raw(
 # ---------------------------------------------------------------------------
 # Cumulant ↔ central-moment transforms (Geier 2015)
 # ---------------------------------------------------------------------------
+
 
 def _central_to_cumulant(k: torch.Tensor) -> torch.Tensor:
     """Legacy nonlinear transform applied to the **f_neq** central moments.
@@ -498,12 +523,12 @@ def _central_to_cumulant(k: torch.Tensor) -> torch.Tensor:
     # 4th order corrections (indices 17-22)
     # κ_{200} = k[4], κ_{020} = k[5], κ_{002} = k[6]
     # κ_{110} = k[7], κ_{101} = k[8], κ_{011} = k[9]
-    k200 = k[4]   # κ_{200}
-    k020 = k[5]   # κ_{020}
-    k002 = k[6]   # κ_{002}
-    k110 = k[7]   # κ_{110}
-    k101 = k[8]   # κ_{101}
-    k011 = k[9]   # κ_{011}
+    k200 = k[4]  # κ_{200}
+    k020 = k[5]  # κ_{020}
+    k002 = k[6]  # κ_{002}
+    k110 = k[7]  # κ_{110}
+    k101 = k[8]  # κ_{101}
+    k011 = k[9]  # κ_{011}
 
     # C_{220} = κ_{220} − κ_{200}·κ_{020} − 2·κ_{110}²
     C[17] = k[17] - k200 * k020 - 2.0 * k110 * k110
@@ -536,14 +561,18 @@ def _central_to_cumulant(k: torch.Tensor) -> torch.Tensor:
     C121 = C[21]
     C112 = C[22]
 
-    C[26] = (k[26]
-             - k200 * C022 - k020 * C202 - k002 * C220
-             - 2.0 * (k110 * C112 + k101 * C121 + k011 * C211)
-             + 2.0 * k200 * k020 * k002
-             + 4.0 * k110 * k101 * k011
-             + 2.0 * k110 * k110 * k002
-             + 2.0 * k101 * k101 * k020
-             + 2.0 * k011 * k011 * k200)
+    C[26] = (
+        k[26]
+        - k200 * C022
+        - k020 * C202
+        - k002 * C220
+        - 2.0 * (k110 * C112 + k101 * C121 + k011 * C211)
+        + 2.0 * k200 * k020 * k002
+        + 4.0 * k110 * k101 * k011
+        + 2.0 * k110 * k110 * k002
+        + 2.0 * k101 * k101 * k020
+        + 2.0 * k011 * k011 * k200
+    )
 
     return C
 
@@ -570,12 +599,12 @@ def _cumulant_to_central(C: torch.Tensor) -> torch.Tensor:
     # Indices 4-16 are unchanged.
 
     # 4th order: invert the corrections
-    C200 = C[4]   # = κ_{200}
-    C020 = C[5]   # = κ_{020}
-    C002 = C[6]   # = κ_{002}
-    C110 = C[7]   # = κ_{110}
-    C101 = C[8]   # = κ_{101}
-    C011 = C[9]   # = κ_{011}
+    C200 = C[4]  # = κ_{200}
+    C020 = C[5]  # = κ_{020}
+    C002 = C[6]  # = κ_{002}
+    C110 = C[7]  # = κ_{110}
+    C101 = C[8]  # = κ_{101}
+    C011 = C[9]  # = κ_{011}
 
     # κ_{220} = C_{220} + C_{200}·C_{020} + 2·C_{110}²
     k[17] = C[17] + C200 * C020 + 2.0 * C110 * C110
@@ -606,14 +635,18 @@ def _cumulant_to_central(C: torch.Tensor) -> torch.Tensor:
     C121 = C[21]
     C112 = C[22]
 
-    k[26] = (C[26]
-             + C200 * C022 + C020 * C202 + C002 * C220
-             + 2.0 * (C110 * C112 + C101 * C121 + C011 * C211)
-             - 2.0 * C200 * C020 * C002
-             - 4.0 * C110 * C101 * C011
-             - 2.0 * C110 * C110 * C002
-             - 2.0 * C101 * C101 * C020
-             - 2.0 * C011 * C011 * C200)
+    k[26] = (
+        C[26]
+        + C200 * C022
+        + C020 * C202
+        + C002 * C220
+        + 2.0 * (C110 * C112 + C101 * C121 + C011 * C211)
+        - 2.0 * C200 * C020 * C002
+        - 4.0 * C110 * C101 * C011
+        - 2.0 * C110 * C110 * C002
+        - 2.0 * C101 * C101 * C020
+        - 2.0 * C011 * C011 * C200
+    )
 
     return k
 
@@ -637,6 +670,7 @@ def _cumulant_to_central(C: torch.Tensor) -> torch.Tensor:
 # equilibrium, every cumulant of order ≥ 4 vanishes.  Numerically this variant
 # gives |C^eq_{≥4}| ~ 1e-16 while the legacy one gives C^eq_222 = 1/9.
 
+
 def _central_to_cumulant_geier(k: torch.Tensor) -> torch.Tensor:
     """Central moments of the **full** distribution → Geier cumulants.
 
@@ -654,7 +688,7 @@ def _central_to_cumulant_geier(k: torch.Tensor) -> torch.Tensor:
         ``C[1:4] = 0``.
     """
     rho = k[0]
-    kt = k / rho                      # κ̃ = κ/ρ
+    kt = k / rho  # κ̃ = κ/ρ
     Ct = kt.clone()
 
     # --- 4th order -----------------------------------------------------
@@ -666,21 +700,46 @@ def _central_to_cumulant_geier(k: torch.Tensor) -> torch.Tensor:
     Ct[22] = kt[22] - (kt[6] * kt[7] + 2.0 * kt[9] * kt[8])
 
     # --- 5th order -----------------------------------------------------
-    Ct[23] = kt[23] - (2.0 * kt[9] * kt[10] + kt[5] * kt[11] + kt[13] * kt[4]
-                       + 2.0 * kt[8] * kt[12] + 4.0 * kt[7] * kt[16])
-    Ct[24] = kt[24] - (kt[6] * kt[10] + 2.0 * kt[9] * kt[11] + kt[15] * kt[4]
-                       + 4.0 * kt[8] * kt[16] + 2.0 * kt[14] * kt[7])
-    Ct[25] = kt[25] - (kt[6] * kt[12] + 4.0 * kt[9] * kt[16] + 2.0 * kt[15] * kt[7]
-                       + kt[5] * kt[14] + 2.0 * kt[13] * kt[8])
+    Ct[23] = kt[23] - (
+        2.0 * kt[9] * kt[10]
+        + kt[5] * kt[11]
+        + kt[13] * kt[4]
+        + 2.0 * kt[8] * kt[12]
+        + 4.0 * kt[7] * kt[16]
+    )
+    Ct[24] = kt[24] - (
+        kt[6] * kt[10]
+        + 2.0 * kt[9] * kt[11]
+        + kt[15] * kt[4]
+        + 4.0 * kt[8] * kt[16]
+        + 2.0 * kt[14] * kt[7]
+    )
+    Ct[25] = kt[25] - (
+        kt[6] * kt[12]
+        + 4.0 * kt[9] * kt[16]
+        + 2.0 * kt[15] * kt[7]
+        + kt[5] * kt[14]
+        + 2.0 * kt[13] * kt[8]
+    )
 
     # --- 6th order -----------------------------------------------------
-    Ct[26] = kt[26] - (-2.0 * kt[6] * kt[5] * kt[4] - 4.0 * kt[6] * kt[7] ** 2
-                       + kt[6] * kt[17] - 4.0 * kt[9] ** 2 * kt[4]
-                       - 16.0 * kt[9] * kt[8] * kt[7] + 4.0 * kt[9] * kt[20]
-                       + 2.0 * kt[15] * kt[10] - 4.0 * kt[5] * kt[8] ** 2
-                       + kt[5] * kt[18] + 2.0 * kt[13] * kt[11] + kt[19] * kt[4]
-                       + 4.0 * kt[8] * kt[21] + 2.0 * kt[14] * kt[12]
-                       + 4.0 * kt[7] * kt[22] + 4.0 * kt[16] ** 2)
+    Ct[26] = kt[26] - (
+        -2.0 * kt[6] * kt[5] * kt[4]
+        - 4.0 * kt[6] * kt[7] ** 2
+        + kt[6] * kt[17]
+        - 4.0 * kt[9] ** 2 * kt[4]
+        - 16.0 * kt[9] * kt[8] * kt[7]
+        + 4.0 * kt[9] * kt[20]
+        + 2.0 * kt[15] * kt[10]
+        - 4.0 * kt[5] * kt[8] ** 2
+        + kt[5] * kt[18]
+        + 2.0 * kt[13] * kt[11]
+        + kt[19] * kt[4]
+        + 4.0 * kt[8] * kt[21]
+        + 2.0 * kt[14] * kt[12]
+        + 4.0 * kt[7] * kt[22]
+        + 4.0 * kt[16] ** 2
+    )
 
     C = Ct * rho
     C[0] = rho
@@ -706,20 +765,50 @@ def _cumulant_to_central_geier(C: torch.Tensor) -> torch.Tensor:
     kt[22] = Ct[6] * Ct[7] + 2.0 * Ct[9] * Ct[8] + Ct[22]
 
     # --- 5th order -----------------------------------------------------
-    kt[23] = (2.0 * Ct[9] * Ct[10] + Ct[5] * Ct[11] + Ct[13] * Ct[4]
-              + 2.0 * Ct[8] * Ct[12] + 4.0 * Ct[7] * Ct[16] + Ct[23])
-    kt[24] = (Ct[6] * Ct[10] + 2.0 * Ct[9] * Ct[11] + Ct[15] * Ct[4]
-              + 4.0 * Ct[8] * Ct[16] + 2.0 * Ct[14] * Ct[7] + Ct[24])
-    kt[25] = (Ct[6] * Ct[12] + 4.0 * Ct[9] * Ct[16] + 2.0 * Ct[15] * Ct[7]
-              + Ct[5] * Ct[14] + 2.0 * Ct[13] * Ct[8] + Ct[25])
+    kt[23] = (
+        2.0 * Ct[9] * Ct[10]
+        + Ct[5] * Ct[11]
+        + Ct[13] * Ct[4]
+        + 2.0 * Ct[8] * Ct[12]
+        + 4.0 * Ct[7] * Ct[16]
+        + Ct[23]
+    )
+    kt[24] = (
+        Ct[6] * Ct[10]
+        + 2.0 * Ct[9] * Ct[11]
+        + Ct[15] * Ct[4]
+        + 4.0 * Ct[8] * Ct[16]
+        + 2.0 * Ct[14] * Ct[7]
+        + Ct[24]
+    )
+    kt[25] = (
+        Ct[6] * Ct[12]
+        + 4.0 * Ct[9] * Ct[16]
+        + 2.0 * Ct[15] * Ct[7]
+        + Ct[5] * Ct[14]
+        + 2.0 * Ct[13] * Ct[8]
+        + Ct[25]
+    )
 
     # --- 6th order (4th-order κ̃ already substituted recursively) --------
-    kt[26] = (Ct[6] * Ct[5] * Ct[4] + 2.0 * Ct[6] * Ct[7] ** 2 + Ct[6] * Ct[17]
-              + 2.0 * Ct[9] ** 2 * Ct[4] + 8.0 * Ct[9] * Ct[8] * Ct[7]
-              + 4.0 * Ct[9] * Ct[20] + 2.0 * Ct[15] * Ct[10]
-              + 2.0 * Ct[5] * Ct[8] ** 2 + Ct[5] * Ct[18] + 2.0 * Ct[13] * Ct[11]
-              + Ct[19] * Ct[4] + 4.0 * Ct[8] * Ct[21] + 2.0 * Ct[14] * Ct[12]
-              + 4.0 * Ct[7] * Ct[22] + 4.0 * Ct[16] ** 2 + Ct[26])
+    kt[26] = (
+        Ct[6] * Ct[5] * Ct[4]
+        + 2.0 * Ct[6] * Ct[7] ** 2
+        + Ct[6] * Ct[17]
+        + 2.0 * Ct[9] ** 2 * Ct[4]
+        + 8.0 * Ct[9] * Ct[8] * Ct[7]
+        + 4.0 * Ct[9] * Ct[20]
+        + 2.0 * Ct[15] * Ct[10]
+        + 2.0 * Ct[5] * Ct[8] ** 2
+        + Ct[5] * Ct[18]
+        + 2.0 * Ct[13] * Ct[11]
+        + Ct[19] * Ct[4]
+        + 4.0 * Ct[8] * Ct[21]
+        + 2.0 * Ct[14] * Ct[12]
+        + 4.0 * Ct[7] * Ct[22]
+        + 4.0 * Ct[16] ** 2
+        + Ct[26]
+    )
 
     k = kt * rho
     k[0] = rho
@@ -808,10 +897,11 @@ def _relax_cumulants_d3q27(
 # Moment matrix (cached)
 # ---------------------------------------------------------------------------
 
-import functools
-import numpy as np
+import functools  # noqa: E402
 
-from .d3q27 import _C_DATA
+import numpy as np  # noqa: E402
+
+from .d3q27 import _C_DATA  # noqa: E402
 
 
 def _build_moment_matrix() -> tuple[list[list[float]], list[list[float]]]:
@@ -840,6 +930,7 @@ def _get_matrices(device: torch.device, dtype: torch.dtype) -> tuple[torch.Tenso
 # ---------------------------------------------------------------------------
 # Main collision operator
 # ---------------------------------------------------------------------------
+
 
 def collide_cumulant_d3q27(
     f: torch.Tensor,
@@ -894,6 +985,7 @@ def collide_cumulant_d3q27(
     # ---- Smagorinsky LES (domain-averaged) ----------------------------
     if C_s > 0:
         from .turbulence import _neq_stress_norm_27, _smagorinsky_tau  # noqa: PLC0415
+
         rho_s, ux_s, uy_s, uz_s = macroscopic27(f)
         feq_s = equilibrium27(rho_s, ux_s, uy_s, uz_s)
         f_neq_s = f - feq_s
@@ -1011,6 +1103,7 @@ def collide_cumulant_geier_d3q27(
     # ---- Smagorinsky LES (domain-averaged), same policy as the legacy op ---
     if C_s > 0:
         from .turbulence import _neq_stress_norm_27, _smagorinsky_tau  # noqa: PLC0415
+
         pi_norm = _neq_stress_norm_27(f - feq)
         tau_eff_per_cell = _smagorinsky_tau(tau, pi_norm, rho, C_s)
         tau_eff = float(tau_eff_per_cell.mean().item())
@@ -1053,7 +1146,7 @@ def collide_cumulant_geier_d3q27(
     C_star[lo:hi] = C[lo:hi] - omega_even * D[lo:hi]
     lo, hi = _ORDER_BOUNDS["sixth"]
     C_star[lo:hi] = C[lo:hi] - omega_even * D[lo:hi]
-    C_star[0:4] = C[0:4]                      # conserved modes untouched
+    C_star[0:4] = C[0:4]  # conserved modes untouched
     del C, C_eq, D
 
     k_star = _cumulant_to_central_geier(C_star)
@@ -1152,6 +1245,7 @@ def collide_cumulant_d3q19(
     # ---- Strain rate tensor from fneq (2nd Hermite moment) ------------
     # Π_αβ = Σ_i c_iα c_iβ fneq_i
     from .d3q19 import C as C19  # noqa: PLC0415
+
     c = C19.to(device=device, dtype=f.dtype)  # (19, 3)
     cx = c[:, 0].view(19, 1, 1, 1)
     cy = c[:, 1].view(19, 1, 1, 1)
@@ -1170,15 +1264,24 @@ def collide_cumulant_d3q19(
 
         if solid_mask is not None:
             ux, uy, uz = (
-                torch.where(solid_mask, torch.as_tensor(
-                    velocity, dtype=f.dtype, device=f.device,
-                ), component)
+                torch.where(
+                    solid_mask,
+                    torch.as_tensor(
+                        velocity,
+                        dtype=f.dtype,
+                        device=f.device,
+                    ),
+                    component,
+                )
                 for component, velocity in zip(
-                    (ux, uy, uz), wall_velocity, strict=True,
+                    (ux, uy, uz),
+                    wall_velocity,
+                    strict=True,
                 )
             )
         tau_eff = _nu_t_to_tau_eff(
-            tau, _wale_nu_t_3d(ux, uy, uz, C_w),
+            tau,
+            _wale_nu_t_3d(ux, uy, uz, C_w),
         )
         omega = 1.0 / tau_eff
     elif C_v > 0.0:
@@ -1186,21 +1289,29 @@ def collide_cumulant_d3q19(
 
         if solid_mask is not None:
             ux, uy, uz = (
-                torch.where(solid_mask, torch.as_tensor(
-                    velocity, dtype=f.dtype, device=f.device,
-                ), component)
+                torch.where(
+                    solid_mask,
+                    torch.as_tensor(
+                        velocity,
+                        dtype=f.dtype,
+                        device=f.device,
+                    ),
+                    component,
+                )
                 for component, velocity in zip(
-                    (ux, uy, uz), wall_velocity, strict=True,
+                    (ux, uy, uz),
+                    wall_velocity,
+                    strict=True,
                 )
             )
         tau_eff = _nu_t_to_tau_eff(
-            tau, _vreman_nu_t_3d(ux, uy, uz, C_v),
+            tau,
+            _vreman_nu_t_3d(ux, uy, uz, C_v),
         )
         omega = 1.0 / tau_eff
     elif C_s > 0.0:
         # Smagorinsky: tau_eff = 0.5*(tau + sqrt(tau² + 18*C_s²*|Π|/ρ))
-        pi_norm = (pi_xx**2 + pi_yy**2 + pi_zz**2
-                   + 2.0*(pi_xy**2 + pi_xz**2 + pi_yz**2)).sqrt()
+        pi_norm = (pi_xx**2 + pi_yy**2 + pi_zz**2 + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2)).sqrt()
         rho_safe = rho.clamp(min=1e-12)
         tau_eff = 0.5 * (tau + torch.sqrt(tau * tau + 18.0 * C_s * C_s * pi_norm / rho_safe))
         omega = 1.0 / tau_eff  # per-cell tensor
@@ -1219,15 +1330,13 @@ def collide_cumulant_d3q19(
     pi_yz_s = pi_yz - omega * pi_yz
 
     # ---- D3Q19 weights (rest 1/3, face 1/18, edge 1/36) --------------
-    w19 = (
-        torch.tensor(
-            [1.0 / 3.0]                       # (0,0,0)
-            + [1.0 / 18.0] * 6                # 6 face centres
-            + [1.0 / 36.0] * 12,              # 12 edge centres
-            dtype=f.dtype, device=device,
-        )
-        .view(19, 1, 1, 1)
-    )
+    w19 = torch.tensor(
+        [1.0 / 3.0]  # (0,0,0)
+        + [1.0 / 18.0] * 6  # 6 face centres
+        + [1.0 / 36.0] * 12,  # 12 edge centres
+        dtype=f.dtype,
+        device=device,
+    ).view(19, 1, 1, 1)
 
     h_xx = cx * cx - cs2
     h_yy = cy * cy - cs2
@@ -1237,16 +1346,32 @@ def collide_cumulant_d3q19(
     h_yz = cy * cz
 
     # Hermite reconstruction from 2nd-order stress tensor only
-    fneq_reg = (4.5 * w19 * (
-        h_xx * pi_xx_s + h_yy * pi_yy_s + h_zz * pi_zz_s
-        + 2.0 * h_xy * pi_xy_s + 2.0 * h_xz * pi_xz_s + 2.0 * h_yz * pi_yz_s
-    ))
+    fneq_reg = (
+        4.5
+        * w19
+        * (
+            h_xx * pi_xx_s
+            + h_yy * pi_yy_s
+            + h_zz * pi_zz_s
+            + 2.0 * h_xy * pi_xy_s
+            + 2.0 * h_xz * pi_xz_s
+            + 2.0 * h_yz * pi_yz_s
+        )
+    )
 
     # Higher-order fneq relaxed separately
-    fneq_ho = fneq - (4.5 * w19 * (
-        h_xx * pi_xx + h_yy * pi_yy + h_zz * pi_zz
-        + 2.0 * h_xy * pi_xy + 2.0 * h_xz * pi_xz + 2.0 * h_yz * pi_yz
-    ))
+    fneq_ho = fneq - (
+        4.5
+        * w19
+        * (
+            h_xx * pi_xx
+            + h_yy * pi_yy
+            + h_zz * pi_zz
+            + 2.0 * h_xy * pi_xy
+            + 2.0 * h_xz * pi_xz
+            + 2.0 * h_yz * pi_yz
+        )
+    )
     fneq_ho_s = (1.0 - omega_even) * fneq_ho
 
     return feq + fneq_reg + fneq_ho_s
@@ -1288,11 +1413,19 @@ def gradient_sgs_effective_tau_d3q19(
     del rho
     if solid_mask is not None:
         ux, uy, uz = (
-            torch.where(solid_mask, torch.as_tensor(
-                velocity, dtype=f.dtype, device=f.device,
-            ), component)
+            torch.where(
+                solid_mask,
+                torch.as_tensor(
+                    velocity,
+                    dtype=f.dtype,
+                    device=f.device,
+                ),
+                component,
+            )
             for component, velocity in zip(
-                (ux, uy, uz), wall_velocity, strict=True,
+                (ux, uy, uz),
+                wall_velocity,
+                strict=True,
             )
         )
     from .turbulence import (  # noqa: PLC0415
@@ -1353,15 +1486,10 @@ def summarize_gradient_sgs_effective_tau_d3q19(
             tau=tau,
             model=model,
             coefficient=coefficient,
-            solid_mask=(
-                None if solid_mask is None
-                else solid_mask[halo_start:halo_stop]
-            ),
+            solid_mask=(None if solid_mask is None else solid_mask[halo_start:halo_stop]),
             wall_velocity=wall_velocity,
         )
-        effective = effective_with_halo[
-            start - halo_start:stop - halo_start
-        ]
+        effective = effective_with_halo[start - halo_start : stop - halo_start]
         minimum = min(minimum, float(effective.min().item()))
         maximum = max(maximum, float(effective.max().item()))
         total += float(effective.sum(dtype=torch.float64).item())
@@ -1379,12 +1507,8 @@ def summarize_gradient_sgs_effective_tau_d3q19(
         "molecular_kinematic_viscosity": molecular_viscosity,
         "mean_eddy_kinematic_viscosity": mean_eddy_viscosity,
         "maximum_eddy_kinematic_viscosity": maximum_eddy_viscosity,
-        "mean_eddy_to_molecular_viscosity_ratio": (
-            mean_eddy_viscosity / molecular_viscosity
-        ),
-        "maximum_eddy_to_molecular_viscosity_ratio": (
-            maximum_eddy_viscosity / molecular_viscosity
-        ),
+        "mean_eddy_to_molecular_viscosity_ratio": (mean_eddy_viscosity / molecular_viscosity),
+        "maximum_eddy_to_molecular_viscosity_ratio": (maximum_eddy_viscosity / molecular_viscosity),
     }
 
 
@@ -1407,7 +1531,10 @@ def smagorinsky_effective_tau_d3q19(
         raise ValueError("C_s must be non-negative")
     if C_s == 0.0:
         return torch.full(
-            f.shape[1:], tau, dtype=f.dtype, device=f.device,
+            f.shape[1:],
+            tau,
+            dtype=f.dtype,
+            device=f.device,
         )
     rho, ux, uy, uz = macroscopic3d(f)
     fneq = f - equilibrium3d(rho, ux, uy, uz)
@@ -1424,16 +1551,12 @@ def smagorinsky_effective_tau_d3q19(
     pi_xz = (cx * cz * fneq).sum(dim=0)
     pi_yz = (cy * cz * fneq).sum(dim=0)
     pi_norm = torch.sqrt(
-        pi_xx.square() + pi_yy.square() + pi_zz.square()
+        pi_xx.square()
+        + pi_yy.square()
+        + pi_zz.square()
         + 2.0 * (pi_xy.square() + pi_xz.square() + pi_yz.square())
     )
-    return 0.5 * (
-        tau
-        + torch.sqrt(
-            tau * tau
-            + 18.0 * C_s * C_s * pi_norm / rho.clamp_min(1.0e-12)
-        )
-    )
+    return 0.5 * (tau + torch.sqrt(tau * tau + 18.0 * C_s * C_s * pi_norm / rho.clamp_min(1.0e-12)))
 
 
 def summarize_smagorinsky_effective_tau_d3q19(
@@ -1476,12 +1599,8 @@ def summarize_smagorinsky_effective_tau_d3q19(
         "molecular_kinematic_viscosity": molecular_viscosity,
         "mean_eddy_kinematic_viscosity": mean_eddy_viscosity,
         "maximum_eddy_kinematic_viscosity": maximum_eddy_viscosity,
-        "mean_eddy_to_molecular_viscosity_ratio": (
-            mean_eddy_viscosity / molecular_viscosity
-        ),
-        "maximum_eddy_to_molecular_viscosity_ratio": (
-            maximum_eddy_viscosity / molecular_viscosity
-        ),
+        "mean_eddy_to_molecular_viscosity_ratio": (mean_eddy_viscosity / molecular_viscosity),
+        "maximum_eddy_to_molecular_viscosity_ratio": (maximum_eddy_viscosity / molecular_viscosity),
     }
 
 
