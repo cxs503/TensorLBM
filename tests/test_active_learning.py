@@ -22,6 +22,7 @@ import torch
 from tensorlbm.ai.active_learning import (
     ARM_CFG,
     HULLFORM_AXES,
+    AcquisitionLabel,
     AcquisitionPoint,
     FlaggedQuery,
     MotherEval,
@@ -32,6 +33,7 @@ from tensorlbm.ai.active_learning import (
     augment_corpus,
     axes_envelope,
     corpus_cond_v3,
+    corpus_cond_v5,
     corpus_design_keys,
     corpus_param_keys,
     corpus_point_keys,
@@ -41,6 +43,7 @@ from tensorlbm.ai.active_learning import (
     honest_verdict,
     hullform_component_counts,
     hullform_condition_rows,
+    hullform_condition_rows_v5,
     hullform_geo_block,
     labels_from_cache,
     point_param_key,
@@ -1157,3 +1160,190 @@ class TestEvalLoop:
             params={"hull_type": "with_sail", "l_over_d_mult": 1.3}, re=123.456, strategy="x"
         )
         assert "with_sail" in p.key and "1.3" in p.key and "123.456" in p.key
+
+
+# ---------------------------------------------------------------------------
+# B4 v5 — sail axial-position conditioning (2026-08-27 sail_x campaign fix)
+# ---------------------------------------------------------------------------
+
+
+def _sailx_label(point: AcquisitionPoint, cd: float, fam: int = 9) -> AcquisitionLabel:
+    """Hand-built matched label of a sail_x point (payload = cache schema)."""
+    rng = np.random.default_rng(42)
+    return AcquisitionLabel(
+        point_key=point.key,
+        matched=True,
+        cd=cd,
+        payload=dict(
+            x=rng.normal(0.5, 0.1, (5, TEST_GRID.ny, TEST_GRID.nx)).astype(np.float32),
+            re=point.re,
+            uin=0.1,
+            sail=1.0,
+            fin=1.0,
+            hull=1,
+            step=4000,
+            aproj=69,
+            cd=cd,
+            aux=rng.normal(0.5, 0.05, 8),
+            mask_bit_eq=False,
+            fam=fam,
+        ),
+    )
+
+
+class TestConditionV5Path:
+    """The v5 axis fix: channel exists, prefix is v3, serving varies with it."""
+
+    def test_rows_prefix_and_channel(self) -> None:
+        params = _family_params({"sail_x_mult": 0.7})
+        v3 = hullform_condition_rows(params, RES[:3], grid=TEST_GRID)
+        v5 = hullform_condition_rows_v5(params, RES[:3], grid=TEST_GRID)
+        assert v5.shape == (3, 9)
+        np.testing.assert_array_equal(v5[:, :8], v3)  # bit-identical prefix
+        np.testing.assert_allclose(v5[:, 8], np.log10(0.7))
+
+    def test_default_params_encode_mother_zero(self) -> None:
+        rows = hullform_condition_rows_v5(_family_params({}), [150.0], grid=TEST_GRID)
+        assert rows[0, 8] == 0.0
+
+    def test_geo_block_invariant_but_rows_v5_vary(self) -> None:
+        """P1 pinned: the geo block cannot see the axis, the v5 rows can."""
+        geo = {
+            m: hullform_geo_block("with_sail", 1.0, 1.0, TEST_GRID, SuboffConfig(sail_x_mult=m))
+            for m in (0.7, 1.0, 1.4)
+        }
+        for m in (0.7, 1.0, 1.4):  # mask-derived block strictly invariant (root cause)
+            np.testing.assert_array_equal(geo[m], geo[1.0])
+        rows = [
+            hullform_condition_rows_v5(_family_params({"sail_x_mult": m}), [150.0], grid=TEST_GRID)[
+                0
+            ]
+            for m in (0.7, 1.0, 1.4)
+        ]
+        np.testing.assert_array_equal(
+            np.stack(rows)[:, :8], np.stack([rows[1][:8]] * 3)
+        )  # v3 part flat
+        assert len({float(r[8]) for r in rows}) == 3  # the channel separates them
+
+    def test_corpus_cond_v5_mother_and_column(self) -> None:
+        corpus = make_corpus(n_per_design=2)
+        v5 = corpus_cond_v5(corpus)
+        assert v5.shape == (len(corpus["cd"]), 9)
+        np.testing.assert_array_equal(v5[:, :8], corpus_cond_v3(corpus))
+        np.testing.assert_array_equal(v5[:, 8], np.zeros(len(corpus["cd"])))
+        n = len(corpus["cd"])
+        with_col = dict(corpus)
+        mults = np.ones(n)
+        mults[n // 2 :] = 0.7
+        with_col["sail_x_mult"] = mults
+        out = corpus_cond_v5(with_col)
+        np.testing.assert_allclose(out[:, 8], np.log10(with_col["sail_x_mult"]))
+
+    def test_augment_carries_sail_x_mult(self, tmp_path: Path) -> None:
+        corpus = make_corpus(n_per_design=2)
+        corpus["sail_x_mult"] = np.ones(len(corpus["cd"]))
+        pt = AcquisitionPoint(
+            params=_family_params({"sail_x_mult": 0.7}), re=150.0, strategy="coverage"
+        )
+        out = augment_corpus(corpus, [pt], [_sailx_label(pt, cd=3.0)], grid=TEST_GRID)
+        assert out["sail_x_mult"][-1] == 0.7
+        assert np.all(out["sail_x_mult"][:-1] == 1.0)
+        np.testing.assert_array_equal(  # geo row is the invariant mother block
+            out["geo"][-1], hullform_geo_block("with_sail", 1.0, 1.0, TEST_GRID)
+        )
+
+    def test_retrain_and_serve_v5_varies_with_sail_x(self, tmp_path: Path) -> None:
+        """End-to-end v5 path: retrain(cond='v5') -> serve via predict_design."""
+        corpus = make_corpus(n_per_design=2)
+        n0 = len(corpus["cd"])
+        corpus["sail_x_mult"] = np.ones(n0)
+        rng = np.random.default_rng(5)
+        for m in (0.7, 1.4):  # two sailx rows, own dataset id -> quota-sampled
+            for k, v in corpus.items():
+                pad = np.zeros((1,) + np.asarray(v).shape[1:], dtype=np.asarray(v).dtype)
+                corpus[k] = np.concatenate([np.asarray(v), pad], axis=0)
+            corpus["dsi"][-1] = 99
+            corpus["re"][-1] = 150.0
+            corpus["sail"][-1] = 1.0
+            corpus["fin"][-1] = 1.0
+            corpus["hull"][-1] = 1
+            corpus["cd"][-1] = 18.0 * 150.0**-0.42
+            corpus["aux"][-1] = rng.normal(0.5, 0.05, 8)
+            corpus["sail_x_mult"][-1] = m
+            corpus["geo"][-1] = _design_geo("with_sail", 1.0, 1.0)
+            corpus["x"][-1] = rng.normal(0.5, 0.1, (5, TEST_GRID.ny, TEST_GRID.nx)).astype(
+                np.float32
+            )
+        ck = tmp_path / "ckpts_v5"
+        retrain_ensemble(
+            corpus,
+            ck,
+            seeds=(0,),
+            device="cpu",
+            hp_overrides=dict(epochs=2, patience=2, batch=8),
+            cond="v5",
+        )
+        spec = ServiceSpec(
+            ckpt_dir=ck,
+            guard_features=corpus_cond_v5(corpus),
+            axes_env={axis: (0.7 if axis == "sail_x_mult" else 1.0, 1.4) for axis in HULLFORM_AXES},
+            corpus_cache=corpus["x"],
+            cache_re=corpus["re"],
+            cache_designs=corpus_design_keys(corpus),
+        )
+        backend = spec.backend()
+        assert backend.cond_dim == 9
+        _mat, mean_lo, _std = predict_design(
+            backend,
+            spec,
+            _family_params({"sail_x_mult": 0.7}),
+            RES[:3],
+            grid=TEST_GRID,
+            cond_version="v5",
+        )
+        _mat, mean_hi, _std = predict_design(
+            backend,
+            spec,
+            _family_params({"sail_x_mult": 1.4}),
+            RES[:3],
+            grid=TEST_GRID,
+            cond_version="v5",
+        )
+        assert not np.array_equal(mean_lo, mean_hi)  # axis reaches the prediction
+        with pytest.raises(ValueError, match=r"cond must be \(N, 9\)"):
+            predict_design(  # v3 rows against a v5 ensemble: width guard fires
+                backend, spec, _family_params({}), RES[:3], grid=TEST_GRID
+            )
+        with pytest.raises(ValueError, match="cond_version"):
+            predict_design(
+                backend,
+                spec,
+                _family_params({}),
+                RES[:3],
+                grid=TEST_GRID,
+                cond_version="v2",
+            )
+
+    def test_retrain_v5_deterministic_cpu(self, tmp_path: Path) -> None:
+        corpus = make_corpus(n_per_design=2)
+        corpus["sail_x_mult"] = np.ones(len(corpus["cd"]))
+        a = retrain_ensemble(
+            corpus,
+            tmp_path / "a",
+            seeds=(0,),
+            device="cpu",
+            hp_overrides=dict(epochs=2, patience=2, batch=8),
+            cond="v5",
+        )
+        b = retrain_ensemble(
+            corpus,
+            tmp_path / "b",
+            seeds=(0,),
+            device="cpu",
+            hp_overrides=dict(epochs=2, patience=2, batch=8),
+            cond="v5",
+        )
+        assert a[0]["mape"] == b[0]["mape"]
+        ta = torch.load(tmp_path / "a" / "al_aug_s0.pt", weights_only=False)
+        assert ta["meta"]["cond"] == "v5"
+        assert ta["arch"]["cond_dim"] == 9
