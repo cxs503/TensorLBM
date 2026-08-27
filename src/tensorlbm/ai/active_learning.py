@@ -68,6 +68,8 @@ from .drag_cond import (
     QuotaSampler,
     SuboffGrid,
     condition_v3,
+    condition_v5,
+    sail_axial_channel,
 )
 from .inference_service import (
     FLAG_REJECT,
@@ -99,6 +101,7 @@ __all__ = [
     "augment_corpus",
     "axes_envelope",
     "corpus_cond_v3",
+    "corpus_cond_v5",
     "corpus_design_keys",
     "corpus_param_keys",
     "corpus_point_keys",
@@ -108,6 +111,7 @@ __all__ = [
     "honest_verdict",
     "hullform_component_counts",
     "hullform_condition_rows",
+    "hullform_condition_rows_v5",
     "hullform_geo_block",
     "labels_from_cache",
     "load_corpus_index",
@@ -300,6 +304,27 @@ def hullform_condition_rows(
         np.full(re.shape, float(params.get("fin_scale", 1.0))),
         np.broadcast_to(geo, (re.size, 4)),
     )
+
+
+def hullform_condition_rows_v5(
+    params: dict[str, Any],
+    re_list: Sequence[float] | np.ndarray,
+    grid: SuboffGrid = PRODUCTION_GRID,
+    u_in: float | None = None,
+) -> np.ndarray:
+    """(N, 9) condition_v5 rows of a design over ``re_list`` (B4 v5).
+
+    Same construction as :func:`hullform_condition_rows` plus the sail
+    axial-position channel :func:`.drag_cond.sail_axial_channel` of
+    ``params['sail_x_mult']`` (default 1.0 = mother, channel exactly 0.0).
+    The first 8 columns are the v3 rows bit-identically, so the v5 serving
+    path differs from v3 only by that channel — the geo block is still the
+    mask-derived one (and still sail-translation-invariant; the axis now
+    enters through the explicit channel instead).
+    """
+    base = hullform_condition_rows(params, re_list, grid=grid, u_in=u_in)
+    col = sail_axial_channel(float(params.get("sail_x_mult", 1.0)))
+    return np.concatenate([base, np.full((base.shape[0], 1), float(col))], axis=1)
 
 
 # ---------------------------------------------------------------------------
@@ -832,6 +857,22 @@ def corpus_cond_v3(index: dict[str, np.ndarray]) -> np.ndarray:
     return condition_v3(index["re"], index["uin"], index["sail"], index["fin"], index["geo"])
 
 
+def corpus_cond_v5(index: dict[str, np.ndarray]) -> np.ndarray:
+    """(N, 9) condition_v5 matrix of a corpus (v3 block + sail axial channel).
+
+    The sail axial position comes from the corpus's ``sail_x_mult`` column
+    (populated by :func:`augment_corpus` when the index carries the key —
+    acquired sail_x rows carry their multiplier); a corpus without the
+    column is entirely mother on that axis, so the channel is all zeros
+    (mother encodes as exactly 0.0, matching the v3 matrix the v4 protocol
+    produced).
+    """
+    mult = index.get("sail_x_mult")
+    if mult is None:
+        mult = np.ones(len(index["re"]))
+    return condition_v5(index["re"], index["uin"], index["sail"], index["fin"], index["geo"], mult)
+
+
 def corpus_param_keys(index: dict[str, np.ndarray]) -> list[str]:
     """Row keys ``re|uin|sail|fin|hull`` (the serving split group key)."""
     return [
@@ -925,6 +966,10 @@ def augment_corpus(
             "aux": np.asarray(pay["aux"], dtype=np.float64),
             "mask_bit_eq": bool(pay["mask_bit_eq"]),
             "geo": hullform_geo_block(hull, sail, fin, grid, cfg),
+            # B4 v5: the sail axial multiplier of the acquired point, for
+            # corpora that carry the column (mother corpora without it are
+            # untouched — the key only matters when the base index has it).
+            "sail_x_mult": float(p.params.get("sail_x_mult", 1.0)),
             "v_sail": int(v_sail),
             "v_fin": int(v_fin),
             "v_solid": int(v_solid),
@@ -1144,16 +1189,25 @@ def predict_design(
     re_list: Sequence[float] | np.ndarray,
     *,
     grid: SuboffGrid = PRODUCTION_GRID,
+    cond_version: str = "v3",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Serve one (possibly variant) design over ``re_list``.
 
     Returns ``(member_cd (M, N), mean (N,), std (N,))`` — the condition
     rows use the hull-form-aware construction, the reference field is the
-    mother-design corpus field nearest in log-Re.
+    mother-design corpus field nearest in log-Re.  ``cond_version="v5"``
+    appends the sail axial-position channel
+    (:func:`hullform_condition_rows_v5`, (N, 9)) for ensembles trained on
+    the v5 vector; the default ``"v3"`` path is unchanged.
     """
+    if cond_version not in ("v3", "v5"):
+        raise ValueError(f"cond_version must be 'v3' or 'v5', got {cond_version!r}")
     re = np.asarray(re_list, dtype=np.float64).ravel()
     u_in = float(params.get("u_in", 0.1))
-    cond = hullform_condition_rows(params, re, grid=grid, u_in=u_in)
+    if cond_version == "v5":
+        cond = hullform_condition_rows_v5(params, re, grid=grid, u_in=u_in)
+    else:
+        cond = hullform_condition_rows(params, re, grid=grid, u_in=u_in)
     field, _row = spec.nearest_field(
         str(params.get("hull_type", "with_sail")),
         float(params.get("sail_scale", 1.0)),
@@ -1182,10 +1236,18 @@ AUX_LAMBDA = 0.1
 ARM_CFG: dict[str, Any] = dict(cond="v3", sampling="quota", aux_lam=AUX_LAMBDA)  # C_full
 
 
-def corpus_with_cond(index: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    """Attach ``cond_v3`` and ``ylog`` columns (the training view)."""
+def corpus_with_cond(index: dict[str, np.ndarray], cond: str = "v3") -> dict[str, np.ndarray]:
+    """Attach ``cond_<cond>`` and ``ylog`` columns (the training view).
+
+    ``cond`` selects the condition vector: ``"v3"`` (default, the (N, 8)
+    serving vector) or ``"v5"`` (the (N, 9) vector with the sail
+    axial-position channel — requires nothing of the corpus: a corpus
+    without a ``sail_x_mult`` column is all-mother on that axis).
+    """
+    if cond not in ("v3", "v5"):
+        raise ValueError(f"cond must be 'v3' or 'v5', got {cond!r}")
     d = dict(index)
-    d["cond_v3"] = corpus_cond_v3(index)
+    d[f"cond_{cond}"] = corpus_cond_v5(index) if cond == "v5" else corpus_cond_v3(index)
     d["ylog"] = np.log10(index["cd"])
     return d
 
@@ -1273,11 +1335,18 @@ def train_member(
     device: torch.device,
     seed: int,
     hp_base: dict[str, Any] | None = None,
+    cond_col: str = "cond_v3",
 ) -> tuple[CondFNODrag, dict[str, Any], dict[str, Any]]:
-    """One ensemble member (verbatim loop of train_ensemble.train_member)."""
+    """One ensemble member (verbatim loop of train_ensemble.train_member).
+
+    ``cond_col`` selects the condition matrix of the training view
+    (``"cond_v3"`` default — the serving protocol verbatim — or
+    ``"cond_v5"`` for the sail axial-position channel; the arch's
+    ``cond_dim`` follows the matrix either way).
+    """
     cfg = ARM_CFG
     x, cd, ylog, aux = d["x"], d["cd"], d["ylog"], d["aux"]
-    cond_arr = d["cond_v3"]
+    cond_arr = d[cond_col]
     fit_idx, val_idx = split["fit"], split["val"]
     hp = dict(HP if hp_base is None else hp_base, seed=seed)
     epochs = int(hp["epochs"])
@@ -1413,6 +1482,7 @@ def retrain_ensemble(
     device: torch.device | str = "cpu",
     corpus_tag: str = "b4_al_augmented",
     hp_overrides: dict[str, Any] | None = None,
+    cond: str = "v3",
 ) -> list[dict[str, Any]]:
     """Incremental retrain on the augmented corpus (serving protocol).
 
@@ -1423,19 +1493,23 @@ def retrain_ensemble(
     mismatch the new condition rows).  Members are saved as
     ``CondDragCheckpoint`` bundles named ``al_aug_s{k}.pt``.
     ``hp_overrides`` exists for CPU tests (the demo uses the serving
-    defaults).
+    defaults).  ``cond="v5"`` trains on the (N, 9) sail axial-position
+    condition vector (recorded in the member ``meta``; the checkpoints are
+    then served with ``predict_design(..., cond_version="v5")``); the
+    default ``"v3"`` is the serving protocol verbatim.
     """
     hp_base = dict(HP, **(hp_overrides or {}))
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     dev = torch.device(device)
-    d = corpus_with_cond(corpus)
+    cond_col = f"cond_{cond}"
+    d = corpus_with_cond(corpus, cond=cond)
     split = split_random(d)
     te = np.asarray(split["test"])
     records: list[dict[str, Any]] = []
     for seed in seeds:
-        model, st, info = train_member(d, split, dev, seed, hp_base=hp_base)
-        pred = predict_rows(model, st, d["x"], d["cond_v3"], te, dev)
+        model, st, info = train_member(d, split, dev, seed, hp_base=hp_base, cond_col=cond_col)
+        pred = predict_rows(model, st, d["x"], d[cond_col], te, dev)
         true = d["cd"][te]
         mape = float(np.mean(np.abs(pred - true) / true) * 100)
         ckpt = CondDragCheckpoint(
@@ -1454,6 +1528,7 @@ def retrain_ensemble(
                 split="random",
                 seed=seed,
                 corpus=corpus_tag,
+                cond=cond,
                 protocol="active_learning.retrain_ensemble (train_ensemble.py verbatim)",
                 best_val_mape=info["best_val_mape"],
                 test_mape=mape,
