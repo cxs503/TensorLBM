@@ -14,7 +14,11 @@ here because they only make sense together at the service boundary:
    ensemble members (both backends expose the same ``(M, N)`` member
    matrix, so downstream statistics are backend-agnostic).  Calibration
    helpers (:func:`ensemble_picp`, :func:`error_std_spearman`) quantify
-   the band against archived LOHO truths.
+   the band against archived LOHO truths.  :func:`resolve_uq_temperature`
+   is the #251 serving knob (``uq_temperature`` argument /
+   ``TENSORLBM_DRAG_UQ_TEMPERATURE``): it rescales the *reported* std only
+   — verdicts and the min-max band never see it (audit in
+   ``docs/uq_temperature_serving_20260827.md``).
 
 3. **Extrapolation guardrails** — :class:`Guardrail` is a pluggable
    interface over an arbitrary feature space.  The default
@@ -64,6 +68,7 @@ from .drag_cond import (
 )
 
 __all__ = [
+    "ENV_UQ_TEMPERATURE",
     "FLAG_OK",
     "FLAG_REJECT",
     "FLAG_REVIEW",
@@ -80,6 +85,7 @@ __all__ = [
     "ReplayEnsembleBackend",
     "SpectralConv2dMatmul",
     "ensemble_picp",
+    "resolve_uq_temperature",
     "ensemble_stats",
     "error_std_spearman",
     "export_cond_fno_onnx",
@@ -98,6 +104,40 @@ FLAG_REJECT = "reject"
 HULL_ORDER = ("bare_hull", "with_sail", "full")
 
 _DEFAULT_DEVICE = "cpu"
+
+#: Environment variable overriding the *reported* ensemble-std temperature
+#: (serving calibration knob, landing of the #251 UQ audit).  Default 1.0
+#: reports the raw deep-ensemble std — the pre-knob behaviour, bit for bit.
+ENV_UQ_TEMPERATURE = "TENSORLBM_DRAG_UQ_TEMPERATURE"
+
+
+def resolve_uq_temperature(explicit: float | str | None = None) -> float:
+    """Reported-sigma temperature: explicit argument > env var > 1.0.
+
+    Mirrors :func:`tensorlbm.ai.service_backends.resolve_backend_kind`
+    (``arg > TENSORLBM_DRAG_UQ_BACKEND > torch``) so all serving knobs of
+    the drag service follow one precedence convention.  The value scales
+    only the **reported** ensemble std of :meth:`DragSurrogateService.predict`
+    — the guard verdict (Mahalanobis + envelope) and the member min-max
+    band never see it, so no threshold semantics can shift with it.  Must
+    be finite and strictly positive; a blank env var counts as unset.
+    """
+    raw = explicit if explicit is not None else os.environ.get(ENV_UQ_TEMPERATURE)
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return 1.0
+    try:
+        t = float(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"uq temperature {raw!r} is not a number "
+            f"({ENV_UQ_TEMPERATURE} or the uq_temperature argument)"
+        ) from exc
+    if not math.isfinite(t) or t <= 0.0:
+        raise ValueError(
+            f"uq temperature must be finite and positive, got {t!r} "
+            f"({ENV_UQ_TEMPERATURE} or the uq_temperature argument)"
+        )
+    return t
 
 
 # ---------------------------------------------------------------------------
@@ -820,6 +860,14 @@ class DragSurrogateService:
         of ``corpus_cache``, used to resolve a design's nearest field.
     u_in_default:
         Default inlet speed of the corpus (0.1 lattice units in B4).
+    uq_temperature:
+        Multiplier applied to the **reported** ensemble std only
+        (``arg > TENSORLBM_DRAG_UQ_TEMPERATURE > 1.0``, see
+        :func:`resolve_uq_temperature`).  ``1.0`` (the default) leaves every
+        served number bit-identical to the pre-knob service; ``2.3`` is the
+        #251-audited value for *new-design* semantics (see
+        ``docs/uq_temperature_serving_20260827.md``).  The guard verdict and
+        the member min-max band are never scaled.
     """
 
     def __init__(
@@ -832,6 +880,7 @@ class DragSurrogateService:
         cache_re: np.ndarray | None = None,
         cache_designs: list[tuple[str, float, float, float]] | None = None,
         u_in_default: float = 0.1,
+        uq_temperature: float | str | None = None,
     ) -> None:
         self.backend = backend
         self.guard = guard
@@ -840,6 +889,7 @@ class DragSurrogateService:
         self.cache_re = None if cache_re is None else np.asarray(cache_re, dtype=np.float64)
         self.cache_designs = cache_designs
         self.u_in_default = float(u_in_default)
+        self.uq_temperature = resolve_uq_temperature(uq_temperature)
 
     # -- construction helpers -------------------------------------------------
 
@@ -857,6 +907,7 @@ class DragSurrogateService:
         cache_designs: list[tuple[str, float, float, float]] | None = None,
         backend_kind: str | None = None,
         backend_plan: str | Path | None = None,
+        uq_temperature: float | str | None = None,
         **guard_kwargs: Any,
     ) -> DragSurrogateService:
         """Real-model service from member checkpoints + guard fit matrix.
@@ -908,6 +959,7 @@ class DragSurrogateService:
             grid=grid,
             cache_re=cache_re,
             cache_designs=cache_designs,
+            uq_temperature=uq_temperature,
         )
 
     @classmethod
@@ -920,6 +972,7 @@ class DragSurrogateService:
         guard_features: np.ndarray | None = None,
         guard_names: Sequence[str] | None = None,
         grid: SuboffGrid | None = None,
+        uq_temperature: float | str | None = None,
         **guard_kwargs: Any,
     ) -> DragSurrogateService:
         """Replay service from a B4 run directory (preds + cache).
@@ -933,7 +986,7 @@ class DragSurrogateService:
         if guard_features is None:
             guard_features = default_guard_features(run_dir)
         guard = EnvelopeMahalanobisGuardrail(guard_features, guard_names, **guard_kwargs)
-        return cls(backend, guard, grid=grid)
+        return cls(backend, guard, grid=grid, uq_temperature=uq_temperature)
 
     # -- queries ---------------------------------------------------------------
 
@@ -1064,6 +1117,14 @@ class DragSurrogateService:
             info.update(rep_info)
 
         mean, std, lo, hi = ensemble_stats(member_cd)
+        t = self.uq_temperature
+        if t != 1.0:
+            # #251 calibration knob: rescale the *reported* sigma only.  The
+            # guard verdict (already computed above) and the member min-max
+            # band stay raw, and at the default T = 1.0 this branch is dead
+            # so the served arrays are bit-identical to the pre-knob service.
+            std = std * t
+        info["uq_temperature"] = t
         return DragCurveResult(
             re=re_arr,
             cd=mean,

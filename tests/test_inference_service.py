@@ -32,6 +32,7 @@ from tensorlbm.ai.drag_cond import (
 from tensorlbm.ai.fno import SpectralConv2d
 from tensorlbm.ai.inference_service import (
     COND_V3_CHANNEL_NAMES,
+    ENV_UQ_TEMPERATURE,
     BackendQueryError,
     CondDragCheckpoint,
     DragSurrogateService,
@@ -48,6 +49,7 @@ from tensorlbm.ai.inference_service import (
     guard_threshold_sweep,
     load_checkpoint,
     load_corpus_index,
+    resolve_uq_temperature,
     save_checkpoint,
     to_matmul_spectral,
 )
@@ -459,6 +461,104 @@ class TestReplayBackend:
         cond_def, geo_def = default.condition_rows("full", 1.0, 1.0, [64.0])
         assert not np.allclose(geo_ok["sail_frac"], geo_def["sail_frac"])
         assert not np.allclose(cond_ok, cond_def)
+
+
+# ---------------------------------------------------------------------------
+# UQ temperature knob (#251 landing: reported-sigma scaling only)
+# ---------------------------------------------------------------------------
+
+
+def _resvc(svc: DragSurrogateService, t: float | str | None) -> DragSurrogateService:
+    """Re-wrap a built service with a temperature, keeping backend/guard/cache."""
+    return DragSurrogateService(
+        svc.backend,
+        svc.guard,
+        corpus_cache=svc.corpus_cache,
+        grid=svc.grid,
+        cache_re=svc.cache_re,
+        cache_designs=svc.cache_designs,
+        uq_temperature=t,
+    )
+
+
+class TestUqTemperature:
+    """``arg > TENSORLBM_DRAG_UQ_TEMPERATURE > 1.0``; sigma-only semantics."""
+
+    def test_resolver_default_and_blank_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv(ENV_UQ_TEMPERATURE, raising=False)
+        assert resolve_uq_temperature() == 1.0
+        assert resolve_uq_temperature(None) == 1.0
+        monkeypatch.setenv(ENV_UQ_TEMPERATURE, "  ")
+        assert resolve_uq_temperature() == 1.0  # blank env counts as unset
+
+    def test_resolver_env_and_arg_precedence(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv(ENV_UQ_TEMPERATURE, "2.3")
+        assert resolve_uq_temperature() == 2.3  # env used when arg is None
+        assert resolve_uq_temperature("1.0") == 1.0  # arg beats env
+        assert resolve_uq_temperature(1.7) == 1.7  # float args pass through
+        monkeypatch.setenv(ENV_UQ_TEMPERATURE, "2.5 ")
+        assert resolve_uq_temperature() == 2.5  # surrounding whitespace ignored
+
+    def test_resolver_rejects_bad_values(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        for bad in ("abc", "0", "-2", "inf", "nan"):
+            with pytest.raises(ValueError, match=ENV_UQ_TEMPERATURE):
+                resolve_uq_temperature(bad)
+        monkeypatch.setenv(ENV_UQ_TEMPERATURE, "zero")
+        with pytest.raises(ValueError, match=ENV_UQ_TEMPERATURE):
+            resolve_uq_temperature()
+
+    def test_default_is_bit_identical(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv(ENV_UQ_TEMPERATURE, raising=False)
+        base = TestModelBackend()._service()  # noqa: SLF001 — fixture reuse
+        explicit_none = _resvc(base, None)
+        explicit_one = _resvc(base, 1.0)
+        re_grid = np.geomspace(50.0, 100.0, 16)
+        for other in (explicit_none, explicit_one):
+            a = base.predict("full", 1.0, 1.0, re_grid)
+            b = other.predict("full", 1.0, 1.0, re_grid)
+            np.testing.assert_array_equal(a.std, b.std)  # bit-for-bit, not approx
+            np.testing.assert_array_equal(a.cd, b.cd)
+            np.testing.assert_array_equal(a.lo, b.lo)
+            np.testing.assert_array_equal(a.hi, b.hi)
+            assert a.guard == b.guard
+            assert b.info["uq_temperature"] == 1.0
+
+    def test_temperature_scales_reported_std_exactly(self) -> None:
+        base = _resvc(TestModelBackend()._service(), 1.0)  # noqa: SLF001 — fixture reuse
+        warm = _resvc(base, 2.3)
+        re_grid = np.geomspace(50.0, 100.0, 16)
+        a = base.predict("full", 1.0, 1.0, re_grid)
+        b = warm.predict("full", 1.0, 1.0, re_grid)
+        np.testing.assert_array_equal(b.std, a.std * 2.3)  # exact x2.3
+        assert b.uq_dict()["mean_std"] == pytest.approx(float(np.mean(a.std)) * 2.3, rel=1e-12)
+        np.testing.assert_array_equal(b.cd, a.cd)  # mean untouched
+        np.testing.assert_array_equal(b.lo, a.lo)  # min-max band untouched
+        np.testing.assert_array_equal(b.hi, a.hi)
+        assert b.members == a.members and b.backend == a.backend
+        assert b.info["uq_temperature"] == 2.3
+
+    def test_verdict_invariant_under_temperature(self) -> None:
+        base = _resvc(TestModelBackend()._service(), 1.0)  # noqa: SLF001 — fixture reuse
+        warm = _resvc(base, 2.3)
+        for re_grid in ([64.0], [50.0, 100.0, 5000.0]):  # ok case and reject case
+            a = base.predict("full", 1.0, 1.0, re_grid)
+            b = warm.predict("full", 1.0, 1.0, re_grid)
+            assert b.guard == a.guard  # flag, score and reasons bit-identical
+            assert b.guard.flag == a.guard.flag
+
+    def test_env_reaches_service_and_arg_wins(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        run_dir = _write_syn_run_dir(tmp_path)
+        monkeypatch.setenv(ENV_UQ_TEMPERATURE, "2.5")
+        env_svc = DragSurrogateService.from_run_dir(run_dir)
+        arg_svc = DragSurrogateService.from_run_dir(run_dir, uq_temperature=1.0)
+        raw = env_svc.predict("full", 1.0, 1.0, [64.0])
+        got = arg_svc.predict("full", 1.0, 1.0, [64.0])
+        assert env_svc.uq_temperature == 2.5
+        np.testing.assert_array_equal(raw.std, got.std * 2.5)
+        assert got.info["uq_temperature"] == 1.0
+        assert raw.info["uq_temperature"] == 2.5
 
 
 # ---------------------------------------------------------------------------
