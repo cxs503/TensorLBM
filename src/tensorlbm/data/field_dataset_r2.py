@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from hashlib import sha256
-import json
 from types import MappingProxyType
 from typing import Any, Mapping
 
-from tensorlbm.runtime import RunManifest
 from tensorlbm.data.field_r2 import (
     ArrayEncoding,
     ArrayManifestR2,
@@ -16,6 +15,7 @@ from tensorlbm.data.field_r2 import (
     BlobRef,
     FieldDataProductR2,
 )
+from tensorlbm.runtime import RunManifest
 
 
 def _text(value: object, name: str) -> str:

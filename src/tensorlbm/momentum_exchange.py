@@ -10,6 +10,12 @@ Implements five force-measurement strategies for stationary walls:
    link with ``(1 + 1/(2τ))``.  More accurate for moving walls and
    non-zero background velocity.
 
+2b. **Background-subtracted MEM** — Ladd sum with the uniform free-stream
+   equilibrium background removed.  On curved staircase surfaces the
+   discrete surface is not closed (Σ n̂ dA ≠ 0) so the free-stream
+   equilibrium background of the Ladd sum does NOT cancel and produces a
+   spurious force; subtracting the closed-form f^eq background fixes it.
+
 3. **BFL MEM** (Yu 2003 / Bouzidi-Firdaouss-Lallemand 2001) — momentum
    exchange weighted by the fractional wall distance *q* for interpolated
    bounce-back boundaries.
@@ -36,11 +42,12 @@ Yu, D.; Mei, R.; Luo, L.-S.; Shyy, W. (2003). "Viscous flow computation
 Caiazzo, A. (2007). "Analysis of correction in Galilean-invariant LBM."
     *J. Comput. Phys.* 225(2).
 """
+
 from __future__ import annotations
 
 import torch
 
-from .d3q19 import C, OPPOSITE
+from .d3q19 import OPPOSITE, C, W
 
 
 # ---------------------------------------------------------------------------
@@ -194,6 +201,85 @@ def momentum_exchange_galilean(
 
 
 # ---------------------------------------------------------------------------
+# 2b. Uniform-background-subtracted MEM (free-stream equilibrium removal)
+# ---------------------------------------------------------------------------
+def momentum_exchange_background_subtracted(
+    f: torch.Tensor,
+    solid: torch.Tensor,
+    near: torch.Tensor,
+    rho0: float = 1.0,
+    u0: tuple[float, float, float] = (0.0, 0.0, 0.0),
+) -> tuple[float, float, float]:
+    """Ladd-sum MEM with the uniform free-stream equilibrium background removed.
+
+    The standard Ladd sum form ``F = Σ_q (f_q + f_opp) · c_q`` contains the
+    equilibrium background of the free stream.  On a flat wall the background
+    cancels across opposite link pairs, but on a curved staircase surface the
+    discrete surface is not closed (``Σ n̂ dA ≠ 0``), so the background does
+    NOT cancel and produces a spurious force (G15: +268% on sphere Re=100).
+
+    For a uniform flow ``f = f^eq(ρ₀, U₀)`` the per-link background is exact:
+
+        f^eq_q(ρ₀,U₀) + f^eq_opp(ρ₀,U₀)
+            = 2·ρ₀·w_q·[1 + 4.5·(c_q·U₀)² − 1.5·|U₀|²]
+
+    (the linear term cancels because ``c_opp = −c_q``).  Subtracting this
+    closed-form background from the Ladd sum removes the spurious free-stream
+    force:
+
+        F_corrected = F_std − Σ_q 2·ρ₀·w_q·[1 + 4.5·(c_q·U₀)² − 1.5·|U₀|²]·c_q
+
+    Args:
+        f:     Distribution tensor ``(19, nz, ny, nx)`` — post-streaming.
+        solid: Boolean solid mask ``(nz, ny, nx)``.
+        near:  Near-wall fluid mask ``(nz, ny, nx)``.
+        rho0:  Free-stream density (lattice units, ≈ 1.0).
+        u0:    Free-stream velocity ``(u0x, u0y, u0z)`` in lattice units.
+
+    Returns:
+        ``(fx, fy, fz)`` — background-corrected force on the wall.
+    """
+    device = f.device
+    c = C.to(device).float()
+    w = W.to(device).float()
+    opp = OPPOSITE.to(device)
+
+    u0x, u0y, u0z = u0
+    u0sq = u0x * u0x + u0y * u0y + u0z * u0z
+
+    fx = torch.tensor(0.0, device=device, dtype=f.dtype)
+    fy = torch.tensor(0.0, device=device, dtype=f.dtype)
+    fz = torch.tensor(0.0, device=device, dtype=f.dtype)
+
+    for i in range(1, 19):
+        opp_i = int(opp[i].item())
+        ci = c[i]
+        di = int(ci[0].item())
+        dj = int(ci[1].item())
+        dk = int(ci[2].item())
+
+        crossing = _crossing_mask(near, solid, di, dj, dk)
+        if not crossing.any():
+            continue
+
+        # Ladd sum contribution
+        f_opp_solid = torch.roll(f[opp_i], (-dk, -dj, -di), dims=(0, 1, 2))
+        contrib = ((f[i] + f_opp_solid) * crossing.float()).sum()
+
+        # Uniform free-stream equilibrium background on the same crossing set
+        cdotu = float(ci[0].item()) * u0x + float(ci[1].item()) * u0y + float(ci[2].item()) * u0z
+        bg = 2.0 * rho0 * float(w[i].item()) * (1.0 + 4.5 * cdotu * cdotu - 1.5 * u0sq)
+        bg_contrib = bg * float(crossing.sum().item())
+
+        net = contrib - bg_contrib
+        fx = fx + float(ci[0].item()) * net
+        fy = fy + float(ci[1].item()) * net
+        fz = fz + float(ci[2].item()) * net
+
+    return float(fx.item()), float(fy.item()), float(fz.item())
+
+
+# ---------------------------------------------------------------------------
 # 3. BFL MEM (Yu 2003)
 # ---------------------------------------------------------------------------
 def momentum_exchange_bfl(
@@ -262,7 +348,7 @@ def momentum_exchange_bfl(
         if per_direction:
             weight = crossing.float() * inv_q[i]
         else:
-            weight = (crossing.float() * inv_q)
+            weight = crossing.float() * inv_q
         contrib = ((f[i] + f_opp_solid) * weight).sum()
         fx = fx + float(ci[0].item()) * contrib
         fy = fy + float(ci[1].item()) * contrib
@@ -303,8 +389,8 @@ def momentum_exchange_stress(
         ``(fx, fy, fz)`` — friction drag coefficient components.
     """
     from .drag_pressure import drag_friction_integration
-    return drag_friction_integration(f, mesh, dpS, nu, q_wall=q_wall,
-                                     formula=formula)
+
+    return drag_friction_integration(f, mesh, dpS, nu, q_wall=q_wall, formula=formula)
 
 
 # ---------------------------------------------------------------------------
@@ -346,18 +432,24 @@ def momentum_exchange_pressure_friction(
         Dict with keys: ``cd_p_x, cd_p_y, cd_p_z, cd_f_x, cd_f_y,
         cd_f_z, cd_tot_x, cd_tot_y, cd_tot_z``.
     """
-    from .drag_pressure import drag_pressure_integration, drag_friction_integration
+    from .drag_pressure import drag_friction_integration, drag_pressure_integration
 
     px, py, pz = drag_pressure_integration(
         f, mesh, dpS, extrap=extrap, p0_method=p0_method, solid=solid
     )
     fx, fy, fz = drag_friction_integration(
-        f, mesh, dpS, nu, q_wall=q_wall, formula=friction_formula
+        f, mesh, dpS, nu, q_wall=q_wall, formula=friction_formula, solid=solid
     )
     return {
-        "cd_p_x": px, "cd_p_y": py, "cd_p_z": pz,
-        "cd_f_x": fx, "cd_f_y": fy, "cd_f_z": fz,
-        "cd_tot_x": px + fx, "cd_tot_y": py + fy, "cd_tot_z": pz + fz,
+        "cd_p_x": px,
+        "cd_p_y": py,
+        "cd_p_z": pz,
+        "cd_f_x": fx,
+        "cd_f_y": fy,
+        "cd_f_z": fz,
+        "cd_tot_x": px + fx,
+        "cd_tot_y": py + fy,
+        "cd_tot_z": pz + fz,
     }
 
 
@@ -411,15 +503,21 @@ def compare_all_methods(
         cd_bfl = float("nan")
 
     # Stress integration (friction only)
-    cd_stress = momentum_exchange_stress(
-        f, mesh, dpS, nu, formula=friction_formula, q_wall=q_wall
-    )[0]
+    cd_stress = momentum_exchange_stress(f, mesh, dpS, nu, formula=friction_formula, q_wall=q_wall)[
+        0
+    ]
 
     # Pressure + friction
     pf = momentum_exchange_pressure_friction(
-        f, mesh, dpS, nu,
-        extrap=extrap, p0_method=p0_method, solid=solid,
-        friction_formula=friction_formula, q_wall=q_wall,
+        f,
+        mesh,
+        dpS,
+        nu,
+        extrap=extrap,
+        p0_method=p0_method,
+        solid=solid,
+        friction_formula=friction_formula,
+        q_wall=q_wall,
     )
 
     return {
@@ -436,6 +534,7 @@ def compare_all_methods(
 __all__ = [
     "momentum_exchange_standard",
     "momentum_exchange_galilean",
+    "momentum_exchange_background_subtracted",
     "momentum_exchange_bfl",
     "momentum_exchange_stress",
     "momentum_exchange_pressure_friction",

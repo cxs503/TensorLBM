@@ -10,16 +10,19 @@ from __future__ import annotations
 
 import torch
 
+from tensorlbm.d2q9 import OPPOSITE as OPP2D
+from tensorlbm.d2q9 import C as C2D
+from tensorlbm.d2q9 import W as W2D
+from tensorlbm.d2q9 import equilibrium as eq2d
+from tensorlbm.d3q19 import C as C3D
 from tensorlbm.dg_advection import dg_rhs, get_ops
 from tensorlbm.dg_band import (
     build_band_topology,
-    dg_rhs_band,
     dg_advect_band,
+    dg_rhs_band,
     hybrid_advect,
     hybrid_step,
 )
-from tensorlbm.d2q9 import C as C2D, W as W2D, OPPOSITE as OPP2D, equilibrium as eq2d
-from tensorlbm.d3q19 import C as C3D
 
 DT = torch.float64
 
@@ -101,7 +104,6 @@ class TestInterfaceConservation:
         mask[list(band_rows), :] = True
         topo = build_band_topology(mask, periodic=True)
         # Seed band DOFs from the cell-mean LBM values at band cells (P0 seed).
-        n_band = topo.n_band
         f_dg = f_lbm[:, topo.band_coords[:, 0], topo.band_coords[:, 1]]  # (Q, n_band)
         f_dg = f_dg.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, 2, 2).contiguous()
         return f_lbm, f_dg, topo, (ny, nx)

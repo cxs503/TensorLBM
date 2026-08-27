@@ -16,21 +16,27 @@ def _result() -> dict:
                 {"step": 1, "collision_resolved_reynolds": 5000.0},
                 {"step": 2, "collision_resolved_reynolds": 100000.0},
             ],
-            "population_health": [{
-                "step": 2,
-                "target_reynolds_reached": True,
-                "levels": [{
-                    "finite": True,
-                    "minimum_population": 0.01,
-                    "minimum_density": 0.9,
-                    "maximum_density": 1.1,
-                    "maximum_speed": 0.12,
-                }],
-                "interfaces": [{
-                    "maximum_reflux_residual": 1.0e-10,
-                    "restriction_limited_fraction": 0.0,
-                }],
-            }],
+            "population_health": [
+                {
+                    "step": 2,
+                    "target_reynolds_reached": True,
+                    "levels": [
+                        {
+                            "finite": True,
+                            "minimum_population": 0.01,
+                            "minimum_density": 0.9,
+                            "maximum_density": 1.1,
+                            "maximum_speed": 0.12,
+                        }
+                    ],
+                    "interfaces": [
+                        {
+                            "maximum_reflux_residual": 1.0e-10,
+                            "restriction_limited_fraction": 0.0,
+                        }
+                    ],
+                }
+            ],
         },
     }
 

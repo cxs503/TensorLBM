@@ -12,7 +12,7 @@ import torch
 from tensorlbm.backends.contracts import DeviceSpec
 from tensorlbm.backends.torch_backend import TorchBackend, build_torch_lattice_constants
 from tensorlbm.core.lattice import D3Q19, D3Q27
-from tensorlbm.d3q19 import C, OPPOSITE, W, equilibrium3d
+from tensorlbm.d3q19 import OPPOSITE, C, W, equilibrium3d
 from tensorlbm.models.contracts import ModelComposition
 from tensorlbm.models.torch_execution import compile_torch_d3q19_mrt_plan
 from tensorlbm.solver3d import collide_mrt3d, stream3d

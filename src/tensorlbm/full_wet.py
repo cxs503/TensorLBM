@@ -21,7 +21,6 @@ from .d3q19 import equilibrium3d, macroscopic3d
 from .models.contracts import ModelComposition
 from .obstacles import compute_obstacle_forces_3d, compute_obstacle_moments_3d
 
-
 _R1_DEVICE = DeviceSpec(device="cpu", dtype_name="float32")
 _UNSUPPORTED = (
     "free_surface",

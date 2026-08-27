@@ -75,7 +75,9 @@ class WallResolvedChannel3DConfig:
         if not 0 <= self.warmup_steps < self.steps:
             raise ValueError("require 0 <= warmup_steps < steps")
         for name in (
-            "sample_interval", "report_interval", "checkpoint_interval",
+            "sample_interval",
+            "report_interval",
+            "checkpoint_interval",
             "collision_chunk_cells",
         ):
             value = getattr(self, name)
@@ -95,10 +97,7 @@ class WallResolvedChannel3DConfig:
             raise ValueError("random_noise_fraction must lie in [0,2]")
         if isinstance(self.spectral_mode_count, bool) or self.spectral_mode_count < 1:
             raise ValueError("spectral_mode_count must be a positive integer")
-        if (
-            isinstance(self.spectral_max_wavenumber, bool)
-            or self.spectral_max_wavenumber < 1
-        ):
+        if isinstance(self.spectral_max_wavenumber, bool) or self.spectral_max_wavenumber < 1:
             raise ValueError("spectral_max_wavenumber must be a positive integer")
         if self.minimum_statistics_eddy_turnovers <= 0.0:
             raise ValueError("minimum_statistics_eddy_turnovers must be positive")
@@ -135,27 +134,53 @@ def _spectral_solenoidal_perturbation(
     envelope = sin_pi_eta.square()
     maximum_k = config.spectral_max_wavenumber
     vector_potential = torch.zeros(
-        (3, config.nz, config.ny, config.nx), device=device, dtype=dtype,
+        (3, config.nz, config.ny, config.nx),
+        device=device,
+        dtype=dtype,
     )
     for _ in range(config.spectral_mode_count):
         # Exclude the constant x-z mode so every mode has zero plane mean.
         while True:
-            kx = int(torch.randint(
-                0, maximum_k + 1, (), generator=generator, device=device,
-            ).item())
-            kz = int(torch.randint(
-                0, maximum_k + 1, (), generator=generator, device=device,
-            ).item())
+            kx = int(
+                torch.randint(
+                    0,
+                    maximum_k + 1,
+                    (),
+                    generator=generator,
+                    device=device,
+                ).item()
+            )
+            kz = int(
+                torch.randint(
+                    0,
+                    maximum_k + 1,
+                    (),
+                    generator=generator,
+                    device=device,
+                ).item()
+            )
             if kx or kz:
                 break
-        ky = int(torch.randint(
-            1, maximum_k + 1, (), generator=generator, device=device,
-        ).item())
+        ky = int(
+            torch.randint(
+                1,
+                maximum_k + 1,
+                (),
+                generator=generator,
+                device=device,
+            ).item()
+        )
         phase_xz, phase_y = torch.rand(
-            2, generator=generator, device=device, dtype=dtype,
+            2,
+            generator=generator,
+            device=device,
+            dtype=dtype,
         ) * (2.0 * math.pi)
         vector = torch.randn(
-            3, generator=generator, device=device, dtype=dtype,
+            3,
+            generator=generator,
+            device=device,
+            dtype=dtype,
         )
         vector /= torch.linalg.vector_norm(vector).clamp_min(1.0e-30)
         wave_x = 2.0 * math.pi * kx / config.nx
@@ -181,11 +206,13 @@ def _spectral_solenoidal_perturbation(
     # Use the same commuting lattice difference operators in curl(A) that are
     # used to audit divergence.  Thus div(curl(A)) is zero to roundoff on the
     # interior lattice, rather than only in the continuous equations.
-    perturbation = torch.stack((
-        derivative_y(az) - derivative_z(ay),
-        derivative_z(ax) - derivative_x(az),
-        derivative_x(ay) - derivative_y(ax),
-    ))
+    perturbation = torch.stack(
+        (
+            derivative_y(az) - derivative_z(ay),
+            derivative_z(ax) - derivative_x(az),
+            derivative_x(ay) - derivative_y(ax),
+        )
+    )
     fluid_slice = perturbation[:, :, 1:-1, :]
     total_rms = torch.sqrt(fluid_slice.square().sum(dim=0).mean())
     target_rms = config.perturbation_fraction * config.u_tau
@@ -207,10 +234,12 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
     ux = base.expand(config.nz, config.ny, config.nx).clone()
     amplitude = config.perturbation_fraction * config.u_tau
     if config.initialization_mode == "spectral_solenoidal":
-        perturbation_x, perturbation_y, perturbation_z = (
-            _spectral_solenoidal_perturbation(
-                config, x=x, y=y, z=z, device=device,
-            )
+        perturbation_x, perturbation_y, perturbation_z = _spectral_solenoidal_perturbation(
+            config,
+            x=x,
+            y=y,
+            z=z,
+            device=device,
         )
         ux += perturbation_x
         uy = perturbation_y
@@ -219,13 +248,13 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
         # Legacy single-mode transition trigger, retained for exact replay of
         # rejected evidence and old checkpoints.
         ux += amplitude * torch.sin(phase_y) * torch.cos(phase_z)
-        uy = (
-            amplitude * torch.sin(phase_x) * torch.sin(phase_y).square()
-            * torch.cos(phase_z)
-        )
+        uy = amplitude * torch.sin(phase_x) * torch.sin(phase_y).square() * torch.cos(phase_z)
         uz = (
-            -amplitude * (config.nz / config.height) * torch.sin(phase_x)
-            * torch.sin(2.0 * phase_y) * torch.sin(phase_z)
+            -amplitude
+            * (config.nz / config.height)
+            * torch.sin(phase_x)
+            * torch.sin(2.0 * phase_y)
+            * torch.sin(phase_z)
         )
     if config.initialization_mode == "coherent" and config.random_noise_fraction:
         generator = torch.Generator(device=device)
@@ -243,32 +272,33 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
         uy += noise_amplitude * taper * noise[1]
         uz += noise_amplitude * taper * noise[2]
     solid = torch.zeros(
-        (config.nz, config.ny, config.nx), dtype=torch.bool, device=device,
+        (config.nz, config.ny, config.nx),
+        dtype=torch.bool,
+        device=device,
     )
     solid[:, 0, :] = True
     solid[:, -1, :] = True
     ux[solid] = uy[solid] = uz[solid] = 0.0
     perturbation_x = ux - base.expand_as(ux)
     perturbation_x[solid] = 0.0
-    component_rms = torch.stack((
-        torch.sqrt(perturbation_x[~solid].square().mean()),
-        torch.sqrt(uy[~solid].square().mean()),
-        torch.sqrt(uz[~solid].square().mean()),
-    ))
-    plane_mean_max = torch.stack((
-        perturbation_x.mean(dim=(0, 2)).abs().max(),
-        uy.mean(dim=(0, 2)).abs().max(),
-        uz.mean(dim=(0, 2)).abs().max(),
-    ))
+    component_rms = torch.stack(
+        (
+            torch.sqrt(perturbation_x[~solid].square().mean()),
+            torch.sqrt(uy[~solid].square().mean()),
+            torch.sqrt(uz[~solid].square().mean()),
+        )
+    )
+    plane_mean_max = torch.stack(
+        (
+            perturbation_x.mean(dim=(0, 2)).abs().max(),
+            uy.mean(dim=(0, 2)).abs().max(),
+            uz.mean(dim=(0, 2)).abs().max(),
+        )
+    )
     interior_divergence = (
-        0.5 * (
-            torch.roll(perturbation_x, -1, 2)
-            - torch.roll(perturbation_x, 1, 2)
-        )[:, 2:-2]
+        0.5 * (torch.roll(perturbation_x, -1, 2) - torch.roll(perturbation_x, 1, 2))[:, 2:-2]
         + 0.5 * (uy[:, 3:-1] - uy[:, 1:-3])
-        + 0.5 * (
-            torch.roll(uz, -1, 0) - torch.roll(uz, 1, 0)
-        )[:, 2:-2]
+        + 0.5 * (torch.roll(uz, -1, 0) - torch.roll(uz, 1, 0))[:, 2:-2]
     )
     divergence_rms = torch.sqrt(interior_divergence.square().mean())
     initialization_diagnostics = {
@@ -278,9 +308,7 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
             if config.initialization_mode == "spectral_solenoidal"
             else "legacy_coherent_cross_plane_mode"
         ),
-        "component_rms_over_u_tau": (
-            component_rms / config.u_tau
-        ).tolist(),
+        "component_rms_over_u_tau": (component_rms / config.u_tau).tolist(),
         "total_rms_over_u_tau": float(
             torch.linalg.vector_norm(component_rms).item() / config.u_tau,
         ),
@@ -288,8 +316,7 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
             plane_mean_max.max().item() / config.u_tau,
         ),
         "component_rms_maximum_to_minimum_ratio": float(
-            component_rms.max().item()
-            / component_rms.min().clamp_min(1.0e-30).item()
+            component_rms.max().item() / component_rms.min().clamp_min(1.0e-30).item()
         ),
         "interior_discrete_divergence_rms_over_u_tau_per_cell": float(
             divergence_rms.item() / config.u_tau
@@ -297,9 +324,13 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
         "interior_discrete_divergence_maximum_over_u_tau_per_cell": float(
             interior_divergence.abs().max().item() / config.u_tau
         ),
-        "wall_maximum_speed": float(torch.sqrt(
-            ux[solid].square() + uy[solid].square() + uz[solid].square(),
-        ).max().item()),
+        "wall_maximum_speed": float(
+            torch.sqrt(
+                ux[solid].square() + uy[solid].square() + uz[solid].square(),
+            )
+            .max()
+            .item()
+        ),
     }
     return solid, ux, uy, uz, initialization_diagnostics
 
@@ -352,15 +383,17 @@ def run_wall_resolved_channel3d(
     """Run the channel and return a fail-closed validation record."""
     config.validate()
     device = torch.device(config.device)
-    solid, initial_ux, initial_uy, initial_uz, initialization_diagnostics = (
-        _initial_velocity(config, device)
+    solid, initial_ux, initial_uy, initial_uz, initialization_diagnostics = _initial_velocity(
+        config, device
     )
     fluid = ~solid
     solid_q = solid.unsqueeze(0)
     # Rows: U,V,W, uu_raw,vv_raw,ww_raw,uv_raw; central moments are formed
     # only after the full statistical mean is available.
     moment_profile_sum = torch.zeros(
-        (7, config.ny), device=device, dtype=torch.float64,
+        (7, config.ny),
+        device=device,
+        dtype=torch.float64,
     )
     profile_samples = 0
     statistics_reset_step = 0
@@ -415,7 +448,10 @@ def run_wall_resolved_channel3d(
         block_start_momentum = float(state["block_start_momentum_x"])
     else:
         f = equilibrium3d(
-            torch.ones_like(initial_ux), initial_ux, initial_uy, initial_uz,
+            torch.ones_like(initial_ux),
+            initial_ux,
+            initial_uy,
+            initial_uz,
         )
         block_start_step = 0
         block_start_momentum = _fluid_momentum_x(f, fluid)
@@ -454,15 +490,17 @@ def run_wall_resolved_channel3d(
 
         if step > config.warmup_steps and step % config.sample_interval == 0:
             _, sample_ux, sample_uy, sample_uz = macroscopic3d_low_memory(f)
-            moment_profile_sum += torch.stack((
-                sample_ux.mean(dim=(0, 2)),
-                sample_uy.mean(dim=(0, 2)),
-                sample_uz.mean(dim=(0, 2)),
-                sample_ux.square().mean(dim=(0, 2)),
-                sample_uy.square().mean(dim=(0, 2)),
-                sample_uz.square().mean(dim=(0, 2)),
-                (sample_ux * sample_uy).mean(dim=(0, 2)),
-            )).to(dtype=torch.float64)
+            moment_profile_sum += torch.stack(
+                (
+                    sample_ux.mean(dim=(0, 2)),
+                    sample_uy.mean(dim=(0, 2)),
+                    sample_uz.mean(dim=(0, 2)),
+                    sample_ux.square().mean(dim=(0, 2)),
+                    sample_uy.square().mean(dim=(0, 2)),
+                    sample_uz.square().mean(dim=(0, 2)),
+                    (sample_ux * sample_uy).mean(dim=(0, 2)),
+                )
+            ).to(dtype=torch.float64)
             profile_samples += 1
         if step % config.report_interval == 0 or step == config.steps:
             rho_now, ux_now, uy_now, uz_now = macroscopic3d_low_memory(f)
@@ -476,17 +514,19 @@ def run_wall_resolved_channel3d(
             crossflow_rms = torch.sqrt(
                 (fluctuation_y[fluid].square() + fluctuation_z[fluid].square()).mean(),
             )
-            turbulent_kinetic_energy = 0.5 * (
-                fluctuation_x[fluid].square()
-                + fluctuation_y[fluid].square()
-                + fluctuation_z[fluid].square()
-            ).mean()
+            turbulent_kinetic_energy = (
+                0.5
+                * (
+                    fluctuation_x[fluid].square()
+                    + fluctuation_y[fluid].square()
+                    + fluctuation_z[fluid].square()
+                ).mean()
+            )
             momentum = _fluid_momentum_x(f, fluid)
             block_steps = step - block_start_step
             body_impulse_per_step = config.body_force_acceleration * fluid_cells
             wall_force_per_step = (
-                body_impulse_per_step
-                - (momentum - block_start_momentum) / block_steps
+                body_impulse_per_step - (momentum - block_start_momentum) / block_steps
             )
             measured_tau_w = wall_force_per_step / wall_area
             measured_u_tau = math.sqrt(max(measured_tau_w, 0.0))
@@ -505,9 +545,8 @@ def run_wall_resolved_channel3d(
                 "reynolds_shear_xy": float(
                     (-(fluctuation_x * fluctuation_y)[fluid].mean()).item(),
                 ),
-                "mass_drift_fraction": (
-                    float(f[:, fluid].sum().item()) - initial_mass
-                ) / initial_mass,
+                "mass_drift_fraction": (float(f[:, fluid].sum().item()) - initial_mass)
+                / initial_mass,
                 "momentum_x": momentum,
                 "measured_wall_shear": measured_tau_w,
                 "measured_friction_velocity": measured_u_tau,
@@ -539,12 +578,14 @@ def run_wall_resolved_channel3d(
         raise RuntimeError("channel collected no profile samples")
     raw_moments = moment_profile_sum / profile_samples
     mean_velocity_profiles = raw_moments[:3]
-    reynolds_stress_profiles = torch.stack((
-        raw_moments[3] - mean_velocity_profiles[0].square(),
-        raw_moments[4] - mean_velocity_profiles[1].square(),
-        raw_moments[5] - mean_velocity_profiles[2].square(),
-        raw_moments[6] - mean_velocity_profiles[0] * mean_velocity_profiles[1],
-    ))
+    reynolds_stress_profiles = torch.stack(
+        (
+            raw_moments[3] - mean_velocity_profiles[0].square(),
+            raw_moments[4] - mean_velocity_profiles[1].square(),
+            raw_moments[5] - mean_velocity_profiles[2].square(),
+            raw_moments[6] - mean_velocity_profiles[0] * mean_velocity_profiles[1],
+        )
+    )
     statistics_start_step = max(config.warmup_steps, statistics_reset_step)
     statistics_steps = config.steps - statistics_start_step
     eddy_turnover_steps = config.height / config.u_tau
@@ -556,19 +597,13 @@ def run_wall_resolved_channel3d(
         statistics_start_step,
         config.steps - stationarity_steps,
     )
-    stationarity_reports = [
-        item for item in reports if int(item["step"]) > stationarity_start
-    ]
+    stationarity_reports = [item for item in reports if int(item["step"]) > stationarity_start]
     if len(stationarity_reports) < 2:
-        stationarity_reports = reports[-min(2, len(reports)):]
-    stationarity_shear = [
-        float(item["measured_wall_shear"]) for item in stationarity_reports
-    ]
+        stationarity_reports = reports[-min(2, len(reports)) :]
+    stationarity_shear = [float(item["measured_wall_shear"]) for item in stationarity_reports]
     mean_wall_shear = sum(stationarity_shear) / len(stationarity_shear)
     stationarity_u_tau = math.sqrt(max(mean_wall_shear, 0.0))
-    mean_error_pct = (
-        (stationarity_u_tau - config.u_tau) / config.u_tau * 100.0
-    )
+    mean_error_pct = (stationarity_u_tau - config.u_tau) / config.u_tau * 100.0
     split = max(1, len(stationarity_shear) // 2)
     first_half_shear = sum(stationarity_shear[:split]) / split
     second_half = stationarity_shear[split:] or stationarity_shear[-1:]
@@ -576,19 +611,17 @@ def run_wall_resolved_channel3d(
     first_half_u_tau = math.sqrt(max(first_half_shear, 0.0))
     second_half_u_tau = math.sqrt(max(second_half_shear, 0.0))
     half_window_drift_fraction = abs(second_half_u_tau - first_half_u_tau) / max(
-        abs(stationarity_u_tau), 1.0e-30,
+        abs(stationarity_u_tau),
+        1.0e-30,
     )
     stationarity_u_tau_values = [
-        float(item["measured_friction_velocity"])
-        for item in stationarity_reports
+        float(item["measured_friction_velocity"]) for item in stationarity_reports
     ]
     stationarity_range_fraction = (
-        (max(stationarity_u_tau_values) - min(stationarity_u_tau_values))
-        / max(abs(stationarity_u_tau), 1.0e-30)
-    )
+        max(stationarity_u_tau_values) - min(stationarity_u_tau_values)
+    ) / max(abs(stationarity_u_tau), 1.0e-30)
     recent_crossflow_ratio = sum(
-        float(item["crossflow_rms_over_u_tau"])
-        for item in stationarity_reports
+        float(item["crossflow_rms_over_u_tau"]) for item in stationarity_reports
     ) / len(stationarity_reports)
     result: dict[str, object] = {
         "schema": "tensorlbm-wall-resolved-channel3d-result-v1",
@@ -607,12 +640,8 @@ def run_wall_resolved_channel3d(
             "target_wall_shear": config.u_tau**2,
             "dx_plus": config.re_tau / (0.5 * config.height),
             "dz_plus": config.re_tau / (0.5 * config.height),
-            "streamwise_length_over_half_height": (
-                config.nx / (0.5 * config.height)
-            ),
-            "spanwise_length_over_half_height": (
-                config.nz / (0.5 * config.height)
-            ),
+            "streamwise_length_over_half_height": (config.nx / (0.5 * config.height)),
+            "spanwise_length_over_half_height": (config.nz / (0.5 * config.height)),
         },
         "initialization_diagnostics": initialization_diagnostics,
         "statistics": {
@@ -620,27 +649,19 @@ def run_wall_resolved_channel3d(
             "statistics_reset_step": statistics_reset_step,
             "mean_velocity_profile": mean_velocity_profiles[0].tolist(),
             "mean_velocity_profiles_xyz": mean_velocity_profiles.tolist(),
-            "reynolds_stress_profiles_uu_vv_ww_uv": (
-                reynolds_stress_profiles.tolist()
-            ),
+            "reynolds_stress_profiles_uu_vv_ww_uv": (reynolds_stress_profiles.tolist()),
             "statistics_steps": statistics_steps,
             "eddy_turnover_steps": eddy_turnover_steps,
             "statistics_eddy_turnovers": statistics_eddy_turnovers,
             "stationarity_window_start_step": stationarity_start,
             "stationarity_report_count": len(stationarity_reports),
             "stationarity_friction_velocity": stationarity_u_tau,
-            "stationarity_friction_velocity_range_fraction": (
-                stationarity_range_fraction
-            ),
-            "stationarity_half_window_drift_fraction": (
-                half_window_drift_fraction
-            ),
+            "stationarity_friction_velocity_range_fraction": (stationarity_range_fraction),
+            "stationarity_half_window_drift_fraction": (half_window_drift_fraction),
             # Retain v1 field names for downstream readers.  Their values now
             # cover a physically scaled stationarity window, not three points.
             "recent_friction_velocity_mean": stationarity_u_tau,
-            "recent_friction_velocity_range_fraction": (
-                stationarity_range_fraction
-            ),
+            "recent_friction_velocity_range_fraction": (stationarity_range_fraction),
             "recent_friction_velocity_error_pct": mean_error_pct,
             "recent_crossflow_rms_over_u_tau": recent_crossflow_ratio,
         },
@@ -648,23 +669,15 @@ def run_wall_resolved_channel3d(
         "collision_execution": collision.diagnostics(),
         "acceptance": {
             "population_health": all(bool(item["finite"]) for item in reports),
-            "positive_populations": min(
-                float(item["minimum_population"]) for item in reports
-            ) > 0.0,
+            "positive_populations": min(float(item["minimum_population"]) for item in reports)
+            > 0.0,
             "friction_velocity_error_below_2pct": abs(mean_error_pct) <= 2.0,
             "minimum_two_eddy_turnover_statistics": (
-                statistics_eddy_turnovers
-                >= config.minimum_statistics_eddy_turnovers
+                statistics_eddy_turnovers >= config.minimum_statistics_eddy_turnovers
             ),
-            "stationarity_half_window_drift_below_2pct": (
-                half_window_drift_fraction <= 0.02
-            ),
-            "stationarity_block_range_below_10pct": (
-                stationarity_range_fraction <= 0.10
-            ),
-            "sustained_three_dimensional_fluctuations": (
-                recent_crossflow_ratio >= 0.1
-            ),
+            "stationarity_half_window_drift_below_2pct": (half_window_drift_fraction <= 0.02),
+            "stationarity_block_range_below_10pct": (stationarity_range_fraction <= 0.10),
+            "sustained_three_dimensional_fluctuations": (recent_crossflow_ratio >= 0.1),
             # The Moser-Kim-Mansour Re_tau=180 reference used downstream was
             # sampled in a 4*pi*h by 4*pi*h/3 periodic box.  Smaller minimal
             # boxes remain useful probes but cannot validate all DNS stresses.

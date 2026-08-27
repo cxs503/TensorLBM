@@ -18,8 +18,7 @@ no physical validation, convergence, or steady-state claim is made.
 from __future__ import annotations
 
 import json
-import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -37,7 +36,7 @@ from .solver3d import collide_mrt3d, correct_mass3d, stream3d
 from .suboff_cad import SuboffHullType, build_suboff_mask
 from .suboff_resistance import _voxel_wetted_area
 from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
-from .wall_function_contract import WallFunctionCapability, WallFunctionCompatibilityError
+from .wall_function_contract import WallFunctionCapability
 
 __all__ = [
     "SuboffValidationConfig",

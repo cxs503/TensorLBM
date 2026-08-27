@@ -16,6 +16,7 @@ Coordinate conventions (mirroring ``examples/amr_sphere_drag_validate.py``):
   more level applies the same formula with the parent coordinate already in
   the parent's with-ghost fine grid (:func:`fine_center_l2`).
 """
+
 from __future__ import annotations
 
 import math
@@ -30,7 +31,6 @@ from tensorlbm.control_volume_force import (
     box_control_volume,
     observe_control_volume_force,
 )
-from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.evidence_io import stationarity_dict
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
@@ -43,7 +43,7 @@ from tensorlbm.sponge_layer import apply_equilibrium_difference_sponge
 class FineSphere:
     """Sphere geometry on one fine level (physical, with-ghost, BFL)."""
 
-    solid: torch.Tensor    # (nz, ny, nx) physical cells, no ghost
+    solid: torch.Tensor  # (nz, ny, nx) physical cells, no ghost
     solid_g: torch.Tensor  # with one-cell ghost layer
     solid_q: torch.Tensor  # (19, nz+2, ny+2, nx+2) collision freeze mask
     bfl_mask: torch.Tensor
@@ -63,6 +63,7 @@ def ramp_activation(step: int, steps: int) -> float:
 # D3Q19-only callers pay no import cost.
 # ---------------------------------------------------------------------------
 
+
 def _q_channels(lattice: str) -> int:
     """Number of population channels for a lattice name."""
     if lattice == "D3Q27":
@@ -71,25 +72,34 @@ def _q_channels(lattice: str) -> int:
 
 
 def _equilibrium(
-    rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
-    device: torch.device, lattice: str,
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    device: torch.device,
+    lattice: str,
 ) -> torch.Tensor:
     """Lattice-dispatched Maxwell-Boltzmann equilibrium."""
     if lattice == "D3Q27":
         from tensorlbm.d3q27 import equilibrium27
+
         return equilibrium27(rho, ux, uy, uz, device=device)
     from tensorlbm.d3q19 import equilibrium3d
+
     return equilibrium3d(rho, ux, uy, uz, device=device)
 
 
 def _macroscopic(
-    f: torch.Tensor, lattice: str,
+    f: torch.Tensor,
+    lattice: str,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Lattice-dispatched macroscopic recovery ``(rho, ux, uy, uz)``."""
     if lattice == "D3Q27":
         from tensorlbm.d3q27 import macroscopic27
+
         return macroscopic27(f)
     from tensorlbm.d3q19 import macroscopic3d
+
     return macroscopic3d(f)
 
 
@@ -97,21 +107,31 @@ def _stream(f: torch.Tensor, lattice: str) -> torch.Tensor:
     """Lattice-dispatched streaming."""
     if lattice == "D3Q27":
         from tensorlbm.d3q27 import stream27_roll
+
         return stream27_roll(f)
     from tensorlbm.solver3d import stream3d
+
     return stream3d(f)
 
 
 def _compute_q_sphere(
-    nx: int, ny: int, nz: int,
-    cx: float, cy: float, cz: float,
-    radius: float, device: torch.device, lattice: str,
+    nx: int,
+    ny: int,
+    nz: int,
+    cx: float,
+    cy: float,
+    cz: float,
+    radius: float,
+    device: torch.device,
+    lattice: str,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Lattice-dispatched spherical BFL q-field ``(mask, q)``."""
     if lattice == "D3Q27":
         from tensorlbm.interpolated_bc_common import compute_q_sphere_27
+
         return compute_q_sphere_27(nx, ny, nz, cx, cy, cz, radius, device)
     from tensorlbm.interpolated_bc import compute_q_sphere
+
     return compute_q_sphere(nx, ny, nz, cx, cy, cz, radius, device)
 
 
@@ -119,10 +139,16 @@ def _compute_q_sphere(
 # Geometry assembly
 # ---------------------------------------------------------------------------
 
+
 def build_sphere_geometry(
-    nx: int, ny: int, nz: int,
-    cx: float, cy: float, cz: float,
-    radius: float, device: torch.device,
+    nx: int,
+    ny: int,
+    nz: int,
+    cx: float,
+    cy: float,
+    cz: float,
+    radius: float,
+    device: torch.device,
     lattice: str = "D3Q19",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Coarse-grid sphere mask and its freeze mask ``(solid, solid_q)``.
@@ -157,19 +183,28 @@ def build_fine_sphere(
     solid = sphere_mask(nx, ny, nz, *fine_center, radius, device=device)
     solid_g = torch.zeros(
         (nz + 2 * ghost, ny + 2 * ghost, nx + 2 * ghost),
-        dtype=torch.bool, device=device,
+        dtype=torch.bool,
+        device=device,
     )
     solid_g[ghost:-ghost, ghost:-ghost, ghost:-ghost] = solid
     solid_q = solid_g.unsqueeze(0).expand(_q_channels(lattice), *solid_g.shape).contiguous()
     bfl_mask, bfl_q = _compute_q_sphere(
-        nx + 2 * ghost, ny + 2 * ghost, nz + 2 * ghost,
-        *fine_center, radius, device=device, lattice=lattice,
+        nx + 2 * ghost,
+        ny + 2 * ghost,
+        nz + 2 * ghost,
+        *fine_center,
+        radius,
+        device=device,
+        lattice=lattice,
     )
     return FineSphere(solid, solid_g, solid_q, bfl_mask, bfl_q)
 
 
 def fine_center_l1(
-    center: float, box_origin: float, ratio: int, ghost: int = 1,
+    center: float,
+    box_origin: float,
+    ratio: int,
+    ghost: int = 1,
 ) -> float:
     """Sphere-centre coordinate on a level's fine with-ghost grid.
 
@@ -184,8 +219,10 @@ def fine_center_l1(
 
 
 def fine_center_l2(
-    parent_fine_center: float, box2_origin: float,
-    ratio: int, ghost: int = 1,
+    parent_fine_center: float,
+    box2_origin: float,
+    ratio: int,
+    ghost: int = 1,
 ) -> float:
     """Sphere-centre coordinate on the L2 fine grid, from the L1 with-ghost centre.
 
@@ -226,7 +263,12 @@ def build_fine_block_geometry(
     )
     radius = radius_coarse * ratio
     sphere = build_fine_sphere(
-        shape, fine_center, radius, device, ghost=ghost, lattice=lattice,
+        shape,
+        fine_center,
+        radius,
+        device,
+        ghost=ghost,
+        lattice=lattice,
     )
     return shape, fine_center, radius, sphere
 
@@ -262,13 +304,19 @@ def build_l2_shell_geometry(
         fine_center_l2(c1_w[2], box2.z0, ratio, ghost),
     )
     sphere = build_fine_sphere(
-        s2, fc2, radius1 * ratio, device, ghost=ghost, lattice=lattice,
+        s2,
+        fc2,
+        radius1 * ratio,
+        device,
+        ghost=ghost,
+        lattice=lattice,
     )
     return box2, s2, fc2, sphere
 
 
 def distinct_level_shapes(
-    level_populations: Sequence[torch.Tensor], expected: int,
+    level_populations: Sequence[torch.Tensor],
+    expected: int,
 ) -> tuple[torch.Size, ...]:
     """Population shapes of a nested solver, asserted pairwise distinct."""
     shapes = tuple(level.shape for level in level_populations)
@@ -317,16 +365,22 @@ def l2_shell_box(
     """
     half2 = int(math.floor(radius1 + l2_margin))
     x0_2, x1_2 = _clamp_axis(
-        int(math.floor(c1_w[0] - half2)), int(math.ceil(c1_w[0] + half2)),
-        parent_shape[2], "x",
+        int(math.floor(c1_w[0] - half2)),
+        int(math.ceil(c1_w[0] + half2)),
+        parent_shape[2],
+        "x",
     )
     y0_2, y1_2 = _clamp_axis(
-        int(math.floor(c1_w[1] - half2)), int(math.ceil(c1_w[1] + half2)),
-        parent_shape[1], "y",
+        int(math.floor(c1_w[1] - half2)),
+        int(math.ceil(c1_w[1] + half2)),
+        parent_shape[1],
+        "y",
     )
     z0_2, z1_2 = _clamp_axis(
-        int(math.floor(c1_w[2] - half2)), int(math.ceil(c1_w[2] + half2)),
-        parent_shape[0], "z",
+        int(math.floor(c1_w[2] - half2)),
+        int(math.ceil(c1_w[2] + half2)),
+        parent_shape[0],
+        "z",
     )
     return BoxRegion(x0_2, x1_2, y0_2, y1_2, z0_2, z1_2)
 
@@ -344,6 +398,7 @@ def build_control_volume(
     :func:`~tensorlbm.control_volume_force.box_control_volume` and an
     enclosure guard verifies the volume fully contains the sphere.
     """
+
     def _cv_lo(centre: float) -> int:
         return int(max(1, math.floor(centre - radius) - margin))
 
@@ -353,9 +408,12 @@ def build_control_volume(
     nz, ny, nx = shape
     cv = box_control_volume(
         tuple(shape),
-        x0=_cv_lo(center[0]), x1=_cv_hi(center[0], nx),
-        y0=_cv_lo(center[1]), y1=_cv_hi(center[1], ny),
-        z0=_cv_lo(center[2]), z1=_cv_hi(center[2], nz),
+        x0=_cv_lo(center[0]),
+        x1=_cv_hi(center[0], nx),
+        y0=_cv_lo(center[1]),
+        y1=_cv_hi(center[1], ny),
+        z0=_cv_lo(center[2]),
+        z1=_cv_hi(center[2], nz),
         device=device,
     )
     cv_bounds = {
@@ -366,8 +424,7 @@ def build_control_volume(
     for name, (cv0, cv1) in cv_bounds.items():
         axis = 0 if name == "x" else 1 if name == "y" else 2
         centre = center[axis]
-        if cv0 > math.floor(centre - radius) or \
-           cv1 < math.ceil(centre + radius) + 1:
+        if cv0 > math.floor(centre - radius) or cv1 < math.ceil(centre + radius) + 1:
             raise ValueError(
                 f"control volume does not enclose the sphere along {name} "
                 f"(cv=[{cv0},{cv1})); enlarge the refined block or shrink "
@@ -380,8 +437,12 @@ def build_control_volume(
 # Advance pieces shared by the static-block runners
 # ---------------------------------------------------------------------------
 
+
 def _collide(
-    f: torch.Tensor, tau: float, collision: str | None, lattice: str,
+    f: torch.Tensor,
+    tau: float,
+    collision: str | None,
+    lattice: str,
     *,
     les_model: str | None = None,
     cs_smag: float = 0.05,
@@ -396,32 +457,43 @@ def _collide(
     if collision is not None and collision == "cascaded":
         if lattice == "D3Q27":
             from tensorlbm.cascaded_collision import collide_cascaded_d3q27
+
             return collide_cascaded_d3q27(f, tau)
         from tensorlbm.cascaded_collision import collide_cascaded_d3q19
+
         return collide_cascaded_d3q19(f, tau)
     if collision is not None and collision == "cumulant":
         if lattice == "D3Q27":
             from tensorlbm.cumulant import collide_cumulant_d3q27
+
             return collide_cumulant_d3q27(f, tau, C_s=0.0)
         from tensorlbm.cumulant import collide_cumulant_d3q19
+
         return collide_cumulant_d3q19(f, tau, C_s=0.0)
     # LES dispatch (collision is None)
     if lattice == "D3Q27":
         if les_model == "wale":
             from tensorlbm.turbulence import collide_wale_bgk27
+
             return collide_wale_bgk27(f, tau, C_w=cw_wale)
         from tensorlbm.turbulence import collide_smagorinsky_bgk27
+
         return collide_smagorinsky_bgk27(f, tau, C_s=cs_smag)
     if les_model == "wale":
         from tensorlbm.turbulence import collide_wale_mrt3d
+
         return collide_wale_mrt3d(f, tau, C_w=cw_wale)
     from tensorlbm.turbulence import collide_smagorinsky_mrt3d
+
     return collide_smagorinsky_mrt3d(f, tau, C_s=cs_smag)
 
 
 def root_advance(
-    f: torch.Tensor, tau: float,
-    solid_q: torch.Tensor, sigma: torch.Tensor, lattice_speed: float,
+    f: torch.Tensor,
+    tau: float,
+    solid_q: torch.Tensor,
+    sigma: torch.Tensor,
+    lattice_speed: float,
     *,
     collision: str | None = "cumulant",
     lattice: str = "D3Q19",
@@ -438,14 +510,21 @@ def root_advance(
     """
     before = f
     collided = _collide(
-        f, tau, collision, lattice,
-        les_model=les_model, cs_smag=cs_smag, cw_wale=cw_wale,
+        f,
+        tau,
+        collision,
+        lattice,
+        les_model=les_model,
+        cs_smag=cs_smag,
+        cw_wale=cw_wale,
     )
     post_collision = torch.where(solid_q, before, collided)
     out = _stream(post_collision, lattice)
     out = non_equilibrium_far_field_bc_3d(out, u_in=lattice_speed)
     out = apply_equilibrium_difference_sponge(
-        out, sigma, velocity_target=(lattice_speed, 0.0, 0.0),
+        out,
+        sigma,
+        velocity_target=(lattice_speed, 0.0, 0.0),
     )
     out = non_equilibrium_far_field_bc_3d(out, u_in=lattice_speed)
     return out, post_collision, collided
@@ -472,7 +551,8 @@ def _bouzidi_bounce_back_d3q27(
     looping over the 26 non-rest directions.  Kept module-private so the
     read-only core library (``bfl_d3q19.py``) is untouched.
     """
-    from tensorlbm.d3q27 import OPPOSITE, W, C
+    from tensorlbm.d3q27 import OPPOSITE, C, W
+
     if wall_velocity is not None and wall_density is None:
         raise ValueError("wall_density is required with wall_velocity")
     if not 0.0 <= boundary_fraction <= 1.0:
@@ -500,34 +580,26 @@ def _bouzidi_bounce_back_d3q27(
 
         dcx, dcy, dcz = (int(v) for v in C[d].tolist())
         fp_d_upstream_field = torch.roll(
-            f_prev[d], shifts=(dcz, dcy, dcx), dims=(0, 1, 2),
+            f_prev[d],
+            shifts=(dcz, dcy, dcx),
+            dims=(0, 1, 2),
         )
         fp_d_upstream = fp_d_upstream_field[mask]
 
         # Wall closer than half-link: interpolate the two outgoing fluid
         # populations at x_f and x_f-c_d.
-        f_bc_lin = (
-            2.0 * q_cell * fp_d
-            + (1.0 - 2.0 * q_cell) * fp_d_upstream
-        )
+        f_bc_lin = 2.0 * q_cell * fp_d + (1.0 - 2.0 * q_cell) * fp_d_upstream
 
         # Wall farther than half-link: interpolate outgoing and opposite
         # post-collision populations at the boundary fluid node.
         safe_q = torch.where(mask_quad, q_cell, torch.ones_like(q_cell))
-        f_bc_quad = (
-            fp_d / (2.0 * safe_q)
-            + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
-        )
-        f_bc_stationary = torch.where(mask_lin, f_bc_lin, f_bc_quad)
+        f_bc_quad = fp_d / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+        torch.where(mask_lin, f_bc_lin, f_bc_quad)
 
         if wall_velocity is not None:
             assert wall_density is not None  # guaranteed by the guard above
             uwx, uwy, uwz = wall_velocity
-            c_dot_uw = (
-                float(dcx) * uwx[mask]
-                + float(dcy) * uwy[mask]
-                + float(dcz) * uwz[mask]
-            )
+            c_dot_uw = float(dcx) * uwx[mask] + float(dcy) * uwy[mask] + float(dcz) * uwz[mask]
             rho_w = wall_density[mask]
             moving_base = weights[d] * rho_w * c_dot_uw
             # Same moving-wall correction as D3Q19 (cs² = 1/3): at q=.5 both
@@ -556,10 +628,7 @@ def _bouzidi_bounce_back_d3q27(
         if boundary_fraction == 1.0:
             target[mask] = f_bc
         elif boundary_fraction > 0.0:
-            target[mask] = (
-                (1.0 - boundary_fraction) * target[mask]
-                + boundary_fraction * f_bc
-            )
+            target[mask] = (1.0 - boundary_fraction) * target[mask] + boundary_fraction * f_bc
         f_out[opp_d] = target
 
     if return_force:
@@ -573,9 +642,12 @@ def _bouzidi_bounce_back_d3q27(
 
 
 def bfl_sphere_advance(
-    out: torch.Tensor, post_collision: torch.Tensor,
-    bfl_mask: torch.Tensor, bfl_q: torch.Tensor,
-    step: int, ramp_steps: int,
+    out: torch.Tensor,
+    post_collision: torch.Tensor,
+    bfl_mask: torch.Tensor,
+    bfl_q: torch.Tensor,
+    step: int,
+    ramp_steps: int,
     lattice: str = "D3Q19",
 ) -> torch.Tensor:
     """Bouzidi BFL curved-wall reconstruction after streaming (ramped wall)."""
@@ -588,24 +660,36 @@ def bfl_sphere_advance(
     )
     if lattice == "D3Q27":
         out, _bfl_force = _bouzidi_bounce_back_d3q27(
-            out, post_collision, bfl_mask, bfl_q,
-            wall_velocity=wall_velocity, wall_density=rho_post,
+            out,
+            post_collision,
+            bfl_mask,
+            bfl_q,
+            wall_velocity=wall_velocity,
+            wall_density=rho_post,
             return_force=True,
         )
         return out
     out, _bfl_force = bouzidi_bounce_back_d3q19(
-        out, post_collision, bfl_mask, bfl_q,
-        wall_velocity=wall_velocity, wall_density=rho_post,
+        out,
+        post_collision,
+        bfl_mask,
+        bfl_q,
+        wall_velocity=wall_velocity,
+        wall_density=rho_post,
         return_force=True,
     )
     return out
 
 
 def fine_sphere_advance(
-    f: torch.Tensor, tau: float,
+    f: torch.Tensor,
+    tau: float,
     *,
-    solid_q: torch.Tensor, bfl_mask: torch.Tensor, bfl_q: torch.Tensor,
-    step: int, ramp_steps: int,
+    solid_q: torch.Tensor,
+    bfl_mask: torch.Tensor,
+    bfl_q: torch.Tensor,
+    step: int,
+    ramp_steps: int,
     sample_cv: bool = False,
     cv: torch.Tensor | None = None,
     solid_g: torch.Tensor | None = None,
@@ -622,13 +706,24 @@ def fine_sphere_advance(
     """
     before = f
     collided = _collide(
-        f, tau, collision, lattice,
-        les_model=les_model, cs_smag=cs_smag, cw_wale=cw_wale,
+        f,
+        tau,
+        collision,
+        lattice,
+        les_model=les_model,
+        cs_smag=cs_smag,
+        cw_wale=cw_wale,
     )
     post_collision = torch.where(solid_q, before, collided)
     out = _stream(post_collision, lattice)
     out = bfl_sphere_advance(
-        out, post_collision, bfl_mask, bfl_q, step, ramp_steps, lattice=lattice,
+        out,
+        post_collision,
+        bfl_mask,
+        bfl_q,
+        step,
+        ramp_steps,
+        lattice=lattice,
     )
     cv_force = None
     if sample_cv:
@@ -644,14 +739,23 @@ def cv_force_from(
     solid: torch.Tensor,
 ) -> float:
     """Streamwise control-volume force on the body over one LBM step."""
-    return float(observe_control_volume_force(
-        f_before, f_after, f_post_collision, cv, solid=solid,
-    ).force_on_body[0].item())
+    return float(
+        observe_control_volume_force(
+            f_before,
+            f_after,
+            f_post_collision,
+            cv,
+            solid=solid,
+        )
+        .force_on_body[0]
+        .item()
+    )
 
 
 # ---------------------------------------------------------------------------
 # Final statistics
 # ---------------------------------------------------------------------------
+
 
 def summarize_force_history(
     force_samples: list[float],
@@ -667,7 +771,8 @@ def summarize_force_history(
     reference = schiller_naumann_cd(reynolds)
     cd_history = [f_ / dynamic_area for f_ in selected]
     stationarity = assess_force_stationarity(
-        cd_history, block_size=max(1, len(cd_history) // 8),
+        cd_history,
+        block_size=max(1, len(cd_history) // 8),
     )
     reference_error = abs(cd - reference) / reference * 100.0
     return {

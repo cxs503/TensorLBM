@@ -11,7 +11,6 @@ import torch
 from tensorlbm import propeller_benchmark
 from tensorlbm.propeller_benchmark import PropellerBenchmarkConfig, _run_single_speed
 
-
 _BENCHMARK_SPEC = importlib.util.spec_from_file_location(
     "bench_propeller",
     Path(__file__).parents[1] / "benchmarks" / "bench_propeller.py",

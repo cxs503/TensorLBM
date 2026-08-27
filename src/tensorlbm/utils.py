@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 import torch
 
 try:  # Optional accelerator plugin.
-    import torch_sdaa  # type: ignore # noqa: F401
+    import torch_sdaa  # noqa: F401
 except (ImportError, ModuleNotFoundError):  # pragma: no cover - depends on environment
-    torch_sdaa = None  # type: ignore[assignment]
+    torch_sdaa = None
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -48,7 +48,7 @@ def configure_cpu_threads(device: torch.device | str, num_threads: int | None = 
     if resolved.type == "cpu" and num_threads is not None and current != num_threads:
         torch.set_num_threads(num_threads)
         current = torch.get_num_threads()
-    return current
+    return int(current)
 
 
 def is_sdaa_available() -> bool:
@@ -60,11 +60,25 @@ def is_sdaa_available() -> bool:
 
 
 def default_device_name() -> str:
-    """Return the preferred accelerator device name for this host."""
+    """Return the preferred accelerator device name for this host.
+
+    Priority: SDAA (LoongArch accelerator) > CUDA > any other probed
+    torch-plugin accelerator (NPU/MLU/MUSA/MPS, in
+    :mod:`tensorlbm.hardware` probe order) > CPU.
+    """
     if is_sdaa_available():
         return "sdaa"
     if torch.cuda.is_available():
         return "cuda"
+    try:
+        from tensorlbm.hardware import probe
+
+        profile = probe()
+        others = [name for name in ("npu", "mlu", "musa", "mps") if profile.has_backend(name)]
+        if others:
+            return others[0]
+    except Exception:  # pragma: no cover - probe must never break defaults
+        pass
     return "cpu"
 
 
@@ -72,16 +86,26 @@ def synchronize_device(device: torch.device | str) -> None:
     """Synchronize the active accelerator stream for timing-critical code."""
     resolved = device if isinstance(device, torch.device) else torch.device(device)
     if resolved.type == "sdaa":
-        torch.sdaa.synchronize()
+        torch.sdaa.synchronize()  # type: ignore[attr-defined]
     elif resolved.type == "cuda":
         torch.cuda.synchronize(resolved)
+    else:
+        # Generic torch-plugin accelerators (npu/mlu/musa/...) expose
+        # torch.<name>.synchronize() when registered.
+        handle = getattr(torch, str(resolved.type), None)
+        synchronize = getattr(handle, "synchronize", None) if handle is not None else None
+        if callable(synchronize):
+            synchronize()
 
 
 def resolve_device(device_name: str) -> torch.device:
     """Resolve a device name string to a :class:`torch.device`.
 
     Args:
-        device_name: ``"cpu"``, ``"sdaa"``, ``"sdaa:0"``, ``"cuda"``, ``"cuda:1"``, or ``"mps"``.
+        device_name: ``"cpu"``, ``"sdaa"``, ``"sdaa:0"``, ``"cuda"``, ``"cuda:1"``,
+            ``"mps"``, or any torch-plugin accelerator that the host actually
+            has available (``"npu"``, ``"mlu"``, ``"musa"``, ... — probed via
+            :mod:`tensorlbm.hardware`, so unavailable plugins are rejected).
 
     Returns:
         The corresponding :class:`torch.device`.
@@ -109,7 +133,23 @@ def resolve_device(device_name: str) -> torch.device:
             msg = "MPS requested but not available"
             raise RuntimeError(msg)
         return torch.device(device_name)
-    msg = f"Unsupported device: {device_name}"
+    # Generic torch-plugin accelerator path (npu/mlu/musa/...): accept any
+    # backend the hardware probe confirms on this host, reject everything
+    # else with a clear degradation message instead of a hard ValueError.
+    from tensorlbm.hardware import HardwareCapabilityError, probe, require
+
+    profile = probe()
+    if profile.backend(base) is not None:
+        try:
+            require(base, profile=profile)
+        except HardwareCapabilityError as error:
+            raise RuntimeError(str(error)) from error
+        return torch.device(device_name)
+    msg = (
+        f"Unsupported device: {device_name}. Torch-plugin accelerators are "
+        f"probed by tensorlbm.hardware; available here: "
+        f"{', '.join(profile.available_backends) if profile.available_backends else 'cpu'}"
+    )
     raise ValueError(msg)
 
 

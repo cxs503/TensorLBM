@@ -12,8 +12,8 @@ Run:
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 import pytest
 import torch
@@ -21,12 +21,11 @@ import torch
 # Ensure src is on path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from tensorlbm.refinement import BoxRegion, _coarse_to_fine_3d, _fine_to_coarse_3d
 from tensorlbm import adaptive_refinement as ar
 from tensorlbm import amr_common
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.d3q27 import equilibrium27, macroscopic27
-
+from tensorlbm.refinement import BoxRegion, _coarse_to_fine_3d, _fine_to_coarse_3d
 
 # ---------------------------------------------------------------------------
 # Helpers

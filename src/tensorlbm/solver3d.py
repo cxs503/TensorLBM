@@ -1,18 +1,26 @@
 from __future__ import annotations
 
 import functools
-from typing import Any
+from collections.abc import Sequence
+from typing import Any, Union
 
 import torch
 
 from .d3q19 import OPPOSITE as _OPPOSITE_3D
-from .d3q19 import C, equilibrium3d, macroscopic3d
+from .d3q19 import (
+    C,
+    equilibrium3d,
+    equilibrium3d_low_memory,
+    macroscopic3d,
+    macroscopic3d_low_memory,
+)
 
 # Cache for streaming index tensors keyed by (nz, ny, nx, device_type, device_index)
 _stream3d_cache: dict[
     tuple[Any, ...],
     tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
 ] = {}
+
 
 def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
     """Compute and return (M, M_inv) as nested Python lists (float64 precision)."""
@@ -54,10 +62,55 @@ def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
 _M_D3Q19_DATA, _M_D3Q19_INV_DATA = _build_d3q19_mrt_matrices()
 
 
+Rate = Union[float, torch.Tensor]
+
+
+def _mrt3d_s_vec(
+    s_e: Rate,
+    s_eps: Rate,
+    s_q: Rate,
+    s_pi: Rate,
+    s_nu: Rate,
+    *,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> torch.Tensor:
+    """Build the 19-entry D3Q19 MRT relaxation-rate vector.
+
+    When *s_nu* (= 1/tau) is a tensor the shear-stress entries (indices
+    9–13) stay connected to the autograd graph: ``torch.tensor([...])`` on a
+    list containing a tensor silently detaches it (scalar conversion), which
+    would block dLoss/dtau on the differentiable reference path (see
+    docs/differentiable_path.md).  The same guard covers the moment rates
+    *s_e/s_eps/s_q/s_pi* (B3 stage 4: rate calibration against pressure
+    profiles needs dLoss/ds_e etc.).  For all-float inputs the result is
+    identical to the previous literal construction.
+    """
+    head = [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, 0.0, s_q]
+    tail = [s_pi, s_pi, 1.0, 1.0, 1.0]
+    if isinstance(s_nu, torch.Tensor) or any(isinstance(v, torch.Tensor) for v in head + tail):
+
+        def _stack(vals: Sequence[Rate]) -> torch.Tensor:
+            return torch.stack([torch.as_tensor(v, dtype=dtype, device=device) for v in vals])
+
+        s_nu_t = torch.as_tensor(s_nu, dtype=dtype, device=device)
+        return torch.cat([_stack(head), s_nu_t.expand(5), _stack(tail)])
+    return torch.tensor(head + [s_nu] * 5 + tail, dtype=dtype, device=device)
+
+
 @functools.cache
-def _get_d3q19_mrt_matrices(device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
-    matrix = torch.tensor(_M_D3Q19_DATA, dtype=torch.float32, device=device)
-    matrix_inv = torch.tensor(_M_D3Q19_INV_DATA, dtype=torch.float32, device=device)
+def _get_d3q19_mrt_matrices(
+    device: torch.device, dtype: torch.dtype | None = None
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Moment matrix and inverse for the D3Q19 MRT collision.
+
+    Built at *dtype* (default float32, the historical behaviour).  Pass the
+    distribution's dtype so fp64 domains — e.g. the differentiable
+    calibration path — do not crash on ``matrix @ f``.
+    """
+    _dtype = torch.float32 if dtype is None else dtype
+    matrix = torch.tensor(_M_D3Q19_DATA, dtype=_dtype, device=device)
+    matrix_inv = torch.tensor(_M_D3Q19_INV_DATA, dtype=_dtype, device=device)
     return matrix, matrix_inv
 
 
@@ -70,11 +123,11 @@ def collide_bgk3d(f: torch.Tensor, tau: float) -> torch.Tensor:
 
 def collide_mrt3d(
     f: torch.Tensor,
-    tau: float,
-    s_e: float = 1.19,
-    s_eps: float = 1.4,
-    s_q: float = 1.2,
-    s_pi: float | None = None,
+    tau: Rate,
+    s_e: Rate = 1.19,
+    s_eps: Rate = 1.4,
+    s_q: Rate = 1.2,
+    s_pi: Rate | None = None,
 ) -> torch.Tensor:
     """Multi-relaxation-time (MRT) collision step for D3Q19.
 
@@ -107,34 +160,10 @@ def collide_mrt3d(
     if s_pi is None:
         s_pi = s_e
     device = f.device
-    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device, f.dtype)
 
     s_nu = 1.0 / tau
-    s_vec = torch.tensor(
-        [
-            0.0,
-            s_e,
-            s_eps,
-            0.0,
-            s_q,
-            0.0,
-            s_q,
-            0.0,
-            s_q,
-            s_nu,
-            s_nu,
-            s_nu,
-            s_nu,
-            s_nu,
-            s_pi,
-            s_pi,
-            1.0,
-            1.0,
-            1.0,
-        ],
-        dtype=f.dtype,
-        device=device,
-    )
+    s_vec = _mrt3d_s_vec(s_e, s_eps, s_q, s_pi, s_nu, dtype=f.dtype, device=device)
 
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
     f_flat = f.reshape(19, -1)
@@ -146,6 +175,53 @@ def collide_mrt3d(
     moments_eq = matrix @ feq_flat
     moments_star = moments - s_vec.unsqueeze(1) * (moments - moments_eq)
     return (matrix_inv @ moments_star).reshape(19, nz, ny, nx)
+
+
+def collide_mrt3d_low_memory(
+    f: torch.Tensor,
+    tau: float,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """MRT collision with a fraction of :func:`collide_mrt3d`'s peak memory.
+
+    Mathematically identical to :func:`collide_mrt3d` (same moment
+    equations, same relaxation-rate vector) but avoids holding the full
+    set of ``(19, N)`` intermediates simultaneously: moments are relaxed
+    in-place and temporaries are freed eagerly.  ``macroscopic3d_low_memory``
+    and ``equilibrium3d_low_memory`` keep the macroscopic/equilibrium
+    phases free of ``(19, N)`` broadcasts, so on a 56M-cell grid the peak
+    drops from ~31 GB to ~18 GB (fits a 24 GB GPU).
+
+    Values differ from :func:`collide_mrt3d` only by float-association
+    noise (~1e-8 relative; the momentum sums use a different but
+    algebraically identical reduction order).
+    """
+    if s_pi is None:
+        s_pi = s_e
+    device = f.device
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device, f.dtype)
+
+    s_nu = 1.0 / tau
+    s_vec = _mrt3d_s_vec(s_e, s_eps, s_q, s_pi, s_nu, dtype=f.dtype, device=device)
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(19, -1)
+    rho, ux, uy, uz = macroscopic3d_low_memory(f)
+    feq = equilibrium3d_low_memory(rho, ux, uy, uz)
+    feq_flat = feq.reshape(19, -1)
+    moments = matrix @ f_flat
+    moments_eq = matrix @ feq_flat
+    del feq, feq_flat
+    diff = moments - moments_eq
+    del moments_eq
+    moments.sub_(s_vec.unsqueeze(1) * diff)  # in-place → moments_star
+    del diff
+    out = matrix_inv @ moments
+    del moments, rho, ux, uy, uz
+    return out.reshape(19, nz, ny, nx)
 
 
 def stream3d(f: torch.Tensor) -> torch.Tensor:
@@ -182,25 +258,25 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
 
 # D3Q19 velocity shifts for roll-based streaming (matches C matrix order)
 _D3Q19_SHIFTS: list[tuple[int, int, int]] = [
-    (0, 0, 0),       #  0: rest
-    (1, 0, 0),       #  1: +x
-    (-1, 0, 0),      #  2: -x
-    (0, 1, 0),       #  3: +y
-    (0, -1, 0),      #  4: -y
-    (0, 0, 1),       #  5: +z
-    (0, 0, -1),      #  6: -z
-    (1, 1, 0),       #  7: +x+y
-    (-1, -1, 0),     #  8: -x-y
-    (1, -1, 0),      #  9: +x-y
-    (-1, 1, 0),      # 10: -x+y
-    (1, 0, 1),       # 11: +x+z
-    (-1, 0, -1),     # 12: -x-z
-    (1, 0, -1),      # 13: +x-z
-    (-1, 0, 1),      # 14: -x+z
-    (0, 1, 1),       # 15: +y+z
-    (0, -1, -1),     # 16: -y-z
-    (0, 1, -1),      # 17: +y-z
-    (0, -1, 1),      # 18: -y+z
+    (0, 0, 0),  #  0: rest
+    (1, 0, 0),  #  1: +x
+    (-1, 0, 0),  #  2: -x
+    (0, 1, 0),  #  3: +y
+    (0, -1, 0),  #  4: -y
+    (0, 0, 1),  #  5: +z
+    (0, 0, -1),  #  6: -z
+    (1, 1, 0),  #  7: +x+y
+    (-1, -1, 0),  #  8: -x-y
+    (1, -1, 0),  #  9: +x-y
+    (-1, 1, 0),  # 10: -x+y
+    (1, 0, 1),  # 11: +x+z
+    (-1, 0, -1),  # 12: -x-z
+    (1, 0, -1),  # 13: +x-z
+    (-1, 0, 1),  # 14: -x+z
+    (0, 1, 1),  # 15: +y+z
+    (0, -1, -1),  # 16: -y-z
+    (0, 1, -1),  # 17: +y-z
+    (0, -1, 1),  # 18: -y+z
 ]
 
 
@@ -239,6 +315,7 @@ def correct_mass3d(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     if current.abs() < 1e-30:
         return f
     return f * (target_mass / current)
+
 
 def collide_trt3d(
     f: torch.Tensor,
@@ -324,13 +401,17 @@ def collide_rlbm3d(f: torch.Tensor, tau: float) -> torch.Tensor:
     h_xz = cx * cz
     h_yz = cy * cz
     w_view = w.view(19, 1, 1, 1)
-    fneq_reg = (9.0 / 2.0) * w_view * (
-        h_xx * pi_xx
-        + h_yy * pi_yy
-        + h_zz * pi_zz
-        + 2.0 * h_xy * pi_xy
-        + 2.0 * h_xz * pi_xz
-        + 2.0 * h_yz * pi_yz
+    fneq_reg = (
+        (9.0 / 2.0)
+        * w_view
+        * (
+            h_xx * pi_xx
+            + h_yy * pi_yy
+            + h_zz * pi_zz
+            + 2.0 * h_xy * pi_xy
+            + 2.0 * h_xz * pi_xz
+            + 2.0 * h_yz * pi_yz
+        )
     )
 
     return feq + (1.0 - 1.0 / tau) * fneq_reg

@@ -8,6 +8,23 @@ For experimental features and rapid-evolution interfaces, use
 from __future__ import annotations
 
 from ._version import __version__
+from .autograd_calib import (
+    BoxCase,
+    CalibResult,
+    DragHistory,
+    DragTarget,
+    HullCase,
+    bounded_drag,
+    calibrate,
+    cd_from_force,
+    cs_power,
+    drag_targets_from_sidecars,
+    evaluate,
+    load_drag_history,
+    synthetic_targets,
+    windowed_cd,
+)
+from .autograd_path import differentiable_step, obstacle_force, rollout
 from .boundaries import (
     apply_simple_channel_boundaries,
     apply_zou_he_channel_boundaries,
@@ -22,6 +39,7 @@ from .d3q19 import OPPOSITE as OPPOSITE3D
 from .d3q19 import C as C3D
 from .d3q19 import W as W3D
 from .d3q19 import equilibrium3d, macroscopic3d
+from .soft_geometry import SoftGeometry
 from .solver import collide_bgk, collide_mrt, collide_rlbm, collide_trt, correct_mass, stream
 from .solver3d import (
     collide_bgk3d,
@@ -40,6 +58,12 @@ from .utils import (
     resolve_device,
     write_legacy_snapshot_alias,
 )
+from .zoo import KNOWN_TASKS, ModelInfo, ModelZoo, ZooValidation, resolve_zoo_root
+from .zoo import info as zoo_info
+from .zoo import list_models as zoo_list_models
+from .zoo import load as zoo_load
+from .zoo import register as zoo_register
+from .zoo import validate as zoo_validate
 
 __all__ = [
     "__version__",
@@ -72,6 +96,25 @@ __all__ = [
     "collide_trt3d",
     "stream3d",
     "correct_mass3d",
+    "differentiable_step",
+    "obstacle_force",
+    "rollout",
+    "SoftGeometry",
+    # closure calibration (solver-in-the-loop)
+    "BoxCase",
+    "CalibResult",
+    "DragHistory",
+    "DragTarget",
+    "HullCase",
+    "bounded_drag",
+    "calibrate",
+    "cd_from_force",
+    "cs_power",
+    "drag_targets_from_sidecars",
+    "evaluate",
+    "load_drag_history",
+    "synthetic_targets",
+    "windowed_cd",
     "DiagnosticPoint",
     "resolve_device",
     "prepare_run_dir",
@@ -79,4 +122,15 @@ __all__ = [
     "flow_step_image_path",
     "legacy_snapshot_image_path",
     "write_legacy_snapshot_alias",
+    # model zoo (training-artifact registry)
+    "KNOWN_TASKS",
+    "ModelInfo",
+    "ModelZoo",
+    "ZooValidation",
+    "resolve_zoo_root",
+    "zoo_register",
+    "zoo_load",
+    "zoo_list_models",
+    "zoo_info",
+    "zoo_validate",
 ]

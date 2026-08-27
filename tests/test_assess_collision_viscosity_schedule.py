@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / (
-    "assess_collision_viscosity_schedule.py"
+SCRIPT = (
+    Path(__file__).resolve().parents[1] / "scripts" / ("assess_collision_viscosity_schedule.py")
 )
 SPEC = importlib.util.spec_from_file_location("viscosity_schedule", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -17,7 +17,8 @@ SPEC.loader.exec_module(MODULE)
 
 def test_schedule_admits_recovered_viscosities() -> None:
     result = MODULE.assess(
-        "natural_kbc", [0.68, 0.8],
+        "natural_kbc",
+        [0.68, 0.8],
         wavelength_cells=24,
         transverse_cells=3,
         amplitude=0.01,
@@ -52,12 +53,17 @@ def test_schedule_rejects_duplicate_or_missing_taus() -> None:
 def test_schedule_serializes_nonfinite_failed_audit_as_null(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(MODULE, "run_collision_viscosity_audit", lambda config: {
-        "result": {"recovered_kinematic_viscosity": math.nan, "finite": False},
-        "acceptance": {"admitted": False},
-    })
+    monkeypatch.setattr(
+        MODULE,
+        "run_collision_viscosity_audit",
+        lambda config: {
+            "result": {"recovered_kinematic_viscosity": math.nan, "finite": False},
+            "acceptance": {"admitted": False},
+        },
+    )
     result = MODULE.assess(
-        "bgk", [0.8],
+        "bgk",
+        [0.8],
         wavelength_cells=24,
         transverse_cells=3,
         amplitude=0.01,

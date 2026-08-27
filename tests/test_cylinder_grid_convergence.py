@@ -70,9 +70,7 @@ def test_legacy_eager_execution_defaults_are_normalized(
 
     result = assess_cylinder_grid_convergence(records)
 
-    assert result["configuration_identity"][
-        "legacy_execution_defaults_normalized"
-    ] == 3
+    assert result["configuration_identity"]["legacy_execution_defaults_normalized"] == 3
     assert result["configuration_identity"]["admitted"] is True
 
 

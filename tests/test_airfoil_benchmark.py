@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import torch
+
 from tensorlbm.airfoil_benchmark import (
     AirfoilConfig,
-    naca4_surface,
     build_airfoil_mask,
-    run_airfoil_benchmark,
+    naca4_surface,
     reference_cl_cd,
+    run_airfoil_benchmark,
 )
 
 

@@ -65,6 +65,7 @@ Outputs (to outputs/bubble_rp_validate/):
     * R_t_compare.png  - R(t) and dR/dt LBM vs Rayleigh-Plesset
     * console summary
 """
+
 from __future__ import annotations
 
 import argparse
@@ -73,6 +74,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -94,12 +96,12 @@ class BubbleRPConfig:
     tau: float = 1.0
     rho_heavy: float = 0.7
     rho_light: float = 0.3
-    sigma_eff: float = 0.05     # from bubble_static_3d.py
-    auto_sigma_path: str = ""   # if non-empty, load sigma_fit.json from this path
+    sigma_eff: float = 0.05  # from bubble_static_3d.py
+    auto_sigma_path: str = ""  # if non-empty, load sigma_fit.json from this path
     delta_dp_frac: float = 1.0  # 1 = pure Laplace equilibrium; >1 drives expansion
     interface_width: float = 1.5  # tanh smoothing (cells)
-    pre_equilibrate: int = 0    # if >0, run frac=1.0 for this many steps first
-    inviscid: bool = False      # if True, drop -4μ_l·Ṙ/(ρ_l·R²) drag term
+    pre_equilibrate: int = 0  # if >0, run frac=1.0 for this many steps first
+    inviscid: bool = False  # if True, drop -4μ_l·Ṙ/(ρ_l·R²) drag term
     n_steps: int = 2000
     output_interval: int = 10
     output_root: str = "outputs"
@@ -138,26 +140,46 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--ny", type=int, default=128)
     p.add_argument("--nz", type=int, default=128)
     p.add_argument("--R0", type=float, default=16.0)
-    p.add_argument("--domain-multiple", type=float, default=4.0,
-                   help="Required nx/R0 ratio (default 4: nx must be ≥ 4·R0).")
+    p.add_argument(
+        "--domain-multiple",
+        type=float,
+        default=4.0,
+        help="Required nx/R0 ratio (default 4: nx must be ≥ 4·R0).",
+    )
     p.add_argument("--G12", type=float, default=0.9)
     p.add_argument("--tau", type=float, default=1.0)
     p.add_argument("--rho-heavy", type=float, default=0.7)
     p.add_argument("--rho-light", type=float, default=0.3)
     p.add_argument("--sigma-eff", type=float, default=0.05)
-    p.add_argument("--auto-sigma", default="",
-                   help="Path to sigma_fit.json; overrides --sigma-eff if set")
-    p.add_argument("--delta-dp-frac", type=float, default=1.0,
-                   help="δdp = frac · 2σ_eff/R0.  1.0 = Laplace equilibrium (no motion).")
-    p.add_argument("--interface-width", type=float, default=1.5,
-                   help="tanh smoothing width for initial density (cells).")
-    p.add_argument("--pre-equilibrate", type=int, default=0,
-                   help="If >0, run delta_dp_frac=1.0 for this many steps first to "
-                        "establish the steady Laplace-equilibrium density profile. "
-                        "Recommended: 500-2000.")
-    p.add_argument("--inviscid", action="store_true",
-                   help="Drop the -4μ_l·Ṙ/(ρ_l·R²) viscous drag term from R-P ODE. "
-                        "Default: viscous R-P (matches LBM dissipation).")
+    p.add_argument(
+        "--auto-sigma", default="", help="Path to sigma_fit.json; overrides --sigma-eff if set"
+    )
+    p.add_argument(
+        "--delta-dp-frac",
+        type=float,
+        default=1.0,
+        help="δdp = frac · 2σ_eff/R0.  1.0 = Laplace equilibrium (no motion).",
+    )
+    p.add_argument(
+        "--interface-width",
+        type=float,
+        default=1.5,
+        help="tanh smoothing width for initial density (cells).",
+    )
+    p.add_argument(
+        "--pre-equilibrate",
+        type=int,
+        default=0,
+        help="If >0, run delta_dp_frac=1.0 for this many steps first to "
+        "establish the steady Laplace-equilibrium density profile. "
+        "Recommended: 500-2000.",
+    )
+    p.add_argument(
+        "--inviscid",
+        action="store_true",
+        help="Drop the -4μ_l·Ṙ/(ρ_l·R²) viscous drag term from R-P ODE. "
+        "Default: viscous R-P (matches LBM dissipation).",
+    )
     p.add_argument("--steps", type=int, default=2000, dest="n_steps")
     p.add_argument("--output-interval", type=int, default=10)
     p.add_argument("--output-root", default="outputs")
@@ -302,23 +324,33 @@ def main():
         print(f"[auto-sigma] loaded sigma_eff = {sigma_eff:.6e} from {args.auto_sigma}")
 
     cfg = BubbleRPConfig(
-        nx=args.nx, ny=args.ny, nz=args.nz,
-        R0=args.R0, domain_multiple=args.domain_multiple,
-        G12=args.G12, tau=args.tau,
-        rho_heavy=args.rho_heavy, rho_light=args.rho_light,
-        sigma_eff=sigma_eff, delta_dp_frac=args.delta_dp_frac,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        R0=args.R0,
+        domain_multiple=args.domain_multiple,
+        G12=args.G12,
+        tau=args.tau,
+        rho_heavy=args.rho_heavy,
+        rho_light=args.rho_light,
+        sigma_eff=sigma_eff,
+        delta_dp_frac=args.delta_dp_frac,
         interface_width=args.interface_width,
         pre_equilibrate=args.pre_equilibrate,
         inviscid=args.inviscid,
-        n_steps=args.n_steps, output_interval=args.output_interval,
-        output_root=args.output_root, run_name=args.run_name,
+        n_steps=args.n_steps,
+        output_interval=args.output_interval,
+        output_root=args.output_root,
+        run_name=args.run_name,
         device=args.device,
     )
     # ---- domain-size guard ----
     min_n = int(np.ceil(cfg.domain_multiple * cfg.R0))
     if cfg.nx < min_n:
-        print(f"[warn] nx={cfg.nx} < {cfg.domain_multiple}·R0={min_n}; "
-              f"periodic image bubbles will interfere. Use --nx {min_n} or larger.")
+        print(
+            f"[warn] nx={cfg.nx} < {cfg.domain_multiple}·R0={min_n}; "
+            f"periodic image bubbles will interfere. Use --nx {min_n} or larger."
+        )
     use_cuda = cfg.device == "cuda" and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     if cfg.device == "cuda" and not torch.cuda.is_available():
@@ -331,9 +363,9 @@ def main():
     print(f"  p_in - p_out (at R0) = {cfg.p_in_minus_p_out:.6e}")
     print(f"Output: {out_dir}")
 
-    f1, f2 = initial_distributions(cfg.nx, cfg.ny, cfg.nz, cfg.R0,
-                                   cfg.rho_heavy, cfg.rho_light,
-                                   cfg.interface_width, device)
+    f1, f2 = initial_distributions(
+        cfg.nx, cfg.ny, cfg.nz, cfg.R0, cfg.rho_heavy, cfg.rho_light, cfg.interface_width, device
+    )
 
     # ---- pre-equilibration phase ----
     # Run frac=1.0 (pure Laplace equilibrium) for pre_equilibrate steps.
@@ -351,27 +383,37 @@ def main():
         # The LBM doesn't see δdp — it just evolves.  So we just run plain.
         for step in range(cfg.pre_equilibrate):
             f1, f2 = collide_sc_two_component_3d(
-                f1, f2, G_12=cfg.G12, tau1=cfg.tau, tau2=cfg.tau,
+                f1,
+                f2,
+                G_12=cfg.G12,
+                tau1=cfg.tau,
+                tau2=cfg.tau,
             )
             f1 = stream3d(f1)
             f2 = stream3d(f2)
             if (step + 1) % max(1, cfg.pre_equilibrate // 4) == 0:
                 rho_tot = macroscopic3d(f1 + f2)[0]
                 R_now = measure_R(rho_tot, cfg)
-                print(f"  [pre-eq] step {step+1:5d}/{cfg.pre_equilibrate}  R={R_now:.3f}")
+                print(f"  [pre-eq] step {step + 1:5d}/{cfg.pre_equilibrate}  R={R_now:.3f}")
         # Save the equilibrated (f1, f2) — they are the new initial state.
-        print(f"[pre-equilibrate] done.")
+        print("[pre-equilibrate] done.")
 
     measure_steps, R_series, dR_series = [], [], []
     R_prev = float(cfg.R0)
 
     if cfg.n_steps < cfg.output_interval:
-        print(f"[warn] n_steps={cfg.n_steps} < output_interval={cfg.output_interval}; "
-              f"no measurements will be recorded. Adjust --output-interval.")
+        print(
+            f"[warn] n_steps={cfg.n_steps} < output_interval={cfg.output_interval}; "
+            f"no measurements will be recorded. Adjust --output-interval."
+        )
 
     for step in range(cfg.n_steps):
         f1, f2 = collide_sc_two_component_3d(
-            f1, f2, G_12=cfg.G12, tau1=cfg.tau, tau2=cfg.tau,
+            f1,
+            f2,
+            G_12=cfg.G12,
+            tau1=cfg.tau,
+            tau2=cfg.tau,
         )
         f1 = stream3d(f1)
         f2 = stream3d(f2)
@@ -385,7 +427,7 @@ def main():
             R_prev = R_now
         if (step + 1) % 500 == 0 or step == 0:
             R_print = R_series[-1] if R_series else cfg.R0
-            print(f"  step {step+1:5d}/{cfg.n_steps}  R={R_print:.3f}")
+            print(f"  step {step + 1:5d}/{cfg.n_steps}  R={R_print:.3f}")
 
     if not measure_steps:
         print("[error] no measurements; aborting plot/comparison")
@@ -431,8 +473,10 @@ def main():
     print(f"  LBM terminal dR = {final_dR:.3e}")
     print(f"  R-P terminal dR = {float(dR_rp[-1]):.3e}")
     print(f"  RMS rel err R(t) [skip {skip} samples] = {rms_rel:.2%}   (whole-curve quality)")
-    print(f"  peak-time rel err                    = {peak_t_err:.2%}   "
-          f"(LBM t_peak={peak_t_lbm:.0f}, R-P t_peak={peak_t_rp:.0f})")
+    print(
+        f"  peak-time rel err                    = {peak_t_err:.2%}   "
+        f"(LBM t_peak={peak_t_lbm:.0f}, R-P t_peak={peak_t_rp:.0f})"
+    )
 
     plot_compare(t, R_lbm, dR_lbm, t_rp, R_rp, dR_rp, cfg, out_dir)
     print(f"\n  Wrote {out_dir / 'R_t_compare.png'}")

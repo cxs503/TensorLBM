@@ -1,0 +1,11 @@
+{
+  "case": "cavity_3d_full (5 walls + moving lid)",
+  "reference": "Ku, Hirsh & Taylor 1987 谱方法: u_min(0.5,0.5)=-0.2751 (Re=1000 3D 立方腔); 2D Ghia -0.3829 → 3D 修正 -28%",
+  "stability": {
+    "Re400": "稳定(MRT/RLBM × 展向周期/全壁 4 组合 OK)",
+    "Re1000": "全发散(MRT 173 步/RLBM 200 步 NaN, tau=0.5096 太低, 发散在顶盖层)"
+  },
+  "analysis": "Re=1000 需更高 τ（RLBM+τ 调整）或 Re=400 先入库；run.py 已写(64³/96³ 双档 + Ku 参考 + 展向对称度量)",
+  "verified": false,
+  "date": "2026-08-20"
+}

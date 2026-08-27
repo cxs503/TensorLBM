@@ -30,9 +30,7 @@ def _record(length: int) -> dict[str, object]:
             "smagorinsky_cs": 0.05,
             "positivity_limiter": True,
             "link_force_frame": "laboratory_after_wall_activation",
-            "wall_traction_source_scheme": (
-                "mass_conservative_post_collision_guo_v2"
-            ),
+            "wall_traction_source_scheme": ("mass_conservative_post_collision_guo_v2"),
         },
         "result": {
             "friction_coefficient": reference + 0.5 / length**2,
@@ -43,13 +41,15 @@ def _record(length: int) -> dict[str, object]:
 
 
 def test_equivalent_three_grid_sequence_is_admitted() -> None:
-    result = assess_flat_plate_convergence([
-        _record(256), _record(384), _record(512),
-    ])
+    result = assess_flat_plate_convergence(
+        [
+            _record(256),
+            _record(384),
+            _record(512),
+        ]
+    )
     assert result["configuration_identity"]["admitted"] is True
-    assert result["configuration_identity"][
-        "numerical_length_ratio_invariant"
-    ] is True
+    assert result["configuration_identity"]["numerical_length_ratio_invariant"] is True
     assert result["spatial_convergence"]["observed_order"] > 1.99
     assert result["admitted"] is True
 
@@ -66,9 +66,12 @@ def test_legacy_schema_or_changed_exchange_ratio_fails_provenance() -> None:
     assert assess_flat_plate_convergence(records)["admitted"] is False
     assert assess_flat_plate_convergence(changed)["admitted"] is False
     assert assess_flat_plate_convergence(changed_margin)["admitted"] is False
-    assert assess_flat_plate_convergence(changed_time)[
-        "configuration_identity"
-    ]["time_ratio_invariant"] is False
+    assert (
+        assess_flat_plate_convergence(changed_time)["configuration_identity"][
+            "time_ratio_invariant"
+        ]
+        is False
+    )
 
 
 def test_pre_correction_wall_source_rejects_sequence() -> None:

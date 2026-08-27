@@ -1,4 +1,5 @@
 """Diagnostic-only decomposition audit for direct CFD resistance."""
+
 from __future__ import annotations
 
 import math
@@ -61,16 +62,13 @@ def audit_resistance_components(
     pressure_over_residual = None
     if friction_reference is not None:
         shear_scale_error = (
-            (wall_shear_resistance / max(abs(friction_reference), 1.0e-30) - 1.0)
-            * 100.0
-        )
+            wall_shear_resistance / max(abs(friction_reference), 1.0e-30) - 1.0
+        ) * 100.0
         candidate_residual = experimental_total - friction_reference
         if candidate_residual > 0.0:
             inferred_residual = candidate_residual
             pressure_over_residual = pressure_resistance / candidate_residual
-    total_reference_bias_pct = (
-        (total_resistance / experimental_total - 1.0) * 100.0
-    )
+    total_reference_bias_pct = (total_resistance / experimental_total - 1.0) * 100.0
     return ResistanceComponentAudit(
         total_resistance=total_resistance,
         pressure_resistance=pressure_resistance,

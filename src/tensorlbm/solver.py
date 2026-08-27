@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools  # retained for compatibility; internal cache functions use explicit dicts
 from typing import Any, cast
 
 import torch
@@ -253,6 +252,7 @@ def collide_mrt(
     s_e: float = 1.64,
     s_eps: float = 1.54,
     s_q: float = 1.7,
+    tau_field: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Multi-relaxation-time (MRT) collision step for D2Q9.
 
@@ -278,6 +278,12 @@ def collide_mrt(
         s_e: Relaxation rate for energy moment.
         s_eps: Relaxation rate for energy-square moment.
         s_q: Relaxation rate for heat-flux moments.
+        tau_field: Optional per-cell relaxation time tensor of shape
+            ``(ny, nx)``.  When given, the shear-stress relaxation rate
+            ``s_nu = 1/tau`` is applied cell-wise instead of uniformly,
+            enabling sponge/absorbing layers (τ_eff = τ·(1 + α·σ(x))) and
+            other space-varying viscosity treatments.  All other MRT rates
+            stay uniform.  ``None`` (default) keeps the original behaviour.
 
     Returns:
         Updated distribution tensor of the same shape.
@@ -285,12 +291,26 @@ def collide_mrt(
     device = f.device
     matrix, matrix_inv = _get_d2q9_mrt_matrices(device, f.dtype)
 
-    s_nu = 1.0 / tau
-    s_vec = torch.tensor(
-        [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, s_nu, s_nu],
-        dtype=f.dtype,
-        device=device,
-    )
+    if isinstance(tau, torch.Tensor):
+        s_nu = 1.0 / tau
+        # Differentiable reference path: ``torch.tensor([...])`` would
+        # silently detach a tensor *tau* from the autograd graph (scalar
+        # conversion).  Keep the shear-rate entries graph-connected so
+        # loss.backward() can reach tau.  See docs/differentiable_path.md.
+        s_head = torch.tensor(
+            [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q],
+            dtype=f.dtype,
+            device=device,
+        )
+        s_nu_t = s_nu.to(device=device, dtype=f.dtype)
+        s_vec = torch.cat([s_head, s_nu_t.expand(2)])
+    else:
+        s_nu = 1.0 / tau
+        s_vec = torch.tensor(
+            [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, s_nu, s_nu],
+            dtype=f.dtype,
+            device=device,
+        )
 
     ny, nx = f.shape[1], f.shape[2]
     f_flat = f.reshape(9, -1)
@@ -300,7 +320,18 @@ def collide_mrt(
 
     moments = matrix @ f_flat
     moments_eq = matrix @ feq_flat
-    moments_star = moments - s_vec.unsqueeze(1) * (moments - moments_eq)
+    if tau_field is None:
+        moments_star = moments - s_vec.unsqueeze(1) * (moments - moments_eq)
+    else:
+        # Cell-wise shear relaxation for sponge layers: s_nu = 1/τ_eff(x, y).
+        s_mat = torch.zeros((9, ny, nx), dtype=f.dtype, device=device)
+        s_mat[1] = s_e
+        s_mat[2] = s_eps
+        s_mat[4] = s_q
+        s_mat[6] = s_q
+        s_mat[7] = 1.0 / tau_field
+        s_mat[8] = 1.0 / tau_field
+        moments_star = moments - s_mat.reshape(9, -1) * (moments - moments_eq)
     return (matrix_inv @ moments_star).reshape(9, ny, nx)
 
 

@@ -6,17 +6,15 @@ equilibrium fixed-point), NOT turbulence physics correctness.
 
 from __future__ import annotations
 
-import pytest
 import torch
 
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.d3q27 import equilibrium27, macroscopic27
 from tensorlbm.turbulence import (
-    collide_dynamic_smagorinsky_bgk27,
     collide_dynamic_smagorinsky_bgk3d,
+    collide_dynamic_smagorinsky_bgk27,
     collide_dynamic_smagorinsky_mrt3d,
 )
-
 
 # ---------------------------------------------------------------------------
 # D3Q19 dynamic Smagorinsky MRT

@@ -324,15 +324,17 @@ def bfl_apply_gather(
     # ---- Bouzidi reconstruction (full-tensor, one pass) ------------------
     qq = q_field.to(torch.float64)
     if q_min is not None:
-        # High-Re safeguard: clamp tiny q to avoid the 1/(2q) divergence in
-        # the quadratic branch. q_min=0 disables (keeps validated low-Re
-        # results bit-identical).
         qq = torch.clamp(qq, min=float(q_min))
+    # f_opp_post = post-stream opposite-direction population (streamed FROM
+    # the solid side).  The legacy formula used fp_d (pre-stream incident)
+    # which reconstructs bounce-back from the wrong source and drains shell
+    # momentum every substep (octree sphere Cd=3.0 vs 1.09).
+    f_opp_post = f[opp].to(torch.float64)
     lin = qq < 0.5
     safe_q = torch.where(lin, torch.ones_like(qq), qq)
-    f_bc_lin = 2.0 * qq * fp_d + (1.0 - 2.0 * qq) * fp_up
+    f_bc_lin = 2.0 * qq * f_opp_post + (1.0 - 2.0 * qq) * fp_d
     f_bc_quad = (
-        fp_d / (2.0 * safe_q)
+        f_opp_post / (2.0 * safe_q)
         + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
     )
     f_bc = torch.where(lin, f_bc_lin, f_bc_quad)
