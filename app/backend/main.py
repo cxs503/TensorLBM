@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -434,6 +434,30 @@ if _ASSETS_DIR.exists():
 @app.get("/", include_in_schema=False)
 async def root() -> FileResponse:
     return FileResponse(_FRONTEND_DIR / "index.html")
+
+
+_DEMO_PAGE = _REPO_ROOT / "demos" / "echo_slider.html"
+
+
+@app.get("/demo", include_in_schema=False)  # type: ignore[untyped-decorator]
+async def demo_page() -> FileResponse:
+    """Serve the drag-echo slider demo (``demos/echo_slider.html``).
+
+    Registered before the SPA catch-all so ``/demo`` is not swallowed by
+    ``spa_fallback``.  The page targets ``/api/drag/echo/*`` with relative
+    URLs, so same-origin serving needs no ``?api=`` override.  ``demos/``
+    ships with the source checkout (not the tensorlbm wheel), hence the
+    explicit existence check: a clear 404 beats a bare 500 from FileResponse.
+    """
+    if not _DEMO_PAGE.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"demo page not found at {_DEMO_PAGE}; demos/ ships with the "
+                "source checkout, not the tensorlbm wheel"
+            ),
+        )
+    return FileResponse(_DEMO_PAGE, media_type="text/html")
 
 
 @app.get("/{full_path:path}", include_in_schema=False)

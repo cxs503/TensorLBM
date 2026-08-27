@@ -51,7 +51,7 @@ operator must not average away an out-of-corpus point.
 
 ## Running it
 
-### Mode (a) — standalone dev mode (today, needs branch `exp/b4-echo`)
+### Mode (a) — standalone dev mode
 
 1. Start the backend (CPU is fine; ensemble load takes a moment):
 
@@ -80,12 +80,22 @@ operator must not average away an out-of-corpus point.
    prefilled. Cross-origin use from this launcher is fine: it sends
    permissive CORS headers, and the FastAPI app ships CORS middleware.
 
-### Mode (b) — next to the FastAPI app (after #241 merges)
+### Mode (b) — from the platform app itself: `GET /demo`
 
-Copy `demos/echo_slider.html` anywhere served by the same origin as the API
-(e.g. a static dir mounted by `app/backend/main.py`) or leave the API base
-empty behind the same proxy. No launcher, no CORS, no `?api=` needed. This
-mode is documented, not implemented — this PR does not touch `app/`.
+`app/backend/main.py` serves the page at **`GET /demo`** (registered before
+the SPA catch-all). Start the backend as in mode (a) — minus the launcher —
+and open `http://<host>:8000/demo`. No CORS and no `?api=` needed: the page
+calls `/api/drag/echo/*` with relative URLs that resolve against the same
+origin. The route locates the file from the repo root, so it works from any
+working directory; when `demos/` is absent (e.g. a wheel-only install) it
+answers a clear 404 instead of a bare 500.
+
+### Mode (c) — behind a reverse proxy
+
+Serve the file under any origin that also proxies the API to the backend,
+e.g. nginx with an exact `location = /demo` serving `echo_slider.html` plus
+`location /api/ { proxy_pass http://127.0.0.1:8000; }`, and keep the API
+base empty. Same-origin is all that matters: the page never hardcodes a host.
 
 ## Files
 
@@ -94,6 +104,7 @@ mode is documented, not implemented — this PR does not touch `app/`.
 | `echo_slider.html` | the demo page (inline CSS/JS, hand-rolled SVG charts) |
 | `serve_demo.py` | stdlib launcher with CORS + `?api=` URL hint |
 | `../tests/test_demo_page.py` | HTML static checks + launcher import/HTTP test |
+| `../tests/test_demo_mount.py` | `GET /demo` mount tests on the platform app |
 
 Screenshots: deliberately not committed (no binaries in git) — take one with
 e.g. `gnome-screenshot` when demoing and attach it to the PR description.
