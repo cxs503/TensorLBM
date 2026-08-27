@@ -431,9 +431,12 @@ class ModelEnsembleBackend:
     ``predict`` takes a reference field ``(5, ny, nx)`` (the mid-plane
     ``[ux/u, uy/u, uz/u, rho, solid_mask]`` stack of the B4 cache
     convention, from the corpus cache or supplied by the caller) plus
-    ``(N, 8)`` condition rows, normalises both with each member's fit
+    condition rows — ``(N, 8)`` v3/v4 vectors or ``(N, 9)`` v5 (sail
+    axial-position channel) — normalises both with each member's fit
     statistics, runs all N Reynolds points in one batch and returns the
-    member matrix ``member_cd[m, n]`` in linear C_D space.
+    member matrix ``member_cd[m, n]`` in linear C_D space.  The accepted
+    condition width is read from the members' architecture (all members
+    must agree), so v3/v4/v5 ensembles serve through the same call.
     """
 
     def __init__(self, ckpts: Sequence[CondDragCheckpoint], device: str = _DEFAULT_DEVICE) -> None:
@@ -447,6 +450,15 @@ class ModelEnsembleBackend:
         self._norms = [c.norm for c in ckpts]
         self.device = torch.device(device)
         self._models = [c.to_model(self.device) for c in ckpts]
+        dims = {int(getattr(m.cond_embed[0], "in_features")) for m in self._models}
+        if len(dims) != 1:
+            raise ValueError(f"ensemble members disagree on cond_dim: {sorted(dims)}")
+        self._cond_dim = dims.pop()
+
+    @property
+    def cond_dim(self) -> int:
+        """Condition-vector width the members were trained with (8 or 9)."""
+        return self._cond_dim
 
     @property
     def n_members(self) -> int:
@@ -464,8 +476,8 @@ class ModelEnsembleBackend:
         cond = np.asarray(cond, dtype=np.float64)
         if fields.ndim != 3 or fields.shape[0] != 5:
             raise ValueError(f"fields must be (5, ny, nx), got {fields.shape}")
-        if cond.ndim != 2 or cond.shape[1] != 8:
-            raise ValueError(f"cond must be (N, 8), got {cond.shape}")
+        if cond.ndim != 2 or cond.shape[1] != self._cond_dim:
+            raise ValueError(f"cond must be (N, {self._cond_dim}), got {cond.shape}")
         x = torch.from_numpy(fields).to(self.device)
         p = torch.from_numpy(cond.astype(np.float32)).to(self.device)
         xn = x.unsqueeze(0).expand(p.shape[0], -1, -1, -1)  # (N, 5, ny, nx)
@@ -493,7 +505,7 @@ class ModelEnsembleBackend:
         """Batched multi-geometry variant of :meth:`predict` (B4-P3a sweep).
 
         ``fields`` is ``(G, 5, ny, nx)`` (one reference field per geometry),
-        ``cond`` the ``(N, 8)`` condition rows of all geometries
+        ``cond`` the ``(N, cond_dim)`` condition rows of all geometries
         concatenated and ``counts`` the per-geometry row counts
         (``counts.sum() == N``).  Row ``n`` is evaluated on the field of the
         geometry it belongs to (``torch.repeat_interleave`` expansion), so a
@@ -508,8 +520,8 @@ class ModelEnsembleBackend:
         counts = np.asarray(counts, dtype=np.int64)
         if fields.ndim != 4 or fields.shape[1] != 5:
             raise ValueError(f"fields must be (G, 5, ny, nx), got {fields.shape}")
-        if cond.ndim != 2 or cond.shape[1] != 8:
-            raise ValueError(f"cond must be (N, 8), got {cond.shape}")
+        if cond.ndim != 2 or cond.shape[1] != self._cond_dim:
+            raise ValueError(f"cond must be (N, {self._cond_dim}), got {cond.shape}")
         if counts.ndim != 1 or counts.size != fields.shape[0] or not (counts > 0).all():
             raise ValueError(
                 f"counts must be positive with one entry per field, got {counts!r} "

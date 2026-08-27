@@ -22,13 +22,16 @@ import torch
 
 from tensorlbm.ai.drag_cond import (
     COND_V3_CHANNEL_NAMES,
+    COND_V5_CHANNEL_NAMES,
     GEOMETRY_CHANNEL_NAMES,
     PRODUCTION_GRID,
     CondFNODrag,
     QuotaSampler,
     condition_v3,
+    condition_v5,
     force_tail_bins,
     geometry_channels,
+    sail_axial_channel,
     suboff_geometry_features,
 )
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
@@ -183,6 +186,66 @@ class TestConditionV3:
     def test_geometry_shape_validation(self):
         with pytest.raises(ValueError, match="geometry block"):
             condition_v3(np.ones(3), np.ones(3), np.ones(3), np.ones(3), np.ones((3, 3)))
+
+
+class TestConditionV5:
+    """Sail axial-position channel (B4 v5, 2026-08-27 sail_x campaign fix).
+
+    Pins: (1) the v4-default path is untouched — first 8 columns are
+    condition_v3 bit-identically, (2) the v5 channel breaks the sail
+    translation invariance that the mask-derived geo block provably cannot
+    (P1: max |diff| = 0.0 across the sweep), (3) mother encodes as exactly
+    0.0, (4) the channel is strictly monotone in the multiplier.
+    """
+
+    def test_names_and_prefix_bit_identity(self):
+        assert COND_V5_CHANNEL_NAMES == COND_V3_CHANNEL_NAMES + ("log10_sail_x_mult",)
+        re = np.array([100.0, 200.0, 400.0])
+        uin = np.full(3, 0.1)
+        geo = np.stack([geometry_channels(feats("with_sail", 1.0, 1.0))] * 3)
+        v3 = condition_v3(re, uin, np.ones(3), np.ones(3), geo)
+        v5 = condition_v5(re, uin, np.ones(3), np.ones(3), geo, [0.7, 1.0, 1.4])
+        assert v5.shape == (3, 9)
+        np.testing.assert_array_equal(v5[:, :8], v3)  # bit-identical prefix
+
+    def test_channel_breaks_translation_invariance(self):
+        """Same design, different sail_x: geo block equal, cond vectors differ.
+
+        The root-cause pin: the sail translation leaves the mask-derived
+        counts bit-identical (identical geo rows) while the v5 vector —
+        through its design-parameter channel — separates the points the v3
+        vector could not.
+        """
+        re = np.array([200.0, 200.0])
+        geo = np.stack([geometry_channels(feats("with_sail", 1.0, 1.0))] * 2)
+        mults = [0.7, 1.4]
+        v3 = condition_v3(re, np.ones(2) * 0.1, np.ones(2), np.ones(2), geo)
+        v5 = condition_v5(re, np.ones(2) * 0.1, np.ones(2), np.ones(2), geo, mults)
+        np.testing.assert_array_equal(v3[0], v3[1])  # v3: flat (the failure)
+        assert not np.array_equal(v5[0], v5[1])  # v5: axis is visible
+        np.testing.assert_allclose(v5[:, 8], np.log10(mults))
+
+    def test_mother_is_exactly_zero_and_monotone(self):
+        for m in (1.0, 1):
+            assert float(sail_axial_channel(m)) == 0.0
+        grid = [0.7, 0.85, 1.0, 1.15, 1.3, 1.4]
+        col = sail_axial_channel(grid)
+        assert np.all(np.diff(col) > 0)  # strictly increasing
+        np.testing.assert_allclose(col, np.log10(grid))
+
+    def test_scalar_broadcast_and_validation(self):
+        re = np.full(4, 100.0)
+        geo = np.stack([geometry_channels(feats("with_sail", 1.0, 1.0))] * 4)
+        v5 = condition_v5(re, np.ones(4) * 0.1, np.ones(4), np.ones(4), geo, 1.3)
+        np.testing.assert_allclose(v5[:, 8], np.log10(1.3))
+        with pytest.raises(ValueError, match="scalar or length-4"):
+            condition_v5(re, np.ones(4) * 0.1, np.ones(4), np.ones(4), geo, [1.0, 1.1])
+        with pytest.raises(ValueError, match="finite and positive"):
+            sail_axial_channel(0.0)
+        with pytest.raises(ValueError, match="finite and positive"):
+            sail_axial_channel(np.nan)
+        with pytest.raises(ValueError, match="1-D"):
+            sail_axial_channel(np.ones((2, 2)))
 
 
 class TestQuotaSampler:

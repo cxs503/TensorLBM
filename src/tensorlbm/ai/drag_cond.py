@@ -41,6 +41,24 @@ vector, where ``n`` is the ``suboff_n128`` case's integer ``resolution``
 (the streamwise cell count; production ``n = 128``).  The first 8 columns
 of :func:`condition_v4` are bit-identical to :func:`condition_v3`, so v3
 models/protocols are unchanged by the addition.
+
+B4-v5 adds the *sail axial-position channel*
+(:func:`condition_v5`): ``log10(sail_x_mult)`` appended to the v3 vector.
+``sail_x_mult`` is the ``SuboffConfig`` hull-form multiplier that
+translates the conning-tower sail's axial centre about the DARPA position
+(``sail_x_frac = 0.254``, i.e. ~25.4 % L from the bow) — a pure
+translation that leaves every mask-derived count (``v_sail``, ``v_solid``,
+``A_proj``) bit-identical, which is exactly why the v3/v4 geometry block
+is **strictly invariant** under it and the served ``C_D`` cannot see the
+axis (2026-08-27 sail_x campaign, P1: max |diff| = 0.0 over the sweep).
+The v5 channel is therefore a *design-parameter* channel, not a
+mask-derived one — necessarily so, because the parameter moves geometry
+that the mask statistics cannot see.  ``log10`` matches the
+``log10_sail_scale`` / ``log10_fin_scale`` multiplier convention and makes
+the mother design (``sail_x_mult = 1``) encode as exactly ``0.0`` (the
+same mother-is-zero property as the resolution channel).  The first 8
+columns of :func:`condition_v5` are bit-identical to
+:func:`condition_v3`, so v3/v4 models/protocols are unchanged.
 """
 
 from __future__ import annotations
@@ -65,18 +83,22 @@ from .fno import SpectralConv2d
 __all__ = [
     "COND_V3_CHANNEL_NAMES",
     "COND_V4_CHANNEL_NAMES",
+    "COND_V5_CHANNEL_NAMES",
     "CondFNODrag",
     "GEOMETRY_CHANNEL_NAMES",
     "PRODUCTION_GRID",
     "QuotaSampler",
     "RESOLUTION_CHANNEL_NAME",
+    "SAIL_AXIAL_CHANNEL_NAME",
     "SuboffGeometryFeatures",
     "SuboffGrid",
     "condition_v3",
     "condition_v4",
+    "condition_v5",
     "force_tail_bins",
     "geometry_channels",
     "resolution_channel",
+    "sail_axial_channel",
     "suboff_geometry_features",
 ]
 
@@ -329,6 +351,61 @@ def condition_v4(
     if col.shape != (base.shape[0],):
         raise ValueError(
             f"resolution must be scalar or length-{base.shape[0]} array, got shape {col.shape}"
+        )
+    return np.concatenate([base, col[:, None]], axis=1)
+
+
+#: Name of the sail axial-position channel (B4 v5): log10(sail_x_mult).
+SAIL_AXIAL_CHANNEL_NAME = "log10_sail_x_mult"
+
+#: Full v5 condition vector: v3 + the sail axial-position channel.
+COND_V5_CHANNEL_NAMES = COND_V3_CHANNEL_NAMES + (SAIL_AXIAL_CHANNEL_NAME,)
+
+
+def sail_axial_channel(sail_x_mult: "int | float | np.ndarray") -> np.ndarray:
+    """log10 of the sail axial-centre multiplier (scalar or 1-D array).
+
+    ``sail_x_mult`` is ``SuboffConfig.sail_x_mult`` — the sail's axial
+    centre as a multiple of the DARPA position ``sail_x_frac = 0.254``
+    (~25.4 % L from the bow); the CAD applies it as a pure translation
+    ``(mult - 1) * x_sail_centre`` in the mother ft frame, constrained to
+    the supported window where the sail footprint stays on the deck
+    (legality audit 2026-08-27: mult in [0.7, 1.4] legal, 1.45 degenerate —
+    the sail enters the stern taper).  Because the translation preserves
+    every mask-derived count, this channel is a *design parameter*, not a
+    mask statistic: it is the only place the v5 encoding can carry the
+    axis.  Mother designs (``mult = 1``) encode as exactly ``0.0``.
+    """
+    m = np.asarray(sail_x_mult, dtype=np.float64)
+    if m.ndim > 1:
+        raise ValueError(f"sail_x_mult must be a scalar or 1-D array, got shape {m.shape}")
+    if not np.isfinite(m).all() or not (m > 0.0).all():
+        raise ValueError(f"sail_x_mult must be finite and positive, got {sail_x_mult!r}")
+    return np.log10(m)
+
+
+def condition_v5(
+    re: np.ndarray,
+    u_in: np.ndarray,
+    sail_scale: np.ndarray,
+    fin_scale: np.ndarray,
+    geometry: np.ndarray,
+    sail_x_mult: "int | float | np.ndarray",
+) -> np.ndarray:
+    """Assemble the (N, 9) v5 condition vector: v3 + sail axial position.
+
+    The first 8 columns are :func:`condition_v3` verbatim (bit-identical);
+    the 9th is :func:`sail_axial_channel` of *sail_x_mult* (scalar
+    broadcast or per-point 1-D array).  Use this vector when the served
+    axis set includes ``sail_x_mult``; the v3/v4 paths are unchanged.
+    """
+    base = condition_v3(re, u_in, sail_scale, fin_scale, geometry)
+    col = sail_axial_channel(sail_x_mult)
+    if col.ndim == 0:
+        col = np.full(base.shape[0], float(col))
+    if col.shape != (base.shape[0],):
+        raise ValueError(
+            f"sail_x_mult must be scalar or length-{base.shape[0]} array, got shape {col.shape}"
         )
     return np.concatenate([base, col[:, None]], axis=1)
 
