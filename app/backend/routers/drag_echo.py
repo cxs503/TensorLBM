@@ -16,7 +16,8 @@ single process.  The router owns only HTTP concerns:
 Service construction (``build_default_echo_service``) wraps the drag
 service built from the PR #239 environment (``TENSORLBM_DRAG_CKPT_DIR`` /
 ``TENSORLBM_DRAG_RUN_DIR`` ...); the ``TENSORLBM_DRAG_ECHO_*`` variables
-override device and geometry-cache size.  With nothing configured the
+override device, channel-count device and geometry-cache size.  With
+nothing configured the
 endpoints answer 503 with the reason — serving is opt-in, never silently
 degraded.
 """
@@ -162,6 +163,7 @@ class EchoHealthResponse(BaseModel):
     guard_n_fit: int
     grid: dict[str, int]
     device: str
+    counts_device: str
     cache_entries: int
 
 
@@ -175,14 +177,22 @@ def build_default_echo_service() -> GeometryEchoPipeline:
     The underlying service follows ``TENSORLBM_DRAG_*`` (see
     ``backend.routers.drag_surrogate.build_default_service``); the echo
     layer adds ``TENSORLBM_DRAG_ECHO_DEVICE`` (default: the drag device or
-    cpu) and ``TENSORLBM_DRAG_ECHO_CACHE`` (geometry LRU slots, default 16).
+    cpu), ``TENSORLBM_DRAG_ECHO_CACHE`` (geometry LRU slots, default 16)
+    and ``TENSORLBM_DRAG_ECHO_COUNTS_DEVICE`` (channel-count device:
+    ``auto`` — the echo device when it is CUDA, else any CUDA device
+    visible to the process, else CPU — or an explicit torch device
+    string; the integer counts are bit-identical on both sides, see
+    ``docs/geo_fast_20260827.md``).
     """
     device = os.environ.get(
         "TENSORLBM_DRAG_ECHO_DEVICE", os.environ.get("TENSORLBM_DRAG_DEVICE", "cpu")
     )
+    counts_device = os.environ.get("TENSORLBM_DRAG_ECHO_COUNTS_DEVICE", "auto")
     cache = int(os.environ.get("TENSORLBM_DRAG_ECHO_CACHE", "16"))
     service = build_default_service()
-    return GeometryEchoPipeline(service, device=device, cache_size=cache)
+    return GeometryEchoPipeline(
+        service, device=device, counts_device=counts_device, cache_size=cache
+    )
 
 
 def get_echo_service() -> Iterator[GeometryEchoPipeline]:
@@ -291,5 +301,6 @@ def health(pipeline: GeometryEchoPipeline = Depends(get_echo_service)) -> EchoHe
             "nx": pipeline.grid.nx,
         },
         device=pipeline.device,
+        counts_device=pipeline.counts_device,
         cache_entries=len(pipeline._cache),  # noqa: SLF001 — process introspection
     )
