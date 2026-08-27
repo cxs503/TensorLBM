@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import copy
 import math
+import os
 import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -854,6 +855,8 @@ class DragSurrogateService:
         grid: SuboffGrid | None = None,
         cache_re: np.ndarray | None = None,
         cache_designs: list[tuple[str, float, float, float]] | None = None,
+        backend_kind: str | None = None,
+        backend_plan: str | Path | None = None,
         **guard_kwargs: Any,
     ) -> DragSurrogateService:
         """Real-model service from member checkpoints + guard fit matrix.
@@ -863,9 +866,40 @@ class DragSurrogateService:
         it), for the same reason as :meth:`from_run_dir`.
         ``corpus_cache``/``cache_re``/``cache_designs`` wire up field
         resolution for callers that do not pass ``fields`` per query.
+
+        Backend selection (TRT slice 2026-08-27): ``backend_kind`` wins over
+        ``TENSORLBM_DRAG_BACKEND`` (``torch`` default).  Any non-default
+        kind is delegated to
+        :func:`tensorlbm.ai.service_backends.make_backend` with
+        ``artifact_path=backend_plan`` (falls back to
+        ``TENSORLBM_DRAG_BACKEND_PLAN``) and
+        ``TENSORLBM_DRAG_BACKEND_FALLBACK`` for degrade-to-torch.  With the
+        argument unset and the env unset, the backend is built exactly as
+        before — the default serving path is unchanged.
         """
         ckpts = [load_checkpoint(p) for p in paths]
-        backend = ModelEnsembleBackend(ckpts, device=device)
+        from .service_backends import (
+            ENV_BACKEND_FALLBACK,
+            ENV_BACKEND_KIND,
+            make_backend,
+            resolve_backend_kind,
+        )
+
+        kind = resolve_backend_kind(backend_kind)
+        if (
+            kind == "torch"
+            and backend_kind is None
+            and not os.environ.get(ENV_BACKEND_KIND, "").strip()
+        ):
+            backend = ModelEnsembleBackend(ckpts, device=device)
+        else:
+            backend = make_backend(
+                kind,
+                ckpts=ckpts,
+                device=device,
+                artifact_path=backend_plan,
+                fallback=os.environ.get(ENV_BACKEND_FALLBACK),
+            )
         guard = EnvelopeMahalanobisGuardrail(guard_features, guard_names, **guard_kwargs)
         return cls(
             backend,
