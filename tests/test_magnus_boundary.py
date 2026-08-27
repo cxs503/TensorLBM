@@ -5,8 +5,7 @@ from pathlib import Path
 
 import torch
 
-from tensorlbm.d3q19 import C, OPPOSITE, W
-
+from tensorlbm.d3q19 import OPPOSITE, C, W
 
 _SPEC = importlib.util.spec_from_file_location(
     "benchmark_magnus_cylinder",

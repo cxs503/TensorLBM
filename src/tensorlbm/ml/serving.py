@@ -65,8 +65,7 @@ class OnnxUnavailableError(RuntimeError):
 
     def __init__(self) -> None:
         super().__init__(
-            "ONNX export requires the optional 'onnx' package. "
-            "Install it with: pip install onnx"
+            "ONNX export requires the optional 'onnx' package. Install it with: pip install onnx"
         )
 
 
@@ -81,6 +80,12 @@ class ModelNotFoundError(KeyError):
 # Families understood by the loader inside :class:`InferenceService`.
 FAMILY_EDDY_MLP = "eddy_viscosity_mlp"
 FAMILY_FLOW_TRANSFORMER = "flow_transformer_ssl"
+FAMILY_FNO = "fno2d"
+FAMILY_PINN = "pinn"
+FAMILY_GNN = "gnn"
+FAMILY_INVERSE = "inverse"
+FAMILY_DIFFUSION = "diffusion"
+FAMILY_UQ = "uq"
 
 
 @dataclass(frozen=True)
@@ -96,12 +101,8 @@ class ModelMetadata:
     version: str = "1"
     framework: str = "torch"
     family: str = FAMILY_EDDY_MLP
-    input_shapes: Mapping[str, Sequence[int | None]] = field(
-        default_factory=dict
-    )
-    output_shapes: Mapping[str, Sequence[int | None]] = field(
-        default_factory=dict
-    )
+    input_shapes: Mapping[str, Sequence[int | None]] = field(default_factory=dict)
+    output_shapes: Mapping[str, Sequence[int | None]] = field(default_factory=dict)
     lineage: Mapping[str, Any] = field(default_factory=dict)
     arch: Mapping[str, Any] = field(default_factory=dict)
 
@@ -174,6 +175,7 @@ def infer_io_shapes(
 # ---------------------------------------------------------------------------
 # Model registry
 # ---------------------------------------------------------------------------
+
 
 class ModelRegistry:
     """SQLite-backed model registry reusing ``tensorlbm.ai.database``.
@@ -253,6 +255,7 @@ class ModelRegistry:
 # Inference service
 # ---------------------------------------------------------------------------
 
+
 class InferenceService:
     """Load registered models and run forward inference.
 
@@ -283,21 +286,45 @@ class InferenceService:
 
     @staticmethod
     def _load_by_family(family: str, path: str) -> nn.Module:
+        from tensorlbm.ai.fno import load_fno2d as _load_fno
         from tensorlbm.ai.model import load_model as _load_eddy_mlp
         from tensorlbm.ai.transformer import (
             load_flow_transformer_model as _load_transformer,
         )
+        from tensorlbm.apps.generative_flow import (
+            load_diffusion_model as _load_diffusion,
+        )
+        from tensorlbm.apps.inverse_problem import (
+            load_inverse_model as _load_inverse,
+        )
+        from tensorlbm.apps.mesh_gnn_flow import load_mesh_gnn as _load_gnn
+        from tensorlbm.apps.physics_informed_lbm import (
+            load_pinn_model as _load_pinn,
+        )
+        from tensorlbm.apps.uncertainty_quantification import (
+            load_uq_mlp as _load_uq,
+        )
 
         if family == FAMILY_FLOW_TRANSFORMER:
             model = _load_transformer(path)
+        elif family == FAMILY_FNO:
+            model = _load_fno(path)
+        elif family == FAMILY_PINN:
+            model = _load_pinn(path)
+        elif family == FAMILY_INVERSE:
+            model = _load_inverse(path)
+        elif family == FAMILY_GNN:
+            model = _load_gnn(path)
+        elif family == FAMILY_DIFFUSION:
+            model = _load_diffusion(path)
+        elif family == FAMILY_UQ:
+            model = _load_uq(path)
         elif family in (FAMILY_EDDY_MLP, ""):
             model = _load_eddy_mlp(path)
         else:
             raise ValueError(f"Unsupported model family: {family!r}")
         if not isinstance(model, nn.Module):
-            raise TypeError(
-                f"Loaded model of family {family!r} is not an nn.Module"
-            )
+            raise TypeError(f"Loaded model of family {family!r} is not an nn.Module")
         return model
 
     # -- inference --------------------------------------------------------
@@ -363,6 +390,7 @@ class InferenceService:
 # ---------------------------------------------------------------------------
 # ONNX export
 # ---------------------------------------------------------------------------
+
 
 def _as_tensor_tuple(value: object) -> tuple[torch.Tensor, ...]:
     if isinstance(value, torch.Tensor):

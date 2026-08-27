@@ -22,14 +22,11 @@ CGNS references:
 from __future__ import annotations
 
 import json
-import os
-import struct
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import torch
-
 
 # ---------------------------------------------------------------------------
 # Data container
@@ -255,7 +252,7 @@ def export_cgns(
         else:
             out_dir = out_path.parent
         out_dir.mkdir(parents=True, exist_ok=True)
-        meta_path = _write_fallback_npy(out_dir, rho, ux, uy, cfg, step)
+        _write_fallback_npy(out_dir, rho, ux, uy, cfg, step)
         fmt = "NumPy+JSON (h5py not available)"
         files = [str(f) for f in out_dir.glob(f"cgns_step{step:06d}*")]
 

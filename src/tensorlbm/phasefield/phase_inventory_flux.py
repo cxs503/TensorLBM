@@ -8,7 +8,7 @@ make a total-phase-conservation claim.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import torch
 
@@ -128,7 +128,7 @@ def diagnose_adapter_stream_phase_inventory_flux(
     samples: list[PhaseInventoryFluxStep] = []
     previous_phi = result.diagnostics[0].phi_integral
     previous_g = result.diagnostics[0].g_sum
-    initial = result.diagnostics[0]
+    result.diagnostics[0]
     samples.append(
         PhaseInventoryFluxStep(
             step=0,

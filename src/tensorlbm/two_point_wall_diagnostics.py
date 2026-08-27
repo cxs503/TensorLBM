@@ -1,4 +1,5 @@
 """Two-point log-slope diagnostics for resolved wall-parallel velocity."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -48,9 +49,7 @@ def estimate_two_point_log_slope_friction_velocity(
     valid &= torch.isfinite(denominator) & (denominator > 0.0)
     friction_velocity = torch.zeros_like(inner_speed)
     friction_velocity[valid] = (
-        kappa
-        * (outer_speed[valid] - inner_speed[valid])
-        / denominator[valid]
+        kappa * (outer_speed[valid] - inner_speed[valid]) / denominator[valid]
     )
     return friction_velocity, valid
 

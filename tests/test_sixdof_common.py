@@ -7,8 +7,6 @@ correctness or fluid-structure coupling validation.
 
 from __future__ import annotations
 
-import math
-
 import pytest
 import torch
 
@@ -19,7 +17,6 @@ from tensorlbm.sixdof_common import (
     rigid_body_state_to_euler,
     rigid_body_step,
 )
-
 
 # --------------------------------------------------------------------------- #
 # Helpers

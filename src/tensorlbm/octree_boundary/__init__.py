@@ -14,10 +14,23 @@ P1 geometry + P2 stepping + P3 body-fitted physics:
 
 See ``docs/octree-boundary-design.md`` for the contract.
 """
+from tensorlbm.octree_boundary.bfl import (
+    bfl_apply_gather,
+    bfl_ramp_wall_velocity,
+    leaf_force_weights,
+    leaf_macroscopic,
+    upstream_donor_table,
+)
 from tensorlbm.octree_boundary.distributed_stepping import (
     split_leaf_bounds,
     step_octree_shell_distributed,
     stream_gather_distributed,
+)
+from tensorlbm.octree_boundary.force import (
+    ShellForceLedger,
+    build_shell_control_volume,
+    convert_leaf_force_to_l1,
+    substep_force_weights,
 )
 from tensorlbm.octree_boundary.geometry import (
     DOMAIN_OUT,
@@ -46,28 +59,6 @@ from tensorlbm.octree_boundary.qfield import (
     compute_leaf_q_field,
     compute_q_sphere_at_points,
 )
-from tensorlbm.octree_boundary.topology import (
-    build_interface_registry,
-    build_neighbor_table,
-    check_balance_21,
-    check_interface_links,
-    check_neighbor_symmetry,
-    check_no_dangling,
-    run_topology_checks,
-)
-from tensorlbm.octree_boundary.bfl import (
-    bfl_apply_gather,
-    bfl_ramp_wall_velocity,
-    leaf_force_weights,
-    leaf_macroscopic,
-    upstream_donor_table,
-)
-from tensorlbm.octree_boundary.force import (
-    ShellForceLedger,
-    build_shell_control_volume,
-    convert_leaf_force_to_l1,
-    substep_force_weights,
-)
 from tensorlbm.octree_boundary.sharding import (
     OctreeLeafShard,
     refresh_octree_f_leaf,
@@ -87,6 +78,15 @@ from tensorlbm.octree_boundary.stepping import (
     step_octree_shell,
     step_octree_shell_sharded,
     stream_gather,
+)
+from tensorlbm.octree_boundary.topology import (
+    build_interface_registry,
+    build_neighbor_table,
+    check_balance_21,
+    check_interface_links,
+    check_neighbor_symmetry,
+    check_no_dangling,
+    run_topology_checks,
 )
 
 __all__ = [
@@ -148,4 +148,3 @@ __all__ = [
     "FANOUT",
     "REMOTE",
 ]
-

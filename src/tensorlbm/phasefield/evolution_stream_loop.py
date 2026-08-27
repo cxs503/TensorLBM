@@ -10,17 +10,14 @@ observables are deliberately absent or withheld.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
-
-import torch
 
 from .evolution_adapter import FreeEnergyCollisionOnlyState, free_energy_step_3d
+from .phase_inventory_flux import adapter_stream_boundary_crossing
 from .stream_boundary_contract import (
     PHASE_FLUX_WITHHELD,
     BoundaryPolicy,
     stream_free_energy_adapter,
 )
-from .phase_inventory_flux import adapter_stream_boundary_crossing
 
 ADAPTER_STREAM_LOOP_STAGE = "collision_then_adapter_stream"
 

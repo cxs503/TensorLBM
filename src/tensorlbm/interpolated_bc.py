@@ -57,7 +57,11 @@ def bouzidi_bounce_back(
     opp = int(OPPOSITE[direction].item())
     f_out = f.clone()
 
-    q_cell = q[fluid_nodes]
+    # q_field is float32 by construction (see compute_q_circle /
+    # compute_q_sphere); promote it to the population dtype so the
+    # interpolation weights are not rounded to float32 in float64 runs
+    # (exact identity for float32 runs).
+    q_cell = q[fluid_nodes].to(dtype=f.dtype)
     mask_lin = q_cell < 0.5
     mask_quad = ~mask_lin
 
@@ -65,18 +69,14 @@ def bouzidi_bounce_back(
     fp_d = f_prev[direction][fluid_nodes]
     dcx, dcy = (int(value) for value in C[direction].tolist())
     fp_d_upstream = torch.roll(
-        f_prev[direction], shifts=(dcy, dcx), dims=(0, 1),
+        f_prev[direction],
+        shifts=(dcy, dcx),
+        dims=(0, 1),
     )[fluid_nodes]
-    f_bc_lin = (
-        2.0 * q_cell * fp_d
-        + (1.0 - 2.0 * q_cell) * fp_d_upstream
-    )
+    f_bc_lin = 2.0 * q_cell * fp_d + (1.0 - 2.0 * q_cell) * fp_d_upstream
 
     safe_q = torch.where(mask_quad, q_cell, torch.ones_like(q_cell))
-    f_bc_quad = (
-        fp_d / (2.0 * safe_q)
-        + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
-    )
+    f_bc_quad = fp_d / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
 
     f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 
@@ -256,7 +256,11 @@ def bouzidi_bounce_back_3d(
     opp = int(OPPOSITE3D[direction].item())
     f_out = f.clone()
 
-    q_cell = q[fluid_nodes]
+    # q_field is float32 by construction (see compute_q_circle /
+    # compute_q_sphere); promote it to the population dtype so the
+    # interpolation weights are not rounded to float32 in float64 runs
+    # (exact identity for float32 runs).
+    q_cell = q[fluid_nodes].to(dtype=f.dtype)
     mask_lin = q_cell < 0.5
     mask_quad = ~mask_lin
 
@@ -264,21 +268,17 @@ def bouzidi_bounce_back_3d(
     fp_d = f_prev[direction][fluid_nodes]
     dcx, dcy, dcz = (int(value) for value in C3D[direction].tolist())
     fp_d_upstream = torch.roll(
-        f_prev[direction], shifts=(dcz, dcy, dcx), dims=(0, 1, 2),
+        f_prev[direction],
+        shifts=(dcz, dcy, dcx),
+        dims=(0, 1, 2),
     )[fluid_nodes]
 
     # Linear interpolation (q < 0.5)
-    f_bc_lin = (
-        2.0 * q_cell * fp_d
-        + (1.0 - 2.0 * q_cell) * fp_d_upstream
-    )
+    f_bc_lin = 2.0 * q_cell * fp_d + (1.0 - 2.0 * q_cell) * fp_d_upstream
 
     # Quadratic interpolation (q >= 0.5)
     safe_q = torch.where(mask_quad, q_cell, torch.ones_like(q_cell))
-    f_bc_quad = (
-        fp_d / (2.0 * safe_q)
-        + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
-    )
+    f_bc_quad = fp_d / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
 
     f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 

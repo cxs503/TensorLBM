@@ -56,8 +56,6 @@ from typing import Callable, Literal
 import torch
 
 from .ibm import (
-    ibm_delta_4pt,
-    ibm_delta_hat,
     ibm_direct_forcing_3d,
 )
 
@@ -103,11 +101,13 @@ class _LatticeSpec:
 def _lattice_spec(lattice: str, device: torch.device) -> _LatticeSpec:
     lattice_u = lattice.upper()
     if lattice_u == "D3Q19":
-        from .d3q19 import C as C19, W as W19
+        from .d3q19 import C as C19
+        from .d3q19 import W as W19
 
         return _LatticeSpec(19, C19.to(device), W19.to(device))
     if lattice_u == "D3Q27":
-        from .d3q27 import C as C27, W as W27
+        from .d3q27 import C as C27
+        from .d3q27 import W as W27
 
         return _LatticeSpec(27, C27.to(device), W27.to(device))
     raise IBMCapabilityWithheldError(
@@ -656,7 +656,7 @@ def _ibm_force_spread_3d_vec(
     :mod:`ibm`, using ``index_put_`` with ``accumulate=True`` for
     scatter-add.
     """
-    from .ibm import ibm_delta_hat, ibm_delta_4pt
+    from .ibm import ibm_delta_4pt, ibm_delta_hat
 
     device = marker_fx.device
     n_markers = marker_x.shape[0]
@@ -825,7 +825,7 @@ def ibm_step_correct(
     nz, ny, nx = f.shape[1:]
 
     # Guo forcing factor: (1 − 1/(2τ))
-    guo_factor = 1.0 - 1.0 / (2.0 * tau)
+    1.0 - 1.0 / (2.0 * tau)
 
     # Accumulate total marker forces for drag computation
     marker_fx_total = torch.zeros_like(ut_x)

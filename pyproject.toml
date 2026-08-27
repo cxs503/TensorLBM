@@ -10,7 +10,10 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [
-    { name = "TensorLBM Contributors", email = "tensorlbm@example.com" },
+    { name = "chuxuesen", email = "cxs503@163.com" },
+]
+maintainers = [
+    { name = "TensorLBM Contributors" },
 ]
 keywords = [
     "lattice boltzmann",
@@ -34,9 +37,16 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+# Runtime dependencies mirror requirements.txt plus einops.  torch is a hard
+# import-time dependency (the public API re-exports torch-based solvers), so it
+# must be declared here for PyPI metadata honesty.  torch>=2.0 is required by
+# the torch.compile-based fast paths.
 dependencies = [
+    "torch>=2.0",
+    "numpy",
     "matplotlib",
     "einops",
+    "tqdm",
 ]
 
 [project.urls]
@@ -47,16 +57,26 @@ Documentation = "https://github.com/cxs503/TensorLBM/tree/main/docs"
 Changelog = "https://github.com/cxs503/TensorLBM/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
+# Everything the library itself lazy-imports stays out of the hard dependency
+# list: h5py/pyyaml (dataset & config IO) and triton (fused GPU kernels) are
+# imported inside functions, so `import tensorlbm` works without them.
+io = [
+    "h5py",
+    "pyyaml",
+]
+fused = [
+    "triton",
+]
 dev = [
     "pytest",
     "pytest-cov",
     "mypy",
     "hypothesis",
-    "tqdm",
     "h5py",
     "pyyaml",
     "build",
     "ruff",
+    "pytest-timeout",
 ]
 
 [tool.setuptools]
@@ -73,20 +93,30 @@ version = {attr = "tensorlbm._version.__version__"}
 # an editable install of the sibling /root/TensorLBM checkout wins import
 # resolution and pytest can validate different code from the working tree.
 pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "slow: long-running simulation campaigns, excluded from CI (run on the GPU dev server)",
+]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Byte-frozen legacy source snapshots (guarded against their pinned git
+# revisions by tests/test_collision_d3q19_advanced.py) must never be
+# reformatted or lint-fixed.
+extend-exclude = ["tests/_legacy_snapshots"]
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "UP", "B", "C4", "SIM", "TCH", "ANN"]
+select = ["E4", "E7", "E9", "F", "I"]
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN"]
 "app/tests/**" = ["ANN"]
+"benchmarks/**" = ["E402", "E701", "E702", "E731", "E741", "F841"]
+"examples/**" = ["E402", "E701", "E702", "E731", "E741", "F841"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 ignore_missing_imports = true

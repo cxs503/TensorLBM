@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import pytest
+import torch
 
 from tensorlbm.wall_resolved_channel3d import (
     WallResolvedChannel3DConfig,
     _initial_velocity,
     run_wall_resolved_channel3d,
 )
-import torch
 
 
 def test_spectral_initialization_is_deterministic_solenoidal_and_no_slip() -> None:
@@ -37,14 +37,13 @@ def test_spectral_initialization_is_deterministic_solenoidal_and_no_slip() -> No
     assert torch.count_nonzero(uz[solid]) == 0
     assert diagnostics["total_rms_over_u_tau"] == pytest.approx(0.75, rel=2e-6)
     assert diagnostics["maximum_plane_mean_over_u_tau"] < 1e-5
-    assert diagnostics[
-        "interior_discrete_divergence_rms_over_u_tau_per_cell"
-    ] < 2e-4
+    assert diagnostics["interior_discrete_divergence_rms_over_u_tau_per_cell"] < 2e-4
     # The central-difference divergence converges to the analytic zero; the
     # residual is normalized by the perturbation velocity per lattice cell.
     base_y = torch.arange(config.ny, dtype=ux.dtype)[None, :, None]
     distance = torch.minimum(base_y - 0.5, config.height + 0.5 - base_y).clamp_min(0.0)
     from tensorlbm.spalding_wall_model import spalding_u_plus_from_y_plus
+
     base = spalding_u_plus_from_y_plus(distance * config.u_tau / config.nu) * config.u_tau
     px = ux - base.expand_as(ux)
     divergence = (
@@ -79,9 +78,12 @@ def test_channel_configuration_encodes_exact_momentum_balance(tmp_path) -> None:
     result = run_wall_resolved_channel3d(config)
     assert result["statistics"]["profile_samples"] == 2
     assert len(result["statistics"]["mean_velocity_profiles_xyz"]) == 3
-    assert len(
-        result["statistics"]["reynolds_stress_profiles_uu_vv_ww_uv"],
-    ) == 4
+    assert (
+        len(
+            result["statistics"]["reynolds_stress_profiles_uu_vv_ww_uv"],
+        )
+        == 4
+    )
     assert len(result["reports"]) == 2
     assert "crossflow_rms_over_u_tau" in result["reports"][0]
     assert "sustained_three_dimensional_fluctuations" in result["acceptance"]
@@ -162,11 +164,13 @@ def test_channel_resume_can_reset_statistics_without_resetting_flow(tmp_path) ->
         checkpoint=tmp_path / "state.ckpt",
     )
     run_wall_resolved_channel3d(WallResolvedChannel3DConfig(steps=1, **common))
-    result = run_wall_resolved_channel3d(WallResolvedChannel3DConfig(
-        steps=2,
-        resume=True,
-        reset_statistics_on_resume=True,
-        **common,
-    ))
+    result = run_wall_resolved_channel3d(
+        WallResolvedChannel3DConfig(
+            steps=2,
+            resume=True,
+            reset_statistics_on_resume=True,
+            **common,
+        )
+    )
     assert result["statistics"]["profile_samples"] == 1
     assert result["statistics"]["statistics_reset_step"] == 1

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Assess the complete sphere width-by-inlet-sponge 2x2 experiment."""
+
 from __future__ import annotations
 
 import argparse
@@ -21,10 +22,12 @@ def main() -> None:
     records = []
     for path in args.inputs:
         payload = path.read_bytes()
-        sources.append({
-            "path": str(path),
-            "sha256": hashlib.sha256(payload).hexdigest(),
-        })
+        sources.append(
+            {
+                "path": str(path),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        )
         records.append(json.loads(payload))
     result = assess_sphere_domain_inlet_factorial(records)
     result["sources"] = sources

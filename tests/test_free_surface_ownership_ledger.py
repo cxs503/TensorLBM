@@ -6,11 +6,12 @@ physical/PV closure or a solver mass correction.
 
 from __future__ import annotations
 
-import pytest
-import torch
 from dataclasses import replace
 
-from tensorlbm.d3q19 import C, equilibrium3d
+import pytest
+import torch
+
+from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID, free_surface_step
 from tensorlbm.free_surface_ownership_ledger import (
     OwnershipLedgerError,

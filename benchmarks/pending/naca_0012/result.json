@@ -1,0 +1,18 @@
+{
+  "case": "naca0012_alpha5_re1000",
+  "literature": "Kurtulus 2015 IJMAV: Re=1000 涡脱落始于 α≈8° → α=5° 稳态(与实测一致)；Cl 预期 0.2-0.35 带内",
+  "measured": {
+    "c60": {
+      "cl": 0.2326
+    },
+    "c90": {
+      "cl": 0.2488
+    },
+    "c60_re500": {
+      "cl": 0.2646
+    }
+  },
+  "analysis": "实测 Cl 落在文献带内(物理合理)但两档差 6.5% 边缘收敛(>5% 阈值)；Kurtulus 精确表值未取得(PDF 未解析)。薄翼理论 0.548 是无黏高 Re 极限不适用；技能旧引用(Ohtake&Motohashi)经 Crossref 核实为实验非数值，应废弃。需 Kurtulus PDF 精确值或提高 Re 重测",
+  "verified": false,
+  "date": "2026-08-19"
+}

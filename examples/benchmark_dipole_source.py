@@ -52,7 +52,6 @@ if _SRC not in sys.path:
 from tensorlbm.d3q19 import C, W, equilibrium3d, macroscopic3d  # noqa: E402
 from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 
-
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
@@ -177,11 +176,11 @@ def run_dipole_source(
     print(f"  网格: {nx} × {ny} × {nz}   设备: {device}")
     print(f"  声速 cs={cs:.4f}  波长 λ={lam:.1f}  波数 k={k:.4f}")
     if source_type == "density":
-        print(f"  源类型: 密度源 (软源, 两点反相)")
+        print("  源类型: 密度源 (软源, 两点反相)")
         print(f"  源A ({src_a[0]},{src_a[1]}):  ρ += {delta_rho}·sin({omega}·t)")
         print(f"  源B ({src_b[0]},{src_b[1]}):  ρ −= {delta_rho}·sin({omega}·t)")
     else:
-        print(f"  源类型: 力源 (Guo forcing, 单点)")
+        print("  源类型: 力源 (Guo forcing, 单点)")
         print(f"  力源 ({cx},{cy}):  Fx = {force_amp}·sin({omega}·t)")
     print(f"  τ={tau}  步数={steps}  吸收层宽度={sponge_width}")
     print(f"  监测点: r={monitor_r}, θ={monitor_angles}°")
@@ -303,7 +302,7 @@ def run_dipole_source(
     print(f"  指向性验证: {'PASS' if dir_pass else 'FAIL'}")
 
     # Directivity at all radii (supplementary)
-    print(f"\n  各半径指向性误差 (补充):")
+    print("\n  各半径指向性误差 (补充):")
     for r in monitor_r:
         ref = amplitudes[(r, 0)]
         errs = []
@@ -317,7 +316,7 @@ def run_dipole_source(
     # Validation 2: Radial decay (|H_1^(1)(kr)|)
     # ----------------------------------------------------------------------- #
     print("\n  --- 验证2: 径向衰减 (|H₁⁽¹⁾(kr)| 衰减) ---")
-    print(f"  固定 θ=0°, 比较 |u_r(r,0°)| 衰减与 |H₁⁽¹⁾(kr)| 衰减")
+    print("  固定 θ=0°, 比较 |u_r(r,0°)| 衰减与 |H₁⁽¹⁾(kr)| 衰减")
     print(f"  {'r':>5s}  {'|H1(kr)|':>12s}  {'归一化H1':>10s}  {'归一化测量':>12s}  {'误差':>8s}")
 
     h1_ref = abs(hankel1(1, k * monitor_r[0]))

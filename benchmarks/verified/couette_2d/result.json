@@ -1,0 +1,36 @@
+{
+  "case": "couette_2d_convergence",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "boundary": "moving wall (half-way BB) + bottom stationary, x periodic",
+  "extrap": "none",
+  "reference": "analytical u(y) = U0*y/H (linear Couette profile)",
+  "grids": {
+    "H40": {
+      "H": 40,
+      "re": 20.0,
+      "l2_rel_err": 0.000138,
+      "max_rel_err_pct": 0.0198,
+      "u_top_err_pct": 0.0021,
+      "steady": true
+    },
+    "H80": {
+      "H": 80,
+      "re": 40.0,
+      "l2_rel_err": 8.36e-05,
+      "max_rel_err_pct": 0.0146,
+      "u_top_err_pct": 0.0005,
+      "steady": true
+    }
+  },
+  "convergence": {
+    "max_rel_err": [
+      0.0198,
+      0.0146
+    ],
+    "err_decreased": true
+  },
+  "verified": true,
+  "verified_date": "2026-08-18",
+  "notes": "线性 Couette 剖面解析解对任意 Re 成立（剖面形状与 Re 无关）；H=40/80 两档网格误差单调下降 0.0198%→0.0146%，远小于 3% 阈值，真收敛真结果。运行: run.py scan /tmp/couette_scan --H 40 80 --tau 0.8 --u0 0.05"
+}

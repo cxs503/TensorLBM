@@ -102,7 +102,9 @@ def test_outlet_density_is_extrapolated_from_interior() -> None:
     out = non_equilibrium_far_field_bc_3d(f, u_in=0.0, rho_far=1.0, faces=("x+",))
     incoming = (C[:, 0] < 0).nonzero().flatten().tolist()
     feq_interior = equilibrium3d(rho[:, :, -2], zero[:, :, -2], zero[:, :, -2], zero[:, :, -2])
-    feq_far = equilibrium3d(torch.ones_like(rho[:, :, -2]), zero[:, :, -2], zero[:, :, -2], zero[:, :, -2])
+    feq_far = equilibrium3d(
+        torch.ones_like(rho[:, :, -2]), zero[:, :, -2], zero[:, :, -2], zero[:, :, -2]
+    )
     for d in incoming:
         # incoming population at the outlet == feq(rho=1.05) (interior extrapolation)
         assert torch.allclose(out[d, :, :, -1], feq_interior[d], atol=1e-7)

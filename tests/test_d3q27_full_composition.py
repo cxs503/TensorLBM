@@ -18,25 +18,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-import torch
-
-from tensorlbm.d3q27 import (
-    C as C27,
-    OPPOSITE as OPPOSITE27,
-    W as W27,
-    collide_mrt27,
-    equilibrium27,
-    macroscopic27,
-    stream27,
-)
-from tensorlbm.boundaries_d3q27 import bounce_back_cells_27
-from tensorlbm.obstacles import compute_obstacle_forces_27
 from tensorlbm.d3q27_full_composition_test import (
     D3Q27_FULL_COMPOSITION_VERSION,
     run_d3q27_full_composition_probe,
 )
-
 
 # ---------------------------------------------------------------------------
 # Probe existence and version

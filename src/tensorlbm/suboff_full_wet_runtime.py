@@ -8,15 +8,15 @@ boundary, obstacle, or full-wet solver paths.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 from hashlib import sha256
-import json
 from math import isfinite
 from typing import Any
 
 import torch
 
-from .d3q19 import C, OPPOSITE, equilibrium3d
+from .d3q19 import OPPOSITE, C, equilibrium3d
 from .force_observation import ForceObservation
 from .marine_geometry import GeometryAsset, compile_d3q19_wall_links
 from .marine_resistance_contract import build_resistance_force_contract

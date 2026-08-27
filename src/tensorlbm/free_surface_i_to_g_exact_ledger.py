@@ -15,8 +15,8 @@ delta.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import struct
+from dataclasses import dataclass
 
 import torch
 
@@ -27,7 +27,6 @@ from .core.d3q19_stencil import (
     roll_from_pull_source,
     roll_to_neighbor,
 )
-
 
 WITHHELD_NOT_REPRESENTABLE = "WITHHELD_NOT_REPRESENTABLE"
 DIAGNOSTIC_ONLY_NOT_STATE_CONSERVATION = "DIAGNOSTIC_ONLY_NOT_STATE_CONSERVATION"

@@ -21,7 +21,6 @@ from tensorlbm.perf_solver import (
     stream27_inplace,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -173,7 +172,7 @@ class TestOptimizedSolver3D:
 
     def test_d3q19_bgk_step_matches_reference(self):
         """One optimized step must match the reference collide→stream→BC loop."""
-        from tensorlbm import collide_bgk3d, stream3d, equilibrium3d
+        from tensorlbm import collide_bgk3d, equilibrium3d, stream3d
         from tensorlbm.boundaries3d import far_field_bc_3d
 
         nz, ny, nx = 4, 6, 8
@@ -205,8 +204,8 @@ class TestOptimizedSolver3D:
         assert torch.allclose(f_opt, f_ref, atol=1e-6)
 
     def test_d3q27_bgk_step_matches_reference(self):
-        from tensorlbm.d3q27 import collide_bgk27, stream27, equilibrium27
         from tensorlbm.boundaries_d3q27 import far_field_bc_27
+        from tensorlbm.d3q27 import collide_bgk27, equilibrium27, stream27
 
         nz, ny, nx = 4, 6, 8
         rho = torch.ones((nz, ny, nx))
@@ -238,7 +237,7 @@ class TestOptimizedSolver3D:
 
     def test_multi_step_stability(self):
         """Multiple optimized steps must stay finite and close to reference."""
-        from tensorlbm import collide_bgk3d, stream3d, equilibrium3d
+        from tensorlbm import collide_bgk3d, equilibrium3d, stream3d
         from tensorlbm.boundaries3d import far_field_bc_3d
 
         nz, ny, nx = 4, 6, 8
@@ -272,7 +271,7 @@ class TestOptimizedSolver3D:
 
     def test_accepts_external_collide_fn(self):
         """The solver must accept an external collide function (e.g. MRT)."""
-        from tensorlbm import collide_mrt3d, stream3d, equilibrium3d
+        from tensorlbm import collide_mrt3d, equilibrium3d, stream3d
         from tensorlbm.boundaries3d import far_field_bc_3d
 
         nz, ny, nx = 4, 6, 8
@@ -300,8 +299,8 @@ class TestOptimizedSolver3D:
 
     def test_wall_function_with_precomputed_macroscopic(self):
         """wall_function must accept pre-computed rho/ux/uy/uz from buffer."""
-        from tensorlbm import collide_bgk3d, stream3d, equilibrium3d
-        from tensorlbm.boundaries3d import far_field_bc_3d, bounce_back_cells_3d
+        from tensorlbm import collide_bgk3d, equilibrium3d, stream3d
+        from tensorlbm.boundaries3d import far_field_bc_3d
         from tensorlbm.wall_function_common import (
             compute_u_tau,
             compute_y_plus,

@@ -18,6 +18,7 @@ Loop per step::
 This runner does **not** modify any solver hot path.  Only existing
 operators are composed.
 """
+
 from __future__ import annotations
 
 import json
@@ -40,6 +41,7 @@ from .cascaded_collision import (
     collide_cascaded_d3q27,
 )
 from .cumulant import collide_cumulant_d3q27
+
 try:
     from .cumulant import collide_cumulant_d3q19
 except ImportError:
@@ -51,8 +53,8 @@ from .d3q27 import (
     correct_mass27,
     equilibrium27,
     macroscopic27,
-    stream27,
 )
+
 try:
     from .d3q27 import collide_rlbm27
 except ImportError:
@@ -61,6 +63,7 @@ try:
     from .d3q27 import collide_trt27
 except ImportError:
     collide_trt27 = None  # type: ignore[assignment]
+from .drag_pressure import SurfaceMesh, get_near_wall_3d
 from .entropic_kbc import (
     collide_kbc_d3q19,
     collide_kbc_d3q27,
@@ -71,18 +74,15 @@ from .solver3d import (
     collide_rlbm3d,
     collide_trt3d,
     correct_mass3d,
-    stream3d,
     stream3d_roll,
 )
 from .suboff_cad import SuboffHullType, build_suboff_mask
 from .suboff_resistance import _voxel_wetted_area
 from .wall_function_common import (
-    _near_wall_mask,
     compute_u_tau,
     compute_y_plus,
     wall_function,
 )
-from .drag_pressure import SurfaceMesh, drag_pressure_integration, drag_friction_integration, get_near_wall_3d
 
 __all__ = [
     "SuboffWallFnFullGridConfig",
@@ -132,6 +132,7 @@ COMBINATIONS: list[tuple[str, str]] = [
 # Configuration
 # --------------------------------------------------------------------------- #
 
+
 @dataclass(frozen=True)
 class SuboffWallFnFullGridConfig:
     """Configuration for a single SUBOFF wall-function full-grid run.
@@ -159,13 +160,10 @@ class SuboffWallFnFullGridConfig:
 
     def __post_init__(self) -> None:
         if self.lattice.upper() not in LATTICES:
-            raise ValueError(
-                f"lattice must be one of {LATTICES}; got {self.lattice!r}"
-            )
+            raise ValueError(f"lattice must be one of {LATTICES}; got {self.lattice!r}")
         if self.collision.upper() not in COLLISION_FAMILIES:
             raise ValueError(
-                f"collision must be one of {COLLISION_FAMILIES}; "
-                f"got {self.collision!r}"
+                f"collision must be one of {COLLISION_FAMILIES}; got {self.collision!r}"
             )
         if self.wall_law not in ("log", "reichardt", "gradient", "hybrid"):
             raise ValueError(
@@ -202,33 +200,33 @@ class SuboffWallFnFullGridConfig:
 
 # D3Q27 velocity vectors matching d3q27.py _C_DATA ordering.
 _D3Q27_SHIFTS: list[tuple[int, int, int]] = [
-    (0, 0, 0),        #  0: rest
-    (1, 0, 0),        #  1: +x
-    (-1, 0, 0),       #  2: -x
-    (0, 1, 0),        #  3: +y
-    (0, -1, 0),       #  4: -y
-    (0, 0, 1),        #  5: +z
-    (0, 0, -1),       #  6: -z
-    (1, 1, 0),        #  7: +x+y
-    (-1, 1, 0),       #  8: -x+y
-    (1, -1, 0),       #  9: +x-y
-    (-1, -1, 0),      # 10: -x-y
-    (1, 0, 1),        # 11: +x+z
-    (-1, 0, 1),       # 12: -x+z
-    (1, 0, -1),       # 13: +x-z
-    (-1, 0, -1),      # 14: -x-z
-    (0, 1, 1),        # 15: +y+z
-    (0, -1, 1),       # 16: -y+z
-    (0, 1, -1),       # 17: +y-z
-    (0, -1, -1),      # 18: -y-z
-    (1, 1, 1),        # 19: +x+y+z
-    (-1, 1, 1),       # 20: -x+y+z
-    (1, -1, 1),       # 21: +x-y+z
-    (-1, -1, 1),      # 22: -x-y+z
-    (1, 1, -1),       # 23: +x+y-z
-    (-1, 1, -1),      # 24: -x+y-z
-    (1, -1, -1),      # 25: +x-y-z
-    (-1, -1, -1),     # 26: -x-y-z
+    (0, 0, 0),  #  0: rest
+    (1, 0, 0),  #  1: +x
+    (-1, 0, 0),  #  2: -x
+    (0, 1, 0),  #  3: +y
+    (0, -1, 0),  #  4: -y
+    (0, 0, 1),  #  5: +z
+    (0, 0, -1),  #  6: -z
+    (1, 1, 0),  #  7: +x+y
+    (-1, 1, 0),  #  8: -x+y
+    (1, -1, 0),  #  9: +x-y
+    (-1, -1, 0),  # 10: -x-y
+    (1, 0, 1),  # 11: +x+z
+    (-1, 0, 1),  # 12: -x+z
+    (1, 0, -1),  # 13: +x-z
+    (-1, 0, -1),  # 14: -x-z
+    (0, 1, 1),  # 15: +y+z
+    (0, -1, 1),  # 16: -y+z
+    (0, 1, -1),  # 17: +y-z
+    (0, -1, -1),  # 18: -y-z
+    (1, 1, 1),  # 19: +x+y+z
+    (-1, 1, 1),  # 20: -x+y+z
+    (1, -1, 1),  # 21: +x-y+z
+    (-1, -1, 1),  # 22: -x-y+z
+    (1, 1, -1),  # 23: +x+y-z
+    (-1, 1, -1),  # 24: -x+y-z
+    (1, -1, -1),  # 25: +x-y-z
+    (-1, -1, -1),  # 26: -x-y-z
 ]
 
 
@@ -254,6 +252,7 @@ def stream27_roll(f: torch.Tensor) -> torch.Tensor:
 # --------------------------------------------------------------------------- #
 # Lattice dispatch helpers
 # --------------------------------------------------------------------------- #
+
 
 def _macroscopic(lattice: str, f: torch.Tensor):
     """Dispatch to the correct macroscopic function."""
@@ -304,6 +303,7 @@ def _correct_mass(lattice: str, f, target_mass):
 # --------------------------------------------------------------------------- #
 # Collision dispatch
 # --------------------------------------------------------------------------- #
+
 
 def _collide(
     lattice: str,
@@ -364,6 +364,7 @@ def _collide(
 # Drag computation (wall-function based)
 # --------------------------------------------------------------------------- #
 
+
 def _compute_drags(
     f: torch.Tensor,
     solid: torch.Tensor,
@@ -389,16 +390,12 @@ def _compute_drags(
     # Friction drag: Σ τ_w · (u_x / |u|) · near
     tau_w = u_tau * u_tau
     inv_umag = 1.0 / u_mag
-    drag_fric = float(
-        (tau_w * (ux * inv_umag) * mesh.near.to(f.dtype)).sum().item()
-    )
+    drag_fric = float((tau_w * (ux * inv_umag) * mesh.near.to(f.dtype)).sum().item())
 
     # Pressure drag using SurfaceMesh normals
     p = (rho - 1.0) / 3.0
     # Use mesh.nx_n (x-component of outward normal)
-    drag_pres = float(
-        (p * mesh.nx_n * mesh.dA).sum().item()
-    )
+    drag_pres = float((p * mesh.nx_n * mesh.dA).sum().item())
 
     return drag_fric, drag_pres
 
@@ -406,6 +403,7 @@ def _compute_drags(
 # --------------------------------------------------------------------------- #
 # Runner
 # --------------------------------------------------------------------------- #
+
 
 def run_suboff_wallfn_fullgrid(
     config: SuboffWallFnFullGridConfig | None = None,
@@ -449,6 +447,7 @@ def run_suboff_wallfn_fullgrid(
     near = get_near_wall_3d(solid)
     # Compute max radius from SUBOFF geometry ratio (R/L ≈ 1/(2×8.57))
     from .suboff_cad import SuboffConfig
+
     suboff_config = SuboffConfig()
     max_radius = suboff_config.r_over_l * config.hull_length
     mesh = SurfaceMesh.from_suboff(solid, near, cx, cy, cz, config.hull_length, max_radius)
@@ -462,7 +461,7 @@ def run_suboff_wallfn_fullgrid(
     # Wetted area and dynamic pressure for Ct normalization
     wetted_area = _voxel_wetted_area(solid, 1.0)
     rho_lu = 1.0
-    dynamic_pressure = 0.5 * rho_lu * config.u_in ** 2 * wetted_area
+    dynamic_pressure = 0.5 * rho_lu * config.u_in**2 * wetted_area
 
     # --- 2. Initialize populations (on CPU, move to device) ---
     rho0 = torch.ones((config.nz, config.ny, config.nx))
@@ -497,7 +496,10 @@ def run_suboff_wallfn_fullgrid(
 
         # Compute friction velocity from log-law
         u_tau = compute_u_tau(
-            u_mag, nu, y_val=config.y_val, wall_law=config.wall_law,
+            u_mag,
+            nu,
+            y_val=config.y_val,
+            wall_law=config.wall_law,
         )
         y_plus = compute_y_plus(u_tau, nu, y_val=config.y_val)
 
@@ -506,8 +508,13 @@ def run_suboff_wallfn_fullgrid(
 
         # Apply wall function (Guo body force on near-wall cells)
         f = wall_function(
-            f, solid, u_tau, y_plus,
-            lattice=lattice, nu=nu, y_val=config.y_val,
+            f,
+            solid,
+            u_tau,
+            y_plus,
+            lattice=lattice,
+            nu=nu,
+            y_val=config.y_val,
         )
 
         # 4. Far-field BC (free-stream on inlet + lateral faces, zero-grad outlet)
@@ -521,18 +528,22 @@ def run_suboff_wallfn_fullgrid(
         ct_pres = drag_pres / dynamic_pressure if dynamic_pressure > 0 else 0.0
         ct_total = ct_fric + ct_pres
 
-        force_series.append({
-            "step": step,
-            "drag_fric": drag_fric,
-            "drag_pres": drag_pres,
-            "drag_total": drag_fric + drag_pres,
-        })
-        ct_series.append({
-            "step": step,
-            "ct_fric": ct_fric,
-            "ct_pres": ct_pres,
-            "ct_total": ct_total,
-        })
+        force_series.append(
+            {
+                "step": step,
+                "drag_fric": drag_fric,
+                "drag_pres": drag_pres,
+                "drag_total": drag_fric + drag_pres,
+            }
+        )
+        ct_series.append(
+            {
+                "step": step,
+                "ct_fric": ct_fric,
+                "ct_pres": ct_pres,
+                "ct_total": ct_total,
+            }
+        )
 
         # Mass correction every 100 steps
         if step % 100 == 0:
@@ -548,14 +559,8 @@ def run_suboff_wallfn_fullgrid(
     # --- 4. Build artifact ---
     # Use time-averaged Ct over last 50% of steps (after warmup)
     warmup = max(1, config.n_steps // 2)
-    ct_fric_avg = (
-        sum(e["ct_fric"] for e in ct_series[warmup:]) /
-        max(len(ct_series[warmup:]), 1)
-    )
-    ct_pres_avg = (
-        sum(e["ct_pres"] for e in ct_series[warmup:]) /
-        max(len(ct_series[warmup:]), 1)
-    )
+    ct_fric_avg = sum(e["ct_fric"] for e in ct_series[warmup:]) / max(len(ct_series[warmup:]), 1)
+    ct_pres_avg = sum(e["ct_pres"] for e in ct_series[warmup:]) / max(len(ct_series[warmup:]), 1)
     ct_total_avg = ct_fric_avg + ct_pres_avg
 
     artifact: dict[str, Any] = {

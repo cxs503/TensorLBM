@@ -428,8 +428,7 @@ def _natural_kbc_gamma(
     denominator = (higher_delta.square() * inverse_equilibrium).sum(dim=0)
     gamma = torch.where(
         denominator > 1.0e-30,
-        1.0 / beta
-        - (2.0 - 1.0 / beta) * numerator / denominator.clamp_min(1.0e-30),
+        1.0 / beta - (2.0 - 1.0 / beta) * numerator / denominator.clamp_min(1.0e-30),
         torch.full_like(denominator, 2.0),
     )
 
@@ -481,11 +480,7 @@ def _collide_natural_kbc_d3q19_unchecked(
         remaining_delta,
         beta,
     )
-    return (
-        f
-        - 2.0 * beta * shear_delta
-        - beta * gamma.unsqueeze(0) * remaining_delta
-    )
+    return f - 2.0 * beta * shear_delta - beta * gamma.unsqueeze(0) * remaining_delta
 
 
 def collide_natural_kbc_d3q19(

@@ -32,7 +32,7 @@ Liu, H.-L. & Huang, T.T. (1998) "Summary of DARPA SUBOFF experimental
 from __future__ import annotations
 
 import math
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import torch
@@ -256,11 +256,9 @@ def resistance_breakdown_3d(
         Dictionary with keys ``CT``, ``Cf``, ``Cp``, ``F_total_lu``,
         ``F_viscous_lu``, ``F_pressure_lu``, ``area_ref_lu2``.
     """
-    from .d3q19 import C as _C3D, equilibrium3d  # noqa: PLC0415
     from .obstacles import compute_obstacle_forces_3d  # noqa: PLC0415
 
     nz, ny, nx = rho.shape
-    device = f.device
 
     # --- Total drag force (x-direction) via momentum exchange ---
     Fx_total, _, _ = compute_obstacle_forces_3d(f, mask)
@@ -289,7 +287,7 @@ def resistance_breakdown_3d(
     s = mask.float()
     nx_norm = torch.zeros_like(s)
     nx_norm[:, :, 1:-1] = (s[:, :, 2:] - s[:, :, :-2]) / 2.0
-    mag = torch.sqrt(
+    torch.sqrt(
         nx_norm**2
         + ((s[:, 2:, :] - s[:, :-2, :]) / 2.0).new_zeros(nz, ny, nx) ** 2
         + ((s[2:, :, :] - s[:-2, :, :]) / 2.0).new_zeros(nz, ny, nx) ** 2
@@ -371,7 +369,6 @@ def pressure_coefficient_hull_3d(
     """
     _nz, ny, nx = rho.shape
     q_ref = _q_ref(rho_ref, u_ref)
-    import torch  # noqa: PLC0415
 
     surf = _hull_surface_cells(mask)
 
@@ -403,7 +400,7 @@ def pressure_coefficient_hull_3d(
         cp_mean_list.append(float(cp_vals.mean().item()))
 
         # Top (maximum y-index) and bottom (minimum y-index) surface cells
-        surf_rows = surf_slice.any(dim=0)  # (ny,) – cols with any surface cell
+        surf_slice.any(dim=0)  # (ny,) – cols with any surface cell
         y_indices = surf_slice.nonzero(as_tuple=False)[:, 1]  # ny indices
         if y_indices.numel() > 0:
             y_top = int(y_indices.max().item())
@@ -474,7 +471,6 @@ def skin_friction_hull_3d(
         Dictionary with keys ``x_over_L``, ``Cf_mean``, ``Cf_max``,
         ``Cf_integrated`` (area-averaged total Cf), ``wss_mean``, ``wss_max``.
     """
-    import torch  # noqa: PLC0415
     from .wall_shear import wss_from_fneq_3d  # noqa: PLC0415
 
     q_ref = _q_ref(rho_ref, u_ref)
@@ -497,7 +493,7 @@ def skin_friction_hull_3d(
         cf_mean_list.append(float((wss_vals.mean() / q_ref).item()))
 
     surf_wss = wss[surf]
-    n_surf = float(surf.sum().item()) or 1.0
+    float(surf.sum().item()) or 1.0
     wss_mean = float(surf_wss.mean().item()) if surf_wss.numel() > 0 else 0.0
     wss_max = float(surf_wss.max().item()) if surf_wss.numel() > 0 else 0.0
 
@@ -755,7 +751,7 @@ def wake_profile_3d(
 
     u_slice = ux[:, :, xi]  # (nz, ny)
     m_slice = mask[:, :, xi]
-    fluid = (~m_slice).float()
+    (~m_slice).float()
 
     # Find hull axis (centroid of solid mask at this station, or midplane)
     if m_slice.any():
@@ -907,6 +903,7 @@ def yplus_hull_3d(
         ``y_plus_global_mean``, ``y_plus_global_max``.
     """
     import torch  # noqa: PLC0415
+
     from .wall_shear import wss_from_fneq_3d  # noqa: PLC0415
 
     if nu_lu is None:

@@ -8,7 +8,6 @@ from tensorlbm.phasefield.evolution_stream_loop import (
     collision_then_adapter_stream,
     run_free_energy_adapter_stream_loop,
 )
-from tensorlbm.phasefield.stream_boundary_contract import stream_free_energy_adapter
 
 
 def test_one_step_uses_real_lazy_collision_then_applies_adapter_stream(monkeypatch):

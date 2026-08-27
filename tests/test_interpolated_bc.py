@@ -74,7 +74,8 @@ class TestBouzidiBounceBack:
             atol=1e-5,
         )
         assert torch.equal(
-            f_out[direction][fluid_nodes], f[direction][fluid_nodes],
+            f_out[direction][fluid_nodes],
+            f[direction][fluid_nodes],
         )
 
     def test_linear_branch_q_less_than_half(self) -> None:
@@ -212,7 +213,8 @@ class TestBouzidiBounceBack3D:
             atol=1e-5,
         )
         assert torch.equal(
-            f_out[direction][fluid_nodes], f[direction][fluid_nodes],
+            f_out[direction][fluid_nodes],
+            f[direction][fluid_nodes],
         )
 
     def test_with_compute_q_sphere_finite(self) -> None:

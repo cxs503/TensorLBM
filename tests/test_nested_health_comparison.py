@@ -20,16 +20,20 @@ def _record(
         "step": step,
         "target_reynolds_reached": step >= 2,
         "maximum_collision_limited_fraction": limiter,
-        "levels": [{
-            "finite": True,
-            "maximum_speed": speed,
-            "minimum_population": population,
-        }],
-        "interfaces": [{
-            "maximum_reflux_residual": 1.0e-10 * step,
-            "raw_mass_mismatch": raw_mass_mismatch,
-            "raw_momentum_mismatch_norm": raw_momentum_mismatch,
-        }],
+        "levels": [
+            {
+                "finite": True,
+                "maximum_speed": speed,
+                "minimum_population": population,
+            }
+        ],
+        "interfaces": [
+            {
+                "maximum_reflux_residual": 1.0e-10 * step,
+                "raw_mass_mismatch": raw_mass_mismatch,
+                "raw_momentum_mismatch_norm": raw_momentum_mismatch,
+            }
+        ],
     }
 
 
@@ -43,11 +47,13 @@ def test_health_log_reader_ignores_reports_and_partial_json(tmp_path) -> None:
         encoding="utf-8",
     )
 
-    assert read_nested_health_log(path) == [{
-        "step": 1,
-        "levels": [],
-        "interfaces": [],
-    }]
+    assert read_nested_health_log(path) == [
+        {
+            "step": 1,
+            "levels": [],
+            "interfaces": [],
+        }
+    ]
 
 
 def test_comparison_aligns_steps_and_reports_worst_and_latest_ratios() -> None:
@@ -98,11 +104,15 @@ def test_comparison_reports_aligned_instability_onset() -> None:
 
 def test_comparison_reports_raw_conserved_interface_mismatch() -> None:
     baseline = [_record(1, 0.08, 0.02, raw_mass_mismatch=0.2)]
-    candidate = [_record(
-        1, 0.08, 0.02,
-        raw_mass_mismatch=0.1,
-        raw_momentum_mismatch=0.03,
-    )]
+    candidate = [
+        _record(
+            1,
+            0.08,
+            0.02,
+            raw_mass_mismatch=0.1,
+            raw_momentum_mismatch=0.03,
+        )
+    ]
 
     comparison = compare_nested_health(baseline, candidate)
 

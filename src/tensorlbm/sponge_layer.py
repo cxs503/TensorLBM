@@ -9,6 +9,7 @@ preserving the local non-equilibrium stress content:
 The construction follows the absorbing-layer form used in mature LBM
 implementations, with a C2-continuous fifth-order strength ramp.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -72,8 +73,12 @@ def build_anisotropic_sponge_sigma_3d(
         if width == 0:
             continue
         face_sigma = build_sponge_sigma_3d(
-            shape, width=width, max_strength=max_strength,
-            device=device, dtype=dtype, faces=(face,),
+            shape,
+            width=width,
+            max_strength=max_strength,
+            device=device,
+            dtype=dtype,
+            faces=(face,),
         )
         sigma = torch.maximum(sigma, face_sigma)
     return sigma
@@ -91,9 +96,11 @@ def apply_equilibrium_difference_sponge(
         raise ValueError("sigma must have the spatial population shape")
     if f.shape[0] == 19:
         from .d3q19 import equilibrium3d, macroscopic3d
+
         equilibrium, macro = equilibrium3d, macroscopic3d
     elif f.shape[0] == 27:
         from .d3q27 import equilibrium27, macroscopic27
+
         equilibrium, macro = equilibrium27, macroscopic27
     else:
         raise ValueError("only D3Q19 and D3Q27 are supported")

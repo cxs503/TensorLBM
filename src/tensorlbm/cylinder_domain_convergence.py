@@ -1,4 +1,5 @@
 """Fail-closed lateral-domain convergence for the Re=100 cylinder."""
+
 from __future__ import annotations
 
 import math
@@ -9,11 +10,24 @@ if TYPE_CHECKING:
 
 
 _IDENTITY_FIELDS = (
-    "schema_version", "radius", "center_x_fraction", "reynolds",
-    "lattice_speed", "collision_model", "warmup_steps", "ramp_steps",
-    "sponge_width", "sponge_strength", "sponge_inlet", "cv_margin",
-    "far_field_mode", "periodic_axes", "link_force_frame", "steps",
-    "report_interval", "statistics_window_steps_resolved",
+    "schema_version",
+    "radius",
+    "center_x_fraction",
+    "reynolds",
+    "lattice_speed",
+    "collision_model",
+    "warmup_steps",
+    "ramp_steps",
+    "sponge_width",
+    "sponge_strength",
+    "sponge_inlet",
+    "cv_margin",
+    "far_field_mode",
+    "periodic_axes",
+    "link_force_frame",
+    "steps",
+    "report_interval",
+    "statistics_window_steps_resolved",
     "minimum_shedding_cycles",
 )
 
@@ -23,12 +37,8 @@ _STREAMWISE_IDENTITY_FIELDS = tuple(
 
 
 def _monotonic(values: Sequence[float]) -> bool:
-    differences = [
-        right - left for left, right in zip(values, values[1:], strict=False)
-    ]
-    return all(value >= 0.0 for value in differences) or all(
-        value <= 0.0 for value in differences
-    )
+    differences = [right - left for left, right in zip(values, values[1:], strict=False)]
+    return all(value >= 0.0 for value in differences) or all(value <= 0.0 for value in differences)
 
 
 def _relative_change(previous: float, finest: float) -> float:
@@ -77,13 +87,15 @@ def assess_cylinder_domain_convergence(
             raise ValueError("each record needs a three-dimensional shape_zyx")
         radius = float(configuration["radius"])
         lateral_width_diameters = float(shape[1]) / (2.0 * radius)
-        parsed.append((
-            lateral_width_diameters,
-            float(result["cd_control_volume"]),
-            float(result["strouhal"]),
-            configuration,
-            result,
-        ))
+        parsed.append(
+            (
+                lateral_width_diameters,
+                float(result["cd_control_volume"]),
+                float(result["strouhal"]),
+                configuration,
+                result,
+            )
+        )
         source_quality &= acceptance.get("numerical_quality_admitted") is True
     parsed.sort(key=lambda item: item[0])
     widths = [item[0] for item in parsed]
@@ -106,19 +118,28 @@ def assess_cylinder_domain_convergence(
         for *_, configuration, _ in parsed[1:]
         for axis in (0, 2)
     )
-    recorded_lateral_clearances = [
-        float(configuration["domain_clearance_diameters"]["lateral_center_distance"])
-        for *_, configuration, _ in parsed
-    ] if required_present else []
+    recorded_lateral_clearances = (
+        [
+            float(configuration["domain_clearance_diameters"]["lateral_center_distance"])
+            for *_, configuration, _ in parsed
+        ]
+        if required_present
+        else []
+    )
     clearance_consistent = required_present and all(
         math.isclose(clearance, width / 2.0, rel_tol=0.0, abs_tol=1.0e-12)
         for clearance, width in zip(
-            recorded_lateral_clearances, widths, strict=True,
+            recorded_lateral_clearances,
+            widths,
+            strict=True,
         )
     )
     provenance_admitted = (
-        schema_valid and required_present and identity_equal
-        and fixed_axes_equal and clearance_consistent
+        schema_valid
+        and required_present
+        and identity_equal
+        and fixed_axes_equal
+        and clearance_consistent
     )
 
     cd_values = [item[1] for item in parsed]
@@ -135,12 +156,15 @@ def assess_cylinder_domain_convergence(
     cd_monotonic = _monotonic(cd_values)
     st_monotonic = _monotonic(st_values)
     domain_change_admitted = (
-        cd_monotonic and st_monotonic
+        cd_monotonic
+        and st_monotonic
         and cd_change <= maximum_finest_domain_change_pct
         and st_change <= maximum_finest_domain_change_pct
     )
     admitted = (
-        provenance_admitted and source_quality and references_invariant
+        provenance_admitted
+        and source_quality
+        and references_invariant
         and domain_change_admitted
         and cd_reference_error <= maximum_reference_error_pct
         and st_reference_error <= maximum_reference_error_pct
@@ -199,15 +223,21 @@ def assess_cylinder_streamwise_clearance_pair(
         configuration = record.get("configuration")
         result = record.get("result")
         acceptance = record.get("acceptance")
-        if not all(isinstance(value, dict) for value in (
-            configuration, result, acceptance,
-        )):
+        if not all(
+            isinstance(value, dict)
+            for value in (
+                configuration,
+                result,
+                acceptance,
+            )
+        ):
             raise ValueError("each record needs configuration/result/acceptance")
         assert isinstance(configuration, dict)
         assert isinstance(result, dict)
         assert isinstance(acceptance, dict)
         missing = [
-            field for field in (
+            field
+            for field in (
                 *_STREAMWISE_IDENTITY_FIELDS,
                 "center_x_fraction",
                 "shape_zyx",
@@ -235,32 +265,35 @@ def assess_cylinder_streamwise_clearance_pair(
         }
         clearance_consistent = all(
             math.isclose(
-                float(clearance[key]), value, rel_tol=0.0, abs_tol=1.0e-12,
+                float(clearance[key]),
+                value,
+                rel_tol=0.0,
+                abs_tol=1.0e-12,
             )
             for key, value in expected.items()
         )
-        parsed.append({
-            "configuration": configuration,
-            "shape": shape,
-            "clearance": {key: float(clearance[key]) for key in expected},
-            "clearance_consistent": clearance_consistent,
-            "cd_control_volume": float(result["cd_control_volume"]),
-            "strouhal": float(result["strouhal"]),
-            "cd_reference": float(result["cd_reference"]),
-            "strouhal_reference": float(result["strouhal_reference"]),
-            "numerical_quality_admitted": (
-                acceptance.get("numerical_quality_admitted") is True
-            ),
-        })
+        parsed.append(
+            {
+                "configuration": configuration,
+                "shape": shape,
+                "clearance": {key: float(clearance[key]) for key in expected},
+                "clearance_consistent": clearance_consistent,
+                "cd_control_volume": float(result["cd_control_volume"]),
+                "strouhal": float(result["strouhal"]),
+                "cd_reference": float(result["cd_reference"]),
+                "strouhal_reference": float(result["strouhal_reference"]),
+                "numerical_quality_admitted": (
+                    acceptance.get("numerical_quality_admitted") is True
+                ),
+            }
+        )
 
     base, expanded = parsed
     identity_equal = all(
         base["configuration"][field] == expanded["configuration"][field]
         for field in _STREAMWISE_IDENTITY_FIELDS
     )
-    fixed_transverse_axes = all(
-        base["shape"][axis] == expanded["shape"][axis] for axis in (0, 1)
-    )
+    fixed_transverse_axes = all(base["shape"][axis] == expanded["shape"][axis] for axis in (0, 1))
     lateral_clearance_equal = math.isclose(
         base["clearance"]["lateral_center_distance"],
         expanded["clearance"]["lateral_center_distance"],
@@ -280,9 +313,7 @@ def assess_cylinder_streamwise_clearance_pair(
         for record in parsed
         for field in ("cd_control_volume", "strouhal")
     )
-    both_healthy = all(
-        bool(record["numerical_quality_admitted"]) for record in parsed
-    )
+    both_healthy = all(bool(record["numerical_quality_admitted"]) for record in parsed)
     causal_pair_admitted = (
         identity_equal
         and fixed_transverse_axes
@@ -295,9 +326,7 @@ def assess_cylinder_streamwise_clearance_pair(
     )
 
     def change(field: str) -> float:
-        return (
-            float(expanded[field]) / float(base[field]) - 1.0
-        ) * 100.0
+        return (float(expanded[field]) / float(base[field]) - 1.0) * 100.0
 
     return {
         "schema": "tensorlbm-cylinder-streamwise-clearance-pair-v1",
@@ -319,9 +348,7 @@ def assess_cylinder_streamwise_clearance_pair(
         },
         "acceptance": {
             "configuration_identity_admitted": identity_equal,
-            "transverse_domain_invariant": (
-                fixed_transverse_axes and lateral_clearance_equal
-            ),
+            "transverse_domain_invariant": (fixed_transverse_axes and lateral_clearance_equal),
             "recorded_clearances_match_shape": all(
                 bool(record["clearance_consistent"]) for record in parsed
             ),

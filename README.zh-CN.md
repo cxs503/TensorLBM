@@ -2,7 +2,11 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-TensorLBM 是一个以 CPU 为首要目标的 PyTorch 格子玻尔兹曼方法 (LBM) 平台，专注于**可复现的研究实验**，并提供清晰的扩展接口。
+[![CI](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml/badge.svg)](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://github.com/cxs503/TensorLBM)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
+
+TensorLBM 是一个面向 **AI4S（AI for Science）** 的综合平台，以 PyTorch LBM 求解器为核心，提供从仿真数据生产、模型训练到推理服务的闭环能力，并保持可复现的工程与科研工作流。
 
 ## 文档
 
@@ -55,7 +59,7 @@ link-force/Ct window adapter。它不重构、合成或重置 populations，也�
 
 ## 可部署 Web 平台（中英双语）
 
-`platform/` 目录提供了一个可部署的 B/S 平台，具备以下功能：
+`app/` 目录提供了一个可部署的 B/S 平台，具备以下功能：
 
 - **前处理**：多边形障碍物掩码生成、随机多孔介质掩码、LBM 单位换算
 - **求解器**：提交 10 余种仿真任务（圆柱绕流、方腔流、湍流通道、多相流、船体阻力等）
@@ -63,6 +67,7 @@ link-force/Ct window adapter。它不重构、合成或重置 populations，也�
 - **基准测试**：与已发表参考数据进行定量比较
 - **船体 CAD**：Wigley / Series 60 / KCS 船体预览、掩码生成与仿真提交
 - **AI 助手**：自然语言驱动的仿真工作流（支持中文指令）
+- **AI4S 应用管理**：统一管理神经算子、PINN、GNN、生成式等应用并接入平台服务
 
 ### 双语界面
 

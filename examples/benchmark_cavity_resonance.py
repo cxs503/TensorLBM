@@ -77,7 +77,7 @@ _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d  # noqa: E402
+from tensorlbm.d3q19 import equilibrium3d  # noqa: E402
 from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 
 # On high-core-count machines PyTorch defaults to using *all* cores, which
@@ -401,7 +401,7 @@ def run_mode(
     print(f"  τ               : {tau}", flush=True)
     print(f"  ν = (τ−½)/3     : {nu:.6f}", flush=True)
     print(f"  c_s = 1/√3      : {cs:.6f}", flush=True)
-    print(f"  边界条件        : 四壁反弹回 (half-way bounce-back)", flush=True)
+    print("  边界条件        : 四壁反弹回 (half-way bounce-back)", flush=True)
     print(f"  监测点          : ({mx}, {my})", flush=True)
     print(f"  步数            : {n_steps}", flush=True)
     print(f"  设备            : {dev}", flush=True)
@@ -494,7 +494,7 @@ def run_mode(
     )
     print(f"  频率分辨率 Δf     : {1.0 / n_steps:.6f} /步", flush=True)
     print(f"  误差              : {error_pct:.2f} %", flush=True)
-    print(f"  阈值              : 5.00 %", flush=True)
+    print("  阈值              : 5.00 %", flush=True)
     status = "✓ PASS" if error_pct < 5.0 else "✗ FAIL"
     print(f"  状态              : {status}", flush=True)
     print("=" * 72, flush=True)

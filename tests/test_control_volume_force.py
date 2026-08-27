@@ -58,14 +58,23 @@ def test_large_float32_cv_accumulates_local_change_before_reduction() -> None:
     old = torch.full((19, *shape), 0.055, dtype=torch.float32)
     new = old.clone()
     cv = box_control_volume(
-        shape, x0=2, x1=128, y0=2, y1=128, z0=0, z1=3,
+        shape,
+        x0=2,
+        x1=128,
+        y0=2,
+        y1=128,
+        z0=0,
+        z1=3,
         periodic_axes=("z",),
     )
     new[1, cv] += 1.0e-7
     expected = (new[1, cv] - old[1, cv]).sum(dtype=torch.float64)
 
     stable = fluid_momentum_change(
-        old, new, cv, periodic_axes=("z",),
+        old,
+        new,
+        cv,
+        periodic_axes=("z",),
     )[0]
     assert stable.item() == pytest.approx(float(expected), abs=1e-14)
 
@@ -76,7 +85,13 @@ def test_directionwise_observers_match_q_wide_reference() -> None:
     old = 0.02 + torch.rand((19, *shape), dtype=torch.float64)
     new = old + 1.0e-6 * torch.randn_like(old)
     cv = box_control_volume(
-        shape, x0=2, x1=7, y0=2, y1=5, z0=2, z1=4,
+        shape,
+        x0=2,
+        x1=7,
+        y0=2,
+        y1=5,
+        z0=2,
+        z1=4,
     )
     solid = torch.zeros(shape, dtype=torch.bool)
     solid[2, 3, 4] = True
@@ -91,10 +106,16 @@ def test_directionwise_observers_match_q_wide_reference() -> None:
     actual_change = fluid_momentum_change(old, new, cv, solid=solid)
 
     torch.testing.assert_close(
-        actual_momentum, expected_momentum, rtol=0.0, atol=2.0e-14,
+        actual_momentum,
+        expected_momentum,
+        rtol=0.0,
+        atol=2.0e-14,
     )
     torch.testing.assert_close(
-        actual_change, expected_change, rtol=0.0, atol=2.0e-20,
+        actual_change,
+        expected_change,
+        rtol=0.0,
+        atol=2.0e-20,
     )
 
 
@@ -119,12 +140,22 @@ def test_periodic_axis_control_volume_may_span_complete_axis() -> None:
     shape = (3, 9, 11)
     f = _state(shape=shape)
     cv = box_control_volume(
-        shape, x0=2, x1=8, y0=2, y1=7, z0=0, z1=3,
+        shape,
+        x0=2,
+        x1=8,
+        y0=2,
+        y1=7,
+        z0=0,
+        z1=3,
         periodic_axes=("z",),
     )
     streamed = stream3d(f)
     result = observe_control_volume_force(
-        f, streamed, f, cv, periodic_axes=("z",),
+        f,
+        streamed,
+        f,
+        cv,
+        periodic_axes=("z",),
     )
     assert torch.allclose(result.force_on_body, torch.zeros(3, dtype=f.dtype), atol=1e-14)
 
@@ -135,7 +166,8 @@ def test_nested_control_volume_assessment_requires_two_consistent_observers() ->
     assert assessment.meets(1.0)
     assert not assess_nested_control_volume_invariance(100.0, [100.1]).meets(1.0)
     assert not assess_nested_control_volume_invariance(
-        100.0, [float("nan"), 100.0],
+        100.0,
+        [float("nan"), 100.0],
     ).meets(1.0)
 
 
@@ -155,7 +187,14 @@ def test_curved_moving_slip_impulse_is_invariant_across_nested_control_volumes()
     old = equilibrium3d(rho, ux, zero, zero)
     solid = sphere_mask(nx, ny, nz, cx, cy, cz, radius, device=torch.device("cpu"))
     masks, q = compute_q_sphere(
-        nx, ny, nz, cx, cy, cz, radius, device=torch.device("cpu"),
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        radius,
+        device=torch.device("cpu"),
     )
     nx_n, ny_n, nz_n = compute_bfl_link_normal(masks)
     normal_speed = ux * nx_n
@@ -165,8 +204,13 @@ def test_curved_moving_slip_impulse_is_invariant_across_nested_control_volumes()
         -normal_speed * nz_n,
     )
     new, bfl_force = bouzidi_bounce_back_d3q19(
-        old.clone(), old, masks, q,
-        wall_velocity=wall_velocity, wall_density=rho, return_force=True,
+        old.clone(),
+        old,
+        masks,
+        q,
+        wall_velocity=wall_velocity,
+        wall_density=rho,
+        return_force=True,
     )
     tight = box_control_volume(shape, x0=9, x1=28, y0=7, y1=26, z0=7, z1=26)
     wide = box_control_volume(shape, x0=6, x1=31, y0=4, y1=29, z0=4, z1=29)

@@ -16,7 +16,6 @@ from copy import deepcopy
 
 import torch
 
-from .d3q19 import C, W, equilibrium3d, macroscopic3d
 from .boundaries3d import bounce_back_cells_3d, free_slip_cells_3d
 from .core.d3q19_stencil import (
     D3Q19_MOVING_Q,
@@ -26,7 +25,20 @@ from .core.d3q19_stencil import (
     roll_from_pull_source,
     roll_to_neighbor,
 )
-from .solver3d import stream3d as _stream3d
+from .d3q19 import C, W, equilibrium3d, macroscopic3d
+from .free_surface_inventory_reconciliation import (
+    CANONICAL_STAGE_ORDER,
+    inventory_measurement,
+    inventory_stage_deltas,
+)
+from .free_surface_topology_transaction import (
+    TopologyTransactionError,
+    build_i_to_g_ownership_transaction,
+    build_topology_transaction,
+    capture_strict_failure_invocation,
+    commit_topology_transaction,
+    publish_strict_failure_evidence,
+)
 from .solver3d import _get_d3q19_mrt_matrices
 from .turbulence import (
     _neq_stress_norm_3d,
@@ -34,19 +46,6 @@ from .turbulence import (
     _smagorinsky_tau,
     _vreman_nu_t_3d,
     _wale_nu_t_3d,
-)
-from .free_surface_topology_transaction import (
-    TopologyTransactionError,
-    build_topology_transaction,
-    build_i_to_g_ownership_transaction,
-    capture_strict_failure_invocation,
-    commit_topology_transaction,
-    publish_strict_failure_evidence,
-)
-from .free_surface_inventory_reconciliation import (
-    CANONICAL_STAGE_ORDER,
-    inventory_measurement,
-    inventory_stage_deltas,
 )
 
 GAS = 0
@@ -477,7 +476,7 @@ def _collide_mrt3d_with_tau_eff(
     """
     if s_pi is None:
         s_pi = s_e
-    M, M_inv = _get_d3q19_mrt_matrices(device)
+    M, M_inv = _get_d3q19_mrt_matrices(device, f.dtype)
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
     f_flat = f.reshape(19, -1)
     feq_flat = feq.reshape(19, -1)
@@ -863,16 +862,21 @@ def free_surface_step(
 
     # ---- 4. Mass exchange (standard Körner, independent mass variable) ----
     # (no .any() sync — multicard-safe under TCCL; torch.where handles empty masks)
-    rho_new = f.sum(dim=0)
     iface_mask = flags == INTERFACE
+    # Receiver gate: an interface cell with fill≈0 is a halo about to be
+    # downgraded to gas by to_gas in this same step.  It must NOT receive
+    # liquid mass, otherwise mass exchange pumps it every step and the
+    # subsequent to_gas conversion misbooks/destroys that mass (the
+    # fill≈0-receiver mass source; batch-16 root cause).  Gate every
+    # exchange receiver on fill > 1e-3.
+    recv_ok = iface_mask & (fill > 1.0e-3)
+    recv_19 = recv_ok.unsqueeze(0)
     # neighbor_flags always computed in anti-bounce-back above (no None check)
     # For pull link q at x, the opposing outgoing population belongs to x
     # itself: f_bar(q)^*(x).  Sampling it at x-c_q mixes two different links.
     f_opp_nb = f_post[_OPP.to(device)]  # (19, nz, ny, nx)
-    iface_19 = iface_mask.unsqueeze(0)
-    from_liq = iface_19 & (neighbor_flags == LIQUID)
-    from_gas = iface_19 & (neighbor_flags == GAS)
-    from_iface = iface_19 & (neighbor_flags == INTERFACE)
+    from_liq = recv_19 & (neighbor_flags == LIQUID)
+    from_iface = recv_19 & (neighbor_flags == INTERFACE)
     mass_delta_liquid = torch.where(from_liq, f - f_opp_nb, torch.zeros_like(f))
     mass_delta_interface = torch.where(from_iface, (f - f_opp_nb) * 0.5, torch.zeros_like(f))
     # A L/I credit at interface target x is paired link-by-link with a debit

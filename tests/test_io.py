@@ -254,15 +254,15 @@ class TestSaveHdf5:
     ) -> None:
         import sys
 
-        h5py_backup = sys.modules.pop("h5py", None)
+        # monkeypatch.setitem alone restores the exact prior sys.modules state
+        # on teardown (re-inserts the module if it was imported, removes the key
+        # if it was not). Manually popping h5py first used to fight the teardown
+        # and leave h5py unloaded while h5py._conv stayed cached, so the next
+        # real "import h5py" re-ran register_converters() and crashed with
+        # "Can't register conversion function" in every later h5py user
+        # (test_io_xdmf, scan_runner workers).
         monkeypatch.setitem(sys.modules, "h5py", None)  # type: ignore[arg-type]
-        try:
-            from tensorlbm.io import save_hdf5 as _save_hdf5
+        from tensorlbm.io import save_hdf5 as _save_hdf5
 
-            with pytest.raises(ImportError, match="h5py"):
-                _save_hdf5(tmp_path / "x.h5", step=0, ux=torch.zeros(2, 2), uy=torch.zeros(2, 2))
-        finally:
-            if h5py_backup is not None:
-                sys.modules["h5py"] = h5py_backup
-            else:
-                sys.modules.pop("h5py", None)
+        with pytest.raises(ImportError, match="h5py"):
+            _save_hdf5(tmp_path / "x.h5", step=0, ux=torch.zeros(2, 2), uy=torch.zeros(2, 2))

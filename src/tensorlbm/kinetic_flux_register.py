@@ -5,6 +5,7 @@ links that cross a refinement boundary.  Each discrete link is counted once,
 including diagonal links leaving through an edge or corner.  Fine transfers
 are integrated over substeps and scaled by the fine-cell physical volume.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -66,7 +67,8 @@ class KineticInterfaceTransfer:
 
     def scaled(self, factor: float) -> KineticInterfaceTransfer:
         return KineticInterfaceTransfer(
-            self.outgoing * factor, self.incoming * factor,
+            self.outgoing * factor,
+            self.incoming * factor,
         )
 
 
@@ -98,7 +100,8 @@ def conserved_population_moments(
     if not population_inventory.is_floating_point():
         raise TypeError("population_inventory must be floating point")
     c = _lattice_velocities(
-        int(population_inventory.numel()), population_inventory.device,
+        int(population_inventory.numel()),
+        population_inventory.device,
     ).to(dtype=population_inventory.dtype)
     return (
         population_inventory.sum(),
@@ -126,7 +129,9 @@ def build_kinetic_interface_links(
     for direction in range(1, q):
         cx, cy, cz = (int(value) for value in c[direction].tolist())
         destination_inside = torch.roll(
-            inside, shifts=(-cz, -cy, -cx), dims=(0, 1, 2),
+            inside,
+            shifts=(-cz, -cy, -cx),
+            dims=(0, 1, 2),
         )
         outgoing[direction] = inside & ~destination_inside
         incoming[direction] = ~inside & destination_inside
@@ -147,7 +152,8 @@ def observe_kinetic_interface_transfer(
     outgoing = (post_collision * links.outgoing_origins).sum(dim=(1, 2, 3))
     incoming = (post_collision * links.incoming_origins).sum(dim=(1, 2, 3))
     return KineticInterfaceTransfer(
-        outgoing * cell_volume, incoming * cell_volume,
+        outgoing * cell_volume,
+        incoming * cell_volume,
     )
 
 
@@ -175,7 +181,8 @@ def _apply_population_total(
         desired = requested[direction]
         factor = desired / inventory.clamp_min(1e-30)
         limited_factor = factor.clamp(
-            -maximum_correction_fraction, maximum_correction_fraction,
+            -maximum_correction_fraction,
+            maximum_correction_fraction,
         )
         if bool(limited_factor != factor):
             limited += 1
@@ -208,10 +215,12 @@ def project_onto_conserved_moments(
     if kinetic_mismatch.ndim != 1 or kinetic_mismatch.numel() not in (19, 27):
         raise ValueError("kinetic_mismatch must be a D3Q19 or D3Q27 vector")
     c = _lattice_velocities(
-        int(kinetic_mismatch.numel()), kinetic_mismatch.device,
+        int(kinetic_mismatch.numel()),
+        kinetic_mismatch.device,
     ).to(dtype=kinetic_mismatch.dtype)
     w = _lattice_weights(
-        int(kinetic_mismatch.numel()), kinetic_mismatch.device,
+        int(kinetic_mismatch.numel()),
+        kinetic_mismatch.device,
     ).to(dtype=kinetic_mismatch.dtype)
     mass, momentum = conserved_population_moments(kinetic_mismatch)
     projected = w * (mass + 3.0 * (c * momentum).sum(dim=1))
@@ -252,18 +261,23 @@ def project_onto_active_conserved_moments(
     if active_directions.device != kinetic_mismatch.device:
         raise ValueError("active_directions and kinetic_mismatch must share device")
     c = _lattice_velocities(
-        int(kinetic_mismatch.numel()), kinetic_mismatch.device,
+        int(kinetic_mismatch.numel()),
+        kinetic_mismatch.device,
     ).to(dtype=kinetic_mismatch.dtype)
     w = _lattice_weights(
-        int(kinetic_mismatch.numel()), kinetic_mismatch.device,
+        int(kinetic_mismatch.numel()),
+        kinetic_mismatch.device,
     ).to(dtype=kinetic_mismatch.dtype)
     active_weights = torch.where(active_directions, w, torch.zeros_like(w))
     if not bool(active_directions[1:7].all()):
         raise ValueError("active crossing directions omit an axial pair")
-    basis = torch.cat((
-        torch.ones((1, c.shape[0]), device=c.device, dtype=c.dtype),
-        c.T,
-    ), dim=0)
+    basis = torch.cat(
+        (
+            torch.ones((1, c.shape[0]), device=c.device, dtype=c.dtype),
+            c.T,
+        ),
+        dim=0,
+    )
     gram = (basis * active_weights.unsqueeze(0)) @ basis.T
     mass, momentum = conserved_population_moments(kinetic_mismatch)
     target = torch.cat((mass.reshape(1), momentum))
@@ -318,15 +332,18 @@ def apply_face_local_reflux(
         cx, cy, cz = (int(value) for value in c[direction].tolist())
         receiving[direction] = torch.roll(
             coarse_links.outgoing_origins[direction],
-            shifts=(cz, cy, cx), dims=(0, 1, 2),
+            shifts=(cz, cy, cx),
+            dims=(0, 1, 2),
         )
     exterior_links = receiving | coarse_links.incoming_origins
     if correction_stencil == "crossing_links":
         active_directions = exterior_links.reshape(
-            coarse_links.q, -1,
+            coarse_links.q,
+            -1,
         ).any(dim=1)
         requested = project_onto_active_conserved_moments(
-            raw_mismatch, active_directions,
+            raw_mismatch,
+            active_directions,
         )
         correction_mask = exterior_links
     else:
@@ -340,7 +357,9 @@ def apply_face_local_reflux(
         limited,
         maximum_applied_fraction,
     ) = _apply_population_total(
-        coarse_populations, correction_mask, requested,
+        coarse_populations,
+        correction_mask,
+        requested,
         maximum_correction_fraction=maximum_correction_fraction,
     )
     residual = requested - applied

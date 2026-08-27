@@ -68,6 +68,7 @@ Run
 ---
     PYTHONPATH=src python examples/benchmark_flag_flapping.py --device cpu --steps 5000
 """
+
 from __future__ import annotations
 
 import argparse
@@ -82,22 +83,28 @@ import torch
 
 sys.path.insert(0, "src")
 
-from tensorlbm.d3q19 import C, W, OPPOSITE, equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import correct_mass3d, stream3d
-from tensorlbm.ibm_vec import ibm_direct_forcing_3d_vec
-from tensorlbm.ibm import ibm_delta_hat, ibm_delta_4pt
 from tensorlbm.benchmark_observability import (
-    BenchmarkReporter, assert_benchmark_tensor_device, resolve_benchmark_device,
+    BenchmarkReporter,
+    assert_benchmark_tensor_device,
+    resolve_benchmark_device,
 )
-
+from tensorlbm.d3q19 import C, W, equilibrium3d, macroscopic3d
+from tensorlbm.ibm import ibm_delta_4pt, ibm_delta_hat
+from tensorlbm.ibm_vec import ibm_direct_forcing_3d_vec
+from tensorlbm.solver3d import correct_mass3d, stream3d
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def interpolate_velocity_markers(
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
-    marker_x: torch.Tensor, marker_y: torch.Tensor, marker_z: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    marker_x: torch.Tensor,
+    marker_y: torch.Tensor,
+    marker_z: torch.Tensor,
     kernel: str = "4pt",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Vectorized velocity interpolation at Lagrangian markers (3D).
@@ -205,8 +212,7 @@ def apply_inlet_velocity(f: torch.Tensor, u_in: float) -> torch.Tensor:
     return f
 
 
-def apply_outlet_sponge(f: torch.Tensor, u_in: float,
-                         sponge_width: int) -> torch.Tensor:
+def apply_outlet_sponge(f: torch.Tensor, u_in: float, sponge_width: int) -> torch.Tensor:
     """Sponge layer at outlet: relax distributions toward equilibrium.
 
     A quadratic ramp blends the current distribution with the target
@@ -234,8 +240,7 @@ def apply_outlet_sponge(f: torch.Tensor, u_in: float,
     return f
 
 
-def apply_top_bottom_sponge(f: torch.Tensor, u_in: float,
-                             sponge_width: int) -> torch.Tensor:
+def apply_top_bottom_sponge(f: torch.Tensor, u_in: float, sponge_width: int) -> torch.Tensor:
     """Sponge layers at top and bottom: relax toward free-stream.
 
     A quadratic ramp blends the current distribution with the target
@@ -280,6 +285,7 @@ def compute_vorticity_z(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Discrete elastic beam (rotational-spring bending + axial springs)
 # ---------------------------------------------------------------------------
+
 
 def compute_beam_forces(
     pos_x: torch.Tensor,
@@ -353,10 +359,10 @@ def compute_beam_forces(
         # Laplacian for all nodes: L_i = x_{i-1} - 2*x_i + x_{i+1}
         # In padded array, real node i is at index i+1, so:
         # L[0:N] = px[0:N] - 2*px[1:N+1] + px[2:N+2]
-        bend_x = px[0:N] - 2.0 * px[1:N + 1] + px[2:N + 2]
-        bend_y = py[0:N] - 2.0 * py[1:N + 1] + py[2:N + 2]
-        damp_x = pvx[0:N] - 2.0 * pvx[1:N + 1] + pvx[2:N + 2]
-        damp_y = pvy[0:N] - 2.0 * pvy[1:N + 1] + pvy[2:N + 2]
+        bend_x = px[0:N] - 2.0 * px[1 : N + 1] + px[2 : N + 2]
+        bend_y = py[0:N] - 2.0 * py[1 : N + 1] + py[2 : N + 2]
+        damp_x = pvx[0:N] - 2.0 * pvx[1 : N + 1] + pvx[2 : N + 2]
+        damp_y = pvy[0:N] - 2.0 * pvy[1 : N + 1] + pvy[2 : N + 2]
 
         # The Laplacian is negative at a positive transverse maximum, so
         # a restoring rotational spring/damper uses +k*L and +c*L.
@@ -394,6 +400,7 @@ def compute_beam_forces(
 # ---------------------------------------------------------------------------
 # Main simulation
 # ---------------------------------------------------------------------------
+
 
 def run_flag_flapping_benchmark(
     device: str = "cpu",
@@ -443,15 +450,16 @@ def run_flag_flapping_benchmark(
     L_node = flag_L / n_seg
     rho_f = 1.0
     rho_solid = rho_s_ratio * rho_f
-    m_node = rho_solid * flag_h * L_node          # mass per node
-    k_b = EI                                      # bending stiffness
-    c_b = c_bend                                  # bending damping
-    L_rest = L_node                               # axial spring rest length
+    m_node = rho_solid * flag_h * L_node  # mass per node
+    k_b = EI  # bending stiffness
+    c_b = c_bend  # bending damping
+    L_rest = L_node  # axial spring rest length
 
     # --- IBM markers: beam nodes only (no cylinder) -------------------
     beam_pos_x = torch.tensor(
         [clamp_x + i * L_node for i in range(flag_N)],
-        dtype=torch.float32, device=dev,
+        dtype=torch.float32,
+        device=dev,
     )
     beam_pos_y = torch.full((flag_N,), clamp_y, dtype=torch.float32, device=dev)
     beam_vel_x = torch.zeros(flag_N, dtype=torch.float32, device=dev)
@@ -500,18 +508,26 @@ def run_flag_flapping_benchmark(
     print(f"  旗帜:       L={flag_L}  h={flag_h}  N={flag_N}节点  L_node={L_node:.4f}", flush=True)
     print(f"  固定端:     ({clamp_x:.0f}, {clamp_y:.0f})  沿+x方向延伸", flush=True)
     print(f"  流动:       Re={Re_actual:.0f}  U={u_in}  ν={nu_lat:.6f}  τ={tau:.4f}", flush=True)
-    print(f"  边界:       入口速度BC  出口海绵层(宽度={sponge_outlet})  "
-          f"上下海绵层(宽度={sponge_tb})", flush=True)
+    print(
+        f"  边界:       入口速度BC  出口海绵层(宽度={sponge_outlet})  上下海绵层(宽度={sponge_tb})",
+        flush=True,
+    )
     print(f"  材料:       ρ_s/ρ_f={rho_s_ratio}  EI={EI}  m_node={m_node:.4f}", flush=True)
-    print(f"  弹簧:       k_b={k_b}  c_b={c_b}  k_axial={k_axial}  c_global={c_global}  k_found={k_foundation}", flush=True)
-    print(f"  子步进:     n_sub={n_substeps}  dt_sub={1.0/n_substeps:.4f}", flush=True)
+    print(
+        f"  弹簧:       k_b={k_b}  c_b={c_b}  k_axial={k_axial}  c_global={c_global}  k_found={k_foundation}",
+        flush=True,
+    )
+    print(f"  子步进:     n_sub={n_substeps}  dt_sub={1.0 / n_substeps:.4f}", flush=True)
     print(f"  渐升:       ramp_steps={ramp_steps}", flush=True)
     print(f"  IBM松弛:   ibm_relax={ibm_relax}", flush=True)
     print(f"  IBM:        旗帜标记={flag_N}(ds={L_node:.3f})  总标记={n_total}", flush=True)
     print(f"  内核:       '{kernel}'", flush=True)
     print(f"  运行:       步数={n_steps}  请求设备={device}  实际设备={dev}", flush=True)
-    print(f"  设备断言:   allocation={device_metadata['allocation_device']}  "
-          f"max_wall_seconds={max_wall_seconds}", flush=True)
+    print(
+        f"  设备断言:   allocation={device_metadata['allocation_device']}  "
+        f"max_wall_seconds={max_wall_seconds}",
+        flush=True,
+    )
     print(f"  状态文件:   {reporter.status_path}  进度CSV: {reporter.progress_path}", flush=True)
     print("=" * 70, flush=True)
 
@@ -525,12 +541,14 @@ def run_flag_flapping_benchmark(
         # --- 1. 宏观场 (碰撞前) ---------------------------------------
         rho, ux, uy, uz = macroscopic3d(f)
         # Never permit NaNs/Infs to feed marker wrapping, FFT, or a PASS.
-        if not (torch.isfinite(f).all().item()
-                and torch.isfinite(rho).all().item()
-                and torch.isfinite(beam_pos_x).all().item()
-                and torch.isfinite(beam_pos_y).all().item()
-                and torch.isfinite(beam_vel_x).all().item()
-                and torch.isfinite(beam_vel_y).all().item()):
+        if not (
+            torch.isfinite(f).all().item()
+            and torch.isfinite(rho).all().item()
+            and torch.isfinite(beam_pos_x).all().item()
+            and torch.isfinite(beam_pos_y).all().item()
+            and torch.isfinite(beam_vel_x).all().item()
+            and torch.isfinite(beam_vel_y).all().item()
+        ):
             numerical_failure = f"step {step}: non-finite fluid or beam state"
             print(f"  [数值失败] {numerical_failure}", flush=True)
             break
@@ -538,13 +556,15 @@ def run_flag_flapping_benchmark(
         # NaN debug: check macroscopic fields
         if step <= 200 and (step % 10 == 0):
             if torch.isnan(rho).any() or torch.isnan(ux).any():
-                print(f"  [DEBUG] NaN in macro at step {step}: "
-                      f"rho=[{float(rho.min()):.4e},{float(rho.max()):.4e}] "
-                      f"ux=[{float(ux.min()):.4e},{float(ux.max()):.4e}] "
-                      f"beam_pos_x=[{float(beam_pos_x.min()):.4f},{float(beam_pos_x.max()):.4f}] "
-                      f"beam_pos_y=[{float(beam_pos_y.min()):.4f},{float(beam_pos_y.max()):.4f}] "
-                      f"beam_vel_x=[{float(beam_vel_x.min()):.4e},{float(beam_vel_x.max()):.4e}]",
-                      flush=True)
+                print(
+                    f"  [DEBUG] NaN in macro at step {step}: "
+                    f"rho=[{float(rho.min()):.4e},{float(rho.max()):.4e}] "
+                    f"ux=[{float(ux.min()):.4e},{float(ux.max()):.4e}] "
+                    f"beam_pos_x=[{float(beam_pos_x.min()):.4f},{float(beam_pos_x.max()):.4f}] "
+                    f"beam_pos_y=[{float(beam_pos_y.min()):.4f},{float(beam_pos_y.max()):.4f}] "
+                    f"beam_vel_x=[{float(beam_vel_x.min()):.4e},{float(beam_vel_x.max()):.4e}]",
+                    flush=True,
+                )
                 break
 
         # --- 2. IBM 直动力 --------------------------------------------
@@ -555,8 +575,13 @@ def run_flag_flapping_benchmark(
 
         # 插值梁节点处的流体速度 (用于松弛目标 + 流体力计算)
         u_mx_b, u_my_b, _ = interpolate_velocity_markers(
-            ux, uy, uz, beam_pos_x, beam_pos_y,
-            torch.full_like(beam_pos_x, cz0), kernel=kernel,
+            ux,
+            uy,
+            uz,
+            beam_pos_x,
+            beam_pos_y,
+            torch.full_like(beam_pos_x, cz0),
+            kernel=kernel,
         )
 
         # 松弛目标速度: u_target = alpha*v_beam + (1-alpha)*u_interp
@@ -569,8 +594,15 @@ def run_flag_flapping_benchmark(
         u_t_z = torch.zeros(n_total, device=dev, dtype=torch.float32)
 
         fx_grid, fy_grid, fz_grid = ibm_direct_forcing_3d_vec(
-            ux, uy, uz, mx_all, my_all, mz_all,
-            u_t_x, u_t_y, u_t_z,
+            ux,
+            uy,
+            uz,
+            mx_all,
+            my_all,
+            mz_all,
+            u_t_x,
+            u_t_y,
+            u_t_z,
             kernel=kernel,
         )
         assert_benchmark_tensor_device(fx_grid, dev, "IBM force grid")
@@ -590,9 +622,11 @@ def run_flag_flapping_benchmark(
         if step % 100 == 0:
             f = correct_mass3d(f, initial_mass)
 
-        if not (torch.isfinite(f).all().item()
-                and torch.isfinite(fx_grid).all().item()
-                and torch.isfinite(fy_grid).all().item()):
+        if not (
+            torch.isfinite(f).all().item()
+            and torch.isfinite(fx_grid).all().item()
+            and torch.isfinite(fy_grid).all().item()
+        ):
             numerical_failure = f"step {step}: non-finite IBM force or post-boundary distribution"
             print(f"  [数值失败] {numerical_failure}", flush=True)
             break
@@ -604,8 +638,14 @@ def run_flag_flapping_benchmark(
                 rho2, ux2, uy2, uz2 = macroscopic3d(f)
                 print(f"    rho: [{float(rho2.min()):.6e}, {float(rho2.max()):.6e}]", flush=True)
                 print(f"    ux:  [{float(ux2.min()):.6e}, {float(ux2.max()):.6e}]", flush=True)
-                print(f"    fx_grid: [{float(fx_grid.min()):.6e}, {float(fx_grid.max()):.6e}]", flush=True)
-                print(f"    fy_grid: [{float(fy_grid.min()):.6e}, {float(fy_grid.max()):.6e}]", flush=True)
+                print(
+                    f"    fx_grid: [{float(fx_grid.min()):.6e}, {float(fx_grid.max()):.6e}]",
+                    flush=True,
+                )
+                print(
+                    f"    fy_grid: [{float(fy_grid.min()):.6e}, {float(fy_grid.max()):.6e}]",
+                    flush=True,
+                )
                 break
 
         # --- 7. 梁节点流体力 (IBM反力) --------------------------------
@@ -620,8 +660,16 @@ def run_flag_flapping_benchmark(
         dt_sub = 1.0 / n_sub
         for _ in range(n_sub):
             F_int_x, F_int_y = compute_beam_forces(
-                beam_pos_x, beam_pos_y, beam_vel_x, beam_vel_y,
-                k_b, c_b, k_axial, c_global, L_rest, flag_N,
+                beam_pos_x,
+                beam_pos_y,
+                beam_vel_x,
+                beam_vel_y,
+                k_b,
+                c_b,
+                k_axial,
+                c_global,
+                L_rest,
+                flag_N,
             )
             # Foundation spring: weak anchoring to initial position
             # Prevents rigid-body drift (uniform/linear modes have zero
@@ -650,10 +698,12 @@ def run_flag_flapping_benchmark(
         beam_vel_x[0] = 0.0
         beam_vel_y[0] = 0.0
 
-        if not (torch.isfinite(beam_pos_x).all().item()
-                and torch.isfinite(beam_pos_y).all().item()
-                and torch.isfinite(beam_vel_x).all().item()
-                and torch.isfinite(beam_vel_y).all().item()):
+        if not (
+            torch.isfinite(beam_pos_x).all().item()
+            and torch.isfinite(beam_pos_y).all().item()
+            and torch.isfinite(beam_vel_x).all().item()
+            and torch.isfinite(beam_vel_y).all().item()
+        ):
             numerical_failure = f"step {step}: non-finite beam state after structural update"
             print(f"  [数值失败] {numerical_failure}", flush=True)
             break
@@ -661,14 +711,16 @@ def run_flag_flapping_benchmark(
         # NaN debug: check beam state after sub-stepping
         if step <= 200 and (step % 10 == 0):
             if torch.isnan(beam_pos_x).any() or torch.isnan(beam_vel_x).any():
-                print(f"  [DEBUG] NaN in beam at step {step}: "
-                      f"pos_x=[{float(beam_pos_x.min()):.4f},{float(beam_pos_x.max()):.4f}] "
-                      f"pos_y=[{float(beam_pos_y.min()):.4f},{float(beam_pos_y.max()):.4f}] "
-                      f"vel_x=[{float(beam_vel_x.min()):.4e},{float(beam_vel_x.max()):.4e}] "
-                      f"vel_y=[{float(beam_vel_y.min()):.4e},{float(beam_vel_y.max()):.4e}] "
-                      f"F_hydro_x=[{float(F_hydro_x.min()):.4e},{float(F_hydro_x.max()):.4e}] "
-                      f"F_hydro_y=[{float(F_hydro_y.min()):.4e},{float(F_hydro_y.max()):.4e}]",
-                      flush=True)
+                print(
+                    f"  [DEBUG] NaN in beam at step {step}: "
+                    f"pos_x=[{float(beam_pos_x.min()):.4f},{float(beam_pos_x.max()):.4f}] "
+                    f"pos_y=[{float(beam_pos_y.min()):.4f},{float(beam_pos_y.max()):.4f}] "
+                    f"vel_x=[{float(beam_vel_x.min()):.4e},{float(beam_vel_x.max()):.4e}] "
+                    f"vel_y=[{float(beam_vel_y.min()):.4e},{float(beam_vel_y.max()):.4e}] "
+                    f"F_hydro_x=[{float(F_hydro_x.min()):.4e},{float(F_hydro_x.max()):.4e}] "
+                    f"F_hydro_y=[{float(F_hydro_y.min()):.4e},{float(F_hydro_y.max()):.4e}]",
+                    flush=True,
+                )
                 break
 
         # --- 9. 记录 -------------------------------------------------
@@ -698,15 +750,17 @@ def run_flag_flapping_benchmark(
             reporter.progress(step, elapsed, tip_y, tip_x)
         if watchdog_expired:
             numerical_failure = (
-                f"watchdog: elapsed {elapsed:.1f}s reached "
-                f"max_wall_seconds={max_wall_seconds}"
+                f"watchdog: elapsed {elapsed:.1f}s reached max_wall_seconds={max_wall_seconds}"
             )
             print(f"  [看门狗] {numerical_failure}", flush=True)
             break
 
     dt_total = time.time() - t0
     print("=" * 70, flush=True)
-    print(f"  仿真完成: {dt_total:.1f}秒  ({dt_total/max(len(tip_y_hist), 1)*1e3:.1f} 毫秒/步)", flush=True)
+    print(
+        f"  仿真完成: {dt_total:.1f}秒  ({dt_total / max(len(tip_y_hist), 1) * 1e3:.1f} 毫秒/步)",
+        flush=True,
+    )
 
     # ===================================================================
     # 分析
@@ -754,7 +808,7 @@ def run_flag_flapping_benchmark(
     wake_y0 = max(int(clamp_y - 60), sponge_tb)
     wake_y1 = min(int(clamp_y + 60), ny - sponge_tb)
     vort_wake = vort[wake_y0:wake_y1, wake_x0:wake_x1]
-    vort_rms = float(np.sqrt(np.mean(vort_wake ** 2))) if vort_wake.size > 0 else 0.0
+    vort_rms = float(np.sqrt(np.mean(vort_wake**2))) if vort_wake.size > 0 else 0.0
     vort_max = float(np.max(np.abs(vort_wake))) if vort_wake.size > 0 else 0.0
 
     # --- 验证报告 ---
@@ -764,16 +818,17 @@ def run_flag_flapping_benchmark(
     print("=" * 70, flush=True)
 
     # 1. 周期性振荡 (振幅 > 1格子)
-    print(f"  1. 旗尖周期性振荡 (振幅 > 1格子):", flush=True)
+    print("  1. 旗尖周期性振荡 (振幅 > 1格子):", flush=True)
     print(f"     旗尖y振幅 (峰峰值/2) = {A_tip:.4f} 格子单位", flush=True)
     print(f"     旗尖y最大位移        = {A_tip_max:.4f} 格子单位", flush=True)
     amp_ok = A_tip > 1.0
     amp_err = 0.0 if amp_ok else (1.0 - A_tip) / 1.0 * 100
-    print(f"     检查: {'通过' if amp_ok else '未通过'}  "
-          f"(A > 1.0, 误差={amp_err:.1f}%)", flush=True)
+    print(
+        f"     检查: {'通过' if amp_ok else '未通过'}  (A > 1.0, 误差={amp_err:.1f}%)", flush=True
+    )
 
     # 2. 拍动频率非零 (FFT检测)
-    print(f"  2. 拍动频率非零 (FFT检测):", flush=True)
+    print("  2. 拍动频率非零 (FFT检测):", flush=True)
     print(f"     旗尖主频 f_tip   = {f_tip:.6f} 周/步", flush=True)
     print(f"     探针主频 f_probe = {f_probe:.6f} 周/步", flush=True)
     if f_tip > 0:
@@ -782,35 +837,42 @@ def run_flag_flapping_benchmark(
         print(f"     5000步内振荡数   = {n_steps * f_tip:.1f}", flush=True)
     freq_ok = f_tip > 1e-5
     freq_err = 0.0 if freq_ok else 100.0
-    print(f"     检查: {'通过' if freq_ok else '未通过'}  "
-          f"(f > 1e-5, 误差={freq_err:.1f}%)", flush=True)
+    print(
+        f"     检查: {'通过' if freq_ok else '未通过'}  (f > 1e-5, 误差={freq_err:.1f}%)",
+        flush=True,
+    )
 
     # 3. 尾流涡脱落 (定性)
-    print(f"  3. 尾流涡脱落 (定性):", flush=True)
+    print("  3. 尾流涡脱落 (定性):", flush=True)
     print(f"     尾流区域: x=[{wake_x0},{wake_x1}] y=[{wake_y0},{wake_y1}]", flush=True)
     print(f"     涡量RMS = {vort_rms:.6f}", flush=True)
     print(f"     涡量最大值 = {vort_max:.6f}", flush=True)
     vort_ok = vort_rms > 1e-4
     vort_err = 0.0 if vort_ok else 100.0
-    print(f"     检查: {'通过' if vort_ok else '未通过'}  "
-          f"(RMS > 1e-4, 误差={vort_err:.1f}%)", flush=True)
+    print(
+        f"     检查: {'通过' if vort_ok else '未通过'}  (RMS > 1e-4, 误差={vort_err:.1f}%)",
+        flush=True,
+    )
 
     # --- 综合评估 ---
-    finite_metrics = (numerical_failure is None and n_completed == n_steps
-                      and all(np.isfinite(a).all() for a in
-                              (tip_y_arr, tip_x_arr, uy_arr, fy_arr))
-                      and all(math.isfinite(v) for v in
-                              (A_tip, A_tip_max, f_tip, f_probe, vort_rms, vort_max)))
-    print(f"  数值完整性检查: {'通过' if finite_metrics else '未通过'}"
-          f"  ({numerical_failure or '所有状态和指标均为有限值'})", flush=True)
+    finite_metrics = (
+        numerical_failure is None
+        and n_completed == n_steps
+        and all(np.isfinite(a).all() for a in (tip_y_arr, tip_x_arr, uy_arr, fy_arr))
+        and all(math.isfinite(v) for v in (A_tip, A_tip_max, f_tip, f_probe, vort_rms, vort_max))
+    )
+    print(
+        f"  数值完整性检查: {'通过' if finite_metrics else '未通过'}"
+        f"  ({numerical_failure or '所有状态和指标均为有限值'})",
+        flush=True,
+    )
     all_pass = finite_metrics and amp_ok and freq_ok and vort_ok
     print(flush=True)
-    print(f"  周期振荡检查: {'通过' if amp_ok else '未通过'} "
-          f"(A={A_tip:.4f} > 1.0)", flush=True)
-    print(f"  频率检测检查: {'通过' if freq_ok else '未通过'} "
-          f"(f={f_tip:.6f} > 0)", flush=True)
-    print(f"  涡脱落检查:   {'通过' if vort_ok else '未通过'} "
-          f"(RMS={vort_rms:.6f} > 1e-4)", flush=True)
+    print(f"  周期振荡检查: {'通过' if amp_ok else '未通过'} (A={A_tip:.4f} > 1.0)", flush=True)
+    print(f"  频率检测检查: {'通过' if freq_ok else '未通过'} (f={f_tip:.6f} > 0)", flush=True)
+    print(
+        f"  涡脱落检查:   {'通过' if vort_ok else '未通过'} (RMS={vort_rms:.6f} > 1e-4)", flush=True
+    )
     print(flush=True)
     print(f"  总体结果: {'通过 ✓' if all_pass else '未通过 ✗'}", flush=True)
     print("=" * 70, flush=True)
@@ -826,13 +888,22 @@ def run_flag_flapping_benchmark(
         w = csv.writer(fh)
         w.writerow(["step", "tip_y", "tip_x", "tip_vy", "Fy_beam", "uy_probe"])
         for i in range(n_completed):
-            w.writerow([i + 1, tip_y_hist[i], tip_x_hist[i],
-                        tip_vy_hist[i], fy_beam_hist[i], uy_probe_hist[i]])
+            w.writerow(
+                [
+                    i + 1,
+                    tip_y_hist[i],
+                    tip_x_hist[i],
+                    tip_vy_hist[i],
+                    fy_beam_hist[i],
+                    uy_probe_hist[i],
+                ]
+            )
     print(f"  已保存: {csv_path}", flush=True)
 
     # 图表
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
@@ -842,8 +913,7 @@ def run_flag_flapping_benchmark(
         axes[0].set_ylabel("旗尖y位移 (格子单位)")
         axes[0].set_title("旗帜摆动: 旗尖横向位移时间序列")
         axes[0].axhline(0, color="k", linewidth=0.5)
-        axes[0].axvline(n_trans, color="r", linestyle="--", linewidth=0.5,
-                        label="瞬态结束")
+        axes[0].axvline(n_trans, color="r", linestyle="--", linewidth=0.5, label="瞬态结束")
         axes[0].legend(fontsize=8)
 
         axes[1].plot(uy_arr, "g-", linewidth=0.8)
@@ -867,9 +937,14 @@ def run_flag_flapping_benchmark(
         vmax = max(abs(vort.min()), abs(vort.max()))
         vmax = max(vmax, 1e-6) * 0.8
         fig2, ax2 = plt.subplots(figsize=(14, 4))
-        im = ax2.imshow(vort, origin="lower", cmap="RdBu_r",
-                        vmin=-vmax, vmax=vmax,
-                        extent=(0.0, float(nx), 0.0, float(ny)))
+        im = ax2.imshow(
+            vort,
+            origin="lower",
+            cmap="RdBu_r",
+            vmin=-vmax,
+            vmax=vmax,
+            extent=(0.0, float(nx), 0.0, float(ny)),
+        )
         plt.colorbar(im, ax=ax2, label=r"$\omega_z$")
         ax2.plot(clamp_x, clamp_y, "ks", markersize=6, label="固定端")
         bx = beam_pos_x.cpu().numpy()
@@ -877,8 +952,7 @@ def run_flag_flapping_benchmark(
         ax2.plot(bx, by, "r.-", markersize=3, linewidth=1.5, label="旗帜")
         ax2.set_xlabel("x")
         ax2.set_ylabel("y")
-        ax2.set_title(f"涡量场 (步 {n_steps})  f={f_tip:.6f}  "
-                      f"A={A_tip:.4f}  RMS={vort_rms:.6f}")
+        ax2.set_title(f"涡量场 (步 {n_steps})  f={f_tip:.6f}  A={A_tip:.4f}  RMS={vort_rms:.6f}")
         ax2.legend(fontsize=8)
         plt.tight_layout()
         vort_path = os.path.join(output_dir, "flag_flapping_vorticity.png")
@@ -890,8 +964,7 @@ def run_flag_flapping_benchmark(
         fig3, ax3 = plt.subplots(1, 1, figsize=(10, 5))
         y_spec = np.abs(np.fft.rfft(tip_y_ss - tip_y_ss.mean(), n=n_fft))
         ax3.semilogy(freqs, y_spec, "b-", linewidth=0.8)
-        ax3.axvline(f_tip, color="r", linestyle="--", linewidth=0.8,
-                     label=f"f_tip={f_tip:.6f}")
+        ax3.axvline(f_tip, color="r", linestyle="--", linewidth=0.8, label=f"f_tip={f_tip:.6f}")
         ax3.set_ylabel("|FFT(旗尖y)|")
         ax3.set_xlabel("频率 (周/步)")
         ax3.set_title("旗尖位移频谱")
@@ -931,60 +1004,79 @@ def run_flag_flapping_benchmark(
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="旗帜风中摆动基准: 弹性旗帜在均匀流中的流致振动"
-    )
-    parser.add_argument("--device", default="cpu",
-                        help="设备: cpu / cuda / sdaa:N")
-    parser.add_argument("--steps", type=int, default=5000,
-                        help="LBM时间步数")
+    parser = argparse.ArgumentParser(description="旗帜风中摆动基准: 弹性旗帜在均匀流中的流致振动")
+    parser.add_argument("--device", default="cpu", help="设备: cpu / cuda / sdaa:N")
+    parser.add_argument("--steps", type=int, default=5000, help="LBM时间步数")
     parser.add_argument("--nx", type=int, default=400, help="网格x方向")
     parser.add_argument("--ny", type=int, default=200, help="网格y方向")
-    parser.add_argument("--u-in", dest="u_in", type=float, default=0.1,
-                        help="入口速度 (格子单位)")
-    parser.add_argument("--tau", type=float, default=0.55,
-                        help="BGK松弛时间 τ (ν=(τ−0.5)/3)")
-    parser.add_argument("--flag-L", dest="flag_L", type=float, default=60.0,
-                        help="旗帜长度 (格子单位)")
-    parser.add_argument("--flag-h", dest="flag_h", type=float, default=2.0,
-                        help="旗帜厚度 (格子单位)")
-    parser.add_argument("--flag-N", dest="flag_N", type=int, default=20,
-                        help="旗帜节点数")
-    parser.add_argument("--clamp-x", dest="clamp_x", type=float,
-                        default=100.0, help="固定端x坐标")
-    parser.add_argument("--clamp-y", dest="clamp_y", type=float,
-                        default=100.0, help="固定端y坐标")
-    parser.add_argument("--EI", type=float, default=20.0,
-                        help="弯曲刚度 (格子单位, 调谐用于可见摆动)")
-    parser.add_argument("--rho-s-ratio", dest="rho_s_ratio", type=float,
-                        default=1.0, help="密度比 ρ_s/ρ_f")
-    parser.add_argument("--k-axial", dest="k_axial", type=float,
-                        default=0.0, help="轴向弹簧刚度 (0=禁用, 防止与弯曲刚度耦合不稳定)")
-    parser.add_argument("--c-bend", dest="c_bend", type=float,
-                        default=1.0, help="弯曲阻尼系数 (模态比例阻尼)")
-    parser.add_argument("--c-global", dest="c_global", type=float,
-                        default=1e-3, help="全局阻尼系数")
-    parser.add_argument("--k-foundation", dest="k_foundation", type=float,
-                        default=0.02, help="基础弹簧刚度 (防止刚体漂移)")
-    parser.add_argument("--sponge-outlet", dest="sponge_outlet",
-                        type=int, default=40, help="出口海绵层宽度")
-    parser.add_argument("--sponge-tb", dest="sponge_tb",
-                        type=int, default=20, help="上下海绵层宽度")
-    parser.add_argument("--n-substeps", dest="n_substeps",
-                        type=int, default=20, help="结构更新子步数")
-    parser.add_argument("--ramp-steps", dest="ramp_steps",
-                        type=int, default=500, help="入口流速渐升步数")
-    parser.add_argument("--ibm-relax", dest="ibm_relax",
-                        type=float, default=0.5, help="IBM耦合松弛因子(0-1)")
-    parser.add_argument("--kernel", default="4pt", choices=["hat", "4pt"],
-                        help="IBM delta内核")
-    parser.add_argument("--output-interval", dest="output_interval",
-                        type=int, default=25, help="进度CSV/日志间隔 (步)")
-    parser.add_argument("--max-wall-seconds", dest="max_wall_seconds", type=float,
-                        default=900.0,
-                        help="看门狗时间上限; <=0 禁用 (默认900秒)")
-    parser.add_argument("--output-dir", dest="output_dir",
-                        default="outputs", help="输出目录")
+    parser.add_argument("--u-in", dest="u_in", type=float, default=0.1, help="入口速度 (格子单位)")
+    parser.add_argument("--tau", type=float, default=0.55, help="BGK松弛时间 τ (ν=(τ−0.5)/3)")
+    parser.add_argument(
+        "--flag-L", dest="flag_L", type=float, default=60.0, help="旗帜长度 (格子单位)"
+    )
+    parser.add_argument(
+        "--flag-h", dest="flag_h", type=float, default=2.0, help="旗帜厚度 (格子单位)"
+    )
+    parser.add_argument("--flag-N", dest="flag_N", type=int, default=20, help="旗帜节点数")
+    parser.add_argument("--clamp-x", dest="clamp_x", type=float, default=100.0, help="固定端x坐标")
+    parser.add_argument("--clamp-y", dest="clamp_y", type=float, default=100.0, help="固定端y坐标")
+    parser.add_argument(
+        "--EI", type=float, default=20.0, help="弯曲刚度 (格子单位, 调谐用于可见摆动)"
+    )
+    parser.add_argument(
+        "--rho-s-ratio", dest="rho_s_ratio", type=float, default=1.0, help="密度比 ρ_s/ρ_f"
+    )
+    parser.add_argument(
+        "--k-axial",
+        dest="k_axial",
+        type=float,
+        default=0.0,
+        help="轴向弹簧刚度 (0=禁用, 防止与弯曲刚度耦合不稳定)",
+    )
+    parser.add_argument(
+        "--c-bend", dest="c_bend", type=float, default=1.0, help="弯曲阻尼系数 (模态比例阻尼)"
+    )
+    parser.add_argument(
+        "--c-global", dest="c_global", type=float, default=1e-3, help="全局阻尼系数"
+    )
+    parser.add_argument(
+        "--k-foundation",
+        dest="k_foundation",
+        type=float,
+        default=0.02,
+        help="基础弹簧刚度 (防止刚体漂移)",
+    )
+    parser.add_argument(
+        "--sponge-outlet", dest="sponge_outlet", type=int, default=40, help="出口海绵层宽度"
+    )
+    parser.add_argument(
+        "--sponge-tb", dest="sponge_tb", type=int, default=20, help="上下海绵层宽度"
+    )
+    parser.add_argument(
+        "--n-substeps", dest="n_substeps", type=int, default=20, help="结构更新子步数"
+    )
+    parser.add_argument(
+        "--ramp-steps", dest="ramp_steps", type=int, default=500, help="入口流速渐升步数"
+    )
+    parser.add_argument(
+        "--ibm-relax", dest="ibm_relax", type=float, default=0.5, help="IBM耦合松弛因子(0-1)"
+    )
+    parser.add_argument("--kernel", default="4pt", choices=["hat", "4pt"], help="IBM delta内核")
+    parser.add_argument(
+        "--output-interval",
+        dest="output_interval",
+        type=int,
+        default=25,
+        help="进度CSV/日志间隔 (步)",
+    )
+    parser.add_argument(
+        "--max-wall-seconds",
+        dest="max_wall_seconds",
+        type=float,
+        default=900.0,
+        help="看门狗时间上限; <=0 禁用 (默认900秒)",
+    )
+    parser.add_argument("--output-dir", dest="output_dir", default="outputs", help="输出目录")
     args = parser.parse_args()
 
     run_flag_flapping_benchmark(

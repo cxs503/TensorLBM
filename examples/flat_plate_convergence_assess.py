@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Assess equivalent corrected-source flat-plate results as one grid sequence."""
+
 from __future__ import annotations
 
 import argparse
@@ -21,10 +22,12 @@ def main() -> None:
         path = Path(path_value)
         payload = path.read_bytes()
         records.append(json.loads(payload))
-        sources.append({
-            "path": str(path),
-            "sha256": hashlib.sha256(payload).hexdigest(),
-        })
+        sources.append(
+            {
+                "path": str(path),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        )
     assessment = assess_flat_plate_convergence(records)
     assessment["sources"] = sources
     output = Path(args.output)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate hierarchy-level device partitioning against a one-device oracle."""
+
 from __future__ import annotations
 
 import argparse
@@ -55,9 +56,7 @@ def _configs() -> tuple[StaticBlockAMRConfig, ...]:
 
 def run(args: argparse.Namespace) -> dict[str, object]:
     devices = tuple(
-        torch.device(value.strip())
-        for value in args.devices.split(",")
-        if value.strip()
+        torch.device(value.strip()) for value in args.devices.split(",") if value.strip()
     )
     if len(devices) != 2 or devices[0] == devices[1]:
         raise ValueError("devices must name two distinct execution devices")
@@ -124,10 +123,7 @@ def run(args: argparse.Namespace) -> dict[str, object]:
     initial_mass = float(initial.sum())
     final_mass = float(distributed.coarse_f.sum())
     root_relative_mass_drift = abs(final_mass - initial_mass) / initial_mass
-    finite = all(
-        bool(torch.isfinite(level).all())
-        for level in distributed.level_populations
-    )
+    finite = all(bool(torch.isfinite(level).all()) for level in distributed.level_populations)
     maximum_difference = max(level_maximum_absolute_difference)
     admitted = (
         finite
@@ -140,18 +136,10 @@ def run(args: argparse.Namespace) -> dict[str, object]:
         "status": "pass" if admitted else "fail",
         "steps": args.steps,
         "seed": args.seed,
-        "reference_level_devices": [
-            str(device) for device in reference.level_devices
-        ],
-        "distributed_level_devices": [
-            str(device) for device in distributed.level_devices
-        ],
-        "device_names": {
-            str(device): torch.cuda.get_device_name(device) for device in devices
-        },
-        "level_maximum_absolute_difference": (
-            level_maximum_absolute_difference
-        ),
+        "reference_level_devices": [str(device) for device in reference.level_devices],
+        "distributed_level_devices": [str(device) for device in distributed.level_devices],
+        "device_names": {str(device): torch.cuda.get_device_name(device) for device in devices},
+        "level_maximum_absolute_difference": (level_maximum_absolute_difference),
         "maximum_absolute_difference": maximum_difference,
         "maximum_reference_reflux_residual": maximum_reference_residual,
         "maximum_distributed_reflux_residual": maximum_distributed_residual,
@@ -164,12 +152,15 @@ def run(args: argparse.Namespace) -> dict[str, object]:
             "admitted": admitted,
         },
     }
-    if not all(math.isfinite(value) for value in (
-        maximum_difference,
-        maximum_reference_residual,
-        maximum_distributed_residual,
-        root_relative_mass_drift,
-    )):
+    if not all(
+        math.isfinite(value)
+        for value in (
+            maximum_difference,
+            maximum_reference_residual,
+            maximum_distributed_residual,
+            root_relative_mass_drift,
+        )
+    ):
         raise FloatingPointError("multi-device validation produced non-finite evidence")
     return result
 

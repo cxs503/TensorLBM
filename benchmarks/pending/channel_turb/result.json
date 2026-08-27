@@ -1,0 +1,61 @@
+{
+  "case": "B26_channel_turb_retau180",
+  "status": "not_verified",
+  "library_module": "tensorlbm.turbulent_channel",
+  "lattice": "D2Q9",
+  "collision": "bgk + smagorinsky_les",
+  "boundary": "post-streaming bounce-back (top/bottom) + periodic x",
+  "driving": "guo_body_force (a_x = 2*u_tau^2/H)",
+  "reference": "DNS MKM1999/KMM1987 Re_tau=178.12 (official database) + log law kappa=0.41 B=5.0",
+  "comparison_window_y_plus": [30, 100],
+  "threshold_rms": 0.03,
+  "wall_offset_calibrated": 0.1,
+  "wall_offset_note": "laminar calibration (re_tau=2, cs=1e-6) shows effective no-slip at y_w~0.1, not module-assumed 0.5; H_eff~62.8 vs 62",
+  "verdict": {
+    "passed": false,
+    "reason": [
+      "2D channel: terminal Re_max = u_max*Re_tau/u_tau ~ 4200 < 2D linear-stability threshold 5772 -> no transition path; flow stays laminar+Smagorinsky eddy viscosity (vv~0, uv~0, no Reynolds stress)",
+      "ramp from rest ~2e6-4.5e6 steps (H^2/nu) vs module default 50000 steps -> averaging window captures transient",
+      "finer grid (256x64) farther from steady state at same step count -> no convergence",
+      "first-order Guo force + post-streaming BB: mass drift ~0.08-0.13% per 1e5 steps, wall position shift"
+    ]
+  },
+  "results": [
+    {
+      "grid": "128x32",
+      "nx": 128, "ny": 32, "H": 30,
+      "re_tau": 180.0, "u_tau": 0.005, "cs": 0.1,
+      "tau": 0.50125, "nu": 0.00041666666666666664,
+      "delta_y_plus": 12.0,
+      "n_steps": 100000, "averaging_start": 60000, "averaging_samples": 40001,
+      "steady": false,
+      "steady_note": "quasi-plateau max|u|~0.1167 at end (laminar+LES terminal state); not turbulent",
+      "rms_vs_dns": 4.586,
+      "rms_vs_loglaw": 3.883,
+      "mean_rel_vs_dns": 0.277,
+      "mean_rel_vs_loglaw": 0.233,
+      "n_pts_in_window": 6,
+      "module_loglaw_rms": 3.409,
+      "passed": false
+    },
+    {
+      "grid": "256x64",
+      "nx": 256, "ny": 64, "H": 62,
+      "re_tau": 180.0, "u_tau": 0.005, "cs": 0.1,
+      "tau": 0.50258, "nu": 0.0008611111111111111,
+      "delta_y_plus": 5.81,
+      "n_steps": 100000, "averaging_start": 60000, "averaging_samples": 40001,
+      "steady": false,
+      "steady_note": "still ramping: max|u|~0.080 ~ a_x*t (plug acceleration, boundary layer not formed)",
+      "rms_vs_dns": 5.611,
+      "rms_vs_loglaw": 4.820,
+      "mean_rel_vs_dns": 0.354,
+      "mean_rel_vs_loglaw": 0.318,
+      "n_pts_in_window": 12,
+      "module_loglaw_rms": 4.794,
+      "passed": false
+    }
+  ],
+  "extrap": "none",
+  "elapsed_s_total": 650.0
+}

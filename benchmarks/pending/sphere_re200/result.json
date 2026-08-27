@@ -1,0 +1,13 @@
+{
+  "case": "B3_sphere_re200",
+  "module": "GeneralSimEngine PARAMETRIC_SPHERE, ForceMethod.MOMENTUM_EXCHANGE",
+  "extrap": "none",
+  "grid": "D=60（280×240×240 域）",
+  "collision": "MRT",
+  "steps": 16000,
+  "cd_total": 2.968987,
+  "cd_ref_sn": 0.805615,
+  "err_pct_vs_sn": 268.5,
+  "verified": false,
+  "notes": "任务书 0.769/0.773 为算术错误，精确值 SN=0.8056/CG=0.7810。压力积分 extrap='none' 时 Cd=0.607（-24.6%，近壁压力低估 G12）；切换 MOMENTUM_EXCHANGE 后 Cd=2.97（+268%，MEM 曲面平衡背景未扣除 G15）。两个力法在球面均未达标。16000 步已收敛（monitor 缓慢下降 3.33→2.97）。球绕流 benchmark 系列（B1/B2/B3）因力法缺口暂缓。"
+}

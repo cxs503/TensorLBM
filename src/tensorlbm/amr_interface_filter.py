@@ -6,6 +6,7 @@ resolved second-order viscous stress in a thin physical shell.  Density,
 momentum and the complete symmetric stress tensor remain unchanged; no
 empirical body force or geometry modification is introduced.
 """
+
 from __future__ import annotations
 
 import math
@@ -37,12 +38,8 @@ class InterfaceFilterControlVolumeClearance:
             "minimum_physical_interface_clearance_cells": (
                 self.minimum_physical_interface_clearance_cells
             ),
-            "minimum_unfiltered_source_guard_cells": (
-                self.minimum_unfiltered_source_guard_cells
-            ),
-            "required_streaming_source_guard_cells": (
-                self.required_streaming_source_guard_cells
-            ),
+            "minimum_unfiltered_source_guard_cells": (self.minimum_unfiltered_source_guard_cells),
+            "required_streaming_source_guard_cells": (self.required_streaming_source_guard_cells),
             "flux_stencil_outside_filter": self.flux_stencil_outside_filter,
         }
 
@@ -74,7 +71,9 @@ def assess_interface_filter_control_volume_clearance(
     bounds_by_storage_axis = ((z0, z1), (y0, y1), (x0, x1))
     clearances: list[int] = []
     for size, (lower, upper) in zip(
-        shape, bounds_by_storage_axis, strict=True,
+        shape,
+        bounds_by_storage_axis,
+        strict=True,
     ):
         if not ghost <= lower < upper <= size - ghost:
             raise ValueError(
@@ -88,9 +87,7 @@ def assess_interface_filter_control_volume_clearance(
         minimum_physical_interface_clearance_cells=minimum_clearance,
         minimum_unfiltered_source_guard_cells=unfiltered_source_guard,
         required_streaming_source_guard_cells=streaming_stencil_radius,
-        flux_stencil_outside_filter=(
-            unfiltered_source_guard >= streaming_stencil_radius
-        ),
+        flux_stencil_outside_filter=(unfiltered_source_guard >= streaming_stencil_radius),
     )
 
 
@@ -158,9 +155,7 @@ def _remove_conserved_roundoff(non_equilibrium: torch.Tensor) -> torch.Tensor:
     result = non_equilibrium.clone()
     result[0] -= result.sum(dim=0)
     for negative, positive, axis in ((1, 2, 0), (3, 4, 1), (5, 6, 2)):
-        momentum = (
-            result * c[:, axis, None, None, None]
-        ).sum(dim=0)
+        momentum = (result * c[:, axis, None, None, None]).sum(dim=0)
         result[negative] -= 0.5 * momentum
         result[positive] += 0.5 * momentum
     return result

@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from tensorlbm.d3q19 import C, OPPOSITE
+from tensorlbm.d3q19 import OPPOSITE, C
 from tensorlbm.phasefield.stream_boundary_contract import (
     ADAPTER_STREAM_STAGE,
     PHASE_FLUX_WITHHELD,

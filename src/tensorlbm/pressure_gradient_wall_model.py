@@ -91,7 +91,8 @@ def pressure_gradient_eddy_viscosity(
     combined_squared = combined_velocity.square()
     alpha = torch.where(
         combined_squared > 0.0,
-        u_tau.square() / combined_squared.clamp_min(
+        u_tau.square()
+        / combined_squared.clamp_min(
             torch.finfo(combined_squared.dtype).tiny,
         ),
         torch.ones_like(combined_squared),
@@ -99,10 +100,7 @@ def pressure_gradient_eddy_viscosity(
     y_star = y * combined_velocity / nu
     base = alpha + y_star * (1.0 - alpha).clamp_min(0.0).pow(1.5)
     damping = -torch.expm1(-y_star / (1.0 + a_plus * alpha.pow(3)))
-    return (
-        nu * kappa * y_star * base.clamp_min(0.0).pow(duprat_beta)
-        * damping.square()
-    )
+    return nu * kappa * y_star * base.clamp_min(0.0).pow(duprat_beta) * damping.square()
 
 
 def _validate_fields(
@@ -189,9 +187,14 @@ def pressure_gradient_equilibrium_velocity(
         raise ValueError("eddy_viscosity_model must be 'van_driest' or 'duprat'")
     if duprat_beta <= 0.0:
         raise ValueError("duprat_beta must be positive")
-    if not isinstance(quadrature_points, int) or isinstance(
-        quadrature_points, bool,
-    ) or quadrature_points < 2:
+    if (
+        not isinstance(quadrature_points, int)
+        or isinstance(
+            quadrature_points,
+            bool,
+        )
+        or quadrature_points < 2
+    ):
         raise ValueError("quadrature_points must be an integer >= 2")
 
     # Midpoint quadrature integrates the laminar linear numerator exactly and
@@ -219,9 +222,7 @@ def pressure_gradient_equilibrium_velocity(
         )
     else:
         nu_t = torch.zeros_like(y)
-    gradient = (
-        u_tau.square() + acceleration.unsqueeze(-1) * y
-    ) / (nu + nu_t)
+    gradient = (u_tau.square() + acceleration.unsqueeze(-1) * y) / (nu + nu_t)
     return gradient.mean(dim=-1) * distance
 
 
@@ -266,9 +267,14 @@ def solve_pressure_gradient_equilibrium_wall_shear(
             ) from error
         if bool((acceleration_magnitude < 0.0).any()):
             raise ValueError("pressure-gradient magnitude must be non-negative")
-    if not isinstance(iterations, int) or isinstance(
-        iterations, bool,
-    ) or iterations < 8:
+    if (
+        not isinstance(iterations, int)
+        or isinstance(
+            iterations,
+            bool,
+        )
+        or iterations < 8
+    ):
         raise ValueError("iterations must be an integer >= 8")
     finite = (
         torch.isfinite(exchange_speed)
@@ -279,10 +285,14 @@ def solve_pressure_gradient_equilibrium_wall_shear(
     )
     safe_speed = torch.where(finite, exchange_speed, torch.zeros_like(exchange_speed))
     safe_acceleration = torch.where(
-        finite, acceleration, torch.zeros_like(acceleration),
+        finite,
+        acceleration,
+        torch.zeros_like(acceleration),
     )
     safe_acceleration_magnitude = torch.where(
-        finite, acceleration_magnitude, torch.zeros_like(acceleration_magnitude),
+        finite,
+        acceleration_magnitude,
+        torch.zeros_like(acceleration_magnitude),
     )
     zero = torch.zeros_like(safe_speed)
     minimum_profile = pressure_gradient_equilibrium_velocity(

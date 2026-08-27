@@ -1,0 +1,192 @@
+{
+  "case": "B18_kovasznay_2d",
+  "title": "Kovasznay 2D steady flow (analytic Navier-Stokes solution, D2Q9 BGK)",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "re": 40.0,
+  "lambda": -0.9637405441957689,
+  "u0": 0.03,
+  "ma_max": 0.103923,
+  "extrap": "none",
+  "verdict": "PASS",
+  "acceptance": {
+    "criterion": "max over {u,v L2 rel err, u/v masked max rel err} on ny=64/128 <= 3% AND all four metrics decrease from ny=64 to ny=128",
+    "max_err_pct_64": 2.7113,
+    "max_err_pct_128": 2.5524,
+    "max_err_pct": 2.7113,
+    "convergence_64_to_128": {
+      "u_l2_decreases": true,
+      "v_l2_decreases": true,
+      "u_max_rel_decreases": true,
+      "v_max_rel_decreases": true,
+      "max_err_pct": 2.7113,
+      "max_err_pct_64": 2.7113,
+      "max_err_pct_128": 2.5524
+    },
+    "min_steps_ok": true,
+    "finite": true
+  },
+  "primary_config": {
+    "description": "zero-gradient outlet, domain x' in [0,3] (nx=3*ny), y-periodic, Zou-He analytic velocity inlet (boundaries.zou_he_inlet_velocity)",
+    "xmax": 3.0,
+    "outlet": "zerograd (f[:,:,-1]=f[:,:,-2], inline)",
+    "grids_ny": [
+      32,
+      64,
+      128
+    ],
+    "min_steps": 20000,
+    "per_grid": [
+      {
+        "ny": 32,
+        "nx": 96,
+        "tau": 0.572,
+        "nu_lb": 0.024,
+        "n_steps": 20000,
+        "steady": true,
+        "u_l2_rel": 0.00180039,
+        "v_l2_rel": 0.03020224,
+        "u_l2_rel_interior": 0.0016371,
+        "v_l2_rel_interior": 0.02794159,
+        "u_max_rel_pct": 1.33245798,
+        "v_max_rel_pct": 2.20791622,
+        "max_abs_err_u_over_u0": 0.01256234,
+        "max_abs_err_v_over_u0": 0.00871174,
+        "mass_drift_pct": -0.00405312,
+        "finite": true,
+        "elapsed_s": 12.5
+      },
+      {
+        "ny": 64,
+        "nx": 192,
+        "tau": 0.644,
+        "nu_lb": 0.048,
+        "n_steps": 20000,
+        "steady": true,
+        "u_l2_rel": 0.0016549,
+        "v_l2_rel": 0.02711283,
+        "u_l2_rel_interior": 0.00158125,
+        "v_l2_rel_interior": 0.0258377,
+        "u_max_rel_pct": 1.24195775,
+        "v_max_rel_pct": 1.65436194,
+        "max_abs_err_u_over_u0": 0.01171973,
+        "max_abs_err_v_over_u0": 0.00844728,
+        "mass_drift_pct": -0.00488758,
+        "finite": true,
+        "elapsed_s": 30.8
+      },
+      {
+        "ny": 128,
+        "nx": 384,
+        "tau": 0.788,
+        "nu_lb": 0.096,
+        "n_steps": 20000,
+        "steady": true,
+        "u_l2_rel": 0.0015787,
+        "v_l2_rel": 0.02552364,
+        "u_l2_rel_interior": 0.00154424,
+        "v_l2_rel_interior": 0.02484732,
+        "u_max_rel_pct": 1.18592619,
+        "v_max_rel_pct": 1.48510832,
+        "max_abs_err_u_over_u0": 0.011196,
+        "max_abs_err_v_over_u0": 0.00831324,
+        "mass_drift_pct": -0.01062552,
+        "finite": true,
+        "elapsed_s": 107.7
+      }
+    ],
+    "convergence_64_to_128": {
+      "u_l2_decreases": true,
+      "v_l2_decreases": true,
+      "u_max_rel_decreases": true,
+      "v_max_rel_decreases": true,
+      "max_err_pct": 2.7113,
+      "max_err_pct_64": 2.7113,
+      "max_err_pct_128": 2.5524
+    },
+    "verdict": "PASS"
+  },
+  "cross_check_config": {
+    "description": "analytic Dirichlet outlet (equilibrium), square domain x' in [0,1], literature-standard Kovasznay setup; shows interior solver convergence without outlet-BC pollution (v masked-max artifact near v=0 crossings, see /tmp/kovasznay_gap.md K4)",
+    "xmax": 1.0,
+    "outlet": "dirichlet (equilibrium, inline)",
+    "grids_ny": [
+      32,
+      64,
+      128
+    ],
+    "min_steps": 20000,
+    "per_grid": [
+      {
+        "ny": 32,
+        "nx": 32,
+        "tau": 0.572,
+        "nu_lb": 0.024,
+        "n_steps": 20000,
+        "steady": true,
+        "u_l2_rel": 0.00198134,
+        "v_l2_rel": 0.03311047,
+        "u_l2_rel_interior": 0.00204967,
+        "v_l2_rel_interior": 0.03450099,
+        "u_max_rel_pct": 1.25233638,
+        "v_max_rel_pct": 29.08761651,
+        "max_abs_err_u_over_u0": 0.00818799,
+        "max_abs_err_v_over_u0": 0.01602054,
+        "mass_drift_pct": -0.05079508,
+        "finite": true,
+        "elapsed_s": 12.8
+      },
+      {
+        "ny": 64,
+        "nx": 64,
+        "tau": 0.644,
+        "nu_lb": 0.048,
+        "n_steps": 20000,
+        "steady": true,
+        "u_l2_rel": 0.00100905,
+        "v_l2_rel": 0.01327396,
+        "u_l2_rel_interior": 0.00102604,
+        "v_l2_rel_interior": 0.01354717,
+        "u_max_rel_pct": 0.3533475,
+        "v_max_rel_pct": 16.10021528,
+        "max_abs_err_u_over_u0": 0.00375835,
+        "max_abs_err_v_over_u0": 0.00887347,
+        "mass_drift_pct": -0.05073547,
+        "finite": true,
+        "elapsed_s": 21.1
+      },
+      {
+        "ny": 128,
+        "nx": 128,
+        "tau": 0.788,
+        "nu_lb": 0.096,
+        "n_steps": 20000,
+        "steady": true,
+        "u_l2_rel": 0.00074922,
+        "v_l2_rel": 0.00397949,
+        "u_l2_rel_interior": 0.00075545,
+        "v_l2_rel_interior": 0.00402004,
+        "u_max_rel_pct": 0.14679504,
+        "v_max_rel_pct": 5.58937134,
+        "max_abs_err_u_over_u0": 0.00184764,
+        "max_abs_err_v_over_u0": 0.00313393,
+        "mass_drift_pct": -0.05059243,
+        "finite": true,
+        "elapsed_s": 31.3
+      }
+    ],
+    "verdict": "FAIL",
+    "note": "u/v L2 all <=3.3% and converge cleanly (v_l2 3.31%->1.33%->0.40%); v_max_rel_pct inflated near sin(2*pi*y') zero crossings (metric artifact)"
+  },
+  "error_sources": [
+    "outlet zero-gradient BC influence zone (last ~0.5-1 y-period): v flattened toward 0, main contributor to full-domain v L2 ~2.5% (h-independent floor)",
+    "BGK O(Ma^2) compressibility error: u L2 ~0.16% floor (h-independent)"
+  ],
+  "notes": [
+    "lambda computed exactly: Re=40 -> lambda = 20 - sqrt(400+4*pi^2) = -0.963741 (task brief claimed ~-0.5; that corresponds to Re~78.5)",
+    "analytic solution verified numerically: max |N-S residual| ~1e-3 (FD truncation), identity lambda = nu*(lambda^2 - 4*pi^2) holds to 2e-15",
+    "steady monitor: ||u(t)-u(t-2500)||2/||u(t)||2 < 5e-5 after >=20000 steps; all grids steady=True at 20000 steps",
+    "slow mass leak ~0.004-0.01%/20000 steps (Zou-He velocity inlet + zero-gradient outlet)",
+    "second-order extrapolation outlet (2*f[n-2]-f[n-3]) diverges to NaN (negative populations) - unusable, see /tmp/kovasznay_gap.md K3"
+  ]
+}

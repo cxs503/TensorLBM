@@ -1,0 +1,68 @@
+{
+  "case": "B6_suboff_re1000",
+  "module": "GeneralSimEngine PARAMETRIC_SUBOFF",
+  "extrap": "none",
+  "grid": "L=80 格（艇长），resolution=80",
+  "collision": "MRT",
+  "steps": 20000,
+  "device": "cuda:2",
+  "cd_tot": 0.0379,
+  "cd_ref": 0.0436,
+  "err_pct": -9.85,
+  "verified": false,
+  "notes": "历史 +3.8% 是 5000 步未收敛瞬态（25% 窗口 ~5000 步给 0.0431 与历史一致）；收敛后 -9.85% 偏低。参考口径：AFF-8 全尺寸实验 Ct≈0.0031 为不同 Re，Re=1000 用平板 Blasius 类推参考 Cd_tot≈0.0436。需更大网格（L≥128）+ 更久收敛 + 摩擦公式检查。子 agent 中断未写完 result.json，本数据来自 live transcript 补录。",
+  "L96_result": {
+    "cd_tot": 0.03776,
+    "cd_p": 0.00543,
+    "cd_f": 0.03233,
+    "err_pct": -10.09,
+    "cells": 23736384
+  },
+  "L128_result": {
+    "status": "OOM (56M cells, 24GB 卡——低内存算子峰值~18GB 仍不够)"
+  },
+  "faces_reeval_2026-08-20": {
+    "purpose": "用 faces 摩擦公式（edd3e80 入库的 per-wall-face 剪切）重估 SUBOFF 摩擦低估是否来自 voxel stair 面积丢失（face/cell=1.49 理论 +49% 面积修正）",
+    "run": {
+      "L": 96,
+      "steps": 10000,
+      "ms_per_step": 199.93,
+      "device": "cuda:2",
+      "friction_formula_primary": "faces",
+      "engine_faces_sampled_cd_tot": 0.050564,
+      "engine_faces_cd_tot_last5000": 0.046455,
+      "result_json": "results_bench_b6_suboff_re1000_L96_mrt_faces/result.json"
+    },
+    "final_field_recompute_same_converged_flow": {
+      "cd_p": 0.0054305,
+      "cd_f_standard": 0.0323268,
+      "cd_f_faces": 0.0410088,
+      "cd_f_lagrange": 0.031884,
+      "note": "final-field 的 cd_p/cd_f_standard 与旧 50000 步结果逐位一致（0.005429/0.032326）→ 10000 步流场已收敛，faces 值为收敛值"
+    },
+    "faces_gain": {
+      "cd_f_ratio_faces_over_standard": 1.269,
+      "geometry_face_cell_ratio": 1.4925,
+      "uniform_field_faces_standard_ratio": 1.4551,
+      "note": "纯几何上限 +45~49%（均匀速度场验证），真实流场 stair 凹角单元面多速度低 → 实际增益收敛到 +26.9%"
+    },
+    "faces_cd_tot": {
+      "cd_tot": 0.046439,
+      "vs_blasius_0.0420_pct": 10.58,
+      "vs_flatplate_analogy_0.0436_pct": 6.51
+    },
+    "verdict": "未达标（verified=false）：faces 修正方向正确（摩擦 -10.1% → +6.5~10.6% 相对参考），但过冲——faces 是 voxel stair 的精确离散摩擦（上界，stair 面积比光滑体湿面积大 ~49%），standard 近壁单元求和是下界，真实连续体摩擦介于两者之间。摩擦低估主因不是 stair 面积丢失而是近壁速度/壁面应力本身偏低（与 3D 圆柱 -11%、球 -24% 绕流族同源），faces 公式无法修复。后续方向：q_wall/BFL 壁面距离修正、壁面函数、或更高分辨率（L=128 需 40GB+ 卡）。",
+    "runner": "benchmarks/pending/suboff_re1000/run.py 已支持 --friction faces（含 final-field 逐公式重算）；共性模块接线：GeneralSimEngine._sample_forces / fsi_common.fsi_drag_step / momentum_exchange.momentum_exchange_pressure_friction 均向 drag_friction_integration 传 solid 掩码"
+  },
+  "analysis": "L=80(-9.85%)/L=96(-10.1%) 网格收敛一致——摩擦主导阻力系统性低估 ~10% 非网格问题（与绕流族摩擦低估同源）；L=128 OOM 是资源限制。参考：Blasius 平板类推 0.0420（摩擦 ~77%）。2026-08-20 faces 重估：cd_f 0.0323→0.0410（+26.9%），Cd_tot 0.0378→0.0464，相对参考从 -10.1% 变为 +6.5~+10.6%，仍超 ±3% 未达标。",
+  "faces_reeval": {
+    "date": "2026-08-20",
+    "cd_f_standard": 0.03233,
+    "cd_f_faces": 0.04101,
+    "cd_tot_faces": 0.04644,
+    "err_standard_vs_blasius": -10.1,
+    "err_faces_vs_blasius": 10.6,
+    "geometric_ceiling": "face/cell=1.49, uniform-field faces/standard=1.4551 (+49%)",
+    "analysis": "faces 修正过冲(+10.6% vs -10.1%)——真实值在 standard/faces 之间；凹角单元面多但局部速度低抵消部分面积增益(实际 +26.9% 非 +49%)。需介于两者的修正(如加权平均或 q 修正)或更高分辨率。L=128 OOM 未跑"
+  }
+}
