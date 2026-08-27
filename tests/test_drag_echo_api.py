@@ -209,6 +209,9 @@ class TestEchoHealth:
         assert body["guard_n_fit"] == 18
         assert body["grid"] == {"nz": 16, "ny": 16, "nx": 32}
         assert body["device"] == "cpu"
+        # counts device follows the geo-fast auto rule (echo device when
+        # CUDA, else any visible CUDA, else CPU)
+        assert body["counts_device"] == ("cuda" if torch.cuda.is_available() else "cpu")
         assert isinstance(body["cache_entries"], int)
 
 

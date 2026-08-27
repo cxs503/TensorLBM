@@ -23,8 +23,10 @@ The serving checkpoints (``b4_serve_20260824``, arm C_full) were fit on
 :func:`tensorlbm.ai.drag_cond.suboff_geometry_features` (pinned bitwise
 against the cache by ``tests/test_geometry_echo.py``).  The echo pipeline
 rebuilds that same decomposition — hull/sail/fin point predicates, same
-operations, same order, CPU — so a mother design reproduces the fit-time
-channels **bit-identically**, and extends it with the ``SuboffConfig``
+operations, same order — so a mother design reproduces the fit-time
+channels **bit-identically** (on CPU, and on CUDA where the integer counts
+are verified equal; see ``_resolve_counts_device``), and extends it with
+the ``SuboffConfig``
 hull-form axes the drag_cond builder cannot express.  Hull-form variants
 are outside the C_full training corpus by construction; the guardrail owns
 that honesty (measured by :meth:`validate_against_cache`).
@@ -161,6 +163,32 @@ def _params_key(hull_type: str, params: dict[str, Any]) -> tuple[Any, ...]:
     )
 
 
+def _resolve_counts_device(device: str, override: str | None) -> str:
+    """Device the channel-count decomposition runs on (slider-miss path).
+
+    ``None`` (the pipeline default) is *auto*: the pipeline device when it
+    is already CUDA, otherwise any CUDA device visible to the process
+    (``"cuda"``), falling back to CPU when none is.  The counts are integer
+    voxel counts / projected areas, so any evaluator is as good as any
+    other — the TRT echo configs run their torch front-end on CPU while
+    the engine owns the GPU, and their geometry misses are exactly the
+    45 ms hot spot this resolves.  An explicit override (``"cpu"``,
+    ``"cuda"``, any torch device string, or ``"auto"``) always wins, so
+    the fast path is A/B-able and rollback is one env var
+    (``TENSORLBM_DRAG_ECHO_COUNTS_DEVICE``).
+
+    Bitwise safety: the decomposition reduces the same elementwise CAD
+    predicates the CPU build evaluates to integers, so a CUDA run
+    reproduces the CPU counts exactly (pinned by ``tests/test_geometry_echo.py``
+    over every varied axis).
+    """
+    if override is None or override == "auto":
+        if torch.device(str(device)).type == "cuda":
+            return str(device)
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    return str(override)
+
+
 def suboff_component_counts(
     hull_type: str,
     sail_scale: float,
@@ -293,7 +321,8 @@ class EchoGeometry:
     """One design point's geometry front-end (channels + condition).
 
     ``geo`` is the (4,) v3 geometry-channel block in fit-time construction
-    (CPU decomposition); :meth:`condition_rows` appends the Re / u_in /
+    (integer decomposition, CPU- or CUDA-evaluated — bitwise equal);
+    :meth:`condition_rows` appends the Re / u_in /
     scale logs to give the exact (N, 8) ``condition_v3`` matrix the serving
     checkpoints were fit with.
     """
@@ -413,8 +442,21 @@ class GeometryEchoPipeline:
         ``(nz, ny, nx) = (64, 64, 128)`` (resolution 128); any other grid
         changes the channel values and is intended for tests only.
     device:
-        Torch device for mask building.  Channel counts always run on CPU —
-        the fit-time device — so served conditions stay bit-exact.
+        Torch device for mask building.  Channel counts run on
+        ``counts_device`` (below) — on CUDA services that is the same GPU,
+        verified bit-identical to the CPU decomposition by
+        ``tests/test_geometry_echo.py`` (integer reductions of the same
+        elementwise predicates), so served conditions stay bit-exact.
+    counts_device:
+        Device for the channel-count decomposition on a cache miss.
+        ``None`` (default) is *auto*: ``device`` when it is CUDA, else any
+        CUDA device visible to the process (the counts are device-
+        invariant integers), else CPU; ``"cpu"`` / ``"cuda"`` / any torch
+        device string force a specific side (A/B and rollback).  The
+        decomposition is integer-valued (voxel counts, projected areas),
+        so a CUDA build reproduces the CPU counts exactly — the
+        slider-miss fast path of ``exp/geo-fast`` (see
+        ``docs/geo_fast_20260827.md``).
     cache_size:
         LRU slots for rebuilt geometries (decomposition + channels).  A
         slider move that only changes Re or u_in reuses the cached entry;
@@ -427,6 +469,7 @@ class GeometryEchoPipeline:
         *,
         grid: SuboffGrid | None = None,
         device: str = "cpu",
+        counts_device: str | None = None,
         cache_size: int = 16,
     ) -> None:
         if cache_size < 1:
@@ -434,13 +477,14 @@ class GeometryEchoPipeline:
         self.service = service
         self.grid = grid if grid is not None else (service.grid or PRODUCTION_GRID)
         self.device = str(device)
+        self.counts_device = _resolve_counts_device(self.device, counts_device)
         self._cache: OrderedDict[tuple[Any, ...], EchoGeometry] = OrderedDict()
         self._cache_size = int(cache_size)
 
     # -- geometry front-end ------------------------------------------------------
 
     def _geometry(self, params: dict[str, Any]) -> EchoGeometry:
-        """Geometry bundle for the params (LRU-cached, channels on CPU).
+        """Geometry bundle for the params (LRU-cached; counts on device).
 
         ``u_in`` is *not* part of the geometry: cached bundles are reused
         across Re / u_in changes and rebound with :func:`dataclasses.replace`.
@@ -454,7 +498,9 @@ class GeometryEchoPipeline:
         config = _config_from_params(params)
         sail = float(params.get("sail_scale", 1.0))
         fin = float(params.get("fin_scale", 1.0))
-        counts = suboff_component_counts(hull_type, sail, fin, self.grid, config=config)
+        counts = suboff_component_counts(
+            hull_type, sail, fin, self.grid, config=config, device=self.counts_device
+        )
         is_mother = all(float(params.get(axis, 1.0)) == 1.0 for axis in HULLFORM_AXIS_NAMES)
         bundle = EchoGeometry(
             hull_type=hull_type,

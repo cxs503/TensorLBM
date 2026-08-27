@@ -46,7 +46,16 @@ from tensorlbm.ai.inference_service import (
     GuardVerdict,
     ModelEnsembleBackend,
 )
-from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
+from tensorlbm.suboff_cad import (
+    _SUBOFF_L_FT,
+    SuboffConfig,
+    _axial_ft_to_mother,
+    _hull_lines_is_mother,
+    _variant_nodes_ft,
+    build_suboff_mask,
+    suboff_hull_mask,
+    suboff_radius_profile,
+)
 
 TEST_GRID = SuboffGrid.from_resolution(32)
 PRODUCTION_GRID = SuboffGrid.from_resolution(128)
@@ -474,3 +483,277 @@ class TestAgainstRealArtifacts:
             assert any("outside the served training corpus" in r for r in res.guard.reasons)
         # Recorded, not asserted: served_gap vs cache_gap sign disagreement.
         assert np.isfinite(served_gap) and cache_gap > 0.0
+
+
+# ---------------------------------------------------------------------------
+# exp/geo-fast (2026-08-27): counts-on-device slider-miss fast path
+# ---------------------------------------------------------------------------
+
+
+def _legacy_hull_mask_fullgrid(
+    nx: int,
+    ny: int,
+    nz: int,
+    cx: float,
+    cy: float,
+    cz: float,
+    length: float,
+    radius: float,
+    device: torch.device,
+    config: SuboffConfig | None = None,
+) -> torch.Tensor:
+    """Frozen pre-geo-fast ``suboff_hull_mask`` (exp/trt-echo e1e56b24).
+
+    The production hull mask now evaluates the axial coordinate on the
+    ``(nx,)`` row and the radial distance as a ``(nz, ny, 1)`` broadcast
+    view instead of a full meshgrid; this reference keeps the historical
+    full-grid algorithm so the optimisation stays pinned bit-for-bit.
+    """
+    if config is None:
+        config = SuboffConfig()
+    if radius <= 0.0:
+        radius = config.r_over_l * length
+    if config.l_over_d_mult != 1.0:
+        radius = radius / config.l_over_d_mult
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=device, dtype=torch.float32),
+        torch.arange(ny, device=device, dtype=torch.float32),
+        torch.arange(nx, device=device, dtype=torch.float32),
+        indexing="ij",
+    )
+    x_bow = cx - length / 2.0
+    xi_t = (xx - x_bow) / length
+    if _hull_lines_is_mother(config):
+        xi_mother = xi_t
+    else:
+        x_ft_var = xi_t * _variant_nodes_ft(config)[-1]
+        xi_mother = _axial_ft_to_mother(x_ft_var, config) / _SUBOFF_L_FT
+    xi_np = xi_mother.cpu().numpy()
+    r_norm = suboff_radius_profile(xi_np, config)
+    r_lu = torch.tensor(r_norm * radius, device=device, dtype=torch.float32)
+    r_grid = torch.sqrt((yy - cy) ** 2 + (zz - cz) ** 2)
+    in_axial = (xi_t >= 0.0) & (xi_t <= 1.0)
+    return in_axial & (r_grid <= r_lu)
+
+
+_GEO_FAST_SWEEP: list[tuple[str, dict[str, float]]] = [
+    ("mother", {}),
+    ("sail_0.85", {"sail_scale": 0.85}),
+    ("sail_1.3", {"sail_scale": 1.3}),
+    ("fin_0.75", {"fin_scale": 0.75}),
+    ("fin_1.2", {"fin_scale": 1.2}),
+    ("lod_0.9", {"l_over_d_mult": 0.9}),
+    ("lod_1.15", {"l_over_d_mult": 1.15}),
+    ("nose_0.85", {"nose_len_mult": 0.85}),
+    ("nose_1.25", {"nose_len_mult": 1.25}),
+    ("stern_0.85", {"stern_len_mult": 0.85}),
+    ("stern_1.2", {"stern_len_mult": 1.2}),
+    ("sailx_0.88", {"sail_x_mult": 0.88}),
+    ("sailx_1.12", {"sail_x_mult": 1.12}),
+    ("combo", {"sail_scale": 1.2, "fin_scale": 0.8, "l_over_d_mult": 1.1, "sail_x_mult": 1.05}),
+]
+
+
+def _sweep_params(over: dict[str, float]) -> dict[str, object]:
+    base: dict[str, object] = {
+        "hull_type": "full",
+        "u_in": 0.1,
+        "sail_scale": 1.0,
+        "fin_scale": 1.0,
+        "l_over_d_mult": 1.0,
+        "nose_len_mult": 1.0,
+        "stern_len_mult": 1.0,
+        "sail_x_mult": 1.0,
+    }
+    return {**base, **over}
+
+
+_HAS_CUDA = torch.cuda.is_available()
+
+
+class TestGeoFastHullMaskRowEval:
+    """The row/broadcast hull-mask optimisation is bit-identical (CPU)."""
+
+    @pytest.mark.parametrize("grid_res", [16, 32, 48])
+    @pytest.mark.parametrize(
+        "config",
+        [
+            SuboffConfig(),
+            SuboffConfig(l_over_d_mult=1.2),
+            SuboffConfig(nose_len_mult=0.85, stern_len_mult=1.3),
+            SuboffConfig(l_over_d_mult=0.9, nose_len_mult=1.1, sail_x_mult=1.2),
+        ],
+        ids=["mother", "lod", "nose_stern", "combo"],
+    )
+    def test_row_eval_bitwise_vs_legacy_fullgrid(self, grid_res: int, config: SuboffConfig) -> None:
+        grid = SuboffGrid.from_resolution(grid_res)
+        fast = suboff_hull_mask(
+            grid.nx,
+            grid.ny,
+            grid.nz,
+            grid.cx,
+            grid.cy,
+            grid.cz,
+            grid.length,
+            0.0,
+            torch.device("cpu"),
+            config,
+        )
+        legacy = _legacy_hull_mask_fullgrid(
+            grid.nx,
+            grid.ny,
+            grid.nz,
+            grid.cx,
+            grid.cy,
+            grid.cz,
+            grid.length,
+            0.0,
+            torch.device("cpu"),
+            config,
+        )
+        assert fast.shape == legacy.shape == (grid.nz, grid.ny, grid.nx)
+        assert torch.equal(fast, legacy)
+
+
+class TestGeoFastCountsDevice:
+    """Counts-on-device fast path: bitwise channels + no latency regression."""
+
+    def test_counts_device_resolution(self) -> None:
+        from tensorlbm.ai.geometry_pipeline import _resolve_counts_device
+
+        auto_side = "cuda" if _HAS_CUDA else "cpu"
+        assert _resolve_counts_device("cuda", None) == "cuda"
+        assert _resolve_counts_device("cuda", "auto") == "cuda"
+        assert _resolve_counts_device("cpu", None) == auto_side
+        assert _resolve_counts_device("cuda", "cpu") == "cpu"
+        assert _resolve_counts_device("cpu", "cuda") == "cuda"
+        assert _resolve_counts_device("cuda:1", None) == "cuda:1"
+        assert _resolve_counts_device("cuda:1", "auto") == "cuda:1"
+
+    def test_pipeline_default_counts_device_auto(
+        self, model_pipeline: GeometryEchoPipeline
+    ) -> None:
+        """A CPU-device pipeline still resolves counts to any visible CUDA."""
+        assert model_pipeline.device == "cpu"
+        assert model_pipeline.counts_device == ("cuda" if _HAS_CUDA else "cpu")
+
+    def test_pipeline_counts_device_override(self, model_pipeline: GeometryEchoPipeline) -> None:
+        pipeline = GeometryEchoPipeline(
+            model_pipeline.service, grid=TEST_GRID, device="cpu", counts_device="cpu"
+        )
+        assert pipeline.counts_device == "cpu"
+
+    @pytest.mark.skipif(not _HAS_CUDA, reason="needs CUDA")
+    def test_pipeline_channels_bitwise_between_count_devices(
+        self, model_pipeline: GeometryEchoPipeline
+    ) -> None:
+        """Served geo blocks are bitwise equal with CPU vs CUDA counts.
+
+        ``model_pipeline`` auto-resolves to CUDA counts here, so pin its
+        twin to CPU explicitly — the comparison is the fast path vs the
+        fit-time device.
+        """
+        cpu_counts = GeometryEchoPipeline(
+            model_pipeline.service, grid=model_pipeline.grid, device="cpu", counts_device="cpu"
+        )
+        for _label, over in _GEO_FAST_SWEEP:
+            params = _sweep_params(over)
+            assert np.array_equal(
+                model_pipeline._geometry(dict(params)).geo,  # noqa: SLF001
+                cpu_counts._geometry(dict(params)).geo,  # noqa: SLF001
+            )
+
+    @pytest.mark.skipif(not _HAS_CUDA, reason="needs CUDA")
+    @pytest.mark.parametrize("hull", ["bare_hull", "with_sail", "full"])
+    def test_counts_bitwise_cpu_vs_cuda_all_axes_production_grid(self, hull: str) -> None:
+        """The service fast path: integer counts match CPU on every axis."""
+        for _label, over in _GEO_FAST_SWEEP:
+            params = _sweep_params(over)
+            config = SuboffConfig(
+                sail_scale=float(params["sail_scale"]),
+                fin_scale=float(params["fin_scale"]),
+                l_over_d_mult=float(params["l_over_d_mult"]),
+                nose_len_mult=float(params["nose_len_mult"]),
+                stern_len_mult=float(params["stern_len_mult"]),
+                sail_x_mult=float(params["sail_x_mult"]),
+            )
+            cpu = suboff_component_counts(
+                hull, 1.0, 1.0, PRODUCTION_GRID, config=config, device="cpu"
+            )
+            cuda = suboff_component_counts(
+                hull, 1.0, 1.0, PRODUCTION_GRID, config=config, device="cuda"
+            )
+            assert cpu == cuda, (hull, _label, cpu, cuda)
+
+    @pytest.mark.skipif(not _HAS_CUDA, reason="needs CUDA")
+    @pytest.mark.parametrize("hull", ["bare_hull", "with_sail", "full"])
+    def test_mask_bitwise_cpu_vs_cuda_all_axes_production_grid(self, hull: str) -> None:
+        """Masks built on the service device match the CPU build bitwise."""
+        for _label, over in _GEO_FAST_SWEEP:
+            params = _sweep_params(over)
+            config = SuboffConfig(
+                sail_scale=float(params["sail_scale"]),
+                fin_scale=float(params["fin_scale"]),
+                l_over_d_mult=float(params["l_over_d_mult"]),
+                nose_len_mult=float(params["nose_len_mult"]),
+                stern_len_mult=float(params["stern_len_mult"]),
+                sail_x_mult=float(params["sail_x_mult"]),
+            )
+            m_cpu, s_cpu = build_suboff_mask(
+                hull_type=hull,
+                nx=PRODUCTION_GRID.nx,
+                ny=PRODUCTION_GRID.ny,
+                nz=PRODUCTION_GRID.nz,
+                cx=PRODUCTION_GRID.cx,
+                cy=PRODUCTION_GRID.cy,
+                cz=PRODUCTION_GRID.cz,
+                length=PRODUCTION_GRID.length,
+                config=config,
+                device="cpu",
+            )
+            m_cuda, s_cuda = build_suboff_mask(
+                hull_type=hull,
+                nx=PRODUCTION_GRID.nx,
+                ny=PRODUCTION_GRID.ny,
+                nz=PRODUCTION_GRID.nz,
+                cx=PRODUCTION_GRID.cx,
+                cy=PRODUCTION_GRID.cy,
+                cz=PRODUCTION_GRID.cz,
+                length=PRODUCTION_GRID.length,
+                config=config,
+                device="cuda",
+            )
+            assert torch.equal(m_cpu, m_cuda.cpu())
+            assert s_cpu["solid_cells"] == s_cuda["solid_cells"]
+
+    @pytest.mark.skipif(not _HAS_CUDA, reason="needs CUDA")
+    def test_slider_miss_counts_no_latency_regression_production_grid(self) -> None:
+        """Latency-regression guard (tolerant): device counts stay fast.
+
+        Post-fix medians on the 5090 (GPU 2): CPU ~10 ms, CUDA ~2.3 ms per
+        production-grid miss.  The bounds are deliberately generous so the
+        guard flags regressions (pre-fix CUDA was ~8.8 ms, CPU ~16.5 ms),
+        not machine noise.
+        """
+        import time
+
+        config = SuboffConfig(sail_scale=1.1)
+
+        def _median(device: str) -> float:
+            times = []
+            for _ in range(9):
+                if device == "cuda":
+                    torch.cuda.synchronize()
+                t0 = time.perf_counter()
+                suboff_component_counts(
+                    "full", 1.1, 1.0, PRODUCTION_GRID, config=config, device=device
+                )
+                if device == "cuda":
+                    torch.cuda.synchronize()
+                times.append(1e3 * (time.perf_counter() - t0))
+            return float(np.median(times))
+
+        cpu_ms = _median("cpu")
+        cuda_ms = _median("cuda")
+        assert cuda_ms < 8.0, f"CUDA slider miss regressed: {cuda_ms:.2f} ms"
+        assert cuda_ms < cpu_ms, f"CUDA slider miss slower than CPU: {cuda_ms:.2f} vs {cpu_ms:.2f}"

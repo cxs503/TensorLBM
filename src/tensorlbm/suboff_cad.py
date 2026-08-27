@@ -642,16 +642,14 @@ def suboff_hull_mask(
     if config.l_over_d_mult != 1.0:
         radius = radius / config.l_over_d_mult
 
-    # Build coordinate grids
-    zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, device=device, dtype=torch.float32),
-        torch.arange(ny, device=device, dtype=torch.float32),
-        torch.arange(nx, device=device, dtype=torch.float32),
-        indexing="ij",
-    )
-
-    # Normalised axial position: xi = 0 at bow, 1 at stern
-    # Bow is at cx - length/2, stern at cx + length/2
+    # Normalised axial position: xi = 0 at bow, 1 at stern.
+    # Bow is at cx - length/2, stern at cx + length/2.  xi depends only on
+    # the axial index, so it is evaluated on the (nx,) row and broadcast:
+    # every elementwise op below sees exactly the values the historical
+    # full-grid meshgrid produced, so the mask stays bit-identical while
+    # the numpy radius-profile round trip shrinks ny*nz-fold (the profile
+    # dominated the CPU build: ~5.7 ms of the 16.5 ms slider miss).
+    xx = torch.arange(nx, device=device, dtype=torch.float32)
     x_bow = cx - length / 2.0
     xi_t = (xx - x_bow) / length  # 0 at bow, 1 at stern
 
@@ -665,13 +663,18 @@ def suboff_hull_mask(
     xi_np = xi_mother.cpu().numpy()
     r_norm = suboff_radius_profile(xi_np, config)  # normalised [0, 1]
 
-    # Actual radius in lattice units
+    # Actual radius in lattice units (one value per axial column)
     r_lu = torch.tensor(r_norm * radius, device=device, dtype=torch.float32)
 
-    # Radial distance from axis in y-z plane
+    # Radial distance from the axis in the y-z plane, as a (nz, ny, 1)
+    # broadcast view — same per-element arithmetic as the full-grid build.
+    yy = torch.arange(ny, device=device, dtype=torch.float32).view(1, ny, 1)
+    zz = torch.arange(nz, device=device, dtype=torch.float32).view(nz, 1, 1)
     r_grid = torch.sqrt((yy - cy) ** 2 + (zz - cz) ** 2)
 
-    # Solid where inside radius and within hull axial extent
+    # Solid where inside radius and within hull axial extent.  Broadcasting
+    # (nz, ny, 1) against (nx,) materialises the (nz, ny, nx) mask exactly
+    # as the full-grid comparison did.
     in_axial = (xi_t >= 0.0) & (xi_t <= 1.0)
     mask = in_axial & (r_grid <= r_lu)
     return mask
