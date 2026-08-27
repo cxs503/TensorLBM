@@ -30,6 +30,7 @@ from tensorlbm.ai.active_learning import (
     TrendSpec,
     _exclusion_floor,
     _params_config,
+    append_fam_fragment,
     augment_corpus,
     axes_envelope,
     corpus_cond_v3,
@@ -46,6 +47,7 @@ from tensorlbm.ai.active_learning import (
     hullform_condition_rows_v5,
     hullform_geo_block,
     labels_from_cache,
+    load_fam_fragment,
     point_param_key,
     predict_design,
     propose_acquisition,
@@ -1347,3 +1349,174 @@ class TestConditionV5Path:
         ta = torch.load(tmp_path / "a" / "al_aug_s0.pt", weights_only=False)
         assert ta["meta"]["cond"] == "v5"
         assert ta["arch"]["cond_dim"] == 9
+
+
+# ---------------------------------------------------------------------------
+# B4-fam corpus fragment (v5 fam arms, 2026-08-28)
+# ---------------------------------------------------------------------------
+
+
+def _write_fam_cache_prod(tmp_path: Path) -> Path:
+    """Synthetic cache_fam in the PRODUCTION schema (``geom``, no ``geo``).
+
+    Unlike :func:`write_fam_cache` (which predates the fragment path and
+    swaps the 6/7 labels), this uses the production family semantics
+    6=slender / 7=blunt / 8=long_nose / 9=aft_sail, the generalised
+    ``geom`` block instead of ``geo``, and a base block of ``fam = -1``
+    rows so the meta (family block only) is genuinely shorter than the
+    cache — the alignment contract :func:`load_fam_fragment` pins.
+    """
+    rng = np.random.default_rng(13)
+    fams = [
+        ("fam_slender", 6, {"l_over_d_mult": 1.30}),
+        ("fam_blunt", 7, {"l_over_d_mult": 0.75}),
+        ("fam_long_nose", 8, {"nose_len_mult": 1.30}),
+        ("fam_aft_sail", 9, {"sail_x_mult": 1.30}),
+    ]
+    res = [110.0, 210.0, 330.0, 520.0]
+    meta: list[dict[str, object]] = []
+    keys = (
+        "x",
+        "dsi",
+        "re",
+        "uin",
+        "sail",
+        "fin",
+        "hull",
+        "step",
+        "aproj",
+        "cd",
+        "geom",
+        "aux",
+        "mask_bit_eq",
+        "fam",
+    )
+    cols: dict[str, list[Any]] = {k: [] for k in keys}
+
+    def append_row(re: float, fam_label: int) -> None:
+        cols["x"].append(rng.normal(0.5, 0.1, (5, TEST_GRID.ny, TEST_GRID.nx)).astype(np.float32))
+        cols["dsi"].append(np.int64(max(fam_label, 0)))
+        cols["re"].append(np.float64(re))
+        cols["uin"].append(np.float64(0.1))
+        cols["sail"].append(np.float64(1.0))
+        cols["fin"].append(np.float64(1.0))
+        cols["hull"].append(np.int64(1))
+        cols["step"].append(np.int64(4000))
+        cols["aproj"].append(np.int64(69))
+        cols["cd"].append(np.float64(18.0 * re**-0.42))
+        cols["geom"].append(rng.normal(0.0, 0.01, 4))
+        cols["aux"].append(rng.normal(0.5, 0.05, 8))
+        cols["mask_bit_eq"].append(True)
+        cols["fam"].append(np.int64(fam_label))
+
+    for re in res[:2]:  # base block (the v2 corpus rows the cache carries)
+        append_row(re, -1)
+    for fam_name, fam_dsi, axes in fams:
+        for re in res:
+            base = {a: 1.0 for a in HULLFORM_AXES}
+            base.update(axes)
+            meta.append(
+                {
+                    "hull": "with_sail",
+                    "sail": 1.0,
+                    "fin": 1.0,
+                    "u_in": 0.1,
+                    "fam": fam_name,
+                    "re": re,
+                    **base,
+                }
+            )
+            append_row(re, fam_dsi)
+    path = tmp_path / "cache_fam.npz"
+    np.savez(path, **{k: np.stack(v) for k, v in cols.items()})  # type: ignore[arg-type]
+    path.with_name("cache_fam_meta.json").write_text(json.dumps(meta))
+    return path
+
+
+class TestFamFragment:
+    def test_aft_sail_geo_bitwise_mother_and_v5_channel(self, tmp_path: Path) -> None:
+        """The aft_sail fragment: geo == mother bitwise, axis only in ch9."""
+        cache = _write_fam_cache_prod(tmp_path)
+        frag = load_fam_fragment(cache, fam_labels=(9,), grid=TEST_GRID)
+        assert len(frag["cd"]) == 4
+        mother = hullform_geo_block("with_sail", 1.0, 1.0, TEST_GRID)
+        for g in frag["geo"]:  # pure sail translation -> block strictly invariant
+            np.testing.assert_array_equal(g, mother)
+        assert np.all(frag["sail_x_mult"] == 1.3)
+        assert np.all(frag["l_over_d_mult"] == 1.0)
+        assert np.all(frag["fam"] == 9)
+
+        corpus = make_corpus(n_per_design=2)
+        n0 = len(corpus["cd"])
+        corpus["sail_x_mult"] = np.ones(n0)
+        out = append_fam_fragment(corpus, frag)
+        cond = corpus_cond_v5(out)
+        np.testing.assert_array_equal(cond[:n0, 8], np.zeros(n0))  # mother -> 0
+        np.testing.assert_allclose(cond[n0:, 8], np.log10(1.3))  # aft rows vary
+        np.testing.assert_array_equal(corpus_cond_v3(out)[:n0], corpus_cond_v3(corpus))
+
+    def test_fragment_cad_geo_and_counts_all_families(self, tmp_path: Path) -> None:
+        cache = _write_fam_cache_prod(tmp_path)
+        frag = load_fam_fragment(cache, grid=TEST_GRID)
+        assert len(frag["cd"]) == 16
+        mother = hullform_geo_block("with_sail", 1.0, 1.0, TEST_GRID)
+        for j in range(len(frag["cd"])):
+            axes = {a: float(frag[a][j]) for a in HULLFORM_AXES}
+            cfg = SuboffConfig(**axes)
+            np.testing.assert_array_equal(
+                frag["geo"][j], hullform_geo_block("with_sail", 1.0, 1.0, TEST_GRID, cfg)
+            )
+            v_bare, v_sail, v_fin, v_solid, aproj, aproj_bare = hullform_component_counts(
+                "with_sail", 1.0, 1.0, TEST_GRID, cfg
+            )
+            assert frag["v_sail"][j] == v_sail
+            assert frag["v_solid"][j] == v_solid == v_bare + v_sail + v_fin
+            assert frag["aproj_cad"][j] == aproj
+            assert frag["aproj_bare"][j] == aproj_bare
+        slender = frag["geo"][frag["fam"] == 6][0]
+        assert not np.array_equal(slender, mother)  # block DOES see hull-form axes
+        assert frag["cd"][0] == pytest.approx(18.0 * 110.0**-0.42)  # payload verbatim
+
+    def test_append_remaps_dsi_and_keeps_base_split(self, tmp_path: Path) -> None:
+        cache = _write_fam_cache_prod(tmp_path)
+        frag = load_fam_fragment(cache, grid=TEST_GRID)
+        corpus = make_corpus(n_per_design=2)
+        corpus["sail_x_mult"] = np.ones(len(corpus["cd"]))
+        out = append_fam_fragment(corpus, frag)
+        n0 = len(corpus["cd"])
+        assert len(out["cd"]) == n0 + 16
+        assert set(out) == set(corpus), "schema identical to the base index (fam dropped)"
+        new_dsi = sorted({int(d) for d in out["dsi"][n0:]})
+        assert new_dsi == [int(corpus["dsi"].max()) + 1 + i for i in range(4)]
+        s0 = split_random(corpus)
+        s1 = split_random(out)
+        for part in ("fit", "val", "test", "train"):
+            assert [i for i in s1[part] if i < n0] == s0[part]
+
+    def test_append_without_sailx_column_refuses_variant_rows(self, tmp_path: Path) -> None:
+        cache = _write_fam_cache_prod(tmp_path)
+        frag = load_fam_fragment(cache, fam_labels=(9,), grid=TEST_GRID)
+        corpus = make_corpus(n_per_design=2)  # no sail_x_mult column
+        with pytest.raises(ValueError, match="sail_x_mult"):
+            append_fam_fragment(corpus, frag)
+        hull_form = load_fam_fragment(cache, fam_labels=(6,), grid=TEST_GRID)
+        out = append_fam_fragment(corpus, hull_form)  # all-mother axis: fine
+        assert "sail_x_mult" not in out
+
+    def test_meta_drift_and_alignment_raise(self, tmp_path: Path) -> None:
+        cache = _write_fam_cache_prod(tmp_path)
+        meta_path = cache.with_name("cache_fam_meta.json")
+        meta = json.loads(meta_path.read_text())
+        drifted = [dict(m) for m in meta]
+        drifted[0]["l_over_d_mult"] = 1.10  # family cache drifted
+        meta_path.write_text(json.dumps(drifted))
+        with pytest.raises(ValueError, match="disagree with canonical"):
+            load_fam_fragment(cache, fam_labels=(6,), grid=TEST_GRID)
+        meta_path.write_text(json.dumps(meta[:-1]))  # meta no longer lists all rows
+        with pytest.raises(ValueError, match="family rows but meta"):
+            load_fam_fragment(cache, grid=TEST_GRID)
+        mismatch = [dict(m) for m in meta]
+        mismatch[0]["re"] = 111.0  # misaligned block
+        meta_path.write_text(json.dumps(mismatch))
+        with pytest.raises(ValueError, match="does not match cache row"):
+            load_fam_fragment(cache, grid=TEST_GRID)
