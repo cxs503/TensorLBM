@@ -37,6 +37,17 @@ identically (the bare-corner ladder of the G2b campaign), so a manual-space
 guard cannot flag in-envelope geometry extrapolation there — PR #235's SDF
 latent space is the planned fix and this interface accepts it unchanged.
 
+4. **Measured-curve Re fallback (opt-in)** — the ``re_policy="quad3_fallback"
+   flag of :meth:`DragSurrogateService.predict` serves the CACHED measured
+   curve of an exactly-matched design (quad3: exact quadratic through the 3
+   nearest cached Re levels in log10-Re / log10-C_D space) for query
+   Reynolds numbers outside the corpus Re window, where the network
+   extrapolates poorly (~14 % median on unseen geometries) but the measured
+   curve is still the ground truth (campaign 2026-08-27: quad3 <= 0.21 %
+   over the full tested range, ``global_lin`` 4 %+ systematic — banned).
+   Default OFF; the network path stays byte-identical.  See
+   ``docs/quad3_fallback_20260828.md``.
+
 The module is import-safe without fastapi/onnx (the HTTP router lives in
 ``app/backend/routers/drag_surrogate.py``; ONNX helpers degrade to honest
 failure reports).
@@ -72,6 +83,8 @@ __all__ = [
     "FLAG_OK",
     "FLAG_REJECT",
     "FLAG_REVIEW",
+    "RE_POLICY_NETWORK",
+    "RE_POLICY_QUAD3_FALLBACK",
     "BackendQueryError",
     "CalibrationRow",
     "CondDragCheckpoint",
@@ -85,6 +98,9 @@ __all__ = [
     "ReplayEnsembleBackend",
     "SpectralConv2dMatmul",
     "ensemble_picp",
+    "quad3_loo_std",
+    "quad3_nearest3",
+    "resolve_re_policy",
     "resolve_uq_temperature",
     "ensemble_stats",
     "error_std_spearman",
@@ -104,6 +120,17 @@ FLAG_REJECT = "reject"
 HULL_ORDER = ("bare_hull", "with_sail", "full")
 
 _DEFAULT_DEVICE = "cpu"
+
+#: Default Re serving policy of :meth:`DragSurrogateService.predict`: the
+#: ensemble network path only (the pre-flag behaviour, byte-identical).
+RE_POLICY_NETWORK = "network"
+
+#: Opt-in Re serving policy: for a query design that EXACTLY matches a
+#: cached ``(hull, sail, fin, u_in)`` key with >= 3 cached Re rows, points
+#: outside the corpus Re window are served by the quad3 measured-curve
+#: extrapolation instead of the network (fresh-Re campaign 2026-08-27
+#: adjudication; ``docs/quad3_fallback_20260828.md``).
+RE_POLICY_QUAD3_FALLBACK = "quad3_fallback"
 
 #: Environment variable overriding the *reported* ensemble-std temperature
 #: (serving calibration knob, landing of the #251 UQ audit).  Default 1.0
@@ -809,6 +836,112 @@ class ReplayEnsembleBackend:
 
 
 # ---------------------------------------------------------------------------
+# Measured-curve quad3 fallback (fresh-Re campaign 2026-08-27)
+# ---------------------------------------------------------------------------
+
+
+def resolve_re_policy(re_policy: str | None = None) -> str:
+    """Validate an Re serving policy name (fail loud, no silent aliases).
+
+    ``None`` counts as :data:`RE_POLICY_NETWORK` so the default call path
+    never touches the fallback logic.  Unknown names raise — a typoed
+    policy must not silently degrade to the network path.
+    """
+    name = RE_POLICY_NETWORK if re_policy is None else str(re_policy)
+    if name not in (RE_POLICY_NETWORK, RE_POLICY_QUAD3_FALLBACK):
+        raise ValueError(
+            f"unknown re_policy {re_policy!r}; expected "
+            f"{RE_POLICY_NETWORK!r} or {RE_POLICY_QUAD3_FALLBACK!r}"
+        )
+    return name
+
+
+def quad3_nearest3(
+    cached_re: np.ndarray, cached_cd: np.ndarray, re_query: float
+) -> tuple[float, np.ndarray] | None:
+    """quad3 measured-curve value at ``re_query`` — the campaign definition.
+
+    Exactly the ``quad3`` predictor adjudicated by the fresh-Re campaign
+    (``analyze_extrap.py`` of 2026-08-27): fit the exact quadratic through
+    the 3 cached levels nearest the query in ``|log10 Re|`` and evaluate it
+    at ``x = log10(re_query)``::
+
+        c2, c1, c0 = np.polyfit(log10(re_sel), log10(cd_sel), 2)
+        cd = 10.0 ** (c2 * x * x + c1 * x + c0)
+
+    For an out-of-window query the nearest 3 cached levels ARE the 3 edge
+    levels on the query side (top-3 above, bottom-3 below), so this
+    reproduces the campaign slices bit-for-bit on the same rows.  Rows are
+    sorted by Re and the selected triple is evaluated in ascending order,
+    the campaign ordering, so the float result is identical.
+
+    Returns ``(cd_value, chosen_re_ascending)`` or ``None`` when the
+    nearest triple does not contain 3 DISTINCT ``log10 Re`` levels
+    (duplicate cached Re -> singular Vandermonde); the caller decides the
+    fallback, nothing is silently interpolated.
+    """
+    re_arr = np.asarray(cached_re, dtype=np.float64)
+    cd_arr = np.asarray(cached_cd, dtype=np.float64)
+    if re_arr.ndim != 1 or cd_arr.ndim != 1 or re_arr.shape != cd_arr.shape:
+        raise ValueError(
+            f"cached_re/cached_cd must be matching 1-D arrays, got {re_arr.shape} vs {cd_arr.shape}"
+        )
+    if re_arr.size < 3:
+        raise ValueError(f"quad3 needs >= 3 cached rows, got {re_arr.size}")
+    if not np.isfinite(re_arr).all() or not (re_arr > 0.0).all():
+        raise ValueError("cached_re entries must be finite and positive")
+    if not np.isfinite(cd_arr).all() or not (cd_arr > 0.0).all():
+        raise ValueError("cached_cd entries must be finite and positive")
+    if not (np.isfinite(re_query) and re_query > 0.0):
+        raise ValueError("re_query must be finite and positive")
+    order = np.argsort(re_arr, kind="stable")
+    re_s = re_arr[order]
+    cd_s = cd_arr[order]
+    lr = np.log10(re_s)
+    x = np.log10(float(re_query))
+    sel = np.sort(np.argsort(np.abs(lr - x), kind="stable")[:3])
+    if np.unique(lr[sel]).size < 3:
+        return None
+    c2, c1, c0 = np.polyfit(lr[sel], np.log10(cd_s[sel]), 2)
+    return float(10.0 ** (c2 * x * x + c1 * x + c0)), re_s[sel]
+
+
+def quad3_loo_std(cached_re: np.ndarray, cached_cd: np.ndarray) -> float | None:
+    """RMS *relative* leave-one-out residual of :func:`quad3_nearest3`.
+
+    Each cached row ``j`` is treated as a pseudo-query served by the SAME
+    estimator built on the remaining rows (nearest 3 to ``re_j`` in
+    ``|log10 Re|``); the returned number is
+    ``sqrt(mean_j ((cd_j - pred_j) / pred_j)^2)`` — a dimensionless
+    relative accuracy of the quad3 estimator on THIS design curve.  The
+    service multiplies it by the served value to obtain an absolute C_D
+    std (the reported ensemble std is absolute C_D everywhere else).
+
+    ``None`` when fewer than 4 cached rows exist (leave-one-out needs at
+    least 3 remaining) or any pseudo-fit is degenerate — NO uncertainty is
+    fabricated; callers report ``std = nan`` with a note instead.
+    """
+    re_arr = np.asarray(cached_re, dtype=np.float64)
+    cd_arr = np.asarray(cached_cd, dtype=np.float64)
+    if re_arr.ndim != 1 or cd_arr.ndim != 1 or re_arr.shape != cd_arr.shape:
+        raise ValueError(
+            f"cached_re/cached_cd must be matching 1-D arrays, got {re_arr.shape} vs {cd_arr.shape}"
+        )
+    if re_arr.size < 4:
+        return None
+    rel = np.empty(re_arr.size, dtype=np.float64)
+    for j in range(re_arr.size):
+        keep = np.ones(re_arr.size, dtype=bool)
+        keep[j] = False
+        out = quad3_nearest3(re_arr[keep], cd_arr[keep], float(re_arr[j]))
+        if out is None:
+            return None
+        pred = out[0]
+        rel[j] = abs(float(cd_arr[j]) - pred) / pred
+    return float(np.sqrt(np.mean(rel**2)))
+
+
+# ---------------------------------------------------------------------------
 # Service facade
 # ---------------------------------------------------------------------------
 
@@ -870,6 +1003,12 @@ class DragSurrogateService:
     cache_re / cache_designs:
         Row-aligned Reynolds numbers and ``(hull, sail, fin, u_in)`` keys
         of ``corpus_cache``, used to resolve a design's nearest field.
+    cache_cd:
+        Row-aligned measured C_D labels of ``cache_re``/``cache_designs``
+        (the corpus cache ``cd`` array).  Only consumer: the opt-in
+        ``re_policy="quad3_fallback"`` of :meth:`predict`.  Absent (the
+        default), the policy declines with
+        ``reason="no_measured_curve_cache"`` and the network serves.
     u_in_default:
         Default inlet speed of the corpus (0.1 lattice units in B4).
     uq_temperature:
@@ -891,6 +1030,7 @@ class DragSurrogateService:
         grid: SuboffGrid | None = None,
         cache_re: np.ndarray | None = None,
         cache_designs: list[tuple[str, float, float, float]] | None = None,
+        cache_cd: np.ndarray | None = None,
         u_in_default: float = 0.1,
         uq_temperature: float | str | None = None,
     ) -> None:
@@ -900,6 +1040,16 @@ class DragSurrogateService:
         self.corpus_cache = None if corpus_cache is None else np.asarray(corpus_cache)
         self.cache_re = None if cache_re is None else np.asarray(cache_re, dtype=np.float64)
         self.cache_designs = cache_designs
+        self.cache_cd = None if cache_cd is None else np.asarray(cache_cd, dtype=np.float64)
+        if (
+            self.cache_cd is not None
+            and self.cache_re is not None
+            and self.cache_cd.shape != self.cache_re.shape
+        ):
+            raise ValueError(
+                f"cache_cd {self.cache_cd.shape} must be row-aligned with "
+                f"cache_re {self.cache_re.shape}"
+            )
         self.u_in_default = float(u_in_default)
         self.uq_temperature = resolve_uq_temperature(uq_temperature)
 
@@ -917,6 +1067,7 @@ class DragSurrogateService:
         grid: SuboffGrid | None = None,
         cache_re: np.ndarray | None = None,
         cache_designs: list[tuple[str, float, float, float]] | None = None,
+        cache_cd: np.ndarray | None = None,
         backend_kind: str | None = None,
         backend_plan: str | Path | None = None,
         uq_temperature: float | str | None = None,
@@ -928,7 +1079,9 @@ class DragSurrogateService:
         on (default: the production grid — the B4 caches were built with
         it), for the same reason as :meth:`from_run_dir`.
         ``corpus_cache``/``cache_re``/``cache_designs`` wire up field
-        resolution for callers that do not pass ``fields`` per query.
+        resolution for callers that do not pass ``fields`` per query;
+        ``cache_cd`` additionally wires the measured-curve quad3 fallback
+        (``CorpusIndex.cd``).
 
         Backend selection (TRT slice 2026-08-27): ``backend_kind`` wins over
         ``TENSORLBM_DRAG_BACKEND`` (``torch`` default).  Any non-default
@@ -971,6 +1124,7 @@ class DragSurrogateService:
             grid=grid,
             cache_re=cache_re,
             cache_designs=cache_designs,
+            cache_cd=cache_cd,
             uq_temperature=uq_temperature,
         )
 
@@ -1083,6 +1237,116 @@ class DragSurrogateService:
             "field_re": float(self.cache_re[best[1]]),
         }
 
+    def _quad3_fallback(
+        self,
+        hull_type: str,
+        sail_scale: float,
+        fin_scale: float,
+        u_in: float,
+        re_arr: np.ndarray,
+        mean: np.ndarray,
+        std: np.ndarray,
+        lo: np.ndarray,
+        hi: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict[str, Any]]:
+        """Route per-point quad3 measured-curve serving (see :meth:`predict`).
+
+        Routing order (first failure wins, the network value is kept and
+        the reason recorded):
+
+        1. no measured curve attached (``cache_designs`` / ``cache_re`` /
+           ``cache_cd``) -> ``no_measured_curve_cache``;
+        2. every query Re inside ``[min(cache_re), max(cache_re)]``
+           (boundary values count as inside) -> ``re_inside_corpus_window``;
+        3. no cached rows with the exact design key (hull string equal,
+           sail/fin float-equal, ``|u_in - key| <= 1e-12`` — the
+           ``_resolve_field`` convention) -> ``no_exact_design_match``;
+        4. fewer than 3 cached rows -> ``insufficient_cached_rows``;
+        5. degenerate nearest-3 (duplicate cached log10-Re) per point ->
+           that point keeps the network value (``declined_points``).
+
+        Applied points get ``cd = quad3``, ``std = cd * quad3_loo_std``
+        (``nan`` with ``std_source`` note when fewer than 4 cached rows —
+        no fabricated uncertainty) and ``lo = hi = nan`` (no member band
+        exists for a measured curve).  ``std`` is NOT rescaled by
+        ``uq_temperature``: that knob is calibrated on the deep-ensemble
+        sigma of the network path, a different estimator.
+        """
+        info: dict[str, Any] = {
+            "name": RE_POLICY_QUAD3_FALLBACK,
+            "method": "network",
+            "n_quad3_points": 0,
+            "quad3_mask": [False] * re_arr.size,
+        }
+        if self.cache_designs is None or self.cache_re is None or self.cache_cd is None:
+            info["reason"] = "no_measured_curve_cache"
+            return mean, std, lo, hi, info
+        window = (float(self.cache_re.min()), float(self.cache_re.max()))
+        info["corpus_re_window"] = list(window)
+        outside = (re_arr < window[0]) | (re_arr > window[1])
+        if not outside.any():
+            info["reason"] = "re_inside_corpus_window"
+            return mean, std, lo, hi, info
+        assert self.cache_designs is not None  # narrowed for mypy below
+        rows = np.array(
+            [
+                r
+                for r, key in enumerate(self.cache_designs)
+                if key[0] == hull_type
+                and key[1] == float(sail_scale)
+                and key[2] == float(fin_scale)
+                and abs(key[3] - u_in) <= 1e-12
+            ],
+            dtype=np.int64,
+        )
+        info["n_cached_rows"] = int(rows.size)
+        if rows.size == 0:
+            info["reason"] = "no_exact_design_match"
+            return mean, std, lo, hi, info
+        if rows.size < 3:
+            info["reason"] = "insufficient_cached_rows"
+            return mean, std, lo, hi, info
+        order = np.argsort(self.cache_re[rows], kind="stable")
+        curve_re = np.asarray(self.cache_re[rows][order], dtype=np.float64)
+        curve_cd = np.asarray(self.cache_cd[rows][order], dtype=np.float64)
+        info["cached_re"] = curve_re.tolist()
+        loo_rel = quad3_loo_std(curve_re, curve_cd)
+        info["loo_rel_rms"] = loo_rel
+        info["std_source"] = (
+            "quad3_loo_relative_rms_times_cd"
+            if loo_rel is not None
+            else "unavailable_fewer_than_4_cached_rows"
+        )
+        mean = mean.copy()
+        std = std.copy()
+        lo = lo.copy()
+        hi = hi.copy()
+        mask = np.zeros(re_arr.size, dtype=bool)
+        chosen: list[list[float] | None] = [None] * re_arr.size
+        declined: list[str] = []
+        for i in np.nonzero(outside)[0]:
+            out = quad3_nearest3(curve_re, curve_cd, float(re_arr[i]))
+            if out is None:
+                declined.append(f"re={float(re_arr[i]):.6g}: duplicate log10 Re in nearest 3")
+                continue
+            value, sel_re = out
+            mask[i] = True
+            mean[i] = value
+            std[i] = value * loo_rel if loo_rel is not None else np.nan
+            lo[i] = np.nan
+            hi[i] = np.nan
+            chosen[i] = [float(v) for v in sel_re]
+        info["quad3_mask"] = mask.tolist()
+        info["n_quad3_points"] = int(mask.sum())
+        info["nearest_cached_re"] = chosen
+        if declined:
+            info["declined_points"] = declined
+        if mask.any():
+            info["method"] = RE_POLICY_QUAD3_FALLBACK
+        else:
+            info["reason"] = "degenerate_nearest3"
+        return mean, std, lo, hi, info
+
     def predict(
         self,
         hull_type: str,
@@ -1093,12 +1357,28 @@ class DragSurrogateService:
         u_in: float | None = None,
         fields: np.ndarray | None = None,
         field_point: int | None = None,
+        re_policy: str | None = None,
     ) -> DragCurveResult:
         """Serve one design swept over ``re_grid`` with UQ + guard verdict.
 
         The guard verdict is always computed and attached; a ``reject``
         does not suppress the numbers — callers (e.g. the HTTP layer)
         decide how to present flagged results.
+
+        ``re_policy`` (opt-in, default :data:`RE_POLICY_NETWORK` = the
+        pre-flag behaviour, byte-identical including ``info``):
+        ``"quad3_fallback"`` serves, per query point, the quad3
+        measured-curve value (:func:`quad3_nearest3`) instead of the
+        network when (a) the query design exactly matches a cached
+        ``(hull, sail, fin, u_in)`` key with >= 3 cached Re rows AND
+        (b) the query Re lies strictly outside the corpus Re window
+        ``[min(cache_re), max(cache_re)]`` of the attached corpus.
+        In-window points, unmatched designs and missing caches keep the
+        network value; ``info["re_policy"]`` records the routing
+        (method / reason / chosen cached Re / n_cached_rows).  The guard
+        verdict is NOT softened: an out-of-window Re still flags
+        ``reject`` on the ``log10_re`` envelope — the number is served
+        AND flagged, mirroring the always-compute-and-attach semantics.
         """
         re_arr = np.asarray(re_grid, dtype=np.float64).ravel()
         if re_arr.size == 0:
@@ -1106,6 +1386,7 @@ class DragSurrogateService:
         if not np.isfinite(re_arr).all() or not (re_arr > 0).all():
             raise ValueError("re_grid entries must be finite and positive")
         u_in = self.u_in_default if u_in is None else float(u_in)
+        policy = resolve_re_policy(re_policy)
         cond, geo_vals = self.condition_rows(hull_type, sail_scale, fin_scale, re_arr, u_in=u_in)
         verdict = self.guard.check(cond)
         info: dict[str, Any] = {"geometry": geo_vals}
@@ -1137,6 +1418,15 @@ class DragSurrogateService:
             # so the served arrays are bit-identical to the pre-knob service.
             std = std * t
         info["uq_temperature"] = t
+        if policy != RE_POLICY_NETWORK:
+            # Opt-in measured-curve fallback: overwrites ONLY the
+            # out-of-window exact-design points below.  The network arrays
+            # above (and the default call path without the flag) are
+            # untouched — at default OFF this whole block is dead code.
+            mean, std, lo, hi, policy_info = self._quad3_fallback(
+                hull_type, float(sail_scale), float(fin_scale), u_in, re_arr, mean, std, lo, hi
+            )
+            info["re_policy"] = policy_info
         return DragCurveResult(
             re=re_arr,
             cd=mean,
@@ -1202,6 +1492,7 @@ class CorpusIndex:
     re: np.ndarray
     designs: tuple[tuple[str, float, float, float], ...]
     cond: np.ndarray
+    cd: np.ndarray | None = None
 
 
 def load_corpus_index(run_dir: str | Path) -> CorpusIndex:
@@ -1220,6 +1511,7 @@ def load_corpus_index(run_dir: str | Path) -> CorpusIndex:
         re=np.asarray(z["re"], dtype=np.float64),
         designs=designs,
         cond=cond,
+        cd=np.asarray(z["cd"], dtype=np.float64),
     )
 
 
