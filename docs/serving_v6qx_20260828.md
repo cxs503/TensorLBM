@@ -127,6 +127,16 @@ holds **10.71 %** held-out MAPE on the slender class
 (`/nfs/wangxi/runs/sdf_slender_20260828/`). Serving rule: slender-class
 designs must route to the SDF two-stage path, never the cond path.
 
+Refinement (2026-08-28 bias adjudication,
+`/nfs/wangxi/runs/sdf_bias_20260828/`): the 10.71 % is a **support-hole
+artifact, not a representation limit**. At the same axis value 1.30, with
+partial training support (22 of 28 rows) the two-stage path reaches
+**0.209 %**; the ×0.894 offset appears only when the axis loses all
+training support, and a globally fitted lambda is a no-op (10.71 →
+10.70 %). Operational consequence: for a new axis value, scan a small
+anchor set (~6 rows) into the SDF training corpus instead of shipping any
+calibration layer.
+
 ### Rule 2 — out-of-support queries are defended by the guard, not the band
 
 The member std is **blind to moderate out-of-label extrapolation**: at
