@@ -69,7 +69,10 @@ from .drag_cond import (
     SuboffGrid,
     condition_v3,
     condition_v5,
+    condition_v6,
+    hullform_axis_channel,
     sail_axial_channel,
+    sail_axial_quad_channel,
 )
 from .inference_service import (
     FLAG_REJECT,
@@ -102,6 +105,7 @@ __all__ = [
     "axes_envelope",
     "corpus_cond_v3",
     "corpus_cond_v5",
+    "corpus_cond_v6",
     "corpus_design_keys",
     "corpus_param_keys",
     "corpus_point_keys",
@@ -112,6 +116,7 @@ __all__ = [
     "hullform_component_counts",
     "hullform_condition_rows",
     "hullform_condition_rows_v5",
+    "hullform_condition_rows_v6",
     "hullform_geo_block",
     "labels_from_cache",
     "load_corpus_index",
@@ -325,6 +330,33 @@ def hullform_condition_rows_v5(
     base = hullform_condition_rows(params, re_list, grid=grid, u_in=u_in)
     col = sail_axial_channel(float(params.get("sail_x_mult", 1.0)))
     return np.concatenate([base, np.full((base.shape[0], 1), float(col))], axis=1)
+
+
+def hullform_condition_rows_v6(
+    params: dict[str, Any],
+    re_list: Sequence[float] | np.ndarray,
+    grid: SuboffGrid = PRODUCTION_GRID,
+    u_in: float | None = None,
+) -> np.ndarray:
+    """(N, 13) condition_v6 rows of a design over ``re_list`` (B4 v6).
+
+    Same construction as :func:`hullform_condition_rows_v5` plus the four
+    v6 channels from the design's hull-form axis multipliers (defaults
+    1.0 = mother, all four channels exactly 0.0 — so a mother design
+    serves bit-identically under ``cond_version="v6"`` and ``"v5"``).
+    Column order follows :data:`.drag_cond.COND_V6_CHANNEL_NAMES`: the
+    v5 block, then ``log10(sail_x_mult)**2``, then
+    ``log10(l_over_d_mult)`` / ``log10(nose_len_mult)`` /
+    ``log10(stern_len_mult)``.
+    """
+    base = hullform_condition_rows_v5(params, re_list, grid=grid, u_in=u_in)
+    cols = [sail_axial_quad_channel(float(params.get("sail_x_mult", 1.0)))]
+    cols += [
+        hullform_axis_channel(float(params.get(axis, 1.0)))
+        for axis in ("l_over_d_mult", "nose_len_mult", "stern_len_mult")
+    ]
+    extra = np.stack([np.full(base.shape[0], float(c), dtype=np.float64) for c in cols], axis=1)
+    return np.concatenate([base, extra], axis=1)
 
 
 # ---------------------------------------------------------------------------
@@ -873,6 +905,26 @@ def corpus_cond_v5(index: dict[str, np.ndarray]) -> np.ndarray:
     return condition_v5(index["re"], index["uin"], index["sail"], index["fin"], index["geo"], mult)
 
 
+def corpus_cond_v6(index: dict[str, np.ndarray]) -> np.ndarray:
+    """(N, 13) condition_v6 matrix of a corpus (v5 block + the 4 v6 channels).
+
+    The axis multipliers come from the corpus's hull-form axis columns
+    (``sail_x_mult`` populated by :func:`augment_corpus`, the others by the
+    fragment loaders); a corpus without a column is entirely mother on
+    that axis, so the channel is all zeros (mother encodes as exactly
+    0.0 — matching the v5 matrix the v5 protocol produced, which is the
+    bit-identical 9-column prefix of this one).
+    """
+    n = len(index["re"])
+    mults = []
+    for axis in ("sail_x_mult", "l_over_d_mult", "nose_len_mult", "stern_len_mult"):
+        col = index.get(axis)
+        mults.append(np.ones(n) if col is None else np.asarray(col, dtype=np.float64))
+    return condition_v6(
+        index["re"], index["uin"], index["sail"], index["fin"], index["geo"], *mults
+    )
+
+
 def corpus_param_keys(index: dict[str, np.ndarray]) -> list[str]:
     """Row keys ``re|uin|sail|fin|hull`` (the serving split group key)."""
     return [
@@ -1383,13 +1435,18 @@ def predict_design(
     mother-design corpus field nearest in log-Re.  ``cond_version="v5"``
     appends the sail axial-position channel
     (:func:`hullform_condition_rows_v5`, (N, 9)) for ensembles trained on
-    the v5 vector; the default ``"v3"`` path is unchanged.
+    the v5 vector; ``cond_version="v6"`` appends the four v6 channels on
+    top (:func:`hullform_condition_rows_v6`, (N, 13) — the "v6qx" layout)
+    for ensembles trained with ``cond="v6"``; the default ``"v3"`` path
+    is unchanged.
     """
-    if cond_version not in ("v3", "v5"):
-        raise ValueError(f"cond_version must be 'v3' or 'v5', got {cond_version!r}")
+    if cond_version not in ("v3", "v5", "v6"):
+        raise ValueError(f"cond_version must be 'v3', 'v5' or 'v6', got {cond_version!r}")
     re = np.asarray(re_list, dtype=np.float64).ravel()
     u_in = float(params.get("u_in", 0.1))
-    if cond_version == "v5":
+    if cond_version == "v6":
+        cond = hullform_condition_rows_v6(params, re, grid=grid, u_in=u_in)
+    elif cond_version == "v5":
         cond = hullform_condition_rows_v5(params, re, grid=grid, u_in=u_in)
     else:
         cond = hullform_condition_rows(params, re, grid=grid, u_in=u_in)
@@ -1425,14 +1482,20 @@ def corpus_with_cond(index: dict[str, np.ndarray], cond: str = "v3") -> dict[str
     """Attach ``cond_<cond>`` and ``ylog`` columns (the training view).
 
     ``cond`` selects the condition vector: ``"v3"`` (default, the (N, 8)
-    serving vector) or ``"v5"`` (the (N, 9) vector with the sail
-    axial-position channel — requires nothing of the corpus: a corpus
-    without a ``sail_x_mult`` column is all-mother on that axis).
+    serving vector), ``"v5"`` (the (N, 9) vector with the sail
+    axial-position channel) or ``"v6"`` (the (N, 13) "v6qx" layout — v5
+    plus ``log10(sail_x_mult)**2`` and the three hull-form axis channels
+    ``log10(l_over_d_mult)`` / ``log10(nose_len_mult)`` /
+    ``log10(stern_len_mult)``; the experiment-side name maps 1:1 to this
+    column order).  Both ``"v5"`` and ``"v6"`` require nothing of the
+    corpus: a corpus without an axis column is all-mother on that axis
+    (the channel degenerates to zeros).
     """
-    if cond not in ("v3", "v5"):
-        raise ValueError(f"cond must be 'v3' or 'v5', got {cond!r}")
+    if cond not in ("v3", "v5", "v6"):
+        raise ValueError(f"cond must be 'v3', 'v5' or 'v6', got {cond!r}")
     d = dict(index)
-    d[f"cond_{cond}"] = corpus_cond_v5(index) if cond == "v5" else corpus_cond_v3(index)
+    builder = {"v3": corpus_cond_v3, "v5": corpus_cond_v5, "v6": corpus_cond_v6}[cond]
+    d[f"cond_{cond}"] = builder(index)
     d["ylog"] = np.log10(index["cd"])
     return d
 
@@ -1525,9 +1588,9 @@ def train_member(
     """One ensemble member (verbatim loop of train_ensemble.train_member).
 
     ``cond_col`` selects the condition matrix of the training view
-    (``"cond_v3"`` default — the serving protocol verbatim — or
-    ``"cond_v5"`` for the sail axial-position channel; the arch's
-    ``cond_dim`` follows the matrix either way).
+    (``"cond_v3"`` default — the serving protocol verbatim — ``"cond_v5"``
+    for the sail axial-position channel, or ``"cond_v6"`` for the 13-wide
+    "v6qx" vector; the arch's ``cond_dim`` follows the matrix either way).
     """
     cfg = ARM_CFG
     x, cd, ylog, aux = d["x"], d["cd"], d["ylog"], d["aux"]
@@ -1679,9 +1742,10 @@ def retrain_ensemble(
     ``CondDragCheckpoint`` bundles named ``al_aug_s{k}.pt``.
     ``hp_overrides`` exists for CPU tests (the demo uses the serving
     defaults).  ``cond="v5"`` trains on the (N, 9) sail axial-position
-    condition vector (recorded in the member ``meta``; the checkpoints are
-    then served with ``predict_design(..., cond_version="v5")``); the
-    default ``"v3"`` is the serving protocol verbatim.
+    condition vector and ``cond="v6"`` on the (N, 13) "v6qx" vector
+    (either recorded in the member ``meta``; the checkpoints are then
+    served with ``predict_design(..., cond_version=...)`` of the same
+    name); the default ``"v3"`` is the serving protocol verbatim.
     """
     hp_base = dict(HP, **(hp_overrides or {}))
     out_dir = Path(out_dir)
