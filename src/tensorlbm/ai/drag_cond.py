@@ -59,6 +59,21 @@ the mother design (``sail_x_mult = 1``) encode as exactly ``0.0`` (the
 same mother-is-zero property as the resolution channel).  The first 8
 columns of :func:`condition_v5` are bit-identical to
 :func:`condition_v3`, so v3/v4 models/protocols are unchanged.
+
+B4-v6 adds the *sail axial quadratic* and the three *hull-form axis*
+channels (:func:`condition_v6`): the v5 vector plus
+``[log10(sail_x_mult)**2, log10(l_over_d_mult), log10(nose_len_mult),
+log10(stern_len_mult)]`` — the 13-column "v6qx" layout validated by the
+2026-08-28 cond_v6 campaign (10-seed ext trend ratio 0.992, the best of
+the campaign series; see ``docs/cond_v6_20260828.md``).  The quadratic
+channel squares the SAME log10 value the v5 channel carries, buying the
+curvature the single linear channel could not; the three axis channels
+give ``l_over_d_mult`` / ``nose_len_mult`` / ``stern_len_mult`` the same
+explicit design-parameter visibility ``sail_x_mult`` got in v5.  At the
+mother design all four new columns are exactly ``0.0``, so v6 reduces to
+v5 numerically there.  The first 9 columns of :func:`condition_v6` are
+bit-identical to :func:`condition_v5`, so v3/v4/v5 models/protocols are
+unchanged.
 """
 
 from __future__ import annotations
@@ -84,21 +99,27 @@ __all__ = [
     "COND_V3_CHANNEL_NAMES",
     "COND_V4_CHANNEL_NAMES",
     "COND_V5_CHANNEL_NAMES",
+    "COND_V6_CHANNEL_NAMES",
     "CondFNODrag",
     "GEOMETRY_CHANNEL_NAMES",
+    "HULLFORM_AXIS_CHANNEL_NAMES",
     "PRODUCTION_GRID",
     "QuotaSampler",
     "RESOLUTION_CHANNEL_NAME",
     "SAIL_AXIAL_CHANNEL_NAME",
+    "SAIL_AXIAL_QUAD_CHANNEL_NAME",
     "SuboffGeometryFeatures",
     "SuboffGrid",
     "condition_v3",
     "condition_v4",
     "condition_v5",
+    "condition_v6",
     "force_tail_bins",
     "geometry_channels",
+    "hullform_axis_channel",
     "resolution_channel",
     "sail_axial_channel",
+    "sail_axial_quad_channel",
     "suboff_geometry_features",
 ]
 
@@ -408,6 +429,102 @@ def condition_v5(
             f"sail_x_mult must be scalar or length-{base.shape[0]} array, got shape {col.shape}"
         )
     return np.concatenate([base, col[:, None]], axis=1)
+
+
+#: Name of the sail axial quadratic channel (B4 v6): log10(sail_x_mult)**2.
+SAIL_AXIAL_QUAD_CHANNEL_NAME = "log10_sail_x_mult_sq"
+
+#: Names of the three hull-form axis channels (B4 v6): log10 of the
+#: ``SuboffConfig`` length-ratio multipliers.
+HULLFORM_AXIS_CHANNEL_NAMES = (
+    "log10_l_over_d_mult",
+    "log10_nose_len_mult",
+    "log10_stern_len_mult",
+)
+
+#: Full v6 condition vector: v5 + the sail quadratic + the hull-form axes.
+COND_V6_CHANNEL_NAMES = (
+    COND_V5_CHANNEL_NAMES + (SAIL_AXIAL_QUAD_CHANNEL_NAME,) + HULLFORM_AXIS_CHANNEL_NAMES
+)
+
+
+def sail_axial_quad_channel(sail_x_mult: "int | float | np.ndarray") -> np.ndarray:
+    """Square of the v5 sail axial channel (scalar or 1-D array).
+
+    ``(log10(sail_x_mult))**2`` of the SAME log10 value
+    :func:`sail_axial_channel` computes — the curvature companion the
+    2026-08-28 cond_v6 campaign showed the single linear channel needs
+    (v5 alone cannot bend: ext trend ratio 1.028 vs v6qx 0.992).  The
+    square is unsigned, so it never replaces the linear channel — the two
+    always travel together in :func:`condition_v6`, quad directly after
+    the v5 channel.  Mother designs (``mult = 1``) encode as exactly
+    ``0.0``.
+    """
+    return np.square(sail_axial_channel(sail_x_mult))
+
+
+def hullform_axis_channel(mult: "int | float | np.ndarray") -> np.ndarray:
+    """log10 of a hull-form length-ratio multiplier (scalar or 1-D array).
+
+    The shared channel primitive for ``l_over_d_mult`` / ``nose_len_mult``
+    / ``stern_len_mult`` — ``SuboffConfig`` multipliers that stretch the
+    bare hull along its own axes (unlike ``sail_x_mult`` they DO move the
+    mask-derived counts, so the v3 geometry block already carries part of
+    the axis; the explicit channel adds the design-parameter view the
+    counts cannot separate).  Same multiplier-log10 convention as
+    :func:`sail_axial_channel`; mother designs (``mult = 1``) encode as
+    exactly ``0.0``.
+    """
+    m = np.asarray(mult, dtype=np.float64)
+    if m.ndim > 1:
+        raise ValueError(f"mult must be a scalar or 1-D array, got shape {m.shape}")
+    if not np.isfinite(m).all() or not (m > 0.0).all():
+        raise ValueError(f"mult must be finite and positive, got {mult!r}")
+    return np.log10(m)
+
+
+def _broadcast_column(col: np.ndarray, n: int, name: str) -> np.ndarray:
+    """Scalar-or-(n,) channel column as an (n, 1) block (the v4/v5 rule)."""
+    if col.ndim == 0:
+        col = np.full(n, float(col))
+    if col.shape != (n,):
+        raise ValueError(f"{name} must be scalar or length-{n} array, got shape {col.shape}")
+    return col[:, None]
+
+
+def condition_v6(
+    re: np.ndarray,
+    u_in: np.ndarray,
+    sail_scale: np.ndarray,
+    fin_scale: np.ndarray,
+    geometry: np.ndarray,
+    sail_x_mult: "int | float | np.ndarray",
+    l_over_d_mult: "int | float | np.ndarray" = 1.0,
+    nose_len_mult: "int | float | np.ndarray" = 1.0,
+    stern_len_mult: "int | float | np.ndarray" = 1.0,
+) -> np.ndarray:
+    """Assemble the (N, 13) v6 condition vector (the "v6qx" layout).
+
+    The first 9 columns are :func:`condition_v5` verbatim
+    (bit-identical); the four additions, in column order, are
+    :func:`sail_axial_quad_channel` of *sail_x_mult* and
+    :func:`hullform_axis_channel` of *l_over_d_mult* / *nose_len_mult* /
+    *stern_len_mult* (each scalar broadcast or per-point 1-D array,
+    defaults 1.0 = mother).  At the mother design every new column is
+    exactly ``0.0``, so a v6 model sees the v5 encoding there — the
+    2026-08-28 campaign's validated 13-column layout (ext trend ratio
+    0.992 vs the serving baseline 1.028).  The v3/v4/v5 paths are
+    unchanged.
+    """
+    base = condition_v5(re, u_in, sail_scale, fin_scale, geometry, sail_x_mult)
+    n = base.shape[0]
+    cols = [
+        _broadcast_column(sail_axial_quad_channel(sail_x_mult), n, "sail_x_mult"),
+        _broadcast_column(hullform_axis_channel(l_over_d_mult), n, "l_over_d_mult"),
+        _broadcast_column(hullform_axis_channel(nose_len_mult), n, "nose_len_mult"),
+        _broadcast_column(hullform_axis_channel(stern_len_mult), n, "stern_len_mult"),
+    ]
+    return np.concatenate([base] + cols, axis=1)
 
 
 class CondFNODrag(nn.Module):
