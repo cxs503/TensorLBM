@@ -35,9 +35,11 @@ from tensorlbm.ai.active_learning import (
     axes_envelope,
     corpus_cond_v3,
     corpus_cond_v5,
+    corpus_cond_v6,
     corpus_design_keys,
     corpus_param_keys,
     corpus_point_keys,
+    corpus_with_cond,
     default_fresh_re_grid,
     eval_loop,
     fit_stats,
@@ -45,6 +47,7 @@ from tensorlbm.ai.active_learning import (
     hullform_component_counts,
     hullform_condition_rows,
     hullform_condition_rows_v5,
+    hullform_condition_rows_v6,
     hullform_geo_block,
     labels_from_cache,
     load_fam_fragment,
@@ -1349,6 +1352,174 @@ class TestConditionV5Path:
         ta = torch.load(tmp_path / "a" / "al_aug_s0.pt", weights_only=False)
         assert ta["meta"]["cond"] == "v5"
         assert ta["arch"]["cond_dim"] == 9
+
+
+class TestConditionV6Path:
+    """The v6 axis channels: 13-wide matrix, v5 bit-prefix, split-neutral,
+    backend width acceptance and the predict_design(cond_version="v6") path.
+    """
+
+    def test_rows_prefix_and_channels(self) -> None:
+        params = _family_params({"sail_x_mult": 1.3, "l_over_d_mult": 1.2})
+        v5 = hullform_condition_rows_v5(params, RES[:3], grid=TEST_GRID)
+        v6 = hullform_condition_rows_v6(params, RES[:3], grid=TEST_GRID)
+        assert v6.shape == (3, 13)
+        np.testing.assert_array_equal(v6[:, :9], v5)  # bit-identical prefix
+        np.testing.assert_allclose(v6[:, 9], np.log10(1.3) ** 2)
+        np.testing.assert_allclose(v6[:, 10], np.log10(1.2))
+        np.testing.assert_array_equal(v6[:, 11:], np.zeros((3, 2)))  # mother axes -> 0.0
+
+    def test_default_params_encode_mother_zero(self) -> None:
+        rows = hullform_condition_rows_v6(_family_params({}), [150.0], grid=TEST_GRID)
+        np.testing.assert_array_equal(rows[0, 9:], np.zeros(4))
+
+    def test_rows_bit_equal_v5_at_mother(self) -> None:
+        """Mother design: the v6 rows are the v5 rows + exact zero columns."""
+        params = _family_params({})
+        v5 = hullform_condition_rows_v5(params, RES[:3], grid=TEST_GRID)
+        v6 = hullform_condition_rows_v6(params, RES[:3], grid=TEST_GRID)
+        assert v6[:, :9].tobytes() == v5.tobytes()
+
+    def test_corpus_matrix_width_and_columns(self) -> None:
+        corpus = make_corpus(n_per_design=2)
+        n = len(corpus["cd"])
+        v6 = corpus_cond_v6(corpus)
+        v5 = corpus_cond_v5(corpus)
+        assert v6.shape == (n, 13)
+        np.testing.assert_array_equal(v6[:, :9], v5)
+        np.testing.assert_array_equal(v6[:, 9:], np.zeros((n, 4)))  # all-mother corpus
+        with_col = dict(corpus)
+        with_col["sail_x_mult"] = np.ones(n)
+        with_col["sail_x_mult"][n // 2 :] = 1.3
+        with_col["l_over_d_mult"] = np.ones(n)
+        with_col["l_over_d_mult"][n // 2 :] = 1.2
+        out = corpus_cond_v6(with_col)
+        np.testing.assert_allclose(out[:, 9], np.log10(with_col["sail_x_mult"]) ** 2)
+        np.testing.assert_allclose(out[:, 10], np.log10(with_col["l_over_d_mult"]))
+        np.testing.assert_array_equal(out[:, 11:], np.zeros((n, 2)))
+
+    def test_corpus_view_width_and_split_neutrality(self) -> None:
+        """cond="v6" attaches a 13-wide cond_v6 column and leaves the split
+        exactly where cond="v5" (and "v3") put it — the base rows keep their
+        fit/val/test membership regardless of the condition vector.
+        """
+        corpus = make_corpus(n_per_design=2)
+        d5 = corpus_with_cond(corpus, cond="v5")
+        d6 = corpus_with_cond(corpus, cond="v6")
+        assert d6["cond_v6"].shape == (len(corpus["cd"]), 13)
+        np.testing.assert_array_equal(d6["cond_v6"], corpus_cond_v6(corpus))
+        s5, s6 = split_random(d5), split_random(d6)
+        for part in ("train", "fit", "val", "test"):
+            assert s5[part] == s6[part], part
+        with pytest.raises(ValueError, match="cond must be"):
+            corpus_with_cond(corpus, cond="v7")
+
+    def test_retrain_and_serve_v6(self, tmp_path: Path) -> None:
+        """End-to-end v6 path: retrain(cond='v6') -> serve via predict_design."""
+        corpus = make_corpus(n_per_design=2)
+        n0 = len(corpus["cd"])
+        for axis in ("sail_x_mult", "l_over_d_mult"):
+            corpus[axis] = np.ones(n0)
+        rng = np.random.default_rng(5)
+        for sx, lod in ((0.7, 1.0), (1.4, 1.2)):  # two variant rows, own dsi
+            for k, v in corpus.items():
+                pad = np.zeros((1,) + np.asarray(v).shape[1:], dtype=np.asarray(v).dtype)
+                corpus[k] = np.concatenate([np.asarray(v), pad], axis=0)
+            corpus["dsi"][-1] = 99
+            corpus["re"][-1] = 150.0
+            corpus["sail"][-1] = 1.0
+            corpus["fin"][-1] = 1.0
+            corpus["hull"][-1] = 1
+            corpus["cd"][-1] = 18.0 * 150.0**-0.42
+            corpus["aux"][-1] = rng.normal(0.5, 0.05, 8)
+            corpus["sail_x_mult"][-1] = sx
+            corpus["l_over_d_mult"][-1] = lod
+            corpus["geo"][-1] = _design_geo("with_sail", 1.0, 1.0)
+            corpus["x"][-1] = rng.normal(0.5, 0.1, (5, TEST_GRID.ny, TEST_GRID.nx)).astype(
+                np.float32
+            )
+        ck = tmp_path / "ckpts_v6"
+        retrain_ensemble(
+            corpus,
+            ck,
+            seeds=(0,),
+            device="cpu",
+            hp_overrides=dict(epochs=2, patience=2, batch=8),
+            cond="v6",
+        )
+        spec = ServiceSpec(
+            ckpt_dir=ck,
+            guard_features=corpus_cond_v6(corpus),
+            axes_env={
+                axis: (0.7 if axis in ("sail_x_mult", "l_over_d_mult") else 1.0, 1.4)
+                for axis in HULLFORM_AXES
+            },
+            corpus_cache=corpus["x"],
+            cache_re=corpus["re"],
+            cache_designs=corpus_design_keys(corpus),
+        )
+        backend = spec.backend()
+        assert backend.cond_dim == 13  # width from the member architecture
+        _m, mean_lo, _s = predict_design(
+            backend,
+            spec,
+            _family_params({"sail_x_mult": 0.7, "l_over_d_mult": 1.0}),
+            RES[:3],
+            grid=TEST_GRID,
+            cond_version="v6",
+        )
+        _m, mean_hi, _s = predict_design(
+            backend,
+            spec,
+            _family_params({"sail_x_mult": 1.4, "l_over_d_mult": 1.2}),
+            RES[:3],
+            grid=TEST_GRID,
+            cond_version="v6",
+        )
+        assert not np.array_equal(mean_lo, mean_hi)  # axes reach the prediction
+        with pytest.raises(ValueError, match=r"cond must be \(N, 13\)"):
+            predict_design(  # v5 rows against a v6 ensemble: width guard fires
+                backend,
+                spec,
+                _family_params({}),
+                RES[:3],
+                grid=TEST_GRID,
+                cond_version="v5",
+            )
+        with pytest.raises(ValueError, match="cond_version"):
+            predict_design(
+                backend,
+                spec,
+                _family_params({}),
+                RES[:3],
+                grid=TEST_GRID,
+                cond_version="v2",
+            )
+
+    def test_retrain_v6_deterministic_cpu(self, tmp_path: Path) -> None:
+        corpus = make_corpus(n_per_design=2)
+        for axis in ("sail_x_mult", "l_over_d_mult"):
+            corpus[axis] = np.ones(len(corpus["cd"]))
+        a = retrain_ensemble(
+            corpus,
+            tmp_path / "a",
+            seeds=(0,),
+            device="cpu",
+            hp_overrides=dict(epochs=2, patience=2, batch=8),
+            cond="v6",
+        )
+        b = retrain_ensemble(
+            corpus,
+            tmp_path / "b",
+            seeds=(0,),
+            device="cpu",
+            hp_overrides=dict(epochs=2, patience=2, batch=8),
+            cond="v6",
+        )
+        assert a[0]["mape"] == b[0]["mape"]
+        ta = torch.load(tmp_path / "a" / "al_aug_s0.pt", weights_only=False)
+        assert ta["meta"]["cond"] == "v6"
+        assert ta["arch"]["cond_dim"] == 13
 
 
 # ---------------------------------------------------------------------------
