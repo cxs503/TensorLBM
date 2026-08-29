@@ -179,8 +179,24 @@ scan point (from the slender scan logs), so the whole acquisition step
 
 For slender 1.30 specifically nothing new needs scanning: the 28 rows
 already exist as held-out data, and the 3 anchor rows (Re 63.2 / 205.9 /
-654.2) promote the 350-row hole corpus to a 353-row corpus
-(`/nfs/wangxi/runs/anchor_promo_20260829/`, 10-seed production confirm).
+654.2, corpus indices 246 / 252 / 257) promote the **378-row hole pool**
+(the 406-row ext corpus minus its 28 slender-1.30 rows) to a **381-row
+production corpus** (fit 325 / val 56 / anchors 3).
+
+10-seed production confirm (wave-16, `/nfs/wangxi/runs/anchor_promo_20260829/`,
+protocol bit-identical to the k3-spread cell, seeds s0-s9, anchors and
+corpus 9/9 bit-checked against the wave-14/15 caches): held-25 MAPE
+median **0.237 %** ts2 [0.107, 0.805] / **0.309 %** ts4 [0.146, 0.923],
+no seed above 0.93 %; per-seed held lambda in [0.9977, 1.0090];
+in-support lambda pooled 0.99972 / 1.00025. The 3-seed wave-15 plateau
+holds at 10 seeds. One disclosure: read per-seed on already-fit rows
+the in-support lambda dips to 0.99785 on 5 of 20 arm-seed cells
+(checkpoint wobble on fit rows; those same seeds hold 1.000 +/- 0.003
+on the held-out 25), and the two 0.92 % ts4 seeds are flat
+lambda ~ 1.008 tilts, not Re-ramps. The corpus file keeps the name
+`corpus353.npz` for lineage but contains the honest 381 rows.
+Selection is executable: `tensorlbm.ai.anchor_selection`
+(`anchor_targets` / `validate_span` / `match_anchor_rows`).
 
 ### Rule 2 — out-of-support queries are defended by the guard, not the band
 
