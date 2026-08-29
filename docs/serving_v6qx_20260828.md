@@ -23,6 +23,7 @@
 | `uq_temperature` | **1.5** (`TENSORLBM_DRAG_UQ_TEMPERATURE=1.5`) |
 | slender-class designs | **route to the two-stage SDF path — never the cond path** (see [§3](#3-serving-rules-hard-limits)) |
 | out-of-support queries | **defended by the envelope guard, not by the uncertainty band** |
+| new axis values | **k = 3 spread-logRe anchors into the SDF corpus** (see the recipe under §3) |
 
 ## 1. Recommended pool
 
@@ -133,9 +134,53 @@ artifact, not a representation limit**. At the same axis value 1.30, with
 partial training support (22 of 28 rows) the two-stage path reaches
 **0.209 %**; the ×0.894 offset appears only when the axis loses all
 training support, and a globally fitted lambda is a no-op (10.71 →
-10.70 %). Operational consequence: for a new axis value, scan a small
-anchor set (~6 rows) into the SDF training corpus instead of shipping any
-calibration layer.
+10.70 %). Operational consequence: for a new axis value, acquire a **k = 3
+spread-logRe anchor set** (recipe below) into the SDF training corpus
+instead of shipping any calibration layer: measured held-out error
+collapses from 10.71 % to **0.411 %** (ts2) / **0.214 %** (ts4), 3-seed
+medians, and the full acquisition step costs under 10 min on one 5090.
+
+### Recipe — k = 3 anchor acquisition for a new axis value (2026-08-29)
+
+Verified recipe (wave-15 W2, `/nfs/wangxi/runs/anchor_min_20260829/`,
+24 cells x 2 arms x 3 seeds, every per-seed number independently
+recomputed from `runs/<cell>/preds.npz`): to bring a **new axis value**
+(e.g. a fresh l_over_d) into support, scan **3 anchor rows** at the
+**min / geometric-mid / max of the intended query range in log10(Re)**
+and add them to the SDF training corpus. Held-out MAPE at slender
+l_over_d 1.30, median over seeds:
+
+| anchors added | ts2 | ts4 | note |
+|---|---|---|---|
+| k = 0 | 10.776 % | 9.567 % | reproduces the support hole; lambda = 0.893 |
+| k = 1 | 5.886-11.162 % | 5.155-12.196 % | by position; Re-slope stays wrong |
+| k = 2 spread | 0.520 % | 0.390 % | [63.2, 654.2] |
+| k = 2 adjacent | 3.574 % | 3.089 % | [190.2, 205.9] — span, not count |
+| **k = 3 spread** | **0.411 %** | **0.214 %** | [63.2, 205.9, 654.2] = min/geo-mid/max |
+| k = 6 spread | 0.396 % | 0.268 % | saturation from k >= 2 |
+| k = 12 / k = 22 spread | 0.376 / 0.274 % | 0.307 / 0.254 % | diminishing |
+
+Mechanism (two cliffs, both on **anchor log10-Re span**, not row count):
+
+1. **offset cliff** — a single anchor (k = 1) does not restore the
+   Re-response: the slope of log10(pred/true) vs log10(Re) stays at
+   **+3 to +13 % per decade** (position- and seed-dependent) and
+   lambda lands anywhere in 0.84-1.13 depending on anchor position
+   (mid 0.99, low 1.05-1.13, high 0.84-0.92);
+2. **slope cliff** — k >= 2 anchors with **>= 0.4 decade span** collapse
+   the slope to -0.8 to +0.1 % per decade and lambda lands at
+   **1.000 +/- 0.003** (k3-spread seeds 1.0031 / 0.9991 / 0.9994).
+
+Random draws are acceptable **only if the span rule holds**: the single
+failing k = 3 draw (span 0.32 decade) gives 1.152 %, while every draw
+with span >= 0.64 decade lands at 0.37-0.51 %. Cost: 22.8 GPU-s per CFD
+scan point (from the slender scan logs), so the whole acquisition step
+— 3 scans plus corpus/training refresh — fits in ~7 min on one 5090.
+
+For slender 1.30 specifically nothing new needs scanning: the 28 rows
+already exist as held-out data, and the 3 anchor rows (Re 63.2 / 205.9 /
+654.2) promote the 350-row hole corpus to a 353-row corpus
+(`/nfs/wangxi/runs/anchor_promo_20260829/`, 10-seed production confirm).
 
 ### Rule 2 — out-of-support queries are defended by the guard, not the band
 
@@ -161,8 +206,17 @@ pool's 0.992 / 0.905 (`/nfs/wangxi/runs/famall_v6_20260828/`). The
 mechanism is zero-sail_x-contrast rows diluting the trend calibration —
 explicit channels do not immunize against it. Blunt-class designs
 (l_over_d 0.75) via the cond path are a **68.5 %** LOFO catastrophe;
-route them to the SDF path (**8.87 %**) until in-support intermediates
-exist in the corpus.
+route them to the SDF path (honest clean-stream base **7.92 % +/- 4.62**,
+see the footnote) until in-support intermediates exist in the corpus.
+
+Footnote (2026-08-29 path-guard correction, wave-15 W3,
+`/nfs/wangxi/runs/sdf_axis_20260829/`): the two-stage trainer's
+first-call path guard shifts model init for exactly one cell per
+process, so the wave-10 campaign number 8.87 % (and the wave-11
+5.02 +/- 0.76) rode a lucky shifted seed; the honest clean-stream
+blunt base is 7.92 % +/- 4.62 with seed spread 5-17 %. The routing
+decision is unchanged — cond 68.5 % versus SDF ~8 % — but treat any
+single-seed blunt number from that lineage with suspicion.
 
 ## 4. What is NOT recommended
 
@@ -187,8 +241,11 @@ exist in the corpus.
 | uq_temperature = 1.5 + coverage table | `/nfs/wangxi/runs/v6_uq_20260828/` (`report.md`, `uq_results.json`, `uq_analysis.json`), `docs/uq_temperature_serving_20260827.md` (knob semantics), PR #257 |
 | slender class (bias, guard, SDF route) | `/nfs/wangxi/runs/v6_uq_20260828/` (−18.7 %, ±14.9σ, 28/28), `/nfs/wangxi/runs/sdf_slender_20260828/` (10.71 %), `docs/sdf_two_stage_20260828.md`, PR #260 |
 | extrapolation blindness + sail_x_mult interval | `/nfs/wangxi/runs/v6_uq_20260828/` §5 |
-| fam-fragment corpus ban | `/nfs/wangxi/runs/famall_v6_20260828/` (ext 1.363, canon 1.570, blunt 68.5 % / SDF 8.87 %), `docs/v5_fam_20260828.md` (0.886) |
+| fam-fragment corpus ban | `/nfs/wangxi/runs/famall_v6_20260828/` (ext 1.363, canon 1.570, blunt cond 68.5 %), `docs/v5_fam_20260828.md` (0.886) |
 | fresh-Re anchor ban | `/nfs/wangxi/runs/freshre_corpus_20260828/` (`report.md`) |
+| k = 3 anchor recipe (MAPE(k) table, span rule, two-cliff lambda) | `/nfs/wangxi/runs/anchor_min_20260829/` (`summary.json` 24 cells, `runs/<cell>/preds.npz` per-row), wave-15 W2 |
+| 10-seed production confirm of the recipe (353-row corpus) | `/nfs/wangxi/runs/anchor_promo_20260829/` (`summary_promo.json`, `preds_promo.npz`), wave-16 W16-B |
+| path-guard RNG correction (blunt honest base) | `/nfs/wangxi/runs/sdf_axis_20260829/` (`report.md`, `crossbatch_replicate/`), wave-15 W3 |
 
 The temperature recommendation must be re-derived if the corpus changes
 (fresh-M / B-grid middles are extrapolation for the current 382 rows;
