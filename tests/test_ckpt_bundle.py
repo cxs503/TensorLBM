@@ -14,6 +14,12 @@ dims shrunk:
   forwards, equals the BASE backend on the shared-encoder degenerate case
   (cond norms padded zeros/ones over the latent columns), and rejects
   norm blocks that try to z-score the latent.
+
+The ``test_fix1_..``–``test_fix4_..`` block below pins the four friction
+fixes from the 2026-08-31 production rehearsal
+(``/nfs/wangxi/runs/ckpt_bundle_rehearsal_20260831``): inference-ready
+frozen modules, the ``weights_only`` opt-out, ``save_member_bundle``
+arch inference, and the batch-contract / param-count docs.
 """
 
 from __future__ import annotations
@@ -444,3 +450,125 @@ def test_load_member_bundle_sniffing(tmp_path: Any) -> None:
     torch.save([1, 2, 3], tmp_path / "junk.pt")
     with pytest.raises(ValueError, match="not a member bundle"):
         load_member_bundle(tmp_path / "junk.pt")
+
+
+# ---------------------------------------------------------------------------
+# 2026-08-31 rehearsal friction fixes (register items 1-4)
+# ---------------------------------------------------------------------------
+
+
+def test_fix1_loaders_return_inference_ready_modules(tmp_path: Any) -> None:
+    """Every loader path hands out eval modules with ALL params frozen."""
+    sup, full = build_member(7)
+    sd1, sd2 = sup.state_dict(), full.fno.state_dict()
+    p1, p2 = tmp_path / "stage1_s7.pt", tmp_path / "stage2_ts2_s7.pt"
+    torch.save(sd1, p1)
+    torch.save(sd2, p2)
+
+    # bare two-file loader: the returned model is fully frozen
+    model = load_two_stage_member(p1, p2)
+    assert all(not p.requires_grad for p in model.parameters())
+    assert not model.training
+
+    # bundle loader: BOTH the full model and the encoder wrapper
+    path = save_member_bundle(
+        tmp_path / "m7.pt", sd1, sd2, arch_config=TINY_ARCH, norm_stats=tiny_norm()
+    )
+    loaded = load_member_bundle(path)
+    assert all(not p.requires_grad for p in loaded.model.parameters())
+    assert all(not p.requires_grad for p in loaded.stage1.parameters())
+    assert not loaded.model.training and not loaded.stage1.training
+
+    # bare-pair sniffing branch of the bundle loader too
+    loaded_bare = load_member_bundle(p2, stage1_path=p1, norm_stats=tiny_norm())
+    assert loaded_bare.source == "bare-pair"
+    assert all(not p.requires_grad for p in loaded_bare.model.parameters())
+    assert all(not p.requires_grad for p in loaded_bare.stage1.parameters())
+
+    # frozen params change no values: forward still runs and is bit-exact
+    fields, sdf, cond = tiny_inputs()
+    y = _forward_batch(loaded.model, fields, sdf, cond)
+    assert y.shape == (4,)
+    assert np.isfinite(y).all()
+    assert np.array_equal(y, _forward_batch(full, fields, sdf, cond))
+    # and a frozen member still serves through the per-member backend
+    got = PerMemberEnsembleBackend.from_bundles([loaded]).predict(fields, sdf, cond)
+    assert got.shape == (1, 4)
+    assert np.isfinite(got).all()
+
+
+def test_fix2_weights_only_opt_out(tmp_path: Any) -> None:
+    """Default loads the numpy-norm bundle; True is an explicit opt-in."""
+    sup, full = build_member(8)
+    sd1, sd2 = sup.state_dict(), full.fno.state_dict()
+    norm = tiny_norm()
+    path = save_member_bundle(tmp_path / "np_norm.pt", sd1, sd2, norm_stats=norm)
+
+    # default (weights_only=False) loads the standard numpy-norm bundle fine
+    loaded = load_member_bundle(path)
+    assert loaded.source == "bundle"
+    for k, v in norm.items():
+        assert np.array_equal(loaded.norm[k], v)
+
+    # weights_only=True refuses the embedded numpy norm arrays
+    with pytest.raises(Exception) as excinfo:
+        load_member_bundle(path, weights_only=True)
+    assert "weights_only" in str(excinfo.value).lower()
+
+    # the documented contract states WHY the default is False
+    doc = load_member_bundle.__doc__ or ""
+    assert "weights_only" in doc
+    assert "numpy" in doc
+
+    # a pure-tensor-norm bundle of the same member DOES load under True
+    payload: Any = torch.load(path, map_location="cpu", weights_only=False)
+    payload["norm"] = {k: torch.as_tensor(np.asarray(v)) for k, v in payload["norm"].items()}
+    pure = str(tmp_path / "tensor_norm.pt")
+    torch.save(payload, pure)
+    strict = load_member_bundle(pure, weights_only=True)
+    assert strict.source == "bundle"
+    for k, v in norm.items():
+        assert np.array_equal(strict.norm[k], v)
+
+
+def test_fix3_save_member_bundle_infers_arch(tmp_path: Any) -> None:
+    """arch_config=None infers the arch; identical to an explicit save."""
+    sup, full = build_member(11)
+    sd1, sd2 = sup.state_dict(), full.fno.state_dict()
+    norm = tiny_norm()
+    p_infer = save_member_bundle(
+        tmp_path / "inferred.pt", sd1, sd2, arch_config=None, norm_stats=norm
+    )
+    p_explicit = save_member_bundle(
+        tmp_path / "explicit.pt", sd1, sd2, arch_config=TINY_ARCH, norm_stats=norm
+    )
+    inferred = load_member_bundle(p_infer)
+    explicit = load_member_bundle(p_explicit)
+    assert inferred.arch == explicit.arch == TINY_ARCH
+    # same member rebuilt either way: identical tensors on both halves
+    for k, v in inferred.model.fno.state_dict().items():
+        assert torch.equal(v, explicit.model.fno.state_dict()[k])
+    for k, v in inferred.stage1.state_dict().items():
+        assert torch.equal(v, explicit.stage1.state_dict()[k])
+
+
+def test_fix4_batch_contract_and_param_counts_documented() -> None:
+    """Docs pin the batch contract and the arm-dependent body param counts."""
+
+    def flat(doc: str) -> str:
+        return " ".join(doc.split())
+
+    predict_doc = flat(PerMemberEnsembleBackend.predict.__doc__ or "")
+    batch_doc = flat(PerMemberEnsembleBackend.predict_batch.__doc__ or "")
+    # predict: N cond rows against ONE shared field/sdf; predict_batch: per-row
+    assert "ONE shared field/sdf" in predict_doc
+    assert "ONE shared field/sdf" in batch_doc
+    assert "counts" in batch_doc
+    assert "predict_batch" in predict_doc
+    # the rehearsal cost note lives on the single-design path
+    assert "1e-5" in predict_doc
+    # ts2 is not the universal body size
+    infer_doc = flat(infer_member_arch.__doc__ or "")
+    assert "4,240,073" in infer_doc
+    assert "4,240,713" in infer_doc
+    assert "cond_dim" in infer_doc
