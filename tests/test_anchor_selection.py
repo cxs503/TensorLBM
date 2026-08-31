@@ -3,6 +3,9 @@
 CPU suite for the wave-16 winner landing: geometric target construction,
 the span rule from the wave-15 W2 campaign, and the promote-from-held-out
 matching used for the slender-1.30 corpus promotion (350 -> 353 rows).
+Also pins the return-order semantics of the matching (target order, never
+cache order — the 2026-08-30 blunt-anchor footgun) and the
+``(achieved, row_indices)`` promote alias.
 """
 
 from __future__ import annotations
@@ -14,6 +17,7 @@ from tensorlbm.ai.anchor_selection import (
     MIN_SPAN_DECADES,
     anchor_targets,
     match_anchor_rows,
+    promote_anchor_rows,
     span_decades,
     validate_span,
 )
@@ -130,3 +134,69 @@ class TestMatchAnchorRows:
     def test_nonpositive_re_rejected(self):
         with pytest.raises(ValueError, match="positive"):
             match_anchor_rows([63.2, -1.0, 654.2], anchor_targets(63.2, 654.2))
+
+
+class TestMatchAnchorRowsOrderSemantics:
+    """Regression for the 2026-08-30 blunt-anchor footgun.
+
+    Two consumers zipped corpus rows (cache order) with ``row_indices``
+    (target order) and silently mismatched rows.  The corpus here is
+    scrambled relative to Re, exactly like a training-cache / npz load.
+    """
+
+    # cache positions 0..4; Re-ascending order would be 50, 90, 120, 300, 700
+    CORPUS_RE = np.array([300.0, 50.0, 120.0, 700.0, 90.0])
+
+    def test_positional_indexing_recovers_achieved_exactly(self):
+        targets = anchor_targets(50.0, 700.0, k=3)
+        row_indices, achieved = match_anchor_rows(self.CORPUS_RE, targets, max_log10_distance=0.2)
+        assert np.array_equal(self.CORPUS_RE[row_indices], achieved)
+
+    def test_zip_consumption_is_wrong_by_construction(self):
+        targets = anchor_targets(50.0, 700.0, k=3)
+        row_indices, achieved = match_anchor_rows(self.CORPUS_RE, targets, max_log10_distance=0.2)
+        # cache-order pairing disagrees with achieved at EVERY position ...
+        assert np.all(self.CORPUS_RE[: len(achieved)] != achieved)
+        # ... so zipping cache-order rows with target-order indices claims
+        # corpus_re[j] realises targets[j] (wrong), and silently truncates
+        # the 5-row corpus to the 3 anchor slots
+        zipped = np.array([row for row, _ in zip(self.CORPUS_RE, row_indices)])
+        assert zipped.shape == achieved.shape
+        assert np.all(zipped != achieved)
+
+    def test_duplicate_index_rejection_survives_scrambled_cache(self):
+        # both k=2 targets snap to the lone 120.0 row (cache position 2)
+        corpus_re = np.array([700.0, 90.0, 120.0, 300.0, 50.0])
+        with pytest.raises(ValueError, match="matched two anchor targets"):
+            match_anchor_rows(corpus_re, anchor_targets(115.0, 125.0, k=2))
+
+    def test_docstring_example_values_hold(self):
+        corpus_re = np.array([300.0, 50.0, 185.0, 700.0, 90.0])  # cache order
+        targets = anchor_targets(50.0, 700.0, k=3)
+        row_indices, achieved = match_anchor_rows(corpus_re, targets)
+        assert np.array_equal(corpus_re[row_indices], achieved)
+
+
+class TestPromoteAnchorRows:
+    def test_delegates_identically_with_swapped_returns(self):
+        corpus_re = np.array([300.0, 50.0, 185.0, 700.0, 90.0])
+        targets = anchor_targets(50.0, 700.0, k=3)
+        row_indices, achieved = match_anchor_rows(corpus_re, targets)
+        achieved_p, row_indices_p = promote_anchor_rows(corpus_re, targets)
+        assert np.array_equal(achieved_p, achieved)
+        assert np.array_equal(row_indices_p, row_indices)
+        assert np.array_equal(corpus_re[row_indices_p], achieved_p)
+
+    def test_tolerance_is_forwarded(self):
+        corpus_re = np.array([70.0, 300.0, 600.0])
+        targets = anchor_targets(63.2, 654.2, k=3)
+        with pytest.raises(ValueError, match="scan this anchor"):
+            promote_anchor_rows(corpus_re, targets, max_log10_distance=0.01)
+        achieved, row_indices = promote_anchor_rows(corpus_re, targets, max_log10_distance=0.2)
+        assert achieved.tolist() == pytest.approx([70.0, 300.0, 600.0])
+        assert np.array_equal(corpus_re[row_indices], achieved)
+
+    def test_duplicate_rejection_forwarded(self):
+        corpus_re = np.array([700.0, 90.0, 120.0, 300.0, 50.0])
+        with pytest.raises(ValueError, match="matched two anchor targets"):
+            promote_anchor_rows(corpus_re, anchor_targets(115.0, 125.0, k=2))
