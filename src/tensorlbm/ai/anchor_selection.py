@@ -35,6 +35,7 @@ __all__ = [
     "MIN_SPAN_DECADES",
     "anchor_targets",
     "match_anchor_rows",
+    "promote_anchor_rows",
     "span_decades",
     "validate_span",
 ]
@@ -111,6 +112,19 @@ def match_anchor_rows(
     the :func:`anchor_targets` output, return the row indices that best
     realise the anchor set.
 
+    **Warning — order semantics (the 2026-08-30 blunt-anchor footgun):**
+    ``row_indices`` follows **target order** (ascending anchor Re), *not*
+    the order of any cached corpus.  Corpus arrays loaded from a training
+    cache / npz ride cache order, so the ONLY correct consumption is
+    positional indexing — ``row_arrays[i][row_indices]`` — never
+    ``zip(row_arrays, row_indices)``: a zip silently pairs each anchor
+    with the wrong row (two separate consumers hit exactly this).
+
+    >>> corpus_re = np.array([300.0, 50.0, 185.0, 700.0, 90.0])  # cache order
+    >>> targets = anchor_targets(50.0, 700.0, k=3)
+    >>> row_indices, achieved = match_anchor_rows(corpus_re, targets)
+    >>> assert np.array_equal(corpus_re[row_indices], achieved)  # positional, never zip
+
     Parameters
     ----------
     row_re:
@@ -125,7 +139,8 @@ def match_anchor_rows(
     Returns
     -------
     row_indices:
-        Shape ``(len(targets),)`` int64 array of indices into ``row_re``.
+        Shape ``(len(targets),)`` int64 array of indices into ``row_re``,
+        in **target order** (NOT cache order).
     achieved:
         Shape ``(len(targets),)`` float64 array of the matched rows'
         Reynolds numbers (ascending, like the targets).
@@ -150,3 +165,46 @@ def match_anchor_rows(
     if len(set(idx.tolist())) != len(idx):
         raise ValueError("one archived row matched two anchor targets; span the targets")
     return idx.astype(np.int64), rows[idx]
+
+
+def promote_anchor_rows(
+    row_re: np.ndarray | list[float],
+    targets: np.ndarray | list[float],
+    max_log10_distance: float = 0.05,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Promote archived rows to anchors, returning ``(achieved, row_indices)``.
+
+    A thin alias over :func:`match_anchor_rows` for the
+    promote-from-held-out call sites: identical matching and identical
+    rejections (it delegates), with the returns swapped so the reading
+    is positional-first — the achieved Reynolds numbers, then the indices
+    to apply to every corpus array.
+
+    **Warning — same order semantics as :func:`match_anchor_rows`:**
+    ``row_indices`` follows **target order**, *not* the order of any
+    cached corpus.  Consume positionally, ``row_arrays[i][row_indices]``
+    — never ``zip(row_arrays, row_indices)`` (see the warning and
+    usage example on :func:`match_anchor_rows`).
+
+    Parameters
+    ----------
+    row_re:
+        Reynolds numbers of the archived rows (any order).
+    targets:
+        Anchor targets from :func:`anchor_targets`.
+    max_log10_distance:
+        Tolerance, in decades, for a row to count as realising a target
+        (0.05 ~ 12 %).  A target with no row within tolerance raises —
+        the axis value needs a scan, not a promotion.
+
+    Returns
+    -------
+    achieved:
+        Shape ``(len(targets),)`` float64 array of the matched rows'
+        Reynolds numbers (ascending, like the targets).
+    row_indices:
+        Shape ``(len(targets),)`` int64 array of indices into ``row_re``,
+        in **target order** (NOT cache order).
+    """
+    row_indices, achieved = match_anchor_rows(row_re, targets, max_log10_distance)
+    return achieved, row_indices
