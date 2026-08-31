@@ -73,7 +73,11 @@ to the B-grid 5-point sweep ratio in the campaign gate tooling is
 below the 0.90 floor — the band fails its own reference, so treat the
 B-grid gate as **advisory** until the band is re-baselined (candidate: a
 band centered on the reference value with a stated tolerance, e.g.
-0.889 ± 0.05; decision pending). The band is annotated here, not changed.
+0.889 ± 0.05; decision pending). Evidence: of the four B-grid ratios
+measured on this corpus family — reference 0.889 and the A-1 arms
+0.857 / 0.926 / 0.914 — the current band excludes two (0.889, 0.857),
+including the reference itself, while all four sit inside ref ± 0.05 =
+[0.839, 0.939]. The band is annotated here, not changed.
 
 ### Trend-slope convention
 
@@ -326,6 +330,8 @@ from that older lineage still deserves suspicion.
 | k = 3 anchor recipe (MAPE(k) table, span rule, two-cliff lambda) | `/nfs/wangxi/runs/anchor_min_20260829/` (`summary.json` 24 cells, `runs/<cell>/preds.npz` per-row), wave-15 W2 |
 | 10-seed production confirm of the recipe (353-row corpus) | `/nfs/wangxi/runs/anchor_promo_20260829/` (`summary_promo.json`, `preds_promo.npz`), wave-16 W16-B |
 | path-guard RNG correction (blunt honest base) | `/nfs/wangxi/runs/sdf_axis_20260829/` (`report.md`, `crossbatch_replicate/`), wave-15 W3 |
+| blunt SDF serving measured (0.1–0.2 %, bit-exact path, ops) | `/nfs/wangxi/runs/sdf_serve_sanity_20260830/` (`report.md`, `identity_check.json`, `blunt_queries.json`, `ops_numbers.json`), maintenance wave A-2 |
+| A-1 blunt × k = 3 cond-path anchors (full/partial transfer, gates) | `/nfs/wangxi/runs/blunt_anchor_20260830/` (`report.md`, `summary.json`, `preds.npz`), maintenance wave A-1 |
 
 The temperature recommendation must be re-derived if the corpus changes
 (fresh-M / B-grid middles are extrapolation for the current 382 rows;
