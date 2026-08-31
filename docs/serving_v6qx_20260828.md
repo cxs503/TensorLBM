@@ -67,6 +67,14 @@ Quality (10 seeds, 382-row corpus; from `eval_v6qx.json` /
 | fresh-M MAPE | 0.515 % |
 | negative members (ext sweep) | 0 |
 
+B-grid gate-band annotation (2026-08-30): the regression-gate band applied
+to the B-grid 5-point sweep ratio in the campaign gate tooling is
+[0.90, 1.10], but the reference value in this table (0.889) itself sits
+below the 0.90 floor — the band fails its own reference, so treat the
+B-grid gate as **advisory** until the band is re-baselined (candidate: a
+band centered on the reference value with a stated tolerance, e.g.
+0.889 ± 0.05; decision pending). The band is annotated here, not changed.
+
 ### Trend-slope convention
 
 Every slope in the tables above (and in the campaign docs) is measured in
@@ -198,6 +206,43 @@ lambda ~ 1.008 tilts, not Re-ramps. The corpus file keeps the name
 Selection is executable: `tensorlbm.ai.anchor_selection`
 (`anchor_targets` / `validate_span` / `match_anchor_rows`).
 
+### A-1 verdict — blunt (l_over_d 0.75) anchors on the cond path (2026-08-30)
+
+Verified micro-experiment (wave-17 A-1,
+`/nfs/wangxi/runs/blunt_anchor_20260830/` — 10 seeds per arm, v6qx pool
+machinery on a main-7b406a10c worktree, anchors drawn with the PR #266
+`tensorlbm.ai.anchor_selection` API):
+
+- **The k = 3 spread recipe transfers FULLY to the blunt axis on the cond
+  path.** The 382-row v6qx corpus plus 3 blunt (l_over_d 0.75) anchors at
+  Re 63.04 / 198.04 / 647.92 (span 1.0119 decades, `validate_span` ok)
+  collapses the blunt held-25 true-field ensemble MAPE **68.52 % → 0.496 %**
+  across 10 seeds — every seed ≤ 1.14 %, per-seed lambda in
+  [0.9932, 1.0087].
+- **The span rule transfers only PARTIALLY on the cond path.** A
+  0.0407-decade "narrow" anchor triple still collapses the cliff (held-25
+  **3.507 %**): on this path the zero-support failure is a one-sided
+  channel extrapolation, so ANY 3 rows at the axis value pull the channel
+  inside support and kill the ×1/3 underprediction — anchor span then only
+  grades the residual (~7×: spread 0.50 % vs narrow 3.51 %). k = 2
+  collapses but is unstable: **1.181 %** ensemble with a 9.31 % seed
+  outlier, and the canon gate breaks (1.631). Use k = 3.
+- **Regression gates for the spread arm** (v6qx 382 reference): ext
+  **0.970** PASS, canon **1.044** PASS, test-55 **0.504 %** PASS, B-grid
+  **0.857** — the B-grid miss is measured against a band whose own
+  reference (0.889) already sits below the 0.90 floor (see the B-grid
+  annotation under the §1 quality table). Slender-1.30 held-out serving
+  drifts +2–4 pp on this pool (18.68 % → 20.46–22.42 %), but
+  slender-class queries route to the SDF path anyway (Rule 1).
+- **Serving recommendation unchanged**: the cond main pool STAYS v6qx 382;
+  blunt routes to the SDF 381-row pool (**0.1–0.2 %**, Rule-3 footnote
+  update). The 385-row c385_spread variant is the VERIFIED BACKUP for
+  single-path blunt support on cond, not the serving choice — it degrades
+  ext 0.992 → 0.970, canon 0.905 → 1.044, B 0.889 → 0.857.
+- **The B/M corpus needs no purchased intermediates**: 3 anchors already
+  collapse blunt on the cond path (68.52 % → 0.496 %), and the SDF route
+  answers blunt at 0.1–0.2 %.
+
 ### Rule 2 — out-of-support queries are defended by the guard, not the band
 
 The member std is **blind to moderate out-of-label extrapolation**: at
@@ -223,16 +268,35 @@ mechanism is zero-sail_x-contrast rows diluting the trend calibration —
 explicit channels do not immunize against it. Blunt-class designs
 (l_over_d 0.75) via the cond path are a **68.5 %** LOFO catastrophe;
 route them to the SDF path (honest clean-stream base **7.92 % +/- 4.62**,
-see the footnote) until in-support intermediates exist in the corpus.
+see the footnote) — in-support intermediates now exist in the 381-row SDF
+production pool, which serves blunt 0.75 at **0.1–0.2 %** (footnote update
+below).
 
 Footnote (2026-08-29 path-guard correction, wave-15 W3,
 `/nfs/wangxi/runs/sdf_axis_20260829/`): the two-stage trainer's
 first-call path guard shifts model init for exactly one cell per
 process, so the wave-10 campaign number 8.87 % (and the wave-11
 5.02 +/- 0.76) rode a lucky shifted seed; the honest clean-stream
-blunt base is 7.92 % +/- 4.62 with seed spread 5-17 %. The routing
-decision is unchanged — cond 68.5 % versus SDF ~8 % — but treat any
-single-seed blunt number from that lineage with suspicion.
+blunt base is 7.92 % +/- 4.62 with seed spread 5-17 %.
+
+Update (2026-08-30 serving sanity, `/nfs/wangxi/runs/sdf_serve_sanity_20260830/`):
+the routing decision is unchanged — blunt never serves on the cond path
+(68.5 % LOFO) — but the SDF side is now measured, not estimated. Blunt
+l_over_d 0.75 queried through the actual production SDF pool (381-row
+corpus, 10-seed ensemble) is **in-support at 0.1–0.2 %** ensemble-median
+APE (per-query ensemble-median ts2 0.014–0.133 %, mean 0.103 / max
+0.133; ts4 0.012–0.237 %, mean 0.120 / max 0.237; worst single member
+1.30 % ts2 / 0.830 % ts4), and
+the whole serving path is bit-exact against the recorded predictions (max
+rel dev 0.0 on all 20 arm-seed cells; isolated single-query fp noise
+4.35e-5). Ops on one 5090: cold build 1.42 s, single query 18.5–18.6 ms
+(median, n=30; ts2 18.57 / ts4 18.50), 381-row × 10-member batch 0.557 s, GPU peak 3.7 GB allocated / 4.7 GB
+reserved; recommendation pin ts2. The **~8 %** above was the pre-pool
+wave-10/11 extrapolation estimate (honest clean-stream base
+**7.92 % +/- 4.62** — the lucky-seed correction earlier in this footnote),
+a leave-blunt-out number from the 378-hole-pool lineage; with the 381-row
+pool the blunt rows are in support, though any single-seed blunt number
+from that older lineage still deserves suspicion.
 
 ## 4. What is NOT recommended
 
