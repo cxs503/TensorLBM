@@ -167,6 +167,11 @@ def infer_member_arch(
     reproduce ``latent_dim=32, base=12, target_dim=12`` and
     ``width=32, n_layers=4, modes=(16, 32), mlp_hidden=128,
     film_hidden=64, aux_dim=8, param_dim=2``).
+
+    Body parameter counts are arm-dependent, so do not read the ts2 figure
+    as universal: the ts2 body (``cond_dim`` 34 = 2 params + 32 latent)
+    carries 4,240,073 parameters while the ts4 body (``cond_dim`` 36 = 4
+    params + 32 latent) carries 4,240,713.
     """
     enc_sd = dict(encoder_state_dict)
     body_sd = dict(body_state_dict)
@@ -285,9 +290,17 @@ def _load_member_weights(
     (it owns the ``probe.*`` head); ``body_state_dict`` is a BARE
     ``CondFNODrag`` state_dict and lands on ``full.fno``.  Both loads are
     strict: any key mismatch is an error, never a silent partial load.
+    Both modules leave inference-ready: eval mode with every parameter
+    ``requires_grad=False``.
     """
     sup.load_state_dict(encoder_state_dict, strict=True)
     full.fno.load_state_dict(body_state_dict, strict=True)
+    # inference-ready: eval + EVERY parameter frozen, not just the trunk
+    # (``freeze_encoder`` covers the shared trunk; this also freezes the body
+    # and the stage-1 probe head).  Value-neutral for serving; training use
+    # must re-enable grads explicitly.
+    sup.requires_grad_(False)
+    full.requires_grad_(False)
     full.freeze_encoder()
     sup.eval()
     full.eval()
@@ -309,7 +322,10 @@ def load_two_stage_member(
     (same module object as the wrapper's) and whose ``.fno`` carries the
     stage-2 body weights — i.e. the bare body keys are remapped into the
     ``.fno`` submodule, NOT loaded at the top level.  Both loads are
-    strict; the trunk is frozen and the model is returned in eval mode.
+    strict.  Loaders hand out inference-ready modules: the model is
+    returned in eval mode with EVERY parameter ``requires_grad=False``
+    (trunk, body and any probe); training use must re-enable grads
+    explicitly.
 
     ``arch_config`` overrides the architecture inference of
     :func:`infer_member_arch` (defaults to inferring it from the bare
@@ -331,11 +347,16 @@ def save_member_bundle(
     encoder_state_dict: Mapping[str, torch.Tensor],
     body_state_dict: Mapping[str, torch.Tensor],
     *,
-    arch_config: Mapping[str, Any],
+    arch_config: Mapping[str, Any] | None = None,
     norm_stats: Mapping[str, Any],
     meta: Mapping[str, Any] | None = None,
 ) -> str:
     """Write one self-describing member file (bundle format v1, GAP 1).
+
+    ``arch_config`` defaults to ``None``, in which case the arch block is
+    INFERRED from the bare state-dict shapes via
+    :func:`infer_member_arch` (the pool layout carries exactly the shapes
+    it reads); pass an explicit block to pin or override it.
 
     ``encoder_state_dict`` / ``body_state_dict`` are the raw pool-layout
     state dicts (``SupervisedSDFEncoder`` / bare ``CondFNODrag``); the
@@ -344,7 +365,11 @@ def save_member_bundle(
     over field channels, ``p_mean``/``p_std`` over the **param columns
     only**, ``y_mean``/``y_std`` scalars — latent columns are served raw).
     """
-    arch = _canonical_arch(arch_config)
+    arch = (
+        _canonical_arch(arch_config)
+        if arch_config is not None
+        else infer_member_arch(encoder_state_dict, body_state_dict)
+    )
     missing = [k for k in _MEMBER_NORM_KEYS if k not in norm_stats]
     if missing:
         raise ValueError(f"norm_stats missing keys: {missing}")
@@ -369,9 +394,11 @@ def save_member_bundle(
 class LoadedMember:
     """A rebuilt two-stage member plus the sidecar it was rebuilt with.
 
-    ``model`` is the serving object (eval mode, frozen trunk, on the
-    requested device); ``stage1`` the wrapper the encoder sd was strict-
-    loaded into (``model.encoder is stage1.encoder``); ``norm`` the six
+    ``model`` is the serving object and ``stage1`` its stage-1 wrapper;
+    loaders hand out inference-ready modules — eval mode with EVERY
+    parameter (trunk, body, probe) ``requires_grad=False``, so training
+    use must re-enable grads explicitly (``model.encoder is
+    stage1.encoder``, both on the requested device); ``norm`` the six
     fit-stat arrays (empty for a bare pool pair — the pool carries no
     sidecar, the caller rebuilds or supplies the fit stats); ``source``
     is ``"bundle"`` or ``"bare-pair"``.
@@ -404,8 +431,21 @@ def load_member_bundle(
     stage1_path: str | Path | None = None,
     norm_stats: Mapping[str, Any] | None = None,
     device: str | torch.device = "cpu",
+    weights_only: bool = False,
 ) -> LoadedMember:
     """Load a member from a bundle file OR a legacy bare pool file (sniffed).
+
+    Loaders hand out inference-ready modules: ``model`` and ``stage1`` are
+    in eval mode with EVERY parameter ``requires_grad=False``; training
+    use must re-enable grads explicitly.
+
+    ``weights_only`` is passed through to the internal ``torch.load``.  It
+    defaults to ``False`` because bundle v1 EMBEDS the norm sidecar as
+    numpy arrays, which ``torch.load(weights_only=True)`` refuses to
+    unpickle — ``True`` therefore only works for payloads whose norms were
+    written as pure tensors.  Callers who control their whole bundle
+    pipeline (write and read) may enforce ``True`` for the stronger load
+    guarantee.
 
     The file at ``path`` is sniffed by its dict keys:
 
@@ -421,7 +461,7 @@ def load_member_bundle(
       :func:`tensorlbm.ai.inference_service.load_checkpoint`, a bare
       stage-1 sd asks to be passed as ``stage1_path``).
     """
-    payload: Any = torch.load(Path(path), map_location="cpu", weights_only=False)
+    payload: Any = torch.load(Path(path), map_location="cpu", weights_only=weights_only)
     if not isinstance(payload, dict) or not payload:
         raise ValueError(
             f"{path} is not a member bundle or legacy bare state_dict (got {type(payload).__name__})"
@@ -490,9 +530,12 @@ class PerMemberEnsembleBackend(ModelEnsembleBackend):
     bit-identical to serving the bare body through the base backend with
     the cond-vector norms padded (zeros/ones on the latent columns).
 
-    The trunk is served in eval mode; ``requires_grad`` is left untouched
-    (``predict`` runs under ``no_grad``, so the frozen-detach branch of
-    ``TwoStageCondFNODrag.forward`` is value-neutral).  Note the SDF input
+    The trunk is served in eval mode; the backend itself leaves
+    ``requires_grad`` untouched — loader-built members arrive fully frozen
+    (inference-ready, see :func:`load_member_bundle`) and hand-built pairs
+    keep whatever grad state they had (``predict`` runs under ``no_grad``,
+    so the frozen-detach branch of ``TwoStageCondFNODrag.forward`` is
+    value-neutral either way).  Note the SDF input
     has no slot in the v3/v4 service query API, so this backend is a
     model-level ensemble, not a drop-in for ``DragSurrogateService``.
     """
@@ -639,6 +682,12 @@ class PerMemberEnsembleBackend(ModelEnsembleBackend):
     def predict(self, fields: np.ndarray, sdf: np.ndarray, cond: np.ndarray) -> np.ndarray:  # type: ignore[override]
         """Serve one design: ``(M, N)`` member C_D rows in linear space.
 
+        Batch contract: the ``N`` cond rows are served against ONE shared
+        field/sdf — the latent is recomputed once per member on a
+        batch-of-``N`` SDF pass and the field is expanded ``N``-fold.  For
+        per-row fields/sdfs use :meth:`predict_batch` (``counts`` grouping)
+        instead.
+
         Per member this is exactly a direct ``TwoStageCondFNODrag.forward``
         on the normalised inputs (field z-scored by ``ch_*``, param columns
         z-scored by ``p_*``, latent recomputed raw from ``sdf``); the
@@ -646,6 +695,15 @@ class PerMemberEnsembleBackend(ModelEnsembleBackend):
         stacked over members).  ``fields`` is the ``(5, ny, nx)`` reference
         field, ``sdf`` the query geometry volume and ``cond`` the
         ``(N, param_dim)`` param rows.
+
+        Batch composition matters at the last-ulp level: a per-row
+        single-design query through this method (``N == 1`` per call) pays
+        a batch-1 vs batch-``N`` latent-recompute fp difference of ~1e-5
+        and ~20 ms per call overhead versus folding the row into one
+        shared-design batch (2026-08-31 production rehearsal,
+        ``/nfs/wangxi/runs/ckpt_bundle_rehearsal_20260831``).  Compose
+        batches of a shared design rather than looping per row when the
+        rows share one field/sdf.
         """
         fields = np.asarray(fields, dtype=np.float32)
         cond = np.asarray(cond, dtype=np.float64)
@@ -682,11 +740,19 @@ class PerMemberEnsembleBackend(ModelEnsembleBackend):
     ) -> np.ndarray:
         """Batched multi-geometry variant of :meth:`predict`.
 
+        Batch contract: this is the per-row-fields/sdfs path — geometry
+        ``g``'s field and sdf carry exactly its ``counts[g]`` cond rows
+        (``repeat_interleave`` grouping), unlike :meth:`predict`, which
+        serves all ``N`` cond rows against ONE shared field/sdf.
+
         ``fields`` is ``(G, 5, ny, nx)``, ``sdfs`` ``(G, C, D, H, W)`` or
         ``(G, 1, C, D, H, W)``, ``cond`` the concatenated param rows and
         ``counts`` the per-geometry row counts — same expansion
         (``repeat_interleave``), normalisation and de-scaling as the base
         :meth:`~tensorlbm.ai.inference_service.ModelEnsembleBackend.predict_batch`.
+        As with :meth:`predict`, batch composition matters at the last-ulp
+        level (batch-kernel fp differences); group rows by shared design
+        rather than re-issuing per-row calls.
         """
         fields = np.asarray(fields, dtype=np.float32)
         cond = np.asarray(cond, dtype=np.float64)
