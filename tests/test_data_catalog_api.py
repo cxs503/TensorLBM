@@ -290,7 +290,12 @@ def test_quality_check_missing_asset_returns_404(client):
 def test_router_registered_in_main_app():
     from backend.main import app as platform_app
 
-    paths = {route.path for route in platform_app.routes}
+    # ``app.routes`` has no stable shape across FastAPI versions: newer
+    # releases keep ``include_router`` branches there as opaque
+    # ``_IncludedRouter`` objects that carry no ``.path`` attribute.  The
+    # OpenAPI path map is the public, version-stable view of every
+    # registered endpoint, so key the assertions off it instead.
+    paths = set(platform_app.openapi()["paths"])
     assert "/api/data/assets" in paths
     assert "/api/data/assets/{asset_id}" in paths
     assert "/api/data/assets/{asset_id}/metadata" in paths
