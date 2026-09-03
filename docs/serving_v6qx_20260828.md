@@ -123,6 +123,19 @@ Known cost (accepted): on test-55 the band widens to a 98.2 % band
 regimes. A per-class exact-95 % temperature does not exist: the per-regime
 t95 spread among guard-passing classes is 0.18–1.47.
 
+**Re-review 2026-09-03 (value unchanged).** A bundle-pool calibration
+sweep (20 `ckpt_bundle` members, 406 corpus rows = 381 pool + 25 held;
+see §5) measured on exactly this population: cov90 = 96.6 / 99.3 / 100 %
+at t = 1.0 / 1.5 / 2.0 (mean 90 % band widths 0.118 / 0.177 / 0.236) and
+rms-z 0.727 on held rows — the raw std **over-disperses on corpus rows**
+(322 of 381 pool rows are trained-on). That is the in-envelope regime the
+#251 audit already marks "keep T = 1.0", and it does **not** move the
+deployment value: the 1.5 setting is driven by the fresh-M / B-grid
+classes (bias-shaped, std uninformative, misses in the low-std half),
+which the corpus sweep does not sample. Corpus-row coverage numbers must
+not be used to argue a global temperature — recorded here to pre-empt
+exactly that reading.
+
 ## 3. Serving rules (hard limits)
 
 ### Rule 1 — slender-class designs route to the SDF two-stage path
@@ -323,6 +336,7 @@ from that older lineage still deserves suspicion.
 |---|---|
 | v6qx pool + quality numbers | `/nfs/wangxi/runs/cond_v6_20260828/` (`report.md`, `eval_v6qx.json`, `corpus382.npz`, `ckpts/v6qx/`), `docs/cond_v6_20260828.md`, PR #262 |
 | uq_temperature = 1.5 + coverage table | `/nfs/wangxi/runs/v6_uq_20260828/` (`report.md`, `uq_results.json`, `uq_analysis.json`), `docs/uq_temperature_serving_20260827.md` (knob semantics), PR #257 |
+| corpus-side coverage re-review 2026-09-03, t = 1.5 kept | `/nfs/wangxi/runs/uq_quad3_evidence_20260901/` (`evidence.json`, `report.md`, `preds_406.npz`) |
 | slender class (bias, guard, SDF route) | `/nfs/wangxi/runs/v6_uq_20260828/` (−18.7 %, ±14.9σ, 28/28), `/nfs/wangxi/runs/sdf_slender_20260828/` (10.71 %), `docs/sdf_two_stage_20260828.md`, PR #260 |
 | extrapolation blindness + sail_x_mult interval | `/nfs/wangxi/runs/v6_uq_20260828/` §5 |
 | fam-fragment corpus ban | `/nfs/wangxi/runs/famall_v6_20260828/` (ext 1.363, canon 1.570, blunt cond 68.5 %), `docs/v5_fam_20260828.md` (0.886) |
