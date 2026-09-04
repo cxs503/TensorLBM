@@ -918,8 +918,10 @@ def quad3_loo_std(cached_re: np.ndarray, cached_cd: np.ndarray) -> float | None:
     std (the reported ensemble std is absolute C_D everywhere else).
 
     ``None`` when fewer than 4 cached rows exist (leave-one-out needs at
-    least 3 remaining) or any pseudo-fit is degenerate — NO uncertainty is
-    fabricated; callers report ``std = nan`` with a note instead.
+    least 3 remaining) or any pseudo-fit is degenerate (duplicate cached
+    log10-Re levels — the measured pool381 curve, 157 rows / 126 distinct
+    Re, hits this) — NO uncertainty is fabricated; the caller keeps the
+    network ensemble std for the point and records why via ``std_source``.
     """
     re_arr = np.asarray(cached_re, dtype=np.float64)
     cd_arr = np.asarray(cached_cd, dtype=np.float64)
@@ -1265,12 +1267,18 @@ class DragSurrogateService:
         5. degenerate nearest-3 (duplicate cached log10-Re) per point ->
            that point keeps the network value (``declined_points``).
 
-        Applied points get ``cd = quad3``, ``std = cd * quad3_loo_std``
-        (``nan`` with ``std_source`` note when fewer than 4 cached rows —
-        no fabricated uncertainty) and ``lo = hi = nan`` (no member band
-        exists for a measured curve).  ``std`` is NOT rescaled by
-        ``uq_temperature``: that knob is calibrated on the deep-ensemble
-        sigma of the network path, a different estimator.
+        Applied points get ``cd = quad3`` and ``lo = hi = nan`` (no member
+        band exists for a measured curve).  ``std = cd * quad3_loo_std``
+        when the LOO rms exists — NOT rescaled by ``uq_temperature`` (that
+        knob is calibrated on the deep-ensemble sigma of the network path,
+        a different estimator).  When the LOO rms is unavailable (fewer
+        than 4 cached rows, or duplicate cached log10-Re levels degenerating
+        a leave-one-out pseudo-fit — the measured pool381 curve hits the
+        latter), the point KEEPS the network ensemble std already computed
+        for it — never ``nan`` — and ``info`` records why: ``std_source``
+        plus, in the degenerate case, ``quad3_loo_degenerate = True`` and
+        ``quad3_loo_duplicate_re_rows`` (cached rows minus distinct log10-Re
+        levels).
         """
         info: dict[str, Any] = {
             "name": RE_POLICY_QUAD3_FALLBACK,
@@ -1312,11 +1320,19 @@ class DragSurrogateService:
         info["cached_re"] = curve_re.tolist()
         loo_rel = quad3_loo_std(curve_re, curve_cd)
         info["loo_rel_rms"] = loo_rel
-        info["std_source"] = (
-            "quad3_loo_relative_rms_times_cd"
-            if loo_rel is not None
-            else "unavailable_fewer_than_4_cached_rows"
-        )
+        if loo_rel is not None:
+            info["std_source"] = "quad3_loo_relative_rms_times_cd"
+        elif curve_re.size < 4:
+            info["std_source"] = "network_ensemble_std_loo_needs_4_cached_rows"
+        else:
+            # >= 4 cached rows yet no LOO rms: duplicate cached log10-Re
+            # levels degenerated a leave-one-out pseudo-fit.  The old flat
+            # label "unavailable_fewer_than_4_cached_rows" was wrong here
+            # (the pool381 curve has 157 rows) — record the true cause.
+            n_dup = int(curve_re.size - np.unique(np.log10(curve_re)).size)
+            info["std_source"] = "network_ensemble_std_loo_degenerate"
+            info["quad3_loo_degenerate"] = True
+            info["quad3_loo_duplicate_re_rows"] = n_dup
         mean = mean.copy()
         std = std.copy()
         lo = lo.copy()
@@ -1332,7 +1348,10 @@ class DragSurrogateService:
             value, sel_re = out
             mask[i] = True
             mean[i] = value
-            std[i] = value * loo_rel if loo_rel is not None else np.nan
+            if loo_rel is not None:
+                std[i] = value * loo_rel
+            # LOO rms unavailable (see std_source above): keep the network
+            # ensemble std already computed for this point — never NaN.
             lo[i] = np.nan
             hi[i] = np.nan
             chosen[i] = [float(v) for v in sel_re]
