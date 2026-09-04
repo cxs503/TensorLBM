@@ -71,6 +71,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from warnings import warn
 
 import numpy as np
 import torch
@@ -83,9 +84,12 @@ from .sdf_two_stage import SupervisedSDFEncoder, TwoStageCondFNODrag
 __all__ = [
     "BUNDLE_FORMAT",
     "BUNDLE_VERSION",
+    "BundleDiscoveryWarning",
     "LoadedMember",
     "PerMemberEnsembleBackend",
+    "discover_bundles",
     "infer_member_arch",
+    "load_bundle_pool",
     "load_member_bundle",
     "load_two_stage_member",
     "save_member_bundle",
@@ -100,6 +104,25 @@ BUNDLE_VERSION = 1
 #: Norm keys a member sidecar must carry (same six as the single-model
 #: ``CondDragCheckpoint`` format of :mod:`tensorlbm.ai.inference_service`).
 _MEMBER_NORM_KEYS = ("ch_mean", "ch_std", "p_mean", "p_std", "y_mean", "y_std")
+
+#: Serving arm of a bundle, keyed by the arch key the detection reads:
+#: ``arch["body"]["param_dim"]`` (verified against the production pool
+#: 2026-09-04: ts2 bodies carry 2, ts4 carry 4).  Equivalently cond_dim
+#: 34 vs 36 (param columns + the 32-column raw latent) or the body param
+#: counts 4,240,073 vs 4,240,713 — param_dim is the first-class bundle
+#: field of the three, so that is the key used.  Detection deliberately
+#: does NOT trust the optional ``meta["arm"]`` label.
+_ARM_BY_PARAM_DIM = {2: "ts2", 4: "ts4"}
+
+
+class BundleDiscoveryWarning(UserWarning):
+    """A candidate ``.pt`` file was skipped while scanning for bundles.
+
+    Emitted by :func:`discover_bundles` for every non-bundle candidate
+    (wrong payload, or a file ``torch.load`` cannot read at all) — a stray
+    ``junk.pt`` sitting next to a production pool must degrade to a
+    warning, never take serving down with an exception.
+    """
 
 
 def _pos_int(cfg: Mapping[str, Any], key: str, block: str) -> int:
@@ -510,6 +533,164 @@ def load_member_bundle(
     sup.to(dev).eval()
     full.to(dev).eval()
     return LoadedMember(model=full, stage1=sup, arch=arch, norm=norm, meta=meta, source=source)
+
+
+def _is_bundle_payload(payload: Any) -> bool:
+    """The same sniff :func:`load_member_bundle` uses to spot a bundle."""
+    fmt = payload.get("format") if isinstance(payload, dict) else None
+    return isinstance(payload, dict) and (
+        (isinstance(fmt, str) and fmt == BUNDLE_FORMAT) or "state_dicts" in payload
+    )
+
+
+def _candidate_files(path: str | Path | Sequence[str | Path]) -> list[Path]:
+    """Resolve the scan input to an explicit, sorted list of files.
+
+    A directory is scanned for ``*.pt`` (non-.pt entries are ignored);
+    an explicit file — or an explicit list of files — is taken as given,
+    so a caller naming a stray ``.txt`` gets it inspected (and warned
+    about) rather than silently dropped.  Output is sorted by file name
+    so downstream order never depends on filesystem iteration order.
+    """
+    if isinstance(path, (str, Path)):
+        p = Path(path)
+        if p.is_dir():
+            return sorted((f for f in p.glob("*.pt") if f.is_file()), key=lambda f: f.name)
+        if p.is_file():
+            return [p]
+        raise FileNotFoundError(f"bundle scan path {p} is neither a directory nor a file")
+    files = [Path(x) for x in path]
+    for f in files:
+        if not f.is_file():
+            raise FileNotFoundError(f"bundle scan path {f} is not a file")
+    return sorted(files, key=lambda f: f.name)
+
+
+def _bundle_descriptor(file: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
+    """The light per-bundle descriptor :func:`discover_bundles` returns."""
+    arch = payload.get("arch")
+    body = arch.get("body") if isinstance(arch, Mapping) else None
+    raw_pd = body.get("param_dim") if isinstance(body, Mapping) else None
+    param_dim = raw_pd if isinstance(raw_pd, int) and not isinstance(raw_pd, bool) else None
+    meta = payload.get("meta")
+    member = meta.get("member", file.stem) if isinstance(meta, Mapping) else file.stem
+    return {
+        "file": file.name,
+        "path": str(file.resolve()),
+        "member": str(member),
+        "arm": _ARM_BY_PARAM_DIM.get(param_dim) if param_dim is not None else None,
+        "param_dim": param_dim,
+    }
+
+
+def discover_bundles(path: str | Path | Sequence[str | Path]) -> list[dict[str, Any]]:
+    """Scan a directory (or an explicit list of files) for member bundles.
+
+    Serving-side companion of the bundle format (POSTMERGE_RUNBOOK step 3,
+    ``/nfs/wangxi/runs/ckpt_bundle_rehearsal_20260831/POSTMERGE_RUNBOOK.md``):
+    the operational question when pointing a loader at a pool directory is
+    "which members live here, and what arm is each" — answered without
+    building any module.  Returns one light descriptor per ``*.pt`` that
+    loads as a bundle dict (the same format-marker sniff as
+    :func:`load_member_bundle`), sorted by file name:
+
+    ``{"file", "path", "member", "arm", "param_dim"}``
+
+    * ``member`` — ``meta["member"]`` when the bundle carries it, else the
+      file stem (so ``ts2_s3.pt`` still reads ``ts2_s3``);
+    * ``arm`` — read from the arch block, exactly the key
+      ``arch["body"]["param_dim"]``: ``2`` -> ``"ts2"`` (cond_dim 34 = 2
+      param columns + the 32-column raw latent), ``4`` -> ``"ts4"``
+      (cond_dim 36); any other value yields ``None``, which never matches
+      an arm filter in :func:`load_bundle_pool`.
+
+    Every other ``.pt`` candidate — wrong payload shape, or a file
+    ``torch.load`` cannot read at all — is skipped with a
+    :class:`BundleDiscoveryWarning` carrying the file name and the reason,
+    never an exception.
+    """
+    descriptors: list[dict[str, Any]] = []
+    for file in _candidate_files(path):
+        try:
+            payload: Any = torch.load(file, map_location="cpu", weights_only=False)
+        except Exception as exc:  # a junk file must skip, not kill the pool build
+            warn(
+                f"{file.name}: skipped (torch.load failed: {exc})",
+                BundleDiscoveryWarning,
+                stacklevel=2,
+            )
+            continue
+        if _is_bundle_payload(payload):
+            descriptors.append(_bundle_descriptor(file, payload))
+        else:
+            got = (
+                type(payload).__name__
+                if not isinstance(payload, dict)
+                else f"dict, first keys: {list(payload)[:6]}"
+            )
+            warn(
+                f"{file.name}: skipped (not a member bundle: {got})",
+                BundleDiscoveryWarning,
+                stacklevel=2,
+            )
+    return descriptors
+
+
+def _describe_scan_root(path: str | Path | Sequence[str | Path]) -> str:
+    """Human-readable name of a scan input for error messages."""
+    if isinstance(path, (str, Path)):
+        return str(Path(path))
+    files = [Path(x) for x in path]
+    return f"[{len(files)} explicit paths, first: {files[0]}]" if files else "[]"
+
+
+def load_bundle_pool(
+    path: str | Path | Sequence[str | Path],
+    *,
+    arm: str = "ts2",
+    device: str | torch.device = "cpu",
+) -> list[LoadedMember]:
+    """Load a serving-ready member pool from bundle-v1 files (one arm).
+
+    The recommended serving load path (POSTMERGE_RUNBOOK step 3): scan
+    with :func:`discover_bundles`, keep ONE arm — the serving pin is
+    ts2, hence the default — and rebuild every matching member through
+    :func:`load_member_bundle`, which enforces the inference-ready
+    contract (eval mode, EVERY parameter ``requires_grad=False``) and
+    reads the embedded norm sidecar.  A bundle built for weight
+    comparison is NOT a serving artifact until its six fit-stat keys are
+    real (the pm20260831 identity-norm incident, fixed 2026-09-01; see
+    the README of ``/nfs/wangxi/runs/ckpt_bundle_pm20260831``).
+
+    Ops case for the switch (2026-08-31 production rehearsal,
+    ``/nfs/wangxi/runs/ckpt_bundle_rehearsal_20260831/rehearsal.json``):
+    cold 20-member build 0.623 s from bundles vs 0.688 s from the bare
+    two-file ckpts, storage ratio 1.029, and bit-exactness of every
+    rebuilt tensor vs the bare pool established by the 1160-tensor
+    ``torch.equal`` sweep.  The bare ckpts stay the archival source of
+    truth (runbook step 4).
+
+    Members are returned in stable sorted-by-filename order (s0..s9 for
+    the production naming), ready for
+    ``PerMemberEnsembleBackend.from_bundles(load_bundle_pool(dir,
+    arm="ts2"))``.  Zero matches raises a :class:`ValueError` naming the
+    scan root, the arm filter and what was discovered instead.
+    """
+    descriptors = discover_bundles(path)
+    matching = [d for d in descriptors if d["arm"] == arm]
+    if not matching:
+        arms_found: dict[str, int] = {}
+        for d in descriptors:
+            key = d["arm"] if d["arm"] is not None else f"param_dim={d['param_dim']!r}"
+            arms_found[key] = arms_found.get(key, 0) + 1
+        summary = ", ".join(f"{k} x {v}" for k, v in sorted(arms_found.items()))
+        raise ValueError(
+            f"no member bundles with arm={arm!r} under {_describe_scan_root(path)} "
+            f"(discovered instead: {summary or 'no bundles at all'}); pass a "
+            f"matching arm= (bundles carry ts2/ts4 via arch.body.param_dim) or "
+            f"point at the directory holding the {arm} bundles"
+        )
+    return [load_member_bundle(d["path"], device=device) for d in matching]
 
 
 class PerMemberEnsembleBackend(ModelEnsembleBackend):

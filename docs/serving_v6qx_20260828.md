@@ -315,6 +315,30 @@ a leave-blunt-out number from the 378-hole-pool lineage; with the 381-row
 pool the blunt rows are in support, though any single-seed blunt number
 from that older lineage still deserves suspicion.
 
+### Serving load path — the bundle pool via `load_bundle_pool` (2026-09-04)
+
+The recommended way to assemble the SDF two-stage serving pool is now the
+bundle-v1 artifacts, not the bare two-file checkpoints (post-merge runbook
+step 3): `load_bundle_pool(dir, arm="ts2")`
+(`src/tensorlbm/ai/ckpt_bundle.py`) scans a directory of member bundles,
+keeps one arm (the serving pin is ts2) and returns inference-ready
+`LoadedMember`s in stable filename order —
+`PerMemberEnsembleBackend.from_bundles(load_bundle_pool(dir, arm="ts2"))`
+is the full serving assembly. Production bundles:
+`/nfs/wangxi/runs/ckpt_bundle_pm20260831/` (20 members = 10 seeds ×
+ts2/ts4, regenerated from main; the bare ckpts remain the archival source
+of truth, runbook step 4). Ops case for the switch (2026-08-31 rehearsal):
+cold 20-member build 0.623 s from bundles vs 0.688 s from bare, storage
+ratio 1.029, bit-exactness vs the bare pool established by the
+1160-tensor `torch.equal` sweep.
+
+Norm-sidecar hazard (the pm20260831 identity-norm incident, fixed
+2026-09-01): a bundle built for weight comparison is NOT a serving
+artifact — the first regeneration embedded identity-norm placeholders
+that would have mis-normalised every query; bundles must carry the six
+real fit-stat keys before entering this load path (lesson and recovery
+record: `README.md` in the run directory).
+
 ## 4. What is NOT recommended
 
 - **20-seed pool** — doubling s0–s9 to s0–s19 adds nothing material
@@ -346,6 +370,7 @@ from that older lineage still deserves suspicion.
 | path-guard RNG correction (blunt honest base) | `/nfs/wangxi/runs/sdf_axis_20260829/` (`report.md`, `crossbatch_replicate/`), wave-15 W3 |
 | blunt SDF serving measured (0.1–0.2 %, bit-exact path, ops) | `/nfs/wangxi/runs/sdf_serve_sanity_20260830/` (`report.md`, `identity_check.json`, `blunt_queries.json`, `ops_numbers.json`), maintenance wave A-2 |
 | A-1 blunt × k = 3 cond-path anchors (full/partial transfer, gates) | `/nfs/wangxi/runs/blunt_anchor_20260830/` (`report.md`, `summary.json`, `preds.npz`), maintenance wave A-1 |
+| bundle-pool serving load path (`load_bundle_pool`, ops + norm-sidecar hazard) | `/nfs/wangxi/runs/ckpt_bundle_pm20260831/` (`README.md` — norm_fix_20260901), `/nfs/wangxi/runs/ckpt_bundle_rehearsal_20260831/` (`POSTMERGE_RUNBOOK.md`, `rehearsal.json`) |
 
 The temperature recommendation must be re-derived if the corpus changes
 (fresh-M / B-grid middles are extrapolation for the current 382 rows;
