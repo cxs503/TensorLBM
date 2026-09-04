@@ -48,6 +48,15 @@ latent space is the planned fix and this interface accepts it unchanged.
    Default OFF; the network path stays byte-identical.  See
    ``docs/quad3_fallback_20260828.md``.
 
+5. **Field borrowing for new geometries (opt-in)** — the
+   ``field_policy="field_borrow"`` flag of :meth:`DragSurrogateService.predict`
+   serves a query whose design is absent from the attached field cache by
+   borrowing an in-manifold reference field from a
+   :class:`~tensorlbm.ai.field_provider.FieldProvider` pool, keyed on the
+   query SDF (``sdf=``); the response carries the retrieval provenance and
+   guard flags, never silently.  Default OFF; the cached-field path stays
+   byte-identical.  See ``docs/field_borrow_20260904.md``.
+
 The module is import-safe without fastapi/onnx (the HTTP router lives in
 ``app/backend/routers/drag_surrogate.py``; ONNX helpers degrade to honest
 failure reports).
@@ -77,9 +86,19 @@ from .drag_cond import (
     geometry_channels,
     suboff_geometry_features,
 )
+from .field_borrow import (
+    FIELD_POLICY_BORROW,
+    FIELD_POLICY_CACHE,
+    borrow_serving_field,
+    param_cond_rows,
+    resolve_field_policy,
+)
+from .field_provider import FieldProvider
 
 __all__ = [
     "ENV_UQ_TEMPERATURE",
+    "FIELD_POLICY_BORROW",
+    "FIELD_POLICY_CACHE",
     "FLAG_OK",
     "FLAG_REJECT",
     "FLAG_REVIEW",
@@ -101,6 +120,7 @@ __all__ = [
     "quad3_loo_std",
     "quad3_nearest3",
     "resolve_re_policy",
+    "resolve_field_policy",
     "resolve_uq_temperature",
     "ensemble_stats",
     "error_std_spearman",
@@ -1019,6 +1039,12 @@ class DragSurrogateService:
         #251-audited value for *new-design* semantics (see
         ``docs/uq_temperature_serving_20260827.md``).  The guard verdict and
         the member min-max band are never scaled.
+    field_provider:
+        Optional :class:`~tensorlbm.ai.field_provider.FieldProvider` pool
+        enabling the opt-in ``field_policy="field_borrow"`` of
+        :meth:`predict` (new-geometry queries with a query SDF but no
+        cached reference field).  ``None`` (the default) leaves every
+        existing behaviour untouched.
     """
 
     def __init__(
@@ -1033,6 +1059,7 @@ class DragSurrogateService:
         cache_cd: np.ndarray | None = None,
         u_in_default: float = 0.1,
         uq_temperature: float | str | None = None,
+        field_provider: FieldProvider | None = None,
     ) -> None:
         self.backend = backend
         self.guard = guard
@@ -1052,6 +1079,7 @@ class DragSurrogateService:
             )
         self.u_in_default = float(u_in_default)
         self.uq_temperature = resolve_uq_temperature(uq_temperature)
+        self.field_provider = field_provider
 
     # -- construction helpers -------------------------------------------------
 
@@ -1071,6 +1099,7 @@ class DragSurrogateService:
         backend_kind: str | None = None,
         backend_plan: str | Path | None = None,
         uq_temperature: float | str | None = None,
+        field_provider: FieldProvider | None = None,
         **guard_kwargs: Any,
     ) -> DragSurrogateService:
         """Real-model service from member checkpoints + guard fit matrix.
@@ -1126,6 +1155,7 @@ class DragSurrogateService:
             cache_designs=cache_designs,
             cache_cd=cache_cd,
             uq_temperature=uq_temperature,
+            field_provider=field_provider,
         )
 
     @classmethod
@@ -1183,6 +1213,73 @@ class DragSurrogateService:
             "fin_frac": float(geo[2]),
             "solid_frac": float(geo[3]),
         }
+
+    def _serve_model_members(
+        self,
+        hull_type: str,
+        sail_scale: float,
+        fin_scale: float,
+        re_arr: np.ndarray,
+        u_in: float,
+        fields: np.ndarray | None,
+        field_point: int | None,
+        sdf: np.ndarray | None,
+        field_policy: str,
+        cond: np.ndarray,
+    ) -> tuple[np.ndarray, dict[str, Any]]:
+        """Resolve the reference field, then serve the member C_D matrix.
+
+        Default ``field_policy="cache"``: exactly the pre-flag composition
+        — :meth:`_resolve_field` followed by ``backend.predict(field,
+        cond)`` — byte-identical to the service before the borrow flag.
+
+        ``field_policy="field_borrow"`` changes ONE thing: when normal
+        field resolution would raise :class:`BackendQueryError` (a new
+        geometry absent from the attached cache) and the query carries
+        ``sdf`` while the service carries a ``field_provider``, the field
+        is BORROWED from the pool via
+        :func:`tensorlbm.ai.field_borrow.borrow_serving_field` and the
+        response carries the retrieval provenance
+        (``info["field_borrow"]``, never silent).  Cached designs and
+        caller-supplied ``fields`` keep the resolution above; a missing
+        provider or query SDF re-raises the original error.
+
+        Two-stage backends (``kind == "per-member-model"``,
+        :class:`tensorlbm.ai.ckpt_bundle.PerMemberEnsembleBackend`) take
+        the query SDF as a model input and serve the corpus-convention
+        param cond (:func:`tensorlbm.ai.field_borrow.param_cond_rows`)
+        instead of the 8-channel condition_v3 — the composition validated
+        by the 2026-09-04 e2e LODO campaign; the guard verdict above stays
+        on condition_v3 either way.
+        """
+        backend = self.backend
+        assert isinstance(backend, ModelEnsembleBackend)  # narrowed for mypy
+        try:
+            field, field_info = self._resolve_field(
+                hull_type,
+                sail_scale,
+                fin_scale,
+                float(re_arr[0]),
+                u_in,
+                fields,
+                field_point,
+            )
+        except BackendQueryError:
+            if field_policy != FIELD_POLICY_BORROW or sdf is None or self.field_provider is None:
+                raise
+            borrowed = borrow_serving_field(self.field_provider, sdf)
+            field, field_info = borrowed.fields, borrowed.info
+        if backend.kind == "per-member-model":
+            if sdf is None:
+                raise BackendQueryError(
+                    "two-stage (per-member) backends need the query geometry volume: "
+                    "pass sdf= to DragSurrogateService.predict"
+                )
+            member_cond = param_cond_rows(re_arr, u_in, sail_scale, fin_scale, backend.cond_dim)
+            member_cd = backend.predict(field, sdf, member_cond)  # type: ignore[call-arg]
+        else:
+            member_cd = backend.predict(field, cond)
+        return member_cd, field_info
 
     def _resolve_field(
         self,
@@ -1358,6 +1455,8 @@ class DragSurrogateService:
         fields: np.ndarray | None = None,
         field_point: int | None = None,
         re_policy: str | None = None,
+        sdf: np.ndarray | None = None,
+        field_policy: str | None = None,
     ) -> DragCurveResult:
         """Serve one design swept over ``re_grid`` with UQ + guard verdict.
 
@@ -1379,6 +1478,20 @@ class DragSurrogateService:
         verdict is NOT softened: an out-of-window Re still flags
         ``reject`` on the ``log10_re`` envelope — the number is served
         AND flagged, mirroring the always-compute-and-attach semantics.
+
+        ``sdf`` / ``field_policy`` (opt-in, default
+        :data:`FIELD_POLICY_CACHE` = the pre-flag behaviour,
+        byte-identical including ``info``): ``field_policy="field_borrow"``
+        serves a query whose reference field cannot be resolved from the
+        caller (``fields=``) or the attached cache by borrowing an
+        in-manifold field from ``field_provider``, keyed on the query SDF
+        (``sdf=``) — provenance and guard flags land in
+        ``info["field_borrow"]``; a failed guard still serves, flagged and
+        warning-logged (``docs/field_borrow_20260904.md``).  Two-stage
+        (per-member) backends always take ``sdf=`` as a model input and
+        serve the corpus-convention param cond instead of condition_v3
+        (the composition validated by the 2026-09-04 e2e campaign); the
+        guard stays on condition_v3 either way.
         """
         re_arr = np.asarray(re_grid, dtype=np.float64).ravel()
         if re_arr.size == 0:
@@ -1387,22 +1500,25 @@ class DragSurrogateService:
             raise ValueError("re_grid entries must be finite and positive")
         u_in = self.u_in_default if u_in is None else float(u_in)
         policy = resolve_re_policy(re_policy)
+        field_pol = resolve_field_policy(field_policy)
         cond, geo_vals = self.condition_rows(hull_type, sail_scale, fin_scale, re_arr, u_in=u_in)
         verdict = self.guard.check(cond)
         info: dict[str, Any] = {"geometry": geo_vals}
 
         if isinstance(self.backend, ModelEnsembleBackend):
-            field, field_info = self._resolve_field(
+            member_cd, field_info = self._serve_model_members(
                 hull_type,
                 float(sail_scale),
                 float(fin_scale),
-                float(re_arr[0]),
+                re_arr,
                 u_in,
                 fields,
                 field_point,
+                sdf,
+                field_pol,
+                cond,
             )
             info.update(field_info)
-            member_cd = self.backend.predict(field, cond)
         else:
             member_cd, rep_info = self.backend.predict(
                 hull_type, float(sail_scale), float(fin_scale), re_arr, u_in=u_in
