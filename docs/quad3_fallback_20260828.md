@@ -106,8 +106,13 @@ are served per point; `info["re_policy"]["quad3_mask"]` records which.
     "nearest_cached_re": [[...3 Re...] | None per grid point],  # the chosen triple
     "quad3_mask": [True, ...],
     "n_quad3_points": 1,
-    "loo_rel_rms": 0.0031,             # or None
+    "loo_rel_rms": 0.0031,             # or None (see section 5)
     "std_source": "quad3_loo_relative_rms_times_cd",
+    # when loo_rel_rms is None, std_source is instead one of
+    #   "network_ensemble_std_loo_needs_4_cached_rows"
+    #   "network_ensemble_std_loo_degenerate"  (then also
+    #    quad3_loo_degenerate = True and quad3_loo_duplicate_re_rows =
+    #    cached rows minus distinct log10-Re levels)
 }
 ```
 
@@ -132,12 +137,26 @@ design's cached curve: each cached row `j` is a pseudo-query served by
 quad3 built on the remaining rows (nearest 3 to `re_j`), residual
 `|cd_j - pred_j| / pred_j`, aggregated as `sqrt(mean(r_j^2))`.
 
-- fewer than 4 cached rows (or a degenerate pseudo-fit) -> `std = nan`
-  at those points with `std_source = "unavailable_fewer_than_4_cached_rows"`.
-  `nan` (not 0.0) is deliberate: zero would fabricate certainty. There is
-  no `std=None` precedent in the pipeline (`ensemble_stats` always returns
-  arrays; single-member ensembles report zeros), so `nan` + note is the
-  array-typed equivalent.
+- fewer than 4 cached rows, or duplicate cached log10-Re degenerating a
+  leave-one-out pseudo-fit (the measured pool381 curve hits the latter:
+  157 rows, 126 distinct Re) -> the point KEEPS the network ensemble std
+  already computed for it — never `nan`, never a fabricated zero — with
+  `std_source = "network_ensemble_std_loo_needs_4_cached_rows"` or
+  `"network_ensemble_std_loo_degenerate"` plus, in the degenerate case,
+  `quad3_loo_degenerate = True` and `quad3_loo_duplicate_re_rows` (cached
+  rows minus distinct log10-Re levels). The kept std is the network-path
+  std including its `uq_temperature` scaling — byte-identical to what the
+  default (non-quad3) path serves at that point. The quad3 VALUE is
+  untouched by this branch: prediction values and nearest-3 selection are
+  byte-unchanged.
+- history: before 2026-09-04 (#277) these points served `std = nan` with
+  `std_source = "unavailable_fewer_than_4_cached_rows"` — and the
+  degenerate case (duplicate Re) was mislabeled as the row-count case.
+  The hardening replaced `nan` with the network std fallback and split the
+  labels honestly; `tests/test_quad3_loo_hardening.py` pins the semantics
+  (duplicate-Re curve -> network std bit-identical + flags; 3-row curve ->
+  NaN-free with the row-count label; clean cache -> cd x LOO rms, no
+  flags; default-off byte-identity).
 - `lo`/`hi` (member min-max band) are `nan` at quad3 points — no ensemble
   exists for a measured curve; keeping the network band would attribute
   another estimator's spread to the value.
@@ -148,7 +167,7 @@ quad3 built on the remaining rows (nearest 3 to `re_j`), residual
 ### Guard interaction (conservative)
 
 The guard verdict never consumes `std` (`Guardrail.check` sees condition
-rows only), so `nan` std cannot corrupt verdicts. An out-of-window Re still
+rows only), so the std fallback branch cannot corrupt verdicts. An out-of-window Re still
 flags `reject` on the `log10_re` envelope — the quad3 path does NOT soften
 or suppress the verdict. The served pair is then (number, flag=reject,
 method=quad3_fallback): honest "measured-curve extrapolation, outside trust
@@ -173,9 +192,10 @@ numbers and callers decide presentation.
 
 ```bash
 # gates (CPU venv)
-cd /nfs/wangxi/worktrees/quad3_fb
+cd <repo checkout>
 OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES= TMPDIR=/nfs/wangxi/tmp \
-  /nfs/wangxi/venvs/ci-cpu/bin/pytest tests/test_inference_service.py -q \
+  /nfs/wangxi/venvs/ci-cpu/bin/pytest tests/test_inference_service.py \
+  tests/test_quad3_loo_hardening.py -q \
   --basetemp=/nfs/wangxi/tmp/pt_quad3
 # real-data quad3 reproduction (max |impl - stored campaign pred| over the
 # 12 out-of-window campaign points; bar 1e-9)
@@ -186,3 +206,16 @@ The real-data test embeds the cached curves of three campaign families
 (`fam_long_nose`, `fam_blunt`, `fam_slender`) and their stored quad3 preds
 from `extrap_eval.json` (generated fixture, `fixture_block.py` in the run
 directory) — the committed test is self-contained and does not read `/nfs`.
+
+## 8. Provenance
+
+- 2026-08-28: original campaign adjudication (2026-08-27 scans),
+  implementation and this document; re_policy quad3_fallback ships
+  default-OFF.
+- 2026-09-04 (#277): LOO-degeneracy hardening. Duplicate-Re caches
+  (pool381: 157 rows / 126 distinct) previously served `std = nan`
+  mislabeled `unavailable_fewer_than_4_cached_rows`; the point now keeps
+  the network ensemble std with honest `std_source` labels and a
+  duplicate-row count. The fewer-than-4-rows case was fixed as the same
+  defect class. Prediction values byte-unchanged; semantics pinned by
+  `tests/test_quad3_loo_hardening.py`.
