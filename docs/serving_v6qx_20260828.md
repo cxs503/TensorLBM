@@ -371,6 +371,7 @@ record: `README.md` in the run directory).
 | blunt SDF serving measured (0.1–0.2 %, bit-exact path, ops) | `/nfs/wangxi/runs/sdf_serve_sanity_20260830/` (`report.md`, `identity_check.json`, `blunt_queries.json`, `ops_numbers.json`), maintenance wave A-2 |
 | A-1 blunt × k = 3 cond-path anchors (full/partial transfer, gates) | `/nfs/wangxi/runs/blunt_anchor_20260830/` (`report.md`, `summary.json`, `preds.npz`), maintenance wave A-1 |
 | bundle-pool serving load path (`load_bundle_pool`, ops + norm-sidecar hazard) | `/nfs/wangxi/runs/ckpt_bundle_pm20260831/` (`README.md` — norm_fix_20260901), `/nfs/wangxi/runs/ckpt_bundle_rehearsal_20260831/` (`POSTMERGE_RUNBOOK.md`, `rehearsal.json`) |
+| L2 new-geometry walkthrough (STL in -> drag curve; field-borrow path, out-of-family probe, latency) | `/nfs/wangxi/runs/l2_walkthrough_20260906/` (`walkthrough.json`, `report.md`), `docs/l2_serving_walkthrough_20260906.md`, `scripts/l2_serving_walkthrough.py` |
 
 The temperature recommendation must be re-derived if the corpus changes
 (fresh-M / B-grid middles are extrapolation for the current 382 rows;
