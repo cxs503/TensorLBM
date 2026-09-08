@@ -100,6 +100,7 @@ A navigable index of the documentation in this directory, grouped by topic.
 |---|---|
 | [ai_turbulence.md](ai_turbulence.md) | End-to-end AI turbulence workflow: data generation → SQLite → MLP/FNO2d training → embedded collision |
 | [model_zoo.md](model_zoo.md) | Model zoo: manifest-driven registry of trained artifacts (provenance, metrics, loader reuse) |
+| [ld_axis_closure_20260908.md](ld_axis_closure_20260908.md) | l/d-axis closure adjudication (Waves 9-1..9-5): five attempts vs the frozen 4-point OLS gate, truth-side voxel quantization finding, W9-4 band recalibration proposal, serving corpus stays 382 |
 | [serving_v6qx_20260828.md](serving_v6qx_20260828.md) | Drag-surrogate serving refresh: cond_v6 v6qx 10-seed pool, uq_temperature = 1.5, routing rules (slender → SDF, guard-not-band, corpus hygiene) |
 | [l2_l3_line_20260908.md](l2_l3_line_20260908.md) | L2/L3 product-line story: arbitrary-geometry serving (retrieved fields + SDF + STL ingest), the first closed loop, and its fresh-LBM adjudication |
 | [benchmarks/ai_fno2d/](benchmarks/ai_fno2d/) | FNO2d 2D cylinder surrogate: loss curves, speed comparison (LBM vs inference) |
