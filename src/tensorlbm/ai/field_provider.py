@@ -23,12 +23,23 @@ Headline numbers (held-25 ensemble MAPE, ts2 arm):
 v1 is deliberately dumb — nearest-neighbour retrieval, a mean fallback,
 and a guard.  The study verdict leaves no accuracy budget for a learned
 field generator: anything in-manifold scores like anything else.
+
+2026-09-08 follow-ups (``/nfs/wangxi/runs/borrow_cache_20260908/``):
+this provider memoizes borrow results per query CONTENT (an LRU keyed on
+a blake2b digest of the query arrays — never object identity), so
+repeated queries of the same geometry pay the ``sdf_near`` scan once
+(57.7 ms retrieval -> cache hit on the 378-row production pool), and it
+carries the calibrated out-of-family ``distance_advisory_threshold``
+consumed by :mod:`tensorlbm.ai.field_borrow` (see
+:data:`DISTANCE_ADVISORY_THRESHOLD` for the calibration).
 """
 
 from __future__ import annotations
 
+import hashlib
 import math
 import os
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any
 
@@ -48,6 +59,26 @@ STUDY_PATH = "/nfs/wangxi/runs/l2_field_sensitivity_20260904"
 #: Default in-manifold guard threshold (see :class:`FieldProvider`).
 GUARD_THRESHOLD = 0.15
 
+#: Default borrow-result cache size in LRU entries (0 disables the cache).
+DEFAULT_BORROW_CACHE_SIZE = 16
+
+#: Default out-of-family distance-advisory threshold (see
+#: :class:`FieldProvider`).  Calibrated 2026-09-08 as the MAX of the
+#: design-level leave-one-out nearest-neighbour SDF-L2 distance
+#: distribution of the 406-row production corpus itself (122 unique
+#: designs; each design's SDF to its nearest OTHER-design SDF, exact
+#: float64 chunked L2 — the runtime ``sdf_near`` math):
+#: min 0.000 / median 1.124 / p90 2.366 / **max 8.875**.  The corpus is
+#: a frozen finite population, so its LOO max IS the exact in-family
+#: envelope — every corpus design sits at <= 8.875 by construction and
+#: the rule has zero false positives on the corpus — while a p90
+#: multiple (e.g. 2 x p90 = 4.73) would mislabel the legitimate slender
+#: tail (designs at 2.94-8.88) as out-of-family.  Walkthrough anchors:
+#: design 106 in-family at 2.981 (ratio 0.34), the sphere probe at
+#: 32.58 (ratio 3.67, ``suspect``).  Machine truth:
+#: ``/nfs/wangxi/runs/borrow_cache_20260908/calibration.json``.
+DISTANCE_ADVISORY_THRESHOLD = 8.875449208906158
+
 #: Pool rows scanned per distance block (bounds peak memory on big pools).
 _CHUNK_ROWS = 64
 
@@ -63,7 +94,11 @@ class BorrowedField:
         fields: the borrowed 5-channel reference field (a private copy,
             ``(5, ...)`` with the pool's dtype; for ``strategy="mean"`` the
             float64 pool mean cast back to the pool dtype, mirroring the
-            study's float64 -> float32 API boundary).
+            study's float64 -> float32 API boundary).  READ-ONLY by
+            contract: on a provider-cache hit the SAME array object is
+            returned again (see :meth:`FieldProvider.borrow`), so callers
+            must not mutate it in place — every downstream consumer
+            (the two-stage backends, the guard) only reads it.
         donor_index: pool row the field came from, or ``None`` for the
             mean fallback.
         strategy: ``"sdf_near"`` | ``"cond_near"`` | ``"mean"``.
@@ -90,6 +125,23 @@ class BorrowedField:
     guard_rel_l2: float
     guard_threshold: float
     provenance: dict[str, Any]
+
+
+def _content_key(arr: np.ndarray | None) -> tuple[Any, ...] | None:
+    """Content fingerprint of a query array: ``(dtype, shape, blake2b)``.
+
+    The digest covers the raw bytes, so equal-content queries hit the
+    same cache entry regardless of which array object carries them (the
+    borrow cache is keyed on CONTENT, never on object identity); shape
+    and dtype ride along so a reinterpreted buffer can never collide
+    with a genuine repeat.  Returns ``None`` for ``None`` (an absent
+    input is its own key part).
+    """
+    if arr is None:
+        return None
+    a = np.asarray(arr)
+    digest = hashlib.blake2b(a.tobytes(), digest_size=16).hexdigest()
+    return (a.dtype.str, a.shape, digest)
 
 
 def _nearest_row(pool: np.ndarray, target: np.ndarray) -> tuple[int, float]:
@@ -136,6 +188,37 @@ class FieldProvider:
     Scope caveat: the invariance numbers were measured with IN-CORPUS
     donors; a borrowed field that passes the guard but is unlike any
     corpus row is out of the study's support, hence the guard.
+
+    Per-geometry result cache (2026-09-08 follow-up #1):
+    :meth:`borrow` memoizes its :class:`BorrowedField` in a bounded LRU
+    (``cache_size`` entries, default :data:`DEFAULT_BORROW_CACHE_SIZE`,
+    ``0`` disables) keyed on the CONTENT of the query arrays —
+    ``(strategy, sdf digest, cond digest)`` via blake2b over the raw
+    bytes plus shape/dtype, never object identity.  Pure memoization:
+    same inputs, same outputs — the pool is treated as immutable after
+    construction, so a hit replays exactly what a miss computes (the
+    sdf_near scan over the 378-row production pool costs ~58 ms per
+    query; repeated same-geometry queries — a Re sweep is one retrieval,
+    a dashboard re-query is zero — pay it once).  Default ON because the
+    borrow path itself is opt-in and the flag-off service composition is
+    untouched either way.  Read-only contract: a hit returns the SAME
+    ``BorrowedField`` (same ``fields`` array object, same ``provenance``
+    dict) as the miss that populated it; callers must treat both as
+    read-only — every downstream consumer only reads them.  On a miss
+    ``fields`` is still a private copy of the pool row, so a caller that
+    DOES mutate it can corrupt later cache hits but never the pool.
+
+    Out-of-family distance advisory (2026-09-08 follow-up #2): the
+    constructor also records ``distance_advisory_threshold`` (default
+    :data:`DISTANCE_ADVISORY_THRESHOLD`, the corpus LOO-NN envelope —
+    see the constant for the calibration).  The provider itself makes no
+    decision with it; :func:`tensorlbm.ai.field_borrow.borrow_serving_field`
+    reads it to attach a NON-BLOCKING ``distance_advisory`` to the
+    response ``info`` (the retrieval distance is the one geometry-side
+    out-of-family signal for STL-sourced shapes — the field guard
+    measures the borrowed field, in-manifold by construction, and the
+    cond guard sees only CAD descriptors).  Operators calibrating a
+    different pool pass their own threshold at construction.
     """
 
     def __init__(
@@ -144,6 +227,8 @@ class FieldProvider:
         pool_sdfs: np.ndarray | None = None,
         pool_cond: np.ndarray | None = None,
         guard_threshold: float = GUARD_THRESHOLD,
+        cache_size: int = DEFAULT_BORROW_CACHE_SIZE,
+        distance_advisory_threshold: float = DISTANCE_ADVISORY_THRESHOLD,
     ) -> None:
         fields = np.asarray(pool_fields)
         if fields.ndim < 2 or fields.shape[1] != FIELD_CHANNELS:
@@ -180,6 +265,20 @@ class FieldProvider:
         if not guard_threshold > 0.0:
             raise ValueError(f"guard_threshold must be > 0, got {guard_threshold!r}")
         self.guard_threshold = float(guard_threshold)
+
+        if isinstance(cache_size, bool) or not isinstance(cache_size, int) or cache_size < 0:
+            raise ValueError(f"cache_size must be a non-negative int, got {cache_size!r}")
+        self.cache_size = int(cache_size)
+        self._borrow_cache: OrderedDict[tuple[Any, ...], BorrowedField] | None = (
+            OrderedDict() if self.cache_size > 0 else None
+        )
+
+        if not distance_advisory_threshold > 0.0 or not math.isfinite(distance_advisory_threshold):
+            raise ValueError(
+                f"distance_advisory_threshold must be a finite positive number, "
+                f"got {distance_advisory_threshold!r}"
+            )
+        self.distance_advisory_threshold = float(distance_advisory_threshold)
 
         self._mean_fields: np.ndarray | None = None
         self._pool_keys: list[str] | None = None
@@ -219,8 +318,25 @@ class FieldProvider:
         The guard is evaluated on the BORROWED field (see class docstring);
         a ``guard_ok=False`` result is still returned, for the caller to
         refuse or escalate.
+
+        Result cache: with ``cache_size > 0`` (the default) the computed
+        :class:`BorrowedField` is memoized per query CONTENT (see the
+        class docstring) and a repeat query returns the SAME object —
+        byte-identical fields, identical provenance, no re-scan.  The
+        cache sits AFTER strategy resolution and shape validation, so a
+        malformed query still raises exactly as without it.  Treat the
+        returned ``fields`` / ``provenance`` as read-only: they are
+        shared with every other caller of the same query.
         """
         chosen = self._choose_strategy(target_sdf, target_cond, strategy)
+        cache = self._borrow_cache
+        key: tuple[Any, ...] | None = None
+        if cache is not None:
+            key = (chosen, _content_key(target_sdf), _content_key(target_cond))
+            cached = cache.get(key)
+            if cached is not None:
+                cache.move_to_end(key)
+                return cached
         provenance: dict[str, Any] = {
             "pool_size": int(self.pool_fields.shape[0]),
             "strategy": chosen,
@@ -258,7 +374,7 @@ class FieldProvider:
         if idx is not None:
             provenance["donor_index"] = idx
 
-        return BorrowedField(
+        result = BorrowedField(
             fields=fields,
             donor_index=idx,
             strategy=chosen,
@@ -268,6 +384,11 @@ class FieldProvider:
             guard_threshold=self.guard_threshold,
             provenance=provenance,
         )
+        if cache is not None and key is not None:
+            cache[key] = result
+            if len(cache) > self.cache_size:
+                cache.popitem(last=False)  # evict the least-recently-used
+        return result
 
     @classmethod
     def from_corpus(
@@ -275,6 +396,8 @@ class FieldProvider:
         path: str | os.PathLike[str],
         *,
         guard_threshold: float = GUARD_THRESHOLD,
+        cache_size: int = DEFAULT_BORROW_CACHE_SIZE,
+        distance_advisory_threshold: float = DISTANCE_ADVISORY_THRESHOLD,
     ) -> FieldProvider:
         """Build a provider from the production corpus artifact (READ-ONLY).
 
@@ -313,12 +436,22 @@ class FieldProvider:
         """
         p = os.fspath(path)
         if os.path.isfile(p) and p.endswith(".npz"):
-            return cls._from_snapshot_npz(p, guard_threshold=guard_threshold)
+            return cls._from_snapshot_npz(
+                p,
+                guard_threshold=guard_threshold,
+                cache_size=cache_size,
+                distance_advisory_threshold=distance_advisory_threshold,
+            )
         if not os.path.isdir(p):
             raise FileNotFoundError(
                 f"corpus path {p!r} is neither an .npz snapshot nor a directory"
             )
-        return cls._from_production_dir(p, guard_threshold=guard_threshold)
+        return cls._from_production_dir(
+            p,
+            guard_threshold=guard_threshold,
+            cache_size=cache_size,
+            distance_advisory_threshold=distance_advisory_threshold,
+        )
 
     # ------------------------------------------------------------- internals
 
@@ -400,7 +533,14 @@ class FieldProvider:
         return num / den
 
     @classmethod
-    def _from_production_dir(cls, directory: str, *, guard_threshold: float) -> FieldProvider:
+    def _from_production_dir(
+        cls,
+        directory: str,
+        *,
+        guard_threshold: float,
+        cache_size: int,
+        distance_advisory_threshold: float,
+    ) -> FieldProvider:
         def load_npz(name: str, required: tuple[str, ...]) -> dict[str, np.ndarray]:
             fp = os.path.join(directory, name)
             if not os.path.isfile(fp):
@@ -452,13 +592,22 @@ class FieldProvider:
             pool_sdfs=sdfs,
             pool_cond=cond,
             guard_threshold=guard_threshold,
+            cache_size=cache_size,
+            distance_advisory_threshold=distance_advisory_threshold,
         )
         provider._pool_keys = keys
         provider._source = f"production-dir:{directory}"
         return provider
 
     @classmethod
-    def _from_snapshot_npz(cls, path: str, *, guard_threshold: float) -> FieldProvider:
+    def _from_snapshot_npz(
+        cls,
+        path: str,
+        *,
+        guard_threshold: float,
+        cache_size: int,
+        distance_advisory_threshold: float,
+    ) -> FieldProvider:
         with np.load(path) as z:
             files = list(z.files)
             fkey = "x" if "x" in files else ("fields" if "fields" in files else None)
@@ -477,6 +626,8 @@ class FieldProvider:
             pool_sdfs=sdfs,
             pool_cond=cond,
             guard_threshold=guard_threshold,
+            cache_size=cache_size,
+            distance_advisory_threshold=distance_advisory_threshold,
         )
         provider._pool_keys = keys
         provider._source = f"snapshot-npz:{path}"

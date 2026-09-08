@@ -47,7 +47,12 @@ silent.  The response carries strategy / donor / guard numbers; a failed
 in-manifold guard (``guard_ok=False``) still serves — flagged in the
 provenance and warning-logged — never raises and never silently swaps
 strategy.  Out-of-manifold fields are the known failure mode (x7.7), so
-the flag IS the safety story.
+the flag IS the safety story.  Since 2026-09-08 the block also carries
+the non-blocking ``distance_advisory`` (the out-of-family geometry
+signal; see :func:`borrow_serving_field`) and the retrieval is memoized
+per query content inside :class:`FieldProvider` (follow-up #1 —
+repeated same-geometry queries cost ONE ``sdf_near`` scan, not one per
+predict call; ``/nfs/wangxi/runs/borrow_cache_20260908/``).
 
 Regeneration caveat: the e2e evidence reused the corpus's own CAD
 parameterization (``suboff_cad`` + ``geom_encoder.sdf_volume``), so it
@@ -144,23 +149,46 @@ def borrow_serving_field(
     and a failed in-manifold guard SERVES, flagged and warning-logged —
     not raised, not re-strategied (out-of-manifold fields are the known
     failure mode, x7.7 ts2 held MAPE, so the flag IS the safety story).
+
+    Distance advisory (2026-09-08 follow-up #2): for distance-carrying
+    strategies the ``field_borrow`` block also carries a NON-BLOCKING
+    ``distance_advisory`` — ``{"reference": "corpus_loo_nn", "threshold":
+    T, "level": "in_family" | "suspect", "distance_ratio": d/T}`` with
+    ``T = provider.distance_advisory_threshold`` (default: the corpus
+    design-level LOO-NN max 8.875, see
+    :data:`tensorlbm.ai.field_provider.DISTANCE_ADVISORY_THRESHOLD`).
+    Rationale: for STL-sourced shapes the retrieval DISTANCE is the one
+    geometry-side out-of-family signal — the field guard measures the
+    borrowed field (a corpus row, in-manifold by construction) and the
+    cond guard sees only CAD descriptors.  The advisory is INFO ONLY:
+    ``suspect`` neither raises, nor warns, nor changes a single served
+    number — an out-of-family query still serves with honest provenance,
+    exactly as before.  The ``"mean"`` fallback has no distance and
+    carries no advisory key.
     """
     borrowed = provider.borrow(target_sdf=target_sdf, strategy=strategy)
     prov = borrowed.provenance
-    info: dict[str, Any] = {
-        "field_source": "field_borrow",
-        "field_borrow": {
-            "strategy": borrowed.strategy,
-            "donor_index": borrowed.donor_index,
-            "donor_key": prov.get("donor_key"),
-            "distance": borrowed.distance,
-            "guard_ok": bool(borrowed.guard_ok),
-            "guard_rel_l2": float(borrowed.guard_rel_l2),
-            "guard_threshold": float(borrowed.guard_threshold),
-            "pool_size": int(prov["pool_size"]),
-            "e2e": E2E_PATH,
-        },
+    field_borrow: dict[str, Any] = {
+        "strategy": borrowed.strategy,
+        "donor_index": borrowed.donor_index,
+        "donor_key": prov.get("donor_key"),
+        "distance": borrowed.distance,
+        "guard_ok": bool(borrowed.guard_ok),
+        "guard_rel_l2": float(borrowed.guard_rel_l2),
+        "guard_threshold": float(borrowed.guard_threshold),
+        "pool_size": int(prov["pool_size"]),
+        "e2e": E2E_PATH,
     }
+    if borrowed.distance is not None:
+        threshold = float(provider.distance_advisory_threshold)
+        distance = float(borrowed.distance)
+        field_borrow["distance_advisory"] = {
+            "reference": "corpus_loo_nn",
+            "threshold": threshold,
+            "level": "suspect" if distance > threshold else "in_family",
+            "distance_ratio": distance / threshold,
+        }
+    info: dict[str, Any] = {"field_source": "field_borrow", "field_borrow": field_borrow}
     if not borrowed.guard_ok:
         _log.warning(
             "field_borrow guard FAILED (strategy=%s donor_index=%s): "
