@@ -103,6 +103,7 @@ A navigable index of the documentation in this directory, grouped by topic.
 | [serving_v6qx_20260828.md](serving_v6qx_20260828.md) | Drag-surrogate serving refresh: cond_v6 v6qx 10-seed pool, uq_temperature = 1.5, routing rules (slender → SDF, guard-not-band, corpus hygiene) |
 | [l2_l3_line_20260908.md](l2_l3_line_20260908.md) | L2/L3 product-line story: arbitrary-geometry serving (retrieved fields + SDF + STL ingest), the first closed loop, and its fresh-LBM adjudication |
 | [benchmarks/ai_fno2d/](benchmarks/ai_fno2d/) | FNO2d 2D cylinder surrogate: loss curves, speed comparison (LBM vs inference) |
+| [l2_closed_loop_multire_20260908.md](l2_closed_loop_multire_20260908.md) | Multi-Re closed loop: mission-profile C_D objective over an 8-point Re grid — coverage map, free-search vs certified-region arms, W9 phantom quantification (json-first report, --verify / --check-doc) |
 
 ---
 
