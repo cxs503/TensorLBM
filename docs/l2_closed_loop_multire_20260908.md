@@ -33,8 +33,8 @@ extrapolated outside a design's measured span.
   362.29, 538.36, 800.00.
 
 Headline: the corpus CANNOT certify a multi-Re J for any full-appendage
-hull design. The single certified full design is the bare 1.0/1.0
-reference hull, and its 82 rows are an LHS over (Re, u_in) — 41 distinct
+hull design. The single certified full design is the full 1.0/1.0
+mother hull (appendages at scale 1.0 - not the bare hull), and its 82 rows are an LHS over (Re, u_in) — 41 distinct
 u_in levels — so its quad3 curve is the Re response at the campaign's u_in
 spread, not a fixed-u_in isochart (the two Re=200 replica rows differ by
 0.0167 %, the truth noise floor at mid-band). The certified-region arm
@@ -52,8 +52,9 @@ any hull, on the 6 grid points bracketed by every member's span
 
 - The multi-Re objective STILL chases l/d < 1.0: both arms pick below 1.0,
   out-of-family (the corpus full hull exists only at l/d = 1.0), with
-  ensemble std 6.7x to 18.4x the certified reference design's across the
-  grid — the out-of-manifold signal is loud and unambiguous.
+  ensemble std 6.4x to 18.4x (greedy) / 8.2x to 24.8x (lcb) of the
+  certified reference design's across the grid — the out-of-manifold signal is
+  loud and unambiguous.
 - Budget honesty: the anchor design's SERVED J is 5.2689 — better than the
   search's own optimum (the greedy pick is +7.46 % predicted-worse than the
   anchor at J level). LHS-40 + trust-region refine never reaches the
