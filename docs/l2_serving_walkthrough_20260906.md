@@ -77,6 +77,10 @@ in-vocabulary descriptor (`bare_hull`, sail=fin=1):
   test; the retrieval distance is.
 - **Cond-space guard `ok`** (score 1.683) — it sees only the CAD
   descriptor triple, so it cannot flag a foreign STL either.
+- **2026-09-08**: the distance now lands `suspect` in the response
+  itself — `info["field_borrow"]["distance_advisory"]` = level
+  `suspect`, ratio 3.67 of the calibrated corpus-LOO threshold 8.875
+  (the in-family design-106 query: ratio 0.34, `in_family`).
 - **The ensemble disagrees loudly**: std inflates x10–x27 vs the
   in-family case; the member min–max band widens from ~0.55–1.25 % to
   ~24–34 % of C_D. Served C_D falls to 0.44–0.57x the slender curve —
@@ -102,6 +106,18 @@ the `sdf_near` retrieval — a chunked float64 L2 over the 378x32x32x64
 pool on CPU numpy — charged **per predict call**, so a whole Re sweep
 amortises it (sweep ≈ single query).
 
+**2026-09-08 amendment (both follow-ups implemented, see the section
+below)**: the retrieval is no longer charged per predict call. The
+per-geometry result cache of `FieldProvider` (default ON, LRU over the
+query CONTENT) turns repeated same-geometry queries into cache hits —
+raw `sdf_near` on this pool: 63.9 ms re-scan vs **0.34 ms hit** — and a
+repeat query through the service is indistinguishable from the
+caller-fields path (same composition re-measured: 120.4 → 25.6 ms
+single query vs 26.3 ms caller-fields, within-session medians n=30;
+speedup x4.70). Served numbers are byte-identical on the hit path
+(design-106 leg-1 curve reproduces to max rel 0.0). Machine truth:
+`/nfs/wangxi/runs/borrow_cache_20260908/` (`evidence.json`).
+
 ## Standing caveats
 
 1. **In-family accuracy is oracle-level**: the all-held design serves at
@@ -118,15 +134,55 @@ amortises it (sweep ≈ single query).
 4. **The cond-space guard is descriptor-blind for STL shapes**: it sees
    `(hull, sail, fin)`, not the query SDF. For STL-sourced geometry the
    retrieval distance and the ensemble std are the out-of-family signals
-   (leg (ii) shows both firing).
+   (leg (ii) shows both firing); since 2026-09-08 the distance signal is
+   surfaced IN the response — see `distance_advisory` in caveat 5.
 5. **Borrowed fields are never silent**: every response carries
    `info["field_borrow"]` with strategy, donor, distance and guard
    numbers (the #275/#278 honest-serving contract); the default
    `field_policy="cache"` path stays byte-identical to the pre-flag
-   service.
+   service. Since 2026-09-08 the block also carries a NON-BLOCKING
+   `distance_advisory` = `{"reference": "corpus_loo_nn", "threshold":
+   8.875449208906158, "level": "in_family" | "suspect",
+   "distance_ratio": d/T}` (present whenever the strategy reports a
+   distance; the `mean` fallback has none). Semantics: `threshold` is
+   the MAX of the design-level leave-one-out nearest-neighbour SDF-L2
+   distance distribution of the 406-row corpus itself (122 unique
+   designs: min 0.000 / median 1.124 / p90 2.366 / max 8.875 — the
+   corpus is a frozen finite population, so its LOO max IS the exact
+   in-family envelope and the rule has zero false positives on the
+   corpus; design 106 sits at 2.981 = ratio 0.34); `suspect` means the
+   query geometry is farther from the family than any corpus design is
+   from its nearest neighbour. It is INFO ONLY — no raise, no warning,
+   no change to any served number — and operators calibrating a
+   different pool pass `distance_advisory_threshold=` at provider
+   construction.
 6. `uq_temperature = 1.5` is the serving pin carried over from
    [serving_v6qx_20260828.md](serving_v6qx_20260828.md); it scales the
    reported sigma only, never the guard or the member band.
+
+## Follow-ups (2026-09-08 — both IMPLEMENTED)
+
+The two follow-ups this walkthrough recommended are merged
+(`exp/borrow-cache-advisory`; evidence
+`/nfs/wangxi/runs/borrow_cache_20260908/`):
+
+1. **Per-geometry retrieval cache — DONE.**
+   `FieldProvider(cache_size=16)` (default ON, 0 disables, LRU) memoizes
+   the `BorrowedField` per query CONTENT — blake2b over the raw bytes
+   plus shape/dtype, never object identity — so repeated same-geometry
+   queries pay the `sdf_near` scan once (63.9 ms re-scan vs 0.34 ms hit
+   on the 378-row pool; repeat predict 25.6 ms, indistinguishable from
+   the 26.3 ms caller-fields baseline, same session). Pure memoization:
+   hit outputs are byte-identical to miss outputs (pinned by test), the
+   pool is never mutated (miss returns a private copy; the hit returns
+   the SAME object under a documented read-only contract), and the
+   cache sits after strategy/shape validation so malformed queries
+   still raise.
+2. **Out-of-family distance advisory — DONE.** See caveat 5 for the
+   semantics and leg (ii) for the sphere landing `suspect` at ratio
+   3.67 while design 106 stays `in_family` at 0.34; threshold =
+   corpus design-LOO max, computed by
+   `calibrate_loo.py` (`calibration.json` in the evidence dir).
 
 ## Provenance
 
@@ -136,3 +192,4 @@ amortises it (sweep ≈ single query).
 | LODO composition this demo reuses (pool rule, target rule, donor, oracle-level accuracy) | `/nfs/wangxi/runs/l2_e2e_validation_20260904/` (`e2e.json`, `run_e2e.py`), `docs/field_borrow_20260904.md` |
 | frozen serving ensembles (10 seeds x ts2/ts4) | `/nfs/wangxi/runs/ckpt_bundle_pm20260831/` (`README.md`) |
 | cached-fields latency reference (18.5–18.6 ms/query) | `/nfs/wangxi/runs/sdf_serve_sanity_20260830/` (`ops_numbers.json`), [serving_v6qx_20260828.md](serving_v6qx_20260828.md) |
+| 2026-09-08 follow-ups (cache amortization, advisory calibration + levels, unchanged leg-1 accuracy) | `/nfs/wangxi/runs/borrow_cache_20260908/` (`evidence.json`, `report.md`, `calibration.json`, `run_evidence.py`, `calibrate_loo.py`) |
