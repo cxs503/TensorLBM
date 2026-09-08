@@ -23,7 +23,6 @@ from pathlib import Path
 import pytest
 
 _TESTS_DIR = Path(__file__).resolve().parent
-_REPO_ROOT = _TESTS_DIR.parent
 
 # These modules load sibling/repo-root scripts via importlib or sys.path
 # tricks; the loaded scripts import torch, which a keyword scan cannot see.
@@ -32,16 +31,7 @@ _DYNAMIC_LOADER_MODULES = [
     "test_assess_pressure_gradient_wall_channel.py",
     "test_assess_pressure_gradient_wall_mkm_dns.py",
     "test_bench_dam_break.py",
-    "test_gallium_pf_grid_diagnostic.py",
 ]
-
-# These import repo-root benchmark scripts that are not tracked in the repo;
-# they only run in environments where those scripts exist.
-_ROOT_SCRIPT_TESTS = {
-    "test_gallium_pf_energy.py",
-    "test_gallium_pf_stefan_interface.py",
-    "test_gallium_pf_grid_diagnostic.py",
-}
 
 
 def _has(mod: str) -> bool:
@@ -52,16 +42,11 @@ def _collect_ignore() -> list[str]:
     has_torch = _has("torch")
     has_triton = _has("triton")
     has_fastapi = _has("fastapi")
-    has_root_gallium = (_REPO_ROOT / "benchmark_gallium_pf.py").exists()
     ignore: list[str] = []
     for p in sorted(_TESTS_DIR.rglob("*test*.py")):
         if p.name == "conftest.py":
             continue
         text = p.read_text(encoding="utf-8", errors="replace")
-        if p.name in _ROOT_SCRIPT_TESTS and not has_root_gallium:
-            _IGNORE_REASONS[str(p)] = "untracked repo-root benchmark_gallium_pf.py"
-            ignore.append(str(p))
-            continue
         if not has_fastapi and "fastapi" in text:
             _IGNORE_REASONS[str(p)] = "fastapi absent"
             ignore.append(str(p))
