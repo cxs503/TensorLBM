@@ -105,6 +105,7 @@ A navigable index of the documentation in this directory, grouped by topic.
 | [l2_l3_line_20260908.md](l2_l3_line_20260908.md) | L2/L3 product-line story: arbitrary-geometry serving (retrieved fields + SDF + STL ingest), the first closed loop, and its fresh-LBM adjudication |
 | [l2_loop_certify_20260908.md](l2_loop_certify_20260908.md) | L3 closed-loop claim certification: fresh-LBM phantom adjudication productized (per-axis tiers, certified-region search, verify/check-doc gates) |
 | [benchmarks/ai_fno2d/](benchmarks/ai_fno2d/) | FNO2d 2D cylinder surrogate: loss curves, speed comparison (LBM vs inference) |
+| [l2_closed_loop_multire_20260908.md](l2_closed_loop_multire_20260908.md) | Multi-Re closed loop: mission-profile C_D objective over an 8-point Re grid — coverage map, free-search vs certified-region arms, W9 phantom quantification (json-first report, --verify / --check-doc) |
 
 ---
 
