@@ -3529,6 +3529,29 @@ def build_surface_panels(
     n_sf = np.zeros(n, dtype=int)
     np.add.at(n_sf, si, 1)
 
+    # IC-D3 runback-credit fix (found in D2+D3 integration): wetted-strip
+    # panels downstream of the impingement limit (n_sf > 0, n_dep == 0)
+    # freeze runback water but had NO deposit cells, so their m_ice never
+    # reached the deposit and the render lost exactly the runback-only
+    # freezing (credit < frozen by it -- invisible pre-D2 because the
+    # legacy drop strands sub-voxel mass anyway).  Credit those panels
+    # uniformly over their surface cells: the deposit freezer cascades
+    # solid-cell water to the outward growth frontier (the #84 fix 4
+    # rule), so runback ice accretes ON the wetted surface, as it does
+    # physically.  Panels with deposit cells are untouched (weights,
+    # areas and D3-verified panel numbers unchanged).
+    sf_only = (n_dep == 0) & (n_sf > 0)
+    if bool(sf_only.any()):
+        sel = np.isin(p_sf, ids[sf_only])
+        dep_mask[sf_y[sel], sf_x[sel]] = True
+        dep_y, dep_x = np.nonzero(dep_mask)
+        p_dep = np.rint(s_grid[dep_y, dep_x] / w).astype(int)
+        di = np.searchsorted(ids, p_dep)
+        n_dep = np.zeros(n, dtype=int)
+        np.add.at(n_dep, di, 1)
+        s_sum = np.zeros(n)
+        np.add.at(s_sum, di, s_grid[dep_y, dep_x])
+
     v_sum = np.zeros(n)
     if len(sf_y):
         np.add.at(v_sum, si, stress["v_e"][sf_y, sf_x])
