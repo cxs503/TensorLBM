@@ -30,8 +30,11 @@ from tensorlbm.aircraft_icing import (
     IcingConfig,
     RimeIcingSimulation,
     _tvd_face_states,
+    airfoil_dat_mask_2d,
+    airfoil_le_radius,
     ice_shape_metrics,
     naca0012_mask_2d,
+    parse_airfoil_dat,
     rime_density_macklin,
     run_glaze_icing,
     run_rime_icing,
@@ -1329,3 +1332,217 @@ def test_phase3_config_validation() -> None:
     # run_glaze_icing rejects the instant model
     with pytest.raises(ValueError):
         run_glaze_icing(IcingConfig(nx=32, ny=24), shots=1, log=lambda *a: None)
+
+
+# ---------------------------------------------------------------------------
+# IC-D1: configurable geometry (Selig .dat contour ingest)
+# ---------------------------------------------------------------------------
+def _naca0012_contour(n_per_side: int = 120) -> np.ndarray:
+    """Sample the NACA 0012 contour in Selig order (upper TE->LE->lower TE)."""
+    b = np.linspace(0.0, math.pi, n_per_side)
+    xc = 0.5 * (1.0 - np.cos(b))
+    yt = (
+        5.0
+        * 0.12
+        * (0.2969 * np.sqrt(xc) - 0.126 * xc - 0.3516 * xc**2 + 0.2843 * xc**3 - 0.1015 * xc**4)
+    )
+    upper = np.column_stack([xc[::-1], yt[::-1]])  # TE -> LE
+    lower = np.column_stack([xc[1:], -yt[1:]])  # LE -> TE
+    return np.vstack([upper, lower])
+
+
+def _write_dat(path, pts, header="TESTAIRFOIL 0012") -> None:
+    with open(path, "w") as fh:
+        if header is not None:
+            fh.write(header + "\n")
+        for x, y in pts:
+            fh.write(f"{x:.6f} {y:.6f}\n")
+
+
+def _rasterize_evenodd(
+    pts: np.ndarray, nx: int, ny: int, chord: float, aoa_deg: float, cx: float, cy: float
+) -> np.ndarray:
+    """Independent reference rasterizer: float64 grid rotation + PNPOLY
+    even-odd crossing test on the closed contour."""
+    aoa = math.radians(aoa_deg)
+    ca, sa = math.cos(aoa), math.sin(aoa)
+    gx, gy = np.meshgrid(np.arange(nx, dtype=np.float64), np.arange(ny, dtype=np.float64))
+    xr = ((gx - cx) * ca - (gy - cy) * sa) / chord
+    yr = ((gx - cx) * sa + (gy - cy) * ca) / chord
+    poly = np.vstack([pts, pts[:1]])
+    inside = np.zeros((ny, nx), dtype=bool)
+    for (x1, y1), (x2, y2) in zip(poly[:-1], poly[1:]):
+        straddles = (y1 > yr) != (y2 > yr)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            xint = (x2 - x1) * (yr - y1) / (y2 - y1) + x1
+        inside ^= straddles & (xr < xint)
+    return inside
+
+
+def test_parse_airfoil_dat_header_and_orientation(tmp_path) -> None:
+    """Header line optional; contour direction/starting point irrelevant."""
+    pts = _naca0012_contour()
+    p = tmp_path / "with_header.dat"
+    _write_dat(p, pts, header="TESTAIRFOIL 0012")
+    got = parse_airfoil_dat(str(p))
+    assert got.shape == (239, 2)  # 2 * 120 - 1 (LE point shared by both sides)
+    np.testing.assert_allclose(got, pts, atol=5e-7)  # 1e-6 write precision
+    # no header line at all
+    p2 = tmp_path / "no_header.dat"
+    _write_dat(p2, pts, header=None)
+    np.testing.assert_allclose(parse_airfoil_dat(str(p2)), got, atol=0.0)
+    # reversed orientation (lower surface first) parses to the same contour
+    p3 = tmp_path / "reversed.dat"
+    _write_dat(p3, pts[::-1], header="REVERSED")
+    np.testing.assert_allclose(parse_airfoil_dat(str(p3)), pts[::-1], atol=5e-7)
+    # started mid-contour (rotate rows by 60) parses identically as a set
+    p4 = tmp_path / "rotated_start.dat"
+    _write_dat(p4, np.roll(pts, 60, axis=0), header=None)
+    np.testing.assert_allclose(parse_airfoil_dat(str(p4)), np.roll(pts, 60, axis=0), atol=5e-7)
+
+
+def test_parse_airfoil_dat_errors(tmp_path) -> None:
+    """Garbage, too-short contours and missing files are hard errors."""
+    p = tmp_path / "garbage.dat"
+    p.write_text("not a dat file\n1 2 3\nonly-one-column\n\n")
+    with pytest.raises(ValueError):
+        parse_airfoil_dat(str(p))
+    p2 = tmp_path / "too_few.dat"
+    p2.write_text("TINY\n0 0\n0.5 0.05\n1 0\n")
+    with pytest.raises(ValueError):
+        parse_airfoil_dat(str(p2))
+    with pytest.raises(FileNotFoundError):
+        parse_airfoil_dat(str(tmp_path / "does_not_exist.dat"))
+
+
+def test_airfoil_dat_mask_matches_independent_rasterizer(tmp_path) -> None:
+    """Voxelization matches an independent even-odd rasterizer cell-for-cell
+    (same grid/rotation convention), at zero and non-zero AoA."""
+    # smooth 24-gon blob centred mid-chord; vertices avoid rotated integer
+    # cell centres so no point sits exactly on an edge
+    ang = np.linspace(0.0, 2.0 * math.pi, 24, endpoint=False)
+    rad = 0.18 + 0.07 * np.cos(3.0 * ang + 0.3)
+    pts = np.column_stack([0.45 + rad * np.cos(ang), rad * np.sin(ang)])
+    p = tmp_path / "blob.dat"
+    _write_dat(p, pts)
+    nx, ny, chord, cx, cy = 160, 96, 80.0, 48.0, 48.0
+    for aoa in (0.0, 7.0):
+        got = airfoil_dat_mask_2d(nx, ny, chord, aoa, cx=cx, cy=cy, dat=str(p))
+        ref = _rasterize_evenodd(pts, nx, ny, chord, aoa, cx, cy)
+        assert got.shape == (ny, nx) and got.dtype == torch.bool
+        assert bool((got.numpy() == ref).all()), (
+            f"aoa={aoa}: {(got.numpy() != ref).sum()} differing cells"
+        )
+        assert ref.sum() > 50  # non-degenerate polygon
+    # exactly one of dat=/points= must be given
+    with pytest.raises(ValueError):
+        airfoil_dat_mask_2d(nx, ny, chord)
+    both = airfoil_dat_mask_2d(nx, ny, chord, points=pts)
+    np.testing.assert_array_equal(
+        both.numpy(), airfoil_dat_mask_2d(nx, ny, chord, dat=str(p)).numpy()
+    )
+
+
+def test_airfoil_dat_mask_naca_convention(tmp_path) -> None:
+    """A dat sampled from the analytic NACA 0012 surface reproduces the
+    implicit NACA mask up to the boundary discretisation (same placement,
+    chord and AoA sense)."""
+    pts = _naca0012_contour()
+    p = tmp_path / "naca0012_sampled.dat"
+    _write_dat(p, pts)
+    nx, ny, chord, aoa, cx, cy = 160, 80, 64.0, 4.0, 48.0, 40.0
+    dat_mask = airfoil_dat_mask_2d(nx, ny, chord, aoa, cx=cx, cy=cy, dat=str(p))
+    ref = naca0012_mask_2d(nx, ny, chord, aoa, cx=cx, cy=cy)
+    d, r = dat_mask.numpy(), ref.numpy()
+    iou = (d & r).sum() / max((d | r).sum(), 1)
+    assert iou > 0.93, f"IoU={iou:.4f}"
+    # leading-edge cell identical: nose at (cx, cy) for both conventions
+    xs = np.nonzero(d.any(axis=0))[0]
+    xs_ref = np.nonzero(r.any(axis=0))[0]
+    assert (
+        xs.min() == xs_ref.min()
+        and abs(int(d[:, xs.min()].sum()) - int(r[:, xs_ref.min()].sum())) <= 2
+    )
+
+
+def test_airfoil_le_radius_circle_fit() -> None:
+    """Kasa fit recovers the exact radius of a known osculating circle."""
+    r0 = 0.0158  # chord units, NACA0012-like
+    th = np.linspace(-math.pi / 3, math.pi / 3, 41)
+    le_arc = np.column_stack([r0 + r0 * np.cos(th), r0 * np.sin(th)])
+    # pad with far-away TE-region points outside the fit window
+    far = np.column_stack([np.linspace(0.3, 0.95, 30), np.full(30, 0.03)])
+    r_le = airfoil_le_radius(np.vstack([le_arc, far]))
+    assert math.isclose(r_le, r0, rel_tol=1e-9)
+    # sparse-window fallback (min_points nearest) still fits the circle
+    sparse = np.vstack([le_arc[::4], far])
+    assert math.isclose(airfoil_le_radius(sparse, min_points=8), r0, rel_tol=1e-9)
+
+
+def test_le_diameter_derivation_and_mapping_note(tmp_path) -> None:
+    """With airfoil_dat set, le_diameter comes from the dat circle fit (not
+    the NACA formula) and mapping_report records the geometry source."""
+    pts = _naca0012_contour()
+    p = tmp_path / "naca0012_sampled.dat"
+    _write_dat(p, pts)
+    cfg = IcingConfig(airfoil_dat=str(p))
+    assert math.isclose(
+        cfg.le_diameter_eff,
+        2.0 * airfoil_le_radius(parse_airfoil_dat(str(p))) * cfg.chord_phys,
+        rel_tol=1e-12,
+    )
+    # the dat circle fit differs from the blind NACA formula on this contour
+    assert not math.isclose(
+        cfg.le_diameter_eff, 2.0 * 1.1019 * cfg.naca_t**2 * cfg.chord_phys, rel_tol=1e-3
+    )
+    rep = cfg.mapping_report()
+    assert rep["airfoil_dat"] == str(p)
+    assert rep["airfoil_dat_points"] == len(pts)
+    assert math.isclose(rep["le_radius_dat_chord"], airfoil_le_radius(parse_airfoil_dat(str(p))))
+    assert rep["le_diameter_source"] == "dat-circle-fit"
+    # explicit le_diameter still wins
+    cfg2 = IcingConfig(airfoil_dat=str(p), le_diameter=0.004)
+    assert cfg2.le_diameter_eff == 0.004
+    assert cfg2.mapping_report()["le_diameter_source"] == "explicit"
+    # default config: no geometry note keys, NACA formula intact
+    d = IcingConfig()
+    rep_d = d.mapping_report()
+    assert "airfoil_dat" not in rep_d and "le_diameter_source" not in rep_d
+    assert math.isclose(d.le_diameter_eff, 2 * 1.1019 * 0.12**2 * d.chord_phys, rel_tol=1e-12)
+    # bad path fails at config time
+    with pytest.raises(FileNotFoundError):
+        IcingConfig(airfoil_dat="/nonexistent/airfoil.dat")
+
+
+def test_geometry_dispatch_in_simulation(tmp_path) -> None:
+    """airfoil_dat=None keeps the exact NACA mask; a dat contour swaps it."""
+    pts = _naca0012_contour()
+    p = tmp_path / "naca0012_sampled.dat"
+    _write_dat(p, pts)
+    base = dict(nx=64, ny=48, chord_frac=0.5, warmup_steps=0, steps=1, device="cpu")
+    sim_default = RimeIcingSimulation(IcingConfig(**base))
+    np.testing.assert_array_equal(
+        sim_default.airfoil.numpy(),
+        naca0012_mask_2d(
+            base["nx"],
+            base["ny"],
+            IcingConfig(**base).chord_lu,
+            IcingConfig(**base).aoa_deg,
+            cx=base["nx"] * IcingConfig(**base).cx_frac,
+            cy=base["ny"] * IcingConfig(**base).cy_frac,
+        ).numpy(),
+    )
+    sim_dat = RimeIcingSimulation(IcingConfig(**base, airfoil_dat=str(p)))
+    np.testing.assert_array_equal(
+        sim_dat.airfoil.numpy(),
+        airfoil_dat_mask_2d(
+            base["nx"],
+            base["ny"],
+            IcingConfig(**base).chord_lu,
+            IcingConfig(**base).aoa_deg,
+            cx=base["nx"] * IcingConfig(**base).cx_frac,
+            cy=base["ny"] * IcingConfig(**base).cy_frac,
+            dat=str(p),
+        ).numpy(),
+    )
+    assert int(sim_dat.airfoil.sum()) > 0 and int(sim_default.airfoil.sum()) > 0
