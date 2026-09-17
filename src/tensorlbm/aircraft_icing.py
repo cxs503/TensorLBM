@@ -320,6 +320,24 @@ class IcingConfig:
     beta_window_mode: str = "clean"  # "clean" | "trailing"
     beta_clean_frac: float = 0.2  # clean mode: window length as fraction of steps
     beta_clean_max_fill: float = 0.5  # clean mode: max expected LE fill [cells]
+    # IC-D3: advance the Eulerian cloud through the flow warmup (identical
+    # field mathematics, no ledger/audit accumulation) so the exposure
+    # window opens with the droplet slip field already developed -- the
+    # stated intent of ``prefill_cloud``.  Without it the first
+    # ~``tau_d_lu`` steps of every measure-only shot under-collect
+    # (u_d starts at u_f, i.e. zero slip), so the whole-shot ledger beta and
+    # the Messinger water feed depend on the shot lattice length (steps=800
+    # vs 3000 vs 6000 gave beta_pk 0.609 / 0.727 / 0.757 on case 3.3).
+    # ``run_glaze_icing`` sets this for its measure-only shots; the default
+    # False keeps every legacy path (rime single shot) byte-identical.
+    droplet_warmup: bool = False
+    # IC-D3: fix the stagnation-row sign degeneracy in surface_arc_length
+    # (see that function).  Default False = legacy s_grid bit-for-bit (the
+    # Phase 2a/2b single-shot path must stay byte-identical; NACA0012 at
+    # the production point has 6 degenerate cells); run_glaze_icing opts in
+    # because the stag-row s-collapse is what polluted the stagnation beta
+    # bin and thermo panel on RG-15.
+    surface_arc_sign_fix: bool = False
     disable_droplets: bool = False  # clean-airfoil twin for A/B cd drift
     uniform_flow: bool = False  # True: static uniform field (tests, no LBM)
     device: str = "cpu"
@@ -925,7 +943,9 @@ def _tvd_face_states(
 # ---------------------------------------------------------------------------
 # Surface arc-length machinery (numpy, CPU, run once at the end)
 # ---------------------------------------------------------------------------
-def surface_arc_length(airfoil: np.ndarray) -> tuple[np.ndarray, tuple[int, int], np.ndarray]:
+def surface_arc_length(
+    airfoil: np.ndarray, fix_stag_row_signs: bool = False
+) -> tuple[np.ndarray, tuple[int, int], np.ndarray]:
     """Signed arc distance from the leading-edge surface cell.
 
     Returns ``(s_grid, stag_xy, surf)``:
@@ -942,6 +962,21 @@ def surface_arc_length(airfoil: np.ndarray) -> tuple[np.ndarray, tuple[int, int]
     Impact cells are mapped onto this coordinate so the beta curve is a
     function of surface position, independent of how thick the ice has
     grown during the run.
+
+    ``fix_stag_row_signs`` (IC-D3, default False = legacy bit-for-bit):
+    the plain y-comparison sign rule annihilates the arc distance of every
+    surface cell *on the stagnation row*, not just the LE cell.  On tilted
+    thin geometries (RG-15 at 4 deg: the TE gap and mid-chord surface
+    crossings share the stag row) fluid cells up to ~0.65 chord downstream
+    inherit s = 0, so low-beta trailing-edge wake catch pollutes the
+    stagnation beta bin (LE beta 0.76 averaged down to 0.10) and the
+    stagnation thermo panel swallows far-field surface cells.  With the
+    flag, degenerate cells (sign 0 with nonzero distance) take the branch
+    label of their shortest-path predecessor (fluid-side fallback); every
+    cell with a definite legacy sign keeps it.  Legacy geometries also
+    carry degenerate cells (NACA0012 @ 320x160/4 deg: 6), so the default
+    keeps the Phase 2a/2b single-shot path byte-identical and only the
+    glaze multishot driver opts in.
     """
     ny, nx = airfoil.shape
     fluid = ~airfoil
@@ -968,6 +1003,7 @@ def surface_arc_length(airfoil: np.ndarray) -> tuple[np.ndarray, tuple[int, int]
         if (dys, dxs) != (0, 0)
     ]
     coord2id = {(int(ys[i]), int(xs[i])): i for i in range(n_surf)}
+    pred = -np.ones(n_surf, dtype=np.int64)  # shortest-path tree (IC-D3 branch labels)
     while heap:
         d, u = heappop(heap)
         if d > dist[u]:
@@ -980,9 +1016,23 @@ def surface_arc_length(airfoil: np.ndarray) -> tuple[np.ndarray, tuple[int, int]
             nd = d + w
             if nd < dist[v] - 1e-12:
                 dist[v] = nd
+                pred[v] = u
                 heappush(heap, (nd, v))
 
     sign = np.where(ys > stag[0], 1.0, np.where(ys < stag[0], -1.0, 0.0))
+    if fix_stag_row_signs:
+        degenerate = (sign == 0.0) & (dist > 0.0) & np.isfinite(dist)
+        for i in np.nonzero(degenerate)[0]:
+            j, seen = int(i), set()
+            while j >= 0 and sign[j] == 0.0 and j not in seen:
+                seen.add(j)
+                j = int(pred[j])
+            if j >= 0 and sign[j] != 0.0:
+                sign[i] = sign[j]
+            else:
+                y0, x0 = int(ys[i]), int(xs[i])
+                above_fluid = y0 - 1 >= 0 and not airfoil[y0 - 1, x0]
+                sign[i] = -1.0 if above_fluid else 1.0
     s_surf = dist * sign
 
     # multi-source BFS: nearest surface cell id for every grid cell
@@ -1902,6 +1952,35 @@ class RimeIcingSimulation:
             else:
                 self.m_w += dm
 
+    def _euler_advance_warmup(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
+        """Advance the Eulerian cloud one warmup step, ledger-free (IC-D3).
+
+        Identical field mathematics to :meth:`_euler_advance` (the same
+        single call of the compiled unit with identical arguments) but the
+        impact ledger, water ledger and audit accumulators stay untouched:
+        warmup only develops the droplet slip field so the exposure window
+        opens with the cloud in local equilibrium.  Without it the first
+        ``~tau_d_lu`` steps of every shot under-collect (``u_d`` starts at
+        ``u_f``, i.e. zero slip), which made the whole-shot-ledger beta and
+        the Messinger impingement rate depend on the lattice length of the
+        shot.
+        """
+        cfg = self.cfg
+        self.alpha, self.mx, self.my, _imp, _bflux = self._step_euler(
+            self.alpha,
+            self.mx,
+            self.my,
+            ux,
+            uy,
+            self.solid,
+            cfg.tau_d_lu,
+            cfg.re_p_scale,
+            cfg.alpha_in,
+            cfg.u_in,
+            cfg.shadow_alpha_min,
+            cfg.eulerian_scheme == "donor2",
+        )
+
     def _void_encased(self, prev_solid: torch.Tensor) -> None:
         """Remove cloud trapped by fresh ice and audit it (encased).
 
@@ -2022,17 +2101,30 @@ class RimeIcingSimulation:
             f"steps [{beta_w0_log}, {beta_w1_log}) "
             f"({'pre-ice reference geometry' if cfg.beta_window_mode == 'clean' else 'iced geometry (legacy)'})"
         )
+        ux_c = torch.full((self.ny, self.nx), cfg.u_in, device=self.dev)
+        uy_c = torch.zeros((self.ny, self.nx), device=self.dev)
+        # IC-D3: co-develop the Eulerian cloud with the warmup flow (the
+        # one-way coupling leaves the flow trajectory bit-identical).
+        warm_drops = (
+            cfg.droplet_warmup
+            and self.use_euler
+            and not cfg.disable_droplets
+            and not cfg.uniform_flow
+        )
+        if warm_drops:
+            self._init_eulerian(ux_c, uy_c)
+            self.log("  [icing-e] droplet warmup: co-advancing cloud through flow warmup")
         if not cfg.uniform_flow:
             for _ in range(cfg.warmup_steps):
                 last = _ == cfg.warmup_steps - 1
                 f_pre = self._flow_step(want_force=last)
                 if last and f_pre is not None:
                     self.cd0, self.cl0 = self._force_coeffs(f_pre)
+                if warm_drops:
+                    _, ux3, uy3, _ = macroscopic3d(self.f)
+                    self._euler_advance_warmup(ux3[0], uy3[0])
             if self.cd0 is not None:
                 log(f"  [icing] warmup done: cd0={self.cd0:.5f} cl0={self.cl0:.5f}")
-
-        ux_c = torch.full((self.ny, self.nx), cfg.u_in, device=self.dev)
-        uy_c = torch.zeros((self.ny, self.nx), device=self.dev)
         # beta window (task #84 fix 1): "clean" = early pre-ice window on the
         # reference geometry (LWC-invariant beta), "trailing" = Phase 2a/2b
         # legacy window on the iced geometry.
@@ -2048,12 +2140,20 @@ class RimeIcingSimulation:
                 ux0, uy0 = ux3[0], uy3[0]
             self._prefill(ux0, uy0)
         if self.use_euler and not cfg.disable_droplets:
-            if cfg.uniform_flow:
-                ux0, uy0 = ux_c, uy_c
+            if warm_drops:
+                # IC-D3: the cloud is already steady from the warmup; audit
+                # its inventory as the window's initial fill instead of
+                # re-initialising (which would reset the developed slip)
+                self.aud_e["initial_fill"] = (
+                    float(self.alpha.double().sum().item()) * cfg.mass_per_lu3
+                )
             else:
-                _, ux3, uy3, _ = macroscopic3d(self.f)
-                ux0, uy0 = ux3[0], uy3[0]
-            self._init_eulerian(ux0, uy0)
+                if cfg.uniform_flow:
+                    ux0, uy0 = ux_c, uy_c
+                else:
+                    _, ux3, uy3, _ = macroscopic3d(self.f)
+                    ux0, uy0 = ux3[0], uy3[0]
+                self._init_eulerian(ux0, uy0)
             self.log(
                 f"  [icing-e] eulerian cloud: alpha_in={cfg.alpha_in:.3e} "
                 f"shadow_min={cfg.shadow_alpha_min:.3e} "
@@ -2181,14 +2281,27 @@ class RimeIcingSimulation:
         # ---- beta + metrics ----
         airfoil_np = self.airfoil.cpu().numpy()
         solid_np = self.solid.cpu().numpy()
-        s_grid, stag, _surf = surface_arc_length(airfoil_np)
+        s_grid, stag, _surf = surface_arc_length(
+            airfoil_np, fix_stag_row_signs=cfg.surface_arc_sign_fix
+        )
         dm = self.impact_mass.clone()
-        if impact_w1 is not None:
-            dm = impact_w1.clone()
-        if impact_w0 is not None:
-            dm = dm - impact_w0
-        # lattice time of the beta window (acceleration cancels, see docstring)
-        t_win = (beta_w1 - beta_w0) * cfg.dt_phys
+        # IC-D3 fix: the glaze whole-shot convention (trailing mode with
+        # beta_window_frac = 0) yields an EMPTY differencing window
+        # (w0 == w1 == steps), so the module reported beta == 0 (empty
+        # curve) for exactly the configs run_glaze_icing drives -- run
+        # scripts had to hand-roll the normalisation (the IC-C pilot used
+        # the un-pinned cfg.lwc_eff, a factor-2 beta error).  Fall back to
+        # the full-shot ledger with the whole-shot lattice time; the
+        # normalisation convention is identical (acceleration cancels).
+        if beta_w1 > beta_w0:
+            if impact_w1 is not None:
+                dm = impact_w1.clone()
+            if impact_w0 is not None:
+                dm = dm - impact_w0
+            # lattice time of the beta window (acceleration cancels, docstring)
+            t_win = (beta_w1 - beta_w0) * cfg.dt_phys
+        else:
+            t_win = cfg.steps * cfg.dt_phys
         beta = collection_efficiency_curve(
             s_grid,
             dm.cpu().numpy(),
@@ -2203,10 +2316,11 @@ class RimeIcingSimulation:
         )
         if euler_result is not None or (self.use_euler and not cfg.disable_droplets):
             dm_e = self.impact_mass_e.clone()
-            if self.impact_e_w1 is not None:
-                dm_e = self.impact_e_w1.clone()
-            if self.impact_e_w0 is not None:
-                dm_e = dm_e - self.impact_e_w0
+            if beta_w1 > beta_w0:  # IC-D3: skip differencing on an empty window
+                if self.impact_e_w1 is not None:
+                    dm_e = self.impact_e_w1.clone()
+                if self.impact_e_w0 is not None:
+                    dm_e = dm_e - self.impact_e_w0
             beta_e = collection_efficiency_curve(
                 s_grid,
                 dm_e.cpu().numpy(),
@@ -2526,7 +2640,7 @@ def build_surface_panels(
     the lattice window time *and* the LWC acceleration — the acceleration
     cancels exactly, so ``m_imp`` is the real-LWC flux.  ``beta`` is the
     diagnostic normalisation against ``LWC V A`` with the panel area from
-    its deposit-cell count.
+    its surface-cell count (IC-D3: the wetted strip, not the deposit ring).
     """
     w = cfg.glaze_panel_cells
     dx = cfg.dx_phys
@@ -2593,7 +2707,14 @@ def build_surface_panels(
     # second listing of the impact cells, which would double the per-cell
     # ice density in the driver's np.add.at credit
     s_m = np.where(n_dep > 0, s_sum / np.maximum(n_dep, 1), ids * w) * dx
-    area = n_dep * dx * dx
+    # IC-D3 fix: the Messinger control volume is a strip of the WETTED
+    # SURFACE, so its area is the panel's surface-cell count (arc width w
+    # cells x dx depth), not the deposit-ring count.  The deposit ring
+    # (boundary fluid cells) double-covers thin regions -- both faces of a
+    # 2-cell-thick leading edge -- inflating the panel area up to ~4x,
+    # which diluted the reported beta by the same factor and over-cooled
+    # the energy balance (h*A and evaporation with the ring area).
+    area = np.where(n_sf > 0, n_sf, n_dep) * dx * dx
     m_imp_kgs = m_ledger / (t_window * lwc_accel) if (t_window * lwc_accel) > 0 else np.zeros(n)
     v_e = np.where(n_sf > 0, v_sum / np.maximum(n_sf, 1), cfg.v_inf)
     tau_sampled = np.where(n_sf > 0, tau_sum / np.maximum(n_sf, 1), 0.0)
@@ -2642,6 +2763,8 @@ def build_surface_panels(
         "v_e": v_e,
         "tau_t": tau_t,
         "tau_sampled_pa": tau_sampled,
+        "n_dep_cells": n_dep,
+        "n_sf_cells": n_sf,
         "dep_y": dep_y.astype(int),
         "dep_x": dep_x.astype(int),
         "dep_p": pj.astype(int),
@@ -2894,6 +3017,7 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
 
     totals = {"impacted": 0.0, "frozen": 0.0, "evaporated": 0.0, "runback_out": 0.0}
     shot_reports: list[dict[str, Any]] = []
+    beta_curves: list[dict[str, np.ndarray]] = []
     airfoil_np: np.ndarray | None = None
     solid_np: np.ndarray | None = None
     m_w: np.ndarray | None = None
@@ -2908,6 +3032,15 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
             beta_window_mode="trailing",  # glaze: whole shot is the beta window
             beta_window_frac=0.0,
             accel_override=accel,  # ledger == dt_shot of physical exposure
+            # IC-D3: develop the cloud through the warmup so the whole-shot
+            # ledger is the steady impingement rate (no tau_d startup
+            # deficit) -- beta and the Messinger water feed become
+            # independent of the shot lattice length.
+            droplet_warmup=True if cfg.droplet_phase in ("eulerian", "both") else False,
+            # IC-D3: resolve the stag-row sign degeneracy (see
+            # surface_arc_length) so the stagnation beta bin and thermo
+            # panel are not polluted by far-field same-row cells.
+            surface_arc_sign_fix=True,
         )
         sim = RimeIcingSimulation(shot_cfg, log=log)
         if solid_np is not None:
@@ -2919,8 +3052,12 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         s_grid = res["s_grid"]
         if cfg.droplet_phase in ("eulerian", "both"):
             ledger = res["eulerian"]["impact_mass"]
+            # IC-D3: the module-reported whole-shot beta curve (empty-window
+            # fallback inside run(), acceleration-cancelling normalisation)
+            beta_curves.append(res["eulerian"]["beta"])
         else:
             ledger = res["impact_mass"]
+            beta_curves.append(res["beta"])
 
         stress = sim.sample_surface_stress()
         panels = build_surface_panels(
@@ -2984,12 +3121,23 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         airfoil_np, solid_np, cfg.dx_phys, cfg.chord_phys, cfg.chord_lu, res["stag"]
     )
     if len(sol["thickness_m"]):
-        i_stag = int(np.argmin(np.abs(sol["s_m"])))
-        metrics["stag_ice_thickness_m"] = float(sol["thickness_m"][i_stag])
+        # IC-D3 fix: sample the stagnation metrics at the impingement peak
+        # (the water-catch maximum = the flow stagnation line), not at the
+        # geometric LE cell (argmin|s|).  At AoA != 0 the geometric LE sits
+        # away from the flow stagnation point: it collects far less water
+        # at the *maximum* Frossling h, so sampling there classified every
+        # temperature of the RG-15 ladder as rime.  The geometric-LE values
+        # stay available under the *_le keys.
+        i_peak = int(np.argmax(panels["m_imp_kg_s"]))
+        i_le = int(np.argmin(np.abs(sol["s_m"])))
+        metrics["stag_ice_thickness_m"] = float(sol["thickness_m"][i_peak])
+        metrics["n_f_stag"] = float(sol["n_f"][i_peak])
+        metrics["n_f_stag_panel_s_over_c"] = float(sol["s_m"][i_peak] / cfg.chord_phys)
+        metrics["n_f_le"] = float(sol["n_f"][i_le])
+        metrics["le_ice_thickness_m"] = float(sol["thickness_m"][i_le])
         j = int(np.argmax(sol["thickness_m"]))
         metrics["max_thickness_m"] = float(sol["thickness_m"][j])
         metrics["max_thickness_s_over_c"] = float(sol["s_m"][j] / cfg.chord_phys)
-        metrics["n_f_stag"] = float(sol["n_f"][i_stag])
     log(
         f"  [glaze] done: {int(ice_only.sum())} ice cells "
         f"({metrics.get('stag_ice_thickness_m', 0.0) * 1e3:.2f} mm at stagnation, "
@@ -3006,6 +3154,14 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         "solid": solid_np,
         "ice_only": ice_only,
         "m_w": m_w,
+        # IC-D3: canonical collection efficiency of the run = the shot-1
+        # (clean reference geometry) whole-shot beta curve, reported by the
+        # module itself (acceleration cancels).  beta is a property of
+        # flow + geometry + droplet inertia only: later shots measure on
+        # the iced geometry (per-shot curves in beta_curve_shots) and must
+        # not be quoted as the case beta.
+        "beta_curve": beta_curves[0] if beta_curves else {},
+        "beta_curve_shots": beta_curves,
         "mapping": cfg.mapping_report(),
         "panels": {
             "s_over_c": sol["s_m"] / cfg.chord_phys,
