@@ -1546,3 +1546,244 @@ def test_geometry_dispatch_in_simulation(tmp_path) -> None:
         ).numpy(),
     )
     assert int(sim_dat.airfoil.sum()) > 0 and int(sim_default.airfoil.sum()) > 0
+
+
+# ---------------------------------------------------------------------------
+# Phase 2c: polydisperse MVD (droplet-size bins)
+# ---------------------------------------------------------------------------
+# IPW IRT 7-bin standard spray (demo distribution): diameters [um] with
+# mass fractions [%] 5/10/20/30/20/10/5
+_IPW_IRT_BINS = (
+    (7.3e-6, 0.05),
+    (9.9e-6, 0.10),
+    (13.7e-6, 0.20),
+    (24.9e-6, 0.30),
+    (44.9e-6, 0.20),
+    (74.9e-6, 0.10),
+    (127.6e-6, 0.05),
+)
+
+
+def test_mvd_bins_validation_and_normalisation() -> None:
+    """Config gate: shape/positivity/distinctness/fraction-sum + exact
+    normalisation, and the documented mvd_bins-over-mvd precedence."""
+    d1, d2, d3 = 13.7e-6, 24.9e-6, 44.9e-6
+    for bad in (
+        (),  # empty
+        ((d1, 1.0),),  # a single bin is the mvd path
+        ((d1, 0.5), (d2, 0.2)),  # fractions sum to 0.7
+        ((d1, 0.6), (d2, 0.4 + 1e-6)),  # off by more than 1e-9
+        ((d1, 0.5), (d2, -0.5)),  # negative fraction
+        ((d1, 0.0), (d2, 1.0)),  # zero fraction
+        ((0.0, 0.5), (d2, 0.5)),  # zero diameter
+        ((-d1, 0.5), (d2, 0.5)),  # negative diameter
+        ((d1, 0.5), (d1, 0.5)),  # duplicate diameter
+        ((d1, 0.5), (d1 * (1.0 + 1e-12), 0.5)),  # distinct only to 1e-12
+        ((d1, 0.5, 0.5), (d2, 1.0)),  # not pairs
+        (d1,),  # not a sequence of pairs
+    ):
+        with pytest.raises(ValueError):
+            IcingConfig(mvd_bins=bad)
+    # accepted: sum within 1e-9 -> fractions renormalised to fsum == 1.0
+    cfg = IcingConfig(mvd_bins=((d1, 0.25), (d2, 0.25 + 5e-10), (d3, 0.5 - 5e-10)))
+    assert len(cfg.mvd_bins) == 3
+    assert [d for d, _ in cfg.mvd_bins] == [d1, d2, d3]
+    assert math.fsum(f for _, f in cfg.mvd_bins) == 1.0
+    # the IPW IRT 7-bin standard spray validates as given
+    cfg7 = IcingConfig(mvd_bins=_IPW_IRT_BINS)
+    assert math.fsum(f for _, f in cfg7.mvd_bins) == 1.0
+    # precedence: mvd_bins OVERRIDES the (here default) scalar mvd everywhere
+    mono = IcingConfig()
+    assert cfg7.mvd_eff != mono.mvd
+    assert math.isclose(cfg7.mvd_eff, sum(f * d for d, f in _IPW_IRT_BINS), rel_tol=1e-15)
+    assert math.isclose(
+        cfg7.tau_d_phys,
+        sum(f * t for (_d, f), t in zip(cfg7.mvd_bins, cfg7.tau_d_phys_bins)),
+        rel_tol=1e-15,
+    )
+    assert cfg7.stokes != mono.stokes
+    sn = IcingConfig(drag_law="schiller-naumann", mvd_bins=_IPW_IRT_BINS)
+    assert math.isclose(
+        sn.re_p_scale,
+        sn.sn_scale_factor * sn.rho_air * (sn.dx_phys / sn.dt_phys) * sn.mvd_eff / sn.mu_air,
+        rel_tol=1e-12,
+    )
+    # mapping report carries the bins diagnostics
+    rep = cfg7.mapping_report()
+    assert rep["n_bins"] == 7 and len(rep["mvd_bins"]) == 7
+    assert len(rep["tau_d_lu_bins"]) == 7 and len(rep["m_parcel_bins"]) == 7
+
+
+def test_mvd_bins_tau_and_parcel_mass_per_bin() -> None:
+    """tau_d(d_i) is exactly rho_w d^2 / (18 mu); parcel mass N rho d^3 pi/6."""
+    cfg = IcingConfig(mvd_bins=((13.7e-6, 0.2), (24.9e-6, 0.3), (44.9e-6, 0.5)))
+    for (d, _f), tau_p, tau_lu, m_d, m_p in zip(
+        cfg.mvd_bins, cfg.tau_d_phys_bins, cfg.tau_d_lu_bins, cfg.m_droplet_bins, cfg.m_parcel_bins
+    ):
+        assert math.isclose(tau_p, cfg.rho_water * d**2 / (18.0 * cfg.mu_air), rel_tol=1e-15)
+        assert math.isclose(tau_lu, tau_p / cfg.dt_phys, rel_tol=1e-15)
+        assert math.isclose(m_d, cfg.rho_water * math.pi * d**3 / 6.0, rel_tol=1e-15)
+        assert math.isclose(m_p, cfg.effective_parcel_multiplier * m_d, rel_tol=1e-15)
+    # the *fastest* bin sets the stable substep count; mixture tau is the
+    # mass-mean of the per-bin times
+    assert cfg.tau_d_lu_min == min(cfg.tau_d_lu_bins)
+    assert cfg.n_substeps == max(1, math.ceil(8.0 / cfg.tau_d_lu_min))
+    assert math.isclose(
+        cfg.tau_d_phys,
+        sum(f * t for (_d, f), t in zip(cfg.mvd_bins, cfg.tau_d_phys_bins)),
+        rel_tol=1e-15,
+    )
+
+
+def test_mvd_bins_seeded_mass_fractions() -> None:
+    """Deterministic per-bin carry: cumulative seeded mass per bin == f_i.
+
+    The bin assignment is a pure integer-carry mechanism (no RNG), so the
+    seeded-mass split tracks the configured mass fractions to one-parcel
+    granularity, with and without impacts/prefill in the run.
+    """
+    bins = ((100e-6, 0.3), (200e-6, 0.7))
+    cfg = _small_cfg(
+        mvd_bins=bins,
+        prefill_cloud=False,
+        steps=300,
+        cx_frac=0.8,  # LE far downstream: nothing impacts, clean audit
+    )
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    seeded = res["bins"]["seeded_mass"]
+    assert math.isclose(sum(seeded), res["audit"]["seeded"], rel_tol=1e-12)
+    for m_i, (_d, f) in zip(seeded, bins):
+        assert abs(m_i / res["audit"]["seeded"] - f) < 2e-3, (m_i, f)
+    # same fractions with impacts + prefill active
+    cfg2 = _small_cfg(mvd_bins=bins, steps=300)
+    res2 = run_rime_icing(cfg2, log=lambda *a: None)
+    for m_i, (_d, f) in zip(res2["bins"]["seeded_mass"], bins):
+        assert abs(m_i / res2["audit"]["seeded"] - f) < 2e-3
+
+
+def test_mvd_bins_monodisperse_equivalence() -> None:
+    """A single bin (d, 1.0) reproduces the classic mvd=d path exactly.
+
+    Public validation requires >= 2 bins, so the nb = 1 reduction is
+    exercised by assigning the bin spec *after* construction (the
+    dataclass is mutable and __post_init__ has already run): the bins
+    code path is generic in n_bins and must collapse onto the monodisperse
+    numerics.
+    """
+    # Eulerian arm: identical step inputs -> identical fields and ledgers
+    cfg_mono = _euler_cfg()
+    cfg_one = _euler_cfg()
+    cfg_one.mvd_bins = ((cfg_mono.mvd, 1.0),)
+    r_mono = run_rime_icing(cfg_mono, log=lambda *a: None)
+    r_one = run_rime_icing(cfg_one, log=lambda *a: None)
+    assert np.array_equal(r_mono["eulerian"]["impact_mass"], r_one["eulerian"]["impact_mass"])
+    assert np.array_equal(r_mono["eulerian"]["alpha"], r_one["eulerian"]["alpha"])
+    assert np.array_equal(r_mono["eulerian"]["beta_grid"], r_one["eulerian"]["beta_grid"])
+    assert math.isclose(
+        r_mono["eulerian"]["audit"]["deposited"],
+        r_one["eulerian"]["audit"]["deposited"],
+        rel_tol=1e-12,
+    )
+    # Lagrangian arm: identical RNG stream + relaxation + mass ledger
+    common = dict(beta_window_mode="trailing", steps=200)
+    cfg_lm = _small_cfg(**common)
+    cfg_lo = _small_cfg(**common)
+    cfg_lo.mvd_bins = ((cfg_lm.mvd, 1.0),)
+    rm = run_rime_icing(cfg_lm, log=lambda *a: None)
+    ro = run_rime_icing(cfg_lo, log=lambda *a: None)
+    assert np.allclose(rm["impact_mass"], ro["impact_mass"], rtol=1e-12, atol=0.0)
+    assert math.isclose(rm["audit"]["seeded"], ro["audit"]["seeded"], rel_tol=1e-12)
+    assert rm["metrics"]["n_ice_cells"] == ro["metrics"]["n_ice_cells"]
+
+
+def test_mvd_bins_superposition_uniform_flow() -> None:
+    """One-way coupling: joint bins == mass-weighted sum of monodisperse runs.
+
+    Each bin evolves independently on the same carrier field, so the joint
+    per-bin Eulerian impact ledgers equal f_i x the monodisperse mvd = d_i
+    ledgers (deterministic scheme: exact to fp rounding), and the betas
+    (streamtube heights) superpose the same way.
+    """
+    bins = ((60e-6, 0.2), (100e-6, 0.5), (160e-6, 0.3))
+    r_joint = run_rime_icing(_euler_cfg(mvd_bins=bins), log=lambda *a: None)
+    mono_runs = [run_rime_icing(_euler_cfg(mvd=d), log=lambda *a: None) for d, _ in bins]
+    led_j = r_joint["bins"]["eulerian"]["impact_mass"]
+    for i, ((d, f), r_i) in enumerate(zip(bins, mono_runs)):
+        expect = f * r_i["eulerian"]["impact_mass"]
+        scale = max(float(expect.sum()), 1e-30)
+        assert np.allclose(led_j[i], expect, rtol=1e-4, atol=1e-18), (
+            i,
+            float(np.abs(led_j[i] - expect).sum()) / scale,
+        )
+    # the joint total ledger is the sum of the per-bin ledgers (fp32
+    # ledgers: per-step sequential accumulation vs numpy axis-sum differ
+    # only in rounding order, ~1e-7 relative)
+    assert np.allclose(r_joint["eulerian"]["impact_mass"], led_j.sum(0), rtol=1e-5, atol=0.0)
+    # ... and the mass-weighted sum of the monodisperse runs
+    led_sum = sum(f * r_i["eulerian"]["impact_mass"] for (_d, f), r_i in zip(bins, mono_runs))
+    assert np.allclose(r_joint["eulerian"]["impact_mass"], led_sum, rtol=1e-4)
+    beta_sum = sum(f * r_i["eulerian"]["beta_grid"] for (_d, f), r_i in zip(bins, mono_runs))
+    assert np.allclose(r_joint["eulerian"]["beta_grid"], beta_sum, rtol=1e-4, atol=1e-12)
+
+
+def test_mvd_bins_superposition_lagrangian_noisy() -> None:
+    """Lagrangian superposition holds within the parcel-sampling noise."""
+    bins = ((100e-6, 0.25), (200e-6, 0.75))
+    common = dict(beta_window_mode="trailing", steps=300)
+    r_joint = run_rime_icing(_small_cfg(mvd_bins=bins, **common), log=lambda *a: None)
+    tot_j = float(r_joint["impact_mass"].sum())
+    assert tot_j > 0.0
+    tot_sum = 0.0
+    for i, (d, f) in enumerate(bins):
+        r_i = run_rime_icing(_small_cfg(mvd=d, **common), log=lambda *a: None)
+        m_i = f * float(r_i["impact_mass"].sum())
+        tot_sum += m_i
+        got = float(r_joint["bins"]["impact_mass"][i].sum())
+        assert abs(got - m_i) / tot_j < 0.08, (i, got, m_i)
+    assert abs(tot_j - tot_sum) / tot_sum < 0.05
+
+
+def test_mvd_bins_eulerian_positivity_and_total_closure() -> None:
+    """Per-bin positivity + per-bin and total mass-audit closure."""
+    bins = ((60e-6, 0.2), (100e-6, 0.5), (160e-6, 0.3))
+    cfg = _euler_cfg(mvd_bins=bins)
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    eb = res["bins"]["eulerian"]
+    for i, (_d, f) in enumerate(bins):
+        a_i = eb["alpha"][i]
+        assert float(a_i.min()) >= 0.0
+        assert float(a_i.max()) <= f * cfg.alpha_in * 1.02
+        assert eb["audit"][i]["closure_error"] < 1e-6, eb["audit"][i]
+    # total closure on the summed audit; per-bin deposits sum to the total
+    assert res["eulerian"]["audit"]["closure_error"] < 1e-6
+    assert math.isclose(
+        res["eulerian"]["audit"]["deposited"],
+        math.fsum(b["deposited"] for b in eb["audit"]),
+        rel_tol=1e-12,
+    )
+    # the total impact ledger is the sum of the per-bin ledgers (fp32
+    # accumulation-order rounding only, see the superposition test)
+    assert np.allclose(res["eulerian"]["impact_mass"], eb["impact_mass"].sum(0), rtol=1e-5)
+    # per-bin streamtube heights sum to the mixture capture height
+    tot_bg = float(res["eulerian"]["beta_grid"].sum())
+    assert abs(float(eb["beta_grid"].sum()) - tot_bg) < 1e-5 * max(abs(tot_bg), 1.0)
+
+
+def test_mvd_bins_eulerian_freezer_interface() -> None:
+    """Polydisperse Eulerian deposits freeze through the shared 2a freezer."""
+    bins = ((60e-6, 0.5), (160e-6, 0.5))
+    cfg = _euler_cfg(mvd_bins=bins, accel_override=2.0e5, rho_rime=100.0, steps=400)
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    a = res["audit"]
+    n_ice = res["metrics"]["n_ice_cells"]
+    assert n_ice >= 5
+    # exact ledger: frozen mass == n_cells * cell ice mass (2a invariant)
+    assert math.isclose(a["frozen"], n_ice * cfg.m_cell_ice, rel_tol=1e-9)
+    assert res["eulerian"]["audit"]["closure_error"] < 1e-4, res["eulerian"]["audit"]
+    assert res["eulerian"]["audit"]["encased"] > 0.0  # _void_encased_bins ran
+    # ice grows on the windward face (upstream of the LE), like Phase 2a
+    ys, xs = np.nonzero(res["ice_only"])
+    assert xs.min() < res["metrics"]["x_le"]
+    # per-bin audits still close with freezing + encasement active
+    for b in res["bins"]["eulerian"]["audit"]:
+        assert b["closure_error"] < 1e-4, b
