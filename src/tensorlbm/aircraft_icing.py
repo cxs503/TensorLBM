@@ -277,6 +277,9 @@ __all__ = [
     "RimeIcingSimulation",
     "run_rime_icing",
     "naca0012_mask_2d",
+    "parse_airfoil_dat",
+    "airfoil_dat_mask_2d",
+    "airfoil_le_radius",
     "surface_arc_length",
     "collection_efficiency_curve",
     "ice_shape_metrics",
@@ -317,6 +320,14 @@ class IcingConfig:
     cx_frac: float = 0.3
     cy_frac: float = 0.5
     naca_t: float = 0.12
+    # Optional custom geometry: path to a Selig-style .dat contour
+    # (optional header line, then "x y" rows in chord units, starting
+    # anywhere on the closed contour).  When set, the solid mask is built
+    # from this contour (airfoil_dat_mask_2d) instead of the NACA 4-digit
+    # implicit surface, and le_diameter defaults to a circle fit through
+    # the contour near the LE instead of the NACA formula.  None (default)
+    # keeps the NACA 0012 path byte-identical.
+    airfoil_dat: str | None = None
 
     # --- physical reference case (NASA Glenn IRT NACA 0012 rime) ---
     chord_phys: float = 0.5334  # m
@@ -510,6 +521,13 @@ class IcingConfig:
             raise ValueError(f"rh must be in (0, 1]; got {self.rh!r}")
         if self.glaze_panel_cells <= 0.0:
             raise ValueError(f"glaze_panel_cells must be > 0; got {self.glaze_panel_cells!r}")
+        # --- custom geometry (IC-D1): parse + cache the dat contour now so a
+        # bad path/contour fails at config time, not mid-simulation ---
+        self._airfoil_points: np.ndarray | None = None
+        self._le_radius_dat: float | None = None
+        if self.airfoil_dat is not None:
+            self._airfoil_points = parse_airfoil_dat(self.airfoil_dat)
+            self._le_radius_dat = airfoil_le_radius(self._airfoil_points)
         # --- Phase 2c: polydisperse MVD bins ---
         if self.mvd_bins is not None:
             # validates and normalises the fractions to sum exactly 1.0
@@ -869,14 +887,20 @@ class IcingConfig:
         """Effective leading-edge cylinder diameter [m] (Frossling htc).
 
         NACA 4-digit leading-edge radius ``r_le = 1.1019 * t^2 * chord``.
+        With ``airfoil_dat`` set and no explicit ``le_diameter``, the LE
+        radius is a circle fit to the dat contour near the LE
+        (:func:`airfoil_le_radius`) — the NACA formula never applies to a
+        custom contour.
         """
         if self.le_diameter is not None:
             return self.le_diameter
+        if self._le_radius_dat is not None:
+            return 2.0 * self._le_radius_dat * self.chord_phys
         return 2.0 * 1.1019 * self.naca_t**2 * self.chord_phys
 
     def mapping_report(self) -> dict[str, Any]:
         """All mapping/physics numbers in one dictionary (printed + JSON)."""
-        return {
+        rep = {
             "nx": self.nx,
             "ny": self.ny,
             "chord_lu": self.chord_lu,
@@ -945,6 +969,20 @@ class IcingConfig:
             "le_diameter_eff": self.le_diameter_eff,
             "recovery_factor_eff": self.recovery_factor_eff,
         }
+        if self.airfoil_dat is not None:
+            # geometry-source note: the mask came from the dat contour and
+            # (unless overridden) so did the LE diameter
+            rep.update(
+                {
+                    "airfoil_dat": str(self.airfoil_dat),
+                    "airfoil_dat_points": int(len(self._airfoil_points)),
+                    "le_radius_dat_chord": self._le_radius_dat,
+                    "le_diameter_source": (
+                        "explicit" if self.le_diameter is not None else "dat-circle-fit"
+                    ),
+                }
+            )
+        return rep
 
 
 def _validate_mvd_bins(bins: Any) -> tuple[tuple[float, float], ...]:
@@ -1084,6 +1122,106 @@ def naca0012_mask_2d(
         * (0.2969 * torch.sqrt(xc) - 0.126 * xc - 0.3516 * xc**2 + 0.2843 * xc**3 - 0.1015 * xc**4)
     )
     return (xr >= 0.0) & (xr <= 1.0) & (yr.abs() <= yt)
+
+
+def parse_airfoil_dat(path: str) -> np.ndarray:
+    """Parse a Selig-style airfoil contour file into an ``(N, 2)`` array.
+
+    Accepted layout: an optional header line (e.g. ``RG-15``), then ``x y``
+    rows in chord units (Selig normalisation: LE near the origin, TE near
+    ``x = 1``).  Lines that are blank, comment-like or not exactly two
+    numeric fields are skipped, so the contour may start anywhere on the
+    closed contour and run in either direction (upper surface first or
+    lower surface first) — the mask builder closes it explicitly.
+    """
+    rows: list[tuple[float, float]] = []
+    with open(path) as fh:
+        for line in fh:
+            parts = line.split()
+            if len(parts) != 2:
+                continue
+            try:
+                rows.append((float(parts[0]), float(parts[1])))
+            except ValueError:
+                continue
+    pts = np.asarray(rows, dtype=np.float64)
+    if pts.ndim != 2 or pts.shape[1] != 2 or len(pts) < 10:
+        raise ValueError(
+            f"airfoil dat {path!r}: expected >= 10 'x y' contour rows, parsed {len(rows)}"
+        )
+    return pts
+
+
+def airfoil_le_radius(pts: np.ndarray, window: float = 0.012, min_points: int = 20) -> float:
+    """Leading-edge radius [chord units] from a circle fit to the contour.
+
+    Contour points within ``window`` chord lengths of the dat origin (the
+    LE for Selig-normalised contours) are fitted with the algebraic
+    (Kasa) circle ``x^2 + y^2 = 2 a x + 2 b y + c``; the returned radius
+    is the fitted circle radius ``sqrt(a^2 + b^2 + c)``.  When the window
+    holds fewer than ``min_points`` points the ``min_points`` nearest the
+    origin are used instead.
+    """
+    r = np.hypot(pts[:, 0], pts[:, 1])
+    sel = pts[r < window]
+    if len(sel) < min_points:
+        sel = pts[np.argsort(r)[:min_points]]
+    a_mat = np.column_stack([2.0 * sel[:, 0], 2.0 * sel[:, 1], np.ones(len(sel))])
+    rhs = sel[:, 0] ** 2 + sel[:, 1] ** 2
+    (a_, b_, c_), *_ = np.linalg.lstsq(a_mat, rhs, rcond=None)
+    r_le = math.sqrt(a_ * a_ + b_ * b_ + c_)
+    if not math.isfinite(r_le) or r_le <= 0.0:
+        raise ValueError(f"leading-edge circle fit failed: r_le={r_le!r}")
+    return float(r_le)
+
+
+def airfoil_dat_mask_2d(
+    nx: int,
+    ny: int,
+    chord: float,
+    aoa_deg: float = 4.0,
+    cx: float | None = None,
+    cy: float | None = None,
+    dat: str | None = None,
+    points: np.ndarray | None = None,
+    device: torch.device | str = "cpu",
+) -> torch.Tensor:
+    """Vectorised solid mask (ny, nx) from a parsed airfoil contour.
+
+    Same grid convention as :func:`naca0012_mask_2d`: cell centres at
+    integer indices, LE pinned at ``(cx, cy)``, chord along the rotated
+    x axis with positive ``aoa_deg`` = nose-up (TE below the LE).  The
+    closed contour (first point repeated, closing the Selig TE gap) is
+    tested at each cell centre in airfoil-frame chord units with
+    matplotlib's point-in-polygon test.  Give exactly one of ``dat``
+    (a .dat path, parsed here) or ``points`` (an ``(N, 2)`` contour from
+    :func:`parse_airfoil_dat`).
+    """
+    from matplotlib.path import Path as MplPath
+
+    if (dat is None) == (points is None):
+        raise ValueError("give exactly one of dat= (path) or points= (contour)")
+    if points is None:
+        points = parse_airfoil_dat(dat)
+    if cx is None:
+        cx = nx / 3.0
+    if cy is None:
+        cy = ny / 2.0
+    dev = torch.device(device)
+    xx = torch.arange(nx, device=dev, dtype=torch.float32)
+    yy = torch.arange(ny, device=dev, dtype=torch.float32)
+    gx, gy = torch.meshgrid(xx, yy, indexing="xy")  # (ny, nx)
+    dx = gx - cx
+    dy = gy - cy
+    aoa = math.radians(aoa_deg)
+    cos_a, sin_a = math.cos(aoa), math.sin(aoa)
+    xr = (dx * cos_a - dy * sin_a) / chord
+    yr = (dx * sin_a + dy * cos_a) / chord
+    poly = np.vstack([points, points[:1]])  # close the contour (TE face)
+    inside = MplPath(poly).contains_points(
+        np.column_stack([xr.cpu().numpy().reshape(-1), yr.cpu().numpy().reshape(-1)])
+    )
+    return torch.from_numpy(inside.reshape(ny, nx)).to(dev)
 
 
 def _dilate4(mask: torch.Tensor) -> torch.Tensor:
@@ -1389,16 +1527,31 @@ class RimeIcingSimulation:
         self.nx, self.ny = cfg.nx, cfg.ny
         self.chord = cfg.chord_lu
 
-        self.airfoil = naca0012_mask_2d(
-            self.nx,
-            self.ny,
-            self.chord,
-            cfg.aoa_deg,
-            cx=self.nx * cfg.cx_frac,
-            cy=self.ny * cfg.cy_frac,
-            t=cfg.naca_t,
-            device=self.dev,
-        )
+        # geometry dispatch (IC-D1): the default path is the unchanged
+        # NACA 4-digit mask; a configured dat contour replaces it with the
+        # same grid/chord/AoA convention (see airfoil_dat_mask_2d)
+        if cfg.airfoil_dat is None:
+            self.airfoil = naca0012_mask_2d(
+                self.nx,
+                self.ny,
+                self.chord,
+                cfg.aoa_deg,
+                cx=self.nx * cfg.cx_frac,
+                cy=self.ny * cfg.cy_frac,
+                t=cfg.naca_t,
+                device=self.dev,
+            )
+        else:
+            self.airfoil = airfoil_dat_mask_2d(
+                self.nx,
+                self.ny,
+                self.chord,
+                cfg.aoa_deg,
+                cx=self.nx * cfg.cx_frac,
+                cy=self.ny * cfg.cy_frac,
+                dat=cfg.airfoil_dat,
+                device=self.dev,
+            )
         self.solid = self.airfoil.clone()  # airfoil | ice
         self.opp = OPPOSITE.to(self.dev)
 
