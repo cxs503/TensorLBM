@@ -210,7 +210,13 @@ surface thermodynamics -> geometry update, repeated):
   freezes column-by-column outward from the surface with the local ice
   density (Macklin at the *Messinger* surface temperature -> 917 kg/m^3
   in the glaze limit), so the classic features appear: a thinner water
-  cap at the stagnation line with runback ice horns downstream.
+  cap at the stagnation line with runback ice horns downstream.  Sub-cell
+  remainders stay pending liquid across shots and, with the default
+  ``deposit_remainder='carry'``, are settled at the end of the exposure
+  into the voxel mask (nearest-cell rounding) plus an exact per-cell
+  ice-mass ledger, so the rendered mass equals the audit frozen mass to
+  machine precision (``deposit_remainder='drop'`` keeps the legacy
+  behaviour where sub-cell water never renders).
 * **Regression guarantee**: the rime limit (cold / small LWC) gives
   ``n_f = 1`` with zero runback, and the deposit reproduces the Phase
   2a voxel shape from the same ledger.  The droplet/flow run stays
@@ -430,6 +436,15 @@ class IcingConfig:
     # stagnation line, where tau_w -> 0 breaks the analogy).
     htc_mode: str = "analytic"  # "analytic" | "shear"
     glaze_panel_cells: float = 1.0  # arc-length panel width for the thermo [cells]
+    # Sub-cell remainder handling in the glaze deposit (IC-D2).  "carry"
+    # (default, fixed): sub-cell remainders stay pending liquid across
+    # shots and, at the end of the exposure, are settled into the voxel
+    # mask (nearest-cell rounding) plus an exact per-cell ice-mass ledger,
+    # so rendered mass == audit frozen to machine precision.  "drop"
+    # (legacy): remainders stay pending liquid forever and never render —
+    # on thin deposits the voxel mask then holds only ~half the frozen
+    # mass (rendered/frozen ~ 0.44-0.58 on the RG-15 benchmark).
+    deposit_remainder: str = "carry"  # "carry" | "drop"
     # Ice density used by the glaze deposit: "macklin-ts" = Macklin with the
     # *Messinger* surface temperature (-> 917 kg/m^3 in the glaze limit,
     # matches 2a in the rime limit); "const" = cfg.rho_rime.
@@ -521,6 +536,10 @@ class IcingConfig:
             raise ValueError(f"rh must be in (0, 1]; got {self.rh!r}")
         if self.glaze_panel_cells <= 0.0:
             raise ValueError(f"glaze_panel_cells must be > 0; got {self.glaze_panel_cells!r}")
+        if self.deposit_remainder not in ("carry", "drop"):
+            raise ValueError(
+                f"deposit_remainder must be 'carry' or 'drop'; got {self.deposit_remainder!r}"
+            )
         # --- custom geometry (IC-D1): parse + cache the dat contour now so a
         # bad path/contour fails at config time, not mid-simulation ---
         self._airfoil_points: np.ndarray | None = None
@@ -964,6 +983,7 @@ class IcingConfig:
             "htc_mode": self.htc_mode,
             "glaze_rho_mode": self.glaze_rho_mode,
             "glaze_panel_cells": self.glaze_panel_cells,
+            "deposit_remainder": self.deposit_remainder,
             "rh": self.rh,
             "evap_enabled": self.evap_enabled,
             "le_diameter_eff": self.le_diameter_eff,
@@ -3508,6 +3528,30 @@ def build_surface_panels(
     np.add.at(s_sum, di, s_grid[dep_y, dep_x] if len(dep_y) else np.zeros(0))
     n_sf = np.zeros(n, dtype=int)
     np.add.at(n_sf, si, 1)
+
+    # IC-D3 runback-credit fix (found in D2+D3 integration): wetted-strip
+    # panels downstream of the impingement limit (n_sf > 0, n_dep == 0)
+    # freeze runback water but had NO deposit cells, so their m_ice never
+    # reached the deposit and the render lost exactly the runback-only
+    # freezing (credit < frozen by it -- invisible pre-D2 because the
+    # legacy drop strands sub-voxel mass anyway).  Credit those panels
+    # uniformly over their surface cells: the deposit freezer cascades
+    # solid-cell water to the outward growth frontier (the #84 fix 4
+    # rule), so runback ice accretes ON the wetted surface, as it does
+    # physically.  Panels with deposit cells are untouched (weights,
+    # areas and D3-verified panel numbers unchanged).
+    sf_only = (n_dep == 0) & (n_sf > 0)
+    if bool(sf_only.any()):
+        sel = np.isin(p_sf, ids[sf_only])
+        dep_mask[sf_y[sel], sf_x[sel]] = True
+        dep_y, dep_x = np.nonzero(dep_mask)
+        p_dep = np.rint(s_grid[dep_y, dep_x] / w).astype(int)
+        di = np.searchsorted(ids, p_dep)
+        n_dep = np.zeros(n, dtype=int)
+        np.add.at(n_dep, di, 1)
+        s_sum = np.zeros(n)
+        np.add.at(s_sum, di, s_grid[dep_y, dep_x])
+
     v_sum = np.zeros(n)
     if len(sf_y):
         np.add.at(v_sum, si, stress["v_e"][sf_y, sf_x])
@@ -3751,7 +3795,9 @@ def deposit_glaze_ice(
     cell_rho_ice: np.ndarray,
     dx_phys: float,
     max_passes: int = 4096,
-) -> tuple[np.ndarray, np.ndarray]:
+    ice_mass: np.ndarray | None = None,
+    flush: bool = False,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Credit water to cells, then freeze columns growing outward.
 
     Per panel the frozen mass is credited to the panel's deposit cells
@@ -3760,14 +3806,54 @@ def deposit_glaze_ice(
     cell's worth of ice; the leftover water cascades to the outward
     4-neighbour (largest distance-from-airfoil), building columns normal
     to the surface — the same per-cell ledger semantics as the Phase 2a
-    freezer, so in the rime limit the frozen set matches.  Returns the
-    updated ``(solid, m_w)``; the pending sub-cell remainder stays liquid.
+    freezer, so in the rime limit the frozen set matches.  The pending
+    sub-cell remainder stays liquid and is carried across shots by the
+    caller (:func:`run_glaze_icing` threads ``m_w``).
+
+    ``ice_mass`` is the exact per-cell ice-mass ledger [kg], threaded
+    across calls by the driver: a fully frozen cell holds exactly
+    ``rho_ice dx^3``.  ``flush=True`` (the end-of-exposure settle of
+    ``deposit_remainder='carry'``) converts every frontier tip's pending
+    sub-cell water into ice bookkeeping at its exact mass — the tip
+    joins the voxel mask when its fill fraction is at least half a cell
+    (nearest-cell rounding of the geometry), otherwise it stays
+    sub-voxel ice mass in the ledger — so ``ice_mass.sum()`` reproduces
+    the credited (frozen) mass to machine precision; without the flush
+    the sub-cell floor strands as liquid (``m_w``), which is the legacy
+    ``deposit_remainder='drop'`` behaviour.  Returns the updated
+    ``(solid, m_w, ice_mass)``.
     """
     solid = solid.copy()
     cell_rho_ice = cell_rho_ice.copy()
     m_w = m_w + cell_mass
+    if ice_mass is None:
+        ice_mass = np.zeros_like(m_w)
+    else:
+        ice_mass = ice_mass.copy()
     ny, nx = solid.shape
     dist = _bfs_distance_cells(airfoil)
+
+    # Water credited to (or engulfed by) solid cells can never freeze
+    # there — cascade it to the outward fluid 4-neighbour, the same rule
+    # the Phase 2a freezer uses (#84 fix 4); a fully enclosed cell keeps
+    # its water (the driver reports it as pending liquid).  The column
+    # keeps its panel ice density.
+    ys, xs = np.nonzero(solid & (m_w > 0.0))
+    for y, x in zip(ys.tolist(), xs.tolist()):
+        best, bd = None, -1
+        for dy, dxn in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            yy, xx = y + dy, x + dxn
+            if 0 <= yy < ny and 0 <= xx < nx and not solid[yy, xx]:
+                d = int(dist[yy, xx])
+                if d > bd:
+                    bd, best = d, (yy, xx)
+        if best is None:
+            continue
+        m_w[best] += m_w[y, x]
+        m_w[y, x] = 0.0
+        if cell_rho_ice[best] <= 0.0 < cell_rho_ice[y, x]:
+            cell_rho_ice[best] = cell_rho_ice[y, x]
+
     m_cell = np.where(cell_rho_ice > 0.0, cell_rho_ice * dx_phys**3, np.inf)
 
     for _ in range(max_passes):
@@ -3780,6 +3866,7 @@ def deposit_glaze_ice(
         rho_src = cell_rho_ice[ys, xs]
         solid[ys, xs] = True
         m_w[ys, xs] = 0.0
+        ice_mass[ys, xs] += m_cell[ys, xs]
         for y, x, lm, lr in zip(ys.tolist(), xs.tolist(), leftover.tolist(), rho_src.tolist()):
             if lm <= 0.0:
                 continue
@@ -3796,7 +3883,25 @@ def deposit_glaze_ice(
                 if cell_rho_ice[best] <= 0.0:
                     cell_rho_ice[best] = lr
                     m_cell[best] = lr * dx_phys**3
-    return solid, m_w
+            else:
+                # no fluid 4-neighbour (domain edge / fully enclosed): the
+                # leftover stays at the cell as pending liquid — it is
+                # reported by the driver, never silently dropped (IC-D2)
+                m_w[y, x] = lm
+    if flush:
+        bf = ~solid & _dilate4(torch.from_numpy(solid)).numpy()
+        settle = (m_w > 0.0) & np.isfinite(m_cell)
+        ys, xs = np.nonzero(settle)
+        if ys.size:
+            fill = m_w[ys, xs] / m_cell[ys, xs]
+            ice_mass[ys, xs] += m_w[ys, xs]
+            # nearest-cell rounding, surface-attached only: a frontier tip
+            # at >= half a cell joins the voxel mask; sub-half tips, fluid
+            # cells off the growth frontier and water trapped inside the
+            # accretion settle as exact sub-voxel ice mass
+            solid[ys, xs] = solid[ys, xs] | (bf[ys, xs] & (fill >= 0.5))
+            m_w[ys, xs] = 0.0
+    return solid, m_w, ice_mass
 
 
 def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[str, Any]:
@@ -3813,7 +3918,14 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
     the surface.  The droplet run stays LWC-accelerated (exact for the
     trajectory/beta physics); the acceleration is pinned per shot so the
     ledger corresponds to exactly ``dt_shot`` of physical cloud exposure
-    — the thermodynamics never sees the acceleration.
+    — the thermodynamics never sees the acceleration.  With the default
+    ``deposit_remainder='carry'`` the last shot additionally settles the
+    sub-cell remainders: frontier tips at >= half a cell join the voxel
+    mask and every tip's exact mass goes into the ``ice_mass`` ledger, so
+    ``audit['rendered_mass_kg'] == audit['frozen'] - pending liquid`` and
+    the rendered/frozen ratio reported in the metrics is ~1.0; the audit
+    totals themselves are mode-independent (the settle happens after the
+    last panel solve and never feeds back into the flow).
     """
     if cfg.thermo_model != "messinger":
         raise ValueError(
@@ -3835,6 +3947,7 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
     airfoil_np: np.ndarray | None = None
     solid_np: np.ndarray | None = None
     m_w: np.ndarray | None = None
+    ice_mass: np.ndarray | None = None
     res: dict[str, Any] | None = None
     sol: dict[str, Any] | None = None
     panels: dict[str, Any] | None = None
@@ -3888,14 +4001,25 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         # per-cell credit from the panel solution
         if m_w is None:
             m_w = np.zeros_like(solid_np, dtype=np.float64)
+            ice_mass = np.zeros_like(m_w)
         cell_mass = np.zeros_like(m_w)
         cell_rho = np.zeros_like(m_w)
         if panels["n_panels"] > 0:
             dm = sol["m_ice_kg"][panels["dep_p"]] * panels["dep_w"]
             np.add.at(cell_mass, (panels["dep_y"], panels["dep_x"]), dm)
             np.add.at(cell_rho, (panels["dep_y"], panels["dep_x"]), sol["rho_ice"][panels["dep_p"]])
-        solid_np, m_w = deposit_glaze_ice(
-            airfoil_np, solid_np, m_w, cell_mass, cell_rho, cfg.dx_phys
+        solid_np, m_w, ice_mass = deposit_glaze_ice(
+            airfoil_np,
+            solid_np,
+            m_w,
+            cell_mass,
+            cell_rho,
+            cfg.dx_phys,
+            ice_mass=ice_mass,
+            # IC-D2: settle the sub-cell remainders into the voxel mask +
+            # exact mass ledger at the end of the exposure ('carry');
+            # 'drop' keeps the legacy never-rendered pending liquid
+            flush=(cfg.deposit_remainder == "carry" and k == shots - 1),
         )
 
         for key in totals:
@@ -3909,6 +4033,8 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
                 "t_s_min_c": float(sol["t_s_c"].min()) if len(sol["t_s_c"]) else 0.0,
                 "frozen_kg": sol["audit"]["frozen"],
                 "runback_out_kg": sol["audit"]["runback_out"],
+                "rendered_kg": float(ice_mass.sum()),
+                "pending_kg": float(m_w.sum()),
             }
         )
         log(
@@ -3921,6 +4047,7 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
 
     assert res is not None and airfoil_np is not None and solid_np is not None
     assert sol is not None and panels is not None and m_w is not None
+    assert ice_mass is not None
     impacted = totals["impacted"]
     closure = (
         abs(impacted - totals["frozen"] - totals["evaporated"] - totals["runback_out"]) / impacted
@@ -3929,11 +4056,28 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
     )
     audit = dict(totals)
     audit["closure_error"] = closure
+    # IC-D2 deposit-mass accounting: rendered = mass actually settled into
+    # the ice ledger (full voxels + sub-voxel flush remainders); pending =
+    # water still liquid (unflushed 'drop' mode, or stranded off-frontier /
+    # on solid cells where it can never freeze).  rendered + pending
+    # reproduces the audit 'frozen' exactly.
+    audit["rendered_mass_kg"] = float(ice_mass.sum())
+    audit["pending_liquid_kg"] = float(m_w.sum())
+    audit["rendered_over_frozen"] = (
+        audit["rendered_mass_kg"] / totals["frozen"] if totals["frozen"] > 0.0 else 0.0
+    )
 
     ice_only = solid_np & ~airfoil_np
     metrics = ice_shape_metrics(
         airfoil_np, solid_np, cfg.dx_phys, cfg.chord_phys, cfg.chord_lu, res["stag"]
     )
+    # mass-equivalent metrics at the config reference accretion density
+    # (exact for glaze_rho_mode='const'; for 'macklin-ts' an indicative
+    # conversion — the exact statement is rendered_mass_kg itself)
+    metrics["rendered_mass_kg"] = audit["rendered_mass_kg"]
+    metrics["rendered_over_frozen"] = audit["rendered_over_frozen"]
+    metrics["mass_equiv_ice_cells"] = audit["rendered_mass_kg"] / cfg.m_cell_ice
+    metrics["mass_equiv_ice_area_m2"] = audit["rendered_mass_kg"] / (cfg.rho_rime_eff * cfg.dx_phys)
     if len(sol["thickness_m"]):
         # IC-D3 fix: sample the stagnation metrics at the impingement peak
         # (the water-catch maximum = the flow stagnation line), not at the
@@ -3957,6 +4101,8 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         f"({metrics.get('stag_ice_thickness_m', 0.0) * 1e3:.2f} mm at stagnation, "
         f"max {metrics.get('max_thickness_m', 0.0) * 1e3:.2f} mm at "
         f"s/c={metrics.get('max_thickness_s_over_c', 0.0):+.3f}); "
+        f"rendered/frozen {audit['rendered_over_frozen']:.6f} "
+        f"(pending liquid {audit['pending_liquid_kg']:.3e} kg); "
         f"audit closure {closure * 100:.4f} %"
     )
     return {
@@ -3968,6 +4114,7 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         "solid": solid_np,
         "ice_only": ice_only,
         "m_w": m_w,
+        "ice_mass": ice_mass,
         # IC-D3: canonical collection efficiency of the run = the shot-1
         # (clean reference geometry) whole-shot beta curve, reported by the
         # module itself (acceleration cancels).  beta is a property of
