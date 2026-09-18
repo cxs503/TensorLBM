@@ -1434,8 +1434,12 @@ def test_glaze_driver_smoke_uniform() -> None:
     assert np.all(p["n_f"] >= 0.0) and np.all(p["n_f"] <= 1.0)
     assert np.all(p["thickness_m"] >= 0.0)
     assert len(g["shot_reports"]) == 2
-    # ice only adjacent to the airfoil
-    assert m["ice_x_offset_max"] < 0.6 and m["ice_x_offset_min"] > -0.3
+    # ice only adjacent to the airfoil.  IC-D3 note: the bound is 0.75
+    # (was 0.6) because the Messinger panel area fix (wetted-surface strip,
+    # not the double-covering deposit ring) weakens h*A cooling, so more
+    # water runs back and runback ice legitimately reaches ~0.68 chord on
+    # this case -- still on the airfoil, not wrapping the domain.
+    assert m["ice_x_offset_max"] < 0.75 and m["ice_x_offset_min"] > -0.3
 
 
 def test_phase3_config_validation() -> None:
@@ -1682,6 +1686,251 @@ def test_geometry_dispatch_in_simulation(tmp_path) -> None:
         ).numpy(),
     )
     assert int(sim_dat.airfoil.sum()) > 0 and int(sim_default.airfoil.sum()) > 0
+
+
+# ---------------------------------------------------------------------------
+
+
+# IC-D3: beta window invariance + accelerated-thermodynamics consistency
+# ---------------------------------------------------------------------------
+def test_beta_empty_window_whole_shot_fallback() -> None:
+    """IC-D3: trailing mode with frac = 0 (the run_glaze_icing whole-shot
+    convention) yields an EMPTY differencing window (w0 == w1 == steps), so
+    the module used to report beta == 0 (empty curve) for exactly the
+    configs the glaze driver runs.  The ledger must fall back to the whole
+    shot with the whole-shot lattice time (acceleration cancels)."""
+    cfg = _euler_cfg(
+        steps=400,
+        beta_window_mode="trailing",
+        beta_window_frac=0.0,
+        rime_density_mode="const",
+        rho_rime=1.0e9,
+    )
+    assert cfg.beta_window_bounds == (400, 400)  # the degenerate convention
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    be = res["eulerian"]["beta"]
+    assert len(be["beta"]) > 0
+    assert float(be["beta"].max()) > 0.0
+    # clean mode (default) still has a proper window: unchanged semantics
+    assert _euler_cfg().beta_window_bounds[1] > _euler_cfg().beta_window_bounds[0]
+
+
+def test_surface_arc_stag_row_sign_fix() -> None:
+    """IC-D3: the legacy y-comparison sign rule annihilates s for every
+    surface cell on the stagnation ROW, not just the LE (NACA0012 @
+    320x160 / 4 deg carries 6 such cells).  The opt-in fix signs them by
+    shortest-path branch; the default must stay legacy bit-for-bit."""
+    af = naca0012_mask_2d(320, 160, 128, 4.0, device="cpu").numpy()
+    s_legacy, stag, surf = surface_arc_length(af)
+    s_fix, stag_fix, _ = surface_arc_length(af, fix_stag_row_signs=True)
+    assert stag_fix == stag
+    # legacy: more than one surface cell pinned at s == 0
+    assert int((s_legacy[surf] == 0.0).sum()) > 1
+    # fix: only the LE origin (dist == 0) remains at s == 0
+    assert int((s_fix[surf] == 0.0).sum()) == 1
+    # every cell with a definite legacy sign keeps its s value exactly
+    same_sign = np.sign(s_legacy) == np.sign(s_fix)
+    assert np.array_equal(s_legacy[same_sign], s_fix[same_sign])
+    # defaults stay legacy: the module call site passes the config flag
+    cfg = IcingConfig()
+    assert cfg.surface_arc_sign_fix is False
+    assert cfg.droplet_warmup is False
+
+
+def test_beta_shot_structure_bitwise_invariance() -> None:
+    """IC-D3 Phase A: the canonical (shot-1) beta curve must be
+    bitwise-invariant to the shot structure whenever the per-shot lattice
+    computation is identical (same steps, same dt_shot -> same accel), and
+    agree to floating-point scale when only the acceleration differs."""
+    base = dict(
+        steps=300,
+        thermo_model="messinger",
+        t_static_c=-10.0,
+        rime_density_mode="const",
+        rho_rime=1.0e9,  # measure-only: no in-run freezing interferes
+    )
+    # same dt_shot (360 s) via 2x720 and 4x1440: identical per-shot lattice
+    g_a = run_glaze_icing(_euler_cfg(t_exposure=720.0, **base), shots=2, log=lambda *a: None)
+    g_b = run_glaze_icing(_euler_cfg(t_exposure=1440.0, **base), shots=4, log=lambda *a: None)
+    assert math.isclose(g_a["accel_per_shot"], g_b["accel_per_shot"], rel_tol=1e-15)
+    ba, bb = g_a["beta_curve"], g_b["beta_curve"]
+    assert len(ba["beta"]) > 0 and float(ba["beta"].max()) > 0.0
+    assert np.array_equal(ba["s_over_c"], bb["s_over_c"])
+    assert np.array_equal(ba["beta"], bb["beta"])
+    assert np.array_equal(ba["n_cells"], bb["n_cells"])
+    assert len(g_b["beta_curve_shots"]) == 4
+    # acceleration x2 (dt_shot 360 -> 720 s, alpha_in x2): beta cancels to
+    # floating-point scale, and the Messinger water feed m_imp_kg_s is the
+    # same physical rate.  Compared on single-shot runs (identical clean
+    # geometry, only the acceleration differs): the returned panels of a
+    # multishot run belong to its final shot, i.e. to different ice.
+    g_a1 = run_glaze_icing(_euler_cfg(t_exposure=360.0, **base), shots=1, log=lambda *a: None)
+    g_c1 = run_glaze_icing(_euler_cfg(t_exposure=720.0, **base), shots=1, log=lambda *a: None)
+    assert math.isclose(g_c1["accel_per_shot"], 2.0 * g_a1["accel_per_shot"], rel_tol=1e-12)
+    assert np.allclose(g_a1["beta_curve"]["beta"], g_c1["beta_curve"]["beta"], rtol=5e-4, atol=1e-6)
+    ma, mc = g_a1["panels"]["m_imp_kg_s"], g_c1["panels"]["m_imp_kg_s"]
+    live = ma > 1e-3 * float(ma.max())
+    assert live.sum() > 2
+    assert np.allclose(ma[live], mc[live], rtol=5e-4, atol=1e-15)
+    # the frozen mass the thermodynamics produces from the same physical
+    # rate is the same ice (identical dt_shot keeps the Messinger side
+    # fixed; only the ledger side is scaled)
+    g_d1 = run_glaze_icing(_euler_cfg(t_exposure=720.0, **base), shots=2, log=lambda *a: None)
+    assert math.isclose(g_d1["accel_per_shot"], g_a1["accel_per_shot"], rel_tol=1e-12)
+    # frozen mass per unit exposure is the shot-count-invariant rate
+    # (g_d1 doubles the exposure at the same dt_shot, so its total frozen
+    # is twice the single-shot one at the same per-shot rate)
+    fa, fd = g_a1["audit"]["frozen"], g_d1["audit"]["frozen"]
+    assert math.isclose(fa, fd / g_d1["shots"], rel_tol=0.05), (fa, fd)
+
+
+def test_messinger_accel_consistency_synthetic_panels() -> None:
+    """IC-D3 Phase B unit gate: the Messinger water feed is the *physical*
+    impingement rate ``m_ledger / (t_window * lwc_accel)`` — scaling the
+    LWC acceleration together with the ledger (alpha_in scales with k) must
+    leave m_imp, n_f and the frozen mass bit-for-bit / to round-off
+    unchanged, however the same physics is sliced in lattice time."""
+    from tensorlbm.aircraft_icing import build_surface_panels, solve_glaze_surface
+
+    ny, nx = 24, 32
+    solid = np.zeros((ny, nx), dtype=bool)
+    solid[16:, :] = True  # solid floor, fluid rows 0..15
+    # two arc panels: the stagnation column and one downstream neighbour
+    s_grid = np.zeros((ny, nx))
+    s_grid[:, :] = np.arange(nx)[None, :] - 4.0  # s in cells, stag column x=4
+    stress = {
+        "v_e": np.full((ny, nx), 67.0),
+        "tau_t": np.full((ny, nx), 50.0),
+        "tau_mag": np.full((ny, nx), 50.0),
+    }
+    cfg = IcingConfig(nx=nx, ny=ny, chord_frac=0.4, glaze_panel_cells=1.0, device="cpu")
+
+    def panels_for(ledger_scale: float, t_win: float, accel: float) -> dict:
+        impact = np.zeros((ny, nx))
+        impact[15, 4] = 1.0e-5 * ledger_scale  # stag panel
+        impact[15, 6] = 3.0e-6 * ledger_scale  # downstream panel
+        return build_surface_panels(cfg, s_grid, impact, solid, stress, t_win, accel)
+
+    p_ref = panels_for(1.0, t_win=2.0, accel=1.0)
+    assert p_ref["n_panels"] >= 2
+    # (a) accel x2 with the ledger x2 (same physics, accelerated cloud):
+    # the physical rate is bit-for-bit unchanged
+    p_a = panels_for(2.0, t_win=2.0, accel=2.0)
+    assert np.array_equal(p_ref["m_imp_kg_s"], p_a["m_imp_kg_s"])
+    assert np.array_equal(p_ref["beta"], p_a["beta"])
+    # (b) window x2 with the ledger x2 (same physics, twice the steps):
+    # identical rate again — the chain is a pure rate normalisation
+    p_b = panels_for(2.0, t_win=4.0, accel=1.0)
+    assert np.array_equal(p_ref["m_imp_kg_s"], p_b["m_imp_kg_s"])
+    # (c) the thermodynamics is therefore accel-blind: identical n_f / ice
+    # bit-for-bit between the two slicings, at both a rime and a warmer
+    # temperature (the temperature ladder itself is covered by its own
+    # test; here only the accel consistency is under test)
+    for t_c in (-10.0, -2.0):
+        cfg_t = IcingConfig(nx=nx, ny=ny, chord_frac=0.4, t_static_c=t_c)
+        s1 = solve_glaze_surface(cfg_t, p_ref, dt=120.0)
+        s2 = solve_glaze_surface(cfg_t, p_a, dt=120.0)
+        assert np.allclose(s1["n_f"], s2["n_f"], rtol=0.0, atol=0.0)
+        assert np.allclose(s1["m_ice_kg"], s2["m_ice_kg"], rtol=1e-12)
+        assert 0.0 <= s1["n_f"][int(np.argmax(p_ref["m_imp_kg_s"]))] <= 1.0
+    # cold + this small catch is hard rime: all available water freezes
+    cfg_r = IcingConfig(nx=nx, ny=ny, chord_frac=0.4, t_static_c=-10.0)
+    sol_r = solve_glaze_surface(cfg_r, p_ref, dt=120.0)
+    wet = sol_r["m_ice_kg"] + sol_r["m_runback_out_kg"] > 0.0
+    assert np.allclose(sol_r["n_f"][wet], 1.0)
+
+
+def test_nf_stag_temperature_ladder_peak_panel() -> None:
+    """IC-D3 Phase B: at the impingement peak the freezing fraction must
+    ladder with temperature (-10 C rime = 1, -4 C intermediate, -2 C glaze
+    well below 1) — sampled at the peak panel, not the geometric LE.
+
+    RG-15 IPW2 case-3 conditions (25 m/s, 0.44 g/m^3, MVD 24 um, LE
+    diameter 4.86 mm): the 0-D stagnation balance is hard rime at -10 C
+    (T_s = -4.5 C) and genuinely glaze at -2 C.  (At the IRT NACA point
+    — 67 m/s, 0.5 g/m^3 — even -10 C is glaze at the peak; that is the
+    physics of the higher catch, not a defect.)
+    """
+    from tensorlbm.aircraft_icing import solve_glaze_surface
+
+    rg15 = dict(
+        chord_phys=0.30,
+        v_inf=25.0,
+        lwc=0.44e-3,
+        mvd=24e-6,
+        le_diameter=4.8588e-3,  # 2 x 0.81% chord LE radius (IC-D1 dat fit)
+    )
+    ladder = {}
+    for t_c in (-10.0, -4.0, -2.0):
+        cfg = IcingConfig(t_static_c=t_c, **rg15)
+        panels = _glaze_panels(cfg)
+        sol = solve_glaze_surface(cfg, panels, dt=120.0)
+        ladder[t_c] = float(sol["n_f"][int(np.argmax(panels["m_imp_kg_s"]))])
+    assert ladder[-10.0] == 1.0  # hard rime at the peak
+    assert ladder[-10.0] > ladder[-4.0] > ladder[-2.0]
+    assert ladder[-2.0] < 0.9  # genuinely glaze
+    assert ladder[-4.0] > 0.0
+
+
+def test_glaze_stag_metrics_sampled_at_impingement_peak() -> None:
+    """IC-D3: n_f_stag / stag thickness are sampled at the impingement
+    peak (the water-catch maximum), with the geometric-LE values kept
+    under the *_le keys."""
+    cfg = _euler_cfg(
+        thermo_model="messinger",
+        t_static_c=-5.0,
+        t_exposure=3600.0,
+        steps=300,
+        rho_rime=800.0,
+    )
+    g = run_glaze_icing(cfg, shots=2, log=lambda *a: None)
+    p = g["panels"]
+    i_pk = int(np.argmax(p["m_imp_kg_s"]))
+    m = g["metrics"]
+    assert "n_f_stag" in m and "n_f_le" in m
+    assert math.isclose(m["n_f_stag"], float(p["n_f"][i_pk]), rel_tol=1e-15)
+    assert math.isclose(m["n_f_stag_panel_s_over_c"], float(p["s_over_c"][i_pk]), rel_tol=1e-12)
+    assert math.isclose(
+        m["le_ice_thickness_m"],
+        float(p["thickness_m"][int(np.argmin(np.abs(p["s_over_c"])))]),
+        rel_tol=1e-12,
+    )
+
+
+def test_droplet_warmup_kills_shot_length_dependence() -> None:
+    """IC-D3: the Eulerian cloud starts at u_f (zero slip), so without
+    warmup the whole-shot ledger beta depends on the shot lattice length
+    (startup deficit ~ tau_d_lu); co-advancing the cloud through the flow
+    warmup removes the dependence."""
+    common = dict(
+        uniform_flow=False,
+        warmup_steps=500,
+        mvd=20e-6,  # tau_d_lu ~ 120 steps: the transient is resolvable
+        accel_override=1.0e5,
+        rime_density_mode="const",
+        rho_rime=1.0e9,  # measure-only
+        nx=96,
+        ny=48,
+        droplet_phase="eulerian",
+        beta_window_mode="trailing",
+        beta_window_frac=0.0,  # whole-shot ledger beta
+    )
+
+    def beta_max(steps: int, warm: bool) -> float:
+        cfg = _euler_cfg(steps=steps, droplet_warmup=warm, **common)
+        res = run_rime_icing(cfg, log=lambda *a: None)
+        be = res["eulerian"]["beta"]
+        return float(be["beta"].max())
+
+    b300_w, b600_w = beta_max(300, True), beta_max(600, True)
+    b300_c, b600_c = beta_max(300, False), beta_max(600, False)
+    # with warmup: the steady rate is shot-length invariant (few %)
+    assert abs(b600_w - b300_w) / b300_w < 0.03, (b300_w, b600_w)
+    # without warmup: the startup deficit biases the shorter shot badly
+    # (this is the 0.61 / 0.73 / 0.76 steps ladder seen on RG-15 3.3)
+    assert abs(b600_c - b300_c) / b300_c > 0.10, (b300_c, b600_c)
+    # and warmup restores the (higher) steady collection rate
+    assert b300_w > b300_c
 
 
 # ---------------------------------------------------------------------------
