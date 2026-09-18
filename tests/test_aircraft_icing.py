@@ -1194,12 +1194,16 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
     asserted directly on the 2a side: frozen + pending == delivered.
     """
     rime_kw = dict(t_static_c=-30.0, lwc=2.0e-4, t_exposure=1800.0, steps=900)
+    # IC-D2: the voxel-parity gate stays on the legacy whole-cell renderer
+    # ('drop') — its 2-cell slack was calibrated on whole-cell counting;
+    # the 'carry' settle is mass-gated in block (e) below.
     cfg = _euler_cfg(
         thermo_model="messinger",
         evap_enabled=False,
         glaze_rho_mode="const",
         rime_density_mode="const",
         rho_rime=800.0,  # #84 fix 4: per-step deposit < 1 cell (no runaway)
+        deposit_remainder="drop",
         **rime_kw,
     )
     accel = cfg.t_exposure / (cfg.steps * cfg.dt_phys)
@@ -1253,6 +1257,30 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
     g2 = run_glaze_icing(cfg2, shots=1, log=lambda *a: None)
     wet2 = g2["panels"]["m_ice_kg"] > 0
     assert np.allclose(g2["panels"]["n_f"][wet2], 1.0)
+    # (e) IC-D2 'carry' settle on the same condition: the deposit renders
+    # the full frozen mass exactly (rendered + pending == frozen), the
+    # settle only ever adds voxels (majority rounding is monotone), and
+    # the audit is mode-independent (the flush never feeds the solver)
+    g3 = run_glaze_icing(
+        _euler_cfg(
+            thermo_model="messinger",
+            evap_enabled=False,
+            glaze_rho_mode="const",
+            rime_density_mode="const",
+            rho_rime=800.0,
+            deposit_remainder="carry",
+            **rime_kw,
+        ),
+        shots=1,
+        log=lambda *a: None,
+    )
+    a3 = g3["audit"]
+    assert math.isclose(
+        a3["rendered_mass_kg"] + a3["pending_liquid_kg"], a3["frozen"], rel_tol=1e-12
+    ), a3
+    assert a3["rendered_over_frozen"] >= 0.999, a3
+    assert a3["frozen"] == g["audit"]["frozen"]
+    assert int(g3["ice_only"].sum()) >= n_g
 
 
 def test_deposit_cascade_column() -> None:
@@ -1269,7 +1297,7 @@ def test_deposit_cascade_column() -> None:
     cell_mass[2, 3] = 3.5 * m_cell
     cell_rho = np.zeros((ny, nx))
     cell_rho[2, 3] = rho
-    solid, m_w = deposit_glaze_ice(
+    solid, m_w, _ice_mass = deposit_glaze_ice(
         airfoil, airfoil.copy(), np.zeros((ny, nx)), cell_mass, cell_rho, dx
     )
     ice = solid & ~airfoil
@@ -1279,13 +1307,117 @@ def test_deposit_cascade_column() -> None:
     assert m_w[ice].sum() == 0.0  # frozen cells fully consumed
 
 
+def test_deposit_flush_settles_remainders() -> None:
+    """IC-D2: the end-of-exposure flush makes the deposit mass-conserving.
+
+    Sub-cell credits accumulate as pending liquid across shots (nothing
+    is dropped per shot); the final flush settles every frontier tip at
+    its exact mass — a >= half-full tip joins the voxel mask, a sub-half
+    tip becomes sub-voxel ice mass — so the ice-mass ledger reproduces
+    the credited total to machine precision.
+    """
+    from tensorlbm.aircraft_icing import deposit_glaze_ice
+
+    ny, nx = 8, 6
+    airfoil = np.zeros((ny, nx), dtype=bool)
+    airfoil[3:, :] = True  # solid floor, fluid rows 0..2
+    rho = 100.0
+    dx = 0.5334 / (0.4 * nx)
+    m_cell = rho * dx**3
+
+    def credit(frac: float) -> np.ndarray:
+        cm = np.zeros((ny, nx))
+        cm[2, 3] = frac * m_cell
+        cr = np.zeros((ny, nx))
+        cr[2, 3] = rho
+        return cm, cr
+
+    # (a) carry without flush: sub-cell credits accumulate, no voxel yet
+    m_w = np.zeros((ny, nx))
+    ice_mass = None
+    for _ in range(3):  # three "shots" of 0.3 cells each
+        cm, cr = credit(0.3)
+        solid, m_w, ice_mass = deposit_glaze_ice(
+            airfoil, airfoil.copy(), m_w, cm, cr, dx, ice_mass=ice_mass
+        )
+        assert solid.sum() == airfoil.sum()  # nothing frozen yet
+    assert math.isclose(float(m_w.sum()), 0.9 * m_cell, rel_tol=1e-12)
+    assert ice_mass.sum() == 0.0
+
+    # (b) fourth shot reaches 1.2 cells -> one full voxel, 0.2 remainder
+    cm, cr = credit(0.3)
+    solid, m_w, ice_mass = deposit_glaze_ice(
+        airfoil, airfoil.copy(), m_w, cm, cr, dx, ice_mass=ice_mass, flush=True
+    )
+    ice = solid & ~airfoil
+    assert ice.sum() == 1 and ice[2, 3]  # sub-half remainder NOT a voxel
+    assert m_w.sum() == 0.0  # everything settled: full voxel + sub-voxel ice
+    assert math.isclose(float(ice_mass.sum()), 1.2 * m_cell, rel_tol=1e-12)
+
+    # (c) majority tip: 0.9 of a cell settles as a voxel at exact mass
+    m_w = np.zeros((ny, nx))
+    cm, cr = credit(0.9)
+    solid, m_w, ice_mass = deposit_glaze_ice(airfoil, airfoil.copy(), m_w, cm, cr, dx, flush=True)
+    ice = solid & ~airfoil
+    assert ice.sum() == 1 and ice[2, 3]
+    assert m_w.sum() == 0.0
+    assert math.isclose(float(ice_mass.sum()), 0.9 * m_cell, rel_tol=1e-12)
+
+    # (d) mixed columns: 0.4 (sub-voxel) + 0.9 (voxel) settle exactly
+    m_w = np.zeros((ny, nx))
+    cm, cr = credit(0.9)
+    cm[2, 1] = 0.4 * m_cell
+    cr[2, 1] = rho
+    solid, m_w, ice_mass = deposit_glaze_ice(airfoil, airfoil.copy(), m_w, cm, cr, dx, flush=True)
+    ice = solid & ~airfoil
+    assert ice.sum() == 1 and ice[2, 3] and not ice[2, 1]
+    assert m_w.sum() == 0.0
+    assert math.isclose(float(ice_mass.sum()), 1.3 * m_cell, rel_tol=1e-12)
+    assert math.isclose(float(ice_mass[2, 1]), 0.4 * m_cell, rel_tol=1e-12)
+
+
+def test_run_glaze_icing_rendered_equals_frozen() -> None:
+    """IC-D2 end-to-end: 'carry' renders the full frozen mass, exactly."""
+    base = dict(
+        thermo_model="messinger",
+        t_static_c=-5.0,
+        t_exposure=3600.0,
+        steps=300,
+    )
+    g = run_glaze_icing(_euler_cfg(**base), shots=3, log=lambda *a: None)
+    a = g["audit"]
+    # the deposit ledger closes against the panel audit to machine precision
+    assert math.isclose(
+        a["rendered_mass_kg"] + a["pending_liquid_kg"], a["frozen"], rel_tol=1e-12
+    ), a
+    # the settle flushes everything that sits on the growth frontier
+    assert a["rendered_over_frozen"] >= 0.999, a
+    assert a["rendered_mass_kg"] > 0.0
+    assert int(g["ice_only"].sum()) > 0  # default-path smoke: voxels appear
+    # the settle is post-solve: 'drop' reproduces the same audit bit-for-bit
+    g_drop = run_glaze_icing(
+        _euler_cfg(**base, deposit_remainder="drop"), shots=3, log=lambda *a: None
+    )
+    assert g_drop["audit"]["frozen"] == a["frozen"]
+    assert g_drop["audit"]["rendered_mass_kg"] <= a["rendered_mass_kg"]
+    assert int(g_drop["ice_only"].sum()) <= int(g["ice_only"].sum())
+    assert g_drop["audit"]["pending_liquid_kg"] >= a["pending_liquid_kg"]
+
+
 def test_glaze_driver_smoke_uniform() -> None:
-    """End-to-end multishot glaze run on a cheap uniform-flow case."""
+    """End-to-end multishot glaze run on a cheap uniform-flow case.
+
+    IC-D2: pinned to ``deposit_remainder='drop'`` — the x-extent bound
+    below was calibrated on whole-cell rendering; the 'carry' settle adds
+    the majority-rounded runback tips farther aft (covered by
+    test_run_glaze_icing_rendered_equals_frozen).
+    """
     cfg = _euler_cfg(
         thermo_model="messinger",
         t_static_c=-5.0,
         t_exposure=3600.0,
         steps=300,
+        deposit_remainder="drop",
     )
     g = run_glaze_icing(cfg, shots=2, log=lambda *a: None)
     a = g["audit"]
@@ -1322,7 +1454,11 @@ def test_phase3_config_validation() -> None:
             IcingConfig(rh=bad)
     with pytest.raises(ValueError):
         IcingConfig(glaze_panel_cells=0.0)
+    for bad in ("keep", ""):
+        with pytest.raises(ValueError):
+            IcingConfig(deposit_remainder=bad)
     d = IcingConfig()
+    assert d.deposit_remainder == "carry"  # IC-D2 default = mass-conserving
     assert d.thermo_model == "instant" and d.freeze_in_run is True
     assert d.glaze_rho_mode == "macklin-ts" and d.htc_mode == "analytic"
     # recovery factor defaults to sqrt(Pr)
