@@ -1,0 +1,624 @@
+{
+  "case": "stokes_second_problem_convergence",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "boundary": "zou_he_moving_lid (oscillating plate, top row) + free-slip specular far field (bottom row), x-periodic",
+  "driving": "moving-wall boundary u=U*cos(w*t)",
+  "extrap": "none",
+  "H_list": [
+    50,
+    100,
+    200
+  ],
+  "kH_list": [
+    6.0,
+    8.0
+  ],
+  "tau": 0.8,
+  "U": 0.05,
+  "tol_pct": 3.0,
+  "per_grid": [
+    {
+      "case": "stokes_second_problem",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "oscillating plate = library zou_he_moving_lid on top row (per-step u_lid=U*cos(w*t)); far field = free-slip specular reflection on bottom row (verified/stokes_first_problem pattern); x-periodic",
+      "driving": "moving-wall (lid) boundary, time-periodic",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "far_field": "free-slip specular reflection (verified/stokes_first_problem inline pattern, f_pre[SPECULAR])",
+        "plate": "tensorlbm.lid_driven_cavity.zou_he_moving_lid",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 50,
+      "ny": 52,
+      "nx": 8,
+      "kH": 6.0,
+      "k": 0.12,
+      "omega": 0.0028800000000000006,
+      "period_steps_float": 2181.6615649929113,
+      "T_int": 2182,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U": 0.05,
+      "Ma": 0.08660254037844388,
+      "tau_diffusion_steps": 2533.0295910584437,
+      "skip_periods": 10,
+      "skip_steps": 21820,
+      "measure_periods": 4,
+      "n_meas_steps": 8728,
+      "total_steps": 30548,
+      "compile_mode": "default",
+      "seed": 0,
+      "amp_mask": "A_ana >= 10% U",
+      "phase_mask": "phi_ana >= 1 rad",
+      "amp_rel_max_pct": 0.18217368885591334,
+      "amp_rel_mean_pct": 0.08369531362419562,
+      "phase_rel_max_pct": 0.10600458780207767,
+      "phase_err_max_deg": 0.1384784331738928,
+      "complex_rel_max_pct": 0.3028331527700151,
+      "n_rows_amp_mask": 19,
+      "n_rows_phase_mask": 11,
+      "snapshot_check": [
+        {
+          "step": 21821,
+          "l2_rel": 0.0024896093132545237,
+          "max_abs_over_U_pct": 0.0202614515752101
+        },
+        {
+          "step": 22093,
+          "l2_rel": 0.002049353040109218,
+          "max_abs_over_U_pct": 0.0269703791843795
+        },
+        {
+          "step": 22366,
+          "l2_rel": 0.0017003350367458432,
+          "max_abs_over_U_pct": 0.0349189916849027
+        },
+        {
+          "step": 22639,
+          "l2_rel": 0.0034756399416086665,
+          "max_abs_over_U_pct": 0.030952777416222432
+        },
+        {
+          "step": 22912,
+          "l2_rel": 0.0028425940759472332,
+          "max_abs_over_U_pct": 0.013068384499617669
+        },
+        {
+          "step": 23184,
+          "l2_rel": 0.0025264810071878464,
+          "max_abs_over_U_pct": 0.03159657587275405
+        },
+        {
+          "step": 23457,
+          "l2_rel": 0.0025604860308307935,
+          "max_abs_over_U_pct": 0.04154529074772151
+        },
+        {
+          "step": 23730,
+          "l2_rel": 0.003297586902433211,
+          "max_abs_over_U_pct": 0.040273540916364176
+        }
+      ],
+      "lid_row_amp_ratio": 1.0001539725188546,
+      "far_row_amp_over_U": 0.004590151617223143,
+      "mass_drift_pct": 0.004739027756911058,
+      "finite": true,
+      "elapsed_s": 6.0
+    },
+    {
+      "case": "stokes_second_problem",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "oscillating plate = library zou_he_moving_lid on top row (per-step u_lid=U*cos(w*t)); far field = free-slip specular reflection on bottom row (verified/stokes_first_problem pattern); x-periodic",
+      "driving": "moving-wall (lid) boundary, time-periodic",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "far_field": "free-slip specular reflection (verified/stokes_first_problem inline pattern, f_pre[SPECULAR])",
+        "plate": "tensorlbm.lid_driven_cavity.zou_he_moving_lid",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 100,
+      "ny": 102,
+      "nx": 8,
+      "kH": 6.0,
+      "k": 0.06,
+      "omega": 0.0007200000000000002,
+      "period_steps_float": 8726.646259971645,
+      "T_int": 8727,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U": 0.05,
+      "Ma": 0.08660254037844388,
+      "tau_diffusion_steps": 10132.118364233775,
+      "skip_periods": 10,
+      "skip_steps": 87270,
+      "measure_periods": 4,
+      "n_meas_steps": 34908,
+      "total_steps": 122178,
+      "compile_mode": "default",
+      "seed": 0,
+      "amp_mask": "A_ana >= 10% U",
+      "phase_mask": "phi_ana >= 1 rad",
+      "amp_rel_max_pct": 0.05186814138089524,
+      "amp_rel_mean_pct": 0.014261137852791378,
+      "phase_rel_max_pct": 0.04186103952989083,
+      "phase_err_max_deg": 0.05468490831692149,
+      "complex_rel_max_pct": 0.1086481799127864,
+      "n_rows_amp_mask": 38,
+      "n_rows_phase_mask": 22,
+      "snapshot_check": [
+        {
+          "step": 87271,
+          "l2_rel": 0.0022602818421986965,
+          "max_abs_over_U_pct": 0.007708094361236206
+        },
+        {
+          "step": 88361,
+          "l2_rel": 0.0019412484462454996,
+          "max_abs_over_U_pct": 0.009420629119769736
+        },
+        {
+          "step": 89452,
+          "l2_rel": 0.0015434065502550158,
+          "max_abs_over_U_pct": 0.006930363485591062
+        },
+        {
+          "step": 90543,
+          "l2_rel": 0.003346492168820235,
+          "max_abs_over_U_pct": 0.0029355245891125176
+        },
+        {
+          "step": 91634,
+          "l2_rel": 0.002546747932253365,
+          "max_abs_over_U_pct": 0.003371874903998484
+        },
+        {
+          "step": 92725,
+          "l2_rel": 0.0023019130666362326,
+          "max_abs_over_U_pct": 0.008940850283065127
+        },
+        {
+          "step": 93816,
+          "l2_rel": 0.0021437286063564352,
+          "max_abs_over_U_pct": 0.01122413185444815
+        },
+        {
+          "step": 94907,
+          "l2_rel": 0.0031538912259598297,
+          "max_abs_over_U_pct": 0.012174056071569475
+        }
+      ],
+      "lid_row_amp_ratio": 1.0000379205474315,
+      "far_row_amp_over_U": 0.004708268012622247,
+      "mass_drift_pct": 0.05708582261029412,
+      "finite": true,
+      "elapsed_s": 24.5
+    },
+    {
+      "case": "stokes_second_problem",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "oscillating plate = library zou_he_moving_lid on top row (per-step u_lid=U*cos(w*t)); far field = free-slip specular reflection on bottom row (verified/stokes_first_problem pattern); x-periodic",
+      "driving": "moving-wall (lid) boundary, time-periodic",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "far_field": "free-slip specular reflection (verified/stokes_first_problem inline pattern, f_pre[SPECULAR])",
+        "plate": "tensorlbm.lid_driven_cavity.zou_he_moving_lid",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 200,
+      "ny": 202,
+      "nx": 8,
+      "kH": 6.0,
+      "k": 0.03,
+      "omega": 0.00018000000000000004,
+      "period_steps_float": 34906.58503988658,
+      "T_int": 34907,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U": 0.05,
+      "Ma": 0.08660254037844388,
+      "tau_diffusion_steps": 40528.4734569351,
+      "skip_periods": 10,
+      "skip_steps": 349070,
+      "measure_periods": 4,
+      "n_meas_steps": 139628,
+      "total_steps": 488698,
+      "compile_mode": "default",
+      "seed": 0,
+      "amp_mask": "A_ana >= 10% U",
+      "phase_mask": "phi_ana >= 1 rad",
+      "amp_rel_max_pct": 0.01742478906762157,
+      "amp_rel_mean_pct": 0.006112476153647289,
+      "phase_rel_max_pct": 0.022890467243011896,
+      "phase_err_max_deg": 0.029902819341640578,
+      "complex_rel_max_pct": 0.05335634205731535,
+      "n_rows_amp_mask": 76,
+      "n_rows_phase_mask": 43,
+      "snapshot_check": [
+        {
+          "step": 349071,
+          "l2_rel": 0.002053638502966559,
+          "max_abs_over_U_pct": 0.0011907030403619095
+        },
+        {
+          "step": 353434,
+          "l2_rel": 0.0022327390057703114,
+          "max_abs_over_U_pct": 0.003895420612701206
+        },
+        {
+          "step": 357797,
+          "l2_rel": 0.0018333906225545245,
+          "max_abs_over_U_pct": 0.0035624517591790333
+        },
+        {
+          "step": 362161,
+          "l2_rel": 0.0030840472947139806,
+          "max_abs_over_U_pct": 0.0013527982043667897
+        },
+        {
+          "step": 366524,
+          "l2_rel": 0.002060998100940315,
+          "max_abs_over_U_pct": 0.0008199776913020429
+        },
+        {
+          "step": 370887,
+          "l2_rel": 0.0022470935018954748,
+          "max_abs_over_U_pct": 0.0027384016353156765
+        },
+        {
+          "step": 375251,
+          "l2_rel": 0.0018583672002376549,
+          "max_abs_over_U_pct": 0.0021664970708996922
+        },
+        {
+          "step": 379614,
+          "l2_rel": 0.0030905678701804522,
+          "max_abs_over_U_pct": 0.002233117717015745
+        }
+      ],
+      "lid_row_amp_ratio": 1.0000164219837726,
+      "far_row_amp_over_U": 0.004631836115653004,
+      "mass_drift_pct": 0.3500003625850866,
+      "finite": true,
+      "elapsed_s": 88.9
+    },
+    {
+      "case": "stokes_second_problem",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "oscillating plate = library zou_he_moving_lid on top row (per-step u_lid=U*cos(w*t)); far field = free-slip specular reflection on bottom row (verified/stokes_first_problem pattern); x-periodic",
+      "driving": "moving-wall (lid) boundary, time-periodic",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "far_field": "free-slip specular reflection (verified/stokes_first_problem inline pattern, f_pre[SPECULAR])",
+        "plate": "tensorlbm.lid_driven_cavity.zou_he_moving_lid",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 50,
+      "ny": 52,
+      "nx": 8,
+      "kH": 8.0,
+      "k": 0.16,
+      "omega": 0.005120000000000001,
+      "period_steps_float": 1227.1846303085126,
+      "T_int": 1227,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U": 0.05,
+      "Ma": 0.08660254037844388,
+      "tau_diffusion_steps": 2533.0295910584437,
+      "skip_periods": 17,
+      "skip_steps": 20859,
+      "measure_periods": 4,
+      "n_meas_steps": 4908,
+      "total_steps": 25767,
+      "compile_mode": "default",
+      "seed": 0,
+      "amp_mask": "A_ana >= 10% U",
+      "phase_mask": "phi_ana >= 1 rad",
+      "amp_rel_max_pct": 0.3095723958369767,
+      "amp_rel_mean_pct": 0.16796028531448823,
+      "phase_rel_max_pct": 0.14672537899258167,
+      "phase_err_max_deg": 0.16679692448357744,
+      "complex_rel_max_pct": 0.42525948519865875,
+      "n_rows_amp_mask": 14,
+      "n_rows_phase_mask": 8,
+      "snapshot_check": [
+        {
+          "step": 20860,
+          "l2_rel": 0.0012223434718778654,
+          "max_abs_over_U_pct": 0.02529114643101682
+        },
+        {
+          "step": 21013,
+          "l2_rel": 0.0010832459622791754,
+          "max_abs_over_U_pct": 0.0510235097560402
+        },
+        {
+          "step": 21166,
+          "l2_rel": 0.0021748850637633987,
+          "max_abs_over_U_pct": 0.06869486976143063
+        },
+        {
+          "step": 21320,
+          "l2_rel": 0.002618516805814839,
+          "max_abs_over_U_pct": 0.0648350277116655
+        },
+        {
+          "step": 21473,
+          "l2_rel": 0.001067218937514381,
+          "max_abs_over_U_pct": 0.022926780895811058
+        },
+        {
+          "step": 21626,
+          "l2_rel": 0.0009950395364497554,
+          "max_abs_over_U_pct": 0.05239583429811345
+        },
+        {
+          "step": 21780,
+          "l2_rel": 0.002221722915576521,
+          "max_abs_over_U_pct": 0.07084975575536584
+        },
+        {
+          "step": 21933,
+          "l2_rel": 0.0028125180196071796,
+          "max_abs_over_U_pct": 0.06751906003931059
+        }
+      ],
+      "lid_row_amp_ratio": 0.999848817371144,
+      "far_row_amp_over_U": 0.0006075884403761447,
+      "mass_drift_pct": 0.0008216271033653846,
+      "finite": true,
+      "elapsed_s": 4.2
+    },
+    {
+      "case": "stokes_second_problem",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "oscillating plate = library zou_he_moving_lid on top row (per-step u_lid=U*cos(w*t)); far field = free-slip specular reflection on bottom row (verified/stokes_first_problem pattern); x-periodic",
+      "driving": "moving-wall (lid) boundary, time-periodic",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "far_field": "free-slip specular reflection (verified/stokes_first_problem inline pattern, f_pre[SPECULAR])",
+        "plate": "tensorlbm.lid_driven_cavity.zou_he_moving_lid",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 100,
+      "ny": 102,
+      "nx": 8,
+      "kH": 8.0,
+      "k": 0.08,
+      "omega": 0.0012800000000000003,
+      "period_steps_float": 4908.7385212340505,
+      "T_int": 4909,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U": 0.05,
+      "Ma": 0.08660254037844388,
+      "tau_diffusion_steps": 10132.118364233775,
+      "skip_periods": 17,
+      "skip_steps": 83453,
+      "measure_periods": 4,
+      "n_meas_steps": 19636,
+      "total_steps": 103089,
+      "compile_mode": "default",
+      "seed": 0,
+      "amp_mask": "A_ana >= 10% U",
+      "phase_mask": "phi_ana >= 1 rad",
+      "amp_rel_max_pct": 0.07210727641806525,
+      "amp_rel_mean_pct": 0.03684776014314701,
+      "phase_rel_max_pct": 0.03565258054782915,
+      "phase_err_max_deg": 0.04575742962875453,
+      "complex_rel_max_pct": 0.10761952368899999,
+      "n_rows_amp_mask": 28,
+      "n_rows_phase_mask": 16,
+      "snapshot_check": [
+        {
+          "step": 83454,
+          "l2_rel": 0.00042871633036568657,
+          "max_abs_over_U_pct": 0.00735220717909893
+        },
+        {
+          "step": 84067,
+          "l2_rel": 0.0003341688467771973,
+          "max_abs_over_U_pct": 0.011725146783984897
+        },
+        {
+          "step": 84681,
+          "l2_rel": 0.0006741897970321146,
+          "max_abs_over_U_pct": 0.015675513917040584
+        },
+        {
+          "step": 85294,
+          "l2_rel": 0.0007327604878022574,
+          "max_abs_over_U_pct": 0.014654568267675333
+        },
+        {
+          "step": 85908,
+          "l2_rel": 0.0002958712065719429,
+          "max_abs_over_U_pct": 0.005573952899604745
+        },
+        {
+          "step": 86522,
+          "l2_rel": 0.00029368275799747633,
+          "max_abs_over_U_pct": 0.013835737043527141
+        },
+        {
+          "step": 87135,
+          "l2_rel": 0.0008012326795807131,
+          "max_abs_over_U_pct": 0.018345133353733778
+        },
+        {
+          "step": 87749,
+          "l2_rel": 0.0009526153552110588,
+          "max_abs_over_U_pct": 0.01738005568615794
+        }
+      ],
+      "lid_row_amp_ratio": 1.0000513993353246,
+      "far_row_amp_over_U": 0.0006313942931131378,
+      "mass_drift_pct": 0.057190539790134796,
+      "finite": true,
+      "elapsed_s": 16.8
+    },
+    {
+      "case": "stokes_second_problem",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "oscillating plate = library zou_he_moving_lid on top row (per-step u_lid=U*cos(w*t)); far field = free-slip specular reflection on bottom row (verified/stokes_first_problem pattern); x-periodic",
+      "driving": "moving-wall (lid) boundary, time-periodic",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "far_field": "free-slip specular reflection (verified/stokes_first_problem inline pattern, f_pre[SPECULAR])",
+        "plate": "tensorlbm.lid_driven_cavity.zou_he_moving_lid",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 200,
+      "ny": 202,
+      "nx": 8,
+      "kH": 8.0,
+      "k": 0.04,
+      "omega": 0.0003200000000000001,
+      "period_steps_float": 19634.954084936202,
+      "T_int": 19635,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U": 0.05,
+      "Ma": 0.08660254037844388,
+      "tau_diffusion_steps": 40528.4734569351,
+      "skip_periods": 17,
+      "skip_steps": 333795,
+      "measure_periods": 4,
+      "n_meas_steps": 78540,
+      "total_steps": 412335,
+      "compile_mode": "default",
+      "seed": 0,
+      "amp_mask": "A_ana >= 10% U",
+      "phase_mask": "phi_ana >= 1 rad",
+      "amp_rel_max_pct": 0.009684718434077588,
+      "amp_rel_mean_pct": 0.005447329453233644,
+      "phase_rel_max_pct": 0.008035301521532161,
+      "phase_err_max_deg": 0.010128555014574514,
+      "complex_rel_max_pct": 0.019835729644840656,
+      "n_rows_amp_mask": 57,
+      "n_rows_phase_mask": 33,
+      "snapshot_check": [
+        {
+          "step": 333796,
+          "l2_rel": 0.00046080120268177907,
+          "max_abs_over_U_pct": 0.0023182554595678473
+        },
+        {
+          "step": 336250,
+          "l2_rel": 0.0003084774306327913,
+          "max_abs_over_U_pct": 0.0020378615743256445
+        },
+        {
+          "step": 338704,
+          "l2_rel": 0.0003199013808619854,
+          "max_abs_over_U_pct": 0.0023536469201043686
+        },
+        {
+          "step": 341159,
+          "l2_rel": 0.0004427136303407738,
+          "max_abs_over_U_pct": 0.0024688764958952225
+        },
+        {
+          "step": 343613,
+          "l2_rel": 0.00039519153649218594,
+          "max_abs_over_U_pct": 0.0013128002421397555
+        },
+        {
+          "step": 346067,
+          "l2_rel": 0.00020398502230730103,
+          "max_abs_over_U_pct": 0.002189066699118114
+        },
+        {
+          "step": 348522,
+          "l2_rel": 0.00043151216837886337,
+          "max_abs_over_U_pct": 0.0043142262745182736
+        },
+        {
+          "step": 350976,
+          "l2_rel": 0.0007172956426743222,
+          "max_abs_over_U_pct": 0.0043044457114505
+        }
+      ],
+      "lid_row_amp_ratio": 0.9999980105678676,
+      "far_row_amp_over_U": 0.0005450698831848024,
+      "mass_drift_pct": 0.3685375251392327,
+      "finite": true,
+      "elapsed_s": 67.8
+    }
+  ],
+  "convergence": {
+    "metric": "complex_rel_max_pct (|U_num/U_ana - 1|, rows A_ana >= 10% U)",
+    "per_kH": [
+      {
+        "kH": 6.0,
+        "H_list": [
+          50,
+          100,
+          200
+        ],
+        "complex_rel_max_pct": [
+          0.3028331527700151,
+          0.1086481799127864,
+          0.05335634205731535
+        ],
+        "amp_rel_max_pct": [
+          0.18217368885591334,
+          0.05186814138089524,
+          0.01742478906762157
+        ],
+        "phase_rel_max_pct": [
+          0.10600458780207767,
+          0.04186103952989083,
+          0.022890467243011896
+        ],
+        "err_decreased": true
+      },
+      {
+        "kH": 8.0,
+        "H_list": [
+          50,
+          100,
+          200
+        ],
+        "complex_rel_max_pct": [
+          0.42525948519865875,
+          0.10761952368899999,
+          0.019835729644840656
+        ],
+        "amp_rel_max_pct": [
+          0.3095723958369767,
+          0.07210727641806525,
+          0.009684718434077588
+        ],
+        "phase_rel_max_pct": [
+          0.14672537899258167,
+          0.03565258054782915,
+          0.008035301521532161
+        ],
+        "err_decreased": true
+      }
+    ],
+    "err_decreased": true
+  },
+  "passed": true,
+  "status": "VERIFIED"
+}
