@@ -63,9 +63,19 @@
 | P8 Blasius 平板 | turbulent_channel | f'(η) 解析 | 子 agent 中断，待重派 |
 | P9 空化气泡 | cavitation（需先修 EOS 缺口） | RP 理论 | 缺口分析完成 |
 | P10 后向台阶 | backward_facing_step | Armaly 1984 | 12.2% 未达标，待改进 |
+| P11 环形 Taylor-Couette | C1 BGK + 旋转壁 Ladd BB（rotating_cylinder） | 解析 u=Ar+B/r + 力矩 M=4πνB（R_eff 剖面反演） | ✅ 已入库 2026-09-19，0.154%（最细档） |
+| P12 Stokes 第二问题 | C1 BGK + Zou-He 振荡盖 + specular 远场 | 解析 U·e^{−ky}·cos(ωt−ky) | ✅ 已入库 2026-09-19，0.008%（最细档） |
+| P13 Womersley 振荡管流 | C1 BGK + Zou-He 驱动 + pre-stream 半程 BB | cosh 复数解析 | ✅ 已入库 2026-09-19，0.117%（最细档） |
+| P14 start-up Poiseuille | C1 BGK + Zou-He + pre-stream 半程 BB | 奇 n 级数 | ✅ 已入库 2026-09-19，0.165%（最细档） |
 
 **新问题方向（未覆盖）**：多相/自由表面（Laplace/溃坝）、声学、RANS 通道、
 D3Q27 高精度、AMR 网格收敛、壁面函数高 Re。
+
+**Wave-1 问题类拓宽（2026-09-19）**：旋转流（P11）与受迫非定常解析族（P12-P14）
+已入库；浮力驱动（thermal 腔）被库 thermal 壁 BC 缺陷阻塞、界面失稳（RT）在
+SCMP 参数面内不可行（详见 TODO.md B38/B39）。Wave-2 候选：声学平面波/偶极子、
+Taylor-Aris 分散、矩形管道 Shah-London 级数 + 环隙 Poiseuille、NACA Cl 重启、
+后向台阶细化。
 
 ## 判定标准（不变）
 
