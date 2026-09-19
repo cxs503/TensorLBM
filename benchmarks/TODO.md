@@ -39,7 +39,7 @@
 | B17 | taylor_green_2d | 2D TG 涡衰减（N=64–128, Re=100–1000） | 解析 γ_E=4νk²（动能）, γ_vel=2νk²（速度） | **err_E ≤ 0.13%（全部 13 案例）** | ✅ 已验证 2026-08-18 |
 | B17-3D | taylor_green_3d | **3D TG 涡衰减 D3Q19 周期域（N=64/96/128³, Re=24, U0=0.05）** | 解析 γ_E=6νk²（动能）, γ_vel=3νk²（速度；\|κ\|²=3k²） | **err_E +0.309%→+0.279%→+0.250%（三档单调收敛）** | ✅ 已验证 2026-08-19 |
 | B30 | shear_wave_decay | 2D 剪切波衰减（H=64/128, τ=0.8, U0=0.05/0.1） | 解析 γ_vel=νk²（速度）, γ_E=2νk²（动能） | **err_vel +0.051%→+0.011%（两档收敛）** | ✅ 已验证 2026-08-18 |
-| B24 | droplet_oscillation | 液滴振荡 m=2 Rayleigh 频率（SCMP SC94，R=20/30/40，30000 步） | Rayleigh ω²=6σ/(ρR³)，σ_eff=0.056112（laplace_droplet 实测） | **阻尼修正 ω₀=√(ω_d²+γ²)：+2.59/−1.50/−2.39% 三档全 ≤3%**（观测频率含固有阻尼 −6~−8%，γ≈0.72/R² 为模型特性） | ✅ 已验证 2026-08-19 |
+| B24 | droplet_oscillation | 液滴振荡 m=2 Rayleigh 频率（SCMP SC94，R=20/30/40，30000 步） | Rayleigh ω²=6σ/(ρR³)，σ_eff=0.056112（laplace_droplet 实测） | 阻尼修正 ω₀=√(ω_d²+γ²)：+2.59/−1.50/−2.39%（**原始直接观测量 −6~−8% > 3%**） | ❌ **移出 verified/（2026-09-19 严格标准：通过修正的不算直接模拟）→ pending/droplet_oscillation/** |
 
 ## 当前状态（2026-08-18 实测）
 
@@ -92,6 +92,15 @@
 | B37 | start-up Poiseuille 起动流（D2Q9，奇 n 级数解析） | ✅ **已入库** verified/startup_poiseuille/。中心线误差/max(u_max) **0.288%→0.165%**（H=59/119 单调收敛），解析级数交叉 ~4e-7 |
 | B38 | 热自然对流方腔（de Vahl Davis，Ra=1e3/1e4，Pr=0.71，tensorlbm.thermal） | ⛔ **BLOCKED：库 thermal 壁 BC 缺陷**（非 benchmark 方案问题）。`thermal.apply_temperature_boundaries` 的 2D D2Q5 壁规则对 u=0 纯扩散逐位守恒，但与含对流项的 `temperature_equilibrium` + 周期 `temperature_stream` 组合 → **绝热壁假热汇 −2.2e-2/步**（Ra=1e4 N=64 发展态，信噪比 1e10）；冻结温度碰撞的对流项（同流场）泄漏坍缩 ×2612；细化 N=64→128 每 t* 恶化 ×5.3；实测 Nu 误差 ra1e3 +51.7%。修复方向：移植 thermal3d 壁处理到 2D D2Q5（Dirichlet 壁列整列=equilibrium w·T_w、绝热行复制内邻整分布）→ 未来库 PR，修后重扫 {64,128,256}²×{1e3,1e4}。证据工件 /nfs/wangxi/runs/bm_widen_20260919/thermal_cavity/（含控制器独立步进器 ctrl/） |
 | B39 | Rayleigh-Taylor 线性增长（SCMP 伪势，ρ 比 2.2，Chandrasekhar 含粘性/表面张力色散） | ❌ **SCMP 参数面内不可行**（非执行缺陷）。10/10 案例基频振幅全衰减（滑窗最优拟合 R²≥0.9967）；g 扫描线性零交叉 **g\*=2.34e-5 > 汽相 spinodal 天花板 7.141e-6** → 无可行窗口；伪势 σ_pt=1.215e-3 对 Laplace 2.06e-3 散布 −41%；毛细截止 γk²/Δρ=1.125e-6 复现。若重开需换多相模型（伪势标定重做或自由能型/MCMP）。注：原报告"超额阻尼 ∝k²"不成立（g=0 时 λ140/λ280 超额比 1.11≈k 无关），机制解释定性可能、定量形式无支撑。证据工件 /nfs/wangxi/runs/bm_widen_20260919/rt_instability/（含控制器自推 5×5 色散 checker） |
+
+### 严格标准复审（2026-09-19 owner 裁定："通过修正、不是直接模拟的都是假的，不能算"）
+
+对全部案例重审：判据数必须是**直接观测量对参考**。结果：
+- **droplet_oscillation 移出**（唯一修正类：判据是阻尼还原 ω₀=√(ω_d²+γ²)，原始观测频率 −6~−8% 超线）；
+- cavity_3d_full 澄清：`3d_correction_pct≈28%` 是 2D Ghia↔3D Ku **参考差距注记**非对模拟值的修正，u_min 直接对 Ku −0.2751 比较（1.34%→0.26%），保留；
+- R_eff 案例双通道复核（控制器亲算）：taylor_couette **名义半径帧** 2.133→0.974→0.435% 单调全 ≤3%；poiseuille_3d_pipe **名义帧直接通道**（中心线速度 vs 2u_in）−1.12%→−0.81% 单调全 ≤3%——两案在最严格"名义解析直接比"口径下裸过，R_eff 帧为增强披露而非拐杖，保留；
+- 观测量提取方式不算修正（衰减率 LSQ、σ 斜率拟合、幅值掩模测量域、中线取线）；碰撞/边界方案选择（TRT、RLBM、V3 半程 BB、BB fix 变体）属模拟配方非事后修正。
+- 严格口径计数：**verified/ = 22 个直接达标案例**。
 
 ## 文件夹结构
 
