@@ -100,7 +100,14 @@ A navigable index of the documentation in this directory, grouped by topic.
 |---|---|
 | [ai_turbulence.md](ai_turbulence.md) | End-to-end AI turbulence workflow: data generation → SQLite → MLP/FNO2d training → embedded collision |
 | [model_zoo.md](model_zoo.md) | Model zoo: manifest-driven registry of trained artifacts (provenance, metrics, loader reuse) |
+| [ld_axis_closure_20260908.md](ld_axis_closure_20260908.md) | l/d-axis closure adjudication (Waves 9-1..9-5): five attempts vs the frozen 4-point OLS gate, truth-side voxel quantization finding, W9-4 band recalibration proposal, serving corpus stays 382 |
+| [serving_v6qx_20260828.md](serving_v6qx_20260828.md) | Drag-surrogate serving refresh: cond_v6 v6qx 10-seed pool, uq_temperature = 1.5, routing rules (slender → SDF, guard-not-band, corpus hygiene) |
+| [l2_l3_line_20260908.md](l2_l3_line_20260908.md) | L2/L3 product-line story: arbitrary-geometry serving (retrieved fields + SDF + STL ingest), the first closed loop, and its fresh-LBM adjudication |
+| [l2_loop_certify_20260908.md](l2_loop_certify_20260908.md) | L3 closed-loop claim certification: fresh-LBM phantom adjudication productized (per-axis tiers, certified-region search, verify/check-doc gates) |
 | [benchmarks/ai_fno2d/](benchmarks/ai_fno2d/) | FNO2d 2D cylinder surrogate: loss curves, speed comparison (LBM vs inference) |
+| [l2_closed_loop_multire_20260908.md](l2_closed_loop_multire_20260908.md) | Multi-Re closed loop: mission-profile C_D objective over an 8-point Re grid — coverage map, free-search vs certified-region arms, W9 phantom quantification (json-first report, --verify / --check-doc) |
+| [appendage_closure_20260908.md](appendage_closure_20260908.md) | Appendage-axis closure at the anchor: sail ladder to the quantization wall, fin-down ladder (cd_proj optimum fin 3.0 / cd_ref optimum bare hull), absorption trial NOT ABSORBED + SDF-only misrank premise, objective-design synthesis |
+| [appendage_closure_part2_20260916.md](appendage_closure_part2_20260916.md) | Appendage closure part 2: n256 mask-only precheck kills the uniform resolution ladder (s* 0.017 / f* 0.272), W13-A single-leg misrank root cause (LEG-S share 1.0, 27.7-164.4x latent gain), fix menu adjudicated (W17-B serve-time damping DEAD, W17-A 12-row corpus absorption CONFIRMED) |
 
 ---
 
