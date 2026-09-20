@@ -70,6 +70,10 @@
 | P15 热自然对流方腔 | D2Q9 流场 + thermal D2Q5（壁 BC 修复 PR #300） | de Vahl Davis 1983（Nu/u_max/v_max） | ✅ 已入库 2026-09-20，Nu −0.83%/−1.41%、u −0.91%/−0.73%、v −1.12%/−0.89%（128/256 档；N=64 粗档如实判败披露） |
 | P16 液滴振荡（严格标准复活） | SCMP SC94 collide + stream，R=128/160/224 | Rayleigh ω²=6σ/((ρl+ρv)R³)，σ_i 逐档自测 | ✅ 重新入库 2026-09-20，原始 ω_d −2.005%（最细档，零修正直接比） |
 | P17 线性声学平面波 | D2Q9 BGK 线性化（声学扰动叠加平衡态） | 连续 c_s 与 νk² 衰减（自推离散理论三链闭环） | ✅ 已入库 2026-09-20，波速 +0.013% / 衰减 +0.080%（最细档） |
+| P18 矩形管 Poiseuille（Shah-London） | D3Q19 BGK + Zou-He 入口/出口 + bounce_back_cells_3d 半程（compile_route） | 自推双奇正弦级数；Po 交叉 Shah-London 方 56.9083 / 2:1 62.1922 | ✅ 已入库 2026-09-20，eff 0.0336%（方 W128）/ 0.0231%（2:1 W128） |
+| P19 Taylor-Aris 剪切分散 | D2Q9 流（pre-stream 半程 BB + 周期体力）+ D2Q5 被动标量（内联解缠零通量壁，披露） | Deff/D = 1+Pe²/210（Taylor 1953 / Aris 1956 缝隙） | ❌ 容差 6/6 过（0.05-0.26%）但单调 0/3——负 O(1/H²)+正地板变号结构，定源记录留 pending |
+| P20 NACA0012 Cl（α=5° Re=1000） | D2Q9 MRT + apply_simple_channel_boundaries + BB + MEM 力（airfoil_benchmark mask） | Kurtulus 2015 Fig4a 数字化 0.132±0.015（锁定）；文字锚 0.26 披露 | ❌ FAIL+参考受限：+85~99% 不单调（对 0.26 亦 0.5-5.9% 不单调）；参考图文自不一致 2.07×/1.3×；Cd 严格单调 0.1387→0.1340 |
+| P21 环隙 Poiseuille（a/R=0.5） | D3Q19 BGK + Zou-He + bounce_back_cells_3d（楼梯曲壁） | 自推精确解 u(r)（3 参数 c0+c1lnr−c2r² 族 + Φ 流量式） | ❌ not_verified 复合：eff 1.16→0.13→0.05% 全过单调，但 δi spread 0.0937>0.05 违格无关条款（内壁曲率真实 O(1/R) 漂移；平壁 duct 对照格无关） |
 
 **新问题方向（未覆盖）**：多相/自由表面（Laplace/溃坝）、声学、RANS 通道、
 D3Q27 高精度、AMR 网格收敛、壁面函数高 Re。
