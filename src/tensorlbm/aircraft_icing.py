@@ -210,13 +210,55 @@ surface thermodynamics -> geometry update, repeated):
   freezes column-by-column outward from the surface with the local ice
   density (Macklin at the *Messinger* surface temperature -> 917 kg/m^3
   in the glaze limit), so the classic features appear: a thinner water
-  cap at the stagnation line with runback ice horns downstream.
+  cap at the stagnation line with runback ice horns downstream.  Sub-cell
+  remainders stay pending liquid across shots and, with the default
+  ``deposit_remainder='carry'``, are settled at the end of the exposure
+  into the voxel mask (nearest-cell rounding) plus an exact per-cell
+  ice-mass ledger, so the rendered mass equals the audit frozen mass to
+  machine precision (``deposit_remainder='drop'`` keeps the legacy
+  behaviour where sub-cell water never renders).
 * **Regression guarantee**: the rime limit (cold / small LWC) gives
   ``n_f = 1`` with zero runback, and the deposit reproduces the Phase
   2a voxel shape from the same ledger.  The droplet/flow run stays
   LWC-accelerated (exact for beta); the acceleration is pinned per shot
   so the ledger equals ``dt_shot`` of *physical* exposure and the
   thermodynamics always runs at the physical LWC.
+
+Phase 2c: polydisperse MVD (droplet-size bins)
+----------------------------------------------
+``mvd_bins`` (sequence of ``(diameter_m, mass_fraction)`` pairs, default
+``None``) upgrades the single-size cloud to a discrete droplet-size
+distribution in both droplet arms:
+
+* **Lagrangian**: every parcel carries its bin's diameter — per-parcel
+  ``tau_d_lu`` (Stokes, ``d^2`` scaling) and per-parcel mass
+  ``N * rho_w * pi * d^3 / 6`` credited to the impact/water ledgers.
+  The bin assignment is a deterministic per-bin integer-carry seeding
+  rate (no RNG): the cumulative seeded *mass* per bin reproduces the
+  configured mass fraction exactly (to one parcel), while the position
+  stream keeps the plain ``torch.rand`` draws of the monodisperse path
+  (bin blocks are drawn consecutively; the carry is fully separate from
+  the position stream).
+* **Eulerian**: one ``(alpha, mx, my)`` set per bin (leading bin axis),
+  each advanced by the *same* donor/donor2 TVD step with its own
+  ``tau_d_lu``, Schiller-Naumann ``re_p_scale`` and inlet fraction
+  ``f_i * alpha_in``; the total impact is the sum of the per-bin
+  ledgers and the mass audit closes per bin *and* in total.  The
+  per-bin advance is a Python loop over the shared compiled step unit:
+  ``n_bins`` x the monodisperse Eulerian kernel launches per step —
+  launch-bound (not memory-bound) at these field sizes (~4 MB of state
+  at the L1 grid for 7 bins) — which is the documented cost of keeping
+  the scheme and the compile unit byte-identical to the monodisperse
+  phase instead of rewriting a batched 3-D kernel.
+* **Precedence**: ``mvd_bins`` *overrides* ``mvd`` for every
+  size-dependent quantity (the scalar ``mvd`` is then ignored by the
+  physics and kept as an explicit fallback/diagnostic).
+  Single-number closure models that need one diameter (Macklin ``R``,
+  Jones, glaze ice density, Schiller-Naumann ``Re_p`` scale) use the
+  mass-mean ``mvd_eff = sum(f_i * d_i)``; the shared rime freezer stays
+  single-density (per-bin freezing densities are not resolved).
+  ``mvd_bins=None`` (default) leaves every Phase 2a/2b/3 path
+  byte-identical.
 """
 
 from __future__ import annotations
@@ -241,6 +283,9 @@ __all__ = [
     "RimeIcingSimulation",
     "run_rime_icing",
     "naca0012_mask_2d",
+    "parse_airfoil_dat",
+    "airfoil_dat_mask_2d",
+    "airfoil_le_radius",
     "surface_arc_length",
     "collection_efficiency_curve",
     "ice_shape_metrics",
@@ -281,6 +326,14 @@ class IcingConfig:
     cx_frac: float = 0.3
     cy_frac: float = 0.5
     naca_t: float = 0.12
+    # Optional custom geometry: path to a Selig-style .dat contour
+    # (optional header line, then "x y" rows in chord units, starting
+    # anywhere on the closed contour).  When set, the solid mask is built
+    # from this contour (airfoil_dat_mask_2d) instead of the NACA 4-digit
+    # implicit surface, and le_diameter defaults to a circle fit through
+    # the contour near the LE instead of the NACA formula.  None (default)
+    # keeps the NACA 0012 path byte-identical.
+    airfoil_dat: str | None = None
 
     # --- physical reference case (NASA Glenn IRT NACA 0012 rime) ---
     chord_phys: float = 0.5334  # m
@@ -320,6 +373,24 @@ class IcingConfig:
     beta_window_mode: str = "clean"  # "clean" | "trailing"
     beta_clean_frac: float = 0.2  # clean mode: window length as fraction of steps
     beta_clean_max_fill: float = 0.5  # clean mode: max expected LE fill [cells]
+    # IC-D3: advance the Eulerian cloud through the flow warmup (identical
+    # field mathematics, no ledger/audit accumulation) so the exposure
+    # window opens with the droplet slip field already developed -- the
+    # stated intent of ``prefill_cloud``.  Without it the first
+    # ~``tau_d_lu`` steps of every measure-only shot under-collect
+    # (u_d starts at u_f, i.e. zero slip), so the whole-shot ledger beta and
+    # the Messinger water feed depend on the shot lattice length (steps=800
+    # vs 3000 vs 6000 gave beta_pk 0.609 / 0.727 / 0.757 on case 3.3).
+    # ``run_glaze_icing`` sets this for its measure-only shots; the default
+    # False keeps every legacy path (rime single shot) byte-identical.
+    droplet_warmup: bool = False
+    # IC-D3: fix the stagnation-row sign degeneracy in surface_arc_length
+    # (see that function).  Default False = legacy s_grid bit-for-bit (the
+    # Phase 2a/2b single-shot path must stay byte-identical; NACA0012 at
+    # the production point has 6 degenerate cells); run_glaze_icing opts in
+    # because the stag-row s-collapse is what polluted the stagnation beta
+    # bin and thermo panel on RG-15.
+    surface_arc_sign_fix: bool = False
     disable_droplets: bool = False  # clean-airfoil twin for A/B cd drift
     uniform_flow: bool = False  # True: static uniform field (tests, no LBM)
     device: str = "cpu"
@@ -365,6 +436,15 @@ class IcingConfig:
     # stagnation line, where tau_w -> 0 breaks the analogy).
     htc_mode: str = "analytic"  # "analytic" | "shear"
     glaze_panel_cells: float = 1.0  # arc-length panel width for the thermo [cells]
+    # Sub-cell remainder handling in the glaze deposit (IC-D2).  "carry"
+    # (default, fixed): sub-cell remainders stay pending liquid across
+    # shots and, at the end of the exposure, are settled into the voxel
+    # mask (nearest-cell rounding) plus an exact per-cell ice-mass ledger,
+    # so rendered mass == audit frozen to machine precision.  "drop"
+    # (legacy): remainders stay pending liquid forever and never render —
+    # on thin deposits the voxel mask then holds only ~half the frozen
+    # mass (rendered/frozen ~ 0.44-0.58 on the RG-15 benchmark).
+    deposit_remainder: str = "carry"  # "carry" | "drop"
     # Ice density used by the glaze deposit: "macklin-ts" = Macklin with the
     # *Messinger* surface temperature (-> 917 kg/m^3 in the glaze limit,
     # matches 2a in the rime limit); "const" = cfg.rho_rime.
@@ -382,6 +462,22 @@ class IcingConfig:
     prandtl_air: float = 0.71
     k_air: float = 0.0235  # W/m/K (analytic htc only)
     mu_water: float = 1.79e-3  # Pa s at 0 C (runback film diagnostic)
+
+    # --- Phase 2c additions (polydisperse droplet-size bins; default None
+    #     keeps every Phase 2a/2b/3 path byte-identical) ---
+    # Sequence of (diameter_m, mass_fraction) pairs describing a discrete
+    # droplet-size distribution (e.g. the IPW IRT 7-bin standard spray).
+    # PRECEDENCE RULE: when mvd_bins is set it OVERRIDES ``mvd`` for every
+    # droplet-size-dependent quantity — per-bin tau_d and parcel mass
+    # (Lagrangian), per-bin Eulerian fields, and every single-number
+    # closure-model diameter through the mass-mean ``mvd_eff`` (Macklin R,
+    # Jones, Schiller-Naumann Re_p scale, glaze ice density).  ``mvd`` is
+    # then ignored by the physics (kept as an explicit fallback/diagnostic);
+    # setting mvd_bins with ``mvd`` left at its default is therefore valid.
+    # Validation in __post_init__: >= 2 bins, diameters > 0 and pairwise
+    # distinct, mass fractions > 0 summing to 1 within 1e-9 (normalised to
+    # sum exactly 1.0).  None (default) = exact monodisperse behaviour.
+    mvd_bins: tuple[tuple[float, float], ...] | None = None
 
     def __post_init__(self) -> None:
         if self.droplet_phase not in ("lagrangian", "eulerian", "both"):
@@ -440,6 +536,21 @@ class IcingConfig:
             raise ValueError(f"rh must be in (0, 1]; got {self.rh!r}")
         if self.glaze_panel_cells <= 0.0:
             raise ValueError(f"glaze_panel_cells must be > 0; got {self.glaze_panel_cells!r}")
+        if self.deposit_remainder not in ("carry", "drop"):
+            raise ValueError(
+                f"deposit_remainder must be 'carry' or 'drop'; got {self.deposit_remainder!r}"
+            )
+        # --- custom geometry (IC-D1): parse + cache the dat contour now so a
+        # bad path/contour fails at config time, not mid-simulation ---
+        self._airfoil_points: np.ndarray | None = None
+        self._le_radius_dat: float | None = None
+        if self.airfoil_dat is not None:
+            self._airfoil_points = parse_airfoil_dat(self.airfoil_dat)
+            self._le_radius_dat = airfoil_le_radius(self._airfoil_points)
+        # --- Phase 2c: polydisperse MVD bins ---
+        if self.mvd_bins is not None:
+            # validates and normalises the fractions to sum exactly 1.0
+            self.mvd_bins = _validate_mvd_bins(self.mvd_bins)
 
     # ------------------------------------------------------------------
     # lattice-side derived quantities
@@ -483,23 +594,103 @@ class IcingConfig:
     # droplet physics
     @property
     def m_droplet(self) -> float:
-        """Single droplet mass [kg]."""
+        """Single droplet mass [kg].
+
+        Monodisperse value (``mvd``); with ``mvd_bins`` this is only the
+        diagnostic of the overridden scalar — the physics uses
+        ``m_droplet_bins``.
+        """
         return self.rho_water * math.pi * self.mvd**3 / 6.0
 
     @property
+    def mvd_eff(self) -> float:
+        """Diameter used by single-number closure models [m].
+
+        ``mvd`` itself when monodisperse; with ``mvd_bins`` the mass-mean
+        diameter ``sum(f_i * d_i)`` — the correct average for closure
+        models linear in d (Macklin ``R``, Schiller-Naumann ``Re_p``).
+        """
+        if self.mvd_bins is None:
+            return self.mvd
+        return sum(f * d for d, f in self.mvd_bins)
+
+    @property
+    def m_droplet_bins(self) -> tuple[float, ...]:
+        """Single-droplet mass per bin [kg] (``rho_w pi d^3 / 6``)."""
+        return tuple(self.rho_water * math.pi * d**3 / 6.0 for d, _ in self.mvd_bins or ())
+
+    @property
     def tau_d_phys(self) -> float:
-        """Stokes relaxation time [s]."""
+        """Stokes relaxation time [s] (mass-mean over the bins)."""
+        if self.mvd_bins is not None:
+            return sum(f * t for (_d, f), t in zip(self.mvd_bins, self.tau_d_phys_bins))
         return self.rho_water * self.mvd**2 / (18.0 * self.mu_air)
 
     @property
     def tau_d_lu(self) -> float:
-        """Stokes relaxation time in lattice steps."""
+        """Stokes relaxation time in lattice steps (mass-mean over bins)."""
         return self.tau_d_phys / self.dt_phys
 
     @property
     def stokes(self) -> float:
-        """Inertia number (unit-system invariant)."""
+        """Inertia number (unit-system invariant; mass-mean over bins)."""
         return self.tau_d_phys * self.v_inf / self.chord_phys
+
+    # ------------------------------------------------------------------
+    # Phase 2c: per-bin droplet physics
+    @property
+    def tau_d_phys_bins(self) -> tuple[float, ...]:
+        """Stokes relaxation time per bin [s] (``rho_w d^2 / 18 mu``)."""
+        return tuple(self.rho_water * d**2 / (18.0 * self.mu_air) for d, _ in self.mvd_bins or ())
+
+    @property
+    def tau_d_lu_bins(self) -> tuple[float, ...]:
+        """Stokes relaxation time per bin [lattice steps]."""
+        return tuple(t / self.dt_phys for t in self.tau_d_phys_bins)
+
+    @property
+    def tau_d_lu_min(self) -> float:
+        """Fastest bin relaxation [lattice steps].
+
+        Sets the explicit-Euler substep count (stability is governed by
+        the smallest tau_d); monodisperse: ``tau_d_lu`` itself.
+        """
+        if self.mvd_bins is None:
+            return self.tau_d_lu
+        return min(self.tau_d_lu_bins)
+
+    @property
+    def m_parcel_bins(self) -> tuple[float, ...]:
+        """Mass of one simulated parcel per bin [kg] (same multiplier N)."""
+        n = self.effective_parcel_multiplier
+        return tuple(n * m for m in self.m_droplet_bins)
+
+    @property
+    def droplets_per_step_bins(self) -> tuple[float, ...]:
+        """Analytic physical droplets / LBM step per bin (mass flux exact)."""
+        total_mass = self.lwc_eff * self.v_inf * self.inlet_area * self.dt_phys
+        return tuple(
+            f * total_mass / m for (_d, f), m in zip(self.mvd_bins or (), self.m_droplet_bins)
+        )
+
+    @property
+    def parcels_per_step_bins(self) -> tuple[float, ...]:
+        """Simulated parcels seeded per LBM step per bin (per-bin carry)."""
+        n = self.effective_parcel_multiplier
+        return tuple(r / n for r in self.droplets_per_step_bins)
+
+    @property
+    def alpha_in_bins(self) -> tuple[float, ...]:
+        """Inlet droplet volume fraction per bin (``f_i * alpha_in``)."""
+        return tuple(f * self.alpha_in for _, f in self.mvd_bins or ())
+
+    @property
+    def re_p_scale_bins(self) -> tuple[float, ...]:
+        """Schiller-Naumann scale per bin (0 for the Stokes law, per bin)."""
+        if self.drag_law != "schiller-naumann" or self.mvd_bins is None:
+            return tuple(0.0 for _ in self.mvd_bins or ())
+        base = self.sn_scale_factor * self.rho_air * (self.dx_phys / self.dt_phys) / self.mu_air
+        return tuple(base * d for d, _ in self.mvd_bins)
 
     @property
     def t_surface_eff_c(self) -> float:
@@ -514,10 +705,10 @@ class IcingConfig:
 
     @property
     def rime_R_macklin(self) -> float:
-        """Macklin parameter R = -(mvd[um] * V) / (2 T_s)."""
+        """Macklin parameter R = -(mvd[um] * V) / (2 T_s) (mass-mean d)."""
         if self.t_surface_eff_c >= 0.0:
             return float("inf")
-        return -(self.mvd * 1e6 * self.v_inf) / (2.0 * self.t_surface_eff_c)
+        return -(self.mvd_eff * 1e6 * self.v_inf) / (2.0 * self.t_surface_eff_c)
 
     @property
     def rho_rime_eff(self) -> float:
@@ -525,9 +716,9 @@ class IcingConfig:
         if self.rime_density_mode == "const":
             return self.rho_rime
         if self.rime_density_mode == "macklin":
-            return rime_density_macklin(self.mvd, self.v_inf, self.t_surface_eff_c)
+            return rime_density_macklin(self.mvd_eff, self.v_inf, self.t_surface_eff_c)
         if self.rime_density_mode == "jones":
-            return rime_density_jones(self.mvd, self.v_inf, self.t_static_c)
+            return rime_density_jones(self.mvd_eff, self.v_inf, self.t_static_c)
         raise ValueError(
             f"rime_density_mode must be 'const', 'macklin' or 'jones'; "
             f"got {self.rime_density_mode!r}"
@@ -556,7 +747,13 @@ class IcingConfig:
 
     @property
     def droplets_per_step(self) -> float:
-        """Analytic seeding rate [physical droplets / LBM step] (docstring)."""
+        """Analytic seeding rate [physical droplets / LBM step] (docstring).
+
+        Total over the bins with ``mvd_bins`` (the smallest bin dominates
+        the count; the *mass* flux is exact per bin).
+        """
+        if self.mvd_bins is not None:
+            return sum(self.droplets_per_step_bins)
         return self.lwc_eff * self.v_inf * self.inlet_area * self.dt_phys / self.m_droplet
 
     @property
@@ -587,7 +784,8 @@ class IcingConfig:
         if self.substeps is not None:
             return max(1, int(self.substeps))
         # explicit Euler relaxation needs dt/tau << 1; 8 sub-steps margin.
-        return max(1, int(math.ceil(8.0 / max(self.tau_d_lu, 1e-12))))
+        # (bins: the *fastest* bin sets the stable substep count)
+        return max(1, int(math.ceil(8.0 / max(self.tau_d_lu_min, 1e-12))))
 
     # ------------------------------------------------------------------
     # Phase 2b: Eulerian droplet field derived quantities
@@ -665,7 +863,7 @@ class IcingConfig:
             self.sn_scale_factor
             * self.rho_air
             * (self.dx_phys / self.dt_phys)
-            * self.mvd
+            * self.mvd_eff
             / self.mu_air
         )
 
@@ -708,14 +906,20 @@ class IcingConfig:
         """Effective leading-edge cylinder diameter [m] (Frossling htc).
 
         NACA 4-digit leading-edge radius ``r_le = 1.1019 * t^2 * chord``.
+        With ``airfoil_dat`` set and no explicit ``le_diameter``, the LE
+        radius is a circle fit to the dat contour near the LE
+        (:func:`airfoil_le_radius`) — the NACA formula never applies to a
+        custom contour.
         """
         if self.le_diameter is not None:
             return self.le_diameter
+        if self._le_radius_dat is not None:
+            return 2.0 * self._le_radius_dat * self.chord_phys
         return 2.0 * 1.1019 * self.naca_t**2 * self.chord_phys
 
     def mapping_report(self) -> dict[str, Any]:
         """All mapping/physics numbers in one dictionary (printed + JSON)."""
-        return {
+        rep = {
             "nx": self.nx,
             "ny": self.ny,
             "chord_lu": self.chord_lu,
@@ -731,6 +935,11 @@ class IcingConfig:
             "lwc_eff": self.lwc_eff,
             "lwc_accel": self.lwc_accel,
             "mvd": self.mvd,
+            "mvd_eff": self.mvd_eff,
+            "n_bins": 0 if self.mvd_bins is None else len(self.mvd_bins),
+            "mvd_bins": [list(b) for b in self.mvd_bins] if self.mvd_bins is not None else None,
+            "tau_d_lu_bins": list(self.tau_d_lu_bins),
+            "m_parcel_bins": list(self.m_parcel_bins),
             "m_droplet": self.m_droplet,
             "m_cell_ice": self.m_cell_ice,
             "rho_rime_eff": self.rho_rime_eff,
@@ -774,11 +983,77 @@ class IcingConfig:
             "htc_mode": self.htc_mode,
             "glaze_rho_mode": self.glaze_rho_mode,
             "glaze_panel_cells": self.glaze_panel_cells,
+            "deposit_remainder": self.deposit_remainder,
             "rh": self.rh,
             "evap_enabled": self.evap_enabled,
             "le_diameter_eff": self.le_diameter_eff,
             "recovery_factor_eff": self.recovery_factor_eff,
         }
+        if self.airfoil_dat is not None:
+            # geometry-source note: the mask came from the dat contour and
+            # (unless overridden) so did the LE diameter
+            rep.update(
+                {
+                    "airfoil_dat": str(self.airfoil_dat),
+                    "airfoil_dat_points": int(len(self._airfoil_points)),
+                    "le_radius_dat_chord": self._le_radius_dat,
+                    "le_diameter_source": (
+                        "explicit" if self.le_diameter is not None else "dat-circle-fit"
+                    ),
+                }
+            )
+        return rep
+
+
+def _validate_mvd_bins(bins: Any) -> tuple[tuple[float, float], ...]:
+    """Validate and exactly normalise a polydisperse ``mvd_bins`` spec.
+
+    Rules (Phase 2c):
+
+    * a sequence of exactly ``(diameter_m, mass_fraction)`` pairs;
+    * at least two bins — a single size class is the ``mvd`` path;
+    * diameters strictly positive and pairwise distinct (relative
+      tolerance 1e-9: two equal diameters are one bin, not two);
+    * mass fractions strictly positive and summing to 1 within 1e-9.
+
+    Accepted inputs are normalised so the fractions sum to *exactly* 1.0
+    in floating point: every fraction is divided by the total, and the
+    last bin absorbs the rounding residual (<= 1 ulp).
+    """
+    try:
+        pairs = tuple((float(d), float(f)) for d, f in bins)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"mvd_bins must be a sequence of (diameter_m, mass_fraction) pairs; got {bins!r}"
+        ) from exc
+    if len(pairs) < 2:
+        raise ValueError(
+            f"mvd_bins needs >= 2 (diameter, mass_fraction) bins; "
+            f"got {len(pairs)} (a single size class is the mvd path)"
+        )
+    for d, f in pairs:
+        if not d > 0.0:
+            raise ValueError(f"mvd_bins diameters must be > 0 [m]; got {d!r}")
+        if not f > 0.0:
+            raise ValueError(f"mvd_bins mass fractions must be > 0; got {f!r}")
+    diam = [d for d, _ in pairs]
+    for i in range(len(diam)):
+        for j in range(i + 1, len(diam)):
+            if abs(diam[i] - diam[j]) <= 1e-9 * max(diam[i], diam[j]):
+                raise ValueError(
+                    f"mvd_bins diameters must be pairwise distinct; bins {i} "
+                    f"and {j} are the same size ({diam[i]!r} m)"
+                )
+    total = math.fsum(f for _, f in pairs)
+    if abs(total - 1.0) > 1e-9:
+        raise ValueError(f"mvd_bins mass fractions must sum to 1 (+- 1e-9); got {total!r}")
+    fracs = [f / total for _, f in pairs]
+    # exact closure: the last bin absorbs the rounding residual
+    for _ in range(3):
+        if math.fsum(fracs) == 1.0:
+            break
+        fracs[-1] += 1.0 - math.fsum(fracs)
+    return tuple((d, f) for (d, _), f in zip(pairs, fracs))
 
 
 def seed_counts_total(rate: float, steps: int) -> int:
@@ -869,6 +1144,106 @@ def naca0012_mask_2d(
     return (xr >= 0.0) & (xr <= 1.0) & (yr.abs() <= yt)
 
 
+def parse_airfoil_dat(path: str) -> np.ndarray:
+    """Parse a Selig-style airfoil contour file into an ``(N, 2)`` array.
+
+    Accepted layout: an optional header line (e.g. ``RG-15``), then ``x y``
+    rows in chord units (Selig normalisation: LE near the origin, TE near
+    ``x = 1``).  Lines that are blank, comment-like or not exactly two
+    numeric fields are skipped, so the contour may start anywhere on the
+    closed contour and run in either direction (upper surface first or
+    lower surface first) — the mask builder closes it explicitly.
+    """
+    rows: list[tuple[float, float]] = []
+    with open(path) as fh:
+        for line in fh:
+            parts = line.split()
+            if len(parts) != 2:
+                continue
+            try:
+                rows.append((float(parts[0]), float(parts[1])))
+            except ValueError:
+                continue
+    pts = np.asarray(rows, dtype=np.float64)
+    if pts.ndim != 2 or pts.shape[1] != 2 or len(pts) < 10:
+        raise ValueError(
+            f"airfoil dat {path!r}: expected >= 10 'x y' contour rows, parsed {len(rows)}"
+        )
+    return pts
+
+
+def airfoil_le_radius(pts: np.ndarray, window: float = 0.012, min_points: int = 20) -> float:
+    """Leading-edge radius [chord units] from a circle fit to the contour.
+
+    Contour points within ``window`` chord lengths of the dat origin (the
+    LE for Selig-normalised contours) are fitted with the algebraic
+    (Kasa) circle ``x^2 + y^2 = 2 a x + 2 b y + c``; the returned radius
+    is the fitted circle radius ``sqrt(a^2 + b^2 + c)``.  When the window
+    holds fewer than ``min_points`` points the ``min_points`` nearest the
+    origin are used instead.
+    """
+    r = np.hypot(pts[:, 0], pts[:, 1])
+    sel = pts[r < window]
+    if len(sel) < min_points:
+        sel = pts[np.argsort(r)[:min_points]]
+    a_mat = np.column_stack([2.0 * sel[:, 0], 2.0 * sel[:, 1], np.ones(len(sel))])
+    rhs = sel[:, 0] ** 2 + sel[:, 1] ** 2
+    (a_, b_, c_), *_ = np.linalg.lstsq(a_mat, rhs, rcond=None)
+    r_le = math.sqrt(a_ * a_ + b_ * b_ + c_)
+    if not math.isfinite(r_le) or r_le <= 0.0:
+        raise ValueError(f"leading-edge circle fit failed: r_le={r_le!r}")
+    return float(r_le)
+
+
+def airfoil_dat_mask_2d(
+    nx: int,
+    ny: int,
+    chord: float,
+    aoa_deg: float = 4.0,
+    cx: float | None = None,
+    cy: float | None = None,
+    dat: str | None = None,
+    points: np.ndarray | None = None,
+    device: torch.device | str = "cpu",
+) -> torch.Tensor:
+    """Vectorised solid mask (ny, nx) from a parsed airfoil contour.
+
+    Same grid convention as :func:`naca0012_mask_2d`: cell centres at
+    integer indices, LE pinned at ``(cx, cy)``, chord along the rotated
+    x axis with positive ``aoa_deg`` = nose-up (TE below the LE).  The
+    closed contour (first point repeated, closing the Selig TE gap) is
+    tested at each cell centre in airfoil-frame chord units with
+    matplotlib's point-in-polygon test.  Give exactly one of ``dat``
+    (a .dat path, parsed here) or ``points`` (an ``(N, 2)`` contour from
+    :func:`parse_airfoil_dat`).
+    """
+    from matplotlib.path import Path as MplPath
+
+    if (dat is None) == (points is None):
+        raise ValueError("give exactly one of dat= (path) or points= (contour)")
+    if points is None:
+        points = parse_airfoil_dat(dat)
+    if cx is None:
+        cx = nx / 3.0
+    if cy is None:
+        cy = ny / 2.0
+    dev = torch.device(device)
+    xx = torch.arange(nx, device=dev, dtype=torch.float32)
+    yy = torch.arange(ny, device=dev, dtype=torch.float32)
+    gx, gy = torch.meshgrid(xx, yy, indexing="xy")  # (ny, nx)
+    dx = gx - cx
+    dy = gy - cy
+    aoa = math.radians(aoa_deg)
+    cos_a, sin_a = math.cos(aoa), math.sin(aoa)
+    xr = (dx * cos_a - dy * sin_a) / chord
+    yr = (dx * sin_a + dy * cos_a) / chord
+    poly = np.vstack([points, points[:1]])  # close the contour (TE face)
+    inside = MplPath(poly).contains_points(
+        np.column_stack([xr.cpu().numpy().reshape(-1), yr.cpu().numpy().reshape(-1)])
+    )
+    return torch.from_numpy(inside.reshape(ny, nx)).to(dev)
+
+
 def _dilate4(mask: torch.Tensor) -> torch.Tensor:
     return (
         torch.roll(mask, 1, 0)
@@ -925,7 +1300,9 @@ def _tvd_face_states(
 # ---------------------------------------------------------------------------
 # Surface arc-length machinery (numpy, CPU, run once at the end)
 # ---------------------------------------------------------------------------
-def surface_arc_length(airfoil: np.ndarray) -> tuple[np.ndarray, tuple[int, int], np.ndarray]:
+def surface_arc_length(
+    airfoil: np.ndarray, fix_stag_row_signs: bool = False
+) -> tuple[np.ndarray, tuple[int, int], np.ndarray]:
     """Signed arc distance from the leading-edge surface cell.
 
     Returns ``(s_grid, stag_xy, surf)``:
@@ -942,6 +1319,21 @@ def surface_arc_length(airfoil: np.ndarray) -> tuple[np.ndarray, tuple[int, int]
     Impact cells are mapped onto this coordinate so the beta curve is a
     function of surface position, independent of how thick the ice has
     grown during the run.
+
+    ``fix_stag_row_signs`` (IC-D3, default False = legacy bit-for-bit):
+    the plain y-comparison sign rule annihilates the arc distance of every
+    surface cell *on the stagnation row*, not just the LE cell.  On tilted
+    thin geometries (RG-15 at 4 deg: the TE gap and mid-chord surface
+    crossings share the stag row) fluid cells up to ~0.65 chord downstream
+    inherit s = 0, so low-beta trailing-edge wake catch pollutes the
+    stagnation beta bin (LE beta 0.76 averaged down to 0.10) and the
+    stagnation thermo panel swallows far-field surface cells.  With the
+    flag, degenerate cells (sign 0 with nonzero distance) take the branch
+    label of their shortest-path predecessor (fluid-side fallback); every
+    cell with a definite legacy sign keeps it.  Legacy geometries also
+    carry degenerate cells (NACA0012 @ 320x160/4 deg: 6), so the default
+    keeps the Phase 2a/2b single-shot path byte-identical and only the
+    glaze multishot driver opts in.
     """
     ny, nx = airfoil.shape
     fluid = ~airfoil
@@ -968,6 +1360,7 @@ def surface_arc_length(airfoil: np.ndarray) -> tuple[np.ndarray, tuple[int, int]
         if (dys, dxs) != (0, 0)
     ]
     coord2id = {(int(ys[i]), int(xs[i])): i for i in range(n_surf)}
+    pred = -np.ones(n_surf, dtype=np.int64)  # shortest-path tree (IC-D3 branch labels)
     while heap:
         d, u = heappop(heap)
         if d > dist[u]:
@@ -980,9 +1373,23 @@ def surface_arc_length(airfoil: np.ndarray) -> tuple[np.ndarray, tuple[int, int]
             nd = d + w
             if nd < dist[v] - 1e-12:
                 dist[v] = nd
+                pred[v] = u
                 heappush(heap, (nd, v))
 
     sign = np.where(ys > stag[0], 1.0, np.where(ys < stag[0], -1.0, 0.0))
+    if fix_stag_row_signs:
+        degenerate = (sign == 0.0) & (dist > 0.0) & np.isfinite(dist)
+        for i in np.nonzero(degenerate)[0]:
+            j, seen = int(i), set()
+            while j >= 0 and sign[j] == 0.0 and j not in seen:
+                seen.add(j)
+                j = int(pred[j])
+            if j >= 0 and sign[j] != 0.0:
+                sign[i] = sign[j]
+            else:
+                y0, x0 = int(ys[i]), int(xs[i])
+                above_fluid = y0 - 1 >= 0 and not airfoil[y0 - 1, x0]
+                sign[i] = -1.0 if above_fluid else 1.0
     s_surf = dist * sign
 
     # multi-source BFS: nearest surface cell id for every grid cell
@@ -1140,16 +1547,31 @@ class RimeIcingSimulation:
         self.nx, self.ny = cfg.nx, cfg.ny
         self.chord = cfg.chord_lu
 
-        self.airfoil = naca0012_mask_2d(
-            self.nx,
-            self.ny,
-            self.chord,
-            cfg.aoa_deg,
-            cx=self.nx * cfg.cx_frac,
-            cy=self.ny * cfg.cy_frac,
-            t=cfg.naca_t,
-            device=self.dev,
-        )
+        # geometry dispatch (IC-D1): the default path is the unchanged
+        # NACA 4-digit mask; a configured dat contour replaces it with the
+        # same grid/chord/AoA convention (see airfoil_dat_mask_2d)
+        if cfg.airfoil_dat is None:
+            self.airfoil = naca0012_mask_2d(
+                self.nx,
+                self.ny,
+                self.chord,
+                cfg.aoa_deg,
+                cx=self.nx * cfg.cx_frac,
+                cy=self.ny * cfg.cy_frac,
+                t=cfg.naca_t,
+                device=self.dev,
+            )
+        else:
+            self.airfoil = airfoil_dat_mask_2d(
+                self.nx,
+                self.ny,
+                self.chord,
+                cfg.aoa_deg,
+                cx=self.nx * cfg.cx_frac,
+                cy=self.ny * cfg.cy_frac,
+                dat=cfg.airfoil_dat,
+                device=self.dev,
+            )
         self.solid = self.airfoil.clone()  # airfoil | ice
         self.opp = OPPOSITE.to(self.dev)
 
@@ -1178,6 +1600,10 @@ class RimeIcingSimulation:
         # droplet-phase selection (Phase 2b; defaults reproduce Phase 2a)
         self.use_lagr = cfg.droplet_phase in ("lagrangian", "both")
         self.use_euler = cfg.droplet_phase in ("eulerian", "both")
+        # Phase 2c: polydisperse bins bookkeeping (set before any bin-aware
+        # state below; purely additive — None keeps every path untouched)
+        self.bins = cfg.mvd_bins
+        self.n_bins = 0 if cfg.mvd_bins is None else len(cfg.mvd_bins)
         if self.use_euler:
             # Eulerian droplet field: alpha (volume fraction) + momentum.
             # Pure-tensor step compiled through the same shared wrapper.
@@ -1206,6 +1632,27 @@ class RimeIcingSimulation:
                 "airborne": 0.0,
                 "closure_error": 0.0,
             }
+            if cfg.mvd_bins is not None:
+                # Phase 2c: per-bin Eulerian state (leading bin axis).  The
+                # step itself reuses the *same* compiled _euler_step per bin
+                # (per-bin tau_d / sn_scale / alpha_in scalars); the Python
+                # loop over <= ~10 bins multiplies the per-step kernel
+                # launches by n_bins — launch-bound at these field sizes,
+                # see the Phase 2c docstring note.
+                self.alpha = torch.zeros((self.n_bins, self.ny, self.nx), device=self.dev)
+                self.mx = torch.zeros_like(self.alpha)
+                self.my = torch.zeros_like(self.alpha)
+                self.impact_mass_e_bins = torch.zeros_like(self.alpha)  # kg (all run)
+                self.impact_e_w0_bins: torch.Tensor | None = None
+                self.impact_e_w1_bins: torch.Tensor | None = None
+                self._bflux_acc = torch.zeros(
+                    (self.n_bins, 4), dtype=torch.float64, device=self.dev
+                )
+                self._dep_acc = torch.zeros((self.n_bins,), dtype=torch.float64, device=self.dev)
+                self._enc_acc = torch.zeros((self.n_bins,), dtype=torch.float64, device=self.dev)
+                self.aud_e_bins: list[dict[str, float]] = [
+                    dict(self.aud_e) for _ in range(self.n_bins)
+                ]
 
         rho0 = torch.ones((1, self.ny, self.nx), device=self.dev)
         u0 = torch.full((1, self.ny, self.nx), cfg.u_in, device=self.dev)
@@ -1219,6 +1666,20 @@ class RimeIcingSimulation:
         self.vx = torch.zeros(0, device=self.dev)
         self.vy = torch.zeros(0, device=self.dev)
         self.age = torch.zeros(0, device=self.dev, dtype=torch.int64)
+
+        # Phase 2c: polydisperse bins state (only when mvd_bins is set;
+        # purely additive — the monodisperse attributes above and every
+        # method branch below are untouched when bins is None)
+        if cfg.mvd_bins is not None:
+            self.tau_bins_t = torch.tensor(cfg.tau_d_lu_bins, device=self.dev)
+            self.sn_bins_t = torch.tensor(cfg.re_p_scale_bins, device=self.dev)
+            self.m_parcel_bins_t = torch.tensor(cfg.m_parcel_bins, device=self.dev)
+            self.pbin = torch.zeros(0, dtype=torch.int64, device=self.dev)
+            self._seed_carry_bins = [0.0] * self.n_bins  # per-bin carry, no RNG
+            self.bin_seeded = [0.0] * self.n_bins  # kg of seeded mass per bin
+            self.impact_mass_bins = torch.zeros(
+                (self.n_bins, self.ny, self.nx), device=self.dev
+            )  # kg per bin (all run; split of impact_mass)
 
         # accretion + measurement fields
         self.m_w = torch.zeros((self.ny, self.nx), device=self.dev)  # kg per cell
@@ -1632,6 +2093,9 @@ class RimeIcingSimulation:
         return fx / (q * self.chord), fy / (q * self.chord)
 
     def _seed(self) -> None:
+        if self.bins is not None:
+            self._seed_bins()
+            return
         self._seed_carry += self.cfg.parcels_per_step
         n = int(self._seed_carry)
         self._seed_carry -= n
@@ -1650,6 +2114,41 @@ class RimeIcingSimulation:
         self.age = torch.cat([self.age, ag])
         self.aud["seeded"] += n * self.cfg.m_parcel
 
+    def _seed_bins(self) -> None:
+        """Polydisperse seeding: one deterministic integer carry *per bin*.
+
+        Bin assignment mechanism (documented contract): each bin owns an
+        independent fractional-rate carry (the same ``seed_counts_total``
+        device as the monodisperse path, but per bin), so the cumulative
+        seeded *mass* per bin reproduces the configured mass fraction
+        exactly (to one parcel) with no RNG involvement.  The position
+        stream stays the plain ``torch.rand`` draws of the monodisperse
+        path, consumed bin block after bin block — fully separate from
+        the carry that decides the diameters.
+        """
+        cfg = self.cfg
+        for i, rate in enumerate(cfg.parcels_per_step_bins):
+            self._seed_carry_bins[i] += rate
+            n = int(self._seed_carry_bins[i])
+            self._seed_carry_bins[i] -= n
+            if n <= 0:
+                continue
+            px = 0.5 + 0.4 * torch.rand(n, device=self.dev)
+            py = 0.5 + (self.ny - 1.0) * torch.rand(n, device=self.dev)
+            vx = torch.full((n,), cfg.u_in, device=self.dev)
+            vy = torch.zeros(n, device=self.dev)
+            ag = torch.zeros(n, device=self.dev, dtype=torch.int64)
+            pb = torch.full((n,), i, dtype=torch.int64, device=self.dev)
+            self.px = torch.cat([self.px, px])
+            self.py = torch.cat([self.py, py])
+            self.vx = torch.cat([self.vx, vx])
+            self.vy = torch.cat([self.vy, vy])
+            self.age = torch.cat([self.age, ag])
+            self.pbin = torch.cat([self.pbin, pb])
+            m_i = cfg.m_parcel_bins[i]
+            self.aud["seeded"] += n * m_i
+            self.bin_seeded[i] += n * m_i
+
     def _prefill(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
         """Seed the steady-state cloud inventory at t=0 of the exposure.
 
@@ -1665,6 +2164,9 @@ class RimeIcingSimulation:
         there).
         """
         cfg = self.cfg
+        if self.bins is not None:
+            self._prefill_bins(ux, uy)
+            return
         n_pre = int(cfg.parcels_per_step * self.kill_x / cfg.u_in)
         if n_pre <= 0:
             return
@@ -1692,7 +2194,55 @@ class RimeIcingSimulation:
             f"{n_kept * cfg.m_parcel:.3e} kg) in x<[{self.kill_x:.0f}]"
         )
 
+    def _prefill_bins(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
+        """Polydisperse prefill: per-bin steady inventory, floor-rounded.
+
+        Same steady-line-density argument as :meth:`_prefill`, applied per
+        bin (``parcels_per_step_bin * kill_x / u_in``, floored to an
+        integer — a one-shot inventory, so the <= 1 parcel per bin floor
+        bias is far below the solid-rejection noise).  Positions use the
+        global RNG (bin block after bin block, same stream as the
+        monodisperse prefill); positions inside the airfoil are rejected.
+        """
+        cfg = self.cfg
+        n_tot, m_tot = 0, 0.0
+        for i, rate in enumerate(cfg.parcels_per_step_bins):
+            n_pre = int(rate * self.kill_x / cfg.u_in)
+            if n_pre <= 0:
+                continue
+            px = 0.5 + (self.kill_x - 1.0) * torch.rand(n_pre, device=self.dev)
+            py = 0.5 + (self.ny - 1.0) * torch.rand(n_pre, device=self.dev)
+            ix = px.floor().long().clamp(0, self.nx - 1)
+            iy = py.floor().long().clamp(0, self.ny - 1)
+            ok = ~self.solid[iy, ix]
+            n_kept = int(ok.sum().item())
+            if n_kept == 0:
+                continue
+            px, py = px[ok], py[ok]
+            vx = self._sample_bilinear(ux, px, py)
+            vy = self._sample_bilinear(uy, px, py)
+            ag = torch.zeros(n_kept, device=self.dev, dtype=torch.int64)
+            pb = torch.full((n_kept,), i, dtype=torch.int64, device=self.dev)
+            self.px = torch.cat([self.px, px])
+            self.py = torch.cat([self.py, py])
+            self.vx = torch.cat([self.vx, vx])
+            self.vy = torch.cat([self.vy, vy])
+            self.age = torch.cat([self.age, ag])
+            self.pbin = torch.cat([self.pbin, pb])
+            m_i = cfg.m_parcel_bins[i]
+            self.aud["seeded"] += n_kept * m_i
+            self.bin_seeded[i] += n_kept * m_i
+            n_tot += n_kept
+            m_tot += n_kept * m_i
+        self.log(
+            f"  [icing] prefill cloud: {n_tot} parcels, {m_tot:.3e} kg "
+            f"({self.n_bins} bins) in x<[{self.kill_x:.0f}]"
+        )
+
     def _droplet_step(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
+        if self.bins is not None:
+            self._droplet_step_bins(ux, uy)
+            return
         cfg = self.cfg
         self._seed()
         n_sub = cfg.n_substeps
@@ -1779,6 +2329,105 @@ class RimeIcingSimulation:
             self.vy = self.vy[keep]
             self.age = self.age[keep]
 
+    def _droplet_step_bins(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
+        """Polydisperse Lagrangian step: per-parcel tau_d / mass from its bin.
+
+        Identical algorithm to :meth:`_droplet_step` with the two scalar
+        per-parcel quantities made bin-dependent via the parcel's bin id
+        ``pbin``: the relaxation factor ``dt_sub / tau_d_lu(bin)`` (with
+        the Schiller-Naumann ``Re_p`` built on the bin diameter when
+        enabled) and the parcel mass ``m_parcel(bin) = N * rho_w pi d^3/6``
+        credited to the ledgers.  Deposit/impact semantics are unchanged
+        — per-parcel *mass-weighted* credits — additionally split per bin
+        into ``impact_mass_bins`` while the total ``impact_mass`` ledger
+        keeps the exact monodisperse convention.
+        """
+        cfg = self.cfg
+        self._seed_bins()
+        n_sub = cfg.n_substeps
+        dt_sub = 1.0 / n_sub
+        tau_b = self.tau_bins_t  # (nb,)
+        sn_b = self.sn_bins_t  # (nb,) zeros for the Stokes law
+        m_b = self.m_parcel_bins_t  # (nb,)
+        use_sn = cfg.drag_law == "schiller-naumann"
+        solid = self.solid
+        nx, ny = self.nx, self.ny
+        nxy = ny * nx
+        for _ in range(n_sub):
+            if self.px.numel() == 0:
+                return
+            ufx = self._sample_bilinear(ux, self.px, self.py)
+            ufy = self._sample_bilinear(uy, self.px, self.py)
+            tau_p = tau_b[self.pbin]
+            if use_sn:
+                du = torch.sqrt((ufx - self.vx) ** 2 + (ufy - self.vy) ** 2)
+                relax_p = (1.0 + 0.15 * (du * sn_b[self.pbin]).pow(0.687)) * dt_sub / tau_p
+                self.vx += (ufx - self.vx) * relax_p
+                self.vy += (ufy - self.vy) * relax_p
+            else:
+                relax = dt_sub / tau_p
+                self.vx += (ufx - self.vx) * relax
+                self.vy += (ufy - self.vy) * relax
+            ix = self.px.floor().long().clamp(0, nx - 1)
+            iy = self.py.floor().long().clamp(0, ny - 1)
+            new_px = self.px + self.vx * dt_sub
+            new_py = self.py + self.vy * dt_sub
+            nix = new_px.floor().long().clamp(0, nx - 1)
+            niy = new_py.floor().long().clamp(0, ny - 1)
+
+            moved_into_solid = solid[niy, nix]
+            encased = solid[iy, ix] & ~moved_into_solid
+
+            dep_iy = torch.cat([iy[moved_into_solid], iy[encased]])
+            dep_ix = torch.cat([ix[moved_into_solid], ix[encased]])
+            hit = moved_into_solid | encased
+            if hit.any():
+                n_hit = int(hit.sum().item())
+                self.n_impacts += n_hit
+                pb_hit = self.pbin[hit]
+                vals = m_b[pb_hit]
+                flat = dep_iy * nx + dep_ix
+                self.impact_mass.view(-1).index_add_(0, flat, vals)
+                self.impact_mass_bins.view(-1).index_add_(0, pb_hit * nxy + flat, vals)
+                # water ledger: identical origin/cascade rule as _droplet_step
+                origin_solid = solid[dep_iy, dep_ix]
+                self.m_w.view(-1).index_add_(0, flat[~origin_solid], vals[~origin_solid])
+                flat_s = flat[origin_solid]
+                if flat_s.numel():
+                    uniq, inv = torch.unique(flat_s, return_inverse=True)
+                    tot = torch.zeros(
+                        uniq.numel(), dtype=torch.float64, device=self.dev
+                    ).index_add_(0, inv, vals[origin_solid].double())
+                    ys, xs = uniq // nx, uniq % nx
+                    self._cascade_water(list(zip(ys.tolist(), xs.tolist())), tot.tolist())
+
+            left = (
+                (new_px >= self.kill_x)
+                | (new_px > nx - 0.5)
+                | (new_px < -0.5)
+                | (new_py < 0.5)
+                | (new_py > ny - 0.5)
+            )
+            out_mask = left & ~hit
+            if bool(out_mask.any()):
+                self.aud["exited"] += float(m_b[self.pbin[out_mask]].sum().item())
+
+            self.px = new_px
+            self.py = new_py
+            keep = ~(hit | left)
+            self.age = self.age + 1
+            too_old = self.age > self.max_age
+            n_trapped = int((too_old & keep).sum().item())
+            if n_trapped:
+                self.aud["trapped"] += float(m_b[self.pbin[too_old & keep]].sum().item())
+            keep &= ~too_old
+            self.px = self.px[keep]
+            self.py = self.py[keep]
+            self.vx = self.vx[keep]
+            self.vy = self.vy[keep]
+            self.age = self.age[keep]
+            self.pbin = self.pbin[keep]
+
     def _freeze(self) -> int:
         cfg = self.cfg
         freeze = (self.m_w >= cfg.m_cell_ice) & (~self.solid)
@@ -1846,6 +2495,9 @@ class RimeIcingSimulation:
         ``initial_fill``.
         """
         cfg = self.cfg
+        if self.bins is not None:
+            self._init_eulerian_bins(ux, uy)
+            return
         if cfg.prefill_cloud:
             self.alpha = torch.where(
                 self.solid,
@@ -1857,6 +2509,31 @@ class RimeIcingSimulation:
         self.mx = self.alpha * ux
         self.my = self.alpha * uy
         self.aud_e["initial_fill"] = float(self.alpha.double().sum().item()) * cfg.mass_per_lu3
+
+    def _init_eulerian_bins(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
+        """Per-bin alpha cloud init (Phase 2c analog of ``_prefill``).
+
+        Bin ``i`` starts everywhere at ``f_i * alpha_in`` (volume
+        fractions add linearly; the total cloud is exactly ``alpha_in``)
+        with velocities at the local warmed-up flow value.
+        """
+        cfg = self.cfg
+        if cfg.prefill_cloud:
+            fill = torch.tensor(cfg.alpha_in_bins, device=self.dev).view(-1, 1, 1)
+            self.alpha = torch.where(
+                self.solid[None],
+                torch.zeros_like(self.alpha),
+                torch.ones_like(self.alpha) * fill,
+            )
+        else:
+            self.alpha = torch.zeros_like(self.alpha)
+        self.mx = self.alpha * ux[None]
+        self.my = self.alpha * uy[None]
+        for i in range(self.n_bins):
+            self.aud_e_bins[i]["initial_fill"] = (
+                float(self.alpha[i].double().sum().item()) * cfg.mass_per_lu3
+            )
+        self.aud_e["initial_fill"] = math.fsum(b["initial_fill"] for b in self.aud_e_bins)
 
     def _euler_advance(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
         """One Eulerian droplet step + audit/impact accumulation (eager).
@@ -1871,6 +2548,9 @@ class RimeIcingSimulation:
         ``impact_mass_e``).
         """
         cfg = self.cfg
+        if self.bins is not None:
+            self._euler_advance_bins(ux, uy)
+            return
         self.alpha, self.mx, self.my, imp, bflux = self._step_euler(
             self.alpha,
             self.mx,
@@ -1902,6 +2582,89 @@ class RimeIcingSimulation:
             else:
                 self.m_w += dm
 
+    def _euler_advance_warmup(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
+        """Advance the Eulerian cloud one warmup step, ledger-free (IC-D3).
+
+        Identical field mathematics to :meth:`_euler_advance` (the same
+        single call of the compiled unit with identical arguments) but the
+        impact ledger, water ledger and audit accumulators stay untouched:
+        warmup only develops the droplet slip field so the exposure window
+        opens with the cloud in local equilibrium.  Without it the first
+        ``~tau_d_lu`` steps of every shot under-collect (``u_d`` starts at
+        ``u_f``, i.e. zero slip), which made the whole-shot-ledger beta and
+        the Messinger impingement rate depend on the lattice length of the
+        shot.
+        """
+        cfg = self.cfg
+        self.alpha, self.mx, self.my, _imp, _bflux = self._step_euler(
+            self.alpha,
+            self.mx,
+            self.my,
+            ux,
+            uy,
+            self.solid,
+            cfg.tau_d_lu,
+            cfg.re_p_scale,
+            cfg.alpha_in,
+            cfg.u_in,
+            cfg.shadow_alpha_min,
+            cfg.eulerian_scheme == "donor2",
+        )
+
+    def _euler_advance_bins(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
+        """One *per-bin* Eulerian droplet step + audit/impact accumulation.
+
+        Each bin is advanced by the *same* :meth:`_euler_step` compile unit
+        with its own scalars — ``tau_d_lu`` (``d^2`` scaling), the
+        Schiller-Naumann ``re_p_scale`` (bin diameter) and the bin's inlet
+        volume fraction ``f_i * alpha_in`` (shadow threshold scaled the
+        same way, so the shadow mask is bin-invariant in the far field) —
+        so scheme, wall-sink semantics and boundary treatment are
+        identical to the monodisperse phase per bin.  One-way coupling
+        makes the bins independent: total impact = sum of the per-bin
+        ledgers, mass audit closes per bin *and* in total.
+
+        Cost note: a Python loop over ``n_bins`` (typically <= 10)
+        multiplies the Eulerian per-step kernel launches by ``n_bins``;
+        the state stays small (``n_bins * 3 * ny * nx * 4`` B ~ 4 MB at
+        the L1 grid for 7 bins), so the overhead is launch-bound, not
+        memory-bound.  This is the documented price of keeping the scheme
+        and the compile unit byte-identical to the monodisperse phase
+        instead of rewriting a batched 3-D kernel.
+        """
+        cfg = self.cfg
+        for i in range(self.n_bins):
+            self.alpha[i], self.mx[i], self.my[i], imp, bflux = self._step_euler(
+                self.alpha[i],
+                self.mx[i],
+                self.my[i],
+                ux,
+                uy,
+                self.solid,
+                cfg.tau_d_lu_bins[i],
+                cfg.re_p_scale_bins[i],
+                cfg.alpha_in_bins[i],
+                cfg.u_in,
+                cfg.alpha_in_bins[i] * cfg.shadow_alpha_frac,
+                cfg.eulerian_scheme == "donor2",
+            )
+            self._bflux_acc[i] += bflux.double()
+            self._dep_acc[i] += imp.double().sum()
+            dm = imp * cfg.mass_per_lu3
+            self.impact_mass_e_bins[i] += dm
+            self.impact_mass_e += dm  # total ledger, identical convention
+            if cfg.droplet_phase == "eulerian":
+                on_solid = imp * self.solid.to(imp.dtype)
+                if cfg.freeze_in_run and bool((on_solid > 0.0).any()):
+                    # border-ice impingement cascades outward (#84 fix 4),
+                    # same rule as the monodisperse _euler_advance
+                    self.m_w += (imp - on_solid) * cfg.mass_per_lu3
+                    idx = torch.nonzero(on_solid)
+                    vals = on_solid[idx[:, 0], idx[:, 1]] * cfg.mass_per_lu3
+                    self._cascade_water([tuple(c) for c in idx.tolist()], vals.tolist())
+                else:
+                    self.m_w += dm
+
     def _void_encased(self, prev_solid: torch.Tensor) -> None:
         """Remove cloud trapped by fresh ice and audit it (encased).
 
@@ -1912,6 +2675,9 @@ class RimeIcingSimulation:
         arm owns freezing and its own encased parcels already do this).
         """
         newly = self.solid & ~prev_solid
+        if self.bins is not None:
+            self._void_encased_bins(newly)
+            return
         enc = self.alpha * newly
         self._enc_acc += enc.double().sum()
         if self.cfg.droplet_phase == "eulerian" and self.cfg.freeze_in_run:
@@ -1924,6 +2690,25 @@ class RimeIcingSimulation:
         self.alpha = self.alpha * keep
         self.mx = self.mx * keep
         self.my = self.my * keep
+
+    def _void_encased_bins(self, newly: torch.Tensor) -> None:
+        """Per-bin encasement accounting over freshly frozen cells.
+
+        The shared freezer consumes the *total* engulfed cloud water per
+        cell (sum over bins); each bin's alpha audit gets its own share.
+        """
+        enc = self.alpha * newly
+        for i in range(self.n_bins):
+            self._enc_acc[i] += enc[i].double().sum()
+        if self.cfg.droplet_phase == "eulerian" and self.cfg.freeze_in_run:
+            enc_tot = enc.sum(0)
+            enc_kg = enc_tot * self.cfg.mass_per_lu3
+            cells = [tuple(c) for c in torch.nonzero(enc_tot > 0).tolist()]
+            self._cascade_water(cells, enc_kg[enc_tot > 0].tolist())
+        keep = (~newly).to(self.alpha.dtype)
+        self.alpha = self.alpha * keep[None]
+        self.mx = self.mx * keep[None]
+        self.my = self.my * keep[None]
 
     # -- Phase 3: surface stress / edge-velocity sampling -----------------
     def sample_surface_stress(self) -> dict[str, np.ndarray]:
@@ -2014,6 +2799,14 @@ class RimeIcingSimulation:
             f"t_equiv={cfg.t_equiv:.2f} s (target {cfg.t_exposure:.0f} s, "
             f"realtime would need {cfg.t_exposure / cfg.dt_phys:.2e} steps)"
         )
+        if self.bins is not None:
+            log(
+                f"  [icing] mvd_bins: n={self.n_bins} "
+                f"d[um]=[{', '.join(f'{d * 1e6:.1f}' for d, _ in self.bins)}] "
+                f"f=[{', '.join(f'{f:.3f}' for _, f in self.bins)}] "
+                f"mvd_eff={cfg.mvd_eff * 1e6:.2f} um "
+                f"tau_d_lu[{min(cfg.tau_d_lu_bins):.0f}..{max(cfg.tau_d_lu_bins):.0f}]"
+            )
 
         # ---- flow warmup on the clean airfoil ----
         beta_w0_log, beta_w1_log = cfg.beta_window_bounds
@@ -2022,17 +2815,30 @@ class RimeIcingSimulation:
             f"steps [{beta_w0_log}, {beta_w1_log}) "
             f"({'pre-ice reference geometry' if cfg.beta_window_mode == 'clean' else 'iced geometry (legacy)'})"
         )
+        ux_c = torch.full((self.ny, self.nx), cfg.u_in, device=self.dev)
+        uy_c = torch.zeros((self.ny, self.nx), device=self.dev)
+        # IC-D3: co-develop the Eulerian cloud with the warmup flow (the
+        # one-way coupling leaves the flow trajectory bit-identical).
+        warm_drops = (
+            cfg.droplet_warmup
+            and self.use_euler
+            and not cfg.disable_droplets
+            and not cfg.uniform_flow
+        )
+        if warm_drops:
+            self._init_eulerian(ux_c, uy_c)
+            self.log("  [icing-e] droplet warmup: co-advancing cloud through flow warmup")
         if not cfg.uniform_flow:
             for _ in range(cfg.warmup_steps):
                 last = _ == cfg.warmup_steps - 1
                 f_pre = self._flow_step(want_force=last)
                 if last and f_pre is not None:
                     self.cd0, self.cl0 = self._force_coeffs(f_pre)
+                if warm_drops:
+                    _, ux3, uy3, _ = macroscopic3d(self.f)
+                    self._euler_advance_warmup(ux3[0], uy3[0])
             if self.cd0 is not None:
                 log(f"  [icing] warmup done: cd0={self.cd0:.5f} cl0={self.cl0:.5f}")
-
-        ux_c = torch.full((self.ny, self.nx), cfg.u_in, device=self.dev)
-        uy_c = torch.zeros((self.ny, self.nx), device=self.dev)
         # beta window (task #84 fix 1): "clean" = early pre-ice window on the
         # reference geometry (LWC-invariant beta), "trailing" = Phase 2a/2b
         # legacy window on the iced geometry.
@@ -2048,12 +2854,20 @@ class RimeIcingSimulation:
                 ux0, uy0 = ux3[0], uy3[0]
             self._prefill(ux0, uy0)
         if self.use_euler and not cfg.disable_droplets:
-            if cfg.uniform_flow:
-                ux0, uy0 = ux_c, uy_c
+            if warm_drops:
+                # IC-D3: the cloud is already steady from the warmup; audit
+                # its inventory as the window's initial fill instead of
+                # re-initialising (which would reset the developed slip)
+                self.aud_e["initial_fill"] = (
+                    float(self.alpha.double().sum().item()) * cfg.mass_per_lu3
+                )
             else:
-                _, ux3, uy3, _ = macroscopic3d(self.f)
-                ux0, uy0 = ux3[0], uy3[0]
-            self._init_eulerian(ux0, uy0)
+                if cfg.uniform_flow:
+                    ux0, uy0 = ux_c, uy_c
+                else:
+                    _, ux3, uy3, _ = macroscopic3d(self.f)
+                    ux0, uy0 = ux3[0], uy3[0]
+                self._init_eulerian(ux0, uy0)
             self.log(
                 f"  [icing-e] eulerian cloud: alpha_in={cfg.alpha_in:.3e} "
                 f"shadow_min={cfg.shadow_alpha_min:.3e} "
@@ -2094,12 +2908,26 @@ class RimeIcingSimulation:
                 impact_w0 = self.impact_mass.clone()
             if self.use_euler and self.impact_e_w0 is None and step >= beta_w0:
                 self.impact_e_w0 = self.impact_mass_e.clone()
+            if (
+                self.bins is not None
+                and self.use_euler
+                and self.impact_e_w0_bins is None
+                and step >= beta_w0
+            ):
+                self.impact_e_w0_bins = self.impact_mass_e_bins.clone()
             # clean mode ends the ledger window before the run does: the
             # run keeps freezing (ice shape) while beta stays pre-ice.
             if impact_w1 is None and step >= beta_w1:
                 impact_w1 = self.impact_mass.clone()
             if self.use_euler and self.impact_e_w1 is None and step >= beta_w1:
                 self.impact_e_w1 = self.impact_mass_e.clone()
+            if (
+                self.bins is not None
+                and self.use_euler
+                and self.impact_e_w1_bins is None
+                and step >= beta_w1
+            ):
+                self.impact_e_w1_bins = self.impact_mass_e_bins.clone()
 
             if want_force and f_pre is not None:
                 cd, cl = self._force_coeffs(f_pre)
@@ -2120,13 +2948,19 @@ class RimeIcingSimulation:
                     f"impacts={self.n_impacts}"
                 )
                 if self.use_euler:
+                    dep_acc = self._dep_acc.sum() if self.bins is not None else self._dep_acc
                     log(
                         f"  [icing-e] step {step:5d} deposited="
-                        f"{float(self._dep_acc.item()) * cfg.mass_per_lu3:.4e} kg"
+                        f"{float(dep_acc.item()) * cfg.mass_per_lu3:.4e} kg"
                     )
 
         # ---- final audit ----
-        self.aud["airborne"] = float(self.px.numel()) * cfg.m_parcel
+        if self.bins is not None:
+            self.aud["airborne"] = (
+                float(self.m_parcel_bins_t[self.pbin].sum().item()) if self.px.numel() else 0.0
+            )
+        else:
+            self.aud["airborne"] = float(self.px.numel()) * cfg.m_parcel
         self.aud["pending"] = float(self.m_w.double().sum().item())
         # #84 fix 4 decomposition: water still on *fluid* cells is the
         # legitimate sub-cell/in-transit remainder (it keeps collecting and
@@ -2148,7 +2982,55 @@ class RimeIcingSimulation:
 
         # ---- Eulerian alpha-field audit (Phase 2b) ----
         euler_result: dict[str, Any] | None = None
-        if self.use_euler and not cfg.disable_droplets:
+        euler_bins_result: dict[str, Any] | None = None
+        if self.use_euler and not cfg.disable_droplets and self.bins is not None:
+            # Phase 2c: per-bin audits first, then the elementwise-summed
+            # total lands in the standard aud_e slot (same keys as the
+            # monodisperse audit; closure recomputed on the sums)
+            mp_lu3 = cfg.mass_per_lu3
+            for i in range(self.n_bins):
+                a = self.aud_e_bins[i]
+                inlet_raw, outlet_raw, bottom_raw, top_raw = self._bflux_acc[i].tolist()
+                a["inlet_in"] = max(inlet_raw, 0.0) * mp_lu3
+                outlet_in = max(-outlet_raw, 0.0) * mp_lu3
+                a["outlet_out"] = max(outlet_raw, 0.0) * mp_lu3
+                lat_in = (max(bottom_raw, 0.0) + max(-top_raw, 0.0)) * mp_lu3
+                lat_out = (max(-bottom_raw, 0.0) + max(top_raw, 0.0)) * mp_lu3
+                a["lat_in"] = lat_in
+                a["lat_out"] = lat_out
+                a["deposited"] = float(self._dep_acc[i].item()) * mp_lu3
+                a["encased"] = float(self._enc_acc[i].item()) * mp_lu3
+                a["airborne"] = float(self.alpha[i].double().sum().item()) * mp_lu3
+                inflow = a["initial_fill"] + a["inlet_in"] + outlet_in + a["lat_in"]
+                outflow = (
+                    a["deposited"] + a["encased"] + a["outlet_out"] + a["lat_out"] + a["airborne"]
+                )
+                a["outlet_in"] = outlet_in
+                a["closure_error"] = abs(inflow - outflow) / inflow if inflow > 0.0 else 0.0
+            tot = dict(self.aud_e)
+            for key in (
+                "initial_fill",
+                "inlet_in",
+                "lat_in",
+                "deposited",
+                "encased",
+                "outlet_out",
+                "lat_out",
+                "airborne",
+                "outlet_in",
+            ):
+                tot[key] = math.fsum(b[key] for b in self.aud_e_bins)
+            inflow = tot["initial_fill"] + tot["inlet_in"] + tot["outlet_in"] + tot["lat_in"]
+            outflow = (
+                tot["deposited"]
+                + tot["encased"]
+                + tot["outlet_out"]
+                + tot["lat_out"]
+                + tot["airborne"]
+            )
+            tot["closure_error"] = abs(inflow - outflow) / inflow if inflow > 0.0 else 0.0
+            self.aud_e.update(tot)
+        if self.use_euler and not cfg.disable_droplets and self.bins is None:
             mp_lu3 = cfg.mass_per_lu3
             inlet_raw, outlet_raw, bottom_raw, top_raw = self._bflux_acc.tolist()
             # face fluxes are positive along +axis: bottom(+y)=in, top(+y)=out
@@ -2181,14 +3063,27 @@ class RimeIcingSimulation:
         # ---- beta + metrics ----
         airfoil_np = self.airfoil.cpu().numpy()
         solid_np = self.solid.cpu().numpy()
-        s_grid, stag, _surf = surface_arc_length(airfoil_np)
+        s_grid, stag, _surf = surface_arc_length(
+            airfoil_np, fix_stag_row_signs=cfg.surface_arc_sign_fix
+        )
         dm = self.impact_mass.clone()
-        if impact_w1 is not None:
-            dm = impact_w1.clone()
-        if impact_w0 is not None:
-            dm = dm - impact_w0
-        # lattice time of the beta window (acceleration cancels, see docstring)
-        t_win = (beta_w1 - beta_w0) * cfg.dt_phys
+        # IC-D3 fix: the glaze whole-shot convention (trailing mode with
+        # beta_window_frac = 0) yields an EMPTY differencing window
+        # (w0 == w1 == steps), so the module reported beta == 0 (empty
+        # curve) for exactly the configs run_glaze_icing drives -- run
+        # scripts had to hand-roll the normalisation (the IC-C pilot used
+        # the un-pinned cfg.lwc_eff, a factor-2 beta error).  Fall back to
+        # the full-shot ledger with the whole-shot lattice time; the
+        # normalisation convention is identical (acceleration cancels).
+        if beta_w1 > beta_w0:
+            if impact_w1 is not None:
+                dm = impact_w1.clone()
+            if impact_w0 is not None:
+                dm = dm - impact_w0
+            # lattice time of the beta window (acceleration cancels, docstring)
+            t_win = (beta_w1 - beta_w0) * cfg.dt_phys
+        else:
+            t_win = cfg.steps * cfg.dt_phys
         beta = collection_efficiency_curve(
             s_grid,
             dm.cpu().numpy(),
@@ -2203,10 +3098,11 @@ class RimeIcingSimulation:
         )
         if euler_result is not None or (self.use_euler and not cfg.disable_droplets):
             dm_e = self.impact_mass_e.clone()
-            if self.impact_e_w1 is not None:
-                dm_e = self.impact_e_w1.clone()
-            if self.impact_e_w0 is not None:
-                dm_e = dm_e - self.impact_e_w0
+            if beta_w1 > beta_w0:  # IC-D3: skip differencing on an empty window
+                if self.impact_e_w1 is not None:
+                    dm_e = self.impact_e_w1.clone()
+                if self.impact_e_w0 is not None:
+                    dm_e = dm_e - self.impact_e_w0
             beta_e = collection_efficiency_curve(
                 s_grid,
                 dm_e.cpu().numpy(),
@@ -2217,14 +3113,52 @@ class RimeIcingSimulation:
                 t_win,
             )
             beta_e_grid = (dm_e / (cfg.lwc_eff * cfg.v_inf * cfg.dx_phys**2 * t_win)).cpu().numpy()
+            alpha_e_np = (
+                self.alpha.sum(0).cpu().numpy()
+                if self.bins is not None
+                else self.alpha.cpu().numpy()
+            )
             euler_result = {
-                "alpha": self.alpha.cpu().numpy(),
+                "alpha": alpha_e_np,
                 "impact_mass": self.impact_mass_e.cpu().numpy(),
                 "beta": beta_e,
                 "beta_grid": beta_e_grid,
                 "audit": dict(self.aud_e),
                 "alpha_in": cfg.alpha_in,
             }
+            if self.bins is not None:
+                # per-bin window ledger -> per-bin beta curves (normalised
+                # against the *total* streamtube, so the per-bin betas sum
+                # to the mixture beta above)
+                dmb = self.impact_mass_e_bins.clone()
+                if self.impact_e_w1_bins is not None:
+                    dmb = self.impact_e_w1_bins.clone()
+                if self.impact_e_w0_bins is not None:
+                    dmb = dmb - self.impact_e_w0_bins
+                euler_bins_result = {
+                    "diameters": [d for d, _ in self.bins or ()],
+                    "fractions": [f for _, f in self.bins or ()],
+                    "alpha": self.alpha.cpu().numpy(),  # (n_bins, ny, nx)
+                    "alpha_in": list(cfg.alpha_in_bins),
+                    "impact_mass": self.impact_mass_e_bins.cpu().numpy(),
+                    "impact_mass_window": dmb.cpu().numpy(),
+                    "beta": [
+                        collection_efficiency_curve(
+                            s_grid,
+                            dmb[i].cpu().numpy(),
+                            cfg.lwc_eff,
+                            cfg.v_inf,
+                            cfg.dx_phys,
+                            cfg.chord_phys,
+                            t_win,
+                        )
+                        for i in range(self.n_bins)
+                    ],
+                    "beta_grid": (dmb / (cfg.lwc_eff * cfg.v_inf * cfg.dx_phys**2 * t_win))
+                    .cpu()
+                    .numpy(),
+                    "audit": [dict(b) for b in self.aud_e_bins],
+                }
         impact_np = self.impact_mass.cpu().numpy()
         if impact_np.any():
             metrics["max_impact_x_frac"] = float(
@@ -2233,6 +3167,18 @@ class RimeIcingSimulation:
         cd_drift = None
         if self.cd0 is not None and self.cd_end is not None and self.cd0 != 0:
             cd_drift = 100.0 * (self.cd_end - self.cd0) / self.cd0
+
+        bins_result: dict[str, Any] | None = None
+        if self.bins is not None:
+            bins_result = {
+                "diameters": [d for d, _ in self.bins],
+                "fractions": [f for _, f in self.bins],
+                "seeded_mass": list(self.bin_seeded),
+                "seeded_total_kg": self.aud["seeded"],
+                "tau_d_lu": list(cfg.tau_d_lu_bins),
+                "impact_mass": self.impact_mass_bins.cpu().numpy() if self.use_lagr else None,
+                "eulerian": euler_bins_result,
+            }
 
         return {
             "config": cfg,
@@ -2257,6 +3203,7 @@ class RimeIcingSimulation:
             "cd_drift_pct": cd_drift,
             "n_impacts": self.n_impacts,
             "eulerian": euler_result,
+            "bins": bins_result,
         }
 
 
@@ -2526,7 +3473,7 @@ def build_surface_panels(
     the lattice window time *and* the LWC acceleration — the acceleration
     cancels exactly, so ``m_imp`` is the real-LWC flux.  ``beta`` is the
     diagnostic normalisation against ``LWC V A`` with the panel area from
-    its deposit-cell count.
+    its surface-cell count (IC-D3: the wetted strip, not the deposit ring).
     """
     w = cfg.glaze_panel_cells
     dx = cfg.dx_phys
@@ -2581,6 +3528,30 @@ def build_surface_panels(
     np.add.at(s_sum, di, s_grid[dep_y, dep_x] if len(dep_y) else np.zeros(0))
     n_sf = np.zeros(n, dtype=int)
     np.add.at(n_sf, si, 1)
+
+    # IC-D3 runback-credit fix (found in D2+D3 integration): wetted-strip
+    # panels downstream of the impingement limit (n_sf > 0, n_dep == 0)
+    # freeze runback water but had NO deposit cells, so their m_ice never
+    # reached the deposit and the render lost exactly the runback-only
+    # freezing (credit < frozen by it -- invisible pre-D2 because the
+    # legacy drop strands sub-voxel mass anyway).  Credit those panels
+    # uniformly over their surface cells: the deposit freezer cascades
+    # solid-cell water to the outward growth frontier (the #84 fix 4
+    # rule), so runback ice accretes ON the wetted surface, as it does
+    # physically.  Panels with deposit cells are untouched (weights,
+    # areas and D3-verified panel numbers unchanged).
+    sf_only = (n_dep == 0) & (n_sf > 0)
+    if bool(sf_only.any()):
+        sel = np.isin(p_sf, ids[sf_only])
+        dep_mask[sf_y[sel], sf_x[sel]] = True
+        dep_y, dep_x = np.nonzero(dep_mask)
+        p_dep = np.rint(s_grid[dep_y, dep_x] / w).astype(int)
+        di = np.searchsorted(ids, p_dep)
+        n_dep = np.zeros(n, dtype=int)
+        np.add.at(n_dep, di, 1)
+        s_sum = np.zeros(n)
+        np.add.at(s_sum, di, s_grid[dep_y, dep_x])
+
     v_sum = np.zeros(n)
     if len(sf_y):
         np.add.at(v_sum, si, stress["v_e"][sf_y, sf_x])
@@ -2593,7 +3564,14 @@ def build_surface_panels(
     # second listing of the impact cells, which would double the per-cell
     # ice density in the driver's np.add.at credit
     s_m = np.where(n_dep > 0, s_sum / np.maximum(n_dep, 1), ids * w) * dx
-    area = n_dep * dx * dx
+    # IC-D3 fix: the Messinger control volume is a strip of the WETTED
+    # SURFACE, so its area is the panel's surface-cell count (arc width w
+    # cells x dx depth), not the deposit-ring count.  The deposit ring
+    # (boundary fluid cells) double-covers thin regions -- both faces of a
+    # 2-cell-thick leading edge -- inflating the panel area up to ~4x,
+    # which diluted the reported beta by the same factor and over-cooled
+    # the energy balance (h*A and evaporation with the ring area).
+    area = np.where(n_sf > 0, n_sf, n_dep) * dx * dx
     m_imp_kgs = m_ledger / (t_window * lwc_accel) if (t_window * lwc_accel) > 0 else np.zeros(n)
     v_e = np.where(n_sf > 0, v_sum / np.maximum(n_sf, 1), cfg.v_inf)
     tau_sampled = np.where(n_sf > 0, tau_sum / np.maximum(n_sf, 1), 0.0)
@@ -2642,6 +3620,8 @@ def build_surface_panels(
         "v_e": v_e,
         "tau_t": tau_t,
         "tau_sampled_pa": tau_sampled,
+        "n_dep_cells": n_dep,
+        "n_sf_cells": n_sf,
         "dep_y": dep_y.astype(int),
         "dep_x": dep_x.astype(int),
         "dep_p": pj.astype(int),
@@ -2747,7 +3727,8 @@ def solve_glaze_surface(cfg: IcingConfig, panels: dict[str, Any], dt: float) -> 
     if cfg.glaze_rho_mode == "const":
         rho_ice = np.full(n, float(cfg.rho_rime))
     else:
-        rho_ice = np.array([rime_density_macklin(cfg.mvd, cfg.v_inf, t) for t in t_s])
+        # mass-mean diameter with mvd_bins (Phase 2c precedence rule)
+        rho_ice = np.array([rime_density_macklin(cfg.mvd_eff, cfg.v_inf, t) for t in t_s])
     with np.errstate(divide="ignore", invalid="ignore"):
         thickness = np.where(area > 0, m_ice * dt / (rho_ice * np.maximum(area, 1e-30)), 0.0)
     q_span = m_out / (cfg.rho_water * cfg.dx_phys)  # m^2/s per unit span
@@ -2814,7 +3795,9 @@ def deposit_glaze_ice(
     cell_rho_ice: np.ndarray,
     dx_phys: float,
     max_passes: int = 4096,
-) -> tuple[np.ndarray, np.ndarray]:
+    ice_mass: np.ndarray | None = None,
+    flush: bool = False,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Credit water to cells, then freeze columns growing outward.
 
     Per panel the frozen mass is credited to the panel's deposit cells
@@ -2823,14 +3806,54 @@ def deposit_glaze_ice(
     cell's worth of ice; the leftover water cascades to the outward
     4-neighbour (largest distance-from-airfoil), building columns normal
     to the surface — the same per-cell ledger semantics as the Phase 2a
-    freezer, so in the rime limit the frozen set matches.  Returns the
-    updated ``(solid, m_w)``; the pending sub-cell remainder stays liquid.
+    freezer, so in the rime limit the frozen set matches.  The pending
+    sub-cell remainder stays liquid and is carried across shots by the
+    caller (:func:`run_glaze_icing` threads ``m_w``).
+
+    ``ice_mass`` is the exact per-cell ice-mass ledger [kg], threaded
+    across calls by the driver: a fully frozen cell holds exactly
+    ``rho_ice dx^3``.  ``flush=True`` (the end-of-exposure settle of
+    ``deposit_remainder='carry'``) converts every frontier tip's pending
+    sub-cell water into ice bookkeeping at its exact mass — the tip
+    joins the voxel mask when its fill fraction is at least half a cell
+    (nearest-cell rounding of the geometry), otherwise it stays
+    sub-voxel ice mass in the ledger — so ``ice_mass.sum()`` reproduces
+    the credited (frozen) mass to machine precision; without the flush
+    the sub-cell floor strands as liquid (``m_w``), which is the legacy
+    ``deposit_remainder='drop'`` behaviour.  Returns the updated
+    ``(solid, m_w, ice_mass)``.
     """
     solid = solid.copy()
     cell_rho_ice = cell_rho_ice.copy()
     m_w = m_w + cell_mass
+    if ice_mass is None:
+        ice_mass = np.zeros_like(m_w)
+    else:
+        ice_mass = ice_mass.copy()
     ny, nx = solid.shape
     dist = _bfs_distance_cells(airfoil)
+
+    # Water credited to (or engulfed by) solid cells can never freeze
+    # there — cascade it to the outward fluid 4-neighbour, the same rule
+    # the Phase 2a freezer uses (#84 fix 4); a fully enclosed cell keeps
+    # its water (the driver reports it as pending liquid).  The column
+    # keeps its panel ice density.
+    ys, xs = np.nonzero(solid & (m_w > 0.0))
+    for y, x in zip(ys.tolist(), xs.tolist()):
+        best, bd = None, -1
+        for dy, dxn in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            yy, xx = y + dy, x + dxn
+            if 0 <= yy < ny and 0 <= xx < nx and not solid[yy, xx]:
+                d = int(dist[yy, xx])
+                if d > bd:
+                    bd, best = d, (yy, xx)
+        if best is None:
+            continue
+        m_w[best] += m_w[y, x]
+        m_w[y, x] = 0.0
+        if cell_rho_ice[best] <= 0.0 < cell_rho_ice[y, x]:
+            cell_rho_ice[best] = cell_rho_ice[y, x]
+
     m_cell = np.where(cell_rho_ice > 0.0, cell_rho_ice * dx_phys**3, np.inf)
 
     for _ in range(max_passes):
@@ -2843,6 +3866,7 @@ def deposit_glaze_ice(
         rho_src = cell_rho_ice[ys, xs]
         solid[ys, xs] = True
         m_w[ys, xs] = 0.0
+        ice_mass[ys, xs] += m_cell[ys, xs]
         for y, x, lm, lr in zip(ys.tolist(), xs.tolist(), leftover.tolist(), rho_src.tolist()):
             if lm <= 0.0:
                 continue
@@ -2859,7 +3883,25 @@ def deposit_glaze_ice(
                 if cell_rho_ice[best] <= 0.0:
                     cell_rho_ice[best] = lr
                     m_cell[best] = lr * dx_phys**3
-    return solid, m_w
+            else:
+                # no fluid 4-neighbour (domain edge / fully enclosed): the
+                # leftover stays at the cell as pending liquid — it is
+                # reported by the driver, never silently dropped (IC-D2)
+                m_w[y, x] = lm
+    if flush:
+        bf = ~solid & _dilate4(torch.from_numpy(solid)).numpy()
+        settle = (m_w > 0.0) & np.isfinite(m_cell)
+        ys, xs = np.nonzero(settle)
+        if ys.size:
+            fill = m_w[ys, xs] / m_cell[ys, xs]
+            ice_mass[ys, xs] += m_w[ys, xs]
+            # nearest-cell rounding, surface-attached only: a frontier tip
+            # at >= half a cell joins the voxel mask; sub-half tips, fluid
+            # cells off the growth frontier and water trapped inside the
+            # accretion settle as exact sub-voxel ice mass
+            solid[ys, xs] = solid[ys, xs] | (bf[ys, xs] & (fill >= 0.5))
+            m_w[ys, xs] = 0.0
+    return solid, m_w, ice_mass
 
 
 def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[str, Any]:
@@ -2876,7 +3918,14 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
     the surface.  The droplet run stays LWC-accelerated (exact for the
     trajectory/beta physics); the acceleration is pinned per shot so the
     ledger corresponds to exactly ``dt_shot`` of physical cloud exposure
-    — the thermodynamics never sees the acceleration.
+    — the thermodynamics never sees the acceleration.  With the default
+    ``deposit_remainder='carry'`` the last shot additionally settles the
+    sub-cell remainders: frontier tips at >= half a cell join the voxel
+    mask and every tip's exact mass goes into the ``ice_mass`` ledger, so
+    ``audit['rendered_mass_kg'] == audit['frozen'] - pending liquid`` and
+    the rendered/frozen ratio reported in the metrics is ~1.0; the audit
+    totals themselves are mode-independent (the settle happens after the
+    last panel solve and never feeds back into the flow).
     """
     if cfg.thermo_model != "messinger":
         raise ValueError(
@@ -2894,9 +3943,11 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
 
     totals = {"impacted": 0.0, "frozen": 0.0, "evaporated": 0.0, "runback_out": 0.0}
     shot_reports: list[dict[str, Any]] = []
+    beta_curves: list[dict[str, np.ndarray]] = []
     airfoil_np: np.ndarray | None = None
     solid_np: np.ndarray | None = None
     m_w: np.ndarray | None = None
+    ice_mass: np.ndarray | None = None
     res: dict[str, Any] | None = None
     sol: dict[str, Any] | None = None
     panels: dict[str, Any] | None = None
@@ -2908,6 +3959,15 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
             beta_window_mode="trailing",  # glaze: whole shot is the beta window
             beta_window_frac=0.0,
             accel_override=accel,  # ledger == dt_shot of physical exposure
+            # IC-D3: develop the cloud through the warmup so the whole-shot
+            # ledger is the steady impingement rate (no tau_d startup
+            # deficit) -- beta and the Messinger water feed become
+            # independent of the shot lattice length.
+            droplet_warmup=True if cfg.droplet_phase in ("eulerian", "both") else False,
+            # IC-D3: resolve the stag-row sign degeneracy (see
+            # surface_arc_length) so the stagnation beta bin and thermo
+            # panel are not polluted by far-field same-row cells.
+            surface_arc_sign_fix=True,
         )
         sim = RimeIcingSimulation(shot_cfg, log=log)
         if solid_np is not None:
@@ -2919,8 +3979,12 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         s_grid = res["s_grid"]
         if cfg.droplet_phase in ("eulerian", "both"):
             ledger = res["eulerian"]["impact_mass"]
+            # IC-D3: the module-reported whole-shot beta curve (empty-window
+            # fallback inside run(), acceleration-cancelling normalisation)
+            beta_curves.append(res["eulerian"]["beta"])
         else:
             ledger = res["impact_mass"]
+            beta_curves.append(res["beta"])
 
         stress = sim.sample_surface_stress()
         panels = build_surface_panels(
@@ -2937,14 +4001,25 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         # per-cell credit from the panel solution
         if m_w is None:
             m_w = np.zeros_like(solid_np, dtype=np.float64)
+            ice_mass = np.zeros_like(m_w)
         cell_mass = np.zeros_like(m_w)
         cell_rho = np.zeros_like(m_w)
         if panels["n_panels"] > 0:
             dm = sol["m_ice_kg"][panels["dep_p"]] * panels["dep_w"]
             np.add.at(cell_mass, (panels["dep_y"], panels["dep_x"]), dm)
             np.add.at(cell_rho, (panels["dep_y"], panels["dep_x"]), sol["rho_ice"][panels["dep_p"]])
-        solid_np, m_w = deposit_glaze_ice(
-            airfoil_np, solid_np, m_w, cell_mass, cell_rho, cfg.dx_phys
+        solid_np, m_w, ice_mass = deposit_glaze_ice(
+            airfoil_np,
+            solid_np,
+            m_w,
+            cell_mass,
+            cell_rho,
+            cfg.dx_phys,
+            ice_mass=ice_mass,
+            # IC-D2: settle the sub-cell remainders into the voxel mask +
+            # exact mass ledger at the end of the exposure ('carry');
+            # 'drop' keeps the legacy never-rendered pending liquid
+            flush=(cfg.deposit_remainder == "carry" and k == shots - 1),
         )
 
         for key in totals:
@@ -2958,6 +4033,8 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
                 "t_s_min_c": float(sol["t_s_c"].min()) if len(sol["t_s_c"]) else 0.0,
                 "frozen_kg": sol["audit"]["frozen"],
                 "runback_out_kg": sol["audit"]["runback_out"],
+                "rendered_kg": float(ice_mass.sum()),
+                "pending_kg": float(m_w.sum()),
             }
         )
         log(
@@ -2970,6 +4047,7 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
 
     assert res is not None and airfoil_np is not None and solid_np is not None
     assert sol is not None and panels is not None and m_w is not None
+    assert ice_mass is not None
     impacted = totals["impacted"]
     closure = (
         abs(impacted - totals["frozen"] - totals["evaporated"] - totals["runback_out"]) / impacted
@@ -2978,23 +4056,53 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
     )
     audit = dict(totals)
     audit["closure_error"] = closure
+    # IC-D2 deposit-mass accounting: rendered = mass actually settled into
+    # the ice ledger (full voxels + sub-voxel flush remainders); pending =
+    # water still liquid (unflushed 'drop' mode, or stranded off-frontier /
+    # on solid cells where it can never freeze).  rendered + pending
+    # reproduces the audit 'frozen' exactly.
+    audit["rendered_mass_kg"] = float(ice_mass.sum())
+    audit["pending_liquid_kg"] = float(m_w.sum())
+    audit["rendered_over_frozen"] = (
+        audit["rendered_mass_kg"] / totals["frozen"] if totals["frozen"] > 0.0 else 0.0
+    )
 
     ice_only = solid_np & ~airfoil_np
     metrics = ice_shape_metrics(
         airfoil_np, solid_np, cfg.dx_phys, cfg.chord_phys, cfg.chord_lu, res["stag"]
     )
+    # mass-equivalent metrics at the config reference accretion density
+    # (exact for glaze_rho_mode='const'; for 'macklin-ts' an indicative
+    # conversion — the exact statement is rendered_mass_kg itself)
+    metrics["rendered_mass_kg"] = audit["rendered_mass_kg"]
+    metrics["rendered_over_frozen"] = audit["rendered_over_frozen"]
+    metrics["mass_equiv_ice_cells"] = audit["rendered_mass_kg"] / cfg.m_cell_ice
+    metrics["mass_equiv_ice_area_m2"] = audit["rendered_mass_kg"] / (cfg.rho_rime_eff * cfg.dx_phys)
     if len(sol["thickness_m"]):
-        i_stag = int(np.argmin(np.abs(sol["s_m"])))
-        metrics["stag_ice_thickness_m"] = float(sol["thickness_m"][i_stag])
+        # IC-D3 fix: sample the stagnation metrics at the impingement peak
+        # (the water-catch maximum = the flow stagnation line), not at the
+        # geometric LE cell (argmin|s|).  At AoA != 0 the geometric LE sits
+        # away from the flow stagnation point: it collects far less water
+        # at the *maximum* Frossling h, so sampling there classified every
+        # temperature of the RG-15 ladder as rime.  The geometric-LE values
+        # stay available under the *_le keys.
+        i_peak = int(np.argmax(panels["m_imp_kg_s"]))
+        i_le = int(np.argmin(np.abs(sol["s_m"])))
+        metrics["stag_ice_thickness_m"] = float(sol["thickness_m"][i_peak])
+        metrics["n_f_stag"] = float(sol["n_f"][i_peak])
+        metrics["n_f_stag_panel_s_over_c"] = float(sol["s_m"][i_peak] / cfg.chord_phys)
+        metrics["n_f_le"] = float(sol["n_f"][i_le])
+        metrics["le_ice_thickness_m"] = float(sol["thickness_m"][i_le])
         j = int(np.argmax(sol["thickness_m"]))
         metrics["max_thickness_m"] = float(sol["thickness_m"][j])
         metrics["max_thickness_s_over_c"] = float(sol["s_m"][j] / cfg.chord_phys)
-        metrics["n_f_stag"] = float(sol["n_f"][i_stag])
     log(
         f"  [glaze] done: {int(ice_only.sum())} ice cells "
         f"({metrics.get('stag_ice_thickness_m', 0.0) * 1e3:.2f} mm at stagnation, "
         f"max {metrics.get('max_thickness_m', 0.0) * 1e3:.2f} mm at "
         f"s/c={metrics.get('max_thickness_s_over_c', 0.0):+.3f}); "
+        f"rendered/frozen {audit['rendered_over_frozen']:.6f} "
+        f"(pending liquid {audit['pending_liquid_kg']:.3e} kg); "
         f"audit closure {closure * 100:.4f} %"
     )
     return {
@@ -3006,6 +4114,15 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
         "solid": solid_np,
         "ice_only": ice_only,
         "m_w": m_w,
+        "ice_mass": ice_mass,
+        # IC-D3: canonical collection efficiency of the run = the shot-1
+        # (clean reference geometry) whole-shot beta curve, reported by the
+        # module itself (acceleration cancels).  beta is a property of
+        # flow + geometry + droplet inertia only: later shots measure on
+        # the iced geometry (per-shot curves in beta_curve_shots) and must
+        # not be quoted as the case beta.
+        "beta_curve": beta_curves[0] if beta_curves else {},
+        "beta_curve_shots": beta_curves,
         "mapping": cfg.mapping_report(),
         "panels": {
             "s_over_c": sol["s_m"] / cfg.chord_phys,

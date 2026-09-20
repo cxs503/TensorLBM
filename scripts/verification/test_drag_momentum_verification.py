@@ -25,7 +25,7 @@ Main loop (verified-correct):
   collide → NoDynamics → BB → [compute MEM here] → (body force) → stream → BC
 
 Usage:
-  PYTHONPATH=src python tests/test_drag_momentum_verification.py
+  PYTHONPATH=src python scripts/verification/test_drag_momentum_verification.py
 """
 
 import sys

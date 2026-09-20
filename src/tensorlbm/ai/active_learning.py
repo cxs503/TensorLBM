@@ -69,7 +69,10 @@ from .drag_cond import (
     SuboffGrid,
     condition_v3,
     condition_v5,
+    condition_v6,
+    hullform_axis_channel,
     sail_axial_channel,
+    sail_axial_quad_channel,
 )
 from .inference_service import (
     FLAG_REJECT,
@@ -102,6 +105,7 @@ __all__ = [
     "axes_envelope",
     "corpus_cond_v3",
     "corpus_cond_v5",
+    "corpus_cond_v6",
     "corpus_design_keys",
     "corpus_param_keys",
     "corpus_point_keys",
@@ -112,6 +116,7 @@ __all__ = [
     "hullform_component_counts",
     "hullform_condition_rows",
     "hullform_condition_rows_v5",
+    "hullform_condition_rows_v6",
     "hullform_geo_block",
     "labels_from_cache",
     "load_corpus_index",
@@ -325,6 +330,33 @@ def hullform_condition_rows_v5(
     base = hullform_condition_rows(params, re_list, grid=grid, u_in=u_in)
     col = sail_axial_channel(float(params.get("sail_x_mult", 1.0)))
     return np.concatenate([base, np.full((base.shape[0], 1), float(col))], axis=1)
+
+
+def hullform_condition_rows_v6(
+    params: dict[str, Any],
+    re_list: Sequence[float] | np.ndarray,
+    grid: SuboffGrid = PRODUCTION_GRID,
+    u_in: float | None = None,
+) -> np.ndarray:
+    """(N, 13) condition_v6 rows of a design over ``re_list`` (B4 v6).
+
+    Same construction as :func:`hullform_condition_rows_v5` plus the four
+    v6 channels from the design's hull-form axis multipliers (defaults
+    1.0 = mother, all four channels exactly 0.0 — so a mother design
+    serves bit-identically under ``cond_version="v6"`` and ``"v5"``).
+    Column order follows :data:`.drag_cond.COND_V6_CHANNEL_NAMES`: the
+    v5 block, then ``log10(sail_x_mult)**2``, then
+    ``log10(l_over_d_mult)`` / ``log10(nose_len_mult)`` /
+    ``log10(stern_len_mult)``.
+    """
+    base = hullform_condition_rows_v5(params, re_list, grid=grid, u_in=u_in)
+    cols = [sail_axial_quad_channel(float(params.get("sail_x_mult", 1.0)))]
+    cols += [
+        hullform_axis_channel(float(params.get(axis, 1.0)))
+        for axis in ("l_over_d_mult", "nose_len_mult", "stern_len_mult")
+    ]
+    extra = np.stack([np.full(base.shape[0], float(c), dtype=np.float64) for c in cols], axis=1)
+    return np.concatenate([base, extra], axis=1)
 
 
 # ---------------------------------------------------------------------------
@@ -873,6 +905,26 @@ def corpus_cond_v5(index: dict[str, np.ndarray]) -> np.ndarray:
     return condition_v5(index["re"], index["uin"], index["sail"], index["fin"], index["geo"], mult)
 
 
+def corpus_cond_v6(index: dict[str, np.ndarray]) -> np.ndarray:
+    """(N, 13) condition_v6 matrix of a corpus (v5 block + the 4 v6 channels).
+
+    The axis multipliers come from the corpus's hull-form axis columns
+    (``sail_x_mult`` populated by :func:`augment_corpus`, the others by the
+    fragment loaders); a corpus without a column is entirely mother on
+    that axis, so the channel is all zeros (mother encodes as exactly
+    0.0 — matching the v5 matrix the v5 protocol produced, which is the
+    bit-identical 9-column prefix of this one).
+    """
+    n = len(index["re"])
+    mults = []
+    for axis in ("sail_x_mult", "l_over_d_mult", "nose_len_mult", "stern_len_mult"):
+        col = index.get(axis)
+        mults.append(np.ones(n) if col is None else np.asarray(col, dtype=np.float64))
+    return condition_v6(
+        index["re"], index["uin"], index["sail"], index["fin"], index["geo"], *mults
+    )
+
+
 def corpus_param_keys(index: dict[str, np.ndarray]) -> list[str]:
     """Row keys ``re|uin|sail|fin|hull`` (the serving split group key)."""
     return [
@@ -989,6 +1041,191 @@ def augment_corpus(
         out[k] = np.concatenate([base, stacked.astype(base.dtype, copy=False)], axis=0)
     if len(out["cd"]) != n0 + len(points):
         raise AssertionError("row count mismatch after augmentation")
+    return out
+
+
+# ---------------------------------------------------------------------------
+# B4-fam corpus fragment (v5 fam arms, 2026-08-28)
+# ---------------------------------------------------------------------------
+
+#: Canonical hull-form axes of the B4-fam family corpus
+#: (``scan_suboff_hullform_20260824``, 4 families x 28 LHS Re).  Keys are
+#: the integer ``fam`` labels of ``cache_fam.npz``; every row of a family
+#: carries exactly these multipliers (validated by :func:`load_fam_fragment`
+#: against the per-row meta, so a regenerated cache cannot silently drift).
+FAM_AXIS_VALUES: dict[int, dict[str, float]] = {
+    6: {"l_over_d_mult": 1.30},  # fam_slender
+    7: {"l_over_d_mult": 0.75},  # fam_blunt
+    8: {"nose_len_mult": 1.30},  # fam_long_nose
+    9: {"sail_x_mult": 1.30},  # fam_aft_sail
+}
+
+#: Family names of :data:`FAM_AXIS_VALUES` (reporting only).
+FAM_NAMES: dict[int, str] = {
+    6: "fam_slender",
+    7: "fam_blunt",
+    8: "fam_long_nose",
+    9: "fam_aft_sail",
+}
+
+
+def load_fam_fragment(
+    cache_path: str | Path,
+    meta_path: str | Path | None = None,
+    *,
+    fam_labels: Sequence[int] = (6, 7, 8, 9),
+    grid: SuboffGrid = PRODUCTION_GRID,
+) -> dict[str, np.ndarray]:
+    """Convert B4-fam family rows to the v4 corpus schema (``geo`` from CAD).
+
+    The fam cache (``cache_fam.npz``) stores a GENERALISED geometry block
+    ``geom (N, 4)`` — log10 area/volume ratios against the mother mask,
+    deliberately CAD-predicate-free — and has no ``geo`` key, so its rows
+    cannot enter the v3/v5 corpus path directly.  This function rebuilds
+    the v3 block with :func:`hullform_geo_block` under each family's
+    :class:`~tensorlbm.suboff_cad.SuboffConfig` (the same construction
+    :func:`augment_corpus` uses for acquired points) and emits the v4
+    schema plus the v5 ``sail_x_mult`` column:
+
+    - ``geo`` — CAD-rebuilt v3 block (aft_sail is a pure sail translation,
+      so its block is bit-identical to the mother's — the axis lives ONLY
+      in ``sail_x_mult`` / the v5 channel, by construction);
+    - ``sail_x_mult`` — the family's axial multiplier (1.3 for aft_sail,
+      1.0 for the hull-form families);
+    - ``dsi`` — the raw ``fam`` label (a placeholder; :func:`append_fam_fragment`
+      remaps it above the target corpus's max ``dsi``).
+
+    Rows are selected by ``fam_labels`` (e.g. ``(9,)`` = aft_sail only)
+    in cache order.  Base rows (``fam = -1``) are never selected: they are
+    the v2 corpus, already inside ``cache_v4.npz``.  ``meta_path`` lists
+    the family block only (112 rows, one per family row, pinned to the
+    cache by Re agreement) and carries the per-row hull-form multipliers
+    the CAD rebuild needs.
+    """
+    z = np.load(Path(cache_path))
+    if meta_path is None:
+        meta_path = Path(cache_path).with_name("cache_fam_meta.json")
+    meta = json.loads(Path(meta_path).read_text())
+    fam = np.asarray(z["fam"])
+    fam_rows = [i for i in range(len(fam)) if int(fam[i]) != -1]
+    if len(fam_rows) != len(meta):
+        raise ValueError(
+            f"cache has {len(fam_rows)} family rows but meta has {len(meta)}; "
+            "the meta lists the family block only (base rows are the v2 corpus)"
+        )
+    # meta[k] is row fam_rows[k] of the cache (build_cache_fam writes the
+    # family block as one contiguous append; pinned by re/cd agreement)
+    for k, i in enumerate(fam_rows):
+        if abs(float(meta[k]["re"]) - float(z["re"][i])) > 1e-9 * max(
+            1.0, abs(float(meta[k]["re"]))
+        ):
+            raise ValueError(f"meta row {k} (re={meta[k]['re']}) does not match cache row {i}")
+    if not np.isin(fam, list(fam_labels)).any():
+        raise ValueError(f"cache {cache_path} has no rows with fam in {tuple(fam_labels)}")
+    unknown = sorted(set(np.unique(fam).tolist()) - {-1} - set(FAM_AXIS_VALUES))
+    if unknown:
+        raise ValueError(f"unknown fam labels {unknown}; known {sorted(FAM_AXIS_VALUES)}")
+    meta_of = {i: meta[k] for k, i in enumerate(fam_rows)}
+    rows = [i for i in fam_rows if int(fam[i]) in set(fam_labels)]
+    n = len(rows)
+    geo = np.empty((n, 4), dtype=np.float64)
+    comp = {
+        k: np.empty(n, dtype=np.int64)
+        for k in ("v_sail", "v_fin", "v_solid", "aproj_cad", "aproj_bare")
+    }
+    mults = {a: np.empty(n, dtype=np.float64) for a in HULLFORM_AXES}
+    for j, i in enumerate(rows):
+        m = meta_of[i]
+        label = int(fam[i])
+        axes = {a: float(m[a]) for a in HULLFORM_AXES}
+        canon = {a: 1.0 for a in HULLFORM_AXES}
+        canon.update(FAM_AXIS_VALUES[label])
+        if {a: round(v, 9) for a, v in axes.items()} != {a: round(v, 9) for a, v in canon.items()}:
+            raise ValueError(
+                f"row {i} fam {label} axes {axes} disagree with canonical {canon}; "
+                "the family cache drifted — update FAM_AXIS_VALUES"
+            )
+        hull = HULL_ORDER[int(z["hull"][i])]
+        cfg = SuboffConfig(
+            sail_scale=float(z["sail"][i]),
+            fin_scale=float(z["fin"][i]),
+            **axes,
+        )
+        geo[j] = hullform_geo_block(hull, float(z["sail"][i]), float(z["fin"][i]), grid, cfg)
+        v_bare, v_sail, v_fin, v_solid, aproj, aproj_bare = hullform_component_counts(
+            hull, float(z["sail"][i]), float(z["fin"][i]), grid, cfg
+        )
+        comp["v_sail"][j] = v_sail
+        comp["v_fin"][j] = v_fin
+        comp["v_solid"][j] = v_solid
+        comp["aproj_cad"][j] = aproj
+        comp["aproj_bare"][j] = aproj_bare
+        for a in HULLFORM_AXES:
+            mults[a][j] = axes[a]
+    out = dict(
+        x=np.asarray(z["x"][rows], dtype=np.float32),
+        dsi=fam[rows].astype(np.int64),
+        re=np.asarray(z["re"][rows], dtype=np.float64),
+        uin=np.asarray(z["uin"][rows], dtype=np.float64),
+        sail=np.asarray(z["sail"][rows], dtype=np.float64),
+        fin=np.asarray(z["fin"][rows], dtype=np.float64),
+        hull=np.asarray(z["hull"][rows], dtype=np.int64),
+        step=np.asarray(z["step"][rows], dtype=np.int64),
+        aproj=np.asarray(z["aproj"][rows], dtype=np.int64),
+        cd=np.asarray(z["cd"][rows], dtype=np.float64),
+        geo=geo,
+        aux=np.asarray(z["aux"][rows], dtype=np.float64),
+        mask_bit_eq=np.asarray(z["mask_bit_eq"][rows], dtype=bool),
+        fam=fam[rows].astype(np.int64),
+        sail_x_mult=mults["sail_x_mult"],
+        l_over_d_mult=mults["l_over_d_mult"],
+        nose_len_mult=mults["nose_len_mult"],
+        stern_len_mult=mults["stern_len_mult"],
+    )
+    out.update(comp)
+    return cast("dict[str, np.ndarray]", out)
+
+
+def append_fam_fragment(
+    index: dict[str, np.ndarray],
+    fragment: dict[str, np.ndarray],
+) -> dict[str, np.ndarray]:
+    """Append :func:`load_fam_fragment` rows to a v4-schema corpus.
+
+    Each family in the fragment gets ONE fresh ``dsi`` above the corpus's
+    max (first-appearance order), the same convention :func:`augment_corpus`
+    uses for acquired campaigns — so ``split_random``'s per-dataset RNG
+    stream consumes the new datasets strictly after the originals and every
+    base row keeps its fit/val/test membership (the property
+    ``test_split_stable_under_augmentation`` pins).  Only corpus keys are
+    filled (fragment-only keys such as ``fam`` are dropped), mirroring
+    ``augment_corpus``; the v3/v4/v5 condition paths are untouched.
+    """
+    n0 = len(index["cd"])
+    fams = fragment["fam"]
+    remap: dict[int, int] = {}
+    for label in fams.tolist():
+        if int(label) not in remap:
+            remap[int(label)] = int(np.max(index["dsi"])) + 1 + len(remap)
+    missing = [k for k in index if k not in fragment]
+    if missing:
+        raise ValueError(f"fragment missing corpus keys {missing}")
+    if "sail_x_mult" not in index and np.any(np.asarray(fragment.get("sail_x_mult", 1.0)) != 1.0):
+        raise ValueError(
+            "appending sail-x-variant fam rows to a corpus without a sail_x_mult "
+            "column would silently drop the axis (the v3 geo block cannot carry "
+            "it); set index['sail_x_mult'] = ones first"
+        )
+    out: dict[str, np.ndarray] = {}
+    for k, base in index.items():
+        add = np.asarray(fragment[k])
+        if add.shape[0] != len(fams):
+            raise ValueError(f"fragment key {k!r} has {add.shape[0]} rows, expected {len(fams)}")
+        if k == "dsi":
+            add = np.asarray([remap[int(f)] for f in fams], dtype=base.dtype)
+        out[k] = np.concatenate([base, add.astype(base.dtype, copy=False)], axis=0)
+    if len(out["cd"]) != n0 + len(fams):
+        raise AssertionError("row count mismatch after fam append")
     return out
 
 
@@ -1198,13 +1435,18 @@ def predict_design(
     mother-design corpus field nearest in log-Re.  ``cond_version="v5"``
     appends the sail axial-position channel
     (:func:`hullform_condition_rows_v5`, (N, 9)) for ensembles trained on
-    the v5 vector; the default ``"v3"`` path is unchanged.
+    the v5 vector; ``cond_version="v6"`` appends the four v6 channels on
+    top (:func:`hullform_condition_rows_v6`, (N, 13) — the "v6qx" layout)
+    for ensembles trained with ``cond="v6"``; the default ``"v3"`` path
+    is unchanged.
     """
-    if cond_version not in ("v3", "v5"):
-        raise ValueError(f"cond_version must be 'v3' or 'v5', got {cond_version!r}")
+    if cond_version not in ("v3", "v5", "v6"):
+        raise ValueError(f"cond_version must be 'v3', 'v5' or 'v6', got {cond_version!r}")
     re = np.asarray(re_list, dtype=np.float64).ravel()
     u_in = float(params.get("u_in", 0.1))
-    if cond_version == "v5":
+    if cond_version == "v6":
+        cond = hullform_condition_rows_v6(params, re, grid=grid, u_in=u_in)
+    elif cond_version == "v5":
         cond = hullform_condition_rows_v5(params, re, grid=grid, u_in=u_in)
     else:
         cond = hullform_condition_rows(params, re, grid=grid, u_in=u_in)
@@ -1240,14 +1482,20 @@ def corpus_with_cond(index: dict[str, np.ndarray], cond: str = "v3") -> dict[str
     """Attach ``cond_<cond>`` and ``ylog`` columns (the training view).
 
     ``cond`` selects the condition vector: ``"v3"`` (default, the (N, 8)
-    serving vector) or ``"v5"`` (the (N, 9) vector with the sail
-    axial-position channel — requires nothing of the corpus: a corpus
-    without a ``sail_x_mult`` column is all-mother on that axis).
+    serving vector), ``"v5"`` (the (N, 9) vector with the sail
+    axial-position channel) or ``"v6"`` (the (N, 13) "v6qx" layout — v5
+    plus ``log10(sail_x_mult)**2`` and the three hull-form axis channels
+    ``log10(l_over_d_mult)`` / ``log10(nose_len_mult)`` /
+    ``log10(stern_len_mult)``; the experiment-side name maps 1:1 to this
+    column order).  Both ``"v5"`` and ``"v6"`` require nothing of the
+    corpus: a corpus without an axis column is all-mother on that axis
+    (the channel degenerates to zeros).
     """
-    if cond not in ("v3", "v5"):
-        raise ValueError(f"cond must be 'v3' or 'v5', got {cond!r}")
+    if cond not in ("v3", "v5", "v6"):
+        raise ValueError(f"cond must be 'v3', 'v5' or 'v6', got {cond!r}")
     d = dict(index)
-    d[f"cond_{cond}"] = corpus_cond_v5(index) if cond == "v5" else corpus_cond_v3(index)
+    builder = {"v3": corpus_cond_v3, "v5": corpus_cond_v5, "v6": corpus_cond_v6}[cond]
+    d[f"cond_{cond}"] = builder(index)
     d["ylog"] = np.log10(index["cd"])
     return d
 
@@ -1340,9 +1588,9 @@ def train_member(
     """One ensemble member (verbatim loop of train_ensemble.train_member).
 
     ``cond_col`` selects the condition matrix of the training view
-    (``"cond_v3"`` default — the serving protocol verbatim — or
-    ``"cond_v5"`` for the sail axial-position channel; the arch's
-    ``cond_dim`` follows the matrix either way).
+    (``"cond_v3"`` default — the serving protocol verbatim — ``"cond_v5"``
+    for the sail axial-position channel, or ``"cond_v6"`` for the 13-wide
+    "v6qx" vector; the arch's ``cond_dim`` follows the matrix either way).
     """
     cfg = ARM_CFG
     x, cd, ylog, aux = d["x"], d["cd"], d["ylog"], d["aux"]
@@ -1494,9 +1742,10 @@ def retrain_ensemble(
     ``CondDragCheckpoint`` bundles named ``al_aug_s{k}.pt``.
     ``hp_overrides`` exists for CPU tests (the demo uses the serving
     defaults).  ``cond="v5"`` trains on the (N, 9) sail axial-position
-    condition vector (recorded in the member ``meta``; the checkpoints are
-    then served with ``predict_design(..., cond_version="v5")``); the
-    default ``"v3"`` is the serving protocol verbatim.
+    condition vector and ``cond="v6"`` on the (N, 13) "v6qx" vector
+    (either recorded in the member ``meta``; the checkpoints are then
+    served with ``predict_design(..., cond_version=...)`` of the same
+    name); the default ``"v3"`` is the serving protocol verbatim.
     """
     hp_base = dict(HP, **(hp_overrides or {}))
     out_dir = Path(out_dir)

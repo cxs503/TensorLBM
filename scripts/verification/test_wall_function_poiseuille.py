@@ -14,7 +14,7 @@ Approaches tested:
   B. Wall function only (equilibrium BC for solid) + Guo body force
   C. Bounce-back only + Guo body force  (reference)
 
-Usage: PYTHONPATH=src python tests/test_wall_function_poiseuille.py
+Usage: PYTHONPATH=src python scripts/verification/test_wall_function_poiseuille.py
 """
 
 from __future__ import annotations

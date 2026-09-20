@@ -37,6 +37,26 @@ identically (the bare-corner ladder of the G2b campaign), so a manual-space
 guard cannot flag in-envelope geometry extrapolation there — PR #235's SDF
 latent space is the planned fix and this interface accepts it unchanged.
 
+4. **Measured-curve Re fallback (opt-in)** — the ``re_policy="quad3_fallback"
+   flag of :meth:`DragSurrogateService.predict` serves the CACHED measured
+   curve of an exactly-matched design (quad3: exact quadratic through the 3
+   nearest cached Re levels in log10-Re / log10-C_D space) for query
+   Reynolds numbers outside the corpus Re window, where the network
+   extrapolates poorly (~14 % median on unseen geometries) but the measured
+   curve is still the ground truth (campaign 2026-08-27: quad3 <= 0.21 %
+   over the full tested range, ``global_lin`` 4 %+ systematic — banned).
+   Default OFF; the network path stays byte-identical.  See
+   ``docs/quad3_fallback_20260828.md``.
+
+5. **Field borrowing for new geometries (opt-in)** — the
+   ``field_policy="field_borrow"`` flag of :meth:`DragSurrogateService.predict`
+   serves a query whose design is absent from the attached field cache by
+   borrowing an in-manifold reference field from a
+   :class:`~tensorlbm.ai.field_provider.FieldProvider` pool, keyed on the
+   query SDF (``sdf=``); the response carries the retrieval provenance and
+   guard flags, never silently.  Default OFF; the cached-field path stays
+   byte-identical.  See ``docs/field_borrow_20260904.md``.
+
 The module is import-safe without fastapi/onnx (the HTTP router lives in
 ``app/backend/routers/drag_surrogate.py``; ONNX helpers degrade to honest
 failure reports).
@@ -66,12 +86,24 @@ from .drag_cond import (
     geometry_channels,
     suboff_geometry_features,
 )
+from .field_borrow import (
+    FIELD_POLICY_BORROW,
+    FIELD_POLICY_CACHE,
+    borrow_serving_field,
+    param_cond_rows,
+    resolve_field_policy,
+)
+from .field_provider import FieldProvider
 
 __all__ = [
     "ENV_UQ_TEMPERATURE",
+    "FIELD_POLICY_BORROW",
+    "FIELD_POLICY_CACHE",
     "FLAG_OK",
     "FLAG_REJECT",
     "FLAG_REVIEW",
+    "RE_POLICY_NETWORK",
+    "RE_POLICY_QUAD3_FALLBACK",
     "BackendQueryError",
     "CalibrationRow",
     "CondDragCheckpoint",
@@ -85,6 +117,10 @@ __all__ = [
     "ReplayEnsembleBackend",
     "SpectralConv2dMatmul",
     "ensemble_picp",
+    "quad3_loo_std",
+    "quad3_nearest3",
+    "resolve_re_policy",
+    "resolve_field_policy",
     "resolve_uq_temperature",
     "ensemble_stats",
     "error_std_spearman",
@@ -104,6 +140,17 @@ FLAG_REJECT = "reject"
 HULL_ORDER = ("bare_hull", "with_sail", "full")
 
 _DEFAULT_DEVICE = "cpu"
+
+#: Default Re serving policy of :meth:`DragSurrogateService.predict`: the
+#: ensemble network path only (the pre-flag behaviour, byte-identical).
+RE_POLICY_NETWORK = "network"
+
+#: Opt-in Re serving policy: for a query design that EXACTLY matches a
+#: cached ``(hull, sail, fin, u_in)`` key with >= 3 cached Re rows, points
+#: outside the corpus Re window are served by the quad3 measured-curve
+#: extrapolation instead of the network (fresh-Re campaign 2026-08-27
+#: adjudication; ``docs/quad3_fallback_20260828.md``).
+RE_POLICY_QUAD3_FALLBACK = "quad3_fallback"
 
 #: Environment variable overriding the *reported* ensemble-std temperature
 #: (serving calibration knob, landing of the #251 UQ audit).  Default 1.0
@@ -809,6 +856,114 @@ class ReplayEnsembleBackend:
 
 
 # ---------------------------------------------------------------------------
+# Measured-curve quad3 fallback (fresh-Re campaign 2026-08-27)
+# ---------------------------------------------------------------------------
+
+
+def resolve_re_policy(re_policy: str | None = None) -> str:
+    """Validate an Re serving policy name (fail loud, no silent aliases).
+
+    ``None`` counts as :data:`RE_POLICY_NETWORK` so the default call path
+    never touches the fallback logic.  Unknown names raise — a typoed
+    policy must not silently degrade to the network path.
+    """
+    name = RE_POLICY_NETWORK if re_policy is None else str(re_policy)
+    if name not in (RE_POLICY_NETWORK, RE_POLICY_QUAD3_FALLBACK):
+        raise ValueError(
+            f"unknown re_policy {re_policy!r}; expected "
+            f"{RE_POLICY_NETWORK!r} or {RE_POLICY_QUAD3_FALLBACK!r}"
+        )
+    return name
+
+
+def quad3_nearest3(
+    cached_re: np.ndarray, cached_cd: np.ndarray, re_query: float
+) -> tuple[float, np.ndarray] | None:
+    """quad3 measured-curve value at ``re_query`` — the campaign definition.
+
+    Exactly the ``quad3`` predictor adjudicated by the fresh-Re campaign
+    (``analyze_extrap.py`` of 2026-08-27): fit the exact quadratic through
+    the 3 cached levels nearest the query in ``|log10 Re|`` and evaluate it
+    at ``x = log10(re_query)``::
+
+        c2, c1, c0 = np.polyfit(log10(re_sel), log10(cd_sel), 2)
+        cd = 10.0 ** (c2 * x * x + c1 * x + c0)
+
+    For an out-of-window query the nearest 3 cached levels ARE the 3 edge
+    levels on the query side (top-3 above, bottom-3 below), so this
+    reproduces the campaign slices bit-for-bit on the same rows.  Rows are
+    sorted by Re and the selected triple is evaluated in ascending order,
+    the campaign ordering, so the float result is identical.
+
+    Returns ``(cd_value, chosen_re_ascending)`` or ``None`` when the
+    nearest triple does not contain 3 DISTINCT ``log10 Re`` levels
+    (duplicate cached Re -> singular Vandermonde); the caller decides the
+    fallback, nothing is silently interpolated.
+    """
+    re_arr = np.asarray(cached_re, dtype=np.float64)
+    cd_arr = np.asarray(cached_cd, dtype=np.float64)
+    if re_arr.ndim != 1 or cd_arr.ndim != 1 or re_arr.shape != cd_arr.shape:
+        raise ValueError(
+            f"cached_re/cached_cd must be matching 1-D arrays, got {re_arr.shape} vs {cd_arr.shape}"
+        )
+    if re_arr.size < 3:
+        raise ValueError(f"quad3 needs >= 3 cached rows, got {re_arr.size}")
+    if not np.isfinite(re_arr).all() or not (re_arr > 0.0).all():
+        raise ValueError("cached_re entries must be finite and positive")
+    if not np.isfinite(cd_arr).all() or not (cd_arr > 0.0).all():
+        raise ValueError("cached_cd entries must be finite and positive")
+    if not (np.isfinite(re_query) and re_query > 0.0):
+        raise ValueError("re_query must be finite and positive")
+    order = np.argsort(re_arr, kind="stable")
+    re_s = re_arr[order]
+    cd_s = cd_arr[order]
+    lr = np.log10(re_s)
+    x = np.log10(float(re_query))
+    sel = np.sort(np.argsort(np.abs(lr - x), kind="stable")[:3])
+    if np.unique(lr[sel]).size < 3:
+        return None
+    c2, c1, c0 = np.polyfit(lr[sel], np.log10(cd_s[sel]), 2)
+    return float(10.0 ** (c2 * x * x + c1 * x + c0)), re_s[sel]
+
+
+def quad3_loo_std(cached_re: np.ndarray, cached_cd: np.ndarray) -> float | None:
+    """RMS *relative* leave-one-out residual of :func:`quad3_nearest3`.
+
+    Each cached row ``j`` is treated as a pseudo-query served by the SAME
+    estimator built on the remaining rows (nearest 3 to ``re_j`` in
+    ``|log10 Re|``); the returned number is
+    ``sqrt(mean_j ((cd_j - pred_j) / pred_j)^2)`` — a dimensionless
+    relative accuracy of the quad3 estimator on THIS design curve.  The
+    service multiplies it by the served value to obtain an absolute C_D
+    std (the reported ensemble std is absolute C_D everywhere else).
+
+    ``None`` when fewer than 4 cached rows exist (leave-one-out needs at
+    least 3 remaining) or any pseudo-fit is degenerate (duplicate cached
+    log10-Re levels — the measured pool381 curve, 157 rows / 126 distinct
+    Re, hits this) — NO uncertainty is fabricated; the caller keeps the
+    network ensemble std for the point and records why via ``std_source``.
+    """
+    re_arr = np.asarray(cached_re, dtype=np.float64)
+    cd_arr = np.asarray(cached_cd, dtype=np.float64)
+    if re_arr.ndim != 1 or cd_arr.ndim != 1 or re_arr.shape != cd_arr.shape:
+        raise ValueError(
+            f"cached_re/cached_cd must be matching 1-D arrays, got {re_arr.shape} vs {cd_arr.shape}"
+        )
+    if re_arr.size < 4:
+        return None
+    rel = np.empty(re_arr.size, dtype=np.float64)
+    for j in range(re_arr.size):
+        keep = np.ones(re_arr.size, dtype=bool)
+        keep[j] = False
+        out = quad3_nearest3(re_arr[keep], cd_arr[keep], float(re_arr[j]))
+        if out is None:
+            return None
+        pred = out[0]
+        rel[j] = abs(float(cd_arr[j]) - pred) / pred
+    return float(np.sqrt(np.mean(rel**2)))
+
+
+# ---------------------------------------------------------------------------
 # Service facade
 # ---------------------------------------------------------------------------
 
@@ -870,6 +1025,12 @@ class DragSurrogateService:
     cache_re / cache_designs:
         Row-aligned Reynolds numbers and ``(hull, sail, fin, u_in)`` keys
         of ``corpus_cache``, used to resolve a design's nearest field.
+    cache_cd:
+        Row-aligned measured C_D labels of ``cache_re``/``cache_designs``
+        (the corpus cache ``cd`` array).  Only consumer: the opt-in
+        ``re_policy="quad3_fallback"`` of :meth:`predict`.  Absent (the
+        default), the policy declines with
+        ``reason="no_measured_curve_cache"`` and the network serves.
     u_in_default:
         Default inlet speed of the corpus (0.1 lattice units in B4).
     uq_temperature:
@@ -880,6 +1041,12 @@ class DragSurrogateService:
         #251-audited value for *new-design* semantics (see
         ``docs/uq_temperature_serving_20260827.md``).  The guard verdict and
         the member min-max band are never scaled.
+    field_provider:
+        Optional :class:`~tensorlbm.ai.field_provider.FieldProvider` pool
+        enabling the opt-in ``field_policy="field_borrow"`` of
+        :meth:`predict` (new-geometry queries with a query SDF but no
+        cached reference field).  ``None`` (the default) leaves every
+        existing behaviour untouched.
     """
 
     def __init__(
@@ -891,8 +1058,10 @@ class DragSurrogateService:
         grid: SuboffGrid | None = None,
         cache_re: np.ndarray | None = None,
         cache_designs: list[tuple[str, float, float, float]] | None = None,
+        cache_cd: np.ndarray | None = None,
         u_in_default: float = 0.1,
         uq_temperature: float | str | None = None,
+        field_provider: FieldProvider | None = None,
     ) -> None:
         self.backend = backend
         self.guard = guard
@@ -900,8 +1069,19 @@ class DragSurrogateService:
         self.corpus_cache = None if corpus_cache is None else np.asarray(corpus_cache)
         self.cache_re = None if cache_re is None else np.asarray(cache_re, dtype=np.float64)
         self.cache_designs = cache_designs
+        self.cache_cd = None if cache_cd is None else np.asarray(cache_cd, dtype=np.float64)
+        if (
+            self.cache_cd is not None
+            and self.cache_re is not None
+            and self.cache_cd.shape != self.cache_re.shape
+        ):
+            raise ValueError(
+                f"cache_cd {self.cache_cd.shape} must be row-aligned with "
+                f"cache_re {self.cache_re.shape}"
+            )
         self.u_in_default = float(u_in_default)
         self.uq_temperature = resolve_uq_temperature(uq_temperature)
+        self.field_provider = field_provider
 
     # -- construction helpers -------------------------------------------------
 
@@ -917,9 +1097,11 @@ class DragSurrogateService:
         grid: SuboffGrid | None = None,
         cache_re: np.ndarray | None = None,
         cache_designs: list[tuple[str, float, float, float]] | None = None,
+        cache_cd: np.ndarray | None = None,
         backend_kind: str | None = None,
         backend_plan: str | Path | None = None,
         uq_temperature: float | str | None = None,
+        field_provider: FieldProvider | None = None,
         **guard_kwargs: Any,
     ) -> DragSurrogateService:
         """Real-model service from member checkpoints + guard fit matrix.
@@ -928,7 +1110,9 @@ class DragSurrogateService:
         on (default: the production grid — the B4 caches were built with
         it), for the same reason as :meth:`from_run_dir`.
         ``corpus_cache``/``cache_re``/``cache_designs`` wire up field
-        resolution for callers that do not pass ``fields`` per query.
+        resolution for callers that do not pass ``fields`` per query;
+        ``cache_cd`` additionally wires the measured-curve quad3 fallback
+        (``CorpusIndex.cd``).
 
         Backend selection (TRT slice 2026-08-27): ``backend_kind`` wins over
         ``TENSORLBM_DRAG_BACKEND`` (``torch`` default).  Any non-default
@@ -971,7 +1155,9 @@ class DragSurrogateService:
             grid=grid,
             cache_re=cache_re,
             cache_designs=cache_designs,
+            cache_cd=cache_cd,
             uq_temperature=uq_temperature,
+            field_provider=field_provider,
         )
 
     @classmethod
@@ -1030,6 +1216,73 @@ class DragSurrogateService:
             "solid_frac": float(geo[3]),
         }
 
+    def _serve_model_members(
+        self,
+        hull_type: str,
+        sail_scale: float,
+        fin_scale: float,
+        re_arr: np.ndarray,
+        u_in: float,
+        fields: np.ndarray | None,
+        field_point: int | None,
+        sdf: np.ndarray | None,
+        field_policy: str,
+        cond: np.ndarray,
+    ) -> tuple[np.ndarray, dict[str, Any]]:
+        """Resolve the reference field, then serve the member C_D matrix.
+
+        Default ``field_policy="cache"``: exactly the pre-flag composition
+        — :meth:`_resolve_field` followed by ``backend.predict(field,
+        cond)`` — byte-identical to the service before the borrow flag.
+
+        ``field_policy="field_borrow"`` changes ONE thing: when normal
+        field resolution would raise :class:`BackendQueryError` (a new
+        geometry absent from the attached cache) and the query carries
+        ``sdf`` while the service carries a ``field_provider``, the field
+        is BORROWED from the pool via
+        :func:`tensorlbm.ai.field_borrow.borrow_serving_field` and the
+        response carries the retrieval provenance
+        (``info["field_borrow"]``, never silent).  Cached designs and
+        caller-supplied ``fields`` keep the resolution above; a missing
+        provider or query SDF re-raises the original error.
+
+        Two-stage backends (``kind == "per-member-model"``,
+        :class:`tensorlbm.ai.ckpt_bundle.PerMemberEnsembleBackend`) take
+        the query SDF as a model input and serve the corpus-convention
+        param cond (:func:`tensorlbm.ai.field_borrow.param_cond_rows`)
+        instead of the 8-channel condition_v3 — the composition validated
+        by the 2026-09-04 e2e LODO campaign; the guard verdict above stays
+        on condition_v3 either way.
+        """
+        backend = self.backend
+        assert isinstance(backend, ModelEnsembleBackend)  # narrowed for mypy
+        try:
+            field, field_info = self._resolve_field(
+                hull_type,
+                sail_scale,
+                fin_scale,
+                float(re_arr[0]),
+                u_in,
+                fields,
+                field_point,
+            )
+        except BackendQueryError:
+            if field_policy != FIELD_POLICY_BORROW or sdf is None or self.field_provider is None:
+                raise
+            borrowed = borrow_serving_field(self.field_provider, sdf)
+            field, field_info = borrowed.fields, borrowed.info
+        if backend.kind == "per-member-model":
+            if sdf is None:
+                raise BackendQueryError(
+                    "two-stage (per-member) backends need the query geometry volume: "
+                    "pass sdf= to DragSurrogateService.predict"
+                )
+            member_cond = param_cond_rows(re_arr, u_in, sail_scale, fin_scale, backend.cond_dim)
+            member_cd = backend.predict(field, sdf, member_cond)  # type: ignore[call-arg]
+        else:
+            member_cd = backend.predict(field, cond)
+        return member_cd, field_info
+
     def _resolve_field(
         self,
         hull_type: str,
@@ -1083,6 +1336,133 @@ class DragSurrogateService:
             "field_re": float(self.cache_re[best[1]]),
         }
 
+    def _quad3_fallback(
+        self,
+        hull_type: str,
+        sail_scale: float,
+        fin_scale: float,
+        u_in: float,
+        re_arr: np.ndarray,
+        mean: np.ndarray,
+        std: np.ndarray,
+        lo: np.ndarray,
+        hi: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict[str, Any]]:
+        """Route per-point quad3 measured-curve serving (see :meth:`predict`).
+
+        Routing order (first failure wins, the network value is kept and
+        the reason recorded):
+
+        1. no measured curve attached (``cache_designs`` / ``cache_re`` /
+           ``cache_cd``) -> ``no_measured_curve_cache``;
+        2. every query Re inside ``[min(cache_re), max(cache_re)]``
+           (boundary values count as inside) -> ``re_inside_corpus_window``;
+        3. no cached rows with the exact design key (hull string equal,
+           sail/fin float-equal, ``|u_in - key| <= 1e-12`` — the
+           ``_resolve_field`` convention) -> ``no_exact_design_match``;
+        4. fewer than 3 cached rows -> ``insufficient_cached_rows``;
+        5. degenerate nearest-3 (duplicate cached log10-Re) per point ->
+           that point keeps the network value (``declined_points``).
+
+        Applied points get ``cd = quad3`` and ``lo = hi = nan`` (no member
+        band exists for a measured curve).  ``std = cd * quad3_loo_std``
+        when the LOO rms exists — NOT rescaled by ``uq_temperature`` (that
+        knob is calibrated on the deep-ensemble sigma of the network path,
+        a different estimator).  When the LOO rms is unavailable (fewer
+        than 4 cached rows, or duplicate cached log10-Re levels degenerating
+        a leave-one-out pseudo-fit — the measured pool381 curve hits the
+        latter), the point KEEPS the network ensemble std already computed
+        for it — never ``nan`` — and ``info`` records why: ``std_source``
+        plus, in the degenerate case, ``quad3_loo_degenerate = True`` and
+        ``quad3_loo_duplicate_re_rows`` (cached rows minus distinct log10-Re
+        levels).
+        """
+        info: dict[str, Any] = {
+            "name": RE_POLICY_QUAD3_FALLBACK,
+            "method": "network",
+            "n_quad3_points": 0,
+            "quad3_mask": [False] * re_arr.size,
+        }
+        if self.cache_designs is None or self.cache_re is None or self.cache_cd is None:
+            info["reason"] = "no_measured_curve_cache"
+            return mean, std, lo, hi, info
+        window = (float(self.cache_re.min()), float(self.cache_re.max()))
+        info["corpus_re_window"] = list(window)
+        outside = (re_arr < window[0]) | (re_arr > window[1])
+        if not outside.any():
+            info["reason"] = "re_inside_corpus_window"
+            return mean, std, lo, hi, info
+        assert self.cache_designs is not None  # narrowed for mypy below
+        rows = np.array(
+            [
+                r
+                for r, key in enumerate(self.cache_designs)
+                if key[0] == hull_type
+                and key[1] == float(sail_scale)
+                and key[2] == float(fin_scale)
+                and abs(key[3] - u_in) <= 1e-12
+            ],
+            dtype=np.int64,
+        )
+        info["n_cached_rows"] = int(rows.size)
+        if rows.size == 0:
+            info["reason"] = "no_exact_design_match"
+            return mean, std, lo, hi, info
+        if rows.size < 3:
+            info["reason"] = "insufficient_cached_rows"
+            return mean, std, lo, hi, info
+        order = np.argsort(self.cache_re[rows], kind="stable")
+        curve_re = np.asarray(self.cache_re[rows][order], dtype=np.float64)
+        curve_cd = np.asarray(self.cache_cd[rows][order], dtype=np.float64)
+        info["cached_re"] = curve_re.tolist()
+        loo_rel = quad3_loo_std(curve_re, curve_cd)
+        info["loo_rel_rms"] = loo_rel
+        if loo_rel is not None:
+            info["std_source"] = "quad3_loo_relative_rms_times_cd"
+        elif curve_re.size < 4:
+            info["std_source"] = "network_ensemble_std_loo_needs_4_cached_rows"
+        else:
+            # >= 4 cached rows yet no LOO rms: duplicate cached log10-Re
+            # levels degenerated a leave-one-out pseudo-fit.  The old flat
+            # label "unavailable_fewer_than_4_cached_rows" was wrong here
+            # (the pool381 curve has 157 rows) — record the true cause.
+            n_dup = int(curve_re.size - np.unique(np.log10(curve_re)).size)
+            info["std_source"] = "network_ensemble_std_loo_degenerate"
+            info["quad3_loo_degenerate"] = True
+            info["quad3_loo_duplicate_re_rows"] = n_dup
+        mean = mean.copy()
+        std = std.copy()
+        lo = lo.copy()
+        hi = hi.copy()
+        mask = np.zeros(re_arr.size, dtype=bool)
+        chosen: list[list[float] | None] = [None] * re_arr.size
+        declined: list[str] = []
+        for i in np.nonzero(outside)[0]:
+            out = quad3_nearest3(curve_re, curve_cd, float(re_arr[i]))
+            if out is None:
+                declined.append(f"re={float(re_arr[i]):.6g}: duplicate log10 Re in nearest 3")
+                continue
+            value, sel_re = out
+            mask[i] = True
+            mean[i] = value
+            if loo_rel is not None:
+                std[i] = value * loo_rel
+            # LOO rms unavailable (see std_source above): keep the network
+            # ensemble std already computed for this point — never NaN.
+            lo[i] = np.nan
+            hi[i] = np.nan
+            chosen[i] = [float(v) for v in sel_re]
+        info["quad3_mask"] = mask.tolist()
+        info["n_quad3_points"] = int(mask.sum())
+        info["nearest_cached_re"] = chosen
+        if declined:
+            info["declined_points"] = declined
+        if mask.any():
+            info["method"] = RE_POLICY_QUAD3_FALLBACK
+        else:
+            info["reason"] = "degenerate_nearest3"
+        return mean, std, lo, hi, info
+
     def predict(
         self,
         hull_type: str,
@@ -1093,12 +1473,44 @@ class DragSurrogateService:
         u_in: float | None = None,
         fields: np.ndarray | None = None,
         field_point: int | None = None,
+        re_policy: str | None = None,
+        sdf: np.ndarray | None = None,
+        field_policy: str | None = None,
     ) -> DragCurveResult:
         """Serve one design swept over ``re_grid`` with UQ + guard verdict.
 
         The guard verdict is always computed and attached; a ``reject``
         does not suppress the numbers — callers (e.g. the HTTP layer)
         decide how to present flagged results.
+
+        ``re_policy`` (opt-in, default :data:`RE_POLICY_NETWORK` = the
+        pre-flag behaviour, byte-identical including ``info``):
+        ``"quad3_fallback"`` serves, per query point, the quad3
+        measured-curve value (:func:`quad3_nearest3`) instead of the
+        network when (a) the query design exactly matches a cached
+        ``(hull, sail, fin, u_in)`` key with >= 3 cached Re rows AND
+        (b) the query Re lies strictly outside the corpus Re window
+        ``[min(cache_re), max(cache_re)]`` of the attached corpus.
+        In-window points, unmatched designs and missing caches keep the
+        network value; ``info["re_policy"]`` records the routing
+        (method / reason / chosen cached Re / n_cached_rows).  The guard
+        verdict is NOT softened: an out-of-window Re still flags
+        ``reject`` on the ``log10_re`` envelope — the number is served
+        AND flagged, mirroring the always-compute-and-attach semantics.
+
+        ``sdf`` / ``field_policy`` (opt-in, default
+        :data:`FIELD_POLICY_CACHE` = the pre-flag behaviour,
+        byte-identical including ``info``): ``field_policy="field_borrow"``
+        serves a query whose reference field cannot be resolved from the
+        caller (``fields=``) or the attached cache by borrowing an
+        in-manifold field from ``field_provider``, keyed on the query SDF
+        (``sdf=``) — provenance and guard flags land in
+        ``info["field_borrow"]``; a failed guard still serves, flagged and
+        warning-logged (``docs/field_borrow_20260904.md``).  Two-stage
+        (per-member) backends always take ``sdf=`` as a model input and
+        serve the corpus-convention param cond instead of condition_v3
+        (the composition validated by the 2026-09-04 e2e campaign); the
+        guard stays on condition_v3 either way.
         """
         re_arr = np.asarray(re_grid, dtype=np.float64).ravel()
         if re_arr.size == 0:
@@ -1106,22 +1518,26 @@ class DragSurrogateService:
         if not np.isfinite(re_arr).all() or not (re_arr > 0).all():
             raise ValueError("re_grid entries must be finite and positive")
         u_in = self.u_in_default if u_in is None else float(u_in)
+        policy = resolve_re_policy(re_policy)
+        field_pol = resolve_field_policy(field_policy)
         cond, geo_vals = self.condition_rows(hull_type, sail_scale, fin_scale, re_arr, u_in=u_in)
         verdict = self.guard.check(cond)
         info: dict[str, Any] = {"geometry": geo_vals}
 
         if isinstance(self.backend, ModelEnsembleBackend):
-            field, field_info = self._resolve_field(
+            member_cd, field_info = self._serve_model_members(
                 hull_type,
                 float(sail_scale),
                 float(fin_scale),
-                float(re_arr[0]),
+                re_arr,
                 u_in,
                 fields,
                 field_point,
+                sdf,
+                field_pol,
+                cond,
             )
             info.update(field_info)
-            member_cd = self.backend.predict(field, cond)
         else:
             member_cd, rep_info = self.backend.predict(
                 hull_type, float(sail_scale), float(fin_scale), re_arr, u_in=u_in
@@ -1137,6 +1553,15 @@ class DragSurrogateService:
             # so the served arrays are bit-identical to the pre-knob service.
             std = std * t
         info["uq_temperature"] = t
+        if policy != RE_POLICY_NETWORK:
+            # Opt-in measured-curve fallback: overwrites ONLY the
+            # out-of-window exact-design points below.  The network arrays
+            # above (and the default call path without the flag) are
+            # untouched — at default OFF this whole block is dead code.
+            mean, std, lo, hi, policy_info = self._quad3_fallback(
+                hull_type, float(sail_scale), float(fin_scale), u_in, re_arr, mean, std, lo, hi
+            )
+            info["re_policy"] = policy_info
         return DragCurveResult(
             re=re_arr,
             cd=mean,
@@ -1202,6 +1627,7 @@ class CorpusIndex:
     re: np.ndarray
     designs: tuple[tuple[str, float, float, float], ...]
     cond: np.ndarray
+    cd: np.ndarray | None = None
 
 
 def load_corpus_index(run_dir: str | Path) -> CorpusIndex:
@@ -1220,6 +1646,7 @@ def load_corpus_index(run_dir: str | Path) -> CorpusIndex:
         re=np.asarray(z["re"], dtype=np.float64),
         designs=designs,
         cond=cond,
+        cd=np.asarray(z["cd"], dtype=np.float64),
     )
 
 

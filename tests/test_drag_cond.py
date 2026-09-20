@@ -23,15 +23,21 @@ import torch
 from tensorlbm.ai.drag_cond import (
     COND_V3_CHANNEL_NAMES,
     COND_V5_CHANNEL_NAMES,
+    COND_V6_CHANNEL_NAMES,
     GEOMETRY_CHANNEL_NAMES,
+    HULLFORM_AXIS_CHANNEL_NAMES,
     PRODUCTION_GRID,
+    SAIL_AXIAL_QUAD_CHANNEL_NAME,
     CondFNODrag,
     QuotaSampler,
     condition_v3,
     condition_v5,
+    condition_v6,
     force_tail_bins,
     geometry_channels,
+    hullform_axis_channel,
     sail_axial_channel,
+    sail_axial_quad_channel,
     suboff_geometry_features,
 )
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
@@ -246,6 +252,103 @@ class TestConditionV5:
             sail_axial_channel(np.nan)
         with pytest.raises(ValueError, match="1-D"):
             sail_axial_channel(np.ones((2, 2)))
+
+
+class TestConditionV6:
+    """The v6 encoding: (1) 13 columns = the v5 9-column prefix
+    (bit-identical, ``.tobytes()``) + the sail quadratic and the three
+    hull-form axis channels; (2) all four new columns are exactly 0.0 at
+    the mother design (v6 reduces to v5 numerically there), (3)
+    representative variant values pin the arithmetic (col 9 =
+    log10(sail_x_mult)**2 of the SAME log10 the v5 channel carries,
+    cols 10-12 = log10 of the hull-form multipliers).
+    """
+
+    def test_names_and_prefix_bit_identity(self):
+        assert COND_V6_CHANNEL_NAMES == (
+            COND_V5_CHANNEL_NAMES + (SAIL_AXIAL_QUAD_CHANNEL_NAME,) + HULLFORM_AXIS_CHANNEL_NAMES
+        )
+        assert COND_V6_CHANNEL_NAMES[:9] == COND_V5_CHANNEL_NAMES
+        re = np.array([100.0, 200.0, 400.0])
+        uin = np.full(3, 0.1)
+        geo = np.stack([geometry_channels(feats("with_sail", 1.0, 1.0))] * 3)
+        v5 = condition_v5(re, uin, np.ones(3), np.ones(3), geo, [0.7, 1.0, 1.4])
+        v6 = condition_v6(re, uin, np.ones(3), np.ones(3), geo, [0.7, 1.0, 1.4], 1.2, 1.1, 0.9)
+        assert v6.shape == (3, 13)
+        assert v6[:, :9].tobytes() == v5.tobytes()  # bit-identical prefix
+
+    def test_mother_design_all_four_new_columns_exactly_zero(self):
+        re = np.array([100.0, 200.0])
+        geo = np.stack([geometry_channels(feats("full", 1.3, 1.5))] * 2)
+        v6 = condition_v6(re, np.full(2, 0.1), np.full(2, 1.3), np.full(2, 1.5), geo, 1.0)
+        np.testing.assert_array_equal(v6[:, 9:], np.zeros((2, 4)))  # exact zeros
+        v5 = condition_v5(re, np.full(2, 0.1), np.full(2, 1.3), np.full(2, 1.5), geo, 1.0)
+        assert v6.tobytes() == np.concatenate([v5, np.zeros((2, 4))], axis=1).tobytes()
+
+    def test_variant_channel_values(self):
+        re = np.full(3, 150.0)
+        geo = np.stack([geometry_channels(feats("with_sail", 1.0, 1.0))] * 3)
+        v6 = condition_v6(
+            re,
+            np.full(3, 0.1),
+            np.ones(3),
+            np.ones(3),
+            geo,
+            1.3,  # sail_x_mult
+            1.2,  # l_over_d_mult
+            1.1,  # nose_len_mult
+            0.9,  # stern_len_mult
+        )
+        np.testing.assert_allclose(v6[:, 9], np.log10(1.3) ** 2)
+        np.testing.assert_allclose(v6[:, 10], np.log10(1.2))
+        np.testing.assert_allclose(v6[:, 11], np.log10(1.1))
+        np.testing.assert_allclose(v6[:, 12], np.log10(0.9))
+        # col 9 is the square of the SAME log10 value col 8 carries
+        np.testing.assert_array_equal(v6[:, 9], np.square(v6[:, 8]))
+        # per-point arrays agree with the scalar broadcast row-for-row
+        per_point = condition_v6(
+            re, np.full(3, 0.1), np.ones(3), np.ones(3), geo, [1.3, 1.0, 0.7], [1.2, 1.0, 1.0]
+        )
+        np.testing.assert_array_equal(per_point[:, 9], np.log10([1.3, 1.0, 0.7]) ** 2)
+        np.testing.assert_array_equal(per_point[:, 10], np.log10([1.2, 1.0, 1.0]))
+
+    def test_channel_primitives(self):
+        for m in (1.0, 1):
+            assert float(sail_axial_quad_channel(m)) == 0.0
+            assert float(hullform_axis_channel(m)) == 0.0
+        grid = [0.7, 0.85, 1.0, 1.15, 1.3, 1.4]
+        np.testing.assert_array_equal(sail_axial_quad_channel(grid), np.log10(grid) ** 2)
+        np.testing.assert_array_equal(hullform_axis_channel(grid), np.log10(grid))
+        # the quad channel is the square of the v5 channel, value for value
+        np.testing.assert_array_equal(sail_axial_quad_channel(grid), sail_axial_channel(grid) ** 2)
+
+    def test_scalar_broadcast_and_validation(self):
+        re = np.full(4, 100.0)
+        geo = np.stack([geometry_channels(feats("with_sail", 1.0, 1.0))] * 4)
+        v6 = condition_v6(re, np.full(4, 0.1), np.ones(4), np.ones(4), geo, 1.3, 1.2)
+        np.testing.assert_allclose(v6[:, 9], np.log10(1.3) ** 2)
+        np.testing.assert_allclose(v6[:, 10], np.log10(1.2))
+        np.testing.assert_array_equal(v6[:, 11:], np.zeros((4, 2)))  # defaults = mother
+        with pytest.raises(ValueError, match="scalar or length-4"):
+            condition_v6(re, np.full(4, 0.1), np.ones(4), np.ones(4), geo, [1.0, 1.1])
+        with pytest.raises(ValueError, match="scalar or length-4"):
+            condition_v6(re, np.full(4, 0.1), np.ones(4), np.ones(4), geo, 1.0, [1.0, 1.1, 1.2])
+        with pytest.raises(ValueError, match="finite and positive"):
+            hullform_axis_channel(0.0)
+        with pytest.raises(ValueError, match="finite and positive"):
+            sail_axial_quad_channel(-1.3)
+        with pytest.raises(ValueError, match="1-D"):
+            hullform_axis_channel(np.ones((2, 2)))
+
+    def test_deterministic_and_idempotent(self):
+        re = np.array([80.0, 300.0, 600.0])
+        uin = np.full(3, 0.1)
+        geo = np.stack([geometry_channels(feats("full", 0.7, 1.2))] * 3)
+        args = (re, uin, np.full(3, 0.7), np.full(3, 1.2), geo, [0.85, 1.0, 1.4], 1.1, 1.0, 1.3)
+        a = condition_v6(*args)
+        b = condition_v6(*args)
+        assert a.tobytes() == b.tobytes()  # pure function of its inputs
+        np.testing.assert_array_equal(a[:, 8], np.log10([0.85, 1.0, 1.4]))  # v5 column intact
 
 
 class TestQuotaSampler:

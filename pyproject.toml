@@ -95,7 +95,7 @@ version = {attr = "tensorlbm._version.__version__"}
 pythonpath = ["src"]
 testpaths = ["tests"]
 markers = [
-    "slow: long-running simulation campaigns, excluded from CI (run on the GPU dev server)",
+    "slow: long-running simulation campaigns; they run in CI unless deselected (CI invokes bare pytest; deselect with -m 'not slow')",
 ]
 
 [tool.ruff]
