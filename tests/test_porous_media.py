@@ -192,8 +192,19 @@ class TestLaplaceTestConfig:
         with pytest.raises(ValueError, match="rho_water"):
             cfg.validate()
 
-    def test_invalid_G12_negative(self) -> None:
-        cfg = LaplaceTestConfig(G_12=-0.5)
+    def test_G12_negative_segregation_accepted(self) -> None:
+        """Negative G_12 is the library's phase-separation domain.
+
+        The legacy validator rejected G_12 <= 0 based on a documentation
+        sign error (the implemented reverse-gather force separates phases
+        for G_12 < 0; see the porous_media module docstring).  Contract now:
+        negative separates, positive mixes, zero is invalid.
+        """
+        cfg = LaplaceTestConfig(G_12=-2.5)
+        cfg.validate()  # must not raise
+
+    def test_invalid_G12_zero(self) -> None:
+        cfg = LaplaceTestConfig(G_12=0.0)
         with pytest.raises(ValueError, match="G_12"):
             cfg.validate()
 
