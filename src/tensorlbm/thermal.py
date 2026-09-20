@@ -11,9 +11,10 @@
 - 边界：
   * 四壁 no-slip —— pre-streaming 半程反弹（与 verified/cavity_re100 的
     V3 配方一致：碰撞前分布反射，动量不进壁面行）
-  * 左壁 x=0 等温 T_hot、右壁 x=nx−1 等温 T_cold —— post-streaming
-    anti-bounce-back（二阶 Dirichlet，壁面位于 half-way 位置 x=∓0.5）
-  * 上下壁绝热（∂T/∂n = 0）—— bounce-back（零法向热通量）
+  * 温度边界（post-streaming）：上/下绝热壁（y=∓0.5）半程 bounce-back
+    反射（从周期 stream 的对侧绕行落点取回本壁出射分布），左/右等温
+    列整列取平衡分布 w_i·T_wall（u=0；等温壁位于节点上），指向流体的
+    群体叠加第一流体列非平衡修正（等温面精确定位壁节点）
 - Nusselt 数：Nu = −∂T/∂x·H/ΔT 沿壁面平均（多种差分口径可选）。
 
 兼容接口（tensorlbm.physics 命名空间约定，与 thermal3d.py 同构）：
@@ -110,29 +111,57 @@ def macroscopic_thermal(g: torch.Tensor) -> torch.Tensor:
 
 
 def apply_temperature_boundaries(g: torch.Tensor, t_hot: float, t_cold: float) -> torch.Tensor:
-    """post-streaming 温度边界（壁面位于 half-way 位置）。
+    """post-streaming 温度边界（绝热壁解缠反射 + 等温列冻结平衡）。
 
-    - 左壁 x=0（壁面 x=−0.5，T=T_hot）：anti-bounce-back
-      g_1 = −g_2 + 2·w_1·T_hot（方向 1 为 +x，从壁面进入流体节点）
-    - 右壁 x=nx−1（壁面 x=nx−0.5，T=T_cold）：anti-bounce-back
-      g_2 = −g_1 + 2·w_2·T_cold
-    - 下壁 y=0 / 上壁 y=ny−1（绝热）：bounce-back（零法向热通量）
-      g_3 = g_4（下壁）、g_4 = g_3（上壁）
-
-    anti-bounce-back 使节点 x=0 与壁面 x=−0.5 之间的温度插值等于 T_wall
-    （二阶 Dirichlet）；bounce-back 对 advection-diffusion 等价于 ∂T/∂n = 0。
+    - 绝热下/上壁（壁面 y=∓0.5，与速度场 no-slip 半程壁同位）：周期
+      ``temperature_stream`` 把从下壁行向下离开的分布 g_pre[4,0,:] 绕行到
+      顶行（= post-stream 的 g[4,ny−1,:]），从顶行向上离开的绕行到底行
+      （= g[3,0,:]）。此处将其从对侧取回并按半程 bounce-back 反射回原壁行：
+        g[3,0,:] = g_pre[4,0,:]（= g[4,−1,:]），g[4,−1,:] = g_pre[3,ny−1,:]（= g[3,0,:]）
+      净绝热通量逐位恒等于 0（两壁 ΔΣT 互为相反数）。旧版
+      g[3,0,:]=g[4,0,:] 取的是 post-stream 自行 1 到达的 g_pre[4,1,:]，
+      并非应反射的 g_pre[4,0,:]——这是旧规则绝热壁假热汇的根因
+      （对流场下两者之差即泄漏，实测 Ra=1e4 N=64 约 −2.2e-2 步⁻¹）。
+    - 左右 Dirichlet 列（等温壁位于节点 x=0 / x=nx−1，间距 nx−1 格，与
+      速度场 no-slip 壁同位）：整列取温度平衡分布（u=0，g_i = w_i·T_wall，
+      thermal3d 同构），指向流体的群体（左壁 g_1、右壁 g_2）叠加第一
+      流体列的非平衡修正，把有效等温面从距第一流体节点 τ_T 格处拉回
+      壁节点（详见下方实现注记；修正量自静止群体 g_0 零和扣除，壁列
+      ΣT = s_w·T_wall 与纯冻结一致）。x 向周期绕行的落点在被整列覆写
+      范围内，不参与能量账目。
+    - 纯扩散 u=0 时全场均匀温度保持不动（tests/test_thermal.py 自洽测试）。
     """
+    w = W5.to(device=g.device, dtype=g.dtype)
+    w1, w2 = float(w[1]), float(w[2])
+    # 非平衡修正项（取自 BC 前输入场：第一流体列未被任何壁规则修改）
+    T1 = g[:, :, 1].sum(dim=0)  # 第一流体列温度
+    Tn2 = g[:, :, -2].sum(dim=0)  # 倒数第二列温度
+    neq_left = g[1, :, 1] - w1 * T1  # 指向流体群体所携非平衡（左壁）
+    neq_right = g[2, :, -2] - w2 * Tn2  # （右壁）
     g = g.clone()
-    w = W5.to(g.device)
     # 分布张量形状 (Q, ny, nx)：g[方向, y, x]。
-    # 左壁 x=0：缺失方向 1（+x，从壁面 x=−0.5 进入流体节点）
-    g[1, :, 0] = -g[2, :, 0] + 2.0 * w[1] * t_hot
-    # 右壁 x=nx−1：缺失方向 2（−x）
-    g[2, :, -1] = -g[1, :, -1] + 2.0 * w[2] * t_cold
-    # 下壁 y=0：缺失方向 3（+y），绝热反弹（零法向通量）
-    g[3, 0, :] = g[4, 0, :]
-    # 上壁 y=ny−1：缺失方向 4（−y），绝热反弹
-    g[4, -1, :] = g[3, -1, :]
+    # 解缠：被周期 stream 绕行到对侧壁行的本壁出射分布
+    refl_from_bottom = g[4, -1, :].clone()  # = g_pre[4, 0, :]（下壁向下出射，绕至顶行）
+    refl_from_top = g[3, 0, :].clone()  # = g_pre[3, ny−1, :]（顶壁向上出射，绕至底行）
+    # 半程 bounce-back 反射回原壁行（角点随后被 Dirichlet 覆写）
+    g[3, 0, :] = refl_from_bottom
+    g[4, -1, :] = refl_from_top
+    # 左壁 x=0 整列、右壁 x=nx−1 整列 = 温度 equilibrium（u=0 ⇒ w_i·T_wall）
+    g[:, :, 0] = w.view(5, 1) * t_hot
+    g[:, :, -1] = w.view(5, 1) * t_cold
+    # 指向流体的群体叠加第一流体列的非平衡修正（把有效等温面拉回壁节点）：
+    # 纯冻结把 D2Q5 BGK 的有效等温面放到距第一流体节点 τ_T 格处
+    # （1D 导热探针实测 x_hot = 1−τ_T），壁面 Nu 系统性偏低；
+    # 修正量 = 该群体在体节点稳态所携非平衡（纯导热斜率 s 时恰为 w·τ_T·s），
+    # 均匀场恒为 0（纯扩散自洽性保持）。g_1 平衡只含 c_x·u_x 项，近壁
+    # u_x≈0，忽略 u 的误差为二阶小量。
+    # 修正量同时从静止群体 g_0 扣除（g_0 永不离开壁列）：壁列 ΣT 保持
+    # s_w·T_wall，节点温度读数与纯冻结一致；交付值只依赖 g_1(BC) 与
+    # 碰撞平衡（由 T(0) 决定），两者均不变——物理与逐位交付不变。
+    g[1, :, 0] = g[1, :, 0] + neq_left
+    g[0, :, 0] = g[0, :, 0] - neq_left
+    g[2, :, -1] = g[2, :, -1] + neq_right
+    g[0, :, -1] = g[0, :, -1] - neq_right
     return g
 
 
