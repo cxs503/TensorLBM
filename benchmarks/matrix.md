@@ -74,6 +74,9 @@
 | P19 Taylor-Aris 剪切分散 | D2Q9 流（pre-stream 半程 BB + 周期体力）+ D2Q5 被动标量（内联解缠零通量壁，披露） | Deff/D = 1+Pe²/210（Taylor 1953 / Aris 1956 缝隙） | ❌ 容差 6/6 过（0.05-0.26%）但单调 0/3——负 O(1/H²)+正地板变号结构，定源记录留 pending |
 | P20 NACA0012 Cl（α=5° Re=1000） | D2Q9 MRT + apply_simple_channel_boundaries + BB + MEM 力（airfoil_benchmark mask） | Kurtulus 2015 Fig4a 数字化 0.132±0.015（锁定）；文字锚 0.26 披露 | ❌ FAIL+参考受限：+85~99% 不单调（对 0.26 亦 0.5-5.9% 不单调）；参考图文自不一致 2.07×/1.3×；Cd 严格单调 0.1387→0.1340 |
 | P21 环隙 Poiseuille（a/R=0.5） | D3Q19 BGK + Zou-He + bounce_back_cells_3d（楼梯曲壁） | 自推精确解 u(r)（3 参数 c0+c1lnr−c2r² 族 + Φ 流量式） | ❌ not_verified 复合：eff 1.16→0.13→0.05% 全过单调，但 δi spread 0.0937>0.05 违格无关条款（内壁曲率真实 O(1/R) 漂移；平壁 duct 对照格无关） |
+| P22 两相 Poiseuille（SC-MCMP） | porous_media 入口（collide_sc_two_component + stream + BB + apply_wall_wettability_sc，w4b_lib 编排） | 库自备 _two_phase_poiseuille_analytical（名义黏度比 M=2） | ❌ FAIL 反收敛：26.82→33.17%（阈值 9-11 倍）；分量自速度平衡结构性偏差（xfail 锁证，PR #305 外） |
+| P23 毛管侵入 Washburn（SC-MCMP） | 同上（固 seam+气储层+水汇，修正案 #2） | Washburn 两段 ODE（σ 不可测→仅黏性项）；β=0.5 | ❌ FAIL：β 0.5954/0.5159、绝对 +689%/+949%、W128@164 NaN（稳定包络 W≤64）；2β 估计器缺陷已修 PR #305 |
+| P24 渗透率（周期圆柱方阵 Stokes） | D2Q9 BGK τ=1.0 + 周期胞 + 掩码体力 _apply_body_force_2d + BB（compile_route） | Sangani–Acrivos 1982 f 表（Basilisk 逐字交叉），k_ref=d²/((1−φ)f) | ✅ 已入库 2026-09-21（fs=10 主判据）：φ=0.3 最细 1.38%、φ=0.5 五档 73.87→…→0.0484%；fp32 噪声地板伪差定源（注入比 r=1.18513 闭合）+ fs=1 链并列披露 |
 
 **新问题方向（未覆盖）**：多相/自由表面（Laplace/溃坝）、声学、RANS 通道、
 D3Q27 高精度、AMR 网格收敛、壁面函数高 Re。

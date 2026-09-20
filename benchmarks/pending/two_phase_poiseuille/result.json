@@ -1,0 +1,50 @@
+{
+ "prereg": {
+  "snapshot_sha256": "40e5c80375bd34e15b39d0ee4e2da61cd54dd04ea1889a4983bc211527a083fb",
+  "notes_sha256": "26e2f9f556c9304be1bbe59271ae3241bd8a3c7a3b467cf7ab77fefebd00dca2",
+  "notes_mtime": "2026-09-21 00:51:32.652232092 +0800",
+  "snapshot_mtime": "2026-09-20 23:52:07.601598378 +0800"
+ },
+ "iron_rule": {
+  "physics_kernel_defs_found": [],
+  "pass": true
+ },
+ "part": "part1_two_phase_poiseuille",
+ "part1": {
+  "H64": {
+   "n_center": 55,
+   "max_rel_err": 0.26821538643505377,
+   "mean_rel_err": 0.14209958433345918,
+   "recorded_max_rel_err": 0.2682153880596161,
+   "recorded_mean_rel_err": 0.14209958910942078,
+   "recompute_matches_recorded": true,
+   "u_max_ratio": 1.2652425421161708,
+   "spurious_uy_max_recorded": 0.07936520874500275,
+   "Ma_max": 0.046743934944757225,
+   "Ma_recomputed": 0.046743934944757225,
+   "finite": true
+  },
+  "H128": {
+   "n_center": 110,
+   "max_rel_err": 0.33173655541170183,
+   "mean_rel_err": 0.15572332635120198,
+   "recorded_max_rel_err": 0.33173656463623047,
+   "recorded_mean_rel_err": 0.15572331845760345,
+   "recompute_matches_recorded": true,
+   "u_max_ratio": 1.3145829551904207,
+   "spurious_uy_max_recorded": 0.0796600952744484,
+   "Ma_max": 0.19428996495289802,
+   "Ma_recomputed": 0.19428996495289802,
+   "finite": true
+  },
+  "criteria": {
+   "criterion_max_rel_err_le_3pct": {
+    "H64": false,
+    "H128": false
+   },
+   "criterion_monotone_decreasing": false,
+   "verdict": "FAIL"
+  }
+ },
+ "record": "benchmarks/pending/two_phase_poiseuille (Wave-4 W4-B Part 1, FAIL)"
+}
