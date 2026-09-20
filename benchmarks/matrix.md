@@ -62,11 +62,14 @@
 | P7 NACA 翼型 | airfoil_benchmark | Cl 文献 | 子 agent 中断，待重派 |
 | P8 Blasius 平板 | turbulent_channel | f'(η) 解析 | 子 agent 中断，待重派 |
 | P9 空化气泡 | cavitation（需先修 EOS 缺口） | RP 理论 | 缺口分析完成 |
-| P10 后向台阶 | backward_facing_step | Armaly 1984 | 12.2% 未达标，待改进 |
+| P10 后向台阶 | backward_facing_step（库入口+τ-matched 梯子） | Erturk 2008 2.878（Armaly 1983 几何 ER=1.9423） | ❌ −4.33%（最细档）未达标：参考簇散布 ~6%>3% 互斥 + BB 滑移伪差 B=42±7（2026-09-20 定源记录） |
 | P11 环形 Taylor-Couette | C1 BGK + 旋转壁 Ladd BB（rotating_cylinder） | 解析 u=Ar+B/r + 力矩 M=4πνB（R_eff 剖面反演） | ✅ 已入库 2026-09-19，0.154%（最细档） |
 | P12 Stokes 第二问题 | C1 BGK + Zou-He 振荡盖 + specular 远场 | 解析 U·e^{−ky}·cos(ωt−ky) | ✅ 已入库 2026-09-19，0.008%（最细档） |
 | P13 Womersley 振荡管流 | C1 BGK + Zou-He 驱动 + pre-stream 半程 BB | cosh 复数解析 | ✅ 已入库 2026-09-19，0.117%（最细档） |
 | P14 start-up Poiseuille | C1 BGK + Zou-He + pre-stream 半程 BB | 奇 n 级数 | ✅ 已入库 2026-09-19，0.165%（最细档） |
+| P15 热自然对流方腔 | D2Q9 流场 + thermal D2Q5（壁 BC 修复 PR #300） | de Vahl Davis 1983（Nu/u_max/v_max） | ✅ 已入库 2026-09-20，Nu −0.83%/−1.41%、u −0.91%/−0.73%、v −1.12%/−0.89%（128/256 档；N=64 粗档如实判败披露） |
+| P16 液滴振荡（严格标准复活） | SCMP SC94 collide + stream，R=128/160/224 | Rayleigh ω²=6σ/((ρl+ρv)R³)，σ_i 逐档自测 | ✅ 重新入库 2026-09-20，原始 ω_d −2.005%（最细档，零修正直接比） |
+| P17 线性声学平面波 | D2Q9 BGK 线性化（声学扰动叠加平衡态） | 连续 c_s 与 νk² 衰减（自推离散理论三链闭环） | ✅ 已入库 2026-09-20，波速 +0.013% / 衰减 +0.080%（最细档） |
 
 **新问题方向（未覆盖）**：多相/自由表面（Laplace/溃坝）、声学、RANS 通道、
 D3Q27 高精度、AMR 网格收敛、壁面函数高 Re。

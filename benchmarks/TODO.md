@@ -39,7 +39,7 @@
 | B17 | taylor_green_2d | 2D TG 涡衰减（N=64–128, Re=100–1000） | 解析 γ_E=4νk²（动能）, γ_vel=2νk²（速度） | **err_E ≤ 0.13%（全部 13 案例）** | ✅ 已验证 2026-08-18 |
 | B17-3D | taylor_green_3d | **3D TG 涡衰减 D3Q19 周期域（N=64/96/128³, Re=24, U0=0.05）** | 解析 γ_E=6νk²（动能）, γ_vel=3νk²（速度；\|κ\|²=3k²） | **err_E +0.309%→+0.279%→+0.250%（三档单调收敛）** | ✅ 已验证 2026-08-19 |
 | B30 | shear_wave_decay | 2D 剪切波衰减（H=64/128, τ=0.8, U0=0.05/0.1） | 解析 γ_vel=νk²（速度）, γ_E=2νk²（动能） | **err_vel +0.051%→+0.011%（两档收敛）** | ✅ 已验证 2026-08-18 |
-| B24 | droplet_oscillation | 液滴振荡 m=2 Rayleigh 频率（SCMP SC94，R=20/30/40，30000 步） | Rayleigh ω²=6σ/(ρR³)，σ_eff=0.056112（laplace_droplet 实测） | 阻尼修正 ω₀=√(ω_d²+γ²)：+2.59/−1.50/−2.39%（**原始直接观测量 −6~−8% > 3%**） | ❌ **移出 verified/（2026-09-19 严格标准：通过修正的不算直接模拟）→ pending/droplet_oscillation/** |
+| B24 | droplet_oscillation | 液滴振荡 m=2 Rayleigh 频率（SCMP SC94，R=128/160/224，G=5，τ=1.0，L=4R 周期） | Rayleigh ω²=6σ_i(R)/((ρ_l+ρ_v)R³)，σ_i/密度逐档内嵌静态 Laplace 自测（basis C，比旧常数口径更严） | **原始观测阻尼频率 ω_d 直接比（严格标准零修正）**：−2.649/−2.404/−2.005% 全 ≤3% 且严格单调；ω₀ 诊断 −0.39/−0.36/−0.20%（阻尼频移机制链） | ✅ **重新入库 2026-09-20（R↑ 杠杆复活，γ/ω₀ 0.22→0.19）→ verified/droplet_oscillation/** |
 
 ## 当前状态（2026-08-18 实测）
 
@@ -57,7 +57,7 @@
 - **B14-椭圆 3D 椭圆管 Poiseuille**（D3Q19 速度入口+压力出口+半程反弹壁，a:b=2:1，s^Q 单尺度方法=R_eff^Q 类比）：a=20 **5.11%**>3%（a=40 2.43%，单调收敛但未两档全达标）→ **记录于 benchmarks/verified/poiseuille_3d_ellipse/（not_verified）**。根因：数字椭圆壁面**各向异性**（面积等效位移 a_eff-a≈+0.21 vs b_eff-b≈+0.11，剖面拟合半轴 (a_fit,b_fit)=(a+1.1, b−0.15) 格），单尺度无法表达；但剖面本身是精确椭圆抛物面（拟合残差<0.2%），求解器/BC 正确。后续可试 两观测量（Q+Δp）水力反演 或 曲率相关壁面位置修正
 - B1 球 Re=100：D40 实测 -13%（需 D60/D80 加密）
 - B4 圆柱 Re=100：4.8%（需加密）
-- backward_step：88%（跑错 Re=200，需重跑 Re=100）
+- backward_step：**定源完成 2026-09-20（W2-C，仍未达标）**——旧 12.2% 根因=Re 口径错位（U_max·s=100 ⇔ Armaly Re=Ū·2h_i=141.4）；τ-matched 三档 2.680→2.718→2.753 vs Erturk 2008 2.878 单调收敛但 −6.9→−4.3% 全 >3%；文献簇与实验锚散布 ~6%>3%（2D 数值 2.792-2.965 vs Armaly 实验 3.05，达标带互斥）= 参考受限；BB 滑移伪差 ∝(τ−0.5)Δx（B=42±7 三网格定标）。详见 pending/backward_step/ 判决记录
 - B1/B2/B4/B7/NACA/Blasius/空化/SUBOFF：子 agent 进行中
 
 ## 达标路线（3% 内，真实模拟，禁外推）
@@ -90,7 +90,7 @@
 | B35 | Stokes 第二问题（振荡平板，D2Q9，τ=0.8，Zou-He 移动盖板 + specular 自由滑移远场） | ✅ **已入库** verified/stokes_second_problem/。复振幅 max **kH6: 0.106%→0.042%→0.023%、kH8: 0.169%→0.036%→0.008%**（H=50/100/200 单调收敛；相位联合掩码 lag≥1rad∩A≥0.1U）；纯幅值 0.033→0.011→0.006 / 0.076→0.015→0.003。**工程发现**：无滑移远壁污染 Stokes 层衰减尾（壁距 6→18 衰减长度误差 2.65%→0.064%；带无滑移壁不可细化收敛 2.40/2.65/2.75% 上升）——specular 远场根治，与 verified/stokes_first_problem 的 10.8% 注记交叉印证 |
 | B36 | Womersley 振荡管流（D2Q9，α=4/8，Zou-He 周期驱动 + pre-stream 半程 BB 壁） | ✅ **已入库** verified/womersley/。复振幅 phasor max（A≥0.1u_peak 掩码）**α4: 0.097%→0.031%、α8: 0.449%→0.117%**（H=59/119 单调收敛），解析列交叉 ~1e-6 |
 | B37 | start-up Poiseuille 起动流（D2Q9，奇 n 级数解析） | ✅ **已入库** verified/startup_poiseuille/。中心线误差/max(u_max) **0.288%→0.165%**（H=59/119 单调收敛），解析级数交叉 ~4e-7 |
-| B38 | 热自然对流方腔（de Vahl Davis，Ra=1e3/1e4，Pr=0.71，tensorlbm.thermal） | ⛔ **BLOCKED：库 thermal 壁 BC 缺陷**（非 benchmark 方案问题）。`thermal.apply_temperature_boundaries` 的 2D D2Q5 壁规则对 u=0 纯扩散逐位守恒，但与含对流项的 `temperature_equilibrium` + 周期 `temperature_stream` 组合 → **绝热壁假热汇 −2.2e-2/步**（Ra=1e4 N=64 发展态，信噪比 1e10）；冻结温度碰撞的对流项（同流场）泄漏坍缩 ×2612；细化 N=64→128 每 t* 恶化 ×5.3；实测 Nu 误差 ra1e3 +51.7%。修复方向：移植 thermal3d 壁处理到 2D D2Q5（Dirichlet 壁列整列=equilibrium w·T_w、绝热行复制内邻整分布）→ 未来库 PR，修后重扫 {64,128,256}²×{1e3,1e4}。证据工件 /nfs/wangxi/runs/bm_widen_20260919/thermal_cavity/（含控制器独立步进器 ctrl/） |
+| B38 | 热自然对流方腔（de Vahl Davis，Ra=1e3/1e4，Pr=0.71，tensorlbm.thermal） | ✅ **已入库 2026-09-20（库壁 BC 修复 PR #300 后重扫；N=128/256 档入库，N=64 粗档如实判败披露）**。原 ⛔ BLOCKED 记录：库 thermal 壁 BC 缺陷。`thermal.apply_temperature_boundaries` 的 2D D2Q5 壁规则对 u=0 纯扩散逐位守恒，但与含对流项的 `temperature_equilibrium` + 周期 `temperature_stream` 组合 → **绝热壁假热汇 −2.2e-2/步**（Ra=1e4 N=64 发展态，信噪比 1e10）；冻结温度碰撞的对流项（同流场）泄漏坍缩 ×2612；细化 N=64→128 每 t* 恶化 ×5.3；实测 Nu 误差 ra1e3 +51.7%。修复方向：移植 thermal3d 壁处理到 2D D2Q5（Dirichlet 壁列整列=equilibrium w·T_w、绝热行复制内邻整分布）→ 未来库 PR，修后重扫 {64,128,256}²×{1e3,1e4}。证据工件 /nfs/wangxi/runs/bm_widen_20260919/thermal_cavity/（含控制器独立步进器 ctrl/） |
 | B39 | Rayleigh-Taylor 线性增长（SCMP 伪势，ρ 比 2.2，Chandrasekhar 含粘性/表面张力色散） | ❌ **SCMP 参数面内不可行**（非执行缺陷）。10/10 案例基频振幅全衰减（滑窗最优拟合 R²≥0.9967）；g 扫描线性零交叉 **g\*=2.34e-5 > 汽相 spinodal 天花板 7.141e-6** → 无可行窗口；伪势 σ_pt=1.215e-3 对 Laplace 2.06e-3 散布 −41%；毛细截止 γk²/Δρ=1.125e-6 复现。若重开需换多相模型（伪势标定重做或自由能型/MCMP）。注：原报告"超额阻尼 ∝k²"不成立（g=0 时 λ140/λ280 超额比 1.11≈k 无关），机制解释定性可能、定量形式无支撑。证据工件 /nfs/wangxi/runs/bm_widen_20260919/rt_instability/（含控制器自推 5×5 色散 checker） |
 
 ### 严格标准复审（2026-09-19 owner 裁定："通过修正、不是直接模拟的都是假的，不能算"）
@@ -101,6 +101,18 @@
 - R_eff 案例双通道复核（控制器亲算）：taylor_couette **名义半径帧** 2.133→0.974→0.435% 单调全 ≤3%；poiseuille_3d_pipe **名义帧直接通道**（中心线速度 vs 2u_in）−1.12%→−0.81% 单调全 ≤3%——两案在最严格"名义解析直接比"口径下裸过，R_eff 帧为增强披露而非拐杖，保留；
 - 观测量提取方式不算修正（衰减率 LSQ、σ 斜率拟合、幅值掩模测量域、中线取线）；碰撞/边界方案选择（TRT、RLBM、V3 半程 BB、BB fix 变体）属模拟配方非事后修正。
 - 严格口径计数：**verified/ = 22 个直接达标案例**。
+
+## 2026-09-20 新增（Wave-2：严格标准复活 + 库修复 + 新问题类）
+
+> 四路并行（A thermal 修复+重扫 / B droplet 严格标准复活 / C backward_step 定源 / D 声学新类），
+> 控制器独立复算（验证器=独立实现）。工件暂存 /nfs/wangxi/runs/bm_widen_20260920/。
+
+| # | 案例 | 状态 |
+|---|------|------|
+| B40 | 线性声学平面波色散+衰减（D2Q9 BGK 线性化，N=16/32/64，τ=1.0，ε=1e-3，fp64 CPU） | ✅ **已入库** verified/acoustics/。波速 vs 连续 c_s **+0.219→+0.054→+0.013%**、衰减率 vs νk² **+1.314→+0.323→+0.081%** 双 ≤3% 严格单调（每档比 ~4×=O(N⁻²)）；与自推离散理论（2×2 行列式特征值）闭合 1e-6-1e-7 三链闭环。**衰减=νk² 恰好（非 ν/2 非 2ν，离散时间 (τ−½) 修正）**。次案 BB 方腔驻波被壁损耗（Kirchhoff BL）支配如实记为限制不晋级 |
+| B41 | droplet_oscillation 严格标准复活 | ✅ **重新入库** verified/droplet_oscillation/（见 B24 行；判据=原始 ω_d 直接比，杠杆=R↑ 使阻尼频移 γ²/2ω² 从 −6~−8% 压入 3% 线） |
+| B42 | 热腔库修复后重扫 | ✅ **已入库** verified/thermal_cavity/（六案六量 64→128→256 全严格单调；入库档 N=128/256 全 ≤3%，N=64 两案粗网格离散误差 5/6 子门超 3% 如实披露；ra1e3_n256 用 fp64——fp32 浮力量化 A/B 实锤） |
+| B43 | backward_step Re=100 定源 | ❌ **未达标但完整定源** pending/backward_step/（判决记录替换；见上 B38 节下 backward_step 行：Re 口径错位根因+参考受限+BB 滑移伪差 B=42±7 定标；连续极限外推 −1.1% 不作判据——预注册禁止） |
 
 ## 文件夹结构
 

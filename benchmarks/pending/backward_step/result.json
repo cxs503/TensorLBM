@@ -1,19 +1,91 @@
 {
-  "case": "backward_step_re200_re400",
-  "re200": {
-    "ny101": {
-      "xr_h": 5.736,
-      "err_pct": 4.3
-    },
-    "ny161": {
-      "xr_h": 6.045,
-      "err_pct": 9.8
-    }
+  "task": "W2-C backward-facing step Re=100",
+  "verdict": "NOT PASSED at Re=100 under the pre-registered criterion (best tau-matched level -4.33% vs primary reference Erturk 2.878, needs <=3%); monotone convergence satisfied; residual gap fully diagnosed as Re-independent lattice artifact (see decomposition); reference declared limited (literature spread ~6% at target point); same machinery passes <=3% vs Erturk at Re>=150 on identical grid/tau",
+  "convention": {
+    "geometry": "Armaly 1983 JFM 127:473 apparatus: h_i=0.52cm, s=0.49cm, H=1.01cm, ER=1.9423; upstream 20s, downstream 30s (50s tested, no effect)",
+    "re_definition": "Re = U_mean*2*h_i/nu = 100 (Armaly 1983 verbatim; Erturk 2008 identical; nu calibrated to discrete inlet profile mean so Re=100.00 exact)",
+    "inlet": "fully developed parabolic over inlet height (halfway-bounce-back wall offset), Zou-He velocity inlet; uniform-inlet tested, no effect",
+    "outlet": "Zou-He pressure rho=1 (zero-gradient tested: -0.009 X_r but 15x mass drift)",
+    "walls": "library full-way bounce-back (=halfway effective wall), uniform grid",
+    "xr_measurement": "PRIMARY (revision 1): stream-function reattachment psi_min back-to-zero == Erturk X1 definition; also reported: row1 (originally pre-registered primary), row2, bubble tip; origin x=x_step-0.5, normalised by step height",
+    "common_entry": "tensorlbm.backward_facing_step.run_backward_facing_step, worktree /nfs/wangxi/worktrees/bm_w2 @ c0b84d96d1 (read-only; BCs+measurement monkey-patched at module level only)"
   },
-  "re400": {
-    "status": "RLBM 稳定但分离泡异常巨大(~9h+), 11.5h 短域+压力出口与泡尾回流耦合 → xr* 测量退化"
+  "reference": {
+    "primary": {"source": "Erturk 2008, Computers & Fluids 37(6):633-655, Table 1 (ER=1.942)", "value": 2.878, "acceptance_band": [2.792, 2.965]},
+    "experimental_anchor": {"source": "Armaly 1983 exp., NAFEMS/Feel++ digitization (Re_h=101.6)", "value": 3.05, "note": "own re-read of original Fig.4 gives 3.0-3.3"},
+    "other_numerical": {"source": "Armaly 1983 own TEACH 2D (Fig 13a, 45x45 upwind)", "value": "3.0-3.2 (figure read)"},
+    "cross_checks": "Denham exp vs Erturk agree <=1.2% at Re_h 174-425; Armaly exp vs Erturk: -0.3% @174, +1.1% @300, +6.0% @100",
+    "limited": "spread at target point ~6% (2.878 vs 3.05) > 3%; bands mutually exclusive; controller adjudicates"
   },
-  "analysis": "Re=200 两档 +4.3%/+9.8% 加密恶化(铁律不达标)；Re=400 MRT τ=0.529 失稳→RLBM(方腔同款修复)稳定但域长不够。低 Re 分离泡系统性偏长是共同根因",
-  "verified": false,
-  "date": "2026-08-19"
+  "ladder_pregregistered_fixed_umax": {
+    "description": "fixed U_max=0.05 ladder (tau drifts up: 0.602/0.664/0.746) - pre-registered in NOTES section 6; contains tau-confound (revision 2), reported for the record",
+    "rows": [
+      {"tag": "L1_ny101_sh49", "h_i": 51, "tau": 0.602, "xr_row1": 2.5163, "xr_psi": 2.6800, "err_psi_vs_erturk_pct": -6.88, "err_psi_vs_armaly_pct": -12.13, "steady": true},
+      {"tag": "L2_ny161_sh78", "h_i": 82, "tau": 0.664, "xr_row1": 2.6002, "xr_psi": 2.7460, "err_psi_vs_erturk_pct": -4.59, "err_psi_vs_armaly_pct": -9.97, "steady": true},
+      {"tag": "L3_ny241_sh117", "h_i": 123, "tau": 0.746, "xr_row1": 2.7123, "xr_psi": 2.8053, "err_psi_vs_erturk_pct": -2.53, "err_psi_vs_armaly_pct": -8.02, "steady": true}
+    ]
+  },
+  "ladder_tau_matched": {
+    "description": "tau=0.602 fixed at all levels, U_max=0.05/0.0311/0.0207 ~ 1/h_i, nu=0.034, Ma=0.087/0.054/0.036; the genuinely convergent ladder (revision 2); (tau-0.5)*dx shrinks 1/sh",
+    "rows": [
+      {"tag": "L1_ny101_sh49", "h_i": 51, "u_max": 0.05, "xr_row1": 2.5163, "xr_row2": 2.6776, "xr_psi": 2.6800, "xr_tip": 2.7028, "err_psi_vs_erturk_pct": -6.88, "err_psi_vs_armaly_pct": -12.13, "steady": true, "drift_last3": 0.0038},
+      {"tag": "L2p_tau0602_ny161", "h_i": 82, "u_max": 0.0310976, "xr_row1": 2.5314, "xr_row2": 2.6932, "xr_psi": 2.7177, "xr_tip": 2.7339, "err_psi_vs_erturk_pct": -5.57, "err_psi_vs_armaly_pct": -10.89, "steady": true, "drift_last3": 0.0092},
+      {"tag": "L3p_tau0602_ny241", "h_i": 123, "u_max": 0.0207317, "xr_row1": 2.5965, "xr_row2": 2.7275, "xr_psi": 2.7534, "xr_tip": 2.7655, "err_psi_vs_erturk_pct": -4.33, "err_psi_vs_armaly_pct": -9.72, "steady": "quasi (jitter +-0.012; drift_last3=0.023)", "drift_last3": 0.023}
+    ],
+    "convergence": "psi increments +0.0377 (L1->L2p), +0.0357 (L2p->L3p): monotone, decreasing -> monotone convergence criterion SATISFIED; but finest level error -4.33% > 3% -> NOT PASSED"
+  },
+  "artifact_decomposition": {
+    "model": "X_r(grid,tau) = X_inf + A*dx^p + B*(tau-0.5)*dx (bounce-back slip ~ (tau-0.5)*dx, verified at three grids)",
+    "B_determinations": [
+      {"pair": "L1 vs S3b (same grid, dtau=0.051)", "B": 41.8},
+      {"pair": "L2 vs L2p (same grid, dtau=0.062)", "B": 35.6},
+      {"pair": "L3p vs S5b (same grid, dtau=0.267)", "B": 48.9}
+    ],
+    "slip_contribution_at_tau_matched_levels": {"L1": 0.087, "L2p": 0.052, "L3p": 0.036},
+    "resolution_sequence_after_slip_removal": [2.593, 2.666, 2.718],
+    "extrapolated_continuum_limit": {"value": 2.845, "uncertainty": 0.04, "err_vs_erturk_pct": -1.1, "err_vs_armaly_pct": -6.7, "status": "model-dependent extrapolation, reference only (pre-registration section 5)"},
+    "tau_bracket_at_L3_grid": {"tau=0.602": 2.7534, "tau=0.746": 2.8053, "tau=0.869": 2.8650}
+  },
+  "re_sweep_diagnostic": {
+    "config": "L3 grid (h_i=123), tau=0.602, same as tau-matched ladder",
+    "rows": [
+      {"re": 100, "xr_psi": 2.7534, "erturk": 2.878, "abs_dev": -0.125, "err_pct": -4.33},
+      {"re": 150, "xr_psi": 3.7854, "erturk": 3.889, "erturk_note": "linear interp 100-200", "abs_dev": -0.104, "err_pct": -2.66},
+      {"re": 200, "xr_psi": 4.8047, "erturk": 4.900, "abs_dev": -0.095, "err_pct": -1.94}
+    ],
+    "conclusion": "absolute deviation ~constant (-0.10) -> Re-independent artifact; relative error within 3% for Re>=150 on the identical grid/tau; Re=100 is the hardest point for this wall treatment"
+  },
+  "sensitivity": {
+    "S1_domain_length_50s": {"xr_psi": 2.6800, "delta_vs_L1": 0.0000},
+    "S2_uniform_inlet": {"xr_psi": 2.6828, "delta_vs_L1": 0.0028},
+    "S3a_lowMa_MRT_tau0.551": {"xr_row2": 2.6301, "note": "sits on BGK tau-line extension; row-1 backflow absent (MRT near-wall anomaly, logged, not used)"},
+    "S3b_highMa_BGK_tau0.653": {"xr_psi": 2.7235, "delta_vs_L1": 0.0435, "use": "tau-slope quantification -> revision 2"},
+    "S4_outlet_zero_gradient": {"xr_psi": 2.6714, "delta_vs_L1": -0.0086, "note": "mass drift 15x worse -> pressure outlet kept"},
+    "S5b_L3grid_tau0.869": {"xr_psi": 2.8650, "use": "tau-slope at fine grid, validates slip scaling"}
+  },
+  "physics_checks": {
+    "max_abs_u": "<= 1.03 * U_max in all runs",
+    "mean_rho": "1.0013-1.0031 (all runs)",
+    "mass_drift": "+0.3% steady (Zou-He pressure outlet characteristic; S4 copy outlet 15x worse)",
+    "steady_state": "all ladders/sensitivities steady per criterion except L3p/R150/R200 which show +-0.01-0.012 quasi-steady jitter in the row-1 series; psi measured on final snapshot"
+  },
+  "disclosures": [
+    "reference limited: experiment (3.05) vs best 2D numerical (2.878) differ by 6% at the target point; acceptance bands mutually exclusive; primary chosen as the stricter Erturk value",
+    "originally pre-registered row-1 measurement shown to be biased low (revision 1); all values still reported under both conventions",
+    "pre-registered fixed-U_max ladder contains tau-drift confound (revision 2); its apparent -2.53% at L3 is not a clean grid-convergence result",
+    "tau-matched ladder (the convergent one) misses 3% at all levels: -6.88/-5.57/-4.33%",
+    "extrapolated continuum limit 2.845+/-0.04 is model-dependent (slip model B=36-49 across three determinations) and not a pass basis per pre-registration",
+    "ER discrete wobble <=0.17% across levels",
+    "corner singularity resolved by 1 cell; uniform grid + bounce-back, no corrections applied (no extrapolation, no manual fix)",
+    "R150 reference is an interpolation between Erturk tabulated points (2.878@100, 4.900@200)",
+    "collected_results.json errE fields for R150/R200 rows are computed vs the Re=100 anchor and are inapplicable; use re_sweep_diagnostic rows"
+  ],
+  "artifacts": {
+    "dir": "/nfs/wangxi/runs/bm_widen_20260920/backward_step/",
+    "preregistration": "NOTES.md (sections 0-10 pre-registered before any run; section 11 revisions registered after L1-L3/S1-S4 and before L2p/L3p)",
+    "driver": "run.py; chains: run_chain.sh (L1-L3,S1-S4), run_chain2.sh (L2p,L3p,S5b), run_chain3.sh (R200,R150)",
+    "analysis": "analyze_field.py, collect_results.py, collected_results.json",
+    "runs": "backward_facing_step/<TAG>/{run_metadata.json, reattachment.csv, result_extra.json, ux_XXXXXXXX.npz, flow_step_*.png}",
+    "logs": "L1.log ... R150_L3grid_tau0602.log, chain.log, chain2.log, chain3.log"
+  }
 }
