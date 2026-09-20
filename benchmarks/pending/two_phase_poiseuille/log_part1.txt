@@ -1,0 +1,17 @@
+Part 1 formal H64
+  H64 step=20000 u_max=0.026590 finite=True conv_rel=None
+  H64 step=40000 u_max=0.026979 finite=True conv_rel=0.014596587449197396
+  H64 step=60000 u_max=0.026988 finite=True conv_rel=0.00033816690614977716
+H64: max_err=26.82% mean=14.21% u_ratio=1.2652 spur=0.0794
+Part 1 formal H128
+  H128 step=20000 u_max=0.072113 finite=True conv_rel=None
+  H128 step=40000 u_max=0.097826 finite=True conv_rel=0.35656236636494787
+  H128 step=60000 u_max=0.106976 finite=True conv_rel=0.09353166179779243
+  H128 step=80000 u_max=0.110298 finite=True conv_rel=0.031049429052949582
+  H128 step=100000 u_max=0.111496 finite=True conv_rel=0.010866877908527249
+  H128 step=120000 u_max=0.111907 finite=True conv_rel=0.003687597712919609
+  H128 step=140000 u_max=0.112059 finite=True conv_rel=0.0013555979584472374
+  H128 step=160000 u_max=0.112132 finite=True conv_rel=0.0006555054981944843
+  H128 step=180000 u_max=0.112173 finite=True conv_rel=0.00036504595299983523
+H128: max_err=33.17% mean=15.57% u_ratio=1.3146 spur=0.0797
+saved -> out_part1.json
