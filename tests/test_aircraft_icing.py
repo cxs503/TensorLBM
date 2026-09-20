@@ -30,8 +30,11 @@ from tensorlbm.aircraft_icing import (
     IcingConfig,
     RimeIcingSimulation,
     _tvd_face_states,
+    airfoil_dat_mask_2d,
+    airfoil_le_radius,
     ice_shape_metrics,
     naca0012_mask_2d,
+    parse_airfoil_dat,
     rime_density_macklin,
     run_glaze_icing,
     run_rime_icing,
@@ -1191,12 +1194,16 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
     asserted directly on the 2a side: frozen + pending == delivered.
     """
     rime_kw = dict(t_static_c=-30.0, lwc=2.0e-4, t_exposure=1800.0, steps=900)
+    # IC-D2: the voxel-parity gate stays on the legacy whole-cell renderer
+    # ('drop') — its 2-cell slack was calibrated on whole-cell counting;
+    # the 'carry' settle is mass-gated in block (e) below.
     cfg = _euler_cfg(
         thermo_model="messinger",
         evap_enabled=False,
         glaze_rho_mode="const",
         rime_density_mode="const",
         rho_rime=800.0,  # #84 fix 4: per-step deposit < 1 cell (no runaway)
+        deposit_remainder="drop",
         **rime_kw,
     )
     accel = cfg.t_exposure / (cfg.steps * cfg.dt_phys)
@@ -1250,6 +1257,30 @@ def test_glaze_rime_regression_gate_vs_2a() -> None:
     g2 = run_glaze_icing(cfg2, shots=1, log=lambda *a: None)
     wet2 = g2["panels"]["m_ice_kg"] > 0
     assert np.allclose(g2["panels"]["n_f"][wet2], 1.0)
+    # (e) IC-D2 'carry' settle on the same condition: the deposit renders
+    # the full frozen mass exactly (rendered + pending == frozen), the
+    # settle only ever adds voxels (majority rounding is monotone), and
+    # the audit is mode-independent (the flush never feeds the solver)
+    g3 = run_glaze_icing(
+        _euler_cfg(
+            thermo_model="messinger",
+            evap_enabled=False,
+            glaze_rho_mode="const",
+            rime_density_mode="const",
+            rho_rime=800.0,
+            deposit_remainder="carry",
+            **rime_kw,
+        ),
+        shots=1,
+        log=lambda *a: None,
+    )
+    a3 = g3["audit"]
+    assert math.isclose(
+        a3["rendered_mass_kg"] + a3["pending_liquid_kg"], a3["frozen"], rel_tol=1e-12
+    ), a3
+    assert a3["rendered_over_frozen"] >= 0.999, a3
+    assert a3["frozen"] == g["audit"]["frozen"]
+    assert int(g3["ice_only"].sum()) >= n_g
 
 
 def test_deposit_cascade_column() -> None:
@@ -1266,7 +1297,7 @@ def test_deposit_cascade_column() -> None:
     cell_mass[2, 3] = 3.5 * m_cell
     cell_rho = np.zeros((ny, nx))
     cell_rho[2, 3] = rho
-    solid, m_w = deposit_glaze_ice(
+    solid, m_w, _ice_mass = deposit_glaze_ice(
         airfoil, airfoil.copy(), np.zeros((ny, nx)), cell_mass, cell_rho, dx
     )
     ice = solid & ~airfoil
@@ -1276,13 +1307,117 @@ def test_deposit_cascade_column() -> None:
     assert m_w[ice].sum() == 0.0  # frozen cells fully consumed
 
 
+def test_deposit_flush_settles_remainders() -> None:
+    """IC-D2: the end-of-exposure flush makes the deposit mass-conserving.
+
+    Sub-cell credits accumulate as pending liquid across shots (nothing
+    is dropped per shot); the final flush settles every frontier tip at
+    its exact mass — a >= half-full tip joins the voxel mask, a sub-half
+    tip becomes sub-voxel ice mass — so the ice-mass ledger reproduces
+    the credited total to machine precision.
+    """
+    from tensorlbm.aircraft_icing import deposit_glaze_ice
+
+    ny, nx = 8, 6
+    airfoil = np.zeros((ny, nx), dtype=bool)
+    airfoil[3:, :] = True  # solid floor, fluid rows 0..2
+    rho = 100.0
+    dx = 0.5334 / (0.4 * nx)
+    m_cell = rho * dx**3
+
+    def credit(frac: float) -> np.ndarray:
+        cm = np.zeros((ny, nx))
+        cm[2, 3] = frac * m_cell
+        cr = np.zeros((ny, nx))
+        cr[2, 3] = rho
+        return cm, cr
+
+    # (a) carry without flush: sub-cell credits accumulate, no voxel yet
+    m_w = np.zeros((ny, nx))
+    ice_mass = None
+    for _ in range(3):  # three "shots" of 0.3 cells each
+        cm, cr = credit(0.3)
+        solid, m_w, ice_mass = deposit_glaze_ice(
+            airfoil, airfoil.copy(), m_w, cm, cr, dx, ice_mass=ice_mass
+        )
+        assert solid.sum() == airfoil.sum()  # nothing frozen yet
+    assert math.isclose(float(m_w.sum()), 0.9 * m_cell, rel_tol=1e-12)
+    assert ice_mass.sum() == 0.0
+
+    # (b) fourth shot reaches 1.2 cells -> one full voxel, 0.2 remainder
+    cm, cr = credit(0.3)
+    solid, m_w, ice_mass = deposit_glaze_ice(
+        airfoil, airfoil.copy(), m_w, cm, cr, dx, ice_mass=ice_mass, flush=True
+    )
+    ice = solid & ~airfoil
+    assert ice.sum() == 1 and ice[2, 3]  # sub-half remainder NOT a voxel
+    assert m_w.sum() == 0.0  # everything settled: full voxel + sub-voxel ice
+    assert math.isclose(float(ice_mass.sum()), 1.2 * m_cell, rel_tol=1e-12)
+
+    # (c) majority tip: 0.9 of a cell settles as a voxel at exact mass
+    m_w = np.zeros((ny, nx))
+    cm, cr = credit(0.9)
+    solid, m_w, ice_mass = deposit_glaze_ice(airfoil, airfoil.copy(), m_w, cm, cr, dx, flush=True)
+    ice = solid & ~airfoil
+    assert ice.sum() == 1 and ice[2, 3]
+    assert m_w.sum() == 0.0
+    assert math.isclose(float(ice_mass.sum()), 0.9 * m_cell, rel_tol=1e-12)
+
+    # (d) mixed columns: 0.4 (sub-voxel) + 0.9 (voxel) settle exactly
+    m_w = np.zeros((ny, nx))
+    cm, cr = credit(0.9)
+    cm[2, 1] = 0.4 * m_cell
+    cr[2, 1] = rho
+    solid, m_w, ice_mass = deposit_glaze_ice(airfoil, airfoil.copy(), m_w, cm, cr, dx, flush=True)
+    ice = solid & ~airfoil
+    assert ice.sum() == 1 and ice[2, 3] and not ice[2, 1]
+    assert m_w.sum() == 0.0
+    assert math.isclose(float(ice_mass.sum()), 1.3 * m_cell, rel_tol=1e-12)
+    assert math.isclose(float(ice_mass[2, 1]), 0.4 * m_cell, rel_tol=1e-12)
+
+
+def test_run_glaze_icing_rendered_equals_frozen() -> None:
+    """IC-D2 end-to-end: 'carry' renders the full frozen mass, exactly."""
+    base = dict(
+        thermo_model="messinger",
+        t_static_c=-5.0,
+        t_exposure=3600.0,
+        steps=300,
+    )
+    g = run_glaze_icing(_euler_cfg(**base), shots=3, log=lambda *a: None)
+    a = g["audit"]
+    # the deposit ledger closes against the panel audit to machine precision
+    assert math.isclose(
+        a["rendered_mass_kg"] + a["pending_liquid_kg"], a["frozen"], rel_tol=1e-12
+    ), a
+    # the settle flushes everything that sits on the growth frontier
+    assert a["rendered_over_frozen"] >= 0.999, a
+    assert a["rendered_mass_kg"] > 0.0
+    assert int(g["ice_only"].sum()) > 0  # default-path smoke: voxels appear
+    # the settle is post-solve: 'drop' reproduces the same audit bit-for-bit
+    g_drop = run_glaze_icing(
+        _euler_cfg(**base, deposit_remainder="drop"), shots=3, log=lambda *a: None
+    )
+    assert g_drop["audit"]["frozen"] == a["frozen"]
+    assert g_drop["audit"]["rendered_mass_kg"] <= a["rendered_mass_kg"]
+    assert int(g_drop["ice_only"].sum()) <= int(g["ice_only"].sum())
+    assert g_drop["audit"]["pending_liquid_kg"] >= a["pending_liquid_kg"]
+
+
 def test_glaze_driver_smoke_uniform() -> None:
-    """End-to-end multishot glaze run on a cheap uniform-flow case."""
+    """End-to-end multishot glaze run on a cheap uniform-flow case.
+
+    IC-D2: pinned to ``deposit_remainder='drop'`` — the x-extent bound
+    below was calibrated on whole-cell rendering; the 'carry' settle adds
+    the majority-rounded runback tips farther aft (covered by
+    test_run_glaze_icing_rendered_equals_frozen).
+    """
     cfg = _euler_cfg(
         thermo_model="messinger",
         t_static_c=-5.0,
         t_exposure=3600.0,
         steps=300,
+        deposit_remainder="drop",
     )
     g = run_glaze_icing(cfg, shots=2, log=lambda *a: None)
     a = g["audit"]
@@ -1299,8 +1434,12 @@ def test_glaze_driver_smoke_uniform() -> None:
     assert np.all(p["n_f"] >= 0.0) and np.all(p["n_f"] <= 1.0)
     assert np.all(p["thickness_m"] >= 0.0)
     assert len(g["shot_reports"]) == 2
-    # ice only adjacent to the airfoil
-    assert m["ice_x_offset_max"] < 0.6 and m["ice_x_offset_min"] > -0.3
+    # ice only adjacent to the airfoil.  IC-D3 note: the bound is 0.75
+    # (was 0.6) because the Messinger panel area fix (wetted-surface strip,
+    # not the double-covering deposit ring) weakens h*A cooling, so more
+    # water runs back and runback ice legitimately reaches ~0.68 chord on
+    # this case -- still on the airfoil, not wrapping the domain.
+    assert m["ice_x_offset_max"] < 0.75 and m["ice_x_offset_min"] > -0.3
 
 
 def test_phase3_config_validation() -> None:
@@ -1319,7 +1458,11 @@ def test_phase3_config_validation() -> None:
             IcingConfig(rh=bad)
     with pytest.raises(ValueError):
         IcingConfig(glaze_panel_cells=0.0)
+    for bad in ("keep", ""):
+        with pytest.raises(ValueError):
+            IcingConfig(deposit_remainder=bad)
     d = IcingConfig()
+    assert d.deposit_remainder == "carry"  # IC-D2 default = mass-conserving
     assert d.thermo_model == "instant" and d.freeze_in_run is True
     assert d.glaze_rho_mode == "macklin-ts" and d.htc_mode == "analytic"
     # recovery factor defaults to sqrt(Pr)
@@ -1329,3 +1472,703 @@ def test_phase3_config_validation() -> None:
     # run_glaze_icing rejects the instant model
     with pytest.raises(ValueError):
         run_glaze_icing(IcingConfig(nx=32, ny=24), shots=1, log=lambda *a: None)
+
+
+# ---------------------------------------------------------------------------
+# IC-D1: configurable geometry (Selig .dat contour ingest)
+# ---------------------------------------------------------------------------
+def _naca0012_contour(n_per_side: int = 120) -> np.ndarray:
+    """Sample the NACA 0012 contour in Selig order (upper TE->LE->lower TE)."""
+    b = np.linspace(0.0, math.pi, n_per_side)
+    xc = 0.5 * (1.0 - np.cos(b))
+    yt = (
+        5.0
+        * 0.12
+        * (0.2969 * np.sqrt(xc) - 0.126 * xc - 0.3516 * xc**2 + 0.2843 * xc**3 - 0.1015 * xc**4)
+    )
+    upper = np.column_stack([xc[::-1], yt[::-1]])  # TE -> LE
+    lower = np.column_stack([xc[1:], -yt[1:]])  # LE -> TE
+    return np.vstack([upper, lower])
+
+
+def _write_dat(path, pts, header="TESTAIRFOIL 0012") -> None:
+    with open(path, "w") as fh:
+        if header is not None:
+            fh.write(header + "\n")
+        for x, y in pts:
+            fh.write(f"{x:.6f} {y:.6f}\n")
+
+
+def _rasterize_evenodd(
+    pts: np.ndarray, nx: int, ny: int, chord: float, aoa_deg: float, cx: float, cy: float
+) -> np.ndarray:
+    """Independent reference rasterizer: float64 grid rotation + PNPOLY
+    even-odd crossing test on the closed contour."""
+    aoa = math.radians(aoa_deg)
+    ca, sa = math.cos(aoa), math.sin(aoa)
+    gx, gy = np.meshgrid(np.arange(nx, dtype=np.float64), np.arange(ny, dtype=np.float64))
+    xr = ((gx - cx) * ca - (gy - cy) * sa) / chord
+    yr = ((gx - cx) * sa + (gy - cy) * ca) / chord
+    poly = np.vstack([pts, pts[:1]])
+    inside = np.zeros((ny, nx), dtype=bool)
+    for (x1, y1), (x2, y2) in zip(poly[:-1], poly[1:]):
+        straddles = (y1 > yr) != (y2 > yr)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            xint = (x2 - x1) * (yr - y1) / (y2 - y1) + x1
+        inside ^= straddles & (xr < xint)
+    return inside
+
+
+def test_parse_airfoil_dat_header_and_orientation(tmp_path) -> None:
+    """Header line optional; contour direction/starting point irrelevant."""
+    pts = _naca0012_contour()
+    p = tmp_path / "with_header.dat"
+    _write_dat(p, pts, header="TESTAIRFOIL 0012")
+    got = parse_airfoil_dat(str(p))
+    assert got.shape == (239, 2)  # 2 * 120 - 1 (LE point shared by both sides)
+    np.testing.assert_allclose(got, pts, atol=5e-7)  # 1e-6 write precision
+    # no header line at all
+    p2 = tmp_path / "no_header.dat"
+    _write_dat(p2, pts, header=None)
+    np.testing.assert_allclose(parse_airfoil_dat(str(p2)), got, atol=0.0)
+    # reversed orientation (lower surface first) parses to the same contour
+    p3 = tmp_path / "reversed.dat"
+    _write_dat(p3, pts[::-1], header="REVERSED")
+    np.testing.assert_allclose(parse_airfoil_dat(str(p3)), pts[::-1], atol=5e-7)
+    # started mid-contour (rotate rows by 60) parses identically as a set
+    p4 = tmp_path / "rotated_start.dat"
+    _write_dat(p4, np.roll(pts, 60, axis=0), header=None)
+    np.testing.assert_allclose(parse_airfoil_dat(str(p4)), np.roll(pts, 60, axis=0), atol=5e-7)
+
+
+def test_parse_airfoil_dat_errors(tmp_path) -> None:
+    """Garbage, too-short contours and missing files are hard errors."""
+    p = tmp_path / "garbage.dat"
+    p.write_text("not a dat file\n1 2 3\nonly-one-column\n\n")
+    with pytest.raises(ValueError):
+        parse_airfoil_dat(str(p))
+    p2 = tmp_path / "too_few.dat"
+    p2.write_text("TINY\n0 0\n0.5 0.05\n1 0\n")
+    with pytest.raises(ValueError):
+        parse_airfoil_dat(str(p2))
+    with pytest.raises(FileNotFoundError):
+        parse_airfoil_dat(str(tmp_path / "does_not_exist.dat"))
+
+
+def test_airfoil_dat_mask_matches_independent_rasterizer(tmp_path) -> None:
+    """Voxelization matches an independent even-odd rasterizer cell-for-cell
+    (same grid/rotation convention), at zero and non-zero AoA."""
+    # smooth 24-gon blob centred mid-chord; vertices avoid rotated integer
+    # cell centres so no point sits exactly on an edge
+    ang = np.linspace(0.0, 2.0 * math.pi, 24, endpoint=False)
+    rad = 0.18 + 0.07 * np.cos(3.0 * ang + 0.3)
+    pts = np.column_stack([0.45 + rad * np.cos(ang), rad * np.sin(ang)])
+    p = tmp_path / "blob.dat"
+    _write_dat(p, pts)
+    nx, ny, chord, cx, cy = 160, 96, 80.0, 48.0, 48.0
+    for aoa in (0.0, 7.0):
+        got = airfoil_dat_mask_2d(nx, ny, chord, aoa, cx=cx, cy=cy, dat=str(p))
+        ref = _rasterize_evenodd(pts, nx, ny, chord, aoa, cx, cy)
+        assert got.shape == (ny, nx) and got.dtype == torch.bool
+        assert bool((got.numpy() == ref).all()), (
+            f"aoa={aoa}: {(got.numpy() != ref).sum()} differing cells"
+        )
+        assert ref.sum() > 50  # non-degenerate polygon
+    # exactly one of dat=/points= must be given
+    with pytest.raises(ValueError):
+        airfoil_dat_mask_2d(nx, ny, chord)
+    both = airfoil_dat_mask_2d(nx, ny, chord, points=pts)
+    np.testing.assert_array_equal(
+        both.numpy(), airfoil_dat_mask_2d(nx, ny, chord, dat=str(p)).numpy()
+    )
+
+
+def test_airfoil_dat_mask_naca_convention(tmp_path) -> None:
+    """A dat sampled from the analytic NACA 0012 surface reproduces the
+    implicit NACA mask up to the boundary discretisation (same placement,
+    chord and AoA sense)."""
+    pts = _naca0012_contour()
+    p = tmp_path / "naca0012_sampled.dat"
+    _write_dat(p, pts)
+    nx, ny, chord, aoa, cx, cy = 160, 80, 64.0, 4.0, 48.0, 40.0
+    dat_mask = airfoil_dat_mask_2d(nx, ny, chord, aoa, cx=cx, cy=cy, dat=str(p))
+    ref = naca0012_mask_2d(nx, ny, chord, aoa, cx=cx, cy=cy)
+    d, r = dat_mask.numpy(), ref.numpy()
+    iou = (d & r).sum() / max((d | r).sum(), 1)
+    assert iou > 0.93, f"IoU={iou:.4f}"
+    # leading-edge cell identical: nose at (cx, cy) for both conventions
+    xs = np.nonzero(d.any(axis=0))[0]
+    xs_ref = np.nonzero(r.any(axis=0))[0]
+    assert (
+        xs.min() == xs_ref.min()
+        and abs(int(d[:, xs.min()].sum()) - int(r[:, xs_ref.min()].sum())) <= 2
+    )
+
+
+def test_airfoil_le_radius_circle_fit() -> None:
+    """Kasa fit recovers the exact radius of a known osculating circle."""
+    r0 = 0.0158  # chord units, NACA0012-like
+    th = np.linspace(-math.pi / 3, math.pi / 3, 41)
+    le_arc = np.column_stack([r0 + r0 * np.cos(th), r0 * np.sin(th)])
+    # pad with far-away TE-region points outside the fit window
+    far = np.column_stack([np.linspace(0.3, 0.95, 30), np.full(30, 0.03)])
+    r_le = airfoil_le_radius(np.vstack([le_arc, far]))
+    assert math.isclose(r_le, r0, rel_tol=1e-9)
+    # sparse-window fallback (min_points nearest) still fits the circle
+    sparse = np.vstack([le_arc[::4], far])
+    assert math.isclose(airfoil_le_radius(sparse, min_points=8), r0, rel_tol=1e-9)
+
+
+def test_le_diameter_derivation_and_mapping_note(tmp_path) -> None:
+    """With airfoil_dat set, le_diameter comes from the dat circle fit (not
+    the NACA formula) and mapping_report records the geometry source."""
+    pts = _naca0012_contour()
+    p = tmp_path / "naca0012_sampled.dat"
+    _write_dat(p, pts)
+    cfg = IcingConfig(airfoil_dat=str(p))
+    assert math.isclose(
+        cfg.le_diameter_eff,
+        2.0 * airfoil_le_radius(parse_airfoil_dat(str(p))) * cfg.chord_phys,
+        rel_tol=1e-12,
+    )
+    # the dat circle fit differs from the blind NACA formula on this contour
+    assert not math.isclose(
+        cfg.le_diameter_eff, 2.0 * 1.1019 * cfg.naca_t**2 * cfg.chord_phys, rel_tol=1e-3
+    )
+    rep = cfg.mapping_report()
+    assert rep["airfoil_dat"] == str(p)
+    assert rep["airfoil_dat_points"] == len(pts)
+    assert math.isclose(rep["le_radius_dat_chord"], airfoil_le_radius(parse_airfoil_dat(str(p))))
+    assert rep["le_diameter_source"] == "dat-circle-fit"
+    # explicit le_diameter still wins
+    cfg2 = IcingConfig(airfoil_dat=str(p), le_diameter=0.004)
+    assert cfg2.le_diameter_eff == 0.004
+    assert cfg2.mapping_report()["le_diameter_source"] == "explicit"
+    # default config: no geometry note keys, NACA formula intact
+    d = IcingConfig()
+    rep_d = d.mapping_report()
+    assert "airfoil_dat" not in rep_d and "le_diameter_source" not in rep_d
+    assert math.isclose(d.le_diameter_eff, 2 * 1.1019 * 0.12**2 * d.chord_phys, rel_tol=1e-12)
+    # bad path fails at config time
+    with pytest.raises(FileNotFoundError):
+        IcingConfig(airfoil_dat="/nonexistent/airfoil.dat")
+
+
+def test_geometry_dispatch_in_simulation(tmp_path) -> None:
+    """airfoil_dat=None keeps the exact NACA mask; a dat contour swaps it."""
+    pts = _naca0012_contour()
+    p = tmp_path / "naca0012_sampled.dat"
+    _write_dat(p, pts)
+    base = dict(nx=64, ny=48, chord_frac=0.5, warmup_steps=0, steps=1, device="cpu")
+    sim_default = RimeIcingSimulation(IcingConfig(**base))
+    np.testing.assert_array_equal(
+        sim_default.airfoil.numpy(),
+        naca0012_mask_2d(
+            base["nx"],
+            base["ny"],
+            IcingConfig(**base).chord_lu,
+            IcingConfig(**base).aoa_deg,
+            cx=base["nx"] * IcingConfig(**base).cx_frac,
+            cy=base["ny"] * IcingConfig(**base).cy_frac,
+        ).numpy(),
+    )
+    sim_dat = RimeIcingSimulation(IcingConfig(**base, airfoil_dat=str(p)))
+    np.testing.assert_array_equal(
+        sim_dat.airfoil.numpy(),
+        airfoil_dat_mask_2d(
+            base["nx"],
+            base["ny"],
+            IcingConfig(**base).chord_lu,
+            IcingConfig(**base).aoa_deg,
+            cx=base["nx"] * IcingConfig(**base).cx_frac,
+            cy=base["ny"] * IcingConfig(**base).cy_frac,
+            dat=str(p),
+        ).numpy(),
+    )
+    assert int(sim_dat.airfoil.sum()) > 0 and int(sim_default.airfoil.sum()) > 0
+
+
+# ---------------------------------------------------------------------------
+
+
+# IC-D3: beta window invariance + accelerated-thermodynamics consistency
+# ---------------------------------------------------------------------------
+def test_beta_empty_window_whole_shot_fallback() -> None:
+    """IC-D3: trailing mode with frac = 0 (the run_glaze_icing whole-shot
+    convention) yields an EMPTY differencing window (w0 == w1 == steps), so
+    the module used to report beta == 0 (empty curve) for exactly the
+    configs the glaze driver runs.  The ledger must fall back to the whole
+    shot with the whole-shot lattice time (acceleration cancels)."""
+    cfg = _euler_cfg(
+        steps=400,
+        beta_window_mode="trailing",
+        beta_window_frac=0.0,
+        rime_density_mode="const",
+        rho_rime=1.0e9,
+    )
+    assert cfg.beta_window_bounds == (400, 400)  # the degenerate convention
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    be = res["eulerian"]["beta"]
+    assert len(be["beta"]) > 0
+    assert float(be["beta"].max()) > 0.0
+    # clean mode (default) still has a proper window: unchanged semantics
+    assert _euler_cfg().beta_window_bounds[1] > _euler_cfg().beta_window_bounds[0]
+
+
+def test_surface_arc_stag_row_sign_fix() -> None:
+    """IC-D3: the legacy y-comparison sign rule annihilates s for every
+    surface cell on the stagnation ROW, not just the LE (NACA0012 @
+    320x160 / 4 deg carries 6 such cells).  The opt-in fix signs them by
+    shortest-path branch; the default must stay legacy bit-for-bit."""
+    af = naca0012_mask_2d(320, 160, 128, 4.0, device="cpu").numpy()
+    s_legacy, stag, surf = surface_arc_length(af)
+    s_fix, stag_fix, _ = surface_arc_length(af, fix_stag_row_signs=True)
+    assert stag_fix == stag
+    # legacy: more than one surface cell pinned at s == 0
+    assert int((s_legacy[surf] == 0.0).sum()) > 1
+    # fix: only the LE origin (dist == 0) remains at s == 0
+    assert int((s_fix[surf] == 0.0).sum()) == 1
+    # every cell with a definite legacy sign keeps its s value exactly
+    same_sign = np.sign(s_legacy) == np.sign(s_fix)
+    assert np.array_equal(s_legacy[same_sign], s_fix[same_sign])
+    # defaults stay legacy: the module call site passes the config flag
+    cfg = IcingConfig()
+    assert cfg.surface_arc_sign_fix is False
+    assert cfg.droplet_warmup is False
+
+
+def test_beta_shot_structure_bitwise_invariance() -> None:
+    """IC-D3 Phase A: the canonical (shot-1) beta curve must be
+    bitwise-invariant to the shot structure whenever the per-shot lattice
+    computation is identical (same steps, same dt_shot -> same accel), and
+    agree to floating-point scale when only the acceleration differs."""
+    base = dict(
+        steps=300,
+        thermo_model="messinger",
+        t_static_c=-10.0,
+        rime_density_mode="const",
+        rho_rime=1.0e9,  # measure-only: no in-run freezing interferes
+    )
+    # same dt_shot (360 s) via 2x720 and 4x1440: identical per-shot lattice
+    g_a = run_glaze_icing(_euler_cfg(t_exposure=720.0, **base), shots=2, log=lambda *a: None)
+    g_b = run_glaze_icing(_euler_cfg(t_exposure=1440.0, **base), shots=4, log=lambda *a: None)
+    assert math.isclose(g_a["accel_per_shot"], g_b["accel_per_shot"], rel_tol=1e-15)
+    ba, bb = g_a["beta_curve"], g_b["beta_curve"]
+    assert len(ba["beta"]) > 0 and float(ba["beta"].max()) > 0.0
+    assert np.array_equal(ba["s_over_c"], bb["s_over_c"])
+    assert np.array_equal(ba["beta"], bb["beta"])
+    assert np.array_equal(ba["n_cells"], bb["n_cells"])
+    assert len(g_b["beta_curve_shots"]) == 4
+    # acceleration x2 (dt_shot 360 -> 720 s, alpha_in x2): beta cancels to
+    # floating-point scale, and the Messinger water feed m_imp_kg_s is the
+    # same physical rate.  Compared on single-shot runs (identical clean
+    # geometry, only the acceleration differs): the returned panels of a
+    # multishot run belong to its final shot, i.e. to different ice.
+    g_a1 = run_glaze_icing(_euler_cfg(t_exposure=360.0, **base), shots=1, log=lambda *a: None)
+    g_c1 = run_glaze_icing(_euler_cfg(t_exposure=720.0, **base), shots=1, log=lambda *a: None)
+    assert math.isclose(g_c1["accel_per_shot"], 2.0 * g_a1["accel_per_shot"], rel_tol=1e-12)
+    assert np.allclose(g_a1["beta_curve"]["beta"], g_c1["beta_curve"]["beta"], rtol=5e-4, atol=1e-6)
+    ma, mc = g_a1["panels"]["m_imp_kg_s"], g_c1["panels"]["m_imp_kg_s"]
+    live = ma > 1e-3 * float(ma.max())
+    assert live.sum() > 2
+    assert np.allclose(ma[live], mc[live], rtol=5e-4, atol=1e-15)
+    # the frozen mass the thermodynamics produces from the same physical
+    # rate is the same ice (identical dt_shot keeps the Messinger side
+    # fixed; only the ledger side is scaled)
+    g_d1 = run_glaze_icing(_euler_cfg(t_exposure=720.0, **base), shots=2, log=lambda *a: None)
+    assert math.isclose(g_d1["accel_per_shot"], g_a1["accel_per_shot"], rel_tol=1e-12)
+    # frozen mass per unit exposure is the shot-count-invariant rate
+    # (g_d1 doubles the exposure at the same dt_shot, so its total frozen
+    # is twice the single-shot one at the same per-shot rate)
+    fa, fd = g_a1["audit"]["frozen"], g_d1["audit"]["frozen"]
+    assert math.isclose(fa, fd / g_d1["shots"], rel_tol=0.05), (fa, fd)
+
+
+def test_messinger_accel_consistency_synthetic_panels() -> None:
+    """IC-D3 Phase B unit gate: the Messinger water feed is the *physical*
+    impingement rate ``m_ledger / (t_window * lwc_accel)`` — scaling the
+    LWC acceleration together with the ledger (alpha_in scales with k) must
+    leave m_imp, n_f and the frozen mass bit-for-bit / to round-off
+    unchanged, however the same physics is sliced in lattice time."""
+    from tensorlbm.aircraft_icing import build_surface_panels, solve_glaze_surface
+
+    ny, nx = 24, 32
+    solid = np.zeros((ny, nx), dtype=bool)
+    solid[16:, :] = True  # solid floor, fluid rows 0..15
+    # two arc panels: the stagnation column and one downstream neighbour
+    s_grid = np.zeros((ny, nx))
+    s_grid[:, :] = np.arange(nx)[None, :] - 4.0  # s in cells, stag column x=4
+    stress = {
+        "v_e": np.full((ny, nx), 67.0),
+        "tau_t": np.full((ny, nx), 50.0),
+        "tau_mag": np.full((ny, nx), 50.0),
+    }
+    cfg = IcingConfig(nx=nx, ny=ny, chord_frac=0.4, glaze_panel_cells=1.0, device="cpu")
+
+    def panels_for(ledger_scale: float, t_win: float, accel: float) -> dict:
+        impact = np.zeros((ny, nx))
+        impact[15, 4] = 1.0e-5 * ledger_scale  # stag panel
+        impact[15, 6] = 3.0e-6 * ledger_scale  # downstream panel
+        return build_surface_panels(cfg, s_grid, impact, solid, stress, t_win, accel)
+
+    p_ref = panels_for(1.0, t_win=2.0, accel=1.0)
+    assert p_ref["n_panels"] >= 2
+    # (a) accel x2 with the ledger x2 (same physics, accelerated cloud):
+    # the physical rate is bit-for-bit unchanged
+    p_a = panels_for(2.0, t_win=2.0, accel=2.0)
+    assert np.array_equal(p_ref["m_imp_kg_s"], p_a["m_imp_kg_s"])
+    assert np.array_equal(p_ref["beta"], p_a["beta"])
+    # (b) window x2 with the ledger x2 (same physics, twice the steps):
+    # identical rate again — the chain is a pure rate normalisation
+    p_b = panels_for(2.0, t_win=4.0, accel=1.0)
+    assert np.array_equal(p_ref["m_imp_kg_s"], p_b["m_imp_kg_s"])
+    # (c) the thermodynamics is therefore accel-blind: identical n_f / ice
+    # bit-for-bit between the two slicings, at both a rime and a warmer
+    # temperature (the temperature ladder itself is covered by its own
+    # test; here only the accel consistency is under test)
+    for t_c in (-10.0, -2.0):
+        cfg_t = IcingConfig(nx=nx, ny=ny, chord_frac=0.4, t_static_c=t_c)
+        s1 = solve_glaze_surface(cfg_t, p_ref, dt=120.0)
+        s2 = solve_glaze_surface(cfg_t, p_a, dt=120.0)
+        assert np.allclose(s1["n_f"], s2["n_f"], rtol=0.0, atol=0.0)
+        assert np.allclose(s1["m_ice_kg"], s2["m_ice_kg"], rtol=1e-12)
+        assert 0.0 <= s1["n_f"][int(np.argmax(p_ref["m_imp_kg_s"]))] <= 1.0
+    # cold + this small catch is hard rime: all available water freezes
+    cfg_r = IcingConfig(nx=nx, ny=ny, chord_frac=0.4, t_static_c=-10.0)
+    sol_r = solve_glaze_surface(cfg_r, p_ref, dt=120.0)
+    wet = sol_r["m_ice_kg"] + sol_r["m_runback_out_kg"] > 0.0
+    assert np.allclose(sol_r["n_f"][wet], 1.0)
+
+
+def test_nf_stag_temperature_ladder_peak_panel() -> None:
+    """IC-D3 Phase B: at the impingement peak the freezing fraction must
+    ladder with temperature (-10 C rime = 1, -4 C intermediate, -2 C glaze
+    well below 1) — sampled at the peak panel, not the geometric LE.
+
+    RG-15 IPW2 case-3 conditions (25 m/s, 0.44 g/m^3, MVD 24 um, LE
+    diameter 4.86 mm): the 0-D stagnation balance is hard rime at -10 C
+    (T_s = -4.5 C) and genuinely glaze at -2 C.  (At the IRT NACA point
+    — 67 m/s, 0.5 g/m^3 — even -10 C is glaze at the peak; that is the
+    physics of the higher catch, not a defect.)
+    """
+    from tensorlbm.aircraft_icing import solve_glaze_surface
+
+    rg15 = dict(
+        chord_phys=0.30,
+        v_inf=25.0,
+        lwc=0.44e-3,
+        mvd=24e-6,
+        le_diameter=4.8588e-3,  # 2 x 0.81% chord LE radius (IC-D1 dat fit)
+    )
+    ladder = {}
+    for t_c in (-10.0, -4.0, -2.0):
+        cfg = IcingConfig(t_static_c=t_c, **rg15)
+        panels = _glaze_panels(cfg)
+        sol = solve_glaze_surface(cfg, panels, dt=120.0)
+        ladder[t_c] = float(sol["n_f"][int(np.argmax(panels["m_imp_kg_s"]))])
+    assert ladder[-10.0] == 1.0  # hard rime at the peak
+    assert ladder[-10.0] > ladder[-4.0] > ladder[-2.0]
+    assert ladder[-2.0] < 0.9  # genuinely glaze
+    assert ladder[-4.0] > 0.0
+
+
+def test_glaze_stag_metrics_sampled_at_impingement_peak() -> None:
+    """IC-D3: n_f_stag / stag thickness are sampled at the impingement
+    peak (the water-catch maximum), with the geometric-LE values kept
+    under the *_le keys."""
+    cfg = _euler_cfg(
+        thermo_model="messinger",
+        t_static_c=-5.0,
+        t_exposure=3600.0,
+        steps=300,
+        rho_rime=800.0,
+    )
+    g = run_glaze_icing(cfg, shots=2, log=lambda *a: None)
+    p = g["panels"]
+    i_pk = int(np.argmax(p["m_imp_kg_s"]))
+    m = g["metrics"]
+    assert "n_f_stag" in m and "n_f_le" in m
+    assert math.isclose(m["n_f_stag"], float(p["n_f"][i_pk]), rel_tol=1e-15)
+    assert math.isclose(m["n_f_stag_panel_s_over_c"], float(p["s_over_c"][i_pk]), rel_tol=1e-12)
+    assert math.isclose(
+        m["le_ice_thickness_m"],
+        float(p["thickness_m"][int(np.argmin(np.abs(p["s_over_c"])))]),
+        rel_tol=1e-12,
+    )
+
+
+def test_droplet_warmup_kills_shot_length_dependence() -> None:
+    """IC-D3: the Eulerian cloud starts at u_f (zero slip), so without
+    warmup the whole-shot ledger beta depends on the shot lattice length
+    (startup deficit ~ tau_d_lu); co-advancing the cloud through the flow
+    warmup removes the dependence."""
+    common = dict(
+        uniform_flow=False,
+        warmup_steps=500,
+        mvd=20e-6,  # tau_d_lu ~ 120 steps: the transient is resolvable
+        accel_override=1.0e5,
+        rime_density_mode="const",
+        rho_rime=1.0e9,  # measure-only
+        nx=96,
+        ny=48,
+        droplet_phase="eulerian",
+        beta_window_mode="trailing",
+        beta_window_frac=0.0,  # whole-shot ledger beta
+    )
+
+    def beta_max(steps: int, warm: bool) -> float:
+        cfg = _euler_cfg(steps=steps, droplet_warmup=warm, **common)
+        res = run_rime_icing(cfg, log=lambda *a: None)
+        be = res["eulerian"]["beta"]
+        return float(be["beta"].max())
+
+    b300_w, b600_w = beta_max(300, True), beta_max(600, True)
+    b300_c, b600_c = beta_max(300, False), beta_max(600, False)
+    # with warmup: the steady rate is shot-length invariant (few %)
+    assert abs(b600_w - b300_w) / b300_w < 0.03, (b300_w, b600_w)
+    # without warmup: the startup deficit biases the shorter shot badly
+    # (this is the 0.61 / 0.73 / 0.76 steps ladder seen on RG-15 3.3)
+    assert abs(b600_c - b300_c) / b300_c > 0.10, (b300_c, b600_c)
+    # and warmup restores the (higher) steady collection rate
+    assert b300_w > b300_c
+
+
+# ---------------------------------------------------------------------------
+# Phase 2c: polydisperse MVD (droplet-size bins)
+# ---------------------------------------------------------------------------
+# IPW IRT 7-bin standard spray (demo distribution): diameters [um] with
+# mass fractions [%] 5/10/20/30/20/10/5
+_IPW_IRT_BINS = (
+    (7.3e-6, 0.05),
+    (9.9e-6, 0.10),
+    (13.7e-6, 0.20),
+    (24.9e-6, 0.30),
+    (44.9e-6, 0.20),
+    (74.9e-6, 0.10),
+    (127.6e-6, 0.05),
+)
+
+
+def test_mvd_bins_validation_and_normalisation() -> None:
+    """Config gate: shape/positivity/distinctness/fraction-sum + exact
+    normalisation, and the documented mvd_bins-over-mvd precedence."""
+    d1, d2, d3 = 13.7e-6, 24.9e-6, 44.9e-6
+    for bad in (
+        (),  # empty
+        ((d1, 1.0),),  # a single bin is the mvd path
+        ((d1, 0.5), (d2, 0.2)),  # fractions sum to 0.7
+        ((d1, 0.6), (d2, 0.4 + 1e-6)),  # off by more than 1e-9
+        ((d1, 0.5), (d2, -0.5)),  # negative fraction
+        ((d1, 0.0), (d2, 1.0)),  # zero fraction
+        ((0.0, 0.5), (d2, 0.5)),  # zero diameter
+        ((-d1, 0.5), (d2, 0.5)),  # negative diameter
+        ((d1, 0.5), (d1, 0.5)),  # duplicate diameter
+        ((d1, 0.5), (d1 * (1.0 + 1e-12), 0.5)),  # distinct only to 1e-12
+        ((d1, 0.5, 0.5), (d2, 1.0)),  # not pairs
+        (d1,),  # not a sequence of pairs
+    ):
+        with pytest.raises(ValueError):
+            IcingConfig(mvd_bins=bad)
+    # accepted: sum within 1e-9 -> fractions renormalised to fsum == 1.0
+    cfg = IcingConfig(mvd_bins=((d1, 0.25), (d2, 0.25 + 5e-10), (d3, 0.5 - 5e-10)))
+    assert len(cfg.mvd_bins) == 3
+    assert [d for d, _ in cfg.mvd_bins] == [d1, d2, d3]
+    assert math.fsum(f for _, f in cfg.mvd_bins) == 1.0
+    # the IPW IRT 7-bin standard spray validates as given
+    cfg7 = IcingConfig(mvd_bins=_IPW_IRT_BINS)
+    assert math.fsum(f for _, f in cfg7.mvd_bins) == 1.0
+    # precedence: mvd_bins OVERRIDES the (here default) scalar mvd everywhere
+    mono = IcingConfig()
+    assert cfg7.mvd_eff != mono.mvd
+    assert math.isclose(cfg7.mvd_eff, sum(f * d for d, f in _IPW_IRT_BINS), rel_tol=1e-15)
+    assert math.isclose(
+        cfg7.tau_d_phys,
+        sum(f * t for (_d, f), t in zip(cfg7.mvd_bins, cfg7.tau_d_phys_bins)),
+        rel_tol=1e-15,
+    )
+    assert cfg7.stokes != mono.stokes
+    sn = IcingConfig(drag_law="schiller-naumann", mvd_bins=_IPW_IRT_BINS)
+    assert math.isclose(
+        sn.re_p_scale,
+        sn.sn_scale_factor * sn.rho_air * (sn.dx_phys / sn.dt_phys) * sn.mvd_eff / sn.mu_air,
+        rel_tol=1e-12,
+    )
+    # mapping report carries the bins diagnostics
+    rep = cfg7.mapping_report()
+    assert rep["n_bins"] == 7 and len(rep["mvd_bins"]) == 7
+    assert len(rep["tau_d_lu_bins"]) == 7 and len(rep["m_parcel_bins"]) == 7
+
+
+def test_mvd_bins_tau_and_parcel_mass_per_bin() -> None:
+    """tau_d(d_i) is exactly rho_w d^2 / (18 mu); parcel mass N rho d^3 pi/6."""
+    cfg = IcingConfig(mvd_bins=((13.7e-6, 0.2), (24.9e-6, 0.3), (44.9e-6, 0.5)))
+    for (d, _f), tau_p, tau_lu, m_d, m_p in zip(
+        cfg.mvd_bins, cfg.tau_d_phys_bins, cfg.tau_d_lu_bins, cfg.m_droplet_bins, cfg.m_parcel_bins
+    ):
+        assert math.isclose(tau_p, cfg.rho_water * d**2 / (18.0 * cfg.mu_air), rel_tol=1e-15)
+        assert math.isclose(tau_lu, tau_p / cfg.dt_phys, rel_tol=1e-15)
+        assert math.isclose(m_d, cfg.rho_water * math.pi * d**3 / 6.0, rel_tol=1e-15)
+        assert math.isclose(m_p, cfg.effective_parcel_multiplier * m_d, rel_tol=1e-15)
+    # the *fastest* bin sets the stable substep count; mixture tau is the
+    # mass-mean of the per-bin times
+    assert cfg.tau_d_lu_min == min(cfg.tau_d_lu_bins)
+    assert cfg.n_substeps == max(1, math.ceil(8.0 / cfg.tau_d_lu_min))
+    assert math.isclose(
+        cfg.tau_d_phys,
+        sum(f * t for (_d, f), t in zip(cfg.mvd_bins, cfg.tau_d_phys_bins)),
+        rel_tol=1e-15,
+    )
+
+
+def test_mvd_bins_seeded_mass_fractions() -> None:
+    """Deterministic per-bin carry: cumulative seeded mass per bin == f_i.
+
+    The bin assignment is a pure integer-carry mechanism (no RNG), so the
+    seeded-mass split tracks the configured mass fractions to one-parcel
+    granularity, with and without impacts/prefill in the run.
+    """
+    bins = ((100e-6, 0.3), (200e-6, 0.7))
+    cfg = _small_cfg(
+        mvd_bins=bins,
+        prefill_cloud=False,
+        steps=300,
+        cx_frac=0.8,  # LE far downstream: nothing impacts, clean audit
+    )
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    seeded = res["bins"]["seeded_mass"]
+    assert math.isclose(sum(seeded), res["audit"]["seeded"], rel_tol=1e-12)
+    for m_i, (_d, f) in zip(seeded, bins):
+        assert abs(m_i / res["audit"]["seeded"] - f) < 2e-3, (m_i, f)
+    # same fractions with impacts + prefill active
+    cfg2 = _small_cfg(mvd_bins=bins, steps=300)
+    res2 = run_rime_icing(cfg2, log=lambda *a: None)
+    for m_i, (_d, f) in zip(res2["bins"]["seeded_mass"], bins):
+        assert abs(m_i / res2["audit"]["seeded"] - f) < 2e-3
+
+
+def test_mvd_bins_monodisperse_equivalence() -> None:
+    """A single bin (d, 1.0) reproduces the classic mvd=d path exactly.
+
+    Public validation requires >= 2 bins, so the nb = 1 reduction is
+    exercised by assigning the bin spec *after* construction (the
+    dataclass is mutable and __post_init__ has already run): the bins
+    code path is generic in n_bins and must collapse onto the monodisperse
+    numerics.
+    """
+    # Eulerian arm: identical step inputs -> identical fields and ledgers
+    cfg_mono = _euler_cfg()
+    cfg_one = _euler_cfg()
+    cfg_one.mvd_bins = ((cfg_mono.mvd, 1.0),)
+    r_mono = run_rime_icing(cfg_mono, log=lambda *a: None)
+    r_one = run_rime_icing(cfg_one, log=lambda *a: None)
+    assert np.array_equal(r_mono["eulerian"]["impact_mass"], r_one["eulerian"]["impact_mass"])
+    assert np.array_equal(r_mono["eulerian"]["alpha"], r_one["eulerian"]["alpha"])
+    assert np.array_equal(r_mono["eulerian"]["beta_grid"], r_one["eulerian"]["beta_grid"])
+    assert math.isclose(
+        r_mono["eulerian"]["audit"]["deposited"],
+        r_one["eulerian"]["audit"]["deposited"],
+        rel_tol=1e-12,
+    )
+    # Lagrangian arm: identical RNG stream + relaxation + mass ledger
+    common = dict(beta_window_mode="trailing", steps=200)
+    cfg_lm = _small_cfg(**common)
+    cfg_lo = _small_cfg(**common)
+    cfg_lo.mvd_bins = ((cfg_lm.mvd, 1.0),)
+    rm = run_rime_icing(cfg_lm, log=lambda *a: None)
+    ro = run_rime_icing(cfg_lo, log=lambda *a: None)
+    assert np.allclose(rm["impact_mass"], ro["impact_mass"], rtol=1e-12, atol=0.0)
+    assert math.isclose(rm["audit"]["seeded"], ro["audit"]["seeded"], rel_tol=1e-12)
+    assert rm["metrics"]["n_ice_cells"] == ro["metrics"]["n_ice_cells"]
+
+
+def test_mvd_bins_superposition_uniform_flow() -> None:
+    """One-way coupling: joint bins == mass-weighted sum of monodisperse runs.
+
+    Each bin evolves independently on the same carrier field, so the joint
+    per-bin Eulerian impact ledgers equal f_i x the monodisperse mvd = d_i
+    ledgers (deterministic scheme: exact to fp rounding), and the betas
+    (streamtube heights) superpose the same way.
+    """
+    bins = ((60e-6, 0.2), (100e-6, 0.5), (160e-6, 0.3))
+    r_joint = run_rime_icing(_euler_cfg(mvd_bins=bins), log=lambda *a: None)
+    mono_runs = [run_rime_icing(_euler_cfg(mvd=d), log=lambda *a: None) for d, _ in bins]
+    led_j = r_joint["bins"]["eulerian"]["impact_mass"]
+    for i, ((d, f), r_i) in enumerate(zip(bins, mono_runs)):
+        expect = f * r_i["eulerian"]["impact_mass"]
+        scale = max(float(expect.sum()), 1e-30)
+        assert np.allclose(led_j[i], expect, rtol=1e-4, atol=1e-18), (
+            i,
+            float(np.abs(led_j[i] - expect).sum()) / scale,
+        )
+    # the joint total ledger is the sum of the per-bin ledgers (fp32
+    # ledgers: per-step sequential accumulation vs numpy axis-sum differ
+    # only in rounding order, ~1e-7 relative)
+    assert np.allclose(r_joint["eulerian"]["impact_mass"], led_j.sum(0), rtol=1e-5, atol=0.0)
+    # ... and the mass-weighted sum of the monodisperse runs
+    led_sum = sum(f * r_i["eulerian"]["impact_mass"] for (_d, f), r_i in zip(bins, mono_runs))
+    assert np.allclose(r_joint["eulerian"]["impact_mass"], led_sum, rtol=1e-4)
+    beta_sum = sum(f * r_i["eulerian"]["beta_grid"] for (_d, f), r_i in zip(bins, mono_runs))
+    assert np.allclose(r_joint["eulerian"]["beta_grid"], beta_sum, rtol=1e-4, atol=1e-12)
+
+
+def test_mvd_bins_superposition_lagrangian_noisy() -> None:
+    """Lagrangian superposition holds within the parcel-sampling noise."""
+    bins = ((100e-6, 0.25), (200e-6, 0.75))
+    common = dict(beta_window_mode="trailing", steps=300)
+    r_joint = run_rime_icing(_small_cfg(mvd_bins=bins, **common), log=lambda *a: None)
+    tot_j = float(r_joint["impact_mass"].sum())
+    assert tot_j > 0.0
+    tot_sum = 0.0
+    for i, (d, f) in enumerate(bins):
+        r_i = run_rime_icing(_small_cfg(mvd=d, **common), log=lambda *a: None)
+        m_i = f * float(r_i["impact_mass"].sum())
+        tot_sum += m_i
+        got = float(r_joint["bins"]["impact_mass"][i].sum())
+        assert abs(got - m_i) / tot_j < 0.08, (i, got, m_i)
+    assert abs(tot_j - tot_sum) / tot_sum < 0.05
+
+
+def test_mvd_bins_eulerian_positivity_and_total_closure() -> None:
+    """Per-bin positivity + per-bin and total mass-audit closure."""
+    bins = ((60e-6, 0.2), (100e-6, 0.5), (160e-6, 0.3))
+    cfg = _euler_cfg(mvd_bins=bins)
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    eb = res["bins"]["eulerian"]
+    for i, (_d, f) in enumerate(bins):
+        a_i = eb["alpha"][i]
+        assert float(a_i.min()) >= 0.0
+        assert float(a_i.max()) <= f * cfg.alpha_in * 1.02
+        assert eb["audit"][i]["closure_error"] < 1e-6, eb["audit"][i]
+    # total closure on the summed audit; per-bin deposits sum to the total
+    assert res["eulerian"]["audit"]["closure_error"] < 1e-6
+    assert math.isclose(
+        res["eulerian"]["audit"]["deposited"],
+        math.fsum(b["deposited"] for b in eb["audit"]),
+        rel_tol=1e-12,
+    )
+    # the total impact ledger is the sum of the per-bin ledgers (fp32
+    # accumulation-order rounding only, see the superposition test)
+    assert np.allclose(res["eulerian"]["impact_mass"], eb["impact_mass"].sum(0), rtol=1e-5)
+    # per-bin streamtube heights sum to the mixture capture height
+    tot_bg = float(res["eulerian"]["beta_grid"].sum())
+    assert abs(float(eb["beta_grid"].sum()) - tot_bg) < 1e-5 * max(abs(tot_bg), 1.0)
+
+
+def test_mvd_bins_eulerian_freezer_interface() -> None:
+    """Polydisperse Eulerian deposits freeze through the shared 2a freezer."""
+    bins = ((60e-6, 0.5), (160e-6, 0.5))
+    cfg = _euler_cfg(mvd_bins=bins, accel_override=2.0e5, rho_rime=100.0, steps=400)
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    a = res["audit"]
+    n_ice = res["metrics"]["n_ice_cells"]
+    assert n_ice >= 5
+    # exact ledger: frozen mass == n_cells * cell ice mass (2a invariant)
+    assert math.isclose(a["frozen"], n_ice * cfg.m_cell_ice, rel_tol=1e-9)
+    assert res["eulerian"]["audit"]["closure_error"] < 1e-4, res["eulerian"]["audit"]
+    assert res["eulerian"]["audit"]["encased"] > 0.0  # _void_encased_bins ran
+    # ice grows on the windward face (upstream of the LE), like Phase 2a
+    ys, xs = np.nonzero(res["ice_only"])
+    assert xs.min() < res["metrics"]["x_le"]
+    # per-bin audits still close with freezing + encasement active
+    for b in res["bins"]["eulerian"]["audit"]:
+        assert b["closure_error"] < 1e-4, b
