@@ -53,6 +53,17 @@ actually crosses the AMR interfaces).  This matches the design's
 ``torch.where(l1_solid_q, before, collided)`` and prevents the L1 from
 evolving (or streaming through) the body interior; the wall force remains
 the shell BFL's exclusive responsibility.
+
+Interface filter
+----------------
+``L1BlockDistributed(interface_filter=(width, strength))`` restores the
+single-card ``StaticBlockAMR3D._filter_fine_interface`` step that the
+distributed L1 advance historically omitted: after every substep's stream,
+:func:`tensorlbm.amr_interface_filter.damp_interface_nonequilibrium` damps
+the kinetic residual (above the resolved second-order stress) on the L1
+physical shell adjacent to the L1/coarse interface, keeping density,
+momentum and the resolved stress intact.  Default ``None`` = unfiltered
+advance, bitwise identical to the pre-filter code path.
 """
 from __future__ import annotations
 
@@ -61,6 +72,10 @@ from dataclasses import dataclass
 import torch
 import torch.distributed as dist
 
+from tensorlbm.amr_interface_filter import (
+    damp_interface_nonequilibrium,
+    interface_shell_blend,
+)
 from tensorlbm.amr_population_transfer import rescale_nonequilibrium
 from tensorlbm.d3q27 import equilibrium27
 from tensorlbm.fixed_nested_transfer import restrict_populations_2to1
@@ -268,6 +283,14 @@ class L1BlockDistributed:
             with-ghost tensor (e.g. cumulant D3Q27).
         stream_fn: ``stream_fn(f_post) -> f_streamed`` — the 27-direction
             ``torch.roll`` pull-stream over the with-ghost tensor.
+        interface_filter: optional ``(width, strength)`` pair enabling the
+            moment-preserving kinetic interface filter of
+            :mod:`tensorlbm.amr_interface_filter` on the L1 physical shell
+            adjacent to the L1/coarse interface (the integrated-path
+            equivalent of ``StaticBlockAMR3D._filter_fine_interface``).
+            ``width`` is in L1 cells and ``strength`` in ``[0, 1]``.
+            ``None`` (default) keeps the historical unfiltered advance —
+            bitwise identical to the pre-filter behaviour.
     """
 
     def __init__(
@@ -286,6 +309,7 @@ class L1BlockDistributed:
         stream_fn=None,
         maximum_reflux_correction_fraction: float = 0.2,
         correction_stencil: str = "exterior_cells",
+        interface_filter: tuple[int, float] | None = None,
     ) -> None:
         if ratio != 2:
             raise ValueError("the L1 block currently supports ratio=2 only")
@@ -304,6 +328,26 @@ class L1BlockDistributed:
             )
         if q not in (19, 27):
             raise ValueError(f"unsupported lattice Q={q}")
+        if interface_filter is not None:
+            if len(interface_filter) != 2:
+                raise ValueError(
+                    "interface_filter must be a (width, strength) pair or None",
+                )
+            filter_width, filter_strength = interface_filter
+            if not isinstance(filter_width, int) or isinstance(
+                filter_width, bool,
+            ) or filter_width < 0:
+                raise ValueError("interface filter width must be a non-negative int")
+            if not 0.0 <= float(filter_strength) <= 1.0:
+                raise ValueError("interface filter strength must lie in [0,1]")
+            if (filter_width == 0) != (float(filter_strength) == 0.0):
+                raise ValueError(
+                    "interface filter width and strength must both be zero or "
+                    "positive (pass interface_filter=None to disable)",
+                )
+            if filter_width == 0:
+                # (0, 0.0) is an explicit no-op: behave exactly like None.
+                interface_filter = None
         if collide_fn is None or stream_fn is None:
             raise TypeError("L1 block requires collide_fn and stream_fn")
         self.box = box
@@ -321,6 +365,7 @@ class L1BlockDistributed:
             maximum_reflux_correction_fraction
         )
         self.correction_stencil = correction_stencil
+        self.interface_filter = interface_filter
 
         g = ghost
         self.l1_shape = (
@@ -394,6 +439,39 @@ class L1BlockDistributed:
                 )
             solid_q[g:-g, g:-g, g:-g] = solid_l1.to(self.device)
         self.l1_solid_q = solid_q
+
+        # ---- optional kinetic interface filter (blend on the with-ghost
+        #      frame, nonzero only on the physical shell adjacent to the
+        #      L1/coarse interface — mirrors StaticBlockAMR3D's
+        #      ``_interface_filter_blend`` built with ghost=config.ghost) ----
+        self.interface_filter_blend: torch.Tensor | None = None
+        if interface_filter is not None:
+            filter_width, filter_strength = interface_filter
+            blend = interface_shell_blend(
+                (nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g),
+                ghost=g,
+                width=filter_width,
+                strength=float(filter_strength),
+                device=self.device,
+                dtype=self.l1_f.dtype,
+            )
+            if bool(solid_q.any()):
+                # Same guard as StaticBlockAMR3D: the filter must not touch
+                # the frozen solid or its near-wall fluid (the wall force is
+                # the shell BFL's exclusive responsibility).
+                protected = solid_q.clone()
+                protected[1:] |= solid_q[:-1]
+                protected[:-1] |= solid_q[1:]
+                protected[:, 1:] |= solid_q[:, :-1]
+                protected[:, :-1] |= solid_q[:, 1:]
+                protected[:, :, 1:] |= solid_q[:, :, :-1]
+                protected[:, :, :-1] |= solid_q[:, :, 1:]
+                if bool((protected & (blend > 0.0)).any()):
+                    raise ValueError(
+                        "L1 interface filter overlaps the solid or its "
+                        "near-wall fluid; shrink the width or move the L1 box",
+                    )
+            self.interface_filter_blend = blend
 
         # ---- coarse<->L1 box interface links (window frame) ----
         box_owned = torch.zeros(
@@ -472,12 +550,26 @@ class L1BlockDistributed:
         self.l1_f = torch.where(self.ghost_mask, sampled, self.l1_f)
 
     def _advance(self) -> tuple[torch.Tensor, torch.Tensor]:
-        """Collide + stream + frozen-solid.  Returns ``(frozen, post_frozen)``."""
+        """Collide + stream + frozen-solid.  Returns ``(frozen, post_frozen)``.
+
+        When ``interface_filter`` is enabled the streamed state is additionally
+        passed through the moment-preserving kinetic interface filter on the
+        L1 physical shell (density, momentum and the resolved second-order
+        stress are untouched; only the unresolved kinetic residual is damped).
+        Mirroring ``StaticBlockAMR3D.step``, the filter is applied to the
+        *streamed* state only — ``post_frozen`` (the pre-stream post-collision
+        state observed by the reflux) is left unfiltered.
+        """
         before = self.l1_f
         post = self.collide_fn(before, self.tau_l1)
         post_frozen = torch.where(self.l1_solid_q, before, post)
         streamed = self.stream_fn(post_frozen)
         frozen = torch.where(self.l1_solid_q, before, streamed)
+        if self.interface_filter_blend is not None:
+            frozen = damp_interface_nonequilibrium(
+                frozen,
+                self.interface_filter_blend,
+            )
         return frozen, post_frozen
 
     # ------------------------------------------------------------------

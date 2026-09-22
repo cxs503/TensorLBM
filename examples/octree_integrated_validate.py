@@ -83,6 +83,38 @@ def main():
              "ghost (3 in the L1 path).",
     )
     p.add_argument("--interleave", action="store_true")
+    p.add_argument(
+        "--l1-interface-filter", action="store_true", default=False,
+        help="L1 path only: enable the single-card "
+             "StaticBlockAMR3D._filter_fine_interface equivalent on the L1 "
+             "physical shell adjacent to the L1/coarse interface "
+             "(moment-preserving kinetic-mode damping; density, momentum and "
+             "the resolved stress are untouched). Default off = historical "
+             "unfiltered advance (bitwise identical). A/B knob for the L1 "
+             "interface-filter parity gap.",
+    )
+    p.add_argument(
+        "--l1-interface-filter-width", type=int, default=2,
+        help="L1 interface filter shell width in L1 cells (default 2; the "
+             "single-card evidence candidates are w2s1.0 and w4s0.2). Must "
+             "leave an unfiltered physical core and must not touch the solid "
+             "or its near-wall fluid.",
+    )
+    p.add_argument(
+        "--l1-interface-filter-strength", type=float, default=1.0,
+        help="L1 interface filter damping strength in [0,1] (default 1.0 = "
+             "full kinetic-residual damping at the wall-adjacent edge of the "
+             "shell, raised-cosine taper to 0 over --l1-interface-filter-width "
+             "cells).",
+    )
+    p.add_argument(
+        "--ghost-from-l1", action="store_true", default=False,
+        help="L1 path only: sample the shell ghost donors from the L1 block "
+             "field (single-card convention, the pre-P0 behaviour) instead of "
+             "the evolved coarse window field (time-lerped cw_old/cw_new, "
+             "coarse-frame trilinear). Default off = current coarse direct "
+             "sampling (P0 fix); on = suppress ghost_parent_* so the L1-frame "
+             "ghost plan is used. A/B knob for the ghost-donor-source audit.")
     p.add_argument("--u-in", type=float, default=0.06)
     p.add_argument("--reynolds", type=float, default=100.0)
     p.add_argument("--steps", type=int, default=200)
@@ -539,6 +571,11 @@ def main():
             window_ring=args.window_ring,
             device=dev, solid_l1=solid,
             collide_fn=advance_l1, stream_fn=stream27_roll,
+            interface_filter=(
+                (args.l1_interface_filter_width,
+                 args.l1_interface_filter_strength)
+                if args.l1_interface_filter else None
+            ),
         )
         l1_block.initialize_uniform(u_in)
         win = l1_block.win
@@ -555,7 +592,8 @@ def main():
               f"ghost={l1_block.ghost} window_ring={l1_block.window_ring} "
               f"window_cells={win.cells.shape[0]} "
               f"window_shape={win.shape} "
-              f"tau_l1={l1_block.tau_l1:.6f}", flush=True)
+              f"tau_l1={l1_block.tau_l1:.6f} "
+              f"interface_filter={l1_block.interface_filter}", flush=True)
     else:
         l1_block = None
 
@@ -733,6 +771,26 @@ def main():
             #    of the two L1 post-collision slices.
             l1_f_phys = l1_block.physical_copy()
             assert box is not None, "L1 path requires a planned box"
+            # Ghost-donor-source A/B (V4 audit): default (coarse direct
+            # sampling, P0 fix) supplies the shell ghosts from the GENUINE
+            # evolved coarse field (time-lerped cw_old/cw_new, coarse-frame
+            # trilinear) instead of the L1 block field — the L1 block itself
+            # is a 2:1 injection of the coarse field, so sampling it re-serves
+            # the injected low-resolution supply and the near-wall band.
+            # --ghost-from-l1 suppresses ghost_parent_* so step_octree_shell_
+            # distributed falls back to the L1-frame ghost plan (single-card
+            # convention, pre-P0 behaviour). The shell host stays L1 either
+            # way (substeps on L1 leaves; restriction/reflux write the L1
+            # field); only the ghost supply source changes.
+            ghost_kwargs = {}
+            if not args.ghost_from_l1:
+                ghost_kwargs = dict(
+                    ghost_parent_old=cw_old, ghost_parent_new=cw_new,
+                    ghost_parent_offset=(
+                        box.z0 - win.z0, box.y0 - win.y0, box.x0 - win.x0,
+                    ),
+                    ghost_parent_tau=tau_coarse,
+                )
             _ledger_shell, local_mem, _restricted, _cells = \
                 step_octree_shell_distributed(
                     octree, advance_shell, l1_phys_pre, l1_f_phys,
@@ -740,20 +798,7 @@ def main():
                     ghost_plan=None, bfl_fn=bfl_fn, rank=rank,
                     world_size=world_size, reflux=True,
                     interleave=args.interleave,
-                    # P0 fix (SUBOFF L1 force deficit): supply the shell
-                    # ghosts from the GENUINE evolved coarse field
-                    # (time-lerped cw_old/cw_new, coarse-frame trilinear)
-                    # instead of the L1 block field — the L1 block itself
-                    # is a 2:1 injection of the coarse field, so sampling
-                    # it re-serves the injected low-resolution supply and
-                    # the near-wall band.  The shell host stays L1 (sub-
-                    # steps run on the L1 leaves; restriction/reflux still
-                    # write the L1 field); only the ghost supply changes.
-                    ghost_parent_old=cw_old, ghost_parent_new=cw_new,
-                    ghost_parent_offset=(
-                        box.z0 - win.z0, box.y0 - win.y0, box.x0 - win.x0,
-                    ),
-                    ghost_parent_tau=tau_coarse,
+                    **ghost_kwargs,
                 )
             l1_block.set_physical(l1_f_phys)
             # 5. L1 -> coarse restriction (box interior) + face-local kinetic
@@ -994,6 +1039,15 @@ def main():
             "err_pct": err_pct,
             "err_pct_inf_domain": err_pct_inf,
             "per_step_s": (time.time() - t0) / args.steps,
+            "l1_interface_filter": bool(args.l1_interface_filter),
+            "l1_interface_filter_width": (
+                args.l1_interface_filter_width
+                if args.l1_interface_filter else 0
+            ),
+            "l1_interface_filter_strength": (
+                args.l1_interface_filter_strength
+                if args.l1_interface_filter else 0.0
+            ),
         }
         if scale_note:
             result["domain_scale_note"] = scale_note
