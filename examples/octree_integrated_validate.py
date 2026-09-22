@@ -474,7 +474,11 @@ def main():
 
     # ---------------- shell advance + BFL (all_gather distributed) ----------------
     from tensorlbm.octree_boundary.bfl import bfl_apply_gather, leaf_force_weights
-    leaf_weights = leaf_force_weights(octree).to(dev)[lidx]
+    # FIX (2026-09-22): include the per-leaf convective spatial factor
+    # (dx_leaf/dx_ref)^2 = 2^-2(level-1) so mixed-depth shells (d_max=2:
+    # level-1 and level-2 leaves) do not sum impulses from different
+    # lattices.  See docs/shell_bfl_force_analytic_validation_20260922.md.
+    leaf_weights = leaf_force_weights(octree, include_spatial=True).to(dev)[lidx]
 
     # ---- TEMP DIAGNOSTICS (SUBOFF L1 force-deficit audit) ----
     # dbg_fx: accumulated x-force (weighted); dbg_nw: weighted link count;
@@ -498,6 +502,9 @@ def main():
         mask_loc = octree_.bfl_mask
         w_leaf = 2.0 ** (-(octree_.d_max
                            - octree_.leaf_level.to(torch.float64)))
+        # fold the same per-leaf spatial factor the force weights carry so
+        # per-link_w (fx / weighted links) is in a single lattice
+        w_leaf = w_leaf * 2.0 ** (-2.0 * (octree_.leaf_level.to(torch.float64) - 1.0))
         dbg_fx[0] += float(force[0].item())
         dbg_nw[0] += float((mask_loc * w_leaf.unsqueeze(0)).sum().item())
         dbg_nraw[0] += float(mask_loc.sum().item())
@@ -604,13 +611,26 @@ def main():
     )
     wall_lv = octree.leaf_level[octree.bfl_mask.any(dim=0)]  # (diagnostics)
     dx_leaf_area = compute_wall_link_dx(octree, l1_block=args.l1_block)
+    # ---- FIX (2026-09-22, mixed-depth per-level dx^2, see
+    # docs/shell_bfl_force_analytic_validation_20260922.md) ----
+    # ``leaf_weights`` now folds the per-leaf convective factor
+    # (dx_leaf/dx_ref)^2 = 2^-2(level-1) (reference level = 1), so every
+    # leaf's impulse is expressed in the *level-1* leaf lattice.  The
+    # dynamic area must therefore be normalised with the level-1 leaf dx
+    # (not the finest wall-link dx used with the old raw force): force and
+    # area both carry one power of dx^2, so Cd is invariant — the change is
+    # a *correctness* fix for shells whose wall links span several levels
+    # (impulses from dx=0.5 and dx=0.25 lattices were summed raw), and an
+    # exact no-op for single-level wall-link shells.  Without it the frozen
+    # analytic-field force grows x3.71 from d_max=1 -> 2 (should be ~1).
+    dx_leaf_ref = 2.0 ** (-(1.0 + 1.0)) if args.l1_block else 2.0 ** (-1.0)
     if args.geo == "sphere":
-        radius_leaf = leaf_radius_from_dx(args.radius, dx_leaf_area)
+        radius_leaf = leaf_radius_from_dx(args.radius, dx_leaf_ref)
         dynamic_area = _dynamic_area_fn(u_in, radius_leaf)
     else:
         # SUBOFF keeps its own reference-area convention (square L_leaf^2,
         # no pi): 0.5*u^2*L_leaf^2 — not the sphere dynamic_area.
-        L_leaf = leaf_radius_from_dx(args.hull, dx_leaf_area)
+        L_leaf = leaf_radius_from_dx(args.hull, dx_leaf_ref)
         radius_leaf = L_leaf
         dynamic_area = 0.5 * u_in ** 2 * L_leaf ** 2
     if rank == 0:
@@ -619,9 +639,12 @@ def main():
         print(f"[area] dx_leaf_coarse(count-weighted mean)={dx_leaf_coarse:.6f} "
               f"dx_leaf(2^-(1+lev_mean))={dx_leaf_levelmean:.6f} "
               f"dx_leaf(old 2^-(1+d_max))={dx_leaf_old:.6f}", flush=True)
-        print(f"[area] dx_leaf_area(wall-link lattice)={dx_leaf_area:.6f} "
-              f"<- FIX (force lives on level-{int(wall_lv.max().item()) if wall_lv.numel() else 0} "
+        print(f"[area] dx_leaf_area(wall-link lattice, diagnostics)={dx_leaf_area:.6f} "
+              f"(force lives on level-{int(wall_lv.max().item()) if wall_lv.numel() else 0} "
               f"leaves, n_wall_leaf={int(wall_lv.numel())})", flush=True)
+        print(f"[area] dx_leaf_ref(level-1 reference)={dx_leaf_ref:.6f} "
+              f"<- FIX: leaf_weights fold (dx/dx_ref)^2=2^-2(level-1), so the "
+              f"dynamic area uses the level-1 leaf dx", flush=True)
         print(f"[area] radius_leaf={radius_leaf:.3f} "
               f"dynamic_area={dynamic_area:.6f}", flush=True)
 

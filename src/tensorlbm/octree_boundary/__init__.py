@@ -17,6 +17,7 @@ See ``docs/octree-boundary-design.md`` for the contract.
 from tensorlbm.octree_boundary.bfl import (
     bfl_apply_gather,
     bfl_ramp_wall_velocity,
+    leaf_force_spatial_weights,
     leaf_force_weights,
     leaf_macroscopic,
     upstream_donor_table,
