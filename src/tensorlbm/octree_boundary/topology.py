@@ -123,6 +123,12 @@ def build_neighbor_table(grid) -> None:
     nt = torch.full((grid.Q, n_leaf), SHELL_OUTSIDE, dtype=torch.int64, device=device)
     nt[0] = torch.arange(n_leaf, dtype=torch.int64, device=device)  # rest -> self
     donor = torch.full((grid.Q, n_leaf), -1, dtype=torch.int64, device=device)
+    # 设备侧镜像 _fanout_groups 的存在性掩码: fo_present[dir, leaf] 为 True
+    # 表示 ``(leaf, dir)`` 已注册进 fanout 注册表。供下面方向 ``d`` 的
+    # ``has_fo`` 查询使用, 取代旧版逐行的 ``dict.get(...).__bool__()``
+    # (每次 host 标量读回 = device sync)。随着注册表增量更新, 其状态与
+    # 该方向处理时的字典内容逐位一致。
+    fo_present = torch.zeros((grid.Q, n_leaf), dtype=torch.bool, device=device)
 
     def _hit(sorted_m: torch.Tensor, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """searchsorted membership: returns (hit_mask, order_positions)."""
@@ -196,13 +202,44 @@ def build_neighbor_table(grid) -> None:
             # link endpoint and the coarse-leaf reverse endpoint do not
             # coincide for diagonal D3Q19 links, so a purely geometric
             # face-facing definition cannot be one-to-one).
-            if bool(hit_p.any()):
-                donor_idx = torch.nonzero(hit_p, as_tuple=False).squeeze(1)
-                for ii in donor_idx.tolist():
-                    j_leaf = int(nbr2[ii].item())
-                    grid._fanout_groups.setdefault(
-                        (j_leaf, od), [],
-                    ).append(int(i2[ii].item()))
+            # fanout 注册表 —— 向量化 (key = j_leaf * Q + od)。旧版对每个
+            # donor 行做两次 ``.item()`` host 读回 (D3Q27/d2 约 72 万次
+            # device sync -> SDAA 驱动死锁)。这里在设备侧分组, 只向 host
+            # 传一次索引数组, 再用纯 Python (无设备访问) 重建字典。逐位
+            # 一致: 同一批 key, 同一 "首次出现" 的 key 插入顺序, 同一 key
+            # 内按 ``ii`` 升序的成员顺序 (stable argsort + 首现重排序)。
+            donor_idx = torch.nonzero(hit_p, as_tuple=False).squeeze(1)
+            n_don = donor_idx.numel()
+            if n_don:
+                j_vals = nbr2[donor_idx]                        # (n_don,)
+                keys = j_vals * grid.Q + od
+                srt = torch.argsort(keys, stable=True)         # 按 key 稳定排序
+                sk = keys[srt]
+                first = torch.empty(n_don, dtype=torch.bool, device=device)
+                first[0] = True
+                if n_don > 1:
+                    first[1:] = sk[1:] != sk[:-1]
+                first_pos = srt[first]                          # (n_grp,) key 升序
+                n_grp = first_pos.numel()
+                # 把 key 升序的组重排成 "首次出现" 顺序
+                rank_keyorder = torch.argsort(first_pos)
+                rank = torch.empty(n_grp, dtype=torch.int64, device=device)
+                rank[rank_keyorder] = torch.arange(
+                    n_grp, dtype=torch.int64, device=device,
+                )
+                gid_sorted = rank[torch.cumsum(first.to(torch.int64), 0) - 1]
+                gid_of_pos = torch.empty(
+                    n_don, dtype=torch.int64, device=device,
+                )
+                gid_of_pos[srt] = gid_sorted
+                gid_host = gid_of_pos.cpu().tolist()
+                iv_host = i2[donor_idx].cpu().tolist()
+                jk_host = keys[first_pos[rank_keyorder]].cpu().tolist()
+                for gid, leaf in zip(gid_host, iv_host):
+                    key = (int(jk_host[gid]) // grid.Q, od)
+                    grid._fanout_groups.setdefault(key, []).append(int(leaf))
+                # 更新设备侧存在性掩码 (key (j_leaf, od))
+                fo_present[od, j_vals] = True
 
         # ---- depth-1 leaves ------------------------------------------------
         if n1:
@@ -217,11 +254,14 @@ def build_neighbor_table(grid) -> None:
             hit_ref = hit_ref & inb1
             # FANOUT only when the reverse donor registry is non-empty; an
             # empty (all-solid wall-facing) refined neighbour is solid.
+            # has_fo: 向量化的字典成员判定 (key = (pos, d))。旧版对每个
+            # hit_ref 行做一次 host 读回 (device sync); ``fo_present`` 是
+            # _fanout_groups 的设备侧镜像, 且增量更新, 因此其状态与本方向
+            # 处理时字典的 ``get((pos, d), [])`` 结果逐位一致。
             has_fo = torch.zeros(n1, dtype=torch.bool, device=device)
-            for pos in torch.nonzero(hit_ref, as_tuple=False).squeeze(1).tolist():
-                has_fo[pos] = bool(
-                    grid._fanout_groups.get((int(pos), int(d)), []),
-                )
+            ref_pos = torch.nonzero(hit_ref, as_tuple=False).squeeze(1)
+            if ref_pos.numel():
+                has_fo[ref_pos] = fo_present[d, ref_pos]
             nbr1 = torch.where(
                 hit1,
                 l1_order[p1.clamp(max=l1_sorted.shape[0] - 1)],

@@ -628,6 +628,77 @@ def _fanout_segment_mean(
     return (vals * valid).sum(dim=1) / valid.sum(dim=1).clamp_min(1)
 
 
+def _shell_stream_tables(octree, device) -> dict:
+    """Static stream index tables for :func:`stream_gather` (cached).
+
+    Every position set used by :func:`stream_gather` is a function of the
+    static topology (``neighbor_table`` / ``_opp``) and of the topology
+    pre-cache (``fanout_pos`` / ``fanout_pad``) alone — never of the
+    populations.  The ``torch.nonzero`` row sets, the ``opp``-permuted row
+    indices and the padded fan-out member rows are therefore computed once
+    here and reused for every substep.
+
+    Why this matters on SDAA: the old per-substep ``if bool(mask.any()):``
+    guards forced six host scalar read-backs (device syncs) per substep,
+    and D3Q27 makes those index sets large (slot table 27 x 177992, ghost
+    rows 420928, fan-out rows 109808).  SDAA faults/hangs on large
+    *dynamic* (data-dependent shape) index gathers — D3Q19 stays inside the
+    limits, D3Q27 does not.  Building the tables once removes both the
+    scalar read-backs and the dynamic output shapes from the hot path; the
+    per-substep kernels are plain static-shape gathers and index_puts.
+
+    The tables are independent of the ``ShellGhostPlan``: the ghost
+    *positions* come from the topology, while the per-plan ``slot`` lookup
+    is still performed per call by :func:`stream_gather`.
+
+    Numerically identical to the old inline version: same ``(d, i)`` row
+    sets in the same (row-major ``nonzero``) order, hence the same
+    right-hand values and the same write-back order.
+    """
+    dev = torch.device(device)
+    cached = getattr(octree, "_shell_stream_tables_cache", None)
+    if cached is not None and cached["device"] == dev:
+        return cached
+    opp = octree._opp.to(dev)
+    nt = octree.neighbor_table.to(dev)
+    src_all = nt[opp]
+
+    def _rows(mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        rows = torch.nonzero(mask, as_tuple=False)
+        # contiguous: nonzero slicing yields a stride-2 view, and SDAA is
+        # sensitive to mis-aligned index tensors
+        return rows[:, 0].contiguous(), rows[:, 1].contiguous()
+
+    d_g, i_g = _rows(src_all == SHELL_OUTSIDE)
+    d_s, i_s = _rows(src_all == SOLID)
+    d_f, i_f = _rows(src_all == FANOUT)
+
+    rowidx, pad_live = ensure_fanout_tables(octree)
+    rowidx = rowidx.to(dev)
+    pad_live = pad_live.to(dev)
+    ridx = rowidx[opp[d_f], i_f]                # live fan-out row / -1
+    has = ridx >= 0
+    fb = ~has
+    tables = {
+        "device": dev,
+        # DOMAIN_OUT is a static topology invariant; checking it once here
+        # (cached) replaces a per-substep ``bool(domain_all.any())`` sync.
+        "has_domain_out": bool((src_all == DOMAIN_OUT).any()),
+        "d_g": d_g,
+        "i_g": i_g,
+        "d_s": d_s,
+        "i_s": i_s,
+        "opp_s": opp[d_s].contiguous(),
+        "d_f_has": d_f[has].contiguous(),
+        "i_f_has": i_f[has].contiguous(),
+        "pad_rows": pad_live[ridx[has]].contiguous(),
+        "d_f_fb": d_f[fb].contiguous(),
+        "i_f_fb": i_f[fb].contiguous(),
+    }
+    octree._shell_stream_tables_cache = tables
+    return tables
+
+
 def stream_gather(
     octree: OctreeGrid,
     plan: ShellGhostPlan,
@@ -656,57 +727,65 @@ def stream_gather(
     out = torch.empty_like(populations)
     opp = octree._opp.to(populations.device)
     nt = octree.neighbor_table
+    # 静态索引表 (一次构建 + 缓存): 见 _shell_stream_tables 的说明
+    tables = _shell_stream_tables(octree, populations.device)
+    if tables["has_domain_out"]:
+        raise RuntimeError(
+            "DOMAIN_OUT neighbour in shell streaming — the shell must be "
+            "fully embedded in the L1 block",
+        )
     # 批量版: 所有方向一次 torch.gather (SDAA 上 27 方向循环 = 135 次小 kernel 极慢)
     src_all = nt[opp]  # (q, n)
     valid_all = src_all >= 0
     idx_safe = src_all.clamp(min=0)
     gathered_all = torch.gather(populations, 1, idx_safe)  # (q, n)
     out = torch.where(valid_all, gathered_all, out)
-    # ghost 分支 (SHELL_OUTSIDE): 批量 (nonzero 一次收集所有 ghost 位置)
-    ghost_all = src_all == SHELL_OUTSIDE
-    if bool(ghost_all.any()):
-        rows = torch.nonzero(ghost_all, as_tuple=False)  # (n_ghost, 2): (d, i)
-        d_idx = rows[:, 0]
-        i_idx = rows[:, 1]
-        slots = plan.slot[d_idx, i_idx]  # 高级索引批量取 slot
-        vals = ghost_vals[d_idx, slots]
-        out[d_idx, i_idx] = vals
-    # solid 分支 (SOLID): 批量
-    solid_all = src_all == SOLID
-    if bool(solid_all.any()):
-        rows_s = torch.nonzero(solid_all, as_tuple=False)  # (n_solid, 2)
-        d_s = rows_s[:, 0]
-        i_s = rows_s[:, 1]
-        out[d_s, i_s] = populations[opp[d_s], i_s]
+    # ------------------------------------------------------------------
+    # SDAA 死锁修复 (单卡 D3Q27 初始化/推进卡死 D 状态):
+    #
+    # 旧版下面每个分支都有 ``if bool(mask.any()):``。``bool(...any())`` 是
+    # host 侧标量读回 = 一次 device sync, 每个 substep 6 次; 而 D3Q27 下这
+    # 些索引集合很大 (ghost 420928 行 / fanout 109808 行 / slot 表
+    # 27x177992), SDAA 在 "多次 per-substep sync + 大动态索引 gather" 的
+    # 组合下会陷入驱动 ioctl 阻塞 (SDAA_ERROR_MISALIGNED_ADDRESS / 进程
+    # D 状态)。D3Q19 索引集合小, 恰好不越界。
+    #
+    # 分支位置集合与 populations 无关 (纯静态拓扑), 所以索引表已在上面的
+    # _shell_stream_tables 里一次性建好并缓存: 这里再无任何标量读回, 也
+    # 没有数据相关 (dynamic) 的输出 shape — 全是静态 shape 的 gather /
+    # index_put。空集合的 ``.numel() == 0`` 判断只读元数据, 不触发 sync;
+    # 即使不判断, 空集合的 gather/index_put 本身也是 no-op。
+    #
+    # 数值与旧版逐位一致: 同一批 (d, i) 位置 (row-major nonzero 顺序),
+    # 同一右值, 同一写回顺序。
+    # ------------------------------------------------------------------
+    # ghost 分支 (SHELL_OUTSIDE): batch — 一次高级索引取回所有 ghost 的 slot
+    d_g, i_g = tables["d_g"], tables["i_g"]
+    if d_g.numel():
+        out[d_g, i_g] = ghost_vals[d_g, plan.slot[d_g, i_g]]
+    # solid 分支 (SOLID): batch 反向反弹
+    d_s, i_s = tables["d_s"], tables["i_s"]
+    if d_s.numel():
+        out[d_s, i_s] = populations[tables["opp_s"], i_s]
     # fanout 分支: 纯张量批量 (修正后的预缓存 — 行方向 q 是 neighbour-table
     # 方向, 拉取/写出方向是 opp[q]; 旧版直接用 fanout_pos[:,0]=q 索引
     # populations 是方向翻转 bug, 且 fo_mask 过滤后 90% 的 fanout 单元仍走
     # Python 回退循环)
-    fanout_all = src_all == FANOUT
-    if bool(fanout_all.any()):
-        rows_f = torch.nonzero(fanout_all, as_tuple=False)   # (n_fan, 2) (d, i)
-        d_f, i_f = rows_f[:, 0], rows_f[:, 1]
-        rowidx, pad_live = ensure_fanout_tables(octree)
-        rowidx = rowidx.to(populations.device)
-        pad_live = pad_live.to(populations.device)
-        ridx = rowidx[opp[d_f], i_f]                         # live 行号 / -1
-        has = ridx >= 0
-        if bool(has.any()):
-            means = _fanout_segment_mean(
-                populations, d_f[has], pad_live[ridx[has]],
-            )
-            out[d_f[has], i_f[has]] = means
-        fb = ~has
-        if bool(fb.any()):
-            # 防御: FANOUT 但无注册组 -> 保留旧值 (与旧循环一致)
-            out[d_f[fb], i_f[fb]] = f_old[d_f[fb], i_f[fb]]
-    # domain 分支: 检查
-    domain_all = src_all == DOMAIN_OUT
-    if bool(domain_all.any()):
-        raise RuntimeError(
-            "DOMAIN_OUT neighbour in shell streaming — the shell must be "
-            "fully embedded in the L1 block",
+    d_fh, i_fh = tables["d_f_has"], tables["i_f_has"]
+    if d_fh.numel():
+        out[d_fh, i_fh] = _fanout_segment_mean(
+            populations, d_fh, tables["pad_rows"],
         )
+    d_fb, i_fb = tables["d_f_fb"], tables["i_f_fb"]
+    if d_fb.numel():
+        # 防御: FANOUT 但无注册组 -> 保留旧值 (与旧循环一致)
+        out[d_fb, i_fb] = f_old[d_fb, i_fb]
+    # 尾部的 DOMAIN_OUT 检查 (旧死代码) 已删除: ``has_domain_out`` 已在
+    # ``_shell_stream_tables`` 里一次性算好, 本函数开头已对同一谓词
+    # (``(src_all == DOMAIN_OUT).any()``) 做过判定并在触发时抛错, 因此这里
+    # 的 ``bool(domain_all.any())`` 永远为 False —— 纯死代码, 却每个 substep
+    # 产生 1 次 device sync。删除后 stream_gather 的 per-substep sync 数:
+    # 6 -> 0, 数值逐位不变。
     return out
 
 
