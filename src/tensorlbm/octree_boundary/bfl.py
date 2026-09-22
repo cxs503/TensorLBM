@@ -78,17 +78,75 @@ def upstream_donor_table(octree: OctreeGrid) -> torch.Tensor:
     return octree.neighbor_table[octree._opp]
 
 
-def leaf_force_weights(octree: OctreeGrid) -> torch.Tensor:
+def leaf_force_spatial_weights(
+    octree: OctreeGrid,
+    *,
+    reference_level: int = 1,
+) -> torch.Tensor:
+    """Per-leaf **convective spatial** factor ``(dx_leaf / dx_ref)^2``.
+
+    The link impulse of a leaf is expressed in that leaf's own lattice
+    units; to add impulses from leaves at *different* depths they must be
+    mapped to a common lattice with the convective scaling
+    ``F ~ (dx^4 / dt^2) F_lu`` (``rho0 = 1``, ``dt_leaf = dx_leaf``), i.e.
+    ``(dx_leaf/dx_ref)^2 = 2^-2(level - reference_level)`` (bfl design
+    doc §3.5).  ``reference_level`` defaults to 1 — the coarsest shell level
+    — so the returned force is expressed in a *fixed* lattice and is
+    refinement-invariant across ``d_max`` (a depth-1 reference leaves the
+    depth-1 leaves at factor 1 and down-weights the finer, smaller-area
+    leaves by ``2^-2`` per level).
+
+    This factor is the piece :func:`leaf_force_weights` used to miss:
+    without it a mixed-depth shell (``d_max=2`` mixes level-1 and level-2
+    leaves) sums impulses from ``dx=0.5`` and ``dx=0.25`` lattices with
+    identical weights, over-counting the fine-level contribution by
+    ``(dx_1/dx_2)^2 = 4`` — the ``d_max=1 -> 2`` force ratio ``~3.7``
+    instead of ``~1`` (scripts/validate_shell_bfl_force_analytic_cpu.py).
+    """
+    level = octree.leaf_level.to(torch.float64)
+    return 2.0 ** (-2.0 * (level - float(reference_level)))
+
+
+def leaf_force_weights(
+    octree: OctreeGrid,
+    *,
+    include_spatial: bool = False,
+    reference_level: int = 1,
+) -> torch.Tensor:
     """Per-leaf substep weight ``2^-(d_max - d_leaf)`` (design doc §3.5).
 
     The shell advances every leaf ``2**d_max`` lockstep substeps per root
     step; a depth-``d`` leaf should only contribute ``2**d`` of them to the
     force (its own convective time step is ``2^-d`` root units).  The weight
     corrects the lockstep over-sampling: ``sum_substeps w = 2**d``.
+
+    Args:
+        octree: the shell grid.
+        include_spatial: fold in the per-leaf convective spatial factor
+            :func:`leaf_force_spatial_weights` (``(dx_leaf/dx_ref)^2``).
+            **Required for a correct force on a mixed-depth shell**: the
+            raw time weight alone assumes every leaf's impulse is already in
+            a common lattice, which only holds for a single-level shell.
+            Defaults to ``False`` for backward compatibility with the
+            historical (time-only) convention; the shell force path should
+            pass ``True``.
+        reference_level: leaf level the spatial factor is referenced to
+            (see :func:`leaf_force_spatial_weights`); only meaningful with
+            ``include_spatial=True``.
+
+    The coordinate conversion that maps the resulting leaf force to the L1
+    root lattice is :func:`tensorlbm.octree_boundary.force.convert_leaf_force_to_l1`
+    — with ``include_spatial=True`` it must be called with the *reference*
+    level's ``dx_leaf`` (a single value), never with the individual leaf
+    depths (see its docstring).
     """
-    return 2.0 ** (
-        -(octree.d_max - octree.leaf_level.to(torch.float64))
-    )
+    levels = octree.leaf_level.to(torch.float64)
+    weights = 2.0 ** (-(octree.d_max - levels))
+    if include_spatial:
+        weights = weights * leaf_force_spatial_weights(
+            octree, reference_level=reference_level,
+        )
+    return weights
 
 
 def leaf_macroscopic(
@@ -396,6 +454,7 @@ def bfl_apply_gather(
 __all__ = [
     "bfl_apply_gather",
     "bfl_ramp_wall_velocity",
+    "leaf_force_spatial_weights",
     "leaf_force_weights",
     "leaf_macroscopic",
     "upstream_donor_table",
