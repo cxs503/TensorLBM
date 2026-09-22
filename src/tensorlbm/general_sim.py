@@ -205,7 +205,9 @@ class SolverConfig:
     # MEM variant for ForceMethod.MOMENTUM_EXCHANGE / BOTH:
     #   'standard' (Ladd sum, default) | 'galilean' ((1+1/2τ) factor)
     #   | 'bg_sub' (free-stream equilibrium background subtracted)
-    #   | 'all' (record standard+galilean+bg_sub for comparison)
+    #   | 'wet_node' (2·Σ c_q f_q(x_solid) over ALL fluid->solid links;
+    #     exact free-stream closure) | 'pair' (two-population per-step budget)
+    #   | 'all' (record every variant for comparison)
     mem_variant: str = "standard"
     # Pressure extrapolation for drag: 'none', 'linear', 'quadratic'
     pressure_extrap: str = "none"
@@ -1167,7 +1169,9 @@ class GeneralSimEngine:
             from .momentum_exchange import (
                 momentum_exchange_background_subtracted,
                 momentum_exchange_galilean,
+                momentum_exchange_pair,
                 momentum_exchange_standard,
+                momentum_exchange_wet_node,
             )
 
             variant = getattr(sol, "mem_variant", "standard")
@@ -1188,9 +1192,13 @@ class GeneralSimEngine:
                 me_bg = momentum_exchange_background_subtracted(
                     self.f, self.solid, self.near, rho0=rho0, u0=(u_in, 0.0, 0.0)
                 )
+                me_wet = momentum_exchange_wet_node(self.f, self.solid, self.near)
+                me_pair = momentum_exchange_pair(self.f, self.solid, self.near)
                 entry["cd_mem_standard"] = _norm(me_std)
                 entry["cd_mem_galilean"] = _norm(me_gal)
                 entry["cd_mem_bgsub"] = _norm(me_bg)
+                entry["cd_mem_wet_node"] = _norm(me_wet)
+                entry["cd_mem_pair"] = _norm(me_pair)
                 entry["cd_mem"] = entry["cd_mem_standard"]
                 entry["fx_mem"] = me_std[0]
                 entry["fy_mem"] = me_std[1]
@@ -1202,6 +1210,37 @@ class GeneralSimEngine:
                     entry["fx"] = me_std[0]
                     entry["fy"] = me_std[1]
                     entry["fz"] = me_std[2]
+            elif variant == "wet_node":
+                # Wet-node MEM over the complete fluid->solid link set
+                # (exact free-stream closure; see momentum_exchange.py).
+                fx_mem, fy_mem, fz_mem = momentum_exchange_wet_node(self.f, self.solid, self.near)
+                entry["cd_mem"] = _norm((fx_mem, fy_mem, fz_mem))
+                entry["fx_mem"] = fx_mem
+                entry["fy_mem"] = fy_mem
+                entry["fz_mem"] = fz_mem
+                if sol.force_method == ForceMethod.MOMENTUM_EXCHANGE:
+                    entry["cd_pressure"] = 0.0
+                    entry["cd_friction"] = 0.0
+                    entry["cd_total"] = entry["cd_mem"]
+                    entry["fx"] = fx_mem
+                    entry["fy"] = fy_mem
+                    entry["fz"] = fz_mem
+                    entry["cl"] = fy_mem / dpS if dpS > 0 else 0.0
+            elif variant == "pair":
+                # Paired two-population MEM (exact per-step budget).
+                fx_mem, fy_mem, fz_mem = momentum_exchange_pair(self.f, self.solid, self.near)
+                entry["cd_mem"] = _norm((fx_mem, fy_mem, fz_mem))
+                entry["fx_mem"] = fx_mem
+                entry["fy_mem"] = fy_mem
+                entry["fz_mem"] = fz_mem
+                if sol.force_method == ForceMethod.MOMENTUM_EXCHANGE:
+                    entry["cd_pressure"] = 0.0
+                    entry["cd_friction"] = 0.0
+                    entry["cd_total"] = entry["cd_mem"]
+                    entry["fx"] = fx_mem
+                    entry["fy"] = fy_mem
+                    entry["fz"] = fz_mem
+                    entry["cl"] = fy_mem / dpS if dpS > 0 else 0.0
             elif variant == "galilean":
                 fx_mem, fy_mem, fz_mem = momentum_exchange_galilean(
                     self.f, self.solid, self.near, tau
