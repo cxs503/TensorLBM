@@ -313,6 +313,17 @@ def run_case(
     host = octree.leaf_host_cell
     octree.f_leaf = l1_fine[:, host[:, 0] + GHOST, host[:, 1] + GHOST, host[:, 2] + GHOST].clone()
     leaf_weights = leaf_force_weights(octree)
+    try:
+        _wl = octree.leaf_level[octree.bfl_mask.any(dim=0)]
+        _uv, _uc = torch.unique(_wl, return_counts=True)
+        _ws = octree.leaf_level[octree.bfl_mask.any(dim=0)]
+        print(f"[area] wall-link leaf levels: {dict(zip(_uv.tolist(), _uc.tolist()))} "
+              f"n_bfl_links={int(octree.bfl_mask.sum().item())} "
+              f"n_leaf={int(octree.leaf_level.shape[0])} "
+              f"leaf_level_counts={dict(zip(*[t.tolist() for t in torch.unique(octree.leaf_level, return_counts=True)]))} "
+              f"bl_cells={bl_cells} radius_l1={radius_l1} d_max={args.d_max}", flush=True)
+    except Exception as _e:
+        print(f"[area] wall-level print failed: {_e}", flush=True)
     ghost_plan = build_ghost_plan(
         octree,
         s1,

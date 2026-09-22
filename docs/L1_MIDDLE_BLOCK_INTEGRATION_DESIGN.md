@@ -230,3 +230,53 @@ L1→coarse：restrict box + 界面 reflux → coarse_window_new
 - `src/tensorlbm/octree_boundary/stepping.py::build_ghost_plan / _fill_ghost_impl / restrict_shell_to_block / build_shell_coarse_links / _tau_chain`
 - `src/tensorlbm/octree_boundary/distributed_stepping.py::step_octree_shell_distributed / split_leaf_bounds / interleaved_leaf_indices`
 - `src/tensorlbm/amr_shell_planning.py::plan_body_shell_box`
+
+## 8. 2026-09-22 排查回填（集成 Cd 2.5x 偏高）
+
+> 完整存档见 **`docs/octree_integrated_cd_investigation_20260922.md`**（21 项假设判定 +
+> 关键数据矩阵 + 已确认 bug + 未解之谜）。本节只回填与本设计/实现直接相关的结论。
+
+### 8.1 修正的验收基线（§6 阶段 1 第 7 条）
+
+原文目标"Cd_mem vs 单卡 1.1093"需补两点：
+
+- **单卡 0.54–0.55 不是收敛值**（未收敛瞬态）。单卡三级 AMR 收敛：**R6 = 1.2432**、**R10 = 1.1093**；
+  均匀网格外推 1.1263；Schiller–Naumann 参考 **1.0917**。集成 R6 d2 收敛 **2.7255** ⇒ 实为 **2.5x**（对 1.0917）。
+- **对照必须在同一 lattice、同一收敛态**：单卡 D3Q19 step200 = 1.5072 vs 单卡 D3Q27 step150 = 0.56
+  （≈3x，均未收敛）——见 §8.4 未解项。
+
+### 8.2 与 L1/d_max=2 直接相关的已修 bug（影响本设计的力/面积口径）
+
+| bug | 对 L1 设计的影响 | 修复 |
+|---|---|---|
+| **混合层级力折算缺 dx²**（d.1） | L1-block（host=L1, d_max=2）产生 depth-1 **和** depth-2 叶；旧 `leaf_force_weights` 只带时间权重 ⇒ depth-2 冲量被按 depth-1 权重累加（权重膨胀 1.758x）。**L1 设计本身激活了此 bug**（`f97a0f2` 引入 L2 叶） | `bfl.leaf_force_spatial_weights = 2^-2(level−ref)`；`substep_force_weights(include_spatial=True)` 默认；`convert_leaf_force_to_l1` 混合层级 **fail-closed**。d1/d2 力比 3.71→0.93（`18eedca`） |
+| **面积公式**（d.3，见 §5 风险表"力面积公式"） | §5 已预警 `radius_leaf` 随 d_max 变 16x；根治为"面积必须用**wall-link 叶**的 dx"（非全壳计数均值）。集成 wall 叶 **44552 全在 level-2** | `drag_normalize.compute_wall_link_dx / leaf_radius_from_dx / dynamic_area`；集成/单卡 `radius_leaf=48, area=13.0288` 一致（`dcf899e`/`18eedca`） |
+| **P0 ghost lev 失配**（d.4） | 直接影响本设计的 ghost 供给（`build_ghost_plan` 的 `lev` 语义） | 给 plan 加 `lev`（coarse-frame 层级），贯穿 shard slice/merge；neq 注入 2.183→0.988（`0a2583f`） |
+| **Re 口径**（d.2） | 本设计 §3d 的 `taus[1]=tau_l1` 链依赖正确 `tau_coarse` | `tau_from_re(u, L_ref=2R, Re)`（`81cc844`） |
+
+### 8.3 已排除的设计相关假设（不再作为 2.5x 根因）
+
+- **L1 初始化方式**（§3b "uniform eq vs coarse window 采样"）：改为 `initialize_from_window`
+  （neq 注入）已落地，但**未**消除 2.5x ⇒ 非主要根因。
+- **ghost 供给源**（§3c P2 修复）：`--ghost-from-l1`（真实 L1 场 donor）仅把 Cd 从 3.05 降到 2.89
+  （−5~−11%）⇒ 非根因。
+- **L1 界面滤波**（§5 "L1 界面 neq 失配"候选）：已实现 `L1BlockDistributed(interface_filter=...)`
+  + `--l1-interface-filter`（关闭时 CPU 位一致，开启时守恒 4.4e-16），但集成 Cd **无变化**
+  ⇒ 壳层 ghost 走 coarse 直采，绕过滤波 ⇒ 非根因。
+- **粗层固体处理**（§3b 三重壁面）：`--coarse-freeze` 无效果（2.83 vs 2.93 BB）；粗层被 L1 restrict
+  每步覆盖、近乎惰性 ⇒ 非根因（§3b 的 `--no-coarse-bb` 建议可保留但不影响 2.5x）。
+- **ghost 深度**（§3a GHOST_PAD）：g1 = g3 ⇒ 非根因。
+- **far-field / 堵塞 / 几何（bl 厚度）/ d1 路径 / ramp**：均排除（见存档 §b）。
+
+### 8.4 剩余未解项（阻断本设计"对齐单卡 1.1093"的最终验收）
+
+1. **lattice 敏感**：单卡 D3Q19（1.5072@200）vs D3Q27（0.56@150）差 ≈3x；单卡 D3Q27 被
+   **SDAA 大索引死锁**阻断，无法收敛。需先打通单卡 D3Q27 收敛，才能判定 lattice 是否为 2.5x 的一部分。
+2. **wall 叶层级**：集成侧已确认全在 level-2；**单卡侧待测**（若层级不同，面积/力口径需再核）。
+3. **`f_opp_post` 运动壁结构修复（V4）**：能修好共转壁解析零力矩，但会改 case A Fx（70→233），
+   对真实收敛 Cd 的净效果**未测** ⇒ 采纳前须在真实球体阻力基准复核（沿用 `sphere_bfl_control_volume`）。
+
+### 8.5 新增长设 gate（建议纳入 §6 验收）
+
+- `scripts/validate_shell_bfl_force_analytic_cpu.py`：**d_max 细化不变性**（d1/d2 力比应 ≈1，现 0.93）
+  + **共转旋转壁解析零力矩**（Tz 应 ≈0，现状 −390.9 不合格）。任一 d_max 下不满足即 FAIL。
