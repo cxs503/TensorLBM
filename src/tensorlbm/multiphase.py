@@ -283,16 +283,37 @@ def collide_sc_two_component(
     gx: float = 0.0,
     gy: float = 0.0,
     solid_mask: torch.Tensor | None = None,
+    u_eq: str = "self",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Shan-Chen two-component BGK collision step for D2Q9.
 
-    Each component undergoes independent BGK relaxation towards its own
-    equilibrium, but the equilibrium velocity is shifted by the inter-component
-    repulsion force and the external body force (gravity).
+    Each component undergoes BGK relaxation towards an equilibrium whose
+    velocity is shifted by the inter-component interaction force and the
+    external body force (gravity).
 
-    Equilibrium velocity for component σ:
+    Equilibrium velocity for component σ (``u_eq="self"``, the default):
 
         uᵉq_σ = uσ + τ_σ Fσ / ρ_σ
+
+    With ``u_eq="mixture"`` the equilibrium is built on the mixture
+    centre-of-mass velocity (Shan & Doolen 1995):
+
+        u_mix  = (ρ₁u₁ + ρ₂u₂) / (ρ₁ + ρ₂)
+        uᵉq_σ  = u_mix + τ_σ Fσ / ρ_σ
+
+    The mixture form couples the components' momentum: each component
+    relaxes towards the barycentric velocity, which transmits the viscous
+    stress across the diffuse interface (per-component relaxation towards
+    u_mix adds exactly (ρ_σ/τ_σ)(u_mix − u_σ) of momentum exchange per
+    step; for τ₁ = τ₂ the exchanges sum to zero, so total momentum is
+    conserved while the *relative* component velocity decays).  The "self"
+    form has no such coupling: two components may carry different
+    velocities through the interface.
+
+    In both forms the force shift τ_σ F_σ/ρ_σ transfers exactly F_σ of
+    momentum per collision step (the τ_σ cancels: Σᵢ cᵢ fᵉq(ρ, u+τF/ρ) =
+    ρu + τF, and the BGK update then yields M' = M + F), matching the
+    library's velocity-shift forcing convention.
 
     Args:
         f1:          Distribution of component 1, shape ``(9, ny, nx)``.
@@ -306,9 +327,27 @@ def collide_sc_two_component(
                      When provided, solid-cell densities are excluded from the
                      SC neighbour sum to avoid spurious forces from periodic
                      streaming across closed-box walls.
+        u_eq:        Equilibrium-velocity convention: ``"self"`` (default,
+                     legacy behaviour, bit-identical to the previous
+                     implementation) or ``"mixture"`` (Shan–Doolen
+                     centre-of-mass coupling).
 
     Returns:
         Updated ``(f1, f2)`` after collision.
+
+    Note
+    ----
+    With unequal relaxation times the mixture form carries a net momentum
+    source (1/tau1 - 1/tau2) * rho1 * rho2 * (u1 - u2) / (rho1 + rho2)
+    per collision step (zero for equal taus), which is structurally
+    destabilising at strong segregation: with tau = (1.0, 0.75) the
+    mixture form diverges for G_12 <= -1.5 while the "self" form remains
+    stable.
+
+    References
+    ----------
+    Shan & Doolen (1995) J. Stat. Phys. 81:379 — multicomponent LBM with the
+    barycentric (mixture) velocity in the equilibrium.
     """
     rho1, ux1, uy1 = macroscopic(f1)
     rho2, ux2, uy2 = macroscopic(f2)
@@ -318,8 +357,17 @@ def collide_sc_two_component(
     rho1_s = torch.clamp(rho1, min=1e-12)
     rho2_s = torch.clamp(rho2, min=1e-12)
 
-    feq1 = equilibrium(rho1, ux1 + tau1 * Fx1 / rho1_s, uy1 + tau1 * Fy1 / rho1_s)
-    feq2 = equilibrium(rho2, ux2 + tau2 * Fx2 / rho2_s, uy2 + tau2 * Fy2 / rho2_s)
+    if u_eq == "self":
+        feq1 = equilibrium(rho1, ux1 + tau1 * Fx1 / rho1_s, uy1 + tau1 * Fy1 / rho1_s)
+        feq2 = equilibrium(rho2, ux2 + tau2 * Fx2 / rho2_s, uy2 + tau2 * Fy2 / rho2_s)
+    elif u_eq == "mixture":
+        rho_tot = rho1_s + rho2_s
+        u_mix_x = (rho1_s * ux1 + rho2_s * ux2) / rho_tot
+        u_mix_y = (rho1_s * uy1 + rho2_s * uy2) / rho_tot
+        feq1 = equilibrium(rho1, u_mix_x + tau1 * Fx1 / rho1_s, u_mix_y + tau1 * Fy1 / rho1_s)
+        feq2 = equilibrium(rho2, u_mix_x + tau2 * Fx2 / rho2_s, u_mix_y + tau2 * Fy2 / rho2_s)
+    else:
+        raise ValueError(f"u_eq must be 'self' or 'mixture', got {u_eq!r}")
 
     f1_out = f1 - (f1 - feq1) / tau1
     f2_out = f2 - (f2 - feq2) / tau2
