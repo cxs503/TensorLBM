@@ -1,4 +1,4 @@
-# 球 Re=100 直接力法基准 — 力法修复 + 解侧误差预算（W5-B）
+# 球 Re=100 直接力法基准 — 力法修复 + 解侧误差预算与地板定源
 
 pending/sphere_re100/（2026-08-19 G15 时代记录：压力+摩擦积分 −16.6%、
 MEM standard +264.6%）的后续：力法修复（库变更 = PR #309）与残余误差的
@@ -101,3 +101,105 @@ cd tests && PYTHONPATH=../src_patched pytest test_momentum_exchange_wet_node.py 
 工件：result.json、formal_{bfl,bb}_{D40,D60}.json（240 采样力史 + CV 账本逐
 采样）、run.py / verify.py。库变更本体在 PR #309；完整过程工件（协议 NOTES、
 诊断通道 diag/、全库回归）留服务器暂存目录。
+
+## W7 域形修复复判 — 入口钳制定源（w7/）
+
+W5-B 记录的 +11% 堵塞无关地板定源为**入口平面 Dirichlet 钳制**：
+`far_field_bc_3d` 在 x=0 强制自由流平衡态，压制球前轴向上游的势流减速。
+修复=纯域形（入口距离 up 从 1.25D 扩到 2.75D 正式对、3-4D 与联合大域
+签名），无任何模型修正。
+
+### 设置（相对 W5-B 的增量）
+
+- 几何/物理全同（D=40/60、Re=100、u_lb=0.05、τ=0.56/0.59、D3Q19、
+  MRT、BFL 判定路线 + bb 副观测、堵塞 3.14%）。
+- 正式对域形 lat2.0 / up2.75 / down2.25；bfl 24000 步（up2.75 域
+  入口→球对渡 ≈3900 步，12k 步仅 3.1 渡时残漂移：12k↔24k 判定数差
+  D40 0.03pp / D60 0.21pp，24k 双档 drift ≤0.02%）；bb 副观测与签名
+  族 12000 步。12k 旧正式对保全于 diag/。
+- D60 显存工程：库低内存流入口 `stream3d_roll` + expandable_segments
+  （与 gather 版 300 步 A/B 逐位一致：cd/cl/cs/mass 最大差 0.0）。
+
+### 判定表（lat2.0 / up2.75 / down2.25）
+
+| 运行 | 路线/估计器 | D | Cd | err | steady | CV 窗闭合 |
+|---|---|---|---|---|---|---|
+| formal_bfl_D40 | BFL 链账本（判定） | 40 | 1.13761 | +4.20% | yes（−0.005%） | 0.102% |
+| formal_bfl_D60 | BFL 链账本（判定） | 60 | 1.13552 | +4.01% | yes（−0.018%） | 0.010% |
+| formal_bb_D40 | 楼梯 + wet-node MEM（12k） | 40 | 1.15097 | +5.43% | yes | — |
+| formal_bb_D60 | 楼梯 + wet-node MEM（12k） | 60 | 1.14630 | +5.00% | 触线（−0.357%） | — |
+
+**判定：FAIL 维持。** 双档均出 3% 门（+4.20/+4.01%），|err| 单调下降
+成立；对 W5-B 同库 +11.28/+11.21% 压掉 ~7.2pp。楼梯差 +1.20/+1.00pp
+（bb 副观测，与 W5-B up1.25 的 1.5pp 同量级）。
+
+### 地板定源（诊断矩阵，D40/lat2.0/12k/稳态 <0.1%）
+
+| 通道 | 探针 | 结果 | 判决 |
+|---|---|---|---|
+| 入口距离 | up 1.25→2.0→2.75→3.0→4.0 | +11.28→+5.83→+4.23→+3.94→+3.31% | **主因定源：入口钳制** |
+| 碰撞算子 | MRT / TRT Λ=3/16 / MRT 魔术 s_q / BGK | +11.28/+11.16/+11.24/+11.30%（0.15pp 带） | 排除（墙位 τ 耦合假设不成立） |
+| 远场反射 | noneq 远场单独 @up1.25 | +11.17% ≈ hard +11.28% | 排除（非 populations 反射问题） |
+| τ 依赖 | τ 0.53/0.59（Re 200/66.7 浮动参考） | +6.21/+13.69% | 黏性型入口伪影（低 Re 上游更厚），非墙位 |
+| 出口 | down 2.25→4.0 @up2.75 | 12k +5.24% / 24k +5.20%（formal +4.20%） | 稳定 +1.0pp 反向偏移（复现 W5-B down→10 +1.1pp），尾长真实弱敏感性 |
+| 联合大域 | lat3/up3/down4 | **+2.77%（D40 达标形）** | 横向钳置另贡献 ~1pp |
+| 壁离散 | BFL vs BB 同域 | 差 1.5pp | 楼梯非主因 |
+
+五点最小二乘签名（12k 协议、逐点稳态窗）：
+
+    err(up) ≈ E0 + C·(a/x)³，  x=(up+0.5)D，a=0.5D
+    E0 ≈ 3.0%，C ≈ 355（lat2.0）
+
+独立复算（不同窗尾约定）：E0=2.9%、C=361、R²=0.9998，对 up2.75/up3.0/
+up4.0 三点预测差 ≤0.07pp。W5-B 横向扫描（堵塞饱和）全程固定 up=1.25D
+（nx 恒 180），与入口假设完全相容——"堵塞饱和"实为入口项主导下的饱和。
+
+### 3% 双档门可达性（本硬件）
+
+- 达标域形（lat3/up3/down4）的 D60 孪生 = 480×420×420 = 84.7M 胞 =
+  **2.6× 实测显存天花板**（D60 ledger 天花板 = 32.4M 胞 FITS @up2.75/
+  lat2；33.75M 胞 OOM ×3 于 `bouzidi_bounce_back_d3q19` 内部表达式树，
+  empty_cache 无效 = 真活中间量）。
+- `stream3d`（gather）缓存 4×[19,N] int64 索引（D60/up3 = 19.1GB）；
+  换库入口 `stream3d_roll` 后墙移至 BFL 核内部中间量（33.75M 胞 ~21GB
+  同时活）。
+- D40 大域 +2.77% 单点过门但无 D60 阶梯（铁律 ≥2 档）→ 不晋级，仅作
+  达标形存在证据。
+- 破门路径：多卡分域或 BFL 核显存优化（另立项）。
+
+### 数值注记
+
+- 基线 bitwise：diag/t1_mrt_base 与 W5-B formal_bfl_D40 **逐位一致**
+  （1.214927，+11.284%）。
+- 时间收敛：12000 步即收敛值，叠加 ±0.45% 极限环振荡（周期 ~1000 步
+  ≈1.25 t_c）；窗均值不受影响（CV 窗闭合 0.102%/0.010%）。
+- 意外保全点：D60/up2.75/τ0.56 = Re150 对自身参考 ≈+2%（窗尾约定差
+  内）——入口伪影随 Re 增大而减，与 Re 扫描（Re200 +6.21% < Re100
+  +11.28% < Re66.7 +13.69%）相容。判定只在 Re=100。
+- roll/gather A/B（diag/bit_*）：6 个共同采样 cd/cl/cs/mass 最大差 0.0。
+- 参考族位置：锁定 S-N(0.687)=1.0917 位于交叉族（1.0685-1.1092）低端；
+  大域 D40 点 vs Clift-Gauvin 仅 +1.15%。锁定参考不重开，门按锁定值判。
+
+### 复现
+
+```bash
+cd <repo>/benchmarks/pending/sphere_re100_mem/w7
+CUDA_VISIBLE_DEVICES=6 W7B_DEV=cuda:0 TMPDIR=<tmp> \
+  PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True W7B_STREAM=roll \
+  python run_diag.py formal_bfl_D40.json --route bfl --collision mrt \
+    --D 40 --steps 24000 --lat 2.0 --up 2.75 --down 2.25 --cv_tail 2500
+# D60 同参数 --D 60 --tau 0.59（必须 roll + expandable_segments）
+python verify.py    # 从原始力史重算判定表/门/单调/CV/域收敛签名
+```
+
+### w7/ 文件清单
+
+- `run_diag.py` — 诊断/正式 runner（全库公共入口）。
+- `cv_instrument.py` — CV 动量预算仪器（W5-B bfl_worker.cv_box_force_exact
+  原样移植；纯测量）。
+- `verify.py` / `result.json` — 判据独立重算 + 判定汇总。
+- `formal_{bfl,bb}_{D40,D60}.json` — 正式档（采样力史 + CV 尾账本）。
+- `diag/` — 19 份诊断档案：t1_*（碰撞四列 + 基线复现）、h1_*（τ 端点）、
+  h2_*（up 扫描 / noneq / 大域）、v1_*（down 复核 12k+24k）、p1_up4.0
+  （签名点）、formal12k_*（12k 旧正式对）、bit_*（roll/gather 逐位 A/B）、
+  accidental_re150_*（Re150 保全点）、mem_D60_up2.75（显存探针）。
