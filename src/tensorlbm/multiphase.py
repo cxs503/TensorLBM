@@ -338,7 +338,7 @@ def collide_sc_two_component(
     Note
     ----
     With unequal relaxation times the mixture form carries a net momentum
-    source (1/tau1 - 1/tau2) * rho1 * rho2 * (u1 - u2) / (rho1 + rho2)
+    source (1/tau2 - 1/tau1) * rho1 * rho2 * (u1 - u2) / (rho1 + rho2)
     per collision step (zero for equal taus), which is structurally
     destabilising at strong segregation: with tau = (1.0, 0.75) the
     mixture form diverges for G_12 <= -1.5 while the "self" form remains
