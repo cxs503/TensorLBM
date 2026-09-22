@@ -11,8 +11,6 @@ tests/test_beamforming.py::test_das_two_sources
 tests/test_dam_break_3d.py::test_fs_runner_does_not_rebuild_mass_from_fill_between_steps
 
 # --- batch 2 (2026-08-19): 102 verified identical failures on stock main @ 2a6da29 (ci-cpu venv run pytest_mainref2.log) ---
-tests/test_kbc_diagnostic.py::TestAdmissibilityDomainBug::test_h_theorem_violation_with_strong_neq
-tests/test_kbc_diagnostic.py::TestHModeRetention::test_h_does_not_decay
 tests/test_lbm_verification.py::test_step_a_shear_wave
 tests/test_lbm_verification.py::test_step_b_couette
 tests/test_lbm_verification.py::test_step_c_poiseuille
