@@ -510,7 +510,10 @@ def main():
     # (dx_leaf/dx_ref)^2 = 2^-2(level-1) so mixed-depth shells (d_max=2:
     # level-1 and level-2 leaves) do not sum impulses from different
     # lattices.  See docs/shell_bfl_force_analytic_validation_20260922.md.
-    leaf_weights = leaf_force_weights(octree, include_spatial=True).to(dev)[lidx]
+    import os as _os
+    leaf_weights = leaf_force_weights(
+        octree, include_spatial=not bool(int(_os.environ.get("TL_NO_SPATIAL", "0")))
+    ).to(dev)[lidx]
 
     # ---- TEMP DIAGNOSTICS (SUBOFF L1 force-deficit audit) ----
     # dbg_fx: accumulated x-force (weighted); dbg_nw: weighted link count;
