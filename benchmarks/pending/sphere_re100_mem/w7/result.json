@@ -1,0 +1,211 @@
+{
+  "case": "sphere Re=100 solution-side floor (W7-B)",
+  "reference": {
+    "formula": "Cd = 24/Re * (1 + 0.15*Re^0.687)",
+    "re": 100.0,
+    "cd_ref": 1.0917310910948732,
+    "gate_pct": 3.0,
+    "cross_references": {
+      "schiller_naumann_0681": 1.0685190542670633,
+      "clift_gauvin": 1.1092345787735252
+    }
+  },
+  "runs": [
+    {
+      "file": "formal_bfl_D40.json",
+      "tier": "bfl_D40",
+      "route": "bfl",
+      "collision": "mrt",
+      "D": 40,
+      "tau": 0.56,
+      "u_lb": 0.05,
+      "re_eff": 99.99999999999991,
+      "domain_lu": [
+        200,
+        200,
+        240
+      ],
+      "lat": 2.0,
+      "up": 2.75,
+      "down": 2.25,
+      "blockage": 0.031415926535897934,
+      "steps": 24000,
+      "diverged": false,
+      "tau_expected": 0.56,
+      "tau_ok": true,
+      "cd_window": 1.1376133384841147,
+      "cd_prev_window": 1.137673798306768,
+      "drift_pct": -0.005314337268136093,
+      "n_window": 96,
+      "steady": true,
+      "cl_mean": 0.0003653189920073634,
+      "cd_ref": 1.0917310910948732,
+      "err_pct": 4.2027059377073535,
+      "within_gate": false,
+      "cv_closure_rel_samples": 0.006232830825589919,
+      "cv_closure_rel_window": 0.0010242533844245065,
+      "cv_samples": 50,
+      "mass_drift_ppm": 0.0
+    },
+    {
+      "file": "formal_bfl_D60.json",
+      "tier": "bfl_D60",
+      "route": "bfl",
+      "collision": "mrt",
+      "D": 60,
+      "tau": 0.59,
+      "u_lb": 0.05,
+      "re_eff": 100.00000000000004,
+      "domain_lu": [
+        300,
+        300,
+        360
+      ],
+      "lat": 2.0,
+      "up": 2.75,
+      "down": 2.25,
+      "blockage": 0.031415926535897934,
+      "steps": 24000,
+      "diverged": false,
+      "tau_expected": 0.5900000000000001,
+      "tau_ok": true,
+      "cd_window": 1.1355162174389517,
+      "cd_prev_window": 1.1357167495443614,
+      "drift_pct": -0.017656876636728616,
+      "n_window": 96,
+      "steady": true,
+      "cl_mean": 0.00011279087696060561,
+      "cd_ref": 1.0917310910948732,
+      "err_pct": 4.010614582769403,
+      "within_gate": false,
+      "cv_closure_rel_samples": 0.0036535420368391607,
+      "cv_closure_rel_window": 9.931623887425236e-05,
+      "cv_samples": 50,
+      "mass_drift_ppm": 0.0
+    },
+    {
+      "file": "formal_bb_D40.json",
+      "tier": "bb_D40",
+      "route": "bb",
+      "collision": "mrt",
+      "D": 40,
+      "tau": 0.56,
+      "u_lb": 0.05,
+      "re_eff": 99.99999999999991,
+      "domain_lu": [
+        200,
+        200,
+        240
+      ],
+      "lat": 2.0,
+      "up": 2.75,
+      "down": 2.25,
+      "blockage": 0.031415926535897934,
+      "steps": 12000,
+      "diverged": false,
+      "tau_expected": 0.56,
+      "tau_ok": true,
+      "cd_window": 1.150965599401582,
+      "cd_prev_window": 1.1518710295155563,
+      "drift_pct": -0.07860516418710245,
+      "n_window": 48,
+      "steady": true,
+      "cl_mean": 0.00040094728247790405,
+      "cd_ref": 1.0917310910948732,
+      "err_pct": 5.425741630872099,
+      "within_gate": false,
+      "cv_closure_rel_samples": null,
+      "cv_closure_rel_window": null,
+      "cv_samples": 0,
+      "mass_drift_ppm": 0.10416657986118344
+    },
+    {
+      "file": "formal_bb_D60.json",
+      "tier": "bb_D60",
+      "route": "bb",
+      "collision": "mrt",
+      "D": 60,
+      "tau": 0.59,
+      "u_lb": 0.05,
+      "re_eff": 100.00000000000004,
+      "domain_lu": [
+        300,
+        300,
+        360
+      ],
+      "lat": 2.0,
+      "up": 2.75,
+      "down": 2.25,
+      "blockage": 0.031415926535897934,
+      "steps": 12000,
+      "diverged": false,
+      "tau_expected": 0.5900000000000001,
+      "tau_ok": true,
+      "cd_window": 1.1462960211174618,
+      "cd_prev_window": 1.1504003857884875,
+      "drift_pct": -0.35677705968540374,
+      "n_window": 48,
+      "steady": false,
+      "cl_mean": 0.00013310043040375136,
+      "cd_ref": 1.0917310910948732,
+      "err_pct": 4.99801924371931,
+      "within_gate": false,
+      "cv_closure_rel_samples": null,
+      "cv_closure_rel_window": null,
+      "cv_samples": 0,
+      "mass_drift_ppm": -0.06172839125133388
+    }
+  ],
+  "judgment": {
+    "route": "bfl",
+    "observable": "BFL per-link momentum ledger (laboratory frame), window-mean Cd",
+    "n_grids": 2,
+    "all_within_gate": false,
+    "monotone_error_decrease": true,
+    "pass": false
+  },
+  "domain_convergence_signature": [
+    {
+      "probe": "up1.25",
+      "file": "diag/t1_mrt_base.json",
+      "cd": 1.214927032369151,
+      "err_pct": 11.28445844211758,
+      "drift_pct": -0.06676014140731741
+    },
+    {
+      "probe": "up2.0",
+      "file": "diag/h2_up2.0.json",
+      "cd": 1.1553350990866116,
+      "err_pct": 5.825977524186044,
+      "drift_pct": -0.07434664440205284
+    },
+    {
+      "probe": "up2.75 (12k formal)",
+      "file": "diag/formal12k_bfl_D40.json",
+      "cd": 1.1379502944831688,
+      "err_pct": 4.233570314640698,
+      "drift_pct": -0.07531290709155054
+    },
+    {
+      "probe": "up3.0",
+      "file": "diag/h2_up3.0.json",
+      "cd": 1.134709647988964,
+      "err_pct": 3.9367347183442902,
+      "drift_pct": -0.07445933443013553
+    },
+    {
+      "probe": "up4.0",
+      "file": "diag/p1_up4.0.json",
+      "cd": 1.1278585129054965,
+      "err_pct": 3.309186859778074,
+      "drift_pct": -0.07367504160693623
+    },
+    {
+      "probe": "big lat3/up3/down4",
+      "file": "diag/h2_big.json",
+      "cd": 1.1219804015117896,
+      "err_pct": 2.7707656824703957,
+      "drift_pct": -0.14475665095754808
+    }
+  ]
+}
