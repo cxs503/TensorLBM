@@ -84,10 +84,17 @@ def main():
     )
     p.add_argument("--interleave", action="store_true")
     p.add_argument(
-        "--l1-no-refreeze", action="store_true", default=False,
-        help="skip the L1 solid re-freeze after streaming (match "
-             "StaticBlockAMR3D / design doc §3b single-freeze semantics; "
-             "solid interior then participates in streaming as a conveyor)",
+        "--l1-no-refreeze", action="store_true", default=True,
+        help="[default ON] skip the L1 solid re-freeze after streaming "
+             "(matches StaticBlockAMR3D / design doc §3b single-freeze "
+             "semantics; the solid interior then participates in streaming "
+             "as a conveyor). CPU A/B: with this on the integrated path "
+             "matches the single-card reference to 4e-6 relative.",
+    )
+    p.add_argument(
+        "--l1-refreeze", action="store_true", default=False,
+        help="restore the legacy L1 double-freeze (design-doc deviation, "
+             "inflates shell BFL force by ~34%%; kept for A/B only)",
     )
     p.add_argument(
         "--l1-interface-filter", action="store_true", default=False,
@@ -585,7 +592,7 @@ def main():
                  args.l1_interface_filter_strength)
                 if args.l1_interface_filter else None
             ),
-            no_refreeze=args.l1_no_refreeze,
+            no_refreeze=not bool(args.l1_refreeze),
         )
         l1_block.initialize_uniform(u_in)
         win = l1_block.win
