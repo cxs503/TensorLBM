@@ -380,6 +380,16 @@ def main():
 
     # ---------------- coarse operators (domain-decomposed) ----------------
     from tensorlbm.cumulant import collide_cumulant_d3q27
+    import os as _osg
+    if _osg.environ.get("TL_GEIER"):
+        # Math-correct Geier cumulant (acts on the full distribution, 1/rho,
+        # C^eq_{>=4} ~ 1e-16).  The legacy variant keeps a non-zero
+        # equilibrium 4th-6th order target (C^eq ~ 0.111) and loses ~7 orders
+        # of magnitude in fp32 (27x27 M matmul, cond=33.6) -- the SDAA prod
+        # path runs fp32, so this switch is the candidate fix for the D3Q27
+        # Cd anomaly.  See docs/octree_integrated_cd_investigation_20260922.md.
+        from tensorlbm.cumulant import collide_cumulant_geier_d3q27
+        collide_cumulant_d3q27 = collide_cumulant_geier_d3q27
     from tensorlbm.d3q27 import C as C27
     from tensorlbm.d3q27 import OPPOSITE as OPP27
     S27 = [(int(C27[d, 0]), int(C27[d, 1]), int(C27[d, 2])) for d in range(27)]
