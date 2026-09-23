@@ -310,6 +310,7 @@ class L1BlockDistributed:
         maximum_reflux_correction_fraction: float = 0.2,
         correction_stencil: str = "exterior_cells",
         interface_filter: tuple[int, float] | None = None,
+        no_refreeze: bool = False,
     ) -> None:
         if ratio != 2:
             raise ValueError("the L1 block currently supports ratio=2 only")
@@ -366,6 +367,7 @@ class L1BlockDistributed:
         )
         self.correction_stencil = correction_stencil
         self.interface_filter = interface_filter
+        self.no_refreeze = bool(no_refreeze)
 
         g = ghost
         self.l1_shape = (
@@ -564,7 +566,15 @@ class L1BlockDistributed:
         post = self.collide_fn(before, self.tau_l1)
         post_frozen = torch.where(self.l1_solid_q, before, post)
         streamed = self.stream_fn(post_frozen)
-        frozen = torch.where(self.l1_solid_q, before, streamed)
+        if self.no_refreeze:
+            # Match StaticBlockAMR3D / design doc §3b (single freeze): solid
+            # cells skip collision but DO take part in streaming, so the solid
+            # interior behaves as a conveyor that re-injects the inflowing
+            # populations downstream.  The integrated path's extra freeze
+            # below leaves the near wake "hollow" and inflates shell BFL force.
+            frozen = streamed
+        else:
+            frozen = torch.where(self.l1_solid_q, before, streamed)
         if self.interface_filter_blend is not None:
             frozen = damp_interface_nonequilibrium(
                 frozen,

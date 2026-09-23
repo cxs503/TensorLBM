@@ -84,6 +84,12 @@ def main():
     )
     p.add_argument("--interleave", action="store_true")
     p.add_argument(
+        "--l1-no-refreeze", action="store_true", default=False,
+        help="skip the L1 solid re-freeze after streaming (match "
+             "StaticBlockAMR3D / design doc §3b single-freeze semantics; "
+             "solid interior then participates in streaming as a conveyor)",
+    )
+    p.add_argument(
         "--l1-interface-filter", action="store_true", default=False,
         help="L1 path only: enable the single-card "
              "StaticBlockAMR3D._filter_fine_interface equivalent on the L1 "
@@ -579,6 +585,7 @@ def main():
                  args.l1_interface_filter_strength)
                 if args.l1_interface_filter else None
             ),
+            no_refreeze=args.l1_no_refreeze,
         )
         l1_block.initialize_uniform(u_in)
         win = l1_block.win
