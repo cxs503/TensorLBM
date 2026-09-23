@@ -205,22 +205,61 @@ CPU 验证：coarse-parent 模式缩放 **2.183 → 0.988**（真实叶上精确
 **附带独立发现**：`bfl_common`/`bfl_d3q19` 的二次支运动壁系数为 `-6`（无 q），与 Bouzidi 式 (11b)
 的 `1/(2q)` 不符——共转滑移判据在 q>0.5 给出 O(Ma) 伪力（现有测试只在 q=0.5 覆盖）。
 
+### d.6 L1 块二次 freeze（refreeze）偏离设计文档  ✅ 已定位并实现开关（`af94bc3`，默认待切）
+
+**文档要求**（`docs/L1_MIDDLE_BLOCK_INTEGRATION_DESIGN.md` §3b）与单卡 `StaticBlockAMR3D`
+都只做**一次** freeze（`where(l1_solid_q, before, collided)`）：固体内部跳过碰撞，但**参与
+streaming**——固体因此像一个"输送机"，把流进来的布居重新喷向下游。
+
+**实现**（`l1_block.py:563-567`）多了一次：
+
+```python
+before = self.l1_f
+post = self.collide_fn(before, self.tau_l1)
+post_frozen = torch.where(self.l1_solid_q, before, post)
+streamed = self.stream_fn(post_frozen)
+frozen = torch.where(self.l1_solid_q, before, streamed)   # ← 第二次 freeze（偏离）
+```
+
+**后果**：固体内部**完全不参与对流** → 近尾迹被掏空 → 壳层 BFL 感受更强不平衡 → 力偏高。
+
+**证据**：
+- CPU 步进对拍探针 `_audit_l1_vs_ref_cpu.py`：`no_refreeze=True` 时固体内部 diff
+  **恰为 0.000e+00**（与单卡**位级等价**）；默认配置固体内部差 `-1.06e-2`、
+  流体侧 `max|d|=2.4e-4`、coarse 层 `1.5e-3`。单步相对漂移 `4.2e-6`，
+  在 2000 步尺度足以解释壳体力约 34% 的偏高。
+- 纯 L1 探针（`/tmp/l1_freeze_probe.py`）：固体内部 ux `0.06000`（refreeze）
+  vs `0.06062`（no-refreeze）；流体区 `max|Δux|=6.3e-3`。
+- 60 步双路产物：单卡下游中心列 ux ≈ `0.00003`（强尾迹亏损）vs 集成 `0.06000`
+  （=来流值，**完全透明**）；`band_speed` `0.0457` vs `0.0579`（+27%）。
+- GPU A/B（同配置 150 步）：`--l1-no-refreeze` `step150=2.0015` vs 现状 `3.0465`
+  （**-34%**，且仍在陡降）。
+
+**开关**：`L1BlockDistributed(no_refreeze=True)` / 集成 CLI `--l1-no-refreeze`
+（默认 `False` = 历史行为不变；建议在收敛 A/B 确认后把默认切到 `True`）。
+
+**验收 gate 建议**：断言"有固体 + 默认配置 与单卡 `max|d| < 1e-12`"（当前默认不满足）。
+
 ---
 
 ## e) 未解之谜与剩余方向
 
 ### e.1 未解之谜
 
-1. **lattice 敏感（#21）**：单卡同配置 D3Q19（step200 `1.5072`）vs D3Q27（step150 `0.56`）差 ≈3x。
-   均未收敛，方向相反（D3Q19 下降、D3Q27 上升/低位），无法判定谁是收敛值。
-   - 单卡 D3Q27 **被 SDAA 大索引死锁阻断**（`stream_gather` 6 次 device sync + 1.4–1.7x 索引膨胀），
-     无法跑到收敛到 1.09。
-   - **待办**：修复/绕过 SDAA 大索引路径（把 gather/scatter 索引构表挪 CPU，或分批），
-     使单卡 D3Q27 能收敛，才能确认 lattice 是否真为 2.5x 的一部分。
-2. **单卡 wall 叶层级未测**：集成 wall 叶 44552 全在 level-2 **已确认**；单卡 wall 叶层级
-   **未知（待测）**——若单卡 wall 链接落在不同层级，则面积/力折算口径需再核对。
-3. **`f_opp_post` 采纳后的 Cd 影响未知**：V4 会显著改 case A Fx（70→233），但对**真实流动**
-   的收敛 Cd（含静止壁主路径）影响未测。需在真实球体阻力基准上判定 V4 是否净改善。
+1. **lattice 敏感（#21）——已量化，D3Q27 侧仍异常**：
+   - 单卡 D3Q19（P3 8000 步收敛）`1.2432` ≈ 参考 `1.0917` ✅（此路径正确）
+   - 单卡 D3Q27（1200 步，SDAA 死锁修复后可跑）step400 `Cd_mem=0.559343 / Cd_cv=0.560533`
+     （mem/cv 自洽）→ **偏低 49%**
+   - 集成 D3Q27 `2.7255`（refreeze 路径收敛）/ `2.0015`（no-refreeze step150，陡降中）
+   - ⇒ **D3Q19 路径正确，D3Q27 路径单卡偏低、集成偏高——D3Q27 自身有系统性问题**
+     （BFL 力链已排除：CV 算子/权重/方向/力学全对）
+   - 待解：D3Q27 cumulant 碰撞 vs D3Q19（LES 对照跑中）或 D3Q27 流场演化
+2. **单卡 wall 叶层级——已测**：单卡 wall 叶 `{2: 44552}` 全在 level-2，与集成**完全一致**
+   （links 266312 亦同）⇒ 力链几何口径差异**排除**。
+3. **`f_opp_post`（运动壁）**：CPU 解析共转壁 Tz 残差仍在（d_max=2, Ω=0.002 → `Tz=-77.5`，
+   解析应为 0）；V4（标准 `fp_d`）给出 `Tz≈0`。**仅影响运动壁**，静止壁（球体）主路径不受影响。
+4. **集成侧 refreeze bug 的收敛影响**：no-refreeze step150 已降 34% 且陡降，
+   收敛值待 1200 步跑完确认（若收敛 ≈1.0–1.2 ⇒ refreeze 是主因）。
 
 ### e.2 剩余方向（按优先级）
 
