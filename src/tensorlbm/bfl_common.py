@@ -55,6 +55,7 @@ Bouzidi, M., Firdaouss, M., & Lallemand, P. (2001).
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from typing import Literal
 
 import torch
@@ -80,6 +81,11 @@ __all__ = [
     "compute_q_wall_generic",
     "compute_q_generic_common",
     "bfl_step",
+    "BFLBoundaryLinks",
+    "bfl_boundary_link_indices",
+    "bfl_bounce_back_sparse",
+    "bfl_force_ledger_sparse",
+    "bfl_moving_wall_correction_sparse",
 ]
 
 SUPPORTED_LATTICES: tuple[str, ...] = ("D3Q19", "D3Q27")
@@ -963,3 +969,449 @@ def bfl_step(
             f = correct_mass_fn(f, target_mass)
 
     return f
+
+
+# --------------------------------------------------------------------------- #
+# 8. Sparse BFL kernels — precomputed boundary-link index sets
+# --------------------------------------------------------------------------- #
+#
+# The vectorised :func:`bfl_bounce_back_common` materialises ~8 full
+# ``(Q, nz, ny, nx)`` temporaries per call (opposite/upstream gathers,
+# both interpolation branches, the correction add and the scatter mask),
+# and requires the dense ``(Q, nz, ny, nx)`` mask/q_field to stay resident.
+# On large external-flow grids (e.g. an 84.7M-cell sphere domain) that is
+# ~8x6.4 GB of transients on top of the solver's own distributions and the
+# kernel OOMs a 32 GB GPU.
+#
+# The boundary-link set of an immersed body is *tiny* compared with the
+# grid (a D60 sphere has ~6.5e4 links vs 1.6e9 lattice nodes), and both the
+# mask and the q-field are static geometry.  The kernels below therefore
+# precompute, once per geometry, the flat indices of every boundary link
+# (and of its upstream node ``x - c_d``), and apply the interpolation on
+# ``n_links``-sized vectors only.  The arithmetic mirrors
+# :func:`bfl_bounce_back_common` (and the per-direction force ledger of
+# :func:`tensorlbm.bfl_d3q19.bouzidi_bounce_back_d3q19`) statement by
+# statement, in the same evaluation order, so the sparse path is
+# **bit-identical** to the dense one.
+#
+# Upstream convention: the dense kernel builds the upstream population with
+# ``torch.roll``, i.e. a *circular* shift.  The precomputation reproduces
+# that wraparound exactly (modular index arithmetic), but a link whose
+# upstream actually crosses the domain boundary almost always indicates a
+# geometry touching the domain edge, so by default it is intercepted with a
+# :class:`ValueError` unless ``allow_wrap=True`` is passed explicitly.
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True, eq=False)
+class BFLBoundaryLinks:
+    """Precomputed sparse boundary-link index set for one geometry.
+
+    Attributes:
+        lattice: Lattice name (``"D3Q19"`` / ``"D3Q27"``).
+        Q: Number of velocities.
+        grid_shape: ``(nz, ny, nx)`` of the underlying grid.
+        link_dir: ``(n_links,)`` int64 — BFL link direction *d*
+            (fluid → solid) of each link.
+        link_out_dir: ``(n_links,)`` int64 — ``opp[d]``, the direction the
+            interpolated population is scattered into.
+        link_idx: ``(n_links,)`` int64 — row-major flat index of the fluid
+            cell of each link.  Within each direction block the indices are
+            ascending (same order as boolean-mask gathering on the dense
+            field, which the force-ledger sum order relies on).
+        link_up_idx: ``(n_links,)`` int64 — flat index of the upstream node
+            ``x - c_d`` (modular/wrapped, matching ``torch.roll``).
+        link_q: ``(n_links,)`` float32 — fractional distance *q* at the link.
+        offsets: ``(Q + 1,)`` tuple of ints — slice bounds of each
+            direction's block, ``links.direction_slice(d)``.
+        n_wrapped: Number of links whose upstream wrapped the domain edge.
+    """
+
+    lattice: BFLLatticeName
+    Q: int
+    grid_shape: tuple[int, int, int]
+    link_dir: torch.Tensor
+    link_out_dir: torch.Tensor
+    link_idx: torch.Tensor
+    link_up_idx: torch.Tensor
+    link_q: torch.Tensor
+    offsets: tuple[int, ...]
+    n_wrapped: int
+
+    @property
+    def n_links(self) -> int:
+        return int(self.link_idx.numel())
+
+    def direction_slice(self, d: int) -> slice:
+        """Slice selecting direction *d*'s link block."""
+        return slice(self.offsets[d], self.offsets[d + 1])
+
+    def to(self, device: torch.device) -> "BFLBoundaryLinks":
+        """Return a copy with every index/value tensor on *device*."""
+        return BFLBoundaryLinks(
+            lattice=self.lattice,
+            Q=self.Q,
+            grid_shape=self.grid_shape,
+            link_dir=self.link_dir.to(device),
+            link_out_dir=self.link_out_dir.to(device),
+            link_idx=self.link_idx.to(device),
+            link_up_idx=self.link_up_idx.to(device),
+            link_q=self.link_q.to(device),
+            offsets=self.offsets,
+            n_wrapped=self.n_wrapped,
+        )
+
+
+def bfl_boundary_link_indices(
+    fluid_boundary_mask: torch.Tensor,
+    q_field: torch.Tensor | None = None,
+    *,
+    lattice: BFLLatticeName = "D3Q19",
+    allow_wrap: bool = False,
+) -> BFLBoundaryLinks:
+    """Precompute the sparse boundary-link index set of a BFL geometry.
+
+    Args:
+        fluid_boundary_mask: ``(Q, nz, ny, nx)`` bool — True at boundary
+            links (fluid node whose neighbour in direction *d* is solid),
+            as produced by the ``compute_q_*`` helpers.
+        q_field: Optional ``(Q, nz, ny, nx)`` float field of fractional
+            distances.  When ``None`` every link gets *q* = 0.5 (the
+            half-way fallback used by the flat-wall/generic helpers).
+        lattice: ``"D3Q19"`` or ``"D3Q27"``.
+        allow_wrap: When False (default), a link whose upstream node
+            ``x - c_d`` leaves the domain raises :class:`ValueError` (the
+            dense kernel's ``torch.roll`` would silently wrap around the
+            opposite edge).  When True the wrap is reproduced exactly.
+
+    Returns:
+        :class:`BFLBoundaryLinks` ready for :func:`bfl_bounce_back_sparse`
+        and :func:`bfl_force_ledger_sparse`.
+    """
+    Q, C_lat, _, opp_list = _lattice_params(lattice)
+    if fluid_boundary_mask.ndim != 4 or fluid_boundary_mask.shape[0] != Q:
+        raise ValueError(
+            f"fluid_boundary_mask must be ({Q}, nz, ny, nx), got {tuple(fluid_boundary_mask.shape)}"
+        )
+    if q_field is not None and q_field.shape != fluid_boundary_mask.shape:
+        raise ValueError(
+            f"q_field shape {tuple(q_field.shape)} does not match mask "
+            f"{tuple(fluid_boundary_mask.shape)}"
+        )
+    device = fluid_boundary_mask.device
+    nz, ny, nx = (int(s) for s in fluid_boundary_mask.shape[1:])
+    plane = ny * nx
+
+    link_dir_blocks: list[torch.Tensor] = []
+    link_out_blocks: list[torch.Tensor] = []
+    link_idx_blocks: list[torch.Tensor] = []
+    link_up_blocks: list[torch.Tensor] = []
+    link_q_blocks: list[torch.Tensor] = []
+    offsets = [0]
+    n_wrapped = 0
+    wrapped_report: list[str] = []
+
+    for d in range(Q):
+        idx = fluid_boundary_mask[d].reshape(-1).nonzero(as_tuple=True)[0]
+        offsets.append(offsets[-1] + int(idx.numel()))
+        if idx.numel() == 0:
+            continue
+        cx, cy, cz = (int(v) for v in C_lat[d, [0, 1, 2]].tolist())
+        z = idx // plane
+        yx = idx % plane
+        y = yx // nx
+        x = yx % nx
+        uz = z - cz
+        uy = y - cy
+        ux = x - cx
+        out_of_domain = (uz < 0) | (uz >= nz) | (uy < 0) | (uy >= ny) | (ux < 0) | (ux >= nx)
+        n_wrap_d = int(out_of_domain.sum().item())
+        if n_wrap_d and not allow_wrap:
+            raise ValueError(
+                f"BFL sparse precompute: {n_wrap_d} link(s) in direction d={d} "
+                f"(c=({cx},{cy},{cz})) have an upstream node x-c_d outside the "
+                f"domain; the dense kernel's torch.roll would silently wrap "
+                f"around the opposite edge. Move the geometry away from the "
+                f"domain boundary or pass allow_wrap=True to reproduce the "
+                f"wrap exactly."
+            )
+        n_wrapped += n_wrap_d
+        if n_wrap_d:
+            wrapped_report.append(f"d={d}:{n_wrap_d}")
+        up = (
+            torch.remainder(uz, nz) * plane + torch.remainder(uy, ny) * nx + torch.remainder(ux, nx)
+        )
+        link_idx_blocks.append(idx)
+        link_dir_blocks.append(torch.full_like(idx, d))
+        link_out_blocks.append(torch.full_like(idx, opp_list[d]))
+        link_up_blocks.append(up)
+        if q_field is None:
+            link_q_blocks.append(
+                torch.full((idx.numel(),), 0.5, dtype=torch.float32, device=device)
+            )
+        else:
+            link_q_blocks.append(q_field[d].reshape(-1)[idx])
+
+    def _cat(blocks: list[torch.Tensor], dtype: torch.dtype) -> torch.Tensor:
+        if not blocks:
+            return torch.empty((0,), dtype=dtype, device=device)
+        return torch.cat(blocks)
+
+    return BFLBoundaryLinks(
+        lattice=lattice,
+        Q=Q,
+        grid_shape=(nz, ny, nx),
+        link_dir=_cat(link_dir_blocks, torch.int64),
+        link_out_dir=_cat(link_out_blocks, torch.int64),
+        link_idx=_cat(link_idx_blocks, torch.int64),
+        link_up_idx=_cat(link_up_blocks, torch.int64),
+        link_q=_cat(link_q_blocks, torch.float32),
+        offsets=tuple(offsets),
+        n_wrapped=n_wrapped,
+    )
+
+
+def _bfl_links_wall_correction(
+    wall_correction: torch.Tensor | None, links: BFLBoundaryLinks
+) -> torch.Tensor | None:
+    """Gather a wall correction onto the link vectors.
+
+    Accepts either the dense ``(Q, nz, ny, nx)`` correction tensor (gathered
+    at the link positions — same opp-indexing convention as
+    :func:`bfl_bounce_back_common`) or an ``(n_links,)`` per-link vector in
+    :class:`BFLBoundaryLinks` order (as produced by
+    :func:`bfl_moving_wall_correction_sparse`).
+    """
+    if wall_correction is None:
+        return None
+    if wall_correction.ndim == 4:
+        Q, nz, ny, nx = links.Q, *links.grid_shape
+        if tuple(wall_correction.shape) != (Q, nz, ny, nx):
+            raise ValueError(
+                f"dense wall_correction must be ({Q}, {nz}, {ny}, {nx}), got "
+                f"{tuple(wall_correction.shape)}"
+            )
+        return wall_correction.reshape(Q, -1)[links.link_dir, links.link_idx]
+    if wall_correction.ndim == 1 and wall_correction.numel() == links.n_links:
+        return wall_correction
+    raise ValueError(
+        "wall_correction must be None, a (Q, nz, ny, nx) tensor, or an "
+        f"(n_links={links.n_links},) vector; got shape "
+        f"{tuple(wall_correction.shape)}"
+    )
+
+
+def bfl_bounce_back_sparse(
+    f: torch.Tensor,
+    f_prev: torch.Tensor,
+    links: BFLBoundaryLinks,
+    *,
+    wall_correction: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Sparse BFL interpolated bounce-back, bit-identical to the dense kernel.
+
+    Computes the same interpolation as :func:`bfl_bounce_back_common`
+    (same expressions, same evaluation order) on the precomputed link
+    vectors only, then scatters into ``f_out[opp[d], x]``.  Peak kernel
+    memory is one clone of *f* plus O(n_links) vectors, instead of ~8 full
+    ``(Q, nz, ny, nx)`` temporaries plus the resident mask/q_field.
+
+    Args:
+        f: Post-stream distribution ``(Q, nz, ny, nx)``, contiguous.
+        f_prev: Pre-stream (post-collision) distribution, contiguous.
+        links: Precomputed :class:`BFLBoundaryLinks` for this geometry.
+        wall_correction: ``None``, a dense ``(Q, nz, ny, nx)`` tensor (the
+            dense-kernel convention, gathered at the links), or an
+            ``(n_links,)`` per-link vector.
+
+    Returns:
+        Updated distribution tensor (new tensor; *f* is not modified).
+    """
+    Q, nz, ny, nx = links.Q, *links.grid_shape
+    if tuple(f.shape) != (Q, nz, ny, nx) or tuple(f_prev.shape) != (Q, nz, ny, nx):
+        raise ValueError(
+            f"f/f_prev must be ({Q}, {nz}, {ny}, {nx}) to match the links; "
+            f"got {tuple(f.shape)} / {tuple(f_prev.shape)}"
+        )
+    if not (f.is_contiguous() and f_prev.is_contiguous()):
+        raise ValueError("f and f_prev must be contiguous (reshape-as-view)")
+
+    if links.n_links == 0:
+        return f.clone()
+
+    fp_flat = f_prev.reshape(Q, -1)
+    idx = links.link_idx
+    up = links.link_up_idx
+    d_arr = links.link_dir
+    e_arr = links.link_out_dir
+
+    fp_d = fp_flat[d_arr, idx]  # f_prev[d](x)
+    fp_up = fp_flat[d_arr, up]  # f_prev[d](x - c_d)   (torch.roll upstream)
+    fp_od = fp_flat[e_arr, idx]  # f_prev[opp[d]](x)
+
+    q = links.link_q.to(dtype=f.dtype)
+    lin = q < 0.5
+
+    # Same expressions/association as bfl_bounce_back_common.
+    f_bc_lin = 2.0 * q * fp_d + (1.0 - 2.0 * q) * fp_up
+    q_safe = torch.where(lin, torch.ones_like(q), q)
+    inv_2q = 1.0 / (2.0 * q_safe)
+    f_bc_quad = fp_d * inv_2q + (2.0 * q_safe - 1.0) * inv_2q * fp_od
+    f_bc = torch.where(lin, f_bc_lin, f_bc_quad)
+
+    corr = _bfl_links_wall_correction(wall_correction, links)
+    if corr is not None:
+        f_bc = f_bc + corr
+
+    f_out = f.clone()
+    f_out.reshape(Q, -1)[e_arr, idx] = f_bc
+    return f_out
+
+
+def bfl_force_ledger_sparse(
+    f: torch.Tensor,
+    f_prev: torch.Tensor,
+    links: BFLBoundaryLinks,
+    *,
+    wall_correction: torch.Tensor | None = None,
+    fraction: float = 1.0,
+    force_frame: str = "laboratory",
+) -> tuple[tuple[torch.Tensor, torch.Tensor, torch.Tensor], int]:
+    """Sparse per-link momentum ledger, bit-identical to the dense ledger.
+
+    Mirrors the force accounting of
+    :func:`tensorlbm.bfl_d3q19.bouzidi_bounce_back_d3q19` (default path:
+    scalar ``fraction``, optional wall correction, laboratory or wall
+    frame): per direction *d* the same masked-vector arithmetic and the
+    same per-direction summation order are reproduced on the precomputed
+    link blocks, so every accumulated component matches the dense ledger
+    bit-for-bit.  The link-normal decomposition variant is not provided.
+
+    Args:
+        f: Post-stream distribution ``(Q, nz, ny, nx)``, contiguous.
+        f_prev: Pre-stream distribution, contiguous.
+        links: Precomputed :class:`BFLBoundaryLinks`.
+        wall_correction: ``None``, dense ``(Q, nz, ny, nx)``, or
+            ``(n_links,)`` per-link vector.
+        fraction: Scalar boundary fraction (default 1.0).
+        force_frame: ``"laboratory"`` (conservative ledger closing a fixed
+            control volume) or ``"wall"`` (removes the transparent-wall
+            background flux).
+
+    Returns:
+        ``(force, active_links)`` with ``force`` a 3-tuple of 0-dim tensors.
+    """
+    if force_frame not in {"laboratory", "wall"}:
+        raise ValueError(f"force_frame must be 'laboratory' or 'wall', got {force_frame!r}")
+    Q, nz, ny, nx = links.Q, *links.grid_shape
+    if tuple(f.shape) != (Q, nz, ny, nx) or tuple(f_prev.shape) != (Q, nz, ny, nx):
+        raise ValueError(
+            f"f/f_prev must be ({Q}, {nz}, {ny}, {nx}) to match the links; "
+            f"got {tuple(f.shape)} / {tuple(f_prev.shape)}"
+        )
+    if not (f.is_contiguous() and f_prev.is_contiguous()):
+        raise ValueError("f and f_prev must be contiguous (reshape-as-view)")
+
+    opp_list = _OPP19_LIST if Q == 19 else _OPP27_LIST
+    c_lat = _C19 if Q == 19 else _C27
+
+    f_flat = f.reshape(Q, -1)
+    fp_flat = f_prev.reshape(Q, -1)
+    corr = _bfl_links_wall_correction(wall_correction, links)
+
+    stat_acc = torch.zeros(3, dtype=f.dtype, device=f.device)
+    corr_acc = torch.zeros(3, dtype=f.dtype, device=f.device)
+    transparent_acc = torch.zeros(3, dtype=f.dtype, device=f.device)
+    active_links = 0
+
+    for d in range(1, Q):
+        sl = links.direction_slice(d)
+        if sl.start == sl.stop:
+            continue
+        od = opp_list[d]
+        cx, cy, cz = (int(v) for v in c_lat[d, [0, 1, 2]].tolist())
+        idx = links.link_idx[sl]
+        up = links.link_up_idx[sl]
+        q_cell = links.link_q[sl].to(dtype=f.dtype)
+        lin = q_cell < 0.5
+        fp_d = fp_flat[d, idx]
+        fp_od = fp_flat[od, idx]
+        fp_up = fp_flat[d, up]
+        q_safe = torch.where(lin, torch.ones_like(q_cell), q_cell)
+        inv_2q = 1.0 / (2.0 * q_safe)
+        f_bc_stat = torch.where(
+            lin,
+            2.0 * q_cell * fp_d + (1.0 - 2.0 * q_cell) * fp_up,
+            fp_d * inv_2q + (2.0 * q_safe - 1.0) * inv_2q * fp_od,
+        )
+        if corr is not None:
+            corr_d = corr[sl]
+        else:
+            corr_d = torch.zeros_like(q_cell)
+        f_streamed_unk = f_flat[od, idx]
+        frac_cell = float(fraction)
+        stat_link = fp_d + (1.0 - frac_cell) * f_streamed_unk + frac_cell * f_bc_stat
+        corr_link = frac_cell * corr_d
+        c_vec = torch.tensor([cx, cy, cz], dtype=f.dtype, device=f.device)
+        active_links += int(idx.numel())
+        stat_acc += c_vec * stat_link.sum()
+        corr_acc += c_vec * corr_link.sum()
+        transparent_acc += c_vec * (fp_d + f_streamed_unk).sum()
+
+    total_force = stat_acc + corr_acc
+    returned_force = total_force - transparent_acc if force_frame == "wall" else total_force
+    force = (
+        returned_force[0].detach(),
+        returned_force[1].detach(),
+        returned_force[2].detach(),
+    )
+    return force, active_links
+
+
+def bfl_moving_wall_correction_sparse(
+    links: BFLBoundaryLinks,
+    moving_wall_mask: torch.Tensor,
+    u_wall: tuple[float, float, float],
+    *,
+    lattice: BFLLatticeName | None = None,
+    rho_w: float = 1.0,
+) -> torch.Tensor:
+    """Per-link moving-wall momentum correction (no full-tensor allocation).
+
+    Computes the same correction values as :func:`bfl_moving_wall_correction`
+    (same opp-indexing convention) but returns only the ``(n_links,)``
+    vector in :class:`BFLBoundaryLinks` order:
+
+        corr[d, x] = correction[opp[d]] = 6·ρ·w[opp[d]]·(c[opp[d]]·u_w)
+
+    evaluated only at moving-wall links (zero elsewhere).
+
+    Args:
+        links: Precomputed :class:`BFLBoundaryLinks`.
+        moving_wall_mask: ``(nz, ny, nx)`` bool — True at moving-wall cells.
+        u_wall: ``(uwx, uwy, uwz)`` wall velocity.
+        lattice: Lattice override (defaults to ``links.lattice``).
+        rho_w: Wall density (default 1.0).
+
+    Returns:
+        ``(n_links,)`` float32 correction vector for
+        :func:`bfl_bounce_back_sparse` / :func:`bfl_force_ledger_sparse`.
+    """
+    lattice = lattice or links.lattice
+    Q, C_lat, W_lat, _ = _lattice_params(lattice)
+    if tuple(moving_wall_mask.shape) != links.grid_shape:
+        raise ValueError(
+            f"moving_wall_mask must be {links.grid_shape}, got {tuple(moving_wall_mask.shape)}"
+        )
+    device = links.link_idx.device
+    c = C_lat.to(device).float()
+    w = W_lat.to(device).float()
+
+    # Same expression/association as bfl_moving_wall_correction.
+    c_dot_u = c[:, 0] * u_wall[0] + c[:, 1] * u_wall[1] + c[:, 2] * u_wall[2]
+    correction_dir = 6.0 * rho_w * w * c_dot_u  # (Q,)
+    opp_tensor = (_OPP19 if Q == 19 else _OPP27).to(device)
+    wall_corr_dir = correction_dir[opp_tensor]  # (Q,)
+
+    moving_flat = moving_wall_mask.reshape(-1)
+    return wall_corr_dir[links.link_dir] * moving_flat[links.link_idx].float()
