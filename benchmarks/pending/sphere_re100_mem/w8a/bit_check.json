@@ -1,0 +1,120 @@
+{
+  "domain": [
+    100,
+    100,
+    100
+  ],
+  "sphere_center_radius": [
+    50.0,
+    50.0,
+    45.0,
+    10.0
+  ],
+  "n_links": 7242,
+  "n_links_27": 11618,
+  "checks": [
+    {
+      "check": "index_consistency/link_count",
+      "pass": true,
+      "detail": "links=7242 mask_sum=7242"
+    },
+    {
+      "check": "index_consistency/per_direction",
+      "pass": true,
+      "detail": "link_idx blocks == mask nonzero"
+    },
+    {
+      "check": "index_consistency/ascending",
+      "pass": true,
+      "detail": "ascending flat order within blocks"
+    },
+    {
+      "check": "index_consistency/q_values",
+      "pass": true,
+      "detail": "link_q == q_field at links"
+    },
+    {
+      "check": "index_consistency/no_wrap",
+      "pass": true,
+      "detail": "n_wrapped=0"
+    },
+    {
+      "check": "index_consistency/unique_scatter",
+      "pass": true,
+      "detail": "scatter (e, x) pairs unique"
+    },
+    {
+      "check": "coverage/branches",
+      "pass": true,
+      "detail": "linear links=3696, quadratic links=3546"
+    },
+    {
+      "check": "populations/no_correction",
+      "pass": true,
+      "detail": "torch.equal=True max|\u0394|=0.000e+00"
+    },
+    {
+      "check": "correction/nonzero_coverage",
+      "pass": true,
+      "detail": "moving links=6/7242"
+    },
+    {
+      "check": "populations/dense_correction_full",
+      "pass": true,
+      "detail": "max|\u0394|=0.000e+00"
+    },
+    {
+      "check": "populations/sparse_correction_link",
+      "pass": true,
+      "detail": "max|\u0394|=0.000e+00"
+    },
+    {
+      "check": "ledger/fraction1_lab",
+      "pass": true,
+      "detail": "dense={3.483646870e+00,8.746267319e+00,-3.229165316e+00} sparse={3.483646870e+00,8.746267319e+00,-3.229165316e+00} exact=True"
+    },
+    {
+      "check": "ledger/fraction0.7_lab",
+      "pass": true,
+      "detail": "exact=True"
+    },
+    {
+      "check": "ledger/fraction1_wall_frame",
+      "pass": true,
+      "detail": "exact=True"
+    },
+    {
+      "check": "ledger/with_wall_velocity_correction",
+      "pass": true,
+      "detail": "exact=True"
+    },
+    {
+      "check": "populations/with_wall_velocity_correction",
+      "pass": true,
+      "detail": "max|\u0394|=0.000e+00"
+    },
+    {
+      "check": "d3q27/populations",
+      "pass": true,
+      "detail": "links=11618 max|\u0394|=0.000e+00"
+    },
+    {
+      "check": "engine_init/equilibrium_full_vs_low_memory",
+      "pass": true,
+      "detail": "torch.equal=True"
+    },
+    {
+      "check": "wrap/intercepted",
+      "pass": true,
+      "detail": "ValueError raised for out-of-domain upstream"
+    },
+    {
+      "check": "wrap/allow_wrap_matches_roll",
+      "pass": true,
+      "detail": "wrapped upstream == torch.roll semantics"
+    }
+  ],
+  "n_pass": 20,
+  "n_fail": 0,
+  "failures": []
+}
