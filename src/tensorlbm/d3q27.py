@@ -306,6 +306,24 @@ def moving_wall_linkwise_me_force_torque(
     fluid momentum as an incident population along ``c`` is reflected along
     ``-c``.  Consequently a stationary wall recovers conventional stationary
     momentum exchange.
+
+    Note:
+        Convention-bound torque.  The reflected population here is the
+        *ideal* mirror of the outgoing one, so the torque below is exact
+        only for schemes in which solid cells are excluded from collision
+        (bounce-back replaces collision on the wall).  When collision runs
+        on all cells and the bounce-back swap happens post-stream, the
+        population actually returning to the fluid is the BGK-relaxed
+        mirror, and this primitive systematically overestimates the wall
+        torque by about 2x: on the verified Taylor-Couette benchmark it
+        returns ``T/M_ref = 2.06/2.14/2.14`` at ``tau = 0.65`` (inner wall,
+        three grid levels; outer wall -2.03/-1.95/-1.91), degrading to
+        1.69 at ``tau = 0.74``.  For a convention-independent torque,
+        bookkeep the interface flux on the actual outgoing and returning
+        populations with link-midpoint lever arms instead (that channel
+        matches the analytic torque to <= 0.73% with two-wall balance
+        <= 0.23%; see disclosure 5 of
+        ``benchmarks/verified/taylor_couette/``).
     """
     if outgoing.ndim != 1:
         raise ValueError("outgoing must have shape (n_links,)")
