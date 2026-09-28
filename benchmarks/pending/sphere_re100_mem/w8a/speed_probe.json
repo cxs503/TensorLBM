@@ -1,0 +1,55 @@
+{
+  "device": "NVIDIA GeForce RTX 5090",
+  "cases": [
+    {
+      "case": "D20_lat2",
+      "grid": [
+        100,
+        100,
+        120
+      ],
+      "cells_m": 1.2,
+      "n_links": 7242,
+      "dense_ms_per_call_median": 12.436809940263629,
+      "sparse_ms_per_call_median": 5.062012304551899,
+      "ratio_sparse_over_dense": 0.40701854646534846,
+      "dense_ms_raw": [
+        12.44078563991934,
+        12.436809940263629,
+        12.41646071895957
+      ],
+      "sparse_ms_raw": [
+        5.056785522028804,
+        5.062012304551899,
+        5.092131621204317
+      ]
+    },
+    {
+      "case": "D40_lat2",
+      "grid": [
+        200,
+        200,
+        240
+      ],
+      "cells_m": 9.6,
+      "n_links": 28722,
+      "dense_ms_per_call_median": 40.4901781398803,
+      "sparse_ms_per_call_median": 5.815629521384835,
+      "ratio_sparse_over_dense": 0.1436306232413634,
+      "dense_ms_raw": [
+        40.4901781398803,
+        40.50748007837683,
+        40.47452100086957
+      ],
+      "sparse_ms_raw": [
+        5.822436260059476,
+        5.815629521384835,
+        5.8109775790944695
+      ]
+    }
+  ],
+  "gate": {
+    "rule": "sparse/dense median ratio <= 1.10 in every case",
+    "pass": true
+  }
+}
