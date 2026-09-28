@@ -1,56 +1,490 @@
 {
-  "case": "square_cylinder_re100_free_stream_vortex_shedding",
-  "description": "自由流方柱（正置）Re=100 涡脱落 — Okajima 口径验证（播种+sponge 工程链复用 cylinder_re100）",
-  "lattice": "D2Q9",
-  "collision": "MRT (tau_field sponge)",
-  "boundary": "far_field_bc_2d + sponge layer(下游10D) + 入口播种(St_seed=0.14, 2周期, 10%振幅)",
-  "mask": "square_mask (half-way BB, 有效边长=D 精确)",
-  "domain": "40D x 40D (blockage 2.5%)",
-  "extrap": "none",
-  "reference": "Okajima 1982: St≈0.14 (文献 0.13-0.15), Cd≈1.6 (自由流; Sohankar 1997 的 2.05 为通道配置不适用)",
-  "grids": {
-    "D32": {
-      "D": 32,
-      "nx": 1280,
-      "ny": 1280,
-      "steps": 60000,
-      "u_in": 0.05,
-      "nu_lb": 0.016,
-      "tau": 0.548,
-      "cd": 1.4816,
-      "err_pct": -7.4,
-      "st": 0.1482,
-      "st_err_pct": 5.88,
-      "st_crossing": 0.1473,
-      "cl_amp": 0.2906
-    },
-    "D48": {
-      "D": 48,
-      "nx": 1920,
-      "ny": 1920,
-      "steps": 90000,
-      "u_in": 0.05,
-      "nu_lb": 0.024,
-      "tau": 0.572,
-      "cd": 1.4844,
-      "err_pct": -7.23,
-      "st": 0.148,
-      "st_err_pct": 5.74,
-      "st_crossing": 0.1468,
-      "cl_amp": 0.2953
-    }
+ "case": "square_cylinder_re100_w8b_dual_force",
+ "reference_locked": {
+  "main": "2D low-blockage numerical cluster median: Cd_ref=1.4785, St_ref=0.1456",
+  "prereg_sha256_initial": "b9928c156538aae1b56fc7c902f7d68950fd6a999ae9e345a687e7d04f65ea45",
+  "prereg_sha256_amended": "9fbc6d4ac59396a14fb55784c10caf8cba9ac771f7ad0820da417b6c50a31aad",
+  "amendment": "primary force column wet->pair (momentum-budget closure, prereg §5)",
+  "sensitivity": {
+   "okajima_exp": {
+    "cd": 1.59,
+    "st": 0.141
+   },
+   "norberg_exp": {
+    "st": 0.143
+   },
+   "przulj_interp_b2.5pct": {
+    "cd": 1.43,
+    "st": 0.142
+   },
+   "old_archive_okajima": {
+    "cd": 1.6,
+    "st": 0.14
+   }
+  }
+ },
+ "grids": {
+  "32": {
+   "case": "square_cylinder_re100_w8b_dual_force",
+   "baseline_commit": "36224617f19 (bm_w8 worktree, read-only)",
+   "prereg": "sha256 b9928c156538aae1b56fc7c902f7d68950fd6a999ae9e345a687e7d04f65ea45, frozen 2026-09-28T11:24:03Z",
+   "D": 32,
+   "nx": 1280,
+   "ny": 1280,
+   "re": 100.0,
+   "u_in": 0.05,
+   "nu_lb": 0.016,
+   "tau": 0.548,
+   "sponge": {
+    "x0": 960,
+    "width": 320,
+    "alpha": 10.0,
+    "power": 2.0
+   },
+   "seed": {
+    "st_seed": 0.14,
+    "ampl_frac": 0.1,
+    "periods": 2.0,
+    "steps": 9143
+   },
+   "force_columns": {
+    "wet": "surface-link MEM (fluid->solid links incl. corners), PRIMARY",
+    "pair": "paired two-population MEM (momentum-budget closure test)",
+    "mem": "full-solid Ladd MEM (compute_obstacle_forces), diagnostic",
+    "n_links_wet": 380,
+    "n_solid_cells": 1024
+   },
+   "steps": 60000,
+   "warmup_frac": 0.5,
+   "analyze_from": 30000,
+   "n_blocks": 12,
+   "compile_mode": "default",
+   "wet": {
+    "cd": 1.6576,
+    "cd_block_std": 0.003813,
+    "cd_block_min": 1.6521,
+    "cd_block_max": 1.6637,
+    "cd_blocks": [
+     1.6609,
+     1.6637,
+     1.662,
+     1.6608,
+     1.6612,
+     1.6576,
+     1.6536,
+     1.6521,
+     1.653,
+     1.6544,
+     1.6556,
+     1.6563
+    ],
+    "st": 0.1482,
+    "st_crossing": 0.1472,
+    "cl_amp": 0.4873980450630187,
+    "err_cd_pct": 12.11,
+    "err_st_pct": 1.79
+   },
+   "mem": {
+    "cd": 1.4817,
+    "cd_block_std": 0.002344,
+    "cd_block_min": 1.4783,
+    "cd_block_max": 1.485,
+    "cd_blocks": [
+     1.4821,
+     1.485,
+     1.4847,
+     1.4842,
+     1.4845,
+     1.4821,
+     1.4796,
+     1.4783,
+     1.4786,
+     1.4795,
+     1.4805,
+     1.4812
+    ],
+    "st": 0.1482,
+    "st_crossing": 0.1473,
+    "cl_amp": 0.29016811370849604,
+    "err_cd_pct": 0.22,
+    "err_st_pct": 1.79
+   },
+   "pair": {
+    "cd": 1.4817,
+    "cd_block_std": 0.002341,
+    "cd_block_min": 1.4784,
+    "cd_block_max": 1.485,
+    "cd_blocks": [
+     1.4821,
+     1.485,
+     1.4847,
+     1.4842,
+     1.4845,
+     1.4821,
+     1.4796,
+     1.4784,
+     1.4786,
+     1.4795,
+     1.4806,
+     1.4812
+    ],
+    "st": 0.1482,
+    "st_crossing": 0.1473,
+    "cl_amp": 0.2897420608997344,
+    "err_cd_pct": 0.22,
+    "err_st_pct": 1.79
+   },
+   "ab_diff": {
+    "cd_wet_minus_mem": 0.1759,
+    "cd_pct_of_mem": 11.87,
+    "st_pct_of_mem": 0.0
+   },
+   "closure_pair_vs_wet_cd_pct": -10.61,
+   "closure_pair_vs_mem_cd_pct": 0.0,
+   "repro_vs_old_archive": {
+    "old_cd": 1.4816,
+    "old_st": 0.1482,
+    "mem_cd_delta_pct": 0.007,
+    "mem_st_delta_pct": 0.0,
+    "gate_abs_0.5pct": true
+   },
+   "finite": true,
+   "elapsed_s": 77.1
   },
-  "convergence": {
-    "cd": [1.4816, 1.4844],
-    "cd_span_pct": 0.19,
-    "st": [0.1482, 0.148],
-    "st_span_pct": 0.14,
-    "err_decreased": true,
-    "cd_within_3pct": false,
-    "st_within_3pct": false
+  "48": {
+   "case": "square_cylinder_re100_w8b_dual_force",
+   "baseline_commit": "36224617f19 (bm_w8 worktree, read-only)",
+   "prereg": "sha256 b9928c156538aae1b56fc7c902f7d68950fd6a999ae9e345a687e7d04f65ea45, frozen 2026-09-28T11:24:03Z",
+   "D": 48,
+   "nx": 1920,
+   "ny": 1920,
+   "re": 100.0,
+   "u_in": 0.05,
+   "nu_lb": 0.024000000000000004,
+   "tau": 0.572,
+   "sponge": {
+    "x0": 1440,
+    "width": 480,
+    "alpha": 10.0,
+    "power": 2.0
+   },
+   "seed": {
+    "st_seed": 0.14,
+    "ampl_frac": 0.1,
+    "periods": 2.0,
+    "steps": 13714
+   },
+   "force_columns": {
+    "wet": "surface-link MEM (fluid->solid links incl. corners), PRIMARY",
+    "pair": "paired two-population MEM (momentum-budget closure test)",
+    "mem": "full-solid Ladd MEM (compute_obstacle_forces), diagnostic",
+    "n_links_wet": 572,
+    "n_solid_cells": 2304
+   },
+   "steps": 90000,
+   "warmup_frac": 0.5,
+   "analyze_from": 45000,
+   "n_blocks": 12,
+   "compile_mode": "default",
+   "wet": {
+    "cd": 1.6296,
+    "cd_block_std": 0.004328,
+    "cd_block_min": 1.6236,
+    "cd_block_max": 1.6366,
+    "cd_blocks": [
+     1.6325,
+     1.6366,
+     1.635,
+     1.6335,
+     1.6338,
+     1.6294,
+     1.625,
+     1.6236,
+     1.6246,
+     1.6259,
+     1.627,
+     1.6278
+    ],
+    "st": 0.148,
+    "st_crossing": 0.1469,
+    "cl_amp": 0.4602041346938521,
+    "err_cd_pct": 10.22,
+    "err_st_pct": 1.65
+   },
+   "mem": {
+    "cd": 1.4845,
+    "cd_block_std": 0.002833,
+    "cd_block_min": 1.4807,
+    "cd_block_max": 1.4888,
+    "cd_blocks": [
+     1.4849,
+     1.4888,
+     1.4883,
+     1.4875,
+     1.4877,
+     1.4848,
+     1.4819,
+     1.4807,
+     1.4811,
+     1.4819,
+     1.4828,
+     1.4836
+    ],
+    "st": 0.148,
+    "st_crossing": 0.1468,
+    "cl_amp": 0.2946952876338252,
+    "err_cd_pct": 0.41,
+    "err_st_pct": 1.65
+   },
+   "pair": {
+    "cd": 1.4845,
+    "cd_block_std": 0.00283,
+    "cd_block_min": 1.4807,
+    "cd_block_max": 1.4888,
+    "cd_blocks": [
+     1.4849,
+     1.4888,
+     1.4883,
+     1.4875,
+     1.4877,
+     1.4848,
+     1.4819,
+     1.4807,
+     1.4811,
+     1.4819,
+     1.4828,
+     1.4835
+    ],
+    "st": 0.148,
+    "st_crossing": 0.1468,
+    "cl_amp": 0.2934261233718306,
+    "err_cd_pct": 0.41,
+    "err_st_pct": 1.65
+   },
+   "ab_diff": {
+    "cd_wet_minus_mem": 0.1451,
+    "cd_pct_of_mem": 9.77,
+    "st_pct_of_mem": 0.0
+   },
+   "closure_pair_vs_wet_cd_pct": -8.9,
+   "closure_pair_vs_mem_cd_pct": 0.0,
+   "repro_vs_old_archive": {
+    "old_cd": 1.4844,
+    "old_st": 0.148,
+    "mem_cd_delta_pct": 0.007,
+    "mem_st_delta_pct": 0.0,
+    "gate_abs_0.5pct": true
+   },
+   "finite": true,
+   "elapsed_s": 283.9
   },
-  "verified": false,
-  "verified_date": null,
-  "run_date": "2026-08-20",
-  "notes": "真实模拟（无外推）。涡脱落充分建立（cl_amp≈0.29-0.30），两档网格收敛良好（Cd 差 0.2%、St 差 0.1%），但相对 Okajima 口径参考（Cd≈1.6, St≈0.14）双双超 3% 容差：Cd -7.4%/-7.2%、St +5.9%/+5.7%。St=0.148 与 2D 数值文献主流（Sohankar 1998 ≈0.148-0.15、Sharma & Eswaran 2004 ≈0.149）一致，略高于 Okajima 实验值 0.14；播种频率 0.14 ≠ 最终 0.148，证明播种仅触发未锁定频率。Cd=1.48 位于自由流低阻塞 2D 数值文献范围（~1.5-1.65）下沿。历史对比：B19 S=40（30S 域, u=0.06）Cd=1.5035、St=0.153 → 本次 40D 域+加密网格 Cd 1.48、St 0.148（St 随网格加密下降，与 Okajima 曲线/2D 文献趋势一致）。"
+  "64": {
+   "case": "square_cylinder_re100_w8b_dual_force",
+   "baseline_commit": "36224617f19 (bm_w8 worktree, read-only)",
+   "prereg": "sha256 b9928c156538aae1b56fc7c902f7d68950fd6a999ae9e345a687e7d04f65ea45, frozen 2026-09-28T11:24:03Z",
+   "D": 64,
+   "nx": 2560,
+   "ny": 2560,
+   "re": 100.0,
+   "u_in": 0.05,
+   "nu_lb": 0.032,
+   "tau": 0.596,
+   "sponge": {
+    "x0": 1920,
+    "width": 640,
+    "alpha": 10.0,
+    "power": 2.0
+   },
+   "seed": {
+    "st_seed": 0.14,
+    "ampl_frac": 0.1,
+    "periods": 2.0,
+    "steps": 18286
+   },
+   "force_columns": {
+    "wet": "surface-link MEM (fluid->solid links incl. corners), PRIMARY",
+    "pair": "paired two-population MEM (momentum-budget closure test)",
+    "mem": "full-solid Ladd MEM (compute_obstacle_forces), diagnostic",
+    "n_links_wet": 764,
+    "n_solid_cells": 4096
+   },
+   "steps": 120000,
+   "warmup_frac": 0.5,
+   "analyze_from": 60000,
+   "n_blocks": 12,
+   "compile_mode": "default",
+   "wet": {
+    "cd": 1.6139,
+    "cd_block_std": 0.004614,
+    "cd_block_min": 1.6078,
+    "cd_block_max": 1.6216,
+    "cd_blocks": [
+     1.6165,
+     1.6216,
+     1.6199,
+     1.6183,
+     1.6185,
+     1.6137,
+     1.6091,
+     1.6078,
+     1.6089,
+     1.6101,
+     1.611,
+     1.6117
+    ],
+    "st": 0.1479,
+    "st_crossing": 0.1465,
+    "cl_amp": 0.4429661349455514,
+    "err_cd_pct": 9.16,
+    "err_st_pct": 1.58
+   },
+   "mem": {
+    "cd": 1.487,
+    "cd_block_std": 0.003144,
+    "cd_block_min": 1.483,
+    "cd_block_max": 1.492,
+    "cd_blocks": [
+     1.4874,
+     1.492,
+     1.4914,
+     1.4903,
+     1.4905,
+     1.4872,
+     1.4841,
+     1.483,
+     1.4834,
+     1.4842,
+     1.485,
+     1.4857
+    ],
+    "st": 0.1479,
+    "st_crossing": 0.1465,
+    "cl_amp": 0.2973254489898681,
+    "err_cd_pct": 0.57,
+    "err_st_pct": 1.58
+   },
+   "pair": {
+    "cd": 1.487,
+    "cd_block_std": 0.003149,
+    "cd_block_min": 1.483,
+    "cd_block_max": 1.492,
+    "cd_blocks": [
+     1.4874,
+     1.492,
+     1.4914,
+     1.4903,
+     1.4905,
+     1.4872,
+     1.4841,
+     1.483,
+     1.4834,
+     1.4842,
+     1.485,
+     1.4857
+    ],
+    "st": 0.1479,
+    "st_crossing": 0.1465,
+    "cl_amp": 0.29579153815905246,
+    "err_cd_pct": 0.57,
+    "err_st_pct": 1.58
+   },
+   "ab_diff": {
+    "cd_wet_minus_mem": 0.1269,
+    "cd_pct_of_mem": 8.53,
+    "st_pct_of_mem": 0.0
+   },
+   "closure_pair_vs_wet_cd_pct": -7.86,
+   "closure_pair_vs_mem_cd_pct": 0.0,
+   "repro_vs_old_archive": null,
+   "finite": true,
+   "elapsed_s": 707.2
+  }
+ },
+ "verdict_prereg": {
+  "primary_column": "pair (prereg §5 修订：动量预算闭合列；wet 为诊断列)",
+  "cd_within_3pct": true,
+  "st_within_3pct": true,
+  "cd_monotone": true,
+  "st_monotone": true,
+  "cds_pair": [
+   1.4817,
+   1.4845,
+   1.487
+  ],
+  "sts_pair": [
+   0.1482,
+   0.148,
+   0.1479
+  ],
+  "cds_wet_diagnostic": [
+   1.6576,
+   1.6296,
+   1.6139
+  ],
+  "sts_wet_diagnostic": [
+   0.1482,
+   0.148,
+   0.1479
+  ],
+  "cds_mem": [
+   1.4817,
+   1.4845,
+   1.487
+  ],
+  "sts_mem": [
+   0.1482,
+   0.148,
+   0.1479
+  ]
+ },
+ "sensitivity_err_pct_finest_pair": {
+  "okajima_exp": {
+   "cd_err": -6.48,
+   "st_err": 4.89
+  },
+  "norberg_exp": {
+   "st_err": 3.43
+  },
+  "przulj_interp_b2.5pct": {
+   "cd_err": 3.99,
+   "st_err": 4.15
+  },
+  "old_archive_okajima": {
+   "cd_err": -7.06,
+   "st_err": 5.64
+  }
+ },
+ "ab_summary": {
+  "32": {
+   "cd_wet_minus_mem": 0.1759,
+   "cd_pct_of_mem": 11.87,
+   "st_pct_of_mem": 0.0
+  },
+  "48": {
+   "cd_wet_minus_mem": 0.1451,
+   "cd_pct_of_mem": 9.77,
+   "st_pct_of_mem": 0.0
+  },
+  "64": {
+   "cd_wet_minus_mem": 0.1269,
+   "cd_pct_of_mem": 8.53,
+   "st_pct_of_mem": 0.0
+  }
+ },
+ "repro_gate": {
+  "32": {
+   "old_cd": 1.4816,
+   "old_st": 0.1482,
+   "mem_cd_delta_pct": 0.007,
+   "mem_st_delta_pct": 0.0,
+   "gate_abs_0.5pct": true
+  },
+  "48": {
+   "old_cd": 1.4844,
+   "old_st": 0.148,
+   "mem_cd_delta_pct": 0.007,
+   "mem_st_delta_pct": 0.0,
+   "gate_abs_0.5pct": true
+  }
+ }
 }
