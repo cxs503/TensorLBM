@@ -26,6 +26,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 import torch
@@ -38,7 +39,30 @@ CS2 = 1.0 / 3.0
 # ── D2Q5 温度格子 ────────────────────────────────────────────────────────────
 # 方向：0:(0,0) 1:(1,0) 2:(-1,0) 3:(0,1) 4:(0,-1)
 C5 = torch.tensor([[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]], dtype=torch.int64)
-W5 = torch.tensor([1.0 / 3.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0], dtype=torch.float32)
+
+
+def _normalized_weights_fp32(values: Sequence[float]) -> torch.Tensor:
+    """格点权重：fp64 构造 → 归一化 → fp32 量化，精确和恰为 1。
+
+    裸 fp32 构造的 D2Q5 权重 [1/3, 1/6×4] 五元精确和为 1 + 2⁻²⁵
+    （≈ 1 + 2.98e-8；fp64 归一化的相对修正 ~1e-16 远小于 fp32 舍入间隔，
+    量化回 fp32 后残差同号保留）。长跑中表现为每步 ~3.7e-8 的标量重标
+    漂移（W3-A 记录）。故把残差吸收进最大权重（静止方向）：逐元素改动
+    ≤ 1 ulp，四个方向权重逐位不变。判别测试见 tests/test_thermal_weights.py。
+    """
+    w64 = torch.tensor(values, dtype=torch.float64)
+    w64 = w64 / w64.sum()
+    w32 = w64.to(torch.float32)
+    for _ in range(4):
+        residual = 1.0 - w32.double().sum().item()
+        if residual == 0.0:
+            break
+        idx = int(w32.argmax().item())
+        w32[idx] = w32[idx].double().item() + residual
+    return w32
+
+
+W5 = _normalized_weights_fp32([1.0 / 3.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0])
 OPPOSITE5 = torch.tensor([0, 2, 1, 4, 3], dtype=torch.int64)
 
 # physics 命名空间兼容别名（与 thermal3d 的 C_D3Q7 / W_D3Q7 同构）
