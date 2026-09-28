@@ -472,9 +472,9 @@ class GeneralSimEngine:
             ux0[self.solid] = 0.0
         uy0 = torch.zeros_like(ux0)
         uz0 = torch.zeros_like(ux0)
-        from .d3q19 import equilibrium3d
+        from .d3q19 import equilibrium3d_low_memory
 
-        self.f = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
+        self.f = equilibrium3d_low_memory(rho0, ux0, uy0, uz0, device=device)
         self._initial_mass = float(rho0.sum().item())
 
         return {
