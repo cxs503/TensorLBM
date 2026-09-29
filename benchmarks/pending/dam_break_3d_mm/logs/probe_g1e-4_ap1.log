@@ -1,0 +1,33 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+  st=  40 T=0.200 X=1.000 H=0.938 com=(4.50,8.00) maxY=15 wet=960 iface=335 drift=+1.907e-07
+  st=  80 T=0.400 X=1.000 H=0.938 com=(4.50,8.00) maxY=15 wet=960 iface=335 drift=+8.901e-07
+  st= 120 T=0.600 X=1.000 H=0.938 com=(4.50,8.00) maxY=15 wet=960 iface=335 drift=+1.526e-06
+  st= 160 T=0.800 X=1.125 H=0.938 com=(4.60,7.82) maxY=15 wet=996 iface=335 drift=+8.901e-07
+  st= 200 T=1.000 X=1.125 H=0.938 com=(4.66,7.74) maxY=15 wet=1024 iface=335 drift=+7.629e-07
+  st= 240 T=1.200 X=1.125 H=0.938 com=(4.71,7.72) maxY=15 wet=1042 iface=361 drift=-1.272e-07
+  st= 280 T=1.400 X=1.125 H=0.938 com=(4.75,7.66) maxY=15 wet=1061 iface=378 drift=-6.358e-08
+  st= 320 T=1.600 X=1.250 H=0.938 com=(4.80,7.60) maxY=15 wet=1083 iface=392 drift=+0.000e+00
+  st= 360 T=1.800 X=1.250 H=0.938 com=(4.81,7.56) maxY=15 wet=1086 iface=424 drift=-2.543e-07
+  st= 400 T=2.000 X=1.250 H=0.938 com=(4.82,7.57) maxY=15 wet=1088 iface=468 drift=-3.179e-07
+  st= 440 T=2.200 X=1.250 H=0.938 com=(4.83,7.53) maxY=15 wet=1089 iface=488 drift=-8.901e-07
+  st= 480 T=2.400 X=1.375 H=0.938 com=(4.91,7.46) maxY=15 wet=1107 iface=515 drift=-8.265e-07
+  st= 520 T=2.600 X=1.375 H=0.938 com=(4.94,7.44) maxY=15 wet=1106 iface=557 drift=-6.358e-07
+  st= 560 T=2.800 X=1.375 H=0.938 com=(4.92,7.40) maxY=15 wet=1101 iface=593 drift=-8.265e-07
+  st= 600 T=3.000 X=1.375 H=0.938 com=(4.95,7.35) maxY=15 wet=1106 iface=606 drift=-6.994e-07
+  st= 620 T=3.100 X=1.500 H=0.938 com=(4.99,7.32) maxY=15 wet=1115 iface=615 drift=-1.272e-06
+[probe_g1e-4_rg1.0_ap1] elapsed=43.2s

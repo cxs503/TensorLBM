@@ -884,17 +884,6 @@ def build_topology_transaction(
             rho_liquid=rho_liquid,
         )
     mass_after_redistribution = float(cmass.sum())
-    import os as _os_dbg
-    if _os_dbg.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
-        _g = (cflags == gas_flag)
-        _xl = cflags == liquid_flag
-        _xi = cflags == interface_flag
-        _neg = cmass < 0
-        print(f"        [TXN gasmass] pre_clamp gas_sum={float(cmass[_g].sum()):.6f} "
-              f"min={float(cmass.min()):.6f} neg_n={int(_neg.sum())} "
-              f"neg_liq={int((_neg & _xl).sum())} neg_iface={int((_neg & _xi).sum())} "
-              f"neg_liq_mass={float(cmass[_neg & _xl].sum()):.6f} "
-              f"near_empty_liq={int((_xl & (cmass <= 0.01)).sum())}")
     # F2 conservation fix: replace the silent clamp with a conservation-
     # preserving one.  Restrict the correction to the movable (non-solid) cells
     # so the solid interior is never credited or debited.
@@ -918,13 +907,6 @@ def build_topology_transaction(
     # H2: to_liq conversion reinitializes f at the rho_liquid equilibrium
     # (neighbor-averaged velocity) instead of inheriting interface
     # populations that were inflated by ABB gas-pressure reconstruction.
-    import os as _os2
-
-    if _os2.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
-        _dbg_liq_before = float(cmass[to_liq].sum())
-        _dbg_gas_before = float(cmass[to_gas].sum())
-        _dbg_liq_n = int(to_liq.sum())
-        _dbg_gas_n = int(to_gas.sum())
     cf = _init_new(cf, cflags, to_liq, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
     cflags = torch.where(to_liq, torch.full_like(cflags, liquid_flag), cflags)
     cfill = torch.where(to_liq, torch.ones_like(cfill), cfill)
@@ -942,11 +924,6 @@ def build_topology_transaction(
         (~solid_mask),
         float(rho_liquid),
     )
-    if _os2.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
-        _dbg_liq_after = float(cmass[to_liq].sum()) if _dbg_liq_n else 0.0
-        _dbg_gas_after = float(cmass[to_gas].sum()) if _dbg_gas_n else 0.0
-        print(f"        [TXN conv] to_liq n={_dbg_liq_n} mass {_dbg_liq_before:.4f}->{_dbg_liq_after:.4f} "
-              f"| to_gas n={_dbg_gas_n} mass {_dbg_gas_before:.4f}->{_dbg_gas_after:.4f}")
     if i_to_g_ownership is not None:
         # No f transfer: independent mass/fill and population density are
         # separate representations at INTERFACE, so copying f would double count.
@@ -972,11 +949,6 @@ def build_topology_transaction(
     f_after_conversion = cf.clone() if capture_evidence else None
 
     shifted_flags = torch.stack(all_moving_neighbor_masks(cflags))
-    cmass_before_halo = cmass.clone()
-    if _os2.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
-        _gas_stage = (cflags == gas_flag)
-        print(f"        [TXN gasmass] pre_halo gas_sum={float(cmass[_gas_stage].sum()):.6f} "
-              f"gas_n={int(_gas_stage.sum())}")
     # H1: halo promotion requires a directly adjacent LIQUID cell.  A gas
     # cell neighbouring only interface cells must not self-propagate the
     # interface layer (quiescent column 743->32291 interface explosion).
@@ -986,8 +958,6 @@ def build_topology_transaction(
     # envelope halo promotion (only residual recv_new receivers survive).
     import os as _os
 
-    if _os.environ.get("TL_FS_ABL_HALO", "0").strip().lower() not in ("0", "false", "no", ""):
-        to_i = recv_new
     cf = _init_new_birth(
         cf, cflags, to_i, _birth_mode, rho_liquid, rho_gas, _birth_rho,
         ux, uy, uz, liquid_flag, interface_flag,
@@ -1012,13 +982,6 @@ def build_topology_transaction(
         _halo_zero = to_i & ~recv_new
     cfill = torch.where(_halo_zero, torch.zeros_like(cfill), cfill)
     cmass = torch.where(_halo_zero, torch.zeros_like(cmass), cmass)
-    if _os.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
-        if bool(_halo_zero.any()):
-            print(f"        [TXN halo] zeroed_n={int(_halo_zero.sum())} "
-                  f"mass_before_zero={float(cmass_before_halo[_halo_zero].sum()):.6f} "
-                  f"recv_new_kept={int(recv_new.sum())} "
-                  f"mass_recv_new={float(cmass[recv_new].sum()):.6f} "
-                  f"carry_kept={int((to_i & ~_halo_zero & ~recv_new).sum())}")
     if replay_stages is not None:
         replay_stages["halo_boundary"] = tuple(
             value.clone() for value in (cf, cfill, cflags, cmass)
@@ -1029,19 +992,6 @@ def build_topology_transaction(
         | (torch.stack(all_moving_neighbor_masks(cflags)) == interface_flag)
     ).any(dim=0)
     isolated = interface_mask & ~has_neighbor & ~solid_mask
-    if _os.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
-        _iso_n = int(isolated.sum())
-        if _iso_n:
-            _neg_liq = (cflags == liquid_flag) & (mass < 0.0)
-            _neg_liq_nb = torch.stack(all_moving_neighbor_masks(_neg_liq)).any(dim=0)
-            print(f"        [TXN iso] n={_iso_n} mass={float(cmass[isolated].sum()):.6f} "
-                  f"recv_new_iso={int((isolated & recv_new).sum())} "
-                  f"to_gas_iso={int((isolated & to_gas).sum())} "
-                  f"maxmass={float(cmass[isolated].max()):.6f} "
-                  f"negliq_nb_iso={int((isolated & _neg_liq_nb).sum())} "
-                  f"negliq_tot={int(_neg_liq.sum())} negliq_mass={float(mass[_neg_liq].sum()):.6f} "
-                  f"iso_mass_after={float(cmass[isolated].sum()):.6f} "
-                  f"iso_flag_pre={int((cflags[isolated] == interface_flag).sum())}")
     cflags = torch.where(isolated, torch.full_like(cflags, gas_flag), cflags)
     cfill = torch.where(isolated, torch.zeros_like(cfill), cfill)
     cmass = torch.where(isolated, torch.zeros_like(cmass), cmass)
@@ -1064,12 +1014,6 @@ def build_topology_transaction(
             rho_liquid=rho_liquid,
         )
     mass_after_isolation = float(cmass.sum())
-    if _os.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
-        _toi_new = int((to_i & ~recv_new).sum())
-        print(f"        [TXN stage] redist={mass_after_redistribution:.6f} "
-              f"clamp={mass_after_clamp:.6f} conv={mass_after_conversion:.6f} "
-              f"iso={mass_after_isolation:.6f} to_i_new={_toi_new} "
-              f"cmass_on_toi_new={float(cmass[to_i & ~recv_new].sum()):.6f}")
 
     evidence = None
     if capture_evidence:
