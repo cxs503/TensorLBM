@@ -41,6 +41,8 @@ into the next step recovers the exact ledger.  Pass ``return_mass=True`` (or use
 
 from __future__ import annotations
 
+import os
+
 import torch
 
 from .d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
@@ -327,10 +329,36 @@ def koerner_step_2d(
     feq_gas = equilibrium(torch.full_like(rho, float(rho_gas)), ux, uy)
     f_abb = feq_gas + feq_gas[opp] - f_post[opp]
     if enable_abb:
+        if os.environ.get("TL_FS_ABB_CLAMP", "0") == "1":
+            # Diagnostic stabilisation: the ABB reconstruction feq_gas + feq_gas[opp]
+            # - f_post[opp] goes NEGATIVE at physical rho_gas (~0.01) because
+            # f_post[opp] ~ rho_liquid, so rho = sum(f) < 0 -> NaN within ~100
+            # steps.  Clipping the reconstructed populations to >= 0 removes the
+            # negative branch (the independent mass ledger uses f_exchange, which
+            # is frozen pre-ABB, so tracked conservation is unaffected).
+            f_abb = f_abb.clamp(min=0.0)
         f = torch.where(need_abb, f_abb, f)
 
     # ---- 4. Wall BC --------------------------------------------------------
+    # OPT-IN fluid-side half-way bounce-back (TL_FS_WALL_MODE), mirroring the 3D
+    # free_surface_lbm fix (commit db1642b).  Legacy reflects at the SOLID cell
+    # via an in-place swap, so the fluid cell adjacent to a wall pulls the
+    # (zero-initialised) solid state on step 1 -> a spurious wall-layer deficit
+    # that feeds the interface chain and the gravity-independent pseudo-film.
+    # The corrected form reflects at the *fluid* side using the fluid cell's own
+    # outgoing populations: f_q(x_f) = f_post[opp(q)](x_f).
     from .boundaries import bounce_back_cells
+
+    _wall_mode = os.environ.get("TL_FS_WALL_MODE", "legacy").strip().lower()
+    if _wall_mode in ("halfway", "halfway_hydro"):
+        _src_solid = torch.stack(
+            [_roll_from_pull(solid_mask, q) for q in _MOVING_Q]
+        )  # (8,ny,nx) pull source x-c_q lies in SOLID
+        _fluid_bb = (~solid_mask).unsqueeze(0) & _src_solid
+        _f_reflect = f_post[_OPP.to(device)][1:]  # (8,ny,nx) own outgoing pops
+        _need = torch.cat([torch.zeros_like(_fluid_bb[:1]), _fluid_bb], dim=0)
+        _fpad = torch.cat([torch.zeros_like(_f_reflect[:1]), _f_reflect], dim=0)
+        f = torch.where(_need, _fpad, f)
 
     f = bounce_back_cells(f, solid_mask)
     if ledger is not None:
@@ -363,7 +391,11 @@ def koerner_step_2d(
     # ---- 6. Flag conversion thresholds + excess redistribution -------------
     to_iface = gas_mask & (fill_t > 0.01) & ~solid_mask
     to_liq = iface & (fill_t >= 0.999) & ~solid_mask
-    to_gas = iface & (fill_t <= 0.01) & ~solid_mask
+    # OPT-IN lower I->G drain threshold (TL_FS_TOGAS_EPS, default 0.01 = legacy).
+    # The 3D module needed 1e-6: a draining front cell whose flux (2.3e-3/step)
+    # never crossed 0.01 was voided then re-born every step (pseudo-film source).
+    _tog_eps = float(os.environ.get("TL_FS_TOGAS_EPS", "0.01"))
+    to_gas = iface & (fill_t <= _tog_eps) & ~solid_mask
 
     excess = torch.where(
         to_liq,

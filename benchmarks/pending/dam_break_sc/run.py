@@ -32,11 +32,16 @@ Diagnostics (every --sample-interval steps):
   H      = h_left/(2a), h_left  = max y with rho > rho_mid at x in [1,4]
   max_u, mass drift (stability / conservation guards)
 
-Reference (Martin & Moyce 1952, Phil. Trans. R. Soc. A 244, 312):
-  T = 1 -> X ~ 1.5 ;  T = 2 -> X ~ 2.7
+Reference (Martin & Moyce 1952, Phil. Trans. R. Soc. A 244, 312) — classic
+digitisation, identical to the repository's own 2D free-surface benchmark
+(benchmarks/bench_fs_2d.py REF_T/REF_Z) and to the corrected table in
+benchmarks/pending/dam_break_3d_mm:
+  T = 1 -> X ~ 1.1 ;  T = 2 -> X ~ 1.8 ;  T = 3 -> X ~ 2.7
+NB: the historical table here (T=1 -> 1.5, T=2 -> 2.7) was WRONG (it mapped the
+M&M T=3 value onto T=2 and used an unsourced T=1 value); corrected 2026-09-29.
 
 Pass criteria (repo standard, real runs only, no extrapolation):
-  1. fine grid (a=80): |X_sim - X_ref|/X_ref <= 3% at T=1 and T=2
+  1. fine grid (a=80): |X_sim - X_ref|/X_ref <= 3% at T=1, T=2 and T=3
   2. two-grid convergence: a=40 vs a=80 within 3% at the checkpoints
 
 Usage: python run.py --a 80 --g 2e-4 --steps 10000 --device cuda:2 [--out DIR]
@@ -64,17 +69,24 @@ from tensorlbm.d2q9 import equilibrium, macroscopic  # noqa: E402
 from tensorlbm.multiphase import collide_sc_single_component, psi_exp  # noqa: E402
 from tensorlbm.solver import stream  # noqa: E402
 
+
+def psi_sqrt(rho: torch.Tensor) -> torch.Tensor:
+    """Alternative SCMP pseudopotential ψ(ρ) = √ρ (van der Waals-like loop)."""
+    return torch.sqrt(torch.clamp(rho, min=0.0))
+
 CS2 = 1.0 / 3.0
 G_LIB = 5.0  # library argument (sign-flipped convention, see laplace_droplet)
 G_EFF = -5.0  # physical standard-convention SC94 coupling
 TAU = 1.0
+PSI_FN = psi_exp  # SCMP pseudopotential (CLI --psi overrides)
 WALL_PSI = None  # None = historical dry wall (psi->0 at solid); float = wetting wall
 RHO_L, RHO_V = 1.957, 0.1596  # discrete coexistence (measured)
 RHO_MID = 0.5 * (RHO_L + RHO_V)
 W_INT = 3.0  # interface width (cells) for the tanh initial condition
 
-# Martin & Moyce (1952) reference checkpoints
-MM = {1.0: 1.5, 2.0: 2.7}
+# Martin & Moyce (1952) reference checkpoints — classic digitisation
+# (bench_fs_2d.py REF_T/REF_Z).  The historical {1.0:1.5, 2.0:2.7} was WRONG.
+MM = {1.0: 1.1, 2.0: 1.8, 3.0: 2.7}
 
 
 def init_rho(nx: int, ny: int, a: float, device: torch.device) -> torch.Tensor:
@@ -177,7 +189,7 @@ def run_case(
 
     def _step(f):
         f = collide_sc_single_component(
-            f, G=G_LIB, tau=TAU, psi_fn=psi_exp, gy=-g,
+            f, G=G_LIB, tau=TAU, psi_fn=PSI_FN, gy=-g,
             solid_mask=wall, wall_psi=WALL_PSI,
         )
         f = stream(f)
@@ -269,14 +281,18 @@ def main() -> None:
                     help="wall pseudopotential: None (default) = historical dry "
                          "wall; e.g. 0.4 = partially wetting wall (removes the "
                          "artificial floor density-depletion layer)")
+    ap.add_argument("--psi", choices=["exp", "sqrt"], default="exp", dest="psi",
+                    help="SCMP pseudopotential form: exp (SC94, default) or "
+                         "sqrt (psi=sqrt(rho), van der Waals-like loop)")
     add_compile_mode_arg(ap)
     args = ap.parse_args()
     compile_mode = compile_mode_from_args(args)
 
-    global G_LIB, RHO_L, RHO_V, RHO_MID, TAU, WALL_PSI
+    global G_LIB, RHO_L, RHO_V, RHO_MID, TAU, WALL_PSI, PSI_FN
     G_LIB = args.g_coupling
     TAU = args.tau
     WALL_PSI = args.psi_wall
+    PSI_FN = psi_exp if args.psi == "exp" else psi_sqrt
     RHO_L = args.rho_l
     RHO_V = args.rho_v
     RHO_MID = 0.5 * (RHO_L + RHO_V)
