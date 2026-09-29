@@ -1,4 +1,4 @@
-#!/home/wxsc/anaconda3/envs/ftw-env/bin/python
+#!/usr/bin/env python3
 """B20 2D dam break (SCMP — Shan-Chen single-component) vs Martin & Moyce (1952).
 
 Model: SC94 pseudopotential psi(rho) = 1 - exp(-rho), physical coupling
@@ -83,7 +83,14 @@ def init_rho(nx: int, ny: int, a: float, device: torch.device) -> torch.Tensor:
     yy, xx = torch.meshgrid(ys, xs, indexing="ij")
     inside = (xx < a) & (yy < 2.0 * a)
     dist_in = torch.minimum(a - xx, 2.0 * a - yy)
-    dist_out = torch.minimum(xx - a, yy - 2.0 * a)
+    # Outside distance: NEGATIVE everywhere outside (so tanh -> gas).
+    # NB: the historical ``min(xx-a, yy-2a)`` was positive in the top-right
+    # quadrant (xx>a & yy>2a), wrongly seeding ~10k cells as liquid and giving
+    # an average density of 0.89 (above coexistence) -> whole box separated as
+    # liquid.  Use the true (signed) Euclidean distance to the box edge:
+    dx = torch.clamp(xx - a, min=0.0)
+    dy = torch.clamp(yy - 2.0 * a, min=0.0)
+    dist_out = -torch.sqrt(dx * dx + dy * dy)
     dist = torch.where(inside, dist_in, dist_out)
     rho = RHO_V + 0.5 * (RHO_L - RHO_V) * (1.0 + torch.tanh(dist / W_INT))
     return rho.clamp(min=1e-3)
@@ -100,8 +107,15 @@ def measure(f: torch.Tensor, a: float, n_toe: int) -> dict:
     """Front/height/mass/velocity diagnostics (rho-mid threshold)."""
     rho = f.sum(dim=0)
     liq = rho > RHO_MID
-    # M&M toe: rightmost liquid cell in the bottom n_toe fluid rows
-    toe = liq[1 : n_toe + 1, 1:-1]
+    # M&M toe: rightmost liquid cell in the bottom band of the fluid region.
+    # NB: the cells immediately above the floor (rows 1-2) form a ~2-cell
+    # density-depleted layer from the no-slip bounce-back wall (psi is zeroed
+    # at the solid so the wall pulls no fluid), so sampling rows 1..n_toe made
+    # X_toe flicker to 0.  Sample the bottom 1/8 of the box from row 3 up —
+    # this is the physically coherent floor toe (rows 3..ny/8 agree to ~1 cell).
+    lo = 3
+    hi = max(lo + 3, liq.shape[0] // 8)
+    toe = liq[lo:hi, 1:-1]
     cols = toe.any(dim=0).nonzero(as_tuple=True)[0]
     x_toe = float(cols.max().item()) if cols.numel() > 0 else 0.0
     # global front: rightmost liquid cell anywhere (fluid region)
@@ -238,9 +252,22 @@ def main() -> None:
     ap.add_argument("--sample-interval", type=int, default=100)
     ap.add_argument("--device", default="cuda:2")
     ap.add_argument("--out", default="")
+    # Optional SC configuration override (defaults = the laplace_droplet-verified
+    # case).  Exposed only to study the density-ratio dependence of the front
+    # (M&M water/air ~800; this SC94 exponential potential gives ~13 at G=5).
+    ap.add_argument("--g-coupling", type=float, default=5.0, dest="g_coupling",
+                    help="SC library coupling G (default 5.0 -> rho_l/rho_v ~ 13)")
+    ap.add_argument("--rho-l", type=float, default=1.957, dest="rho_l")
+    ap.add_argument("--rho-v", type=float, default=0.1596, dest="rho_v")
     add_compile_mode_arg(ap)
     args = ap.parse_args()
     compile_mode = compile_mode_from_args(args)
+
+    global G_LIB, RHO_L, RHO_V, RHO_MID
+    G_LIB = args.g_coupling
+    RHO_L = args.rho_l
+    RHO_V = args.rho_v
+    RHO_MID = 0.5 * (RHO_L + RHO_V)
 
     device = torch.device(args.device)
     if device.type == "cuda" and not torch.cuda.is_available():

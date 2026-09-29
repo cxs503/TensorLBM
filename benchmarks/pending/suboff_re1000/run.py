@@ -28,7 +28,28 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
+
+
+def _default_device() -> str:
+    """Pick the first available accelerator on this host.
+
+    Historical runs hardcoded ``cuda:2``; this host is a Hygon/SDAA node
+    (32 SDAA devices, no CUDA).  Prefer SDAA, then CUDA, else CPU.
+    """
+    try:
+        import torch_sdaa  # noqa: F401
+
+        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+            return "sdaa:0"
+    except Exception:
+        pass
+    if torch.cuda.is_available():
+        return "cuda:0"
+    return "cpu"
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 import torch
 
@@ -71,7 +92,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--resolution", type=int, default=80, help="cells per hull length L")
     ap.add_argument("--steps", type=int, default=20000)
-    ap.add_argument("--device", default="cuda:2")
+    ap.add_argument("--device", default=None, help="torch device, e.g. sdaa:0 / cuda:0 (auto if unset)")
     ap.add_argument("--collision", default="mrt", choices=["mrt", "smagorinsky"])
     ap.add_argument(
         "--friction",
@@ -93,6 +114,8 @@ def main() -> None:
     )
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
+    if not args.device:
+        args.device = _default_device()
 
     L = args.resolution
     collision = (
@@ -101,7 +124,8 @@ def main() -> None:
     viscosity = U_PHYS * SUBOFF_LENGTH_M / 1000.0  # Re = u*L/nu = 1000
 
     out_dir = Path(
-        args.out or f"/home/wxsc/cxs/TensorLBM/results_bench_b6_suboff_re1000_L{L}_{args.collision}"
+        args.out
+        or str(_REPO_ROOT / f"results_bench_b6_suboff_re1000_L{L}_{args.collision}")
     )
     out_dir.mkdir(parents=True, exist_ok=True)
 
