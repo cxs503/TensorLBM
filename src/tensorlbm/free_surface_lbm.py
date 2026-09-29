@@ -12,6 +12,7 @@ References: Körner et al. (2005), waLBerla free_surface/, Maarten-vd-Sande/lbm
 
 from __future__ import annotations
 
+import os
 from copy import deepcopy
 
 import torch
@@ -52,6 +53,14 @@ GAS = 0
 LIQUID = 1
 INTERFACE = 2
 SOLID = 3
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    """Read an opt-out boolean env gate for A/B diagnosis of the FS fixes."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() not in ("0", "false", "no", "")
 
 # D3Q19 velocity vectors and weights
 _C = C  # (19, 3)
@@ -630,6 +639,16 @@ def free_surface_step(
 
     # ---- 1. Macroscopic + collision ----
     rho, ux, uy, uz = macroscopic3d(f)
+    # (c) Velocity guard at the source.  ``macroscopic3d`` clamps rho only up to
+    # a 1e-12 floor, so at a near-empty INTERFACE cell u = momentum / rho is
+    # unbounded.  That u feeds the ABB gas reconstruction
+    # (f_eq_gas + f_eq_gas[opp] - f_post[opp]) and every new-cell equilibrium,
+    # where it drives f to inf/nan within a handful of steps.  Bound it to the
+    # stable lattice range *before* it is used anywhere.
+    if _env_bool("TL_FS_INPUT_GUARD", True):
+        ux = ux.clamp(-0.5, 0.5)
+        uy = uy.clamp(-0.5, 0.5)
+        uz = uz.clamp(-0.5, 0.5)
     rho_s = rho.clamp(min=1e-6, max=rho_liquid * 3.0)
     ux_eq = (ux + tau * gx).clamp(-0.5, 0.5)
     uy_eq = (uy + tau * gy).clamp(-0.5, 0.5)
@@ -765,6 +784,14 @@ def free_surface_step(
     # ---- 2b. Zero gas cells AFTER streaming (prevent mass leak into gas) ----
     gas_mask_pre = flags == GAS
     f = torch.where(gas_mask_pre.unsqueeze(0), torch.zeros_like(f), f)
+    if _env_bool("TL_FS_INPUT_GUARD", True):
+        # (c) Exchange input guard: never let a single non-finite / runaway
+        # population enter the tracked-mass stencil.  The ABB reconstruction
+        # below reads the same field, so this is also the last line of defence
+        # before a non-finite f is committed for the next step.
+        f = torch.nan_to_num(f, nan=0.0, posinf=0.0, neginf=0.0).clamp(
+            min=0.0, max=rho_liquid * 3.0
+        )
     # F3: freeze the mass-exchange population *before* the anti-bounce-back gas
     # reconstruction.  The exchange must read the pure streamed state; letting
     # the ABB-reconstructed populations (magnitude ~ rho_gas) into the exchange
@@ -916,6 +943,12 @@ def free_surface_step(
         mass_delta = mass_delta + torch.where(
             valid_bulk_owner, mass_delta_bulk_debit, torch.zeros_like(mass_delta_bulk_debit)
         )
+    if _env_bool("TL_FS_INPUT_GUARD", True):
+        # (c) Bound the tracked-mass increment: a non-finite or runaway exchange
+        # delta must not be committed to the independent mass field.
+        mass_delta = torch.nan_to_num(mass_delta, nan=0.0, posinf=0.0, neginf=0.0).clamp(
+            -float(rho_liquid), float(rho_liquid)
+        )
     mass = torch.where(~solid_mask, mass + mass_delta, mass)
     mass_after_exchange_value = float(mass.sum())
     fill = torch.where(~solid_mask, (mass / rho_liquid).clamp(0.0, 1.0), fill)
@@ -1019,10 +1052,37 @@ def free_surface_step(
     interface_mask = flags == INTERFACE
     liquid_mask = flags == LIQUID
 
-    # Gas → Interface (received mass from streaming)
-    to_iface = gas_mask & (fill > 0.01) & (~solid_mask)
-    to_liq = interface_mask & (fill >= 0.999) & (~solid_mask)
-    to_gas = (interface_mask | liquid_mask) & (fill <= 0.01) & (~solid_mask)
+    # (a) Mass-based conversion gates.  ``fill`` is already
+    # ``clamp(mass/rho_liquid, 0, 1)``, so it is sign-blind: a numerically
+    # negative-mass INTERFACE cell reads as fill = 0 (indistinguishable from an
+    # empty cell) and an over-full cell reads as fill = 1.  Reading the tracked
+    # mass directly means a negative cell can never be mistaken for a full I→L
+    # donor, and I→G only fires on a genuinely (near-)empty non-negative cell.
+    if _env_bool("TL_FS_MASS_GATE", True):
+        mass_gate = mass.clamp(min=0.0)
+        to_iface = gas_mask & (mass_gate > 0.01 * rho_liquid) & (~solid_mask)
+        to_liq = interface_mask & (mass >= 0.999 * rho_liquid) & (~solid_mask)
+        if _env_bool("TL_FS_TOGAS_NONNEG", False):
+            # A numerically negative-mass cell must not enter I→G either: its
+            # sign aliases into the redistribution and the conversion then
+            # deletes it, which is the observed tracked-mass leak.  Leave it to
+            # the conservation-preserving clamp, which settles it without a net
+            # source/sink.
+            to_gas = (
+                (interface_mask | liquid_mask)
+                & (mass >= 0.0)
+                & (mass <= 0.01 * rho_liquid)
+                & (~solid_mask)
+            )
+        else:
+            to_gas = (
+                (interface_mask | liquid_mask) & (mass_gate <= 0.01 * rho_liquid) & (~solid_mask)
+            )
+    else:
+        # Legacy fill-gated path (A/B reference).
+        to_iface = gas_mask & (fill > 0.01) & (~solid_mask)
+        to_liq = interface_mask & (fill >= 0.999) & (~solid_mask)
+        to_gas = (interface_mask | liquid_mask) & (fill <= 0.01) & (~solid_mask)
 
     # ---- 5a. Körner mass redistribution (excess → interface neighbors) ----
     # Excess mass at converting cells (vectorized, no bool sync)
@@ -1038,8 +1098,34 @@ def free_surface_step(
     redistribution_to_g = (
         to_gas if not enable_i_to_g_ownership_closure else (to_gas & ~interface_mask)
     )
-    excess = torch.where(to_liq, mass - rho_liquid, torch.zeros_like(mass)) + torch.where(
-        redistribution_to_g, mass, torch.zeros_like(mass)
+    # (b) Positive-overflow-only excess.  The legacy expression adds an
+    # INTERFACE cell's raw (possibly negative) mass as "excess"; a negative
+    # contribution aliases the sign and cancels a genuine positive overflow
+    # elsewhere, so the redistributed sum quietly nets to ~0 and the clamped
+    # conversion destroys the difference.  Keep only the non-negative part.
+    exp_pos_on = _env_bool("TL_FS_EXP_POS", True)
+    if exp_pos_on:
+        excess_to_liq = (mass - rho_liquid).clamp(min=0.0)
+        excess_to_g = mass.clamp(min=0.0)
+    else:
+        excess_to_liq = mass - rho_liquid
+        excess_to_g = mass
+    excess = (
+        torch.where(to_liq, excess_to_liq, torch.zeros_like(mass))
+        + torch.where(redistribution_to_g, excess_to_g, torch.zeros_like(mass))
+    ).clamp(min=0.0)
+    # (b) Explicit donor for the negative mass that I→G clears.  Clamping the
+    # positive excess discards the negative part; the negative cell must then be
+    # settled *explicitly*, otherwise the conversion deletes it (a spurious
+    # source) and the conservation-preserving clamp re-owns it (a double count).
+    # The donor therefore (i) zeroes the negative INTERFACE donor cell itself and
+    # (ii) charges the same negative amount to surviving INTERFACE receivers over
+    # the moving D3Q19 links.  Donor + receivers net to exactly zero.
+    donor_on = _env_bool("TL_FS_EXP_DONOR", False)
+    neg_donor = (
+        torch.where(redistribution_to_g & (mass < 0.0), mass, torch.zeros_like(mass))
+        if donor_on
+        else torch.zeros_like(mass)
     )
     # Existing interface cells receive first.  If a converting interface has
     # none, promote its adjacent gas halo to receivers in this same step; a
@@ -1107,15 +1193,37 @@ def free_surface_step(
     n_recv = shifted_recv.sum(dim=0).float().clamp(min=1.0)
     # Excess per receiving neighbor
     excess_per_nb = excess / n_recv
+    # (b) Explicit negative-mass donor: charge the discarded negative mass to
+    # surviving INTERFACE cells only, over the same moving D3Q19 links.  The
+    # distributing to_gas donor is itself a (converting) INTERFACE cell, so
+    # this is exactly "to_gas INTERFACE as donor, credit landing on surviving
+    # INTERFACE".
+    if donor_on and bool(neg_donor.any()):
+        shifted_recv_iface = torch.stack(all_moving_neighbor_masks(recv_iface))
+        n_cnt = shifted_recv_iface.sum(dim=0)
+        n_recv_iface = n_cnt.float().clamp(min=1.0)
+        neg_per_nb = neg_donor / n_recv_iface
+        neg_dist = torch.stack(
+            [roll_to_neighbor(neg_per_nb, q) * recv_iface for q in D3Q19_MOVING_Q]
+        ).sum(dim=0)
+        # Only the part that actually has a surviving-INTERFACE receiver may be
+        # self-credited; a receiver-less donor is left to the clamp.
+        distributable = torch.where(n_cnt > 0, neg_donor, torch.zeros_like(neg_donor))
+        neg_increment = -distributable + neg_dist
+    else:
+        neg_increment = torch.zeros_like(mass)
 
     # Aggregate every D3Q19 receiver contribution in the mass dtype, then
     # commit it once.  Sequential float32 rebinding rounds the same mass field
     # 18 times and leaves a transaction residual when conversion removes the
     # donor excess.  This preserves each link/mask contribution and topology;
     # only their deterministic same-dtype aggregation precedes one commit.
-    legacy_redistribution_increment = torch.stack(
-        [roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q]
-    ).sum(dim=0)
+    legacy_redistribution_increment = (
+        torch.stack(
+            [roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q]
+        ).sum(dim=0)
+        + neg_increment
+    )
     redistribution_link_evidence = ()
     if runtime_ledger is not None or ownership_ledger is not None:
         links = []
