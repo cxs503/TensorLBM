@@ -1062,6 +1062,47 @@ def free_surface_step(
     recv_ok_iface = recv_ok if not _liq_only else iface_mask
     recv_19 = recv_ok_liq.unsqueeze(0)
     recv_19_iface = recv_ok_iface.unsqueeze(0)
+
+    # --- A-prime exchange closure (OPT-IN: TL_FS_APRIME=1) ----------------
+    # Design doc §6.2 closure redesign, exchange end.
+    #
+    # Legacy: the L/I channel is paired by the explicit bulk debit below, but
+    # the I/I channel is a bare per-cell half-weight whose net vanishes only
+    # when the receiver gate is *symmetric across every link*.  A graded gate
+    # (graded_n3..n5) is asymmetric (one endpoint established, the other not):
+    # measured 288 asymmetric I/I links, +1.7..2% static-column drift.  Even
+    # the open gate still siphons real liquid into the fill=0 shells born at
+    # mass 0 while their populations sit at rho_liquid -- the pseudo-wetting
+    # film.
+    #
+    # A-prime fixes both ends of the exchange:
+    #  (a) legal-receiver promotion (per-link): an I/I link is legal only when
+    #      BOTH endpoints are legal receivers;  an L/I link only when its
+    #      INTERFACE target is a legal receiver.
+    #  (b) fill~=0 guard, paired accounting: a link is dead when EITHER
+    #      endpoint is an *unsupported* near-empty shell (mass <= eps_shell and
+    #      fewer than n_min LIQUID neighbours) -- the pseudo-film seed.  The
+    #      predicate is a symmetric function of the undirected link, so the
+    #      paired half-weight stays exactly antisymmetric and the I/I net is
+    #      identically zero.  No global rescale, no topology mutation.
+    #
+    # Legacy behaviour is untouched unless the switch is set (bit-identical).
+    if _env_bool("TL_FS_APRIME", False):
+        _nbr_recv = torch.stack(list(all_moving_neighbor_masks(recv_ok_iface)))
+        _nbr_recv = torch.cat([recv_ok_iface.unsqueeze(0), _nbr_recv], dim=0)
+        _eps_shell = float(os.environ.get("TL_FS_APRIME_SHELL_EPS", "0.01")) * rho_liquid
+        _n_min = int(os.environ.get("TL_FS_APRIME_NMIN", "3"))
+        _n_liq_nbr = (neighbor_flags == LIQUID).sum(dim=0)
+        _shell = (mass <= _eps_shell) & iface_mask
+        _unsupported = _shell & (_n_liq_nbr < _n_min)
+        _live_mv = ~_unsupported.unsqueeze(0) & ~torch.stack(
+            list(all_moving_neighbor_masks(_unsupported))
+        )
+        # Index 0 (rest direction) is a no-op link: keep it live so the (19,)
+        # mask aligns with ``neighbor_flags``.
+        _live = torch.cat([torch.ones_like(_live_mv[:1]), _live_mv], dim=0)
+        recv_19 = recv_ok_liq.unsqueeze(0) & _live
+        recv_19_iface = recv_ok_iface.unsqueeze(0) & _nbr_recv & _live
     # neighbor_flags always computed in anti-bounce-back above (no None check)
     # For pull link q at x, the opposing outgoing population belongs to x
     # itself: f_bar(q)^*(x).  Sampling it at x-c_q mixes two different links.
@@ -1117,6 +1158,22 @@ def free_surface_step(
         mass_ledger["dbg_debit_nonliq_abs"] = float(
             mass_delta_bulk_debit.masked_select(~(flags == LIQUID)).abs().sum()
         )
+        # A-prime leak forensics: the I/I (interface-interface) channel is
+        # applied as a per-cell half-weight, so its net requires BOTH link
+        # endpoints to pass the receiver gate.  An asymmetric gate (one endpoint
+        # established, the other not) breaks the antisymmetry and leaks.
+        mass_ledger["dbg_mass_delta_interface_sum"] = float(mass_delta_interface.sum())
+        mass_ledger["dbg_mass_delta_liquid_sum"] = float(mass_delta_liquid.sum())
+        mass_ledger["dbg_mass_delta_bulk_debit_sum"] = float(mass_delta_bulk_debit.sum())
+        _ii_gate = torch.stack(list(all_moving_neighbor_masks(recv_ok_iface)))
+        # asymmetric I/I links: gate(x) xor gate(pull source y) on I/I links.
+        _ii_nb = neighbor_flags[list(D3Q19_MOVING_Q)]
+        _ii_asym = (
+            (_ii_nb == INTERFACE)
+            & recv_ok_iface.unsqueeze(0)
+            & ~_ii_gate
+        )
+        mass_ledger["dbg_ii_asym_links"] = float(_ii_asym.sum())
     mass = torch.where(~solid_mask, mass + mass_delta, mass)
     if _env_bool("TL_FS_DIAG_FIELD", False):
         globals()["_FS_DIAG"] = {
