@@ -61,6 +61,7 @@ from tensorlbm import (
     free_surface_step,
     init_flags_from_fill,
     init_mass_from_fill,
+    init_population_from_fill,
 )
 
 LIQUID = 1
@@ -97,8 +98,14 @@ def _interp_table(tab, x):
     return tab[-1][1]
 
 
-def build_domain(a: int, g: float, device: torch.device):
-    """Corner column a x a x 2a; walls on all six faces; rest is gas."""
+def build_domain(a: int, g: float, device: torch.device, rho_gas: float = 1.0):
+    """Corner column a x a x 2a; walls on all six faces; rest is gas.
+
+    Populations are seeded by ``init_population_from_fill`` so the mass=0
+    INTERFACE envelope is *gas-consistent* (rho_gas / Körner fill-weighted)
+    instead of the historical rho_liquid.  ``TL_FS_SHELL_MODE=legacy`` restores
+    the old rho_liquid envelope bit-for-bit.
+    """
     nx, ny, nz = 5 * a, 2 * a + a // 2, 2 * a
     ch = 2 * a
     fill = torch.zeros((nz, ny, nx), dtype=torch.float32, device=device)
@@ -112,13 +119,12 @@ def build_domain(a: int, g: float, device: torch.device):
     solid[:, :, -1] = True
     flags = init_flags_from_fill(fill, solid)
     mass = init_mass_from_fill(fill, flags, rho_liquid=1.0)
-    active = (flags == LIQUID) | (flags == INTERFACE)
-    zero = torch.zeros((nz, ny, nx), device=device)
-    f = equilibrium3d(
-        torch.where(active, torch.ones((nz, ny, nx), device=device), zero),
-        zero,
-        zero,
-        zero,
+    # Gas-consistent envelope seeding (mass-free shell at rho_gas, partial
+    # interface at the Körner fill-weighted density).  Legacy behaviour
+    # (rho_liquid everywhere on the active set) is restored with
+    # TL_FS_SHELL_MODE=legacy.
+    f = init_population_from_fill(
+        fill, flags, rho_liquid=1.0, rho_gas=rho_gas
     )
     return f, fill, flags, mass, solid, (nx, ny, nz)
 
