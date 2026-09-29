@@ -32,7 +32,7 @@ link-force/Ct window adapter。它不重构、合成或重置 populations，也�
 
 ## TensorLBM 提供的功能
 
-- `src/tensorlbm/__init__.py` 中精简、明确的公开 API
+- `src/tensorlbm/__init__.py` 中精简、明确的公开 API，采用惰性解析（PEP 562）：`import tensorlbm` 仅需约 0.02 秒，且只加载实际用到的子模块
 - **D2Q9**、**D3Q19** 和 **D3Q27** 格子原语（平衡态、宏观量、格子常数）
 - **BGK**、**MRT**、**TRT**、**正则化 BGK (RLBM)**、**累积量（Cumulant）** 碰撞算子（支持二维和三维）
 - **自适应网格细化（AMR）**：D2Q9/D3Q19 动态 Patch 管理，最多 5 级细化（Filippova–Hänel 界面交换），非平衡量/涡量/梯度/边界层等细化指示子
