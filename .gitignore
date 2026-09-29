@@ -89,3 +89,6 @@ tensorlbm_same_grid_bench.py
 naca_*.py
 after.txt
 run_general_sim_acceptance.sh
+
+# Resolution probe written by tests/conftest.py at collection time
+tests/.tensorlbm_resolution.json

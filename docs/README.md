@@ -112,9 +112,33 @@ A navigable index of the documentation in this directory, grouped by topic.
 
 ---
 
+## Reports & Audits (`reports/`)
+
+Point-in-time studies and self-audits, kept for provenance. They record what
+was true when they were written and are **not** maintained as current
+specification — for that, use the manuals and capability contracts above.
+
+| Document | Description |
+|---|---|
+| [reports/REPO_ANALYSIS_2026-09-29.md](reports/REPO_ANALYSIS_2026-09-29.md) | Repository-structure analysis: metrics, strengths, prioritized findings and remediation plan |
+| [reports/PLATFORM_ANALYSIS.md](reports/PLATFORM_ANALYSIS.md) | Platform self-diagnosis; §4.2 is the origin of the generic-run fusion |
+| [reports/VALIDATION_SUMMARY.md](reports/VALIDATION_SUMMARY.md) | Cross-case validation summary |
+| [reports/MATURE_CFD_BENCHMARK_RESEARCH.md](reports/MATURE_CFD_BENCHMARK_RESEARCH.md) | Survey of mature CFD benchmark suites |
+| [reports/IBM_RESEARCH_SUMMARY.md](reports/IBM_RESEARCH_SUMMARY.md) | Immersed-boundary method research summary |
+| [reports/MEM_VS_PF_VERIFICATION.md](reports/MEM_VS_PF_VERIFICATION.md) | Momentum-exchange vs pressure/friction force verification |
+| [reports/STL_DA_SHIP_BENCHMARK_SUMMARY.md](reports/STL_DA_SHIP_BENCHMARK_SUMMARY.md) | STL/DrivAer ship benchmark summary |
+| [reports/WATER_ENTRY_SLAMMING_SUMMARY.md](reports/WATER_ENTRY_SLAMMING_SUMMARY.md) | Water-entry slamming study summary |
+| [reports/WAVE_BODY_VALIDATION_README.md](reports/WAVE_BODY_VALIDATION_README.md) | Wave–body interaction validation notes |
+
+The regression reports listed under *Benchmarks & Validation* also live in
+`reports/`.
+
+---
+
 ## See Also
 
 - **[Root README](../README.md)** — project overview, installation, quick-start
+- **[experiments/archived/](../experiments/archived/)** — retired one-off campaign / debug scripts (unmaintained, not on any import path)
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** — contribution guidelines
 - **[CHANGELOG.md](../CHANGELOG.md)** — release history
 - **[examples/](../examples/)** — runnable code examples
