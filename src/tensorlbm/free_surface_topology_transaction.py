@@ -972,6 +972,13 @@ def build_topology_transaction(
         | (torch.stack(all_moving_neighbor_masks(cflags)) == interface_flag)
     ).any(dim=0)
     isolated = interface_mask & ~has_neighbor & ~solid_mask
+    if _os.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
+        _iso_n = int(isolated.sum())
+        if _iso_n:
+            print(f"        [TXN iso] n={_iso_n} mass={float(cmass[isolated].sum()):.6f} "
+                  f"recv_new_iso={int((isolated & recv_new).sum())} "
+                  f"to_gas_iso={int((isolated & to_gas).sum())} "
+                  f"maxmass={float(cmass[isolated].max()):.6f}")
     cflags = torch.where(isolated, torch.full_like(cflags, gas_flag), cflags)
     cfill = torch.where(isolated, torch.zeros_like(cfill), cfill)
     cmass = torch.where(isolated, torch.zeros_like(cmass), cmass)
@@ -994,6 +1001,12 @@ def build_topology_transaction(
             rho_liquid=rho_liquid,
         )
     mass_after_isolation = float(cmass.sum())
+    if _os.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
+        _toi_new = int((to_i & ~recv_new).sum())
+        print(f"        [TXN stage] redist={mass_after_redistribution:.6f} "
+              f"clamp={mass_after_clamp:.6f} conv={mass_after_conversion:.6f} "
+              f"iso={mass_after_isolation:.6f} to_i_new={_toi_new} "
+              f"cmass_on_toi_new={float(cmass[to_i & ~recv_new].sum()):.6f}")
 
     evidence = None
     if capture_evidence:
