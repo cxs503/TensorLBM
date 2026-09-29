@@ -7,7 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Public API is now resolved lazily** (`tensorlbm/__init__.py`, PEP 562):
+  the 153 eager `from .x import y` statements are replaced by a
+  `_LAZY_ATTRS` table mapping each of the 786 exports to the *same*
+  submodule it was previously imported from, resolved by `__getattr__` on
+  first access and cached in module globals. `import tensorlbm` drops from
+  **1.81 s to 0.016 s** (~110x), loading 2 submodules instead of 193 and 65
+  entries in `sys.modules` instead of 1588. Verified behaviour-preserving
+  against a snapshot of all 939 pre-change public attributes: every
+  `__all__` entry resolves, zero identity mismatches, submodule attributes
+  (including ~21 that were only bound transitively, e.g. `tensorlbm.lattice`,
+  `tensorlbm.core`) still resolve via a `find_spec` fallback, `dir()` is a
+  superset of the old surface and imports nothing, and unknown names still
+  raise `AttributeError`. Import-time side effects are *deferred, not
+  removed*: `tensorlbm.cases` still registers built-in cases when any of its
+  exports is touched, and the benchmark drivers' `matplotlib.use("Agg")` now
+  runs when the plotting module is first used. A `TYPE_CHECKING` block
+  repeats the original imports verbatim so mypy/IDEs are unaffected;
+  `tests/test_public_api_lazy_exports.py` locks all of the above, including
+  that a bare import stays lazy. Adding an export now requires entries in
+  `_LAZY_ATTRS`, the `TYPE_CHECKING` block and `__all__` (see CONTRIBUTING).
+- **CI reworked** (`.github/workflows/ci.yml`): static gates (ruff, mypy,
+  docs consistency) split into a single `lint` job instead of being repeated
+  per interpreter; `test` now runs a **3.11 + 3.12 matrix** (pyproject
+  declares `requires-python >=3.11` but only 3.12 was ever exercised);
+  pull requests run `-m "not slow"` for fast feedback while pushes, a new
+  nightly cron and manual dispatch run the full suite; `--timeout` activates
+  `pytest-timeout` (a declared dev extra that was previously unused) so a
+  hung solver fails the job instead of burning the runner limit; added
+  `concurrency` cancellation for non-main refs and pip caching.
+- **D3Q19/D3Q27 stencil traversal deduplicated** (`tensorlbm.core`): the two
+  modules were line-for-line copies differing only in lattice size and
+  message text. The traversal now lives once in `core/_stencil_base.py`
+  (`StencilOps` / `build_stencil_ops`); both modules keep their public names,
+  descriptor binding and import-time fail-closed validation, so no call site
+  or re-export changes. Checked identical against the pre-refactor modules
+  for every roll direction, neighbour mask, shift table and guard **error
+  message**.
+
+### Removed
+- Generated artifacts that `.gitignore` already intended to exclude but that
+  predated the rules are no longer tracked: `coverage.xml`,
+  `checkpoints/*.ckpt`, `artifacts/multi_card_test/fields_final.pt` (38 MB),
+  `test_screenshots/`, `logs_thermal_common/`, `results/`, `results_*/` and
+  `sphere_3d_results/`. Tracked payload **108 MB -> 33 MB**, 2661 -> 2434
+  files. Model weights should be distributed via Release assets / HF Hub /
+  Git LFS; `.gitignore` now covers the weight extensions and directories.
+
+### Moved
+- 166 one-off experiment scripts (`*_worker.py`, `*_launcher.py`,
+  `verify_*.py`, `diagnose_*.py`, `rettest_v*`, plus their `run_*.sh` /
+  `launch_*.sh` drivers) from the repository root into the existing
+  `experiments/archived/` convention, documented by a new README there.
+  Nothing imported them. The root now holds packaging metadata, the
+  README/CHANGELOG/LICENSE set and three tooling shells; `.gitignore` has
+  root-anchored guards so one-offs cannot be committed there again.
+- Point-in-time reports collected into `docs/reports/`: the 8 root-level
+  `*_SUMMARY` / `*_RESEARCH` / `*_ANALYSIS` files and the 7
+  `docs/*REGRESSION_REPORT*.md`, indexed from `docs/README.md` with a note
+  that they are provenance, not current specification.
+
 ### Added
+- **Repository-structure analysis** (`docs/reports/REPO_ANALYSIS_2026-09-29.md`):
+  metrics, strengths, prioritized findings and the remediation plan the
+  changes above execute.
 - **Parameter-sweep execution chain** (`tensorlbm.scan_runner`, new module): the
   execution layer of the AI4S scale-out data loop — `ScanPlan` builds a
   serializable sweep from the DoE generators (LHS / Sobol / factorial / CCD over
