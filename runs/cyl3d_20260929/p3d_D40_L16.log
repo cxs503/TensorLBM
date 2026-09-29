@@ -18,3 +18,5 @@
 [cyl3d D=40 640x640x4] near=464 faces=656 ratio=1.4138 q_smooth mean=0.4508 min=0.0500 max=1.0000
 [cyl3d D=40 640x640x4] init done (1s)
 [cyl3d D=40 640x640x4] step=2500 Cd_p=1.2017 standard=0.5117 lagrange=0.5108 faces=0.4781 mix50=0.4949 bfl_smooth=0.7623 bfl_lag_exact=0.7781 (425s)
+[cyl3d D=40 640x640x4] step=5000 Cd_p=1.1296 standard=0.4562 lagrange=0.4554 faces=0.4234 mix50=0.4398 bfl_smooth=0.6733 bfl_lag_exact=0.6869 (806s)
+[cyl3d D=40 640x640x4] step=7500 Cd_p=1.0923 standard=0.4330 lagrange=0.4322 faces=0.4005 mix50=0.4167 bfl_smooth=0.6361 bfl_lag_exact=0.6488 (1189s)
