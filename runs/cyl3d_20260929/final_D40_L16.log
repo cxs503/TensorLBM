@@ -14,6 +14,6 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[study] wall=bottom outlet=zouhe nx=1750 ny=500 le=20 L=1700 probes=[200, 740, 1640] U=0.05 nu=0.01 steps=50000
-  step 5000: umax=0.05476 finite=True
-  step 10000: umax=0.05491 finite=True
+[cyl3d D=40 640x640x4] Re=40.0 u_in=0.08 nu=0.080000 tau=0.740000 dpS=0.5120
+[cyl3d D=40 640x640x4] solid=5028 near=464 (blockage 6.25%, span 4 cells = 0.10D)
+[compile_route] cylinder_3d_re40[D40]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]

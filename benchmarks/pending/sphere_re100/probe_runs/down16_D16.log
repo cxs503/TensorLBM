@@ -23,3 +23,7 @@
 [mon] step=500 Cd(p+f std)=0.84060 err_SN=-23.00%
 [mon] step=1000 Cd(p+f std)=0.82281 err_SN=-24.63%
 [mon] step=1500 Cd(p+f std)=0.79875 err_SN=-26.84%
+[mon] step=2000 Cd(p+f std)=0.79088 err_SN=-27.56%
+[mon] step=2500 Cd(p+f std)=0.78665 err_SN=-27.95%
+[mon] step=3000 Cd(p+f std)=0.78439 err_SN=-28.15%
+[mon] step=3500 Cd(p+f std)=0.78308 err_SN=-28.27%

@@ -20,3 +20,4 @@
 [cyl3d D=20 320x320x4] step=2500 Cd_p=1.1049 standard=0.3941 lagrange=0.3894 faces=0.3652 mix50=0.3797 bfl_smooth=0.5414 bfl_lag_exact=0.5368 (121s)
 [cyl3d D=20 320x320x4] step=5000 Cd_p=1.0728 standard=0.3672 lagrange=0.3629 faces=0.3382 mix50=0.3527 bfl_smooth=0.5001 bfl_lag_exact=0.4957 (246s)
 [cyl3d D=20 320x320x4] step=7500 Cd_p=1.0586 standard=0.3570 lagrange=0.3530 faces=0.3280 mix50=0.3425 bfl_smooth=0.4846 bfl_lag_exact=0.4803 (383s)
+[cyl3d D=20 320x320x4] step=10000 Cd_p=1.0514 standard=0.3519 lagrange=0.3480 faces=0.3229 mix50=0.3374 bfl_smooth=0.4768 bfl_lag_exact=0.4725 (798s)

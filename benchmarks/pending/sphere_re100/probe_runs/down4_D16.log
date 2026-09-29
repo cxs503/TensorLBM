@@ -22,3 +22,8 @@
 [cv] frac=1.0 m=8 x[24,57) y[24,57) z[24,57) cells=35937
 [mon] step=500 Cd(p+f std)=0.84919 err_SN=-22.22%
 [mon] step=1000 Cd(p+f std)=0.82900 err_SN=-24.07%
+[mon] step=1500 Cd(p+f std)=0.81117 err_SN=-25.70%
+[mon] step=2000 Cd(p+f std)=0.80581 err_SN=-26.19%
+[mon] step=2500 Cd(p+f std)=0.79964 err_SN=-26.75%
+[mon] step=3000 Cd(p+f std)=0.80011 err_SN=-26.71%
+[mon] step=3500 Cd(p+f std)=0.79686 err_SN=-27.01%
