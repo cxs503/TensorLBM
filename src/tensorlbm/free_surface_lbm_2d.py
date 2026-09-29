@@ -207,26 +207,45 @@ def _conservative_clamp(field, upper, weight=None):
     return (clipped + room * ((-net) / room_sum)).clamp(0.0, hi)
 
 
-def _address_interface_layer(flags, mass, f, solid_mask, rho_liquid, ux, uy):
+def _address_interface_layer(
+    flags, mass, f, solid_mask, rho_liquid, ux, uy, recv_new=None
+):
     """Rebuild a valid one-cell INTERFACE envelope and remove isolated cells.
 
     Mirrors the 3D ``build_topology_transaction`` halo/isolation stage:
-      * GAS cells directly adjacent to LIQUID become empty INTERFACE cells;
+      * GAS cells directly adjacent to LIQUID become INTERFACE cells;
+      * a cell that just received redistribution mass (``recv_new``) is promoted
+        to INTERFACE *without* discarding the mass it received — zeroing it was
+        a silent tracked-mass sink (the recv_new halo cell is a *receiver*);
       * an INTERFACE cell with no LIQUID/INTERFACE neighbour is dissolved to GAS
         (this is the guard that prevents the interface layer from self-
-        propagating and atomising the domain).
+        propagating and atomising the domain).  Dissolution is only allowed for
+        a (near-)empty cell: an isolated cell that still carries tracked mass is
+        retained, so no liquid mass is silently destroyed.
+
+    The stage keeps ``mass.sum()`` invariant (mass is only ever moved between
+    non-solid cells, never created or destroyed).
     """
     gas_mask = flags == GAS
     shifted = torch.stack(_neighbor_masks(flags))
     is_nb_liq = (shifted == LIQUID).any(dim=0)
     to_i = gas_mask & is_nb_liq & ~solid_mask
+    if recv_new is not None:
+        to_i = to_i | recv_new
     f = _init_new_2d(f, flags, to_i, rho_liquid, ux=ux, uy=uy)
     flags = torch.where(to_i, torch.full_like(flags, INTERFACE), flags)
-    mass = torch.where(to_i, torch.zeros_like(mass), mass)
+    # Only a freshly promoted *empty* envelope cell is zeroed; a recv_new
+    # receiver keeps the mass it was credited in the redistribution stage.
+    if recv_new is not None:
+        zero_mass = to_i & ~recv_new
+    else:
+        zero_mass = to_i
+    mass = torch.where(zero_mass, torch.zeros_like(mass), mass)
 
     shifted2 = torch.stack(_neighbor_masks(flags))
     has_nb = ((shifted2 == LIQUID) | (shifted2 == INTERFACE)).any(dim=0)
-    isolated = (flags == INTERFACE) & ~has_nb & ~solid_mask
+    empty = mass <= 1.0e-3 * rho_liquid
+    isolated = (flags == INTERFACE) & ~has_nb & ~solid_mask & empty
     flags = torch.where(isolated, torch.full_like(flags, GAS), flags)
     mass = torch.where(isolated, torch.zeros_like(mass), mass)
     f = torch.where(isolated.unsqueeze(0), torch.zeros_like(f), f)
@@ -365,7 +384,6 @@ def koerner_step_2d(
     f = _init_new_2d(f, flags, to_iface, rho_liquid, ux=ux, uy=uy)
     flags = torch.where(to_iface, torch.full_like(flags, INTERFACE), flags)
 
-    # Redistribute overflow, then bound the ledger without leaking mass.
     mass = mass + redistribution_increment
     if clamp_mass:
         mass = _conservative_clamp(mass, rho_liquid, weight=(~solid_mask).to(mass.dtype))
@@ -381,7 +399,7 @@ def koerner_step_2d(
 
     # ---- 7. Envelope halo + isolation cleanup ------------------------------
     flags, mass, f = _address_interface_layer(
-        flags, mass, f, solid_mask, rho_liquid, ux, uy
+        flags, mass, f, solid_mask, rho_liquid, ux, uy, recv_new=recv_new
     )
 
     if ledger is not None:
