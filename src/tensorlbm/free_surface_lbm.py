@@ -1174,6 +1174,21 @@ def free_surface_step(
             & ~_ii_gate
         )
         mass_ledger["dbg_ii_asym_links"] = float(_ii_asym.sum())
+        # isolation-level forensics: is the L/I bulk debit landing on a
+        # near-empty LIQUID owner (mass < eps) and driving it negative?
+        _liq = flags == LIQUID
+        _eps = 0.01 * rho_liquid
+        _deb = mass_delta_bulk_debit
+        _deb_liq = _liq & (_deb != 0.0)
+        mass_ledger["dbg_debit_liq_cells"] = float(_deb_liq.sum())
+        mass_ledger["dbg_debit_liq_nearempty"] = float(
+            (_deb_liq & (mass <= _eps)).sum()
+        )
+        mass_ledger["dbg_debit_liq_sum"] = float(_deb.masked_select(_liq).sum())
+        _post_liq = (mass + mass_delta).masked_select(_liq)
+        mass_ledger["dbg_min_liq_post"] = float(_post_liq.min()) if _post_liq.numel() else 0.0
+        mass_ledger["dbg_neg_liq_post"] = float(((_post_liq < 0)).sum())
+        mass_ledger["dbg_neg_all_post"] = float(((mass + mass_delta) < 0).sum())
     mass = torch.where(~solid_mask, mass + mass_delta, mass)
     if _env_bool("TL_FS_DIAG_FIELD", False):
         globals()["_FS_DIAG"] = {
