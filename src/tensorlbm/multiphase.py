@@ -171,6 +171,7 @@ def psi_peng_robinson(rho: torch.Tensor) -> torch.Tensor:
 def _sc_neighbor_weighted_sum(
     psi: torch.Tensor,
     solid_mask: torch.Tensor | None = None,
+    wall_psi: float | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute Σᵢ wᵢ ψ(x+cᵢ) cᵢ for the SC interaction force.
 
@@ -182,18 +183,23 @@ def _sc_neighbor_weighted_sum(
     Args:
         psi:         Scalar field of shape ``(ny, nx)``.
         solid_mask:  Optional boolean mask of shape ``(ny, nx)``.  When
-                     provided, ``psi`` is zeroed at solid/wall cells so that
-                     they contribute neutral pseudopotential to the force sum.
-                     This avoids instabilities caused by large density
-                     gradients at corners when the domain uses periodic
-                     streaming with closed-box bounce-back walls.
+                     provided, the pseudopotential at solid/wall cells is
+                     replaced before the force sum (see ``wall_psi``).
+        wall_psi:    Pseudopotential value attributed to solid/wall cells in the
+                     neighbour sum.  ``None`` (default) reproduces the historical
+                     behaviour of zeroing ``psi`` at the wall (a fully non-wetting
+                     "dry" wall).  A positive value ``0 < wall_psi < psi(rho_l)``
+                     models a partially wetting wall (finite contact angle) and
+                     removes the artificial density-depleted layer that the dry
+                     wall creates on a no-slip floor.  See
+                     ``benchmarks/pending/dam_break_sc``.
 
     Returns:
         Tuple ``(Fx_kernel, Fy_kernel)`` of shape ``(ny, nx)`` each – the
         weighted-sum *before* multiplication by −G ψ(x).
     """
     if solid_mask is not None:
-        psi = psi.masked_fill(solid_mask, 0.0)
+        psi = psi.masked_fill(solid_mask, 0.0 if wall_psi is None else float(wall_psi))
 
     device = psi.device
     ny, nx = psi.shape[-2], psi.shape[-1]
@@ -346,6 +352,7 @@ def sc_single_component_force(
     gx: float = 0.0,
     gy: float = 0.0,
     solid_mask: torch.Tensor | None = None,
+    wall_psi: float | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute the SC self-interaction + gravity force for a single component.
 
@@ -359,12 +366,14 @@ def sc_single_component_force(
         gx:          x body-force acceleration.
         gy:          y body-force acceleration.
         solid_mask:  Optional boolean mask of wall/solid cells.
+        wall_psi:    Pseudopotential attributed to solid cells (see
+                     :func:`_sc_neighbor_weighted_sum`); ``None`` = dry wall.
 
     Returns:
         ``(Fx, Fy)`` each of shape ``(ny, nx)``.
     """
     psi = psi_fn(rho)
-    sum_x, sum_y = _sc_neighbor_weighted_sum(psi, solid_mask)
+    sum_x, sum_y = _sc_neighbor_weighted_sum(psi, solid_mask, wall_psi)
     Fx = -G * psi * sum_x + rho * gx
     Fy = -G * psi * sum_y + rho * gy
     return Fx, Fy
@@ -378,6 +387,7 @@ def collide_sc_single_component(
     gx: float = 0.0,
     gy: float = 0.0,
     solid_mask: torch.Tensor | None = None,
+    wall_psi: float | None = None,
 ) -> torch.Tensor:
     """Shan-Chen single-component multiphase (SCMP) BGK collision for D2Q9.
 
@@ -392,12 +402,15 @@ def collide_sc_single_component(
         gx:          x body-force acceleration.
         gy:          y body-force acceleration.
         solid_mask:  Optional boolean mask of wall/solid cells.
+        wall_psi:    Pseudopotential value attributed to solid cells.  ``None``
+                     (default) keeps the historical dry-wall behaviour; a
+                     positive value gives a partially wetting wall.
 
     Returns:
         Updated distribution tensor of the same shape.
     """
     rho, ux, uy = macroscopic(f)
-    Fx, Fy = sc_single_component_force(rho, G, psi_fn, gx, gy, solid_mask)
+    Fx, Fy = sc_single_component_force(rho, G, psi_fn, gx, gy, solid_mask, wall_psi)
     rho_s = torch.clamp(rho, min=1e-12)
     feq = equilibrium(rho, ux + tau * Fx / rho_s, uy + tau * Fy / rho_s)
     f_out = f - (f - feq) / tau
