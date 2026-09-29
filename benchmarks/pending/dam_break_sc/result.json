@@ -2,8 +2,13 @@
   "case": "dam_break_sc",
   "verified": false,
   "date": "2026-09-29",
-  "reference": "Martin & Moyce 1952, Phil. Trans. R. Soc. A 244, 312",
-  "reference_checkpoints": {"T=1": 1.5, "T=2": 2.7},
+  "reference": "Martin & Moyce 1952, Phil. Trans. R. Soc. A 244, 312 (classic digitisation, same table as benchmarks/bench_fs_2d.py REF_Z and dam_break_3d_mm)",
+  "reference_checkpoints": {"T=1": 1.1, "T=2": 1.8, "T=3": 2.7},
+  "reference_table_bug_fixed": {
+    "before": {"T=1": 1.5, "T=2": 2.7},
+    "after": {"T=1": 1.1, "T=2": 1.8, "T=3": 2.7},
+    "why": "the historical table mapped the M&M T=3 value (2.7) onto T=2 and used an unsourced T=1 value (1.5); corrected to match the repository's own corrected digitisation"
+  },
   "model": {
     "kind": "2D Shan-Chen single-component pseudopotential (SCMP / SC94 psi_exp)",
     "modules": [
@@ -20,67 +25,84 @@
     "rho_v": 0.1596,
     "density_ratio": 12.3,
     "g": 2e-4,
-    "g_eff": 1.8368e-4,
-    "device": "cpu",
-    "note": "no CUDA on host (LoongArch/SDAA); compile_route routed via tensorlbm.compile_utils eager"
+    "device": "cpu"
   },
-  "fixes_applied_to_run_py": [
-    {
-      "id": "init_distance",
-      "severity": "decisive",
-      "before": "dist_out = min(xx-a, yy-2a)",
-      "after": "dist_out = -sqrt(clamp(xx-a,0)^2 + clamp(yy-2a,0)^2)",
-      "why": "old form was POSITIVE in the top-right quadrant (xx>a & yy>2a), seeding ~10k gas cells as liquid -> domain mean density 0.89 (above coexistence) -> whole box separated as liquid, column never collapsed",
-      "evidence": "before: mass=29220, avg=0.8917, liquid_cells=13305; after: mass=11102, avg=0.3388, liquid_cells=3200 (= a*2a)"
+  "route_A_scmp_results_corrected_reference": {
+    "baseline_psi_exp_dry_wall": {
+      "a40": {"X_T_eff_1": 1.750, "err_pct_T_eff_1": 59.09, "err_pct_T_raw_1": 54.04,
+              "err_pct_T_eff_2": 63.42, "err_pct_T_raw_2": 57.71,
+              "err_pct_T_eff_3": 42.59, "mass_drift_max": 1.3e-5},
+      "a80": {"X_T_eff_1": 1.702, "err_pct_T_eff_1": 54.76, "err_pct_T_raw_1": 50.22,
+              "err_pct_T_eff_2": 64.85, "err_pct_T_raw_2": 59.30,
+              "err_pct_T_eff_3": 58.23, "mass_drift_max": 1.9e-5}
     },
-    {
-      "id": "toe_measurement",
-      "severity": "measurement",
-      "before": "X_toe sampled rows 1..n_toe (n_toe=max(2,ny//64)); rows 1-2 are a ~2-cell density-depleted no-slip wall layer (rho_max~0.66 < rho_mid=1.058)",
-      "after": "X_toe samples rows [3 : ny//8] (bottom 1/8 of box, above the depleted layer)",
-      "why": "as-shipped X_toe flickered to 0 -> -100% error; the coherent floor toe (rows 3..ny/8 agree to ~1 cell) is the physical M&M toe"
-    }
-  ],
-  "results": {
-    "a40": {
-      "X_T_eff_1": 1.741616, "err_pct_T_eff_1": 16.108,
-      "X_T_eff_2": 2.933233, "err_pct_T_eff_2": 8.638,
-      "X_T_raw_1": 1.694427, "err_pct_T_raw_1": 12.962,
-      "X_T_raw_2": 2.836068, "err_pct_T_raw_2": 5.04,
-      "mass_drift_max": 1.26e-05, "max_u_max": 0.253, "steps": 1400, "wall_s": 9
+    "best_lever_wall_psi_0p4": {
+      "a40": {"X_T_eff_1": 1.550, "err_pct_T_eff_1": 40.90, "err_pct_T_raw_1": 35.86,
+              "err_pct_T_eff_2": 48.14, "err_pct_T_raw_2": 43.52},
+      "a80": {"X_T_eff_1": 1.632, "err_pct_T_eff_1": 48.40, "err_pct_T_raw_1": 44.20,
+              "err_pct_T_eff_2": 58.46, "err_pct_T_raw_2": 52.35},
+      "grid_conv_40_vs_80_pct": {"T1": 5.05, "T2": 6.51, "T3": 15.64}
     },
-    "a80": {
-      "X_T_eff_1": 1.704891, "err_pct_T_eff_1": 13.659,
-      "X_T_eff_2": 2.972282, "err_pct_T_eff_2": 10.085,
-      "X_T_raw_1": 1.656797, "err_pct_T_raw_1": 10.453,
-      "X_T_raw_2": 2.867322, "err_pct_T_raw_2": 6.197,
-      "mass_drift_max": 1.9e-05, "max_u_max": 0.26, "steps": 2200, "wall_s": 27
-    }
+    "pseudopotential_variant_psi_sqrt": "unstable — NaN at step 25 (a=40, G_lib=+5)",
+    "baseline_grid_conv_40_vs_80_pct": {"T1": 2.79, "T2": 0.87, "T3": 9.88},
+    "best_X_T1": {"value": 1.494, "axis": "T_raw", "a": 40, "config": "wall_psi=0.4", "err_pct": 35.86},
+    "verdict": "FAIL — min error +36% (T_raw) / +41% (T_eff) at T=1, an order of magnitude above the 3% target; SCMP is a dead end for this benchmark under the corrected reference"
+  },
+  "route_B_fs2d_results": {
+    "module": "tensorlbm.free_surface_lbm_2d (Koerner 2D)",
+    "note": "3D wall-BC/TOGAS fixes ported to the 2D module as OPT-IN env flags (defaults bit-identical; probe A reproduces verify_koerner2d_cpu X=1.7666 exactly)",
+    "configs": {
+      "rho_gas_0p01_legacy": {"stable": false, "failure": "NaN at step ~100"},
+      "rho_gas_0p01_wallBC": {"stable": false, "failure": "NaN at step 29 (worse)"},
+      "rho_gas_0p01_abb_clamp": {"stable": true, "X_T1_a40": 3.175, "err_pct_vs_1p1": 188.6,
+                                  "X_T1_a80": 3.528, "mass_drift": 1.0, "inv_drift": 1.72},
+      "rho_gas_1p0_legacy": {"stable": true, "X_T1_a40": 1.767, "err_pct_vs_1p1": 60.6,
+                              "mass_drift": 0.41, "inv_drift": 2.32, "iface": "119->789 (a=40)"},
+      "rho_gas_1p0_wallBC": {"stable": true, "X_T1_a40": 1.792, "err_pct_vs_1p1": 62.9,
+                              "mass_drift": 0.47, "inv_drift": 2.32}
+    },
+    "measured_conservation_drift": "41% mass-ledger / 232% inventory at rho_gas=1.0; 100% / 172-229% with ABB-clamp — i.e. NOT the 2-5% the task background expected",
+    "ported_3d_fixes_effective_in_2d": false,
+    "verdict": "FAIL — unstable at physical rho_gas; stable-but-fast (+61%) and non-conservative at rho_gas=1.0; needs a genuine module-level rebuild"
+  },
+  "supporting_3d_fs": {
+    "module": "tensorlbm.free_surface_lbm (commit db1642b wall-BC + TOGAS fixes)",
+    "legacy_a8": {"X_T1": 2.000, "err_pct": 81.8, "H_T1": 1.125},
+    "wallBC_a8": {"X_T1": 1.250, "err_pct": 13.6, "H_T1": 0.938, "drift": 1e-4, "iface_growth": "335->508"},
+    "wallBC_a16": {"X_T1": 1.379, "err_pct": 25.4, "H_T1": 0.969},
+    "verdict": "improves dramatically but still >3% and NOT grid-converging (a8 +13.6% -> a16 +25.4%); H frozen (~0.95 vs 0.78)"
   },
   "checks": {
-    "accuracy_le_3pct_fine_grid_a80": {
-      "pass": false,
-      "T_eff_axis": {"T1": "+13.66%", "T2": "+10.09%"},
-      "T_raw_axis": {"T1": "+10.45%", "T2": "+6.20%"},
-      "most_favourable_band_rows_3_5_a40": {"T_raw_T1": "+9.5%", "T_raw_T2": "+3.2%"}
-    },
-    "two_grid_convergence_le_3pct": {
-      "pass": true,
-      "T_eff_axis": {"T1": "2.15%", "T2": "1.31%"},
-      "T_raw_axis": {"T1": "2.27%", "T2": "1.09%"}
-    },
-    "stability": {"mass_drift_max": 1.9e-05, "max_u_max": 0.26, "nan": false, "pass": true}
+    "accuracy_le_3pct_fine_grid": {"pass": false,
+      "best_any_route": {"route": "3D FS +fix (a=8)", "X_T1": 1.250, "err_pct": 13.6},
+      "best_2d_route": {"route": "FS2D rho_gas=1.0 legacy", "X_T1": 1.767, "err_pct": 60.6},
+      "scmp_best": {"route": "wall_psi=0.4 a=40 T_raw", "X_T1": 1.494, "err_pct": 35.86}},
+    "two_grid_convergence_le_3pct": {"pass": "partial",
+      "scmp_baseline": {"T1": "2.8% (pass)", "T2": "0.9% (pass)", "T3": "9.9% (fail)"},
+      "scmp_wall04": "5.1-15.6% (fail)",
+      "fs2d": "not applicable (conservation fails)"},
+    "stability": {"scmp": "no NaN (baseline/wall_psi); psi=sqrt NaN step 25",
+                  "fs2d_low_rho_gas": "NaN", "pass": false}
   },
   "gap": {
-    "summary": "not a convention/axis problem, not a resolution problem; a genuine SCMP (SC94 exponential-pseudopotential) constitutive gap of ~+6-14% front overshoot (a ~+0.15a constant lead)",
-    "ruled_out": {
-      "time_axis": "T_raw(+10-13%), T_eff(+14-16%), repo t*sqrt(2g/a)(-9..-21%) -- none <=3%; front slope matches (~1.2) but offset",
-      "grid": "a40->a80 changes only 1-2% (already converged)",
-      "gravity_scale": "varying g at a=40 (Re ~11->60) converges X(T_raw=1) to ~1.60 (still +7%)",
-      "density_ratio_parameter": "G=5->ratio13->+16%, G=6->ratio24->+23% (worse), G=7 unstable"
-    },
-    "root_cause": "low SCMP density ratio (~12 vs water/air ~800) + diffuse interface + no-slip wall pseudopotential-depleted boundary layer make the surge front run ahead; consistent with repo standing note benchmarks/problems.md B20 / gap_analysis.md 'multiphase gap blocking'",
-    "recommendation": "treat as module-level (multiphase) gap for B20, not a dam_break_sc parameter/measurement issue; do NOT move to benchmarks/verified/ until fixed"
+    "summary": "Under the CORRECTED M&M reference table (1.1/1.8/2.7) neither SCMP nor the 2D free-surface module reaches <=3%; the previously reported '+10% SCMP gap' was an artifact of the WRONG reference table (1.5/2.7)",
+    "route_A_scmp": "constitutive gap; min +36% at T=1 with the best lever (wall_psi=0.4); sqrt pseudopotential unstable; no parameter combination reaches 3%",
+    "route_B_fs2d": "module-level defect: unstable at physical rho_gas (negative ABB reconstruction), conservation broken (41-232% drift), interface fogging; ported 3D wall-BC/TOGAS fixes do NOT help",
+    "promising": "3D free_surface_lbm + committed wall-BC fix is the only lever that moved the front materially (+82% -> +14%), but still fails <=3% and does not grid-converge",
+    "open_item": "M&M reference-table digitisation itself is disputed (1.1/1.8/2.7 vs 1.5/2.7); should be adjudicated as a separate task before any pass/fail claim"
   },
-  "artifacts": ["case_a40.json", "case_a80.json", "hist_a40.csv", "hist_a80.csv", "README.md"]
+  "recommendation": [
+    "keep B20 in benchmarks/pending/ (do NOT move to verified)",
+    "priority 1: 3D free-surface module + committed wall-BC fix (only route that improved); next fix grid-convergence + H collapse",
+    "priority 2: rebuild free_surface_lbm_2d (low-rho_gas ABB stability + conservation ledger + interface fogging) — 3D flags do not transfer",
+    "priority 3: abandon SCMP for this benchmark (+36% floor)",
+    "separate item: adjudicate the M&M digitisation table"
+  ],
+  "artifacts": ["case_a40.json", "case_a80.json", "hist_a40.csv", "hist_a80.csv", "README.md",
+                "REPORT_SCMP_vs_FS2D.md"],
+  "run_artifacts": {
+    "scmp": "runs/dam_break_sc_fix/sc_{base,wall04,sqrt}_a{40,80}/",
+    "fs2d": "runs/dam_break_sc_fix/probe_fs2d.py + fs2d_*.json",
+    "fs3d": "runs/fs_aprime_20260929/probe.py + fix3d_*.json"
+  }
 }
