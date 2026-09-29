@@ -95,8 +95,12 @@ version = {attr = "tensorlbm._version.__version__"}
 pythonpath = ["src"]
 testpaths = ["tests"]
 markers = [
-    "slow: long-running simulation campaigns; they run in CI unless deselected (CI invokes bare pytest; deselect with -m 'not slow')",
+    "slow: long-running simulation campaigns. Deselected on pull requests (CI runs -m 'not slow' there for fast feedback) and executed in full on pushes to main, the nightly cron and manual dispatch. Locally: 'pytest -m \"not slow\"' to skip, bare 'pytest' to include.",
 ]
+# pytest-timeout is a dev extra; CI passes --timeout explicitly (600s on the
+# fast PR scope, 1800s for the slow campaigns) so a hung solver fails loudly
+# instead of running out the job limit.
+timeout_func_only = true
 
 [tool.ruff]
 line-length = 100

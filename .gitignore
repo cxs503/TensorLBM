@@ -19,6 +19,8 @@ src/*.egg-info/
 .mypy_cache/
 .ruff_cache/
 .coverage
+coverage.xml
+htmlcov/
 
 # IDEs/editors
 .vscode/
@@ -45,8 +47,32 @@ artifacts/runs/
 scripts/diag_*.py
 
 # 运行结果目录（不提交）
+results/
 results_*/
 results_bench_*/
+sphere_3d_results/
+logs_*/
+test_screenshots/
+
+# ── Model weights & heavy binaries ──────────────────────────────────────────
+# Distribute via GitHub Release assets / HF Hub / Git LFS, never in-tree.
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.safetensors
+
+# ── One-off experiment scripts belong in experiments/archived/, not the root ─
+# Guard the repository root only (`/`-anchored) so src/, tests/ and scripts/
+# keep tracking their legitimately-named modules.
+/*_worker.py
+/*_launcher.py
+/verify_*.py
+/run_*.sh
+/launch_*.sh
+/rettest_*
+/*_test.py
 
 # 一次性诊断脚本
 diag_*.py
@@ -63,3 +89,6 @@ tensorlbm_same_grid_bench.py
 naca_*.py
 after.txt
 run_general_sim_acceptance.sh
+
+# Resolution probe written by tests/conftest.py at collection time
+tests/.tensorlbm_resolution.json
