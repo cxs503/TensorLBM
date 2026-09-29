@@ -1,0 +1,67 @@
+# Benchmark status (generated 2026-09-29)
+
+verified: **19** | pending: **21**
+
+Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
+
+## verified/
+
+| case | note |
+|---|---|
+| `cavity` | 2D lid-driven cavity (Ghia) |
+| `cavity_3d_full` | 3D cavity |
+| `couette_2d` | analytic |
+| `cylinder` | 2D cylinder Re=100 (Braza Cd=1.35/St=0.1645) |
+| `kovasznay_2d` | analytic |
+| `laplace_droplet` | analytic |
+| `poiseuille_2d` | analytic |
+| `poiseuille_3d_pipe` | analytic |
+| `shear_wave_decay` | analytic (nu to 0.05%) |
+| `sod_shock_tube` | Riemann exact |
+| `square_cylinder` | 2D square cyl Re=100: Cd +0.11%/+0.30%, St +0.82%/+0.68% (2 grids) |
+| `startup_poiseuille` | analytic unsteady |
+| `stokes_first_problem` | analytic |
+| `stokes_second_problem` | analytic (Womersley family) |
+| `suboff_re1000` | SUBOFF hull drag Re=1000: Cd -1.15% end-to-end (mix50 friction, 3.4h) |
+| `taylor_couette` | analytic |
+| `taylor_green_2d` | analytic decay |
+| `taylor_green_3d` | analytic decay |
+| `womersley` | analytic pulsatile |
+
+## pending/ (not yet accepted -- blockers documented)
+
+| case | status / blocker |
+|---|---|
+| `backward_step` | classic (needs run) |
+| `blasius_flat_plate` | Cf +20%: effective-scale excess 1.65x (blockage/leading-edge origin), long runs in flight |
+| `bstep_3d` | 3D backward step |
+| `cavity_natural_convection` | +2.57%/+6.64% -- not converged |
+| `channel_turb` | turbulent channel |
+| `couette_3d` | no result yet |
+| `cylinder_3d` | 3D extruded cyl Re=40: reference now 2D cluster 1.50 (not Tritton 1.54); D40 +1.7% transient, 60k runs in flight |
+| `cylinder_re40_st` | Schafer-Turek channel Re=40; no official Re=40 reference |
+| `dam_break_3d_mm` | STRUCTURAL: X/H mutually exclusive (same mass channel) -- docs/free_surface_architecture_gaps.md |
+| `dam_break_sc` | STRUCTURAL: constitutive barrier (err(T=1)=0 needs ratio 12.7, err(T=2.96)=0 needs 6.9) |
+| `dit_turbulence` | - |
+| `droplet_oscillation` | SCMP -6~-8% |
+| `naca_0012` | airfoil |
+| `poiseuille_3d_annulus` | no result yet |
+| `poiseuille_3d_ellipse` | no result yet |
+| `rayleigh_benard` | thermal convection |
+| `rayleigh_taylor` | STRUCTURAL: VOF has no free pressure field |
+| `sphere_re100` | R8 +3.09% / R10 +1.59% (span 1.48pp OK); R8 CV-caliber -2.0% needs a clean rerun |
+| `sphere_re100_d3q27` | D3Q27 lattice path (systematic offsets) |
+| `sphere_re200` | reference corrected (SN 0.8056, not 0.769) |
+| `stokes_sphere_dg` | DG force method: spurious (2.15% then 53% on refine) |
+
+## Notes
+
+* Free-surface / multiphase failures are structural (architecture), not tuning; see
+  `docs/free_surface_architecture_gaps.md` (27 tried levers with failure reasons).
+* Reference-caliber errors (not solver errors) accounted for two of the biggest false
+  failures this cycle: the M&M dam-break table (axis x sqrt2 AND the wrong table) and
+  the square-cylinder / cylinder-3d references (experiment/finite-span vs 2D numerical).
+  Always run the `REFERENCE_AUDIT.md` procedure before believing an error percentage.
+* `benchmarks/compile_route.py` auto-falls back to eager when the SDAA teco-inductor
+  backend fails (5 known defects); results are bit-identical and `compile_mode_effective`
+  is recorded in result.json.
