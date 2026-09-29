@@ -101,7 +101,9 @@ def load_sc(name: str) -> tuple[list[float], list[float], dict]:
     T, X = [], []
     with p.open() as fh:
         for row in csv.DictReader(fh):
-            T.append(float(row["T_raw"]))   # T_raw = step*sqrt(g/a) [code axis]
+            # new CSVs store T_code (= t*sqrt(g/a), the legacy code axis);
+            # older CSVs stored the same quantity as T_raw.
+            T.append(float(row.get("T_code", row.get("T_raw"))))
             X.append(float(row["X_toe"]))
     case = json.loads((ROOT / "benchmarks/pending/dam_break_sc"
                        / f"case_{name}.json").read_text())

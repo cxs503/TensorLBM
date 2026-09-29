@@ -2,12 +2,31 @@
   "case": "dam_break_sc",
   "verified": false,
   "date": "2026-09-29",
-  "reference": "Martin & Moyce 1952, Phil. Trans. R. Soc. A 244, 312 (classic digitisation, same table as benchmarks/bench_fs_2d.py REF_Z and dam_break_3d_mm)",
-  "reference_checkpoints": {"T=1": 1.1, "T=2": 1.8, "T=3": 2.7},
-  "reference_table_bug_fixed": {
-    "before": {"T=1": 1.5, "T=2": 2.7},
-    "after": {"T=1": 1.1, "T=2": 1.8, "T=3": 2.7},
-    "why": "the historical table mapped the M&M T=3 value (2.7) onto T=2 and used an unsourced T=1 value (1.5); corrected to match the repository's own corrected digitisation"
+  "reference": "Martin & Moyce 1952, Phil. Trans. R. Soc. A 244, 312 (doi:10.1098/rsta.1952.0006)",
+  "time_convention": {
+    "correct": "T_MM = t*sqrt(2*g/a), X = x_front/a  (M&M definition; a = initial column WIDTH, column is a wide x 2a tall)",
+    "evidence": [
+      "Lethe official post-processing examples/multiphysics/dam-break/dam-break-2d.py: time_list = [x * ((2*g/L1)**0.5) for x in time_list]; x_list = [x / L1 for x in x_list]  (verbatim)",
+      "repo kernel src/tensorlbm/dam_break.py:299 -> sqrt_coeff = (2.0*config.g/L)**0.5",
+      "repo kernel src/tensorlbm/dam_break_3d.py:500 -> same",
+      "K&O / Trixi-family digitisation agrees with the Lethe x_exp/y_exp digitisation"
+    ],
+    "old_wrong": "T_code = t*sqrt(g/a)  (used by bench_fs_2d.py, dam_break_sc/run.py, dam_break_3d_mm/run.py) -- a factor sqrt(2) too small",
+    "relation": "T_MM = sqrt(2) * T_code",
+    "secondary_axis": "T_MM_geff = t*sqrt(2*g_eff/a) with g_eff = g*(1-rho_v/rho_l) = 0.9184*g (reported for completeness; primary axis uses the M&M g)"
+  },
+  "reference_digitisation_lethe": {
+    "T": [0.00, 0.41, 0.84, 1.19, 1.43, 1.63, 1.82, 1.97, 2.20, 2.32, 2.50, 2.64, 2.82, 2.96],
+    "Z": [1.00, 1.11, 1.23, 1.44, 1.67, 1.89, 2.11, 2.33, 2.56, 2.78, 3.00, 3.22, 3.44, 3.67]
+  },
+  "reference_checkpoints": {"T=1.0": 1.326, "T=2.0": 2.360, "T=2.96": 3.670},
+  "checkpoint_basis": "linear interpolation of the Lethe table; T=2.96 is the last tabulated point (T=3 would require extrapolation, forbidden by the repo no-extrapolation standard)",
+  "convention_and_table_fix": {
+    "double_error_retraction": "the historical +50~82% errors were the product of a DOUBLE error: (i) the axis T=t*sqrt(g/a) was missing a factor sqrt(2); (ii) the reference table was wrong. Both are now fixed; the +50% claims are RETRACTED.",
+    "wrong_tables": {
+      "table_1": {"T=1": 1.5, "T=2": 2.7, "why_wrong": "mapped M&M's T=3 value (2.7) onto T=2 and used an unsourced T=1 value"},
+      "table_2": {"T=1": 1.1, "T=2": 1.8, "T=3": 2.7, "why_wrong": "coarse digitisation, only meaningful on the old t*sqrt(g/a) axis"}
+    }
   },
   "model": {
     "kind": "2D Shan-Chen single-component pseudopotential (SCMP / SC94 psi_exp)",
@@ -25,84 +44,68 @@
     "rho_v": 0.1596,
     "density_ratio": 12.3,
     "g": 2e-4,
-    "device": "cpu"
+    "g_eff": 1.83689320388349e-4,
+    "device": "cpu",
+    "steps": 1600,
+    "sample_interval": 20
   },
-  "route_A_scmp_results_corrected_reference": {
-    "baseline_psi_exp_dry_wall": {
-      "a40": {"X_T_eff_1": 1.750, "err_pct_T_eff_1": 59.09, "err_pct_T_raw_1": 54.04,
-              "err_pct_T_eff_2": 63.42, "err_pct_T_raw_2": 57.71,
-              "err_pct_T_eff_3": 42.59, "mass_drift_max": 1.3e-5},
-      "a80": {"X_T_eff_1": 1.702, "err_pct_T_eff_1": 54.76, "err_pct_T_raw_1": 50.22,
-              "err_pct_T_eff_2": 64.85, "err_pct_T_raw_2": 59.30,
-              "err_pct_T_eff_3": 58.23, "mass_drift_max": 1.9e-5}
+  "official_rerun_correct_convention": {
+    "note": "real runs, CPU, 2026-09-29; X = X_toe/a interpolated on the T_MM axis; errors against 1.326/2.360/3.670",
+    "a40": {
+      "T_max_MM": 5.0596,
+      "X_T1": 1.4656, "err_pct_T1": 10.526, "pass_T1": false,
+      "X_T2": 2.1811, "err_pct_T2": -7.579, "pass_T2": false,
+      "X_T2p96": 2.9401, "err_pct_T2p96": -19.889, "pass_T2p96": false,
+      "err_pct_T_MM_geff": {"T1": 12.177, "T2": -3.612, "T2p96": -17.118},
+      "mass_drift_max": 1.43e-5,
+      "dt_s": 14.2
     },
-    "best_lever_wall_psi_0p4": {
-      "a40": {"X_T_eff_1": 1.550, "err_pct_T_eff_1": 40.90, "err_pct_T_raw_1": 35.86,
-              "err_pct_T_eff_2": 48.14, "err_pct_T_raw_2": 43.52},
-      "a80": {"X_T_eff_1": 1.632, "err_pct_T_eff_1": 48.40, "err_pct_T_raw_1": 44.20,
-              "err_pct_T_eff_2": 58.46, "err_pct_T_raw_2": 52.35},
-      "grid_conv_40_vs_80_pct": {"T1": 5.05, "T2": 6.51, "T3": 15.64}
-    },
-    "pseudopotential_variant_psi_sqrt": "unstable — NaN at step 25 (a=40, G_lib=+5)",
-    "baseline_grid_conv_40_vs_80_pct": {"T1": 2.79, "T2": 0.87, "T3": 9.88},
-    "best_X_T1": {"value": 1.494, "axis": "T_raw", "a": 40, "config": "wall_psi=0.4", "err_pct": 35.86},
-    "verdict": "FAIL — min error +36% (T_raw) / +41% (T_eff) at T=1, an order of magnitude above the 3% target; SCMP is a dead end for this benchmark under the corrected reference"
+    "a80": {
+      "T_max_MM": 3.5777,
+      "X_T1": 1.3590, "err_pct_T1": 2.49, "pass_T1": true,
+      "X_T2": 2.1305, "err_pct_T2": -9.723, "pass_T2": false,
+      "X_T2p96": 2.9695, "err_pct_T2p96": -19.086, "pass_T2p96": false,
+      "err_pct_T_MM_geff": {"T1": 4.322, "T2": -6.783, "T2p96": -16.147},
+      "mass_drift_max": 1.40e-5,
+      "dt_s": 25.4
+    }
   },
-  "route_B_fs2d_results": {
-    "module": "tensorlbm.free_surface_lbm_2d (Koerner 2D)",
-    "note": "3D wall-BC/TOGAS fixes ported to the 2D module as OPT-IN env flags (defaults bit-identical; probe A reproduces verify_koerner2d_cpu X=1.7666 exactly)",
-    "configs": {
-      "rho_gas_0p01_legacy": {"stable": false, "failure": "NaN at step ~100"},
-      "rho_gas_0p01_wallBC": {"stable": false, "failure": "NaN at step 29 (worse)"},
-      "rho_gas_0p01_abb_clamp": {"stable": true, "X_T1_a40": 3.175, "err_pct_vs_1p1": 188.6,
-                                  "X_T1_a80": 3.528, "mass_drift": 1.0, "inv_drift": 1.72},
-      "rho_gas_1p0_legacy": {"stable": true, "X_T1_a40": 1.767, "err_pct_vs_1p1": 60.6,
-                              "mass_drift": 0.41, "inv_drift": 2.32, "iface": "119->789 (a=40)"},
-      "rho_gas_1p0_wallBC": {"stable": true, "X_T1_a40": 1.792, "err_pct_vs_1p1": 62.9,
-                              "mass_drift": 0.47, "inv_drift": 2.32}
-    },
-    "measured_conservation_drift": "41% mass-ledger / 232% inventory at rho_gas=1.0; 100% / 172-229% with ABB-clamp — i.e. NOT the 2-5% the task background expected",
-    "ported_3d_fixes_effective_in_2d": false,
-    "verdict": "FAIL — unstable at physical rho_gas; stable-but-fast (+61%) and non-conservative at rho_gas=1.0; needs a genuine module-level rebuild"
-  },
-  "supporting_3d_fs": {
-    "module": "tensorlbm.free_surface_lbm (commit db1642b wall-BC + TOGAS fixes)",
-    "legacy_a8": {"X_T1": 2.000, "err_pct": 81.8, "H_T1": 1.125},
-    "wallBC_a8": {"X_T1": 1.250, "err_pct": 13.6, "H_T1": 0.938, "drift": 1e-4, "iface_growth": "335->508"},
-    "wallBC_a16": {"X_T1": 1.379, "err_pct": 25.4, "H_T1": 0.969},
-    "verdict": "improves dramatically but still >3% and NOT grid-converging (a8 +13.6% -> a16 +25.4%); H frozen (~0.95 vs 0.78)"
+  "two_grid_convergence_a40_vs_a80": {
+    "definition": "|X_a40 - X_a80| / X_a80",
+    "T1": {"pct": 7.84, "pass": false},
+    "T2": {"pct": 2.38, "pass": true},
+    "T2p96": {"pct": 0.99, "pass": true}
   },
   "checks": {
-    "accuracy_le_3pct_fine_grid": {"pass": false,
-      "best_any_route": {"route": "3D FS +fix (a=8)", "X_T1": 1.250, "err_pct": 13.6},
-      "best_2d_route": {"route": "FS2D rho_gas=1.0 legacy", "X_T1": 1.767, "err_pct": 60.6},
-      "scmp_best": {"route": "wall_psi=0.4 a=40 T_raw", "X_T1": 1.494, "err_pct": 35.86}},
-    "two_grid_convergence_le_3pct": {"pass": "partial",
-      "scmp_baseline": {"T1": "2.8% (pass)", "T2": "0.9% (pass)", "T3": "9.9% (fail)"},
-      "scmp_wall04": "5.1-15.6% (fail)",
-      "fs2d": "not applicable (conservation fails)"},
-    "stability": {"scmp": "no NaN (baseline/wall_psi); psi=sqrt NaN step 25",
-                  "fs2d_low_rho_gas": "NaN", "pass": false}
+    "accuracy_le_3pct_fine_grid": {
+      "pass": false,
+      "detail": "a=80: T=1 +2.49% PASS; T=2 -9.72% FAIL; T=2.96 -19.09% FAIL -> 1 of 3 checkpoints",
+      "best": {"X_T1": 1.3590, "err_pct_T1": 2.49}
+    },
+    "two_grid_convergence_le_3pct": {
+      "pass": "partial",
+      "detail": "T=2 2.38% PASS, T=2.96 0.99% PASS, T=1 7.84% FAIL"
+    },
+    "stability": {"scmp_baseline": "stable, mass drift <= 1.4e-5", "psi_sqrt": "unstable (NaN @ step 25)"}
   },
   "gap": {
-    "summary": "Under the CORRECTED M&M reference table (1.1/1.8/2.7) neither SCMP nor the 2D free-surface module reaches <=3%; the previously reported '+10% SCMP gap' was an artifact of the WRONG reference table (1.5/2.7)",
-    "route_A_scmp": "constitutive gap; min +36% at T=1 with the best lever (wall_psi=0.4); sqrt pseudopotential unstable; no parameter combination reaches 3%",
-    "route_B_fs2d": "module-level defect: unstable at physical rho_gas (negative ABB reconstruction), conservation broken (41-232% drift), interface fogging; ported 3D wall-BC/TOGAS fixes do NOT help",
-    "promising": "3D free_surface_lbm + committed wall-BC fix is the only lever that moved the front materially (+82% -> +14%), but still fails <=3% and does not grid-converge",
-    "open_item": "M&M reference-table digitisation itself is disputed (1.1/1.8/2.7 vs 1.5/2.7); should be adjudicated as a separate task before any pass/fail claim"
+    "summary": "Under the CORRECT convention (T=t*sqrt(2g/a)) and the CORRECT Lethe table, the SCMP front is only within 3% at the earliest checkpoint (a=80, T=1: +2.49%); the error grows monotonically with T (-9.7% at T=2, -19.1% at T=2.96). NOT verified.",
+    "root_cause": "mid/late-time dynamics: the simulated column collapses too fast (residual height H~0.16 vs M&M ~0.5+), so insufficient potential energy is converted to front momentum -> the front is systematically too slow for T>=2. This is a constitutive / density-ratio gap (SC94 at G=5 gives rho_l/rho_v ~ 13 vs M&M water/air ~800).",
+    "broken_lookup_run": true,
+    "retraction": "the previously reported +50~82% SCMP errors were double-counted (axis x sqrt2 AND wrong table) and are withdrawn; the true errors are +2.5% / -9.7% / -19.1% at a=80.",
+    "ruled_out": ["psi=sqrt(rho) (NaN at G_lib=+5)", "wall_psi=0.4 (does not grid-converge)"]
   },
   "recommendation": [
-    "keep B20 in benchmarks/pending/ (do NOT move to verified)",
-    "priority 1: 3D free-surface module + committed wall-BC fix (only route that improved); next fix grid-convergence + H collapse",
-    "priority 2: rebuild free_surface_lbm_2d (low-rho_gas ABB stability + conservation ledger + interface fogging) — 3D flags do not transfer",
-    "priority 3: abandon SCMP for this benchmark (+36% floor)",
-    "separate item: adjudicate the M&M digitisation table"
+    "keep B20 in benchmarks/pending/ (do NOT move to verified) -- accuracy fails at T=2 and T=2.96",
+    "the metric of record for this benchmark is now the T_MM = t*sqrt(2g/a) axis with the Lethe table (1.326/2.360/3.670)",
+    "next lever: late-time column collapse (residual height H) -- a density-ratio / constitutive change, or a hybrid two-phase route",
+    "the historical +50% claims are retracted; the honest summary is 'close at early time (+2.5% at T=1), diverging to -19% by T=2.96'"
   ],
   "artifacts": ["case_a40.json", "case_a80.json", "hist_a40.csv", "hist_a80.csv", "README.md",
                 "REPORT_SCMP_vs_FS2D.md"],
-  "run_artifacts": {
-    "scmp": "runs/dam_break_sc_fix/sc_{base,wall04,sqrt}_a{40,80}/",
-    "fs2d": "runs/dam_break_sc_fix/probe_fs2d.py + fs2d_*.json",
-    "fs3d": "runs/fs_aprime_20260929/probe.py + fix3d_*.json"
+  "supporting": {
+    "recompute_script": "scripts/recompute_mm_errors.py (4-scheme old/new axis x old/new table comparison; reads hist_*.csv, no re-simulation)",
+    "recompute_json": "benchmarks/pending/dam_break_recompute_mm.json",
+    "fs2d_convention_fix": "benchmarks/bench_fs_2d.py REF_T/REF_Z + T_TARGETS + SQRT_GA corrected to the T=t*sqrt(2g/a) convention (old table kept as a comment)"
   }
 }
