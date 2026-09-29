@@ -73,7 +73,13 @@ def main() -> None:
                     help="upstream,downstream,ylo,yhi,zlo,zhi in units of D")
     ap.add_argument("--device", default="sdaa:0")
     ap.add_argument("--collision", default="mrt")
-    ap.add_argument("--cov-margin", type=int, default=2)
+    ap.add_argument("--cov-margin", type=int, default=2,
+                    help="legacy single CV margin in lattice cells (kept for compat)")
+    ap.add_argument("--cov-margins", type=str, default="0.25,0.5,0.75,1.0",
+                    help="nested CV margins as fractions of R_lb (comma list). "
+                         "One momentum-balance probe per margin in a single pass.")
+    ap.add_argument("--monitor-steps", type=int, default=500,
+                    help="print a Cd(p+f standard) convergence trace every N steps")
     add_compile_mode_arg(ap)
     args = ap.parse_args()
 
@@ -122,20 +128,32 @@ def main() -> None:
 
     step_fn = route_step(_step, compile_mode, name=f"probe_sphere_re100[D{D}]")
 
-    # control volume: box around the sphere, strictly interior
+    # control volumes: nested boxes around the sphere, strictly interior.
+    # Shells must stay inside the domain on every side.
     dpS = engine._compute_dpS()
     dx = config.physics.reference_length / D
     R_lb = 0.5 / dx
     cx = (0.0 - engine.domain_phys[0]) / dx
     cy = (0.0 - engine.domain_phys[2]) / dx
     cz = (0.0 - engine.domain_phys[4]) / dx
-    m = args.cov_margin
-    cv = box_control_volume(solid.shape, x0=int(cx - R_lb - m), x1=int(cx + R_lb + m) + 1,
-                            y0=int(cy - R_lb - m), y1=int(cy + R_lb + m) + 1,
-                            z0=int(cz - R_lb - m), z1=int(cz + R_lb + m) + 1,
-                            device=solid.device)
-    print(f"[cv] cx={cx:.1f} R_lb={R_lb:.1f} cells={int(cv.sum())}", flush=True)
+    nz_g, ny_g, nx_g = solid.shape
+    fracs = [float(v) for v in args.cov_margins.split(",") if v.strip()]
+    cvs = {}
+    for fr in fracs:
+        m = int(round(fr * R_lb))
+        x0, x1 = int(cx - R_lb - m), int(cx + R_lb + m) + 1
+        y0, y1 = int(cy - R_lb - m), int(cy + R_lb + m) + 1
+        z0, z1 = int(cz - R_lb - m), int(cz + R_lb + m) + 1
+        x0, x1 = max(1, x0), min(nx_g - 1, x1)
+        y0, y1 = max(1, y0), min(ny_g - 1, y1)
+        z0, z1 = max(1, z0), min(nz_g - 1, z1)
+        cvs[fr] = box_control_volume(solid.shape, x0=x0, x1=x1, y0=y0, y1=y1,
+                                     z0=z0, z1=z1, device=solid.device)
+        print(f"[cv] frac={fr} m={m} x[{x0},{x1}) y[{y0},{y1}) z[{z0},{z1}) "
+              f"cells={int(cvs[fr].sum())}", flush=True)
 
+    mon = max(1, args.monitor_steps)
+    cd_trace = []
     t0 = time.time()
     for s in range(1, args.steps + 1):
         engine.f = step_fn(engine.f)
@@ -143,6 +161,14 @@ def main() -> None:
         if s % 200 == 0:
             from tensorlbm.solver3d import correct_mass3d
             engine.f = correct_mass3d(engine.f, target_mass)
+        if mon and s % mon == 0:
+            cdp = drag_pressure_integration(engine.f, engine.mesh, dpS, extrap="none",
+                                            p0_method="near_wall", solid=solid)[0]
+            cdf = drag_friction_integration(engine.f, engine.mesh, dpS, nu_lb,
+                                            formula="standard", solid=solid)[0]
+            cd_trace.append((s, round(cdp + cdf, 5)))
+            print(f"[mon] step={s} Cd(p+f std)={cdp + cdf:.5f} "
+                  f"err_SN={100 * (cdp + cdf - REF_SN) / REF_SN:+.2f}%", flush=True)
     t_step = time.time() - t0
     print(f"[run] {args.steps} steps in {t_step:.0f}s "
           f"({t_step / args.steps * 1000:.1f} ms/step)", flush=True)
@@ -173,22 +199,29 @@ def main() -> None:
                                              formula="bfl", q_wall=q_sph, solid=solid)[0]
         rows[p0] = r
 
-    # ---- discrete control-volume momentum balance over 20 steps ----
-    cov_sum = torch.zeros(3, dtype=torch.float64, device=solid.device)
+    # ---- discrete control-volume momentum balance over 20 steps (all CVs) ----
+    cov_sums = {fr: torch.zeros(3, dtype=torch.float64, device=solid.device)
+                for fr in fracs}
     n_cov = 20
     for _ in range(n_cov):
         f_old = engine.f
         fp = collide_fn(f_old, tau=tau, **collide_kwargs)
         fp = torch.where(solid.unsqueeze(0),
                          f_old[f_pre_opp_idx.to(f_old.device)], fp)
-        imported = streaming_momentum_import(fp, cv)
         f_new = far_field_fn(stream3d(fp), u_in)
-        change = fluid_momentum_change(f_old, f_new, cv, solid=solid)
-        cov_sum += imported - change
+        for fr, cv in cvs.items():
+            imported = streaming_momentum_import(fp, cv)
+            change = fluid_momentum_change(f_old, f_new, cv, solid=solid)
+            cov_sums[fr] += imported - change
         engine.f = f_new
-    cov_f = (cov_sum / n_cov).tolist()
+    cd_cov_by_frac = {}
+    for fr in fracs:
+        cov_f = (cov_sums[fr] / n_cov).tolist()
+        cd_cov_by_frac[fr] = cov_f[0] / dpS
+        print(f"[cov] frac={fr} force_x={cov_f[0]:.6e}  Cd_cov={cov_f[0]/dpS:.4f}",
+              flush=True)
+    cov_f = (cov_sums[fracs[len(fracs) // 2]] / n_cov).tolist()
     cd_cov = cov_f[0] / dpS
-    print(f"[cov] force_x={cov_f[0]:.6e}  Cd_cov={cd_cov:.4f}", flush=True)
 
     print("\n=== final-field pressure/friction sweep (extrap=none) ===")
     for p0, r in rows.items():
@@ -204,6 +237,8 @@ def main() -> None:
         "D": D, "domain": info["domain_lu"], "pad": pad,
         "u_lb": u_in, "nu_lb": nu_lb, "tau": tau, "steps": args.steps,
         "Cd_cov": cd_cov, "cov_force": cov_f,
+        "Cd_cov_by_frac": cd_cov_by_frac,
+        "cd_trace": cd_trace,
         "cd_pressure_by_p0": {k: v["cd_p"] for k, v in rows.items()},
         "cd_friction": {k: {ff: v[ff] for ff in ("standard", "faces", "mix50", "bfl", "lagrange")}
                         for k, v in rows.items()},
