@@ -765,6 +765,12 @@ def free_surface_step(
     # ---- 2b. Zero gas cells AFTER streaming (prevent mass leak into gas) ----
     gas_mask_pre = flags == GAS
     f = torch.where(gas_mask_pre.unsqueeze(0), torch.zeros_like(f), f)
+    # F3: freeze the mass-exchange population *before* the anti-bounce-back gas
+    # reconstruction.  The exchange must read the pure streamed state; letting
+    # the ABB-reconstructed populations (magnitude ~ rho_gas) into the exchange
+    # couples the tracked liquid mass to the gas pressure BC and amplifies the
+    # exchange delta ~100x between rho_gas = 0.1 and 1.0.
+    f_exchange = f
     if inventory_stages is not None:
         inventory_stages["after_stream_and_gas_zero"] = inventory_measurement(
             f,
@@ -863,13 +869,16 @@ def free_surface_step(
     # ---- 4. Mass exchange (standard Körner, independent mass variable) ----
     # (no .any() sync — multicard-safe under TCCL; torch.where handles empty masks)
     iface_mask = flags == INTERFACE
-    # Receiver gate: an interface cell with fill≈0 is a halo about to be
-    # downgraded to gas by to_gas in this same step.  It must NOT receive
-    # liquid mass, otherwise mass exchange pumps it every step and the
-    # subsequent to_gas conversion misbooks/destroys that mass (the
-    # fill≈0-receiver mass source; batch-16 root cause).  Gate every
-    # exchange receiver on fill > 1e-3.
-    recv_ok = iface_mask & (fill > 1.0e-3)
+    # F1: unified interface birth/receive semantics.
+    # Every INTERFACE cell is a legal mass-exchange receiver — including a
+    # freshly-born envelope cell at fill = 0.  The previous ``fill > 1e-3``
+    # gate sealed the column: ``init_flags_from_fill`` / ``to_i`` birth the
+    # envelope at fill = 0, so a gated receiver could never fill and no
+    # L/I -> I/L conversion could ever fire (front frozen at X = 1.0).
+    # Conservation is restored by pairing every I/I link (antisymmetric half
+    # weight) and every L/I link with an explicit bulk debit below, so an
+    # ungated receiver is a *transfer*, never a source.
+    recv_ok = iface_mask
     recv_19 = recv_ok.unsqueeze(0)
     # neighbor_flags always computed in anti-bounce-back above (no None check)
     # For pull link q at x, the opposing outgoing population belongs to x
@@ -877,8 +886,10 @@ def free_surface_step(
     f_opp_nb = f_post[_OPP.to(device)]  # (19, nz, ny, nx)
     from_liq = recv_19 & (neighbor_flags == LIQUID)
     from_iface = recv_19 & (neighbor_flags == INTERFACE)
-    mass_delta_liquid = torch.where(from_liq, f - f_opp_nb, torch.zeros_like(f))
-    mass_delta_interface = torch.where(from_iface, (f - f_opp_nb) * 0.5, torch.zeros_like(f))
+    mass_delta_liquid = torch.where(from_liq, f_exchange - f_opp_nb, torch.zeros_like(f))
+    mass_delta_interface = torch.where(
+        from_iface, (f_exchange - f_opp_nb) * 0.5, torch.zeros_like(f)
+    )
     # A L/I credit at interface target x is paired link-by-link with a debit
     # at its pull source x-c_q.  This uses only existing D3Q19 links; it is
     # neither a global rescale nor a topology mutation.

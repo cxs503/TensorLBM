@@ -1,0 +1,86 @@
+{
+  "case": "dam_break_sc",
+  "verified": false,
+  "date": "2026-09-29",
+  "reference": "Martin & Moyce 1952, Phil. Trans. R. Soc. A 244, 312",
+  "reference_checkpoints": {"T=1": 1.5, "T=2": 2.7},
+  "model": {
+    "kind": "2D Shan-Chen single-component pseudopotential (SCMP / SC94 psi_exp)",
+    "modules": [
+      "tensorlbm.multiphase.collide_sc_single_component",
+      "tensorlbm.multiphase.psi_exp",
+      "tensorlbm.solver.stream",
+      "tensorlbm.boundaries.bounce_back_cells",
+      "tensorlbm.d2q9"
+    ],
+    "G_lib": 5.0,
+    "G_eff": -5.0,
+    "tau": 1.0,
+    "rho_l": 1.957,
+    "rho_v": 0.1596,
+    "density_ratio": 12.3,
+    "g": 2e-4,
+    "g_eff": 1.8368e-4,
+    "device": "cpu",
+    "note": "no CUDA on host (LoongArch/SDAA); compile_route routed via tensorlbm.compile_utils eager"
+  },
+  "fixes_applied_to_run_py": [
+    {
+      "id": "init_distance",
+      "severity": "decisive",
+      "before": "dist_out = min(xx-a, yy-2a)",
+      "after": "dist_out = -sqrt(clamp(xx-a,0)^2 + clamp(yy-2a,0)^2)",
+      "why": "old form was POSITIVE in the top-right quadrant (xx>a & yy>2a), seeding ~10k gas cells as liquid -> domain mean density 0.89 (above coexistence) -> whole box separated as liquid, column never collapsed",
+      "evidence": "before: mass=29220, avg=0.8917, liquid_cells=13305; after: mass=11102, avg=0.3388, liquid_cells=3200 (= a*2a)"
+    },
+    {
+      "id": "toe_measurement",
+      "severity": "measurement",
+      "before": "X_toe sampled rows 1..n_toe (n_toe=max(2,ny//64)); rows 1-2 are a ~2-cell density-depleted no-slip wall layer (rho_max~0.66 < rho_mid=1.058)",
+      "after": "X_toe samples rows [3 : ny//8] (bottom 1/8 of box, above the depleted layer)",
+      "why": "as-shipped X_toe flickered to 0 -> -100% error; the coherent floor toe (rows 3..ny/8 agree to ~1 cell) is the physical M&M toe"
+    }
+  ],
+  "results": {
+    "a40": {
+      "X_T_eff_1": 1.741616, "err_pct_T_eff_1": 16.108,
+      "X_T_eff_2": 2.933233, "err_pct_T_eff_2": 8.638,
+      "X_T_raw_1": 1.694427, "err_pct_T_raw_1": 12.962,
+      "X_T_raw_2": 2.836068, "err_pct_T_raw_2": 5.04,
+      "mass_drift_max": 1.26e-05, "max_u_max": 0.253, "steps": 1400, "wall_s": 9
+    },
+    "a80": {
+      "X_T_eff_1": 1.704891, "err_pct_T_eff_1": 13.659,
+      "X_T_eff_2": 2.972282, "err_pct_T_eff_2": 10.085,
+      "X_T_raw_1": 1.656797, "err_pct_T_raw_1": 10.453,
+      "X_T_raw_2": 2.867322, "err_pct_T_raw_2": 6.197,
+      "mass_drift_max": 1.9e-05, "max_u_max": 0.26, "steps": 2200, "wall_s": 27
+    }
+  },
+  "checks": {
+    "accuracy_le_3pct_fine_grid_a80": {
+      "pass": false,
+      "T_eff_axis": {"T1": "+13.66%", "T2": "+10.09%"},
+      "T_raw_axis": {"T1": "+10.45%", "T2": "+6.20%"},
+      "most_favourable_band_rows_3_5_a40": {"T_raw_T1": "+9.5%", "T_raw_T2": "+3.2%"}
+    },
+    "two_grid_convergence_le_3pct": {
+      "pass": true,
+      "T_eff_axis": {"T1": "2.15%", "T2": "1.31%"},
+      "T_raw_axis": {"T1": "2.27%", "T2": "1.09%"}
+    },
+    "stability": {"mass_drift_max": 1.9e-05, "max_u_max": 0.26, "nan": false, "pass": true}
+  },
+  "gap": {
+    "summary": "not a convention/axis problem, not a resolution problem; a genuine SCMP (SC94 exponential-pseudopotential) constitutive gap of ~+6-14% front overshoot (a ~+0.15a constant lead)",
+    "ruled_out": {
+      "time_axis": "T_raw(+10-13%), T_eff(+14-16%), repo t*sqrt(2g/a)(-9..-21%) -- none <=3%; front slope matches (~1.2) but offset",
+      "grid": "a40->a80 changes only 1-2% (already converged)",
+      "gravity_scale": "varying g at a=40 (Re ~11->60) converges X(T_raw=1) to ~1.60 (still +7%)",
+      "density_ratio_parameter": "G=5->ratio13->+16%, G=6->ratio24->+23% (worse), G=7 unstable"
+    },
+    "root_cause": "low SCMP density ratio (~12 vs water/air ~800) + diffuse interface + no-slip wall pseudopotential-depleted boundary layer make the surge front run ahead; consistent with repo standing note benchmarks/problems.md B20 / gap_analysis.md 'multiphase gap blocking'",
+    "recommendation": "treat as module-level (multiphase) gap for B20, not a dam_break_sc parameter/measurement issue; do NOT move to benchmarks/verified/ until fixed"
+  },
+  "artifacts": ["case_a40.json", "case_a80.json", "hist_a40.csv", "hist_a80.csv", "README.md"]
+}
