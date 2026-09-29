@@ -17,3 +17,5 @@
 [cyl3d D=20 320x320x4] Re=40.0 u_in=0.08 nu=0.040000 tau=0.620000 dpS=0.2560
 [cyl3d D=20 320x320x4] solid=1268 near=240 (blockage 6.25%, span 4 cells = 0.20D)
 [compile_route] cylinder_3d_re40[D20]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
+[cyl3d D=20 320x320x4] step=5000 Cd_p=1.0728 standard=0.3672 lagrange=0.3629 faces=0.3382 mix50=0.3527 (343s)
+[cyl3d D=20 320x320x4] step=10000 Cd_p=1.0514 standard=0.3519 lagrange=0.3480 faces=0.3229 mix50=0.3374 (693s)

@@ -17,3 +17,5 @@
 [study] wall=bottom outlet=zouhe nx=1750 ny=500 le=20 L=1700 probes=[200, 740, 1640] U=0.05 nu=0.01 steps=50000
   step 5000: umax=0.05476 finite=True
   step 10000: umax=0.05491 finite=True
+  step 15000: umax=0.05490 finite=True
+  step 20000: umax=0.05491 finite=True
