@@ -1,0 +1,367 @@
+{
+  "case": "dam_break_3d_martin_moyce",
+  "status": "NOT_VERIFIED",
+  "reason": "tensorlbm.free_surface_lbm mass-conservation/interface-stability defects: interface-cell explosion + front pollution / mass drift; see /tmp/dambreak_gap.md",
+  "module": "tensorlbm.free_surface_lbm (D3Q19, free_surface_step) \u2014 unmodified",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "reference": "Martin & Moyce (1952), classic digitisation taken from benchmarks/bench_fs_2d.py: T=1 X=1.1, T=2 X=1.8, T=3 X=2.7; H(T=1)~0.78",
+  "config": {
+    "a": 16,
+    "g": 0.0001,
+    "tau": 0.8,
+    "rho_gas": 1.0,
+    "steps": 1200,
+    "domain": {
+      "nx": 80,
+      "ny": 40,
+      "nz": 32,
+      "cells": 102400
+    },
+    "T_max": 3.0
+  },
+  "elapsed_s": 321.11527371406555,
+  "checks": [
+    {
+      "T": 1.0,
+      "kind": "X",
+      "ref": 1.1,
+      "sim": 2.0,
+      "err_pct": 81.8181818181818,
+      "extrapolated": false
+    },
+    {
+      "T": 2.0,
+      "kind": "X",
+      "ref": 1.8,
+      "sim": 3.0625,
+      "err_pct": 70.13888888888889,
+      "extrapolated": false
+    },
+    {
+      "T": 3.0,
+      "kind": "X",
+      "ref": 2.7,
+      "sim": 4.0625,
+      "err_pct": 50.462962962962955,
+      "extrapolated": false
+    },
+    {
+      "T": 1.0,
+      "kind": "H",
+      "ref": 0.78,
+      "sim": 1.1875,
+      "err_pct": 52.24358974358974,
+      "extrapolated": false
+    }
+  ],
+  "max_err_pct": 81.8181818181818,
+  "final": {
+    "mass_drift_rel": -0.2853612592143397,
+    "iface_cells": 22545,
+    "iface_initial": 1311,
+    "iface_growth": 17.19679633867277
+  },
+  "series": [
+    {
+      "step": 40,
+      "T": 0.1,
+      "front": 18,
+      "X": 1.125,
+      "h": 33,
+      "H": 1.03125,
+      "mass_drift_rel": -0.0008940542897870464,
+      "iface_cells": 1341
+    },
+    {
+      "step": 80,
+      "T": 0.2,
+      "front": 19,
+      "X": 1.1875,
+      "h": 34,
+      "H": 1.0625,
+      "mass_drift_rel": -0.004758342619865171,
+      "iface_cells": 1627
+    },
+    {
+      "step": 120,
+      "T": 0.3,
+      "front": 21,
+      "X": 1.3125,
+      "h": 35,
+      "H": 1.09375,
+      "mass_drift_rel": -0.004809656450825353,
+      "iface_cells": 1972
+    },
+    {
+      "step": 160,
+      "T": 0.4,
+      "front": 22,
+      "X": 1.375,
+      "h": 37,
+      "H": 1.15625,
+      "mass_drift_rel": -0.00604248046875,
+      "iface_cells": 2368
+    },
+    {
+      "step": 200,
+      "T": 0.5,
+      "front": 24,
+      "X": 1.5,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.006457851779076361,
+      "iface_cells": 2823
+    },
+    {
+      "step": 240,
+      "T": 0.6,
+      "front": 26,
+      "X": 1.625,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.006529900335496472,
+      "iface_cells": 3266
+    },
+    {
+      "step": 280,
+      "T": 0.7000000000000001,
+      "front": 27,
+      "X": 1.6875,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.007172369187878024,
+      "iface_cells": 3877
+    },
+    {
+      "step": 320,
+      "T": 0.8,
+      "front": 29,
+      "X": 1.8125,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.007264229559129284,
+      "iface_cells": 4419
+    },
+    {
+      "step": 360,
+      "T": 0.9,
+      "front": 30,
+      "X": 1.875,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.007606629402406754,
+      "iface_cells": 5105
+    },
+    {
+      "step": 400,
+      "T": 1.0,
+      "front": 32,
+      "X": 2.0,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.008081743794102822,
+      "iface_cells": 5741
+    },
+    {
+      "step": 440,
+      "T": 1.1,
+      "front": 34,
+      "X": 2.125,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.009510286392704133,
+      "iface_cells": 6482
+    },
+    {
+      "step": 480,
+      "T": 1.2,
+      "front": 35,
+      "X": 2.1875,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.011875398697391633,
+      "iface_cells": 7157
+    },
+    {
+      "step": 520,
+      "T": 1.3,
+      "front": 37,
+      "X": 2.3125,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.015136165003622732,
+      "iface_cells": 7987
+    },
+    {
+      "step": 560,
+      "T": 1.4000000000000001,
+      "front": 39,
+      "X": 2.4375,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.020294435562626008,
+      "iface_cells": 8781
+    },
+    {
+      "step": 600,
+      "T": 1.5,
+      "front": 40,
+      "X": 2.5,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.027271886025705645,
+      "iface_cells": 9643
+    },
+    {
+      "step": 640,
+      "T": 1.6,
+      "front": 42,
+      "X": 2.625,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.036184557022586945,
+      "iface_cells": 10483
+    },
+    {
+      "step": 680,
+      "T": 1.7,
+      "front": 44,
+      "X": 2.75,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.04695117089056199,
+      "iface_cells": 11312
+    },
+    {
+      "step": 720,
+      "T": 1.8,
+      "front": 45,
+      "X": 2.8125,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.05982146724577873,
+      "iface_cells": 12156
+    },
+    {
+      "step": 760,
+      "T": 1.9000000000000001,
+      "front": 47,
+      "X": 2.9375,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.07515938051285283,
+      "iface_cells": 13056
+    },
+    {
+      "step": 800,
+      "T": 2.0,
+      "front": 49,
+      "X": 3.0625,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.09231844256001134,
+      "iface_cells": 13907
+    },
+    {
+      "step": 840,
+      "T": 2.1,
+      "front": 50,
+      "X": 3.125,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.11003205084031628,
+      "iface_cells": 14795
+    },
+    {
+      "step": 880,
+      "T": 2.2,
+      "front": 52,
+      "X": 3.25,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.12854422292401713,
+      "iface_cells": 15626
+    },
+    {
+      "step": 920,
+      "T": 2.3000000000000003,
+      "front": 53,
+      "X": 3.3125,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.1489619593466482,
+      "iface_cells": 16417
+    },
+    {
+      "step": 960,
+      "T": 2.4,
+      "front": 55,
+      "X": 3.4375,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.16924581220073084,
+      "iface_cells": 17282
+    },
+    {
+      "step": 1000,
+      "T": 2.5,
+      "front": 56,
+      "X": 3.5,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.18913330570344003,
+      "iface_cells": 18114
+    },
+    {
+      "step": 1040,
+      "T": 2.6,
+      "front": 58,
+      "X": 3.625,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.20962456733949722,
+      "iface_cells": 19034
+    },
+    {
+      "step": 1080,
+      "T": 2.7,
+      "front": 59,
+      "X": 3.6875,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.22921365307223412,
+      "iface_cells": 19907
+    },
+    {
+      "step": 1120,
+      "T": 2.8000000000000003,
+      "front": 61,
+      "X": 3.8125,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.2496582769578503,
+      "iface_cells": 20816
+    },
+    {
+      "step": 1160,
+      "T": 2.9,
+      "front": 62,
+      "X": 3.875,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.26846055061586444,
+      "iface_cells": 21653
+    },
+    {
+      "step": 1200,
+      "T": 3.0,
+      "front": 65,
+      "X": 4.0625,
+      "h": 38,
+      "H": 1.1875,
+      "mass_drift_rel": -0.2853612592143397,
+      "iface_cells": 22545
+    }
+  ]
+}
