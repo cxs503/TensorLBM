@@ -32,7 +32,7 @@ for _ in range(200):
 
 ## What TensorLBM provides
 
-- A small, explicit public API in `src/tensorlbm/__init__.py`
+- A small, explicit public API in `src/tensorlbm/__init__.py`, resolved lazily (PEP 562) so `import tensorlbm` costs ~0.02 s and loads only the submodules you actually touch
 - **D2Q9**, **D3Q19**, and **D3Q27** lattice primitives (`equilibrium`, `macroscopic`, lattice constants)
 - **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D
 - **Adaptive Mesh Refinement (AMR)**: dynamic patch management for D2Q9 and D3Q19, up to 5 refinement levels with Filippova–Hänel interface exchange, and multiple refinement indicators (non-equilibrium, vorticity, gradient, boundary-layer)
