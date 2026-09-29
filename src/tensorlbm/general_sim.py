@@ -217,6 +217,13 @@ class SolverConfig:
     # Mass correction
     mass_correction: bool = True
     mass_correction_interval: int = 200
+    # Divergence guard: run the ``torch.isfinite(f).all()`` check every N steps.
+    # 1 = check every step (safe default, historical behaviour).  Raising it
+    # (e.g. 50) trades divergence-detection latency for speed: the check is a
+    # scalar reduction of the full state (pathological on SDAA, ~42 ms/step at
+    # L=48) and does not affect the evolution itself (bit-exact fields).
+    # Override without editing code via the ``TL_ISFINITE_INTERVAL`` env var.
+    divergence_check_interval: int = 1
 
 
 @dataclass
@@ -562,6 +569,14 @@ class GeneralSimEngine:
         # dpS: dynamic pressure × reference area
         dpS = self._compute_dpS()
 
+        # Divergence-guard cadence (see SolverConfig.divergence_check_interval).
+        import os as _os
+
+        div_check = int(
+            _os.environ.get("TL_ISFINITE_INTERVAL", sol.divergence_check_interval)
+        )
+        div_check = max(1, div_check)
+
         # Run loop
         for step in range(1, n_steps + 1):
             if use_wall_function:
@@ -617,8 +632,8 @@ class GeneralSimEngine:
             if cfg.output.save_macroscopic and step % sol.snapshot_interval == 0:
                 self._save_snapshot()
 
-            # Divergence guard
-            if not torch.isfinite(self.f).all():
+            # Divergence guard (cadence = divergence_check_interval; default 1)
+            if step % div_check == 0 and not torch.isfinite(self.f).all():
                 break
 
         return {
@@ -1043,12 +1058,25 @@ class GeneralSimEngine:
         collision = self._auto_collision or sol.collision
         cs = sol.smagorinsky_cs
 
-        from .solver3d import collide_bgk3d, collide_mrt3d_low_memory
+        from .solver3d import collide_bgk3d, collide_mrt3d_fused, collide_mrt3d_low_memory
         from .turbulence import collide_smagorinsky_mrt3d
 
         if collision == CollisionModel.BGK:
             return collide_bgk3d, {}
         elif collision == CollisionModel.MRT:
+            # Single-gemm fused MRT (R = M^-1 diag(s) M precomputed) is an
+            # opt-in ~2x speedup on SDAA.  It is NOT bit-exact vs the standard
+            # 3-transform path (fp32 gemm association noise, ~1.5e-7/step), so
+            # it is gated behind TL_MRT_FUSED=1 and off by default.
+            import os
+
+            if os.environ.get("TL_MRT_FUSED", "0").strip().lower() in (
+                "1",
+                "true",
+                "yes",
+                "on",
+            ):
+                return collide_mrt3d_fused, {}
             # Memory-light MRT: mathematically identical to collide_mrt3d
             # (same moments/relaxation rates; ~1e-8 float-association noise),
             # but needs ~18 GB instead of ~31 GB peak at 56M cells.
