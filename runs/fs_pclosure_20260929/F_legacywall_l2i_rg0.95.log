@@ -1,0 +1,27 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+  st=  40 T=0.200 X=1.125 H=1.000 iface=1229 drift=-3.815e-07 fin=True
+  st=  80 T=0.400 X=1.250 H=1.000 iface=1283 drift=-7.629e-07 fin=True
+  st= 120 T=0.600 X=1.250 H=1.062 iface=1333 drift=-3.179e-07 fin=True
+  st= 160 T=0.800 X=1.250 H=1.062 iface=1343 drift=+0.000e+00 fin=True
+  st= 200 T=1.000 X=1.375 H=1.062 iface=1340 drift=+8.265e-07 fin=True
+  st= 240 T=1.200 X=1.375 H=1.062 iface=7939 drift=-6.358e-08 fin=True
+  st= 280 T=1.400 X=4.500 H=1.062 iface=7947 drift=-6.358e-07 fin=True
+  st= 320 T=1.600 X=4.500 H=1.062 iface=7950 drift=-8.901e-07 fin=True
+  st= 360 T=1.800 X=4.500 H=1.062 iface=7957 drift=-8.265e-07 fin=True
+  st= 400 T=2.000 X=4.500 H=1.062 iface=7972 drift=-3.179e-07 fin=True
+[F_legacywall_l2i_rg0.95] elapsed=28.3s
