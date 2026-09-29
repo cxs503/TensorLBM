@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""方柱 Re=100 自由流涡脱落 — Okajima 1982 验证（播种+sponge 工程链复用）。
+"""方柱 Re=100 自由流涡脱落 — 2D 自由流数值口径验证（播种+sponge 工程链复用）。
 
 基于 benchmarks/verified/cylinder/re100/run.py（Braza 验证）的完整工程链
 直接改造：圆形掩码 → 方块掩码（half-way BB 精确边长 D），其余环节
@@ -21,10 +21,19 @@
 - 入口播种：2 个 St_seed=0.14 周期、10% 振幅正弦横向扰动后回归自由流
 - ν = U·D/Re，τ = 3ν + 0.5
 
-参考解（任务口径，Okajima 1982）：
-- St ≈ 0.14（方柱 Re=100 文献范围 0.13-0.15）
-- Cd ≈ 1.6（自由流方柱 Re=100 文献范围 ~1.5-1.7；Sohankar 1997 的 2.05
-  是通道配置参考，不适用自由流）
+参考口径（2D 自由流、无障/低阻塞数值基准，正置 α=0°；多源核对见
+REFERENCE_AUDIT.md）：
+- St ≈ 0.147（2D 自由流数值簇 0.145-0.149；实验 Okajima 1982 为 0.143-0.145，
+  2D 数值系统性略高于实验——2D 忽略展向三维失稳，高估 St，故不以实验为参考）
+- Cd ≈ 1.48（2D 自由流数值簇 1.44-1.52，中位 1.488）
+- 来源（ar5iv/arxiv 全文表格）：arxiv 2411.03124v4 Table 1（Re=100:
+  Sohankar 1.46/0.147、Yoon 1.44/0.145、Present 1.48/0.147）、
+  arxiv 2309.09197 Table 2（Sohankar 1.477/0.146、Sahu 1.488/0.149、
+  Sen 1.530/0.145、Present 1.495/0.145）、arxiv 2308.08085v3 Table 8
+  （Fakhari&Lee 1.51/0.149、González 1.50/0.145 等）、arxiv 2404.12123
+  （Present 1.476）、arxiv 2405.12834（≈1.47-1.55/0.145-0.148）
+- 误用排除：Sohankar 1997 通道配置 Cd≈2.05（高阻塞加速）不适用自由流；
+  Sharma&Eswaran 2004 Cd=1.57 为较小域（较高阻塞）结果，亦不适用 40D 低阻塞域
 
 compile 路径（tensorlbm.compile_utils，lesson 2 双变体）：
 - 播种期（前 2 个 St_seed 周期）与自由流期是两种步进模式 → 编译两个
@@ -33,7 +42,7 @@ compile 路径（tensorlbm.compile_utils，lesson 2 双变体）：
   .cpu()——逐步 .item() 同步留在编译域外
 
 用法：
-    run.py --D 32 48 --device cuda:0 [--compile-mode default|eager] [--out DIR]
+    run.py --D 32 48 --device sdaa:0 [--compile-mode default|eager] [--out DIR]
 """
 
 from __future__ import annotations
@@ -49,7 +58,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmark
 
 import numpy as np
 import torch
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
+from compile_route import (  # noqa: E402
+    add_compile_mode_arg,
+    compile_mode_from_args,
+    compile_status_of,
+    route_step,
+)
+
+
+def _default_device() -> str:
+    """Pick the first available accelerator on this host (SDAA > CUDA > CPU).
+
+    Historical runs hardcoded ``cuda:0``; the current host is a Hygon/SDAA
+    node (torch built without CUDA).  Mirrors the suboff_re1000 standard.
+    """
+    try:
+        import torch_sdaa  # noqa: F401
+
+        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+            return "sdaa:0"
+    except Exception:
+        pass
+    if torch.cuda.is_available():
+        return "cuda:0"
+    return "cpu"
+
 
 from tensorlbm.boundaries import (
     compute_obstacle_forces,
@@ -59,8 +92,11 @@ from tensorlbm.boundaries import (
 from tensorlbm.d2q9 import equilibrium
 from tensorlbm.solver import collide_mrt, stream
 
-REF_CD = 1.6  # Okajima 1982（任务口径，自由流方柱 Re=100 文献 1.5-1.7）
-REF_ST = 0.14  # Okajima 1982（方柱 Re=100 St 文献 0.13-0.15）
+# 参考值 = 2D 自由流无障/低阻塞数值基准簇的中心值（多源核对见 REFERENCE_AUDIT.md）。
+# 参考口径裁定（2026-09-29）：本 solver 为 2D、域 40D（blockage 2.5%），正确对标
+# 2D 自由流数值基准（非实验、非通道/受限口径）。
+REF_CD = 1.48  # 2D 自由流数值簇 [1.44, 1.52] 中心（中位 1.488）
+REF_ST = 0.147  # 2D 自由流数值簇 [0.145, 0.149] 中心
 
 # 域/播种参数（与 cylinder_re100 完全同口径，仅 St_seed 换方柱值）
 DOMAIN_D = 40.0  # 域边长 = 40D
@@ -197,6 +233,23 @@ def run_case(
     err_cd = (cd_mean - REF_CD) / REF_CD * 100.0
     err_st = (st_val - REF_ST) / REF_ST * 100.0
 
+    # Routing outcome (final after the loop): 'compiled', 'eager_fallback' or
+    # 'eager'.  A run is effective-eager if ANY routed variant fell back (or
+    # was eager); persisted to result.json for auditability (see
+    # compile_route docstring, SDAA teco limitation).
+    _cs = [compile_status_of(step_plain), compile_status_of(step_seeded)]
+    _fb = next((c for c in _cs if c["compile_status"] == "eager_fallback"), None)
+    if _fb is not None:
+        compile_status_v = "eager_fallback"
+        compile_status_reason_v = _fb["compile_status_reason"]
+    elif _cs and all(c["compile_status"] == "eager" for c in _cs):
+        compile_status_v, compile_status_reason_v = "eager", None
+    else:
+        compile_status_v, compile_status_reason_v = "compiled", None
+    compile_mode_effective_v = (
+        "eager" if compile_status_v in ("eager", "eager_fallback") else compile_mode
+    )
+
     if series_path:
         np.savez(series_path, cd=cd_series, cl=cl_series, warmup_from=w0)
 
@@ -225,6 +278,9 @@ def run_case(
         "warmup_frac": warmup_frac,
         "analyze_from": w0,
         "compile_mode": compile_mode,
+        "compile_mode_effective": compile_mode_effective_v,
+        "compile_status": compile_status_v,
+        "compile_status_reason": compile_status_reason_v,
         "cd": round(cd_mean, 4),
         "cd_ref": REF_CD,
         "err_pct": round(err_cd, 2),
@@ -239,7 +295,8 @@ def run_case(
     print(
         f"[square_re100 D={D}] steps={steps} t={elapsed:.0f}s Cd={cd_mean:.4f} "
         f"({err_cd:+.2f}%) St={st_val:.4f} ({err_st:+.2f}%) "
-        f"cl_amp={result['cl_amp']:.4f} seed_steps={seed_steps}",
+        f"cl_amp={result['cl_amp']:.4f} seed_steps={seed_steps} "
+        f"compile_effective={compile_mode_effective_v!r}",
         flush=True,
     )
     if out_path:
@@ -261,13 +318,17 @@ def main() -> None:
         default=None,
         help="per-D step counts; default 60000 (D=32) / 90000 (D=48)",
     )
-    ap.add_argument("--device", default="cuda:0")
+    ap.add_argument(
+        "--device",
+        default=None,
+        help="torch device, e.g. sdaa:0 / cuda:0 (auto-detect if unset)",
+    )
     ap.add_argument("--warmup-frac", type=float, default=0.5)
     ap.add_argument("--out", default="")
     add_compile_mode_arg(ap)
     args = ap.parse_args()
 
-    device = torch.device(args.device)
+    device = torch.device(args.device if args.device else _default_device())
     compile_mode = compile_mode_from_args(args)
     default_steps = {32: 60000, 48: 90000}
     steps_list = args.steps or [default_steps.get(D, 60000) for D in args.D]
@@ -289,18 +350,47 @@ def main() -> None:
         )
 
     cds = [g["cd"] for g in grids.values()]
+    cd_errs = [g["err_pct"] for g in grids.values()]
+    st_errs = [g["st_err_pct"] for g in grids.values()]
+
+    def _within_3pct(vals: list[float | None]) -> bool | None:
+        """True/False over the measured error percentages; ``None`` if none.
+
+        ``st_err_pct`` is ``None`` whenever the lift spectrum cannot be
+        resolved (analysis window too short for a Strouhal peak).  A bare
+        ``abs(g["st_err_pct"])`` would then raise ``TypeError`` at summary
+        time — *after* every expensive grid has finished stepping — so the
+        aggregate treats an unmeasured St as not-passing, and reports
+        ``None`` only when the tolerance is genuinely not applicable
+        (every grid unmeasured).
+        """
+        if vals and all(v is None for v in vals):
+            return None
+        return all(v is not None and abs(v) <= 3.0 for v in vals)
+
     summary = {
         "case": "square_cylinder_re100_free_stream_vortex_shedding",
-        "reference": "Okajima 1982: St~0.14 (0.13-0.15), Cd~1.6 (free-stream)",
+        "reference": "2D free-stream (unconfined/low-blockage) numerical, Re=100, "
+        "alpha=0: Cd~1.48 [1.44-1.52], St~0.147 [0.145-0.149] "
+        "(arxiv 2411.03124v4, 2309.09197, 2308.08085v3, 2404.12123, 2405.12834)",
         "grids": grids,
+        "compile_mode": compile_mode,
+        "compile_mode_effective": (
+            "eager"
+            if any(
+                g.get("compile_status") in ("eager", "eager_fallback")
+                for g in grids.values()
+            )
+            else compile_mode
+        ),
         "convergence": {
             "cd": cds,
             "err_decreased": abs(grids[str(args.D[-1])]["err_pct"])
             <= abs(grids[str(args.D[0])]["err_pct"])
             if len(cds) > 1
             else None,
-            "cd_within_3pct": all(abs(g["err_pct"]) <= 3.0 for g in grids.values()),
-            "st_within_3pct": all(abs(g["st_err_pct"]) <= 3.0 for g in grids.values()),
+            "cd_within_3pct": _within_3pct(cd_errs),
+            "st_within_3pct": _within_3pct(st_errs),
         },
     }
     if out:

@@ -63,7 +63,12 @@ def _default_device() -> str:
 
 import torch
 
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
+from compile_route import (  # noqa: E402
+    add_compile_mode_arg,
+    compile_mode_from_args,
+    compile_status_of,
+    route_step,
+)
 
 from tensorlbm.boundaries3d import far_field_bc_3d  # noqa: E402
 from tensorlbm.d3q19 import equilibrium3d  # noqa: E402
@@ -137,6 +142,10 @@ def run_engine_routed(engine: GeneralSimEngine, compile_mode: str | None) -> tup
         )
         t0 = time.time()
         info = engine.run()
+        # Eager engine loop: no compiled step was routed.
+        info.setdefault("compile_status", "eager")
+        info.setdefault("compile_mode_effective", "eager")
+        info.setdefault("compile_status_reason", "wall-function path: eager engine.run()")
         return info, time.time() - t0
 
     tau = engine.uc.tau
@@ -199,12 +208,20 @@ def run_engine_routed(engine: GeneralSimEngine, compile_mode: str | None) -> tup
             break
     elapsed = time.time() - t0
 
+    # Routing outcome (final after the loop): 'compiled', 'eager_fallback'
+    # or 'eager'.  Persisted to result.json so an SDAA run that silently
+    # fell back is auditable (see compile_route docstring).
+    compile_status = compile_status_of(step_fn)
+
     info = {
         "status": "completed",
         "steps": engine.step_count,
         "snapshots": len(engine.snapshots),
         "force_samples": len(engine.forces_log),
         "diverged": not torch.isfinite(engine.f).all().item(),
+        "compile_status": compile_status["compile_status"],
+        "compile_mode_effective": compile_status["compile_mode_effective"],
+        "compile_status_reason": compile_status["compile_status_reason"],
     }
     return info, elapsed
 
@@ -327,7 +344,8 @@ def main() -> None:
     print(
         f"run finished: {run_info['status']} in {elapsed:.0f}s "
         f"({elapsed / max(run_info['steps'], 1) * 1000:.1f} ms/step) "
-        f"compile_mode={compile_mode!r}",
+        f"compile_mode={compile_mode!r} effective={run_info.get('compile_mode_effective')!r} "
+        f"status={run_info.get('compile_status')!r}",
         flush=True,
     )
 
@@ -461,6 +479,9 @@ def main() -> None:
         "collision": args.collision,
         "Cs": 0.05 if args.collision == "smagorinsky" else None,
         "compile_mode": compile_mode,
+        "compile_mode_effective": run_info.get("compile_mode_effective"),
+        "compile_status": run_info.get("compile_status"),
+        "compile_status_reason": run_info.get("compile_status_reason"),
         "n_steps": run_info["steps"],
         "elapsed_s": round(elapsed, 1),
         "ms_per_step": round(elapsed / max(run_info["steps"], 1) * 1000, 2),

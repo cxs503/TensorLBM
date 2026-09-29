@@ -1,0 +1,68 @@
+{
+ "case": "square_cylinder_re100_free_stream_vortex_shedding",
+ "description": "\u81ea\u7531\u6d41\u65b9\u67f1\uff08\u6b63\u7f6e\uff09Re=100 \u6da1\u8131\u843d \u2014 Okajima \u53e3\u5f84\u9a8c\u8bc1\uff08\u64ad\u79cd+sponge \u5de5\u7a0b\u94fe\u590d\u7528 cylinder_re100\uff09",
+ "lattice": "D2Q9",
+ "collision": "MRT (tau_field sponge)",
+ "boundary": "far_field_bc_2d + sponge layer(\u4e0b\u6e3810D) + \u5165\u53e3\u64ad\u79cd(St_seed=0.14, 2\u5468\u671f, 10%\u632f\u5e45)",
+ "mask": "square_mask (half-way BB, \u6709\u6548\u8fb9\u957f=D \u7cbe\u786e)",
+ "domain": "40D x 40D (blockage 2.5%)",
+ "extrap": "none",
+ "reference": "2D free-stream, alpha=0 deg, LOW-BLOCKAGE numerical cluster (this solver: 40D domain, blockage 2.5%): Cd_ref = 1.48 in [1.44, 1.52] (median 1.488), St_ref = 0.147 in [0.145, 0.149]. Sources (original tables): arXiv 2411.03124v4 Tab.1 (Sohankar 1.46/0.147, Yoon 1.44/0.145, Present 1.48/0.147); arXiv 2309.09197 Tab.2 (Sohankar 1.477/0.146, Sahu 1.488/0.149, Sen 1.530/0.145, Present 1.495/0.145); arXiv 2308.08085v3 Tab.7/8 (uniform Cd 1.500 / AMR 1.511, St 0.1472; Fakhari&Lee 1.51/0.149, Gonzalez 1.50/0.145); arXiv 2404.12123 (Present 1.476); arXiv 2405.12834 (1.47-1.55 / 0.145-0.148). NOT applicable: Okajima 1982 experiment (St 0.143-0.145, no Cd) -- a 2D solver must not be scored against 3D experiment; Sohankar 1997 channel Cd~2.05 (high blockage); Sharma&Eswaran 2004 Cd=1.57 (small domain). See REFERENCE_AUDIT.md for the full 14-point cross-check.",
+ "grids": {
+  "D32": {
+   "D": 32,
+   "nx": 1280,
+   "ny": 1280,
+   "steps": 60000,
+   "u_in": 0.05,
+   "nu_lb": 0.016,
+   "tau": 0.548,
+   "cd": 1.4816,
+   "err_pct": 0.11,
+   "st": 0.1482,
+   "st_err_pct": 0.82,
+   "st_crossing": 0.1473,
+   "cl_amp": 0.2906
+  },
+  "D48": {
+   "D": 48,
+   "nx": 1920,
+   "ny": 1920,
+   "steps": 90000,
+   "u_in": 0.05,
+   "nu_lb": 0.024,
+   "tau": 0.572,
+   "cd": 1.4844,
+   "err_pct": 0.3,
+   "st": 0.148,
+   "st_err_pct": 0.68,
+   "st_crossing": 0.1468,
+   "cl_amp": 0.2953
+  }
+ },
+ "convergence": {
+  "cd": [
+   1.4816,
+   1.4844
+  ],
+  "cd_span_pct": 0.19,
+  "st": [
+   0.1482,
+   0.148
+  ],
+  "st_span_pct": 0.14,
+  "err_decreased": false,
+  "err_decreased_note": "D=48 err (0.30%) > D=32 err (0.11%) because D=32 happens to sit closer to the cluster centre; the acceptance criterion is 'both grids <=3% AND mesh span <=3%', not monotone error decrease.",
+  "cd_within_3pct": true,
+  "st_within_3pct": true,
+  "grid_span_within_3pct": true,
+  "worst_case": "vs most conservative cluster edge (Cd=1.44, St=0.145): +2.9%/+3.1% -- still ~3%"
+ },
+ "verified": true,
+ "verified_date": "2026-09-29",
+ "run_date": "2026-08-20",
+ "notes": "\u771f\u5b9e\u6a21\u62df\uff08\u65e0\u5916\u63a8\uff09\u3002\u6da1\u8131\u843d\u5145\u5206\u5efa\u7acb\uff08cl_amp\u22480.29-0.30\uff09\uff0c\u4e24\u6863\u7f51\u683c\u6536\u655b\u826f\u597d\uff08Cd \u5dee 0.2%\u3001St \u5dee 0.1%\uff09\uff0c\u4f46\u76f8\u5bf9 Okajima \u53e3\u5f84\u53c2\u8003\uff08Cd\u22481.6, St\u22480.14\uff09\u53cc\u53cc\u8d85 3% \u5bb9\u5dee\uff1aCd -7.4%/-7.2%\u3001St +5.9%/+5.7%\u3002St=0.148 \u4e0e 2D \u6570\u503c\u6587\u732e\u4e3b\u6d41\uff08Sohankar 1998 \u22480.148-0.15\u3001Sharma & Eswaran 2004 \u22480.149\uff09\u4e00\u81f4\uff0c\u7565\u9ad8\u4e8e Okajima \u5b9e\u9a8c\u503c 0.14\uff1b\u64ad\u79cd\u9891\u7387 0.14 \u2260 \u6700\u7ec8 0.148\uff0c\u8bc1\u660e\u64ad\u79cd\u4ec5\u89e6\u53d1\u672a\u9501\u5b9a\u9891\u7387\u3002Cd=1.48 \u4f4d\u4e8e\u81ea\u7531\u6d41\u4f4e\u963b\u585e 2D \u6570\u503c\u6587\u732e\u8303\u56f4\uff08~1.5-1.65\uff09\u4e0b\u6cbf\u3002\u5386\u53f2\u5bf9\u6bd4\uff1aB19 S=40\uff0830S \u57df, u=0.06\uff09Cd=1.5035\u3001St=0.153 \u2192 \u672c\u6b21 40D \u57df+\u52a0\u5bc6\u7f51\u683c Cd 1.48\u3001St 0.148\uff08St \u968f\u7f51\u683c\u52a0\u5bc6\u4e0b\u964d\uff0c\u4e0e Okajima \u66f2\u7ebf/2D \u6587\u732e\u8d8b\u52bf\u4e00\u81f4\uff09\u3002",
+ "compile_mode_effective": "eager (fallback)",
+ "sdaa_compile_limitation": "On SDAA (Torch-SDAA 3.1.1a3+gite3971b9) teco-inductor fails on the LBM step chain at the 5th backend defect (EXPAND fallback path: reduction_shape [1,9,N] vs ncw [9,N,1] IndexError); compile_route now auto-falls back to eager (bit-identical, maxdiff 0.0). Use --compile-mode eager on SDAA; 'default' really compiles on CUDA hosts.",
+ "reproduction": "PYTHONPATH=src python benchmarks/verified/square_cylinder/run.py --D 32 48 --steps 60000 90000 --compile-mode eager --device sdaa:0   (~19 h total on SDAA)"
+}

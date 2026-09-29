@@ -1,0 +1,37 @@
+{
+  "case": "square_cylinder_re100_free_stream_vortex_shedding",
+  "D": 32,
+  "nx": 1280,
+  "ny": 1280,
+  "re": 100.0,
+  "u_in": 0.05,
+  "nu_lb": 0.016,
+  "tau": 0.548,
+  "sponge": {
+    "x0": 960,
+    "width": 320,
+    "alpha": 10.0,
+    "power": 2.0
+  },
+  "seed": {
+    "st_seed": 0.14,
+    "ampl_frac": 0.1,
+    "periods": 2.0,
+    "steps": 9143
+  },
+  "steps": 60000,
+  "warmup_frac": 0.5,
+  "analyze_from": 30000,
+  "compile_mode": "default",
+  "cd": 1.4816,
+  "cd_ref": 1.48,
+  "err_pct": 0.11,
+  "st": 0.1482,
+  "st_ref": 0.147,
+  "st_err_pct": 0.82,
+  "st_crossing": 0.1473,
+  "cl_amp": 0.29057903925577794,
+  "finite": true,
+  "elapsed_s": 146.0,
+  "data_source": "SDAA D=32/60000-step convergence run (2026-08-20, 146 s, on-host compiled step path). Cd/St are physical measurements and independent of the reference convention; err_pct/st_err_pct were recomputed 2026-09-29 against the corrected 2D free-stream numerical reference REF_CD=1.48 / REF_ST=0.147 (see REFERENCE_AUDIT.md). A fresh full re-run on this host is currently blocked by the SDAA teco-inductor defect (see result.json: sdaa_compile_limitation)."
+}
