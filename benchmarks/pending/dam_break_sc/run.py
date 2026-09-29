@@ -129,6 +129,7 @@ G_EFF = -5.0  # physical standard-convention SC94 coupling
 TAU = 1.0
 PSI_FN = psi_exp  # SCMP pseudopotential (CLI --psi overrides)
 FORCING = "velocity_shift"  # Guo source-term forcing opt-in (CLI --forcing)
+FORCE_SCHEME = "standard"  # interaction-force discretisation (CLI --force-scheme)
 WALL_PSI = None  # None = historical dry wall (psi->0 at solid); float = wetting wall
 RHO_L, RHO_V = 1.957, 0.1596  # discrete coexistence (measured)
 RHO_MID = 0.5 * (RHO_L + RHO_V)
@@ -255,6 +256,7 @@ def run_case(
         f = collide_sc_single_component(
             f, G=G_LIB, tau=TAU, psi_fn=PSI_FN, gy=-g,
             solid_mask=wall, wall_psi=WALL_PSI, forcing=FORCING,
+            scheme=FORCE_SCHEME,
         )
         f = stream(f)
         f = bounce_back_cells(f, wall)
@@ -360,16 +362,28 @@ def main() -> None:
                          "historical) or guo (Guo 2002 source term + half-force "
                          "velocity correction; removes the interface spurious "
                          "force that lags the late-time dam-break front)")
+    ap.add_argument("--force-scheme",
+                    choices=["standard", "pressure_tensor", "pressure_tensor_cd"],
+                    default="standard", dest="force_scheme",
+                    help="interaction-force discretisation: standard (default, "
+                         "historical SC D2Q9 stencil); pressure_tensor "
+                         "(Ramshaw-Phathanapirom divergence form F=-(G/2)*sum_i "
+                         "w_i*psi^2(x-c_i)*c_i on the isotropic D2Q9 stencil -> "
+                         "exactly zero net force / Newton-3); pressure_tensor_cd "
+                         "(central-difference psi^2 gradient -> exactly curl-free "
+                         "but UNSTABLE at a=80, record only)")
     add_compile_mode_arg(ap)
     args = ap.parse_args()
     compile_mode = compile_mode_from_args(args)
 
     global G_LIB, RHO_L, RHO_V, RHO_MID, TAU, WALL_PSI, PSI_FN, FORCING
+    global FORCE_SCHEME
     G_LIB = args.g_coupling
     TAU = args.tau
     WALL_PSI = args.psi_wall
     PSI_FN = psi_exp if args.psi == "exp" else psi_sqrt
     FORCING = args.forcing
+    FORCE_SCHEME = args.force_scheme
     RHO_L = args.rho_l
     RHO_V = args.rho_v
     RHO_MID = 0.5 * (RHO_L + RHO_V)
@@ -396,6 +410,8 @@ def main() -> None:
     )
 
     case_id = f"a{int(args.a)}"
+    if args.forcing != "velocity_shift" or args.force_scheme != "standard":
+        case_id += f"_{args.force_scheme}_{args.forcing}_G{args.g_coupling:g}_tau{args.tau:g}"
     out.mkdir(parents=True, exist_ok=True)
     (out / f"hist_{case_id}.csv").write_text(
         "step,T_MM,T_MM_geff,T_code,X_toe,X_glob,H,max_u,rho_min,rho_max,mass_drift\n"

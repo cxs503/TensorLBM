@@ -70,6 +70,63 @@ B_CONST = 5.0
 # Opposite direction indices for D3Q19
 _OPP = torch.tensor([0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17])
 _C19_SHIFTS = [(int(C[q, 0]), int(C[q, 1]), int(C[q, 2])) for q in range(19)]
+_OPP_INDEX = tuple(int(v) for v in _OPP.tolist())
+
+
+def _specular_wall_mirror_index(solid_mask, device):
+    """Per-link specular (free-slip) reflected source indices for wall cells.
+
+    OPT-IN wall-stagnation fix (``TL_FS_WALL_SLIP=1``).
+
+    ``halfway`` no-slip bounce-back imposes u = 0 at the wall, so at the low
+    Reynolds numbers reachable on a small ``a`` (nu = 1/3*(tau-0.5) is O(0.1)
+    while the column is only ``a`` cells wide) the no-slip boundary layer spans
+    the entire column.  The wall-adjacent *interface* column then carries
+    u_y ~ 3-5x smaller than the interior, drains 3-5x slower, never empties at
+    the free surface and pins the measured residual height H (the "back-wall
+    corner column" freeze).  Free-slip (specular) walls remove only the
+    *wall-normal* momentum while preserving the tangential component, so the
+    wall column falls with the interior.
+
+    For every D3Q19 link ``q`` at a fluid cell whose pull source ``p - c_q``
+    lies in SOLID, the reflected link reverses each coordinate component of
+    ``c_q`` for which the corresponding signed axis neighbour is SOLID
+    (a face wall reverses one component -> specular; an edge/corner reverses
+    two/three -> full bounce).  Returns an ``(19, nz, ny, nx)`` int64 tensor of
+    source link indices to gather from ``f_post``.
+    """
+    smx = solid_mask.roll(1, dims=2)    # SOLID at p-(1,0,0)
+    spx = solid_mask.roll(-1, dims=2)   # SOLID at p+(1,0,0)
+    smy = solid_mask.roll(1, dims=1)
+    spy = solid_mask.roll(-1, dims=1)
+    smz = solid_mask.roll(1, dims=0)
+    spz = solid_mask.roll(-1, dims=0)
+    off2idx = {(sx, sy, sz): q for q, (sx, sy, sz) in enumerate(_C19_SHIFTS)}
+    table = torch.zeros((19, 2, 2, 2), dtype=torch.long)
+    for q, (cx, cy, cz) in enumerate(_C19_SHIFTS):
+        for fx in (0, 1):
+            for fy in (0, 1):
+                for fz in (0, 1):
+                    table[q, fx, fy, fz] = off2idx[
+                        (-cx if fx else cx, -cy if fy else cy, -cz if fz else cz)
+                    ]
+    table = table.to(device)
+    shape = (19,) + tuple(solid_mask.shape)
+    idx = torch.empty(shape, dtype=torch.long, device=device)
+    for q, (cx, cy, cz) in enumerate(_C19_SHIFTS):
+        sx, sy, sz = _C19_SHIFTS[q]
+        src_solid = (
+            solid_mask.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
+        )
+        fx = ((cx > 0) & smx) | ((cx < 0) & spx)
+        fy = ((cy > 0) & smy) | ((cy < 0) & spy)
+        fz = ((cz > 0) & smz) | ((cz < 0) & spz)
+        refl = table[q, fx.long(), fy.long(), fz.long()]
+        # Safety fallback: a solid source detected with no flagged axis (not
+        # reachable for axis-aligned walls) keeps the plain opposite link.
+        refl = torch.where(src_solid & ~(fx | fy | fz), torch.full_like(refl, _OPP_INDEX[q]), refl)
+        idx[q] = refl
+    return idx
 
 
 def _stream19_roll(f):
@@ -400,6 +457,96 @@ def init_mass_from_fill(fill, flags, rho_liquid=1.0):
     mass[flags == LIQUID] = rho_liquid
     mass[flags == INTERFACE] = fill[flags == INTERFACE] * rho_liquid
     return mass
+
+
+def _read_shell_mode(rho_gas: float) -> tuple[str, float]:
+    """(mode, rho_env) for the initial empty-shell density.
+
+    ``TL_FS_SHELL_MODE`` (falling back to ``TL_FS_BIRTH_MODE``) selects how the
+    *initial* mass-free INTERFACE envelope (fill == 0) is seeded:
+
+      ``legacy``  rho_liquid (historical, over-pressurised gas side)
+      ``gas``     rho_gas
+      ``fill``    rho_gas + (rho_liquid - rho_gas) * fill  (Körner closure)
+      ``env``     TL_FS_BIRTH_RHO
+      ``zero``    0
+      ``liqface`` directional: liquid-facing links at rho_liquid,
+                  gas-facing links at TL_FS_BIRTH_RHO
+
+    ``fill``/``gas`` make an empty shell gas-consistent, matching the ABB gas
+    pressure boundary and ``TL_FS_BIRTH_MODE`` birth semantics.
+    """
+    mode = os.environ.get("TL_FS_SHELL_MODE")
+    if mode is None:
+        mode = os.environ.get("TL_FS_BIRTH_MODE", "legacy")
+    mode = mode.strip().lower()
+    rho_env = float(os.environ.get("TL_FS_BIRTH_RHO", "0.0"))
+    return mode, rho_env
+
+
+def init_population_from_fill(
+    fill,
+    flags,
+    rho_liquid=1.0,
+    rho_gas=1.0,
+    mode=None,
+    rho_env=None,
+):
+    """Initial D3Q19 populations for a free-surface state, shell-density aware.
+
+    LIQUID cells start at ``equilibrium(rho_liquid)``.  INTERFACE cells use a
+    density that is *gas-consistent*:
+
+    * a partially filled INTERFACE cell (0 < fill < 1) carries the Körner
+      pressure-closure density ``rho_gas + (rho_liquid - rho_gas) * fill``;
+    * a mass-free envelope cell (fill == 0) would therefore carry ``rho_gas``.
+
+    The historical ``build_domain`` instead seeded *every* active cell
+    (LIQUID *and* the mass=0 envelope) at ``rho_liquid``.  That over-pressures
+    the gas-facing links of the envelope: the ABB reconstruction and the
+    gas-vent exchange both read it, so a mass-free shell starts with a
+    spurious liquid-scale population and siphons real liquid (the large
+    ``TL_FS_GAS_CHANNEL=naive/redist`` drift and part of the pseudo-film).
+
+    ``mode``/``rho_env`` default to ``_read_shell_mode(rho_gas)`` (env-gated;
+    ``legacy`` reproduces the historical initial state bit-for-bit).
+    """
+    if mode is None or rho_env is None:
+        m_env, r_env = _read_shell_mode(rho_gas)
+        mode = mode if mode is not None else m_env
+        rho_env = rho_env if rho_env is not None else r_env
+    mode = str(mode).strip().lower()
+    device = fill.device
+    shape = tuple(fill.shape)
+    zero = torch.zeros(shape, device=device, dtype=fill.dtype)
+    liquid = flags == LIQUID
+    iface = flags == INTERFACE
+    if mode in ("legacy", "liq", "off", "0", ""):
+        rho = torch.where(liquid | iface, torch.full_like(fill, float(rho_liquid)), zero)
+        return equilibrium3d(rho, zero, zero, zero)
+    if mode == "liqface":
+        active = liquid | iface
+        nb_liq = torch.stack(all_moving_neighbor_masks(liquid)).any(dim=0)
+        feq_liq = equilibrium3d(
+            torch.where(active, torch.full_like(fill, float(rho_liquid)), zero),
+            zero, zero, zero,
+        )
+        feq_env = equilibrium3d(
+            torch.where(active, torch.full_like(fill, float(rho_env)), zero),
+            zero, zero, zero,
+        )
+        return torch.where((iface & nb_liq).unsqueeze(0), feq_liq, feq_env)
+    if mode == "zero":
+        rho_i = zero
+    elif mode == "env":
+        rho_i = torch.full_like(fill, float(rho_env))
+    elif mode == "gas":
+        rho_i = torch.full_like(fill, float(rho_gas))
+    else:  # "fill" (and any unrecognised mode) -> Körner fill-weighted closure
+        rho_i = float(rho_gas) + (float(rho_liquid) - float(rho_gas)) * fill
+    rho = torch.where(liquid, torch.full_like(fill, float(rho_liquid)), zero)
+    rho = torch.where(iface, rho_i, rho)
+    return equilibrium3d(rho, zero, zero, zero)
 
 
 def total_liquid_inventory(f, fill, flags, rho_liquid=1.0):
@@ -943,7 +1090,15 @@ def free_surface_step(
             ]
         )  # (19,nz,ny,nx): pull source x - c_q lies in SOLID
         _fluid_bb = (~solid_mask).unsqueeze(0) & _src_solid
-        _f_reflect = f_post[_OPP.to(device)]
+        # OPT-IN free-slip reflection (TL_FS_WALL_SLIP=1): reverse only the
+        # wall-normal components of the wall-entering link instead of the whole
+        # population.  Removes the no-slip boundary-layer stagnation of the
+        # wall-adjacent column (see ``_specular_wall_mirror_index``).
+        if _env_bool("TL_FS_WALL_SLIP", False):
+            _mir_idx = _specular_wall_mirror_index(solid_mask, device)
+            _f_reflect = torch.gather(f_post, 0, _mir_idx)
+        else:
+            _f_reflect = f_post[_OPP.to(device)]
         if _wall_mode == "halfway_hydro" and (gx != 0.0 or gy != 0.0 or gz != 0.0):
             _cs2_w = 1.0 / 3.0
             _coef_w = float(os.environ.get("TL_FS_WALL_HYDRO_COEF", "1.0"))
