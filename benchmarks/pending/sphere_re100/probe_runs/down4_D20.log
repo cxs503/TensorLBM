@@ -1,0 +1,29 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[setup] D=20 domain=(140, 100, 100) cells=1400000 solid=4139 near=1118 tau=0.5300 u_lb=0.0500
+[compile_route] probe_sphere_re100[D20]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
+[cv] frac=0.25 m=2 x[38,63) y[38,63) z[38,63) cells=15625
+[cv] frac=0.5 m=5 x[35,66) y[35,66) z[35,66) cells=29791
+[cv] frac=0.75 m=8 x[32,69) y[32,69) z[32,69) cells=50653
+[cv] frac=1.0 m=10 x[30,71) y[30,71) z[30,71) cells=68921
+[mon] step=500 Cd(p+f std)=0.87627 err_SN=-19.74%
+[mon] step=1000 Cd(p+f std)=0.84880 err_SN=-22.25%
+[mon] step=1500 Cd(p+f std)=0.83043 err_SN=-23.93%
+[mon] step=2000 Cd(p+f std)=0.81921 err_SN=-24.96%
+[mon] step=2500 Cd(p+f std)=0.81519 err_SN=-25.33%
+[mon] step=3000 Cd(p+f std)=0.81051 err_SN=-25.76%
+[mon] step=3500 Cd(p+f std)=0.81021 err_SN=-25.79%
