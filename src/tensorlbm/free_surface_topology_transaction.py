@@ -439,11 +439,63 @@ class TopologyTransactionPlan:
         return restored
 
 
+# D3Q19 weights cached for directional birth reconstruction.
+try:  # local import kept lazy to avoid a hard d3q19 import cycle
+    from .d3q19 import W as _D3Q19_W
+except Exception:  # pragma: no cover - d3q19 is always importable in practice
+    _D3Q19_W = None
+
+
+def _read_birth_mode() -> tuple[str, float]:
+    """(mode, rho_env) for empty-shell birth, env-gated for A/B diagnosis.
+
+    ``TL_FS_BIRTH_MODE`` controls how a freshly (re)born, mass-carrying zero
+    INTERFACE envelope cell is seeded:
+
+      ``legacy``  equilibrium(rho_liquid)  -- current behaviour
+      ``zero``    f = 0
+      ``gas``     equilibrium(rho_gas)
+      ``env``     equilibrium(TL_FS_BIRTH_RHO)  -- decoupled from rho_gas
+      ``nbr``     equilibrium(neighbour-averaged active density)
+      ``liqface`` directional: liquid-facing links carry rho_liquid,
+                  gas-facing links carry TL_FS_BIRTH_RHO (decoupled).
+    """
+    import os as _os
+
+    mode = _os.environ.get("TL_FS_BIRTH_MODE", "legacy").strip().lower()
+    rho_env = float(_os.environ.get("TL_FS_BIRTH_RHO", "0.0"))
+    return mode, rho_env
+
+
+def _birth_density_field(
+    f, flags, rho_liquid, rho_gas, mode, rho_env, liquid_flag, interface_flag
+):
+    """Per-cell birth density (scalar modes).  Returns ``None`` for others."""
+    if mode == "zero":
+        return torch.zeros_like(f.sum(0))
+    if mode == "gas":
+        return torch.full_like(f.sum(0), float(rho_gas))
+    if mode == "env":
+        return torch.full_like(f.sum(0), float(rho_env))
+    if mode == "nbr":
+        # Neighbour-averaged *active* density: a shell backed by liquid inherits
+        # a liquid-scale density, a gas-only shell inherits near-zero.
+        active = (flags == liquid_flag) | (flags == interface_flag)
+        nb = torch.stack(all_moving_neighbor_masks(active)).to(f.dtype)
+        cnt = nb.sum(dim=0).clamp(min=1.0)
+        rho = f.sum(0)
+        rho_nb = (
+            torch.stack([roll_from_pull_source(rho, q) for q in D3Q19_MOVING_Q]) * nb
+        ).sum(dim=0) / cnt
+        return torch.where(nb.sum(dim=0) > 0, rho_nb, torch.zeros_like(rho_nb))
+    return None
+
+
 def _init_new(
     f: torch.Tensor,
     flags: torch.Tensor,
     mask: torch.Tensor,
-    rho_init: float,
+    rho_init,
     ux: torch.Tensor,
     uy: torch.Tensor,
     uz: torch.Tensor,
@@ -465,8 +517,85 @@ def _init_new(
     uz_mean = (
         torch.stack([roll_from_pull_source(uz, q) for q in D3Q19_MOVING_Q]) * neighbours
     ).sum(dim=0) / count
-    feq = equilibrium3d(torch.full_like(ux, float(rho_init)), ux_mean, uy_mean, uz_mean)
+    if isinstance(rho_init, torch.Tensor):
+        rho_field = rho_init.to(ux.dtype)
+    else:
+        rho_field = torch.full_like(ux, float(rho_init))
+    feq = equilibrium3d(rho_field, ux_mean, uy_mean, uz_mean)
     return torch.where(mask.unsqueeze(0), feq, f)
+
+
+def _init_new_directional(
+    f, flags, mask, rho_liquid, rho_env, ux, uy, uz, liquid_flag, interface_flag
+):
+    """Directional consistent birth for an empty envelope cell.
+
+    A zero-mass INTERFACE shell is part liquid-facing and part gas-facing.  Its
+    population must carry the *liquid* equilibrium on the links that actually
+    face bulk liquid (so the Körner L/I exchange is balanced at rest) while the
+    gas-facing links carry a small, ``rho_gas``-decoupled envelope density
+    ``rho_env``.  A uniform equilibrium at either density violates that split:
+    ``rho_liquid`` over-pressurises the gas side, ``rho_gas`` starves the liquid
+    side, and both leave a systematic net L/I flux (the pseudo-wetting film).
+    """
+    from .core.d3q19_stencil import roll_from_pull_source
+    from .d3q19 import C as _C
+
+    device = f.device
+    w = _D3Q19_W.to(device=device, dtype=f.dtype).view(19, 1, 1, 1)
+    c = _C.to(device).to(f.dtype)
+    active = (flags == liquid_flag) | (flags == interface_flag)
+    neighbours = torch.stack(all_moving_neighbor_masks(active)).to(f.dtype)
+    count = neighbours.sum(dim=0).clamp(min=1)
+    ux_mean = (
+        torch.stack([roll_from_pull_source(ux, q) for q in D3Q19_MOVING_Q]) * neighbours
+    ).sum(dim=0) / count
+    uy_mean = (
+        torch.stack([roll_from_pull_source(uy, q) for q in D3Q19_MOVING_Q]) * neighbours
+    ).sum(dim=0) / count
+    uz_mean = (
+        torch.stack([roll_from_pull_source(uz, q) for q in D3Q19_MOVING_Q]) * neighbours
+    ).sum(dim=0) / count
+    nbf = torch.stack(
+        [roll_from_pull_source(flags.to(f.dtype), q) for q in D3Q19_MOVING_Q]
+    )
+    rho_dir = torch.where(
+        nbf == float(liquid_flag),
+        torch.full_like(nbf, float(rho_liquid)),
+        torch.full_like(nbf, float(rho_env)),
+    )
+    u_sq = ux_mean * ux_mean + uy_mean * uy_mean + uz_mean * uz_mean
+    cu = (
+        c[:, 0].view(19, 1, 1, 1) * ux_mean
+        + c[:, 1].view(19, 1, 1, 1) * uy_mean
+        + c[:, 2].view(19, 1, 1, 1) * uz_mean
+    )
+    feq = w * rho_dir * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    return torch.where(mask.unsqueeze(0), feq, f)
+
+
+def _init_new_birth(
+    f, flags, mask, mode, rho_liquid, rho_gas, rho_env, ux, uy, uz, liquid_flag, interface_flag
+):
+    """Dispatcher for the empty-shell birth state (env-gated A/B hook)."""
+    if mode == "legacy":
+        return _init_new(
+            f, flags, mask, rho_liquid, ux, uy, uz, liquid_flag, interface_flag
+        )
+    if mode == "liqface":
+        return _init_new_directional(
+            f, flags, mask, rho_liquid, rho_env, ux, uy, uz, liquid_flag, interface_flag
+        )
+    rho_field = _birth_density_field(
+        f, flags, rho_liquid, rho_gas, mode, rho_env, liquid_flag, interface_flag
+    )
+    if rho_field is None:
+        return _init_new(
+            f, flags, mask, rho_liquid, ux, uy, uz, liquid_flag, interface_flag
+        )
+    return _init_new(
+        f, flags, mask, rho_field, ux, uy, uz, liquid_flag, interface_flag
+    )
 
 
 def conservative_clamp_conserve(
@@ -697,7 +826,11 @@ def build_topology_transaction(
             "i_to_g_ownership": _serialize_i_to_g_ownership(i_to_g_ownership),
         }
     gas_mask = cflags == gas_flag
-    cf = _init_new(cf, cflags, to_iface, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
+    _birth_mode, _birth_rho = _read_birth_mode()
+    cf = _init_new_birth(
+        cf, cflags, to_iface, _birth_mode, rho_liquid, rho_gas, _birth_rho,
+        ux, uy, uz, liquid_flag, interface_flag,
+    )
     cflags = torch.where(to_iface, torch.full_like(cflags, interface_flag), cflags)
     if replay_stages is not None:
         replay_stages["to_iface_initialization"] = tuple(
@@ -822,7 +955,10 @@ def build_topology_transaction(
 
     if _os.environ.get("TL_FS_ABL_HALO", "0").strip().lower() not in ("0", "false", "no", ""):
         to_i = recv_new
-    cf = _init_new(cf, cflags, to_i, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
+    cf = _init_new_birth(
+        cf, cflags, to_i, _birth_mode, rho_liquid, rho_gas, _birth_rho,
+        ux, uy, uz, liquid_flag, interface_flag,
+    )
     cflags = torch.where(to_i, torch.full_like(cflags, interface_flag), cflags)
     cfill = torch.where(to_i & ~recv_new, torch.zeros_like(cfill), cfill)
     cmass = torch.where(to_i & ~recv_new, torch.zeros_like(cmass), cmass)
