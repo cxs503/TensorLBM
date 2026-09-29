@@ -4,19 +4,30 @@
 Setup: water column a x a x 2a against the x=0 wall (corner), gravity -y,
 solid walls on all six faces, rest is gas.  Dimensionless:
     T = t*sqrt(g/a),  X = x_front/a,  H = h_residual/(2a)  (starts at 1.0)
-Reference (Martin & Moyce 1952): T=1 -> X~1.5, T=2 -> X~2.7; T=1 -> H~0.8.
+Reference (Martin & Moyce 1952):
+    X: T=1 -> X~1.1, T=2 -> X~1.8, T=3 -> X~2.7
+       (classic M&M digitisation, identical to the repository's own 2D
+        benchmark benchmarks/bench_fs_2d.py: REF_T/REF_Z)
+    H: T=1 -> H~0.78 (M&M residual-height curve, approximate digitisation)
 
 Measurements:
   front x(t) = rightmost x-column holding LIQUID or INTERFACE with fill>=0.5;
-  residual height h(t) = highest wet cell in original column region
+  residual height h(t) = highest wet cell (y height) within the original
+  column footprint x in [1, a//2+1).  NOTE (bug fixed 2026-09-29): the old
+  code did region.any(dim=2).nonzero()[-1,0] which returned the max *z*
+  index instead of the y height -> H was a bogus near-constant value.
   x in [1, a//2+1); mass drift and interface-cell count are tracked as
   quality-of-simulation diagnostics.
 
-STATUS: NOT VERIFIED (2026-08-19).  The tensorlbm.free_surface_lbm common
-module (free_surface_step) has systematic mass-conservation / interface-stability
-defects: interface-cell counts explode ~100x and the front position is polluted
-(rho_gas=0.1: X~4.75 at T=1.6 vs reference ~2.1; rho_gas=1.0: +48% mass drift).
-See /tmp/dambreak_gap.md and benchmarks/pending/dam_break_3d_mm/README.md.
+STATUS: NOT VERIFIED (caliper bugs fixed + re-measured 2026-09-29).  After
+fixing the two caliper bugs above and using the classic M&M reference, the
+front is still ~1.5-1.8x too fast (a=16: X err +82% @T=1, +70% @T=2,
++50% @T=3; a=32: +53% @T=1) and H rises to a bogus 1.19 plateau instead of
+dropping.  Root cause is a gravity-independent pseudo-wetting film
+(ΔX ≈ 0.042·√(a/g) per step; g=0 tracks g=1e-4), i.e. a free-surface /
+interface-treatment defect of tensorlbm.free_surface_lbm (D3Q19,
+free_surface_step) — NOT a measurement problem.  See
+/tmp/dambreak_gap.md and benchmarks/pending/dam_break_3d_mm/README.md.
 """
 
 from __future__ import annotations
@@ -39,8 +50,19 @@ from tensorlbm import (
 LIQUID = 1
 INTERFACE = 2
 
-# Martin & Moyce (1952) dimensionless reference curves (a = column side)
-MM_X = [(0.0, 1.0), (0.5, 1.2), (1.0, 1.5), (1.5, 2.0), (2.0, 2.7), (2.5, 3.2), (3.0, 3.7)]
+# Martin & Moyce (1952) dimensionless reference curves (a = column side).
+#
+# X reference — classic M&M digitisation, taken verbatim from the repository's
+# own 2D free-surface benchmark (benchmarks/bench_fs_2d.py: REF_T / REF_Z):
+#   T=1.0 -> X=1.1, T=2.0 -> X=1.8, T=3.0 -> X=2.7
+# (The previous table here was WRONG: it used T=1 -> 1.5 and T=2 -> 2.7,
+#  i.e. it mapped the T=3 M&M value onto T=2 and used an unsourced T=1 value.)
+MM_X = [
+    (0.0, 1.0), (0.5, 1.0), (1.0, 1.1), (1.5, 1.4), (2.0, 1.8),
+    (2.5, 2.2), (3.0, 2.7), (3.5, 3.1), (4.0, 3.5), (4.5, 3.8), (5.0, 4.1),
+]
+# H reference — M&M residual-height curve (approximate digitisation, kept from
+# the original benchmark; the pass/fail criterion is the X front error).
 MM_H = [(0.0, 1.0), (0.5, 0.92), (1.0, 0.78), (1.5, 0.65), (2.0, 0.55), (2.5, 0.45), (3.0, 0.37)]
 
 
@@ -77,8 +99,11 @@ def measure(f, fill, flags, mass, a: int):
     idx = cols.nonzero(as_tuple=False)
     front = int(idx[-1, 0].item()) if idx.numel() else 0
     region = wet[:, :, 1 : a // 2 + 1]
-    rows = region.any(dim=2).nonzero(as_tuple=False)
-    h = int(rows[-1, 0].item()) if rows.numel() else 0
+    # Residual water height = highest *y* (height) index of the wet mask inside
+    # the original column footprint.  region has shape (nz, ny, nx_region);
+    # collapse z and x, then read the y coordinate.
+    ys = region.any(dim=2).any(dim=0).nonzero(as_tuple=False)
+    h = int(ys[-1, 0].item()) if ys.numel() else 0
     return front, h, int((flags == INTERFACE).sum().item())
 
 
@@ -116,6 +141,12 @@ def run(
         )
         if step % out_interval == 0 or step == steps:
             front, h, iface = measure(f, fill, flags, mass, a)
+            drift = (float(mass.sum().item()) - m0) / m0
+            print(
+                f"  st={step:4d} T={step * t_scale:.3f} X={front / a:.3f} "
+                f"H={h / (2 * a):.3f} iface={iface} drift={drift:+.4%}",
+                flush=True,
+            )
             series.append(
                 {
                     "step": step,
@@ -124,7 +155,7 @@ def run(
                     "X": front / a,
                     "h": h,
                     "H": h / (2 * a),
-                    "mass_drift_rel": (float(mass.sum().item()) - m0) / m0,
+                    "mass_drift_rel": drift,
                     "iface_cells": iface,
                 }
             )
@@ -140,8 +171,10 @@ def run(
         return pts[-1][1]
 
     checks = []
-    for T_ref, X_ref in [(1.0, 1.5), (2.0, 2.7)]:
+    T_max_sim = series[-1]["T"]
+    for T_ref, X_ref in [(1.0, 1.1), (2.0, 1.8), (3.0, 2.7)]:
         X_sim = interp("X", T_ref)
+        extrap = T_ref > T_max_sim + 1e-9
         checks.append(
             {
                 "T": T_ref,
@@ -149,14 +182,26 @@ def run(
                 "ref": X_ref,
                 "sim": X_sim,
                 "err_pct": abs(X_sim - X_ref) / X_ref * 100.0,
+                "extrapolated": extrap,
             }
         )
     H_sim = interp("H", 1.0)
     checks.append(
-        {"T": 1.0, "kind": "H", "ref": 0.8, "sim": H_sim, "err_pct": abs(H_sim - 0.8) / 0.8 * 100.0}
+        {
+            "T": 1.0,
+            "kind": "H",
+            "ref": 0.78,
+            "sim": H_sim,
+            "err_pct": abs(H_sim - 0.78) / 0.78 * 100.0,
+            "extrapolated": 1.0 > T_max_sim + 1e-9,
+        }
     )
 
-    max_err = max(c["err_pct"] for c in checks)
+    # Only non-extrapolated checkpoints count towards the pass/fail error.
+    valid_errs = [c["err_pct"] for c in checks if not c["extrapolated"]] or [
+        max(c["err_pct"] for c in checks)
+    ]
+    max_err = max(valid_errs)
     final = series[-1]
     result = {
         "case": "dam_break_3d_martin_moyce",
@@ -169,7 +214,7 @@ def run(
         "module": "tensorlbm.free_surface_lbm (D3Q19, free_surface_step) — unmodified",
         "lattice": "D3Q19",
         "collision": "bgk",
-        "reference": "Martin & Moyce (1952): T=1 X~1.5, T=2 X~2.7, H(T=1)~0.8",
+        "reference": "Martin & Moyce (1952), classic digitisation taken from benchmarks/bench_fs_2d.py: T=1 X=1.1, T=2 X=1.8, T=3 X=2.7; H(T=1)~0.78",
         "config": {
             "a": a,
             "g": g,

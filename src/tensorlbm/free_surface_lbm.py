@@ -825,7 +825,28 @@ def free_surface_step(
     # interface velocity from the pre-collision macroscopics.
     rho_g_field = torch.full_like(rho, float(rho_gas))
     f_eq_gas = equilibrium3d(rho_g_field, ux, uy, uz)
-    f_abb = f_eq_gas + f_eq_gas[_OPP.to(device)] - f_post[_OPP.to(device)]
+    # Candidate physics: the legacy form subtracts the *local post-collision*
+    # outgoing population f_post[opp], whose magnitude is O(rho_interface) ~
+    # O(rho_liquid).  At high density ratio (rho_gas << rho_liquid) that makes
+    # every reconstructed population strongly negative -- the interface
+    # density then collapses and u = m/rho diverges.  The variants below keep
+    # the equilibrium part at the gas pressure and only carry the outgoing
+    # non-equilibrium stress, which is the physically meaningful content of a
+    # free-surface pressure boundary.
+    _abb_mode = os.environ.get("TL_FS_ABB_MODE", "legacy").strip().lower()
+    if _abb_mode == "eq":
+        f_abb = f_eq_gas.expand_as(f)
+    elif _abb_mode == "eqref":
+        f_eq_local = equilibrium3d(rho_s, ux, uy, uz)
+        f_abb = f_eq_gas + (f_post[_OPP.to(device)] - f_eq_local[_OPP.to(device)])
+    elif _abb_mode == "eqrefflip":
+        f_eq_local = equilibrium3d(rho_s, ux, uy, uz)
+        f_abb = f_eq_gas - (f_post[_OPP.to(device)] - f_eq_local[_OPP.to(device)])
+    elif _abb_mode == "sumeq":
+        f_eq_local = equilibrium3d(rho_s, ux, uy, uz)
+        f_abb = f_eq_gas + f_eq_gas[_OPP.to(device)] - f_eq_local[_OPP.to(device)]
+    else:
+        f_abb = f_eq_gas + f_eq_gas[_OPP.to(device)] - f_post[_OPP.to(device)]
     abb_delta = torch.where(need_abb, f_abb - f, torch.zeros_like(f))
     if mass_ledger is not None:
         # This is a population (not tracked-liquid-mass) change.  Keeping it
@@ -833,7 +854,12 @@ def free_surface_step(
         # the subsequent liquid/interface mass stencil.
         mass_ledger["abb_population_delta"] = float(abb_delta.sum())
         mass_ledger["abb_population_abs_delta"] = float(abb_delta.abs().sum())
-    f = torch.where(need_abb, f_abb, f)
+    # ABLATION (diagnostic only): TL_FS_ABL_ABB suppresses the gas-pressure
+    # anti-bounce-back reconstruction to test whether it drives the interface.
+    if _env_bool("TL_FS_ABL_ABB", False):
+        f = torch.where(need_abb, f, f)
+    else:
+        f = torch.where(need_abb, f_abb, f)
     if inventory_stages is not None:
         inventory_stages["after_abb"] = inventory_measurement(
             f, fill, flags, mass, rho_liquid=rho_liquid
@@ -906,6 +932,10 @@ def free_surface_step(
     # weight) and every L/I link with an explicit bulk debit below, so an
     # ungated receiver is a *transfer*, never a source.
     recv_ok = iface_mask
+    # ABLATION (diagnostic only): TL_FS_ABL_RECVCLOSED restores the pre-F1
+    # fill gate so a freshly-born envelope cell at fill=0 cannot receive.
+    if _env_bool("TL_FS_ABL_RECVCLOSED", False):
+        recv_ok = iface_mask & (fill > 1e-3)
     recv_19 = recv_ok.unsqueeze(0)
     # neighbor_flags always computed in anti-bounce-back above (no None check)
     # For pull link q at x, the opposing outgoing population belongs to x
@@ -946,10 +976,33 @@ def free_surface_step(
     if _env_bool("TL_FS_INPUT_GUARD", True):
         # (c) Bound the tracked-mass increment: a non-finite or runaway exchange
         # delta must not be committed to the independent mass field.
+        mass_delta_preclamp = mass_delta
         mass_delta = torch.nan_to_num(mass_delta, nan=0.0, posinf=0.0, neginf=0.0).clamp(
             -float(rho_liquid), float(rho_liquid)
         )
+    else:
+        mass_delta_preclamp = mass_delta
+    if _env_bool("TL_FS_DBG", False) and mass_ledger is not None:
+        mass_ledger["dbg_mass_delta_preclamp_sum"] = float(mass_delta_preclamp.sum())
+        mass_ledger["dbg_mass_delta_postclamp_sum"] = float(mass_delta.sum())
+        mass_ledger["dbg_mass_delta_absmax"] = float(mass_delta_preclamp.abs().max())
+        mass_ledger["dbg_clamp_touch"] = float(
+            (mass_delta_preclamp.abs() > float(rho_liquid)).sum()
+        )
+        mass_ledger["dbg_debit_nonliq_abs"] = float(
+            mass_delta_bulk_debit.masked_select(~(flags == LIQUID)).abs().sum()
+        )
     mass = torch.where(~solid_mask, mass + mass_delta, mass)
+    if _env_bool("TL_FS_DIAG_FIELD", False):
+        globals()["_FS_DIAG"] = {
+            "mass_delta": mass_delta.clone(),
+            "from_liq": from_liq.clone(),
+            "from_iface": from_iface.clone(),
+            "f_exchange": f_exchange.clone(),
+            "f_post": f_post.clone(),
+            "flags": flags.clone(),
+            "mass_delta_liquid": mass_delta_liquid.clone().sum(0),
+        }
     mass_after_exchange_value = float(mass.sum())
     fill = torch.where(~solid_mask, (mass / rho_liquid).clamp(0.0, 1.0), fill)
     if inventory_stages is not None:
@@ -1061,6 +1114,9 @@ def free_surface_step(
     if _env_bool("TL_FS_MASS_GATE", True):
         mass_gate = mass.clamp(min=0.0)
         to_iface = gas_mask & (mass_gate > 0.01 * rho_liquid) & (~solid_mask)
+        # ABLATION (diagnostic only): TL_FS_ABL_TOIFACE suppresses the gas->interface birth.
+        if _env_bool("TL_FS_ABL_TOIFACE", False):
+            to_iface = torch.zeros_like(to_iface)
         to_liq = interface_mask & (mass >= 0.999 * rho_liquid) & (~solid_mask)
         if _env_bool("TL_FS_TOGAS_NONNEG", False):
             # A numerically negative-mass cell must not enter I→G either: its
@@ -1136,6 +1192,10 @@ def free_surface_step(
     # interface retains the established interface-only redistribution path.
     adjacent_converting = torch.stack(all_moving_neighbor_masks(to_liq)).any(dim=0)
     recv_new = gas_mask & adjacent_converting & ~solid_mask
+    # ABLATION (diagnostic only): TL_FS_ABL_RECVNEW suppresses promoting gas
+    # cells adjacent to a converting cell into redistribution receivers.
+    if _env_bool("TL_FS_ABL_RECVNEW", False):
+        recv_new = torch.zeros_like(recv_new)
     recv_mask = recv_iface | recv_new
     i_to_g_ownership = None
     if enable_i_to_g_ownership_closure and bool(i_to_g.any()):
@@ -1224,6 +1284,22 @@ def free_surface_step(
         ).sum(dim=0)
         + neg_increment
     )
+    # ABLATION (diagnostic only): TL_FS_ABL_REDIST suppresses the Körner
+    # excess-mass redistribution entirely (conversion still clamps).
+    if _env_bool("TL_FS_ABL_REDIST", False):
+        legacy_redistribution_increment = torch.zeros_like(legacy_redistribution_increment)
+    if _env_bool("TL_FS_DBG", False) and mass_ledger is not None:
+        mass_ledger["dbg_redist_inc_sum"] = float(legacy_redistribution_increment.sum())
+        mass_ledger["dbg_excess_sum"] = float(excess.sum())
+        mass_ledger["dbg_excess_max"] = float(excess.max())
+        mass_ledger["dbg_recv_sum"] = float(recv_mask.sum())
+        mass_ledger["dbg_recv_new_sum"] = float(recv_new.sum())
+        mass_ledger["dbg_to_liq_sum"] = float(to_liq.sum())
+        mass_ledger["dbg_to_gas_sum"] = float(to_gas.sum())
+        mass_ledger["dbg_to_iface_sum"] = float(to_iface.sum())
+        mass_ledger["dbg_min_mass"] = float(mass.min())
+        mass_ledger["dbg_max_mass"] = float(mass.max())
+        mass_ledger["dbg_nrecv_zero"] = float((n_recv < 1.0).sum())
     redistribution_link_evidence = ()
     if runtime_ledger is not None or ownership_ledger is not None:
         links = []

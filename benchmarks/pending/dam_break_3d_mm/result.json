@@ -15,5 +15,40 @@
     "evidence": "paired 残差 0.515 → -3.8e-6（完美配对！）；test_static_plane 4 步漂移 +149.7 → +0.000002",
     "remaining": "clamp 仍 +9.87 造质量（cmass.clamp(0,rho_liquid) 负质量补零）——最后一步：clamp 对称化/截断到邻居可吸收量（build_topology_transaction ~631 行）",
     "status": "配对修复成功，clamp 残留"
+  },
+  "caliper_fix_remeasure": {
+    "date": "2026-09-29",
+    "status": "NOT_VERIFIED",
+    "module": "tensorlbm.free_surface_lbm (D3Q19, free_surface_step) — 原版，未修改",
+    "caliper_fixes": [
+      "H 测量: region.any(dim=2).nonzero()[-1,0] 取的是 max z 索引而非 y 高度 → 改为 region.any(dim=2).any(dim=0).nonzero()[-1,0] 取 y 高度（水柱残高/(2a)）",
+      "参考表: MM_X 旧用 T=1→1.5, T=2→2.7（错）；改为经典 M&M 数字化 T=1→1.1, T=2→1.8, T=3→2.7，与 benchmarks/bench_fs_2d.py 的 REF_T/REF_Z 一致",
+      "附加: 检查点扩展到 T=1/2/3；对超出模拟 T_max 的检查点标记 extrapolated 并排除出 max_err"
+    ],
+    "config": {"g": 1e-4, "tau": 0.8, "rho_gas": 1.0},
+    "results": {
+      "a16": {
+        "steps": 1200, "T_max": 3.0, "elapsed_s": 321.1,
+        "X": {"T1": 2.0, "T2": 3.0625, "T3": 4.0625},
+        "H": {"T1": 1.1875},
+        "X_err_pct": {"T1": 81.82, "T2": 70.14, "T3": 50.46},
+        "H_err_pct_T1": 52.24,
+        "mass_drift_rel": -0.2854,
+        "iface": {"init": 1311, "final": 22545, "growth": 17.2}
+      },
+      "a32": {
+        "steps": 566, "T_max": 1.0006, "elapsed_s": 1172.4,
+        "X": {"T1": 1.6875},
+        "H": {"T1": 1.21875},
+        "X_err_pct_T1": 53.41,
+        "H_err_pct_T1": 56.25,
+        "note": "T=2/3 检查点超出 T_max，为外推的陈旧值，不计入",
+        "mass_drift_rel": -0.0136,
+        "iface": {"init": 5183, "final": 34818, "growth": 6.7}
+      }
+    },
+    "max_err_pct": {"a16": 81.82, "a32": 56.25},
+    "verdict": "修正口径后误差仍 +50%~+82%，远未达标(≤3%)；网格不收敛(a16 X(1)=2.00 vs a32 X(1)=1.69)。根因为重力无关的伪润湿薄膜(ΔX=0.042·√(a/g)/步)，同时抬高 X 和 H(H 不降反升到 1.19 平台)。",
+    "artifacts": "outputs_remeasure/a16_g1e-04_rg1.0_result.json, outputs_remeasure/a32_g1e-04_rg1.0_result.json"
   }
 }

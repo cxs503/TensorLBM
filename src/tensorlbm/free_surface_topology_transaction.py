@@ -698,6 +698,13 @@ def build_topology_transaction(
     # H2: to_liq conversion reinitializes f at the rho_liquid equilibrium
     # (neighbor-averaged velocity) instead of inheriting interface
     # populations that were inflated by ABB gas-pressure reconstruction.
+    import os as _os2
+
+    if _os2.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
+        _dbg_liq_before = float(cmass[to_liq].sum())
+        _dbg_gas_before = float(cmass[to_gas].sum())
+        _dbg_liq_n = int(to_liq.sum())
+        _dbg_gas_n = int(to_gas.sum())
     cf = _init_new(cf, cflags, to_liq, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
     cflags = torch.where(to_liq, torch.full_like(cflags, liquid_flag), cflags)
     cfill = torch.where(to_liq, torch.ones_like(cfill), cfill)
@@ -706,6 +713,11 @@ def build_topology_transaction(
     cfill = torch.where(to_gas, torch.zeros_like(cfill), cfill)
     cmass = torch.where(to_gas, torch.zeros_like(cmass), cmass)
     cf = torch.where(to_gas.unsqueeze(0), torch.zeros_like(cf), cf)
+    if _os2.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
+        _dbg_liq_after = float(cmass[to_liq].sum()) if _dbg_liq_n else 0.0
+        _dbg_gas_after = float(cmass[to_gas].sum()) if _dbg_gas_n else 0.0
+        print(f"        [TXN conv] to_liq n={_dbg_liq_n} mass {_dbg_liq_before:.4f}->{_dbg_liq_after:.4f} "
+              f"| to_gas n={_dbg_gas_n} mass {_dbg_gas_before:.4f}->{_dbg_gas_after:.4f}")
     if i_to_g_ownership is not None:
         # No f transfer: independent mass/fill and population density are
         # separate representations at INTERFACE, so copying f would double count.
@@ -736,6 +748,12 @@ def build_topology_transaction(
     # interface layer (quiescent column 743->32291 interface explosion).
     is_neighbor = (shifted_flags == liquid_flag).any(dim=0)
     to_i = ((gas_mask | to_gas) & is_neighbor & ~solid_mask) | recv_new
+    # ABLATION (diagnostic only): TL_FS_ABL_HALO suppresses the gas->interface
+    # envelope halo promotion (only residual recv_new receivers survive).
+    import os as _os
+
+    if _os.environ.get("TL_FS_ABL_HALO", "0").strip().lower() not in ("0", "false", "no", ""):
+        to_i = recv_new
     cf = _init_new(cf, cflags, to_i, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
     cflags = torch.where(to_i, torch.full_like(cflags, interface_flag), cflags)
     cfill = torch.where(to_i & ~recv_new, torch.zeros_like(cfill), cfill)
