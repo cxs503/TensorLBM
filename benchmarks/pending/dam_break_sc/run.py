@@ -20,10 +20,12 @@ Setup: closed 2D box nx x ny, bounce-back walls on all four sides.
        liquid-only dam break with effective gravity
          g_eff = g*(1 - rho_v/rho_l) = 0.9184*g
        (the gas weight cancels in the momentum balance; incompressible
-       limit).  Non-dimensional time is reported on BOTH axes:
-         T_raw = t*sqrt(g/a)     (literal definition)
-         T_eff = t*sqrt(g_eff/a) (physically consistent for this fluid)
-       and the Martin & Moyce comparison is quoted on both.
+       limit).  Non-dimensional time uses the MARTIN & MOYCE definition
+       (2026-09-29 correction — see the reference section below):
+         T_MM      = t*sqrt(2*g/a)      <- primary, the M&M convention
+         T_MM_geff = t*sqrt(2*g_eff/a)  <- secondary (buoyancy-reduced g)
+         T_code    = t*sqrt(g/a)        <- the OLD/wrong axis, kept only as
+                                           a provenance annotation
 
 Diagnostics (every --sample-interval steps):
   X_toe  = x_front/a,   x_front = max x with rho > rho_mid in the bottom
@@ -32,19 +34,59 @@ Diagnostics (every --sample-interval steps):
   H      = h_left/(2a), h_left  = max y with rho > rho_mid at x in [1,4]
   max_u, mass drift (stability / conservation guards)
 
-Reference (Martin & Moyce 1952, Phil. Trans. R. Soc. A 244, 312) — classic
-digitisation, identical to the repository's own 2D free-surface benchmark
-(benchmarks/bench_fs_2d.py REF_T/REF_Z) and to the corrected table in
-benchmarks/pending/dam_break_3d_mm:
-  T = 1 -> X ~ 1.1 ;  T = 2 -> X ~ 1.8 ;  T = 3 -> X ~ 2.7
-NB: the historical table here (T=1 -> 1.5, T=2 -> 2.7) was WRONG (it mapped the
-M&M T=3 value onto T=2 and used an unsourced T=1 value); corrected 2026-09-29.
+Reference (Martin & Moyce 1952, Phil. Trans. R. Soc. A 244, 312,
+doi:10.1098/rsta.1952.0006).
+
+*** TIME CONVENTION (decisive, 2026-09-29) ***
+
+M&M use the dimensionless time
+
+      T = t * sqrt(2 g / a),      X = x_front / a      (X(0) = 1)
+
+where `a` is the initial column WIDTH (the column is a wide x 2a tall).
+The sqrt(2 g / a) form follows from the shallow-water (Ritter) scaling and is
+confirmed VERBATIM by Lethe's official post-processing script
+(examples/multiphysics/dam-break/dam-break-2d.py):
+
+      time_list = [x * ((2 * g / L1) ** 0.5) for x in time_list]
+      x_list    = [x / L1 for x in x_list]
+
+The repository kernel already uses this convention (dam_break.py:299,
+dam_break_3d.py:500).  The three benchmark scripts
+(bench_fs_2d.py / dam_break_sc/run.py / dam_break_3d_mm/run.py) instead used
+T = t*sqrt(g/a) — a factor sqrt(2) too small.  THIS FILE WAS ONE OF THEM and
+is fixed here.  All historical error numbers for this benchmark are therefore
+on the wrong axis and have been recomputed (scripts/recompute_mm_errors.py,
+benchmarks/pending/dam_break_recompute_mm.json).
+
+Reference table (Lethe digitisation, x_exp/y_exp in dam-break-2d.py; identical
+to the K&O/Trixi-family digitisation, T = t*sqrt(2g/a)):
+    T = [0.00, 0.41, 0.84, 1.19, 1.43, 1.63, 1.82, 1.97, 2.20,
+         2.32, 2.50, 2.64, 2.82, 2.96]
+    Z = [1.00, 1.11, 1.23, 1.44, 1.67, 1.89, 2.11, 2.33, 2.56,
+         2.78, 3.00, 3.22, 3.44, 3.67]
+Checkpoints used below (linear interpolation of the table above):
+    T=1.0 -> 1.326 ;  T=2.0 -> 2.360 ;  T=2.96 -> 3.670
+NB: the last tabulated point is T=2.96, so that is used as the final
+checkpoint (evaluating T=3 would require extrapolation — forbidden by the
+repo "no extrapolation" standard).
+
+Historical-tables note (for the record, both are superseded):
+  * wrong table 1: {T=1 -> 1.5, T=2 -> 2.7} — mapped the M&M T=3 value (2.7)
+    onto T=2 and used an unsourced T=1 value;
+  * wrong table 2: {T=1 -> 1.1, T=2 -> 1.8, T=3 -> 2.7} — a coarse digitisation
+    valid only on the t*sqrt(g/a) axis.
+The final +50~82% errors historically reported here were the product of a
+DOUBLE error: wrong axis (missing sqrt2) AND wrong table.
 
 Pass criteria (repo standard, real runs only, no extrapolation):
-  1. fine grid (a=80): |X_sim - X_ref|/X_ref <= 3% at T=1, T=2 and T=3
+  1. fine grid (a=80): |X_sim - X_ref|/X_ref <= 3% at T=1, T=2 and T=2.96
+     (all on the M&M axis T_MM = t*sqrt(2g/a))
   2. two-grid convergence: a=40 vs a=80 within 3% at the checkpoints
 
-Usage: python run.py --a 80 --g 2e-4 --steps 10000 --device cuda:2 [--out DIR]
+Usage: python run.py --a 80 --g 2e-4 --steps 1600 --device cpu [--out DIR]
+       (1600 steps reaches T_MM = 3.13 at a=80 and 4.43 at a=40, i.e. safely
+        past the last checkpoint T_MM = 2.96)
 """
 
 from __future__ import annotations
@@ -84,9 +126,14 @@ RHO_L, RHO_V = 1.957, 0.1596  # discrete coexistence (measured)
 RHO_MID = 0.5 * (RHO_L + RHO_V)
 W_INT = 3.0  # interface width (cells) for the tanh initial condition
 
-# Martin & Moyce (1952) reference checkpoints — classic digitisation
-# (bench_fs_2d.py REF_T/REF_Z).  The historical {1.0:1.5, 2.0:2.7} was WRONG.
-MM = {1.0: 1.1, 2.0: 1.8, 3.0: 2.7}
+# Martin & Moyce (1952) reference checkpoints on the CORRECT M&M axis
+# T_MM = t*sqrt(2 g / a)  (Lethe digitisation, linear interpolation):
+#     T=1.0 -> 1.326 ;  T=2.0 -> 2.360 ;  T=2.96 -> 3.670
+# Historical wrong tables (for the record):
+#   {1.0: 1.5, 2.0: 2.7}         -- mapped M&M's T=3 value onto T=2
+#   {1.0: 1.1, 2.0: 1.8, 3.0: 2.7} -- coarse digitisation, only valid on the
+#                                    old t*sqrt(g/a) axis
+MM = {1.0: 1.326, 2.0: 2.360, 2.96: 3.670}
 
 
 def init_rho(nx: int, ny: int, a: float, device: torch.device) -> torch.Tensor:
@@ -150,9 +197,13 @@ def measure(f: torch.Tensor, a: float, n_toe: int) -> dict:
     }
 
 
-def interp_x(recs: list[dict], Tq: float) -> float:
-    """Linear interpolation of X(T) at Tq from the sampled history (real data)."""
-    Ts = np.array([r["T_eff"] for r in recs])
+def interp_x(recs: list[dict], Tq: float, key: str = "T_MM") -> float:
+    """Linear interpolation of X(T) at Tq from the sampled history (real data).
+
+    ``key`` selects the dimensionless-time axis (T_MM primary, T_MM_geff
+    secondary, T_code for the legacy axis).
+    """
+    Ts = np.array([r[key] for r in recs])
     Xs = np.array([r["X_toe"] for r in recs])
     if Tq <= Ts[0]:
         return float(Xs[0])
@@ -184,8 +235,13 @@ def run_case(
     wall = wall_mask(nx, ny, device)
 
     g_eff = g * (1.0 - RHO_V / RHO_L)
-    sqrt_ga = math.sqrt(g / a)
-    sqrt_geff_a = math.sqrt(g_eff / a)
+    # --- M&M time convention (decisive fix, 2026-09-29) -------------------
+    #   T_MM      = t*sqrt(2*g/a)      primary  (Martin & Moyce / Lethe)
+    #   T_MM_geff = t*sqrt(2*g_eff/a)  secondary (buoyancy-reduced gravity)
+    #   T_code    = t*sqrt(g/a)        OLD wrong axis, kept for provenance
+    sqrt_2ga = math.sqrt(2.0 * g / a)
+    sqrt_2geff_a = math.sqrt(2.0 * g_eff / a)
+    sqrt_ga = math.sqrt(g / a)  # legacy code axis, annotation only
 
     def _step(f):
         f = collide_sc_single_component(
@@ -211,8 +267,9 @@ def run_case(
                 raise RuntimeError(f"a={a:.0f}: NaN/negative rho at step {step}")
             rec = {
                 "step": step,
-                "T_raw": float(step) * sqrt_ga,
-                "T_eff": float(step) * sqrt_geff_a,
+                "T_MM": float(step) * sqrt_2ga,
+                "T_MM_geff": float(step) * sqrt_2geff_a,
+                "T_code": float(step) * sqrt_ga,
                 "X_toe": m["x_toe"] / a,
                 "X_glob": m["x_glob"] / a,
                 "H": m["h_left"] / (2.0 * a),
@@ -223,23 +280,24 @@ def run_case(
             }
             hist.append(rec)
             print(
-                f"  a={a:6.0f} step={step:6d} T_eff={rec['T_eff']:6.3f} "
+                f"  a={a:6.0f} step={step:6d} T_MM={rec['T_MM']:6.3f} "
                 f"X_toe={rec['X_toe']:6.3f} X_glob={rec['X_glob']:6.3f} "
                 f"H={rec['H']:5.3f} max_u={rec['max_u']:7.4f} md={rec['mass_drift']:.1e}",
                 flush=True,
             )
 
-    # checkpoint errors on the T_eff axis (primary) and T_raw axis (secondary)
+    # checkpoint errors on the M&M axis T_MM (primary) and T_MM_geff (secondary)
     ck = {}
     for Tq, Xref in MM.items():
-        x_eff = interp_x(hist, Tq)
-        x_raw = interp_x([dict(r, T_eff=r["T_raw"]) for r in hist], Tq)  # same curve, raw axis
+        x_mm = interp_x(hist, Tq, "T_MM")
+        x_geff = interp_x(hist, Tq, "T_MM_geff")
         ck[f"T{Tq:g}"] = {
             "X_ref": Xref,
-            "X_sim_T_eff": round(x_eff, 6),
-            "X_sim_T_raw": round(x_raw, 6),
-            "err_pct_T_eff": round(100.0 * (x_eff - Xref) / Xref, 3),
-            "err_pct_T_raw": round(100.0 * (x_raw - Xref) / Xref, 3),
+            "X_sim_T_MM": round(x_mm, 6),
+            "X_sim_T_MM_geff": round(x_geff, 6),
+            "err_pct_T_MM": round(100.0 * (x_mm - Xref) / Xref, 3),
+            "err_pct_T_MM_geff": round(100.0 * (x_geff - Xref) / Xref, 3),
+            "pass_le_3pct_T_MM": abs(x_mm - Xref) / Xref <= 0.03,
         }
 
     final = {
@@ -250,8 +308,10 @@ def run_case(
         "g_eff": g_eff,
         "max_steps": max_steps,
         "sample_interval": sample_interval,
-        "T_max_eff": float(hist[-1]["T_eff"]),
-        "T_max_raw": float(hist[-1]["T_raw"]),
+        "time_convention": "T_MM = t*sqrt(2*g/a)  (Martin & Moyce 1952; Lethe digitisation)",
+        "T_max_MM": float(hist[-1]["T_MM"]),
+        "T_max_MM_geff": float(hist[-1]["T_MM_geff"]),
+        "T_max_code": float(hist[-1]["T_code"]),
         "max_u_max": float(max(r["max_u"] for r in hist)),
         "mass_drift_max": float(max(r["mass_drift"] for r in hist)),
         "checkpoints": ck,
@@ -264,8 +324,10 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--a", type=float, default=80.0)
     ap.add_argument("--g", type=float, default=2e-4)
-    ap.add_argument("--steps", type=int, default=10000)
-    ap.add_argument("--sample-interval", type=int, default=100)
+    ap.add_argument("--steps", type=int, default=1600,
+                    help="steps; 1600 reaches T_MM=3.13 at a=80 (>= last "
+                         "checkpoint T_MM=2.96)")
+    ap.add_argument("--sample-interval", type=int, default=20)
     ap.add_argument("--device", default="cuda:2")
     ap.add_argument("--out", default="")
     # Optional SC configuration override (defaults = the laplace_droplet-verified
@@ -309,11 +371,11 @@ def main() -> None:
         args.a, args.g, args.steps, args.sample_interval, device, compile_mode, out
     )
     print(
-        f"\n  RESULT a={final['a']:.0f}: "
+        f"\n  RESULT a={final['a']:.0f} (axis T_MM = t*sqrt(2g/a)): "
         + "  ".join(
-            f"T={Tq:g}: X={final['checkpoints'][f'T{Tq:g}']['X_sim_T_eff']:.3f} "
-            f"(err_eff={final['checkpoints'][f'T{Tq:g}']['err_pct_T_eff']:+.2f}%, "
-            f"err_raw={final['checkpoints'][f'T{Tq:g}']['err_pct_T_raw']:+.2f}%)"
+            f"T={Tq:g}: X={final['checkpoints'][f'T{Tq:g}']['X_sim_T_MM']:.3f} "
+            f"(err_MM={final['checkpoints'][f'T{Tq:g}']['err_pct_T_MM']:+.2f}%, "
+            f"err_MM_geff={final['checkpoints'][f'T{Tq:g}']['err_pct_T_MM_geff']:+.2f}%)"
             for Tq in MM
         )
     )
@@ -321,9 +383,10 @@ def main() -> None:
     case_id = f"a{int(args.a)}"
     out.mkdir(parents=True, exist_ok=True)
     (out / f"hist_{case_id}.csv").write_text(
-        "step,T_raw,T_eff,X_toe,X_glob,H,max_u,rho_min,rho_max,mass_drift\n"
+        "step,T_MM,T_MM_geff,T_code,X_toe,X_glob,H,max_u,rho_min,rho_max,mass_drift\n"
         + "\n".join(
-            f"{r['step']},{r['T_raw']:.8f},{r['T_eff']:.8f},{r['X_toe']:.8f},"
+            f"{r['step']},{r['T_MM']:.8f},{r['T_MM_geff']:.8f},{r['T_code']:.8f},"
+            f"{r['X_toe']:.8f},"
             f"{r['X_glob']:.8f},{r['H']:.8f},{r['max_u']:.8e},{r['rho_min']:.8e},"
             f"{r['rho_max']:.8e},{r['mass_drift']:.8e}"
             for r in hist
