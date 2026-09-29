@@ -823,7 +823,57 @@ def free_surface_step(
     #                 - f_barq^*(x,t).  With u_g=u_interface this fixes p_g.
     # The implementation has no separate gas velocity field, so use the local
     # interface velocity from the pre-collision macroscopics.
+    _abb_mode = os.environ.get("TL_FS_ABB_MODE", "legacy").strip().lower()
     rho_g_field = torch.full_like(rho, float(rho_gas))
+    # ------------------------------------------------------------------
+    # Hydrostatic free-surface pressure closure (OPT-IN: TL_FS_ABB_MODE in
+    # {"hydro","hydrofill"}; legacy is bit-for-bit preserved otherwise).
+    #
+    # Physics (Körner 2005 / Thürey 2007 free-surface pressure boundary).
+    # On a free surface the ambient pressure is p_gas = rho_gas c_s^2 and the
+    # standard ABB below already imposes it.  What the legacy form omits is the
+    # *interfacial pressure closure* of a finite liquid column: a static column
+    # of height H is in hydrostatic equilibrium (grad p = rho_l g_vec), so the
+    # pressure the interface must "see" at depth below the local free surface is
+    #
+    #     p_int(x) = p_gas + (p_fill(x) - p_gas) + rho_l * g_vec . (x - x_ref)
+    #
+    # with
+    #   * p_fill = c_s^2 [ rho_gas + (rho_l - rho_gas) fill ]  -- Körner pressure
+    #     closure: a half-full interface cell carries the fill-weighted
+    #     pressure, not the full rho_l (the H~W cube has a large fill gradient).
+    #   * x_ref  = local free-surface height in the same vertical column, so the
+    #     hydrostatic head rho_l g_vec.(x - x_ref) vanishes on the surface and
+    #     grows with depth (the H~W-column hydrostatic imbalance).
+    #
+    # Both terms collapse to one equivalent ABB reference density
+    #
+    #     rho_ref(x) = rho_gas + (rho_l - rho_gas) fill
+    #                  + coef * rho_l * (g_vec . (x - x_ref)) / c_s^2
+    #
+    # so the same ABB arithmetic can be reused.  TL_FS_HYDRO_COEF (default 1)
+    # scales the head term (0 = fill-consistent pressure only).
+    # ------------------------------------------------------------------
+    if _abb_mode in ("hydro", "hydrofill"):
+        _cs2 = 1.0 / 3.0
+        _coef = float(os.environ.get("TL_FS_HYDRO_COEF", "1.0"))
+        rho_ref = torch.full_like(rho, float(rho_gas))
+        if _abb_mode == "hydrofill":
+            rho_ref = rho_ref + (float(rho_liquid) - float(rho_gas)) * fill
+        _gvec = (float(gx), float(gy), float(gz))
+        _gax = max(range(3), key=lambda k: abs(_gvec[k]))
+        if _coef != 0.0 and _gvec[_gax] != 0.0:
+            idxb = torch.arange(rho.shape[_gax], device=device, dtype=rho.dtype)
+            view = [1, 1, 1]
+            view[_gax] = rho.shape[_gax]
+            idxb = idxb.view(view)
+            nongas_f = (flags != GAS).to(rho.dtype)
+            _ref = torch.where(nongas_f > 0, idxb, torch.full_like(nongas_f, -1.0))
+            ref = _ref.amax(dim=_gax, keepdim=True)
+            # x - x_ref along the gravity axis (<= 0 below the free surface)
+            dpos = idxb - ref
+            rho_ref = rho_ref + _coef * float(rho_liquid) * _gvec[_gax] * dpos / _cs2
+        rho_g_field = rho_ref.clamp(min=0.0)
     f_eq_gas = equilibrium3d(rho_g_field, ux, uy, uz)
     # Candidate physics: the legacy form subtracts the *local post-collision*
     # outgoing population f_post[opp], whose magnitude is O(rho_interface) ~
@@ -833,7 +883,6 @@ def free_surface_step(
     # the equilibrium part at the gas pressure and only carry the outgoing
     # non-equilibrium stress, which is the physically meaningful content of a
     # free-surface pressure boundary.
-    _abb_mode = os.environ.get("TL_FS_ABB_MODE", "legacy").strip().lower()
     if _abb_mode == "eq":
         f_abb = f_eq_gas.expand_as(f)
     elif _abb_mode == "eqref":
