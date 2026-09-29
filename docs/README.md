@@ -36,17 +36,17 @@ A navigable index of the documentation in this directory, grouped by topic.
 
 | Document | Description |
 |---|---|
-| [REGRESSION_REPORT.md](REGRESSION_REPORT.md) | Core regression baseline report |
-| [REGRESSION_REPORT_interp_bc.md](REGRESSION_REPORT_interp_bc.md) | Regression report: interpolated bounce-back boundary condition |
-| [REGRESSION_REPORT_sliding_mesh.md](REGRESSION_REPORT_sliding_mesh.md) | Regression report: sliding-mesh boundary |
-| [REGRESSION_REPORT_wall_multi_gpu.md](REGRESSION_REPORT_wall_multi_gpu.md) | Regression report: wall function multi-GPU |
-| [AMR_REGRESSION_REPORT.md](AMR_REGRESSION_REPORT.md) | AMR regression report |
-| [RANS_REGRESSION_EQUIVALENCE_REPORT.md](RANS_REGRESSION_EQUIVALENCE_REPORT.md) | RANS solver regression equivalence report |
+| [REGRESSION_REPORT.md](reports/REGRESSION_REPORT.md) | Core regression baseline report |
+| [REGRESSION_REPORT_interp_bc.md](reports/REGRESSION_REPORT_interp_bc.md) | Regression report: interpolated bounce-back boundary condition |
+| [REGRESSION_REPORT_sliding_mesh.md](reports/REGRESSION_REPORT_sliding_mesh.md) | Regression report: sliding-mesh boundary |
+| [REGRESSION_REPORT_wall_multi_gpu.md](reports/REGRESSION_REPORT_wall_multi_gpu.md) | Regression report: wall function multi-GPU |
+| [AMR_REGRESSION_REPORT.md](reports/AMR_REGRESSION_REPORT.md) | AMR regression report |
+| [RANS_REGRESSION_EQUIVALENCE_REPORT.md](reports/RANS_REGRESSION_EQUIVALENCE_REPORT.md) | RANS solver regression equivalence report |
 | [accuracy_recommendation_evidence_gate.md](accuracy_recommendation_evidence_gate.md) | Fail-closed evidence gate before accuracy recommendations |
 | [FORCE_METHODS_SURVEY.md](FORCE_METHODS_SURVEY.md) | Survey of force-computation methods (momentum exchange, stress integration) |
 | [WALL_FUNCTION_SURVEY.md](WALL_FUNCTION_SURVEY.md) | Wall-function survey: log-law, power-law, Spalding |
 | [wall-refinement-combination-gate.md](wall-refinement-combination-gate.md) | Gate check for wall + refinement combinations |
-| [WAVE_BC_REGRESSION_REPORT.md](WAVE_BC_REGRESSION_REPORT.md) | Wave boundary condition regression report |
+| [WAVE_BC_REGRESSION_REPORT.md](reports/WAVE_BC_REGRESSION_REPORT.md) | Wave boundary condition regression report |
 | [irregular_wave_6dof_validation.md](irregular_wave_6dof_validation.md) | Irregular wave + 6-DOF validation |
 | [benchmarks/ai_fno2d/](benchmarks/ai_fno2d/) | FNO2d surrogate benchmark artifacts (loss curve, speed comparison) |
 | [acoustic_attenuation_nu_k_squared.md](acoustic_attenuation_nu_k_squared.md) | Physics note: plane-wave attenuation delta = nu*k^2 (not nu*k^2/2, not 2*nu*k^2) with the discrete correction chain, calibrated by the verified acoustics benchmark |
