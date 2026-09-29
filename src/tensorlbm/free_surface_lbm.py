@@ -1113,6 +1113,24 @@ def free_surface_step(
     mass_delta_interface = torch.where(
         from_iface, (f_exchange - f_opp_nb) * 0.5, torch.zeros_like(f)
     )
+    # ------------------------------------------------------------------
+    # OPT-IN free-surface (gas) mass-flux channel: TL_FS_GAS_CHANNEL=1.
+    #
+    # The legacy path hard-zeroes the gas channel ("gas is a pressure boundary,
+    # not a liquid-mass reservoir").  That makes the interface cells unable to
+    # empty through the free surface, so the residual column height H is frozen
+    # and the front is throttled.  The Körner exchange sums over *every* D3Q19
+    # link; for a gas-valued pull source the incoming population is the
+    # anti-bounce-back reconstruction f_abb and the outgoing is the local
+    # post-collision population f_opp_nb, so the gas contribution to a tracked
+    # interface cell is (f_abb[q] - f_opp_nb[q]) summed over the gas links.
+    # ------------------------------------------------------------------
+    if _env_bool("TL_FS_GAS_CHANNEL", False):
+        mass_delta_gas = torch.where(
+            need_abb, f_abb - f_opp_nb, torch.zeros_like(f)
+        )
+    else:
+        mass_delta_gas = torch.zeros_like(f)
     # A L/I credit at interface target x is paired link-by-link with a debit
     # at its pull source x-c_q.  This uses only existing D3Q19 links; it is
     # neither a global rescale nor a topology mutation.
@@ -1127,8 +1145,9 @@ def free_surface_step(
         +
         # Gas is a pressure boundary, not a liquid-mass reservoir.  Adding
         # its reconstructed population here spuriously creates tracked liquid
-        # mass in a quiescent closed column.
-        torch.zeros_like(f)
+        # mass in a quiescent closed column (unless TL_FS_GAS_CHANNEL=1, the
+        # opt-in free-surface mass-flux channel above).
+        mass_delta_gas
         + mass_delta_interface
     ).sum(0)
     if paired_liquid_interface_debit:
@@ -1562,6 +1581,25 @@ def free_surface_step(
         capture_replay_stages=capture_replay_stages,
     )
     f, fill, flags, mass = commit_topology_transaction(plan)
+    # ------------------------------------------------------------------
+    # OPT-IN LIQUID -> INTERFACE demotion: TL_FS_LIQ_TO_IFACE=1.
+    #
+    # The legacy conversion gates are one-way for the liquid flag: an
+    # INTERFACE cell fills to m >= 0.999 rho_l and becomes LIQUID, but a
+    # LIQUID cell only ever leaves the liquid state by draining to m <= eps
+    # (LIQUID -> GAS).  A LIQUID cell that loses *part* of its mass to an
+    # adjacent interface receiver (the paired L/I bulk debit) therefore stays
+    # flagged LIQUID at fill << 1.  Measured in the a=8 column: the interior
+    # drains to fill ~0.3-0.8 while remaining LIQUID -> the column "hollows
+    # out" instead of collapsing and H stays pinned at its initial value.
+    # Demoting the drained LIQUID cells back to INTERFACE restores the
+    # flag <-> mass consistency that the free-surface model assumes.
+    # ------------------------------------------------------------------
+    if _env_bool("TL_FS_LIQ_TO_IFACE", False):
+        _rel = float(os.environ.get("TL_FS_LIQ_TO_IFACE_REL", "0.01"))
+        _l2i = (flags == LIQUID) & (mass < (1.0 - _rel) * float(rho_liquid))
+        flags = torch.where(_l2i, torch.full_like(flags, INTERFACE), flags)
+        fill = torch.where(_l2i, (mass / float(rho_liquid)).clamp(0.0, 1.0), fill)
     if replay_capture is not None and plan.replay_evidence is not None:
         replay_capture["evidence"] = plan.replay_evidence
     if inventory_reconciliation_ledger is not None:
