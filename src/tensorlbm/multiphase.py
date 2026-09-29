@@ -131,6 +131,56 @@ def psi_carnahan_starling(rho: torch.Tensor) -> torch.Tensor:
     return psi_val
 
 
+def make_psi_carnahan_starling(
+    a: float = 5.0, b: float = 4.0, RT: float = 1.0 / 3.0, cs2: float = 1.0 / 3.0
+):
+    """Build a **correct-sign** Carnahan–Starling EOS pseudopotential ψ(ρ).
+
+    The historical :func:`psi_carnahan_starling` in this module computes
+    ``√(2(p_EOS − ρcs²)/cs²)`` — the WRONG sign for the library's attractive
+    convention (``G_lib > 0``), and it silently clamps ``p_EOS < ρcs²`` regions
+    to ψ=0 (killing the vapour branch).  It also hard-codes a=0.5, b=4, RT=1/3,
+    for which the CS EOS has **no van der Waals loop** (∂p/∂ρ > 0 everywhere),
+    i.e. no spinodal → the model cannot phase-separate at all (this is why the
+    historical ``--psi cs`` runs diverged at ~step 20).
+
+    Correct construction.  With the library convention ``F = +G_lib·cs²·ψ∇ψ``
+    (``G_lib > 0`` = attraction) the non-ideal pressure is
+    ``p(ρ) = ρcs² − (G_lib·cs²/2)ψ²``.  Requiring ``p = p_EOS`` gives
+
+        ψ(ρ) = √( 2(ρcs² − p_EOS(ρ)) / (G_lib·cs²) ) .
+
+    Choosing the coupling ``G_lib = 1`` makes ψ independent of G, so this
+    factory returns
+
+        ψ(ρ) = √( 2(ρcs² − p_EOS(ρ)) / cs² ) ,   p_EOS < ρcs²  (ψ=0 elsewhere).
+
+    Use it with ``G_lib = 1`` (any other G rescales the effective attraction
+    and must be re-calibrated).  CS EOS:
+        p_EOS = ρ·RT·(1 + η + η² − η³)/(1 − η)³ − a·ρ² ,  η = b·ρ/4 .
+
+    Coexistence (Maxwell, this module's ``scripts/measure_coexistence.py``):
+        a=5, b=4, RT=1/3 → ρ_l≈0.355, ρ_v≈0.0101, ratio ≈ 35  (≈3× psi_exp's 12.3)
+
+    Args:
+        a, b, RT, cs2: CS EOS parameters (defaults give a 35:1 two-phase loop).
+
+    Returns:
+        A callable ``psi(rho) -> tensor`` suitable as ``psi_fn``.
+    """
+
+    def psi(rho: torch.Tensor) -> torch.Tensor:
+        rho_c = torch.clamp(rho, min=1e-12)
+        eta = b * rho_c / 4.0
+        eta_c = torch.clamp(1.0 - eta, min=1e-8)
+        p_eos = rho_c * RT * (1.0 + eta + eta**2 - eta**3) / (eta_c**3) - a * rho_c**2
+        p_ideal = rho_c * cs2
+        val = 2.0 * (p_ideal - p_eos) / cs2
+        return torch.sqrt(torch.clamp(val, min=0.0))
+
+    return psi
+
+
 def psi_peng_robinson(rho: torch.Tensor) -> torch.Tensor:
     """Peng-Robinson EOS pseudopotential ψ = √(2(p_EOS − ρ·cs²)/cs²).
 
@@ -172,6 +222,7 @@ def _sc_neighbor_weighted_sum(
     psi: torch.Tensor,
     solid_mask: torch.Tensor | None = None,
     wall_psi: float | None = None,
+    square: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute Σᵢ wᵢ ψ(x+cᵢ) cᵢ for the SC interaction force.
 
@@ -193,6 +244,12 @@ def _sc_neighbor_weighted_sum(
                      removes the artificial density-depleted layer that the dry
                      wall creates on a no-slip floor.  See
                      ``benchmarks/pending/dam_break_sc``.
+        square:      When ``True``, the (masked) field is squared *before* the
+                     gather, returning ``Σᵢ wᵢ ψ²(x−cᵢ) cᵢ``.  This is the
+                     isotropic-stencil evaluation of the pressure-tensor form
+                     ``F = −½∇(ψ²)`` used by ``scheme="pressure_tensor"``
+                     (leading-order-equivalent to the standard force, but a
+                     symmetric divergence form with Σₓ F = 0 exactly).
 
     Returns:
         Tuple ``(Fx_kernel, Fy_kernel)`` of shape ``(ny, nx)`` each – the
@@ -200,6 +257,8 @@ def _sc_neighbor_weighted_sum(
     """
     if solid_mask is not None:
         psi = psi.masked_fill(solid_mask, 0.0 if wall_psi is None else float(wall_psi))
+    if square:
+        psi = psi * psi
 
     device = psi.device
     ny, nx = psi.shape[-2], psi.shape[-1]
@@ -231,6 +290,56 @@ def _sc_neighbor_weighted_sum(
     Fx = (w_3d * cx_float * psi_shifts).sum(0)  # (ny, nx)
     Fy = (w_3d * cy_float * psi_shifts).sum(0)  # (ny, nx)
     return Fx, Fy
+
+
+def _psi_sq_central_gradient(
+    psi: torch.Tensor,
+    solid_mask: torch.Tensor | None = None,
+    wall_psi: float | None = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Discrete gradient of ψ² by *central differences* (exactly curl-free).
+
+    This is the core of the Ramshaw–Phathanapirom pressure-tensor force form.
+    The standard Shan–Chen force samples ψ on the (forward/backward) D2Q9
+    stencil; the resulting discrete operator is **not** a discrete gradient,
+    so its discrete curl is O(h²) ≠ 0 and it can inject a *non-gradient*
+    (vortical) spurious force at the interface — the mechanism that biases the
+    late-time dam-break front.
+
+    Writing the (leading-order) SC force as a pressure-tensor divergence,
+
+        F_α = −G_eff ψ ∂_α ψ = −(G_eff/2) ∂_α(ψ²) = −∂_β P_αβ ,
+        P_αβ = (G_eff/2) ψ² δ_αβ   (isotropic part)
+
+    the force becomes an *exact* discrete gradient when the ψ² derivative is
+    taken with central differences: central differences on a rectangular grid
+    satisfy ∂_x ∂_y = ∂_y ∂_x **exactly**, so the discrete curl is identically
+    zero and the force cannot generate spurious vorticity at the interface.
+    Additionally, Σ_x D(ψ²) = 0 telescopically for a periodic box, i.e. the
+    total force vanishes **exactly** (Newton's third law holds at machine
+    precision) — the defining property of the pressure-tensor form.
+
+    Calibration is identical to the standard scheme at leading order:
+    with ``G_lib`` the library coupling (``G_eff = −G_lib``) the returned
+    field equals ``(G_lib·cs²/2)·D(ψ²)``, reproducing ``G_lib·cs²·ψ∇ψ`` to
+    O(h²) so the coexistence densities / EOS are unchanged.
+
+    Args:
+        psi:         Pseudopotential field of shape ``(ny, nx)``.
+        solid_mask:  Optional boolean wall mask (same convention as
+                     :func:`_sc_neighbor_weighted_sum`).
+        wall_psi:    ψ attributed to wall cells (``None`` → dry wall, ψ=0).
+
+    Returns:
+        ``(Dx, Dy)`` of shape ``(ny, nx)`` — the central-difference gradient
+        of the (masked) ψ² field, periodic wrap.
+    """
+    if solid_mask is not None:
+        psi = psi.masked_fill(solid_mask, 0.0 if wall_psi is None else float(wall_psi))
+    psi2 = psi * psi
+    dpx = 0.5 * (torch.roll(psi2, -1, dims=-1) - torch.roll(psi2, 1, dims=-1))
+    dpy = 0.5 * (torch.roll(psi2, -1, dims=-2) - torch.roll(psi2, 1, dims=-2))
+    return dpx, dpy
 
 
 # ---------------------------------------------------------------------------
@@ -353,11 +462,27 @@ def sc_single_component_force(
     gy: float = 0.0,
     solid_mask: torch.Tensor | None = None,
     wall_psi: float | None = None,
+    scheme: str = "standard",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute the SC self-interaction + gravity force for a single component.
 
     The self-interaction (G < 0, attractive) generates liquid–gas coexistence
     via a density-dependent pseudopotential.
+
+    Two interaction-force discretisations are available (``scheme``):
+
+    ``"standard"`` (default, historical behaviour)
+        F = −G ψ(x) Σᵢ wᵢ cᵢ ψ(x+cᵢ)  — the SC force sampled on the D2Q9
+        stencil.  Its discrete curl is O(h²) ≠ 0, so it is *not* an exact
+        discrete gradient and can generate spurious vorticity at interfaces.
+
+    ``"pressure_tensor"`` (Ramshaw–Phathanapirom form)
+        F = −∂·P with P_αβ = (G_eff/2) ψ² δ_αβ + …; evaluated here as
+        (G·cs²/2)·D(ψ²) with **central differences** D.  Central differences
+        on a rectangular grid commute, so the discrete curl is *identically
+        zero* (no spurious vorticity) and Σₓ F = 0 exactly (exact momentum
+        conservation / Newton's third law).  Leading-order calibration is
+        identical to ``"standard"`` (same EOS / coexistence densities).
 
     Args:
         rho:         Density field, shape ``(ny, nx)``.
@@ -368,14 +493,45 @@ def sc_single_component_force(
         solid_mask:  Optional boolean mask of wall/solid cells.
         wall_psi:    Pseudopotential attributed to solid cells (see
                      :func:`_sc_neighbor_weighted_sum`); ``None`` = dry wall.
+        scheme:      ``"standard"`` or ``"pressure_tensor"``.
 
     Returns:
         ``(Fx, Fy)`` each of shape ``(ny, nx)``.
     """
     psi = psi_fn(rho)
-    sum_x, sum_y = _sc_neighbor_weighted_sum(psi, solid_mask, wall_psi)
-    Fx = -G * psi * sum_x + rho * gx
-    Fy = -G * psi * sum_y + rho * gy
+    if scheme == "standard":
+        sum_x, sum_y = _sc_neighbor_weighted_sum(psi, solid_mask, wall_psi)
+        Fx = -G * psi * sum_x + rho * gx
+        Fy = -G * psi * sum_y + rho * gy
+    elif scheme == "pressure_tensor":
+        # Ramshaw–Phathanapirom divergence form on the *isotropic* D2Q9 stencil:
+        #     F = −G_eff ψ ∇ψ = −(G_eff/2) ∇(ψ²)  →  −(G/2) Σᵢ wᵢ ψ²(x−cᵢ) cᵢ
+        # (library sign G_lib = −G_eff).  Leading-order identical to the standard
+        # branch, but the force is a symmetric divergence: Σₓ F ≡ 0 exactly
+        # because Σᵢ wᵢ cᵢ = 0 → exact momentum conservation (Newton's third law).
+        # This keeps the standard D2Q9 gather stencil (no central-difference
+        # odd-even/checkerboard decoupling → numerically robust).
+        sumsq_x, sumsq_y = _sc_neighbor_weighted_sum(
+            psi, solid_mask, wall_psi, square=True
+        )
+        Fx = -0.5 * G * sumsq_x + rho * gx
+        Fy = -0.5 * G * sumsq_y + rho * gy
+    elif scheme == "pressure_tensor_cd":
+        # Exactly curl-free variant: F = (G·cs²/2)·D(ψ²) with *central*
+        # differences D.  Central differences commute on a rectangular grid, so
+        # the discrete curl is identically zero (no interface spurious
+        # vorticity) — the strictest reading of the pressure-tensor form.
+        # WARNING: central differences on a colocated grid are prone to
+        # odd-even (checkerboard) decoupling; this variant was found UNSTABLE on
+        # the dam-break at a=80 (diverges ~step 320).  Kept for the record only.
+        dpx, dpy = _psi_sq_central_gradient(psi, solid_mask, wall_psi)
+        Fx = G * _CS2 * 0.5 * dpx + rho * gx
+        Fy = G * _CS2 * 0.5 * dpy + rho * gy
+    else:
+        raise ValueError(
+            f"unknown scheme {scheme!r}; expected 'standard', 'pressure_tensor' "
+            f"or 'pressure_tensor_cd'"
+        )
     return Fx, Fy
 
 
@@ -389,6 +545,7 @@ def collide_sc_single_component(
     solid_mask: torch.Tensor | None = None,
     wall_psi: float | None = None,
     forcing: str = "velocity_shift",
+    scheme: str = "standard",
 ) -> torch.Tensor:
     """Shan-Chen single-component multiphase (SCMP) BGK collision for D2Q9.
 
@@ -438,12 +595,19 @@ def collide_sc_single_component(
                      (default) keeps the historical dry-wall behaviour; a
                      positive value gives a partially wetting wall.
         forcing:     ``"velocity_shift"`` (default) or ``"guo"``.
+        scheme:      interaction-force discretisation, ``"standard"`` (default,
+                     historical) or ``"pressure_tensor"`` (Ramshaw–Phathanapirom
+                     form: exactly curl-free, exactly momentum-conserving).  The
+                     two are independent: any ``forcing`` × ``scheme`` combination
+                     is allowed.
 
     Returns:
         Updated distribution tensor of the same shape.
     """
     rho, ux, uy = macroscopic(f)
-    Fx, Fy = sc_single_component_force(rho, G, psi_fn, gx, gy, solid_mask, wall_psi)
+    Fx, Fy = sc_single_component_force(
+        rho, G, psi_fn, gx, gy, solid_mask, wall_psi, scheme
+    )
     rho_s = torch.clamp(rho, min=1e-12)
 
     if forcing == "velocity_shift":

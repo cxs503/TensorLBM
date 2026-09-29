@@ -371,6 +371,7 @@ from .free_surface_lbm import (
     init_fill_rectangular,
     init_flags_from_fill,
     init_mass_from_fill,
+    init_population_from_fill,
     total_liquid_inventory,
 )
 from .free_surface_lbm_2d import free_surface_step_2d, init_fill_rectangular_2d
@@ -1732,6 +1733,7 @@ __all__ = [
     "init_fill_rectangular",
     "init_flags_from_fill",
     "init_mass_from_fill",
+    "init_population_from_fill",
     "total_liquid_inventory",
     "free_surface_step_2d",
     "init_fill_rectangular_2d",
