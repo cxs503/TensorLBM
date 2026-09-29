@@ -87,6 +87,13 @@ Pass criteria (repo standard, real runs only, no extrapolation):
 Usage: python run.py --a 80 --g 2e-4 --steps 1600 --device cpu [--out DIR]
        (1600 steps reaches T_MM = 3.13 at a=80 and 4.43 at a=40, i.e. safely
         past the last checkpoint T_MM = 2.96)
+
+Forcing scheme (2026-09-29): --forcing velocity_shift (default, historical
+       velocity-shifted SC force) or --forcing guo (Guo 2002 source term +
+       half-force-corrected velocity).  NB: with the correct mass-conserving
+       Guo source term the two schemes give essentially the same front; the
+       earlier "Guo is the decisive lever" claim came from a non-mass-conserving
+       prototype and is retracted (see README.md section 0c).
 """
 
 from __future__ import annotations
@@ -121,6 +128,7 @@ G_LIB = 5.0  # library argument (sign-flipped convention, see laplace_droplet)
 G_EFF = -5.0  # physical standard-convention SC94 coupling
 TAU = 1.0
 PSI_FN = psi_exp  # SCMP pseudopotential (CLI --psi overrides)
+FORCING = "velocity_shift"  # Guo source-term forcing opt-in (CLI --forcing)
 WALL_PSI = None  # None = historical dry wall (psi->0 at solid); float = wetting wall
 RHO_L, RHO_V = 1.957, 0.1596  # discrete coexistence (measured)
 RHO_MID = 0.5 * (RHO_L + RHO_V)
@@ -246,7 +254,7 @@ def run_case(
     def _step(f):
         f = collide_sc_single_component(
             f, G=G_LIB, tau=TAU, psi_fn=PSI_FN, gy=-g,
-            solid_mask=wall, wall_psi=WALL_PSI,
+            solid_mask=wall, wall_psi=WALL_PSI, forcing=FORCING,
         )
         f = stream(f)
         f = bounce_back_cells(f, wall)
@@ -346,15 +354,22 @@ def main() -> None:
     ap.add_argument("--psi", choices=["exp", "sqrt"], default="exp", dest="psi",
                     help="SCMP pseudopotential form: exp (SC94, default) or "
                          "sqrt (psi=sqrt(rho), van der Waals-like loop)")
+    ap.add_argument("--forcing", choices=["velocity_shift", "guo"],
+                    default="velocity_shift", dest="forcing",
+                    help="SC force coupling scheme: velocity_shift (default, "
+                         "historical) or guo (Guo 2002 source term + half-force "
+                         "velocity correction; removes the interface spurious "
+                         "force that lags the late-time dam-break front)")
     add_compile_mode_arg(ap)
     args = ap.parse_args()
     compile_mode = compile_mode_from_args(args)
 
-    global G_LIB, RHO_L, RHO_V, RHO_MID, TAU, WALL_PSI, PSI_FN
+    global G_LIB, RHO_L, RHO_V, RHO_MID, TAU, WALL_PSI, PSI_FN, FORCING
     G_LIB = args.g_coupling
     TAU = args.tau
     WALL_PSI = args.psi_wall
     PSI_FN = psi_exp if args.psi == "exp" else psi_sqrt
+    FORCING = args.forcing
     RHO_L = args.rho_l
     RHO_V = args.rho_v
     RHO_MID = 0.5 * (RHO_L + RHO_V)

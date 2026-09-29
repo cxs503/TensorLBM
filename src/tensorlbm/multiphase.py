@@ -388,11 +388,43 @@ def collide_sc_single_component(
     gy: float = 0.0,
     solid_mask: torch.Tensor | None = None,
     wall_psi: float | None = None,
+    forcing: str = "velocity_shift",
 ) -> torch.Tensor:
     """Shan-Chen single-component multiphase (SCMP) BGK collision for D2Q9.
 
     Use G < 0 to generate attractive self-interaction and spontaneous
     liquid–gas phase separation.
+
+    Two forcing schemes are available (selected by ``forcing``):
+
+    ``"velocity_shift"`` (default, historical behaviour)
+        The interaction/gravity force is folded into the *equilibrium velocity*:
+
+            uᵉq = u + τ·F/ρ ,   f_out = f − (f − fᵉq(uᵉq))/τ
+
+        This is the scheme used by the ``laplace_droplet`` benchmark.  On a
+        curved interface it injects a *spurious* force whose magnitude depends
+        on the local acceleration ``g`` (proved by the g-dependence of the
+        simulated front), which biases the late-time dam-break front low.
+
+    ``"guo"`` (Guo 2002 forcing, F as a source term)
+        The force enters as an explicit source term and the physical velocity
+        carries the half-force correction:
+
+            u_phys = u + F/(2ρ)
+            fᵉq    = fᵉq(u_phys)
+            Sᵢ     = wᵢ (1 − 1/(2τ)) [ (cᵢ − u_phys)·F / cs²
+                                      + (cᵢ·u_phys)(cᵢ·F) / cs⁴ ]
+            f_out  = f − (f − fᵉq)/τ + S
+
+        The standard mass-conserving source term (Σᵢ Sᵢ = 0) is used — the
+        ``−(u_phys·F)/cs²`` contribution is essential; omitting it (as in early
+        prototypes) leaks mass at ~10% over a dam-break run.  After the step
+        the lattice momentum is ``ρ·u + F/2``, so the next ``macroscopic(f)``
+        call returns ``u_phys − F/(2ρ)`` and the half-force correction is
+        applied consistently each step.  This is the scheme that removes the
+        interface spurious force and is the lever for the ``dam_break_sc``
+        late-time front (see ``benchmarks/pending/dam_break_sc``).
 
     Args:
         f:           Distribution tensor, shape ``(9, ny, nx)``.
@@ -401,10 +433,11 @@ def collide_sc_single_component(
         psi_fn:      Pseudopotential callable.
         gx:          x body-force acceleration.
         gy:          y body-force acceleration.
-        solid_mask:  Optional boolean mask of wall/solid cells.
+        solid_mask:  Optional boolean mask ``(ny, nx)`` of solid/wall cells.
         wall_psi:    Pseudopotential value attributed to solid cells.  ``None``
                      (default) keeps the historical dry-wall behaviour; a
                      positive value gives a partially wetting wall.
+        forcing:     ``"velocity_shift"`` (default) or ``"guo"``.
 
     Returns:
         Updated distribution tensor of the same shape.
@@ -412,8 +445,35 @@ def collide_sc_single_component(
     rho, ux, uy = macroscopic(f)
     Fx, Fy = sc_single_component_force(rho, G, psi_fn, gx, gy, solid_mask, wall_psi)
     rho_s = torch.clamp(rho, min=1e-12)
-    feq = equilibrium(rho, ux + tau * Fx / rho_s, uy + tau * Fy / rho_s)
-    f_out = f - (f - feq) / tau
+
+    if forcing == "velocity_shift":
+        feq = equilibrium(rho, ux + tau * Fx / rho_s, uy + tau * Fy / rho_s)
+        f_out = f - (f - feq) / tau
+    elif forcing == "guo":
+        # Physical velocity includes the half-force correction u + F/(2ρ).
+        uxp = ux + 0.5 * Fx / rho_s
+        uyp = uy + 0.5 * Fy / rho_s
+        feq = equilibrium(rho, uxp, uyp)
+        device = f.device
+        c = _c_on(device).float()
+        w = _w_on(device).float()
+        cx = c[:, 0].view(9, 1, 1)
+        cy = c[:, 1].view(9, 1, 1)
+        w3 = w.view(9, 1, 1)
+        cf = cx * Fx.unsqueeze(0) + cy * Fy.unsqueeze(0)  # cᵢ·F
+        cu = cx * uxp.unsqueeze(0) + cy * uyp.unsqueeze(0)  # cᵢ·u_phys
+        uf = uxp * Fx + uyp * Fy  # u_phys·F
+        # Standard Guo (2002) source term, Σᵢ Sᵢ = 0 (mass-conserving):
+        #   Sᵢ = wᵢ (1 − 1/(2τ)) [ (cᵢ − u_phys)·F / cs² + (cᵢ·u_phys)(cᵢ·F) / cs⁴ ]
+        S = w3 * (1.0 - 1.0 / (2.0 * tau)) * (
+            (cf - uf.unsqueeze(0)) / _CS2 + cu * cf / _CS2**2
+        )
+        f_out = f - (f - feq) / tau + S
+    else:
+        raise ValueError(
+            f"unknown forcing {forcing!r}; expected 'velocity_shift' or 'guo'"
+        )
+
     if solid_mask is not None:
         f_out = torch.where(solid_mask.unsqueeze(0), f, f_out)
     return f_out
