@@ -78,6 +78,75 @@ def ensure_tensorlbm_importable() -> str | None:
     return src
 
 
+def _enable_sdaa_inductor() -> str | None:
+    """Make ``torch.compile`` usable on Hygon/SDAA (``teco_inductor``).
+
+    ``torch_sdaa`` ships its own inductor device codegen, but importing plain
+    ``torch_sdaa`` does **not** register it: ``torch._inductor.codegen.common
+    .device_codegens`` only has cpu/cuda/xpu/mps, so the first reduction in any
+    compiled graph dies with
+
+        AssertionError: assert scheduling_ctor
+        (torch._inductor.codegen.common.get_backend_features)
+
+    Importing ``torch_sdaa._inductor`` registers the ``sdaa`` device codegen and
+    the ``teco_inductor`` backend.  One more binding is left stale after that
+    import: ``torch._inductor.lowering`` did ``from .ir import Reduction`` at
+    module-import time, so its module-global ``Reduction`` still points at the
+    *original* class while ``torch._inductor.ir.Reduction`` was replaced by
+    ``SDAAReduction`` (whose ``num_splits`` returns ``(DEFAULT, 1)`` and avoids
+    ``DeviceProperties.create`` — the generic one raises
+    ``AttributeError: 'torch_sdaa._C._SDAADeviceProperties' object has no
+    attribute 'multi_processor_count'``).  Re-bind the stale reference so the
+    lowering path picks up the SDAA reduction.
+
+    This is a no-op on CUDA/CPU hosts and changes no numerics: the SDAA
+    reduction only picks a non-split hint.  Returns a short tag when the shim
+    was applied, else ``None``.
+    """
+    try:
+        import torch_sdaa  # noqa: F401,PLC0415
+    except Exception:
+        return None
+    try:
+        import torch_sdaa._inductor  # noqa: F401,PLC0415
+    except Exception:
+        return None
+
+    import torch._inductor.ir as _ir  # noqa: PLC0415
+
+    if not hasattr(_ir, "Reduction"):
+        return None
+    for _mod_name in ("torch._inductor.lowering", "torch._inductor.decomposition"):
+        try:
+            mod = __import__(_mod_name, fromlist=["Reduction"])
+        except Exception:
+            continue
+        if getattr(mod, "Reduction", None) is not None and mod.Reduction is not _ir.Reduction:
+            mod.Reduction = _ir.Reduction
+
+    # Second stale-/broken-binding: TecoScheduling.can_fuse_horizontal (teco.py)
+    # crashes on fused pointwise groups ("'FusedSchedulerNode' object has no
+    # attribute '_sizes'") while comparing reduction shapes.  The class keeps
+    # the stock inductor implementation as ``_can_fuse_horizontal_impl`` (whose
+    # call is commented out at the end of the override) — restore it.
+    try:
+        from torch_sdaa._inductor.codegen.teco import (
+            TecoScheduling as _TecoScheduling,
+        )
+
+        if hasattr(_TecoScheduling, "_can_fuse_horizontal_impl"):
+            _TecoScheduling.can_fuse_horizontal = (
+                _TecoScheduling._can_fuse_horizontal_impl
+            )
+    except Exception:
+        pass
+    return "sdaa-teco_inductor"
+
+
+_SDAA_INDUCTOR_TAG = _enable_sdaa_inductor()
+
+
 ensure_tensorlbm_importable()
 
 from tensorlbm.compile_utils import (  # noqa: E402  (needs the path bootstrap above)
@@ -158,7 +227,10 @@ def route_step(
             if canonical is None
             else f"torch.compile(mode={canonical!r})"
         )
-        print(f"[compile_route] {name}: mode={mode!r} -> {routed}", flush=True)
+        tagged = (
+            f"{routed} [{_SDAA_INDUCTOR_TAG}]" if _SDAA_INDUCTOR_TAG else routed
+        )
+        print(f"[compile_route] {name}: mode={mode!r} -> {tagged}", flush=True)
     return wrapped
 
 
