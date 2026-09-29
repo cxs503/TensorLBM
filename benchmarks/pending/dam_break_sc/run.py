@@ -68,6 +68,7 @@ CS2 = 1.0 / 3.0
 G_LIB = 5.0  # library argument (sign-flipped convention, see laplace_droplet)
 G_EFF = -5.0  # physical standard-convention SC94 coupling
 TAU = 1.0
+WALL_PSI = None  # None = historical dry wall (psi->0 at solid); float = wetting wall
 RHO_L, RHO_V = 1.957, 0.1596  # discrete coexistence (measured)
 RHO_MID = 0.5 * (RHO_L + RHO_V)
 W_INT = 3.0  # interface width (cells) for the tanh initial condition
@@ -175,7 +176,10 @@ def run_case(
     sqrt_geff_a = math.sqrt(g_eff / a)
 
     def _step(f):
-        f = collide_sc_single_component(f, G=G_LIB, tau=TAU, psi_fn=psi_exp, gy=-g, solid_mask=wall)
+        f = collide_sc_single_component(
+            f, G=G_LIB, tau=TAU, psi_fn=psi_exp, gy=-g,
+            solid_mask=wall, wall_psi=WALL_PSI,
+        )
         f = stream(f)
         f = bounce_back_cells(f, wall)
         return f
@@ -259,12 +263,20 @@ def main() -> None:
                     help="SC library coupling G (default 5.0 -> rho_l/rho_v ~ 13)")
     ap.add_argument("--rho-l", type=float, default=1.957, dest="rho_l")
     ap.add_argument("--rho-v", type=float, default=0.1596, dest="rho_v")
+    ap.add_argument("--tau", type=float, default=1.0,
+                    help="BGK relaxation time (nu = (tau-0.5)/3)")
+    ap.add_argument("--psi-wall", type=float, default=None, dest="psi_wall",
+                    help="wall pseudopotential: None (default) = historical dry "
+                         "wall; e.g. 0.4 = partially wetting wall (removes the "
+                         "artificial floor density-depletion layer)")
     add_compile_mode_arg(ap)
     args = ap.parse_args()
     compile_mode = compile_mode_from_args(args)
 
-    global G_LIB, RHO_L, RHO_V, RHO_MID
+    global G_LIB, RHO_L, RHO_V, RHO_MID, TAU, WALL_PSI
     G_LIB = args.g_coupling
+    TAU = args.tau
+    WALL_PSI = args.psi_wall
     RHO_L = args.rho_l
     RHO_V = args.rho_v
     RHO_MID = 0.5 * (RHO_L + RHO_V)
