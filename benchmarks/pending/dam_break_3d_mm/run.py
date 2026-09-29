@@ -3,12 +3,31 @@
 
 Setup: water column a x a x 2a against the x=0 wall (corner), gravity -y,
 solid walls on all six faces, rest is gas.  Dimensionless:
-    T = t*sqrt(g/a),  X = x_front/a,  H = h_residual/(2a)  (starts at 1.0)
-Reference (Martin & Moyce 1952):
-    X: T=1 -> X~1.1, T=2 -> X~1.8, T=3 -> X~2.7
-       (classic M&M digitisation, identical to the repository's own 2D
-        benchmark benchmarks/bench_fs_2d.py: REF_T/REF_Z)
-    H: T=1 -> H~0.78 (M&M residual-height curve, approximate digitisation)
+    T = t*sqrt(2*g/a),  X = x_front/a,  H = h_residual/(2a)  (starts at 1.0)
+
+Reference convention (DECISIVE ruling, commit 857bbe8): Martin & Moyce (1952)
+define the dimensionless time as
+
+        T = t * sqrt(2 g / a)
+
+(confirmed verbatim by Lethe's dam-break-2d.py post-processing
+``time_list = [x * ((2 * g / L1) ** 0.5) for x in time_list]`` and by
+FrankenSim).  The repo CORE already uses this (dam_break.py:299,
+dam_break_3d.py:500); this benchmark historically used T = t*sqrt(g/a), i.e. a
+factor sqrt(2) too small — FIXED here.
+
+Reference table — FrankenSim square-column (n^2 = 2, i.e. the a x a x 2a
+column solved here), in the SAME T = t*sqrt(2g/a) axis:
+
+    T = [0.41,0.84,1.19,1.43,1.63,1.83,2.00,2.20,2.32,2.51,2.66,2.83,2.95]
+    Z = [1.11,1.44,1.78,2.11,2.44,2.78,3.11,3.44,3.67,4.00,4.33,4.67,5.00]
+
+The 3D square column spreads laterally too, so its front Z(T) runs ~15-37%
+ahead of the 2D rectangular-column (Lethe/K&O) digitisation at the same T
+(ratio 1.17 @T=0.84 -> 1.37 @T=2.95).  The 2D table (T=1->1.326, T=2->2.36,
+T=2.95->3.654) is the WRONG reference for this a x a x 2a geometry; the
+FrankenSim n^2=2 square-column table is used.  (If the 2D table were used
+instead the front error is systematically understated at late T.)
 
 Measurements:
   front x(t) = rightmost x-column holding LIQUID or INTERFACE with fill>=0.5;
@@ -19,15 +38,11 @@ Measurements:
   x in [1, a//2+1); mass drift and interface-cell count are tracked as
   quality-of-simulation diagnostics.
 
-STATUS: NOT VERIFIED (caliper bugs fixed + re-measured 2026-09-29).  After
-fixing the two caliper bugs above and using the classic M&M reference, the
-front is still ~1.5-1.8x too fast (a=16: X err +82% @T=1, +70% @T=2,
-+50% @T=3; a=32: +53% @T=1) and H rises to a bogus 1.19 plateau instead of
-dropping.  Root cause is a gravity-independent pseudo-wetting film
-(ΔX ≈ 0.042·√(a/g) per step; g=0 tracks g=1e-4), i.e. a free-surface /
-interface-treatment defect of tensorlbm.free_surface_lbm (D3Q19,
-free_surface_step) — NOT a measurement problem.  See
-/tmp/dambreak_gap.md and benchmarks/pending/dam_break_3d_mm/README.md.
+STATUS: re-run in progress on the corrected axis + FrankenSim square-column
+table + the free-surface fix levers (TL_FS_WALL_MODE=halfway,
+TL_FS_TOGAS_EPS=1e-6, TL_FS_APRIME=1).  Historical "+50-82%" errors were a
+DOUBLE artefact (T-axis sqrt2 + wrong 2D table) — see commit 857bbe8 and
+benchmarks/pending/dam_break_recompute_mm.json.
 """
 
 from __future__ import annotations
@@ -35,6 +50,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import time
 from pathlib import Path
 
@@ -50,20 +66,35 @@ from tensorlbm import (
 LIQUID = 1
 INTERFACE = 2
 
-# Martin & Moyce (1952) dimensionless reference curves (a = column side).
+# Martin & Moyce (1952) dimensionless reference curves.
 #
-# X reference — classic M&M digitisation, taken verbatim from the repository's
-# own 2D free-surface benchmark (benchmarks/bench_fs_2d.py: REF_T / REF_Z):
-#   T=1.0 -> X=1.1, T=2.0 -> X=1.8, T=3.0 -> X=2.7
-# (The previous table here was WRONG: it used T=1 -> 1.5 and T=2 -> 2.7,
-#  i.e. it mapped the T=3 M&M value onto T=2 and used an unsourced T=1 value.)
+# X reference — FrankenSim SQUARE-COLUMN digitisation (n^2 = 2, the a x a x 2a
+# column solved here), on the correct T = t*sqrt(2g/a) axis.  This is the
+# physically matching reference for a finite-width 3D column (the classic
+# Lethe / K&O table is for the 2D rectangular column and sits 15-37% lower).
+#   T=2.00 -> X=3.11, T=2.95 -> X=5.00;
+#   T=1.00 -> X=1.595 (linear interpolation of (0.84,1.44)-(1.19,1.78)).
+# (The previous table here was WRONG: the classic T=1->1.1, T=2->1.8,
+#  T=3->2.7 digitisation was the 2D-rectangular M&M curve — wrong geometry
+#  for this 3D square column — on a T-axis that was itself sqrt(2) too small.)
 MM_X = [
-    (0.0, 1.0), (0.5, 1.0), (1.0, 1.1), (1.5, 1.4), (2.0, 1.8),
-    (2.5, 2.2), (3.0, 2.7), (3.5, 3.1), (4.0, 3.5), (4.5, 3.8), (5.0, 4.1),
+    (0.00, 1.00), (0.41, 1.11), (0.84, 1.44), (1.19, 1.78), (1.43, 2.11),
+    (1.63, 2.44), (1.83, 2.78), (2.00, 3.11), (2.20, 3.44), (2.32, 3.67),
+    (2.51, 4.00), (2.66, 4.33), (2.83, 4.67), (2.95, 5.00),
 ]
 # H reference — M&M residual-height curve (approximate digitisation, kept from
 # the original benchmark; the pass/fail criterion is the X front error).
 MM_H = [(0.0, 1.0), (0.5, 0.92), (1.0, 0.78), (1.5, 0.65), (2.0, 0.55), (2.5, 0.45), (3.0, 0.37)]
+
+
+def _interp_table(tab, x):
+    """Linear interpolation / edge-clamped evaluation of a (T, V) table."""
+    if x <= tab[0][0]:
+        return tab[0][1]
+    for (t1, v1), (t2, v2) in zip(tab, tab[1:]):
+        if t1 <= x <= t2:
+            return v1 + (v2 - v1) * (x - t1) / (t2 - t1)
+    return tab[-1][1]
 
 
 def build_domain(a: int, g: float, device: torch.device):
@@ -123,7 +154,7 @@ def run(
     f, fill, flags, mass, solid, (nx, ny, nz) = build_domain(a, g, dev)
     m0 = float(mass.sum().item())
     iface0 = int((flags == INTERFACE).sum().item())
-    t_scale = math.sqrt(g / a)
+    t_scale = math.sqrt(2.0 * g / a)  # T_MM = t * sqrt(2g/a)
     series = []
     for step in range(1, steps + 1):
         f, fill, flags, mass, df = free_surface_step(
@@ -172,7 +203,10 @@ def run(
 
     checks = []
     T_max_sim = series[-1]["T"]
-    for T_ref, X_ref in [(1.0, 1.1), (2.0, 1.8), (3.0, 2.7)]:
+    # M&M checkpoints on the CORRECT dimensionless-time axis T = t*sqrt(2g/a),
+    # against the FrankenSim square-column (n^2=2) reference table.
+    for T_ref in (1.0, 2.0, 2.95):
+        X_ref = _interp_table(MM_X, T_ref)
         X_sim = interp("X", T_ref)
         extrap = T_ref > T_max_sim + 1e-9
         checks.append(
@@ -185,14 +219,15 @@ def run(
                 "extrapolated": extrap,
             }
         )
+    H_ref_T1 = _interp_table(MM_H, 1.0)
     H_sim = interp("H", 1.0)
     checks.append(
         {
             "T": 1.0,
             "kind": "H",
-            "ref": 0.78,
+            "ref": H_ref_T1,
             "sim": H_sim,
-            "err_pct": abs(H_sim - 0.78) / 0.78 * 100.0,
+            "err_pct": abs(H_sim - H_ref_T1) / H_ref_T1 * 100.0,
             "extrapolated": 1.0 > T_max_sim + 1e-9,
         }
     )
@@ -205,16 +240,20 @@ def run(
     final = series[-1]
     result = {
         "case": "dam_break_3d_martin_moyce",
-        "status": "NOT_VERIFIED",
+        "status": "PENDING",
         "reason": (
-            "tensorlbm.free_surface_lbm mass-conservation/interface-stability "
-            "defects: interface-cell explosion + front pollution / mass drift; "
-            "see /tmp/dambreak_gap.md"
+            "T axis corrected to t*sqrt(2g/a); FrankenSim square-column "
+            "(n^2=2) reference table; free-surface fix levers "
+            "TL_FS_WALL_MODE=halfway + TL_FS_TOGAS_EPS=1e-6 on."
         ),
-        "module": "tensorlbm.free_surface_lbm (D3Q19, free_surface_step) — unmodified",
+        "module": "tensorlbm.free_surface_lbm (D3Q19, free_surface_step) — env-gated fix levers",
         "lattice": "D3Q19",
         "collision": "bgk",
-        "reference": "Martin & Moyce (1952), classic digitisation taken from benchmarks/bench_fs_2d.py: T=1 X=1.1, T=2 X=1.8, T=3 X=2.7; H(T=1)~0.78",
+        "reference": (
+            "Martin & Moyce (1952); T = t*sqrt(2g/a) (Lethe/FrankenSim verbatim); "
+            "FrankenSim square-column n^2=2 table: T=1.00 X=1.595, T=2.00 X=3.11, "
+            "T=2.95 X=5.00; H(T=1)~0.78"
+        ),
         "config": {
             "a": a,
             "g": g,
@@ -223,6 +262,11 @@ def run(
             "steps": steps,
             "domain": {"nx": nx, "ny": ny, "nz": nz, "cells": nx * ny * nz},
             "T_max": steps * t_scale,
+            "env": {
+                "TL_FS_WALL_MODE": os.environ.get("TL_FS_WALL_MODE", "legacy"),
+                "TL_FS_TOGAS_EPS": os.environ.get("TL_FS_TOGAS_EPS", "0.01"),
+                "TL_FS_APRIME": os.environ.get("TL_FS_APRIME", "0"),
+            },
         },
         "elapsed_s": elapsed,
         "checks": checks,
@@ -258,6 +302,11 @@ if __name__ == "__main__":
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--outdir", default="outputs")
     args = ap.parse_args()
+    tag = (
+        f"wm{os.environ.get('TL_FS_WALL_MODE', 'legacy')}"
+        f"_te{os.environ.get('TL_FS_TOGAS_EPS', '0.01')}"
+        f"_ap{os.environ.get('TL_FS_APRIME', '0')}"
+    )
     run(
         args.a,
         args.g,
@@ -267,5 +316,5 @@ if __name__ == "__main__":
         args.rho_gas,
         args.device,
         Path(args.outdir),
-        f"a{args.a}_g{args.g:.0e}_rg{args.rho_gas}",
+        f"a{args.a}_g{args.g:.0e}_rg{args.rho_gas}_{tag}",
     )

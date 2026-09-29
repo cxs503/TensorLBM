@@ -1,0 +1,382 @@
+{
+  "case": "dam_break_3d_martin_moyce",
+  "status": "PENDING",
+  "reason": "T axis corrected to t*sqrt(2g/a); FrankenSim square-column (n^2=2) reference table; free-surface fix levers TL_FS_WALL_MODE=halfway + TL_FS_TOGAS_EPS=1e-6 on.",
+  "module": "tensorlbm.free_surface_lbm (D3Q19, free_surface_step) \u2014 env-gated fix levers",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "reference": "Martin & Moyce (1952); T = t*sqrt(2g/a) (Lethe/FrankenSim verbatim); FrankenSim square-column n^2=2 table: T=1.00 X=1.595, T=2.00 X=3.11, T=2.95 X=5.00; H(T=1)~0.78",
+  "config": {
+    "a": 8,
+    "g": 0.0001,
+    "tau": 0.8,
+    "rho_gas": 0.001,
+    "steps": 620,
+    "domain": {
+      "nx": 40,
+      "ny": 20,
+      "nz": 16,
+      "cells": 12800
+    },
+    "T_max": 3.1,
+    "env": {
+      "TL_FS_WALL_MODE": "halfway",
+      "TL_FS_TOGAS_EPS": "1e-6",
+      "TL_FS_APRIME": "1"
+    }
+  },
+  "elapsed_s": 41.25231671333313,
+  "checks": [
+    {
+      "T": 1.0,
+      "kind": "X",
+      "ref": 1.5954285714285714,
+      "sim": 4.75,
+      "err_pct": 197.72564469914042,
+      "extrapolated": false
+    },
+    {
+      "T": 2.0,
+      "kind": "X",
+      "ref": 3.11,
+      "sim": 4.75,
+      "err_pct": 52.7331189710611,
+      "extrapolated": false
+    },
+    {
+      "T": 2.95,
+      "kind": "X",
+      "ref": 5.0,
+      "sim": 4.75,
+      "err_pct": 5.0,
+      "extrapolated": false
+    },
+    {
+      "T": 1.0,
+      "kind": "H",
+      "ref": 0.78,
+      "sim": 1.125,
+      "err_pct": 44.230769230769226,
+      "extrapolated": false
+    }
+  ],
+  "max_err_pct": 197.72564469914042,
+  "final": {
+    "mass_drift_rel": -0.003533490498860677,
+    "iface_cells": 5000,
+    "iface_initial": 335,
+    "iface_growth": 14.925373134328359
+  },
+  "series": [
+    {
+      "step": 20,
+      "T": 0.1,
+      "front": 11,
+      "X": 1.375,
+      "h": 15,
+      "H": 0.9375,
+      "mass_drift_rel": -1.9073486328125e-07,
+      "iface_cells": 570
+    },
+    {
+      "step": 40,
+      "T": 0.2,
+      "front": 14,
+      "X": 1.75,
+      "h": 15,
+      "H": 0.9375,
+      "mass_drift_rel": -2.5431315104166666e-07,
+      "iface_cells": 1193
+    },
+    {
+      "step": 60,
+      "T": 0.3,
+      "front": 18,
+      "X": 2.25,
+      "h": 16,
+      "H": 1.0,
+      "mass_drift_rel": -1.2715657552083333e-07,
+      "iface_cells": 2115
+    },
+    {
+      "step": 80,
+      "T": 0.4,
+      "front": 22,
+      "X": 2.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": 6.357828776041666e-07,
+      "iface_cells": 3373
+    },
+    {
+      "step": 100,
+      "T": 0.5,
+      "front": 26,
+      "X": 3.25,
+      "h": 17,
+      "H": 1.0625,
+      "mass_drift_rel": 5.7220458984375e-07,
+      "iface_cells": 3813
+    },
+    {
+      "step": 120,
+      "T": 0.6,
+      "front": 29,
+      "X": 3.625,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -5.677541097005208e-05,
+      "iface_cells": 4184
+    },
+    {
+      "step": 140,
+      "T": 0.7000000000000001,
+      "front": 32,
+      "X": 4.0,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -5.772908528645833e-05,
+      "iface_cells": 4310
+    },
+    {
+      "step": 160,
+      "T": 0.8,
+      "front": 35,
+      "X": 4.375,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -7.584889729817708e-05,
+      "iface_cells": 4195
+    },
+    {
+      "step": 180,
+      "T": 0.9,
+      "front": 38,
+      "X": 4.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.0006715138753255208,
+      "iface_cells": 4282
+    },
+    {
+      "step": 200,
+      "T": 1.0,
+      "front": 38,
+      "X": 4.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.0008464177449544271,
+      "iface_cells": 4052
+    },
+    {
+      "step": 220,
+      "T": 1.1,
+      "front": 36,
+      "X": 4.5,
+      "h": 16,
+      "H": 1.0,
+      "mass_drift_rel": -0.0012261708577473958,
+      "iface_cells": 4166
+    },
+    {
+      "step": 240,
+      "T": 1.2,
+      "front": 33,
+      "X": 4.125,
+      "h": 13,
+      "H": 0.8125,
+      "mass_drift_rel": -0.001503753662109375,
+      "iface_cells": 4288
+    },
+    {
+      "step": 260,
+      "T": 1.3,
+      "front": 36,
+      "X": 4.5,
+      "h": 15,
+      "H": 0.9375,
+      "mass_drift_rel": -0.0015413920084635417,
+      "iface_cells": 4457
+    },
+    {
+      "step": 280,
+      "T": 1.4000000000000001,
+      "front": 38,
+      "X": 4.75,
+      "h": 16,
+      "H": 1.0,
+      "mass_drift_rel": -0.0016459147135416666,
+      "iface_cells": 4419
+    },
+    {
+      "step": 300,
+      "T": 1.5,
+      "front": 38,
+      "X": 4.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.0018559773763020834,
+      "iface_cells": 4512
+    },
+    {
+      "step": 320,
+      "T": 1.6,
+      "front": 38,
+      "X": 4.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.0018835067749023438,
+      "iface_cells": 4657
+    },
+    {
+      "step": 340,
+      "T": 1.7,
+      "front": 38,
+      "X": 4.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.0018835067749023438,
+      "iface_cells": 4828
+    },
+    {
+      "step": 360,
+      "T": 1.8,
+      "front": 38,
+      "X": 4.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.0022796630859375,
+      "iface_cells": 4471
+    },
+    {
+      "step": 380,
+      "T": 1.9000000000000001,
+      "front": 38,
+      "X": 4.75,
+      "h": 14,
+      "H": 0.875,
+      "mass_drift_rel": -0.002280553181966146,
+      "iface_cells": 4599
+    },
+    {
+      "step": 400,
+      "T": 2.0,
+      "front": 38,
+      "X": 4.75,
+      "h": 14,
+      "H": 0.875,
+      "mass_drift_rel": -0.002346229553222656,
+      "iface_cells": 4816
+    },
+    {
+      "step": 420,
+      "T": 2.1,
+      "front": 38,
+      "X": 4.75,
+      "h": 14,
+      "H": 0.875,
+      "mass_drift_rel": -0.002346674601236979,
+      "iface_cells": 4829
+    },
+    {
+      "step": 440,
+      "T": 2.2,
+      "front": 38,
+      "X": 4.75,
+      "h": 13,
+      "H": 0.8125,
+      "mass_drift_rel": -0.00239105224609375,
+      "iface_cells": 4893
+    },
+    {
+      "step": 460,
+      "T": 2.3000000000000003,
+      "front": 38,
+      "X": 4.75,
+      "h": 14,
+      "H": 0.875,
+      "mass_drift_rel": -0.002607917785644531,
+      "iface_cells": 4545
+    },
+    {
+      "step": 480,
+      "T": 2.4,
+      "front": 36,
+      "X": 4.5,
+      "h": 15,
+      "H": 0.9375,
+      "mass_drift_rel": -0.002607917785644531,
+      "iface_cells": 4767
+    },
+    {
+      "step": 500,
+      "T": 2.5,
+      "front": 36,
+      "X": 4.5,
+      "h": 17,
+      "H": 1.0625,
+      "mass_drift_rel": -0.0027553558349609373,
+      "iface_cells": 5085
+    },
+    {
+      "step": 520,
+      "T": 2.6,
+      "front": 37,
+      "X": 4.625,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.002756818135579427,
+      "iface_cells": 4942
+    },
+    {
+      "step": 540,
+      "T": 2.7,
+      "front": 38,
+      "X": 4.75,
+      "h": 17,
+      "H": 1.0625,
+      "mass_drift_rel": -0.0030501683553059897,
+      "iface_cells": 4634
+    },
+    {
+      "step": 560,
+      "T": 2.8000000000000003,
+      "front": 38,
+      "X": 4.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.0031992594401041665,
+      "iface_cells": 4657
+    },
+    {
+      "step": 580,
+      "T": 2.9,
+      "front": 38,
+      "X": 4.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.003270403544108073,
+      "iface_cells": 4706
+    },
+    {
+      "step": 600,
+      "T": 3.0,
+      "front": 38,
+      "X": 4.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.0033842086791992187,
+      "iface_cells": 4777
+    },
+    {
+      "step": 620,
+      "T": 3.1,
+      "front": 38,
+      "X": 4.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -0.003533490498860677,
+      "iface_cells": 5000
+    }
+  ]
+}
