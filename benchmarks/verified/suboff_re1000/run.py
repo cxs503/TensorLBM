@@ -9,9 +9,17 @@ Reference conventions (repo family, consistent with historical runs):
     scale Re=2e6 experiment, NOT to Re=1000 — see SUMMARY_REPORT.txt)
   - pressure_extrap = 'none'  (verified-benchmark rule, no extrapolation)
 
+Verified-benchmark standard (2026-08-19): the whole time-stepping chain is
+routed through the shared compile module ``benchmarks.compile_route``
+(``route_step`` -> ``tensorlbm.compile_utils.compile_step``), i.e.
+``torch.compile`` by default and ``--compile-mode eager`` for the A/B path.
+The step-dependent branches (mass-correction cadence, force sampling,
+divergence guard) stay OUTSIDE the compiled closure, in the eager driver loop.
+
 Usage:
   python run.py [--resolution 80] [--steps 20000] [--device cuda:2]
                 [--collision mrt|smagorinsky] [--out DIR]
+                [--friction standard|mix50|...] [--compile-mode default|eager]
 
 Simulation runs through GeneralSimEngine (common-module entry point);
 force post-processing reuses the same common modules
@@ -22,13 +30,17 @@ with the wetted-area reference area.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import math
+import os
 import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(_REPO_ROOT / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
 
 
 def _default_device() -> str:
@@ -49,17 +61,19 @@ def _default_device() -> str:
     return "cpu"
 
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d
-from tensorlbm.drag_pressure import (
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
+
+from tensorlbm.boundaries3d import far_field_bc_3d  # noqa: E402
+from tensorlbm.d3q19 import equilibrium3d  # noqa: E402
+from tensorlbm.drag_pressure import (  # noqa: E402
     drag_friction_integration,
     drag_pressure_integration,
     suboff_smooth_q,
 )
-from tensorlbm.general_sim import (
+from tensorlbm.lbm_step_correct import lbm_step_correct  # noqa: E402
+from tensorlbm.general_sim import (  # noqa: E402
     CollisionModel,
     ForceMethod,
     GeneralSimConfig,
@@ -88,6 +102,113 @@ def frontal_dpS(u_lb: float, radius_lb: float) -> float:
     return 0.5 * u_lb**2 * math.pi * radius_lb**2
 
 
+def run_engine_routed(engine: GeneralSimEngine, compile_mode: str | None) -> tuple[dict, float]:
+    """Drive ``GeneralSimEngine``'s time-stepping chain through ``compile_route``.
+
+    Replicates ``GeneralSimEngine.run`` for the plain bounce-back path so the
+    whole per-step chain (collision -> NoDynamics -> half-way BB -> streaming
+    -> far-field BC) is routed through the shared
+    :func:`benchmarks.compile_route.route_step` (``torch.compile`` by default),
+    per the verified-benchmark standard (benchmarks/compile_route.py).
+
+    Every step-dependent branch — the mass-correction cadence, the force
+    sampling, the snapshot cadence and the divergence guard — stays OUTSIDE the
+    compiled closure, in the eager driver loop (compile_route rule #2).  The
+    compiled closure is accordingly the *pure* ``f -> f'`` chain; mass
+    correction is re-applied here with exactly the cadence
+    ``step % mass_correction_interval == 0`` that ``lbm_step_correct`` used
+    internally, so the evolution is unchanged and only the routing differs.
+
+    The wall-function / BFL / thermal / VOF paths are not part of the compiled
+    chain; if the auto-selected wall treatment is the wall function this falls
+    back to the engine's own (eager) loop and says so in the log.
+
+    Returns ``(run_info, elapsed_s)`` — same ``run_info`` dict as
+    ``GeneralSimEngine.run``.
+    """
+    sol = engine.config.solver
+    out = engine.config.output
+
+    if engine._auto_wall_treatment == WallTreatment.WALL_FUNCTION:
+        print(
+            "[compile_route] suboff_re1000: wall-function path not in compiled "
+            "chain -> eager engine.run()",
+            flush=True,
+        )
+        t0 = time.time()
+        info = engine.run()
+        return info, time.time() - t0
+
+    tau = engine.uc.tau
+    nu_lb = engine.uc.nu_lb
+    u_in = engine.uc.u_lb
+
+    collide_fn, collide_kwargs = engine._get_collide_fn()
+    far_field_fn = functools.partial(
+        far_field_bc_3d, bc_config=engine._build_bc_config()
+    )
+    solid = (
+        engine.solid
+        if engine.solid is not None
+        else torch.zeros_like(engine.f[0], dtype=torch.bool)
+    )
+
+    # Mass correction: step-dependent branch -> kept in the eager loop below.
+    correct_mass_fn = None
+    target_mass = None
+    if sol.mass_correction:
+        try:
+            from tensorlbm.solver3d import correct_mass3d
+
+            correct_mass_fn = correct_mass3d
+            target_mass = engine._initial_mass
+        except ImportError:
+            pass
+
+    dpS = engine._compute_dpS()
+    div_check = max(
+        1, int(os.environ.get("TL_ISFINITE_INTERVAL", sol.divergence_check_interval))
+    )
+
+    def _step(f: torch.Tensor) -> torch.Tensor:
+        # Whole per-step chain, pure tensor function f -> f' (no host sync,
+        # no step index): collide -> NoDynamics -> half-way BB -> stream -> BC.
+        return lbm_step_correct(
+            f, collide_fn, tau, solid, u_in, far_field_fn, **collide_kwargs
+        )
+
+    step_fn = route_step(_step, compile_mode, name=f"suboff_re1000[L{sol.resolution}]")
+
+    n_steps = sol.max_steps
+    t0 = time.time()
+    for step in range(1, n_steps + 1):
+        engine.f = step_fn(engine.f)
+        engine.step_count += 1
+        # ---- step-dependent branches stay eager (outside the compiled graph) ----
+        if (
+            correct_mass_fn is not None
+            and target_mass is not None
+            and step % sol.mass_correction_interval == 0
+        ):
+            engine.f = correct_mass_fn(engine.f, target_mass)
+        if out.save_forces and step % sol.force_sample_interval == 0:
+            engine._sample_forces(dpS, nu_lb)
+        if out.save_macroscopic and step % sol.snapshot_interval == 0:
+            engine._save_snapshot()
+        if step % div_check == 0 and not torch.isfinite(engine.f).all():
+            break
+    elapsed = time.time() - t0
+
+    info = {
+        "status": "completed",
+        "steps": engine.step_count,
+        "snapshots": len(engine.snapshots),
+        "force_samples": len(engine.forces_log),
+        "diverged": not torch.isfinite(engine.f).all().item(),
+    }
+    return info, elapsed
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--resolution", type=int, default=80, help="cells per hull length L")
@@ -113,9 +234,11 @@ def main() -> None:
         "--p0", default="near_wall", choices=["near_wall", "far_field", "domain_avg", "inlet"]
     )
     ap.add_argument("--out", default=None)
+    add_compile_mode_arg(ap)
     args = ap.parse_args()
     if not args.device:
         args.device = _default_device()
+    compile_mode = compile_mode_from_args(args)
 
     L = args.resolution
     collision = (
@@ -200,12 +323,11 @@ def main() -> None:
         flush=True,
     )
 
-    t0 = time.time()
-    run_info = engine.run()
-    elapsed = time.time() - t0
+    run_info, elapsed = run_engine_routed(engine, compile_mode)
     print(
         f"run finished: {run_info['status']} in {elapsed:.0f}s "
-        f"({elapsed / max(run_info['steps'], 1) * 1000:.1f} ms/step)",
+        f"({elapsed / max(run_info['steps'], 1) * 1000:.1f} ms/step) "
+        f"compile_mode={compile_mode!r}",
         flush=True,
     )
 
@@ -338,6 +460,7 @@ def main() -> None:
         "tau": setup_info["tau"],
         "collision": args.collision,
         "Cs": 0.05 if args.collision == "smagorinsky" else None,
+        "compile_mode": compile_mode,
         "n_steps": run_info["steps"],
         "elapsed_s": round(elapsed, 1),
         "ms_per_step": round(elapsed / max(run_info["steps"], 1) * 1000, 2),
