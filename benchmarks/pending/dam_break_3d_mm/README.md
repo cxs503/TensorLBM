@@ -4,6 +4,19 @@
 后重测，误差虽有变化但仍 >50%，共性模块的自由面物理缺陷（**重力无关的伪润湿薄膜**）
 是根因，未入库 `benchmarks/verified/`。
 
+> ## 🧱 结构性障碍已固化 → `docs/free_surface_architecture_gaps.md`
+>
+> 本 benchmark 的缺口是**结构性质量通道耦合**（不是参数没调好），已连同障碍 A（2D SCMP
+> 本构障碍）、已试过的全部失败杠杆、能力边界表一起固化到
+> **[`docs/free_surface_architecture_gaps.md`](../../../docs/free_surface_architecture_gaps.md)**。
+> **在按该文档 §4 引入新架构自由度（解耦质量通道 / 独立气相 EOS / 自由压力场）前，请勿重复标量调参。**
+>
+> 核心证据（commit `6615076`）：X（波前）与 H（残高）**互斥**——36 组 a=8 配置从不同时进 ±3%；
+> H 解冻开关是 `TL_FS_LIQ_TO_IFACE`（**非** `WALL_SLIP` 单独）；要 H→0.78 需
+> `WALL_SLIP+LIQ_TO_IFACE` 但抑制波前（X 钉在 1.125–1.375）；要 X→1.5954 需关
+> `LIQ_TO_IFACE`+`rg≈0.983` 但 H 冻结 0.938。根因：壁面滑移/L-I 守恒交换与波前驱动
+> 由**同一质量通道**控制。
+
 ## 物理问题
 
 水柱 a×a×2a（如 32×64×32，高度 2a 沿 +y）在角部（x=0, z=0 墙），重力 -y，六面固壁，其余为气体。
