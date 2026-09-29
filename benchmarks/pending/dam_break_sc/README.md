@@ -4,6 +4,17 @@
 见 `result.json`、`guo_sweep.json`、`REPORT_SCMP_vs_FS2D.md`。本目录保留真实数据与
 可复现材料，**未**入库 `benchmarks/verified/`。
 
+> ## 🧱 结构性障碍已固化 → `docs/free_surface_architecture_gaps.md`
+>
+> 本 benchmark 的缺口是**结构性本构障碍**（不是参数没调好），已连同障碍 B（3D Körner
+> 通道耦合）、已试过的全部失败杠杆、能力边界表一起固化到
+> **[`docs/free_surface_architecture_gaps.md`](../../../docs/free_surface_architecture_gaps.md)**。
+> **在按该文档 §4 引入新架构自由度（独立气相 EOS / 相场 / 解耦质量通道）前，请勿重复标量调参。**
+>
+> 核心证据：`psi_exp` 的 G↔共存密度比单调（G4.6→6.8、G5.0→12.6、G5.4→18.4）；
+> `err(T=1)=0` 需比≈12.7 而 `err(T=2.96)=0` 需≈6.9（**要求相反**）；压力张量 SC 力
+> = 领头阶等价（只平移有效 G ~0.1）；Guo 力（守恒修正后）≈速度平移（逐位级）。
+
 ---
 
 ## 0. 决定性修正一：M&M 时间口径（T = t·√(2g/a)）
