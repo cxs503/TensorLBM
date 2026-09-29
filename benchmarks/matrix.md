@@ -98,3 +98,21 @@ verified/ 案例（本标准设立时点的全部 15 个）的整步步进链（
   入库标准不变：误差 ≤3%。
 - 注：main 后续新增的 `cylinder/re200` 与 `sod_shock_tube` 尚未按本标准接入，
   待后续 PR 以同一矩阵流程补测后接入。
+
+#### 编译不可用设备的自动 eager 回退（2026-09-29 增补）
+
+`mode='default'` 在 **CUDA** 上是真编译（生产路径，不回退）。在 **Hygon/SDAA**
+上 `torch.compile` 走 `teco_inductor`（Torch-SDAA **3.1.1a3**），其后端对整步
+LBM 链仍不完整：`compile_route._enable_sdaa_inductor()` 已修 L1–L4 四处后端
+缺陷（device codegen 注册 / `Reduction` 陈旧绑定 / `TecoScheduling._sizes` /
+`load_count` 契约），但上游仍有 L5（teco `EXPAND` 回退路径 `reduction_shape`
+越界）——属已安装包内部实现，不再继续 hack。
+
+为此 `route_step`（编译模式）不再直接抛错中断 benchmark，而是返回
+`_CompileWithEagerFallback`：**首次**调用试编译版，捕获
+`InductorError/AssertionError/IndexError/RuntimeError` 后打印醒目 banner
+（含异常与回退原因），**其后每步走 eager**（与 `--compile-mode eager` 逐位一致，
+保证 suboff_re1000 / square_cylinder 等入库用例在 SDAA 上可复现）。判定结果经
+`compile_status_of(step)` 读出并写入 `result.json` 的 `compile_mode_effective`
+（`compiled` / `eager_fallback` / `eager`）——静默回退的运行与真编译运行由此可区分。
+CUDA 上该封装是 no-op（首次即成功并保持编译）。

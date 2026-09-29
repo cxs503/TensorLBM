@@ -45,6 +45,17 @@ SUBOFF 裸艇体（DARPA SUBOFF bare hull，L=4.356 m，D=0.508 m，L/D=8.57）
 快照、NaN 守卫）全部留在编译域外的 eager 驱动循环（compile_route 规则 #2），
 routing banner 写入日志留痕。
 
+**SDAA / teco 限制与自动 eager 回退（2026-09-29）**：`mode='default'` 在 CUDA
+上是真编译（生产路径）。本机为 Hygon/SDAA，`torch.compile` 走 `teco_inductor`
+（Torch-SDAA **3.1.1a3**），其后端对整步 LBM 链仍不完整（`_enable_sdaa_inductor`
+已修 L1–L4，上游 L5 teco `EXPAND` 路径 `reduction_shape` 越界未修）。因此
+`route_step` 对编译模式改用 `_CompileWithEagerFallback`：**首次**调用试编译版，
+捕获 `InductorError/AssertionError/IndexError/RuntimeError` 后打印醒目 banner
+（异常 + 回退原因），**其后每步走 eager**，与 `--compile-mode eager` **逐位一致**
+——保证本用例在 SDAA 上仍可复现。实际模式写入 `result.json` 的
+`compile_mode_effective`（`compiled` / `eager_fallback` / `eager`），并附
+`compile_status` / `compile_status_reason`。CUDA 上该封装是 no-op。
+
 ### mix50 摩擦公式（为什么用标准公式会偏低 ~10%）
 
 体壁摩擦是阻力主导项（摩擦 ~77%）。离散体壁的精确摩擦有两个界：
