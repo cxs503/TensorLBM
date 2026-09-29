@@ -915,6 +915,46 @@ def free_surface_step(
         )
 
     # ---- 3. Wall BCs ----
+    # OPT-IN hydrostatic-consistent half-way bounce-back (TL_FS_WALL_MODE).
+    #
+    # Legacy: ``bounce_back_cells_3d`` reflects at the SOLID cell via an in-place
+    # q <-> opp(q) swap.  In this pull-stream framework the *fluid* cell adjacent
+    # to a wall reads its wall-entering populations from that solid cell BEFORE
+    # the swap, i.e. it samples the post-collision solid state (and, on step 1,
+    # the zero initial solid state).  The one-step budget shows the resulting
+    # spurious wall-layer deficit: rho 1.0 -> 0.694 and u_y spike -0.20 EVEN AT
+    # g = 0 (gravity-independent), which drives the boundary layer into free
+    # vibration and feeds the interface chain (pseudo-wetting film creep).
+    #
+    # Corrected form reflects at the *fluid* side using its own outgoing
+    # populations (true half-way BB).  ``halfway_hydro`` additionally adds the
+    # hydrostatic pressure head of a static column p = rho_l g_vec.(x - x_ref):
+    #     f_q(x_f) = f_post[opp(q)](x_f) - 2 w_q rho_l (g_vec.c_q) / cs^2
+    # (the discrete drop p(x_f) - p(x_f - c_q) mirrored into the entering
+    # population, so it vanishes at the free surface x_ref and supports the fluid
+    # against gravity near the wall).  Both collapse to a single where;
+    # TL_FS_WALL_HYDRO_COEF (default 1) scales the head term.
+    _wall_mode = os.environ.get("TL_FS_WALL_MODE", "legacy").strip().lower()
+    if _wall_mode in ("halfway", "halfway_hydro"):
+        _src_solid = torch.stack(
+            [
+                solid_mask.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
+                for sx, sy, sz in _C19_SHIFTS
+            ]
+        )  # (19,nz,ny,nx): pull source x - c_q lies in SOLID
+        _fluid_bb = (~solid_mask).unsqueeze(0) & _src_solid
+        _f_reflect = f_post[_OPP.to(device)]
+        if _wall_mode == "halfway_hydro" and (gx != 0.0 or gy != 0.0 or gz != 0.0):
+            _cs2_w = 1.0 / 3.0
+            _coef_w = float(os.environ.get("TL_FS_WALL_HYDRO_COEF", "1.0"))
+            _gvec_w = torch.tensor([float(gx), float(gy), float(gz)], device=device)
+            _gc_w = (c_dev * _gvec_w.view(1, 3)).sum(dim=1)  # (19,) = g_vec . c_q
+            _w19_w = _W.to(device).float()
+            _head_w = (
+                -2.0 / _cs2_w
+            ) * _coef_w * float(rho_liquid) * _w19_w * _gc_w  # (19,)
+            _f_reflect = _f_reflect + _head_w.view(19, 1, 1, 1)
+        f = torch.where(_fluid_bb, _f_reflect, f)
     f = bounce_back_cells_3d(f, solid_mask)
     if free_slip_y and y_wall_mask is not None:
         f = free_slip_cells_3d(f, y_wall_mask, axis=1)
@@ -1199,6 +1239,7 @@ def free_surface_step(
     # donor, and I→G only fires on a genuinely (near-)empty non-negative cell.
     if _env_bool("TL_FS_MASS_GATE", True):
         mass_gate = mass.clamp(min=0.0)
+        _tog_eps = float(os.environ.get("TL_FS_TOGAS_EPS", "0.01")) * rho_liquid
         to_iface = gas_mask & (mass_gate > 0.01 * rho_liquid) & (~solid_mask)
         # ABLATION (diagnostic only): TL_FS_ABL_TOIFACE suppresses the gas->interface birth.
         if _env_bool("TL_FS_ABL_TOIFACE", False):
@@ -1218,7 +1259,7 @@ def free_surface_step(
             )
         else:
             to_gas = (
-                (interface_mask | liquid_mask) & (mass_gate <= 0.01 * rho_liquid) & (~solid_mask)
+                (interface_mask | liquid_mask) & (mass_gate <= _tog_eps) & (~solid_mask)
             )
     else:
         # Legacy fill-gated path (A/B reference).
