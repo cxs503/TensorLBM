@@ -516,6 +516,65 @@ def conservative_clamp_conserve(
     return (clipped + room * ((-net) / room_sum)).clamp(0.0, hi)
 
 
+def pair_conversion_conservation(
+    field: torch.Tensor,
+    target_total: float,
+    credit: torch.Tensor,
+    movable: torch.Tensor,
+    upper: float,
+) -> torch.Tensor:
+    """Pair the redistribution credit with the conversion debit on one field.
+
+    F2b (conversion/conservation pairing).  ``excess`` is credited to the
+    distribution receivers here, but the matching donor debit is (legacy) only
+    applied later by the ``to_liq`` → ``rho_liquid`` / ``to_gas`` → ``0``
+    relabel.  The conservation-preserving clamp runs *between* the two, so it
+    absorbs the donor overflow into the field first and the conversion relabel
+    then becomes a near no-op: the receiver credit survives as a net mass
+    source every time an I→L conversion fires (measured: ``A ≈ +0.5`` with the
+    full ``A`` appearing as per-step drift).
+
+    Recompute the pairing on the *post-clamp* conversion field: the residual
+    ``target_total - field.sum()`` is charged to (or drawn from) the credited
+    receivers proportionally to the credit they received, so the redistribution
+    and the conversion cancel exactly and conversion fabricates no mass.
+
+    ``credit`` is the per-cell redistribution increment (non-negative at
+    receivers); ``movable`` excludes the solid interior; the result is bounded
+    to ``[0, upper]``.
+    """
+    delta = float(target_total) - float(field.sum())
+    if delta == 0.0:
+        return field
+    movable = movable.to(field.dtype)
+    # Phase 1: the credited receivers give back (or are given) their share,
+    # bounded so a receiver never loses more than the credit it received.
+    credit_weight = credit.clamp(min=0.0).to(field.dtype) * movable
+    credit_sum = float(credit_weight.sum())
+    out = field
+    if credit_sum > 0.0:
+        magnitude = min(abs(delta), credit_sum)
+        sign = 1.0 if delta > 0.0 else -1.0
+        out = (field + credit_weight * (sign * magnitude / credit_sum)).clamp(0.0, float(upper))
+    # Phase 2: settle any residual over the whole movable band (held mass when
+    # removing, available headroom when adding) so the total is exact.
+    residual = float(target_total) - float(out.sum())
+    if abs(residual) > 1e-12:
+        if residual < 0.0:
+            band = out * movable
+            band_sum = float(band.sum())
+            if band_sum > 0.0:
+                take = min(-residual, band_sum)
+                out = (out - band * (take / band_sum)).clamp(0.0, float(upper))
+        else:
+            band = (float(upper) - out) * movable
+            band_sum = float(band.sum())
+            if band_sum > 0.0:
+                give = min(residual, band_sum)
+                out = (out + band * (give / band_sum)).clamp(0.0, float(upper))
+    return out
+
+
 def _validate_candidate(
     f: torch.Tensor,
     fill: torch.Tensor,
@@ -713,6 +772,15 @@ def build_topology_transaction(
     cfill = torch.where(to_gas, torch.zeros_like(cfill), cfill)
     cmass = torch.where(to_gas, torch.zeros_like(cmass), cmass)
     cf = torch.where(to_gas.unsqueeze(0), torch.zeros_like(cf), cf)
+    # F2b: pair the redistribution credit with the conversion donor debit on the
+    # post-clamp conversion field, so the to_liq relabel cannot fabricate mass.
+    cmass = pair_conversion_conservation(
+        cmass,
+        float(mass.sum()),
+        combined_increment,
+        (~solid_mask),
+        float(rho_liquid),
+    )
     if _os2.environ.get("TL_FS_DBG", "0").strip().lower() not in ("0", "false", "no", ""):
         _dbg_liq_after = float(cmass[to_liq].sum()) if _dbg_liq_n else 0.0
         _dbg_gas_after = float(cmass[to_gas].sum()) if _dbg_gas_n else 0.0

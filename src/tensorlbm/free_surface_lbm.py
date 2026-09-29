@@ -932,17 +932,53 @@ def free_surface_step(
     # weight) and every L/I link with an explicit bulk debit below, so an
     # ungated receiver is a *transfer*, never a source.
     recv_ok = iface_mask
+    # F1': GRADED receive gate — resolves the "freeze vs pseudo-advance" tension.
+    #
+    # The F1 open gate (``recv_ok = iface_mask``) treats *every* INTERFACE cell
+    # as a legal mass-exchange receiver, including a freshly-born envelope cell
+    # at fill = 0.  ``init_flags_from_fill`` / the halo promotion birth that
+    # envelope with an equilibrium population at rho_liquid but tracked mass 0.
+    # A single D3Q19 link into such an empty shell then siphons real liquid mass
+    # into it (gravity-independent, ~0.04 cell/step): once mass >= 0.999 rho_L
+    # the cell converts to LIQUID and the halo lifts the next GAS cell to
+    # INTERFACE -> a pseudo-wetting film that pollutes X and H.
+    #
+    # The pre-F1 strict gate (fill > 1e-3) closed *all* empty shells, which also
+    # sealed the genuine gravity-driven spread (front frozen at X = 1.0).
+    #
+    # The graded gate distinguishes the two cases by the *support* of the shell:
+    #   tier 1 (established): the INTERFACE cell already carries tracked liquid
+    #     mass (mass > m_eps) -> always a legal receiver (real interface).
+    #   tier 2 (supported birth): a fresh / empty shell (mass <= m_eps) may
+    #     receive only when it is backed by a *real liquid surface*, i.e. it has
+    #     at least N_MIN of its D3Q19 neighbours in LIQUID.  A lone corner finger
+    #     (1-2 liquid links) — the pseudo-film seed — is locked out; a proper
+    #     face (>= 3-4 liquid links) is admitted so gravity-driven spreading can
+    #     still fill the leading interface.
+    if _env_bool("TL_FS_RECV_GRADED", False):
+        m_eps = float(os.environ.get("TL_FS_RECV_MASS_EPS", "0.01")) * rho_liquid
+        n_min = int(os.environ.get("TL_FS_RECV_NMIN", "3"))
+        established = mass > m_eps
+        n_liq_nbr_pre = (neighbor_flags == LIQUID).sum(dim=0)
+        supported = n_liq_nbr_pre >= n_min
+        recv_ok = iface_mask & (established | supported)
     # ABLATION (diagnostic only): TL_FS_ABL_RECVCLOSED restores the pre-F1
     # fill gate so a freshly-born envelope cell at fill=0 cannot receive.
     if _env_bool("TL_FS_ABL_RECVCLOSED", False):
         recv_ok = iface_mask & (fill > 1e-3)
-    recv_19 = recv_ok.unsqueeze(0)
+    # EXPERIMENTAL knobs: apply the gate to the L/I and I/I channels separately.
+    _liq_only = _env_bool("TL_FS_RECV_LIQ_ONLY", False)
+    _iface_only = _env_bool("TL_FS_RECV_IFACE_ONLY", False)
+    recv_ok_liq = recv_ok if not _iface_only else iface_mask
+    recv_ok_iface = recv_ok if not _liq_only else iface_mask
+    recv_19 = recv_ok_liq.unsqueeze(0)
+    recv_19_iface = recv_ok_iface.unsqueeze(0)
     # neighbor_flags always computed in anti-bounce-back above (no None check)
     # For pull link q at x, the opposing outgoing population belongs to x
     # itself: f_bar(q)^*(x).  Sampling it at x-c_q mixes two different links.
     f_opp_nb = f_post[_OPP.to(device)]  # (19, nz, ny, nx)
     from_liq = recv_19 & (neighbor_flags == LIQUID)
-    from_iface = recv_19 & (neighbor_flags == INTERFACE)
+    from_iface = recv_19_iface & (neighbor_flags == INTERFACE)
     mass_delta_liquid = torch.where(from_liq, f_exchange - f_opp_nb, torch.zeros_like(f))
     mass_delta_interface = torch.where(
         from_iface, (f_exchange - f_opp_nb) * 0.5, torch.zeros_like(f)
@@ -1001,6 +1037,7 @@ def free_surface_step(
             "f_exchange": f_exchange.clone(),
             "f_post": f_post.clone(),
             "flags": flags.clone(),
+            "mass_after_exchange": mass.clone(),
             "mass_delta_liquid": mass_delta_liquid.clone().sum(0),
         }
     mass_after_exchange_value = float(mass.sum())
