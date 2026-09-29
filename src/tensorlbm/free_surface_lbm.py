@@ -1114,7 +1114,7 @@ def free_surface_step(
         from_iface, (f_exchange - f_opp_nb) * 0.5, torch.zeros_like(f)
     )
     # ------------------------------------------------------------------
-    # OPT-IN free-surface (gas) mass-flux channel: TL_FS_GAS_CHANNEL=1.
+    # OPT-IN free-surface (gas) mass-flux channel: TL_FS_GAS_CHANNEL.
     #
     # The legacy path hard-zeroes the gas channel ("gas is a pressure boundary,
     # not a liquid-mass reservoir").  That makes the interface cells unable to
@@ -1124,13 +1124,48 @@ def free_surface_step(
     # anti-bounce-back reconstruction f_abb and the outgoing is the local
     # post-collision population f_opp_nb, so the gas contribution to a tracked
     # interface cell is (f_abb[q] - f_opp_nb[q]) summed over the gas links.
+    #
+    # The bare form (TL_FS_GAS_CHANNEL=1 / "naive") is a NON-CONSERVATIVE
+    # source/sink: the mass an interface cell vents into the gas is simply
+    # dropped from the tracked field (measured drift -3.4e-2 at rho_gas=1).
+    # Two CONSERVATIVE closures are provided, both paired per D3Q19 link:
+    #   * "conserv"/"paired" (gas-side receipt): the same amount is credited to
+    #     the gas pull-source x-c_q, so gas cells accumulate real mass and are
+    #     promoted by the mass gate.  This is the L/I bulk-debit pattern applied
+    #     to the gas channel; the global link sum is identically zero.
+    #   * "redist"/"paired_redist": the vented mass is kept inside the liquid
+    #     system.  The interface cell is debited (mass_delta_gas) and the same
+    #     amount is returned to the Körner redistribution pool so surviving
+    #     interface neighbours receive it -- donor + receivers net to exactly
+    #     zero, no new interface is born in the gas (no pseudo-film), and the
+    #     cell is free to empty so H can actually collapse.
     # ------------------------------------------------------------------
-    if _env_bool("TL_FS_GAS_CHANNEL", False):
+    _gc_mode = os.environ.get("TL_FS_GAS_CHANNEL", "0").strip().lower()
+    _gc_on = _gc_mode in ("1", "true", "yes", "naive", "conserv", "paired", "redist", "paired_redist")
+    _gc_conserv_credit = _gc_mode in ("conserv", "paired")
+    _gc_conserv_redist = _gc_mode in ("redist", "paired_redist")
+    if _gc_on:
         mass_delta_gas = torch.where(
             need_abb, f_abb - f_opp_nb, torch.zeros_like(f)
         )
     else:
         mass_delta_gas = torch.zeros_like(f)
+    mass_delta_gas_credit = torch.zeros_like(mass)
+    gas_redist_excess = torch.zeros_like(mass)
+    if _gc_conserv_credit:
+        # Per-link receipt on the gas pull-source x-c_q (identical roll pattern
+        # to the L/I bulk debit below), so every vent is matched by a gain.
+        mass_delta_gas_credit = -torch.stack(
+            [
+                mass_delta_gas[q].roll((-sz, -sy, -sx), dims=(0, 1, 2))
+                for q, (sx, sy, sz) in enumerate(_C19_SHIFTS)
+            ]
+        ).sum(0)
+    if _gc_conserv_redist:
+        # Interface cell net gas vent (negative = loss); its magnitude is
+        # returned to the redistribution pool.  The cell is already debited by
+        # mass_delta_gas, so donor + receivers net to exactly zero.
+        gas_redist_excess = (-mass_delta_gas.sum(0)).clamp(min=0.0)
     # A L/I credit at interface target x is paired link-by-link with a debit
     # at its pull source x-c_q.  This uses only existing D3Q19 links; it is
     # neither a global rescale nor a topology mutation.
@@ -1145,11 +1180,11 @@ def free_surface_step(
         +
         # Gas is a pressure boundary, not a liquid-mass reservoir.  Adding
         # its reconstructed population here spuriously creates tracked liquid
-        # mass in a quiescent closed column (unless TL_FS_GAS_CHANNEL=1, the
-        # opt-in free-surface mass-flux channel above).
+        # mass in a quiescent closed column (unless TL_FS_GAS_CHANNEL is set to
+        # one of the opt-in free-surface mass-flux closures above).
         mass_delta_gas
         + mass_delta_interface
-    ).sum(0)
+    ).sum(0) + mass_delta_gas_credit
     if paired_liquid_interface_debit:
         valid_bulk_owner = flags == LIQUID
         invalid_debit = mass_delta_bulk_debit.masked_select(~valid_bulk_owner)
@@ -1388,6 +1423,13 @@ def free_surface_step(
         torch.where(to_liq, excess_to_liq, torch.zeros_like(mass))
         + torch.where(redistribution_to_g, excess_to_g, torch.zeros_like(mass))
     ).clamp(min=0.0)
+    # Conservative gas-channel ("redist") pairing: the mass each interface cell
+    # vents through its gas links (already debited from that cell via
+    # mass_delta_gas above) is returned to the redistribution pool here, so
+    # surviving interface neighbours receive it and the global tracked mass is
+    # unchanged.  Zero unless TL_FS_GAS_CHANNEL is "redist"/"paired_redist".
+    if _gc_conserv_redist:
+        excess = excess + gas_redist_excess
     # (b) Explicit donor for the negative mass that I→G clears.  Clamping the
     # positive excess discards the negative part; the negative cell must then be
     # settled *explicitly*, otherwise the conversion deletes it (a spurious
