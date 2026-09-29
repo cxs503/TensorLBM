@@ -469,6 +469,53 @@ def _init_new(
     return torch.where(mask.unsqueeze(0), feq, f)
 
 
+def conservative_clamp_conserve(
+    field: torch.Tensor, upper: float, weight: torch.Tensor | None = None
+) -> torch.Tensor:
+    """Clip ``field`` into ``[0, upper]`` while preserving ``field.sum()``.
+
+    F2 (Körner conservation fix).  A plain ``field.clamp(0, upper)`` is a silent
+    mass source/sink: the paired liquid/interface debit can drive a LIQUID cell
+    below zero (clip-up creates mass) and redistribution can push a receiver
+    above ``rho_liquid`` (clip-down destroys mass).  Instead of dropping the
+    clipped amount, this clips each cell to the legal band and *returns the
+    clipped mass to cells that can still absorb it*:
+
+    * clip-up (net created): the surplus is drawn back out of the cells that
+      still carry tracked mass, proportionally to that mass, so no cell is
+      driven below zero — the excess is explicitly pushed back to its
+      liquid/interface neighbours rather than silently retained;
+    * clip-down (net destroyed): the deficit is pushed forward to the cells
+      that still have headroom below ``rho_liquid``.
+
+    ``weight`` optionally restricts where the correction is applied (e.g. to the
+    non-solid cells).  The returned tensor is bounded to ``[0, upper]`` and its
+    sum is exactly the input sum up to float rounding.
+    """
+    hi = float(upper)
+    clipped = field.clamp(0.0, hi)
+    net = float((clipped - field).sum())
+    if net == 0.0:
+        return clipped
+    if weight is None:
+        weight = torch.ones_like(field)
+    else:
+        weight = weight.to(field.dtype)
+    if net > 0.0:
+        # Clipped negatives lifted mass; remove it from cells that hold mass.
+        mass_weight = clipped * weight
+        weight_sum = float(mass_weight.sum())
+        if weight_sum <= 0.0:
+            return clipped
+        return (clipped - mass_weight * (net / weight_sum)).clamp(0.0, hi)
+    # Clipped overflow destroyed mass; give it back to cells with headroom.
+    room = (hi - clipped) * weight
+    room_sum = float(room.sum())
+    if room_sum <= 0.0:
+        return clipped
+    return (clipped + room * ((-net) / room_sum)).clamp(0.0, hi)
+
+
 def _validate_candidate(
     f: torch.Tensor,
     fill: torch.Tensor,
@@ -591,7 +638,7 @@ def build_topology_transaction(
             "i_to_g_ownership": _serialize_i_to_g_ownership(i_to_g_ownership),
         }
     gas_mask = cflags == gas_flag
-    cf = _init_new(cf, cflags, to_iface, rho_gas, ux, uy, uz, liquid_flag, interface_flag)
+    cf = _init_new(cf, cflags, to_iface, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
     cflags = torch.where(to_iface, torch.full_like(cflags, interface_flag), cflags)
     if replay_stages is not None:
         replay_stages["to_iface_initialization"] = tuple(
@@ -628,7 +675,10 @@ def build_topology_transaction(
             rho_liquid=rho_liquid,
         )
     mass_after_redistribution = float(cmass.sum())
-    cmass = cmass.clamp(0.0, rho_liquid)
+    # F2 conservation fix: replace the silent clamp with a conservation-
+    # preserving one.  Restrict the correction to the movable (non-solid) cells
+    # so the solid interior is never credited or debited.
+    cmass = conservative_clamp_conserve(cmass, rho_liquid, weight=(~solid_mask).to(cmass.dtype))
     if replay_stages is not None:
         replay_stages["clamp"] = tuple(value.clone() for value in (cf, cfill, cflags, cmass))
     if inventory_stages is not None:
@@ -686,7 +736,7 @@ def build_topology_transaction(
     # interface layer (quiescent column 743->32291 interface explosion).
     is_neighbor = (shifted_flags == liquid_flag).any(dim=0)
     to_i = ((gas_mask | to_gas) & is_neighbor & ~solid_mask) | recv_new
-    cf = _init_new(cf, cflags, to_i, rho_gas, ux, uy, uz, liquid_flag, interface_flag)
+    cf = _init_new(cf, cflags, to_i, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
     cflags = torch.where(to_i, torch.full_like(cflags, interface_flag), cflags)
     cfill = torch.where(to_i & ~recv_new, torch.zeros_like(cfill), cfill)
     cmass = torch.where(to_i & ~recv_new, torch.zeros_like(cmass), cmass)
