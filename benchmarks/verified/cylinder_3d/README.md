@@ -28,18 +28,23 @@ it inflated the historical "−11% error" by itself.
 
 The Ladd momentum-exchange sum `Σ_solid 2 c_ix f_i` splits as
 `Σ_surface + Σ_interior`. On a curved voxel body the **interior solid cells carry a
-non-degenerate pseudo-force** (measured 0.043 at D=20, 0.063 at D=40 — growing with D),
+non-degenerate pseudo-force** (measured 0.043 at D=20, 0.062 at D=40 — growing with D),
 which is why summing over *all* solid cells over-predicts Cd. Restricting the sum to the
 **surface solid cells (6-neighbourhood touching fluid)** recovers the correct value. This
 is also the true cause of the historical sphere MEM "+264%" failure (all-solid sum).
 See `docs/mem_surface_caliber_finding.md`.
 
-| grid | Cd (surface MEM) | err | Cd (all-solid, diagnostic) | Cd (interior, pseudo) |
-|---|---|---|---|---|
-| D=20 (640²) | **1.5368** | **+2.45%** | 1.5801 (+5.34%) | 0.0433 |
-| D=40 (1280²) | **1.4972** | **−0.19%** | 1.5596 (+3.97%) | 0.0625 |
+**Preferred pair — 40D lateral domain (blockage 2.50%), same caliber as `verified/cylinder`:**
 
-Both grids ≤3%, grid span 2.64% ≤3% → **verified**.
+| grid | Cd (surface MEM) | err vs 1.50 | Cd (all-solid, diag) | Cd (interior, pseudo) |
+|---|---|---|---|---|
+| D=20 (800²) | **1.5244** | **+1.62%** | 1.5673 (+4.48%) | 0.0429 |
+| D=40 (1600²) | **1.4852** | **−0.99%** | 1.5471 (+3.14%) | 0.0618 |
+
+Grid span 2.61% ≤ 3%, both grids ≤3% → **verified**.
+
+Alternative 32D-domain pair (blockage 3.125%) also passes — D=20 1.5368 (+2.45%),
+D=40 1.4972 (−0.19%), span 2.64%.
 
 Note: the pressure+friction decomposition on the *same* fields reads 1.305 / 1.323
 (−13.0% / −11.8%) — the augmented pressure/friction split on staircase wall geometry
