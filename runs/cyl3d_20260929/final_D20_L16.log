@@ -19,3 +19,20 @@
 [compile_route] cylinder_3d_re40[D20]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
 [cyl3d D=20 320x320x4] step=5000 Cd_p=1.0728 standard=0.3672 lagrange=0.3629 faces=0.3382 mix50=0.3527 (343s)
 [cyl3d D=20 320x320x4] step=10000 Cd_p=1.0514 standard=0.3519 lagrange=0.3480 faces=0.3229 mix50=0.3374 (693s)
+[cyl3d D=20 320x320x4] step=15000 Cd_p=1.0442 standard=0.3468 lagrange=0.3430 faces=0.3178 mix50=0.3323 (990s)
+[cyl3d D=20 320x320x4] step=20000 Cd_p=1.0406 standard=0.3443 lagrange=0.3405 faces=0.3153 mix50=0.3298 (1266s)
+[cyl3d D=20 320x320x4] step=25000 Cd_p=1.0298 standard=0.3366 lagrange=0.3330 faces=0.3076 mix50=0.3221 (1545s)
+[cyl3d D=20 320x320x4] step=30000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (1814s)
+[cyl3d D=20 320x320x4] step=35000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (2066s)
+[cyl3d D=20 320x320x4] step=40000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (2315s)
+[cyl3d D=20 320x320x4] step=45000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (2550s)
+[cyl3d D=20 320x320x4] step=50000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (2776s)
+[cyl3d D=20 320x320x4] step=55000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (3001s)
+[cyl3d D=20 320x320x4] step=60000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (3225s)
+[cyl3d D=20 320x320x4] === FINAL win=200 === Cd_p=1.0298 Cd_f=0.3366 Cd=1.3664 err_vs_1.5=-8.90% (3225s)
+  standard       Cd_f=0.3366 Cd=1.3664 err=-8.90%
+  lagrange       Cd_f=0.3329 Cd=1.3627 err=-9.15%
+  faces          Cd_f=0.3076 Cd=1.3374 err=-10.84%
+  mix50          Cd_f=0.3221 Cd=1.3519 err=-9.87%
+  plateau(standard) [1.391, 1.3664, 1.3664, 1.3664]
+[cyl3d] saved runs/cyl3d_20260929/final_D20_L16.json

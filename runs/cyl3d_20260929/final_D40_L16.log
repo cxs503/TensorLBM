@@ -17,3 +17,22 @@
 [cyl3d D=40 640x640x4] Re=40.0 u_in=0.08 nu=0.080000 tau=0.740000 dpS=0.5120
 [cyl3d D=40 640x640x4] solid=5028 near=464 (blockage 6.25%, span 4 cells = 0.10D)
 [compile_route] cylinder_3d_re40[D40]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
+[cyl3d D=40 640x640x4] step=5000 Cd_p=1.1296 standard=0.4562 lagrange=0.4554 faces=0.4234 mix50=0.4398 (890s)
+[cyl3d D=40 640x640x4] step=10000 Cd_p=1.0704 standard=0.4202 lagrange=0.4193 faces=0.3878 mix50=0.4040 (1657s)
+[cyl3d D=40 640x640x4] step=15000 Cd_p=1.0472 standard=0.4068 lagrange=0.4060 faces=0.3747 mix50=0.3907 (2401s)
+[cyl3d D=40 640x640x4] step=20000 Cd_p=1.0355 standard=0.4001 lagrange=0.3993 faces=0.3681 mix50=0.3841 (3139s)
+[cyl3d D=40 640x640x4] step=25000 Cd_p=1.0033 standard=0.3810 lagrange=0.3802 faces=0.3493 mix50=0.3651 (3801s)
+[cyl3d D=40 640x640x4] step=30000 Cd_p=1.0006 standard=0.3800 lagrange=0.3792 faces=0.3483 mix50=0.3641 (4383s)
+[cyl3d D=40 640x640x4] step=35000 Cd_p=1.0006 standard=0.3800 lagrange=0.3792 faces=0.3483 mix50=0.3641 (4974s)
+[cyl3d D=40 640x640x4] step=40000 Cd_p=1.0006 standard=0.3800 lagrange=0.3792 faces=0.3482 mix50=0.3641 (5565s)
+[cyl3d D=40 640x640x4] step=45000 Cd_p=1.0006 standard=0.3800 lagrange=0.3792 faces=0.3482 mix50=0.3641 (6156s)
+[cyl3d D=40 640x640x4] step=50000 Cd_p=1.0006 standard=0.3800 lagrange=0.3792 faces=0.3482 mix50=0.3641 (6746s)
+[cyl3d D=40 640x640x4] step=55000 Cd_p=1.0006 standard=0.3800 lagrange=0.3792 faces=0.3482 mix50=0.3641 (7330s)
+[cyl3d D=40 640x640x4] step=60000 Cd_p=1.0006 standard=0.3800 lagrange=0.3792 faces=0.3482 mix50=0.3641 (7914s)
+[cyl3d D=40 640x640x4] === FINAL win=200 === Cd_p=1.0006 Cd_f=0.3800 Cd=1.3805 err_vs_1.5=-7.97% (7914s)
+  standard       Cd_f=0.3800 Cd=1.3805 err=-7.97%
+  lagrange       Cd_f=0.3792 Cd=1.3797 err=-8.02%
+  faces          Cd_f=0.3482 Cd=1.3488 err=-10.08%
+  mix50          Cd_f=0.3641 Cd=1.3647 err=-9.02%
+  plateau(standard) [1.454, 1.3806, 1.3805, 1.3805]
+[cyl3d] saved runs/cyl3d_20260929/final_D40_L16.json
