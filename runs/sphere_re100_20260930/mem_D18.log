@@ -22,3 +22,4 @@
 [sphmem D=18 306x288x288] step=3000 Cd_mem_surf=1.2052 Cd_mem_all=1.2273 Cd_mem_int=0.0221 (7380s)
 [sphmem D=18 306x288x288] step=4000 Cd_mem_surf=1.1891 Cd_mem_all=1.2112 Cd_mem_int=0.0221 (9584s)
 [sphmem D=18 306x288x288] step=5000 Cd_mem_surf=1.1791 Cd_mem_all=1.2012 Cd_mem_int=0.0221 (11806s)
+[sphmem D=18 306x288x288] step=6000 Cd_mem_surf=1.1723 Cd_mem_all=1.1944 Cd_mem_int=0.0221 (13835s)
