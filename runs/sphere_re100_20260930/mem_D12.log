@@ -22,3 +22,8 @@
 [sphmem D=12 204x192x192] step=3000 Cd_mem_surf=1.2149 Cd_mem_all=1.2531 Cd_mem_int=0.0382 (2462s)
 [sphmem D=12 204x192x192] step=4000 Cd_mem_surf=1.2048 Cd_mem_all=1.2431 Cd_mem_int=0.0383 (3275s)
 [sphmem D=12 204x192x192] step=5000 Cd_mem_surf=1.1986 Cd_mem_all=1.2371 Cd_mem_int=0.0384 (4090s)
+[sphmem D=12 204x192x192] step=6000 Cd_mem_surf=1.1945 Cd_mem_all=1.2330 Cd_mem_int=0.0385 (4858s)
+[sphmem D=12 204x192x192] step=7000 Cd_mem_surf=1.1916 Cd_mem_all=1.2301 Cd_mem_int=0.0385 (5855s)
+[sphmem D=12 204x192x192] === FINAL win=70 === Cd_mem_surface=1.1916 err_SN=+9.15% | Cd_mem_all=1.2301 Cd_mem_interior=0.0385 (5855s)
+[sphmem D=12 204x192x192] saved final field -> runs/sphere_re100_20260930/mem_D12.json.field.pt
+[sphmem] saved runs/sphere_re100_20260930/mem_D12.json

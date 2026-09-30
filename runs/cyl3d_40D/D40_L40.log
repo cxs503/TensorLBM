@@ -24,3 +24,13 @@
 [cyl3d D=40 1600x1600x1] step=25000 Cd_mem=1.5636 Cd_p=0.9558 standard=0.3676 lagrange=0.3667 faces=0.3370 mix50=0.3523 (5550s)
 [cyl3d D=40 1600x1600x1] step=30000 Cd_mem=1.5515 Cd_p=0.9482 standard=0.3650 lagrange=0.3641 faces=0.3345 mix50=0.3497 (6763s)
 [cyl3d D=40 1600x1600x1] step=35000 Cd_mem=1.5481 Cd_p=0.9460 standard=0.3642 lagrange=0.3634 faces=0.3338 mix50=0.3490 (7987s)
+[cyl3d D=40 1600x1600x1] step=40000 Cd_mem=1.5474 Cd_p=0.9455 standard=0.3640 lagrange=0.3632 faces=0.3337 mix50=0.3489 (9177s)
+[cyl3d D=40 1600x1600x1] === FINAL win=200 === Cd_mem=1.5474 err_mem_vs_1.5=+3.16%  |  DIAGNOSTIC Cd_p=0.9455 Cd_f=0.3640 Cd_p+f=1.3096 err_pf=-12.69% (9177s)
+  [diag] standard       Cd_f=0.3640 Cd_p+f=1.3096 err=-12.69%
+  [diag] lagrange       Cd_f=0.3632 Cd_p+f=1.3087 err=-12.75%
+  [diag] faces          Cd_f=0.3337 Cd_p+f=1.2792 err=-14.72%
+  [diag] mix50          Cd_f=0.3489 Cd_p+f=1.2944 err=-13.71%
+  plateau(mem)      [1.7231, 1.6392, 1.5515, 1.5474]
+  plateau(standard) [1.4558, 1.3861, 1.3131, 1.3096]
+[cyl3d D=40 1600x1600x1] saved final field -> runs/cyl3d_40D/D40_L40.json.field.pt
+[cyl3d] saved runs/cyl3d_40D/D40_L40.json
