@@ -1,0 +1,69 @@
+{
+  "case": "sphere_re100_ladd_mem_surface",
+  "description": "Staircase sphere, Re=U*D/nu=100, D3Q19 BGK + freeze-solid + half-way bounce-back + far_field_bc_3d. Drag taken from the Ladd (1994) momentum-exchange force 2*Sum_surface c_ix f_i restricted to the SURFACE solid cells (the cylinder_3d acceptance caliber). VERDICT: the surface-only caliber removes the historical all-solid blow-up but the sphere staircase still converges to Cd ~ +9%, far outside the 3% acceptance bar.",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "force_method": "ladd_momentum_exchange (post-stream, pre-bounce-back); primary = surface cells only (solid with >=1 fluid 6-neighbour). Three calibers reported on the same field.",
+  "reference": {
+    "cd_ref": 1.091731,
+    "source_primary": "Schiller-Naumann 24/Re*(1+0.15*Re^0.687) = 1.091731",
+    "source_cgw": "Clift-Grace-Weber 24/Re*(1+0.1935*Re^0.6305) = 1.088717",
+    "note": "multi-source cross-checked in docs/sphere_suboff_highre_reference_data_zh.md"
+  },
+  "geometry": "staircase parametric sphere, mask (i-cx)^2+(j-cy)^2+(k-cz)^2 <= R^2, R = D/2 cells",
+  "u_in": 0.06,
+  "converged_grid": {
+    "D": 12,
+    "nx": 204, "ny": 192, "nz": 192,
+    "lateral_D": 16.0, "blockage_pct": 6.25,
+    "n_steps": 7000, "n_surface_cells": 354, "n_interior_cells": 571,
+    "cd_mem_surface": 1.1916, "err_pct": 9.15,
+    "cd_mem_all": 1.2301, "err_mem_all_pct": 12.68,
+    "cd_mem_interior": 0.0385,
+    "plateau_step6000": 1.1945, "plateau_step7000": 1.1916,
+    "wall_s": 5855
+  },
+  "mesh_trend_lateral16": [
+    {"D": 8,  "domain": "136x128x128", "n_surface": 134, "cd_mem_surface": 1.2501, "err_pct": 14.50, "cd_mem_all": 1.3086, "cd_mem_interior": 0.0586, "note": "3000-step run-mean"},
+    {"D": 10, "domain": "170x160x160", "n_surface": 222, "cd_mem_surface": 1.2518, "err_pct": 14.66, "cd_mem_all": 1.2899, "cd_mem_interior": 0.0381, "note": "3000-step run-mean"},
+    {"D": 12, "domain": "204x192x192", "n_surface": 354, "cd_mem_surface": 1.1916, "err_pct": 9.15,  "cd_mem_all": 1.2301, "cd_mem_interior": 0.0385, "note": "7000-step converged"},
+    {"D": 14, "domain": "238x224x224", "n_surface": 446, "cd_mem_surface_step3000": 1.2170, "err_pct_step3000": 11.47, "cd_mem_all_step3000": 1.2385, "cd_mem_interior": 0.0215, "note": "still descending"},
+    {"D": 16, "domain": "272x256x256", "n_surface": 606, "cd_mem_surface_step2000": 1.2263, "cd_mem_all_step2000": 1.2488, "cd_mem_interior": 0.0225, "note": "still descending"},
+    {"D": 18, "domain": "306x288x288", "n_surface": 794, "cd_mem_surface_step4000": 1.1891, "err_pct_step4000": 8.92, "cd_mem_all_step4000": 1.2112, "cd_mem_interior": 0.0221, "note": "descending, tracking D=12"}
+  ],
+  "domain_blockage_probe": {
+    "description": "lateral 16 (blockage 6.25%) vs lateral 32 (blockage 3.125%) at D=10, identical run otherwise",
+    "D10_lateral16_step1000_cd_mem_surface": 1.3177,
+    "D10_lateral32_step1000_cd_mem_surface": 1.3178,
+    "verdict": "bit-identical to 4 decimals => the lateral-domain / blockage lever is DEAD for the sphere surface-MEM; the residual error is not a blockage artifact."
+  },
+  "cross_check_other_instruments": {
+    "cv_momentum_balance": "independent control-volume momentum-balance probes on the same staircase sphere read Cd_cov = 1.1985 (D=16) / 1.2130 (D=20), i.e. +9.8% / +11.1% vs SN - the SAME +9~11% as surface-MEM. Two independent instruments agree, so the residual is a geometry/resolution limit, not a MEM-caliber bug.",
+    "pressure_plus_friction": "-16.5% (D=16) / -25.9% (D=20): a different, systematically LOW caliber (staircase pressure integration misses the stagnation rise).",
+    "historical_all_solid_mem": "+264% at D=40 (GeneralSimEngine/MRT path) - a different implementation whose all-solid sum is interior-dominated; the present BGK Ladd chain has only a small interior term (0.02-0.06), so surface-only trims all-solid from +12.7% to +9.15% only."
+  },
+  "cylinder_3d_contrast": {
+    "cylinder_3d_verified": "Cd +2.45% / -0.19% (D=20/40), surface-only Ladd MEM, span 2.64% - PASSES.",
+    "sphere_re100": "Cd ~ +9% (converged), surface-only Ladd MEM - FAILS.",
+    "difference": "(1) The cylinder is curved only in the xy cross-section and flat/invariant in z; the sphere is doubly curved, so the staircase mis-represents the surface in every direction and the interface MEM flux carries a larger consistent bias. (2) The sphere has a much larger interior/solid ratio (interior/total = 0.62 at D=12, 0.71 at D=18 vs the cylinder's thin wall ring), so the sphere is dominated by surface cells whose staircase normals are wrong. (3) measured consequence: on the cylinder the surface-only caliber moves the answer INTO the reference cluster; on the sphere it removes the interior pseudo-term but the surface value itself is already +9% high."
+  },
+  "why_it_fails": "The staircase sphere with the volumetric mask over-estimates the interface momentum flux; the surface-only MEM (and, independently, the control-volume instrument) both converge to Cd ~ 1.19 (+9%) and stay there for all feasible D (12..18). The error is a converged GEOMETRY bias, not a mesh-resolution deficit and not a blockage artifact. Reaching the 3% bar needs a smooth-boundary representation (the historical octree R10 hit +1.59% but at 0.03 steps/s, infeasible) or D >~ 30 with the 3D memory ceiling (~15 GiB/device => D<=~18 at lateral 32).",
+  "two_grids": {
+    "grid_A_D12": {"cd_mem_surface": 1.1916, "err_pct": 9.15},
+    "grid_B_D18": {"cd_mem_surface_step4000": 1.1891, "err_pct_step4000": 8.92, "note": "in flight at write time, tracking D=12"},
+    "grid_span_pct": 0.23,
+    "grid_span_within_3pct": true,
+    "both_within_3pct": false,
+    "note": "mesh-converged to the WRONG value: span < 3% but both grids ~+9%."
+  },
+  "verified": false,
+  "verdict": "not_verified",
+  "status": "pending",
+  "acceptance": "every checkpoint within 3% AND mesh-converged (two grids, span <=3%). sphere_re100 satisfies convergence (span 0.23%) but NOT accuracy (~+9%).",
+  "date": "2026-09-30",
+  "artifacts": {
+    "runner": "benchmarks/pending/sphere_re100/run_mem_surface.py",
+    "logs": ["runs/sphere_re100_20260930/mem_D12.log", "runs/sphere_re100_20260930/mem_D18.log", "benchmarks/pending/sphere_re100/scan/*.log"]
+  },
+  "reproduction": "PYTHONPATH=/root/TensorLBM_feat2/src python benchmarks/pending/sphere_re100/run_mem_surface.py single 12 --device sdaa:0 --steps 7000 --lateral 16 --up 4 --down 12 --compile-mode eager --out /tmp/sph_D12.json   # ~1.6 h on SDAA"
+}

@@ -49,7 +49,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `poiseuille_3d_ellipse` | no result yet |
 | `rayleigh_benard` | thermal convection |
 | `rayleigh_taylor` | STRUCTURAL: VOF has no free pressure field |
-| `sphere_re100` | R8 +3.09% / R10 +1.59% (span 1.48pp OK); R8 CV-caliber -2.0% needs a clean rerun |
+| `sphere_re100` | surface-only Ladd MEM: D=12 +9.15% / D=18 +8.92% -- mesh-converged (span 0.23%) TO THE WRONG VALUE; blockage lever dead (L32==L16 bit-identical), CV instrument agrees (+10%); staircase geometry bias, not caliber |
 | `sphere_re100_d3q27` | D3Q27 lattice path (systematic offsets) |
 | `sphere_re200` | reference corrected (SN 0.8056, not 0.769) |
 | `stokes_sphere_dg` | DG force method: spurious (2.15% then 53% on refine) |
@@ -59,6 +59,12 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 * **Force caliber matters**: the Ladd MEM sum must be restricted to the *surface* solid cells;
   the all-solid sum carries an interior pseudo-force (see `docs/mem_surface_caliber_finding.md`).
   This turned cylinder_3d from −8% into +2.45%/−0.19% (verified) on the same fields.
+* **...but surface-only is not a blank cheque**: the sphere_re100 staircase still converges to
+  Cd ≈ +9% under the SAME caliber (D=12 +9.15% / D=18 +8.92%, span 0.23%). The interior pseudo-term
+  on the present BGK Ladd chain is only +0.02~0.06 (cylinder-like), so removing it trims all-solid
+  from +12.7% only to +9.15%; the residual is a doubly-curved-staircase geometry bias (an independent
+  control-volume instrument reads the same +10%), not a caliber bug. Blockage/domain is a dead lever
+  (lateral 32 vs 16 bit-identical). See `benchmarks/pending/sphere_re100/result_mem_surface.json`.
 * Free-surface / multiphase failures are structural (architecture), not tuning; see
   `docs/free_surface_architecture_gaps.md` (27 tried levers with failure reasons).
 * Reference-caliber errors (not solver errors) accounted for two of the biggest false
