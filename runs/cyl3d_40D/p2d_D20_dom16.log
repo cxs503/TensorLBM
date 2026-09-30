@@ -14,20 +14,14 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[cyl2d Re=40 D=40 1600x1600] nu=0.05 tau=0.650000
-[cyl2d] solid=1257 near=116 faces=164 ratio=1.4138
-[cyl2d] step=5000 Cd_mem=1.7035 Cd_p=0.1348 Cd_f_std=0.0753 Cd_f_faces=0.0701 Cd_f_bfl=0.1116 (999s)
-[cyl2d] step=10000 Cd_mem=1.6034 Cd_p=0.2597 Cd_f_std=0.1359 Cd_f_faces=0.1257 Cd_f_bfl=0.1999 (1994s)
-[cyl2d] step=15000 Cd_mem=1.5696 Cd_p=0.3803 Cd_f_std=0.1943 Cd_f_faces=0.1793 Cd_f_bfl=0.2851 (2988s)
-[cyl2d] step=20000 Cd_mem=1.5547 Cd_p=0.4991 Cd_f_std=0.2520 Cd_f_faces=0.2320 Cd_f_bfl=0.3690 (3982s)
-[cyl2d] step=25000 Cd_mem=1.5477 Cd_p=0.6172 Cd_f_std=0.3091 Cd_f_faces=0.2844 Cd_f_bfl=0.4523 (4978s)
-[cyl2d] step=30000 Cd_mem=1.5451 Cd_p=0.7350 Cd_f_std=0.3661 Cd_f_faces=0.3366 Cd_f_bfl=0.5354 (5974s)
-[cyl2d] step=35000 Cd_mem=1.5435 Cd_p=0.8526 Cd_f_std=0.4230 Cd_f_faces=0.3887 Cd_f_bfl=0.6182 (6971s)
-[cyl2d] step=40000 Cd_mem=1.5430 Cd_p=0.9702 Cd_f_std=0.4798 Cd_f_faces=0.4407 Cd_f_bfl=0.7010 (7967s)
-[cyl2d] step=45000 Cd_mem=1.5427 Cd_p=0.9529 Cd_f_std=0.4612 Cd_f_faces=0.4225 Cd_f_bfl=0.6721 (8960s)
-[cyl2d] step=50000 Cd_mem=1.5426 Cd_p=0.9456 Cd_f_std=0.4574 Cd_f_faces=0.4189 Cd_f_bfl=0.6664 (9952s)
-[cyl2d] step=55000 Cd_mem=1.5424 Cd_p=0.9425 Cd_f_std=0.4556 Cd_f_faces=0.4172 Cd_f_bfl=0.6638 (10945s)
-[cyl2d] step=60000 Cd_mem=1.5425 Cd_p=0.9412 Cd_f_std=0.4547 Cd_f_faces=0.4162 Cd_f_bfl=0.6625 (11937s)
+[cyl2d Re=40 D=20 320x320] nu=0.04 tau=0.620000
+[cyl2d] solid=317 near=60 faces=84 ratio=1.4000
+[cyl2d] step=5000 Cd_mem=1.6444 Cd_p=0.1339 Cd_f_std=0.0584 Cd_f_faces=0.0536 Cd_f_bfl=0.0765 (71s)
+[cyl2d] step=10000 Cd_mem=1.6423 Cd_p=0.2614 Cd_f_std=0.1123 Cd_f_faces=0.1026 Cd_f_bfl=0.1463 (142s)
+[cyl2d] step=15000 Cd_mem=1.6423 Cd_p=0.3890 Cd_f_std=0.1659 Cd_f_faces=0.1514 Cd_f_bfl=0.2158 (212s)
+[cyl2d] step=20000 Cd_mem=1.6422 Cd_p=0.5167 Cd_f_std=0.2194 Cd_f_faces=0.2000 Cd_f_bfl=0.2851 (282s)
+[cyl2d] step=25000 Cd_mem=1.6422 Cd_p=0.6444 Cd_f_std=0.2728 Cd_f_faces=0.2486 Cd_f_bfl=0.3543 (352s)
+[cyl2d] step=30000 Cd_mem=1.6421 Cd_p=0.7721 Cd_f_std=0.3261 Cd_f_faces=0.2972 Cd_f_bfl=0.4235 (423s)
 Traceback (most recent call last):
   File "/root/TensorLBM_feat2/benchmarks/pending/cylinder_3d/_ref2d_re40.py", line 160, in <module>
     raise SystemExit(main())

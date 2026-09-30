@@ -1,0 +1,34 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[shim] compile_route loaded, teco tag=sdaa-teco_inductor
+[canonical] R=12.0 shape_zyx=(192,192,288) cells=10616832 est_GiB=9.9 steps=9600 warmup=6400 window=3200 nu=0.0144 tau=0.543200
+Traceback (most recent call last):
+  File "/root/TensorLBM_feat2/benchmarks/pending/sphere_re100/run_canonical.py", line 145, in <module>
+    main()
+  File "/root/TensorLBM_feat2/benchmarks/pending/sphere_re100/run_canonical.py", line 129, in main
+    result = run_sphere_bfl_control_volume(cfg)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/TensorLBM_feat2/src/tensorlbm/sphere_bfl_control_volume.py", line 367, in run_sphere_bfl_control_volume
+    f, bfl_force = bouzidi_bounce_back_d3q19(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/TensorLBM_feat2/src/tensorlbm/bfl_d3q19.py", line 316, in bouzidi_bounce_back_d3q19
+    f_out = bfl_bounce_back_common(
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/TensorLBM_feat2/src/tensorlbm/bfl_common.py", line 190, in bfl_bounce_back_common
+    return torch.where(mask_for_e, f_bc_for_e, f)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: sdaa out of memory. Tried to allocate 770.00 MiB (SDAA 27; 14.94 GiB total capacity; 13.24 GiB already allocated; 1.23 GiB free; 13.46 GiB reserved in total by Torch-SDAA)

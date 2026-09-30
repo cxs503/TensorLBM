@@ -47,6 +47,32 @@ from tensorlbm.sphere_bfl_control_volume import (  # noqa: E402
 )
 
 
+def _jsonable(obj):
+    """Recursively convert torch / numpy scalars+tensors to JSON-safe types.
+
+    The library result carries a few 0-d torch tensors (``cd_bfl_link``,
+    ``observer_difference_pct`` and the ``force_observer_target_met`` bool),
+    which ``json.dumps`` refuses.  Sanitise the whole tree instead of
+    patching individual keys so future fields cannot reintroduce the crash.
+    """
+    try:
+        import numpy as np
+    except Exception:  # pragma: no cover
+        np = None
+    if isinstance(obj, dict):
+        return {k: _jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_jsonable(v) for v in obj]
+    if isinstance(obj, torch.Tensor):
+        return obj.detach().cpu().tolist()
+    if np is not None:
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.generic):
+            return obj.item()
+    return obj
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--radius", type=float, required=True)
@@ -101,15 +127,16 @@ def main() -> None:
           f"steps={cfg.steps} warmup={cfg.warmup_steps} window={cfg.statistics_window_steps} "
           f"nu={cfg.nu:.6g} tau={cfg.tau:.6f}", flush=True)
     result = run_sphere_bfl_control_volume(cfg)
+    payload = _jsonable(result)
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(json.dumps({
-        "cd_control_volume": result["result"]["cd_control_volume"],
-        "cd_bfl_link": result["result"]["cd_bfl_link"],
-        "reference_error_pct": result["result"]["reference_error_pct"],
-        "observer_difference_pct": result["result"]["observer_difference_pct"],
-        "numerical_quality_admitted": result["acceptance"]["numerical_quality_admitted"],
+        "cd_control_volume": payload["result"]["cd_control_volume"],
+        "cd_bfl_link": payload["result"]["cd_bfl_link"],
+        "reference_error_pct": payload["result"]["reference_error_pct"],
+        "observer_difference_pct": payload["result"]["observer_difference_pct"],
+        "numerical_quality_admitted": payload["acceptance"]["numerical_quality_admitted"],
     }, indent=2), flush=True)
     print("DONE", flush=True)
 

@@ -1,6 +1,6 @@
 # Benchmark status (generated 2026-09-29)
 
-verified: **19** | pending: **21**
+verified: **21** | pending: **20**
 
 Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
 
@@ -23,6 +23,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `stokes_first_problem` | analytic |
 | `stokes_second_problem` | analytic (Womersley family) |
 | `suboff_re1000` | SUBOFF hull drag Re=1000: Cd -1.15% end-to-end (mix50 friction, 3.4h) |
+| `cylinder_3d` | 3D extruded cyl Re=40: Cd +2.45%/−0.19% (surface-only Ladd MEM, 2 grids, span 2.64%) |
 | `taylor_couette` | analytic |
 | `taylor_green_2d` | analytic decay |
 | `taylor_green_3d` | analytic decay |
@@ -38,7 +39,6 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `cavity_natural_convection` | +2.57%/+6.64% -- not converged |
 | `channel_turb` | turbulent channel |
 | `couette_3d` | no result yet |
-| `cylinder_3d` | 3D extruded cyl Re=40: reference now 2D cluster 1.50 (not Tritton 1.54); D40 +1.7% transient, 60k runs in flight |
 | `cylinder_re40_st` | Schafer-Turek channel Re=40; no official Re=40 reference |
 | `dam_break_3d_mm` | STRUCTURAL: X/H mutually exclusive (same mass channel) -- docs/free_surface_architecture_gaps.md |
 | `dam_break_sc` | STRUCTURAL: constitutive barrier (err(T=1)=0 needs ratio 12.7, err(T=2.96)=0 needs 6.9) |
@@ -56,6 +56,9 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 
 ## Notes
 
+* **Force caliber matters**: the Ladd MEM sum must be restricted to the *surface* solid cells;
+  the all-solid sum carries an interior pseudo-force (see `docs/mem_surface_caliber_finding.md`).
+  This turned cylinder_3d from −8% into +2.45%/−0.19% (verified) on the same fields.
 * Free-surface / multiphase failures are structural (architecture), not tuning; see
   `docs/free_surface_architecture_gaps.md` (27 tried levers with failure reasons).
 * Reference-caliber errors (not solver errors) accounted for two of the biggest false

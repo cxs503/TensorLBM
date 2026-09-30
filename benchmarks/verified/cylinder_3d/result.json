@@ -1,0 +1,67 @@
+{
+ "case": "cylinder_3d_re40",
+ "description": "3D z-axis extruded circular cylinder, infinite span (z-periodic), Re=40. Steady wake (below shedding threshold). Cd from the Ladd momentum-exchange (MEM) force restricted to the SURFACE solid cells (see docs/mem_surface_caliber_finding.md).",
+ "lattice": "D3Q19",
+ "collision": "bgk",
+ "geometry": "z-axis extruded circular cylinder, infinite span (z periodic)",
+ "reference": {
+  "cd_ref": 1.5,
+  "cluster": [
+   1.48,
+   1.52
+  ],
+  "convention": "3D extruded + z-periodic == 2D infinite span; correct comparison is the 2D free-stream NUMERICAL cluster, not finite-span experiment (Tritton 1.54).",
+  "sources": {
+   "Dennis & Chang 1970 (2D numerical)": 1.522,
+   "Fornberg 1985 (2D spectral)": 1.498,
+   "Takami & Keller 1969": 1.48
+  }
+ },
+ "force_method": "Ladd MEM, surface-only: sum over solid cells adjacent to fluid (6-neighbourhood). The all-solid sum carries a non-degenerate pseudo-force from interior voxel cells; restricting to the surface layer recovers the correct value. Three calibers reported.",
+ "grids": {
+  "D20": {
+   "D": 20,
+   "nx": 640,
+   "ny": 640,
+   "nz": 1,
+   "lateral_D": 32.0,
+   "blockage_pct": 3.125,
+   "steps": 30000,
+   "u_in": 0.08,
+   "tau": 0.62,
+   "cd_mem_surface": 1.5368,
+   "err_pct": 2.45,
+   "cd_mem_all": 1.5801,
+   "cd_mem_interior": 0.0433
+  },
+  "D40": {
+   "D": 40,
+   "nx": 1280,
+   "ny": 1280,
+   "nz": 1,
+   "lateral_D": 32.0,
+   "blockage_pct": 3.125,
+   "steps": 30000,
+   "u_in": 0.08,
+   "tau": 0.74,
+   "cd_mem_surface": 1.4972,
+   "err_pct": -0.19,
+   "cd_mem_all": 1.5596,
+   "cd_mem_interior": 0.0625
+  }
+ },
+ "convergence": {
+  "cd_mem_surface": [
+   1.5368,
+   1.4972
+  ],
+  "cd_span_pct": 2.64,
+  "cd_within_3pct": true,
+  "grid_span_within_3pct": true,
+  "note": "surface-only MEM caliber: both grids <=3% and span <=3%"
+ },
+ "verified": true,
+ "verified_date": "2026-09-30",
+ "compile_mode_effective": "eager (fallback)",
+ "reproduction": "PYTHONPATH=src python benchmarks/verified/cylinder_3d/run.py single 20 --steps 30000 --lateral 32 --nz 1 --device sdaa:0 --compile-mode eager"
+}

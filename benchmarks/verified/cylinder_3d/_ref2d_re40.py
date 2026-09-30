@@ -146,7 +146,7 @@ def main() -> int:
         "cd_friction_faces": sum(cdf_fc[-k:]) / k,
         "cd_friction_bfl_smooth": sum(cdf_bfl[-k:]) / k,
         "plateau_mem": {
-            f"{int(fr * 100)}%": sum(mem_hist[int(len(mem_hist) * fr) - k:int(len(mem_hist) * fr)]) / k / dpS
+            f"{int(fr * 100)}%": float(sum(mem_hist[int(len(mem_hist) * fr) - k:int(len(mem_hist) * fr)]) / k / dpS)
             for fr in (0.25, 0.5, 0.75, 1.0)
         },
         "wall_s": time.time() - t0,
