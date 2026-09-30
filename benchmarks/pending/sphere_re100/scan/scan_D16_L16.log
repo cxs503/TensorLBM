@@ -19,3 +19,4 @@
 [compile_route] sphere_re100_mem[D16]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
 [sphmem D=16 272x256x256] step=1000 Cd_mem_surf=1.2896 Cd_mem_all=1.3117 Cd_mem_int=0.0221 (1936s)
 [sphmem D=16 272x256x256] step=2000 Cd_mem_surf=1.2263 Cd_mem_all=1.2488 Cd_mem_int=0.0225 (3756s)
+[sphmem D=16 272x256x256] step=3000 Cd_mem_surf=1.1994 Cd_mem_all=1.2219 Cd_mem_int=0.0225 (5263s)
