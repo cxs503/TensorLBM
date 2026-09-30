@@ -19,49 +19,59 @@
  },
  "force_method": "Ladd MEM, surface-only: sum over solid cells adjacent to fluid (6-neighbourhood). The all-solid sum carries a non-degenerate pseudo-force from interior voxel cells; restricting to the surface layer recovers the correct value. Three calibers reported.",
  "grids": {
-  "D20": {
+  "D20_L40": {
    "D": 20,
-   "nx": 640,
-   "ny": 640,
+   "nx": 800,
+   "ny": 800,
    "nz": 1,
-   "lateral_D": 32.0,
-   "blockage_pct": 3.125,
-   "steps": 30000,
+   "lateral_D": 40.0,
+   "blockage_pct": 2.5,
+   "steps": 40000,
    "u_in": 0.08,
    "tau": 0.62,
-   "cd_mem_surface": 1.5368,
-   "err_pct": 2.45,
-   "cd_mem_all": 1.5801,
-   "cd_mem_interior": 0.0433
+   "cd_mem_surface": 1.5244,
+   "err_pct": 1.62,
+   "cd_mem_all": 1.5673,
+   "cd_mem_interior": 0.0429
   },
-  "D40": {
+  "D40_L40": {
    "D": 40,
-   "nx": 1280,
-   "ny": 1280,
+   "nx": 1600,
+   "ny": 1600,
    "nz": 1,
-   "lateral_D": 32.0,
-   "blockage_pct": 3.125,
-   "steps": 30000,
+   "lateral_D": 40.0,
+   "blockage_pct": 2.5,
+   "steps": 40000,
    "u_in": 0.08,
    "tau": 0.74,
-   "cd_mem_surface": 1.4972,
-   "err_pct": -0.19,
-   "cd_mem_all": 1.5596,
-   "cd_mem_interior": 0.0625
+   "cd_mem_surface": 1.4852,
+   "err_pct": -0.99,
+   "cd_mem_all": 1.5471,
+   "cd_mem_interior": 0.0618
   }
  },
  "convergence": {
+  "domain": "40D lateral (blockage 2.50%) -- same caliber as verified/cylinder",
   "cd_mem_surface": [
-   1.5368,
-   1.4972
+   1.5244,
+   1.4852
   ],
-  "cd_span_pct": 2.64,
+  "cd_span_pct": 2.61,
   "cd_within_3pct": true,
   "grid_span_within_3pct": true,
-  "note": "surface-only MEM caliber: both grids <=3% and span <=3%"
+  "alt_32D_domain": {
+   "D20": 1.5368,
+   "D40": 1.4972,
+   "errs": [
+    2.45,
+    -0.19
+   ],
+   "span_pct": 2.64,
+   "note": "32D-domain pair also passes; 40D preferred"
+  }
  },
  "verified": true,
  "verified_date": "2026-09-30",
  "compile_mode_effective": "eager (fallback)",
- "reproduction": "PYTHONPATH=src python benchmarks/verified/cylinder_3d/run.py single 20 --steps 30000 --lateral 32 --nz 1 --device sdaa:0 --compile-mode eager"
+ "reproduction": "PYTHONPATH=src python benchmarks/verified/cylinder_3d/run.py single 20 --steps 30000 --lateral 40 --nz 1 --device sdaa:0 --compile-mode eager"
 }
