@@ -1,0 +1,49 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl2d Re=40 D=20 800x800] nu=0.04 tau=0.620000
+[cyl2d] solid=317 near=60 faces=84 ratio=1.4000
+[cyl2d] step=5000 Cd_mem=1.5843 Cd_p=0.1312 Cd_f_std=0.0574 Cd_f_faces=0.0527 Cd_f_bfl=0.0752 (273s)
+[cyl2d] step=10000 Cd_mem=1.5595 Cd_p=0.2522 Cd_f_std=0.1093 Cd_f_faces=0.0999 Cd_f_bfl=0.1425 (542s)
+[cyl2d] step=15000 Cd_mem=1.5579 Cd_p=0.3728 Cd_f_std=0.1607 Cd_f_faces=0.1466 Cd_f_bfl=0.2091 (813s)
+[cyl2d] step=20000 Cd_mem=1.5577 Cd_p=0.4933 Cd_f_std=0.2119 Cd_f_faces=0.1933 Cd_f_bfl=0.2756 (1083s)
+[cyl2d] step=25000 Cd_mem=1.5577 Cd_p=0.6139 Cd_f_std=0.2631 Cd_f_faces=0.2398 Cd_f_bfl=0.3419 (1344s)
+[cyl2d] step=30000 Cd_mem=1.5576 Cd_p=0.7344 Cd_f_std=0.3143 Cd_f_faces=0.2864 Cd_f_bfl=0.4082 (1606s)
+[cyl2d] step=35000 Cd_mem=1.5575 Cd_p=0.8550 Cd_f_std=0.3654 Cd_f_faces=0.3329 Cd_f_bfl=0.4744 (1867s)
+[cyl2d] step=40000 Cd_mem=1.5575 Cd_p=0.9756 Cd_f_std=0.4165 Cd_f_faces=0.3794 Cd_f_bfl=0.5407 (2130s)
+Traceback (most recent call last):
+  File "/root/TensorLBM_feat2/benchmarks/pending/cylinder_3d/_ref2d_re40.py", line 160, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/root/TensorLBM_feat2/benchmarks/pending/cylinder_3d/_ref2d_re40.py", line 154, in main
+    Path(a.out).write_text(json.dumps(out, indent=2))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/usr/lib64/python3.11/json/encoder.py", line 202, in encode
+    chunks = list(chunks)
+             ^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/json/encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/usr/lib64/python3.11/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib64/python3.11/json/encoder.py", line 439, in _iterencode
+    o = _default(o)
+        ^^^^^^^^^^^
+  File "/usr/lib64/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type Tensor is not JSON serializable

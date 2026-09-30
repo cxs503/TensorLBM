@@ -1,0 +1,101 @@
+{
+  "case": "cylinder_3d_re40",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "geometry": "z-axis extruded circular cylinder, infinite span (z periodic)",
+  "D_cells": 40,
+  "nx": 1280,
+  "ny": 1280,
+  "nz": 1,
+  "lateral_D": 32.0,
+  "blockage_pct": 3.125,
+  "span_cells": 1,
+  "n_solid_cells": 1257,
+  "n_near_cells": 116,
+  "Re": 40.0,
+  "u_in": 0.08,
+  "nu": 0.08,
+  "tau": 0.74,
+  "n_steps": 30000,
+  "n_finished": 30000,
+  "sample_interval": 100,
+  "avg_window_samples": 200,
+  "force_method": "ladd_momentum_exchange_3d (post-stream, pre-bounce-back)",
+  "cd_mem": 1.5627487329766154,
+  "err_mem_pct": 4.183248865107695,
+  "cd": 1.5627487329766154,
+  "err_pct": 4.183248865107695,
+  "cd_pressure": 0.9556182721280493,
+  "cd_friction": {
+    "standard": 0.36709879743284546,
+    "lagrange": 0.366267543140566,
+    "faces": 0.3364868239441421,
+    "mix50": 0.3517928106884938
+  },
+  "cd_total": {
+    "standard": 1.3227170695608947,
+    "lagrange": 1.3218858152686153,
+    "faces": 1.2921050960721914,
+    "mix50": 1.307411082816543
+  },
+  "cd_pf_standard": 1.3227170695608947,
+  "err_pf_pct": -11.818862029273685,
+  "ref_cd": 1.5,
+  "ref_cluster": [
+    1.48,
+    1.52
+  ],
+  "ref_sources": {
+    "Dennis & Chang 1970": 1.522,
+    "Fornberg 1985": 1.498,
+    "Takami & Keller 1969": 1.48
+  },
+  "plateau_windows": {
+    "standard@25%": 1.4985939111405364,
+    "lagrange@25%": 1.4977127926734588,
+    "faces@25%": 1.4666125651759407,
+    "mix50@25%": 1.4826032381582386,
+    "standard@50%": 1.4161388541106135,
+    "lagrange@50%": 1.4152810705127195,
+    "faces@50%": 1.3847814187950767,
+    "mix50@50%": 1.400460136452845,
+    "standard@75%": 1.3450271006149705,
+    "lagrange@75%": 1.344188299117377,
+    "faces@75%": 1.3142079785757232,
+    "mix50@75%": 1.329617539595347,
+    "standard@100%": 1.3227170695608947,
+    "lagrange@100%": 1.3218858152686153,
+    "faces@100%": 1.2921050960721914,
+    "mix50@100%": 1.307411082816543
+  },
+  "plateau_mem": [
+    1.774664173523585,
+    1.6751096708079178,
+    1.5888999833259732,
+    1.5627487329766154
+  ],
+  "plateau_standard": [
+    1.4985939111405364,
+    1.4161388541106135,
+    1.3450271006149705,
+    1.3227170695608947
+  ],
+  "mass_drift_pct": 0.03469089398746611,
+  "finite": true,
+  "wall_s": 4863.068397760391,
+  "compile_status": "eager",
+  "compile_mode_effective": "eager",
+  "compile_status_reason": null,
+  "modules_used": [
+    "solver3d.collide_bgk3d",
+    "solver3d.stream3d_roll",
+    "boundaries3d.bounce_back_cells_3d (half-way BB pre-stream, NoDynamics)",
+    "boundaries3d.far_field_bc_3d (bc_config: y\u00b1 far-field, z\u00b1 periodic)",
+    "obstacles.compute_obstacle_forces_3d (Ladd MEM \u2014 PRIMARY Cd)",
+    "drag_pressure.SurfaceMesh.from_cylinder (diagnostic)",
+    "drag_pressure.get_near_wall_2d(axis='z') (diagnostic)",
+    "drag_pressure.drag_pressure_integration (extrap=none, p0=far_field; diagnostic)",
+    "drag_pressure.drag_friction_integration (standard; others diagnostic)",
+    "benchmarks.compile_route.route_step -> tensorlbm.compile_utils"
+  ]
+}
