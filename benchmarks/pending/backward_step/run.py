@@ -223,7 +223,7 @@ def run_grid(
                 f"[m={m} H={H}] step={step:>7d} X1/H={mm['X1_H']:.4f} "
                 f"X1/h={mm['X1_h']:.4f} X2/H={mm['X2_H']:.3f} X3/H={mm['X3_H']:.3f} "
                 f"max|u|={mm['max_speed']:.4f} drift={mm['mass_drift']:+.3e} "
-                f"t={time.time()-t0:.0f}s",
+                f"t={time.time() - t0:.0f}s",
                 flush=True,
             )
     elapsed = time.time() - t0
@@ -295,7 +295,7 @@ def main() -> None:
     out_interval = args.out_interval or max(2000, steps_list[0] // 20)
 
     print(
-        f"=== Gartling BFS Re={args.re} ER=2 ref X1/H={REF_X1_H} (X1/h={REF_X1_H*2:.2f}) "
+        f"=== Gartling BFS Re={args.re} ER=2 ref X1/H={REF_X1_H} (X1/h={REF_X1_H * 2:.2f}) "
         f"u={args.u} collision={args.collision} L/H={args.L_over_H} device={device} "
         f"compile={compile_mode!r} ===",
         flush=True,

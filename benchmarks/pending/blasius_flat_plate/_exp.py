@@ -12,12 +12,9 @@ Runnable now (library imports cleanly via PYTHONPATH=<repo>/src).
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import math
-import sys
 import time
-import types as _types
 from pathlib import Path
 
 import numpy as np
@@ -201,33 +198,64 @@ def run_case(args):
         u_ref = U * fp_ref
         m = (eta_hi > 0.02) & (eta_hi < 5.0) & (fp_ref > 0.02) & (fp_ref < 0.995)
         rel = np.abs(u_hi - u_ref) / np.maximum(u_ref, 1e-12)
-        l2 = float(np.linalg.norm(rel[m]) / np.linalg.norm(np.ones(m.sum()))) if m.any() else float("nan")
+        l2 = (
+            float(np.linalg.norm(rel[m]) / np.linalg.norm(np.ones(m.sum())))
+            if m.any()
+            else float("nan")
+        )
         maxp = float(rel[m].max() * 100.0) if m.any() else float("nan")
-        dudy = float(np.linalg.solve(
-            np.vstack([np.ones(3), [0.5, 1.5, 2.5], [0.25, 2.25, 6.25]]).T,
-            np.array([0.0, 1.0, 0.0])) @ np.array([u_hi[0], u_hi[1], u_hi[2]]))
+        dudy = float(
+            np.linalg.solve(
+                np.vstack([np.ones(3), [0.5, 1.5, 2.5], [0.25, 2.25, 6.25]]).T,
+                np.array([0.0, 1.0, 0.0]),
+            )
+            @ np.array([u_hi[0], u_hi[1], u_hi[2]])
+        )
         Cf2 = 2.0 * nu * dudy / (U * U)
         dudy1 = u_hi[0] / 0.5
         Cf1 = 2.0 * nu * dudy1 / (U * U)
         # delta* integrand
         uedge = U
         ds = float(np.trapezoid(1.0 - u_hi / uedge, y_hi))
-        return dict(label=label, l2=l2, max_rel_pct=maxp, Cf_2nd=Cf2, Cf_1st=Cf1,
-                    Cf_err_2nd_pct=(Cf2 - Cf_ref) / Cf_ref * 100.0,
-                    Cf_err_1st_pct=(Cf1 - Cf_ref) / Cf_ref * 100.0,
-                    delta_star=ds, delta_star_ref=delta_star_ref,
-                    u1_over_U=float(u_hi[0] / U))
+        return dict(
+            label=label,
+            l2=l2,
+            max_rel_pct=maxp,
+            Cf_2nd=Cf2,
+            Cf_1st=Cf1,
+            Cf_err_2nd_pct=(Cf2 - Cf_ref) / Cf_ref * 100.0,
+            Cf_err_1st_pct=(Cf1 - Cf_ref) / Cf_ref * 100.0,
+            delta_star=ds,
+            delta_star_ref=delta_star_ref,
+            u1_over_U=float(u_hi[0] / U),
+        )
 
-    out = dict(grid=args.grid, wall=wall, outlet=args.outlet, nx=nx, ny=ny,
-               U=U, nu=nu, tau=tau, Rex=Rex, scale=scale, steps=args.steps,
-               elapsed_s=round(elapsed, 1), umax_drift=umax_drift,
-               mass_drift_pct=mass_drift_pct, finite=finite, Cf_ref=Cf_ref,
-               fpp0=fpp0, delta_star_ref=delta_star_ref, theta_ref=theta_ref)
+    out = dict(
+        grid=args.grid,
+        wall=wall,
+        outlet=args.outlet,
+        nx=nx,
+        ny=ny,
+        U=U,
+        nu=nu,
+        tau=tau,
+        Rex=Rex,
+        scale=scale,
+        steps=args.steps,
+        elapsed_s=round(elapsed, 1),
+        umax_drift=umax_drift,
+        mass_drift_pct=mass_drift_pct,
+        finite=finite,
+        Cf_ref=Cf_ref,
+        fpp0=fpp0,
+        delta_star_ref=delta_star_ref,
+        theta_ref=theta_ref,
+    )
     if wall == "mid":
         y_w = py + 0.5
         y_hi = np.arange(py + 1, ny, dtype=np.float64) - y_w
-        out["upper"] = analyze(u_prof[py + 1:], y_hi, "upper")
-        y_lo = y_w - np.arange(0, py, dtype=np.float64)  # 0.5.. 
+        out["upper"] = analyze(u_prof[py + 1 :], y_hi, "upper")
+        y_lo = y_w - np.arange(0, py, dtype=np.float64)  # 0.5..
         out["lower"] = analyze(u_prof[:py][::-1], y_lo, "lower")
     else:
         y_w = 0.5

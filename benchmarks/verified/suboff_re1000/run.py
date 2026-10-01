@@ -62,7 +62,6 @@ def _default_device() -> str:
 
 
 import torch
-
 from compile_route import (  # noqa: E402
     add_compile_mode_arg,
     compile_mode_from_args,
@@ -77,7 +76,6 @@ from tensorlbm.drag_pressure import (  # noqa: E402
     drag_pressure_integration,
     suboff_smooth_q,
 )
-from tensorlbm.lbm_step_correct import lbm_step_correct  # noqa: E402
 from tensorlbm.general_sim import (  # noqa: E402
     CollisionModel,
     ForceMethod,
@@ -91,6 +89,7 @@ from tensorlbm.general_sim import (  # noqa: E402
     SolverConfig,
     WallTreatment,
 )
+from tensorlbm.lbm_step_correct import lbm_step_correct  # noqa: E402
 
 SUBOFF_LENGTH_M = 4.356  # DARPA SUBOFF bare hull length [m]
 SUBOFF_RADIUS_M = 0.254  # max radius [m]  (L/D = 8.57)
@@ -153,9 +152,7 @@ def run_engine_routed(engine: GeneralSimEngine, compile_mode: str | None) -> tup
     u_in = engine.uc.u_lb
 
     collide_fn, collide_kwargs = engine._get_collide_fn()
-    far_field_fn = functools.partial(
-        far_field_bc_3d, bc_config=engine._build_bc_config()
-    )
+    far_field_fn = functools.partial(far_field_bc_3d, bc_config=engine._build_bc_config())
     solid = (
         engine.solid
         if engine.solid is not None
@@ -175,16 +172,12 @@ def run_engine_routed(engine: GeneralSimEngine, compile_mode: str | None) -> tup
             pass
 
     dpS = engine._compute_dpS()
-    div_check = max(
-        1, int(os.environ.get("TL_ISFINITE_INTERVAL", sol.divergence_check_interval))
-    )
+    div_check = max(1, int(os.environ.get("TL_ISFINITE_INTERVAL", sol.divergence_check_interval)))
 
     def _step(f: torch.Tensor) -> torch.Tensor:
         # Whole per-step chain, pure tensor function f -> f' (no host sync,
         # no step index): collide -> NoDynamics -> half-way BB -> stream -> BC.
-        return lbm_step_correct(
-            f, collide_fn, tau, solid, u_in, far_field_fn, **collide_kwargs
-        )
+        return lbm_step_correct(f, collide_fn, tau, solid, u_in, far_field_fn, **collide_kwargs)
 
     step_fn = route_step(_step, compile_mode, name=f"suboff_re1000[L{sol.resolution}]")
 
@@ -230,7 +223,9 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--resolution", type=int, default=80, help="cells per hull length L")
     ap.add_argument("--steps", type=int, default=20000)
-    ap.add_argument("--device", default=None, help="torch device, e.g. sdaa:0 / cuda:0 (auto if unset)")
+    ap.add_argument(
+        "--device", default=None, help="torch device, e.g. sdaa:0 / cuda:0 (auto if unset)"
+    )
     ap.add_argument("--collision", default="mrt", choices=["mrt", "smagorinsky"])
     ap.add_argument(
         "--friction",
@@ -264,8 +259,7 @@ def main() -> None:
     viscosity = U_PHYS * SUBOFF_LENGTH_M / 1000.0  # Re = u*L/nu = 1000
 
     out_dir = Path(
-        args.out
-        or str(_REPO_ROOT / f"results_bench_b6_suboff_re1000_L{L}_{args.collision}")
+        args.out or str(_REPO_ROOT / f"results_bench_b6_suboff_re1000_L{L}_{args.collision}")
     )
     out_dir.mkdir(parents=True, exist_ok=True)
 

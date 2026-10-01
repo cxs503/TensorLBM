@@ -1138,12 +1138,6 @@ def __dir__() -> list[str]:
 
 
 if TYPE_CHECKING:  # pragma: no cover - static-analysis only
-    from .lbm_re_tau import (
-        nu_from_re,
-        nu_from_tau,
-        re_from_tau,
-        tau_from_re,
-    )
     from .accuracy_recommendation import (
         AccuracyRecommendation,
         ConvergenceEvidence,
@@ -1565,6 +1559,12 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
     )
     from .interpolated_bc_suboff import compute_q_suboff
     from .io import save_hdf5, save_vtk, save_vtk_binary, save_vts, save_xdmf
+    from .lbm_re_tau import (
+        nu_from_re,
+        nu_from_tau,
+        re_from_tau,
+        tau_from_re,
+    )
     from .lbm_step import LBMStepExecutor
     from .lid_driven_cavity import (
         GHIA_RE100,

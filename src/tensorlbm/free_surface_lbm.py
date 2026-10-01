@@ -62,6 +62,7 @@ def _env_bool(name: str, default: bool = False) -> bool:
         return default
     return raw.strip().lower() not in ("0", "false", "no", "")
 
+
 # D3Q19 velocity vectors and weights
 _C = C  # (19, 3)
 _W = W
@@ -95,8 +96,8 @@ def _specular_wall_mirror_index(solid_mask, device):
     two/three -> full bounce).  Returns an ``(19, nz, ny, nx)`` int64 tensor of
     source link indices to gather from ``f_post``.
     """
-    smx = solid_mask.roll(1, dims=2)    # SOLID at p-(1,0,0)
-    spx = solid_mask.roll(-1, dims=2)   # SOLID at p+(1,0,0)
+    smx = solid_mask.roll(1, dims=2)  # SOLID at p-(1,0,0)
+    spx = solid_mask.roll(-1, dims=2)  # SOLID at p+(1,0,0)
     smy = solid_mask.roll(1, dims=1)
     spy = solid_mask.roll(-1, dims=1)
     smz = solid_mask.roll(1, dims=0)
@@ -115,9 +116,7 @@ def _specular_wall_mirror_index(solid_mask, device):
     idx = torch.empty(shape, dtype=torch.long, device=device)
     for q, (cx, cy, cz) in enumerate(_C19_SHIFTS):
         sx, sy, sz = _C19_SHIFTS[q]
-        src_solid = (
-            solid_mask.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
-        )
+        src_solid = solid_mask.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
         fx = ((cx > 0) & smx) | ((cx < 0) & spx)
         fy = ((cy > 0) & smy) | ((cy < 0) & spy)
         fz = ((cz > 0) & smz) | ((cz < 0) & spz)
@@ -529,11 +528,15 @@ def init_population_from_fill(
         nb_liq = torch.stack(all_moving_neighbor_masks(liquid)).any(dim=0)
         feq_liq = equilibrium3d(
             torch.where(active, torch.full_like(fill, float(rho_liquid)), zero),
-            zero, zero, zero,
+            zero,
+            zero,
+            zero,
         )
         feq_env = equilibrium3d(
             torch.where(active, torch.full_like(fill, float(rho_env)), zero),
-            zero, zero, zero,
+            zero,
+            zero,
+            zero,
         )
         return torch.where((iface & nb_liq).unsqueeze(0), feq_liq, feq_env)
     if mode == "zero":
@@ -1105,9 +1108,7 @@ def free_surface_step(
             _gvec_w = torch.tensor([float(gx), float(gy), float(gz)], device=device)
             _gc_w = (c_dev * _gvec_w.view(1, 3)).sum(dim=1)  # (19,) = g_vec . c_q
             _w19_w = _W.to(device).float()
-            _head_w = (
-                -2.0 / _cs2_w
-            ) * _coef_w * float(rho_liquid) * _w19_w * _gc_w  # (19,)
+            _head_w = (-2.0 / _cs2_w) * _coef_w * float(rho_liquid) * _w19_w * _gc_w  # (19,)
             _f_reflect = _f_reflect + _head_w.view(19, 1, 1, 1)
         f = torch.where(_fluid_bb, _f_reflect, f)
     f = bounce_back_cells_3d(f, solid_mask)
@@ -1296,13 +1297,20 @@ def free_surface_step(
     #     cell is free to empty so H can actually collapse.
     # ------------------------------------------------------------------
     _gc_mode = os.environ.get("TL_FS_GAS_CHANNEL", "0").strip().lower()
-    _gc_on = _gc_mode in ("1", "true", "yes", "naive", "conserv", "paired", "redist", "paired_redist")
+    _gc_on = _gc_mode in (
+        "1",
+        "true",
+        "yes",
+        "naive",
+        "conserv",
+        "paired",
+        "redist",
+        "paired_redist",
+    )
     _gc_conserv_credit = _gc_mode in ("conserv", "paired")
     _gc_conserv_redist = _gc_mode in ("redist", "paired_redist")
     if _gc_on:
-        mass_delta_gas = torch.where(
-            need_abb, f_abb - f_opp_nb, torch.zeros_like(f)
-        )
+        mass_delta_gas = torch.where(need_abb, f_abb - f_opp_nb, torch.zeros_like(f))
     else:
         mass_delta_gas = torch.zeros_like(f)
     mass_delta_gas_credit = torch.zeros_like(mass)
@@ -1377,11 +1385,7 @@ def free_surface_step(
         _ii_gate = torch.stack(list(all_moving_neighbor_masks(recv_ok_iface)))
         # asymmetric I/I links: gate(x) xor gate(pull source y) on I/I links.
         _ii_nb = neighbor_flags[list(D3Q19_MOVING_Q)]
-        _ii_asym = (
-            (_ii_nb == INTERFACE)
-            & recv_ok_iface.unsqueeze(0)
-            & ~_ii_gate
-        )
+        _ii_asym = (_ii_nb == INTERFACE) & recv_ok_iface.unsqueeze(0) & ~_ii_gate
         mass_ledger["dbg_ii_asym_links"] = float(_ii_asym.sum())
         # isolation-level forensics: is the L/I bulk debit landing on a
         # near-empty LIQUID owner (mass < eps) and driving it negative?
@@ -1390,13 +1394,11 @@ def free_surface_step(
         _deb = mass_delta_bulk_debit
         _deb_liq = _liq & (_deb != 0.0)
         mass_ledger["dbg_debit_liq_cells"] = float(_deb_liq.sum())
-        mass_ledger["dbg_debit_liq_nearempty"] = float(
-            (_deb_liq & (mass <= _eps)).sum()
-        )
+        mass_ledger["dbg_debit_liq_nearempty"] = float((_deb_liq & (mass <= _eps)).sum())
         mass_ledger["dbg_debit_liq_sum"] = float(_deb.masked_select(_liq).sum())
         _post_liq = (mass + mass_delta).masked_select(_liq)
         mass_ledger["dbg_min_liq_post"] = float(_post_liq.min()) if _post_liq.numel() else 0.0
-        mass_ledger["dbg_neg_liq_post"] = float(((_post_liq < 0)).sum())
+        mass_ledger["dbg_neg_liq_post"] = float((_post_liq < 0).sum())
         mass_ledger["dbg_neg_all_post"] = float(((mass + mass_delta) < 0).sum())
     mass = torch.where(~solid_mask, mass + mass_delta, mass)
     if _env_bool("TL_FS_DIAG_FIELD", False):
@@ -1539,9 +1541,7 @@ def free_surface_step(
                 & (~solid_mask)
             )
         else:
-            to_gas = (
-                (interface_mask | liquid_mask) & (mass_gate <= _tog_eps) & (~solid_mask)
-            )
+            to_gas = (interface_mask | liquid_mask) & (mass_gate <= _tog_eps) & (~solid_mask)
     else:
         # Legacy fill-gated path (A/B reference).
         to_iface = gas_mask & (fill > 0.01) & (~solid_mask)
@@ -1694,9 +1694,9 @@ def free_surface_step(
     # donor excess.  This preserves each link/mask contribution and topology;
     # only their deterministic same-dtype aggregation precedes one commit.
     legacy_redistribution_increment = (
-        torch.stack(
-            [roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q]
-        ).sum(dim=0)
+        torch.stack([roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q]).sum(
+            dim=0
+        )
         + neg_increment
     )
     # ABLATION (diagnostic only): TL_FS_ABL_REDIST suppresses the Körner

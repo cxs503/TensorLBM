@@ -36,30 +36,31 @@ and do not affect drag statistics.
 """
 
 from __future__ import annotations
+
 import os
 
 import torch
 import torch.distributed as dist
 
+from tensorlbm.kinetic_flux_register import KineticInterfaceTransfer
 from tensorlbm.octree_boundary.geometry import (
     FANOUT,
     SHELL_OUTSIDE,
     SOLID,
     OctreeGrid,
 )
+from tensorlbm.octree_boundary.sharding import _slice_ghost_plan
 from tensorlbm.octree_boundary.stepping import (
+    PopulationRefluxLedger,
     _fill_ghost_impl,
     _tau_chain,
-    build_ghost_plan_coarse_parent,
-    ensure_fanout_tables,
-    restrict_shell_to_block,
-    build_shell_coarse_links,
-    observe_kinetic_interface_transfer,
     apply_face_local_reflux,
-    PopulationRefluxLedger,
+    build_ghost_plan_coarse_parent,
+    build_shell_coarse_links,
+    ensure_fanout_tables,
+    observe_kinetic_interface_transfer,
+    restrict_shell_to_block,
 )
-from tensorlbm.kinetic_flux_register import KineticInterfaceTransfer
-from tensorlbm.octree_boundary.sharding import _slice_ghost_plan
 
 __all__ = [
     "stream_gather_distributed",
@@ -99,8 +100,11 @@ def interleaved_leaf_indices(n_leaf: int, n_shards: int, rank: int) -> torch.Ten
 
 
 def _slice_ghost_plan_by_indices(
-    plan, local_indices_cpu, n_local,
-    *, slot_device=None,
+    plan,
+    local_indices_cpu,
+    n_local,
+    *,
+    slot_device=None,
 ):
     """Like ``_slice_ghost_plan`` but for a non-contiguous leaf set.
 
@@ -117,8 +121,7 @@ def _slice_ghost_plan_by_indices(
     n_leaf_global = plan.slot.shape[1]
     n_local = int(local_indices_cpu.shape[0])
     if plan.n_ghost == 0:
-        slot = torch.full((plan.slot.shape[0], n_local), -1, dtype=torch.int64,
-                          device=device)
+        slot = torch.full((plan.slot.shape[0], n_local), -1, dtype=torch.int64, device=device)
         if slot_device is not None:
             slot = slot.to(slot_device)
         return ShellGhostPlan(
@@ -158,9 +161,15 @@ def _slice_ghost_plan_by_indices(
         n_ghost=n_ghost,
         leaf=leaf,
         direction=plan.direction[rows],
-        z0=plan.z0[rows], y0=plan.y0[rows], x0=plan.x0[rows],
-        z1=plan.z1[rows], y1=plan.y1[rows], x1=plan.x1[rows],
-        wx=plan.wx[rows], wy=plan.wy[rows], wz=plan.wz[rows],
+        z0=plan.z0[rows],
+        y0=plan.y0[rows],
+        x0=plan.x0[rows],
+        z1=plan.z1[rows],
+        y1=plan.y1[rows],
+        x1=plan.x1[rows],
+        wx=plan.wx[rows],
+        wy=plan.wy[rows],
+        wz=plan.wz[rows],
         volume=plan.volume[rows],
         slot=slot,
         lev=plan.lev[rows] if plan.lev is not None else None,
@@ -181,8 +190,9 @@ class _LocalShellFacade:
     *masked* links whose upstream is in-shard).
     """
 
-    def __init__(self, octree: OctreeGrid, local_indices: torch.Tensor,
-                 device: torch.device) -> None:
+    def __init__(
+        self, octree: OctreeGrid, local_indices: torch.Tensor, device: torch.device
+    ) -> None:
         idx = local_indices.cpu()
         self.Q = octree.Q
         self.n_leaf = int(idx.shape[0])
@@ -231,10 +241,18 @@ def _build_local_fanout_cache(
     * ``fb_n`` / ``fb_d`` / ``fb_i``: defensive fallback cells (FANOUT but no
       registered group) whose stream output falls back to ``f_old``.
     """
-    empty = {"n": 0, "d": None, "i": None, "pad": None, "vp": None,
-             "fb_n": 0, "fb_d": None, "fb_i": None}
+    empty = {
+        "n": 0,
+        "d": None,
+        "i": None,
+        "pad": None,
+        "vp": None,
+        "fb_n": 0,
+        "fb_d": None,
+        "fb_i": None,
+    }
     rowidx, pad_live = ensure_fanout_tables(octree)
-    rowidx = rowidx.detach().cpu()                     # lookups stay on CPU
+    rowidx = rowidx.detach().cpu()  # lookups stay on CPU
     pad_live = pad_live.to(device)
     opp = octree._opp.cpu()
     # Locate this rank's FANOUT cells on the CPU only.  SDAA's ``nonzero``
@@ -245,20 +263,20 @@ def _build_local_fanout_cache(
     rows = torch.nonzero(octree.neighbor_table.cpu() == FANOUT, as_tuple=False)
     if rows.shape[0] == 0:
         return empty
-    q_f = rows[:, 0]                                   # neighbour-table direction
-    g_f = rows[:, 1]                                   # global leaf enum
+    q_f = rows[:, 0]  # neighbour-table direction
+    g_f = rows[:, 1]  # global leaf enum
     # Global enum -> local column map for this rank's shard.
     idx_cpu = local_indices.detach().cpu()
     pos_of = torch.full((octree.n_leaf,), -1, dtype=torch.int64)
     pos_of[idx_cpu] = torch.arange(idx_cpu.shape[0], dtype=torch.int64)
-    i_f = pos_of[g_f]                                  # -1 when not owned here
+    i_f = pos_of[g_f]  # -1 when not owned here
     own = i_f >= 0
     if not bool(own.any()):
         return empty
-    d_f = opp[q_f[own]]                                # pull direction
+    d_f = opp[q_f[own]]  # pull direction
     i_f = i_f[own]
     g_f = g_f[own]
-    ridx = rowidx[q_f[own], g_f]                       # live row / -1 (CPU)
+    ridx = rowidx[q_f[own], g_f]  # live row / -1 (CPU)
     has = ridx >= 0
     cache = dict(empty)
     cache["n"] = int(has.sum())
@@ -309,10 +327,9 @@ def stream_gather_distributed(
     n_leaf = full_populations.shape[1]
     opp = octree._opp.to(full_populations.device)
     nt = octree.neighbor_table.to(full_populations.device)
-    out = torch.empty(q, n_local, dtype=full_populations.dtype,
-                      device=full_populations.device)
+    out = torch.empty(q, n_local, dtype=full_populations.dtype, device=full_populations.device)
     # ---- one batched pass: every source, every direction ------------------
-    src_all = nt[opp][:, local_indices]          # (Q, n_local) enums/sentinels
+    src_all = nt[opp][:, local_indices]  # (Q, n_local) enums/sentinels
     valid = src_all >= 0
     if bool(valid.any()):
         if int(src_all.max()) >= n_leaf:
@@ -324,14 +341,14 @@ def stream_gather_distributed(
     # ghost 分支 (SHELL_OUTSIDE): 一次 nonzero 收集所有 (d, i), 批量取 slot
     ghost_all = src_all == SHELL_OUTSIDE
     if bool(ghost_all.any()):
-        rows = torch.nonzero(ghost_all, as_tuple=False)    # (n_g, 2) (d, i)
+        rows = torch.nonzero(ghost_all, as_tuple=False)  # (n_g, 2) (d, i)
         d_g, i_g = rows[:, 0], rows[:, 1]
         slots = ghost_slot_local[d_g, i_g]
         out[d_g, i_g] = ghost_vals[d_g, slots]
     # solid 分支 (SOLID): bounce-back, 同全局列取 opp[d] 方向
     solid_all = src_all == SOLID
     if bool(solid_all.any()):
-        rows = torch.nonzero(solid_all, as_tuple=False)    # (n_s, 2) (d, i)
+        rows = torch.nonzero(solid_all, as_tuple=False)  # (n_s, 2) (d, i)
         d_s, i_s = rows[:, 0], rows[:, 1]
         out[d_s, i_s] = full_populations[opp[d_s], local_indices[i_s]]
     # fanout 分支: 预缓存位置一次批量 gather + 段均值
@@ -348,9 +365,7 @@ def stream_gather_distributed(
             out[d_f, i_f] = means.to(full_populations.dtype)
     if fan_cache is not None and fan_cache["fb_n"] > 0:
         # 防御: FANOUT 但无注册组 -> 保留旧值 (与旧循环一致)
-        out[fan_cache["fb_d"], fan_cache["fb_i"]] = (
-            f_old[fan_cache["fb_d"], fan_cache["fb_i"]]
-        )
+        out[fan_cache["fb_d"], fan_cache["fb_i"]] = f_old[fan_cache["fb_d"], fan_cache["fb_i"]]
     return out
 
 
@@ -444,15 +459,16 @@ def step_octree_shell_distributed(
     # ---- P0 fix: optional coarse-parent ghost supply (see docstring) ----
     use_coarse_parent = ghost_parent_old is not None
     if use_coarse_parent:
-        if ghost_parent_new is None or ghost_parent_offset is None \
-                or ghost_parent_tau is None:
+        if ghost_parent_new is None or ghost_parent_offset is None or ghost_parent_tau is None:
             raise TypeError(
                 "step_octree_shell_distributed: ghost_parent_old/new/offset/"
                 "tau must all be provided together",
             )
         _wz, _wy, _wx = ghost_parent_old.shape[1:]
         ghost_plan_coarse = build_ghost_plan_coarse_parent(
-            octree, (_wz, _wy, _wx), ghost_parent_offset,
+            octree,
+            (_wz, _wy, _wx),
+            ghost_parent_offset,
         )
         # The ghost rescale chain: the sampled parent is the REAL coarse
         # field (relaxation ghost_parent_tau), so the chain must start at
@@ -472,20 +488,38 @@ def step_octree_shell_distributed(
         """Per-rank slice of a global ghost plan (contiguous or interleaved)."""
         if interleave:
             return _slice_ghost_plan_by_indices(
-                plan, local_indices.cpu(), n_local, slot_device=device,
+                plan,
+                local_indices.cpu(),
+                n_local,
+                slot_device=device,
             )[0]
         lo0, hi0 = split_leaf_bounds(n_leaf, world_size)[rank]
         return _slice_ghost_plan(
-            plan, lo0, hi0, n_local, slot_device=device,
+            plan,
+            lo0,
+            hi0,
+            n_local,
+            slot_device=device,
         )[0]
 
     def _restore_global(plan_slice):
         """Map sliced-plan local leaf enums back to global enums."""
         p = plan_slice
         return ShellGhostPlan(
-            p.n_ghost, local_indices[p.leaf.cpu()], p.direction,
-            p.z0, p.y0, p.x0, p.z1, p.y1, p.x1,
-            p.wx, p.wy, p.wz, p.volume, p.slot,
+            p.n_ghost,
+            local_indices[p.leaf.cpu()],
+            p.direction,
+            p.z0,
+            p.y0,
+            p.x0,
+            p.z1,
+            p.y1,
+            p.x1,
+            p.wx,
+            p.wy,
+            p.wz,
+            p.volume,
+            p.slot,
             lev=p.lev if p.lev is not None else None,
         )
 
@@ -514,7 +548,9 @@ def step_octree_shell_distributed(
         # identity ``dM = -residual.sum()`` exactly (same as the unsharded
         # ``step_octree_shell``).
         observation_links = build_shell_coarse_links(
-            coarse_links.inside, None, q=q,
+            coarse_links.inside,
+            None,
+            q=q,
         )
 
     fine_transfer = None
@@ -528,8 +564,10 @@ def step_octree_shell_distributed(
         f_local = octree.f_leaf.contiguous()
         f_in_save = f_local.clone()
         from tensorlbm.octree_boundary.stepping import _unpack_shell_advance
+
         populations, post_collision = _unpack_shell_advance(
-            advance(f_local, tau_shell, shell_level, s), f_local.shape,
+            advance(f_local, tau_shell, shell_level, s),
+            f_local.shape,
         )
         octree.f_leaf = populations
         if os.environ.get("DBG_NAN"):
@@ -555,10 +593,23 @@ def step_octree_shell_distributed(
         # _slice_ghost_plan stores *local* leaf enums in plan.leaf; the fill
         # indexes leaf_level with it, so restore the global enum first.
         from tensorlbm.octree_boundary.stepping import ShellGhostPlan
+
         p = ghost_plan_local
         gplan_fill = ShellGhostPlan(
-            p.n_ghost, local_indices[p.leaf.cpu()], p.direction, p.z0, p.y0, p.x0,
-            p.z1, p.y1, p.x1, p.wx, p.wy, p.wz, p.volume, p.slot,
+            p.n_ghost,
+            local_indices[p.leaf.cpu()],
+            p.direction,
+            p.z0,
+            p.y0,
+            p.x0,
+            p.z1,
+            p.y1,
+            p.x1,
+            p.wx,
+            p.wy,
+            p.wz,
+            p.volume,
+            p.slot,
             lev=p.lev if p.lev is not None else None,
         )
         if use_coarse_parent:
@@ -572,25 +623,33 @@ def step_octree_shell_distributed(
             assert ghost_parent_tau is not None and taus_ghost is not None
             gplan_fill_coarse = _restore_global(_slice_plan(ghost_plan_coarse))
             ghost_vals = _fill_ghost_impl(
-                octree.leaf_level, gplan_fill_coarse,
+                octree.leaf_level,
+                gplan_fill_coarse,
                 torch.lerp(ghost_parent_old, ghost_parent_new, alpha),
                 taus_ghost,
             )
         else:
             ghost_vals = _fill_ghost_impl(
-                octree.leaf_level, gplan_fill, parent_t, taus,
+                octree.leaf_level,
+                gplan_fill,
+                parent_t,
+                taus,
             )
         if os.environ.get("DBG_NAN"):
             dbg_mass_log.append((s, "ghost_vals_sum", float(ghost_vals.sum().item())))
             n_gh = ghost_plan_local.n_ghost
             dbg_mass_log.append((s, "ghost_rows", float(n_gh)))
-            dbg_mass_log.append((s, "ghost_leaf_count",
-                                 float(torch.unique(ghost_plan_local.leaf).shape[0])))
+            dbg_mass_log.append(
+                (s, "ghost_leaf_count", float(torch.unique(ghost_plan_local.leaf).shape[0]))
+            )
         if os.environ.get("DBG_NAN") and not bool(torch.isfinite(ghost_vals).all()):
             nnan = (~torch.isfinite(ghost_vals)).sum().item()
             dd, rr = torch.nonzero(~torch.isfinite(ghost_vals), as_tuple=True)
-            print(f"[dbg] rank{rank} substep{s} ghost_vals NaN: {nnan} elems "
-                  f"rows={torch.unique(rr).tolist()[:10]}", flush=True)
+            print(
+                f"[dbg] rank{rank} substep{s} ghost_vals NaN: {nnan} elems "
+                f"rows={torch.unique(rr).tolist()[:10]}",
+                flush=True,
+            )
         # Fanout member means over the all-gathered post-collision state —
         # one batched gather per substep (no per-group Python loop).  The
         # same (d, leaf) cells serve the stream fanout branch and BFL's
@@ -598,18 +657,21 @@ def step_octree_shell_distributed(
         # table is computed once and shared.
         fan_mean_t = None
         if fan_cache["n"] > 0:
-            _vals = full_pc[fan_cache["d"].unsqueeze(1),
-                            fan_cache["pad"].clamp(min=0)]
-            _means = (
-                _vals.to(torch.float64) * fan_cache["vp"]
-            ).sum(dim=1) / fan_cache["vp"].sum(dim=1).clamp_min(1)
-            fan_mean_t = torch.zeros(q, n_local, dtype=torch.float64,
-                                     device=device)
+            _vals = full_pc[fan_cache["d"].unsqueeze(1), fan_cache["pad"].clamp(min=0)]
+            _means = (_vals.to(torch.float64) * fan_cache["vp"]).sum(dim=1) / fan_cache["vp"].sum(
+                dim=1
+            ).clamp_min(1)
+            fan_mean_t = torch.zeros(q, n_local, dtype=torch.float64, device=device)
             fan_mean_t[fan_cache["d"], fan_cache["i"]] = _means
         out = stream_gather_distributed(
-            octree, full_pc, ghost_vals, ghost_plan_local.slot,
-            octree.f_leaf, local_indices,
-            fan_cache=fan_cache, fan_mean=fan_mean_t,
+            octree,
+            full_pc,
+            ghost_vals,
+            ghost_plan_local.slot,
+            octree.f_leaf,
+            local_indices,
+            fan_cache=fan_cache,
+            fan_mean=fan_mean_t,
         )
         if os.environ.get("DBG_NAN"):
             dbg_mass_log.append((s, "post_stream", float(out.sum().item())))
@@ -619,63 +681,92 @@ def step_octree_shell_distributed(
             ghost_pulled = float(out[gh].sum().item()) if bool(gh.any()) else 0.0
             dbg_mass_log.append((s, "ghost_pulled_in", ghost_pulled))
         if os.environ.get("DBG_NAN"):
-            for gc in [14775, 30153, 45060, 55123, 55127, 67864, 67868,
-                       77931, 83239, 92838, 92841, 108216, 111655]:
+            for gc in [
+                14775,
+                30153,
+                45060,
+                55123,
+                55127,
+                67864,
+                67868,
+                77931,
+                83239,
+                92838,
+                92841,
+                108216,
+                111655,
+            ]:
                 m = (local_indices == gc).nonzero(as_tuple=False)
                 if m.numel():
                     loc = int(m[0])
                     ov = out[:, loc]
                     fv = f_in_save[:, loc]
-                    print(f"[dbg] rank{rank} substep{s} global_col {gc}: "
-                          f"f_in sum={float(fv.sum()):.6g} "
-                          f"stream_out sum={float(ov.sum()):.6g} "
-                          f"out_finite={bool(torch.isfinite(ov).all())}",
-                          flush=True)
+                    print(
+                        f"[dbg] rank{rank} substep{s} global_col {gc}: "
+                        f"f_in sum={float(fv.sum()):.6g} "
+                        f"stream_out sum={float(ov.sum()):.6g} "
+                        f"out_finite={bool(torch.isfinite(ov).all())}",
+                        flush=True,
+                    )
         if not bool(torch.isfinite(out).all()):
             nan_elems = (~torch.isfinite(out)).sum().item()
-            print(f"[shell] rank{rank} NaN after stream substep {s}: "
-                  f"{nan_elems} elems", flush=True)
+            print(f"[shell] rank{rank} NaN after stream substep {s}: {nan_elems} elems", flush=True)
             if os.environ.get("DBG_NAN"):
                 bad = ~torch.isfinite(out)
                 dd, ii = torch.nonzero(bad, as_tuple=True)
                 uni = torch.unique(ii)
-                print(f"[dbg] NaN leaves {len(uni)} unique global "
-                      f"{local_indices[uni[:10]].tolist()} dirs "
-                      f"{torch.unique(dd).tolist()}", flush=True)
+                print(
+                    f"[dbg] NaN leaves {len(uni)} unique global "
+                    f"{local_indices[uni[:10]].tolist()} dirs "
+                    f"{torch.unique(dd).tolist()}",
+                    flush=True,
+                )
                 opp_t = octree._opp.to(full_pc.device)
                 for li in uni[:5].tolist():
                     gi = int(local_indices[li])
                     src = octree.neighbor_table[opp_t][:, gi]
-                    print(f"[dbg] leaf {gi} host="
-                          f"{octree.leaf_host_cell[gi].tolist()} "
-                          f"q={octree.q_field[:, gi].tolist()}", flush=True)
+                    print(
+                        f"[dbg] leaf {gi} host="
+                        f"{octree.leaf_host_cell[gi].tolist()} "
+                        f"q={octree.q_field[:, gi].tolist()}",
+                        flush=True,
+                    )
                     for d in torch.unique(dd).tolist():
-                        print(f"[dbg]   d={d} src={int(src[d])} "
-                              f"slot={int(ghost_plan_local.slot[d, li])} "
-                              f"fullpc={float(full_pc[d, gi])} "
-                              f"out={float(out[d, li])}", flush=True)
+                        print(
+                            f"[dbg]   d={d} src={int(src[d])} "
+                            f"slot={int(ghost_plan_local.slot[d, li])} "
+                            f"fullpc={float(full_pc[d, gi])} "
+                            f"out={float(out[d, li])}",
+                            flush=True,
+                        )
                 # where do NaN leaves get their values? check each branch
-                print(f"[dbg] post_collision finite="
-                      f"{bool(torch.isfinite(post_collision).all())} "
-                      f"full_pc finite={bool(torch.isfinite(full_pc).all())}",
-                      flush=True)
+                print(
+                    f"[dbg] post_collision finite="
+                    f"{bool(torch.isfinite(post_collision).all())} "
+                    f"full_pc finite={bool(torch.isfinite(full_pc).all())}",
+                    flush=True,
+                )
                 if not bool(torch.isfinite(full_pc).all()):
                     bd, bi = torch.nonzero(~torch.isfinite(full_pc), as_tuple=True)
                     cols = torch.unique(bi).tolist()[:20]
-                    print(f"[dbg] full_pc NaN cols={cols} "
-                          f"dirs={torch.unique(bd).tolist()}", flush=True)
+                    print(
+                        f"[dbg] full_pc NaN cols={cols} dirs={torch.unique(bd).tolist()}",
+                        flush=True,
+                    )
                     # collide input at those columns (local col = global - lo)
                     # NOTE: for interleave, local col != global col; map back.
                     for gc in cols:
                         loc = int((local_indices == gc).nonzero(as_tuple=False)[0])
                         fin = f_in_save[:, loc]
-                        print(f"[dbg]   col {gc} collide-input finite="
-                              f"{bool(torch.isfinite(fin).all())} "
-                              f"sum={float(fin.sum()):.6g} "
-                              f"min={float(fin.min()):.6g} "
-                              f"max={float(fin.max()):.6g} "
-                              f"pc={post_collision[:, loc].tolist()[:6]}",
-                              flush=True)
+                        print(
+                            f"[dbg]   col {gc} collide-input finite="
+                            f"{bool(torch.isfinite(fin).all())} "
+                            f"sum={float(fin.sum()):.6g} "
+                            f"min={float(fin.min()):.6g} "
+                            f"max={float(fin.max()):.6g} "
+                            f"pc={post_collision[:, loc].tolist()[:6]}",
+                            flush=True,
+                        )
             raise FloatingPointError("NaN after stream")
         if bfl_fn is not None:
             # BFL needs the full-shell facade (bfl_mask etc. are global);
@@ -689,26 +780,26 @@ def step_octree_shell_distributed(
                 # correctness bug — it keyed the global registry with LOCAL
                 # columns, always missing and falling back to fp_d).
                 facade.fanout_mean = fan_mean_t
-            result = bfl_fn(facade, out, post_collision, ghost_plan_local,
-                            ghost_vals, substep=s)
+            result = bfl_fn(facade, out, post_collision, ghost_plan_local, ghost_vals, substep=s)
             out, substep_force = result
             if os.environ.get("DBG_NAN"):
                 dbg_mass_log.append((s, "post_bfl", float(out.sum().item())))
             if os.environ.get("DBG_NAN") and not bool(torch.isfinite(out).all()):
                 nnan = (~torch.isfinite(out)).sum().item()
                 dd, ii = torch.nonzero(~torch.isfinite(out), as_tuple=True)
-                print(f"[dbg] rank{rank} substep{s} BFL-out NaN: {nnan} elems "
-                      f"dirs={torch.unique(dd).tolist()[:10]} "
-                      f"local_leaves={torch.unique(ii).tolist()[:10]} "
-                      f"q_range=[{float(octree.q_field.min())},"
-                      f"{float(octree.q_field.max())}] "
-                      f"bfl_links={int(octree.bfl_mask.sum())}", flush=True)
+                print(
+                    f"[dbg] rank{rank} substep{s} BFL-out NaN: {nnan} elems "
+                    f"dirs={torch.unique(dd).tolist()[:10]} "
+                    f"local_leaves={torch.unique(ii).tolist()[:10]} "
+                    f"q_range=[{float(octree.q_field.min())},"
+                    f"{float(octree.q_field.max())}] "
+                    f"bfl_links={int(octree.bfl_mask.sum())}",
+                    flush=True,
+                )
             if substep_force is not None:
-                sf = torch.as_tensor(substep_force, dtype=torch.float64,
-                                     device=device)
+                sf = torch.as_tensor(substep_force, dtype=torch.float64, device=device)
                 if rank == 0 and s == 0 and os.environ.get("DUMP_FORCE"):
-                    print(f"[force] rank{rank} substep{s} force="
-                          f"{sf.tolist()}", flush=True)
+                    print(f"[force] rank{rank} substep{s} force={sf.tolist()}", flush=True)
                 mem_accum = mem_accum + sf
         # 4. reflux observation (distributed): observe the fine-side
         #    interface transfer from the all-gathered full_pc (outgoing)
@@ -730,16 +821,17 @@ def step_octree_shell_distributed(
                 _d_l = _if_links[:, 1]
                 _li = _if_links[:, 0]
                 _obs_out.scatter_add_(
-                    0, _d_l,
+                    0,
+                    _d_l,
                     (full_pc[_d_l, _li] * _leaf_vol[_li].to(dtype)),
                 )
             if ghost_plan_local.n_ghost:
                 _gdir = ghost_plan_local.direction
                 _grow = torch.arange(ghost_plan_local.n_ghost, device=device)
                 _obs_in.scatter_add_(
-                    0, _gdir,
-                    (ghost_vals[_gdir, _grow]
-                     * ghost_plan_local.volume.to(dtype)),
+                    0,
+                    _gdir,
+                    (ghost_vals[_gdir, _grow] * ghost_plan_local.volume.to(dtype)),
                 )
             _obs_out[0] = 0
             _obs_in[0] = 0
@@ -748,10 +840,7 @@ def step_octree_shell_distributed(
             # global incoming sum (one all_reduce per substep).
             dist.all_reduce(_obs_in, op=dist.ReduceOp.SUM)
             _observed = KineticInterfaceTransfer(_obs_out, _obs_in)
-            fine_transfer = (
-                _observed if fine_transfer is None
-                else fine_transfer + _observed
-            )
+            fine_transfer = _observed if fine_transfer is None else fine_transfer + _observed
         octree.f_leaf = out
 
     # ---- restriction on rank 0, broadcast the L1 patch ----
@@ -792,8 +881,11 @@ def step_octree_shell_distributed(
         if not reflux:
             ledger = PopulationRefluxLedger(
                 replacement_mismatch,
-                torch.zeros_like(replacement_mismatch), 0,
-                replacement_mismatch, 0, replacement_mismatch,
+                torch.zeros_like(replacement_mismatch),
+                0,
+                replacement_mismatch,
+                0,
+                replacement_mismatch,
             )
         else:
             if fine_transfer is None:
@@ -810,29 +902,40 @@ def step_octree_shell_distributed(
                 if len(l1_post) == 0:
                     raise ValueError("l1_post sequence must not be empty")
                 coarse_transfer = observe_kinetic_interface_transfer(
-                    l1_post[0], observation_links,
+                    l1_post[0],
+                    observation_links,
                 )
                 for _post in l1_post[1:]:
                     coarse_transfer = coarse_transfer + (
                         observe_kinetic_interface_transfer(
-                            _post, observation_links,
+                            _post,
+                            observation_links,
                         )
                     )
             else:
                 coarse_transfer = observe_kinetic_interface_transfer(
-                    l1_post, observation_links,
+                    l1_post,
+                    observation_links,
                 )
             l1_f, report = apply_face_local_reflux(
-                l1_f, coarse_links, coarse_transfer, fine_transfer,
+                l1_f,
+                coarse_links,
+                coarse_transfer,
+                fine_transfer,
                 maximum_correction_fraction=maximum_reflux_correction_fraction,
                 correction_stencil=correction_stencil,
             )
             ledger = PopulationRefluxLedger(
                 report.requested_inventory_correction,
                 report.applied_inventory_correction,
-                report.corrected_links, report.residual,
-                report.limited_directions, report.raw_kinetic_mismatch, 0.0,
-                1.0, 0.0, 1.0,
+                report.corrected_links,
+                report.residual,
+                report.limited_directions,
+                report.raw_kinetic_mismatch,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
                 report.maximum_applied_correction_fraction,
             )
     # Broadcast the L1 patch so every rank's L1 copy stays in sync.
@@ -888,18 +991,24 @@ def step_octree_shell_distributed(
             t = torch.tensor(float(v), dtype=torch.float64, device=device)
             dist.all_reduce(t, op=dist.ReduceOp.SUM)
             return float(t.item())
+
         if dbg_mass_log:
             for s, stage, val in dbg_mass_log:
                 dbg_mass_log_sum = _reduce(val)
                 if rank == 0:
-                    print(f"[dbg] RS{_DBG_ROOT_STEP} s{s} {stage} global_sum="
-                          f"{dbg_mass_log_sum:.9g}", flush=True)
+                    print(
+                        f"[dbg] RS{_DBG_ROOT_STEP} s{s} {stage} global_sum={dbg_mass_log_sum:.9g}",
+                        flush=True,
+                    )
         shard_sum = float(octree.f_leaf.sum().item())
         shell_sum = _reduce(shard_sum)
         restr_sum = _reduce(float(restricted.sum().item()) if rank == 0 else 0.0)
         if rank == 0:
-            print(f"[dbg] RS{_DBG_ROOT_STEP} shell_total={shell_sum:.9g} "
-                  f"restricted_total={restr_sum:.9g}", flush=True)
+            print(
+                f"[dbg] RS{_DBG_ROOT_STEP} shell_total={shell_sum:.9g} "
+                f"restricted_total={restr_sum:.9g}",
+                flush=True,
+            )
     # Time-average over the root step's substeps (per-root-step MEM force).
     mem_avg = mem_accum / n_substeps
     return ledger, mem_avg, restricted, cells

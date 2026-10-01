@@ -50,7 +50,7 @@ def sphere_inside_fn(
             + (centers[:, 1] - center[1]) ** 2
             + (centers[:, 2] - center[2]) ** 2
         )
-        return dist2 <= radius ** 2
+        return dist2 <= radius**2
 
     inside_fn.analytic_q = True  # type: ignore[attr-defined]
     return inside_fn
@@ -112,7 +112,10 @@ def solid_mask_shell_fn(
     n_passes = max(1, int(round(bl_thickness)))
     for _ in range(n_passes):
         dilated = F.max_pool3d(
-            dilated, kernel_size=3, stride=1, padding=1,
+            dilated,
+            kernel_size=3,
+            stride=1,
+            padding=1,
         )
     dilated = dilated.squeeze(0).squeeze(0) > 0.5
     shell_band = dilated & ~mask  # fluid but near solid

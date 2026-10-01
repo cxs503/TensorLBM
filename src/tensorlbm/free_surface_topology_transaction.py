@@ -484,9 +484,7 @@ def _read_birth_mode() -> tuple[str, float]:
     return mode, rho_env
 
 
-def _birth_density_field(
-    f, flags, rho_liquid, rho_gas, mode, rho_env, liquid_flag, interface_flag
-):
+def _birth_density_field(f, flags, rho_liquid, rho_gas, mode, rho_env, liquid_flag, interface_flag):
     """Per-cell birth density (scalar modes).  Returns ``None`` for others."""
     if mode == "zero":
         return torch.zeros_like(f.sum(0))
@@ -501,9 +499,9 @@ def _birth_density_field(
         nb = torch.stack(all_moving_neighbor_masks(active)).to(f.dtype)
         cnt = nb.sum(dim=0).clamp(min=1.0)
         rho = f.sum(0)
-        rho_nb = (
-            torch.stack([roll_from_pull_source(rho, q) for q in D3Q19_MOVING_Q]) * nb
-        ).sum(dim=0) / cnt
+        rho_nb = (torch.stack([roll_from_pull_source(rho, q) for q in D3Q19_MOVING_Q]) * nb).sum(
+            dim=0
+        ) / cnt
         return torch.where(nb.sum(dim=0) > 0, rho_nb, torch.zeros_like(rho_nb))
     return None
 
@@ -573,9 +571,7 @@ def _init_new_directional(
     uz_mean = (
         torch.stack([roll_from_pull_source(uz, q) for q in D3Q19_MOVING_Q]) * neighbours
     ).sum(dim=0) / count
-    nbf = torch.stack(
-        [roll_from_pull_source(flags.to(f.dtype), q) for q in D3Q19_MOVING_Q]
-    )
+    nbf = torch.stack([roll_from_pull_source(flags.to(f.dtype), q) for q in D3Q19_MOVING_Q])
     rho_dir = torch.where(
         nbf == float(liquid_flag),
         torch.full_like(nbf, float(rho_liquid)),
@@ -596,9 +592,7 @@ def _init_new_birth(
 ):
     """Dispatcher for the empty-shell birth state (env-gated A/B hook)."""
     if mode == "legacy":
-        return _init_new(
-            f, flags, mask, rho_liquid, ux, uy, uz, liquid_flag, interface_flag
-        )
+        return _init_new(f, flags, mask, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
     if mode == "liqface":
         return _init_new_directional(
             f, flags, mask, rho_liquid, rho_env, ux, uy, uz, liquid_flag, interface_flag
@@ -607,12 +601,8 @@ def _init_new_birth(
         f, flags, rho_liquid, rho_gas, mode, rho_env, liquid_flag, interface_flag
     )
     if rho_field is None:
-        return _init_new(
-            f, flags, mask, rho_liquid, ux, uy, uz, liquid_flag, interface_flag
-        )
-    return _init_new(
-        f, flags, mask, rho_field, ux, uy, uz, liquid_flag, interface_flag
-    )
+        return _init_new(f, flags, mask, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
+    return _init_new(f, flags, mask, rho_field, ux, uy, uz, liquid_flag, interface_flag)
 
 
 def conservative_clamp_conserve(
@@ -845,8 +835,18 @@ def build_topology_transaction(
     gas_mask = cflags == gas_flag
     _birth_mode, _birth_rho = _read_birth_mode()
     cf = _init_new_birth(
-        cf, cflags, to_iface, _birth_mode, rho_liquid, rho_gas, _birth_rho,
-        ux, uy, uz, liquid_flag, interface_flag,
+        cf,
+        cflags,
+        to_iface,
+        _birth_mode,
+        rho_liquid,
+        rho_gas,
+        _birth_rho,
+        ux,
+        uy,
+        uz,
+        liquid_flag,
+        interface_flag,
     )
     cflags = torch.where(to_iface, torch.full_like(cflags, interface_flag), cflags)
     if replay_stages is not None:
@@ -956,11 +956,20 @@ def build_topology_transaction(
     to_i = ((gas_mask | to_gas) & is_neighbor & ~solid_mask) | recv_new
     # ABLATION (diagnostic only): TL_FS_ABL_HALO suppresses the gas->interface
     # envelope halo promotion (only residual recv_new receivers survive).
-    import os as _os
 
     cf = _init_new_birth(
-        cf, cflags, to_i, _birth_mode, rho_liquid, rho_gas, _birth_rho,
-        ux, uy, uz, liquid_flag, interface_flag,
+        cf,
+        cflags,
+        to_i,
+        _birth_mode,
+        rho_liquid,
+        rho_gas,
+        _birth_rho,
+        ux,
+        uy,
+        uz,
+        liquid_flag,
+        interface_flag,
     )
     cflags = torch.where(to_i, torch.full_like(cflags, interface_flag), cflags)
     # A-prime: bring the halo/isolation boundary under the same per-link
@@ -974,9 +983,7 @@ def build_topology_transaction(
     _aprime = _read_aprime()
     if _aprime:
         _carry = to_i & (cmass > 0.0)
-        cfill = torch.where(
-            _carry, (cmass / float(rho_liquid)).clamp(0.0, 1.0), cfill
-        )
+        cfill = torch.where(_carry, (cmass / float(rho_liquid)).clamp(0.0, 1.0), cfill)
         _halo_zero = to_i & ~recv_new & ~_carry
     else:
         _halo_zero = to_i & ~recv_new
