@@ -36,8 +36,8 @@
 1. **H 测量 bug（已修）**：旧代码
    ```python
    region = wet[:, :, 1 : a // 2 + 1]
-   rows = region.any(dim=2).nonzero(as_tuple=False)   # (nz,ny) → (z,y) 对
-   h = int(rows[-1, 0].item())                        # ← 取的是 max z 索引，不是 y 高度！
+   rows = region.any(dim=2).nonzero(as_tuple=False)  # (nz,ny) → (z,y) 对
+   h = int(rows[-1, 0].item())  # ← 取的是 max z 索引，不是 y 高度！
    ```
    `region.any(dim=2)` 把 x 压掉后得到 `(nz, ny)`，`nonzero()` 返回 `(z, y)` 对，
    `[-1,0]` 取的是**最大的 z 索引**而非 y 高度 → H 恒为伪值（旧值恰好接近 1.0 属巧合）。
@@ -45,7 +45,7 @@
    `h_flag` 一致）：
    ```python
    ys = region.any(dim=2).any(dim=0).nonzero(as_tuple=False)  # (ny,) → y 高度索引
-   h  = int(ys[-1, 0].item()) if ys.numel() else 0
+   h = int(ys[-1, 0].item()) if ys.numel() else 0
    ```
    修正后初始 H = 31/(2·16) = 0.969（水柱 32 层，最高液格 y=31），量纲正确。
 
