@@ -149,6 +149,17 @@ quirks encoded: no `-W`, no `-e`, `bash` missing on compute nodes
 * Watch the known Triton-on-DCU gaps (Q=19/32 padding, force all-reduce
   contiguity — see `docs/triton_distributed_notes.md`); on DCU the eager
   gather path remains the correctness baseline for cross-checks.
+* **`torch.compile` is not production-ready on SDAA (Torch-SDAA 3.1.1a3)**:
+  the `teco_inductor` backend still hits upstream defects (L5: the `EXPAND`
+  fallback path indexes `reduction_shape` out of range) past the L1–L4 shims
+  in `benchmarks/compile_route._enable_sdaa_inductor`.  The benchmark
+  standard therefore routes compiled steps through
+  `_CompileWithEagerFallback`: the first call tries the compiled graph, and on
+  `InductorError/AssertionError/IndexError/RuntimeError` prints a fallback
+  banner and runs every later step **eager** (bitwise-identical to
+  `--compile-mode eager`).  The effective mode is recorded in `result.json`
+  (`compile_mode_effective`).  On CUDA `mode='default'` stays a real
+  compilation — the fallback is a no-op there.
 
 **Moore Threads MUSA / Cambricon MLU**
 * Same pattern: plugin import probe (`torch_mlu`, `torch_musa`) + eager

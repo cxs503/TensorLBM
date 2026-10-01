@@ -18,9 +18,15 @@ See ``docs/octree-boundary-design.md`` for the contract.
 from tensorlbm.octree_boundary.bfl import (
     bfl_apply_gather,
     bfl_ramp_wall_velocity,
+    leaf_force_spatial_weights,
     leaf_force_weights,
     leaf_macroscopic,
     upstream_donor_table,
+)
+from tensorlbm.octree_boundary.distributed_stepping import (
+    split_leaf_bounds,
+    step_octree_shell_distributed,
+    stream_gather_distributed,
 )
 from tensorlbm.octree_boundary.force import (
     ShellForceLedger,
@@ -46,6 +52,11 @@ from tensorlbm.octree_boundary.geometry import (
     morton_parent,
     sphere_distance_field,
 )
+from tensorlbm.octree_boundary.geometry_adapters import (
+    solid_mask_inside_fn,
+    solid_mask_shell_fn,
+    sphere_inside_fn,
+)
 from tensorlbm.octree_boundary.qfield import (
     compute_leaf_q_field,
     compute_q_sphere_at_points,
@@ -56,7 +67,6 @@ from tensorlbm.octree_boundary.sharding import (
     shard_octree_shell,
     shards_all_finite,
     shards_f_leaf,
-    split_leaf_bounds,
 )
 from tensorlbm.octree_boundary.stepping import (
     ShellGhostPlan,
@@ -85,6 +95,9 @@ __all__ = [
     "build_octree_shell",
     "build_shell_cell_mask",
     "sphere_distance_field",
+    "split_leaf_bounds",
+    "stream_gather_distributed",
+    "step_octree_shell_distributed",
     "analytic_shell_volume",
     "cell_saving_report",
     "morton_encode",
@@ -95,6 +108,9 @@ __all__ = [
     "morton_child",
     "compute_q_sphere_at_points",
     "compute_leaf_q_field",
+    "sphere_inside_fn",
+    "solid_mask_inside_fn",
+    "solid_mask_shell_fn",
     "build_neighbor_table",
     "build_interface_registry",
     "check_neighbor_symmetry",
@@ -104,6 +120,7 @@ __all__ = [
     "run_topology_checks",
     "bfl_apply_gather",
     "bfl_ramp_wall_velocity",
+    "leaf_force_spatial_weights",
     "leaf_force_weights",
     "leaf_macroscopic",
     "upstream_donor_table",
@@ -116,7 +133,6 @@ __all__ = [
     "shard_octree_shell",
     "shards_all_finite",
     "shards_f_leaf",
-    "split_leaf_bounds",
     "ShellGhostPlan",
     "build_ghost_plan",
     "build_plane_shell",

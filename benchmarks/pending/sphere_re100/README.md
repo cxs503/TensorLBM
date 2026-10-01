@@ -128,3 +128,86 @@ extrap='none'，p0=far_field，cuda:1）：
 
 - 真实模拟（extrap='none'），禁外推凑精度；误差 ≤3% 且 ≥2 档网格单调收敛才入库
 - 本案例两档对称性均为 0 且 D=40 收敛误差 +264.6% ≫ 3% → **不入库，留 pending/**
+
+---
+
+# 2026-09-30 追加：surface-only Ladd MEM 口径复核（cylinder_3d 配方移植）— 仍不达标
+
+针对 cylinder_3d 入库的关键机制（Ladd 动量交换力 Σ_solid = Σ_surface + Σ_interior，
+壁面相邻 surface 格才是真实界面动量通量），按同一机制链
+（`collide_bgk3d → 冻结 solid → 半程 bounce_back_cells_3d → stream3d → far_field_bc_3d`，
+post-stream/pre-bounce-back 采样）对球体做了系统复核。运行器：
+`benchmarks/pending/sphere_re100/run_mem_surface.py`（同场并列三口径）。完整判定与数据见
+`result_mem_surface.json`。
+
+## 三口径对照（点一份收敛场，D=12，lateral 16）
+
+| 口径 | Cd | vs SN 1.0917 |
+|---|---|---|
+| **`cd_mem_surface`（cylinder 采纳口径，壁面相邻）** | **1.1916** | **+9.15%** |
+| `cd_mem_all`（全部 solid，旧口径） | 1.2301 | +12.68% |
+| `cd_mem_interior`（内部伪项） | 0.0385 | — |
+
+**关键事实**：在本 BGK + Ladd 实现里，球的 interior 伪项只有 +0.02~0.06（与 cylinder 同量级），
+所以 surface-only 只把 all-solid 从 +12.7% 修到 +9.15%——**不能**复现文档里「+264% → 个位数」
+那种量级修复（历史 +264% 来自 GeneralSimEngine/MRT 路径，是另一套实现，其 all-solid 求和被
+interior 大幅污染；本链不是那个机制）。**surface-only 口径对球的净改善有限，残余 ~+9% 是真实
+的几何偏差。**
+
+## 网格趋势（lateral 16，blockage 6.25%）
+
+| D | 域 | surface 格 | Cd_mem_surface | vs SN |
+|---|---|---|---|---|
+| 8 | 136×128×128 | 134 | 1.2501（3000 步均值） | +14.50% |
+| 10 | 170×160×160 | 222 | 1.2518 | +14.66% |
+| **12** | 204×192×192 | 354 | **1.1916**（7000 步收敛） | **+9.15%** |
+| 14 | 238×224×224 | 446 | 1.2170（step3000） | +11.47% |
+| 16 | 272×256×256 | 606 | 1.2263（step2000） | — |
+| 18 | 306×288×288 | 794 | **1.1891**（step4000，仍缓降） | **+8.92%** |
+
+D≥12 的曲线彼此重合：**收敛到 ~1.19（+9%），加密不降**。两档 D=12 / D=18 的跨度仅 **0.23%
+（≤3%，网格收敛成立）**，但**两档都在 +9%**——即**收敛到了错误的值**。这是「几何偏差」而非
+「分辨率不足」。
+
+## 域/阻塞杠杆：无效（决定性否证）
+
+固定 D=10，仅把 lateral 从 16（blockage 6.25%）改到 32（blockage 3.125%）：
+
+| 配置 | blockage | step=1000 的 Cd_mem_surface |
+|---|---|---|
+| D=10, lateral 16 | 6.25% | 1.3177 |
+| D=10, lateral 32 | 3.125% | **1.3178** |
+
+四位小数逐位相同 → **球体 surface-MEM 对横向域/阻塞不敏感**（球近场力是局部量），
+残余误差不是阻塞伪影。
+
+## 独立仪器交叉验证（同阶梯球）
+
+- **控制体积动量平衡（CV）**：D=16 → Cd_cov=1.1985（+9.8%）、D=20 → 1.2130（+11.1%），
+  与 surface-MEM 的 +9~11% **一致**。两个互相独立的仪器给出同一残差 → 不是 MEM 口径 bug，
+  而是**阶梯球本身的阻力偏高**。
+- 压力+摩擦：−16.5%（D=16）/−25.9%（D=20），系统性偏低（另一类口径病）。
+- 历史 octree R10：+1.59%（单档）——**光滑边界表示**能达标，但 0.03 steps/s 不可行。
+
+## 与 cylinder_3d 的差异（为何 cylinder 过、球不过）
+
+cylinder_3d 曲面只在 xy 截面上、z 向不变；球是**双曲率**，阶梯化在每个方向都畸变界面，
+surface 壳的界面动量通量带一个更大的**一致性偏高**。同时球的 interior/total 高达 0.62(D12)/
+0.71(D18)（cylinder 只是薄壁环），使球几乎全部由「法向错误的 surface 格」构成。后果：同一
+surface-only 口径把 cylinder 拉进参考簇（+2.45%/−0.19%），却只把球从 +12.7% 修到 +9.15%，
+**过不了 3% 线**。
+
+## 复现
+
+```bash
+PYTHONPATH=/root/TensorLBM_feat2/src python benchmarks/pending/sphere_re100/run_mem_surface.py \
+    single 12 --device sdaa:0 --steps 7000 --lateral 16 --up 4 --down 12 \
+    --compile-mode eager --out /tmp/sph_D12.json      # ~1.6 h on SDAA
+```
+
+## 结论
+
+**surface-only Ladd MEM 未能使 sphere_re100 达标**：两档（D=12/18）网格收敛（跨度 0.23% ≤3%）
+但精度 **~+9% ≫ 3%**；阻塞/域杠杆无效（L32==L16 逐位相同）；独立 CV 仪器复核一致。
+本案例**维持 pending/**（verified 计数不变）。达标需光滑边界表示（octree/BFL，代价不可行）
+或 D≳30（受 15 GiB/卡显存上限约束，lateral 32 时 D≤~18，不可行）。
