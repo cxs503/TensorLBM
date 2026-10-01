@@ -817,21 +817,35 @@ def step_octree_shell_distributed(
             # One scatter_add per side; direction 0 is never a link (rest
             # direction self-references) but is zeroed for exact equivalence
             # with the old ``range(1, q)`` loop.
+            _nt = octree.neighbor_table
             if _if_links.shape[0]:
                 _d_l = _if_links[:, 1]
                 _li = _if_links[:, 0]
+                # Only genuine shell<->L1 interface links take part in the
+                # reflux bookkeeping: ``interface_links`` may additionally
+                # carry the BFL wall-link ghost slots appended by
+                # ``build_octree_shell``, whose upstream donor is not an
+                # outgoing interface link.  Counting them leaked a spurious
+                # fine-side transfer every substep (O(0.1)/step mass drift
+                # while ledger.mass_residual stayed ~1e-16).  Same fix as the
+                # unsharded ``observe_shell_interface_transfer``.
+                _keep_out = (_nt[_d_l, _li] == SHELL_OUTSIDE).to(dtype)
                 _obs_out.scatter_add_(
                     0,
                     _d_l,
-                    (full_pc[_d_l, _li] * _leaf_vol[_li].to(dtype)),
+                    (full_pc[_d_l, _li] * _leaf_vol[_li].to(dtype) * _keep_out),
                 )
             if ghost_plan_local.n_ghost:
                 _gdir = ghost_plan_local.direction
                 _grow = torch.arange(ghost_plan_local.n_ghost, device=device)
+                _opp_dev = octree._opp
+                assert _opp_dev is not None  # set by build_octree_shell
+                _opp_dev = _opp_dev.to(device)
+                _keep_in = (_nt[_opp_dev[_gdir], ghost_plan_local.leaf] == SHELL_OUTSIDE).to(dtype)
                 _obs_in.scatter_add_(
                     0,
                     _gdir,
-                    (ghost_vals[_gdir, _grow] * ghost_plan_local.volume.to(dtype)),
+                    (ghost_vals[_gdir, _grow] * ghost_plan_local.volume.to(dtype) * _keep_in),
                 )
             _obs_out[0] = 0
             _obs_in[0] = 0

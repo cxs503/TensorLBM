@@ -897,21 +897,40 @@ def observe_shell_interface_transfer(
     # but is zeroed for exact equivalence with the old ``range(1, q)``
     # loop.  Mirrors the sharded stepper's vectorised observation
     # (distributed_stepping.py).
+    #
+    # Only genuine shell<->L1 interface links (neighbour along the stored
+    # link direction is ``SHELL_OUTSIDE``) take part in the reflux
+    # bookkeeping.  ``interface_links`` may additionally carry the BFL
+    # wall-link ghost slots appended by ``build_octree_shell`` (the upstream
+    # donor of a wall link is not itself an outgoing interface link); those
+    # are virtual BFL-only donors and must never be counted as mass crossing
+    # the interface.  Counting them inflates the fine-side transfer with the
+    # wall populations that ``stream_gather`` actually reflects in place
+    # (SOLID branch), so the reflux correction then injects spurious mass
+    # into the L1 exterior every root step even though the residual is ~0.
+    # The mask keeps the gathers static-shape (SDAA-safe); excluded rows
+    # contribute exactly 0.0 via the multiply.
+    nt = octree.neighbor_table
     if links.shape[0]:
         d_l = links[:, 1]
         li = links[:, 0]
+        keep_out = (nt[d_l, li] == SHELL_OUTSIDE).to(dtype)
         outgoing.scatter_add_(
             0,
             d_l,
-            post_collision[d_l, li] * vol[li].to(dtype),
+            post_collision[d_l, li] * vol[li].to(dtype) * keep_out,
         )
     if plan.n_ghost:
         gdir = plan.direction
         grow = torch.arange(plan.n_ghost, device=device)
+        opp_dev = octree._opp
+        assert opp_dev is not None  # set by build_octree_shell
+        opp_dev = opp_dev.to(device)
+        keep_in = (nt[opp_dev[gdir], plan.leaf] == SHELL_OUTSIDE).to(dtype)
         incoming.scatter_add_(
             0,
             gdir,
-            ghost_vals[gdir, grow] * plan.volume.to(dtype),
+            ghost_vals[gdir, grow] * plan.volume.to(dtype) * keep_in,
         )
     outgoing[0] = 0
     incoming[0] = 0
