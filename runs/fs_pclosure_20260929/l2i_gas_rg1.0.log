@@ -1,0 +1,37 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+  st=  20 T=0.100 X=1.000 H=0.938 iface=353 drift=+7.465e-04 fin=True
+  st=  40 T=0.200 X=1.000 H=0.938 iface=489 drift=+1.180e-03 fin=True
+  st=  60 T=0.300 X=1.000 H=0.938 iface=703 drift=+2.023e-03 fin=True
+  st=  80 T=0.400 X=1.000 H=0.938 iface=727 drift=+3.257e-03 fin=True
+  st= 100 T=0.500 X=1.000 H=0.938 iface=735 drift=+4.583e-03 fin=True
+  st= 120 T=0.600 X=1.000 H=0.938 iface=786 drift=+6.115e-03 fin=True
+  st= 140 T=0.700 X=1.000 H=0.938 iface=826 drift=+7.517e-03 fin=True
+  st= 160 T=0.800 X=1.000 H=0.938 iface=838 drift=+9.351e-03 fin=True
+  st= 180 T=0.900 X=1.125 H=0.938 iface=816 drift=+1.107e-02 fin=True
+  st= 200 T=1.000 X=1.125 H=0.938 iface=860 drift=+1.277e-02 fin=True
+  st= 220 T=1.100 X=1.125 H=1.000 iface=862 drift=+1.433e-02 fin=True
+  st= 240 T=1.200 X=1.125 H=1.000 iface=864 drift=+1.611e-02 fin=True
+  st= 260 T=1.300 X=1.125 H=1.000 iface=875 drift=+1.789e-02 fin=True
+  st= 280 T=1.400 X=1.125 H=1.000 iface=906 drift=+1.961e-02 fin=True
+  st= 300 T=1.500 X=1.125 H=1.000 iface=904 drift=+2.143e-02 fin=True
+  st= 320 T=1.600 X=1.125 H=1.000 iface=949 drift=+2.321e-02 fin=True
+  st= 340 T=1.700 X=1.250 H=1.000 iface=949 drift=+2.522e-02 fin=True
+  st= 360 T=1.800 X=1.250 H=1.000 iface=974 drift=+2.709e-02 fin=True
+  st= 380 T=1.900 X=1.250 H=1.000 iface=1021 drift=+2.888e-02 fin=True
+  st= 400 T=2.000 X=1.250 H=1.062 iface=1080 drift=+2.964e-02 fin=True
+[l2i_gas_rg1.0] elapsed=25.7s

@@ -38,6 +38,7 @@ the joint-system mass drift.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 
 import torch
@@ -165,6 +166,13 @@ class ShellGhostPlan:
     wx: torch.Tensor
     volume: torch.Tensor  # (n_ghost,) fine-cell volume (2^-3l)
     slot: torch.Tensor  # (Q, n_leaf) int64, -1 = no ghost
+    # Per-row leaf level in the PARENT field's frame (coarse-frame level for
+    # coarse-parent plans built by ``build_ghost_plan_coarse_parent``, i.e.
+    # ``octree.leaf_level[leaf] + 1``; ``None`` for the ordinary L1-frame
+    # plans, where ``_fill_ghost_impl`` falls back to
+    # ``leaf_level[plan.leaf]``).  Drives the neq rescale
+    # ``tau_f / (2^lev * taus[0]) * (1 - 1/tau_f)``.
+    lev: torch.Tensor | None = None  # (n_ghost,) int64, parent-frame level
 
 
 def build_ghost_plan(
@@ -292,13 +300,20 @@ def build_ghost_plan(
             host = octree.leaf_host_cell[leaf]  # (n, 3) (z, y, x)
             lo[solid_host] = host[solid_host]
             hi[solid_host] = host[solid_host]
-            w[solid_host] = 0.0
     volume = 2.0 ** (-3.0 * level_i.to(torch.float64))
-    slot[direction, leaf] = torch.arange(
-        n_link,
-        dtype=torch.int64,
-        device=device,
-    )
+    # Deterministic duplicate-safe slot map: ``interface_links`` can hold
+    # duplicate (direction, leaf) rows (geometry build artifact, ~0.4% of
+    # rows — e.g. SUBOFF L1 2667/609140), and the plain advanced-index
+    # assignment ``slot[direction, leaf] = arange(n_link)`` is a RACE for
+    # duplicate indices (nondeterministic slot across runs, breaks plan
+    # equality checks).  Duplicate rows sample the same ghost position, so
+    # any row index is value-correct; "largest row index wins" (amax) is
+    # deterministic and matches the old last-write intent.
+    row_idx = torch.arange(n_link, dtype=torch.int64, device=device)
+    key = direction * n_leaf + leaf  # unique (dir, leaf) key
+    flat = torch.full((q * n_leaf,), -1, dtype=torch.int64, device=device)
+    flat.scatter_reduce_(0, key, row_idx, reduce="amax")
+    slot = flat.view(q, n_leaf)
     return ShellGhostPlan(
         n_ghost=n_link,
         leaf=leaf,
@@ -314,6 +329,185 @@ def build_ghost_plan(
         wx=w[:, 2],
         volume=volume,
         slot=slot,
+    )
+
+
+def build_ghost_plan_coarse_parent(
+    octree: OctreeGrid,
+    win_shape: tuple[int, int, int],
+    coarse_offset: tuple[int, int, int],
+    *,
+    solid_fallback: bool = True,
+) -> ShellGhostPlan:
+    """ShellGhostPlan whose donor indices index a coarse WINDOW field.
+
+    Identical geometry and row order to :func:`build_ghost_plan` (same
+    leaf/interface rows, same sample positions in the octree's host
+    frame), but the trilinear donor stencil is expressed in the coarse
+    *parent* frame: the octree host grid here is the L1 physical grid
+    (2x coarse spacing), so a sample position ``p`` (L1 world units,
+    origin at the L1 physical grid's first cell) maps to the coarse
+    continuous index ``p / 2 + offset - 0.5``, where ``offset =
+    (box_origin - window_origin)`` in coarse cells.
+
+    The resulting ``z0/y0/x0/z1/y1/x1`` index the coarse window tensor
+    ``(Q, nz_w, ny_w, nx_w)`` directly — the same frame the legacy
+    two-level path feeds ``coarse_sparse`` in, so the shell ghost
+    supply can sample the genuine evolved coarse field (time-lerped
+    ``cw_old``/``cw_new``) with the exact trilinear convention of
+    :func:`_fill_ghost_impl` instead of the 2:1-injected L1 block
+    field (SUBOFF L1 force-deficit P0 fix).
+    """
+    nz_w, ny_w, nx_w = win_shape
+    device = octree.leaf_morton.device
+    q = octree.Q
+    n_leaf = octree.n_leaf
+    links = octree.interface_links  # (n_link, 2) (i, d)
+    n_link = int(links.shape[0])
+    slot = torch.full((q, n_leaf), -1, dtype=torch.int64, device=device)
+    if n_link == 0:
+        empty = torch.empty(0, dtype=torch.int64, device=device)
+        return ShellGhostPlan(
+            0,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            slot,
+        )
+    leaf = links[:, 0]
+    d_link = links[:, 1]
+    opp = octree._opp.to(device)
+    c_vec = octree._c_vec.to(device)
+    direction = opp[d_link]  # filled direction
+    level_i = octree.leaf_level[leaf]
+    dx = 2.0 ** (-level_i.to(torch.float64))
+    if octree._l2_coords is not None and octree._l2_coords.numel() > 0:
+        coords = torch.cat((octree._l1_coords, octree._l2_coords), dim=0)
+    else:
+        coords = octree._l1_coords
+    centers64 = (coords.to(torch.float64) + 0.5) / (2.0 ** octree.leaf_level.to(torch.float64))[
+        :, None
+    ]  # (n, 3) x,y,z
+    # Same ghost-cell position as build_ghost_plan (see its docstring for
+    # the ``c_vec[d_link]`` vs ``c_vec[direction]`` convention).
+    p_xyz = centers64[leaf] + c_vec[d_link].to(torch.float64) * dx[:, None]
+    p = p_xyz[:, [2, 1, 0]]  # (z, y, x) L1 world
+    # L1 world -> coarse window frame: the L1 physical cell (i, j, k)
+    # sits at global coarse (box.z0 + i/2, ...), the window cell
+    # (zi, yi, xi) at global coarse (win.z0 + zi, ...), hence
+    #     coarse_continuous = p/2 + (box_origin - win_origin) - 0.5
+    # (the -0.5 is the cell-centred sampling convention of build_ghost_plan).
+    oz, oy, ox = (float(o) for o in coarse_offset)
+    off = torch.tensor([oz, oy, ox], dtype=torch.float64, device=device)
+    continuous = p * 0.5 + off - 0.5  # coarse window coords
+    lo = torch.floor(continuous).to(torch.int64)
+    hi = lo + 1
+    bounds = torch.tensor(
+        [nz_w, ny_w, nx_w],
+        dtype=torch.int64,
+        device=device,
+    )
+    lo = lo.clamp(torch.zeros_like(lo), bounds - 2)
+    hi = hi.clamp(torch.ones_like(hi), bounds - 1)
+    w = (continuous - lo.to(continuous.dtype)).clamp(0.0, 1.0)
+    if (
+        octree._solid is not None
+        and bool(
+            (
+                octree._solid[
+                    p[:, 0].floor().to(torch.int64).clamp(0, nz_w - 1),
+                    p[:, 1].floor().to(torch.int64).clamp(0, ny_w - 1),
+                    p[:, 2].floor().to(torch.int64).clamp(0, nx_w - 1),
+                ]
+            ).any()
+        )
+        and solid_fallback
+    ):
+        # Solid-host fallback (same condition as build_ghost_plan): sample
+        # the coarse cell CONTAINING the leaf's own covered L1 host cell —
+        # ``off + host // 2`` is exactly the coarse cell the 2:1 restriction
+        # of the covered L1 cell writes into, i.e. the same local-band fluid
+        # the L1-frame fallback sampled at leaf resolution.
+        cell_p = torch.stack(
+            (
+                p[:, 0].floor().to(torch.int64).clamp(0, nz_w - 1),
+                p[:, 1].floor().to(torch.int64).clamp(0, ny_w - 1),
+                p[:, 2].floor().to(torch.int64).clamp(0, nx_w - 1),
+            ),
+            dim=1,
+        )
+        solid_host = octree._solid[
+            cell_p[:, 0],
+            cell_p[:, 1],
+            cell_p[:, 2],
+        ]
+        if bool(solid_host.any()):
+            lo = lo.clone()
+            hi = hi.clone()
+            w = w.clone()
+            host = octree.leaf_host_cell[leaf]  # (n, 3) L1 indices
+            oz_i, oy_i, ox_i = (int(o) for o in coarse_offset)
+            off_i = torch.tensor(
+                [oz_i, oy_i, ox_i],
+                dtype=torch.int64,
+                device=device,
+            )
+            lo_c = host // 2 + off_i
+            lo_c = lo_c.clamp(torch.zeros_like(lo_c), bounds - 2)
+            lo[solid_host] = lo_c[solid_host]
+            hi[solid_host] = (lo_c[solid_host] + 1).clamp(
+                torch.ones_like(lo_c[solid_host]),
+                bounds - 1,
+            )
+            w[solid_host] = 0.0
+    volume = 2.0 ** (-3.0 * level_i.to(torch.float64))
+    # P0 ghost-lev fix: the donor field here is the COARSE parent (coarse
+    # frame, taus[0] = real coarse tau), while ``octree.leaf_level`` is the
+    # L1-hosted octree's level (1 or 2, relative to the L1 physical grid
+    # which already sits 2x finer than coarse).  The rescale in
+    # ``_fill_ghost_impl`` needs the level in the PARENT (coarse) frame,
+    # i.e. ``leaf_level + 1`` — otherwise tau_f and the 2^lev denominator
+    # are one level too coarse and the ghost neq is injected ~2.18x too
+    # strong vs the legacy two-level path (SUBOFF P0 Cd 1.10 -> 1.28).
+    lev = level_i + 1  # coarse-frame level
+    # Deterministic duplicate-safe slot map: ``interface_links`` can hold
+    # duplicate (direction, leaf) rows (geometry build artifact, ~0.4% of
+    # rows — e.g. SUBOFF L1 2667/609140), and the plain advanced-index
+    # assignment ``slot[direction, leaf] = arange(n_link)`` is a RACE for
+    # duplicate indices (nondeterministic slot across runs, breaks plan
+    # equality checks).  Duplicate rows sample the same ghost position, so
+    # any row index is value-correct; "largest row index wins" (amax) is
+    # deterministic and matches the old last-write intent.
+    row_idx = torch.arange(n_link, dtype=torch.int64, device=device)
+    key = direction * n_leaf + leaf  # unique (dir, leaf) key
+    flat = torch.full((q * n_leaf,), -1, dtype=torch.int64, device=device)
+    flat.scatter_reduce_(0, key, row_idx, reduce="amax")
+    slot = flat.view(q, n_leaf)
+    return ShellGhostPlan(
+        n_ghost=n_link,
+        leaf=leaf,
+        direction=direction,
+        z0=lo[:, 0],
+        y0=lo[:, 1],
+        x0=lo[:, 2],
+        z1=hi[:, 0],
+        y1=hi[:, 1],
+        x1=hi[:, 2],
+        wz=w[:, 0],
+        wy=w[:, 1],
+        wx=w[:, 2],
+        volume=volume,
+        slot=slot,
+        lev=lev,
     )
 
 
@@ -338,7 +532,12 @@ def _fill_ghost_impl(
     taus: list[float],
 ) -> torch.Tensor:
     """Shared ghost-fill body; ``leaf_level`` is the (global or shard-local)
-    per-leaf level array indexed by ``plan.leaf``."""
+    per-leaf level array indexed by ``plan.leaf``.
+
+    The level used for the neq rescale is ``plan.lev`` when the plan carries
+    one (coarse-parent plans: the level in the PARENT field's frame, e.g.
+    ``octree.leaf_level[leaf] + 1`` for a coarse donor), otherwise it falls
+    back to ``leaf_level[plan.leaf]`` (ordinary L1-frame plans — unchanged)."""
     q = parent_t.shape[0]
     if plan.n_ghost == 0:
         return torch.empty(
@@ -375,7 +574,10 @@ def _fill_ghost_impl(
         torch.lerp(v10, v11, wy),
         wz,
     )
-    lev = leaf_level[plan.leaf]
+    if plan.lev is not None:
+        lev = plan.lev  # parent-frame level (coarse plans)
+    else:
+        lev = leaf_level[plan.leaf]  # L1-frame level (ordinary plans)
     tau_f = torch.tensor(
         taus,
         dtype=torch.float64,
@@ -399,6 +601,177 @@ def _fill_ghost_impl(
 # ---------------------------------------------------------------------------
 # Streaming through the neighbour table
 # ---------------------------------------------------------------------------
+
+
+def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
+    """Corrected live fanout tables, built once and cached on ``octree``.
+
+    The registry ``interface_fanout`` is keyed ``(leaf, direction q)`` with
+    ``neighbor_table[q, leaf] == FANOUT`` — *q is the neighbour-table
+    direction*.  The topology pre-cache ``fanout_pos``/``fanout_pad`` stores
+    rows in the same convention but includes dead keys (registered during the
+    fine-leaf pass whose reverse neighbour never became a FANOUT entry), so it
+    is filtered here to the live rows.
+
+    Returns ``(rowidx, pad)``:
+
+    * ``rowidx``: ``(Q, n_leaf)`` int64 — row index into ``pad`` for every
+      ``(q, i)`` with ``neighbor_table[q, i] == FANOUT``, else -1.
+    * ``pad``: ``(n_live, max_len)`` int64 — member leaf enums (global column
+      space), padded with -1.
+
+    **Pull direction**: streaming / BFL read the member populations along
+    ``opp[q]`` (``src_all[d, i] = neighbor_table[opp[d], i]``), so callers
+    must index the member values with ``opp[q]`` — never ``q`` directly (the
+    original batched prototype indexed with ``q``, a direction-flip bug that
+    only manifests at d_max=2 where fanout groups exist).
+    """
+    rowidx = getattr(octree, "_fanout_rowidx", None)
+    if rowidx is not None:
+        return rowidx, octree._fanout_pad_live
+    nt = octree.neighbor_table
+    fo_pos = octree.fanout_pos
+    fo_pad = octree.fanout_pad
+    # Do all indexing on the CPU: SDAA's advanced-index gather faults with
+    # SDAA_ERROR_MISALIGNED_ADDRESS for large dynamic index tensors (seen at
+    # d_max=2 with ~30k fanout rows).  The tables are static topology, built
+    # once, so the CPU cost is negligible.
+    nt_c = nt.detach().cpu()
+    fo_pos_c = fo_pos.detach().cpu()
+    fo_pad_c = fo_pad.detach().cpu()
+    rowidx = torch.full((octree.Q, nt.shape[1]), -1, dtype=torch.int64)
+    if fo_pos_c.shape[0] > 0 and fo_pad_c.shape[0] > 0:
+        # Defensive bounds guard: an out-of-range (q, leaf) row would make
+        # the advanced index ``nt[fo_pos[:, 0], fo_pos[:, 1]]`` (and the
+        # scatter into ``rowidx`` below) run out of bounds — on SDAA that
+        # surfaces as SDAA_ERROR_MISALIGNED_ADDRESS.  Such rows cannot be
+        # FANOUT links of this table; drop them and warn loudly (they
+        # indicate a topology inconsistency worth investigating).
+        n_leaf = nt.shape[1]
+        qv, lv = fo_pos_c[:, 0], fo_pos_c[:, 1]
+        ok = (qv >= 0) & (qv < octree.Q) & (lv >= 0) & (lv < n_leaf)
+        if not bool(ok.all()):
+            warnings.warn(
+                "ensure_fanout_tables: dropping "
+                f"{int((~ok).sum())} fanout_pos row(s) out of range "
+                f"(Q={octree.Q}, n_leaf={n_leaf})",
+                RuntimeWarning,
+            )
+            fo_pos_c = fo_pos_c[ok]
+            fo_pad_c = fo_pad_c[ok]
+        live = nt_c[fo_pos_c[:, 0], fo_pos_c[:, 1]] == FANOUT
+        pos = fo_pos_c[live]
+        pad = fo_pad_c[live]
+        rowidx[pos[:, 0], pos[:, 1]] = torch.arange(
+            pos.shape[0],
+            dtype=torch.int64,
+        )
+    else:
+        # Fallback: build from the registry directly (octrees built before
+        # the pre-cache existed).  Live keys are exactly the FANOUT entries.
+        rows = torch.nonzero(nt_c == FANOUT, as_tuple=False)  # (n_live, 2)
+        if rows.shape[0]:
+            members = [octree.interface_fanout[(int(r[1]), int(r[0]))] for r in rows.tolist()]
+            max_len = max(len(m) for m in members)
+            pad = torch.full((rows.shape[0], max_len), -1, dtype=torch.int64)
+            for r, m in enumerate(members):
+                pad[r, : len(m)] = torch.tensor(m, dtype=torch.int64)
+            rowidx[rows[:, 0], rows[:, 1]] = torch.arange(
+                rows.shape[0],
+                dtype=torch.int64,
+            )
+        else:
+            pad = torch.empty((0, 0), dtype=torch.int64)
+    octree._fanout_rowidx = rowidx
+    octree._fanout_pad_live = pad
+    return rowidx, pad
+
+
+def _fanout_segment_mean(
+    values: torch.Tensor,
+    d_idx: torch.Tensor,
+    pad: torch.Tensor,
+) -> torch.Tensor:
+    """Masked mean over the padded fanout member table.
+
+    ``values[d_idx[:, None], pad.clamp(min=0)]`` gathered in the population
+    direction ``d_idx``, averaged over the valid (``pad >= 0``) members.
+    Returns ``(n_rows,)`` in ``values.dtype``.
+    """
+    valid = pad >= 0
+    vals = values[d_idx.unsqueeze(1), pad.clamp(min=0)]
+    return (vals * valid).sum(dim=1) / valid.sum(dim=1).clamp_min(1)
+
+
+def _shell_stream_tables(octree, device) -> dict:
+    """Static stream index tables for :func:`stream_gather` (cached).
+
+    Every position set used by :func:`stream_gather` is a function of the
+    static topology (``neighbor_table`` / ``_opp``) and of the topology
+    pre-cache (``fanout_pos`` / ``fanout_pad``) alone — never of the
+    populations.  The ``torch.nonzero`` row sets, the ``opp``-permuted row
+    indices and the padded fan-out member rows are therefore computed once
+    here and reused for every substep.
+
+    Why this matters on SDAA: the old per-substep ``if bool(mask.any()):``
+    guards forced six host scalar read-backs (device syncs) per substep,
+    and D3Q27 makes those index sets large (slot table 27 x 177992, ghost
+    rows 420928, fan-out rows 109808).  SDAA faults/hangs on large
+    *dynamic* (data-dependent shape) index gathers — D3Q19 stays inside the
+    limits, D3Q27 does not.  Building the tables once removes both the
+    scalar read-backs and the dynamic output shapes from the hot path; the
+    per-substep kernels are plain static-shape gathers and index_puts.
+
+    The tables are independent of the ``ShellGhostPlan``: the ghost
+    *positions* come from the topology, while the per-plan ``slot`` lookup
+    is still performed per call by :func:`stream_gather`.
+
+    Numerically identical to the old inline version: same ``(d, i)`` row
+    sets in the same (row-major ``nonzero``) order, hence the same
+    right-hand values and the same write-back order.
+    """
+    dev = torch.device(device)
+    cached = getattr(octree, "_shell_stream_tables_cache", None)
+    if cached is not None and cached["device"] == dev:
+        return cached
+    opp = octree._opp.to(dev)
+    nt = octree.neighbor_table.to(dev)
+    src_all = nt[opp]
+
+    def _rows(mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        rows = torch.nonzero(mask, as_tuple=False)
+        # contiguous: nonzero slicing yields a stride-2 view, and SDAA is
+        # sensitive to mis-aligned index tensors
+        return rows[:, 0].contiguous(), rows[:, 1].contiguous()
+
+    d_g, i_g = _rows(src_all == SHELL_OUTSIDE)
+    d_s, i_s = _rows(src_all == SOLID)
+    d_f, i_f = _rows(src_all == FANOUT)
+
+    rowidx, pad_live = ensure_fanout_tables(octree)
+    rowidx = rowidx.to(dev)
+    pad_live = pad_live.to(dev)
+    ridx = rowidx[opp[d_f], i_f]  # live fan-out row / -1
+    has = ridx >= 0
+    fb = ~has
+    tables = {
+        "device": dev,
+        # DOMAIN_OUT is a static topology invariant; checking it once here
+        # (cached) replaces a per-substep ``bool(domain_all.any())`` sync.
+        "has_domain_out": bool((src_all == DOMAIN_OUT).any()),
+        "d_g": d_g,
+        "i_g": i_g,
+        "d_s": d_s,
+        "i_s": i_s,
+        "opp_s": opp[d_s].contiguous(),
+        "d_f_has": d_f[has].contiguous(),
+        "i_f_has": i_f[has].contiguous(),
+        "pad_rows": pad_live[ridx[has]].contiguous(),
+        "d_f_fb": d_f[fb].contiguous(),
+        "i_f_fb": i_f[fb].contiguous(),
+    }
+    octree._shell_stream_tables_cache = tables
+    return tables
 
 
 def stream_gather(
@@ -429,34 +802,67 @@ def stream_gather(
     out = torch.empty_like(populations)
     opp = octree._opp.to(populations.device)
     nt = octree.neighbor_table
-    for d in range(q):
-        src = nt[opp[d]]
-        valid = src >= 0
-        if bool(valid.any()):
-            out[d, valid] = populations[d, src[valid]]
-        ghost_mask = src == SHELL_OUTSIDE
-        if bool(ghost_mask.any()):
-            slots = plan.slot[d, ghost_mask]
-            out[d, ghost_mask] = ghost_vals[d, slots]
-        solid_mask = src == SOLID
-        if bool(solid_mask.any()):
-            out[d, solid_mask] = populations[opp[d], solid_mask]
-        fanout_mask = src == FANOUT
-        if bool(fanout_mask.any()):
-            for i in torch.nonzero(fanout_mask, as_tuple=False).squeeze(1).tolist():
-                group = octree.interface_fanout.get((int(i), int(opp[d])), [])
-                if not group:
-                    out[d, i] = f_old[d, i]
-                else:
-                    out[d, i] = populations[
-                        d, torch.tensor(group, device=populations.device)
-                    ].mean()
-        domain_mask = src == DOMAIN_OUT
-        if bool(domain_mask.any()):
-            raise RuntimeError(
-                "DOMAIN_OUT neighbour in shell streaming — the shell must be "
-                "fully embedded in the L1 block",
-            )
+    # 静态索引表 (一次构建 + 缓存): 见 _shell_stream_tables 的说明
+    tables = _shell_stream_tables(octree, populations.device)
+    if tables["has_domain_out"]:
+        raise RuntimeError(
+            "DOMAIN_OUT neighbour in shell streaming — the shell must be "
+            "fully embedded in the L1 block",
+        )
+    # 批量版: 所有方向一次 torch.gather (SDAA 上 27 方向循环 = 135 次小 kernel 极慢)
+    src_all = nt[opp]  # (q, n)
+    valid_all = src_all >= 0
+    idx_safe = src_all.clamp(min=0)
+    gathered_all = torch.gather(populations, 1, idx_safe)  # (q, n)
+    out = torch.where(valid_all, gathered_all, out)
+    # ------------------------------------------------------------------
+    # SDAA 死锁修复 (单卡 D3Q27 初始化/推进卡死 D 状态):
+    #
+    # 旧版下面每个分支都有 ``if bool(mask.any()):``。``bool(...any())`` 是
+    # host 侧标量读回 = 一次 device sync, 每个 substep 6 次; 而 D3Q27 下这
+    # 些索引集合很大 (ghost 420928 行 / fanout 109808 行 / slot 表
+    # 27x177992), SDAA 在 "多次 per-substep sync + 大动态索引 gather" 的
+    # 组合下会陷入驱动 ioctl 阻塞 (SDAA_ERROR_MISALIGNED_ADDRESS / 进程
+    # D 状态)。D3Q19 索引集合小, 恰好不越界。
+    #
+    # 分支位置集合与 populations 无关 (纯静态拓扑), 所以索引表已在上面的
+    # _shell_stream_tables 里一次性建好并缓存: 这里再无任何标量读回, 也
+    # 没有数据相关 (dynamic) 的输出 shape — 全是静态 shape 的 gather /
+    # index_put。空集合的 ``.numel() == 0`` 判断只读元数据, 不触发 sync;
+    # 即使不判断, 空集合的 gather/index_put 本身也是 no-op。
+    #
+    # 数值与旧版逐位一致: 同一批 (d, i) 位置 (row-major nonzero 顺序),
+    # 同一右值, 同一写回顺序。
+    # ------------------------------------------------------------------
+    # ghost 分支 (SHELL_OUTSIDE): batch — 一次高级索引取回所有 ghost 的 slot
+    d_g, i_g = tables["d_g"], tables["i_g"]
+    if d_g.numel():
+        out[d_g, i_g] = ghost_vals[d_g, plan.slot[d_g, i_g]]
+    # solid 分支 (SOLID): batch 反向反弹
+    d_s, i_s = tables["d_s"], tables["i_s"]
+    if d_s.numel():
+        out[d_s, i_s] = populations[tables["opp_s"], i_s]
+    # fanout 分支: 纯张量批量 (修正后的预缓存 — 行方向 q 是 neighbour-table
+    # 方向, 拉取/写出方向是 opp[q]; 旧版直接用 fanout_pos[:,0]=q 索引
+    # populations 是方向翻转 bug, 且 fo_mask 过滤后 90% 的 fanout 单元仍走
+    # Python 回退循环)
+    d_fh, i_fh = tables["d_f_has"], tables["i_f_has"]
+    if d_fh.numel():
+        out[d_fh, i_fh] = _fanout_segment_mean(
+            populations,
+            d_fh,
+            tables["pad_rows"],
+        )
+    d_fb, i_fb = tables["d_f_fb"], tables["i_f_fb"]
+    if d_fb.numel():
+        # 防御: FANOUT 但无注册组 -> 保留旧值 (与旧循环一致)
+        out[d_fb, i_fb] = f_old[d_fb, i_fb]
+    # 尾部的 DOMAIN_OUT 检查 (旧死代码) 已删除: ``has_domain_out`` 已在
+    # ``_shell_stream_tables`` 里一次性算好, 本函数开头已对同一谓词
+    # (``(src_all == DOMAIN_OUT).any()``) 做过判定并在触发时抛错, 因此这里
+    # 的 ``bool(domain_all.any())`` 永远为 False —— 纯死代码, 却每个 substep
+    # 产生 1 次 device sync。删除后 stream_gather 的 per-substep sync 数:
+    # 6 -> 0, 数值逐位不变。
     return out
 
 
@@ -485,14 +891,30 @@ def observe_shell_interface_transfer(
     incoming = torch.zeros_like(outgoing)
     links = octree.interface_links
     vol = octree.leaf_volume()
-    for d in range(1, q):
-        sel = links[:, 1] == d
-        if bool(sel.any()):
-            li = links[sel, 0]
-            outgoing[d] = (post_collision[d, li] * vol[li].to(dtype)).sum()
-        gsel = plan.direction == d
-        if bool(gsel.any()):
-            incoming[d] = (ghost_vals[d, gsel] * plan.volume[gsel].to(dtype)).sum()
+    # Batched per-direction observation (old code: 26-iteration Python loop
+    # with ~52 device-sync ``bool(...)`` per substep).  One scatter_add per
+    # side; direction 0 is never a link (rest direction self-references)
+    # but is zeroed for exact equivalence with the old ``range(1, q)``
+    # loop.  Mirrors the sharded stepper's vectorised observation
+    # (distributed_stepping.py).
+    if links.shape[0]:
+        d_l = links[:, 1]
+        li = links[:, 0]
+        outgoing.scatter_add_(
+            0,
+            d_l,
+            post_collision[d_l, li] * vol[li].to(dtype),
+        )
+    if plan.n_ghost:
+        gdir = plan.direction
+        grow = torch.arange(plan.n_ghost, device=device)
+        incoming.scatter_add_(
+            0,
+            gdir,
+            ghost_vals[gdir, grow] * plan.volume.to(dtype),
+        )
+    outgoing[0] = 0
+    incoming[0] = 0
     return KineticInterfaceTransfer(outgoing, incoming)
 
 
@@ -1120,6 +1542,7 @@ def _merge_shard_ghost_plans(shards) -> ShellGhostPlan:
     leaf = _scatter("leaf", torch.int64, local_leaf=True)
     direction = _scatter("direction", torch.int64)
     slot[direction, leaf] = torch.arange(n_ghost, dtype=torch.int64, device=dev)
+    has_lev = all(getattr(s.ghost_plan, "lev", None) is not None for s in shards)
     return ShellGhostPlan(
         n_ghost=n_ghost,
         leaf=leaf,
@@ -1135,6 +1558,7 @@ def _merge_shard_ghost_plans(shards) -> ShellGhostPlan:
         wx=_scatter("wx", torch.float64),
         volume=_scatter("volume", torch.float64),
         slot=slot,
+        lev=_scatter("lev", torch.int64) if has_lev else None,
     )
 
 
@@ -1650,6 +2074,7 @@ def build_plane_shell(
 __all__ = [
     "ShellGhostPlan",
     "build_ghost_plan",
+    "build_ghost_plan_coarse_parent",
     "build_plane_shell",
     "build_shell_coarse_links",
     "fill_ghost",

@@ -1,0 +1,32 @@
+{
+  "a": 8,
+  "g": 0.0,
+  "steps": 200,
+  "rho_gas": 1.0,
+  "closure": false,
+  "iface_initial": 335,
+  "iface_growth": 1.4597014925373135,
+  "drift_end": -2.288818359375e-06,
+  "series": [
+    {
+      "step": 100,
+      "T": 0.0,
+      "front": 11,
+      "X": 1.375,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -1.8437703450520833e-06,
+      "iface_cells": 443
+    },
+    {
+      "step": 200,
+      "T": 0.0,
+      "front": 13,
+      "X": 1.625,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -2.288818359375e-06,
+      "iface_cells": 489
+    }
+  ]
+}

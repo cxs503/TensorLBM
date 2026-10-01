@@ -92,6 +92,7 @@ A navigable index of the documentation in this directory, grouped by topic.
 | [phasefield_phase_inventory_flux_r1.md](phasefield_phase_inventory_flux_r1.md) | Phase inventory and flux accounting |
 | [phasefield_static_droplet_r1.md](phasefield_static_droplet_r1.md) | Static droplet validation |
 | [phasefield_stream_boundary_contract_r1.md](phasefield_stream_boundary_contract_r1.md) | Phase-field streaming boundary contract |
+| [free_surface_architecture_gaps.md](free_surface_architecture_gaps.md) | **Architecture-gap ledger** for free-surface / multiphase: two structural obstacles (2D SCMP constitutive + 3D Körner channel coupling) with measured evidence, why parameter tuning cannot close them, required architecture changes, the full tried-lever list, and the capability boundary table |
 
 ---
 

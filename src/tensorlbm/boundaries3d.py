@@ -523,10 +523,19 @@ def far_field_bc_3d(
     # ("y±" → f[:, :, 0/-1, :], "z±" → f[:, 0/-1, :, :]; previously these
     # two branches were swapped, which no legacy caller could observe
     # because the far-field value is uniform across all four planes.)
+    #
+    # Portability note (SDAA): writing a broadcast (19,1,1) source into the
+    # non-contiguous strided y-slice ``f[:, :, 0, :]`` traps with
+    # ``SDAA_ERROR_INVALID_ADDRESS_SPACE`` on Hygon/SDAA (the y± slices are
+    # the only ones whose middle axis is stride>1).  Materialising the
+    # source to the full target shape with ``.expand().contiguous()`` is
+    # numerically identical and works on every backend.  The z±/inlet
+    # branches target contiguous views and are left as-is.
+    _Q, _nz, _ny, _nx = f.shape
     if "y-" in ff and "y-" not in periodic:
-        f[:, :, 0, :] = feq[:, :, 0, :]
+        f[:, :, 0, :] = feq[:, :, 0, :].expand(_Q, _nz, _nx).contiguous()
     if "y+" in ff and "y+" not in periodic:
-        f[:, :, -1, :] = feq[:, :, -1, :]
+        f[:, :, -1, :] = feq[:, :, -1, :].expand(_Q, _nz, _nx).contiguous()
     if "z-" in ff and "z-" not in periodic:
         f[:, 0, :, :] = feq[:, 0, :, :]
     if "z+" in ff and "z+" not in periodic:

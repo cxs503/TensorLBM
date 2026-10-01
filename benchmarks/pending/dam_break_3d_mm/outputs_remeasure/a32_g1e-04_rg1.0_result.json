@@ -1,0 +1,217 @@
+{
+  "case": "dam_break_3d_martin_moyce",
+  "status": "NOT_VERIFIED",
+  "reason": "tensorlbm.free_surface_lbm mass-conservation/interface-stability defects: interface-cell explosion + front pollution / mass drift; see /tmp/dambreak_gap.md",
+  "module": "tensorlbm.free_surface_lbm (D3Q19, free_surface_step) \u2014 unmodified",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "reference": "Martin & Moyce (1952), classic digitisation taken from benchmarks/bench_fs_2d.py: T=1 X=1.1, T=2 X=1.8, T=3 X=2.7; H(T=1)~0.78",
+  "config": {
+    "a": 32,
+    "g": 0.0001,
+    "tau": 0.8,
+    "rho_gas": 1.0,
+    "steps": 566,
+    "domain": {
+      "nx": 160,
+      "ny": 80,
+      "nz": 64,
+      "cells": 819200
+    },
+    "T_max": 1.0005560953789647
+  },
+  "elapsed_s": 1172.375569343567,
+  "checks": [
+    {
+      "T": 1.0,
+      "kind": "X",
+      "ref": 1.1,
+      "sim": 1.6875,
+      "err_pct": 53.40909090909089,
+      "extrapolated": false
+    },
+    {
+      "T": 2.0,
+      "kind": "X",
+      "ref": 1.8,
+      "sim": 1.6875,
+      "err_pct": 6.250000000000003,
+      "extrapolated": true
+    },
+    {
+      "T": 3.0,
+      "kind": "X",
+      "ref": 2.7,
+      "sim": 1.6875,
+      "err_pct": 37.50000000000001,
+      "extrapolated": true
+    },
+    {
+      "T": 1.0,
+      "kind": "H",
+      "ref": 0.78,
+      "sim": 1.21875,
+      "err_pct": 56.25,
+      "extrapolated": false
+    }
+  ],
+  "max_err_pct": 56.25,
+  "final": {
+    "mass_drift_rel": -0.013613988482762896,
+    "iface_cells": 34818,
+    "iface_initial": 5183,
+    "iface_growth": 6.717731043797029
+  },
+  "series": [
+    {
+      "step": 40,
+      "T": 0.07071067811865475,
+      "front": 34,
+      "X": 1.0625,
+      "h": 65,
+      "H": 1.015625,
+      "mass_drift_rel": -6.672692677331349e-05,
+      "iface_cells": 5213
+    },
+    {
+      "step": 80,
+      "T": 0.1414213562373095,
+      "front": 35,
+      "X": 1.09375,
+      "h": 66,
+      "H": 1.03125,
+      "mass_drift_rel": -0.0019698975578187005,
+      "iface_cells": 5287
+    },
+    {
+      "step": 120,
+      "T": 0.21213203435596426,
+      "front": 37,
+      "X": 1.15625,
+      "h": 67,
+      "H": 1.046875,
+      "mass_drift_rel": -0.004539368644593254,
+      "iface_cells": 5656
+    },
+    {
+      "step": 160,
+      "T": 0.282842712474619,
+      "front": 38,
+      "X": 1.1875,
+      "h": 69,
+      "H": 1.078125,
+      "mass_drift_rel": -0.006018502371651786,
+      "iface_cells": 7912
+    },
+    {
+      "step": 200,
+      "T": 0.3535533905932738,
+      "front": 40,
+      "X": 1.25,
+      "h": 70,
+      "H": 1.09375,
+      "mass_drift_rel": -0.006429278661334325,
+      "iface_cells": 8972
+    },
+    {
+      "step": 240,
+      "T": 0.4242640687119285,
+      "front": 41,
+      "X": 1.28125,
+      "h": 72,
+      "H": 1.125,
+      "mass_drift_rel": -0.006688859727647569,
+      "iface_cells": 9710
+    },
+    {
+      "step": 280,
+      "T": 0.4949747468305833,
+      "front": 43,
+      "X": 1.34375,
+      "h": 73,
+      "H": 1.140625,
+      "mass_drift_rel": -0.007365211607917907,
+      "iface_cells": 11474
+    },
+    {
+      "step": 320,
+      "T": 0.565685424949238,
+      "front": 44,
+      "X": 1.375,
+      "h": 75,
+      "H": 1.171875,
+      "mass_drift_rel": -0.008633386521112351,
+      "iface_cells": 14261
+    },
+    {
+      "step": 360,
+      "T": 0.6363961030678927,
+      "front": 46,
+      "X": 1.4375,
+      "h": 76,
+      "H": 1.1875,
+      "mass_drift_rel": -0.009052639915829613,
+      "iface_cells": 17220
+    },
+    {
+      "step": 400,
+      "T": 0.7071067811865476,
+      "front": 47,
+      "X": 1.46875,
+      "h": 78,
+      "H": 1.21875,
+      "mass_drift_rel": -0.009338439457000249,
+      "iface_cells": 19606
+    },
+    {
+      "step": 440,
+      "T": 0.7778174593052023,
+      "front": 49,
+      "X": 1.53125,
+      "h": 78,
+      "H": 1.21875,
+      "mass_drift_rel": -0.010153815859840029,
+      "iface_cells": 22299
+    },
+    {
+      "step": 480,
+      "T": 0.848528137423857,
+      "front": 51,
+      "X": 1.59375,
+      "h": 78,
+      "H": 1.21875,
+      "mass_drift_rel": -0.011274246942429315,
+      "iface_cells": 26202
+    },
+    {
+      "step": 520,
+      "T": 0.9192388155425117,
+      "front": 52,
+      "X": 1.625,
+      "h": 78,
+      "H": 1.21875,
+      "mass_drift_rel": -0.012237185523623512,
+      "iface_cells": 30209
+    },
+    {
+      "step": 560,
+      "T": 0.9899494936611666,
+      "front": 54,
+      "X": 1.6875,
+      "h": 78,
+      "H": 1.21875,
+      "mass_drift_rel": -0.013383956182570685,
+      "iface_cells": 34246
+    },
+    {
+      "step": 566,
+      "T": 1.0005560953789647,
+      "front": 54,
+      "X": 1.6875,
+      "h": 78,
+      "H": 1.21875,
+      "mass_drift_rel": -0.013613988482762896,
+      "iface_cells": 34818
+    }
+  ]
+}

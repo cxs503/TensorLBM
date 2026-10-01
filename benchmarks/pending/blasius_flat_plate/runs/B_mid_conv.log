@@ -1,0 +1,62 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+{
+  "grid": "mid400",
+  "wall": "mid",
+  "outlet": "convective",
+  "nx": 440,
+  "ny": 1400,
+  "U": 0.05,
+  "nu": 0.01,
+  "tau": 0.53,
+  "Rex": 900.0,
+  "scale": 6.0,
+  "steps": 20000,
+  "elapsed_s": 2687.7,
+  "umax_drift": 0.0007852041712926569,
+  "mass_drift_pct": 0.01578734406953899,
+  "finite": true,
+  "Cf_ref": 0.022133333333333335,
+  "fpp0": 0.3320573362152722,
+  "delta_star_ref": 10.324800000000002,
+  "theta_ref": 3.9840000000000004,
+  "upper": {
+    "label": "upper",
+    "l2": 0.20645959278493675,
+    "max_rel_pct": 27.990629619292704,
+    "Cf_2nd": 0.039062164956703775,
+    "Cf_1st": 0.028333371505141258,
+    "Cf_err_2nd_pct": 76.48568504534838,
+    "Cf_err_1st_pct": 28.012218475341797,
+    "delta_star": 0.2931423485279083,
+    "delta_star_ref": 10.324800000000002,
+    "u1_over_U": 0.03541671484708786
+  },
+  "lower": {
+    "label": "lower",
+    "l2": 2.6405515324094346,
+    "max_rel_pct": 1104.6335722840308,
+    "Cf_2nd": 0.03906192048452794,
+    "Cf_1st": 0.02833280898630619,
+    "Cf_err_2nd_pct": 76.48458050238526,
+    "Cf_err_1st_pct": 28.00967788696289,
+    "delta_star": -0.2979292869567871,
+    "delta_star_ref": 10.324800000000002,
+    "u1_over_U": 0.03541601076722145
+  },
+  "u_edge_over_U": 0.999964103102684
+}

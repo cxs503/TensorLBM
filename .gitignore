@@ -92,3 +92,7 @@ run_general_sim_acceptance.sh
 
 # Resolution probe written by tests/conftest.py at collection time
 tests/.tensorlbm_resolution.json
+
+# LBM field snapshots (large binaries, keep on disk only)
+*.field.pt
+*.pt

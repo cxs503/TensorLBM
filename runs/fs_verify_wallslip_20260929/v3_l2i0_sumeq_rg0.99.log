@@ -1,0 +1,37 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+  st=  20 T=0.100 X=1.000 H=0.938 iface=335 drift=+0.0000%
+  st=  40 T=0.200 X=1.000 H=0.938 iface=335 drift=-0.0000%
+  st=  60 T=0.300 X=1.000 H=0.938 iface=335 drift=-0.0000%
+  st=  80 T=0.400 X=1.125 H=0.938 iface=335 drift=-0.0000%
+  st= 100 T=0.500 X=1.125 H=0.938 iface=335 drift=-0.0000%
+  st= 120 T=0.600 X=1.125 H=0.938 iface=401 drift=-0.0000%
+  st= 140 T=0.700 X=1.250 H=0.938 iface=387 drift=-0.0001%
+  st= 160 T=0.800 X=1.250 H=0.938 iface=454 drift=-0.0001%
+  st= 180 T=0.900 X=1.375 H=0.938 iface=512 drift=-0.0001%
+  st= 200 T=1.000 X=1.375 H=0.938 iface=581 drift=-0.0001%
+  st= 220 T=1.100 X=1.500 H=0.938 iface=661 drift=-0.0001%
+  st= 240 T=1.200 X=1.625 H=0.938 iface=840 drift=-0.0001%
+  st= 260 T=1.300 X=1.625 H=0.938 iface=959 drift=-0.0002%
+  st= 280 T=1.400 X=1.750 H=0.938 iface=1107 drift=-0.0002%
+  st= 300 T=1.500 X=1.875 H=0.938 iface=1271 drift=-0.0002%
+  st= 320 T=1.600 X=2.000 H=0.938 iface=1399 drift=-0.0002%
+  st= 340 T=1.700 X=2.125 H=0.938 iface=1505 drift=-0.0002%
+  st= 360 T=1.800 X=2.250 H=0.938 iface=1629 drift=-0.0001%
+  st= 380 T=1.900 X=2.375 H=0.938 iface=1761 drift=-0.0001%
+  st= 400 T=2.000 X=2.500 H=0.938 iface=1860 drift=-0.0001%
+[a8_g1e-04_rg0.99_wmhalfway_te1e-6_ap1] T_max=2.00 elapsed=38.7s max_err=20.2% drift=-0.00% iface=335->1860 X(T=1)~1.38
