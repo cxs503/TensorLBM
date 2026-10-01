@@ -55,8 +55,8 @@ for _p in (_REPO / "src", _REPO / "benchmarks"):
         sys.path.insert(0, str(_p))
 
 import torch  # noqa: E402
-
 from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
+
 from tensorlbm.boundaries import (  # noqa: E402
     compute_obstacle_forces,
     far_field_bc_2d,
@@ -80,8 +80,8 @@ U_IN_DEFAULT = 0.1
 UPSTREAM_C = 6.0
 DOWNSTREAM_C = 16.0
 HALFHEIGHT_C = 8.0
-SPONGE_C = 6.0          # downstream sponge width (chords)
-SPONGE_ALPHA = 10.0     # tau_eff = tau * (1 + alpha*sigma)
+SPONGE_C = 6.0  # downstream sponge width (chords)
+SPONGE_ALPHA = 10.0  # tau_eff = tau * (1 + alpha*sigma)
 
 
 def naca0012_half_thickness(xi: torch.Tensor, t: float = 0.12) -> torch.Tensor:
@@ -97,8 +97,13 @@ def naca0012_half_thickness(xi: torch.Tensor, t: float = 0.12) -> torch.Tensor:
 
 
 def airfoil_mask(
-    nx: int, ny: int, chord: float, alpha_deg: float,
-    x_le: float, y_c: float, device: torch.device,
+    nx: int,
+    ny: int,
+    chord: float,
+    alpha_deg: float,
+    x_le: float,
+    y_c: float,
+    device: torch.device,
 ) -> torch.Tensor:
     """Voxelised NACA 0012 solid mask (True = solid).
 
@@ -115,8 +120,8 @@ def airfoil_mask(
     )
     dx = xx - x_mid
     dy = yy - y_c
-    sp = dx * ca + dy * sa          # along chord from mid-chord
-    nn = -dx * sa + dy * ca         # normal to chord
+    sp = dx * ca + dy * sa  # along chord from mid-chord
+    nn = -dx * sa + dy * ca  # normal to chord
     xi = (sp + 0.5 * chord) / chord  # 0 at LE, 1 at TE
     half = chord * naca0012_half_thickness(xi)
     return (xi >= 0.0) & (xi <= 1.0) & (nn.abs() <= half)
@@ -165,9 +170,12 @@ def run_case(
     n_int = int(interior.sum().item())
     # blockage = max thickness / domain height
     blockage = 100.0 * (0.12 * C) / ny
-    print(f"{tag} solid={n_solid} surface={n_surf} interior={n_int} "
-          f"(blockage {blockage:.3f}%, upstream {UPSTREAM_C}c, downstream {DOWNSTREAM_C}c, "
-          f"halfheight {HALFHEIGHT_C}c)", flush=True)
+    print(
+        f"{tag} solid={n_solid} surface={n_surf} interior={n_int} "
+        f"(blockage {blockage:.3f}%, upstream {UPSTREAM_C}c, downstream {DOWNSTREAM_C}c, "
+        f"halfheight {HALFHEIGHT_C}c)",
+        flush=True,
+    )
 
     # downstream sponge (absorbing layer); MEM force is unaffected
     sigma = make_sponge_strength(
@@ -211,9 +219,12 @@ def run_case(
         if step % 5000 == 0:
             n = min(200, len(cds))
             if n:
-                print(f"{tag} step={step} Cd_surf={sum(cds[-n:]) / n:.5f} "
-                      f"Cl_surf={sum(cls[-n:]) / n:+.5f} Cd_all={sum(cds_all[-n:]) / n:.5f} "
-                      f"({time.time() - t0:.0f}s)", flush=True)
+                print(
+                    f"{tag} step={step} Cd_surf={sum(cds[-n:]) / n:.5f} "
+                    f"Cl_surf={sum(cls[-n:]) / n:+.5f} Cd_all={sum(cds_all[-n:]) / n:.5f} "
+                    f"({time.time() - t0:.0f}s)",
+                    flush=True,
+                )
         if not torch.isfinite(f).all():
             print(f"{tag} DIVERGED at step {step}", flush=True)
             break
@@ -228,7 +239,7 @@ def run_case(
 
     def plateau(arr, frac):
         kk = int(n_tot * frac)
-        seg = arr[max(0, kk - win):kk]
+        seg = arr[max(0, kk - win) : kk]
         return sum(seg) / len(seg) if seg else float("nan")
 
     cd_pl = [plateau(cds, fr) for fr in (0.25, 0.5, 0.75, 1.0)]
@@ -236,9 +247,12 @@ def run_case(
     cl_pl = [plateau(cls, fr) for fr in (0.25, 0.5, 0.75, 1.0)]
     err = (cd - CD_REF) / CD_REF * 100.0
 
-    print(f"{tag} === FINAL win={win} Cd_surf={cd:.5f} err={err:+.2f}% "
-          f"Cl_surf={cl:+.5f} | Cd_all={cd_all:.5f} Cd_int={cd_int:.5f} "
-          f"(plateau Cd {[round(v, 4) for v in cd_pl]}) ({elapsed:.0f}s)", flush=True)
+    print(
+        f"{tag} === FINAL win={win} Cd_surf={cd:.5f} err={err:+.2f}% "
+        f"Cl_surf={cl:+.5f} | Cd_all={cd_all:.5f} Cd_int={cd_int:.5f} "
+        f"(plateau Cd {[round(v, 4) for v in cd_pl]}) ({elapsed:.0f}s)",
+        flush=True,
+    )
     print(f"{tag} plateau Cl_surf {[round(v, 4) for v in cl_pl]}", flush=True)
 
     routing = dict(
@@ -252,23 +266,44 @@ def run_case(
         print(f"{tag} saved final field -> {save_field}", flush=True)
 
     return {
-        "C": C, "alpha_deg": alpha_deg, "nx": nx, "ny": ny,
-        "x_le": x_le, "y_c": y_c,
-        "upstream_c": UPSTREAM_C, "downstream_c": DOWNSTREAM_C, "halfheight_c": HALFHEIGHT_C,
+        "C": C,
+        "alpha_deg": alpha_deg,
+        "nx": nx,
+        "ny": ny,
+        "x_le": x_le,
+        "y_c": y_c,
+        "upstream_c": UPSTREAM_C,
+        "downstream_c": DOWNSTREAM_C,
+        "halfheight_c": HALFHEIGHT_C,
         "blockage_pct": blockage,
-        "Re": re, "u_in": u_in, "nu": nu, "tau": tau,
-        "n_solid_cells": n_solid, "n_surface_cells": n_surf, "n_interior_cells": n_int,
-        "n_steps": n_steps, "n_finished": step, "sample_interval": sample_interval,
+        "Re": re,
+        "u_in": u_in,
+        "nu": nu,
+        "tau": tau,
+        "n_solid_cells": n_solid,
+        "n_surface_cells": n_surf,
+        "n_interior_cells": n_int,
+        "n_steps": n_steps,
+        "n_finished": step,
+        "sample_interval": sample_interval,
         "avg_window_samples": win,
-        "cd_mem_surface": cd, "cl_mem_surface": cl,
-        "cd_mem_all": cd_all, "cd_mem_interior": cd_int,
+        "cd_mem_surface": cd,
+        "cl_mem_surface": cl,
+        "cd_mem_all": cd_all,
+        "cd_mem_interior": cd_int,
         "err_cd_pct": err,
-        "cd": cd, "cl": cl,
-        "plateau_cd_surface": cd_pl, "plateau_cd_all": cd_all_pl, "plateau_cl_surface": cl_pl,
-        "ref_cd": CD_REF, "ref_cluster": list(CD_CLUSTER), "ref_note": REF_NOTE,
+        "cd": cd,
+        "cl": cl,
+        "plateau_cd_surface": cd_pl,
+        "plateau_cd_all": cd_all_pl,
+        "plateau_cl_surface": cl_pl,
+        "ref_cd": CD_REF,
+        "ref_cluster": list(CD_CLUSTER),
+        "ref_note": REF_NOTE,
         "mass_drift_pct": (float(f.sum().item()) - im0) / im0 * 100.0,
         "finite": bool(torch.isfinite(f).all().item()),
-        "wall_s": elapsed, **routing,
+        "wall_s": elapsed,
+        **routing,
     }
 
 
@@ -293,9 +328,18 @@ def main() -> int:
     if a.mode == "single":
         out = a.out or f"/tmp/naca0012_C{a.arg}.json"
         field = (out + ".field.pt") if a.save_field else None
-        r = run_case(int(a.arg), a.alpha, a.device, a.steps, a.u_in, a.re,
-                     sample_interval=a.sample, warmup_frac=a.warmup_frac,
-                     compile_mode=cm, save_field=field)
+        r = run_case(
+            int(a.arg),
+            a.alpha,
+            a.device,
+            a.steps,
+            a.u_in,
+            a.re,
+            sample_interval=a.sample,
+            warmup_frac=a.warmup_frac,
+            compile_mode=cm,
+            save_field=field,
+        )
         Path(out).write_text(json.dumps(r, indent=2))
         print(f"[naca0012] saved {out}", flush=True)
         return 0
@@ -304,10 +348,19 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     per_grid = []
     for C in a.grids:
-        field = (str(out_dir / f"final_C{C}.pt") if a.save_field else None)
-        r = run_case(C, a.alpha, a.device, a.steps, a.u_in, a.re,
-                     sample_interval=a.sample, warmup_frac=a.warmup_frac,
-                     compile_mode=cm, save_field=field)
+        field = str(out_dir / f"final_C{C}.pt") if a.save_field else None
+        r = run_case(
+            C,
+            a.alpha,
+            a.device,
+            a.steps,
+            a.u_in,
+            a.re,
+            sample_interval=a.sample,
+            warmup_frac=a.warmup_frac,
+            compile_mode=cm,
+            save_field=field,
+        )
         per_grid.append(r)
         (out_dir / f"case_C{C}.json").write_text(json.dumps(r, indent=2))
     cd = [r["cd_mem_surface"] for r in per_grid]
@@ -317,13 +370,18 @@ def main() -> int:
     conv = span <= 3.0
     res = {
         "case": "naca0012_lowre",
-        "alpha_deg": a.alpha, "Re": a.re,
+        "alpha_deg": a.alpha,
+        "Re": a.re,
         "force_method": "Ladd MEM, surface-only (post-step field, negated)",
-        "reference": REF_NOTE, "ref_cd": CD_REF, "ref_cluster": list(CD_CLUSTER),
+        "reference": REF_NOTE,
+        "ref_cd": CD_REF,
+        "ref_cluster": list(CD_CLUSTER),
         "grids": per_grid,
         "convergence": {
-            "cd": cd, "cd_span_pct": span,
-            "cd_within_3pct": ok, "grid_span_within_3pct": conv,
+            "cd": cd,
+            "cd_span_pct": span,
+            "cd_within_3pct": ok,
+            "grid_span_within_3pct": conv,
         },
         "verified": bool(ok and conv),
         "verdict": "verified" if (ok and conv) else "not_verified",

@@ -19,11 +19,11 @@ Usage:
   python _probe_formulas.py --D 20 --lateral 16 --nz 8 --steps 60000 \
       --device sdaa:0 --out /tmp/cyl3d_probe_D20.json
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import sys
 import time
 from pathlib import Path
 
@@ -183,11 +183,11 @@ def main() -> int:
             n_avg = min(200, len(cd_p_hist))
             if n_avg:
                 cdp = sum(cd_p_hist[-n_avg:]) / n_avg
-                parts = " ".join(
-                    f"{k}={sum(hist[k][-n_avg:]) / n_avg:.4f}" for k in FORMULAS
+                parts = " ".join(f"{k}={sum(hist[k][-n_avg:]) / n_avg:.4f}" for k in FORMULAS)
+                print(
+                    f"{tag} step={step} Cd_p={cdp:.4f} {parts} ({time.time() - t0:.0f}s)",
+                    flush=True,
                 )
-                print(f"{tag} step={step} Cd_p={cdp:.4f} {parts} ({time.time() - t0:.0f}s)",
-                      flush=True)
 
         if not torch.isfinite(f).all():
             print(f"{tag} DIVERGED at step {step}", flush=True)
@@ -204,7 +204,11 @@ def main() -> int:
     # calibrated ratio weight (SUBOFF recipe)
     gain = cdf["faces"] / cdf["standard"] - 1.0
     w_ratio = 1.0 - gain / (ratio - 1.0) if abs(ratio - 1.0) > 1e-9 else float("nan")
-    cd_f_wr = w_ratio * cdf["standard"] + (1 - w_ratio) * cdf["faces"] if w_ratio == w_ratio else float("nan")
+    cd_f_wr = (
+        w_ratio * cdf["standard"] + (1 - w_ratio) * cdf["faces"]
+        if w_ratio == w_ratio
+        else float("nan")
+    )
     cd_t_wr = cdp + cd_f_wr if cd_f_wr == cd_f_wr else float("nan")
 
     # MEM diagnostics on final field
@@ -212,9 +216,12 @@ def main() -> int:
     try:
         ms = momentum_exchange_standard(f, solid, near)[0] / dpS
         mg = momentum_exchange_galilean(f, solid, near, tau)[0] / dpS
-        mb = momentum_exchange_background_subtracted(
-            f, solid, near, rho0=1.0, u0=(u_in, 0.0, 0.0)
-        )[0] / dpS
+        mb = (
+            momentum_exchange_background_subtracted(f, solid, near, rho0=1.0, u0=(u_in, 0.0, 0.0))[
+                0
+            ]
+            / dpS
+        )
         mem_cd = {"standard": ms, "galilean": mg, "bg_sub": mb}
     except Exception as exc:  # pragma: no cover
         mem_cd = {"error": str(exc)}
@@ -229,7 +236,7 @@ def main() -> int:
         return sum(seg) / len(seg) + sum(pseg) / len(pseg)
 
     plateau = {
-        f"{k}@{int(f*100)}%": wmean(k, f) for f in (0.25, 0.5, 0.75, 1.0) for k in FORMULAS
+        f"{k}@{int(f * 100)}%": wmean(k, f) for f in (0.25, 0.5, 0.75, 1.0) for k in FORMULAS
     }
 
     print(f"{tag} === FINAL win={win} ===", flush=True)
@@ -246,16 +253,33 @@ def main() -> int:
 
     res = {
         "case": "cylinder_3d_re40_probe_formulas",
-        "D_cells": D, "nx": nx, "ny": ny, "nz": nz, "lateral_D": a.lateral,
-        "blockage_pct": 100.0 * D / nx, "Re": Re, "u_in": u_in, "nu": nu, "tau": tau,
-        "n_near_cells": n_near, "n_wall_faces": n_faces, "face_cell_ratio": ratio,
-        "q_smooth_mean": float(q_vals.mean()), "q_smooth_min": float(q_vals.min()),
+        "D_cells": D,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
+        "lateral_D": a.lateral,
+        "blockage_pct": 100.0 * D / nx,
+        "Re": Re,
+        "u_in": u_in,
+        "nu": nu,
+        "tau": tau,
+        "n_near_cells": n_near,
+        "n_wall_faces": n_faces,
+        "face_cell_ratio": ratio,
+        "q_smooth_mean": float(q_vals.mean()),
+        "q_smooth_min": float(q_vals.min()),
         "q_smooth_max": float(q_vals.max()),
-        "n_steps": a.steps, "n_finished": step, "avg_window_samples": win,
-        "cd_pressure": cdp, "cd_friction": cdf, "cd_total": cdt,
+        "n_steps": a.steps,
+        "n_finished": step,
+        "avg_window_samples": win,
+        "cd_pressure": cdp,
+        "cd_friction": cdf,
+        "cd_total": cdt,
         "err_vs_DC_pct": {k: (v - REF_CD_DC) / REF_CD_DC * 100 for k, v in cdt.items()},
         "err_vs_Tritton_pct": {k: (v - REF_CD) / REF_CD * 100 for k, v in cdt.items()},
-        "ratio_weight": w_ratio, "cd_f_weighted_ratio": cd_f_wr, "cd_tot_weighted_ratio": cd_t_wr,
+        "ratio_weight": w_ratio,
+        "cd_f_weighted_ratio": cd_f_wr,
+        "cd_tot_weighted_ratio": cd_t_wr,
         "mem_cd": mem_cd,
         "plateau_windows": plateau,
         "cd_p_series": cd_p_hist,

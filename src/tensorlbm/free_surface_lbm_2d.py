@@ -45,7 +45,7 @@ import os
 
 import torch
 
-from .d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
+from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
 from .solver import stream as _stream2d
 
 GAS = 0
@@ -151,9 +151,7 @@ def total_liquid_inventory_2d(f, mass, flags, rho_liquid=1.0):
     bulk population debit link-by-link).
     """
     rho = f.sum(dim=0)
-    return float(
-        rho[flags == LIQUID].sum().item() + mass[flags == INTERFACE].sum().item()
-    )
+    return float(rho[flags == LIQUID].sum().item() + mass[flags == INTERFACE].sum().item())
 
 
 # ---------------------------------------------------------------------------
@@ -209,9 +207,7 @@ def _conservative_clamp(field, upper, weight=None):
     return (clipped + room * ((-net) / room_sum)).clamp(0.0, hi)
 
 
-def _address_interface_layer(
-    flags, mass, f, solid_mask, rho_liquid, ux, uy, recv_new=None
-):
+def _address_interface_layer(flags, mass, f, solid_mask, rho_liquid, ux, uy, recv_new=None):
     """Rebuild a valid one-cell INTERFACE envelope and remove isolated cells.
 
     Mirrors the 3D ``build_topology_transaction`` halo/isolation stage:
@@ -383,9 +379,7 @@ def koerner_step_2d(
             bulk_debit = torch.stack(
                 [_roll_to_neighbor(debit[i], q) for i, q in enumerate(_MOVING_Q)]
             ).sum(dim=0)
-            mass = mass + torch.where(
-                liq_mask, bulk_debit, torch.zeros_like(bulk_debit)
-            )
+            mass = mass + torch.where(liq_mask, bulk_debit, torch.zeros_like(bulk_debit))
     fill_t = (mass / rho_liquid).clamp(0.0, 1.0)
 
     # ---- 6. Flag conversion thresholds + excess redistribution -------------

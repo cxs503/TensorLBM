@@ -17,11 +17,10 @@ Usage (torchrun, one device per rank):
       --geo sphere --nx 96 --ny 64 --nz 64 --radius 6 --steps 200 \
       --warmup-steps 50 --report-interval 50 --output /tmp/integrated.json
 """
+
 import argparse
 import json
 import math
-import os
-import sys
 import time
 
 import torch
@@ -40,7 +39,7 @@ import torch.distributed as dist
 # 1/(1-1.5*beta) form is kept as 'glauert_classic' for reproducibility of
 # pre-2026-08-17 runs.
 from tensorlbm.drag_normalize import (
-    BLOCKAGE_HARD_GATE,   # beta >= 15%: severe blockage -> warn + escalate
+    BLOCKAGE_HARD_GATE,  # beta >= 15%: severe blockage -> warn + escalate
     BLOCKAGE_WARN_RATIO,  # beta > 12.5%: soft advisory (Ly >= 8D rule)
     compute_blockage_factor,
 )
@@ -58,93 +57,132 @@ def main():
     p.add_argument("--cx", type=float, default=30.0)
     p.add_argument("--bl", type=float, default=None)
     p.add_argument("--d-max", type=int, default=2)
-    p.add_argument("--l1-block", action="store_true", default=True,
-                   help="enable the L1 middle block (coarse -> L1 2x -> shell "
-                        "leaf three-level hierarchy, design doc "
-                        "L1_MIDDLE_BLOCK_INTEGRATION_DESIGN.md). "
-                        "Pass --no-l1-block for the legacy two-level path.")
-    p.add_argument("--no-l1-block", dest="l1_block", action="store_false")
-    p.add_argument("--shell-margin", type=int, default=6,
-                   help="L1 box: hull-proximity shell thickness in coarse "
-                        "cells (plan_body_shell_box)")
-    p.add_argument("--wake-cells", type=int, default=32,
-                   help="L1 box: downstream wake extension in coarse cells")
-    p.add_argument("--wall-margin", type=int, default=8,
-                   help="L1 box: coarse-cell padding around the shell+wake "
-                        "mask (also raises GHOST_PAD to max(6, pad+2))")
     p.add_argument(
-        "--window-ring", type=int, default=None,
+        "--l1-block",
+        action="store_true",
+        default=True,
+        help="enable the L1 middle block (coarse -> L1 2x -> shell "
+        "leaf three-level hierarchy, design doc "
+        "L1_MIDDLE_BLOCK_INTEGRATION_DESIGN.md). "
+        "Pass --no-l1-block for the legacy two-level path.",
+    )
+    p.add_argument("--no-l1-block", dest="l1_block", action="store_false")
+    p.add_argument(
+        "--shell-margin",
+        type=int,
+        default=6,
+        help="L1 box: hull-proximity shell thickness in coarse cells (plan_body_shell_box)",
+    )
+    p.add_argument(
+        "--wake-cells",
+        type=int,
+        default=32,
+        help="L1 box: downstream wake extension in coarse cells",
+    )
+    p.add_argument(
+        "--wall-margin",
+        type=int,
+        default=8,
+        help="L1 box: coarse-cell padding around the shell+wake "
+        "mask (also raises GHOST_PAD to max(6, pad+2))",
+    )
+    p.add_argument(
+        "--window-ring",
+        type=int,
+        default=None,
         help="coarse-window ring depth (coarse cells) around the L1 box, "
-             "independent of the L1 ghost depth (window ring decoupling "
-             "audit 2026-08-17). Default None = follow ghost (window_ring "
-             "= ghost, pre-decoupling behaviour). A larger value deepens "
-             "the coarse supply band so the outer L1 ghost layers sample "
-             "genuine coarse flow further outside the box; must be >= "
-             "ghost (3 in the L1 path).",
+        "independent of the L1 ghost depth (window ring decoupling "
+        "audit 2026-08-17). Default None = follow ghost (window_ring "
+        "= ghost, pre-decoupling behaviour). A larger value deepens "
+        "the coarse supply band so the outer L1 ghost layers sample "
+        "genuine coarse flow further outside the box; must be >= "
+        "ghost (3 in the L1 path).",
     )
     p.add_argument("--interleave", action="store_true")
     p.add_argument(
-        "--l1-no-refreeze", action="store_true", default=True,
+        "--l1-no-refreeze",
+        action="store_true",
+        default=True,
         help="[default ON] skip the L1 solid re-freeze after streaming "
-             "(matches StaticBlockAMR3D / design doc §3b single-freeze "
-             "semantics; the solid interior then participates in streaming "
-             "as a conveyor). CPU A/B: with this on the integrated path "
-             "matches the single-card reference to 4e-6 relative.",
+        "(matches StaticBlockAMR3D / design doc §3b single-freeze "
+        "semantics; the solid interior then participates in streaming "
+        "as a conveyor). CPU A/B: with this on the integrated path "
+        "matches the single-card reference to 4e-6 relative.",
     )
     p.add_argument(
-        "--l1-refreeze", action="store_true", default=False,
+        "--l1-refreeze",
+        action="store_true",
+        default=False,
         help="restore the legacy L1 double-freeze (design-doc deviation, "
-             "inflates shell BFL force by ~34%%; kept for A/B only)",
+        "inflates shell BFL force by ~34%%; kept for A/B only)",
     )
     p.add_argument(
-        "--l1-interface-filter", action="store_true", default=False,
+        "--l1-interface-filter",
+        action="store_true",
+        default=False,
         help="L1 path only: enable the single-card "
-             "StaticBlockAMR3D._filter_fine_interface equivalent on the L1 "
-             "physical shell adjacent to the L1/coarse interface "
-             "(moment-preserving kinetic-mode damping; density, momentum and "
-             "the resolved stress are untouched). Default off = historical "
-             "unfiltered advance (bitwise identical). A/B knob for the L1 "
-             "interface-filter parity gap.",
+        "StaticBlockAMR3D._filter_fine_interface equivalent on the L1 "
+        "physical shell adjacent to the L1/coarse interface "
+        "(moment-preserving kinetic-mode damping; density, momentum and "
+        "the resolved stress are untouched). Default off = historical "
+        "unfiltered advance (bitwise identical). A/B knob for the L1 "
+        "interface-filter parity gap.",
     )
     p.add_argument(
-        "--l1-interface-filter-width", type=int, default=2,
+        "--l1-interface-filter-width",
+        type=int,
+        default=2,
         help="L1 interface filter shell width in L1 cells (default 2; the "
-             "single-card evidence candidates are w2s1.0 and w4s0.2). Must "
-             "leave an unfiltered physical core and must not touch the solid "
-             "or its near-wall fluid.",
+        "single-card evidence candidates are w2s1.0 and w4s0.2). Must "
+        "leave an unfiltered physical core and must not touch the solid "
+        "or its near-wall fluid.",
     )
     p.add_argument(
-        "--l1-interface-filter-strength", type=float, default=1.0,
+        "--l1-interface-filter-strength",
+        type=float,
+        default=1.0,
         help="L1 interface filter damping strength in [0,1] (default 1.0 = "
-             "full kinetic-residual damping at the wall-adjacent edge of the "
-             "shell, raised-cosine taper to 0 over --l1-interface-filter-width "
-             "cells).",
+        "full kinetic-residual damping at the wall-adjacent edge of the "
+        "shell, raised-cosine taper to 0 over --l1-interface-filter-width "
+        "cells).",
     )
     p.add_argument(
-        "--ghost-from-l1", action="store_true", default=False,
+        "--ghost-from-l1",
+        action="store_true",
+        default=False,
         help="L1 path only: sample the shell ghost donors from the L1 block "
-             "field (single-card convention, the pre-P0 behaviour) instead of "
-             "the evolved coarse window field (time-lerped cw_old/cw_new, "
-             "coarse-frame trilinear). Default off = current coarse direct "
-             "sampling (P0 fix); on = suppress ghost_parent_* so the L1-frame "
-             "ghost plan is used. A/B knob for the ghost-donor-source audit.")
+        "field (single-card convention, the pre-P0 behaviour) instead of "
+        "the evolved coarse window field (time-lerped cw_old/cw_new, "
+        "coarse-frame trilinear). Default off = current coarse direct "
+        "sampling (P0 fix); on = suppress ghost_parent_* so the L1-frame "
+        "ghost plan is used. A/B knob for the ghost-donor-source audit.",
+    )
     p.add_argument("--u-in", type=float, default=0.06)
     p.add_argument("--reynolds", type=float, default=100.0)
     p.add_argument("--steps", type=int, default=200)
     p.add_argument("--warmup-steps", type=int, default=50)
     p.add_argument("--q-min", type=float, default=None)
-    p.add_argument("--no-coarse-bb", action="store_true",
-                   help="disable coarse halfway BB (wall handled only by shell BFL)")
-    p.add_argument("--coarse-freeze", action="store_true",
-                   help="FREEZE coarse solid cells (torch.where(solid, before, "
-                        "collided), aligning the integrated coarse layer with "
-                        "the single-card root_advance; rho stays 1.0 inside the "
-                        "solid -> coarse layer transparent). Mutually exclusive "
-                        "with --no-coarse-bb (freeze takes precedence).")
-    p.add_argument("--far-field-yz-extrapolate", action="store_true",
-                   help="y/z boundaries use zero-gradient extrapolation instead "
-                        "of hard uniform-inflow equilibrium reset (lets lateral "
-                        "flow develop around the body)")
+    p.add_argument(
+        "--no-coarse-bb",
+        action="store_true",
+        help="disable coarse halfway BB (wall handled only by shell BFL)",
+    )
+    p.add_argument(
+        "--coarse-freeze",
+        action="store_true",
+        help="FREEZE coarse solid cells (torch.where(solid, before, "
+        "collided), aligning the integrated coarse layer with "
+        "the single-card root_advance; rho stays 1.0 inside the "
+        "solid -> coarse layer transparent). Mutually exclusive "
+        "with --no-coarse-bb (freeze takes precedence).",
+    )
+    p.add_argument(
+        "--far-field-yz-extrapolate",
+        action="store_true",
+        help="y/z boundaries use zero-gradient extrapolation instead "
+        "of hard uniform-inflow equilibrium reset (lets lateral "
+        "flow develop around the body)",
+    )
     p.add_argument("--sponge-width", type=int, default=16)
     p.add_argument("--sponge-strength", type=float, default=0.2)
     p.add_argument("--report-interval", type=int, default=50)
@@ -153,25 +191,30 @@ def main():
         "--blockage-correction",
         choices=("simple", "glauert", "glauert_classic", "off"),
         default="simple",
-        help=("Blockage (wind-tunnel) correction for the confined domain. "
-              "The infinite-domain Cd_ref is unfair in a small domain: the "
-              "lateral walls accelerate the flow around the body, so a "
-              "correct solver should compute a HIGHER Cd. 'simple' (default, "
-              "Maskell/Bartz): f=1/(1-beta)^2; 'glauert': "
-              "f=1/sqrt(1-beta^2); 'glauert_classic': f=1/(1-1.5*beta) "
-              "(legacy); 'off': no correction. beta=D/Ly (D=body diameter, "
-              "Ly=domain width). Hard gate: beta>=15%% auto-escalates "
-              "'simple' to 'glauert' and recommends enlarging the domain to "
-              "Ly>=8D. R6 sphere: D=12, Ly=64 -> beta=0.1875 -> simple "
-              "f=1.5148 -> Cd_ref_blocked=1.654."),
+        help=(
+            "Blockage (wind-tunnel) correction for the confined domain. "
+            "The infinite-domain Cd_ref is unfair in a small domain: the "
+            "lateral walls accelerate the flow around the body, so a "
+            "correct solver should compute a HIGHER Cd. 'simple' (default, "
+            "Maskell/Bartz): f=1/(1-beta)^2; 'glauert': "
+            "f=1/sqrt(1-beta^2); 'glauert_classic': f=1/(1-1.5*beta) "
+            "(legacy); 'off': no correction. beta=D/Ly (D=body diameter, "
+            "Ly=domain width). Hard gate: beta>=15%% auto-escalates "
+            "'simple' to 'glauert' and recommends enlarging the domain to "
+            "Ly>=8D. R6 sphere: D=12, Ly=64 -> beta=0.1875 -> simple "
+            "f=1.5148 -> Cd_ref_blocked=1.654."
+        ),
     )
     p.add_argument(
         "--domain-scale",
-        type=float, default=None,
-        help=("Target Ly/D ratio for a recommended larger domain (e.g. 8.0 "
-              "means Ly=8D, beta=12.5%%). If set, prints the recommended ny "
-              "and resulting beta. If unset and beta>12.5%%, prints a "
-              "recommendation to scale to Ly>=8D."),
+        type=float,
+        default=None,
+        help=(
+            "Target Ly/D ratio for a recommended larger domain (e.g. 8.0 "
+            "means Ly=8D, beta=12.5%%). If set, prints the recommended ny "
+            "and resulting beta. If unset and beta>12.5%%, prints a "
+            "recommendation to scale to Ly>=8D."
+        ),
     )
     args = p.parse_args()
 
@@ -186,22 +229,21 @@ def main():
     u_in = args.u_in
 
     # ---------------- geometry ----------------
+    from tensorlbm.amr_shell_planning import plan_body_shell_box
     from tensorlbm.octree_boundary.geometry import (
         build_octree_shell,
         sphere_distance_field,
     )
     from tensorlbm.octree_boundary.geometry_adapters import (
         solid_mask_inside_fn,
-        sphere_inside_fn,
     )
-    from tensorlbm.amr_shell_planning import plan_body_shell_box
 
     solid_coarse = None  # coarse-frame solid mask (L1 box planning / coarse BB)
 
     if args.geo == "sphere":
         center = (nx * 0.5, ny * 0.5, nz * 0.5)
         radius = args.radius
-        D_body = 2.0 * radius          # body diameter for blockage ratio
+        D_body = 2.0 * radius  # body diameter for blockage ratio
         bl = args.bl if args.bl is not None else max(2.0, round(radius / 2.0))
         # Sphere uses the ANALYTIC path (no inside_fn): the analytic q-field
         # (0.02-0.97) and symmetric BFL mask are required for a correct Cd.
@@ -211,19 +253,34 @@ def main():
         if args.l1_block:
             # Coarse solid mask for the L1 box planning (same cell-centre
             # convention as the octree's analytic solid).
-            solid_coarse = sphere_distance_field(
-                (nz, ny, nx), center, radius, dev,
-            ) <= 0.0
+            solid_coarse = (
+                sphere_distance_field(
+                    (nz, ny, nx),
+                    center,
+                    radius,
+                    dev,
+                )
+                <= 0.0
+            )
     else:
         from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
+
         L = args.hull
         config = SuboffConfig()
         srad = config.r_over_l * L
-        D_body = 2.0 * srad            # hull diameter for blockage ratio
+        D_body = 2.0 * srad  # hull diameter for blockage ratio
         solid_cpu, _ = build_suboff_mask(
-            hull_type=args.hull_type, nx=nx, ny=ny, nz=nz,
-            cx=args.cx, cy=ny * 0.5, cz=nz * 0.5,
-            length=L, radius=srad, config=config, device="cpu",
+            hull_type=args.hull_type,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            cx=args.cx,
+            cy=ny * 0.5,
+            cz=nz * 0.5,
+            length=L,
+            radius=srad,
+            config=config,
+            device="cpu",
         )
         center = (args.cx, ny * 0.5, nz * 0.5)
         bl = args.bl if args.bl is not None else max(2.0, round(srad / 2.0))
@@ -236,12 +293,15 @@ def main():
         # planned on the COARSE solid mask, in coarse global coordinates.
         assert solid_coarse is not None, "L1 path requires a coarse solid mask"
         plan = plan_body_shell_box(
-            solid_coarse, shell_margin=args.shell_margin,
-            wake_cells=args.wake_cells, pad=args.wall_margin,
+            solid_coarse,
+            shell_margin=args.shell_margin,
+            wake_cells=args.wake_cells,
+            pad=args.wall_margin,
         )
         box = plan.box
         l1_shape = (
-            (box.z1 - box.z0) * 2, (box.y1 - box.y0) * 2,
+            (box.z1 - box.z0) * 2,
+            (box.y1 - box.y0) * 2,
             (box.x1 - box.x0) * 2,
         )
         # Body centre in L1 physical coordinates and radius in L1 units.
@@ -253,9 +313,13 @@ def main():
         if args.geo == "sphere":
             radius_l1 = radius * 2.0
             octree = build_octree_shell(
-                l1_shape, center=center_l1, radius=radius_l1,
-                bl_thickness_cells=bl, d_max=args.d_max,
-                lattice="D3Q27", device=dev,
+                l1_shape,
+                center=center_l1,
+                radius=radius_l1,
+                bl_thickness_cells=bl,
+                d_max=args.d_max,
+                lattice="D3Q27",
+                device=dev,
             )
         else:
             radius_l1 = max(srad, bl * 2) * 2.0
@@ -264,37 +328,51 @@ def main():
                 # Leaf centres are in L1-local world units; map them back to
                 # the coarse mask frame (mask index = box origin + local/2).
                 coarse = 0.5 * centers + torch.tensor(
-                    (box.x0, box.y0, box.z0), dtype=torch.float64,
+                    (box.x0, box.y0, box.z0),
+                    dtype=torch.float64,
                     device=centers.device,
                 )
                 return solid_mask_inside_fn(
-                    solid_cpu.bool(), device=dev,
+                    solid_cpu.bool(),
+                    device=dev,
                 )(coarse)
 
             octree = build_octree_shell(
-                l1_shape, center=center_l1, radius=radius_l1,
-                bl_thickness_cells=bl, d_max=args.d_max,
-                lattice="D3Q27", device=dev,
+                l1_shape,
+                center=center_l1,
+                radius=radius_l1,
+                bl_thickness_cells=bl,
+                d_max=args.d_max,
+                lattice="D3Q27",
+                device=dev,
                 # device=dev keeps inside_fn evaluation on the GPU.
                 inside_fn=_suboff_inside_l1,
             )
-        solid = octree._solid              # L1-frame solid mask
+        solid = octree._solid  # L1-frame solid mask
     else:
         # ---- legacy two-level path: octree hosted on the coarse grid ----
         l1_shape = (nz, ny, nx)
         box = None
         if args.geo == "sphere":
             octree = build_octree_shell(
-                l1_shape, center=center, radius=radius,
-                bl_thickness_cells=bl, d_max=args.d_max,
-                lattice="D3Q27", device=dev,
+                l1_shape,
+                center=center,
+                radius=radius,
+                bl_thickness_cells=bl,
+                d_max=args.d_max,
+                lattice="D3Q27",
+                device=dev,
             )
             solid = octree._solid
         else:
             octree = build_octree_shell(
-                l1_shape, center=center, radius=max(srad, bl * 2),
-                bl_thickness_cells=bl, d_max=args.d_max,
-                lattice="D3Q27", device=dev,
+                l1_shape,
+                center=center,
+                radius=max(srad, bl * 2),
+                bl_thickness_cells=bl,
+                d_max=args.d_max,
+                lattice="D3Q27",
+                device=dev,
                 # device=dev keeps inside_fn evaluation on the GPU (the
                 # default mask device would be CPU and break
                 # _level1_leaves arithmetic).
@@ -304,9 +382,10 @@ def main():
     n_leaf = octree.n_leaf
     q_oct = octree.Q
     if rank == 0:
-        box_desc = "None" if box is None else (
-            f"z:[{box.z0},{box.z1}) y:[{box.y0},{box.y1}) "
-            f"x:[{box.x0},{box.x1})"
+        box_desc = (
+            "None"
+            if box is None
+            else (f"z:[{box.z0},{box.z1}) y:[{box.y0},{box.y1}) x:[{box.x0},{box.x1})")
         )
         print(
             f"[geo] l1_block={args.l1_block} box={box_desc} "
@@ -330,6 +409,7 @@ def main():
     uy = torch.zeros_like(ux)
     uz = torch.zeros_like(ux)
     from tensorlbm.d3q27 import equilibrium27
+
     eq = equilibrium27(rho, ux, uy, uz)
     coarse_f[:, :, :, 1:-1] = eq
     coarse_f[:, :, :, 0:1] = eq[:, :, :, 0:1]
@@ -340,12 +420,14 @@ def main():
     from tensorlbm.octree_boundary.distributed_stepping import (
         interleaved_leaf_indices,
     )
+
     if args.interleave:
         lidx = interleaved_leaf_indices(n_leaf, world_size, rank)
     else:
         # MUST match distributed_stepping.split_leaf_bounds (base+extra), so
         # all ranks agree on shard sizes when n_leaf % world_size != 0.
         from tensorlbm.octree_boundary.distributed_stepping import split_leaf_bounds
+
         lo_l, hi_l = split_leaf_bounds(n_leaf, world_size)[rank]
         lidx = torch.arange(lo_l, hi_l, dtype=torch.int64)
     n_local = lidx.shape[0]
@@ -362,15 +444,19 @@ def main():
         torch.zeros(oshape, device=dev),
     )
     octree.f_leaf = eq_global[:, host[lidx, 0], host[lidx, 1], host[lidx, 2]].clone()
-    print(f"[r{rank}] n_leaf={n_leaf} lidx_len={lidx.shape[0]} "
-          f"f_leaf_cols={octree.f_leaf.shape[1]}", flush=True)
+    print(
+        f"[r{rank}] n_leaf={n_leaf} lidx_len={lidx.shape[0]} f_leaf_cols={octree.f_leaf.shape[1]}",
+        flush=True,
+    )
 
     # coarse tau + L1/shell tau chain (Re convention: L_ref = diameter 2R,
     # shared tensorlbm.lbm_re_tau.tau_from_re)
     from tensorlbm.lbm_re_tau import tau_from_re
+
     L_ref = 2.0 * args.radius if args.geo == "sphere" else 2.0 * args.hull
     tau_coarse = tau_from_re(u_in, L_ref, args.reynolds)
     from tensorlbm.octree_boundary.stepping import _tau_chain
+
     taus = _tau_chain(tau_coarse, octree.d_max)
     # Legacy two-level (host=coarse, d_max=1): taus = [tau_c, tau_shell].
     # L1 block (host=L1, d_max=2): taus = [tau_c, tau_l1, tau_shell]; the
@@ -379,8 +465,10 @@ def main():
     tau_shell = taus[octree.d_max]
 
     # ---------------- coarse operators (domain-decomposed) ----------------
-    from tensorlbm.cumulant import collide_cumulant_d3q27
     import os as _osg
+
+    from tensorlbm.cumulant import collide_cumulant_d3q27
+
     if _osg.environ.get("TL_GEIER"):
         # Math-correct Geier cumulant (acts on the full distribution, 1/rho,
         # C^eq_{>=4} ~ 1e-16).  The legacy variant keeps a non-zero
@@ -389,9 +477,11 @@ def main():
         # path runs fp32, so this switch is the candidate fix for the D3Q27
         # Cd anomaly.  See docs/octree_integrated_cd_investigation_20260922.md.
         from tensorlbm.cumulant import collide_cumulant_geier_d3q27
+
         collide_cumulant_d3q27 = collide_cumulant_geier_d3q27
-    from tensorlbm.d3q27 import C as C27
     from tensorlbm.d3q27 import OPPOSITE as OPP27
+    from tensorlbm.d3q27 import C as C27
+
     S27 = [(int(C27[d, 0]), int(C27[d, 1]), int(C27[d, 2])) for d in range(27)]
 
     # Coarse solid mask for the coarse halfway BB: the L1 path keeps the
@@ -402,7 +492,7 @@ def main():
         coarse_solid = solid_coarse
     else:
         coarse_solid = solid
-    solid_local = coarse_solid[:, :, lo:hi]   # (nz, ny, nx_local) no halo
+    solid_local = coarse_solid[:, :, lo:hi]  # (nz, ny, nx_local) no halo
     solid_full = torch.zeros(nz, ny, nx_local + 2, dtype=torch.bool, device=dev)
     solid_full[:, :, 1:-1] = solid_local
     # Sponge toward uniform inflow on y/z/x+ faces (inlet x- is driven by the
@@ -411,8 +501,10 @@ def main():
         apply_equilibrium_difference_sponge,
         build_sponge_sigma_3d,
     )
+
     sponge_sigma = build_sponge_sigma_3d(
-        (nz, ny, nx_local + 2), width=args.sponge_width,
+        (nz, ny, nx_local + 2),
+        width=args.sponge_width,
         max_strength=args.sponge_strength,
         device=dev,
         # y/z faces are global per-rank (not decomposed); x faces are
@@ -442,7 +534,8 @@ def main():
         # the non-inlet faces; suppresses far-field reflection / blocking.
         if sponge_sigma is not None:
             c4 = apply_equilibrium_difference_sponge(
-                c4, sponge_sigma,
+                c4,
+                sponge_sigma,
                 rho_target=1.0,
                 velocity_target=(u_in, 0.0, 0.0),
             )
@@ -451,12 +544,10 @@ def main():
     def halo_exchange(f_local):
         left_interior = f_local[:, :, :, 1:2].contiguous()
         right_interior = f_local[:, :, :, -2:-1].contiguous()
-        right_gather = [torch.empty_like(right_interior)
-                        for _ in range(world_size)]
+        right_gather = [torch.empty_like(right_interior) for _ in range(world_size)]
         dist.all_gather(right_gather, right_interior)
         left_halo = right_gather[(rank - 1) % world_size]
-        left_gather = [torch.empty_like(left_interior)
-                       for _ in range(world_size)]
+        left_gather = [torch.empty_like(left_interior) for _ in range(world_size)]
         dist.all_gather(left_gather, left_interior)
         right_halo = left_gather[(rank + 1) % world_size]
         f_local[:, :, :, 0:1] = left_halo
@@ -475,8 +566,7 @@ def main():
         out = streamed.clone()
         for d in range(27):
             sx, sy, sz = S27[d]
-            solid_source = torch.roll(solid_full, shifts=(sz, sy, sx),
-                                      dims=(0, 1, 2))
+            solid_source = torch.roll(solid_full, shifts=(sz, sy, sx), dims=(0, 1, 2))
             wall_link = fluid & solid_source
             out[d] = torch.where(wall_link, postcollision[opposite[d]], out[d])
         return out
@@ -528,12 +618,14 @@ def main():
         return f
 
     # ---------------- shell advance + BFL (all_gather distributed) ----------------
-    from tensorlbm.octree_boundary.bfl import bfl_apply_gather, leaf_force_weights
     # FIX (2026-09-22): include the per-leaf convective spatial factor
     # (dx_leaf/dx_ref)^2 = 2^-2(level-1) so mixed-depth shells (d_max=2:
     # level-1 and level-2 leaves) do not sum impulses from different
     # lattices.  See docs/shell_bfl_force_analytic_validation_20260922.md.
     import os as _os
+
+    from tensorlbm.octree_boundary.bfl import bfl_apply_gather, leaf_force_weights
+
     leaf_weights = leaf_force_weights(
         octree, include_spatial=not bool(int(_os.environ.get("TL_NO_SPATIAL", "0")))
     ).to(dev)[lidx]
@@ -551,15 +643,18 @@ def main():
 
     def bfl_fn(octree_, out, post, gplan, ghost_vals, *, substep):
         fout, force = bfl_apply_gather(
-            octree_, out, post,
-            ghost_plan=gplan, ghost_vals=ghost_vals,
-            force_weights=leaf_weights, return_force=True,
+            octree_,
+            out,
+            post,
+            ghost_plan=gplan,
+            ghost_vals=ghost_vals,
+            force_weights=leaf_weights,
+            return_force=True,
             q_min=args.q_min,
         )
         # local BFL mask on the facade is (Q, n_local)
         mask_loc = octree_.bfl_mask
-        w_leaf = 2.0 ** (-(octree_.d_max
-                           - octree_.leaf_level.to(torch.float64)))
+        w_leaf = 2.0 ** (-(octree_.d_max - octree_.leaf_level.to(torch.float64)))
         # fold the same per-leaf spatial factor the force weights carry so
         # per-link_w (fx / weighted links) is in a single lattice
         w_leaf = w_leaf * 2.0 ** (-2.0 * (octree_.leaf_level.to(torch.float64) - 1.0))
@@ -593,14 +688,21 @@ def main():
     if args.l1_block:
         assert box is not None, "L1 path requires a planned box"
         l1_block = L1BlockDistributed(
-            box, (nz, ny, nx), tau_coarse, q=q, ratio=2, ghost=3,
+            box,
+            (nz, ny, nx),
+            tau_coarse,
+            q=q,
+            ratio=2,
+            ghost=3,
             window_ring=args.window_ring,
-            device=dev, solid_l1=solid,
-            collide_fn=advance_l1, stream_fn=stream27_roll,
+            device=dev,
+            solid_l1=solid,
+            collide_fn=advance_l1,
+            stream_fn=stream27_roll,
             interface_filter=(
-                (args.l1_interface_filter_width,
-                 args.l1_interface_filter_strength)
-                if args.l1_interface_filter else None
+                (args.l1_interface_filter_width, args.l1_interface_filter_strength)
+                if args.l1_interface_filter
+                else None
             ),
             no_refreeze=not bool(args.l1_refreeze),
         )
@@ -611,16 +713,17 @@ def main():
         # Without this the L1 physical region starts with neq=0 and the shell
         # BFL never sees coarse non-equilibrium structure (a ~2.7x Cd excess
         # driver, see l1_block docstring / single-card comparison).
-        cw_seed, _ = gather_window_chunked(
-            coarse_f, win, lo, hi,
-            rank=rank, world_size=world_size)
+        cw_seed, _ = gather_window_chunked(coarse_f, win, lo, hi, rank=rank, world_size=world_size)
         l1_block.initialize_from_window(cw_seed)
-        print(f"[r{rank}] L1 block shape={l1_block.l1_shape} "
-              f"ghost={l1_block.ghost} window_ring={l1_block.window_ring} "
-              f"window_cells={win.cells.shape[0]} "
-              f"window_shape={win.shape} "
-              f"tau_l1={l1_block.tau_l1:.6f} "
-              f"interface_filter={l1_block.interface_filter}", flush=True)
+        print(
+            f"[r{rank}] L1 block shape={l1_block.l1_shape} "
+            f"ghost={l1_block.ghost} window_ring={l1_block.window_ring} "
+            f"window_cells={win.cells.shape[0]} "
+            f"window_shape={win.shape} "
+            f"tau_l1={l1_block.tau_l1:.6f} "
+            f"interface_filter={l1_block.interface_filter}",
+            flush=True,
+        )
     else:
         l1_block = None
 
@@ -641,17 +744,13 @@ def main():
     n_l2 = int((lev == 2).sum().item())
     level_mean = float(lev.mean().item()) if n_leaf_lv else 0.0
     if n_leaf_lv:
-        dx_per_leaf = 2.0 ** (-(1.0 + lev)) if args.l1_block \
-            else 2.0 ** (-lev)
+        dx_per_leaf = 2.0 ** (-(1.0 + lev)) if args.l1_block else 2.0 ** (-lev)
         dx_leaf_coarse = float(dx_per_leaf.mean().item())
-        dx_leaf_levelmean = 2.0 ** (-(1.0 + level_mean)) if args.l1_block \
-            else 2.0 ** (-level_mean)
+        dx_leaf_levelmean = 2.0 ** (-(1.0 + level_mean)) if args.l1_block else 2.0 ** (-level_mean)
     else:
-        dx_leaf_coarse = 2.0 ** (-(1 + octree.d_max)) if args.l1_block \
-            else 2.0 ** (-octree.d_max)
+        dx_leaf_coarse = 2.0 ** (-(1 + octree.d_max)) if args.l1_block else 2.0 ** (-octree.d_max)
         dx_leaf_levelmean = dx_leaf_coarse
-    dx_leaf_old = 2.0 ** (-(1 + octree.d_max)) if args.l1_block \
-        else 2.0 ** (-octree.d_max)
+    dx_leaf_old = 2.0 ** (-(1 + octree.d_max)) if args.l1_block else 2.0 ** (-octree.d_max)
     # ---- FIX (2026-08-16, R10 d2 Cd 9.33 divergence root cause) ----
     # The dynamic area must be expressed in the lattice that actually
     # carries the wall force: the BFL wall links all live on the finest
@@ -671,9 +770,12 @@ def main():
     # leaf_radius_from_dx and the reference area is dynamic_area.
     from tensorlbm.drag_normalize import (
         compute_wall_link_dx,
-        dynamic_area as _dynamic_area_fn,
         leaf_radius_from_dx,
     )
+    from tensorlbm.drag_normalize import (
+        dynamic_area as _dynamic_area_fn,
+    )
+
     wall_lv = octree.leaf_level[octree.bfl_mask.any(dim=0)]  # (diagnostics)
     dx_leaf_area = compute_wall_link_dx(octree, l1_block=args.l1_block)
     # ---- FIX (2026-09-22, mixed-depth per-level dx^2, see
@@ -697,21 +799,32 @@ def main():
         # no pi): 0.5*u^2*L_leaf^2 — not the sphere dynamic_area.
         L_leaf = leaf_radius_from_dx(args.hull, dx_leaf_ref)
         radius_leaf = L_leaf
-        dynamic_area = 0.5 * u_in ** 2 * L_leaf ** 2
+        dynamic_area = 0.5 * u_in**2 * L_leaf**2
     if rank == 0:
-        print(f"[area] leaf_level counts: L1={n_l1} L2={n_l2} "
-              f"total={n_leaf_lv} level_mean={level_mean:.4f}", flush=True)
-        print(f"[area] dx_leaf_coarse(count-weighted mean)={dx_leaf_coarse:.6f} "
-              f"dx_leaf(2^-(1+lev_mean))={dx_leaf_levelmean:.6f} "
-              f"dx_leaf(old 2^-(1+d_max))={dx_leaf_old:.6f}", flush=True)
-        print(f"[area] dx_leaf_area(wall-link lattice, diagnostics)={dx_leaf_area:.6f} "
-              f"(force lives on level-{int(wall_lv.max().item()) if wall_lv.numel() else 0} "
-              f"leaves, n_wall_leaf={int(wall_lv.numel())})", flush=True)
-        print(f"[area] dx_leaf_ref(level-1 reference)={dx_leaf_ref:.6f} "
-              f"<- FIX: leaf_weights fold (dx/dx_ref)^2=2^-2(level-1), so the "
-              f"dynamic area uses the level-1 leaf dx", flush=True)
-        print(f"[area] radius_leaf={radius_leaf:.3f} "
-              f"dynamic_area={dynamic_area:.6f}", flush=True)
+        print(
+            f"[area] leaf_level counts: L1={n_l1} L2={n_l2} "
+            f"total={n_leaf_lv} level_mean={level_mean:.4f}",
+            flush=True,
+        )
+        print(
+            f"[area] dx_leaf_coarse(count-weighted mean)={dx_leaf_coarse:.6f} "
+            f"dx_leaf(2^-(1+lev_mean))={dx_leaf_levelmean:.6f} "
+            f"dx_leaf(old 2^-(1+d_max))={dx_leaf_old:.6f}",
+            flush=True,
+        )
+        print(
+            f"[area] dx_leaf_area(wall-link lattice, diagnostics)={dx_leaf_area:.6f} "
+            f"(force lives on level-{int(wall_lv.max().item()) if wall_lv.numel() else 0} "
+            f"leaves, n_wall_leaf={int(wall_lv.numel())})",
+            flush=True,
+        )
+        print(
+            f"[area] dx_leaf_ref(level-1 reference)={dx_leaf_ref:.6f} "
+            f"<- FIX: leaf_weights fold (dx/dx_ref)^2=2^-2(level-1), so the "
+            f"dynamic area uses the level-1 leaf dx",
+            flush=True,
+        )
+        print(f"[area] radius_leaf={radius_leaf:.3f} dynamic_area={dynamic_area:.6f}", flush=True)
 
     # Legacy two-level path: precompute the dilated shell-region coarse cells
     # once (the sparse coarse field fed to the shell ghost fill).  GHOST_PAD
@@ -729,26 +842,31 @@ def main():
     if not args.l1_block:
         shell_mask_full = octree._shell_mask
         import torch.nn.functional as Fnn
+
         dilated = shell_mask_full.float().unsqueeze(0).unsqueeze(0)
         for _ in range(GHOST_PAD):
             dilated = Fnn.max_pool3d(
-                dilated, kernel_size=3, stride=1, padding=1,
+                dilated,
+                kernel_size=3,
+                stride=1,
+                padding=1,
             )
-        shell_mask_full = (dilated.squeeze(0).squeeze(0) > 0.5)
+        shell_mask_full = dilated.squeeze(0).squeeze(0) > 0.5
         shell_cells = torch.nonzero(
-            shell_mask_full, as_tuple=False,
+            shell_mask_full,
+            as_tuple=False,
         )  # (n_shell, 3) (z, y, x) global
         n_shell = shell_cells.shape[0]
         sc_x = shell_cells[:, 2]
-        sc_in = (sc_x >= lo) & (sc_x < hi)   # cells in this rank's x-slab
+        sc_in = (sc_x >= lo) & (sc_x < hi)  # cells in this rank's x-slab
         sc_z = shell_cells[sc_in, 0]
         sc_y = shell_cells[sc_in, 1]
-        sc_xx = sc_x[sc_in] - lo + 1          # local column (with halo)
-        print(f"[r{rank}] n_shell={n_shell} in_rank={int(sc_in.sum())}",
-              flush=True)
+        sc_xx = sc_x[sc_in] - lo + 1  # local column (with halo)
+        print(f"[r{rank}] n_shell={n_shell} in_rank={int(sc_in.sum())}", flush=True)
 
     # ---------------- main loop ----------------
     from tensorlbm.d3q27 import equilibrium27 as eq27b
+
     # --coarse-freeze: solid mask expanded over the 27 velocity directions,
     # aligned with single-card root_advance's torch.where(solid_q, before,
     # collided) (solid cells keep their pre-collision f -> rho stays 1.0 ->
@@ -778,19 +896,20 @@ def main():
             #    and ``l1_block`` are guaranteed set in this branch.
             assert win is not None and l1_block is not None
             cw_old, _in_slab = gather_window_chunked(
-                coarse_old, win, lo, hi,
-                rank=rank, world_size=world_size)
+                coarse_old, win, lo, hi, rank=rank, world_size=world_size
+            )
             cw_new, in_slab = gather_window_chunked(
-                coarse_f, win, lo, hi,
-                rank=rank, world_size=world_size)
+                coarse_f, win, lo, hi, rank=rank, world_size=world_size
+            )
             cw_post, _in_slab2 = gather_window_chunked(
-                post, win, lo, hi,
-                rank=rank, world_size=world_size)
+                post, win, lo, hi, rank=rank, world_size=world_size
+            )
             # 3. L1 block stage: 2 time-interpolated substeps (ghost <-
             #    lerp(coarse_old, coarse_new, s/2); cumulant collide +
             #    stream27_roll + frozen solid) -> l1_posts.
-            l1_phys_pre, l1_posts_phys, _posts_ghost = \
-                step_l1_block_distributed(l1_block, cw_old, cw_new)
+            l1_phys_pre, l1_posts_phys, _posts_ghost = step_l1_block_distributed(
+                l1_block, cw_old, cw_new
+            )
             # 4. shell stage hosted on the real L1 field: the two lerp
             #    anchors are the genuine root-step-start / root-step-end L1
             #    physical slices (design §3c — fixes the old P3 defect where
@@ -812,26 +931,37 @@ def main():
             ghost_kwargs = {}
             if not args.ghost_from_l1:
                 ghost_kwargs = dict(
-                    ghost_parent_old=cw_old, ghost_parent_new=cw_new,
+                    ghost_parent_old=cw_old,
+                    ghost_parent_new=cw_new,
                     ghost_parent_offset=(
-                        box.z0 - win.z0, box.y0 - win.y0, box.x0 - win.x0,
+                        box.z0 - win.z0,
+                        box.y0 - win.y0,
+                        box.x0 - win.x0,
                     ),
                     ghost_parent_tau=tau_coarse,
                 )
-            _ledger_shell, local_mem, _restricted, _cells = \
-                step_octree_shell_distributed(
-                    octree, advance_shell, l1_phys_pre, l1_f_phys,
-                    tau_coarse=l1_block.tau_l1, l1_post=l1_posts_phys,
-                    ghost_plan=None, bfl_fn=bfl_fn, rank=rank,
-                    world_size=world_size, reflux=True,
-                    interleave=args.interleave,
-                    **ghost_kwargs,
-                )
+            _ledger_shell, local_mem, _restricted, _cells = step_octree_shell_distributed(
+                octree,
+                advance_shell,
+                l1_phys_pre,
+                l1_f_phys,
+                tau_coarse=l1_block.tau_l1,
+                l1_post=l1_posts_phys,
+                ghost_plan=None,
+                bfl_fn=bfl_fn,
+                rank=rank,
+                world_size=world_size,
+                reflux=True,
+                interleave=args.interleave,
+                **ghost_kwargs,
+            )
             l1_block.set_physical(l1_f_phys)
             # 5. L1 -> coarse restriction (box interior) + face-local kinetic
             #    reflux on the box interface (design §3d).
             ledger_l1c = restrict_l1_block_to_coarse(
-                l1_block, cw_new, cw_post,
+                l1_block,
+                cw_new,
+                cw_post,
             )
             if step % args.report_interval == 0 and rank == 0:
                 print(
@@ -889,16 +1019,14 @@ def main():
                 g_piece = [torch.empty_like(piece) for _ in range(world_size)]
                 dist.all_gather(g_piece, piece)
                 for r in range(world_size):
-                    full_sc_post[:, c0:c1] = \
-                        full_sc_post[:, c0:c1] + g_piece[r]
+                    full_sc_post[:, c0:c1] = full_sc_post[:, c0:c1] + g_piece[r]
             l1_post = eq27b(
                 torch.ones(nz, ny, nx, device=dev),
                 torch.full((nz, ny, nx), u_in, device=dev),
                 torch.zeros(nz, ny, nx, device=dev),
                 torch.zeros(nz, ny, nx, device=dev),
             )
-            l1_post[:, shell_cells[:, 0], shell_cells[:, 1],
-                    shell_cells[:, 2]] = full_sc_post
+            l1_post[:, shell_cells[:, 0], shell_cells[:, 1], shell_cells[:, 2]] = full_sc_post
             # Sparse coarse field (4D) with shell-region values; fill the
             # rest with uniform inflow equilibrium (ghost donors must never
             # see 0).
@@ -908,18 +1036,23 @@ def main():
                 torch.zeros(nz, ny, nx, device=dev),
                 torch.zeros(nz, ny, nx, device=dev),
             )
-            coarse_sparse[:, shell_cells[:, 0], shell_cells[:, 1],
-                          shell_cells[:, 2]] = full_sc
+            coarse_sparse[:, shell_cells[:, 0], shell_cells[:, 1], shell_cells[:, 2]] = full_sc
             l1_old = coarse_sparse
             l1_f = coarse_sparse
-            _ledger, local_mem, restricted, cells = \
-                step_octree_shell_distributed(
-                    octree, advance_shell, l1_old, l1_f,
-                    tau_coarse=tau_coarse, l1_post=l1_post,
-                    ghost_plan=None, bfl_fn=bfl_fn, rank=rank,
-                    world_size=world_size, reflux=True,
-                    interleave=args.interleave,
-                )
+            _ledger, local_mem, restricted, cells = step_octree_shell_distributed(
+                octree,
+                advance_shell,
+                l1_old,
+                l1_f,
+                tau_coarse=tau_coarse,
+                l1_post=l1_post,
+                ghost_plan=None,
+                bfl_fn=bfl_fn,
+                rank=rank,
+                world_size=world_size,
+                reflux=True,
+                interleave=args.interleave,
+            )
             # ---- bidirectional coupling: shell restriction + reflux ->
             # coarse.  ``l1_f`` (= ``coarse_sparse``) now carries the fine
             # restriction at covered cells AND the face-local reflux
@@ -932,8 +1065,7 @@ def main():
             # inside its own slab [lo, hi); neighbour halo columns are
             # refreshed by halo_exchange at the start of the next root step.
             if bool(sc_in.any()):
-                coarse_f[:, sc_z, sc_y, sc_xx] = \
-                    l1_f[:, sc_z, sc_y, sc_x[sc_in]]
+                coarse_f[:, sc_z, sc_y, sc_xx] = l1_f[:, sc_z, sc_y, sc_x[sc_in]]
         if step > args.warmup_steps:
             # Only accumulate force after the startup transient (warmup);
             # the initial impact force is unphysical and must not pollute Cd.
@@ -964,10 +1096,10 @@ def main():
                 print(
                     f"[dbg] step={step} fx_sum={gfx[0].item():.6e} "
                     f"links_w={gnw[0].item():.0f} links_raw={gnr[0].item():.0f} "
-                    f"per-link_w={gfx[0].item()/max(gnw[0].item(),1.0):.6e} "
-                    f"per-link_raw={gfx[0].item()/max(gnr[0].item(),1.0):.6e} | "
+                    f"per-link_w={gfx[0].item() / max(gnw[0].item(), 1.0):.6e} "
+                    f"per-link_raw={gfx[0].item() / max(gnr[0].item(), 1.0):.6e} | "
                     f"Δfx={d_fx:.6e} Δlinks_w={d_nw:.0f} "
-                    f"Δper-link_w={d_fx/max(d_nw,1.0):.6e} (n_steps={n_steps})",
+                    f"Δper-link_w={d_fx / max(d_nw, 1.0):.6e} (n_steps={n_steps})",
                     flush=True,
                 )
                 dbg_fx_last[0] = gfx[0].item()
@@ -975,8 +1107,10 @@ def main():
                 dbg_nraw_last[0] = gnr[0].item()
                 dbg_step_last = step
         if step % args.report_interval == 0:
-            print(f"[r{rank}] step={step}/{args.steps} "
-                  f"({(time.time()-t0)/step:.2f}s/step)", flush=True)
+            print(
+                f"[r{rank}] step={step}/{args.steps} ({(time.time() - t0) / step:.2f}s/step)",
+                flush=True,
+            )
 
     dist.all_reduce(mem_accum, op=dist.ReduceOp.SUM)
     n_samples = max(args.steps - args.warmup_steps, 1)
@@ -1007,7 +1141,8 @@ def main():
         beta = D_body / Ly if Ly > 0 else 0.0
         ref_inf = 1.0917 if args.geo == "sphere" else 0.004
         corr_factor, bc_note, blockage_escalated = compute_blockage_factor(
-            beta, args.blockage_correction,
+            beta,
+            args.blockage_correction,
         )
         ref = ref_inf * corr_factor
         err_pct = 100.0 * (cd_mem - ref) / ref
@@ -1024,38 +1159,38 @@ def main():
             corr_rec = (1.0 / (1.0 - beta_rec) ** 2) if beta_rec > 0 else 1.0
             scale_note = (
                 f"domain_scale={target_ratio:.1f}D -> recommended ny={ny_rec} "
-                f"(beta={beta_rec:.4f}={beta_rec*100:.2f}%, "
+                f"(beta={beta_rec:.4f}={beta_rec * 100:.2f}%, "
                 f"corr_factor={corr_rec:.4f}, "
-                f"Cd_ref_blocked={ref_inf*corr_rec:.4f})"
+                f"Cd_ref_blocked={ref_inf * corr_rec:.4f})"
             )
         elif beta >= BLOCKAGE_HARD_GATE:
             ny_rec = int(math.ceil(8.0 * D_body))
             beta_rec = D_body / ny_rec if ny_rec > 0 else 0.0
             gate_note = (
-                f"HARD GATE: beta={beta*100:.2f}% >= "
-                f"{BLOCKAGE_HARD_GATE*100:.0f}% (severe blockage); recommend "
+                f"HARD GATE: beta={beta * 100:.2f}% >= "
+                f"{BLOCKAGE_HARD_GATE * 100:.0f}% (severe blockage); recommend "
                 f"enlarging the domain to Ly>=8D (ny>={ny_rec}, "
-                f"beta<={beta_rec*100:.2f}%) or pass --domain-scale 8.0"
+                f"beta<={beta_rec * 100:.2f}%) or pass --domain-scale 8.0"
             )
             if blockage_escalated:
-                gate_note += (
-                    " -> correction auto-escalated simple -> glauert "
-                    "(1/sqrt(1-beta^2))."
-                )
+                gate_note += " -> correction auto-escalated simple -> glauert (1/sqrt(1-beta^2))."
             scale_note = gate_note
         elif beta > BLOCKAGE_WARN_RATIO:
             ny_rec = int(math.ceil(8.0 * D_body))
             beta_rec = D_body / ny_rec if ny_rec > 0 else 0.0
             scale_note = (
-                f"WARNING: beta={beta*100:.2f}% > "
-                f"{BLOCKAGE_WARN_RATIO*100:.1f}% (blockage is large); "
+                f"WARNING: beta={beta * 100:.2f}% > "
+                f"{BLOCKAGE_WARN_RATIO * 100:.1f}% (blockage is large); "
                 f"recommend enlarging the domain to Ly>=8D (ny>={ny_rec}, "
-                f"beta<={beta_rec*100:.2f}%) or pass --domain-scale 8.0"
+                f"beta<={beta_rec * 100:.2f}%) or pass --domain-scale 8.0"
             )
 
         result = {
-            "geo": args.geo, "n_leaf": n_leaf, "world_size": world_size,
-            "steps": args.steps, "warmup": args.warmup_steps,
+            "geo": args.geo,
+            "n_leaf": n_leaf,
+            "world_size": world_size,
+            "steps": args.steps,
+            "warmup": args.warmup_steps,
             "cd_mem": cd_mem,
             "ref_Cd_inf": ref_inf,
             "ref_Cd": ref,
@@ -1068,12 +1203,10 @@ def main():
             "per_step_s": (time.time() - t0) / args.steps,
             "l1_interface_filter": bool(args.l1_interface_filter),
             "l1_interface_filter_width": (
-                args.l1_interface_filter_width
-                if args.l1_interface_filter else 0
+                args.l1_interface_filter_width if args.l1_interface_filter else 0
             ),
             "l1_interface_filter_strength": (
-                args.l1_interface_filter_strength
-                if args.l1_interface_filter else 0.0
+                args.l1_interface_filter_strength if args.l1_interface_filter else 0.0
             ),
         }
         if scale_note:
@@ -1082,13 +1215,12 @@ def main():
         # Human-readable blockage summary.
         print(
             f"[blockage] beta=D/Ly={D_body:.3f}/{Ly:.0f}="
-            f"{beta*100:.2f}%  correction={bc_note}  "
+            f"{beta * 100:.2f}%  correction={bc_note}  "
             f"factor={corr_factor:.4f}",
             flush=True,
         )
         print(
-            f"[blockage] Cd_ref: inf-domain={ref_inf:.4f} -> "
-            f"blocked={ref:.4f}",
+            f"[blockage] Cd_ref: inf-domain={ref_inf:.4f} -> blocked={ref:.4f}",
             flush=True,
         )
         print(

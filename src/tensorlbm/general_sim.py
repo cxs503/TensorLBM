@@ -574,9 +574,7 @@ class GeneralSimEngine:
         # Divergence-guard cadence (see SolverConfig.divergence_check_interval).
         import os as _os
 
-        div_check = int(
-            _os.environ.get("TL_ISFINITE_INTERVAL", sol.divergence_check_interval)
-        )
+        div_check = int(_os.environ.get("TL_ISFINITE_INTERVAL", sol.divergence_check_interval))
         div_check = max(1, div_check)
 
         # Run loop

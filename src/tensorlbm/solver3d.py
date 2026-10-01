@@ -288,9 +288,7 @@ def collide_mrt3d_fused(
     """
     if s_pi is None:
         s_pi = s_e
-    r = _mrt3d_fused_R(
-        tau, s_e, s_eps, s_q, s_pi, dtype=f.dtype, device=f.device
-    )
+    r = _mrt3d_fused_R(tau, s_e, s_eps, s_q, s_pi, dtype=f.dtype, device=f.device)
     rho, ux, uy, uz = macroscopic3d(f)
     feq = equilibrium3d(rho, ux, uy, uz)
     shape = f.shape

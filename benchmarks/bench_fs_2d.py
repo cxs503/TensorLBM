@@ -37,10 +37,8 @@ from tensorlbm.free_surface_lbm_2d import (
 # ---------- Martin and Moyce (1952) reference ----------
 # CORRECT digitisation (Lethe x_exp/y_exp; identical to the K&O/Trixi-family
 # digitisation), valid for T = t*sqrt(2 g / a):
-REF_T = [0.00, 0.41, 0.84, 1.19, 1.43, 1.63, 1.82, 1.97, 2.20,
-         2.32, 2.50, 2.64, 2.82, 2.96]
-REF_Z = [1.00, 1.11, 1.23, 1.44, 1.67, 1.89, 2.11, 2.33, 2.56,
-         2.78, 3.00, 3.22, 3.44, 3.67]
+REF_T = [0.00, 0.41, 0.84, 1.19, 1.43, 1.63, 1.82, 1.97, 2.20, 2.32, 2.50, 2.64, 2.82, 2.96]
+REF_Z = [1.00, 1.11, 1.23, 1.44, 1.67, 1.89, 2.11, 2.33, 2.56, 2.78, 3.00, 3.22, 3.44, 3.67]
 # Historical (WRONG) table, kept for reference/comparison only.  It was a coarse
 # digitisation that is only meaningful on the old t*sqrt(g/a) axis; it mapped
 # M&M's T=3 value (2.7) onto T=2 on that axis:

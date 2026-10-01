@@ -39,6 +39,7 @@ Per-leaf substep weights ``2^-(d_max - d_leaf)`` (``leaf_force_weights``)
 are applied when supplied; the accumulation into a per-root-step force is
 the responsibility of :mod:`tensorlbm.octree_boundary.force`.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -144,13 +145,15 @@ def leaf_force_weights(
     weights = 2.0 ** (-(octree.d_max - levels))
     if include_spatial:
         weights = weights * leaf_force_spatial_weights(
-            octree, reference_level=reference_level,
+            octree,
+            reference_level=reference_level,
         )
     return weights
 
 
 def leaf_macroscopic(
-    octree: OctreeGrid, f_prev: torch.Tensor,
+    octree: OctreeGrid,
+    f_prev: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Per-leaf ``(rho, ux, uy, uz)`` from the pre-stream populations."""
     if octree.Q == 27:
@@ -275,21 +278,21 @@ def bfl_apply_gather(
     # looked at ``idx = nonzero(mask[d])``): this also keeps the facade's
     # out-of-shard donor remap (-1, same value as SHELL_OUTSIDE) from being
     # misread as a ghost cell on unmasked links.
-    src = nt[opp].to(device)                       # (Q, n)
+    src = nt[opp].to(device)  # (Q, n)
     fp_d = f_prev.to(torch.float64)
     fp_opp = f_prev[opp].to(torch.float64)
     fp_up = torch.zeros_like(fp_d)
-    cells = torch.nonzero(mask, as_tuple=False)    # (n_m, 2) (d, i)
+    cells = torch.nonzero(mask, as_tuple=False)  # (n_m, 2) (d, i)
     if cells.shape[0]:
         d_c, i_c = cells[:, 0], cells[:, 1]
-        src_m = src[d_c, i_c]                      # (n_m,)
+        src_m = src[d_c, i_c]  # (n_m,)
         valid = src_m >= 0
         if bool(valid.any()):
             if int(src_m.max()) >= f_prev.shape[1]:
                 raise IndexError("BFL upstream donor index out of range")
-            fp_up[d_c[valid], i_c[valid]] = f_prev[
-                d_c[valid], src_m[valid].clamp(min=0)
-            ].to(torch.float64)
+            fp_up[d_c[valid], i_c[valid]] = f_prev[d_c[valid], src_m[valid].clamp(min=0)].to(
+                torch.float64
+            )
         if remote_values is not None and remote_pos is not None:
             remote = src_m == REMOTE
             if bool(remote.any()):
@@ -306,20 +309,20 @@ def bfl_apply_gather(
         if bool(ghost.any()):
             if ghost_plan is None or ghost_vals is None:
                 raise RuntimeError(
-                    "BFL upstream point is a ghost cell but no ghost values "
-                    "were supplied",
+                    "BFL upstream point is a ghost cell but no ghost values were supplied",
                 )
             d_g = d_c[ghost]
             i_g = i_c[ghost]
             slots = ghost_plan.slot[d_g, i_g]
             if bool((slots < 0).any()):
                 bad = torch.nonzero(slots < 0, as_tuple=False).squeeze(1)
-                print(f"[bfl] ghost slot missing: n_bad={len(bad)} "
-                      f"ghost_plan.slot shape={tuple(ghost_plan.slot.shape)}",
-                      flush=True)
+                print(
+                    f"[bfl] ghost slot missing: n_bad={len(bad)} "
+                    f"ghost_plan.slot shape={tuple(ghost_plan.slot.shape)}",
+                    flush=True,
+                )
                 raise RuntimeError(
-                    "BFL upstream ghost cell has no ghost slot "
-                    "(shell band too thin)",
+                    "BFL upstream ghost cell has no ghost slot (shell band too thin)",
                 )
             fp_up[d_g, i_g] = ghost_vals[d_g, slots].to(torch.float64)
         fanout = src_m == FANOUT
@@ -344,13 +347,10 @@ def bfl_apply_gather(
                     col = torch.arange(max_ln, device=device)
                     pad_idx = offs[has].unsqueeze(1) + col.unsqueeze(0)
                     pad_ok = col.unsqueeze(0) < lens[has].unsqueeze(1)
-                    rv = remote_values[
-                        pad_idx.clamp(max=max(remote_values.shape[0] - 1, 0))
-                    ]
-                    fp_up[d_f[has], i_f[has]] = (
-                        (rv * pad_ok).to(torch.float64).sum(dim=1)
-                        / pad_ok.sum(dim=1).clamp_min(1).to(torch.float64)
-                    )
+                    rv = remote_values[pad_idx.clamp(max=max(remote_values.shape[0] - 1, 0))]
+                    fp_up[d_f[has], i_f[has]] = (rv * pad_ok).to(torch.float64).sum(
+                        dim=1
+                    ) / pad_ok.sum(dim=1).clamp_min(1).to(torch.float64)
                 fb = ~has
                 if bool(fb.any()):
                     fp_up[d_f[fb], i_f[fb]] = fp_d[d_f[fb], i_f[fb]]
@@ -360,12 +360,15 @@ def bfl_apply_gather(
                     _fanout_segment_mean,
                     ensure_fanout_tables,
                 )
+
                 rowidx, pad_live = ensure_fanout_tables(octree)
-                ridx = rowidx[opp[d_f], i_f].to(device)      # live row / -1
+                ridx = rowidx[opp[d_f], i_f].to(device)  # live row / -1
                 has = ridx >= 0
                 if bool(has.any()):
                     fp_up[d_f[has], i_f[has]] = _fanout_segment_mean(
-                        f_prev, d_f[has], pad_live[ridx[has]].to(device),
+                        f_prev,
+                        d_f[has],
+                        pad_live[ridx[has]].to(device),
                     ).to(torch.float64)
                 fb = ~has
                 if bool(fb.any()):
@@ -391,10 +394,7 @@ def bfl_apply_gather(
     lin = qq < 0.5
     safe_q = torch.where(lin, torch.ones_like(qq), qq)
     f_bc_lin = 2.0 * qq * f_opp_post + (1.0 - 2.0 * qq) * fp_d
-    f_bc_quad = (
-        f_opp_post / (2.0 * safe_q)
-        + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
-    )
+    f_bc_quad = f_opp_post / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
     f_bc = torch.where(lin, f_bc_lin, f_bc_quad)
     if wall_velocity is not None:
         uwx, uwy, uwz = wall_velocity
@@ -403,16 +403,12 @@ def bfl_apply_gather(
             uwx = uwx.to(dev_w)
             uwy = uwy.to(dev_w)
             uwz = uwz.to(dev_w)
-        u_stack = torch.stack([uwx, uwy, uwz], dim=0)        # (3, n)
+        u_stack = torch.stack([uwx, uwy, uwz], dim=0)  # (3, n)
         c_dot_uw = c_vec.to(torch.float64) @ u_stack.to(torch.float64)
         rho_w = wall_density.to(torch.float64)
         if rho_w.device != dev_w:
             rho_w = rho_w.to(dev_w)
-        moving_base = (
-            _W.to(torch.float64).unsqueeze(1).to(dev_w)
-            * rho_w.unsqueeze(0)
-            * c_dot_uw
-        )
+        moving_base = _W.to(torch.float64).unsqueeze(1).to(dev_w) * rho_w.unsqueeze(0) * c_dot_uw
         f_bc = torch.where(
             lin,
             f_bc - 6.0 * moving_base,
@@ -428,9 +424,7 @@ def bfl_apply_gather(
         # that closes the fixed-frame control-volume balance (identical
         # convention to bouzidi_bounce_back_d3q19).
         exchange = fp_d + f_bc
-        link = (
-            exchange.unsqueeze(2) * c_vec.to(torch.float64).unsqueeze(1)
-        ) * mask.unsqueeze(2)
+        link = (exchange.unsqueeze(2) * c_vec.to(torch.float64).unsqueeze(1)) * mask.unsqueeze(2)
         if force_weights is not None:
             link = link * force_weights.to(torch.float64).unsqueeze(0).unsqueeze(2)
         if link_sink is not None:

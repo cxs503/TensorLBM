@@ -57,7 +57,6 @@ from pathlib import Path
 import torch
 
 from tensorlbm import (
-    equilibrium3d,
     free_surface_step,
     init_flags_from_fill,
     init_mass_from_fill,
@@ -79,9 +78,20 @@ INTERFACE = 2
 #  T=3->2.7 digitisation was the 2D-rectangular M&M curve — wrong geometry
 #  for this 3D square column — on a T-axis that was itself sqrt(2) too small.)
 MM_X = [
-    (0.00, 1.00), (0.41, 1.11), (0.84, 1.44), (1.19, 1.78), (1.43, 2.11),
-    (1.63, 2.44), (1.83, 2.78), (2.00, 3.11), (2.20, 3.44), (2.32, 3.67),
-    (2.51, 4.00), (2.66, 4.33), (2.83, 4.67), (2.95, 5.00),
+    (0.00, 1.00),
+    (0.41, 1.11),
+    (0.84, 1.44),
+    (1.19, 1.78),
+    (1.43, 2.11),
+    (1.63, 2.44),
+    (1.83, 2.78),
+    (2.00, 3.11),
+    (2.20, 3.44),
+    (2.32, 3.67),
+    (2.51, 4.00),
+    (2.66, 4.33),
+    (2.83, 4.67),
+    (2.95, 5.00),
 ]
 # H reference — M&M residual-height curve (approximate digitisation, kept from
 # the original benchmark; the pass/fail criterion is the X front error).
@@ -123,9 +133,7 @@ def build_domain(a: int, g: float, device: torch.device, rho_gas: float = 1.0):
     # interface at the Körner fill-weighted density).  Legacy behaviour
     # (rho_liquid everywhere on the active set) is restored with
     # TL_FS_SHELL_MODE=legacy.
-    f = init_population_from_fill(
-        fill, flags, rho_liquid=1.0, rho_gas=rho_gas
-    )
+    f = init_population_from_fill(fill, flags, rho_liquid=1.0, rho_gas=rho_gas)
     return f, fill, flags, mass, solid, (nx, ny, nz)
 
 

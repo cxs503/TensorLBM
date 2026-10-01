@@ -9,10 +9,14 @@ Wall BC (pre-stream half-way bounce-back, pull-stream convention):
                                             f[8,s,:-1]<-f[6,s-1,1:]
   (mid thin plate = both; bottom wall = first only)
 """
+
 from __future__ import annotations
 
-import argparse, json, math
+import argparse
+import json
+import math
 from pathlib import Path
+
 import numpy as np
 import torch
 
@@ -32,7 +36,9 @@ def blasius_tab(eta_max=14.0, h=0.002):
         return [s[1], s[2], -0.5 * s[0] * s[2]]
 
     def shoot(a):
-        return solve_ivp(rhs, [0, 14], [0, 0, a], rtol=1e-11, atol=1e-13, max_step=0.01).y[1, -1] - 1.0
+        return (
+            solve_ivp(rhs, [0, 14], [0, 0, a], rtol=1e-11, atol=1e-13, max_step=0.01).y[1, -1] - 1.0
+        )
 
     a = brentq(shoot, 0.3, 0.37, xtol=1e-13)
     n = int(round(eta_max / h))
@@ -80,12 +86,19 @@ def main():
         solid[y_solid, le:plate_end] = True
     mask = solid[y_solid]
 
-    f = equilibrium(torch.ones((ny, nx), device=dev), torch.full((ny, nx), U, device=dev),
-                    torch.zeros((ny, nx), device=dev), device=dev)
+    f = equilibrium(
+        torch.ones((ny, nx), device=dev),
+        torch.full((ny, nx), U, device=dev),
+        torch.zeros((ny, nx), device=dev),
+        device=dev,
+    )
     m0 = float(f.sum().item())
     spec = SPEC.to(dev)
-    feq_in = equilibrium(torch.ones((ny, 1), device=dev), torch.full((ny, 1), U, device=dev),
-                         torch.zeros((ny, 1), device=dev))[:, :, 0].contiguous()
+    feq_in = equilibrium(
+        torch.ones((ny, 1), device=dev),
+        torch.full((ny, 1), U, device=dev),
+        torch.zeros((ny, 1), device=dev),
+    )[:, :, 0].contiguous()
 
     def step(f_):
         f_ = collide_bgk(f_, tau)
@@ -116,14 +129,19 @@ def main():
             f_[:, :, -1] = f_[:, :, -2]
         return f_
 
-    print(f"[study] wall={args.wall} outlet={args.outlet} nx={nx} ny={ny} "
-          f"le={le} L={pl} probes={probes} U={U} nu={nu} steps={args.steps}", flush=True)
+    print(
+        f"[study] wall={args.wall} outlet={args.outlet} nx={nx} ny={ny} "
+        f"le={le} L={pl} probes={probes} U={U} nu={nu} steps={args.steps}",
+        flush=True,
+    )
     for i in range(1, args.steps + 1):
         f = step(f)
         if i % 5000 == 0:
             _, ux, _ = macroscopic(f)
-            print(f"  step {i}: umax={float(ux.max()):.5f} finite={bool(torch.isfinite(f).all())}",
-                  flush=True)
+            print(
+                f"  step {i}: umax={float(ux.max()):.5f} finite={bool(torch.isfinite(f).all())}",
+                flush=True,
+            )
 
     # average profiles over last 400 steps
     acc = torch.zeros((len(probes), ny), device=dev)
@@ -140,13 +158,29 @@ def main():
     etas, fprime, ffun, fpp0 = blasius_tab()
 
     def q_deriv(u3):
-        return float(np.linalg.solve(
-            np.vstack([np.ones(3), [0.5, 1.5, 2.5], [0.25, 2.25, 6.25]]).T,
-            [0, 1, 0]) @ u3)
+        return float(
+            np.linalg.solve(
+                np.vstack([np.ones(3), [0.5, 1.5, 2.5], [0.25, 2.25, 6.25]]).T, [0, 1, 0]
+            )
+            @ u3
+        )
 
-    res = dict(wall=args.wall, outlet=args.outlet, nx=nx, ny=ny, le=le, plate_len=pl,
-               U=U, nu=nu, tau=tau, steps=args.steps, fpp0=fpp0,
-               mass_drift_pct=mass_drift, finite=bool(torch.isfinite(f).all()), probes={})
+    res = dict(
+        wall=args.wall,
+        outlet=args.outlet,
+        nx=nx,
+        ny=ny,
+        le=le,
+        plate_len=pl,
+        U=U,
+        nu=nu,
+        tau=tau,
+        steps=args.steps,
+        fpp0=fpp0,
+        mass_drift_pct=mass_drift,
+        finite=bool(torch.isfinite(f).all()),
+        probes={},
+    )
     for j, p in enumerate(probes):
         x_eff = p - le
         Rex = U * x_eff / nu
@@ -171,24 +205,42 @@ def main():
         rel = np.abs(prof - u_ref) / np.maximum(u_ref, 1e-12)
         l2 = float(np.linalg.norm(rel[m]) / np.linalg.norm(np.ones(m.sum())))
         Cf_ref = 0.664 / math.sqrt(Rex)
-        Cf1 = 2 * nu * (prof[0] / 0.5) / U ** 2
-        Cf2 = 2 * nu * q_deriv(prof[0:3]) / U ** 2
+        Cf1 = 2 * nu * (prof[0] / 0.5) / U**2
+        Cf2 = 2 * nu * q_deriv(prof[0:3]) / U**2
         tab = []
         for et in (1.0, 2.0, 3.0, 4.0, 5.0):
             ut = float(np.interp(et * scale, y, prof))
             fr = float(np.interp(et, etas, fprime))
-            tab.append({"eta": et, "u_sim": round(ut, 7), "u_blas": round(U * fr, 7),
-                        "rel_pct": round((ut - U * fr) / (U * fr) * 100, 2)})
+            tab.append(
+                {
+                    "eta": et,
+                    "u_sim": round(ut, 7),
+                    "u_blas": round(U * fr, 7),
+                    "rel_pct": round((ut - U * fr) / (U * fr) * 100, 2),
+                }
+            )
         res["probes"][str(p)] = dict(
-            x_eff=x_eff, Rex=Rex, scale=scale, delta99_cells=4.91 * scale,
-            u_edge_over_U=ue / U, l2=l2,
-            Cf_ref=Cf_ref, Cf_1st=Cf1, Cf_err_1st_pct=(Cf1 - Cf_ref) / Cf_ref * 100,
-            Cf_2nd=Cf2, Cf_err_2nd_pct=(Cf2 - Cf_ref) / Cf_ref * 100,
-            dstar=dstar, dstar_ref=1.7208 * x_eff / math.sqrt(Rex),
-            theta=theta, theta_ref=0.664 * x_eff / math.sqrt(Rex),
-            H=H, eta_tab=tab,
-            prof_in_eta=[[round(float(e), 4), round(float(uu) / U, 6), round(float(ur) / U, 6)]
-                         for e, uu, ur in zip(eta, prof, u_ref)],
+            x_eff=x_eff,
+            Rex=Rex,
+            scale=scale,
+            delta99_cells=4.91 * scale,
+            u_edge_over_U=ue / U,
+            l2=l2,
+            Cf_ref=Cf_ref,
+            Cf_1st=Cf1,
+            Cf_err_1st_pct=(Cf1 - Cf_ref) / Cf_ref * 100,
+            Cf_2nd=Cf2,
+            Cf_err_2nd_pct=(Cf2 - Cf_ref) / Cf_ref * 100,
+            dstar=dstar,
+            dstar_ref=1.7208 * x_eff / math.sqrt(Rex),
+            theta=theta,
+            theta_ref=0.664 * x_eff / math.sqrt(Rex),
+            H=H,
+            eta_tab=tab,
+            prof_in_eta=[
+                [round(float(e), 4), round(float(uu) / U, 6), round(float(ur) / U, 6)]
+                for e, uu, ur in zip(eta, prof, u_ref)
+            ],
         )
     print(json.dumps(res, indent=2, default=float))
     if args.out:

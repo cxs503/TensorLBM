@@ -90,8 +90,8 @@ for _p in (_REPO / "src", _REPO / "benchmarks"):
         sys.path.insert(0, str(_p))
 
 import torch  # noqa: E402
-
 from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
+
 from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d  # noqa: E402
 from tensorlbm.d3q19 import equilibrium3d  # noqa: E402
 from tensorlbm.drag_pressure import (  # noqa: E402
@@ -106,7 +106,7 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d_roll  # noqa: E402
 # ----------------------------------------------------------------------------
 # Reference convention (see REFERENCE_AUDIT.md)
 # ----------------------------------------------------------------------------
-CD_REF = 1.50          # centre of the 2D free-stream numerical cluster
+CD_REF = 1.50  # centre of the 2D free-stream numerical cluster
 CD_CLUSTER = (1.48, 1.52)
 CD_SOURCES = {
     "Dennis & Chang 1970": 1.522,
@@ -195,9 +195,11 @@ def run_case(
     n_solid = int(solid.sum().item())
     n_surf = int(surf.sum().item())
     n_int = int(interior.sum().item())
-    print(f"{tag} solid={n_solid} surface={n_surf} interior={n_int} near={n_near} "
-          f"(blockage {100.0 * D_cells / nx:.2f}%, span {nz} cells = {nz / D_cells:.2f}D)",
-          flush=True)
+    print(
+        f"{tag} solid={n_solid} surface={n_surf} interior={n_int} near={n_near} "
+        f"(blockage {100.0 * D_cells / nx:.2f}%, span {nz} cells = {nz / D_cells:.2f}D)",
+        flush=True,
+    )
 
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=dev)
     ux0 = torch.full_like(rho0, u_in)
@@ -234,15 +236,9 @@ def run_case(
             #   surface  = wall-adjacent cells only  (ACCEPTANCE caliber)
             #   all      = every solid cell          (legacy; over-reads: +4..+9%)
             #   interior = interior only             (spurious diagnostic)
-            mem_hist.append(
-                float(compute_obstacle_forces_3d(f, solid)[0].item()) / dpS
-            )
-            mem_surf_hist.append(
-                float(compute_obstacle_forces_3d(f, surf)[0].item()) / dpS
-            )
-            mem_int_hist.append(
-                float(compute_obstacle_forces_3d(f, interior)[0].item()) / dpS
-            )
+            mem_hist.append(float(compute_obstacle_forces_3d(f, solid)[0].item()) / dpS)
+            mem_surf_hist.append(float(compute_obstacle_forces_3d(f, surf)[0].item()) / dpS)
+            mem_int_hist.append(float(compute_obstacle_forces_3d(f, interior)[0].item()) / dpS)
             cdp_hist.append(
                 drag_pressure_integration(
                     f, mesh, dpS, extrap="none", p0_method="far_field", solid=solid
@@ -250,9 +246,7 @@ def run_case(
             )
             for k in FORMULAS:
                 hist[k].append(
-                    drag_friction_integration(
-                        f, mesh, dpS, nu, q_wall=q, formula=k, solid=solid
-                    )[0]
+                    drag_friction_integration(f, mesh, dpS, nu, q_wall=q, formula=k, solid=solid)[0]
                 )
             mass_hist.append(float(f.sum().item()))
             umax_hist.append(float(f.abs().max().item()))
@@ -261,11 +255,14 @@ def run_case(
             n = min(200, len(cdp_hist))
             if n:
                 parts = " ".join(f"{k}={sum(hist[k][-n:]) / n:.4f}" for k in FORMULAS)
-                print(f"{tag} step={step} Cd_mem_surf={sum(mem_surf_hist[-n:]) / n:.4f} "
-                      f"Cd_mem_all={sum(mem_hist[-n:]) / n:.4f} "
-                      f"Cd_mem_int={sum(mem_int_hist[-n:]) / n:.4f} "
-                      f"Cd_p={sum(cdp_hist[-n:]) / n:.4f} {parts} "
-                      f"({time.time() - t0:.0f}s)", flush=True)
+                print(
+                    f"{tag} step={step} Cd_mem_surf={sum(mem_surf_hist[-n:]) / n:.4f} "
+                    f"Cd_mem_all={sum(mem_hist[-n:]) / n:.4f} "
+                    f"Cd_mem_int={sum(mem_int_hist[-n:]) / n:.4f} "
+                    f"Cd_p={sum(cdp_hist[-n:]) / n:.4f} {parts} "
+                    f"({time.time() - t0:.0f}s)",
+                    flush=True,
+                )
 
         if not torch.isfinite(f).all():
             print(f"{tag} DIVERGED at step {step}", flush=True)
@@ -277,22 +274,22 @@ def run_case(
     cd_all = sum(mem_hist[-win:]) / win
     cd_surf = sum(mem_surf_hist[-win:]) / win
     cd_int = sum(mem_int_hist[-win:]) / win
-    cd_mem = cd_surf                      # PRIMARY / acceptance caliber
+    cd_mem = cd_surf  # PRIMARY / acceptance caliber
     cdp = sum(cdp_hist[-win:]) / win
     cdf = {k: sum(hist[k][-win:]) / win for k in FORMULAS}
     cdt = {k: cdp + cdf[k] for k in FORMULAS}
 
     def plateau(k, frac):
         kk = int(n_tot * frac)
-        seg = hist[k][max(0, kk - win):kk]
-        pseg = cdp_hist[max(0, kk - win):kk]
+        seg = hist[k][max(0, kk - win) : kk]
+        pseg = cdp_hist[max(0, kk - win) : kk]
         if not seg:
             return float("nan")
         return sum(seg) / len(seg) + sum(pseg) / len(pseg)
 
     def plateau_arr(arr, frac):
         kk = int(n_tot * frac)
-        seg = arr[max(0, kk - win):kk]
+        seg = arr[max(0, kk - win) : kk]
         if not seg:
             return float("nan")
         return sum(seg) / len(seg)
@@ -311,20 +308,32 @@ def run_case(
     err_all = (cd_all - CD_REF) / CD_REF * 100.0
     cdt_std = cdt["standard"]
     err_pf = (cdt_std - CD_REF) / CD_REF * 100.0
-    print(f"{tag} === FINAL win={win} === Cd_mem_surface={cd_surf:.4f} "
-          f"err_surf_vs_{CD_REF}={err:+.2f}%  |  Cd_mem_all={cd_all:.4f} "
-          f"({err_all:+.2f}%)  Cd_mem_interior={cd_int:.4f}  |  DIAGNOSTIC "
-          f"Cd_p={cdp:.4f} Cd_f={cdf['standard']:.4f} Cd_p+f={cdt_std:.4f} "
-          f"err_pf={err_pf:+.2f}% ({elapsed:.0f}s)", flush=True)
+    print(
+        f"{tag} === FINAL win={win} === Cd_mem_surface={cd_surf:.4f} "
+        f"err_surf_vs_{CD_REF}={err:+.2f}%  |  Cd_mem_all={cd_all:.4f} "
+        f"({err_all:+.2f}%)  Cd_mem_interior={cd_int:.4f}  |  DIAGNOSTIC "
+        f"Cd_p={cdp:.4f} Cd_f={cdf['standard']:.4f} Cd_p+f={cdt_std:.4f} "
+        f"err_pf={err_pf:+.2f}% ({elapsed:.0f}s)",
+        flush=True,
+    )
     for k in FORMULAS:
-        print(f"  [diag] {k:14s} Cd_f={cdf[k]:.4f} Cd_p+f={cdt[k]:.4f} "
-              f"err={(cdt[k] - CD_REF) / CD_REF * 100:+.2f}%", flush=True)
-    print(f"  plateau(mem_surface) {[round(plateau_surf(p / 100), 4) for p in (25, 50, 75, 100)]}",
-          flush=True)
-    print(f"  plateau(mem_all)     {[round(plateau_mem(p / 100), 4) for p in (25, 50, 75, 100)]}",
-          flush=True)
-    print(f"  plateau(standard) {[round(plateau_win[f'standard@{p}%'], 4) for p in (25, 50, 75, 100)]}",
-          flush=True)
+        print(
+            f"  [diag] {k:14s} Cd_f={cdf[k]:.4f} Cd_p+f={cdt[k]:.4f} "
+            f"err={(cdt[k] - CD_REF) / CD_REF * 100:+.2f}%",
+            flush=True,
+        )
+    print(
+        f"  plateau(mem_surface) {[round(plateau_surf(p / 100), 4) for p in (25, 50, 75, 100)]}",
+        flush=True,
+    )
+    print(
+        f"  plateau(mem_all)     {[round(plateau_mem(p / 100), 4) for p in (25, 50, 75, 100)]}",
+        flush=True,
+    )
+    print(
+        f"  plateau(standard) {[round(plateau_win[f'standard@{p}%'], 4) for p in (25, 50, 75, 100)]}",
+        flush=True,
+    )
 
     routing = dict(
         compile_status=getattr(step_fn, "compile_status", None),
@@ -342,7 +351,9 @@ def run_case(
         "collision": "bgk",
         "geometry": "z-axis extruded circular cylinder, infinite span (z periodic)",
         "D_cells": D_cells,
-        "nx": nx, "ny": ny, "nz": nz,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
         "lateral_D": lateral_D,
         "blockage_pct": 100.0 * D_cells / nx,
         "span_cells": nz,
@@ -350,19 +361,24 @@ def run_case(
         "n_surface_cells": n_surf,
         "n_interior_cells": n_int,
         "n_near_cells": n_near,
-        "Re": Re, "u_in": u_in, "nu": nu, "tau": tau,
-        "n_steps": n_steps, "n_finished": step,
-        "sample_interval": sample_interval, "avg_window_samples": win,
+        "Re": Re,
+        "u_in": u_in,
+        "nu": nu,
+        "tau": tau,
+        "n_steps": n_steps,
+        "n_finished": step,
+        "sample_interval": sample_interval,
+        "avg_window_samples": win,
         "force_method": "ladd_momentum_exchange_3d (post-stream, pre-bounce-back); "
-                        "reported in three calibers on the same field",
+        "reported in three calibers on the same field",
         "cd_mem_surface": cd_surf,
         "err_surf_pct": err,
         "cd_mem_all": cd_all,
         "err_mem_all_pct": err_all,
         "cd_mem_interior": cd_int,
-        "cd_mem": cd_all,               # legacy alias == all-solid
+        "cd_mem": cd_all,  # legacy alias == all-solid
         "err_mem_pct": err_all,
-        "cd": cd_surf,                  # PRIMARY / acceptance caliber
+        "cd": cd_surf,  # PRIMARY / acceptance caliber
         "err_pct": err,
         "cd_pressure": cdp,
         "cd_friction": cdf,
@@ -410,8 +426,11 @@ def main() -> int:
     ap.add_argument("--sample", type=int, default=100)
     ap.add_argument("--out", default=None, help="output JSON path (single mode)")
     ap.add_argument("--grids", type=int, nargs="+", default=[40, 60])
-    ap.add_argument("--save-field", action="store_true",
-                    help="also persist the final distribution (for MEM recompute / provenance)")
+    ap.add_argument(
+        "--save-field",
+        action="store_true",
+        help="also persist the final distribution (for MEM recompute / provenance)",
+    )
     add_compile_mode_arg(ap, default="eager")
     a = ap.parse_args()
     cm = compile_mode_from_args(a)
@@ -419,8 +438,17 @@ def main() -> int:
     if a.mode == "single":
         out = a.out or f"/tmp/cyl3d_D{a.arg}.json"
         field = (out + ".field.pt") if a.save_field else None
-        r = run_case(int(a.arg), a.device, a.steps, a.lateral, a.nz, a.u_in,
-                     sample_interval=a.sample, compile_mode=cm, save_field=field)
+        r = run_case(
+            int(a.arg),
+            a.device,
+            a.steps,
+            a.lateral,
+            a.nz,
+            a.u_in,
+            sample_interval=a.sample,
+            compile_mode=cm,
+            save_field=field,
+        )
         Path(out).write_text(json.dumps(r, indent=2))
         print(f"[cyl3d] saved {out}", flush=True)
         return 0
@@ -429,15 +457,24 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     per_grid = []
     for D in a.grids:
-        field = (str(out_dir / f"final_D{D}.pt") if a.save_field else None)
-        r = run_case(D, a.device, a.steps, a.lateral, a.nz, a.u_in,
-                     sample_interval=a.sample, compile_mode=cm, save_field=field)
+        field = str(out_dir / f"final_D{D}.pt") if a.save_field else None
+        r = run_case(
+            D,
+            a.device,
+            a.steps,
+            a.lateral,
+            a.nz,
+            a.u_in,
+            sample_interval=a.sample,
+            compile_mode=cm,
+            save_field=field,
+        )
         per_grid.append(r)
         (out_dir / f"case_D{D}.json").write_text(json.dumps(r, indent=2))
     cd_surf = [r["cd_mem_surface"] for r in per_grid]
     cd_all = [r["cd_mem_all"] for r in per_grid]
     cd_int = [r["cd_mem_interior"] for r in per_grid]
-    cd = cd_surf                        # PRIMARY / acceptance caliber
+    cd = cd_surf  # PRIMARY / acceptance caliber
     errs = [r["err_surf_pct"] for r in per_grid]
     span = abs(cd[-1] - cd[0]) / CD_REF * 100.0 if len(cd) > 1 else float("nan")
     span_all = abs(cd_all[-1] - cd_all[0]) / CD_REF * 100.0 if len(cd_all) > 1 else float("nan")
@@ -446,12 +483,15 @@ def main() -> int:
     res = {
         "case": "cylinder_3d_re40",
         "description": "3D extruded circular cylinder, infinite span (z periodic), Re=40 steady",
-        "lattice": "D3Q19", "collision": "bgk",
+        "lattice": "D3Q19",
+        "collision": "bgk",
         "force_method": "ladd_momentum_exchange_3d (post-stream, pre-bounce-back); "
-                        "primary caliber = SURFACE cells only (wall-adjacent). "
-                        "See docs/mem_surface_caliber_finding.md",
+        "primary caliber = SURFACE cells only (wall-adjacent). "
+        "See docs/mem_surface_caliber_finding.md",
         "reference": REF_NOTE,
-        "ref_cd": CD_REF, "ref_cluster": list(CD_CLUSTER), "ref_sources": CD_SOURCES,
+        "ref_cd": CD_REF,
+        "ref_cluster": list(CD_CLUSTER),
+        "ref_sources": CD_SOURCES,
         "grids": per_grid,
         "cd_mem_surface_by_grid": cd_surf,
         "cd_mem_all_by_grid": cd_all,
@@ -460,8 +500,10 @@ def main() -> int:
         "cd_pressure_friction_by_grid": [r["cd_pf_standard"] for r in per_grid],
         "convergence": {
             "caliber": "surface_only",
-            "cd": cd, "cd_span_pct": span,
-            "cd_within_3pct": ok, "grid_span_within_3pct": conv,
+            "cd": cd,
+            "cd_span_pct": span,
+            "cd_within_3pct": ok,
+            "grid_span_within_3pct": conv,
             "cd_all_span_pct": span_all,
         },
         "verified": bool(ok and conv),

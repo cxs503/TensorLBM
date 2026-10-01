@@ -44,7 +44,7 @@ import torch
 # Hard gate: beta >= BLOCKAGE_HARD_GATE auto-escalates 'simple' -> 'glauert'
 # (the conservative higher-order form for severe blockage).  Enlarging the
 # domain to Ly >= 8D keeps beta <= 12.5% (BLOCKAGE_WARN_RATIO).
-BLOCKAGE_HARD_GATE = 0.15    # beta >= 15%: severe blockage -> warn + escalate
+BLOCKAGE_HARD_GATE = 0.15  # beta >= 15%: severe blockage -> warn + escalate
 BLOCKAGE_WARN_RATIO = 0.125  # beta > 12.5%: soft advisory (Ly >= 8D rule)
 
 
@@ -72,13 +72,15 @@ def compute_wall_link_dx(octree, l1_block: bool = True) -> float:
     """
     wall_lv = octree.leaf_level[octree.bfl_mask.any(dim=0)]
     if wall_lv.numel():
-        dx_wall_leaf = 2.0 ** (-(1.0 + wall_lv.to(torch.float64))) \
-            if l1_block else 2.0 ** (-wall_lv.to(torch.float64))
+        dx_wall_leaf = (
+            2.0 ** (-(1.0 + wall_lv.to(torch.float64)))
+            if l1_block
+            else 2.0 ** (-wall_lv.to(torch.float64))
+        )
         return float(dx_wall_leaf.mean().item())
     # No wall links: fall back to the finest leaf resolution (the old
     # ``dx_leaf_old`` formula, which coincides with the finest leaf dx).
-    return float(2.0 ** (-(1 + octree.d_max))) if l1_block \
-        else float(2.0 ** (-octree.d_max))
+    return float(2.0 ** (-(1 + octree.d_max))) if l1_block else float(2.0 ** (-octree.d_max))
 
 
 def leaf_radius_from_dx(radius_coarse: float, dx_leaf: float) -> float:
@@ -100,7 +102,7 @@ def dynamic_area(u: float, radius_leaf: float) -> float:
     dimensionless Cd is resolution-independent (see
     ``octree_boundary/force.py`` conventions).
     """
-    return 0.5 * u ** 2 * math.pi * radius_leaf ** 2
+    return 0.5 * u**2 * math.pi * radius_leaf**2
 
 
 def compute_blockage_factor(
@@ -141,8 +143,7 @@ def compute_blockage_factor(
         f = 1.0 / math.sqrt(max(1.0 - beta * beta, 1e-12))
         return (
             f,
-            "simple->glauert 1/sqrt(1-beta^2) "
-            "(auto-escalated: beta>=15% hard gate)",
+            "simple->glauert 1/sqrt(1-beta^2) (auto-escalated: beta>=15% hard gate)",
             True,
         )
     return 1.0 / (1.0 - beta) ** 2, "simple 1/(1-beta)^2", False

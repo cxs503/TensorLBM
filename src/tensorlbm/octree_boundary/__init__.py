@@ -14,6 +14,7 @@ P1 geometry + P2 stepping + P3 body-fitted physics:
 
 See ``docs/octree-boundary-design.md`` for the contract.
 """
+
 from tensorlbm.octree_boundary.bfl import (
     bfl_apply_gather,
     bfl_ramp_wall_velocity,
@@ -66,7 +67,6 @@ from tensorlbm.octree_boundary.sharding import (
     shard_octree_shell,
     shards_all_finite,
     shards_f_leaf,
-    split_leaf_bounds,
 )
 from tensorlbm.octree_boundary.stepping import (
     ShellGhostPlan,
@@ -120,6 +120,7 @@ __all__ = [
     "run_topology_checks",
     "bfl_apply_gather",
     "bfl_ramp_wall_velocity",
+    "leaf_force_spatial_weights",
     "leaf_force_weights",
     "leaf_macroscopic",
     "upstream_donor_table",
@@ -132,7 +133,6 @@ __all__ = [
     "shard_octree_shell",
     "shards_all_finite",
     "shards_f_leaf",
-    "split_leaf_bounds",
     "ShellGhostPlan",
     "build_ghost_plan",
     "build_plane_shell",

@@ -133,7 +133,7 @@ def reynolds_tau(u_in: float, reynolds: float, diameter: float) -> float:
 
 def schiller_naumann(reynolds: float) -> float:
     """Schiller-Naumann sphere-drag reference: 24/Re (1 + 0.15 Re^0.687)."""
-    return 24.0 / reynolds * (1.0 + 0.15 * reynolds ** 0.687)
+    return 24.0 / reynolds * (1.0 + 0.15 * reynolds**0.687)
 
 
 class ShellBflFn:
@@ -193,7 +193,10 @@ class ShellBflFn:
             self.step = int(self._step_holder[0])
         if self.moving_wall and self.ramp_steps > 0:
             rho_w, uwx, uwy, uwz = bfl_ramp_wall_velocity(
-                octree_, post, self.step, self.ramp_steps,
+                octree_,
+                post,
+                self.step,
+                self.ramp_steps,
             )
             wall_velocity = (uwx, uwy, uwz)
             wall_density = rho_w
@@ -206,10 +209,15 @@ class ShellBflFn:
         if fw is None:
             fw = self.leaf_weights
         return bfl_apply_gather(
-            octree_, out, post,
-            ghost_plan=gplan, ghost_vals=ghost_vals,
-            wall_velocity=wall_velocity, wall_density=wall_density,
-            force_weights=fw, return_force=True,
+            octree_,
+            out,
+            post,
+            ghost_plan=gplan,
+            ghost_vals=ghost_vals,
+            wall_velocity=wall_velocity,
+            wall_density=wall_density,
+            force_weights=fw,
+            return_force=True,
             q_min=self.q_min,
         )
 
@@ -240,8 +248,12 @@ def make_shell_bfl_fn(
             :meth:`ShellBflFn.set_step`.
     """
     bfl_fn = ShellBflFn(
-        octree, lidx=lidx, device=device,
-        ramp_steps=ramp_steps, q_min=q_min, moving_wall=moving_wall,
+        octree,
+        lidx=lidx,
+        device=device,
+        ramp_steps=ramp_steps,
+        q_min=q_min,
+        moving_wall=moving_wall,
         step_holder=step_holder,
     )
     return bfl_fn
@@ -301,15 +313,13 @@ class CdStatTracker:
         if self.last_step <= self.warmup_steps:
             return False
         if isinstance(force, (int, float)):
-            f = torch.zeros(self.acc.shape[0], dtype=torch.float64,
-                            device=self.device)
+            f = torch.zeros(self.acc.shape[0], dtype=torch.float64, device=self.device)
             f[0] = float(force)
         else:
             f = force.detach().to(torch.float64).reshape(-1)
             if f.shape[0] != self.acc.shape[0]:
                 raise ValueError(
-                    f"force has {f.shape[0]} components, tracker expects "
-                    f"{self.acc.shape[0]}",
+                    f"force has {f.shape[0]} components, tracker expects {self.acc.shape[0]}",
                 )
         self.acc += f
         self.samples.append(float(f[0].item()))
@@ -348,14 +358,12 @@ class CdStatTracker:
         line = (
             f"[{self.label}] step={step} n={self.n_samples} "
             f"Cd={self.cd():.6f} "
-            f"Cd_win={self.rolling_cd(self.report_interval):.6f}"
-            + (f" {extra}" if extra else "")
+            f"Cd_win={self.rolling_cd(self.report_interval):.6f}" + (f" {extra}" if extra else "")
         )
         print(line, flush=True)
         return line
 
-    def finalize(self, reference_cd: Optional[float] = None,
-                 window: Optional[int] = None) -> dict:
+    def finalize(self, reference_cd: Optional[float] = None, window: Optional[int] = None) -> dict:
         """JSON-able summary dict (mirrors the validate scripts' run dicts)."""
         cd = self.cd(0)
         out = {
@@ -368,8 +376,12 @@ class CdStatTracker:
             "mean_force_x_leaf_lu": self.mean_force(0),
             "dynamic_area": self.dynamic_area,
         }
-        if reference_cd is not None and math.isfinite(reference_cd) \
-                and math.isfinite(cd) and reference_cd != 0.0:
+        if (
+            reference_cd is not None
+            and math.isfinite(reference_cd)
+            and math.isfinite(cd)
+            and reference_cd != 0.0
+        ):
             out["reference_cd"] = float(reference_cd)
             out["reference_error_pct"] = abs(cd - reference_cd) / reference_cd * 100.0
         return out
@@ -397,7 +409,12 @@ def smoke_test(
     center = (nz * 0.5, ny * 0.5, nx * 0.5)
 
     octree = build_shell_octree(
-        shape, center, radius, bl=None, d_max=d_max, device=device,
+        shape,
+        center,
+        radius,
+        bl=None,
+        d_max=d_max,
+        device=device,
     )
     # initialise the leaf populations from the uniform inflow equilibrium
     # (host-cell gather, the validated pattern of the integrated script)
@@ -410,8 +427,7 @@ def smoke_test(
 
     # ghost plan: supplies SHELL_OUTSIDE upstream cells (if any)
     ghost_plan = build_ghost_plan(octree, shape, solid_fallback=True)
-    n_slots = int(ghost_plan.slot.max().item()) + 1 \
-        if ghost_plan.slot.numel() else 0
+    n_slots = int(ghost_plan.slot.max().item()) + 1 if ghost_plan.slot.numel() else 0
     ghost_vals = torch.zeros((octree.Q, n_slots), device=device)
 
     bfl_fn = make_shell_bfl_fn(octree, None, device, ramp_steps=ramp_steps)
@@ -419,8 +435,11 @@ def smoke_test(
     radius_leaf = sphere_radius_leaf(radius, dx_leaf)
     area = dynamic_area(u_in, radius_leaf)
     tracker = CdStatTracker(
-        area, warmup_steps=warmup_steps, ramp_steps=ramp_steps,
-        label="smoke", report_interval=1,
+        area,
+        warmup_steps=warmup_steps,
+        ramp_steps=ramp_steps,
+        label="smoke",
+        report_interval=1,
     )
 
     print(
@@ -435,8 +454,12 @@ def smoke_test(
         tracker.begin_step(step)
         bfl_fn.set_step(step)
         f_out, force = bfl_fn(
-            octree, octree.f_leaf.clone(), octree.f_leaf,
-            ghost_plan, ghost_vals, substep=0,
+            octree,
+            octree.f_leaf.clone(),
+            octree.f_leaf,
+            ghost_plan,
+            ghost_vals,
+            substep=0,
         )
         octree.f_leaf = f_out  # advance the static smoke field
         accepted = tracker.update(force, step)

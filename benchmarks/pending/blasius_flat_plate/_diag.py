@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Fast diagnostic: watch the wall-normal profile + Cf evolve at the probe."""
+
 from __future__ import annotations
 
-import argparse, json, math, sys
-from pathlib import Path
+import argparse
+import math
+
 import numpy as np
 import torch
 
@@ -25,7 +27,9 @@ def blasius(eta):
         return sol.y[1, -1] - 1.0
 
     a = brentq(shoot, 0.3, 0.37, xtol=1e-12)
-    sol = solve_ivp(rhs, [0, 12], [0.0, 0.0, a], rtol=1e-11, atol=1e-13, dense_output=True, max_step=0.005)
+    sol = solve_ivp(
+        rhs, [0, 12], [0.0, 0.0, a], rtol=1e-11, atol=1e-13, dense_output=True, max_step=0.005
+    )
     return sol.sol(eta)[1], sol.sol(eta)[0], a
 
 
@@ -52,12 +56,18 @@ def main():
     solid[0, le:plate_end] = True
     mask = solid[0]
 
-    f = equilibrium(torch.ones((ny, nx), device=dev),
-                    torch.full((ny, nx), U, device=dev),
-                    torch.zeros((ny, nx), device=dev), device=dev)
+    f = equilibrium(
+        torch.ones((ny, nx), device=dev),
+        torch.full((ny, nx), U, device=dev),
+        torch.zeros((ny, nx), device=dev),
+        device=dev,
+    )
     spec = SPEC.to(dev)
-    feq_in = equilibrium(torch.ones((ny, 1), device=dev), torch.full((ny, 1), U, device=dev),
-                         torch.zeros((ny, 1), device=dev))[:, :, 0].contiguous()
+    feq_in = equilibrium(
+        torch.ones((ny, 1), device=dev),
+        torch.full((ny, 1), U, device=dev),
+        torch.zeros((ny, 1), device=dev),
+    )[:, :, 0].contiguous()
 
     def step(f_):
         f_ = collide_bgk(f_, tau)
@@ -91,15 +101,21 @@ def main():
             dudy1 = u1 / 0.5
             Cf1 = 2 * nu * dudy1 / U**2
             u123 = prof[1:4]
-            dudy2 = float(np.linalg.solve(
-                np.vstack([np.ones(3), [0.5, 1.5, 2.5], [0.25, 2.25, 6.25]]).T,
-                [0, 1, 0]) @ u123)
+            dudy2 = float(
+                np.linalg.solve(
+                    np.vstack([np.ones(3), [0.5, 1.5, 2.5], [0.25, 2.25, 6.25]]).T, [0, 1, 0]
+                )
+                @ u123
+            )
             Cf2 = 2 * nu * dudy2 / U**2
             n = 8
-            print(f"step={step_i:6d} u1/U={u1/U:.5f} (blas {fp_ref[0]:.5f}) "
-                  f"Cf1={Cf1:.5f} Cf2={Cf2:.5f} Cf_ref={Cf_ref:.5f} "
-                  f"err1={(Cf1-Cf_ref)/Cf_ref*100:+.2f}% err2={(Cf2-Cf_ref)/Cf_ref*100:+.2f}% "
-                  f"prof5={np.round(prof[1:6]/U,4)}", flush=True)
+            print(
+                f"step={step_i:6d} u1/U={u1 / U:.5f} (blas {fp_ref[0]:.5f}) "
+                f"Cf1={Cf1:.5f} Cf2={Cf2:.5f} Cf_ref={Cf_ref:.5f} "
+                f"err1={(Cf1 - Cf_ref) / Cf_ref * 100:+.2f}% err2={(Cf2 - Cf_ref) / Cf_ref * 100:+.2f}% "
+                f"prof5={np.round(prof[1:6] / U, 4)}",
+                flush=True,
+            )
     print("fpp0_num=%.6f" % a)
 
 

@@ -57,13 +57,13 @@ for _p in (_REPO / "src", _REPO / "benchmarks"):
         sys.path.insert(0, str(_p))
 
 import torch  # noqa: E402
-
 from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
+
 from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d, sphere_mask  # noqa: E402
 from tensorlbm.d3q19 import C, equilibrium3d  # noqa: E402
 from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 
-REF_SN = 24.0 / 100.0 * (1.0 + 0.15 * 100.0**0.687)      # 1.091731
+REF_SN = 24.0 / 100.0 * (1.0 + 0.15 * 100.0**0.687)  # 1.091731
 REF_CGW = 24.0 / 100.0 * (1.0 + 0.1935 * 100.0**0.6305)  # Clift-Grace-Weber
 
 
@@ -109,8 +109,7 @@ def run_case(
     dpS = 0.5 * u_in**2 * math.pi * R**2
 
     tag = f"[sphmem D={D_cells} {nx}x{ny}x{nz}]"
-    print(f"{tag} Re={re} u_in={u_in} nu={nu:.6f} tau={tau:.6f} dpS={dpS:.6f}",
-          flush=True)
+    print(f"{tag} Re={re} u_in={u_in} nu={nu:.6f} tau={tau:.6f} dpS={dpS:.6f}", flush=True)
     t0 = time.time()
 
     solid = sphere_mask(nx, ny, nz, cx, cy, cz, R, device=dev)
@@ -118,9 +117,12 @@ def run_case(
     interior = solid & ~surf
     n_solid = int(solid.sum().item())
     n_surf = int(surf.sum().item())
-    print(f"{tag} solid={n_solid} surface={n_surf} interior={n_solid - n_surf} "
-          f"(blockage {100.0 * D_cells / ny:.2f}%, domain {nx / D_cells:.1f}D x "
-          f"{ny / D_cells:.1f}D)", flush=True)
+    print(
+        f"{tag} solid={n_solid} surface={n_surf} interior={n_solid - n_surf} "
+        f"(blockage {100.0 * D_cells / ny:.2f}%, domain {nx / D_cells:.1f}D x "
+        f"{ny / D_cells:.1f}D)",
+        flush=True,
+    )
 
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=dev)
     ux0 = torch.full_like(rho0, u_in)
@@ -152,10 +154,13 @@ def run_case(
         if step % report_every == 0:
             n = min(200, len(surf_hist))
             if n:
-                print(f"{tag} step={step} Cd_mem_surf={sum(surf_hist[-n:]) / n:.4f} "
-                      f"Cd_mem_all={sum(all_hist[-n:]) / n:.4f} "
-                      f"Cd_mem_int={sum(int_hist[-n:]) / n:.4f} "
-                      f"({time.time() - t0:.0f}s)", flush=True)
+                print(
+                    f"{tag} step={step} Cd_mem_surf={sum(surf_hist[-n:]) / n:.4f} "
+                    f"Cd_mem_all={sum(all_hist[-n:]) / n:.4f} "
+                    f"Cd_mem_int={sum(int_hist[-n:]) / n:.4f} "
+                    f"({time.time() - t0:.0f}s)",
+                    flush=True,
+                )
         if not torch.isfinite(f).all():
             print(f"{tag} DIVERGED at step {step}", flush=True)
             break
@@ -170,16 +175,19 @@ def run_case(
 
     def plateau(arr, frac, w=win):
         kk = int(n_tot * frac)
-        seg = arr[max(0, kk - w):kk]
+        seg = arr[max(0, kk - w) : kk]
         return sum(seg) / len(seg) if seg else float("nan")
 
     cd_surf = mean_last(surf_hist)
     cd_all = mean_last(all_hist)
     cd_int = mean_last(int_hist)
     err_surf = (cd_surf - REF_SN) / REF_SN * 100.0
-    print(f"{tag} === FINAL win={win} === Cd_mem_surface={cd_surf:.4f} "
-          f"err_SN={err_surf:+.2f}% | Cd_mem_all={cd_all:.4f} "
-          f"Cd_mem_interior={cd_int:.4f} ({elapsed:.0f}s)", flush=True)
+    print(
+        f"{tag} === FINAL win={win} === Cd_mem_surface={cd_surf:.4f} "
+        f"err_SN={err_surf:+.2f}% | Cd_mem_all={cd_all:.4f} "
+        f"Cd_mem_interior={cd_int:.4f} ({elapsed:.0f}s)",
+        flush=True,
+    )
 
     if save_field:
         torch.save(f.detach().cpu(), save_field)
@@ -190,20 +198,34 @@ def run_case(
         "lattice": "D3Q19",
         "collision": "bgk",
         "force_method": "ladd_momentum_exchange (post-stream, pre-bounce-back); "
-                        "primary = surface cells only",
-        "D_cells": D_cells, "nx": nx, "ny": ny, "nz": nz,
-        "lateral_D": lateral_D, "upstream_D": up_D, "downstream_D": down_D,
+        "primary = surface cells only",
+        "D_cells": D_cells,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
+        "lateral_D": lateral_D,
+        "upstream_D": up_D,
+        "downstream_D": down_D,
         "blockage_pct": 100.0 * D_cells / ny,
-        "n_solid_cells": n_solid, "n_surface_cells": n_surf,
+        "n_solid_cells": n_solid,
+        "n_surface_cells": n_surf,
         "n_interior_cells": n_solid - n_surf,
-        "Re": re, "u_in": u_in, "nu": nu, "tau": tau,
-        "n_steps": n_steps, "n_finished": step,
-        "sample_interval": sample_interval, "avg_window_samples": win,
+        "Re": re,
+        "u_in": u_in,
+        "nu": nu,
+        "tau": tau,
+        "n_steps": n_steps,
+        "n_finished": step,
+        "sample_interval": sample_interval,
+        "avg_window_samples": win,
         "cd_mem_surface": cd_surf,
         "cd_mem_all": cd_all,
         "cd_mem_interior": cd_int,
-        "cd": cd_surf, "err_pct": err_surf,
-        "ref_cd": REF_SN, "ref_sn": REF_SN, "ref_cgw": REF_CGW,
+        "cd": cd_surf,
+        "err_pct": err_surf,
+        "ref_cd": REF_SN,
+        "ref_sn": REF_SN,
+        "ref_cgw": REF_CGW,
         "err_mem_all_pct": (cd_all - REF_SN) / REF_SN * 100.0,
         "plateau_surface": [plateau(surf_hist, p) for p in (0.25, 0.5, 0.75, 1.0)],
         "plateau_all": [plateau(all_hist, p) for p in (0.25, 0.5, 0.75, 1.0)],
@@ -214,7 +236,8 @@ def run_case(
         "compile_status": getattr(step_fn, "compile_status", None),
         "compile_mode_effective": getattr(step_fn, "compile_mode_effective", None),
         "modules_used": [
-            "solver3d.collide_bgk3d", "solver3d.stream3d",
+            "solver3d.collide_bgk3d",
+            "solver3d.stream3d",
             "boundaries3d.bounce_back_cells_3d (half-way BB pre-stream, NoDynamics)",
             "boundaries3d.far_field_bc_3d (inlet/y±/z± far-field, x+ zero-gradient)",
             "boundaries3d.sphere_mask (staircase parametric sphere)",
@@ -246,8 +269,19 @@ def main() -> int:
     if a.mode == "single":
         out = a.out or f"/tmp/sphmem_D{a.arg}.json"
         field = (out + ".field.pt") if a.save_field else None
-        r = run_case(int(a.arg), a.device, a.steps, a.lateral, a.up, a.down,
-                     a.u_in, a.re, a.sample, cm, save_field=field)
+        r = run_case(
+            int(a.arg),
+            a.device,
+            a.steps,
+            a.lateral,
+            a.up,
+            a.down,
+            a.u_in,
+            a.re,
+            a.sample,
+            cm,
+            save_field=field,
+        )
         Path(out).write_text(json.dumps(r, indent=2))
         print(f"[sphmem] saved {out}", flush=True)
         return 0
@@ -256,9 +290,20 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     per_grid = []
     for D in a.grids:
-        field = (str(out_dir / f"final_D{D}.pt") if a.save_field else None)
-        r = run_case(D, a.device, a.steps, a.lateral, a.up, a.down,
-                     a.u_in, a.re, a.sample, cm, save_field=field)
+        field = str(out_dir / f"final_D{D}.pt") if a.save_field else None
+        r = run_case(
+            D,
+            a.device,
+            a.steps,
+            a.lateral,
+            a.up,
+            a.down,
+            a.u_in,
+            a.re,
+            a.sample,
+            cm,
+            save_field=field,
+        )
         per_grid.append(r)
         (out_dir / f"case_D{D}.json").write_text(json.dumps(r, indent=2))
     cds = [r["cd_mem_surface"] for r in per_grid]
@@ -274,8 +319,12 @@ def main() -> int:
         "grids": per_grid,
         "cd_mem_surface_by_grid": cds,
         "cd_mem_all_by_grid": [r["cd_mem_all"] for r in per_grid],
-        "convergence": {"cd": cds, "cd_span_pct": span,
-                        "cd_within_3pct": ok, "grid_span_within_3pct": conv},
+        "convergence": {
+            "cd": cds,
+            "cd_span_pct": span,
+            "cd_within_3pct": ok,
+            "grid_span_within_3pct": conv,
+        },
         "verified": bool(ok and conv),
         "verdict": "verified" if (ok and conv) else "not_verified",
     }
