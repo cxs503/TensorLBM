@@ -17,6 +17,7 @@ fluid node and matches the Blasius reference y_w = q (default 0.5).
 Library primitives only (collide_bgk/stream/equilibrium/macroscopic,
 zou_he_outlet_pressure); inlet/top/wall/symmetry built here.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,8 +46,10 @@ def blasius(eta_max=14.0, h=0.002):
     def shoot(a):
         s = np.array([0.0, 0.0, a])
         for _ in range(n):
-            k1 = rhs(s); k2 = rhs(s + 0.5 * h * k1)
-            k3 = rhs(s + 0.5 * h * k2); k4 = rhs(s + h * k3)
+            k1 = rhs(s)
+            k2 = rhs(s + 0.5 * h * k1)
+            k3 = rhs(s + 0.5 * h * k2)
+            k4 = rhs(s + h * k3)
             s = s + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
         return s[1] - 1.0
 
@@ -63,8 +66,10 @@ def blasius(eta_max=14.0, h=0.002):
     fp = np.zeros(n + 1)
     s = np.array([0.0, 0.0, a0])
     for i in range(1, n + 1):
-        k1 = rhs(s); k2 = rhs(s + 0.5 * h * k1)
-        k3 = rhs(s + 0.5 * h * k2); k4 = rhs(s + h * k3)
+        k1 = rhs(s)
+        k2 = rhs(s + 0.5 * h * k1)
+        k3 = rhs(s + 0.5 * h * k2)
+        k4 = rhs(s + h * k3)
         s = s + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
         fp[i] = s[1]
     return etas, fp, a0
@@ -79,8 +84,10 @@ def bfl_R(f, Delta, jf, jf2, ny):
         c2 = (2 * Delta - 1.0) / (2 * Delta)
         R2 = c1 * f[4, jf, :] + c2 * f[2, jf2, :]
         # R5 uses f5 at (jf2, x+1) ; R6 uses f6 at (jf2, x-1)
-        r5b = torch.zeros_like(R2); r5b[:-1] = f[5, jf2, 1:]
-        r6b = torch.zeros_like(R2); r6b[1:] = f[6, jf2, :-1]
+        r5b = torch.zeros_like(R2)
+        r5b[:-1] = f[5, jf2, 1:]
+        r6b = torch.zeros_like(R2)
+        r6b[1:] = f[6, jf2, :-1]
         R5 = c1 * f[8, jf, :] + c2 * r5b
         R6 = c1 * f[7, jf, :] + c2 * r6b
     else:
@@ -117,8 +124,10 @@ def wall_bc_mid(f, Delta, ys):
     if Delta >= 0.5:
         c2 = (2 * Delta - 1.0) / (2 * Delta)
         R4 = c1 * f[2, ys - 1, :] + c2 * f[4, ys - 2, :]
-        r7b = torch.zeros_like(R4); r7b[:-1] = f[7, ys - 2, 1:]
-        r8b = torch.zeros_like(R4); r8b[1:] = f[8, ys - 2, :-1]
+        r7b = torch.zeros_like(R4)
+        r7b[:-1] = f[7, ys - 2, 1:]
+        r8b = torch.zeros_like(R4)
+        r8b[1:] = f[8, ys - 2, :-1]
         R7 = c1 * f[5, ys - 1, :] + c2 * r7b
         R8 = c1 * f[6, ys - 1, :] + c2 * r8b
     else:
@@ -148,9 +157,11 @@ def run(args):
     solid[y_solid, le:te] = True
     mask = solid[y_solid]
 
-    f = equilibrium(torch.ones((ny, nx), device=dev),
-                    torch.full((ny, nx), U, device=dev),
-                    torch.zeros((ny, nx), device=dev))
+    f = equilibrium(
+        torch.ones((ny, nx), device=dev),
+        torch.full((ny, nx), U, device=dev),
+        torch.zeros((ny, nx), device=dev),
+    )
     if getattr(args, "seed", 0.0) > 0.0:
         # seed a Blasius-like boundary layer so the plate does not sit on the
         # spurious uniform-flow fixed point.  amp scales the BL thickness.
@@ -159,20 +170,25 @@ def run(args):
         ux_np = np.full((ny, nx), U)
         for x in range(le, te):
             sc = math.sqrt(nu * max(x - le, 1) / U) * amp
-            yloc = (np.arange(ny) - (args.q if args.wall == "bottom" else y_solid + 1 - args.q))
+            yloc = np.arange(ny) - (args.q if args.wall == "bottom" else y_solid + 1 - args.q)
             if args.wall == "bottom":
                 yloc = np.arange(ny) - args.q
             else:
                 yloc = np.abs(np.arange(ny) - (y_solid + 0.5))
             fp_i = np.interp(yloc / sc, etas_s, fp_s)
             ux_np[:, x] = U * np.where(yloc <= 0, 0.0, fp_i)
-        f = equilibrium(torch.ones((ny, nx), device=dev),
-                        torch.tensor(ux_np, device=dev, dtype=f.dtype),
-                        torch.zeros((ny, nx), device=dev))
+        f = equilibrium(
+            torch.ones((ny, nx), device=dev),
+            torch.tensor(ux_np, device=dev, dtype=f.dtype),
+            torch.zeros((ny, nx), device=dev),
+        )
     m0 = float(f.sum().item())
     spec = SPEC.to(dev)
-    feq_in = equilibrium(torch.ones((1, 1), device=dev), torch.full((1, 1), U, device=dev),
-                         torch.zeros((1, 1), device=dev))[:, :, 0]  # (9,1) broadcastable
+    feq_in = equilibrium(
+        torch.ones((1, 1), device=dev),
+        torch.full((1, 1), U, device=dev),
+        torch.zeros((1, 1), device=dev),
+    )[:, :, 0]  # (9,1) broadcastable
 
     def step(f_):
         f_ = collide_bgk(f_, tau)
@@ -208,11 +224,15 @@ def run(args):
             _, ux, _ = macroscopic(f)
             umaxh.append(float(ux.max()))
             if args.verbose:
-                print(f"  step {i}: umax={umaxh[-1]:.5f} "
-                      f"finite={bool(torch.isfinite(f).all())}", flush=True)
+                print(
+                    f"  step {i}: umax={umaxh[-1]:.5f} finite={bool(torch.isfinite(f).all())}",
+                    flush=True,
+                )
     elapsed = time.time() - t0
     ua = np.array(umaxh)
-    drift = (ua[-10:].max() - ua[-10:].min()) / abs(ua[-10:].mean()) if len(ua) >= 10 else float("nan")
+    drift = (
+        (ua[-10:].max() - ua[-10:].min()) / abs(ua[-10:].mean()) if len(ua) >= 10 else float("nan")
+    )
 
     # time-averaged profile at probe
     n_avg = 300
@@ -245,15 +265,15 @@ def run(args):
     l2 = float(np.linalg.norm(rel[m]) / np.sqrt(m.sum()))
 
     # Cf: 1st-order at wall (u at y=q, distance q)
-    Cf1 = 2 * nu * (u[0] / args.q) / U ** 2
+    Cf1 = 2 * nu * (u[0] / args.q) / U**2
     Cf_ref = 0.664 / math.sqrt(Rex)
     Cf_err1 = (Cf1 - Cf_ref) / Cf_ref * 100.0
     # 2nd/3rd via quadratic fit through first three nodes
     d3 = np.array([y[0], y[1], y[2]])
-    A = np.vstack([np.ones(3), d3, d3 ** 2]).T
+    A = np.vstack([np.ones(3), d3, d3**2]).T
     w = np.linalg.solve(A, np.array([0.0, 1.0, 0.0]))
     dudy2 = float(w @ u[:3])
-    Cf2 = 2 * nu * dudy2 / U ** 2
+    Cf2 = 2 * nu * dudy2 / U**2
     Cf_err2 = (Cf2 - Cf_ref) / Cf_ref * 100.0
 
     # integral quantities with u_e = U
@@ -266,41 +286,100 @@ def run(args):
 
     # overshoot metric
     os_max = float(np.max(u / ue))
-    ue_local = float(np.mean(up[ny - 30:])) if args.wall == "bottom" else None
+    ue_local = float(np.mean(up[ny - 30 :])) if args.wall == "bottom" else None
 
     tab = []
     for et in (1.0, 2.0, 3.0, 4.0, 5.0):
         ut = float(np.interp(et * scale, y, u))
         fr = float(np.interp(et, etas, fp))
-        tab.append({"eta": et, "u_sim_over_U": round(ut / U, 5),
-                    "blasius": round(fr, 5),
-                    "rel_pct": round((ut / U - fr) / fr * 100.0, 2)})
+        tab.append(
+            {
+                "eta": et,
+                "u_sim_over_U": round(ut / U, 5),
+                "blasius": round(fr, 5),
+                "rel_pct": round((ut / U - fr) / fr * 100.0, 2),
+            }
+        )
 
-    res = dict(case="B25_dev", wall=args.wall, top=args.top, outlet=args.outlet, q=args.q,
-               nx=nx, ny=ny, le=le, plate_len=pl, probe=probe, U=U, nu=nu, tau=tau,
-               steps=args.steps, Rex=Rex, scale=scale, fpp0=a0,
-               umax_drift=drift, mass_drift_pct=mass_drift,
-               finite=bool(torch.isfinite(f).all()),
-               u1_over_U=round(float(u[0] / U), 6),
-               u1_blasius=round(float(np.interp(args.q / scale, etas, fp)), 6),
-               overshoot_max=round(os_max, 5),
-               Cf1=Cf1, Cf_ref=Cf_ref, Cf_err1_pct=Cf_err1,
-               Cf2=Cf2, Cf_err2_pct=Cf_err2,
-               delta_star=dstar, delta_star_ref=dstar_ref,
-               theta=theta, theta_ref=theta_ref, H=H, H_ref=H_ref,
-               l2_profile=l2, eta_tab=tab,
-               profile=[[round(float(e), 4), round(float(uu) / U, 6)]
-                        for e, uu in zip(eta, u)][:120],
-               elapsed_s=round(elapsed, 1))
+    res = dict(
+        case="B25_dev",
+        wall=args.wall,
+        top=args.top,
+        outlet=args.outlet,
+        q=args.q,
+        nx=nx,
+        ny=ny,
+        le=le,
+        plate_len=pl,
+        probe=probe,
+        U=U,
+        nu=nu,
+        tau=tau,
+        steps=args.steps,
+        Rex=Rex,
+        scale=scale,
+        fpp0=a0,
+        umax_drift=drift,
+        mass_drift_pct=mass_drift,
+        finite=bool(torch.isfinite(f).all()),
+        u1_over_U=round(float(u[0] / U), 6),
+        u1_blasius=round(float(np.interp(args.q / scale, etas, fp)), 6),
+        overshoot_max=round(os_max, 5),
+        Cf1=Cf1,
+        Cf_ref=Cf_ref,
+        Cf_err1_pct=Cf_err1,
+        Cf2=Cf2,
+        Cf_err2_pct=Cf_err2,
+        delta_star=dstar,
+        delta_star_ref=dstar_ref,
+        theta=theta,
+        theta_ref=theta_ref,
+        H=H,
+        H_ref=H_ref,
+        l2_profile=l2,
+        eta_tab=tab,
+        profile=[[round(float(e), 4), round(float(uu) / U, 6)] for e, uu in zip(eta, u)][:120],
+        elapsed_s=round(elapsed, 1),
+    )
     if args.out:
         Path(args.out).write_text(json.dumps(res, indent=2))
-    print(json.dumps({k: res[k] for k in
-                      ["wall", "top", "outlet", "q", "nx", "ny", "probe", "steps",
-                       "Rex", "u1_over_U", "u1_blasius", "overshoot_max",
-                       "Cf1", "Cf_ref", "Cf_err1_pct", "Cf2", "Cf_err2_pct",
-                       "delta_star", "delta_star_ref", "theta", "theta_ref", "H", "H_ref",
-                       "l2_profile", "mass_drift_pct", "finite", "elapsed_s"]},
-                     indent=2))
+    print(
+        json.dumps(
+            {
+                k: res[k]
+                for k in [
+                    "wall",
+                    "top",
+                    "outlet",
+                    "q",
+                    "nx",
+                    "ny",
+                    "probe",
+                    "steps",
+                    "Rex",
+                    "u1_over_U",
+                    "u1_blasius",
+                    "overshoot_max",
+                    "Cf1",
+                    "Cf_ref",
+                    "Cf_err1_pct",
+                    "Cf2",
+                    "Cf_err2_pct",
+                    "delta_star",
+                    "delta_star_ref",
+                    "theta",
+                    "theta_ref",
+                    "H",
+                    "H_ref",
+                    "l2_profile",
+                    "mass_drift_pct",
+                    "finite",
+                    "elapsed_s",
+                ]
+            },
+            indent=2,
+        )
+    )
     return res
 
 

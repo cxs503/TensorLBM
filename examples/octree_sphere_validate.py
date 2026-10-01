@@ -317,11 +317,14 @@ def run_case(
         _wl = octree.leaf_level[octree.bfl_mask.any(dim=0)]
         _uv, _uc = torch.unique(_wl, return_counts=True)
         _ws = octree.leaf_level[octree.bfl_mask.any(dim=0)]
-        print(f"[area] wall-link leaf levels: {dict(zip(_uv.tolist(), _uc.tolist()))} "
-              f"n_bfl_links={int(octree.bfl_mask.sum().item())} "
-              f"n_leaf={int(octree.leaf_level.shape[0])} "
-              f"leaf_level_counts={dict(zip(*[t.tolist() for t in torch.unique(octree.leaf_level, return_counts=True)]))} "
-              f"bl_cells={bl_cells} radius_l1={radius_l1} d_max={args.d_max}", flush=True)
+        print(
+            f"[area] wall-link leaf levels: {dict(zip(_uv.tolist(), _uc.tolist()))} "
+            f"n_bfl_links={int(octree.bfl_mask.sum().item())} "
+            f"n_leaf={int(octree.leaf_level.shape[0])} "
+            f"leaf_level_counts={dict(zip(*[t.tolist() for t in torch.unique(octree.leaf_level, return_counts=True)]))} "
+            f"bl_cells={bl_cells} radius_l1={radius_l1} d_max={args.d_max}",
+            flush=True,
+        )
     except Exception as _e:
         print(f"[area] wall-level print failed: {_e}", flush=True)
     ghost_plan = build_ghost_plan(
@@ -703,5 +706,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     import faulthandler
+
     faulthandler.dump_traceback_later(3600, exit=True)  # 3600s 后 dump 卡点
     main()

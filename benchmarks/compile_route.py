@@ -166,9 +166,7 @@ def _enable_sdaa_inductor() -> str | None:
         )
 
         if hasattr(_TecoScheduling, "_can_fuse_horizontal_impl"):
-            _TecoScheduling.can_fuse_horizontal = (
-                _TecoScheduling._can_fuse_horizontal_impl
-            )
+            _TecoScheduling.can_fuse_horizontal = _TecoScheduling._can_fuse_horizontal_impl
     except Exception:
         pass
 
@@ -281,9 +279,7 @@ class _CompileWithEagerFallback:
       and persist to ``result.json``.
     """
 
-    def __init__(
-        self, compiled: StepFn, eager: StepFn, *, name: str, mode: str
-    ) -> None:
+    def __init__(self, compiled: StepFn, eager: StepFn, *, name: str, mode: str) -> None:
         self._compiled = compiled
         self._eager = eager
         self._name = name
@@ -444,9 +440,7 @@ def route_step(
         # Compiled: guard the first call so an unsupported inductor backend
         # (SDAA teco, see module docstring) degrades to eager instead of
         # aborting the benchmark.
-        routed_step = _CompileWithEagerFallback(
-            compiled, step_fn, name=name, mode=canonical
-        )
+        routed_step = _CompileWithEagerFallback(compiled, step_fn, name=name, mode=canonical)
 
     if not quiet:
         routed = (
@@ -454,9 +448,7 @@ def route_step(
             if canonical is None
             else f"torch.compile(mode={canonical!r}) + auto eager fallback"
         )
-        tagged = (
-            f"{routed} [{_SDAA_INDUCTOR_TAG}]" if _SDAA_INDUCTOR_TAG else routed
-        )
+        tagged = f"{routed} [{_SDAA_INDUCTOR_TAG}]" if _SDAA_INDUCTOR_TAG else routed
         print(f"[compile_route] {name}: mode={mode!r} -> {tagged}", flush=True)
     return routed_step
 

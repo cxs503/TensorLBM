@@ -11,11 +11,11 @@ sphere-v9-corrected-bfl evidence).
 Usage:
     run_canonical.py --radius 9 --width-over-r 16 --device sdaa:8 --output out.json
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 from pathlib import Path
 
@@ -36,8 +36,8 @@ except Exception as exc:  # pragma: no cover
 # compile path uses; it runs at import time.
 try:
     import compile_route  # noqa: F401,E402
-    print(f"[shim] compile_route loaded, teco tag={compile_route._SDAA_INDUCTOR_TAG}",
-          flush=True)
+
+    print(f"[shim] compile_route loaded, teco tag={compile_route._SDAA_INDUCTOR_TAG}", flush=True)
 except Exception as exc:  # pragma: no cover
     print(f"[warn] compile_route shim not loaded: {exc}", flush=True)
 
@@ -76,10 +76,18 @@ def _jsonable(obj):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--radius", type=float, required=True)
-    ap.add_argument("--width-over-r", type=float, default=16.0,
-                    help="transverse half..full width in units of R (16 -> 8D wide)")
-    ap.add_argument("--length-over-r", type=float, default=24.0,
-                    help="streamwise length in units of R (24 -> 12D)")
+    ap.add_argument(
+        "--width-over-r",
+        type=float,
+        default=16.0,
+        help="transverse half..full width in units of R (16 -> 8D wide)",
+    )
+    ap.add_argument(
+        "--length-over-r",
+        type=float,
+        default=24.0,
+        help="streamwise length in units of R (24 -> 12D)",
+    )
     ap.add_argument("--center-x-fraction", type=float, default=0.30)
     ap.add_argument("--steps-over-r", type=float, default=800.0)
     ap.add_argument("--warmup-over-r", type=float, default=533.3333333333334)
@@ -103,7 +111,10 @@ def main() -> None:
     nx = int(round(args.length_over_r * R))
     nw = int(round(args.width_over_r * R))
     cfg = SphereBFLControlVolumeConfig(
-        nx=nx, ny=nw, nz=nw, radius=R,
+        nx=nx,
+        ny=nw,
+        nz=nw,
+        radius=R,
         center_x_fraction=args.center_x_fraction,
         reynolds=args.reynolds,
         lattice_speed=args.lattice_speed,
@@ -122,22 +133,31 @@ def main() -> None:
         compile_natural_kbc=bool(args.compile_natural_kbc),
         device=args.device,
     )
-    print(f"[canonical] R={R} shape_zyx=({cfg.nz},{cfg.ny},{cfg.nx}) "
-          f"cells={cfg.nx * cfg.ny * cfg.nz} est_GiB={cfg.nx*cfg.ny*cfg.nz*1000/2**30:.1f} "
-          f"steps={cfg.steps} warmup={cfg.warmup_steps} window={cfg.statistics_window_steps} "
-          f"nu={cfg.nu:.6g} tau={cfg.tau:.6f}", flush=True)
+    print(
+        f"[canonical] R={R} shape_zyx=({cfg.nz},{cfg.ny},{cfg.nx}) "
+        f"cells={cfg.nx * cfg.ny * cfg.nz} est_GiB={cfg.nx * cfg.ny * cfg.nz * 1000 / 2**30:.1f} "
+        f"steps={cfg.steps} warmup={cfg.warmup_steps} window={cfg.statistics_window_steps} "
+        f"nu={cfg.nu:.6g} tau={cfg.tau:.6f}",
+        flush=True,
+    )
     result = run_sphere_bfl_control_volume(cfg)
     payload = _jsonable(result)
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    print(json.dumps({
-        "cd_control_volume": payload["result"]["cd_control_volume"],
-        "cd_bfl_link": payload["result"]["cd_bfl_link"],
-        "reference_error_pct": payload["result"]["reference_error_pct"],
-        "observer_difference_pct": payload["result"]["observer_difference_pct"],
-        "numerical_quality_admitted": payload["acceptance"]["numerical_quality_admitted"],
-    }, indent=2), flush=True)
+    print(
+        json.dumps(
+            {
+                "cd_control_volume": payload["result"]["cd_control_volume"],
+                "cd_bfl_link": payload["result"]["cd_bfl_link"],
+                "reference_error_pct": payload["result"]["reference_error_pct"],
+                "observer_difference_pct": payload["result"]["observer_difference_pct"],
+                "numerical_quality_admitted": payload["acceptance"]["numerical_quality_admitted"],
+            },
+            indent=2,
+        ),
+        flush=True,
+    )
     print("DONE", flush=True)
 
 

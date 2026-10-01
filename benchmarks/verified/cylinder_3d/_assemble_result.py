@@ -11,6 +11,7 @@ diagnostics.  See ``docs/mem_surface_caliber_finding.md``.
 
     python _assemble_result.py <out_dir> <case_D20.json> <case_D40.json>
 """
+
 from __future__ import annotations
 
 import json
@@ -31,8 +32,9 @@ def main() -> int:
     cd_all = [r["cd_mem_all"] for r in per_grid]
     cd_int = [r["cd_mem_interior"] for r in per_grid]
     cd = cd_surf
-    errs = [r.get("err_surf_pct", (r["cd_mem_surface"] - CD_REF) / CD_REF * 100.0)
-            for r in per_grid]
+    errs = [
+        r.get("err_surf_pct", (r["cd_mem_surface"] - CD_REF) / CD_REF * 100.0) for r in per_grid
+    ]
     span = abs(cd[-1] - cd[0]) / CD_REF * 100.0 if len(cd) > 1 else float("nan")
     span_all = abs(cd_all[-1] - cd_all[0]) / CD_REF * 100.0 if len(cd_all) > 1 else float("nan")
     ok = all(abs(e) <= 3.0 for e in errs)
@@ -40,11 +42,13 @@ def main() -> int:
     res = {
         "case": "cylinder_3d_re40",
         "description": "3D extruded circular cylinder, infinite span (z periodic), Re=40 steady",
-        "lattice": "D3Q19", "collision": "bgk",
+        "lattice": "D3Q19",
+        "collision": "bgk",
         "force_method": "ladd_momentum_exchange_3d (post-stream, pre-bounce-back); "
-                        "primary caliber = SURFACE cells only (wall-adjacent)",
+        "primary caliber = SURFACE cells only (wall-adjacent)",
         "reference": per_grid[0]["ref_cd"],
-        "ref_cd": per_grid[0]["ref_cd"], "ref_cluster": per_grid[0]["ref_cluster"],
+        "ref_cd": per_grid[0]["ref_cd"],
+        "ref_cluster": per_grid[0]["ref_cluster"],
         "ref_sources": per_grid[0]["ref_sources"],
         "grids": per_grid,
         "cd_mem_surface_by_grid": cd_surf,
@@ -54,8 +58,10 @@ def main() -> int:
         "cd_pressure_friction_by_grid": [r["cd_pf_standard"] for r in per_grid],
         "convergence": {
             "caliber": "surface_only",
-            "cd": cd, "cd_span_pct": span,
-            "cd_within_3pct": ok, "grid_span_within_3pct": conv,
+            "cd": cd,
+            "cd_span_pct": span,
+            "cd_within_3pct": ok,
+            "grid_span_within_3pct": conv,
             "cd_all_span_pct": span_all,
         },
         "verified": bool(ok and conv),

@@ -12,11 +12,11 @@ Also reports a 2D pressure/friction split identical in convention to
 tensorlbm.drag_pressure (dA=1 per near cell, p0=far-field, extrap='none') so the
 3D and 2D numbers are directly comparable.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import time
 from pathlib import Path
 
@@ -77,8 +77,11 @@ def main() -> int:
     n_near = int(near.sum().item())
     nfx, nfy = face_counts_2d(solid)
     n_faces = int((nfx + nfy).sum().item())
-    print(f"[cyl2d] solid={int(solid.sum())} near={n_near} faces={n_faces} "
-          f"ratio={n_faces / n_near:.4f}", flush=True)
+    print(
+        f"[cyl2d] solid={int(solid.sum())} near={n_near} faces={n_faces} "
+        f"ratio={n_faces / n_near:.4f}",
+        flush=True,
+    )
 
     rho0 = torch.ones((ny, nx), device=dev)
     ux0 = torch.full_like(rho0, u_in)
@@ -97,7 +100,7 @@ def main() -> int:
     norm = torch.sqrt(nxn**2 + nyn**2).clamp(min=1e-10)
     nxn = (nxn / norm) * near.float()
     nyn = (nyn / norm) * near.float()
-    q_sm = ((r_c - R).clamp(0.05, 1.0) * near.float())
+    q_sm = (r_c - R).clamp(0.05, 1.0) * near.float()
 
     mem_hist, cdp_hist, cdf_std, cdf_fc, cdf_bfl = [], [], [], [], []
     step = 0
@@ -126,19 +129,31 @@ def main() -> int:
         if step % 5000 == 0:
             k = min(200, len(mem_hist))
             mm = sum(mem_hist[-k:]) / k / dpS
-            print(f"[cyl2d] step={step} Cd_mem={mm:.4f} "
-                  f"Cd_p={sum(cdp_hist[-k:]) / k:.4f} "
-                  f"Cd_f_std={sum(cdf_std[-k:]) / k:.4f} "
-                  f"Cd_f_faces={sum(cdf_fc[-k:]) / k:.4f} "
-                  f"Cd_f_bfl={sum(cdf_bfl[-k:]) / k:.4f} ({time.time() - t0:.0f}s)",
-                  flush=True)
+            print(
+                f"[cyl2d] step={step} Cd_mem={mm:.4f} "
+                f"Cd_p={sum(cdp_hist[-k:]) / k:.4f} "
+                f"Cd_f_std={sum(cdf_std[-k:]) / k:.4f} "
+                f"Cd_f_faces={sum(cdf_fc[-k:]) / k:.4f} "
+                f"Cd_f_bfl={sum(cdf_bfl[-k:]) / k:.4f} ({time.time() - t0:.0f}s)",
+                flush=True,
+            )
 
     k = min(200, len(mem_hist))
     out = {
         "case": "cylinder_2d_re40_independent_crosscheck",
-        "D": D, "nx": nx, "ny": ny, "domain_D": a.domain_D, "Re": Re,
-        "u_in": u_in, "nu": nu, "tau": tau, "steps": a.steps, "n_finished": step,
-        "n_near": n_near, "n_faces": n_faces, "face_cell_ratio": n_faces / n_near,
+        "D": D,
+        "nx": nx,
+        "ny": ny,
+        "domain_D": a.domain_D,
+        "Re": Re,
+        "u_in": u_in,
+        "nu": nu,
+        "tau": tau,
+        "steps": a.steps,
+        "n_finished": step,
+        "n_near": n_near,
+        "n_faces": n_faces,
+        "face_cell_ratio": n_faces / n_near,
         "cd_mem": sum(mem_hist[-k:]) / k / dpS,
         "cd_mem_last": float(mem_hist[-1].item() / dpS),
         "cd_pressure": sum(cdp_hist[-k:]) / k,
@@ -146,7 +161,9 @@ def main() -> int:
         "cd_friction_faces": sum(cdf_fc[-k:]) / k,
         "cd_friction_bfl_smooth": sum(cdf_bfl[-k:]) / k,
         "plateau_mem": {
-            f"{int(fr * 100)}%": float(sum(mem_hist[int(len(mem_hist) * fr) - k:int(len(mem_hist) * fr)]) / k / dpS)
+            f"{int(fr * 100)}%": float(
+                sum(mem_hist[int(len(mem_hist) * fr) - k : int(len(mem_hist) * fr)]) / k / dpS
+            )
             for fr in (0.25, 0.5, 0.75, 1.0)
         },
         "wall_s": time.time() - t0,

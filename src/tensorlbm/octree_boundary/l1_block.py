@@ -65,6 +65,7 @@ physical shell adjacent to the L1/coarse interface, keeping density,
 momentum and the resolved stress intact.  Default ``None`` = unfiltered
 advance, bitwise identical to the pre-filter code path.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -121,8 +122,7 @@ class WindowInfo:
 
     @property
     def shape(self) -> tuple[int, int, int]:
-        return (self.z1 - self.z0 + 1, self.y1 - self.y0 + 1,
-                self.x1 - self.x0 + 1)
+        return (self.z1 - self.z0 + 1, self.y1 - self.y0 + 1, self.x1 - self.x0 + 1)
 
 
 def build_window_indices(
@@ -163,9 +163,12 @@ def build_window_indices(
     x0 = max(0, box.x0 - ring)
     x1 = min(nx - 1, box.x1 + ring)
     if not (
-        box.z0 - ring >= 0 and box.z1 + ring <= nz
-        and box.y0 - ring >= 0 and box.y1 + ring <= ny
-        and box.x0 - ring >= 0 and box.x1 + ring <= nx
+        box.z0 - ring >= 0
+        and box.z1 + ring <= nz
+        and box.y0 - ring >= 0
+        and box.y1 + ring <= ny
+        and box.x0 - ring >= 0
+        and box.x1 + ring <= nx
     ):
         # Degrade (warn) instead of raising: some geometries (SUBOFF with
         # a body close to the inlet, box.x0 = 1) cannot keep a full ring on
@@ -173,6 +176,7 @@ def build_window_indices(
         # thinner on the truncated side(s).  The 69d027c hard raise broke
         # those standard configurations, so we relax it here.
         import warnings as _w
+
         _w.warn(
             "L1 window ring truncated by the domain edge "
             f"(box z:[{box.z0},{box.z1}) y:[{box.y0},{box.y1}) "
@@ -184,8 +188,7 @@ def build_window_indices(
     yy = torch.arange(y0, y1 + 1, device=device)
     xx = torch.arange(x0, x1 + 1, device=device)
     gz, gy, gx = torch.meshgrid(zz, yy, xx, indexing="ij")
-    cells = torch.stack((gz.reshape(-1), gy.reshape(-1), gx.reshape(-1)),
-                        dim=1)
+    cells = torch.stack((gz.reshape(-1), gy.reshape(-1), gx.reshape(-1)), dim=1)
     return WindowInfo(z0, z1, y0, y1, x0, x1, cells)
 
 
@@ -225,8 +228,7 @@ def gather_window_chunked(
         xx = wc[in_slab, 2] - lo + 1
         local[:, in_slab] = slab_field[:, zz, yy, xx]
     full = torch.zeros(q, n_win, dtype=dtype, device=dev)
-    chunk = max(1, int(max_bytes_per_msg
-                       // (q * torch.finfo(dtype).bits // 8)))
+    chunk = max(1, int(max_bytes_per_msg // (q * torch.finfo(dtype).bits // 8)))
     for c0 in range(0, n_win, chunk):
         c1 = min(c0 + chunk, n_win)
         piece = local[:, c0:c1].contiguous()
@@ -255,8 +257,7 @@ def write_window_back(
     wc = win.cells
     if bool(in_slab.any()):
         flat = window_patch.reshape(window_patch.shape[0], -1)
-        coarse_f[:, wc[in_slab, 0], wc[in_slab, 1],
-                 wc[in_slab, 2] - lo + 1] = flat[:, in_slab]
+        coarse_f[:, wc[in_slab, 0], wc[in_slab, 1], wc[in_slab, 2] - lo + 1] = flat[:, in_slab]
 
 
 class L1BlockDistributed:
@@ -335,9 +336,14 @@ class L1BlockDistributed:
                     "interface_filter must be a (width, strength) pair or None",
                 )
             filter_width, filter_strength = interface_filter
-            if not isinstance(filter_width, int) or isinstance(
-                filter_width, bool,
-            ) or filter_width < 0:
+            if (
+                not isinstance(filter_width, int)
+                or isinstance(
+                    filter_width,
+                    bool,
+                )
+                or filter_width < 0
+            ):
                 raise ValueError("interface filter width must be a non-negative int")
             if not 0.0 <= float(filter_strength) <= 1.0:
                 raise ValueError("interface filter strength must lie in [0,1]")
@@ -362,9 +368,7 @@ class L1BlockDistributed:
         self.tau_l1 = convective_refined_tau(self.tau_coarse, self.ratio)
         self.collide_fn = collide_fn
         self.stream_fn = stream_fn
-        self.maximum_reflux_correction_fraction = (
-            maximum_reflux_correction_fraction
-        )
+        self.maximum_reflux_correction_fraction = maximum_reflux_correction_fraction
         self.correction_stencil = correction_stencil
         self.interface_filter = interface_filter
         self.no_refreeze = bool(no_refreeze)
@@ -393,7 +397,10 @@ class L1BlockDistributed:
         # cells without touching the L1 ghost layer.
         self.window_ring = ghost if window_ring is None else window_ring
         self.win = build_window_indices(
-            domain_shape, box, self.device, ring=self.window_ring,
+            domain_shape,
+            box,
+            self.device,
+            ring=self.window_ring,
         )
         w = self.win
         nz_w, ny_w, nx_w = w.shape
@@ -402,7 +409,8 @@ class L1BlockDistributed:
         # ---- ghost-layer mask + injection coarse-donor maps ----
         ghost_mask = torch.zeros(
             (nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g),
-            dtype=torch.bool, device=self.device,
+            dtype=torch.bool,
+            device=self.device,
         )
         ghost_mask[0] = True
         ghost_mask[-1] = True
@@ -419,19 +427,26 @@ class L1BlockDistributed:
         yc = (box.y0 + (yoff - g) // ratio).clamp(w.y0, w.y1)
         xc = (box.x0 + (xoff - g) // ratio).clamp(w.x0, w.x1)
         self.zc_map = zc[:, None, None].expand(
-            nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g,
+            nz_l1 + 2 * g,
+            ny_l1 + 2 * g,
+            nx_l1 + 2 * g,
         )
         self.yc_map = yc[None, :, None].expand(
-            nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g,
+            nz_l1 + 2 * g,
+            ny_l1 + 2 * g,
+            nx_l1 + 2 * g,
         )
         self.xc_map = xc[None, None, :].expand(
-            nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g,
+            nz_l1 + 2 * g,
+            ny_l1 + 2 * g,
+            nx_l1 + 2 * g,
         )
 
         # ---- frozen-solid mask (with-ghost frame) ----
         solid_q = torch.zeros(
             (nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g),
-            dtype=torch.bool, device=self.device,
+            dtype=torch.bool,
+            device=self.device,
         )
         if solid_l1 is not None:
             if tuple(solid_l1.shape) != self.l1_shape:
@@ -477,26 +492,28 @@ class L1BlockDistributed:
 
         # ---- coarse<->L1 box interface links (window frame) ----
         box_owned = torch.zeros(
-            (nz_w, ny_w, nx_w), dtype=torch.bool, device=self.device,
+            (nz_w, ny_w, nx_w),
+            dtype=torch.bool,
+            device=self.device,
         )
         box_owned[
-            box.z0 - w.z0: box.z1 - w.z0,
-            box.y0 - w.y0: box.y1 - w.y0,
-            box.x0 - w.x0: box.x1 - w.x0,
+            box.z0 - w.z0 : box.z1 - w.z0,
+            box.y0 - w.y0 : box.y1 - w.y0,
+            box.x0 - w.x0 : box.x1 - w.x0,
         ] = True
         self.box_links: KineticInterfaceLinks = build_kinetic_interface_links(
-            box_owned, q=q,
+            box_owned,
+            q=q,
         )
 
         # ---- L1 fine interface links (with-ghost frame) ----
         l1_owned = torch.zeros(
             (nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g),
-            dtype=torch.bool, device=self.device,
+            dtype=torch.bool,
+            device=self.device,
         )
         l1_owned[g:-g, g:-g, g:-g] = True
-        self.l1_fine_links: KineticInterfaceLinks = (
-            build_kinetic_interface_links(l1_owned, q=q)
-        )
+        self.l1_fine_links: KineticInterfaceLinks = build_kinetic_interface_links(l1_owned, q=q)
 
         self.l1_phys_pre: torch.Tensor | None = None
         self.l1_posts_phys: list[torch.Tensor] = []
@@ -633,18 +650,26 @@ class L1BlockDistributed:
         posts_ghost: list[torch.Tensor] = []
         for s in range(self.ratio):
             alpha_start = s / self.ratio
-            self._fill_ghost(torch.lerp(
-                coarse_window_old, coarse_window_new, alpha_start,
-            ))
+            self._fill_ghost(
+                torch.lerp(
+                    coarse_window_old,
+                    coarse_window_new,
+                    alpha_start,
+                )
+            )
             self.l1_f, post_frozen = self._advance()
             posts_phys.append(
                 post_frozen[:, g:-g, g:-g, g:-g].contiguous(),
             )
             posts_ghost.append(post_frozen)
             alpha_end = (s + 1) / self.ratio
-            self._fill_ghost(torch.lerp(
-                coarse_window_old, coarse_window_new, alpha_end,
-            ))
+            self._fill_ghost(
+                torch.lerp(
+                    coarse_window_old,
+                    coarse_window_new,
+                    alpha_end,
+                )
+            )
         self.l1_posts_phys = posts_phys
         self.l1_posts_ghost = posts_ghost
         return self.l1_phys_pre, posts_phys, posts_ghost
@@ -662,13 +687,11 @@ class L1BlockDistributed:
         applies the face-local reflux correction on the 1-cell ring and
         returns the ledger (schema of ``StaticBlockAMR3D.step``).
         """
-        g = self.ghost
         b = self.box
         w = self.win
         if not self.l1_posts_ghost:
             raise RuntimeError(
-                "restrict_and_reflux requires the L1 substep post states "
-                "(call step() first)",
+                "restrict_and_reflux requires the L1 substep post states (call step() first)",
             )
         l1_phys = self.physical_copy()
         restricted = restrict_populations_2to1(l1_phys)
@@ -680,23 +703,22 @@ class L1BlockDistributed:
         )
         coarse_window_new[
             :,
-            b.z0 - w.z0: b.z1 - w.z0,
-            b.y0 - w.y0: b.y1 - w.y0,
-            b.x0 - w.x0: b.x1 - w.x0,
+            b.z0 - w.z0 : b.z1 - w.z0,
+            b.y0 - w.y0 : b.y1 - w.y0,
+            b.x0 - w.x0 : b.x1 - w.x0,
         ] = restricted
         coarse_transfer = observe_kinetic_interface_transfer(
-            coarse_window_post, self.box_links,
+            coarse_window_post,
+            self.box_links,
         )
         fine_transfer = None
         for post_g in self.l1_posts_ghost:
             observed = observe_kinetic_interface_transfer(
-                post_g, self.l1_fine_links,
-                cell_volume=1.0 / self.ratio ** 3,
+                post_g,
+                self.l1_fine_links,
+                cell_volume=1.0 / self.ratio**3,
             )
-            fine_transfer = (
-                observed if fine_transfer is None
-                else fine_transfer + observed
-            )
+            fine_transfer = observed if fine_transfer is None else fine_transfer + observed
         if fine_transfer is None:
             raise RuntimeError("L1 block omitted the fine interface transfer")
         coarse_window_new, report = apply_face_local_reflux(
@@ -704,9 +726,7 @@ class L1BlockDistributed:
             self.box_links,
             coarse_transfer,
             fine_transfer,
-            maximum_correction_fraction=(
-                self.maximum_reflux_correction_fraction
-            ),
+            maximum_correction_fraction=(self.maximum_reflux_correction_fraction),
             correction_stencil=self.correction_stencil,
         )
         ledger = PopulationRefluxLedger(
@@ -716,7 +736,10 @@ class L1BlockDistributed:
             report.residual,
             report.limited_directions,
             report.raw_kinetic_mismatch,
-            0.0, 1.0, 0.0, 1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
             report.maximum_applied_correction_fraction,
         )
         self.last_reflux = ledger

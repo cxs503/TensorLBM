@@ -559,9 +559,7 @@ def sc_single_component_force(
         # because Σᵢ wᵢ cᵢ = 0 → exact momentum conservation (Newton's third law).
         # This keeps the standard D2Q9 gather stencil (no central-difference
         # odd-even/checkerboard decoupling → numerically robust).
-        sumsq_x, sumsq_y = _sc_neighbor_weighted_sum(
-            psi, solid_mask, wall_psi, square=True
-        )
+        sumsq_x, sumsq_y = _sc_neighbor_weighted_sum(psi, solid_mask, wall_psi, square=True)
         Fx = -0.5 * G * sumsq_x + rho * gx
         Fy = -0.5 * G * sumsq_y + rho * gy
     elif scheme == "pressure_tensor_cd":
@@ -653,9 +651,7 @@ def collide_sc_single_component(
         Updated distribution tensor of the same shape.
     """
     rho, ux, uy = macroscopic(f)
-    Fx, Fy = sc_single_component_force(
-        rho, G, psi_fn, gx, gy, solid_mask, wall_psi, scheme
-    )
+    Fx, Fy = sc_single_component_force(rho, G, psi_fn, gx, gy, solid_mask, wall_psi, scheme)
     rho_s = torch.clamp(rho, min=1e-12)
 
     if forcing == "velocity_shift":
@@ -677,14 +673,10 @@ def collide_sc_single_component(
         uf = uxp * Fx + uyp * Fy  # u_phys·F
         # Standard Guo (2002) source term, Σᵢ Sᵢ = 0 (mass-conserving):
         #   Sᵢ = wᵢ (1 − 1/(2τ)) [ (cᵢ − u_phys)·F / cs² + (cᵢ·u_phys)(cᵢ·F) / cs⁴ ]
-        S = w3 * (1.0 - 1.0 / (2.0 * tau)) * (
-            (cf - uf.unsqueeze(0)) / _CS2 + cu * cf / _CS2**2
-        )
+        S = w3 * (1.0 - 1.0 / (2.0 * tau)) * ((cf - uf.unsqueeze(0)) / _CS2 + cu * cf / _CS2**2)
         f_out = f - (f - feq) / tau + S
     else:
-        raise ValueError(
-            f"unknown forcing {forcing!r}; expected 'velocity_shift' or 'guo'"
-        )
+        raise ValueError(f"unknown forcing {forcing!r}; expected 'velocity_shift' or 'guo'")
 
     if solid_mask is not None:
         f_out = torch.where(solid_mask.unsqueeze(0), f, f_out)

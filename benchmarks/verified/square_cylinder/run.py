@@ -377,10 +377,7 @@ def main() -> None:
         "compile_mode": compile_mode,
         "compile_mode_effective": (
             "eager"
-            if any(
-                g.get("compile_status") in ("eager", "eager_fallback")
-                for g in grids.values()
-            )
+            if any(g.get("compile_status") in ("eager", "eager_fallback") for g in grids.values())
             else compile_mode
         ),
         "convergence": {

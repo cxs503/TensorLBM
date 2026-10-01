@@ -35,15 +35,15 @@ L1-exterior + shell volume-integrated mass changes by exactly
 ``-ledger.residual.sum()`` per root step, so a reflux residual < 1e-10 bounds
 the joint-system mass drift.
 """
+
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 
 import torch
-import time as _time
-import warnings
 
-from tensorlbm.d3q19 import C, OPPOSITE, equilibrium3d, macroscopic3d
+from tensorlbm.d3q19 import OPPOSITE, C, equilibrium3d, macroscopic3d
 from tensorlbm.kinetic_flux_register import (
     KineticInterfaceLinks,
     KineticInterfaceTransfer,
@@ -63,12 +63,11 @@ from tensorlbm.octree_boundary.geometry import (
 from tensorlbm.octree_boundary.topology import run_topology_checks
 from tensorlbm.refinement import BoxRegion
 from tensorlbm.static_block_amr import (
-    AMRAdvanceResult,
     Advance3D,
+    AMRAdvanceResult,
     PopulationRefluxLedger,
     convective_refined_tau,
 )
-
 
 # ---------------------------------------------------------------------------
 # Lattice helpers
@@ -84,7 +83,8 @@ def _tau_chain(tau_coarse: float, d_max: int) -> list[float]:
 
 
 def _rescale_nonequilibrium_per_cell(
-    f: torch.Tensor, scale: torch.Tensor,
+    f: torch.Tensor,
+    scale: torch.Tensor,
 ) -> torch.Tensor:
     """``f + (scale-1) * neq`` per cell — the vectorised analogue of
     ``rescale_nonequilibrium`` with a per-cell scale (needed because shell
@@ -130,8 +130,7 @@ def _unpack_shell_advance(
             raise ValueError("advance changed the shell population shape")
         return result, result
     raise TypeError(
-        "advance must return a tensor or AMRAdvanceResult, "
-        f"got {type(result).__name__}",
+        f"advance must return a tensor or AMRAdvanceResult, got {type(result).__name__}",
     )
 
 
@@ -154,19 +153,19 @@ class ShellGhostPlan:
     """
 
     n_ghost: int
-    leaf: torch.Tensor            # (n_ghost,) leaf enum
-    direction: torch.Tensor       # (n_ghost,) filled direction at the leaf
-    z0: torch.Tensor              # (n_ghost,) donor lower cells (z, y, x)
+    leaf: torch.Tensor  # (n_ghost,) leaf enum
+    direction: torch.Tensor  # (n_ghost,) filled direction at the leaf
+    z0: torch.Tensor  # (n_ghost,) donor lower cells (z, y, x)
     y0: torch.Tensor
     x0: torch.Tensor
-    z1: torch.Tensor              # (n_ghost,) donor upper cells
+    z1: torch.Tensor  # (n_ghost,) donor upper cells
     y1: torch.Tensor
     x1: torch.Tensor
-    wz: torch.Tensor              # (n_ghost,) trilinear weights
+    wz: torch.Tensor  # (n_ghost,) trilinear weights
     wy: torch.Tensor
     wx: torch.Tensor
-    volume: torch.Tensor          # (n_ghost,) fine-cell volume (2^-3l)
-    slot: torch.Tensor            # (Q, n_leaf) int64, -1 = no ghost
+    volume: torch.Tensor  # (n_ghost,) fine-cell volume (2^-3l)
+    slot: torch.Tensor  # (Q, n_leaf) int64, -1 = no ghost
     # Per-row leaf level in the PARENT field's frame (coarse-frame level for
     # coarse-parent plans built by ``build_ghost_plan_coarse_parent``, i.e.
     # ``octree.leaf_level[leaf] + 1``; ``None`` for the ordinary L1-frame
@@ -177,7 +176,8 @@ class ShellGhostPlan:
 
 
 def build_ghost_plan(
-    octree: OctreeGrid, l1_shape: tuple[int, int, int],
+    octree: OctreeGrid,
+    l1_shape: tuple[int, int, int],
     *,
     solid_fallback: bool = True,
 ) -> ShellGhostPlan:
@@ -198,29 +198,41 @@ def build_ghost_plan(
     device = octree.leaf_morton.device
     q = octree.Q
     n_leaf = octree.n_leaf
-    links = octree.interface_links                      # (n_link, 2) (i, d)
+    links = octree.interface_links  # (n_link, 2) (i, d)
     n_link = int(links.shape[0])
     slot = torch.full((q, n_leaf), -1, dtype=torch.int64, device=device)
     if n_link == 0:
         empty = torch.empty(0, dtype=torch.int64, device=device)
         return ShellGhostPlan(
-            0, empty, empty, empty, empty, empty, empty, empty, empty,
-            empty, empty, empty, empty, slot,
+            0,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            slot,
         )
     leaf = links[:, 0]
     d_link = links[:, 1]
     opp = octree._opp.to(device)
     c_vec = octree._c_vec.to(device)
-    direction = opp[d_link]                             # filled direction
+    direction = opp[d_link]  # filled direction
     level_i = octree.leaf_level[leaf]
     dx = 2.0 ** (-level_i.to(torch.float64))
     if octree._l2_coords is not None and octree._l2_coords.numel() > 0:
         coords = torch.cat((octree._l1_coords, octree._l2_coords), dim=0)
     else:
         coords = octree._l1_coords
-    centers64 = (
-        coords.to(torch.float64) + 0.5
-    ) / (2.0 ** octree.leaf_level.to(torch.float64))[:, None]   # (n, 3) x,y,z
+    centers64 = (coords.to(torch.float64) + 0.5) / (2.0 ** octree.leaf_level.to(torch.float64))[
+        :, None
+    ]  # (n, 3) x,y,z
     # The ghost cell sits at the SHELL_OUTSIDE neighbour position, i.e. the
     # cell adjacent to leaf i along the *link* direction d_link
     # (``x_i + c_vec[d_link] * dx``), and supplies the incoming population of
@@ -230,27 +242,37 @@ def build_ghost_plan(
     # boundary leaves from the exterior L1 flow; see the stream_gather /
     # bfl_apply_gather donor conventions).
     p_xyz = centers64[leaf] + c_vec[d_link].to(torch.float64) * dx[:, None]
-    p = p_xyz[:, [2, 1, 0]]                             # (z, y, x) world
+    p = p_xyz[:, [2, 1, 0]]  # (z, y, x) world
     # The restricted shell stores volume averages in the L1 covered cells.
     # Those parent values are sampled as cell-centred quantities at the
     # shell/L1 interface, hence the local world-to-index map retains the
     # half-cell offset even though the L1 wall mask itself is node-centred.
     # Keeping this interface convention avoids changing the established
     # subcycling transfer stencil while the parent wall geometry is aligned.
-    continuous = p - 0.5                                # coarse-index coords
+    continuous = p - 0.5  # coarse-index coords
     lo = torch.floor(continuous).to(torch.int64)
     hi = lo + 1
     bounds = torch.tensor(
-        [nz, ny, nx], dtype=torch.int64, device=device,
+        [nz, ny, nx],
+        dtype=torch.int64,
+        device=device,
     )
     lo = lo.clamp(torch.zeros_like(lo), bounds - 2)
     hi = hi.clamp(torch.ones_like(hi), bounds - 1)
     w = (continuous - lo.to(continuous.dtype)).clamp(0.0, 1.0)
-    if octree._solid is not None and bool(
-        (octree._solid[p[:, 0].floor().to(torch.int64).clamp(0, nz - 1),
-                       p[:, 1].floor().to(torch.int64).clamp(0, ny - 1),
-                       p[:, 2].floor().to(torch.int64).clamp(0, nx - 1)]).any()
-    ) and solid_fallback:
+    if (
+        octree._solid is not None
+        and bool(
+            (
+                octree._solid[
+                    p[:, 0].floor().to(torch.int64).clamp(0, nz - 1),
+                    p[:, 1].floor().to(torch.int64).clamp(0, ny - 1),
+                    p[:, 2].floor().to(torch.int64).clamp(0, nx - 1),
+                ]
+            ).any()
+        )
+        and solid_fallback
+    ):
         # Solid-host fallback: a ghost position can be fluid at leaf
         # resolution yet fall inside an L1-solid cell (the surface-straddling
         # ring — L1 cells whose centre is inside the sphere but whose outer
@@ -258,19 +280,24 @@ def build_ghost_plan(
         # not a fluid state; sample the leaf's own (covered) host cell
         # instead, which holds the restricted leaf state — the same local
         # band fluid the old mirror sampling happened to hit for these links.
-        cell_p = torch.stack((
-            p[:, 0].floor().to(torch.int64).clamp(0, nz - 1),
-            p[:, 1].floor().to(torch.int64).clamp(0, ny - 1),
-            p[:, 2].floor().to(torch.int64).clamp(0, nx - 1),
-        ), dim=1)
+        cell_p = torch.stack(
+            (
+                p[:, 0].floor().to(torch.int64).clamp(0, nz - 1),
+                p[:, 1].floor().to(torch.int64).clamp(0, ny - 1),
+                p[:, 2].floor().to(torch.int64).clamp(0, nx - 1),
+            ),
+            dim=1,
+        )
         solid_host = octree._solid[
-            cell_p[:, 0], cell_p[:, 1], cell_p[:, 2],
+            cell_p[:, 0],
+            cell_p[:, 1],
+            cell_p[:, 2],
         ]
         if bool(solid_host.any()):
             lo = lo.clone()
             hi = hi.clone()
             w = w.clone()
-            host = octree.leaf_host_cell[leaf]          # (n, 3) (z, y, x)
+            host = octree.leaf_host_cell[leaf]  # (n, 3) (z, y, x)
             lo[solid_host] = host[solid_host]
             hi[solid_host] = host[solid_host]
     volume = 2.0 ** (-3.0 * level_i.to(torch.float64))
@@ -283,7 +310,7 @@ def build_ghost_plan(
     # any row index is value-correct; "largest row index wins" (amax) is
     # deterministic and matches the old last-write intent.
     row_idx = torch.arange(n_link, dtype=torch.int64, device=device)
-    key = direction * n_leaf + leaf                     # unique (dir, leaf) key
+    key = direction * n_leaf + leaf  # unique (dir, leaf) key
     flat = torch.full((q * n_leaf,), -1, dtype=torch.int64, device=device)
     flat.scatter_reduce_(0, key, row_idx, reduce="amax")
     slot = flat.view(q, n_leaf)
@@ -291,9 +318,15 @@ def build_ghost_plan(
         n_ghost=n_link,
         leaf=leaf,
         direction=direction,
-        z0=lo[:, 0], y0=lo[:, 1], x0=lo[:, 2],
-        z1=hi[:, 0], y1=hi[:, 1], x1=hi[:, 2],
-        wz=w[:, 0], wy=w[:, 1], wx=w[:, 2],
+        z0=lo[:, 0],
+        y0=lo[:, 1],
+        x0=lo[:, 2],
+        z1=hi[:, 0],
+        y1=hi[:, 1],
+        x1=hi[:, 2],
+        wz=w[:, 0],
+        wy=w[:, 1],
+        wx=w[:, 2],
         volume=volume,
         slot=slot,
     )
@@ -329,33 +362,45 @@ def build_ghost_plan_coarse_parent(
     device = octree.leaf_morton.device
     q = octree.Q
     n_leaf = octree.n_leaf
-    links = octree.interface_links                      # (n_link, 2) (i, d)
+    links = octree.interface_links  # (n_link, 2) (i, d)
     n_link = int(links.shape[0])
     slot = torch.full((q, n_leaf), -1, dtype=torch.int64, device=device)
     if n_link == 0:
         empty = torch.empty(0, dtype=torch.int64, device=device)
         return ShellGhostPlan(
-            0, empty, empty, empty, empty, empty, empty, empty, empty,
-            empty, empty, empty, empty, slot,
+            0,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            slot,
         )
     leaf = links[:, 0]
     d_link = links[:, 1]
     opp = octree._opp.to(device)
     c_vec = octree._c_vec.to(device)
-    direction = opp[d_link]                             # filled direction
+    direction = opp[d_link]  # filled direction
     level_i = octree.leaf_level[leaf]
     dx = 2.0 ** (-level_i.to(torch.float64))
     if octree._l2_coords is not None and octree._l2_coords.numel() > 0:
         coords = torch.cat((octree._l1_coords, octree._l2_coords), dim=0)
     else:
         coords = octree._l1_coords
-    centers64 = (
-        coords.to(torch.float64) + 0.5
-    ) / (2.0 ** octree.leaf_level.to(torch.float64))[:, None]   # (n, 3) x,y,z
+    centers64 = (coords.to(torch.float64) + 0.5) / (2.0 ** octree.leaf_level.to(torch.float64))[
+        :, None
+    ]  # (n, 3) x,y,z
     # Same ghost-cell position as build_ghost_plan (see its docstring for
     # the ``c_vec[d_link]`` vs ``c_vec[direction]`` convention).
     p_xyz = centers64[leaf] + c_vec[d_link].to(torch.float64) * dx[:, None]
-    p = p_xyz[:, [2, 1, 0]]                             # (z, y, x) L1 world
+    p = p_xyz[:, [2, 1, 0]]  # (z, y, x) L1 world
     # L1 world -> coarse window frame: the L1 physical cell (i, j, k)
     # sits at global coarse (box.z0 + i/2, ...), the window cell
     # (zi, yi, xi) at global coarse (win.z0 + zi, ...), hence
@@ -363,47 +408,65 @@ def build_ghost_plan_coarse_parent(
     # (the -0.5 is the cell-centred sampling convention of build_ghost_plan).
     oz, oy, ox = (float(o) for o in coarse_offset)
     off = torch.tensor([oz, oy, ox], dtype=torch.float64, device=device)
-    continuous = p * 0.5 + off - 0.5                    # coarse window coords
+    continuous = p * 0.5 + off - 0.5  # coarse window coords
     lo = torch.floor(continuous).to(torch.int64)
     hi = lo + 1
     bounds = torch.tensor(
-        [nz_w, ny_w, nx_w], dtype=torch.int64, device=device,
+        [nz_w, ny_w, nx_w],
+        dtype=torch.int64,
+        device=device,
     )
     lo = lo.clamp(torch.zeros_like(lo), bounds - 2)
     hi = hi.clamp(torch.ones_like(hi), bounds - 1)
     w = (continuous - lo.to(continuous.dtype)).clamp(0.0, 1.0)
-    if octree._solid is not None and bool(
-        (octree._solid[p[:, 0].floor().to(torch.int64).clamp(0, nz_w - 1),
-                       p[:, 1].floor().to(torch.int64).clamp(0, ny_w - 1),
-                       p[:, 2].floor().to(torch.int64).clamp(0, nx_w - 1)]).any()
-    ) and solid_fallback:
+    if (
+        octree._solid is not None
+        and bool(
+            (
+                octree._solid[
+                    p[:, 0].floor().to(torch.int64).clamp(0, nz_w - 1),
+                    p[:, 1].floor().to(torch.int64).clamp(0, ny_w - 1),
+                    p[:, 2].floor().to(torch.int64).clamp(0, nx_w - 1),
+                ]
+            ).any()
+        )
+        and solid_fallback
+    ):
         # Solid-host fallback (same condition as build_ghost_plan): sample
         # the coarse cell CONTAINING the leaf's own covered L1 host cell —
         # ``off + host // 2`` is exactly the coarse cell the 2:1 restriction
         # of the covered L1 cell writes into, i.e. the same local-band fluid
         # the L1-frame fallback sampled at leaf resolution.
-        cell_p = torch.stack((
-            p[:, 0].floor().to(torch.int64).clamp(0, nz_w - 1),
-            p[:, 1].floor().to(torch.int64).clamp(0, ny_w - 1),
-            p[:, 2].floor().to(torch.int64).clamp(0, nx_w - 1),
-        ), dim=1)
+        cell_p = torch.stack(
+            (
+                p[:, 0].floor().to(torch.int64).clamp(0, nz_w - 1),
+                p[:, 1].floor().to(torch.int64).clamp(0, ny_w - 1),
+                p[:, 2].floor().to(torch.int64).clamp(0, nx_w - 1),
+            ),
+            dim=1,
+        )
         solid_host = octree._solid[
-            cell_p[:, 0], cell_p[:, 1], cell_p[:, 2],
+            cell_p[:, 0],
+            cell_p[:, 1],
+            cell_p[:, 2],
         ]
         if bool(solid_host.any()):
             lo = lo.clone()
             hi = hi.clone()
             w = w.clone()
-            host = octree.leaf_host_cell[leaf]           # (n, 3) L1 indices
+            host = octree.leaf_host_cell[leaf]  # (n, 3) L1 indices
             oz_i, oy_i, ox_i = (int(o) for o in coarse_offset)
             off_i = torch.tensor(
-                [oz_i, oy_i, ox_i], dtype=torch.int64, device=device,
+                [oz_i, oy_i, ox_i],
+                dtype=torch.int64,
+                device=device,
             )
             lo_c = host // 2 + off_i
             lo_c = lo_c.clamp(torch.zeros_like(lo_c), bounds - 2)
             lo[solid_host] = lo_c[solid_host]
             hi[solid_host] = (lo_c[solid_host] + 1).clamp(
-                torch.ones_like(lo_c[solid_host]), bounds - 1,
+                torch.ones_like(lo_c[solid_host]),
+                bounds - 1,
             )
             w[solid_host] = 0.0
     volume = 2.0 ** (-3.0 * level_i.to(torch.float64))
@@ -415,7 +478,7 @@ def build_ghost_plan_coarse_parent(
     # i.e. ``leaf_level + 1`` — otherwise tau_f and the 2^lev denominator
     # are one level too coarse and the ghost neq is injected ~2.18x too
     # strong vs the legacy two-level path (SUBOFF P0 Cd 1.10 -> 1.28).
-    lev = level_i + 1                                # coarse-frame level
+    lev = level_i + 1  # coarse-frame level
     # Deterministic duplicate-safe slot map: ``interface_links`` can hold
     # duplicate (direction, leaf) rows (geometry build artifact, ~0.4% of
     # rows — e.g. SUBOFF L1 2667/609140), and the plain advanced-index
@@ -425,7 +488,7 @@ def build_ghost_plan_coarse_parent(
     # any row index is value-correct; "largest row index wins" (amax) is
     # deterministic and matches the old last-write intent.
     row_idx = torch.arange(n_link, dtype=torch.int64, device=device)
-    key = direction * n_leaf + leaf                     # unique (dir, leaf) key
+    key = direction * n_leaf + leaf  # unique (dir, leaf) key
     flat = torch.full((q * n_leaf,), -1, dtype=torch.int64, device=device)
     flat.scatter_reduce_(0, key, row_idx, reduce="amax")
     slot = flat.view(q, n_leaf)
@@ -433,9 +496,15 @@ def build_ghost_plan_coarse_parent(
         n_ghost=n_link,
         leaf=leaf,
         direction=direction,
-        z0=lo[:, 0], y0=lo[:, 1], x0=lo[:, 2],
-        z1=hi[:, 0], y1=hi[:, 1], x1=hi[:, 2],
-        wz=w[:, 0], wy=w[:, 1], wx=w[:, 2],
+        z0=lo[:, 0],
+        y0=lo[:, 1],
+        x0=lo[:, 2],
+        z1=hi[:, 0],
+        y1=hi[:, 1],
+        x1=hi[:, 2],
+        wz=w[:, 0],
+        wy=w[:, 1],
+        wx=w[:, 2],
         volume=volume,
         slot=slot,
         lev=lev,
@@ -472,7 +541,9 @@ def _fill_ghost_impl(
     q = parent_t.shape[0]
     if plan.n_ghost == 0:
         return torch.empty(
-            (q, 0), dtype=parent_t.dtype, device=parent_t.device,
+            (q, 0),
+            dtype=parent_t.dtype,
+            device=parent_t.device,
         )
     wdtype = parent_t.dtype
     wx = plan.wx.unsqueeze(0).to(dtype=wdtype)
@@ -480,33 +551,39 @@ def _fill_ghost_impl(
     wz = plan.wz.unsqueeze(0).to(dtype=wdtype)
     v00 = torch.lerp(
         parent_t[:, plan.z0, plan.y0, plan.x0],
-        parent_t[:, plan.z0, plan.y0, plan.x1], wx,
+        parent_t[:, plan.z0, plan.y0, plan.x1],
+        wx,
     )
     v01 = torch.lerp(
         parent_t[:, plan.z0, plan.y1, plan.x0],
-        parent_t[:, plan.z0, plan.y1, plan.x1], wx,
+        parent_t[:, plan.z0, plan.y1, plan.x1],
+        wx,
     )
     v10 = torch.lerp(
         parent_t[:, plan.z1, plan.y0, plan.x0],
-        parent_t[:, plan.z1, plan.y0, plan.x1], wx,
+        parent_t[:, plan.z1, plan.y0, plan.x1],
+        wx,
     )
     v11 = torch.lerp(
         parent_t[:, plan.z1, plan.y1, plan.x0],
-        parent_t[:, plan.z1, plan.y1, plan.x1], wx,
+        parent_t[:, plan.z1, plan.y1, plan.x1],
+        wx,
     )
     sampled = torch.lerp(
-        torch.lerp(v00, v01, wy), torch.lerp(v10, v11, wy), wz,
+        torch.lerp(v00, v01, wy),
+        torch.lerp(v10, v11, wy),
+        wz,
     )
     if plan.lev is not None:
-        lev = plan.lev                       # parent-frame level (coarse plans)
+        lev = plan.lev  # parent-frame level (coarse plans)
     else:
-        lev = leaf_level[plan.leaf]          # L1-frame level (ordinary plans)
+        lev = leaf_level[plan.leaf]  # L1-frame level (ordinary plans)
     tau_f = torch.tensor(
-        taus, dtype=torch.float64, device=sampled.device,
+        taus,
+        dtype=torch.float64,
+        device=sampled.device,
     )[lev.to(device=sampled.device)]
-    scale = tau_f / (
-        (2.0 ** lev.to(torch.float64)) * taus[0]
-    )
+    scale = tau_f / ((2.0 ** lev.to(torch.float64)) * taus[0])
     # The ghost cell is a virtual leaf-lattice neighbour, and stream_gather
     # pulls *post-collision* populations from real leaf neighbours; the ghost
     # must therefore supply its post-collision state too.  The rescaled
@@ -559,7 +636,6 @@ def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
     # SDAA_ERROR_MISALIGNED_ADDRESS for large dynamic index tensors (seen at
     # d_max=2 with ~30k fanout rows).  The tables are static topology, built
     # once, so the CPU cost is negligible.
-    dev = nt.device
     nt_c = nt.detach().cpu()
     fo_pos_c = fo_pos.detach().cpu()
     fo_pad_c = fo_pad.detach().cpu()
@@ -587,23 +663,22 @@ def ensure_fanout_tables(octree) -> tuple[torch.Tensor, torch.Tensor]:
         pos = fo_pos_c[live]
         pad = fo_pad_c[live]
         rowidx[pos[:, 0], pos[:, 1]] = torch.arange(
-            pos.shape[0], dtype=torch.int64,
+            pos.shape[0],
+            dtype=torch.int64,
         )
     else:
         # Fallback: build from the registry directly (octrees built before
         # the pre-cache existed).  Live keys are exactly the FANOUT entries.
-        rows = torch.nonzero(nt_c == FANOUT, as_tuple=False)   # (n_live, 2)
+        rows = torch.nonzero(nt_c == FANOUT, as_tuple=False)  # (n_live, 2)
         if rows.shape[0]:
-            members = [
-                octree.interface_fanout[(int(r[1]), int(r[0]))]
-                for r in rows.tolist()
-            ]
+            members = [octree.interface_fanout[(int(r[1]), int(r[0]))] for r in rows.tolist()]
             max_len = max(len(m) for m in members)
             pad = torch.full((rows.shape[0], max_len), -1, dtype=torch.int64)
             for r, m in enumerate(members):
-                pad[r, :len(m)] = torch.tensor(m, dtype=torch.int64)
+                pad[r, : len(m)] = torch.tensor(m, dtype=torch.int64)
             rowidx[rows[:, 0], rows[:, 1]] = torch.arange(
-                rows.shape[0], dtype=torch.int64,
+                rows.shape[0],
+                dtype=torch.int64,
             )
         else:
             pad = torch.empty((0, 0), dtype=torch.int64)
@@ -676,7 +751,7 @@ def _shell_stream_tables(octree, device) -> dict:
     rowidx, pad_live = ensure_fanout_tables(octree)
     rowidx = rowidx.to(dev)
     pad_live = pad_live.to(dev)
-    ridx = rowidx[opp[d_f], i_f]                # live fan-out row / -1
+    ridx = rowidx[opp[d_f], i_f]  # live fan-out row / -1
     has = ridx >= 0
     fb = ~has
     tables = {
@@ -774,7 +849,9 @@ def stream_gather(
     d_fh, i_fh = tables["d_f_has"], tables["i_f_has"]
     if d_fh.numel():
         out[d_fh, i_fh] = _fanout_segment_mean(
-            populations, d_fh, tables["pad_rows"],
+            populations,
+            d_fh,
+            tables["pad_rows"],
         )
     d_fb, i_fb = tables["d_f_fb"], tables["i_f_fb"]
     if d_fb.numel():
@@ -824,14 +901,16 @@ def observe_shell_interface_transfer(
         d_l = links[:, 1]
         li = links[:, 0]
         outgoing.scatter_add_(
-            0, d_l,
+            0,
+            d_l,
             post_collision[d_l, li] * vol[li].to(dtype),
         )
     if plan.n_ghost:
         gdir = plan.direction
         grow = torch.arange(plan.n_ghost, device=device)
         incoming.scatter_add_(
-            0, gdir,
+            0,
+            gdir,
             ghost_vals[gdir, grow] * plan.volume.to(dtype),
         )
     outgoing[0] = 0
@@ -875,7 +954,7 @@ def _segmented_sum(segments: torch.Tensor, values: torch.Tensor, n_segments: int
     if n > 1:
         start_mask[1:] = seg_sorted[1:] != seg_sorted[:-1]
     start_pos = torch.nonzero(start_mask, as_tuple=False).squeeze(1)  # (k,)
-    seg_ids = seg_sorted[start_pos]                                   # (k,)
+    seg_ids = seg_sorted[start_pos]  # (k,)
     # end position of group starting at start_pos[k] is start_pos[k+1]-1
     end_pos = torch.cat(
         (
@@ -913,16 +992,25 @@ def restrict_shell_to_block(
     volume_sum = _segmented_sum(cell_id, vol, n_cells)
     weight = (vol / volume_sum[cell_id]).to(f_leaf.dtype)
     f_mean = _segmented_sum(
-        cell_id, weight.unsqueeze(0) * f_leaf, n_cells,
+        cell_id,
+        weight.unsqueeze(0) * f_leaf,
+        n_cells,
     )
     level_max = torch.zeros(
-        n_cells, dtype=torch.float64, device=device,
+        n_cells,
+        dtype=torch.float64,
+        device=device,
     ).scatter_reduce_(
-        0, cell_id, octree.leaf_level.to(torch.float64),
-        reduce="amax", include_self=False,
+        0,
+        cell_id,
+        octree.leaf_level.to(torch.float64),
+        reduce="amax",
+        include_self=False,
     )
     tau_f = torch.tensor(
-        taus, dtype=torch.float64, device=device,
+        taus,
+        dtype=torch.float64,
+        device=device,
     )[level_max.to(torch.int64)]
     scale = taus[0] / ((2.0 ** (-level_max)) * tau_f)
     return _rescale_nonequilibrium_per_cell(f_mean, scale), cells
@@ -971,16 +1059,22 @@ def build_shell_coarse_links(
         raise ValueError(f"unsupported lattice Q={q} (D3Q19 or D3Q27)")
     c = C.to(covered.device)
     outgoing = torch.zeros(
-        (q, *covered.shape), dtype=torch.bool, device=covered.device,
+        (q, *covered.shape),
+        dtype=torch.bool,
+        device=covered.device,
     )
     incoming = torch.zeros_like(outgoing)
     for d in range(1, q):
         cx, cy, cz = (int(v) for v in c[d].tolist())
         dest_covered = torch.roll(
-            covered, shifts=(-cz, -cy, -cx), dims=(0, 1, 2),
+            covered,
+            shifts=(-cz, -cy, -cx),
+            dims=(0, 1, 2),
         )
         dest_solid = torch.roll(
-            solid, shifts=(-cz, -cy, -cx), dims=(0, 1, 2),
+            solid,
+            shifts=(-cz, -cy, -cx),
+            dims=(0, 1, 2),
         )
         outgoing[d] = covered & ~dest_covered & ~dest_solid
         incoming[d] = ~covered & ~solid & dest_covered
@@ -1091,7 +1185,9 @@ def step_octree_shell(
             )
         solid_mask = octree._solid if solid is None else solid
         coarse_links = build_shell_coarse_links(
-            covered, solid_mask, q=octree.Q,
+            covered,
+            solid_mask,
+            q=octree.Q,
         )
     if reflux:
         if coarse_links is None:
@@ -1109,7 +1205,9 @@ def step_octree_shell(
         # exactly (the fine side and the coarse side then count the same
         # flux set).
         observation_links = build_shell_coarse_links(
-            coarse_links.inside, None, q=octree.Q,
+            coarse_links.inside,
+            None,
+            q=octree.Q,
         )
     else:
         observation_links = None
@@ -1124,11 +1222,19 @@ def step_octree_shell(
             octree.f_leaf.shape,
         )
         out = stream_gather(
-            octree, ghost_plan, populations, octree.f_leaf, ghost_vals,
+            octree,
+            ghost_plan,
+            populations,
+            octree.f_leaf,
+            ghost_vals,
         )
         if bfl_fn is not None:
             result = bfl_fn(
-                octree, out, post_collision, ghost_plan, ghost_vals,
+                octree,
+                out,
+                post_collision,
+                ghost_plan,
+                ghost_vals,
                 substep=s,
             )
             out, substep_force = result
@@ -1136,11 +1242,12 @@ def step_octree_shell(
                 force_ledger.add_substep_force(substep_force)
         if reflux:
             observed = observe_shell_interface_transfer(
-                octree, ghost_plan, post_collision, ghost_vals,
+                octree,
+                ghost_plan,
+                post_collision,
+                ghost_vals,
             )
-            fine_transfer = (
-                observed if fine_transfer is None else fine_transfer + observed
-            )
+            fine_transfer = observed if fine_transfer is None else fine_transfer + observed
         octree.f_leaf = out
 
     restricted, cells = restrict_shell_to_block(octree, octree.f_leaf, taus)
@@ -1169,15 +1276,18 @@ def step_octree_shell(
         if len(l1_post) == 0:
             raise ValueError("l1_post sequence must not be empty")
         coarse_transfer = observe_kinetic_interface_transfer(
-            l1_post[0], observation_links,
+            l1_post[0],
+            observation_links,
         )
         for post in l1_post[1:]:
             coarse_transfer = coarse_transfer + observe_kinetic_interface_transfer(
-                post, observation_links,
+                post,
+                observation_links,
             )
     else:
         coarse_transfer = observe_kinetic_interface_transfer(
-            l1_post, observation_links,
+            l1_post,
+            observation_links,
         )
     l1_f, report = apply_face_local_reflux(
         l1_f,
@@ -1276,13 +1386,18 @@ def _stream_gather_shard(shard, populations, f_old, ghost_vals) -> torch.Tensor:
             out[d, solid_mask] = populations[opp[d], solid_mask]
         fanout_mask = src == FANOUT
         if bool(fanout_mask.any()):
-            for i in torch.nonzero(
-                fanout_mask, as_tuple=False,
-            ).squeeze(1).tolist():
+            for i in (
+                torch.nonzero(
+                    fanout_mask,
+                    as_tuple=False,
+                )
+                .squeeze(1)
+                .tolist()
+            ):
                 off = int(fan_off[opp[d], i].item())
                 ln = int(fan_len[opp[d], i].item())
                 if ln > 0:
-                    out[d, i] = remote_buf[off:off + ln].mean()
+                    out[d, i] = remote_buf[off : off + ln].mean()
                 else:
                     out[d, i] = f_old[d, i]
         domain_mask = src == DOMAIN_OUT
@@ -1310,9 +1425,7 @@ def _assemble_shell_transfer(
     outgoing = torch.zeros(q, dtype=dtype, device=root_device)
     incoming = torch.zeros(q, dtype=dtype, device=root_device)
     for d in range(1, q):
-        n_out = sum(
-            int((shard.link_dir == d).sum().item()) for shard in shards
-        )
+        n_out = sum(int((shard.link_dir == d).sum().item()) for shard in shards)
         if n_out:
             buf = torch.zeros(n_out, dtype=dtype, device=root_device)
             for shard in shards:
@@ -1322,16 +1435,10 @@ def _assemble_shell_transfer(
                 # link_dir/link_leaf live on different devices (root vs shard);
                 # move the mask to the shard device before indexing
                 li = shard.link_leaf[sel.to(shard.device)]
-                vals = (
-                    shard.post_collision[d, li]
-                    * shard.leaf_volume[li].to(dtype)
-                )
+                vals = shard.post_collision[d, li] * shard.leaf_volume[li].to(dtype)
                 buf[shard.out_rank[sel]] = vals.to(root_device)
             outgoing[d] = buf.sum()
-        n_in = sum(
-            int((shard.ghost_plan.direction == d).sum().item())
-            for shard in shards
-        )
+        n_in = sum(int((shard.ghost_plan.direction == d).sum().item()) for shard in shards)
         if n_in:
             buf = torch.zeros(n_in, dtype=dtype, device=root_device)
             for shard in shards:
@@ -1364,10 +1471,7 @@ def _assemble_bfl_force(
     force = torch.zeros(3, dtype=torch.float64, device=root_device)
     for d in range(1, q):
         per_shard = [
-            (s, link)
-            for s, recs in enumerate(records)
-            for (dd, _idx, link) in recs
-            if dd == d
+            (s, link) for s, recs in enumerate(records) for (dd, _idx, link) in recs if dd == d
         ]
         if not per_shard:
             continue
@@ -1407,8 +1511,20 @@ def _merge_shard_ghost_plans(shards) -> ShellGhostPlan:
         empty = torch.empty(0, dtype=torch.int64, device=dev)
         empty64 = torch.empty(0, dtype=torch.float64, device=dev)
         return ShellGhostPlan(
-            0, empty, empty, empty, empty, empty, empty, empty, empty,
-            empty64, empty64, empty64, empty64, slot,
+            0,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty64,
+            empty64,
+            empty64,
+            empty64,
+            slot,
         )
 
     def _scatter(name: str, dtype: torch.dtype, *, local_leaf: bool = False):
@@ -1419,25 +1535,28 @@ def _merge_shard_ghost_plans(shards) -> ShellGhostPlan:
                 continue
             vals = getattr(s.ghost_plan, name).to(device=dev)
             if local_leaf:
-                vals = vals + s.lo        # shard-local leaf enum -> global
+                vals = vals + s.lo  # shard-local leaf enum -> global
             buf[rows] = vals
         return buf
 
     leaf = _scatter("leaf", torch.int64, local_leaf=True)
     direction = _scatter("direction", torch.int64)
     slot[direction, leaf] = torch.arange(n_ghost, dtype=torch.int64, device=dev)
-    has_lev = all(
-        getattr(s.ghost_plan, "lev", None) is not None for s in shards
-    )
+    has_lev = all(getattr(s.ghost_plan, "lev", None) is not None for s in shards)
     return ShellGhostPlan(
         n_ghost=n_ghost,
         leaf=leaf,
         direction=direction,
-        z0=_scatter("z0", torch.int64), y0=_scatter("y0", torch.int64),
-        x0=_scatter("x0", torch.int64), z1=_scatter("z1", torch.int64),
-        y1=_scatter("y1", torch.int64), x1=_scatter("x1", torch.int64),
-        wz=_scatter("wz", torch.float64), wy=_scatter("wy", torch.float64),
-        wx=_scatter("wx", torch.float64), volume=_scatter("volume", torch.float64),
+        z0=_scatter("z0", torch.int64),
+        y0=_scatter("y0", torch.int64),
+        x0=_scatter("x0", torch.int64),
+        z1=_scatter("z1", torch.int64),
+        y1=_scatter("y1", torch.int64),
+        x1=_scatter("x1", torch.int64),
+        wz=_scatter("wz", torch.float64),
+        wy=_scatter("wy", torch.float64),
+        wx=_scatter("wx", torch.float64),
+        volume=_scatter("volume", torch.float64),
         slot=slot,
         lev=_scatter("lev", torch.int64) if has_lev else None,
     )
@@ -1460,6 +1579,7 @@ def _prepare_shard_les_context(octree: OctreeGrid, shards: list) -> None:
     vel_local: list[torch.Tensor] = []
     if Q == 27:
         from tensorlbm.d3q27 import macroscopic27
+
         macro = macroscopic27
     elif Q == 19:
         macro = macroscopic3d
@@ -1479,7 +1599,7 @@ def _prepare_shard_les_context(octree: OctreeGrid, shards: list) -> None:
         nv = torch.zeros((3, Q, n), dtype=shard.f_leaf.dtype, device=shard.device)
         nd = torch.zeros((Q, n), dtype=shard.f_leaf.dtype, device=shard.device)
         nt = shard.neighbor_table
-        centers = octree.leaf_center[shard.lo:shard.hi].to(shard.device)
+        centers = octree.leaf_center[shard.lo : shard.hi].to(shard.device)
         local_vel = vel_local[s]
         for d in range(Q):
             src = nt[d]
@@ -1495,9 +1615,7 @@ def _prepare_shard_les_context(octree: OctreeGrid, shards: list) -> None:
                 nv[:, d, remote] = shard.les_remote_velocity[:, slots]
                 global_i = torch.nonzero(remote, as_tuple=False).squeeze(1)
                 src_cent = shard.les_remote_centers[slots]
-                nd[d, global_i] = (
-                    centers[global_i] - src_cent
-                ).abs().amax(dim=1).to(nd.dtype)
+                nd[d, global_i] = (centers[global_i] - src_cent).abs().amax(dim=1).to(nd.dtype)
             fan = src == FANOUT
             if bool(fan.any()):
                 for i in torch.nonzero(fan, as_tuple=False).squeeze(1).tolist():
@@ -1515,7 +1633,8 @@ def _prepare_shard_les_context(octree: OctreeGrid, shards: list) -> None:
                         nv[:, d, i] = torch.stack(vals, dim=1).mean(dim=1)
                         nd[d, i] = torch.as_tensor(
                             shard.les_fan_distance.get((d, int(i)), 0.0),
-                            dtype=nd.dtype, device=nd.device,
+                            dtype=nd.dtype,
+                            device=nd.device,
                         )
         shard.les_neighbor_velocity = nv
         shard.les_neighbor_distance = nd
@@ -1586,18 +1705,15 @@ def step_octree_shell_sharded(
     # while avoiding device-key collisions when multiple shards share a device
     # (CPU regression mode or MIG partitions).
     import inspect
+
     try:
         _advance_params = inspect.signature(advance).parameters
-        advance_accepts_shard = (
-            "shard" in _advance_params
-            or any(p.kind is inspect.Parameter.VAR_KEYWORD
-                   for p in _advance_params.values())
+        advance_accepts_shard = "shard" in _advance_params or any(
+            p.kind is inspect.Parameter.VAR_KEYWORD for p in _advance_params.values()
         )
     except (TypeError, ValueError):
         advance_accepts_shard = False
-    advance_uses_sparse_les = bool(
-        getattr(advance, "uses_sparse_les", advance_accepts_shard)
-    )
+    advance_uses_sparse_les = bool(getattr(advance, "uses_sparse_les", advance_accepts_shard))
     n_substeps = 1 << octree.d_max
     taus = _tau_chain(tau_coarse, octree.d_max)
     if tau_fine is not None and abs(tau_fine - taus[1]) > 1.0e-12:
@@ -1619,7 +1735,9 @@ def step_octree_shell_sharded(
             )
         solid_mask = octree._solid if solid is None else solid
         coarse_links = build_shell_coarse_links(
-            covered, solid_mask, q=octree.Q,
+            covered,
+            solid_mask,
+            q=octree.Q,
         )
     observation_links = None
     if reflux:
@@ -1628,7 +1746,9 @@ def step_octree_shell_sharded(
                 "reflux bookkeeping lost the coarse interface links",
             )
         observation_links = build_shell_coarse_links(
-            coarse_links.inside, None, q=octree.Q,
+            coarse_links.inside,
+            None,
+            q=octree.Q,
         )
 
     root_device = octree.f_leaf.device
@@ -1656,7 +1776,11 @@ def step_octree_shell_sharded(
         for shard in shards:
             if advance_accepts_shard:
                 result = advance(
-                    shard.f_leaf, tau_shell, shell_level, s, shard=shard,
+                    shard.f_leaf,
+                    tau_shell,
+                    shell_level,
+                    s,
+                    shard=shard,
                 )
             else:
                 result = advance(shard.f_leaf, tau_shell, shell_level, s)
@@ -1668,7 +1792,10 @@ def step_octree_shell_sharded(
         # 2. ghost fill on the root device: ONE global-order call over the
         # merged plan (batch order == unsharded), then scatter per shard
         gv_global = _fill_ghost_impl(
-            octree.leaf_level, merged_plan, parent_t, taus,
+            octree.leaf_level,
+            merged_plan,
+            parent_t,
+            taus,
         )
         _debug_nan("after-ghostfill", {"ghost_vals": gv_global}, substep=s)
         for shard in shards:
@@ -1683,7 +1810,10 @@ def step_octree_shell_sharded(
         # 4. streaming per shard
         for shard in shards:
             shard.out = _stream_gather_shard(
-                shard, shard.populations, shard.f_leaf, shard.ghost_vals,
+                shard,
+                shard.populations,
+                shard.f_leaf,
+                shard.ghost_vals,
             )
             _debug_nan("after-stream", {"out": shard.out}, substep=s)
         # 5. BFL per shard (force contributions captured for global assembly)
@@ -1691,14 +1821,16 @@ def step_octree_shell_sharded(
         if bfl_fn is not None:
             for idx_s, shard in enumerate(shards):
                 shard.remote_values = shard.remote_buf
-                shard._link_sink = (
-                    lambda d, idx, link, _s=idx_s: force_records[_s].append(
-                        (d, idx, link),
-                    )
+                shard._link_sink = lambda d, idx, link, _s=idx_s: force_records[_s].append(
+                    (d, idx, link),
                 )
                 result = bfl_fn(
-                    shard, shard.out, shard.post_collision,
-                    shard.ghost_plan, shard.ghost_vals, substep=s,
+                    shard,
+                    shard.out,
+                    shard.post_collision,
+                    shard.ghost_plan,
+                    shard.ghost_vals,
+                    substep=s,
                 )
                 shard.out, _substep_force = result
                 _debug_nan("after-bfl", {"out": shard.out}, substep=s)
@@ -1706,15 +1838,19 @@ def step_octree_shell_sharded(
         # 6. reflux observation (assembled in global order on the root)
         if reflux:
             observed = _assemble_shell_transfer(
-                shards, q=q, dtype=dtype, root_device=root_device,
+                shards,
+                q=q,
+                dtype=dtype,
+                root_device=root_device,
             )
-            fine_transfer = (
-                observed if fine_transfer is None else fine_transfer + observed
-            )
+            fine_transfer = observed if fine_transfer is None else fine_transfer + observed
         # 7. force bookkeeping (one global force per substep, like unsharded)
         if force_ledger is not None and bfl_fn is not None:
             force_root = _assemble_bfl_force(
-                shards, force_records, q=q, root_device=root_device,
+                shards,
+                force_records,
+                q=q,
+                root_device=root_device,
             )
             force_ledger.add_substep_force(force_root)
         # 8. commit
@@ -1753,15 +1889,18 @@ def step_octree_shell_sharded(
         if len(l1_post) == 0:
             raise ValueError("l1_post sequence must not be empty")
         coarse_transfer = observe_kinetic_interface_transfer(
-            l1_post[0], observation_links,
+            l1_post[0],
+            observation_links,
         )
         for post in l1_post[1:]:
             coarse_transfer = coarse_transfer + observe_kinetic_interface_transfer(
-                post, observation_links,
+                post,
+                observation_links,
             )
     else:
         coarse_transfer = observe_kinetic_interface_transfer(
-            l1_post, observation_links,
+            l1_post,
+            observation_links,
         )
     l1_f, report = apply_face_local_reflux(
         l1_f,
@@ -1825,7 +1964,7 @@ def build_plane_shell(
         torch.arange(box.z0, box.z1, device=dev),
         torch.arange(box.y0, box.y1, device=dev),
         torch.arange(box.x0, box.x1, device=dev),
-    )                                                       # (n, 3) (z,y,x)
+    )  # (n, 3) (z,y,x)
     n_cells = cells.shape[0]
     child = torch.arange(8, device=dev)
     bx, by, bz = child & 1, (child >> 1) & 1, (child >> 2) & 1
@@ -1836,9 +1975,11 @@ def build_plane_shell(
             (2 * cells[:, 0]).repeat_interleave(8) + bz.repeat(n_cells),
         ),
         dim=1,
-    )                                                       # (8n, 3) x,y,z
+    )  # (8n, 3) x,y,z
     morton = morton_encode_batch(
-        torch.ones(coords.shape[0], dtype=torch.int64, device=dev), coords, k,
+        torch.ones(coords.shape[0], dtype=torch.int64, device=dev),
+        coords,
+        k,
     )
     order = torch.argsort(morton, stable=True)
     coords_sorted = coords[order]
@@ -1853,7 +1994,8 @@ def build_plane_shell(
         target = coords_sorted + C[d].to(dev)
         q_target = morton_encode_batch(
             torch.ones(target.shape[0], dtype=torch.int64, device=dev),
-            target, k,
+            target,
+            k,
         )
         pos = torch.searchsorted(morton_sorted, q_target)
         pos_m = pos.clamp(max=n_leaf - 1)
@@ -1875,12 +2017,11 @@ def build_plane_shell(
         2 * (box.x1 - box.x0),
     )
     fine_flat = (
-        (coords_sorted[:, 2] - 2 * box.z0) * ny_f
-        + (coords_sorted[:, 1] - 2 * box.y0)
+        (coords_sorted[:, 2] - 2 * box.z0) * ny_f + (coords_sorted[:, 1] - 2 * box.y0)
     ) * nx_f + (coords_sorted[:, 0] - 2 * box.x0)
 
     covered = torch.zeros((nz, ny, nx), dtype=torch.bool, device=dev)
-    covered[box.z0:box.z1, box.y0:box.y1, box.x0:box.x1] = True
+    covered[box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1] = True
 
     grid = OctreeGrid(
         n_leaf=n_leaf,
@@ -1891,7 +2032,8 @@ def build_plane_shell(
         leaf_level=torch.ones(n_leaf, dtype=torch.int64, device=dev),
         leaf_center=centers.to(torch.float32),
         leaf_box=torch.stack(
-            [centers - 0.25, centers + 0.25], dim=1,
+            [centers - 0.25, centers + 0.25],
+            dim=1,
         ).to(torch.float32),
         neighbor_table=nt,
         q_field=torch.full((q, n_leaf), 0.5, dtype=torch.float32, device=dev),
@@ -1901,9 +2043,7 @@ def build_plane_shell(
         cross_level_donor=torch.full((q, n_leaf), -1, dtype=torch.int64, device=dev),
         leaf_host_cell=host_cell,
         f_leaf=torch.zeros((q, n_leaf), dtype=torch.float32, device=dev),
-        morton_to_index={
-            int(m): i for i, m in enumerate(morton_sorted.tolist())
-        },
+        morton_to_index={int(m): i for i, m in enumerate(morton_sorted.tolist())},
         meta={
             "shape": tuple(shape),
             "box": (box.z0, box.z1, box.y0, box.y1, box.x0, box.x1),

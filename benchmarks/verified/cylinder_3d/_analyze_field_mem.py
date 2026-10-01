@@ -8,6 +8,7 @@ against the pressure/friction diagnostics on the SAME field.
 The MEM convention is identical to run.py: called on the post-stream field at
 the solid cells (== the populations the next half-way bounce-back reverses).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -56,7 +57,7 @@ def main() -> int:
     Re, u_in = 40.0, a.u_in
     nu = u_in * D / Re
     dpS = 0.5 * u_in**2 * (D * nz)
-    print(f"field {tuple(f.shape)}  D={D} nz={nz} nx={nx} blockage={100*D/nx:.2f}%")
+    print(f"field {tuple(f.shape)}  D={D} nz={nz} nx={nx} blockage={100 * D / nx:.2f}%")
 
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=dev, dtype=torch.float32),
@@ -68,53 +69,72 @@ def main() -> int:
     fluid = ~solid
     # wall-adjacent solid cells (4-neighbour + z-rolls, z periodic)
     surf = solid & (
-        torch.roll(fluid, 1, 1) | torch.roll(fluid, -1, 1)   # y neighbours
-        | torch.roll(fluid, 1, 2) | torch.roll(fluid, -1, 2)  # x neighbours
+        torch.roll(fluid, 1, 1)
+        | torch.roll(fluid, -1, 1)  # y neighbours
+        | torch.roll(fluid, 1, 2)
+        | torch.roll(fluid, -1, 2)  # x neighbours
     )
     interior = solid & ~surf
 
     fx_all = float(mem_force(f, solid).item()) / dpS
     fx_surf = float(mem_force(f, surf).item()) / dpS
     fx_int = float(mem_force(f, interior).item()) / dpS
-    print(f"n_solid={int(solid.sum())} n_surface={int(surf.sum())} n_interior={int(interior.sum())}")
-    print(f"Cd_mem(all solid)   = {fx_all:.4f}   err = {(fx_all-1.5)/1.5*100:+.2f}%")
-    print(f"Cd_mem(surface only)= {fx_surf:.4f}   err = {(fx_surf-1.5)/1.5*100:+.2f}%")
+    print(
+        f"n_solid={int(solid.sum())} n_surface={int(surf.sum())} n_interior={int(interior.sum())}"
+    )
+    print(f"Cd_mem(all solid)   = {fx_all:.4f}   err = {(fx_all - 1.5) / 1.5 * 100:+.2f}%")
+    print(f"Cd_mem(surface only)= {fx_surf:.4f}   err = {(fx_surf - 1.5) / 1.5 * 100:+.2f}%")
     print(f"Cd_mem(interior)    = {fx_int:.4f}   (spurious/self-cancelling term)")
 
     # pressure/friction diagnostic on the same field
     near = get_near_wall_2d(solid, axis="z")
     mesh = SurfaceMesh.from_cylinder(solid, near, cx, cy, R, axis="z")
-    q = ((torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2) - R).clamp(0.05, 1.0) * near.float())
-    cdp = float(drag_pressure_integration(f, mesh, dpS, extrap="none",
-                                          p0_method="far_field", solid=solid)[0])
+    q = (torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2) - R).clamp(0.05, 1.0) * near.float()
+    cdp = float(
+        drag_pressure_integration(f, mesh, dpS, extrap="none", p0_method="far_field", solid=solid)[
+            0
+        ]
+    )
     for k in ("standard", "lagrange", "faces", "mix50"):
-        cdf = float(drag_friction_integration(f, mesh, dpS, nu, q_wall=q,
-                                              formula=k, solid=solid)[0])
-        print(f"  [diag] Cd_p={cdp:.4f} Cd_f_{k}={cdf:.4f} Cd_p+f={cdp+cdf:.4f} "
-              f"err={(cdp+cdf-1.5)/1.5*100:+.2f}%")
+        cdf = float(
+            drag_friction_integration(f, mesh, dpS, nu, q_wall=q, formula=k, solid=solid)[0]
+        )
+        print(
+            f"  [diag] Cd_p={cdp:.4f} Cd_f_{k}={cdf:.4f} Cd_p+f={cdp + cdf:.4f} "
+            f"err={(cdp + cdf - 1.5) / 1.5 * 100:+.2f}%"
+        )
 
     # ---- independent control-volume momentum balance -----------------------
     c = C.to(dev).float()
-    rho = f.sum(dim=0)                       # (nz, ny, nx)
+    rho = f.sum(dim=0)  # (nz, ny, nx)
     ux = (c[:, 0].view(19, 1, 1, 1) * f).sum(0) / rho
     uy = (c[:, 1].view(19, 1, 1, 1) * f).sum(0) / rho
     p = (rho - 1.0) / 3.0
+
     def plane(ax, idx):
         return rho[:, :, idx], ux[:, :, idx], uy[:, :, idx], p[:, :, idx]
+
     # x-faces: flux = rho*ux^2 + p ; y-faces: rho*ux*uy
     ro, uxo, _, po = plane(2, nx - 1)
     ri, uxi, _, pi = plane(2, 0)
     # average over the periodic z planes
-    Fxo = float((ro * uxo**2 + po).mean(0).sum());  Fxi = float((ri * uxi**2 + pi).mean(0).sum())
+    Fxo = float((ro * uxo**2 + po).mean(0).sum())
+    Fxi = float((ri * uxi**2 + pi).mean(0).sum())
     _, uxt, uyt, _ = plane(1, ny - 1)
     _, uxb, uyb, _ = plane(1, 0)
-    rt = rho[:, -1, :].mean(0); rb = rho[:, 0, :].mean(0)
-    Fyt = float((rt * uxt * uyt).mean(0).sum());    Fyb = float((rb * uxb * uyb).mean(0).sum())
+    rt = rho[:, -1, :].mean(0)
+    rb = rho[:, 0, :].mean(0)
+    Fyt = float((rt * uxt * uyt).mean(0).sum())
+    Fyb = float((rb * uxb * uyb).mean(0).sum())
     D_mom = (Fxo - Fxi) + (Fyt - Fyb)
     cd_mom = D_mom / (0.5 * u_in**2 * D * nz)
-    print(f"CV momentum balance: Fx_out={Fxo:.4f} Fx_in={Fxi:.4f} Fy_top={Fyt:.4f} Fy_bot={Fyb:.4f}")
-    print(f"Cd_momentum_balance = {cd_mom:.4f}   err = {(cd_mom-1.5)/1.5*100:+.2f}%   "
-          f"(independent of both MEM and the pressure/friction split)")
+    print(
+        f"CV momentum balance: Fx_out={Fxo:.4f} Fx_in={Fxi:.4f} Fy_top={Fyt:.4f} Fy_bot={Fyb:.4f}"
+    )
+    print(
+        f"Cd_momentum_balance = {cd_mom:.4f}   err = {(cd_mom - 1.5) / 1.5 * 100:+.2f}%   "
+        f"(independent of both MEM and the pressure/friction split)"
+    )
     return 0
 
 

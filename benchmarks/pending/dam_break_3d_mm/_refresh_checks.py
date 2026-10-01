@@ -4,6 +4,7 @@
 Adds per-check `extrapolated` flag and recomputes max_err over the
 non-extrapolated checkpoints only (consistent with benchmarks/bench_fs_2d.py).
 """
+
 import json
 import sys
 from pathlib import Path
@@ -29,19 +30,30 @@ def refresh(path: Path) -> dict:
     checks = []
     for T_ref, X_ref in MM_X:
         x = interp(series, "X", T_ref)
-        checks.append({
-            "T": T_ref, "kind": "X", "ref": X_ref, "sim": x,
-            "err_pct": abs(x - X_ref) / X_ref * 100.0,
-            "extrapolated": T_ref > tmax + 1e-9,
-        })
+        checks.append(
+            {
+                "T": T_ref,
+                "kind": "X",
+                "ref": X_ref,
+                "sim": x,
+                "err_pct": abs(x - X_ref) / X_ref * 100.0,
+                "extrapolated": T_ref > tmax + 1e-9,
+            }
+        )
     h = interp(series, "H", H_T)
-    checks.append({
-        "T": H_T, "kind": "H", "ref": H_REF, "sim": h,
-        "err_pct": abs(h - H_REF) / H_REF * 100.0,
-        "extrapolated": H_T > tmax + 1e-9,
-    })
+    checks.append(
+        {
+            "T": H_T,
+            "kind": "H",
+            "ref": H_REF,
+            "sim": h,
+            "err_pct": abs(h - H_REF) / H_REF * 100.0,
+            "extrapolated": H_T > tmax + 1e-9,
+        }
+    )
     valid = [c["err_pct"] for c in checks if not c["extrapolated"]] or [
-        max(c["err_pct"] for c in checks)]
+        max(c["err_pct"] for c in checks)
+    ]
     r["checks"] = checks
     r["max_err_pct"] = max(valid)
     path.write_text(json.dumps(r, indent=2) + "\n")
@@ -54,5 +66,7 @@ if __name__ == "__main__":
         print(p, "Tmax=%.3f" % r["series"][-1]["T"], "max_err=%.2f%%" % r["max_err_pct"])
         for c in r["checks"]:
             tag = "  (EXTRAPOLATED)" if c["extrapolated"] else ""
-            print(f"   T={c['T']:.1f} {c['kind']}: sim={c['sim']:.4f} ref={c['ref']:.2f} "
-                  f"err={c['err_pct']:+.2f}%{tag}")
+            print(
+                f"   T={c['T']:.1f} {c['kind']}: sim={c['sim']:.4f} ref={c['ref']:.2f} "
+                f"err={c['err_pct']:+.2f}%{tag}"
+            )

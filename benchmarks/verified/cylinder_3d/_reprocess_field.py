@@ -10,6 +10,7 @@ from runs whose live code predated the surface caliber.
     python _reprocess_field.py <field.pt> <D_cells> <base.json> <out.json> \
         [--lateral L] [--u-in 0.08] [--nz N]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -63,8 +64,11 @@ def main() -> int:
     dpS = 0.5 * a.u_in**2 * (D * nz)
 
     zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, dtype=torch.float32), torch.arange(ny, dtype=torch.float32),
-        torch.arange(nx, dtype=torch.float32), indexing="ij")
+        torch.arange(nz, dtype=torch.float32),
+        torch.arange(ny, dtype=torch.float32),
+        torch.arange(nx, dtype=torch.float32),
+        indexing="ij",
+    )
     solid = (xx - cx) ** 2 + (yy - cy) ** 2 <= R**2
     surf = surface_mask(solid)
     interior = solid & ~surf
@@ -89,13 +93,18 @@ def main() -> int:
     r["caliber_note"] = (
         "three-caliber decomposition of the converged final field "
         f"({a.field.name}); formula identical to run.py surface_mask + "
-        "obstacles.compute_obstacle_forces_3d")
+        "obstacles.compute_obstacle_forces_3d"
+    )
     a.out.write_text(json.dumps(r, indent=2))
-    print(f"D={D} nz={nz} nx={nx} solid={int(solid.sum())} surface={int(surf.sum())} "
-          f"interior={int(interior.sum())}")
-    print(f"  Cd_mem_surface={cd_surf:.4f} ({(cd_surf-CD_REF)/CD_REF*100:+.2f}%)  "
-          f"Cd_mem_all={cd_all:.4f} ({(cd_all-CD_REF)/CD_REF*100:+.2f}%)  "
-          f"Cd_mem_interior={cd_int:.4f}")
+    print(
+        f"D={D} nz={nz} nx={nx} solid={int(solid.sum())} surface={int(surf.sum())} "
+        f"interior={int(interior.sum())}"
+    )
+    print(
+        f"  Cd_mem_surface={cd_surf:.4f} ({(cd_surf - CD_REF) / CD_REF * 100:+.2f}%)  "
+        f"Cd_mem_all={cd_all:.4f} ({(cd_all - CD_REF) / CD_REF * 100:+.2f}%)  "
+        f"Cd_mem_interior={cd_int:.4f}"
+    )
     print(f"  wrote {a.out}")
     return 0
 
