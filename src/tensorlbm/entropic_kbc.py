@@ -11,19 +11,23 @@ Key components
    * *s* — second-order deviatoric (shear / traceless) stress projection
    * *k* — second-order trace (bulk) projection  (kinetic ghost mode)
    * *h* — higher-order residual (third-order and above)
-3. **Entropy-condition γ-solve** — minimise ``H(f_eq + γ·s + h)`` per cell
-4. **Positivity / admissibility-domain** enforcement
+3. **Entropy-condition beta-solve** — minimise ``H(f_eq + (1 − 1/τ)·s + β·h)``
+   over the admissibility domain intersected with ``β ∈ [0, 1]``
+4. **Positivity / admissibility-domain** enforcement along the solved direction
 5. **Per-cell nonlinear bisection** solver (vectorised over all cells)
 
-Post-collision state::
+Post-collision state (Karlin–Bösch–Chikatamarla construction)::
 
-    f* = f_eq + γ·s + (1 − 1/τ)·h
+    f* = f_eq + (1 − 1/τ)·s + β·h
 
-where *k* is fully relaxed (removed), *s* is scaled by the entropy-optimal *γ*,
-and *h* is relaxed by the BGK factor (1 − 1/τ).  The shear viscosity is set by
-the target *τ* via the initial guess ``γ₀ = 1 − 1/τ``; the entropy condition
-adjusts *γ* per cell for stability while respecting the H-theorem
-(``H(f*) ≤ H(f)``).
+where *k* is fully relaxed (removed), the shear projection *s* is relaxed by the
+exact BGK factor ``(1 − 1/τ)``, and the higher-order ghost residual *h* is
+relaxed by the per-cell entropy-optimal ``β``.  The shear viscosity is therefore
+controlled *exactly* by *τ*: ``nu = c_s^2 (τ − 1/2)``, identical to BGK.  The
+entropy condition only fixes the non-hydrodynamic ghost relaxation ``β``, which
+cannot feed back into the shear stress because *h* carries no second-order
+moments.  Restricting ``β`` to ``[0, 1]`` and to the positivity domain keeps
+``H(f*) ≤ H(f)`` (H-theorem behaviour) without disturbing the viscosity.
 
 References
 ----------
@@ -211,7 +215,7 @@ def kbc_decompose_d3q27(f_neq: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor
 
 
 # ---------------------------------------------------------------------------
-# 3. Entropy-condition γ-solve (vectorised bisection)
+# 3. Entropy-condition 1-D minimisation solvers (vectorised bisection)
 # ---------------------------------------------------------------------------
 
 
@@ -300,6 +304,114 @@ def solve_gamma_entropy(
     return 0.5 * (gamma_lower + gamma_upper)
 
 
+def solve_beta_entropy(
+    feq: torch.Tensor,
+    s_relaxed: torch.Tensor,
+    h: torch.Tensor,
+    w: torch.Tensor,
+    beta_init: torch.Tensor,
+    max_iter: int = 28,
+    tol: float = 1e-8,
+) -> torch.Tensor:
+    """Solve for the per-cell entropy-optimal ghost coefficient ``β`` by bisection.
+
+    Minimises ``H(f_eq + s_relaxed + β·h) = Σ_i (f_eq + s_relaxed + β·h)_i
+    ln((f_eq + s_relaxed + β·h)_i / w_i)`` over the admissibility domain
+    (population positivity along the ``h`` direction) intersected with the
+    physical ghost-relaxation bracket ``β ∈ [0, 1]``.
+
+    The entropy ``H`` is convex in ``β`` (``d²H/dβ² = Σ h_i² / f_i > 0``), so
+    the minimum is unique and bisection on ``dH/dβ`` converges.  If the
+    positivity domain does not intersect ``[0, 1]``, the positivity domain
+    wins (admissibility has priority over the bracket).
+
+    Convergence is measured on the bracket *width* (the ``β`` resolution),
+    which is amplitude-independent.  A legacy ``|dH/dβ|`` criterion would be
+    amplitude-dependent (``dH`` scales with the perturbation) and truncates
+    the solve prematurely at small amplitudes, freezing ``β`` near the
+    initial bracket midpoint and biasing the measured viscosity by up to
+    ~2.3% per the W7-A shear-wave audit.
+
+    Args:
+        feq:        Equilibrium distribution ``(Q, nz, ny, nx)``.
+        s_relaxed:  Fixed shear offset ``(1 − 1/τ)·s`` already applied ``(Q, nz, ny, nx)``.
+        h:          Higher-order non-equilibrium direction ``(Q, nz, ny, nx)``.
+        w:          Lattice weights ``(Q, 1, 1, 1)``.
+        beta_init:  Initial guess per cell ``(nz, ny, nx)`` (typically ``clamp(1 − 1/τ, 0, 1)``).
+        max_iter:   Maximum bisection iterations.
+        tol:        Convergence tolerance on the bracket width (β resolution).
+
+    Returns:
+        Per-cell optimal ``β`` tensor of shape ``(nz, ny, nx)``, admissible
+        (positive populations along the search ray) and — whenever the
+        admissible interval allows — confined to ``[0, 1]``.
+    """
+    # f_base = f at β=0: f_eq + s_relaxed
+    f_base = feq + s_relaxed
+
+    # --- Admissibility domain (positivity): f_i = f_base_i + β·h_i > 0 ---
+    eps_h = 1e-30
+    h_safe = torch.where(h.abs() > eps_h, h, torch.full_like(h, eps_h))
+    ratio = -f_base / h_safe  # (Q, nz, ny, nx)
+
+    neg_inf = torch.full_like(beta_init, -1e6)
+    pos_inf = torch.full_like(beta_init, 1e6)
+
+    # Lower bound: max over Q of ratio where h > 0
+    pos_mask = h > eps_h
+    ratio_pos = torch.where(pos_mask, ratio, neg_inf.unsqueeze(0).expand_as(ratio))
+    h_lower = ratio_pos.amax(dim=0)
+
+    # Upper bound: min over Q of ratio where h < 0
+    neg_mask = h < -eps_h
+    ratio_neg = torch.where(neg_mask, ratio, pos_inf.unsqueeze(0).expand_as(ratio))
+    h_upper = ratio_neg.amin(dim=0)
+
+    # If no constraint from either side (all h ≈ 0), return beta_init
+    no_constraint = (h_lower <= -1e5) & (h_upper >= 1e5)
+    h_lower = torch.where(no_constraint, beta_init, h_lower)
+    h_upper = torch.where(no_constraint, beta_init, h_upper)
+
+    # --- Intersect the admissibility domain with the physical bracket [0, 1] ---
+    zero = torch.zeros_like(h_lower)
+    one = torch.ones_like(h_upper)
+    beta_lower = torch.maximum(h_lower, zero)
+    beta_upper = torch.minimum(h_upper, one)
+    # If the intersection is empty, keep the full positivity domain
+    empty_bracket = beta_lower > beta_upper
+    beta_lower = torch.where(empty_bracket, h_lower, beta_lower)
+    beta_upper = torch.where(empty_bracket, h_upper, beta_upper)
+
+    # Clamp beta_init to the search interval
+    beta_init = torch.clamp(beta_init, beta_lower, beta_upper)
+    # Guarantee lower < upper
+    beta_lower = torch.minimum(beta_lower, beta_upper - 1e-10)
+
+    # --- Bisection on dH/dβ ---
+    # dH/dβ = Σ_i h_i [1 + ln(f_i / w_i)]
+    # At beta_lower: dH/dβ < 0 (need to increase β)
+    # At beta_upper: dH/dβ > 0 (need to decrease β)
+    # Convergence: bracket width (amplitude-independent β resolution).  An
+    # absolute |dH| stop would truncate the solve at small perturbation
+    # amplitudes because dH itself scales with the amplitude.
+    for _ in range(max_iter):
+        if float((beta_upper - beta_lower).max().item()) < tol:
+            break
+
+        beta_mid = 0.5 * (beta_lower + beta_upper)
+        f_mid = feq + s_relaxed + beta_mid.unsqueeze(0) * h
+        f_safe = torch.clamp(f_mid, min=1e-30)
+        dH = (h * (1.0 + torch.log(f_safe / w))).sum(dim=0)
+
+        # dH > 0 → minimum is to the left → shrink upper
+        # dH ≤ 0 → minimum is to the right → shrink lower
+        upper_mask = dH > 0
+        beta_upper = torch.where(upper_mask, beta_mid, beta_upper)
+        beta_lower = torch.where(~upper_mask, beta_mid, beta_lower)
+
+    return 0.5 * (beta_lower + beta_upper)
+
+
 # ---------------------------------------------------------------------------
 # 4. Full entropic KBC collision operators
 # ---------------------------------------------------------------------------
@@ -314,23 +426,29 @@ def collide_kbc_d3q19(
 ) -> torch.Tensor:
     """Complete entropic KBC collision for D3Q19.
 
-    Implements the full H-theorem / entropy-minimisation KBC collision:
+    Implements the full H-theorem / entropy-minimisation KBC collision
+    (Karlin–Bösch–Chikatamarla construction — viscosity on the shear modes,
+    entropy on the ghost modes):
 
     1. Decompose ``f = f_eq + k + s + h`` (kinetic / shear / higher-order)
     2. Remove *k* (fully relaxed kinetic ghost modes)
-    3. Relax *h* by the BGK factor: ``h* = (1 − 1/τ)·h``
-    4. Find per-cell ``γ`` that minimises ``H(f_eq + γ·s + h*)``
-    5. Post-collision: ``f* = f_eq + γ·s + h*``
+    3. Relax the shear projection *s* by the exact BGK factor:
+       ``s* = (1 − 1/τ)·s`` — this pins the shear viscosity to
+       ``nu = c_s^2 (τ − 1/2)`` exactly, independent of the entropy solve
+    4. Find per-cell ``β = argmin H(f_eq + (1 − 1/τ)·s + β·h)`` restricted to
+       ``[0, 1]`` and the positivity domain
+    5. Post-collision: ``f* = f_eq + (1 − 1/τ)·s + β·h``
 
-    The shear viscosity is set by *τ* via the initial guess
-    ``γ₀ = 1 − 1/τ``; the entropy condition adjusts *γ* per cell for
-    stability while guaranteeing ``H(f*) ≤ H(f)``.
+    Because *h* carries no second-order moments, the entropy-optimal ``β``
+    cannot feed back into the viscous stress: the shear viscosity is set by
+    *τ* alone, while the H-theorem behaviour (``H(f*) ≤ H(f)``) is retained
+    through the ghost-mode entropy minimisation.
 
     Args:
         f:        Distribution tensor of shape ``(19, nz, ny, nx)``.
         tau:      Shear relaxation time (τ > 0.5).
-        max_iter: Maximum bisection iterations for the γ-solve.
-        tol:      Convergence tolerance on ``|dH/dγ|``.
+        max_iter: Maximum bisection iterations for the β-solve.
+        tol:      Convergence tolerance on the bracket width (β resolution).
 
     Returns:
         Post-collision distribution of the same shape.
@@ -348,22 +466,23 @@ def collide_kbc_d3q19(
 
     s, k, h = _kbc_decompose(f_neq, p)
 
-    # Initial guess: BGK retention factor γ₀ = 1 - 1/τ
-    gamma_init = torch.full(
+    # Shear retention factor: exact BGK relaxation sigma = 1 - 1/tau
+    sigma = 1.0 - 1.0 / tau
+    s_relaxed = sigma * s
+
+    # Ghost retention initial guess: sigma clamped to the physical bracket [0, 1]
+    beta_init = torch.full(
         rho.shape,
-        1.0 - 1.0 / tau,
+        min(max(sigma, 0.0), 1.0),
         device=device,
         dtype=dtype,
     )
 
-    # Relax higher-order modes by the BGK factor (1 − 1/τ)
-    h_relaxed = (1.0 - 1.0 / tau) * h
-
     w = p["w"]
-    gamma = solve_gamma_entropy(feq, s, h_relaxed, w, gamma_init, max_iter=max_iter, tol=tol)
+    beta = solve_beta_entropy(feq, s_relaxed, h, w, beta_init, max_iter=max_iter, tol=tol)
 
-    # Post-collision: f* = f_eq + γ·s + (1-1/τ)·h  (k is removed, h relaxed)
-    return feq + gamma.unsqueeze(0) * s + h_relaxed
+    # Post-collision: f* = f_eq + (1-1/tau)·s + β·h  (k removed, shear exact-τ)
+    return feq + s_relaxed + beta.unsqueeze(0) * h
 
 
 def collide_kbc_d3q27(
@@ -375,13 +494,15 @@ def collide_kbc_d3q27(
 ) -> torch.Tensor:
     """Complete entropic KBC collision for D3Q27.
 
-    Same algorithm as :func:`collide_kbc_d3q19` but for the 27-velocity lattice.
+    Same algorithm as :func:`collide_kbc_d3q19` but for the 27-velocity lattice:
+    ``f* = f_eq + (1 − 1/τ)·s + β·h`` with ``β = argmin H`` per cell, so the
+    shear viscosity is ``nu = c_s^2 (τ − 1/2)`` exactly.
 
     Args:
         f:        Distribution tensor of shape ``(27, nz, ny, nx)``.
         tau:      Shear relaxation time (τ > 0.5).
-        max_iter: Maximum bisection iterations for the γ-solve.
-        tol:      Convergence tolerance on ``|dH/dγ|``.
+        max_iter: Maximum bisection iterations for the β-solve.
+        tol:      Convergence tolerance on the bracket width (β resolution).
 
     Returns:
         Post-collision distribution of the same shape.
@@ -399,20 +520,22 @@ def collide_kbc_d3q27(
 
     s, k, h = _kbc_decompose(f_neq, p)
 
-    gamma_init = torch.full(
+    # Shear retention factor: exact BGK relaxation sigma = 1 - 1/tau
+    sigma = 1.0 - 1.0 / tau
+    s_relaxed = sigma * s
+
+    # Ghost retention initial guess: sigma clamped to the physical bracket [0, 1]
+    beta_init = torch.full(
         rho.shape,
-        1.0 - 1.0 / tau,
+        min(max(sigma, 0.0), 1.0),
         device=device,
         dtype=dtype,
     )
 
-    # Relax higher-order modes by the BGK factor (1 − 1/τ)
-    h_relaxed = (1.0 - 1.0 / tau) * h
-
     w = p["w"]
-    gamma = solve_gamma_entropy(feq, s, h_relaxed, w, gamma_init, max_iter=max_iter, tol=tol)
+    beta = solve_beta_entropy(feq, s_relaxed, h, w, beta_init, max_iter=max_iter, tol=tol)
 
-    return feq + gamma.unsqueeze(0) * s + h_relaxed
+    return feq + s_relaxed + beta.unsqueeze(0) * h
 
 
 def _natural_kbc_gamma(
@@ -510,6 +633,7 @@ __all__ = [
     "kbc_decompose_d3q19",
     "kbc_decompose_d3q27",
     "solve_gamma_entropy",
+    "solve_beta_entropy",
     "collide_kbc_d3q19",
     "collide_kbc_d3q27",
     "collide_natural_kbc_d3q19",

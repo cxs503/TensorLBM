@@ -1,0 +1,633 @@
+{
+  "amendment1_ladders": {
+    "phi0.125": {
+      "cond_i_finest_le_tol": true,
+      "cond_ii_finest_lt_coarsest": true,
+      "cond_iii_intermediate_le_coarsest": true,
+      "tiers": [
+        {
+          "K_sim": 4.1648782047793045,
+          "K_table": 4.292,
+          "Ma_max": 0.008213585107845048,
+          "N": 64,
+          "Re_p_achieved": 0.5152005142586396,
+          "case_file": "case_phi0.125_N64_fs10.json",
+          "err": 0.030522331979557116,
+          "err_actualphi_diag": 0.030574323413424143,
+          "k_ref": 163.22699186767966,
+          "k_sim": 168.20906030148944,
+          "mass_drift_max_rel": 0.00019288060750000113,
+          "phi_actual": 0.12510299682617188,
+          "steady_detected": true,
+          "steps_run": 24000,
+          "wall_seconds": 15.331765227019787
+        },
+        {
+          "K_sim": 4.276434118190498,
+          "K_table": 4.292,
+          "Ma_max": 0.0053595538931647145,
+          "N": 96,
+          "Re_p_achieved": 0.5017506002971666,
+          "case_file": "case_phi0.125_N96_fs10.json",
+          "err": 0.003639920873161673,
+          "err_actualphi_diag": 0.004779154055874479,
+          "k_ref": 367.26073170227914,
+          "k_sim": 368.5975317054949,
+          "mass_drift_max_rel": 0.0003006545736088384,
+          "phi_actual": 0.1251209400318287,
+          "steady_detected": true,
+          "steps_run": 41000,
+          "wall_seconds": 118.35125719895586
+        },
+        {
+          "K_sim": 4.230032657495238,
+          "K_table": 4.292,
+          "Ma_max": 0.004071903764270303,
+          "N": 128,
+          "Re_p_achieved": 0.507315011976537,
+          "case_file": "case_phi0.125_N128_fs10.json",
+          "err": 0.0146493768540914,
+          "err_actualphi_diag": 0.014595330378271099,
+          "k_ref": 652.9079674707186,
+          "k_sim": 662.4726623372361,
+          "mass_drift_max_rel": 0.000441551103222082,
+          "phi_actual": 0.1250166893005371,
+          "steady_detected": true,
+          "steps_run": 63400,
+          "wall_seconds": 514.671742387116
+        },
+        {
+          "K_sim": 4.344759279501507,
+          "K_table": 4.292,
+          "Ma_max": 0.003172321494978257,
+          "N": 160,
+          "Re_p_achieved": 0.4939323967894358,
+          "case_file": "case_phi0.125_N160_fs10.json",
+          "err": 0.012143199682068562,
+          "err_actualphi_diag": 0.012339666229808532,
+          "k_ref": 1020.168699172998,
+          "k_sim": 1007.7805869495442,
+          "mass_drift_max_rel": 0.0006093756694800501,
+          "phi_actual": 0.124992919921875,
+          "steady_detected": true,
+          "steps_run": 92600,
+          "wall_seconds": 1887.4711881238036
+        }
+      ],
+      "tiers_N": [
+        64,
+        96,
+        128,
+        160
+      ],
+      "tiers_err": [
+        0.030522331979557116,
+        0.003639920873161673,
+        0.0146493768540914,
+        0.012143199682068562
+      ],
+      "verdict": "PASS"
+    },
+    "phi0.216": {
+      "cond_i_finest_le_tol": false,
+      "cond_ii_finest_lt_coarsest": false,
+      "cond_iii_intermediate_le_coarsest": true,
+      "tiers": [
+        {
+          "K_sim": 7.19494790462511,
+          "K_table": 7.4423,
+          "Ma_max": 0.009683777521796293,
+          "N": 64,
+          "Re_p_achieved": 0.5171996178603864,
+          "case_file": "case_phi0.216_N64_fs10.json",
+          "err": 0.03437858045030273,
+          "err_actualphi_diag": 0.03316140276464452,
+          "k_ref": 78.4446395487149,
+          "k_sim": 81.14145490033539,
+          "mass_drift_max_rel": 0.00013542173678615654,
+          "phi_actual": 0.21598434448242188,
+          "steady_detected": true,
+          "steps_run": 17800,
+          "wall_seconds": 11.40944332210347
+        },
+        {
+          "K_sim": 7.311932220783275,
+          "K_table": 7.4423,
+          "Ma_max": 0.00639437897572623,
+          "N": 96,
+          "Re_p_achieved": 0.508944058540997,
+          "case_file": "case_phi0.216_N96_fs10.json",
+          "err": 0.017829456740062533,
+          "err_actualphi_diag": 0.017298374731446575,
+          "k_ref": 176.5004389846085,
+          "k_sim": 179.64734592608664,
+          "mass_drift_max_rel": 0.00019356051026497845,
+          "phi_actual": 0.21595481589988427,
+          "steady_detected": true,
+          "steps_run": 28800,
+          "wall_seconds": 83.0552126551047
+        },
+        {
+          "K_sim": 7.246952522833029,
+          "K_table": 7.4423,
+          "Ma_max": 0.004855794754649899,
+          "N": 128,
+          "Re_p_achieved": 0.5134484962058289,
+          "case_file": "case_phi0.216_N128_fs10.json",
+          "err": 0.026955810259758906,
+          "err_actualphi_diag": 0.026578239221429323,
+          "k_ref": 313.7785581948596,
+          "k_sim": 322.236713473141,
+          "mass_drift_max_rel": 0.00027680390434170477,
+          "phi_actual": 0.21604490280151367,
+          "steady_detected": true,
+          "steps_run": 43600,
+          "wall_seconds": 352.9262601460796
+        },
+        {
+          "K_sim": 7.114119104502873,
+          "K_table": 7.4423,
+          "Ma_max": 0.003964695697258689,
+          "N": 160,
+          "Re_p_achieved": 0.5229946077430091,
+          "case_file": "case_phi0.216_N160_fs10.json",
+          "err": 0.04613092509083905,
+          "err_actualphi_diag": 0.04486251808779418,
+          "k_ref": 490.278997179468,
+          "k_sim": 512.8960208719657,
+          "mass_drift_max_rel": 0.0003906864643772323,
+          "phi_actual": 0.216106201171875,
+          "steady_detected": true,
+          "steps_run": 63600,
+          "wall_seconds": 1294.2646933128126
+        }
+      ],
+      "tiers_N": [
+        64,
+        96,
+        128,
+        160
+      ],
+      "tiers_err": [
+        0.03437858045030273,
+        0.017829456740062533,
+        0.026955810259758906,
+        0.04613092509083905
+      ],
+      "verdict": "FAIL"
+    },
+    "phi0.343": {
+      "cond_i_finest_le_tol": true,
+      "cond_ii_finest_lt_coarsest": true,
+      "cond_iii_intermediate_le_coarsest": true,
+      "tiers": [
+        {
+          "K_sim": 14.72110608832727,
+          "K_table": 15.402,
+          "Ma_max": 0.013560916920278446,
+          "N": 64,
+          "Re_p_achieved": 0.523552878242122,
+          "case_file": "case_phi0.343_N64_fs10.json",
+          "err": 0.04625290433934337,
+          "err_actualphi_diag": 0.04213794606089327,
+          "k_ref": 32.48976241935561,
+          "k_sim": 33.992508292546056,
+          "mass_drift_max_rel": 0.00010216234896631704,
+          "phi_actual": 0.3424644470214844,
+          "steady_detected": true,
+          "steps_run": 14000,
+          "wall_seconds": 9.15136144706048
+        },
+        {
+          "K_sim": 14.939179311648926,
+          "K_table": 15.402,
+          "Ma_max": 0.008994290269967592,
+          "N": 96,
+          "Re_p_achieved": 0.5157362141841979,
+          "case_file": "case_phi0.343_N96_fs10.json",
+          "err": 0.030980328885280795,
+          "err_actualphi_diag": 0.02882039850857976,
+          "k_ref": 73.10196544355013,
+          "k_sim": 75.36668837515174,
+          "mass_drift_max_rel": 0.0001292758152500184,
+          "phi_actual": 0.3426864058883102,
+          "steady_detected": true,
+          "steps_run": 21400,
+          "wall_seconds": 61.705830653896555
+        },
+        {
+          "K_sim": 15.092724138038292,
+          "K_table": 15.402,
+          "Ma_max": 0.00671321344472221,
+          "N": 128,
+          "Re_p_achieved": 0.510244428559669,
+          "case_file": "case_phi0.343_N128_fs10.json",
+          "err": 0.020491718998708608,
+          "err_actualphi_diag": 0.0200908966260277,
+          "k_ref": 129.95904967742243,
+          "k_sim": 132.6221340047514,
+          "mass_drift_max_rel": 0.00016689296558070055,
+          "phi_actual": 0.3430018424987793,
+          "steady_detected": true,
+          "steps_run": 30200,
+          "wall_seconds": 243.7963771871291
+        },
+        {
+          "K_sim": 15.182333569832728,
+          "K_table": 15.402,
+          "Ma_max": 0.005353161105066581,
+          "N": 160,
+          "Re_p_achieved": 0.5071145878003933,
+          "case_file": "case_phi0.343_N160_fs10.json",
+          "err": 0.014468555124078408,
+          "err_actualphi_diag": 0.015163464376042213,
+          "k_ref": 203.06101512097257,
+          "k_sim": 205.9990146118017,
+          "mass_drift_max_rel": 0.00022363305819061985,
+          "phi_actual": 0.343155029296875,
+          "steady_detected": true,
+          "steps_run": 42400,
+          "wall_seconds": 859.9173069018871
+        }
+      ],
+      "tiers_N": [
+        64,
+        96,
+        128,
+        160
+      ],
+      "tiers_err": [
+        0.04625290433934337,
+        0.030980328885280795,
+        0.020491718998708608,
+        0.014468555124078408
+      ],
+      "verdict": "PASS"
+    }
+  },
+  "benchmark": "permeability3d_sphere_array_sc_zick_homsy",
+  "created_utc": "2026-09-21T12:34:11Z",
+  "disclosures": [
+    "phi set deviates from instructed {0.10,0.20,0.30} to table-exact {0.125,0.216,0.343} (no reference interpolation; NOTES 1.4)",
+    "3D body force is a driver-level D3Q19 transcription of turbulent_channel._apply_body_force_2d with caller-side fluid masking; library has no 3D single-phase helper (NOTES 4)",
+    "staircase effective radius O(1/R): nominal geometry primary; phi_actual channels diagnostic only",
+    "full-way bounce-back tau-sensitivity is literature-standard +/-2.5%; tau probe quantifies it (verdict-blind)",
+    "fp32 injection rounding floor prechecked at (0.343,128) fs in {1,10,100}; formal fs per pre-registered decision rule",
+    "Z&H row 0.5236 diverges between sources (42.1 vs 41.99, 0.26%) and is excluded from the protocol",
+    "Source B witnessed via verbatim search-snippet fragments of the Wiley page (page itself blocked); NOTES 1.3 caveat"
+  ],
+  "formal_force_scale": 10.0,
+  "fs1_double_report": {
+    "phi0.125_N128": {
+      "K_sim": 4.309604978812526,
+      "err_primary": 0.004085056263643305,
+      "k_sim": 650.2408016886197
+    },
+    "phi0.125_N64": {
+      "K_sim": 3.9963129131613226,
+      "err_primary": 0.07398997357410897,
+      "k_sim": 175.30415268255058
+    },
+    "phi0.125_N96": {
+      "K_sim": 3.990372154782026,
+      "err_primary": 0.07558890086392234,
+      "k_sim": 395.02156674213427
+    },
+    "phi0.216_N128": {
+      "K_sim": 7.42351667676673,
+      "err_primary": 0.002530245980594925,
+      "k_sim": 314.57249513052903
+    },
+    "phi0.216_N64": {
+      "K_sim": 7.025965199969075,
+      "err_primary": 0.05925659865675903,
+      "k_sim": 83.09300207122723
+    },
+    "phi0.216_N96": {
+      "K_sim": 7.09858158191375,
+      "err_primary": 0.04842071815614535,
+      "k_sim": 185.04671699511817
+    },
+    "phi0.343_N128": {
+      "K_sim": 16.094672183192678,
+      "err_primary": 0.043037358904148504,
+      "k_sim": 124.36595541361314
+    },
+    "phi0.343_N64": {
+      "K_sim": 14.881742218483009,
+      "err_primary": 0.034959467371423525,
+      "k_sim": 33.62558720856037
+    },
+    "phi0.343_N96": {
+      "K_sim": 15.226794280716422,
+      "err_primary": 0.011506408772164134,
+      "k_sim": 73.94310653999223
+    }
+  },
+  "fs_precheck": {
+    "case": "phi=0.343 N=128",
+    "floor_active": true,
+    "k_sim_by_fs": {
+      "1": 124.36595541361314,
+      "10": 132.6221340047514,
+      "100": 129.31110489689812
+    },
+    "max_rel_spread": 0.06638616302733391,
+    "threshold": 0.005
+  },
+  "kind": "report",
+  "ladders": {
+    "phi0.125": {
+      "fallback_applied": false,
+      "finest_err_le_tol": true,
+      "strictly_monotonic": false,
+      "tiers": [
+        {
+          "K_sim": 4.1648782047793045,
+          "K_table": 4.292,
+          "Ma_max": 0.008213585107845048,
+          "N": 64,
+          "Re_p_achieved": 0.5152005142586396,
+          "case_file": "case_phi0.125_N64_fs10.json",
+          "err": 0.030522331979557116,
+          "err_actualphi_diag": 0.030574323413424143,
+          "k_ref": 163.22699186767966,
+          "k_sim": 168.20906030148944,
+          "mass_drift_max_rel": 0.00019288060750000113,
+          "phi_actual": 0.12510299682617188,
+          "steady_detected": true,
+          "steps_run": 24000,
+          "wall_seconds": 15.331765227019787
+        },
+        {
+          "K_sim": 4.276434118190498,
+          "K_table": 4.292,
+          "Ma_max": 0.0053595538931647145,
+          "N": 96,
+          "Re_p_achieved": 0.5017506002971666,
+          "case_file": "case_phi0.125_N96_fs10.json",
+          "err": 0.003639920873161673,
+          "err_actualphi_diag": 0.004779154055874479,
+          "k_ref": 367.26073170227914,
+          "k_sim": 368.5975317054949,
+          "mass_drift_max_rel": 0.0003006545736088384,
+          "phi_actual": 0.1251209400318287,
+          "steady_detected": true,
+          "steps_run": 41000,
+          "wall_seconds": 118.35125719895586
+        },
+        {
+          "K_sim": 4.230032657495238,
+          "K_table": 4.292,
+          "Ma_max": 0.004071903764270303,
+          "N": 128,
+          "Re_p_achieved": 0.507315011976537,
+          "case_file": "case_phi0.125_N128_fs10.json",
+          "err": 0.0146493768540914,
+          "err_actualphi_diag": 0.014595330378271099,
+          "k_ref": 652.9079674707186,
+          "k_sim": 662.4726623372361,
+          "mass_drift_max_rel": 0.000441551103222082,
+          "phi_actual": 0.1250166893005371,
+          "steady_detected": true,
+          "steps_run": 63400,
+          "wall_seconds": 514.671742387116
+        }
+      ],
+      "tiers_N": [
+        64,
+        96,
+        128
+      ],
+      "tiers_err": [
+        0.030522331979557116,
+        0.003639920873161673,
+        0.0146493768540914
+      ],
+      "verdict": "FAIL"
+    },
+    "phi0.216": {
+      "fallback_applied": false,
+      "finest_err_le_tol": true,
+      "strictly_monotonic": false,
+      "tiers": [
+        {
+          "K_sim": 7.19494790462511,
+          "K_table": 7.4423,
+          "Ma_max": 0.009683777521796293,
+          "N": 64,
+          "Re_p_achieved": 0.5171996178603864,
+          "case_file": "case_phi0.216_N64_fs10.json",
+          "err": 0.03437858045030273,
+          "err_actualphi_diag": 0.03316140276464452,
+          "k_ref": 78.4446395487149,
+          "k_sim": 81.14145490033539,
+          "mass_drift_max_rel": 0.00013542173678615654,
+          "phi_actual": 0.21598434448242188,
+          "steady_detected": true,
+          "steps_run": 17800,
+          "wall_seconds": 11.40944332210347
+        },
+        {
+          "K_sim": 7.311932220783275,
+          "K_table": 7.4423,
+          "Ma_max": 0.00639437897572623,
+          "N": 96,
+          "Re_p_achieved": 0.508944058540997,
+          "case_file": "case_phi0.216_N96_fs10.json",
+          "err": 0.017829456740062533,
+          "err_actualphi_diag": 0.017298374731446575,
+          "k_ref": 176.5004389846085,
+          "k_sim": 179.64734592608664,
+          "mass_drift_max_rel": 0.00019356051026497845,
+          "phi_actual": 0.21595481589988427,
+          "steady_detected": true,
+          "steps_run": 28800,
+          "wall_seconds": 83.0552126551047
+        },
+        {
+          "K_sim": 7.246952522833029,
+          "K_table": 7.4423,
+          "Ma_max": 0.004855794754649899,
+          "N": 128,
+          "Re_p_achieved": 0.5134484962058289,
+          "case_file": "case_phi0.216_N128_fs10.json",
+          "err": 0.026955810259758906,
+          "err_actualphi_diag": 0.026578239221429323,
+          "k_ref": 313.7785581948596,
+          "k_sim": 322.236713473141,
+          "mass_drift_max_rel": 0.00027680390434170477,
+          "phi_actual": 0.21604490280151367,
+          "steady_detected": true,
+          "steps_run": 43600,
+          "wall_seconds": 352.9262601460796
+        }
+      ],
+      "tiers_N": [
+        64,
+        96,
+        128
+      ],
+      "tiers_err": [
+        0.03437858045030273,
+        0.017829456740062533,
+        0.026955810259758906
+      ],
+      "verdict": "FAIL"
+    },
+    "phi0.343": {
+      "fallback_applied": false,
+      "finest_err_le_tol": true,
+      "strictly_monotonic": true,
+      "tiers": [
+        {
+          "K_sim": 14.72110608832727,
+          "K_table": 15.402,
+          "Ma_max": 0.013560916920278446,
+          "N": 64,
+          "Re_p_achieved": 0.523552878242122,
+          "case_file": "case_phi0.343_N64_fs10.json",
+          "err": 0.04625290433934337,
+          "err_actualphi_diag": 0.04213794606089327,
+          "k_ref": 32.48976241935561,
+          "k_sim": 33.992508292546056,
+          "mass_drift_max_rel": 0.00010216234896631704,
+          "phi_actual": 0.3424644470214844,
+          "steady_detected": true,
+          "steps_run": 14000,
+          "wall_seconds": 9.15136144706048
+        },
+        {
+          "K_sim": 14.939179311648926,
+          "K_table": 15.402,
+          "Ma_max": 0.008994290269967592,
+          "N": 96,
+          "Re_p_achieved": 0.5157362141841979,
+          "case_file": "case_phi0.343_N96_fs10.json",
+          "err": 0.030980328885280795,
+          "err_actualphi_diag": 0.02882039850857976,
+          "k_ref": 73.10196544355013,
+          "k_sim": 75.36668837515174,
+          "mass_drift_max_rel": 0.0001292758152500184,
+          "phi_actual": 0.3426864058883102,
+          "steady_detected": true,
+          "steps_run": 21400,
+          "wall_seconds": 61.705830653896555
+        },
+        {
+          "K_sim": 15.092724138038292,
+          "K_table": 15.402,
+          "Ma_max": 0.00671321344472221,
+          "N": 128,
+          "Re_p_achieved": 0.510244428559669,
+          "case_file": "case_phi0.343_N128_fs10.json",
+          "err": 0.020491718998708608,
+          "err_actualphi_diag": 0.0200908966260277,
+          "k_ref": 129.95904967742243,
+          "k_sim": 132.6221340047514,
+          "mass_drift_max_rel": 0.00016689296558070055,
+          "phi_actual": 0.3430018424987793,
+          "steady_detected": true,
+          "steps_run": 30200,
+          "wall_seconds": 243.7963771871291
+        }
+      ],
+      "tiers_N": [
+        64,
+        96,
+        128
+      ],
+      "tiers_err": [
+        0.04625290433934337,
+        0.030980328885280795,
+        0.020491718998708608
+      ],
+      "verdict": "PASS"
+    }
+  },
+  "library": {
+    "library_commit": "cf5709db3c2bba273c64807e721071de110627d1",
+    "library_worktree_dirty": false,
+    "tensorlbm_file": "/nfs/wangxi/worktrees/bm_w5/src/tensorlbm/__init__.py",
+    "torch_version": "2.11.0+cu128"
+  },
+  "overall_verdict": "FAIL",
+  "overall_verdict_amended": "FAIL",
+  "per_phi_verdict": {
+    "phi0.125": "FAIL",
+    "phi0.216": "FAIL",
+    "phi0.343": "PASS"
+  },
+  "per_phi_verdict_amended": {
+    "phi0.125": "PASS",
+    "phi0.216": "FAIL",
+    "phi0.343": "PASS"
+  },
+  "protocol": {
+    "Ma_limit": 0.05,
+    "Re_target": 0.05,
+    "drift_tol": 1e-05,
+    "drift_window_steps": 2000,
+    "lattice": "D3Q19 BGK fp32 periodic unit cell",
+    "max_steps_rule": "min(20*N^2, 250000)",
+    "meas_window_steps": 4000,
+    "nu": 0.16666666666666666,
+    "phi_set": [
+      0.125,
+      0.216,
+      0.343
+    ],
+    "post_steady_steps": 8000,
+    "sample_every": 200,
+    "step_order": "collide -> stream -> masked body force -> bounce-back",
+    "tau": 1.0,
+    "tiers": {
+      "0.125": [
+        64,
+        96,
+        128
+      ],
+      "0.216": [
+        64,
+        96,
+        128
+      ],
+      "0.343": [
+        64,
+        96,
+        128
+      ]
+    },
+    "verdict_rule": "per phi: err strictly monotonically decreasing N=64->96->128 AND err(128)<=3%; pre-registered coarsest-tier fallback (NOTES section 3)"
+  },
+  "reference": {
+    "K_def": "F/(6*pi*mu*U*a), U superficial",
+    "corroboration": "Hasimoto 1959 5-term dilute SC series (NOTES 1.6)",
+    "locked_table_protocol_points": {
+      "0.125": 4.292,
+      "0.216": 7.4423,
+      "0.343": 15.402
+    },
+    "sources": [
+      "Basilisk src/test/spheres.c zick[7][2] (verbatim, fetched 2026-09-20)",
+      "Holmes, Williams & Tilke 2011 DOI 10.1002/nag.898, literature column (verbatim snippet witnesses; NOTES section 1.3)"
+    ],
+    "two_source_cross_max_rel_diff_protocol_points": 0.00015,
+    "type": "Zick & Homsy 1982 JFM 115:13-26, simple-cubic array"
+  },
+  "tau_probe": {
+    "tau0.75": {
+      "K_sim": 7.5263399306658885,
+      "N": 96,
+      "err_primary": 0.011166108817842413,
+      "phi": 0.216
+    },
+    "tau1.25": {
+      "K_sim": 7.217058832744019,
+      "N": 96,
+      "err_primary": 0.031209551214139486,
+      "phi": 0.216
+    }
+  },
+  "tolerance_finest": 0.03
+}

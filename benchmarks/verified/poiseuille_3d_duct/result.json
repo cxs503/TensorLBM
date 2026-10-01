@@ -1,0 +1,103 @@
+{
+  "case": "poiseuille_3d_duct_rect_convergence",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "aspect": 1.0,
+  "W_list": [
+    32,
+    64,
+    128
+  ],
+  "tau": 0.8,
+  "u_in": 0.005,
+  "extrap": "none",
+  "comparison_method": "CH1 (primary): full 2D profile weighted LSQ of the exact double-sine series over (G, da, db) (da/db = effective half-width offsets, G analytic; coarse grid + alternating golden section), fit region u_meas>0.2 u_max; G anchored by imposed flux G_Q = nu Q_meas/I0(a_eff,b_eff); metric = per-cell central max rel err. CH2 (direct): nominal (a,b) series with G_nom from u_mean=u_in. Cross-checks: Po vs Shah-London, G_int, G_fit/G_Q.",
+  "per_grid": [
+    {
+      "W": 32,
+      "H": 32,
+      "Re": 1.5999999999999996,
+      "n_steps": 250000,
+      "steady": true,
+      "eff_max_cell_central_pct": 0.1232,
+      "eff_l2_cell_central_pct": 0.127,
+      "nom_max_cell_central_pct": 4.6867,
+      "nom_l2_cell_central_pct": 3.6012,
+      "da": 0.4285,
+      "db": 0.4285,
+      "G_fit_over_G_Q": 1.00126,
+      "G_int_over_G_Q": 1.006,
+      "Po_sim_err_pct": -9.4922,
+      "Po_Q_err_pct": -10.0318,
+      "mass_drift_pct": 0.1658,
+      "elapsed_s": 63.8
+    },
+    {
+      "W": 64,
+      "H": 64,
+      "Re": 3.1999999999999993,
+      "n_steps": 250000,
+      "steady": true,
+      "eff_max_cell_central_pct": 0.0518,
+      "eff_l2_cell_central_pct": 0.0377,
+      "nom_max_cell_central_pct": 2.4938,
+      "nom_l2_cell_central_pct": 1.9552,
+      "da": 0.4502,
+      "db": 0.4502,
+      "G_fit_over_G_Q": 1.00033,
+      "G_int_over_G_Q": 1.00607,
+      "Po_sim_err_pct": -4.8615,
+      "Po_Q_err_pct": -5.4353,
+      "mass_drift_pct": 0.0777,
+      "elapsed_s": 142.6
+    },
+    {
+      "W": 128,
+      "H": 128,
+      "Re": 6.399999999999999,
+      "n_steps": 268000,
+      "steady": true,
+      "eff_max_cell_central_pct": 0.0336,
+      "eff_l2_cell_central_pct": 0.0225,
+      "nom_max_cell_central_pct": 1.234,
+      "nom_l2_cell_central_pct": 0.973,
+      "da": 0.464,
+      "db": 0.4642,
+      "G_fit_over_G_Q": 1.00012,
+      "G_int_over_G_Q": 1.00112,
+      "Po_sim_err_pct": -2.7403,
+      "Po_Q_err_pct": -2.849,
+      "mass_drift_pct": 0.0471,
+      "elapsed_s": 1688.9
+    }
+  ],
+  "eff_errors_pct": [
+    0.1232,
+    0.0518,
+    0.0336
+  ],
+  "nom_errors_pct": [
+    4.6867,
+    2.4938,
+    1.234
+  ],
+  "eff_monotone": true,
+  "nom_monotone": true,
+  "da": [
+    0.4285,
+    0.4502,
+    0.464
+  ],
+  "db": [
+    0.4285,
+    0.4502,
+    0.4642
+  ],
+  "da_spread": 0.03550000000000003,
+  "db_spread": 0.03570000000000001,
+  "delta_grid_independent_(bound_0.05)": true,
+  "passed_eff_3pct_monotone": true,
+  "passed_nom_3pct_monotone": false,
+  "verdict": "verified",
+  "notes": "CH1 eff per-cell central max: 0.123% -> 0.052% -> 0.034%; da: +0.4285 / +0.4502 / +0.4640; db: +0.4285 / +0.4502 / +0.4642 (spreads 0.0355/0.0357, bound 0.05: True). CH2 nominal: 4.687% -> 2.494% -> 1.234%. Po_sim err: -9.492% / -4.862% / -2.740%."
+}

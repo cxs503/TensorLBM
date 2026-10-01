@@ -1,23 +1,178 @@
 {
-  "case": "B25_blasius_flat_plate",
-  "tau_scan": {
-    "0.53": {
-      "cf_err": 76.0
-    },
-    "0.60": {
-      "cf_err": 97.7
-    },
-    "0.65": {
-      "cf_err": 107.2
-    },
-    "0.70": {
-      "cf_err": 114.7
-    },
-    "0.80": {
-      "cf_err": 126.7
-    }
+  "case": "Blasius flat-plate boundary layer, mid-domain thin plate (D2Q9)",
+  "reference": {
+    "solution": "Blasius ODE RK4 shooting (h=0.005), f_double_prime_0 = 0.3320573362151963",
+    "cf_formula": "C_f = 2 f(0) / sqrt(Re_x) = 0.6641146724 / sqrt(Re_x)",
+    "probe_x_eff": 180,
+    "Re_x": 900,
+    "cf_ref": 0.022137155747679754,
+    "gate_pct": 3.0,
+    "old_record_convention": "0.664/sqrt(Re_x) (differs by 0.017 percent, disclosure only)"
   },
-  "analysis": "τ 扫描 0.53→0.80 全失败且 C_f 误差单调恶化(76%→135%)——否决'τ≥0.65 可修复近壁 Knudsen'假设。C_f +76%+ 是几何/测量系统偏差：δ* 位移厚度低估 20-60 倍(delta_star_meas 0.4-2.3 vs ref 10-68)，前缘奇异性(无厚度薄板)导致。需要完全不同的处理(圆角前缘/压力修正)——定案暂缓",
-  "verified": false,
-  "date": "2026-08-19"
+  "runs": [
+    {
+      "file": "results/R1p_plate200_bgk_tau053.json",
+      "run": "R1p",
+      "grid": "plate200",
+      "collision": "bgk",
+      "cf_sim": 0.032614540308713906,
+      "cf_ref": 0.022137155747679754,
+      "cf_err_pct_corrected_fd": 47.32940708578749,
+      "fd_err_old_buggy_weights": 101.91288120159699,
+      "me_err": 47.280385415642705,
+      "fd_norm_ue_err": 30.78012080300058,
+      "first_cell_rel_err": 45.55651601927549,
+      "Rex": 900.0,
+      "n_steps": 30000,
+      "l2_rel_err_profile": 0.27881049235399086,
+      "u_edge_over_U_probe": 1.00051,
+      "mass_drift_pct": 0.002827381215344235,
+      "umax_drift_last_2000": 1.149152771998413e-05,
+      "finite": true
+    },
+    {
+      "file": "results/R2p_plate200_trt_lam3_16.json",
+      "run": "R2p",
+      "grid": "plate200",
+      "collision": "trt",
+      "cf_sim": 0.03256269544363021,
+      "cf_ref": 0.022137155747679754,
+      "cf_err_pct_corrected_fd": 47.0952086834515,
+      "fd_err_old_buggy_weights": 101.89792511694684,
+      "me_err": 47.704864235174455,
+      "fd_norm_ue_err": 30.692925885736255,
+      "first_cell_rel_err": 46.14116454968295,
+      "Rex": 900.0,
+      "n_steps": 30000,
+      "l2_rel_err_profile": 0.2758602296523279,
+      "u_edge_over_U_probe": 1.00051,
+      "mass_drift_pct": 0.002855283003653553,
+      "umax_drift_last_2000": 4.050961801631233e-06,
+      "finite": true
+    },
+    {
+      "file": "results/R3p_plate400_trt_lam3_16.json",
+      "run": "R3p",
+      "grid": "plate400",
+      "collision": "trt",
+      "cf_sim": 0.028198640793561932,
+      "cf_ref": 0.022137155747679754,
+      "cf_err_pct_corrected_fd": 27.381498847328196,
+      "fd_err_old_buggy_weights": 75.03615971627323,
+      "me_err": 27.3795636014944,
+      "fd_norm_ue_err": 13.530042522899846,
+      "first_cell_rel_err": 27.079606428984636,
+      "Rex": 900.0,
+      "n_steps": 30000,
+      "l2_rel_err_profile": 0.19899796529597488,
+      "u_edge_over_U_probe": 1.00093,
+      "mass_drift_pct": 0.004393263878503222,
+      "umax_drift_last_2000": 8.655797635674286e-06,
+      "finite": true
+    },
+    {
+      "file": "results/R4p_plate400_bgk_tau053.json",
+      "run": "R4p",
+      "grid": "plate400",
+      "collision": "bgk",
+      "cf_sim": 0.028356648981571194,
+      "cf_ref": 0.022137155747679754,
+      "cf_err_pct_corrected_fd": 28.095267995498112,
+      "fd_err_old_buggy_weights": 75.95526265446277,
+      "me_err": 28.105964435785857,
+      "fd_norm_ue_err": 14.054161471749666,
+      "first_cell_rel_err": 27.62716540320598,
+      "Rex": 900.0,
+      "n_steps": 30000,
+      "l2_rel_err_profile": 0.20451815020295713,
+      "u_edge_over_U_probe": 1.00094,
+      "mass_drift_pct": 0.004383117772548249,
+      "umax_drift_last_2000": 1.0765580243782258e-05,
+      "finite": true
+    },
+    {
+      "file": "results/R5p_plate400_y1600_bgk.json",
+      "run": "R5p",
+      "grid": "plate400_y1600",
+      "collision": "bgk",
+      "cf_sim": 0.02835182845592498,
+      "cf_ref": 0.022137155747679754,
+      "cf_err_pct_corrected_fd": 28.073492272811972,
+      "fd_err_old_buggy_weights": 75.92350358750808,
+      "me_err": 28.04949785388327,
+      "fd_norm_ue_err": 14.039172423572246,
+      "first_cell_rel_err": 27.600543044818306,
+      "Rex": 900.0,
+      "n_steps": 30000,
+      "l2_rel_err_profile": 0.20435898273978537,
+      "u_edge_over_U_probe": 1.00065,
+      "mass_drift_pct": 0.00385298363866897,
+      "umax_drift_last_2000": 5.517348292434531e-06,
+      "finite": true
+    },
+    {
+      "file": "results/R6p_plate400_y1600_trt.json",
+      "run": "R6p",
+      "grid": "plate400_y1600",
+      "collision": "trt",
+      "cf_sim": 0.028190111741423603,
+      "cf_ref": 0.022137155747679754,
+      "cf_err_pct_corrected_fd": 27.342970627011443,
+      "fd_err_old_buggy_weights": 74.98687510511843,
+      "me_err": 27.352401795158954,
+      "fd_norm_ue_err": 13.500073917918451,
+      "first_cell_rel_err": 27.05092260479261,
+      "Rex": 900.0,
+      "n_steps": 30000,
+      "l2_rel_err_profile": 0.1988508431055636,
+      "u_edge_over_U_probe": 1.00061,
+      "mass_drift_pct": 0.0038707393236397944,
+      "umax_drift_last_2000": 8.993886206362771e-06,
+      "finite": true
+    },
+    {
+      "file": "results/R1_plate200_bgk_tau053.json",
+      "run": "R1",
+      "grid": "plate200",
+      "collision": "bgk",
+      "cf_sim": 0.04469776898622512,
+      "cf_ref": 0.022137155747679754,
+      "me_err": -103.46311387395643,
+      "first_cell_rel_err": 45.55651601927549,
+      "Rex": 900.0,
+      "n_steps": 30000,
+      "l2_rel_err_profile": 0.27881049235399086,
+      "u_edge_over_U_probe": 1.00051,
+      "mass_drift_pct": 0.0028366820752756838,
+      "umax_drift_last_2000": 1.149152771998413e-05,
+      "finite": true,
+      "cf_err_pct_first_batch_weights": 101.91288120159699,
+      "note": "first-batch schema: primary C_f measured with the pre-fix FD weights (reproduction gate vs old record)"
+    }
+  ],
+  "judgment": {
+    "observable": "wall shear from 3-point one-sided second-order FD on the first three fluid rows (corrected weights (-2,3,-1)); no correction or extrapolation",
+    "main_gate": {
+      "grids": [
+        "plate200",
+        "plate400"
+      ],
+      "best_err_pct": 27.342970627011443,
+      "all_within_3pct": false,
+      "pass": false
+    },
+    "monotone_error_decrease_plate200_to_plate400": true,
+    "baseline_reproduction": {
+      "old_record": "+102.0 percent (2026-08-19, buggy weights)",
+      "R1_buggy_weights_pct": 101.91288120159699,
+      "within_5pp": true
+    },
+    "pass": false
+  },
+  "attribution": {
+    "measurement_formula_bug_old_record": "old FD used solve(A,e2) instead of solve(A^T,e2); buggy dudy = correct + 0.75*u(0.5); contributes about +48pp at plate400 probe (about +55pp of the old +102 percent at plate200)",
+    "finite_Re_x_edge_acceleration": "u_e/U = 1.0805 at probe; (u_e/U)^2.5 gives about +21pp (physical, not numerical)",
+    "edge_normalized_residual": "about +14 percent at plate400 probe mid-plate, collision- and domain-height-independent; grows as Re_x decreases (cf_ue +18.99 to +47.64 percent for BGK tau 0.53-0.80 ladder at x_eff=90 with TRT within 0.1-0.4pp)",
+    "trt_lambda_3_16_vs_bgk": "differences 0.23-0.73pp across both measurement levels; wall-position tau-coupling hypothesis not supported"
+  }
 }

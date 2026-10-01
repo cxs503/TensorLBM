@@ -1,0 +1,22 @@
+[2026-09-21T14:47:34+08:00]  rev 1 — protocol pre-registration (before first diagnostic run diag_smoke_d20.json at 14:48:52)
+  artifact : NOTES.md
+  sha256   : 8d8df2536f4e7b5a6481a6abf953982d35ded7899f87f52da8a8cd0da778673c
+  content  : locked references (S-N 1.091566 primary anchor, gate ±3%), locked case
+             definition (§2), candidate methods M1/M2/M3 (§3), pre-registered
+             phase-1 diagnostics (§4), phase-2 deliverables + PASS criterion (§5).
+  status   : in force for all phase-1 diagnostic runs (diag_*.json).
+2026-09-21T17:22:03+08:00  rev 2 — phase-1 error budget (§6) + formal protocol lock (§7), before any formal run
+  artifact : NOTES.md
+  sha256   : 6589bf75c07968b60f72e8bfada0763e654a7c69f22923525d733eaaf88bd621
+  content  : error budget incl. estimator root cause, CV validation (0.12%/0.01%
+             agreement), sensitivity map (lateral saturates, streamwise flat, sponge
+             worse), library pipeline divergence at HEAD; locked formal set:
+             bb D40/D60 lat1.25 + bfl D40/D60 lat2.0, 12000 steps, hard treatment.
+  status   : in force for formal_bb_*.json and formal_bfl_*.json.
+[2026-09-21T20:37:39+08:00]  rev 3 — record correction (after formal runs, before result.json finalisation)
+  artifact : NOTES.md
+  sha256   : 489074a4899ccf4beb754734811f2bb4d100f0433f5a221b5c0db4c64748564c
+  content  : §1 numeric rendering of the locked formula corrected
+             (1.091566 -> 1.0917311; formula, gate, conclusions unchanged);
+             §6 annotated (quoted errors shift +0.015 pp under the formula value).
+  status   : in force for result.json and README.md.

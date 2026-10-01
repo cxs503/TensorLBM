@@ -5,6 +5,13 @@ Implements five force-measurement strategies for stationary walls:
 1. **Standard MEM** (Ladd 1994) — link-wise momentum exchange using
    post-streaming distributions at the solid-fluid interface.
 
+1b. **Wet-node MEM** — ``2·Σ_links c_q f_q(x_solid)`` over the complete
+   fluid->solid link set (face + staircase-corner links), sampled
+   post-streaming.  Zero on the engine's initial state by exact pairwise
+   cancellation, and free of the spurious linear background that the
+   standard pairing produces by pairing populations from two different
+   steps (the +264.6% Re=100 sphere failure).
+
 2. **Galilean-invariant MEM** (Lorenz 2014 / Caiazzo 2007) — corrects the
    Galilean-invariance violation of the standard MEM by weighting each
    link with ``(1 + 1/(2τ))``.  More accurate for moving walls and
@@ -130,6 +137,174 @@ def momentum_exchange_standard(
         fz = fz + float(ci[2].item()) * contrib
 
     return float(fx.item()), float(fy.item()), float(fz.item())
+
+
+# ---------------------------------------------------------------------------
+# 1b. Wet-node MEM (exact link budget over ALL fluid->solid links)
+# ---------------------------------------------------------------------------
+def _crossing_mask_full(
+    solid: torch.Tensor,
+    cqx: int,
+    cqy: int,
+    cqz: int,
+) -> torch.Tensor:
+    """Boolean mask of fluid cells whose c_q-neighbour is solid (full set).
+
+    Unlike :func:`_crossing_mask` this is not restricted to the near-wall
+    (face-adjacent) band, so it also captures the *corner* links of a
+    staircase boundary: fluid cells that touch the solid only diagonally.
+    For a voxelised sphere these are ~14% of the crossing links and every
+    one of them crosses a real piece of wall, so excluding them biases the
+    measured force.
+    """
+    solid_shifted = torch.roll(solid, (-cqz, -cqy, -cqx), dims=(0, 1, 2))
+    return (~solid) & solid_shifted
+
+
+def momentum_exchange_wet_node(
+    f: torch.Tensor,
+    solid: torch.Tensor,
+    near: torch.Tensor | None = None,
+    links: str = "full",
+) -> tuple[float, float, float]:
+    """Wet-node (Ladd 1994) MEM over the complete fluid->solid link set.
+
+    For each fluid cell *x_f* and each direction *q* whose neighbour
+    ``x_s = x_f + c_q`` is solid, the population ``f_q(x_s)`` (the one that
+    has just streamed onto the solid node and is about to be bounced back)
+    transfers ``2·c_q·f_q(x_s)`` of momentum to the wall:
+
+        F = 2 · Σ_links c_q · f_q(x_solid)
+
+    Why this form (and not the ``f_q(x_f) + f_opp(x_s)`` pairing of
+    :func:`momentum_exchange_standard`): in the production stepper the
+    population leaves the fluid node after collision, crosses the link
+    during streaming, is reversed at the solid node, and returns during the
+    next streaming step.  The momentum handed to the wall per completed
+    step is therefore carried by the populations *at the solid node*,
+    which ``f_q(x_s)`` (post-streaming, pre-bounce-back) measures exactly.
+    Sampling the fluid-side value ``f_q(x_f)`` instead pairs cells from
+    two different steps and leaves the linear free-stream background
+    uncancelled (+43.6 Cd on a D40 sphere at t=0, i.e. the historical
+    +264.6% failure of ``momentum_exchange_standard`` at Re=100).
+
+    Background behaviour: on the engine's initial state (free-stream
+    equilibrium in the fluid, body cells at rest equilibrium) this
+    estimator returns exactly 0 — the isotropic rest populations at the
+    solid nodes cancel pairwise over any centrally symmetric link set
+    (measured 0.0 at machine precision).  During the run the populations
+    arriving at the solid nodes are the *scattered* near-wall field (the
+    flow has decelerated at the wall), so no analytic background
+    subtraction is needed.  The spurious linear free-stream background of
+    :func:`momentum_exchange_standard` — which pairs ``f_q(x_f)`` from a
+    different step than ``f_opp(x_s)`` — does not occur here.
+
+    Args:
+        f:     Distribution tensor ``(19, nz, ny, nx)`` — post-streaming
+               (pre- or post-far-field-BC: interior cells are not touched
+               by the far-field boundary condition).
+        solid: Boolean solid mask ``(nz, ny, nx)``.
+        near:  Near-wall fluid mask, required only for ``links="near"``.
+        links: ``"full"`` (default) — all fluid->solid links including the
+               staircase corner links; ``"near"`` — face-adjacent band only
+               (the subset :func:`momentum_exchange_standard` uses).
+
+    Returns:
+        ``(fx, fy, fz)`` — force on the wall (drag-positive).
+    """
+    if links not in ("full", "near"):
+        raise ValueError(f"links must be 'full' or 'near', got {links!r}")
+    if links == "near" and near is None:
+        raise ValueError("near mask is required when links='near'")
+
+    device = f.device
+    c = C.to(device).float()
+
+    fx = 0.0
+    fy = 0.0
+    fz = 0.0
+    for i in range(1, 19):
+        ci = c[i]
+        di = int(ci[0].item())
+        dj = int(ci[1].item())
+        dk = int(ci[2].item())
+
+        crossing = _crossing_mask_full(solid, di, dj, dk)
+        if links == "near":
+            crossing = crossing & near
+        if not crossing.any():
+            continue
+
+        # f_i at the solid neighbour x_s = x + c_i (shifted view)
+        f_i_solid = torch.roll(f[i], (-dk, -dj, -di), dims=(0, 1, 2))
+        contrib = float((f_i_solid * crossing.float()).sum().item())
+        fx = fx + 2.0 * float(ci[0].item()) * contrib
+        fy = fy + 2.0 * float(ci[1].item()) * contrib
+        fz = fz + 2.0 * float(ci[2].item()) * contrib
+
+    return fx, fy, fz
+
+
+def momentum_exchange_pair(
+    f: torch.Tensor,
+    solid: torch.Tensor,
+    near: torch.Tensor | None = None,
+    links: str = "full",
+) -> tuple[float, float, float]:
+    """Paired two-population MEM — exact per-step momentum budget.
+
+        F = Σ_links c_q · ( f_q(x_s) + f_{opp_q}(x_f) )
+
+    with ``x_s = x_f + c_q`` the solid node.  ``f_q(x_s)`` is the population
+    that just crossed the wall link; ``f_{opp_q}(x_f)`` is the population
+    that arrived back at the fluid node after being bounced at the wall.
+    Their pairing is the discrete momentum change of the *completed* step,
+    so at steady state this equals :func:`momentum_exchange_wet_node`
+    (they differ only by the unsteady storage term).
+
+    Useful as an independent momentum-budget identity check of the wet-node
+    estimator.  On the engine's initial state (body at rest equilibrium)
+    it returns the link-storage transient ``Σ c_q·f_opp^eq(x_f)`` (non-zero
+    in general); at steady state the storage term vanishes and it equals
+    the wet-node estimator (verified numerically to 4 decimals on the
+    Re=100 sphere).
+
+    Args: as :func:`momentum_exchange_wet_node`.
+    Returns: ``(fx, fy, fz)`` — force on the wall (drag-positive).
+    """
+    if links not in ("full", "near"):
+        raise ValueError(f"links must be 'full' or 'near', got {links!r}")
+    if links == "near" and near is None:
+        raise ValueError("near mask is required when links='near'")
+
+    device = f.device
+    c = C.to(device).float()
+    opp = OPPOSITE.to(device)
+
+    fx = 0.0
+    fy = 0.0
+    fz = 0.0
+    for i in range(1, 19):
+        opp_i = int(opp[i].item())
+        ci = c[i]
+        di = int(ci[0].item())
+        dj = int(ci[1].item())
+        dk = int(ci[2].item())
+
+        crossing = _crossing_mask_full(solid, di, dj, dk)
+        if links == "near":
+            crossing = crossing & near
+        if not crossing.any():
+            continue
+
+        f_i_solid = torch.roll(f[i], (-dk, -dj, -di), dims=(0, 1, 2))
+        contrib_solid = float((f_i_solid * crossing.float()).sum().item())
+        contrib_fluid = float((f[opp_i] * crossing.float()).sum().item())
+        fx = fx + float(ci[0].item()) * (contrib_solid + contrib_fluid)
+        fy = fy + float(ci[1].item()) * (contrib_solid + contrib_fluid)
+        fz = fz + float(ci[2].item()) * (contrib_solid + contrib_fluid)
+
+    return fx, fy, fz
 
 
 # ---------------------------------------------------------------------------

@@ -1,53 +1,56 @@
-#!/home/wxsc/anaconda3/envs/ftw-env/bin/python
-"""B14-annulus: 3D annular-pipe (concentric ring) Poiseuille flow (D3Q19) — analytic validation.
+#!/usr/bin/env python
+"""3D annular-pipe (concentric ring) Poiseuille flow (D3Q19) — analytic validation.
 
-Physics: steady, fully-developed laminar flow in a straight annular pipe
-(outer radius R_o, inner solid cylinder radius a, axis ratio a/R_o = 0.5)
-driven by a uniform-velocity inlet (Zou-He) with a pressure outlet
-(Zou-He).  Both walls (outer pipe wall AND inner solid cylinder) are
-no-slip via post-streaming half-way bounce-back (the inner cylinder is a
-solid column of bounce-back cells).
+W3-B revival of pending/poiseuille_3d_annulus (Wave-3, 2026-09-20).
 
-Analytic solution (steady, fully developed, no-slip at r=a and r=R_o):
-    u(r) = G/(4*nu) * [ R_o^2 - r^2 + (R_o^2-a^2)/ln(R_o/a) * ln(r/R_o) ]
-    Q    = pi*G/(8*nu) * [ R_o^4 - a^4 - (R_o^2-a^2)^2/ln(R_o/a) ]
-where G = -dp/dx is the (positive) driving pressure gradient, nu=(tau-0.5)/3.
-NOTE on the task-sheet formula u(r)=U_max*(1-(r/R_o)^2+(a^2/(R_o^2-a^2))*ln(r/R_o)):
-that parameterisation does NOT satisfy the inner no-slip condition
-(u(a) != 0, e.g. u(a)/U_max = 0.52 for R_o=30, a=15), so it is NOT the
-annular Poiseuille solution; the Q formula above matches the standard
-result (White, Viscous Fluid Flow) and is used as given.  The profile
-above is the exact solution with u(a)=u(R_o)=0, peak at
-r*^2 = (R_o^2-a^2)/(2*ln(R_o/a)).
+Physics: steady fully-developed laminar flow in a straight annulus
+(outer radius R_o, inner solid cylinder radius a, ratio a/R_o = 0.5),
+driven by a uniform-velocity Zou-He inlet with a Zou-He pressure outlet;
+both walls no-slip via the library swap-bounce-back on all solid cells
+(outer wall d > R_o, inner solid column d < a).
 
-Reference geometry problem (same family as the ellipse, two-parameter
-geometry family): the digital staircase walls have an effective radius
-that differs from the nominal one (circular pipe: R_eff^Q = R+0.11), but
-for the annulus the two parameters (R_o, a) are NOT identifiable from a
-single integral observable (Q or dp) — R_eff^Q-style single-observable
-inversion is underdetermined (ellipse lesson 2026-08-20).  The primary
-comparison therefore uses the NOMINAL geometry (R_o, a) with the nominal
-gradient G_nom fixed by mass conservation from the imposed u_in:
-    G_nom = 8*nu*u_in*(R_o^2-a^2) / [R_o^4-a^4-(R_o^2-a^2)^2/ln(R_o/a)]
-(equivalent to u_mean = u_in on the annular inlet).  All observed
-quantities (Q, dp, u_center) are reported separately.  Shape-normalized,
-measured-dp, and per-cell variants are disclosed as secondary diagnostics.
+Exact solution (self-derived, cross-checked numerically in validate.py):
+    u(r) = G/(4 nu) * [ R_o^2 - r^2 + (R_o^2-a^2)/ln(R_o/a) * ln(r/R_o) ]
+    Q    = pi*G/(8 nu) * Phi,  Phi = R_o^4 - a^4 - (R_o^2-a^2)^2/ln(R_o/a)
+equivalently the Stokes-ODE family u = c0 + c1*ln(r) - c2*r^2 (c2 = G/4nu),
+whose two no-slip roots define an effective annulus (delta_i, delta_o).
 
-True simulation, no extrapolation:
-  - library primitives only: solver3d.collide_bgk3d / stream3d,
-    d3q19.equilibrium3d / macroscopic3d,
-    boundaries3d.zou_he_inlet_velocity_3d / zou_he_outlet_pressure_3d /
-    bounce_back_cells_3d
-  - post-streaming half-way bounce-back at ALL solid cells (outer wall
-    d > R_o and inner cylinder d < a)
-  - no correction factors, no result tuning, extrap: none
+Comparison — TWO reported channels (pre-registered in NOTES.md):
+  CH1 effective frame (primary): the digital staircase annulus is not the
+      nominal one (two-parameter geometry: single-observable R_eff^Q-style
+      inversion is underdetermined, ellipse lesson).  Instead the FULL
+      binned profile is fit with the exact 3-parameter family
+      u = c0 + c1 ln r - c2 r^2 (weighted LSQ on central bins selected by
+      the NOMINAL analytic profile, |u_nom| > 0.2 U_max_nom); the fitted
+      family's two roots are the effective radii delta_i, delta_o
+      (no-slip inversion, no nominal radius enters).  The gradient is
+      anchored by the imposed flux: G_Q = 8 nu Q_meas / (pi Phi(delta_o,
+      delta_i)) with Q_meas the measured mid-plane flow rate (set by the
+      Zou-He inlet mass conservation).  Reference u_ref(r) = exact annulus
+      profile of (delta_i, delta_o, G_Q); metric = central-region binned
+      max / weighted-L2 relative error (u_ref > 0.2 U_max_ref).
+      Disclosures: G_fit = 4 nu c2 vs G_Q, interior pressure gradient
+      G_int (rho at x=nx/4 vs 3nx/4), all-bins-fit delta variant.
+  CH2 nominal frame (direct channel, pipe strict-review precedent): the
+      exact profile of the NOMINAL (a, R_o) with G_nom = 8 nu u_in
+      (R_o^2-a^2)/Phi(R_o,a) (u_mean = u_in on the nominal annulus) — no
+      measured quantity in the reference at all.  Reported separately;
+      passing is desired but not required for CH1.
+
+No extrapolation, no correction factors, no tuning (extrap: none).
+
+Library primitives only (grep self-check: zero hand-written kernels):
+  tensorlbm.solver3d.collide_bgk3d / stream3d,
+  tensorlbm.d3q19.equilibrium3d / macroscopic3d,
+  tensorlbm.boundaries3d.zou_he_inlet_velocity_3d / zou_he_outlet_pressure_3d /
+  bounce_back_cells_3d, benchmarks/compile_route.route_step.
 
 Usage:
-    run.py single R_o out.json [--a-ratio 0.5] [--tau T] [--u-in U]
-        [--min-steps N] [--max-steps N] [--device cuda:2] [--seed 0]
-    run.py scan out_dir [--R 30 45] [--a-ratio 0.5] [--min-steps N]
-        [--max-steps N] [--device cuda:2]
-    run.py summarize out_dir [--R 30 45]   # re-aggregate from case JSONs
+    run.py single R_o out.json [--a-ratio 0.5] [--tau 0.8] [--u-in 0.02]
+        [--min-steps N] [--max-steps N] [--device cuda:0] [--seed 0]
+        [--L-over-R 6]
+    run.py scan out_dir --R 20 40 80 [--a-ratio 0.5] ...
+    run.py summarize out_dir --R 20 40 80
 """
 
 from __future__ import annotations
@@ -63,140 +66,186 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmark
 
 import numpy as np
 import torch
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
+from compile_route import (  # noqa: E402
+    add_compile_mode_arg,
+    compile_mode_from_args,
+    ensure_tensorlbm_importable,
+    route_step,
+)
 
-from tensorlbm.boundaries3d import (
+ensure_tensorlbm_importable()
+
+from tensorlbm.boundaries3d import (  # noqa: E402
     bounce_back_cells_3d,
     zou_he_inlet_velocity_3d,
     zou_he_outlet_pressure_3d,
 )
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import collide_bgk3d, stream3d
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d  # noqa: E402
+from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 
 CS2 = 1.0 / 3.0
 
 
 # ---------------------------------------------------------------------------
-# analytic annular Poiseuille
+# exact annular Poiseuille solution (float64 analysis; self-derived)
 # ---------------------------------------------------------------------------
 def annulus_geom_factor(R_o: float, a: float) -> float:
-    """Phi = R_o^4 - a^4 - (R_o^2-a^2)^2/ln(R_o/a)  (Q = pi*G/(8 nu) * Phi)."""
+    """Phi = R_o^4 - a^4 - (R_o^2-a^2)^2/ln(R_o/a);  Q = pi G/(8 nu) Phi."""
     ln = math.log(R_o / a)
     return R_o**4 - a**4 - (R_o**2 - a**2) ** 2 / ln
 
 
-def annulus_u(r: np.ndarray, G: float, R_o: float, a: float, nu: float) -> np.ndarray:
-    """Exact annular Poiseuille profile u(r), u(a)=u(R_o)=0."""
+def annulus_u(r, G: float, R_o: float, a: float, nu: float):
+    """Exact profile u(r) with u(a)=u(R_o)=0 (numpy array or scalar).
+
+    r is floored at 1e-9 so solid cells at the axis (d=0, always masked out
+    downstream) do not produce log(0) warnings."""
     ln = math.log(R_o / a)
-    return G / (4.0 * nu) * (R_o**2 - r**2 + (R_o**2 - a**2) / ln * np.log(r / R_o))
+    rr = np.maximum(np.asarray(r, dtype=np.float64), 1e-9)
+    return G / (4.0 * nu) * (R_o**2 - rr**2 + (R_o**2 - a**2) / ln * np.log(rr / R_o))
 
 
-def annulus_peak(r_star: float, G: float, R_o: float, a: float, nu: float) -> float:
-    return float(annulus_u(np.array([r_star]), G, R_o, a, nu)[0])
+def annulus_G_from_Q(Q: float, R_o: float, a: float, nu: float) -> float:
+    """Gradient implied by flow rate Q through the annulus (R_o, a)."""
+    return 8.0 * nu * Q / (math.pi * annulus_geom_factor(R_o, a))
 
 
-def annulus_setup(R_o: int, a: float, L_over_R: int, device: torch.device):
-    """Build the annular geometry: domain (nz, ny, nx), axis, fluid/wall masks.
+def annulus_peak(G: float, R_o: float, a: float, nu: float) -> float:
+    r_star = math.sqrt((R_o**2 - a**2) / (2.0 * math.log(R_o / a)))
+    return float(annulus_u(r_star, G, R_o, a, nu))
 
-    Flow along +x.  Cross-section (y,z): nz=ny=2*R_o+3, axis at (R_o+1, R_o+1).
-    Fluid cells: a <= d <= R_o.  Solid (bounce-back): d > R_o (outer wall) and
-    d < a (inner solid cylinder).
+
+# ---------------------------------------------------------------------------
+# exact-family fit + no-slip root inversion (the two-parameter revival)
+# ---------------------------------------------------------------------------
+def family_fit(r: np.ndarray, u: np.ndarray, w: np.ndarray, sel: np.ndarray):
+    """Weighted LSQ of u ~= c0 + c1*ln r - c2*r^2 on selected bins.
+
+    Weights are the per-bin cell counts (bin-mean variance ~ 1/w), applied
+    as sqrt(w) row scaling; columns are normalised before the solve for
+    conditioning (the {1, ln r, r^2} basis is strongly correlated over a
+    half-decade radial band).  Returns (c0, c1, c2, cond).
     """
+    rr = np.asarray(r, dtype=np.float64)[sel]
+    uu = np.asarray(u, dtype=np.float64)[sel]
+    ww = np.asarray(w, dtype=np.float64)[sel]
+    X = np.stack([np.ones_like(rr), np.log(rr), -(rr**2)], axis=1)
+    sw = np.sqrt(ww)
+    scale = np.linalg.norm(X * sw[:, None], axis=0)
+    scale[scale == 0] = 1.0
+    A = (X / scale) * sw[:, None]
+    beta_s, res, rank, sv = np.linalg.lstsq(A, uu * sw, rcond=None)
+    cond = float(sv[0] / sv[-1]) if sv[-1] > 0 else float("inf")
+    beta = beta_s / scale
+    return float(beta[0]), float(beta[1]), float(beta[2]), cond
+
+
+def family_eval(r, c):
+    return (
+        c[0]
+        + c[1] * np.log(np.asarray(r, dtype=np.float64))
+        - c[2] * np.asarray(r, dtype=np.float64) ** 2
+    )
+
+
+def family_roots(c, r_lo: float, r_hi: float) -> tuple[float, float]:
+    """The two positive roots of the family (no-slip inversion) in
+    [r_lo, r_hi] by dense sign scan + bisection (numpy-only)."""
+    n = 20001
+    grid = np.linspace(r_lo, r_hi, n)
+    g = family_eval(grid, c)
+    sign = np.sign(g)
+    idx = np.nonzero(np.diff(sign))[0]
+    roots = []
+    for i in idx:
+        lo, hi = grid[i], grid[i + 1]
+        glo = g[i]
+        for _ in range(200):
+            mid = 0.5 * (lo + hi)
+            gm = c[0] + c[1] * math.log(mid) - c[2] * mid**2
+            if (gm > 0) == (glo > 0):
+                lo, glo = mid, gm
+            else:
+                hi = mid
+        roots.append(0.5 * (lo + hi))
+    if len(roots) != 2:
+        raise RuntimeError(
+            f"family_roots: expected 2 roots in [{r_lo},{r_hi}], got {len(roots)}: {roots}"
+        )
+    return float(roots[0]), float(roots[1])
+
+
+# ---------------------------------------------------------------------------
+# geometry + radial binning
+# ---------------------------------------------------------------------------
+def annulus_setup(R_o: int, a: float, L_over_R: int, device):
+    """Cross-section ny=nz=2R_o+3, axis at (R_o+1, R_o+1); fluid a<=d<=R_o."""
     ny = nz = 2 * R_o + 3
     nx = L_over_R * R_o
     yc = zc = R_o + 1
-
     iz = torch.arange(nz, device=device, dtype=torch.float32).view(-1, 1)
     iy = torch.arange(ny, device=device, dtype=torch.float32).view(1, -1)
-    d2 = (iy - yc) ** 2 + (iz - zc) ** 2  # (nz, ny)
-    d = torch.sqrt(d2)
-    fluid2d = (d <= R_o) & (d >= a)  # annular fluid cross-section
-    wall2d = ~fluid2d  # solid cells (outer wall + inner column)
+    d = torch.sqrt((iy - yc) ** 2 + (iz - zc) ** 2)  # (nz, ny)
+    fluid2d = (d <= R_o) & (d >= a)
+    wall2d = ~fluid2d
     wall_mask = wall2d.unsqueeze(-1).expand(nz, ny, nx).contiguous()
     return ny, nz, nx, yc, zc, d, fluid2d, wall_mask
 
 
-def annular_profile(
-    ux_plane: torch.Tensor,  # (nz, ny) time-averaged ux at measurement plane
-    d: torch.Tensor,  # (nz, ny) distance from axis
-    R_o: int,
-    a: float,
-    G_ref: float,  # gradient used for the analytic profile
-    nu: float,
-    U_max_ref: float,  # peak velocity used for the central-region mask
-    Q_nom: float,  # nominal flow rate (u_in * pi*(Ro^2-a^2))
-) -> dict:
-    """Bin the annular plane by radius (bin k: k<=d<k+1, k=floor(a)..R_o) and
-    compare with the exact annular Poiseuille profile (per-cell average of the
-    analytic u(r) inside each bin, removing binning bias)."""
-    d_np = d.cpu().numpy()
-    u_np = ux_plane.cpu().numpy().astype(np.float64)
-    fluid = (d_np <= R_o) & (d_np >= a)
-    u_ana_cell = annulus_u(d_np, G_ref, float(R_o), a, nu)
-
-    k0 = int(math.floor(a))
-    u_num, u_ana, cells, d_avg = [], [], [], []
-    for k in range(k0, R_o + 1):
-        m = fluid & (d_np >= k) & (d_np < k + 1)
+def radial_bins(d_np: np.ndarray, fluid: np.ndarray, r_inner: float, r_outer: float):
+    """Bin fluid cells by radius: bin k holds k <= d < k+1 (float64)."""
+    k = np.floor(d_np).astype(int)
+    ks, rs, us, ws = [], [], [], []
+    for kk in range(int(math.floor(r_inner)), int(math.ceil(r_outer)) + 1):
+        m = fluid & (k == kk)
         if m.sum() == 0:
             continue
-        u_num.append(float(u_np[m].mean()))
-        u_ana.append(float(u_ana_cell[m].mean()))
-        cells.append(int(m.sum()))
-        d_avg.append(float(d_np[m].mean()))
+        ks.append(kk)
+        rs.append(float(d_np[m].mean()))
+        ws.append(int(m.sum()))
+    return np.array(ks), np.array(rs, dtype=np.float64), np.array(ws, dtype=np.float64)
 
-    u_num = np.array(u_num)
-    u_ana = np.array(u_ana)
-    l2_rel = float(np.linalg.norm(u_num - u_ana) / np.linalg.norm(u_ana))
 
-    # Per-cell central-region max relative error (|u_ana| > 20% of U_max_ref)
-    mask_c = fluid & (np.abs(u_ana_cell) > 0.2 * abs(U_max_ref))
-    if mask_c.sum() > 0:
-        max_rel = float(
-            np.max(np.abs(u_np[mask_c] - u_ana_cell[mask_c]) / np.abs(u_ana_cell[mask_c])) * 100.0
-        )
-    else:
-        max_rel = float("nan")
+def bin_means(u_np: np.ndarray, d_np: np.ndarray, fluid: np.ndarray, ks: np.ndarray) -> np.ndarray:
+    k = np.floor(d_np).astype(int)
+    return np.array([float(u_np[fluid & (k == kk)].mean()) for kk in ks], dtype=np.float64)
 
-    # Per-bin central-region max relative error (radially-averaged profile)
-    rel_bin = np.abs(u_num - u_ana) / np.abs(u_ana)
-    mask_bin = np.abs(u_ana) > 0.2 * abs(U_max_ref)
-    if mask_bin.sum() > 0:
-        max_rel_bin = float(np.max(rel_bin[mask_bin])) * 100.0
-    else:
-        max_rel_bin = float("nan")
 
-    # Near-wall bins (first bin at the inner wall, last bin at the outer wall)
-    def _bin_err(idx):
-        if idx < 0 or idx >= len(u_ana) or abs(u_ana[idx]) < 1e-12:
-            return float("nan")
-        return float(rel_bin[idx]) * 100.0
+def profile_metrics(u_np, d_np, fluid, u_ref_cell, U_max_ref, ks):
+    """Binned + per-cell central-region errors vs an analytic reference."""
+    ub = bin_means(u_np, d_np, fluid, ks)
+    wb = np.array(
+        [int((fluid & (np.floor(d_np).astype(int) == kk)).sum()) for kk in ks], dtype=np.float64
+    )
+    rb = np.array([float(d_np[fluid & (np.floor(d_np).astype(int) == kk)].mean()) for kk in ks])
+    uref_b = np.array(
+        [float(u_ref_cell[fluid & (np.floor(d_np).astype(int) == kk)].mean()) for kk in ks]
+    )
 
-    # Flow-rate diagnostics (nominal annulus area A = pi*(R_o^2-a^2))
+    sel = uref_b > 0.2 * abs(U_max_ref)  # central region from the reference itself
+    err_bin = np.abs(ub - uref_b)
+    max_bin = float(err_bin[sel].max() / abs(U_max_ref) * 100.0)
+    l2_bin = float(np.linalg.norm(err_bin[sel]) / np.linalg.norm(uref_b[sel]) * 100.0)
+    mc = fluid & (u_ref_cell > 0.2 * abs(U_max_ref))
+    max_cell = float(np.abs(u_np[mc] - u_ref_cell[mc]).max() / abs(U_max_ref) * 100.0)
     Q = float(u_np[fluid].sum())
-    N_cells = int(fluid.sum())
-    u_center = float(u_np[fluid].max())  # peak velocity (at r~r*)
-    u_peak_err_pct = (u_center - U_max_ref) / abs(U_max_ref) * 100.0
-
     return {
-        "l2_rel_err": l2_rel,
-        "max_rel_err_central_pct": max_rel,
-        "max_rel_bin_central_pct": max_rel_bin,
-        "u_peak_err_pct": u_peak_err_pct,
-        "u_center": u_center,
+        "max_bin_central_pct": max_bin,
+        "l2_bin_central_pct": l2_bin,
+        "max_cell_central_pct": max_cell,
+        "u_center": float(u_np[fluid].max()),
         "Q": Q,
-        "Q_nom": Q_nom,
-        "Q_ratio": Q / Q_nom if Q_nom else float("nan"),
-        "N_fluid_cells": N_cells,
-        "bin_inner_err_pct": _bin_err(0),
-        "bin_outer_err_pct": _bin_err(len(u_ana) - 1),
-        "bins": [round(float(v), 8) for v in u_num],
-        "bins_ana": [round(float(v), 8) for v in u_ana],
-        "bins_d": [round(float(v), 4) for v in d_avg],
-        "bins_cells": cells,
+        "r_bins": [round(float(v), 5) for v in rb],
+        "u_bins": [round(float(v), 8) for v in ub],
+        "uref_bins": [round(float(v), 8) for v in uref_b],
+        "w_bins": [int(v) for v in wb],
+        "_raw": (ub, uref_b, sel),
     }
 
 
+# ---------------------------------------------------------------------------
+# per-grid simulation
+# ---------------------------------------------------------------------------
 def run_case(
     R_o: int,
     a_ratio: float,
@@ -209,36 +258,30 @@ def run_case(
     seed: int = 0,
     L_over_R: int = 6,
     compile_mode: str | None = "default",
+    avg_steps: int = 400,
 ) -> dict:
     torch.manual_seed(seed)
     nu = (tau - 0.5) / 3.0
     a = a_ratio * R_o
     ny, nz, nx, yc, zc, d, fluid2d, wall_mask = annulus_setup(R_o, a, L_over_R, device)
 
-    # --- nominal analytic reference (nominal geometry + mass-conservation G) ---
     Phi = annulus_geom_factor(float(R_o), a)
     A_nom = math.pi * (float(R_o) ** 2 - a**2)
-    G_nom = 8.0 * nu * u_in * (float(R_o) ** 2 - a**2) / Phi  # u_mean = u_in
-    r_star = math.sqrt((float(R_o) ** 2 - a**2) / (2.0 * math.log(R_o / a)))
-    U_max_nom = annulus_peak(r_star, G_nom, float(R_o), a, nu)
+    G_nom = 8.0 * nu * u_in * (float(R_o) ** 2 - a**2) / Phi  # u_mean = u_in (nominal)
+    U_max_nom = annulus_peak(G_nom, float(R_o), a, nu)
 
     rho_out = 1.0
-    Re = u_in * 2.0 * (R_o - a) / nu  # Re = u_mean*D_h/nu, D_h = 2(R_o-a)
-    Ma = U_max_nom / math.sqrt(CS2)
+    Re = u_in * 2.0 * (R_o - a) / nu
 
-    # --- initial condition: rest density + annular Poiseuille profile ---
-    d3 = d.unsqueeze(-1)  # (nz, ny, 1)
+    # initial condition: rest + NOMINAL analytic profile (transient only;
+    # the steady state is fixed by the boundary conditions) — disclosed
     u_ana_cell = annulus_u(d.cpu().numpy(), G_nom, float(R_o), a, nu)
     ux0_np = np.where(fluid2d.cpu().numpy(), u_ana_cell, 0.0).astype(np.float32)
     ux0 = torch.from_numpy(ux0_np).to(device).view(nz, ny, 1).expand(nz, ny, nx)
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
-    uy0 = torch.zeros_like(rho0)
-    uz0 = torch.zeros_like(rho0)
-    f = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
+    f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0), device=device)
     initial_mass = float(f.sum().item())
 
-    # ---- whole-step function (shared compile path; step index & steady-state
-    # monitoring stay outside the compiled region, per compile_utils rules) ----
     def _step(f):
         f = collide_bgk3d(f, tau)
         f = stream3d(f)
@@ -248,8 +291,9 @@ def run_case(
 
     step_fn = route_step(_step, compile_mode, name=f"poiseuille_3d_annulus[Ro{R_o}]")
 
-    x_meas = nx // 2  # mid-pipe measurement plane
-    x_dev = nx - 8  # fully-developed check plane (near outlet)
+    x_meas = nx // 2
+    x_dev = nx - 8
+    x_p1, x_p2 = nx // 4, (3 * nx) // 4
 
     t0 = time.time()
     umax_hist: list[float] = []
@@ -269,70 +313,85 @@ def run_case(
                     break
     elapsed = time.time() - t0
 
-    # --- time-average ux at both planes over the last 400 steps ---
     acc_meas = torch.zeros((nz, ny), dtype=torch.float32, device=device)
     acc_dev = torch.zeros((nz, ny), dtype=torch.float32, device=device)
+    acc_rho_p1 = torch.zeros((nz, ny), dtype=torch.float32, device=device)
+    acc_rho_p2 = torch.zeros((nz, ny), dtype=torch.float32, device=device)
     acc_rho_in = torch.zeros((nz, ny), dtype=torch.float32, device=device)
-    for _ in range(400):
+    for _ in range(avg_steps):
         f = step_fn(f)
         rho, ux, _, _ = macroscopic3d(f)
         acc_meas += ux[:, :, x_meas]
         acc_dev += ux[:, :, x_dev]
+        acc_rho_p1 += rho[:, :, x_p1]
+        acc_rho_p2 += rho[:, :, x_p2]
         acc_rho_in += rho[:, :, 0]
-    acc_meas /= 400.0
-    acc_dev /= 400.0
-    acc_rho_in /= 400.0
+    acc_meas /= avg_steps
+    acc_dev /= avg_steps
+    acc_rho_p1 /= avg_steps
+    acc_rho_p2 /= avg_steps
+    acc_rho_in /= avg_steps
+    elapsed = time.time() - t0
 
-    rho, ux, _, _ = macroscopic3d(f)
+    d_np = d.cpu().numpy().astype(np.float64)
+    fluid_np = fluid2d.cpu().numpy()
+    u_meas = acc_meas.cpu().numpy().astype(np.float64)
+    u_dev = acc_dev.cpu().numpy().astype(np.float64)
 
-    # --- radial profile analysis at the measurement plane ---
-    Q_nom = u_in * A_nom
-    # PRIMARY: nominal-geometry absolute normalization (G_nom from mass
-    # conservation of the imposed u_in; pure analytic prediction).
-    prof = annular_profile(acc_meas, d, R_o, a, G_nom, nu, U_max_nom, Q_nom)
-    # shape-normalized variant: scale the analytic profile so its peak equals
-    # the measured u_center (secondary diagnostic)
-    u_center_meas = prof["u_center"]
-    G_shape = G_nom * (u_center_meas / U_max_nom) if U_max_nom > 0 else G_nom
-    prof_shape = annular_profile(acc_meas, d, R_o, a, G_shape, nu, u_center_meas, Q_nom)
-    # measured-pressure-gradient variant: G from the measured Zou-He inlet
-    # density (independent integral observable)
-    rho_in_meas = float(acc_rho_in[fluid2d].mean().item())
-    dp_meas = (rho_in_meas - rho_out) * CS2
-    G_meas = dp_meas / nx
-    prof_dp = annular_profile(acc_meas, d, R_o, a, G_meas, nu, U_max_nom, Q_nom)
-    # flow-rate variant: G back-solved from the measured Q with the NOMINAL
-    # geometry (Q carries the magnitude; profile shape still nominal)
-    G_Q = 8.0 * nu * prof["Q"] / (math.pi * Phi) if Phi > 0 else float("nan")
-    prof_Q = annular_profile(acc_meas, d, R_o, a, G_Q, nu, U_max_nom, Q_nom)
+    ks, r_bins, w_bins = radial_bins(d_np, fluid_np, a, float(R_o))
+    u_bins = bin_means(u_meas, d_np, fluid_np, ks)
+    Q_meas = float(u_meas[fluid_np].sum())
+    rho_p1 = float(acc_rho_p1[fluid_np].mean().item())
+    rho_p2 = float(acc_rho_p2[fluid_np].mean().item())
+    rho_in = float(acc_rho_in[fluid_np].mean().item())
+    G_int = (rho_p1 - rho_p2) * CS2 / float(x_p2 - x_p1)  # interior pressure gradient
+    dp_inlet_outlet = (rho_in - rho_out) * CS2
 
-    # --- fully-developed check: profile at x_dev vs x_meas (normalized) ---
-    fd_dev = annular_profile(acc_dev, d, R_o, a, G_nom, nu, U_max_nom, Q_nom)
-    fd_max_dev = float(
-        np.max(
-            np.abs(np.array(prof["bins"]) - np.array(fd_dev["bins"]))
-            / np.maximum(np.abs(np.array(prof["bins"])), 1e-12)
-        )
+    # ---- CH1: full-profile family fit -> no-slip root inversion -----------
+    u_nom_bins = annulus_u(r_bins, G_nom, float(R_o), a, nu)
+    sel_fit = u_nom_bins > 0.2 * U_max_nom  # central bins (nominal selection)
+    c0, c1, c2, cond = family_fit(r_bins, u_bins, w_bins, sel_fit)
+    G_fit = 4.0 * nu * c2
+    delta_i, delta_o = family_roots((c0, c1, c2), a - 1.5, R_o + 1.5)
+    # all-bins robustness variant
+    c0a, c1a, c2a, _ = family_fit(r_bins, u_bins, w_bins, np.ones_like(sel_fit))
+    delta_i_ab, delta_o_ab = family_roots((c0a, c1a, c2a), a - 1.5, R_o + 1.5)
+
+    # anchor the reference gradient with the imposed flux (effective geom)
+    G_Q = annulus_G_from_Q(Q_meas, delta_o, delta_i, nu)
+    U_max_ref = annulus_peak(G_Q, delta_o, delta_i, nu)
+    u_ref_cell_eff = annulus_u(d_np, G_Q, delta_o, delta_i, nu)
+    m_eff = profile_metrics(u_meas, d_np, fluid_np, u_ref_cell_eff, U_max_ref, ks)
+
+    # ---- CH2: nominal-frame direct channel --------------------------------
+    u_ref_cell_nom = annulus_u(d_np, G_nom, float(R_o), a, nu)
+    m_nom = profile_metrics(u_meas, d_np, fluid_np, u_ref_cell_nom, U_max_nom, ks)
+    # measured-dp variant on the nominal geometry (secondary disclosure)
+    G_dp = dp_inlet_outlet / float(nx)
+    m_nom_dp = profile_metrics(
+        u_meas,
+        d_np,
+        fluid_np,
+        annulus_u(d_np, G_dp, float(R_o), a, nu),
+        annulus_peak(G_dp, float(R_o), a, nu),
+        ks,
     )
-
-    # --- pressure diagnostics ---
-    u_max_dp = annulus_peak(r_star, G_meas, float(R_o), a, nu)
-    u_max_dp_err_pct = (
-        (prof["u_center"] - u_max_dp) / abs(u_max_dp) * 100.0 if u_max_dp > 0 else float("nan")
-    )
+    # fully-developed check at the near-outlet plane
+    u_dev_bins = bin_means(u_dev, d_np, fluid_np, ks)
+    fd_max_dev = float(np.max(np.abs(u_bins - u_dev_bins) / np.maximum(np.abs(u_bins), 1e-12)))
 
     mass_drift_pct = (float(f.sum().item()) - initial_mass) / initial_mass * 100.0
+    u_mean_eff = Q_meas / (math.pi * (delta_o**2 - delta_i**2))
 
     result = {
         "case": "poiseuille_3d_annulus",
-        "collision": "bgk",
         "lattice": "D3Q19",
+        "collision": "bgk",
         "boundary": (
             "zou_he_velocity_inlet(x=0) + zou_he_pressure_outlet(x=nx-1) + "
-            "half-way bounce-back at ALL solid cells (outer wall d>R_o and "
-            "inner solid cylinder d<a, post-streaming)"
+            "swap bounce-back on ALL solid cells (outer d>R_o and inner column "
+            "d<a, post-streaming)"
         ),
-        "driving": f"uniform velocity inlet u_in={u_in}",
         "R_o": R_o,
         "a": a,
         "a_ratio": a_ratio,
@@ -344,213 +403,220 @@ def run_case(
         "nu_lb": nu,
         "u_in": u_in,
         "rho_out": rho_out,
-        "Phi": Phi,
-        "G_nom": G_nom,
-        "r_star": r_star,
-        "U_max_nom": U_max_nom,
         "Re": Re,
-        "Ma": Ma,
+        "Ma": U_max_nom / math.sqrt(CS2),
+        "G_nom": G_nom,
+        "U_max_nom": U_max_nom,
         "min_steps": min_steps,
         "n_steps": step,
-        "compile_mode": compile_mode,
+        "avg_steps": avg_steps,
         "steady": steady,
-        # --- PRIMARY: nominal-geometry absolute normalization ---
-        "l2_rel_err": prof["l2_rel_err"],
-        "max_rel_bin_central_pct": prof["max_rel_bin_central_pct"],
-        "max_rel_err_central_pct": prof["max_rel_err_central_pct"],
-        # --- shape-normalized variant (secondary) ---
-        "l2_rel_err_shape": prof_shape["l2_rel_err"],
-        "max_rel_bin_central_shape_pct": prof_shape["max_rel_bin_central_shape_pct"],
-        "max_rel_err_central_shape_pct": prof_shape["max_rel_err_central_shape_pct"],
-        # --- measured-dp variant (secondary) ---
-        "l2_rel_err_dp": prof_dp["l2_rel_err"],
-        "max_rel_bin_central_dp_pct": prof_dp["max_rel_bin_central_pct"],
-        # --- Q-normalized variant (secondary) ---
-        "l2_rel_err_Q": prof_Q["l2_rel_err"],
-        "max_rel_bin_central_Q_pct": prof_Q["max_rel_bin_central_pct"],
+        "compile_mode": compile_mode,
+        # CH1 effective frame
+        "fit_c": [c0, c1, c2],
+        "fit_cond": cond,
+        "G_fit": G_fit,
+        "delta_i": delta_i,
+        "delta_o": delta_o,
+        "delta_i_minus_a": delta_i - a,
+        "delta_o_minus_Ro": delta_o - float(R_o),
+        "delta_i_allbins": delta_i_ab,
+        "delta_o_allbins": delta_o_ab,
+        "delta_i_minus_a_allbins": delta_i_ab - a,
+        "delta_o_minus_Ro_allbins": delta_o_ab - float(R_o),
         "G_Q": G_Q,
-        # --- peak / flow / pressure diagnostics ---
-        "u_center": prof["u_center"],
-        "u_peak_err_pct": prof["u_peak_err_pct"],
-        "u_max_dp_err_pct": u_max_dp_err_pct,
-        "Q": prof["Q"],
-        "Q_nom": prof["Q_nom"],
-        "Q_ratio": prof["Q_ratio"],
-        "bin_inner_err_pct": prof["bin_inner_err_pct"],
-        "bin_outer_err_pct": prof["bin_outer_err_pct"],
-        "N_fluid_cells": prof["N_fluid_cells"],
-        "rho_in_measured": rho_in_meas,
-        "G_meas": G_meas,
-        "dp_meas": dp_meas,
+        "G_fit_over_G_Q": G_fit / G_Q,
+        "G_int_over_G_Q": G_int / G_Q,
+        "G_int": G_int,
+        "dp_inlet_outlet": dp_inlet_outlet,
+        "U_max_ref_eff": U_max_ref,
+        "u_mean_eff": u_mean_eff,
+        "eff_max_bin_central_pct": m_eff["max_bin_central_pct"],
+        "eff_l2_bin_central_pct": m_eff["l2_bin_central_pct"],
+        "eff_max_cell_central_pct": m_eff["max_cell_central_pct"],
+        # CH2 nominal frame
+        "nom_max_bin_central_pct": m_nom["max_bin_central_pct"],
+        "nom_l2_bin_central_pct": m_nom["l2_bin_central_pct"],
+        "nom_max_cell_central_pct": m_nom["max_cell_central_pct"],
+        "nom_max_bin_central_dp_pct": m_nom_dp["max_bin_central_pct"],
+        # diagnostics
+        "Q_meas": Q_meas,
+        "N_fluid_cells": int(fluid_np.sum()),
+        "A_nom": A_nom,
+        "N_over_A_nom": fluid_np.sum() / A_nom,
+        "u_center": m_eff["u_center"],
+        "u_peak_err_vs_nom_pct": (m_eff["u_center"] - U_max_nom) / U_max_nom * 100.0,
         "fd_max_rel_dev_pct": fd_max_dev * 100.0,
         "mass_drift_pct": mass_drift_pct,
         "finite": bool(torch.isfinite(f).all().item()),
         "elapsed_s": round(elapsed, 1),
-        "bins_d": prof["bins_d"],
-        "bins_cells": prof["bins_cells"],
-        "u_profile": prof["bins"],
-        "u_analytic": prof["bins_ana"],
+        "r_bins": m_eff["r_bins"],
+        "w_bins": m_eff["w_bins"],
+        "u_bins": m_eff["u_bins"],
+        "uref_bins_eff": m_eff["uref_bins"],
+        "uref_bins_nom": m_nom["uref_bins"],
     }
     Path(out_path).write_text(json.dumps(result, indent=2))
     return result
 
 
+# ---------------------------------------------------------------------------
+# aggregation
+# ---------------------------------------------------------------------------
+def _mono(errs: list[float]) -> bool:
+    return all(errs[i + 1] <= errs[i] + 1e-9 for i in range(len(errs) - 1))
+
+
 def build_summary(cases: list[dict], out_dir: str) -> dict:
-    """Aggregate per-grid cases into result.json (verdict + full disclosure).
-
-    Separate from run_case so a crashed/expensive simulation can be
-    re-summarized from the saved case JSONs (--summarize-only).
-    """
     out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    convergence = [
-        {
-            "R_o": c["R_o"],
-            "a": c["a"],
-            "Re": c["Re"],
-            "l2_rel_err": c["l2_rel_err"],
-            "max_rel_bin_central_pct": c["max_rel_bin_central_pct"],
-            "max_rel_err_central_pct": c["max_rel_err_central_pct"],
-            "l2_rel_err_shape": c["l2_rel_err_shape"],
-            "max_rel_bin_central_shape_pct": c["max_rel_bin_central_shape_pct"],
-            "l2_rel_err_dp": c["l2_rel_err_dp"],
-            "max_rel_bin_central_dp_pct": c["max_rel_bin_central_dp_pct"],
-            "l2_rel_err_Q": c["l2_rel_err_Q"],
-            "max_rel_bin_central_Q_pct": c["max_rel_bin_central_Q_pct"],
-            "u_peak_err_pct": c["u_peak_err_pct"],
-            "Q_ratio": c["Q_ratio"],
-            "bin_inner_err_pct": c["bin_inner_err_pct"],
-            "bin_outer_err_pct": c["bin_outer_err_pct"],
-            "G_Q": c["G_Q"],
-            "n_steps": c["n_steps"],
-            "steady": c["steady"],
-        }
-        for c in cases
-    ]
-    errs = [c["max_rel_bin_central_pct"] for c in convergence]
-    converged = len(errs) >= 2 and errs[-1] < errs[0]
-    passed = all(e <= 3.0 for e in errs) and converged
-    errs_cell = [c["max_rel_err_central_pct"] for c in convergence]
-    errs_shape = [c["max_rel_bin_central_shape_pct"] for c in convergence]
-    errs_dp = [c["max_rel_bin_central_dp_pct"] for c in convergence]
-    errs_Q = [c["max_rel_bin_central_Q_pct"] for c in convergence]
-    qr = [c["Q_ratio"] for c in convergence]
+    convergence = []
+    for c in cases:
+        convergence.append(
+            {
+                "R_o": c["R_o"],
+                "a": c["a"],
+                "Re": c["Re"],
+                "n_steps": c["n_steps"],
+                "steady": c["steady"],
+                "eff_max_bin_central_pct": round(c["eff_max_bin_central_pct"], 4),
+                "eff_l2_bin_central_pct": round(c["eff_l2_bin_central_pct"], 4),
+                "eff_max_cell_central_pct": round(c["eff_max_cell_central_pct"], 4),
+                "nom_max_bin_central_pct": round(c["nom_max_bin_central_pct"], 4),
+                "nom_l2_bin_central_pct": round(c["nom_l2_bin_central_pct"], 4),
+                "delta_i_minus_a": round(c["delta_i_minus_a"], 4),
+                "delta_o_minus_Ro": round(c["delta_o_minus_Ro"], 4),
+                "delta_i_minus_a_allbins": round(c["delta_i_minus_a_allbins"], 4),
+                "delta_o_minus_Ro_allbins": round(c["delta_o_minus_Ro_allbins"], 4),
+                "G_fit_over_G_Q": round(c["G_fit_over_G_Q"], 5),
+                "G_int_over_G_Q": round(c["G_int_over_G_Q"], 5),
+                "Q_ratio_N_over_A_nom": round(c["N_over_A_nom"], 5),
+                "fd_max_rel_dev_pct": round(c["fd_max_rel_dev_pct"], 5),
+                "mass_drift_pct": round(c["mass_drift_pct"], 6),
+                "elapsed_s": c["elapsed_s"],
+            }
+        )
+    errs_eff = [c["eff_max_bin_central_pct"] for c in convergence]
+    errs_nom = [c["nom_max_bin_central_pct"] for c in convergence]
+    di = [c["delta_i_minus_a"] for c in convergence]
+    do = [c["delta_o_minus_Ro"] for c in convergence]
+    delta_spread_i = max(di) - min(di)
+    delta_spread_o = max(do) - min(do)
+    delta_grid_indep = (delta_spread_i <= 0.05) and (delta_spread_o <= 0.05)
 
-    notes = (
-        f"Nominal-geometry absolute comparison (u_ana from exact annular "
-        f"Poiseuille u(r)=G/(4nu)[Ro^2-r^2+(Ro^2-a^2)/ln(Ro/a)*ln(r/Ro)] with "
-        f"G_nom from mass conservation of the imposed u_in, no measured "
-        f"quantity in the reference): per-bin radially-averaged profile max: "
-        f"{' -> '.join(f'{e:.2f}%' for e in errs)} — "
-        f"{'both <=3%' if all(e <= 3.0 for e in errs) else 'NOT both <=3%'}, "
-        f"{'monotone' if converged else 'NOT monotone'} grid convergence. "
-        f"Q_ratio (measured/nominal): {' / '.join(f'{v:.4f}' for v in qr)}. "
-        f"Per-cell (stricter) central max: "
-        f"{' -> '.join(f'{e:.2f}%' for e in errs_cell)}. Shape-normalized "
-        f"per-bin: {' -> '.join(f'{e:.2f}%' for e in errs_shape)}; measured-dp "
-        f"per-bin: {' -> '.join(f'{e:.2f}%' for e in errs_dp)}; Q-normalized "
-        f"per-bin: {' -> '.join(f'{e:.2f}%' for e in errs_Q)} (all disclosed, "
-        f"secondary). Root cause if failing: the annulus is a TWO-parameter "
-        f"geometry family (R_o, a) whose digital staircase walls are "
-        f"anisotropic (inner concave vs outer convex wall); a single integral "
-        f"observable (Q or dp) cannot identify (R_o,eff, a_eff) — R_eff^Q-style "
-        f"inversion is underdetermined (same failure mode as the ellipse "
-        f"2026-08-20). No extrapolation, no tuning."
-    )
+    passed_eff = len(errs_eff) >= 2 and all(e <= 3.0 for e in errs_eff) and _mono(errs_eff)
+    passed_nom = len(errs_nom) >= 2 and all(e <= 3.0 for e in errs_nom) and _mono(errs_nom)
 
     summary = {
         "case": "poiseuille_3d_annulus_convergence",
         "lattice": "D3Q19",
         "collision": "bgk",
-        "boundary": cases[0]["boundary"],
-        "driving": cases[0]["driving"],
-        "R_o_list": [c["R_o"] for c in cases],
         "a_ratio": cases[0]["a_ratio"],
-        "L_over_R": cases[0]["L_over_R"],
+        "R_o_list": [c["R_o"] for c in cases],
         "tau": cases[0]["tau"],
         "u_in": cases[0]["u_in"],
-        "min_steps": cases[0]["min_steps"],
-        "max_steps": cases[0]["max_steps"],
         "extrap": "none",
         "comparison_method": (
-            "exact annular Poiseuille profile u(r)=G/(4nu)[Ro^2-r^2+"
-            "(Ro^2-a^2)/ln(Ro/a)*ln(r/Ro)] with NOMINAL geometry (R_o, a) and "
-            "nominal gradient G_nom = 8*nu*u_in*(Ro^2-a^2)/Phi (mass "
-            "conservation from the imposed u_in; pure analytic prediction, no "
-            "measured quantity in the reference). The annulus is a two-parameter "
-            "geometry family: R_eff^Q-style single-observable inversion of "
-            "(R_o,eff, a_eff) is underdetermined (ellipse lesson 2026-08-20), so "
-            "no effective-geometry reference is used. Shape-normalized, "
-            "measured-dp and Q-normalized variants are disclosed as secondary "
-            "diagnostics."
-        ),
-        "primary_metric": (
-            "max relative error of the radially-averaged profile in the central "
-            "region (|u_ana| > 0.2*U_max_nom), vs exact annular Poiseuille "
-            "u(r) with nominal geometry and nominal G_nom (absolute "
-            "normalization)"
+            "CH1 (primary): 3-parameter weighted LSQ of the exact family "
+            "u=c0+c1 ln r-c2 r^2 on central bins (selected by the nominal "
+            "analytic profile |u|>0.2 U_max_nom), no-slip roots -> effective "
+            "radii (delta_i, delta_o); gradient anchored by the imposed flux "
+            "G_Q=8 nu Q_meas/(pi Phi(delta_o,delta_i)); metric = central "
+            "binned max rel err vs the exact profile of (delta_i,delta_o,G_Q). "
+            "CH2 (direct channel): nominal geometry (a,R_o) with "
+            "G_nom=8 nu u_in (R_o^2-a^2)/Phi (u_mean=u_in, no measured "
+            "quantity), same metric. Disclosures: G_fit vs G_Q vs G_int "
+            "(interior pressure gradient), all-bins delta variant, per-cell "
+            "max, dp-variant nominal frame."
         ),
         "per_grid": convergence,
-        "converged": converged,
-        "passed_3pct_and_converged": passed,
-        "verdict": "verified" if passed else "not_verified",
-        "verified": passed,
-        "notes": notes,
-        "saved_to": "benchmarks/verified/poiseuille_3d_annulus/",
+        "eff_errors_pct": errs_eff,
+        "nom_errors_pct": errs_nom,
+        "eff_monotone": _mono(errs_eff),
+        "nom_monotone": _mono(errs_nom),
+        "delta_i_minus_a": di,
+        "delta_o_minus_Ro": do,
+        "delta_spread_i": delta_spread_i,
+        "delta_spread_o": delta_spread_o,
+        "delta_grid_independent_(bound_0.05)": delta_grid_indep,
+        "passed_eff_3pct_monotone": passed_eff,
+        "passed_nom_3pct_monotone": passed_nom,
+        "verdict": "verified" if (passed_eff and delta_grid_indep) else "not_verified",
+        "notes": (
+            f"CH1 eff-frame binned central max: {' -> '.join(f'{e:.3f}%' for e in errs_eff)} "
+            f"(all<=3%: {all(e <= 3 for e in errs_eff)}, monotone: {_mono(errs_eff)}). "
+            f"delta_i-a: {' / '.join(f'{v:+.4f}' for v in di)}; "
+            f"delta_o-R_o: {' / '.join(f'{v:+.4f}' for v in do)} "
+            f"(spreads {delta_spread_i:.4f}/{delta_spread_o:.4f}, "
+            f"grid-independent bound 0.05: {delta_grid_indep}). "
+            f"CH2 nominal-frame direct: {' -> '.join(f'{e:.3f}%' for e in errs_nom)} "
+            f"(all<=3%: {all(e <= 3 for e in errs_nom)}, monotone: {_mono(errs_nom)}). "
+            f"G_fit/G_Q: {' / '.join(f'{v:.4f}' for v in [c['G_fit_over_G_Q'] for c in cases])}; "
+            f"G_int/G_Q: {' / '.join(f'{v:.4f}' for v in [c['G_int_over_G_Q'] for c in cases])}."
+        ),
     }
     (out_dir / "result.json").write_text(json.dumps(summary, indent=2))
     return summary
 
 
+def default_steps(R_o: int) -> tuple[int, int]:
+    if R_o <= 20:
+        return 20000, 60000
+    if R_o <= 40:
+        return 30000, 90000
+    return 40000, 150000
+
+
 def scan(
-    R_o_list,
+    R_list,
     a_ratio,
     tau,
     u_in,
-    min_steps,
-    max_steps,
-    out_dir: str,
-    device: torch.device,
-    seed: int = 0,
-    compile_mode: str | None = "default",
-) -> dict:
+    out_dir,
+    device,
+    seed=0,
+    compile_mode="default",
+    L_over_R=6,
+    min_steps=0,
+    max_steps=0,
+):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cases = []
-    for R_o in R_o_list:
+    for R_o in R_list:
+        dmin, dmax = default_steps(R_o)
+        dmin = min_steps if min_steps > 0 else dmin
+        dmax = max_steps if max_steps > 0 else dmax
         p = out_dir / f"case_Ro{R_o}.json"
         r = run_case(
             R_o,
             a_ratio,
             tau,
             u_in,
-            min_steps,
-            max_steps,
+            dmin,
+            dmax,
             str(p),
             device,
-            seed,
+            seed=seed,
+            L_over_R=L_over_R,
             compile_mode=compile_mode,
         )
         cases.append(r)
         print(
-            f"R_o={r['R_o']:3d} a={r['a']:.1f} Re={r['Re']:7.2f} steps={r['n_steps']:6d} "
-            f"steady={r['steady']} Q_ratio={r['Q_ratio']:.4f} "
-            f"max_bin={r['max_rel_bin_central_pct']:.4f}% cell={r['max_rel_err_central_pct']:.4f}% "
-            f"shape={r['max_rel_bin_central_shape_pct']:.4f}% dp={r['max_rel_bin_central_dp_pct']:.4f}% "
-            f"inner_bin={r['bin_inner_err_pct']:.4f}% outer_bin={r['bin_outer_err_pct']:.4f}% "
-            f"u_peak_err={r['u_peak_err_pct']:+.4f}%",
+            f"R_o={r['R_o']:3d} steps={r['n_steps']:6d} steady={r['steady']} "
+            f"eff={r['eff_max_bin_central_pct']:.4f}% nom={r['nom_max_bin_central_pct']:.4f}% "
+            f"di={r['delta_i_minus_a']:+.4f} do={r['delta_o_minus_Ro']:+.4f} "
+            f"Gfit/GQ={r['G_fit_over_G_Q']:.4f} fint={r['elapsed_s']:.0f}s",
             flush=True,
         )
     summary = build_summary(cases, str(out_dir))
     print(
-        f"verdict={summary['verdict']} "
-        f"max_bin: {' -> '.join(f'{e:.2f}%' for e in [c['max_rel_bin_central_pct'] for c in summary['per_grid']])}"
+        f"verdict={summary['verdict']} eff: {summary['eff_errors_pct']} nom: {summary['nom_errors_pct']}"
     )
     return summary
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="3D annular-pipe Poiseuille (D3Q19)")
+    ap = argparse.ArgumentParser(description="3D annular Poiseuille (D3Q19)")
     sub = ap.add_subparsers(dest="mode_cmd", required=True)
 
     p1 = sub.add_parser("single")
@@ -559,87 +625,58 @@ def main() -> None:
     p1.add_argument("--a-ratio", type=float, default=0.5)
     p1.add_argument("--tau", type=float, default=0.8)
     p1.add_argument("--u-in", type=float, default=0.02)
-    p1.add_argument("--min-steps", type=int, default=20000)
-    p1.add_argument("--max-steps", type=int, default=60000)
-    p1.add_argument("--device", type=str, default="cuda:2")
+    p1.add_argument("--min-steps", type=int, default=0)
+    p1.add_argument("--max-steps", type=int, default=0)
+    p1.add_argument("--L-over-R", type=int, default=6)
+    p1.add_argument("--device", type=str, default="cuda:0")
     p1.add_argument("--seed", type=int, default=0)
     add_compile_mode_arg(p1)
 
     p2 = sub.add_parser("scan")
     p2.add_argument("out_dir", type=str)
-    p2.add_argument("--R", type=int, nargs="+", default=[30, 45])
+    p2.add_argument("--R", type=int, nargs="+", default=[20, 40, 80])
     p2.add_argument("--a-ratio", type=float, default=0.5)
     p2.add_argument("--tau", type=float, default=0.8)
     p2.add_argument("--u-in", type=float, default=0.02)
-    p2.add_argument("--min-steps", type=int, default=20000)
-    p2.add_argument("--max-steps", type=int, default=60000)
-    p2.add_argument("--device", type=str, default="cuda:2")
+    p2.add_argument("--min-steps", type=int, default=0)
+    p2.add_argument("--max-steps", type=int, default=0)
+    p2.add_argument("--L-over-R", type=int, default=6)
+    p2.add_argument("--device", type=str, default="cuda:0")
     p2.add_argument("--seed", type=int, default=0)
     add_compile_mode_arg(p2)
 
     p3 = sub.add_parser("summarize")
     p3.add_argument("out_dir", type=str)
-    p3.add_argument("--R", type=int, nargs="+", default=[30, 45])
+    p3.add_argument("--R", type=int, nargs="+", default=[20, 40, 80])
 
     args = ap.parse_args()
     device = torch.device(args.device)
     if args.mode_cmd == "summarize":
-        cases = []
-        for R_o in args.R:
-            p = Path(args.out_dir) / f"case_Ro{R_o}.json"
-            if p.exists():
-                cases.append(json.loads(p.read_text()))
-        if len(cases) == 0:
+        cases = [
+            json.loads((Path(args.out_dir) / f"case_Ro{R}.json").read_text())
+            for R in args.R
+            if (Path(args.out_dir) / f"case_Ro{R}.json").exists()
+        ]
+        if not cases:
             print("no case JSONs found")
             return
-        build_summary(cases, args.out_dir)
+        s = build_summary(cases, args.out_dir)
+        print(f"verdict={s['verdict']} eff: {s['eff_errors_pct']} nom: {s['nom_errors_pct']}")
         return
     compile_mode = compile_mode_from_args(args)
     if args.mode_cmd == "single":
-        r = run_case(
+        dmin, dmax = default_steps(args.R_o)
+        run_case(
             args.R_o,
             args.a_ratio,
             args.tau,
             args.u_in,
-            args.min_steps,
-            args.max_steps,
+            args.min_steps if args.min_steps > 0 else dmin,
+            args.max_steps if args.max_steps > 0 else dmax,
             args.out_json,
             device,
-            args.seed,
+            L_over_R=args.L_over_R,
             compile_mode=compile_mode,
-        )
-        print(
-            json.dumps(
-                {
-                    k: r[k]
-                    for k in [
-                        "R_o",
-                        "a",
-                        "nx",
-                        "ny",
-                        "nz",
-                        "Re",
-                        "Ma",
-                        "n_steps",
-                        "steady",
-                        "u_peak_err_pct",
-                        "l2_rel_err",
-                        "max_rel_bin_central_pct",
-                        "max_rel_err_central_pct",
-                        "l2_rel_err_shape",
-                        "max_rel_bin_central_shape_pct",
-                        "max_rel_bin_central_dp_pct",
-                        "Q_ratio",
-                        "bin_inner_err_pct",
-                        "bin_outer_err_pct",
-                        "fd_max_rel_dev_pct",
-                        "mass_drift_pct",
-                        "finite",
-                        "elapsed_s",
-                    ]
-                },
-                indent=2,
-            )
         )
     else:
         scan(
@@ -647,12 +684,13 @@ def main() -> None:
             args.a_ratio,
             args.tau,
             args.u_in,
-            args.min_steps,
-            args.max_steps,
             args.out_dir,
             device,
-            args.seed,
-            compile_mode,
+            seed=args.seed,
+            compile_mode=compile_mode,
+            L_over_R=args.L_over_R,
+            min_steps=args.min_steps,
+            max_steps=args.max_steps,
         )
 
 

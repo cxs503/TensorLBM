@@ -57,7 +57,12 @@ def test_float64_equilibrium_uses_unrounded_lattice_weights() -> None:
     assert not torch.equal(W.double(), W_EXACT64)
 
 
-def test_current_kbc_is_withheld_when_viscosity_is_not_recovered() -> None:
+def test_current_entropic_kbc_recovers_target_viscosity() -> None:
+    """Since the KBC viscosity fix (shear projection relaxed by the exact BGK
+    factor), the entropic KBC kernel recovers tau-controlled viscosity and the
+    audit admits it. The previous kernel relaxed the shear modes fully at
+    every step (audit error > 20%, withheld); the rejection path of the audit
+    gate itself is covered by the under-resolved-decay test below."""
     result = run_collision_viscosity_audit(
         CollisionViscosityAuditConfig(
             collision_model="entropic_kbc",
@@ -68,8 +73,8 @@ def test_current_kbc_is_withheld_when_viscosity_is_not_recovered() -> None:
         )
     )
 
-    assert result["acceptance"]["admitted"] is False
-    assert result["result"]["relative_error_pct"] > 20.0
+    assert result["acceptance"]["admitted"] is True
+    assert result["result"]["relative_error_pct"] < 2.0
 
 
 def test_planar_cylinder_tau_recovers_viscosity_in_float32() -> None:
