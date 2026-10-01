@@ -20,3 +20,6 @@
 [sphmem D=16 272x256x256] step=1000 Cd_mem_surf=1.2896 Cd_mem_all=1.3117 Cd_mem_int=0.0221 (1936s)
 [sphmem D=16 272x256x256] step=2000 Cd_mem_surf=1.2263 Cd_mem_all=1.2488 Cd_mem_int=0.0225 (3756s)
 [sphmem D=16 272x256x256] step=3000 Cd_mem_surf=1.1994 Cd_mem_all=1.2219 Cd_mem_int=0.0225 (5263s)
+[sphmem D=16 272x256x256] step=4000 Cd_mem_surf=1.1849 Cd_mem_all=1.2073 Cd_mem_int=0.0224 (6654s)
+[sphmem D=16 272x256x256] === FINAL win=40 === Cd_mem_surface=1.1849 err_SN=+8.54% | Cd_mem_all=1.2073 Cd_mem_interior=0.0224 (6655s)
+[sphmem] saved benchmarks/pending/sphere_re100/scan/scan_D16_L16.json
