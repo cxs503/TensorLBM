@@ -17,3 +17,25 @@
 === Gartling BFS Re=800.0 ER=2 ref X1/H=6.1 (X1/h=12.20) u=0.06 collision=mrt L/H=15.0 device=sdaa:0 compile=None ===
 [compile_route] bfs_gartling[m64]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
 [m=64 H=128] step=   3000 X1/H=0.9705 X1/h=1.9410 X2/H=0.756 X3/H=1.020 max|u|=0.0926 drift=+0.000e+00 t=101s
+[m=64 H=128] step=   6000 X1/H=0.0131 X1/h=0.0263 X2/H=1.342 X3/H=2.058 max|u|=0.0905 drift=+9.222e+03 t=202s
+[m=64 H=128] step=   9000 X1/H=0.2937 X1/h=0.5875 X2/H=1.802 X3/H=2.591 max|u|=0.0915 drift=+1.897e+04 t=302s
+[m=64 H=128] step=  12000 X1/H=0.2877 X1/h=0.5753 X2/H=2.460 X3/H=3.279 max|u|=0.0886 drift=+1.524e+04 t=402s
+[m=64 H=128] step=  15000 X1/H=2.4574 X1/h=4.9148 X2/H=1.737 X3/H=2.560 max|u|=0.0889 drift=+6.195e+03 t=502s
+[m=64 H=128] step=  18000 X1/H=0.0074 X1/h=0.0147 X2/H=1.421 X3/H=2.104 max|u|=0.0886 drift=+4.657e+03 t=603s
+[m=64 H=128] step=  21000 X1/H=0.2055 X1/h=0.4109 X2/H=2.359 X3/H=2.685 max|u|=0.0896 drift=+1.274e+04 t=703s
+[m=64 H=128] step=  24000 X1/H=0.7023 X1/h=1.4047 X2/H=3.218 X3/H=4.597 max|u|=0.0888 drift=+1.816e+04 t=803s
+[m=64 H=128] step=  27000 X1/H=2.6267 X1/h=5.2533 X2/H=4.001 X3/H=4.668 max|u|=0.1012 drift=+1.118e+04 t=904s
+[m=64 H=128] step=  30000 X1/H=0.0087 X1/h=0.0173 X2/H=2.503 X3/H=3.365 max|u|=0.0889 drift=+3.482e+03 t=1004s
+{
+  "X1_H": [
+    0.0087
+  ],
+  "err_pct": [
+    -99.858
+  ],
+  "span_pct": 0.0,
+  "all_within_3pct": false,
+  "grid_span_within_3pct": null
+}
+VERIFIED=False
+DONE
