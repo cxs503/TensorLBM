@@ -14,6 +14,11 @@ Layers:
     ``route_step(mode="default")`` agrees with the eager routing on the
     same device (allclose) — run on CPU by default (small grid), which also
     proves the wrapper is device-agnostic like ``compile_utils`` itself.
+4.  Eager fallback: ``_CompileWithEagerFallback`` tries the compiled path
+    once, and on ``InductorError``/``AssertionError``/``IndexError``/
+    ``RuntimeError`` prints the fallback banner and runs every later step
+    eager; ``compile_status_of`` reports ``compiled`` / ``eager_fallback``
+    / ``eager``.  (Fake compiled/eager callables — no real compilation.)
 """
 
 from __future__ import annotations
@@ -158,3 +163,80 @@ class TestRoutedStepNumerics:
             f_comp = comp_fn(f_comp)
         torch.testing.assert_close(f_eager, f_comp, rtol=1e-4, atol=1e-6)
         assert torch.isfinite(f_comp).all()
+
+
+# ---------------------------------------------------------------------------
+# 4. Eager fallback (SDAA teco / any unsupported inductor backend)
+# ---------------------------------------------------------------------------
+
+
+class TestCompileWithEagerFallback:
+    @pytest.mark.parametrize("exc", [AssertionError, IndexError, RuntimeError])
+    def test_one_shot_fallback_then_always_eager(self, exc, capsys) -> None:
+        calls = {"compiled": 0, "eager": 0}
+
+        def compiled(f):
+            calls["compiled"] += 1
+            raise exc("teco boom")
+
+        def eager(f):
+            calls["eager"] += 1
+            return f + 1
+
+        w = cr._CompileWithEagerFallback(compiled, eager, name="fb", mode="default")
+        # provisional before the first call
+        assert w.compile_status == "compiled"
+        assert w(0) == 1  # first call falls back, then runs eager for THIS step
+        assert w(5) == 6  # every later call stays eager
+        assert calls == {"compiled": 1, "eager": 2}
+        s = cr.compile_status_of(w)
+        assert s["compile_status"] == "eager_fallback"
+        assert s["compile_mode_effective"] == "eager"
+        assert exc.__name__ in s["compile_status_reason"]
+        assert "EAGER FALLBACK" in capsys.readouterr().out
+
+    def test_exception_outside_trigger_set_propagates(self) -> None:
+        def compiled(f):
+            raise OSError("not a compile failure")
+
+        def eager(f):
+            return f
+
+        w = cr._CompileWithEagerFallback(compiled, eager, name="prop", mode="default")
+        with pytest.raises(OSError):
+            w(0)
+        assert w.compile_status == "compiled"  # untouched, not a fallback trigger
+
+    def test_stays_compiled_on_success(self) -> None:
+        def compiled(f):
+            return f * 2
+
+        def eager(f):
+            return f + 1
+
+        w = cr._CompileWithEagerFallback(compiled, eager, name="ok", mode="default")
+        assert w(3) == 6 and w(4) == 8
+        s = cr.compile_status_of(w)
+        assert s == {
+            "compile_status": "compiled",
+            "compile_mode_effective": "default",
+            "compile_status_reason": None,
+        }
+
+    def test_eager_passthrough_is_tagged(self) -> None:
+        def step(f):
+            return f
+
+        routed = cr.route_step(step, "eager", name="t", quiet=True)
+        assert routed is step  # identity preserved (byte-identical eager path)
+        s = cr.compile_status_of(routed)
+        assert s["compile_status"] == "eager"
+        assert s["compile_mode_effective"] == "eager"
+
+    def test_route_step_status_of_eager_passthrough(self) -> None:
+        def step(f):
+            return f + 1
+
+        routed = cr.route_step(step, None, name="t", quiet=True)
+        assert routed is step
+        assert cr.compile_status_of(routed)["compile_status"] == "eager"

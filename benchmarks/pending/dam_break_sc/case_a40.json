@@ -1,0 +1,42 @@
+{
+  "T_max_MM": 5.059644256269407,
+  "T_max_MM_geff": 4.848941431870335,
+  "T_max_code": 3.577708763999664,
+  "a": 40.0,
+  "checkpoints": {
+    "T1": {
+      "X_ref": 1.326,
+      "X_sim_T_MM": 1.465569,
+      "X_sim_T_MM_geff": 1.487461,
+      "err_pct_T_MM": 10.526,
+      "err_pct_T_MM_geff": 12.177,
+      "pass_le_3pct_T_MM": false
+    },
+    "T2": {
+      "X_ref": 2.36,
+      "X_sim_T_MM": 2.181139,
+      "X_sim_T_MM_geff": 2.274767,
+      "err_pct_T_MM": -7.579,
+      "err_pct_T_MM_geff": -3.612,
+      "pass_le_3pct_T_MM": false
+    },
+    "T2.96": {
+      "X_ref": 3.67,
+      "X_sim_T_MM": 2.940085,
+      "X_sim_T_MM_geff": 3.04177,
+      "err_pct_T_MM": -19.889,
+      "err_pct_T_MM_geff": -17.118,
+      "pass_le_3pct_T_MM": false
+    }
+  },
+  "dt_s": 14.247905360534787,
+  "g": 0.0002,
+  "g_eff": 0.0001836893203883495,
+  "mass_drift_max": 1.4338297257708287e-05,
+  "max_steps": 1600,
+  "max_u_max": 0.2704508900642395,
+  "nx": 256,
+  "ny": 128,
+  "sample_interval": 20,
+  "time_convention": "T_MM = t*sqrt(2*g/a)  (Martin & Moyce 1952; Lethe digitisation)"
+}

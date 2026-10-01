@@ -54,9 +54,28 @@ signature must match
 
 from __future__ import annotations
 
+import os
+
 import torch
 
 from .boundaries3d import bounce_back_cells_3d
+from .d3q19 import OPPOSITE as _OPPOSITE_3D
+
+# Fuse the NoDynamics restore + half-way bounce-back into a single ``torch.where``.
+# Bit-exact (pure data movement) but replaces two boolean-index ops on the solid
+# set — pathological on SDAA (~212 ms/step at L=48) — with one cheap
+# first-axis gather plus a where (~7.8 ms, 27x).  Enabled by default; set
+# ``TL_FUSE_NODYN_BB=0`` to restore the legacy two-op path.
+_FUSE_NODYN_BB_ENV = "TL_FUSE_NODYN_BB"
+
+
+def _fuse_nodyn_bb_enabled() -> bool:
+    return os.environ.get(_FUSE_NODYN_BB_ENV, "1").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
 
 
 def lbm_step_correct(
@@ -199,29 +218,53 @@ def lbm_step_correct(
     # ----------------------------------------------------------------
     # Standard LBM step (BB / WF / BFL modes)
     # ----------------------------------------------------------------
-    # 1. Save pre-collision state.  Only the SOLID cells are needed for the
-    #    NoDynamics restore below; a full-domain clone is a memory hog on
-    #    large grids (4.3 GB at 56M cells) and is one of the allocations
-    #    that pushes MRT past 24 GB.  The BFL path and any custom
-    #    bounce_back_fn still receive the full f_pre.
-    need_full_f_pre = solid is None or wall_treatment == "bfl" or bounce_back_fn is not None
-    if need_full_f_pre:
-        f_pre = f.clone()
-        f_pre_solid = None
-    else:
+    # Fused NoDynamics + half-way bounce-back is only valid for the plain BB
+    # path (no custom bounce_back_fn).  It is bit-exact: at a solid cell the
+    # legacy sequence (NoDynamics restore, then swap to the opposite direction)
+    # leaves f_pre[OPPOSITE[q]] in every direction q, which is exactly what a
+    # single ``torch.where(solid, f_pre[opp], collide(f))`` produces.
+    fuse_nodyn_bb = (
+        wall_treatment == "bb"
+        and bounce_back_fn is None
+        and solid is not None
+        and _fuse_nodyn_bb_enabled()
+    )
+
+    if fuse_nodyn_bb:
+        # Snapshot only the mirror image we need (pre-collision).
         f_pre = None
-        f_pre_solid = f[:, solid].clone()
+        f_pre_solid = None
+        f_pre_opp = f[_OPPOSITE_3D.to(f.device)].clone()
+    else:
+        f_pre_opp = None
+        # 1. Save pre-collision state.  Only the SOLID cells are needed for the
+        #    NoDynamics restore below; a full-domain clone is a memory hog on
+        #    large grids (4.3 GB at 56M cells) and is one of the allocations
+        #    that pushes MRT past 24 GB.  The BFL path and any custom
+        #    bounce_back_fn still receive the full f_pre.
+        need_full_f_pre = solid is None or wall_treatment == "bfl" or bounce_back_fn is not None
+        if need_full_f_pre:
+            f_pre = f.clone()
+            f_pre_solid = None
+        else:
+            f_pre = None
+            f_pre_solid = f[:, solid].clone()
 
     # 2. Collision (all cells)
     f = collide_fn(f, tau=tau, **collide_kwargs)
 
-    # 3. NoDynamics: restore solid cells to pre-collision values
-    if f_pre is not None:
-        sm = solid.unsqueeze(0).expand_as(f)
-        for q in range(f.shape[0]):
-            f[q] = torch.where(sm[q], f_pre[q], f[q])
+    if fuse_nodyn_bb:
+        # 3. NoDynamics (solid cells keep pre-collision state) + half-way BB
+        #    (swap to opposite direction) fused into a single torch.where.
+        f = torch.where(solid.unsqueeze(0), f_pre_opp, f)
     else:
-        f[:, solid] = f_pre_solid
+        # 3. NoDynamics: restore solid cells to pre-collision values
+        if f_pre is not None:
+            sm = solid.unsqueeze(0).expand_as(f)
+            for q in range(f.shape[0]):
+                f[q] = torch.where(sm[q], f_pre[q], f[q])
+        else:
+            f[:, solid] = f_pre_solid
 
     if wall_treatment == "wf":
         # WF mode: collide → NoDynamics → stream → WF → BC
@@ -285,7 +328,10 @@ def lbm_step_correct(
     else:
         # BB mode: collide → NoDynamics → BB → stream → BC
         # 4. Half-way bounce-back (BEFORE streaming)
-        if bounce_back_fn is not None:
+        if fuse_nodyn_bb:
+            # Already applied (fused with NoDynamics above).
+            pass
+        elif bounce_back_fn is not None:
             f = bounce_back_fn(f, solid, f_pre)
         else:
             f = bounce_back_cells_3d(f, solid, f_pre=f_pre)

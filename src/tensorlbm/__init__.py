@@ -618,6 +618,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "init_mass_from_fill_27": ("free_surface_lbm_27", "init_mass_from_fill_27"),
     "init_phi_bubble_3d": ("free_surface_common", "init_phi_bubble_3d"),
     "init_phi_rayleigh_taylor_3d": ("free_surface_common", "init_phi_rayleigh_taylor_3d"),
+    "init_population_from_fill": ("free_surface_lbm", "init_population_from_fill"),
     "initialize_free_energy_collision_only_state": (
         "phasefield",
         "initialize_free_energy_collision_only_state",
@@ -706,6 +707,8 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     ),
     "nonequilibrium_indicator_2d": ("adaptive_refinement", "nonequilibrium_indicator_2d"),
     "nonequilibrium_indicator_3d": ("adaptive_refinement", "nonequilibrium_indicator_3d"),
+    "nu_from_re": ("lbm_re_tau", "nu_from_re"),
+    "nu_from_tau": ("lbm_re_tau", "nu_from_tau"),
     "oaspl": ("acoustics", "oaspl"),
     "observe_control_volume_force": ("control_volume_force", "observe_control_volume_force"),
     "obstacle_force": ("autograd_path", "obstacle_force"),
@@ -735,6 +738,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "psi_power": ("multiphase", "psi_power"),
     "random_porosity_mask_2d": ("preprocess_geo", "random_porosity_mask_2d"),
     "random_porosity_mask_3d": ("preprocess_geo", "random_porosity_mask_3d"),
+    "re_from_tau": ("lbm_re_tau", "re_from_tau"),
     "recommend_by_physical_accuracy": ("accuracy_recommendation", "recommend_by_physical_accuracy"),
     "recommend_grid": ("yplus_guide", "recommend_grid"),
     "reconstruct_bfl_wall_pressure": ("drag_pressure", "reconstruct_bfl_wall_pressure"),
@@ -882,6 +886,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "surface_tension_force_3d": ("free_surface_common", "surface_tension_force_3d"),
     "synthetic_targets": ("autograd_calib", "synthetic_targets"),
     "synthetic_turbulence_2d": ("inlet_profiles", "synthetic_turbulence_2d"),
+    "tau_from_re": ("lbm_re_tau", "tau_from_re"),
     "tau_from_viscosity": ("powerlaw", "tau_from_viscosity"),
     "theoretical_block_coefficient": ("ship_cad", "theoretical_block_coefficient"),
     "total_liquid_inventory": ("free_surface_lbm", "total_liquid_inventory"),
@@ -1499,6 +1504,7 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         init_fill_rectangular,
         init_flags_from_fill,
         init_mass_from_fill,
+        init_population_from_fill,
         total_liquid_inventory,
     )
     from .free_surface_lbm_2d import free_surface_step_2d, init_fill_rectangular_2d
@@ -1553,6 +1559,12 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
     )
     from .interpolated_bc_suboff import compute_q_suboff
     from .io import save_hdf5, save_vtk, save_vtk_binary, save_vts, save_xdmf
+    from .lbm_re_tau import (
+        nu_from_re,
+        nu_from_tau,
+        re_from_tau,
+        tau_from_re,
+    )
     from .lbm_step import LBMStepExecutor
     from .lid_driven_cavity import (
         GHIA_RE100,
@@ -2103,7 +2115,12 @@ __all__ = [
     "AMRPatch3D",
     "AdaptiveSolver2D",
     "AdaptiveSolver3D",
+    "init_population_from_fill",
     "nonequilibrium_indicator_2d",
+    "nu_from_re",
+    "nu_from_tau",
+    "re_from_tau",
+    "tau_from_re",
     "vorticity_indicator_2d",
     "gradient_indicator_2d",
     "nonequilibrium_indicator_3d",

@@ -283,6 +283,8 @@ def run_case(
         tau_coarse=tau_coarse,
         reflux=True,
         ghost_interpolation=args.ghost_interpolation,
+        # SDAA 上 limit_nonequilibrium_for_positivity 间歇性卡死 GPU → 关闭
+        enforce_transfer_positivity=False,
     )
     amr = NestedStaticBlockAMR3D(coarse_f, (config1,), fine_solids=(None,))
     l1_fine = amr.interfaces[0].fine_f  # with-ghost tensor
@@ -311,6 +313,20 @@ def run_case(
     host = octree.leaf_host_cell
     octree.f_leaf = l1_fine[:, host[:, 0] + GHOST, host[:, 1] + GHOST, host[:, 2] + GHOST].clone()
     leaf_weights = leaf_force_weights(octree)
+    try:
+        _wl = octree.leaf_level[octree.bfl_mask.any(dim=0)]
+        _uv, _uc = torch.unique(_wl, return_counts=True)
+        _ws = octree.leaf_level[octree.bfl_mask.any(dim=0)]
+        print(
+            f"[area] wall-link leaf levels: {dict(zip(_uv.tolist(), _uc.tolist()))} "
+            f"n_bfl_links={int(octree.bfl_mask.sum().item())} "
+            f"n_leaf={int(octree.leaf_level.shape[0])} "
+            f"leaf_level_counts={dict(zip(*[t.tolist() for t in torch.unique(octree.leaf_level, return_counts=True)]))} "
+            f"bl_cells={bl_cells} radius_l1={radius_l1} d_max={args.d_max}",
+            flush=True,
+        )
+    except Exception as _e:
+        print(f"[area] wall-level print failed: {_e}", flush=True)
     ghost_plan = build_ghost_plan(
         octree,
         s1,
@@ -689,4 +705,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import faulthandler
+
+    faulthandler.dump_traceback_later(3600, exit=True)  # 3600s 后 dump 卡点
     main()

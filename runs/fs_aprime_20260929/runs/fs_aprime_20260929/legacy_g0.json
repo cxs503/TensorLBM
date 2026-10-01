@@ -1,0 +1,52 @@
+{
+  "a": 8,
+  "g": 0.0,
+  "steps": 200,
+  "rho_gas": 1.0,
+  "closure": false,
+  "iface_initial": 335,
+  "iface_growth": 2.71044776119403,
+  "drift_end": -5.594889322916666e-06,
+  "series": [
+    {
+      "step": 50,
+      "T": 0.0,
+      "front": 10,
+      "X": 1.25,
+      "h": 17,
+      "H": 1.0625,
+      "mass_drift_rel": -6.29425048828125e-06,
+      "iface_cells": 413
+    },
+    {
+      "step": 100,
+      "T": 0.0,
+      "front": 12,
+      "X": 1.5,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -5.213419596354167e-06,
+      "iface_cells": 574
+    },
+    {
+      "step": 150,
+      "T": 0.0,
+      "front": 14,
+      "X": 1.75,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -4.8319498697916664e-06,
+      "iface_cells": 747
+    },
+    {
+      "step": 200,
+      "T": 0.0,
+      "front": 16,
+      "X": 2.0,
+      "h": 18,
+      "H": 1.125,
+      "mass_drift_rel": -5.594889322916666e-06,
+      "iface_cells": 908
+    }
+  ]
+}
