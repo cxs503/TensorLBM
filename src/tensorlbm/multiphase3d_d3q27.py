@@ -207,8 +207,33 @@ def collide_sc_two_component_27(
     use_guo: bool = False,
     C_s: float = 0.0,
     sgs_model: str = "smagorinsky",
+    u_eq: str = "self",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Shan-Chen two-component BGK collision step for D3Q27.
+
+    Each component undergoes BGK relaxation towards an equilibrium whose
+    velocity is shifted by the inter-component interaction force and the
+    external body force (gravity).
+
+    Equilibrium velocity for component σ (``u_eq="self"``, the default):
+
+        uᵉq_σ = uσ + τ_σ Fσ / ρ_σ
+
+    With ``u_eq="mixture"`` the equilibrium is built on the mixture
+    centre-of-mass velocity (Shan & Doolen 1995) — the D3Q27 counterpart
+    of :func:`tensorlbm.multiphase.collide_sc_two_component`:
+
+        u_mix  = (ρ₁u₁ + ρ₂u₂) / (ρ₁ + ρ₂)
+        uᵉq_σ  = u_mix + τ_σ Fσ / ρ_σ
+
+    The mixture form couples the components' momentum: each component
+    relaxes towards the barycentric velocity, which transmits the viscous
+    stress across the diffuse interface (per-component relaxation towards
+    u_mix adds exactly (ρ_σ/τ_σ)(u_mix − u_σ) of momentum exchange per
+    step; for τ₁ = τ₂ the exchanges sum to zero, so total momentum is
+    conserved while the *relative* component velocity decays).  The "self"
+    form has no such coupling: two components may carry different
+    velocities through the interface.
 
     Args:
         f1:          Component-1 distribution, shape ``(27, nz, ny, nx)``.
@@ -225,17 +250,54 @@ def collide_sc_two_component_27(
                      Δfᵢ = (1 − 1/(2τ))·wᵢ·[(cᵢ−u)/cs² + (cᵢ·u)·cᵢ/cs⁴]·F
                      which improves stability at high-density gradients and
                      is the standard in waLBerla (``lbm::force_model::GuoField``).
+                     Only defined for ``u_eq="self"`` (see below).
         C_s:         SGS model constant.  When > 0, an LES sub-grid model is
                      applied to both component collisions.  Interpreted as the
                      Smagorinsky constant C_s, WALE constant C_w, or Vreman
                      constant C_V depending on *sgs_model*.
         sgs_model:   Sub-grid model selector: ``'smagorinsky'`` (default),
                      ``'wale'``, or ``'vreman'``.  Only active when ``C_s > 0``.
+        u_eq:        Equilibrium-velocity convention: ``"self"`` (default,
+                     legacy behaviour, bit-identical to the previous
+                     implementation) or ``"mixture"`` (Shan–Doolen
+                     centre-of-mass coupling).  ``"mixture"`` requires the
+                     velocity-shift forcing (``use_guo=False``): the Guo
+                     branch keeps the τ_σ F_σ/ρ_σ shift inside the
+                     equilibrium *and* adds the (1 − 1/(2τ_σ)) F_σ
+                     correction, so the mixture momentum-exchange identity
+                     above no longer holds for that combination.  The
+                     combination ``u_eq="mixture"`` with ``C_s > 0`` is
+                     permitted (the SGS closure only replaces the relaxation
+                     rate applied to the same non-equilibrium) but, like all
+                     mixture×sub-grid pairings, is unvalidated.
 
     Returns:
         Updated ``(f1, f2)`` after BGK collision.
+
+    Note
+    ----
+    With unequal relaxation times the mixture form carries a net momentum
+    source (1/tau2 - 1/tau1) * rho1 * rho2 * (u1 - u2) / (rho1 + rho2)
+    per collision step (zero for equal taus), which is structurally
+    destabilising at strong segregation: with tau = (1.0, 0.75) the 2D
+    D2Q9 reference diverges for G_12 <= -1.5 while the "self" form remains
+    stable (W5-A record, NaN at step 29 for G_12 = -2.5).  The source term
+    is dimension-independent algebra, so the same restriction applies here.
+
+    References
+    ----------
+    Shan & Doolen (1995) J. Stat. Phys. 81:379 — multicomponent LBM with the
+    barycentric (mixture) velocity in the equilibrium.
     """
     _validate_sgs_model(sgs_model)
+    if u_eq not in ("self", "mixture"):
+        raise ValueError(f"u_eq must be 'self' or 'mixture', got {u_eq!r}")
+    if use_guo and u_eq == "mixture":
+        raise ValueError(
+            "u_eq='mixture' is only defined for the velocity-shift forcing "
+            "(use_guo=False); the Guo branch double-counts the force shift "
+            "and breaks the mixture momentum-exchange identity"
+        )
     device = f1.device
     rho1, ux1, uy1, uz1 = macroscopic27(f1)
     rho2, ux2, uy2, uz2 = macroscopic27(f2)
@@ -282,18 +344,36 @@ def collide_sc_two_component_27(
         )
     else:
         # --- Velocity-shift (first-order, original TensorLBM) ---
-        feq1 = equilibrium27(
-            rho1,
-            ux1 + tau1 * Fx1 / rho1_s,
-            uy1 + tau1 * Fy1 / rho1_s,
-            uz1 + tau1 * Fz1 / rho1_s,
-        )
-        feq2 = equilibrium27(
-            rho2,
-            ux2 + tau2 * Fx2 / rho2_s,
-            uy2 + tau2 * Fy2 / rho2_s,
-            uz2 + tau2 * Fz2 / rho2_s,
-        )
+        if u_eq == "self":
+            feq1 = equilibrium27(
+                rho1,
+                ux1 + tau1 * Fx1 / rho1_s,
+                uy1 + tau1 * Fy1 / rho1_s,
+                uz1 + tau1 * Fz1 / rho1_s,
+            )
+            feq2 = equilibrium27(
+                rho2,
+                ux2 + tau2 * Fx2 / rho2_s,
+                uy2 + tau2 * Fy2 / rho2_s,
+                uz2 + tau2 * Fz2 / rho2_s,
+            )
+        else:  # u_eq == "mixture"
+            rho_tot = rho1_s + rho2_s
+            u_mix_x = (rho1_s * ux1 + rho2_s * ux2) / rho_tot
+            u_mix_y = (rho1_s * uy1 + rho2_s * uy2) / rho_tot
+            u_mix_z = (rho1_s * uz1 + rho2_s * uz2) / rho_tot
+            feq1 = equilibrium27(
+                rho1,
+                u_mix_x + tau1 * Fx1 / rho1_s,
+                u_mix_y + tau1 * Fy1 / rho1_s,
+                u_mix_z + tau1 * Fz1 / rho1_s,
+            )
+            feq2 = equilibrium27(
+                rho2,
+                u_mix_x + tau2 * Fx2 / rho2_s,
+                u_mix_y + tau2 * Fy2 / rho2_s,
+                u_mix_z + tau2 * Fz2 / rho2_s,
+            )
         if C_s > 0.0:
             tau_eff1 = _compute_tau_eff(
                 sgs_model,
