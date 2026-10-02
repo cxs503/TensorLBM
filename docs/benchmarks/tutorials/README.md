@@ -1,4 +1,4 @@
-# TensorLBM 已验证 Benchmark 使用教程（27 案）
+# TensorLBM 已验证 Benchmark 使用教程（30 案）
 
 每个案例含：Benchmark 介绍、计算条件设置、软件使用步骤、计算结果（速度场 / 压力场等）、与文献或解析解的比较（阻力、表面压力系数等）。判据数字一律取自入库 `result.json` 机器档案；演示图为缩短时长的可视化档（`docs/benchmarks/demos/`），定量结论以存档扫描为准。
 
@@ -12,6 +12,9 @@
 | [Schäfer–Turek 2D-1 圆柱绕流 Re=20：稳态层流基准（cylinder_re20_st）](tutorials/cylinder_re20_st.md) | 圆柱绕流（外流族） | [md](tutorials/cylinder_re20_st.md) | [docx](tutorials/files/cylinder_re20_st.docx) | [pdf](tutorials/files/cylinder_re20_st.pdf) | `benchmarks/verified/cylinder/re20_st` |
 | [自由流圆柱绕流 Re=100：Kármán 涡街（Braza 1986）（cylinder_re100）](tutorials/cylinder_re100.md) | 圆柱绕流（外流族） | [md](tutorials/cylinder_re100.md) | [docx](tutorials/files/cylinder_re100.docx) | [pdf](tutorials/files/cylinder_re100.pdf) | `benchmarks/verified/cylinder/re100` |
 | [自由流圆柱绕流 Re=200：Kármán 涡街（Braza 1986）（cylinder_re200）](tutorials/cylinder_re200.md) | 圆柱绕流（外流族） | [md](tutorials/cylinder_re200.md) | [docx](tutorials/files/cylinder_re200.docx) | [pdf](tutorials/files/cylinder_re200.pdf) | `benchmarks/verified/cylinder/re200` |
+| [3D 展向周期圆柱绕流 Re=40：稳态尾流 Cd（表面 MEM 口径）（cylinder_3d）](tutorials/cylinder_3d.md) | 圆柱绕流（外流族） | [md](tutorials/cylinder_3d.md) | [docx](tutorials/files/cylinder_3d.docx) | [pdf](tutorials/files/cylinder_3d.pdf) | `benchmarks/verified/cylinder_3d` |
+| [自由流方柱绕流 Re=100：涡脱落对 2D 数值簇验证（square_cylinder）](tutorials/square_cylinder.md) | 方柱绕流（外流族） | [md](tutorials/square_cylinder.md) | [docx](tutorials/files/square_cylinder.docx) | [pdf](tutorials/files/square_cylinder.pdf) | `benchmarks/verified/square_cylinder` |
+| [DARPA SUBOFF 裸艇体 Re=1000：总阻力 Blasius 验证（suboff_re1000）](tutorials/suboff_re1000.md) | 潜体绕流（外流族） | [md](tutorials/suboff_re1000.md) | [docx](tutorials/files/suboff_re1000.docx) | [pdf](tutorials/files/suboff_re1000.pdf) | `benchmarks/verified/suboff_re1000` |
 | [等温 Sod 激波管（D2Q9 可压缩 Riemann 问题）（sod_shock_tube）](tutorials/sod_shock_tube.md) | 可压缩流 | [md](tutorials/sod_shock_tube.md) | [docx](tutorials/files/sod_shock_tube.docx) | [pdf](tutorials/files/sod_shock_tube.pdf) | `benchmarks/verified/sod_shock_tube` |
 | [Kovasznay 二维稳态层流（解析 Navier–Stokes 解）（kovasznay_2d）](tutorials/kovasznay_2d.md) | 可压缩流 | [md](tutorials/kovasznay_2d.md) | [docx](tutorials/files/kovasznay_2d.docx) | [pdf](tutorials/files/kovasznay_2d.pdf) | `benchmarks/verified/kovasznay_2d` |
 | [二维 Poiseuille 流（压力差驱动）— 解析抛物线剖面验证（poiseuille_2d）](tutorials/poiseuille_2d.md) | 内流解析解 | [md](tutorials/poiseuille_2d.md) | [docx](tutorials/files/poiseuille_2d.docx) | [pdf](tutorials/files/poiseuille_2d.pdf) | `benchmarks/verified/poiseuille_2d` |
