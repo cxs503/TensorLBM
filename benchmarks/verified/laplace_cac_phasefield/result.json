@@ -1,0 +1,251 @@
+{
+  "arms": {
+    "b1_R20": {
+      "B4_drift_rel_at_10k": 8.617871524775128e-13,
+      "arg": 20.0,
+      "dP_window_mean": 0.0009993760665757663,
+      "err_pct": 0.0623933424233683,
+      "kind": "b1",
+      "nan_free": true,
+      "params": {
+        "M_mob": 0.05,
+        "W": 4.0,
+        "device": "cuda:0(GPU5)",
+        "dtype": "torch.float64",
+        "mu_g": 0.001,
+        "mu_l": 0.1,
+        "mu_law": "harmonic",
+        "n_steps": 12000,
+        "nu": 0.1,
+        "radius": 20.0,
+        "rho_g": 0.01,
+        "rho_l": 1.0,
+        "shape": [
+          128,
+          128,
+          128
+        ],
+        "sigma": 0.010823730488377745,
+        "window": "last 2000 steps, samples every 500"
+      },
+      "series_len": 25,
+      "sigma_model_input": 0.010823730488377745,
+      "sigma_rec_rel_err": 0.000623933424233683,
+      "sigma_rec_window_mean": 0.009993760665757663,
+      "sigma_target": 0.01,
+      "tail_sigma_rec": [
+        0.009993965100733408,
+        0.009993834292320036,
+        0.009993648396218174,
+        0.009993594873759035
+      ],
+      "u_max_window": 6.734317202075902e-05
+    },
+    "b1_R32": {
+      "B4_drift_rel_at_10k": 8.604225042496983e-13,
+      "arg": 32.0,
+      "dP_window_mean": 0.0006250221401246626,
+      "err_pct": 0.0035424199460072636,
+      "kind": "b1",
+      "nan_free": true,
+      "params": {
+        "M_mob": 0.05,
+        "W": 4.0,
+        "device": "cuda:0(GPU5)",
+        "dtype": "torch.float64",
+        "mu_g": 0.001,
+        "mu_l": 0.1,
+        "mu_law": "harmonic",
+        "n_steps": 12000,
+        "nu": 0.1,
+        "radius": 32.0,
+        "rho_g": 0.01,
+        "rho_l": 1.0,
+        "shape": [
+          128,
+          128,
+          128
+        ],
+        "sigma": 0.010823730488377745,
+        "window": "last 2000 steps, samples every 500"
+      },
+      "series_len": 25,
+      "sigma_model_input": 0.010823730488377745,
+      "sigma_rec_rel_err": 3.5424199460072636e-05,
+      "sigma_rec_window_mean": 0.010000354241994601,
+      "sigma_target": 0.01,
+      "tail_sigma_rec": [
+        0.00998570775008284,
+        0.010032399564374128,
+        0.009985213064940102,
+        0.009998096588581334
+      ],
+      "u_max_window": 6.139478905773556e-05
+    },
+    "b1_R48": {
+      "B4_drift_rel_at_10k": 8.57917584220031e-13,
+      "arg": 48.0,
+      "dP_window_mean": 0.0004185204433313915,
+      "err_pct": 0.44490639953395295,
+      "kind": "b1",
+      "nan_free": true,
+      "params": {
+        "M_mob": 0.05,
+        "W": 4.0,
+        "device": "cuda:0(GPU5)",
+        "dtype": "torch.float64",
+        "mu_g": 0.001,
+        "mu_l": 0.1,
+        "mu_law": "harmonic",
+        "n_steps": 12000,
+        "nu": 0.1,
+        "radius": 48.0,
+        "rho_g": 0.01,
+        "rho_l": 1.0,
+        "shape": [
+          128,
+          128,
+          128
+        ],
+        "sigma": 0.010823730488377745,
+        "window": "last 2000 steps, samples every 500"
+      },
+      "series_len": 25,
+      "sigma_model_input": 0.010823730488377745,
+      "sigma_rec_rel_err": 0.004449063995339529,
+      "sigma_rec_window_mean": 0.010044490639953395,
+      "sigma_target": 0.01,
+      "tail_sigma_rec": [
+        0.010410435822071476,
+        0.010356894130241295,
+        0.009656919864636654,
+        0.009753712742864157
+      ],
+      "u_max_window": 6.08296362850369e-05
+    },
+    "b3_rho10": {
+      "B4_drift_rel_at_10k": 8.61575254972636e-13,
+      "arg": 10.0,
+      "dP_window_mean": 0.0009995520561068903,
+      "err_pct": 0.04479438931096272,
+      "kind": "b3",
+      "nan_free": true,
+      "params": {
+        "M_mob": 0.05,
+        "W": 4.0,
+        "device": "cuda:0(GPU5)",
+        "dtype": "torch.float64",
+        "mu_g": 0.010000000000000002,
+        "mu_l": 0.1,
+        "mu_law": "harmonic",
+        "n_steps": 12000,
+        "nu": 0.1,
+        "radius": 20.0,
+        "rho_g": 0.1,
+        "rho_l": 1.0,
+        "shape": [
+          96,
+          96,
+          96
+        ],
+        "sigma": 0.010823730488377745,
+        "window": "last 2000 steps, samples every 500"
+      },
+      "series_len": 25,
+      "sigma_model_input": 0.010823730488377745,
+      "sigma_rec_rel_err": 0.0004479438931096272,
+      "sigma_rec_window_mean": 0.009995520561068904,
+      "sigma_target": 0.01,
+      "tail_sigma_rec": [
+        0.009995525778132685,
+        0.009995525735036759,
+        0.00999552122716461,
+        0.009995509503941558
+      ],
+      "u_max_window": 5.022285728343788e-05
+    },
+    "b3_rho100": {
+      "B4_drift_rel_at_10k": 8.61575254972636e-13,
+      "arg": 100.0,
+      "dP_window_mean": 0.000999382168606116,
+      "err_pct": 0.06178313938839247,
+      "kind": "b3",
+      "nan_free": true,
+      "params": {
+        "M_mob": 0.05,
+        "W": 4.0,
+        "device": "cuda:0(GPU5)",
+        "dtype": "torch.float64",
+        "mu_g": 0.001,
+        "mu_l": 0.1,
+        "mu_law": "harmonic",
+        "n_steps": 12000,
+        "nu": 0.1,
+        "radius": 20.0,
+        "rho_g": 0.01,
+        "rho_l": 1.0,
+        "shape": [
+          96,
+          96,
+          96
+        ],
+        "sigma": 0.010823730488377745,
+        "window": "last 2000 steps, samples every 500"
+      },
+      "series_len": 25,
+      "sigma_model_input": 0.010823730488377745,
+      "sigma_rec_rel_err": 0.0006178313938839247,
+      "sigma_rec_window_mean": 0.009993821686061161,
+      "sigma_target": 0.01,
+      "tail_sigma_rec": [
+        0.009994033276876316,
+        0.009993906841725235,
+        0.009993727566728911,
+        0.009993619058914181
+      ],
+      "u_max_window": 6.742015685931379e-05
+    }
+  },
+  "benchmark": "laplace_cac_phasefield",
+  "calibration": {
+    "W_star_on_valid": 8.0,
+    "bar_eff_W4": 0.9238958795895513,
+    "linearity_P7_rel_diff": 0.0005702514186345375,
+    "note": "sigma_eff(W) measured once (R-independent, monotone in W); model input = target/bar_eff(W=4); same constant for all B1 radii and B3 density ratios",
+    "route": "B",
+    "sigma_eff_ladder": {
+      "3": 0.8779650815057204,
+      "5": 0.9479940754517359,
+      "6": 0.9647459873384855,
+      "8": 0.9813195231472474
+    },
+    "sigma_model_input": 0.010823730488377745,
+    "sigma_target": 0.01
+  },
+  "criteria": {
+    "b1_spread_pct": 1.0,
+    "drift_10k": 1e-06,
+    "nan_free": true,
+    "per_arm_err_pct": 1.5,
+    "u_max": 0.0002
+  },
+  "gates": {
+    "b1_arms_present": [
+      20.0,
+      32.0,
+      48.0
+    ],
+    "b1_spread_pct": 0.5066477614797954,
+    "b3_arms_present": [
+      10.0,
+      100.0
+    ],
+    "drift_10k_max": 8.617871524775128e-13,
+    "nan_free_all": true,
+    "pass": true,
+    "per_arm_err_max_pct": 0.44490639953395295,
+    "u_max_max": 6.742015685931379e-05
+  },
+  "model": "CAC conservative Allen-Cahn two-phase LBM, D3Q19, fp64, harmonic mu(phi), W=4, tensorlbm.cac_lbm (Li et al PRE 97,033309)",
+  "verified": true
+}
