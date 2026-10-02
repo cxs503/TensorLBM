@@ -181,6 +181,120 @@ def make_psi_carnahan_starling(
     return psi
 
 
+# ---------------------------------------------------------------------------
+# EOS pseudopotentials, corrected sign (generic factory, YS2006 parameters)
+# ---------------------------------------------------------------------------
+#
+# CONVENTION NOTE (locked in M4 Phase 0, verified numerically):
+# This library's SC force gathers the BACKWARD neighbour psi(x - c_i), so its
+# coupling constant has the opposite sign to the classic Shan-Chen convention:
+# with G > 0 the interaction is ATTRACTIVE.  The mechanical pressure of the
+# lattice scheme is
+#     p_mech(rho) = rho*cs^2 - (G/2)*cs^2*psi^2
+# so pairing the EOS-derived pseudopotential
+#     psi^2 = 2*(rho*cs^2 - p_EOS(rho; T))/cs^2      (clamp >= 0)
+# with G = +1.0 reproduces p_mech = p_EOS exactly wherever the argument is
+# positive (p_eff = min(rho*cs^2, p_EOS)).  This is the same construction as
+# make_psi_carnahan_starling above (dam-break campaign calibration a=5,b=4);
+# the factories below are parameter-generic and follow Yuan & Schaefer (2006)
+# Phys. Fluids 18 042101 exactly:
+#   C-S: a = 1.0, b = 4.0, R = 1.0   -> T_c = 0.09433, rho_c = 0.13044
+#   P-R: a = 2/49, b = 2/21, R = 1.0 -> T_c = 0.07292, rho_c = 2.65730
+#
+# The pre-existing psi_carnahan_starling / psi_peng_robinson use the OPPOSITE
+# sign, psi^2 = 2*(p_EOS - rho*cs^2)/cs^2, which gives p_eff = max(rho*cs^2,
+# p_EOS) - monotone in rho, hence no liquid/vapour coexistence at subcritical
+# T.  They are kept unchanged for backward compatibility.
+
+
+def psi_eos_carnahan_starling(
+    rho: torch.Tensor,
+    T: float,
+    a: float = 1.0,
+    b: float = 4.0,
+    R: float = 1.0,
+) -> torch.Tensor:
+    """Carnahan-Starling EOS pseudopotential, corrected sign.
+
+    psi = sqrt(2*(rho*cs^2 - p_EOS)/cs^2) with
+        p_EOS = rho*R*T*(1 + eta + eta^2 - eta^3)/(1 - eta)^3 - a*rho^2,
+        eta = b*rho/4.
+
+    The argument is clamped at zero: for rho > rho_cross (where p_EOS exceeds
+    rho*cs^2 on the dense branch) psi = 0 and the scheme falls back to
+    p_mech = rho*cs^2.  Pair with G = +1.0 (this library's attractive sign).
+
+    Args:
+        rho: Density field (any shape).
+        T:   Absolute temperature in lattice units (T_r = T/T_c).
+        a:   Attraction parameter (YS2006: 1.0).
+        b:   Covolume parameter (YS2006: 4.0; rho_max admissible = 4/b).
+        R:   Gas constant (YS2006: 1.0).
+
+    Returns:
+        Pseudopotential field psi >= 0, same shape as input.
+
+    References
+    ----------
+    Yuan & Schaefer (2006) Phys. Fluids 18 042101 (Table 1 parameters).
+    """
+    rho_s = torch.clamp(rho, min=1e-12)
+    eta = b * rho_s / 4.0
+    eta_1 = torch.clamp(1.0 - eta, min=1e-8)
+    p = rho_s * R * T * (1.0 + eta + eta * eta - eta**3) / (eta_1**3) - a * rho_s * rho_s
+    arg = torch.clamp(2.0 * (rho_s * _CS2 - p) / _CS2, min=0.0)
+    return torch.sqrt(arg)
+
+
+def psi_eos_peng_robinson(
+    rho: torch.Tensor,
+    T: float,
+    a: float = 2.0 / 49.0,
+    b: float = 2.0 / 21.0,
+    R: float = 1.0,
+) -> torch.Tensor:
+    """Peng-Robinson EOS pseudopotential, corrected sign (alpha(T) = 1).
+
+    psi = sqrt(2*(rho*cs^2 - p_EOS)/cs^2) with
+        p_EOS = rho*R*T/(1 - b*rho) - a*rho^2/(1 + 2*b*rho - b^2*rho^2).
+
+    Same clamping and G = +1.0 pairing as :func:`psi_eos_carnahan_starling`.
+    """
+    rho_s = torch.clamp(rho, min=1e-12)
+    one_m_bp = torch.clamp(1.0 - b * rho_s, min=1e-8)
+    denom2 = torch.clamp(1.0 + 2.0 * b * rho_s - b * b * rho_s * rho_s, min=1e-8)
+    p = rho_s * R * T / one_m_bp - a * rho_s * rho_s / denom2
+    arg = torch.clamp(2.0 * (rho_s * _CS2 - p) / _CS2, min=0.0)
+    return torch.sqrt(arg)
+
+
+def make_psi_eos(
+    eos: str, T: float, a: float | None = None, b: float | None = None, R: float = 1.0
+):
+    """Build a zero-argument-style psi callable for the SCMP collide/force API.
+
+    Args:
+        eos: ``"cs"`` (Carnahan-Starling) or ``"pr"`` (Peng-Robinson).
+        T:   Absolute temperature (lattice units).
+        a, b, R: EOS parameters; ``None`` keeps the Yuan & Schaefer (2006)
+                 defaults of the chosen EOS.
+
+    Returns:
+        ``psi_fn`` closure taking a density tensor, suitable as the
+        ``psi_fn`` argument of :func:`sc_single_component_force` /
+        :func:`collide_sc_single_component`.
+    """
+    if eos == "cs":
+        kwargs = dict(a=a if a is not None else 1.0, b=b if b is not None else 4.0, R=R)
+        return lambda rho: psi_eos_carnahan_starling(rho, T, **kwargs)
+    if eos == "pr":
+        kwargs = dict(
+            a=a if a is not None else 2.0 / 49.0, b=b if b is not None else 2.0 / 21.0, R=R
+        )
+        return lambda rho: psi_eos_peng_robinson(rho, T, **kwargs)
+    raise ValueError(f"eos must be 'cs' or 'pr', got {eos!r}")
+
+
 def psi_peng_robinson(rho: torch.Tensor) -> torch.Tensor:
     """Peng-Robinson EOS pseudopotential ψ = √(2(p_EOS − ρ·cs²)/cs²).
 
@@ -610,6 +724,12 @@ def collide_sc_single_component(
         on the local acceleration ``g`` (proved by the g-dependence of the
         simulated front), which biases the late-time dam-break front low.
 
+    ``"edm"`` (Exact Difference Method)
+        The collision relaxes towards feq(rho, u), then the exact difference
+        feq(rho, u + F/rho) - feq(rho, u) is added.  Adds exactly F of
+        momentum per step (sum_i c_i feq(rho, u) = rho*u).  Used by the
+        ``laplace_pr_eos`` benchmark.
+
     ``"guo"`` (Guo 2002 forcing, F as a source term)
         The force enters as an explicit source term and the physical velocity
         carries the half-force correction:
@@ -631,7 +751,9 @@ def collide_sc_single_component(
 
     Args:
         f:           Distribution tensor, shape ``(9, ny, nx)``.
-        G:           SC self-coupling constant (< 0 for phase separation).
+        G:           SC self-coupling constant (< 0 for phase separation with
+                     the classic psi_exp; +1.0 with the corrected-sign
+                     :func:`make_psi_eos` psi, see the convention note).
         tau:         Relaxation time.
         psi_fn:      Pseudopotential callable.
         gx:          x body-force acceleration.
@@ -640,7 +762,7 @@ def collide_sc_single_component(
         wall_psi:    Pseudopotential value attributed to solid cells.  ``None``
                      (default) keeps the historical dry-wall behaviour; a
                      positive value gives a partially wetting wall.
-        forcing:     ``"velocity_shift"`` (default) or ``"guo"``.
+        forcing:     ``"velocity_shift"`` (default), ``"edm"`` or ``"guo"``.
         scheme:      interaction-force discretisation, ``"standard"`` (default,
                      historical) or ``"pressure_tensor"`` (Ramshaw–Phathanapirom
                      form: exactly curl-free, exactly momentum-conserving).  The
@@ -657,6 +779,13 @@ def collide_sc_single_component(
     if forcing == "velocity_shift":
         feq = equilibrium(rho, ux + tau * Fx / rho_s, uy + tau * Fy / rho_s)
         f_out = f - (f - feq) / tau
+    elif forcing == "edm":
+        # Exact Difference Method (Kupershtokh 2004 / Li et al. 2012):
+        # relax towards feq(rho, u), add the exact difference
+        # feq(rho, u + F/rho) - feq(rho, u).  Momentum-exact, mass-conserving.
+        feq_u = equilibrium(rho, ux, uy)
+        feq_d = equilibrium(rho, ux + Fx / rho_s, uy + Fy / rho_s)
+        f_out = f - (f - feq_u) / tau + (feq_d - feq_u)
     elif forcing == "guo":
         # Physical velocity includes the half-force correction u + F/(2ρ).
         uxp = ux + 0.5 * Fx / rho_s
@@ -676,7 +805,7 @@ def collide_sc_single_component(
         S = w3 * (1.0 - 1.0 / (2.0 * tau)) * ((cf - uf.unsqueeze(0)) / _CS2 + cu * cf / _CS2**2)
         f_out = f - (f - feq) / tau + S
     else:
-        raise ValueError(f"unknown forcing {forcing!r}; expected 'velocity_shift' or 'guo'")
+        raise ValueError(f"unknown forcing {forcing!r}; expected 'velocity_shift', 'edm' or 'guo'")
 
     if solid_mask is not None:
         f_out = torch.where(solid_mask.unsqueeze(0), f, f_out)
@@ -983,6 +1112,9 @@ __all__ = [
     "psi_power",
     "psi_carnahan_starling",
     "psi_peng_robinson",
+    "psi_eos_carnahan_starling",
+    "psi_eos_peng_robinson",
+    "make_psi_eos",
     # Model 1: Shan-Chen Two-Component
     "sc_two_component_force",
     "collide_sc_two_component",
