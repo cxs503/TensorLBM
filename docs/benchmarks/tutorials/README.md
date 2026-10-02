@@ -1,4 +1,4 @@
-# TensorLBM 已验证 Benchmark 使用教程（30 案）
+# TensorLBM 已验证 Benchmark 使用教程（32 案）
 
 每个案例含：Benchmark 介绍、计算条件设置、软件使用步骤、计算结果（速度场 / 压力场等）、与文献或解析解的比较（阻力、表面压力系数等）。判据数字一律取自入库 `result.json` 机器档案；演示图为缩短时长的可视化档（`docs/benchmarks/demos/`），定量结论以存档扫描为准。
 
@@ -31,6 +31,8 @@
 | [三维 Taylor–Green 涡：近解析衰减与涡拉伸（taylor_green_3d）](tutorials/taylor_green_3d.md) | 非定常解析 | [md](tutorials/taylor_green_3d.md) | [docx](tutorials/files/taylor_green_3d.docx) | [pdf](tutorials/files/taylor_green_3d.pdf) | `benchmarks/verified/taylor_green_3d` |
 | [液滴毛细振荡：m=2 模态频率 vs Rayleigh 解析（droplet_oscillation）](tutorials/droplet_oscillation.md) | 多相/热/声/多孔 | [md](tutorials/droplet_oscillation.md) | [docx](tutorials/files/droplet_oscillation.docx) | [pdf](tutorials/files/droplet_oscillation.pdf) | `benchmarks/verified/droplet_oscillation` |
 | [静态液滴 Young–Laplace 定律（表面张力标定）（laplace_droplet）](tutorials/laplace_droplet.md) | 多相/热/声/多孔 | [md](tutorials/laplace_droplet.md) | [docx](tutorials/files/laplace_droplet.docx) | [pdf](tutorials/files/laplace_droplet.pdf) | `benchmarks/verified/laplace_droplet` |
+| [PR 状态方程高密度比伪势液滴 Young–Laplace：σ 全自测与界面加密收敛（laplace_pr_eos）](tutorials/laplace_pr_eos.md) | 多相/热/声/多孔 | [md](tutorials/laplace_pr_eos.md) | [docx](tutorials/files/laplace_pr_eos.docx) | [pdf](tutorials/files/laplace_pr_eos.pdf) | `benchmarks/verified/laplace_pr_eos` |
+| [CAC 相场两相液滴 Young–Laplace：Route-B σ 标定与 R/密度比迁移（laplace_cac_phasefield）](tutorials/laplace_cac_phasefield.md) | 多相/热/声/多孔 | [md](tutorials/laplace_cac_phasefield.md) | [docx](tutorials/files/laplace_cac_phasefield.docx) | [pdf](tutorials/files/laplace_cac_phasefield.pdf) | `benchmarks/verified/laplace_cac_phasefield` |
 | [方腔自然对流（de Vahl Davis 基准）（thermal_cavity）](tutorials/thermal_cavity.md) | 多相/热/声/多孔 | [md](tutorials/thermal_cavity.md) | [docx](tutorials/files/thermal_cavity.docx) | [pdf](tutorials/files/thermal_cavity.pdf) | `benchmarks/verified/thermal_cavity` |
 | [平面声波：线性色散与衰减（acoustics）](tutorials/acoustics.md) | 多相/热/声/多孔 | [md](tutorials/acoustics.md) | [docx](tutorials/files/acoustics.docx) | [pdf](tutorials/files/acoustics.pdf) | `benchmarks/verified/acoustics` |
 | [周期圆柱方阵渗透率（Sangani–Acrivos 1982）（permeability）](tutorials/permeability.md) | 多相/热/声/多孔 | [md](tutorials/permeability.md) | [docx](tutorials/files/permeability.docx) | [pdf](tutorials/files/permeability.pdf) | `benchmarks/verified/permeability` |
