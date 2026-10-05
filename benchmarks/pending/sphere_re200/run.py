@@ -1,31 +1,24 @@
-#!/home/wxsc/anaconda3/envs/ftw-env/bin/python
-"""B3: sphere Re=200 drag benchmark — GeneralSimEngine common-module path.
+"""W8-A runner — sphere Re=100 with dense vs sparse BFL kernels.
 
-Physics: uniform free stream over a sphere (D = 1.0 m), Re = u*L/nu = 200
-with u = 1e-4 m/s, L = 1.0 m, nu = 5e-7 m^2/s (same frame as the Re=100
-sphere case, only viscosity halved).
+Same simulation loop as the Wave-7 W7-B runner (run_diag.py): engine
+kernels + library public entrances only; the BFL wall is either the
+library dense kernel (bouzidi_bounce_back_d3q19) or the W8-A sparse
+kernels (bfl_boundary_link_indices precompute + bfl_bounce_back_sparse /
+bfl_force_ledger_sparse), selected with --kernel.
 
-Common-module path: GeneralSimConfig -> GeneralSimEngine.setup() -> run()
-  - D3Q19, collision AUTO (-> MRT, Re<1000), wall AUTO (-> half-way bounce-back)
-  - mass_correction=True (interval 200)
-  - ForceMethod.PRESSURE_FRICTION with pressure_extrap='none'  (REAL simulation,
-    no extrapolation), p0_method='near_wall', friction_formula=<arg>
+Driver-side memory scheduling (values identical, disclosed in prereg.md):
+the sparse route restores solid cells from a gathered (19, n_solid) block
+instead of holding a full pre-collision clone, and frees the dense
+mask/q_field right after the link precompute.
 
-References (formula-exact values, used for the verdict):
-  - Schiller-Naumann: Cd = 24/Re*(1 + 0.15*Re^0.687) = 0.8056
-  - Clift-Gauvin:     Cd = 24/Re*(1 + 0.1315*Re^(0.82-0.05*log10(Re))) = 0.7810
-  NOTE: the task sheet quoted SN(200)=0.769 / CG(200)=0.773 — that arithmetic
-  is wrong (0.769 corresponds to Re~185). Formula-exact values are used here,
-  same convention as the sphere_re100 D3Q27 case (1.087 vs 1.0917 note).
-
-Usage:
-  python run.py [resolution] [steps] [device] [friction]
-    resolution: 60|80 (D cells, default 60)
-    steps:      total steps (default 16000)
-    device:     cuda:N (default cuda:1)
-    friction:   standard|lagrange (default standard)
+grep rule honored: no collide/stream/equilibrium/bounce/zou_he/far_field
+definitions in this file — only library calls.
 """
 
+from __future__ import annotations
+
+import argparse
+import functools
 import json
 import math
 import os
@@ -33,9 +26,21 @@ import sys
 import threading
 import time
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+import torch
 
-
+from tensorlbm.bfl_common import (  # noqa: E402
+    bfl_bounce_back_sparse,
+    bfl_boundary_link_indices,
+    bfl_force_ledger_sparse,
+)
+from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19  # noqa: E402
+from tensorlbm.boundaries3d import (  # noqa: E402
+    bounce_back_cells_3d,
+    far_field_bc_3d,
+)
+from tensorlbm.external_open_boundary import (  # noqa: E402
+    non_equilibrium_far_field_bc_3d,
+)
 from tensorlbm.general_sim import (  # noqa: E402
     CollisionModel,
     ForceMethod,
@@ -50,204 +55,360 @@ from tensorlbm.general_sim import (  # noqa: E402
     SolverConfig,
     WallTreatment,
 )
+from tensorlbm.interpolated_bc import compute_q_sphere  # noqa: E402
+from tensorlbm.solver3d import (  # noqa: E402
+    collide_bgk3d,
+    collide_mrt3d_low_memory,
+    collide_trt3d,
+    correct_mass3d,
+    stream3d,
+    stream3d_roll,
+)
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from cv_instrument import cv_box_force_exact  # noqa: E402
+
+DEV = os.environ.get("W8A_DEV", "cuda:0")
+PROGRESS = {"step": 0, "phase": "init"}
 
 
-def schiller_naumann_cd(re):
-    return 24.0 / re * (1.0 + 0.15 * re**0.687)
-
-
-def clift_gauvin_cd(re):
-    return 24.0 / re * (1.0 + 0.1315 * re ** (0.82 - 0.05 * math.log10(re)))
-
-
-def main():
-    resolution = int(sys.argv[1]) if len(sys.argv) > 1 else 60  # D cells
-    n_steps = int(sys.argv[2]) if len(sys.argv) > 2 else 16000
-    device = sys.argv[3] if len(sys.argv) > 3 else "cuda:1"
-    friction = sys.argv[4] if len(sys.argv) > 4 else "standard"
-    assert friction in ("standard", "lagrange"), friction
-
-    out_dir = f"/home/wxsc/cxs/TensorLBM/results_b3_sphere_re200_d{resolution}_{friction}"
-
-    # Re = u*L/nu = 1e-4 * 1.0 / 5e-7 = 200
-    config = GeneralSimConfig(
-        name=f"b3_sphere_re200_d{resolution}_{friction}",
+def build_engine_config(D, lat, up, down):
+    pad = (up, down, lat, lat, lat, lat)
+    return GeneralSimConfig(
+        name=f"w8a_sphere_D{D}",
         geometry=GeometryConfig(
             source=GeometrySource.PARAMETRIC_SPHERE,
-            sphere_radius=0.5,  # m  -> D = 1.0 m = reference_length
+            sphere_radius=0.5,
             sphere_center=(0.0, 0.0, 0.0),
         ),
         physics=PhysicsConfig(
-            density=1000.0,  # kg/m^3
-            viscosity=5.0e-7,  # m^2/s  -> Re = 200
-            inlet_velocity=1.0e-4,  # m/s
-            reference_length=1.0,  # m (sphere diameter)
+            density=1000.0,
+            viscosity=1.0e-6,
+            inlet_velocity=1.0e-4,
+            reference_length=1.0,
         ),
         solver=SolverConfig(
             lattice=LatticeModel.D3Q19,
-            collision=CollisionModel.AUTO,  # Re<1000 -> MRT
-            resolution=resolution,
-            domain_padding=None,  # auto domain (3.5D x 3D x 3D)
-            max_steps=n_steps,
-            warmup_steps=None,
-            snapshot_interval=100000,  # no field snapshots (save_macroscopic=False)
-            force_sample_interval=10,
-            device=device,
-            wall_treatment=WallTreatment.AUTO,  # Re<10000 -> bounce-back
-            force_method=ForceMethod.MOMENTUM_EXCHANGE,
-            pressure_extrap="none",  # REAL simulation, no extrapolation
-            p0_method="near_wall",
-            friction_formula=friction,
+            collision=CollisionModel.MRT,
+            resolution=D,
+            domain_padding=pad,
+            max_steps=10,
+            snapshot_interval=10**9,
+            force_sample_interval=50,
+            device=DEV,
+            wall_treatment=WallTreatment.BOUNCE_BACK,
             mass_correction=True,
             mass_correction_interval=200,
-            smagorinsky_cs=0.05,
+            force_method=ForceMethod.MOMENTUM_EXCHANGE,
+            mem_variant="wet_node",
         ),
         output=OutputConfig(
-            directory=out_dir,
+            directory="out",
             formats=[OutputFormat.NPY],
-            save_macroscopic=False,  # keep RAM low; forces.csv is the record
+            save_macroscopic=False,
             save_forces=True,
         ),
     )
 
-    print(f"=== B3: sphere Re=200 D{resolution}, friction={friction}, extrap=none ===")
-    engine = GeneralSimEngine(config)
 
-    t0 = time.time()
-    setup_info = engine.setup()
-    print(f"[setup] {time.time() - t0:.1f}s")
-    for k in (
-        "Re",
-        "tau",
-        "u_lb",
-        "nu_lb",
-        "Ma",
-        "domain_lu",
-        "obstacle_cells",
-        "near_wall_cells",
-        "total_cells",
-        "device",
-        "auto_collision",
-        "auto_wall_treatment",
-    ):
-        print(f"  {k:18s} = {setup_info[k]}")
-    print(f"  Re config         = {config.reynolds_number}")
-    print(f"  Cd_ref SN (exact) = {schiller_naumann_cd(200.0):.4f}")
-    print(f"  Cd_ref CG (exact) = {clift_gauvin_cd(200.0):.4f}")
+def magic_s_q(tau: float, lam: float = 3.0 / 16.0) -> float:
+    """Ginzburg/Pan magic relation (tau-0.5)*(1/s_q-0.5)=lam -> s_q."""
+    return 1.0 / (0.5 + lam / (tau - 0.5))
 
-    # Monitor thread: periodic last-100-sample window mean while running
-    stop = threading.Event()
 
-    def monitor():
-        while not stop.is_set():
-            stop.wait(90)
-            if engine.forces_log:
-                recent = engine.forces_log[-100:]
-                cd = sum(e["cd_total"] for e in recent) / len(recent)
-                cd_p = sum(e["cd_pressure"] for e in recent) / len(recent)
-                cd_f = sum(e["cd_friction"] for e in recent) / len(recent)
-                print(
-                    f"  [mon] step={engine.step_count:6d}  "
-                    f"cd_p={cd_p:.4f} cd_f={cd_f:.4f} cd_tot(last100)={cd:.4f}",
-                    flush=True,
+def make_collider(kind: str, tau: float):
+    if kind == "mrt":
+        return lambda f: collide_mrt3d_low_memory(f, tau=tau)
+    if kind == "mrt_magic":
+        return lambda f: collide_mrt3d_low_memory(f, tau=tau, s_q=magic_s_q(tau))
+    if kind == "trt":
+        return lambda f: collide_trt3d(f, tau_plus=tau, lambda_trt=3.0 / 16.0)
+    if kind == "bgk":
+        return lambda f: collide_bgk3d(f, tau=tau)
+    raise ValueError(kind)
+
+
+def cd_ref_family(re: float) -> float:
+    return 24.0 / re * (1.0 + 0.15 * re**0.687)
+
+
+class MemSampler:
+    """Background nvidia-smi sampler (engineering probe only)."""
+
+    def __init__(self, physical_gpu: str, interval: float = 2.0):
+        self.physical_gpu = physical_gpu
+        self.interval = interval
+        self.max_mib = 0
+        self.samples = 0
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    def _run(self):
+        import subprocess
+
+        while not self._stop.is_set():
+            try:
+                out = subprocess.run(
+                    [
+                        "nvidia-smi",
+                        "-i",
+                        self.physical_gpu,
+                        "--query-gpu=memory.used",
+                        "--format=csv,noheader,nounits",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
                 )
+                v = int(out.stdout.strip().splitlines()[0])
+                if v > self.max_mib:
+                    self.max_mib = v
+                self.samples += 1
+            except Exception:
+                pass
+            self._stop.wait(self.interval)
 
-    th = threading.Thread(target=monitor, daemon=True)
-    th.start()
+    def __enter__(self):
+        self._thread.start()
+        return self
 
+    def __exit__(self, *exc):
+        self._stop.set()
+        self._thread.join(timeout=5)
+
+
+def run_case(
+    out_path, kernel, D, steps, lat, up, down, tau, ulb, treat, sample, cv_tail=0, mem_stats=False
+):
+    cfg = build_engine_config(D, lat, up, down)
+    engine = GeneralSimEngine(cfg)
+    engine.setup()
+    nu_lb = (tau - 0.5) / 3.0
+    re_eff = ulb * D / nu_lb
+    R_lb = cfg.geometry.sphere_radius / (cfg.physics.reference_length / cfg.solver.resolution)
+    dpS = 0.5 * ulb**2 * math.pi * R_lb**2
+    solid = engine.solid
+    nz, ny, nx = solid.shape
+    dx = cfg.physics.reference_length / cfg.solver.resolution
+    cx_lb = (cfg.geometry.sphere_center[0] - engine.domain_phys[0]) / dx
+    cy_lb = (cfg.geometry.sphere_center[1] - engine.domain_phys[2]) / dx
+    cz_lb = (cfg.geometry.sphere_center[2] - engine.domain_phys[4]) / dx
+    dev = torch.device(DEV)
+
+    sampler = MemSampler(os.environ.get("CUDA_VISIBLE_DEVICES", "0")) if mem_stats else None
+    if sampler is not None:
+        sampler.__enter__()
+
+    bfl_mask, bfl_q = compute_q_sphere(nx, ny, nz, cx_lb, cy_lb, cz_lb, R_lb, dev)
+    n_links = int(bfl_mask[1:].sum().item())
+    q_active = bfl_q[1:][bfl_mask[1:]]
+    if kernel == "sparse":
+        links = bfl_boundary_link_indices(bfl_mask, bfl_q, lattice="D3Q19")
+        if links.n_links != n_links or links.n_wrapped != 0:
+            raise RuntimeError(
+                f"link precompute mismatch: {links.n_links} vs {n_links}, wrapped={links.n_wrapped}"
+            )
+        q_min = float(links.link_q.min().item())
+        q_max = float(links.link_q.max().item())
+        del bfl_mask, bfl_q, q_active
+        torch.cuda.empty_cache()
+    else:
+        links = None
+        q_min = float(q_active.min().item())
+        q_max = float(q_active.max().item())
+        del q_active
+
+    peak_after_setup = float(torch.cuda.max_memory_allocated()) / 2**30 if mem_stats else None
+    if mem_stats:
+        torch.cuda.reset_peak_memory_stats()
+
+    bc_config = {"far_field_faces": ["y-", "y+", "z-", "z+"], "periodic_faces": []}
+    far_field_fn = functools.partial(far_field_bc_3d, bc_config=bc_config)
+    collide = make_collider("mrt", tau)
+    stream_fn = stream3d_roll if os.environ.get("W8A_STREAM", "roll") == "roll" else stream3d
+
+    f = engine.f.clone()
+    engine.f = None  # memory trim: release engine's distribution reference
+    target_mass = float(f.sum().item())
+    initial_mass = target_mass
+    hist = []
+    finite = True
+    diverged_at = None
+    sample_set = set(range(sample, steps + 1, sample))
+    sm = solid.unsqueeze(0).expand_as(f)
+    solid_idx = solid.reshape(-1).nonzero(as_tuple=True)[0]
     t0 = time.time()
-    run_info = engine.run(steps=n_steps)
-    stop.set()
-    t_run = time.time() - t0
-    print(
-        f"[run] {t_run:.1f}s for {run_info['steps']} steps "
-        f"({t_run / max(run_info['steps'], 1) * 1000:.1f} ms/step), "
-        f"diverged={run_info['diverged']}"
-    )
+    PROGRESS["phase"] = "loop"
+    for step in range(1, steps + 1):
+        PROGRESS["step"] = step
+        if kernel == "sparse":
+            # NoDynamics bookkeeping: gather pre-collision values at solid
+            # cells only (values identical to the full-clone restore).
+            f_solid_pre = f.reshape(19, -1)[:, solid_idx]
+            f = collide(f)
+            f.reshape(19, -1)[:, solid_idx] = f_solid_pre
+            del f_solid_pre
+        else:
+            f_pre = f.clone()
+            f = collide(f)
+            for q in range(f.shape[0]):
+                f[q] = torch.where(sm[q], f_pre[q], f[q])
+            del f_pre
+        f = bounce_back_cells_3d(f, solid)
+        f_pre_stream = f.clone()
+        f = stream_fn(f)
+        if treat == "noneq":
+            f = non_equilibrium_far_field_bc_3d(
+                f,
+                u_in=ulb,
+                faces=("x-", "x+", "y-", "y+", "z-", "z+"),
+            )
+        else:
+            f = far_field_fn(f, ulb)
+        if kernel == "sparse":
+            force3, _ = bfl_force_ledger_sparse(f, f_pre_stream, links)
+            f = bfl_bounce_back_sparse(f, f_pre_stream, links)
+        else:
+            f, force3 = bouzidi_bounce_back_d3q19(
+                f, f_pre_stream, bfl_mask, bfl_q, return_force=True
+            )
+        if step in sample_set:
+            cd = float(force3[0].item()) / dpS
+            cl = float(force3[1].item()) / dpS
+            cs = float(force3[2].item()) / dpS
+            entry = {
+                "step": step,
+                "cd": cd,
+                "cl": cl,
+                "cs": cs,
+                "mass": float(f.sum().item()),
+            }
+            if cv_tail > 0 and step > steps - cv_tail:
+                cv, _ = cv_box_force_exact(f_pre_stream, solid)
+                entry["cv_mom_cd"] = cv[0] / dpS
+                entry["cv_mom_cl"] = cv[1] / dpS
+            hist.append(entry)
+        del f_pre_stream
+        if step % 200 == 0:
+            f = correct_mass3d(f, target_mass)
+        if step % 500 == 0 and not bool(torch.isfinite(f).all()):
+            finite = False
+            diverged_at = step
+            break
+        if step % 2000 == 0:
+            el = time.time() - t0
+            print(f"step {step}/{steps} ({el:.0f}s, {el / step * 1000:.0f} ms/step)", flush=True)
 
-    # ── Analysis: last-100-sample mean (task criterion) + convergence windows ──
-    log = engine.forces_log
-    n_samples = len(log)
-    recent = log[-min(100, n_samples) :]
-    cd_tot = float(sum(e["cd_total"] for e in recent) / max(len(recent), 1))
-    cd_p = float(sum(e["cd_pressure"] for e in recent) / max(len(recent), 1))
-    cd_f = float(sum(e["cd_friction"] for e in recent) / max(len(recent), 1))
+    peak_loop = float(torch.cuda.max_memory_allocated()) / 2**30 if mem_stats else None
+    if sampler is not None:
+        sampler.__exit__()
 
-    # block means: 5 consecutive windows of 100 samples (1000 steps each), oldest first
-    blocks = []
-    nb = min(5, n_samples // 100)
-    for b in range(nb):
-        seg = log[-(nb - b) * 100 : -(nb - b - 1) * 100] if b < nb - 1 else log[-100:]
-        blocks.append(round(float(sum(e["cd_total"] for e in seg) / len(seg)), 5))
-    drift = None
-    if len(blocks) >= 2:
-        drift = (blocks[-1] - blocks[-2]) / blocks[-1] * 100.0
-
-    cd_ref_sn = schiller_naumann_cd(200.0)
-    cd_ref_cg = clift_gauvin_cd(200.0)
-    err_sn = (cd_tot - cd_ref_sn) / cd_ref_sn * 100.0
-    err_cg = (cd_tot - cd_ref_cg) / cd_ref_cg * 100.0
-
-    print(f"\n[results] D={resolution}, steps={run_info['steps']}, force samples={n_samples}")
-    print(f"  Cd_pressure = {cd_p:.4f}")
-    print(f"  Cd_friction = {cd_f:.4f}")
-    print(f"  Cd_total    = {cd_tot:.4f}  (last {len(recent)} samples)")
-    print(f"  window means (5x1000 steps): {blocks}")
-    print(f"  last-window drift: {drift if drift is not None else float('nan'):+.3f}%")
-    print(
-        f"  ref SN {cd_ref_sn:.4f}  -> err {err_sn:+.2f}%   (task sheet quoted 0.769: arithmetic error)"
-    )
-    print(
-        f"  ref CG {cd_ref_cg:.4f}  -> err {err_cg:+.2f}%   (task sheet quoted 0.773: arithmetic error)"
-    )
-
-    # ── Save: forces.csv (via engine.results) + bench_result.json ──
-    os.makedirs(out_dir, exist_ok=True)
-    try:
-        res = engine.results()
-        print(f"  saved {len(res['saved_files'])} files -> {res['output_dir']}")
-    except Exception as e:  # results() failure must not lose the JSON
-        print(f"  [warn] engine.results() failed: {e}")
-
-    result = {
-        "case": "B3",
-        "benchmark": "sphere_re200",
-        "engine": "GeneralSimEngine",
-        "extrap": "none",  # REAL simulation, no extrapolation
-        "physics": {"u_mps": 1e-4, "L_m": 1.0, "nu_m2ps": 5e-7, "Re": 200.0},
-        "resolution_D_cells": resolution,
-        "domain_lu": list(setup_info["domain_lu"]),
-        "tau": setup_info["tau"],
-        "u_lb": setup_info["u_lb"],
-        "nu_lb": setup_info["nu_lb"],
-        "collision": setup_info["auto_collision"],
-        "wall_treatment": setup_info["auto_wall_treatment"],
-        "friction_formula": friction,
-        "mass_correction": True,
-        "mass_correction_interval": 200,
-        "steps": run_info["steps"],
-        "diverged": run_info["diverged"],
-        "ms_per_step": round(t_run / max(run_info["steps"], 1) * 1000, 2),
-        "Cd_pressure": cd_p,
-        "Cd_friction": cd_f,
-        "Cd_total": cd_tot,
-        "Cd_window_means_5x1000": blocks,
-        "last_window_drift_pct": drift,
-        "Cd_ref_SN_exact": round(cd_ref_sn, 6),
-        "err_pct_vs_SN": round(err_sn, 2),
-        "Cd_ref_CG_exact": round(cd_ref_cg, 6),
-        "err_pct_vs_CG": round(err_cg, 2),
-        "note_task_sheet_refs": (
-            "task sheet quoted SN(200)=0.769 / CG(200)=0.773 "
-            "but formula-exact values are SN=0.8056 / CG=0.7810 "
-            "(0.769 corresponds to Re~185); verdict uses formula-exact"
+    meta = {
+        "kernel": kernel,
+        "route": "bfl",
+        "collision": "mrt",
+        "treat": treat,
+        "D": D,
+        "lat": lat,
+        "up": up,
+        "down": down,
+        "tau": tau,
+        "u_lb": ulb,
+        "nu_lb": nu_lb,
+        "re_eff": re_eff,
+        "steps": steps if finite else diverged_at,
+        "diverged": not finite,
+        "domain_lu": [nz, ny, nx],
+        "dpS": dpS,
+        "R_lb": R_lb,
+        "center_lu": [cz_lb, cy_lb, cx_lb],
+        "blockage": math.pi * R_lb**2 / (ny * nz),
+        "cd_ref_at_re_eff": cd_ref_family(re_eff),
+        "mass_drift_ppm": (
+            (float(f.sum().item()) - initial_mass) / initial_mass * 1e6 if finite else None
         ),
+        "bfl_links": n_links,
+        "q_min": q_min,
+        "q_max": q_max,
+        "stream": "roll" if stream_fn is stream3d_roll else "gather",
+        "wall_s": time.time() - t0,
     }
-    with open(os.path.join(out_dir, "bench_result.json"), "w") as fh:
-        json.dump(result, fh, indent=2)
-    print("\nbench_result.json written:")
-    print(json.dumps(result, indent=2))
-    print("=== DONE ===")
+    if mem_stats:
+        meta["mem_peak_after_setup_gib"] = peak_after_setup
+        meta["mem_peak_loop_gib"] = peak_loop
+        meta["mem_peak_reserved_gib"] = float(torch.cuda.max_memory_reserved()) / 2**30
+        if sampler is not None:
+            meta["mem_peak_nvidia_smi_mib"] = sampler.max_mib
+            meta["mem_nvidia_smi_samples"] = sampler.samples
+
+    with open(out_path, "w") as fh:
+        json.dump({"meta": meta, "history": hist}, fh)
+    print("written", out_path)
+    if hist:
+        tail = [h["cd"] for h in hist[-8:]]
+        print("last-8 cd mean:", sum(tail) / len(tail))
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("out")
+    ap.add_argument("--kernel", choices=["dense", "sparse"], default="sparse")
+    ap.add_argument("--D", type=int, default=40)
+    ap.add_argument("--steps", type=int, default=12000)
+    ap.add_argument("--lat", type=float, default=2.0)
+    ap.add_argument("--up", type=float, default=1.25)
+    ap.add_argument("--down", type=float, default=2.25)
+    ap.add_argument("--tau", type=float, default=0.56)
+    ap.add_argument("--ulb", type=float, default=0.05)
+    ap.add_argument("--treat", choices=["hard", "noneq"], default="hard")
+    ap.add_argument("--sample", type=int, default=50)
+    ap.add_argument("--cv_tail", type=int, default=0)
+    ap.add_argument("--mem_stats", action="store_true")
+    args = ap.parse_args()
+    PROGRESS["phase"] = "run"
+    try:
+        run_case(
+            args.out,
+            args.kernel,
+            args.D,
+            args.steps,
+            args.lat,
+            args.up,
+            args.down,
+            args.tau,
+            args.ulb,
+            args.treat,
+            args.sample,
+            args.cv_tail,
+            args.mem_stats,
+        )
+    except (torch.cuda.OutOfMemoryError, RuntimeError) as exc:
+        if "out of memory" not in str(exc).lower() and not isinstance(
+            exc, torch.cuda.OutOfMemoryError
+        ):
+            raise
+        import traceback
+
+        rec = {
+            "oom": True,
+            "kernel": args.kernel,
+            "D": args.D,
+            "lat": args.lat,
+            "up": args.up,
+            "down": args.down,
+            "tau": args.tau,
+            "steps_requested": args.steps,
+            "progress": dict(PROGRESS),
+            "torch_peak_allocated_gib": float(torch.cuda.max_memory_allocated()) / 2**30,
+            "torch_peak_reserved_gib": float(torch.cuda.max_memory_reserved()) / 2**30,
+            "alloc_conf": os.environ.get("PYTORCH_CUDA_ALLOC_CONF", ""),
+            "traceback_tail": traceback.format_exc().strip().splitlines()[-8:],
+            "error": str(exc)[:2000],
+        }
+        with open(args.out + ".oom.json", "w") as fh:
+            json.dump(rec, fh, indent=2)
+        print(json.dumps(rec, indent=2))
+        sys.exit(3)
 
 
 if __name__ == "__main__":

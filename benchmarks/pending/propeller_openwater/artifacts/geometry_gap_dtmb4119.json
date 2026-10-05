@@ -1,0 +1,33 @@
+{
+  "purpose": "Quantify why the parametric tensorlbm.propeller_cad geometry cannot represent the real DTMB 4119 blade, independently of the solver.",
+  "real_4119_section_table": {
+    "source": "OpenProp Examples/ExP03_Propeller4119_replica_design/Prop4119_input.m (joaoantoniocardoso/OpenProp), the standard DTMB 4119 replica-design input",
+    "r_over_R": [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 1.00],
+    "chord_over_D": [0.3200, 0.3625, 0.4048, 0.4392, 0.4610, 0.4622, 0.4347, 0.3613, 0.2775, 0.0020],
+    "thickness_over_chord": [0.2055, 0.1553, 0.1180, 0.09016, 0.06960, 0.05418, 0.04206, 0.03321, 0.03228, 0.03160],
+    "pitch_over_D_0.7R": 1.084,
+    "meanline": "NACA a=0.8",
+    "thickness_form": "NACA66 (DTRC modified)",
+    "skew_deg": 0.0,
+    "rake": 0.0,
+    "hub_diameter_ratio": 0.20,
+    "derived_expanded_area_ratio": 0.5987
+  },
+  "parametric_cad_geometry": {
+    "source": "tensorlbm.propeller_cad.build_propeller_mask analytic elliptic chord x NACA4 half-thickness; only scalar parameters accepted",
+    "chord_over_D": [0.2452, 0.2721, 0.2912, 0.3042, 0.3117, 0.3142, 0.3117, 0.3042, 0.2984, 0.2912],
+    "peak_chord_over_D_at_0.7R": 0.3142,
+    "derived_expanded_area_ratio": 0.4541,
+    "tip_chord_over_D": 0.2912
+  },
+  "deficits": {
+    "peak_chord_deficit_pct": 32.0,
+    "expanded_area_ratio_nominal": 0.60,
+    "expanded_area_ratio_actual_delivered": 0.4541,
+    "expanded_area_deficit_pct": 24.1,
+    "tip_chord_behavior": "real 4119 tapers to c/D=0.002 at the tip; the CAD keeps c/D=0.291 (open elliptic tail) -> spurious tip loading",
+    "section_thickness": "build_propeller_mask clamps the half-thickness to >= 2 lu (4 lu full), so at D=32 peak t/c = 0.40 and at D=48 t/c = 0.27, versus the real t0/c = 0.054 at 0.7R (5-7x too thick)",
+    "camber": "the CAD uses NACA4 symmetric-thickness style shaping without the NACA a=0.8 meanline camber"
+  },
+  "conclusion": "Independent of any solver error, the delivered blade area is 24% low, the peak chord is 32% low, the radial chord distribution is wrong, and the sections are 5-7x too thick. A KT/KQ match to DTMB 4119 experiment within 3% is not attainable from this geometry."
+}

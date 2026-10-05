@@ -1,0 +1,29 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+  step 5000: umax=0.05001 finite=True
+  step 10000: umax=0.05010 finite=True
+  step 15000: umax=0.05031 finite=True
+  step 20000: umax=0.05019 finite=True
+  step 25000: umax=0.05023 finite=True
+  step 30000: umax=0.05023 finite=True
+Traceback (most recent call last):
+  File "/root/TensorLBM_feat2/benchmarks/pending/blasius_flat_plate/_mech.py", line 232, in <module>
+    main()
+  File "/root/TensorLBM_feat2/benchmarks/pending/blasius_flat_plate/_mech.py", line 194, in main
+    K_compress=Cf_ref/Cf,
+               ~~~~~~^~~
+ZeroDivisionError: float division by zero

@@ -96,3 +96,7 @@ tests/.tensorlbm_resolution.json
 # LBM field snapshots (large binaries, keep on disk only)
 *.field.pt
 *.pt
+
+# run artifacts (logs/fields, keep on disk only)
+runs/
+runs_prop/

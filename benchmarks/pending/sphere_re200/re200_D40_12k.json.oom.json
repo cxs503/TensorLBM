@@ -1,0 +1,27 @@
+{
+  "oom": true,
+  "kernel": "sparse",
+  "D": 40,
+  "lat": 3.0,
+  "up": 3.0,
+  "down": 4.0,
+  "tau": 0.53,
+  "steps_requested": 12000,
+  "progress": {
+    "step": 0,
+    "phase": "run"
+  },
+  "torch_peak_allocated_gib": 0.0,
+  "torch_peak_reserved_gib": 0.0,
+  "alloc_conf": "expandable_segments:True",
+  "traceback_tail": [
+    "Traceback (most recent call last):",
+    "  File \"/root/TensorLBM_feat2/benchmarks/pending/sphere_re200/run.py\", line 370, in main",
+    "    run_case(",
+    "  File \"/root/TensorLBM_feat2/benchmarks/pending/sphere_re200/run.py\", line 203, in run_case",
+    "    n_links = int(bfl_mask[1:].sum().item())",
+    "                  ^^^^^^^^^^^^^^^^^^",
+    "RuntimeError: sdaa out of memory. Tried to allocate 3.37 GiB (SDAA 2; 14.94 GiB total capacity; 7.78 GiB already allocated; 6.73 GiB free; 7.95 GiB reserved in total by Torch-SDAA)"
+  ],
+  "error": "sdaa out of memory. Tried to allocate 3.37 GiB (SDAA 2; 14.94 GiB total capacity; 7.78 GiB already allocated; 6.73 GiB free; 7.95 GiB reserved in total by Torch-SDAA)"
+}
