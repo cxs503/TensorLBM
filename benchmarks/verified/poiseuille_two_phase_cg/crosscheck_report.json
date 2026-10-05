@@ -1,0 +1,386 @@
+{
+ "all_ok": true,
+ "n_checks": 72,
+ "checks": [
+  {
+   "check": "eq_ny64.relL2 == judgments.g2",
+   "ok": true,
+   "value": 0.002109392211371581
+  },
+  {
+   "check": "eq_ny64.u_max_ratio == judgments.g2",
+   "ok": true,
+   "value": 1.0082617670387721
+  },
+  {
+   "check": "eq_ny64.j_first_blue == judgments.g2",
+   "ok": true,
+   "value": null
+  },
+  {
+   "check": "eq_ny64.u_max_frozen_rel_tail20 == judgments.g2",
+   "ok": true,
+   "value": 3.356887573375712e-10
+  },
+  {
+   "check": "eq_ny64.mass_drift_r_per_step == judgments.g2",
+   "ok": true,
+   "value": 2.429677200173804e-14
+  },
+  {
+   "check": "eq_ny64.mass_drift_b_per_step == judgments.g2",
+   "ok": true,
+   "value": 2.2669155441690236e-14
+  },
+  {
+   "check": "eq_ny64.stable == judgments.g2",
+   "ok": true,
+   "value": true
+  },
+  {
+   "check": "eq_ny64.ny == judgments.g2",
+   "ok": true,
+   "value": 64
+  },
+  {
+   "check": "eq_ny64.tau_r in judgments.g2 arm table",
+   "ok": true,
+   "value": 1.0
+  },
+  {
+   "check": "eq_ny64.tau_b in judgments.g2 arm table",
+   "ok": true,
+   "value": 1.0
+  },
+  {
+   "check": "eq_ny64.gx in judgments.g2 arm table",
+   "ok": true,
+   "value": 5e-06
+  },
+  {
+   "check": "eq_ny64.beta in judgments.g2 arm table",
+   "ok": true,
+   "value": 0.9
+  },
+  {
+   "check": "eq_ny64.steps in judgments.g2 arm table",
+   "ok": true,
+   "value": 60000
+  },
+  {
+   "check": "eq_ny128.relL2 == judgments.g2",
+   "ok": true,
+   "value": 0.0015494927478906233
+  },
+  {
+   "check": "eq_ny128.u_max_ratio == judgments.g2",
+   "ok": true,
+   "value": 1.0087562739553901
+  },
+  {
+   "check": "eq_ny128.j_first_blue == judgments.g2",
+   "ok": true,
+   "value": null
+  },
+  {
+   "check": "eq_ny128.u_max_frozen_rel_tail20 == judgments.g2",
+   "ok": true,
+   "value": 2.2092867868394697e-08
+  },
+  {
+   "check": "eq_ny128.mass_drift_r_per_step == judgments.g2",
+   "ok": true,
+   "value": 3.601257958507631e-14
+  },
+  {
+   "check": "eq_ny128.mass_drift_b_per_step == judgments.g2",
+   "ok": true,
+   "value": 3.574399443095899e-14
+  },
+  {
+   "check": "eq_ny128.stable == judgments.g2",
+   "ok": true,
+   "value": true
+  },
+  {
+   "check": "eq_ny128.ny == judgments.g2",
+   "ok": true,
+   "value": 128
+  },
+  {
+   "check": "eq_ny128.tau_r in judgments.g2 arm table",
+   "ok": true,
+   "value": 1.0
+  },
+  {
+   "check": "eq_ny128.tau_b in judgments.g2 arm table",
+   "ok": true,
+   "value": 1.0
+  },
+  {
+   "check": "eq_ny128.gx in judgments.g2 arm table",
+   "ok": true,
+   "value": 1.25e-06
+  },
+  {
+   "check": "eq_ny128.beta in judgments.g2 arm table",
+   "ok": true,
+   "value": 0.9
+  },
+  {
+   "check": "eq_ny128.steps in judgments.g2 arm table",
+   "ok": true,
+   "value": 200000
+  },
+  {
+   "check": "g10_ny64.relL2 == judgments.g2",
+   "ok": true,
+   "value": 0.010918219215161354
+  },
+  {
+   "check": "g10_ny64.u_max_ratio == judgments.g2",
+   "ok": true,
+   "value": 0.9914692286512666
+  },
+  {
+   "check": "g10_ny64.j_first_blue == judgments.g2",
+   "ok": true,
+   "value": 33
+  },
+  {
+   "check": "g10_ny64.u_max_frozen_rel_tail20 == judgments.g2",
+   "ok": true,
+   "value": 2.6773673348863597e-12
+  },
+  {
+   "check": "g10_ny64.mass_drift_r_per_step == judgments.g2",
+   "ok": true,
+   "value": 1.4930634506526986e-14
+  },
+  {
+   "check": "g10_ny64.mass_drift_b_per_step == judgments.g2",
+   "ok": true,
+   "value": 3.048548080641922e-14
+  },
+  {
+   "check": "g10_ny64.stable == judgments.g2",
+   "ok": true,
+   "value": true
+  },
+  {
+   "check": "g10_ny64.ny == judgments.g2",
+   "ok": true,
+   "value": 64
+  },
+  {
+   "check": "g10_ny64.tau_r in judgments.g2 arm table",
+   "ok": true,
+   "value": 2.5
+  },
+  {
+   "check": "g10_ny64.tau_b in judgments.g2 arm table",
+   "ok": true,
+   "value": 0.7
+  },
+  {
+   "check": "g10_ny64.gx in judgments.g2 arm table",
+   "ok": true,
+   "value": 1.5e-07
+  },
+  {
+   "check": "g10_ny64.beta in judgments.g2 arm table",
+   "ok": true,
+   "value": 0.9
+  },
+  {
+   "check": "g10_ny64.steps in judgments.g2 arm table",
+   "ok": true,
+   "value": 80000
+  },
+  {
+   "check": "g10_ny128.relL2 == judgments.g2",
+   "ok": true,
+   "value": 0.005596650353003679
+  },
+  {
+   "check": "g10_ny128.u_max_ratio == judgments.g2",
+   "ok": true,
+   "value": 0.9955838667297485
+  },
+  {
+   "check": "g10_ny128.j_first_blue == judgments.g2",
+   "ok": true,
+   "value": 65
+  },
+  {
+   "check": "g10_ny128.u_max_frozen_rel_tail20 == judgments.g2",
+   "ok": true,
+   "value": 2.9640541200092656e-12
+  },
+  {
+   "check": "g10_ny128.mass_drift_r_per_step == judgments.g2",
+   "ok": true,
+   "value": 1.4959368854761124e-14
+  },
+  {
+   "check": "g10_ny128.mass_drift_b_per_step == judgments.g2",
+   "ok": true,
+   "value": 5.298352334648371e-14
+  },
+  {
+   "check": "g10_ny128.stable == judgments.g2",
+   "ok": true,
+   "value": true
+  },
+  {
+   "check": "g10_ny128.ny == judgments.g2",
+   "ok": true,
+   "value": 128
+  },
+  {
+   "check": "g10_ny128.tau_r in judgments.g2 arm table",
+   "ok": true,
+   "value": 2.5
+  },
+  {
+   "check": "g10_ny128.tau_b in judgments.g2 arm table",
+   "ok": true,
+   "value": 0.7
+  },
+  {
+   "check": "g10_ny128.gx in judgments.g2 arm table",
+   "ok": true,
+   "value": 3.75e-08
+  },
+  {
+   "check": "g10_ny128.beta in judgments.g2 arm table",
+   "ok": true,
+   "value": 0.9
+  },
+  {
+   "check": "g10_ny128.steps in judgments.g2 arm table",
+   "ok": true,
+   "value": 250000
+  },
+  {
+   "check": "eq_ny64: CLOSURE relL2% @3dp",
+   "ok": true,
+   "machine": 0.211,
+   "closure_printed": 0.211
+  },
+  {
+   "check": "eq_ny64: CLOSURE u_max_ratio @4dp",
+   "ok": true,
+   "machine": 1.0083,
+   "closure_printed": 1.0083
+  },
+  {
+   "check": "eq_ny64: CLOSURE j_first_blue",
+   "ok": true,
+   "machine": null,
+   "closure_printed": null
+  },
+  {
+   "check": "eq_ny64: CLOSURE frozen @2sf",
+   "ok": true,
+   "machine": 3.36e-10,
+   "closure_printed": 3.36e-10
+  },
+  {
+   "check": "eq_ny64: CLOSURE drift_max @2sf",
+   "ok": true,
+   "machine": 2.43e-14,
+   "closure_printed": 2.43e-14
+  },
+  {
+   "check": "eq_ny128: CLOSURE relL2% @3dp",
+   "ok": true,
+   "machine": 0.155,
+   "closure_printed": 0.155
+  },
+  {
+   "check": "eq_ny128: CLOSURE u_max_ratio @4dp",
+   "ok": true,
+   "machine": 1.0088,
+   "closure_printed": 1.0088
+  },
+  {
+   "check": "eq_ny128: CLOSURE j_first_blue",
+   "ok": true,
+   "machine": null,
+   "closure_printed": null
+  },
+  {
+   "check": "eq_ny128: CLOSURE frozen @2sf",
+   "ok": true,
+   "machine": 2.21e-08,
+   "closure_printed": 2.21e-08
+  },
+  {
+   "check": "eq_ny128: CLOSURE drift_max @2sf",
+   "ok": true,
+   "machine": 3.6e-14,
+   "closure_printed": 3.6e-14
+  },
+  {
+   "check": "g10_ny64: CLOSURE relL2% @3dp",
+   "ok": true,
+   "machine": 1.092,
+   "closure_printed": 1.092
+  },
+  {
+   "check": "g10_ny64: CLOSURE u_max_ratio @4dp",
+   "ok": true,
+   "machine": 0.9915,
+   "closure_printed": 0.9915
+  },
+  {
+   "check": "g10_ny64: CLOSURE j_first_blue",
+   "ok": true,
+   "machine": 33,
+   "closure_printed": 33
+  },
+  {
+   "check": "g10_ny64: CLOSURE frozen @2sf",
+   "ok": true,
+   "machine": 2.68e-12,
+   "closure_printed": 2.68e-12
+  },
+  {
+   "check": "g10_ny64: CLOSURE drift_max @2sf",
+   "ok": true,
+   "machine": 3.05e-14,
+   "closure_printed": 3.05e-14
+  },
+  {
+   "check": "g10_ny128: CLOSURE relL2% @3dp",
+   "ok": true,
+   "machine": 0.56,
+   "closure_printed": 0.56
+  },
+  {
+   "check": "g10_ny128: CLOSURE u_max_ratio @4dp",
+   "ok": true,
+   "machine": 0.9956,
+   "closure_printed": 0.9956
+  },
+  {
+   "check": "g10_ny128: CLOSURE j_first_blue",
+   "ok": true,
+   "machine": 65,
+   "closure_printed": 65
+  },
+  {
+   "check": "g10_ny128: CLOSURE frozen @2sf",
+   "ok": true,
+   "machine": 2.96e-12,
+   "closure_printed": 2.96e-12
+  },
+  {
+   "check": "g10_ny128: CLOSURE drift_max @2sf",
+   "ok": true,
+   "machine": 5.3e-14,
+   "closure_printed": 5.3e-14
+  }
+ ]
+}
