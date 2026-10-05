@@ -1,6 +1,6 @@
-# Benchmark status (generated 2026-09-29)
+# Benchmark status (generated 2026-10-05)
 
-verified: **21** | pending: **20**
+verified: **22** | pending: **19**
 
 Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
 
@@ -24,6 +24,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `stokes_second_problem` | analytic (Womersley family) |
 | `suboff_re1000` | SUBOFF hull drag Re=1000: Cd -1.15% end-to-end (mix50 friction, 3.4h) |
 | `cylinder_3d` | 3D extruded cyl Re=40: Cd +2.45%/−0.19% (surface-only Ladd MEM, 2 grids, span 2.64%) |
+| `sphere_re100` | sphere Re=100: Cd +2.771%/+2.540% (BFL interpolated-boundary per-link ledger, D40/D60, span 0.231%, monotone; big domain) |
 | `taylor_couette` | analytic |
 | `taylor_green_2d` | analytic decay |
 | `taylor_green_3d` | analytic decay |
@@ -49,7 +50,6 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `poiseuille_3d_ellipse` | no result yet |
 | `rayleigh_benard` | thermal convection |
 | `rayleigh_taylor` | STRUCTURAL: VOF has no free pressure field |
-| `sphere_re100` | surface-only Ladd MEM: D=12 +9.15% / D=18 +8.92% -- mesh-converged (span 0.23%) TO THE WRONG VALUE; blockage lever dead (L32==L16 bit-identical), CV instrument agrees (+10%); staircase geometry bias, not caliber |
 | `sphere_re100_d3q27` | D3Q27 lattice path (systematic offsets) |
 | `sphere_re200` | reference corrected (SN 0.8056, not 0.769) |
 | `stokes_sphere_dg` | DG force method: spurious (2.15% then 53% on refine) |
@@ -59,12 +59,15 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 * **Force caliber matters**: the Ladd MEM sum must be restricted to the *surface* solid cells;
   the all-solid sum carries an interior pseudo-force (see `docs/mem_surface_caliber_finding.md`).
   This turned cylinder_3d from −8% into +2.45%/−0.19% (verified) on the same fields.
-* **...but surface-only is not a blank cheque**: the sphere_re100 staircase still converges to
-  Cd ≈ +9% under the SAME caliber (D=12 +9.15% / D=18 +8.92%, span 0.23%). The interior pseudo-term
-  on the present BGK Ladd chain is only +0.02~0.06 (cylinder-like), so removing it trims all-solid
-  from +12.7% only to +9.15%; the residual is a doubly-curved-staircase geometry bias (an independent
-  control-volume instrument reads the same +10%), not a caliber bug. Blockage/domain is a dead lever
-  (lateral 32 vs 16 bit-identical). See `benchmarks/pending/sphere_re100/result_mem_surface.json`.
+* **...but surface-only is not a blank cheque**: the sphere_re100 *staircase* Ladd-MEM still
+  converges to Cd ≈ +9% under the SAME caliber (D=12 +9.15% / D=18 +8.92%, span 0.23%). The interior
+  pseudo-term on the present BGK Ladd chain is only +0.02~0.06 (cylinder-like), so removing it trims
+  all-solid from +12.7% only to +9.15%; the residual is a doubly-curved-staircase geometry bias (an
+  independent control-volume instrument reads the same +10%), not a caliber bug. Blockage/domain is a
+  dead lever for the staircase (lateral 32 vs 16 bit-identical). **sphere_re100 is nevertheless
+  VERIFIED** via a *smooth* wall: the BFL interpolated-boundary per-link momentum ledger with a big
+  domain reads Cd +2.771%/+2.540% (D40/D60, span 0.231%, monotone). See
+  `benchmarks/verified/sphere_re100/` (staircase negative kept in `staircase_surface_mem/`).
 * Free-surface / multiphase failures are structural (architecture), not tuning; see
   `docs/free_surface_architecture_gaps.md` (27 tried levers with failure reasons).
 * Reference-caliber errors (not solver errors) accounted for two of the biggest false
