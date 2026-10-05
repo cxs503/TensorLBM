@@ -23,3 +23,4 @@
 [naca0012 C=128 a=0 2944x2048] step=20000 Cd_surf=0.20610 Cl_surf=+0.00002 Cd_all=0.12667 (4150s)
 [naca0012 C=128 a=0 2944x2048] step=25000 Cd_surf=0.20527 Cl_surf=-0.00000 Cd_all=0.12134 (5976s)
 [naca0012 C=128 a=0 2944x2048] step=30000 Cd_surf=0.20974 Cl_surf=+0.00000 Cd_all=0.12116 (7719s)
+[naca0012 C=128 a=0 2944x2048] step=35000 Cd_surf=0.21321 Cl_surf=+0.00000 Cd_all=0.12113 (9508s)
