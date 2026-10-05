@@ -1,0 +1,36 @@
+{
+  "case": "propeller_openwater",
+  "status": "pending_blocked",
+  "verified": false,
+  "scope": "DTMB 4119 propeller open-water KT/KQ vs advance ratio J (moving-wall bounce-back, per-step re-voxelised rotating mask)",
+  "reference": {
+    "propeller": "DTMB 4119",
+    "source": "main table cross-checked against OpenProp Prop4119_input.m (J=0.833 -> KT=0.15, 1.6% agreement)",
+    "kt_ref": {
+      "0.5": 0.2853,
+      "0.7": 0.212
+    }
+  },
+  "measured": [
+    {
+      "J": 0.5,
+      "KT": 0.8708203710411908,
+      "KQ": 0.7417890207264767,
+      "KT_err_pct": 205.22971294819166,
+      "KQ_err_pct": 1498.34
+    },
+    {
+      "J": 0.7,
+      "KT": 1.2904992302549847,
+      "KQ": 0.7666117363144925,
+      "KT_err_pct": 508.7260520070683,
+      "KQ_err_pct": null
+    }
+  ],
+  "blockers": [
+    "B1 geometry: propeller_cad delivers peak chord/D 0.3142 (real 0.4622, -32%), A_E/A_0 0.454 (real 0.599, -24%), radial chord distribution wrong, section thickness forced >=4 lu (5-7x too thick), no NACA a=0.8 camber. See artifacts/geometry_gap_dtmb4119.json.",
+    "B2 Reynolds mismatch: real Re_D ~1.4e6; this lattice/lift regime reaches Re_D <~73*D (~2.3e3) -- ~600x low. The repo's own feasibility map returns status=fail_closed for the real operating point.",
+    "B3 low-tip-Mach gate vs time resolution: the rotating mask needs 1e2-1e3 steps/rev to avoid tip cell-hopping; at that resolution tip Ma ~0.17, 42x over LOW_MACH_TIP_GATE=0.004. The two requirements are mutually exclusive. Disc blockage 12.6% (open-water target <5%)."
+  ],
+  "verdict": "NOT ACCEPTED -- the measured KT is 2-6x the reference and KQ ~15x; every one of the three blockers is structural (geometry fidelity / Reynolds / Mach-vs-resolution), not a tunable 3% gap."
+}

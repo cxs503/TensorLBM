@@ -19,3 +19,6 @@ step 4000/12000 (3275s, 819 ms/step)
 step 6000/12000 (5073s, 846 ms/step)
 step 8000/12000 (6836s, 854 ms/step)
 step 10000/12000 (8623s, 862 ms/step)
+step 12000/12000 (10604s, 884 ms/step)
+written re200_D24_12k.json
+last-8 cd mean: 0.8009029226763099
