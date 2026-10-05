@@ -134,12 +134,14 @@ def run_case(
     sample_interval: int = 100,
     warmup_frac: float = 0.6,
     out_path: str | None = None,
+    use_sponge: bool = False,
+    cyl_x_d: float = 20.0,
 ) -> dict:
     nx = ny = int(DOMAIN_D * D)
     nu = u_in * D / re
     tau = 0.5 + 3.0 * nu
 
-    mask = cylinder_mask(nx, ny, CYL_X_D * D, ny / 2.0, D / 2.0, device)
+    mask = cylinder_mask(nx, ny, cyl_x_d * D, ny / 2.0, D / 2.0, device)
     surf = _surface_layer_2d(mask)
     interior = mask & ~surf
     n_solid = int(mask.sum().item())
@@ -151,18 +153,34 @@ def run_case(
     )
 
     rho0 = torch.ones((ny, nx), device=device)
-    f = equilibrium(rho0, torch.full_like(rho0, u_in), torch.zeros_like(rho0))
+    ux0 = torch.full((ny, nx), u_in, device=device)
+    ux0[mask] = 0.0  # match cylinder_3d init (solid frozen at u=0 equilibrium)
+    f = equilibrium(rho0, ux0, torch.zeros_like(rho0))
+    del rho0, ux0
     im0 = float(f.sum())
 
-    def _step(f):
-        f_pre = f[:, mask].clone()  # NoDynamics: freeze solid
-        f = collide_bgk(f, tau)
-        f[:, mask] = f_pre
-        rho, ux, uy = macroscopic(f)
-        f = apply_viscous_sponge_2d(f, rho, ux, uy, tau, sponge)
-        f = bounce_back_cells(f, mask)  # half-way BB *pre*-streaming
-        f = stream(f)
-        return far_field_bc_2d(f, u_in, None)
+    if use_sponge:
+
+        def _step(f):
+            f_pre = f[:, mask].clone()  # NoDynamics: freeze solid
+            f = collide_bgk(f, tau)
+            f[:, mask] = f_pre
+            rho, ux, uy = macroscopic(f)
+            f = apply_viscous_sponge_2d(f, rho, ux, uy, tau, sponge)
+            f = bounce_back_cells(f, mask)  # half-way BB *pre*-streaming
+            f = stream(f)
+            return far_field_bc_2d(f, u_in, None)
+
+    else:
+        # Exact caliber of the verified `cylinder_3d` chain (no sponge):
+        # collide -> NoDynamics restore -> half-way BB (pre-stream) -> stream -> far_field BC.
+        def _step(f):
+            f_pre = f[:, mask].clone()  # NoDynamics: freeze solid
+            f = collide_bgk(f, tau)
+            f[:, mask] = f_pre
+            f = bounce_back_cells(f, mask)  # half-way BB *pre*-streaming
+            f = stream(f)
+            return far_field_bc_2d(f, u_in, None)
 
     step = route_step(_step, compile_mode, name=f"cylinder_re40_st[D{D}]")
 
@@ -240,6 +258,8 @@ def run_case(
         "n_solid_cells": n_solid,
         "n_surface_cells": n_surface,
         "n_interior_cells": n_interior,
+        "use_sponge": use_sponge,
+        "sponge_active": bool(use_sponge),
         "steps": steps,
         "sample_interval": sample_interval,
         "n_samples": n_samp,
@@ -278,6 +298,12 @@ def main() -> None:
     ap.add_argument("--sample", type=int, default=100)
     ap.add_argument("--warmup-frac", type=float, default=0.6)
     ap.add_argument("--out", default="")
+    ap.add_argument(
+        "--sponge",
+        action="store_true",
+        help="enable the downstream viscous sponge (NOT the verified cylinder_3d caliber; "
+        "default off so the chain matches cylinder_3d exactly)",
+    )
     add_compile_mode_arg(ap)
     args = ap.parse_args()
 
@@ -302,6 +328,7 @@ def main() -> None:
             sample_interval=args.sample,
             warmup_frac=args.warmup_frac,
             out_path=str(out / f"case_D{D}.json") if out else None,
+            use_sponge=args.sponge,
         )
 
     cds = [g["cd_mem_surface"] for g in grids.values()]

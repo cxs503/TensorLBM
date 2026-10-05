@@ -1,0 +1,25 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[naca0012 C=128 a=0 2944x2048] Re=1000.0 u_in=0.1 nu=0.012800 tau=0.538400 dpS=0.640000
+[naca0012 C=128 a=0 2944x2048] solid=1347 surface=250 interior=1097 (blockage 0.750%, upstream 6.0c, downstream 16.0c, halfheight 8.0c)
+[compile_route] naca0012_re1000[C128]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
+[naca0012 C=128 a=0 2944x2048] step=5000 Cd_surf=0.21545 Cl_surf=+0.00007 Cd_all=0.14244 (903s)
+[naca0012 C=128 a=0 2944x2048] step=10000 Cd_surf=0.20630 Cl_surf=+0.00003 Cd_all=0.13214 (1765s)
+[naca0012 C=128 a=0 2944x2048] step=15000 Cd_surf=0.20535 Cl_surf=+0.00002 Cd_all=0.12851 (2623s)
+[naca0012 C=128 a=0 2944x2048] step=20000 Cd_surf=0.20610 Cl_surf=+0.00002 Cd_all=0.12667 (4150s)
+[naca0012 C=128 a=0 2944x2048] step=25000 Cd_surf=0.20527 Cl_surf=-0.00000 Cd_all=0.12134 (5976s)
+[naca0012 C=128 a=0 2944x2048] step=30000 Cd_surf=0.20974 Cl_surf=+0.00000 Cd_all=0.12116 (7719s)

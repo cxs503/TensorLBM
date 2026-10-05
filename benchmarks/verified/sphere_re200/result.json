@@ -1,0 +1,62 @@
+{
+  "case": "sphere_re200",
+  "status": "verified",
+  "verified": true,
+  "reference": {
+    "value": 0.805615,
+    "source": "Schiller-Naumann correlation Cd=24/Re*(1+0.15*Re^0.687), Re=200",
+    "cluster": [
+      0.7756,
+      0.8056
+    ],
+    "audit": "REFERENCE_AUDIT.md (Clift-Grace-Weber 0.7756, Turton 0.8025; task's 0.769/0.773 are arithmetic errors)"
+  },
+  "caliber": {
+    "force": "BFL interpolated smooth wall + per-link momentum ledger (surface-restricted)",
+    "domain": "lat 3.0 / up 3.0 / down 4.0 (blockage 1.603%)",
+    "collision": "MRT (sparse kernel route), hard treatment",
+    "tau_law": "tau = 0.5 + 3*u*D/Re with Re=200 locked exactly (Re_eff=200.0000)",
+    "averaging": "last-20% sample window mean (240 samples)"
+  },
+  "grids": [
+    {
+      "D": 16,
+      "grid": null,
+      "blockage_pct": 1.603,
+      "cd": 0.820646,
+      "err_pct": 1.866,
+      "steps": 12000,
+      "drift_pct": -0.026,
+      "cv_window_closure_pct": 0.036
+    },
+    {
+      "D": 20,
+      "grid": null,
+      "blockage_pct": 1.603,
+      "cd": 0.807356,
+      "err_pct": 0.216,
+      "steps": 12000,
+      "drift_pct": -0.078,
+      "cv_window_closure_pct": 0.037
+    }
+  ],
+  "convergence": {
+    "cd_within_3pct": true,
+    "grid_span_within_3pct": true,
+    "span_pct": 1.65,
+    "monotone": true,
+    "note": "D16 +1.866% -> D20 +0.216% as D grows"
+  },
+  "memory_ceiling": {
+    "note": "SDAA single-process torch capped at 14.94 GiB; D<=30 runs, D>=32 OOMs in collide_mrt3d_low_memory. D40 pair is infeasible, D16/D20 pair suffices.",
+    "evidence_json": [
+      "memtest_D28.json",
+      "memtest_D30.json",
+      "memtest_D32.json.oom.json",
+      "memtest_D34.json.oom.json",
+      "memtest_D36.json.oom.json",
+      "re200_D40_12k.json.oom.json"
+    ]
+  },
+  "verdict": "PASS: two ladders within 3%, span 1.650% <= 3%, monotone in D"
+}
