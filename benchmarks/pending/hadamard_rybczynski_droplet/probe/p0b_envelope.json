@@ -1,0 +1,1689 @@
+[
+ {
+  "c1": 0.9,
+  "c2": 1.1,
+  "G": -1.0,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.034933146089315414
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027203360572457314
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02783595211803913
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027448751032352448
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.026999682188034058
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02716233767569065
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027364581823349
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02731478027999401
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02726205810904503
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027270913124084473
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027279535308480263
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02728119120001793
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.0272810235619545
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027279537171125412
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027279341593384743
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027280136942863464
+   }
+  ]
+ },
+ {
+  "c1": 0.9,
+  "c2": 1.1,
+  "G": -1.5,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05195564031600952
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04972311854362488
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04744075611233711
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.048513028770685196
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04950323700904846
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04952351748943329
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04948343336582184
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04949669539928436
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04952894151210785
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04952352121472359
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04951266571879387
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04950827732682228
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04950764775276184
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04950686916708946
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04950617253780365
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04950607940554619
+   }
+  ]
+ },
+ {
+  "c1": 0.9,
+  "c2": 1.1,
+  "G": -2.5,
+  "nan": 250,
+  "hist": []
+ },
+ {
+  "c1": 0.85,
+  "c2": 1.15,
+  "G": -1.0,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.03066415525972843
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027943747118115425
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.028535867109894753
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.028121275827288628
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02769605815410614
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027781017124652863
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027985336259007454
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027970533818006516
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027918482199311256
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027917956933379173
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02792447991669178
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027927404269576073
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02792864479124546
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027927439659833908
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.0279267318546772
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027927260845899582
+   }
+  ]
+ },
+ {
+  "c1": 0.85,
+  "c2": 1.15,
+  "G": -1.5,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05413788929581642
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05098230764269829
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04942730441689491
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050188928842544556
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.051234014332294464
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.0512629896402359
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05126769095659256
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05129300802946091
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05133682116866112
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05134328827261925
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.051338739693164825
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05133696645498276
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.051337338984012604
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05133723467588425
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.051336780190467834
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05133660510182381
+   }
+  ]
+ },
+ {
+  "c1": 0.85,
+  "c2": 1.15,
+  "G": -2.5,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": 0.9257141947746277,
+    "diss": 0.1592104732990265,
+    "Req": 3.1901917457580566,
+    "maxu": 0.13102363049983978
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13041181862354279
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13135962188243866
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1305389404296875
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1308278888463974
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13081401586532593
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13078412413597107
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13081076741218567
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13080298900604248
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13080525398254395
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13080711662769318
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13080725073814392
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13080836832523346
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13080903887748718
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1308097541332245
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13081037998199463
+   }
+  ]
+ },
+ {
+  "c1": 0.75,
+  "c2": 1.15,
+  "G": -1.0,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02788950689136982
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027828846126794815
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02828642912209034
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02785594016313553
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02749413438141346
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027587514370679855
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02776384726166725
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027747930958867073
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027701957151293755
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027701489627361298
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027707861736416817
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027710674330592155
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027711445465683937
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02771027944982052
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.0277097150683403
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027710262686014175
+   }
+  ]
+ },
+ {
+  "c1": 0.75,
+  "c2": 1.15,
+  "G": -1.5,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.0523630790412426
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05065099149942398
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04919098690152168
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04997128248214722
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05086522176861763
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05089729279279709
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05090618506073952
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05092906206846237
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050964947789907455
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050968237221241
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050963420420885086
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050961486995220184
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05096152797341347
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050961244851350784
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050960782915353775
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05096064880490303
+   }
+  ]
+ },
+ {
+  "c1": 0.75,
+  "c2": 1.15,
+  "G": -2.5,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": 0.8231833577156067,
+    "diss": 0.3316178321838379,
+    "Req": 1.2407009601593018,
+    "maxu": 0.13093480467796326
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12976546585559845
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13088805973529816
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1298869103193283
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13010069727897644
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13014036417007446
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13008125126361847
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13011226058006287
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13010664284229279
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13010603189468384
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13010895252227783
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13010883331298828
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13010981678962708
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13011057674884796
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1301112025976181
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1301119327545166
+   }
+  ]
+ },
+ {
+  "c1": 0.65,
+  "c2": 1.15,
+  "G": -1.0,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.026890160515904427
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02772889845073223
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02803480625152588
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027588214725255966
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027295242995023727
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027392247691750526
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027540557086467743
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027525024488568306
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02748488262295723
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027484368532896042
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027490563690662384
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02749323844909668
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.0274936743080616
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027492526918649673
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027492178604006767
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027492688968777657
+   }
+  ]
+ },
+ {
+  "c1": 0.65,
+  "c2": 1.15,
+  "G": -1.5,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.0505925714969635
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05027119070291519
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04896574094891548
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.049752216786146164
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05049235001206398
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050529420375823975
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05054274946451187
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050562892109155655
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05059061944484711
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05059114843606949
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05058631673455238
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050584252923727036
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05058393254876137
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050583504140377045
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05058305710554123
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05058298632502556
+   }
+  ]
+ },
+ {
+  "c1": 0.65,
+  "c2": 1.15,
+  "G": -2.5,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13086247444152832
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12849009037017822
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13037189841270447
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12925836443901062
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12934079766273499
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12944841384887695
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12936604022979736
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12939400970935822
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12939459085464478
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12939055263996124
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12939423322677612
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12939445674419403
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12939517199993134
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12939605116844177
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12939681112766266
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12939754128456116
+   }
+  ]
+ },
+ {
+  "c1": 0.55,
+  "c2": 1.15,
+  "G": -1.0,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.0257249865680933
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027644487097859383
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02778014726936817
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027317790314555168
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027099397033452988
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027195226401090622
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027315715327858925
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027301836758852005
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02726733312010765
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027266519144177437
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027272650972008705
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027275098487734795
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027275139465928078
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027274170890450478
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.027273990213871002
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.02727445401251316
+   }
+  ]
+ },
+ {
+  "c1": 0.55,
+  "c2": 1.15,
+  "G": -1.5,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04884050041437149
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04984799027442932
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.04875120893120766
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.0495293103158474
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05011584609746933
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050159502774477005
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05017724260687828
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050194110721349716
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05021378770470619
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05021209642291069
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050207484513521194
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05020533502101898
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.050204768776893616
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05020418390631676
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.0502038300037384
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.05020381510257721
+   }
+  ]
+ },
+ {
+  "c1": 0.55,
+  "c2": 1.15,
+  "G": -2.5,
+  "nan": null,
+  "hist": [
+   {
+    "step": 250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.13082237541675568
+   },
+   {
+    "step": 500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12684324383735657
+   },
+   {
+    "step": 750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12972569465637207
+   },
+   {
+    "step": 1000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12865085899829865
+   },
+   {
+    "step": 1250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1285497099161148
+   },
+   {
+    "step": 1500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12873074412345886
+   },
+   {
+    "step": 1750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1286402940750122
+   },
+   {
+    "step": 2000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12865671515464783
+   },
+   {
+    "step": 2250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1286662369966507
+   },
+   {
+    "step": 2500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12865954637527466
+   },
+   {
+    "step": 2750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1286628693342209
+   },
+   {
+    "step": 3000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1286637932062149
+   },
+   {
+    "step": 3250,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1286640614271164
+   },
+   {
+    "step": 3500,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.1286650002002716
+   },
+   {
+    "step": 3750,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12866556644439697
+   },
+   {
+    "step": 4000,
+    "ratio": NaN,
+    "diss": NaN,
+    "Req": 0.0,
+    "maxu": 0.12866617739200592
+   }
+  ]
+ }
+]

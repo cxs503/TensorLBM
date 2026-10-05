@@ -1,0 +1,308 @@
+{
+ "kind": "result",
+ "task": "W9-B Hadamard-Rybczynski droplet terminal velocity (creeping, Re<<1)",
+ "verdict": "FAIL \u2014 module capability (benchmark unrunnable: no 3D multiphase module represents a buoyant viscous droplet with any viscosity ratio lambda != 1; formal Phase-2 ladder never started, prereg gates never reached)",
+ "baseline": "bm_w9 @ e717b464 (= main 2026-09-29); fp32 torch 2.11+cu128; grid 96^3, a=12, droplet_y0=24",
+ "reference_lock": {
+  "terminal_velocity": "U_t = (2/3) a^2 g (rho_o - rho_i) (1+lambda) / (mu_o (2+3lambda)), lambda = mu_i/mu_o",
+  "sources": "drag form Pigeonneau 1998 (thesis, literature aggregate) + terminal-velocity form Clift, Grace & Weber 2005 (via Wikipedia Hadamard-Rybczynski equation); force balance closes the two; limit checks lambda->inf = Stokes (2/9), lambda->0 = clean bubble (1/3, 1.5x rigid)",
+  "lattice_form_lambda_rho_lock": "U_t = (2/3) a^2 g (1 - r^2) / (nu (2 + 3r)), r = rho_i/rho_o",
+  "hand_example_recomputed_rel_dev": 2.220446049250313e-16,
+  "hand_example_re_note": "prereg printed Re=0.14396685714285715, exact 144*U_t=0.14396708571428576 (rel dev 1.59e-06); U_t check unaffected",
+  "hand_example": {
+   "r": 0.5,
+   "a": 12.0,
+   "nu": 0.16666666666666666,
+   "g": 8.1e-06,
+   "ut": 0.0009997714285714286,
+   "re": 0.14396685714285715,
+   "U_t_recomputed": 0.0009997714285714288,
+   "Re_recomputed": 0.14396708571428576
+  }
+ },
+ "module_exclusion": {
+  "headline": "every viable 3D configuration locks lambda = rho (single tau); the preregistered lambda ladder degenerates: lambda=1 <=> zero density contrast <=> zero buoyancy <=> U_t = 0 unmeasurable",
+  "E1_color_gradient_3d_contrast_collapse": {
+   "init_ratio_total": 1.028876543045044,
+   "final_ratio_total": 1.0024418830871582,
+   "init_r1_ctr": 1.030517339706421,
+   "final_r1_ctr": 1.0002877712249756,
+   "first_step": 100,
+   "last_step": 2000
+  },
+  "E2_mcmp19_Gplus2.5_nan_step": 50,
+  "E3_mcmp19_Gminus2.5_crush_inversion": {
+   "r1_ctr_first": 1.2211779356002808,
+   "r1_ctr_last": 0.59615159034729,
+   "comp2_in_core_last": 0.3321268856525421,
+   "steps": [
+    50,
+    250
+   ]
+  },
+  "E4_allen_cahn_3d_dissolution": {
+   "vol_lt_-0.5_first": 2492,
+   "vol_lt_-0.5_last": 0,
+   "steps": [
+    25,
+    1000
+   ],
+   "sensitivity_W_sigma_series": {
+    "W2.0_sig0.0": [
+     298,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "W2.0_sig0.01": [
+     398,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "W8.0_sig0.0": [
+     432,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "W8.0_sig0.01": [
+     452,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  "E5_d27_Gplus2.5_nan_step": 50,
+  "E6_d27_Gminus2.5_inversion": {
+   "r1_ctr_first": 1.2209757566452026,
+   "r1_ctr_last": 0.5874204635620117,
+   "comp2_in_core_last": 0.3385912775993347,
+   "steps": [
+    50,
+    250
+   ]
+  },
+  "envelope_15_cases": {
+   "provenance": "probe/p0b_envelope.json (contrasts 1.05-2.1 x G in [-2.5, +1.5])",
+   "nan_cases": 1,
+   "mixed_or_inverted": 14,
+   "sustained_contrast_droplet_cases": 0,
+   "rows": [
+    {
+     "contrast_in_out": "0.9/1.1",
+     "G": -1.0,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.027280136942863464,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.9/1.1",
+     "G": -1.5,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.04950607940554619,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.9/1.1",
+     "G": -2.5,
+     "nan_step": 250,
+     "end_ratio": null,
+     "end_Req": null,
+     "end_maxu": null,
+     "state": "NaN"
+    },
+    {
+     "contrast_in_out": "0.85/1.15",
+     "G": -1.0,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.027927260845899582,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.85/1.15",
+     "G": -1.5,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.05133660510182381,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.85/1.15",
+     "G": -2.5,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.13081037998199463,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.75/1.15",
+     "G": -1.0,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.027710262686014175,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.75/1.15",
+     "G": -1.5,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.05096064880490303,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.75/1.15",
+     "G": -2.5,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.1301119327545166,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.65/1.15",
+     "G": -1.0,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.027492688968777657,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.65/1.15",
+     "G": -1.5,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.05058298632502556,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.65/1.15",
+     "G": -2.5,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.12939754128456116,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.55/1.15",
+     "G": -1.0,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.02727445401251316,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.55/1.15",
+     "G": -1.5,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.05020381510257721,
+     "state": "mixed/inverted"
+    },
+    {
+     "contrast_in_out": "0.55/1.15",
+     "G": -2.5,
+     "nan_step": null,
+     "end_ratio": NaN,
+     "end_Req": 0.0,
+     "end_maxu": 0.12866617739200592,
+     "state": "mixed/inverted"
+    }
+   ]
+  },
+  "static_branches": [
+   "SCMP 3D: lambda fixed ~12.3 by coexistence; spurious max|u| 0.137-0.140 >> U_t ~ 1e-3 (verified/laplace_droplet archive)",
+   "SC-MCMP unequal tau: W5-A structural bias 26.8/33.2% anti-convergent + NaN (pending/two_phase_poiseuille)",
+   "phasefield free-energy package: lambda == 1 (Boussinesq), no buoyancy contrast possible",
+   "free-surface family: one-fluid + flag, no viscous droplet interior; multiphase.py: 2D only, same locks"
+  ]
+ },
+ "library_gaps": [
+  {
+   "id": "G1",
+   "gap": "multiphase3d G_12 sign bug: docstring + StaticDroplet3DConfig validation demand G_12 > 0 for phase separation, implementation makes +G attractive (mixing; +2.5 NaNs) \u2014 segregation needs G < 0; validated default G=0.9 yields a MIXED state so the library's own sigma_eff measurement is vacuous; same wording bug in multiphase3d_d3q27",
+   "status": "fixed by Wave-10 track M2 (MCMP3D G1), archive pending"
+  },
+  {
+   "id": "G2",
+   "gap": "no module separates viscosity ratio from density ratio with acceptable accuracy (headline)",
+   "status": "open (Wave-10 M1 phasefield rebuild addresses the long-term path)"
+  },
+  {
+   "id": "G3",
+   "gap": "no 3D two-phase module sustains a total-density contrast droplet (kills every buoyant-drop/bubble benchmark class in 3D): CG collapses acoustically (EOS), SC-MCMP inverts by pressure crush at every probed G/contrast",
+   "status": "open"
+  },
+  {
+   "id": "G4",
+   "gap": "allen_cahn_lbm is an unvalidated orphan (zero tests/benchmarks): curvature-less sigma force, no solid-skip in collision, non-conserving phase equation, hardcoded mobility/tau_phi; fix path = Fakhari/Geier full scheme",
+   "status": "open"
+  },
+  {
+   "id": "G5",
+   "gap": "bounce_back_cells_3d hardcodes the 19-direction OPPOSITE table (fails on 27-q fields; boundaries_d3q27.bounce_back_cells_27 exists \u2014 composition footgun)",
+   "status": "open"
+  }
+ ],
+ "design_constraint": {
+  "name": "equivalence principle",
+  "statement": "periodic domain + per-mass gravity on all components = free fall, no relative motion; walls (momentum sink) are mandatory for buoyancy benchmarks \u2014 the W4-A-validated tank composition (channel|tank union + full-way bounce-back) was probed innocent (probe/p0b_diag.json: G=0 + walls stable, spurious decays 1.9e-2 -> 5e-4)"
+ },
+ "outcome": {
+  "conclusion_then": "HR needs a from-scratch phase-field development",
+  "resolution": "delivered by the revival arc: phasefield development R2 -> Wave-10 track M1, merged as PR #323 (laplace_cac_phasefield in verified/)"
+ },
+ "artifacts": {
+  "canonical_evidence": "out/evidence.json (generator out/evidence.py)",
+  "probes": [
+   "probe/p0_static.json (CG collapse + first MCMP NaN scan)",
+   "probe/p0b_scan.json (G>=1 asym NaN matrix)",
+   "probe/p0b_diag.json (walls innocent)",
+   "probe/p0b_gsweep.json (G window)",
+   "probe/p0b_envelope.json (15-case contrast x G envelope)",
+   "probe/p_final_diligence.json (AC W/sigma sensitivity + D27 inversion)"
+  ],
+  "integrity_note": "probe/p1_ac.{log,json} were corrupted by an accidental concurrent double launch; the AC conclusions are independently re-established in out/evidence.json E4 and p_final_diligence.json (clean single-process runs)"
+ }
+}

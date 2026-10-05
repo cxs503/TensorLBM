@@ -1,0 +1,789 @@
+{
+ "kind": "result",
+ "case": "thermal_cavity_3d",
+ "title": "3D differentially-heated cubic cavity natural convection (D3Q19 BGK + D3Q7 passive scalar, Pr=0.71) with high-Pr capability tiers",
+ "track": "W9-A (benchmark widening campaign Wave-9), library baseline e717b464",
+ "lattice": "D3Q19 (velocity) + D3Q7 (temperature, W=[1/4, 1/8 x 6], alpha=(tau_T-1/2)/4 self-calibrated conductivity)",
+ "collision": "bgk + post-collision raw buoyancy increment (apply_buoyancy_3d, unscaled) restricted to fluid nodes (force_mask)",
+ "stack": {
+  "fluid_walls": "full-way bounce-back, library boundaries3d.bounce_back_cells_3d applied after streaming (bb=post)",
+  "temperature_walls": "library thermal3d.apply_temperature_boundaries_3d (isothermal walls frozen on the node; adiabatic walls de-wrapped reflect, PR #303)",
+  "buoyancy": "thermal_common.apply_buoyancy_3d post-collision, raw increment (no Guo 1-1/(2 tau) factor; tau-invariance 2x2 discrimination archived), fluid-node masked",
+  "library_changes": "none (src_patched/ empty; force_mask is a driver-layer multiply)"
+ },
+ "reference": {
+  "primary": "cluster median of six published 3D cubic-cavity Nu solutions transcribed in Jimenez-Islas et al. 2014 Rev. Mex. Ing. Quim. 13(1):259-277 Table 3 (controller-locked, prereg section 2)",
+  "medians": {
+   "1e3": 1.07065,
+   "1e4": 2.05552,
+   "1e5": 4.3411
+  },
+  "per_source": {
+   "ra1e3": {
+    "Tric": 1.07,
+    "Lo": 1.07,
+    "Ravnik": 1.0713,
+    "Brahim": 1.07124,
+    "W&S": null,
+    "Bessonov": null
+   },
+   "ra1e4": {
+    "W&S": 2.0624,
+    "Bessonov": 2.055,
+    "Tric": 2.0542,
+    "Lo": 2.054,
+    "Ravnik": 2.0591,
+    "Brahim": 2.05604
+   },
+   "ra1e5": {
+    "W&S": 4.3665,
+    "Bessonov": 4.339,
+    "Tric": 4.337,
+    "Lo": 4.335,
+    "Ravnik": 4.357,
+    "Brahim": 4.3432
+   }
+  }
+ },
+ "nu_convention": {
+  "definition": "Nu_face = L * mean_fullface(T_wall - T_adj); Nu = (Nu_hot + Nu_cold)/2",
+  "gradient": "one-sided first difference across the wall-adjacent link (grad1)",
+  "face_mean": "full y-z face INCLUDING corner nodes (cluster-comparable; verified/cavity convention)",
+  "L": 31.0,
+  "L_basis": "nx-1 (isothermal surface on the node: #303 T-slab + full-way BB)",
+  "sample_every_steps": 500,
+  "steady_window": "last 20% of recorded history samples",
+  "recompute_hint": "nu_hot = mean(T_x0_hot_wall - T_x1_hot_adj) * L; nu_cold = mean(T_xm2_cold_adj - T_xm1_cold_wall) * L (must reproduce history[-1].nu_hot/nu_cold bitwise)"
+ },
+ "acceptance": {
+  "criterion": "per Ra ladder: finest-grid |Nu err| vs cluster median <= 3% AND |err| monotonically decreasing with refinement (>= 3 grids per Ra); direct observable, no extrapolation (Richardson vetoed by controller ruling)",
+  "gate_result": "PASS all three Ra ladders",
+  "finest_err_pct": {
+   "ra1e3": -0.5524486397970985,
+   "ra1e4": -1.468032189400792,
+   "ra1e5": -2.370069166089972
+  },
+  "monotone": {
+   "ra1e3": true,
+   "ra1e4": true,
+   "ra1e5": true
+  }
+ },
+ "verdict": "VERIFIED CANDIDATE (all gates pass; promotion owner decision)",
+ "ladder": {
+  "ra1e3": {
+   "cluster_median": 1.07065,
+   "cases": [
+    {
+     "archive": "out/probe_fm_ra1e3_n32.json",
+     "n": 32,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 40000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 5.253080550894758e-05,
+      "L": 31.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 16,
+      "first_step": 32500,
+      "last_step": 39999
+     },
+     "nu_win": 1.057619970291853,
+     "nu_hot_win": 1.0576222613453865,
+     "nu_cold_win": 1.0576176792383194,
+     "window_drift_pct": 7.326453772107323e-05,
+     "cluster_median": 1.07065,
+     "err_pct": -1.2170204743050639,
+     "last_row": {
+      "step": 39999,
+      "nu_hot": 1.0576220750808716,
+      "nu_cold": 1.0576179027557373,
+      "nu": 1.0576199889183044,
+      "u_max": 0.005237606819719076,
+      "sumT": 16383.4287109375,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 31.0,
+      "nu_hot_from_faces": 1.057622077583801,
+      "nu_cold_from_faces": 1.0576179044837772,
+      "nu_recomposed": 1.0576199910337891,
+      "dev_vs_history_end_pct": 2.000231313914469e-07
+     },
+     "energy": {
+      "sumT_first": 16384.001953125,
+      "sumT_last": 16383.4287109375,
+      "rel_drift": -3.498792231226893e-05
+     },
+     "ma_last": 0.009071801121822685,
+     "hot_cold_imbal_pct": 0.00039450135001179836,
+     "nan_at": null
+    },
+    {
+     "archive": "out/probe_fm_ra1e3_n48.json",
+     "n": 48,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 90000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 1.5073203692024478e-05,
+      "L": 47.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 36,
+      "first_step": 72500,
+      "last_step": 89999
+     },
+     "nu_win": 1.0624261084530089,
+     "nu_hot_win": 1.062426980998781,
+     "nu_cold_win": 1.0624252359072368,
+     "window_drift_pct": -9.537406442854354e-05,
+     "cluster_median": 1.07065,
+     "err_pct": -0.7681213792547714,
+     "last_row": {
+      "step": 89999,
+      "nu_hot": 1.062426209449768,
+      "nu_cold": 1.0624254941940308,
+      "nu": 1.0624258518218994,
+      "u_max": 0.003487634239718318,
+      "sumT": 55295.078125,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 47.0,
+      "nu_hot_from_faces": 1.0624263166553445,
+      "nu_cold_from_faces": 1.0624254603624448,
+      "nu_recomposed": 1.0624258885088946,
+      "dev_vs_history_end_pct": 3.453134644892941e-06
+     },
+     "energy": {
+      "sumT_first": 55296.0,
+      "sumT_last": 55295.078125,
+      "rel_drift": -1.667163990162037e-05
+     },
+     "ma_last": 0.00604075970140898,
+     "hot_cold_imbal_pct": 6.732288527035861e-05,
+     "nan_at": null
+    },
+    {
+     "archive": "out/probe_fm_ra1e3_n64.json",
+     "n": 64,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 160000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 6.258604290061698e-06,
+      "L": 63.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 64,
+      "first_step": 128500,
+      "last_step": 159999
+     },
+     "nu_win": 1.0647352086380124,
+     "nu_hot_win": 1.0647358261048794,
+     "nu_cold_win": 1.0647345911711454,
+     "window_drift_pct": 0.00017913830756591034,
+     "cluster_median": 1.07065,
+     "err_pct": -0.5524486397970985,
+     "last_row": {
+      "step": 159999,
+      "nu_hot": 1.064734935760498,
+      "nu_cold": 1.064734935760498,
+      "nu": 1.064734935760498,
+      "u_max": 0.0026140064001083374,
+      "sumT": 131070.921875,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 63.0,
+      "nu_hot_from_faces": 1.064734941945062,
+      "nu_cold_from_faces": 1.0647349164903517,
+      "nu_recomposed": 1.0647349292177068,
+      "dev_vs_history_end_pct": -6.144995290391364e-07
+     },
+     "energy": {
+      "sumT_first": 131072.0,
+      "sumT_last": 131070.921875,
+      "rel_drift": -8.225440979003906e-06
+     },
+     "ma_last": 0.00452759189629786,
+     "hot_cold_imbal_pct": 0.0,
+     "nan_at": null
+    }
+   ],
+   "errs_pct": [
+    -1.2170204743050639,
+    -0.7681213792547714,
+    -0.5524486397970985
+   ],
+   "abs_err_monotone_decreasing": true
+  },
+  "ra1e4": {
+   "cluster_median": 2.05552,
+   "cases": [
+    {
+     "archive": "out/probe_fm_ra1e4_n32.json",
+     "n": 32,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 60000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 0.0005253080550894758,
+      "L": 31.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 24,
+      "first_step": 48500,
+      "last_step": 59999
+     },
+     "nu_win": 1.914303643008073,
+     "nu_hot_win": 1.9143658926089604,
+     "nu_cold_win": 1.9142413934071858,
+     "window_drift_pct": -4.047740205218898e-05,
+     "cluster_median": 2.05552,
+     "err_pct": -6.870103768969749,
+     "last_row": {
+      "step": 59999,
+      "nu_hot": 1.9143657684326172,
+      "nu_cold": 1.9142415523529053,
+      "nu": 1.9143036603927612,
+      "u_max": 0.028579596430063248,
+      "sumT": 16380.03125,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 31.0,
+      "nu_hot_from_faces": 1.9143657111562788,
+      "nu_cold_from_faces": 1.9142414617072063,
+      "nu_recomposed": 1.9143035864317426,
+      "dev_vs_history_end_pct": -3.863599085107694e-06
+     },
+     "energy": {
+      "sumT_first": 16384.001953125,
+      "sumT_last": 16380.03125,
+      "rel_drift": -0.0002423524567660741
+     },
+     "ma_last": 0.04950131307668365,
+     "hot_cold_imbal_pct": 0.006488838854668878,
+     "nan_at": null
+    },
+    {
+     "archive": "out/probe_fm_ra1e4_n48.json",
+     "n": 48,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 120000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 0.00015073203692024477,
+      "L": 47.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 48,
+      "first_step": 96500,
+      "last_step": 119999
+     },
+     "nu_win": 1.9673278592526913,
+     "nu_hot_win": 1.96734169870615,
+     "nu_cold_win": 1.9673140197992325,
+     "window_drift_pct": 0.0,
+     "cluster_median": 2.05552,
+     "err_pct": -4.290502682888453,
+     "last_row": {
+      "step": 119999,
+      "nu_hot": 1.9673415422439575,
+      "nu_cold": 1.967313528060913,
+      "nu": 1.9673275351524353,
+      "u_max": 0.018882518634200096,
+      "sumT": 55289.8515625,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 47.0,
+      "nu_hot_from_faces": 1.9673416598751727,
+      "nu_cold_from_faces": 1.9673134440058169,
+      "nu_recomposed": 1.9673275519404947,
+      "dev_vs_history_end_pct": 8.533433959456715e-07
+     },
+     "energy": {
+      "sumT_first": 55296.0,
+      "sumT_last": 55289.8515625,
+      "rel_drift": -0.00011119136103877315
+     },
+     "ma_last": 0.03270548164930065,
+     "hot_cold_imbal_pct": 0.0014239714813051177,
+     "nan_at": null
+    },
+    {
+     "archive": "out/probe_fm_ra1e4_n64.json",
+     "n": 64,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 200000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 6.258604290061698e-05,
+      "L": 63.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 80,
+      "first_step": 160500,
+      "last_step": 199999
+     },
+     "nu_win": 1.9917223669588566,
+     "nu_hot_win": 1.9917280539870261,
+     "nu_cold_win": 1.991716679930687,
+     "window_drift_pct": 0.00014364567053525742,
+     "cluster_median": 2.05552,
+     "err_pct": -3.103722320441704,
+     "last_row": {
+      "step": 199999,
+      "nu_hot": 1.9917283058166504,
+      "nu_cold": 1.9917173385620117,
+      "nu": 1.991722822189331,
+      "u_max": 0.014096858911216259,
+      "sumT": 131063.640625,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 63.0,
+      "nu_hot_from_faces": 1.991728356020758,
+      "nu_cold_from_faces": 1.991717192461465,
+      "nu_recomposed": 1.9917227742411114,
+      "dev_vs_history_end_pct": -2.4073741111685365e-06
+     },
+     "energy": {
+      "sumT_first": 131072.0,
+      "sumT_last": 131063.640625,
+      "rel_drift": -6.377696990966797e-05
+     },
+     "ma_last": 0.024416475861356646,
+     "hot_cold_imbal_pct": 0.0005506416111965071,
+     "nan_at": null
+    },
+    {
+     "archive": "out/probe_fm_ra1e4_n96.json",
+     "n": 96,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 360000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 1.8252750860674236e-05,
+      "L": 95.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 144,
+      "first_step": 288500,
+      "last_step": 359999
+     },
+     "nu_win": 2.014555106560389,
+     "nu_hot_win": 2.014557608299785,
+     "nu_cold_win": 2.0145526048209934,
+     "window_drift_pct": 8.284360394392165e-05,
+     "cluster_median": 2.05552,
+     "err_pct": -1.9929211800231106,
+     "last_row": {
+      "step": 359999,
+      "nu_hot": 2.0145535469055176,
+      "nu_cold": 2.0145516395568848,
+      "nu": 2.014552593231201,
+      "u_max": 0.009370277635753155,
+      "sumT": 442356.03125,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 95.0,
+      "nu_hot_from_faces": 2.014553575330259,
+      "nu_cold_from_faces": 2.014551635672635,
+      "nu_recomposed": 2.014552605501447,
+      "dev_vs_history_end_pct": 6.090804305358688e-07
+     },
+     "energy": {
+      "sumT_first": 442368.0,
+      "sumT_last": 442356.03125,
+      "rel_drift": -2.7056093569155092e-05
+     },
+     "ma_last": 0.016229796946150843,
+     "hot_cold_imbal_pct": 9.467852262686507e-05,
+     "nan_at": null
+    },
+    {
+     "archive": "out/probe_fm_ra1e4_n128.json",
+     "n": 128,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 640000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 7.639905363972739e-06,
+      "L": 127.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 256,
+      "first_step": 512500,
+      "last_step": 639999
+     },
+     "nu_win": 2.025344304740429,
+     "nu_hot_win": 2.025343985296786,
+     "nu_cold_win": 2.025344624184072,
+     "window_drift_pct": 0.00021777747630638994,
+     "cluster_median": 2.05552,
+     "err_pct": -1.468032189400792,
+     "last_row": {
+      "step": 639999,
+      "nu_hot": 2.0253498554229736,
+      "nu_cold": 2.0253474712371826,
+      "nu": 2.025348663330078,
+      "u_max": 0.007016217336058617,
+      "sumT": 1048560.25,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 127.0,
+      "nu_hot_from_faces": 2.0253499441569147,
+      "nu_cold_from_faces": 2.025347348531625,
+      "nu_recomposed": 2.02534864634427,
+      "dev_vs_history_end_pct": -8.386609517962995e-07
+     },
+     "energy": {
+      "sumT_first": 1048576.0,
+      "sumT_last": 1048560.25,
+      "rel_drift": -1.5020370483398438e-05
+     },
+     "ma_last": 0.012152444902999085,
+     "hot_cold_imbal_pct": 0.00011771730142974725,
+     "nan_at": null
+    }
+   ],
+   "errs_pct": [
+    -6.870103768969749,
+    -4.290502682888453,
+    -3.103722320441704,
+    -1.9929211800231106,
+    -1.468032189400792
+   ],
+   "abs_err_monotone_decreasing": true
+  },
+  "ra1e5": {
+   "cluster_median": 4.3411,
+   "cases": [
+    {
+     "archive": "out/probe_fm_ra1e5_n64.json",
+     "n": 64,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 200000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 0.0006258604290061698,
+      "L": 63.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 80,
+      "first_step": 160500,
+      "last_step": 199999
+     },
+     "nu_win": 4.109240341186523,
+     "nu_hot_win": 4.109191101789475,
+     "nu_cold_win": 4.109289580583573,
+     "window_drift_pct": 5.8020110605825575e-06,
+     "cluster_median": 4.3411,
+     "err_pct": -5.341034733442596,
+     "last_row": {
+      "step": 199999,
+      "nu_hot": 4.109189987182617,
+      "nu_cold": 4.10929012298584,
+      "nu": 4.1092400550842285,
+      "u_max": 0.0529589019715786,
+      "sumT": 131111.46875,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 63.0,
+      "nu_hot_from_faces": 4.109190242132172,
+      "nu_cold_from_faces": 4.109290212047654,
+      "nu_recomposed": 4.109240227089913,
+      "dev_vs_history_end_pct": 4.1858271071504305e-06
+     },
+     "energy": {
+      "sumT_first": 131072.0,
+      "sumT_last": 131111.46875,
+      "rel_drift": 0.00030112266540527344
+     },
+     "ma_last": 0.09172750892783373,
+     "hot_cold_imbal_pct": 0.002436844815107881,
+     "nan_at": null
+    },
+    {
+     "archive": "out/probe_fm_ra1e5_n96.json",
+     "n": 96,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 360000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 0.00018252750860674234,
+      "L": 95.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 144,
+      "first_step": 288500,
+      "last_step": 359999
+     },
+     "nu_win": 4.198412671685219,
+     "nu_hot_win": 4.198406365182665,
+     "nu_cold_win": 4.198418978187773,
+     "window_drift_pct": -6.246656951577104e-05,
+     "cluster_median": 4.3411,
+     "err_pct": -3.286893375291544,
+     "last_row": {
+      "step": 359999,
+      "nu_hot": 4.1984052658081055,
+      "nu_cold": 4.198417663574219,
+      "nu": 4.198411464691162,
+      "u_max": 0.035136960446834564,
+      "sumT": 442436.3125,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 95.0,
+      "nu_hot_from_faces": 4.198405517155253,
+      "nu_cold_from_faces": 4.198417917291408,
+      "nu_recomposed": 4.198411717223331,
+      "dev_vs_history_end_pct": 6.0149456748703756e-06
+     },
+     "energy": {
+      "sumT_first": 442368.0,
+      "sumT_last": 442436.3125,
+      "rel_drift": 0.00015442459671585648
+     },
+     "ma_last": 0.06085900071745551,
+     "hot_cold_imbal_pct": 0.00029529659533247387,
+     "nan_at": null
+    },
+    {
+     "archive": "out/probe_fm_ra1e5_n128.json",
+     "n": 128,
+     "pr": 0.71,
+     "tau_f": 0.6,
+     "dtype": "fp32",
+     "steps": 800000,
+     "sample_every_steps": 500,
+     "derived_params": {
+      "nu_lu": 0.033333333333333326,
+      "alpha_lu": 0.04694835680751173,
+      "tau_T": 0.6877934272300469,
+      "g_beta": 7.63990536397274e-05,
+      "L": 127.0
+     },
+     "window": {
+      "rule": "last 20% of history rows",
+      "rows": 320,
+      "first_step": 640500,
+      "last_step": 799999
+     },
+     "nu_win": 4.238212927430868,
+     "nu_hot_win": 4.238212862610817,
+     "nu_cold_win": 4.2382129922509195,
+     "window_drift_pct": -9.000721131624229e-05,
+     "cluster_median": 4.3411,
+     "err_pct": -2.370069166089972,
+     "last_row": {
+      "step": 799999,
+      "nu_hot": 4.238208770751953,
+      "nu_cold": 4.238211154937744,
+      "nu": 4.238209962844849,
+      "u_max": 0.02627602219581604,
+      "sumT": 1048673.375,
+      "T_min": 0.0,
+      "T_max": 1.0
+     },
+     "wall_flux_recompose": {
+      "definition": "full-face mean of one-sided first difference across the wall-adjacent link, corners included",
+      "L": 127.0,
+      "nu_hot_from_faces": 4.238208870734525,
+      "nu_cold_from_faces": 4.2382112404881696,
+      "nu_recomposed": 4.238210055611347,
+      "dev_vs_history_end_pct": 2.1888131751524043e-06
+     },
+     "energy": {
+      "sumT_first": 1048576.0,
+      "sumT_last": 1048673.375,
+      "rel_drift": 9.28640365600586e-05
+     },
+     "ma_last": 0.045511405463960916,
+     "hot_cold_imbal_pct": 5.6254546422123654e-05,
+     "nan_at": null
+    }
+   ],
+   "errs_pct": [
+    -5.341034733442596,
+    -3.286893375291544,
+    -2.370069166089972
+   ],
+   "abs_err_monotone_decreasing": true
+  }
+ },
+ "tau_invariance": [
+  {
+   "base_archive": "out/probe_fm_ra1e4_n32.json",
+   "tau09_archive": "out/probe_t09fm_ra1e4_n32.json",
+   "nu_tau06": 1.914303643008073,
+   "nu_tau09": 1.9086401648819447,
+   "diff_pct": -0.2958505640844433
+  },
+  {
+   "base_archive": "out/probe_fm_ra1e4_n64.json",
+   "tau09_archive": "out/probe_t09fm_ra1e4_n64.json",
+   "nu_tau06": 1.9917223669588566,
+   "nu_tau09": 1.9904449470341206,
+   "diff_pct": -0.06413644521583439
+  }
+ ],
+ "capability_tiers_high_pr": [
+  {
+   "archive": "out/probe_cap_pr100.json",
+   "pr": 100.0,
+   "ra": 10000.0,
+   "n": 32,
+   "dtype": "fp32",
+   "tau_f": 0.6,
+   "steps": 5600000,
+   "window_rows": 2240,
+   "nu_win": 1.93902611288109,
+   "window_drift_pct": -0.018037923946382723,
+   "last_row": {
+    "step": 5599999,
+    "nu_hot": 1.9393593072891235,
+    "nu_cold": 1.9385106563568115,
+    "nu": 1.9389349818229675,
+    "u_max": 0.00020988704636693,
+    "sumT": 16378.3388671875,
+    "T_min": 0.0,
+    "T_max": 1.0
+   },
+   "nan_at": null,
+   "note": "capability disclosure only: no cluster reference exists at this Pr; steady state evidenced by window drift"
+  },
+  {
+   "archive": "out/probe_cap_pr1000_fp64.json",
+   "pr": 1000.0,
+   "ra": 10000.0,
+   "n": 32,
+   "dtype": "fp64",
+   "tau_f": 0.6,
+   "steps": 56000000,
+   "window_rows": 224,
+   "nu_win": 1.9299815402333476,
+   "window_drift_pct": 2.623142702017041e-12,
+   "last_row": {
+    "step": 55999999,
+    "nu_hot": 1.9300809061711655,
+    "nu_cold": 1.9298821742936192,
+    "nu": 1.9299815402323923,
+    "u_max": 2.0766968847530513e-05,
+    "sumT": 16379.587650122092,
+    "T_min": 0.0,
+    "T_max": 1.0
+   },
+   "nan_at": null,
+   "note": "capability disclosure only: no cluster reference exists at this Pr; steady state evidenced by window drift"
+  }
+ ],
+ "fp32_vs_fp64": {
+  "archives": [
+   "out/probe_conv32f_lib.json",
+   "out/probe_conv64_lib.json"
+  ],
+  "case": "pure conduction N=32 Ra=1e4 stack, library temperature BC arm, final history row nu_hot (node convention)",
+  "nu_hot_fp32": 1.8134567737579346,
+  "nu_hot_fp64": 1.813457338051353,
+  "rel_dev": 3.1116994406013993e-07,
+  "statement": "fp32 and fp64 agree to 7 significant digits (rel dev 3.112e-07); NOT bitwise identical"
+ },
+ "disclosures": [
+  "fp32 vs fp64: agreement is 7 significant digits (rel dev 3.112e-07 on the conduction-pair nu_hot), not bitwise identity",
+  "force_mask is a driver-layer flag (library untouched, src_patched/ empty): the buoyancy increment is multiplied by the fluid mask; without it the bb=post stack develops a slow linear instability (NaN at 17k/55k/131k steps for N=32/48/64) from forcing bounced solid nodes",
+  "bb=post (full-way bounce-back, wall on the node) is a BC recipe choice pairing with the #303 node-located isothermal temperature walls; the half-way pre-bounce alternative leaves a wall-location mismatch and only first-order convergence (archived in staging)",
+  "tau=0.6 for all gated ladders (tau=0.9 reaches Ma=0.22 at Ra=1e5, compressibility ~-1.7%); tau invariance on the fixed stack documented in tau_invariance",
+  "capability tiers have no cluster reference (no published high-Pr 3D cavity solution table exists; Turan et al. provide correlations only) and are stability disclosures, not gates"
+ ],
+ "anchors_check": "PASS (13 ladder Nu/err + 3 monotone + 2 tau pairs + 2 capability tiers + fp32/fp64 pair + config echo)"
+}

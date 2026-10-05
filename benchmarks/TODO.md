@@ -172,6 +172,20 @@
 | B58 | 球 Re=100 域形修复复判（bfl D40/D60 lat2.0/up2.75/down2.25，24k 步 + bb 副观测） | ❌ **FAIL 维持（3% 门），地板定源+压降 ~7.2pp**——正式对 **+4.20/+4.01%** 双出 3% 门（对 W5-B +11.28/+11.21%）、\|err\| 单调过、CV 窗闭合 0.102/0.010%；**主因=入口平面 Dirichlet 钳制**（far_field_bc_3d 压制球前势流减速；up 1.25→4.0 五点签名 err≈E0+C·(a/x)³ R²=0.9998）；碰撞算子不敏感（MRT/TRT Λ=3/16/魔术/BGK 0.15pp 带——墙位 τ 耦合假设球侧被杀，与 B59 互为独立复核）；大域 D40 **+2.77%** 单点达标形，但 D60 孪生 84.7M 胞=2.6× 实测显存天花板（32.4M FITS）→ 无阶梯不晋级；破门=多卡分域/BFL 核显存优化（另立项）→ pending/sphere_re100_mem/ w7/ 补充 |
 | B59 | Blasius 平板边界层复活（BGK vs TRT Λ=3/16，plate200/plate400/y1600，30k 步，修正 FD 口径） | ❌ **FAIL（最好 +27.3%）**——**旧档 +76~102% 首因=测量公式 bug**（首 3 行二阶单侧差分权重解错方程，buggy=正确+0.75·u(0.5)，占 +48pp；旧"随 τ 恶化"结论作废）；修正口径 47.1-47.3%（plate200）/27.3-28.1%（plate400），单调过；基线复现过（+101.91% vs 旧 +102.0%）；**TRT Λ=3/16 ≡ BGK**（0.23-0.73pp；τ 阶梯 cf_ue +18.99→+47.64% 全同 0.12-0.39pp）→ 低 τ 墙位假设 blasius 侧也被杀；残差=有限 Re_x=900 边缘加速（u_e/U=1.0805→+21pp）+cf_ue ~+14% 位移物理 → pending/blasius_flat_plate/ 判决记录替换 |
 
+## 2026-09-29 新增（Wave-9：玻璃产业基准三轨）
+
+> 三轨（A 高 Pr 差热立方腔 / B Hadamard–Rybczynski 液滴终端速度 / C Gebart
+> 纤维横向渗透率）。W9-A verified 候选、W9-B
+> FAIL·模块能力（修复路径已由 Wave-10 M1 PR #323 走通）、W9-C FAIL（诚实
+> 定源，方阵三档 verified 候选）。
+> 工件随本 PR 入库 benchmarks/。
+
+| # | 案例 | 状态 |
+|---|------|------|
+| B60 | 高 Pr 差热立方腔自然对流（D3Q19 BGK + D3Q7 温度 α=(τ_T−1/2)/4，Pr=0.71 判据 Ra=1e3/1e4/1e5 × N=32–128 共 11 案；Pr=100 fp32 5.6M 步 / Pr=1000 fp64 56M 步能力档；全反弹 bb=post + 节点等温温度壁（#303）+ apply_buoyancy_3d 原始增量 force_mask） | ✅ **verified 候选 verified/thermal_cavity_3d/**——三条 Ra 阶梯全过门：finest err **−0.55/−1.47/−2.37%**（全 ≤3%）且 \|err\| 随加密严格单调；参考=六源 3D 立方腔簇中位（Jiménez-Islas 2014 Table 3，参考锁：1.07065/2.05552/4.34110）；τ 不变性 2×2 判别 ≤0.30%（原始增量无 Guo 因子）；高 Pr 能力档全程无 NaN（无簇参考=Turan 仅 correlation，非门）；强制披露：fp32≡fp64 为 7 位有效数字（rel dev 3.112e-07）**非逐位同**、force_mask 为驱动层 flag（库零改动；不掩码则 bb=post 慢线性不稳定 NaN@17k/55k/131k 步 @N=32/48/64）、bb=post 为 BC 配方选择（与 #303 节点温度壁同位配对，半程变体一阶收敛不入档） |
+| B61 | Hadamard–Rybczynski 液滴终端速度（蠕变流 λ 阶梯，96³，a=12，U_t 对 λ 完整曲线） | ❌ **FAIL·模块能力 pending/hadamard_rybczynski_droplet/**——库内任何 3D 多相配置 λ 锁死=ρ 比（单 τ）→ λ 阶梯退化（λ=1 ⇔ 零密度对比 ⇔ 零浮力 ⇔ U_t=0 不可测），形式化 Phase-2 从未启动；E1–E6 动态排除（CG 3D 声学坍缩总密度比 1.029→1.0024、SC-MCMP ±G NaN@50 步/压碎反转 r1_ctr 1.221→0.596、AC 3D 少数相完全溶解、D3Q27 同病）+ 15 案对比×G 包络 0 sustained + 4 静态分支；等效原理定界（周期域+逐质量重力=自由落体→壁必选，已证无辜）；G1–G5 库缺陷清单（G1 multiphase3d G_12 符号 bug 已由 Wave-10 M2 修复待归档；G2 λ-ρ 分离、G3 总密度对比维持、G4 allen_cahn 孤儿、G5 27-q BB 硬编码均开放）；结局：相场重建 R2→Wave-10 M1，PR #323 已合（verified/laplace_cac_phasefield） |
+| B62 | Gebart 纤维横向渗透率（周期方阵/六角圆柱阵列，D2Q9 BGK τ=1，sq vf=0.30–0.70 / hex vf=0.30–0.75，阶梯 W 至 1293；sq 主参考=Sangani–Acrivos 1982 精确 f 表） | ❌ **FAIL（诚实）pending/permeability_fibrous/**——三种失效全定源：hex 0.70/0.75 vs Gebart **参考侧**（渐近式偏差 +3.9%/+2.4%，阶梯分解 (1+signed)=(1+staircase)(1+bias) 钉死；精确 hex 表付费墙不可得，8 通道搜寻）；sq 0.40 破单调=**几何量化地板振荡**（阶梯 +17.25/6.92/2.42/2.63%，gap-96 扩展 −0.6475% 深入门内）；S1 力线性 0.256%>0.1%=真实 O(Re) 惯性（继承 Re_cell=0.5）；**方阵 0.30/0.50/0.60 三档全过门（最细 0.22/0.24/0.88%）= verified 候选（晋级 owner）**；R3 参考自产门（Schur–Stokes 解算器 51 case 池，三估计器 0.5% 门）FAIL 于 vf0.6 差 0.052pp（fixed15 −0.5521%）→ 按 prereg §11.5 停，不产 hex 表；owner 菜单 (a) M1 cut-cell 重跑 / (b) 门放宽 1% / (c) 购 Koch-Ladd 1997 / Wang-Sangani 1997 表 / (d) 维持 Gebart 门接受 FAIL |
+
 ## 文件夹结构
 
 ```
