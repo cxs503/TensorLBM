@@ -859,6 +859,9 @@ class GeneralSimEngine:
         elif geo.source == GeometrySource.PARAMETRIC_NACA:
             return self._build_naca_solid(nx, ny, nz, device)
 
+        elif geo.source == GeometrySource.PARAMETRIC_HULL:
+            return self._build_hull_solid(nx, ny, nz, device)
+
         else:
             return torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
 
@@ -963,6 +966,48 @@ class GeneralSimEngine:
             spacing=(1.0, 1.0, 1.0),
         )
         return solid.to(device)
+
+    def _build_hull_solid(self, nx, ny, nz, device):
+        """Boolean solid mask for parametric ship hulls (via ship_cad.build_hull_mask).
+
+        Covers wigley / series60 / kcs / kvlcc2 / npl.  Beam and draft are derived
+        from each hull's own main-dimension ratios, so a single ``hull_length`` in
+        lattice units is enough to place a correctly-proportioned hull.  Without
+        this branch ``GeometrySource.PARAMETRIC_HULL`` fell through to the empty
+        mask and ship benchmarks silently ran on an empty channel.
+        """
+        from .ship_cad import build_hull_mask
+
+        geo = self.config.geometry
+        dx = self.config.physics.reference_length / self.config.solver.resolution
+        length_lb = geo.hull_length / dx
+
+        # (L/B, B/T) from each hull's real main dimensions.
+        ratios = {
+            "wigley": (10.0, 1.60),
+            "series60": (6.50, 2.74),
+            "kcs": (7.14, 2.98),
+            "kvlcc2": (5.52, 2.79),
+            "npl": (6.50, 2.74),
+        }
+        lb, bt = ratios.get(str(geo.hull_type).lower(), (7.0, 2.9))
+        beam_lb = length_lb / lb
+        draft_lb = beam_lb / bt if bt > 0 else beam_lb / 2.9
+
+        mask, _stats = build_hull_mask(
+            hull_type=geo.hull_type,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            cx=nx * 0.25,
+            cy=ny * 0.5,
+            cz_keel=nz * 0.25,
+            length=length_lb,
+            beam=beam_lb,
+            draft=draft_lb,
+            device=str(device),
+        )
+        return mask.to(device)
 
     # ── Internal helpers: surface mesh ────────────────────────────────
 
