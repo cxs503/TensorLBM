@@ -1,0 +1,52 @@
+{
+  "case": "suboff_sail_resistance",
+  "status": "pending",
+  "verified": false,
+  "scope": "SUBOFF with sail (AFF-3 inspired), Re=1000 laminar, piDL+appendage wetted-area normalization, mix50 friction",
+  "reference": {
+    "value": 0.041995,
+    "source": "Blasius flat-plate Cf at Re=1000 (same caliber as the verified bare-hull suboff_re1000)",
+    "note": "the ITTC-1957 / DARPA AFF-8 experimental Ct values are turbulent Re~2e6-1.2e7 and NOT applicable at Re=1000"
+  },
+  "grids": [
+    {
+      "L": 48,
+      "grid": [
+        102,
+        102,
+        288
+      ],
+      "appendage_cells": 12,
+      "Cd_total": 0.040827,
+      "err_pct": -2.78,
+      "drag_increment_ratio": 1.0102
+    },
+    {
+      "L": 52,
+      "grid": [
+        110,
+        110,
+        312
+      ],
+      "appendage_cells": 8,
+      "Cd_total": 0.03899,
+      "err_pct": -7.16,
+      "drag_increment_ratio": 0.9647
+    },
+    {
+      "L": 60,
+      "grid": [
+        127,
+        127,
+        360
+      ],
+      "appendage_cells": 0,
+      "Cd_total": 0.042098,
+      "err_pct": 0.24,
+      "note": "0 appendage cells: this run has NO sail at all, so it is a bare-hull control, not a sail ladder"
+    }
+  ],
+  "caliber_finding": "The earlier claim that the sail is 'sub-grid and unusable for L<=96' is WRONG -- it came from using a FIXED\nradius instead of the correct radius_lb = 0.05831*L.  With the correct radius every resolution has a sail:\nL40->6, L48->12, L52->8, L56->15 ... L88->32 cells.\nHOWEVER the run's own domain formula produces ODD dimensions from L>=56 (119/127/135 for L=56/60/64),\nwhich puts the sail on a half-cell and annihilates it (0 cells) -- that is why L60 above is a bare-hull control.",
+  "blocker": "The two grids that DO carry a sail (L48: 12 cells, L52: 8 cells) have a 4.38% inter-grid span, over the 3%\nacceptance gate.  The 12-vs-8 cell staircase difference in the sail alone moves Cd by 4.4%, so the gate is\nmeasuring the appendage voxelisation, not a converged submerged-body drag.  A defensible sail ladder needs\na resolution where the sail is >= 3-5 cells thick in BOTH ladders -- which is not reachable with the current\nbody-fitted domain formula on a 15 GiB card.",
+  "verdict": "NOT ACCEPTED (honest block). L48 alone hits -2.78% but its pair L52 is -7.16%; the 4.38% span is dominated by sail staircasing (12 vs 8 cells), so this is not a converged validation."
+}
