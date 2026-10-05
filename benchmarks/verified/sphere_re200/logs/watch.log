@@ -772,3 +772,1036 @@
   re200_D24_12k -> OK "steps": 12000
   re200_D28_12k -> running
   re200_D30_12k -> running
+[watch 7741s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 7801s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 7861s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 7921s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 7981s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8041s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8101s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8161s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8221s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8281s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8341s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8401s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8461s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8521s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8581s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8641s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8701s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8761s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8821s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8881s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 8941s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9001s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9061s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9121s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9181s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9241s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9301s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9361s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9421s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9481s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9542s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9602s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9662s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9722s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9782s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9842s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9902s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 9962s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10022s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10082s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10142s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10202s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10262s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10322s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10382s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10442s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10502s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10562s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10622s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10682s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10742s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10802s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10862s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10922s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 10982s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11042s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11102s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11162s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11222s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11282s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11342s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11402s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11462s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11522s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11582s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11642s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11702s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11762s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11822s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11882s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 11942s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12002s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12062s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12122s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12182s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12242s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12302s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12362s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12422s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12482s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12542s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12602s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12662s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12722s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12782s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12842s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12902s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 12962s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13022s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13082s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13143s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13203s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13263s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13323s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13383s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13443s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13503s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13563s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13623s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13683s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13743s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13803s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13863s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13923s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 13983s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 14043s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 14103s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 14163s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 14223s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 14283s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 14343s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 14403s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 14463s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 14523s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 14583s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 14643s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 14703s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 14763s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 14823s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 14883s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 14943s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15003s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15063s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15123s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15183s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15243s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15303s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15363s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15423s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15483s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15543s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15603s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15663s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15723s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15783s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15843s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15903s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 15963s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16023s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16083s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16143s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16203s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16263s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16323s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16383s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16443s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16504s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16564s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16624s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16684s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16744s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16804s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16864s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16924s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 16984s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17044s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17104s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17164s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17224s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17284s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17344s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17404s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17464s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17524s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17584s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17644s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17704s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17764s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17824s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17884s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 17944s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+[watch 18004s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> OK "steps": 12000
+  re200_D30_12k -> running
+WATCH_TIMEOUT
