@@ -1,0 +1,60 @@
+{
+  "C": 128,
+  "alpha_deg": 0.0,
+  "nx": 2944,
+  "ny": 2048,
+  "x_le": 768.0,
+  "y_c": 1024.0,
+  "upstream_c": 6.0,
+  "downstream_c": 16.0,
+  "halfheight_c": 8.0,
+  "blockage_pct": 0.75,
+  "Re": 1000.0,
+  "u_in": 0.1,
+  "nu": 0.0128,
+  "tau": 0.5384,
+  "n_solid_cells": 1347,
+  "n_surface_cells": 250,
+  "n_interior_cells": 1097,
+  "n_steps": 60000,
+  "n_finished": 60000,
+  "sample_interval": 100,
+  "avg_window_samples": 300,
+  "cd_mem_surface": 0.22127878246828908,
+  "cl_mem_surface": 2.3410345117251073e-06,
+  "cd_mem_all": 0.12113087127606072,
+  "cd_mem_interior": -0.10014902055263518,
+  "err_cd_pct": 110.74169758884676,
+  "cd": 0.22127878246828908,
+  "cl": 2.3410345117251073e-06,
+  "plateau_cd_surface": [
+    0.20534534379839894,
+    0.20858844059209025,
+    0.21549676420787967,
+    0.22127878246828908
+  ],
+  "plateau_cd_all": [
+    0.12850855539242423,
+    0.12482098738352455,
+    0.12113067135214803,
+    0.12113087127606072
+  ],
+  "plateau_cl_surface": [
+    2.1471952398618058e-05,
+    1.0833299408356346e-05,
+    1.4845281839370725e-06,
+    2.3410345117251073e-06
+  ],
+  "ref_cd": 0.105,
+  "ref_cluster": [
+    0.09,
+    0.12
+  ],
+  "ref_note": "NACA0012 Re=1000 alpha=0 2-D NUMERICAL cluster (see REFERENCE_AUDIT.md)",
+  "mass_drift_pct": 0.002462958799674956,
+  "finite": true,
+  "wall_s": 18480.55953669548,
+  "compile_status": "eager",
+  "compile_mode_effective": "eager",
+  "compile_status_reason": null
+}

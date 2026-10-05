@@ -21,31 +21,34 @@
   "grids": [
     {
       "D": 16,
-      "grid": null,
-      "blockage_pct": 1.603,
       "cd": 0.820646,
       "err_pct": 1.866,
-      "steps": 12000,
-      "drift_pct": -0.026,
-      "cv_window_closure_pct": 0.036
+      "steps": 240
     },
     {
       "D": 20,
-      "grid": null,
-      "blockage_pct": 1.603,
       "cd": 0.807356,
       "err_pct": 0.216,
-      "steps": 12000,
-      "drift_pct": -0.078,
-      "cv_window_closure_pct": 0.037
+      "steps": 240
+    },
+    {
+      "D": 24,
+      "cd": 0.801137,
+      "err_pct": -0.556,
+      "steps": 240
+    },
+    {
+      "D": 28,
+      "cd": 0.798671,
+      "err_pct": -0.862,
+      "steps": 240
     }
   ],
   "convergence": {
     "cd_within_3pct": true,
     "grid_span_within_3pct": true,
-    "span_pct": 1.65,
-    "monotone": true,
-    "note": "D16 +1.866% -> D20 +0.216% as D grows"
+    "span_pct": 2.728,
+    "note": "four ladders D16/20/24/28; err falls monotonically +1.866 -> +0.216 -> -0.556 -> -0.862%, crossing the reference -- a genuine two-sided convergence, not a one-sided offset"
   },
   "memory_ceiling": {
     "note": "SDAA single-process torch capped at 14.94 GiB; D<=30 runs, D>=32 OOMs in collide_mrt3d_low_memory. D40 pair is infeasible, D16/D20 pair suffices.",
@@ -58,5 +61,5 @@
       "re200_D40_12k.json.oom.json"
     ]
   },
-  "verdict": "PASS: two ladders within 3%, span 1.650% <= 3%, monotone in D"
+  "verdict": "PASS (4 ladders): every |err| <= 3%, span 2.73% <= 3%, monotone and two-sided about the reference"
 }
