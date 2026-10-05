@@ -29,6 +29,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `taylor_green_2d` | analytic decay |
 | `taylor_green_3d` | analytic decay |
 | `womersley` | analytic pulsatile |
+| `floating_body_free_decay` | 6DOF still-water free-decay eigenfrequency (analytic): heave +1.07%/+0.26%, roll +1.21%/+0.30% (2 dt levels, span ≤0.91%); radiation-memory path diagnostic-only (see README) |
 
 ## pending/ (not yet accepted -- blockers documented)
 
