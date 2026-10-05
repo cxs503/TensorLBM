@@ -1,0 +1,25 @@
+[OK] dist2 sq: max rel diff vs brute 7x7 = 0.00e+00
+[OK] dist2 hexA: max rel diff vs brute 7x7 = 2.54e-15
+[OK] dist2 hexB: max rel diff vs brute 7x7 = 1.08e-14
+
+hexA cell-centre solid fraction (mask only, no solve):
+  vf=0.70 m= 2 (112x194): phi_actual=0.699926 dev=-0.011%
+  vf=0.70 m= 4 (224x388): phi_actual=0.699926 dev=-0.011%
+  vf=0.70 m= 8 (448x776): phi_actual=0.700179 dev=+0.026%
+  vf=0.70 m=14 (784x1358): phi_actual=0.699964 dev=-0.005%
+  vf=0.75 m= 2 (112x194): phi_actual=0.751105 dev=+0.147%
+  vf=0.75 m= 4 (224x388): phi_actual=0.750184 dev=+0.025%
+  vf=0.75 m= 8 (448x776): phi_actual=0.750000 dev=+0.000%
+  vf=0.75 m=14 (784x1358): phi_actual=0.749947 dev=-0.007%
+  hexB vf=0.70 m=20 (300x520): phi=0.700154 dev=+0.022%
+  hexB vf=0.70 m=28 (420x728): phi=0.700078 dev=+0.011%
+  hexB vf=0.75 m=20 (300x520): phi=0.749538 dev=-0.062%
+  hexB vf=0.75 m=28 (420x728): phi=0.750052 dev=+0.007%
+
+lattice metric check:
+  hexA vf=0.70: d_nn=1.000040 R=0.439290 gap/r=0.2765
+  hexA vf=0.75: d_nn=1.000040 R=0.454708 gap/r=0.1993
+  hexB vf=0.70: d_nn=1.000555 R=0.439441 gap/r=0.2769
+  hexB vf=0.75: d_nn=1.000555 R=0.454864 gap/r=0.1997
+
+ALL OK
