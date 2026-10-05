@@ -748,3 +748,27 @@
   re200_D24_12k -> running
   re200_D28_12k -> running
   re200_D30_12k -> running
+[watch 7501s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> running
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 7561s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> running
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 7621s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> running
+  re200_D28_12k -> running
+  re200_D30_12k -> running
+[watch 7681s] done_all=0
+  re200_D16_12k -> OK "steps": 12000
+  re200_D20_12k -> OK "steps": 12000
+  re200_D24_12k -> OK "steps": 12000
+  re200_D28_12k -> running
+  re200_D30_12k -> running
