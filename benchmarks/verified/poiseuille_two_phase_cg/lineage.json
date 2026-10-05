@@ -1,0 +1,29 @@
+{
+ "case": "two_layer_poiseuille_cg",
+ "as_run_engine_md5": "81203d6d6f00104f4853a6db81815fe0",
+ "in_repo_engine_md5": "350a3230c7a9578ab4353d6e95ca2db6",
+ "engine_ast_dump_equal": true,
+ "evaluator_md5": "e78c6d1eb22d628182636c0df74fb26a",
+ "result_json_md5": "df99f63a77e107acb034c643bc3e086e",
+ "run_py_as_packaged_md5": "3576b36137232699b090ff4d343781a1",
+ "run_py_in_repo_md5": "f8e82f00e431df5d7aec345583597d0c",
+ "run_py_changes": [
+  "ruff I001 import order (import multiset + non-import body machine-verified identical)",
+  "src lookup parents[3] -> parents[2] (off-by-one for in-repo case path benchmarks/verified/<case>/; default never exercised in staging which always passed --src)"
+ ],
+ "bit_identity_proof": {
+  "protocol": "600-step eq_ny64 + g10_ny64 CPU arms, engine loaded under tensorlbm.color_gradient2d from as-run and in-repo files",
+  "physical_channel_mismatches": [],
+  "only_differring_field": "wall_s (wall-clock timing)",
+  "verdict": "PASS"
+ },
+ "cli_integration_proof": {
+  "protocol": "shipped run.py --arms eq_ny64 --device cpu from repo tree, default src resolution (no --src)",
+  "engine_origin": "repo tensorlbm.color_gradient2d",
+  "relL2_cpu": 0.0021093922113859876,
+  "relL2_formal_gpu6": 0.002109392211371581,
+  "relL2_rel_diff": 6.829666246729406e-12,
+  "profile_max_abs_diff_vs_formal": 0.0,
+  "verdict": true
+ }
+}

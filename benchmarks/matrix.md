@@ -80,6 +80,7 @@
 | P25 3D 差热立方腔自然对流（Pr=0.71，Ra=1e3/1e4/1e5） | D3Q19 BGK + D3Q7 温度（τ_T=4α+1/2 自标定）+ 全反弹 BB（bb=post）+ apply_buoyancy_3d 原始增量（force_mask 流体掩码） | 六源 3D 簇中位（Jiménez-Islas 2014 Table 3：1.07065/2.05552/4.34110） | ✅ verified 候选 verified/thermal_cavity_3d/：finest −0.55/−1.47/−2.37% 全 ≤3% 且 \|err\| 严格单调；Pr=100/1000 能力档无 NaN（披露非门）；fp32≡fp64 7 位有效（非逐位）+ force_mask 驱动层披露 |
 | P26 H–R 液滴终端速度（λ 阶梯） | 库 3D 多相全族 probe（CG3D/SC-MCMP19/AC3D/MCMP27，96³） | Hadamard–Rybczynski U_t（Pigeonneau 1998 + Clift–Grace–Weber 2005，力平衡闭环） | ❌ FAIL·模块能力 pending/hadamard_rybczynski_droplet/：λ 锁死=ρ 比（单 τ），λ=1 ⇔ U_t=0；E1–E6 + 15 案包络 0 sustained；G1–G5 库缺陷清单；结局 PR #323（相场重建已入库） |
 | P27 纤维横向渗透率（方阵/六角圆柱阵列 Stokes） | D2Q9 BGK τ=1 + 周期胞 + 掩码体力 _apply_body_force_2d + BB（compile_route；sq 单圆柱 / hex W×√3W 双位） | sq=Sangani–Acrivos 1982 精确 f 表；hex=Gebart 1992 闭式（精确 hex 表付费墙，8 通道搜寻） | ❌ FAIL（诚实）pending/permeability_fibrous/：hex=参考侧偏差 +3.9%/+2.4%（阶梯分解 D1）；sq0.40 量化振荡破单调（gap-96 扩展 −0.6475%）；方阵 0.30/0.50/0.60 三档 verified 候选（最细 0.22/0.24/0.88%）；R3 参考自产门 FAIL（vf0.6 差 0.052pp） |
+| P28 两层 Poiseuille（颜色梯度 per-color τ） | D2Q9 双色 + src/tensorlbm/color_gradient2d.py（per-color τ + recoloration β=0.9 + 一阶色梯度力）+ solver.stream + bounce_back_cells | 两层 Stokes 闭式解（名义黏度比 1/10；界面=上色层首行节点半格位） | ✅ verified/poiseuille_two_phase_cg/：relL2 0.211/0.155%（等黏度）、1.092/0.560%（μ 比 10）双族随加密严格单调、全 ≤3%；双色质量漂移 ≤5.3e-14/步/色 |
 
 
 **新问题方向（未覆盖）**：多相/自由表面（Laplace/溃坝）、声学、RANS 通道、
