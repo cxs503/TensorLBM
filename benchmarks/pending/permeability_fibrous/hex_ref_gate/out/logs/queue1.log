@@ -1,0 +1,6 @@
++ /nfs/wangxi/venvs/hexref/bin/python run_case.py sq 0.30 96 96
+DONE sq_vf0.3_nx96_ny96_MMD_AT_PLUS_A f=100.347672 K/R2=1.043569e-01 res=1.4e-10 fac=103.3s rss=0.002G
++ /nfs/wangxi/venvs/hexref/bin/python run_case.py sq 0.30 192 192
+已终止
++ /nfs/wangxi/venvs/hexref/bin/python run_case.py sq 0.30 288 288
+DONE sq_vf0.3_nx288_ny288_schur f=101.41309305 K/R2=1.032606e-01 cg=0 cgres=1.2e-12 div=5.1e-13 fac=0.5s cg_t=15.0s rss=0.0G
