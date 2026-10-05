@@ -50,7 +50,7 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve()
 _REPO = _HERE.parents[3]
-for _p in (_REPO / "src", _REPO / "benchmarks"):
+for _p in (_REPO / "src", _REPO / "benchmarks", _HERE.parent):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
@@ -63,16 +63,27 @@ from tensorlbm.boundaries import (  # noqa: E402
     make_sponge_strength,
 )
 from tensorlbm.d2q9 import equilibrium  # noqa: E402
-from tensorlbm.solver import collide_mrt, stream  # noqa: E402
+
+# Fast elementwise-equivalent MRT collision + roll-streaming.  The library's
+# collide_mrt / stream hit pathologically slow SDAA kernels (131 / 105 ms per
+# step at 1472x1024); these drop-in replacements are numerically identical to
+# f32 round-off (see fast_kernel.py --selftest) and run at ~10-20 ms/step.
+from fast_kernel import fast_collide_mrt, fast_stream  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# Reference convention (filled by REFERENCE_AUDIT.md) -- see constants below
+# Reference convention (audited in REFERENCE_AUDIT.md) -- see constants below
 # ---------------------------------------------------------------------------
-# Re=1000, alpha=0 (2-D numerical cluster).  Placeholders are overwritten by
-# the audited values; run.py never tunes the reference.
-CD_REF = 0.105
+# Re=1000, alpha=0.  Kurtulus (2015) 正文: "Drag coefficient at zero angle of
+# attack is found to be about 0.12 for NACA0012 airfoil at Re=1000"; independently
+# corroborated by Di Ilio et al. (2020, arXiv:2006.10487) Table 1: Cd(0)=0.119
+# (HLBM) and XFOIL 0.119.  The old value 0.105 was a stale placeholder with no
+# supporting source.  run.py never tunes the reference.
+CD_REF = 0.12
 CD_CLUSTER = (0.09, 0.12)
-REF_NOTE = "NACA0012 Re=1000 alpha=0 2-D NUMERICAL cluster (see REFERENCE_AUDIT.md)"
+REF_NOTE = (
+    "NACA0012 Re=1000 alpha=0 Cd: Kurtulus 2015 text ~0.12; Di Ilio 2020 Table 1 "
+    "HLBM/XFOIL 0.119 (see REFERENCE_AUDIT.md)"
+)
 
 # geometry / solver defaults
 RE_DEFAULT = 1000.0
@@ -193,7 +204,7 @@ def run_case(
 
     def _step(f):
         # collide -> stream -> far-field (applies half-way BB last)
-        return far_field_bc_2d(stream(collide_mrt(f, tau, tau_field=tau_field)), u_in, solid)
+        return far_field_bc_2d(fast_stream(fast_collide_mrt(f, tau, tau_field=tau_field)), u_in, solid)
 
     step_fn = route_step(_step, compile_mode, name=f"naca0012_re{int(re)}[C{C}]")
 

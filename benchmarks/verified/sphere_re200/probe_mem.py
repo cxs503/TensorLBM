@@ -1,4 +1,9 @@
-"""Memory probe: build the BFL sphere setup at several D and report device peak."""
+"""Memory probe: build the BFL sphere setup at several D and report device peak.
+
+Extended 2026-10-05 to (a) include small D=16 and (b) mimic the ACTUAL run.py
+sparse-route allocation footprint (f + bfl mask/q + f_pre_stream clone) so the
+reported peak is the real loop peak, not just setup.
+"""
 from __future__ import annotations
 import math, os, sys
 import torch
@@ -10,6 +15,7 @@ from tensorlbm.general_sim import (  # noqa: E402
     GeometryConfig, GeometrySource, LatticeModel, OutputConfig, OutputFormat,
     PhysicsConfig, SolverConfig, WallTreatment,
 )
+from tensorlbm.bfl_common import bfl_boundary_link_indices  # noqa: E402
 from tensorlbm.interpolated_bc import compute_q_sphere  # noqa: E402
 
 DEV = os.environ.get("W8A_DEV", "sdaa:2")
@@ -33,8 +39,10 @@ def build(D, lat, up, down):
                             save_macroscopic=False, save_forces=True),
     )
 
-for D, lat, up, down in [(20,3.0,3.0,4.0),(24,3.0,3.0,4.0),(28,3.0,3.0,4.0),
-                         (32,3.0,3.0,4.0),(36,3.0,3.0,4.0),(40,3.0,3.0,4.0)]:
+CASES = [(16,3.0,3.0,4.0),(20,3.0,3.0,4.0),(24,3.0,3.0,4.0),(28,3.0,3.0,4.0),
+         (30,3.0,3.0,4.0),(32,3.0,3.0,4.0),(36,3.0,3.0,4.0),(40,3.0,3.0,4.0)]
+
+for D, lat, up, down in CASES:
     try:
         torch.sdaa.empty_cache()
         torch.sdaa.reset_peak_memory_stats()
@@ -43,12 +51,18 @@ for D, lat, up, down in [(20,3.0,3.0,4.0),(24,3.0,3.0,4.0),(28,3.0,3.0,4.0),
         R = D/2.0
         bfl_mask, bfl_q = compute_q_sphere(nx, ny, nz, up*D+R, ny/2.0, nz/2.0, R, torch.device(DEV))
         nl = int(bfl_mask[1:].sum().item())
+        links = bfl_boundary_link_indices(bfl_mask, bfl_q, lattice="D3Q19")
+        # mimic the run loop footprint: f + one full clone (f_pre_stream)
+        f = eng.f.clone()
+        f_pre_stream = f.clone()
         peak = torch.sdaa.max_memory_allocated()/2**30
-        print(f"D={D} dom={nx}x{ny}x{nz} cells={nx*ny*nz/1e6:.1f}M links={nl} peak={peak:.2f}GiB")
-        del eng, bfl_mask, bfl_q
+        reserved = torch.sdaa.max_memory_reserved()/2**30
+        print(f"D={D} dom={nx}x{ny}x{nz} cells={nx*ny*nz/1e6:.2f}M links={nl} "
+              f"n_dense_links={links.n_links} peak={peak:.2f}GiB reserved={reserved:.2f}GiB", flush=True)
+        del eng, bfl_mask, bfl_q, links, f, f_pre_stream
         torch.sdaa.empty_cache()
     except Exception as e:
-        print(f"D={D} FAIL {str(e)[:100]}")
+        print(f"D={D} FAIL {str(e)[:140]}", flush=True)
         try: torch.sdaa.empty_cache()
         except Exception: pass
 print("PROBE_DONE")
