@@ -24,3 +24,11 @@
 [naca0012 C=128 a=0 2944x2048] step=25000 Cd_surf=0.20527 Cl_surf=-0.00000 Cd_all=0.12134 (5976s)
 [naca0012 C=128 a=0 2944x2048] step=30000 Cd_surf=0.20974 Cl_surf=+0.00000 Cd_all=0.12116 (7719s)
 [naca0012 C=128 a=0 2944x2048] step=35000 Cd_surf=0.21321 Cl_surf=+0.00000 Cd_all=0.12113 (9508s)
+[naca0012 C=128 a=0 2944x2048] step=40000 Cd_surf=0.21593 Cl_surf=+0.00000 Cd_all=0.12112 (11353s)
+[naca0012 C=128 a=0 2944x2048] step=45000 Cd_surf=0.21812 Cl_surf=+0.00000 Cd_all=0.12112 (13224s)
+[naca0012 C=128 a=0 2944x2048] step=50000 Cd_surf=0.21993 Cl_surf=+0.00000 Cd_all=0.12113 (15088s)
+[naca0012 C=128 a=0 2944x2048] step=55000 Cd_surf=0.22146 Cl_surf=+0.00000 Cd_all=0.12113 (16950s)
+[naca0012 C=128 a=0 2944x2048] step=60000 Cd_surf=0.22277 Cl_surf=+0.00000 Cd_all=0.12113 (18481s)
+[naca0012 C=128 a=0 2944x2048] === FINAL win=300 Cd_surf=0.22128 err=+110.74% Cl_surf=+0.00000 | Cd_all=0.12113 Cd_int=-0.10015 (plateau Cd [0.2053, 0.2086, 0.2155, 0.2213]) (18481s)
+[naca0012 C=128 a=0 2944x2048] plateau Cl_surf [0.0, 0.0, 0.0, 0.0]
+[naca0012] saved logs/case_C128.json
