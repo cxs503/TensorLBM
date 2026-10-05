@@ -186,6 +186,15 @@
 | B61 | Hadamard–Rybczynski 液滴终端速度（蠕变流 λ 阶梯，96³，a=12，U_t 对 λ 完整曲线） | ❌ **FAIL·模块能力 pending/hadamard_rybczynski_droplet/**——库内任何 3D 多相配置 λ 锁死=ρ 比（单 τ）→ λ 阶梯退化（λ=1 ⇔ 零密度对比 ⇔ 零浮力 ⇔ U_t=0 不可测），形式化 Phase-2 从未启动；E1–E6 动态排除（CG 3D 声学坍缩总密度比 1.029→1.0024、SC-MCMP ±G NaN@50 步/压碎反转 r1_ctr 1.221→0.596、AC 3D 少数相完全溶解、D3Q27 同病）+ 15 案对比×G 包络 0 sustained + 4 静态分支；等效原理定界（周期域+逐质量重力=自由落体→壁必选，已证无辜）；G1–G5 库缺陷清单（G1 multiphase3d G_12 符号 bug 已由 Wave-10 M2 修复待归档；G2 λ-ρ 分离、G3 总密度对比维持、G4 allen_cahn 孤儿、G5 27-q BB 硬编码均开放）；结局：相场重建 R2→Wave-10 M1，PR #323 已合（verified/laplace_cac_phasefield） |
 | B62 | Gebart 纤维横向渗透率（周期方阵/六角圆柱阵列，D2Q9 BGK τ=1，sq vf=0.30–0.70 / hex vf=0.30–0.75，阶梯 W 至 1293；sq 主参考=Sangani–Acrivos 1982 精确 f 表） | ❌ **FAIL（诚实）pending/permeability_fibrous/**——三种失效全定源：hex 0.70/0.75 vs Gebart **参考侧**（渐近式偏差 +3.9%/+2.4%，阶梯分解 (1+signed)=(1+staircase)(1+bias) 钉死；精确 hex 表付费墙不可得，8 通道搜寻）；sq 0.40 破单调=**几何量化地板振荡**（阶梯 +17.25/6.92/2.42/2.63%，gap-96 扩展 −0.6475% 深入门内）；S1 力线性 0.256%>0.1%=真实 O(Re) 惯性（继承 Re_cell=0.5）；**方阵 0.30/0.50/0.60 三档全过门（最细 0.22/0.24/0.88%）= verified 候选（晋级 owner）**；R3 参考自产门（Schur–Stokes 解算器 51 case 池，三估计器 0.5% 门）FAIL 于 vf0.6 差 0.052pp（fixed15 −0.5521%）→ 按 prereg §11.5 停，不产 hex 表；owner 菜单 (a) M1 cut-cell 重跑 / (b) 门放宽 1% / (c) 购 Koch-Ladd 1997 / Wang-Sangani 1997 表 / (d) 维持 Gebart 门接受 FAIL |
 
+## 2026-10-05 新增（颜色梯度两层 Poiseuille）
+
+> 颜色梯度 per-color τ 内核（RK-Latva-Koko recoloration，库空白档）首个
+> verified 案例，对 B48/B51 SC-MCMP 同题反收敛 FAIL 的翻案对照。
+
+| # | 案例 | 状态 |
+|---|------|------|
+| B63 | 两层 Poiseuille（颜色梯度，D2Q9 双色分布 per-color τ（等黏度 τ=(1,1) 与 μ 比 10 τ=(2.5,0.7) 两族）+ recoloration β=0.9 + 一阶色梯度力 A=0.04，ny=64/128，引擎 src/tensorlbm/color_gradient2d.py 新增，fp64） | ✅ **verified/poiseuille_two_phase_cg/**——4/4 臂全过门：relL2 等黏度 0.211%→0.155% / μ 比 10 1.092%→0.560%，双族随加密严格单调、全 ≤3%；参考=两层 Stokes 闭式解（界面=上色层首行节点半格位，冻结估计器）；双色质量漂移 ≤5.3e-14/步/色（门 1e-10） |
+
 ## 文件夹结构
 
 ```
