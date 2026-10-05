@@ -1,0 +1,7 @@
+vf0.3: fixed10=-0.169% fixed15=-0.228% aitken3=-0.073% free(a=0.30)=+1.164% -> PASS
+vf0.4: fixed10=-0.085% fixed15=-0.250% aitken3=-0.339% free(a=4.00)=-0.296% -> PASS
+vf0.5: fixed10=+0.199% fixed15=-0.245% aitken3=-0.390% free(a=2.58)=-0.304% -> PASS
+vf0.6: fixed10=-0.188% fixed15=-0.552% aitken3=-0.283% free(a=0.30)=+2.539% -> FAIL
+vf0.7: fixed10=+0.156% fixed15=-0.432% aitken3=-0.797% free(a=1.40)=-0.499% -> FAIL
+vf0.75: fixed10=+1.762% fixed15=-0.942% aitken3=-7.671% free(a=0.30)=+20.796% -> FAIL
+GATE2_READY
