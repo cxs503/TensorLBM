@@ -33,7 +33,7 @@ dx = 4.1672 mm、Stokes = 0.1551。
 | G10c Richardson 误差 L4 | |err|<=3% | -0.857% | PASS |
 | G10d Richardson 复现 IC-A 先验 | |p-prior|,|f_ext-prior| <=1e-9 rel | p = 4.5936, f_ext = 10.50800 mm | PASS |
 
-## 结果（9 案；`evidence/<run>/results.json`）
+## 结果（9 案；`evidence/<run>`（无扩展名 JSON 文件））
 
 | run | 格子 | steps | LWC (g/m³) | β_pk | t_max (mm) | Eulerian 沉积 (kg) | wall (s) |
 |---|---|---|---|---|---|---|---|
@@ -73,7 +73,7 @@ CUDA_VISIBLE_DEVICES=0 python benchmarks/verified/aircraft_icing_naca0012_rime/r
 ## 目录
 
 - `run.py` — 9 案生产入口（B1 生产点 + B2 阶梯 + LWC 族 + 确定性对）
-- `evidence/<run>/results.json` — 每案机器档案（β 曲线、质量账、映射常数、
+- `evidence/<run>`（无扩展名 JSON 文件） — 每案机器档案（β 曲线、质量账、映射常数、
   确定性 sha256；判据数字全部出自这些文件）
 - `figs/` — 6 图：beta_curve / alpha_impact / ice_overlay / history /
   convergence（B2 阶梯 + Richardson）/ g9_lwc_linearity
