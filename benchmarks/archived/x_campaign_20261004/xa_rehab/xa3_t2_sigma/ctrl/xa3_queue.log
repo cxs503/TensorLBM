@@ -1,0 +1,3 @@
+[xa3-watcher 2026-10-05T02:46:30Z] start; waiting for XB chain pid 2832008 to exit
+[xa3-watcher 2026-10-05T05:37:31Z] XB chain 2832008 exited
+[xa3-watcher 2026-10-05T05:39:36Z] LAUNCHED xa3_run.py pid=2857406 snapshot=ctrl/gpu6_snapshot_pre_xa3_20261005T053931Z.txt
