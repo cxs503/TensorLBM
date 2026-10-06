@@ -1,0 +1,59 @@
+PASS P0.prereg_md5_unchanged 
+PASS P0.judge_md5_postJ1 
+PASS P0.crossval_json_md5 
+PASS P0.attribution_md5 
+PASS P0.notes_md5 
+PASS P0.notes_J1_dual_md5 pre-fix judge md5 + post-fix md5 both recorded
+PASS P0.sources_md5_7 consumption chain md5s match my own md5 of each file
+PASS A.MCMP.sigma_ref_quote 0.11169168382612461
+PASS A.MCMP.sigma_sph_consumed exact JSON passthrough
+PASS A.MCMP.err_by_N_recompute 96:0.471872% 144:0.540184% 192:0.402106%
+PASS A.MCMP.err_ties_m2_archive 
+PASS A.MCMP.F_range 
+PASS A.MCMP.band_rel 
+PASS A.MCMP.u_max_tail_recompute max over 3 R-arms of tail umax_mean, exact
+PASS A.MCMP.density_ratio 
+PASS A.SC.sigma_by_L_consumed 
+PASS A.SC.prereg_quotes 
+PASS A.SC.F_sigma 2.826270%
+PASS A.SC.rms_and_gate rms exact + gate recomputed 3/3 True
+PASS A.SC.u_max_Lmax 2.0619e-01
+PASS A.CAC.row_restored 
+PASS A.CAC.sigma_eff_consumed 16:0.006543204919 24:0.006497685527 32:0.006483279093
+PASS A.CAC.F_sigma 0.920794% (ctrl_xa3 C3 cross-read)
+PASS A.CAC.u_max_tail 
+PASS A.CAC.sigma_over_in 
+PASS A.CG.sigma_ladder_consumed 
+PASS A.CG.F_sigma 17.972704%
+PASS A.CG.u_max_final 
+PASS A.CG.health_recheck_recompute 200_20:p4=0.1436,p20=0.1919; 200_30:p4=0.2583,p20=1.1239; 200_40:p4=0.4788,p20=0.7451; 128_25:p4=0.0282,p20=0.0268
+PASS A.CG.engine_lineage C1 campaign engine md5, 4/4 arms
+PASS B.CG.analytic_convention_pinned b2m2_ny64 best=halfway(0.5,ny-1.5)=C1 |dRelL2|=1.31e-10 (2nd 3.91e-02) relL2 mine 0.003175877 vs stored 0.003175877 (bound 1.8e-09) max(ana) 0.039860 (gx-inverse target 0.04) ; b2m2_ny128 best=halfway(0.5,ny-1.5)=C1 |dRelL2|=3.24e-11 (2nd 1.91e-02) relL2 mine 0.002134634 vs stored 0.002134634 (bound 1.8e-09) max(ana) 0.039922 (gx-inverse target 0.04)
+PASS B.CG.relL2_recompute 
+PASS B.CG.u_max_ratio_recompute 
+PASS B.CG.gates_3pct_stable_mass_mono 0.3176% -> 0.2135% monotone refinement, drift ~2e-14/step/color
+PASS B.CG.consumed_scalars 
+[B.CAC] ny100: my Eu 0.0770267808049133/0.0799202635794425/0.0746155451594722 vs stored 0.0770267808049133/0.0799202635794425/0.0746155451594722
+[B.CAC] ny200: my Eu 0.355475757732747/0.367180818636218/0.345721540313188 vs stored 0.355475757732747/0.367180818636218/0.345721540313188
+PASS B.CAC.Eu_formula_pinned_and_tied Eu = sum|n-a|/sum|a|, split s<0/s>0, ties all 6 stored values
+[B.CAC] ny100 analytic: best=fullway(0,ny-1) misfit=2.31e-14 (2nd 4.99e-01) max(ana)=1.041628e-04 u(y0)=1.0000000000e-04 vs u_center_ana=0.0001
+[B.CAC] ny200 analytic: best=fullway(0,ny-1) misfit=1.11e-14 (2nd 5.00e-01) max(ana)=1.041666e-04 u(y0)=1.0000000000e-04 vs u_center_ana=0.0001
+PASS B.CAC.analytic_independent_solve my 4x4 two-layer (nu=mu/rho, Yi=y0) ties stored profile_ana; center-plane velocity == u_center_ana
+[B.CAC] ny100: my layer-interior FD residual 2.269e-21 (n=94) vs scale 6.122e-09 (stored ana_vs_fd 4.216e-17)
+[B.CAC] ny200: my layer-interior FD residual 4.190e-21 (n=194) vs scale 1.515e-09 (stored ana_vs_fd 9.894e-18)
+PASS B.CAC.fd_residual_my_own 
+PASS B.CAC.ny100_bit_identical_to_m1 non-decisive diffs: ['diag_series', 'wall_time_s']
+PASS B.CAC.ny100_receipt_consumed 
+[B.CAC] disclosure: stationarity ny100/ny200 = 0.0260/0.0980 (frozen-table col, not a gate)
+[B.MCMP] H64: mine 27.040218588% vs archived 27.040222287% (abs 3.70e-06, rel 1.37e-07, n 55) -- fp32 archive vs fp64 recompute, honest recompute_match=False
+[B.MCMP] H128: mine 33.638003558% vs archived 33.638003469% (abs 8.91e-08, rel 2.65e-09, n 110) -- fp32 archive vs fp64 recompute, honest recompute_match=False
+PASS B.MCMP.err_recompute_ties_judge H64 27.04% / H128 33.64%, mu_ratio_measured 2.02/2.03 ~ nominal 2
+PASS B.MCMP.fp32_epsilon_story_holds |mine-archived| <= 5e-6 abs AND <= 2e-7 rel -> J2 honest-false justified
+PASS B.MCMP.fd_residual_my_own 
+PASS C.CAC.C16b_bit_consumed 
+PASS C.CAC.in_band_recompute 
+PASS C.CG.not_supported_row probe: stationary bounce_back_cells only, no shear wall in frozen C1 stack
+PASS T.table_cells_traceable 0.14 2.83 0.92 17.97 0.32% 0.21% 7.70% 35.55% 27.04% 33.64% (0.9774) all rendered from JSON machine values
+PASS T.ban_line_present 
+
+=== 48 PASS, 0 FAIL ===

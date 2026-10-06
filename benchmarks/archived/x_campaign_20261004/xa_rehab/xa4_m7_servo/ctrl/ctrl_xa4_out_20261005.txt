@@ -1,0 +1,11 @@
+PASS F1 freeze: arm md5 == judgment source md5 18ccb583; m7 formal_R67 b0d77bf8 + formal_arms 8bb5ef49 == judgment sources (on-disk)
+PASS F2 §2 locks MY re-assert: formal_arms R67 {R 67, ny 138, nx 871, nsteps 233129, gx 2.9531274180874463e-06, ud_target 0.009340303531852497, mu 0.99866883, H_eff 134.175259} + p1 mu_eff/H_eff cross-tie (rounding half-quantum) + frozen baseline Ca_ach +13.328% / err_h +5.3065% / sigma_eff 0.932787*0.1
+PASS F3a MY Ca_ach_final = mu_eff*Ud/sigma_eff == stored EXACT (0.1050713415); over_target 0.050713 == judgment V1 value
+PASS F3b MY Ud = own LSQ on unwrapped centroid over window [1399.92, 2177.5] (158 samples) = 0.009813982191 vs stored 0.009813982191 (rel 0.00e+00)
+PASS F3c Ud window == [last_update_xc+0.3*nx, 2.5*nx] (L=nx=871): 1399.9242 -> 2177.5000
+PASS F4 MY update law: Ca_meas = mu_eff*ud_meas/sigma_eff == 0.108181236331 == logged; gx_new = gx_old*(0.1/Ca_meas)^(1/1.41) == logged rel 1e-6; trigger rule |rel_dev|>2% honored (8.18% triggered)
+PASS F5 post-update evaluations: 5 points, rel_dev 0.0424-0.0526 ALL >2% (would trigger) but xc_unw all > 1.4L=1219.4 -> untriggered = protocol cap honored, NOT a skip; convergence starved by window geometry [1.1L,1.4L] w/ 0.2L spacing (<=2 evaluation slots)
+PASS F6 MY V2 duty 0.4255<=0.6; V3 health (phi_max 1.00213<=1.01 Am.1, phi_min -3.6e-8>=-1e-6, flatness 8.8e-4<=5%, slope_rel 8.1e-17, w_max 54.19<67); V4 wall 1.584h<=11.4h -- V2/V3/V4 all TRUE == judgment
+PASS F7 MY verdict == judgment: V1 FALSE (+5.0713%% > 2%%) -> PROTOCOL FAIL, branch A/B BLOCKED (err_h +4.711%% vs frozen +5.306%% is disclosure only, no physics claim), full ladder NOT opened  | one update pulled Ca +13.33%%->+5.07%% but err_h only +5.31%%->+4.71%% (-0.60pp for -8.26pp Ca) -- recorded hint toward structural (branch B family), unjudged per frozen rule
+
+mine: PASS 9 FAIL 0

@@ -1,0 +1,45 @@
+step 20000/303067  4.01 MLUPS(cpu)  xc=595.0 xcu=595 gx=2.9531e-06 w=59.0828 Uinf=5.20565e-03 phi_max=1.00020
+step 40000/303067  3.97 MLUPS(cpu)  xc=767.9 xcu=768 gx=2.9531e-06 w=55.9962 Uinf=5.24927e-03 phi_max=1.00064
+step 60000/303067  3.97 MLUPS(cpu)  xc=81.5 xcu=952 gx=2.9531e-06 w=54.5837 Uinf=5.45455e-03 phi_max=1.00157
+step 80000/303067  3.94 MLUPS(cpu)  xc=282.7 xcu=1154 gx=2.7929e-06 w=54.3679 Uinf=5.53862e-03 phi_max=1.00207
+step 100000/303067  3.93 MLUPS(cpu)  xc=477.6 xcu=1349 gx=2.7929e-06 w=54.0704 Uinf=5.43138e-03 phi_max=1.00207
+step 120000/303067  3.91 MLUPS(cpu)  xc=673.7 xcu=1545 gx=2.7929e-06 w=54.1696 Uinf=5.46796e-03 phi_max=1.00206
+step 140000/303067  3.89 MLUPS(cpu)  xc=870.2 xcu=1741 gx=2.7929e-06 w=54.1847 Uinf=5.46210e-03 phi_max=1.00211
+step 160000/303067  3.89 MLUPS(cpu)  xc=195.3 xcu=1937 gx=2.7929e-06 w=54.1674 Uinf=5.45670e-03 phi_max=1.00214
+step 180000/303067  3.89 MLUPS(cpu)  xc=391.5 xcu=2134 gx=2.7929e-06 w=54.1772 Uinf=5.45945e-03 phi_max=1.00211
+travel 2.5L reached at step 184500
+{
+ "Ud": 0.009813982191100534,
+ "Ud_window": [
+  1399.924159412954,
+  2177.5
+ ],
+ "Ud_disclosure_frozen_window": 0.009806829471087049,
+ "Uinf": 0.005458973405326224,
+ "Ud_over_Uinf": 1.7977706543734404,
+ "Ca_ach_final": 0.10507134154062853,
+ "Ca_ach_final_over_target": 0.050713415406285156,
+ "w_mean": 54.174556202856046,
+ "h_direct": 12.91307335569575,
+ "h_over_R_eff": 0.19248069190499062,
+ "h_judge_Ca_ach_final": 0.18382010432110812,
+ "err_h_vs_judge": 0.04711447431644178,
+ "ud68_from_h_direct": 1.22713859407326,
+ "closure_err_eq68": 0.4650102792432538,
+ "flatness": 0.0008783827645799426,
+ "dh_dx_per_R": -3.5747721521123544e-05,
+ "phi_int_slope": -4.819279784458659e-12,
+ "phi_int_slope_rel": -8.092495999910142e-17,
+ "phi_max_first": 1.0000000000000002,
+ "phi_max_last": 1.0021340884507435,
+ "phi_min_last": -3.618344938338858e-08,
+ "w_max_tail": 54.1856408438569,
+ "u_max": 0.10719400722610163,
+ "u_film": 0.10718239820947456,
+ "w_tail_spread": 0.00867435109203285,
+ "mlups_cpu": 3.888233416231473,
+ "wall_time_s": 5703.49786901474,
+ "n_series": 370
+}
+updates=1 last_update_xc=1138.6 nsteps=184500
+wrote /nfs/wangxi/runs/x_campaign_20261004/xa_rehab/xa4_m7_servo/out/servo_ca010_R67.json

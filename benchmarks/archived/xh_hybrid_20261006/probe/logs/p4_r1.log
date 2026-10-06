@@ -1,0 +1,13 @@
+[p4-r1] step 5000/50000 (34s) nan_f=0
+[p4-r1] step 10000/50000 (61s) nan_f=0
+[p4-r1] step 15000/50000 (87s) nan_f=0
+[p4-r1] step 20000/50000 (113s) nan_f=0
+[p4-r1] step 25000/50000 (144s) nan_f=0
+[p4-r1] step 30000/50000 (174s) nan_f=0
+[p4-r1] step 35000/50000 (204s) nan_f=0
+[p4-r1] step 40000/50000 (234s) nan_f=0
+[p4-r1] step 45000/50000 (265s) nan_f=0
+[p4-r1] step 50000/50000 (296s) nan_f=0
+[p4] r1: Eu=0.07165150233604216 (liq 0.0716192156619823 / gas 0.07168378901010201) wall=0.1549892131895548 mid=0.06346309899267139 class=H_fw (force/wall machinery implicated)
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/probe/out/p4_cac_poiseuille_rootcause_r1.json
+GATES: {"g_p4_r1_discriminator_decided": true}

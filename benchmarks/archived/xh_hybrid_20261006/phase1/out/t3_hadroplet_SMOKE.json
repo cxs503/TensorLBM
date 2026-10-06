@@ -1,0 +1,423 @@
+{
+ "test": "t3_hadroplet_smoke",
+ "script_version": "v2 (v1 never executed; XH-A6 instrumentation, zero gate changes; v1 preserved as t3_hadroplet_v1_neverrun.py)",
+ "protocol": {
+  "interpretation": "XH-A1 (NOTES.md, appended pre-run): domain (D,3D,D), a=D/8, Re_t=0.05 lock, y0 centred trajectory, sigma_target=0.01 via T1 route-B bar_eff + linearity scaling",
+  "E3": "U_t = (2/3) a^2 g drho (1+lam) / (mu_o (2+3 lam)); locked by t0 fixture (expected 9.997714285714286e-4)",
+  "t5_scope": "driven rise at U_t ~ 3.5-5.2e-4; the u_max>1e-2 kill clause targets quiescent spurious currents -- here the interior-mean-uy cross-check separates the physical rise; spurious residual disclosed via u_max, u_max_dimless_rho_o/rho_1 and the uy interior/exterior contrast (XH-A3)",
+  "arm_table": [
+   {
+    "name": "smoke_lam0.5_D32",
+    "lam": 0.5,
+    "D": 32,
+    "a": 4.0,
+    "steps": 4500,
+    "gated": false
+   },
+   {
+    "name": "smoke_lam2.0_D32",
+    "lam": 2.0,
+    "D": 32,
+    "a": 4.0,
+    "steps": 4500,
+    "gated": false
+   }
+  ]
+ },
+ "sigma_channel": {
+  "route": "B",
+  "W_star": 4.0,
+  "bar_eff_ratio_Wstar": 1.448527228801677,
+  "sigma_input_at_0.002": 0.0013807127406604152,
+  "sigma_input": 0.006903563703302076,
+  "linearity_ratio": 1.9927980507060639,
+  "t1_md5": "1791453e36a3d8803b73c84336abcef9"
+ },
+ "xh_a6_registration": {
+  "notes_md5_at_run_start": "4e44d6e35947264848ac47a0a20b24fa",
+  "prereg_md5_frozen": "80513afc24bd28a73225a2bc47132f1d",
+  "ruling_1_t4_fp32_reading": {
+   "gate_domain": "fp64 arms (prereg T4 parenthetical)",
+   "t3_arms_step_dtype": "fp32 stepping + fp64 diagnostics",
+   "fp32_membrane_is_weight_rounding_floor": true,
+   "ulp_exact_fp32_weight_table_rerun": "rejected (XH-A6)",
+   "r5_verdict_literal": false,
+   "r5_verdict_registered_reading": "literal False (out-of-domain fp32 term included); physical precondition met (rho2 stable AND C_retention >= 0.9 AND fp64 ledgers clean)"
+  },
+  "ruling_2_sl2": {
+   "t2_final": "honest FAIL (g10_ny64 E1 relL2 4.573% machine-read from t2_poiseuille.json)",
+   "sl2_right": "retained but waived; sigma channel does not enter the flat-interface Poiseuille estimator (interface parallel to flow, no curvature; controller 12-variant analytic sweep)"
+  },
+  "ruling_3_t3_release": {
+   "t6": "N/A+FAIL per prereg SL-3 (unchanged)",
+   "xh1_downgrade": "low-density-ratio specialized",
+   "t3_release_condition": "fp32 attribution disclosure line on disk per arm",
+   "condition_met_by": "arms[*].t4_fp32_attribution (all arms, NaN arms carry unmeasurable markers)"
+  }
+ },
+ "t4_attribution_sources": {
+  "e3diag_d3q19_f32_sum_minus_1": 1.4901161193847656e-08,
+  "e3diag_d3q19_f32_floor_2x": 2.9802322387695312e-08,
+  "e3diag_pform_fp32_3d_drift_max_per_step": 2.8932984613802104e-08,
+  "e3diag_pform_fp64_3d_drift_max_per_step": 1.0362612981527443e-16,
+  "r5_pA_rho2_drift_r_per_step": 2.9565866570846898e-08,
+  "r5_pA_rho2_drift_b_per_step": 1.6498823123212107e-08,
+  "r5_pA_rho2_stable": true,
+  "r5_pA_rho2_C_retention": 1.0020186629185863,
+  "r5_verdict_T3_precondition_met_rho2_literal": false,
+  "t1_derived_drift_max_per_step": 5.560251684869131e-17,
+  "t2_arms_drift_max_per_step": 5.1604575991592665e-17,
+  "source_paths": [
+   "/nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/e3diag.json",
+   "/nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/r5_pressure_probe.json",
+   "/nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/t1_laplace.json",
+   "/nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/t2_poiseuille.json"
+  ]
+ },
+ "env": {
+  "host": "localhost.localdomain",
+  "time_utc": "2026-10-06T03:27:19Z",
+  "python": "3.12.13",
+  "torch": "2.11.0+cu128",
+  "cuda_available": true,
+  "OMP_NUM_THREADS": "16",
+  "torch_num_threads": 16,
+  "cuda_visible_devices": "5",
+  "worktree": "/nfs/wangxi/worktrees/xh_hyb",
+  "worktree_sha": "4ba836c9977b9607788b9f0eca0a46a703bcc0e9",
+  "worktree_tracked_clean": true,
+  "prereg_md5_frozen": "80513afc24bd28a73225a2bc47132f1d",
+  "prereg_md5_live": "80513afc24bd28a73225a2bc47132f1d",
+  "engine_md5": {
+   "hybrid_cg_cac.py": "02dbe4b1ec5e337f94e91f132c16d5e3",
+   "color_gradient2d.py": "350a3230c7a9578ab4353d6e95ca2db6",
+   "cac_lbm.py": "ccc671ee4738d9266967e74f1fd8924b",
+   "d2q9.py": "bc2be8ae3bf7538494e5eee7c6fc6e25",
+   "d3q19.py": "81ff92c8912d2d6dde638ef1d27825cb",
+   "solver.py": "5dd41e8002ba94eaad6f269bb98d5a72",
+   "boundaries.py": "a732dadf1860b78141dd8bb10cf77fee",
+   "boundaries3d.py": "0b5d1def0625a18243a8a2c761d63a18",
+   "phasefield/stream_boundary_contract.py": "4d6f4013950d50d58658183078cccbc7",
+   "E1_cg_reference.py": "e78c6d1eb22d628182636c0df74fb26a",
+   "E1prime_xh_common.py": "5045f0dc55c06760f3f6cd599767636b"
+  },
+  "evaluator_lock": {
+   "E1": "benchmarks/verified/poiseuille_two_phase_cg/cg_reference.py",
+   "E1prime": "probe/xh_common.py::two_layer",
+   "E2": "sigma_rec = dP*R (2D) / dP*R/2 (3D); dP from band means of the mechanical pressure (cs^2 rho in plain mode; cs^2 rho + Psi in pressure-form mode)",
+   "E3": "U_t = (2/3) a^2 g (rho_o - rho_i) (1+lambda) / (mu_o (2+3lambda)); locked hand example a=12, g=8.1e-6, rho_o=2, rho_i=1, nu=1/6 (tau=1), lambda=0.5 -> U_t=9.997714285714286e-4",
+   "E3_fixture_expected": 0.0009997714285714286
+  },
+  "script": "t3_hadroplet.py",
+  "script_md5": "3343afb4c32397713e1b642349f45e3e",
+  "gpu": {
+   "tag": "t3",
+   "cuda_visible_devices": "5",
+   "nvidia_smi_csv": "index, name, memory.used [MiB], memory.total [MiB], utilization.gpu [%]\n0, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n1, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n2, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n3, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n4, NVIDIA GeForce RTX 5090, 27760 MiB, 32607 MiB, 0 %\n5, NVIDIA GeForce RTX 5090, 5 MiB, 32607 MiB, 0 %\n6, NVIDIA GeForce RTX 5090, 5 MiB, 32607 MiB, 0 %\n7, NVIDIA GeForce RTX 5090, 5 MiB, 32607 MiB, 0 %",
+   "device": "NVIDIA GeForce RTX 5090",
+   "capability": [
+    12,
+    0
+   ]
+  }
+ },
+ "arms": [
+  {
+   "name": "smoke_lam0.5_D32",
+   "gated": false,
+   "stable": true,
+   "protocol": {
+    "lam": 0.5,
+    "D": 32,
+    "a": 4.0,
+    "domain": [
+     32,
+     96,
+     32
+    ],
+    "steps": 4500,
+    "tau_r": 1.0,
+    "tau_b": 1.0,
+    "mu_i": 0.16666666666666666,
+    "mu_o": 0.3333333333333333,
+    "Re_t": 0.05,
+    "U_t": 0.0010416666666666667,
+    "g": 7.595486111111111e-05,
+    "y0_center": 45.65625,
+    "sigma_target": 0.01,
+    "sigma_input": 0.006903563703302076,
+    "W": 4.0,
+    "p0_resolved": 0.6666666666666666,
+    "Ca_mu_o_Ut_over_sigma": 0.03472222222222222,
+    "cells": 98304
+   },
+   "U_sim": 0.0013214027301059873,
+   "U_sim_interior_mean_uy": 0.0011590772681041588,
+   "R_eq_window_mean": 5.293894749773065,
+   "err_vs_Ut": 0.26854662090174797,
+   "err_vs_Ut_interior": 0.11271417737999245,
+   "U_t_at_Req": 0.0018245652097444547,
+   "err_vs_Ut_Req": -0.27577116835903026,
+   "steady_change_in_window": 0.059943153577301116,
+   "U_roll_first": 0.0010776536876552147,
+   "U_roll_last": 0.001146370766572392,
+   "gap_top_min_in_a": 11.16282100958303,
+   "gap_bot_min_in_a": 12.422003649153721,
+   "C_init": 0.49535098093498064,
+   "C_end": 0.5047562217107427,
+   "C_retention": 1.0189870236211294,
+   "u_max_final": 0.0052206749811554475,
+   "u_max_window_mean": 0.003859594924733094,
+   "u_max_dimless_rho_o": 0.03691574681545968,
+   "u_max_dimless_rho_1": 0.026103374905777237,
+   "sigma_rec_end": 0.007399346760075263,
+   "sigma_rec_window_mean": 0.007385417667517981,
+   "mass_r_rel_final": 0.00011177347975308219,
+   "mass_b_rel_final": 6.18182069496405e-05,
+   "mass_drift_r_per_step": 2.4838551056240487e-08,
+   "mass_drift_b_per_step": 1.3737379322142334e-08,
+   "t4_fp32_attribution": {
+    "arm_ledger_r_per_step_fp32": 2.4838551056240487e-08,
+    "arm_ledger_b_per_step_fp32": 1.3737379322142334e-08,
+    "arm_projected_mass_breathing_rel_r_over_run": 0.00011177347975308219,
+    "arm_projected_mass_breathing_rel_b_over_run": 6.18182069496405e-05,
+    "e3diag_d3q19_f32_floor_2x": 2.9802322387695312e-08,
+    "e3diag_pform_fp32_3d_drift_max_per_step": 2.8932984613802104e-08,
+    "r5_pA_rho2_drift_r_per_step": 2.9565866570846898e-08,
+    "fp64_domain_receipts_per_step": {
+     "t1": 5.560251684869131e-17,
+     "t2_arms_max": 5.1604575991592665e-17,
+     "e3diag_pform_fp64_3d": 1.0362612981527443e-16
+    },
+    "reading": "XH-A6 ruling 1: the prereg T4 bound (<=1e-10/step/colour) is defined on fp64 arms (prereg parenthetical); T3 arms step fp32 (fp64 diagnostics). The fp32 membrane 2.980232e-08/step = 2x e3diag weight_sums.d3q19_f32.sum_minus_1 1.490116e-08 (r5 pA_rho2 measured 2.956587e-08) is the weight-rounding floor, not a physics defect; its observational impact over this run is the projected mass breathing 1.117735e-04 (rel, colour r), far below the 3% T3 gate. ulp-exact fp32 weight-table re-run explicitly rejected by XH-A6 (no information content). r5 verdict_T3_precondition_met_rho2 literal = False (contains the out-of-domain fp32 term); physical precondition met per XH-A6: rho2 stable=True, C_retention=1.002019>=0.9, fp64 ledgers clean (t1 5.56e-17, t2 max 5.16e-17, pform_fp64_3d 1.04e-16 per step)."
+   },
+   "gpu_snapshot_arm_start": {
+    "tag": "t3-smoke_lam0.5_D32",
+    "cuda_visible_devices": "5",
+    "nvidia_smi_csv": "index, name, memory.used [MiB], memory.total [MiB], utilization.gpu [%]\n0, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n1, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n2, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n3, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n4, NVIDIA GeForce RTX 5090, 27760 MiB, 32607 MiB, 0 %\n5, NVIDIA GeForce RTX 5090, 5 MiB, 32607 MiB, 0 %\n6, NVIDIA GeForce RTX 5090, 5 MiB, 32607 MiB, 0 %\n7, NVIDIA GeForce RTX 5090, 5 MiB, 32607 MiB, 0 %",
+    "device": "NVIDIA GeForce RTX 5090",
+    "capability": [
+     12,
+     0
+    ]
+   },
+   "wall_s": 15.33124041557312,
+   "samples": [
+    {
+     "step": 1,
+     "y_centroid": 45.65617125146593,
+     "R_eq_from_phi_volume": 5.024203416988778,
+     "r_rms": 5.474380251514307,
+     "uy_interior_mean": -8.413528749198506e-05,
+     "u_max": 0.000641030529625432,
+     "C_contrast": 0.49535098093498064,
+     "rho_r_in": 0.9874719852145682,
+     "rho_b_out": 1.9934794180697968,
+     "dP": 0.0057793369240003445,
+     "sigma_rec": 0.01451828216074597,
+     "mass_r_rel": 1.6222308584884165e-08,
+     "mass_b_rel": 1.4150677556096698e-08,
+     "gap_top_in_a": 12.335957187133518,
+     "gap_bot_in_a": 11.414042812866482
+    },
+    {
+     "step": 2000,
+     "y_centroid": 47.62151866759403,
+     "R_eq_from_phi_volume": 5.291293344658363,
+     "r_rms": 4.596897534217126,
+     "uy_interior_mean": -0.002309629261572118,
+     "u_max": 0.002914134395512364,
+     "C_contrast": 0.505670041863079,
+     "rho_r_in": 1.009283888688747,
+     "rho_b_out": 1.9959337218597424,
+     "dP": 0.0034515691064248566,
+     "sigma_rec": 0.009131632320727128,
+     "mass_r_rel": 4.974499620621509e-05,
+     "mass_b_rel": 2.713804300868658e-05,
+     "gap_top_in_a": 11.844620333101492,
+     "gap_bot_in_a": 11.905379666898508
+    },
+    {
+     "step": 4000,
+     "y_centroid": 49.688014596614885,
+     "R_eq_from_phi_volume": 5.293924563270635,
+     "r_rms": 4.598956632767037,
+     "uy_interior_mean": -0.0016956589948292705,
+     "u_max": 0.002498514868310741,
+     "C_contrast": 0.5048523683077931,
+     "rho_r_in": 1.0076818957838207,
+     "rho_b_out": 1.9959932032436616,
+     "dP": 0.0027848861414098147,
+     "sigma_rec": 0.007371488574960699,
+     "mass_r_rel": 9.938797209758967e-05,
+     "mass_b_rel": 5.502951873692788e-05,
+     "gap_top_in_a": 11.327996350846279,
+     "gap_bot_in_a": 12.422003649153721
+    }
+   ],
+   "n_samples_full": 10
+  },
+  {
+   "name": "smoke_lam2.0_D32",
+   "gated": false,
+   "stable": true,
+   "protocol": {
+    "lam": 2.0,
+    "D": 32,
+    "a": 4.0,
+    "domain": [
+     32,
+     96,
+     32
+    ],
+    "steps": 4500,
+    "tau_r": 2.5,
+    "tau_b": 1.0,
+    "mu_i": 0.6666666666666666,
+    "mu_o": 0.3333333333333333,
+    "Re_t": 0.05,
+    "U_t": 0.0010416666666666667,
+    "g": 8.680555555555556e-05,
+    "y0_center": 45.65625,
+    "sigma_target": 0.01,
+    "sigma_input": 0.006903563703302076,
+    "W": 4.0,
+    "p0_resolved": 0.6666666666666666,
+    "Ca_mu_o_Ut_over_sigma": 0.03472222222222222,
+    "cells": 98304
+   },
+   "U_sim": 0.0013297728383863613,
+   "U_sim_interior_mean_uy": 0.0010635879027416563,
+   "R_eq_window_mean": 5.2939138184980346,
+   "err_vs_Ut": 0.27658192485090694,
+   "err_vs_Ut_interior": 0.021044386631990042,
+   "U_t_at_Req": 0.0018245783540159143,
+   "err_vs_Ut_Req": -0.27118896513294777,
+   "steady_change_in_window": 0.07037073590097068,
+   "U_roll_first": 0.0010511582411590196,
+   "U_roll_last": 0.0011307284331004497,
+   "gap_top_min_in_a": 11.199491302267456,
+   "gap_bot_min_in_a": 12.38428709293425,
+   "C_init": 0.4827560777983212,
+   "C_end": 0.504909841800707,
+   "C_retention": 1.0458901814419845,
+   "u_max_final": 0.005822571039355312,
+   "u_max_window_mean": 0.004441446520250793,
+   "u_max_dimless_rho_o": 0.04117179465868545,
+   "u_max_dimless_rho_1": 0.029112855196776557,
+   "sigma_rec_end": 0.007245866544298962,
+   "sigma_rec_window_mean": 0.007235108764701107,
+   "mass_r_rel_final": 6.209786194660807e-05,
+   "mass_b_rel_final": 6.162044353770482e-05,
+   "mass_drift_r_per_step": 1.3799524877024015e-08,
+   "mass_drift_b_per_step": 1.3693431897267739e-08,
+   "t4_fp32_attribution": {
+    "arm_ledger_r_per_step_fp32": 1.3799524877024015e-08,
+    "arm_ledger_b_per_step_fp32": 1.3693431897267739e-08,
+    "arm_projected_mass_breathing_rel_r_over_run": 6.209786194660807e-05,
+    "arm_projected_mass_breathing_rel_b_over_run": 6.162044353770482e-05,
+    "e3diag_d3q19_f32_floor_2x": 2.9802322387695312e-08,
+    "e3diag_pform_fp32_3d_drift_max_per_step": 2.8932984613802104e-08,
+    "r5_pA_rho2_drift_r_per_step": 2.9565866570846898e-08,
+    "fp64_domain_receipts_per_step": {
+     "t1": 5.560251684869131e-17,
+     "t2_arms_max": 5.1604575991592665e-17,
+     "e3diag_pform_fp64_3d": 1.0362612981527443e-16
+    },
+    "reading": "XH-A6 ruling 1: the prereg T4 bound (<=1e-10/step/colour) is defined on fp64 arms (prereg parenthetical); T3 arms step fp32 (fp64 diagnostics). The fp32 membrane 2.980232e-08/step = 2x e3diag weight_sums.d3q19_f32.sum_minus_1 1.490116e-08 (r5 pA_rho2 measured 2.956587e-08) is the weight-rounding floor, not a physics defect; its observational impact over this run is the projected mass breathing 6.209786e-05 (rel, colour r), far below the 3% T3 gate. ulp-exact fp32 weight-table re-run explicitly rejected by XH-A6 (no information content). r5 verdict_T3_precondition_met_rho2 literal = False (contains the out-of-domain fp32 term); physical precondition met per XH-A6: rho2 stable=True, C_retention=1.002019>=0.9, fp64 ledgers clean (t1 5.56e-17, t2 max 5.16e-17, pform_fp64_3d 1.04e-16 per step)."
+   },
+   "gpu_snapshot_arm_start": {
+    "tag": "t3-smoke_lam2.0_D32",
+    "cuda_visible_devices": "5",
+    "nvidia_smi_csv": "index, name, memory.used [MiB], memory.total [MiB], utilization.gpu [%]\n0, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n1, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n2, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n3, NVIDIA GeForce RTX 5090, 32128 MiB, 32607 MiB, 0 %\n4, NVIDIA GeForce RTX 5090, 27760 MiB, 32607 MiB, 0 %\n5, NVIDIA GeForce RTX 5090, 816 MiB, 32607 MiB, 0 %\n6, NVIDIA GeForce RTX 5090, 5 MiB, 32607 MiB, 0 %\n7, NVIDIA GeForce RTX 5090, 5 MiB, 32607 MiB, 0 %",
+    "device": "NVIDIA GeForce RTX 5090",
+    "capability": [
+     12,
+     0
+    ]
+   },
+   "wall_s": 15.132368803024292,
+   "samples": [
+    {
+     "step": 1,
+     "y_centroid": 45.65616056742908,
+     "R_eq_from_phi_volume": 5.028666122484069,
+     "r_rms": 5.476027846574416,
+     "uy_interior_mean": 0.00033075561451986925,
+     "u_max": 0.03088321702226352,
+     "C_contrast": 0.4827560777983212,
+     "rho_r_in": 0.9623760165686303,
+     "rho_b_out": 1.9935036777945605,
+     "dP": -0.006081073415384108,
+     "sigma_rec": -0.01528984393614028,
+     "mass_r_rel": 1.4138965503153202e-08,
+     "mass_b_rel": 5.243435296286748e-09,
+     "gap_top_in_a": 12.33595985814273,
+     "gap_bot_in_a": 11.41404014185727
+    },
+    {
+     "step": 2000,
+     "y_centroid": 47.546651852084196,
+     "R_eq_from_phi_volume": 5.2911030155954,
+     "r_rms": 4.596752037985453,
+     "uy_interior_mean": -0.003094761749569911,
+     "u_max": 0.0036505399555147146,
+     "C_contrast": 0.5057717262252556,
+     "rho_r_in": 1.0094166275985696,
+     "rho_b_out": 1.995794891763099,
+     "dP": 0.003473914911104936,
+     "sigma_rec": 0.009190420831034577,
+     "mass_r_rel": 2.773284362681595e-05,
+     "mass_b_rel": 2.731426627946454e-05,
+     "gap_top_in_a": 11.863337036978951,
+     "gap_bot_in_a": 11.886662963021049
+    },
+    {
+     "step": 4000,
+     "y_centroid": 49.537148371737,
+     "R_eq_from_phi_volume": 5.293930266526877,
+     "r_rms": 4.598955370916833,
+     "uy_interior_mean": -0.0024359776462424374,
+     "u_max": 0.0030603220011462744,
+     "C_contrast": 0.5047374274053545,
+     "rho_r_in": 1.0073845348855917,
+     "rho_b_out": 1.995858599319922,
+     "dP": 0.002729295862010983,
+     "sigma_rec": 0.0072243509851032525,
+     "mass_r_rel": 5.5202843202277536e-05,
+     "mass_b_rel": 5.4788593166458264e-05,
+     "gap_top_in_a": 11.36571290706575,
+     "gap_bot_in_a": 12.38428709293425
+    }
+   ],
+   "n_samples_full": 10
+  }
+ ],
+ "monotonicity": {},
+ "derived": {
+  "drift_max_per_step": 2.4838551056240487e-08,
+  "gpu_h_total_this_run": 0.008462113671832614,
+  "gpu_ledger": {
+   "r5_3d_arms_wall_s": {
+    "sum": 31.274986743927002,
+    "source": "/nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/r5_pressure_probe.json",
+    "note": "e2diag/e3diag carry no wall field (<=64^3 x <=10k diagnostic shorts); T1/T2 ran CPU fp64"
+   },
+   "t3_wall_s": 30.463609218597412,
+   "gpu_h_cumulative": 0.017149609989590114,
+   "sl5_limit_gpu_h": 28.8,
+   "sl5_tripped": false
+  },
+  "attribution_arm_note": "non-gated; err(a=4) vs err(a=8) at lambda=0.5/D=64 discriminates wall-confinement-dominated (halves) vs discretization-dominated (grows)"
+ },
+ "gates": {
+  "smoke_only_no_gates": true
+ },
+ "gates_reading_registration_xh_a6": {
+  "g_t4_ledger_le_1e-10": {
+   "literal": null,
+   "domain_registration": "prereg T4 bound is defined on fp64 arms; T3 arms step fp32 -> the literal field reads the out-of-domain fp32 membrane (weight-rounding floor ~2.96e-8/step, e3diag chain); physical precondition receipted by arms[*].t4_fp32_attribution + t4_attribution_sources (XH-A6 ruling 1)"
+  },
+  "other_gates": "literal machine booleans, no registration needed"
+ }
+}

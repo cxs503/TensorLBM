@@ -1,0 +1,21 @@
+PASS A1 prereg md5 260dabf4 (frozen pre-run)
+PASS A2 judge script md5 2559ee07 + version string v1.1 + v1.0 md5 48242bc9 recorded
+PASS A3 verdict md5 26d783ec + NOTES md5 77936277 (receipted)
+PASS A4 engine_w1 file on disk == 8782d48d, runner == 07398a05; all 9 arms stamp identical prereg/engine/runner provenance
+PASS A5 v1.1 engine file (m8_fs worktree, runner's read-only import) == 4e15dfa0  | 4e15dfa0
+PASS A6 bit-identity guardrail 9/9 (250 steps, no break)
+PASS B1 MY full recompute (slope LSQ, drifts, ratio env, over-3x times, zombie, late means) == verdict stored values, all 9 arms, 1e-12/1e-15
+PASS B2 all gate booleans agree with MY values (td1/td2/td3/g1a/g1b/g1c), 9 arms
+PASS B3 per-step uy audit >= sampled max and == stored audit field, 9 arms
+PASS B4 P-static G3: MY hydrostatic fit (polyfit + r2) == verdict; g_eff/g=0.999909 in [0.97,1.03]
+PASS B5 P-fossil G4: MY cum last-values == verdict cum block; l2i_without_i2g_nb=0
+PASS C1 MAIN W1-AB-055 all three T-D gates green -- MY values: slope -0.003121 (<=+1e-3), max|uy| sampled 0.0244 / audit 0.0260 (<=0.1), td3 finite
+PASS C2 agent-quoted numbers tie: slope -0.003121, sampled 0.0244, audit 0.0260, tracked drift <=0.0120 pct
+PASS C3 ablation orthogonality: W1-A-055 all-pass (capture kills ceiling); W1-B-055 T-D2 FAIL ~0.5005 (mirror alone does not); W1-R-055 all-pass
+PASS C4 off control (v1.1 baseline): T-D2 FAIL ~0.5004 AND zombie ablation headline off mean ~57.6 / peak ~111 vs AB 2.01/6 (poisoning scale quantified)
+PASS C5 tau=0.8/1.0 arms T-D1 literal FAIL as pre-disclosed (+0.00136/+0.00156), T-D2/T-D3 pass; disclosure-role only (reading A)
+   W1-AB-08 subwindow slopes t>=2000/3500/5000/6500/8000: ['+0.00136', '+0.00087', '+0.00024', '-0.00032', '-0.00013']
+PASS C6 W1-AB-08 slope decay ladder monotone toward zero (relaxation tail, transient not ratchet) -- my windows
+PASS C7 P-arm G2 literal FAIL pre-disclosed: all over-3x samples t<=1400 (collapse birth transient), late envelope <=1.21; g1/g3/g4 green
+
+mine: PASS 18 FAIL 0

@@ -1,0 +1,19 @@
+{
+  "probe": "X1 C-CG P0 CPU probe: does the frozen C1 stack support shear driving?",
+  "utc": "2026-10-04T00:00:00Z",
+  "method": "static code inspection of the frozen engine surface (zero GPU)",
+  "evidence": {
+    "kernel_functions": [
+      "/nfs/wangxi/runs/bm_mp_20261004/c1_color_gradient/src_patched/tensorlbm/color_gradient2d.py",
+      "exports: cg_phase_field, cg_phase_gradient, color_gradient_two_tau_step (body-force/Guo driven), cg_pressure_jump, cg_max_velocity, cg_interface_width_cut"
+    ],
+    "wall_api": "tensorlbm.boundaries.bounce_back_cells only (stationary halfway bounce-back; no velocity-dependent / moving-wall variant anywhere in the C1 stack)",
+    "c1_g2_runner_wall": "run_g2_poiseuille.py: wall rows j=0,j=ny-1 + bounce_back_cells(stream(f)) - stationary",
+    "shear_mentions": "probe_nu.py shear_decay = periodic bulk-viscosity measurement (no walls, uniform mixture); NOT a droplet-in-shear driver",
+    "conclusion": "frozen C1 kernel does NOT support shear driving (no moving-wall BB, no equivalent)"
+  },
+  "prereg_rule": "x1_crossval/prereg.md §4: not supported -> record 'CG shear not supported (frozen kernel)'; case (c) collapses to the CAC row; NO 2D Stokes reference lock needed; NO GPU burned for C-CG",
+  "engine_md5": {
+    "color_gradient2d.py": "81203d6d6f00104f4853a6db81815fe0"
+  }
+}

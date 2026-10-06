@@ -1,0 +1,26 @@
+engine md5 OK (ccc671ee4738d9266967e74f1fd8924b); torch=2.11.0+cu128
+=== stp_R16: variant P (ppp 100^3) ===
+  sigma_eff=0.0065432049 (R0 conv=0.0064612163) health=True wall=194.2s
+=== stp_R16: variant W (t2_run calib replica) ===
+  rc=0 wall=206.0s
+=== stp_R16_b8: variant P (ppp 132^3) ===
+  sigma_eff=0.0065432777 (R0 conv=0.0064612881) health=True wall=455.8s
+=== stp_R16_b8: variant W (t2_run calib replica) ===
+  rc=0 wall=477.8s
+=== stp_R24: variant P (ppp 148^3) ===
+  sigma_eff=0.0064976855 (R0 conv=0.0064609919) health=True wall=673.5s
+=== stp_R24: variant W (t2_run calib replica) ===
+  rc=0 wall=700.0s
+=== stp_R32: variant P (ppp 196^3) ===
+  sigma_eff=0.0064832791 (R0 conv=0.0064625827) health=True wall=1796.1s
+=== stp_R32: variant W (t2_run calib replica) ===
+  rc=1 wall=2.1s
+  stderr tail: s 2857406 has 27.01 GiB memory in use. Including non-PyTorch memory, this process has 4.10 GiB memory in use. Of the allocated memory 3.50 GiB is allocated by PyTorch, and 7.64 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+=== stp_R24_mu045: variant P (ppp 148^3) ===
+  sigma_eff=0.0064978509 (R0 conv=0.0064611563) health=True wall=673.4s
+=== stp_R24_mu045: variant W (t2_run calib replica) ===
+  rc=1 wall=2.2s
+  stderr tail: 2857406 has 27.01 GiB memory in use. Including non-PyTorch memory, this process has 3.98 GiB memory in use. Of the allocated memory 3.13 GiB is allocated by PyTorch, and 258.46 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+xa3 runs done

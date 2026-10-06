@@ -1,0 +1,131 @@
+{
+ "utc": "2026-10-05T05:49:47Z",
+ "receipts": {
+  "section2_locks": "OK (formal_arms R67 + formal_ca010_R67 + sigma_eff)",
+  "frozen_baseline": {
+   "Ca_ach_over_target": 0.13328449203566062,
+   "err_h_vs_judge": 0.0530648092706445,
+   "phi_max_last_baseline": 1.0023946145142026
+  }
+ },
+ "gates": {
+  "V1": {
+   "value": 0.050713415406285156,
+   "updates": 1,
+   "pass": false
+  },
+  "V2": {
+   "servo_phase_steps": 78500,
+   "total_steps": 184500,
+   "duty": 0.4254742547425474,
+   "pass": true
+  },
+  "V3": {
+   "phi_ok_amdt1": true,
+   "phi_max_last": 1.0021340884507435,
+   "phi_min_last": -3.618344938338858e-08,
+   "flatness": 0.0008783827645799426,
+   "flatness_pass": true,
+   "phi_int_slope_rel": -8.092495999910142e-17,
+   "wall_clearance": true,
+   "w_max_tail": 54.1856408438569,
+   "pass": true
+  },
+  "V4": {
+   "wall_h": 1.5843049636152056,
+   "cap_h": 11.4,
+   "pass": true
+  }
+ },
+ "verdict": "PROTOCOL FAIL: servo protocol itself not validated (failed gates: V1); no physics conclusion; full ladder NOT opened",
+ "sources": {
+  "servo_run": {
+   "path": "/nfs/wangxi/runs/x_campaign_20261004/xa_rehab/xa4_m7_servo/out/servo_ca010_R67.json",
+   "md5": "18ccb58313e952d78bca63928943f453"
+  },
+  "formal_R67": {
+   "path": "/nfs/wangxi/runs/bm_mp_20261001/m7_taylor/out/formal_ca010_R67.json",
+   "md5": "b0d77bf8d0383a67fac3fef112b8d7e1"
+  },
+  "formal_arms": {
+   "path": "/nfs/wangxi/runs/bm_mp_20261001/m7_taylor/scripts/formal_arms.json",
+   "md5": "8bb5ef49b96c40e0d1290aeb34ee5fd8"
+  }
+ },
+ "result_slice": {
+  "Ud": 0.009813982191100534,
+  "Ud_window": [
+   1399.924159412954,
+   2177.5
+  ],
+  "Ud_disclosure_frozen_window": 0.009806829471087049,
+  "Uinf": 0.005458973405326224,
+  "Ca_ach_final": 0.10507134154062853,
+  "Ca_ach_final_over_target": 0.050713415406285156,
+  "h_direct": 12.91307335569575,
+  "h_judge_Ca_ach_final": 0.18382010432110812,
+  "err_h_vs_judge": 0.04711447431644178,
+  "flatness": 0.0008783827645799426,
+  "w_max_tail": 54.1856408438569,
+  "wall_time_s": 5703.49786901474
+ },
+ "servo_log": [
+  {
+   "step": 78500,
+   "xc_unw": 1138.624159412954,
+   "n_samples": 35,
+   "ud_meas": 0.010104455803016431,
+   "Ca_meas": 0.10818123633072012,
+   "rel_dev": 0.08181236330720121,
+   "triggered": true,
+   "gx_old": 2.9531274180874463e-06,
+   "gx_new": 2.7929357909957923e-06,
+   "update_index": 1
+  },
+  {
+   "step": 96500,
+   "xc_unw": 1314.4050128054998,
+   "n_samples": 36,
+   "ud_meas": 0.009736719906256824,
+   "Ca_meas": 0.10424414909611969,
+   "rel_dev": 0.04244149096119676,
+   "triggered": false
+  },
+  {
+   "step": 114500,
+   "xc_unw": 1490.6587443182325,
+   "n_samples": 36,
+   "ud_meas": 0.009792877420091755,
+   "Ca_meas": 0.104845387737206,
+   "rel_dev": 0.04845387737205997,
+   "triggered": false
+  },
+  {
+   "step": 132500,
+   "xc_unw": 1667.594837000749,
+   "n_samples": 36,
+   "ud_meas": 0.009831478897345902,
+   "Ca_meas": 0.10525866635556555,
+   "rel_dev": 0.05258666355565533,
+   "triggered": false
+  },
+  {
+   "step": 150500,
+   "xc_unw": 1844.2043078552897,
+   "n_samples": 36,
+   "ud_meas": 0.009810642352201832,
+   "Ca_meas": 0.1050355842560948,
+   "rel_dev": 0.05035584256094783,
+   "triggered": false
+  },
+  {
+   "step": 168500,
+   "xc_unw": 2020.710661067201,
+   "n_samples": 36,
+   "ud_meas": 0.009805926259239189,
+   "Ca_meas": 0.10498509239613761,
+   "rel_dev": 0.049850923961376026,
+   "triggered": false
+  }
+ ]
+}
