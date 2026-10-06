@@ -1,6 +1,6 @@
-# Benchmark status (generated 2026-09-29)
+# Benchmark status (generated 2026-10-06)
 
-verified: **21** | pending: **20**
+verified: **22** | pending: **21**
 
 Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
 
@@ -28,6 +28,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `taylor_green_2d` | analytic decay |
 | `taylor_green_3d` | analytic decay |
 | `womersley` | analytic pulsatile |
+| `aircraft_icing_naca0012_rime` | NACA 0012 IRT rime: internal-consistency family all PASS (G1 closure 0.0, G7 bitwise 15/15, G9 LWC linearity 1.66%, G10 Richardson |err| <= 0.86%); no external anchor |
 
 ## pending/ (not yet accepted -- blockers documented)
 
@@ -53,6 +54,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `sphere_re100_d3q27` | D3Q27 lattice path (systematic offsets) |
 | `sphere_re200` | reference corrected (SN 0.8056, not 0.769) |
 | `stokes_sphere_dg` | DG force method: spurious (2.15% then 53% on refine) |
+| `aircraft_icing_rg15_ipw2` | RG-15 IPW2 3 official cases: G3 FAIL 3.03e-02 (per-bin closure, warmup-window), G11a FAIL 10.1% (input reconstruction); MCCS D1 area ratio 0.14-0.32x model-class gap; per-bin beta curves empty (library asymmetry) |
 
 ## Notes
 
