@@ -1,0 +1,18 @@
+scan files loaded: 40
+stable=40/40  mass=40/40  width_stab=7/40  u_max=0/40  health_pass=0/40
+u_max range [1.279e-03,1.053e-02]  width_stab range [0.0000,0.5607]
+judge_allfail_confirmed: True
+det 128_25 b0.5: rel 0.0e+00  md5match
+det 128_25 b0.7: rel 0.0e+00  md5match
+det 128_25 b0.9: rel 0.0e+00  md5match
+beta 0.5: F_main(no-health)=0.37388 (4/4)  F_all=0.44242 (8/8)
+beta 0.6: F_main(no-health)=0.29349 (4/4)  F_all=0.28598 (8/8)
+beta 0.7: F_main(no-health)=0.20106 (4/4)  F_all=0.30356 (8/8)
+beta 0.8: F_main(no-health)=0.20321 (4/4)  F_all=0.19991 (8/8)
+beta 0.9: F_main(no-health)=0.21824 (4/4)  F_all=0.23098 (8/8)
+engine_md5 set: {'81203d6d6f00104f4853a6db81815fe0'} expected 81203d6d6f00104f4853a6db81815fe0
+width 200_30 b0.5: 25.17 cells
+width 200_30 b0.6: 15.67 cells
+width 200_30 b0.7: 16.67 cells
+width 200_30 b0.8: 14.33 cells
+width 200_30 b0.9: 25.33 cells
