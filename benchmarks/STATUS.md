@@ -1,6 +1,6 @@
 # Benchmark status (generated 2026-10-05, after the 22-agent marine sweep)
 
-verified: **30** | pending: **30**
+verified: **31** | pending: **31**
 
 Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
 
@@ -9,6 +9,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | case | note |
 |---|---|
 | `acoustics` | analytic / standard case |
+| `aircraft_icing_naca0012_rime` | NACA 0012 IRT rime: internal-consistency family all PASS (G1 closure 0.0, G7 bitwise 15/15, G9 LWC linearity 1.66%, G10 Richardson |err| <= 0.86%); no external anchor |
 | `cavity` | analytic / standard case |
 | `cavity_3d_full` | analytic / standard case |
 | `couette_2d` | analytic / standard case |
@@ -43,6 +44,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 
 | case | status / blocker |
 |---|---|
+| `aircraft_icing_rg15_ipw2` | RG-15 IPW2 3 official cases: G3 FAIL 3.03e-02 (per-bin closure, warmup-window), G11a FAIL 10.1% (input reconstruction); MCCS D1 area ratio 0.14-0.32x model-class gap; per-bin beta curves empty (library asymmetry) |
 | `backward_step` | mode K fix (pre-stream BB + non-eq sponge) kills the acoustic standing wave (drift 4e-2 -> 2e-7/step); near-wall travelling artefact remains -> X1 not plateaued |
 | `blasius_flat_plate` | domain height / exit BC / virtual-LE all REFUTED; residual = leading-edge near-field acceleration + inlet transient (le=100 -> +12.1%) |
 | `bstep_3d` | in progress |
