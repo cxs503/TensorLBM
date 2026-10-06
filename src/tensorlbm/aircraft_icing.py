@@ -1621,6 +1621,12 @@ class RimeIcingSimulation:
             self._bflux_acc = torch.zeros(4, dtype=torch.float64, device=self.dev)
             self._dep_acc = torch.zeros((), dtype=torch.float64, device=self.dev)
             self._enc_acc = torch.zeros((), dtype=torch.float64, device=self.dev)
+            # G3: warmup-window observers — the fluxes _euler_advance_warmup
+            # used to discard, recorded separately so the full-run (cold
+            # start -> end) per-bin mass identity can close without
+            # touching any production ledger
+            self._bflux_warm_acc = torch.zeros(4, dtype=torch.float64, device=self.dev)
+            self._dep_warm_acc = torch.zeros((), dtype=torch.float64, device=self.dev)
             self.aud_e: dict[str, float] = {
                 "initial_fill": 0.0,
                 "inlet_in": 0.0,
@@ -1631,6 +1637,15 @@ class RimeIcingSimulation:
                 "lat_out": 0.0,
                 "airborne": 0.0,
                 "closure_error": 0.0,
+                # G3 additive keys (warmup window + full-run identity)
+                "warmup_inlet_in": 0.0,
+                "warmup_outlet_in": 0.0,
+                "warmup_outlet_out": 0.0,
+                "warmup_lat_in": 0.0,
+                "warmup_lat_out": 0.0,
+                "warmup_deposited": 0.0,
+                "warmup_bflux_raw": [0.0, 0.0, 0.0, 0.0],
+                "closure_error_full": 0.0,
             }
             if cfg.mvd_bins is not None:
                 # Phase 2c: per-bin Eulerian state (leading bin axis).  The
@@ -1650,6 +1665,13 @@ class RimeIcingSimulation:
                 )
                 self._dep_acc = torch.zeros((self.n_bins,), dtype=torch.float64, device=self.dev)
                 self._enc_acc = torch.zeros((self.n_bins,), dtype=torch.float64, device=self.dev)
+                # G3: per-bin warmup-window observers (see the mono init above)
+                self._bflux_warm_acc = torch.zeros(
+                    (self.n_bins, 4), dtype=torch.float64, device=self.dev
+                )
+                self._dep_warm_acc = torch.zeros(
+                    (self.n_bins,), dtype=torch.float64, device=self.dev
+                )
                 self.aud_e_bins: list[dict[str, float]] = [
                     dict(self.aud_e) for _ in range(self.n_bins)
                 ]
@@ -2583,26 +2605,40 @@ class RimeIcingSimulation:
                 self.m_w += dm
 
     def _euler_advance_warmup(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
-        """Advance the Eulerian cloud one warmup step, ledger-free (IC-D3).
+        """Advance the Eulerian cloud one warmup step (IC-D3, G3 ledger).
 
         Identical field mathematics to :meth:`_euler_advance` (the same
-        single call of the compiled unit with identical arguments) but the
-        impact ledger, water ledger and audit accumulators stay untouched:
-        warmup only develops the droplet slip field so the exposure window
-        opens with the cloud in local equilibrium.  Without it the first
-        ``~tau_d_lu`` steps of every shot under-collect (``u_d`` starts at
-        ``u_f``, i.e. zero slip), which made the whole-shot-ledger beta and
-        the Messinger impingement rate depend on the lattice length of the
-        shot.
+        single call of the compiled unit with identical arguments) and the
+        impact ledger, water ledger and *production* audit accumulators
+        stay untouched: warmup only develops the droplet slip field so the
+        exposure window opens with the cloud in local equilibrium.  Without
+        it the first ``~tau_d_lu`` steps of every shot under-collect
+        (``u_d`` starts at ``u_f``, i.e. zero slip), which made the
+        whole-shot-ledger beta and the Messinger impingement rate depend
+        on the lattice length of the shot.
+
+        G3: the returned ``imp``/``bflux`` are no longer *discarded*.  They
+        feed two separate warmup-only observers (``_bflux_warm_acc``/
+        ``_dep_warm_acc``) so the full-run per-bin mass identity (cold
+        start -> end) can close.  These accumulators are pure observers:
+        no production accumulator (``_bflux_acc``/``_dep_acc``/``_enc_acc``,
+        ``impact_mass_e*``), the water ledger ``m_w`` or any audited key of
+        the production window is read or written here, and the ``_step_euler``
+        calls keep identical arguments and order.  No encasement can occur
+        in the warmup window, so no ``_enc_warm_acc`` is needed: the solid
+        mask only grows through freezing (``_freeze``), and both ``_freeze``
+        and ``_void_encased`` are called exclusively inside the exposure
+        step loop — during warmup ``self.solid`` is constant, hence
+        ``newly = solid & ~prev_solid`` would be identically false.
         """
         cfg = self.cfg
         if self.bins is not None:
             # per-bin dispatch, same scalars as _euler_advance_bins — but
-            # ledger-free (warmup semantics): the returned imp/bflux of
-            # every bin are discarded, so no audit or water accumulator
-            # may be touched here (IC-E-D1)
+            # only the warmup-side observers accumulate (warmup semantics):
+            # no production audit or water accumulator may be touched here
+            # (IC-E-D1)
             for i in range(self.n_bins):
-                self.alpha[i], self.mx[i], self.my[i], _imp, _bflux = self._step_euler(
+                self.alpha[i], self.mx[i], self.my[i], imp, bflux = self._step_euler(
                     self.alpha[i],
                     self.mx[i],
                     self.my[i],
@@ -2616,8 +2652,10 @@ class RimeIcingSimulation:
                     cfg.alpha_in_bins[i] * cfg.shadow_alpha_frac,
                     cfg.eulerian_scheme == "donor2",
                 )
+                self._bflux_warm_acc[i] += bflux.double()
+                self._dep_warm_acc[i] += imp.double().sum()
             return
-        self.alpha, self.mx, self.my, _imp, _bflux = self._step_euler(
+        self.alpha, self.mx, self.my, imp, bflux = self._step_euler(
             self.alpha,
             self.mx,
             self.my,
@@ -2631,6 +2669,8 @@ class RimeIcingSimulation:
             cfg.shadow_alpha_min,
             cfg.eulerian_scheme == "donor2",
         )
+        self._bflux_warm_acc += bflux.double()
+        self._dep_warm_acc += imp.double().sum()
 
     def _euler_advance_bins(self, ux: torch.Tensor, uy: torch.Tensor) -> None:
         """One *per-bin* Eulerian droplet step + audit/impact accumulation.
@@ -3028,6 +3068,45 @@ class RimeIcingSimulation:
                 )
                 a["outlet_in"] = outlet_in
                 a["closure_error"] = abs(inflow - outflow) / inflow if inflow > 0.0 else 0.0
+                # G3 additive warmup ledger: the same decomposition as the
+                # production bflux above, over the warmup window only
+                w_inlet_raw, w_outlet_raw, w_bottom_raw, w_top_raw = self._bflux_warm_acc[
+                    i
+                ].tolist()
+                a["warmup_inlet_in"] = max(w_inlet_raw, 0.0) * mp_lu3
+                a["warmup_outlet_in"] = max(-w_outlet_raw, 0.0) * mp_lu3
+                a["warmup_outlet_out"] = max(w_outlet_raw, 0.0) * mp_lu3
+                a["warmup_lat_in"] = (max(w_bottom_raw, 0.0) + max(-w_top_raw, 0.0)) * mp_lu3
+                a["warmup_lat_out"] = (max(-w_bottom_raw, 0.0) + max(w_top_raw, 0.0)) * mp_lu3
+                a["warmup_deposited"] = float(self._dep_warm_acc[i].item()) * mp_lu3
+                a["warmup_bflux_raw"] = [w_inlet_raw, w_outlet_raw, w_bottom_raw, w_top_raw]
+                # G3: full-run identity from cold start.  initial_fill is
+                # deliberately absent: it is an intermediate inventory
+                # snapshot (taken between the warmup and production
+                # windows), not a boundary source — the warmup ledger above
+                # covers the cold-start period, so every real source and
+                # sink of the run is now on one side of this identity.
+                inflow_full = (
+                    a["warmup_inlet_in"]
+                    + a["warmup_outlet_in"]
+                    + a["warmup_lat_in"]
+                    + a["inlet_in"]
+                    + a["outlet_in"]
+                    + a["lat_in"]
+                )
+                outflow_full = (
+                    a["warmup_deposited"]
+                    + a["deposited"]
+                    + a["encased"]
+                    + a["warmup_outlet_out"]
+                    + a["warmup_lat_out"]
+                    + a["outlet_out"]
+                    + a["lat_out"]
+                    + a["airborne"]
+                )
+                a["closure_error_full"] = (
+                    abs(inflow_full - outflow_full) / inflow_full if inflow_full > 0.0 else 0.0
+                )
             tot = dict(self.aud_e)
             for key in (
                 "initial_fill",
@@ -3039,8 +3118,17 @@ class RimeIcingSimulation:
                 "lat_out",
                 "airborne",
                 "outlet_in",
+                "warmup_inlet_in",
+                "warmup_outlet_in",
+                "warmup_outlet_out",
+                "warmup_lat_in",
+                "warmup_lat_out",
+                "warmup_deposited",
             ):
                 tot[key] = math.fsum(b[key] for b in self.aud_e_bins)
+            tot["warmup_bflux_raw"] = [
+                math.fsum(b["warmup_bflux_raw"][j] for b in self.aud_e_bins) for j in range(4)
+            ]
             inflow = tot["initial_fill"] + tot["inlet_in"] + tot["outlet_in"] + tot["lat_in"]
             outflow = (
                 tot["deposited"]
@@ -3050,6 +3138,27 @@ class RimeIcingSimulation:
                 + tot["airborne"]
             )
             tot["closure_error"] = abs(inflow - outflow) / inflow if inflow > 0.0 else 0.0
+            inflow_full = (
+                tot["warmup_inlet_in"]
+                + tot["warmup_outlet_in"]
+                + tot["warmup_lat_in"]
+                + tot["inlet_in"]
+                + tot["outlet_in"]
+                + tot["lat_in"]
+            )
+            outflow_full = (
+                tot["warmup_deposited"]
+                + tot["deposited"]
+                + tot["encased"]
+                + tot["warmup_outlet_out"]
+                + tot["warmup_lat_out"]
+                + tot["outlet_out"]
+                + tot["lat_out"]
+                + tot["airborne"]
+            )
+            tot["closure_error_full"] = (
+                abs(inflow_full - outflow_full) / inflow_full if inflow_full > 0.0 else 0.0
+            )
             self.aud_e.update(tot)
         if self.use_euler and not cfg.disable_droplets and self.bins is None:
             mp_lu3 = cfg.mass_per_lu3
@@ -3080,6 +3189,37 @@ class RimeIcingSimulation:
             )
             self.aud_e["outlet_in"] = outlet_in
             self.aud_e["closure_error"] = abs(inflow - outflow) / inflow if inflow > 0.0 else 0.0
+            # G3 additive warmup ledger (mono path; see the per-bin branch
+            # above for the identity documentation)
+            w_inlet_raw, w_outlet_raw, w_bottom_raw, w_top_raw = self._bflux_warm_acc.tolist()
+            self.aud_e["warmup_inlet_in"] = max(w_inlet_raw, 0.0) * mp_lu3
+            self.aud_e["warmup_outlet_in"] = max(-w_outlet_raw, 0.0) * mp_lu3
+            self.aud_e["warmup_outlet_out"] = max(w_outlet_raw, 0.0) * mp_lu3
+            self.aud_e["warmup_lat_in"] = (max(w_bottom_raw, 0.0) + max(-w_top_raw, 0.0)) * mp_lu3
+            self.aud_e["warmup_lat_out"] = (max(-w_bottom_raw, 0.0) + max(w_top_raw, 0.0)) * mp_lu3
+            self.aud_e["warmup_deposited"] = float(self._dep_warm_acc.item()) * mp_lu3
+            self.aud_e["warmup_bflux_raw"] = [w_inlet_raw, w_outlet_raw, w_bottom_raw, w_top_raw]
+            inflow_full = (
+                self.aud_e["warmup_inlet_in"]
+                + self.aud_e["warmup_outlet_in"]
+                + self.aud_e["warmup_lat_in"]
+                + self.aud_e["inlet_in"]
+                + self.aud_e["outlet_in"]
+                + self.aud_e["lat_in"]
+            )
+            outflow_full = (
+                self.aud_e["warmup_deposited"]
+                + self.aud_e["deposited"]
+                + self.aud_e["encased"]
+                + self.aud_e["warmup_outlet_out"]
+                + self.aud_e["warmup_lat_out"]
+                + self.aud_e["outlet_out"]
+                + self.aud_e["lat_out"]
+                + self.aud_e["airborne"]
+            )
+            self.aud_e["closure_error_full"] = (
+                abs(inflow_full - outflow_full) / inflow_full if inflow_full > 0.0 else 0.0
+            )
 
         # ---- beta + metrics ----
         airfoil_np = self.airfoil.cpu().numpy()
