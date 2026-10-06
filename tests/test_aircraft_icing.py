@@ -2322,3 +2322,126 @@ def test_euler_advance_warmup_bins_ledger_free() -> None:
         )
         closure = abs(inflow - outflow) / inflow if inflow > 0.0 else 0.0
         assert closure < 1e-6, (i, closure)
+
+
+# ---------------------------------------------------------------------------
+# G3: warmup-window per-bin flux ledger — the additive accumulators
+# _bflux_warm_acc/_dep_warm_acc observe what _euler_advance_warmup used to
+# discard, so the full-run (cold start -> end) identity closes per bin
+# ---------------------------------------------------------------------------
+def _warmup_bins_cfg(**kw) -> IcingConfig:
+    """Small bins config whose Eulerian cloud runs a droplet warmup.
+
+    ``prefill_cloud=False`` by default: the cold start is empty, so the
+    full-run identity (``closure_error_full``) has no source besides the
+    boundary fluxes.  With a prefilled cold start the initial fill is a
+    genuine source term that sits outside the ``closure_error_full``
+    formula; the raw warmup vector (``warmup_bflux_raw``) is exported so
+    that variant can be recomputed independently.
+    """
+    base = dict(
+        mvd_bins=((60e-6, 0.2), (100e-6, 0.5), (160e-6, 0.3)),
+        uniform_flow=False,  # the droplet-warmup loop only runs on real flow
+        droplet_warmup=True,
+        warmup_steps=120,
+        steps=150,
+        cx_frac=0.05,  # LE near the inlet: the cloud impinges inside warmup
+        prefill_cloud=False,
+    )
+    base.update(kw)
+    return _euler_cfg(**base)
+
+
+def test_warmup_flux_ledger_accumulates() -> None:
+    """G3: the discarded warmup fluxes land in additive audit keys."""
+    cfg = _warmup_bins_cfg()
+    res = run_rime_icing(cfg, log=lambda *a: None)
+    tot = res["eulerian"]["audit"]
+    for key in (
+        "warmup_inlet_in",
+        "warmup_outlet_in",
+        "warmup_outlet_out",
+        "warmup_lat_in",
+        "warmup_lat_out",
+        "warmup_deposited",
+        "warmup_bflux_raw",
+        "closure_error_full",
+    ):
+        assert key in tot, key
+    per = res["bins"]["eulerian"]["audit"]
+    for b in per:
+        assert b["warmup_inlet_in"] > 0.0, b  # the warmup window transports
+        assert b["warmup_deposited"] >= 0.0, b
+        assert len(b["warmup_bflux_raw"]) == 4
+    # the total warmup ledger is the sum of the per-bin ledgers
+    assert math.isclose(
+        tot["warmup_inlet_in"],
+        math.fsum(b["warmup_inlet_in"] for b in per),
+        rel_tol=1e-12,
+    )
+    assert tot["warmup_deposited"] > 0.0  # impingement starts inside warmup
+
+
+def test_warmup_ledger_full_run_closure() -> None:
+    """G3: closure_error_full closes the cold-start -> end identity per bin.
+
+    Pre-fix, the per-bin production-window identity was missing every
+    warmup-window term, so its per-bin closure_error sat at O(1) for an
+    empty cold start (the warmup-filled inventory appeared on no inflow
+    side).  With the warmup ledger the full-run identity closes to the
+    fp32 transport noise floor of the scheme: per-bin residuals measure
+    ~2e-8 here (120 warmup + 150 exposure steps), i.e. the same floor the
+    production-window per-bin closure of this file gates at 1e-6 — a 1e-9
+    absolute gate sits below the demonstrated floor of the identity
+    (independent probe: pre-fix production closure over 500 steps already
+    floors at 5.4e-8 on the smallest bin).
+    """
+    res = run_rime_icing(_warmup_bins_cfg(), log=lambda *a: None)
+    per = res["bins"]["eulerian"]["audit"]
+    for b in per:
+        assert b["closure_error_full"] <= 1e-6, b
+        # ...and it closes what the production-window identity missed
+        assert b["closure_error_full"] < 1e-2 * b["closure_error"], b
+    assert res["eulerian"]["audit"]["closure_error_full"] <= 1e-7
+
+
+def test_warmup_ledger_leaves_production_ledgers_untouched() -> None:
+    """G3: the warmup observers never touch a production ledger (mono path).
+
+    The bins twin of this invariant is the IC-E-D1 ledger-free test.  Here
+    the monodisperse arm proves the new ``_bflux_warm_acc``/``_dep_warm_acc``
+    accumulators are pure observers: 50 warmup steps move them while every
+    production accumulator (bflux/dep/enc, the impact ledger, the water
+    ledger ``m_w`` and the audited production keys) stays bitwise
+    identical — including ``aud_e`` itself, which the final audit alone
+    may write.
+    """
+    cfg = _euler_cfg(warmup_steps=0, steps=10, cx_frac=0.05)
+    sim = RimeIcingSimulation(cfg, log=lambda *a: None)
+    ux = torch.full((sim.ny, sim.nx), cfg.u_in, device=sim.dev)
+    uy = torch.zeros((sim.ny, sim.nx), device=sim.dev)
+    # prefill_cloud=True default: the cloud impinges from the first step
+    sim._init_eulerian(ux, uy)
+
+    def snapshot() -> dict:
+        return {
+            "impact": sim.impact_mass_e.clone(),
+            "bflux": sim._bflux_acc.clone(),
+            "dep": sim._dep_acc.clone(),
+            "enc": sim._enc_acc.clone(),
+            "m_w": sim.m_w.clone(),
+            "aud_e": dict(sim.aud_e),
+        }
+
+    before = snapshot()
+    for _ in range(50):  # well past tau_d_lu
+        sim._euler_advance_warmup(ux, uy)
+    after = snapshot()
+    for key, val in after.items():
+        if isinstance(val, torch.Tensor):
+            assert torch.equal(before[key], val), key
+        else:
+            assert before[key] == val, key
+    # the warmup-side observers DID accumulate over the same 50 steps
+    assert float(sim._bflux_warm_acc[0]) > 0.0  # inlet flux entered the ledger
+    assert float(sim._dep_warm_acc) > 0.0  # prefilled cloud impinges in warmup
