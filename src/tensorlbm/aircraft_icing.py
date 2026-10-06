@@ -2596,6 +2596,27 @@ class RimeIcingSimulation:
         shot.
         """
         cfg = self.cfg
+        if self.bins is not None:
+            # per-bin dispatch, same scalars as _euler_advance_bins — but
+            # ledger-free (warmup semantics): the returned imp/bflux of
+            # every bin are discarded, so no audit or water accumulator
+            # may be touched here (IC-E-D1)
+            for i in range(self.n_bins):
+                self.alpha[i], self.mx[i], self.my[i], _imp, _bflux = self._step_euler(
+                    self.alpha[i],
+                    self.mx[i],
+                    self.my[i],
+                    ux,
+                    uy,
+                    self.solid,
+                    cfg.tau_d_lu_bins[i],
+                    cfg.re_p_scale_bins[i],
+                    cfg.alpha_in_bins[i],
+                    cfg.u_in,
+                    cfg.alpha_in_bins[i] * cfg.shadow_alpha_frac,
+                    cfg.eulerian_scheme == "donor2",
+                )
+            return
         self.alpha, self.mx, self.my, _imp, _bflux = self._step_euler(
             self.alpha,
             self.mx,
