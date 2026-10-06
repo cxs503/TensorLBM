@@ -2172,3 +2172,153 @@ def test_mvd_bins_eulerian_freezer_interface() -> None:
     # per-bin audits still close with freezing + encasement active
     for b in res["bins"]["eulerian"]["audit"]:
         assert b["closure_error"] < 1e-4, b
+
+
+# ---------------------------------------------------------------------------
+# IC-E-D1: bins x droplet warmup (glaze multishot) — per-bin dispatch in
+# _euler_advance_warmup + the ledger-free warmup invariant
+# ---------------------------------------------------------------------------
+def test_bins_glaze_multishot_warmup_runs() -> None:
+    """IC-E-D1 regression: bins x glaze multishot with droplet warmup runs.
+
+    run_glaze_icing pins droplet_warmup=True for the Eulerian phase
+    (IC-D3), and ``_euler_advance_warmup`` lacked the per-bin dispatch of
+    ``_euler_advance``: the stacked ``(n_bins, ny, nx)`` cloud state was
+    fed straight into the 2-D ``_step_euler`` kernel, so any ``mvd_bins``
+    glaze run crashed at the first warmup step (319-vs-320 dim mismatch).
+    The multishot run now completes: the surface audit closes, ice grows
+    and the bin-to-total deposit identity holds exactly.  The per-bin
+    transport closures stay finite and track the total (the residual is
+    the ledger-free warmup window: fluxes that crossed the domain during
+    warmup are deliberately outside the audit — see the companion
+    ledger-free test for the strict production-window closure).
+    """
+    bins = ((60e-6, 0.2), (100e-6, 0.5), (160e-6, 0.3))
+    cfg = _euler_cfg(
+        thermo_model="messinger",
+        t_static_c=-5.0,
+        t_exposure=3600.0,
+        steps=150,
+        warmup_steps=150,
+        uniform_flow=False,  # the droplet-warmup loop only runs on real flow
+        cx_frac=0.05,  # LE near the inlet: impingement starts inside warmup
+        mvd_bins=bins,
+    )
+    import tensorlbm.aircraft_icing as _ai
+
+    base = _ai.RimeIcingSimulation
+    seen: dict = {}
+
+    class _Recorder(base):
+        def run(self):
+            r = super().run()
+            seen["bins"] = r.get("bins")
+            seen["audit_e"] = r["eulerian"]["audit"]
+            return r
+
+    # run_glaze_icing resolves RimeIcingSimulation from module globals
+    _ai.RimeIcingSimulation = _Recorder
+    try:
+        g = run_glaze_icing(cfg, shots=2, log=lambda *a: None)
+    finally:
+        _ai.RimeIcingSimulation = base
+    a = g["audit"]
+    assert a["closure_error"] < 1e-9, a
+    assert a["frozen"] > 0.0
+    assert int(g["ice_only"].sum()) > 0
+    assert len(g["beta_curve"]["beta"]) > 0
+    eb = seen["bins"]["eulerian"]
+    assert len(eb["diameters"]) == len(bins)
+    # bin-to-total identity: the summed per-bin audits reproduce the total
+    assert math.isclose(
+        seen["audit_e"]["deposited"],
+        math.fsum(b["deposited"] for b in eb["audit"]),
+        rel_tol=1e-12,
+    )
+    for i, (_d, _f) in enumerate(bins):
+        assert eb["audit"][i]["closure_error"] < 5e-2, eb["audit"][i]
+
+
+def test_euler_advance_warmup_bins_ledger_free() -> None:
+    """IC-E-D1 companion invariant: per-bin warmup stays ledger-free, and
+    the per-bin audits close over a production window.
+
+    Documented warmup semantics (``_euler_advance_warmup``): warmup only
+    develops the droplet slip field so the exposure window opens with the
+    cloud in local equilibrium — the impact ledgers, the audit
+    accumulators and the shared water ledger must stay bitwise untouched.
+    The control arm proves the state is impinging (one production
+    ``_euler_advance_bins`` call from the same state moves the ledgers),
+    so a warmup that accumulated anything would fail the comparison.
+    The per-bin closure is then recomputed independently over a clean
+    production window (ledger deltas + window-open inventory), which is
+    the quantity the RG-15 B4 per-bin gate measures at production scale.
+    """
+    bins = ((60e-6, 0.2), (100e-6, 0.5), (160e-6, 0.3))
+    cfg = _euler_cfg(
+        mvd_bins=bins,
+        uniform_flow=False,
+        warmup_steps=0,
+        steps=10,
+        cx_frac=0.05,
+    )
+    sim = RimeIcingSimulation(cfg, log=lambda *a: None)
+    ux = torch.full((sim.ny, sim.nx), cfg.u_in, device=sim.dev)
+    uy = torch.zeros((sim.ny, sim.nx), device=sim.dev)
+    # prefill_cloud=True default: alpha_in everywhere, so the cloud
+    # impinges on the airfoil from the first step
+    sim._init_eulerian(ux, uy)
+
+    def snapshot() -> dict:
+        return {
+            "impact_bins": sim.impact_mass_e_bins.clone(),
+            "impact": sim.impact_mass_e.clone(),
+            "bflux": sim._bflux_acc.clone(),
+            "dep": sim._dep_acc.clone(),
+            "enc": sim._enc_acc.clone(),
+            "m_w": sim.m_w.clone(),
+            "aud_e": dict(sim.aud_e),
+            "aud_e_bins": [dict(b) for b in sim.aud_e_bins],
+        }
+
+    before = snapshot()
+    for _ in range(50):  # well past tau_d_lu of the smallest bin
+        sim._euler_advance_warmup(ux, uy)
+    after = snapshot()
+    for key, val in after.items():
+        if isinstance(val, torch.Tensor):
+            assert torch.equal(before[key], val), key
+        else:
+            assert before[key] == val, key
+    # control arm: from this exact state one production euler step moves
+    # the ledgers — the impingement is nonzero, so the invariant has teeth
+    sim._euler_advance_bins(ux, uy)
+    moved = snapshot()
+    assert float(moved["impact_bins"].sum()) > float(before["impact_bins"].sum())
+    assert float(moved["dep"].sum()) > float(before["dep"].sum())
+
+    # production-window per-bin closure, computed independently of the
+    # module's audit bookkeeping (ledger deltas + window-open inventory)
+    w0 = snapshot()
+    inv0 = [float(sim.alpha[i].double().sum().item()) for i in range(sim.n_bins)]
+    for _ in range(60):
+        sim._euler_advance_bins(ux, uy)
+    for i in range(sim.n_bins):
+        # every term in the raw pre-mass_per_lu3 units of the accumulators
+        inlet_raw, outlet_raw, bottom_raw, top_raw = (sim._bflux_acc[i] - w0["bflux"][i]).tolist()
+        inflow = (
+            inv0[i]
+            + max(inlet_raw, 0.0)
+            + max(-outlet_raw, 0.0)
+            + (max(bottom_raw, 0.0) + max(-top_raw, 0.0))
+        )
+        airborne = float(sim.alpha[i].double().sum().item())
+        outflow = (
+            float((sim._dep_acc[i] - w0["dep"][i]).item())
+            + float((sim._enc_acc[i] - w0["enc"][i]).item())
+            + max(outlet_raw, 0.0)
+            + (max(-bottom_raw, 0.0) + max(top_raw, 0.0))
+            + airborne
+        )
+        closure = abs(inflow - outflow) / inflow if inflow > 0.0 else 0.0
+        assert closure < 1e-6, (i, closure)
