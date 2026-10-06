@@ -1176,7 +1176,17 @@ def free_surface_step(
     # Conservation is restored by pairing every I/I link (antisymmetric half
     # weight) and every L/I link with an explicit bulk debit below, so an
     # ungated receiver is a *transfer*, never a source.
-    recv_ok = iface_mask
+    # Default receiver gate = the trunk behaviour: an INTERFACE cell must already
+    # carry some tracked mass (fill > 1e-3) to be a legal mass-exchange receiver.
+    # (The earlier F1 "open gate" ``recv_ok = iface_mask`` let a freshly-born
+    # empty envelope cell siphon real liquid mass in — a gravity-independent
+    # ~0.04 cell/step pseudo-wetting film that polluted X/H AND pushed the
+    # per-step mass drift to ~7e-4, tripping the topology-normalized-drift gate
+    # in tests/test_dam_break_3d*.py.  It is retained below as an opt-in.)
+    recv_ok = iface_mask & (fill > 1e-3)
+    # OPT-IN (diagnostic): the F1 open gate, every INTERFACE cell may receive.
+    if _env_bool("TL_FS_RECV_OPEN", False):
+        recv_ok = iface_mask
     # F1': GRADED receive gate — resolves the "freeze vs pseudo-advance" tension.
     #
     # The F1 open gate (``recv_ok = iface_mask``) treats *every* INTERFACE cell

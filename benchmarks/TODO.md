@@ -8,7 +8,7 @@
 ### 组 1：GeneralSimEngine（产品内核，配置即求解）
 | # | 案例 | 物理 | 参考值 | 当前精度 | 状态 |
 |---|------|------|--------|---------|------|
-| B1 | sphere_re100 | 球 Re=100 D40 | Cd=1.09 (Schiller-Naumann) | 压力积分 -16.6%；MEM 修复后（PR #309）bfl +11.28%；W7 域形修复（up2.75D）压到 +4.20/+4.01%，地板定源=入口 Dirichlet 钳制 | ❌ FAIL 维持 — pending/sphere_re100_mem/（含 w7/ 复判） |
+| B1 | sphere_re100 | 球 Re=100 D40 | Cd=1.09 (Schiller-Naumann) | **✅ VERIFIED（2026-10-05）**：BFL 插值（亚格光滑）壁逐链动量账本 + 大域（lat3/up3/down4）阶梯 **+2.771%/+2.540%**（D40/D60，跨度 0.231%，单调降）——W8-A 稀疏核解锁显存后补齐 D60 孪生；阶梯 surface-only Ladd MEM 负结果（+9%，双曲率几何偏差）留档于 `staircase_surface_mem/` | ✅ VERIFIED — `benchmarks/verified/sphere_re100/` |
 | B2 | sphere_re100_d60 | 球 Re=100 D60（加密） | Cd=1.09 | 未知（需跑） | 待验证 |
 | B3 | sphere_re200 | 球 Re=200 | Cd=0.77 (Schiller-Naumann) | 未知 | 待验证 |
 | B4 | cylinder_re100_2d | 2D 圆柱 Re=100 自由流涡街（D48/D64，40D×40D 域） | Cd=1.35±0.05, St≈0.164-0.165 (Braza 1986) | Cd **−1.53%/−2.55%**、St +0.7%/−2.4%（两档全 ≤3%） | ✅ 已验证 2026-08-19 |
@@ -169,7 +169,7 @@
 |---|------|------|
 | B56 | entropic KBC 黏度修复（D3Q19+D3Q27，Karlin–Bösch–Chikatamarla 构造 f\*=feq+(1−1/τ)s+βh，β 正定性域熵解） | ✅ **库修复已合 PR #312**——单步剪切弛豫比 ==1−1/τ（84 组合最差 1.1e-14）、质量/动量 5.6e-17；TG err_E **−0.675→−0.358→−0.161%**（N=64/96/128 严格单调，修复后核在本协议下过单调条款）；collision_viscosity_audit withheld(>20%)→admitted 0.09%；3 个前提失效测试翻正 + quarantine 消缺 2 行；B53 的 collide_kbc_d3q19 实质 FAIL 缺陷即此项（该表数字为旧核历史档） |
 | B57 | MCMP mixture 3D 移植（multiphase3d.collide_sc_two_component_3d 加 u_eq="mixture"，2D #308 镜像） | ✅ **库选项已合 PR #311**——默认 "self" 位同（6/6 配置 19/27×G/τ/guo/solid/sgs 逐位）；闭式 dMσ=Fσ+(ρσ/τσ)(u_mix−uσ) 残差 4.3e-8；不等 τ 净动量源 (1/τ₂−1/τ₁)ρ₁ρ₂(u₁−u₂)/ρ_tot 恒等式注记入 docstring；W5-A 符号勘误三处随修（multiphase.py:341 / two_phase_poiseuille README / 3D 两处） |
-| B58 | 球 Re=100 域形修复复判（bfl D40/D60 lat2.0/up2.75/down2.25，24k 步 + bb 副观测） | ❌ **FAIL 维持（3% 门），地板定源+压降 ~7.2pp**——正式对 **+4.20/+4.01%** 双出 3% 门（对 W5-B +11.28/+11.21%）、\|err\| 单调过、CV 窗闭合 0.102/0.010%；**主因=入口平面 Dirichlet 钳制**（far_field_bc_3d 压制球前势流减速；up 1.25→4.0 五点签名 err≈E0+C·(a/x)³ R²=0.9998）；碰撞算子不敏感（MRT/TRT Λ=3/16/魔术/BGK 0.15pp 带——墙位 τ 耦合假设球侧被杀，与 B59 互为独立复核）；大域 D40 **+2.77%** 单点达标形，但 D60 孪生 84.7M 胞=2.6× 实测显存天花板（32.4M FITS）→ 无阶梯不晋级；破门=多卡分域/BFL 核显存优化（另立项）→ pending/sphere_re100_mem/ w7/ 补充 |
+| B58 | 球 Re=100 域形修复复判（bfl D40/D60 lat2.0/up2.75/down2.25，24k 步 + bb 副观测） | ✅ **破门（B58 阻塞 + W8-A 解锁，2026-10-05 晋级 verified）**——B58 正式档 +4.20/+4.01% 双出 3% 门（对 W5-B +11.28/+11.21%）、\|err\| 单调过、CV 窗闭合 0.102/0.010%；**主因=入口平面 Dirichlet 钳制**（far_field_bc_3d 压制球前势流减速；up 1.25→4.0 五点签名 err≈E0+C·(a/x)³ R²=0.9998）；碰撞算子不敏感（MRT/TRT Λ=3/16/魔术/BGK 0.15pp 带——墙位 τ 耦合假设球侧被杀，与 B59 互为独立复核）；**大域 D40 +2.77% 单点达标形、D60 孪生 84.7M 胞=2.6× 实测显存天花板（32.4M FITS）当年无阶梯不晋级；破门路径（BFL 核显存优化）由 W8-A 稀疏核兑现**——D40 1.121980 **+2.771%** / D60 1.119462 **+2.540%**，跨度 0.231%，逐位复现 W7 密集核存档 → `benchmarks/verified/sphere_re100/`（w8a/） |
 | B59 | Blasius 平板边界层复活（BGK vs TRT Λ=3/16，plate200/plate400/y1600，30k 步，修正 FD 口径） | ❌ **FAIL（最好 +27.3%）**——**旧档 +76~102% 首因=测量公式 bug**（首 3 行二阶单侧差分权重解错方程，buggy=正确+0.75·u(0.5)，占 +48pp；旧"随 τ 恶化"结论作废）；修正口径 47.1-47.3%（plate200）/27.3-28.1%（plate400），单调过；基线复现过（+101.91% vs 旧 +102.0%）；**TRT Λ=3/16 ≡ BGK**（0.23-0.73pp；τ 阶梯 cf_ue +18.99→+47.64% 全同 0.12-0.39pp）→ 低 τ 墙位假设 blasius 侧也被杀；残差=有限 Re_x=900 边缘加速（u_e/U=1.0805→+21pp）+cf_ue ~+14% 位移物理 → pending/blasius_flat_plate/ 判决记录替换 |
 
 ## 2026-09-29 新增（Wave-9：玻璃产业基准三轨）
