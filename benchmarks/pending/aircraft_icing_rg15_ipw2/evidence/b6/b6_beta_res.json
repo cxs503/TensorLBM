@@ -1,0 +1,62 @@
+{
+  "case": "3.3_rime",
+  "rows": [
+    {
+      "nx": 320,
+      "ny": 160,
+      "chord_lu": 128.0,
+      "dx_mm": 2.34375,
+      "tau_d_lu": 409.7461800746676,
+      "stokes": 0.16005710159166703,
+      "le_span_cells": 4,
+      "n_airfoil_cells": 1018,
+      "stats": {
+        "beta_max": 0.7880398631095886,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.7880398631095886,
+        "stag_s_over_c": 0.0,
+        "n_bins": 113
+      },
+      "wall_s": 42.100817013997585,
+      "le_diameter_cells": 4.0
+    },
+    {
+      "nx": 480,
+      "ny": 240,
+      "chord_lu": 192.0,
+      "dx_mm": 1.5624999999999998,
+      "tau_d_lu": 614.6192701120013,
+      "stokes": 0.16005710159166703,
+      "le_span_cells": 5,
+      "n_airfoil_cells": 2299,
+      "stats": {
+        "beta_max": 0.8047183752059937,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.8047183752059937,
+        "stag_s_over_c": 0.0,
+        "n_bins": 172
+      },
+      "wall_s": 42.036037725862116,
+      "le_diameter_cells": 5.0
+    },
+    {
+      "nx": 640,
+      "ny": 320,
+      "chord_lu": 256.0,
+      "dx_mm": 1.171875,
+      "tau_d_lu": 819.4923601493352,
+      "stokes": 0.16005710159166703,
+      "le_span_cells": 6,
+      "n_airfoil_cells": 4091,
+      "stats": {
+        "beta_max": 0.817893922328949,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.817893922328949,
+        "stag_s_over_c": 0.0,
+        "n_bins": 253
+      },
+      "wall_s": 42.444209017790854,
+      "le_diameter_cells": 6.0
+    }
+  ]
+}
