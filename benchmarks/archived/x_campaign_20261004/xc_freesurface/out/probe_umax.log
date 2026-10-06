@@ -1,0 +1,2 @@
+[VERIFY] replica vs engine bit-identity over 250 steps: True
+[RUN] wrote /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/probe_w1_umax.json; last t=9500, uy_max=0.5002

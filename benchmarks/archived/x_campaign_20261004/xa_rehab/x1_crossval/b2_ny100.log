@@ -1,0 +1,6 @@
+[a/Ny100] step 42000  u_c 9.303e-05
+[a/Ny100] step 44000  u_c 9.360e-05
+[a/Ny100] step 46000  u_c 9.410e-05
+[a/Ny100] step 48000  u_c 9.454e-05
+[a/Ny100] step 50000  u_c 9.490e-05
+[a/Ny100] Eu=7.703%  (liq 7.992% / gas 7.462%)  u_c=9.3800e-05 vs 1.0000e-04  stat=2.60e-02  fd_res=4.2e-17  t=153s  grep={'def\\s+bounce': 0, 'def\\s+stream_3d': 0, 'torch\\.roll\\(\\s*f\\b': 0}

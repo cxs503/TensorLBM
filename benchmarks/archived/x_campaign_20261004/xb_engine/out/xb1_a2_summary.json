@@ -1,0 +1,16 @@
+{
+ "note": "diagnostic attribution arms; runner-side module-function surgery restored in finally; not gated (prereg A2)",
+ "attribution_doc": {
+  "g4only": "gradient iso4 (G4), chemical-potential Laplacian iso2: m.chemical_potential_iso4 := lambda -> m.chemical_potential",
+  "l4only": "gradient iso2, chemical-potential Laplacian iso4: m.iso_gradient_3d_iso4 := lambda -> m.iso_gradient_3d"
+ },
+ "sigma_eff_ratio": {
+  "g4only": 0.9463444251913189,
+  "l4only": 0.9480928245456904
+ },
+ "context": {
+  "iso4_full": 0.9718014336608061,
+  "iso2_default": 0.9235675731544108,
+  "law_baseline_1_minus": "1 - sigma_effbar(W) ~ 1.1/W^2 (M1 P1)"
+ }
+}

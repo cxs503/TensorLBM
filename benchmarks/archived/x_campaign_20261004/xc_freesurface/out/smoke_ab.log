@@ -1,0 +1,2 @@
+[VERIFY] patched(off) vs v1.1 bit-identity 250 steps: True
+[RUN] wrote /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/smoke_w1_ab.json; last t=10000 uy_max=0.011192062869668007 zombie=1 cap_cum=215971 starved_cum=37119

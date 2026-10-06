@@ -1,0 +1,21 @@
+PASS A1 judgment md5 == 674607cd02b321db9b6af82eaf40166e
+PASS A2 all 9 ext arm files on disk match judgment sources md5 (untouched)  | []
+PASS B1 sigma_ref + per-N sigma_sph values present verbatim in alternative_all18.json
+PASS B2 err_frozen == sigma_sph/sigma_ref - 1 to 1e-12 (my arithmetic)  | {'96': 0.4719, '144': 0.5402, '192': 0.4021}
+PASS C1 estimator calibrated on points_pre reproduces sigma_pre <=1e-12  | origin-LSQ dp~2/r
+PASS D1 MY tail reduction (frozen -len//5 rule, 32 of 161 samples) == tail_stats dp_mean & r_eq_mean at 1e-12  | dp 0.014023831114172935 r 15.897924746317971
+PASS D3b MY sigma_pre from ext-run prefix (frozen tail rule) == judgment sigma_pre + points_pre verbatim, all 3 N
+PASS D2 MY per-arm tail means (own window reduction of raw series) == judgment points_ext AND arm tail_stats, all 9 arms, 1e-12
+PASS D3 MY sigma_ext (calibrated estimator on MY points) == judgment sigma_ext, all 3 N, 1e-12  | {'96': 0.112204688807, '144': 0.112306616558, '192': 0.112145215391}
+PASS D4 MY err_ext == judgment err_ext_by_N <=1e-12; values 0.4593/0.5506/0.4061 pct  | {'96': 0.4593, '144': 0.5506, '192': 0.4061}
+PASS E1 R-A: MY tail_of(prefix) means == receipt (1e-12); receipt formal == M2 formal file tail_stats on disk; prefix len == formal series len; prefix-vs-formal rel diff <=1e-9; 9/9  | 0.0
+PASS F1 MY 3-disjoint-subwindow sigma spreads == judgment noise blocks (all 6, subs 1e-9 / spread_pp 1e-6)  | {'96': 0.0038, '144': 0.0331, '192': 0.0077}
+PASS F2 noise scale range 0.0038-0.0331pp as reported  | [0.0065, 0.0038, 0.0048, 0.0331, 0.009, 0.0077]
+PASS F3 creep rel_move == sigma_ext/sigma_pre-1 (my arithmetic); reported pp -0.0125/+0.0103/+0.0039  | {'96': -0.0125, '144': 0.0103, '192': 0.0039}
+PASS F4 ext bump 0.0913pp exceeds every window-noise spread (2.8x-24x; agent's 2-14x claim conservative side)  | min ratio 2.76
+PASS G1 monotone non-increasing FALSE (my values: 144 > 96) == judgment; bump GROWS 0.0683->0.0913pp  | bump +0.0683 -> +0.0913 pp
+PASS G2 err_ext(192)=0.4061% <= 3% (that clause alone passes, as reported)
+PASS G3 R-C rule: revision NOT triggered, M2 G2 honest FAIL maintained (my concurrence)
+PASS H1 all 9 arms: run_gate pass, no NaN, mass/step < 2e-8 (family gate 2e-8)
+
+mine: PASS 19 FAIL 0

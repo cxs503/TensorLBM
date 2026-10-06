@@ -1,0 +1,23 @@
+[t1] calibration ladder W in {3,4,5,6} x R in {20,28}, sigma_cal=0.002
+[t1-cal] W=3.0 R=20.0: sigma_rec=0.00217796 ratio=1.08898 umax=5.65e-04 stable=True
+[t1-cal] W=3.0 R=28.0: sigma_rec=0.00217413 ratio=1.08707 umax=4.91e-04 stable=True
+[t1-cal] W=4.0 R=20.0: sigma_rec=0.00289429 ratio=1.44714 umax=6.47e-04 stable=True
+[t1-cal] W=4.0 R=28.0: sigma_rec=0.00289982 ratio=1.44991 umax=5.53e-04 stable=True
+[t1-cal] W=5.0 R=20.0: sigma_rec=0.00362228 ratio=1.81114 umax=6.90e-04 stable=True
+[t1-cal] W=5.0 R=28.0: sigma_rec=0.00362611 ratio=1.81306 umax=5.83e-04 stable=True
+[t1-cal] W=6.0 R=20.0: sigma_rec=0.00429366 ratio=2.14683 umax=7.92e-04 stable=True
+[t1-cal] W=6.0 R=28.0: sigma_rec=0.00438478 ratio=2.19239 umax=6.83e-04 stable=True
+[t1] route=B W*=4.0 sigma_input(W*)=0.00138071
+[t1-acc] W=3.0 R=20.0: in=0.00183820 rec=0.00200040 dev=+0.0198% umax=5.53e-04
+[t1-acc] W=3.0 R=28.0: in=0.00183820 rec=0.00199546 dev=-0.2269% umax=4.85e-04
+[t1-acc] W=4.0 R=20.0: in=0.00138071 rec=0.00200692 dev=+0.3461% umax=6.10e-04
+[t1-acc] W=4.0 R=28.0: in=0.00138071 rec=0.00199298 dev=-0.3509% umax=5.48e-04
+[t1-acc] W=5.0 R=20.0: in=0.00110369 rec=0.00200688 dev=+0.3440% umax=6.36e-04
+[t1-acc] W=5.0 R=28.0: in=0.00110369 rec=0.00198929 dev=-0.5353% umax=5.75e-04
+[t1-pin] W=3.0 R=20.0: in=0.00138071 rec=0.00149315 dev=-25.3424%
+[t1-pin] W=3.0 R=28.0: in=0.00138071 rec=0.00150842 dev=-24.5791%
+[t1-pin] W=5.0 R=20.0: in=0.00138071 rec=0.00249993 dev=+24.9964%
+[t1-pin] W=5.0 R=28.0: in=0.00138071 rec=0.00251963 dev=+25.9813%
+[t1-lin] sigma_rec(2x)/sigma_rec(1x) = 1.381821
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/t1_laplace.json
+GATES: {'g_t1a_acceptance_le_3pct': False, 'g_t1b_r_spread_le_1pct': False, 'g_t1c_linearity_2x': False, 'g_t1d_umax_le_1e-2': True, 'g_t1d_umax_disclose_le_1e-3': True, 'g_t4_ledger_le_1e-10': True, 'g_all_stable': True}
