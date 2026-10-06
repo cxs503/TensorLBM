@@ -4291,6 +4291,7 @@ def run_glaze_icing(cfg: IcingConfig, shots: int = 5, log: Any = print) -> dict[
             "m_imp_kg_s": panels["m_imp_kg_s"],
             "h_w_m2k": panels["h"],
             "v_e_m_s": panels["v_e"],
+            "A_m2": panels["A_m2"],
             "tau_t_pa": panels["tau_t"],
             "n_f": sol["n_f"],
             "t_s_c": sol["t_s_c"],

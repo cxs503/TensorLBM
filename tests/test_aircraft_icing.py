@@ -1897,6 +1897,52 @@ def test_glaze_stag_metrics_sampled_at_impingement_peak() -> None:
     )
 
 
+def test_glaze_panels_export_area_self_consistency() -> None:
+    """G11a: the panels export carries the solver control-volume area.
+
+    ``run_glaze_icing`` used to drop the internal ``A_m2`` (n_sf dx^2),
+    so downstream evaluations had to reconstruct it by inverting
+    ``beta = m_imp/(lwc v_inf A)`` -- a lossy inversion, because m_imp
+    carries the lwc_accel ledger bookkeeping (10% gap on RG-15 3.1).
+    The export must carry the exact area the Messinger balance consumed:
+    feeding the exported peak-panel inputs back to the module's own 0-D
+    :func:`messinger_panel_fluxes` (m_in = 0: at alpha = 0 the
+    impingement peak is the stagnation panel, the only panel with no
+    upstream runback) must reproduce the exported n_f bit-exactly.
+    """
+    from tensorlbm.aircraft_icing import messinger_panel_fluxes
+
+    cfg = _euler_cfg(
+        thermo_model="messinger",
+        t_static_c=-2.0,
+        t_exposure=3600.0,
+        steps=300,
+        aoa_deg=0.0,
+        rho_rime=800.0,
+    )
+    g = run_glaze_icing(cfg, shots=2, log=lambda *a: None)
+    p = g["panels"]
+    a_m2 = p["A_m2"]
+    assert len(a_m2) == len(p["s_over_c"])
+    collect = p["m_imp_kg_s"] > 0.0
+    assert collect.any()
+    assert np.all(a_m2[collect] > 0.0)
+    i_pk = int(np.argmax(p["m_imp_kg_s"]))
+    assert i_pk == int(np.argmin(np.abs(p["s_over_c"])))
+    assert p["regime"][i_pk] == "glaze"
+    assert 0.0 < p["n_f"][i_pk] < 1.0  # not the trivially-exact n_f == 1 rime branch
+    r0d = messinger_panel_fluxes(
+        cfg,
+        float(p["m_imp_kg_s"][i_pk]),
+        0.0,
+        cfg.t_static_c,
+        float(p["h_w_m2k"][i_pk]),
+        float(a_m2[i_pk]),
+        float(p["v_e_m_s"][i_pk]),
+    )
+    assert abs(r0d["n_f"] - float(p["n_f"][i_pk])) <= 1e-12
+
+
 def test_droplet_warmup_kills_shot_length_dependence() -> None:
     """IC-D3: the Eulerian cloud starts at u_f (zero slip), so without
     warmup the whole-shot ledger beta depends on the shot lattice length
