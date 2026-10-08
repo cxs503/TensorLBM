@@ -88,7 +88,7 @@ async def compare_jobs(
                 meta = {}
         results.append(
             {
-                "job": job.to_dict(),
+                "job": job.to_dict(include_result=False),
                 "metadata": meta,
             }
         )
@@ -197,7 +197,7 @@ async def get_job(job_id: str) -> dict:
     job = job_manager.get_job(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
-    return job.to_dict()
+    return job.to_dict(include_result=False)
 
 
 @router.get("/{job_id}/logs")
