@@ -1,99 +1,132 @@
-# Rayleigh-Taylor 不稳定性（VOF 自由表面共性模块首次验证）
+# Rayleigh-Taylor 不稳定性 rayleigh_taylor（线性增长率 γ）（pending）
 
-**状态：未达标（pending/，2026-08-19）** — 如实记录，不保存 verified/。
+**状态：⛔ 参数面不可行（SCMP 轨 T-D 判决，2026-09-19）——SCMP 伪势模型在可达 (g, λ) 参数面内不存在 RT 增长窗口：λ=280 档已扫到 vapor-spinodal 重力天花板的 91%（g=6.5e-6），界面模式增长率 σ_sim 仍为负；λ=140 档 5 个 g 臂窗口从未打开（全拟合窗斜率为负）。10/10 案例 σ_sim ≤ 0 或 NaN。本目录另含更早的 VOF 模块轨失败记录（2026-08-19，结构性缺陷，正文保留摘要）。**
 
 ## 物理问题
-Rayleigh-Taylor（RT）不稳定性：重流体置于轻流体之上、重力指向重流体一侧（−y），
-界面单模正弦扰动在失稳后以指数增长。线性理论（Chandrasekhar 1961；两无限深
-无粘流体）：
 
-    γ_theory = sqrt(At · g · k),   At = (ρ_h − ρ_l)/(ρ_h + ρ_l),   k = 2π/λ
+重流体置于轻流体之上 + 重力，界面单模扰动线性增长率对比理论：
 
-本 benchmark 配置：3D 域 (nz,ny,nx)=(64,128,64)，重力 gy=−1e-4，重流体在上
-（phi=1）/轻流体在下（phi=0），Atwood=0.9（ρ_h=1.0，ρ_l=1/19≈0.05263），
-界面单模扰动 λ=64（=nx，一个波长）、振幅 a0=0.01λ=0.64，τ=0.8（ν=0.1），
-封闭六面盒（bounce-back 壁）。
+- 理论参考（SCMP 轨，Wave-2 T-D）：等黏性两流体精确黏性色散关系
+  （Chandrasekhar 5×5 行列式，sympy 化简，`rt_theory.py` 对原始行列式自校验）；
+- 材料：SCMP 伪势 D2Q9（psi=exp(-ρ)，G_LIB=+4.1，τ=1），重/轻相密度
+  1.0047322946806552 / 0.4556430880312282（密度比 2.205086220054312，At=0.367），
+  ν=0.16666666666666666，界面宽 6.866132180338164 格，气相 spinodal 密度 0.548；
+- VOF 轨（本目录 2026-08-19）：3D 64×128×64，At=0.9，γ_theory=sqrt(At·g·k)，
+  用 `free_surface_vof_step` 共性模块。
 
-> **任务书文字勘误**：任务书写“下半重流体上半轻流体 + 重力 −y”——该分层在
-> 重力 −y 下是**稳定**分层（无 RT）。`init_phi_rayleigh_taylor_3d` 的模块约定
-> 是 phi=1 **重流体在上**（docstring：“Heavy fluid (phi=1) sits on top of light
-> fluid (phi=0)”），即标准 RT 失稳分层。本 benchmark 采用模块约定（重上轻下 +
-> 重力 −y = RT 失稳），README/result.json 均注明。
+## 计算结果现状
 
-理论值：γ_theory = sqrt(0.9 × 1e-4 × 2π/64) = **2.973e-3**。
-线性期速度量级：u ~ γ·a0 ≈ 1.9e-3。
+**SCMP 参数面扫描（staging `rt_instability/result.json`，2026-09-19，10 案例）**：
 
-## 共性模块路径（首次验证）
-- **顶层导入验证通过**（commit da550e5 导出后首次使用）：
-  `from tensorlbm import init_phi_rayleigh_taylor_3d, free_surface_vof_step` 可直接调用。
-- 演化：`free_surface_vof_step(f, phi, tau, gy, rho_liquid, rho_gas, solid)`
-  （VOF 碰撞+BGK+Guo 体力 → D3Q19 流播 → bounce-back → phi 迎风平流）。
-- 初始场：`init_phi_rayleigh_taylor_3d(nz, ny, nx, interface_frac, amplitude, wavelength, device)`。
-- 测量：phi=0.5 等值面高度亚格子插值 → sin(2πx/λ) 基模傅里叶投影振幅 a(t)；
-  `mixing_layer_thickness_3d`；max|u|。
-- 全部脚本见 `run.py`（无手写碰撞/流播/平衡态，纯共性模块调用）。
+| 案例 | gy | window_open | σ_sim |
+|------|---------|-------------|------|
+| lam140_g6e6 | 6e-06 | false | NaN（14 拟合窗斜率全负） |
+| lam140_g8e6 | 8e-06 | false | NaN |
+| lam140_g8e6_a2 | 8e-06 | false | -0.0009663450176290631 |
+| lam140_g1e5 | 1e-05 | false | NaN |
+| lam140_g1p2e5 | 1.2e-05 | false | NaN |
+| lam280_g3e6 | 3e-06 | true | -0.00021536746744910603 |
+| lam280_g4e6 | 4e-06 | true | -0.000205150208666548 |
+| lam280_g4e6_a2 | 4e-06 | true | -0.000206630426464502 |
+| lam280_g5p5e6 | 5.5e-06 | true | -0.00019305515715374987 |
+| lam280_g6p5e6 | 6.5e-06 | true | -0.00018699780823696162 |
 
-## 实测结果（真实模拟，GPU cuda:2，float32）
-| 网格 | 步数 | a(t) 增长 | γ_sim | 结果 |
-|---|---|---|---|---|
-| 64×128×64 | 5000 | 无（~50 步界面即毁） | 不可测 | FAIL |
-| 96×192×96 | 3000 | 无（同） | 不可测 | FAIL |
+可行性锚点（每档 g 的三重约束）：
 
-失败机制（量化证据）：
-1. **锚定密度 → 平衡态压力跳变 → 固有伪流动**：碰撞平衡态用
-   `rho_blend = ρ_l·φ + ρ_g·(1−φ)`，LBM 压力 p = ρ·cs² 随之在界面处跳变
-   Δp = Δρ·cs²（At=0.9 时 Δρ=0.947 → Δp≈0.316），而模型**没有**自由压力场
-   或表面张力机制与之平衡 → 界面被持续吹散。
-2. **伪流动速度标度实测（gy=0 对照，无重力也发生）**：
-   - Δρ=0.7（At≈0.54）：|u|_plateau ≈ **0.44**（峰值 0.88）
-   - Δρ=0.1：≈ 0.09；Δρ=0.01：≈ 0.011；Δρ=0（无对比）：0.0（完美静止）
-   - 标度 |u|_spurious ~ O(sqrt(Δρ·cs²/ρ̄))，与能量估算一致（Δρ=0.7 时
-     sqrt(2Δp/ρ̄)=0.85，实测 0.44–0.88）。
-3. **伪流动 vs RT 线性速度**：RT 线性期 u ~ γ·a0 ≈ 1.9e-3；伪流动 ~0.44
-   （At=0.9 时 ~0.5+）→ **大 2 个数量级**，界面在第一个 e-folding（~230 步）之前
-   即被撕碎（实测 ~50 步后 phi 场呈碎片/丝状结构，t=50 截面见图证据）。
-4. **a(t) 无指数增长**：界面模式振幅始终 ≈ 0（±噪声），γ_sim 拟合不成立
-   （R² 无意义），误差无法定义 → 判定未达标。
-5. **表面张力不能修复**：σ·κ 只作用于弯曲界面，平界面 κ≈0，无法平衡 Δp；
-   实测 σ=0.05/0.5 对伪流动无影响。初始场（平滑 2 格界面）与界面压缩
-   （c_comp=0.5）均不改变结论。
+| 量 | λ=140 | λ=280 |
+|----|-------|-------|
+| g_ceiling（气相 spinodal 天花板） | 1.4281160151573876e-05 | 7.140580075786938e-06 |
+| g_cutoff（毛细下限） | 4.504690367304767e-06 | 1.1268927966536935e-06 |
+| g_crit_with_restore（含实测蒸发钉扎） | NaN（lam140 唯一可测臂 = 2.5371043496415984e-05，**高于天花板**） | 6.936644426062614e-06 |
 
-## 对照：Boussinesq 变体与 Körner 路径（修复方向证据）
-1. **Boussinesq 变体（rho_l=rho_g=1，密度对比只进重力）**：无伪流动（|u|≈0.0005），
-   但碰撞把密度钉在 1 → **压力场同样被钉死**（无流体静压梯度 ∇p=ρg）→ RT 驱动
-   机制缺失 → 界面中性稳定、a(t)≈0 不增长；c_comp=0.5 时压缩项后期自发制造
-   丝状结构（数值噪声被反扩散放大）。⇒ 仅去掉密度对比不够，还需要自由压力。
-2. **Körner 完整自由表面模型（free_surface_step，质量追踪+界面 ABB 气压）**：
-   密度不被钉死（feq 用实际 ρ=Σf），可建立静压支持；但模型是**单液体+空洞气体**
-   （气体 f 清零、无惯性），At 固定 = 1（非任务书 0.5–0.9），且 ABB 需
-   rho_gas≈rho_liquid 才无压力爆炸（rho_gas=0 时初始即 |u|~0.5 爆炸）。
-   初步测试界面可保持，RT 增长（At=1，γ=sqrt(g·k)）的定量拟合见 result.json 附录。
+λ=280 最深臂 g=6.5e-6 已达天花板的 91%（6.5e-6/7.140580075786938e-06），仍衰减。
 
-## 修复方向（按优先级）
-1. **给 VOF 共性模块加质量追踪 + 自由压力场（Körner 式）**：密度从 phi 的
-   平流/质量守恒演化（fill=mass/ρ），碰撞平衡态用实际密度 → 压力可建立
-   静压梯度，RT 机制恢复；这是 free_surface_lbm.py 已验证的路线，把
-   free_surface_step 的质量/ABB 机制移植进 free_surface_vof_step（或直接
-   用 free_surface_step 做 RT，At=1 口径）。
-2. **Boussinesq VOF + 自由压力**：密度统一进平衡态（ρ=1）但允许密度扰动
-   承载压力（即**不要**把 rho_blend 塞进 feq，而是用实际 Σf 密度），密度对比
-   只通过重力力 F=ρ(φ)·g 施加 → 无压力跳变、可静压支持，γ = sqrt(g·k·ρ_h/(ρ_h+ρ_l))
-   （注意该口径与任务公式 sqrt(At·g·k) 的关系需按模型重新推导，At 高时两者
-   差 ~2.7% @At=0.9）。
-3. 若坚持现模块不改：需 σκ ≈ Δρ·cs² 的曲率项平衡压力跳变，但平界面 κ≈0
-   无法平衡 → 不可行；降低 At（Δρ→0）则伪流动 ~Δρ 线性下降但 RT 信号
-   ~sqrt(At) 也下降，且 At→0 不再是任务书目标区间。
+**VOF 模块轨（本目录，2026-08-19）**：两档网格（64×128×64、96×192×96）界面
+在约 50 步内被伪流动撕碎，γ_sim 不可测，无 result.json 入库（旧 README 记录
+了完整机制链，正文见"根因"）。旧 README 正文实测：伪流动速度比 RT 线性期
+信号大约两个数量级（gy=0 对照同样发生，纯 Δρ·cs² 压力跳变驱动）。
 
-## 判定
-- γ_sim 不可测（界面被伪流动撕碎，无线性期）→ **未达标，不保存 verified/**。
-- 达标判定标准（供修复后复测）：两档网格（64×128×64 / 96×192×96 或同级）
-  γ_sim/γ_theory 误差 ≤3% 且 |err| 随网格加密单调下降、R²≥0.99、
-  线性期窗口 ≥5 个 e-folding。
-- 已建 `benchmarks/pending/rayleigh_taylor/`：run.py（复现脚本）+ result.json
-  （实测数据）+ 本 README。
+## 不达标清单（严格标准：共性模块入口 + 直接观测量 ≤3% + ≥2 档网格单调收敛）
+
+- 共性模块入口：两轨均 ✓ 纯库路径（SCMP 轨 = multiphase 伪势原语；
+  VOF 轨 = `init_phi_rayleigh_taylor_3d` + `free_surface_vof_step`）。
+- 直接观测量 ≤3%：**不可测**（SCMP 轨 σ_sim ≤0 无增长期；VOF 轨界面损毁）。
+- ≥2 档网格单调收敛：不可测（无有效观测量）。
+- 判决：T-D 参数面不可行（非数值误差问题，是模型可达域问题）。
+
+## 根因/诊断
+
+- **SCMP 轨（决定性）——蒸发钉扎 + 三重 g 约束夹死增长窗口**：
+  1. RT 增长需 g > g_crit_with_restore；伪势界面的蒸发质量输运阻力
+     （R=C_R·k² 型钉扎）把该临界推高。λ=140 唯一可测 C_R 的臂给出
+     2.5371043496415984e-05，已**超过**同档天花板 1.4281160151573876e-05；
+     λ=280 的 6.936644426062614e-06 与天花板 7.140580075786938e-06 只剩
+     3% 余量，而 91% 深度处 σ_sim=-0.00018699780823696162 仍衰减
+     （外推所需 g* 已越出天花板，staging README §7 有完整论证）。
+  2. 上限物理：g 再大 → 轻相密度跌破 spinodal 0.548，SCMP 机制本身失效。
+  3. σ_sim 处处 ≤0/NaN：10/10 案例无任何指数增长窗口。
+  4. 辅证：材料 σ 两种测量口径差 -0.41020277042882486（41% 方法散布），
+     表面张力项本身不确定；gy=0 对照与 controls 自由落体校准通过
+     （步进器/重力实现无误，失败在伪势界面物理）。
+- **VOF 轨（结构性）**：碰撞平衡态用锚定密度 rho_blend=ρ_l·φ+ρ_g·(1-φ)，
+  界面处 p=ρcs² 跳变 Δρ·cs² 无自由压力场/表面张力平衡 → 固有伪流动
+  （Δρ=0 时完美静止，Δρ 增大伪流动按 ~sqrt(Δρ) 增长）；表面张力 σ·κ
+  对平界面 κ≈0 无效。Boussinesq 变体密度钉死 → 无静压梯度 → RT 驱动缺失；
+  Körner 完整自由表面模型只能做 At=1（气体无惯性）。**两条路都到不了
+  任务目标的 At∈[0.5,0.9] 定量增长率。**
+
+## 晋级路径
+
+- SCMP 参数面已论证穷尽（g 上限撞 spinodal、下限撞毛细截止、C_R 不可降），
+  **参数调优不可复活**；复活须换引擎：
+  1. 高密度比伪势（Carnahan-Starling/幂律 EOS，需重测共存曲线）；
+  2. 自由表面 Körner 轨——依赖 Wave-10 M3 晋级引擎重设计（主动邻居/
+     fill 阈值触发的前锋推进 + 质量交换权重，见
+     `/nfs/wangxi/runs/bm_mp_20261001/m3_freesurface/root_cause_chain.json`
+     根因 #5 与已登记的重设计提案）落地后重开；
+  3. 或等 M4（高密度比伪势轨）结论。
+- 达标即归档 PR 移 `pending/rayleigh_taylor` → `verified/`（需先有可测的
+  γ_sim 线性窗 + 两档网格收敛记录）。
 
 ## 复现
-    cd benchmarks/pending/rayleigh_taylor
-    PYTHONPATH=/home/wxsc/cxs/TensorLBM/src \
-      /home/wxsc/anaconda3/envs/ftw-env/bin/python run.py --device cuda:2 --grid 64 --steps 5000
-    # 第二档：--grid 96 --steps 3000
+
+```
+SCMP 轨（staging）: /nfs/wangxi/runs/bm_widen_20260919/rt_instability/
+  result.json       # 10 案例完整判决（本 README 表格来源）
+  README.md §7      # 参数面不可行完整论证
+VOF 轨（本目录）:   run.py（2026-08-19 记录脚本；旧 README 见 git 历史）
+```
+
+<!-- PROVENANCE
+[{"v": 1.0047322946806552, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "material.rho_heavy"},
+ {"v": 0.4556430880312282, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "material.rho_light"},
+ {"v": 2.205086220054312, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "material.density_ratio"},
+ {"v": 6.866132180338164, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "material.interface_width_w"},
+ {"v": 0.16666666666666666, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "material.nu"},
+ {"v": 0.548, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "material.rho_vapor_spinodal"},
+ {"v": -0.41020277042882486, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "material.sigma_eff_method_spread"},
+ {"v": 0.3670385497355098, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam140_g6e6.feasibility.At"},
+ {"v": false, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam140_g6e6.feasibility.window_open"},
+ {"v": 1.4281160151573876e-05, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam140_g6e6.feasibility.g_ceiling_vapor_spinodal"},
+ {"v": 4.504690367304767e-06, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam140_g6e6.feasibility.g_cutoff_capillary"},
+ {"v": 2.5371043496415984e-05, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam140_g8e6_a2.feasibility.g_crit_with_restore"},
+ {"v": 6e-06, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam140_g6e6.config.gy"},
+ {"v": 8e-06, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam140_g8e6.config.gy"},
+ {"v": 1e-05, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam140_g1e5.config.gy"},
+ {"v": 1.2e-05, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam140_g1p2e5.config.gy"},
+ {"v": 3e-06, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g3e6.config.gy"},
+ {"v": 4e-06, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g4e6.config.gy"},
+ {"v": 5.5e-06, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g5p5e6.config.gy"},
+ {"v": 6.5e-06, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g6p5e6.config.gy"},
+ {"v": -0.0009663450176290631, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam140_g8e6_a2.sigma_sim"},
+ {"v": -0.00021536746744910603, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g3e6.sigma_sim"},
+ {"v": -0.000205150208666548, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g4e6.sigma_sim"},
+ {"v": -0.000206630426464502, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g4e6_a2.sigma_sim"},
+ {"v": -0.00019305515715374987, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g5p5e6.sigma_sim"},
+ {"v": -0.00018699780823696162, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g6p5e6.sigma_sim"},
+ {"v": true, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g6p5e6.feasibility.window_open"},
+ {"v": 7.140580075786938e-06, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g6p5e6.feasibility.g_ceiling_vapor_spinodal"},
+ {"v": 1.1268927966536935e-06, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g6p5e6.feasibility.g_cutoff_capillary"},
+ {"v": 6.936644426062614e-06, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "cases.lam280_g6p5e6.feasibility.g_crit_with_restore"},
+ {"v": 4.1, "f": "/nfs/wangxi/runs/bm_widen_20260919/rt_instability/result.json", "k": "method", "in_str": true}]
+-->

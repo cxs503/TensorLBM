@@ -1,93 +1,123 @@
-# 毛管侵入 / Washburn 动力学（SC-MCMP）— 判决记录
+# 毛细侵入 capillary_invasion_washburn（Washburn 律 β 与 L(t)）（pending）
 
-日期 2026-09-21。实现：tensorlbm `multiphase`/`porous_media` 模块（经
-`w4b_lib.py` 编排，零手写物理核）。
+**状态：❌ 未达标（SC-MCMP 结构性搅动，Wave-4 W4-B Part 2 判决，2026-09-21）——β 判据 19.08%（W32）/3.17%（W64，压线仍 FAIL）；L(t) 对 nominal-μ ODE 绝对判据 +689%/+949%（b_max_rel_diff 6.894/9.492）；湿润相质量漂移 -60.7%/-67.0%；W128 确定性 NaN@164 步；σ 原理性不可测使 ODE 参考只能去掉毛细项。姊妹案例 two_phase_poiseuille（同库 Part 1）26.82%→33.17% 反收敛，同根因。**
 
-## 一句话结论
+## 物理问题
 
-**FAIL（三判据全败）**：(a) Washburn 指数 β = 0.5954 / 0.5159（距 0.5 偏差
-19.08% / 3.17%，阈值 ≤3%）；(b) 前沿 L(t) 对参考 ODE 最大偏差 **+689% / +949%**；
-W128 档**第 164 步确定性 NaN 发散**。该模型点的侵入动力学被 SC 界面 churn
-（伪流 u_max≈0.073）支配，Washburn 毛管驱动区**不可达**；σ 在本构造下**不可测**
-（见下），毛管项无法构造，参考 ODE 只含黏性驱动项。
+两相 SC-MCMP 流体在压差 dP 驱动下侵入宽度 W 的细管（毛细侵入/Washburn）：
 
-## 判定表（result.json 复算一致）
+- 判据 a（指数）：侵入前沿 L(t) 的 Washburn 指数 β（理论 0.5）偏差 ≤3%；
+- 判据 b（绝对）：L(t) 对 ODE 参考解的最大相对偏差 ≤3%。参考 ODE 用
+  nominal-μ（**无毛细项**——SC-MCMP 的 σ 无可测量路径，
+  `b_reference = 'nominal-mu ODE (no capillary; sigma unmeasurable)'`）；
+- 预注册冻结（snapshot/notes sha256 双锁，iron_rule pass），
+  判据、窗口协议（thr1 阈值触发 t1，跨 t2 关窗）全部预注册。
 
-| 档 | (a) β | 距 0.5 | (b) max rel diff vs ODE | 同窗 β_ODE | 前沿速度 (lu/step) | 状态 |
-|---|---|---|---|---|---|---|
-| W32 | 0.5954 | 19.08% | +689% @t=12500 | 0.200 | 0.030（设计值 15×） | ok |
-| W64 | 0.5159 | 3.17% | +949% @t=6000 | 0.154 | 0.050（设计值 25×） | ok |
-| W128 | — | — | — | — | — | **DIVERGED @164** |
+模型：库 SC-MCMP 多相原语（D2Q9 多组分伪势），drho_rule_check 通过；
+W ∈ {32, 64, 128} 三档，40k 步预算。
 
-β = ln L 对 ln t 的窗口 LSQ 斜率（窗规则：L>max(2.5W, L0+40) 起、L<0.7nx 止；
-W32 窗 [1500, 12600]×112 样本、W64 窗 [1900, 6900]×51 样本）。
-参考 ODE = 名义黏度两段 Washburn 方程（水/气各占管长），无毛管项（σ 不可测，
-见下）。
+## 计算结果现状（result.json `part2`，2026-09-21）
 
-## 配置
+| 档 | 状态 | steps | β | β 判据偏差% | b_max_rel_diff | 湿润相质量漂移% | 判定 |
+|----|------|-------|---|-------------|----------------|------------------|------|
+| W32 | ok | 40000 | 0.5954203105406733 | **19.08406210813467** | **6.894145455199683** | **-60.677107119080844** | A ✗ B ✗ |
+| W64 | ok | 40000 | 0.515863171986898 | **3.1726343973796034** | **9.491756800333688** | **-66.97527211128853** | A ✗ B ✗ |
+| W128 | DIVERGED | 100 | — | — | — | — | NaN@164（确定性） |
 
-- 几何 nx=600，管宽 W=32/64/128（tw=W−1）；**固体 seam 列 x=nx−1**（埋掉
-  周期 streaming 接缝 = 库缺陷 #9 的驱动层规避）
-- 驱动：气储层列 0 共存组成 ×(1+Δρ)，Δρ = 3·1.8/Weff²（K=1 黏性定尺寸，
-  u_target=2e-3）；水汇列 nx−2 共存组成（Dirichlet 型覆写）
-- 初始化：共存匹配 tanh-3（x0=33.5）；共存对 (0.7, 0.3001)/(0.1593, 0.8407)
-  = Part-1 终态实测
-- τ=(1.0, 0.75)，G_12=−2.5，中性壁（G_ads=0），θ=83.33288817404761°
-  （selftest_theta 静滴自测，20k–40k 稳定）
-- 步数 40000（三档统一）、采样间隔 100
+窗口健康度（W32：t∈[1500,12600]，112 样本，u_max=0.074523，
+Ma=0.12907762233245546，minf=0.000621；W64：t∈[1900,6900]，51 样本，
+u_max=0.072953，Ma=0.1263583025645723）——拟合窗本身健康，
+失败不是窗口选择问题。β 的 ODE 自参对照：W32 beta_ode=0.19952327471976875
+（偏离 sim β 3 倍），W64 beta_ode=0.153640644256196——ODE 参考自身与
+0.5 差距巨大，再次说明 σ 缺失下参考解不具判别力（fit_rms_rel 0.148/0.364）。
 
-## σ 可测性：不可测
+W128 发散归因（result.json `attribution`）：确定性 NaN@164，与驱动无关
+（drho=0 复现）与域长无关（nx=300 复现）；水汇处气相耗尽层 → rho_g→0 →
+分布函数变负（exp39/40/41）。
 
-- 全交换 MCMP 构造使 ρ_tot ≡ 1 → 朴素 cs²Δ(ρ_tot) 压差**结构性≈0**。
-- 气泡再平衡且**长大**（R0=16→28.55、32→49.26、64→90.96）→ 模块式固定
-  mask（0.6R0/1.4R0）被污染；固定 mask σ = 0.1223/0.1240/0.0297（强 R 依赖）。
-- 半径一致 mask 下 ΔP 符号翻转（+7.6e-3 vs −8e-4）；EOS 形修正与平界面
-  dP_flat=0 矛盾；2 参拟合截距 35.6%。
-- 后果：严格 Washburn 形判据 (b) 的毛管项 2σcosθ/W **不可构造**；未做任何
- 事后重标定。
+**姊妹案例（同库同预注册）**：`../two_phase_poiseuille/result.json`
+（W4-B Part 1）：H64 max_rel_err=0.26821538643505377 → H128
+0.33173655541170183（**反收敛**），criterion_monotone_decreasing=False，
+verdict FAIL。
 
-## W128 发散
+## 不达标清单（严格标准：共性模块入口 + 直接观测量 ≤3% + ≥2 档网格单调收敛）
 
-确定性 NaN @ step 164（npz 102 个 NaN）。与驱动无关（Δρ=0 复现）、与域长无关
-（nx=300 复现）。机理：水汇侧气耗尽边界层增厚 → ρ_g→0 → 负分布。边界扫描
-W96 @181、W112 @173、W128 @164；**本模型点稳定包络 W ≤ 64**。
+- 共性模块入口：✓（SC-MCMP 库原语；prereg sha256 冻结，iron_rule 通过）。
+- 直接观测量 ≤3%：✗（β 19.08%/3.17%；L(t) 绝对判据 689%/949%）。
+- ≥2 档网格单调收敛：✗（W64 比 W32 更差：b_max_rel_diff 6.894→9.492，
+  质量漂移 -60.7→-67.0；W128 直接发散；姊妹 Part 1 同样反收敛）。
+- 附：σ 不可测 → 判据 b 的参考解退化为无毛细 ODE，判别力受损（如实披露）。
 
-## β≈0.5 表象的定源
+## 根因/诊断
 
-前沿实测速度是 Poiseuille 排驱设计值的 15–25×（拟合驱动尺度 19.1×/25.5×，
-仅归因用）；SC churn（窗内 u_max 0.0745/0.0730，Ma≈0.13）主导输运。β≈0.5
-是前沿减速趋向**汇钉住饱和**（L∞≈580–597）的形状副产物，同窗参考 ODE 的
-β 仅 0.15–0.20 —— β 判据 (a) 的"接近 0.5"与 Washburn 毛管物理无关。
+1. **SC-MCMP 结构性耦合偏差**：多组分伪势的组分间动量耦合在侵入前沿
+   附近产生持续搅动——湿润相质量在 40k 步内漂移 -60~-67%（质量账严重
+   不守恒），前沿动力学偏离 Washburn 自相似律（β 偏离 0.5 且档间不稳）。
+2. **σ 无测量路径**：表面张力在 SC-MCMP 参数化下原理性不可测，ODE 参考
+   只能去毛细项（nominal-μ），绝对判据的 +689/+949% 部分来自参考本身
+   缺项——这是"参考受限"型失败与"物理错误"型失败的叠加，判决如实双 FAIL。
+3. **W128 负分布 NaN**：水汇气相耗尽 → rho_g→0 → 分布负值（确定性、
+   与驱动/域长无关）——密度比下限路径的库级缺陷。
+4. 战役侧记录的库缺陷清单（W4-B 报告）：SC-MCMP 库 validate 逻辑把唯一
+   可用域拦死、washburn 指数器口径（返回 2β）、0.05 台阶初始化等 10 项
+   已登记——本案例的搅动与质量漂移与该清单同源。
 
-## 库缺陷清单（10 条；机械项已修 PR #305，深物理项另立项）
+## 晋级路径
 
-| # | 缺陷 | 位置（porous_media.py 行号 @ b71e598670） |
-|---|---|---|
-| 1 | G_12 文档/校验符号错误：docstring 称 >0 分相，实测分相需 ≤−2.5；validate 主动拦截 G_12≤0，把唯一可用域挡死 | porous_media.py:305/346 |
-| 2 | 入口注入纯单组分柱（远离共存对）→ SC 剧烈瞬态 | 入口协议 |
-| 3 | 周期 x-streaming + 入口列覆写 → col0/col(nx−1) 虚拟界面 → NaN<4k 步（4 变体） | 几何 |
-| 4 | 曲界面稳定性：τ_water≤0.7 @G=−2.5 NaN；稳定窗 τ_w∈[0.8, ~2.5] | 参数面 |
-| 5 | 大 τ 对比下有效黏度比反转（30% 互溶度：名义 M=4 → 有效 M≈0.54） | 物理核 |
-| 6 | `_measure_invasion_front` φ_col>0.4 + 最大气柱：晚期扩散混合下前沿无定义 | 测量 |
-| 7 | σ 在全交换构造下不可测（ρ_tot≡1；固定 mask 被气泡再平衡污染） | run_laplace_test |
-| 8 | SC churn（伪流 0.07–0.11）支配一切低于它的排驱设计；Washburn 区不可达 | 模型点 |
-| 9 | run_capillary_invasion 在本格子上几何语义破损（= #3） | 入口 |
-| 10 | 管宽 >~64 确定性发散（汇侧 ρ_g→0 负分布） | 模型限制 |
+- 先修库再重验：SC-MCMP 湿润相质量守恒（侵入前沿质量账）、可测 σ 路径
+  （或改用可测 σ 的自由能 MultiRelaxation 类多相）、气相耗尽层防护
+  （W128 类负分布）。
+- 重验须新预注册（判据 b 的参考解在 σ 可测后重锁）；σ 不可测的现状下
+  该案例无可判别参考，不宜复跑。
+- 达标即归档 PR 移 `pending/capillary_invasion_washburn` → `verified/`
+  （建议与 Part 1 two_phase_poiseuille 同批处置，同库同根因）。
 
-机械项（#1 G_12 符号/#2 入口组成/#7 σ 测量/#9 几何语义，含 Washburn 2β
-估计器与 dp_inlet 等）已随 PR #305 修复并附判别测试；深物理项（#5 分量自
-速度平衡、#8 churn、#10 W≳64 发散）以 xfail-strict 测试锁定证据，修复另立项。
+## 复现
 
-## 文件
+```
+cd benchmarks/pending/capillary_invasion_washburn
+PYTHONPATH=../../../src python run.py --W {32,64,128}
+# 判决: result.json part2.criteria（a/b 判据 + W128 状态）
+# 预注册哈希: prereg.snapshot_sha256 / prereg.notes_sha256（见 result.json 头部）
+```
 
-- `run.py` — 正式驱动
-- `w4b_lib.py` — 共享驱动库（同 two_phase_poiseuille 记录）
-- `result.json` — 复算判决（Part 2 切片 + 铁律检查）
-- `out_part2_W{32,64,128}.json` — 三档原始输出（逐采样序列：L/质量/u_max/minf）
-- `out_part2_W{32,64,128}_final.npz` — 终态 φ 场 + 固体 mask
-- `out_selftest_{sigma,sigma_v2,theta}.json` — σ/θ 自测输出
-- `log_part2.txt` — 运行日志
-- 完整工件（NOTES、参数探索记录）保留于服务器
-  `/nfs/wangxi/runs/bm_widen_w4_20260920/washburn_twophase/`
-
-复现：`python run.py`（需空闲 CUDA 设备；W32/W64 各 ~47 s，W128 ~60 s 到发散）。
+<!-- PROVENANCE
+[{"v": true, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "iron_rule.pass"},
+ {"v": 40000, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.completed_steps"},
+ {"v": 1500, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.window.t1"},
+ {"v": 12600, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.window.t2"},
+ {"v": 112, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.window.n_samples"},
+ {"v": 0.5954203105406733, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.beta"},
+ {"v": 19.08406210813467, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.beta_criterion_dev_pct"},
+ {"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.criterion_a_pass"},
+ {"v": 0.19952327471976875, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.beta_ode"},
+ {"v": 6.894145455199683, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.b_max_rel_diff"},
+ {"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.criterion_b_pass"},
+ {"v": -60.677107119080844, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.massw_drift_pct"},
+ {"v": 0.074523, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.umax_in_window"},
+ {"v": 0.12907762233245546, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.Ma_in_window"},
+ {"v": 0.000621, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.minf_overall"},
+ {"v": 0.14812899907521598, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.fit_rms_rel"},
+ {"v": 0.03018018018018018, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W32.front_speed_mean_in_window"},
+ {"v": 1900, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.window.t1"},
+ {"v": 6900, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.window.t2"},
+ {"v": 51, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.window.n_samples"},
+ {"v": 0.515863171986898, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.beta"},
+ {"v": 3.1726343973796034, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.beta_criterion_dev_pct"},
+ {"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.criterion_a_pass"},
+ {"v": 0.153640644256196, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.beta_ode"},
+ {"v": 9.491756800333688, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.b_max_rel_diff"},
+ {"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.criterion_b_pass"},
+ {"v": -66.97527211128853, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.massw_drift_pct"},
+ {"v": 0.072953, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.umax_in_window"},
+ {"v": 0.1263583025645723, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.Ma_in_window"},
+ {"v": 0.3644854864941034, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W64.fit_rms_rel"},
+ {"v": 100, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.W128.completed_steps"},
+ {"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.criteria.a_beta_vs_0.5_le_3pct.W32"},
+ {"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.criteria.a_beta_vs_0.5_le_3pct.W64"},
+ {"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.criteria.b_L_vs_ODE_le_3pct.W32"},
+ {"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json", "k": "part2.criteria.b_L_vs_ODE_le_3pct.W64"},
+ {"v": 0.26821538643505377, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/two_phase_poiseuille/result.json", "k": "part1.H64.max_rel_err"},
+ {"v": 0.33173655541170183, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/two_phase_poiseuille/result.json", "k": "part1.H128.max_rel_err"},
+ {"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/two_phase_poiseuille/result.json", "k": "part1.criteria.criterion_monotone_decreasing"}]
+-->

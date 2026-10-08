@@ -1,87 +1,54 @@
-# Taylor–Aris 剪切分散 benchmark（W3-A，Wave-3 新问题类：被动标量分散）
+# taylor_aris_dispersion（pending）
 
-平面缝隙稳态 Poiseuille 流 + 被动标量纵向剪切分散。**理论：Taylor (1953) / Aris
-(1956) 缝隙精确解 `Deff/D = 1 + Pe²/210`，`Pe = u_mean·H/D`。**
+**状态：❌ 未达标（判据类）——容差门 6/6 全过（0.0496%–0.2624%，低于 3% 门 11–60×）但网格单调收敛门 0/3：三个 Pe 档全部 err(H128) ≥ err(H64)；根因为负号 O(1/H²) 离散项 + 正号 ~0.2% 地板的误差变号结构（H≈50 过零），非解发散、非舍入、非测量偏差。**
 
-真实模拟，无外推、无修正因子、无重标定。全部配置/判据/窗口规则在运行前预注册
-（`NOTES.md` A 节 + 只读快照 `NOTES_prereg_snapshot.txt`，mtime 2026-09-20T08:09:50Z，
-早于一切 case 输出）。
+## 物理问题
 
-## 判定
+平面缝隙稳态 Poiseuille 流 + 被动标量纵向剪切分散（Wave-3 新问题类）。理论：Taylor (1953) / Aris (1956) 缝隙精确解 Deff/D = 1 + Pe²/210，Pe = u_mean·H/D。真实模拟，无外推、无修正因子、无重标定；配置/判据/窗口规则全部预注册（staging NOTES.md A 节 + 只读快照，早于一切 case 输出）。
 
-**容差判据达标：6/6 档 |Deff_sim/Deff_theory − 1| ≤ 3%，实测 0.050%–0.262%
-（低于容差 11–60×）。**
-**单调收敛判据未达标：3/3 个 Pe 档 err(H=128) ≥ err(H=64) → 预注册
-verdict_pass=FALSE（result.json）。** 根因经诊断链定位为**误差变号 + 正地板**
-结构（见"误差结构诊断"），非解发散、非测量偏差、非 fp32 舍入；H=64/128 全部
-在 0.3% 内。
+设置：速度 D2Q9 BGK（τ=0.9，ν=0.13333333333333333）+ 标量 D2Q5 BGK（τ_T=0.8，D=α=0.10000000000000002），纯被动无浮力；x 全周期，nx=m·H；速度壁走库 pre_streaming_bounce_back（半程 no-slip，同 W1 已验证模式），标量壁为内联解缠零通量反射（同位 y=0.5/ny−1.5，死行恒零）；驱动为周期域常体力（库 _apply_body_force_2d，无 Zou-He）；H∈{64,128}，Pe_target∈{10,20,30}；测量 = C̄(x,t) wrapped 矩 σ² 斜率窗 [2,3]·H²/α，Deff=斜率/2，理论值按窗口实测 pe_sim 计算。库入口：solver.collide_bgk/stream、thermal.pre_streaming_bounce_back、thermal.temperature_equilibrium/collision/stream、turbulent_channel._apply_body_force_2d、d2q9.equilibrium/macroscopic；run.py 内零手写核（铁律 grep 自检零命中）。
 
-## 配置
+## 计算结果现状
 
-| 项 | 值 |
-|---|---|
-| 格子 | 速度 D2Q9 BGK（τ=0.9，ν=0.1333）；标量 D2Q5 BGK（τ_T=0.8，D=α=0.1），无浮力（纯被动） |
-| 域 | ny=H+2，nx=m·H；m=ceil(1.15·4·√(6·(1+Pe²/210))) → Pe10:14 / Pe20:20 / Pe30:26；x 全周期 |
-| 壁 | 速度：库 `pre_streaming_bounce_back`（半程，no-slip 面 y=0.5/ny−1.5，H_eff=ny−2，W1 已验证模式）；标量：内联解缠零通量反射（同位 y=0.5/ny−1.5，NOTES A.8，死行恒零，逐位守恒） |
-| 驱动 | 周期域常体力 `a=12νu_mean/H²`（库 `_apply_body_force_2d`，W1 先例）；无 Zou-He |
-| 网格/Pe | H∈{64,128}；Pe_target∈{10,20,30}；u_mean_target=Pe·α/H（Ma 0.041–0.122） |
-| 初值 | 流场解析抛物线 + 0.5·H²/ν 纯流场沉降；标量全缝横向均匀高斯线团（A=0.05，σ0=3 节点） |
-| 测量 | C̄(x,t)（流体行截面平均）wrapped 矩 σ²=−2lnR·(L/2π)²；窗 [2,3]·H²/α；采样 0.01·H²/α；Deff=斜率/2；Pe_sim 用窗口实测 u_mean |
+正式扫描（fp32，result.json，判定 verdict_pass=FALSE）：
 
-库入口：`solver.collide_bgk/stream`、`thermal.pre_streaming_bounce_back`、
-`thermal.temperature_equilibrium/collision/stream`、`turbulent_channel._apply_body_force_2d`、
-`d2q9.equilibrium/macroscopic`。铁律自检
-`grep -nE "def (collide|stream|equilibrium|bounce|zou_he|far_field)" run.py` 零命中。
-
-## 管道验证（正式扫描前，全部通过/落实）
-
-| 门 | 结果 |
-|---|---|
-| V1 稳态剖面 vs 解析抛物线 | Pe30/H64：L2 0.005%、pointwise 0.005%、u_mean 偏 0.007%；Pe10/H64：0.007%/0.008%/0.006%（正式 6 档 V1 全部 L2 ≤0.03%） |
-| V2 标量守恒 | 阶段审计（val_mass_probe.txt）：stream 与壁反射对 Σg 贡献**逐位 0.0**、死行恒 0（无壁通量/汇）；全局原始漂移 = 库 W5 常数栅齿 ≤1.8e-2（修订门 2.5e-2，扫描前修订留痕） |
-| V3 合成估计器 | wrapped 矩 bias ≤1.7e-15（σ/L=0.05–0.25、非高斯两团、全部生产 nx∈{896..3328}）；naive 中央矩同域 −2e-6～−13.6% → wrapped 选择必要 |
-| V4 纯扩散（u≡0） | Deff_sim=0.100005 vs α=0.1（0.0049%），max\|u\|=0 严格静止 |
-
-## 结果（正式扫描，fp32，result.json）
-
-| Pe | H | nx | Deff_sim | Deff_theory(pe_sim) | err |
+| Pe | H | nx | Deff_sim | Deff_theory(pe_sim) | err% |
 |---|---|---|---|---|---|
-| 10 | 64 | 896 | 0.147507 | 0.147624 | 0.079% |
-| 10 | 128 | 1792 | 0.147478 | 0.147616 | 0.094% |
-| 20 | 64 | 1280 | 0.290630 | 0.290486 | 0.050% |
-| 20 | 128 | 2560 | 0.291130 | 0.290368 | 0.262% |
-| 30 | 64 | 1664 | 0.529219 | 0.528633 | 0.111% |
-| 30 | 128 | 3328 | 0.529748 | 0.528553 | 0.226% |
+| 10 | 64 | 896 | 0.14750743616041578 | 0.14762438948034895 | 0.07922357568749261 |
+| 10 | 128 | 1792 | 0.1474777956160168 | 0.14761616563616384 | 0.09373635980228778 |
+| 20 | 64 | 1280 | 0.2906299313972214 | 0.29048595440979114 | 0.04956418210400049 |
+| 20 | 128 | 2560 | 0.2911301753736006 | 0.2903683610705727 | 0.262361333107752344 |
+| 30 | 64 | 1664 | 0.5292189799770554 | 0.5286334877680435 | 0.11075579254047341 |
+| 30 | 128 | 3328 | 0.5297482464739621 | 0.5285532408327899 | 0.22608992791139926 |
 
-独立佐证：⟨u'²⟩/u_mean² = 0.1997–0.2000（理论精确值 1/5）；x_c(t) 漂移速度与实测
-u_mean 一致（≤1.4e-4 相对）；pe_sim 偏 target ≤0.03%；子窗敏感性 [1.5,3]/[2,2.5]/
-[2.5,3]·H²/α 全部稳定（±0.05pp，无瞬态污染）；动量场质量漂移 ≤2.4e-9。
+诊断阶梯（staging diag_*.json；err_pct 为 |sim/theory−1| 幅值，方向由 Deff 对判定）：
 
-## 误差结构诊断（post-scan，不替换判据；diag_*.json）
+| Pe≈20 | H | dtype | Deff_sim | Deff_theory | err% | 方向 |
+|---|---|---|---|---|---|---|
+| 20 | 32 | fp32 | 0.2887759225633225 | 0.29059137541158375 | 0.6247442291395955 | sim 偏低 |
+| 20 | 64 | fp64 | 0.2905751933569982 | 0.2905022101054308 | 0.025123131263238285 | sim 偏高 |
+| 20 | 128 | fp64 | 0.29103068167095814 | 0.2904827029855865 | 0.18864417045818538 | sim 偏高 |
+| 40（外推探针） | 64 | fp32 | 0.8635182634551876 | 0.8619029453833372 | 0.18741298895688097 | sim 偏高 |
 
-| Pe=20 | H=32 | H=64 | H=128 |
+管道验证（staging val_*.json）：V4 纯扩散（u≡0）Deff_sim=0.10000492049213791 vs α=0.10000000000000002（err 0.00492049213789425%），标量场通量审计 f_mass_drift_max=0.0（逐位零）；V3 合成估计器 wrapped 矩 bias_max=3.774758283725532e-15（含双团非高斯），同域 naive 中央矩最差 −0.1358513639299479（σ/L=0.25）；V1 稳态剖面 v1_l2：Pe10/H64 6.506550750513557e-05、Pe30/H64 4.731402192482771e-05。佐证：Pe20/H64 案例档 uu_fluct_over_umean2=0.19974105584565674（理论精确 1/5）。
+
+## 不达标清单
+
+| 门 | 冻结条款 | 实测 | 判 |
 |---|---|---|---|
-| fp32 err | −0.625% | +0.050% | +0.262% |
-| fp64 err | — | +0.025% | +0.189% |
+| 容差门 | 每档 \|Deff_sim/Deff_theory−1\| ≤ 3% | 6/6 过，0.04956418210400049%–0.262361333107752344% | ✓ |
+| 单调收敛门 | 每 Pe 档 err(H128) < err(H64)（≥2 档网格） | 0/3（三档全反向增大） | ✗ |
+| 总判 | 预注册 verdict_pass | FALSE（all_within_tol=true、all_monotone=false） | ✗ |
+| 共性模块入口 | 库 only、run.py 零手写核 | 库五入口 + grep 自检零命中 | ✓ |
 
-1. **fp64 对照**：误差不降为 0、单调性不恢复 → 非 fp32 舍入。fp64 各子窗斜率逐位
-   相同 → 系统误差恒定于时间（非逐步累积，t=1H²/α 前即建立）。
-2. **H=32 探针**：Pe20 误差 −0.625%→+0.05%→+0.26% 随 H **变号**（H≈50 过零，
-   |err| 最小在 H=64）→ 总误差 = 负号 O(1/H²) 离散项 + 正号缓变地板（~0.2%）。
-   单调收敛判据失败源于此结构，而非解发散。
-3. **排除项**：估计器（机器精度，全部生产 nx）；场非高斯（naive/wrapped@t2≈0.94
-   与纯 wrapped 高斯预言一致）；流场剖面（⟨u'²⟩/ū² 偏差 ≤0.05%）；瞬态污染
-   （子窗稳定）；壁泄漏（阶段审计逐位 0）；栅齿漂移（均匀重标，归一化矩精确相消，
-   fp64 恒定斜率双重实证）。正地板 ~0.2% 的确切格点项未完全定位（候选：D2Q5 线性
-   平衡剪切输运截断与标量半程壁的耦合）；如实报数，不修正。
-4. **库常数栅齿**：`thermal.W5` 为 fp32 常量（Σw=1+2.98e-8）→ 每步全场 +3.7e-8·T
-   均匀乘性重标；fp64 运行不消除（常数舍入非算术舍入）。实测漂移 H64 4.2e-3 /
-   H128 1.8e-2 与该常数逐位吻合。归一化测量免疫（V4 0.0049% 实证）。
+## 根因/诊断
 
-## 工件
+1. **误差变号结构**：Pe20 链 err 随 H 为 H32 0.6247442291395955%（sim 偏低）→ H64 0.0496%（sim 偏高）→ H128 0.2624%（sim 偏高），约 H≈50 过零；总误差 = 负号 O(1/H²) 离散项 + 正号缓变地板（~0.2%）。单调门读的是这两支之和，H64 恰在谷底。
+2. **fp64 对照排除舍入**：fp64 同核 H64/H128 err 0.025123131263238285% / 0.18864417045818538%——不归零、单调不恢复，且各子窗斜率逐位相同（系统误差恒定于时间，非逐步累积）。
+3. **排除项**（均有机器档案）：估计器（V3 机器精度）、瞬态污染（子窗稳定）、壁泄漏（f_mass 逐位 0）、流场剖面（V1 与 uu² 检验）、fp32 舍入（fp64 对照）。正地板的确切格点项未完全定位（候选：D2Q5 线性平衡剪切输运截断与标量半程壁的耦合）；如实报数，不修正。库标量 W5 权重为 fp32 常量（逐步累加权重和与 1 有机器 ε 量级偏差，W8-C 小债记录在案），归一化测量对其免疫（V4 实证）。
 
-`run.py`（入口：synthetic/profile/diffusion/case/scan）、`NOTES.md`（预注册 A +
-时间线 B + 披露 C）、`NOTES_prereg_snapshot.txt`（只读快照）、`result.json`（正式
-判定）、`case_pe*_H*.json`（6 档全量）、`val_synthetic.json`、`val_profile_*.json`、
-`val_diffusion_H64.json`、`val_mass_probe.txt`、`diag_fp64_pe20_H*.json`、
-`diag_probe_pe20_H32.json`、`diag_probe_pe40_H64.json`、`scan.log`、`log_*.txt`。
+## 晋级路径
+
+W3-A 判决 FAIL 已如实归档（Wave-3 归档 PR，pending 带定源记录）。晋级需新波次攻击正地板：(a) 定位并修复 D2Q5 线性平衡剪切输运截断（或换 D2Q9 标量/高阶平衡）后按新 prereg 重跑 3Pe×2H 阶梯；(b) 或 owner 接受"误差变号 + 地板"结构改锁单调条款口径（预注册修订，非本档可自决）。归档 PR 将 pending/taylor_aris_dispersion 移 verified/ 仅在门重判后发生。成本：重跑阶梯 CPU/GPU 均轻（六档全仿真分钟级~小时级）；主要成本在地板定位的数值实验。
+
+<!-- PROVENANCE [{"v":3.0,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"tol_pct"},{"v":0.9,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"tau"},{"v":0.8,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"tau_T"},{"v":0.10000000000000002,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"alpha"},{"v":0.13333333333333333,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"nu"},{"v":10,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[0].pe_target"},{"v":64,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[0].H"},{"v":896,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[0].nx"},{"v":0.14750743616041578,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[0].deff_sim"},{"v":0.14762438948034895,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[0].deff_theory"},{"v":0.07922357568749261,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[0].err_pct"},{"v":128,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[1].H"},{"v":1792,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[1].nx"},{"v":0.1474777956160168,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[1].deff_sim"},{"v":0.14761616563616384,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[1].deff_theory"},{"v":0.09373635980228778,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[1].err_pct"},{"v":20,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[2].pe_target"},{"v":1280,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[2].nx"},{"v":0.2906299313972214,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[2].deff_sim"},{"v":0.29048595440979114,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[2].deff_theory"},{"v":0.04956418210400049,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[2].err_pct"},{"v":2560,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[3].nx"},{"v":0.2911301753736006,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[3].deff_sim"},{"v":0.2903683610705727,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[3].deff_theory"},{"v":0.262361333107752344,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[3].err_pct"},{"v":30,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[4].pe_target"},{"v":1664,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[4].nx"},{"v":0.5292189799770554,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[4].deff_sim"},{"v":0.5286334877680435,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[4].deff_theory"},{"v":0.11075579254047341,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[4].err_pct"},{"v":3328,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[5].nx"},{"v":0.5297482464739621,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[5].deff_sim"},{"v":0.5285532408327899,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[5].deff_theory"},{"v":0.22608992791139926,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/result.json","k":"per_case[5].err_pct"},{"v":32,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_probe_pe20_H32.json","k":"H"},{"v":0.2887759225633225,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_probe_pe20_H32.json","k":"deff_sim"},{"v":0.29059137541158375,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_probe_pe20_H32.json","k":"deff_theory"},{"v":0.6247442291395955,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_probe_pe20_H32.json","k":"err_pct"},{"v":0.2905751933569982,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_fp64_pe20_H64.json","k":"deff_sim"},{"v":0.2905022101054308,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_fp64_pe20_H64.json","k":"deff_theory"},{"v":0.025123131263238285,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_fp64_pe20_H64.json","k":"err_pct"},{"v":0.29103068167095814,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_fp64_pe20_H128.json","k":"deff_sim"},{"v":0.2904827029855865,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_fp64_pe20_H128.json","k":"deff_theory"},{"v":0.18864417045818538,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_fp64_pe20_H128.json","k":"err_pct"},{"v":39.99995231628417,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_probe_pe40_H64.json","k":"pe_sim"},{"v":0.8635182634551876,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_probe_pe40_H64.json","k":"deff_sim"},{"v":0.8619029453833372,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_probe_pe40_H64.json","k":"deff_theory"},{"v":0.18741298895688097,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/diag_probe_pe40_H64.json","k":"err_pct"},{"v":0.10000492049213791,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/val_diffusion_H64.json","k":"deff_sim"},{"v":0.10000000000000002,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/val_diffusion_H64.json","k":"deff_theory"},{"v":0.00492049213789425,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/val_diffusion_H64.json","k":"err_pct"},{"v":0.0,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/val_diffusion_H64.json","k":"f_mass_drift_max"},{"v":3.774758283725532e-15,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/val_synthetic.json","k":"bias_max"},{"v":-0.1358513639299479,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/val_synthetic.json","k":"rows[4].naive_bias"},{"v":6.506550750513557e-05,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/val_profile_pe10_H64.json","k":"v1_l2"},{"v":4.731402192482771e-05,"f":"/nfs/wangxi/runs/bm_widen_w3_20260920/taylor_aris/val_profile_pe30_H64.json","k":"v1_l2"},{"v":0.19974105584565674,"f":"/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/taylor_aris_dispersion/case_pe20_H64.json","k":"uu_fluct_over_umean2"}] -->

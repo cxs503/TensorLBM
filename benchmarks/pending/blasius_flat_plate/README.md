@@ -1,120 +1,101 @@
-# B25 平板边界层 Blasius（D2Q9，中置薄板）— ❌ FAIL（测量公式修正后主门 +27.3%）
+# 平板边界层 Blasius（中置薄板，D2Q9）（pending）
 
-**状态：未达标。** 判定口径（修正权重 FD）下最好 +27.34% ≫ 3% 门；单调条款过
-（plate400 系 ≤ plate200 系）；基线复现过（+101.91% vs 旧档 +102.0%，3-4 位
-有效数字）。本记录替换 2026-08-19 旧档——旧档主判据 C_f +76~102% 的首因是
-**测量公式 bug**（见"测量口径"），旧"低 τ 近壁格子误差"归因与其 τ 扫描结论
-作废。
+**状态：❌ 未达标(根因类)——测量公式修正后主门最好 +27.34% ≫ 3%；旧档正误差 +75~102%（buggy 权重口径）的首因是测量公式 bug（已定位并修正），残余为有限 Re_x 物理效应主导**
+
+（Wave-7 W7-D 判决记录；本 README 为案例导引，完整判决见 `result.json` 与 `verify.py`。）
 
 ## 物理问题
 
-均匀流 U 掠过半无限薄平板（前缘 x=x0，无滑移壁面），层流定常边界层。
-Blasius 相似解 f''' + f·f''/2 = 0：
+均匀流 U 掠过半无限薄平板的层流定常边界层，Blasius 相似解 f'''+f·f''/2=0：η=(y−y_w)·√(U/(ν(x−x0)))，u/U=f'(η)，f''(0)=0.3320573362151963，C_f = 0.6641146724/√Re_x。参考为本目录 `run.py` 内 RK4 打靶自解（h=0.005，`result.json` reference 节：probe x_eff=180、Re_x=900、C_f_ref=0.022137155747679754）。
 
-- η = (y−y_w)·√(U/(ν(x−x0)))，u/U = f'(η)，f''(0) = 0.3320573362151963
-- C_f = 2τ_w/(ρU²) = 0.6641146724/√Re_x，Re_x = U(x−x0)/ν
+设置：中置单行薄板（plate_y=ny/2，双侧流体，上下镜面对称远离平板）；plate200（nx=240,ny=1400,plate_len=200）/plate400（nx=440,ny=1400,plate_len=400）/plate400_y1600（ny=1600）；U=0.05、ν=0.01（τ=0.53）、30000 步；BGK 与 TRT（Λ=3/16）双碰撞；half-way BB 双侧表面 + Zou-He 压力出口；碰撞/迁移/边界全走库公共入口。
 
-参考为本脚本内 RK4 打靶自解（h=0.005）；probe x_eff=180（Re_x=900）。
-旧档 0.664 约定差 0.017%，仅披露。
+## 计算结果现状
 
-## 设置
+判定口径 = 修正权重 FD（首 3 流体行二阶单侧差分，权重 (−2,3,−1)；无任何修正/还原/外推），probe x_eff=180（Re_x=900）：
 
-- **中置单行薄板**：plate_y = ny/2，流体双侧，上下镜面（specular）对称边界
-  远离平板；plate200（nx=240, ny=1400, le=20, L=200）/ plate400（nx=440,
-  ny=1400）/ plate400_y1600（y 加密对照）。
-- 双侧表面流体侧反射 half-way BB（固体行由相邻流体行构造，含 x 位移，
-  5↔7、6↔8 全反转）；入口 feq 均匀流 Dirichlet；出口库
-  `boundaries.zou_he_outlet_pressure`（ρ=1）；库入口
-  `solver.collide_bgk` / `solver.collide_trt`（TRT 魔术参数 Λ=3/16，
-  Ginzburg 2008；τ₋=0.5+Λ/(τ₊−0.5)=6.75 @τ₊=0.53）。
-- U=0.05（Ma=0.087）、ν=0.01（τ=0.53）、30000 步 + 200 步平均；CPU 32 线程。
-- 铁律：碰撞/迁移/平衡/边界全走库公共入口（grep 零手写核）。
+| run | 网格 | 碰撞 | C_f 实测 | C_f 误差（修正 FD） | 旧 buggy 权重 | ME 动量交换交叉 |
+|-----|------|------|---------|--------------------|---------------|----------------|
+| R1p | plate200 | BGK | 0.032614540308713906 | +47.33% | +101.91% | +47.28% |
+| R2p | plate200 | TRT | 0.03256269544363021 | +47.10% | +101.90% | +47.70% |
+| R3p | plate400 | TRT | 0.028198640793561932 | +27.38% | +75.04% | +27.38% |
+| R4p | plate400 | BGK | 0.028356648981571194 | +28.10% | +75.96% | +28.11% |
+| R5p | plate400_y1600 | BGK | 0.02835182845592498 | +28.07% | +75.92% | +28.05% |
+| R6p | plate400_y1600 | TRT | 0.028190111741423603 | **+27.34%** | +74.99% | +27.35% |
 
-## 测量口径（判定用修正权重，双值并行披露）
+- 域高无关（y1600 ≡ y1400）；稳态/守恒良好（umax 漂移 ≤1.1e-5、质量漂移 ≤0.004%、全 finite）。
+- η 剖面二级证据：L2(0.05<η<5)=0.19899796529597488（plate400 系）/0.27881049235399086（plate200 系）。
 
-C_f 取首 3 流体行（s=0.5,1.5,2.5）二阶单侧差分。旧档权重解错方程：
-`solve(A,e2)` 应为 `solve(Aᵀ,e2)`——正确权重 (−2,3,−1)，buggy (−1.25,3,−1)，
-**buggy dudy = 正确 + 0.75·u(0.5)**（合成二次曲线：buggy +37%、修正逐位精确；
-verify.py V2 从第一性原理重推）。动量交换（ME）交叉列独立复现修正口径
-（差 ≤0.6pp）。
+## 不达标清单
 
-## 判定表（probe x_eff=180，Re_x=900）
+（战役严格标准：共性模块入口 + 直接观测量对参考 ≤3% + ≥2 档网格单调收敛；修正/还原变换不算直接模拟）
 
-| run | 网格 | 碰撞 | C_f 误差（修正 FD） | 旧 buggy 权重 | ME 交叉 |
-|-----|------|------|--------------------|---------------|---------|
-| R1p | plate200 | BGK τ=0.53 | **+47.33%** | +101.91% | +47.28% |
-| R2p | plate200 | TRT Λ=3/16 | **+47.10%** | +101.90% | +47.70% |
-| R3p | plate400 | TRT | **+27.38%** | +75.04% | +27.38% |
-| R4p | plate400 | BGK | **+28.10%** | +75.96% | +28.11% |
-| R5p | plate400_y1600 | BGK | **+28.07%** | +75.92% | +28.05% |
-| R6p | plate400_y1600 | TRT | **+27.34%** | +74.99% | +27.35% |
+1. **主门 ✗**：`result.json` judgment.main_gate：grids=[plate200, plate400]，best_err_pct=27.342970627011443，all_within_3pct=false，pass=false。
+2. **单调条款 ✓**：plate400 系（27.34–28.10%）≤ plate200 系（47.10–47.33%），monotone_error_decrease_plate200_to_plate400=true。
+3. **基线复现 ✓**：R1（旧 buggy 口径，与 2026-08-19 旧档同法）+101.91%，within_5pp=true（对旧档记录复现）。
 
-- **主门 FAIL**：最好 +27.34% ≫ 3%。**单调过**：plate400 系（27.34-28.10%）
-  ≤ plate200 系（47.10-47.33%）。**基线复现过**：R1（buggy 口径，与旧档同法）
-  +101.91% vs 旧 +102.0%（±5pp 门内）。
-- 域高无关：y1600 ≡ y1400（27.34/28.07 vs 27.38/28.10）。
-- 稳态/守恒：umax 漂移 ≤1.1e-5、质量漂移 ≤0.004%、全 finite。
+## 根因/诊断
 
-## TRT Λ=3/16 ≡ BGK（墙位 τ 耦合假设否定）
+已定源（`result.json` attribution 节 + `verify.py` 独立审计）：
 
-- 两测量层级全同：buggy 层 +101.9% ≡ +101.9%；修正层 47.33/47.10（plate200）、
-  28.10/27.38（plate400），差 0.23-0.73pp；wall shift ≤0.13 格、滑移
-  u(0) ≤0.004U。
-- 归因扫描（attr/，小网格 ny∝√ν 保堵塞，站 x_eff=90）：cf_ue BGK τ 阶梯
-  0.53→0.8 = **+18.99 → +29.78 → +39.85 → +47.64%**，TRT 两端点
-  +19.38/+47.76%（差 0.12-0.39pp）。
-- 与球 Re=100 记录（pending/sphere_re100_mem）的四碰撞算子 0.15pp 带互为
-  独立复核：**BB 墙位 τ 耦合在这两类问题中都不是地板来源**。
+1. **旧档测量公式 bug**：旧 FD 权重解错方程（solve(A,e2) 应为 solve(Aᵀ,e2)），buggy dudy = 正确 + 0.75·u(0.5)——旧档 C_f +76~102% 的首因（合成二次曲线检验：buggy 偏高、修正逐位精确，verify.py V2 第一性原理重推）；旧"低 τ 近壁格子误差"归因及其 τ 扫描结论作废。
+2. **有限 Re_x=900 边缘加速**（物理真实，非数值）：归因扫描（attr/ τ 阶梯）显示 cf_ue 误差随 Re_x 降而单调增长、碰撞无关、域高无关——有限 Re_x 位移自感应物理，非低 τ 墙数值效应。
+3. **TRT Λ=3/16 ≡ BGK**：两测量层级差在亚 pp 量级（见上表成对数值），"BB 墙位 τ 耦合是地板来源"的假设在这类问题中被否定（与球系记录互为独立复核）。
+4. 板尾效应：板尾附近 C_f 爬升（数值注记），plate200 probe（x_eff=180）距板尾比 plate400 近得多——plate200/plate400 差异部分来自出口距离。
 
-## 归因（修正口径 plate400 probe +27.4~+28.1% 分解）
+## 晋级路径（转 verified 的条件）
 
-1. **旧测量 bug**：+0.75·u(0.5) ≈ **+48pp**（plate200 +102% 中占 ~55pp）。
-   旧 τ 扫描"随 τ 恶化"（+76→+127%）同源（τ 大 → u(0.5) 大 → 偏置大），
-   该旧结论作废。
-2. **有限 Re_x=900 边缘加速**（物理真实）：u_e/U=1.0805（probe），
-   (u_e/U)^2.5 ≈ **+21pp**。
-3. **边缘归一残差 cf_ue ≈ +14%**：板中段平坦（plate400 x_eff=30..240:
-   +24.6→+28.6%）、碰撞无关、域高无关，随 Re_x 降单调增长（上面 τ 阶梯
-   = Re_x 450→45 扫描）→ 有限 Re_x 位移自感应物理（∝1/√Re_x 或更强），
-   非低 τ 墙数值效应（后者预测随 τ→1 收敛到 0，观测相反）。判据外归因
-   披露，不进判定。
+1. **加大有效 Re_x**：延长板长并把 probe 移向板中段远端（le、L 与域同步放大），压低有限 Re_x 物理位移项——C_f 误差随 Re_x 单调下降的归因链已建立；预算：plate400 系 30k 步 CPU 32 线程可日内完成，加倍板长约 2–4× CPU 时（估算）。
+2. 保持修正 FD 直接口径不变（修正/还原不进判定），若 Re_x 推大后最好档仍 >3%，如实维持 FAIL。
+3. 达标后由归档 PR 将本目录 `pending/blasius_flat_plate` → `verified/blasius_flat_plate`（旧档测量 bug 披露条款随迁）。
 
-严格标准：C_f 为直接观测量（修正权重 FD）对解析参考；无修正/还原/外推
-进判定；cf_ue 归一化口径仅作归因披露。
-
-## η 剖面二级证据（R4p probe）
-
-- L2(0.05<η<5) = 0.1989（plate400 系）/ 0.2788（plate200 系）；首格
-  （η=0.083）相对误差 −1.5%（修正口径；buggy 口径 +45.6% 高估即 bug 产物）。
-- 形状：u/u_e 对 f'(η) 比值 ≈1.18（η=0.1）缓降到 1.05（η=3.9）；
-  δ*/σ=1.352（Blasius 1.7208）、θ/σ=0.538（0.664）、H=2.514（2.59）——
-  整层薄 ~21%，非简单拉伸。
-- **近壁完美线性**：u/(G·s)=0.996（s=0.5）→0.962（s=7.5），Blasius 参考
-  1.000→0.987——真无滑移于半程墙位、无 kink，修正 FD 忠实测梯度。
-- 边缘超速 u_e/U=1.0805、质量守恒闭合（近壁亏缺 8.05 格 ≈ 外区盈余 8.2 格）。
-
-## 数值注记
-
-- 站点结构：板中段平坦，板尾 ~50 格内爬升（x_eff=380: +46.6%，尾缘加速）；
-  plate200 probe 距板尾仅 20 格，正落该区——plate200/plate400 差异部分
-  来自出口距离。
-- 30k 步时间收敛（umax/质量漂移上述量级），非欠收敛假象。
-
-## 复现
-
-```bash
-cd <repo>/benchmarks/pending/blasius_flat_plate
-python run.py results/R4p_plate400_bgk_tau053.json --grid plate400 \
-    --collision bgk --U 0.05 --nu 0.01 --steps 30000 --device cpu
-python verify.py     # V1-V4 全 PASS，exit 0（判定门为数据结论非审计错误）
-```
-
-## 文件清单
-
-- `run.py` — runner（BGK/TRT、多站 C_f 三口径、η 剖面、诊断）。
-- `verify.py` — 独立审计（参考 RK4 重推导、权重合成检验、JSON 一致性、
-  判定门），exit 0。
-- `result.json` — 判定汇总（7 run 机切）。
-- `results/` — 10 份机器测量档案（R1-R2 首批 buggy 口径、R1p-R6p 修正批
-  三口径，含逐站全量、剖面子采样、远场行）。
-- `attr/` — τ/Re_x 归因扫描 6 档日志（BGK/TRT × ν 阶梯，站 x_eff=15..110）。
+<!-- PROVENANCE
+[{"v": 0.3320573362151963, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R1p_plate200_bgk_tau053.json", "k": "blasius_fpp0_ref"},
+ {"v": 0.6641146724303926, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R1p_plate200_bgk_tau053.json", "k": "cf_coeff_locked"},
+ {"v": 180, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "reference.probe_x_eff"},
+ {"v": 900, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "reference.Re_x"},
+ {"v": 0.022137155747679754, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "reference.cf_ref"},
+ {"v": 3.0, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "reference.gate_pct"},
+ {"v": 0.032614540308713906, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[0].cf_sim"},
+ {"v": 47.32940708578749, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[0].cf_err_pct_corrected_fd"},
+ {"v": 101.91288120159699, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[0].fd_err_old_buggy_weights"},
+ {"v": 47.280385415642705, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[0].me_err"},
+ {"v": 0.03256269544363021, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[1].cf_sim"},
+ {"v": 47.0952086834515, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[1].cf_err_pct_corrected_fd"},
+ {"v": 101.89792511694684, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[1].fd_err_old_buggy_weights"},
+ {"v": 47.704864235174455, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[1].me_err"},
+ {"v": 0.028198640793561932, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[2].cf_sim"},
+ {"v": 27.381498847328196, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[2].cf_err_pct_corrected_fd"},
+ {"v": 75.03615971627323, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[2].fd_err_old_buggy_weights"},
+ {"v": 27.3795636014944, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[2].me_err"},
+ {"v": 0.028356648981571194, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[3].cf_sim"},
+ {"v": 28.095267995498112, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[3].cf_err_pct_corrected_fd"},
+ {"v": 75.95526265446277, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[3].fd_err_old_buggy_weights"},
+ {"v": 28.105964435785857, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[3].me_err"},
+ {"v": 0.02835182845592498, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[4].cf_sim"},
+ {"v": 28.073492272811972, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[4].cf_err_pct_corrected_fd"},
+ {"v": 75.92350358750808, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[4].fd_err_old_buggy_weights"},
+ {"v": 28.04949785388327, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[4].me_err"},
+ {"v": 0.028190111741423603, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[5].cf_sim"},
+ {"v": 27.342970627011443, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[5].cf_err_pct_corrected_fd"},
+ {"v": 74.98687510511843, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[5].fd_err_old_buggy_weights"},
+ {"v": 27.352401795158954, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[5].me_err"},
+ {"v": 27.342970627011443, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "judgment.main_gate.best_err_pct"},
+ {"v": 101.91288120159699, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "judgment.baseline_reproduction.R1_buggy_weights_pct"},
+ {"v": 0.19899796529597488, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[2].l2_rel_err_profile"},
+ {"v": 0.27881049235399086, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[0].l2_rel_err_profile"},
+ {"v": 30000, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[0].n_steps"},
+ {"v": 1.149152771998413e-05, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[0].umax_drift_last_2000"},
+ {"v": 0.004393263878503222, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/result.json", "k": "runs[2].mass_drift_pct"},
+ {"v": 240, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R1p_plate200_bgk_tau053.json", "k": "nx"},
+ {"v": 1400, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R1p_plate200_bgk_tau053.json", "k": "ny"},
+ {"v": 200, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R1p_plate200_bgk_tau053.json", "k": "plate_len"},
+ {"v": 0.05, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R1p_plate200_bgk_tau053.json", "k": "U"},
+ {"v": 0.01, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R1p_plate200_bgk_tau053.json", "k": "nu"},
+ {"v": 0.53, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R1p_plate200_bgk_tau053.json", "k": "tau"},
+ {"v": 20, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R1p_plate200_bgk_tau053.json", "k": "x0_leading_edge"},
+ {"v": 440, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R4p_plate400_bgk_tau053.json", "k": "nx"},
+ {"v": 1400, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R4p_plate400_bgk_tau053.json", "k": "ny"},
+ {"v": 400, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R4p_plate400_bgk_tau053.json", "k": "plate_len"},
+ {"v": 1600, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/blasius_flat_plate/results/R6p_plate400_y1600_trt.json", "k": "ny"}]
+-->

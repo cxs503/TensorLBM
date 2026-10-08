@@ -1,119 +1,116 @@
-# W2-C: Backward-Facing Step Re=100 (Armaly/Erturk 口径) — 最终结果与工件
+# 背向台阶 Re=100（backward-facing step，Armaly/Erturk 口径）（pending）
 
-预注册: `NOTES.md`（§0–§10 于任何模拟前注册；§11 为 L1–L3+S1–S4 之后、L2p/L3p 之前的
-修订记录）。机器可读汇总: `result.json`；逐运行汇总: `collected_results.json`。
+**状态：❌ 未达标(根因类)——τ-matched 收敛梯子最好档 -4.33% > 3% 门，残余偏差已完整定源为与 Re 无关的格点伪差（bounce-back 滑移 + 台阶角分辨率），且参考本身受限（实验 3.05 vs 2D 数值 2.878 散布 ~6%）**
 
-## 一句话结论
+（Wave-2 W2-C 定源记录，PR #301 入库；本 README 为案例导引，完整判决见 `result.json` 与暂存 `NOTES.md` 预注册。）
 
-**Re=100 未达标**（最严收敛梯子最好档 ψ 基 X_r=2.7534，对主参考 Erturk 2.878 差
-−4.33%，>3% 门槛），但 ≥3 档单调收敛成立（−6.88/−5.57/−4.33%），残余偏差已被完整
-定源为与 Re 无关的格点伪差（bounce-back 滑移 ∝(τ−0.5)Δx + 台阶角一阶分辨率误差，
-去伪后外推连续极限 2.845±0.04 ≈ Erturk −1.1%），且同一机制/网格/τ 在 Re=150/200
-对 Erturk 误差 −2.66%/−1.94%（≤3%）——**参考本身受限（文献散布 ~6%）**，控制方裁决。
+## 物理问题
 
-## 1. 口径（预注册摘要，细节见 NOTES）
+Armaly 1983（JFM 127:473）背向台阶装置：入口段高 h_i=0.52 cm、台阶高 s=0.49 cm、下游高 H=1.01 cm，ER=1.9423；Re = Ū·2h_i/ν = 100（Armaly 原文口径，ν 按离散入口 profile 平均定标到 Re=100.00 精确）。观测量为底壁再附着长度 X_r（主判据 = 流函数 ψ 基再附着，等价 Erturk X1 定义）。
 
-- 几何: Armaly 1983 装置，h_i=0.52 / s=0.49 / H=1.01 cm，ER=1.9423；上游 20s，下游 30s。
-- Re = Ū·2h_i/ν = 100（Armaly 原文逐字口径；Erturk 2008 相同；ν 按离散入口
-  profile 平均定标，Re=100.00 精确）。
-- 入口抛物线（充分发展，halfway 壁修正），Zou-He 速度入口；出口 Zou-He 压力 ρ=1；
-  halfway bounce-back 壁面；均匀网格。
-- X_r: 主判据（修订 1）= ψ 基再附着（=Erturk X1 定义）；row-1（原预注册主判据）、
-  row-2、bubble-tip 全部报告。原点 x=x_step−0.5，台阶高度归一。
-- 主参考 Erturk 2008 Table 1: **2.878**（带 [2.792,2.965]）；实验锚 Armaly 3.05。
+参考（`result.json` reference 节 + `REFERENCE_AUDIT.md`）：
 
-## 2. τ-matched 收敛梯子（判定序列，修订 2）
+- 主参考 Erturk 2008 Table 1（ER=1.942）：X_r = 2.878（验收带 [2.792, 2.965]）；
+- 实验锚 Armaly 1983（NAFEMS 数字化）：3.05；
+- 交叉：Denham 实验 vs Erturk 在 Re_h 174–425 一致 ≤1.2%，Armaly 实验 vs Erturk 在目标点差 +6.0%；
+- `REFERENCE_AUDIT.md` 另录 Gartling 1990 Re=800/ER=2 口径（X1/H 数字化簇，具体数字见该文件）为备选参考审计，未用于本判决。
 
-τ=0.602 三档固定，U_max=0.05/0.0311/0.0207 ∝ 1/h_i，Ma=0.087/0.054/0.036，
-(τ−0.5)·Δx ∝ 1/sh 逐档收缩（bounce-back 滑移误差真正收敛的序列）。
+## 计算结果现状
 
-| 档 | ny | h_i | U_max | Ma | n_steps | X_r(row1) | X_r(row2) | **X_r(ψ)** | 误差 vs Erturk | vs Armaly | 定常 |
-|----|----|----|----|----|----|----|----|----|----|----|----|
-| L1 | 101 | 51 | 0.05 | 0.087 | 260k | 2.5163 | 2.6776 | **2.6800** | −6.88% | −12.13% | ✓ |
-| L2p | 161 | 82 | 0.0311 | 0.054 | 600k | 2.5314 | 2.6932 | **2.7177** | −5.57% | −10.89% | ✓ |
-| L3p | 241 | 123 | 0.0207 | 0.036 | 900k | 2.5965 | 2.7275 | **2.7534** | −4.33% | −9.72% | 准稳态(±0.012 抖动) |
+判定梯子 = τ-matched（τ=0.602 三档固定、U_max ∝ 1/h_i，(τ-1/2)·Δx 逐档收缩——bounce-back 滑移真正收敛的序列）：
 
-- 单调收敛 ✓：误差 −6.88 → −5.57 → −4.33 单调减；ψ 增量 +0.0377 / +0.0357 递减。
-- **未达标 ✗**：最好档 −4.33% > 3%。
+| 档 | h_i（入口半高格数） | U_max | X_r(ψ) | 误差 vs Erturk 2.878 | 误差 vs Armaly 3.05 |
+|----|----|----|----|----|----|
+| L1 | 51 | 0.05 | 2.6800 | -6.88% | -12.13% |
+| L2p | 82 | 0.0310976 | 2.7177 | -5.57% | -10.89% |
+| L3p | 123 | 0.0207317 | 2.7534 | -4.33% | -9.72% |
 
-## 3. 伪差分解（滑移模型，定量验证于三个网格）
+- 单调收敛成立（X_r 逐档升、误差逐档降），最好档 -4.33% 未进 3% 门。
+- 同网格 Re 扫描（L3 网格、τ=0.602）：Re=150 X_r=3.7854（对 Erturk 内插 3.889 为 -2.66%）、Re=200 X_r=4.8047（对表值 4.900 为 -1.94%）——绝对偏差近似常数（-0.125/-0.104/-0.095），伪差与 Re 无关。
+- 预注册固定 U_max 梯子（τ 漂移 0.602/0.664/0.746）L3 档 X_r(ψ)=2.8053、-2.53%，含 τ 漂移混杂不可字面判读（NOTES §11 修订 2）。
 
-X_r(网格,τ) = X∞ + A·Δx^p + B·(τ−0.5)·Δx。B 三次独立测定：41.8（L1 vs S3b）、
-35.6（L2 vs L2p）、48.9（L3p vs S5b）→ B≈42±7，Δx 标度成立。
-- 滑移贡献：L1 +0.087 / L2p +0.052 / L3p +0.036。
-- 去滑移后分辨率序列 2.593 → 2.666 → 2.718（增量 +0.073/+0.052，比率 0.71）
-  → 外推 **X∞ = 2.845 ± 0.04**（vs Erturk −1.1%；vs Armaly −6.7%）。
-  外推仅为模型推断（预注册 §5 规定不作达标依据）。
-- L3 网格 τ 全谱：2.7534 (τ=0.602) / 2.8053 (0.746) / 2.8650 (0.869) —— 平滑单调，
-  伪差已完全包络。
+## 不达标清单
 
-## 4. Re 扫描诊断（同 L3 网格、同 τ=0.602）
+（战役严格标准：库共性模块入口 + 直接观测量对参考 ≤3% + ≥2 档网格单调收敛；修正/还原变换不算直接模拟）
 
-| Re | X_r(ψ) | Erturk | 绝对偏差 | 相对误差 |
-|----|----|----|----|----|
-| 100 | 2.7534 | 2.878（表值） | −0.125 | **−4.33%** |
-| 150 | 3.7854 | 3.889（内插） | −0.104 | −2.66% |
-| 200 | 4.8047 | 4.900（表值） | −0.095 | −1.94% |
+1. **精度门 ✗**：τ-matched 梯子三档 -6.88/-5.57/-4.33%，最好档 -4.33% > 3%（门 = `result.json` 判定口径）。
+2. **单调收敛条款 ✓**：误差逐档严格下降（见上表）。
+3. **参考受限**：目标点两锚 2.878 vs 3.05 互斥（散布 ~6% > 3%），任何模拟不可能同时满足两锚——判决取决于主参考选择，控制方裁决。
+4. 口径披露：预注册 row-1 测量被证明偏低（修订 1）；连续极限外推 2.845±0.04（对 Erturk -1.1%）为模型推断，预注册规定不作达标依据。
 
-绝对偏差 ≈ 常数 −0.10 → 伪差与 Re 无关；同一机制在 Re≥150 于同网格/τ 达到 ≤3%。
-Re=100 是该壁处理最难的点。
+## 根因/诊断
 
-## 5. 预注册梯子（固定 U_max=0.05，含 τ 漂移混杂，如实报告）
+已定源（`result.json` artifact_decomposition 节）：**与 Re 无关的格点伪差**，分解模型 X_r(网格,τ) = X∞ + A·Δx^p + B·(τ-1/2)·Δx：
 
-| 档 | τ | X_r(row1) | X_r(ψ) | ψ 误差 vs Erturk |
-|----|----|----|----|----|
-| L1 | 0.602 | 2.5163 | 2.6800 | −6.88% |
-| L2 | 0.664 | 2.6002 | 2.7460 | −4.59% |
-| L3 | 0.746 | 2.7123 | 2.8053 | −2.53% |
+- B 三次独立测定：41.8（L1 vs S3b）/ 35.6（L2 vs L2p）/ 48.9（L3p vs S5b）——Δx 标度成立；
+- 滑移贡献：L1 +0.087 / L2p +0.052 / L3p +0.036；
+- 去滑移后分辨率序列 2.593 → 2.666 → 2.718，外推 X∞ = 2.845（不确定度 0.04，对 Erturk -1.1%、对 Armaly -6.7%）；
+- L3 网格 τ 全谱 2.7534（τ=0.602）/ 2.8053（0.746）/ 2.8650（0.869）平滑单调，伪差被完全包络；
+- 旧 pending 基线大幅正偏差的根因是 Re 口径错位 + 上游段过短（NOTES §8 预注册分析，S1/S2 敏感性实验佐证：域长/入口剖面变化影响 ≤0.0028）。
 
-注意: 该梯子 (τ−0.5)·Δx 逐档不变，表观收敛部分来自 τ 漂移（NOTES §11 修订 2）；
-L3 的 −2.53% 不可按字面作为达标判读。
+## 晋级路径（转 verified 的条件）
 
-## 6. 敏感性实验（全部完成）
+1. **控制方参考裁决**（零计算成本）：Erturk（更严）或 Armaly 实验锚二选一；若采实验锚，现有 L3p 档 -9.72% 仍远超 3%，无捷径。
+2. 若维持 Erturk：**追加 τ-matched 细档 L4**（延续 U_max ∝ 1/h_i、τ=0.602 的序列再细一档），使最好档直接进 3%（外推表明 X∞ 在 -1.1% 处，物理上可达）；计算量为 L3p（最细档 h_i=123）的约 2–3×（估算）。
+3. 或改判 Re=150/200 工况点（同网格/τ 已达 -2.66%/-1.94%），按战役标准补第二档网格形成阶梯。
+4. 达标后由归档 PR 将本目录 `pending/backward_step` → `verified/backward_step`（参考受限条款须一并写入）。
 
-| 实验 | 变化 | X_r(ψ) | Δ vs L1 | 结论 |
-|----|----|----|----|----|
-| S1 域长 | 下游 30s→50s | 2.6800 | +0.0000 | 无影响 |
-| S2 入口 | 抛物线→均匀(同 Ū) | 2.6828 | +0.0028 | 无影响 |
-| S3a | U_max=0.025 (τ=0.551, MRT) | row2 2.6301 | −0.048 | 落在 BGK τ 线延拓上；row-1 无回流（MRT 近壁异常，记录未用） |
-| S3b | U_max=0.075 (τ=0.653) | 2.7235 | +0.0435 | τ 斜率量化 → 修订 2 |
-| S4 出口 | 压力→零梯度 | 2.6714 | −0.0086 | 质量漂移 ×15 → 保持压力出口 |
-| S5b | L3 网格 U_max=0.075 (τ=0.869) | 2.8650 | — | 细网格 τ 斜率，验证滑移 Δx 标度 |
-
-## 7. 文献参考值汇总（目标点 Re=100, ER=1.942）
-
-| 来源 | 类型 | X_r/s | 备注 |
-|----|----|----|----|
-| Erturk 2008 Table 1 | 2D 数值 | 2.878 | 主参考（预注册）；与本文问题定义逐项相同 |
-| Armaly 1983 实验 (NAFEMS 数字化) | 实验 | 3.05 | 实验锚；本次复核原图 Fig.4 读 ≈3.0–3.3 |
-| Armaly 1983 自算 TEACH (图 13a) | 2D 数值 | ≈3.0–3.2 | 支持实验侧 |
-
-散布 ≈6–10% > 3% ⇒ **参考受限**（NOTES §7）：两锚达标带互斥，本模拟不可能同时满足；
-判定取决于主参考选择，控制方裁决。本报告所有运行同时给出对两锚误差。
-
-## 8. 诚实披露清单
-
-1. **参考受限**: 实验 (3.05) vs 2D 数值 (2.878) 在目标点差 6%；Armaly 自算 TEACH
-   读图 ≈3.0–3.2 在实验侧。主参考取更严的 Erturk。
-2. **未达标**: 判定梯子（τ-matched）最好档 −4.33%（需 ≤3%）。
-3. 预注册 row-1 测量被证明偏低（修订 1）；row-1 口径下误差更大（L3p row1 −9.8%）。
-4. 预注册固定 U_max 梯子存在 τ 漂移混杂（修订 2），其 −2.53%@L3 不可字面判读。
-5. 连续极限 2.845±0.04 为模型外推（B 三次测定 36–49），不作达标依据。
-6. L3p/R150/R200 末段存在 ±0.01–0.012 准稳态抖动（ψ 取末快照；row-1 序列均值与之一致）。
-7. ER 离散摆动 ≤0.17%；ν 按离散 profile 定标（与连续标称差 ≤0.04%）。
-8. 台阶角奇异性以均匀网格+bounce-back 处理，无任何人工修正/外推。
-9. collected_results.json 中 R150/R200 行的 errE 字段按 Re=100 锚计算，不适用
-   （正确值见 §4 表）。
-10. pending 旧基线的 +12.2% 根因是 Re 口径错位（U_max·s=100 ⇔ 本口径 Re≈141.4）+
-    上游段仅 2h，已在 NOTES §8 预注册分析并经本次 S2/域长检验佐证。
-
-## 9. 工件清单（均在 /nfs/wangxi/runs/bm_widen_20260920/backward_step/）
-
-- `NOTES.md` — 预注册（§0–§10 先于模拟；§11 修订记录 L2p/L3p 之前注册）
-- `run.py` — 驱动（库入口 run_backward_facing_step, worktree bm_w2 @c0b84d96d1，
-  monkey-patch 仅边界与测量；worktree 零修改）
-- `run_chain.sh` / `run_chain2.sh` / `run_chain3.sh` — 三条运行链
-- `analyze_field.py` / `collect_results.py` / `collected_results.json`
-- `result.json` — 终版机器可读汇总
-- `backward_facing_step/<TAG>/` — 13 个运行目录（metadata/CSV/result_extra/npz/PNG）
-- `L1.log … R150_L3grid_tau0602.log`, `chain*.log` — 全部运行日志
+<!-- PROVENANCE
+[{"v": 2.878, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "reference.primary.value"},
+ {"v": 2.792, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "reference.primary.acceptance_band[0]"},
+ {"v": 2.965, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "reference.primary.acceptance_band[1]"},
+ {"v": 3.05, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "reference.experimental_anchor.value"},
+ {"v": 51, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[0].h_i"},
+ {"v": 0.05, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[0].u_max"},
+ {"v": 2.68, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[0].xr_psi"},
+ {"v": -6.88, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[0].err_psi_vs_erturk_pct"},
+ {"v": -12.13, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[0].err_psi_vs_armaly_pct"},
+ {"v": 82, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[1].h_i"},
+ {"v": 0.0310976, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[1].u_max"},
+ {"v": 2.7177, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[1].xr_psi"},
+ {"v": -5.57, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[1].err_psi_vs_erturk_pct"},
+ {"v": -10.89, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[1].err_psi_vs_armaly_pct"},
+ {"v": 123, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[2].h_i"},
+ {"v": 0.0207317, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[2].u_max"},
+ {"v": 2.7534, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[2].xr_psi"},
+ {"v": -4.33, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[2].err_psi_vs_erturk_pct"},
+ {"v": -9.72, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_tau_matched.rows[2].err_psi_vs_armaly_pct"},
+ {"v": 3.7854, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "re_sweep_diagnostic.rows[1].xr_psi"},
+ {"v": 3.889, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "re_sweep_diagnostic.rows[1].erturk"},
+ {"v": -2.66, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "re_sweep_diagnostic.rows[1].err_pct"},
+ {"v": 4.8047, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "re_sweep_diagnostic.rows[2].xr_psi"},
+ {"v": 4.9, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "re_sweep_diagnostic.rows[2].erturk"},
+ {"v": -1.94, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "re_sweep_diagnostic.rows[2].err_pct"},
+ {"v": -0.125, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "re_sweep_diagnostic.rows[0].abs_dev"},
+ {"v": -0.104, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "re_sweep_diagnostic.rows[1].abs_dev"},
+ {"v": -0.095, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "re_sweep_diagnostic.rows[2].abs_dev"},
+ {"v": 2.8053, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_pregregistered_fixed_umax.rows[2].xr_psi"},
+ {"v": -2.53, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_pregregistered_fixed_umax.rows[2].err_psi_vs_erturk_pct"},
+ {"v": 41.8, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.B_determinations[0].B"},
+ {"v": 35.6, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.B_determinations[1].B"},
+ {"v": 48.9, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.B_determinations[2].B"},
+ {"v": 0.087, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.slip_contribution_at_tau_matched_levels.L1"},
+ {"v": 0.052, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.slip_contribution_at_tau_matched_levels.L2p"},
+ {"v": 0.036, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.slip_contribution_at_tau_matched_levels.L3p"},
+ {"v": 2.593, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.resolution_sequence_after_slip_removal[0]"},
+ {"v": 2.666, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.resolution_sequence_after_slip_removal[1]"},
+ {"v": 2.718, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.resolution_sequence_after_slip_removal[2]"},
+ {"v": 2.845, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.extrapolated_continuum_limit.value"},
+ {"v": 0.04, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.extrapolated_continuum_limit.uncertainty"},
+ {"v": -1.1, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.extrapolated_continuum_limit.err_vs_erturk_pct"},
+ {"v": -6.7, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.extrapolated_continuum_limit.err_vs_armaly_pct"},
+ {"v": 2.865, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.tau_bracket_at_L3_grid.tau=0.869"},
+ {"v": 0.0028, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "sensitivity.S2_uniform_inlet.delta_vs_L1"},
+ {"v": 0.602, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_pregregistered_fixed_umax.rows[0].tau"},
+ {"v": 0.746, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_pregregistered_fixed_umax.rows[2].tau"},
+ {"v": 0.664, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "ladder_pregregistered_fixed_umax.rows[1].tau"},
+ {"v": 0.869, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "artifact_decomposition.tau_bracket_at_L3_grid", "in_str": true},
+ {"v": 0.52, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "convention.geometry", "in_str": true},
+ {"v": 0.49, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "convention.geometry", "in_str": true},
+ {"v": 1.01, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "convention.geometry", "in_str": true},
+ {"v": 1.9423, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "convention.geometry", "in_str": true},
+ {"v": 100.0, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "convention.re_definition", "in_str": true},
+ {"v": 1.942, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "reference.primary.source", "in_str": true},
+ {"v": 1.2, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "reference.cross_checks", "in_str": true},
+ {"v": 6.0, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/backward_step/result.json", "k": "reference.cross_checks", "in_str": true}]
+-->
