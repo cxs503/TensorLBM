@@ -1,56 +1,50 @@
-# B10: Stokes 球（Re=0.1）— 球坐标贴体 DG 壳层（spherical_dg）
+# stokes_sphere_dg（pending）
 
-**状态：🔶 未入库（2026-08-18）——单网格 2.15% 为巧合精度，加密恶化，按"网格收敛性"标准判定为假结果**
-
-> 用户核心标准：单网格误差 ≤3% 且加密收敛才算真结果。本案例 4×16×32 误差 2.15%
-> 但 6×24×48 恶化到 53%（误差随加密增长 = 凑出来的精度），**不入库**。
-> 需修复摩擦项（DG 弱形式应力张量积分）后重跑收敛性，达标才可移回 verified/。
+**状态：🔵 formal 在跑——W11-B 重制 Phase 1 formal 阶梯 9/12 档已完成且全过主门（每档 |err|≤3%、S 门全过），每 φ 的 |err| 已严格下降；剩 R24×3 档补完 4 点收敛链，预算投影 41.17 模型·h < 48 红线。**
 
 ## 物理问题
 
-Stokes 绕球（Re=0.1，粘性主导），阻力解析解：
-- **Cd = 24/Re = 240**（Stokes 1851）
-- 压力贡献 1/3（F_p = 2πμUR），摩擦贡献 2/3（F_f = 4πμUR）
+旧档案（B10，2026-08-18）：球坐标贴体 DG 壳层（spherical_dg.SphericalShellDG）与笛卡尔 LBM 远场耦合的 Stokes 绕球 Re=0.1，Cd_ref=240（Stokes 24/Re）；单网格过门但加密反收敛，已判假结果（见根因节）。
 
-## 共性模块
+W11-B 重制（现役，冻结 prereg + Amendment A1）：周期体力单球沉降的 Stokes 极限新类——三周期胞内单球在恒体力 g_x 下匀速沉降，度量阻碍函数 K(φ)=U_sup/U_∞；参考双锁 = 自产 Ewald 周期 Stokes 边界积分解算器（P5）对 Hasimoto 1959 逆 E 级数，逐档交叉一致性 12 档最大 0.0009117580205497688（ref_table.json，md5 在 FORMAL_VERDICT.provenance）。fp64、τ=1.0、Re_a 设计值 0.05，库路径驱动（worktree bm_w11 src，run.py md5 记录在案）。
 
-**spherical_dg.SphericalShellDG**（src/tensorlbm/spherical_dg.py）：
-- 球坐标贴体壳层（R_in=10 → R_out=15），正统 nodal DG（质量矩阵 M⁻¹、face lift、迎风数值通量、SSP-RK3）
-- 与笛卡尔 LBM 远场（80×50×50）双向耦合：外边界 LBM 供体 ghost + 壳区覆盖
-- 壁面：平衡态 ghost（f_eq(ρ_wall, u=0)）；极点 θ/φ 速度置零
-- 力法：**压力积分（+∫p·n̂·dA，LBM 弱可压缩符号）+ 单元均值差分摩擦**（Cd=234.8）
+## 计算结果现状
 
-## 运行方式
+formal 阶梯（12 档 = 3φ×4R，R∈{8,12,16,24}），机器判定 phase1/results_a2/FORMAL_VERDICT.json（快照 generated_at 2026-10-08T01:51:59+0800，阶梯仍在跑）：
 
-```
-cd /home/wxsc/cxs/TensorLBM
-PYTHONPATH=src CUDA_VISIBLE_DEVICES= python examples/耦合验证脚本（500 步耦合 + 3000 步 warm-start）
-```
+| φ | R | L | steps | K_sim | K_ref | err% | 主门 |
+|---|---|---|---|---|---|---|---|
+| 0.005 | 8 | 75 | 79491 | 1.4090316655097581 | 1.4236876671818015 | -1.0294393924936474 | ✓ |
+| 0.01 | 8 | 60 | 36421 | 1.55428928990201 | 1.5835652945879688 | -1.848739978453251 | ✓ |
+| 0.02 | 8 | 48 | 15973 | 1.7786343929191768 | 1.8314165180198159 | -2.8820382791845067 | ✓ |
+| 0.005 | 12 | 113 | 181606 | 1.4100821054320067 | 1.4211122928920468 | -0.7761657903607944 | ✓ |
+| 0.01 | 12 | 90 | 81943 | 1.5620483616174508 | 1.5835652945879688 | -1.358765126013739 | ✓ |
+| 0.02 | 12 | 71 | 34054 | 1.8080482570904997 | 1.8513146674665182 | -2.337064094848207 | ✓ |
+| 0.005 | 16 | 151 | 325290 | 1.4108535758975163 | 1.4198361628893346 | -0.6326495427147694 | ✓ |
+| 0.01 | 16 | 120 | 145665 | 1.564926856746533 | 1.5835652945879688 | -1.1769920637396458 | ✓ |
+| 0.02 | 16 | 95 | 61350 | 1.8064925780370944 | 1.8462537570522688 | -2.1536139798386755 | ✓ |
+| 三档 | 24 | 226 | — | — | — | — | not_run |
 
-完整耦合验证脚本位于开发时 /tmp/b10_conv.py（DG 4×16×32 或 6×24×48）。
+每 φ 的 |err| 序列（R8→R16）严格下降（如 φ=0.02：err -2.8820382791845067% → -2.337064094848207% → -2.1536139798386755%，即 |err| 严格降）；signed 序列同为负向收敛（monotone_signed_strict=false 仅因同号不穿零，机器备注按 |err| 收敛意图判读，冲突已旗标）。预算账本：q=0.1700949025634073（r(N)=r8·(N/N8)^(q−1)），已耗 6.16061052819093 墙钟·h，剩余模型 35.006000333922984 ·h，投影总 41.16661086211391 ·h < 红线 48.0。
 
-## 结果（2026-08-18 实测，真实模拟无外推）
+旧档案机器值（result.json，B10）：cd_sim=234.84、cd_ref=240.0、err 2.15%、500 步耦合、verified=false（单网格巧合精度，加密到 6×24×48 恶化至 53%，记录于 notes 字段）。
 
-| DG 网格 | Cd | 误差 | 500 步耦合 |
-|---------|-----|------|-----------|
-| 4×16×32 | 234.8 | **2.15%** ✅ | 35s (GPU) |
-| 6×24×48 | 368.0 | 53.3% | 75s |
+## 不达标清单
 
-## 力法研究结论（已定案）
+| 门 | 冻结条款 | 实测 | 判 |
+|---|---|---|---|
+| 主门（每档） | \|err\| ≤3% 且 S 门（质量/摆动/弛豫/均值四检） | 9/9 过（最差 2.8820382791845067%） | ✓（已完成档） |
+| 收敛门（每 φ） | 4 点 R 阶梯 \|err\| 严格下降（prereg 判读注记） | 3 点严格下降成立；complete_4_points=false（R24 not_run） | ⏳ 待 R24 |
+| 完整性 | 12/12 档 | 9 完成 / 3 not_run | ⏳ 在跑 |
 
-| 力法 | Cd@4×16×32 | 结论 |
-|------|-----------|------|
-| **单元均值差分摩擦（当前）** | **234.8 (2.15%)** | 最优 |
-| P1 节点导数摩擦 | 473 (97%) | DG 多项式过冲放大剪切率 |
-| Ladd 动量交换 | 118 (51%) | specular 反射只换法向动量（镜面无摩擦） |
-| 切向投影摩擦 | 188 (21.6%) | 投影抵消 |
+## 根因/诊断
 
-## 已知限制
+1. 旧 B10 假结果根因：DG 弱形式应力张量积分（摩擦项）缺陷 + 单网格巧合精度——4×16×32 误差 2.15% 但 6×24×48 加密恶化 53%，按网格收敛性标准判负；重制版因此整体换设计（周期体力新类 + 双锁参考 + fp64），不再修 DG 壳层路径。
+2. 现役阶梯无下潜条款：已完成 9 档全过、单调按 |err| 成立；唯一未决项是 R24 三档（计算最重档），由预算模型律外推在红线内。
+3. monotone_reading_conflict=true 为判读口径旗标（signed 同号不严格穿零），非物理缺陷；机器 verdict_lines 已按 |err| 收敛意图记录在案。
 
-- **收敛性未建立**：6×24×48 恶化到 53%（摩擦项一阶差分随 dr 减小偏离）。单网格 2.15% 达标，但加密不收敛——用户核心要求（网格收敛才算真精度）尚未满足，力后处理需 DG 弱形式应力张量积分（待开发）
-- 稳定性：500 步耦合无 NaN、质量漂移 0.5%（已解决）
+## 晋级路径
 
-## 判定标准
+formal 跑完 R24×3 → verify 脚本重判（convergence_gate_all_tiers_pass）→ owner 以机器 FORMAL_VERDICT 发起归档 PR 将 pending/stokes_sphere_dg 移 verified/。若 R24 任一档打破 |err| 下降序或超 3%，则按冻结 stop-loss 条款如实 FAIL，无参数回调。成本：已在预算内（剩余 35.006000333922984 模型·h，投影 41.16661086211391 < 48.0）。
 
-- 真实模拟（无外推），误差 ≤3% 入库
-- 收敛性（加密误差下降）为正式验证目标
+<!-- PROVENANCE [{"v": 9, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "summary.n_runs_completed"}, {"v": 1.4090316655097581, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[0].K_sim"}, {"v": 1.4236876671818015, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[0].K_ref"}, {"v": -1.0294393924936474, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[0].err_pct"}, {"v": 79491, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[0].steps"}, {"v": 1.55428928990201, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[1].K_sim"}, {"v": 1.5835652945879688, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[1].K_ref"}, {"v": -1.848739978453251, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[1].err_pct"}, {"v": 36421, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[1].steps"}, {"v": 1.7786343929191768, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[2].K_sim"}, {"v": 1.8314165180198159, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[2].K_ref"}, {"v": -2.8820382791845067, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[2].err_pct"}, {"v": 15973, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[2].steps"}, {"v": 1.4100821054320067, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[3].K_sim"}, {"v": 1.4211122928920468, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[3].K_ref"}, {"v": -0.7761657903607944, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[3].err_pct"}, {"v": 181606, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[3].steps"}, {"v": 1.5620483616174508, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[4].K_sim"}, {"v": 1.5835652945879688, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[4].K_ref"}, {"v": -1.358765126013739, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[4].err_pct"}, {"v": 81943, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[4].steps"}, {"v": 1.8080482570904997, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[5].K_sim"}, {"v": 1.8513146674665182, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[5].K_ref"}, {"v": -2.337064094848207, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[5].err_pct"}, {"v": 34054, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[5].steps"}, {"v": 1.4108535758975163, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[6].K_sim"}, {"v": 1.4198361628893346, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[6].K_ref"}, {"v": -0.6326495427147694, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[6].err_pct"}, {"v": 325290, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[6].steps"}, {"v": 1.564926856746533, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[7].K_sim"}, {"v": 1.5835652945879688, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[7].K_ref"}, {"v": -1.1769920637396458, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[7].err_pct"}, {"v": 145665, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[7].steps"}, {"v": 1.8064925780370944, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[8].K_sim"}, {"v": 1.8462537570522688, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[8].K_ref"}, {"v": -2.1536139798386755, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[8].err_pct"}, {"v": 61350, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[8].steps"}, {"v": 0.1700949025634073, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "budget_audit.q"}, {"v": 6.16061052819093, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "budget_audit.elapsed_wall_h"}, {"v": 35.006000333922984, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "budget_audit.remaining_model_h"}, {"v": 41.16661086211391, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "budget_audit.projected_total_h"}, {"v": 48.0, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "budget_audit.red_line_h"}, {"v": 234.84, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/stokes_sphere_dg/result.json", "k": "cd_sim"}, {"v": 240.0, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/stokes_sphere_dg/result.json", "k": "cd_ref"}, {"v": 2.15, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/stokes_sphere_dg/result.json", "k": "err_pct"}, {"v": 500, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/stokes_sphere_dg/result.json", "k": "steps"}, {"v": 0.005, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[0].phi"}, {"v": 0.01, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[1].phi"}, {"v": 0.02, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json", "k": "per_tier[2].phi"}, {"v": 0.05, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase0/ref_table.json", "k": "[0].re_a_design"}, {"v": 0.0009117580205497688, "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase0/ref_table.json", "k": "[9].bie_vs_series_pct"}] -->

@@ -1,77 +1,47 @@
-# W9-C: Gebart (1992) 横向渗透率 — 周期方阵/六角圆柱阵列 — FAIL（诚实）+ 方阵 verified 候选注记
+# Gebart 纤维床横向渗透率：周期方阵/六角圆柱阵列（pending）
 
-## 一句话结论
+**状态：❌ 未达标（根因类，三失效模式全部定源）——冻结门 FAIL（sq/hex 双 FAIL）：hex 近堆积极限档 = 参考侧（Gebart 渐近式对精确解偏高 +2.4%/+3.9%，已由方阵精确表双通道锁定）；sq 0.40 = 几何量化地板振荡（gap-96 扩展案深入门内 −0.65%）；S1 = 真实 O(Re) 惯性。方阵 4 主档中 3 档（0.30/0.50/0.60）逐档全过门且严格单调 = verified 候选（owner 决策）。**
 
-**两阵列在冻结门下 FAIL**（sq: FAIL / hex: FAIL），三种失效模式全部定源：hex 近堆积极限 = **参考侧**（Gebart 渐近式偏差 +2.4%/+3.9%（0.75/0.70），已由方阵精确表双通道定量锁定）、sq 0.40 单调破缺 = **几何量化地板振荡**（gap-96 扩展案深入门内 -0.65%）、S1 = **真实 O(Re) 惯性**（继承力标下 Re_cell=0.5）。方阵 4 主档中 3 档（0.30/0.50/0.60）逐档全过门且严格单调 = **verified 候选**（晋级 owner 决策）。
+## 物理问题
 
-## 口径
+纤维床（周期圆柱阵列）横向渗透率 K⊥——两类阵列：
 
-- D2Q9 BGK τ=1（ν=1/6 精确），全周期单元胞；sq：W×W 单圆柱居中（W4-A 继承）；hex：W×H 超胞（H=round(√3·W)），折叠角+中心双位= 三角格子。体力只加流体节点，步序 collide→stream→masked force→bounce-back；物理核全部来自 tensorlbm 库入口（铁律 grep 零命中）。
-- 主参考（按档）：**方阵全部档 = Sangani & Acrivos 1982 精确 f 表**（k_ref=π/(vf·f)·R²，W4-A 双转录逐位一致）；**hex 近堆积（0.70/0.75 主档）= Gebart 1992 闭式** K/R²=C1·(√(vf_max/vf)−1)^2.5（sq C1=16/(9π√2)、hex 16/(9π√6)）。Gebart 同时对每档报告（一致性通道，方阵阶梯须原位复现锁定的 Gebart-vs-精确偏差：Vf=0.70 +2.978%、0.75 +0.268%）。
-- 判据：err（对档主参考）随加密严格单调下降 AND finest ≤3% AND 全档稳态；Darcy/上皮口径 K_sim=(1−vf_actual)·ν·⟨u_x⟩_fluid/a_body；无外推（nominal 几何，不做有效半径再标定）。
-- **hex 精确表不可得**：NOT OBTAINABLE——no exact hex transverse-permeability table is obtainable: Koch & Ladd 1997 and Wang & Sangani 1997 sit behind paywalls (8-channel hunt in prereg section 3); the hex main gate therefore references the Gebart near-packing asymptote, which the measurements show is biased HIGH by 2-4% at s = sqrt(vf_max/vf)-1 = 0.10-0.14
+- **方阵（sq）**：W×W 单圆柱居中周期胞（W4-A 渗透率案例继承），主参考 =
+  **Sangani & Acrivos 1982 精确 f 表**（W4-A 双转录逐位一致；k_ref = π/(vf·f)·R²）；
+- **六角（hex）**：W×H 超胞（H=round(√3·W)），主参考（近堆积 0.70/0.75 主档）=
+  **Gebart 1992 近堆积闭式** K/R² = C1·(√(vf_max/vf)−1)^2.5（sq C1=16/(9π√2)、
+  hex 16/(9π√6)）；**hex 精确表不可得**（Koch & Ladd 1997 / Wang & Sangani 1997
+  闭源，8 通道检索见 prereg §3），Gebart 闭式对每档作一致性通道。
+- 口径：Darcy/表观（K = μ·U_sup/G），K_sim = (1−vf_actual)·ν·⟨u_x⟩_fluid/a_body，
+  名义几何（无有效半径再标定）；无外推。
 
-## 判决表（冻结 report，逐档）
+### 共性模块
 
-| 档 | 阶梯 err (%) | 单调 | finest (%) | 全稳态 | 过门 | 档类 |
-|----|--------------|------|-----------|--------|------|------|
-| sq_vf0.3 | 15.23, 4.78, 2.18, 0.22 | True | 0.22 | True | True | main |
-| sq_vf0.4 | 17.25, 6.92, 2.42, 2.63 | False | 2.63 | True | False | main |
-| sq_vf0.5 | 16.03, 5.08, 2.96, 0.24 | True | 0.24 | True | True | main |
-| sq_vf0.6 | 17.19, 5.99, 1.64, 0.88 | True | 0.88 | True | True | main |
-| sq_vf0.7 | 17.12, 6.47, 3.85 | True | 3.85 | True | False | disclosure |
-| hex_vf0.3 | 5.32, 2.74, 1.22 | True | 1.22 | True | True | disclosure |
-| hex_vf0.45 | 5.55, 2.58, 2.16 | True | 2.16 | True | True | disclosure |
-| hex_vf0.6 | 3.89, 2.09, 0.62 | True | 0.62 | True | True | disclosure |
-| hex_vf0.7 | 1.66, 0.47, 0.13, 2.10 | False | 2.10 | True | False | main |
-| hex_vf0.75 | 2.38, 0.34, 0.85, 2.03 | False | 2.03 | True | False | main |
+- D2Q9 BGK τ=1（ν=1/6 精确），全周期单元胞；步序 collide → stream →（流体掩码）
+  体力 → bounce-back；物理核全部走 tensorlbm 库入口（铁律 grep 零命中，
+  `compile_route` 适配）。
 
-sq 主档：0.3 过、0.4 未过、0.5 过、0.6 过。hex 主档 0.70/0.75 全 FAIL（vs Gebart，参考侧偏差见定源 1）。
+## 计算结果现状（`result.json` 冻结 report，err 对档主参考）
 
-## 失效定源（三种，全部机读）
+| 档 | 阶梯 err (%) | 单调 | finest (%) | 过门 | 档类 |
+|----|--------------|------|-----------|------|------|
+| sq_vf0.3 | 15.23, 4.78, 2.18, 0.22 | True | 0.22 | True | main |
+| sq_vf0.4 | 17.25, 6.92, 2.42, 2.63 | False | 2.63 | False | main |
+| sq_vf0.5 | 16.03, 5.08, 2.96, 0.24 | True | 0.24 | True | main |
+| sq_vf0.6 | 17.19, 5.99, 1.64, 0.88 | True | 0.88 | True | main |
+| sq_vf0.7 | 17.12, 6.47, 3.85 | True | 3.85 | False | disclosure |
+| hex_vf0.3 | 5.32, 2.74, 1.22 | True | 1.22 | True | disclosure |
+| hex_vf0.45 | 5.55, 2.58, 2.16 | True | 2.16 | True | disclosure |
+| hex_vf0.6 | 3.89, 2.09, 0.62 | True | 0.62 | True | disclosure |
+| hex_vf0.7 | 1.66, 0.47, 0.13, 2.10 | False | 2.10 | False | main |
+| hex_vf0.75 | 2.38, 0.34, 0.85, 2.03 | False | 2.03 | False | main |
 
-1. **hex = 参考侧**。
-   - resolved LBM K at hex 0.70/0.75 is genuinely BELOW Gebart by O(2-4%): error stays negative and keeps descending as gap grows 12->24->48->72->96; a staircase artifact would decay toward 0, a reference bias is revealed as the staircase part shrinks
-   - 阶梯分解（1+signed = (1+staircase)*(1+gebart_bias)，DIAGNOSTICS.md D1 (controller-verified; this file ships verbatim in the archive)）：hex 0.75 阶梯项 [4.9, 2.9, 1.6, 0.5]%（gap 12/24/48/72）、Gebart 偏差 +2.4%；hex 0.70 阶梯项 [6.3, 4.4, 4.0, 1.8]%、偏差 +3.9%。
-   - 排除项：premature steady (S2 20/20 pass, tol bounds hidden drift << 0.1%)；inertia (S1: 0.073% per dRe 0.5 at hex0.75)。
-   - these are the first resolved LBM measurements of hex 0.70/0.75 transverse permeability; solver validated by four independent channels (square exact tiers, hex dilute tiers, gebart-consistency bit-closure, S1/S2)
-2. **sq 0.40 = 量化地板振荡**。
-   - formal ladder +17.25/+6.92/+2.42/+2.63% breaks strict monotonicity by +0.21pp between rungs 3 and 4; the gap-96 extension returns -0.6475% (deep under the gate) -> rung-3->4 uptick is geometry-quantization oscillation (dR/R ~ 0.5/R amplified by |dlnK/dlnR| ~ 6.7 at phi=0.4), not a divergent trend
-3. **S1 力标敏感性与 sq 0.70 披露补全**。
-   - fs 10->20 linearity fails at sq0.3 W64 (0.256% > 0.1% tol): real O(Re) inertia at the inherited Re_cell=0.5; hex0.75 pair passes (0.073%). Physical, correctly measured, recorded per frozen protocol (FAIL, no re-run). Diagnostics at fs=20 run at Re_cell ~ 1.0 because the W4-A fp32-margin guard rejected fs=10 at gap 96 (margins 8.67-11.35 < 14)
-   - 3-rung formal ladder 17.12/6.47/3.85% (frozen non-gating disclosure); gap-72 extension -1.4686% crosses under the gate; kept non-gating per frozen prereg (tier frozen at 3 rungs)（扩展案 gap-72 err -1.4686%）。
-
-S1 力线性敏感性（fs 10→20，K_sim 不变性，容差 0.1%）：
-
-| 案 | K_base | K_scaled | Δ (%) | 过 |
-|----|--------|----------|-------|----|
-| case_hex_vf0.75_w265_fs20.json | 10.5463 | 10.5386 | 0.0732 | True |
-| case_sq_vf0.3_w64_fs20.json | 41.7095 | 41.6028 | 0.2557 | False |
-
-### 扩展案（gap-72/96 定源跑，冻结判决外，非门）
-
-| 案 | 阵列 | vf | W | gap (lu) | K_sim | K_ref(主) | 符号 err (%) |
-|----|------|----|----|---------|-------|-----------|--------------|
-| case_hex_vf0.75_w1058_fs20.json | hex | 0.75 | 1058 | 95.7 | 161.386 | 167.58 | -3.6963 |
-| case_hex_vf0.7_w790_fs20.json | hex | 0.7 | 790 | 96.0 | 194.389 | 197.606 | -1.6284 |
-| case_sq_vf0.4_w335_fs20.json | sq | 0.4 | 335 | 95.9 | 511.719 | 515.053 | -0.6475 |
-| case_sq_vf0.7_w1293_fs20.json | sq | 0.7 | 1293 | 72.3 | 121.841 | 123.657 | -1.4686 |
-
-## 方阵 verified 候选注记
-
-the square array at its exact Sangani-Acrivos reference is a VERIFIED CANDIDATE on three of four main tiers (0.30/0.50/0.60): every gated tier passes finest <= 3% with strict monotonicity; promotion is an owner decision (the array-level FAIL comes only from the 0.40 quantization oscillation)
-
-| vf | 阶梯 err (%) | 单调 | finest 符号 err (%) | 过门 |
-|----|--------------|------|--------------------|------|
-| 0.3 | 15.23, 4.78, 2.18, 0.22 | True | -0.22% | True |
-| 0.5 | 16.03, 5.08, 2.96, 0.24 | True | +0.24% | True |
-| 0.6 | 17.19, 5.99, 1.64, 0.88 | True | -0.88% | True |
-
-## R3 参考自产门（hex_ref_gate/）
-
-- 做什么：self-production of the square reference at 0.5% three-estimator gate as the prerequisite for producing an exact hex reference (Schur-complement Stokes solver on the square array, ladder pool 51 cases)
-- 协议：fixed-alpha LSQ 1.0/1.5 (finest windows 4/5/6) + worst-window point value + Aitken3 on the last three rungs; pass = all three |err| <= 0.5%
-- 判决：**FAIL** — vf0.3/0.4/0.5 PASS, vf0.6 FAIL by 0.052pp (fixed15 -0.5521%), vf0.7 FAIL (aitken3 -0.7967%, tail effective order collapses 1.34->0.58), vf0.75 attempt tier FAIL (not blocking). Per prereg 11.5: stop — no hex values produced
+- 判据（冻结）：err（对档主参考）随加密严格单调下降 AND finest ≤3% AND 全档稳态；
+  主档门（sq 0.30/0.40/0.50/0.60 对 S&A 精确表；hex 0.70/0.75 对 Gebart）定
+  per-array 判决——**sq: FAIL（0.40 一档破）、hex: FAIL（两主档全破）、总判 FAIL**。
+- R3 参考自产门（`hex_ref_gate/`，Schur-complement Stokes 解算器 + 51 case 阶梯池，
+  0.5% 三估计器门）：vf0.3/0.4/0.5 PASS，vf0.6 差 0.052pp（fixed-α1.5 −0.552%）、
+  vf0.7 FAIL（Aitken₃ −0.797%）、vf0.75 FAIL——按 prereg 11.5 停止，未产 hex 值。
 
 | vf | ref_f | fixed-α1.0 (%) | fixed-α1.5 (%) | Aitken₃ (%) | 过门 |
 |----|-------|----------------|----------------|-------------|------|
@@ -82,26 +52,170 @@ the square array at its exact Sangani-Acrivos reference is a VERIFIED CANDIDATE 
 | 0.7 | 13520 | +0.156 | -0.432 | -0.797 | False |
 | 0.75 | 126300 | +1.762 | -0.942 | -7.671 | False |
 
-- 控制器交叉核对：controller's own fitter recomputed all 18 estimator values and 6 tier verdicts bit-identical。
-- owner 决策菜单（hex 精确参考的取得路径）：
-  - (a) M1 cut-cell rerun of the full square array (prereg section 3 registered variant; recommended by the track)
-  - (b) widen the gate to 1% (vf0.6/0.7 then pass; hex error band propagates equally wide)
-  - (c) purchase Koch-Ladd 1997 / Wang-Sangani 1997 tables
-  - (d) keep the Gebart gate and accept the W9-C FAIL as recorded (zero cost; reference-side bias +2.4%/+3.9% already source-attributed)
-- 工件：hex_ref_gate/ (NOTES.md, prereg.md, src/, out/cases 51 case JSONs, sq_gate.json, sq_gate2.json, gate2_owner_report.md)
+## 不达标清单（严格标准：共性模块入口 + 直接观测量 ≤3% + ≥2 档网格单调收敛）
 
-## 运行
+1. **共性模块入口**：✓——物理核全部库入口（铁律），几何/测量为 driver 层。
+2. **直接观测量 ≤3%**：主档全部数值过线（sq 最细 0.22/2.63/0.24/0.88%、
+   hex 0.70/0.75 最细 2.10/2.03%）；唯披露档 sq_vf0.7 最细 3.85% 超线（非门）。
+3. **≥2 档网格单调收敛**：✗——三个档单调破缺：sq_vf0.4（2.42→2.63，+0.21pp）、
+   hex_vf0.7（0.13→2.10）、hex_vf0.75（0.34→0.85→2.03）——判据的单调条款是
+   本案例唯一实质败因。
+
+## 根因/诊断（三种失效模式，全部机读定源）
+
+1. **hex 近堆积 = 参考侧**：解析 LBM 的 K 在 hex 0.70/0.75 真实低于 Gebart——
+   误差随 gap 增大持续走负（楼梯伪影应衰减归零，参考偏差则随楼梯份额缩小显形）。
+   阶梯分解（1+signed = (1+staircase)·(1+gebart_bias)，DIAGNOSTICS.md D1，
+   独立复核）：hex 0.75 阶梯项 [4.9, 2.9, 1.6, 0.5]%（gap 12/24/48/72）、
+   Gebart 偏差 +2.4%；hex 0.70 阶梯项 [6.3, 4.4, 4.0, 1.8]%、偏差 +3.9%。
+   Gebart 对精确表的锁定偏差（方阵阶梯原位复现）：vf0.70 +2.978%、vf0.75 +0.268%。
+   排除项：过早稳态（S2 全过）、惯性（S1 hex0.75 对 0.073%）。
+   附：这是 hex 0.70/0.75 横向渗透率的首批解析 LBM 测量（求解器经四独立通道验证）。
+2. **sq 0.40 = 几何量化地板振荡**：正式阶梯 +17.25/+6.92/+2.42/+2.63% 在第 3→4 档
+   回升 ~0.2pp；gap-96 扩展案返回 −0.6475%（门内深处）→ 回升是分辨率地板处的
+   半径量化振荡（dR/R 离散被渗透率对半径的强敏感放大），非发散趋势。
+3. **S1 = 真实 O(Re) 惯性**：fs 10→20 力线性在 sq0.3 W64 破容差（0.256% > 0.1%），
+   继承力标 Re_cell=0.5 下的真实惯性；hex0.75 对过（0.073%）。物理量、测得正确、
+   按冻结协议如实记 FAIL（不重跑）；fs=20 诊断跑因 W4-A fp32 裕度守卫在 gap 96
+   拒绝 fs=10 而运行在 Re_cell≈1.0。
+   sq0.70 披露档补全：3 档正式阶梯 17.12/6.47/3.85%（冻结非门），gap-72 扩展
+   −1.4686% 已入门内，按冻结 prereg 维持非门（档冻结 3 档）。
+
+## 晋级路径（转 verified 条件；达标即归档 PR 移 pending/permeability_fibrous → verified/permeability_fibrous）
+
+1. **方阵 verified 候选（现成）**：sq 0.30/0.50/0.60 三主档全过（最细
+   0.22/0.24/0.88%，严格单调）——owner 晋级决策（整档拆出或与 0.40 合并处置）；
+2. **hex 精确参考取得（owner 菜单）**：(a) M1 cut-cell 重跑方阵全阵自产精确表
+   （prereg §3 注册变体，轨道推荐）；(b) 门放宽到 1%（vf0.6/0.7 即过；hex 误差带
+   等比放宽）；(c) 购 Koch-Ladd 1997 / Wang-Sangani 1997 表；(d) 维持 Gebart 门
+   接受 FAIL（零成本；参考侧偏差 +2.4%/+3.9% 已定量定源）；
+3. **sq 0.40**：加 gap≥96 rung 或改包络收敛判据（同 permeability3d 修正规则）重判。
+4. 达标即归档 PR 移 `pending/permeability_fibrous` → `verified/permeability_fibrous`。
+
+## 运行方式
 
 ```bash
-python run.py case --array sq --vf 0.5 --w 238 --device cuda:0   # 单案
-python run.py report --out-dir out                              # 聚合判决
+cd benchmarks/pending/permeability_fibrous
+PYTHONPATH=../../../src python run.py case --array sq --vf 0.5 --w 238 --device cuda:0  # 单案
+PYTHONPATH=../../../src python run.py report --out-dir out                              # 聚合判决
 ```
 
-## 交付物（本目录）
+R3 自产门（`hex_ref_gate/src/`，queue_sq/queue_hex/extrapolate 等）与扩展定源案
+（`out_diag/`）独立可跑。工件：`result.json`（冻结 report 原文 + wave9_record 附录）、
+`out/`（40 份 case 机器档案）、`out_diag/`（4 案）、`prereg.md`、`DIAGNOSTICS.md`、
+`hex_ref_gate/`（NOTES + prereg + src + out：51 case + 双门 JSON + owner report）。
+完整过程工件留服务器暂存 `/nfs/wangxi/runs/bm_widen_w9_20260929/fibrous_perm/`。
 
-- `run.py`（case/report 双子命令；库核入口 + compile_route 适配）/ `result.json`（冻结 report 原文 + wave9_record 附录：失效定源、扩展案、方阵候选、R3 门）/ `out/`（40 份 case 机器档案 + 机器 README）/ `out_diag/`（gap-72/96 定源扩展 4 案）/ `prereg.md` / `DIAGNOSTICS.md` / `hex_ref_gate/`（R3 全套：NOTES.md + prereg.md + src/ + out/（51 case + 双门 JSON + owner report））。
-
-## 判定
-
-- benchmark_overall = **FAIL**（sq: FAIL、hex: FAIL；冻结判据原样，无事后放宽）。
-- 附加价值：方阵三档 verified 候选 + hex 参考侧偏差定量钉死 + 首次 hex 0.70/0.75 横向渗透率解析测量。
+<!-- PROVENANCE
+[{"v": 1.0, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "settings.tau"},
+{"v": 0.05, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "settings.Re_target"},
+{"v": 10.0, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "settings.force_scale_default"},
+{"v": "FAIL", "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.benchmark_overall"},
+{"v": "FAIL", "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.overall.sq"},
+{"v": "FAIL", "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.overall.hex"},
+{"v": true, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_array.sq.main_tiers.sq_vf0.3"},
+{"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_array.sq.main_tiers.sq_vf0.4"},
+{"v": true, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_array.sq.main_tiers.sq_vf0.5"},
+{"v": true, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_array.sq.main_tiers.sq_vf0.6"},
+{"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_array.hex.main_tiers.hex_vf0.7"},
+{"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_array.hex.main_tiers.hex_vf0.75"},
+{"v": 15.231435079977329, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.3.errors_pct[0]"},
+{"v": 4.782804330150681, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.3.errors_pct[1]"},
+{"v": 2.18439458411559, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.3.errors_pct[2]"},
+{"v": 0.2160566801704511, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.3.errors_pct[3]"},
+{"v": 17.25228839329256, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.4.errors_pct[0]"},
+{"v": 6.920144431623343, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.4.errors_pct[1]"},
+{"v": 2.418694925947107, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.4.errors_pct[2]"},
+{"v": 2.6283936232617267, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.4.errors_pct[3]"},
+{"v": 16.031529384966483, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.5.errors_pct[0]"},
+{"v": 5.083774163499544, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.5.errors_pct[1]"},
+{"v": 2.957754152099601, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.5.errors_pct[2]"},
+{"v": 0.2424357355092388, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.5.errors_pct[3]"},
+{"v": 17.19004279588514, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.6.errors_pct[0]"},
+{"v": 5.993759157473222, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.6.errors_pct[1]"},
+{"v": 1.6381862785754153, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.6.errors_pct[2]"},
+{"v": 0.8756241746041393, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.6.errors_pct[3]"},
+{"v": 17.120656150017165, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.7.errors_pct[0]"},
+{"v": 6.467105687375541, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.7.errors_pct[1]"},
+{"v": 3.851477863002062, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.7.errors_pct[2]"},
+{"v": 5.3237831758605525, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.3.errors_pct[0]"},
+{"v": 2.73925185489865, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.3.errors_pct[1]"},
+{"v": 1.221918649335052, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.3.errors_pct[2]"},
+{"v": 5.548163690917041, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.45.errors_pct[0]"},
+{"v": 2.581773666622955, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.45.errors_pct[1]"},
+{"v": 2.159710824148986, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.45.errors_pct[2]"},
+{"v": 3.886490541268972, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.6.errors_pct[0]"},
+{"v": 2.0908822545763206, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.6.errors_pct[1]"},
+{"v": 0.6218225965950896, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.6.errors_pct[2]"},
+{"v": 1.6613065077422107, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.7.errors_pct[0]"},
+{"v": 0.4678446386337187, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.7.errors_pct[1]"},
+{"v": 0.13106477515814063, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.7.errors_pct[2]"},
+{"v": 2.0988291146574634, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.7.errors_pct[3]"},
+{"v": 2.3771076248163325, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.75.errors_pct[0]"},
+{"v": 0.3383014680396368, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.75.errors_pct[1]"},
+{"v": 0.8473364265903727, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.75.errors_pct[2]"},
+{"v": 2.0250093124438706, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.75.errors_pct[3]"},
+{"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.4.monotone_decreasing"},
+{"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.7.monotone_decreasing"},
+{"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.hex_vf0.75.monotone_decreasing"},
+{"v": true, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.3.monotone_decreasing"},
+{"v": true, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.5.monotone_decreasing"},
+{"v": true, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "verdict.per_tier.sq_vf0.6.monotone_decreasing"},
+{"v": 102.9, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "reference.sangani_f_table_sq.0.3"},
+{"v": 217.89, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "reference.sangani_f_table_sq.0.4"},
+{"v": 532.55, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "reference.sangani_f_table_sq.0.5"},
+{"v": 1763.0, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "reference.sangani_f_table_sq.0.6"},
+{"v": 13520.0, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "reference.sangani_f_table_sq.0.7"},
+{"v": 126300.0, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "reference.sangani_f_table_sq.0.75"},
+{"v": 2.978, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "reference_deviation_disclosure.sq_gebart_vs_sangani_exact_pct.0.7"},
+{"v": 0.268, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "reference_deviation_disclosure.sq_gebart_vs_sangani_exact_pct.0.75"},
+{"v": 2.4, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.hex_reference_side.staircase_decomposition.hex_0.75_gebart_bias_pct"},
+{"v": 3.9, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.hex_reference_side.staircase_decomposition.hex_0.70_gebart_bias_pct"},
+{"v": 4.9, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.hex_reference_side.staircase_decomposition.hex_0.75_staircase_pct_by_gap_12_24_48_72[0]"},
+{"v": 2.9, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.hex_reference_side.staircase_decomposition.hex_0.75_staircase_pct_by_gap_12_24_48_72[1]"},
+{"v": 1.6, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.hex_reference_side.staircase_decomposition.hex_0.75_staircase_pct_by_gap_12_24_48_72[2]"},
+{"v": 0.5, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.hex_reference_side.staircase_decomposition.hex_0.75_staircase_pct_by_gap_12_24_48_72[3]"},
+{"v": 6.3, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.hex_reference_side.staircase_decomposition.hex_0.70_staircase_pct_by_gap_12_24_48_72[0]"},
+{"v": 4.4, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.hex_reference_side.staircase_decomposition.hex_0.70_staircase_pct_by_gap_12_24_48_72[1]"},
+{"v": 4.0, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.hex_reference_side.staircase_decomposition.hex_0.70_staircase_pct_by_gap_12_24_48_72[2]"},
+{"v": 1.8, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.hex_reference_side.staircase_decomposition.hex_0.70_staircase_pct_by_gap_12_24_48_72[3]"},
+{"v": -0.6474881319222692, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.sq_0.40_quantization_floor.extension_signed_err_pct"},
+{"v": -1.4686040664330768, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.failure_attribution.sq_0.70_disclosure_completion.extension_signed_err_pct"},
+{"v": 0.07324999527964504, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "sensitivity.S1_force_linearity.case_hex_vf0.75_w265_fs20.json.delta_pct"},
+{"v": 0.1, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "sensitivity.S1_force_linearity.case_hex_vf0.75_w265_fs20.json.tol_pct"},
+{"v": 0.2557244059488428, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "sensitivity.S1_force_linearity.case_sq_vf0.3_w64_fs20.json.delta_pct"},
+{"v": 0.1, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "sensitivity.S1_force_linearity.case_sq_vf0.3_w64_fs20.json.tol_pct"},
+{"v": 161.38611649329235, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.extension_runs.cases[0].K_sim_darcy"},
+{"v": -3.6963492824352295, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.extension_runs.cases[0].signed_err_pct"},
+{"v": 194.3886374677627, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.extension_runs.cases[1].K_sim_darcy"},
+{"v": -1.6283636878920427, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.extension_runs.cases[1].signed_err_pct"},
+{"v": 511.7185572717894, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.extension_runs.cases[2].K_sim_darcy"},
+{"v": -0.6474881319222692, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.extension_runs.cases[2].signed_err_pct"},
+{"v": 121.84143177524994, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.extension_runs.cases[3].K_sim_darcy"},
+{"v": -1.4686040664330768, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "wave9_record.extension_runs.cases[3].signed_err_pct"},
+{"v": 0.5761571753998865, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/result.json", "k": "ladders.sq_vf0.3[0].Re_cell_achieved"},
+{"v": -0.16910853386309377, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.3.est_errs.fixed10.err_pct"},
+{"v": -0.2280976641777288, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.3.est_errs.fixed15.err_pct"},
+{"v": -0.07277542127638315, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.3.est_errs.aitken3.err_pct"},
+{"v": true, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.3.gate_pass_3est"},
+{"v": -0.08519124687147439, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.4.est_errs.fixed10.err_pct"},
+{"v": -0.25041764443365366, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.4.est_errs.fixed15.err_pct"},
+{"v": -0.33927639488661177, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.4.est_errs.aitken3.err_pct"},
+{"v": true, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.4.gate_pass_3est"},
+{"v": 0.19902603481196657, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.5.est_errs.fixed10.err_pct"},
+{"v": -0.24483811335509476, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.5.est_errs.fixed15.err_pct"},
+{"v": -0.390079617530259, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.5.est_errs.aitken3.err_pct"},
+{"v": true, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.5.gate_pass_3est"},
+{"v": -0.18796620821104337, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.6.est_errs.fixed10.err_pct"},
+{"v": -0.5520652028774164, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.6.est_errs.fixed15.err_pct"},
+{"v": -0.28285839899955256, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.6.est_errs.aitken3.err_pct"},
+{"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.6.gate_pass_3est"},
+{"v": 0.15586169892045643, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.7.est_errs.fixed10.err_pct"},
+{"v": -0.4319506770494086, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.7.est_errs.fixed15.err_pct"},
+{"v": -0.7967327932867474, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.7.est_errs.aitken3.err_pct"},
+{"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.7.gate_pass_3est"},
+{"v": 1.7615533703343456, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.75.est_errs.fixed10.err_pct"},
+{"v": -0.9415624682871049, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.75.est_errs.fixed15.err_pct"},
+{"v": -7.670830474559532, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.75.est_errs.aitken3.err_pct"},
+{"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/permeability_fibrous/hex_ref_gate/out/sq_gate2.json", "k": "vf0.75.gate_pass_3est"}]
+-->
