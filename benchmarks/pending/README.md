@@ -55,6 +55,12 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 
 **统计**：🟡 4 · 🔵 1 · ⚠️ 3 · ⛔ 1 · ❌ 21（共 30）
 
+**范围**：本表覆盖 30 案。marine sweep 线五案（dtmb5415_resistance、
+kcs_resistance、propeller_openwater、series60_resistance、
+suboff_sail_resistance）与 aircraft_icing_rg15_ipw2 为本表基线后入库的
+pending 案例，不在本表，由各自战役线补档；sphere_re100 / sphere_re100_mem /
+sphere_re200 三案此前仅有本地档案，本次建档入库（README 即本表所链）。
+
 待决策汇总（owner）：🟡 四案的归档批次（sphere_re100_mem、sphere_re100_d3q27、
 permeability3d φ=0.343、cavity_3d_full 清理）· cylinder W11-A2 扩上游 ·
 couette/annulus/taylor_aris/collision 的口径类裁定 · naca/backward_step/
