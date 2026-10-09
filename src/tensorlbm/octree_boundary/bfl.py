@@ -298,7 +298,12 @@ def bfl_apply_gather(
             if bool(remote.any()):
                 d_r = d_c[remote]
                 i_r = i_c[remote]
-                slots = remote_pos[d_r, i_r]
+                # ``remote_pos[q, i]`` is keyed by the stream-link direction q,
+                # while BFL's upstream donor for wall direction d is
+                # ``neighbor_table[opp[d], i]``.  Use that same donor direction
+                # for the remote slot; using d silently addresses a different
+                # (often absent) cross-shard request.
+                slots = remote_pos[opp[d_r], i_r]
                 if bool((slots < 0).any()):
                     raise RuntimeError(
                         "sharded BFL upstream point is REMOTE but has no "

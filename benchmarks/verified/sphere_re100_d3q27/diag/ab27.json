@@ -1,0 +1,17 @@
+{
+  "random": {
+    "P1_feq_perq": true,
+    "P2_collide_inplace": true,
+    "P3_bb_scatter": true,
+    "P4_farfield_inplace": true,
+    "P5_correct_mass_inplace": true
+  },
+  "shifted": {
+    "P1_feq_perq": true,
+    "P2_collide_inplace": true,
+    "P3_bb_scatter": true,
+    "P4_farfield_inplace": true,
+    "P5_correct_mass_inplace": true
+  },
+  "all_pass": true
+}

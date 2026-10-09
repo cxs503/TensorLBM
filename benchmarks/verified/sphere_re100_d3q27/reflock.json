@@ -1,0 +1,61 @@
+{
+  "case": "sphere_re100_d3q27",
+  "locked_utc": "2026-10-06",
+  "provenance": {
+    "repo": "cxs503/TensorLBM",
+    "ref": "main",
+    "promotion_commit": "20cd23472",
+    "pull_script": "diag/pull_remote_sphere.py",
+    "manifest": "diag/remote_pull/manifest.json"
+  },
+  "reference": {
+    "cd_ref": 1.0917310910948732,
+    "source_primary": "Schiller-Naumann 24/Re*(1+0.15*Re^0.687) = 1.0917311",
+    "cross_references": {
+      "schiller_naumann_0681": 1.0685190542670633,
+      "clift_gauvin": 1.1092345787735252
+    },
+    "correlation_band": [
+      1.069,
+      1.109
+    ],
+    "gate_pct": 3.0,
+    "file": "diag/remote_pull/verified__sphere_re100/result.json",
+    "sha256": "b4c13e0f862f41072a022fae6beb96d581337b72c3b929a2d25db28bdae52b08"
+  },
+  "tier_twins": {
+    "T1": {
+      "file": "t1_d40big_12k.json",
+      "sha256": "2373d5162952ac5fe272016df8a575811766561711cce63407de4ddbadc72d58",
+      "D": 40,
+      "domain_lu": [
+        280,
+        280,
+        320
+      ],
+      "tau": 0.56,
+      "steps": 12000
+    },
+    "T2": {
+      "file": "t2_d60big_24k.json",
+      "sha256": "78d3eb6e839df50256bfe2dec445bb5397872384272664ab4180104442e9bf86",
+      "D": 60,
+      "domain_lu": [
+        420,
+        420,
+        480
+      ],
+      "tau": 0.59,
+      "steps": 24000
+    }
+  },
+  "decomposition_files": {
+    "w7_diag_t1_bgk": {
+      "sha256": "4038cf57783b8554fbe79679b1981ceec6cd8a38527b3eccc18adc9d97f4d6be"
+    },
+    "w7_diag_t1_mrt_base": {
+      "sha256": "fa75631edd1bf6035823ab74d3c8e9a9abf870c1f40bd023a50fada69087cc2a"
+    }
+  },
+  "note": "tier numbers above duplicated from the machine files only for readability; the verifier reads values live from the files."
+}
