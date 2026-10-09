@@ -6,9 +6,7 @@ import json
 from pathlib import Path
 
 SCRIPT = (
-    Path(__file__).resolve().parents[1]
-    / "scripts"
-    / "assess_pressure_gradient_wall_channel.py"
+    Path(__file__).resolve().parents[1] / "scripts" / "assess_pressure_gradient_wall_channel.py"
 )
 SPEC = importlib.util.spec_from_file_location("assess_pressure_gradient_wall_channel", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None

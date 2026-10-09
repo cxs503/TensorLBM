@@ -1,0 +1,112 @@
+{
+  "case": "poiseuille_3d_annulus_convergence",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "a_ratio": 0.5,
+  "R_o_list": [
+    20,
+    40,
+    80
+  ],
+  "tau": 0.8,
+  "u_in": 0.02,
+  "extrap": "none",
+  "comparison_method": "CH1 (primary): 3-parameter weighted LSQ of the exact family u=c0+c1 ln r-c2 r^2 on central bins (selected by the nominal analytic profile |u|>0.2 U_max_nom), no-slip roots -> effective radii (delta_i, delta_o); gradient anchored by the imposed flux G_Q=8 nu Q_meas/(pi Phi(delta_o,delta_i)); metric = central binned max rel err vs the exact profile of (delta_i,delta_o,G_Q). CH2 (direct channel): nominal geometry (a,R_o) with G_nom=8 nu u_in (R_o^2-a^2)/Phi (u_mean=u_in, no measured quantity), same metric. Disclosures: G_fit vs G_Q vs G_int (interior pressure gradient), all-bins delta variant, per-cell max, dp-variant nominal frame.",
+  "per_grid": [
+    {
+      "R_o": 20,
+      "a": 10.0,
+      "Re": 3.9999999999999996,
+      "n_steps": 49400,
+      "steady": true,
+      "eff_max_bin_central_pct": 1.1634,
+      "eff_l2_bin_central_pct": 0.622,
+      "eff_max_cell_central_pct": 9.4954,
+      "nom_max_bin_central_pct": 9.0529,
+      "nom_l2_bin_central_pct": 4.6744,
+      "delta_i_minus_a": -0.3807,
+      "delta_o_minus_Ro": 0.2105,
+      "delta_i_minus_a_allbins": -0.4067,
+      "delta_o_minus_Ro_allbins": 0.2438,
+      "G_fit_over_G_Q": 0.99605,
+      "G_int_over_G_Q": 1.0438,
+      "Q_ratio_N_over_A_nom": 1.0101,
+      "fd_max_rel_dev_pct": 3.4875,
+      "mass_drift_pct": 3.214998,
+      "elapsed_s": 18.3
+    },
+    {
+      "R_o": 40,
+      "a": 20.0,
+      "Re": 7.999999999999999,
+      "n_steps": 33800,
+      "steady": true,
+      "eff_max_bin_central_pct": 0.127,
+      "eff_l2_bin_central_pct": 0.0749,
+      "eff_max_cell_central_pct": 7.584,
+      "nom_max_bin_central_pct": 5.2262,
+      "nom_l2_bin_central_pct": 2.742,
+      "delta_i_minus_a": -0.3216,
+      "delta_o_minus_Ro": 0.2117,
+      "delta_i_minus_a_allbins": -0.342,
+      "delta_o_minus_Ro_allbins": 0.2298,
+      "G_fit_over_G_Q": 0.99865,
+      "G_int_over_G_Q": 1.02166,
+      "Q_ratio_N_over_A_nom": 1.00268,
+      "fd_max_rel_dev_pct": 2.00174,
+      "mass_drift_pct": 1.470505,
+      "elapsed_s": 32.1
+    },
+    {
+      "R_o": 80,
+      "a": 40.0,
+      "Re": 15.999999999999998,
+      "n_steps": 40800,
+      "steady": true,
+      "eff_max_bin_central_pct": 0.0514,
+      "eff_l2_bin_central_pct": 0.0256,
+      "eff_max_cell_central_pct": 4.1986,
+      "nom_max_bin_central_pct": 2.5697,
+      "nom_l2_bin_central_pct": 1.2685,
+      "delta_i_minus_a": -0.287,
+      "delta_o_minus_Ro": 0.1716,
+      "delta_i_minus_a_allbins": -0.2978,
+      "delta_o_minus_Ro_allbins": 0.182,
+      "G_fit_over_G_Q": 0.99963,
+      "G_int_over_G_Q": 1.01197,
+      "Q_ratio_N_over_A_nom": 0.99923,
+      "fd_max_rel_dev_pct": 1.08845,
+      "mass_drift_pct": 0.706808,
+      "elapsed_s": 261.4
+    }
+  ],
+  "eff_errors_pct": [
+    1.1634,
+    0.127,
+    0.0514
+  ],
+  "nom_errors_pct": [
+    9.0529,
+    5.2262,
+    2.5697
+  ],
+  "eff_monotone": true,
+  "nom_monotone": true,
+  "delta_i_minus_a": [
+    -0.3807,
+    -0.3216,
+    -0.287
+  ],
+  "delta_o_minus_Ro": [
+    0.2105,
+    0.2117,
+    0.1716
+  ],
+  "delta_spread_i": 0.0937,
+  "delta_spread_o": 0.0401,
+  "delta_grid_independent_(bound_0.05)": false,
+  "passed_eff_3pct_monotone": true,
+  "passed_nom_3pct_monotone": false,
+  "verdict": "not_verified",
+  "notes": "CH1 eff-frame binned central max: 1.163% -> 0.127% -> 0.051% (all<=3%: True, monotone: True). delta_i-a: -0.3807 / -0.3216 / -0.2870; delta_o-R_o: +0.2105 / +0.2117 / +0.1716 (spreads 0.0937/0.0401, grid-independent bound 0.05: False). CH2 nominal-frame direct: 9.053% -> 5.226% -> 2.570% (all<=3%: False, monotone: True). G_fit/G_Q: 0.9960 / 0.9987 / 0.9996; G_int/G_Q: 1.0438 / 1.0217 / 1.0120."
+}

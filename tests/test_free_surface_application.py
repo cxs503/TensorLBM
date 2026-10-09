@@ -150,6 +150,7 @@ def test_existing_strict_runner_failure_maps_to_failed_result(tmp_path, monkeypa
 
 def test_runner_call_boundary_has_no_loop_step_or_backend_compile():
     import inspect
+
     import tensorlbm.free_surface_application as app
 
     source = inspect.getsource(app)

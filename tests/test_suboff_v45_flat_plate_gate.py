@@ -18,9 +18,9 @@ def test_v45_queue_and_parameterised_suboff_runner_are_valid_shell() -> None:
 
 
 def test_v45_is_gated_by_canonical_flat_plate_and_viscosity() -> None:
-    queue = (
-        ROOT / "scripts" / "run_suboff_v45_after_physical_re_flat_plate.sh"
-    ).read_text(encoding="utf-8")
+    queue = (ROOT / "scripts" / "run_suboff_v45_after_physical_re_flat_plate.sh").read_text(
+        encoding="utf-8"
+    )
     assert 'assessment.get("admitted") is not True' in queue
     assert "all_levels_recover_configured_viscosity" in queue
     assert "configured_reynolds_sequence_admitted" in queue

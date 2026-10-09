@@ -12,7 +12,6 @@ from typing import Final
 
 import torch
 
-
 GAS: Final = 0
 LIQUID: Final = 1
 INTERFACE: Final = 2

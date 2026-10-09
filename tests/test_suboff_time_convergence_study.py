@@ -20,7 +20,6 @@ from tensorlbm.suboff_time_convergence_study import (
     run_suboff_time_convergence_study,
 )
 
-
 # ---------------------------------------------------------------------------
 # Small study config factory (fast test execution)
 # ---------------------------------------------------------------------------
@@ -269,7 +268,7 @@ def test_study_artifact_is_json_serializable() -> None:
 
 def test_study_writes_machine_readable_artifact_file(tmp_path: Path) -> None:
     config = _small_study_config()
-    artifact = run_suboff_time_convergence_study(
+    run_suboff_time_convergence_study(
         config,
         output_path=tmp_path / "time_convergence.json",
     )

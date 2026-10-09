@@ -1,0 +1,40 @@
+{
+ "benchmark": "xb2_discriminating_tests_multirange",
+ "prereg": "prereg_xb2.md section 4 (md5 97ff5e21a3f528d5bddbf9a925ce504f)",
+ "gates": {
+  "T1_force_equal_plain": true,
+  "T1_force_equal_solid_dry": true,
+  "T1_force_equal_solid_wet": true,
+  "T1_traj_equal_tau1.0": true,
+  "T1_traj_equal_tau0.8": true,
+  "T2_uniform_F0_G2_0.0": true,
+  "T2_uniform_F0_G2_-0.1": true,
+  "T3_total_force0_G2_0.0": true,
+  "T3_total_force0_G2_-0.15": true,
+  "T4_belt2_linear_analytic": true,
+  "T4_belt2_linear_sumy_zero": true
+ },
+ "results": {
+  "T1_force_equal_plain": "torch.equal Fx/Fy = True",
+  "T1_force_equal_solid_dry": "torch.equal Fx/Fy = True",
+  "T1_force_equal_solid_wet": "torch.equal Fx/Fy = True",
+  "T1_traj_equal_tau1.0": "5000-step trajectory torch.equal = True",
+  "T1_traj_equal_tau0.8": "5000-step trajectory torch.equal = True",
+  "T2_uniform_F0_G2_0.0": "max|F| = 0.000e+00",
+  "T2_uniform_F0_G2_-0.1": "max|F| = 0.000e+00",
+  "T3_total_force0_G2_0.0": "|sumF|=(6.938893903907228e-18, 6.245004513516506e-17), rel gate 1e-8 (scale 7.670e+01)",
+  "T3_total_force0_G2_-0.15": "|sumF|=(5.551115123125783e-17, 1.3877787807814457e-17), rel gate 1e-8 (scale 9.907e+01)",
+  "T4_belt2_linear_analytic": "max|sum2x - (-2 slope sum w cx^2)| = 5.551e-17 (gate 1e-14, pred -0.020000000149)",
+  "T4_disclosure_pure_third_prediction_residual": {
+   "value": 1.490116502411709e-10,
+   "note": "residual vs analytic -2/3*slope (exact cs^2=1/3) = float32 weight rounding of the library gather (sum w cx^2 = 0.3333333365), identical structure in belt-1; not a patch artefact"
+  },
+  "T4_belt2_linear_sumy_zero": "max|sum2y| interior = 6.939e-18",
+  "T4b_expfield_cubic_residual_vs_prediction_rel": 0.00019244051603763994,
+  "T4b_note": "residual of nonlinear field matches -(4/9) psi''' Taylor term (disclosure)"
+ },
+ "all_pass": true,
+ "patched_md5": "e643cb1c8e6044cbeb23975bf243e6ba",
+ "generated_utc": "2026-10-04T06:16:30Z",
+ "code_sha256": "ead4a165450776b251d944e03fd487930a124b0e5e73bdce935c1de5d662e53a"
+}

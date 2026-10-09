@@ -1,4 +1,5 @@
 """Fail-closed grid convergence for Re=100 cylinder drag and shedding."""
+
 from __future__ import annotations
 
 import math
@@ -11,13 +12,25 @@ if TYPE_CHECKING:
 
 
 _IDENTITY_FIELDS = (
-    "schema_version", "center_x_fraction", "reynolds", "lattice_speed",
-    "collision_model", "collision_chunk_cells", "compile_natural_kbc",
-    "sponge_strength", "sponge_inlet", "far_field_mode",
-    "periodic_axes", "minimum_shedding_cycles", "link_force_frame",
+    "schema_version",
+    "center_x_fraction",
+    "reynolds",
+    "lattice_speed",
+    "collision_model",
+    "collision_chunk_cells",
+    "compile_natural_kbc",
+    "sponge_strength",
+    "sponge_inlet",
+    "far_field_mode",
+    "periodic_axes",
+    "minimum_shedding_cycles",
+    "link_force_frame",
 )
 _TIME_FIELDS = (
-    "steps", "warmup_steps", "ramp_steps", "statistics_window_steps_resolved",
+    "steps",
+    "warmup_steps",
+    "ramp_steps",
+    "statistics_window_steps_resolved",
     "report_interval",
 )
 
@@ -58,10 +71,15 @@ def assess_cylinder_grid_convergence(
             configuration.setdefault("collision_chunk_cells", 0)
             configuration.setdefault("compile_natural_kbc", False)
         radius = float(configuration["radius"])
-        parsed.append((
-            radius, float(result["cd_control_volume"]),
-            float(result["strouhal"]), configuration, result,
-        ))
+        parsed.append(
+            (
+                radius,
+                float(result["cd_control_volume"]),
+                float(result["strouhal"]),
+                configuration,
+                result,
+            )
+        )
         source_quality &= acceptance.get("numerical_quality_admitted") is True
     parsed.sort(key=lambda item: item[0])
     radii = [item[0] for item in parsed]
@@ -70,12 +88,14 @@ def assess_cylinder_grid_convergence(
 
     baseline = parsed[0][3]
     required_fields = (
-        *_IDENTITY_FIELDS, *_TIME_FIELDS, "shape_zyx", "cv_margin", "sponge_width",
+        *_IDENTITY_FIELDS,
+        *_TIME_FIELDS,
+        "shape_zyx",
+        "cv_margin",
+        "sponge_width",
     )
     required_present = all(
-        field in configuration
-        for *_, configuration, _ in parsed
-        for field in required_fields
+        field in configuration for *_, configuration, _ in parsed for field in required_fields
     )
     identity_equal = required_present and all(
         configuration.get(field) == baseline.get(field)
@@ -112,7 +132,8 @@ def assess_cylinder_grid_convergence(
     }
     ratio_groups = (*domain_ratios.values(), *spatial_ratios.values(), *time_ratios.values())
     scaled_invariant = (
-        required_present and spanwise_invariant
+        required_present
+        and spanwise_invariant
         and all(all(math.isfinite(value) for value in group) for group in ratio_groups)
         and all(_spread(group) <= 1e-12 for group in ratio_groups)
     )
@@ -135,19 +156,26 @@ def assess_cylinder_grid_convergence(
     st_reference_error = reference_error(st_spatial.extrapolated_value, st_reference)
     cd_spatial_admitted = cd_spatial.meets(
         maximum_finest_error_pct=maximum_finest_discretisation_error_pct,
-        maximum_fit_rms_pct=maximum_fit_rms_pct, minimum_order=minimum_order,
+        maximum_fit_rms_pct=maximum_fit_rms_pct,
+        minimum_order=minimum_order,
     )
     st_spatial_admitted = st_spatial.meets(
         maximum_finest_error_pct=maximum_finest_discretisation_error_pct,
-        maximum_fit_rms_pct=maximum_fit_rms_pct, minimum_order=minimum_order,
+        maximum_fit_rms_pct=maximum_fit_rms_pct,
+        minimum_order=minimum_order,
     )
     provenance_admitted = (
-        schema_valid and required_present and identity_equal
-        and scaled_invariant and references_invariant
+        schema_valid
+        and required_present
+        and identity_equal
+        and scaled_invariant
+        and references_invariant
     )
     admitted = (
-        provenance_admitted and source_quality
-        and cd_spatial_admitted and st_spatial_admitted
+        provenance_admitted
+        and source_quality
+        and cd_spatial_admitted
+        and st_spatial_admitted
         and cd_reference_error <= maximum_reference_error_pct
         and st_reference_error <= maximum_reference_error_pct
     )
@@ -171,9 +199,7 @@ def assess_cylinder_grid_convergence(
         "configuration_identity": {
             "v4_schema": schema_valid,
             "required_fields_present": required_present,
-            "legacy_execution_defaults_normalized": (
-                legacy_execution_defaults_normalized
-            ),
+            "legacy_execution_defaults_normalized": (legacy_execution_defaults_normalized),
             "identity_fields_equal": identity_equal,
             "spanwise_cells_invariant": spanwise_invariant,
             "domain_over_radius": domain_ratios,

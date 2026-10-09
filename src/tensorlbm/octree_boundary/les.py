@@ -14,14 +14,15 @@ Gradients are one-sided when the opposite neighbour is missing (sentinel),
 which is the correct fallback for a shell whose inner neighbour is SOLID
 (wall) and outer neighbour is SHELL_OUTSIDE (ghost-filled).
 """
+
 from __future__ import annotations
 
 import functools
 
 import torch
 
-from tensorlbm.d3q27 import macroscopic27
 from tensorlbm.d3q19 import macroscopic3d
+from tensorlbm.d3q27 import macroscopic27
 
 # sentinels (must match geometry.py)
 SHELL_OUTSIDE = -1
@@ -38,14 +39,18 @@ _AXIS_DIRS = ((1, 2), (3, 4), (5, 6))  # x, y, z: (+, -)
 
 @functools.lru_cache(maxsize=16)
 def _leaf_mrt_matrices(
-    Q: int, device: torch.device, dtype: torch.dtype,
+    Q: int,
+    device: torch.device,
+    dtype: torch.dtype,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Cache native sparse-LES MRT matrices in the population dtype."""
     if Q == 27:
         from tensorlbm.turbulence import _get_d3q27_mrt_matrices
+
         M, M_inv = _get_d3q27_mrt_matrices(device)
     elif Q == 19:
         from tensorlbm.solver3d import _get_d3q19_mrt_matrices
+
         M, M_inv = _get_d3q19_mrt_matrices(device)
     else:
         raise NotImplementedError(f"leaf LES supports D3Q19/D3Q27, got Q={Q}")
@@ -62,8 +67,13 @@ def _leaf_macros(f: torch.Tensor, Q: int):
 
 
 def _gather_velocity(
-    f: torch.Tensor, d: int, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
-    neighbor_table: torch.Tensor, n_leaf: int,
+    f: torch.Tensor,
+    d: int,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    neighbor_table: torch.Tensor,
+    n_leaf: int,
     *,
     neighbor_velocity: torch.Tensor | None = None,
     neighbor_distance: torch.Tensor | None = None,
@@ -97,6 +107,7 @@ def _gather_velocity(
     gz = torch.where(valid, uz[idx], torch.zeros_like(uz))
     return gx, gy, gz, valid
 
+
 def _gradient(f, d: int, u, neighbor_table, n_leaf, dx):
     """One-sided central difference ∂u/∂x_d via neighbour gather.
 
@@ -106,22 +117,43 @@ def _gradient(f, d: int, u, neighbor_table, n_leaf, dx):
     """
     dp, dm = _AXIS_DIRS[d]
     gp, _, _, vp = _gather_velocity(
-        f, dp, u, torch.zeros_like(u), torch.zeros_like(u), neighbor_table, n_leaf,
+        f,
+        dp,
+        u,
+        torch.zeros_like(u),
+        torch.zeros_like(u),
+        neighbor_table,
+        n_leaf,
     )
     gm, _, _, vm = _gather_velocity(
-        f, dm, u, torch.zeros_like(u), torch.zeros_like(u), neighbor_table, n_leaf,
+        f,
+        dm,
+        u,
+        torch.zeros_like(u),
+        torch.zeros_like(u),
+        neighbor_table,
+        n_leaf,
     )
     dx_t = torch.as_tensor(dx, dtype=u.dtype, device=u.device)
     central = (gp - gm) / (2.0 * dx_t)
     one_sided_p = (gp - u) / dx_t
     one_sided_m = (u - gm) / dx_t
-    return torch.where(vp & vm, central, torch.where(vp, one_sided_p,
-                       torch.where(vm, one_sided_m, torch.zeros_like(u))))
+    return torch.where(
+        vp & vm,
+        central,
+        torch.where(vp, one_sided_p, torch.where(vm, one_sided_m, torch.zeros_like(u))),
+    )
 
 
 def _gradient_centers(
-    f, d: int, u, neighbor_table, leaf_center, n_leaf,
-    *, neighbor_velocity: torch.Tensor | None = None,
+    f,
+    d: int,
+    u,
+    neighbor_table,
+    leaf_center,
+    n_leaf,
+    *,
+    neighbor_velocity: torch.Tensor | None = None,
     neighbor_distance: torch.Tensor | None = None,
 ):
     """Gradient using actual neighbour centre distances along spatial axis.
@@ -132,12 +164,24 @@ def _gradient_centers(
     """
     dp, dm = _AXIS_DIRS[d]
     gp, _, _, vp = _gather_velocity(
-        f, dp, u, torch.zeros_like(u), torch.zeros_like(u), neighbor_table, n_leaf,
+        f,
+        dp,
+        u,
+        torch.zeros_like(u),
+        torch.zeros_like(u),
+        neighbor_table,
+        n_leaf,
         neighbor_velocity=neighbor_velocity,
         neighbor_distance=neighbor_distance,
     )
     gm, _, _, vm = _gather_velocity(
-        f, dm, u, torch.zeros_like(u), torch.zeros_like(u), neighbor_table, n_leaf,
+        f,
+        dm,
+        u,
+        torch.zeros_like(u),
+        torch.zeros_like(u),
+        neighbor_table,
+        n_leaf,
         neighbor_velocity=neighbor_velocity,
         neighbor_distance=neighbor_distance,
     )
@@ -145,6 +189,7 @@ def _gradient_centers(
         dp_t = neighbor_distance[dp].to(dtype=u.dtype, device=u.device)
         dm_t = neighbor_distance[dm].to(dtype=u.dtype, device=u.device)
     else:
+
         def _distance(direction: int, valid: torch.Tensor) -> torch.Tensor:
             nb = neighbor_table[direction]
             idx = nb.clamp(min=0)
@@ -156,13 +201,17 @@ def _gradient_centers(
                 delta[row, axis_vec].abs().clamp_min(1e-12),
                 torch.ones_like(u),
             )
+
         dp_t = _distance(dp, vp)
         dm_t = _distance(dm, vm)
     central = (gp - gm) / (dp_t + dm_t).clamp_min(1e-12)
     one_sided_p = (gp - u) / dp_t.clamp_min(1e-12)
     one_sided_m = (u - gm) / dm_t.clamp_min(1e-12)
-    return torch.where(vp & vm, central, torch.where(vp, one_sided_p,
-                       torch.where(vm, one_sided_m, torch.zeros_like(u))))
+    return torch.where(
+        vp & vm,
+        central,
+        torch.where(vp, one_sided_p, torch.where(vm, one_sided_m, torch.zeros_like(u))),
+    )
 
 
 def _dx_per_leaf(leaf_level: torch.Tensor, base_dx: float = 0.5) -> torch.Tensor:
@@ -215,8 +264,9 @@ def leaf_wale_nu_t(
 
     if os.environ.get("OCTREE_DEBUG_NAN"):
         bad_f = ~torch.isfinite(f)
-        bad_m = ~(torch.isfinite(rho) & torch.isfinite(ux)
-                  & torch.isfinite(uy) & torch.isfinite(uz))
+        bad_m = ~(
+            torch.isfinite(rho) & torch.isfinite(ux) & torch.isfinite(uy) & torch.isfinite(uz)
+        )
         if bool(bad_f.any()):
             print(
                 f"[dbg] leaf_wale_nu_t: f INPUT non-finite {int(bad_f.sum().item())} "
@@ -245,18 +295,26 @@ def leaf_wale_nu_t(
     if leaf_level is not None:
         dx = _dx_per_leaf(leaf_level)
     grad = (
-        (lambda f, d, u, nbt, n_leaf: _gradient_centers(
-            f, d, u, nbt, leaf_center, n_leaf,
-            neighbor_velocity=neighbor_velocity,
-            neighbor_distance=neighbor_distance))
-        if leaf_center is not None else
-        (lambda f, d, u, nbt, n_leaf, dx=dx: _gradient(f, d, u, nbt, n_leaf, dx))
+        (
+            lambda f, d, u, nbt, n_leaf: _gradient_centers(
+                f,
+                d,
+                u,
+                nbt,
+                leaf_center,
+                n_leaf,
+                neighbor_velocity=neighbor_velocity,
+                neighbor_distance=neighbor_distance,
+            )
+        )
+        if leaf_center is not None
+        else (lambda f, d, u, nbt, n_leaf, dx=dx: _gradient(f, d, u, nbt, n_leaf, dx))
     )
 
     # velocity gradient tensor g_ij = ∂u_i / ∂x_j (axis 0=x, 1=y, 2=z)
-    g11 = grad(f, 0, ux, nbt, n_leaf)   # ∂ux/∂x
-    g12 = grad(f, 1, ux, nbt, n_leaf)   # ∂ux/∂y
-    g13 = grad(f, 2, ux, nbt, n_leaf)   # ∂ux/∂z
+    g11 = grad(f, 0, ux, nbt, n_leaf)  # ∂ux/∂x
+    g12 = grad(f, 1, ux, nbt, n_leaf)  # ∂ux/∂y
+    g13 = grad(f, 2, ux, nbt, n_leaf)  # ∂ux/∂z
     g21 = grad(f, 0, uy, nbt, n_leaf)
     g22 = grad(f, 1, uy, nbt, n_leaf)
     g23 = grad(f, 2, uy, nbt, n_leaf)
@@ -265,15 +323,22 @@ def leaf_wale_nu_t(
     g33 = grad(f, 2, uz, nbt, n_leaf)
 
     # S_ij = (g_ij + g_ji)/2
-    S11 = 0.5 * (g11 + g11); S12 = 0.5 * (g12 + g21); S13 = 0.5 * (g13 + g31)
-    S21 = S12;              S22 = 0.5 * (g22 + g22); S23 = 0.5 * (g23 + g32)
-    S31 = S13;              S32 = S23;              S33 = 0.5 * (g33 + g33)
+    S11 = 0.5 * (g11 + g11)
+    S12 = 0.5 * (g12 + g21)
+    S13 = 0.5 * (g13 + g31)
+    S21 = S12
+    S22 = 0.5 * (g22 + g22)
+    S23 = 0.5 * (g23 + g32)
+    S31 = S13
+    S32 = S23
+    S33 = 0.5 * (g33 + g33)
 
-    S2 = (S11**2 + S22**2 + S33**2
-          + 2 * (S12**2 + S13**2 + S23**2))          # |S|²
-    S3 = (S11 * (S22 * S33 - S23 * S32)
-          - S12 * (S21 * S33 - S23 * S31)
-          + S13 * (S21 * S32 - S22 * S31))           # det(S)
+    S2 = S11**2 + S22**2 + S33**2 + 2 * (S12**2 + S13**2 + S23**2)  # |S|²
+    S3 = (
+        S11 * (S22 * S33 - S23 * S32)
+        - S12 * (S21 * S33 - S23 * S31)
+        + S13 * (S21 * S32 - S22 * S31)
+    )  # det(S)
 
     # WALE: nu_t = (C_w dx)² * S3^(2/3) / (S2^(5/2) + S3^(5/3))
     # Use sign-preserving real power for possibly-negative S3, and guard the
@@ -305,12 +370,20 @@ def leaf_smagorinsky_nu_t(
     if leaf_level is not None:
         dx = _dx_per_leaf(leaf_level)
     grad = (
-        (lambda f, d, u, nbt, n_leaf: _gradient_centers(
-            f, d, u, nbt, leaf_center, n_leaf,
-            neighbor_velocity=neighbor_velocity,
-            neighbor_distance=neighbor_distance))
-        if leaf_center is not None else
-        (lambda f, d, u, nbt, n_leaf, dx=dx: _gradient(f, d, u, nbt, n_leaf, dx))
+        (
+            lambda f, d, u, nbt, n_leaf: _gradient_centers(
+                f,
+                d,
+                u,
+                nbt,
+                leaf_center,
+                n_leaf,
+                neighbor_velocity=neighbor_velocity,
+                neighbor_distance=neighbor_distance,
+            )
+        )
+        if leaf_center is not None
+        else (lambda f, d, u, nbt, n_leaf, dx=dx: _gradient(f, d, u, nbt, n_leaf, dx))
     )
 
     g11 = grad(f, 0, ux, nbt, n_leaf)
@@ -323,8 +396,7 @@ def leaf_smagorinsky_nu_t(
     g32 = grad(f, 1, uz, nbt, n_leaf)
     g33 = grad(f, 2, uz, nbt, n_leaf)
 
-    S2 = (g11**2 + g22**2 + g33**2
-          + 0.5 * ((g12 + g21)**2 + (g13 + g31)**2 + (g23 + g32)**2))
+    S2 = g11**2 + g22**2 + g33**2 + 0.5 * ((g12 + g21) ** 2 + (g13 + g31) ** 2 + (g23 + g32) ** 2)
     nu_t = (C_s * dx) ** 2 * torch.sqrt(S2.clamp(min=0.0))
     return torch.clamp(nu_t, min=0.0)
 
@@ -351,15 +423,25 @@ def leaf_les_collide(
     """
     Q = f.shape[0]
     if model == "wale":
-        nu_t = leaf_wale_nu_t(f, neighbor_table, C_w, leaf_level=leaf_level,
-                              leaf_center=leaf_center,
-                              neighbor_velocity=neighbor_velocity,
-                              neighbor_distance=neighbor_distance)
+        nu_t = leaf_wale_nu_t(
+            f,
+            neighbor_table,
+            C_w,
+            leaf_level=leaf_level,
+            leaf_center=leaf_center,
+            neighbor_velocity=neighbor_velocity,
+            neighbor_distance=neighbor_distance,
+        )
     else:
-        nu_t = leaf_smagorinsky_nu_t(f, neighbor_table, C_s, leaf_level=leaf_level,
-                                    leaf_center=leaf_center,
-                                    neighbor_velocity=neighbor_velocity,
-                                    neighbor_distance=neighbor_distance)
+        nu_t = leaf_smagorinsky_nu_t(
+            f,
+            neighbor_table,
+            C_s,
+            leaf_level=leaf_level,
+            leaf_center=leaf_center,
+            neighbor_velocity=neighbor_velocity,
+            neighbor_distance=neighbor_distance,
+        )
 
     # Cap the eddy viscosity so tau_eff stays healthy (nu_t >> nu_molecular
     # would over-relax the MRT shear rows and destabilise the shell).
@@ -376,12 +458,15 @@ def leaf_les_collide(
 
     device = f.device
     from tensorlbm.turbulence import _nu_t_to_tau_eff
+
     if Q == 27:
-        from tensorlbm.d3q27 import macroscopic27, equilibrium27
+        from tensorlbm.d3q27 import equilibrium27, macroscopic27
+
         rho, ux, uy, uz = macroscopic27(f.view(Q, 1, 1, -1))
         feq = equilibrium27(rho, ux, uy, uz)
     elif Q == 19:
-        from tensorlbm.d3q19 import macroscopic3d, equilibrium3d
+        from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+
         rho, ux, uy, uz = macroscopic3d(f.view(Q, 1, 1, -1))
         feq = equilibrium3d(rho, ux, uy, uz)
     else:

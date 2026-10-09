@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate a static 2:1 interface against a uniform-fine reference."""
+
 from __future__ import annotations
 
 import argparse

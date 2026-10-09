@@ -64,11 +64,9 @@ Menter, F. R. & Egorov, Y. (2010). The scale-adaptive simulation method for
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 
 import torch
-import torch.nn.functional as F
 
 __all__ = [
     "DDESConfig",
@@ -252,8 +250,8 @@ def ddes_eddy_viscosity(
     nu_t = torch.clamp(nu_t, min=0.0, max=cfg.nu_t_max)
 
     shield_frac = float((f_d < 0.5).float().mean())
-    rans_frac = float((l_ddes == l_rans).float().mean())
-    les_frac = 1.0 - shield_frac
+    float((l_ddes == l_rans).float().mean())
+    1.0 - shield_frac
 
     return nu_t, f_d, float(nu_t.mean()), float(nu_t.max()), shield_frac
 
@@ -360,7 +358,7 @@ def run_ddes_diagnostics(
         ux, uy, d_wall, cfg, nu_t_prev
     )
 
-    total = nu_t.numel()
+    nu_t.numel()
     rans_frac = float((f_d < 0.5).float().mean())
 
     return DDESResult(

@@ -22,9 +22,8 @@ At α>0°, Cl grows roughly linearly with α for small angles (3D lifting-line).
 
 from __future__ import annotations
 
-import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 
 import torch
@@ -33,16 +32,13 @@ from .boundaries3d import (
     apply_zou_he_channel_boundaries_3d,
     make_channel_wall_mask_3d,
 )
-from .d3q19 import equilibrium3d, macroscopic3d
+from .d3q19 import equilibrium3d
 from .obstacles import compute_obstacle_forces_3d
 from .solver3d import correct_mass3d, stream3d
 from .turbulence import collide_smagorinsky_mrt3d
 from .utils import (
-    get_reproducibility_metadata,
-    prepare_run_dir,
     resolve_device,
 )
-
 
 # ---------------------------------------------------------------------------
 # Ellipsoid geometry: prolate spheroid (x/a)² + (y/b)² + (z/b)² ≤ 1
@@ -201,7 +197,6 @@ def reference_ellipsoid_cd(
     cf = 1.328 / math.sqrt(max(re, 1.0))  # Blasius friction coefficient
 
     # For a 6:1 prolate spheroid (a/b=3), the wetted/frontal area ratio ≈ 9.0
-    a_b = 3.0
     b = 1.0
     a = 3.0
     e2 = 1.0 - (b / a) ** 2
@@ -214,7 +209,6 @@ def reference_ellipsoid_cd(
 
     # Form factor — streamlined body has lower pressure drag than sphere
     # At low Re, separation occurs near the tail → form drag ~0.3-0.6 of friction
-    form_factor = 0.5  # streamline advantage over sphere
     cd_form = cf * 0.5  # form drag proportional to friction at low Re
 
     cd = cd_friction + cd_form

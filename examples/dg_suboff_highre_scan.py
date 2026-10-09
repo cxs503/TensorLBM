@@ -16,8 +16,6 @@ import math
 import pathlib
 import tempfile
 
-import torch
-
 from tensorlbm import DGLBMSuboffConfig, run_dg_lbm_suboff_flow
 
 
@@ -51,7 +49,7 @@ def scan(re, use_real_dg, n_steps=120):
             drag = m.get("drag_force_lu", float("nan"))
             ok = math.isfinite(ms) and ms < 5.0
             return tau, ms, drag, ok
-        except Exception as e:
+        except Exception:
             return tau, float("nan"), float("nan"), False
 
 

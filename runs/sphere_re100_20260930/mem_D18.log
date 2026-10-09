@@ -1,0 +1,29 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[sphmem D=18 306x288x288] Re=100.0 u_in=0.06 nu=0.010800 tau=0.532400 dpS=0.458044
+[sphmem D=18 306x288x288] solid=3071 surface=794 interior=2277 (blockage 6.25%, domain 17.0D x 16.0D)
+[compile_route] sphere_re100_mem[D18]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
+[sphmem D=18 306x288x288] step=1000 Cd_mem_surf=1.3018 Cd_mem_all=1.3228 Cd_mem_int=0.0210 (2454s)
+[sphmem D=18 306x288x288] step=2000 Cd_mem_surf=1.2345 Cd_mem_all=1.2565 Cd_mem_int=0.0219 (4812s)
+[sphmem D=18 306x288x288] step=3000 Cd_mem_surf=1.2052 Cd_mem_all=1.2273 Cd_mem_int=0.0221 (7380s)
+[sphmem D=18 306x288x288] step=4000 Cd_mem_surf=1.1891 Cd_mem_all=1.2112 Cd_mem_int=0.0221 (9584s)
+[sphmem D=18 306x288x288] step=5000 Cd_mem_surf=1.1791 Cd_mem_all=1.2012 Cd_mem_int=0.0221 (11806s)
+[sphmem D=18 306x288x288] step=6000 Cd_mem_surf=1.1723 Cd_mem_all=1.1944 Cd_mem_int=0.0221 (13835s)
+[sphmem D=18 306x288x288] step=7000 Cd_mem_surf=1.1674 Cd_mem_all=1.1895 Cd_mem_int=0.0221 (15808s)
+[sphmem D=18 306x288x288] === FINAL win=70 === Cd_mem_surface=1.1674 err_SN=+6.93% | Cd_mem_all=1.1895 Cd_mem_interior=0.0221 (15809s)
+[sphmem D=18 306x288x288] saved final field -> runs/sphere_re100_20260930/mem_D18.json.field.pt
+[sphmem] saved runs/sphere_re100_20260930/mem_D18.json

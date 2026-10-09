@@ -32,6 +32,7 @@ Run (CPU smoke)::
         --shell-margin 8 --wake-cells 25 --report-interval 50 \
         --output /tmp/shell_smoke.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -70,7 +71,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--nx", type=int, default=160)
     p.add_argument("--ny", type=int, default=112)
     p.add_argument("--nz", type=int, default=112)
-    p.add_argument("--radius", type=float, default=8.0)      # coarse-grid sphere radius
+    p.add_argument("--radius", type=float, default=8.0)  # coarse-grid sphere radius
     p.add_argument("--reynolds", type=float, default=100.0)
     p.add_argument("--lattice-speed", type=float, default=0.06)
     p.add_argument("--steps", type=int, default=3000)
@@ -118,13 +119,23 @@ def main() -> None:
     # ---- here, so the level-0 freeze is dormant but keeps partial-shell runs
     # ---- geometrically consistent).
     solid_coarse, solid_coarse_q = build_sphere_geometry(
-        args.nx, args.ny, args.nz, cx, cy, cz, args.radius, device,
+        args.nx,
+        args.ny,
+        args.nz,
+        cx,
+        cy,
+        cz,
+        args.radius,
+        device,
     )
 
     # ---- body-fitted shell refinement region: hull-proximity surface shell
     # ---- (cells within shell_margin of the sphere surface) + downstream wake.
     plan = plan_body_shell_box(
-        solid_coarse, args.shell_margin, args.wake_cells, pad=2,
+        solid_coarse,
+        args.shell_margin,
+        args.wake_cells,
+        pad=2,
     )
     box = plan.box
     x0, x1, y0, y1, z0, z1 = box.x0, box.x1, box.y0, box.y1, box.z0, box.z1
@@ -143,10 +154,19 @@ def main() -> None:
     # ---- cells the fine block covers — robust whether or not the shell box
     # ---- contains the sphere centre (partial-shell case).
     fine_shape, fine_center, r_fine, fs = build_fine_block_geometry(
-        box, (cx, cy, cz), args.radius, ratio, g, device,
+        box,
+        (cx, cy, cz),
+        args.radius,
+        ratio,
+        g,
+        device,
     )
     fine_solid, fine_solid_g, solid_q, bfl_mask, bfl_q = (
-        fs.solid, fs.solid_g, fs.solid_q, fs.bfl_mask, fs.bfl_q,
+        fs.solid,
+        fs.solid_g,
+        fs.solid_q,
+        fs.bfl_mask,
+        fs.bfl_q,
     )
 
     print(
@@ -161,7 +181,8 @@ def main() -> None:
     amr = StaticBlockAMR3D(
         coarse_f,
         StaticBlockAMRConfig(
-            box, tau_coarse=tau_coarse,
+            box,
+            tau_coarse=tau_coarse,
             reflux=True,
             maximum_reflux_correction_fraction=0.2,
             ghost_interpolation=args.ghost_interpolation,
@@ -180,13 +201,19 @@ def main() -> None:
     # ---- control volume on the fine grid (with ghost offset), clamped to the
     # ---- strictly-interior range required by box_control_volume.
     cv = build_control_volume(
-        fine_solid_g.shape, fine_center, r_fine, args.cv_margin, device,
+        fine_solid_g.shape,
+        fine_center,
+        r_fine,
+        args.cv_margin,
+        device,
     )
 
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sigma = build_sponge_sigma_3d(
-        shape, width=args.sponge_width,
-        max_strength=args.sponge_strength, device=device,
+        shape,
+        width=args.sponge_width,
+        max_strength=args.sponge_strength,
+        device=device,
         faces=sponge_faces,
     )
     dynamic_area = 0.5 * args.lattice_speed**2 * math.pi * r_fine**2
@@ -197,20 +224,33 @@ def main() -> None:
     started = time.time()
 
     def advance(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         nonlocal max_reflux_residual, max_reflux_correction
         if level == 0:
             out, _post_collision, collided = root_advance(
-                f, tau, solid_coarse_q, sigma, args.lattice_speed,
+                f,
+                tau,
+                solid_coarse_q,
+                sigma,
+                args.lattice_speed,
             )
             return AMRAdvanceResult(out, collided)
 
         out, post_collision, cv_force = fine_sphere_advance(
-            f, tau,
-            solid_q=solid_q, bfl_mask=bfl_mask, bfl_q=bfl_q,
-            step=current_step, ramp_steps=args.ramp_steps,
-            sample_cv=(substep == 1), cv=cv, solid_g=fine_solid_g,
+            f,
+            tau,
+            solid_q=solid_q,
+            bfl_mask=bfl_mask,
+            bfl_q=bfl_q,
+            step=current_step,
+            ramp_steps=args.ramp_steps,
+            sample_cv=(substep == 1),
+            cv=cv,
+            solid_g=fine_solid_g,
         )
         if substep == 1:  # one sample per coarse step
             assert cv_force is not None
@@ -231,10 +271,9 @@ def main() -> None:
             fine_finite = bool(torch.isfinite(amr.fine_f).all())
             if not (coarse_finite and fine_finite):
                 raise FloatingPointError(
-                    f"AMR shell run diverged (non-finite populations) at step "
-                    f"{current_step}",
+                    f"AMR shell run diverged (non-finite populations) at step {current_step}",
                 )
-            recent = force_samples[-min(len(force_samples), args.report_interval):]
+            recent = force_samples[-min(len(force_samples), args.report_interval) :]
             recent_cd = sum(recent) / len(recent) / dynamic_area if recent else math.nan
             elapsed = time.time() - started
             print(
@@ -245,7 +284,10 @@ def main() -> None:
             )
 
     summary = summarize_force_history(
-        force_samples, dynamic_area, args.reynolds, args.statistics_window_steps,
+        force_samples,
+        dynamic_area,
+        args.reynolds,
+        args.statistics_window_steps,
     )
     cd = summary["cd"]
     reference = summary["reference_cd"]

@@ -63,7 +63,7 @@ Dupuis A., Chopard B. (2003)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import torch
@@ -188,9 +188,11 @@ def _fh_coarse_to_fine_3d(
 
     # Cell-block upsampling (correct ratio-2 coordinate mapping).
     b19, nz_c, ny_c, nx_c = f_rescaled.shape
-    out = (f_rescaled.repeat_interleave(ratio, dim=1)
-           .repeat_interleave(ratio, dim=2)
-           .repeat_interleave(ratio, dim=3))
+    out = (
+        f_rescaled.repeat_interleave(ratio, dim=1)
+        .repeat_interleave(ratio, dim=2)
+        .repeat_interleave(ratio, dim=3)
+    )
     return out.contiguous()
 
 

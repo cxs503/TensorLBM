@@ -4,8 +4,9 @@ Original: 168 sequential SDAA ops per call → 300ms
 Vectorized: ~5 batch ops per call → ~5ms
 """
 
-import math, torch
-from tensorlbm.ibm import ibm_delta_hat, ibm_delta_4pt
+import torch
+
+from tensorlbm.ibm import ibm_delta_4pt, ibm_delta_hat
 
 __all__ = [
     "ibm_velocity_interpolate_3d_vec",

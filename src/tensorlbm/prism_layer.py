@@ -27,7 +27,7 @@ from typing import Optional
 import torch
 
 # Re-use the DG operators from the existing infrastructure
-from .dg_advection import _Ops, lobatto_nodes, _lagrange_basis_matrices
+from .dg_advection import _Ops
 
 # ---------------------------------------------------------------------------
 # Prism layer data structures
@@ -264,7 +264,7 @@ def generate_prism_layers(
     # shape: (n_layers, n_surface, ndim)
 
     # 4. Build the Cartesian-lattice mask: cells covered by prism layers
-    n_total_prism = n_layers * n_surface
+    n_layers * n_surface
 
     # Mark all prism-covered cells: we snap layer centres to the nearest
     # grid cell and mark them as "prism band" (removed from LBM).

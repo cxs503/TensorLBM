@@ -12,21 +12,21 @@ from __future__ import annotations
 
 import math
 
-import pytest
 import torch
 
 from tensorlbm.boundaries import far_field_bc_2d
 from tensorlbm.boundaries3d import far_field_bc_3d
 from tensorlbm.boundaries_d3q27 import far_field_bc_27
+from tensorlbm.cylinder_cross_validation import run_single_combination as run_cylinder
 from tensorlbm.d2q9 import equilibrium
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.d3q27 import equilibrium27
-from tensorlbm.cylinder_cross_validation import run_single_combination as run_cylinder
 from tensorlbm.sphere_cross_validation import (
     SphereCrossValidationConfig,
+)
+from tensorlbm.sphere_cross_validation import (
     _run_single_combination as run_sphere_single,
 )
-
 
 # ---------------------------------------------------------------------------
 # far_field_bc_27 unit tests

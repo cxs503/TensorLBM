@@ -2,14 +2,15 @@
 TensorLBM 高精度基准测试 — GPU加密网格 对标文献值
 """
 
-import json, math, time
+import json
+import time
 from pathlib import Path
 
 from tensorlbm import CylinderFlowConfig, run_cylinder_flow
-from tensorlbm.pipeline_flow import PipelineFlowConfig, run_pipeline_flow
-from tensorlbm.turbulent_channel import TurbulentChannelConfig, run_turbulent_channel
-from tensorlbm.sphere_flow import SphereFlowConfig, run_sphere_flow
 from tensorlbm.backward_facing_step import BackwardFacingStepConfig, run_backward_facing_step
+from tensorlbm.pipeline_flow import PipelineFlowConfig, run_pipeline_flow
+from tensorlbm.sphere_flow import SphereFlowConfig, run_sphere_flow
+from tensorlbm.turbulent_channel import TurbulentChannelConfig, run_turbulent_channel
 
 OUTPUT = Path("outputs/benchmarks_fine")
 
@@ -179,4 +180,4 @@ header("BENCHMARK SUMMARY")
 total = 8
 passed = sum([r1a, r1b, r2, r3, r4]) + (sphere_ok >= 2)
 print(f"\n  Passed: {passed}/{total} (threshold: <15% error)")
-print(f"  GPU: NVIDIA RTX 3090 24GB")
+print("  GPU: NVIDIA RTX 3090 24GB")

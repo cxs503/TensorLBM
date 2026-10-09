@@ -18,16 +18,15 @@ from typing import Any
 import pytest
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.suboff_cmk_kbc_runner import (
     COMBINATIONS,
     SuboffCmkKbcConfig,
-    _compute_sgs_tau_eff,
     _collide_with_sgs,
+    _compute_sgs_tau_eff,
     run_suboff_cmk_kbc,
     write_artifact,
 )
-
 
 # ---------------------------------------------------------------------------
 # Small-grid config factory

@@ -23,14 +23,16 @@ Outputs (to outputs/bubble_static_3d/):
     * sigma_fit.json      - per-radius measurements + fitted σ_eff
     * console summary
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -84,10 +86,8 @@ def initial_distributions(nx, ny, nz, R, rho_heavy, rho_light, device):
     r = torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2)
     inside = r <= R
     zero = torch.zeros((nz, ny, nx), device=device)
-    rho1 = torch.where(inside, torch.full_like(zero, rho_light),
-                       torch.full_like(zero, rho_heavy))
-    rho2 = torch.where(inside, torch.full_like(zero, rho_heavy),
-                       torch.full_like(zero, rho_light))
+    rho1 = torch.where(inside, torch.full_like(zero, rho_light), torch.full_like(zero, rho_heavy))
+    rho2 = torch.where(inside, torch.full_like(zero, rho_heavy), torch.full_like(zero, rho_light))
     f1 = equilibrium3d(rho1, zero, zero, zero)
     f2 = equilibrium3d(rho2, zero, zero, zero)
     return f1, f2
@@ -129,8 +129,7 @@ def measure_profile(rho_total, ux, uy, uz, cfg):
     for r in radii:
         idx = int(nx // 2 + r)
         rho_vals.append(float(line_rho[idx]))
-        u_mag_vals.append(float(np.sqrt(line_ux[idx] ** 2 +
-                                        line_uy[idx] ** 2 + line_uz[idx] ** 2)))
+        u_mag_vals.append(float(np.sqrt(line_ux[idx] ** 2 + line_uy[idx] ** 2 + line_uz[idx] ** 2)))
         p_vals.append(float(line_rho[idx]) / 3.0)
     return {
         "radii": radii,
@@ -181,12 +180,17 @@ def plot_profile(profile, cfg, R_focus, out_path):
 def main():
     args = build_parser().parse_args()
     cfg = BubbleStaticConfig(
-        nx=args.nx, ny=args.ny, nz=args.nz,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
         radii=tuple(args.radii),
-        G12=args.G12, tau=args.tau,
-        rho_heavy=args.rho_heavy, rho_light=args.rho_light,
+        G12=args.G12,
+        tau=args.tau,
+        rho_heavy=args.rho_heavy,
+        rho_light=args.rho_light,
         n_steps=args.n_steps,
-        output_root=args.output_root, run_name=args.run_name,
+        output_root=args.output_root,
+        run_name=args.run_name,
         device=args.device,
     )
     use_cuda = cfg.device == "cuda" and torch.cuda.is_available()
@@ -209,30 +213,46 @@ def main():
             print(f"  [skip] R={R}: too large for nx={cfg.nx}")
             continue
         print(f"\n--- R = {R} ---")
-        f1, f2 = initial_distributions(cfg.nx, cfg.ny, cfg.nz, R,
-                                       cfg.rho_heavy, cfg.rho_light, device)
+        f1, f2 = initial_distributions(
+            cfg.nx, cfg.ny, cfg.nz, R, cfg.rho_heavy, cfg.rho_light, device
+        )
         for step in range(cfg.n_steps):
             f1, f2 = collide_sc_two_component_3d(
-                f1, f2, G_12=cfg.G12, tau1=cfg.tau, tau2=cfg.tau,
+                f1,
+                f2,
+                G_12=cfg.G12,
+                tau1=cfg.tau,
+                tau2=cfg.tau,
             )
             f1 = stream3d(f1)
             f2 = stream3d(f2)
             if (step + 1) % 500 == 0 or step == 0:
                 rho_m, ux_m, uy_m, uz_m = macroscopic3d(f1 + f2)
-                u_max = float(torch.sqrt(ux_m ** 2 + uy_m ** 2 + uz_m ** 2).max())
+                u_max = float(torch.sqrt(ux_m**2 + uy_m**2 + uz_m**2).max())
                 rho_c = float(rho_m[cfg.nz // 2, cfg.ny // 2, cfg.nx // 2])
-                print(f"  step {step+1:5d}/{cfg.n_steps}  "
-                      f"rho_centre={rho_c:.4f}  |u|_max={u_max:.2e}")
+                print(
+                    f"  step {step + 1:5d}/{cfg.n_steps}  "
+                    f"rho_centre={rho_c:.4f}  |u|_max={u_max:.2e}"
+                )
 
         rho_f, ux_f, uy_f, uz_f = macroscopic3d(f1 + f2)
-        u_max_final = float(torch.sqrt(ux_f ** 2 + uy_f ** 2 + uz_f ** 2).max())
+        u_max_final = float(torch.sqrt(ux_f**2 + uy_f**2 + uz_f**2).max())
         p_in, p_out, dp = measure_pressure_jump(rho_f, R)
         sigma_eff_one = abs(dp) * R / 2.0  # single-radius estimate
-        per_r.append({"R": R, "p_in": p_in, "p_out": p_out,
-                      "dp": dp, "sigma_eff_one": sigma_eff_one,
-                      "max_u": u_max_final})
-        print(f"  R={R}  p_in={p_in:.5e}  p_out={p_out:.5e}  "
-              f"dp={dp:.5e}  sigma(R)={sigma_eff_one:.5e}  |u|_max={u_max_final:.3e}")
+        per_r.append(
+            {
+                "R": R,
+                "p_in": p_in,
+                "p_out": p_out,
+                "dp": dp,
+                "sigma_eff_one": sigma_eff_one,
+                "max_u": u_max_final,
+            }
+        )
+        print(
+            f"  R={R}  p_in={p_in:.5e}  p_out={p_out:.5e}  "
+            f"dp={dp:.5e}  sigma(R)={sigma_eff_one:.5e}  |u|_max={u_max_final:.3e}"
+        )
 
         if R == R_focus_for_plot:
             profile_focus = measure_profile(rho_f, ux_f, uy_f, uz_f, cfg)
@@ -243,11 +263,13 @@ def main():
     mean_u = float(np.mean([d["max_u"] for d in per_r]))
 
     print("\n=== Surface tension fit (Young-Laplace) ===")
-    print(f"  Per-radius results:")
+    print("  Per-radius results:")
     for d in per_r:
-        print(f"    R={d['R']:5.1f}  dp={d['dp']:+.5e}  "
-              f"sigma(R)={d['sigma_eff_one']:.5e}  |u|_max={d['max_u']:.3e}")
-    print(f"  Fitted sigma_eff (ΔP = sigma_eff / R, least-squares through origin):")
+        print(
+            f"    R={d['R']:5.1f}  dp={d['dp']:+.5e}  "
+            f"sigma(R)={d['sigma_eff_one']:.5e}  |u|_max={d['max_u']:.3e}"
+        )
+    print("  Fitted sigma_eff (ΔP = sigma_eff / R, least-squares through origin):")
     print(f"    sigma_eff = {sigma_fit:.6e}  (lattice units)")
     print(f"  Mean |u|_max across radii = {mean_u:.3e}")
 

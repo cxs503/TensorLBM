@@ -11,11 +11,11 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from .free_surface_transaction_contract import (
+    WITHHELD_NO_POPULATION_TRANSFER,
     CellConversion,
     CellState,
     TransactionContractReport,
     TransactionInput,
-    WITHHELD_NO_POPULATION_TRANSFER,
     diagnose_korner_i_to_g_transaction,
 )
 

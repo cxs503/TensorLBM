@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Assess a declared resolution/value sequence and write JSON evidence."""
+
 from __future__ import annotations
 
 import argparse

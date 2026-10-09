@@ -14,19 +14,14 @@ import pytest
 from tensorlbm.acoustics_capability_contract import (
     NO_IMPLEMENTATION,
     VERIFICATION_CONTRACT_TESTED,
-    VERIFICATION_NO_IMPLEMENTATION,
-    WITHHELD_NO_IMPLEMENTATION,
     WITHHELD_NO_PHYSICS_VALIDATION,
     WITHHELD_UNKNOWN_FUNCTION,
     WITHHELD_UNKNOWN_LATTICE,
-    AcousticsCapability,
     AcousticsWithheldError,
-    PostProcessingAudit,
     acoustics_capability_matrix,
     acoustics_post_processing_audit,
     require_acoustics_capability,
 )
-
 
 # ---------------------------------------------------------------------------
 # Matrix structure

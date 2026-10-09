@@ -1,0 +1,27 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[shim] compile_route loaded, teco tag=sdaa-teco_inductor
+[canonical] R=9.0 shape_zyx=(144,144,216) cells=4478976 est_GiB=4.2 steps=7200 warmup=4800 window=2400 nu=0.0108 tau=0.532400
+Traceback (most recent call last):
+  File "/root/TensorLBM_feat2/benchmarks/pending/sphere_re100/run_canonical.py", line 145, in <module>
+    main()
+  File "/root/TensorLBM_feat2/benchmarks/pending/sphere_re100/run_canonical.py", line 129, in main
+    result = run_sphere_bfl_control_volume(cfg)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/TensorLBM_feat2/src/tensorlbm/sphere_bfl_control_volume.py", line 441, in run_sphere_bfl_control_volume
+    raise FloatingPointError(f"sphere benchmark diverged at step {step}")
+FloatingPointError: sphere benchmark diverged at step 19

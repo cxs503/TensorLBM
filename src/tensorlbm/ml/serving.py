@@ -65,8 +65,7 @@ class OnnxUnavailableError(RuntimeError):
 
     def __init__(self) -> None:
         super().__init__(
-            "ONNX export requires the optional 'onnx' package. "
-            "Install it with: pip install onnx"
+            "ONNX export requires the optional 'onnx' package. Install it with: pip install onnx"
         )
 
 
@@ -102,12 +101,8 @@ class ModelMetadata:
     version: str = "1"
     framework: str = "torch"
     family: str = FAMILY_EDDY_MLP
-    input_shapes: Mapping[str, Sequence[int | None]] = field(
-        default_factory=dict
-    )
-    output_shapes: Mapping[str, Sequence[int | None]] = field(
-        default_factory=dict
-    )
+    input_shapes: Mapping[str, Sequence[int | None]] = field(default_factory=dict)
+    output_shapes: Mapping[str, Sequence[int | None]] = field(default_factory=dict)
     lineage: Mapping[str, Any] = field(default_factory=dict)
     arch: Mapping[str, Any] = field(default_factory=dict)
 
@@ -180,6 +175,7 @@ def infer_io_shapes(
 # ---------------------------------------------------------------------------
 # Model registry
 # ---------------------------------------------------------------------------
+
 
 class ModelRegistry:
     """SQLite-backed model registry reusing ``tensorlbm.ai.database``.
@@ -259,6 +255,7 @@ class ModelRegistry:
 # Inference service
 # ---------------------------------------------------------------------------
 
+
 class InferenceService:
     """Load registered models and run forward inference.
 
@@ -294,15 +291,15 @@ class InferenceService:
         from tensorlbm.ai.transformer import (
             load_flow_transformer_model as _load_transformer,
         )
-        from tensorlbm.apps.mesh_gnn_flow import load_mesh_gnn as _load_gnn
-        from tensorlbm.apps.physics_informed_lbm import (
-            load_pinn_model as _load_pinn,
+        from tensorlbm.apps.generative_flow import (
+            load_diffusion_model as _load_diffusion,
         )
         from tensorlbm.apps.inverse_problem import (
             load_inverse_model as _load_inverse,
         )
-        from tensorlbm.apps.generative_flow import (
-            load_diffusion_model as _load_diffusion,
+        from tensorlbm.apps.mesh_gnn_flow import load_mesh_gnn as _load_gnn
+        from tensorlbm.apps.physics_informed_lbm import (
+            load_pinn_model as _load_pinn,
         )
         from tensorlbm.apps.uncertainty_quantification import (
             load_uq_mlp as _load_uq,
@@ -327,9 +324,7 @@ class InferenceService:
         else:
             raise ValueError(f"Unsupported model family: {family!r}")
         if not isinstance(model, nn.Module):
-            raise TypeError(
-                f"Loaded model of family {family!r} is not an nn.Module"
-            )
+            raise TypeError(f"Loaded model of family {family!r} is not an nn.Module")
         return model
 
     # -- inference --------------------------------------------------------
@@ -395,6 +390,7 @@ class InferenceService:
 # ---------------------------------------------------------------------------
 # ONNX export
 # ---------------------------------------------------------------------------
+
 
 def _as_tensor_tuple(value: object) -> tuple[torch.Tensor, ...]:
     if isinstance(value, torch.Tensor):

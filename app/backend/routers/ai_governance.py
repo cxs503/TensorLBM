@@ -88,7 +88,7 @@ def _resolve_policy(scenario: str, model_id: str) -> dict[str, Any]:
 @router.get("/registry-summary")
 async def registry_summary(limit: int = 200) -> dict[str, Any]:
     """Summarize AI model registry records for governance reporting."""
-    from tensorlbm import LBMDatabase
+    from tensorlbm.ai.database import LBMDatabase
 
     db_path = _AI_ROOT / "platform.db"
     if not db_path.exists():

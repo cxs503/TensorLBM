@@ -11,7 +11,6 @@ from __future__ import annotations
 import importlib
 
 from ..backends import get_backend, set_backend  # re-export for convenience
-
 from .database import (
     LBMDatabase,
     connect,
@@ -29,6 +28,27 @@ from .dataset import (
     load_dataset_pt,
     save_dataset_pt,
     strain_rate_tensor_2d,
+)
+from .drag_surrogate import (
+    DragNorm,
+    DragSplit,
+    DragTrainConfig,
+    DragTrainResult,
+    FNODragArch,
+    FNODragRegressor,
+    ParamNorm,
+    PlaneSampleSpec,
+    build_drag_split,
+    load_drag_regressor,
+    load_exact_cd,
+    load_exact_cd_per_point,
+    power_law_fit,
+    power_law_predict,
+    predict_cd,
+    regression_metrics,
+    run_drag_surrogate_study,
+    save_drag_regressor,
+    train_drag_surrogate,
 )
 from .fno import FNO2d, FNO2dArch, load_fno2d, save_fno2d
 from .inference import collide_ai_les_bgk, predict_nu_t_2d, predict_tau_eff_2d
@@ -75,6 +95,26 @@ __all__ = [
     "FNO2d",
     "save_fno2d",
     "load_fno2d",
+    # field-to-drag surrogate
+    "FNODragArch",
+    "FNODragRegressor",
+    "DragNorm",
+    "DragSplit",
+    "DragTrainConfig",
+    "DragTrainResult",
+    "ParamNorm",
+    "PlaneSampleSpec",
+    "build_drag_split",
+    "load_exact_cd",
+    "load_exact_cd_per_point",
+    "power_law_fit",
+    "power_law_predict",
+    "predict_cd",
+    "regression_metrics",
+    "run_drag_surrogate_study",
+    "save_drag_regressor",
+    "load_drag_regressor",
+    "train_drag_surrogate",
     # train
     "TrainConfig",
     "train_eddy_viscosity_model",
@@ -98,7 +138,7 @@ __all__ = [
 ]
 
 # SUBOFF 3D surrogate modules
-from tensorlbm.ai.nn import encoder_module, decoder_module, attention_module
+from tensorlbm.ai.nn import attention_module, decoder_module, encoder_module
 from tensorlbm.ai.suboff_coord import coord_ori27, coord_ori28, coord_ori28_addition
 from tensorlbm.ai.suboff_dataset import (
     CylinderDatasetMultiRe14,

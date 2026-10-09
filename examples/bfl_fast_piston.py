@@ -4,11 +4,17 @@ Previous test had q=1.0 always (slow piston). This script tests
 faster piston speeds to exercise the BFL distance correction.
 """
 
-import sys, math, torch
+import math
+import sys
+
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C as C3D, W as W3D, OPPOSITE as OPP
-from tensorlbm.solver3d import stream3d, collide_bgk3d
+from tensorlbm.d3q19 import OPPOSITE as OPP
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 
 def run_bfl_fast(piston_speed=0.05, n_steps=4000, device="sdaa:9"):

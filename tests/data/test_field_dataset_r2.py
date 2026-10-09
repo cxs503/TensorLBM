@@ -13,14 +13,13 @@ from tensorlbm.data.field_r2 import (
     ArrayManifestR2,
     ArrayRole,
     AxisSemantic,
-    ByteOrder,
     AxisSpec,
     BlobRef,
+    ByteOrder,
     FieldDataProductR2,
     MemoryOrder,
 )
 from tensorlbm.runtime import ArtifactManifest, MetricEvidence, RunManifest, ValidationStatus
-
 
 _CODE_SHA = "a" * 40
 

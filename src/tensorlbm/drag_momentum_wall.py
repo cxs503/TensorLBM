@@ -20,7 +20,8 @@ For q=0.5 (flat wall): f_wall = f_opp → same as standard BB+ME (verified 0.005
 from __future__ import annotations
 
 import torch
-from .d3q19 import C, OPPOSITE
+
+from .d3q19 import OPPOSITE, C
 
 
 def drag_momentum_exchange_wall(

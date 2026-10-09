@@ -13,7 +13,6 @@ Verifies:
 
 from __future__ import annotations
 
-import pytest
 import torch
 
 from tensorlbm import (
@@ -21,9 +20,9 @@ from tensorlbm import (
     collide_sc_two_component_27,
     equilibrium27,
     macroscopic27,
+    psi_exp,
     sc_two_component_force_27,
     stream27,
-    psi_exp,
 )
 
 DEVICE = torch.device("cpu")

@@ -1,0 +1,765 @@
+"""L1 middle block: coarse -> L1 (2x) -> shell-leaf three-level hierarchy.
+
+Stage 1 of ``docs/L1_MIDDLE_BLOCK_INTEGRATION_DESIGN.md`` (sections 3b/3d).
+The L1 block is **replicated on every rank** (design Phase 1): the only new
+collectives are the three chunked window ``all_gather``s (< 3MB/msg each);
+the L1 stage itself performs zero communication and every operator
+(cumulant collide, ``torch.roll`` streaming, ``torch.where`` freeze, stable
+segmented reductions) is deterministic, so all ranks' L1 copies stay
+bit-identical without any synchronization.
+
+Layout
+------
+The persistent L1 tensor is ``(Q, nz_l1+2g, ny_l1+2g, nx_l1+2g)`` — a
+``g``-cell ghost ring (``g = ghost``, 1 by default, up to 3), the same
+layout as ``StaticBlockAMR3D.fine_f``.  ``nz_l1 =
+2*(box.z1-box.z0)`` etc.  The physical interior ``[:, g:-g, g:-g, g:-g]`` is
+the L1 field handed to the octree shell (``octree.meta["shape"]``); the
+ghost ring is re-filled every substep from the time-lerped coarse window
+(injection 2:1 + non-equilibrium rescale), so the block needs no far-field /
+sponge / bounce-back of its own (it is strictly interior to the coarse
+domain, design §3b).  The coarse window itself carries a ``g``-cell ring
+around the box (``WindowInfo``), so the outer ghost layers sample genuine
+coarse flow outside the box rather than the box-adjacent ring that the L1
+restriction write-back + box reflux corrections perturb (audit 2026-08,
+SUBOFF L1 force-deficit fix).
+
+Per root step::
+
+    l1_phys_pre, posts_phys, posts_ghost = step_l1_block_distributed(
+        block, coarse_window_old, coarse_window_new)
+    # ... shell stage (see octree_integrated_validate.py):
+    # step_octree_shell_distributed(octree, advance_shell, l1_phys_pre,
+    #     block.physical_copy(), tau_coarse=block.tau_l1,
+    #     l1_post=posts_phys, reflux=True, ...) -> mutates the copy
+    block.set_physical(l1_f_phys)
+    ledger = restrict_l1_block_to_coarse(block, coarse_window_new,
+                                         coarse_window_post)
+    write_window_back(coarse_f, coarse_window_new, block.win, in_slab, lo)
+
+``posts_phys`` are the per-substep post-collision *physical* slices used by
+the shell reflux observation (``l1_post`` list); ``posts_ghost`` are the
+with-ghost post-collision states used by the coarse<->L1 box reflux
+observation (``cell_volume = 1/8``, same convention as
+``StaticBlockAMR3D.step``).
+
+Freeze semantics
+----------------
+Solid L1 cells (``octree._solid``, L1 frame, mapped to the with-ghost grid)
+are kept bitwise frozen across every substep: ``frozen = where(solid,
+before, streamed)`` and the captured post-collision state is
+``post_frozen = where(solid, before, post)`` (the state whose streaming
+actually crosses the AMR interfaces).  This matches the design's
+``torch.where(l1_solid_q, before, collided)`` and prevents the L1 from
+evolving (or streaming through) the body interior; the wall force remains
+the shell BFL's exclusive responsibility.
+
+Interface filter
+----------------
+``L1BlockDistributed(interface_filter=(width, strength))`` restores the
+single-card ``StaticBlockAMR3D._filter_fine_interface`` step that the
+distributed L1 advance historically omitted: after every substep's stream,
+:func:`tensorlbm.amr_interface_filter.damp_interface_nonequilibrium` damps
+the kinetic residual (above the resolved second-order stress) on the L1
+physical shell adjacent to the L1/coarse interface, keeping density,
+momentum and the resolved stress intact.  Default ``None`` = unfiltered
+advance, bitwise identical to the pre-filter code path.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import torch
+import torch.distributed as dist
+
+from tensorlbm.amr_interface_filter import (
+    damp_interface_nonequilibrium,
+    interface_shell_blend,
+)
+from tensorlbm.amr_population_transfer import rescale_nonequilibrium
+from tensorlbm.d3q27 import equilibrium27
+from tensorlbm.fixed_nested_transfer import restrict_populations_2to1
+from tensorlbm.kinetic_flux_register import (
+    KineticInterfaceLinks,
+    apply_face_local_reflux,
+    build_kinetic_interface_links,
+    observe_kinetic_interface_transfer,
+)
+from tensorlbm.octree_boundary.stepping import _tau_chain  # noqa: F401 (documented reuse)
+from tensorlbm.refinement import BoxRegion
+from tensorlbm.static_block_amr import (
+    PopulationRefluxLedger,
+    convective_refined_tau,
+)
+
+__all__ = [
+    "L1BlockDistributed",
+    "WindowInfo",
+    "build_window_indices",
+    "gather_window_chunked",
+    "restrict_l1_block_to_coarse",
+    "step_l1_block_distributed",
+    "write_window_back",
+]
+
+
+@dataclass(frozen=True)
+class WindowInfo:
+    """The coarse box + 1-cell ring window (global coarse coordinates).
+
+    ``cells`` is the ``(n_win, 3)`` int64 array of global ``(z, y, x)``
+    window cells in row-major order (z-major, then y, then x).
+    """
+
+    z0: int
+    z1: int
+    y0: int
+    y1: int
+    x0: int
+    x1: int
+    cells: torch.Tensor
+
+    @property
+    def shape(self) -> tuple[int, int, int]:
+        return (self.z1 - self.z0 + 1, self.y1 - self.y0 + 1, self.x1 - self.x0 + 1)
+
+
+def build_window_indices(
+    domain_shape: tuple[int, int, int],
+    box: BoxRegion,
+    device: torch.device,
+    ring: int = 1,
+) -> WindowInfo:
+    """Box + ``ring``-cell ring cell set, clipped to the coarse domain.
+
+    The ring must be complete on every side (the coarse reflux correction
+    stencil and the L1 ghost donors both live in the ring), which requires
+    the box to keep at least a ``ring``-cell margin from the domain
+    boundary — ``plan_body_shell_box`` with ``pad >= ring`` guarantees
+    this.  Ring completeness is **enforced** here (unlike the old
+    strictly-interior check, which silently accepted a ring clipped by the
+    domain edge): if any side of the ring would be truncated the window
+    cannot supply the ghost donors it was sized for, so we raise instead of
+    silently degrading.  Audit 2026-08 (SUBOFF L1 force-deficit fix):
+    the window ring is widened from 1 to 2-3 cells (``ring`` tracks the
+    L1 ghost depth) so the L1 ghost supply band samples genuine coarse
+    flow outside the box instead of the narrow box-adjacent ring that the
+    L1 restriction write-back + box reflux corrections perturb.  The
+    2026-08-17 de-pollution pass decouples ``window_ring`` from the ghost
+    depth (``L1BlockDistributed(window_ring=...)``) so the supply frame
+    can be deepened to 6-8 cells independently of the ghost depth.
+
+    The high-side convention is inclusive: the window covers
+    ``[box.z0 - ring, box.z1 + ring]``, so the ring extends exactly
+    ``ring`` cells beyond the box on the low side and ``ring`` cells on
+    the high side (plus one buffer cell when ``box.z1 + ring < nz``).
+    """
+    nz, ny, nx = domain_shape
+    z0 = max(0, box.z0 - ring)
+    z1 = min(nz - 1, box.z1 + ring)
+    y0 = max(0, box.y0 - ring)
+    y1 = min(ny - 1, box.y1 + ring)
+    x0 = max(0, box.x0 - ring)
+    x1 = min(nx - 1, box.x1 + ring)
+    if not (
+        box.z0 - ring >= 0
+        and box.z1 + ring <= nz
+        and box.y0 - ring >= 0
+        and box.y1 + ring <= ny
+        and box.x0 - ring >= 0
+        and box.x1 + ring <= nx
+    ):
+        # Degrade (warn) instead of raising: some geometries (SUBOFF with
+        # a body close to the inlet, box.x0 = 1) cannot keep a full ring on
+        # every side.  The window is still usable — the supply band is just
+        # thinner on the truncated side(s).  The 69d027c hard raise broke
+        # those standard configurations, so we relax it here.
+        import warnings as _w
+
+        _w.warn(
+            "L1 window ring truncated by the domain edge "
+            f"(box z:[{box.z0},{box.z1}) y:[{box.y0},{box.y1}) "
+            f"x:[{box.x0},{box.x1}) ring={ring} domain={domain_shape}); "
+            "supply band is thinner on the clipped side(s)",
+            RuntimeWarning,
+        )
+    zz = torch.arange(z0, z1 + 1, device=device)
+    yy = torch.arange(y0, y1 + 1, device=device)
+    xx = torch.arange(x0, x1 + 1, device=device)
+    gz, gy, gx = torch.meshgrid(zz, yy, xx, indexing="ij")
+    cells = torch.stack((gz.reshape(-1), gy.reshape(-1), gx.reshape(-1)), dim=1)
+    return WindowInfo(z0, z1, y0, y1, x0, x1, cells)
+
+
+def gather_window_chunked(
+    slab_field: torch.Tensor,
+    win: WindowInfo,
+    lo: int,
+    hi: int,
+    *,
+    rank: int,
+    world_size: int,
+    max_bytes_per_msg: int = 3 * 1024 * 1024,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Chunked all_gather of the box+ring window from per-rank x-slabs.
+
+    ``slab_field`` is one rank's coarse slab ``(Q, nz, ny, nx_local+2)`` with
+    one halo column per x side (global column ``g`` lives at local index
+    ``g - lo + 1``).  Every window cell inside ``[lo, hi)`` contributes its
+    real value; cells owned by other ranks contribute zero and the chunked
+    all_gather sum assembles the full window.  All messages stay below
+    ``max_bytes_per_msg`` (TCCL ~4MB deadlock guard).
+
+    Returns ``(window (Q, nz_w, ny_w, nx_w), in_slab (n_win,) bool)`` where
+    ``window`` is the box+ring reshaped to 4D (row-major z,y,x) and
+    ``in_slab`` marks the cells owned by this rank (reused by the write-back).
+    """
+    q = slab_field.shape[0]
+    dtype = slab_field.dtype
+    dev = slab_field.device
+    wc = win.cells
+    n_win = wc.shape[0]
+    in_slab = (wc[:, 2] >= lo) & (wc[:, 2] < hi)
+    local = torch.zeros(q, n_win, dtype=dtype, device=dev)
+    if bool(in_slab.any()):
+        zz = wc[in_slab, 0]
+        yy = wc[in_slab, 1]
+        xx = wc[in_slab, 2] - lo + 1
+        local[:, in_slab] = slab_field[:, zz, yy, xx]
+    full = torch.zeros(q, n_win, dtype=dtype, device=dev)
+    chunk = max(1, int(max_bytes_per_msg // (q * torch.finfo(dtype).bits // 8)))
+    for c0 in range(0, n_win, chunk):
+        c1 = min(c0 + chunk, n_win)
+        piece = local[:, c0:c1].contiguous()
+        gathered = [torch.empty_like(piece) for _ in range(world_size)]
+        dist.all_gather(gathered, piece)
+        for r in range(world_size):
+            full[:, c0:c1] = full[:, c0:c1] + gathered[r]
+    # Reshape the flat window (z-major row order) to 4D for downstream
+    # (restriction / reflux / L1 ghost sampling all expect (Q, nz, ny, nx)).
+    wz, wy, wx = win.shape
+    return full.view(q, wz, wy, wx), in_slab
+
+
+def write_window_back(
+    coarse_f: torch.Tensor,
+    window_patch: torch.Tensor,
+    win: WindowInfo,
+    in_slab: torch.Tensor,
+    lo: int,
+) -> None:
+    """Write the corrected window patch back into this rank's coarse slab.
+
+    Only the cells inside ``[lo, hi)`` are written (``in_slab`` mask);
+    neighbour halo columns are refreshed by the next ``halo_exchange``.
+    """
+    wc = win.cells
+    if bool(in_slab.any()):
+        flat = window_patch.reshape(window_patch.shape[0], -1)
+        coarse_f[:, wc[in_slab, 0], wc[in_slab, 1], wc[in_slab, 2] - lo + 1] = flat[:, in_slab]
+
+
+class L1BlockDistributed:
+    """Persistent L1 middle block (replicated per rank, Phase 1).
+
+    Args:
+        box: coarse-domain :class:`BoxRegion` of the L1 block (half-open
+            ``[x0, x1)`` etc.).
+        domain_shape: coarse domain ``(nz, ny, nx)`` (for the window frame).
+        tau_coarse: coarse relaxation time; the L1 tau is the convective
+            2:1 refinement of it.
+        window_ring: coarse-window ring depth (in coarse cells) around the
+            box, independent of the L1 ghost depth.  ``None`` follows the
+            ghost depth (``window_ring = ghost``, the pre-decoupling
+            behaviour — regression-safe).  A larger value deepens the
+            coarse supply band so the outer L1 ghost layers sample genuine
+            coarse flow further outside the box (de-pollution audit
+            2026-08-17); must be ``>= ghost`` so every ghost donor still
+            lands on a real coarse window cell.
+        solid_l1: L1-frame boolean solid mask ``(nz_l1, ny_l1, nx_l1)``
+            (``octree._solid``) used for the frozen-solid mask; ``None``
+            disables freezing.
+        collide_fn: ``collide_fn(f, tau) -> f_post`` applied to the whole
+            with-ghost tensor (e.g. cumulant D3Q27).
+        stream_fn: ``stream_fn(f_post) -> f_streamed`` — the 27-direction
+            ``torch.roll`` pull-stream over the with-ghost tensor.
+        interface_filter: optional ``(width, strength)`` pair enabling the
+            moment-preserving kinetic interface filter of
+            :mod:`tensorlbm.amr_interface_filter` on the L1 physical shell
+            adjacent to the L1/coarse interface (the integrated-path
+            equivalent of ``StaticBlockAMR3D._filter_fine_interface``).
+            ``width`` is in L1 cells and ``strength`` in ``[0, 1]``.
+            ``None`` (default) keeps the historical unfiltered advance —
+            bitwise identical to the pre-filter behaviour.
+    """
+
+    def __init__(
+        self,
+        box: BoxRegion,
+        domain_shape: tuple[int, int, int],
+        tau_coarse: float,
+        *,
+        q: int = 27,
+        ratio: int = 2,
+        ghost: int = 1,
+        window_ring: int | None = None,
+        device: torch.device | str | None = None,
+        solid_l1: torch.Tensor | None = None,
+        collide_fn=None,
+        stream_fn=None,
+        maximum_reflux_correction_fraction: float = 0.2,
+        correction_stencil: str = "exterior_cells",
+        interface_filter: tuple[int, float] | None = None,
+        no_refreeze: bool = False,
+    ) -> None:
+        if ratio != 2:
+            raise ValueError("the L1 block currently supports ratio=2 only")
+        if ghost not in (1, 2, 3):
+            raise ValueError(
+                "the L1 block currently supports ghost 1-3 (ghost-ring "
+                "depth in L1 cells; ghost=3 deepens the coarse supply "
+                "band — audit 2026-08 SUBOFF L1 force-deficit fix)",
+            )
+        if window_ring is not None and window_ring < ghost:
+            raise ValueError(
+                f"window_ring={window_ring} must be >= ghost={ghost}: the "
+                "coarse window ring has to be at least as deep as the L1 "
+                "ghost layer so every ghost donor lands on a real window "
+                "cell (decoupling audit 2026-08-17)",
+            )
+        if q not in (19, 27):
+            raise ValueError(f"unsupported lattice Q={q}")
+        if interface_filter is not None:
+            if len(interface_filter) != 2:
+                raise ValueError(
+                    "interface_filter must be a (width, strength) pair or None",
+                )
+            filter_width, filter_strength = interface_filter
+            if (
+                not isinstance(filter_width, int)
+                or isinstance(
+                    filter_width,
+                    bool,
+                )
+                or filter_width < 0
+            ):
+                raise ValueError("interface filter width must be a non-negative int")
+            if not 0.0 <= float(filter_strength) <= 1.0:
+                raise ValueError("interface filter strength must lie in [0,1]")
+            if (filter_width == 0) != (float(filter_strength) == 0.0):
+                raise ValueError(
+                    "interface filter width and strength must both be zero or "
+                    "positive (pass interface_filter=None to disable)",
+                )
+            if filter_width == 0:
+                # (0, 0.0) is an explicit no-op: behave exactly like None.
+                interface_filter = None
+        if collide_fn is None or stream_fn is None:
+            raise TypeError("L1 block requires collide_fn and stream_fn")
+        self.box = box
+        self.ratio = ratio
+        self.ghost = ghost
+        self.q = q
+        self.device = torch.device(
+            "cpu" if device is None else device,
+        )
+        self.tau_coarse = float(tau_coarse)
+        self.tau_l1 = convective_refined_tau(self.tau_coarse, self.ratio)
+        self.collide_fn = collide_fn
+        self.stream_fn = stream_fn
+        self.maximum_reflux_correction_fraction = maximum_reflux_correction_fraction
+        self.correction_stencil = correction_stencil
+        self.interface_filter = interface_filter
+        self.no_refreeze = bool(no_refreeze)
+
+        g = ghost
+        self.l1_shape = (
+            (box.z1 - box.z0) * ratio,
+            (box.y1 - box.y0) * ratio,
+            (box.x1 - box.x0) * ratio,
+        )
+        nz_l1, ny_l1, nx_l1 = self.l1_shape
+        self.l1_f = torch.zeros(
+            (q, nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g),
+            device=self.device,
+        )
+
+        # ---- window frame (box + ring-cell ring) ----
+        # The ring defaults to the L1 ghost depth (``ring = ghost``): the
+        # outer L1 ghost layer sits ``ceil(g/2)`` coarse cells beyond the
+        # box, so a ring of at least that width keeps every ghost donor on
+        # a real coarse cell (audit 2026-08: widened from 1 to 2-3 cells
+        # for the SUBOFF L1 force-deficit fix — deeper supply band of
+        # genuine coarse flow outside the box).  ``window_ring`` decouples
+        # the supply frame from the ghost depth (de-pollution audit
+        # 2026-08-17): a caller may deepen the coarse supply band to 6-8
+        # cells without touching the L1 ghost layer.
+        self.window_ring = ghost if window_ring is None else window_ring
+        self.win = build_window_indices(
+            domain_shape,
+            box,
+            self.device,
+            ring=self.window_ring,
+        )
+        w = self.win
+        nz_w, ny_w, nx_w = w.shape
+        self.window_shape = (nz_w, ny_w, nx_w)
+
+        # ---- ghost-layer mask + injection coarse-donor maps ----
+        ghost_mask = torch.zeros(
+            (nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g),
+            dtype=torch.bool,
+            device=self.device,
+        )
+        ghost_mask[0] = True
+        ghost_mask[-1] = True
+        ghost_mask[:, 0] = True
+        ghost_mask[:, -1] = True
+        ghost_mask[:, :, 0] = True
+        ghost_mask[:, :, -1] = True
+        self.ghost_mask = ghost_mask
+
+        zoff = torch.arange(nz_l1 + 2 * g, device=self.device)
+        yoff = torch.arange(ny_l1 + 2 * g, device=self.device)
+        xoff = torch.arange(nx_l1 + 2 * g, device=self.device)
+        zc = (box.z0 + (zoff - g) // ratio).clamp(w.z0, w.z1)
+        yc = (box.y0 + (yoff - g) // ratio).clamp(w.y0, w.y1)
+        xc = (box.x0 + (xoff - g) // ratio).clamp(w.x0, w.x1)
+        self.zc_map = zc[:, None, None].expand(
+            nz_l1 + 2 * g,
+            ny_l1 + 2 * g,
+            nx_l1 + 2 * g,
+        )
+        self.yc_map = yc[None, :, None].expand(
+            nz_l1 + 2 * g,
+            ny_l1 + 2 * g,
+            nx_l1 + 2 * g,
+        )
+        self.xc_map = xc[None, None, :].expand(
+            nz_l1 + 2 * g,
+            ny_l1 + 2 * g,
+            nx_l1 + 2 * g,
+        )
+
+        # ---- frozen-solid mask (with-ghost frame) ----
+        solid_q = torch.zeros(
+            (nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g),
+            dtype=torch.bool,
+            device=self.device,
+        )
+        if solid_l1 is not None:
+            if tuple(solid_l1.shape) != self.l1_shape:
+                raise ValueError(
+                    f"solid_l1 shape {tuple(solid_l1.shape)} must equal the "
+                    f"L1 physical shape {self.l1_shape}",
+                )
+            solid_q[g:-g, g:-g, g:-g] = solid_l1.to(self.device)
+        self.l1_solid_q = solid_q
+
+        # ---- optional kinetic interface filter (blend on the with-ghost
+        #      frame, nonzero only on the physical shell adjacent to the
+        #      L1/coarse interface — mirrors StaticBlockAMR3D's
+        #      ``_interface_filter_blend`` built with ghost=config.ghost) ----
+        self.interface_filter_blend: torch.Tensor | None = None
+        if interface_filter is not None:
+            filter_width, filter_strength = interface_filter
+            blend = interface_shell_blend(
+                (nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g),
+                ghost=g,
+                width=filter_width,
+                strength=float(filter_strength),
+                device=self.device,
+                dtype=self.l1_f.dtype,
+            )
+            if bool(solid_q.any()):
+                # Same guard as StaticBlockAMR3D: the filter must not touch
+                # the frozen solid or its near-wall fluid (the wall force is
+                # the shell BFL's exclusive responsibility).
+                protected = solid_q.clone()
+                protected[1:] |= solid_q[:-1]
+                protected[:-1] |= solid_q[1:]
+                protected[:, 1:] |= solid_q[:, :-1]
+                protected[:, :-1] |= solid_q[:, 1:]
+                protected[:, :, 1:] |= solid_q[:, :, :-1]
+                protected[:, :, :-1] |= solid_q[:, :, 1:]
+                if bool((protected & (blend > 0.0)).any()):
+                    raise ValueError(
+                        "L1 interface filter overlaps the solid or its "
+                        "near-wall fluid; shrink the width or move the L1 box",
+                    )
+            self.interface_filter_blend = blend
+
+        # ---- coarse<->L1 box interface links (window frame) ----
+        box_owned = torch.zeros(
+            (nz_w, ny_w, nx_w),
+            dtype=torch.bool,
+            device=self.device,
+        )
+        box_owned[
+            box.z0 - w.z0 : box.z1 - w.z0,
+            box.y0 - w.y0 : box.y1 - w.y0,
+            box.x0 - w.x0 : box.x1 - w.x0,
+        ] = True
+        self.box_links: KineticInterfaceLinks = build_kinetic_interface_links(
+            box_owned,
+            q=q,
+        )
+
+        # ---- L1 fine interface links (with-ghost frame) ----
+        l1_owned = torch.zeros(
+            (nz_l1 + 2 * g, ny_l1 + 2 * g, nx_l1 + 2 * g),
+            dtype=torch.bool,
+            device=self.device,
+        )
+        l1_owned[g:-g, g:-g, g:-g] = True
+        self.l1_fine_links: KineticInterfaceLinks = build_kinetic_interface_links(l1_owned, q=q)
+
+        self.l1_phys_pre: torch.Tensor | None = None
+        self.l1_posts_phys: list[torch.Tensor] = []
+        self.l1_posts_ghost: list[torch.Tensor] = []
+        self.last_reflux: PopulationRefluxLedger | None = None
+
+    # ------------------------------------------------------------------
+    # initialization
+    # ------------------------------------------------------------------
+    def initialize_uniform(self, u_in: float = 0.06) -> None:
+        """Uniform-inflow equilibrium init (bit-exact for a uniform start)."""
+        shp = self.l1_f.shape[1:]
+        rho = torch.ones(shp, device=self.device)
+        ux = torch.full(shp, u_in, device=self.device)
+        uy = torch.zeros(shp, device=self.device)
+        uz = torch.zeros(shp, device=self.device)
+        self.l1_f = equilibrium27(rho, ux, uy, uz)
+
+    def initialize_from_window(self, coarse_window_new: torch.Tensor) -> None:
+        """2x injection + neq rescale of the whole L1 grid from the window.
+
+        ``_sample_parent_with_ghost`` semantics of ``StaticBlockAMR3D``
+        (piecewise-constant parent sampling on the physical+ghost grid).
+        """
+        self.l1_f = self._sample_window(coarse_window_new)
+
+    # ------------------------------------------------------------------
+    # ghost fill / advance helpers
+    # ------------------------------------------------------------------
+    def _sample_window(self, parent_t: torch.Tensor) -> torch.Tensor:
+        """Injection 2:1 sampling + neq rescale of the with-ghost L1 grid.
+
+        ``parent_t`` is the gathered window ``(Q, nz_w, ny_w, nx_w)``.
+        Each L1 cell's coarse parent coordinate maps into the window via
+        ``(z - w.z0, y - w.y0, x - w.x0)``; gather once.
+        """
+        zc = self.zc_map  # (nz_l1+2g, ny_l1+2g, nx_l1+2g) coarse coords
+        yc = self.yc_map
+        xc = self.xc_map
+        zi = (zc - self.win.z0).to(torch.int64)
+        yi = (yc - self.win.y0).to(torch.int64)
+        xi = (xc - self.win.x0).to(torch.int64)
+        sampled = parent_t[:, zi, yi, xi]
+        return rescale_nonequilibrium(
+            sampled,
+            tau_source=self.tau_coarse,
+            tau_target=self.tau_l1,
+            spatial_ratio=float(self.ratio),
+        )
+
+    def _fill_ghost(self, parent_t: torch.Tensor) -> None:
+        sampled = self._sample_window(parent_t)
+        self.l1_f = torch.where(self.ghost_mask, sampled, self.l1_f)
+
+    def _advance(self) -> tuple[torch.Tensor, torch.Tensor]:
+        """Collide + stream + frozen-solid.  Returns ``(frozen, post_frozen)``.
+
+        When ``interface_filter`` is enabled the streamed state is additionally
+        passed through the moment-preserving kinetic interface filter on the
+        L1 physical shell (density, momentum and the resolved second-order
+        stress are untouched; only the unresolved kinetic residual is damped).
+        Mirroring ``StaticBlockAMR3D.step``, the filter is applied to the
+        *streamed* state only — ``post_frozen`` (the pre-stream post-collision
+        state observed by the reflux) is left unfiltered.
+        """
+        before = self.l1_f
+        post = self.collide_fn(before, self.tau_l1)
+        post_frozen = torch.where(self.l1_solid_q, before, post)
+        streamed = self.stream_fn(post_frozen)
+        if self.no_refreeze:
+            # Match StaticBlockAMR3D / design doc §3b (single freeze): solid
+            # cells skip collision but DO take part in streaming, so the solid
+            # interior behaves as a conveyor that re-injects the inflowing
+            # populations downstream.  The integrated path's extra freeze
+            # below leaves the near wake "hollow" and inflates shell BFL force.
+            frozen = streamed
+        else:
+            frozen = torch.where(self.l1_solid_q, before, streamed)
+        if self.interface_filter_blend is not None:
+            frozen = damp_interface_nonequilibrium(
+                frozen,
+                self.interface_filter_blend,
+            )
+        return frozen, post_frozen
+
+    # ------------------------------------------------------------------
+    # physical-slice access (interface with the shell stepper)
+    # ------------------------------------------------------------------
+    def physical_slice(self) -> torch.Tensor:
+        g = self.ghost
+        return self.l1_f[:, g:-g, g:-g, g:-g]
+
+    def physical_copy(self) -> torch.Tensor:
+        """Contiguous copy of the physical interior.
+
+        The distributed shell stepper mutates the tensor it is handed
+        (restriction + reflux) and broadcasts it; passing a contiguous copy
+        keeps the broadcast's flat-view write-back correct (a non-contiguous
+        view's ``.contiguous()`` would detach the broadcast writes).
+        """
+        return self.physical_slice().contiguous()
+
+    def set_physical(self, phys: torch.Tensor) -> None:
+        g = self.ghost
+        self.l1_f[:, g:-g, g:-g, g:-g] = phys
+
+    # ------------------------------------------------------------------
+    # root-step stage
+    # ------------------------------------------------------------------
+    def step(
+        self,
+        coarse_window_old: torch.Tensor,
+        coarse_window_new: torch.Tensor,
+    ) -> tuple[torch.Tensor, list[torch.Tensor], list[torch.Tensor]]:
+        """Advance the L1 block by one root step (2 time-interpolated substeps).
+
+        Returns ``(l1_phys_pre, posts_phys, posts_ghost)``:
+
+        * ``l1_phys_pre`` — the physical L1 state at the root-step start
+          (the shell stepper's time-lerp anchor ``l1_old``);
+        * ``posts_phys`` — per-substep post-collision physical slices (the
+          shell stepper's ``l1_post`` list);
+        * ``posts_ghost`` — per-substep with-ghost post-collision states
+          (the coarse<->L1 box reflux fine-transfer observations).
+
+        The substep schedule mirrors ``StaticBlockAMR3D.step``: ghost is
+        filled at ``alpha_start`` before the collide, and again at
+        ``alpha_end`` after the stream, so the ghost layer always holds the
+        time-lerped coarse state at the next substep's stream time.
+        """
+        g = self.ghost
+        self.l1_phys_pre = self.physical_copy()
+        posts_phys: list[torch.Tensor] = []
+        posts_ghost: list[torch.Tensor] = []
+        for s in range(self.ratio):
+            alpha_start = s / self.ratio
+            self._fill_ghost(
+                torch.lerp(
+                    coarse_window_old,
+                    coarse_window_new,
+                    alpha_start,
+                )
+            )
+            self.l1_f, post_frozen = self._advance()
+            posts_phys.append(
+                post_frozen[:, g:-g, g:-g, g:-g].contiguous(),
+            )
+            posts_ghost.append(post_frozen)
+            alpha_end = (s + 1) / self.ratio
+            self._fill_ghost(
+                torch.lerp(
+                    coarse_window_old,
+                    coarse_window_new,
+                    alpha_end,
+                )
+            )
+        self.l1_posts_phys = posts_phys
+        self.l1_posts_ghost = posts_ghost
+        return self.l1_phys_pre, posts_phys, posts_ghost
+
+    def restrict_and_reflux(
+        self,
+        coarse_window_new: torch.Tensor,
+        coarse_window_post: torch.Tensor,
+    ) -> PopulationRefluxLedger:
+        """L1 -> coarse restriction + box-interface kinetic reflux.
+
+        Must run AFTER the shell stage (the physical interior already
+        carries the shell restriction + shell reflux patch).  Writes the
+        restricted box interior into ``coarse_window_new`` in place, then
+        applies the face-local reflux correction on the 1-cell ring and
+        returns the ledger (schema of ``StaticBlockAMR3D.step``).
+        """
+        b = self.box
+        w = self.win
+        if not self.l1_posts_ghost:
+            raise RuntimeError(
+                "restrict_and_reflux requires the L1 substep post states (call step() first)",
+            )
+        l1_phys = self.physical_copy()
+        restricted = restrict_populations_2to1(l1_phys)
+        restricted = rescale_nonequilibrium(
+            restricted,
+            tau_source=self.tau_l1,
+            tau_target=self.tau_coarse,
+            spatial_ratio=1.0 / self.ratio,
+        )
+        coarse_window_new[
+            :,
+            b.z0 - w.z0 : b.z1 - w.z0,
+            b.y0 - w.y0 : b.y1 - w.y0,
+            b.x0 - w.x0 : b.x1 - w.x0,
+        ] = restricted
+        coarse_transfer = observe_kinetic_interface_transfer(
+            coarse_window_post,
+            self.box_links,
+        )
+        fine_transfer = None
+        for post_g in self.l1_posts_ghost:
+            observed = observe_kinetic_interface_transfer(
+                post_g,
+                self.l1_fine_links,
+                cell_volume=1.0 / self.ratio**3,
+            )
+            fine_transfer = observed if fine_transfer is None else fine_transfer + observed
+        if fine_transfer is None:
+            raise RuntimeError("L1 block omitted the fine interface transfer")
+        coarse_window_new, report = apply_face_local_reflux(
+            coarse_window_new,
+            self.box_links,
+            coarse_transfer,
+            fine_transfer,
+            maximum_correction_fraction=(self.maximum_reflux_correction_fraction),
+            correction_stencil=self.correction_stencil,
+        )
+        ledger = PopulationRefluxLedger(
+            report.requested_inventory_correction,
+            report.applied_inventory_correction,
+            report.corrected_links,
+            report.residual,
+            report.limited_directions,
+            report.raw_kinetic_mismatch,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            report.maximum_applied_correction_fraction,
+        )
+        self.last_reflux = ledger
+        return ledger
+
+
+def step_l1_block_distributed(
+    block: L1BlockDistributed,
+    coarse_window_old: torch.Tensor,
+    coarse_window_new: torch.Tensor,
+) -> tuple[torch.Tensor, list[torch.Tensor], list[torch.Tensor]]:
+    """Advance the L1 middle block by one root step (2 substeps)."""
+    return block.step(coarse_window_old, coarse_window_new)
+
+
+def restrict_l1_block_to_coarse(
+    block: L1BlockDistributed,
+    coarse_window_new: torch.Tensor,
+    coarse_window_post: torch.Tensor,
+) -> PopulationRefluxLedger:
+    """L1 -> coarse restriction + box reflux (see
+    :meth:`L1BlockDistributed.restrict_and_reflux`)."""
+    return block.restrict_and_reflux(coarse_window_new, coarse_window_post)

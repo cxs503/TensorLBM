@@ -1,4 +1,5 @@
 """Moment equivalence for the bounded-memory D3Q19 observer."""
+
 from __future__ import annotations
 
 import pytest

@@ -1,4 +1,5 @@
 """Smooth resolved-viscosity continuation for stable LBM startup."""
+
 from __future__ import annotations
 
 import math
@@ -17,17 +18,17 @@ class ResolvedReynoldsContinuation:
     end_step: int
 
     def __post_init__(self) -> None:
-        if not all(math.isfinite(value) and value > 0.0 for value in (
-            self.start_reynolds,
-            self.target_reynolds,
-        )):
+        if not all(
+            math.isfinite(value) and value > 0.0
+            for value in (
+                self.start_reynolds,
+                self.target_reynolds,
+            )
+        ):
             raise ValueError("resolved Reynolds numbers must be finite and positive")
         if self.start_step < 0 or self.end_step < self.start_step:
             raise ValueError("continuation steps must satisfy 0 <= start <= end")
-        if (
-            self.start_reynolds != self.target_reynolds
-            and self.end_step == self.start_step
-        ):
+        if self.start_reynolds != self.target_reynolds and self.end_step == self.start_step:
             raise ValueError("a non-constant continuation needs a positive ramp duration")
 
     def reynolds_at(self, step: int) -> float:
@@ -42,9 +43,8 @@ class ResolvedReynoldsContinuation:
         phase = (step - self.start_step) / (self.end_step - self.start_step)
         activation = 0.5 * (1.0 - math.cos(math.pi * phase))
         inverse_reynolds = (
-            (1.0 - activation) / self.start_reynolds
-            + activation / self.target_reynolds
-        )
+            1.0 - activation
+        ) / self.start_reynolds + activation / self.target_reynolds
         return 1.0 / inverse_reynolds
 
     def tau_by_level(

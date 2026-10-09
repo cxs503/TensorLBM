@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import torch
 from tensorlbm.propeller_cad import (
+    GENERIC_PRESET,
+    KP505_PRESET,
     PropellerGeometryConfig,
     build_propeller_mask,
     propeller_statistics,
-    KP505_PRESET,
-    GENERIC_PRESET,
 )
 
 

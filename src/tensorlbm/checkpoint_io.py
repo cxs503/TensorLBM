@@ -1,4 +1,5 @@
 """Crash-resistant checkpoint writes shared by long-running CFD benchmarks."""
+
 from __future__ import annotations
 
 import os

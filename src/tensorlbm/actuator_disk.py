@@ -40,13 +40,11 @@ from pathlib import Path
 
 import torch
 
+from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
 from .d3q19 import equilibrium3d, macroscopic3d
 from .solver3d import stream3d
 from .turbulence import collide_smagorinsky_mrt3d
-from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
-from .propeller_cad import PropellerGeometryConfig, KP505_PRESET
 from .utils import get_reproducibility_metadata, prepare_run_dir, resolve_device
-
 
 # ---------------------------------------------------------------------------
 # Reference KT/KQ curves (KP505, Fujisawa et al. 2000)
@@ -294,7 +292,7 @@ def run_actuator_disk_benchmark(
     cy = ny // 2
     cz = nz // 2
 
-    print(f"Actuator Disk Propeller Benchmark")
+    print("Actuator Disk Propeller Benchmark")
     print(f"  Device:     {device}")
     print(f"  Diameter:   {config.diameter} lu   Hub ratio: {config.hub_diameter_ratio}")
     print(f"  RPM:        {config.rpm_lu} rps   Domain: {nx}x{ny}x{nz}")
@@ -332,7 +330,7 @@ def run_actuator_disk_benchmark(
             torch.arange(nx, device=device, dtype=torch.float32),
             indexing="ij",
         )
-        r_sq = (xx.permute(1, 0, 2) - cx) ** 2
+        (xx.permute(1, 0, 2) - cx) ** 2
         hub_r_sq = (yy.permute(1, 0, 2) - cy) ** 2 + (zz.permute(1, 0, 2) - cz) ** 2
         hub_mask = hub_r_sq <= (config.hub_radius * 1.5) ** 2
         wall_mask = make_channel_wall_mask_3d(nz, ny, nx, hub_mask, device=device)

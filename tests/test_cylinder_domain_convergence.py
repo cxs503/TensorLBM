@@ -107,10 +107,12 @@ def _streamwise_candidate(baseline: dict[str, object]) -> dict[str, object]:
     candidate = copy.deepcopy(baseline)
     candidate["configuration"]["shape_zyx"][2] = 540
     candidate["configuration"]["center_x_fraction"] = 1.0 / 3.0
-    candidate["configuration"]["domain_clearance_diameters"].update({
-        "upstream_center_distance": 10.0,
-        "downstream_center_distance": 20.0,
-    })
+    candidate["configuration"]["domain_clearance_diameters"].update(
+        {
+            "upstream_center_distance": 10.0,
+            "downstream_center_distance": 20.0,
+        }
+    )
     candidate["result"]["cd_control_volume"] = 1.34
     candidate["result"]["strouhal"] = 0.165
     return candidate
@@ -141,9 +143,7 @@ def test_streamwise_pair_rejects_changed_lateral_domain() -> None:
 def test_streamwise_pair_rejects_unexpanded_downstream() -> None:
     baseline = _record(20.0)
     candidate = _streamwise_candidate(baseline)
-    candidate["configuration"]["domain_clearance_diameters"][
-        "downstream_center_distance"
-    ] = 14.0
+    candidate["configuration"]["domain_clearance_diameters"]["downstream_center_distance"] = 14.0
     result = assess_cylinder_streamwise_clearance_pair(baseline, candidate)
 
     assert result["acceptance"]["recorded_clearances_match_shape"] is False

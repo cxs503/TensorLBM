@@ -1,0 +1,64 @@
+{
+  "case": "backward_step_gartling_re800_er2",
+  "reference": {
+    "source": "Gartling 1990 IJNMF 11(7):953-967; corroborated by ECN/TNO ECN-E-11-042 \u00a74 (X1=6.10, X2=4.85, X3=10.48) and arXiv:2507.16509 table (Gartling/Gresho 12.20, Keskar&Lyn 12.19, Grigoriev&Dargush 12.18 in step-height units)",
+    "re_definition": "Re = u_mean * H_channel / nu  (= 800)",
+    "X1_over_H": 6.1,
+    "X1_over_h_step": 12.2,
+    "X2_over_H": 4.85,
+    "X3_over_H": 10.48,
+    "err_tol_pct": 3.0
+  },
+  "grids": {
+    "64": {
+      "m": 64,
+      "ny": 129,
+      "nx": 1928,
+      "H": 128,
+      "ER": 2.0,
+      "L_over_H": 15.0,
+      "u_in": 0.06,
+      "re": 800.0,
+      "nu_lb": 0.0096,
+      "tau": 0.5288,
+      "collision": "mrt",
+      "steps": 30000,
+      "X1_H": 0.0087,
+      "X1_h": 0.0173,
+      "X2_H": 2.503,
+      "X3_H": 3.3651,
+      "X1_H_series": [
+        0.9705,
+        0.0131,
+        0.2937,
+        0.2877,
+        2.4574,
+        0.0074,
+        0.2055,
+        0.7023,
+        2.6267,
+        0.0087
+      ],
+      "err_pct": -99.858,
+      "tail_span_H": 2.618,
+      "max_speed": 0.08891,
+      "mass_drift_rel": 0.01399924913152562,
+      "elapsed_s": 1004.1,
+      "compile_status": "eager",
+      "compile_status_reason": null,
+      "finite": true
+    }
+  },
+  "convergence": {
+    "X1_H": [
+      0.0087
+    ],
+    "err_pct": [
+      -99.858
+    ],
+    "span_pct": 0.0,
+    "all_within_3pct": false,
+    "grid_span_within_3pct": null
+  },
+  "verified": false
+}
