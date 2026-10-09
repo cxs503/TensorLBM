@@ -244,36 +244,59 @@ def _apply_body_force(
 
     This is a **lattice-agnostic** helper: it dispatches to the correct
     velocity vectors (``C``, ``W``) for D3Q19 or D3Q27.  The Guo forcing
-    term is ``w_i * 3 * (c_i · F)`` added to the distribution.
+    term is ``w_i * ((c_i - u)·F/cs² + (c_i·u)(c_i·F)/cs⁴)`` added to the
+    distribution.  Its zeroth moment vanishes and its first moment equals
+    *F* exactly — the same moment contract as
+    :func:`tensorlbm.wall_model.guo_body_force_d3q19`.
 
     If *ux*, *uy*, *uz* are provided, they are used directly instead of
     recomputing macroscopic fields from *f*.
     """
     if lattice == "D3Q19":
         from .d3q19 import C as C_LAT
-        from .d3q19 import W as W_LAT
 
         q = 19
     elif lattice == "D3Q27":
         from .d3q27 import C as C_LAT
-        from .d3q27 import W as W_LAT
 
         q = 27
     else:
         raise ValueError(f"Unsupported lattice: {lattice!r}")
 
     device = f.device
-    c = C_LAT.to(device).float()
-    w = W_LAT.to(device).float()
+    dtype = f.dtype
+    c = C_LAT.to(device=device, dtype=dtype)
+    # Build the weights from literals in *f*'s dtype (mirroring
+    # wall_model.guo_body_force_d3q19/_d3q27) instead of the module-level
+    # ``W`` constants, which are stored as float32: their rounding breaks
+    # the moment identity ``sum_q w c_a c_b = cs^2 delta`` at ~1e-8
+    # relative, which shows up as a spurious ~1e-12 mass moment in
+    # float64 runs.  In float32 the literal-built weights are bit-identical
+    # to the ``W`` constants, so production runs are unchanged.
+    if lattice == "D3Q19":
+        weights_by_squared_speed = torch.tensor(
+            (1.0 / 3.0, 1.0 / 18.0, 1.0 / 36.0), device=device, dtype=dtype
+        )
+    else:
+        weights_by_squared_speed = torch.tensor(
+            (8.0 / 27.0, 2.0 / 27.0, 1.0 / 54.0, 1.0 / 216.0), device=device, dtype=dtype
+        )
+    w = weights_by_squared_speed[c.square().sum(dim=1).to(torch.long)]
     cx = c[:, 0].view(q, 1, 1, 1)
     cy = c[:, 1].view(q, 1, 1, 1)
     cz = c[:, 2].view(q, 1, 1, 1)
     w_view = w.view(q, 1, 1, 1)
 
-    # Full Guo forcing: w_i * (1 + c_i·u/c_s²) * (c_i·F) / c_s²
-    # c_s² = 1/3 for both D3Q19 and D3Q27, so 1/c_s² = 3.
-    # The (1 + c·u/cs²) velocity-correction term is essential for
-    # correct force application at non-trivial velocities.
+    # Full Guo forcing (Guo et al. 2002), same moment contract as the
+    # wall_model kernels (guo_body_force_d3q19 / guo_body_force_d3q27):
+    #     w_i * ((c_i·F - u·F)/cs² + (c_i·u)(c_i·F)/cs⁴)
+    # c_s² = 1/3 for both D3Q19 and D3Q27.  The ``-w_i·(u·F)/cs²`` term is
+    # essential: without it the q-sum of the source is (u·F)/cs² ≠ 0, i.e.
+    # the force creates mass whenever velocity and force are not orthogonal.
+    # Like the wall_model kernels, this source is applied as a post-collision
+    # operator split and injects the requested impulse exactly
+    # (sum_q c·Δf = F); it deliberately omits the collision-dependent
+    # half-step prefactor (1 - 1/(2τ)) of the bulk-force Guo scheme.
     cs2 = 1.0 / 3.0
     cu = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
     # Need velocity field for the correction term; use pre-computed if available.
@@ -286,7 +309,8 @@ def _apply_body_force(
             from .d3q27 import macroscopic27 as _macro
         _rho, _ux, _uy, _uz = _macro(f)
     cu_u = cx * _ux.unsqueeze(0) + cy * _uy.unsqueeze(0) + cz * _uz.unsqueeze(0)
-    forcing = w_view * (1.0 + cu_u / cs2) * cu / cs2
+    u_dot_f = (_ux * fx + _uy * fy + _uz * fz).unsqueeze(0)
+    forcing = w_view * ((cu - u_dot_f) / cs2 + cu_u * cu / cs2**2)
     return f + forcing
 
 
