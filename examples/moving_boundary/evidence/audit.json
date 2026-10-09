@@ -1,0 +1,32 @@
+{
+  "cases": [
+    {
+      "name": "comoving",
+      "raw_field_and_ledger_passed": true
+    },
+    {
+      "name": "moving",
+      "raw_field_and_ledger_passed": true
+    },
+    {
+      "name": "motion-half",
+      "raw_field_and_ledger_passed": true
+    },
+    {
+      "name": "motion-quarter",
+      "raw_field_and_ledger_passed": true
+    },
+    {
+      "name": "time-half",
+      "raw_field_and_ledger_passed": true
+    },
+    {
+      "name": "time-quarter",
+      "raw_field_and_ledger_passed": true
+    }
+  ],
+  "time_half_to_quarter_impulse_change_percent": 5.827318896651081,
+  "declared_threshold_percent": 3.0,
+  "temporal_convergence_qualified": false,
+  "physical_accuracy_qualified": false
+}

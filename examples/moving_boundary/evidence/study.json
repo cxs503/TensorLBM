@@ -1,0 +1,191 @@
+{
+  "schema": "tensorlbm.moving-disk-study/1",
+  "units": "lattice units: dx=dt=rho0=1",
+  "algorithm": "moving halfway bounce-back; adjacent density wall-speed refill; global mass reservoir",
+  "physical_accuracy_qualified": false,
+  "temporal_convergence_qualified": false,
+  "rate_sensitivity_changes_reynolds_number": true,
+  "source_sha256": "0d66e0afc75d84df3da2eeb0a003e90c4ed973dad2c6d58ce3b65fed40d10059",
+  "cases": [
+    {
+      "name": "comoving",
+      "steps": 100,
+      "physical_accuracy_qualified": false,
+      "si": {
+        "dx_m": 0.01,
+        "dt_s": 0.01,
+        "rho_kg_m3": 1000.0,
+        "thickness_m": 0.01,
+        "nu_m2_s": 0.0010000000000000002,
+        "velocity_m_s": 0.029999999999999995,
+        "duration_s": 1.0
+      },
+      "restart_bitwise": true,
+      "max_momentum_residual": 8.056749711826683e-14,
+      "max_mass_residual": 9.094947017729282e-13,
+      "covered": 24,
+      "exposed": 24,
+      "cumulative_reservoir_mass": -0.0243744961851462,
+      "total_absolute_reservoir_mass": 43.98706711373029,
+      "solid_impulse": [
+        -0.0007312348857245118,
+        -1.6958656701149266e-14
+      ],
+      "solid_impulse_si_Ns": [
+        -7.31234885724512e-07,
+        -1.6958656701149266e-17
+      ],
+      "sha256": "160c2972185887fbd49017cc6cd957a992553e0afb317e369b6b347f08959453"
+    },
+    {
+      "name": "moving",
+      "steps": 100,
+      "physical_accuracy_qualified": false,
+      "si": {
+        "dx_m": 0.01,
+        "dt_s": 0.01,
+        "rho_kg_m3": 1000.0,
+        "thickness_m": 0.01,
+        "nu_m2_s": 0.0010000000000000002,
+        "velocity_m_s": 0.029999999999999995,
+        "duration_s": 1.0
+      },
+      "restart_bitwise": true,
+      "max_momentum_residual": 9.103828801926284e-14,
+      "max_mass_residual": 6.821210263296962e-13,
+      "covered": 24,
+      "exposed": 24,
+      "cumulative_reservoir_mass": -0.05377516315547837,
+      "total_absolute_reservoir_mass": 44.31096485568469,
+      "solid_impulse": [
+        -7.799548391912463,
+        0.006332929953682308
+      ],
+      "solid_impulse_si_Ns": [
+        -0.0077995483919124625,
+        6.332929953682308e-06
+      ],
+      "sha256": "85ebbb8d3d2e597375b4f8ebcf80d18766babc9140c6bcd5909882140406770c"
+    },
+    {
+      "name": "motion-half",
+      "steps": 200,
+      "physical_accuracy_qualified": false,
+      "si": {
+        "dx_m": 0.01,
+        "dt_s": 0.01,
+        "rho_kg_m3": 1000.0,
+        "thickness_m": 0.01,
+        "nu_m2_s": 0.0010000000000000002,
+        "velocity_m_s": 0.014999999999999998,
+        "duration_s": 2.0
+      },
+      "restart_bitwise": true,
+      "max_momentum_residual": 9.270362255620057e-14,
+      "max_mass_residual": 4.547473508864641e-13,
+      "covered": 24,
+      "exposed": 24,
+      "cumulative_reservoir_mass": -0.049909848754623454,
+      "total_absolute_reservoir_mass": 44.11742957535148,
+      "solid_impulse": [
+        -5.798494227456303,
+        -0.0026588907607681504
+      ],
+      "solid_impulse_si_Ns": [
+        -0.005798494227456303,
+        -2.65889076076815e-06
+      ],
+      "sha256": "792c4a4612c03c853ad61302043092ab98619805818c45190a4fd0a26a24498c"
+    },
+    {
+      "name": "motion-quarter",
+      "steps": 400,
+      "physical_accuracy_qualified": false,
+      "si": {
+        "dx_m": 0.01,
+        "dt_s": 0.01,
+        "rho_kg_m3": 1000.0,
+        "thickness_m": 0.01,
+        "nu_m2_s": 0.0010000000000000002,
+        "velocity_m_s": 0.007499999999999999,
+        "duration_s": 4.0
+      },
+      "restart_bitwise": true,
+      "max_momentum_residual": 8.903988657493755e-14,
+      "max_mass_residual": 6.821210263296962e-13,
+      "covered": 24,
+      "exposed": 24,
+      "cumulative_reservoir_mass": -0.02165779244546684,
+      "total_absolute_reservoir_mass": 44.05061739408461,
+      "solid_impulse": [
+        -4.0191800525367025,
+        0.0022505176159851245
+      ],
+      "solid_impulse_si_Ns": [
+        -0.004019180052536702,
+        2.2505176159851247e-06
+      ],
+      "sha256": "32467475effc5c9d879d83e590aaa07535a515205ce1a496f0041b2217e40fcb"
+    },
+    {
+      "name": "time-half",
+      "steps": 200,
+      "physical_accuracy_qualified": false,
+      "si": {
+        "dx_m": 0.01,
+        "dt_s": 0.005,
+        "rho_kg_m3": 1000.0,
+        "thickness_m": 0.01,
+        "nu_m2_s": 0.0010000000000000002,
+        "velocity_m_s": 0.029999999999999995,
+        "duration_s": 1.0
+      },
+      "restart_bitwise": true,
+      "max_momentum_residual": 7.005507285384738e-14,
+      "max_mass_residual": 9.094947017729282e-13,
+      "covered": 24,
+      "exposed": 24,
+      "cumulative_reservoir_mass": -0.04804116602258546,
+      "total_absolute_reservoir_mass": 44.11675312048396,
+      "solid_impulse": [
+        -4.329525277872608,
+        -0.0035554771439816196
+      ],
+      "solid_impulse_si_Ns": [
+        -0.008659050555745217,
+        -7.11095428796324e-06
+      ],
+      "sha256": "868a88eedab2969e0e6c63ba65ef78e15636838945557a40f897175024069898"
+    },
+    {
+      "name": "time-quarter",
+      "steps": 400,
+      "physical_accuracy_qualified": false,
+      "si": {
+        "dx_m": 0.01,
+        "dt_s": 0.0025,
+        "rho_kg_m3": 1000.0,
+        "thickness_m": 0.01,
+        "nu_m2_s": 0.0009999999999999994,
+        "velocity_m_s": 0.029999999999999995,
+        "duration_s": 1.0
+      },
+      "restart_bitwise": true,
+      "max_momentum_residual": 8.1601392309949e-14,
+      "max_mass_residual": 9.094947017729282e-13,
+      "covered": 24,
+      "exposed": 24,
+      "cumulative_reservoir_mass": -0.023881135063675174,
+      "total_absolute_reservoir_mass": 44.05919971418825,
+      "solid_impulse": [
+        -2.0455612610297442,
+        0.0027064247180124817
+      ],
+      "solid_impulse_si_Ns": [
+        -0.008182245044118975,
+        1.0825698872049926e-05
+      ],
+      "sha256": "ac7abff0a5ca2b00f391fbc56d9a41059549fdb3c1c887673f6d6464da472f49"
+    }
+  ]
+}
