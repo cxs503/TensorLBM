@@ -30,7 +30,6 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [sphere_re100](sphere_re100/) | ❌ | 三代测力路径全 >3%（surface-MEM 两档 +9.15/+8.92%；压力 -16.56%；MEM 爆炸已修） | 并入 sphere_re100_mem 大域路线一并处理 | 0（随 mem 晋级） |
 | [sphere_re100_mem](sphere_re100_mem/) | 🟡 | 无——大域孪生 T1 +2.7708% / T2 +2.5401% 双过 3% 且严格单调（位一致链+稀疏核解锁证据齐全） | 归档晋级（建议同批 sphere_re100） | 0 |
 | [sphere_re200](sphere_re200/) | ⚠️ | 旧口径 Ladd Cd +268.5%（历史失效同族；未按修复后估计器重跑） | 按冻结协议重制（BFL+wet-node+域形条款） | ≈10–20 GPU·h |
-| [sphere_re100_d3q27](sphere_re100_d3q27/) | 🟡 | 无——全门 PASS（err +2.79%→+2.57% 严格单调；twins 逐位） | 归档晋级 | 0 |
 | [couette_3d](couette_3d/) | ❌ | 唯一败因 G3 稳态判据：H128 fp32 未达 drift 门（判据坐 fp32 噪声带；fp64 四档 l2 ≤1.7337e-9 且跨机逐位） | 稳态口径裁定（fp64 踪迹或噪声带重锁） | ≤0.15 GPU·h |
 | [stokes_second_problem](stokes_second_problem/) | ⚠️ | 骨架（仅 run.py 设计稿，无机器结果，PROVENANCE 空块如实） | Phase-0 停批 → 冻结 prereg → H∈{40,80} | ≤0.1 GPU·h |
 | [taylor_aris_dispersion](taylor_aris_dispersion/) | ❌ | 容差 6/6 全过（0.05–0.26%）但单调 0/3（err=负 O(1/H²)+正地板 H≈50 变号） | 判据口径重锁或更大 H 阶梯（决策项） | 已判死 |
@@ -60,7 +59,7 @@ suboff_sail_resistance）与 aircraft_icing_rg15_ipw2 为本表基线后入库�
 pending 案例，不在本表，由各自战役线补档；sphere_re100 / sphere_re100_mem /
 sphere_re200 三案此前仅有本地档案，本次建档入库（README 即本表所链）。
 
-待决策汇总（owner）：🟡 四案的归档批次（sphere_re100_mem、sphere_re100_d3q27、
+待决策汇总（owner）：🟡 三案的归档批次（sphere_re100_mem、
 permeability3d φ=0.343、cavity_3d_full 清理）· cylinder W11-A2 扩上游 ·
 couette/annulus/taylor_aris/collision 的口径类裁定 · naca/backward_step/
 forchheimer/fibrous 的参考类裁决。

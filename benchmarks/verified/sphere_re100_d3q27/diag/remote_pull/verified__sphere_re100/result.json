@@ -1,0 +1,106 @@
+{
+  "case": "sphere_re100",
+  "description": "Uniform flow past a smooth sphere, Re = U*D/nu = 100, D3Q19 + MRT + Bouzidi interpolated (sub-cell smooth) bounce-back wall + far-field BC. Cd taken from the BFL per-link momentum ledger (laboratory frame) summed over the wall-adjacent boundary links -- a surface-restricted caliber on a SMOOTH interpolated wall. Two grids (D=40/D=60) within 3% of Schiller-Naumann and monotonically convergent (span 0.231%).",
+  "lattice": "D3Q19",
+  "collision": "mrt (collide_mrt3d_low_memory)",
+  "geometry": "parametric sphere, radius 0.5, mask on the analytic sphere; wall = Bouzidi-Firdaouss-Lallemand interpolated bounce-back (compute_q_sphere gives the sub-cell wall distance q per boundary link)",
+  "reference": {
+    "cd_ref": 1.0917310910948732,
+    "source_primary": "Schiller-Naumann 24/Re*(1+0.15*Re^0.687) = 1.0917311",
+    "cross_references": {
+      "schiller_naumann_0681": 1.0685190542670633,
+      "clift_gauvin": 1.1092345787735252
+    },
+    "correlation_band": [1.069, 1.109],
+    "gate_pct": 3.0,
+    "note": "multi-source audit in REFERENCE_AUDIT.md"
+  },
+  "force_method": "BFL per-link momentum ledger (laboratory frame), bfl_force_ledger_sparse, summed over wall-adjacent boundary links only. This is the pre-registered judgment observable (NOTES.md sec 7). The wall is a sub-cell SMOOTH interpolated boundary (not a staircase), which removes the doubly-curved staircase geometry bias that makes the alternative staircase Ladd-MEM caliber fail (+9%).",
+  "grids": {
+    "D40": {
+      "D": 40,
+      "domain_lu": [280, 280, 320],
+      "lateral_D": 3.0,
+      "up_D": 3.0,
+      "down_D": 4.0,
+      "blockage_pct": 1.603,
+      "bfl_links": 28722,
+      "tau": 0.56,
+      "u_in": 0.05,
+      "re_eff": 100.0,
+      "steps": 12000,
+      "cd": 1.1219804015117896,
+      "err_pct": 2.7707656824703957,
+      "drift_pct": -0.14475665095754808,
+      "steady": true,
+      "cv_closure_rel_window": 0.0001496104414234331,
+      "mass_drift_ppm": -0.07971931784817472,
+      "wall_s": 1185.8
+    },
+    "D60": {
+      "D": 60,
+      "domain_lu": [420, 420, 480],
+      "lateral_D": 3.0,
+      "up_D": 3.0,
+      "down_D": 4.0,
+      "blockage_pct": 1.603,
+      "bfl_links": 64794,
+      "tau": 0.59,
+      "u_in": 0.05,
+      "re_eff": 100.0,
+      "steps": 24000,
+      "cd": 1.119462001144486,
+      "err_pct": 2.5400861325477218,
+      "drift_pct": -0.0420075943755402,
+      "steady": true,
+      "cv_closure_rel_window": 7.813769713472235e-05,
+      "mass_drift_ppm": 0.0,
+      "wall_s": 7676.5
+    }
+  },
+  "convergence": {
+    "cd_by_grid": [1.1219804015117896, 1.119462001144486],
+    "cd_span_pct": 0.231,
+    "cd_within_3pct": true,
+    "grid_span_within_3pct": true,
+    "monotone_error_decrease": true
+  },
+  "domain_convergence_signature": {
+    "note": "BFL route error is dominated by the upstream inlet distance (far_field_bc_3d Dirichlet clamping). err vs up/D at lat 2.0: err ~ E0 + C*(a/x)^3 (R^2=0.9998). Enlarging the domain (lat 2->3, up 1.25->3, down 2.25->4) moves the error inside the 3% gate.",
+    "points": {
+      "up1.25": {"cd": 1.214927032369151, "err_pct": 11.28445844211758},
+      "up2.0": {"cd": 1.1553350990866116, "err_pct": 5.825977524186044},
+      "up2.75": {"cd": 1.1379502944831688, "err_pct": 4.233570314640698},
+      "up3.0": {"cd": 1.134709647988964, "err_pct": 3.9367347183442902},
+      "up4.0": {"cd": 1.1278585129054965, "err_pct": 3.309186859778074},
+      "big_lat3_up3_down4": {"cd": 1.1219804015117896, "err_pct": 2.7707656824703957}
+    }
+  },
+  "bitwise_reproduction": {
+    "t1_sparse_d40big_vs_w7_dense_h2_big": {"exact": true, "detail": "240 shared steps x 4 quantities exact"},
+    "w7_driver_dense_vs_w8a_driver_dense_D20": {"exact": true, "detail": "6 shared steps x 4 quantities exact"}
+  },
+  "alternative_caliber_staircase_ladd_mem": {
+    "summary": "Staircase sphere + half-way bounce-back + surface-only Ladd MEM (cylinder_3d caliber) converges to +9% -- a mesh-converged geometry bias, NOT a caliber bug.",
+    "D12": {"cd_mem_surface": 1.1916, "err_pct": 9.15, "cd_mem_all": 1.2301, "cd_mem_interior": 0.0385},
+    "D18": {"cd_mem_surface": 1.1891, "err_pct": 8.92},
+    "grid_span_pct": 0.23,
+    "domain_lever_dead": "lateral 16 vs 32 at D=10: step-1000 cd_mem_surface = 1.3177 vs 1.3178 (bit-identical 4dp)",
+    "cv_cross_check": "control-volume momentum balance agrees: D=16 1.1985 (+9.8%), D=20 1.2130 (+11.1%)",
+    "cylinder_3d_contrast": "cylinder is singly curved (invariant in z), surface-only caliber brings it into the reference cluster (+1.62%/-0.99%); the sphere is DOUBLY curved with interior/total = 0.62 (D12) / 0.71 (D18), so the same caliber only trims +12.7% to +9.15%. Only a smooth/interpolated boundary representation (the BFL route used here) removes the bias.",
+    "detail_dir": "staircase_surface_mem/"
+  },
+  "verified": true,
+  "verified_date": "2026-10-05",
+  "status": "verified",
+  "acceptance": "every checkpoint within 3% AND mesh-converged (two grids, span <=3%); sphere_re100 satisfies both (2.771%/2.540%, span 0.231%) AND |err| monotone decreasing",
+  "reproduction": "cd benchmarks/verified/sphere_re100 && CUDA_VISIBLE_DEVICES=<id> PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python run.py --D 40 --steps 12000 --lat 3.0 --up 3.0 --down 4.0 --tau 0.56 --sample 50 --cv_tail 2500   # then --D 60 --tau 0.59 --steps 24000; python verify.py",
+  "artifacts": {
+    "runner": "run.py",
+    "verifier": "verify.py",
+    "tier_histories": ["t1_d40big_12k.json", "t2_d60big_24k.json"],
+    "bitwise_archive": "w7_dense_h2_big.json",
+    "cv_instrument": "cv_instrument.py",
+    "staircase_negative": "staircase_surface_mem/"
+  }
+}
