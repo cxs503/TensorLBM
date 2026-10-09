@@ -1,0 +1,47 @@
+{
+  "case": "cavity_re400_ghia",
+  "description": "方腔流 Re=400，D2Q9 MRT，Ghia(1982) 验证",
+  "lattice": "D2Q9",
+  "collision": "mrt",
+  "boundary": "V3: pre-streaming 半程反弹(三静止壁) + zou_he_moving_lid(顶盖) + 角点静止",
+  "extrap": "none",
+  "reference": "Ghia 1982 Re=400 中线表值 + 涡心 (0.5547, 0.6055)",
+  "grids": {
+    "128": {
+      "nx": 128,
+      "tau": 0.5576,
+      "u_lid": 0.06,
+      "steps": 100000,
+      "last_resid": 1.36e-06,
+      "u_mid": -0.1211,
+      "u_mid_ghia": -0.1148,
+      "u_bot": -0.0824,
+      "rmse_u": 0.0066,
+      "rmse_v": 0.0084,
+      "max_abs_dev_pct": 1.5
+    },
+    "192": {
+      "nx": 192,
+      "tau": 0.5864,
+      "u_lid": 0.06,
+      "steps": 100000,
+      "last_resid": 3.37e-05,
+      "u_mid": -0.1193,
+      "u_mid_ghia": -0.1148,
+      "u_bot": -0.0863,
+      "rmse_u": 0.0046,
+      "rmse_v": 0.0043,
+      "max_abs_dev_pct": 0.83
+    }
+  },
+  "convergence": {
+    "max_abs_dev": [
+      1.5,
+      0.83
+    ],
+    "err_decreased": true
+  },
+  "key_fix": "V0 post-streaming 反弹使顶盖动量绕入底壁(回流过量2.6倍)导致23.6%偏差; V3 pre-streaming 半程反弹(OpenLB 同口径)修复至1.5%",
+  "verified": true,
+  "verified_date": "2026-08-19"
+}

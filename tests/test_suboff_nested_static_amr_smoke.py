@@ -43,34 +43,84 @@ def _args(
     deep_wake_cells: int = 0,
 ):
     values = [
-        "--device", "cpu",
-        "--hull-type", hull_type,
-        "--nx", "80", "--ny", "40", "--nz", "40",
-        "--hull-length", "24", "--center-x-fraction", "0.35",
-        "--outer-wall-margin", "4", "--outer-wake-cells", "8",
-        "--inner-wall-margin", "3", "--inner-wake-cells", "0",
-        "--deep-wall-margin", str(deep_wall_margin),
-        "--deep-wake-cells", str(deep_wake_cells),
-        "--cv-margin", "2", "--steps", str(steps), "--ramp-steps", "0",
-        "--aux-cv-margins", "1,3", "--surface-force-interval", "1",
-        "--warmup-steps", "0", "--statistics-window-steps", str(steps),
-        "--report-interval", "1", "--wall-diagnostic-interval", "1",
-        "--health-interval", "1",
-        "--resolved-reynolds", "2000", "--sponge-width", "3",
-        "--memory-bytes-per-cell", "742",
-        "--ghost-interpolation", ghost_interpolation,
-        "--reflux-correction-stencil", reflux_correction_stencil,
-        "--collision-model", collision_model,
-        "--natural-kbc-compute-dtype", natural_kbc_compute_dtype,
-        "--kbc-max-iterations", "4",
-        "--omega-bulk", str(omega_bulk),
-        "--wale-cw", str(wale_cw),
-        "--vreman-cv", str(vreman_cv),
-        "--interface-filter-width", str(interface_filter_width),
-        "--interface-filter-strength", str(interface_filter_strength),
-        "--output", str(tmp_path / "nested-smoke.json"),
-        "--checkpoint", str(tmp_path / "nested-smoke.ckpt"),
-        "--checkpoint-interval", "1",
+        "--device",
+        "cpu",
+        "--hull-type",
+        hull_type,
+        "--nx",
+        "80",
+        "--ny",
+        "40",
+        "--nz",
+        "40",
+        "--hull-length",
+        "24",
+        "--center-x-fraction",
+        "0.35",
+        "--outer-wall-margin",
+        "4",
+        "--outer-wake-cells",
+        "8",
+        "--inner-wall-margin",
+        "3",
+        "--inner-wake-cells",
+        "0",
+        "--deep-wall-margin",
+        str(deep_wall_margin),
+        "--deep-wake-cells",
+        str(deep_wake_cells),
+        "--cv-margin",
+        "2",
+        "--steps",
+        str(steps),
+        "--ramp-steps",
+        "0",
+        "--aux-cv-margins",
+        "1,3",
+        "--surface-force-interval",
+        "1",
+        "--warmup-steps",
+        "0",
+        "--statistics-window-steps",
+        str(steps),
+        "--report-interval",
+        "1",
+        "--wall-diagnostic-interval",
+        "1",
+        "--health-interval",
+        "1",
+        "--resolved-reynolds",
+        "2000",
+        "--sponge-width",
+        "3",
+        "--memory-bytes-per-cell",
+        "742",
+        "--ghost-interpolation",
+        ghost_interpolation,
+        "--reflux-correction-stencil",
+        reflux_correction_stencil,
+        "--collision-model",
+        collision_model,
+        "--natural-kbc-compute-dtype",
+        natural_kbc_compute_dtype,
+        "--kbc-max-iterations",
+        "4",
+        "--omega-bulk",
+        str(omega_bulk),
+        "--wale-cw",
+        str(wale_cw),
+        "--vreman-cv",
+        str(vreman_cv),
+        "--interface-filter-width",
+        str(interface_filter_width),
+        "--interface-filter-strength",
+        str(interface_filter_strength),
+        "--output",
+        str(tmp_path / "nested-smoke.json"),
+        "--checkpoint",
+        str(tmp_path / "nested-smoke.ckpt"),
+        "--checkpoint-interval",
+        "1",
     ]
     if preflight:
         values.append("--preflight-only")
@@ -141,46 +191,33 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     )
     assert result["acceptance"]["surface_observer_used_for_acceptance"] is False
     assert result["acceptance"]["conservative_force_observer_target_met"] is True
-    link_decomposition = result["result"]["steps"][0][
-        "bfl_link_force_decomposition"
-    ]
+    link_decomposition = result["result"]["steps"][0]["bfl_link_force_decomposition"]
     assert link_decomposition["samples"] > 0
     assert link_decomposition["maximum_relative_closure_error"] < 1.0e-4
-    assert link_decomposition[
-        "maximum_relative_component_closure_error"
-    ] < 1.0e-4
+    assert link_decomposition["maximum_relative_component_closure_error"] < 1.0e-4
     assert link_decomposition["minimum_coverage_fraction"] == pytest.approx(1.0)
-    assert link_decomposition["normal_completion"][
-        "maximum_unresolved_nodes"
-    ] == 0
-    assert link_decomposition["scope"] == (
-        "diagnostic_population_impulse_not_pressure_shear"
-    )
+    assert link_decomposition["normal_completion"]["maximum_unresolved_nodes"] == 0
+    assert link_decomposition["scope"] == ("diagnostic_population_impulse_not_pressure_shear")
     assert result["result"]["statistics"]["wall_exchange"]["mean_distance_cells"] > 0.0
-    y_plus_distribution = result["result"]["statistics"]["wall_exchange"][
-        "y_plus_distribution"
-    ]
+    y_plus_distribution = result["result"]["statistics"]["wall_exchange"]["y_plus_distribution"]
     assert y_plus_distribution["requested_sample_exposures"] > 0
     assert y_plus_distribution["finite_fraction"] == pytest.approx(1.0)
-    assert result["acceptance"][
-        "wall_exchange_y_plus_applicability_target_met"
-    ] is y_plus_distribution["admitted"]
+    assert (
+        result["acceptance"]["wall_exchange_y_plus_applicability_target_met"]
+        is y_plus_distribution["admitted"]
+    )
     pressure_gradient = result["result"]["statistics"]["wall_exchange"][
         "pressure_gradient_parameter"
     ]
     assert pressure_gradient["samples"] > 0
     assert pressure_gradient["mean"] >= 0.0
     assert pressure_gradient["maximum"] >= pressure_gradient["mean"]
-    assert pressure_gradient["scope"] == (
-        "diagnostic_only_not_a_force_correction"
-    )
-    wall_shear_profile = result["result"]["steps"][0][
-        "wall_shear_axial_profile"
-    ]
+    assert pressure_gradient["scope"] == ("diagnostic_only_not_a_force_correction")
+    wall_shear_profile = result["result"]["steps"][0]["wall_shear_axial_profile"]
     assert wall_shear_profile is not None
-    assert sum(
-        item["absolute_shear_x_fraction"] for item in wall_shear_profile
-    ) == pytest.approx(1.0)
+    assert sum(item["absolute_shear_x_fraction"] for item in wall_shear_profile) == pytest.approx(
+        1.0
+    )
     assert result["planning"]["cuda_persistent_allocated_gib_by_device"] == {}
     statistics = result["result"]["statistics"]
     assert statistics["mean_bfl_pressure_n"] is not None
@@ -191,9 +228,9 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
         "deprecated_alias_for_conservative_link_impulse_not_pressure"
     )
     assert statistics["mean_wall_shear_n"] is not None
-    assert statistics["bfl_pressure_fraction"] + statistics[
-        "wall_shear_fraction"
-    ] == pytest.approx(1.0)
+    assert statistics["bfl_pressure_fraction"] + statistics["wall_shear_fraction"] == pytest.approx(
+        1.0
+    )
     component_audit = statistics["resistance_component_audit"]
     assert component_audit["scope"] == "diagnostic_only_not_a_cfd_correction"
     assert component_audit["pressure_input_status"] == (
@@ -203,9 +240,7 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert component_audit["component_sum"] == pytest.approx(
         statistics["mean_bfl_plus_wall_stress_n"],
     )
-    boundary_delta = result["result"]["population_health"][0][
-        "open_boundary_population_delta"
-    ]
+    boundary_delta = result["result"]["population_health"][0]["open_boundary_population_delta"]
     assert len(boundary_delta["stages"]) == 2
     assert boundary_delta["finite"] is True
     assert len(boundary_delta["momentum_delta"]) == 3
@@ -221,11 +256,13 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
 def test_rejected_surface_pressure_observer_requires_explicit_opt_in(
     tmp_path: Path,
 ) -> None:
-    result = MODULE.run(_args(
-        tmp_path,
-        steps=1,
-        enable_rejected_surface_pressure=True,
-    ))
+    result = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            enable_rejected_surface_pressure=True,
+        )
+    )
 
     statistics = result["result"]["statistics"]
     assert statistics["surface_observer_difference_pct"] is not None
@@ -238,11 +275,13 @@ def test_rejected_surface_pressure_observer_requires_explicit_opt_in(
 def test_projected_bfl_pressure_observer_is_independent_diagnostic(
     tmp_path: Path,
 ) -> None:
-    result = MODULE.run(_args(
-        tmp_path,
-        steps=1,
-        enable_projected_bfl_pressure=True,
-    ))
+    result = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            enable_projected_bfl_pressure=True,
+        )
+    )
 
     step = result["result"]["steps"][0]
     assert step["projected_bfl_pressure_n"] is not None
@@ -251,14 +290,10 @@ def test_projected_bfl_pressure_observer_is_independent_diagnostic(
     assert diagnostics["requested_links"] > 0
     assert diagnostics["usable_links"] > 0
     assert diagnostics["reconstruction"] == "linear"
-    observer = result["result"]["statistics"][
-        "projected_bfl_pressure_observer"
-    ]
+    observer = result["result"]["statistics"]["projected_bfl_pressure_observer"]
     assert observer["enabled"] is True
     assert observer["source_corrected_cv_difference_pct"] is not None
-    assert observer["scope"] == (
-        "candidate_diagnostic_only_not_an_acceptance_gate"
-    )
+    assert observer["scope"] == ("candidate_diagnostic_only_not_an_acceptance_gate")
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
@@ -280,25 +315,33 @@ def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
 def test_nested_aff8_preflight_measures_appendage_resolution(
     tmp_path: Path,
 ) -> None:
-    result = MODULE.run(_args(
-        tmp_path, steps=1, preflight=True, hull_type="full",
-    ))
+    result = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            preflight=True,
+            hull_type="full",
+        )
+    )
 
     resolution = result["planning"]["geometry_resolution"]
     assert resolution["hull_type"] == "full"
     assert resolution["appendage_boundary_links"] > 0
     assert resolution["appendage_halfway_links"] == 0
-    assert resolution["appendage_link_scheme"] == (
-        "continuous_parametric_bisection_v1"
-    )
+    assert resolution["appendage_link_scheme"] == ("continuous_parametric_bisection_v1")
     assert resolution["sail_only_cells"] > 0
     assert resolution["fin_only_cells"] > 0
 
 
 def test_four_level_preflight_and_runtime_use_deepest_geometry(tmp_path: Path) -> None:
-    preflight = MODULE.run(_args(
-        tmp_path, steps=1, preflight=True, deep_wall_margin=4,
-    ))
+    preflight = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            preflight=True,
+            deep_wall_margin=4,
+        )
+    )
 
     assert preflight["planning"]["refinement_depth"] == 3
     assert preflight["planning"]["level_count"] == 4
@@ -308,18 +351,26 @@ def test_four_level_preflight_and_runtime_use_deepest_geometry(tmp_path: Path) -
     assert preflight["planning"]["stress_exchange_distance_cells"] == 1.0
     assert preflight["planning"]["estimated_exchange_y_plus"] > 0.0
     bounds = preflight["planning"]["estimated_bfl_exchange_y_plus_bounds"]
-    assert bounds["maximum_exchange_y_plus_estimate"] >= (
-        preflight["planning"]["estimated_exchange_y_plus"]
+    assert (
+        bounds["maximum_exchange_y_plus_estimate"]
+        >= (preflight["planning"]["estimated_exchange_y_plus"])
     )
-    assert sum(preflight["planning"]["allocated_cells_by_level"]) == (
-        preflight["planning"]["total_allocated_cells"]
+    assert (
+        sum(preflight["planning"]["allocated_cells_by_level"])
+        == (preflight["planning"]["total_allocated_cells"])
     )
 
-    result = MODULE.run(_args(
-        tmp_path, steps=1, deep_wall_margin=4,
-    ))
+    result = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            deep_wall_margin=4,
+        )
+    )
     checkpoint = torch.load(
-        tmp_path / "nested-smoke.ckpt", map_location="cpu", weights_only=True,
+        tmp_path / "nested-smoke.ckpt",
+        map_location="cpu",
+        weights_only=True,
     )
     assert result["geometry"]["geometry_owner_level"] == 3
     assert result["geometry"]["force_owner_level"] == 3
@@ -373,7 +424,9 @@ def test_nested_preflight_rejects_cv_flux_stencil_inside_interface_filter(
 def test_nested_suboff_checkpoint_restores_all_levels(tmp_path: Path) -> None:
     first = MODULE.run(_args(tmp_path, steps=1))
     checkpoint_state = torch.load(
-        tmp_path / "nested-smoke.ckpt", map_location="cpu", weights_only=True,
+        tmp_path / "nested-smoke.ckpt",
+        map_location="cpu",
+        weights_only=True,
     )
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
 
@@ -390,23 +443,28 @@ def test_nested_suboff_checkpoint_restores_all_levels(tmp_path: Path) -> None:
 def test_checkpoint_before_collision_chunk_option_can_resume(
     tmp_path: Path,
 ) -> None:
-    MODULE.run(_args(
-        tmp_path, steps=1, collision_model="natural_kbc",
-    ))
+    MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            collision_model="natural_kbc",
+        )
+    )
     checkpoint = tmp_path / "nested-smoke.ckpt"
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
     state["configuration"].pop("collision_chunk_cells")
     torch.save(state, checkpoint)
 
     resume_args = _args(
-        tmp_path, steps=2, resume=True, collision_model="natural_kbc",
+        tmp_path,
+        steps=2,
+        resume=True,
+        collision_model="natural_kbc",
     )
     resume_args.collision_chunk_cells = 512
     resumed = MODULE.run(resume_args)
 
-    assert resumed["configuration"][
-        "resumed_pre_collision_chunk_checkpoint"
-    ] is True
+    assert resumed["configuration"]["resumed_pre_collision_chunk_checkpoint"] is True
     assert resumed["configuration"]["resumed_from_step"] == 1
     assert resumed["configuration"]["collision_chunk_cells"] == 512
 
@@ -431,13 +489,9 @@ def test_checkpoint_before_y_plus_distribution_gate_can_resume(
 
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
 
-    assert resumed["configuration"][
-        "resumed_pre_y_plus_distribution_checkpoint"
-    ] is True
+    assert resumed["configuration"]["resumed_pre_y_plus_distribution_checkpoint"] is True
     assert resumed["configuration"]["resumed_from_step"] == 1
-    assert resumed["result"]["statistics"]["wall_exchange"][
-        "y_plus_distribution"
-    ] is not None
+    assert resumed["result"]["statistics"]["wall_exchange"]["y_plus_distribution"] is not None
 
 
 def test_checkpoint_without_mass_conservative_wall_source_is_rejected(
@@ -460,9 +514,10 @@ def test_nested_aff8_smoke_records_appendage_resolution(tmp_path: Path) -> None:
     assert resolution["hull_type"] == "full"
     assert result["geometry"]["appendage_boundary_links"] > 0
     assert result["geometry"]["appendage_halfway_links"] == 0
-    assert result["geometry"]["appendage_link_intersection"][
-        "target_links"
-    ] == result["geometry"]["appendage_boundary_links"]
+    assert (
+        result["geometry"]["appendage_link_intersection"]["target_links"]
+        == result["geometry"]["appendage_boundary_links"]
+    )
     assert resolution["sail_only_cells"] > 0
     assert resolution["fin_only_cells"] > 0
     assert result["physical_validation"] is False
@@ -495,22 +550,26 @@ def test_nested_smoke_can_use_cell_centered_trilinear_ghosts(tmp_path: Path) -> 
 
 
 def test_nested_smoke_can_use_crossing_link_reflux(tmp_path: Path) -> None:
-    result = MODULE.run(_args(
-        tmp_path,
-        steps=1,
-        reflux_correction_stencil="crossing_links",
-    ))
+    result = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            reflux_correction_stencil="crossing_links",
+        )
+    )
 
     assert result["configuration"]["reflux_correction_stencil"] == "crossing_links"
     assert result["result"]["finite"] is True
 
 
 def test_nested_smoke_records_transfer_positivity_diagnostics(tmp_path: Path) -> None:
-    result = MODULE.run(_args(
-        tmp_path,
-        steps=1,
-        enforce_transfer_positivity=True,
-    ))
+    result = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            enforce_transfer_positivity=True,
+        )
+    )
 
     assert result["configuration"]["enforce_transfer_positivity"] is True
     assert len(result["result"]["minimum_transfer_alpha_by_interface"]) == 2
@@ -532,31 +591,24 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
     assert [record["finite"] for record in health["levels"]] == [True, True, True]
     assert len(health["interfaces"]) == 2
     assert all(
-        record["raw_mass_mismatch"] >= 0.0
-        and record["raw_momentum_mismatch_norm"] >= 0.0
+        record["raw_mass_mismatch"] >= 0.0 and record["raw_momentum_mismatch_norm"] >= 0.0
         for record in health["interfaces"]
     )
     assert health["finest_peak_speed_context"] is not None
     assert "bfl_link_count" in health["finest_peak_speed_context"]
-    assert all(
-        "restriction_minimum_alpha" in record
-        for record in health["interfaces"]
-    )
-    assert all(
-        "prolongation_minimum_alpha" in record
-        for record in health["interfaces"]
-    )
-    assert all(
-        "maximum_applied_correction_fraction" in record
-        for record in health["interfaces"]
-    )
+    assert all("restriction_minimum_alpha" in record for record in health["interfaces"])
+    assert all("prolongation_minimum_alpha" in record for record in health["interfaces"])
+    assert all("maximum_applied_correction_fraction" in record for record in health["interfaces"])
     assert result["acceptance"]["population_health_target_met"] is True
     assert result["result"]["maximum_observed_speed"] < 0.3
     assert result["result"]["minimum_observed_population"] > 1.0e-8
     assert len(result["result"]["maximum_raw_mass_mismatch_by_interface"]) == 2
-    assert len(
-        result["result"]["maximum_raw_momentum_mismatch_by_interface"],
-    ) == 2
+    assert (
+        len(
+            result["result"]["maximum_raw_momentum_mismatch_by_interface"],
+        )
+        == 2
+    )
 
 
 def test_wall_stress_can_be_disabled_only_as_nonphysical_diagnostic(
@@ -569,11 +621,13 @@ def test_wall_stress_can_be_disabled_only_as_nonphysical_diagnostic(
 
 
 def test_nested_smoke_dispatches_entropic_kbc_collision(tmp_path: Path) -> None:
-    result = MODULE.run(_args(
-        tmp_path,
-        steps=1,
-        collision_model="entropic_kbc",
-    ))
+    result = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            collision_model="entropic_kbc",
+        )
+    )
 
     assert result["configuration"]["collision_model"] == "entropic_kbc"
     assert result["acceptance"]["collision_viscosity_target_met"] is False
@@ -581,11 +635,13 @@ def test_nested_smoke_dispatches_entropic_kbc_collision(tmp_path: Path) -> None:
 
 
 def test_nested_smoke_dispatches_natural_kbc_as_diagnostic(tmp_path: Path) -> None:
-    result = MODULE.run(_args(
-        tmp_path,
-        steps=1,
-        collision_model="natural_kbc",
-    ))
+    result = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            collision_model="natural_kbc",
+        )
+    )
 
     assert result["configuration"]["collision_model"] == "natural_kbc"
     assert result["acceptance"]["collision_viscosity_target_met"] is False
@@ -650,13 +706,18 @@ def test_float64_population_checkpoint_resumes_without_downcast(
     tmp_path: Path,
 ) -> None:
     initial_args = _args(
-        tmp_path, steps=1, collision_model="natural_kbc",
+        tmp_path,
+        steps=1,
+        collision_model="natural_kbc",
     )
     initial_args.population_storage_dtype = "float64"
     MODULE.run(initial_args)
 
     resume_args = _args(
-        tmp_path, steps=2, resume=True, collision_model="natural_kbc",
+        tmp_path,
+        steps=2,
+        resume=True,
+        collision_model="natural_kbc",
     )
     resume_args.population_storage_dtype = "float64"
     resumed = MODULE.run(resume_args)
@@ -680,12 +741,14 @@ def test_nested_smoke_dispatches_gradient_sgs_as_diagnostic(
     coefficient_key: str,
     coefficient: float,
 ) -> None:
-    result = MODULE.run(_args(
-        tmp_path,
-        steps=1,
-        collision_model=collision_model,
-        **{coefficient_key: coefficient},
-    ))
+    result = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            collision_model=collision_model,
+            **{coefficient_key: coefficient},
+        )
+    )
 
     assert result["configuration"]["collision_model"] == collision_model
     assert result["configuration"][coefficient_key] == coefficient
@@ -718,9 +781,9 @@ def test_nested_single_grid_gate_uses_declared_wall_exchange_family(
 
     assert unscaled["acceptance"]["wall_exchange_scaling_target_met"] is False
     assert scaled["acceptance"]["wall_exchange_scaling_target_met"] is True
-    assert scaled["configuration"][
-        "stress_exchange_distance_over_finest_length"
-    ] == pytest.approx(3.0 / 256.0)
+    assert scaled["configuration"]["stress_exchange_distance_over_finest_length"] == pytest.approx(
+        3.0 / 256.0
+    )
     assert custom["acceptance"]["wall_exchange_scaling_target_met"] is True
     assert custom["acceptance"][
         "wall_exchange_distance_over_finest_length_target"
@@ -730,12 +793,14 @@ def test_nested_single_grid_gate_uses_declared_wall_exchange_family(
 def test_nested_smoke_can_filter_both_physical_interface_shells(
     tmp_path: Path,
 ) -> None:
-    result = MODULE.run(_args(
-        tmp_path,
-        steps=1,
-        interface_filter_width=1,
-        interface_filter_strength=0.2,
-    ))
+    result = MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            interface_filter_width=1,
+            interface_filter_strength=0.2,
+        )
+    )
 
     assert result["configuration"]["interface_filter_width"] == 1
     assert result["configuration"]["interface_filter_strength"] == 0.2
@@ -763,8 +828,9 @@ def test_nested_smoke_uses_smooth_resolved_viscosity_continuation(
         0.06 / 24.0,
     )
     assert result["acceptance"]["target_reynolds_duration_target_met"] is False
-    assert result["configuration"]["initial_tau_by_level"][0] > (
-        result["configuration"]["tau_by_level"][0]
+    assert (
+        result["configuration"]["initial_tau_by_level"][0]
+        > (result["configuration"]["tau_by_level"][0])
     )
 
 
@@ -891,9 +957,13 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
 def test_natural_kbc_can_resume_checkpoint_before_gradient_sgs_options(
     tmp_path: Path,
 ) -> None:
-    MODULE.run(_args(
-        tmp_path, steps=1, collision_model="natural_kbc",
-    ))
+    MODULE.run(
+        _args(
+            tmp_path,
+            steps=1,
+            collision_model="natural_kbc",
+        )
+    )
     checkpoint = tmp_path / "nested-smoke.ckpt"
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
     state["configuration"].pop("wale_cw")
@@ -901,9 +971,14 @@ def test_natural_kbc_can_resume_checkpoint_before_gradient_sgs_options(
     state["configuration"].pop("sponge_inlet")
     torch.save(state, checkpoint)
 
-    resumed = MODULE.run(_args(
-        tmp_path, steps=2, resume=True, collision_model="natural_kbc",
-    ))
+    resumed = MODULE.run(
+        _args(
+            tmp_path,
+            steps=2,
+            resume=True,
+            collision_model="natural_kbc",
+        )
+    )
 
     assert resumed["configuration"]["resumed_pre_gradient_sgs_checkpoint"] is True
     assert resumed["configuration"]["resumed_from_step"] == 1

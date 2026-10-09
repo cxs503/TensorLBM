@@ -3,7 +3,14 @@
 
 Domain: ny=200, nx=600; liquid column width=120, height=198.
 500 timesteps, tau=0.8, gy=-5e-5.
-T = t * sqrt(g/a), Z = front_x / a.
+
+Time convention (FIXED 2026-09-29):  T = t * sqrt(2 g / a),  Z = front_x / a.
+The sqrt(2 g / a) form is the Martin & Moyce (1952) definition and is confirmed
+verbatim by Lethe's post-processing (examples/multiphysics/dam-break/
+dam-break-2d.py:  time_list = [x * ((2*g/L1)**0.5) for x in time_list]);
+the repository kernel already uses it (dam_break.py:299).  This script
+previously used T = t * sqrt(g/a) -- a factor sqrt(2) too small -- and an
+inconsistent coarse table.  Both are fixed here.
 """
 
 from __future__ import annotations
@@ -13,25 +20,30 @@ import sys
 from pathlib import Path
 
 import torch
-import torch_sdaa
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from tensorlbm.d2q9 import equilibrium
 from tensorlbm.free_surface_lbm_2d import (
     GAS,
-    LIQUID,
     INTERFACE,
+    LIQUID,
     SOLID,
+    free_surface_step_2d,
     init_fill_rectangular_2d,
     init_flags_from_fill_2d,
-    free_surface_step_2d,
 )
-from tensorlbm.d2q9 import equilibrium
 
 # ---------- Martin and Moyce (1952) reference ----------
-REF_T = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
-REF_Z = [1.0, 1.1, 1.4, 1.8, 2.2, 2.7, 3.1, 3.5, 3.8, 4.1]
-# Extended reference: [4.3, 4.5, 4.7] at T>5 (not compared)
+# CORRECT digitisation (Lethe x_exp/y_exp; identical to the K&O/Trixi-family
+# digitisation), valid for T = t*sqrt(2 g / a):
+REF_T = [0.00, 0.41, 0.84, 1.19, 1.43, 1.63, 1.82, 1.97, 2.20, 2.32, 2.50, 2.64, 2.82, 2.96]
+REF_Z = [1.00, 1.11, 1.23, 1.44, 1.67, 1.89, 2.11, 2.33, 2.56, 2.78, 3.00, 3.22, 3.44, 3.67]
+# Historical (WRONG) table, kept for reference/comparison only.  It was a coarse
+# digitisation that is only meaningful on the old t*sqrt(g/a) axis; it mapped
+# M&M's T=3 value (2.7) onto T=2 on that axis:
+#   REF_T_old = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+#   REF_Z_old = [1.0, 1.1, 1.4, 1.8, 2.2, 2.7, 3.1, 3.5, 3.8, 4.1]
 
 # ---------- Simulation parameters ----------
 NY, NX = 200, 600
@@ -46,9 +58,11 @@ DEVICE = "sdaa" if torch.sdaa.is_available() else "cpu"
 
 A = COL_WIDTH
 G_ABS = abs(GY)
-SQRT_GA = math.sqrt(G_ABS / A)
+# M&M convention: T = t*sqrt(2 g / a)  (the factor sqrt2 is the 2026-09-29 fix)
+SQRT_GA = math.sqrt(2.0 * G_ABS / A)
 
-T_TARGETS = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+# Checkpoints on the CORRECT T = t*sqrt(2g/a) axis (same as REF_T).
+T_TARGETS = list(REF_T)
 
 
 def find_front_x(flags, _fill):
@@ -80,7 +94,7 @@ def main():
     print(f"  Column    : w={COL_WIDTH:.0f}  h={COL_HEIGHT:.0f}")
     print(f"  Physics   : tau={TAU}  gy={GY:.1e}  rho_L={RHO_LIQ}  rho_G={RHO_GAS}")
     print(f"  Steps     : {N_STEPS}")
-    print(f"  sqrt(g/a) : {SQRT_GA:.6e}")
+    print(f"  sqrt(2g/a): {SQRT_GA:.6e}   (M&M axis T = t*sqrt(2g/a))")
     print(f"  T_max     : {N_STEPS * SQRT_GA:.4f}")
     print()
 
@@ -168,9 +182,11 @@ def main():
     )
 
     print()
-    print("  Note: free-surface LBM (no air resistance) advances faster than")
-    print("        the two-phase Martin & Moyce experiment. Front saturates")
-    print("        at domain wall after ~1500 steps at T≈1.0 (Z≈5.0).")
+    print(f"  Note: on the M&M axis T = t*sqrt(2g/a) this {N_STEPS}-step run only")
+    print(f"        reaches T_max = {N_STEPS * SQRT_GA:.3f}; checkpoints beyond that are")
+    print("        (extrapolated) and are indicative only.  The full deep-time")
+    print("        comparison (T = 1, 2, 2.96) lives in")
+    print("        benchmarks/pending/dam_break_sc/run.py.")
     print("=" * 70)
 
 

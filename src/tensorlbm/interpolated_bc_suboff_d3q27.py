@@ -18,6 +18,7 @@ Bouzidi, M., Firdaouss, M., & Lallemand, P. (2001).
 Groves, N.C., Huang, T.T., Chang, M.S. (1989).
 "Geometric Characteristics of DARPA SUBOFF Models", DTRC/SHD-1298-01.
 """
+
 from __future__ import annotations
 
 import torch
@@ -95,8 +96,12 @@ def compute_q_suboff_27(
         hull_type_enum = SuboffHullType(hull_type)
         solid, _stats = build_suboff_mask(
             hull_type_enum,
-            nx=nx, ny=ny, nz=nz,
-            cx=cx, cy=cy, cz=cz,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            cx=cx,
+            cy=cy,
+            cz=cz,
             length=hull_length,
             config=config,
             device=str(device),
@@ -110,10 +115,15 @@ def compute_q_suboff_27(
         solid = solid_mask.to(device=device)
 
     fluid_boundary_mask = torch.zeros(
-        (27, nz, ny, nx), dtype=torch.bool, device=device,
+        (27, nz, ny, nx),
+        dtype=torch.bool,
+        device=device,
     )
     q_field = torch.full(
-        (27, nz, ny, nx), 0.5, dtype=torch.float32, device=device,
+        (27, nz, ny, nx),
+        0.5,
+        dtype=torch.float32,
+        device=device,
     )
 
     for d in range(27):
@@ -150,8 +160,15 @@ def compute_q_suboff_27(
         i_f = idx[:, 2].to(dtype=torch.float32, device=device)
 
         endpoint_in_main_body = _inside_hull(
-            i_f + dcx, j_f + dcy, k_f + dcz,
-            x_bow, cy, cz, hull_length, radius, config,
+            i_f + dcx,
+            j_f + dcy,
+            k_f + dcz,
+            x_bow,
+            cy,
+            cz,
+            hull_length,
+            radius,
+            config,
         )
 
         # ---- Bisection on boundary cells only ----
@@ -166,8 +183,15 @@ def compute_q_suboff_27(
             z_mid = k_f + t_mid * dcz
 
             inside = _inside_hull(
-                x_mid, y_mid, z_mid,
-                x_bow, cy, cz, hull_length, radius, config,
+                x_mid,
+                y_mid,
+                z_mid,
+                x_bow,
+                cy,
+                cz,
+                hull_length,
+                radius,
+                config,
             )
 
             # If inside → surface is closer → lower hi

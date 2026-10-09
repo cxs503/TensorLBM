@@ -16,7 +16,8 @@ def test_axis_aligned_plane_has_unit_area_per_crossing() -> None:
     ny = torch.zeros(shape)
     ny[:, 1, :] = 1.0
     weights, diagnostics = bfl_surface_area_weights(
-        mask, (zero, ny, zero),
+        mask,
+        (zero, ny, zero),
     )
     assert weights[:, 1, :].sum().item() == pytest.approx(15.0)
     assert torch.all(weights[:, 1, :] == 1.0)
@@ -51,14 +52,18 @@ def test_reference_area_calibrates_total_without_flattening_distribution() -> No
     nx[first] = 1.0
     nx[second] = ny[second] = 1.0 / math.sqrt(2.0)
     weights, diagnostics = bfl_surface_area_weights(
-        mask, (nx, ny, zero), reference_area=10.0,
+        mask,
+        (nx, ny, zero),
+        reference_area=10.0,
     )
     assert weights.sum().item() == pytest.approx(10.0)
     assert weights[second] > weights[first]
     assert diagnostics.calibrated_area == pytest.approx(10.0)
     with pytest.raises(ValueError, match="not both"):
         bfl_surface_area_weights(
-            mask, (nx, ny, zero), reference_area=10.0,
+            mask,
+            (nx, ny, zero),
+            reference_area=10.0,
             calibration_factor=1.0,
         )
 
@@ -77,7 +82,9 @@ def test_optional_boundary_mask_excludes_diagonal_only_nodes() -> None:
     nx[active] = 1.0
     nx[diagonal] = ny[diagonal] = 1.0 / math.sqrt(2.0)
     weights, diagnostics = bfl_surface_area_weights(
-        mask, (nx, ny, nz), boundary_mask=boundary,
+        mask,
+        (nx, ny, nz),
+        boundary_mask=boundary,
     )
     assert weights.sum().item() == pytest.approx(1.0)
     assert weights[diagonal].item() == pytest.approx(0.0)
@@ -101,24 +108,54 @@ def test_full_suboff_area_adds_appendage_surface_with_bare_calibration() -> None
     radius = length / (2.0 * 8.57)
     config = SuboffConfig()
     bare, geometry = build_suboff_mask(
-        "bare_hull", nx, ny, nz, cx=cx, cy=cy, cz=cz,
-        length=length, radius=radius, config=config,
+        "bare_hull",
+        nx,
+        ny,
+        nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        length=length,
+        radius=radius,
+        config=config,
     )
     full, _ = build_suboff_mask(
-        "full", nx, ny, nz, cx=cx, cy=cy, cz=cz,
-        length=length, radius=radius, config=config,
+        "full",
+        nx,
+        ny,
+        nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        length=length,
+        radius=radius,
+        config=config,
     )
     bare_near = get_near_wall_3d(bare)
     full_near = get_near_wall_3d(full)
     bare_surface = SurfaceMesh.from_gradient(bare, bare_near)
     full_surface = SurfaceMesh.from_gradient(full, full_near)
     bare_links, _ = compute_q_suboff(
-        nx, ny, nz, cx, cy, cz, length,
-        hull_type="bare_hull", config=config,
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        length,
+        hull_type="bare_hull",
+        config=config,
     )
     full_links, _ = compute_q_suboff(
-        nx, ny, nz, cx, cy, cz, length,
-        hull_type="full", config=config,
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        length,
+        hull_type="full",
+        config=config,
     )
     _, bare_diagnostics = bfl_surface_area_weights(
         bare_links,

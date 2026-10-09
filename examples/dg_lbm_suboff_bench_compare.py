@@ -10,10 +10,7 @@ laminar flat-plate Blasius reference Cf = 1.328/sqrt(Re) (form-factor scaled).
 from __future__ import annotations
 
 import json
-import math
 import pathlib
-
-import torch
 
 from tensorlbm import DGLBMSuboffConfig, run_dg_lbm_suboff_flow
 from tensorlbm.suboff_cad import SuboffHullType, build_suboff_mask

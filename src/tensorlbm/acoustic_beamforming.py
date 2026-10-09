@@ -47,7 +47,7 @@ Sijtsma, P. (2007). CLEAN based on spatial source coherence. *Int. J. Aeroacoust
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 import torch

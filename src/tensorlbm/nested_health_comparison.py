@@ -1,4 +1,5 @@
 """Reproducible A/B comparison for nested-LBM health log records."""
+
 from __future__ import annotations
 
 import json
@@ -19,7 +20,7 @@ def read_nested_health_log(path: str | Path) -> list[dict[str, Any]]:
         if not line.startswith(_PREFIX):
             continue
         try:
-            record = json.loads(line[len(_PREFIX):])
+            record = json.loads(line[len(_PREFIX) :])
         except json.JSONDecodeError:
             continue
         if isinstance(record, dict) and isinstance(record.get("step"), int):
@@ -32,10 +33,7 @@ def _metrics(record: dict[str, Any]) -> dict[str, float | int | bool | None]:
     interfaces = record.get("interfaces", [])
     speeds = [float(level["maximum_speed"]) for level in levels]
     populations = [float(level["minimum_population"]) for level in levels]
-    reflux = [
-        abs(float(interface["maximum_reflux_residual"]))
-        for interface in interfaces
-    ]
+    reflux = [abs(float(interface["maximum_reflux_residual"])) for interface in interfaces]
     raw_mass_mismatch = [
         abs(float(interface["raw_mass_mismatch"]))
         for interface in interfaces
@@ -52,9 +50,7 @@ def _metrics(record: dict[str, Any]) -> dict[str, float | int | bool | None]:
         "maximum_speed": max(speeds) if speeds else None,
         "minimum_population": min(populations) if populations else None,
         "maximum_reflux_residual": max(reflux) if reflux else None,
-        "maximum_raw_mass_mismatch": (
-            max(raw_mass_mismatch) if raw_mass_mismatch else None
-        ),
+        "maximum_raw_mass_mismatch": (max(raw_mass_mismatch) if raw_mass_mismatch else None),
         "maximum_raw_momentum_mismatch": (
             max(raw_momentum_mismatch) if raw_momentum_mismatch else None
         ),
@@ -84,19 +80,20 @@ def compare_nested_health(
         speed_ratio = None
         if isinstance(base_speed, float) and isinstance(trial_speed, float):
             speed_ratio = trial_speed / base_speed if base_speed > 0.0 else None
-        aligned.append({
-            "step": step,
-            "baseline": base,
-            "candidate": trial,
-            "candidate_to_baseline_speed_ratio": speed_ratio,
-        })
+        aligned.append(
+            {
+                "step": step,
+                "baseline": base,
+                "candidate": trial,
+                "candidate_to_baseline_speed_ratio": speed_ratio,
+            }
+        )
 
     def values(side: str, metric: str) -> list[float]:
         return [
             float(item[side][metric])
             for item in aligned
-            if item[side][metric] is not None
-            and math.isfinite(float(item[side][metric]))
+            if item[side][metric] is not None and math.isfinite(float(item[side][metric]))
         ]
 
     baseline_speeds = values("baseline", "maximum_speed")
@@ -123,7 +120,9 @@ def compare_nested_health(
     speed_threshold_steps = {
         str(threshold): {
             side: first_step(
-                side, "maximum_speed", lambda value, limit=threshold: value >= limit,
+                side,
+                "maximum_speed",
+                lambda value, limit=threshold: value >= limit,
             )
             for side in ("baseline", "candidate")
         }
@@ -150,14 +149,14 @@ def compare_nested_health(
         "candidate_maximum_raw_momentum_mismatch": (
             max(candidate_raw_momentum) if candidate_raw_momentum else None
         ),
-        "latest_candidate_to_baseline_speed_ratio": latest[
-            "candidate_to_baseline_speed_ratio"
-        ],
+        "latest_candidate_to_baseline_speed_ratio": latest["candidate_to_baseline_speed_ratio"],
         "instability_onset": {
             "speed_threshold_steps": speed_threshold_steps,
             "population_at_or_below_1e-8_step": {
                 side: first_step(
-                    side, "minimum_population", lambda value: value <= 1.0e-8,
+                    side,
+                    "minimum_population",
+                    lambda value: value <= 1.0e-8,
                 )
                 for side in ("baseline", "candidate")
             },

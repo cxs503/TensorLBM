@@ -1,0 +1,549 @@
+{
+  "case": "womersley_convergence",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern), x-periodic",
+  "driving": "library body force a0*cos(w*t) (_apply_body_force_2d)",
+  "extrap": "none",
+  "H_list": [
+    59,
+    119
+  ],
+  "alpha_list": [
+    4.0,
+    8.0
+  ],
+  "tau": 0.8,
+  "u_peak_target": 0.03,
+  "tol_pct": 3.0,
+  "per_grid": [
+    {
+      "case": "womersley",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern, f_pre[OPPOSITE] at wall rows; walls at 0.5 / ny-1.5, H_eff = ny-2), x-periodic",
+      "driving": "library body force _apply_body_force_2d, a(t)=a0*cos(w*t), composed collide->halfway-BB->force->stream",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "force": "tensorlbm.turbulent_channel._apply_body_force_2d",
+        "wall": "pre-streaming half-way BB via library OPPOSITE table (verified/poiseuille_2d pattern; see gap note)",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 59,
+      "ny": 61,
+      "nx": 16,
+      "H_eff": 59.0,
+      "alpha": 4.0,
+      "omega": 0.001838552140189601,
+      "period_steps_float": 3417.463758483146,
+      "T_int": 3417,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "a0": 4.956540888015068e-05,
+      "u_peak_ana": 0.03,
+      "u_peak_target": 0.03,
+      "Ma": 0.05196152422706632,
+      "tau_diffusion_steps": 3526.990402589777,
+      "skip_periods": 7,
+      "skip_steps": 23919,
+      "measure_periods": 4,
+      "n_meas_steps": 13668,
+      "total_steps": 37587,
+      "compile_mode": "default",
+      "seed": 0,
+      "profile_l2_instant_max_pct": 0.4962299124795224,
+      "profile_l2_max_pct": 0.10973690814377494,
+      "profile_l2_metric": "||du(t)|| / max_t' ||u_ref(t')||  (fixed scale; instantaneous per-phase values in phase_table)",
+      "u_ref_norm_peak": 0.18608733563626975,
+      "profile_pointwise_max_over_upeak_pct": 0.10898483696075742,
+      "complex_rel_max_pct": 0.4664806220533355,
+      "n_rows_mask": 57,
+      "center_phasor_num": [
+        0.0010008751944836937,
+        -0.029991377645464085
+      ],
+      "center_phasor_ana": [
+        0.0009728316382351129,
+        -0.02998422249456618
+      ],
+      "center_complex_rel_pct": 0.09647321052666849,
+      "phase_table": [
+        {
+          "step": 23920,
+          "phase_deg": 359.76,
+          "l2_rel_instant": 0.0037447019509195796,
+          "l2_rel_peaknorm": 0.0008317911456343383,
+          "u_ref_norm": 0.041334610905127966,
+          "max_abs_over_upeak": 0.0009449257826277967
+        },
+        {
+          "step": 24347,
+          "phase_deg": 44.74,
+          "l2_rel_instant": 0.0007186378880201164,
+          "l2_rel_peaknorm": 0.0005895761761570763,
+          "u_ref_norm": 0.15266751392409084,
+          "max_abs_over_upeak": 0.0007618313687812234
+        },
+        {
+          "step": 24774,
+          "phase_deg": 89.72,
+          "l2_rel_instant": 0.0005215818528449354,
+          "l2_rel_peaknorm": 0.0005143339650197305,
+          "u_ref_norm": 0.18350147087309535,
+          "max_abs_over_upeak": 0.0006803181932005589
+        },
+        {
+          "step": 25201,
+          "phase_deg": 134.71,
+          "l2_rel_instant": 0.0016148286579485752,
+          "l2_rel_peaknorm": 0.0009540812884774525,
+          "u_ref_norm": 0.10994506697616603,
+          "max_abs_over_upeak": 0.000964392185029706
+        },
+        {
+          "step": 25628,
+          "phase_deg": 179.69,
+          "l2_rel_instant": 0.004962299124795224,
+          "l2_rel_peaknorm": 0.0010973690814377495,
+          "u_ref_norm": 0.04115158789078407,
+          "max_abs_over_upeak": 0.0010898483696075742
+        },
+        {
+          "step": 26055,
+          "phase_deg": 224.67,
+          "l2_rel_instant": 0.0009462923799686567,
+          "l2_rel_peaknorm": 0.0007756287151726863,
+          "u_ref_norm": 0.1525265172844877,
+          "max_abs_over_upeak": 0.0008635963249845521
+        },
+        {
+          "step": 26482,
+          "phase_deg": 269.65,
+          "l2_rel_instant": 0.0004282248439622035,
+          "l2_rel_peaknorm": 0.00042236853041103514,
+          "u_ref_norm": 0.18354244408980055,
+          "max_abs_over_upeak": 0.0005925184594987819
+        },
+        {
+          "step": 26909,
+          "phase_deg": 314.63,
+          "l2_rel_instant": 0.001295305807011541,
+          "l2_rel_peaknorm": 0.0007666607805270073,
+          "u_ref_norm": 0.11014067968570655,
+          "max_abs_over_upeak": 0.0008219860926769393
+        }
+      ],
+      "mass_drift_pct": 0.00028766569544057377,
+      "finite": true,
+      "elapsed_s": 49.4
+    },
+    {
+      "case": "womersley",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern, f_pre[OPPOSITE] at wall rows; walls at 0.5 / ny-1.5, H_eff = ny-2), x-periodic",
+      "driving": "library body force _apply_body_force_2d, a(t)=a0*cos(w*t), composed collide->halfway-BB->force->stream",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "force": "tensorlbm.turbulent_channel._apply_body_force_2d",
+        "wall": "pre-streaming half-way BB via library OPPOSITE table (verified/poiseuille_2d pattern; see gap note)",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 119,
+      "ny": 121,
+      "nx": 16,
+      "H_eff": 119.0,
+      "alpha": 4.0,
+      "omega": 0.00045194548407598344,
+      "period_steps_float": 13902.529239839077,
+      "T_int": 13903,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "a0": 1.2183969233232437e-05,
+      "u_peak_ana": 0.03,
+      "u_peak_target": 0.03,
+      "Ma": 0.05196152422706632,
+      "tau_diffusion_steps": 14348.09281559145,
+      "skip_periods": 7,
+      "skip_steps": 97321,
+      "measure_periods": 4,
+      "n_meas_steps": 55612,
+      "total_steps": 152933,
+      "compile_mode": "default",
+      "seed": 0,
+      "profile_l2_instant_max_pct": 0.19978153112581634,
+      "profile_l2_max_pct": 0.046411993631046755,
+      "profile_l2_metric": "||du(t)|| / max_t' ||u_ref(t')||  (fixed scale; instantaneous per-phase values in phase_table)",
+      "u_ref_norm_peak": 0.2642799832318476,
+      "profile_pointwise_max_over_upeak_pct": 0.04823802984611972,
+      "complex_rel_max_pct": 0.14366212052581082,
+      "n_rows_mask": 115,
+      "center_phasor_num": [
+        0.000981084821824932,
+        -0.029982167268445884
+      ],
+      "center_phasor_ana": [
+        0.000972831638235113,
+        -0.029984222494566184
+      ],
+      "center_complex_rel_pct": 0.028350777722590186,
+      "phase_table": [
+        {
+          "step": 97322,
+          "phase_deg": 0.11,
+          "l2_rel_instant": 0.0004656060414674175,
+          "l2_rel_peaknorm": 0.00010550624103393468,
+          "u_ref_norm": 0.05988579427239832,
+          "max_abs_over_upeak": 0.0002550082300225119
+        },
+        {
+          "step": 99059,
+          "phase_deg": 45.09,
+          "l2_rel_instant": 0.00022621731269047122,
+          "l2_rel_peaknorm": 0.00018635567466960165,
+          "u_ref_norm": 0.21771134132527645,
+          "max_abs_over_upeak": 0.00021335397789116103
+        },
+        {
+          "step": 100797,
+          "phase_deg": 90.09,
+          "l2_rel_instant": 0.0003783045038165612,
+          "l2_rel_peaknorm": 0.0003726386474207291,
+          "u_ref_norm": 0.2603218690191481,
+          "max_abs_over_upeak": 0.00033985983158857835
+        },
+        {
+          "step": 102535,
+          "phase_deg": 135.1,
+          "l2_rel_instant": 0.0007927731485927661,
+          "l2_rel_peaknorm": 0.00046411993631046756,
+          "u_ref_norm": 0.1547196814163337,
+          "max_abs_over_upeak": 0.00045106181737024353
+        },
+        {
+          "step": 104273,
+          "phase_deg": 180.1,
+          "l2_rel_instant": 0.0019978153112581633,
+          "l2_rel_peaknorm": 0.00045252723628244097,
+          "u_ref_norm": 0.05986233549354531,
+          "max_abs_over_upeak": 0.0004823802984611972
+        },
+        {
+          "step": 106011,
+          "phase_deg": 225.11,
+          "l2_rel_instant": 0.000384401905459272,
+          "l2_rel_peaknorm": 0.0003167378906824637,
+          "u_ref_norm": 0.21776032649588734,
+          "max_abs_over_upeak": 0.000379733506152812
+        },
+        {
+          "step": 107749,
+          "phase_deg": 270.11,
+          "l2_rel_instant": 0.0001347165906738205,
+          "l2_rel_peaknorm": 0.0001326913029126522,
+          "u_ref_norm": 0.2603068793039344,
+          "max_abs_over_upeak": 0.00017044092416676945
+        },
+        {
+          "step": 109487,
+          "phase_deg": 315.12,
+          "l2_rel_instant": 0.00026147838161839996,
+          "l2_rel_peaknorm": 0.00015301130334664884,
+          "u_ref_norm": 0.1546507379785998,
+          "max_abs_over_upeak": 0.00017439547894543272
+        }
+      ],
+      "mass_drift_pct": 0.08153994221332644,
+      "finite": true,
+      "elapsed_s": 213.6
+    },
+    {
+      "case": "womersley",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern, f_pre[OPPOSITE] at wall rows; walls at 0.5 / ny-1.5, H_eff = ny-2), x-periodic",
+      "driving": "library body force _apply_body_force_2d, a(t)=a0*cos(w*t), composed collide->halfway-BB->force->stream",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "force": "tensorlbm.turbulent_channel._apply_body_force_2d",
+        "wall": "pre-streaming half-way BB via library OPPOSITE table (verified/poiseuille_2d pattern; see gap note)",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 59,
+      "ny": 61,
+      "nx": 16,
+      "H_eff": 59.0,
+      "alpha": 8.0,
+      "omega": 0.007354208560758404,
+      "period_steps_float": 854.3659396207865,
+      "T_int": 854,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "a0": 0.0002063598537512328,
+      "u_peak_ana": 0.03,
+      "u_peak_target": 0.03,
+      "Ma": 0.05196152422706632,
+      "tau_diffusion_steps": 3526.990402589777,
+      "skip_periods": 27,
+      "skip_steps": 23058,
+      "measure_periods": 4,
+      "n_meas_steps": 3416,
+      "total_steps": 26474,
+      "compile_mode": "default",
+      "seed": 0,
+      "profile_l2_instant_max_pct": 2.8075526789624137,
+      "profile_l2_max_pct": 0.38852307189779156,
+      "profile_l2_metric": "||du(t)|| / max_t' ||u_ref(t')||  (fixed scale; instantaneous per-phase values in phase_table)",
+      "u_ref_norm_peak": 0.20385446642820873,
+      "profile_pointwise_max_over_upeak_pct": 0.42313975833727613,
+      "complex_rel_max_pct": 2.8996732695883987,
+      "n_rows_mask": 59,
+      "center_phasor_num": [
+        -1.0830768988199479e-05,
+        -0.027910741765828546
+      ],
+      "center_phasor_ana": [
+        -0.00011492069381498671,
+        -0.027901262002144933
+      ],
+      "center_complex_rel_pct": 0.37460607075407454,
+      "phase_table": [
+        {
+          "step": 23059,
+          "phase_deg": 356.26,
+          "l2_rel_instant": 0.02743752965227123,
+          "l2_rel_peaknorm": 0.0037995238407492007,
+          "u_ref_norm": 0.028229578794207184,
+          "max_abs_over_upeak": 0.004172693700155638
+        },
+        {
+          "step": 23165,
+          "phase_deg": 40.92,
+          "l2_rel_instant": 0.003911842932729909,
+          "l2_rel_peaknorm": 0.0028049203494426877,
+          "u_ref_norm": 0.1461703731571431,
+          "max_abs_over_upeak": 0.0031758514864834294
+        },
+        {
+          "step": 23272,
+          "phase_deg": 86.01,
+          "l2_rel_instant": 0.0012075430245642403,
+          "l2_rel_peaknorm": 0.0012075203003033951,
+          "u_ref_norm": 0.2038506301739508,
+          "max_abs_over_upeak": 0.0025561648437002343
+        },
+        {
+          "step": 23379,
+          "phase_deg": 131.09,
+          "l2_rel_instant": 0.004091559805917953,
+          "l2_rel_peaknorm": 0.002898905008595888,
+          "u_ref_norm": 0.1444326276005134,
+          "max_abs_over_upeak": 0.00369358977964721
+        },
+        {
+          "step": 23486,
+          "phase_deg": 176.18,
+          "l2_rel_instant": 0.028075526789624137,
+          "l2_rel_peaknorm": 0.0038852307189779153,
+          "u_ref_norm": 0.028210392670545932,
+          "max_abs_over_upeak": 0.004231397583372761
+        },
+        {
+          "step": 23592,
+          "phase_deg": 220.85,
+          "l2_rel_instant": 0.004037354942272568,
+          "l2_rel_peaknorm": 0.0028911982744767224,
+          "u_ref_norm": 0.1459826272420464,
+          "max_abs_over_upeak": 0.003174788717730595
+        },
+        {
+          "step": 23699,
+          "phase_deg": 265.93,
+          "l2_rel_instant": 0.0012138500226451076,
+          "l2_rel_peaknorm": 0.0012138360261966887,
+          "u_ref_norm": 0.20385211585896945,
+          "max_abs_over_upeak": 0.002535503700001653
+        },
+        {
+          "step": 23806,
+          "phase_deg": 311.02,
+          "l2_rel_instant": 0.003977831525299713,
+          "l2_rel_peaknorm": 0.002822030074505341,
+          "u_ref_norm": 0.14462237312559365,
+          "max_abs_over_upeak": 0.0036553377619975153
+        }
+      ],
+      "mass_drift_pct": 0.025433399638191596,
+      "finite": true,
+      "elapsed_s": 35.7
+    },
+    {
+      "case": "womersley",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern, f_pre[OPPOSITE] at wall rows; walls at 0.5 / ny-1.5, H_eff = ny-2), x-periodic",
+      "driving": "library body force _apply_body_force_2d, a(t)=a0*cos(w*t), composed collide->halfway-BB->force->stream",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "force": "tensorlbm.turbulent_channel._apply_body_force_2d",
+        "wall": "pre-streaming half-way BB via library OPPOSITE table (verified/poiseuille_2d pattern; see gap note)",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 119,
+      "ny": 121,
+      "nx": 16,
+      "H_eff": 119.0,
+      "alpha": 8.0,
+      "omega": 0.0018077819363039337,
+      "period_steps_float": 3475.6323099597694,
+      "T_int": 3476,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "a0": 5.0712697251559954e-05,
+      "u_peak_ana": 0.03,
+      "u_peak_target": 0.03,
+      "Ma": 0.05196152422706632,
+      "tau_diffusion_steps": 14348.09281559145,
+      "skip_periods": 27,
+      "skip_steps": 93852,
+      "measure_periods": 4,
+      "n_meas_steps": 13904,
+      "total_steps": 107756,
+      "compile_mode": "default",
+      "seed": 0,
+      "profile_l2_instant_max_pct": 0.6039487099904755,
+      "profile_l2_max_pct": 0.10117699189638521,
+      "profile_l2_metric": "||du(t)|| / max_t' ||u_ref(t')||  (fixed scale; instantaneous per-phase values in phase_table)",
+      "u_ref_norm_peak": 0.28943365983323577,
+      "profile_pointwise_max_over_upeak_pct": 0.10739194449066285,
+      "complex_rel_max_pct": 0.4502307232324186,
+      "n_rows_mask": 117,
+      "center_phasor_num": [
+        -8.934995178797714e-05,
+        -0.027890250378291542
+      ],
+      "center_phasor_ana": [
+        -0.0001148893142779811,
+        -0.027893643455350312
+      ],
+      "center_complex_rel_pct": 0.09236353322756262,
+      "phase_table": [
+        {
+          "step": 93853,
+          "phase_deg": 1.13,
+          "l2_rel_instant": 0.005268154486995196,
+          "l2_rel_peaknorm": 0.0008815753969807246,
+          "u_ref_norm": 0.04843396187354471,
+          "max_abs_over_upeak": 0.0009808039411089305
+        },
+        {
+          "step": 94287,
+          "phase_deg": 46.08,
+          "l2_rel_instant": 0.0007550743371638082,
+          "l2_rel_peaknorm": 0.000585829318219776,
+          "u_ref_norm": 0.22455898083737216,
+          "max_abs_over_upeak": 0.0007608674026103183
+        },
+        {
+          "step": 94722,
+          "phase_deg": 91.14,
+          "l2_rel_instant": 0.00032769573893743807,
+          "l2_rel_peaknorm": 0.00032622275145644366,
+          "u_ref_norm": 0.2881326598297107,
+          "max_abs_over_upeak": 0.0006672783663469
+        },
+        {
+          "step": 95156,
+          "phase_deg": 136.09,
+          "l2_rel_instant": 0.0012628254753414053,
+          "l2_rel_peaknorm": 0.0008154281355987206,
+          "u_ref_norm": 0.18689229369048305,
+          "max_abs_over_upeak": 0.0009657947459036874
+        },
+        {
+          "step": 95591,
+          "phase_deg": 181.15,
+          "l2_rel_instant": 0.006039487099904754,
+          "l2_rel_peaknorm": 0.001011769918963852,
+          "u_ref_norm": 0.04848760593585875,
+          "max_abs_over_upeak": 0.0010739194449066285
+        },
+        {
+          "step": 96025,
+          "phase_deg": 226.1,
+          "l2_rel_instant": 0.0009174524266781854,
+          "l2_rel_peaknorm": 0.000712000678251994,
+          "u_ref_norm": 0.22461868988276854,
+          "max_abs_over_upeak": 0.0007585727722800552
+        },
+        {
+          "step": 96460,
+          "phase_deg": 271.16,
+          "l2_rel_instant": 0.0003017260750264487,
+          "l2_rel_peaknorm": 0.000300360398999074,
+          "u_ref_norm": 0.28812362187673857,
+          "max_abs_over_upeak": 0.0006336144206623799
+        },
+        {
+          "step": 96894,
+          "phase_deg": 316.11,
+          "l2_rel_instant": 0.0010621074941164434,
+          "l2_rel_peaknorm": 0.0006855577448456329,
+          "u_ref_norm": 0.18682053202416923,
+          "max_abs_over_upeak": 0.0008921643338344101
+        }
+      ],
+      "mass_drift_pct": 0.05562522194602273,
+      "finite": true,
+      "elapsed_s": 158.8
+    }
+  ],
+  "convergence": {
+    "metric": "profile_l2_max_pct = max_t ||du(t)||/max_t' ||u_ref(t')|| (fixed scale; worst of 8 phase instants)",
+    "per_alpha": [
+      {
+        "alpha": 4.0,
+        "H_list": [
+          59,
+          119
+        ],
+        "profile_l2_max_pct": [
+          0.10973690814377494,
+          0.046411993631046755
+        ],
+        "complex_rel_max_pct": [
+          0.4664806220533355,
+          0.14366212052581082
+        ],
+        "err_decreased": true
+      },
+      {
+        "alpha": 8.0,
+        "H_list": [
+          59,
+          119
+        ],
+        "profile_l2_max_pct": [
+          0.38852307189779156,
+          0.10117699189638521
+        ],
+        "complex_rel_max_pct": [
+          2.8996732695883987,
+          0.4502307232324186
+        ],
+        "err_decreased": true
+      }
+    ],
+    "err_decreased": true
+  },
+  "passed": true,
+  "status": "VERIFIED"
+}

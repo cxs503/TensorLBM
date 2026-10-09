@@ -1,0 +1,7 @@
+[p2] p2_W2_s0.01: sigma_eff=0.4251222388722442 stable=True u_max=0.0004904233691927736
+[p2] p2_W4_s0.01: sigma_eff=0.46893280121703684 stable=True u_max=5.403320219107212e-05
+[p2] p2_W6_s0.01: sigma_eff=0.48662570365399227 stable=True u_max=2.6319295192538663e-05
+[p2] p2_W8_s0.01: sigma_eff=0.4944881270692869 stable=True u_max=1.8590535885999963e-05
+[p2] p2_W4_s0.02: sigma_eff=0.4689315914593095 stable=True u_max=0.00010804558952912003
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/probe/out/p2_force_portability.json
+GATES: {"g_p2_linearity_2pct": true, "g_p2_ladder_w4_dev_le_0.04": false, "g_p2_ladder_w6_dev_le_0.04": false, "g_p2_monotone_w4_w6_w8": true, "g_p2_stable": true}

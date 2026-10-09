@@ -10,11 +10,9 @@ profile, then injected back into LBM by replacing the near-wall velocity.
 No NS solve, no Newton iteration — just the exact viscous solution.
 """
 
-import torch
 import math
-import time
-from dataclasses import dataclass
-from typing import Optional
+
+import torch
 
 
 # ── Surface extraction ──
@@ -137,7 +135,6 @@ class PrismCorrector:
         from .d3q19 import equilibrium3d
 
         c0 = self.prism["surface_xyz"]
-        N = self.N
 
         # Gather corrected velocity at surface cells
         cz_all = c0[:, 2].long().clamp(0, f.shape[1] - 1)

@@ -172,7 +172,7 @@ def compute_retardation_function(
     omega = radiation.omega  # (N_freq,)
     B = radiation.damping  # (N_freq, 6, 6)
     N_freq = omega.shape[0]
-    N_t = t.shape[0]
+    t.shape[0]
 
     # Interpolate B to a finer frequency grid if needed
     if n_omega_integration > N_freq:

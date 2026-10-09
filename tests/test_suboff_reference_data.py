@@ -27,7 +27,6 @@ from tensorlbm.suboff_reference_data import (
     list_available_reference_ids,
 )
 
-
 # ---------------------------------------------------------------------------
 # 1. Typed data structure
 # ---------------------------------------------------------------------------

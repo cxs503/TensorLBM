@@ -1,0 +1,160 @@
+{
+  "case": "taylor_couette_annulus_convergence",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "problem": "annular Taylor-Couette laminar flow, eta=0.5, inner rotating / outer at rest, Re_i=20 (<< Re_crit~68), axial-periodic 2D r-theta plane",
+  "boundary": "inner cylinder d<=r_i: Ladd moving-wall bounce-back (tensorlbm.rotating_cylinder.moving_wall_bounce_back, whole obstacle mask, u_w from rotating_wall_velocity); outer wall d>r_o: static bounce_back_cells; streaming periodic (box border fully solid)",
+  "entry": "tensorlbm.rotating_cylinder public functions (rotating_wall_velocity, moving_wall_bounce_back) + tensorlbm.solver collide_bgk/stream + d2q9 equilibrium/macroscopic + boundaries cylinder_mask/bounce_back_cells/compute_obstacle_forces + d3q27.moving_wall_linkwise_me_force_torque (torque diagnostic); compile via benchmarks/compile_route",
+  "extrap": "none",
+  "comparison_method": "effective staircase radii: 2-param weighted LSQ fit of the exact Couette family A*r+B/r on central bins; r_o_eff=sqrt(-B/A), r_i_eff=sqrt(B/(omega_i-A)) from the fitted no-slip conditions; primary comparison u_ref=A*r+B/r with absolute normalization U_max_ref=omega_i*r_i_eff (imposed omega_i)",
+  "primary_metric": "max & weighted-L2 relative error of the azimuthally-averaged binned profile vs the effective-geometry Couette solution over the central region (u_ref > 0.2*U_max_ref)",
+  "ri_list": [
+    24,
+    48,
+    96
+  ],
+  "per_grid": [
+    {
+      "ri": 24,
+      "ro": 48,
+      "n_grid": 99,
+      "Re_i": 20.0,
+      "tau": 0.65,
+      "omega_i": 0.001736111111111111,
+      "n_steps": 40400,
+      "steady": true,
+      "ri_eff": 23.871,
+      "ro_eff": 47.9591,
+      "delta_i": -0.129,
+      "delta_o": -0.0409,
+      "delta_i_allbins": -0.1282,
+      "delta_o_allbins": -0.049,
+      "profile_max_rel_bin_central_pct": 0.7464,
+      "profile_l2_rel_bin_central_pct": 0.3032,
+      "percell_max_rel_central_pct": 2.8759,
+      "profile_max_rel_bin_central_shape_pct": 1.0138,
+      "nominal_max_rel_bin_central_pct": 2.1333,
+      "nominal_l2_rel_bin_central_pct": 1.5292,
+      "midgap_err_vs_nominal_pct": -1.6053,
+      "T_if_inner_err_pct": 0.1851,
+      "T_if_outer_err_pct": -0.1893,
+      "T_fw_outer_err_pct": -0.305,
+      "T_if_balance_pct": -0.0042,
+      "T_lw_inner_ratio_disclosed": 2.061,
+      "T_lw_outer_ratio_disclosed": -2.0298,
+      "M_ref_from_Bfit": 0.826289
+    },
+    {
+      "ri": 48,
+      "ro": 96,
+      "n_grid": 195,
+      "Re_i": 20.0,
+      "tau": 0.65,
+      "omega_i": 0.00043402777777777775,
+      "n_steps": 161400,
+      "steady": true,
+      "ri_eff": 47.888,
+      "ro_eff": 95.9605,
+      "delta_i": -0.112,
+      "delta_o": -0.0395,
+      "delta_i_allbins": -0.1122,
+      "delta_o_allbins": -0.0395,
+      "profile_max_rel_bin_central_pct": 0.3626,
+      "profile_l2_rel_bin_central_pct": 0.102,
+      "percell_max_rel_central_pct": 1.8507,
+      "profile_max_rel_bin_central_shape_pct": 0.4672,
+      "nominal_max_rel_bin_central_pct": 0.974,
+      "nominal_l2_rel_bin_central_pct": 0.6618,
+      "midgap_err_vs_nominal_pct": -0.7061,
+      "T_if_inner_err_pct": 0.2028,
+      "T_if_outer_err_pct": -0.1593,
+      "T_fw_outer_err_pct": -0.1479,
+      "T_if_balance_pct": 0.0434,
+      "T_lw_inner_ratio_disclosed": 2.1391,
+      "T_lw_outer_ratio_disclosed": -1.9504,
+      "M_ref_from_Bfit": 0.832787
+    },
+    {
+      "ri": 96,
+      "ro": 192,
+      "n_grid": 387,
+      "Re_i": 20.0,
+      "tau": 0.65,
+      "omega_i": 0.00010850694444444444,
+      "n_steps": 645200,
+      "steady": true,
+      "ri_eff": 95.8976,
+      "ro_eff": 191.8638,
+      "delta_i": -0.1024,
+      "delta_o": -0.1362,
+      "delta_i_allbins": -0.1146,
+      "delta_o_allbins": -0.0612,
+      "profile_max_rel_bin_central_pct": 0.1525,
+      "profile_l2_rel_bin_central_pct": 0.0354,
+      "percell_max_rel_central_pct": 1.2441,
+      "profile_max_rel_bin_central_shape_pct": 0.2121,
+      "nominal_max_rel_bin_central_pct": 0.435,
+      "nominal_l2_rel_bin_central_pct": 0.3447,
+      "midgap_err_vs_nominal_pct": -0.4451,
+      "T_if_inner_err_pct": 0.7272,
+      "T_if_outer_err_pct": -0.4954,
+      "T_fw_outer_err_pct": 0.1493,
+      "T_if_balance_pct": 0.2317,
+      "T_lw_inner_ratio_disclosed": 2.1357,
+      "T_lw_outer_ratio_disclosed": -1.9128,
+      "M_ref_from_Bfit": 0.835772
+    }
+  ],
+  "convergence": {
+    "err_decreased": true,
+    "profile_max_pct": [
+      0.7464376909781671,
+      0.3625926773671251,
+      0.15247321949386708
+    ],
+    "profile_l2_pct": [
+      0.3031538318844648,
+      0.10204681850280173,
+      0.03539856098288858
+    ],
+    "delta_i_values": [
+      -0.12899978007924418,
+      -0.1119935314799747,
+      -0.1024236016190514
+    ],
+    "delta_o_values": [
+      -0.04092220769327781,
+      -0.03945700536128527,
+      -0.13615608519592115
+    ],
+    "delta_i_spread_lattice": 0.02657617846019278,
+    "delta_o_spread_lattice": 0.09669907983463588,
+    "geometry_constants_grid_independent": true
+  },
+  "torque_crosscheck": {
+    "T_if_inner_err_pct": [
+      0.18508688823215055,
+      0.20275929970806988,
+      0.727154903730582
+    ],
+    "T_if_outer_err_pct": [
+      -0.189275919534084,
+      -0.15931880073942628,
+      -0.49543928942082416
+    ],
+    "T_fw_outer_err_pct": [
+      -0.30497006042861324,
+      -0.14793803161387664,
+      0.14927662992862673
+    ],
+    "T_if_balance_pct": [
+      -0.00418903130193344,
+      0.0434404989686436,
+      0.23171561430975787
+    ],
+    "all_within_3pct": true
+  },
+  "passed_3pct_and_converged": true,
+  "verdict": "verified",
+  "notes": "effective-geometry Couette comparison: per-bin profile max 0.75% -> 0.36% -> 0.15%, L2 0.30% -> 0.10% -> 0.04%; monotone convergence; geometry offsets delta_i=-0.129 / -0.112 / -0.102, delta_o=-0.041 / -0.039 / -0.136 lattice units (spread 0.027 / 0.097); torque cross-check (interface-flux MEM vs 4*pi*nu*B): +0.19% / +0.20% / +0.73%, wall balance -0.00% / +0.04% / +0.23%. Nominal-radii comparison (disclosure): 2.13% -> 0.97% -> 0.44%"
+}

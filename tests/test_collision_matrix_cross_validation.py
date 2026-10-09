@@ -28,8 +28,12 @@ def test_runner_records_only_available_mrt_and_explicitly_skips_withheld_familie
     available = [item for item in evidence.combinations if item.status == "PASS"]
     assert [(item.lattice, item.family) for item in available] == [
         ("D3Q19", "MRT"),
+        ("D3Q19", "CM"),
+        ("D3Q19", "KBC"),
         ("D3Q19", "CUMULANT"),
         ("D3Q27", "MRT"),
+        ("D3Q27", "CM"),
+        ("D3Q27", "KBC"),
         ("D3Q27", "CUMULANT"),
     ]
     for item in available:
@@ -44,10 +48,7 @@ def test_runner_records_only_available_mrt_and_explicitly_skips_withheld_familie
         assert all(len(source.sha256) == 64 for source in item.source_provenance)
 
     withheld = [item for item in evidence.combinations if item.status == "SKIPPED_WITHHELD"]
-    assert len(withheld) == 4
-    assert all(
-        item.probes == () and item.withheld_reason.startswith("WITHHELD_") for item in withheld
-    )
+    assert withheld == []  # all eight lattice x family combinations are admitted
 
 
 def test_runner_is_reproducible_and_writer_emits_machine_readable_hashable_json(tmp_path) -> None:

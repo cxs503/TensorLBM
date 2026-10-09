@@ -5,7 +5,6 @@ from pathlib import Path
 
 import torch
 
-
 _SPEC = importlib.util.spec_from_file_location(
     "propeller_improved",
     Path(__file__).parents[1] / "examples" / "propeller_improved.py",

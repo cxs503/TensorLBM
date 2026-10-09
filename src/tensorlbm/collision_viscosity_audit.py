@@ -1,4 +1,5 @@
 """Periodic shear-wave audit for recovered collision-model viscosity."""
+
 from __future__ import annotations
 
 import math
@@ -33,9 +34,13 @@ class CollisionViscosityAuditConfig:
 
     def validate(self) -> None:
         if self.collision_model not in {
-            "bgk", "cumulant", "planar_cumulant_d2q9",
-            "cumulant_wale", "cumulant_vreman",
-            "entropic_kbc", "natural_kbc",
+            "bgk",
+            "cumulant",
+            "planar_cumulant_d2q9",
+            "cumulant_wale",
+            "cumulant_vreman",
+            "entropic_kbc",
+            "natural_kbc",
         }:
             raise ValueError(
                 "unsupported collision_model",
@@ -64,10 +69,7 @@ class CollisionViscosityAuditConfig:
             raise ValueError(
                 "natural_kbc_compute_dtype must be storage or float64",
             )
-        if (
-            self.natural_kbc_compute_dtype != "storage"
-            and self.collision_model != "natural_kbc"
-        ):
+        if self.natural_kbc_compute_dtype != "storage" and self.collision_model != "natural_kbc":
             raise ValueError(
                 "float64 natural-KBC compute requires collision_model=natural_kbc",
             )
@@ -89,20 +91,23 @@ def _collide(
         return collide_planar_cumulant_d3q19(populations, config.tau)
     if config.collision_model == "cumulant_wale":
         return collide_cumulant_d3q19(
-            populations, tau=config.tau, C_w=config.wale_cw,
+            populations,
+            tau=config.tau,
+            C_w=config.wale_cw,
         )
     if config.collision_model == "cumulant_vreman":
         return collide_cumulant_d3q19(
-            populations, tau=config.tau, C_v=config.vreman_cv,
+            populations,
+            tau=config.tau,
+            C_v=config.vreman_cv,
         )
     if config.collision_model == "natural_kbc":
         compute_populations = (
-            populations.double()
-            if config.natural_kbc_compute_dtype == "float64"
-            else populations
+            populations.double() if config.natural_kbc_compute_dtype == "float64" else populations
         )
         return collide_natural_kbc_d3q19(
-            compute_populations, config.tau,
+            compute_populations,
+            config.tau,
         ).to(dtype=populations.dtype)
     return collide_kbc_d3q19(
         populations,
@@ -146,31 +151,30 @@ def run_collision_viscosity_audit(
         device=device,
         dtype=torch.float64,
     )
-    log_amplitude = torch.log(torch.tensor(
-        [max(abs(amplitude), 1.0e-300) for _, amplitude in samples],
-        device=device,
-        dtype=torch.float64,
-    ))
+    log_amplitude = torch.log(
+        torch.tensor(
+            [max(abs(amplitude), 1.0e-300) for _, amplitude in samples],
+            device=device,
+            dtype=torch.float64,
+        )
+    )
     centered_steps = steps - steps.mean()
-    slope = float((
-        (centered_steps * (log_amplitude - log_amplitude.mean())).sum()
-        / centered_steps.square().sum()
-    ).item())
+    slope = float(
+        (
+            (centered_steps * (log_amplitude - log_amplitude.mean())).sum()
+            / centered_steps.square().sum()
+        ).item()
+    )
     recovered_viscosity = -slope / wave_number**2
     target_viscosity = (config.tau - 0.5) / 3.0
-    relative_error_pct = (
-        abs(recovered_viscosity - target_viscosity) / target_viscosity * 100.0
-    )
+    relative_error_pct = abs(recovered_viscosity - target_viscosity) / target_viscosity * 100.0
     fitted_log_decay = -slope * float(steps[-1] - steps[0])
     finite = bool(torch.isfinite(populations).all()) and all(
-        math.isfinite(value)
-        for value in (slope, recovered_viscosity, relative_error_pct)
+        math.isfinite(value) for value in (slope, recovered_viscosity, relative_error_pct)
     )
     decay_signal_admitted = fitted_log_decay >= config.minimum_fitted_log_decay
     admitted = (
-        finite
-        and relative_error_pct <= config.maximum_relative_error_pct
-        and decay_signal_admitted
+        finite and relative_error_pct <= config.maximum_relative_error_pct and decay_signal_admitted
     )
     return {
         "schema": "tensorlbm-collision-viscosity-audit-v1",

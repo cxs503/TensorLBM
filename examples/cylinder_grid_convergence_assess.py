@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Assess equivalent cylinder-v3 grids with hashed source records."""
+
 from __future__ import annotations
 
 import argparse

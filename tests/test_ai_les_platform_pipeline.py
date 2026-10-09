@@ -69,4 +69,5 @@ def test_dataset_upstream(pipeline, tmp_path):
 def test_default_pipeline_fn_importable(pipeline):
     """run_ai_les_pipeline is importable as the default fn (not executed)."""
     from tensorlbm.ai.pipeline import run_ai_les_pipeline
+
     assert callable(run_ai_les_pipeline)

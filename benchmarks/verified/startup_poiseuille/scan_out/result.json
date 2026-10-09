@@ -1,0 +1,203 @@
+{
+  "case": "startup_poiseuille_convergence",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern), x-periodic",
+  "driving": "constant body force a (library _apply_body_force_2d)",
+  "extrap": "none",
+  "H_list": [
+    59,
+    119
+  ],
+  "tau": 0.8,
+  "u_max_target": 0.03,
+  "tol_pct": 3.0,
+  "per_grid": [
+    {
+      "case": "startup_poiseuille",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern, f_pre[OPPOSITE] at wall rows; walls at 0.5 / ny-1.5, H_eff = ny-2), x-periodic",
+      "driving": "constant body force a=8*nu*u_max/H^2 via library _apply_body_force_2d, composed collide->halfway-BB->force->stream",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "force": "tensorlbm.turbulent_channel._apply_body_force_2d",
+        "wall": "pre-streaming half-way BB via library OPPOSITE table (verified/poiseuille_2d pattern; see gap note)",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 59,
+      "ny": 61,
+      "nx": 16,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "H_eff": 59.0,
+      "a": 6.894570525711003e-06,
+      "u_max_final": 0.03,
+      "Ma": 0.05196152422706632,
+      "t_end": 52235,
+      "tstar_marks": [
+        0.05,
+        0.125,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ],
+      "center_every": 20,
+      "tstar_center_min": 0.02,
+      "compile_mode": "default",
+      "seed": 0,
+      "centerline_err_max_over_umax_pct": 0.2879102122821618,
+      "profile_l2_max_pct": 0.2910038310912985,
+      "profile_pointwise_max_over_umax_pct": 0.28791015789626784,
+      "profile_table": [
+        {
+          "step": 1740,
+          "tstar": 0.05,
+          "l2_rel": 0.0015985093219742493,
+          "max_abs_over_umax": 0.0005460680240042491
+        },
+        {
+          "step": 4351,
+          "tstar": 0.125,
+          "l2_rel": 0.0016088569748466065,
+          "max_abs_over_umax": 0.0010833526679106024
+        },
+        {
+          "step": 8702,
+          "tstar": 0.25,
+          "l2_rel": 0.0016463488084649774,
+          "max_abs_over_umax": 0.0014619034497414622
+        },
+        {
+          "step": 17405,
+          "tstar": 0.5,
+          "l2_rel": 0.0017536942361016995,
+          "max_abs_over_umax": 0.0016904507217595927
+        },
+        {
+          "step": 26107,
+          "tstar": 0.75,
+          "l2_rel": 0.002303398375212284,
+          "max_abs_over_umax": 0.002249941791039485
+        },
+        {
+          "step": 34810,
+          "tstar": 1.0,
+          "l2_rel": 0.0028589616058102003,
+          "max_abs_over_umax": 0.00282610462007081
+        },
+        {
+          "step": 52215,
+          "tstar": 1.5,
+          "l2_rel": 0.0029100383109129852,
+          "max_abs_over_umax": 0.0028791015789626784
+        }
+      ],
+      "mass_drift_pct": 0.009993256115522542,
+      "finite": true,
+      "elapsed_s": 66.6
+    },
+    {
+      "case": "startup_poiseuille",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern, f_pre[OPPOSITE] at wall rows; walls at 0.5 / ny-1.5, H_eff = ny-2), x-periodic",
+      "driving": "constant body force a=8*nu*u_max/H^2 via library _apply_body_force_2d, composed collide->halfway-BB->force->stream",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "force": "tensorlbm.turbulent_channel._apply_body_force_2d",
+        "wall": "pre-streaming half-way BB via library OPPOSITE table (verified/poiseuille_2d pattern; see gap note)",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 119,
+      "ny": 121,
+      "nx": 16,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "H_eff": 119.0,
+      "a": 1.6947955652849378e-06,
+      "u_max_final": 0.03,
+      "Ma": 0.05196152422706632,
+      "t_end": 212435,
+      "tstar_marks": [
+        0.05,
+        0.125,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ],
+      "center_every": 20,
+      "tstar_center_min": 0.02,
+      "compile_mode": "default",
+      "seed": 0,
+      "centerline_err_max_over_umax_pct": 0.16531640209999782,
+      "profile_l2_max_pct": 0.22484521932756535,
+      "profile_pointwise_max_over_umax_pct": 0.15535496643604108,
+      "profile_table": [
+        {
+          "step": 7080,
+          "tstar": 0.05,
+          "l2_rel": 0.0022484521932756535,
+          "max_abs_over_umax": 0.0008426349493286199
+        },
+        {
+          "step": 17701,
+          "tstar": 0.125,
+          "l2_rel": 0.0021285228267628026,
+          "max_abs_over_umax": 0.0014976461865815148
+        },
+        {
+          "step": 35402,
+          "tstar": 0.25,
+          "l2_rel": 0.0016810539780892835,
+          "max_abs_over_umax": 0.0015535496643604106
+        },
+        {
+          "step": 70805,
+          "tstar": 0.5,
+          "l2_rel": 0.000496140827976212,
+          "max_abs_over_umax": 0.0005616195796946898
+        },
+        {
+          "step": 106207,
+          "tstar": 0.75,
+          "l2_rel": 0.0012015381949805827,
+          "max_abs_over_umax": 0.0012572440659835058
+        },
+        {
+          "step": 141610,
+          "tstar": 1.0,
+          "l2_rel": 0.001378964174561585,
+          "max_abs_over_umax": 0.0013876376257362702
+        },
+        {
+          "step": 212415,
+          "tstar": 1.5,
+          "l2_rel": 0.001325897026903504,
+          "max_abs_over_umax": 0.0013062219267804174
+        }
+      ],
+      "mass_drift_pct": 0.1606649603725465,
+      "finite": true,
+      "elapsed_s": 257.3
+    }
+  ],
+  "convergence": {
+    "metric": "centerline_err_max_over_umax_pct",
+    "values": [
+      0.2879102122821618,
+      0.16531640209999782
+    ],
+    "err_decreased": true
+  },
+  "passed": true,
+  "status": "VERIFIED"
+}

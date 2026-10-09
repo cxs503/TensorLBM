@@ -14,16 +14,21 @@ Usage:
     python examples/hull_fs_d3q27_pf.py --hull wigley --collision cumulant --device sdaa:0
 """
 
-import sys, math, time, torch, numpy as np
+import sys
+import time
+
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q27 import equilibrium27, macroscopic27, stream27, OPPOSITE as OPP27
-from tensorlbm.d3q27 import _c_on as _c27_on, _w_on as _w27_on, collide_mrt27
-from tensorlbm.advanced_collision import collide_kbc_d3q27, collide_cascaded_d3q27
+from tensorlbm.advanced_collision import collide_cascaded_d3q27, collide_kbc_d3q27
 from tensorlbm.cumulant import collide_cumulant_d3q27
-from tensorlbm.turbulence import collide_smagorinsky_mrt27
-from tensorlbm.ship_cad import build_hull_mask
+from tensorlbm.d3q27 import OPPOSITE as OPP27
+from tensorlbm.d3q27 import _c_on as _c27_on
+from tensorlbm.d3q27 import _w_on as _w27_on
+from tensorlbm.d3q27 import collide_mrt27, equilibrium27, macroscopic27, stream27
 from tensorlbm.hydrodynamics import ittc57_friction_coefficient, voxel_wetted_area
+from tensorlbm.ship_cad import build_hull_mask
+from tensorlbm.turbulence import collide_smagorinsky_mrt27
 
 KAPPA = 0.41
 B_CONST = 5.0

@@ -1,0 +1,42 @@
+{
+  "case": "cylinder_re200_free_stream_vortex_shedding",
+  "description": "自由流圆柱 Re=200 Kármán 涡街（Braza 验证，Re=100 工程链复用）",
+  "lattice": "D2Q9",
+  "collision": "MRT (tau_field sponge)",
+  "boundary": "far_field_bc_2d + sponge(下游10D) + 入口播种(St_seed=0.195, 2周期)",
+  "extrap": "none",
+  "reference": "Braza 1986: Cd=1.33 (1.28-1.40), St≈0.195 (0.19-0.20)",
+  "grids": {
+    "D48": {
+      "D": 48,
+      "steps": 70000,
+      "cd": 1.3386,
+      "err_pct": 0.65,
+      "st": 0.1962,
+      "st_err_pct": 0.6,
+      "cl_std": 0.485
+    },
+    "D64": {
+      "D": 64,
+      "steps": 80000,
+      "cd": 1.3177,
+      "err_pct": -0.92,
+      "st": 0.1936,
+      "st_err_pct": -0.72,
+      "cl_std": 0.47
+    }
+  },
+  "convergence": {
+    "cd": [
+      1.3386,
+      1.3177
+    ],
+    "st": [
+      0.1962,
+      0.1936
+    ],
+    "within_3pct": true
+  },
+  "verified": true,
+  "verified_date": "2026-08-19"
+}

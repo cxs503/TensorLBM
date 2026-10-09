@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run the canonical Re=100 cylinder BFL/control-volume validation."""
+
 from __future__ import annotations
 
 import argparse
@@ -58,19 +59,28 @@ def parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = parser().parse_args()
     config = CylinderBFLControlVolumeConfig(
-        nx=args.nx, ny=args.ny, nz=args.nz, radius=args.radius,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        radius=args.radius,
         center_x_fraction=args.center_x_fraction,
-        reynolds=args.reynolds, lattice_speed=args.lattice_speed,
-        steps=args.steps, warmup_steps=args.warmup_steps,
-        ramp_steps=args.ramp_steps, sponge_width=args.sponge_width,
-        sponge_strength=args.sponge_strength, sponge_inlet=args.sponge_inlet,
+        reynolds=args.reynolds,
+        lattice_speed=args.lattice_speed,
+        steps=args.steps,
+        warmup_steps=args.warmup_steps,
+        ramp_steps=args.ramp_steps,
+        sponge_width=args.sponge_width,
+        sponge_strength=args.sponge_strength,
+        sponge_inlet=args.sponge_inlet,
         cv_margin=args.cv_margin,
         report_interval=args.report_interval,
         checkpoint_interval=args.checkpoint_interval,
-        checkpoint_path=args.checkpoint, resume=args.resume,
+        checkpoint_path=args.checkpoint,
+        resume=args.resume,
         statistics_window_steps=args.statistics_window_steps,
         minimum_shedding_cycles=args.minimum_shedding_cycles,
-        far_field_mode=args.far_field_mode, device=args.device,
+        far_field_mode=args.far_field_mode,
+        device=args.device,
         collision_model=args.collision_model,
         collision_chunk_cells=args.collision_chunk_cells,
         compile_natural_kbc=args.compile_natural_kbc,

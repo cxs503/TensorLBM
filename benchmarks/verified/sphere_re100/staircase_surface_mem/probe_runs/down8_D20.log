@@ -1,0 +1,168 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[setup] D=20 domain=(220, 100, 100) cells=2200000 solid=4139 near=1118 tau=0.5300 u_lb=0.0500
+[compile_route] probe_sphere_re100[D20]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
+[cv] frac=0.25 m=2 x[38,63) y[38,63) z[38,63) cells=15625
+[cv] frac=0.5 m=5 x[35,66) y[35,66) z[35,66) cells=29791
+[cv] frac=0.75 m=8 x[32,69) y[32,69) z[32,69) cells=50653
+[cv] frac=1.0 m=10 x[30,71) y[30,71) z[30,71) cells=68921
+[mon] step=500 Cd(p+f std)=0.87418 err_SN=-19.93%
+[mon] step=1000 Cd(p+f std)=0.84932 err_SN=-22.20%
+[mon] step=1500 Cd(p+f std)=0.83074 err_SN=-23.91%
+[mon] step=2000 Cd(p+f std)=0.82091 err_SN=-24.81%
+[mon] step=2500 Cd(p+f std)=0.81551 err_SN=-25.30%
+[mon] step=3000 Cd(p+f std)=0.81280 err_SN=-25.55%
+[mon] step=3500 Cd(p+f std)=0.81063 err_SN=-25.75%
+[mon] step=4000 Cd(p+f std)=0.80983 err_SN=-25.82%
+[mon] step=4500 Cd(p+f std)=0.80901 err_SN=-25.90%
+[mon] step=5000 Cd(p+f std)=0.80873 err_SN=-25.92%
+[run] 5000 steps in 829s (165.7 ms/step)
+[cov] frac=0.25 force_x=4.764022e-01  Cd_cov=1.2131
+[cov] frac=0.5 force_x=4.763853e-01  Cd_cov=1.2131
+[cov] frac=0.75 force_x=4.763611e-01  Cd_cov=1.2130
+[cov] frac=1.0 force_x=4.763389e-01  Cd_cov=1.2130
+
+=== final-field pressure/friction sweep (extrap=none) ===
+  p0=near_wall   cd_p=0.5112 Std=0.2975 Faces=0.3380 mix50=0.3178 bfl(=.5std)=0.5982 lag=0.2896
+      tot(standard) = 0.8087  err_SN=-25.92%  err_CGW=-25.60%
+      tot(faces) = 0.8492  err_SN=-22.21%  err_CGW=-21.88%
+      tot(mix50) = 0.8290  err_SN=-24.07%  err_CGW=-23.74%
+  p0=far_field   cd_p=0.5112 Std=0.2975 Faces=0.3380 mix50=0.3178 bfl(=.5std)=0.5982 lag=0.2896
+      tot(standard) = 0.8087  err_SN=-25.92%  err_CGW=-25.60%
+      tot(faces) = 0.8492  err_SN=-22.21%  err_CGW=-21.88%
+      tot(mix50) = 0.8290  err_SN=-24.07%  err_CGW=-23.74%
+  p0=domain_avg  cd_p=0.5112 Std=0.2975 Faces=0.3380 mix50=0.3178 bfl(=.5std)=0.5982 lag=0.2896
+      tot(standard) = 0.8087  err_SN=-25.92%  err_CGW=-25.60%
+      tot(faces) = 0.8492  err_SN=-22.21%  err_CGW=-21.88%
+      tot(mix50) = 0.8290  err_SN=-24.07%  err_CGW=-23.74%
+  p0=inlet       cd_p=0.5112 Std=0.2975 Faces=0.3380 mix50=0.3178 bfl(=.5std)=0.5982 lag=0.2896
+      tot(standard) = 0.8087  err_SN=-25.92%  err_CGW=-25.60%
+      tot(faces) = 0.8492  err_SN=-22.21%  err_CGW=-21.88%
+      tot(mix50) = 0.8290  err_SN=-24.07%  err_CGW=-23.74%
+{
+ "D": 20,
+ "domain": [
+  220,
+  100,
+  100
+ ],
+ "pad": [
+  2.0,
+  8.0,
+  2.0,
+  2.0,
+  2.0,
+  2.0
+ ],
+ "u_lb": 0.05,
+ "nu_lb": 0.009999999999999998,
+ "tau": 0.53,
+ "steps": 5000,
+ "Cd_cov": 1.2130435517359142,
+ "cov_force": [
+  0.47636108882725237,
+  -9.134868159890174e-05,
+  -9.407112374901772e-05
+ ],
+ "Cd_cov_by_frac": {
+  "0.25": 1.2131481658065861,
+  "0.5": 1.2131052188577456,
+  "0.75": 1.2130435517359142,
+  "1.0": 1.2129869531836293
+ },
+ "cd_trace": [
+  [
+   500,
+   0.87418
+  ],
+  [
+   1000,
+   0.84932
+  ],
+  [
+   1500,
+   0.83074
+  ],
+  [
+   2000,
+   0.82091
+  ],
+  [
+   2500,
+   0.81551
+  ],
+  [
+   3000,
+   0.8128
+  ],
+  [
+   3500,
+   0.81063
+  ],
+  [
+   4000,
+   0.80983
+  ],
+  [
+   4500,
+   0.80901
+  ],
+  [
+   5000,
+   0.80873
+  ]
+ ],
+ "cd_pressure_by_p0": {
+  "near_wall": 0.5111965912381878,
+  "far_field": 0.5111965912381878,
+  "domain_avg": 0.5111965912381878,
+  "inlet": 0.5111965532926924
+ },
+ "cd_friction": {
+  "near_wall": {
+   "standard": 0.29753368395721197,
+   "faces": 0.33803422030543956,
+   "mix50": 0.31778395213132576,
+   "bfl": 0.5981853492705347,
+   "lagrange": 0.28962068213077985
+  },
+  "far_field": {
+   "standard": 0.29753368395721197,
+   "faces": 0.33803422030543956,
+   "mix50": 0.31778395213132576,
+   "bfl": 0.5981853492705347,
+   "lagrange": 0.28962068213077985
+  },
+  "domain_avg": {
+   "standard": 0.29753368395721197,
+   "faces": 0.33803422030543956,
+   "mix50": 0.31778395213132576,
+   "bfl": 0.5981853492705347,
+   "lagrange": 0.28962068213077985
+  },
+  "inlet": {
+   "standard": 0.29753368395721197,
+   "faces": 0.33803422030543956,
+   "mix50": 0.31778395213132576,
+   "bfl": 0.5981853492705347,
+   "lagrange": 0.28962068213077985
+  }
+ },
+ "ref_SN": 1.0917310910948732,
+ "ref_CGW": 1.0870171641572397,
+ "ms_per_step": 165.72282028198242
+}

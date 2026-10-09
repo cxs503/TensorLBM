@@ -65,6 +65,8 @@ k-omega SST (3D):
 from __future__ import annotations
 
 import inspect
+import subprocess
+from pathlib import Path
 
 import pytest
 import torch
@@ -73,13 +75,33 @@ from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.d3q27 import equilibrium27, macroscopic27
 from tensorlbm.rans_common import (
     collide_rans_3d,
-    collide_rans_bgk27,
     collide_rans_bgk3d,
-    collide_rans_mrt27,
+    collide_rans_bgk27,
     collide_rans_mrt3d,
+    collide_rans_mrt27,
 )
 from tensorlbm.solver3d import stream3d
 from tensorlbm.turbulence import _nu_t_to_tau_eff
+
+_RANS_KE_BASE_SNAPSHOT = Path(__file__).with_name("_legacy_snapshots") / ("rans_ke_base_2341767.py")
+
+
+def test_vendored_rans_ke_base_snapshot_matches_pinned_rev():
+    """The vendored rans_ke base snapshot is byte-identical to 2341767^."""
+    try:
+        source = subprocess.run(
+            ["git", "show", "2341767^:src/tensorlbm/rans_ke.py"],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=str(Path(__file__).resolve().parent.parent),
+        )
+    except OSError:
+        source = None
+    if source is None or source.returncode != 0:
+        pytest.skip("revision 2341767 not in this clone's history")
+    assert _RANS_KE_BASE_SNAPSHOT.read_text() == source.stdout
+
 
 TAU = 0.7
 DEVICE = torch.device("cpu")
@@ -156,17 +178,14 @@ class TestOriginalBugIdentification:
 
     @pytest.fixture
     def original_rans_ke_source(self):
-        """Load the original rans_ke.py source from git history."""
-        import subprocess
+        """Load the original rans_ke.py source from the vendored snapshot.
 
-        result = subprocess.run(
-            ["git", "show", "2341767^:src/tensorlbm/rans_ke.py"],
-            capture_output=True,
-            text=True,
-            check=True,
-            cwd=str(__import__("pathlib").Path(__file__).resolve().parent.parent),
-        )
-        return result.stdout
+        The base revision lives byte-frozen at ``tests/_legacy_snapshots/`` so
+        the bug-documentation tests also run in history-less checkouts (CI's
+        shallow clone cannot ``git show`` the pinned revision); the snapshot
+        guard below re-checks it against the revision wherever history exists.
+        """
+        return _RANS_KE_BASE_SNAPSHOT.read_text()
 
     def test_bug1_sa_scalar_averaging_exists(self, original_rans_ke_source):
         """BUG-1: collide_rans_sa averaged nu_t to a scalar via .mean().item()."""
@@ -378,8 +397,6 @@ class TestSaEquivalence:
 
         This proves BUG-1 was a real correctness bug, not a no-op.
         """
-        from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-        from tensorlbm.solver3d import _get_d3q19_mrt_matrices
         from tensorlbm.turbulence import collide_smagorinsky_mrt3d
 
         f = _non_equilibrium_f3d19()

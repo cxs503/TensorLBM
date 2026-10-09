@@ -1,0 +1,97 @@
+# TensorLBM Benchmark 问题类型清单（按物理问题分类）
+
+> 目标：每个 benchmark 通过共性模块实现，真实模拟（禁外推），精度 ≤3% 才保存。
+> 本清单覆盖**不同问题类型**（不限于绕流），每类给出参考基准与共性模块路径。
+
+## ⚡ 可立即同步测试（共性模块现成入口，CPU 可行）
+
+| # | 问题 | 参考基准 | 共性模块入口 | 状态 |
+|---|------|---------|-------------|------|
+| B6 | SUBOFF Re=1000 | 实验 Ct | GeneralSimEngine PARAMETRIC_SUBOFF | 🔶 -9.85% 未达标 |
+| B18 | NACA 0012 翼型 Re=1000 | 文献 Cl/Cd | GeneralSimEngine PARAMETRIC_NACA + airfoil_benchmark.run_airfoil_benchmark | 🔄 子agent跑中 |
+| B19 | 方柱绕流 Re=100 | 文献 Cd≈2.05 | GeneralSimEngine POLYGON_2D | 待测 |
+| B25 | 平板边界层 Blasius | 解析 f'(η) 剖面 | turbulent_channel.run_turbulent_channel | 🔄 子agent跑中 |
+| B26 | 后向台阶 Re=100 | Armaly 1984 再附着长度 | backward_facing_step.run_backward_facing_step | 🔶 12.2% 未达标 |
+| B29 | 空化气泡 | Rayleigh-Plesset | cavitation.run_cavitation_flow | 待测 |
+| B28 | 圆柱涡脱落声学 | Roshko St≈0.184 | acoustics.py | 🔶 St 6.8% 未达标 |
+| B20 | 2D 溃坝波前 | Martin & Moyce 1952 | dam_break.run_dam_break + dambreak_cross_validation | 🔶 多相缺口阻塞 |
+
+## A. 稳态绕流（GeneralSimEngine）
+
+| # | 问题 | 参考基准 | 共性模块 | 备注 |
+|---|------|---------|---------|------|
+| B1 | 球 Re=100 阻力 | Schiller-Naumann Cd=1.087 | PARAMETRIC_SPHERE | D40/D60/D80 真实模拟 |
+| B2 | 球 Re=100 D60 加密 | 同上 | 同上 | 网格收敛趋势 |
+| B4 | 2D 圆柱 Re=100 | Braza 1990 Cd≈1.35 | PARAMETRIC_CYLINDER+D2Q9 | 升阻力+St |
+| B5 | 2D 圆柱 Re=200 | Braza 1990 Cd≈1.33, St≈0.196 | 同上 | 涡脱落基准 |
+| B6 | SUBOFF Re=1000 | 实验 Ct | PARAMETRIC_SUBOFF | 阻力+摩擦系数 |
+
+## B. 内部流动（解析解精确）
+
+| # | 问题 | 参考基准 | 共性模块 | 备注 |
+|---|------|---------|---------|------|
+| B13 | 2D Poiseuille 流 | 解析抛物线剖面 u=Δp/2νL(y²−Hy) | D2Q9+Zou-He 入口 | **解析解，最易 3%** |
+| B14 | 3D 管道流 | 解析圆管剖面 | D3Q19+压力驱动 | ✅ 已达标（**R_eff^Q 方法** 2026-08-19: 数字楼梯圆管水力半径 R_eff^Q=R+0.11，径向平均剖面 max 2.15%→1.45% 单调收敛，benchmarks/verified/poiseuille_3d_pipe/）；椭圆管扩展 2026-08-20：s^Q 单尺度 a=20 5.11% 未达标（各向异性楼梯壁，记录 benchmarks/verified/poiseuille_3d_ellipse/，not_verified） |
+| B15 | 方腔流 Re=100 | Ghia 1982 涡心/中线剖面 | D2Q9 或 D3Q19 | 经典基准，验证对流+耗散 |
+| B16 | 方腔流 Re=400/1000 | Ghia 1982 | 同上 | 高阶验证 |
+
+## C. 时变/涡流（文献基准）
+
+| # | 问题 | 参考基准 | 共性模块 | 备注 |
+|---|------|---------|---------|------|
+| B17 | Taylor-Green 涡衰减 | 解析 e^(−2νk²t) 衰减率 | D3Q19 周期域 | **验证数值耗散**（LBM 弱项） | ✅ 已达标（2D D2Q9 周期域 err≤0.13%: taylor_green_2d/；**3D D3Q19 周期域 err +0.31%→+0.25% 收敛: taylor_green_3d/**；注：3D 场 \|κ\|²=3k² → γ_E=6νk²，任务书 e^{−2νk²t} 为 2D 速度率） |
+| B30 | 2D 衰减剪切波 | 解析 γ_vel=νk² 衰减率 | D2Q9 周期域 | **验证 1D 粘性耗散**（纯剪切无涡拉伸） | ✅ 已达标（H=64/128, err 0.051%→0.011% 收敛, benchmarks/verified/shear_wave_decay/） |
+| B18 | 后向台阶 Re=100-800 | Armaly 1984 再附着长度 | backward_facing_step.py | 验证分离流 |
+| B19 | 方柱绕流 Re=100 | 文献 Cd≈2.05, St≈0.14 | PARAMETRIC_CYLINDER(方) | 验证尖锐角处理 |
+
+## D. 自由表面（dam_break 模块）
+
+| # | 问题 | 参考基准 | 共性模块 | 备注 |
+|---|------|---------|---------|------|
+| B20 | 2D 溃坝波前位置 | Martin & Moyce 1952 | dam_break.py | 已有 bench_dam_break |
+| B21 | 3D 溃坝水柱坍塌 | Martin & Moyce | dam_break_3d.py | 已有 bench_dam_break_3d |
+| B22 | 溃坝波前时间关系 | 实验数据 | dam_break_quant.py | 定量 |
+
+## E. 多相流（multiphase 模块）
+
+| # | 问题 | 参考基准 | 共性模块 | 备注 |
+|---|------|---------|---------|------|
+| B23 | Laplace 定律（气泡压差） | Δp=σ/R 解析 | multiphase.py | 表面张力验证 |
+| B24 | 液滴振荡 m=2 Rayleigh 频率 | ω²=6σ/(ρR³) Rayleigh 1880 | multiphase + d2q9（周期域） | ✅ 已达标（**阻尼修正口径** 2026-08-19: SC94 固有强阻尼 γ≈0.72/R² 压低观测频率，ω₀=√(ω_d²+γ²) 还原后 err **+2.59/−1.50/−2.39%** 三档全 ≤3%，R30/R40 物理量 w₀²R³ 一致 1.8%，benchmarks/verified/droplet_oscillation/） |
+
+## F. 边界层/湍流（RANS/turbulence 模块）
+
+| # | 问题 | 参考基准 | 共性模块 | 备注 |
+|---|------|---------|---------|------|
+| B25 | 平板层流边界层 | Blasius 解 | turbulent_channel/des | 速度剖面 |
+| B26 | 湍流通道 Re_τ=180 | DNS 数据 (Kim 1987) | turbulent_channel.py | u+ 剖面 |
+| B27 | RANS 后向台阶 | rans_ke.py | 工程验证 | 中等精度 |
+
+## G. 声学/空化（专项模块）
+
+| # | 问题 | 参考基准 | 共性模块 | 备注 |
+|---|------|---------|-------------|------|
+| B28 | 圆柱涡脱落声 | 文献 SPL 谱 | acoustics.py | 气动声学 |
+| B29 | 空化气泡 | Rayleigh-Plesset | cavitation.py | 相变验证 |
+
+## H. 可压缩流（激波管，2026-08-19 新增）
+
+| # | 问题 | 参考基准 | 共性模块 | 备注 |
+|---|------|---------|-------------|------|
+| B31 | 等温 Sod 激波管（密度比 4:1） | 等温 Riemann 解析解（p=ρ/3） | D2Q9 solver.collide_bgk/stream + d2q9 | ✅ 已达标（**2026-08-19**: Ma_mid=0.70，L2(ρ) 0.84%→0.46% 两档收敛，激波速度 −0.09%/−0.03%，中间态 <0.05%，benchmarks/verified/sod_shock_tube/。参照=等温 Riemann 解——D2Q9 为等温 EOS，γ=1.4 Sod 不适用；附声学补充验证 ε=0.01/0.25 波速偏差 <0.1%） |
+| B32 | 完整可压缩（γ-law 高 Ma）Sod | γ=1.4 经典 Sod | 需多速度 D2V17/D2V21 或 FVM-LBM | ❌ 未具备（规格书见 /tmp/compressible_gap.md；D2Q9 8:1 即发散） |
+
+## 优先推荐（解析解/经典基准，最易达标 3%）
+
+1. **B13 Poiseuille 流** — 解析解，验证边界条件+粘性，最易
+2. **B15/B16 方腔流** — Ghia 经典基准，验证对流+扩散+角点
+3. **B17 Taylor-Green** — 解析衰减，验证数值耗散（LBM 关键指标）
+4. **B20 溃坝波前** — 实验基准，验证自由表面
+5. **B23 Laplace 定律** — 解析，验证表面张力
+6. **B25 Blasius 边界层** — 解析，验证壁面摩擦
+
+## 判定标准（不变）
+
+- 真实模拟（禁外推），误差 ≤3% 才保存到 benchmarks/verified/
+- 通过共性模块（GeneralSimEngine 或各物理模块入口）
+- 保存附运行命令/配置/参考值来源/误差

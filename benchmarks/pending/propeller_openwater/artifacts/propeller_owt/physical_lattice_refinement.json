@@ -1,0 +1,150 @@
+{
+  "name": "propeller_physical_to_lattice_three_level_refinement",
+  "status": "fail_closed",
+  "physical_case": {
+    "diameter_m": 0.3048,
+    "advance_speed_ms": 3.8084759999999998,
+    "rotation_rps": 15.0,
+    "nu_m2s": 1e-06,
+    "re_d": 1393545.6000000003,
+    "advance_ratio_j": 0.833
+  },
+  "mapping_contract": {
+    "dx": "D / D_lu",
+    "dt": "1 / (n_phys * steps_per_revolution)",
+    "nu_lu": "nu_phys * dt / dx^2",
+    "rpm_lu": "n_phys * dt",
+    "tip_ma": "pi * D_lu / (sqrt(3) * steps_per_revolution)",
+    "exact_rotation_sampling": true
+  },
+  "levels": [
+    {
+      "name": "level_0",
+      "diameter_lu": 32,
+      "dx_m": 0.009525,
+      "dt_s": 6.510416666666667e-05,
+      "rpm_lu": 0.0009765625,
+      "u_lu": 0.026031249999999995,
+      "nu_lu": 7.175940277806481e-07,
+      "tau": 0.5000021527820834,
+      "steps_per_revolution": 1024,
+      "angular_increment_degrees": 0.3515625,
+      "tip_ma": 0.17004369039695788,
+      "re_d_lu": 1393545.6,
+      "j_lu": 0.8329999999999999,
+      "re_d_preserved": false,
+      "j_preserved": true
+    },
+    {
+      "name": "level_1",
+      "diameter_lu": 48,
+      "dx_m": 0.006350000000000001,
+      "dt_s": 6.510416666666667e-05,
+      "rpm_lu": 0.0009765625,
+      "u_lu": 0.039046874999999995,
+      "nu_lu": 1.614586562506458e-06,
+      "tau": 0.5000048437596876,
+      "steps_per_revolution": 1024,
+      "angular_increment_degrees": 0.3515625,
+      "tip_ma": 0.2550655355954368,
+      "re_d_lu": 1393545.6000000003,
+      "j_lu": 0.8329999999999999,
+      "re_d_preserved": true,
+      "j_preserved": true
+    },
+    {
+      "name": "level_2",
+      "diameter_lu": 64,
+      "dx_m": 0.0047625,
+      "dt_s": 6.510416666666667e-05,
+      "rpm_lu": 0.0009765625,
+      "u_lu": 0.05206249999999999,
+      "nu_lu": 2.8703761111225923e-06,
+      "tau": 0.5000086111283334,
+      "steps_per_revolution": 1024,
+      "angular_increment_degrees": 0.3515625,
+      "tip_ma": 0.34008738079391576,
+      "re_d_lu": 1393545.6,
+      "j_lu": 0.8329999999999999,
+      "re_d_preserved": false,
+      "j_preserved": true
+    }
+  ],
+  "violations": [
+    {
+      "constraint": "tau_range",
+      "level": "level_0",
+      "actual": 0.5000021527820834,
+      "required": [
+        0.5001,
+        2.0
+      ],
+      "operator": "BGK/MRT relaxation"
+    },
+    {
+      "constraint": "low_mach",
+      "level": "level_0",
+      "actual": 0.17004369039695788,
+      "required": "< 0.004",
+      "operator": "moving-wall bounce-back"
+    },
+    {
+      "constraint": "tau_range",
+      "level": "level_1",
+      "actual": 0.5000048437596876,
+      "required": [
+        0.5001,
+        2.0
+      ],
+      "operator": "BGK/MRT relaxation"
+    },
+    {
+      "constraint": "low_mach",
+      "level": "level_1",
+      "actual": 0.2550655355954368,
+      "required": "< 0.004",
+      "operator": "moving-wall bounce-back"
+    },
+    {
+      "constraint": "tip_mach_preservation",
+      "level": "level_1",
+      "actual": 0.2550655355954368,
+      "required": 0.17004369039695788,
+      "operator": "fixed-N moving-mask sampling"
+    },
+    {
+      "constraint": "tau_range",
+      "level": "level_2",
+      "actual": 0.5000086111283334,
+      "required": [
+        0.5001,
+        2.0
+      ],
+      "operator": "BGK/MRT relaxation"
+    },
+    {
+      "constraint": "low_mach",
+      "level": "level_2",
+      "actual": 0.34008738079391576,
+      "required": "< 0.004",
+      "operator": "moving-wall bounce-back"
+    },
+    {
+      "constraint": "tip_mach_preservation",
+      "level": "level_2",
+      "actual": 0.34008738079391576,
+      "required": 0.17004369039695788,
+      "operator": "fixed-N moving-mask sampling"
+    }
+  ],
+  "campaign": {
+    "status": "not_run",
+    "reason": "physical_lattice_constraints_incompatible"
+  },
+  "metric_convergence": {
+    "status": "withheld",
+    "reason": "fail_closed_no_kt_kq_generated",
+    "kt_kq_eta_differences": null
+  },
+  "artifact": "benchmarks/pending/propeller_openwater/artifacts/propeller_owt/physical_lattice_refinement.json"
+}

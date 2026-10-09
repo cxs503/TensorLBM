@@ -1,4 +1,5 @@
 """Fail-closed two-domain sensitivity audit for canonical sphere drag."""
+
 from __future__ import annotations
 
 import math
@@ -74,44 +75,37 @@ def assess_sphere_domain_sensitivity_pair(
         for field in (*_IDENTITY_FIELDS, "shape_zyx")
     )
     identity_equal = required_present and all(
-        parsed[1][1].get(field) == baseline_configuration.get(field)
-        for field in _IDENTITY_FIELDS
+        parsed[1][1].get(field) == baseline_configuration.get(field) for field in _IDENTITY_FIELDS
     )
     baseline_shape = baseline_configuration["shape_zyx"]
     expanded_shape = parsed[1][1]["shape_zyx"]
     streamwise_fixed = expanded_shape[2] == baseline_shape[2]
     transverse_isotropic = (
-        baseline_shape[0] == baseline_shape[1]
-        and expanded_shape[0] == expanded_shape[1]
+        baseline_shape[0] == baseline_shape[1] and expanded_shape[0] == expanded_shape[1]
     )
     expanded_only_transverse = (
-        streamwise_fixed
-        and transverse_isotropic
-        and expanded_shape[0] > baseline_shape[0]
+        streamwise_fixed and transverse_isotropic and expanded_shape[0] > baseline_shape[0]
     )
 
     cd_values = [float(item[2]["cd_control_volume"]) for item in parsed]
-    drag_change_pct = (
-        abs(cd_values[1] - cd_values[0])
-        / max(abs(cd_values[1]), 1.0e-30)
-        * 100.0
-    )
-    references = {
-        float(item[2]["cd_reference_schiller_naumann"]) for item in parsed
-    }
+    drag_change_pct = abs(cd_values[1] - cd_values[0]) / max(abs(cd_values[1]), 1.0e-30) * 100.0
+    references = {float(item[2]["cd_reference_schiller_naumann"]) for item in parsed}
     reference_invariant = len(references) == 1
     reference = next(iter(references)) if reference_invariant else math.nan
-    reference_errors = [
-        abs(value - reference) / max(abs(reference), 1.0e-30) * 100.0
-        for value in cd_values
-    ] if reference_invariant else [math.inf, math.inf]
+    reference_errors = (
+        [abs(value - reference) / max(abs(reference), 1.0e-30) * 100.0 for value in cd_values]
+        if reference_invariant
+        else [math.inf, math.inf]
+    )
     provenance_admitted = (
-        schema_valid and required_present and identity_equal
-        and expanded_only_transverse and reference_invariant
+        schema_valid
+        and required_present
+        and identity_equal
+        and expanded_only_transverse
+        and reference_invariant
     )
     sensitivity_within_tolerance = (
-        provenance_admitted and source_quality
-        and drag_change_pct <= maximum_drag_change_pct
+        provenance_admitted and source_quality and drag_change_pct <= maximum_drag_change_pct
     )
     return {
         "schema": "tensorlbm-sphere-domain-sensitivity-pair-v1",
@@ -140,9 +134,7 @@ def assess_sphere_domain_sensitivity_pair(
         },
         "source_numerical_quality_admitted": source_quality,
         "admitted_as_pair_sensitivity": sensitivity_within_tolerance,
-        "next_required_evidence": (
-            "Add a third, wider domain before claiming domain convergence."
-        ),
+        "next_required_evidence": ("Add a third, wider domain before claiming domain convergence."),
     }
 
 
@@ -202,37 +194,38 @@ def assess_sphere_domain_convergence(
         for _, configuration, _ in parsed
     )
     provenance_admitted = (
-        schema_valid and required_present and identity_equal
-        and streamwise_fixed and transverse_isotropic
+        schema_valid
+        and required_present
+        and identity_equal
+        and streamwise_fixed
+        and transverse_isotropic
     )
 
     cd_values = [float(item[2]["cd_control_volume"]) for item in parsed]
-    differences = [
-        right - left for left, right in zip(cd_values, cd_values[1:], strict=False)
-    ]
+    differences = [right - left for left, right in zip(cd_values, cd_values[1:], strict=False)]
     monotonic = all(value >= 0.0 for value in differences) or all(
         value <= 0.0 for value in differences
     )
     finest_change_pct = (
-        abs(cd_values[-1] - cd_values[-2])
-        / max(abs(cd_values[-1]), 1.0e-30)
-        * 100.0
+        abs(cd_values[-1] - cd_values[-2]) / max(abs(cd_values[-1]), 1.0e-30) * 100.0
     )
     domain_convergence_admitted = (
-        provenance_admitted and source_quality and monotonic
+        provenance_admitted
+        and source_quality
+        and monotonic
         and finest_change_pct <= maximum_finest_drag_change_pct
     )
-    references = {
-        float(item[2]["cd_reference_schiller_naumann"]) for item in parsed
-    }
+    references = {float(item[2]["cd_reference_schiller_naumann"]) for item in parsed}
     reference_invariant = len(references) == 1
     reference = next(iter(references)) if reference_invariant else math.nan
     finest_reference_error_pct = (
         abs(cd_values[-1] - reference) / max(abs(reference), 1.0e-30) * 100.0
-        if reference_invariant else math.inf
+        if reference_invariant
+        else math.inf
     )
     physical_validation = (
-        domain_convergence_admitted and reference_invariant
+        domain_convergence_admitted
+        and reference_invariant
         and finest_reference_error_pct <= maximum_reference_error_pct
     )
     return {
@@ -260,8 +253,7 @@ def assess_sphere_domain_convergence(
             "maximum_reference_error_pct": maximum_reference_error_pct,
             "invariant": reference_invariant,
             "admitted": (
-                reference_invariant
-                and finest_reference_error_pct <= maximum_reference_error_pct
+                reference_invariant and finest_reference_error_pct <= maximum_reference_error_pct
             ),
         },
         "source_numerical_quality_admitted": source_quality,
@@ -271,6 +263,8 @@ def assess_sphere_domain_convergence(
             "is applied to the direct CFD drag sequence."
         ),
     }
+
+
 __all__ = [
     "assess_sphere_domain_convergence",
     "assess_sphere_domain_sensitivity_pair",

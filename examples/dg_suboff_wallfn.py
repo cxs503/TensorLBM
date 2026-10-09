@@ -15,12 +15,12 @@ import math
 
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.suboff_cad import build_suboff_mask
-from tensorlbm.suboff_resistance import _voxel_wetted_area
 from tensorlbm.boundaries3d import far_field_bc_3d
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.ibm import ibm_apply_body_force_3d
 from tensorlbm.solver3d import correct_mass3d, stream3d
+from tensorlbm.suboff_cad import build_suboff_mask
+from tensorlbm.suboff_resistance import _voxel_wetted_area
 from tensorlbm.turbulence import collide_smagorinsky_mrt3d
 
 KAPPA = 0.41
@@ -108,7 +108,7 @@ def run(
     print(
         f"Re={re:.0e} tau_lam={tau:.5f} nu_lat={nu_lat:.2e} grid={nx}x{ny}x{nz} hull={hull_length:.0f} S={S:.0f}"
     )
-    print(f"experimental AFF-8 Ct ~ 0.004\n")
+    print("experimental AFF-8 Ct ~ 0.004\n")
     fric = []
     pres = []
     for step in range(1, n_steps + 1):

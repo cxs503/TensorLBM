@@ -1,0 +1,35 @@
+{
+ "config": {
+  "W": 128,
+  "tw": 127,
+  "Weff": 128,
+  "ny": 129,
+  "nx": 600,
+  "steps": 40000,
+  "sample": 100,
+  "tau_water": 1.0,
+  "tau_gas": 0.75,
+  "G12": -2.5,
+  "drho": 0.00032958984375,
+  "dP": 0.00010986328125,
+  "x0": 33.5,
+  "interface_width": 3.0,
+  "L0": 33.5,
+  "wettability": "neutral (G_ads=0 both components)",
+  "theta_measured_deg": 83.33288817404761,
+  "nu_water": 0.16666666666666666,
+  "nu_gas": 0.08333333333333333
+ },
+ "series": [
+  {
+   "step": 100,
+   "L": 31.0,
+   "massw": 50164.148,
+   "massg": 24077.207,
+   "umax": 0.113823,
+   "minf": 0.000423
+  }
+ ],
+ "wall_time_s": 0.2,
+ "completed_steps": 100
+}

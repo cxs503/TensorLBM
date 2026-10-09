@@ -14,15 +14,14 @@ from __future__ import annotations
 import pytest
 
 from tensorlbm.cross_module_composition_matrix import (
+    MATRIX_VERSION,
     CompositionDecision,
     CompositionRequest,
     CompositionStatus,
-    MATRIX_VERSION,
     SubContractResult,
     SubContractStatus,
     assess_composition,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -291,10 +290,11 @@ class TestAllSubContractsQueried:
         "amr_capability_contract",
         "boundary_capability_contract",
         "turbulence_capability_contract",
+        "acoustics_capability_contract",
         "accuracy_recommendation",
     }
 
-    def test_all_nine_sub_contracts_are_queried(self) -> None:
+    def test_all_ten_sub_contracts_are_queried(self) -> None:
         decision = assess_composition(baseline())
         assert _names(decision.sub_contract_results) == self.EXPECTED
 
@@ -382,7 +382,7 @@ class TestToDict:
         # Must be JSON-serializable
         json.dumps(d)
         assert d["status"] == decision.status.value
-        assert len(d["sub_contract_results"]) == 9
+        assert len(d["sub_contract_results"]) == 10
         assert "missing_dimensions" in d
         assert "reason_codes" in d
         assert "normalized_request" in d

@@ -1,0 +1,50 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+  step 5000: umax=0.05257 finite=True
+  step 10000: umax=0.05300 finite=True
+  step 15000: umax=0.05353 finite=True
+  step 20000: umax=0.05355 finite=True
+  step 25000: umax=0.05353 finite=True
+  step 30000: umax=0.05353 finite=True
+{
+  "config": {
+    "nx": 560,
+    "ny": 600,
+    "le": 100,
+    "plate_len": 440,
+    "probes": "200,300,400",
+    "U": 0.05,
+    "nu": 0.01,
+    "steps": 30000,
+    "avg": 300,
+    "wall": "bottom",
+    "outlet": "zouhe",
+    "top": "specular",
+    "collision": "bgk",
+    "device": "sdaa:11",
+    "out": "exp_mech/le100.json"
+  },
+  "umax": 0.05352669209241867,
+  "mass_drift_pct": 0.0015997022321705512,
+  "finite": true,
+  "elapsed_s": 745.2,
+  "ny": 600,
+  "nx": 560
+}
+probe 200: Cf_err= +12.07% K=0.892 ue_in=1.0473 ue_far=1.0009 os=1.0473@6.149 H_U=0.022 H_ue=1.217 l2=0.052
+probe 300: Cf_err= +16.27% K=0.860 ue_in=1.0550 ue_far=1.0023 os=1.0550@6.087 H_U=0.023 H_ue=1.274 l2=0.062
+probe 400: Cf_err= +26.19% K=0.792 ue_in=1.0629 ue_far=1.0035 os=1.0629@5.745 H_U=0.025 H_ue=1.292 l2=0.079

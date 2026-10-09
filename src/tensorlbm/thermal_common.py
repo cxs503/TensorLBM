@@ -239,14 +239,18 @@ def apply_buoyancy_3d(
     """
     lattice_u = lattice.upper()
     if lattice_u == "D3Q19":
-        from .d3q19 import C as C3D, W as W3D, macroscopic3d
+        from .d3q19 import C as C3D
+        from .d3q19 import W as W3D
+        from .d3q19 import macroscopic3d
 
         q = 19
         c = C3D.to(f.device).float()
         w = W3D.to(f.device).float()
         rho, _, _, _ = macroscopic3d(f)
     elif lattice_u == "D3Q27":
-        from .d3q27 import C as C27, W as W27, macroscopic27
+        from .d3q27 import C as C27
+        from .d3q27 import W as W27
+        from .d3q27 import macroscopic27
 
         q = 27
         c = C27.to(f.device).float()
@@ -731,9 +735,9 @@ def run_thermal_cavity_common(
     uz = torch.zeros_like(rho)
     T = T_hot - delta_T * x_idx / L
 
+    from .boundaries3d import bounce_back_cells_3d
     from .d3q19 import equilibrium3d, macroscopic3d
     from .solver3d import collide_bgk3d, stream3d
-    from .boundaries3d import bounce_back_cells_3d
 
     f = equilibrium3d(rho, ux, uy, uz, device=device)
     g = thermal_equilibrium_3d(T, ux, uy, uz)
@@ -845,11 +849,12 @@ def run_conjugate_ht_common(
     wall[:, 0, :] = True
     wall[:, -1, :] = True
 
-    from .d3q19 import equilibrium3d, macroscopic3d
-    from .solver3d import collide_bgk3d, stream3d
-    from .boundaries3d import bounce_back_cells_3d, far_field_bc_3d
-    from .lbm_step_correct import lbm_step_correct
     import functools
+
+    from .boundaries3d import far_field_bc_3d
+    from .d3q19 import equilibrium3d, macroscopic3d
+    from .lbm_step_correct import lbm_step_correct
+    from .solver3d import collide_bgk3d
 
     far_field_fn = functools.partial(
         far_field_bc_3d, bc_config={"far_field_faces": ["x-", "x+"], "periodic_faces": ["z-", "z+"]}
@@ -951,11 +956,12 @@ def run_heated_cylinder_common(
     circle = (xx - cx) ** 2 + (yy - cy) ** 2 <= R**2
     solid = circle.unsqueeze(0).expand(nz, ny, nx).clone()
 
-    from .d3q19 import equilibrium3d, macroscopic3d
-    from .solver3d import collide_bgk3d, stream3d
-    from .boundaries3d import bounce_back_cells_3d, far_field_bc_3d
-    from .lbm_step_correct import lbm_step_correct
     import functools
+
+    from .boundaries3d import far_field_bc_3d
+    from .d3q19 import equilibrium3d, macroscopic3d
+    from .lbm_step_correct import lbm_step_correct
+    from .solver3d import collide_bgk3d
 
     far_field_fn = functools.partial(
         far_field_bc_3d, bc_config={"far_field_faces": ["y-", "y+"], "periodic_faces": ["z-", "z+"]}
@@ -1055,9 +1061,9 @@ def run_rayleigh_benard_common(
     wall[:, 0, :] = True
     wall[:, -1, :] = True
 
+    from .boundaries3d import bounce_back_cells_3d
     from .d3q19 import equilibrium3d, macroscopic3d
     from .solver3d import collide_bgk3d, stream3d
-    from .boundaries3d import bounce_back_cells_3d
 
     # Initial: linear T profile + small perturbation to trigger convection
     _, y_idx, _ = torch.meshgrid(

@@ -1,4 +1,5 @@
 """Moment-preserving positivity limiter for lattice populations."""
+
 from __future__ import annotations
 
 import math
@@ -77,13 +78,9 @@ def limit_nonequilibrium_for_positivity(
     rho = selected.sum(dim=0)
     momentum = (selected[:, None, :] * c[:, :, None]).sum(dim=0)
     ux, uy, uz = (momentum[axis] / rho.clamp_min(1e-30) for axis in range(3))
-    cu = (
-        c[:, 0, None] * ux + c[:, 1, None] * uy + c[:, 2, None] * uz
-    )
+    cu = c[:, 0, None] * ux + c[:, 1, None] * uy + c[:, 2, None] * uz
     speed2 = ux.square() + uy.square() + uz.square()
-    feq = w[:, None] * rho[None, :] * (
-        1.0 + 3.0 * cu + 4.5 * cu.square() - 1.5 * speed2
-    )
+    feq = w[:, None] * rho[None, :] * (1.0 + 3.0 * cu + 4.5 * cu.square() - 1.5 * speed2)
     below = selected < floor
     denominator = feq - selected
     candidate = torch.where(

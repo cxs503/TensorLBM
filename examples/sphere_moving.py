@@ -9,12 +9,19 @@ Sphere moves through fluid, compare drag with stationary sphere benchmark.
 Stationary sphere Cd ref: ~0.47 (Re~1000)
 """
 
-import sys, math, time, torch
+import math
+import sys
+import time
+
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C as C3D, W as W3D, OPPOSITE as OPP
-from tensorlbm.solver3d import stream3d, collide_bgk3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import OPPOSITE as OPP
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.solver3d import stream3d
 
 
 def run_moving_sphere(nx=128, ny=64, nz=64, n_steps=3000, device="sdaa:0", stationary=False):
@@ -74,8 +81,8 @@ def run_moving_sphere(nx=128, ny=64, nz=64, n_steps=3000, device="sdaa:0", stati
         f"Grid: {nx}x{ny}x{nz} R={R} u={u_sphere} Re={u_sphere * 2 * R / ((tau - 0.5) / 3.0):.0f}",
         flush=True,
     )
-    print(f"BFL + virtual Lagrangian refill", flush=True)
-    print(f"Expected Cd ≈ 0.47 (Re~1000)", flush=True)
+    print("BFL + virtual Lagrangian refill", flush=True)
+    print("Expected Cd ≈ 0.47 (Re~1000)", flush=True)
     print(flush=True)
 
     t0 = time.time()

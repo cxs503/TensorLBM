@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from tensorlbm.d3q19 import C, OPPOSITE, equilibrium3d
+from tensorlbm.d3q19 import OPPOSITE, C, equilibrium3d
 from tensorlbm.marine_geometry import GeometryAsset, compile_d3q19_wall_links
 from tensorlbm.suboff_real_state_force import (
     SuboffRealStateForceConfig,

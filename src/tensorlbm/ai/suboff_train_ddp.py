@@ -19,15 +19,11 @@ Usage:
 
 from __future__ import annotations
 
-import os
-import sys
-import math
-import random
-import logging
-import time
 import argparse
-from pathlib import Path
-from dataclasses import asdict
+import logging
+import math
+import os
+import random
 
 import numpy as np
 import torch
@@ -37,24 +33,21 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
+from .suboff_dataset import CylinderDatasetMultiRe14
+from .suboff_train import (
+    SuboffFinetuneConfig,
+    SuboffTrainConfig,
+    _load_train_data_pretrain,
+    _make_mask_ratio_generator,
+    _prepare_positions,
+)
 from .suboff_utils import (
     build_suboff_model,
     ensure_dir,
     load_checkpoint,
-    save_checkpoint,
     pointwise_rel_loss,
-    _move_to_device,
+    save_checkpoint,
 )
-from .suboff_train import (
-    SuboffTrainConfig,
-    SuboffFinetuneConfig,
-    _load_train_data_pretrain,
-    _load_train_data_finetune,
-    _prepare_positions,
-    _make_mask_ratio_generator,
-    _load_multi_re_data,
-)
-from .suboff_dataset import CylinderDatasetMultiRe14
 
 
 def _setup_ddp():
@@ -182,8 +175,8 @@ def train_ddp(
         # We need to rebuild with DistributedSampler
         from .suboff_train import (
             _load_multi_re_data,
-            _load_npy_channel_ori27,
             _load_npy_channel,
+            _load_npy_channel_ori27,
             _load_npy_channel_ori28_addition,
         )
 

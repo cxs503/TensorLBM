@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass
-from typing import Callable
 
 import pytest
 import torch
 
 from tensorlbm.d3q19 import equilibrium3d
-from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID, free_surface_step
+from tensorlbm.free_surface_lbm import GAS, INTERFACE, free_surface_step
 from tensorlbm.free_surface_topology_transaction import TopologyTransactionError
 
 
@@ -230,8 +229,8 @@ def test_fallback_deepcopies_adapter_identity_snapshot() -> None:
 
 def test_stop_and_report_returns_last_committed_state_and_exact_failure_evidence() -> None:
     from tensorlbm.free_surface_i_to_g_failure_policy import (
-        IToGStrictFailurePolicy,
         STOPPED_AND_REPORTED,
+        IToGStrictFailurePolicy,
         run_i_to_g_policy_campaign,
     )
 
@@ -272,8 +271,8 @@ def test_stop_and_report_returns_last_committed_state_and_exact_failure_evidence
 def test_explicit_fallback_restarts_same_prestate_with_legacy_path_and_is_withheld() -> None:
     from tensorlbm.free_surface_i_to_g_failure_policy import (
         FALLBACK_NOT_PHYSICAL,
-        IToGStrictFailurePolicy,
         WITHHELD,
+        IToGStrictFailurePolicy,
         run_i_to_g_policy_campaign,
     )
 
@@ -396,8 +395,8 @@ def test_fallback_revalidates_isolation_after_legacy_exception() -> None:
 def test_real_b_c_stop_reports_two_commits_then_step_three_strict_failure(case_id: str) -> None:
     from tensorlbm.free_surface_closure_experiment import _conversion_state
     from tensorlbm.free_surface_i_to_g_failure_policy import (
-        IToGStrictFailurePolicy,
         STOPPED_AND_REPORTED,
+        IToGStrictFailurePolicy,
         run_i_to_g_policy_campaign,
     )
 
@@ -443,8 +442,8 @@ def test_real_b_c_explicit_fallback_continues_legacy_but_remains_not_physical(ca
     from tensorlbm.free_surface_closure_experiment import _conversion_state
     from tensorlbm.free_surface_i_to_g_failure_policy import (
         FALLBACK_NOT_PHYSICAL,
-        IToGStrictFailurePolicy,
         WITHHELD,
+        IToGStrictFailurePolicy,
         run_i_to_g_policy_campaign,
     )
 

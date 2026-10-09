@@ -17,16 +17,10 @@ import pytest
 import torch
 
 from tensorlbm.d3q27 import C as C27
-from tensorlbm.d3q27 import W as W27
-from tensorlbm.d3q27 import OPPOSITE as OPP27
 from tensorlbm.d3q27 import (
-    collide_bgk27,
     equilibrium27,
     macroscopic27,
-    stream27,
 )
-from tensorlbm.boundaries_d3q27 import bounce_back_cells_27
-
 
 # ---------------------------------------------------------------------------
 # Stencil module tests
@@ -149,12 +143,11 @@ class TestFreeSurface27Init:
 
     def test_init_flags_from_fill(self):
         from tensorlbm.free_surface_lbm_27 import (
-            init_fill_rectangular_27,
-            init_flags_from_fill_27,
             GAS,
             LIQUID,
-            INTERFACE,
             SOLID,
+            init_fill_rectangular_27,
+            init_flags_from_fill_27,
         )
 
         fill, solid = init_fill_rectangular_27(8, 8, 10, 4, 6, torch.device("cpu"))
@@ -170,11 +163,11 @@ class TestFreeSurface27Init:
 
     def test_init_mass_from_fill(self):
         from tensorlbm.free_surface_lbm_27 import (
+            INTERFACE,
+            LIQUID,
             init_fill_rectangular_27,
             init_flags_from_fill_27,
             init_mass_from_fill_27,
-            LIQUID,
-            INTERFACE,
         )
 
         fill, solid = init_fill_rectangular_27(8, 8, 10, 4, 6, torch.device("cpu"))
@@ -343,8 +336,8 @@ class TestFreeSurfaceStep27:
 
     def test_no_direct_liquid_gas_links_after_step(self):
         """After a step, no direct LIQUID-GAS links should exist."""
-        from tensorlbm.free_surface_lbm_27 import free_surface_step_27
         from tensorlbm.core.d3q27_stencil import assert_no_direct_phase_links_27
+        from tensorlbm.free_surface_lbm_27 import free_surface_step_27
 
         f, fill, flags, solid, mass, rho_gas = self._make_static_column()
         f, fill, flags, mass, _ = free_surface_step_27(
@@ -442,10 +435,10 @@ class TestFreeSurface27Stability:
     def test_20_step_stability(self):
         """20 steps should not produce NaN or Inf."""
         from tensorlbm.free_surface_lbm_27 import (
+            free_surface_step_27,
             init_fill_rectangular_27,
             init_flags_from_fill_27,
             init_mass_from_fill_27,
-            free_surface_step_27,
         )
 
         nz, ny, nx = 12, 12, 12

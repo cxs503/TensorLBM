@@ -13,14 +13,17 @@ import math
 
 import torch
 
-from tensorlbm.d3q19 import C as C3D, OPPOSITE as OPP3D, W as W3D, equilibrium3d
-from tensorlbm.dg_advection import get_ops
-from tensorlbm.dg_band import build_band_topology, hybrid_step
 from tensorlbm.boundaries3d import (
+    apply_zou_he_channel_boundaries_3d,
     make_channel_wall_mask_3d,
     sphere_mask,
-    apply_zou_he_channel_boundaries_3d,
 )
+from tensorlbm.d3q19 import OPPOSITE as OPP3D
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.dg_advection import get_ops
+from tensorlbm.dg_band import build_band_topology, hybrid_step
 from tensorlbm.interpolated_bc import bouzidi_bounce_back_3d, compute_q_sphere
 from tensorlbm.solver3d import correct_mass3d
 

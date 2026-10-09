@@ -25,14 +25,13 @@ solid-mask gradient.
 
 from __future__ import annotations
 
-import struct
 from pathlib import Path
 
 import numpy as np
 import torch
 
-from .preprocess_geo import _voxelize_triangles, _write_stl_binary
 from .drag_pressure import SurfaceMesh, get_near_wall_3d
+from .preprocess_geo import _voxelize_triangles, _write_stl_binary
 
 __all__ = [
     "read_stl",
@@ -42,6 +41,7 @@ __all__ = [
     "write_stl",
     "get_near_wall_3d",
     "make_sphere_stl",
+    "make_icosphere_stl",
     "make_cylinder_stl",
     "make_naca_stl",
 ]
@@ -384,9 +384,9 @@ def _ray_triangle_intersections_count(
             # dot product of (vertex - origin) with rd is positive) **and**
             # the origin's non-ray coordinates fall within the triangle's
             # bounding box (expanded by a small tolerance).
-            tri_xmin, tri_xmax = tri_min[ti, 0], tri_max[ti, 0]
-            tri_ymin, tri_ymax = tri_min[ti, 1], tri_max[ti, 1]
-            tri_zmin, tri_zmax = tri_min[ti, 2], tri_max[ti, 2]
+            _tri_xmin, _tri_xmax = tri_min[ti, 0], tri_max[ti, 0]
+            _tri_ymin, _tri_ymax = tri_min[ti, 1], tri_max[ti, 1]
+            _tri_zmin, _tri_zmax = tri_min[ti, 2], tri_max[ti, 2]
 
             # Determine which components are "along the ray" vs "perpendicular"
             # For a general ray direction, the perpendicular coordinates are
@@ -490,7 +490,7 @@ def _orient_normals_raycast(
     normals : (N, 3) float64
         Normals oriented to point toward the cell (outward from solid).
     """
-    n_near = len(normals)
+    len(normals)
 
     # Direction from nearest triangle centroid to cell — this is the
     # "toward cell" direction.  For external flow, near-wall cells are
@@ -562,7 +562,7 @@ def mirror_stl(vertices, faces, face_normals, axis=1):
     normals_full : np.ndarray, shape (2M, 3)
     """
     n_v = len(vertices)
-    n_f = len(faces)
+    len(faces)
 
     # Mirrored vertices: negate the mirror axis coordinate
     vertices_mir = vertices.copy().astype(np.float64)
@@ -941,6 +941,114 @@ def make_sphere_stl(center, radius, n_lat=30, n_lon=60):
         np.array(vertices, dtype=np.float32),
         np.array(faces, dtype=np.int32),
     )
+
+
+# Canonical icosahedron (golden-ratio construction): 12 vertices and the
+# 20 outward-wound faces, written out explicitly so the generator has no
+# hidden dependence on iteration order.
+_ICOSA_T = (1.0 + np.sqrt(5.0)) / 2.0
+_ICOSA_VERTS = np.array(
+    [
+        [-1.0, _ICOSA_T, 0.0],
+        [1.0, _ICOSA_T, 0.0],
+        [-1.0, -_ICOSA_T, 0.0],
+        [1.0, -_ICOSA_T, 0.0],
+        [0.0, -1.0, _ICOSA_T],
+        [0.0, 1.0, _ICOSA_T],
+        [0.0, -1.0, -_ICOSA_T],
+        [0.0, 1.0, -_ICOSA_T],
+        [_ICOSA_T, 0.0, -1.0],
+        [_ICOSA_T, 0.0, 1.0],
+        [-_ICOSA_T, 0.0, -1.0],
+        [-_ICOSA_T, 0.0, 1.0],
+    ],
+    dtype=np.float64,
+)
+_ICOSA_VERTS /= np.linalg.norm(_ICOSA_VERTS[0])  # project onto the unit sphere
+_ICOSA_FACES = np.array(
+    [
+        [0, 11, 5],
+        [0, 5, 1],
+        [0, 1, 7],
+        [0, 7, 10],
+        [0, 10, 11],
+        [1, 5, 9],
+        [5, 11, 4],
+        [11, 10, 2],
+        [10, 7, 6],
+        [7, 1, 8],
+        [3, 9, 4],
+        [3, 4, 2],
+        [3, 2, 6],
+        [3, 6, 8],
+        [3, 8, 9],
+        [4, 9, 5],
+        [2, 4, 11],
+        [6, 2, 10],
+        [8, 6, 7],
+        [9, 8, 1],
+    ],
+    dtype=np.int64,
+)
+
+
+def make_icosphere_stl(center, radius, subdivisions=4, scale=(1.0, 1.0, 1.0)):
+    """Generate a deterministic icosphere (subdivided icosahedron) mesh.
+
+    Each subdivision splits every triangle into four by edge midpoints
+    projected back onto the sphere, giving a near-uniform tessellation
+    with exactly ``20 * 4**subdivisions`` faces — no pole degeneracies,
+    unlike :func:`make_sphere_stl`.  Intended for voxelisation benchmarks
+    (10^4 – 10^6 faces) and reproducibility tests: the construction is
+    purely deterministic (sorted edge welding, no hashing randomness),
+    so the same arguments always produce bit-identical output.
+
+    Parameters
+    ----------
+    center : tuple of float (cx, cy, cz)
+        Sphere centre.
+    radius : float
+        Sphere radius.
+    subdivisions : int, default 4
+        Number of edge-midpoint subdivisions (0 = raw icosahedron,
+        20 faces; 8 = 1,310,720 faces).
+    scale : tuple of float (sx, sy, sz), default (1, 1, 1)
+        Per-axis stretch applied after normalisation — use e.g.
+        ``(1.0, 1.0, 2.0)`` for a prolate ellipsoid.
+
+    Returns
+    -------
+    vertices : np.ndarray, shape (N, 3), float32
+    faces : np.ndarray, shape (M, 3), int32
+    """
+    verts = _ICOSA_VERTS.copy()
+    faces = _ICOSA_FACES.copy()
+    for _ in range(int(subdivisions)):
+        # Weld edge midpoints once: np.unique sorts, so the vertex order
+        # (and therefore the whole mesh) is a deterministic function of
+        # the arguments.
+        edges = np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]])
+        welded, mid_of_edge = np.unique(np.sort(edges, axis=1), axis=0, return_inverse=True)
+        midpoints = 0.5 * (verts[welded[:, 0]] + verts[welded[:, 1]])
+        midpoints /= np.linalg.norm(midpoints, axis=1, keepdims=True)
+        n_old = verts.shape[0]
+        verts = np.concatenate([verts, midpoints])
+        e01 = n_old + mid_of_edge[0 : faces.shape[0]]
+        e12 = n_old + mid_of_edge[faces.shape[0] : 2 * faces.shape[0]]
+        e20 = n_old + mid_of_edge[2 * faces.shape[0] : 3 * faces.shape[0]]
+        a, b, c = faces[:, 0], faces[:, 1], faces[:, 2]
+        faces = np.concatenate(
+            [
+                np.stack([a, e01, e20], axis=1),
+                np.stack([e01, b, e12], axis=1),
+                np.stack([e12, c, e20], axis=1),
+                np.stack([e01, e12, e20], axis=1),
+            ]
+        )
+    sx, sy, sz = (float(s) for s in scale)
+    verts = verts * np.array([sx, sy, sz], dtype=np.float64)[None, :] * float(radius)
+    verts = verts + np.asarray(center, dtype=np.float64)[None, :]
+    return verts.astype(np.float32), faces.astype(np.int32)
 
 
 def make_cylinder_stl(center, radius, length, n_circ=40, axis="z", n_axial=1):

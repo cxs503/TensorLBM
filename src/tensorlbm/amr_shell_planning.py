@@ -13,6 +13,7 @@ The clipping and padding logic (including the box size validation) follows
 ``examples/amr_sphere_shell_validate.py`` so all runners produce identical
 boxes.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -59,10 +60,12 @@ def plan_body_shell_box(
             empty, or the padded box degenerates below the minimum size.
     """
     shell_mask = HullProximityRegion(
-        solid_mask, margin=shell_margin,
+        solid_mask,
+        margin=shell_margin,
     ).expand_mask()
     wake_mask = WakeRegion(
-        solid_mask, extend_x=wake_cells,
+        solid_mask,
+        extend_x=wake_cells,
     ).expand_mask()
     # WakeRegion fills the full downstream cross-section plane; clip it
     # laterally to the body's shell extent so the fine block stays
@@ -75,9 +78,9 @@ def plan_body_shell_box(
     sz0, sy0 = int(shell_idx[:, 0].min().item()), int(shell_idx[:, 1].min().item())
     sz1, sy1 = int(shell_idx[:, 0].max().item()), int(shell_idx[:, 1].max().item())
     wake_mask[:sz0, :, :] = False
-    wake_mask[sz1 + 1:, :, :] = False
+    wake_mask[sz1 + 1 :, :, :] = False
     wake_mask[:, :sy0, :] = False
-    wake_mask[:, sy1 + 1:, :] = False
+    wake_mask[:, sy1 + 1 :, :] = False
     refine_mask = shell_mask | wake_mask
     indices = refine_mask.nonzero(as_tuple=False)
     if indices.numel() == 0:
@@ -95,8 +98,7 @@ def plan_body_shell_box(
     z1 = min(nz - 1, z_max + pad)
     if min(x1 - x0, y1 - y0, z1 - z0) < 3:
         raise ValueError(
-            "refinement box too small: try a larger --wake-cells or a smaller "
-            "--shell-margin",
+            "refinement box too small: try a larger --wake-cells or a smaller --shell-margin",
         )
     box = BoxRegion(x0, x1, y0, y1, z0, z1)
     return ShellPlan(box, int(refine_mask.sum().item()), shell_mask, wake_mask)

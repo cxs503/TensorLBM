@@ -57,7 +57,6 @@ _orig = _load_orig_module()
 # Import the current (fixed) module normally
 from tensorlbm import acoustics as _fixed  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

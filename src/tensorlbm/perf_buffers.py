@@ -147,11 +147,11 @@ class LBMStepBuffer:
             lattice: ``"D3Q19"`` or ``"D3Q27"``.
         """
         if lattice == "D3Q19":
-            from .d3q19 import _c_on, _w_on  # noqa: PLC0415
+            from .d3q19 import _c_on  # noqa: PLC0415
 
             q = 19
         elif lattice == "D3Q27":
-            from .d3q27 import _c_on, _w_on  # noqa: PLC0415
+            from .d3q27 import _c_on  # noqa: PLC0415
 
             q = 27
         else:

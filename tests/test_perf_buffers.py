@@ -17,7 +17,6 @@ import torch
 
 from tensorlbm.perf_buffers import LBMStepBuffer
 
-
 # ---------------------------------------------------------------------------
 # Construction and shape contracts
 # ---------------------------------------------------------------------------

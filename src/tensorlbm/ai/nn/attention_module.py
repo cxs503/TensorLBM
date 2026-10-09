@@ -1,7 +1,7 @@
-from torch import nn
 import torch
 from einops import rearrange, repeat
-from torch.nn.init import xavier_uniform_, orthogonal_
+from torch import nn
+from torch.nn.init import orthogonal_, xavier_uniform_
 
 
 def masked_instance_norm(x, mask, eps=1e-5):
@@ -545,7 +545,7 @@ class CrossLinearAttention(nn.Module):
         # x (z^T z)
         # x [b, n1, d]
         # z [b, n2, d]
-        n1 = x.shape[1]  # x [b, n1, d]
+        x.shape[1]  # x [b, n1, d]
         n2 = z.shape[1]  # z [b, n2, d]
         if padding_mask is not None:
             grid_size = torch.sum(padding_mask, dim=1).view(-1, 1, 1, 1)

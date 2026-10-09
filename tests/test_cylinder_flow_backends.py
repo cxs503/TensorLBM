@@ -5,8 +5,8 @@ from pathlib import Path
 
 import tensorlbm.backends as B
 from tensorlbm import CylinderFlowConfig, run_cylinder_flow
-from tensorlbm.backends import torch_backend
 from tensorlbm import cylinder_flow as cylinder_flow_mod
+from tensorlbm.backends import torch_backend
 
 
 def test_run_cylinder_flow_explicit_backend_switches_temporarily(

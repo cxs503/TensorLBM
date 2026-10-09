@@ -16,12 +16,12 @@ import math
 
 import torch
 
-from tensorlbm.d3q19 import C as C3D, equilibrium3d, macroscopic3d
-from tensorlbm.suboff_cad import build_suboff_mask
-from tensorlbm.suboff_resistance import _voxel_wetted_area
-from tensorlbm.boundaries3d import far_field_bc_3d, bounce_back_cells_3d
+from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.obstacles import compute_obstacle_forces_3d
 from tensorlbm.solver3d import correct_mass3d, stream3d
+from tensorlbm.suboff_cad import build_suboff_mask
+from tensorlbm.suboff_resistance import _voxel_wetted_area
 from tensorlbm.turbulence import _get_d3q19_mrt_matrices, _neq_stress_norm_3d
 
 

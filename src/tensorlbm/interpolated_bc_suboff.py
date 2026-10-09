@@ -13,6 +13,7 @@ Bouzidi, M., Firdaouss, M., & Lallemand, P. (2001).
 Groves, N.C., Huang, T.T., Chang, M.S. (1989).
 "Geometric Characteristics of DARPA SUBOFF Models", DTRC/SHD-1298-01.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -41,12 +42,15 @@ class SuboffAppendageLinkDiagnostics:
     def to_dict(self) -> dict[str, str | int | float | None]:
         return asdict(self)
 
+
 # ---------------------------------------------------------------------------
 # PyTorch implementation of the normalised SUBOFF radius profile
 # ---------------------------------------------------------------------------
 
+
 def _suboff_radius_norm_torch(
-    xi: torch.Tensor, config: SuboffConfig,
+    xi: torch.Tensor,
+    config: SuboffConfig,
 ) -> torch.Tensor:
     """Normalised hull radius r(xi)/R_max for xi ∈ [0,1] (PyTorch, autograd-safe).
 
@@ -110,11 +114,14 @@ def _suboff_radius_norm_torch(
     tail_r = 0.1175 * torch.sqrt(torch.clamp(tail_poly, min=0.0))
 
     r = torch.where(
-        bow_mask, bow_r,
+        bow_mask,
+        bow_r,
         torch.where(
-            mid_mask, torch.ones_like(xi),
+            mid_mask,
+            torch.ones_like(xi),
             torch.where(
-                stern_mask, stern_r,
+                stern_mask,
+                stern_r,
                 torch.where(tail_mask, tail_r, torch.zeros_like(xi)),
             ),
         ),
@@ -149,6 +156,7 @@ def _inside_hull(
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def compute_q_suboff(
     nx: int,
@@ -215,8 +223,12 @@ def compute_q_suboff(
         hull_type_enum = SuboffHullType(hull_type)
         solid, _stats = build_suboff_mask(
             hull_type_enum,
-            nx=nx, ny=ny, nz=nz,
-            cx=cx, cy=cy, cz=cz,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            cx=cx,
+            cy=cy,
+            cz=cz,
             length=hull_length,
             config=config,
             device=str(device),
@@ -230,10 +242,15 @@ def compute_q_suboff(
         solid = solid_mask.to(device=device)
 
     fluid_boundary_mask = torch.zeros(
-        (19, nz, ny, nx), dtype=torch.bool, device=device,
+        (19, nz, ny, nx),
+        dtype=torch.bool,
+        device=device,
     )
     q_field = torch.full(
-        (19, nz, ny, nx), 0.5, dtype=torch.float32, device=device,
+        (19, nz, ny, nx),
+        0.5,
+        dtype=torch.float32,
+        device=device,
     )
 
     for d in range(19):
@@ -272,8 +289,15 @@ def compute_q_suboff(
         i_f = idx[:, 2].to(dtype=torch.float32, device=device)
 
         endpoint_in_main_body = _inside_hull(
-            i_f + dcx, j_f + dcy, k_f + dcz,
-            x_bow, cy, cz, hull_length, radius, config,
+            i_f + dcx,
+            j_f + dcy,
+            k_f + dcz,
+            x_bow,
+            cy,
+            cz,
+            hull_length,
+            radius,
+            config,
         )
 
         # ---- Bisection on boundary cells only ----
@@ -288,8 +312,15 @@ def compute_q_suboff(
             z_mid = k_f + t_mid * dcz
 
             inside = _inside_hull(
-                x_mid, y_mid, z_mid,
-                x_bow, cy, cz, hull_length, radius, config,
+                x_mid,
+                y_mid,
+                z_mid,
+                x_bow,
+                cy,
+                cz,
+                hull_length,
+                radius,
+                config,
             )
 
             # If inside → surface is closer → lower hi
@@ -342,10 +373,7 @@ def refine_q_suboff_appendages(
         or bare_hull.shape != solid.shape
         or solid.dtype is not torch.bool
         or bare_hull.dtype is not torch.bool
-        or not (
-            fluid_boundary_mask.device
-            == q_field.device == solid.device == bare_hull.device
-        )
+        or not (fluid_boundary_mask.device == q_field.device == solid.device == bare_hull.device)
     ):
         raise ValueError("SUBOFF link fields must be matching device tensors")
     if bool((bare_hull & ~solid).any()):
@@ -390,9 +418,7 @@ def refine_q_suboff_appendages(
             upper = torch.where(inside, midpoint, upper)
             lower = torch.where(inside, lower, midpoint)
         values = (0.5 * (lower + upper)).clamp(1.0e-6, 1.0)
-        refined[
-            direction, indices[:, 0], indices[:, 1], indices[:, 2]
-        ] = values
+        refined[direction, indices[:, 0], indices[:, 1], indices[:, 2]] = values
         all_values.append(values)
 
     if all_values:

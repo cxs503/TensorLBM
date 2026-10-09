@@ -14,7 +14,6 @@ import torch
 
 from ..d3q19 import equilibrium3d
 
-
 D3Q19_POPULATIONS = 19
 COLLISION_ONLY_STAGE = "collision_only"
 NO_STREAMING_BOUNDARY_WITHHELD = "no_streaming_boundary_withheld"

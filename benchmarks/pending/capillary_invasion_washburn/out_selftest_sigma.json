@@ -1,0 +1,164 @@
+{
+  "protocol": "static Laplace gas bubble in water, full-swap, G=-2.5, tau=(1.0,0.75), tanh width 3, 40k steps, dP over r<=0.6R vs r>=1.4R",
+  "per_R_sigma": {
+    "16": 0.1223139762878418,
+    "32": 0.12397193908691406,
+    "64": 0.029720306396484375
+  },
+  "two_param_fit": {
+    "intercept_a": -0.0014208704233169558,
+    "sigma": 0.14853245871407644,
+    "r2": 0.9742623305729892,
+    "note": "dP = a + sigma/R; intercept relative to mean dP = 35.6%"
+  },
+  "locked_rule": "sigma(W) = measured sigma at R = W_eff/2",
+  "runs": [
+    {
+      "R": 16,
+      "L": 96,
+      "delta_p_hist": [
+        {
+          "step": 5000,
+          "delta_p": 0.0076348185539245605,
+          "finite": true
+        },
+        {
+          "step": 10000,
+          "delta_p": 0.007641792297363281,
+          "finite": true
+        },
+        {
+          "step": 15000,
+          "delta_p": 0.0076423585414886475,
+          "finite": true
+        },
+        {
+          "step": 20000,
+          "delta_p": 0.007642924785614014,
+          "finite": true
+        },
+        {
+          "step": 25000,
+          "delta_p": 0.0076434314250946045,
+          "finite": true
+        },
+        {
+          "step": 30000,
+          "delta_p": 0.007643848657608032,
+          "finite": true
+        },
+        {
+          "step": 35000,
+          "delta_p": 0.007644325494766235,
+          "finite": true
+        },
+        {
+          "step": 40000,
+          "delta_p": 0.007644623517990112,
+          "finite": true
+        }
+      ],
+      "delta_p_final": 0.007644623517990112,
+      "drift_last5k_rel": 3.8984682918081485e-05,
+      "sigma_R": 0.1223139762878418
+    },
+    {
+      "R": 32,
+      "L": 160,
+      "delta_p_hist": [
+        {
+          "step": 5000,
+          "delta_p": 0.0037438273429870605,
+          "finite": true
+        },
+        {
+          "step": 10000,
+          "delta_p": 0.0038736462593078613,
+          "finite": true
+        },
+        {
+          "step": 15000,
+          "delta_p": 0.0038738250732421875,
+          "finite": true
+        },
+        {
+          "step": 20000,
+          "delta_p": 0.003874152898788452,
+          "finite": true
+        },
+        {
+          "step": 25000,
+          "delta_p": 0.0038743913173675537,
+          "finite": true
+        },
+        {
+          "step": 30000,
+          "delta_p": 0.003874540328979492,
+          "finite": true
+        },
+        {
+          "step": 35000,
+          "delta_p": 0.003874480724334717,
+          "finite": true
+        },
+        {
+          "step": 40000,
+          "delta_p": 0.0038741230964660645,
+          "finite": true
+        }
+      ],
+      "delta_p_final": 0.0038741230964660645,
+      "drift_last5k_rel": 9.231195285936273e-05,
+      "sigma_R": 0.12397193908691406
+    },
+    {
+      "R": 64,
+      "L": 288,
+      "delta_p_hist": [
+        {
+          "step": 5000,
+          "delta_p": 0.000964432954788208,
+          "finite": true
+        },
+        {
+          "step": 10000,
+          "delta_p": 0.0007352232933044434,
+          "finite": true
+        },
+        {
+          "step": 15000,
+          "delta_p": 0.00046885013580322266,
+          "finite": true
+        },
+        {
+          "step": 20000,
+          "delta_p": 0.00047275424003601074,
+          "finite": true
+        },
+        {
+          "step": 25000,
+          "delta_p": 0.0004673600196838379,
+          "finite": true
+        },
+        {
+          "step": 30000,
+          "delta_p": 0.00046521425247192383,
+          "finite": true
+        },
+        {
+          "step": 35000,
+          "delta_p": 0.00046440958976745605,
+          "finite": true
+        },
+        {
+          "step": 40000,
+          "delta_p": 0.00046437978744506836,
+          "finite": true
+        }
+      ],
+      "delta_p_final": 0.00046437978744506836,
+      "drift_last5k_rel": 6.417661404184315e-05,
+      "sigma_R": 0.029720306396484375
+    }
+  ]
+}

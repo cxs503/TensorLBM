@@ -1,0 +1,7 @@
+[t2] sigma channel from t1_laplace.json: route=B W*=4.0 sigma_input=0.00138071
+[t2] g2_ny64: relL2(E1)=0.0012426867866606286 relL2(E1')=0.02726348866147064 jb=32 stable=True
+[t2] g2_ny128: relL2(E1)=0.0008943381062556313 relL2(E1')=0.012733525777260373 jb=65 stable=True
+[t2] g10_ny64: relL2(E1)=0.0457295558445782 relL2(E1')=0.06928928104592012 jb=32 stable=True
+[t2] g10_ny128: relL2(E1)=0.0044649007203453215 relL2(E1')=0.0203091959810171 jb=65 stable=True
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/t2_poiseuille.json
+GATES: {'g_t2_relL2_le_3pct_all': False, 'g_t2_monotone_both': True, 'g_t4_ledger_le_1e-10': True, 'g_all_stable': True}

@@ -1,5 +1,12 @@
 """Common, tensorised three-dimensional phase-field building blocks."""
 
+from .ch_validation import (
+    FreeEnergyCHDiagnosticResult,
+    FreeEnergyCHStepDiagnostic,
+    FreeEnergyCHValidationConfig,
+    run_closed_periodic_free_energy_diagnostic,
+    uniform_phase_capillary_force,
+)
 from .diagnostics import phase_volume_smoothed, phase_volume_threshold
 from .evolution_adapter import (
     COLLISION_ONLY_STAGE,
@@ -19,13 +26,6 @@ from .evolution_stream_loop import (
     FreeEnergyAdapterStreamLoopResult,
     collision_then_adapter_stream,
     run_free_energy_adapter_stream_loop,
-)
-from .ch_validation import (
-    FreeEnergyCHDiagnosticResult,
-    FreeEnergyCHStepDiagnostic,
-    FreeEnergyCHValidationConfig,
-    run_closed_periodic_free_energy_diagnostic,
-    uniform_phase_capillary_force,
 )
 from .free_energy import DoubleWellFreeEnergy, force_minus_phi_grad_mu, force_mu_grad_phi
 from .operators import central_gradient_3d, laplacian_3d

@@ -19,7 +19,7 @@ from .boundaries3d import bounce_back_cells_3d
 from .d3q19 import equilibrium3d
 from .multiphase3d import color_gradient_step_3d
 from .obstacles import compute_obstacle_forces_3d, wigley_hull_mask
-from .ship_cad import series60_hull_mask, kcs_hull_mask
+from .ship_cad import kcs_hull_mask, series60_hull_mask
 from .solver3d import stream3d
 
 __all__ = ["HullFreeSurfaceConfig", "run_hull_free_surface"]

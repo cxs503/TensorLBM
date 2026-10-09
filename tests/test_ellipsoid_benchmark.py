@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 
 import torch
+
 from tensorlbm.ellipsoid_benchmark import (
     EllipsoidConfig,
     build_ellipsoid_mask,

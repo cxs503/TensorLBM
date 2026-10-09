@@ -73,6 +73,7 @@ CREATE INDEX IF NOT EXISTS idx_training_jobs_status ON training_jobs(status);
 # Records
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True, slots=True)
 class TrainingJob:
     """One managed training job; an immutable in-memory view of a DB row."""
@@ -91,6 +92,7 @@ class TrainingJob:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
@@ -140,6 +142,7 @@ def _row_to_job(row: sqlite3.Row) -> TrainingJob:
 # ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
+
 
 class TrainingJobRegistry:
     """SQLite-backed registry for training-job lifecycle and lineage."""
@@ -211,7 +214,8 @@ class TrainingJobRegistry:
 
     def get_job(self, job_id: str) -> TrainingJob | None:
         row = self._conn.execute(
-            "SELECT * FROM training_jobs WHERE job_id = ?", (_require_job_id(job_id),),
+            "SELECT * FROM training_jobs WHERE job_id = ?",
+            (_require_job_id(job_id),),
         ).fetchone()
         return _row_to_job(row) if row else None
 
@@ -222,7 +226,9 @@ class TrainingJobRegistry:
         return job
 
     def list_jobs(
-        self, status: str | None = None, limit: int = 50,
+        self,
+        status: str | None = None,
+        limit: int = 50,
     ) -> list[TrainingJob]:
         query = "SELECT * FROM training_jobs WHERE 1=1"
         args: list[Any] = []
@@ -235,7 +241,10 @@ class TrainingJobRegistry:
         return [_row_to_job(r) for r in rows]
 
     def update_status(
-        self, job_id: str, status: str, error: str | None = None,
+        self,
+        job_id: str,
+        status: str,
+        error: str | None = None,
     ) -> TrainingJob:
         """Transition a job's status through the validated state machine."""
         status = _validate_status(status)
@@ -246,12 +255,9 @@ class TrainingJobRegistry:
                 "no further transitions allowed"
             )
         if status not in _TRANSITIONS[job.status]:
-            raise ValueError(
-                f"invalid transition {job.status!r} -> {status!r}"
-            )
+            raise ValueError(f"invalid transition {job.status!r} -> {status!r}")
         self._conn.execute(
-            "UPDATE training_jobs SET status = ?, error = ?, updated_at = ? "
-            "WHERE job_id = ?",
+            "UPDATE training_jobs SET status = ?, error = ?, updated_at = ? WHERE job_id = ?",
             (status, error, _now(), job_id),
         )
         self._conn.commit()
@@ -267,8 +273,7 @@ class TrainingJobRegistry:
         merged = dict(job.metrics or {})
         merged.update(metrics)
         self._conn.execute(
-            "UPDATE training_jobs SET metrics_json = ?, updated_at = ? "
-            "WHERE job_id = ?",
+            "UPDATE training_jobs SET metrics_json = ?, updated_at = ? WHERE job_id = ?",
             (_encode_json(merged), _now(), job_id),
         )
         self._conn.commit()
@@ -302,8 +307,7 @@ class TrainingJobRegistry:
             metrics=metrics,
         )
         self._conn.execute(
-            "UPDATE training_jobs SET model_id = ?, updated_at = ? "
-            "WHERE job_id = ?",
+            "UPDATE training_jobs SET model_id = ?, updated_at = ? WHERE job_id = ?",
             (model_id, _now(), job_id),
         )
         self._conn.commit()
@@ -335,18 +339,22 @@ class TrainingJobRegistry:
         job_asset_id = _require_job_id(job_asset_id)
         if dataset_asset_id is not None:
             if product_asset_id is not None:
-                catalog.add_lineage(LineageRecord(
-                    source_id=product_asset_id,
-                    target_id=dataset_asset_id,
-                    relation_type="derived_from",
-                    resource_type="product",
-                ))
-            catalog.add_lineage(LineageRecord(
-                source_id=dataset_asset_id,
-                target_id=job_asset_id,
-                relation_type="trained_on",
-                resource_type="dataset",
-            ))
+                catalog.add_lineage(
+                    LineageRecord(
+                        source_id=product_asset_id,
+                        target_id=dataset_asset_id,
+                        relation_type="derived_from",
+                        resource_type="product",
+                    )
+                )
+            catalog.add_lineage(
+                LineageRecord(
+                    source_id=dataset_asset_id,
+                    target_id=job_asset_id,
+                    relation_type="trained_on",
+                    resource_type="dataset",
+                )
+            )
 
 
 __all__ = [

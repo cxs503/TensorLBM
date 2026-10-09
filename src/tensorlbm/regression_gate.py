@@ -7,11 +7,11 @@ submitted, partial, or numerically invalid run for a benchmark success.
 
 from __future__ import annotations
 
-import json
+import csv
 import hashlib
+import json
 import math
 import os
-import csv
 import re
 import tempfile
 from pathlib import Path

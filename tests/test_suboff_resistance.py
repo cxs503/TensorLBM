@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from tensorlbm import SuboffResistanceBenchmarkConfig, run_suboff_resistance_benchmark
-from tensorlbm import suboff_resistance
+from tensorlbm import (
+    SuboffResistanceBenchmarkConfig,
+    run_suboff_resistance_benchmark,
+    suboff_resistance,
+)
 from tensorlbm.suboff_resistance import run_suboff_resistance_runtime
 
 

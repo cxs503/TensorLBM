@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Quantitative dam-break benchmark across all TensorLBM models."""
 
-import json, math, time, sys
-from pathlib import Path
-import torch
+import json
+import math
+import sys
+import time
 
 sys.path.insert(0, "/home/jsyc/TensorLBM/src")
-from tensorlbm.dam_break_3d import DamBreak3DConfig, run_dam_break_3d, _KOSHIZUKA_FRONT
+from tensorlbm.dam_break_3d import _KOSHIZUKA_FRONT, DamBreak3DConfig, run_dam_break_3d
 
 # Reference data
 REF_T, REF_X = zip(*_KOSHIZUKA_FRONT)
@@ -96,7 +97,7 @@ print("=" * 80)
 print("TensorLBM 3D Dam-Break Quantitative Benchmark")
 print("=" * 80)
 print(f"Domain: {BASE['nx']}×{BASE['ny']}×{BASE['nz']}, {BASE['n_steps']} steps")
-print(f"Reference: Koshizuka & Oka (1996)")
+print("Reference: Koshizuka & Oka (1996)")
 print()
 
 results = []

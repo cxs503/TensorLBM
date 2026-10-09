@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import csv
 import json
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -53,7 +54,32 @@ __all__ = [
 # D2Q5 lattice
 _CX5 = torch.tensor([0.0, 1.0, 0.0, -1.0, 0.0])
 _CY5 = torch.tensor([0.0, 0.0, 1.0, 0.0, -1.0])
-_W5 = torch.tensor([2.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0])
+
+
+def _normalized_weights_fp32(values: Sequence[float]) -> torch.Tensor:
+    """Lattice weights: built in fp64, normalized, quantized to fp32 so that
+    the exact element sum is 1.0.
+
+    A bare fp32 construction of the D2Q5 weights [1/3, 1/6 x 4] has an exact
+    sum of 1 + 2**-25 (~1 + 2.98e-8); normalizing in fp64 perturbs each weight
+    by only ~1e-16 relative, far below the fp32 rounding grid, so the residual
+    survives re-quantization. It is therefore absorbed into the largest
+    (rest-direction) weight: every element moves by at most 1 ulp and the four
+    directional weights stay bit-identical. See tests/test_thermal_weights.py.
+    """
+    w64 = torch.tensor(values, dtype=torch.float64)
+    w64 = w64 / w64.sum()
+    w32 = w64.to(torch.float32)
+    for _ in range(4):
+        residual = 1.0 - w32.double().sum().item()
+        if residual == 0.0:
+            break
+        idx = int(w32.argmax().item())
+        w32[idx] = w32[idx].double().item() + residual
+    return w32
+
+
+_W5 = _normalized_weights_fp32([2.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0])
 _CS2_D2Q5 = 1.0 / 3.0
 
 

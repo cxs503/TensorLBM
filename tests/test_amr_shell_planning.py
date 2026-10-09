@@ -9,6 +9,7 @@ L1-shell runner, so the returned box must:
   off the solid shell surface);
 * grow monotonically with the shell margin / wake extension.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -20,7 +21,14 @@ from tensorlbm.boundaries3d import sphere_mask
 
 def _sphere(nx: int = 96, ny: int = 64, nz: int = 64, radius: float = 6.0) -> torch.Tensor:
     return sphere_mask(
-        nx, ny, nz, nx * 0.5, ny / 2.0, nz / 2.0, radius, device=torch.device("cpu"),
+        nx,
+        ny,
+        nz,
+        nx * 0.5,
+        ny / 2.0,
+        nz / 2.0,
+        radius,
+        device=torch.device("cpu"),
     )
 
 
@@ -40,7 +48,7 @@ def test_plan_box_is_valid_and_covers_the_shell() -> None:
     refined = plan.shell_mask | plan.wake_mask
     assert int(refined.sum().item()) == plan.refine_cells
     assert bool((refined & ~solid).any())  # the shell is fluid-only by construction
-    box_slice = refined[box.z0:box.z1, box.y0:box.y1, box.x0:box.x1]
+    box_slice = refined[box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1]
     assert int(box_slice.sum().item()) == int(refined.sum().item())
 
 

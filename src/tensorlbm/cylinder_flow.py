@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 from .backends import get_ops, using_backend
-
 from .boundaries import (
     apply_simple_channel_boundaries,
     bounce_back_cells,

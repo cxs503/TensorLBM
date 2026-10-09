@@ -18,10 +18,8 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Sequence
 
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # 楔形体入水 (2-D wedge water entry)

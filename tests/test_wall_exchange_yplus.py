@@ -62,15 +62,20 @@ def test_wall_exchange_yplus_empty_input_fails_closed() -> None:
 
 def test_wall_exchange_yplus_aggregate_uses_exact_exposure_counts() -> None:
     first = summarize_wall_exchange_yplus(
-        torch.tensor([20.0, 40.0, 80.0]), minimum_in_range_fraction=0.6,
+        torch.tensor([20.0, 40.0, 80.0]),
+        minimum_in_range_fraction=0.6,
     )
     second = summarize_wall_exchange_yplus(
-        torch.tensor([100.0, 1200.0]), minimum_in_range_fraction=0.6,
+        torch.tensor([100.0, 1200.0]),
+        minimum_in_range_fraction=0.6,
     )
 
-    aggregate = aggregate_wall_exchange_yplus_summaries([
-        first.to_dict(), second.to_dict(),
-    ])
+    aggregate = aggregate_wall_exchange_yplus_summaries(
+        [
+            first.to_dict(),
+            second.to_dict(),
+        ]
+    )
 
     assert aggregate.requested_sample_exposures == 5
     assert aggregate.in_range_sample_exposures == 3
@@ -82,10 +87,14 @@ def test_wall_exchange_yplus_aggregate_uses_exact_exposure_counts() -> None:
 def test_wall_exchange_yplus_aggregate_rejects_mixed_policies() -> None:
     first = summarize_wall_exchange_yplus(torch.tensor([100.0]))
     second = summarize_wall_exchange_yplus(
-        torch.tensor([100.0]), upper_bound=500.0,
+        torch.tensor([100.0]),
+        upper_bound=500.0,
     )
 
     with pytest.raises(ValueError, match="different policies"):
-        aggregate_wall_exchange_yplus_summaries([
-            first.to_dict(), second.to_dict(),
-        ])
+        aggregate_wall_exchange_yplus_summaries(
+            [
+                first.to_dict(),
+                second.to_dict(),
+            ]
+        )

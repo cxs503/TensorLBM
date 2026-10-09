@@ -9,9 +9,9 @@ result explicitly exposes a sequence through ``population_states``.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, is_dataclass
 from hashlib import sha256
-import json
 from typing import Any, Callable, Mapping, Sequence
 
 import torch

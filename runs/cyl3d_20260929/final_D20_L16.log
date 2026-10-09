@@ -1,0 +1,38 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl3d D=20 320x320x4] Re=40.0 u_in=0.08 nu=0.040000 tau=0.620000 dpS=0.2560
+[cyl3d D=20 320x320x4] solid=1268 near=240 (blockage 6.25%, span 4 cells = 0.20D)
+[compile_route] cylinder_3d_re40[D20]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
+[cyl3d D=20 320x320x4] step=5000 Cd_p=1.0728 standard=0.3672 lagrange=0.3629 faces=0.3382 mix50=0.3527 (343s)
+[cyl3d D=20 320x320x4] step=10000 Cd_p=1.0514 standard=0.3519 lagrange=0.3480 faces=0.3229 mix50=0.3374 (693s)
+[cyl3d D=20 320x320x4] step=15000 Cd_p=1.0442 standard=0.3468 lagrange=0.3430 faces=0.3178 mix50=0.3323 (990s)
+[cyl3d D=20 320x320x4] step=20000 Cd_p=1.0406 standard=0.3443 lagrange=0.3405 faces=0.3153 mix50=0.3298 (1266s)
+[cyl3d D=20 320x320x4] step=25000 Cd_p=1.0298 standard=0.3366 lagrange=0.3330 faces=0.3076 mix50=0.3221 (1545s)
+[cyl3d D=20 320x320x4] step=30000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (1814s)
+[cyl3d D=20 320x320x4] step=35000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (2066s)
+[cyl3d D=20 320x320x4] step=40000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (2315s)
+[cyl3d D=20 320x320x4] step=45000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (2550s)
+[cyl3d D=20 320x320x4] step=50000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (2776s)
+[cyl3d D=20 320x320x4] step=55000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (3001s)
+[cyl3d D=20 320x320x4] step=60000 Cd_p=1.0298 standard=0.3366 lagrange=0.3329 faces=0.3076 mix50=0.3221 (3225s)
+[cyl3d D=20 320x320x4] === FINAL win=200 === Cd_p=1.0298 Cd_f=0.3366 Cd=1.3664 err_vs_1.5=-8.90% (3225s)
+  standard       Cd_f=0.3366 Cd=1.3664 err=-8.90%
+  lagrange       Cd_f=0.3329 Cd=1.3627 err=-9.15%
+  faces          Cd_f=0.3076 Cd=1.3374 err=-10.84%
+  mix50          Cd_f=0.3221 Cd=1.3519 err=-9.87%
+  plateau(standard) [1.391, 1.3664, 1.3664, 1.3664]
+[cyl3d] saved runs/cyl3d_20260929/final_D20_L16.json

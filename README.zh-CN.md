@@ -1,8 +1,14 @@
 # TensorLBM
 
+二维 LBM–DEM 联算已可运行：[P1 报告](docs/tensordem_coupling_p1.md)。真实求解器、重启与守恒证据已保存；滑移 IBM 和颗粒敏感性尚未达标。
+
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-TensorLBM 是一个以 CPU 为首要目标的 PyTorch 格子玻尔兹曼方法 (LBM) 平台，专注于**可复现的研究实验**，并提供清晰的扩展接口。
+[![CI](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml/badge.svg)](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://github.com/cxs503/TensorLBM)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
+
+TensorLBM 是一个面向 **AI4S（AI for Science）** 的综合平台，以 PyTorch LBM 求解器为核心，提供从仿真数据生产、模型训练到推理服务的闭环能力，并保持可复现的工程与科研工作流。
 
 ## 文档
 
@@ -28,7 +34,7 @@ link-force/Ct window adapter。它不重构、合成或重置 populations，也�
 
 ## TensorLBM 提供的功能
 
-- `src/tensorlbm/__init__.py` 中精简、明确的公开 API
+- `src/tensorlbm/__init__.py` 中精简、明确的公开 API，采用惰性解析（PEP 562）：`import tensorlbm` 仅需约 0.02 秒，且只加载实际用到的子模块
 - **D2Q9**、**D3Q19** 和 **D3Q27** 格子原语（平衡态、宏观量、格子常数）
 - **BGK**、**MRT**、**TRT**、**正则化 BGK (RLBM)**、**累积量（Cumulant）** 碰撞算子（支持二维和三维）
 - **自适应网格细化（AMR）**：D2Q9/D3Q19 动态 Patch 管理，最多 5 级细化（Filippova–Hänel 界面交换），非平衡量/涡量/梯度/边界层等细化指示子
@@ -55,7 +61,7 @@ link-force/Ct window adapter。它不重构、合成或重置 populations，也�
 
 ## 可部署 Web 平台（中英双语）
 
-`platform/` 目录提供了一个可部署的 B/S 平台，具备以下功能：
+`app/` 目录提供了一个可部署的 B/S 平台，具备以下功能：
 
 - **前处理**：多边形障碍物掩码生成、随机多孔介质掩码、LBM 单位换算
 - **求解器**：提交 10 余种仿真任务（圆柱绕流、方腔流、湍流通道、多相流、船体阻力等）
@@ -63,6 +69,7 @@ link-force/Ct window adapter。它不重构、合成或重置 populations，也�
 - **基准测试**：与已发表参考数据进行定量比较
 - **船体 CAD**：Wigley / Series 60 / KCS 船体预览、掩码生成与仿真提交
 - **AI 助手**：自然语言驱动的仿真工作流（支持中文指令）
+- **AI4S 应用管理**：统一管理神经算子、PINN、GNN、生成式等应用并接入平台服务
 
 ### 双语界面
 

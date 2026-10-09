@@ -103,25 +103,19 @@ def bouzidi_bounce_back_3d_common(
 
     fp_opp = f_prev[opp][fluid_nodes]
     fp_d = f_prev[direction][fluid_nodes]
-    dcx, dcy, dcz = (
-        int(value) for value in velocities[direction].tolist()
-    )
+    dcx, dcy, dcz = (int(value) for value in velocities[direction].tolist())
     fp_d_upstream = torch.roll(
-        f_prev[direction], shifts=(dcz, dcy, dcx), dims=(0, 1, 2),
+        f_prev[direction],
+        shifts=(dcz, dcy, dcx),
+        dims=(0, 1, 2),
     )[fluid_nodes]
 
     # Linear interpolation (q < 0.5)
-    f_bc_lin = (
-        2.0 * q_cell * fp_d
-        + (1.0 - 2.0 * q_cell) * fp_d_upstream
-    )
+    f_bc_lin = 2.0 * q_cell * fp_d + (1.0 - 2.0 * q_cell) * fp_d_upstream
 
     # Quadratic interpolation (q >= 0.5)
     safe_q = torch.where(mask_quad, q_cell, torch.ones_like(q_cell))
-    f_bc_quad = (
-        fp_d / (2.0 * safe_q)
-        + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
-    )
+    f_bc_quad = fp_d / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
 
     f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 

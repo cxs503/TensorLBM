@@ -12,13 +12,13 @@ The model follows the reusable algorithm documented by OpenLB:
 It is geometry- and collision-agnostic and operates only on sparse boundary
 nodes.  D3Q19 and D3Q27 are supported.
 """
+
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
 
 import torch
-
 
 SPALDING_KAPPA = 0.4
 SPALDING_A = 0.1108
@@ -27,9 +27,7 @@ SPALDING_A = 0.1108
 def spalding_y_plus(u_plus: torch.Tensor) -> torch.Tensor:
     """Spalding unified law ``y+ = f(u+)``."""
     ku = SPALDING_KAPPA * u_plus.clamp(min=0.0, max=60.0)
-    return u_plus + SPALDING_A * (
-        torch.exp(ku) - 1.0 - ku - 0.5 * ku.square() - ku.pow(3) / 6.0
-    )
+    return u_plus + SPALDING_A * (torch.exp(ku) - 1.0 - ku - 0.5 * ku.square() - ku.pow(3) / 6.0)
 
 
 def spalding_u_plus_from_y_plus(y_plus: torch.Tensor, iterations: int = 40) -> torch.Tensor:
@@ -57,7 +55,9 @@ def solve_spalding_friction_velocity(
         raise ValueError("nu must be positive")
     speed = tangential_speed.clamp_min(0.0)
     distance = torch.as_tensor(
-        wall_distance, dtype=speed.dtype, device=speed.device,
+        wall_distance,
+        dtype=speed.dtype,
+        device=speed.device,
     ).expand_as(speed)
     if bool((distance <= 0.0).any()):
         raise ValueError("wall_distance must be positive")
@@ -107,9 +107,7 @@ def effective_bfl_wall_distance(
     for direction in range(1, q_count):
         boundary = fluid_boundary_mask[direction]
         projection = (
-            c[direction, 0] * nx_n
-            + c[direction, 1] * ny_n
-            + c[direction, 2] * nz_n
+            c[direction, 0] * nx_n + c[direction, 1] * ny_n + c[direction, 2] * nz_n
         ).abs()
         weight = projection * boundary.to(dtype=q_field.dtype)
         denominator.add_(weight)
@@ -142,9 +140,11 @@ def _sample_sparse_trilinear(
 def _lattice(q: int, device: torch.device, dtype: torch.dtype):
     if q == 19:
         from .d3q19 import C, W, macroscopic3d
+
         return C.to(device=device, dtype=dtype), W.to(device=device, dtype=dtype), macroscopic3d
     if q == 27:
         from .d3q27 import C, W, macroscopic27
+
         return C.to(device=device, dtype=dtype), W.to(device=device, dtype=dtype), macroscopic27
     raise ValueError("only D3Q19 and D3Q27 are supported")
 
@@ -241,11 +241,11 @@ def sample_wall_exchange_velocity(
     ux, uy, uz = velocity
     if any(field.shape != q_field.shape[1:] for field in velocity):
         raise ValueError("velocity fields must have the spatial grid shape")
-    nx_n, ny_n, nz_n = (
-        component.to(device=ux.device, dtype=ux.dtype) for component in normals
-    )
+    nx_n, ny_n, nz_n = (component.to(device=ux.device, dtype=ux.dtype) for component in normals)
     y1_field = effective_bfl_wall_distance(
-        fluid_boundary_mask, q_field, (nx_n, ny_n, nz_n),
+        fluid_boundary_mask,
+        q_field,
+        (nx_n, ny_n, nz_n),
     )
     boundary = fluid_boundary_mask.any(dim=0) & (y1_field > 0.0)
     if boundary_mask is not None:
@@ -259,7 +259,15 @@ def sample_wall_exchange_velocity(
     if not indices.numel():
         empty = torch.empty(0, device=ux.device, dtype=ux.dtype)
         return WallExchangeSamples(
-            boundary, empty, empty, empty, empty, empty, empty, empty, empty,
+            boundary,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
+            empty,
         )
     iz, iy, ix = indices[:, 0], indices[:, 1], indices[:, 2]
     nxb, nyb, nzb = nx_n[boundary], ny_n[boundary], nz_n[boundary]
@@ -270,45 +278,51 @@ def sample_wall_exchange_velocity(
     sample_y = iy.to(ux.dtype) + offset * nyb
     sample_x = ix.to(ux.dtype) + offset * nxb
     valid = (
-        (sample_z >= 0.0) & (sample_z <= ux.shape[0] - 1.0)
-        & (sample_y >= 0.0) & (sample_y <= ux.shape[1] - 1.0)
-        & (sample_x >= 0.0) & (sample_x <= ux.shape[2] - 1.0)
+        (sample_z >= 0.0)
+        & (sample_z <= ux.shape[0] - 1.0)
+        & (sample_y >= 0.0)
+        & (sample_y <= ux.shape[1] - 1.0)
+        & (sample_x >= 0.0)
+        & (sample_x <= ux.shape[2] - 1.0)
     )
     if not bool(valid.all()):
         invalid_indices = indices[~valid]
         boundary = boundary.clone()
-        boundary[
-            invalid_indices[:, 0], invalid_indices[:, 1], invalid_indices[:, 2]
-        ] = False
+        boundary[invalid_indices[:, 0], invalid_indices[:, 1], invalid_indices[:, 2]] = False
         y1, y2 = y1[valid], y2[valid]
         nxb, nyb, nzb = nxb[valid], nyb[valid], nzb[valid]
-        sample_z, sample_y, sample_x = (
-            sample_z[valid], sample_y[valid], sample_x[valid]
-        )
+        sample_z, sample_y, sample_x = (sample_z[valid], sample_y[valid], sample_x[valid])
         indices = indices[valid]
     if fluid_mask is not None and sample_x.numel():
         fluid_fraction = _sample_sparse_trilinear(
             fluid_mask.to(device=ux.device, dtype=ux.dtype),
-            sample_z, sample_y, sample_x,
+            sample_z,
+            sample_y,
+            sample_x,
         )
         valid_fluid_support = fluid_fraction >= 1.0 - 1e-6
         if not bool(valid_fluid_support.all()):
             invalid_indices = indices[~valid_fluid_support]
             boundary = boundary.clone()
-            boundary[
-                invalid_indices[:, 0], invalid_indices[:, 1], invalid_indices[:, 2]
-            ] = False
+            boundary[invalid_indices[:, 0], invalid_indices[:, 1], invalid_indices[:, 2]] = False
             y1, y2 = y1[valid_fluid_support], y2[valid_fluid_support]
             nxb, nyb, nzb = (
-                nxb[valid_fluid_support], nyb[valid_fluid_support],
+                nxb[valid_fluid_support],
+                nyb[valid_fluid_support],
                 nzb[valid_fluid_support],
             )
             sample_z, sample_y, sample_x = (
-                sample_z[valid_fluid_support], sample_y[valid_fluid_support],
+                sample_z[valid_fluid_support],
+                sample_y[valid_fluid_support],
                 sample_x[valid_fluid_support],
             )
     return WallExchangeSamples(
-        boundary, y1, y2, nxb, nyb, nzb,
+        boundary,
+        y1,
+        y2,
+        nxb,
+        nyb,
+        nzb,
         _sample_sparse_trilinear(ux, sample_z, sample_y, sample_x),
         _sample_sparse_trilinear(uy, sample_z, sample_y, sample_x),
         _sample_sparse_trilinear(uz, sample_z, sample_y, sample_x),
@@ -352,8 +366,11 @@ def apply_spalding_exchange_wall_model(
     rho, ux, uy, uz = macro(f)
     nx_n, ny_n, nz_n = (component.to(device=f.device, dtype=f.dtype) for component in normals)
     samples = sample_wall_exchange_velocity(
-        (ux, uy, uz), fluid_boundary_mask, q_field,
-        (nx_n, ny_n, nz_n), exchange_distance=exchange_distance,
+        (ux, uy, uz),
+        fluid_boundary_mask,
+        q_field,
+        (nx_n, ny_n, nz_n),
+        exchange_distance=exchange_distance,
         fluid_mask=(~solid_mask if solid_mask is not None else None),
     )
     boundary = samples.boundary
@@ -396,12 +413,15 @@ def apply_spalding_exchange_wall_model(
         if area_weight.shape != boundary.shape:
             raise ValueError("area_weight must have the spatial grid shape")
         area = area_weight.to(device=f.device, dtype=f.dtype)[boundary]
-    shear = torch.stack((
-        (tau_w * tx * area).sum(),
-        (tau_w * ty * area).sum(),
-        (tau_w * tz * area).sum(),
-    ))
+    shear = torch.stack(
+        (
+            (tau_w * tx * area).sum(),
+            (tau_w * ty * area).sum(),
+            (tau_w * tz * area).sum(),
+        )
+    )
     from .wall_exchange_yplus import summarize_wall_exchange_yplus
+
     y_plus_summary = summarize_wall_exchange_yplus(
         y2_plus,
         lower_bound=y_plus_lower_bound,

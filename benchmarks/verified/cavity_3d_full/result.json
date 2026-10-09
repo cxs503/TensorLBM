@@ -1,0 +1,37 @@
+{
+  "case": "cavity_3d_full_re1000",
+  "description": "全 3D 方腔 Re=1000（5 壁固定+顶盖移动，非展向周期）——Ku, Hirsh & Taylor 1987 谱方法验证",
+  "lattice": "D3Q19",
+  "collision": "TRT（MRT/RLBM 在 Re=1000 发散——TRT 是稳定解）",
+  "boundary": "V3-3D: pre-streaming 半程反弹(5 静止壁) + zou_he_moving_lid_3d 顶盖",
+  "extrap": "none",
+  "reference": "Ku, Hirsh & Taylor 1987: u_min(0.5,0.5)=-0.2751 (Re=1000 3D 立方腔)；2D Ghia -0.3829 → 3D 修正 ~-28%",
+  "grids": {
+    "64": {
+      "nx": 64,
+      "steps": 100000,
+      "u_min": -0.27142,
+      "err_pct_vs_ku": 1.338,
+      "3d_correction_pct": 29.11,
+      "resid": 9.75e-07
+    },
+    "96": {
+      "nx": 96,
+      "steps": 100000,
+      "u_min": -0.27581,
+      "err_pct_vs_ku": 0.259,
+      "3d_correction_pct": 27.97,
+      "resid": 3.82e-06
+    }
+  },
+  "convergence": {
+    "err": [
+      1.338,
+      0.259
+    ],
+    "monotone_decrease": true
+  },
+  "span_symmetry": "uz_midplane_max_abs 0.0013-0.0020 (良好展向对称)",
+  "verified": true,
+  "verified_date": "2026-08-20"
+}

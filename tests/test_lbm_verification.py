@@ -10,17 +10,18 @@
 用法: PYTHONPATH=src python tests/test_lbm_verification.py
 """
 
-import sys
 import math
-import torch
+import sys
+
 import numpy as np
+import torch
 
 # 添加src到路径
 sys.path.insert(0, "src")
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C, W
-from tensorlbm.solver3d import stream3d, collide_bgk3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import C, W, equilibrium3d, macroscopic3d
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 
 def test_step_a_shear_wave(device="sdaa:0"):

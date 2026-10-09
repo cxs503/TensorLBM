@@ -1,0 +1,133 @@
+{
+  "benchmark": "laplace_droplet",
+  "criteria": {
+    "laplace": "2D dp=sigma/R, 3D dp=2*sigma/R; per-radius sigma within 3% of fit; R2>=0.999; |intercept|<=3% of slope/Rmax"
+  },
+  "dims": {
+    "2d": {
+      "R2": 0.9999999504023084,
+      "dim": 2,
+      "intercept_frac_pct": 0.6323382768118313,
+      "intercept_free": 2.2790246905095443e-05,
+      "max_dev_sigma_pct": 0.8027712069659252,
+      "pass_laplace": true,
+      "per_radius": [
+        {
+          "R_eq": 15.440663999700893,
+          "R_init": 15.0,
+          "converged": true,
+          "dev_sigma_pct": 0.19856943000847296,
+          "dp": 0.003626807282368342,
+          "mass_drift": 4.935772936635425e-05,
+          "max_u": 0.1384669840335846,
+          "p_in": 0.03884255265196165,
+          "p_out": 0.0352157453695933,
+          "rho_in": 1.9646410544713337,
+          "rho_out": 0.1608158548672994,
+          "sigma_i": 0.05600031263871789,
+          "step": 6000
+        },
+        {
+          "R_eq": 25.288031978452484,
+          "R_init": 25.0,
+          "converged": true,
+          "dev_sigma_pct": 0.21718659287714442,
+          "dp": 0.0022237238784631095,
+          "mass_drift": 7.878998121999947e-05,
+          "max_u": 0.13948157926400503,
+          "p_in": 0.037229267259438835,
+          "p_out": 0.03500554338097572,
+          "rho_in": 1.952362020810445,
+          "rho_out": 0.15911213060220084,
+          "sigma_i": 0.056233600549823494,
+          "step": 9000
+        },
+        {
+          "R_eq": 40.34251415142246,
+          "R_init": 40.0,
+          "converged": true,
+          "dev_sigma_pct": 0.8027712069659252,
+          "dp": 0.0014020490149656932,
+          "mass_drift": 0.00013743888521299696,
+          "max_u": 0.13956829408804575,
+          "p_in": 0.036285566786924996,
+          "p_out": 0.034883517771959305,
+          "rho_in": 1.9450875520706177,
+          "rho_out": 0.15813376009464264,
+          "sigma_i": 0.0565621822272414,
+          "step": 17000
+        }
+      ],
+      "sigma_eff_fit": 0.05611173338787406,
+      "slope_free": 0.05565004647607594
+    },
+    "3d": {
+      "R2": 0.9999821249251835,
+      "dim": 3,
+      "intercept_frac_pct": 1.0587711978109229,
+      "intercept_free": 3.8028480679490795e-05,
+      "max_dev_sigma_pct": 1.1108985217028102,
+      "pass_laplace": true,
+      "per_radius": [
+        {
+          "R_eq": 15.424265934258889,
+          "R_init": 15.0,
+          "converged": true,
+          "dev_sigma_pct": 0.38050918481119095,
+          "dp": 0.007255576550960541,
+          "mass_drift": 9.034429006782925e-05,
+          "max_u": 0.13663936654726663,
+          "p_in": 0.04302754998207092,
+          "p_out": 0.03577197343111038,
+          "rho_in": 1.9956389268239338,
+          "rho_out": 0.16544211904207864,
+          "sigma_i": 0.055955971114194133,
+          "step": 6000
+        },
+        {
+          "R_eq": 25.249245749079506,
+          "R_init": 25.0,
+          "converged": true,
+          "dev_sigma_pct": 0.5825938430168209,
+          "dp": 0.004475139081478119,
+          "mass_drift": 8.847956539188764e-05,
+          "max_u": 0.13805333276589712,
+          "p_in": 0.03982835387190183,
+          "p_out": 0.03535321479042371,
+          "rho_in": 1.9720509052276611,
+          "rho_out": 0.16194295386473337,
+          "sigma_i": 0.05649694321477548,
+          "step": 6000
+        },
+        {
+          "R_eq": 40.254538042399275,
+          "R_init": 40.0,
+          "converged": true,
+          "dev_sigma_pct": 1.1108985217028102,
+          "dp": 0.0028217285871505737,
+          "mass_drift": 0.00017462444306458818,
+          "max_u": 0.1394344319899877,
+          "p_in": 0.03792869299650192,
+          "p_out": 0.03510696440935135,
+          "rho_in": 1.9577093521753948,
+          "rho_out": 0.15993123749891916,
+          "sigma_i": 0.05679369037838917,
+          "step": 12000
+        }
+      ],
+      "sigma_eff_fit": 0.056169701989344664,
+      "slope_free": 0.055400203584026975
+    }
+  },
+  "eos": {
+    "discrete_coexistence": {
+      "rho_l": 1.957,
+      "rho_v": 0.1596
+    },
+    "p(rho)": "rho/3 + G_eff*psi^2/6  (G_eff=-5.0, standard convention)"
+  },
+  "model": "SCMP SC94 psi_exp (psi=1-exp(-rho)), physical G_eff=-5.0, tau=1.0; library called with G=+5.0 (library SC force sign flipped - backward gather; see README)",
+  "note": "SCMP SC94 static droplet, physical G_eff=-5.0, tau=1.0; library called with G=+5.0 due to backward-gather sign flip (see README). Laplace law: 2D dp=sigma/R, 3D dp=2*sigma/R. Pass: per-radius sigma within 3% of fit, R2>=0.999, |intercept|<=3%.",
+  "verified": true,
+  "verified_date": "2026-08-18"
+}

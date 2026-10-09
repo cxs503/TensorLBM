@@ -15,16 +15,15 @@ import pytest
 import torch
 
 from tensorlbm.amr_common import (
+    SUPPORTED_LATTICES,
     AMRPatch3D,
     coarsen,
     halo_exchange,
     refine,
-    SUPPORTED_LATTICES,
 )
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.d3q27 import equilibrium27, macroscopic27
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.d3q27 import equilibrium27
 from tensorlbm.refinement import BoxRegion
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -121,7 +120,7 @@ class TestRefineCoarsen:
     @pytest.mark.parametrize("lattice", SUPPORTED_LATTICES)
     def test_refine_coarsen_roundtrip_preserves_mass(self, lattice: str) -> None:
         """refine then coarsen should approximately preserve total mass."""
-        q = _q_for(lattice)
+        _q_for(lattice)
         f = _make_equilibrium_3d(lattice, nz=4, ny=6, nx=8)
         f_fine = refine(f, lattice=lattice, tau_c=1.0, tau_f=0.75, ratio=2)
         f_back = coarsen(f_fine, lattice=lattice, tau_f=0.75, tau_c=1.0, ratio=2)
@@ -239,7 +238,7 @@ class TestSolverAgnosticCombination:
     @pytest.mark.parametrize("lattice", SUPPORTED_LATTICES)
     def test_refine_works_with_identity_collision(self, lattice: str) -> None:
         """The common module does not call any specific collision operator."""
-        q = _q_for(lattice)
+        _q_for(lattice)
         f = _make_equilibrium_3d(lattice)
         # Add perturbation
         f = f + 0.01 * torch.rand_like(f)

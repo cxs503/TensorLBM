@@ -6,9 +6,9 @@ not a CFD physical-truth, accuracy, or generality evaluation.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from hashlib import sha256
-import json
 from io import BytesIO
 from math import ceil, isfinite
 from pathlib import Path
@@ -316,7 +316,7 @@ def evaluate_evidence_gated_flow_transformer_holdout(
     metadata = _read_json_object(metadata_bytes, "metadata")
     arch = _validate_arch(metadata)
     provenance = _read_json_object(provenance_bytes, "provenance")
-    provenance_digest = _validate_provenance(
+    _validate_provenance(
         provenance, metadata, materialized, weights, metadata_path, weights_sha, metadata_sha
     )
 

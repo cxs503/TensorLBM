@@ -9,17 +9,15 @@ bring Cd closer to the Williamson reference (~1.38).
 
 from __future__ import annotations
 
-import math
-
 import torch
 
-from tensorlbm.d2q9 import equilibrium, macroscopic
 from tensorlbm.boundaries import (
-    far_field_bc_2d,
     apply_simple_channel_boundaries,
+    far_field_bc_2d,
     make_channel_wall_mask,
 )
-from tensorlbm.solver import collide_bgk, stream, correct_mass
+from tensorlbm.d2q9 import equilibrium, macroscopic
+from tensorlbm.solver import collide_bgk, correct_mass, stream
 
 REF_CD = 1.38  # Williamson (1988) Re=100
 REF_ST = 0.166

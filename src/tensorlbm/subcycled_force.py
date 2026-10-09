@@ -6,6 +6,7 @@ and averaged exactly that many times.  Keeping this rule in one small common
 component prevents a solver or benchmark from silently retaining a hard-coded
 denominator when another refinement level is introduced.
 """
+
 from __future__ import annotations
 
 import math

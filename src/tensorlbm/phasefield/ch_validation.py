@@ -15,7 +15,7 @@ from ..d3q19 import equilibrium3d
 from .free_energy import DoubleWellFreeEnergy, force_minus_phi_grad_mu
 
 if TYPE_CHECKING:
-    from ..multiphase3d import free_energy_step_3d as _free_energy_step_3d
+    pass
 
 
 def free_energy_step_3d(*args: object, **kwargs: object) -> tuple[torch.Tensor, torch.Tensor]:

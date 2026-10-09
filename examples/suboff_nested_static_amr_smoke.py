@@ -5,6 +5,7 @@ This runner validates allocation, deepest-level geometry/force ownership and
 every conservative AMR interface.  It is intentionally not a resistance
 validation claim and never promotes a short trajectory by reference proximity.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -123,7 +124,9 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     result.add_argument(
-        "--hull-type", choices=("bare_hull", "full"), default="bare_hull",
+        "--hull-type",
+        choices=("bare_hull", "full"),
+        default="bare_hull",
     )
     result.add_argument("--speed-knots", type=float, default=5.92)
     result.add_argument("--nx", type=int, default=600)
@@ -189,7 +192,9 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--report-interval", type=int, default=1)
     result.add_argument("--wall-diagnostic-interval", type=int, default=1)
     result.add_argument(
-        "--health-interval", type=int, default=0,
+        "--health-interval",
+        type=int,
+        default=0,
         help="root-step cadence for per-level population/rho/speed diagnostics; 0 disables",
     )
     result.add_argument(
@@ -263,7 +268,9 @@ def parser() -> argparse.ArgumentParser:
         help="minimum trajectory duration after collision Re reaches its target",
     )
     result.add_argument(
-        "--minimum-statistics-convective-times", type=float, default=5.0,
+        "--minimum-statistics-convective-times",
+        type=float,
+        default=5.0,
     )
     result.add_argument("--lattice-speed", type=float, default=0.06)
     result.add_argument("--resolved-reynolds", type=float, default=100000.0)
@@ -297,8 +304,7 @@ def parser() -> argparse.ArgumentParser:
         type=int,
         default=0,
         help=(
-            "bounded-memory z-slab size for cell-local KBC collision; "
-            "0 keeps whole-level collision"
+            "bounded-memory z-slab size for cell-local KBC collision; 0 keeps whole-level collision"
         ),
     )
     result.add_argument(
@@ -358,10 +364,14 @@ def parser() -> argparse.ArgumentParser:
         help="validation-family exchange-height ratio held fixed across grids",
     )
     result.add_argument(
-        "--wall-model-y-plus-lower-bound", type=float, default=30.0,
+        "--wall-model-y-plus-lower-bound",
+        type=float,
+        default=30.0,
     )
     result.add_argument(
-        "--wall-model-y-plus-upper-bound", type=float, default=1000.0,
+        "--wall-model-y-plus-upper-bound",
+        type=float,
+        default=1000.0,
     )
     result.add_argument(
         "--minimum-wall-model-y-plus-in-range-fraction",
@@ -402,18 +412,13 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("stress exchange distance must be positive")
     if args.wall_exchange_distance_over_length_target <= 0.0:
         raise ValueError("wall-exchange distance ratio target must be positive")
-    if not (
-        0.0 <= args.wall_model_y_plus_lower_bound
-        < args.wall_model_y_plus_upper_bound
-    ):
+    if not (0.0 <= args.wall_model_y_plus_lower_bound < args.wall_model_y_plus_upper_bound):
         raise ValueError("wall-model y+ bounds must be ordered and non-negative")
     if not 0.0 <= args.minimum_wall_model_y_plus_in_range_fraction <= 1.0:
         raise ValueError("minimum wall-model y+ in-range fraction must lie in [0,1]")
     if args.deep_wall_margin != 0 and args.deep_wall_margin < 2:
         raise ValueError("deep wall margin must be 0 or at least two")
-    if args.deep_wake_cells < 0 or (
-        args.deep_wall_margin == 0 and args.deep_wake_cells != 0
-    ):
+    if args.deep_wake_cells < 0 or (args.deep_wall_margin == 0 and args.deep_wake_cells != 0):
         raise ValueError("deep wake cells require an enabled deep block")
     if args.memory_bytes_per_cell <= 0.0:
         raise ValueError("memory bytes per cell must be positive")
@@ -423,10 +428,7 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("collision chunk cells must be non-negative")
     if args.compile_natural_kbc and args.collision_model != "natural_kbc":
         raise ValueError("compiled natural KBC requires --collision-model natural_kbc")
-    if (
-        args.natural_kbc_compute_dtype != "storage"
-        and args.collision_model != "natural_kbc"
-    ):
+    if args.natural_kbc_compute_dtype != "storage" and args.collision_model != "natural_kbc":
         raise ValueError(
             "float64 natural-KBC compute requires --collision-model natural_kbc",
         )
@@ -438,18 +440,20 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("checkpoint interval must be non-negative")
     if args.health_interval < 0:
         raise ValueError("health interval must be non-negative")
-    if args.ramp_steps < 0 or min(
-        args.wall_normal_ramp_steps,
-        args.wall_shear_ramp_steps,
-    ) < -1:
+    if (
+        args.ramp_steps < 0
+        or min(
+            args.wall_normal_ramp_steps,
+            args.wall_shear_ramp_steps,
+        )
+        < -1
+    ):
         raise ValueError("wall ramp steps must be non-negative or -1")
     wall_normal_ramp_steps = (
-        args.ramp_steps
-        if args.wall_normal_ramp_steps == -1 else args.wall_normal_ramp_steps
+        args.ramp_steps if args.wall_normal_ramp_steps == -1 else args.wall_normal_ramp_steps
     )
     wall_shear_ramp_steps = (
-        args.ramp_steps
-        if args.wall_shear_ramp_steps == -1 else args.wall_shear_ramp_steps
+        args.ramp_steps if args.wall_shear_ramp_steps == -1 else args.wall_shear_ramp_steps
     )
     if not args.lattice_speed < args.maximum_health_speed < 1.0:
         raise ValueError("maximum health speed must lie between inlet speed and one")
@@ -467,9 +471,7 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError(
             "maximum reflux applied correction fraction must lie in (0,0.2]",
         )
-    if (args.interface_filter_width == 0) != (
-        args.interface_filter_strength == 0.0
-    ):
+    if (args.interface_filter_width == 0) != (args.interface_filter_strength == 0.0):
         raise ValueError(
             "interface filter width and strength must both be zero or positive",
         )
@@ -478,17 +480,11 @@ def run(args: argparse.Namespace) -> dict:
         if args.resolved_reynolds_start == 0.0
         else args.resolved_reynolds_start
     )
-    if (
-        resolved_reynolds_start != args.resolved_reynolds
-        and not (
-            0 <= args.viscosity_ramp_start_step
-            < args.viscosity_ramp_end_step
-            <= args.steps
-        )
+    if resolved_reynolds_start != args.resolved_reynolds and not (
+        0 <= args.viscosity_ramp_start_step < args.viscosity_ramp_end_step <= args.steps
     ):
         raise ValueError(
-            "non-constant viscosity continuation needs "
-            "0 <= ramp start < ramp end <= steps",
+            "non-constant viscosity continuation needs 0 <= ramp start < ramp end <= steps",
         )
     continuation = ResolvedReynoldsContinuation(
         resolved_reynolds_start,
@@ -500,19 +496,20 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("warmup steps must lie in [0, steps)")
     if not 0 <= args.statistics_window_steps <= args.steps - args.warmup_steps:
         raise ValueError("statistics window exceeds the post-warmup trajectory")
-    if min(
-        args.report_interval,
-        args.wall_diagnostic_interval,
-        args.surface_force_interval,
-        args.minimum_convective_times,
-        args.minimum_target_reynolds_convective_times,
-        args.minimum_statistics_convective_times,
-    ) <= 0:
+    if (
+        min(
+            args.report_interval,
+            args.wall_diagnostic_interval,
+            args.surface_force_interval,
+            args.minimum_convective_times,
+            args.minimum_target_reynolds_convective_times,
+            args.minimum_statistics_convective_times,
+        )
+        <= 0
+    ):
         raise ValueError("report/diagnostic intervals and duration targets must be positive")
     auxiliary_margins = tuple(
-        int(value.strip())
-        for value in args.aux_cv_margins.split(",")
-        if value.strip()
+        int(value.strip()) for value in args.aux_cv_margins.split(",") if value.strip()
     )
     if len(auxiliary_margins) != 2 or len({args.cv_margin, *auxiliary_margins}) != 3:
         raise ValueError("primary and two auxiliary CV margins must be distinct")
@@ -533,9 +530,16 @@ def run(args: argparse.Namespace) -> dict:
     )
     geometry_config = SuboffConfig()
     coarse_solid, _ = build_suboff_mask(
-        args.hull_type, args.nx, args.ny, args.nz,
-        cx=center[0], cy=center[1], cz=center[2],
-        length=args.hull_length, config=geometry_config, device=device,
+        args.hull_type,
+        args.nx,
+        args.ny,
+        args.nz,
+        cx=center[0],
+        cy=center[1],
+        cz=center[2],
+        length=args.hull_length,
+        config=geometry_config,
+        device=device,
     )
     outer_plan = plan_suboff_static_amr(
         coarse_solid,
@@ -585,11 +589,9 @@ def run(args: argparse.Namespace) -> dict:
         finest_geometry = deep_geometry
     finest_plan = refinement_plans[-1]
     finest_planning_solid = planning_solids[-1]
-    wall_exchange_interface_clearance = (
-        assess_wall_exchange_interface_clearance(
-            exchange_distance_cells=args.stress_exchange_distance,
-            available_buffer_cells=finest_plan.wall_buffer_finest_cells,
-        )
+    wall_exchange_interface_clearance = assess_wall_exchange_interface_clearance(
+        exchange_distance_cells=args.stress_exchange_distance,
+        available_buffer_cells=finest_plan.wall_buffer_finest_cells,
     )
     if not wall_exchange_interface_clearance.admitted:
         raise ValueError(
@@ -602,9 +604,7 @@ def run(args: argparse.Namespace) -> dict:
     level_count = refinement_depth + 1
     if args.level_devices:
         level_devices = tuple(
-            torch.device(value.strip())
-            for value in args.level_devices.split(",")
-            if value.strip()
+            torch.device(value.strip()) for value in args.level_devices.split(",") if value.strip()
         )
         if len(level_devices) != level_count:
             raise ValueError(
@@ -628,51 +628,47 @@ def run(args: argparse.Namespace) -> dict:
     )
     refinement_boxes = [
         outer_plan.box,
-        *[
-            plan.box_in_outer_allocated_coordinates
-            for plan in refinement_plans[1:]
-        ],
+        *[plan.box_in_outer_allocated_coordinates for plan in refinement_plans[1:]],
     ]
     amr_configs = []
     for interface_index, box in enumerate(refinement_boxes):
-        amr_configs.append(StaticBlockAMRConfig(
-            box,
-            tau_coarse=initial_tau_by_level[interface_index],
-            regularize_restriction=args.regularize_restriction,
-            regularize_prolongation=args.regularize_prolongation,
-            reflux_correction_stencil=args.reflux_correction_stencil,
-            ghost_interpolation=args.ghost_interpolation,
-            enforce_transfer_positivity=args.enforce_transfer_positivity,
-            interface_filter_width=args.interface_filter_width,
-            interface_filter_strength=args.interface_filter_strength,
-        ))
+        amr_configs.append(
+            StaticBlockAMRConfig(
+                box,
+                tau_coarse=initial_tau_by_level[interface_index],
+                regularize_restriction=args.regularize_restriction,
+                regularize_prolongation=args.regularize_prolongation,
+                reflux_correction_stencil=args.reflux_correction_stencil,
+                ghost_interpolation=args.ghost_interpolation,
+                enforce_transfer_positivity=args.enforce_transfer_positivity,
+                interface_filter_width=args.interface_filter_width,
+                interface_filter_strength=args.interface_filter_strength,
+            )
+        )
 
     # Derive force-observer geometry before allocating the hierarchy so that
     # preflight mode catches a CV whose radius-one streaming flux stencil
     # would sample the interface filter.  Fine masks omit the AMR ghost shell.
     nested_indices = finest_planning_solid.nonzero(as_tuple=False)
     ghost = amr_configs[-1].ghost
-    z_min, y_min, x_min = (
-        int(nested_indices[:, axis].min().item()) + ghost for axis in range(3)
-    )
+    z_min, y_min, x_min = (int(nested_indices[:, axis].min().item()) + ghost for axis in range(3))
     z_max, y_max, x_max = (
-        int(nested_indices[:, axis].max().item()) + 1 + ghost
-        for axis in range(3)
+        int(nested_indices[:, axis].max().item()) + 1 + ghost for axis in range(3)
     )
-    finest_shape = tuple(
-        int(size) + 2 * ghost for size in finest_planning_solid.shape
-    )
+    finest_shape = tuple(int(size) + 2 * ghost for size in finest_planning_solid.shape)
 
     def control_volume_bounds(margin: int) -> tuple[int, int, int, int, int, int]:
         return (
-            x_min - margin, x_max + margin,
-            y_min - margin, y_max + margin,
-            z_min - margin, z_max + margin,
+            x_min - margin,
+            x_max + margin,
+            y_min - margin,
+            y_max + margin,
+            z_min - margin,
+            z_max + margin,
         )
 
     control_volume_bounds_by_margin = {
-        margin: control_volume_bounds(margin)
-        for margin in (args.cv_margin, *auxiliary_margins)
+        margin: control_volume_bounds(margin) for margin in (args.cv_margin, *auxiliary_margins)
     }
     control_volume_clearance = []
     for role, margin in (
@@ -750,9 +746,7 @@ def run(args: argparse.Namespace) -> dict:
         "inner_box_in_outer_allocated_coordinates": vars(
             nested_plan.box_in_outer_allocated_coordinates,
         ),
-        "refinement_boxes_in_parent_allocated_coordinates": [
-            vars(box) for box in refinement_boxes
-        ],
+        "refinement_boxes_in_parent_allocated_coordinates": [vars(box) for box in refinement_boxes],
         "refinement_depth": refinement_depth,
         "level_count": level_count,
         "force_samples_per_root_step": force_averager.expected_samples,
@@ -771,15 +765,9 @@ def run(args: argparse.Namespace) -> dict:
         "allocated_cells_by_level": list(finest_plan.allocated_cells_by_level),
         "wall_buffer_parent_cells": finest_plan.wall_buffer_parent_cells,
         "wall_buffer_finest_cells": finest_plan.wall_buffer_finest_cells,
-        "wall_exchange_interface_clearance": (
-            wall_exchange_interface_clearance.to_dict()
-        ),
-        "downstream_buffer_parent_cells": (
-            finest_plan.downstream_buffer_parent_cells
-        ),
-        "downstream_buffer_finest_cells": (
-            finest_plan.downstream_buffer_finest_cells
-        ),
+        "wall_exchange_interface_clearance": (wall_exchange_interface_clearance.to_dict()),
+        "downstream_buffer_parent_cells": (finest_plan.downstream_buffer_parent_cells),
+        "downstream_buffer_finest_cells": (finest_plan.downstream_buffer_finest_cells),
         "total_allocated_cells": finest_plan.total_allocated_cells,
         "uniform_finest_cells": finest_plan.uniform_finest_cells,
         "cell_saving_fraction": finest_plan.cell_saving_fraction,
@@ -789,13 +777,10 @@ def run(args: argparse.Namespace) -> dict:
         "device_memory_preflight": device_memory_preflight,
         "stress_exchange_distance_cells": args.stress_exchange_distance,
         "stress_exchange_distance_over_finest_length": (
-            args.stress_exchange_distance
-            / finest_plan.effective_hull_length_cells
+            args.stress_exchange_distance / finest_plan.effective_hull_length_cells
         ),
         "estimated_exchange_y_plus": estimated_exchange_y_plus,
-        "estimated_bfl_exchange_y_plus_bounds": (
-            estimated_bfl_exchange_y_plus_bounds
-        ),
+        "estimated_bfl_exchange_y_plus_bounds": (estimated_bfl_exchange_y_plus_bounds),
         "root_external_domain_quality": root_external_domain_quality,
         "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
         "appendage_link_scheme": (
@@ -804,8 +789,7 @@ def run(args: argparse.Namespace) -> dict:
             else "analytic_axisymmetric_bisection_v1"
         ),
         "cuda_memory_preflight": (
-            device_memory_preflight[0]["cuda_budget"]
-            if len(device_memory_preflight) == 1 else None
+            device_memory_preflight[0]["cuda_budget"] if len(device_memory_preflight) == 1 else None
         ),
         "control_volume_interface_clearance": {
             "interface_filter_width_cells": args.interface_filter_width,
@@ -840,9 +824,7 @@ def run(args: argparse.Namespace) -> dict:
         planning_resolution = assess_suboff_geometry_resolution(
             finest_planning_solid,
             hull_type=args.hull_type,
-            fine_hull_length_cells=(
-                finest_plan.effective_hull_length_cells
-            ),
+            fine_hull_length_cells=(finest_plan.effective_hull_length_cells),
             center_yz=(
                 float(finest_geometry["cy"]),
                 float(finest_geometry["cz"]),
@@ -853,13 +835,9 @@ def run(args: argparse.Namespace) -> dict:
         )
         planning_resolution_output = planning_resolution.to_dict()
         if args.hull_type == "full":
-            planning_resolution_output["appendage_boundary_links"] = (
-                planning_appendage_links
-            )
+            planning_resolution_output["appendage_boundary_links"] = planning_appendage_links
             planning_resolution_output["appendage_halfway_links"] = 0
-            planning_resolution_output["appendage_link_scheme"] = (
-                SUBOFF_APPENDAGE_LINK_SCHEME
-            )
+            planning_resolution_output["appendage_link_scheme"] = SUBOFF_APPENDAGE_LINK_SCHEME
         planning["geometry_resolution"] = planning_resolution_output
         return {
             "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
@@ -876,9 +854,7 @@ def run(args: argparse.Namespace) -> dict:
     hierarchy = NestedStaticBlockAMR3D(
         equilibrium3d(rho, ux, zero, zero, device=device),
         tuple(amr_configs),
-        fine_solids=(None,) * (refinement_depth - 1) + (
-            finest_planning_solid,
-        ),
+        fine_solids=(None,) * (refinement_depth - 1) + (finest_planning_solid,),
         fine_devices=level_devices[1:],
     )
     checkpoint_signature = {
@@ -893,12 +869,8 @@ def run(args: argparse.Namespace) -> dict:
         "cv_margin": args.cv_margin,
         "auxiliary_cv_margins": list(auxiliary_margins),
         "surface_force_interval": args.surface_force_interval,
-        "projected_bfl_pressure_diagnostic": (
-            args.enable_projected_bfl_pressure_diagnostic
-        ),
-        "projected_bfl_pressure_reconstruction": (
-            args.projected_bfl_pressure_reconstruction
-        ),
+        "projected_bfl_pressure_diagnostic": (args.enable_projected_bfl_pressure_diagnostic),
+        "projected_bfl_pressure_reconstruction": (args.projected_bfl_pressure_reconstruction),
         "force_samples_per_root_step": force_averager.expected_samples,
         "ramp_steps": args.ramp_steps,
         "wall_normal_ramp_steps": wall_normal_ramp_steps,
@@ -946,9 +918,7 @@ def run(args: argparse.Namespace) -> dict:
         "interface_filter_width": args.interface_filter_width,
         "interface_filter_strength": args.interface_filter_strength,
         "minimum_health_population": args.minimum_health_population,
-        "maximum_positivity_limited_fraction": (
-            args.maximum_positivity_limited_fraction
-        ),
+        "maximum_positivity_limited_fraction": (args.maximum_positivity_limited_fraction),
         "maximum_reflux_applied_correction_fraction": (
             args.maximum_reflux_applied_correction_fraction
         ),
@@ -957,9 +927,7 @@ def run(args: argparse.Namespace) -> dict:
         checkpoint_signature["refinement_depth"] = refinement_depth
         checkpoint_signature["deep_box"] = vars(refinement_boxes[-1])
     if args.hull_type == "full":
-        checkpoint_signature["appendage_link_scheme"] = (
-            SUBOFF_APPENDAGE_LINK_SCHEME
-        )
+        checkpoint_signature["appendage_link_scheme"] = SUBOFF_APPENDAGE_LINK_SCHEME
     finest_solid = hierarchy.interfaces[-1].fine_solid_with_ghost
     assert finest_solid is not None
     finest_solid_q = finest_solid.unsqueeze(0).expand_as(hierarchy.finest_f)
@@ -971,8 +939,14 @@ def run(args: argparse.Namespace) -> dict:
     nz_f, ny_f, nx_f = finest_solid.shape
     finest_length = finest_plan.effective_hull_length_cells
     bfl_mask, bfl_q = compute_q_suboff(
-        nx_f, ny_f, nz_f, *finest_center, finest_length,
-        hull_type=args.hull_type, config=geometry_config, device=finest_device,
+        nx_f,
+        ny_f,
+        nz_f,
+        *finest_center,
+        finest_length,
+        hull_type=args.hull_type,
+        config=geometry_config,
+        device=finest_device,
         solid_mask=finest_solid,
     )
     appendage_boundary_links = 0
@@ -980,9 +954,16 @@ def run(args: argparse.Namespace) -> dict:
     bare_solid = None
     if args.hull_type == "full":
         bare_solid, _ = build_suboff_mask(
-            "bare_hull", nx_f, ny_f, nz_f,
-            cx=finest_center[0], cy=finest_center[1], cz=finest_center[2],
-            length=finest_length, config=geometry_config, device=finest_device,
+            "bare_hull",
+            nx_f,
+            ny_f,
+            nz_f,
+            cx=finest_center[0],
+            cy=finest_center[1],
+            cz=finest_center[2],
+            length=finest_length,
+            config=geometry_config,
+            device=finest_device,
         )
         bfl_q, appendage_link_diagnostics = refine_q_suboff_appendages(
             bfl_mask,
@@ -1015,15 +996,28 @@ def run(args: argparse.Namespace) -> dict:
         surface = SurfaceMesh.from_gradient(finest_solid, near)
         assert bare_solid is not None
         with_sail_solid, _ = build_suboff_mask(
-            "with_sail", nx_f, ny_f, nz_f,
-            cx=finest_center[0], cy=finest_center[1], cz=finest_center[2],
-            length=finest_length, config=geometry_config, device=finest_device,
+            "with_sail",
+            nx_f,
+            ny_f,
+            nz_f,
+            cx=finest_center[0],
+            cy=finest_center[1],
+            cz=finest_center[2],
+            length=finest_length,
+            config=geometry_config,
+            device=finest_device,
         )
         bare_near = get_near_wall_3d(bare_solid)
         bare_surface = SurfaceMesh.from_gradient(bare_solid, bare_near)
         bare_bfl_mask, _ = compute_q_suboff(
-            nx_f, ny_f, nz_f, *finest_center, finest_length,
-            hull_type="bare_hull", config=geometry_config, device=finest_device,
+            nx_f,
+            ny_f,
+            nz_f,
+            *finest_center,
+            finest_length,
+            hull_type="bare_hull",
+            config=geometry_config,
+            device=finest_device,
             solid_mask=bare_solid,
         )
         _, bare_area_diagnostics = bfl_surface_area_weights(
@@ -1038,13 +1032,17 @@ def run(args: argparse.Namespace) -> dict:
             calibration_factor=bare_area_diagnostics.calibration_factor,
             boundary_mask=near,
         )
+
     def build_control_volume(margin: int) -> torch.Tensor:
         x0, x1, y0, y1, z0, z1 = control_volume_bounds_by_margin[margin]
         return box_control_volume(
             finest_solid.shape,
-            x0=x0, x1=x1,
-            y0=y0, y1=y1,
-            z0=z0, z1=z1,
+            x0=x0,
+            x1=x1,
+            y0=y0,
+            y1=y1,
+            z0=z0,
+            z1=z1,
             device=finest_device,
         )
 
@@ -1067,9 +1065,7 @@ def run(args: argparse.Namespace) -> dict:
         for level_device in dict.fromkeys(level_devices)
         if level_device.type == "cuda"
     }
-    planning["cuda_persistent_allocated_gib_by_device"] = (
-        persistent_allocated_gib_by_device
-    )
+    planning["cuda_persistent_allocated_gib_by_device"] = persistent_allocated_gib_by_device
     runtime_memory_reserves = []
     for allocation in device_memory_plan:
         reserve = require_cuda_runtime_reserve(
@@ -1080,20 +1076,21 @@ def run(args: argparse.Namespace) -> dict:
                 + ",".join(str(value) for value in allocation.level_indices)
             ),
         )
-        runtime_memory_reserves.append({
-            "device": allocation.device,
-            "level_indices": list(allocation.level_indices),
-            "cuda_reserve": reserve.to_dict() if reserve is not None else None,
-        })
-    planning["cuda_runtime_reserve_after_persistent_allocation_by_device"] = (
-        runtime_memory_reserves
-    )
+        runtime_memory_reserves.append(
+            {
+                "device": allocation.device,
+                "level_indices": list(allocation.level_indices),
+                "cuda_reserve": reserve.to_dict() if reserve is not None else None,
+            }
+        )
+    planning["cuda_runtime_reserve_after_persistent_allocation_by_device"] = runtime_memory_reserves
     planning["cuda_runtime_reserve_after_persistent_allocation"] = (
-        runtime_memory_reserves[0]["cuda_reserve"]
-        if len(runtime_memory_reserves) == 1 else None
+        runtime_memory_reserves[0]["cuda_reserve"] if len(runtime_memory_reserves) == 1 else None
     )
     wall_nu = physical_wall_lattice_viscosity(
-        args.lattice_speed, finest_length, physical_re,
+        args.lattice_speed,
+        finest_length,
+        physical_re,
     )
     scale = force_scale_newton(
         rho_water=args.rho_water,
@@ -1130,7 +1127,8 @@ def run(args: argparse.Namespace) -> dict:
             stored_configuration = dict(stored_configuration)
             stored_configuration.setdefault("compile_natural_kbc", False)
             stored_configuration.setdefault(
-                "natural_kbc_compute_dtype", "storage",
+                "natural_kbc_compute_dtype",
+                "storage",
             )
             stored_configuration.setdefault("population_storage_dtype", "float32")
         pre_collision_chunk_signature = dict(checkpoint_signature)
@@ -1153,8 +1151,7 @@ def run(args: argparse.Namespace) -> dict:
         pre_inlet_sponge_signature = dict(checkpoint_signature)
         pre_inlet_sponge_signature.pop("sponge_inlet")
         resumed_pre_inlet_sponge_checkpoint = (
-            not args.sponge_inlet
-            and stored_configuration == pre_inlet_sponge_signature
+            not args.sponge_inlet and stored_configuration == pre_inlet_sponge_signature
         )
         pre_gradient_sgs_signature = dict(checkpoint_signature)
         pre_gradient_sgs_signature.pop("wale_cw")
@@ -1269,88 +1266,101 @@ def run(args: argparse.Namespace) -> dict:
         resumed_from_step = current_step
         if current_step >= args.steps:
             raise ValueError("checkpoint already reached or exceeded requested steps")
-        hierarchy.restore_level_populations([
-            populations.to(device=template.device, dtype=template.dtype)
-            for populations, template in zip(
-                state["level_populations"],
-                hierarchy.level_populations,
-                strict=True,
-            )
-        ])
+        hierarchy.restore_level_populations(
+            [
+                populations.to(device=template.device, dtype=template.dtype)
+                for populations, template in zip(
+                    state["level_populations"],
+                    hierarchy.level_populations,
+                    strict=True,
+                )
+            ]
+        )
         step_records = list(state["step_records"])
         maximum_limiter_fraction = float(state["maximum_limiter_fraction"])
-        maximum_reflux_residual = [
-            float(value) for value in state["maximum_reflux_residual"]
-        ]
+        maximum_reflux_residual = [float(value) for value in state["maximum_reflux_residual"]]
         maximum_reflux_limited_directions = [
             int(value) for value in state["maximum_reflux_limited_directions"]
         ]
         maximum_reflux_applied_correction_fraction = [
-            float(value) for value in state.get(
+            float(value)
+            for value in state.get(
                 "maximum_reflux_applied_correction_fraction",
                 (0.0,) * refinement_depth,
             )
         ]
         maximum_rejected_fraction = float(state["maximum_rejected_fraction"])
         maximum_transfer_limited_fraction = [
-            float(value) for value in state.get(
-                "maximum_transfer_limited_fraction", (0.0,) * refinement_depth,
+            float(value)
+            for value in state.get(
+                "maximum_transfer_limited_fraction",
+                (0.0,) * refinement_depth,
             )
         ]
         minimum_transfer_alpha = [
-            float(value) for value in state.get(
-                "minimum_transfer_alpha", (1.0,) * refinement_depth,
+            float(value)
+            for value in state.get(
+                "minimum_transfer_alpha",
+                (1.0,) * refinement_depth,
             )
         ]
         maximum_raw_mass_mismatch = [
-            float(value) for value in state.get(
-                "maximum_raw_mass_mismatch", (0.0,) * refinement_depth,
+            float(value)
+            for value in state.get(
+                "maximum_raw_mass_mismatch",
+                (0.0,) * refinement_depth,
             )
         ]
         maximum_raw_momentum_mismatch = [
-            float(value) for value in state.get(
-                "maximum_raw_momentum_mismatch", (0.0,) * refinement_depth,
+            float(value)
+            for value in state.get(
+                "maximum_raw_momentum_mismatch",
+                (0.0,) * refinement_depth,
             )
         ]
         health_records = list(state.get("health_records", []))
 
     def save_checkpoint(step: int) -> None:
         assert args.checkpoint is not None
-        atomic_torch_save({
-            "schema": "tensorlbm-suboff-nested-amr-smoke-checkpoint-v3",
-            "configuration": checkpoint_signature,
-            "step": step,
-            "level_populations": [
-                level.detach().cpu() for level in hierarchy.level_populations
-            ],
-            "level_solid_masks": [
-                None,
-                *[
-                    None if interface.fine_solid_with_ghost is None else (
-                        interface.fine_solid_with_ghost.detach().cpu()
-                    )
-                    for interface in hierarchy.interfaces
+        atomic_torch_save(
+            {
+                "schema": "tensorlbm-suboff-nested-amr-smoke-checkpoint-v3",
+                "configuration": checkpoint_signature,
+                "step": step,
+                "level_populations": [
+                    level.detach().cpu() for level in hierarchy.level_populations
                 ],
-            ],
-            "step_records": step_records,
-            "maximum_limiter_fraction": maximum_limiter_fraction,
-            "maximum_reflux_residual": maximum_reflux_residual,
-            "maximum_reflux_limited_directions": (
-                maximum_reflux_limited_directions
-            ),
-            "maximum_reflux_applied_correction_fraction": (
-                maximum_reflux_applied_correction_fraction
-            ),
-            "maximum_rejected_fraction": maximum_rejected_fraction,
-            "maximum_transfer_limited_fraction": maximum_transfer_limited_fraction,
-            "minimum_transfer_alpha": minimum_transfer_alpha,
-            "maximum_raw_mass_mismatch": maximum_raw_mass_mismatch,
-            "maximum_raw_momentum_mismatch": maximum_raw_momentum_mismatch,
-            "health_records": health_records,
-        }, args.checkpoint)
+                "level_solid_masks": [
+                    None,
+                    *[
+                        None
+                        if interface.fine_solid_with_ghost is None
+                        else (interface.fine_solid_with_ghost.detach().cpu())
+                        for interface in hierarchy.interfaces
+                    ],
+                ],
+                "step_records": step_records,
+                "maximum_limiter_fraction": maximum_limiter_fraction,
+                "maximum_reflux_residual": maximum_reflux_residual,
+                "maximum_reflux_limited_directions": (maximum_reflux_limited_directions),
+                "maximum_reflux_applied_correction_fraction": (
+                    maximum_reflux_applied_correction_fraction
+                ),
+                "maximum_rejected_fraction": maximum_rejected_fraction,
+                "maximum_transfer_limited_fraction": maximum_transfer_limited_fraction,
+                "minimum_transfer_alpha": minimum_transfer_alpha,
+                "maximum_raw_mass_mismatch": maximum_raw_mass_mismatch,
+                "maximum_raw_momentum_mismatch": maximum_raw_momentum_mismatch,
+                "health_records": health_records,
+            },
+            args.checkpoint,
+        )
 
     def require_finite_limiter(
-        diagnostic: PositivityDiagnostics, *, level: int, stage: str,
+        diagnostic: PositivityDiagnostics,
+        *,
+        level: int,
+        stage: str,
     ) -> None:
         values = (
             diagnostic.minimum_population_before,
@@ -1405,30 +1415,35 @@ def run(args: argparse.Namespace) -> dict:
                 "cumulant_wale": {
                     "C_w": args.wale_cw,
                     "solid_mask": (
-                        hierarchy.interfaces[level - 1].fine_solid_with_ghost
-                        if level > 0 else None
+                        hierarchy.interfaces[level - 1].fine_solid_with_ghost if level > 0 else None
                     ),
                 },
                 "cumulant_vreman": {
                     "C_v": args.vreman_cv,
                     "solid_mask": (
-                        hierarchy.interfaces[level - 1].fine_solid_with_ghost
-                        if level > 0 else None
+                        hierarchy.interfaces[level - 1].fine_solid_with_ghost if level > 0 else None
                     ),
                 },
             }[args.collision_model]
             post = collide_cumulant_d3q19(
-                state, tau=tau, omega_b=args.omega_bulk, **sgs_coefficients,
+                state,
+                tau=tau,
+                omega_b=args.omega_bulk,
+                **sgs_coefficients,
             )
         post, diagnostic = limit_nonequilibrium_for_positivity(post)
         require_finite_limiter(diagnostic, level=level, stage="post_collision")
         maximum_limiter_fraction = max(
-            maximum_limiter_fraction, diagnostic.limited_fraction,
+            maximum_limiter_fraction,
+            diagnostic.limited_fraction,
         )
         return post
 
     def advance(
-        state: torch.Tensor, tau: float, level: int, substep: int,
+        state: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         nonlocal maximum_limiter_fraction, maximum_rejected_fraction
         del substep
@@ -1450,10 +1465,12 @@ def run(args: argparse.Namespace) -> dict:
                     )
                     if collect_open_boundary_diagnostics:
                         out, boundary_diagnostic = boundary_result
-                        open_boundary_diagnostics.append({
-                            "stage": "post_stream_pre_sponge",
-                            **asdict(boundary_diagnostic),
-                        })
+                        open_boundary_diagnostics.append(
+                            {
+                                "stage": "post_stream_pre_sponge",
+                                **asdict(boundary_diagnostic),
+                            }
+                        )
                     else:
                         out = boundary_result
                 else:
@@ -1471,10 +1488,12 @@ def run(args: argparse.Namespace) -> dict:
                     )
                     if collect_open_boundary_diagnostics:
                         out, boundary_diagnostic = boundary_result
-                        open_boundary_diagnostics.append({
-                            "stage": "post_sponge",
-                            **asdict(boundary_diagnostic),
-                        })
+                        open_boundary_diagnostics.append(
+                            {
+                                "stage": "post_sponge",
+                                **asdict(boundary_diagnostic),
+                            }
+                        )
                     else:
                         out = boundary_result
                 else:
@@ -1484,14 +1503,14 @@ def run(args: argparse.Namespace) -> dict:
         post_collision = torch.where(finest_solid_q, before, collided)
         out = stream3d(post_collision)
         normal_activation = smooth_ramp_factor(
-            current_step, wall_normal_ramp_steps,
+            current_step,
+            wall_normal_ramp_steps,
         )
         shear_activation = smooth_ramp_factor(
-            current_step, wall_shear_ramp_steps,
+            current_step,
+            wall_shear_ramp_steps,
         )
-        collect_wall_diagnostics = (
-            current_step % args.wall_diagnostic_interval == 0
-        )
+        collect_wall_diagnostics = current_step % args.wall_diagnostic_interval == 0
         wall_result = bfl_wall_function_3d(
             out,
             post_collision,
@@ -1514,29 +1533,22 @@ def run(args: argparse.Namespace) -> dict:
             use_low_memory_macroscopic=args.low_memory_wall_macroscopic,
             y_plus_lower_bound=args.wall_model_y_plus_lower_bound,
             y_plus_upper_bound=args.wall_model_y_plus_upper_bound,
-            minimum_y_plus_in_range_fraction=(
-                args.minimum_wall_model_y_plus_in_range_fraction
-            ),
+            minimum_y_plus_in_range_fraction=(args.minimum_wall_model_y_plus_in_range_fraction),
         )
         if collect_wall_diagnostics:
             out, friction, pressure, diagnostics = wall_result
             maximum_rejected_fraction = max(
-                maximum_rejected_fraction, diagnostics.rejected_fraction,
+                maximum_rejected_fraction,
+                diagnostics.rejected_fraction,
             )
             mean_y_plus = diagnostics.y_plus_mean
             minimum_y_plus = diagnostics.y_plus_min
             maximum_y_plus = diagnostics.y_plus_max
             mean_wall_distance = diagnostics.wall_distance_mean
             y_plus_summary = diagnostics.y_plus_summary
-            pressure_gradient_parameter_mean = (
-                diagnostics.pressure_gradient_parameter_mean
-            )
-            pressure_gradient_parameter_p95 = (
-                diagnostics.pressure_gradient_parameter_p95
-            )
-            pressure_gradient_parameter_max = (
-                diagnostics.pressure_gradient_parameter_max
-            )
+            pressure_gradient_parameter_mean = diagnostics.pressure_gradient_parameter_mean
+            pressure_gradient_parameter_p95 = diagnostics.pressure_gradient_parameter_p95
+            pressure_gradient_parameter_max = diagnostics.pressure_gradient_parameter_max
             pressure_gradient_summary = diagnostics.pressure_gradient_summary
             wall_shear_axial_profile = diagnostics.wall_shear_axial_profile
             link_force_decomposition = diagnostics.link_force_decomposition
@@ -1557,61 +1569,71 @@ def run(args: argparse.Namespace) -> dict:
         out, positivity = limit_nonequilibrium_for_positivity(out)
         require_finite_limiter(positivity, level=level, stage="post_wall")
         maximum_limiter_fraction = max(
-            maximum_limiter_fraction, positivity.limited_fraction,
+            maximum_limiter_fraction,
+            positivity.limited_fraction,
         )
-        cv_force = float(observe_control_volume_force(
-            before,
-            out,
-            post_collision,
-            control_volume,
-            solid=finest_solid,
-        ).force_on_body[0])
-        collision_source = float(fluid_momentum_change(
-            before,
-            post_collision,
-            control_volume,
-            solid=finest_solid,
-        )[0])
-        positivity_source = float(fluid_momentum_change(
-            before_positivity,
-            out,
-            control_volume,
-            solid=finest_solid,
-        )[0])
+        cv_force = float(
+            observe_control_volume_force(
+                before,
+                out,
+                post_collision,
+                control_volume,
+                solid=finest_solid,
+            ).force_on_body[0]
+        )
+        collision_source = float(
+            fluid_momentum_change(
+                before,
+                post_collision,
+                control_volume,
+                solid=finest_solid,
+            )[0]
+        )
+        positivity_source = float(
+            fluid_momentum_change(
+                before_positivity,
+                out,
+                control_volume,
+                solid=finest_solid,
+            )[0]
+        )
         auxiliary_forces = (
             {
-                margin: float(observe_control_volume_force(
-                    before,
-                    out,
-                    post_collision,
-                    auxiliary_cv,
-                    solid=finest_solid,
-                ).force_on_body[0])
+                margin: float(
+                    observe_control_volume_force(
+                        before,
+                        out,
+                        post_collision,
+                        auxiliary_cv,
+                        solid=finest_solid,
+                    ).force_on_body[0]
+                )
                 for margin, auxiliary_cv in auxiliary_control_volumes.items()
             }
-            if current_step % args.surface_force_interval == 0 else {}
+            if current_step % args.surface_force_interval == 0
+            else {}
         )
-        force_samples.append({
-            "cv": cv_force,
-            "bfl": pressure + friction,
-            "pressure": pressure,
-            "friction": friction,
-            "source": collision_source + positivity_source,
-            "y_plus": mean_y_plus,
-            "y_plus_min": minimum_y_plus,
-            "y_plus_max": maximum_y_plus,
-            "wall_distance": mean_wall_distance,
-            "y_plus_summary": y_plus_summary,
-            "pressure_gradient_parameter_mean": (
-                pressure_gradient_parameter_mean
-            ),
-            "pressure_gradient_parameter_p95": pressure_gradient_parameter_p95,
-            "pressure_gradient_parameter_max": pressure_gradient_parameter_max,
-            "pressure_gradient_summary": pressure_gradient_summary,
-            "wall_shear_axial_profile": wall_shear_axial_profile,
-            "link_force_decomposition": link_force_decomposition,
-            "auxiliary": auxiliary_forces,
-        })
+        force_samples.append(
+            {
+                "cv": cv_force,
+                "bfl": pressure + friction,
+                "pressure": pressure,
+                "friction": friction,
+                "source": collision_source + positivity_source,
+                "y_plus": mean_y_plus,
+                "y_plus_min": minimum_y_plus,
+                "y_plus_max": maximum_y_plus,
+                "wall_distance": mean_wall_distance,
+                "y_plus_summary": y_plus_summary,
+                "pressure_gradient_parameter_mean": (pressure_gradient_parameter_mean),
+                "pressure_gradient_parameter_p95": pressure_gradient_parameter_p95,
+                "pressure_gradient_parameter_max": pressure_gradient_parameter_max,
+                "pressure_gradient_summary": pressure_gradient_summary,
+                "wall_shear_axial_profile": wall_shear_axial_profile,
+                "link_force_decomposition": link_force_decomposition,
+                "auxiliary": auxiliary_forces,
+            }
+        )
         return AMRAdvanceResult(out, post_collision)
 
     start_step = current_step
@@ -1637,74 +1659,74 @@ def run(args: argparse.Namespace) -> dict:
             raw_mass, raw_momentum = conserved_population_moments(
                 ledger.raw_kinetic_mismatch,
             )
-            raw_mismatch_moments.append((
-                abs(float(raw_mass)),
-                float(torch.linalg.vector_norm(raw_momentum)),
-            ))
+            raw_mismatch_moments.append(
+                (
+                    abs(float(raw_mass)),
+                    float(torch.linalg.vector_norm(raw_momentum)),
+                )
+            )
         if args.health_interval and current_step % args.health_interval == 0:
             level_health = [
                 inspect_population_health(populations).to_dict()
                 for populations in hierarchy.level_populations
             ]
             diagnostic_force_samples = [
-                sample for sample in force_samples
-                if sample["y_plus"] is not None
+                sample for sample in force_samples if sample["y_plus"] is not None
             ]
             diagnostic_y_plus_summaries = [
-                sample["y_plus_summary"] for sample in force_samples
+                sample["y_plus_summary"]
+                for sample in force_samples
                 if sample["y_plus_summary"] is not None
             ]
             diagnostic_y_plus_aggregate = (
                 aggregate_wall_exchange_yplus_summaries(
                     diagnostic_y_plus_summaries,
                 ).to_dict()
-                if diagnostic_y_plus_summaries else None
+                if diagnostic_y_plus_summaries
+                else None
             )
             pressure_gradient_samples = [
-                sample for sample in force_samples
+                sample
+                for sample in force_samples
                 if sample["pressure_gradient_parameter_mean"] is not None
             ]
             pressure_gradient_summaries = [
-                sample["pressure_gradient_summary"] for sample in force_samples
+                sample["pressure_gradient_summary"]
+                for sample in force_samples
                 if sample["pressure_gradient_summary"] is not None
             ]
             pressure_gradient_aggregate = (
                 aggregate_wall_pressure_gradient_summaries(
                     pressure_gradient_summaries,
                 ).to_dict()
-                if pressure_gradient_summaries else None
+                if pressure_gradient_summaries
+                else None
             )
             wall_exchange_health = {
                 "force_samples_observed": len(force_samples),
                 "force_samples_expected": force_averager.expected_samples,
                 "diagnostic_samples": len(diagnostic_force_samples),
                 "mean_distance_cells": (
-                    sum(
-                        sample["wall_distance"]
-                        for sample in diagnostic_force_samples
-                    ) / len(diagnostic_force_samples)
-                    if diagnostic_force_samples else None
+                    sum(sample["wall_distance"] for sample in diagnostic_force_samples)
+                    / len(diagnostic_force_samples)
+                    if diagnostic_force_samples
+                    else None
                 ),
                 "minimum_y_plus": (
-                    min(
-                        sample["y_plus_min"]
-                        for sample in diagnostic_force_samples
-                    )
-                    if diagnostic_force_samples else None
+                    min(sample["y_plus_min"] for sample in diagnostic_force_samples)
+                    if diagnostic_force_samples
+                    else None
                 ),
                 "mean_y_plus": (
-                    sum(
-                        sample["y_plus"]
-                        for sample in diagnostic_force_samples
-                    ) / len(diagnostic_force_samples)
-                    if diagnostic_force_samples else None
+                    sum(sample["y_plus"] for sample in diagnostic_force_samples)
+                    / len(diagnostic_force_samples)
+                    if diagnostic_force_samples
+                    else None
                 ),
                 "maximum_y_plus": (
-                    max(
-                        sample["y_plus_max"]
-                        for sample in diagnostic_force_samples
-                    )
-                    if diagnostic_force_samples else None
+                    max(sample["y_plus_max"] for sample in diagnostic_force_samples)
+                    if diagnostic_force_samples
+                    else None
                 ),
                 "y_plus_distribution": diagnostic_y_plus_aggregate,
                 "pressure_gradient_parameter": {
@@ -1713,20 +1735,26 @@ def run(args: argparse.Namespace) -> dict:
                         sum(
                             sample["pressure_gradient_parameter_mean"]
                             for sample in pressure_gradient_samples
-                        ) / len(pressure_gradient_samples)
-                        if pressure_gradient_samples else None
+                        )
+                        / len(pressure_gradient_samples)
+                        if pressure_gradient_samples
+                        else None
                     ),
                     "maximum_p95": (
                         max(
                             sample["pressure_gradient_parameter_p95"]
                             for sample in pressure_gradient_samples
-                        ) if pressure_gradient_samples else None
+                        )
+                        if pressure_gradient_samples
+                        else None
                     ),
                     "maximum": (
                         max(
                             sample["pressure_gradient_parameter_max"]
                             for sample in pressure_gradient_samples
-                        ) if pressure_gradient_samples else None
+                        )
+                        if pressure_gradient_samples
+                        else None
                     ),
                     "distribution": pressure_gradient_aggregate,
                 },
@@ -1738,16 +1766,10 @@ def run(args: argparse.Namespace) -> dict:
                     "maximum_applied_correction_fraction": (
                         ledger.maximum_applied_correction_fraction
                     ),
-                    "restriction_limited_fraction": (
-                        ledger.restriction_limited_fraction
-                    ),
+                    "restriction_limited_fraction": (ledger.restriction_limited_fraction),
                     "restriction_minimum_alpha": ledger.restriction_minimum_alpha,
-                    "prolongation_limited_fraction": (
-                        ledger.prolongation_limited_fraction
-                    ),
-                    "prolongation_minimum_alpha": (
-                        ledger.prolongation_minimum_alpha
-                    ),
+                    "prolongation_limited_fraction": (ledger.prolongation_limited_fraction),
+                    "prolongation_minimum_alpha": (ledger.prolongation_minimum_alpha),
                     "raw_mass_mismatch": raw_mismatch_moments[index][0],
                     "raw_momentum_mismatch_norm": raw_mismatch_moments[index][1],
                 }
@@ -1776,56 +1798,54 @@ def run(args: argparse.Namespace) -> dict:
                         peak_x - x_min,
                     ],
                     "bfl_link_count": int(peak_links.sum()),
-                    "minimum_bfl_q": (
-                        float(peak_q.min()) if peak_q.numel() else None
-                    ),
-                    "maximum_bfl_q": (
-                        float(peak_q.max()) if peak_q.numel() else None
-                    ),
+                    "minimum_bfl_q": (float(peak_q.min()) if peak_q.numel() else None),
+                    "maximum_bfl_q": (float(peak_q.max()) if peak_q.numel() else None),
                 }
-            health_records.append({
-                "step": current_step,
-                "collision_resolved_reynolds": instantaneous_reynolds,
-                "collision_tau_by_level": list(instantaneous_tau_by_level),
-                "wall_normal_activation": smooth_ramp_factor(
-                    current_step, wall_normal_ramp_steps,
-                ),
-                "wall_shear_activation": smooth_ramp_factor(
-                    current_step, wall_shear_ramp_steps,
-                ),
-                "target_reynolds_reached": math.isclose(
-                    instantaneous_reynolds,
-                    args.resolved_reynolds,
-                    rel_tol=1.0e-12,
-                    abs_tol=0.0,
-                ),
-                "maximum_collision_limited_fraction": maximum_limiter_fraction,
-                "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
-                "wall_exchange": wall_exchange_health,
-                "open_boundary_population_delta": {
-                    "stages": open_boundary_diagnostics,
-                    "mass_delta": sum(
-                        record["mass_delta"]
-                        for record in open_boundary_diagnostics
+            health_records.append(
+                {
+                    "step": current_step,
+                    "collision_resolved_reynolds": instantaneous_reynolds,
+                    "collision_tau_by_level": list(instantaneous_tau_by_level),
+                    "wall_normal_activation": smooth_ramp_factor(
+                        current_step,
+                        wall_normal_ramp_steps,
                     ),
-                    "momentum_delta": [
-                        sum(
-                            record["momentum_delta"][axis]
-                            for record in open_boundary_diagnostics
-                        )
-                        for axis in range(3)
-                    ],
-                    "finite": all(
-                        record["finite"] for record in open_boundary_diagnostics
+                    "wall_shear_activation": smooth_ramp_factor(
+                        current_step,
+                        wall_shear_ramp_steps,
                     ),
-                } if open_boundary_diagnostics else None,
-                "levels": level_health,
-                "interfaces": interface_health,
-                "finest_peak_speed_context": finest_peak_context,
-            })
+                    "target_reynolds_reached": math.isclose(
+                        instantaneous_reynolds,
+                        args.resolved_reynolds,
+                        rel_tol=1.0e-12,
+                        abs_tol=0.0,
+                    ),
+                    "maximum_collision_limited_fraction": maximum_limiter_fraction,
+                    "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
+                    "wall_exchange": wall_exchange_health,
+                    "open_boundary_population_delta": {
+                        "stages": open_boundary_diagnostics,
+                        "mass_delta": sum(
+                            record["mass_delta"] for record in open_boundary_diagnostics
+                        ),
+                        "momentum_delta": [
+                            sum(
+                                record["momentum_delta"][axis]
+                                for record in open_boundary_diagnostics
+                            )
+                            for axis in range(3)
+                        ],
+                        "finite": all(record["finite"] for record in open_boundary_diagnostics),
+                    }
+                    if open_boundary_diagnostics
+                    else None,
+                    "levels": level_health,
+                    "interfaces": interface_health,
+                    "finest_peak_speed_context": finest_peak_context,
+                }
+            )
             print(
-                "nested health "
-                + json.dumps(health_records[-1], separators=(",", ":")),
+                "nested health " + json.dumps(health_records[-1], separators=(",", ":")),
                 flush=True,
             )
             if not all(record["finite"] for record in level_health):
@@ -1843,19 +1863,14 @@ def run(args: argparse.Namespace) -> dict:
                     f"at root_step={current_step}: {peak_speed:.6g} > "
                     f"{args.maximum_health_speed:.6g}",
                 )
-            minimum_population = min(
-                float(record["minimum_population"]) for record in level_health
-            )
+            minimum_population = min(float(record["minimum_population"]) for record in level_health)
             if minimum_population < args.minimum_health_population:
                 raise FloatingPointError(
                     "hierarchy crossed the population-health floor "
                     f"at root_step={current_step}: {minimum_population:.6g} < "
                     f"{args.minimum_health_population:.6g}",
                 )
-            if (
-                maximum_limiter_fraction
-                > args.maximum_positivity_limited_fraction
-            ):
+            if maximum_limiter_fraction > args.maximum_positivity_limited_fraction:
                 raise FloatingPointError(
                     "hierarchy exceeded the positivity-limiter gate "
                     f"at root_step={current_step}: "
@@ -1863,13 +1878,9 @@ def run(args: argparse.Namespace) -> dict:
                     f"{args.maximum_positivity_limited_fraction:.6g}",
                 )
             maximum_interface_correction = max(
-                ledger.maximum_applied_correction_fraction
-                for ledger in ledgers
+                ledger.maximum_applied_correction_fraction for ledger in ledgers
             )
-            if (
-                maximum_interface_correction
-                > args.maximum_reflux_applied_correction_fraction
-            ):
+            if maximum_interface_correction > args.maximum_reflux_applied_correction_fraction:
                 raise FloatingPointError(
                     "hierarchy exceeded the reflux-correction gate "
                     f"at root_step={current_step}: "
@@ -1879,7 +1890,8 @@ def run(args: argparse.Namespace) -> dict:
         # The common averager owns both the recursive sample-count invariant
         # and its denominator.  This must evolve with refinement depth.
         cv_mean = force_averager.mean(
-            (item["cv"] for item in force_samples), observable="CV force",
+            (item["cv"] for item in force_samples),
+            observable="CV force",
         )
         for index, ledger in enumerate(ledgers):
             maximum_reflux_residual[index] = max(
@@ -1913,7 +1925,8 @@ def run(args: argparse.Namespace) -> dict:
                 raw_mismatch_moments[index][1],
             )
         bfl_mean = force_averager.mean(
-            (item["bfl"] for item in force_samples), observable="BFL force",
+            (item["bfl"] for item in force_samples),
+            observable="BFL force",
         )
         pressure_mean = force_averager.mean(
             (item["pressure"] for item in force_samples),
@@ -1930,63 +1943,58 @@ def run(args: argparse.Namespace) -> dict:
         auxiliary_means = (
             {
                 margin: force_averager.mean(
-                    (
-                        item["auxiliary"][margin]
-                        for item in force_samples
-                    ),
+                    (item["auxiliary"][margin] for item in force_samples),
                     observable=f"auxiliary CV force margin {margin}",
                 )
                 for margin in auxiliary_margins
             }
-            if current_step % args.surface_force_interval == 0 else None
+            if current_step % args.surface_force_interval == 0
+            else None
         )
         corrected = cv_mean + source_mean
-        y_plus_samples = [
-            item["y_plus"] for item in force_samples
-            if item["y_plus"] is not None
-        ]
+        y_plus_samples = [item["y_plus"] for item in force_samples if item["y_plus"] is not None]
         y_plus_minima = [
-            item["y_plus_min"] for item in force_samples
-            if item["y_plus_min"] is not None
+            item["y_plus_min"] for item in force_samples if item["y_plus_min"] is not None
         ]
         y_plus_maxima = [
-            item["y_plus_max"] for item in force_samples
-            if item["y_plus_max"] is not None
+            item["y_plus_max"] for item in force_samples if item["y_plus_max"] is not None
         ]
         wall_distances = [
-            item["wall_distance"] for item in force_samples
-            if item["wall_distance"] is not None
+            item["wall_distance"] for item in force_samples if item["wall_distance"] is not None
         ]
         y_plus_summaries = [
-            item["y_plus_summary"] for item in force_samples
-            if item["y_plus_summary"] is not None
+            item["y_plus_summary"] for item in force_samples if item["y_plus_summary"] is not None
         ]
         y_plus_aggregate = (
             aggregate_wall_exchange_yplus_summaries(
                 y_plus_summaries,
             ).to_dict()
-            if y_plus_summaries else None
+            if y_plus_summaries
+            else None
         )
         pressure_gradient_samples = [
-            item for item in force_samples
-            if item["pressure_gradient_parameter_mean"] is not None
+            item for item in force_samples if item["pressure_gradient_parameter_mean"] is not None
         ]
         pressure_gradient_summaries = [
-            item["pressure_gradient_summary"] for item in force_samples
+            item["pressure_gradient_summary"]
+            for item in force_samples
             if item["pressure_gradient_summary"] is not None
         ]
         pressure_gradient_aggregate = (
             aggregate_wall_pressure_gradient_summaries(
                 pressure_gradient_summaries,
             ).to_dict()
-            if pressure_gradient_summaries else None
+            if pressure_gradient_summaries
+            else None
         )
         wall_shear_profiles = [
-            item["wall_shear_axial_profile"] for item in force_samples
+            item["wall_shear_axial_profile"]
+            for item in force_samples
             if item["wall_shear_axial_profile"] is not None
         ]
         link_force_samples = [
-            item["link_force_decomposition"] for item in force_samples
+            item["link_force_decomposition"]
+            for item in force_samples
             if item["link_force_decomposition"] is not None
         ]
         link_force_aggregate = None
@@ -1995,12 +2003,8 @@ def run(args: argparse.Namespace) -> dict:
                 "scope": "diagnostic_population_impulse_not_pressure_shear",
                 "force_frame": link_force_samples[0]["force_frame"],
                 "samples": len(link_force_samples),
-                "minimum_active_links": min(
-                    item["active_links"] for item in link_force_samples
-                ),
-                "maximum_active_links": max(
-                    item["active_links"] for item in link_force_samples
-                ),
+                "minimum_active_links": min(item["active_links"] for item in link_force_samples),
+                "maximum_active_links": max(item["active_links"] for item in link_force_samples),
                 "minimum_decomposed_links": min(
                     item["decomposed_links"] for item in link_force_samples
                 ),
@@ -2011,20 +2015,15 @@ def run(args: argparse.Namespace) -> dict:
                     item["coverage_fraction"] for item in link_force_samples
                 ),
                 "normal_completion": {
-                    "scheme": link_force_samples[0]["normal_completion"][
-                        "scheme"
-                    ],
+                    "scheme": link_force_samples[0]["normal_completion"]["scheme"],
                     "maximum_fallback_nodes": max(
-                        item["normal_completion"]["fallback_nodes"]
-                        for item in link_force_samples
+                        item["normal_completion"]["fallback_nodes"] for item in link_force_samples
                     ),
                     "maximum_fallback_links": max(
-                        item["normal_completion"]["fallback_links"]
-                        for item in link_force_samples
+                        item["normal_completion"]["fallback_links"] for item in link_force_samples
                     ),
                     "maximum_unresolved_nodes": max(
-                        item["normal_completion"]["unresolved_nodes"]
-                        for item in link_force_samples
+                        item["normal_completion"]["unresolved_nodes"] for item in link_force_samples
                     ),
                 },
                 "mean_total_force_n": [
@@ -2040,28 +2039,19 @@ def run(args: argparse.Namespace) -> dict:
                     for axis in range(3)
                 ],
                 "mean_geometry_tangential_force_n": [
-                    sum(
-                        item["tangential_force"][axis]
-                        for item in link_force_samples
-                    )
+                    sum(item["tangential_force"][axis] for item in link_force_samples)
                     / len(link_force_samples)
                     * scale
                     for axis in range(3)
                 ],
                 "mean_unresolved_force_n": [
-                    sum(
-                        item["unresolved_force"][axis]
-                        for item in link_force_samples
-                    )
+                    sum(item["unresolved_force"][axis] for item in link_force_samples)
                     / len(link_force_samples)
                     * scale
                     for axis in range(3)
                 ],
                 "mean_stationary_interpolation_force_n": [
-                    sum(
-                        item["stationary_interpolation_force"][axis]
-                        for item in link_force_samples
-                    )
+                    sum(item["stationary_interpolation_force"][axis] for item in link_force_samples)
                     / len(link_force_samples)
                     * scale
                     for axis in range(3)
@@ -2076,24 +2066,20 @@ def run(args: argparse.Namespace) -> dict:
                     for axis in range(3)
                 ],
                 "mean_frame_correction_force_n": [
-                    sum(
-                        item["frame_correction_force"][axis]
-                        for item in link_force_samples
-                    )
+                    sum(item["frame_correction_force"][axis] for item in link_force_samples)
                     / len(link_force_samples)
                     * scale
                     for axis in range(3)
                 ],
                 "maximum_closure_error_n": max(
                     item["maximum_closure_error"] for item in link_force_samples
-                ) * scale,
+                )
+                * scale,
                 "maximum_relative_closure_error": max(
-                    item["maximum_relative_closure_error"]
-                    for item in link_force_samples
+                    item["maximum_relative_closure_error"] for item in link_force_samples
                 ),
                 "maximum_relative_component_closure_error": max(
-                    item["maximum_relative_component_closure_error"]
-                    for item in link_force_samples
+                    item["maximum_relative_component_closure_error"] for item in link_force_samples
                 ),
             }
         record = {
@@ -2110,11 +2096,9 @@ def run(args: argparse.Namespace) -> dict:
             "numerical_source_n": source_mean * scale,
             "source_corrected_cv_n": corrected * scale,
             "auxiliary_cv_n": (
-                {
-                    str(margin): value * scale
-                    for margin, value in auxiliary_means.items()
-                }
-                if auxiliary_means is not None else None
+                {str(margin): value * scale for margin, value in auxiliary_means.items()}
+                if auxiliary_means is not None
+                else None
             ),
             "raw_observer_difference_pct": (
                 abs(cv_mean - bfl_mean) / max(abs(cv_mean), 1.0e-30) * 100.0
@@ -2122,43 +2106,36 @@ def run(args: argparse.Namespace) -> dict:
             "source_corrected_observer_difference_pct": (
                 abs(corrected - bfl_mean) / max(abs(corrected), 1.0e-30) * 100.0
             ),
-            "mean_y_plus": (
-                sum(y_plus_samples) / len(y_plus_samples)
-                if y_plus_samples else None
-            ),
+            "mean_y_plus": (sum(y_plus_samples) / len(y_plus_samples) if y_plus_samples else None),
             "minimum_y_plus": min(y_plus_minima) if y_plus_minima else None,
             "maximum_y_plus": max(y_plus_maxima) if y_plus_maxima else None,
             "mean_wall_distance_cells": (
-                sum(wall_distances) / len(wall_distances)
-                if wall_distances else None
+                sum(wall_distances) / len(wall_distances) if wall_distances else None
             ),
             "wall_y_plus_distribution": y_plus_aggregate,
             "wall_pressure_gradient_parameter_mean": (
-                sum(
-                    item["pressure_gradient_parameter_mean"]
-                    for item in pressure_gradient_samples
-                ) / len(pressure_gradient_samples)
-                if pressure_gradient_samples else None
+                sum(item["pressure_gradient_parameter_mean"] for item in pressure_gradient_samples)
+                / len(pressure_gradient_samples)
+                if pressure_gradient_samples
+                else None
             ),
             "wall_pressure_gradient_parameter_p95": (
-                max(
-                    item["pressure_gradient_parameter_p95"]
-                    for item in pressure_gradient_samples
-                ) if pressure_gradient_samples else None
+                max(item["pressure_gradient_parameter_p95"] for item in pressure_gradient_samples)
+                if pressure_gradient_samples
+                else None
             ),
             "wall_pressure_gradient_parameter_max": (
-                max(
-                    item["pressure_gradient_parameter_max"]
-                    for item in pressure_gradient_samples
-                ) if pressure_gradient_samples else None
+                max(item["pressure_gradient_parameter_max"] for item in pressure_gradient_samples)
+                if pressure_gradient_samples
+                else None
             ),
             "wall_pressure_gradient_distribution": pressure_gradient_aggregate,
-            "wall_shear_axial_profile": (
-                wall_shear_profiles[-1] if wall_shear_profiles else None
-            ),
+            "wall_shear_axial_profile": (wall_shear_profiles[-1] if wall_shear_profiles else None),
             "bfl_link_force_decomposition": link_force_aggregate,
-            "wall_fully_activated": current_step >= max(
-                wall_normal_ramp_steps, wall_shear_ramp_steps,
+            "wall_fully_activated": current_step
+            >= max(
+                wall_normal_ramp_steps,
+                wall_shear_ramp_steps,
             ),
             "surface_pressure_plus_wall_stress_n": None,
             "surface_pressure_observer_status": "rejected_diagnostic_only",
@@ -2177,25 +2154,19 @@ def run(args: argparse.Namespace) -> dict:
             # Removing the unit far-field density also avoids subtracting two
             # large directional sums; a closed projected body is invariant to
             # this constant by construction.
-            projected_pressure_field = (
-                hierarchy.finest_f.sum(dim=0) - 1.0
-            ) / 3.0
-            projected_force, projected_diagnostics = (
-                integrate_bfl_projected_pressure(
-                    projected_pressure_field,
-                    bfl_mask,
-                    bfl_q,
-                    solid=finest_solid,
-                    reconstruction=args.projected_bfl_pressure_reconstruction,
-                )
+            projected_pressure_field = (hierarchy.finest_f.sum(dim=0) - 1.0) / 3.0
+            projected_force, projected_diagnostics = integrate_bfl_projected_pressure(
+                projected_pressure_field,
+                bfl_mask,
+                bfl_q,
+                solid=finest_solid,
+                reconstruction=args.projected_bfl_pressure_reconstruction,
             )
             projected_pressure_x = projected_force[0]
-            record["projected_bfl_pressure_n"] = (
-                projected_pressure_x * scale
-            )
+            record["projected_bfl_pressure_n"] = projected_pressure_x * scale
             record["projected_bfl_pressure_plus_wall_stress_n"] = (
-                (projected_pressure_x + friction_mean) * scale
-            )
+                projected_pressure_x + friction_mean
+            ) * scale
             record["projected_bfl_pressure_diagnostics"] = {
                 **asdict(projected_diagnostics),
                 "reconstruction": args.projected_bfl_pressure_reconstruction,
@@ -2215,8 +2186,8 @@ def run(args: argparse.Namespace) -> dict:
                 solid=finest_solid,
             )[0]
             record["surface_pressure_plus_wall_stress_n"] = (
-                (surface_pressure + friction_mean) * scale
-            )
+                surface_pressure + friction_mean
+            ) * scale
         step_records.append(record)
         if current_step % args.report_interval == 0 or current_step == args.steps:
             print(
@@ -2234,11 +2205,10 @@ def run(args: argparse.Namespace) -> dict:
         ):
             save_checkpoint(current_step)
 
-    wall_activated_records = [
-        record for record in step_records if record["wall_fully_activated"]
-    ]
+    wall_activated_records = [record for record in step_records if record["wall_fully_activated"]]
     all_target_reynolds_records = [
-        record for record in step_records
+        record
+        for record in step_records
         if math.isclose(
             record["collision_resolved_reynolds"],
             args.resolved_reynolds,
@@ -2247,7 +2217,8 @@ def run(args: argparse.Namespace) -> dict:
         )
     ]
     target_reynolds_records = [
-        record for record in wall_activated_records
+        record
+        for record in wall_activated_records
         if math.isclose(
             record["collision_resolved_reynolds"],
             args.resolved_reynolds,
@@ -2257,18 +2228,15 @@ def run(args: argparse.Namespace) -> dict:
     ]
     maximum_corrected_difference = (
         max(
-            record["source_corrected_observer_difference_pct"]
-            for record in target_reynolds_records
+            record["source_corrected_observer_difference_pct"] for record in target_reynolds_records
         )
-        if target_reynolds_records else None
+        if target_reynolds_records
+        else None
     )
     conservative_force_observer_acceptable = (
-        maximum_corrected_difference is not None
-        and maximum_corrected_difference <= 0.1
+        maximum_corrected_difference is not None and maximum_corrected_difference <= 0.1
     )
-    finite = all(
-        bool(torch.isfinite(level).all()) for level in hierarchy.level_populations
-    )
+    finite = all(bool(torch.isfinite(level).all()) for level in hierarchy.level_populations)
     open_boundary_history = [
         record["open_boundary_population_delta"]
         for record in health_records
@@ -2290,13 +2258,9 @@ def run(args: argparse.Namespace) -> dict:
     )
     geometry_resolution_output = geometry_resolution.to_dict()
     if args.hull_type == "full":
-        geometry_resolution_output["appendage_boundary_links"] = (
-            appendage_boundary_links
-        )
+        geometry_resolution_output["appendage_boundary_links"] = appendage_boundary_links
         geometry_resolution_output["appendage_halfway_links"] = 0
-        geometry_resolution_output["appendage_link_scheme"] = (
-            SUBOFF_APPENDAGE_LINK_SCHEME
-        )
+        geometry_resolution_output["appendage_link_scheme"] = SUBOFF_APPENDAGE_LINK_SCHEME
     maximum_observed_speed = (
         max(
             float(level["maximum_speed"])
@@ -2304,7 +2268,8 @@ def run(args: argparse.Namespace) -> dict:
             for level in record["levels"]
             if level["maximum_speed"] is not None
         )
-        if health_records else None
+        if health_records
+        else None
     )
     minimum_observed_population = (
         min(
@@ -2312,7 +2277,8 @@ def run(args: argparse.Namespace) -> dict:
             for record in health_records
             for level in record["levels"]
         )
-        if health_records else None
+        if health_records
+        else None
     )
     minimum_observed_density = (
         min(
@@ -2321,7 +2287,8 @@ def run(args: argparse.Namespace) -> dict:
             for level in record["levels"]
             if level["minimum_density"] is not None
         )
-        if health_records else None
+        if health_records
+        else None
     )
     maximum_observed_density = (
         max(
@@ -2330,7 +2297,8 @@ def run(args: argparse.Namespace) -> dict:
             for level in record["levels"]
             if level["maximum_density"] is not None
         )
-        if health_records else None
+        if health_records
+        else None
     )
     population_health_acceptable = (
         maximum_observed_speed is not None
@@ -2356,35 +2324,22 @@ def run(args: argparse.Namespace) -> dict:
         and (args.health_interval == 0 or population_health_acceptable)
     )
     post_warmup_records = [
-        record for record in target_reynolds_records
-        if record["step"] > args.warmup_steps
+        record for record in target_reynolds_records if record["step"] > args.warmup_steps
     ]
-    statistics_window_steps = (
-        args.statistics_window_steps or len(post_warmup_records)
-    )
+    statistics_window_steps = args.statistics_window_steps or len(post_warmup_records)
     selected_records = post_warmup_records[-statistics_window_steps:]
-    total_convective_times = (
-        args.steps * args.lattice_speed / args.hull_length
-    )
+    total_convective_times = args.steps * args.lattice_speed / args.hull_length
     target_reynolds_convective_times = (
-        len(all_target_reynolds_records)
-        * args.lattice_speed
-        / args.hull_length
+        len(all_target_reynolds_records) * args.lattice_speed / args.hull_length
     )
     fully_physical_convective_times = (
-        len(target_reynolds_records)
-        * args.lattice_speed
-        / args.hull_length
+        len(target_reynolds_records) * args.lattice_speed / args.hull_length
     )
-    sampling_convective_times = (
-        len(selected_records) * args.lattice_speed / args.hull_length
-    )
+    sampling_convective_times = len(selected_records) * args.lattice_speed / args.hull_length
     duration_acceptable = (
         total_convective_times >= args.minimum_convective_times
-        and target_reynolds_convective_times
-        >= args.minimum_target_reynolds_convective_times
-        and sampling_convective_times
-        >= args.minimum_statistics_convective_times
+        and target_reynolds_convective_times >= args.minimum_target_reynolds_convective_times
+        and sampling_convective_times >= args.minimum_statistics_convective_times
     )
     force_stationarity = None
     mean_resistance = None
@@ -2396,26 +2351,25 @@ def run(args: argparse.Namespace) -> dict:
     resistance_component_audit = None
     mean_source = None
     reference_error_pct = None
-    wall_records = [
-        record for record in selected_records
-        if record["mean_y_plus"] is not None
-    ]
+    wall_records = [record for record in selected_records if record["mean_y_plus"] is not None]
     wall_y_plus_distributions = [
-        record["wall_y_plus_distribution"] for record in wall_records
+        record["wall_y_plus_distribution"]
+        for record in wall_records
         if record.get("wall_y_plus_distribution") is not None
     ]
     wall_y_plus_distribution = (
         aggregate_wall_exchange_yplus_summaries(
             wall_y_plus_distributions,
         ).to_dict()
-        if wall_y_plus_distributions else None
+        if wall_y_plus_distributions
+        else None
     )
-    wall_y_plus_applicability_acceptable = (
-        wall_y_plus_distribution is not None
-        and bool(wall_y_plus_distribution["admitted"])
+    wall_y_plus_applicability_acceptable = wall_y_plus_distribution is not None and bool(
+        wall_y_plus_distribution["admitted"]
     )
     wall_pressure_gradient_records = [
-        record for record in wall_records
+        record
+        for record in wall_records
         if record.get("wall_pressure_gradient_parameter_mean") is not None
     ]
     wall_pressure_gradient_distributions = [
@@ -2427,27 +2381,27 @@ def run(args: argparse.Namespace) -> dict:
         aggregate_wall_pressure_gradient_summaries(
             wall_pressure_gradient_distributions,
         ).to_dict()
-        if wall_pressure_gradient_distributions else None
+        if wall_pressure_gradient_distributions
+        else None
     )
     if selected_records:
         cv_values = [record["cv_resistance_n"] for record in selected_records]
         mean_resistance = sum(cv_values) / len(cv_values)
-        mean_bfl = sum(
-            record["bfl_plus_wall_stress_n"] for record in selected_records
-        ) / len(selected_records)
-        mean_bfl_pressure = sum(
-            record["bfl_pressure_n"] for record in selected_records
-        ) / len(selected_records)
-        mean_wall_shear = sum(
-            record["wall_shear_n"] for record in selected_records
-        ) / len(selected_records)
+        mean_bfl = sum(record["bfl_plus_wall_stress_n"] for record in selected_records) / len(
+            selected_records
+        )
+        mean_bfl_pressure = sum(record["bfl_pressure_n"] for record in selected_records) / len(
+            selected_records
+        )
+        mean_wall_shear = sum(record["wall_shear_n"] for record in selected_records) / len(
+            selected_records
+        )
         pressure_fraction = mean_bfl_pressure / max(abs(mean_bfl), 1.0e-30)
         wall_shear_fraction = mean_wall_shear / max(abs(mean_bfl), 1.0e-30)
         friction_reference = None
         if args.hull_type == "bare_hull":
             wetted_area_m2 = (
-                float(finest_geometry["wetted_area_lu2"])
-                * (MODEL_LENGTH_M / finest_length) ** 2
+                float(finest_geometry["wetted_area_lu2"]) * (MODEL_LENGTH_M / finest_length) ** 2
             )
             friction_reference = (
                 0.5
@@ -2466,27 +2420,21 @@ def run(args: argparse.Namespace) -> dict:
         resistance_component_audit["pressure_input_status"] = (
             "deprecated_link_impulse_alias_not_physical_pressure"
         )
-        mean_source = sum(
-            record["numerical_source_n"] for record in selected_records
-        ) / len(selected_records)
-        reference_error_pct = (
-            abs(mean_resistance - point.resistance_n)
-            / point.resistance_n
-            * 100.0
+        mean_source = sum(record["numerical_source_n"] for record in selected_records) / len(
+            selected_records
         )
+        reference_error_pct = abs(mean_resistance - point.resistance_n) / point.resistance_n * 100.0
         if len(cv_values) >= 4:
             force_stationarity = assess_force_stationarity(
                 cv_values,
                 block_size=max(1, len(cv_values) // 8),
             )
-    stationarity_acceptable = (
-        force_stationarity is not None and force_stationarity.meets(1.0)
-    )
-    collision_viscosity_acceptable = (
-        args.collision_model in {
-            "cumulant_smagorinsky", "cumulant_wale", "cumulant_vreman",
-        }
-    )
+    stationarity_acceptable = force_stationarity is not None and force_stationarity.meets(1.0)
+    collision_viscosity_acceptable = args.collision_model in {
+        "cumulant_smagorinsky",
+        "cumulant_wale",
+        "cumulant_vreman",
+    }
     wall_exchange_ratio = args.stress_exchange_distance / finest_length
     wall_exchange_scaling_acceptable = math.isclose(
         wall_exchange_ratio,
@@ -2503,58 +2451,57 @@ def run(args: argparse.Namespace) -> dict:
     projected_bfl_mean_total_n = None
     if selected_records and mean_resistance is not None:
         auxiliary_records = [
-            record for record in selected_records
-            if record["auxiliary_cv_n"] is not None
+            record for record in selected_records if record["auxiliary_cv_n"] is not None
         ]
-        auxiliary_means_n = {
-            str(margin): sum(
-                record["auxiliary_cv_n"][str(margin)]
-                for record in auxiliary_records
-            ) / len(auxiliary_records)
-            for margin in auxiliary_margins
-        } if auxiliary_records else {}
+        auxiliary_means_n = (
+            {
+                str(margin): sum(
+                    record["auxiliary_cv_n"][str(margin)] for record in auxiliary_records
+                )
+                / len(auxiliary_records)
+                for margin in auxiliary_margins
+            }
+            if auxiliary_records
+            else {}
+        )
         if auxiliary_records:
             paired_primary_mean = sum(
                 record["cv_resistance_n"] for record in auxiliary_records
             ) / len(auxiliary_records)
             auxiliary_cv_difference_pct = {
                 margin: abs(value - paired_primary_mean)
-                / max(abs(paired_primary_mean), 1.0e-30) * 100.0
+                / max(abs(paired_primary_mean), 1.0e-30)
+                * 100.0
                 for margin, value in auxiliary_means_n.items()
             }
-            nested_cv_acceptable = (
-                max(auxiliary_cv_difference_pct.values()) <= 1.0
-            )
+            nested_cv_acceptable = max(auxiliary_cv_difference_pct.values()) <= 1.0
         surface_records = [
-            record for record in selected_records
+            record
+            for record in selected_records
             if record["surface_pressure_plus_wall_stress_n"] is not None
         ]
         if surface_records:
             surface_mean = sum(
-                record["surface_pressure_plus_wall_stress_n"]
-                for record in surface_records
+                record["surface_pressure_plus_wall_stress_n"] for record in surface_records
             ) / len(surface_records)
-            paired_cv_mean = sum(
-                record["cv_resistance_n"] for record in surface_records
-            ) / len(surface_records)
+            paired_cv_mean = sum(record["cv_resistance_n"] for record in surface_records) / len(
+                surface_records
+            )
             surface_observer_difference_pct = (
-                abs(surface_mean - paired_cv_mean)
-                / max(abs(paired_cv_mean), 1.0e-30)
-                * 100.0
+                abs(surface_mean - paired_cv_mean) / max(abs(paired_cv_mean), 1.0e-30) * 100.0
             )
             surface_observer_acceptable = surface_observer_difference_pct <= 5.0
         projected_records = [
-            record for record in selected_records
+            record
+            for record in selected_records
             if record["projected_bfl_pressure_plus_wall_stress_n"] is not None
         ]
         if projected_records:
             projected_bfl_mean_pressure_n = sum(
-                record["projected_bfl_pressure_n"]
-                for record in projected_records
+                record["projected_bfl_pressure_n"] for record in projected_records
             ) / len(projected_records)
             projected_bfl_mean_total_n = sum(
-                record["projected_bfl_pressure_plus_wall_stress_n"]
-                for record in projected_records
+                record["projected_bfl_pressure_plus_wall_stress_n"] for record in projected_records
             ) / len(projected_records)
             paired_corrected_cv_mean = sum(
                 record["source_corrected_cv_n"] for record in projected_records
@@ -2583,22 +2530,19 @@ def run(args: argparse.Namespace) -> dict:
         for level_device in dict.fromkeys(level_devices)
         if level_device.type == "cuda"
     }
-    peak_gib = (
-        next(iter(peak_gib_by_device.values()))
-        if len(peak_gib_by_device) == 1 else None
-    )
+    peak_gib = next(iter(peak_gib_by_device.values())) if len(peak_gib_by_device) == 1 else None
     invocation_elapsed_seconds = time.perf_counter() - invocation_started
     root_steps_advanced = args.steps - start_step
     return {
         "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
         "status": (
             "single_grid_candidate"
-            if single_grid_candidate else (
-                "integration_smoke_pass" if admitted else "integration_smoke_fail"
-            )
+            if single_grid_candidate
+            else ("integration_smoke_pass" if admitted else "integration_smoke_fail")
         ),
         "physical_validation": False,
-        "configuration": vars(args) | {
+        "configuration": vars(args)
+        | {
             "output": str(args.output) if args.output else None,
             "checkpoint": str(args.checkpoint) if args.checkpoint else None,
             "physical_reynolds": physical_re,
@@ -2622,9 +2566,7 @@ def run(args: argparse.Namespace) -> dict:
             "gradient_sgs_solid_velocity": [0.0, 0.0, 0.0],
             "force_samples_per_root_step": force_averager.expected_samples,
             "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
-            "link_force_decomposition_scheme": (
-                "actual_population_impulse_geometry_projection_v1"
-            ),
+            "link_force_decomposition_scheme": ("actual_population_impulse_geometry_projection_v1"),
             "conservative_force_observer_scheme": (
                 "fixed_control_volume_plus_laboratory_bfl_link_impulse_v1"
             ),
@@ -2636,70 +2578,53 @@ def run(args: argparse.Namespace) -> dict:
             "gradient_sgs_uses_finest_solid_mask": (
                 args.collision_model in {"cumulant_wale", "cumulant_vreman"}
             ),
-            "stress_exchange_distance_over_finest_length": (
-                wall_exchange_ratio
-            ),
+            "stress_exchange_distance_over_finest_length": (wall_exchange_ratio),
             "resumed_from_step": resumed_from_step,
             "resumed_legacy_v2_checkpoint": resumed_legacy_v2_checkpoint,
             "resumed_legacy_v3_checkpoint": resumed_legacy_v3_checkpoint,
-            "resumed_pre_gradient_sgs_checkpoint": (
-                resumed_pre_gradient_sgs_checkpoint
-            ),
-            "resumed_pre_inlet_sponge_checkpoint": (
-                resumed_pre_inlet_sponge_checkpoint
-            ),
-            "resumed_pre_collision_chunk_checkpoint": (
-                resumed_pre_collision_chunk_checkpoint
-            ),
+            "resumed_pre_gradient_sgs_checkpoint": (resumed_pre_gradient_sgs_checkpoint),
+            "resumed_pre_inlet_sponge_checkpoint": (resumed_pre_inlet_sponge_checkpoint),
+            "resumed_pre_collision_chunk_checkpoint": (resumed_pre_collision_chunk_checkpoint),
             "resumed_pre_y_plus_distribution_checkpoint": (
                 resumed_pre_y_plus_distribution_checkpoint
             ),
         },
-        "planning": planning | {
+        "planning": planning
+        | {
             "measured_peak_allocated_gib": peak_gib,
             "measured_peak_allocated_gib_by_device": peak_gib_by_device,
         },
         "runtime": {
             "invocation_elapsed_seconds": invocation_elapsed_seconds,
             "root_steps_advanced": root_steps_advanced,
-            "seconds_per_root_step": (
-                invocation_elapsed_seconds / root_steps_advanced
-            ),
+            "seconds_per_root_step": (invocation_elapsed_seconds / root_steps_advanced),
         },
-        "geometry": finest_geometry | {
+        "geometry": finest_geometry
+        | {
             "resolution": geometry_resolution_output,
             "area_weighting": vars(area_diagnostics),
             "appendage_boundary_links": appendage_boundary_links,
             "appendage_halfway_links": 0,
             "appendage_link_intersection": (
                 appendage_link_diagnostics.to_dict()
-                if appendage_link_diagnostics is not None else None
+                if appendage_link_diagnostics is not None
+                else None
             ),
             "geometry_owner_level": refinement_depth,
             "force_owner_level": refinement_depth,
         },
         "result": {
             "steps": step_records,
-            "maximum_source_corrected_observer_difference_pct": (
-                maximum_corrected_difference
-            ),
+            "maximum_source_corrected_observer_difference_pct": (maximum_corrected_difference),
             "maximum_reflux_residual_by_interface": maximum_reflux_residual,
-            "maximum_reflux_limited_directions_by_interface": (
-                maximum_reflux_limited_directions
-            ),
+            "maximum_reflux_limited_directions_by_interface": (maximum_reflux_limited_directions),
             "maximum_reflux_applied_correction_fraction_by_interface": (
                 maximum_reflux_applied_correction_fraction
             ),
-            "maximum_transfer_limited_fraction_by_interface": (
-                maximum_transfer_limited_fraction
-            ),
+            "maximum_transfer_limited_fraction_by_interface": (maximum_transfer_limited_fraction),
             "minimum_transfer_alpha_by_interface": minimum_transfer_alpha,
-            "maximum_raw_mass_mismatch_by_interface": (
-                maximum_raw_mass_mismatch
-            ),
-            "maximum_raw_momentum_mismatch_by_interface": (
-                maximum_raw_momentum_mismatch
-            ),
+            "maximum_raw_mass_mismatch_by_interface": (maximum_raw_mass_mismatch),
+            "maximum_raw_momentum_mismatch_by_interface": (maximum_raw_momentum_mismatch),
             "maximum_positivity_limited_fraction": maximum_limiter_fraction,
             "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
             "force_sample_aggregation": force_averager.provenance(
@@ -2708,9 +2633,7 @@ def run(args: argparse.Namespace) -> dict:
             "collision_execution": natural_kbc_executor.diagnostics(),
             "finite": finite,
             "population_health": health_records,
-            "open_boundary_population_delta_audit": (
-                open_boundary_audit.to_dict()
-            ),
+            "open_boundary_population_delta_audit": (open_boundary_audit.to_dict()),
             "maximum_observed_speed": maximum_observed_speed,
             "minimum_observed_population": minimum_observed_population,
             "minimum_observed_density": minimum_observed_density,
@@ -2722,12 +2645,8 @@ def run(args: argparse.Namespace) -> dict:
                 "statistics_window_steps_requested": args.statistics_window_steps,
                 "statistics_window_steps_resolved": len(selected_records),
                 "total_convective_times": total_convective_times,
-                "target_reynolds_convective_times": (
-                    target_reynolds_convective_times
-                ),
-                "fully_physical_convective_times": (
-                    fully_physical_convective_times
-                ),
+                "target_reynolds_convective_times": (target_reynolds_convective_times),
+                "fully_physical_convective_times": (fully_physical_convective_times),
                 "sampling_convective_times": sampling_convective_times,
                 "mean_resistance_n": mean_resistance,
                 "mean_bfl_plus_wall_stress_n": mean_bfl,
@@ -2745,53 +2664,45 @@ def run(args: argparse.Namespace) -> dict:
                 "experimental_resistance_n": point.resistance_n,
                 "reference_error_pct": reference_error_pct,
                 "force_stationarity": (
-                    force_stationarity.to_dict()
-                    if force_stationarity is not None else None
+                    force_stationarity.to_dict() if force_stationarity is not None else None
                 ),
                 "auxiliary_cv_difference_pct": auxiliary_cv_difference_pct,
-                "surface_observer_difference_pct": (
-                    surface_observer_difference_pct
-                ),
+                "surface_observer_difference_pct": (surface_observer_difference_pct),
                 "surface_pressure_observer_scope": (
                     "enabled_rejected_diagnostic_only_not_an_acceptance_gate"
                     if args.enable_rejected_surface_pressure_diagnostic
                     else "disabled_rejected_diagnostic_not_an_acceptance_gate"
                 ),
                 "projected_bfl_pressure_observer": {
-                    "scope": (
-                        "candidate_diagnostic_only_not_an_acceptance_gate"
-                    ),
+                    "scope": ("candidate_diagnostic_only_not_an_acceptance_gate"),
                     "enabled": args.enable_projected_bfl_pressure_diagnostic,
-                    "reconstruction": (
-                        args.projected_bfl_pressure_reconstruction
-                    ),
+                    "reconstruction": (args.projected_bfl_pressure_reconstruction),
                     "mean_pressure_n": projected_bfl_mean_pressure_n,
-                    "mean_pressure_plus_wall_stress_n": (
-                        projected_bfl_mean_total_n
-                    ),
-                    "source_corrected_cv_difference_pct": (
-                        projected_bfl_observer_difference_pct
-                    ),
+                    "mean_pressure_plus_wall_stress_n": (projected_bfl_mean_total_n),
+                    "source_corrected_cv_difference_pct": (projected_bfl_observer_difference_pct),
                 },
                 "wall_exchange": {
                     "samples": len(wall_records),
                     "mean_distance_cells": (
                         sum(record["mean_wall_distance_cells"] for record in wall_records)
                         / len(wall_records)
-                        if wall_records else None
+                        if wall_records
+                        else None
                     ),
                     "minimum_y_plus": (
                         min(record["minimum_y_plus"] for record in wall_records)
-                        if wall_records else None
+                        if wall_records
+                        else None
                     ),
                     "mean_y_plus": (
-                        sum(record["mean_y_plus"] for record in wall_records)
-                        / len(wall_records)
-                        if wall_records else None
+                        sum(record["mean_y_plus"] for record in wall_records) / len(wall_records)
+                        if wall_records
+                        else None
                     ),
                     "maximum_y_plus": (
                         max(record["maximum_y_plus"] for record in wall_records)
-                        if wall_records else None
+                        if wall_records
+                        else None
                     ),
                     "y_plus_distribution": wall_y_plus_distribution,
                     "pressure_gradient_parameter": {
@@ -2800,20 +2711,26 @@ def run(args: argparse.Namespace) -> dict:
                             sum(
                                 record["wall_pressure_gradient_parameter_mean"]
                                 for record in wall_pressure_gradient_records
-                            ) / len(wall_pressure_gradient_records)
-                            if wall_pressure_gradient_records else None
+                            )
+                            / len(wall_pressure_gradient_records)
+                            if wall_pressure_gradient_records
+                            else None
                         ),
                         "maximum_p95": (
                             max(
                                 record["wall_pressure_gradient_parameter_p95"]
                                 for record in wall_pressure_gradient_records
-                            ) if wall_pressure_gradient_records else None
+                            )
+                            if wall_pressure_gradient_records
+                            else None
                         ),
                         "maximum": (
                             max(
                                 record["wall_pressure_gradient_parameter_max"]
                                 for record in wall_pressure_gradient_records
-                            ) if wall_pressure_gradient_records else None
+                            )
+                            if wall_pressure_gradient_records
+                            else None
                         ),
                         "distribution": wall_pressure_gradient_distribution,
                         "scope": "diagnostic_only_not_a_force_correction",
@@ -2828,34 +2745,25 @@ def run(args: argparse.Namespace) -> dict:
             "target_reynolds_reached": bool(target_reynolds_records),
             "duration_target_met": duration_acceptable,
             "target_reynolds_duration_target_met": (
-                target_reynolds_convective_times
-                >= args.minimum_target_reynolds_convective_times
+                target_reynolds_convective_times >= args.minimum_target_reynolds_convective_times
             ),
             "stationarity_target_met": stationarity_acceptable,
             "nested_control_volume_target_met": nested_cv_acceptable,
             "surface_observer_target_met": surface_observer_acceptable,
             "surface_observer_used_for_acceptance": False,
-            "conservative_force_observer_target_met": (
-                conservative_force_observer_acceptable
-            ),
+            "conservative_force_observer_target_met": (conservative_force_observer_acceptable),
             "reference_error_target_met": (
                 reference_error_pct is not None and reference_error_pct <= 5.0
             ),
             "population_health_target_met": population_health_acceptable,
             "collision_viscosity_target_met": collision_viscosity_acceptable,
-            "wall_exchange_scaling_target_met": (
-                wall_exchange_scaling_acceptable
-            ),
-            "wall_exchange_y_plus_applicability_target_met": (
-                wall_y_plus_applicability_acceptable
-            ),
+            "wall_exchange_scaling_target_met": (wall_exchange_scaling_acceptable),
+            "wall_exchange_y_plus_applicability_target_met": (wall_y_plus_applicability_acceptable),
             "wall_exchange_distance_over_finest_length_target": (
                 args.wall_exchange_distance_over_length_target
             ),
             "minimum_population_target": args.minimum_health_population,
-            "positivity_limited_fraction_target": (
-                args.maximum_positivity_limited_fraction
-            ),
+            "positivity_limited_fraction_target": (args.maximum_positivity_limited_fraction),
             "reflux_applied_correction_fraction_target": (
                 args.maximum_reflux_applied_correction_fraction
             ),

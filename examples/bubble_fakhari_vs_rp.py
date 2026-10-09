@@ -18,10 +18,15 @@ Gas mass conservation for RP comparison:
   Pressure field: P = (1-C)·p_gas + C·p_inf
 """
 
-import sys, math, torch, numpy as np
+import math
+import sys
+
+import numpy as np
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import C as C3D, W as W3D
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
 
 
 def solve_rp(R0, p_ratio, rho_liq, gamma, n_steps, dt=1.0):
@@ -175,7 +180,7 @@ def run_fakhari_bubble(nx=64, n_steps=3000, device="sdaa:0", p_ratio=1.5, gamma=
     geq = P.unsqueeze(0) * w.view(19, 1, 1, 1) + Gamma_w - 0.5 * hlp_g
     g = geq.clone()
 
-    print(f"=== Fakhari Phase-Field Bubble ===", flush=True)
+    print("=== Fakhari Phase-Field Bubble ===", flush=True)
     print(f"Grid: {nx}³ R0={R0} W={W} σ={sigma} M={M_mob}", flush=True)
     print(f"ρ_l={rho_l} ρ_h={rho_h} τ_g={tau_g:.2f} τ_h={tau_h:.2f}", flush=True)
     print(

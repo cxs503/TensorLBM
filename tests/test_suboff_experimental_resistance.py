@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import pytest
 import torch
-
 
 MODULE_PATH = Path(__file__).parents[1] / "examples" / "suboff_experimental_resistance.py"
 SPEC = importlib.util.spec_from_file_location("suboff_experimental_resistance", MODULE_PATH)
@@ -17,7 +16,8 @@ SPEC.loader.exec_module(module)
 
 ENGINEERING_PATH = Path(__file__).parents[1] / "examples" / "suboff_engineering_resistance.py"
 ENGINEERING_SPEC = importlib.util.spec_from_file_location(
-    "suboff_engineering_resistance", ENGINEERING_PATH,
+    "suboff_engineering_resistance",
+    ENGINEERING_PATH,
 )
 assert ENGINEERING_SPEC and ENGINEERING_SPEC.loader
 engineering = importlib.util.module_from_spec(ENGINEERING_SPEC)
@@ -41,8 +41,10 @@ def test_experimental_appendage_ratio_matches_report() -> None:
 
 def test_force_scale_is_positive_and_dimensionally_consistent() -> None:
     scale = module.force_scale_newton(
-        rho_water=998.2, dx_m=4.356 / 80.0,
-        speed_mps=5.92 * module.KNOT_TO_MPS, lattice_speed=0.06,
+        rho_water=998.2,
+        dx_m=4.356 / 80.0,
+        speed_mps=5.92 * module.KNOT_TO_MPS,
+        lattice_speed=0.06,
     )
     assert scale == pytest.approx(7614.44, rel=2e-3)
 
@@ -62,7 +64,12 @@ def test_non_table_speed_is_rejected() -> None:
 
 def test_far_field_sponge_damps_six_faces_and_leaves_interior() -> None:
     sponge = module.build_far_field_sponge(
-        100, 60, 50, width=10, strength=1.0, device=torch.device("cpu"),
+        100,
+        60,
+        50,
+        width=10,
+        strength=1.0,
+        device=torch.device("cpu"),
     )
     assert sponge.shape == (50, 60, 100)
     assert sponge[25, 30, 40].item() == 0.0

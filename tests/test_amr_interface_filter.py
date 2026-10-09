@@ -23,12 +23,20 @@ def _perturbed_population() -> torch.Tensor:
     uz = torch.full(shape, 0.005, dtype=torch.float64)
     f = equilibrium3d(rho, ux, uy, uz)
     c = C.to(dtype=f.dtype)
-    moments = torch.stack((
-        torch.ones(19, dtype=f.dtype),
-        c[:, 0], c[:, 1], c[:, 2],
-        c[:, 0].square(), c[:, 1].square(), c[:, 2].square(),
-        c[:, 0] * c[:, 1], c[:, 0] * c[:, 2], c[:, 1] * c[:, 2],
-    ))
+    moments = torch.stack(
+        (
+            torch.ones(19, dtype=f.dtype),
+            c[:, 0],
+            c[:, 1],
+            c[:, 2],
+            c[:, 0].square(),
+            c[:, 1].square(),
+            c[:, 2].square(),
+            c[:, 0] * c[:, 1],
+            c[:, 0] * c[:, 2],
+            c[:, 1] * c[:, 2],
+        )
+    )
     _, _, right = torch.linalg.svd(moments, full_matrices=True)
     kinetic_mode = right[-1] / torch.linalg.vector_norm(right[-1])
     return f + 2.0e-3 * kinetic_mode[:, None, None, None]
@@ -36,8 +44,12 @@ def _perturbed_population() -> torch.Tensor:
 
 def test_interface_shell_excludes_ghosts_and_retains_core() -> None:
     blend = interface_shell_blend(
-        (10, 12, 14), ghost=1, width=2, strength=0.4,
-        device=torch.device("cpu"), dtype=torch.float64,
+        (10, 12, 14),
+        ghost=1,
+        width=2,
+        strength=0.4,
+        device=torch.device("cpu"),
+        dtype=torch.float64,
     )
 
     assert float(blend[0].max()) == 0.0
@@ -51,8 +63,12 @@ def test_interface_shell_excludes_ghosts_and_retains_core() -> None:
 def test_filter_preserves_density_and_momentum_and_reduces_nonequilibrium() -> None:
     f = _perturbed_population()
     blend = interface_shell_blend(
-        f.shape[1:], ghost=1, width=2, strength=0.4,
-        device=f.device, dtype=f.dtype,
+        f.shape[1:],
+        ghost=1,
+        width=2,
+        strength=0.4,
+        device=f.device,
+        dtype=f.dtype,
     )
     rho_before, ux_before, uy_before, uz_before = macroscopic3d(f)
     filtered = damp_interface_nonequilibrium(f, blend)
@@ -88,7 +104,10 @@ def test_filter_preserves_density_and_momentum_and_reduces_nonequilibrium() -> N
                 c[:, second_axis],
             )
             assert torch.allclose(
-                after_stress, before_stress, rtol=0.0, atol=3.0e-15,
+                after_stress,
+                before_stress,
+                rtol=0.0,
+                atol=3.0e-15,
             )
 
 
@@ -97,12 +116,19 @@ def test_uniform_equilibrium_is_unchanged() -> None:
     zero = torch.zeros_like(rho)
     f = equilibrium3d(rho, zero, zero, zero)
     blend = interface_shell_blend(
-        f.shape[1:], ghost=1, width=3, strength=1.0,
-        device=f.device, dtype=f.dtype,
+        f.shape[1:],
+        ghost=1,
+        width=3,
+        strength=1.0,
+        device=f.device,
+        dtype=f.dtype,
     )
 
     assert torch.allclose(
-        damp_interface_nonequilibrium(f, blend), f, rtol=0.0, atol=2.0e-8,
+        damp_interface_nonequilibrium(f, blend),
+        f,
+        rtol=0.0,
+        atol=2.0e-8,
     )
 
 
@@ -118,7 +144,9 @@ def test_uniform_equilibrium_is_unchanged() -> None:
 def test_invalid_filter_configuration_fails_closed(kwargs: dict) -> None:
     with pytest.raises(ValueError):
         interface_shell_blend(
-            (10, 12, 14), device=torch.device("cpu"), dtype=torch.float32,
+            (10, 12, 14),
+            device=torch.device("cpu"),
+            dtype=torch.float32,
             **kwargs,
         )
 
@@ -132,8 +160,12 @@ def test_filter_rejects_wrong_blend_shape() -> None:
 def test_population_momentum_is_directly_unchanged() -> None:
     f = _perturbed_population()
     blend = interface_shell_blend(
-        f.shape[1:], ghost=1, width=2, strength=0.3,
-        device=f.device, dtype=f.dtype,
+        f.shape[1:],
+        ghost=1,
+        width=2,
+        strength=0.3,
+        device=f.device,
+        dtype=f.dtype,
     )
     filtered = damp_interface_nonequilibrium(f, blend)
     c = C.to(dtype=f.dtype)
@@ -152,8 +184,12 @@ def test_d3q27_filter_preserves_macroscopic_state() -> None:
     f = equilibrium27(rho, ux, uy, uz)
     f += 1.0e-5 * torch.randn_like(f)
     blend = interface_shell_blend(
-        shape, ghost=1, width=2, strength=0.25,
-        device=f.device, dtype=f.dtype,
+        shape,
+        ghost=1,
+        width=2,
+        strength=0.25,
+        device=f.device,
+        dtype=f.dtype,
     )
     before = macroscopic27(f)
     after = macroscopic27(damp_interface_nonequilibrium(f, blend))

@@ -11,7 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 
-
 DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE = "DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE"
 WITHHELD_MISSING_CONVERSION_EVIDENCE = "WITHHELD_MISSING_CONVERSION_EVIDENCE"
 

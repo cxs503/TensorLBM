@@ -3,11 +3,12 @@
 These deliberately freeze topology/conversion: they test the population-link
 accounting independently of a wave-validation claim.
 """
+
 from __future__ import annotations
 
 import torch
 
-from tensorlbm.d3q19 import C, OPPOSITE, equilibrium3d
+from tensorlbm.d3q19 import OPPOSITE, C, equilibrium3d
 from tensorlbm.free_surface_lbm import (
     GAS,
     INTERFACE,
@@ -19,10 +20,9 @@ from tensorlbm.free_surface_lbm import (
 
 def _source_flags(flags: torch.Tensor) -> torch.Tensor:
     """flag(x-c_q), matching `_stream19_roll` pull streaming exactly."""
-    return torch.stack([
-        flags.roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2))
-        for q in range(19)
-    ])
+    return torch.stack(
+        [flags.roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2)) for q in range(19)]
+    )
 
 
 def test_frozen_all_interface_link_exchange_is_pairwise_antisymmetric() -> None:
@@ -42,15 +42,17 @@ def test_frozen_all_interface_link_exchange_is_pairwise_antisymmetric() -> None:
     # Pull q at x is f_q^*(x-c_q).  The other end of that physical link is
     # the local outgoing f_bar(q)^*(x), not f_bar(q)^*(x-c_q).
     link = 0.5 * (f_streamed - f_pre[OPPOSITE])
-    link = torch.where((flags == INTERFACE).unsqueeze(0) & (src_flags == INTERFACE), link, torch.zeros_like(link))
+    link = torch.where(
+        (flags == INTERFACE).unsqueeze(0) & (src_flags == INTERFACE), link, torch.zeros_like(link)
+    )
 
     # The same physical link is represented by (q,x) and (qbar,x-cq).
-    paired = torch.stack([
-        link[int(OPPOSITE[q])].roll(
-            (int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2)
-        )
-        for q in range(19)
-    ])
+    paired = torch.stack(
+        [
+            link[int(OPPOSITE[q])].roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2))
+            for q in range(19)
+        ]
+    )
     assert float(link.abs().max()) > 1.0e-6
     assert torch.allclose(link + paired, torch.zeros_like(link), atol=2.0e-8, rtol=0.0)
     assert abs(float(link.sum())) < 2.0e-7
@@ -78,7 +80,8 @@ def test_implementation_exchange_matches_pull_link_formula_at_liquid_interface()
     src_flags = _source_flags(flags)
     expected_delta = torch.where(
         (flags == INTERFACE).unsqueeze(0) & (src_flags == LIQUID),
-        f_streamed - f_pre[OPPOSITE], torch.zeros_like(f_streamed),
+        f_streamed - f_pre[OPPOSITE],
+        torch.zeros_like(f_streamed),
     ).sum(0)
     ledger: dict[str, float] = {}
 
@@ -100,7 +103,13 @@ def test_implementation_has_no_global_exchange_source_on_frozen_interface() -> N
     ledger: dict[str, float] = {}
 
     _, _, out_flags, out_mass, _ = free_surface_step(
-        f, fill, flags, solid, mass=mass, tau=1.0, mass_ledger=ledger,
+        f,
+        fill,
+        flags,
+        solid,
+        mass=mass,
+        tau=1.0,
+        mass_ledger=ledger,
     )
     assert torch.equal(out_flags, flags)  # frozen topology premise
     assert abs(ledger["exchange"] - ledger["start"]) < 2.0e-6
@@ -126,7 +135,13 @@ def test_gas_link_uses_korner_anti_bounce_back_not_simple_bounce_back() -> None:
     f = equilibrium3d(rho, zero, zero, zero)
 
     out, _, _, _, _ = free_surface_step(
-        f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=0.001,
+        f,
+        fill,
+        flags,
+        solid,
+        mass=mass,
+        tau=1.0,
+        rho_gas=0.001,
     )
     # q=+x at x=2 pulls from the GAS source x=1.  After streaming its
     # opposite is the +x-neighbour's qbar population, here w_q*rho_liquid.

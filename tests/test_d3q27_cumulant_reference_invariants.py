@@ -15,7 +15,6 @@ import torch
 from tensorlbm.cumulant import collide_cumulant_d3q27
 from tensorlbm.d3q27 import equilibrium27
 
-
 # D3Q27 velocities in the documented population ordering.  Keep this local to
 # the reference test rather than calling the collision implementation's moment
 # recovery path.

@@ -54,7 +54,8 @@ def test_invalid_floor_is_rejected() -> None:
         limit_nonequilibrium_for_positivity(torch.ones((19, 2, 2, 2)), floor=-1.0)
     with pytest.raises(ValueError, match="finite"):
         limit_nonequilibrium_for_positivity(
-            torch.ones((19, 2, 2, 2)), floor=math.nan,
+            torch.ones((19, 2, 2, 2)),
+            floor=math.nan,
         )
 
 
@@ -78,7 +79,8 @@ def test_sparse_d3q27_limiter_preserves_mass_and_momentum() -> None:
     assert torch.allclose(
         (after[:, None] * C27.to(after)).sum(dim=0),
         (before[:, None] * C27.to(before)).sum(dim=0),
-        atol=5e-9, rtol=0.0,
+        atol=5e-9,
+        rtol=0.0,
     )
 
 

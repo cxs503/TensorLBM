@@ -42,7 +42,6 @@ References
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 
 import torch
@@ -302,7 +301,6 @@ class KESolver:
     ) -> torch.Tensor:
         """First-order upwind advection of scalar phi."""
         nz, ny, nx = phi.shape
-        device = phi.device
 
         # x-direction
         dphi_dx = torch.zeros_like(phi)

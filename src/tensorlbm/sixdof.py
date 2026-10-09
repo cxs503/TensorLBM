@@ -46,7 +46,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Sequence
 
 import torch
 
@@ -234,8 +233,8 @@ def step_sixdof(
     """
     m = body.mass
     g = torch.tensor(body.gravity, dtype=torch.float64)
-    I = body.inertia_tensor()
-    I_inv = torch.linalg.inv(I)
+    inertia = body.inertia_tensor()
+    I_inv = torch.linalg.inv(inertia)
 
     # --- Forces in world frame ---
     F_fluid = torch.tensor([fluid.fx, fluid.fy, fluid.fz], dtype=torch.float64)
@@ -261,7 +260,7 @@ def step_sixdof(
     M_fluid = torch.tensor([fluid.mx, fluid.my, fluid.mz], dtype=torch.float64)
 
     # Gyroscopic term: ω × (I ω)
-    Iw = I @ omega_body
+    Iw = inertia @ omega_body
     gyro = torch.linalg.cross(omega_body, Iw)
     alpha_body = I_inv @ (M_fluid - gyro)
 

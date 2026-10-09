@@ -4,8 +4,6 @@ These tests use prescribed synthetic hydrodynamic coefficients and a local
 JONSWAP spectrum.  They do not instantiate an LBM solver or couple a hull.
 """
 
-import math
-
 import pytest
 import torch
 

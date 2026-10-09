@@ -129,7 +129,7 @@ def compute_rao_from_timeseries(
     """
     N = t.shape[0]
     dt = t[1] - t[0] if len(t) > 1 else torch.tensor(1.0)
-    fs = 1.0 / dt  # sampling frequency
+    1.0 / dt  # sampling frequency
 
     # Apply window
     if window == "hann":
@@ -197,7 +197,7 @@ def spectral_response_analysis(
     S_response = rao_amplitude**2 * wave_spectrum
 
     # Spectral moments
-    d_omega = omega[1] - omega[0] if len(omega) > 1 else torch.tensor(0.1)
+    omega[1] - omega[0] if len(omega) > 1 else torch.tensor(0.1)
     m0 = torch.trapz(S_response, omega)  # zeroth moment
     m2 = torch.trapz(S_response * omega**2, omega)  # second moment
     m4 = torch.trapz(S_response * omega**4, omega)  # fourth moment

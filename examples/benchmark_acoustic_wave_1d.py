@@ -251,7 +251,7 @@ def run_acoustic_wave_benchmark(
     print(f"  ν = (τ−½)/3    : {nu:.6f}", flush=True)
     print(f"  c_s = 1/√3     : {cs:.6f}", flush=True)
     print(f"  Γ_theory = νk² : {gamma_theory:.6e} /step", flush=True)
-    print(f"  BCs            : periodic (all directions)", flush=True)
+    print("  BCs            : periodic (all directions)", flush=True)
     print(f"  Steps          : {n_steps}", flush=True)
     print(f"  Device         : {dev}", flush=True)
     print("=" * 72, flush=True)
@@ -390,7 +390,7 @@ def run_acoustic_wave_benchmark(
     print(f"  │  c_s  (theory)     = {cs:.6f}                        │", flush=True)
     print(f"  │  c_lbm (measured)  = {c_lbm:.6f}                        │", flush=True)
     print(f"  │  error             = {speed_error_pct:.2f} %                      │", flush=True)
-    print(f"  │  threshold         = 5.00 %                       │", flush=True)
+    print("  │  threshold         = 5.00 %                       │", flush=True)
     print(f"  │  phase fit RMS     = {phase_residual:.4e} rad              │", flush=True)
     status = "✓ PASS" if speed_error_pct < 5.0 else "✗ FAIL"
     print(f"  │  status            = {status}                        │", flush=True)
@@ -431,7 +431,7 @@ def run_acoustic_wave_benchmark(
         np.abs(np.minimum(np.abs(x_peak - x_peak_theory), nx - np.abs(x_peak - x_peak_theory)))
     )
     print(f"  Wave peak tracking: mean |Δx_peak| = {peak_err:.2f} cells", flush=True)
-    print(f"  (phase-based speed is the primary measurement)", flush=True)
+    print("  (phase-based speed is the primary measurement)", flush=True)
     print(flush=True)
 
     # ---- PASS / FAIL ----

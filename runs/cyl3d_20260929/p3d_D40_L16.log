@@ -1,0 +1,22 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl3d D=40 640x640x4] Re=40.0 u_in=0.08 nu=0.080000 tau=0.740000
+[cyl3d D=40 640x640x4] near=464 faces=656 ratio=1.4138 q_smooth mean=0.4508 min=0.0500 max=1.0000
+[cyl3d D=40 640x640x4] init done (1s)
+[cyl3d D=40 640x640x4] step=2500 Cd_p=1.2017 standard=0.5117 lagrange=0.5108 faces=0.4781 mix50=0.4949 bfl_smooth=0.7623 bfl_lag_exact=0.7781 (425s)
+[cyl3d D=40 640x640x4] step=5000 Cd_p=1.1296 standard=0.4562 lagrange=0.4554 faces=0.4234 mix50=0.4398 bfl_smooth=0.6733 bfl_lag_exact=0.6869 (806s)
+[cyl3d D=40 640x640x4] step=7500 Cd_p=1.0923 standard=0.4330 lagrange=0.4322 faces=0.4005 mix50=0.4167 bfl_smooth=0.6361 bfl_lag_exact=0.6488 (1189s)

@@ -1,4 +1,5 @@
 """Orientation-aware local surface-area weights for BFL boundary nodes."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -56,9 +57,7 @@ def bfl_surface_area_weights(
     axial = c.abs().sum(dim=1) == 1
     axial[0] = False
     axial_count = fluid_boundary_mask[axial].sum(dim=0).to(dtype=dtype)
-    nx_n, ny_n, nz_n = (
-        component.to(device=device, dtype=dtype) for component in normals
-    )
+    nx_n, ny_n, nz_n = (component.to(device=device, dtype=dtype) for component in normals)
     normal_l1 = nx_n.abs() + ny_n.abs() + nz_n.abs()
     boundary = fluid_boundary_mask.any(dim=0)
     if boundary_mask is not None:

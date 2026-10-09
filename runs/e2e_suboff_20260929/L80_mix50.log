@@ -1,0 +1,255 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+=== B6 SUBOFF Re=1000 L=80 collision=mrt steps=12000 device=sdaa:2 ===
+setup: {
+ "Re": 1000.0,
+ "tau": 0.512,
+ "u_lb": 0.05,
+ "nu_lb": 0.004,
+ "domain_lu": [
+  480,
+  169,
+  169
+ ],
+ "obstacle_cells": 4304,
+ "near_wall_cells": 1928,
+ "total_cells": 13709280,
+ "device": "sdaa:2",
+ "auto_collision": "mrt",
+ "auto_wall_treatment": "bounce_back"
+}
+[MON] step=    59 nlog=    5 win5_raw_cd_tot=6.036792 cd_p=1.528132 cd_f=4.508660
+[MON] step=   117 nlog=   11 win11_raw_cd_tot=4.658545 cd_p=0.807214 cd_f=3.851331
+[MON] step=   176 nlog=   17 win17_raw_cd_tot=4.022525 cd_p=0.577921 cd_f=3.444605
+[MON] step=   235 nlog=   23 win23_raw_cd_tot=3.648657 cd_p=0.483810 cd_f=3.164847
+[MON] step=   294 nlog=   29 win29_raw_cd_tot=3.393374 cd_p=0.436304 cd_f=2.957070
+[MON] step=   352 nlog=   35 win35_raw_cd_tot=3.192068 cd_p=0.397236 cd_f=2.794832
+[MON] step=   411 nlog=   41 win41_raw_cd_tot=3.032485 cd_p=0.369541 cd_f=2.662944
+[MON] step=   470 nlog=   47 win47_raw_cd_tot=2.902944 cd_p=0.349845 cd_f=2.553100
+[MON] step=   529 nlog=   52 win52_raw_cd_tot=2.811208 cd_p=0.336787 cd_f=2.474421
+[MON] step=   588 nlog=   58 win58_raw_cd_tot=2.715827 cd_p=0.323777 cd_f=2.392050
+[MON] step=   646 nlog=   64 win64_raw_cd_tot=2.632985 cd_p=0.312806 cd_f=2.320179
+[MON] step=   705 nlog=   70 win70_raw_cd_tot=2.560751 cd_p=0.303941 cd_f=2.256809
+[MON] step=   764 nlog=   76 win76_raw_cd_tot=2.496659 cd_p=0.296241 cd_f=2.200418
+[MON] step=   823 nlog=   82 win82_raw_cd_tot=2.439429 cd_p=0.289590 cd_f=2.149840
+[MON] step=   881 nlog=   88 win88_raw_cd_tot=2.387903 cd_p=0.283738 cd_f=2.104165
+[MON] step=   940 nlog=   94 win94_raw_cd_tot=2.341254 cd_p=0.278575 cd_f=2.062679
+[MON] step=   999 nlog=   99 win99_raw_cd_tot=2.305634 cd_p=0.274742 cd_f=2.030892
+[MON] step=  1058 nlog=  105 win105_raw_cd_tot=2.266196 cd_p=0.270527 cd_f=1.995669
+[MON] step=  1117 nlog=  111 win111_raw_cd_tot=2.229967 cd_p=0.266713 cd_f=1.963255
+[MON] step=  1175 nlog=  117 win117_raw_cd_tot=2.196571 cd_p=0.263253 cd_f=1.933318
+[MON] step=  1234 nlog=  123 win123_raw_cd_tot=2.165720 cd_p=0.260134 cd_f=1.905586
+[MON] step=  1293 nlog=  129 win129_raw_cd_tot=2.137036 cd_p=0.257223 cd_f=1.879813
+[MON] step=  1351 nlog=  135 win135_raw_cd_tot=2.110359 cd_p=0.254564 cd_f=1.855795
+[MON] step=  1410 nlog=  141 win141_raw_cd_tot=2.085505 cd_p=0.252138 cd_f=1.833367
+[MON] step=  1469 nlog=  146 win146_raw_cd_tot=2.065980 cd_p=0.250201 cd_f=1.815779
+[MON] step=  1528 nlog=  152 win152_raw_cd_tot=2.043931 cd_p=0.248055 cd_f=1.795876
+[MON] step=  1587 nlog=  158 win158_raw_cd_tot=2.023277 cd_p=0.246094 cd_f=1.777184
+[MON] step=  1646 nlog=  164 win164_raw_cd_tot=2.003836 cd_p=0.244240 cd_f=1.759596
+[MON] step=  1704 nlog=  170 win170_raw_cd_tot=1.985518 cd_p=0.242498 cd_f=1.743020
+[MON] step=  1763 nlog=  176 win176_raw_cd_tot=1.968268 cd_p=0.240891 cd_f=1.727376
+[MON] step=  1822 nlog=  182 win182_raw_cd_tot=1.951988 cd_p=0.239392 cd_f=1.712595
+[MON] step=  1881 nlog=  188 win188_raw_cd_tot=1.936561 cd_p=0.237954 cd_f=1.698607
+[MON] step=  1940 nlog=  193 win193_raw_cd_tot=1.924352 cd_p=0.236838 cd_f=1.687514
+[MON] step=  1998 nlog=  199 win199_raw_cd_tot=1.910427 cd_p=0.235591 cd_f=1.674836
+[MON] step=  2057 nlog=  205 win205_raw_cd_tot=1.897188 cd_p=0.234387 cd_f=1.662800
+[MON] step=  2116 nlog=  211 win211_raw_cd_tot=1.884605 cd_p=0.233245 cd_f=1.651360
+[MON] step=  2175 nlog=  217 win217_raw_cd_tot=1.872665 cd_p=0.232187 cd_f=1.640478
+[MON] step=  2233 nlog=  223 win223_raw_cd_tot=1.861291 cd_p=0.231175 cd_f=1.630116
+[MON] step=  2292 nlog=  229 win229_raw_cd_tot=1.850434 cd_p=0.230196 cd_f=1.620239
+[MON] step=  2351 nlog=  235 win235_raw_cd_tot=1.840095 cd_p=0.229281 cd_f=1.610814
+[MON] step=  2410 nlog=  240 win240_raw_cd_tot=1.831840 cd_p=0.228553 cd_f=1.603287
+[MON] step=  2468 nlog=  246 win246_raw_cd_tot=1.822327 cd_p=0.227705 cd_f=1.594622
+[MON] step=  2527 nlog=  252 win252_raw_cd_tot=1.813229 cd_p=0.226895 cd_f=1.586334
+[MON] step=  2586 nlog=  258 win258_raw_cd_tot=1.804523 cd_p=0.226122 cd_f=1.578401
+[MON] step=  2644 nlog=  264 win264_raw_cd_tot=1.796182 cd_p=0.225381 cd_f=1.570801
+[MON] step=  2703 nlog=  270 win270_raw_cd_tot=1.788184 cd_p=0.224669 cd_f=1.563515
+[MON] step=  2762 nlog=  276 win276_raw_cd_tot=1.780504 cd_p=0.223980 cd_f=1.556524
+[MON] step=  2820 nlog=  282 win282_raw_cd_tot=1.773128 cd_p=0.223317 cd_f=1.549810
+[MON] step=  2879 nlog=  287 win287_raw_cd_tot=1.767213 cd_p=0.222795 cd_f=1.544418
+[MON] step=  2938 nlog=  293 win293_raw_cd_tot=1.760357 cd_p=0.222180 cd_f=1.538177
+[MON] step=  2997 nlog=  299 win299_raw_cd_tot=1.753744 cd_p=0.221573 cd_f=1.532171
+[MON] step=  3055 nlog=  305 win305_raw_cd_tot=1.747395 cd_p=0.221006 cd_f=1.526389
+[MON] step=  3114 nlog=  311 win311_raw_cd_tot=1.741282 cd_p=0.220461 cd_f=1.520821
+[MON] step=  3173 nlog=  317 win317_raw_cd_tot=1.735364 cd_p=0.219911 cd_f=1.515453
+[MON] step=  3232 nlog=  323 win323_raw_cd_tot=1.729663 cd_p=0.219389 cd_f=1.510274
+[MON] step=  3290 nlog=  329 win329_raw_cd_tot=1.724185 cd_p=0.218907 cd_f=1.505278
+[MON] step=  3349 nlog=  334 win334_raw_cd_tot=1.719743 cd_p=0.218496 cd_f=1.501247
+[MON] step=  3408 nlog=  340 win340_raw_cd_tot=1.714562 cd_p=0.218005 cd_f=1.496558
+[MON] step=  3467 nlog=  346 win346_raw_cd_tot=1.709587 cd_p=0.217562 cd_f=1.492025
+[MON] step=  3525 nlog=  352 win352_raw_cd_tot=1.704770 cd_p=0.217126 cd_f=1.487644
+[MON] step=  3584 nlog=  358 win358_raw_cd_tot=1.700080 cd_p=0.216676 cd_f=1.483403
+[MON] step=  3643 nlog=  364 win364_raw_cd_tot=1.695557 cd_p=0.216260 cd_f=1.479297
+[MON] step=  3701 nlog=  370 win370_raw_cd_tot=1.691194 cd_p=0.215872 cd_f=1.475322
+[MON] step=  3760 nlog=  376 win376_raw_cd_tot=1.686935 cd_p=0.215465 cd_f=1.471470
+[MON] step=  3819 nlog=  381 win381_raw_cd_tot=1.683483 cd_p=0.215134 cd_f=1.468348
+[MON] step=  3878 nlog=  387 win387_raw_cd_tot=1.679487 cd_p=0.214780 cd_f=1.464707
+[MON] step=  3937 nlog=  393 win393_raw_cd_tot=1.675595 cd_p=0.214419 cd_f=1.461176
+[MON] step=  3995 nlog=  399 win399_raw_cd_tot=1.671792 cd_p=0.214046 cd_f=1.457746
+[MON] step=  4054 nlog=  405 win405_raw_cd_tot=1.668127 cd_p=0.213711 cd_f=1.454416
+[MON] step=  4113 nlog=  411 win411_raw_cd_tot=1.664572 cd_p=0.213389 cd_f=1.451183
+[MON] step=  4171 nlog=  417 win417_raw_cd_tot=1.661089 cd_p=0.213049 cd_f=1.448040
+[MON] step=  4230 nlog=  423 win423_raw_cd_tot=1.657710 cd_p=0.212728 cd_f=1.444983
+[MON] step=  4289 nlog=  428 win428_raw_cd_tot=1.654989 cd_p=0.212488 cd_f=1.442501
+[MON] step=  4348 nlog=  434 win434_raw_cd_tot=1.651781 cd_p=0.212183 cd_f=1.439597
+[MON] step=  4407 nlog=  440 win440_raw_cd_tot=1.648643 cd_p=0.211873 cd_f=1.436770
+[MON] step=  4466 nlog=  446 win446_raw_cd_tot=1.645616 cd_p=0.211599 cd_f=1.434017
+[MON] step=  4526 nlog=  452 win452_raw_cd_tot=1.642665 cd_p=0.211326 cd_f=1.431338
+[MON] step=  4585 nlog=  458 win458_raw_cd_tot=1.639767 cd_p=0.211039 cd_f=1.428728
+[MON] step=  4644 nlog=  464 win464_raw_cd_tot=1.636957 cd_p=0.210774 cd_f=1.426182
+[MON] step=  4703 nlog=  470 win470_raw_cd_tot=1.634231 cd_p=0.210528 cd_f=1.423703
+[MON] step=  4762 nlog=  476 win476_raw_cd_tot=1.631552 cd_p=0.210267 cd_f=1.421286
+[MON] step=  4822 nlog=  482 win482_raw_cd_tot=1.628939 cd_p=0.210013 cd_f=1.418926
+[MON] step=  4881 nlog=  488 win488_raw_cd_tot=1.626409 cd_p=0.209784 cd_f=1.416625
+[MON] step=  4940 nlog=  494 win494_raw_cd_tot=1.623926 cd_p=0.209547 cd_f=1.414379
+[MON] step=  5000 nlog=  500 win500_raw_cd_tot=1.621494 cd_p=0.209308 cd_f=1.412186
+[MON] step=  5059 nlog=  505 win500_raw_cd_tot=1.575350 cd_p=0.195934 cd_f=1.379416
+[MON] step=  5118 nlog=  511 win500_raw_cd_tot=1.550299 cd_p=0.195747 cd_f=1.354553
+[MON] step=  5178 nlog=  517 win500_raw_cd_tot=1.533078 cd_p=0.196134 cd_f=1.336944
+[MON] step=  5237 nlog=  523 win500_raw_cd_tot=1.519065 cd_p=0.195809 cd_f=1.323256
+[MON] step=  5296 nlog=  529 win500_raw_cd_tot=1.507156 cd_p=0.195049 cd_f=1.312107
+[MON] step=  5355 nlog=  535 win500_raw_cd_tot=1.497586 cd_p=0.194829 cd_f=1.302757
+[MON] step=  5415 nlog=  541 win500_raw_cd_tot=1.489423 cd_p=0.194612 cd_f=1.294811
+[MON] step=  5474 nlog=  547 win500_raw_cd_tot=1.482274 cd_p=0.194317 cd_f=1.287958
+[MON] step=  5533 nlog=  553 win500_raw_cd_tot=1.476014 cd_p=0.194033 cd_f=1.281981
+[MON] step=  5592 nlog=  559 win500_raw_cd_tot=1.470523 cd_p=0.193790 cd_f=1.276733
+[MON] step=  5652 nlog=  565 win500_raw_cd_tot=1.465690 cd_p=0.193590 cd_f=1.272100
+[MON] step=  5711 nlog=  571 win500_raw_cd_tot=1.461353 cd_p=0.193366 cd_f=1.267987
+[MON] step=  5770 nlog=  577 win500_raw_cd_tot=1.457495 cd_p=0.193171 cd_f=1.264323
+[MON] step=  5830 nlog=  582 win500_raw_cd_tot=1.454591 cd_p=0.193021 cd_f=1.261571
+[MON] step=  5889 nlog=  588 win500_raw_cd_tot=1.451447 cd_p=0.192860 cd_f=1.258587
+[MON] step=  5948 nlog=  594 win500_raw_cd_tot=1.448619 cd_p=0.192707 cd_f=1.255912
+[MON] step=  6007 nlog=  600 win500_raw_cd_tot=1.446066 cd_p=0.192557 cd_f=1.253509
+[MON] step=  6067 nlog=  606 win500_raw_cd_tot=1.443779 cd_p=0.192430 cd_f=1.251349
+[MON] step=  6126 nlog=  612 win500_raw_cd_tot=1.441721 cd_p=0.192314 cd_f=1.249407
+[MON] step=  6185 nlog=  618 win500_raw_cd_tot=1.439859 cd_p=0.192200 cd_f=1.247659
+[MON] step=  6245 nlog=  624 win500_raw_cd_tot=1.438179 cd_p=0.192095 cd_f=1.246084
+[MON] step=  6304 nlog=  630 win500_raw_cd_tot=1.436677 cd_p=0.192011 cd_f=1.244666
+[MON] step=  6363 nlog=  636 win500_raw_cd_tot=1.435309 cd_p=0.191919 cd_f=1.243390
+[MON] step=  6422 nlog=  642 win500_raw_cd_tot=1.434072 cd_p=0.191832 cd_f=1.242240
+[MON] step=  6482 nlog=  648 win500_raw_cd_tot=1.432974 cd_p=0.191769 cd_f=1.241205
+[MON] step=  6541 nlog=  654 win500_raw_cd_tot=1.431967 cd_p=0.191694 cd_f=1.240274
+[MON] step=  6600 nlog=  660 win500_raw_cd_tot=1.431056 cd_p=0.191622 cd_f=1.239434
+[MON] step=  6660 nlog=  665 win500_raw_cd_tot=1.430369 cd_p=0.191572 cd_f=1.238798
+[MON] step=  6719 nlog=  671 win500_raw_cd_tot=1.429615 cd_p=0.191510 cd_f=1.238105
+[MON] step=  6778 nlog=  677 win500_raw_cd_tot=1.428927 cd_p=0.191447 cd_f=1.237480
+[MON] step=  6837 nlog=  683 win500_raw_cd_tot=1.428300 cd_p=0.191384 cd_f=1.236916
+[MON] step=  6897 nlog=  689 win500_raw_cd_tot=1.427738 cd_p=0.191332 cd_f=1.236407
+[MON] step=  6956 nlog=  695 win500_raw_cd_tot=1.427218 cd_p=0.191271 cd_f=1.235947
+[MON] step=  7015 nlog=  701 win500_raw_cd_tot=1.426739 cd_p=0.191209 cd_f=1.235530
+[MON] step=  7074 nlog=  707 win500_raw_cd_tot=1.426311 cd_p=0.191158 cd_f=1.235153
+[MON] step=  7134 nlog=  713 win500_raw_cd_tot=1.425916 cd_p=0.191104 cd_f=1.234812
+[MON] step=  7193 nlog=  719 win500_raw_cd_tot=1.425546 cd_p=0.191044 cd_f=1.234502
+[MON] step=  7252 nlog=  725 win500_raw_cd_tot=1.425213 cd_p=0.190993 cd_f=1.234220
+[MON] step=  7311 nlog=  731 win500_raw_cd_tot=1.424909 cd_p=0.190945 cd_f=1.233965
+[MON] step=  7371 nlog=  737 win500_raw_cd_tot=1.424623 cd_p=0.190892 cd_f=1.233732
+[MON] step=  7430 nlog=  743 win500_raw_cd_tot=1.424361 cd_p=0.190842 cd_f=1.233519
+[MON] step=  7490 nlog=  748 win500_raw_cd_tot=1.424162 cd_p=0.190806 cd_f=1.233356
+[MON] step=  7549 nlog=  754 win500_raw_cd_tot=1.423936 cd_p=0.190760 cd_f=1.233176
+[MON] step=  7608 nlog=  760 win500_raw_cd_tot=1.423728 cd_p=0.190716 cd_f=1.233011
+[MON] step=  7667 nlog=  766 win500_raw_cd_tot=1.423535 cd_p=0.190674 cd_f=1.232861
+[MON] step=  7727 nlog=  772 win500_raw_cd_tot=1.423357 cd_p=0.190634 cd_f=1.232722
+[MON] step=  7786 nlog=  778 win500_raw_cd_tot=1.423195 cd_p=0.190600 cd_f=1.232596
+[MON] step=  7845 nlog=  784 win500_raw_cd_tot=1.423042 cd_p=0.190563 cd_f=1.232480
+[MON] step=  7904 nlog=  790 win500_raw_cd_tot=1.422897 cd_p=0.190525 cd_f=1.232372
+[MON] step=  7964 nlog=  796 win500_raw_cd_tot=1.422769 cd_p=0.190496 cd_f=1.232273
+[MON] step=  8023 nlog=  802 win500_raw_cd_tot=1.422651 cd_p=0.190468 cd_f=1.232183
+[MON] step=  8082 nlog=  808 win500_raw_cd_tot=1.422531 cd_p=0.190432 cd_f=1.232099
+[MON] step=  8141 nlog=  814 win500_raw_cd_tot=1.422428 cd_p=0.190407 cd_f=1.232021
+[MON] step=  8200 nlog=  820 win500_raw_cd_tot=1.422340 cd_p=0.190390 cd_f=1.231950
+[MON] step=  8260 nlog=  826 win500_raw_cd_tot=1.422243 cd_p=0.190358 cd_f=1.231885
+[MON] step=  8319 nlog=  831 win500_raw_cd_tot=1.422167 cd_p=0.190334 cd_f=1.231833
+[MON] step=  8379 nlog=  837 win500_raw_cd_tot=1.422097 cd_p=0.190322 cd_f=1.231776
+[MON] step=  8438 nlog=  843 win500_raw_cd_tot=1.422028 cd_p=0.190304 cd_f=1.231724
+[MON] step=  8497 nlog=  849 win500_raw_cd_tot=1.421947 cd_p=0.190272 cd_f=1.231675
+[MON] step=  8556 nlog=  855 win500_raw_cd_tot=1.421887 cd_p=0.190258 cd_f=1.231629
+[MON] step=  8616 nlog=  861 win500_raw_cd_tot=1.421838 cd_p=0.190251 cd_f=1.231587
+[MON] step=  8675 nlog=  867 win500_raw_cd_tot=1.421771 cd_p=0.190223 cd_f=1.231549
+[MON] step=  8734 nlog=  873 win500_raw_cd_tot=1.421717 cd_p=0.190206 cd_f=1.231511
+[MON] step=  8794 nlog=  879 win500_raw_cd_tot=1.421684 cd_p=0.190205 cd_f=1.231478
+[MON] step=  8853 nlog=  885 win500_raw_cd_tot=1.421634 cd_p=0.190186 cd_f=1.231448
+[MON] step=  8912 nlog=  891 win500_raw_cd_tot=1.421582 cd_p=0.190164 cd_f=1.231418
+[MON] step=  8971 nlog=  897 win500_raw_cd_tot=1.421553 cd_p=0.190162 cd_f=1.231391
+[MON] step=  9030 nlog=  903 win500_raw_cd_tot=1.421522 cd_p=0.190155 cd_f=1.231367
+[MON] step=  9090 nlog=  909 win500_raw_cd_tot=1.421473 cd_p=0.190130 cd_f=1.231343
+[MON] step=  9149 nlog=  914 win500_raw_cd_tot=1.421449 cd_p=0.190124 cd_f=1.231325
+[MON] step=  9208 nlog=  920 win500_raw_cd_tot=1.421432 cd_p=0.190127 cd_f=1.231305
+[MON] step=  9268 nlog=  926 win500_raw_cd_tot=1.421395 cd_p=0.190109 cd_f=1.231286
+[MON] step=  9327 nlog=  932 win500_raw_cd_tot=1.421362 cd_p=0.190094 cd_f=1.231268
+[MON] step=  9386 nlog=  938 win500_raw_cd_tot=1.421349 cd_p=0.190098 cd_f=1.231251
+[MON] step=  9446 nlog=  944 win500_raw_cd_tot=1.421327 cd_p=0.190090 cd_f=1.231237
+[MON] step=  9505 nlog=  950 win500_raw_cd_tot=1.421293 cd_p=0.190071 cd_f=1.231222
+[MON] step=  9564 nlog=  956 win500_raw_cd_tot=1.421279 cd_p=0.190071 cd_f=1.231208
+[MON] step=  9623 nlog=  962 win500_raw_cd_tot=1.421267 cd_p=0.190071 cd_f=1.231196
+[MON] step=  9683 nlog=  968 win500_raw_cd_tot=1.421238 cd_p=0.190054 cd_f=1.231184
+[MON] step=  9742 nlog=  974 win500_raw_cd_tot=1.421222 cd_p=0.190049 cd_f=1.231173
+[MON] step=  9801 nlog=  980 win500_raw_cd_tot=1.421215 cd_p=0.190052 cd_f=1.231163
+[MON] step=  9860 nlog=  986 win500_raw_cd_tot=1.421195 cd_p=0.190041 cd_f=1.231153
+[MON] step=  9920 nlog=  992 win500_raw_cd_tot=1.421177 cd_p=0.190033 cd_f=1.231144
+[MON] step=  9979 nlog=  997 win500_raw_cd_tot=1.421171 cd_p=0.190035 cd_f=1.231137
+[MON] step= 10038 nlog= 1003 win500_raw_cd_tot=1.421161 cd_p=0.190033 cd_f=1.231129
+[MON] step= 10098 nlog= 1009 win500_raw_cd_tot=1.421142 cd_p=0.190021 cd_f=1.231121
+[MON] step= 10157 nlog= 1015 win500_raw_cd_tot=1.421133 cd_p=0.190019 cd_f=1.231114
+[MON] step= 10216 nlog= 1021 win500_raw_cd_tot=1.421126 cd_p=0.190019 cd_f=1.231107
+[MON] step= 10275 nlog= 1027 win500_raw_cd_tot=1.421111 cd_p=0.190010 cd_f=1.231101
+[MON] step= 10335 nlog= 1033 win500_raw_cd_tot=1.421099 cd_p=0.190005 cd_f=1.231094
+[MON] step= 10394 nlog= 1039 win500_raw_cd_tot=1.421092 cd_p=0.190004 cd_f=1.231088
+[MON] step= 10453 nlog= 1045 win500_raw_cd_tot=1.421082 cd_p=0.189999 cd_f=1.231082
+[MON] step= 10512 nlog= 1051 win500_raw_cd_tot=1.421071 cd_p=0.189994 cd_f=1.231077
+[MON] step= 10572 nlog= 1057 win500_raw_cd_tot=1.421063 cd_p=0.189991 cd_f=1.231071
+[MON] step= 10631 nlog= 1063 win500_raw_cd_tot=1.421055 cd_p=0.189988 cd_f=1.231066
+[MON] step= 10690 nlog= 1069 win500_raw_cd_tot=1.421046 cd_p=0.189985 cd_f=1.231061
+[MON] step= 10750 nlog= 1075 win500_raw_cd_tot=1.421038 cd_p=0.189982 cd_f=1.231057
+[MON] step= 10809 nlog= 1080 win500_raw_cd_tot=1.421032 cd_p=0.189979 cd_f=1.231053
+[MON] step= 10868 nlog= 1086 win500_raw_cd_tot=1.421026 cd_p=0.189977 cd_f=1.231049
+[MON] step= 10928 nlog= 1092 win500_raw_cd_tot=1.421019 cd_p=0.189975 cd_f=1.231044
+[MON] step= 10987 nlog= 1098 win500_raw_cd_tot=1.421011 cd_p=0.189971 cd_f=1.231040
+[MON] step= 11046 nlog= 1104 win500_raw_cd_tot=1.421006 cd_p=0.189970 cd_f=1.231036
+[MON] step= 11105 nlog= 1110 win500_raw_cd_tot=1.421001 cd_p=0.189969 cd_f=1.231033
+[MON] step= 11165 nlog= 1116 win500_raw_cd_tot=1.420994 cd_p=0.189965 cd_f=1.231029
+[MON] step= 11224 nlog= 1122 win500_raw_cd_tot=1.420987 cd_p=0.189962 cd_f=1.231025
+[MON] step= 11283 nlog= 1128 win500_raw_cd_tot=1.420986 cd_p=0.189964 cd_f=1.231022
+[MON] step= 11342 nlog= 1134 win500_raw_cd_tot=1.420980 cd_p=0.189961 cd_f=1.231019
+[MON] step= 11402 nlog= 1140 win500_raw_cd_tot=1.420972 cd_p=0.189956 cd_f=1.231015
+[MON] step= 11461 nlog= 1146 win500_raw_cd_tot=1.420970 cd_p=0.189958 cd_f=1.231012
+[MON] step= 11520 nlog= 1152 win500_raw_cd_tot=1.420966 cd_p=0.189957 cd_f=1.231009
+[MON] step= 11580 nlog= 1157 win500_raw_cd_tot=1.420960 cd_p=0.189953 cd_f=1.231007
+[MON] step= 11639 nlog= 1163 win500_raw_cd_tot=1.420955 cd_p=0.189951 cd_f=1.231004
+[MON] step= 11698 nlog= 1169 win500_raw_cd_tot=1.420955 cd_p=0.189954 cd_f=1.231001
+[MON] step= 11757 nlog= 1175 win500_raw_cd_tot=1.420949 cd_p=0.189950 cd_f=1.230999
+[MON] step= 11817 nlog= 1181 win500_raw_cd_tot=1.420943 cd_p=0.189947 cd_f=1.230996
+[MON] step= 11876 nlog= 1187 win500_raw_cd_tot=1.420943 cd_p=0.189950 cd_f=1.230993
+[MON] step= 11935 nlog= 1193 win500_raw_cd_tot=1.420940 cd_p=0.189949 cd_f=1.230991
+[MON] step= 11995 nlog= 1199 win500_raw_cd_tot=1.420933 cd_p=0.189944 cd_f=1.230989
+run finished: completed in 12186s (1015.5 ms/step)
+final field saved to /root/TensorLBM_feat2/results_e2e_suboff_L80_mix50/final_field.pt
+{
+ "Cd_pressure": 0.005556427630348497,
+ "Cd_friction": 0.03595687486402395,
+ "Cd_total": 0.04151330249437245,
+ "Cd_total_last5000": 0.04142754760397146,
+ "Cf_ref": 0.04199504732703608,
+ "error_pct_vs_Blasius": -1.1471467787904794,
+ "convergence_windows": {
+  "25%": 0.051099,
+  "50%": 0.046304,
+  "75%": 0.04468,
+  "100%": 0.041513
+ }
+}
+results written to /root/TensorLBM_feat2/results_e2e_suboff_L80_mix50/result.json
+RESULT Cd_p=0.005556 Cd_f=0.035957 Cd_tot=0.041513 (ref 0.041995) err=-1.15%

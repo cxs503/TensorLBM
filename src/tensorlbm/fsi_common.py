@@ -56,14 +56,11 @@ from typing import Literal
 import torch
 
 from .ibm_common import (
-    IBMLatticeName,
     IBMKernelName,
-    derive_surface_markers_3d,
     ibm_direct_forcing_3d_common,
-    macroscopic_velocity_3d,
 )
-from .sixdof_common import RigidBodyState, rigid_body_step
 from .sixdof import SixDOFBody
+from .sixdof_common import RigidBodyState, rigid_body_step
 
 __all__ = [
     "FSILatticeName",
@@ -366,8 +363,8 @@ def fsi_step_drag(
         :class:`FSIDragResult` with advanced structure state and force/CD.
     """
     from .drag_pressure import (
-        drag_pressure_integration,
         drag_friction_integration,
+        drag_pressure_integration,
     )
 
     # 1. Compute fluid force via drag integration.
@@ -385,6 +382,7 @@ def fsi_step_drag(
         dpS,
         nu,
         formula=friction_formula,
+        solid=solid,
     )
     cd_p = (fx_p, fy_p, fz_p)
     cd_f = (fx_f, fy_f, fz_f)

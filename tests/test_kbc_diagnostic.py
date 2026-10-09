@@ -13,21 +13,20 @@ using the entropic KBC collision operator.  They check:
 
 from __future__ import annotations
 
-import math
-
 import pytest
 import torch
 
-from tensorlbm.d3q19 import C as C19, W as W19, equilibrium3d, macroscopic3d
+from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import W as W19
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.entropic_kbc import (
+    _kbc_decompose,
+    _lattice_constants,
+    collide_kbc_d3q19,
     discrete_entropy,
     kbc_decompose_d3q19,
     solve_gamma_entropy,
-    collide_kbc_d3q19,
-    _kbc_decompose,
-    _lattice_constants,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -100,7 +99,7 @@ class TestKBCDecomposition:
         f_neq_2 = s + k  # second-order projection
 
         p = _lattice_constants(C19, W19, f_neq.device, f_neq.dtype)
-        cx, cy, cz = p["cx"], p["cy"], p["cz"]
+        cx, cy, _cz = p["cx"], p["cy"], p["cz"]
 
         # Original stress
         pi_xx = (cx * cx * f_neq).sum(0)
@@ -275,16 +274,21 @@ class TestCollideKBC:
 
 
 class TestAdmissibilityDomainBug:
-    """Reproduce the root-cause bug: gamma_init expansion beyond natural admissibility.
+    """Historical trigger state for the admissibility-domain expansion defect.
 
-    The solve_gamma_entropy function expands [lower, upper] to include gamma_init
-    (lines 247-248 of entropic_kbc.py).  When gamma_init is outside the natural
-    admissibility domain, this places the bisection search in regions where
-    populations are negative, leading to:
+    The legacy collide path (solve_gamma_entropy) expands [lower, upper] to
+    include gamma_init; when gamma_init is outside the natural admissibility
+    domain the bisection searches regions with negative populations.  The
+    Karlin-Boesch construction now used by collide_kbc_d3q19 (f* = feq +
+    (1-1/tau)*s + beta*h with beta solved on the positivity-restricted
+    [0, 1] interval) removes the post-collision symptoms on this same trigger
+    state, which the kernel-facing tests below pin:
 
-    1. dH/dgamma sign reversal at expanded boundaries → bisection converges wrong
-    2. Negative post-collision populations
-    3. H-theorem violations (H(f*) > H(f))
+    1. No negative post-collision populations
+    2. No H-theorem violations (H(f*) <= H(f))
+
+    The two remaining tests verify the trigger state itself and the retained
+    legacy solver (solve_gamma_entropy is still public API).
     """
 
     @pytest.fixture
@@ -308,7 +312,7 @@ class TestAdmissibilityDomainBug:
         """Verify that gamma_init can fall outside the natural admissibility domain."""
         f, feq, tau = strong_neq_case
         p = _lattice_constants(C19, W19, f.device, f.dtype)
-        w = p["w"]
+        p["w"]
         f_neq = f - feq
         s, k, h = _kbc_decompose(f_neq, p)
 
@@ -355,7 +359,7 @@ class TestAdmissibilityDomainBug:
         gamma_init = torch.full(feq.shape[1:], 1.0 - 1.0 / tau, dtype=f.dtype)
 
         # Expanded domain (what the code does)
-        gamma_lower_exp = torch.minimum(gamma_lower_nat, gamma_init)
+        torch.minimum(gamma_lower_nat, gamma_init)
         gamma_upper_exp = torch.maximum(gamma_upper_nat, gamma_init)
 
         # dH/dgamma at expanded upper
@@ -370,46 +374,57 @@ class TestAdmissibilityDomainBug:
             f"found {wrong_sign} cells with wrong sign"
         )
 
-    def test_h_theorem_violation_with_strong_neq(self, strong_neq_case):
-        """H-theorem is violated when gamma_init is outside admissibility domain."""
+    def test_h_theorem_holds_with_strong_neq(self, strong_neq_case):
+        """The discrete entropy does not increase on the strong-neq trigger state.
+
+        The beta solve minimizes H along the positivity-restricted h-ray, so the
+        historical H(f*) > H(f) symptom of the gamma-domain expansion is gone
+        (on this seeded state H drops by at least 0.03 per cell).
+        """
         f, feq, tau = strong_neq_case
         w = W19.view(19, 1, 1, 1).to(dtype=f.dtype)
         H_before = discrete_entropy(f, w)
         f_star = collide_kbc_d3q19(f, tau=tau)
         H_after = discrete_entropy(f_star, w)
         violations = (H_after > H_before + 1e-10).sum().item()
-        assert violations > 0, (
-            f"Expected H-theorem violations with strong non-equilibrium, got 0. "
-            f"This indicates the admissibility domain expansion bug is present."
+        assert violations == 0, (
+            f"H-theorem violated in {violations} cells with strong non-equilibrium."
         )
 
-    def test_negative_populations_with_strong_neq(self, strong_neq_case):
-        """Post-collision populations can go negative due to admissibility expansion."""
+    def test_no_negative_populations_with_strong_neq(self, strong_neq_case):
+        """Post-collision populations stay non-negative on the trigger state.
+
+        The legacy gamma expansion produced negative populations here; the beta
+        construction intersects the search interval with the positivity domain.
+        """
         f, feq, tau = strong_neq_case
         f_star = collide_kbc_d3q19(f, tau=tau)
         neg_count = (f_star < 0).sum().item()
-        assert neg_count > 0, (
-            f"Expected negative populations due to admissibility domain expansion, "
-            f"got 0 negative cells."
+        assert neg_count == 0, (
+            f"{neg_count} negative post-collision populations on the strong-neq "
+            f"trigger state (positivity domain not enforced)."
         )
 
 
 # ---------------------------------------------------------------------------
-# 5. h-mode retention test
+# 5. h-mode relaxation test
 # ---------------------------------------------------------------------------
 
 
 class TestHModeRetention:
-    """Verify that the higher-order mode h is fully retained (not relaxed).
+    """The higher-order mode h is relaxed, not carried over unchanged.
 
-    The post-collision formula f* = f_eq + γ·s + h means h is carried over
-    unchanged.  Without boundary-generated non-equilibrium, h stays constant
-    over multiple collisions (it doesn't decay).  This is a design issue:
-    in standard KBC, h should also be relaxed.
+    The legacy post-collision formula f* = f_eq + gamma*s + h retained h in
+    full (a documented design deviation from KBC).  The current construction
+    f* = f_eq + (1-1/tau)*s + beta*h relaxes h along the entropy-optimal
+    beta ray: on this seeded state the first collision reduces max|h| by more
+    than an order of magnitude.  For weak residual h the optimal beta
+    approaches 1, so the decay stalls after the first few collisions; the
+    discriminating assertion is the first-collision drop.
     """
 
-    def test_h_does_not_decay(self):
-        """h_norm should not decrease over multiple KBC collisions."""
+    def test_h_is_relaxed_by_first_collision(self):
+        """max|h| shrinks markedly after one collision (legacy retained h in full)."""
         dev = torch.device("cpu")
         dtype = torch.float64
         nz, ny, nx = 4, 4, 4
@@ -428,23 +443,19 @@ class TestHModeRetention:
         s0, k0, h0 = _kbc_decompose(f_neq, p)
         h_norm_0 = h0.abs().max().item()
 
-        # Run 5 KBC collisions
-        tau = 0.8
-        for _ in range(5):
-            f = collide_kbc_d3q19(f, tau=tau)
+        f = collide_kbc_d3q19(f, tau=0.8)
 
-        # Check h_norm after 5 collisions
         rho_f, ux_f, uy_f, uz_f = macroscopic3d(f)
         feq_f = equilibrium3d(rho_f, ux_f, uy_f, uz_f, device=dev)
         f_neq_f = f - feq_f
         s_f, k_f, h_f = _kbc_decompose(f_neq_f, p)
         h_norm_f = h_f.abs().max().item()
 
-        # h should not have decayed significantly (it's fully retained)
         ratio = h_norm_f / max(h_norm_0, 1e-30)
-        assert ratio > 0.5, (
-            f"h_norm decayed from {h_norm_0:.6e} to {h_norm_f:.6e} (ratio={ratio:.2f}). "
-            f"h-mode is being relaxed, which contradicts the f*=feq+γ·s+h formula."
+        assert ratio < 0.5, (
+            f"h_norm stayed at {h_norm_f:.6e} vs {h_norm_0:.6e} (ratio={ratio:.2f}). "
+            f"h-mode is not being relaxed, which contradicts the "
+            f"f*=feq+(1-1/tau)*s+beta*h construction."
         )
 
 

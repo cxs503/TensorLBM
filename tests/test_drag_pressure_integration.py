@@ -32,12 +32,22 @@ def test_quadratic_wall_pressure_extrapolation_is_exact() -> None:
     solid = torch.zeros(shape, dtype=torch.bool)
 
     force_none = drag_pressure_integration(
-        populations, mesh, 1.0, extrap="none",
-        p0_method="inlet", solid=solid, p0_inlet_width=1,
+        populations,
+        mesh,
+        1.0,
+        extrap="none",
+        p0_method="inlet",
+        solid=solid,
+        p0_inlet_width=1,
     )[0]
     force_quadratic = drag_pressure_integration(
-        populations, mesh, 1.0, extrap="quadratic",
-        p0_method="inlet", solid=solid, p0_inlet_width=1,
+        populations,
+        mesh,
+        1.0,
+        extrap="quadratic",
+        p0_method="inlet",
+        solid=solid,
+        p0_inlet_width=1,
     )[0]
 
     assert force_none == pytest.approx(-4.0e-3, abs=2.0e-8)
@@ -51,8 +61,8 @@ def test_bfl_quadratic_wall_pressure_is_exact_at_actual_q(q: float) -> None:
     x_wall = x - q
     xx = torch.arange(shape[2], dtype=torch.float64).view(1, 1, -1)
     pressure = (
-        0.013 + 0.007 * (xx - x_wall) + 0.002 * (xx - x_wall).square()
-    ).expand(shape).clone()
+        (0.013 + 0.007 * (xx - x_wall) + 0.002 * (xx - x_wall).square()).expand(shape).clone()
+    )
     near = torch.zeros(shape, dtype=torch.bool)
     near[z, y, x] = True
     nx = torch.zeros(shape, dtype=torch.float64)
@@ -70,7 +80,11 @@ def test_bfl_quadratic_wall_pressure_is_exact_at_actual_q(q: float) -> None:
     solid[z, y, x - 1] = True
 
     wall, diagnostics = reconstruct_bfl_wall_pressure(
-        pressure, mesh, boundary, q_field, solid=solid,
+        pressure,
+        mesh,
+        boundary,
+        q_field,
+        solid=solid,
     )
 
     assert wall[z, y, x].item() == pytest.approx(0.013, abs=2.0e-14)
@@ -101,7 +115,11 @@ def test_bfl_pressure_reconstruction_never_wraps_at_domain_edge() -> None:
     solid[1, 1, 1] = True
 
     wall, diagnostics = reconstruct_bfl_wall_pressure(
-        pressure, mesh, boundary, q_field, solid=solid,
+        pressure,
+        mesh,
+        boundary,
+        q_field,
+        solid=solid,
     )
 
     assert wall[1, 1, 0].item() == pytest.approx(0.0)
@@ -121,8 +139,12 @@ def test_bfl_pressure_integration_requires_link_geometry() -> None:
 
     with pytest.raises(ValueError, match="fluid_boundary_mask and q_field"):
         drag_pressure_integration(
-            populations, mesh, 1.0, extrap="bfl_quadratic",
-            p0_method="inlet", solid=solid,
+            populations,
+            mesh,
+            1.0,
+            extrap="bfl_quadratic",
+            p0_method="inlet",
+            solid=solid,
         )
 
 
@@ -143,7 +165,10 @@ def test_projected_bfl_pressure_closes_constant_and_linear_cube_fields() -> None
         boundary[(direction, *fluid)] = True
     constant = torch.full(shape, 2.75, dtype=torch.float64)
     force_constant, diagnostics = integrate_bfl_projected_pressure(
-        constant, boundary, q_field, solid=solid,
+        constant,
+        boundary,
+        q_field,
+        solid=solid,
     )
     assert force_constant == pytest.approx((0.0, 0.0, 0.0), abs=1.0e-14)
     assert diagnostics.requested_links == 6
@@ -153,7 +178,10 @@ def test_projected_bfl_pressure_closes_constant_and_linear_cube_fields() -> None
     x = torch.arange(shape[2], dtype=torch.float64).view(1, 1, -1)
     linear = (1.0 + 0.2 * x).expand(shape)
     force_linear, _ = integrate_bfl_projected_pressure(
-        linear, boundary, q_field, solid=solid,
+        linear,
+        boundary,
+        q_field,
+        solid=solid,
     )
     assert force_linear == pytest.approx((-0.2, 0.0, 0.0), abs=1.0e-14)
 
@@ -165,7 +193,8 @@ def test_projected_bfl_pressure_closes_constant_and_linear_cube_fields() -> None
         reconstruction="linear",
     )
     assert force_linear_first_order == pytest.approx(
-        (-0.2, 0.0, 0.0), abs=1.0e-14,
+        (-0.2, 0.0, 0.0),
+        abs=1.0e-14,
     )
     force_local, _ = integrate_bfl_projected_pressure(
         linear,

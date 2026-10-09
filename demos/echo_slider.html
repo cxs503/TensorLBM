@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TensorLBM drag echo — CAD slider demo</title>
+<!--
+  Self-contained interactive demo for the TensorLBM drag-surrogate echo API
+  (PR #241, branch exp/b4-echo, commit 98c617f7).  No CDN, no build step:
+  works from the file system or any static server in an offline lab.
+
+  Endpoints used (exact PR #241 schemas):
+    POST /api/drag/echo/params   {params:{hull_type,u_in,sail_scale,fin_scale,
+                                 l_over_d_mult,nose_len_mult,stern_len_mult,
+                                 sail_x_mult}, re_list:[...]}
+    POST /api/drag/echo/sweep    {axis, values:[...], base_params:{...}, re_list:[...]}
+    GET  /api/drag/echo/health
+
+  API base: empty = same origin.  Override with ?api=<full origin of the
+  backend>, e.g. .../echo_slider.html?api=http://192.168.215.56:8000
+  (see demos/serve_demo.py, which prints that URL prefilled).
+-->
+<style>
+  /* ---- palette (validated categorical slots + status, light & dark) ---- */
+  :root {
+    color-scheme: light;
+    --page:            #f9f9f7;
+    --surface-1:       #fcfcfb;
+    --text-primary:    #0b0b0b;
+    --text-secondary:  #52514e;
+    --text-muted:      #898781;
+    --grid:            #e1e0d9;
+    --axis:            #c3c2b7;
+    --border:          rgba(11, 11, 11, 0.10);
+    --series-1:        #2a78d6;   /* Re level 1 (low)  */
+    --series-2:        #eb6834;   /* Re level 2 (mid)  */
+    --series-3:        #1baf7a;   /* Re level 3 (high) */
+    --ok:              #0ca30c;
+    --warn:            #fab219;
+    --crit:            #d03b3b;
+    --ok-ink:          #006300;
+    --band:            rgba(42, 120, 214, 0.16);
+    --hatch:           rgba(42, 120, 214, 0.45);
+    --focus:           rgba(11, 11, 11, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:          #0d0d0d;
+      --surface-1:     #1a1a19;
+      --text-primary:  #ffffff;
+      --text-secondary:#c3c2b7;
+      --text-muted:    #898781;
+      --grid:          #2c2c2a;
+      --axis:          #383835;
+      --border:        rgba(255, 255, 255, 0.10);
+      --series-1:      #3987e5;
+      --series-2:      #d95926;
+      --series-3:      #199e70;
+      --band:          rgba(57, 135, 229, 0.20);
+      --hatch:         rgba(57, 135, 229, 0.55);
+      --focus:         rgba(255, 255, 255, 0.07);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:          #0d0d0d;
+    --surface-1:     #1a1a19;
+    --text-primary:  #ffffff;
+    --text-secondary:#c3c2b7;
+    --text-muted:    #898781;
+    --grid:          #2c2c2a;
+    --axis:          #383835;
+    --border:        rgba(255, 255, 255, 0.10);
+    --series-1:      #3987e5;
+    --series-2:      #d95926;
+    --series-3:      #199e70;
+    --band:          rgba(57, 135, 229, 0.20);
+    --hatch:         rgba(57, 135, 229, 0.55);
+    --focus:         rgba(255, 255, 255, 0.07);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--text-primary);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header, main { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---- header: title, connection state, api settings ---- */
+  header {
+    display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: baseline;
+    padding-top: 18px; padding-bottom: 8px;
+  }
+  header h1 { font-size: 19px; margin: 0; letter-spacing: -0.01em; }
+  header .sub { color: var(--text-secondary); font-size: 12.5px; }
+  .conn { display: flex; align-items: center; gap: 7px; font-size: 12.5px;
+          color: var(--text-secondary); margin-left: auto; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-muted);
+         box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-muted) 20%, transparent); }
+  .dot.ok   { background: var(--ok);   box-shadow: 0 0 0 3px rgba(12,163,12,.18); }
+  .dot.err  { background: var(--crit); box-shadow: 0 0 0 3px rgba(208,59,59,.18); }
+  .settings { display: flex; gap: 6px; align-items: center; font-size: 12.5px;
+              color: var(--text-secondary); width: 100%; }
+  .settings input { flex: 0 1 340px; }
+  .settings .hint { color: var(--text-muted); }
+
+  /* ---- banners ---- */
+  .banner { border-radius: 10px; padding: 12px 16px; margin: 10px 0;
+            border: 1px solid var(--border); }
+  #errorBanner { background: color-mix(in srgb, var(--crit) 10%, var(--surface-1));
+                 border-color: color-mix(in srgb, var(--crit) 45%, transparent);
+                 color: var(--text-primary); display: none; }
+  #errorBanner .retry { margin-left: 10px; }
+
+  /* verdict banner: the honesty contract made visible */
+  #verdict { display: flex; gap: 16px; align-items: flex-start;
+             background: var(--surface-1); }
+  #verdict.v-ok     { border-left: 5px solid var(--ok); }
+  #verdict.v-review { border-left: 5px solid var(--warn); }
+  #verdict.v-reject { border-left: 5px solid var(--crit); }
+  #verdict.v-idle   { border-left: 5px solid var(--axis); }
+  .vbadge { flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px;
+            align-items: center; min-width: 96px; padding: 6px 10px;
+            border-radius: 8px; font-weight: 700; font-size: 15px; }
+  .vbadge .vicon { font-size: 20px; line-height: 1; }
+  #verdict.v-ok     .vbadge { background: rgba(12,163,12,.12);  color: var(--ok-ink); }
+  #verdict.v-review .vbadge { background: rgba(250,178,25,.14); color: var(--text-primary); }
+  #verdict.v-reject .vbadge { background: rgba(208,59,59,.13);  color: var(--crit); }
+  #verdict.v-idle   .vbadge { background: var(--focus); color: var(--text-secondary); }
+  :root[data-theme="dark"] #verdict.v-ok .vbadge,
+  :root:where(:not([data-theme="light"])) #verdict.v-ok .vbadge { color: #0ca30c; }
+  .vbody { flex: 1 1 auto; min-width: 0; }
+  .vheadline { font-weight: 600; font-size: 15px; }
+  .vreasons { margin: 6px 0 4px; padding-left: 18px; }
+  .vreasons li { color: var(--text-secondary); font-size: 12.5px; margin: 2px 0; }
+  .vreasons li .count { color: var(--text-muted); }
+  .vmeta { font-size: 12px; color: var(--text-muted);
+           font-variant-numeric: tabular-nums; }
+  .vchips { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px;
+          border: 1px solid var(--border); border-radius: 999px;
+          padding: 2px 9px; color: var(--text-secondary); background: var(--surface-1); }
+  .chip i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+  .chip .mark { font-weight: 700; }
+  .chip.f-ok .mark     { color: var(--ok-ink); }
+  .chip.f-review .mark { color: var(--text-primary); }
+  .chip.f-reject .mark { color: var(--crit); }
+  :root[data-theme="dark"] .chip.f-ok .mark,
+  :root:where(:not([data-theme="light"])) .chip.f-ok .mark { color: #0ca30c; }
+
+  /* ---- layout: controls left, charts right ---- */
+  main { display: grid; grid-template-columns: 330px minmax(0, 1fr);
+         gap: 18px; padding-bottom: 40px; align-items: start; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+
+  aside { background: var(--surface-1); border: 1px solid var(--border);
+          border-radius: 10px; padding: 14px 16px; display: grid; gap: 14px; }
+  fieldset { border: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+  legend { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em;
+           color: var(--text-muted); padding: 0; margin-bottom: 2px; }
+  .ctl { display: grid; grid-template-columns: 1fr 74px; gap: 4px 8px;
+         align-items: center; }
+  .ctl label { font-size: 12.5px; color: var(--text-secondary); grid-column: 1 / 3; }
+  .ctl output, .ctl input[type="number"] { font-size: 12.5px; text-align: right;
+    font-variant-numeric: tabular-nums; }
+  input[type="range"] { width: 100%; accent-color: var(--series-1); }
+  input[type="number"], select, .settings input {
+    background: var(--page); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
+  select { width: 100%; font-size: 13px; padding: 5px 6px; grid-column: 1 / 3; }
+  .note { font-size: 11.5px; color: var(--text-muted); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  button { background: var(--series-1); border: none; color: #fff;
+           border-radius: 7px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+  button.ghost { background: var(--focus); color: var(--text-primary);
+                 border: 1px solid var(--border); }
+  button:disabled { opacity: 0.5; cursor: default; }
+
+  /* ---- charts ---- */
+  .charts { display: grid; gap: 18px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border);
+          border-radius: 10px; padding: 12px 14px; }
+  .cardhead { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
+  .cardhead h2 { font-size: 14px; margin: 0; font-weight: 650; }
+  .cardhead .sub { color: var(--text-muted); font-size: 12px; }
+  .tag { font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+         padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+  .tag.in  { background: rgba(12,163,12,.10); color: var(--ok-ink);
+             border: 1px solid rgba(12,163,12,.35); }
+  .tag.out { background: rgba(250,178,25,.13); color: var(--text-primary);
+             border: 1px dashed color-mix(in srgb, var(--warn) 70%, transparent); }
+  .tag.rej { background: rgba(208,59,59,.12); color: var(--crit);
+             border: 1px solid rgba(208,59,59,.45); }
+  :root[data-theme="dark"] .tag.in,
+  :root:where(:not([data-theme="light"])) .tag.in { color: #0ca30c; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px;
+            color: var(--text-secondary); margin-left: auto; }
+  .plot { position: relative; margin-top: 8px; }
+  .plot svg { display: block; width: 100%; height: auto; }
+  .empty-hint { fill: var(--text-muted); font-size: 14px;
+                font-family: system-ui, sans-serif; }
+  .axis-ink   { fill: var(--text-muted); font-size: 11px;
+                font-family: system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  .axis-title { fill: var(--text-secondary); font-size: 11.5px;
+                font-family: system-ui, sans-serif; }
+  .hoverlayer { position: absolute; inset: 0; cursor: crosshair; }
+  .vline { position: absolute; top: 0; bottom: 0; width: 0;
+           border-left: 1px dashed var(--text-muted); display: none; }
+  .tooltip { position: absolute; pointer-events: none; display: none; z-index: 5;
+             background: var(--surface-1); border: 1px solid var(--border);
+             border-radius: 8px; padding: 7px 10px; font-size: 12px;
+             box-shadow: 0 4px 14px rgba(0,0,0,.14);
+             font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tooltip .t-title { color: var(--text-secondary); margin-bottom: 3px; }
+  .tooltip table { border-collapse: collapse; }
+  .tooltip td { padding: 1px 6px 1px 0; color: var(--text-primary); }
+  .tooltip td.k { color: var(--text-secondary); }
+  details.data { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
+  details.data summary { cursor: pointer; color: var(--text-muted); }
+  details.data table { border-collapse: collapse; margin-top: 6px; }
+  details.data th, details.data td { border: 1px solid var(--grid); padding: 2px 8px;
+    font-variant-numeric: tabular-nums; text-align: right; }
+  details.data th { color: var(--text-secondary); font-weight: 600; }
+  details.data td:first-child, details.data th:first-child { text-align: left; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Drag echo — CAD slider demo</h1>
+    <div class="sub">SUBOFF-parameter drag surrogate with deep-ensemble UQ and
+      guardrail verdict · API of PR #241 (exp/b4-echo)</div>
+  </div>
+  <div class="conn"><span class="dot" id="connDot"></span><span id="connText">connecting…</span></div>
+  <div class="settings">
+    <label for="apiBase">API base</label>
+    <input id="apiBase" type="text" spellcheck="false" autocomplete="off"
+           placeholder="empty = same origin">
+    <button class="ghost" id="apiApply" type="button">Apply</button>
+    <button class="ghost" id="themeToggle" type="button">theme: auto</button>
+    <span class="hint">empty = same origin · otherwise full origin (scheme +
+      host + port) of the backend, or pass ?api=… in the URL</span>
+  </div>
+</header>
+
+<div class="banner" id="verdict">
+  <div class="vbadge"><span class="vicon" id="vIcon">·</span><span id="vLabel">IDLE</span></div>
+  <div class="vbody">
+    <div class="vheadline" id="vHeadline">No query yet — move a slider or press Run sweep.</div>
+    <ul class="vreasons" id="vReasons" hidden></ul>
+    <div class="vmeta" id="vMeta"></div>
+    <div class="vchips" id="vChips"></div>
+  </div>
+</div>
+
+<div class="banner" id="errorBanner">
+  <b>Query failed.</b> <span id="errorText"></span>
+  <button class="ghost retry" id="errorRetry" type="button">Retry</button>
+  <span class="note">Charts keep the last successful data.</span>
+</div>
+
+<main>
+  <!-- ======================= controls (left) ======================= -->
+  <aside>
+    <fieldset>
+      <legend>Hull &amp; appendages</legend>
+      <div class="ctl" data-slider="sail_scale"></div>
+      <div class="ctl" data-slider="fin_scale"></div>
+      <div class="ctl">
+        <label for="hullType">hull type</label>
+        <select id="hullType"></select>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Hull form — CAD axes</legend>
+      <div class="ctl" data-slider="l_over_d_mult"></div>
+      <div class="ctl" data-slider="nose_len_mult"></div>
+      <div class="ctl" data-slider="stern_len_mult"></div>
+      <div class="ctl" data-slider="sail_x_mult"></div>
+      <div class="note">Any axis ≠ 1 is outside the served training corpus:
+        the guardrail downgrades the verdict to at least review (honesty
+        contract of PR #241).</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Flow conditions</legend>
+      <div class="ctl" data-slider="u_in"></div>
+      <div class="ctl">
+        <label for="reMinN">Re min <span class="note">(log slider)</span></label>
+        <input id="reMinRange" type="range">
+        <input id="reMinN" type="number" min="10" max="2000" step="1">
+      </div>
+      <div class="ctl">
+        <label for="reMaxN">Re max</label>
+        <input id="reMaxRange" type="range">
+        <input id="reMaxN" type="number" min="10" max="2000" step="1">
+      </div>
+      <div class="ctl">
+        <label for="reCount">Re points (log-spaced)</label>
+        <input id="reCount" type="number" min="8" max="64" step="1">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Sweep this axis</legend>
+      <div class="ctl">
+        <label for="sweepAxis">axis</label>
+        <select id="sweepAxis"></select>
+      </div>
+      <div class="row">
+        <button id="sweepRun" type="button">Run sweep (16 pts)</button>
+        <button class="ghost" id="resetBtn" type="button">Reset design</button>
+      </div>
+      <div class="note">One batched /sweep call: 16 geometries along the axis,
+        curve shown at 3 Re levels (min / geometric mean / max of the range).</div>
+    </fieldset>
+  </aside>
+
+  <!-- ======================= charts (right) ======================= -->
+  <section class="charts">
+    <div class="card">
+      <div class="cardhead">
+        <h2>C<sub>D</sub> vs Reynolds — slider echo</h2>
+        <span class="sub" id="paramsSub">one design point over the Re list</span>
+        <span class="tag in" id="paramsTag" hidden>in served corpus</span>
+        <span class="sub" id="paramsLat"></span>
+      </div>
+      <div class="plot" id="paramsPlot">
+        <svg id="paramsChart" viewBox="0 0 880 330" role="img"
+             aria-label="Drag coefficient versus Reynolds number with uncertainty band"></svg>
+        <div class="hoverlayer" id="paramsHover">
+          <div class="vline"></div><div class="tooltip"></div>
+        </div>
+      </div>
+      <details class="data"><summary>data table</summary>
+        <div id="paramsTable"></div>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="cardhead">
+        <h2>Sweep — C<sub>D</sub> vs axis parameter</h2>
+        <span class="sub" id="sweepSub">no sweep yet</span>
+        <span class="legend" id="sweepLegend"></span>
+      </div>
+      <div class="plot" id="sweepPlot">
+        <svg id="sweepChart" viewBox="0 0 880 280" role="img"
+             aria-label="Drag coefficient versus swept axis parameter at three Reynolds levels"></svg>
+        <div class="hoverlayer" id="sweepHover">
+          <div class="vline"></div><div class="tooltip"></div>
+        </div>
+      </div>
+      <details class="data"><summary>data table</summary>
+        <div id="sweepTable"></div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+/* =====================================================================
+ * 1. Contract constants — field names match PR #241 exactly
+ *    (app/backend/routers/drag_echo.py @ 98c617f7).  Do not rename.
+ * =================================================================== */
+const ENDPOINTS = {
+  params: "/api/drag/echo/params",
+  sweep: "/api/drag/echo/sweep",
+  health: "/api/drag/echo/health",
+};
+
+/* Continuous design axes (PARAM_AXIS_NAMES + u_in) with demo slider ranges. */
+const AXES = [
+  { key: "l_over_d_mult",  label: "L/D multiplier",   min: 0.7, max: 1.3, step: 0.01 },
+  { key: "nose_len_mult",  label: "nose length ×",    min: 0.5, max: 1.5, step: 0.01 },
+  { key: "stern_len_mult", label: "stern length ×",   min: 0.5, max: 1.5, step: 0.01 },
+  { key: "sail_x_mult",    label: "sail position ×",  min: 0.6, max: 1.4, step: 0.01 },
+  { key: "sail_scale",     label: "sail scale",       min: 0.5, max: 1.5, step: 0.01 },
+  { key: "fin_scale",      label: "fin scale",        min: 0.5, max: 1.5, step: 0.01 },
+  { key: "u_in",           label: "u_in (inlet)",     min: 0.05, max: 0.30, step: 0.005, dec: 3 },
+];
+const HULLS = [
+  { value: "bare_hull", label: "bare hull" },
+  { value: "with_sail", label: "hull + sail" },
+  { value: "full", label: "full (sail + fins) — mother design" },
+];
+const SWEEP_POINTS = 16;          // spec: 16 geometries per sweep call
+const RE_DOMAIN = { lo: 10, hi: 2000 };
+const DEFAULTS = { re_min: 20, re_max: 900, re_n: 24, sweep_axis: "l_over_d_mult" };
+
+const FLAG_RANK = { ok: 0, review: 1, reject: 2 };
+const VB = { params: { w: 880, h: 330 }, sweep: { w: 880, h: 280 } };
+
+/* ---------------------------- state -------------------------------- */
+const state = {
+  apiBase: "",
+  params: { hull_type: "full", u_in: 0.1, l_over_d_mult: 1.0, nose_len_mult: 1.0,
+            stern_len_mult: 1.0, sail_x_mult: 1.0, sail_scale: 1.0, fin_scale: 1.0 },
+  re: { min: DEFAULTS.re_min, max: DEFAULTS.re_max, n: DEFAULTS.re_n },
+  sweepAxis: DEFAULTS.sweep_axis,
+  paramsResp: null,               // last successful EchoResponse (params)
+  sweepResp: null,                // last successful EchoSweepResponse
+};
+
+/* --------------------------- utilities ----------------------------- */
+const $ = (id) => document.getElementById(id);
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function fmt(v, sig = 4) {
+  if (v === null || v === undefined || !isFinite(v)) return "—";
+  if (v === 0) return "0";
+  const a = Math.abs(v);
+  if (a >= 1e5 || a < 1e-3) return v.toExponential(2);
+  return Number(v.toPrecision(sig)).toString();
+}
+function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+function linspace(a, b, n) {
+  return Array.from({ length: n }, (_, i) => (n === 1 ? a : a + (b - a) * i / (n - 1)));
+}
+function geomean(a, b) { return Math.sqrt(a * b); }
+
+/* =====================================================================
+ * 2. API layer — base URL, JSON errors, abortable requests
+ * =================================================================== */
+function url(path) { return state.apiBase + path; }
+
+async function apiFetch(path, options = {}, signal) {
+  let resp;
+  try {
+    resp = await fetch(url(path), { ...options, signal });
+  } catch (err) {
+    if (err && err.name === "AbortError") throw err;
+    throw new Error("network: " + (err && err.message ? err.message : err));
+  }
+  if (!resp.ok) {
+    let detail = "";
+    try {
+      const body = await resp.json();
+      detail = body && body.detail !== undefined ? String(body.detail)
+        : JSON.stringify(body).slice(0, 300);
+    } catch { /* non-JSON body */ }
+    throw new Error("HTTP " + resp.status + (detail ? ": " + detail : ""));
+  }
+  return resp.json();
+}
+
+function postJSON(path, body, signal) {
+  return apiFetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }, signal);
+}
+
+/* ---------------- request bodies (mirror these in tests) ----------- */
+function axisValues() {
+  const out = {};
+  for (const a of AXES) if (a.key !== "u_in") out[a.key] = state.params[a.key];
+  return out;
+}
+function reList() {
+  const { min, max, n } = state.re;
+  return linspace(Math.log10(min), Math.log10(max), n)
+    .map((lg) => Number((10 ** lg).toPrecision(4)));
+}
+function paramsBody() {
+  return {
+    params: { hull_type: state.params.hull_type, u_in: state.params.u_in, ...axisValues() },
+    re_list: reList(),
+  };
+}
+function sweepBody() {
+  const axis = AXES.find((a) => a.key === state.sweepAxis);
+  const { min, max } = state.re;
+  return {
+    axis: axis.key,
+    values: linspace(axis.min, axis.max, SWEEP_POINTS)
+      .map((v) => Number(v.toFixed(axis.key === "u_in" ? 4 : 3))),
+    base_params: { hull_type: state.params.hull_type, u_in: state.params.u_in, ...axisValues() },
+    re_list: [Number(min.toPrecision(4)), Number(geomean(min, max).toPrecision(4)),
+              Number(max.toPrecision(4))],
+  };
+}
+
+/* =====================================================================
+ * 3. Controls — data-driven sliders with two-way numeric readouts
+ * =================================================================== */
+function buildSlider(host, axis) {
+  host.innerHTML = "";
+  const label = document.createElement("label");
+  const range = document.createElement("input");
+  const num = document.createElement("input");
+  label.textContent = axis.label;
+  label.htmlFor = "ctl-" + axis.key;
+  range.type = "range"; range.id = "ctl-" + axis.key;
+  range.min = axis.min; range.max = axis.max; range.step = axis.step;
+  num.type = "number"; num.min = axis.min; num.max = axis.max; num.step = axis.step;
+  const dec = axis.dec || 2;
+  const sync = (v, fromRange) => {
+    const val = clamp(Number(v), axis.min, axis.max);
+    state.params[axis.key] = val;
+    range.value = String(val);
+    if (!fromRange) num.value = val.toFixed(dec);
+    else if (document.activeElement !== num) num.value = val.toFixed(dec);
+    scheduleParamsQuery();
+  };
+  range.addEventListener("input", () => sync(range.value, true));
+  num.addEventListener("change", () => sync(num.value, false));
+  host.append(label, range, num);
+  range.value = String(state.params[axis.key]);
+  num.value = state.params[axis.key].toFixed(dec);
+}
+
+function buildReControls() {
+  const toLog = (v) => Math.log10(v);
+  const fromLog = (v) => Number((10 ** v).toPrecision(4));
+  const minR = $("reMinRange"), maxR = $("reMaxRange");
+  minR.min = maxR.min = toLog(RE_DOMAIN.lo);
+  minR.max = maxR.max = toLog(RE_DOMAIN.hi);
+  minR.step = maxR.step = 0.005;
+  const paint = () => {
+    minR.value = String(toLog(state.re.min));
+    maxR.value = String(toLog(state.re.max));
+    $("reMinN").value = String(state.re.min);
+    $("reMaxN").value = String(state.re.max);
+    $("reCount").value = String(state.re.n);
+  };
+  const apply = (which, v) => {
+    if (which === "min") state.re.min = clamp(v, RE_DOMAIN.lo, state.re.max / 1.5);
+    if (which === "max") state.re.max = clamp(v, state.re.min * 1.5, RE_DOMAIN.hi);
+    if (which === "n") state.re.n = Math.round(clamp(v, 8, 64));
+    paint();
+    scheduleParamsQuery(0);       // range change is already a deliberate act
+  };
+  minR.addEventListener("input", () => apply("min", fromLog(Number(minR.value))));
+  maxR.addEventListener("input", () => apply("max", fromLog(Number(maxR.value))));
+  $("reMinN").addEventListener("change", () => apply("min", Number($("reMinN").value)));
+  $("reMaxN").addEventListener("change", () => apply("max", Number($("reMaxN").value)));
+  $("reCount").addEventListener("change", () => apply("n", Number($("reCount").value)));
+  paint();
+}
+
+function buildSelects() {
+  const hull = $("hullType");
+  for (const h of HULLS) {
+    const o = document.createElement("option");
+    o.value = h.value; o.textContent = h.label;
+    hull.append(o);
+  }
+  hull.value = state.params.hull_type;
+  hull.addEventListener("change", () => {
+    state.params.hull_type = hull.value;
+    scheduleParamsQuery(0);
+  });
+  const sw = $("sweepAxis");
+  for (const a of AXES) {
+    const o = document.createElement("option");
+    o.value = a.key; o.textContent = a.label + " (" + a.key + ")";
+    sw.append(o);
+  }
+  sw.value = state.sweepAxis;
+  sw.addEventListener("change", () => { state.sweepAxis = sw.value; });
+}
+
+function resetDesign() {
+  state.params = { hull_type: "full", u_in: 0.1, l_over_d_mult: 1.0, nose_len_mult: 1.0,
+                   stern_len_mult: 1.0, sail_x_mult: 1.0, sail_scale: 1.0, fin_scale: 1.0 };
+  $("hullType").value = "full";
+  for (const a of AXES) {
+    const r = $("ctl-" + a.key);
+    if (r) { r.value = String(state.params[a.key]);
+             r.parentElement.querySelector("input[type=number]").value =
+               state.params[a.key].toFixed(a.dec || 2); }
+  }
+  scheduleParamsQuery(0);
+}
+
+/* =====================================================================
+ * 4. Hand-rolled SVG charts (no libraries)
+ * =================================================================== */
+function linearScale(d0, d1, r0, r1) {
+  const k = (r1 - r0) / (d1 - d0 || 1);
+  return { to: (v) => r0 + (v - d0) * k, inv: (p) => d0 + (p - r0) / k };
+}
+function logScale(d0, d1, r0, r1) {
+  const inner = linearScale(Math.log10(d0), Math.log10(d1), r0, r1);
+  return { to: (v) => inner.to(Math.log10(v)),
+           inv: (p) => 10 ** inner.inv(p), log: true };
+}
+function logTicks(min, max) {
+  const out = [];
+  const d0 = Math.ceil(Math.log10(min) - 1e-9);
+  const d1 = Math.floor(Math.log10(max) + 1e-9);
+  if (d1 - d0 >= 3) {
+    for (let d = d0; d <= d1; d++) out.push(10 ** d);
+  } else {                       // narrow range: 1-2-5 minors inside decades
+    for (let d = Math.floor(Math.log10(min)); d <= d1 + 1; d++)
+      for (const m of [1, 2, 5]) {
+        const v = m * 10 ** d;
+        if (v >= min * 0.999 && v <= max * 1.001 && !out.includes(v)) out.push(v);
+      }
+  }
+  return out.sort((a, b) => a - b);
+}
+function niceStep(span, target) {
+  const raw = span / Math.max(1, target);
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  for (const m of [1, 2, 5, 10]) if (raw <= m * mag) return m * mag;
+  return 10 * mag;
+}
+function tickLabel(v) {
+  if (v >= 1e4 || (v > 0 && v < 0.01)) return v.toExponential(0).replace("e+", "e");
+  return String(Number(v.toPrecision(3)));
+}
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+function pathFrom(pts) {
+  return pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("");
+}
+function bandPath(xs, yTop, yBot) {
+  const up = xs.map((x, i) => (i ? "L" : "M") + x.toFixed(1) + " " + yTop[i].toFixed(1)).join("");
+  const dn = xs.slice().reverse().map((x, i) => "L" + x.toFixed(1) + " " +
+    yBot[xs.length - 1 - i].toFixed(1)).join("");
+  return up + dn + "Z";
+}
+/* Frame + axes shared by both charts; returns the y-scale for the caller.
+ * Marks are appended afterwards (innerHTML +=) so they draw on top. */
+function drawFrame(svg, W, xs, ydom, xTicks, xLab, yLab, H, M) {
+  const ys = linearScale(ydom[0], ydom[1], H - M.b, M.t);
+  const ink = cssVar("--grid"), axisC = cssVar("--axis");
+  let g = "";
+  for (const t of xTicks)
+    g += '<line x1="' + xs.to(t).toFixed(1) + '" x2="' + xs.to(t).toFixed(1) +
+         '" y1="' + M.t + '" y2="' + (H - M.b) + '" stroke="' + ink + '" stroke-width="1"/>' +
+         '<text class="axis-ink" text-anchor="middle" x="' + xs.to(t).toFixed(1) +
+         '" y="' + (H - M.b + 16) + '">' + tickLabel(t) + "</text>";
+  const yStep = niceStep(ydom[1] - ydom[0], 5);
+  for (let v = Math.ceil(ydom[0] / yStep) * yStep; v <= ydom[1] + 1e-12; v += yStep)
+    g += '<line x1="' + M.l + '" x2="' + (W - M.r) + '" y1="' + ys.to(v).toFixed(1) +
+         '" y2="' + ys.to(v).toFixed(1) + '" stroke="' + ink + '" stroke-width="1"/>' +
+         '<text class="axis-ink" text-anchor="end" x="' + (M.l - 7) + '" y="' +
+         (ys.to(v) + 4).toFixed(1) + '">' + tickLabel(v) + "</text>";
+  g += '<line x1="' + M.l + '" x2="' + (W - M.r) + '" y1="' + (H - M.b) +
+       '" y2="' + (H - M.b) + '" stroke="' + axisC + '"/>' +
+       '<line x1="' + M.l + '" x2="' + M.l + '" y1="' + M.t + '" y2="' + (H - M.b) +
+       '" stroke="' + axisC + '"/>' +
+       '<text class="axis-title" text-anchor="middle" x="' + ((M.l + W - M.r) / 2) +
+       '" y="' + (H - 6) + '">' + esc(xLab) + "</text>" +
+       '<text class="axis-title" transform="rotate(-90 14 ' + ((M.t + H - M.b) / 2) +
+       ')" x="14" y="' + ((M.t + H - M.b) / 2) + '" text-anchor="middle">' + esc(yLab) + "</text>";
+  svg.innerHTML = g;
+  return ys;
+}
+
+/* ---- chart 1: C_D vs Re with ensemble band ------------------------ */
+function renderParamsChart(resp) {
+  const svg = $("paramsChart");
+  const { w: W, h: H } = VB.params;
+  const M = { t: 16, r: 22, b: 42, l: 64 };
+  const reLo = Math.min(...resp.re), reHi = Math.max(...resp.re);
+  const xs = logScale(reLo, reHi, M.l, W - M.r);
+  const lo = Math.min(...resp.uq.lo), hi = Math.max(...resp.uq.hi);
+  const pad = (hi - lo) * 0.08 || 0.01;
+  const yStep = niceStep(hi - lo + 2 * pad, 5);
+  const ydom = [Math.floor((lo - pad) / yStep) * yStep, Math.ceil((hi + pad) / yStep) * yStep];
+  const ys = drawFrame(svg, W, xs, ydom, logTicks(reLo, reHi),
+                       "Re", "C_D (mean of members)", H, M);
+  const px = resp.re.map((r) => xs.to(r));
+  const outOfCorpus = resp.guard.flag !== "ok";
+  let marks = "";
+  if (outOfCorpus) {              // honesty: hatched band, dashed edges
+    marks += '<defs><pattern id="hatchP" width="7" height="7" patternTransform="rotate(45)" ' +
+             'patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="7" stroke="' +
+             cssVar("--hatch") + '" stroke-width="2.2"/></pattern></defs>';
+  }
+  const bandYTop = resp.uq.hi.map((v) => ys.to(v));
+  const bandYBot = resp.uq.lo.map((v) => ys.to(v));
+  marks += '<path d="' + bandPath(px, bandYTop, bandYBot) + '" fill="' +
+           (outOfCorpus ? "url(#hatchP)" : cssVar("--band")) + '" fill-opacity="0.75"' +
+           (outOfCorpus ? ' stroke="' + cssVar("--hatch") + '" stroke-dasharray="5 4" stroke-width="1"' : "") +
+           "/>";
+  marks += '<path d="' + pathFrom(px.map((x, i) => [x, ys.to(resp.cd[i])])) +
+           '" fill="none" stroke="' + cssVar("--series-1") + '" stroke-width="2"' +
+           (outOfCorpus ? ' stroke-dasharray="7 4"' : "") + "/>";
+  svg.innerHTML += marks;
+
+  /* hover geometry cache for the mousemove handler */
+  paramsGeom = { xs, ys, re: resp.re, cd: resp.cd, uq: resp.uq, guard: resp.guard, M, W, H };
+  const tag = $("paramsTag");
+  tag.hidden = false;
+  tag.className = "tag " + (resp.guard.flag === "ok" ? "in" :
+                    resp.guard.flag === "review" ? "out" : "rej");
+  tag.textContent = resp.guard.flag === "ok" ? "in served corpus" : "out of served corpus";
+  $("paramsLat").textContent = "echo " + fmt(timingsOf(resp).total_s, 3) + " ms · " +
+    resp.backend + " · " + resp.members.length + " members";
+}
+
+function timingsOf(resp) {
+  return (resp.info && resp.info.timings_ms) || {};
+}
+
+/* ---- chart 2: sweep — 3 Re-level curves vs axis value ------------- */
+function renderSweepChart(swr) {
+  const svg = $("sweepChart");
+  const { w: W, h: H } = VB.sweep;
+  const M = { t: 14, r: 22, b: 42, l: 64 };
+  /* EchoSweepResponse = {axis, values, results[]}; the Re levels live in
+   * results[*].re (identical rows) — there is no top-level re_list field. */
+  const reList = swr.results[0].re;
+  const xs = linearScale(swr.values[0], swr.values[swr.values.length - 1], M.l, W - M.r);
+  let lo = Infinity, hi = -Infinity;
+  for (const r of swr.results) for (const c of r.cd) { lo = Math.min(lo, c); hi = Math.max(hi, c); }
+  const pad = (hi - lo) * 0.08 || 0.01;
+  const yStep = niceStep(hi - lo + 2 * pad, 5);
+  const ydom = [Math.floor((lo - pad) / yStep) * yStep, Math.ceil((hi + pad) / yStep) * yStep];
+  const xTicks = [];
+  const xStep = niceStep(swr.values[swr.values.length - 1] - swr.values[0], 6);
+  for (let v = Math.ceil(swr.values[0] / xStep) * xStep;
+       v <= swr.values[swr.values.length - 1] + 1e-12; v += xStep) xTicks.push(v);
+  const ys = drawFrame(svg, W, xs, ydom, xTicks, swr.axis, "C_D (mean of members)", H, M);
+  const worst = worstFlagOf(swr.results.map((r) => r.guard.flag));
+  let marks = "", legend = "";
+  for (let k = 0; k < reList.length; k++) {
+    const color = cssVar("--series-" + (k + 1));
+    const pts = swr.results.map((r, i) => [xs.to(swr.values[i]), ys.to(r.cd[k])]);
+    marks += '<path d="' + pathFrom(pts) + '" fill="none" stroke="' + color +
+             '" stroke-width="2"' + (worst !== "ok" ? ' stroke-dasharray="7 4"' : "") + "/>";
+    legend += '<span class="chip"><i style="background:' + color + '"></i>Re ' +
+              fmt(reList[k], 3) + "</span>";
+  }
+  svg.innerHTML += marks;
+  $("sweepLegend").innerHTML = legend;
+  $("sweepSub").textContent = SWEEP_POINTS + " geometries · base " +
+    describeParams(swr.results[0].params);
+  sweepGeom = { xs, ys, swr, M, W, H };
+}
+
+function describeParams(p) {
+  const parts = [];
+  for (const a of AXES)
+    if (Math.abs(Number(p[a.key]) - 1) > 1e-9 || a.key === "u_in")
+      parts.push(a.key + "=" + fmt(p[a.key], 3));
+  return esc(p.hull_type) + (parts.length ? " · " + esc(parts.join(" ")) : " (mother)");
+}
+
+/* ---- shared hover layer ------------------------------------------- */
+function attachHover(hoverId, geomRef, buildTooltip) {
+  const layer = $(hoverId);
+  const vline = layer.querySelector(".vline");
+  const tip = layer.querySelector(".tooltip");
+  layer.addEventListener("mousemove", (ev) => {
+    const g = geomRef();
+    if (!g) return;
+    const svg = layer.parentElement.querySelector("svg");
+    const rect = svg.getBoundingClientRect();
+    const vbx = (ev.clientX - rect.left) / rect.width * g.W;
+    const item = buildTooltip(g, vbx);
+    if (!item) { vline.style.display = tip.style.display = "none"; return; }
+    vline.style.display = "block";
+    const px = item.x / g.W * rect.width;
+    vline.style.left = px + "px";
+    tip.style.display = "block";
+    tip.innerHTML = item.html;
+    const tw = tip.offsetWidth;
+    const left = px + 14 + tw > rect.width ? px - tw - 12 : px + 14;
+    tip.style.left = Math.max(0, left) + "px";
+    tip.style.top = Math.max(0, ev.clientY - rect.top - 20) + "px";
+  });
+  layer.addEventListener("mouseleave", () => {
+    vline.style.display = tip.style.display = "none";
+  });
+}
+let paramsGeom = null, sweepGeom = null;
+
+function nearestIndex(xData, xVal, useLog) {
+  let best = 0, bd = Infinity;
+  for (let i = 0; i < xData.length; i++) {
+    const d = Math.abs(useLog ? Math.log10(xData[i] / xVal) : xData[i] - xVal);
+    if (d < bd) { bd = d; best = i; }
+  }
+  return best;
+}
+function paramsTooltip(g, vbx) {
+  if (vbx < g.M.l - 4 || vbx > g.W - g.M.r + 4) return null;
+  const reVal = g.xs.inv(vbx);
+  const i = nearestIndex(g.re, reVal, true);
+  return {
+    x: g.xs.to(g.re[i]),
+    html: '<div class="t-title">Re ' + fmt(g.re[i], 4) + " · verdict " + esc(g.guard.flag) + "</div>" +
+      "<table>" +
+      '<tr><td class="k">C_D</td><td>' + fmt(g.cd[i]) + "</td></tr>" +
+      '<tr><td class="k">band</td><td>' + fmt(g.uq.lo[i], 3) + " – " + fmt(g.uq.hi[i], 3) + "</td></tr>" +
+      '<tr><td class="k">member σ</td><td>' + fmt(g.uq.std[i], 3) + "</td></tr></table>",
+  };
+}
+function sweepTooltip(g, vbx) {
+  const swr = g.swr;
+  if (vbx < g.M.l - 4 || vbx > g.W - g.M.r + 4) return null;
+  const axisVal = g.xs.inv(vbx);
+  const i = nearestIndex(swr.values, axisVal, false);
+  const res = swr.results[i];
+  const reList = swr.results[0].re;
+  let rows = "";
+  for (let k = 0; k < reList.length; k++)
+    rows += '<tr><td class="k">Re ' + fmt(reList[k], 3) + "</td><td>C_D " + fmt(res.cd[k]) +
+            " (σ " + fmt(res.uq.std[k], 3) + ")</td></tr>";
+  return {
+    x: g.xs.to(swr.values[i]),
+    html: '<div class="t-title">' + esc(swr.axis) + "=" + fmt(swr.values[i], 3) +
+           " · verdict " + esc(res.guard.flag) + "</div><table>" + rows + "</table>",
+  };
+}
+
+/* =====================================================================
+ * 5. Verdict banner — worst verdict wins, reasons verbatim
+ * =================================================================== */
+function worstFlagOf(flags) {
+  let worst = "ok";
+  for (const f of flags) if (FLAG_RANK[f] > FLAG_RANK[worst]) worst = f;
+  return worst;
+}
+/* One entry per query batch shown in the banner; each carries the worst
+ * verdict over every query inside it (a sweep = one query per geometry). */
+function activeBatches() {
+  const b = [];
+  if (state.paramsResp) {
+    b.push({ label: "slider echo", worst: state.paramsResp.guard.flag,
+             confident: state.paramsResp.confident,
+             results: [state.paramsResp],
+             std: state.paramsResp.uq.mean_std,
+             lat: timingsOf(state.paramsResp).total_s });
+  }
+  if (state.sweepResp) {
+    const rs = state.sweepResp.results;
+    b.push({ label: "sweep " + state.sweepResp.axis,
+             worst: worstFlagOf(rs.map((r) => r.guard.flag)),
+             confident: rs.every((r) => r.confident),
+             results: rs,
+             std: Math.max(...rs.map((r) => r.uq.mean_std)),
+             lat: timingsOf(rs[0]).sweep_total_s });
+  }
+  return b;
+}
+/* Aggregate reasons, keeping the text verbatim.  Identical strings collapse
+ * into one entry with a count; near-duplicates that differ only in the
+ * numeric guard score share a key so 16 sweep points do not print 16 lines. */
+function aggregateReasons(batches) {
+  const order = [], map = new Map();
+  for (const b of batches) {
+    for (const res of b.results) {
+      for (const r of res.guard.reasons || []) {
+        const key = String(r).replace(/score=[\d.]+/g, "score=");
+        const e = map.get(key);
+        if (e) e.n += 1;
+        else { map.set(key, { text: String(r), n: 1 }); order.push(key); }
+      }
+    }
+  }
+  return order.map((k) => map.get(k));
+}
+function renderVerdict() {
+  const batches = activeBatches();
+  const el = $("verdict");
+  if (!batches.length) return;    // idle banner stays
+  const worst = worstFlagOf(batches.map((b) => b.worst));
+  const allConfident = batches.every((b) => b.confident);
+  el.className = "banner v-" + worst;
+  $("vIcon").textContent = worst === "ok" ? "✓" : worst === "review" ? "⚠" : "✕";
+  $("vLabel").textContent = worst.toUpperCase();
+  $("vHeadline").textContent =
+    worst === "ok" ? "Inside served corpus — answers are confident" :
+    worst === "review"
+      ? "Out of served corpus — curve rendered, verdict downgraded to review"
+      : "Rejected — these inputs cannot be served as confident numbers";
+  const reasons = aggregateReasons(batches);
+  const ul = $("vReasons");
+  ul.hidden = reasons.length === 0;
+  ul.innerHTML = reasons.map((r) =>
+    "<li>" + esc(r.text) + (r.n > 1 ? ' <span class="count">×' + r.n + "</span>" : "") + "</li>")
+    .join("");
+  const stdTxt = batches.map((b) => b.label + " σ̄ " + fmt(b.std, 3)).join(" · ");
+  const last = batches[0];
+  $("vMeta").textContent =
+    "confident: " + (allConfident ? "yes" : "no") + " · member std (mean over curve): " +
+    stdTxt + " · backend " + last.results[0].backend + " · " +
+    last.results[0].members.length + " members";
+  const unsupported = new Set();
+  for (const b of batches) for (const r of b.results)
+    for (const c of r.unsupported_channels || []) unsupported.add(c);
+  if (unsupported.size)
+    ul.insertAdjacentHTML("beforeend",
+      "<li>unsupported channels: " + esc([...unsupported].join(", ")) + "</li>");
+  $("vChips").innerHTML = batches.map((b) =>
+    '<span class="chip f-' + b.worst + '"><span class="mark">' +
+    (b.worst === "ok" ? "✓" : b.worst === "review" ? "⚠" : "✕") + "</span>" +
+    esc(b.label) + ": " + b.worst + "</span>").join("") +
+    (state.paramsResp && state.paramsResp.info && state.paramsResp.info.hull_form_variant
+      ? '<span class="chip"><span class="mark">CAD</span>hull-form variant</span>' : "");
+}
+
+/* =====================================================================
+ * 6. Data tables (accessibility: the numbers behind every chart)
+ * =================================================================== */
+function renderTables() {
+  if (state.paramsResp) {
+    const r = state.paramsResp;
+    $("paramsTable").innerHTML = "<table><tr><th>Re</th><th>C_D</th><th>lo</th><th>hi</th><th>σ</th></tr>" +
+      r.re.map((_, i) => "<tr><td>" + fmt(r.re[i], 4) + "</td><td>" + fmt(r.cd[i]) +
+        "</td><td>" + fmt(r.uq.lo[i], 3) + "</td><td>" + fmt(r.uq.hi[i], 3) +
+        "</td><td>" + fmt(r.uq.std[i], 3) + "</td></tr>").join("") + "</table>";
+  }
+  if (state.sweepResp) {
+    const s = state.sweepResp;
+    const reList = s.results[0].re;
+    $("sweepTable").innerHTML = "<table><tr><th>" + esc(s.axis) + "</th>" +
+      reList.map((re) => "<th>Re " + fmt(re, 3) + "</th>").join("") +
+      "<th>verdict</th></tr>" +
+      s.results.map((r, i) => "<tr><td>" + fmt(s.values[i], 3) + "</td>" +
+        r.cd.map((c) => "<td>" + fmt(c) + "</td>").join("") +
+        "<td>" + esc(r.guard.flag) + "</td></tr>").join("") + "</table>";
+  }
+}
+
+/* =====================================================================
+ * 7. Queries (debounced, abortable) + degraded modes
+ * =================================================================== */
+let paramsAbort = null, sweepAbort = null, debounceTimer = null;
+
+function scheduleParamsQuery(delay = 250) {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(runParamsQuery, delay);
+}
+async function runParamsQuery() {
+  paramsAbort && paramsAbort.abort();
+  paramsAbort = new AbortController();
+  try {
+    const data = await postJSON(ENDPOINTS.params, paramsBody(), paramsAbort.signal);
+    state.paramsResp = data;
+    hideError();
+    renderParamsChart(data);
+    renderVerdict();
+    renderTables();
+  } catch (err) {
+    if (err && err.name === "AbortError") return;
+    showError("slider echo (" + ENDPOINTS.params + "): " + err.message);
+  }
+}
+async function runSweep() {
+  sweepAbort && sweepAbort.abort();
+  sweepAbort = new AbortController();
+  const btn = $("sweepRun");
+  btn.disabled = true;
+  try {
+    const data = await postJSON(ENDPOINTS.sweep, sweepBody(), sweepAbort.signal);
+    state.sweepResp = data;
+    hideError();
+    renderSweepChart(data);
+    renderVerdict();
+    renderTables();
+  } catch (err) {
+    if (err && err.name === "AbortError") return;
+    showError("sweep (" + ENDPOINTS.sweep + "): " + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+function showError(msg) {
+  $("errorBanner").style.display = "block";
+  $("errorText").textContent = msg;
+}
+function hideError() { $("errorBanner").style.display = "none"; }
+
+/* ---- health polling: connection dot + backend identity ------------ */
+async function pollHealth() {
+  try {
+    const h = await apiFetch(ENDPOINTS.health);
+    $("connDot").className = "dot ok";
+    $("connText").textContent =
+      h.backend + " · " + h.device + " · " + h.members.length + " members · guard fit " +
+      h.guard_n_fit + " · grid " + h.grid.nz + "×" + h.grid.ny + "×" + h.grid.nx;
+  } catch (err) {
+    $("connDot").className = "dot err";
+    $("connText").textContent = "backend unreachable: " + err.message;
+  }
+}
+
+/* =====================================================================
+ * 8. Boot
+ * =================================================================== */
+/* localStorage can be unavailable (file:// in some browsers) — degrade. */
+function lsGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
+function lsSet(key, v) { try { localStorage.setItem(key, v); } catch { /* ignore */ } }
+
+function readApiBase() {
+  const fromQuery = new URLSearchParams(location.search).get("api");
+  if (fromQuery !== null) {
+    state.apiBase = fromQuery.replace(/\/+$/, "");
+    return;
+  }
+  const saved = lsGet("echoApiBase");
+  state.apiBase = saved ? saved.replace(/\/+$/, "") : "";
+}
+function applyApiBase() {
+  const v = $("apiBase").value.trim().replace(/\/+$/, "");
+  state.apiBase = v;
+  lsSet("echoApiBase", v);
+  pollHealth();
+  scheduleParamsQuery(0);
+}
+function initThemeToggle() {
+  const btn = $("themeToggle");
+  const modes = ["auto", "light", "dark"];
+  let i = 0;
+  btn.addEventListener("click", () => {
+    i = (i + 1) % modes.length;
+    const m = modes[i];
+    btn.textContent = "theme: " + m;
+    if (m === "auto") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = m;
+    state.paramsResp && renderParamsChart(state.paramsResp);
+    state.sweepResp && renderSweepChart(state.sweepResp);
+  });
+}
+function emptyStates() {
+  $("paramsChart").innerHTML =
+    '<text class="empty-hint" x="440" y="165" text-anchor="middle">' +
+    "move a slider to request the first echo" + "</text>";
+  $("sweepChart").innerHTML =
+    '<text class="empty-hint" x="440" y="140" text-anchor="middle">' +
+    "run an axis sweep to draw C_D vs a design parameter" + "</text>";
+}
+function init() {
+  readApiBase();
+  $("apiBase").value = state.apiBase;
+  $("apiApply").addEventListener("click", applyApiBase);
+  $("apiBase").addEventListener("change", applyApiBase);
+  $("errorRetry").addEventListener("click", () => {
+    hideError();
+    runParamsQuery();
+    if (state.sweepResp) runSweep();
+  });
+  $("sweepRun").addEventListener("click", runSweep);
+  $("resetBtn").addEventListener("click", resetDesign);
+  initThemeToggle();
+  for (const host of document.querySelectorAll("[data-slider]"))
+    buildSlider(host, AXES.find((a) => a.key === host.dataset.slider));
+  buildSelects();
+  buildReControls();
+  attachHover("paramsHover", () => paramsGeom, paramsTooltip);
+  attachHover("sweepHover", () => sweepGeom, sweepTooltip);
+  emptyStates();
+  pollHealth();
+  setInterval(pollHealth, 5000);
+  scheduleParamsQuery(400);       // first echo once the page settles
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

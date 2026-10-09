@@ -1,0 +1,87 @@
+{
+  "case": "dam_break_sc",
+  "investigation": "Ramshaw-Phathanapirom pressure-tensor SC force form + higher-density-ratio pseudopotential (density-ratio lever)",
+  "date": "2026-09-29",
+  "axis": "T_MM = t*sqrt(2*g/a), checkpoints X_ref = 1.326 / 2.360 / 3.670",
+  "verdict": "NEGATIVE -- the pressure-tensor (divergence) form is leading-order equivalent to the standard SC force (no new degree of freedom) and is numerically UNSTABLE at the fine grid (a=80); the density-ratio lever is already ruled out by the existing G-sweep because for psi_exp G monotonically controls the coexistence density ratio.",
+
+  "implemented": {
+    "where": "src/tensorlbm/multiphase.py",
+    "scheme_arg": "sc_single_component_force(..., scheme=) / collide_sc_single_component(..., scheme=)",
+    "variants": {
+      "standard": "default, historical SC D2Q9 stencil F=-G*psi*sum_i w_i c_i psi(x-c_i); bit-identical to before",
+      "pressure_tensor": "F = -(G/2) * sum_i w_i psi^2(x-c_i) c_i  (isotropic D2Q9 stencil evaluation of F=-(G_eff/2)*grad(psi^2)); leading-order identical to standard; Sigma_x F == 0 EXACTLY (Newton-3) because sum_i w_i c_i = 0; keeps the standard stencil -> no checkerboard decoupling",
+      "pressure_tensor_cd": "F = (G*cs2/2)*D(psi^2) with central differences D; exactly curl-free (central differences commute on a rectangular grid -> discrete curl == 0 identically) but UNSTABLE at a=80 (odd-even/checkerboard decoupling)"
+    },
+    "cli": "benchmarks/pending/dam_break_sc/run.py --force-scheme {standard,pressure_tensor,pressure_tensor_cd}",
+    "default_unchanged": "force_scheme defaults to 'standard'; a=40/80 default reruns reproduce the historical errors"
+  },
+
+  "pressure_tensor_results": {
+    "note": "err_MM (%) at T=1 / T=2 / T=2.96; 1600 steps, g=2e-4",
+    "a40_stable": {
+      "standard_G5.0_tau1.0_velocity_shift": [10.53, -7.58, -19.89],
+      "pressure_tensor_cd_G5.0_tau1.0_velocity_shift": [6.63, -9.15, -25.39],
+      "pressure_tensor_G5.0_tau1.0_velocity_shift": [18.78, -12.33, -27.44],
+      "pressure_tensor_G5.0_tau0.8_guo": "DIVERGED step 400"
+    },
+    "a80_unstable_at_G5": {
+      "pressure_tensor_cd_G5.0_tau1.0_velocity_shift": "DIVERGED step 320",
+      "pressure_tensor_cd_G5.0_tau0.8_guo": "DIVERGED step 320",
+      "pressure_tensor_G5.0_tau1.0_velocity_shift": "DIVERGED step 480",
+      "pressure_tensor_G5.0_tau0.8_velocity_shift": "DIVERGED step 40",
+      "pressure_tensor_G5.0_tau0.9_guo": "DIVERGED step 40"
+    },
+    "a80_stabilised_lowG": {
+      "pressure_tensor_G4.5_tau1.0_velocity_shift": [35.05, 19.26, 1.01],
+      "pressure_tensor_G4.0_tau1.0_velocity_shift": [59.04, 19.28, 73.03],
+      "pressure_tensor_G4.5_tau0.9_guo": [38.99, 23.16, 5.13],
+      "standard_for_comparison_G4.6_tau0.8_guo_from_README": [31.11, 16.61, 1.01]
+    },
+    "conclusion": "At the only resolution at which it is stable (a=40) the pt form is WORSE than standard at all three checkpoints. At a=80 it is unstable unless G is lowered, and at G=4.5 it coincides with the STANDARD scheme at G~4.6 (35/19/1 vs 31/17/1) i.e. the pt form is just a ~0.1 reparametrisation of the effective coupling G -- it adds NO independent degree of freedom, exactly as the leading-order-analytic equivalence (F = -(G_eff/2)grad(psi^2) = -G_eff psi grad psi + O(h^2)) predicts. It therefore cannot break the (err(T=1), err(T=2.96)) structural obstacle.",
+    "instability_mechanism": "The standard SC force carries an O(h^2) non-gradient (vortical) component that acts as extra interfacial dissipation; the divergence form removes it, so the psi^2 nonlinearity (quadratic in psi, vs linear for the standard psi*psi) can run away at fine resolution."
+  },
+
+  "density_ratio_lever": {
+    "finding": "For psi_exp the library coupling G monotonically controls the discrete coexistence density ratio, so the existing G-sweep IS the density-ratio sweep -- lever (c) is already covered by data on record.",
+    "coexistence_measured_G_coupling_to_ratio": {
+      "G=4.6": {"rho_v": 0.2291, "rho_l": 1.5644, "ratio": 6.83},
+      "G=4.8": {"rho_v": 0.1821, "rho_l": 1.7408, "ratio": 9.56},
+      "G=5.0": {"rho_v": 0.1529, "rho_l": 1.9235, "ratio": 12.58},
+      "G=5.2": {"rho_v": 0.1292, "rho_l": 2.0581, "ratio": 15.93},
+      "G=5.4": {"rho_v": 0.1199, "rho_l": 2.2050, "ratio": 18.38}
+    },
+    "error_vs_ratio": {
+      "note": "from the on-record G-sweep (a=80): higher ratio (higher G) SLOWS the front at ALL times",
+      "ratio_6.8_G4.6": [31.11, 16.61, 1.01],
+      "ratio_12.6_G5.0": [2.49, -9.53, -19.09],
+      "ratio_16_G5.2": [-4.11, -13.05, -22.15],
+      "deduction": "err(T=1) crosses zero at ratio~12.7; err(T=2.96) crosses zero at ratio~6.9 (G~4.65). Opposite-required ratios -> the structural obstacle is a DENSITY-RATIO (constitutive) obstacle, not a force-form one. A HIGHER density ratio (which is what Carnahan-Starling offers) makes T=2.96 MORE negative -> the wrong direction."
+    }
+  },
+
+  "carnahan_starling_investigation": {
+    "existing_psi_carnahan_starling_is_broken": {
+      "sign_error": "the shipped psi_carnahan_starling computes sqrt(2*(p_EOS - rho*cs2)/cs2); the library's attractive convention (G_lib>0, F=+G_lib*cs2*psi*grad psi, p = rho*cs2 - (G_lib*cs2/2)*psi^2) requires sqrt(2*(rho*cs2 - p_EOS)/(G_lib*cs2)) -- the SIGN is inverted and it clamps the vapour branch (p_EOS<rho*cs2) to psi=0",
+      "no_spinodal": "with the hard-coded a=0.5, b=4, RT=1/3 the CS EOS has d p/d rho > 0 EVERYWHERE (no van der Waals loop, no spinodal) -> the model CANNOT phase-separate; this explains the historical '--psi cs diverges at step 20'"
+    },
+    "corrected_factory_added": "tensorlbm.multiphase.make_psi_carnahan_starling(a,b,RT,cs2) (correct sign, G_lib=1)",
+    "maxwell_coexistence_correct_params": {
+      "a=5,b=4,RT=1/3": {"rho_v": 0.0101, "rho_l": 0.355, "ratio": 35.1},
+      "a=6,b=4,RT=1/3": {"rho_v": 0.0023, "rho_l": 0.409, "ratio": 176},
+      "a=4,b=4,RT=0.28": {"rho_v": 0.0135, "rho_l": 0.337, "ratio": 25.1}
+    },
+    "stability": "the corrected CS pseudopotential is still numerically stiff: both the spinodal-random init and a smooth liquid-slab init diverge within ~1000 steps (G_lib=1..3, tau=1.0). Not usable for the dam break within budget.",
+    "disposition": "the density-ratio lever is in any case already ruled out (see density_ratio_lever): a higher ratio moves T=2.96 further negative. So a working CS would not break the obstacle either."
+  },
+
+  "new_tooling": "scripts/measure_coexistence.py -- SCMP coexistence-density measurement (validated: psi_exp G=5 -> ratio 12.58 vs the on-record 12.3)",
+
+  "final": {
+    "accuracy_le_3pct": false,
+    "two_grid_le_3pct": false,
+    "best_stable_config_remains": "velocity_shift / guo standard, ~+2.5/-9.5/-19.1 (a=80); the pressure-tensor form only reproduces the same family",
+    "structural_obstacle_confirmed": "err(T=1) and err(T=2.96) demand OPPOSITE coexistence density ratios (12.7 vs 6.9). Neither the SC force discretisation (pressure tensor = leading-order-equivalent to standard) nor a higher-density-ratio pseudopotential can null both; only a genuinely new mechanism (e.g. wall/contact-line physics or a two-fluid gas with independent properties) could.",
+    "migrated_to_verified": false
+  }
+}

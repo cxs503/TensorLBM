@@ -21,12 +21,14 @@ Density set from R (not from f.sum()).
 IBM pushes liquid outward (bubble surface = moving wall).
 """
 
-import sys, math, torch
+import sys
+
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import equilibrium3d, C as C3D, W as W3D
-from tensorlbm.solver3d import stream3d, collide_bgk3d
-from tensorlbm.ibm import ibm_direct_forcing_3d, ibm_force_spread_3d, ibm_velocity_interpolate_3d
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 
 def run_bubble_expansion(nx=64, ny=64, nz=64, n_steps=3000, device="sdaa:3"):
@@ -82,10 +84,10 @@ def run_bubble_expansion(nx=64, ny=64, nz=64, n_steps=3000, device="sdaa:3"):
     V0_bubble = float(bubble_mask.sum())  # initial bubble volume (in cells)
     R_current = R0
 
-    print(f"=== Bubble Expansion ===", flush=True)
+    print("=== Bubble Expansion ===", flush=True)
     print(f"Grid: {nx}x{ny}x{nz} R0={R0} expansion_rate={expansion_rate}", flush=True)
     print(f"V0={V0_bubble} cells", flush=True)
-    print(f"Gas: rho=rho0*(R0/R)^3, T=(R0/R)^1.2, p=rho*cs²*T", flush=True)
+    print("Gas: rho=rho0*(R0/R)^3, T=(R0/R)^1.2, p=rho*cs²*T", flush=True)
     print(flush=True)
 
     for step in range(1, n_steps + 1):

@@ -40,7 +40,14 @@ def test_d3q19_sphere_face_diagonal_q_is_ray_fraction(common: bool) -> None:
 
 def test_common_extruded_cylinder_diagonal_q_is_ray_fraction() -> None:
     mask, q = compute_q_cylinder_common(
-        9, 9, 3, 4.0, 4.0, 2.0, DEVICE, lattice="D3Q19",
+        9,
+        9,
+        3,
+        4.0,
+        4.0,
+        2.0,
+        DEVICE,
+        lattice="D3Q19",
     )
     expected = 2.0 - math.sqrt(2.0)
     assert mask[8, 1, 6, 6]
@@ -49,10 +56,23 @@ def test_common_extruded_cylinder_diagonal_q_is_ray_fraction() -> None:
 
 def test_vector_common_matches_admitted_d3q19_cylinder_bfl() -> None:
     reference_mask, reference_q = compute_q_cylinder_d3q19(
-        9, 9, 3, 4.0, 4.0, 2.0, DEVICE,
+        9,
+        9,
+        3,
+        4.0,
+        4.0,
+        2.0,
+        DEVICE,
     )
     common_mask, common_q = compute_q_cylinder_common(
-        9, 9, 3, 4.0, 4.0, 2.0, DEVICE, lattice="D3Q19",
+        9,
+        9,
+        3,
+        4.0,
+        4.0,
+        2.0,
+        DEVICE,
+        lattice="D3Q19",
     )
     assert torch.equal(common_mask, reference_mask)
     torch.testing.assert_close(common_q, reference_q)
@@ -61,14 +81,24 @@ def test_vector_common_matches_admitted_d3q19_cylinder_bfl() -> None:
     previous = 0.02 + 0.05 * torch.rand(19, 3, 9, 9)
     streamed = 0.02 + 0.05 * torch.rand(19, 3, 9, 9)
     reference = bouzidi_bounce_back_d3q19(
-        streamed, previous, reference_mask, reference_q,
+        streamed,
+        previous,
+        reference_mask,
+        reference_q,
     )
     common = bfl_bounce_back_common(
-        streamed, previous, common_mask, common_q, lattice="D3Q19",
+        streamed,
+        previous,
+        common_mask,
+        common_q,
+        lattice="D3Q19",
     )
     torch.testing.assert_close(common, reference, rtol=0.0, atol=0.0)
     vector_specific = bouzidi_bounce_back_d3q19_vec(
-        streamed, previous, common_mask, common_q,
+        streamed,
+        previous,
+        common_mask,
+        common_q,
     )
     torch.testing.assert_close(vector_specific, reference, rtol=0.0, atol=0.0)
 
@@ -82,7 +112,16 @@ def test_d3q27_body_diagonal_q_is_ray_fraction() -> None:
 
 def test_ellipsoid_spherical_limit_diagonal_q_is_ray_fraction() -> None:
     mask, q = compute_q_ellipsoid(
-        9, 9, 9, 4.0, 4.0, 4.0, 2.0, 2.0, 0.0, DEVICE,
+        9,
+        9,
+        9,
+        4.0,
+        4.0,
+        4.0,
+        2.0,
+        2.0,
+        0.0,
+        DEVICE,
     )
     expected = 2.0 - math.sqrt(2.0)
     assert mask[8, 4, 6, 6]

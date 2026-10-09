@@ -16,7 +16,6 @@ from tensorlbm.ml.torch_materialize import (
     materialize_torch_velocity_snapshots,
 )
 
-
 _SPLITS = ("train", "val", "test")
 
 

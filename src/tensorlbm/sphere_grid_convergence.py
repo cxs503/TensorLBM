@@ -1,4 +1,5 @@
 """Fail-closed spatial-convergence assessment for canonical sphere drag."""
+
 from __future__ import annotations
 
 import math
@@ -70,13 +71,14 @@ def assess_sphere_grid_convergence(
 
     baseline = parsed[0][2]
     required_fields = (
-        *_IDENTITY_FIELDS, *_SCALED_TIME_FIELDS,
-        "shape_zyx", "cv_margin", "sponge_width",
+        *_IDENTITY_FIELDS,
+        *_SCALED_TIME_FIELDS,
+        "shape_zyx",
+        "cv_margin",
+        "sponge_width",
     )
     required_present = all(
-        field in configuration
-        for _, _, configuration, _ in parsed
-        for field in required_fields
+        field in configuration for _, _, configuration, _ in parsed for field in required_fields
     )
     identity_equal = required_present and all(
         configuration.get(field) == baseline.get(field)
@@ -116,15 +118,13 @@ def assess_sphere_grid_convergence(
 
     coefficients = [item[1] for item in parsed]
     spatial = assess_spatial_convergence([2.0 * radius for radius in radii], coefficients)
-    references = {
-        float(result["cd_reference_schiller_naumann"])
-        for _, _, _, result in parsed
-    }
+    references = {float(result["cd_reference_schiller_naumann"]) for _, _, _, result in parsed}
     reference_invariant = len(references) == 1
     reference = next(iter(references)) if reference_invariant else math.nan
     reference_error = (
         abs(spatial.extrapolated_value - reference) / abs(reference) * 100.0
-        if reference_invariant and reference != 0.0 else math.inf
+        if reference_invariant and reference != 0.0
+        else math.inf
     )
     spatial_admitted = spatial.meets(
         maximum_finest_error_pct=maximum_finest_discretisation_error_pct,
@@ -132,11 +132,16 @@ def assess_sphere_grid_convergence(
         minimum_order=minimum_order,
     )
     provenance_admitted = (
-        schema_valid and required_present and identity_equal
-        and scaled_invariant and reference_invariant
+        schema_valid
+        and required_present
+        and identity_equal
+        and scaled_invariant
+        and reference_invariant
     )
     admitted = (
-        provenance_admitted and source_quality and spatial_admitted
+        provenance_admitted
+        and source_quality
+        and spatial_admitted
         and reference_error <= maximum_extrapolated_reference_error_pct
     )
     return {

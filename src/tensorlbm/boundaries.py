@@ -385,6 +385,42 @@ def fan_model_2d(
     return f_new
 
 
+def make_sponge_strength(
+    ny: int,
+    nx: int,
+    x0: int,
+    width: int,
+    power: float = 2.0,
+    device: torch.device | None = None,
+) -> torch.Tensor:
+    """Sponge-layer strength field σ(x) ramping smoothly from 0 to 1.
+
+    Used to build absorbing layers at the downstream end of free-stream
+    domains (e.g. cylinder vortex shedding).  σ rises from 0 at column
+    ``x0`` to 1 at column ``x0 + width`` following a power law:
+
+        σ(x) = clamp((x − x0) / width, 0, 1) ** power
+
+    The quadratic profile (``power=2``) has a smooth zero derivative at the
+    sponge entrance, minimising spurious reflections.  Combine with
+    :func:`tensorlbm.solver.collide_mrt`'s ``tau_field`` argument as
+    ``tau_eff = tau · (1 + alpha · σ)``, or use it to scale a damping force.
+
+    Args:
+        ny: Number of rows in the grid.
+        nx: Number of columns in the grid.
+        x0: First column of the sponge (0-based).
+        width: Sponge thickness in lattice units.
+        power: Smoothing exponent (default 2 → quadratic).
+        device: Target device (default None → CPU).
+
+    Returns:
+        Float tensor of shape ``(ny, nx)`` with σ ∈ [0, 1].
+    """
+    xx = torch.arange(nx, device=device, dtype=torch.float32).view(1, -1).expand(ny, nx)
+    return ((xx - x0) / width).clamp(min=0.0, max=1.0) ** power
+
+
 def nscbc_outlet_2d(
     f: torch.Tensor,
     rho_target: float = 1.0,

@@ -185,7 +185,7 @@ def run_spherical_wave_3d(
     else:
         alpha_fit = 0.0
 
-    print(f"\n  衰减指数拟合: p(r) = A * r^alpha")
+    print("\n  衰减指数拟合: p(r) = A * r^alpha")
     print(f"    alpha = {alpha_fit:.3f}  (三维解析: -1.0, 二维: -0.5)")
 
     # --- 验证 ---

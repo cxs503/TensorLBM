@@ -28,7 +28,6 @@ from dataclasses import dataclass
 
 import torch
 
-
 __all__ = [
     "PropellerGeometryConfig",
     "build_propeller_mask",
@@ -248,7 +247,7 @@ def build_propeller_mask(
         # Chord and thickness at each radius
         chord_frac_mid = _chord_frac(r_frac_ann, config.hub_diameter_ratio)
         chord = chord_frac_mid * config.mean_chord  # chord length at each radius
-        t_frac = _thickness_frac(r_frac_ann)
+        _thickness_frac(r_frac_ann)
         t_max_local = config.max_thickness_ratio * chord  # max half-thickness at each radius
 
         # Pitch: advance per radian

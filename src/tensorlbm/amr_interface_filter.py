@@ -6,6 +6,7 @@ resolved second-order viscous stress in a thin physical shell.  Density,
 momentum and the complete symmetric stress tensor remain unchanged; no
 empirical body force or geometry modification is introduced.
 """
+
 from __future__ import annotations
 
 import math
@@ -37,12 +38,8 @@ class InterfaceFilterControlVolumeClearance:
             "minimum_physical_interface_clearance_cells": (
                 self.minimum_physical_interface_clearance_cells
             ),
-            "minimum_unfiltered_source_guard_cells": (
-                self.minimum_unfiltered_source_guard_cells
-            ),
-            "required_streaming_source_guard_cells": (
-                self.required_streaming_source_guard_cells
-            ),
+            "minimum_unfiltered_source_guard_cells": (self.minimum_unfiltered_source_guard_cells),
+            "required_streaming_source_guard_cells": (self.required_streaming_source_guard_cells),
             "flux_stencil_outside_filter": self.flux_stencil_outside_filter,
         }
 
@@ -74,7 +71,9 @@ def assess_interface_filter_control_volume_clearance(
     bounds_by_storage_axis = ((z0, z1), (y0, y1), (x0, x1))
     clearances: list[int] = []
     for size, (lower, upper) in zip(
-        shape, bounds_by_storage_axis, strict=True,
+        shape,
+        bounds_by_storage_axis,
+        strict=True,
     ):
         if not ghost <= lower < upper <= size - ghost:
             raise ValueError(
@@ -88,9 +87,7 @@ def assess_interface_filter_control_volume_clearance(
         minimum_physical_interface_clearance_cells=minimum_clearance,
         minimum_unfiltered_source_guard_cells=unfiltered_source_guard,
         required_streaming_source_guard_cells=streaming_stencil_radius,
-        flux_stencil_outside_filter=(
-            unfiltered_source_guard >= streaming_stencil_radius
-        ),
+        flux_stencil_outside_filter=(unfiltered_source_guard >= streaming_stencil_radius),
     )
 
 
@@ -158,19 +155,37 @@ def _remove_conserved_roundoff(non_equilibrium: torch.Tensor) -> torch.Tensor:
     result = non_equilibrium.clone()
     result[0] -= result.sum(dim=0)
     for negative, positive, axis in ((1, 2, 0), (3, 4, 1), (5, 6, 2)):
-        momentum = (
-            result * c[:, axis, None, None, None]
-        ).sum(dim=0)
+        momentum = (result * c[:, axis, None, None, None]).sum(dim=0)
         result[negative] -= 0.5 * momentum
         result[positive] += 0.5 * momentum
     return result
+
+
+def _damp_core(f: torch.Tensor, blend: torch.Tensor) -> torch.Tensor:
+    """Damp kinetic modes on one population tensor (blend broadcast over the
+    trailing spatial axes, which may be a packed ``(1, 1, n)`` view)."""
+    equilibrium = _macroscopic_and_equilibrium(f)
+    non_equilibrium = _remove_conserved_roundoff(f - equilibrium)
+    resolved_stress = regularize_nonequilibrium_second_order(non_equilibrium)
+    kinetic_residual = _remove_conserved_roundoff(
+        non_equilibrium - resolved_stress,
+    )
+    return f - blend.unsqueeze(0) * kinetic_residual
 
 
 def damp_interface_nonequilibrium(
     f: torch.Tensor,
     blend: torch.Tensor,
 ) -> torch.Tensor:
-    """Damp kinetic modes while retaining each cell's density and momentum."""
+    """Damp kinetic modes while retaining each cell's density and momentum.
+
+    The per-cell work is identical for every spatial location, so when the
+    blend is sparse (the usual interface-shell case) the active cells are
+    gathered into one packed tensor, processed with the same batched tensor
+    kernels, and scattered back — no Python loop over cells or directions,
+    and bitwise-identical results for every filtered cell (the elementwise
+    arithmetic and the ``sum(dim=0)`` reductions over ``q`` are unchanged).
+    """
     if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] not in (19, 27):
         raise ValueError("f must have shape (19|27,nz,ny,nx)")
     if not f.is_floating_point():
@@ -184,13 +199,20 @@ def damp_interface_nonequilibrium(
     if not bool(blend.any()):
         return f
 
-    equilibrium = _macroscopic_and_equilibrium(f)
-    non_equilibrium = _remove_conserved_roundoff(f - equilibrium)
-    resolved_stress = regularize_nonequilibrium_second_order(non_equilibrium)
-    kinetic_residual = _remove_conserved_roundoff(
-        non_equilibrium - resolved_stress,
-    )
-    return f - blend.unsqueeze(0) * kinetic_residual
+    mask = blend > 0
+    if mask.sum() * 4 < mask.numel():
+        # Sparse interface shell: process only the active cells as one
+        # packed batch.  The reductions are still along ``q`` (dim 0), so
+        # every active cell sees exactly the old arithmetic.
+        indices = torch.nonzero(mask, as_tuple=False)  # (n_active, 3)
+        zi, yi, xi = indices[:, 0], indices[:, 1], indices[:, 2]
+        packed = f[:, zi, yi, xi].reshape(f.shape[0], 1, 1, -1)
+        packed_blend = blend[zi, yi, xi].reshape(1, 1, -1)
+        filtered = _damp_core(packed, packed_blend)
+        result = f.clone()
+        result[:, zi, yi, xi] = filtered.reshape(f.shape[0], -1)
+        return result
+    return _damp_core(f, blend)
 
 
 __all__ = [

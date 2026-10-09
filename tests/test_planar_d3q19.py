@@ -3,12 +3,13 @@ from __future__ import annotations
 import pytest
 import torch
 
-from tensorlbm.cumulant import collide_cumulant_d2q9
 from tensorlbm.bfl_d3q19 import (
     bouzidi_bounce_back_d3q19,
     compute_q_cylinder_d3q19,
 )
-from tensorlbm.d2q9 import C as C2, equilibrium
+from tensorlbm.cumulant import collide_cumulant_d2q9
+from tensorlbm.d2q9 import C as C2
+from tensorlbm.d2q9 import equilibrium
 from tensorlbm.d3q19 import C as C3
 from tensorlbm.interpolated_bc import bouzidi_bounce_back, compute_q_circle
 from tensorlbm.planar_d3q19 import (
@@ -50,9 +51,9 @@ def test_planar_d3q19_collision_exactly_matches_d2q9(tau: float) -> None:
     actual = marginalize_d3q19_to_d2q9(
         collide_planar_cumulant_d3q19(d3, tau),
     )
-    expected = torch.stack([
-        collide_cumulant_d2q9(d2[:, z], tau) for z in range(d2.shape[1])
-    ], dim=1)
+    expected = torch.stack(
+        [collide_cumulant_d2q9(d2[:, z], tau) for z in range(d2.shape[1])], dim=1
+    )
     torch.testing.assert_close(actual, expected, rtol=2e-14, atol=2e-15)
 
 
@@ -84,7 +85,12 @@ def test_planar_collision_stream_and_curved_wall_match_d2q9() -> None:
     d3_streamed = stream3d(d3_post)
 
     d2_mask, d2_q = compute_q_circle(
-        nx, ny, 6.0, 6.0, 2.0, torch.device("cpu"),
+        nx,
+        ny,
+        6.0,
+        6.0,
+        2.0,
+        torch.device("cpu"),
     )
     for direction in range(1, 9):
         d2_streamed = bouzidi_bounce_back(
@@ -95,10 +101,19 @@ def test_planar_collision_stream_and_curved_wall_match_d2q9() -> None:
             direction,
         )
     d3_mask, d3_q = compute_q_cylinder_d3q19(
-        nx, ny, 3, 6.0, 6.0, 2.0, torch.device("cpu"),
+        nx,
+        ny,
+        3,
+        6.0,
+        6.0,
+        2.0,
+        torch.device("cpu"),
     )
     d3_streamed = bouzidi_bounce_back_d3q19(
-        d3_streamed, d3_post, d3_mask, d3_q,
+        d3_streamed,
+        d3_post,
+        d3_mask,
+        d3_q,
     )
 
     marginal = marginalize_d3q19_to_d2q9(d3_streamed)
