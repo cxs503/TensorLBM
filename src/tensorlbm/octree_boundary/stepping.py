@@ -1454,7 +1454,14 @@ def _assemble_shell_transfer(
                 # link_dir/link_leaf live on different devices (root vs shard);
                 # move the mask to the shard device before indexing
                 li = shard.link_leaf[sel.to(shard.device)]
-                vals = shard.post_collision[d, li] * shard.leaf_volume[li].to(dtype)
+                # Parity with observe_shell_interface_transfer: only genuine
+                # shell<->L1 interface links (neighbour along d is
+                # SHELL_OUTSIDE) join the reflux bookkeeping.
+                # interface_links also carries the BFL wall-link ghost slots
+                # appended by build_octree_shell, which must not inject mass
+                # through the reflux correction.
+                keep_out = (shard.neighbor_table[d, li] == SHELL_OUTSIDE).to(dtype)
+                vals = shard.post_collision[d, li] * shard.leaf_volume[li].to(dtype) * keep_out
                 buf[shard.out_rank[sel]] = vals.to(root_device)
             outgoing[d] = buf.sum()
         n_in = sum(int((shard.ghost_plan.direction == d).sum().item()) for shard in shards)
@@ -1466,7 +1473,13 @@ def _assemble_shell_transfer(
                     continue
                 vol = shard.ghost_plan.volume[gsel].to(dtype).to(shard.device)
                 gsel_dev = gsel.to(shard.device)
-                vals = shard.ghost_vals[d, gsel_dev] * vol
+                # Same SHELL_OUTSIDE filter on the ghost side: wall-link ghost
+                # targets are excluded exactly as in the unsharded observation.
+                keep_in = (
+                    shard.neighbor_table[shard.opp[d], shard.ghost_plan.leaf[gsel].to(shard.device)]
+                    == SHELL_OUTSIDE
+                ).to(dtype)
+                vals = shard.ghost_vals[d, gsel_dev] * vol * keep_in
                 buf[shard.in_rank[gsel]] = vals.to(root_device)
             incoming[d] = buf.sum()
     return KineticInterfaceTransfer(outgoing, incoming)
