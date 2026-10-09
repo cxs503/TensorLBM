@@ -1,6 +1,6 @@
 # Benchmark status (generated 2026-10-05, after the 22-agent marine sweep)
 
-verified: **31** | pending: **31**
+verified: **37** | pending: **36**  (counts refreshed 2026-10-09)
 
 Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
 
@@ -27,6 +27,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `shear_wave_decay` | analytic / standard case |
 | `sod_shock_tube` | analytic / standard case |
 | `sphere_re100` | sphere Re=100: Cd +2.771%/+2.540% (BFL interpolated smooth wall + per-link momentum ledger; D40/D60, span 0.231%) |
+| `sphere_re100_d3q27` | sphere Re=100 D3Q27 twin: Cd +2.79%/+2.57% (BGK27 + BFL sparse links, mirrored kernels bitwise-equal to library; reference sha256-pinned to the sphere_re100 archive) |
 | `sphere_re200` | sphere Re=200: Cd +1.866%/+0.216% (same caliber; D16/D20, span 1.650%, monotone) |
 | `square_cylinder` | 2D square cyl Re=100: Cd +0.11%/+0.30%, St +0.82%/+0.68% |
 | `startup_poiseuille` | analytic / standard case |
@@ -69,7 +70,6 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `rayleigh_benard` | in progress |
 | `rayleigh_taylor` | STRUCTURAL: VOF has no free pressure field |
 | `series60_resistance` | BLOCKED: parametric hull Cb phase-oscillates with grid (no stable pair); ALSO exposed a library bug -- GeometrySource.PARAMETRIC_HULL returns an EMPTY mask in GeneralSimEngine |
-| `sphere_re100_d3q27` | in progress |
 | `stokes_second_problem` | in progress |
 | `stokes_sphere_dg` | BLOCKED: Stokes flow is linear yet Cd moves 133->67 as u_in 0.02->0.05 at Re=0.1 => staircase sphere is non-physical there |
 | `suboff_sail_resistance` | STRUCTURAL: real sail half-width 0.0077L is sub-grid; L<=96 sail absent or 1-cell. Needs n>=256 (~180M cells, >=60GB) |
