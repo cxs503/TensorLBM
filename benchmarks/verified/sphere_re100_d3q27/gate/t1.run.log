@@ -1,0 +1,8 @@
+step 2000/12000 (241s, 120 ms/step)
+step 4000/12000 (482s, 120 ms/step)
+step 6000/12000 (723s, 121 ms/step)
+step 8000/12000 (964s, 121 ms/step)
+step 10000/12000 (1205s, 121 ms/step)
+step 12000/12000 (1447s, 121 ms/step)
+written gate/t1_D40_27.json
+last-8 cd mean: 1.1219204982230688
