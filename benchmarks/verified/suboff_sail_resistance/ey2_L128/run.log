@@ -1,0 +1,42 @@
+=== E2 TIER L128 start 2026-10-09T14:29:13+08:00
+=== SUBOFF with_sail Re=1000 L=128 collision=mrt steps=19200 device=cuda:6 ===
+
+setup: {
+ "Re": 1000.0,
+ "tau": 0.5192,
+ "u_lb": 0.05,
+ "nu_lb": 0.0064,
+ "domain_lu": [
+  768,
+  271,
+  271
+ ],
+ "obstacle_cells": 17634,
+ "near_wall_cells": 4992,
+ "total_cells": 56402688,
+ "device": "cuda:6",
+ "auto_collision": "mrt",
+ "auto_wall_treatment": "bounce_back"
+}
+appendage stats: {"hull_type": "with_sail", "label": "SUBOFF + Sail (AFF-3 inspired)", "L_D_ratio": 8.575, "r_over_l": 0.05831, "bow_fraction": 0.233, "stern_fraction": 0.252, "displacement_lu3": 17740.43, "wetted_area_lu2": 5170.5, "wetted_area_scope": "bare_hull_surface_of_revolution", "wetted_area_method": "profile_meridional_metric_quadrature", "bare_hull_wetted_area_lu2": 5170.5, "prismatic_coefficient": 0.7919, "sail_scale": 1.0, "fin_scale": 1.0, "sail_own_volume_lu3": 107.126, "sail_own_wetted_area_lu2": 163.108, "appendage_own_volume_lu3": 107.126, "appendage_own_wetted_area_lu2": 163.108, "appendage_wetted_area_method": "own_dimension_quadrature_scaled", "solid_cells": 17634, "bare_hull_solid_cells": 17508, "appendage_solid_cells": 126, "fluid_cells": 56385054, "total_cells": 56402688, "nx": 768, "ny": 271, "nz": 271, "cx": 192.0, "cy": 135.5, "cz": 135.5, "length": 128.0, "radius": 7.463728191000919}
+appendage near cells (gradient normals): 150
+[compile_route] suboff_with_sail[L128]: mode=None -> eager (compile_step passthrough)
+run finished: completed in 4208s (219.2 ms/step) compile_mode=None effective='eager' status='eager'
+{
+ "Cd_pressure": 0.006495627589678578,
+ "Cd_friction": 0.035900145820593,
+ "Cd_total": 0.04239577341027158,
+ "Cd_total_last500": 0.042393177156678126,
+ "Cf_ref_blasius": 0.04199504732703608,
+ "error_pct_vs_Blasius_totalwetted": 0.9542222446252956,
+ "drag_increment_ratio_vs_verified_bare": 1.04900766689737,
+ "convergence_windows": {
+  "25%": 0.053456,
+  "50%": 0.047971,
+  "75%": 0.042455,
+  "100%": 0.042396
+ }
+}
+results written to ey2_L128/result_L128.json
+RESULT with_sail L=128 Cd_p=0.006496 Cd_f=0.035900 Cd_tot=0.042396 (ref 0.041995) err=+0.95%
+=== E2 TIER L128 exit 0 2026-10-09T15:40:30+08:00
