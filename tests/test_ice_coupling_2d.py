@@ -59,3 +59,39 @@ def test_restart_rejects_invalid_state(bad):
     elif bad=='vector':r['vectors']['external_impulse']=[1.]
     else:r['exchange']['ice_load']=[[1.,2.]]
     with pytest.raises(ValueError):CoupledIce2D.from_snapshot(r)
+
+@pytest.mark.parametrize('field,value',[
+    ('dx_m',0),('dx_m',True),('dx_m','0.025'),('fluid_dt_s',False),
+    ('duration_s',float('nan')),('density_kg_m3',True),('viscosity_m2_s',float('inf')),
+    ('coupling_rate_s',complex(30,0)),('ice_radius_m',-1),('tool_speed_m_s','0.2'),
+    ('tool_gap_m',0),('breaking_strain',True),('shear_breaking_strain',None),
+    ('wet','false'),('wet',0),('nx',48.0),('ny',True),('exchange_steps',1.5),
+    ('ice_nx','9'),('ice_ny',False)])
+def test_config_rejects_bad_units_and_types(field,value):
+    with pytest.raises(ValueError):CoupledIceConfig(**{field:value})
+
+
+def test_config_accepts_positive_integral_real_parameters():
+    assert CoupledIceConfig(density_kg_m3=1000,coupling_rate_s=30).tau>.5
+
+
+@pytest.mark.parametrize('positions,shape,dx',[
+    (torch.tensor([[float('nan'),.2]]),(24,24),.025),
+    (torch.tensor([[float('inf'),.2]]),(24,24),.025),
+    (torch.tensor([.1,.2]),(24,24),.025),
+    (torch.tensor([[.1,.2,.3]]),(24,24),.025),
+    (torch.empty((0,2)),(24,24),.025),
+    ([[.1,.2]],(24,24),.025),
+    (torch.tensor([[1,2]]),(24,24),.025),
+    (torch.tensor([[.1,.2]]),(24,24),0),
+    (torch.tensor([[.1,.2]]),(24,24),True),
+    (torch.tensor([[.1,.2]]),(24,24),'0.025'),
+    (torch.tensor([[.1,.2]]),(24,24),float('nan')),
+    (torch.tensor([[.1,.2]]),(24.0,24),.025),
+    (torch.tensor([[.1,.2]]),(True,24),.025),
+    (torch.tensor([[.1,.2]]),(24,),.025),
+    (torch.tensor([[.1,.2]]),None,.025),
+    (torch.tensor([[1e308,.2]],dtype=torch.float64),(24,24),1e-308),
+])
+def test_bilinear_rejects_invalid_input_before_indexing(positions,shape,dx):
+    with pytest.raises(ValueError):bilinear_map(positions,shape,dx)
