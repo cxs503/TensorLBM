@@ -1,5 +1,7 @@
 # TensorLBM
 
+Executable 2-D LBM–DEM coupling: [P1 report](docs/tensordem_coupling_p1.md). Real solvers, restart and conservation evidence; slipping IBM and particle sensitivity remain unqualified.
+
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml/badge.svg)](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml)

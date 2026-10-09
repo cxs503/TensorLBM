@@ -1,5 +1,7 @@
 # TensorLBM
 
+二维 LBM–DEM 联算已可运行：[P1 报告](docs/tensordem_coupling_p1.md)。真实求解器、重启与守恒证据已保存；滑移 IBM 和颗粒敏感性尚未达标。
+
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml/badge.svg)](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml)
