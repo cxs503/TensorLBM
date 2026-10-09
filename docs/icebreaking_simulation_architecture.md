@@ -154,3 +154,15 @@ Resolve these with explicit evidence before committing to a production model:
 - the hull–ice friction calibration source;
 - experimental/literature dataset and resistance averaging window;
 - the coupling timestep and acceptable energy/force imbalance.
+
+
+## 10. Implemented traction-to-wrench utility
+
+The module `tensorlbm.icebreaking.integrate_surface_traction` now provides a small integration seam for already-reconstructed hull traction samples:
+
+- Inputs: global sample positions (m), traction vectors acting on the hull (Pa), surface quadrature weights (m²), and a moment reference origin (m).
+- Outputs: `WrenchSI` containing the integrated force (N) and moment (N·m).
+- Validation: matching sample counts, three-component vectors, finite values, and non-negative area weights.
+- Tests: force integration, moment-arm/origin behavior, and invalid-input rejection.
+
+This utility deliberately does not reconstruct wall stress, derive area weights from an LBM boundary, or establish the action/reaction convention of any particular force method. The caller must document those choices and verify the integrated result against an independent momentum-exchange or control-volume calculation before using it in a resistance result. It is an interface building block, not yet a TensorLBM–TensorDEM coupled solver.
