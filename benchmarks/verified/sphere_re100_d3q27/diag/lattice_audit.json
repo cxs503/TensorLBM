@@ -1,0 +1,73 @@
+{
+  "tensorlbm_file": "/nfs/wangxi/worktrees/bm_w11/src/tensorlbm/__init__.py",
+  "tol": 1e-12,
+  "checks": {
+    "D3Q19": {
+      "w_sum": 1.0,
+      "w_sum_pass": true,
+      "w32_is_w64_cast": true,
+      "iso2": {
+        "max_abs_dev": 1.1102230246251565e-16,
+        "pass": true
+      },
+      "opposite": {
+        "involution": true,
+        "negation_consistent": true,
+        "pass": true
+      },
+      "dir_counts": {
+        "rest": 1,
+        "face": 6,
+        "edge": 12,
+        "total": 19
+      }
+    },
+    "D3Q27": {
+      "w_sum": 0.9999999999999998,
+      "w_sum_pass": true,
+      "w32_is_w64_cast": true,
+      "iso2": {
+        "max_abs_dev": 1.6653345369377348e-16,
+        "pass": true
+      },
+      "iso4": {
+        "sum_w_cx4": 0.3333333333333335,
+        "sum_w_cx2cy2": 0.11111111111111105,
+        "rhs_3xxyy_plus_yyzz": 0.33333333333333315,
+        "abs_dev": 3.3306690738754696e-16,
+        "pass": true
+      },
+      "opposite": {
+        "involution": true,
+        "negation_consistent": true,
+        "pass": true
+      },
+      "dir_counts": {
+        "rest": 1,
+        "face": 6,
+        "edge": 12,
+        "corner": 8,
+        "total": 27
+      }
+    },
+    "bfl_common_vs_modules": {
+      "W19_same_object_as_d3q19W": true,
+      "W27_same_object_as_d3q27W": true,
+      "W19_equal": true,
+      "W27_equal": true,
+      "W19_is_exact64_f32_cast": true,
+      "W27_is_exact64_f32_cast": true,
+      "C19_equal": true,
+      "OPP19_equal": true,
+      "C27_equal": true,
+      "OPP27_equal": true,
+      "pass": true,
+      "note": "bfl_common weights are the modules' float32 W tables (same objects); the BFL force ledger uses C/OPPOSITE tables only; weights matter for equilibrium27 (W_EXACT64 rational cast, checks above) and moving-wall corrections (unused here)."
+    },
+    "weight_scheme": {
+      "d3q27.WEIGHT_PRECISION_SCHEME": "rational_binary64_cast_to_runtime_dtype_v1",
+      "equilibrium27_uses_W_EXACT64_cast": true
+    }
+  },
+  "overall_pass": true
+}
