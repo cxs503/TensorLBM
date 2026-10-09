@@ -1,0 +1,42 @@
+=== E2 TIER L112 start 2026-10-09T13:47:32+08:00
+=== SUBOFF with_sail Re=1000 L=112 collision=mrt steps=16800 device=cuda:6 ===
+
+setup: {
+ "Re": 1000.0,
+ "tau": 0.5168,
+ "u_lb": 0.05,
+ "nu_lb": 0.005600000000000001,
+ "domain_lu": [
+  672,
+  237,
+  237
+ ],
+ "obstacle_cells": 12246,
+ "near_wall_cells": 3898,
+ "total_cells": 37745568,
+ "device": "cuda:6",
+ "auto_collision": "mrt",
+ "auto_wall_treatment": "bounce_back"
+}
+appendage stats: {"hull_type": "with_sail", "label": "SUBOFF + Sail (AFF-3 inspired)", "L_D_ratio": 8.575, "r_over_l": 0.05831, "bow_fraction": 0.233, "stern_fraction": 0.252, "displacement_lu3": 11884.7, "wetted_area_lu2": 3958.66, "wetted_area_scope": "bare_hull_surface_of_revolution", "wetted_area_method": "profile_meridional_metric_quadrature", "bare_hull_wetted_area_lu2": 3958.66, "prismatic_coefficient": 0.7919, "sail_scale": 1.0, "fin_scale": 1.0, "sail_own_volume_lu3": 71.766, "sail_own_wetted_area_lu2": 124.879, "appendage_own_volume_lu3": 71.766, "appendage_own_wetted_area_lu2": 124.879, "appendage_wetted_area_method": "own_dimension_quadrature_scaled", "solid_cells": 12246, "bare_hull_solid_cells": 12176, "appendage_solid_cells": 70, "fluid_cells": 37733322, "total_cells": 37745568, "nx": 672, "ny": 237, "nz": 237, "cx": 168.0, "cy": 118.5, "cz": 118.5, "length": 112.00000000000001, "radius": 6.530762167125804}
+appendage near cells (gradient normals): 104
+[compile_route] suboff_with_sail[L112]: mode=None -> eager (compile_step passthrough)
+run finished: completed in 2457s (146.3 ms/step) compile_mode=None effective='eager' status='eager'
+{
+ "Cd_pressure": 0.006628803048342275,
+ "Cd_friction": 0.03413986772537355,
+ "Cd_total": 0.04076867077371583,
+ "Cd_total_last500": 0.04076329226562978,
+ "Cf_ref_blasius": 0.04199504732703608,
+ "error_pct_vs_Blasius_totalwetted": -2.920288537288349,
+ "drag_increment_ratio_vs_verified_bare": 1.0087477990096354,
+ "convergence_windows": {
+  "25%": 0.050944,
+  "50%": 0.045897,
+  "75%": 0.040913,
+  "100%": 0.040769
+ }
+}
+results written to ey2_L112/result_L112.json
+RESULT with_sail L=112 Cd_p=0.006629 Cd_f=0.034140 Cd_tot=0.040769 (ref 0.041995) err=-2.92%
+=== E2 TIER L112 exit 0 2026-10-09T14:29:13+08:00
