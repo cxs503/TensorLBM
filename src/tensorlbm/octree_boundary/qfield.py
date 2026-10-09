@@ -9,6 +9,7 @@ body-fitted.  The ray-sphere intersection follows the same maths as
 the sphere, ``q`` is the first intersection parameter of the ray
 ``x + s * c_d * dx`` with the sphere, clamped to ``(0, 1]``.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -22,12 +23,12 @@ if TYPE_CHECKING:
 def _lattice_params(lattice: str) -> tuple[int, torch.Tensor, torch.Tensor]:
     """``(Q, C, OPPOSITE)`` for D3Q19 or D3Q27."""
     if lattice == "D3Q27":
-        from tensorlbm.d3q27 import C, OPPOSITE
+        from tensorlbm.d3q27 import OPPOSITE, C
 
         return 27, C, OPPOSITE
     if lattice != "D3Q19":
         raise ValueError(f"unsupported lattice {lattice!r} (D3Q19 or D3Q27)")
-    from tensorlbm.d3q19 import C, OPPOSITE
+    from tensorlbm.d3q19 import OPPOSITE, C
 
     return 19, C, OPPOSITE
 
@@ -82,18 +83,20 @@ def compute_q_sphere_at_points(
         c_d = c[d].to(device=device, dtype=torch.float64)
         if bool((c_d == 0).all()):
             continue
-        v = c_d * dxv                                   # (n, 3) neighbour offset
+        v = c_d * dxv  # (n, 3) neighbour offset
         nb = centers + v
         nb_solid = ((nb - cs) ** 2).sum(dim=1) <= r2
         boundary = self_fluid & nb_solid
         if not bool(boundary.any()):
             continue
-        a = (v ** 2).sum(dim=1)
+        a = (v**2).sum(dim=1)
         b = 2.0 * (v * (centers - cs)).sum(dim=1)
         cst = d_self - r2
         disc = b * b - 4.0 * a * cst
         safe_disc = torch.where(
-            boundary & (disc >= 0.0), disc, torch.zeros_like(disc),
+            boundary & (disc >= 0.0),
+            disc,
+            torch.zeros_like(disc),
         )
         s = (-b - torch.sqrt(safe_disc)) / (2.0 * a)
         q = torch.where(boundary, s.clamp(1e-6, 1.0), torch.full_like(s, 0.5))
@@ -107,11 +110,16 @@ def compute_leaf_q_field(
     grid: OctreeGrid,
     center: tuple[float, float, float],
     radius: float,
+    inside_fn=None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Fill ``grid.q_field`` / ``grid.bfl_mask`` on the leaf coordinates.
 
     The per-leaf spacing is ``2^-level`` (L1 cell = 1).  The rest direction
     keeps the default ``q = 0.5`` with mask False.
+
+    With ``inside_fn`` the wall distance is not analytic; the BFL mask is
+    derived from the neighbour table (any SOLID neighbour direction) and the
+    q-field defaults to 0.5 (BFL interpolates at the leaf midpoint).
     """
     lattice = grid.meta.get("lattice", "D3Q19")
     if lattice == "D3Q27":
@@ -122,10 +130,42 @@ def compute_leaf_q_field(
     Q = grid.Q
     n = grid.n_leaf
     level = grid.leaf_level
-    dx = 2.0 ** (-level.to(torch.float64))                 # (n,)
+    dx = 2.0 ** (-level.to(torch.float64))  # (n,)
+    if inside_fn is not None:
+        # BFL link = the neighbour in the *same* direction d points at SOLID
+        # (mask[d] True <=> x_i + c_d is inside the body, matching the
+        # analytic path and bfl_apply_gather's +c_d upstream convention).
+        from tensorlbm.octree_boundary.geometry import SOLID
+
+        nt = grid.neighbor_table  # (Q, n)
+        mask = torch.zeros(Q, n, dtype=torch.bool, device=nt.device)
+        for d in range(Q):
+            mask[d] = nt[d] == SOLID
+        # Use the analytic sphere q when the body IS the sphere (the adapters
+        # expose it via the meta hook set by sphere_inside_fn).  Otherwise
+        # default q = 0.5 (BFL interpolates at the leaf midpoint).
+        if grid.meta.get("analytic_q") is not None:
+            mask_s, q_s = compute_q_sphere_at_points(
+                grid.leaf_center,
+                dx,
+                tuple(grid.meta["center"]),
+                grid.meta["radius"],
+                device=grid.leaf_center.device,
+                lattice=lattice,
+            )
+            q = q_s
+        else:
+            q = torch.full((Q, n), 0.5, dtype=torch.float64, device=nt.device)
+        grid.bfl_mask = mask.contiguous()
+        grid.q_field = q.contiguous()
+        return grid.bfl_mask, grid.q_field
     mask, q = compute_q_sphere_at_points(
-        grid.leaf_center, dx, center, radius,
-        device=grid.leaf_center.device, lattice=lattice,
+        grid.leaf_center,
+        dx,
+        center,
+        radius,
+        device=grid.leaf_center.device,
+        lattice=lattice,
     )
     grid.bfl_mask = mask.contiguous()
     grid.q_field = q.contiguous()

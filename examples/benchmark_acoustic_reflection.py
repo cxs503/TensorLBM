@@ -85,7 +85,7 @@ _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d  # noqa: E402
+from tensorlbm.d3q19 import equilibrium3d  # noqa: E402
 from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 
 # 在多核机器上 PyTorch 默认使用全部核心，对小张量的线程管理开销过大。
@@ -346,7 +346,7 @@ def run_reflection_benchmark(
     print(f"  衰减率 Γ = νk²  : {gamma_damp:.6e} /步", flush=True)
     print(f"  衰减长度 c_s/Γ  : {cs / gamma_damp:.1f} 格子", flush=True)
     print(f"  衰减因子 e^(-ΓL/c_s): {damp_factor:.4f}", flush=True)
-    print(f"  边界条件        : 左=硬源(无反射), 右=反弹回, 上下=周期", flush=True)
+    print("  边界条件        : 左=硬源(无反射), 右=反弹回, 上下=周期", flush=True)
     print(f"  监测点          : {monitor_x}", flush=True)
     print(f"  步数            : {n_steps}", flush=True)
     print(f"  测量窗口        : {measure_start}–{n_steps} ({measure_window} 步)", flush=True)
@@ -470,10 +470,10 @@ def run_reflection_benchmark(
 
     # ---- 1. 驻波形态 ----
     print("  ┌─── 1. 驻波形态 ──────────────────────────────────────────┐", flush=True)
-    print(f"  │  解析: |p(x)| = √[a_i²+a_r²+2·a_i·a_r·cos(2k(x-L))]  │", flush=True)
+    print("  │  解析: |p(x)| = √[a_i²+a_r²+2·a_i·a_r·cos(2k(x-L))]  │", flush=True)
     print(f"  │  (含粘性衰减 Γ = νk² = {gamma_damp:.2e})              │", flush=True)
     print(f"  │  L2 相对误差: {pattern_error:.2f}%                              │", flush=True)
-    print(f"  │  阈值:        10%                                        │", flush=True)
+    print("  │  阈值:        10%                                        │", flush=True)
     status1 = "✓ PASS" if pattern_error < 10.0 else "✗ FAIL"
     print(f"  │  状态:        {status1}                                        │", flush=True)
     print("  └──────────────────────────────────────────────────────────┘", flush=True)
@@ -485,7 +485,7 @@ def run_reflection_benchmark(
     print(f"  │  壁面总振幅   |p_wall|  = {p_wall:.6e}          │", flush=True)
     print(f"  │  比值 |p_wall|/|p_i(L)| = {doubling_ratio:.4f}              │", flush=True)
     print(f"  │  误差: {doubling_error:.2f}%                              │", flush=True)
-    print(f"  │  阈值: 10%                                        │", flush=True)
+    print("  │  阈值: 10%                                        │", flush=True)
     status2 = "✓ PASS" if doubling_error < 10.0 else "✗ FAIL"
     print(f"  │  状态: {status2}                                        │", flush=True)
     print("  └──────────────────────────────────────────────────────────┘", flush=True)
@@ -497,7 +497,7 @@ def run_reflection_benchmark(
     print(f"  │  S_min (波节) = {s_min:.6e}                        │", flush=True)
     print(f"  │  |R| = (S_max - S_min)/(S_max + S_min) = {R_coeff:.4f}  │", flush=True)
     print(f"  │  误差: {R_error:.2f}%                                        │", flush=True)
-    print(f"  │  阈值: 5%                                          │", flush=True)
+    print("  │  阈值: 5%                                          │", flush=True)
     status3 = "✓ PASS" if R_error < 5.0 else "✗ FAIL"
     print(f"  │  状态: {status3}                                        │", flush=True)
     print("  └──────────────────────────────────────────────────────────┘", flush=True)

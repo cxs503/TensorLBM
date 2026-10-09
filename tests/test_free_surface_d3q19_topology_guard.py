@@ -13,10 +13,9 @@ import inspect
 import pytest
 import torch
 
-from tensorlbm.d3q19 import C, equilibrium3d
 import tensorlbm.free_surface_lbm as free_surface_lbm
+from tensorlbm.d3q19 import C, equilibrium3d
 from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID, free_surface_step
-
 
 MOVING_LINKS = tuple((q, tuple(int(component) for component in C[q])) for q in range(1, 19))
 

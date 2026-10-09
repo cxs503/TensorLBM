@@ -1,0 +1,13 @@
+{
+  "case": "bstep_3d_spanwise_periodic_re100",
+  "reference": "Armaly 1984: X_r/h≈3.0 (Re=100)",
+  "config": "D3Q19 展向周期, H=40, ER=1.94, 充分发展入口",
+  "result": {
+    "X_r_h": 3.3955,
+    "err_pct": 13.2,
+    "steps": 20000,
+    "spanwise_std": 0.0
+  },
+  "analysis": "展向均匀性完美（std=0.0000，3D 周期等价 2D 确认）；X_r/h=3.40 (+13.2%) 与 2D 后向台阶系统偏差一致（+9~15% 低 Re 分离泡数值误差）——非维度问题，是 2D/3D 共同的低 Re 分离泡偏长。需 300k 步双档扫描确认或改 Re=800（3D 展向周期 X_r≈6-7 更有区分度）",
+  "verified": false
+}

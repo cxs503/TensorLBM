@@ -1,0 +1,38 @@
+{
+ "d2q9_f64": {
+  "sum": 1.0000000074505806,
+  "sum_minus_1": 7.450580596923828e-09,
+  "eps_level": 33554432.0
+ },
+ "d2q9_f32": {
+  "sum": 1.0000000074505806,
+  "sum_minus_1": 7.450580596923828e-09,
+  "eps_level": 0.0625
+ },
+ "d3q19_f64": {
+  "sum": 1.0,
+  "sum_minus_1": 0.0,
+  "eps_level": 0.0
+ },
+ "d3q19_f32": {
+  "sum": 1.0000000149011612,
+  "sum_minus_1": 1.4901161193847656e-08,
+  "eps_level": 0.125
+ }
+}
+[plain_fp32] 1: rel_r=1.407e-08 rel_b=1.154e-08
+[plain_fp32] 500: rel_r=7.777e-06 rel_b=9.606e-06
+[plain_fp32] 1000: rel_r=1.567e-05 rel_b=1.664e-05
+[plain_fp32] 1500: rel_r=2.324e-05 rel_b=2.258e-05
+[plain_fp32] 2000: rel_r=3.053e-05 rel_b=3.238e-05
+[pform_fp32] 1: rel_r=2.553e-08 rel_b=7.733e-09
+[pform_fp32] 500: rel_r=1.465e-05 rel_b=1.116e-05
+[pform_fp32] 1000: rel_r=2.913e-05 rel_b=2.813e-05
+[pform_fp32] 1500: rel_r=4.347e-05 rel_b=3.678e-05
+[pform_fp32] 2000: rel_r=5.787e-05 rel_b=4.557e-05
+[pform_fp64] 1: rel_r=0.000e+00 rel_b=1.203e-16
+[pform_fp64] 500: rel_r=5.157e-14 rel_b=2.803e-14
+[pform_fp64] 1000: rel_r=1.035e-13 rel_b=5.667e-14
+[pform_fp64] 1500: rel_r=1.554e-13 rel_b=8.675e-14
+[pform_fp64] 2000: rel_r=2.073e-13 rel_b=1.173e-13
+[out] e3diag.json

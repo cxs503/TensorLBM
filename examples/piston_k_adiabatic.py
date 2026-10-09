@@ -8,11 +8,14 @@ p = ρ × cs² × T₀ × K^γ (adiabatic pressure).
 No f.sum(), no fluid mask, no D3Q7 temperature distribution.
 """
 
-import sys, math, torch
+import sys
+
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import equilibrium3d, C as C3D, W as W3D
-from tensorlbm.solver3d import stream3d, collide_bgk3d
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 
 def run_piston_k_adiabatic(nx=64, ny=32, nz=32, n_steps=4000, device="sdaa:3", ps=0.01):
@@ -59,11 +62,11 @@ def run_piston_k_adiabatic(nx=64, ny=32, nz=32, n_steps=4000, device="sdaa:3", p
     # K field (initial = 1.0 everywhere)
     K = torch.ones(nz, ny, nx, device=dev)
 
-    print(f"=== K Diffusion + Temperature Bridge ===", flush=True)
+    print("=== K Diffusion + Temperature Bridge ===", flush=True)
     print(f"Grid: {nx}x{ny}x{nz} ps={ps} gamma={gamma}", flush=True)
-    print(f"K: ∇²K=0, 1 Jacobi/step, BC: K=V₀/V at piston", flush=True)
-    print(f"T = T₀ × K^(γ-1) = K^0.4", flush=True)
-    print(f"p = ρ × cs² × T₀ × K^γ = ρ × cs² × K^1.4", flush=True)
+    print("K: ∇²K=0, 1 Jacobi/step, BC: K=V₀/V at piston", flush=True)
+    print("T = T₀ × K^(γ-1) = K^0.4", flush=True)
+    print("p = ρ × cs² × T₀ × K^γ = ρ × cs² × K^1.4", flush=True)
     print(flush=True)
 
     for step in range(1, n_steps + 1):

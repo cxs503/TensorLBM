@@ -1,0 +1,55 @@
+{
+  "case": "cavity_re100_ghia",
+  "description": "方腔流 Re=100，D2Q9 MRT，Ghia(1982) 验证，V3 修复版（2026-08-19）",
+  "lattice": "D2Q9",
+  "collision": "mrt",
+  "boundary": "V3: pre-streaming 半程反弹(三静止壁) + zou_he_moving_lid(顶盖)",
+  "extrap": "none",
+  "reference": "Ghia 1982 Re=100 中线表值 + 涡心 (0.6172, 0.7344)",
+  "grids": {
+    "128": {
+      "nx": 128,
+      "re": 100.0,
+      "u_lid": 0.06,
+      "tau": 0.7304,
+      "steps": 100000,
+      "elapsed_s": 159.3,
+      "last_resid": 4.197790985926986e-07,
+      "u_mid": -0.21084705740213394,
+      "u_mid_ghia": -0.20581,
+      "u_bot": -0.03884852910414338,
+      "v_mid": 0.056532666087150574,
+      "vortex": [0.6139, 0.7402],
+      "vortex_ghia": [0.6172, 0.7344],
+      "rmse_u": 0.003912177903656288,
+      "rmse_v": 0.0031676689632096277,
+      "max_abs_dev_pct": 0.7513717701435135
+    },
+    "192": {
+      "nx": 192,
+      "re": 100.0,
+      "u_lid": 0.06,
+      "tau": 0.8456,
+      "steps": 100000,
+      "elapsed_s": 301.8,
+      "last_resid": 4.423782229423523e-07,
+      "u_mid": -0.21028464287519455,
+      "u_mid_ghia": -0.20581,
+      "u_bot": -0.03990875417366623,
+      "v_mid": 0.05690430290997034,
+      "vortex": [0.6141, 0.7388],
+      "vortex_ghia": [0.6172, 0.7344],
+      "rmse_u": 0.003239141870327505,
+      "rmse_v": 0.003142618063418253,
+      "max_abs_dev_pct": 0.7263405613303187
+    }
+  },
+  "convergence": {
+    "max_abs_dev_pct": [0.7513717701435135, 0.7263405613303187],
+    "err_decreased": true,
+    "pass": true
+  },
+  "key_fix": "V3 pre-streaming 半程反弹(三静止壁) + zou_he_moving_lid：V0 post-streaming 反弹使顶盖动量绕入底壁(Re=100 曾 22.5% 偏差)；Re=400 案例验证 V3 修复后(23.6%→1.50%)经验迁移至 Re=100，两档 0.75%/0.73% 达标",
+  "verified": true,
+  "verified_date": "2026-08-19"
+}

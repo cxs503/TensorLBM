@@ -1,0 +1,75 @@
+{
+  "benchmark": "dit_turbulence",
+  "run": "第三次验证：Cs=0.13/0.14 精确扫描 + N=256 决定性两档（2026-08-20）",
+  "description": "背景：Cs=0.12 时 N=128 达标(+1.69%)/N=256 欠耗散(+17.05%)；Cs 单调（0.12 偏平 → 0.15 偏陡），达标点应在 0.13-0.14。本次：N=128 扫 Cs=0.13/0.14 → 选达标档 Cs=0.13 跑 N=256 两档验证（避免单档巧合）。bgk 路径（float32，避开 collide_smagorinsky_mrt3d dtype bug）。预注册窗口：N=128 k∈[10,24]、N=256 k∈[10,44]，时间窗 [146τ_L,292τ_L]≈[2000,4000]。",
+  "extrap": "none",
+  "cases": {
+    "N128_cs013": {
+      "slope": -1.6828,
+      "slope_se": 0.0678,
+      "err_pct_vs_-5/3": -0.97,
+      "r2": 0.9793,
+      "n_decay": 1.4903,
+      "n_r2": 0.9996,
+      "s3_mean": -0.368,
+      "mass_drift": 4.4e-04,
+      "wall_sec": 261,
+      "ms_per_step": 17.4,
+      "device": "cuda:0",
+      "slope_ok_3pct": true,
+      "n_in_band": true
+    },
+    "N128_cs014": {
+      "slope": -1.7396,
+      "slope_se": 0.0721,
+      "err_pct_vs_-5/3": -4.38,
+      "r2": 0.9781,
+      "n_decay": 1.4973,
+      "n_r2": 0.999,
+      "s3_mean": -0.386,
+      "mass_drift": 4.4e-04,
+      "wall_sec": 261,
+      "ms_per_step": 17.4,
+      "device": "cuda:0",
+      "slope_ok_3pct": false,
+      "n_in_band": true
+    },
+    "N256_cs013": {
+      "slope": -1.3843,
+      "slope_se": 0.0329,
+      "err_pct_vs_-5/3": 16.94,
+      "r2": 0.9816,
+      "n_decay": 1.6965,
+      "n_r2": 0.9947,
+      "s3_mean": -0.386,
+      "mass_drift": 4.4e-04,
+      "wall_sec": 3905,
+      "ms_per_step": 260.3,
+      "device": "cuda:2",
+      "slope_ok_3pct": false,
+      "n_in_band": false
+    }
+  },
+  "cs_monotonicity_N128": {
+    "0.12": {"slope": -1.6386, "err_pct": 1.69, "n": 1.4491},
+    "0.13": {"slope": -1.6828, "err_pct": -0.97, "n": 1.4903},
+    "0.14": {"slope": -1.7396, "err_pct": -4.38, "n": 1.4973},
+    "0.15": {"slope": -1.794, "err_pct": -7.66, "n": 1.476}
+  },
+  "verdict_cs013_twogrid": {
+    "grids": [128, 256],
+    "slope_per_grid": {"128": -1.6828, "256": -1.3843},
+    "slope_err_pct_per_grid": {"128": -0.97, "256": 16.94},
+    "n_decay_per_grid": {"128": 1.4903, "256": 1.6965},
+    "within_slope_tol": false,
+    "n_in_physical_band": false,
+    "converged_slope": false,
+    "converged_n": false,
+    "intergrid_slope_diff_pct": 17.91,
+    "intergrid_n_diff_pct": 13.84,
+    "tol_pct": 3.0,
+    "verified": false
+  },
+  "conclusion": "FAIL（不保存 verified/）。① N=128 单档：Cs=0.13 达标（-0.97%），Cs=0.14 超差（-4.38%），确认达标点 Cs≈0.13、Cs 单调（0.12→0.15 斜率 -1.639→-1.794 严格单调）；② N=256 决定性两档：Cs=0.13 slope=-1.384（+16.94%）、n=1.697 超带，与 Cs=0.12 的 N=256（+17.05%）几乎相同 → **N=256 欠耗散问题对 Cs∈[0.12,0.13] 不敏感，Cs 微调不是解**（先前 '提高 Cs 至 0.15-0.18' 建议大概率无效，需更高 Cs 或耗散自适应模型/多 IC 系综）；③ 档间差 slope 17.9% / n 13.8% >> 5%，两档不收敛。",
+  "environment_note": "N=128 两档跑 cuda:0（17.4ms/step）。N=256 首启 cuda:0 OOM：cuda:0 被 dell 用户 ComfyUI(1.15GB) + 僵尸进程 279936(9.93GB 显存, PPID=1 init 收养无法清理, 7月30 起存在) 占据，仅剩 ~12.6GB < 峰值 ~15GB；cuda:1 被 cylinder_3d verify 占 16.18GB（剩 5.5GB）；改用 cuda:2（空闲 ≥15GB，历史先例 README §3：同型号 RTX 3090，确定性计算与 device 无关）。受同卡 naca5 并发影响 260ms/step（wall 3905s vs 历史独占 2047s）。nvidia-smi 全局报 'Unable to determine the device handle for GPU0000:12:00.0'（NVML 层面，CUDA runtime 可用）。"
+}

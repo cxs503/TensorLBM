@@ -3,6 +3,7 @@
 This intentionally holds flags fixed so exchange and ABB reconstruction can be
 measured without redistribution/conversion/halo propagation.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -56,8 +57,15 @@ def test_frozen_mixed_topology_ledger_attributes_exchange_to_liquid_interface_ru
     f, fill, flags, solid, mass = _mixed_liquid_interface_gas_state()
     ledger: dict[str, float] = {}
     _, out_fill, out_flags, out_mass, _ = free_surface_step(
-        f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=0.001,
-        mass_ledger=ledger, freeze_topology=True,
+        f,
+        fill,
+        flags,
+        solid,
+        mass=mass,
+        tau=1.0,
+        rho_gas=0.001,
+        mass_ledger=ledger,
+        freeze_topology=True,
     )
 
     assert torch.equal(out_flags, flags)
@@ -76,7 +84,13 @@ def test_frozen_mixed_topology_conserves_composite_liquid_inventory() -> None:
     before = float(total_liquid_inventory(f, fill, flags))
 
     out_f, out_fill, out_flags, _, _ = free_surface_step(
-        f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=0.001,
+        f,
+        fill,
+        flags,
+        solid,
+        mass=mass,
+        tau=1.0,
+        rho_gas=0.001,
         freeze_topology=True,
     )
 
@@ -93,6 +107,12 @@ def test_direct_liquid_gas_link_is_rejected_in_frozen_topology() -> None:
 
     with pytest.raises(ValueError, match="LIQUID.*GAS.*INTERFACE"):
         free_surface_step(
-            f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=0.001,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            rho_gas=0.001,
             freeze_topology=True,
         )

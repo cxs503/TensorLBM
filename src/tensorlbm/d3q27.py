@@ -306,6 +306,24 @@ def moving_wall_linkwise_me_force_torque(
     fluid momentum as an incident population along ``c`` is reflected along
     ``-c``.  Consequently a stationary wall recovers conventional stationary
     momentum exchange.
+
+    Note:
+        Convention-bound torque.  The reflected population here is the
+        *ideal* mirror of the outgoing one, so the torque below is exact
+        only for schemes in which solid cells are excluded from collision
+        (bounce-back replaces collision on the wall).  When collision runs
+        on all cells and the bounce-back swap happens post-stream, the
+        population actually returning to the fluid is the BGK-relaxed
+        mirror, and this primitive systematically overestimates the wall
+        torque by about 2x: on the verified Taylor-Couette benchmark it
+        returns ``T/M_ref = 2.06/2.14/2.14`` at ``tau = 0.65`` (inner wall,
+        three grid levels; outer wall -2.03/-1.95/-1.91), degrading to
+        1.69 at ``tau = 0.74``.  For a convention-independent torque,
+        bookkeep the interface flux on the actual outgoing and returning
+        populations with link-midpoint lever arms instead (that channel
+        matches the analytic torque to <= 0.73% with two-wall balance
+        <= 0.23%; see disclosure 5 of
+        ``benchmarks/verified/taylor_couette/``).
     """
     if outgoing.ndim != 1:
         raise ValueError("outgoing must have shape (n_links,)")
@@ -634,19 +652,25 @@ _M_D3Q27_DATA, _M_D3Q27_INV_DATA = _build_d3q27_mrt_matrices()
 
 
 @functools.cache
-def _get_d3q27_mrt_matrices(device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
-    matrix = torch.tensor(_M_D3Q27_DATA, dtype=torch.float32, device=device)
-    matrix_inv = torch.tensor(_M_D3Q27_INV_DATA, dtype=torch.float32, device=device)
+def _get_d3q27_mrt_matrices(
+    device: torch.device, dtype: torch.dtype | None = None
+) -> tuple[torch.Tensor, torch.Tensor]:
+    matrix = torch.tensor(
+        _M_D3Q27_DATA, dtype=torch.float32 if dtype is None else dtype, device=device
+    )
+    matrix_inv = torch.tensor(
+        _M_D3Q27_INV_DATA, dtype=torch.float32 if dtype is None else dtype, device=device
+    )
     return matrix, matrix_inv
 
 
 def collide_mrt27(
     f: torch.Tensor,
-    tau: float,
-    s_e: float = 1.19,
-    s_eps: float = 1.4,
-    s_q: float = 1.2,
-    s_pi: float | None = None,
+    tau: float | torch.Tensor,
+    s_e: float | torch.Tensor = 1.19,
+    s_eps: float | torch.Tensor = 1.4,
+    s_q: float | torch.Tensor = 1.2,
+    s_pi: float | torch.Tensor | None = None,
 ) -> torch.Tensor:
     """D3Q27 multi-relaxation-time (MRT) collision step.
 
@@ -677,42 +701,28 @@ def collide_mrt27(
         s_pi = s_e
 
     device = f.device
-    matrix, matrix_inv = _get_d3q27_mrt_matrices(device)
+    matrix, matrix_inv = _get_d3q27_mrt_matrices(device, f.dtype)
 
     s_nu = 1.0 / tau
-    s_vec = torch.tensor(
-        [
-            0.0,  # 0  mass
-            0.0,  # 1  jx
-            0.0,  # 2  jy
-            0.0,  # 3  jz
-            s_e,  # 4  energy
-            s_nu,  # 5  Nxx
-            s_nu,  # 6  Nyy
-            s_nu,  # 7  Pxy
-            s_nu,  # 8  Pxz
-            s_nu,  # 9  Pyz
-            s_q,  # 10 qx
-            s_q,  # 11 qy
-            s_q,  # 12 qz
-            s_q,  # 13
-            s_q,  # 14
-            s_q,  # 15
-            s_q,  # 16
-            s_q,  # 17
-            s_q,  # 18
-            s_eps,  # 19 e²
-            s_pi,  # 20
-            s_pi,  # 21
-            s_pi,  # 22
-            s_pi,  # 23
-            s_pi,  # 24
-            s_pi,  # 25
-            s_pi,  # 26
-        ],
-        dtype=f.dtype,
-        device=device,
-    )
+    # Tensor-safe construction (B3 stage 5): ``torch.tensor([...])`` on a
+    # list containing a 0-dim tensor silently detaches it (scalar
+    # conversion), which would block dLoss/ds_e etc. on the differentiable
+    # calibration path — the same bug class :func:`tensorlbm.solver3d.collide_mrt3d`
+    # guards against (see ``_mrt3d_s_vec``).  For all-float inputs the
+    # result is identical to the previous literal construction.
+    head = [0.0, 0.0, 0.0, 0.0, s_e, s_nu, s_nu, s_nu, s_nu, s_nu]  # mass..Pyz
+    qblock = [s_q] * 9  # 3rd-order heat-flux moments
+    tail = [s_eps] + [s_pi] * 7  # energy-square + >=4th-order moments
+    if isinstance(s_nu, torch.Tensor) or any(
+        isinstance(v, torch.Tensor) for v in head + qblock + tail
+    ):
+
+        def _stack(vals: list[Any]) -> torch.Tensor:
+            return torch.stack([torch.as_tensor(v, dtype=f.dtype, device=device) for v in vals])
+
+        s_vec = torch.cat([_stack(head), _stack(qblock), _stack(tail)])
+    else:
+        s_vec = torch.tensor(head + qblock + tail, dtype=f.dtype, device=device)
 
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
     f_flat = f.reshape(27, -1)

@@ -50,6 +50,7 @@ __all__ = [
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _to_tensor(x: Any) -> torch.Tensor:
     """Coerce ``x`` into a float32 ``torch.Tensor``."""
     if isinstance(x, torch.Tensor):
@@ -80,6 +81,7 @@ def _mlp(in_dim: int, out_dim: int, hidden_dim: int, activation: str) -> nn.Modu
 # ---------------------------------------------------------------------------
 # Message-passing GNN (pure PyTorch)
 # ---------------------------------------------------------------------------
+
 
 class MeshGraphNetLayer(nn.Module):
     """One MeshGraphNet message-passing layer.
@@ -200,6 +202,7 @@ class MeshGraphNet(nn.Module):
 # Persistence helpers (mirror tensorlbm.ai.fno.save_fno2d / load_fno2d)
 # ---------------------------------------------------------------------------
 
+
 def save_mesh_gnn(model: MeshGraphNet, path: str | Path) -> Path:
     """Serialize a :class:`MeshGraphNet` to a ``.pt`` file plus JSON metadata."""
     p = Path(path)
@@ -232,6 +235,7 @@ def load_mesh_gnn(path: str | Path) -> MeshGraphNet:
 # ---------------------------------------------------------------------------
 # Synthetic flow-graph data generation
 # ---------------------------------------------------------------------------
+
 
 def _grid_edges(grid_size: int) -> torch.Tensor:
     """Build undirected 4-connectivity edges over a ``grid_size``×``grid_size`` grid."""
@@ -279,9 +283,9 @@ def _make_flow_graph(
     gy, gx = torch.meshgrid(coords, coords, indexing="ij")
     pos = torch.stack([gx.reshape(-1), gy.reshape(-1)], dim=1)  # (N, 2)
 
-    x = _velocity_field(pos, t, c)               # node velocity features (N, 2)
-    y = _velocity_field(pos, t + dt, c)          # next-time-step target  (N, 2)
-    edge_index = _grid_edges(gs)                 # (2, E)
+    x = _velocity_field(pos, t, c)  # node velocity features (N, 2)
+    y = _velocity_field(pos, t + dt, c)  # next-time-step target  (N, 2)
+    edge_index = _grid_edges(gs)  # (2, E)
     edge_attr = _edge_features(pos, x, edge_index)  # (E, 5)
 
     return {
@@ -315,6 +319,7 @@ def _collate(graphs: list[Mapping[str, torch.Tensor]]) -> dict[str, torch.Tensor
 # ---------------------------------------------------------------------------
 # The application
 # ---------------------------------------------------------------------------
+
 
 class MeshGNNFlow(AI4SApplication):
     """MeshGraphNet-style GNN flow predictor as an :class:`AI4SApplication`.
@@ -370,12 +375,15 @@ class MeshGNNFlow(AI4SApplication):
 
         if self._produce_fn is not None:
             graphs = self._produce_fn(
-                grid_size=grid_size, n_graphs=n_graphs, c=c, dt=dt, t0=t0,
+                grid_size=grid_size,
+                n_graphs=n_graphs,
+                c=c,
+                dt=dt,
+                t0=t0,
             )
         else:
             graphs = [
-                _make_flow_graph(grid_size, c=c, t=t0 + k * dt, dt=dt)
-                for k in range(n_graphs)
+                _make_flow_graph(grid_size, c=c, t=t0 + k * dt, dt=dt) for k in range(n_graphs)
             ]
         if not graphs:
             raise ValueError("flow-graph production returned no graphs")
@@ -494,6 +502,7 @@ class MeshGNNFlow(AI4SApplication):
 # Default training loop
 # ---------------------------------------------------------------------------
 
+
 def _train_gnn(
     dataset: Mapping[str, Any],
     model: MeshGraphNet,
@@ -549,6 +558,7 @@ def _train_gnn(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _unpack_sample(
     sample: Any,

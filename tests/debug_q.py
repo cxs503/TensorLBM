@@ -1,9 +1,13 @@
 """Debug q computation for a specific boundary link."""
 
 from __future__ import annotations
-import math, torch
+
+import math
+
 import numpy as np
-from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask, SuboffHullType
+import torch
+
+from tensorlbm.suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask
 
 nx, ny, nz = 64, 32, 32
 cx, cy, cz = nx * 0.35, ny / 2.0, nz / 2.0
@@ -23,7 +27,7 @@ solid, _ = build_suboff_mask(
 )
 
 # Find a few boundary links
-from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import C as C19  # noqa: E402
 
 c = C19.cpu().float()
 

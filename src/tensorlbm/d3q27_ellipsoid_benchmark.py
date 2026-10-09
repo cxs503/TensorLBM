@@ -22,7 +22,6 @@ from pathlib import Path
 
 import torch
 
-from .boundaries3d import make_channel_wall_mask_3d
 from .boundaries_d3q27 import (
     apply_zou_he_channel_boundaries_27,
     make_channel_wall_mask_27,
@@ -31,7 +30,6 @@ from .d3q27 import (
     collide_mrt27,
     correct_mass27,
     equilibrium27,
-    macroscopic27,
     stream27,
 )
 from .ellipsoid_benchmark import (

@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import torch
 import pytest
+import torch
 
 from tensorlbm.apps.base import TrainingResult
 from tensorlbm.apps.generative_flow import (
@@ -32,10 +32,10 @@ from tensorlbm.ml.serving import (
 )
 from tensorlbm.ml.training_job import TrainingJobRegistry
 
-
 # ---------------------------------------------------------------------------
 # Mock collaborators
 # ---------------------------------------------------------------------------
+
 
 def _mock_train_fn(dataset, model, cfg):
     """Save the (already built) DDPM and return a fixed TrainingResult."""
@@ -63,6 +63,7 @@ def app():
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 def test_class_identity():
     assert GenerativeFlow.name == "generative_flow"
@@ -195,7 +196,9 @@ def test_train_default_fn_writes_real_checkpoint(tmp_path):
     torch.manual_seed(0)
     app = GenerativeFlow()
     dataset = app.make_dataset(
-        app.produce_data({"nx": 16, "ny": 16, "n_snapshots": 4, "data_source": "vortex", "seed": 2}),
+        app.produce_data(
+            {"nx": 16, "ny": 16, "n_snapshots": 4, "data_source": "vortex", "seed": 2}
+        ),
     )
     model = app.build_model(
         {

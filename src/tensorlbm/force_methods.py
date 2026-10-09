@@ -49,14 +49,19 @@ Bouzidi, M., Firdaouss, M., & Lallemand, P. (2001). "Momentum transfer of
 
 from __future__ import annotations
 
-import math
 from typing import Literal
 
 import torch
 
-from .d2q9 import C as C2D, OPPOSITE as OPP2D, W as W2D
-from .d3q19 import C as C3D19, OPPOSITE as OPP3D19, W as W3D19
-from .d3q27 import C as C3D27, OPPOSITE as OPP3D27, W as W3D27
+from .d2q9 import OPPOSITE as OPP2D
+from .d2q9 import C as C2D
+from .d2q9 import W as W2D
+from .d3q19 import OPPOSITE as OPP3D19
+from .d3q19 import C as C3D19
+from .d3q19 import W as W3D19
+from .d3q27 import OPPOSITE as OPP3D27
+from .d3q27 import C as C3D27
+from .d3q27 import W as W3D27
 
 __all__ = [
     "force_momentum_exchange",
@@ -343,7 +348,7 @@ def force_stress_integration(
     C, OPP, W, nq = _get_lattice(dim, lattice)
     device = f.device
     c = C.to(device).float()
-    w = W.to(device).float()
+    W.to(device).float()
 
     # Compute macroscopic quantities
     if dim == 2:
@@ -485,7 +490,6 @@ def force_pressure_integration(
         Dictionary ``{"fx", "fy", "fz"}``.
     """
     dim = _detect_dim(f, solid)
-    device = f.device
     cs2 = 1.0 / 3.0
 
     if dim == 2:
@@ -892,15 +896,15 @@ def _extrapolate_to_wall_2d(
     # Layer 2: fluid cells adjacent to layer 1
     near2 = _near_wall_mask_2d(near1 | solid) & fluid
     # Layer 3
-    near3 = _near_wall_mask_2d(near1 | near2 | solid) & fluid
+    _near_wall_mask_2d(near1 | near2 | solid) & fluid
 
     if order == "linear":
         # Linear extrapolation: p_wall = 2*p1 - p2
         p1 = torch.where(near1, p, torch.zeros_like(p))
-        p2 = torch.where(near2, p, torch.zeros_like(p))
-        n1 = near1.to(p.dtype)
-        n2 = near2.to(p.dtype)
-        p_extrap = torch.where(
+        torch.where(near2, p, torch.zeros_like(p))
+        near1.to(p.dtype)
+        near2.to(p.dtype)
+        torch.where(
             near1,
             2.0 * p1 - torch.roll(p, shifts=(0, 0), dims=(0, 1)),  # fallback
             p,

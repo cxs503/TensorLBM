@@ -45,22 +45,18 @@ import torch
 
 # Reuse kernels from the one-phase benchmark
 from benchmark_stefan_freezing import (
-    C_D2Q5,
     W_D2Q5,
-    OPPOSITE,
-    equilibrium_thermal,
-    collide_thermal_bgk,
-    stream_thermal,
-    macroscopic_thermal,
     apply_temperature_bc_x,
     bounce_back_solid,
-    detect_interface_x,
+    collide_thermal_bgk,
+    equilibrium_thermal,
+    macroscopic_thermal,
     mean_temperature_profile_x,
+    stream_thermal,
 )
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
-
 
 # =========================================================================== #
 # Analytical solution (two-phase Stefan, equal thermal properties)
@@ -190,7 +186,7 @@ def run_stefan_two_phase(
 
     if not quiet:
         print(f"\n{'─' * 64}")
-        print(f"  Two-phase Stefan  —  D3Q19 BGK + D2Q5 thermal + Stefan condition")
+        print("  Two-phase Stefan  —  D3Q19 BGK + D2Q5 thermal + Stefan condition")
         print(f"  Grid: {nx} × {ny} × {nz}  (1-D in x)")
         print(f"  τ = {tau:.4f}   τ_T = {tau_T:.4f}   ν = {nu:.6f}   α = {alpha:.6f}")
         print(f"  T_left = {T_left}   T_right = {T_right}   T_freeze = {T_freeze}")

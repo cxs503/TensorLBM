@@ -13,20 +13,24 @@ near the correlation; a systematic factor reveals a force bug.
 from __future__ import annotations
 
 import math
-import sys
 
 import torch
 import torch.nn.functional as F
 
-from tensorlbm.d3q19 import C as C3D, OPPOSITE as OPP3D, W as W3D, equilibrium3d, macroscopic3d
-from tensorlbm.dg_advection import get_ops
-from tensorlbm.dg_band import build_band_topology, compute_dg_solid_force, hybrid_step
 from tensorlbm.boundaries3d import (
-    apply_simple_channel_boundaries_3d,
     make_channel_wall_mask_3d,
     sphere_mask,
 )
-from tensorlbm.dg_band import project_band_to_lbm
+from tensorlbm.d3q19 import OPPOSITE as OPP3D
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.dg_advection import get_ops
+from tensorlbm.dg_band import (
+    build_band_topology,
+    hybrid_step,
+    project_band_to_lbm,
+)
 from tensorlbm.obstacles import compute_obstacle_forces_3d
 from tensorlbm.solver3d import correct_mass3d
 

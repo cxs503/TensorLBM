@@ -1,0 +1,98 @@
+[
+ {
+  "R1": 0.8,
+  "R2": 1.0,
+  "G": 1.0,
+  "guo": false,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.8,
+  "R2": 1.0,
+  "G": 1.0,
+  "guo": true,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.8,
+  "R2": 1.0,
+  "G": 2.5,
+  "guo": false,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.8,
+  "R2": 1.0,
+  "G": 2.5,
+  "guo": true,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.7,
+  "R2": 1.0,
+  "G": 1.0,
+  "guo": false,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.7,
+  "R2": 1.0,
+  "G": 1.0,
+  "guo": true,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.7,
+  "R2": 1.0,
+  "G": 2.5,
+  "guo": false,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.7,
+  "R2": 1.0,
+  "G": 2.5,
+  "guo": true,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.55,
+  "R2": 1.0,
+  "G": 1.0,
+  "guo": false,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.55,
+  "R2": 1.0,
+  "G": 1.0,
+  "guo": true,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.55,
+  "R2": 1.0,
+  "G": 2.5,
+  "guo": false,
+  "nan_step": 50,
+  "trace": []
+ },
+ {
+  "R1": 0.55,
+  "R2": 1.0,
+  "G": 2.5,
+  "guo": true,
+  "nan_step": 50,
+  "trace": []
+ }
+]

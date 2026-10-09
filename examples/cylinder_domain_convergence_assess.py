@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Assess cylinder lateral-domain convergence with hashed source records."""
+
 from __future__ import annotations
 
 import argparse
@@ -21,10 +22,12 @@ def main() -> None:
         path = Path(value)
         payload = path.read_bytes()
         records.append(json.loads(payload))
-        sources.append({
-            "path": str(path),
-            "sha256": hashlib.sha256(payload).hexdigest(),
-        })
+        sources.append(
+            {
+                "path": str(path),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        )
     result = assess_cylinder_domain_convergence(records)
     result["sources"] = sources
     output = Path(args.output)

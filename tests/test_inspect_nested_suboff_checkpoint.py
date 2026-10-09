@@ -19,16 +19,19 @@ def _checkpoint(path: Path) -> None:
     rho = torch.ones((2, 3, 4))
     zero = torch.zeros_like(rho)
     population = equilibrium3d(rho, zero, zero, zero)
-    torch.save({
-        "schema": "tensorlbm-suboff-nested-amr-smoke-checkpoint-v3",
-        "configuration": {"hull_type": "bare_hull"},
-        "step": 12,
-        "level_populations": [population, population.clone(), population.clone()],
-        "step_records": [{"step": 12, "cv_resistance_n": 91.0}],
-        "maximum_limiter_fraction": 0.0,
-        "maximum_reflux_residual": [1e-8, 2e-8],
-        "maximum_reflux_limited_directions": [0, 0],
-    }, path)
+    torch.save(
+        {
+            "schema": "tensorlbm-suboff-nested-amr-smoke-checkpoint-v3",
+            "configuration": {"hull_type": "bare_hull"},
+            "step": 12,
+            "level_populations": [population, population.clone(), population.clone()],
+            "step_records": [{"step": 12, "cv_resistance_n": 91.0}],
+            "maximum_limiter_fraction": 0.0,
+            "maximum_reflux_residual": [1e-8, 2e-8],
+            "maximum_reflux_limited_directions": [0, 0],
+        },
+        path,
+    )
 
 
 def test_nested_checkpoint_health_is_read_only_and_explicit(tmp_path: Path) -> None:

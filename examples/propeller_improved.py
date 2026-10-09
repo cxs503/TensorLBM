@@ -7,17 +7,23 @@
 Based on the D3Q27 Cumulant + moving mask approach.
 """
 
-import sys, math, time, torch
+import math
+import sys
+import time
+
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
+from tensorlbm.cumulant import collide_cumulant_d3q27
 from tensorlbm.d3q27 import (
+    C as C27,
+)
+from tensorlbm.d3q27 import (
+    correct_mass27,
     equilibrium27,
     macroscopic27,
-    C as C27,
-    correct_mass27,
     moving_wall_linkwise_me_force_torque,
 )
-from tensorlbm.cumulant import collide_cumulant_d3q27
 from tensorlbm.propeller_cad import KP505_PRESET, build_propeller_mask
 
 SHIFTS = [(int(C27[q, 0]), int(C27[q, 1]), int(C27[q, 2])) for q in range(27)]
@@ -112,7 +118,7 @@ def run_improved_propeller(
     initial_mass = float(rho0.sum().item())
     wake_x = min(int(cx + D * 1.5), nx - 2)
 
-    print(f"=== Improved Propeller ===", flush=True)
+    print("=== Improved Propeller ===", flush=True)
     print(f"Grid: {nx}x{ny}x{nz} J={J} u_in={u_in} omega={omega:.4f}", flush=True)
     print(f"Masks: {n_masks} ({mask_interval_deg}°) BFL={use_bfl}", flush=True)
     print(f"tip_speed={omega * D / 2:.3f} tau={tau:.3f}", flush=True)

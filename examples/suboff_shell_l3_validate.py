@@ -50,6 +50,7 @@ Run (CPU smoke):::
         --l2-margin 4 --l3-margin 3 --sponge-width 8 --collision cumulant \\
         --report-interval 20 --output /tmp/suboff_l3_smoke.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -60,13 +61,13 @@ from dataclasses import asdict
 from pathlib import Path
 
 import torch
-
 from suboff_experimental_resistance import (
     MODEL_LENGTH_M,
     experimental_point,
     force_scale_newton,
     smooth_ramp_factor,
 )
+
 from tensorlbm.boundaries3d import bounce_back_cells_3d
 from tensorlbm.cascaded_collision import collide_cascaded_d3q19
 from tensorlbm.control_volume_force import (
@@ -185,12 +186,8 @@ def _shell_box(
         raise ValueError(
             f"empty {tag} surface-hugging shell; reduce the {tag} margin",
         )
-    z0, y0, x0 = (
-        int(indices[:, axis].min().item()) for axis in range(3)
-    )
-    z1, y1, x1 = (
-        int(indices[:, axis].max().item()) + 1 for axis in range(3)
-    )
+    z0, y0, x0 = (int(indices[:, axis].min().item()) for axis in range(3))
+    z1, y1, x1 = (int(indices[:, axis].max().item()) + 1 for axis in range(3))
     nz, ny, nx = solid_g.shape
     x0, x1 = _clamp_axis(x0, x1, nx, "x")
     y0, y1 = _clamp_axis(y0, y1, ny, "y")
@@ -281,7 +278,9 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cs-smag", type=float, default=0.05)
     p.add_argument("--cw-wale", type=float, default=0.5)
     p.add_argument(
-        "--wall-law", choices=("log", "reichardt", "musker"), default="reichardt",
+        "--wall-law",
+        choices=("log", "reichardt", "musker"),
+        default="reichardt",
     )
     p.add_argument("--wall-distance", type=float, default=0.5)
     p.add_argument("--stress-exchange-distance", type=float, default=0.0)
@@ -307,8 +306,7 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("cv-margin must be positive")
     if args.disable_reflux:
         raise ValueError(
-            "nested static-block AMR requires reflux on every interface; "
-            "remove --disable-reflux",
+            "nested static-block AMR requires reflux on every interface; remove --disable-reflux",
         )
     if not 0.0 < args.maximum_reflux_correction_fraction <= 1.0:
         raise ValueError("maximum-reflux-correction-fraction must lie in (0,1]")
@@ -319,19 +317,23 @@ def run(args: argparse.Namespace) -> dict:
     point = experimental_point(args.hull_type, args.speed_knots)
     shape = (args.nz, args.ny, args.nx)
     center = (args.nx * args.center_x_fraction, args.ny / 2.0, args.nz / 2.0)
-    if (
-        center[0] - args.hull_length / 2.0 <= 1
-        or center[0] + args.hull_length / 2.0 >= args.nx - 1
-    ):
+    if center[0] - args.hull_length / 2.0 <= 1 or center[0] + args.hull_length / 2.0 >= args.nx - 1:
         raise ValueError("SUBOFF hull does not fit inside the streamwise domain")
     config = SuboffConfig()
 
     # ---- coarse hull (level-0 freeze mask for coarse cells the fine block
     # ---- does not own).
     solid_coarse, coarse_geometry = build_suboff_mask(
-        args.hull_type, args.nx, args.ny, args.nz,
-        cx=center[0], cy=center[1], cz=center[2], length=args.hull_length,
-        config=config, device=device,
+        args.hull_type,
+        args.nx,
+        args.ny,
+        args.nz,
+        cx=center[0],
+        cy=center[1],
+        cz=center[2],
+        length=args.hull_length,
+        config=config,
+        device=device,
     )
     if not bool(solid_coarse.any()):
         raise ValueError("no SUBOFF cells on the coarse grid")
@@ -341,10 +343,12 @@ def run(args: argparse.Namespace) -> dict:
     # ---- surface shell + downstream wake, clipped laterally to the shell
     # ---- extent (identical to the single-level runner).
     shell_mask = HullProximityRegion(
-        solid_coarse, margin=args.shell_margin,
+        solid_coarse,
+        margin=args.shell_margin,
     ).expand_mask()
     wake_mask = WakeRegion(
-        solid_coarse, extend_x=args.wake_cells,
+        solid_coarse,
+        extend_x=args.wake_cells,
     ).expand_mask()
     shell_idx = shell_mask.nonzero(as_tuple=False)
     if shell_idx.numel() == 0:
@@ -354,9 +358,9 @@ def run(args: argparse.Namespace) -> dict:
     sz0, sy0 = int(shell_idx[:, 0].min().item()), int(shell_idx[:, 1].min().item())
     sz1, sy1 = int(shell_idx[:, 0].max().item()), int(shell_idx[:, 1].max().item())
     wake_mask[:sz0, :, :] = False
-    wake_mask[sz1 + 1:, :, :] = False
+    wake_mask[sz1 + 1 :, :, :] = False
     wake_mask[:, :sy0, :] = False
-    wake_mask[:, sy1 + 1:, :] = False
+    wake_mask[:, sy1 + 1 :, :] = False
     refine_mask = shell_mask | wake_mask
     indices = refine_mask.nonzero(as_tuple=False)
     if indices.numel() == 0:
@@ -374,8 +378,7 @@ def run(args: argparse.Namespace) -> dict:
     z1 = min(args.nz - 1, z_max + pad)
     if min(x1 - x0, y1 - y0, z1 - z0) < 3:
         raise ValueError(
-            "refinement box too small: try a larger --wake-cells or a smaller "
-            "--shell-margin",
+            "refinement box too small: try a larger --wake-cells or a smaller --shell-margin",
         )
     box1 = BoxRegion(x0, x1, y0, y1, z0, z1)
 
@@ -384,7 +387,9 @@ def run(args: argparse.Namespace) -> dict:
     collision_re = args.resolved_reynolds or physical_re
     nu_coarse = args.lattice_speed * args.hull_length / collision_re
     wall_nu_fine3 = physical_wall_lattice_viscosity(
-        args.lattice_speed, args.hull_length * 8.0, physical_re,
+        args.lattice_speed,
+        args.hull_length * 8.0,
+        physical_re,
     )
     tau_coarse = 0.5 + 3.0 * nu_coarse
 
@@ -417,9 +422,16 @@ def run(args: argparse.Namespace) -> dict:
         center[2] * RATIO - z0 * RATIO + GHOST,
     )
     l1_solid, l1_geometry = build_suboff_mask(
-        args.hull_type, s1[2], s1[1], s1[0],
-        cx=fc1[0], cy=fc1[1], cz=fc1[2],
-        length=args.hull_length * 2.0, config=config, device=device1,
+        args.hull_type,
+        s1[2],
+        s1[1],
+        s1[0],
+        cx=fc1[0],
+        cy=fc1[1],
+        cz=fc1[2],
+        length=args.hull_length * 2.0,
+        config=config,
+        device=device1,
     )
     if not bool(l1_solid.any()):
         raise RuntimeError("L1 block contains no SUBOFF cells")
@@ -430,7 +442,12 @@ def run(args: argparse.Namespace) -> dict:
     # ---- coordinates from the L1 fine hull.
     box2 = _shell_box(l1_solid_g, args.l2_margin, "L2")
     x0_2, x1_2, y0_2, y1_2, z0_2, z1_2 = (
-        box2.x0, box2.x1, box2.y0, box2.y1, box2.z0, box2.z1,
+        box2.x0,
+        box2.x1,
+        box2.y0,
+        box2.y1,
+        box2.z0,
+        box2.z1,
     )
     s2 = (
         (z1_2 - z0_2) * RATIO,
@@ -443,9 +460,16 @@ def run(args: argparse.Namespace) -> dict:
         c1_w[2] * RATIO - z0_2 * RATIO + GHOST,
     )
     l2_solid, l2_geometry = build_suboff_mask(
-        args.hull_type, s2[2], s2[1], s2[0],
-        cx=fc2[0], cy=fc2[1], cz=fc2[2],
-        length=args.hull_length * 4.0, config=config, device=device2,
+        args.hull_type,
+        s2[2],
+        s2[1],
+        s2[0],
+        cx=fc2[0],
+        cy=fc2[1],
+        cz=fc2[2],
+        length=args.hull_length * 4.0,
+        config=config,
+        device=device2,
     )
     if not bool(l2_solid.any()):
         raise RuntimeError("L2 block contains no SUBOFF cells")
@@ -456,7 +480,12 @@ def run(args: argparse.Namespace) -> dict:
     # ---- coordinates from the L2 fine hull.
     box3 = _shell_box(l2_solid_g, args.l3_margin, "L3")
     x0_3, x1_3, y0_3, y1_3, z0_3, z1_3 = (
-        box3.x0, box3.x1, box3.y0, box3.y1, box3.z0, box3.z1,
+        box3.x0,
+        box3.x1,
+        box3.y0,
+        box3.y1,
+        box3.z0,
+        box3.z1,
     )
     s3 = (
         (z1_3 - z0_3) * RATIO,
@@ -469,9 +498,16 @@ def run(args: argparse.Namespace) -> dict:
         c2_w[2] * RATIO - z0_3 * RATIO + GHOST,
     )
     l3_solid, l3_geometry = build_suboff_mask(
-        args.hull_type, s3[2], s3[1], s3[0],
-        cx=fc3[0], cy=fc3[1], cz=fc3[2],
-        length=args.hull_length * 8.0, config=config, device=device3,
+        args.hull_type,
+        s3[2],
+        s3[1],
+        s3[0],
+        cx=fc3[0],
+        cy=fc3[1],
+        cz=fc3[2],
+        length=args.hull_length * 8.0,
+        config=config,
+        device=device3,
     )
     if not bool(l3_solid.any()):
         raise RuntimeError("L3 block contains no SUBOFF cells")
@@ -480,24 +516,24 @@ def run(args: argparse.Namespace) -> dict:
     # ---- tau chain: interface i+1's tau_coarse must equal interface i's
     # ---- tau_fine (0.5 + 2*(tau-0.5) recursion, convective scaling).
     config1 = StaticBlockAMRConfig(
-        box1, tau_coarse=tau_coarse, reflux=True,
-        maximum_reflux_correction_fraction=(
-            args.maximum_reflux_correction_fraction
-        ),
+        box1,
+        tau_coarse=tau_coarse,
+        reflux=True,
+        maximum_reflux_correction_fraction=(args.maximum_reflux_correction_fraction),
         ghost_interpolation=args.ghost_interpolation,
     )
     config2 = StaticBlockAMRConfig(
-        box2, tau_coarse=config1.tau_fine, reflux=True,
-        maximum_reflux_correction_fraction=(
-            args.maximum_reflux_correction_fraction
-        ),
+        box2,
+        tau_coarse=config1.tau_fine,
+        reflux=True,
+        maximum_reflux_correction_fraction=(args.maximum_reflux_correction_fraction),
         ghost_interpolation=args.ghost_interpolation,
     )
     config3 = StaticBlockAMRConfig(
-        box3, tau_coarse=config2.tau_fine, reflux=True,
-        maximum_reflux_correction_fraction=(
-            args.maximum_reflux_correction_fraction
-        ),
+        box3,
+        tau_coarse=config2.tau_fine,
+        reflux=True,
+        maximum_reflux_correction_fraction=(args.maximum_reflux_correction_fraction),
         ghost_interpolation=args.ghost_interpolation,
     )
     tau_fine3 = config3.tau_fine
@@ -514,15 +550,23 @@ def run(args: argparse.Namespace) -> dict:
     # ---- normals + BFL q-field evaluated on the L3 with-ghost grid.
     print("building L3 BFL link distances", flush=True)
     bfl_mask3, bfl_q3 = compute_q_suboff(
-        l3_solid_g.shape[2], l3_solid_g.shape[1], l3_solid_g.shape[0],
-        *fc3, args.hull_length * 8.0,
-        hull_type=args.hull_type, config=config, device=device3,
+        l3_solid_g.shape[2],
+        l3_solid_g.shape[1],
+        l3_solid_g.shape[0],
+        *fc3,
+        args.hull_length * 8.0,
+        hull_type=args.hull_type,
+        config=config,
+        device=device3,
         solid_mask=l3_solid_g,
     )
     l3_near = get_near_wall_3d(l3_solid_g)
     l3_surface = SurfaceMesh.from_suboff(
-        l3_solid_g, l3_near, *fc3,
-        args.hull_length * 8.0, args.hull_length * 8.0 / (2.0 * SUBOFF_L_D),
+        l3_solid_g,
+        l3_near,
+        *fc3,
+        args.hull_length * 8.0,
+        args.hull_length * 8.0 / (2.0 * SUBOFF_L_D),
         config=config,
     )
     l3_area_weight, surface_area_diagnostics = bfl_surface_area_weights(
@@ -543,12 +587,8 @@ def run(args: argparse.Namespace) -> dict:
     l3_indices = l3_solid_g.nonzero(as_tuple=False)
     if l3_indices.numel() == 0:
         raise RuntimeError("L3 block contains no SUBOFF cells")
-    z_min_f, y_min_f, x_min_f = (
-        int(l3_indices[:, axis].min().item()) for axis in range(3)
-    )
-    z_max_f, y_max_f, x_max_f = (
-        int(l3_indices[:, axis].max().item()) + 1 for axis in range(3)
-    )
+    z_min_f, y_min_f, x_min_f = (int(l3_indices[:, axis].min().item()) for axis in range(3))
+    z_max_f, y_max_f, x_max_f = (int(l3_indices[:, axis].max().item()) + 1 for axis in range(3))
     nz_f, ny_f, nx_f = l3_solid_g.shape
     resolved_margin = args.cv_margin
     for lower, upper, size in (
@@ -565,28 +605,35 @@ def run(args: argparse.Namespace) -> dict:
         )
     if resolved_margin < args.cv_margin:
         print(
-            f"note: clamped cv-margin {args.cv_margin} -> {resolved_margin} "
-            f"(thin-shell L3 block)",
+            f"note: clamped cv-margin {args.cv_margin} -> {resolved_margin} (thin-shell L3 block)",
             flush=True,
         )
     cv = box_control_volume(
         tuple(l3_solid_g.shape),
-        x0=x_min_f - resolved_margin, x1=x_max_f + resolved_margin,
-        y0=y_min_f - resolved_margin, y1=y_max_f + resolved_margin,
-        z0=z_min_f - resolved_margin, z1=z_max_f + resolved_margin,
+        x0=x_min_f - resolved_margin,
+        x1=x_max_f + resolved_margin,
+        y0=y_min_f - resolved_margin,
+        y1=y_max_f + resolved_margin,
+        z0=z_min_f - resolved_margin,
+        z1=z_max_f + resolved_margin,
         device=device3,
     )
 
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sponge = build_sponge_sigma_3d(
-        shape, width=args.sponge_width, max_strength=args.sponge_strength,
-        device=device, faces=sponge_faces,
+        shape,
+        width=args.sponge_width,
+        max_strength=args.sponge_strength,
+        device=device,
+        faces=sponge_faces,
     )
 
     dx_fine_m = MODEL_LENGTH_M / (8.0 * args.hull_length)
     scale = force_scale_newton(
-        rho_water=args.rho_water, dx_m=dx_fine_m,
-        speed_mps=point.speed_mps, lattice_speed=args.lattice_speed,
+        rho_water=args.rho_water,
+        dx_m=dx_fine_m,
+        speed_mps=point.speed_mps,
+        lattice_speed=args.lattice_speed,
     )
 
     print(
@@ -635,14 +682,16 @@ def run(args: argparse.Namespace) -> dict:
         return result
 
     def advance(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         nonlocal max_reflux_residual, maximum_positivity_limited_fraction
         level_index = _level_index_of(f, level_shapes)
         if level != level_index:
             raise ValueError(
-                f"runtime level {level} disagrees with shape-derived level "
-                f"{level_index}",
+                f"runtime level {level} disagrees with shape-derived level {level_index}",
             )
         if level_index == 0:
             # root: coarse hull frozen, far-field + sponge (patch-free region)
@@ -651,15 +700,18 @@ def run(args: argparse.Namespace) -> dict:
             post_collision = torch.where(solid_coarse_q, before, collided)
             out = stream3d(post_collision)
             out = non_equilibrium_far_field_bc_3d(
-                out, u_in=args.lattice_speed,
+                out,
+                u_in=args.lattice_speed,
             )
             if args.sponge_width > 0 and args.sponge_strength > 0.0:
                 out = apply_equilibrium_difference_sponge(
-                    out, sponge,
+                    out,
+                    sponge,
                     velocity_target=(args.lattice_speed, 0.0, 0.0),
                 )
             out = non_equilibrium_far_field_bc_3d(
-                out, u_in=args.lattice_speed,
+                out,
+                u_in=args.lattice_speed,
             )
             return AMRAdvanceResult(out, post_collision)
 
@@ -668,8 +720,7 @@ def run(args: argparse.Namespace) -> dict:
             # (no wall model — avoids double wall treatment; the wall model
             # lives exclusively on the finest level L3).
             solid_g, solid_q = (
-                (l1_solid_g, solid_q1) if level_index == 1
-                else (l2_solid_g, solid_q2)
+                (l1_solid_g, solid_q1) if level_index == 1 else (l2_solid_g, solid_q2)
             )
             before = f
             collided = collide(f, tau)
@@ -686,16 +737,24 @@ def run(args: argparse.Namespace) -> dict:
         out = stream3d(post_collision)
         activation = smooth_ramp_factor(current_step, args.ramp_steps)
         wall_result = bfl_wall_function_3d(
-            out, post_collision, l3_solid_g, wall_nu_fine3,
-            bfl_mask3, bfl_q3, y_val=args.wall_distance,
-            wall_law=args.wall_law, near_mask=l3_near,
-            bfl_wall_mode="wall_model_slip", wall_activation=activation,
+            out,
+            post_collision,
+            l3_solid_g,
+            wall_nu_fine3,
+            bfl_mask3,
+            bfl_q3,
+            y_val=args.wall_distance,
+            wall_law=args.wall_law,
+            near_mask=l3_near,
+            bfl_wall_mode="wall_model_slip",
+            wall_activation=activation,
             stress_exchange_distance=(
-                args.stress_exchange_distance
-                if args.stress_exchange_distance > 0.0 else None
+                args.stress_exchange_distance if args.stress_exchange_distance > 0.0 else None
             ),
             wall_normals=(
-                l3_surface.nx_n, l3_surface.ny_n, l3_surface.nz_n,
+                l3_surface.nx_n,
+                l3_surface.ny_n,
+                l3_surface.nz_n,
             ),
             area_weight=l3_area_weight,
             apply_wall_stress=True,
@@ -710,9 +769,17 @@ def run(args: argparse.Namespace) -> dict:
         if substep == 0 and current_step > args.warmup_steps:
             # one sample per coarse step, post-warmup only (same statistics
             # semantics as suboff_static_amr_resistance.py)
-            cv_force = float(observe_control_volume_force(
-                before, out, post_collision, cv, solid=l3_solid_g,
-            ).force_on_body[0].item())
+            cv_force = float(
+                observe_control_volume_force(
+                    before,
+                    out,
+                    post_collision,
+                    cv,
+                    solid=l3_solid_g,
+                )
+                .force_on_body[0]
+                .item()
+            )
             force_samples.append(cv_force)
         return AMRAdvanceResult(out, post_collision)
 
@@ -721,22 +788,18 @@ def run(args: argparse.Namespace) -> dict:
         for index, ledger in enumerate(ledgers):
             residual = float(ledger.residual.abs().max().item())
             reflux_residual_by_level[index] = max(
-                reflux_residual_by_level[index], residual,
+                reflux_residual_by_level[index],
+                residual,
             )
         max_reflux_residual = max(max_reflux_residual, *reflux_residual_by_level)
         if current_step % args.report_interval == 0:
-            if not all(
-                bool(torch.isfinite(level).all())
-                for level in amr.level_populations
-            ):
+            if not all(bool(torch.isfinite(level).all()) for level in amr.level_populations):
                 raise FloatingPointError(
                     f"SUBOFF shell L3 AMR run diverged (non-finite "
                     f"populations) at step {current_step}",
                 )
-            recent = force_samples[-min(len(force_samples), args.report_interval):]
-            recent_n = (
-                sum(recent) / len(recent) * scale if recent else math.nan
-            )
+            recent = force_samples[-min(len(force_samples), args.report_interval) :]
+            recent_n = sum(recent) / len(recent) * scale if recent else math.nan
             elapsed = time.time() - started
             print(
                 f"step={current_step}/{args.steps} recent_Rt={recent_n:.3f} N "
@@ -758,25 +821,18 @@ def run(args: argparse.Namespace) -> dict:
         block_size=max(1, len(resistance_history_n) // 8),
     )
     stationarity_dict = (
-        asdict(stationarity)
-        if hasattr(stationarity, "__dataclass_fields__")
-        else stationarity
+        asdict(stationarity) if hasattr(stationarity, "__dataclass_fields__") else stationarity
     )
     reference_error_pct = (
         abs(resistance_n - point.resistance_n) / point.resistance_n * 100.0
-        if math.isfinite(resistance_n) else math.nan
+        if math.isfinite(resistance_n)
+        else math.nan
     )
-    final_window = resistance_history_n[-min(len(resistance_history_n), args.report_interval):]
-    final_window_resistance_n = (
-        sum(final_window) / len(final_window) if final_window else math.nan
-    )
-    finite = (
-        all(
-            bool(torch.isfinite(level).all())
-            for level in amr.level_populations
-        )
-        and math.isfinite(resistance_n)
-    )
+    final_window = resistance_history_n[-min(len(resistance_history_n), args.report_interval) :]
+    final_window_resistance_n = sum(final_window) / len(final_window) if final_window else math.nan
+    finite = all(
+        bool(torch.isfinite(level).all()) for level in amr.level_populations
+    ) and math.isfinite(resistance_n)
     wall_time_s = time.time() - started
 
     result = {
@@ -815,21 +871,16 @@ def run(args: argparse.Namespace) -> dict:
             "ghost": GHOST,
             "reflux": True,
             "reflux_method": "face_local_conserved_moment_flux",
-            "maximum_reflux_correction_fraction": (
-                args.maximum_reflux_correction_fraction
-            ),
+            "maximum_reflux_correction_fraction": (args.maximum_reflux_correction_fraction),
             "ghost_interpolation": args.ghost_interpolation,
             "collision": args.collision,
             "collision_model": args.collision_model,
             "les_model": args.les_model,
-            "les_constant": (
-                args.cw_wale if args.les_model == "wale" else args.cs_smag
-            ),
+            "les_constant": (args.cw_wale if args.les_model == "wale" else args.cs_smag),
             "wall_law": args.wall_law,
             "wall_distance": args.wall_distance,
             "stress_exchange_distance": (
-                args.stress_exchange_distance
-                if args.stress_exchange_distance > 0.0 else None
+                args.stress_exchange_distance if args.stress_exchange_distance > 0.0 else None
             ),
             "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
             "positivity_limiter_enabled": not args.disable_positivity_limiter,
@@ -873,7 +924,10 @@ def run(args: argparse.Namespace) -> dict:
                 },
             ],
             "tau_chain": [
-                tau_coarse, config1.tau_fine, config2.tau_fine, tau_fine3,
+                tau_coarse,
+                config1.tau_fine,
+                config2.tau_fine,
+                tau_fine3,
             ],
             "cell_saving_fraction": amr.cell_saving_fraction,
         },
@@ -908,9 +962,7 @@ def run(args: argparse.Namespace) -> dict:
             "stationarity": stationarity_dict,
             "max_reflux_residual": max_reflux_residual,
             "max_reflux_residual_by_level": reflux_residual_by_level,
-            "maximum_positivity_limited_fraction": (
-                maximum_positivity_limited_fraction
-            ),
+            "maximum_positivity_limited_fraction": (maximum_positivity_limited_fraction),
             "force_samples": len(force_samples),
             "statistics_window_steps": statistics_window,
             "finite": finite,

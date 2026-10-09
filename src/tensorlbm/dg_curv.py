@@ -44,15 +44,14 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 
-from .dg_advection import _Ops, get_ops, macroscopic_dg, equilibrium_dg
+from .d3q19 import OPPOSITE as OPP3D
+from .dg_advection import _Ops, equilibrium_dg, get_ops, macroscopic_dg
 from .dg_band import (
     BandTopology,
     _neighbour_face_value,
     _override_face,
     write_back_exports,
-    project_band_to_lbm,
 )
-from .d3q19 import OPPOSITE as OPP3D
 
 
 @dataclass
@@ -161,7 +160,7 @@ def make_sphere_prism_topology(
     LBM (their contribution to drag is tiny).  Returns ``(topo, geo, meta)``.
     """
     nz, ny, nx = solid.shape
-    C = torch.tensor(center, dtype=torch.float64, device=solid.device)
+    torch.tensor(center, dtype=torch.float64, device=solid.device)
     cx, cy, cz = center
 
     # --- surface fluid cells (adjacent to solid) ---
@@ -176,7 +175,7 @@ def make_sphere_prism_topology(
     # direction (radial unit) and local frame per surface cell
     d = torch.stack([sx - cx, sy - cy, sz - cz], dim=-1)
     dnorm = d.norm(dim=-1, keepdim=True)
-    n0 = (d / dnorm)  # (N,3) outward radial
+    n0 = d / dnorm  # (N,3) outward radial
     ex = torch.tensor([[1.0, 0.0, 0.0]], dtype=n0.dtype, device=n0.device)
     ey = torch.tensor([[0.0, 1.0, 0.0]], dtype=n0.dtype, device=n0.device)
     cross = torch.cross(n0, ex, dim=-1)
@@ -208,7 +207,7 @@ def make_sphere_prism_topology(
     h[0] = first_height
     for k in range(1, n_layers):
         h[k] = h[k - 1] * growth
-    cum = torch.zeros(n_layers, dtype=torch.float64, device=solid.device)
+    torch.zeros(n_layers, dtype=torch.float64, device=solid.device)
     rc = torch.zeros(n_layers, dtype=torch.float64, device=solid.device)
     run = 0.0
     for k in range(n_layers):
@@ -244,7 +243,11 @@ def make_sphere_prism_topology(
             hst = R * (np.pi / n_stream)
             for k in range(n_layers):
                 elem_of[sb, ab, k] = b
-                cc = torch.tensor([sx[si].item(), sy[si].item(), sz[si].item()], dtype=torch.float64, device=n0.device)
+                cc = torch.tensor(
+                    [sx[si].item(), sy[si].item(), sz[si].item()],
+                    dtype=torch.float64,
+                    device=n0.device,
+                )
                 cb = cc + rc[k].item() * n0[si]
                 center_b[b] = cb
                 nrm_b[b] = n0[si]
@@ -304,39 +307,52 @@ def make_sphere_prism_topology(
 
                 # a=0 radial: minus = inner layer (solid if k==0), plus = outer (exterior)
                 if k > 0:
-                    nbr_minus[0, b] = int(elem_of[sb, ab, k - 1]); type_minus[0, b] = 0
+                    nbr_minus[0, b] = int(elem_of[sb, ab, k - 1])
+                    type_minus[0, b] = 0
                 else:
                     type_minus[0, b] = 2
                 if k < n_layers - 1:
-                    nbr_plus[0, b] = int(elem_of[sb, ab, k + 1]); type_plus[0, b] = 0
+                    nbr_plus[0, b] = int(elem_of[sb, ab, k + 1])
+                    type_plus[0, b] = 0
                 else:
                     type_plus[0, b] = 1
                 # a=1 azimuth: periodic wrap
                 abm = (ab - 1) % n_az
                 abp = (ab + 1) % n_az
                 if int(elem_of[sb, abm, k]) >= 0:
-                    nbr_minus[1, b] = int(elem_of[sb, abm, k]); type_minus[1, b] = 0
+                    nbr_minus[1, b] = int(elem_of[sb, abm, k])
+                    type_minus[1, b] = 0
                 else:
                     type_minus[1, b] = 1
                 if int(elem_of[sb, abp, k]) >= 0:
-                    nbr_plus[1, b] = int(elem_of[sb, abp, k]); type_plus[1, b] = 0
+                    nbr_plus[1, b] = int(elem_of[sb, abp, k])
+                    type_plus[1, b] = 0
                 else:
                     type_plus[1, b] = 1
                 # a=2 streamwise
                 if sb > 0 and int(elem_of[sb - 1, ab, k]) >= 0:
-                    nbr_minus[2, b] = int(elem_of[sb - 1, ab, k]); type_minus[2, b] = 0
+                    nbr_minus[2, b] = int(elem_of[sb - 1, ab, k])
+                    type_minus[2, b] = 0
                 else:
                     type_minus[2, b] = 1
                 if sb < n_stream - 1 and int(elem_of[sb + 1, ab, k]) >= 0:
-                    nbr_plus[2, b] = int(elem_of[sb + 1, ab, k]); type_plus[2, b] = 0
+                    nbr_plus[2, b] = int(elem_of[sb + 1, ab, k])
+                    type_plus[2, b] = 0
                 else:
                     type_plus[2, b] = 1
 
     topo = BandTopology(
-        ndim=3, shape=tuple(solid.shape), n_band=n_band,
-        band_coords=band_coords, nbr_minus=nbr_minus, nbr_plus=nbr_plus,
-        ext_minus_idx=ext_minus, ext_plus_idx=ext_plus,
-        nbr_type_minus=type_minus, nbr_type_plus=type_plus, periodic=False,
+        ndim=3,
+        shape=tuple(solid.shape),
+        n_band=n_band,
+        band_coords=band_coords,
+        nbr_minus=nbr_minus,
+        nbr_plus=nbr_plus,
+        ext_minus_idx=ext_minus,
+        ext_plus_idx=ext_plus,
+        nbr_type_minus=type_minus,
+        nbr_type_plus=type_plus,
+        periodic=False,
     )
 
     # --- wall reflection map ---
@@ -352,12 +368,15 @@ def make_sphere_prism_topology(
         specular = OPP3D.to(device=device).to(torch.long).unsqueeze(0).expand(n_band, Q).clone()
 
     geo = PrismGeometry(
-        contrav=contrav.to(dtype), face_J=face_J.to(dtype),
-        n_phys=n_phys.to(dtype), specular=specular,
+        contrav=contrav.to(dtype),
+        face_J=face_J.to(dtype),
+        n_phys=n_phys.to(dtype),
+        specular=specular,
         detJ=detJ.to(dtype),
     )
-    meta = dict(n_stream=n_stream, n_az=n_az, n_layers=n_layers,
-                elem_of=elem_of, R=R, center=center)
+    meta = dict(
+        n_stream=n_stream, n_az=n_az, n_layers=n_layers, elem_of=elem_of, R=R, center=center
+    )
     return topo, geo, meta
 
 
@@ -370,9 +389,12 @@ def _specular_map(vel, n_wall, device):
     """
     if vel is None:
         Q = 19
-        return torch.arange(Q, dtype=torch.long, device=device).unsqueeze(0).expand(
-            n_wall.shape[0], Q
-        ).clone()
+        return (
+            torch.arange(Q, dtype=torch.long, device=device)
+            .unsqueeze(0)
+            .expand(n_wall.shape[0], Q)
+            .clone()
+        )
     Q = vel.shape[0]
     nhat = n_wall.to(device).to(torch.float64)  # (n_band, 3)
     c = vel.to(device).to(torch.float64)  # (Q, 3)
@@ -382,9 +404,6 @@ def _specular_map(vel, n_wall, device):
     dist = diff.norm(dim=-1)  # (Q, n_band, Q')
     spec = dist.argmin(dim=2)  # (Q, n_band)
     return spec.T.to(torch.long).to(device)
-
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -412,21 +431,17 @@ def dg_rhs_band_geo(
     """
     ndim = topo.ndim
     n_node = ops.n_node
-    n_dims = f_dg.ndim
-    Q = velocities.shape[0]
+    velocities.shape[0]
     n_band = topo.n_band
     b_debug = False
     contrav = geo.contrav  # (n_band, 3, 3)
-    face_J = geo.face_J  # (3, 2, n_band)
     specular = geo.specular  # (n_band, Q)
     detJ = geo.detJ  # (n_band,) volume weight (= face_J weight)
     dev = f_dg.device
 
     # ĉ[b, a, q] = Σ_c contrav[b,a,c] c[q,c]
     velocities = velocities.to(device=dev, dtype=f_dg.dtype)
-    c_hat = torch.einsum(
-        "b a c, q c -> b a q", contrav, velocities
-    )  # (n_band, 3, Q)
+    c_hat = torch.einsum("b a c, q c -> b a q", contrav, velocities)  # (n_band, 3, Q)
 
     # precompute specular ghost for ALL velocities (restricted later)
     spec = specular.to(dev)  # (n_band, Q)
@@ -462,9 +477,7 @@ def dg_rhs_band_geo(
         left_ext = _neighbour_face_value(
             sub, nbr_m, topo.ext_minus_idx[a], ext_sub, n_node - 1, node_axis
         )
-        right_ext = _neighbour_face_value(
-            sub, nbr_p, topo.ext_plus_idx[a], ext_sub, 0, node_axis
-        )
+        right_ext = _neighbour_face_value(sub, nbr_p, topo.ext_plus_idx[a], ext_sub, 0, node_axis)
         # solid wall ghost via specular reflection
         solid_m = topo.nbr_type_minus[a] == 2  # (n_band,)
         solid_p = topo.nbr_type_plus[a] == 2
@@ -477,7 +490,9 @@ def dg_rhs_band_geo(
 
         pos = (c_sub > 0.0).view(list(c_sub.shape) + [1] * (inner_left.ndim - 2))
         if b_debug:
-            print(f"[dbg a={a}] pos{tuple(pos.shape)} L{tuple(left_ext.shape)} iL{tuple(inner_left.shape)} R{tuple(right_ext.shape)} iR{tuple(inner_right.shape)}")
+            print(
+                f"[dbg a={a}] pos{tuple(pos.shape)} L{tuple(left_ext.shape)} iL{tuple(inner_left.shape)} R{tuple(right_ext.shape)} iR{tuple(inner_right.shape)}"
+            )
         uL = torch.where(pos, left_ext, inner_left)
         uR = torch.where(pos, inner_right, right_ext)
 
@@ -501,9 +516,7 @@ def dg_rhs_band_geo(
     return rhs
 
 
-def dg_lbm_rhs_band_geo(
-    f_dg, velocities, weights, tau, ops, topo, geo, ext_field=None
-):
+def dg_lbm_rhs_band_geo(f_dg, velocities, weights, tau, ops, topo, geo, ext_field=None):
     adv = dg_rhs_band_geo(f_dg, velocities, ops, topo, geo, ext_field)
     rho, us = macroscopic_dg(f_dg, velocities, q_first=0)
     feq = equilibrium_dg(rho, us, velocities, weights, q_first=0, ndim_field=f_dg.ndim)
@@ -511,8 +524,17 @@ def dg_lbm_rhs_band_geo(
 
 
 def dg_lbm_step_band_geo(
-    f_dg, velocities, weights, tau, ops, topo, geo, ext_field, dt=1.0,
-    n_substeps=6, scheme="rk3",
+    f_dg,
+    velocities,
+    weights,
+    tau,
+    ops,
+    topo,
+    geo,
+    ext_field,
+    dt=1.0,
+    n_substeps=6,
+    scheme="rk3",
 ):
     import math
 
@@ -545,8 +567,19 @@ def dg_lbm_step_band_geo(
 
 
 def hybrid_step_geo(
-    f_lbm, f_dg, velocities, weights, ops, topo, geo, tau_lbm, dt=1.0,
-    n_substeps=6, scheme="rk3", stream_fn=None, collide_fn=None,
+    f_lbm,
+    f_dg,
+    velocities,
+    weights,
+    ops,
+    topo,
+    geo,
+    tau_lbm,
+    dt=1.0,
+    n_substeps=6,
+    scheme="rk3",
+    stream_fn=None,
+    collide_fn=None,
 ):
     """One hybrid DG-LBM macro-step on a curvilinear prism band."""
     if stream_fn is None:
@@ -616,8 +649,7 @@ def compute_dg_solid_force_geo(f_dg, topo, geo, velocities, ops):
 
 
 if __name__ == "__main__":
-    import sys
-    from .d3q19 import C as C3D, W as W3D
+    from .d3q19 import C as C3D
 
     dev = torch.device("cpu")
     dtype = torch.float32
@@ -625,8 +657,8 @@ if __name__ == "__main__":
     # ---- Test 1: affine == Cartesian reproduction ----
     # A flat Cartesian shell: contrav=I, face_J=1, specular=OPPOSITE.
     # Build a small 3D Cartesian band and compare dg_rhs_band vs dg_rhs_band_geo.
-    from .dg_band import build_band_topology, dg_rhs_band
     from .d3q19 import OPPOSITE as OPP3D
+    from .dg_band import build_band_topology, dg_rhs_band
 
     nz, ny, nx = 8, 16, 16
     solid = torch.zeros(nz, ny, nx, dtype=torch.bool)
@@ -659,8 +691,9 @@ if __name__ == "__main__":
         n_phys[a, 0, :, a] = -1.0
     specular = OPP3D.unsqueeze(0).expand(n_b, 19).clone()
     detJ = torch.ones(n_b)
-    geo_cart = PrismGeometry(contrav=contrav, face_J=face_J, n_phys=n_phys,
-                            specular=specular, detJ=detJ)
+    geo_cart = PrismGeometry(
+        contrav=contrav, face_J=face_J, n_phys=n_phys, specular=specular, detJ=detJ
+    )
     got = dg_rhs_band_geo(f_dg, C3D, ops, topo, geo_cart, ext_field=ext)
 
     err = (got - ref).abs().max().item()
@@ -685,7 +718,6 @@ if __name__ == "__main__":
     assert abs(total) < 1e-5 * max(1.0, f2.sum().item()), "advection RHS must conserve mass"
 
     # ---- Test 3: sphere prism-band topology + curvilinear RHS smoke ----
-    from .d3q19 import W as W3D
 
     nz3, ny3, nx3 = 24, 24, 48
     R = 6.0
@@ -696,21 +728,36 @@ if __name__ == "__main__":
     )
     solid3 = ((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2) <= R * R
     topo_s, geo_s, meta_s = make_sphere_prism_topology(
-        solid3, center=(cx, cy, cz), R=R, n_layers=3, first_height=0.5,
-        growth=1.1, n_az=16, vel=C3D, dtype=dtype, device=dev,
+        solid3,
+        center=(cx, cy, cz),
+        R=R,
+        n_layers=3,
+        first_height=0.5,
+        growth=1.1,
+        n_az=16,
+        vel=C3D,
+        dtype=dtype,
+        device=dev,
     )
-    print(f"[T3 sphere band] n_band={topo_s.n_band}  n_az={meta_s['n_az']}  n_layers={meta_s['n_layers']}")
+    print(
+        f"[T3 sphere band] n_band={topo_s.n_band}  n_az={meta_s['n_az']}  n_layers={meta_s['n_layers']}"
+    )
     assert topo_s.n_band > 0, "sphere band must contain elements"
     # geometry factors finite & specular valid
     assert torch.isfinite(geo_s.contrav).all(), "contrav must be finite"
-    assert torch.isfinite(geo_s.face_J).all() and (geo_s.face_J > 0).all(), "face_J must be finite positive"
+    assert torch.isfinite(geo_s.face_J).all() and (geo_s.face_J > 0).all(), (
+        "face_J must be finite positive"
+    )
     assert geo_s.specular.min() >= 0 and geo_s.specular.max() < 19, "specular map out of range"
     # wall normals (inner radial face) should point roughly radially outward
     nw = geo_s.n_phys[0, 0]  # (n_band, 3) inward normal of inner face
     rad = torch.stack(
-        [topo_s.band_coords[:, 2].double() - cx,
-         topo_s.band_coords[:, 1].double() - cy,
-         topo_s.band_coords[:, 0].double() - cz], dim=-1
+        [
+            topo_s.band_coords[:, 2].double() - cx,
+            topo_s.band_coords[:, 1].double() - cy,
+            topo_s.band_coords[:, 0].double() - cz,
+        ],
+        dim=-1,
     )
     rad = rad / (rad.norm(dim=-1, keepdim=True) + 1e-12)
     align = (nw.double() * rad.to(dev)).sum(dim=-1).abs().mean().item()

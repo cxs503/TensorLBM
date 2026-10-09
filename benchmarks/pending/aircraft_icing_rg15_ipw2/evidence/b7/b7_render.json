@@ -1,0 +1,44 @@
+{
+  "cases": [
+    {
+      "tag": "b3_c31_glaze",
+      "wall_s_cpu": 66.46564661199227,
+      "ux_shape": [
+        160,
+        320
+      ],
+      "alpha_shape": [
+        160,
+        320
+      ]
+    },
+    {
+      "tag": "b3_c32_mixed",
+      "wall_s_cpu": 60.57907533925027,
+      "ux_shape": [
+        160,
+        320
+      ],
+      "alpha_shape": [
+        160,
+        320
+      ]
+    },
+    {
+      "tag": "b3_c33_rime",
+      "wall_s_cpu": 65.90723865712062,
+      "ux_shape": [
+        160,
+        320
+      ],
+      "alpha_shape": [
+        160,
+        320
+      ]
+    },
+    {
+      "tag": "b4_bins7",
+      "skipped": "no masks (B4 library-blocked)"
+    }
+  ]
+}

@@ -1,26 +1,30 @@
 """P1 octree boundary geometry/topology tests."""
+
 import pytest
 import torch
 
 from tensorlbm.octree_boundary.geometry import (
     SHELL_OUTSIDE,
     build_octree_shell,
-    morton_encode,
-    morton_decode,
-    morton_parent,
     morton_child,
+    morton_decode,
+    morton_encode,
 )
 from tensorlbm.octree_boundary.topology import (
-    build_neighbor_table,
     build_interface_registry,
+    build_neighbor_table,
     run_topology_checks,
 )
 
 
 def _sphere_shell(**kw):
     params = dict(
-        shape=(40, 40, 40), center=(20, 20, 20), radius=10,
-        bl_thickness_cells=3, d_max=2, device="cpu",
+        shape=(40, 40, 40),
+        center=(20, 20, 20),
+        radius=10,
+        bl_thickness_cells=3,
+        d_max=2,
+        device="cpu",
     )
     params.update(kw)
     return build_octree_shell(**params)
@@ -62,8 +66,12 @@ def test_parent_solid_contains_only_fully_embedded_cells():
     center = (21.0, 20.0, 19.0)
     radius = 9.0
     shell = build_octree_shell(
-        shape=shape, center=center, radius=radius,
-        bl_thickness_cells=3, d_max=1, device="cpu",
+        shape=shape,
+        center=center,
+        radius=radius,
+        bl_thickness_cells=3,
+        d_max=1,
+        device="cpu",
     )
     zz, yy, xx = torch.meshgrid(
         torch.arange(shape[0], dtype=torch.float64) + 0.5,
@@ -128,4 +136,5 @@ def test_level_distribution():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(pytest.main([__file__, "-v"]))

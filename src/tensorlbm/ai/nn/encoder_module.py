@@ -1,12 +1,13 @@
 import torch
-from torch import nn
 from einops.layers.torch import Rearrange
+from torch import nn
+
 from tensorlbm.ai.nn.attention_module import (
-    PreNorm,
-    StandardAttention,
     FeedForward,
-    ReLUFeedForward,
     LinearAttention,
+    PreNorm,
+    ReLUFeedForward,
+    StandardAttention,
 )
 
 

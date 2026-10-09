@@ -1,4 +1,5 @@
 """Uniform-fine reference benchmark for a 2:1 static LBM interface."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -50,14 +51,13 @@ class AMRInterfaceValidationConfig:
             raise ValueError("invalid pulse parameters")
         if self.steps < 1:
             raise ValueError("steps must be positive")
-        if (self.interface_filter_width == 0) != (
-            self.interface_filter_strength == 0.0
-        ):
+        if (self.interface_filter_width == 0) != (self.interface_filter_strength == 0.0):
             raise ValueError(
                 "interface filter width and strength must both be zero or positive",
             )
         if self.reflux_correction_stencil not in (
-            "exterior_cells", "crossing_links",
+            "exterior_cells",
+            "crossing_links",
         ):
             raise ValueError(
                 "reflux_correction_stencil must be exterior_cells or crossing_links",
@@ -69,16 +69,13 @@ def _initial_coarse(config: AMRInterfaceValidationConfig, device: torch.device) 
     z, y, x = torch.meshgrid(
         torch.arange(nz, device=device, dtype=torch.float32),
         torch.arange(ny, device=device, dtype=torch.float32),
-        torch.arange(nx, device=device, dtype=torch.float32), indexing="ij",
+        torch.arange(nx, device=device, dtype=torch.float32),
+        indexing="ij",
     )
     center_x = config.box.x1 - 1.5
     center_y = 0.5 * (config.box.y0 + config.box.y1 - 1)
     center_z = 0.5 * (config.box.z0 + config.box.z1 - 1)
-    radius2 = (
-        (x - center_x).square()
-        + (y - center_y).square()
-        + (z - center_z).square()
-    )
+    radius2 = (x - center_x).square() + (y - center_y).square() + (z - center_z).square()
     rho = 1.0 + config.perturbation * torch.exp(
         -radius2 / (2.0 * config.pulse_radius**2),
     )
@@ -88,9 +85,14 @@ def _initial_coarse(config: AMRInterfaceValidationConfig, device: torch.device) 
 
 
 def _repeat_2to1(populations: torch.Tensor) -> torch.Tensor:
-    return populations.repeat_interleave(2, dim=1).repeat_interleave(
-        2, dim=2,
-    ).repeat_interleave(2, dim=3)
+    return (
+        populations.repeat_interleave(2, dim=1)
+        .repeat_interleave(
+            2,
+            dim=2,
+        )
+        .repeat_interleave(2, dim=3)
+    )
 
 
 def _advance_periodic(state: torch.Tensor, tau: float) -> AMRAdvanceResult:
@@ -103,18 +105,20 @@ def _rms(field: torch.Tensor, mask: torch.Tensor) -> float:
 
 
 def _interface_shell(
-    shape: tuple[int, int, int], box: BoxRegion, device: torch.device,
+    shape: tuple[int, int, int],
+    box: BoxRegion,
+    device: torch.device,
 ) -> torch.Tensor:
     shell = torch.zeros(shape, dtype=torch.bool, device=device)
     shell[
-        box.z0 - 1:box.z1 + 1,
-        box.y0 - 1:box.y1 + 1,
-        box.x0 - 1:box.x1 + 1,
+        box.z0 - 1 : box.z1 + 1,
+        box.y0 - 1 : box.y1 + 1,
+        box.x0 - 1 : box.x1 + 1,
     ] = True
     shell[
-        box.z0 + 1:box.z1 - 1,
-        box.y0 + 1:box.y1 - 1,
-        box.x0 + 1:box.x1 - 1,
+        box.z0 + 1 : box.z1 - 1,
+        box.y0 + 1 : box.y1 - 1,
+        box.x0 + 1 : box.x1 - 1,
     ] = False
     return shell
 
@@ -147,25 +151,32 @@ def run_amr_interface_validation(
     maximum_applied_correction_fraction = 0.0
     for _ in range(config.steps):
         coarse_baseline = _advance_periodic(
-            coarse_baseline, config.tau_coarse,
+            coarse_baseline,
+            config.tau_coarse,
         ).populations
         for _ in range(2):
             uniform_fine = _advance_periodic(
-                uniform_fine, tau_fine,
+                uniform_fine,
+                tau_fine,
             ).populations
 
         def advance(
-            state: torch.Tensor, tau: float, level: int, substep: int,
+            state: torch.Tensor,
+            tau: float,
+            level: int,
+            substep: int,
         ) -> AMRAdvanceResult:
             del level, substep
             return _advance_periodic(state, tau)
 
         ledger = solver.step(advance)
         maximum_reflux_residual = max(
-            maximum_reflux_residual, float(ledger.residual.abs().max().item()),
+            maximum_reflux_residual,
+            float(ledger.residual.abs().max().item()),
         )
         maximum_limited_directions = max(
-            maximum_limited_directions, ledger.limited_directions,
+            maximum_limited_directions,
+            ledger.limited_directions,
         )
         if ledger.raw_kinetic_mismatch is None:
             raise RuntimeError("AMR ledger omitted raw kinetic mismatch")
@@ -188,7 +199,7 @@ def run_amr_interface_validation(
     rho_coarse, ux_coarse, _, _ = macroscopic3d(coarse_baseline)
     inside = torch.zeros(config.shape_zyx, dtype=torch.bool, device=device)
     b = config.box
-    inside[b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = True
+    inside[b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1] = True
     shell = _interface_shell(config.shape_zyx, b, device)
     density_amr_error = rho_amr - rho_reference
     density_coarse_error = rho_coarse - rho_reference
@@ -211,23 +222,18 @@ def run_amr_interface_validation(
         "maximum_reflux_population_residual": maximum_reflux_residual,
         "maximum_raw_kinetic_mismatch": maximum_raw_kinetic_mismatch,
         "maximum_conserved_moment_correction": maximum_requested_correction,
-        "maximum_applied_correction_fraction": (
-            maximum_applied_correction_fraction
-        ),
+        "maximum_applied_correction_fraction": (maximum_applied_correction_fraction),
         "maximum_limited_directions": maximum_limited_directions,
         "finite": finite,
     }
     refined_improves_density = (
-        metrics["density_rms_refined_amr"]
-        <= metrics["density_rms_refined_coarse"]
+        metrics["density_rms_refined_amr"] <= metrics["density_rms_refined_coarse"]
     )
-    density_error_ratio = (
-        metrics["density_rms_refined_amr"]
-        / max(metrics["density_rms_refined_coarse"], 1e-30)
+    density_error_ratio = metrics["density_rms_refined_amr"] / max(
+        metrics["density_rms_refined_coarse"], 1e-30
     )
-    velocity_error_ratio = (
-        metrics["velocity_x_rms_refined_amr"]
-        / max(metrics["velocity_x_rms_refined_coarse"], 1e-30)
+    velocity_error_ratio = metrics["velocity_x_rms_refined_amr"] / max(
+        metrics["velocity_x_rms_refined_coarse"], 1e-30
     )
     velocity_not_materially_worse = velocity_error_ratio <= 1.05
     metrics["refined_to_coarse_density_error_ratio"] = density_error_ratio
@@ -269,9 +275,7 @@ def run_amr_interface_validation(
             "maximum_reflux_population_residual": 1e-6,
             "refined_region_improves_density": refined_improves_density,
             "maximum_velocity_error_ratio": 1.05,
-            "refined_region_velocity_not_materially_worse": (
-                velocity_not_materially_worse
-            ),
+            "refined_region_velocity_not_materially_worse": (velocity_not_materially_worse),
             "admitted": admitted,
         },
     }

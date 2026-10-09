@@ -11,11 +11,16 @@ When piston moves by delta_x, delta_mass = rho * delta_x * area.
 This mass is injected at the nearest gas cell as equilibrium.
 """
 
-import sys, math, torch
+import math
+import sys
+
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import equilibrium3d, C as C3D, W as W3D
-from tensorlbm.solver3d import stream3d, collide_bgk3d
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 
 def run_piston_virtual(nx=64, ny=32, nz=32, n_steps=4000, device="sdaa:3", ps=0.01):
@@ -57,9 +62,9 @@ def run_piston_virtual(nx=64, ny=32, nz=32, n_steps=4000, device="sdaa:3", ps=0.
     piston_pos = float(nx - 1)
     V0 = (nx - 1) * ny * nz  # initial volume
 
-    print(f"=== Piston Virtual Gas Points (no K) ===", flush=True)
+    print("=== Piston Virtual Gas Points (no K) ===", flush=True)
     print(f"Grid: {nx}x{ny}x{nz} ps={ps} Ma={ps / math.sqrt(cs2):.4f}", flush=True)
-    print(f"Local mass transfer: delta_m = rho * delta_x * area", flush=True)
+    print("Local mass transfer: delta_m = rho * delta_x * area", flush=True)
     print(flush=True)
 
     for step in range(1, n_steps + 1):

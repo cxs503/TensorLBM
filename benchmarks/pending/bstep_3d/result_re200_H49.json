@@ -1,0 +1,62 @@
+{
+  "case": "bstep_3d_highre",
+  "name": "backward_facing_step_3d_re200_H49",
+  "reference": {
+    "source": "Armaly, Durst, Pereira & Schoenung, JFM 127:473-496 (1983); 2D 数值解 (Erturk 2008 等) Re=200 X_r/h≈5.5",
+    "re_definition": "Re = U_max * step_h / nu (最大入口速度, 台阶高)",
+    "xr_h_ref": 5.5,
+    "er_ref": 1.94,
+    "err_tol_pct": 3.0
+  },
+  "geometry": {
+    "nx": 490,
+    "ny": 101,
+    "nz": 98,
+    "step_h": 49,
+    "x_step": 98,
+    "expansion_ratio": 1.9411764705882353,
+    "er_dev_pct": 0.06064281382656363,
+    "spanwise": "periodic, Lz=98 = 2.0H",
+    "inlet": "fully_developed_parabolic (3D Zou/He profile), U_max=0.05",
+    "outlet": "Zou/He pressure (rho=1)"
+  },
+  "physics": {
+    "re": 200.0,
+    "nu": 0.01225,
+    "tau": 0.5367500000000001,
+    "collision": "bgk",
+    "lattice": "D3Q19"
+  },
+  "result": {
+    "xr_h": 0.0,
+    "xr_h_err_pct": -100.0,
+    "xr_planes_mean": 0.0,
+    "xr_planes_std": 0.0,
+    "xr_planes_min": 0.0,
+    "xr_planes_max": 0.0,
+    "xr_series": [
+      0.0
+    ],
+    "steps": [
+      500
+    ],
+    "converged": false,
+    "n_steps_run": 500,
+    "wall_time_s": 35.5,
+    "ms_per_step": 70.92,
+    "device": "cuda:1",
+    "inlet_profile_check": {
+      "max_abs_dev_over_umax": 5.854363170632038e-07,
+      "flux_ratio": 1.0001922354978674
+    },
+    "spanwise_uniformity": {
+      "max_z_rel_dev_over_umax": 1.4156103134155273e-06
+    },
+    "separation_bubble": {
+      "max_backflow_over_umax": -0.004788748628925532,
+      "backflow_x_rel_h": 0.12244897959183673
+    },
+    "mass_drift_final": 550.5,
+    "finite": true
+  }
+}

@@ -12,7 +12,6 @@ Tests verify:
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
 from typing import Any
 
@@ -20,15 +19,13 @@ import pytest
 import torch
 
 from tensorlbm.suboff_trt_runner import (
+    ITTC_1957_REFERENCE_CT,
     SuboffTrtConfig,
-    SuboffTrtEvidence,
     _collide_trt_sgs_27,
     _far_field_bc_27,
     run_suboff_trt_sgs,
     run_suboff_trt_sgs_campaign,
-    ITTC_1957_REFERENCE_CT,
 )
-
 
 # ---------------------------------------------------------------------------
 # Small-grid config factory (CPU, fast tests)

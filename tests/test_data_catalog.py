@@ -9,7 +9,7 @@ from tensorlbm.data.catalog import (
     LineageRecord,
     QualityCheck,
 )
-from tensorlbm.data.quality import check_field_product, validate_field_product
+from tensorlbm.data.quality import check_field_product
 
 
 @pytest.fixture
@@ -20,8 +20,15 @@ def catalog(tmp_path):
 
 
 def _asset(asset_id="p1", **kw):
-    base = dict(asset_id=asset_id, name="u-velocity", kind="field_product",
-                field_name="ux", units="lu", shape="(64,48,48)", dtype="float32")
+    base = dict(
+        asset_id=asset_id,
+        name="u-velocity",
+        kind="field_product",
+        field_name="ux",
+        units="lu",
+        shape="(64,48,48)",
+        dtype="float32",
+    )
     base.update(kw)
     return AssetRecord(**base)
 
@@ -65,11 +72,14 @@ def test_lineage_and_upstream(catalog):
 
 def test_quality_score_updates_asset(catalog):
     catalog.register_asset(_asset())
-    score = catalog.record_quality("p1", [
-        QualityCheck("finiteness", True, "ok"),
-        QualityCheck("shape", True, "ok"),
-        QualityCheck("mass", False, "drift"),
-    ])
+    score = catalog.record_quality(
+        "p1",
+        [
+            QualityCheck("finiteness", True, "ok"),
+            QualityCheck("shape", True, "ok"),
+            QualityCheck("mass", False, "drift"),
+        ],
+    )
     assert score == 67
     rec = catalog.get_asset("p1")
     assert rec.quality_score == 67
@@ -91,9 +101,16 @@ def test_invalid_asset_rejected(catalog):
 
 def test_quality_checks():
     arr = np.zeros((4, 4, 4), dtype=np.float32)
-    prod = type("P", (), {
-        "field_name": "ux", "shape": (4, 4, 4), "dtype": "float32", "units": "lu",
-    })()
+    prod = type(
+        "P",
+        (),
+        {
+            "field_name": "ux",
+            "shape": (4, 4, 4),
+            "dtype": "float32",
+            "units": "lu",
+        },
+    )()
     # finiteness + shape pass on a clean field
     result = check_field_product(prod, arr, mass_field=False)
     assert result.passed and result.overall_score == 100
@@ -112,5 +129,4 @@ def test_quality_checks():
     # mass conservation flags a drifted density field
     rho = np.full((4, 4, 4), 1.05, dtype=np.float32)
     result4 = check_field_product(prod, rho, mass_field=True)
-    assert any(not c.passed and c.check_name == "mass_conservation"
-               for c in result4.checks)
+    assert any(not c.passed and c.check_name == "mass_conservation" for c in result4.checks)

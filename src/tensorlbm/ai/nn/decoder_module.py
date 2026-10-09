@@ -1,8 +1,9 @@
-import torch
-from torch import nn
 import numpy as np
+import torch
 from einops import rearrange
-from tensorlbm.ai.nn.attention_module import FeedForward, LinearAttention, CrossLinearAttention
+from torch import nn
+
+from tensorlbm.ai.nn.attention_module import CrossLinearAttention, FeedForward, LinearAttention
 
 
 class IrregSTDecoder2D(nn.Module):

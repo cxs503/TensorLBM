@@ -6,6 +6,7 @@ nodes inside the declared wall-law ``y+`` interval.  This module keeps that
 policy and its diagnostics independent of any particular geometry or solver
 runner.
 """
+
 from __future__ import annotations
 
 import math
@@ -196,21 +197,46 @@ def aggregate_wall_exchange_yplus_summaries(
         key = summary_key if summary_key in item else aggregate_key
         return int(item[key])
 
-    requested = sum(count(
-        item, "requested_samples", "requested_sample_exposures",
-    ) for item in summaries)
-    finite = sum(count(
-        item, "finite_samples", "finite_sample_exposures",
-    ) for item in summaries)
-    below = sum(count(
-        item, "below_range_samples", "below_range_sample_exposures",
-    ) for item in summaries)
-    in_range = sum(count(
-        item, "in_range_samples", "in_range_sample_exposures",
-    ) for item in summaries)
-    above = sum(count(
-        item, "above_range_samples", "above_range_sample_exposures",
-    ) for item in summaries)
+    requested = sum(
+        count(
+            item,
+            "requested_samples",
+            "requested_sample_exposures",
+        )
+        for item in summaries
+    )
+    finite = sum(
+        count(
+            item,
+            "finite_samples",
+            "finite_sample_exposures",
+        )
+        for item in summaries
+    )
+    below = sum(
+        count(
+            item,
+            "below_range_samples",
+            "below_range_sample_exposures",
+        )
+        for item in summaries
+    )
+    in_range = sum(
+        count(
+            item,
+            "in_range_samples",
+            "in_range_sample_exposures",
+        )
+        for item in summaries
+    )
+    above = sum(
+        count(
+            item,
+            "above_range_samples",
+            "above_range_sample_exposures",
+        )
+        for item in summaries
+    )
     finite_means = [
         (
             count(item, "finite_samples", "finite_sample_exposures"),
@@ -221,12 +247,10 @@ def aggregate_wall_exchange_yplus_summaries(
         and item["mean_y_plus"] is not None
     ]
     minima = [
-        float(item["minimum_y_plus"])
-        for item in summaries if item["minimum_y_plus"] is not None
+        float(item["minimum_y_plus"]) for item in summaries if item["minimum_y_plus"] is not None
     ]
     maxima = [
-        float(item["maximum_y_plus"])
-        for item in summaries if item["maximum_y_plus"] is not None
+        float(item["maximum_y_plus"]) for item in summaries if item["maximum_y_plus"] is not None
     ]
     finite_fraction = finite / requested if requested else 0.0
     in_range_fraction = in_range / finite if finite else 0.0
@@ -236,8 +260,7 @@ def aggregate_wall_exchange_yplus_summaries(
         finite_sample_exposures=finite,
         minimum_y_plus=min(minima) if minima else None,
         mean_y_plus=(
-            sum(count * mean for count, mean in finite_means) / finite
-            if finite else None
+            sum(count * mean for count, mean in finite_means) / finite if finite else None
         ),
         maximum_y_plus=max(maxima) if maxima else None,
         lower_bound_y_plus=lower,
@@ -248,12 +271,10 @@ def aggregate_wall_exchange_yplus_summaries(
         finite_fraction=finite_fraction,
         in_range_fraction=in_range_fraction,
         minimum_in_range_fraction=required,
-        admitted=(
-            requested > 0
-            and finite == requested
-            and in_range_fraction >= required
-        ),
+        admitted=(requested > 0 and finite == requested and in_range_fraction >= required),
     )
+
+
 __all__ = [
     "WallExchangeYPlusAggregate",
     "WallExchangeYPlusSummary",

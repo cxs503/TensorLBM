@@ -79,5 +79,8 @@ def test_rescaling_rejects_invalid_parameters() -> None:
     state = torch.ones((19, 2, 2, 2))
     with pytest.raises(ValueError, match="positive"):
         rescale_nonequilibrium(
-            state, tau_source=0.0, tau_target=0.6, spatial_ratio=2.0,
+            state,
+            tau_source=0.0,
+            tau_target=0.6,
+            spatial_ratio=2.0,
         )

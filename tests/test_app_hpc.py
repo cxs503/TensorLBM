@@ -36,6 +36,7 @@ from tensorlbm.apps.hpc import (  # noqa: E402
 # Fakes / fixtures
 # ---------------------------------------------------------------------------
 
+
 class FakeScheduler:
     """Drop-in mock of the platform HPC scheduler (no real submission)."""
 
@@ -112,6 +113,7 @@ def scheduler() -> FakeScheduler:
 # HpcRunSpec
 # ---------------------------------------------------------------------------
 
+
 def test_hpc_run_spec_defaults():
     spec = HpcRunSpec(app_name="demo_hpc_app")
     assert spec.app_name == "demo_hpc_app"
@@ -139,7 +141,11 @@ def test_hpc_run_spec_custom():
         backend="pbs",
     )
     assert (spec.partition, spec.nodes, spec.cpus, spec.mem, spec.walltime) == (
-        "gpu", 2, 8, "16G", "01:00:00",
+        "gpu",
+        2,
+        8,
+        "16G",
+        "01:00:00",
     )
     assert spec.script_cmd == "echo hi"
     assert spec.backend == "pbs"
@@ -148,6 +154,7 @@ def test_hpc_run_spec_custom():
 # ---------------------------------------------------------------------------
 # Command / id helpers
 # ---------------------------------------------------------------------------
+
 
 def test_build_produce_data_cmd_mentions_app_and_produce_data():
     cmd = build_produce_data_cmd("demo_hpc_app", {"nx": 32, "seed": 7})
@@ -166,6 +173,7 @@ def test_build_hpc_job_id_shape():
 # ---------------------------------------------------------------------------
 # submit_app_hpc (SLURM)
 # ---------------------------------------------------------------------------
+
 
 def test_submit_app_hpc_builds_slurm_script(app, scheduler):
     spec = HpcRunSpec(
@@ -244,17 +252,22 @@ def test_submit_app_hpc_validation_errors(app, scheduler):
         submit_app_hpc(_Nameless(), HpcRunSpec(), scheduler=scheduler)  # empty app_name
     with pytest.raises(ValueError):
         submit_app_hpc(
-            app, HpcRunSpec(app_name="demo_hpc_app", nodes=0), scheduler=scheduler,
+            app,
+            HpcRunSpec(app_name="demo_hpc_app", nodes=0),
+            scheduler=scheduler,
         )
     with pytest.raises(ValueError):
         submit_app_hpc(
-            app, HpcRunSpec(app_name="demo_hpc_app", backend="torque"), scheduler=scheduler,
+            app,
+            HpcRunSpec(app_name="demo_hpc_app", backend="torque"),
+            scheduler=scheduler,
         )
 
 
 # ---------------------------------------------------------------------------
 # query_app_hpc
 # ---------------------------------------------------------------------------
+
 
 def test_query_app_hpc_returns_status(scheduler):
     status = query_app_hpc("314159", scheduler=scheduler)

@@ -1,4 +1,5 @@
 """Fail-closed multi-resolution assessment for flat-plate wall-model runs."""
+
 from __future__ import annotations
 
 import math
@@ -24,8 +25,11 @@ _IDENTITY_FIELDS = (
 )
 _RATIO_FIELDS = ("sponge_width", "cv_margin")
 _TIME_RATIO_FIELDS = (
-    "steps", "warmup_steps", "ramp_steps",
-    "statistics_window_steps_resolved", "report_interval",
+    "steps",
+    "warmup_steps",
+    "ramp_steps",
+    "statistics_window_steps_resolved",
+    "report_interval",
     "wall_diagnostic_interval",
 )
 
@@ -76,16 +80,12 @@ def assess_flat_plate_convergence(
         float(configuration["stress_exchange_distance"]) / length
         for length, _, configuration, _ in parsed
     ]
-    exchange_ratio_invariant = (
-        max(exchange_ratios) - min(exchange_ratios) <= 1e-12
-    )
+    exchange_ratio_invariant = max(exchange_ratios) - min(exchange_ratios) <= 1e-12
     streamwise_ratios = [
-        float(configuration["shape_zyx"][2]) / length
-        for length, _, configuration, _ in parsed
+        float(configuration["shape_zyx"][2]) / length for length, _, configuration, _ in parsed
     ]
     transverse_ratios = [
-        float(configuration["shape_zyx"][1]) / length
-        for length, _, configuration, _ in parsed
+        float(configuration["shape_zyx"][1]) / length for length, _, configuration, _ in parsed
     ]
     domain_ratio_invariant = (
         max(streamwise_ratios) - min(streamwise_ratios) <= 1e-12
@@ -105,27 +105,22 @@ def assess_flat_plate_convergence(
         and max(cv_margin_ratios) - min(cv_margin_ratios) <= 1e-12
     )
     time_ratios = {
-        field: [
-            float(configuration[field]) / length
-            for length, _, configuration, _ in parsed
-        ]
+        field: [float(configuration[field]) / length for length, _, configuration, _ in parsed]
         for field in _TIME_RATIO_FIELDS
     }
     time_ratio_invariant = all(
-        all(math.isfinite(value) for value in values)
-        and max(values) - min(values) <= 1e-12
+        all(math.isfinite(value) for value in values) and max(values) - min(values) <= 1e-12
         for values in time_ratios.values()
     )
     values = [item[1] for item in parsed]
     spatial = assess_spatial_convergence(resolutions, values)
-    reference_values = {
-        float(result["ittc_1957_reference"]) for _, _, _, result in parsed
-    }
+    reference_values = {float(result["ittc_1957_reference"]) for _, _, _, result in parsed}
     reference_invariant = len(reference_values) == 1
     reference = next(iter(reference_values)) if reference_invariant else float("nan")
     extrapolated_reference_error = (
         abs(spatial.extrapolated_value - reference) / abs(reference) * 100.0
-        if reference_invariant and reference != 0.0 else float("inf")
+        if reference_invariant and reference != 0.0
+        else float("inf")
     )
     spatial_admitted = spatial.meets(
         maximum_finest_error_pct=maximum_finest_error_pct,
@@ -161,9 +156,7 @@ def assess_flat_plate_convergence(
             "domain_ratio_invariant": domain_ratio_invariant,
             "sponge_width_over_length": sponge_ratios,
             "cv_margin_over_length": cv_margin_ratios,
-            "numerical_length_ratio_invariant": (
-                numerical_length_ratio_invariant
-            ),
+            "numerical_length_ratio_invariant": (numerical_length_ratio_invariant),
             "time_steps_over_plate_length": time_ratios,
             "time_ratio_invariant": time_ratio_invariant,
             "reference_invariant": reference_invariant,

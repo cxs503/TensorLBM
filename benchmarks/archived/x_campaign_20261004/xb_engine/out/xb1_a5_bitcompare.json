@@ -1,0 +1,35 @@
+{
+ "archived_sigma_rec_window_mean": 0.009235675731544109,
+ "run_sigma_rec_window_mean": 0.009235675731544109,
+ "window_mean_bit_equal": true,
+ "per_sample": {
+  "sigma_rec": {
+   "n_match": 25,
+   "n_total_arch": 25,
+   "n_total_run": 25
+  },
+  "dP": {
+   "n_match": 25,
+   "n_total_arch": 25,
+   "n_total_run": 25
+  },
+  "p_in": {
+   "n_match": 25,
+   "n_total_arch": 25,
+   "n_total_run": 25
+  },
+  "p_out": {
+   "n_match": 25,
+   "n_total_arch": 25,
+   "n_total_run": 25
+  },
+  "phi_integral": {
+   "n_match": 25,
+   "n_total_arch": 25,
+   "n_total_run": 25
+  }
+ },
+ "all_sigma_rec_bit_equal": true,
+ "max_rel_diff_sigma_rec": 0.0,
+ "stack_note": "mp_w10+M1 overlay vs mp_w11+xb src_patched; per prereg A5: disclose, never gate; A1 cross-W monotone clause unaffected."
+}
