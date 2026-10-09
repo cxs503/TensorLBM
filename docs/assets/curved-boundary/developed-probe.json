@@ -1,0 +1,25 @@
+{
+  "cases": [
+    {
+      "n": 48,
+      "dt_s": 0.0005,
+      "duration_s": 10.0,
+      "late_mean_force_N": 3.511025726692349,
+      "late_window_drift": 0.010974370068719486,
+      "first_steady_gate_pass_time_s": null,
+      "steady_qualified": false,
+      "max_mass_error": 1.9509949211737876e-12,
+      "max_momentum_error": 6.989111511757073e-10,
+      "minimum_population": 0.027569957384220082,
+      "file": "developed-n48-dt0.0005-t10.0.json",
+      "sha256": "6eab5616ec777a1a1d93c4958be2fa433e8a0743b06cbb8062fa72b6ace70240"
+    }
+  ],
+  "source_sha256": {
+    "src/tensorlbm/curved_boundary_2d.py": "a826bb4bece205e43f990100ed480f0506d25ffa4630036f050e82b13cb99254",
+    "src/tensorlbm/solver.py": "6cef9523e393f4d584ef01620074c945fc94e44521884ff308ce25b7b59c39b3",
+    "src/tensorlbm/d2q9.py": "1065c3093e07dfa186d729412c4081c7e4ba0925db223e8083ff007d457adf4d",
+    "docs/assets/curved-boundary/developed-probe-source.py": "4a4b4ea4700252b2540c0316459b848819c5de073db8c1496eb008b86283ac9f"
+  },
+  "physical_accuracy_qualified": false
+}
