@@ -1,0 +1,116 @@
+{
+  "schema": "balanced-local-moving-study/1",
+  "cases": [
+    {
+      "case": "cross-grid",
+      "artifact": "cross-grid.json",
+      "sha256": "c7c4d08a0fc9868020af499d04b67259bd345539a6939249120ae3a30fa891ae",
+      "restart_bitwise": true,
+      "covered": 20,
+      "exposed": 19,
+      "mass_drift": -9.094947017729282e-12,
+      "max_momentum_residual": 7.016609515630989e-14,
+      "minimum_population": 0.02230823608669589,
+      "wall_impulse": [
+        -8.68841346888311,
+        -0.4399256163359795
+      ]
+    },
+    {
+      "case": "co-moving",
+      "artifact": "co-moving.json",
+      "sha256": "e1461a093de496aab347bc59f1e8d12cab152a139d33bb12299557e78b3e6dce",
+      "restart_bitwise": true,
+      "covered": 20,
+      "exposed": 19,
+      "mass_drift": -1.1596057447604835e-11,
+      "max_momentum_residual": 1.6642243139131097e-13,
+      "minimum_population": 0.022263275373495532,
+      "wall_impulse": [
+        -2.336260286296719,
+        -0.4982092102776614
+      ]
+    },
+    {
+      "case": "periodic-wrap",
+      "artifact": "periodic-wrap.json",
+      "sha256": "3ec98fc1195588b6fc174b116da1835fe1f5a878d5de5e53dc0b22e68373a23a",
+      "restart_bitwise": true,
+      "covered": 20,
+      "exposed": 19,
+      "mass_drift": -9.549694368615746e-12,
+      "max_momentum_residual": 7.949196856316121e-14,
+      "minimum_population": 0.02230823608669588,
+      "wall_impulse": [
+        -8.688413468882992,
+        -0.439925616335872
+      ]
+    },
+    {
+      "case": "paired-small-disk",
+      "artifact": "paired-small-disk.json",
+      "sha256": "8c96db8684a362a5626f58b364a8ce0a79433298714e86adeebb1fe2f50ecbbd",
+      "restart_bitwise": true,
+      "covered": 18,
+      "exposed": 18,
+      "mass_drift": -1.000444171950221e-11,
+      "max_momentum_residual": 9.797718192317006e-14,
+      "minimum_population": 0.021701745206103386,
+      "wall_impulse": [
+        -0.343969715880417,
+        0.004297393661048421
+      ]
+    },
+    {
+      "case": "co-moving-half",
+      "artifact": "co-moving-half.json",
+      "sha256": "0bcb7854cfe96e3a6b1f31791aefd61c108384f0d7633dbd08ebc520e76df354",
+      "restart_bitwise": true,
+      "covered": 77,
+      "exposed": 78,
+      "mass_drift": -1.5734258340671659e-10,
+      "max_momentum_residual": 3.113065361048939e-13,
+      "minimum_population": 0.023264835960692377,
+      "wall_impulse": [
+        -5.332023985239755,
+        -0.22540503925961342
+      ]
+    },
+    {
+      "case": "step-half",
+      "artifact": "step-half.json",
+      "sha256": "7a922fe487ece33fcc1b38148224c11f2a63ca0ff24372b32e30ecc7586a666a",
+      "restart_bitwise": true,
+      "covered": 77,
+      "exposed": 78,
+      "mass_drift": -1.5643308870494366e-10,
+      "max_momentum_residual": 3.959055305813308e-13,
+      "minimum_population": 0.023154200862157137,
+      "wall_impulse": [
+        -16.672183824129604,
+        -0.2596384126206872
+      ]
+    }
+  ],
+  "refinement": {
+    "diffusive_scaling": true,
+    "relative_impulse_change": 0.04055073553763543,
+    "threshold": 0.03,
+    "passed": false
+  },
+  "physical_accuracy_qualified": false,
+  "global_rescale": false,
+  "exact_swept_volume": false,
+  "co_moving_equilibrium": {
+    "expected_impulse": [
+      0.0,
+      0.0
+    ],
+    "absolute_tolerance": 1e-08,
+    "actual_impulse": [
+      -2.336260286296719,
+      -0.4982092102776614
+    ],
+    "passed": false
+  }
+}
