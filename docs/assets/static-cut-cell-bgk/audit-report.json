@@ -1,0 +1,83 @@
+{
+  "schema": "tensorlbm.independent-static-bgk-audit/1",
+  "cases": [
+    {
+      "case": "static-cut",
+      "steps": 12,
+      "max_Q_reconstruction_error_kg": 2.220446049250313e-16,
+      "max_momentum_residual_Ns": 4.405330267243102e-15,
+      "maximum_step_macroscopic_energy_increase_J": 4.0126089922778403e-32
+    },
+    {
+      "case": "nonuniform-cut",
+      "steps": 12,
+      "max_Q_reconstruction_error_kg": 2.220446049250313e-16,
+      "max_momentum_residual_Ns": 4.668802237178804e-14,
+      "maximum_step_macroscopic_energy_increase_J": -0.00012703721328215754
+    },
+    {
+      "case": "nonuniform-time-half",
+      "steps": 24,
+      "max_Q_reconstruction_error_kg": 1.1102230246251565e-16,
+      "max_momentum_residual_Ns": 3.128492473761235e-14,
+      "maximum_step_macroscopic_energy_increase_J": -6.467003346865251e-05
+    },
+    {
+      "case": "nonuniform-grid-half",
+      "steps": 24,
+      "max_Q_reconstruction_error_kg": 5.551115123125783e-17,
+      "max_momentum_residual_Ns": 7.747372621907944e-14,
+      "maximum_step_macroscopic_energy_increase_J": -4.535655173110945e-05
+    },
+    {
+      "case": "periodic-comoving",
+      "steps": 12,
+      "max_Q_reconstruction_error_kg": 2.220446049250313e-16,
+      "max_momentum_residual_Ns": 9.429956815409923e-15,
+      "maximum_step_macroscopic_energy_increase_J": 2.7755575615628914e-17
+    },
+    {
+      "case": "shear-16",
+      "steps": 10,
+      "max_Q_reconstruction_error_kg": 2.7755575615628914e-17,
+      "max_momentum_residual_Ns": 6.149247777642586e-14,
+      "maximum_step_macroscopic_energy_increase_J": -3.2395661163224343e-09,
+      "continuous_kinetic_relative_error": 0.03063967768282568,
+      "semidiscrete_time_relative_error": 0.005290587674191932
+    },
+    {
+      "case": "shear-32",
+      "steps": 20,
+      "max_Q_reconstruction_error_kg": 6.938893903907228e-18,
+      "max_momentum_residual_Ns": 3.95890785431785e-13,
+      "maximum_step_macroscopic_energy_increase_J": -8.193027260311004e-10,
+      "continuous_kinetic_relative_error": 0.016188875194313408,
+      "semidiscrete_time_relative_error": 0.003468792750857247
+    },
+    {
+      "case": "shear-64",
+      "steps": 40,
+      "max_Q_reconstruction_error_kg": 1.734723475976807e-18,
+      "max_momentum_residual_Ns": 1.2657031455906576e-12,
+      "maximum_step_macroscopic_energy_increase_J": -2.054187928874531e-10,
+      "continuous_kinetic_relative_error": 0.008322900192769057,
+      "semidiscrete_time_relative_error": 0.0019393076225655203
+    },
+    {
+      "case": "shear-32-time-half",
+      "steps": 40,
+      "max_Q_reconstruction_error_kg": 6.938893903907228e-18,
+      "max_momentum_residual_Ns": 3.87216734371032e-13,
+      "maximum_step_macroscopic_energy_increase_J": -4.0978270235452354e-10,
+      "continuous_kinetic_relative_error": 0.017911686893780292,
+      "semidiscrete_time_relative_error": 0.001711557309407356
+    }
+  ],
+  "study_sha256": "65168686ba3441acbd0e32f9b4589c3467315f117abb3da1d37e2c4e60da0dea",
+  "auditor_sha256": "efd4551f04fa67722f175f31d228cb96b60ef953815368ce34904ad6c2787e06",
+  "total_impulse_grid_relative_change": 0.04461137660777609,
+  "total_impulse_time_relative_change": 0.0024157947523081257,
+  "physical_accuracy_qualified": false,
+  "moving_geometry_implemented": false,
+  "scope": "NumPy raw collision/transport/geometry/CFL/Fourier reconstruction; no production solver imports or independent restart execution"
+}
