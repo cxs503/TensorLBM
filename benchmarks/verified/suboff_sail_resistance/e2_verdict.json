@@ -1,0 +1,82 @@
+{
+ "case": "suboff_sail_resistance",
+ "adjudication": "Erratum E2 (prereg md5 a955ceda9da5169e3c0b952a3c50b959): primary friction estimator standard; ladder/steps/domain/gates unchanged; anti-shopping frozen before any std window series was seen",
+ "cf_ref": 0.041995047327036086,
+ "tiers": {
+  "L96": {
+   "n_steps": 14400,
+   "window_samples": 1000,
+   "cd_pressure": 0.007165424312493779,
+   "cd_friction": 0.03140493761314792,
+   "cd_tot_window": 0.0385703619256417,
+   "err_pct": -8.154974501456492,
+   "g4_drift_pct": 1.7775287766119925,
+   "g4_pass": true,
+   "appendage_solid_cells": 48,
+   "g5_pass": true,
+   "ab_bitwise_pass": true,
+   "convergence_windows": {
+    "25%": 0.04767,
+    "50%": 0.043154,
+    "75%": 0.039268,
+    "100%": 0.03857
+   }
+  },
+  "L112": {
+   "n_steps": 16800,
+   "window_samples": 1000,
+   "cd_pressure": 0.006628803048342275,
+   "cd_friction": 0.03413986772537355,
+   "cd_tot_window": 0.04076867077371583,
+   "err_pct": -2.9202885372883514,
+   "g4_drift_pct": 0.35196636765819744,
+   "g4_pass": true,
+   "appendage_solid_cells": 70,
+   "g5_pass": true,
+   "ab_bitwise_pass": true,
+   "convergence_windows": {
+    "25%": 0.050944,
+    "50%": 0.045897,
+    "75%": 0.040913,
+    "100%": 0.040769
+   }
+  },
+  "L128": {
+   "n_steps": 19200,
+   "window_samples": 1000,
+   "cd_pressure": 0.006495627589678578,
+   "cd_friction": 0.035900145820593,
+   "cd_tot_window": 0.04239577341027158,
+   "err_pct": 0.9542222446252913,
+   "g4_drift_pct": 0.13897067483216713,
+   "g4_pass": true,
+   "appendage_solid_cells": 126,
+   "g5_pass": true,
+   "ab_bitwise_pass": true,
+   "convergence_windows": {
+    "25%": 0.053456,
+    "50%": 0.047971,
+    "75%": 0.042455,
+    "100%": 0.042396
+   }
+  }
+ },
+ "g2_pairwise_abs_err_drops_pct": {
+  "L96->L112": 5.23468596416814,
+  "L112->L128": 1.96606629266306
+ },
+ "gates": {
+  "G1_finest_|err|<=3%": true,
+  "G2_|err|_nonincreasing": true,
+  "G3_common_modules": true,
+  "G4_window_drift<=2.5%": true,
+  "G5_appendage_cells": true,
+  "AB_reproduction": true
+ },
+ "formal_mix50_FAIL_stands": {
+  "G1": "+9.21%",
+  "G2": "1.56->5.93->9.21% monotone increasing",
+  "note": "archived, not superseded; co-disclosed per E2"
+ },
+ "verdict": "PASS"
+}
