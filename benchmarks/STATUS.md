@@ -1,6 +1,6 @@
 # Benchmark status (generated 2026-10-05, after the 22-agent marine sweep)
 
-verified: **37** | pending: **36**  (counts refreshed 2026-10-09)
+verified: **38** | pending: **35**  (counts refreshed 2026-10-09)
 
 Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
 
@@ -34,6 +34,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `stokes_first_problem` | analytic / standard case |
 | `stokes_second_problem` | analytic / standard case |
 | `suboff_re1000` | SUBOFF hull drag Re=1000: Cd -1.15% end-to-end (mix50 friction, 3.4h) |
+| `suboff_sail_resistance` | SUBOFF+sail AFF-3 Re=1000: Cd +0.95% finest tier, |err| monotone 8.15->2.92->0.95% (std friction per frozen erratum E2; formal mix50 FAIL co-archived) |
 | `taylor_couette` | analytic / standard case |
 | `taylor_green_2d` | analytic / standard case |
 | `taylor_green_3d` | analytic / standard case |
@@ -72,7 +73,6 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `series60_resistance` | BLOCKED: parametric hull Cb phase-oscillates with grid (no stable pair); ALSO exposed a library bug -- GeometrySource.PARAMETRIC_HULL returns an EMPTY mask in GeneralSimEngine |
 | `stokes_second_problem` | in progress |
 | `stokes_sphere_dg` | BLOCKED: Stokes flow is linear yet Cd moves 133->67 as u_in 0.02->0.05 at Re=0.1 => staircase sphere is non-physical there |
-| `suboff_sail_resistance` | STRUCTURAL: real sail half-width 0.0077L is sub-grid; L<=96 sail absent or 1-cell. Needs n>=256 (~180M cells, >=60GB) |
 | `taylor_aris_dispersion` | in progress |
 | `two_phase_poiseuille` | in progress |
 
