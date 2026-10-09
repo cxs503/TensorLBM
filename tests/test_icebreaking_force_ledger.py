@@ -83,3 +83,55 @@ def test_wrench_addition_and_scaling() -> None:
     assert result.scaled(2.0).fx_n == pytest.approx(-6.0)
     with pytest.raises(ValueError, match="finite"):
         result.scaled(math.inf)
+
+
+def test_surface_traction_integrates_force_and_moment_about_origin() -> None:
+    from tensorlbm.icebreaking import integrate_surface_traction
+
+    wrench = integrate_surface_traction(
+        positions_m=[(1.0, 0.0, 0.0), (0.0, 2.0, 0.0)],
+        tractions_pa=[(0.0, 3.0, 0.0), (4.0, 0.0, 0.0)],
+        area_weights_m2=[2.0, 0.5],
+        origin_m=(0.0, 0.0, 0.0),
+    )
+
+    assert wrench.fx_n == pytest.approx(2.0)
+    assert wrench.fy_n == pytest.approx(6.0)
+    assert wrench.fz_n == pytest.approx(0.0)
+    assert wrench.mz_nm == pytest.approx(6.0 - 4.0)
+
+
+def test_surface_traction_moment_changes_with_reference_origin() -> None:
+    from tensorlbm.icebreaking import integrate_surface_traction
+
+    origin_wrench = integrate_surface_traction(
+        positions_m=[(1.0, 0.0, 0.0)],
+        tractions_pa=[(0.0, 2.0, 0.0)],
+        area_weights_m2=[3.0],
+        origin_m=(0.0, 0.0, 0.0),
+    )
+    shifted_wrench = integrate_surface_traction(
+        positions_m=[(1.0, 0.0, 0.0)],
+        tractions_pa=[(0.0, 2.0, 0.0)],
+        area_weights_m2=[3.0],
+        origin_m=(1.0, 0.0, 0.0),
+    )
+
+    assert origin_wrench.mz_nm == pytest.approx(6.0)
+    assert shifted_wrench.mz_nm == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize(
+    "positions,tractions,areas",
+    [
+        ([(0.0, 0.0, 0.0)], [], [1.0]),
+        ([(0.0, 0.0)], [(1.0, 0.0, 0.0)], [1.0]),
+        ([(0.0, 0.0, 0.0)], [(1.0, 0.0, 0.0)], [-1.0]),
+        ([(0.0, 0.0, 0.0)], [(math.nan, 0.0, 0.0)], [1.0]),
+    ],
+)
+def test_surface_traction_rejects_invalid_samples(positions, tractions, areas) -> None:
+    from tensorlbm.icebreaking import integrate_surface_traction
+
+    with pytest.raises(ValueError):
+        integrate_surface_traction(positions, tractions, areas)
