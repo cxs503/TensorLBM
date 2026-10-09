@@ -13,7 +13,7 @@ def main():
     # Same displacement but different lattice velocity and duration. At fixed
     # tau this changes Re and diffusion time: motion-rate sensitivity, NOT a
     # same-physical-problem time refinement claim.
-    for name,speed,steps,comoving,tau,dt in [('comoving',.03,100,True,.8,.01),('moving',.03,100,False,.8,.01),('motion-half',.015,200,False,.8,.01),('motion-quarter',.0075,400,False,.8,.01),('time-half',.015,200,False,.65,.005),('time-quarter',.0075,400,False,.575,.0025)]:
+    for name,speed,steps,comoving,tau,dt in [('comoving',.03,100,True,.8,.01),('moving',.03,100,False,.8,.01),('motion-half',.015,200,False,.8,.01),('motion-quarter',.0075,400,False,.8,.01),('time-half',.015,200,False,.65,.005),('time-quarter',.0075,400,False,.575,.0025),('time-eighth',.00375,800,False,.5375,.00125),('time-sixteenth',.001875,1600,False,.51875,.000625)]:
         sim=MovingDisk(velocity=(speed,0),fluid_velocity=(speed if comoving else 0,0),tau=tau)
         for _ in range(steps):sim.step()
         import torch
@@ -36,6 +36,8 @@ def main():
     summary=dict(schema='tensorlbm.moving-disk-study/1',units='lattice units: dx=dt=rho0=1',
         algorithm='moving halfway bounce-back; adjacent density wall-speed refill; global mass reservoir',
         physical_accuracy_qualified=False,temporal_convergence_qualified=False,
+        sensitivity_type='combined time-step/compressibility at fixed grid, viscosity, speed and duration',
+        sound_speed_si_m_s={x['name']:.01/(3**.5*x['si']['dt_s']) for x in reports},
         rate_sensitivity_changes_reynolds_number=True,
         source_sha256=hashlib.sha256((ROOT/'src/tensorlbm/moving_boundary_2d.py').read_bytes()).hexdigest(),cases=reports)
     (OUT/'study.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2))
