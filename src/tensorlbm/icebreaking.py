@@ -149,3 +149,36 @@ def integrate_surface_traction(
         fx_n=total_force[0], fy_n=total_force[1], fz_n=total_force[2],
         mx_nm=total_moment[0], my_nm=total_moment[1], mz_nm=total_moment[2],
     )
+
+
+def integrate_particle_tractions_2d(
+    tractions_pa: "Sequence[Sequence[float]]",
+    area_weights_m2: "Sequence[float]",
+) -> tuple[tuple[float, float], ...]:
+    """Convert already-mapped 2-D particle tractions into SI particle forces.
+
+    Each traction is the hydrodynamic traction acting on one DEM particle,
+    expressed in the shared global x/y frame in pascals. Each matching area
+    weight is that particle's effective 2-D surface area in square metres
+    (including the chosen out-of-plane thickness). The returned (N, 2) values
+    are forces in newtons and can be converted to a PyTorch tensor for the
+    IceDEM.step(external_forces=...) interface.
+
+    This function performs no fluid-to-particle interpolation and does not
+    infer areas. The caller must map the fluid traction to particles, provide
+    consistent quadrature weights, and validate that their sum and moment
+    agree with the fluid-side force integration.
+    """
+    if len(tractions_pa) != len(area_weights_m2):
+        raise ValueError("tractions and area weights must have equal lengths")
+    forces: list[tuple[float, float]] = []
+    for index, (traction, area) in enumerate(zip(tractions_pa, area_weights_m2)):
+        if len(traction) != 2:
+            raise ValueError(f"particle {index} traction must be a 2-vector")
+        tx, ty, weight = float(traction[0]), float(traction[1]), float(area)
+        if not all(math.isfinite(value) for value in (tx, ty, weight)):
+            raise ValueError(f"particle {index} contains non-finite values")
+        if weight < 0.0:
+            raise ValueError(f"particle {index} area weight must be non-negative")
+        forces.append((tx * weight, ty * weight))
+    return tuple(forces)

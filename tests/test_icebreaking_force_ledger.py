@@ -135,3 +135,33 @@ def test_surface_traction_rejects_invalid_samples(positions, tractions, areas) -
 
     with pytest.raises(ValueError):
         integrate_surface_traction(positions, tractions, areas)
+
+
+
+def test_particle_traction_integration_returns_forces_for_dem() -> None:
+    from tensorlbm.icebreaking import integrate_particle_tractions_2d
+
+    forces = integrate_particle_tractions_2d(
+        tractions_pa=[(2.0, -3.0), (-1.0, 4.0)],
+        area_weights_m2=[0.5, 2.0],
+    )
+
+    assert forces == ((1.0, -1.5), (-2.0, 8.0))
+    assert sum(force[0] for force in forces) == pytest.approx(-1.0)
+    assert sum(force[1] for force in forces) == pytest.approx(6.5)
+
+
+@pytest.mark.parametrize(
+    "tractions,areas",
+    [
+        ([(1.0, 2.0)], []),
+        ([(1.0, 2.0, 3.0)], [1.0]),
+        ([(math.inf, 0.0)], [1.0]),
+        ([(1.0, 0.0)], [-1.0]),
+    ],
+)
+def test_particle_traction_integration_rejects_invalid_inputs(tractions, areas) -> None:
+    from tensorlbm.icebreaking import integrate_particle_tractions_2d
+
+    with pytest.raises(ValueError):
+        integrate_particle_tractions_2d(tractions, areas)
