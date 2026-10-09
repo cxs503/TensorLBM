@@ -171,3 +171,14 @@ final momentum, masses, topology, energies and force decompositions.
 Next gates are resolved disk-boundary coupling, interface/grid sensitivity,
 objective fracture regularization and material calibration. Only then should
 free-surface floating ice and three-dimensional hull–ice–fluid physics follow.
+
+### Upstream diagnostic compatibility re-execution
+
+After TensorDEM `main` merged the additional `tool_x` diagnostic at commit
+`0daab2d`, all six P1 cases were actually re-executed with the updated dependency.
+All six raw JSON files and both plots remain byte-for-byte identical; only the
+TensorDEM source SHA256 in `study.json` changes. The wet case SHA256 remains
+`3f8c4e5c34d152107053dd65d4e02ebacbad7a178cc468dc0e4896fa68e0e783`.
+The independent raw-field audit passes again. Time-step and exchange sensitivity
+remain 0.09654% and 0.11697%; particle peak sensitivity remains 10.16594%, failed.
+No physical qualification or numerical result changes are claimed.

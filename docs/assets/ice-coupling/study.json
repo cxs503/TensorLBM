@@ -1,7 +1,7 @@
 {
   "schema": "tensorlbm.dem-coupling-study/1",
   "source_sha256": {
-    "src/dem.py": "39ff7c146aa1fd172e47640de5ae26e7cee40947258595e747281420b9c70bfc",
+    "src/dem.py": "e6b00e84b4ca0753981bdf8c4772994d8ed221d35527eb91f6b54d9b24ff1b71",
     "src/ice_coupling_2d.py": "1100840642d6086ac25b21debe5a655c0200e458ba211d81776dd96c592aea07",
     "src/solver.py": "6cef9523e393f4d584ef01620074c945fc94e44521884ff308ce25b7b59c39b3",
     "examples/run_benchmark.py": "f64e1c176b9c0427365379e03550feb7144c55db93586d6234cfaf06c49ef510",
