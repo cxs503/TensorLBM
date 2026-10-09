@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import asdict, dataclass
-from typing import Mapping
+from typing import Mapping, Sequence
 
 
 @dataclass(frozen=True)
@@ -102,3 +102,50 @@ class IcebreakingForceLedger:
                 record[f"{prefix}_{key}"] = value
         record["resistance_n"] = self.resistance_n
         return record
+
+
+
+def integrate_surface_traction(
+    positions_m: "Sequence[Sequence[float]]",
+    tractions_pa: "Sequence[Sequence[float]]",
+    area_weights_m2: "Sequence[float]",
+    origin_m: "Sequence[float]" = (0.0, 0.0, 0.0),
+) -> WrenchSI:
+    """Integrate sampled surface traction into a hull wrench in SI units.
+
+    positions_m are global sample coordinates, tractions_pa are the traction
+    vectors acting on the hull in pascals, and area_weights_m2 are the matching
+    surface quadrature weights. The returned moment is about origin_m. This
+    helper does not compute wall stress or surface quadrature weights; callers
+    must provide samples from their chosen boundary-force method.
+    """
+    if not (len(positions_m) == len(tractions_pa) == len(area_weights_m2)):
+        raise ValueError("positions, tractions, and area weights must have equal lengths")
+    if len(origin_m) != 3 or not all(math.isfinite(float(v)) for v in origin_m):
+        raise ValueError("origin_m must contain three finite coordinates")
+    total_force = [0.0, 0.0, 0.0]
+    total_moment = [0.0, 0.0, 0.0]
+    for index, (position, traction, area) in enumerate(
+        zip(positions_m, tractions_pa, area_weights_m2)
+    ):
+        if len(position) != 3 or len(traction) != 3:
+            raise ValueError(f"sample {index} position and traction must be 3-vectors")
+        values = [float(v) for v in (*position, *traction, area)]
+        if not all(math.isfinite(value) for value in values):
+            raise ValueError(f"sample {index} contains non-finite values")
+        if area < 0.0:
+            raise ValueError(f"sample {index} area weight must be non-negative")
+        force = [float(traction[k]) * float(area) for k in range(3)]
+        arm = [float(position[k]) - float(origin_m[k]) for k in range(3)]
+        moment = [
+            arm[1] * force[2] - arm[2] * force[1],
+            arm[2] * force[0] - arm[0] * force[2],
+            arm[0] * force[1] - arm[1] * force[0],
+        ]
+        for axis in range(3):
+            total_force[axis] += force[axis]
+            total_moment[axis] += moment[axis]
+    return WrenchSI(
+        fx_n=total_force[0], fy_n=total_force[1], fz_n=total_force[2],
+        mx_nm=total_moment[0], my_nm=total_moment[1], mz_nm=total_moment[2],
+    )
