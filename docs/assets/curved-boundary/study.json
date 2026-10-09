@@ -1,0 +1,97 @@
+{
+  "cases": [
+    {
+      "file": "bfl-n32-dt0.0005.json",
+      "sha256": "ae1e4b92a740461063524d1f1551ebd7c8c8aedccce6030a7524ad3907408919",
+      "n": 32,
+      "dt_s": 0.0005,
+      "interpolated": true,
+      "impulse_x_Ns": 0.5661801313729783,
+      "max_mass_error": 3.0753177782116836e-14,
+      "max_momentum_error": 1.3658851827358376e-11,
+      "minimum_population": 0.027718126925731886,
+      "repair_l1_accumulated": 0.06373132930165647
+    },
+    {
+      "file": "bfl-n48-dt0.0005.json",
+      "sha256": "36db7057ac708a1ac994ca398e811ec10d7939fbca6dfd14d6c282e6faac0511",
+      "n": 48,
+      "dt_s": 0.0005,
+      "interpolated": true,
+      "impulse_x_Ns": 0.5720780395804386,
+      "max_mass_error": 2.842170943040401e-14,
+      "max_momentum_error": 6.2697624869656465e-12,
+      "minimum_population": 0.027692707831576447,
+      "repair_l1_accumulated": 0.12806385285746893
+    },
+    {
+      "file": "bfl-n64-dt0.0005.json",
+      "sha256": "99d02dfbde66951045884d902704a951744c0a256c819e45258081211960eefa",
+      "n": 64,
+      "dt_s": 0.0005,
+      "interpolated": true,
+      "impulse_x_Ns": 0.6506211022723456,
+      "max_mass_error": 2.5868196473766147e-14,
+      "max_momentum_error": 4.815925436219004e-12,
+      "minimum_population": 0.02767094235343737,
+      "repair_l1_accumulated": 0.1819692715837367
+    },
+    {
+      "file": "bfl-n64-dt0.00025.json",
+      "sha256": "2dbeed2ffc2a88096903f9a7fa23f433f742663556ff209ebc75fce1963738ea",
+      "n": 64,
+      "dt_s": 0.00025,
+      "interpolated": true,
+      "impulse_x_Ns": 0.5453197589652851,
+      "max_mass_error": 5.806466418789569e-14,
+      "max_momentum_error": 2.374644925140501e-11,
+      "minimum_population": 0.027720042817212045,
+      "repair_l1_accumulated": 0.17803098119634087
+    },
+    {
+      "file": "staircase-n32-dt0.0005.json",
+      "sha256": "f0d72f65a844bc8ce6c9032169f05d77f473e0db95ebfcee151210ebeaeef2a1",
+      "n": 32,
+      "dt_s": 0.0005,
+      "interpolated": false,
+      "impulse_x_Ns": 0.5645491661479124,
+      "max_mass_error": 3.097522238704187e-14,
+      "max_momentum_error": 1.3624545935897459e-11,
+      "minimum_population": 0.02771587556207828,
+      "repair_l1_accumulated": 0.0
+    },
+    {
+      "file": "staircase-n48-dt0.0005.json",
+      "sha256": "c531abd1e8261e0139fafd4a9d2b38448d0b9b8c81acc2e4b741063eb12abb47",
+      "n": 48,
+      "dt_s": 0.0005,
+      "interpolated": false,
+      "impulse_x_Ns": 0.5827725781763711,
+      "max_mass_error": 2.8199664825478976e-14,
+      "max_momentum_error": 6.4107608110930414e-12,
+      "minimum_population": 0.027687411776814733,
+      "repair_l1_accumulated": 0.0
+    },
+    {
+      "file": "staircase-n64-dt0.0005.json",
+      "sha256": "3074313dda08006069fa0883d5b33347b0c3c5c9f80b16f4e4f476baa5de992d",
+      "n": 64,
+      "dt_s": 0.0005,
+      "interpolated": false,
+      "impulse_x_Ns": 0.6608285929664766,
+      "max_mass_error": 2.5868196473766147e-14,
+      "max_momentum_error": 4.825806421138168e-12,
+      "minimum_population": 0.02766844119374681,
+      "repair_l1_accumulated": 0.0
+    }
+  ],
+  "source_sha256": {
+    "src/tensorlbm/curved_boundary_2d.py": "a826bb4bece205e43f990100ed480f0506d25ffa4630036f050e82b13cb99254",
+    "src/tensorlbm/solver.py": "6cef9523e393f4d584ef01620074c945fc94e44521884ff308ce25b7b59c39b3",
+    "src/tensorlbm/d2q9.py": "1065c3093e07dfa186d729412c4081c7e4ba0925db223e8083ff007d457adf4d",
+    "examples/curved_boundary/run.py": "dccaa0a1f75e2518e084044f3aa326ebb5492b9f61d748ef9de12c5387d8bd62"
+  },
+  "spatial_last_pair_relative_change": 0.1372943152118029,
+  "temporal_half_relative_change": 0.1618474146308616,
+  "physical_accuracy_qualified": false
+}
