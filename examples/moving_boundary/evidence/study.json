@@ -4,6 +4,17 @@
   "algorithm": "moving halfway bounce-back; adjacent density wall-speed refill; global mass reservoir",
   "physical_accuracy_qualified": false,
   "temporal_convergence_qualified": false,
+  "sensitivity_type": "combined time-step/compressibility at fixed grid, viscosity, speed and duration",
+  "sound_speed_si_m_s": {
+    "comoving": 0.5773502691896257,
+    "moving": 0.5773502691896257,
+    "motion-half": 0.5773502691896257,
+    "motion-quarter": 0.5773502691896257,
+    "time-half": 1.1547005383792515,
+    "time-quarter": 2.309401076758503,
+    "time-eighth": 4.618802153517006,
+    "time-sixteenth": 9.237604307034012
+  },
   "rate_sensitivity_changes_reynolds_number": true,
   "source_sha256": "0d66e0afc75d84df3da2eeb0a003e90c4ed973dad2c6d58ce3b65fed40d10059",
   "cases": [
@@ -186,6 +197,66 @@
         1.0825698872049926e-05
       ],
       "sha256": "ac7abff0a5ca2b00f391fbc56d9a41059549fdb3c1c887673f6d6464da472f49"
+    },
+    {
+      "name": "time-eighth",
+      "steps": 800,
+      "physical_accuracy_qualified": false,
+      "si": {
+        "dx_m": 0.01,
+        "dt_s": 0.00125,
+        "rho_kg_m3": 1000.0,
+        "thickness_m": 0.01,
+        "nu_m2_s": 0.0009999999999999994,
+        "velocity_m_s": 0.029999999999999995,
+        "duration_s": 1.0
+      },
+      "restart_bitwise": true,
+      "max_momentum_residual": 8.64863736182997e-14,
+      "max_mass_residual": 5.977440764581843e-13,
+      "covered": 24,
+      "exposed": 24,
+      "cumulative_reservoir_mass": -0.02198655790448356,
+      "total_absolute_reservoir_mass": 48.01267701139136,
+      "solid_impulse": [
+        -1.0607651483599858,
+        0.0016788569337051439
+      ],
+      "solid_impulse_si_Ns": [
+        -0.008486121186879888,
+        1.3430855469641149e-05
+      ],
+      "sha256": "1e38f2756ec12f1578bba5a48528096146a580c51cf86b8725cffb0ad6e9551f"
+    },
+    {
+      "name": "time-sixteenth",
+      "steps": 1600,
+      "physical_accuracy_qualified": false,
+      "si": {
+        "dx_m": 0.01,
+        "dt_s": 0.000625,
+        "rho_kg_m3": 1000.0,
+        "thickness_m": 0.01,
+        "nu_m2_s": 0.0010000000000000024,
+        "velocity_m_s": 0.029999999999999995,
+        "duration_s": 1.0
+      },
+      "restart_bitwise": true,
+      "max_momentum_residual": 9.670042544485113e-14,
+      "max_mass_residual": 4.547473508864641e-13,
+      "covered": 24,
+      "exposed": 24,
+      "cumulative_reservoir_mass": -0.022216330338324042,
+      "total_absolute_reservoir_mass": 47.98852116893431,
+      "solid_impulse": [
+        -0.5343381260107215,
+        0.0013026585696129488
+      ],
+      "solid_impulse_si_Ns": [
+        -0.008549410016171544,
+        2.0842537113807178e-05
+      ],
+      "sha256": "4a9753d85b41b4f4e0cd6267c906a69f7234e5ecd0c55444d6423a735e667267"
     }
   ]
 }

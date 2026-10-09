@@ -19,16 +19,26 @@ to machine precision. Staircase area changes mean uniform density and exactly
 zero solid force are not guaranteed. JSON restart retains every population,
 configuration, geometry, clock and ledger; continuation is bitwise identical.
 
-Six actual cases publish full final populations and every step's ledger.
-`moving`, `time-half` and `time-quarter` have the same physical dx=0.01 m,
+Eight actual cases publish full final populations and every step's ledger.
+`moving`, `time-half`, `time-quarter`, `time-eighth` and `time-sixteenth`
+have the same physical dx=0.01 m,
 duration=1 s, radius=0.04 m, speed=0.03 m/s, density=1000 kg/m³,
 extrusion thickness=0.01 m and viscosity=0.001 m²/s. Reducing dt changes both
 lattice speed and tau to keep those physical parameters fixed. Independent
 `motion-half`/`motion-quarter` cases keep tau unchanged and change Reynolds
 number; they are motion sensitivity, not time convergence evidence.
 
+At fixed grid, this also changes the SI lattice sound speed from 0.57735 m/s
+to 9.23760 m/s (Mach 0.05196 to 0.00325). The study therefore measures
+**combined time-step/compressibility sensitivity**, not isolated time error
+for a fixed compressible equation of state.
+
 The half-to-quarter step impulse change is approximately **5.83%**, exceeding
-the declared **3%** threshold. This boundary is **not temporally converged**.
+the declared **3%** threshold; quarter-to-eighth changes **3.58086%**, also
+failing. Eighth-to-sixteenth changes **0.740271%**, passing the unchanged
+3% threshold for the finest pair. The original failures remain in the audit.
+The finest pair passing combined sensitivity does not qualify pure temporal
+convergence or total physical accuracy.
 Coarse node conversion creates approximately 44 lattice mass units of total
 absolute reservoir exchange. Conservation bookkeeping does not remove this
 local discretization error. Physical accuracy remains unqualified: no curved

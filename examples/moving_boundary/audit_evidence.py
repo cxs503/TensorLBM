@@ -36,7 +36,16 @@ def main():
         results.append(dict(name=case['name'],raw_field_and_ledger_passed=True))
     base,half,quarter=[next(x for x in study['cases'] if x['name']==n) for n in ('moving','time-half','time-quarter')]
     difference=abs(quarter['solid_impulse_si_Ns'][0]-half['solid_impulse_si_Ns'][0])/abs(quarter['solid_impulse_si_Ns'][0])*100
-    report=dict(cases=results,time_half_to_quarter_impulse_change_percent=difference,declared_threshold_percent=3.,temporal_convergence_qualified=difference<=3.,physical_accuracy_qualified=False)
+    eighth,sixteenth=[next(x for x in study['cases'] if x['name']==n) for n in ('time-eighth','time-sixteenth')]
+    last_difference=abs(sixteenth['solid_impulse_si_Ns'][0]-eighth['solid_impulse_si_Ns'][0])/abs(sixteenth['solid_impulse_si_Ns'][0])*100
+    middle_difference=abs(eighth['solid_impulse_si_Ns'][0]-quarter['solid_impulse_si_Ns'][0])/abs(eighth['solid_impulse_si_Ns'][0])*100
+    report=dict(cases=results,time_half_to_quarter_impulse_change_percent=difference,
+        time_quarter_to_eighth_impulse_change_percent=middle_difference,
+        time_eighth_to_sixteenth_impulse_change_percent=last_difference,
+        declared_threshold_percent=3.,coarse_pair_threshold_passed=difference<=3.,
+        finest_pair_threshold_passed=last_difference<=3.,
+        sensitivity_type='combined time-step/compressibility; SI sound speed changes',
+        temporal_convergence_qualified=False,physical_accuracy_qualified=False)
     (OUT/'audit.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))
 
 if __name__=='__main__':main()
