@@ -161,7 +161,11 @@ real D2Q9 populations, complete DEM state and bonds, exchange map/held loads,
 history and cumulative accounting. `CoupledIce2D.from_snapshot(...)` resumes
 mid-exchange; tests require subsequent populations and DEM positions to be
 bitwise identical. Invalid populations, shape/field/time/subcycle mismatches
-are rejected. The standalone audit verifies hashes and independently recomputes
+are rejected. Configuration rejects booleans/strings in physical real-valued
+fields, nonfinite values and nonboolean wet/dry selection. Bilinear mapping
+rejects malformed/nonfinite coordinates, invalid grid dimensions or spacing,
+and overflow before generating any indexing array. The 70 related tests cover
+these failure paths and valid unit-bearing inputs. The standalone audit verifies hashes and independently recomputes
 final momentum, masses, topology, energies and force decompositions.
 
 Next gates are resolved disk-boundary coupling, interface/grid sensitivity,

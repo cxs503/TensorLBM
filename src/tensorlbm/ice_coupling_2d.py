@@ -7,6 +7,7 @@ A finite drag coefficient regularizes the exchange; it is NOT a no-slip solve.
 from __future__ import annotations
 from dataclasses import asdict, dataclass
 import math
+from numbers import Real
 import torch
 from .d2q9 import C, macroscopic
 from .solver import collide_bgk_matmul, stream
@@ -38,9 +39,14 @@ class CoupledIceConfig:
             v=getattr(self,k)
             if isinstance(v,bool) or not isinstance(v,int) or v<1:
                 raise ValueError(k+' must be a positive integer')
-        for k,v in asdict(self).items():
-            if isinstance(v,float) and (not math.isfinite(v) or v<=0):
-                raise ValueError(k+' must be positive and finite')
+        if not isinstance(self.wet,bool):
+            raise ValueError('wet must be a bool')
+        for k in ('dx_m','fluid_dt_s','duration_s','density_kg_m3',
+                  'viscosity_m2_s','coupling_rate_s','ice_radius_m',
+                  'tool_speed_m_s','tool_gap_m','breaking_strain','shear_breaking_strain'):
+            v=getattr(self,k)
+            if isinstance(v,bool) or not isinstance(v,Real) or not math.isfinite(v) or v<=0:
+                raise ValueError(k+' must be a positive finite real number')
         if self.nx<24 or self.ny<24 or self.ice_nx<3:
             raise ValueError('domain/ice too small')
         if self.duration_s/self.fluid_dt_s<1:
@@ -55,8 +61,20 @@ class CoupledIceConfig:
 
 def bilinear_map(positions_m, shape, dx):
     """Dense small-case J; reject wrap support to retain physical moment."""
+    if (not isinstance(shape,(tuple,list)) or len(shape)!=2 or
+        any(isinstance(v,bool) or not isinstance(v,int) or v<2 for v in shape)):
+        raise ValueError('shape must contain two integer dimensions >= 2')
+    if isinstance(dx,bool) or not isinstance(dx,Real) or not math.isfinite(dx) or dx<=0:
+        raise ValueError('dx must be a positive finite real number')
+    if (not isinstance(positions_m,torch.Tensor) or positions_m.ndim!=2 or
+        positions_m.shape[1]!=2 or len(positions_m)==0 or
+        not positions_m.is_floating_point() or positions_m.device.type!='cpu' or
+        not bool(torch.isfinite(positions_m).all())):
+        raise ValueError('positions must be a finite nonempty real floating CPU tensor (N,2)')
     ny,nx=shape
-    p=positions_m/dx
+    p=positions_m.double()/dx
+    if not bool(torch.isfinite(p).all()):
+        raise ValueError('scaled marker positions must be finite')
     base=torch.floor(p).long()
     if bool((base<0).any() or (base[:,0]>=nx-1).any() or (base[:,1]>=ny-1).any()):
         raise ValueError('marker crossed non-wrapping coupling support')
