@@ -32,7 +32,6 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [sphere_re200](sphere_re200/) | ⚠️ | 旧口径 Ladd Cd +268.5%（历史失效同族；未按修复后估计器重跑） | 按冻结协议重制（BFL+wet-node+域形条款） | ≈10–20 GPU·h |
 | [sphere_re100_d3q27](sphere_re100_d3q27/) | 🟡 | 无——全门 PASS（err +2.79%→+2.57% 严格单调；twins 逐位） | 归档晋级 | 0 |
 | [couette_3d](couette_3d/) | ❌ | 唯一败因 G3 稳态判据：H128 fp32 未达 drift 门（判据坐 fp32 噪声带；fp64 四档 l2 ≤1.7337e-9 且跨机逐位） | 稳态口径裁定（fp64 踪迹或噪声带重锁） | ≤0.15 GPU·h |
-| [stokes_sphere_dg](stokes_sphere_dg/) | 🔵 | formal 12 档在跑（已完成档主门全过，err 最大 -2.88%；Hasimoto+自产周期解算器双锁） | 跑完自动验证 → 归档 | 预算内（R24×3） |
 | [stokes_second_problem](stokes_second_problem/) | ⚠️ | 骨架（仅 run.py 设计稿，无机器结果，PROVENANCE 空块如实） | Phase-0 停批 → 冻结 prereg → H∈{40,80} | ≤0.1 GPU·h |
 | [taylor_aris_dispersion](taylor_aris_dispersion/) | ❌ | 容差 6/6 全过（0.05–0.26%）但单调 0/3（err=负 O(1/H²)+正地板 H≈50 变号） | 判据口径重锁或更大 H 阶梯（决策项） | 已判死 |
 | [collision_kernels_3d_tg](collision_kernels_3d_tg/) | ❌ | 容差/衰减全过（≤0.4713%）但单调 0/5（bgk27 对照同败=τ 阶梯结构性；KBC 黏度修复后 patched 阶梯 -0.67→-0.36→-0.16% 收敛） | 按修复后核重判（侧证据已有） | 侧证据已有 |
@@ -167,11 +166,6 @@ forchheimer/fibrous 的参考类裁决。
   "v": 0.14812899907521598,
   "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/capillary_invasion_washburn/result.json",
   "k": "part2.W32.fit_rms_rel"
- },
- {
-  "v": -2.8820382791845067,
-  "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/b_stokes_sphere/phase1/results_a2/FORMAL_VERDICT.json",
-  "k": "per_tier[2].err_pct"
  },
  {
   "v": 0.05,
