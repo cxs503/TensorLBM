@@ -23,10 +23,23 @@
     {
       "name": "time-quarter",
       "raw_field_and_ledger_passed": true
+    },
+    {
+      "name": "time-eighth",
+      "raw_field_and_ledger_passed": true
+    },
+    {
+      "name": "time-sixteenth",
+      "raw_field_and_ledger_passed": true
     }
   ],
   "time_half_to_quarter_impulse_change_percent": 5.827318896651081,
+  "time_quarter_to_eighth_impulse_change_percent": 3.580860278435867,
+  "time_eighth_to_sixteenth_impulse_change_percent": 0.7402713072825232,
   "declared_threshold_percent": 3.0,
+  "coarse_pair_threshold_passed": false,
+  "finest_pair_threshold_passed": true,
+  "sensitivity_type": "combined time-step/compressibility; SI sound speed changes",
   "temporal_convergence_qualified": false,
   "physical_accuracy_qualified": false
 }
