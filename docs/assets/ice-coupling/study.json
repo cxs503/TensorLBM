@@ -2,7 +2,7 @@
   "schema": "tensorlbm.dem-coupling-study/1",
   "source_sha256": {
     "src/dem.py": "39ff7c146aa1fd172e47640de5ae26e7cee40947258595e747281420b9c70bfc",
-    "src/ice_coupling_2d.py": "2fa02d39eac8c5d6b6956b9a24c3b69e8d85d3ecf50d69a9111b2d6a1b37aeee",
+    "src/ice_coupling_2d.py": "1100840642d6086ac25b21debe5a655c0200e458ba211d81776dd96c592aea07",
     "src/solver.py": "6cef9523e393f4d584ef01620074c945fc94e44521884ff308ce25b7b59c39b3",
     "examples/run_benchmark.py": "f64e1c176b9c0427365379e03550feb7144c55db93586d6234cfaf06c49ef510",
     "src/hull_contact.py": "7775b6e625a3cb74fab705b3f78280d232b73b4e1199b8640fe8af888c966a09",
