@@ -1,0 +1,1500 @@
+{
+  "schema": "tensorlbm.dem-coupling-study/1",
+  "source_sha256": {
+    "src/dem.py": "39ff7c146aa1fd172e47640de5ae26e7cee40947258595e747281420b9c70bfc",
+    "src/ice_coupling_2d.py": "2fa02d39eac8c5d6b6956b9a24c3b69e8d85d3ecf50d69a9111b2d6a1b37aeee",
+    "src/solver.py": "6cef9523e393f4d584ef01620074c945fc94e44521884ff308ce25b7b59c39b3",
+    "examples/run_benchmark.py": "f64e1c176b9c0427365379e03550feb7144c55db93586d6234cfaf06c49ef510",
+    "src/hull_contact.py": "7775b6e625a3cb74fab705b3f78280d232b73b4e1199b8640fe8af888c966a09",
+    "src/d2q9.py": "1065c3093e07dfa186d729412c4081c7e4ba0925db223e8083ff007d457adf4d",
+    "src/icebreaking.py": "3b05c434692b462cedb098e6917c2f90b7ba60be5f7a8abc91af5f4d2367d818"
+  },
+  "scope": "single-phase periodic liquid; slipping point IBM; no gravity/free surface/ice calibration",
+  "physical_accuracy_pass": false,
+  "cases": {
+    "dry": {
+      "config": {
+        "nx": 48,
+        "ny": 40,
+        "dx_m": 0.025,
+        "fluid_dt_s": 0.0005,
+        "duration_s": 0.15,
+        "density_kg_m3": 1000.0,
+        "viscosity_m2_s": 0.02,
+        "exchange_steps": 2,
+        "coupling_rate_s": 30.0,
+        "wet": false,
+        "ice_nx": 9,
+        "ice_ny": 2,
+        "ice_radius_m": 0.025,
+        "tool_speed_m_s": 0.2,
+        "tool_gap_m": 0.001,
+        "breaking_strain": 0.015,
+        "shear_breaking_strain": 0.03
+      },
+      "steps": 300,
+      "dem_substeps": 1,
+      "peak_total_tool_force_N": 6.8185043460882255,
+      "tool_impulse_Ns": 0.6225749417957314,
+      "broken_bonds": 29,
+      "initial_bonds": 41,
+      "fragment_count": 12,
+      "fragments": [
+        {
+          "particle_ids": [
+            0,
+            1,
+            9,
+            10
+          ],
+          "mass_kg": 1.4404202316709205,
+          "centroid_m": [
+            -0.1751524658615802,
+            0.025015148247839642
+          ],
+          "mean_velocity_m_s": [
+            -0.005432132339107139,
+            -0.0004300082873985254
+          ]
+        },
+        {
+          "particle_ids": [
+            2
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.10015022168303371,
+            -0.0003422537169283069
+          ],
+          "mean_velocity_m_s": [
+            0.0044704945172742315,
+            -0.004667958716436522
+          ]
+        },
+        {
+          "particle_ids": [
+            3
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.04987345060423617,
+            -0.009263281835604365
+          ],
+          "mean_velocity_m_s": [
+            0.015494916084480514,
+            -0.2776973498026211
+          ]
+        },
+        {
+          "particle_ids": [
+            4
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            7.009625301353497e-22,
+            -0.030225460238785813
+          ],
+          "mean_velocity_m_s": [
+            1.270718627173241e-20,
+            -0.4390360206073054
+          ]
+        },
+        {
+          "particle_ids": [
+            5
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.04987345060423617,
+            -0.009263281835604365
+          ],
+          "mean_velocity_m_s": [
+            -0.015494916084480514,
+            -0.2776973498026211
+          ]
+        },
+        {
+          "particle_ids": [
+            6
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.10015022168303371,
+            -0.00034225371692830686
+          ],
+          "mean_velocity_m_s": [
+            -0.004470494517274231,
+            -0.00466795871643652
+          ]
+        },
+        {
+          "particle_ids": [
+            7,
+            8,
+            16,
+            17
+          ],
+          "mass_kg": 1.4404202316709205,
+          "centroid_m": [
+            0.17515246586158018,
+            0.025015148247839642
+          ],
+          "mean_velocity_m_s": [
+            0.0054321323391071374,
+            -0.0004300082873985254
+          ]
+        },
+        {
+          "particle_ids": [
+            11
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.10177318650591821,
+            0.05008567759832617
+          ],
+          "mean_velocity_m_s": [
+            -0.05856720443259229,
+            0.013128284658937402
+          ]
+        },
+        {
+          "particle_ids": [
+            12
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.05498864368405692,
+            0.037689045751109616
+          ],
+          "mean_velocity_m_s": [
+            -0.10745707772873746,
+            -0.20318248984404214
+          ]
+        },
+        {
+          "particle_ids": [
+            13
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -3.1311095508120154e-21,
+            0.021130771437375656
+          ],
+          "mean_velocity_m_s": [
+            -2.868210215756197e-20,
+            -0.3535939507057968
+          ]
+        },
+        {
+          "particle_ids": [
+            14
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.05498864368405692,
+            0.037689045751109616
+          ],
+          "mean_velocity_m_s": [
+            0.10745707772873746,
+            -0.20318248984404214
+          ]
+        },
+        {
+          "particle_ids": [
+            15
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.10177318650591821,
+            0.05008567759832617
+          ],
+          "mean_velocity_m_s": [
+            0.058567204432592286,
+            0.013128284658937402
+          ]
+        }
+      ],
+      "physical_ice_mass_kg": 6.481891042519142,
+      "max_momentum_residual_kg_m_s": 3.3306690738754696e-16,
+      "max_mass_relative_error": 0.0,
+      "max_force_mapping_error_N": 0.0,
+      "max_moment_mapping_error_Nm": 0.0,
+      "max_adjoint_power_error_W": 0.0,
+      "final_dem_energy_residual_J": 0.0013272724549286546,
+      "final_staggered_interface_work_residual_J": 0.0,
+      "max_marker_slip_rms_m_s": 0.1354748518125605,
+      "final_fracture_release_J": 0.0032077940908395606,
+      "interface_verification_pass": true
+    },
+    "wet": {
+      "config": {
+        "nx": 48,
+        "ny": 40,
+        "dx_m": 0.025,
+        "fluid_dt_s": 0.0005,
+        "duration_s": 0.15,
+        "density_kg_m3": 1000.0,
+        "viscosity_m2_s": 0.02,
+        "exchange_steps": 2,
+        "coupling_rate_s": 30.0,
+        "wet": true,
+        "ice_nx": 9,
+        "ice_ny": 2,
+        "ice_radius_m": 0.025,
+        "tool_speed_m_s": 0.2,
+        "tool_gap_m": 0.001,
+        "breaking_strain": 0.015,
+        "shear_breaking_strain": 0.03
+      },
+      "steps": 300,
+      "dem_substeps": 1,
+      "peak_total_tool_force_N": 11.162610132237674,
+      "tool_impulse_Ns": 1.0206463665818206,
+      "broken_bonds": 29,
+      "initial_bonds": 41,
+      "fragment_count": 12,
+      "fragments": [
+        {
+          "particle_ids": [
+            0,
+            1,
+            9,
+            10
+          ],
+          "mass_kg": 1.4404202316709205,
+          "centroid_m": [
+            -0.17511601081584077,
+            0.02511302161295948
+          ],
+          "mean_velocity_m_s": [
+            -0.002744682381560265,
+            0.0017204002929314067
+          ]
+        },
+        {
+          "particle_ids": [
+            2
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.1003860119436751,
+            -1.989522070424607e-05
+          ],
+          "mean_velocity_m_s": [
+            -0.0016029236030412409,
+            0.0028576757183349255
+          ]
+        },
+        {
+          "particle_ids": [
+            3
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.0504900598114673,
+            -0.00525553898502317
+          ],
+          "mean_velocity_m_s": [
+            -0.0024937620403236937,
+            -0.14674690790054518
+          ]
+        },
+        {
+          "particle_ids": [
+            4
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -1.0640778429057254e-16,
+            -0.016320350210541082
+          ],
+          "mean_velocity_m_s": [
+            -8.535421664314684e-16,
+            -0.25110927918849457
+          ]
+        },
+        {
+          "particle_ids": [
+            5
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.050490059811467036,
+            -0.005255538985023337
+          ],
+          "mean_velocity_m_s": [
+            0.0024937620403225726,
+            -0.14674690790055145
+          ]
+        },
+        {
+          "particle_ids": [
+            6
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.100386011943675,
+            -1.989522070412665e-05
+          ],
+          "mean_velocity_m_s": [
+            0.001602923603041421,
+            0.002857675718334937
+          ]
+        },
+        {
+          "particle_ids": [
+            7,
+            8,
+            16,
+            17
+          ],
+          "mass_kg": 1.4404202316709205,
+          "centroid_m": [
+            0.17511601081584077,
+            0.025113021612959488
+          ],
+          "mean_velocity_m_s": [
+            0.0027446823815607184,
+            0.0017204002929292763
+          ]
+        },
+        {
+          "particle_ids": [
+            11
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.10093344120914824,
+            0.05028891357626749
+          ],
+          "mean_velocity_m_s": [
+            -0.03078512980053477,
+            0.01182154803208824
+          ]
+        },
+        {
+          "particle_ids": [
+            12
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.053437596639894454,
+            0.040936772865890175
+          ],
+          "mean_velocity_m_s": [
+            -0.07397010910631346,
+            -0.1509829936824067
+          ]
+        },
+        {
+          "particle_ids": [
+            13
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -3.820534547255674e-16,
+            0.029435126657462903
+          ],
+          "mean_velocity_m_s": [
+            -2.3951084190330623e-15,
+            -0.23344557961540677
+          ]
+        },
+        {
+          "particle_ids": [
+            14
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.0534375966398944,
+            0.04093677286589008
+          ],
+          "mean_velocity_m_s": [
+            0.07397010910631584,
+            -0.15098299368241036
+          ]
+        },
+        {
+          "particle_ids": [
+            15
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.10093344120914823,
+            0.0502889135762676
+          ],
+          "mean_velocity_m_s": [
+            0.030785129800538557,
+            0.01182154803208598
+          ]
+        }
+      ],
+      "physical_ice_mass_kg": 6.481891042519142,
+      "max_momentum_residual_kg_m_s": 3.467448550509289e-12,
+      "max_mass_relative_error": 2.8976820942716586e-14,
+      "max_force_mapping_error_N": 3.552999964401906e-15,
+      "max_moment_mapping_error_Nm": 3.5041414214731503e-16,
+      "max_adjoint_power_error_W": 1.6653345369377348e-16,
+      "final_dem_energy_residual_J": 0.0016235211675836303,
+      "final_staggered_interface_work_residual_J": 0.0002090132947864115,
+      "max_marker_slip_rms_m_s": 0.10690449676496976,
+      "final_fracture_release_J": 0.0033052989779664022,
+      "interface_verification_pass": true
+    },
+    "time_half": {
+      "config": {
+        "nx": 48,
+        "ny": 40,
+        "dx_m": 0.025,
+        "fluid_dt_s": 0.00025,
+        "duration_s": 0.15,
+        "density_kg_m3": 1000.0,
+        "viscosity_m2_s": 0.02,
+        "exchange_steps": 4,
+        "coupling_rate_s": 30.0,
+        "wet": true,
+        "ice_nx": 9,
+        "ice_ny": 2,
+        "ice_radius_m": 0.025,
+        "tool_speed_m_s": 0.2,
+        "tool_gap_m": 0.001,
+        "breaking_strain": 0.015,
+        "shear_breaking_strain": 0.03
+      },
+      "steps": 600,
+      "dem_substeps": 1,
+      "peak_total_tool_force_N": 11.151833589986879,
+      "tool_impulse_Ns": 1.0213592275280232,
+      "broken_bonds": 29,
+      "initial_bonds": 41,
+      "fragment_count": 12,
+      "fragments": [
+        {
+          "particle_ids": [
+            0,
+            1,
+            9,
+            10
+          ],
+          "mass_kg": 1.4404202316709205,
+          "centroid_m": [
+            -0.17511595075262398,
+            0.025112650740749566
+          ],
+          "mean_velocity_m_s": [
+            -0.002740384670801824,
+            0.0016986654368482278
+          ]
+        },
+        {
+          "particle_ids": [
+            2
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.10038583611146133,
+            -2.2884782117108477e-05
+          ],
+          "mean_velocity_m_s": [
+            -0.0015307193445721142,
+            0.002803823137936098
+          ]
+        },
+        {
+          "particle_ids": [
+            3
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.050489502153234604,
+            -0.005267134242170965
+          ],
+          "mean_velocity_m_s": [
+            -0.0024653736495652873,
+            -0.14727410125741347
+          ]
+        },
+        {
+          "particle_ids": [
+            4
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            1.0150213368575586e-17,
+            -0.01633421620084999
+          ],
+          "mean_velocity_m_s": [
+            1.7997530588361315e-15,
+            -0.25149153330287466
+          ]
+        },
+        {
+          "particle_ids": [
+            5
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.05048950215323487,
+            -0.005267134242171265
+          ],
+          "mean_velocity_m_s": [
+            0.002465373649570252,
+            -0.1472741012574077
+          ]
+        },
+        {
+          "particle_ids": [
+            6
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.10038583611146154,
+            -2.288478211820047e-05
+          ],
+          "mean_velocity_m_s": [
+            0.00153071934458015,
+            0.002803823137916865
+          ]
+        },
+        {
+          "particle_ids": [
+            7,
+            8,
+            16,
+            17
+          ],
+          "mass_kg": 1.4404202316709205,
+          "centroid_m": [
+            0.17511595075262404,
+            0.025112650740749407
+          ],
+          "mean_velocity_m_s": [
+            0.0027403846708013483,
+            0.0016986654368470206
+          ]
+        },
+        {
+          "particle_ids": [
+            11
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.10093174768468184,
+            0.05028549477354751
+          ],
+          "mean_velocity_m_s": [
+            -0.03086861252168278,
+            0.011818230373065581
+          ]
+        },
+        {
+          "particle_ids": [
+            12
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.05343694521256361,
+            0.04092700561842447
+          ],
+          "mean_velocity_m_s": [
+            -0.07412627912009694,
+            -0.15113120478971862
+          ]
+        },
+        {
+          "particle_ids": [
+            13
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            3.1723674799249523e-16,
+            0.02942659654993176
+          ],
+          "mean_velocity_m_s": [
+            7.184127056020666e-15,
+            -0.233687011703119
+          ]
+        },
+        {
+          "particle_ids": [
+            14
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.05343694521256369,
+            0.04092700561842442
+          ],
+          "mean_velocity_m_s": [
+            0.0741262791200925,
+            -0.1511312047897227
+          ]
+        },
+        {
+          "particle_ids": [
+            15
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.10093174768468194,
+            0.05028549477354657
+          ],
+          "mean_velocity_m_s": [
+            0.03086861252167823,
+            0.011818230373051294
+          ]
+        }
+      ],
+      "physical_ice_mass_kg": 6.481891042519142,
+      "max_momentum_residual_kg_m_s": 1.4755086041873255e-11,
+      "max_mass_relative_error": 6.183942247162122e-14,
+      "max_force_mapping_error_N": 1.8092592039395346e-15,
+      "max_moment_mapping_error_Nm": 4.510281037539698e-16,
+      "max_adjoint_power_error_W": 1.6653345369377348e-16,
+      "final_dem_energy_residual_J": 0.001466675034367232,
+      "final_staggered_interface_work_residual_J": -0.00013305431239528376,
+      "max_marker_slip_rms_m_s": 0.10690449676496976,
+      "final_fracture_release_J": 0.003285996521585879,
+      "interface_verification_pass": true
+    },
+    "exchange_half": {
+      "config": {
+        "nx": 48,
+        "ny": 40,
+        "dx_m": 0.025,
+        "fluid_dt_s": 0.0005,
+        "duration_s": 0.15,
+        "density_kg_m3": 1000.0,
+        "viscosity_m2_s": 0.02,
+        "exchange_steps": 1,
+        "coupling_rate_s": 30.0,
+        "wet": true,
+        "ice_nx": 9,
+        "ice_ny": 2,
+        "ice_radius_m": 0.025,
+        "tool_speed_m_s": 0.2,
+        "tool_gap_m": 0.001,
+        "breaking_strain": 0.015,
+        "shear_breaking_strain": 0.03
+      },
+      "steps": 300,
+      "dem_substeps": 1,
+      "peak_total_tool_force_N": 11.175667524405785,
+      "tool_impulse_Ns": 1.0217217255821387,
+      "broken_bonds": 29,
+      "initial_bonds": 41,
+      "fragment_count": 12,
+      "fragments": [
+        {
+          "particle_ids": [
+            0,
+            1,
+            9,
+            10
+          ],
+          "mass_kg": 1.4404202316709205,
+          "centroid_m": [
+            -0.17511586577031635,
+            0.02511427614579704
+          ],
+          "mean_velocity_m_s": [
+            -0.002730430629390805,
+            0.0017336463969597317
+          ]
+        },
+        {
+          "particle_ids": [
+            2
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.10038667012519113,
+            -1.4699922284354549e-05
+          ],
+          "mean_velocity_m_s": [
+            -0.0015857108753655391,
+            0.002904884701428982
+          ]
+        },
+        {
+          "particle_ids": [
+            3
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.05049020000275074,
+            -0.005234628575401419
+          ],
+          "mean_velocity_m_s": [
+            -0.0024833968530374746,
+            -0.14661976229323245
+          ]
+        },
+        {
+          "particle_ids": [
+            4
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -2.1389200570459417e-17,
+            -0.01630238495270731
+          ],
+          "mean_velocity_m_s": [
+            -1.195510128812195e-15,
+            -0.25135820716917545
+          ]
+        },
+        {
+          "particle_ids": [
+            5
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.050490200002750785,
+            -0.005234628575401506
+          ],
+          "mean_velocity_m_s": [
+            0.002483396853033821,
+            -0.14661976229323384
+          ]
+        },
+        {
+          "particle_ids": [
+            6
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.10038667012519112,
+            -1.4699922284415813e-05
+          ],
+          "mean_velocity_m_s": [
+            0.001585710875364763,
+            0.0029048847014300663
+          ]
+        },
+        {
+          "particle_ids": [
+            7,
+            8,
+            16,
+            17
+          ],
+          "mass_kg": 1.4404202316709205,
+          "centroid_m": [
+            0.1751158657703164,
+            0.025114276145797053
+          ],
+          "mean_velocity_m_s": [
+            0.0027304306293896314,
+            0.001733646396960655
+          ]
+        },
+        {
+          "particle_ids": [
+            11
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.10093020231295054,
+            0.05028994885827729
+          ],
+          "mean_velocity_m_s": [
+            -0.030731198539753767,
+            0.011763078831187438
+          ]
+        },
+        {
+          "particle_ids": [
+            12
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -0.053434176710077434,
+            0.04094532019914457
+          ],
+          "mean_velocity_m_s": [
+            -0.07397093772224786,
+            -0.15097384341070197
+          ]
+        },
+        {
+          "particle_ids": [
+            13
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            -2.1667720165557354e-17,
+            0.029447055329322933
+          ],
+          "mean_velocity_m_s": [
+            -1.1340464637726934e-15,
+            -0.23332329551861797
+          ]
+        },
+        {
+          "particle_ids": [
+            14
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.05343417671007746,
+            0.0409453201991445
+          ],
+          "mean_velocity_m_s": [
+            0.0739709377222448,
+            -0.15097384341070322
+          ]
+        },
+        {
+          "particle_ids": [
+            15
+          ],
+          "mass_kg": 0.3601050579177301,
+          "centroid_m": [
+            0.10093020231295056,
+            0.05028994885827719
+          ],
+          "mean_velocity_m_s": [
+            0.03073119853975256,
+            0.011763078831185714
+          ]
+        }
+      ],
+      "physical_ice_mass_kg": 6.481891042519142,
+      "max_momentum_residual_kg_m_s": 3.553601857220201e-12,
+      "max_mass_relative_error": 2.90878432451791e-14,
+      "max_force_mapping_error_N": 3.554238011089489e-15,
+      "max_moment_mapping_error_Nm": 5.793976409762536e-16,
+      "max_adjoint_power_error_W": 1.6653345369377348e-16,
+      "final_dem_energy_residual_J": 0.0016211818865354555,
+      "final_staggered_interface_work_residual_J": 0.0004451634173033431,
+      "max_marker_slip_rms_m_s": 0.10690449676496976,
+      "final_fracture_release_J": 0.0032926389807186643,
+      "interface_verification_pass": true
+    },
+    "particle_fine": {
+      "config": {
+        "nx": 48,
+        "ny": 40,
+        "dx_m": 0.025,
+        "fluid_dt_s": 0.0005,
+        "duration_s": 0.15,
+        "density_kg_m3": 1000.0,
+        "viscosity_m2_s": 0.02,
+        "exchange_steps": 2,
+        "coupling_rate_s": 30.0,
+        "wet": true,
+        "ice_nx": 18,
+        "ice_ny": 4,
+        "ice_radius_m": 0.0125,
+        "tool_speed_m_s": 0.2,
+        "tool_gap_m": 0.001,
+        "breaking_strain": 0.015,
+        "shear_breaking_strain": 0.03
+      },
+      "steps": 300,
+      "dem_substeps": 4,
+      "peak_total_tool_force_N": 10.027825778900032,
+      "tool_impulse_Ns": 0.9904363381537467,
+      "broken_bonds": 112,
+      "initial_bonds": 224,
+      "fragment_count": 32,
+      "fragments": [
+        {
+          "particle_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            18,
+            19,
+            20,
+            21,
+            22,
+            36,
+            37,
+            38,
+            39,
+            40,
+            54,
+            55,
+            56,
+            57,
+            58
+          ],
+          "mass_kg": 1.890551554068083,
+          "centroid_m": [
+            -0.1592707416394191,
+            0.03581124910709109
+          ],
+          "mean_velocity_m_s": [
+            -0.007993894350589366,
+            0.0023532249790747676
+          ]
+        },
+        {
+          "particle_ids": [
+            6
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.06305039174577513,
+            -0.0008568854191496455
+          ],
+          "mean_velocity_m_s": [
+            -0.00237875328146137,
+            -0.038668103121994174
+          ]
+        },
+        {
+          "particle_ids": [
+            7
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.038488583690456,
+            -0.010125815664819527
+          ],
+          "mean_velocity_m_s": [
+            -0.011650825783286252,
+            -0.20699268647145666
+          ]
+        },
+        {
+          "particle_ids": [
+            8
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.013252090689745413,
+            -0.016594231083142265
+          ],
+          "mean_velocity_m_s": [
+            -0.007178186236292076,
+            -0.19686785663134643
+          ]
+        },
+        {
+          "particle_ids": [
+            9
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.01325209068974551,
+            -0.01659423108314235
+          ],
+          "mean_velocity_m_s": [
+            0.007178186236293455,
+            -0.19686785663134787
+          ]
+        },
+        {
+          "particle_ids": [
+            10
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.03848858369045597,
+            -0.010125815664819656
+          ],
+          "mean_velocity_m_s": [
+            0.011650825783285624,
+            -0.20699268647145497
+          ]
+        },
+        {
+          "particle_ids": [
+            11
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.06305039174577519,
+            -0.0008568854191497439
+          ],
+          "mean_velocity_m_s": [
+            0.0023787532814642945,
+            -0.03866810312199361
+          ]
+        },
+        {
+          "particle_ids": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            31,
+            32,
+            33,
+            34,
+            35,
+            49,
+            50,
+            51,
+            52,
+            53,
+            67,
+            68,
+            69,
+            70,
+            71
+          ],
+          "mass_kg": 1.890551554068083,
+          "centroid_m": [
+            0.15927074163941915,
+            0.03581124910709117
+          ],
+          "mean_velocity_m_s": [
+            0.007993894350589703,
+            0.0023532249790746743
+          ]
+        },
+        {
+          "particle_ids": [
+            23
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.0879558970655295,
+            0.0250771335054342
+          ],
+          "mean_velocity_m_s": [
+            -0.005101136276761563,
+            0.0007461832741983874
+          ]
+        },
+        {
+          "particle_ids": [
+            24
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.06287935374086767,
+            0.023611580544161688
+          ],
+          "mean_velocity_m_s": [
+            0.0019119218132188736,
+            -0.0706952781290414
+          ]
+        },
+        {
+          "particle_ids": [
+            25
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.038103852749438276,
+            0.013788326881637634
+          ],
+          "mean_velocity_m_s": [
+            -0.01205984059594086,
+            -0.2012498557425064
+          ]
+        },
+        {
+          "particle_ids": [
+            26
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.012739662205465402,
+            0.00785988831653424
+          ],
+          "mean_velocity_m_s": [
+            -0.005257960896669687,
+            -0.18237093000127
+          ]
+        },
+        {
+          "particle_ids": [
+            27
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.01273966220546531,
+            0.007859888316534152
+          ],
+          "mean_velocity_m_s": [
+            0.005257960896668088,
+            -0.18237093000126994
+          ]
+        },
+        {
+          "particle_ids": [
+            28
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.038103852749438324,
+            0.013788326881637537
+          ],
+          "mean_velocity_m_s": [
+            0.012059840595940138,
+            -0.2012498557425049
+          ]
+        },
+        {
+          "particle_ids": [
+            29
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.06287935374086773,
+            0.023611580544161553
+          ],
+          "mean_velocity_m_s": [
+            -0.0019119218132172637,
+            -0.07069527812904851
+          ]
+        },
+        {
+          "particle_ids": [
+            30
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.08795589706552961,
+            0.02507713350543433
+          ],
+          "mean_velocity_m_s": [
+            0.005101136276763084,
+            0.0007461832741972286
+          ]
+        },
+        {
+          "particle_ids": [
+            41
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.08882165797536748,
+            0.05022688058475635
+          ],
+          "mean_velocity_m_s": [
+            -0.0673404950813211,
+            0.008962497646787986
+          ]
+        },
+        {
+          "particle_ids": [
+            42
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.06533007896273017,
+            0.04730757598736725
+          ],
+          "mean_velocity_m_s": [
+            -0.08992745329921062,
+            -0.11944026788281185
+          ]
+        },
+        {
+          "particle_ids": [
+            43
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.03831117508801747,
+            0.03690923178595842
+          ],
+          "mean_velocity_m_s": [
+            -0.11191014950681788,
+            -0.17448610624607513
+          ]
+        },
+        {
+          "particle_ids": [
+            44
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.012137658549930196,
+            0.03178969888583639
+          ],
+          "mean_velocity_m_s": [
+            -0.003151628028446659,
+            -0.17857681745270562
+          ]
+        },
+        {
+          "particle_ids": [
+            45
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.012137658549930465,
+            0.03178969888583632
+          ],
+          "mean_velocity_m_s": [
+            0.003151628028451008,
+            -0.17857681745270615
+          ]
+        },
+        {
+          "particle_ids": [
+            46
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.0383111750880177,
+            0.036909231785958375
+          ],
+          "mean_velocity_m_s": [
+            0.1119101495068208,
+            -0.17448610624607422
+          ]
+        },
+        {
+          "particle_ids": [
+            47
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.0653300789627303,
+            0.04730757598736721
+          ],
+          "mean_velocity_m_s": [
+            0.08992745329921316,
+            -0.1194402678828103
+          ]
+        },
+        {
+          "particle_ids": [
+            48
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.08882165797536752,
+            0.05022688058475648
+          ],
+          "mean_velocity_m_s": [
+            0.06734049508132273,
+            0.008962497646786156
+          ]
+        },
+        {
+          "particle_ids": [
+            59
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.09041356463699028,
+            0.07583272972747769
+          ],
+          "mean_velocity_m_s": [
+            -0.056892932157805096,
+            0.026394394361293844
+          ]
+        },
+        {
+          "particle_ids": [
+            60
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.06732031937658822,
+            0.07104856888516205
+          ],
+          "mean_velocity_m_s": [
+            -0.06550301435318305,
+            -0.17853525756221408
+          ]
+        },
+        {
+          "particle_ids": [
+            61
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.04541856287676457,
+            0.05942403883735725
+          ],
+          "mean_velocity_m_s": [
+            -0.038340025003691706,
+            -0.17159911310851228
+          ]
+        },
+        {
+          "particle_ids": [
+            62
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            -0.0214854217134645,
+            0.05270477203594386
+          ],
+          "mean_velocity_m_s": [
+            -0.04252009980058088,
+            -0.21244960017032755
+          ]
+        },
+        {
+          "particle_ids": [
+            63
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.021485421713464656,
+            0.05270477203594383
+          ],
+          "mean_velocity_m_s": [
+            0.04252009980058157,
+            -0.21244960017033004
+          ]
+        },
+        {
+          "particle_ids": [
+            64
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.04541856287676469,
+            0.05942403883735727
+          ],
+          "mean_velocity_m_s": [
+            0.03834002500368985,
+            -0.17159911310851264
+          ]
+        },
+        {
+          "particle_ids": [
+            65
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.0673203193765883,
+            0.07104856888516205
+          ],
+          "mean_velocity_m_s": [
+            0.065503014353183,
+            -0.17853525756221864
+          ]
+        },
+        {
+          "particle_ids": [
+            66
+          ],
+          "mass_kg": 0.09002626447943253,
+          "centroid_m": [
+            0.09041356463699034,
+            0.07583272972747783
+          ],
+          "mean_velocity_m_s": [
+            0.05689293215780681,
+            0.026394394361294503
+          ]
+        }
+      ],
+      "physical_ice_mass_kg": 6.481891042519142,
+      "max_momentum_residual_kg_m_s": 3.616440480413985e-12,
+      "max_mass_relative_error": 2.919886554764162e-14,
+      "max_force_mapping_error_N": 1.792881821378896e-15,
+      "max_moment_mapping_error_Nm": 2.498001805406602e-16,
+      "max_adjoint_power_error_W": 1.1102230246251565e-16,
+      "final_dem_energy_residual_J": 0.0010826613678786845,
+      "final_staggered_interface_work_residual_J": -0.00010003879023652573,
+      "max_marker_slip_rms_m_s": 0.08029049352059031,
+      "final_fracture_release_J": 0.0021439045717124793,
+      "interface_verification_pass": true
+    },
+    "intact_control": {
+      "config": {
+        "nx": 48,
+        "ny": 40,
+        "dx_m": 0.025,
+        "fluid_dt_s": 0.0005,
+        "duration_s": 0.15,
+        "density_kg_m3": 1000.0,
+        "viscosity_m2_s": 0.02,
+        "exchange_steps": 2,
+        "coupling_rate_s": 30.0,
+        "wet": true,
+        "ice_nx": 9,
+        "ice_ny": 2,
+        "ice_radius_m": 0.025,
+        "tool_speed_m_s": 0.2,
+        "tool_gap_m": 0.001,
+        "breaking_strain": 10.0,
+        "shear_breaking_strain": 10.0
+      },
+      "steps": 300,
+      "dem_substeps": 1,
+      "peak_total_tool_force_N": 13.732539836596402,
+      "tool_impulse_Ns": 1.1226145670248555,
+      "broken_bonds": 0,
+      "initial_bonds": 41,
+      "fragment_count": 1,
+      "fragments": [
+        {
+          "particle_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "mass_kg": 6.481891042519142,
+          "centroid_m": [
+            3.7778422365717134e-17,
+            0.021137104749129117
+          ],
+          "mean_velocity_m_s": [
+            4.1536989897000217e-16,
+            -0.06778676786496736
+          ]
+        }
+      ],
+      "physical_ice_mass_kg": 6.481891042519142,
+      "max_momentum_residual_kg_m_s": 3.7414515929867775e-12,
+      "max_mass_relative_error": 2.8976820942716586e-14,
+      "max_force_mapping_error_N": 3.552760371184885e-15,
+      "max_moment_mapping_error_Nm": 4.805184028455756e-16,
+      "max_adjoint_power_error_W": 1.1102230246251565e-16,
+      "final_dem_energy_residual_J": 0.0003964832534683882,
+      "final_staggered_interface_work_residual_J": 0.00015758904212606617,
+      "max_marker_slip_rms_m_s": 0.10690449676496976,
+      "final_fracture_release_J": 0.0,
+      "interface_verification_pass": true
+    }
+  },
+  "artifacts_sha256": {
+    "dry.json": "344b53d97245e0db1686c6b02773eff410c80de3d36c0843c95bbe4241a6f243",
+    "wet.json": "3f8c4e5c34d152107053dd65d4e02ebacbad7a178cc468dc0e4896fa68e0e783",
+    "time_half.json": "fd3f234fbd84033783ccbad31f2fbb7b3b1d543a4f160fe9908cc40ef2d90e0a",
+    "exchange_half.json": "c19f94463cc819087532ccb7cb82dfaa6436d9a6ee0b7f3946b8e1a5b0b98cea",
+    "particle_fine.json": "9bb835427d4da310216181b6c4b60667becd5edb489a372be912ec16dd6fed3b",
+    "intact_control.json": "2f7dd98ea8ef470e877e70c5f9eb8a833d8c479ef5e28f8d2e88defafcd9f31e"
+  },
+  "sensitivity": {
+    "time_half": {
+      "peak_total_tool_force_N": 0.0009654141928394644,
+      "tool_impulse_Ns": 0.0006984406838090873
+    },
+    "exchange_half": {
+      "peak_total_tool_force_N": 0.0011697436364279667,
+      "tool_impulse_Ns": 0.0010536058673480397
+    },
+    "particle_fine": {
+      "peak_total_tool_force_N": 0.10165940939389961,
+      "tool_impulse_Ns": 0.029598918310215883
+    }
+  },
+  "sensitivity_pass_3percent": false
+}
