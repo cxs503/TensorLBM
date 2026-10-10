@@ -1,15 +1,14 @@
 # TensorLBM
 
-Executable 2-D LBM–DEM coupling: [P1 report](docs/tensordem_coupling_p1.md). Real solvers, restart and conservation evidence; slipping IBM and particle sensitivity remain unqualified.
-
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-[![CI](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml/badge.svg)](https://github.com/cxs503/TensorLBM/actions/workflows/ci.yml)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://github.com/cxs503/TensorLBM)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cxs503/TensorLBM/blob/main/notebooks/quickstart.ipynb)
+[![Quick Start](https://img.shields.io/badge/Quick%20Start-Get%20Started-blue)](#installation)
+[![AI4S Apps](https://img.shields.io/badge/AI4S%20Apps-Industry%20Workflows-6f42c1)](docs/AI4S_APPS.md)
+[![Browser Platform](https://img.shields.io/badge/Browser%20Platform-FastAPI%20%2B%20WebUI-0ea5e9)](docs/PLATFORM.md)
+[![HPC Benchmarks](https://img.shields.io/badge/HPC%20Benchmarks-Validated%20Cases-16a34a)](#quantitative-validation-summary)
 
-> **An AI4S integrated platform built on PyTorch Lattice Boltzmann solvers.**
+> **An AI4Science Platform for Industrial Fluid Dynamics.**
 > D2Q9 · D3Q19 · D3Q27 · BGK · MRT · TRT · RLBM · Cumulant · LES · RANS · AMR · DG-LBM · AI turbulence closure · Multi-GPU
 
 ```bash
@@ -32,9 +31,22 @@ for _ in range(200):
 
 ---
 
+## What's new in v0.3
+
+- **Platform 升级可见化**：新增 `app/backend/` FastAPI 服务化平台，覆盖 28 个业务路由与统一作业管理。
+- **AI pipeline 三件套**：SUBOFF、AI-LES、Flow-Transformer 三条 AI4Science 流水线已接入平台骨架。
+- **LLM Agent 集成**：`app/backend/agent_core.py` 提供平台级 agent 编排能力，支持自然语言驱动任务。
+- **库 + 平台双形态**：保留 `src/tensorlbm/` 研究库能力，同时面向浏览器与后端场景提供工程入口。
+
+## 3 个差异化
+
+1. **真实工业 case**：以 SUBOFF 等工业流体场景为核心，覆盖工程导向数据与验证路径。  
+2. **完整闭环**：从几何/数据准备、仿真求解、AI 训练到推理服务形成端到端交付链路。  
+3. **浏览器 + Agent**：浏览器平台与 LLM Agent 协同，降低复杂 CFD+AI 工作流使用门槛。
+
 ## What TensorLBM provides
 
-- A small, explicit public API in `src/tensorlbm/__init__.py`, resolved lazily (PEP 562) so `import tensorlbm` costs ~0.02 s and loads only the submodules you actually touch
+- A small, explicit public API in `src/tensorlbm/__init__.py`
 - **D2Q9**, **D3Q19**, and **D3Q27** lattice primitives (`equilibrium`, `macroscopic`, lattice constants)
 - **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D
 - **Adaptive Mesh Refinement (AMR)**: dynamic patch management for D2Q9 and D3Q19, up to 5 refinement levels with Filippova–Hänel interface exchange, and multiple refinement indicators (non-equilibrium, vorticity, gradient, boundary-layer)
@@ -68,19 +80,26 @@ for _ in range(200):
 2. **Composable solver core**: isolate lattice math, solver stepping, and boundary logic.
 3. **Reproducible runs**: parameterized CLI + deterministic run folder layout + metadata snapshot.
 4. **Fast feedback loops**: smoke tests and CI on push/PR.
-5. **HPC + AI co-design**: support CPU/GPU/HPC execution while keeping AI training and serving in the same platform loop.
+5. **CPU-first defaults, GPU-ready shape**: default to CPU, but keep interfaces ready for device scaling.
 6. **Multi-backend**: PyTorch is the default; Paddle and MindSpore backends are selectable at runtime.
 
 ## Documentation / 文档
 
+- **[AI4S 应用目录 / AI4S Apps](docs/AI4S_APPS.md)** – 面向工业流体问题的 AI4Science 应用列表、输入输出约定与示例入口。
+- **[Browser Platform 说明](docs/PLATFORM.md)** – 平台架构、用户旅程、部署形态与与库边界说明。
+- **[Pre-trained Models](docs/PRETRAINED_MODELS.md)** – 可直接下载的 checkpoint 列表与使用说明。
 - **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
   Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
 - **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
 - **[HPC + AI: AI Turbulence Models](docs/ai_turbulence.md)** – Agent-driven 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范 (`tensorlbm.ai`).
-- **[AI4S integrated platform architecture](docs/plans/ai4s-integrated-platform-architecture.md)** – three-layer architecture (infrastructure/platform/application) and AI4S app framework.
 - **[Accuracy-recommendation evidence gate](docs/accuracy_recommendation_evidence_gate.md)** – fail-closed physical-evidence admission before an accuracy recommendation.
 - **[Development Workflow](docs/development_workflow.md)** – single entrypoint for setup, checks, platform startup, and output naming conventions.
 - **[Observability Notes](docs/observability.md)** – job lifecycle, output schema, and failure-triage checklist.
+
+## Model Checkpoints
+
+- **SUBOFF v0.3 checkpoint**: [`models/suboff_v0.3.pt`](models/suboff_v0.3.pt)
+- 完整模型说明、输入约定与加载示例见 [`docs/PRETRAINED_MODELS.md`](docs/PRETRAINED_MODELS.md)
 
 ## Installation
 
@@ -262,8 +281,6 @@ GitHub Actions runs the same test command on every push and pull request.
 - Backend dispatch: `tensorlbm.backends` — `torch` (default), `paddle`, `mindspore`
 
 ## Quantitative validation summary
-
-The platform-level evidence spans CFD physics benchmarks, engineering workflows, and AI surrogate efficiency gains.
 
 | Benchmark | Parameter | TensorLBM | Reference | Error |
 |-----------|-----------|-----------|-----------|-------|
