@@ -6,28 +6,34 @@ as callable library functions.
 
 from __future__ import annotations
 
+import csv
 import os
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import torch
 import torch.nn.functional as F
-from einops import repeat
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from einops import repeat
+
 from .suboff_utils import (
-    _move_to_device,
     build_suboff_model,
     default_suboff_device,
     get_suboff_coords,
     load_checkpoint,
     pointwise_rel_loss,
+    _move_to_device,
 )
+
+_DEMO_CHANNEL_TO_INDEX = {"p": 0, "ux": 1, "uy": 2, "uz": 3, "u": 4}
+_DEMO_VOLUME_SHAPE = (100, 50, 100)
+
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
@@ -224,6 +230,7 @@ def predict_suboff(cfg: SuboffPredictConfig | None = None) -> dict[str, Any]:
     # Run inference
     all_avg_loss = []
     torch_avg_loss = []
+    pred_result = None
     input_data = None
     pred = None
 
@@ -321,6 +328,83 @@ def predict_suboff(cfg: SuboffPredictConfig | None = None) -> dict[str, Any]:
         "mse_avg": float(np.mean(torch_avg_loss)) * 1e4,
         "checkpoint": cfg.checkpoint_path,
         "snap_idx": cfg.snap_idx,
+    }
+
+
+def render_suboff_flowfield_demo(
+    inference_result: dict[str, Any],
+    output_dir: str | Path,
+    *,
+    slice_axis: str = "z",
+    slice_index: int = 50,
+    channels: tuple[str, ...] = ("u", "p"),
+    file_prefix: str = "suboff_v03",
+) -> dict[str, Any]:
+    """Render standard SUBOFF demo flow-field figures from prediction results."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    output_root = Path(output_dir)
+    output_root.mkdir(parents=True, exist_ok=True)
+
+    pred = np.asarray(inference_result["pred"], dtype=np.float32)
+    real = np.asarray(inference_result["real"], dtype=np.float32)
+    error = np.asarray(inference_result["error"], dtype=np.float32)
+    expected_points = int(np.prod(_DEMO_VOLUME_SHAPE))
+    if pred.shape != (expected_points, 5):
+        raise ValueError(f"pred shape must be ({expected_points}, 5), got {pred.shape}")
+    if real.shape != (expected_points, 5):
+        raise ValueError(f"real shape must be ({expected_points}, 5), got {real.shape}")
+    if error.shape != (expected_points, 5):
+        raise ValueError(f"error shape must be ({expected_points}, 5), got {error.shape}")
+
+    axis_to_dim = {"z": 2, "y": 1, "x": 0}
+    axis = slice_axis.lower()
+    if axis not in axis_to_dim:
+        raise ValueError("slice_axis must be one of: x, y, z")
+    dim = axis_to_dim[axis]
+    max_idx = _DEMO_VOLUME_SHAPE[dim] - 1
+    slice_idx = max(0, min(int(slice_index), max_idx))
+
+    requested_channels = [c for c in channels if c in _DEMO_CHANNEL_TO_INDEX]
+    if not requested_channels:
+        requested_channels = ["u", "p"]
+
+    def _slice_2d(flat_field: np.ndarray, channel: str) -> np.ndarray:
+        vol = flat_field[:, _DEMO_CHANNEL_TO_INDEX[channel]].reshape(_DEMO_VOLUME_SHAPE)
+        return np.take(vol, slice_idx, axis=dim)
+
+    generated_files: list[str] = []
+    for channel in requested_channels:
+        real_2d = _slice_2d(real, channel)
+        pred_2d = _slice_2d(pred, channel)
+        abs_err_2d = np.abs(_slice_2d(error, channel))
+
+        for kind, arr, cmap in (
+            ("real", real_2d, "viridis"),
+            ("pred", pred_2d, "viridis"),
+            ("abs_error", abs_err_2d, "magma"),
+        ):
+            fig, ax = plt.subplots(figsize=(6.4, 4.8), dpi=120)
+            im = ax.imshow(arr, origin="lower", cmap=cmap, aspect="auto")
+            ax.set_title(f"{channel} {kind} slice {axis}={slice_idx}")
+            ax.set_xlabel("i")
+            ax.set_ylabel("j")
+            fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            fname = f"{file_prefix}_{channel}_{kind}_slice-{axis}{slice_idx:03d}.png"
+            out_path = output_root / fname
+            fig.tight_layout()
+            fig.savefig(out_path)
+            plt.close(fig)
+            generated_files.append(str(out_path.resolve()))
+
+    return {
+        "slice_axis": axis,
+        "slice_index": slice_idx,
+        "channels": requested_channels,
+        "files": generated_files,
     }
 
 
@@ -427,6 +511,7 @@ def _load_npy_data(data_dir: str, max_snaps: int | None = None) -> torch.Tensor 
     Returns:
         Tensor of shape [n_snaps, total_points, 4] or None.
     """
+    import glob
 
     channels = ("p", "ux", "uy", "uz")
     result: list[torch.Tensor] | None = None

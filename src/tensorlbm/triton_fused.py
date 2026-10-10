@@ -38,12 +38,7 @@ for the inner periodic step and then apply BCs separately.
 
 D3Q19 only.  Reduced-precision storage (``fp16``, ``bf16``) keeps
 compute in ``fp32`` in registers; tested rel error vs ``fp32``
-reference is ~2e-4 (fp16) and ~1.5e-3 (bf16).  Storage precision can
-also be selected through the compute/store tiers of
-:mod:`tensorlbm.precision` (``PrecisionPolicy``, e.g. ``FP32FP16``)
-via the ``precision=`` argument of :class:`TritonFusedSolver3D`; the
-fp32-compute tiers map to the storage dtypes above, fp64-compute
-tiers raise ``NotImplementedError``.
+reference is ~2e-4 (fp16) and ~1.5e-3 (bf16).
 
 The module raises :class:`ImportError` at import time if Triton is
 not installed or no CUDA device is visible; check :func:`is_available`
@@ -53,17 +48,13 @@ first if you want a graceful fallback.
 from __future__ import annotations
 
 import functools
+import math
 import time
-from typing import TYPE_CHECKING, Tuple
+from typing import Tuple
 
 import torch
 import triton
 import triton.language as tl
-
-if TYPE_CHECKING:  # pragma: no cover - typing only
-    from collections.abc import Sequence
-
-    from .reporters import Reporter
 
 
 __all__ = [
@@ -83,80 +74,21 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Lattice constants — D3Q19
 # ---------------------------------------------------------------------------
-# The authoritative copy of the constants lives in :mod:`tensorlbm.d3q19`;
-# the tuples below are DERIVED from the canonical ``d3q19.C`` / ``d3q19.W``
-# tensors so that the int addressing tables (pull-gather offsets) and the
-# float moment/equilibrium tables built by :func:`make_lattice_tensors`
-# can never drift from the reference lattice again.
-#
-# History: these used to be hand-typed literals, and ``_CY``/``_CZ``
-# carried sign errors on six diagonal directions — q = 8, 10 (cy flipped)
-# and q = 12, 14, 16, 18 (cz flipped), i.e. the lane pairs 8<->10,
-# 12<->14, 16<->18 each held the other direction's lattice velocity.
-# Both the int and the float tables inherited the error.  Because the
-# wrong table is a pure lane permutation of the correct one, the bug was
-# invisible on uniform or mirror-symmetric fields (periodic tests passed,
-# step-1 forces matched) while any z-asymmetric flow streamed from wrong
-# neighbour cells on those six lanes.  See the matching block comment in
-# ``triton_fused_obstacle.py`` and
-# ``tests/test_triton_fused_asymmetric.py``.
-try:
-    from tensorlbm.d3q19 import C as _D3Q19_C
-    from tensorlbm.d3q19 import W as _D3Q19_W
-except ImportError:  # standalone import (module file outside the package)
-    _D3Q19_C = torch.tensor(
-        [
-            [0, 0, 0],
-            [1, 0, 0],
-            [-1, 0, 0],
-            [0, 1, 0],
-            [0, -1, 0],
-            [0, 0, 1],
-            [0, 0, -1],
-            [1, 1, 0],
-            [-1, -1, 0],
-            [1, -1, 0],
-            [-1, 1, 0],
-            [1, 0, 1],
-            [-1, 0, -1],
-            [1, 0, -1],
-            [-1, 0, 1],
-            [0, 1, 1],
-            [0, -1, -1],
-            [0, 1, -1],
-            [0, -1, 1],
-        ],
-        dtype=torch.int64,
-    )
-    _D3Q19_W = torch.tensor(
-        [1.0 / 3.0] + [1.0 / 18.0] * 6 + [1.0 / 36.0] * 12,
-        dtype=torch.float32,
-    )
-
-_CX: Tuple[int, ...] = tuple(int(v) for v in _D3Q19_C[:, 0].tolist())
-_CY: Tuple[int, ...] = tuple(int(v) for v in _D3Q19_C[:, 1].tolist())
-_CZ: Tuple[int, ...] = tuple(int(v) for v in _D3Q19_C[:, 2].tolist())
-_W: Tuple[float, ...] = tuple(float(v) for v in _D3Q19_W.tolist())
+# Authoritative copy of the constants lives in :mod:`tensorlbm.d3q19`.
+# We mirror the subset we need here as Python tuples so the kernel can
+# reference them without re-importing on every launch.
+_CX: Tuple[int, ...] = (0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, 1, -1, 0, 0, 0, 0)
+_CY: Tuple[int, ...] = (0, 0, 0, 1, -1, 0, 0, 1, 1, -1, -1, 0, 0, 0, 0, 1, -1, 1, -1)
+_CZ: Tuple[int, ...] = (0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, 1, -1, -1, 1, 1, -1, -1)
+_W: Tuple[float, ...] = (
+    1.0 / 3.0,
+    1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0,
+    1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0,
+    1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0,
+    1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0,
+)
 _Q = 19
-
-# Compute/store precision tiers (FP32FP32, FP32FP16, ...).  Imported
-# lazily-tolerantly so standalone module use (outside the package)
-# keeps working; the policy only parameterises the storage dtype here.
-try:
-    from tensorlbm.precision import PrecisionPolicy as _PrecisionPolicy
-except ImportError:  # standalone import (module file outside the package)
-    _PrecisionPolicy = None  # type: ignore[assignment]
-
-# Import-time self-check: guard the D3Q19 invariants so any future drift
-# of the source tables fails loudly instead of corrupting kernels.
-assert _Q == len(_CX) == len(_CY) == len(_CZ) == len(_W) == 19
-assert abs(sum(_W) - 1.0) < 1e-5, "D3Q19 weights must sum to 1"
-for _q in range(_Q):
-    _c2 = _CX[_q] ** 2 + _CY[_q] ** 2 + _CZ[_q] ** 2
-    assert _c2 in (0, 1, 2), f"non-D3Q19 lattice velocity at q={_q}"
-del _q, _c2
-
-_Q_PAD = 32  # next power of two >= 19
+_Q_PAD = 32                       # next power of two >= 19
 
 # Recommended block/warp config from sweep at n=256, fp32 on RTX 5090.
 # 77% of achievable bandwidth; alternative configs are within 2%.
@@ -169,7 +101,6 @@ DEFAULT_NUM_STAGES: int = 2
 # ---------------------------------------------------------------------------
 # Availability
 # ---------------------------------------------------------------------------
-
 
 @functools.lru_cache(maxsize=1)
 def is_available() -> bool:
@@ -189,7 +120,6 @@ def is_available() -> bool:
 # Lattice-tensor cache (one set per device + dtype)
 # ---------------------------------------------------------------------------
 
-
 @functools.lru_cache(maxsize=8)
 def make_lattice_tensors(device: str) -> dict:
     """Return padded lattice constants on ``device``.
@@ -197,11 +127,7 @@ def make_lattice_tensors(device: str) -> dict:
     Returns a dict with int32 tensors (``cxi``, ``cyi``, ``czi``) for
     index arithmetic and float32 tensors (``cxf``, ``cyf``, ``czf``,
     ``w``) for the equilibrium computation.  All tensors have length
-    ``_Q_PAD``; the last 13 entries are zero-padded.  Direction
-    components and weights derive from the canonical
-    ``tensorlbm.d3q19`` tables (see the lattice-constants block above),
-    so the int and float tables cannot disagree with each other or with
-    the reference lattice.
+    ``_Q_PAD``; the last 13 entries are zero-padded.
 
     Cached per device string so repeated solver constructions on the
     same GPU do not re-allocate.
@@ -219,13 +145,9 @@ def make_lattice_tensors(device: str) -> dict:
         return t
 
     return {
-        "cxi": _i(_CX),
-        "cyi": _i(_CY),
-        "czi": _i(_CZ),
-        "cxf": _f(_CX),
-        "cyf": _f(_CY),
-        "czf": _f(_CZ),
-        "w": _f(_W),
+        "cxi": _i(_CX), "cyi": _i(_CY), "czi": _i(_CZ),
+        "cxf": _f(_CX), "cyf": _f(_CY), "czf": _f(_CZ),
+        "w":   _f(_W),
     }
 
 
@@ -233,23 +155,13 @@ def make_lattice_tensors(device: str) -> dict:
 # Triton kernels
 # ---------------------------------------------------------------------------
 
-
 @triton.jit
 def _collide_only_kernel(
-    f_ptr,
-    fnew_ptr,
-    cxf_ptr,
-    cyf_ptr,
-    czf_ptr,
-    w_ptr,
+    f_ptr, fnew_ptr,
+    cxf_ptr, cyf_ptr, czf_ptr, w_ptr,
     tau_inv,
-    nz,
-    ny,
-    nx,
-    stride_q,
-    stride_z,
-    stride_y,
-    stride_x,
+    nz, ny, nx,
+    stride_q, stride_z, stride_y, stride_x,
     Q_PAD: tl.constexpr,
     BLOCK_X: tl.constexpr,
     BLOCK_Y: tl.constexpr,
@@ -267,11 +179,9 @@ def _collide_only_kernel(
     spatial_mask = (offs_y < ny)[:, None] & (offs_x < nx)[None, :]
     load_mask = mask_q[:, None, None] & spatial_mask[None, :, :]
 
-    base = (
-        pid_z.to(tl.int64) * stride_z
-        + offs_y.to(tl.int64)[:, None] * stride_y
-        + offs_x.to(tl.int64)[None, :] * stride_x
-    )
+    base = (pid_z.to(tl.int64) * stride_z
+            + offs_y.to(tl.int64)[:, None] * stride_y
+            + offs_x.to(tl.int64)[None, :] * stride_x)
     offs = offs_q.to(tl.int64)[:, None, None] * stride_q + base[None, :, :]
 
     f = tl.load(f_ptr + offs, mask=load_mask, other=0.0)
@@ -289,24 +199,17 @@ def _collide_only_kernel(
     usq = ux * ux + uy * uy + uz * uz
 
     cu = cx_b * ux[None, :, :] + cy_b * uy[None, :, :] + cz_b * uz[None, :, :]
-    feq = rho_safe[None, :, :] * w_b * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :])
+    feq = (rho_safe[None, :, :] * w_b
+           * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :]))
     tl.store(fnew_ptr + offs, f - tau_inv * (f - feq), mask=load_mask)
 
 
 @triton.jit
 def _stream_pull_kernel(
-    f_ptr,
-    fnew_ptr,
-    cxi_ptr,
-    cyi_ptr,
-    czi_ptr,
-    nz,
-    ny,
-    nx,
-    stride_q,
-    stride_z,
-    stride_y,
-    stride_x,
+    f_ptr, fnew_ptr,
+    cxi_ptr, cyi_ptr, czi_ptr,
+    nz, ny, nx,
+    stride_q, stride_z, stride_y, stride_x,
     Q_PAD: tl.constexpr,
     BLOCK_X: tl.constexpr,
     BLOCK_Y: tl.constexpr,
@@ -336,42 +239,27 @@ def _stream_pull_kernel(
     src_x = offs_x[None, None, :] - cx_i
     src_x = tl.where(src_x < 0, src_x + nx, tl.where(src_x >= nx, src_x - nx, src_x))
 
-    src_offs = (
-        offs_q.to(tl.int64)[:, None, None] * stride_q
-        + src_z.to(tl.int64) * stride_z
-        + src_y.to(tl.int64) * stride_y
-        + src_x.to(tl.int64) * stride_x
-    )
+    src_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
+                + src_z.to(tl.int64) * stride_z
+                + src_y.to(tl.int64) * stride_y
+                + src_x.to(tl.int64) * stride_x)
     f_in = tl.load(f_ptr + src_offs, mask=rw_mask, other=0.0)
 
-    dst_offs = (
-        offs_q.to(tl.int64)[:, None, None] * stride_q
-        + pid_z.to(tl.int64) * stride_z
-        + offs_y.to(tl.int64)[None, :, None] * stride_y
-        + offs_x.to(tl.int64)[None, None, :] * stride_x
-    )
+    dst_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
+                + pid_z.to(tl.int64) * stride_z
+                + offs_y.to(tl.int64)[None, :, None] * stride_y
+                + offs_x.to(tl.int64)[None, None, :] * stride_x)
     tl.store(fnew_ptr + dst_offs, f_in, mask=rw_mask)
 
 
 @triton.jit
 def _fused_collide_stream_kernel(
-    f_ptr,
-    fnew_ptr,
-    cxi_ptr,
-    cyi_ptr,
-    czi_ptr,
-    cxf_ptr,
-    cyf_ptr,
-    czf_ptr,
-    w_ptr,
+    f_ptr, fnew_ptr,
+    cxi_ptr, cyi_ptr, czi_ptr,
+    cxf_ptr, cyf_ptr, czf_ptr, w_ptr,
     tau_inv,
-    nz,
-    ny,
-    nx,
-    stride_q,
-    stride_z,
-    stride_y,
-    stride_x,
+    nz, ny, nx,
+    stride_q, stride_z, stride_y, stride_x,
     Q_PAD: tl.constexpr,
     BLOCK_X: tl.constexpr,
     BLOCK_Y: tl.constexpr,
@@ -401,12 +289,10 @@ def _fused_collide_stream_kernel(
     src_x = offs_x[None, None, :] - cx_i
     src_x = tl.where(src_x < 0, src_x + nx, tl.where(src_x >= nx, src_x - nx, src_x))
 
-    src_offs = (
-        offs_q.to(tl.int64)[:, None, None] * stride_q
-        + src_z.to(tl.int64) * stride_z
-        + src_y.to(tl.int64) * stride_y
-        + src_x.to(tl.int64) * stride_x
-    )
+    src_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
+                + src_z.to(tl.int64) * stride_z
+                + src_y.to(tl.int64) * stride_y
+                + src_x.to(tl.int64) * stride_x)
     f_in = tl.load(f_ptr + src_offs, mask=rw_mask, other=0.0)
 
     # --- 2. BGK collision ---
@@ -423,38 +309,26 @@ def _fused_collide_stream_kernel(
     usq = ux * ux + uy * uy + uz * uz
 
     cu = cx_b * ux[None, :, :] + cy_b * uy[None, :, :] + cz_b * uz[None, :, :]
-    feq = rho_safe[None, :, :] * w_b * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :])
+    feq = (rho_safe[None, :, :] * w_b
+           * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :]))
     f_post = f_in - tau_inv * (f_in - feq)
 
     # --- 3. store at own cell ---
-    dst_offs = (
-        offs_q.to(tl.int64)[:, None, None] * stride_q
-        + pid_z.to(tl.int64) * stride_z
-        + offs_y.to(tl.int64)[None, :, None] * stride_y
-        + offs_x.to(tl.int64)[None, None, :] * stride_x
-    )
+    dst_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
+                + pid_z.to(tl.int64) * stride_z
+                + offs_y.to(tl.int64)[None, :, None] * stride_y
+                + offs_x.to(tl.int64)[None, None, :] * stride_x)
     tl.store(fnew_ptr + dst_offs, f_post, mask=rw_mask)
 
 
 @triton.jit
 def _fused_collide_stream_anydtype(
-    f_ptr,
-    fnew_ptr,
-    cxi_ptr,
-    cyi_ptr,
-    czi_ptr,
-    cxf_ptr,
-    cyf_ptr,
-    czf_ptr,
-    w_ptr,
+    f_ptr, fnew_ptr,
+    cxi_ptr, cyi_ptr, czi_ptr,
+    cxf_ptr, cyf_ptr, czf_ptr, w_ptr,
     tau_inv,
-    nz,
-    ny,
-    nx,
-    stride_q,
-    stride_z,
-    stride_y,
-    stride_x,
+    nz, ny, nx,
+    stride_q, stride_z, stride_y, stride_x,
     Q_PAD: tl.constexpr,
     BLOCK_X: tl.constexpr,
     BLOCK_Y: tl.constexpr,
@@ -489,12 +363,10 @@ def _fused_collide_stream_anydtype(
     src_x = offs_x[None, None, :] - cx_i
     src_x = tl.where(src_x < 0, src_x + nx, tl.where(src_x >= nx, src_x - nx, src_x))
 
-    src_offs = (
-        offs_q.to(tl.int64)[:, None, None] * stride_q
-        + src_z.to(tl.int64) * stride_z
-        + src_y.to(tl.int64) * stride_y
-        + src_x.to(tl.int64) * stride_x
-    )
+    src_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
+                + src_z.to(tl.int64) * stride_z
+                + src_y.to(tl.int64) * stride_y
+                + src_x.to(tl.int64) * stride_x)
     f_in = tl.load(f_ptr + src_offs, mask=rw_mask, other=0.0).to(tl.float32)
 
     cx_b = tl.load(cxf_ptr + offs_q, mask=mask_q, other=0.0)[:, None, None]
@@ -510,22 +382,21 @@ def _fused_collide_stream_anydtype(
     usq = ux * ux + uy * uy + uz * uz
 
     cu = cx_b * ux[None, :, :] + cy_b * uy[None, :, :] + cz_b * uz[None, :, :]
-    feq = rho_safe[None, :, :] * w_b * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :])
+    feq = (rho_safe[None, :, :] * w_b
+           * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :]))
     f_post = f_in - tau_inv * (f_in - feq)
 
-    dst_offs = (
-        offs_q.to(tl.int64)[:, None, None] * stride_q
-        + pid_z.to(tl.int64) * stride_z
-        + offs_y.to(tl.int64)[None, :, None] * stride_y
-        + offs_x.to(tl.int64)[None, None, :] * stride_x
-    )
-    tl.store(fnew_ptr + dst_offs, f_post.to(fnew_ptr.dtype.element_ty), mask=rw_mask)
+    dst_offs = (offs_q.to(tl.int64)[:, None, None] * stride_q
+                + pid_z.to(tl.int64) * stride_z
+                + offs_y.to(tl.int64)[None, :, None] * stride_y
+                + offs_x.to(tl.int64)[None, None, :] * stride_x)
+    tl.store(fnew_ptr + dst_offs,
+             f_post.to(fnew_ptr.dtype.element_ty), mask=rw_mask)
 
 
 # ---------------------------------------------------------------------------
 # Public entry points
 # ---------------------------------------------------------------------------
-
 
 def _grid(ny: int, nx: int, nz: int, by: int, bx: int):
     return (triton.cdiv(ny, by), triton.cdiv(nx, bx), nz)
@@ -550,25 +421,12 @@ def triton_collide(
         out = torch.empty_like(f)
     lat = make_lattice_tensors(str(f.device))
     _collide_only_kernel[_grid(ny, nx, nz, block_y, block_x)](
-        f,
-        out,
-        lat["cxf"],
-        lat["cyf"],
-        lat["czf"],
-        lat["w"],
-        1.0 / tau,
-        nz,
-        ny,
-        nx,
-        f.stride(0),
-        f.stride(1),
-        f.stride(2),
-        f.stride(3),
-        Q_PAD=_Q_PAD,
-        BLOCK_X=block_x,
-        BLOCK_Y=block_y,
-        num_warps=num_warps,
-        num_stages=num_stages,
+        f, out,
+        lat["cxf"], lat["cyf"], lat["czf"], lat["w"], 1.0 / tau,
+        nz, ny, nx,
+        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
+        Q_PAD=_Q_PAD, BLOCK_X=block_x, BLOCK_Y=block_y,
+        num_warps=num_warps, num_stages=num_stages,
     )
     return out
 
@@ -594,23 +452,12 @@ def triton_stream(
         out = torch.empty_like(f)
     lat = make_lattice_tensors(str(f.device))
     _stream_pull_kernel[_grid(ny, nx, nz, block_y, block_x)](
-        f,
-        out,
-        lat["cxi"],
-        lat["cyi"],
-        lat["czi"],
-        nz,
-        ny,
-        nx,
-        f.stride(0),
-        f.stride(1),
-        f.stride(2),
-        f.stride(3),
-        Q_PAD=_Q_PAD,
-        BLOCK_X=block_x,
-        BLOCK_Y=block_y,
-        num_warps=num_warps,
-        num_stages=num_stages,
+        f, out,
+        lat["cxi"], lat["cyi"], lat["czi"],
+        nz, ny, nx,
+        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
+        Q_PAD=_Q_PAD, BLOCK_X=block_x, BLOCK_Y=block_y,
+        num_warps=num_warps, num_stages=num_stages,
     )
     return out
 
@@ -641,28 +488,13 @@ def triton_fused(
         out = torch.empty_like(f)
     lat = make_lattice_tensors(str(f.device))
     _fused_collide_stream_anydtype[_grid(ny, nx, nz, block_y, block_x)](
-        f,
-        out,
-        lat["cxi"],
-        lat["cyi"],
-        lat["czi"],
-        lat["cxf"],
-        lat["cyf"],
-        lat["czf"],
-        lat["w"],
-        1.0 / tau,
-        nz,
-        ny,
-        nx,
-        f.stride(0),
-        f.stride(1),
-        f.stride(2),
-        f.stride(3),
-        Q_PAD=_Q_PAD,
-        BLOCK_X=block_x,
-        BLOCK_Y=block_y,
-        num_warps=num_warps,
-        num_stages=num_stages,
+        f, out,
+        lat["cxi"], lat["cyi"], lat["czi"],
+        lat["cxf"], lat["cyf"], lat["czf"], lat["w"], 1.0 / tau,
+        nz, ny, nx,
+        f.stride(0), f.stride(1), f.stride(2), f.stride(3),
+        Q_PAD=_Q_PAD, BLOCK_X=block_x, BLOCK_Y=block_y,
+        num_warps=num_warps, num_stages=num_stages,
     )
     return out
 
@@ -671,7 +503,6 @@ def triton_fused(
 # Solver class — drop-in alternative to perf_solver.OptimizedSolver3D for
 # the periodic case.
 # ---------------------------------------------------------------------------
-
 
 class TritonFusedSolver3D:
     """Periodic D3Q19 LBM step powered by a single fused Triton kernel.
@@ -707,18 +538,7 @@ class TritonFusedSolver3D:
             does not run on CPU.
         dtype: Storage dtype of the distribution.  fp32 is the
             default; fp16 and bf16 are supported with reduced
-            precision (see module docstring).  Mutually consistent
-            with ``precision`` (a conflicting explicit pair raises).
-        precision: Optional :class:`tensorlbm.precision.PrecisionPolicy`
-            tier (enum or exact name string, e.g. ``"FP32FP16"``).
-            The policy fixes the storage dtype to its ``store_dtype``
-            and documents the cast boundary: the kernel loads are
-            widened to the compute dtype (fp32 registers) and stores
-            are narrowed to the storage dtype, so the *kernel itself*
-            is the ``cast_to_compute``/``cast_to_store`` boundary.  The
-            fused Triton kernel computes in fp32 registers, so only
-            fp32-compute tiers are accepted here; ``FP64*`` tiers raise
-            ``NotImplementedError`` (use the eager paths for fp64).
+            precision (see module docstring).
         block_x, block_y: Tile shape per program.  Defaults are
             tuned for RTX 5090 / Ada-class GPUs at n=64..512.
         num_warps, num_stages: Triton scheduling hints.
@@ -731,9 +551,8 @@ class TritonFusedSolver3D:
         nx: int,
         tau: float,
         device: str | torch.device = "cuda:0",
-        dtype: torch.dtype | None = None,
+        dtype: torch.dtype = torch.float32,
         *,
-        precision: "object | None" = None,
         block_x: int = DEFAULT_BLOCK_X,
         block_y: int = DEFAULT_BLOCK_Y,
         num_warps: int = DEFAULT_NUM_WARPS,
@@ -745,40 +564,17 @@ class TritonFusedSolver3D:
                 "Check tensorlbm.triton_fused.is_available() first and "
                 "fall back to tensorlbm.perf_solver.OptimizedSolver3D if False."
             )
-        if precision is not None:
-            if _PrecisionPolicy is None:
-                raise RuntimeError(
-                    "precision= requires the tensorlbm package "
-                    "(tensorlbm.precision); standalone module import "
-                    "cannot resolve the policy."
-                )
-            policy = _PrecisionPolicy.parse(precision)
-            if policy.compute_dtype != torch.float32:
-                raise NotImplementedError(
-                    f"{policy.name}: the fused Triton kernel computes in "
-                    f"fp32 registers, so fp64-compute tiers are not "
-                    f"available here; use an eager solver for fp64."
-                )
-            if dtype is not None and dtype != policy.store_dtype:
-                raise ValueError(
-                    f"dtype={dtype} conflicts with precision={policy.name} "
-                    f"(store dtype {policy.store_dtype}); pass only one."
-                )
-            dtype = policy.store_dtype
-            self.precision_policy = policy
-        else:
-            self.precision_policy = None
-        if dtype is None:
-            dtype = torch.float32
         if dtype not in (torch.float32, torch.float16, torch.bfloat16):
-            raise ValueError(f"Unsupported dtype {dtype}; use float32, float16, or bfloat16.")
+            raise ValueError(
+                f"Unsupported dtype {dtype}; use float32, float16, or bfloat16.")
 
         self.nz, self.ny, self.nx = int(nz), int(ny), int(nx)
-        self._Q = _Q  # lattice size (D3Q19), used by diagnostics
+        self._Q = _Q                    # lattice size (D3Q19), used by diagnostics
         self.tau = float(tau)
         self.device = torch.device(device)
         if self.device.type != "cuda":
-            raise RuntimeError(f"TritonFusedSolver3D requires a CUDA device, got {self.device}.")
+            raise RuntimeError(
+                f"TritonFusedSolver3D requires a CUDA device, got {self.device}.")
         self.dtype = dtype
         self.block_x = block_x
         self.block_y = block_y
@@ -794,8 +590,6 @@ class TritonFusedSolver3D:
         # caller can shape them on demand.
         self._buf_a: torch.Tensor | None = None
         self._buf_b: torch.Tensor | None = None
-        # Reporter step counter (tensorlbm.reporters); see run().
-        self._report_step = 0
 
     # ------------------------------------------------------------------
     # Step
@@ -816,33 +610,11 @@ class TritonFusedSolver3D:
         Calls that feed the previous output back alternate buffers, so
         the kernel's input and output pointers are always distinct;
         a first call with a caller-owned ``f`` writes into ``_buf_a``.
-
-        The input's dtype must equal the solver's storage dtype (the
-        ``cast_to_store`` side of the precision boundary): the internal
-        buffers are allocated from the first input, so an fp32 input to
-        an ``FP32FP16`` solver would silently run the whole trajectory
-        in fp32 instead of raising.
         """
-        if f.dtype != self.dtype:
-            policy = (
-                f" (precision {self.precision_policy.name})"
-                if self.precision_policy is not None
-                else ""
-            )
-            raise ValueError(
-                f"step() input dtype {f.dtype} does not match the solver's "
-                f"storage dtype {self.dtype}{policy}; store the initial "
-                f"distribution in the storage dtype first (e.g. "
-                f"precision.cast_to_store(f, policy) or f.to(dtype))"
-            )
-        if (
-            self._buf_a is None
-            or self._buf_a.shape != f.shape
-            or self._buf_a.dtype != f.dtype
-            or self._buf_b is None
-            or self._buf_b.shape != f.shape
-            or self._buf_b.dtype != f.dtype
-        ):
+        if self._buf_a is None or self._buf_a.shape != f.shape \
+                or self._buf_a.dtype != f.dtype \
+                or self._buf_b is None or self._buf_b.shape != f.shape \
+                or self._buf_b.dtype != f.dtype:
             self._buf_a = torch.empty_like(f)
             self._buf_b = torch.empty_like(f)
 
@@ -855,69 +627,11 @@ class TritonFusedSolver3D:
             out = self._buf_a
 
         return triton_fused(
-            f,
-            self.tau,
+            f, self.tau,
             out=out,
-            block_x=self.block_x,
-            block_y=self.block_y,
-            num_warps=self.num_warps,
-            num_stages=self.num_stages,
+            block_x=self.block_x, block_y=self.block_y,
+            num_warps=self.num_warps, num_stages=self.num_stages,
         )
-
-    # ------------------------------------------------------------------
-    # Multi-step driver with the unified reporter hook
-    # ------------------------------------------------------------------
-
-    def run(
-        self,
-        f: torch.Tensor,
-        n_steps: int,
-        *,
-        reporters: Sequence[Reporter] | None = None,
-    ) -> tuple[torch.Tensor, list[dict]]:
-        """Advance *n_steps* steps, dispatching reporters after each one.
-
-        Same contract as :meth:`tensorlbm.lbm_step.LBMStepExecutor.run`:
-        with no reporters this is a plain ``step`` loop (no behaviour
-        change); with reporters, a
-        :class:`~tensorlbm.reporters.StepContext` is dispatched after
-        every completed step and ``ctx.stop = True`` ends the run early.
-        Per-step diagnostics are empty dicts — the fused kernel reports
-        nothing Python-side — kept for API symmetry with the executor.
-
-        The step counter persists across ``run()`` calls so reporter
-        intervals and export step labels stay monotonic.
-        """
-        if not reporters:
-            for _ in range(n_steps):
-                f = self.step(f)
-            self._report_step = getattr(self, "_report_step", 0) + int(n_steps)
-            return f, [{} for _ in range(n_steps)]
-
-        from .reporters import StepContext, dispatch
-
-        ctx = StepContext(
-            step=getattr(self, "_report_step", 0),
-            f=f,
-            lattice="D3Q19",
-            num_cells=self.grid_size_cells(),
-            num_steps=int(n_steps),
-        )
-        step = ctx.step
-        diags: list[dict] = []
-        for _ in range(n_steps):
-            f = self.step(f)
-            step += 1
-            diags.append({})
-            ctx.step = step
-            ctx.f = f
-            ctx.num_steps = n_steps
-            ctx.stop = False
-            dispatch(ctx, reporters)
-            if ctx.stop:
-                break
-        self._report_step = step
-        return f, diags
 
     # ------------------------------------------------------------------
     # Diagnostics
@@ -941,12 +655,8 @@ class TritonFusedSolver3D:
         :meth:`step` invocation including the Python-side overhead.
         """
         f = torch.zeros(
-            _Q,
-            self.nz,
-            self.ny,
-            self.nx,
-            dtype=self.dtype,
-            device=self.device,
+            _Q, self.nz, self.ny, self.nx,
+            dtype=self.dtype, device=self.device,
         )
         # Need non-trivial content so the compiler doesn't optimise the
         # kernel body away.
