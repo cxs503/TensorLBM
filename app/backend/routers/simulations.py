@@ -851,8 +851,12 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
                 device=device,
                 periodic_axes=periodic_axes,
             )
-        except Exception:
+        except Exception as exc:
             cv_mask = None
+            job.logs.append(
+                "Control-volume force cross-check unavailable: "
+                f"{type(exc).__name__}: {exc}"
+            )
 
     # ── History accumulators ──
     cd_p_hist: list[float] = []
@@ -999,11 +1003,13 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
     cv_mismatch_final = (
         sum(cv_mismatch_hist[-avg_window:]) / avg_window if cv_mismatch_hist else None
     )
-    force_gate_passed = (
-        cv_mismatch_final is None
-        or cv_mismatch_final <= float(sol.force_crosscheck_tolerance_pct)
-    )
-    if not force_gate_passed:
+    force_crosscheck_enabled = bool(sol.force_crosscheck)
+    force_gate_passed: bool | None = None
+    if force_crosscheck_enabled and cv_mask is not None and cv_mismatch_final is not None:
+        force_gate_passed = (
+            cv_mismatch_final <= float(sol.force_crosscheck_tolerance_pct)
+        )
+    if force_gate_passed is False:
         raise RuntimeError(
             "Generic-run force cross-check gate failed: "
             f"{cv_mismatch_final:.3f}% > {sol.force_crosscheck_tolerance_pct:.3f}%"
@@ -1085,7 +1091,13 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
                 "threshold_pct": float(sol.max_mass_drift_pct),
             },
             "force_crosscheck": {
-                "enabled": bool(sol.force_crosscheck and cv_mask is not None),
+                "enabled": force_crosscheck_enabled,
+                "status": (
+                    "disabled" if not force_crosscheck_enabled
+                    else "unavailable" if force_gate_passed is None
+                    else "passed" if force_gate_passed
+                    else "failed"
+                ),
                 "passed": force_gate_passed,
                 "mismatch_pct": cv_mismatch_final,
                 "threshold_pct": float(sol.force_crosscheck_tolerance_pct),
@@ -1259,7 +1271,7 @@ def generic_run_status(job_id: str) -> dict:
         "shape": jm_job.config.get("shape"),
         "auto_selected": jm_job.config.get("auto_selected"),
         "logs": jm_job.logs[-20:],
-        "jm_status": jm_job.to_dict(),
+        "jm_status": jm_job.to_dict(include_result=False),
     }
     if jm_job.diagnostics:
         latest = jm_job.diagnostics[-1]
