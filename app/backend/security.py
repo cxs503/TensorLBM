@@ -1,4 +1,5 @@
 """Opt-in API authentication, RBAC, rate-limiting and audit helpers."""
+
 from __future__ import annotations
 
 import logging
@@ -56,6 +57,7 @@ class AccessRule:
 # Rate limiting
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class _RateLimitBucket:
     hits: deque[float] = field(default_factory=deque)
@@ -75,10 +77,15 @@ def _rl_config() -> tuple[int, float]:
 
 def _client_key(request: Request) -> str:
     """Return a string key that identifies the caller for rate-limiting."""
-    # Honour X-Forwarded-For when behind a trusted proxy.
-    xff = request.headers.get("x-forwarded-for")
-    if xff:
-        return xff.split(",")[0].strip()
+    trust_proxy_headers = os.environ.get("TENSORLBM_TRUST_PROXY_HEADERS", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    if trust_proxy_headers:
+        xff = request.headers.get("x-forwarded-for")
+        if xff:
+            return xff.split(",")[0].strip()
     client = request.client
     return client.host if client else "unknown"
 
@@ -111,7 +118,7 @@ def check_rate_limit(request: Request) -> None:
 
 
 def _auth_mode() -> str:
-    return (os.environ.get("TENSORLBM_AUTH_MODE", "disabled").strip().lower() or "disabled")
+    return os.environ.get("TENSORLBM_AUTH_MODE", "disabled").strip().lower() or "disabled"
 
 
 def _public_paths() -> set[str]:
@@ -125,7 +132,7 @@ def _token_map() -> dict[str, AuthContext]:
     for part in (p.strip() for p in raw.split(",") if p.strip()):
         token, _, role = part.partition(":")
         token = token.strip()
-        role = (role.strip().lower() or "viewer")
+        role = role.strip().lower() or "viewer"
         if token and role in _ROLE_ORDER:
             out[token] = AuthContext(user=f"token:{token[:6]}", role=role, auth_mode="header")
     return out
