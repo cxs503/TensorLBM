@@ -29,6 +29,32 @@ def test_authorize_disabled_mode(monkeypatch):
     assert ctx.role == "admin"
 
 
+def test_api_middleware_enforces_auth_and_rbac(client, monkeypatch):
+    monkeypatch.setenv("TENSORLBM_AUTH_MODE", "header")
+    monkeypatch.setenv("TENSORLBM_AUTH_TOKENS", "viewer-token:viewer")
+
+    assert client.get("/api/health").status_code == 200
+    assert client.get("/api/jobs/").status_code == 401
+
+    headers = {"X-API-Key": "viewer-token"}
+    assert client.get("/api/jobs/", headers=headers).status_code == 200
+    assert client.delete("/api/jobs/missing", headers=headers).status_code == 403
+
+
+def test_api_middleware_preserves_disabled_auth_default(client, monkeypatch):
+    monkeypatch.setenv("TENSORLBM_AUTH_MODE", "disabled")
+    monkeypatch.setenv("TENSORLBM_RATE_LIMIT_REQUESTS", "0")
+
+    assert client.get("/api/jobs/").status_code == 200
+
+
+def test_gzip_middleware_compresses_large_responses(client):
+    response = client.get("/openapi.json", headers={"Accept-Encoding": "gzip"})
+
+    assert response.status_code == 200
+    assert response.headers["content-encoding"] == "gzip"
+
+
 def test_authorize_requires_token_when_enabled(monkeypatch):
     monkeypatch.setenv("TENSORLBM_AUTH_MODE", "header")
     monkeypatch.setenv("TENSORLBM_AUTH_TOKENS", "eng-token:engineer")
