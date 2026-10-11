@@ -27,3 +27,12 @@ Every exported field/load should identify units, coordinate frame, mesh/lattice 
 3. Register run manifests and output artifacts with TensorPhysics; store large arrays in artifact storage.
 4. Register validated datasets and derived AI experiments with TensorPlatform.
 5. Add coupled engineering cases only after standalone and interface-level tests pass.
+
+## Repository map
+
+- [TensorPlatform](https://github.com/cxs503/TensorPlatform) — shared data and AI services.
+- [TensorPhysics](https://github.com/cxs503/TensorPhysics) — scientific workflow orchestration and multiphysics coordination.
+- [TensorLBM](https://github.com/cxs503/TensorLBM) — lattice Boltzmann solver.
+- [TensorFVM](https://github.com/cxs503/TensorFVM) — finite-volume solver.
+- [TensorFEM](https://github.com/cxs503/TensorFEM) — finite-element solver.
+- [TensorDEM](https://github.com/cxs503/TensorDEM) — discrete-element solver.
