@@ -55,9 +55,31 @@
 - 直接 `uvicorn backend.main:app` 启动，适合算法调试和本地复现实验。  
 - 可在 CPU 或单卡 CUDA 上运行，最小运维成本。
 
-## 5. 谁在用（Who uses it）
+## 5. API access control and observability
+
+For backward compatibility, API authentication is disabled by default. Enable
+header-token authentication before exposing the platform beyond a trusted
+development environment:
+
+```bash
+export TENSORLBM_AUTH_MODE=header
+export TENSORLBM_AUTH_TOKENS='viewer-token:viewer,engineer-token:engineer,admin-token:admin'
+export TENSORLBM_RATE_LIMIT_REQUESTS=120
+export TENSORLBM_RATE_LIMIT_WINDOW_S=60
+```
+
+Send the selected token in the `X-API-Key` header for HTTP API and WebSocket
+connections. `/api/health` and `/api/status` remain public probes. The
+rate-limit counter is process-local; deployments with multiple workers or
+replicas should enforce shared limits at the gateway. Forwarded client IP
+headers are ignored unless the service is reachable only through a trusted
+proxy and `TENSORLBM_TRUST_PROXY_HEADERS=true` is configured. API decisions and
+response durations are emitted to the `tensorlbm.platform.audit` logger. Large
+HTTP responses are gzip-compressed when requested by the client.
+
+## 6. Who uses it (Who uses it)
 
 - **CFD 研究工程师**：用统一入口批量跑工况、做误差对照和收敛分析。  
 - **AI4Science 工程团队**：将高保真仿真数据沉淀为可训练数据集，迭代 surrogate/transformer 模型。  
 - **平台与 MLOps 团队**：治理作业、模型版本与推理服务，把“库能力”交付为“可运营系统”。  
-- **教学与验证用户**：以浏览器 + Agent 方式快速体验复杂流体问题，降低入门门槛。  
+- **教学与验证用户**：以浏览器 + Agent 方式快速体验复杂流体问题，降低入门门槛。
