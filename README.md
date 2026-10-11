@@ -310,3 +310,7 @@ PYTHONPATH=src python benchmarks/bench_mlups.py --collisions all --device cpu
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, coding conventions, and how to add a new solver or benchmark.
+
+## Tensor ecosystem integration
+
+This repository's role, interface boundaries, data-exchange requirements and recommended integration path are documented in [Ecosystem Integration](docs/ecosystem-integration.md).
