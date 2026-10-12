@@ -62,6 +62,7 @@ __all__ = [
     "SuboffHullType",
     "SuboffConfig",
     "suboff_radius_profile",
+    "suboff_analytic_wetted_area",
     "suboff_hull_mask",
     "build_suboff_mask",
     "suboff_statistics",
@@ -2252,3 +2253,36 @@ def suboff_mesh_data(
         "n_triangles": len(triangles),
         "hull_type": hull_type.value,
     }
+
+
+def suboff_analytic_wetted_area(
+    length: float,
+    samples: int = 200_001,
+    config: SuboffConfig | None = None,
+) -> float:
+    """Wetted area of the axisymmetric SUBOFF bare hull in lattice units².
+
+    Surface of revolution over the hull axial extent::
+
+        A = ∫ 2π r(x) √(1 + r'(x)²) dx
+
+    evaluated by the trapezoidal rule on a uniform ``xi`` grid with
+    ``numpy.gradient`` central differences — the same quadrature the
+    uniform formal-tier runner uses privately, factored here (owner
+    directive 2026-10-11) so refined-grid runners and layout planners
+    share one machine source for the reference area.  Appendages are
+    excluded by construction (the ``refs_lock`` bare-hull reference-area
+    convention).  At ``length = 240`` this yields 18187.9… lu²
+    (= 0.31576·L²), matching the experimental WSA = 5.998 m² to 0.08%.
+    """
+    if length <= 0.0:
+        raise ValueError("length must be positive")
+    if samples < 3:
+        raise ValueError("samples must be >= 3")
+    max_radius = (config or SuboffConfig()).r_over_l * length
+    xi = np.linspace(0.0, 1.0, int(samples))
+    radius = np.asarray(suboff_radius_profile(xi, config), dtype=np.float64) * max_radius
+    dr_dxi = np.gradient(radius, xi)
+    integrand = 2.0 * np.pi * radius * np.sqrt(1.0 + (dr_dxi / length) ** 2)
+    x = xi * length
+    return float(np.sum(0.5 * (integrand[1:] + integrand[:-1]) * np.diff(x)))
