@@ -54,6 +54,7 @@ Advance3D = Callable[
     [torch.Tensor, float, int, int],
     torch.Tensor | AMRAdvanceResult,
 ]
+FineStageHook = Callable[[torch.Tensor, torch.Tensor], None]
 _SUPPORTED_Q = {19: "D3Q19", 27: "D3Q27"}
 
 
@@ -602,6 +603,7 @@ class StaticBlockAMR3D:
         advance: Advance3D,
         *,
         tau_pair: tuple[float, float] | None = None,
+        pre_restrict_hook: FineStageHook | None = None,
     ) -> PopulationRefluxLedger:
         """Advance one coarse step and two time-interpolated fine substeps.
 
@@ -610,6 +612,14 @@ class StaticBlockAMR3D:
         before streaming.  A raw tensor remains accepted only when reflux is
         disabled. ``level`` is 0/1; the coarse call uses ``substep=-1`` and
         fine calls use 0 and 1.
+
+        ``pre_restrict_hook(fine_old, fine_new)`` (optional) fires once per
+        step, after the fine level's last substep and before the
+        fine-to-coarse restriction; it may mutate ``fine_new`` in place
+        (e.g. a hybrid octree-shell stage overwriting the covered region
+        with the leaf restriction and reflux-correcting the exterior), and
+        the restriction then carries the mutated state into the coarse
+        level.  ``fine_old`` is the fine state at step entry.
         """
         tau_coarse, tau_fine = (
             (self.config.tau_coarse, self.config.tau_fine) if tau_pair is None else tau_pair
@@ -617,6 +627,7 @@ class StaticBlockAMR3D:
         self._reset_prolongation_positivity()
         if abs(tau_fine - convective_refined_tau(tau_coarse, self.config.ratio)) > 1.0e-12:
             raise ValueError("dynamic tau_pair must preserve convective scaling")
+        fine_old = self.fine_f.clone() if pre_restrict_hook is not None else None
         coarse_old = self.coarse_f.clone()
         coarse_new, coarse_post = self._unpack_advance(
             advance(self.coarse_f, tau_coarse, 0, -1),
@@ -664,6 +675,8 @@ class StaticBlockAMR3D:
                 tau_target=tau_fine,
             )
 
+        if pre_restrict_hook is not None:
+            pre_restrict_hook(fine_old, self.fine_f)
         restricted = self._restrict_physical(
             tau_source=tau_fine,
             tau_target=tau_coarse,
@@ -832,11 +845,16 @@ class NestedStaticBlockAMR3D:
         coarse_substep: int,
         ledgers: list[PopulationRefluxLedger | None],
         tau_by_level: Sequence[float],
+        pre_restrict_hook: FineStageHook | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         interface = self.interfaces[interface_index]
         config = interface.config
         tau_coarse = tau_by_level[interface_index]
         tau_fine = tau_by_level[interface_index + 1]
+        is_innermost = interface_index + 1 == len(self.interfaces)
+        fine_old = (
+            interface.fine_f.clone() if pre_restrict_hook is not None and is_innermost else None
+        )
         coarse_old = interface.coarse_f.clone()
         coarse_new, coarse_post = interface._unpack_advance(
             advance(
@@ -883,6 +901,7 @@ class NestedStaticBlockAMR3D:
                     child_substep,
                     ledgers,
                     tau_by_level,
+                    pre_restrict_hook=pre_restrict_hook,
                 )
             else:
                 fine_new, unpacked_post = interface._unpack_advance(
@@ -921,6 +940,8 @@ class NestedStaticBlockAMR3D:
                 fine_transfer.outgoing.to(coarse_transfer.outgoing.device),
                 fine_transfer.incoming.to(coarse_transfer.incoming.device),
             )
+        if pre_restrict_hook is not None and is_innermost:
+            pre_restrict_hook(fine_old, interface.fine_f)
         restricted = interface._restrict_physical(
             tau_source=tau_fine,
             tau_target=tau_coarse,
@@ -968,8 +989,17 @@ class NestedStaticBlockAMR3D:
         advance: Advance3D,
         *,
         tau_by_level: Sequence[float] | None = None,
+        pre_restrict_hook: FineStageHook | None = None,
     ) -> tuple[PopulationRefluxLedger, ...]:
-        """Advance the complete hierarchy by one root-grid time step."""
+        """Advance the complete hierarchy by one root-grid time step.
+
+        ``pre_restrict_hook(fine_old, fine_new)`` (optional) fires at the
+        innermost interface, once per parent-coarse substep burst of the
+        finest level (``ratio`` finest substeps), before that burst's
+        fine-to-coarse restriction; it may mutate ``fine_new`` in place
+        (hybrid octree-shell stage semantics — see
+        :class:`StaticBlockAMR3D.step`).
+        """
         if tau_by_level is None:
             tau_by_level = (
                 self.interfaces[0].config.tau_coarse,
@@ -993,7 +1023,14 @@ class NestedStaticBlockAMR3D:
         ledgers: list[PopulationRefluxLedger | None] = [None for _ in self.interfaces]
         for interface in self.interfaces:
             interface._reset_prolongation_positivity()
-        self._advance_interface(0, advance, -1, ledgers, tau_by_level)
+        self._advance_interface(
+            0,
+            advance,
+            -1,
+            ledgers,
+            tau_by_level,
+            pre_restrict_hook=pre_restrict_hook,
+        )
         if any(ledger is None for ledger in ledgers):
             raise RuntimeError("nested AMR did not produce every reflux ledger")
         self.last_reflux = tuple(ledger for ledger in ledgers if ledger is not None)
@@ -1003,6 +1040,7 @@ class NestedStaticBlockAMR3D:
 __all__ = [
     "Advance3D",
     "AMRAdvanceResult",
+    "FineStageHook",
     "PopulationRefluxLedger",
     "NestedStaticBlockAMR3D",
     "StaticBlockAMR3D",
