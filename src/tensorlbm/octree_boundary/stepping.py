@@ -61,6 +61,7 @@ from tensorlbm.octree_boundary.geometry import (
     morton_encode_batch,
 )
 from tensorlbm.octree_boundary.topology import run_topology_checks
+from tensorlbm.population_positivity import limit_nonequilibrium_for_positivity
 from tensorlbm.refinement import BoxRegion
 from tensorlbm.static_block_amr import (
     Advance3D,
@@ -1124,8 +1125,11 @@ def step_octree_shell(
     solid: torch.Tensor | None = None,
     bfl_fn=None,
     force_ledger=None,
+    host_substeps: int = 1,
+    leaf_post_wall_positivity: bool = False,
+    leaf_post_wall_diagnostics: list[dict[str, float]] | None = None,
 ) -> PopulationRefluxLedger:
-    """Advance the octree shell by one L1 root step.
+    """Advance the octree shell by one call window of the L1 host.
 
     Args:
         octree: the :class:`OctreeGrid` shell (``f_leaf`` is mutated in place).
@@ -1164,6 +1168,47 @@ def step_octree_shell(
             (e.g. :class:`tensorlbm.octree_boundary.force.ShellForceLedger`)
             that accumulates the substep forces.  ``None`` disables force
             bookkeeping even when ``bfl_fn`` returns forces.
+        host_substeps: number of host-lattice (L1) substeps spanned by this
+            call.  The shell advances ``host_substeps * 2^d_max`` leaf
+            substeps — **two per finer-level substep per level of
+            refinement** — so the leaf wall integrates the full host time of
+            the call window (ghost anchors at ``s / n_substeps`` of the
+            ``l1_old -> l1_f`` lerp).  ``1`` (default) is the legacy
+            contract — one shell call per host lattice step — and is
+            bit-identical to the historical behaviour.  Under the
+            root-step call cadence of the hybrid validate drivers
+            (``NestedStaticBlockAMR3D`` with ``ratio = 2``: one shell call
+            per root step, the L1 block advancing ``ratio`` substeps in
+            between) pass ``host_substeps=2``; with the legacy default the
+            shell integrates only ``2^d_max`` leaf substeps = half the host
+            window at ``d_max=1`` — the F2 coverage-0.5 wall-chain defect
+            (wall-chain decomposition 2026-10-11) in which the delivered
+            drag is half the instantaneous wall rate.
+        leaf_post_wall_positivity: v3.3 symmetry repair — when True, run
+            ``limit_nonequilibrium_for_positivity`` on the leaf field
+            once per substep AFTER the last field write of the substep
+            (the ``bfl_fn`` boundary-population / Guo-traction write,
+            applied regardless of whether ``bfl_fn`` is ``None``) and
+            immediately before the ``octree.f_leaf = out`` commit.
+            This is the second (post-wall) positivity pass every BLOCK
+            advance already gets (runner advance closure: post-collide
+            pass #1, post-stream/post-wall pass #2); the legacy leaf
+            path applied the limiter only inside ``advance``
+            (pre-stream), so the unclamped BFL write could commit
+            negative populations after the only limiter pass (layer 2
+            of the high-Re startup-hump leaf degradation, adjudicated
+            2026-10-12).  ``False`` (default) is the legacy
+            bit-identical path — no tensor ops are added when off.
+        leaf_post_wall_diagnostics: optional accumulator ``list``; when
+            the pass is enabled, one ``dict`` per substep is appended
+            with the limiter's ``limited_fraction``
+            (``"limited_fraction"``) and the number of clamped leaves
+            whose pre-pass density was non-positive
+            (``"rho_nonpositive_count"`` — those degrade to a
+            mass-adding floor clamp, since ``sum(f) >= Q*floor`` forces
+            mass in; cells with ``rho > 0`` are clamped exactly
+            moment-preservingly).  ``None`` (default) disables the
+            counting (the limiter still runs when the pass is enabled).
 
     Returns:
         A :class:`PopulationRefluxLedger` with the same schema as
@@ -1181,7 +1226,9 @@ def step_octree_shell(
         raise ValueError(
             "correction_stencil must be exterior_cells or crossing_links",
         )
-    n_substeps = 1 << octree.d_max
+    if int(host_substeps) != host_substeps or int(host_substeps) < 1:
+        raise ValueError(f"host_substeps must be a positive int, got {host_substeps!r}")
+    n_substeps = int(host_substeps) << octree.d_max
     taus = _tau_chain(tau_coarse, octree.d_max)
     if tau_fine is not None and abs(tau_fine - taus[1]) > 1.0e-12:
         raise ValueError("dynamic tau_fine must preserve convective scaling")
@@ -1267,6 +1314,41 @@ def step_octree_shell(
                 ghost_vals,
             )
             fine_transfer = observed if fine_transfer is None else fine_transfer + observed
+        if leaf_post_wall_positivity:
+            # v3.3 symmetry repair: the second (post-wall) positivity pass
+            # every block advance gets.  The leaf field's last writes of the
+            # substep (bfl_fn's unclamped Bouzidi combination / Guo traction)
+            # happen AFTER the only limiter pass inside advance (pre-stream);
+            # clamp here, immediately before the commit.  Same tool, same
+            # floor (1e-9) as the block passes.  The (Q,1,1,n) view is the
+            # leaf_les_collide convention (the tool takes (Q,nz,ny,nx)).
+            q_leaf = int(out.shape[0])
+            n_leaf_cells = int(out.shape[1])
+            if leaf_post_wall_diagnostics is not None:
+                rho_pre = out.sum(dim=0)
+                clamped_pre = out.amin(dim=0) < 1e-9
+                out, post_wall_diag = limit_nonequilibrium_for_positivity(
+                    out.view(q_leaf, 1, 1, n_leaf_cells)
+                )
+                leaf_post_wall_diagnostics.append(
+                    {
+                        "limited_fraction": float(post_wall_diag.limited_fraction),
+                        # Count only leaves that WERE clamped: on the tool's
+                        # non-finite fail-safe path (input NaN -> returned
+                        # unchanged, limited_cells == 0) nothing was clamped
+                        # and the honest count is 0.
+                        "rho_nonpositive_count": (
+                            int(((rho_pre <= 0.0) & clamped_pre).sum().item())
+                            if post_wall_diag.limited_cells > 0
+                            else 0
+                        ),
+                    }
+                )
+            else:
+                out, _post_wall_diag = limit_nonequilibrium_for_positivity(
+                    out.view(q_leaf, 1, 1, n_leaf_cells)
+                )
+            out = out.view(q_leaf, n_leaf_cells)
         octree.f_leaf = out
 
     restricted, cells = restrict_shell_to_block(octree, octree.f_leaf, taus)
@@ -1692,8 +1774,9 @@ def step_octree_shell_sharded(
     solid: torch.Tensor | None = None,
     bfl_fn=None,
     force_ledger=None,
+    host_substeps: int = 1,
 ) -> PopulationRefluxLedger:
-    """Advance a device-sharded octree shell by one L1 root step.
+    """Advance a device-sharded octree shell by one call window of the host.
 
     Same contract as :func:`step_octree_shell`, with the leaf set split into
     the :class:`~tensorlbm.octree_boundary.sharding.OctreeLeafShard` shards of
@@ -1746,7 +1829,9 @@ def step_octree_shell_sharded(
     except (TypeError, ValueError):
         advance_accepts_shard = False
     advance_uses_sparse_les = bool(getattr(advance, "uses_sparse_les", advance_accepts_shard))
-    n_substeps = 1 << octree.d_max
+    if int(host_substeps) != host_substeps or int(host_substeps) < 1:
+        raise ValueError(f"host_substeps must be a positive int, got {host_substeps!r}")
+    n_substeps = int(host_substeps) << octree.d_max
     taus = _tau_chain(tau_coarse, octree.d_max)
     if tau_fine is not None and abs(tau_fine - taus[1]) > 1.0e-12:
         raise ValueError("dynamic tau_fine must preserve convective scaling")
