@@ -12,6 +12,14 @@
 
 TensorLBM 是一个面向 **AI4S（AI for Science）** 的综合平台，以 PyTorch LBM 求解器为核心，提供从仿真数据生产、模型训练到推理服务的闭环能力，并保持可复现的工程与科研工作流。
 
+## 面向 Agent 科研工厂的职责
+
+在以 Agent 为科研主体的黑灯科研工厂中，TensorLBM 是一个**可编程、可观测、可验证的数值实验设备**。它负责 LBM 流体数值内核及其专项验证，不负责全局科研规划、跨仓库工作流编排，也不能自行判定自身结果已获得科学验证。
+
+目标接口应使实验参数化、运行可观测、结果可复现，并将输出关联到基准证据和适用范围。一个科研任务可以按物理问题和验证证据选择 Tensor 求解器或外部求解器，不要求所有任务都使用自研内核。
+
+**系统架构：** [科研工厂架构](https://github.com/cxs503/TensorPhysics/blob/main/docs/SCIENCE_FACTORY_ARCHITECTURE.md) · [系统总览](https://github.com/cxs503/TensorPhysics/blob/main/docs/SYSTEM_OVERVIEW.md)
+
 ## 在 Tensor 系统中的职责
 
 TensorLBM 是 Tensor 生态中的 **格子 Boltzmann 流体求解器**，负责 LBM 数值方法、边界条件、流体模型和自身基准验证。TensorPhysics 负责跨求解器工作流、执行生命周期、场数据交换与运行追溯；TensorPlatform 负责共性数据集、实验、权限、数据血缘和 AI 模型生命周期。

@@ -34,6 +34,14 @@ for _ in range(200):
 
 ---
 
+## Role as a programmable scientific instrument
+
+In the Agent-first science factory, TensorLBM is a **specialist numerical instrument** that an authorized Agent can use through explicit, testable solver interfaces. It owns LBM fluid numerics and solver-specific verification; it does not own global research planning, cross-repository orchestration, or the acceptance of its own results.
+
+The long-term contract is to make experiments parameterized, observable, reproducible, and verifiable: declare supported physics and limits, expose diagnostics and artifacts, and link results to benchmark evidence. External and Tensor solvers can coexist in one research campaign; use the method that fits the physics and evidence requirements.
+
+**Architecture:** [Science Factory Architecture](https://github.com/cxs503/TensorPhysics/blob/main/docs/SCIENCE_FACTORY_ARCHITECTURE.md) · [System Overview](https://github.com/cxs503/TensorPhysics/blob/main/docs/SYSTEM_OVERVIEW.md)
+
 ## Role in the Tensor ecosystem
 
 TensorLBM is the specialist **lattice Boltzmann fluid solver** in the Tensor engineering ecosystem. It provides fluid-flow and related multiphysics capabilities; TensorPhysics is responsible for cross-solver workflow orchestration and field exchange, while TensorPlatform owns shared data, experiment, and model-lifecycle services.
