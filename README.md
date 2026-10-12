@@ -34,6 +34,14 @@ for _ in range(200):
 
 ---
 
+## Role in the Tensor ecosystem
+
+TensorLBM is the specialist **lattice Boltzmann fluid solver** in the Tensor engineering ecosystem. It provides fluid-flow and related multiphysics capabilities; TensorPhysics is responsible for cross-solver workflow orchestration and field exchange, while TensorPlatform owns shared data, experiment, and model-lifecycle services.
+
+For the icebreaker application, TensorLBM may provide fluid loads and flow-field data to a coordinated FEM/DEM workflow after interface mapping, time synchronization, conservation, and sensitivity are verified. DG-LBM is a capability within this repository, not a separate TensorDG project.
+
+AI turbulence closures and flow-model pipelines are useful foundations for AI-assisted CFD. They should not be described as a validated icebreaking-resistance surrogate: that requires a separately curated dataset, held-out validation, uncertainty assessment, and comparison with trusted high-fidelity simulations or experiments.
+
 ## What's new in v0.3
 
 - **Platform 升级可见化**：新增 `app/backend/` FastAPI 服务化平台，覆盖 28 个业务路由与统一作业管理。
