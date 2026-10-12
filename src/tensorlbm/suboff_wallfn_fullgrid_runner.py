@@ -110,6 +110,10 @@ COLLISION_FAMILIES: tuple[str, ...] = (
 
 LATTICES: tuple[str, ...] = ("D3Q27", "D3Q19")
 
+HULL_TYPES: tuple[str, ...] = ("BARE_HULL", "WITH_SAIL", "FULL")
+
+MESH_SOURCES: tuple[str, ...] = ("suboff", "gradient", "hybrid")
+
 # The 11 test combinations from the task specification.
 # D3Q27: all 7 families (MRT uses reduced grid 320×160×160 for memory).
 # D3Q19: 4 families (Cumulant, BGK, MRT, RLBM).
@@ -154,6 +158,16 @@ class SuboffWallFnFullGridConfig:
     # Wall-function parameters
     y_val: float = 0.5
     wall_law: str = "log"
+    # Geometry: BARE_HULL (axisymmetric), WITH_SAIL, or FULL (AFF-8 style).
+    hull_type: str = "BARE_HULL"
+    # Surface-normal source for the pressure-drag mesh:
+    #   "suboff"   - analytical axisymmetric-hull normals (valid only for
+    #                BARE_HULL; appendage cells would get wrong normals)
+    #   "gradient" - generic voxel-gradient normals (any geometry)
+    #   "hybrid"   - analytical normals on hull-band near cells
+    #                (|r - r_hull(x)| <= 1.5 cells, incl. bow/stern caps),
+    #                gradient normals on appendage near cells
+    mesh_source: str = "suboff"
     # ITTC reference
     reference_Ct: float = 0.00405
     reference_source: str = "ITTC-1957"
@@ -164,6 +178,16 @@ class SuboffWallFnFullGridConfig:
         if self.collision.upper() not in COLLISION_FAMILIES:
             raise ValueError(
                 f"collision must be one of {COLLISION_FAMILIES}; got {self.collision!r}"
+            )
+        if self.hull_type.upper() not in HULL_TYPES:
+            raise ValueError(f"hull_type must be one of {HULL_TYPES}; got {self.hull_type!r}")
+        if self.mesh_source not in MESH_SOURCES:
+            raise ValueError(f"mesh_source must be one of {MESH_SOURCES}; got {self.mesh_source!r}")
+        if self.hull_type.upper() != "BARE_HULL" and self.mesh_source == "suboff":
+            raise ValueError(
+                "mesh_source='suboff' (analytical axisymmetric normals) is "
+                "only valid for hull_type='BARE_HULL'; use 'hybrid' or "
+                "'gradient' for appendage configurations"
             )
         if self.wall_law not in ("log", "reichardt", "gradient", "hybrid"):
             raise ValueError(
@@ -400,6 +424,58 @@ def _compute_drags(
     return drag_fric, drag_pres
 
 
+def _hybrid_mesh(
+    base: SurfaceMesh,
+    solid: torch.Tensor,
+    near: torch.Tensor,
+    cx: float,
+    cy: float,
+    cz: float,
+    length: float,
+    radius: float,
+) -> SurfaceMesh:
+    """Analytical hull normals on hull-band near cells, voxel-gradient
+    normals on appendage near cells (sail / stern planes).
+
+    Hull band: near-wall fluid cells with ``0 <= xi <= 1`` whose radial
+    distance lies within 1.5 cells of the local hull radius, plus the
+    bow/stern cap cells (``xi`` outside ``[0, 1]``, which for the SUBOFF
+    CAD can only be adjacent to the hull caps — appendages live inside
+    the hull's axial extent).
+    """
+    from .suboff_cad import suboff_radius_profile
+
+    nz, ny, nx = solid.shape
+    device = solid.device
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=device, dtype=torch.float32),
+        torch.arange(ny, device=device, dtype=torch.float32),
+        torch.arange(nx, device=device, dtype=torch.float32),
+        indexing="ij",
+    )
+    x_bow = cx - length / 2.0
+    xi = (xx - x_bow) / length
+    r_cell = torch.sqrt((yy - cy) ** 2 + (zz - cz) ** 2)
+
+    r_hull = torch.as_tensor(
+        suboff_radius_profile(xi.cpu().numpy()) * radius,
+        device=device,
+        dtype=torch.float32,
+    )
+
+    near_f = near.to(device).bool()
+    in_axial = (xi >= 0.0) & (xi <= 1.0)
+    hull_band = near_f & in_axial & ((r_cell - r_hull).abs() <= 1.5)
+    caps = near_f & ~in_axial
+    use_analytic = hull_band | caps
+
+    grad = SurfaceMesh.from_gradient(solid, near)
+    nx_n = torch.where(use_analytic, base.nx_n, grad.nx_n)
+    ny_n = torch.where(use_analytic, base.ny_n, grad.ny_n)
+    nz_n = torch.where(use_analytic, base.nz_n, grad.nz_n)
+    return SurfaceMesh(near, nx_n, ny_n, nz_n)
+
+
 # --------------------------------------------------------------------------- #
 # Runner
 # --------------------------------------------------------------------------- #
@@ -431,7 +507,7 @@ def run_suboff_wallfn_fullgrid(
     cy = config.ny / 2.0
     cz = config.nz / 2.0
     solid, _stats = build_suboff_mask(
-        hull_type=SuboffHullType.BARE_HULL,
+        hull_type=SuboffHullType[config.hull_type.upper()],
         nx=config.nx,
         ny=config.ny,
         nz=config.nz,
@@ -443,14 +519,19 @@ def run_suboff_wallfn_fullgrid(
     )
     solid = solid.to(device)
 
-    # Build SurfaceMesh with analytical normals for SUBOFF hull
+    # Build SurfaceMesh; the normal source depends on mesh_source/hull_type.
     near = get_near_wall_3d(solid)
     # Compute max radius from SUBOFF geometry ratio (R/L ≈ 1/(2×8.57))
     from .suboff_cad import SuboffConfig
 
     suboff_config = SuboffConfig()
     max_radius = suboff_config.r_over_l * config.hull_length
-    mesh = SurfaceMesh.from_suboff(solid, near, cx, cy, cz, config.hull_length, max_radius)
+    if config.mesh_source == "gradient":
+        mesh = SurfaceMesh.from_gradient(solid, near)
+    else:
+        mesh = SurfaceMesh.from_suboff(solid, near, cx, cy, cz, config.hull_length, max_radius)
+        if config.mesh_source == "hybrid":
+            mesh = _hybrid_mesh(mesh, solid, near, cx, cy, cz, config.hull_length, max_radius)
     # Move mesh tensors to device
     mesh.near = mesh.near.to(device)
     mesh.nx_n = mesh.nx_n.to(device)
@@ -569,6 +650,8 @@ def run_suboff_wallfn_fullgrid(
         "physical_validation": False,
         "lattice": lattice,
         "collision": collision,
+        "hull_type": config.hull_type.upper(),
+        "mesh_source": config.mesh_source,
         "wall_function": f"log-law (κ=0.41, B=5.0, y_val={config.y_val})",
         "Re": config.re,
         "Ct_fric": ct_fric_avg,
