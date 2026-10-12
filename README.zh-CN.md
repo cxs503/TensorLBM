@@ -1,5 +1,7 @@
 # TensorLBM
 
+**系统总览：** [Tensor 生态系统总览](https://github.com/cxs503/TensorPhysics/blob/main/docs/SYSTEM_OVERVIEW.md) — 统一架构、仓库职责、共享契约、端到端工作流与破冰应用路线。
+
 二维 LBM–DEM 联算已可运行：[P1 报告](docs/tensordem_coupling_p1.md)。真实求解器、重启与守恒证据已保存；滑移 IBM 和颗粒敏感性尚未达标。
 
 [English](README.md) | [简体中文](README.zh-CN.md)
@@ -9,6 +11,14 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
 
 TensorLBM 是一个面向 **AI4S（AI for Science）** 的综合平台，以 PyTorch LBM 求解器为核心，提供从仿真数据生产、模型训练到推理服务的闭环能力，并保持可复现的工程与科研工作流。
+
+## 在 Tensor 系统中的职责
+
+TensorLBM 是 Tensor 生态中的 **格子 Boltzmann 流体求解器**，负责 LBM 数值方法、边界条件、流体模型和自身基准验证。TensorPhysics 负责跨求解器工作流、执行生命周期、场数据交换与运行追溯；TensorPlatform 负责共性数据集、实验、权限、数据血缘和 AI 模型生命周期。
+
+面向破冰船应用，TensorLBM 可在流体模型与验证适用的前提下，为 FEM/DEM 工作流提供流场或流体载荷。接口映射、物理时间同步、载荷守恒和敏感性验证完成之前，不应将耦合演示视为已验证的流固/流冰工程预测。DG-LBM 是本仓库内部的一类混合求解能力，不是独立的 TensorDG 仓库。
+
+本仓库已有的 AI 湍流闭环是 AI 辅助 CFD 的基础；破冰阻力、冰裂纹演化等代理模型仍需独立的数据集、留出集评估、不确定性分析，以及与可信高保真计算或实验的对比。
 
 ## 文档
 
