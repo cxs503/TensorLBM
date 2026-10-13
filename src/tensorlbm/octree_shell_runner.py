@@ -160,6 +160,7 @@ class ShellBflFn:
         device: Optional[torch.device] = None,
         *,
         leaf_weights: Optional[torch.Tensor] = None,
+        host_steps_per_shell_call: float = 1.0,
         ramp_steps: int = 0,
         q_min: Optional[float] = None,
         moving_wall: bool = True,
@@ -167,7 +168,10 @@ class ShellBflFn:
     ):
         dev = device if device is not None else torch.device("cpu")
         if leaf_weights is None:
-            leaf_weights = leaf_force_weights(octree)
+            leaf_weights = leaf_force_weights(
+                octree,
+                host_steps_per_shell_call=host_steps_per_shell_call,
+            )
         leaf_weights = leaf_weights.to(dev)
         if lidx is not None:
             # distributed path: local leaf shard weights (validated pattern
@@ -227,6 +231,7 @@ def make_shell_bfl_fn(
     lidx: Optional[torch.Tensor] = None,
     device: Optional[torch.device] = None,
     *,
+    host_steps_per_shell_call: float = 1.0,
     ramp_steps: int = 0,
     q_min: Optional[float] = None,
     moving_wall: bool = True,
@@ -238,6 +243,12 @@ def make_shell_bfl_fn(
         octree: the built shell (``OctreeGrid`` or a distributed facade).
         lidx: local leaf indices of this rank/shard; ``None`` = full shell.
         device: device for the force weights (default CPU).
+        host_steps_per_shell_call: cadence frame of the default leaf force
+            weights — host-grid lattice steps advanced per shell call
+            (``1.0`` = the legacy one-call-per-host-step frame,
+            bit-identical; ``2.0`` under the ``pre_restrict_hook`` cadence
+            that fires the shell once per outer-root step).  Ignored when
+            the caller supplies explicit ``leaf_weights``.
         ramp_steps: moving-wall ramp length (0 = no ramp / fixed wall).
         q_min: BFL q clamp (high-Re safeguard); ``None`` = disabled.
         moving_wall: apply the ``bfl_ramp_wall_velocity`` ramp when
@@ -251,6 +262,7 @@ def make_shell_bfl_fn(
         octree,
         lidx=lidx,
         device=device,
+        host_steps_per_shell_call=host_steps_per_shell_call,
         ramp_steps=ramp_steps,
         q_min=q_min,
         moving_wall=moving_wall,
