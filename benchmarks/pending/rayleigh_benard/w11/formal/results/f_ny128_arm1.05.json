@@ -1,0 +1,55 @@
+{
+ "ny": 128,
+ "frac": 1.05,
+ "Ra": 1793.3012704815872,
+ "g_beta": 1.7680619127519675e-05,
+ "amp": 0.0001,
+ "dtype": "float64",
+ "mass_correct_every_step": true,
+ "runner": "batched",
+ "steps": 508883,
+ "sample_every": 848,
+ "windows": [
+  [
+   0.15,
+   0.9
+  ],
+  [
+   0.05,
+   0.75
+  ],
+  [
+   0.3,
+   1.0
+  ]
+ ],
+ "slopes_per_step": [
+  5.799432754432155e-06,
+  5.817349569948984e-06,
+  5.781341535706098e-06
+ ],
+ "gammas_windows": [
+  0.5524307664561895,
+  0.5541374506350605,
+  0.5507074693252202
+ ],
+ "slope_spread_rel": 0.0062089512407987185,
+ "gamma_sim": 0.55242522880549,
+ "gamma_ref": 0.5615603521307948,
+ "rel_err": -0.016267393683763953,
+ "report_only": false,
+ "health": {
+  "a_first": 9.99999996252324e-05,
+  "a_last": 0.0015610163579110315,
+  "e_folds": 2.7479222173431292,
+  "mass_drift_abs": -7.275957614183426e-12,
+  "mass_drift_rel": -2.220446035731439e-16,
+  "u_max": 4.4785727826058156e-05,
+  "v_max": 0.000739099054198575,
+  "theta_min": -0.0021374008493635355,
+  "theta_max": 0.0011265566079536882
+ },
+ "wall_seconds": 676.5053331851959,
+ "abort": null,
+ "seed_rows": "npz row 0 = lower ghost mirror; rows 1..d = fluid; last = upper ghost (E3a)"
+}
