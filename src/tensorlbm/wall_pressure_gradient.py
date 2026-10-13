@@ -10,6 +10,42 @@ import torch
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+# cuSOLVER's batched symmetric eigensolver rejects large batches
+# (CUSOLVER_STATUS_INVALID_VALUE observed for ~3.3e4 matrices of size 3x3
+# on torch 2.11/cu128, RTX 5090).  Eigen decomposition and LU solve are
+# per-matrix operations, so chunking the batch is result-identical.
+LINALG_MAX_BATCH = 16384
+
+
+def _eigvalsh_chunked(matrix: torch.Tensor) -> torch.Tensor:
+    """``torch.linalg.eigvalsh`` in result-identical, batch-size-safe chunks."""
+    rows = matrix.shape[0]
+    if rows <= LINALG_MAX_BATCH:
+        return torch.linalg.eigvalsh(matrix)
+    return torch.cat(
+        [
+            torch.linalg.eigvalsh(matrix[start : start + LINALG_MAX_BATCH])
+            for start in range(0, rows, LINALG_MAX_BATCH)
+        ]
+    )
+
+
+def _solve_chunked(matrix: torch.Tensor, rhs: torch.Tensor) -> torch.Tensor:
+    """``torch.linalg.solve`` in result-identical, batch-size-safe chunks."""
+    rows = matrix.shape[0]
+    if rows <= LINALG_MAX_BATCH:
+        return torch.linalg.solve(matrix, rhs)
+    return torch.cat(
+        [
+            torch.linalg.solve(
+                matrix[start : start + LINALG_MAX_BATCH],
+                rhs[start : start + LINALG_MAX_BATCH],
+            )
+            for start in range(0, rows, LINALG_MAX_BATCH)
+        ],
+        dim=0,
+    )
+
 
 @dataclass(frozen=True)
 class WallTangentialPressureGradientSamples:
@@ -260,7 +296,7 @@ def sample_wall_tangential_pressure_gradient(
     matrix = torch.einsum("no,oi,oj->nij", weights, design, design)
     delta = neighbour_pressure - center_pressure[:, None]
     right_hand_side = torch.einsum("no,oi,no->ni", weights, design, delta)
-    eigenvalues = torch.linalg.eigvalsh(matrix)
+    eigenvalues = _eigvalsh_chunked(matrix)
     scale = eigenvalues[:, -1].clamp_min(torch.finfo(pressure.dtype).eps)
     solvable = (
         (eigenvalues[:, 0] > 1.0e-6 * scale)
@@ -269,7 +305,7 @@ def sample_wall_tangential_pressure_gradient(
     )
     local_positions = solvable.nonzero(as_tuple=False).flatten()
     if int(local_positions.numel()):
-        gradient = torch.linalg.solve(
+        gradient = _solve_chunked(
             matrix[local_positions],
             right_hand_side[local_positions].unsqueeze(2),
         ).squeeze(2)
@@ -310,6 +346,7 @@ def sample_wall_tangential_pressure_gradient(
 
 
 __all__ = [
+    "LINALG_MAX_BATCH",
     "WallPressureGradientAggregate",
     "WallTangentialPressureGradientSamples",
     "aggregate_wall_pressure_gradient_summaries",
