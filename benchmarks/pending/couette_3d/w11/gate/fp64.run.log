@@ -1,0 +1,4 @@
+H= 16 float64 steps= 20000 l2=9.596e-14 max_rel=0.00000% u_top=+0.00000% tau=+0.0000% mass=-0.00000% uz=1.0e-17 span=0.0e+00 steady=True t=34s
+H= 32 float64 steps= 20000 l2=6.700e-13 max_rel=0.00000% u_top=+0.00000% tau=+0.0000% mass=-0.00000% uz=7.0e-16 span=0.0e+00 steady=True t=177s
+H= 64 float64 steps= 20000 l2=7.232e-13 max_rel=0.00000% u_top=+0.00000% tau=+0.0000% mass=-0.00000% uz=1.3e-15 span=0.0e+00 steady=True t=1146s
+H=128 float64 steps= 20000 l2=1.734e-09 max_rel=0.00000% u_top=+0.00000% tau=-0.0000% mass=-0.00000% uz=4.7e-15 span=0.0e+00 steady=True t=11106s
