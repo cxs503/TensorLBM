@@ -1,0 +1,52 @@
+{
+ "cd": NaN,
+ "cd_p": NaN,
+ "cd_f": NaN,
+ "theta_s_deg": null,
+ "lw_over_d": null,
+ "u_th_wall_max": NaN,
+ "u_r_wall_max": NaN,
+ "p_period_jump": NaN,
+ "om_w_max": NaN,
+ "re": 40.0,
+ "n_r": 120,
+ "n_th": 64,
+ "r_max": 8.0,
+ "beta": 3.0,
+ "cfl": 0.4,
+ "filt_alpha": 0.02,
+ "iters": 200000,
+ "res": NaN,
+ "hist_tail": [
+  {
+   "iter": 192000,
+   "res": NaN,
+   "maxom": NaN,
+   "cd": NaN
+  },
+  {
+   "iter": 194000,
+   "res": NaN,
+   "maxom": NaN,
+   "cd": NaN
+  },
+  {
+   "iter": 196000,
+   "res": NaN,
+   "maxom": NaN,
+   "cd": NaN
+  },
+  {
+   "iter": 198000,
+   "res": NaN,
+   "maxom": NaN,
+   "cd": NaN
+  },
+  {
+   "iter": 200000,
+   "res": NaN,
+   "maxom": NaN,
+   "cd": NaN
+  }
+ ]
+}

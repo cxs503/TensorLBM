@@ -1,0 +1,7 @@
+[E-D_up40_lx70_h20] step=8000 (10 t_c) cd_win=2.190757 elapsed=102s
+[E-D_up40_lx70_h20] step=16000 (20 t_c) cd_win=1.585933 elapsed=203s
+[E-D_up40_lx70_h20] step=24000 (30 t_c) cd_win=1.550088 elapsed=305s
+[E-D_up40_lx70_h20] step=32000 (40 t_c) cd_win=1.537278 elapsed=406s
+[E-D_up40_lx70_h20] step=40000 (50 t_c) cd_win=1.532347 elapsed=507s
+[E-D_up40_lx70_h20] step=48000 (60 t_c) cd_win=1.530639 elapsed=609s
+{"diagnostic_only": true, "tag": "E-D_up40_lx70_h20", "purpose": "floor diagnosis 2026-10-08: residual domain/Ma sensitivity of frozen W11-A config; NOT a formal run, never enters gates", "re": 40.0, "D": 40, "u_lb": 0.05, "ma": 0.08660254037844387, "tau": 0.6500216597361282, "nu_lb": 0.05000721991204275, "nx": 2800, "ny": 1600, "lx_d": 70.0, "up_d": 40.0, "h_d": 20.0, "sponge_d": 10.0, "sponge_alpha": 10.0, "cx": 1600, "cy": 800, "r_mask": 20.0, "n_solid": 1257, "R_row": 20.5, "R_area": 20.002887964817102, "R_eff": 20.002887964817102, "D_eff_cells": 40.005775929634204, "t_c_steps": 800, "steps": 48000, "plateau_at": 48000, "cap_steps": 120000, "stop_reason": "plateau", "cd": 1.5314928033831259, "cd_last10tc": 1.530638534686326, "cd_ref_primary": 1.498, "err_pct": 2.2358346717707533, "wall_s": 608.6558876037598, "device": "cuda", "protocol": "run_formal.py clone, frozen \u00a72/\u00a74/\u00a76; only \u00a73 domain/u_lb varies"}

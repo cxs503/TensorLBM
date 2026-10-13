@@ -1,0 +1,309 @@
+{
+  "ma_sweep": {
+    "points": [
+      {
+        "ma": 0.05196152422706631,
+        "cd": 1.7597863471098307,
+        "tag": "area_D20_u0.03"
+      },
+      {
+        "ma": 0.08660254037844387,
+        "cd": 1.7452141021398897,
+        "tag": "area_D20"
+      },
+      {
+        "ma": 0.12124355652982141,
+        "cd": 1.7365643386485603,
+        "tag": "area_D20_u0.07"
+      }
+    ],
+    "linear_fit_slope_cd_per_ma": -0.3351808209059509,
+    "fit_intercept_cd_at_ma0": 1.7762157732093484,
+    "cd_at_ma_0.0866": 1.7471882626327608,
+    "shift_pct_ma0_to_ma0.0866": -1.6342333524118735,
+    "interpretation": "Cd FALLS with Ma; removing compressibility (Ma->0) RAISES Cd, so Ma masks part of the positive offset rather than causing it; incompressible-limit err at compact D20 = 18.572% vs 16.503% at Ma=0.0866",
+    "incompressible_limit_err_pct_compact_D20": 18.572481522653426,
+    "err_pct_compact_D20_at_formal_Ma": 16.63473048282782
+  },
+  "steady_state_drift": {
+    "trace_re20_D160.npz": {
+      "win_means": [
+        2.8027697858122234,
+        2.147794754441132,
+        2.1251917465657812,
+        2.1186357435810557,
+        2.1178001579330745,
+        2.11758087577416
+      ],
+      "last3_diffs": [
+        -0.006556002984725584,
+        -0.0008355856479811408,
+        -0.00021928215891442449
+      ],
+      "geometric_ratio": 0.2624293026624288,
+      "extrapolated_remaining_drift_abs": -7.802108226092751e-05,
+      "extrapolated_remaining_drift_pct": -0.003684444034866154,
+      "note": "even running to t->inf closes only this much; floor is not a transient"
+    },
+    "trace_re20_D40.npz": {
+      "win_means": [
+        2.807381005134479,
+        2.151242198921625,
+        2.128625673677201,
+        2.1222576414123724,
+        2.1213522178593545,
+        2.121163110091568
+      ],
+      "last3_diffs": [
+        -0.006368032264828738,
+        -0.0009054235530179255,
+        -0.0001891077677864672
+      ],
+      "geometric_ratio": 0.20886110942899588,
+      "extrapolated_remaining_drift_abs": -4.992455642398687e-05,
+      "extrapolated_remaining_drift_pct": -0.002353640612853751,
+      "note": "even running to t->inf closes only this much; floor is not a transient"
+    },
+    "trace_re20_D80.npz": {
+      "win_means": [
+        2.8012179001665416,
+        2.147171693316197,
+        2.1246642563353224,
+        2.1182674192820055,
+        2.1173785972497465,
+        2.117172014625396
+      ],
+      "last3_diffs": [
+        -0.0063968370533169505,
+        -0.0008888220322589291,
+        -0.00020658262435047092
+      ],
+      "geometric_ratio": 0.2324229337851178,
+      "extrapolated_remaining_drift_abs": -6.255337963305402e-05,
+      "extrapolated_remaining_drift_pct": -0.0029545723824486677,
+      "note": "even running to t->inf closes only this much; floor is not a transient"
+    },
+    "trace_re40_D160.npz": {
+      "win_means": [
+        2.1933422049653406,
+        1.6162899168613876,
+        1.5903127252442737,
+        1.5823198134062526,
+        1.5797986042913783,
+        1.5789564181272373
+      ],
+      "last3_diffs": [
+        -0.007992911838021088,
+        -0.002521209114874301,
+        -0.0008421861641410011
+      ],
+      "geometric_ratio": 0.3340405836121966,
+      "extrapolated_remaining_drift_abs": -0.00042243468724519924,
+      "extrapolated_remaining_drift_pct": -0.026754043518581655,
+      "note": "even running to t->inf closes only this much; floor is not a transient"
+    },
+    "trace_re40_D40.npz": {
+      "win_means": [
+        2.20280605798921,
+        1.6223273699843805,
+        1.5960563441002191,
+        1.5880957721725137,
+        1.585647528740213,
+        1.5847722488638285
+      ],
+      "last3_diffs": [
+        -0.007960571927705384,
+        -0.0024482434323007674,
+        -0.0008752798763844716
+      ],
+      "geometric_ratio": 0.3575134175125373,
+      "extrapolated_remaining_drift_abs": -0.00048705188312982384,
+      "extrapolated_remaining_drift_pct": -0.030733241541742427,
+      "note": "even running to t->inf closes only this much; floor is not a transient"
+    },
+    "trace_re40_D80.npz": {
+      "win_means": [
+        2.193900003972649,
+        1.6168775989202586,
+        1.59089093449534,
+        1.5829857451271785,
+        1.580547472262968,
+        1.5796755613319535
+      ],
+      "last3_diffs": [
+        -0.007905189368161425,
+        -0.0024382728642105,
+        -0.0008719109310144635
+      ],
+      "geometric_ratio": 0.3575936655050228,
+      "extrapolated_remaining_drift_abs": -0.0004853467487372618,
+      "extrapolated_remaining_drift_pct": -0.030724457642936902,
+      "note": "even running to t->inf closes only this much; floor is not a transient"
+    }
+  },
+  "geometric_normalization": {
+    "re20_D160": {
+      "R_row": 80.5,
+      "R_area": 79.99762660057554,
+      "row_minus_area_pct": 0.6279853800323254,
+      "link_midpoint_R_area_plus_0.5_pct": 0.62501854273312,
+      "note": "both terms ~1/D -> vanish with refinement; cannot form a D-independent floor"
+    },
+    "re20_D40": {
+      "R_row": 20.5,
+      "R_area": 20.002887964817102,
+      "row_minus_area_pct": 2.4852013172161236,
+      "link_midpoint_R_area_plus_0.5_pct": 2.499639056517466,
+      "note": "both terms ~1/D -> vanish with refinement; cannot form a D-independent floor"
+    },
+    "re20_D80": {
+      "R_row": 40.5,
+      "R_area": 39.993839251484076,
+      "row_minus_area_pct": 1.26559679687952,
+      "link_midpoint_R_area_plus_0.5_pct": 1.2501925530478952,
+      "note": "both terms ~1/D -> vanish with refinement; cannot form a D-independent floor"
+    },
+    "re40_D160": {
+      "R_row": 80.5,
+      "R_area": 79.99762660057554,
+      "row_minus_area_pct": 0.6279853800323254,
+      "link_midpoint_R_area_plus_0.5_pct": 0.62501854273312,
+      "note": "both terms ~1/D -> vanish with refinement; cannot form a D-independent floor"
+    },
+    "re40_D40": {
+      "R_row": 20.5,
+      "R_area": 20.002887964817102,
+      "row_minus_area_pct": 2.4852013172161236,
+      "link_midpoint_R_area_plus_0.5_pct": 2.499639056517466,
+      "note": "both terms ~1/D -> vanish with refinement; cannot form a D-independent floor"
+    },
+    "re40_D80": {
+      "R_row": 40.5,
+      "R_area": 39.993839251484076,
+      "row_minus_area_pct": 1.26559679687952,
+      "link_midpoint_R_area_plus_0.5_pct": 1.2501925530478952,
+      "note": "both terms ~1/D -> vanish with refinement; cannot form a D-independent floor"
+    }
+  },
+  "pilot_errors_vs_fornberg": {
+    "area_D20": {
+      "cd": 1.7452141021398897,
+      "err_pct_vs_fornberg_re40": 16.502944068083416,
+      "lx_d": 20.0,
+      "up_d": 5.0,
+      "h_d": 8.0,
+      "sponge_alpha": 10.0,
+      "D": 20
+    },
+    "area_D40": {
+      "cd": 1.719458162774738,
+      "err_pct_vs_fornberg_re40": 14.783588970276229,
+      "lx_d": 20.0,
+      "up_d": 5.0,
+      "h_d": 8.0,
+      "sponge_alpha": 10.0,
+      "D": 40
+    },
+    "fam_h20_sp10": {
+      "cd": 1.603101711696812,
+      "err_pct_vs_fornberg_re40": 7.016135627290532,
+      "lx_d": 40.0,
+      "up_d": 10.0,
+      "h_d": 20.0,
+      "sponge_alpha": 10.0,
+      "D": 20
+    },
+    "fam_h20_sp0": {
+      "cd": 1.6027221723243088,
+      "err_pct_vs_fornberg_re40": 6.990799220581367,
+      "lx_d": 40.0,
+      "up_d": 10.0,
+      "h_d": 20.0,
+      "sponge_alpha": 0.0,
+      "D": 20
+    },
+    "area_D20_h5": {
+      "cd": 1.8179167927598254,
+      "err_pct_vs_fornberg_re40": 21.356261198920244,
+      "lx_d": 20.0,
+      "up_d": 5.0,
+      "h_d": 5.0,
+      "sponge_alpha": 10.0,
+      "D": 20
+    },
+    "area_D20_h12": {
+      "cd": 1.7365635952665717,
+      "err_pct_vs_fornberg_re40": 15.925473649303857,
+      "lx_d": 20.0,
+      "up_d": 5.0,
+      "h_d": 12.0,
+      "sponge_alpha": 10.0,
+      "D": 20
+    },
+    "cmp_h8_sp0": {
+      "cd": 1.7418208064657472,
+      "err_pct_vs_fornberg_re40": 16.276422327486472,
+      "lx_d": 20.0,
+      "up_d": 5.0,
+      "h_d": 8.0,
+      "sponge_alpha": 0.0,
+      "D": 20
+    }
+  },
+  "siblings_same_machinery": {
+    "re100_free_stream_40Dx40D_braza1.35": {
+      "D48_cd": 1.3293,
+      "D48_err_pct": -1.53,
+      "D64_cd": 1.3155,
+      "D64_err_pct": -2.55,
+      "src": "/nfs/wangxi/worktrees/bm_w11/benchmarks/verified/cylinder/re100/result.json"
+    },
+    "re200_free_stream_40Dx40D_braza1.33": {
+      "D48_cd": 1.3386,
+      "D48_err_pct": 0.65,
+      "D64_cd": 1.3177,
+      "D64_err_pct": -0.92,
+      "src": "/nfs/wangxi/worktrees/bm_w11/benchmarks/verified/cylinder/re200/result.json"
+    },
+    "re20_st_channel_schaefer_turek_nabh5.5795": {
+      "D40_cd": 5.54842757949829,
+      "D40_err_pct": -0.5575312824093583,
+      "D80_cd": 5.419129320526122,
+      "D80_err_pct": -2.8748973989986206,
+      "src": "/nfs/wangxi/worktrees/bm_w11/benchmarks/verified/cylinder/re20_st/result.json"
+    },
+    "note": "same collide_mrt + far_field_bc_2d + compute_obstacle_forces (Ladd MEM); none shows a +5% floor"
+  },
+  "fd_leg_domain_ladder": {
+    "fd4_base3.json": {
+      "re": 40.0,
+      "r_max": 12.0,
+      "cd": 1.602068830943838,
+      "n_r": 240,
+      "n_th": 128,
+      "err_pct_vs_fornberg": 6.947184976224174
+    },
+    "fd4_refine1.json": {
+      "re": 20.0,
+      "r_max": 24.0,
+      "cd": 2.061897052656543,
+      "n_r": 360,
+      "n_th": 192
+    },
+    "fd4_refine2.json": {
+      "re": 30.0,
+      "r_max": 24.0,
+      "cd": 1.7286713105557543,
+      "n_r": 360,
+      "n_th": 192
+    },
+    "fd4_refine3.json": {
+      "re": 40.0,
+      "r_max": 24.0,
+      "cd": 1.5352705699629818,
+      "n_r": 360,
+      "n_th": 192,
+      "err_pct_vs_fornberg": 2.4880220269013265
+    }
+  }
+}
