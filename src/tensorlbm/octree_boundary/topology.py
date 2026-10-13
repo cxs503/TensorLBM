@@ -470,3 +470,108 @@ def run_topology_checks(grid) -> dict:
         "interface_links": check_interface_links(grid),
     }
     return checks
+
+
+def bfl_link_balance(
+    grid,
+    mirror_center: tuple[float, float, float] | None = None,
+    tol: float = 1.0e-9,
+) -> dict:
+    """Directional-balance census of the masked BFL wall-link set.
+
+    The P1 topology checks (symmetry / 2:1 balance / no dangling) all pass
+    on a link set whose directional census is heavily asymmetric — the
+    masked-BFL reflection defect diagnosed 2026-10-13 passed every check
+    with a 3:1 per-direction split and 100% mirror orphans.  This
+    diagnostic closes that blind spot with the two invariants that defect
+    breaks:
+
+    * **directional sum** ``sum_d n_d * w_d * c_{d, alpha}`` per axis over
+      all masked links (direction 0 excluded).  For a closed body whose
+      fluid side is fully enumerated this telescopes to exactly zero for
+      *any* body shape: per solid node ``sum_d w_d c_d = 0`` (isotropic
+      stencil) and every solid-solid pair cancels via ``(d, opp[d])``.  A
+      non-zero value is a net static force bias that a correct linkwise-MEM
+      ledger faithfully sums into the drag.
+    * **mirror pairing**: reflecting a masked link's leaf about the body
+      centre (rounded to the nearest finest-lattice node) must land on a
+      leaf carrying the mirrored direction ``opp[d]``; 100% orphans means
+      the link set has no reflection partner anywhere.
+
+    Args:
+        grid: built ``OctreeGrid`` (``bfl_mask`` / ``leaf_center`` filled).
+        mirror_center: body centre in world (L1 physical) coordinates
+            ``(x, y, z)`` for the mirror statistic.  ``None`` (default)
+            falls back to ``grid.meta["center"]``; pass an explicit centre
+            for ``inside_fn`` bodies whose builder ``center`` is a dummy.
+        tol: absolute tolerance on the per-axis directional sum for the
+            ``directional_balance_ok`` verdict.
+
+    Returns:
+        dict with ``n_links``, ``per_direction`` counts, per-axis
+        ``sum_w_c_{x,y,z}``, ``directional_balance_ok`` and (when a mirror
+        centre is known) a ``mirror_pairing`` sub-dict.
+    """
+    q = int(grid.Q)
+    if q == 27:
+        from tensorlbm.d3q27 import OPPOSITE, W_EXACT64, C
+    else:
+        from tensorlbm.d3q19 import OPPOSITE, W_EXACT64, C
+
+    mask = grid.bfl_mask.clone()
+    mask[0] = False  # library contract: direction 0 never processed
+    d_idx, i_idx = mask.nonzero(as_tuple=True)
+    n_links = int(d_idx.numel())
+    per_direction = {int(d): 0 for d in range(1, q)}
+    for d in torch.unique(d_idx).tolist():
+        per_direction[int(d)] = int((d_idx == d).sum().item())
+    if n_links:
+        # W_EXACT64: the binary64 casts of the rational weight literals;
+        # the public W is float32 and cannot recover the lost bits.
+        w = W_EXACT64.to(torch.float64)[d_idx]
+        c = C.to(torch.float64)[d_idx]
+        sum_w_c = (w.unsqueeze(1) * c).sum(dim=0)
+        sums = [float(v) for v in sum_w_c.tolist()]
+    else:
+        sums = [0.0, 0.0, 0.0]
+    out = {
+        "n_links": n_links,
+        "per_direction": per_direction,
+        "sum_w_c_x": sums[0],
+        "sum_w_c_y": sums[1],
+        "sum_w_c_z": sums[2],
+        "directional_balance_ok": bool(max(abs(v) for v in sums) <= float(tol)),
+        "tol": float(tol),
+    }
+
+    center = mirror_center if mirror_center is not None else grid.meta.get("center")
+    if center is None:
+        out["mirror_pairing"] = None
+        return out
+    # Finest-lattice integer node ids: leaf centres live on the level-l
+    # lattice, and 2^(d_max + 1) * centre is an integer for every l <= d_max.
+    scale = 2 ** (int(grid.d_max) + 1)
+    centers_f = (grid.leaf_center.to(torch.float64) * scale).round().to(torch.int64)
+    c0 = [int(round(float(v) * scale)) for v in center]
+    key = {(int(x), int(y), int(z)): int(i) for i, (x, y, z) in enumerate(centers_f.tolist())}
+    opp = OPPOSITE
+    paired = 0
+    orphan = 0
+    orphan_by_dir: dict[int, int] = {}
+    for d, i in zip(d_idx.tolist(), i_idx.tolist()):
+        x, y, z = centers_f[i].tolist()
+        j = key.get((2 * c0[0] - x, 2 * c0[1] - y, 2 * c0[2] - z))
+        if j is not None and bool(mask[int(opp[d]), j]):
+            paired += 1
+        else:
+            orphan += 1
+            orphan_by_dir[int(d)] = orphan_by_dir.get(int(d), 0) + 1
+    out["mirror_center"] = tuple(float(v) for v in center)
+    out["mirror_pairing"] = {
+        "paired": paired,
+        "orphan": orphan,
+        "orphan_frac": (orphan / n_links) if n_links else 0.0,
+        "orphan_by_dir": {str(k): v for k, v in sorted(orphan_by_dir.items())},
+        "note": ("reflection about the body centre, rounded to the nearest finest-lattice node"),
+    }
+    return out
