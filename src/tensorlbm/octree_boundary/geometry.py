@@ -202,6 +202,7 @@ def build_shell_cell_mask(
     transition: int = 1,
     device: torch.device = torch.device("cpu"),
     inside_fn=None,
+    include_solid_hosts: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor, float]:
     """Near-wall fluid cell mask of the L1 block.
 
@@ -214,6 +215,20 @@ def build_shell_cell_mask(
 
     With ``inside_fn`` the body is arbitrary (e.g. SUBOFF solid mask); the
     shell band is computed by a fixed number of dilation passes.
+
+    ``include_solid_hosts=True`` (leaf-BFL symmetry repair) keeps the
+    boundary solid host cells in the enumeration band.  The legacy
+    ``inside_fn`` band ``dilated & ~solid`` never enumerates the
+    fluid-classified quarter-children of boundary solid host cells, so every
+    body face keeps its +normal link layer and loses its -normal layer: the
+    BFL link set becomes reflection-asymmetric and its correct linkwise-MEM
+    sum produces a spurious net static force (diagnosed 2026-10-13,
+    ``sum_d n_d w_d c_dx = 211/3`` on the sphere hybrid arm; see
+    :func:`tensorlbm.octree_boundary.topology.bfl_link_balance`).  With the
+    solid hosts included those children exist and the directional census
+    closes; sub-leaves whose centre classifies solid are still dropped by
+    the leaf centre test.  Default ``False`` is the legacy bit-identical
+    band.
 
     Returns:
         ``(solid, shell_mask, delta_mask)`` — the solid cell mask, the bool
@@ -243,7 +258,14 @@ def build_shell_cell_mask(
         for _ in range(n_passes):
             dilated = F.max_pool3d(dilated, kernel_size=3, stride=1, padding=1)
         dilated = dilated.squeeze(0).squeeze(0) > 0.5
-        shell_mask = dilated & ~solid
+        if include_solid_hosts:
+            # Inclusive band: keep the boundary solid host cells so their
+            # fluid-classified quarter-children are enumerated (see the
+            # docstring — without them the BFL link census loses every
+            # face's -normal link layer).
+            shell_mask = dilated
+        else:
+            shell_mask = dilated & ~solid
         return solid, shell_mask, delta_mask
     # Solid = cells whose *centre* lies inside the analytic sphere.  This is
     # the same convention as the shell band (``sphere_distance_field``), the
@@ -278,7 +300,17 @@ def build_shell_cell_mask(
     # cells as solid makes the same volume both a frozen L1 solid and an
     # active shell cell, breaking the momentum/control-volume balance.
     solid = max_dist <= radius
-    shell_mask = (max_dist > radius) & (min_dist <= radius + delta_mask)
+    if include_solid_hosts:
+        # Uniform inclusive semantics: drop the wholly-inside exclusion so
+        # the flag means the same on both channels.  The analytic-sphere
+        # band already includes cut (surface-straddling) host cells via
+        # ``max_dist > radius``; the only cells added here are wholly
+        # inside the sphere, whose every sub-leaf centre is inside and is
+        # dropped by the leaf centre test — a provable leaf-set no-op
+        # (pinned by test_octree_shell_band_inclusive).
+        shell_mask = min_dist <= radius + delta_mask
+    else:
+        shell_mask = (max_dist > radius) & (min_dist <= radius + delta_mask)
     return solid, shell_mask, delta_mask
 
 
@@ -552,6 +584,7 @@ def build_octree_shell(
     lattice: str = "D3Q19",
     device: torch.device = torch.device("cpu"),
     inside_fn=None,
+    include_solid_hosts: bool = False,
 ) -> OctreeGrid:
     """Build the body-fitted octree boundary shell around a body.
 
@@ -570,6 +603,13 @@ def build_octree_shell(
         inside_fn: optional ``inside_fn(centers) -> bool tensor`` marking
             leaf centres inside the body (e.g. from a solid mask for
             arbitrary geometry like SUBOFF).  Defaults to sphere test.
+        include_solid_hosts: leaf-BFL symmetry repair — enumerate the band
+            including boundary solid host cells so their fluid-classified
+            quarter-children exist and the BFL link set closes
+            directionally (see :func:`build_shell_cell_mask`).  Default
+            ``False`` is the legacy bit-identical band.  On the analytic
+            sphere channel the flag is a provable leaf-set no-op (the band
+            already includes cut cells).
 
     Returns:
         :class:`OctreeGrid` with topology, q-field and statistics filled in.
@@ -605,6 +645,7 @@ def build_octree_shell(
         transition,
         device,
         inside_fn=inside_fn,
+        include_solid_hosts=include_solid_hosts,
     )
     if not bool(shell_mask.any()):
         raise ValueError(
@@ -769,6 +810,10 @@ def build_octree_shell(
         grid.meta["inside_fn"] = inside_fn  # topology classification hook
         if getattr(inside_fn, "analytic_q", False):
             grid.meta["analytic_q"] = True
+    if include_solid_hosts:
+        # Present only when the flag is on so the default-path meta dict is
+        # unchanged (bit-identical default contract).
+        grid.meta["include_solid_hosts"] = True
 
     from tensorlbm.octree_boundary.qfield import compute_leaf_q_field
     from tensorlbm.octree_boundary.topology import (

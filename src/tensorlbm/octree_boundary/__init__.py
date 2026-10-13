@@ -81,6 +81,7 @@ from tensorlbm.octree_boundary.stepping import (
     stream_gather,
 )
 from tensorlbm.octree_boundary.topology import (
+    bfl_link_balance,
     build_interface_registry,
     build_neighbor_table,
     check_balance_21,
@@ -95,6 +96,7 @@ __all__ = [
     "build_octree_shell",
     "build_shell_cell_mask",
     "sphere_distance_field",
+    "bfl_link_balance",
     "split_leaf_bounds",
     "stream_gather_distributed",
     "step_octree_shell_distributed",
