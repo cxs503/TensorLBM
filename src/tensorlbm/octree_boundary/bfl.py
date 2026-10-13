@@ -20,6 +20,19 @@ exposes ``neighbor_table[OPPOSITE]``.  Cross-level entries (depth-1 donor
 leaves), virtual ghost cells (``SHELL_OUTSIDE``, filled from the ghost plan)
 and refined fan-out groups are handled like ``stream_gather``.
 
+Interpolation-source axis
+-------------------------
+``bfl_apply_gather(..., bfl_source=...)`` / env ``OCTREE_BFL_INTERP``
+selects the reconstruction source (see :func:`bfl_apply_gather`):
+``"f_opp_post"`` (default) keeps the historical form, which — because
+:func:`tensorlbm.octree_boundary.stepping.stream_gather` cell-locally
+bounces SOLID links — reads the local post-collision ``fp_d`` back from the
+streamed slot and degenerates the linear branch to a q-blind ``fp_d``;
+``"legacy"`` restores the documented donor form (purely post-collision
+``fp_d`` / ``fp_up`` / ``fp_opp``), the single-grid
+``bfl_common``/``bfl_d3q19`` contract the design doc §3.4 pins for this
+module.
+
 Moving wall
 -----------
 The ramp startup of ``bfl_sphere_advance`` is preserved: during the first
@@ -37,11 +50,17 @@ same impulse that ``bouzidi_bounce_back_d3q19`` reports and that the
 single-grid sphere benchmark validates against the control-volume force.
 Per-leaf substep weights ``2^-(d_max - d_leaf)`` (``leaf_force_weights``)
 are applied when supplied; the accumulation into a per-root-step force is
-the responsibility of :mod:`tensorlbm.octree_boundary.force`.
+the responsibility of :mod:`tensorlbm.octree_boundary.force`.  The
+per-substep weight carries the cadence frame
+``host_steps_per_shell_call`` (default ``1.0`` = one shell call per
+host-grid lattice step); see :func:`leaf_force_weights` for the hook
+cadence correction.
 """
 
 from __future__ import annotations
 
+import math
+import os
 from typing import TYPE_CHECKING
 
 import torch
@@ -113,13 +132,38 @@ def leaf_force_weights(
     *,
     include_spatial: bool = False,
     reference_level: int = 1,
+    host_steps_per_shell_call: float = 1.0,
 ) -> torch.Tensor:
-    """Per-leaf substep weight ``2^-(d_max - d_leaf)`` (design doc §3.5).
+    """Per-leaf substep weight ``2^-(d_max - d_leaf) * host_steps_per_shell_call``.
 
-    The shell advances every leaf ``2**d_max`` lockstep substeps per root
-    step; a depth-``d`` leaf should only contribute ``2**d`` of them to the
-    force (its own convective time step is ``2^-d`` root units).  The weight
-    corrects the lockstep over-sampling: ``sum_substeps w = 2**d``.
+    The shell advances every leaf ``2**d_max`` lockstep substeps per shell
+    call; a depth-``d`` leaf should only contribute ``2**d`` of them to the
+    force per **host lattice step** (its own convective time step is
+    ``2^-d`` host steps).  The weight corrects the lockstep over-sampling:
+    ``sum_substeps w = 2**d`` per host step of accumulated samples.
+
+    **Cadence frame (E3 lockstep adjudication, 2026-10-10).**  Each weighted
+    sample represents ``rate * dt_host``: accumulating over ``C`` shell calls
+    therefore yields the impulse over ``C * dt_host`` of host time, which is
+    only the impulse over the caller's force interval ``T`` when the host
+    advances exactly one lattice step per shell call (``C * dt_host == T``,
+    the legacy two-level design of ``examples/octree_{sphere,integrated_
+    distributed,multigpu}_validate.py`` and the wrapper cadence of the E3
+    arms A_S/A_S_tau/B/B2 — measured ``force_ratio_corr_over_lib == 1.0``).
+    The hybrid ``pre_restrict_hook`` cadence (``StaticBlockAMR3D.step``,
+    Phase 0.5) fires :func:`tensorlbm.octree_boundary.stepping.step_octree_shell`
+    once per outer-root step while the host advances ``config.ratio``
+    (typically 2) lattice steps in between, so the stock weight under-counts
+    every leaf by exactly ``ratio`` — E3 arms A/A_tau (``d_max=2``, hook)
+    measured ``force_ratio_corr_over_lib = 2.0`` at **both** leaf depths
+    (``phase05/e3_lockstep_ab2.json``); the depth split is cadence-driven,
+    not ``d_max``-driven.  Pass ``host_steps_per_shell_call =
+    host_lattice_steps_per_root_step / shell_calls_per_root_step`` (hook:
+    ``2.0``) to make the accumulated ledger the impulse over the caller's
+    interval; this reproduces the formal runner's manual
+    ``leaf_force_weights(octree, include_spatial=True) * 2.0`` cadence-P
+    convention (F-4/F-5/E3 A1 record) exactly (bit-for-bit: the factor is a
+    power of two).
 
     Args:
         octree: the shell grid.
@@ -134,6 +178,14 @@ def leaf_force_weights(
         reference_level: leaf level the spatial factor is referenced to
             (see :func:`leaf_force_spatial_weights`); only meaningful with
             ``include_spatial=True``.
+        host_steps_per_shell_call: host-grid lattice steps advanced per
+            shell call (the cadence frame).  ``1.0`` — the default — is the
+            legacy "one shell call per host-grid lattice step" frame and is
+            bit-identical to the historical weight.  Under the
+            ``pre_restrict_hook`` cadence (one call per outer-root step,
+            ``ratio`` host steps per root step) pass the ratio (e.g.
+            ``2.0``); any positive value is accepted (fractional cadences
+            ``C > R`` give ``< 1``).
 
     The coordinate conversion that maps the resulting leaf force to the L1
     root lattice is :func:`tensorlbm.octree_boundary.force.convert_leaf_force_to_l1`
@@ -142,7 +194,14 @@ def leaf_force_weights(
     depths (see its docstring).
     """
     levels = octree.leaf_level.to(torch.float64)
+    kappa = float(host_steps_per_shell_call)
+    if not math.isfinite(kappa) or kappa <= 0.0:
+        raise ValueError(
+            f"host_steps_per_shell_call must be finite and positive, got {host_steps_per_shell_call!r}",
+        )
     weights = 2.0 ** (-(octree.d_max - levels))
+    if kappa != 1.0:
+        weights = weights * kappa
     if include_spatial:
         weights = weights * leaf_force_spatial_weights(
             octree,
@@ -198,6 +257,7 @@ def bfl_apply_gather(
     return_force: bool = False,
     q_min: float | None = None,
     link_sink=None,
+    bfl_source: str | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Gather-based Bouzidi BFL on the octree shell leaves.
 
@@ -228,6 +288,12 @@ def bfl_apply_gather(
             given, the per-direction in-place ``force`` accumulation is
             skipped (the returned force is then all zeros and must not be
             used).
+        bfl_source: interpolation-source axis, one of ``"f_opp_post"``
+            (default; the historical/defective form, see below) or
+            ``"legacy"`` (the documented donor form).  ``None`` defers to the
+            ``OCTREE_BFL_INTERP`` environment variable, itself defaulting to
+            ``"f_opp_post"`` — the calibration-harness A/B gate.  Fail-closed
+            on any other value.
 
     Returns:
         ``f_out`` or ``(f_out, force)``.  ``f_out[d]`` is only changed on
@@ -367,13 +433,19 @@ def bfl_apply_gather(
                 )
 
                 rowidx, pad_live = ensure_fanout_tables(octree)
-                ridx = rowidx[opp[d_f], i_f].to(device)  # live row / -1
+                # the cached fanout tables live on the CPU (the SDAA-safe
+                # build path); move them to the populations device before
+                # the advanced index — indexing a CPU tensor with CUDA
+                # indices raises (seen on the E4 SUBOFF shell, d_max=2)
+                rowidx = rowidx.to(device)
+                pad_live = pad_live.to(device)
+                ridx = rowidx[opp[d_f], i_f]  # live row / -1
                 has = ridx >= 0
                 if bool(has.any()):
                     fp_up[d_f[has], i_f[has]] = _fanout_segment_mean(
                         f_prev,
                         d_f[has],
-                        pad_live[ridx[has]].to(device),
+                        pad_live[ridx[has]],
                     ).to(torch.float64)
                 fb = ~has
                 if bool(fb.any()):
@@ -391,15 +463,42 @@ def bfl_apply_gather(
     qq = q_field.to(torch.float64)
     if q_min is not None:
         qq = torch.clamp(qq, min=float(q_min))
-    # f_opp_post = post-stream opposite-direction population (streamed FROM
-    # the solid side).  The legacy formula used fp_d (pre-stream incident)
-    # which reconstructs bounce-back from the wrong source and drains shell
-    # momentum every substep (octree sphere Cd=3.0 vs 1.09).
-    f_opp_post = f[opp].to(torch.float64)
+    # Interpolation-source axis (suboff_highre_20261010 diagnosis /
+    # libfix_20261011): stream_gather's SOLID branch performs a cell-local
+    # full-way bounce, so at every BFL link the streamed unknown slot
+    # f[opp[d]] is bitwise the local post-collision outgoing fp_d (machine
+    # probe: frac_bitwise_equal=1.0) and the historical "f_opp_post" form
+    # degenerates to f_bc = fp_d — q-blind and wall-information-free in the
+    # linear branch (the wall is pinned to the link midpoint).  "legacy" is
+    # the documented contract (docs/octree-boundary-design.md §3.4 =
+    # bfl_common.bfl_bounce_back_common = bfl_d3q19.bouzidi_bounce_back_
+    # d3q19): the reconstruction is expressed purely on post-collision
+    # populations — local outgoing fp_d, local opposite fp_opp, and the TRUE
+    # upstream donor fp_up = f_prev[d](x_i - c_d) gathered explicitly by the
+    # machinery above — never on the streamed slot.  At q = 0.5 both forms
+    # reduce to fp_d (the half-way bounce-back fixed point, bit-identical to
+    # the single-grid references); for every q != 0.5 only the legacy form
+    # honours q and the donor.
+    _source = (
+        bfl_source if bfl_source is not None else os.environ.get("OCTREE_BFL_INTERP", "f_opp_post")
+    )
+    if _source not in ("f_opp_post", "legacy"):
+        raise ValueError(
+            f"bfl_source/OCTREE_BFL_INTERP must be 'f_opp_post' or 'legacy', got {_source!r}",
+        )
     lin = qq < 0.5
     safe_q = torch.where(lin, torch.ones_like(qq), qq)
-    f_bc_lin = 2.0 * qq * f_opp_post + (1.0 - 2.0 * qq) * fp_d
-    f_bc_quad = f_opp_post / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+    if _source == "legacy":
+        f_bc_lin = 2.0 * qq * fp_d + (1.0 - 2.0 * qq) * fp_up
+        f_bc_quad = fp_d / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+    else:
+        # f_opp_post = post-stream opposite-direction population (streamed FROM
+        # the solid side).  The legacy formula used fp_d (pre-stream incident)
+        # which reconstructs bounce-back from the wrong source and drains shell
+        # momentum every substep (octree sphere Cd=3.0 vs 1.09).
+        f_opp_post = f[opp].to(torch.float64)
+        f_bc_lin = 2.0 * qq * f_opp_post + (1.0 - 2.0 * qq) * fp_d
+        f_bc_quad = f_opp_post / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
     f_bc = torch.where(lin, f_bc_lin, f_bc_quad)
     if wall_velocity is not None:
         uwx, uwy, uwz = wall_velocity

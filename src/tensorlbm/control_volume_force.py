@@ -291,4 +291,45 @@ __all__ = [
     "fluid_momentum_change",
     "observe_control_volume_force",
     "streaming_momentum_import",
+    "union_box_control_volume",
 ]
+
+
+def union_box_control_volume(
+    shape: tuple[int, int, int],
+    boxes: Sequence[tuple[int, int, int, int, int, int]],
+    *,
+    device: torch.device | str = "cpu",
+    periodic_axes: tuple[str, ...] = (),
+) -> torch.Tensor:
+    """Union of strictly interior Cartesian control-volume boxes.
+
+    Each member is ``(x0, x1, y0, y1, z0, z1)`` half-open, validated with
+    exactly the :func:`box_control_volume` rules; the returned mask is the
+    boolean OR of the member masks.  This is the surface-shell control
+    volume: a ring of blocks hugging a body tiles its neighbourhood
+    without covering the interior, and :func:`observe_control_volume_force`
+    applies unchanged — its streaming import only sees faces where the
+    mask flips, so faces shared by member boxes carry no net discrete
+    flux and the union outer face set is the disjoint face union of the
+    members.  Overlapping members simply OR.
+
+    Every member must satisfy the same physical requirements as a single
+    box (strictly interior; the layer just outside its faces fluid only).
+    """
+    if not boxes:
+        raise ValueError("boxes must contain at least one control-volume box")
+    mask = torch.zeros(shape, dtype=torch.bool, device=device)
+    for x0, x1, y0, y1, z0, z1 in boxes:
+        mask |= box_control_volume(
+            shape,
+            x0=int(x0),
+            x1=int(x1),
+            y0=int(y0),
+            y1=int(y1),
+            z0=int(z0),
+            z1=int(z1),
+            device=device,
+            periodic_axes=periodic_axes,
+        )
+    return mask

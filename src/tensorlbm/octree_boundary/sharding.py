@@ -276,12 +276,18 @@ def shard_octree_shell(
     ghost_plan: ShellGhostPlan | None = None,
     solid_fallback: bool = True,
     l1_shape: tuple[int, int, int] | None = None,
+    host_steps_per_shell_call: float = 1.0,
 ) -> list[OctreeLeafShard]:
     """Split ``octree``'s leaves across ``fine_devices`` (one shard per device).
 
     The octree itself (and the L0/L1 hierarchy) stays on its own device — the
     root device.  ``ghost_plan`` may be a prebuilt global plan (built on the
     root device); otherwise one is built with ``solid_fallback``.
+
+    ``host_steps_per_shell_call`` is the cadence frame of the shard facades'
+    ``force_weights`` (host-grid lattice steps advanced per shell call;
+    ``1.0`` = the legacy one-call-per-host-step frame, bit-identical — see
+    :func:`tensorlbm.octree_boundary.bfl.leaf_force_weights`).
     """
     devices = [torch.device(d) for d in fine_devices]
     if not devices:
@@ -307,7 +313,7 @@ def shard_octree_shell(
     shard_of = shard_of.to(octree.f_leaf.device)
 
     leaf_vol = octree.leaf_volume()
-    fw = leaf_force_weights(octree)
+    fw = leaf_force_weights(octree, host_steps_per_shell_call=host_steps_per_shell_call)
     links = octree.interface_links  # (n_link, 2) (i, d)
     n_link = int(links.shape[0])
     link_dir = links[:, 1]
