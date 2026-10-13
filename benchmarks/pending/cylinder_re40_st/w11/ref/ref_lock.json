@@ -1,0 +1,534 @@
+{
+ "locked": {
+  "re40": {
+   "primary": {
+    "value": 1.498,
+    "source": "Fornberg 1980 (JFM 98:819)",
+    "unc": 0.0005,
+    "kind": "high-accuracy FDM, unbounded"
+   },
+   "cross": [
+    {
+     "value": 1.49,
+     "source": "Gautier 2013 pseudo-spectral reference (arXiv:1310.6641)"
+    },
+    {
+     "value": 1.494,
+     "source": "Dennis & Chang 1970 as quoted in Fornberg 1980 text"
+    }
+   ],
+   "agreement_pct": {
+    "fornberg_vs_gautier": 0.5369127516778528,
+    "fornberg_vs_dennis": 0.2677376171352078,
+    "cluster17_spread_pct": 9.15032679738563,
+    "core9_spread_pct": 3.333333333333336
+   },
+   "verdict": "spread>1pct -> single primary lock (Fornberg) + disclosure"
+  },
+  "re20": {
+   "primary": {
+    "value": 2.0001,
+    "source": "Fornberg 1980",
+    "unc": 0.0002
+   },
+   "cross": [
+    {
+     "value": 1.998,
+     "source": "Dennis 1976 as quoted in Fornberg 1980"
+    }
+   ],
+   "agreement_pct": {
+    "fornberg_vs_dennis": 0.10510510510511575
+   },
+   "verdict": "two-source agreement 0.1% -> dual lock ok"
+  },
+  "re30": {
+   "status": "NO_LOCKABLE_PRIMARY",
+   "note": "Fornberg cd@Re=30 only in fig.22 (not machine-extractable); Sen/Rajani/D&C/Coutanceau blocked (paywall/bot). Proposal: substitute Re ladder {20,40} (both dual-locked) - controller decision pending."
+  }
+ },
+ "provenance": {
+  "fornberg1980": {
+   "url": "https://www.colorado.edu/amath/sites/default/files/attached-files/jcp_80_fl_p_cyl.pdf",
+   "doi": "10.1017/S0022112080000419",
+   "sha256": "8ad5d3f478248173660d6607684221233eef1655dd263d5a0372fd8850560ce4",
+   "extraction": "src/extract_refs.py (pdfplumber OCR -> regex on inline cd statements)",
+   "text_dump": "ref/fornberg1980_fulltext.txt"
+  },
+  "gautier2013": {
+   "url": "https://arxiv.org/abs/1310.6641",
+   "arxiv_id": "1310.6641",
+   "sha256_pdf": "80cf1c751eabea1ca2fb6a56cbbb421b9e51a598acad7604e90e5ac89a09f986",
+   "sha256_src": "af737cf755b1d001f2cc083df087e0bed83dcf4f9e0f3fcd12a4e1949fb56b12",
+   "extraction": "src/extract_refs.py (LaTeX table parser on ref/refsol_src/CF2012.tex)"
+  }
+ },
+ "blocked_sources": [
+  {
+   "name": "Rajani et al. 2009",
+   "tried": "Elsevier bronze OA + ResearchGate",
+   "result": "linkinghub interstitial HTML (2678B) / 403",
+   "sha256_of_saved_html": "7fc8352d536ae20995439517287b240be4c550907560d702d76afcaffc90732b"
+  },
+  {
+   "name": "Sen et al. JFM 620 (2009)",
+   "result": "no OA copy found; Cambridge paywalled"
+  },
+  {
+   "name": "Dennis & Chang 1970",
+   "result": "Cambridge 302 -> abstract landing (paywalled); value recovered only as quoted-in-Fornberg"
+  },
+  {
+   "name": "Coutanceau & Bouard 1977",
+   "result": "no OA copy found"
+  },
+  {
+   "name": "Sochinskii 2019 (hal)",
+   "result": "HAL served bot-challenge HTML (12528B) from both local and 5090 egress",
+   "sha256_of_saved_html": "36adb1ab4f4baf47d7676dee85a746de1d8ec31c704df0ae4b57de20c1891952"
+  }
+ ],
+ "extraction_tables": {
+  "fornberg1980": {
+   "source": "Fornberg 1980, JFM 98(4):819-855, doi:10.1017/S0022112080000419",
+   "file": "pdf/fornberg1980.pdf (author-hosted: colorado.edu/amath attached-files jcp_80_fl_p_cyl.pdf)",
+   "text_dump": "ref/fornberg1980_fulltext.txt",
+   "cd_inline": {
+    "20": {
+     "cd": 2.0001,
+     "pm": 0.0002
+    },
+    "40": {
+     "cd": 1.498,
+     "pm": 0.0005
+    },
+    "100": {
+     "cd": 1.058,
+     "pm": 0.001
+    }
+   },
+   "dennis1976_quote": {
+    "re20_cd": 1.998,
+    "re40_cd": 1.494
+   },
+   "norm_statement_found": true
+  },
+  "gautier2013": {
+   "source": "Gautier, Biau & Lamballais 2013, arXiv:1310.6641 (submitted to Comput. Fluids)",
+   "file": "pdf/refsol1310.6641.pdf + LaTeX source ref/refsol_src/CF2012.tex",
+   "comparison_table_re40": {
+    "Tritton": {
+     "cd": 1.48,
+     "theta_s": null,
+     "lw": null,
+     "a": null,
+     "b": null
+    },
+    "Dennis & Chang": {
+     "cd": 1.52,
+     "theta_s": 126.2,
+     "lw": 2.35,
+     "a": null,
+     "b": null
+    },
+    "Fornberg": {
+     "cd": 1.5,
+     "theta_s": 124.4,
+     "lw": 2.24,
+     "a": null,
+     "b": null
+    },
+    "He & Doolen": {
+     "cd": 1.5,
+     "theta_s": 127.2,
+     "lw": 2.25,
+     "a": null,
+     "b": null
+    },
+    "Ye et al.": {
+     "cd": 1.52,
+     "theta_s": null,
+     "lw": 2.27,
+     "a": null,
+     "b": null
+    },
+    "Calhoun": {
+     "cd": 1.62,
+     "theta_s": 125.8,
+     "lw": 2.18,
+     "a": null,
+     "b": null
+    },
+    "Russel & Wang": {
+     "cd": 1.6,
+     "theta_s": null,
+     "lw": 2.29,
+     "a": null,
+     "b": null
+    },
+    "Tseng & Ferziger": {
+     "cd": 1.53,
+     "theta_s": null,
+     "lw": 2.21,
+     "a": null,
+     "b": null
+    },
+    "Linnick & Fasel": {
+     "cd": 1.54,
+     "theta_s": 126.4,
+     "lw": 2.28,
+     "a": 0.72,
+     "b": 0.6
+    },
+    "Chung": {
+     "cd": 1.54,
+     "theta_s": null,
+     "lw": 2.3,
+     "a": null,
+     "b": null
+    },
+    "Le et al.": {
+     "cd": 1.56,
+     "theta_s": null,
+     "lw": 2.22,
+     "a": null,
+     "b": null
+    },
+    "Ding et al.": {
+     "cd": 1.58,
+     "theta_s": 127.2,
+     "lw": 2.35,
+     "a": null,
+     "b": null
+    },
+    "Taira & Colonius": {
+     "cd": 1.54,
+     "theta_s": 126.3,
+     "lw": 2.3,
+     "a": 0.73,
+     "b": 0.6
+    },
+    "Posdziec & R. Grundmann": {
+     "cd": 1.49,
+     "theta_s": null,
+     "lw": null,
+     "a": null,
+     "b": null
+    },
+    "Patil & Lakshisha": {
+     "cd": 1.56,
+     "theta_s": 127.3,
+     "lw": 2.14,
+     "a": null,
+     "b": null
+    },
+    "Bouchon et al.": {
+     "cd": 1.5,
+     "theta_s": 126.6,
+     "lw": 2.26,
+     "a": 0.71,
+     "b": 0.6
+    },
+    "Present reference solution": {
+     "cd": 1.49,
+     "theta_s": 126.4,
+     "lw": 2.24,
+     "a": 0.71,
+     "b": 0.59
+    }
+   },
+   "own_sensitivity": {
+    "grid": [
+     "coarse Nr100 Nth512",
+     "fine Nr200 Nth1024"
+    ],
+    "r_inf_values": [
+     30,
+     40,
+     50
+    ],
+    "cd": [
+     1.4903,
+     1.5153,
+     1.5024,
+     1.4906,
+     1.4931,
+     1.4943
+    ],
+    "lw": [
+     2.234,
+     2.2628,
+     2.2507,
+     2.2346,
+     2.236,
+     2.2369
+    ],
+    "theta_s": [
+     126.4117,
+     126.2627,
+     126.3315,
+     126.4059,
+     126.3945,
+     126.3888
+    ]
+   }
+  }
+ },
+ "own_solver": {
+  "method": "independent polar streamfunction-vorticity FD/pseudo-spectral, local pseudo-time steady iteration, Woods 2nd-order wall (src/indep_solver.py; unit-tested src/test_solver_units.py)",
+  "cases": {
+   "base0": {
+    "cd": 3.014345317826109,
+    "cd_p": 1.7004087039908908,
+    "cd_f": 1.3139366138352182,
+    "theta_s_deg": 150.75199708494975,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 0.4831579872791876,
+    "lw_over_d_corrected": 0.2415789936395938,
+    "n_r": 240,
+    "n_th": 128,
+    "r_max": 12.0,
+    "iters": 48000,
+    "res": 0.0005195251238528081,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.031205572414458538,
+    "p_period_jump": 0.0015111359356732856
+   },
+   "base1": {
+    "cd": 2.1552157302423423,
+    "cd_p": 1.3043549450307212,
+    "cd_f": 0.8508607852116209,
+    "theta_s_deg": 136.50247516645456,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 1.7775848705720536,
+    "lw_over_d_corrected": 0.8887924352860268,
+    "n_r": 240,
+    "n_th": 128,
+    "r_max": 12.0,
+    "iters": 38000,
+    "res": 0.0005410487195607327,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.04464197134789216,
+    "p_period_jump": 0.0012132987605635304
+   },
+   "base2": {
+    "cd": 1.8039973664821674,
+    "cd_p": 1.1451759933287022,
+    "cd_f": 0.6588213731534651,
+    "theta_s_deg": 130.45585807717165,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 3.027223316745636,
+    "lw_over_d_corrected": 1.513611658372818,
+    "n_r": 240,
+    "n_th": 128,
+    "r_max": 12.0,
+    "iters": 32000,
+    "res": 0.0020736194527974927,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.055032461208095906,
+    "p_period_jump": 0.0009980885530603
+   },
+   "base3": {
+    "cd": 1.602068830943838,
+    "cd_p": 1.0537225553268506,
+    "cd_f": 0.5483462756169875,
+    "theta_s_deg": 126.42677675349712,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 4.228477467340998,
+    "lw_over_d_corrected": 2.114238733670499,
+    "n_r": 240,
+    "n_th": 128,
+    "r_max": 12.0,
+    "iters": 30000,
+    "res": 0.004490989618579189,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.0637580984116004,
+    "p_period_jump": 0.0008404194191504594
+   },
+   "refine1": {
+    "cd": 2.061897052656543,
+    "cd_p": 1.2436589947523287,
+    "cd_f": 0.8182380579042144,
+    "theta_s_deg": 136.35165896288677,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 1.8224477814360105,
+    "lw_over_d_corrected": 0.9112238907180052,
+    "n_r": 360,
+    "n_th": 192,
+    "r_max": 24.0,
+    "iters": 52000,
+    "res": 0.0011952635922991943,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.04112518784059482,
+    "p_period_jump": 0.0005148726037259438
+   },
+   "refine2": {
+    "cd": 1.7286713105557543,
+    "cd_p": 1.0936542632877504,
+    "cd_f": 0.6350170472680038,
+    "theta_s_deg": 130.30460311593222,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 3.147776801817148,
+    "lw_over_d_corrected": 1.573888400908574,
+    "n_r": 360,
+    "n_th": 192,
+    "r_max": 24.0,
+    "iters": 46000,
+    "res": 0.0008224200538131665,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.05087723002165789,
+    "p_period_jump": 0.00042498948797156655
+   },
+   "refine3": {
+    "cd": 1.5352705699629818,
+    "cd_p": 1.0064084653732623,
+    "cd_f": 0.5288621045897194,
+    "theta_s_deg": 126.3099585812184,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 4.458727858380356,
+    "lw_over_d_corrected": 2.229363929190178,
+    "n_r": 360,
+    "n_th": 192,
+    "r_max": 24.0,
+    "iters": 40000,
+    "res": 0.001200412123509853,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.058980707894519924,
+    "p_period_jump": 0.0003581984080520684
+   },
+   "rmax0": {
+    "cd": 1.7773061974346764,
+    "cd_p": 1.1793235619288525,
+    "cd_f": 0.5979826355058239,
+    "theta_s_deg": 127.33291048890614,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 3.420169570168497,
+    "lw_over_d_corrected": 1.7100847850842484,
+    "n_r": 240,
+    "n_th": 128,
+    "r_max": 6.0,
+    "iters": 42000,
+    "res": 0.008483719121776367,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.04624233254176857,
+    "p_period_jump": 0.000949781577849404
+   },
+   "rmax1": {
+    "cd": 1.534598801001352,
+    "cd_p": 1.0059016990479772,
+    "cd_f": 0.5286971019533748,
+    "theta_s_deg": 126.3101352160801,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 4.46404757732765,
+    "lw_over_d_corrected": 2.232023788663825,
+    "n_r": 240,
+    "n_th": 128,
+    "r_max": 24.0,
+    "iters": 30000,
+    "res": 0.0017989825105598108,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.061537496292178084,
+    "p_period_jump": 0.0008029684366845091
+   },
+   "smoke": {
+    "cd": 1.6839824279352986,
+    "cd_p": 1.1120984102406661,
+    "cd_f": 0.5718840176946325,
+    "theta_s_deg": 126.98536356576834,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 3.8445253609685883,
+    "lw_over_d_corrected": 1.9222626804842942,
+    "n_r": 120,
+    "n_th": 64,
+    "r_max": 8.0,
+    "iters": 24000,
+    "res": 0.014392088211928179,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.06144348479526196,
+    "p_period_jump": 0.003511484838890286
+   },
+   "th0": {
+    "cd": 1.6018991889170922,
+    "cd_p": 1.0535520366959008,
+    "cd_f": 0.5483471522211912,
+    "theta_s_deg": 126.49429460356737,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 4.228164707983303,
+    "lw_over_d_corrected": 2.1140823539916513,
+    "n_r": 240,
+    "n_th": 96,
+    "r_max": 12.0,
+    "iters": 28000,
+    "res": 0.008985095971223489,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.06373471089164717,
+    "p_period_jump": 0.0014890089209495805
+   },
+   "th1": {
+    "cd": 1.602225038111942,
+    "cd_p": 1.0538720216940547,
+    "cd_f": 0.5483530164178874,
+    "theta_s_deg": 126.44150685080446,
+    "lw_stored_unit_note": "solver stores wake length in cylinder RADII (2*(r0-R), D=1, R=0.5); Lw/D = lw_over_d/2",
+    "lw_over_d": 4.228087322537819,
+    "lw_over_d_corrected": 2.1140436612689095,
+    "n_r": 240,
+    "n_th": 192,
+    "r_max": 12.0,
+    "iters": 38000,
+    "res": 0.000979814155228742,
+    "stop_reason": "cd_plateau",
+    "u_th_wall_max": 0.06375834059871655,
+    "p_period_jump": 0.00037441308289860864
+   }
+  },
+  "validation_summary": {
+   "re40_vs_primary_pct": {
+    "direct_rmax6": 18.64527352701444,
+    "direct_rmax12": 6.947184976224174,
+    "direct_rmax24_240x128": 2.4431776369393976,
+    "direct_rmax24_360x192": 2.4880220269013265,
+    "richardson_rmax_limit": {
+     "cd": 1.4923577557436594,
+     "err_pct": -0.3766518195153945,
+     "method": "Aitken on rmax ladder 6/12/24 (240x128)",
+     "ratio_d2_d1": 0.3850207937586951
+    }
+   },
+   "re20_vs_primary_pct": {
+    "direct_rmax12": 7.755398742179986,
+    "direct_rmax24_360x192": 3.0896981479197505,
+    "extrap_borrowed_ratio": {
+     "cd": 2.003472912536108,
+     "err_pct": 0.16863719494564222,
+     "method": "2-point rmax 12/24 + ratio borrowed from Re40 ladder"
+    }
+   },
+   "discretization_independence": {
+    "rmax24_grid_240x128_vs_360x192_pct": 0.04377489159976822,
+    "rmax12_theta_96_128_192_spread_pct": 0.020341429542147793
+   },
+   "diagnostics_vs_lit_cluster": {
+    "theta_s_refine3_deg": 126.3099585812184,
+    "theta_s_lit_deg_gautier_rinf_series": [
+     126.4117,
+     126.2627,
+     126.3315,
+     126.4059,
+     126.3945,
+     126.3888
+    ],
+    "lw_over_d_refine3_corrected": 2.229363929190178,
+    "lw_lit_over_d_gautier_rinf_series": [
+     2.234,
+     2.2628,
+     2.2507,
+     2.2346,
+     2.236,
+     2.2369
+    ]
+   },
+   "verdict": "own-solver leg PASSED: Re=40 >=2 significant digits via Richardson rmax limit (see re40_vs_primary_pct.richardson_rmax_limit.err_pct), direct rmax24 residual dominated by outer-boundary truncation (see discretization_independence); Re=20 satisfies >=1 significant digit directly and approaches the primary under the borrowed-ratio extrapolation; theta_s and Lw/D match the lit cluster (diagnostics_vs_lit_cluster)."
+  }
+ }
+}

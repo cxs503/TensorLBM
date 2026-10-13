@@ -1,0 +1,116 @@
+{
+ "re20": {
+  "rows": [
+   {
+    "D": 40,
+    "cd": 2.1212576639754612,
+    "err_pct": 6.057580319757072,
+    "tau": 0.8000433194722565,
+    "nu_lb": 0.1000144398240855,
+    "R_area": 20.002887964817102,
+    "D_eff_cells": 40.005775929634204,
+    "t_c_steps": 800,
+    "steps": 48000,
+    "plateau_at": 48000,
+    "stop_reason": "plateau",
+    "wall_s": 340.1366913318634
+   },
+   {
+    "D": 80,
+    "cd": 2.1172753059375715,
+    "err_pct": 5.858472373259893,
+    "tau": 1.0999075887722611,
+    "nu_lb": 0.19996919625742038,
+    "R_area": 39.993839251484076,
+    "D_eff_cells": 79.98767850296815,
+    "t_c_steps": 1600,
+    "steps": 96000,
+    "plateau_at": 96000,
+    "stop_reason": "plateau",
+    "wall_s": 2715.3182163238525
+   },
+   {
+    "D": 160,
+    "cd": 2.1176905168536173,
+    "err_pct": 5.8792318810868105,
+    "tau": 1.6999643990086333,
+    "nu_lb": 0.3999881330028777,
+    "R_area": 79.99762660057554,
+    "D_eff_cells": 159.9952532011511,
+    "t_c_steps": 3200,
+    "steps": 192000,
+    "plateau_at": 192000,
+    "stop_reason": "plateau",
+    "wall_s": 21316.685428619385
+   }
+  ],
+  "cd_ref_primary": 2.0001,
+  "g1_all_within_3pct": false,
+  "g2_strict_monotone": false,
+  "g2_nonincreasing": false,
+  "err_diffs_pct": [
+   -0.199107946497179,
+   0.02075950782691738
+  ],
+  "g3_relock_chain_ok": true,
+  "ladder_complete": true,
+  "verdict": "FAIL"
+ },
+ "re40": {
+  "rows": [
+   {
+    "D": 40,
+    "cd": 1.5852098888020207,
+    "err_pct": 5.821754926703648,
+    "tau": 0.6500216597361282,
+    "nu_lb": 0.05000721991204275,
+    "R_area": 20.002887964817102,
+    "D_eff_cells": 40.005775929634204,
+    "t_c_steps": 800,
+    "steps": 48000,
+    "plateau_at": 48000,
+    "stop_reason": "plateau",
+    "wall_s": 298.31444120407104
+   },
+   {
+    "D": 80,
+    "cd": 1.5801115167974609,
+    "err_pct": 5.481409666052128,
+    "tau": 0.7999537943861306,
+    "nu_lb": 0.09998459812871019,
+    "R_area": 39.993839251484076,
+    "D_eff_cells": 79.98767850296815,
+    "t_c_steps": 1600,
+    "steps": 96000,
+    "plateau_at": 96000,
+    "stop_reason": "plateau",
+    "wall_s": 2617.131555080414
+   },
+   {
+    "D": 160,
+    "cd": 1.5793775112093078,
+    "err_pct": 5.432410628124695,
+    "tau": 1.0999821995043166,
+    "nu_lb": 0.19999406650143886,
+    "R_area": 79.99762660057554,
+    "D_eff_cells": 159.9952532011511,
+    "t_c_steps": 3200,
+    "steps": 192000,
+    "plateau_at": 192000,
+    "stop_reason": "plateau",
+    "wall_s": 23497.439470291138
+   }
+  ],
+  "cd_ref_primary": 1.498,
+  "g1_all_within_3pct": false,
+  "g2_strict_monotone": true,
+  "g2_nonincreasing": true,
+  "err_diffs_pct": [
+   -0.34034526065152004,
+   -0.04899903792743299
+  ],
+  "g3_relock_chain_ok": true,
+  "ladder_complete": true,
+  "verdict": "FAIL"
+ }
+}

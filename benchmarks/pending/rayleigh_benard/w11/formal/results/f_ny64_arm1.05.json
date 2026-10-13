@@ -1,0 +1,55 @@
+{
+ "ny": 64,
+ "nx": 128,
+ "frac": 1.05,
+ "Ra": 1794.5846936484088,
+ "g_beta": 0.00014850625241151903,
+ "amp": 0.0001,
+ "dtype": "float64",
+ "mass_correct_every_step": true,
+ "steps": 124448,
+ "sample_every": 207,
+ "windows": [
+  [
+   0.15,
+   0.9
+  ],
+  [
+   0.05,
+   0.75
+  ],
+  [
+   0.3,
+   1.0
+  ]
+ ],
+ "slopes_per_step": [
+  2.366551586063556e-05,
+  2.36838762025615e-05,
+  2.364672048448972e-05
+ ],
+ "gammas_windows": [
+  0.5458214578096986,
+  0.5462449207358785,
+  0.5453879612542709
+ ],
+ "slope_spread_rel": 0.0015700458830117576,
+ "gamma_sim": 0.545818113266616,
+ "gamma_ref": 0.5559941731154854,
+ "rel_err": -0.018302457725138277,
+ "report_only": false,
+ "health": {
+  "mass_drift_abs": 0.0,
+  "mass_drift_rel": 0.0,
+  "u_max": 9.106597452936227e-05,
+  "v_max": 0.00018221456258281046,
+  "theta_min": -0.0016948674387459173,
+  "theta_max": 0.0014320239776325905,
+  "a_first": 9.999999995730811e-05,
+  "a_last": 0.0015614845825951804,
+  "e_folds": 2.74822211765512
+ },
+ "wall_seconds": 2221.1102981567383,
+ "abort": null,
+ "seed_rows": "npz row 0 = lower ghost mirror; rows 1..d = fluid; last = upper ghost (E3a)"
+}

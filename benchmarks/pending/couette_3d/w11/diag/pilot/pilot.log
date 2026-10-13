@@ -1,0 +1,147 @@
++ D=/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings
++ WT=/nfs/wangxi/worktrees/bm_w11
++ PY=/nfs/wangxi/venvs/tensorlbm/bin/python
++ export PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=8 TMPDIR=/nfs/wangxi/tmp
++ PYTHONDONTWRITEBYTECODE=1
++ OMP_NUM_THREADS=8
++ TMPDIR=/nfs/wangxi/tmp
++ cd /nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/couette3d/diag/pilot
++ PYTHONPATH=/nfs/wangxi/worktrees/bm_w11/src
++ /nfs/wangxi/venvs/tensorlbm/bin/python -c 'import tensorlbm,sys;print("tensorlbm:",tensorlbm.__file__);print(sys.version)'
++ for spec in "16 2000 12000" "32 6000 24000" "64 16000 48000"
++ set -- 16 2000 12000
++ PYTHONPATH=/nfs/wangxi/worktrees/bm_w11/src
++ /nfs/wangxi/venvs/tensorlbm/bin/python /nfs/wangxi/worktrees/bm_w11/benchmarks/pending/couette_3d/run.py single 16 /nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/couette3d/diag/pilot/case_H16.json --tau 0.8 --u0 0.05 --min-steps 2000 --max-steps 12000 --device cpu
+[compile_route] couette_3d[H16]: mode='default' -> torch.compile(mode='default') + auto eager fallback
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[compile_route] !!! torch.compile FAILED on this device -> EAGER FALLBACK
+[compile_route]   step    : couette_3d[H16]
+[compile_route]   mode    : 'default'
+[compile_route]   reason  : InternalTorchDynamoError: AcceleratorError: CUDA error: out of memory
+Search for `cudaErrorMemoryAllocation' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"
+
+[compile_route]   effect  : this step + every later step run EAGER
+[compile_route]             (bitwise-identical to --compile-mode eager)
+[compile_route]   detail  : see compile_route.py docstring, 'Compile-time device support & the automatic eager fallback'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+{
+  "H_eff": 16,
+  "nx": 8,
+  "ny": 18,
+  "nz": 8,
+  "tau": 0.8,
+  "nu_lb": 0.10000000000000002,
+  "U0": 0.05,
+  "Re": 7.999999999999999,
+  "Ma": 0.08660254037844388,
+  "n_steps": 3600,
+  "steady": true,
+  "l2_rel_err": 6.775924038873656e-05,
+  "max_abs_err": 2.5302171707194954e-06,
+  "max_rel_err_masked_pct": 0.011488369533003376,
+  "u_top_row_err_pct": 0.003879301009642482,
+  "tau_err_pct": -0.0036080678304101213,
+  "uz_max": 3.781147199788393e-07,
+  "mass_drift_pct": 0.0034650166829427085,
+  "elapsed_s": 2.6
+}
++ for spec in "16 2000 12000" "32 6000 24000" "64 16000 48000"
++ set -- 32 6000 24000
++ PYTHONPATH=/nfs/wangxi/worktrees/bm_w11/src
++ /nfs/wangxi/venvs/tensorlbm/bin/python /nfs/wangxi/worktrees/bm_w11/benchmarks/pending/couette_3d/run.py single 32 /nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/couette3d/diag/pilot/case_H32.json --tau 0.8 --u0 0.05 --min-steps 6000 --max-steps 24000 --device cpu
+[compile_route] couette_3d[H32]: mode='default' -> torch.compile(mode='default') + auto eager fallback
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[compile_route] !!! torch.compile FAILED on this device -> EAGER FALLBACK
+[compile_route]   step    : couette_3d[H32]
+[compile_route]   mode    : 'default'
+[compile_route]   reason  : InternalTorchDynamoError: AcceleratorError: CUDA error: out of memory
+Search for `cudaErrorMemoryAllocation' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"
+
+[compile_route]   effect  : this step + every later step run EAGER
+[compile_route]             (bitwise-identical to --compile-mode eager)
+[compile_route]   detail  : see compile_route.py docstring, 'Compile-time device support & the automatic eager fallback'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+{
+  "H_eff": 32,
+  "nx": 8,
+  "ny": 34,
+  "nz": 8,
+  "tau": 0.8,
+  "nu_lb": 0.10000000000000002,
+  "U0": 0.05,
+  "Re": 15.999999999999998,
+  "Ma": 0.08660254037844388,
+  "n_steps": 7400,
+  "steady": true,
+  "l2_rel_err": 0.0003295224892635872,
+  "max_abs_err": 1.241415739059587e-05,
+  "max_rel_err_masked_pct": 0.07122663351206021,
+  "u_top_row_err_pct": 0.012258499387722091,
+  "tau_err_pct": -0.011039549304581866,
+  "uz_max": 1.6931089703575708e-06,
+  "mass_drift_pct": 0.012711914800326449,
+  "elapsed_s": 6.7
+}
++ for spec in "16 2000 12000" "32 6000 24000" "64 16000 48000"
++ set -- 64 16000 48000
++ PYTHONPATH=/nfs/wangxi/worktrees/bm_w11/src
++ /nfs/wangxi/venvs/tensorlbm/bin/python /nfs/wangxi/worktrees/bm_w11/benchmarks/pending/couette_3d/run.py single 64 /nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/couette3d/diag/pilot/case_H64.json --tau 0.8 --u0 0.05 --min-steps 16000 --max-steps 48000 --device cpu
+[compile_route] couette_3d[H64]: mode='default' -> torch.compile(mode='default') + auto eager fallback
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[compile_route] !!! torch.compile FAILED on this device -> EAGER FALLBACK
+[compile_route]   step    : couette_3d[H64]
+[compile_route]   mode    : 'default'
+[compile_route]   reason  : InternalTorchDynamoError: AcceleratorError: CUDA error: out of memory
+Search for `cudaErrorMemoryAllocation' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"
+
+[compile_route]   effect  : this step + every later step run EAGER
+[compile_route]             (bitwise-identical to --compile-mode eager)
+[compile_route]   detail  : see compile_route.py docstring, 'Compile-time device support & the automatic eager fallback'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+{
+  "H_eff": 64,
+  "nx": 8,
+  "ny": 66,
+  "nz": 8,
+  "tau": 0.8,
+  "nu_lb": 0.10000000000000002,
+  "U0": 0.05,
+  "Re": 31.999999999999996,
+  "Ma": 0.08660254037844388,
+  "n_steps": 17200,
+  "steady": true,
+  "l2_rel_err": 0.003363907946296767,
+  "max_abs_err": 0.0001348145306110382,
+  "max_rel_err_masked_pct": 0.7796181572808225,
+  "u_top_row_err_pct": 0.033845676211868625,
+  "tau_err_pct": -0.02750971960643194,
+  "uz_max": 1.4546756119671045e-06,
+  "mass_drift_pct": 0.030101429332386364,
+  "elapsed_s": 16.8
+}
++ echo PILOT_DONE
+PILOT_DONE
