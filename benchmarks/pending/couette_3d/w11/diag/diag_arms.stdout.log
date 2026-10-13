@@ -1,0 +1,38 @@
+== A_asis_H16 (init_fixed=False, nx=8) ==
+   t=0   : {'l2_rel': '2.500e-01', 'max_abs': '1.211e-02', 'dev_mid': '-6.641e-03', 'dev_bot': '-3.906e-04', 'dev_top': '-1.211e-02', 'span_fluid_std': '1.157e-02', 'mass_drift_pct': '0.000e+00', 'mom_x': '2.160e+01', 'uz_max': '0.000e+00'}
+   t=  1000 l2=4.093e-03 dev_mid=-1.661e-04 mass=+0.0016% span=1.97e-07 mom=28.02
+   t=  2000 l2=1.218e-04 dev_mid=-4.765e-06 mass=+0.0033% span=1.91e-07 mom=28.14
+   t=  3000 l2=6.938e-05 dev_mid=-2.386e-06 mass=+0.0035% span=1.86e-07 mom=28.14
+   t=  4000 l2=6.657e-05 dev_mid=-2.388e-06 mass=+0.0035% span=1.84e-07 mom=28.14
+   t=  5000 l2=6.660e-05 dev_mid=-2.380e-06 mass=+0.0035% span=1.83e-07 mom=28.14
+   t=  6000 l2=6.663e-05 dev_mid=-2.386e-06 mass=+0.0035% span=1.83e-07 mom=28.14
+== B_fixed_H16 (init_fixed=True, nx=8) ==
+   t=0   : {'l2_rel': '2.445e-07', 'max_abs': '1.490e-08', 'dev_mid': '-3.725e-09', 'dev_bot': '-1.630e-09', 'dev_top': '3.725e-09', 'span_fluid_std': '0.000e+00', 'mass_drift_pct': '0.000e+00', 'mom_x': '2.880e+01', 'uz_max': '0.000e+00'}
+   t=  1000 l2=1.041e-05 dev_mid=-2.552e-07 mass=+0.0007% span=0.00e+00 mom=28.80
+   t=  2000 l2=1.048e-05 dev_mid=-2.552e-07 mass=+0.0007% span=0.00e+00 mom=28.80
+   t=  3000 l2=1.049e-05 dev_mid=-2.552e-07 mass=+0.0007% span=0.00e+00 mom=28.80
+   t=  4000 l2=1.012e-05 dev_mid=-2.440e-07 mass=+0.0007% span=0.00e+00 mom=28.80
+   t=  5000 l2=9.948e-06 dev_mid=-2.440e-07 mass=+0.0007% span=0.00e+00 mom=28.79
+   t=  6000 l2=9.948e-06 dev_mid=-2.440e-07 mass=+0.0007% span=0.00e+00 mom=28.79
+== B_fixed_H16_nx16 (init_fixed=True, nx=16) ==
+   t=0   : {'l2_rel': '2.642e-07', 'max_abs': '1.863e-08', 'dev_mid': '0.000e+00', 'dev_bot': '-1.630e-09', 'dev_top': '-3.725e-09', 'span_fluid_std': '0.000e+00', 'mass_drift_pct': '0.000e+00', 'mom_x': '1.152e+02', 'uz_max': '0.000e+00'}
+   t=  1000 l2=1.046e-05 dev_mid=-2.552e-07 mass=+0.0006% span=0.00e+00 mom=115.20
+   t=  2000 l2=1.048e-05 dev_mid=-2.552e-07 mass=+0.0006% span=0.00e+00 mom=115.20
+   t=  3000 l2=1.049e-05 dev_mid=-2.552e-07 mass=+0.0006% span=0.00e+00 mom=115.20
+   t=  4000 l2=1.014e-05 dev_mid=-2.496e-07 mass=+0.0007% span=0.00e+00 mom=115.19
+   t=  5000 l2=9.943e-06 dev_mid=-2.496e-07 mass=+0.0007% span=0.00e+00 mom=115.18
+   t=  6000 l2=9.943e-06 dev_mid=-2.496e-07 mass=+0.0007% span=0.00e+00 mom=115.16
+== C_fixed_H16_long (init_fixed=True, nx=8) ==
+   t=0   : {'l2_rel': '2.445e-07', 'max_abs': '1.490e-08', 'dev_mid': '-3.725e-09', 'dev_bot': '-1.630e-09', 'dev_top': '3.725e-09', 'span_fluid_std': '0.000e+00', 'mass_drift_pct': '0.000e+00', 'mom_x': '2.880e+01', 'uz_max': '0.000e+00'}
+   t=  3000 l2=1.049e-05 dev_mid=-2.552e-07 mass=+0.0007% span=0.00e+00 mom=28.80
+   t=  9000 l2=7.786e-06 dev_mid=-2.421e-07 mass=+0.0012% span=0.00e+00 mom=28.79
+   t= 15000 l2=7.785e-06 dev_mid=-2.421e-07 mass=+0.0012% span=0.00e+00 mom=28.82
+   t= 21000 l2=1.605e-05 dev_mid=-2.421e-07 mass=+0.0009% span=0.00e+00 mom=28.85
+   t= 27000 l2=1.605e-05 dev_mid=-2.421e-07 mass=+0.0009% span=0.00e+00 mom=28.88
+== D_fixed_H32_long (init_fixed=True, nx=8) ==
+   t=0   : {'l2_rel': '4.512e-07', 'max_abs': '4.470e-08', 'dev_mid': '-3.725e-09', 'dev_bot': '-7.567e-10', 'dev_top': '-1.118e-08', 'span_fluid_std': '0.000e+00', 'mass_drift_pct': '0.000e+00', 'mom_x': '5.440e+01', 'uz_max': '0.000e+00'}
+   t=  3000 l2=1.052e-05 dev_mid=+5.588e-08 mass=+0.0012% span=0.00e+00 mom=54.40
+   t=  9000 l2=8.969e-06 dev_mid=+7.078e-08 mass=+0.0013% span=0.00e+00 mom=54.39
+   t= 15000 l2=8.969e-06 dev_mid=+7.078e-08 mass=+0.0013% span=0.00e+00 mom=54.37
+   t= 21000 l2=1.861e-05 dev_mid=-7.451e-09 mass=+0.0024% span=0.00e+00 mom=54.40
+   t= 27000 l2=1.861e-05 dev_mid=-7.451e-09 mass=+0.0024% span=0.00e+00 mom=54.43
