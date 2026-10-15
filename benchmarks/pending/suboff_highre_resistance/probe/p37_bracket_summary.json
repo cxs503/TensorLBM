@@ -1,0 +1,34 @@
+[
+  {
+    "tag": "p25_bgksmag_a1",
+    "label": "wall_model_slip+reichardt",
+    "wall_mode": null,
+    "wall_law": "reichardt",
+    "Ct_cv": 0.06561159402018828,
+    "reference_error_pct": 1689.2444510550388,
+    "Ct_fric": 0.007270038630671284,
+    "Ct_wall_total": 0.02202013050247279,
+    "mode_rel_ct_cv": 0.09220189681903314,
+    "observer_difference_pct": 66.43865946055611,
+    "yplus_mean_last": 1899.690673828125,
+    "maximum_positivity_limited_fraction": 0.0185825625,
+    "finite": true,
+    "steps_completed": 16000
+  },
+  {
+    "tag": "p36_bgksmag_stationary_a1",
+    "label": "stationary (no WM)",
+    "wall_mode": "stationary",
+    "wall_law": "reichardt",
+    "Ct_cv": 0.033065430174000945,
+    "reference_error_pct": 801.7024863376314,
+    "Ct_fric": 0.00018994255261229205,
+    "Ct_wall_total": 0.1393739314450053,
+    "mode_rel_ct_cv": 3.1732447140037428,
+    "observer_difference_pct": 321.5095061868991,
+    "yplus_mean_last": 1231.52099609375,
+    "maximum_positivity_limited_fraction": 0.0190453125,
+    "finite": true,
+    "steps_completed": 16000
+  }
+]
