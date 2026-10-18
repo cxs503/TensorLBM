@@ -124,9 +124,10 @@ def _measure_pressure_jump(
 ) -> tuple[float, float, float]:
     """Return ``(p_inside, p_outside, delta_p)`` from the total density.
 
-    The lattice pressure is ``p = cs² ρ = ρ / 3``.
-    Inside and outside averages exclude a transition band of 0.5 R around
-    the nominal radius to avoid contamination by the diffuse interface.
+    The current diagnostic is only the ideal-gas density proxy ``p* = cs² ρ``.
+    It omits the interaction/capillary stress and therefore is NOT a validated
+    mechanical-pressure measurement for Shan-Chen or color-gradient models.
+    Inside/outside averages exclude a transition band around the interface.
     """
     rho = f_total.sum(dim=0)  # (ny, nx)
     ny, nx = rho.shape
@@ -333,6 +334,8 @@ def _run_scmc_droplet(
         "delta_p": round(dp, 8),
         "sigma_eff": round(sigma_eff, 6),
         "max_spurious_u": round(max_u, 8),
+        "pressure_diagnostic": "ideal_gas_density_proxy",
+        "laplace_physical_validation": "NOT_VALIDATED",
     }
 
 
@@ -378,6 +381,8 @@ def _run_cg_droplet(
         "delta_p": round(dp, 8),
         "sigma_eff": round(sigma_eff, 6),
         "max_spurious_u": round(max_u, 8),
+        "pressure_diagnostic": "ideal_gas_density_proxy",
+        "laplace_physical_validation": "NOT_VALIDATED",
     }
 
 
@@ -444,7 +449,10 @@ def run_static_droplet(config: StaticDropletConfig) -> dict[str, object]:
         print(f"  σ_eff (fit) = {sigma_fit:.6f}   mean max_u = {mean_u:.3e}")
         results[model_name] = {
             "per_radius": per_r,
-            "sigma_eff_fit": round(sigma_fit, 8),
+            "sigma_eff_fit": round(sigma_fit, 8),  # legacy name; proxy-derived only
+            "sigma_eff_fit_proxy": round(sigma_fit, 8),
+            "pressure_diagnostic": "ideal_gas_density_proxy",
+            "laplace_physical_validation": "NOT_VALIDATED",
             "mean_max_spurious_u": round(mean_u, 8),
         }
 
@@ -454,9 +462,11 @@ def run_static_droplet(config: StaticDropletConfig) -> dict[str, object]:
         "config": {**asdict(config), "output_root": str(config.output_root)},
         "results": results,
         "note": (
-            "delta_p = P_inside - P_outside (lattice pressure cs2*rho). "
-            "sigma_eff_fit: slope of ΔP vs 1/R (Young-Laplace: ΔP = σ/R). "
-            "max_spurious_u: max velocity in static droplet (quality metric)."
+            "delta_p is computed from the ideal-gas density proxy cs2*rho, not "
+            "the full mechanical pressure including interaction/capillary stress. "
+            "sigma_eff_fit is retained for compatibility but is proxy-derived only; "
+            "the Laplace physical benchmark is NOT_VALIDATED for SCMC or CG. "
+            "max_spurious_u is the maximum velocity in the static droplet."
         ),
     }
     (run_dir / "static_droplet.json").write_text(
@@ -486,7 +496,7 @@ def _plot_laplace(results: dict[str, object], run_dir: Path) -> None:
         ax.plot(inv_r_line, [sigma * x for x in inv_r_line], "--", color=colours[model], alpha=0.7)
 
     ax.set_xlabel("1/R (lattice units⁻¹)")
-    ax.set_ylabel("ΔP (lattice units)")
+    ax.set_ylabel("Δp* = cs² Δρ (density proxy; not mechanical pressure)")
     ax.set_title("Laplace pressure test: ΔP vs 1/R")
     ax.legend()
     ax.grid(True, alpha=0.3)
@@ -1696,7 +1706,7 @@ def _generate_analysis(
         "1. Laplace Pressure Test (static circular droplet, periodic domain):",
         f"   SCMC (Shan-Chen two-component): σ_eff = {sigma_scmc:.4f} lu",
         f"   CG  (Color-Gradient):           σ_eff = {sigma_cg:.4f} lu",
-        "   → SCMC and CG both satisfy ΔP ∝ 1/R (Young-Laplace).",
+        "   → NOT VALIDATED: cs²ρ is only a density proxy; interaction/capillary stress is omitted.",
         f"   Spurious currents — SCMC: {u_scmc:.2e}, CG: {u_cg:.2e}",
         "",
         "2. Spinodal Decomposition (SCMP, Shan-Chen single-component):",
