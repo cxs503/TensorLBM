@@ -1,0 +1,71 @@
+name: Droplet-impact benchmark smoke test
+
+on:
+  pull_request:
+    paths:
+      - "examples/droplet_impact.py"
+      - "docs/benchmarks/droplet_impact.md"
+      - "src/tensorlbm/multiphase.py"
+      - ".github/workflows/droplet-impact-benchmark.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  droplet-impact-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install TensorLBM and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Run real CPU smoke simulation
+        run: |
+          PYTHONPATH=src python examples/droplet_impact.py --fast --output-root outputs/droplet_impact --run-name ci_smoke --overwrite
+      - name: Validate numerical outputs
+        run: |
+          python - <<'PY'
+          import csv, json
+          from pathlib import Path
+          import math
+
+          root = Path("outputs/droplet_impact/ci_smoke")
+          required = [
+              root / "diagnostic_curves.png",
+              root / "run_metadata.json",
+              root / "history.csv",
+              root / "contours" / "phase_0000000.png",
+          ]
+          missing = [str(path) for path in required if not path.is_file() or path.stat().st_size == 0]
+          assert not missing, f"Missing/empty artifacts: {missing}"
+          metadata = json.loads((root / "run_metadata.json").read_text())
+          rows = list(csv.DictReader((root / "history.csv").open()))
+          assert len(rows) >= 2, f"Expected multiple history rows, got {len(rows)}"
+          for row in rows:
+              for key in ("phase_mass", "relative_phase_mass_drift", "max_speed", "phi_min", "phi_max"):
+                  assert math.isfinite(float(row[key])), f"Non-finite {key} at step {row['step']}"
+          assert metadata["benchmark"] == "2d_free_energy_droplet_impact"
+          print(json.dumps({
+              "status": "smoke_outputs_valid",
+              "samples": len(rows),
+              "final_step": rows[-1]["step"],
+              "final_relative_phase_mass_drift": rows[-1]["relative_phase_mass_drift"],
+              "final_max_speed": rows[-1]["max_speed"],
+              "artifacts": [str(p) for p in required],
+          }, indent=2))
+          PY
+      - name: Upload computed contours and curves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: droplet-impact-smoke-results
+          path: outputs/droplet_impact/ci_smoke/
+          if-no-files-found: warn
+          retention-days: 30
