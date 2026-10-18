@@ -497,7 +497,7 @@ def _plot_laplace(results: dict[str, object], run_dir: Path) -> None:
 
     ax.set_xlabel("1/R (lattice units⁻¹)")
     ax.set_ylabel("Δp* = cs² Δρ (density proxy; not mechanical pressure)")
-    ax.set_title("Laplace pressure test: ΔP vs 1/R")
+    ax.set_title("Static-droplet density-pressure proxy vs 1/R (not validated)")
     ax.legend()
     ax.grid(True, alpha=0.3)
     fig.savefig(run_dir / "laplace_pressure.png", dpi=120, bbox_inches="tight")
