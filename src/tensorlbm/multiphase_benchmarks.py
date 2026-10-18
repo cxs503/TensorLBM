@@ -602,6 +602,7 @@ def run_spinodal_decomposition(config: SpinodaleConfig) -> dict[str, object]:
 
     zero = torch.zeros((ny, nx), device=device)
     f = equilibrium(rho, zero, zero)
+    initial_mass = float(rho.sum().item())
 
     print(
         f"Spinodal decomposition  NX={nx}  NY={ny}  G={config.G}  "
@@ -634,6 +635,8 @@ def run_spinodal_decomposition(config: SpinodaleConfig) -> dict[str, object]:
 
     # Final state
     rho_final, _, _ = macroscopic(f)
+    final_mass = float(rho_final.sum().item())
+    relative_mass_drift = abs(final_mass - initial_mass) / max(abs(initial_mass), 1e-12)
     rho_liquid = float(rho_final.max().item())
     rho_gas = float(rho_final.min().item())
     density_ratio = rho_liquid / max(rho_gas, 1e-12)
@@ -646,6 +649,9 @@ def run_spinodal_decomposition(config: SpinodaleConfig) -> dict[str, object]:
         "rho_gas": round(rho_gas, 6),
         "density_ratio": round(density_ratio, 4),
         "phase_separated": phase_separated,
+        "initial_mass": round(initial_mass, 8),
+        "final_mass": round(final_mass, 8),
+        "relative_mass_drift": round(relative_mass_drift, 10),
         "diagnostics": diagnostics,
         "note": (
             "SCMP (Shan-Chen single-component) spinodal decomposition. "
@@ -1177,6 +1183,7 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
     rho = (rho0 + noise).clamp(min=0.01)
     zero = torch.zeros((config.nz, config.ny, config.nx), device=device)
     f = equilibrium3d(rho, zero, zero, zero)
+    initial_mass = float(rho.sum().item())
     diagnostics: list[dict[str, object]] = []
 
     for step in range(1, config.n_steps + 1):
@@ -1203,6 +1210,8 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
             )
 
     rho_final, _, _, _ = macroscopic3d(f)
+    final_mass = float(rho_final.sum().item())
+    relative_mass_drift = abs(final_mass - initial_mass) / max(abs(initial_mass), 1e-12)
     rho_liquid = float(rho_final.max().item())
     rho_gas = float(rho_final.min().item())
     density_ratio = rho_liquid / max(rho_gas, 1e-12)
@@ -1215,6 +1224,9 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
         "rho_gas": round(rho_gas, 6),
         "density_ratio": round(density_ratio, 4),
         "phase_separated": phase_separated,
+        "initial_mass": round(initial_mass, 8),
+        "final_mass": round(final_mass, 8),
+        "relative_mass_drift": round(relative_mass_drift, 10),
         "diagnostics": diagnostics,
         "note": "3D SCMP spinodal decomposition benchmark on D3Q19.",
     }
