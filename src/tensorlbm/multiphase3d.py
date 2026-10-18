@@ -136,6 +136,9 @@ def sc_two_component_force_3d(
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Shan-Chen interaction + body forces for two 3D components.
 
+    The neighbour sum gathers rho(x-c_i), hence its first moment approximates
+    -cs² grad(rho). With the plus-G convention below, G_12 > 0 is repulsive.
+
     Args:
         rho1:        Density of component 1, shape ``(nz, ny, nx)``.
         rho2:        Density of component 2, shape ``(nz, ny, nx)``.
@@ -149,14 +152,14 @@ def sc_two_component_force_3d(
         ``(Fx1, Fy1, Fz1, Fx2, Fy2, Fz2)`` each of shape ``(nz, ny, nx)``.
     """
     sx2, sy2, sz2 = _sc_neighbor_weighted_sum_3d(rho2, solid_mask)
-    Fx1 = -G_12 * rho1 * sx2 + rho1 * gx
-    Fy1 = -G_12 * rho1 * sy2 + rho1 * gy
-    Fz1 = -G_12 * rho1 * sz2 + rho1 * gz
+    Fx1 = G_12 * rho1 * sx2 + rho1 * gx
+    Fy1 = G_12 * rho1 * sy2 + rho1 * gy
+    Fz1 = G_12 * rho1 * sz2 + rho1 * gz
 
     sx1, sy1, sz1 = _sc_neighbor_weighted_sum_3d(rho1, solid_mask)
-    Fx2 = -G_12 * rho2 * sx1 + rho2 * gx
-    Fy2 = -G_12 * rho2 * sy1 + rho2 * gy
-    Fz2 = -G_12 * rho2 * sz1 + rho2 * gz
+    Fx2 = G_12 * rho2 * sx1 + rho2 * gx
+    Fy2 = G_12 * rho2 * sy1 + rho2 * gy
+    Fz2 = G_12 * rho2 * sz1 + rho2 * gz
 
     return Fx1, Fy1, Fz1, Fx2, Fy2, Fz2
 
