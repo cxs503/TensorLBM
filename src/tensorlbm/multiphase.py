@@ -471,7 +471,7 @@ def sc_two_component_force(
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute Shan-Chen interaction + gravity forces for two immiscible components.
 
-    The repulsive interaction (G_12 > 0) drives the two fluids apart and
+    The repulsive interaction (G_12 < 0) drives the two fluids apart and
     maintains a diffuse interface between them.
 
     The buoyancy force arises naturally: the heavier component sinks faster
@@ -491,15 +491,15 @@ def sc_two_component_force(
         ``(Fx1, Fy1, Fx2, Fy2)`` – force fields for each component,
         each of shape ``(ny, nx)``.
     """
-    # The gather samples x-c_i, so Σw_i c_i ρ(x-c_i) ≈ -cs²∇ρ.
-    # +G times this sum therefore repels unlike components for G > 0.
+    # Reverse gather samples x-c_i, so Σw_i c_i ρ(x-c_i) ≈ -cs²∇ρ.
+    # With F=-G ρ Σw_i c_i ρ'(x-c_i), G < 0 gives repulsion.
     sum_x2, sum_y2 = _sc_neighbor_weighted_sum(rho2, solid_mask)
-    Fx1 = G_12 * rho1 * sum_x2 + rho1 * gx
-    Fy1 = G_12 * rho1 * sum_y2 + rho1 * gy
+    Fx1 = -G_12 * rho1 * sum_x2 + rho1 * gx
+    Fy1 = -G_12 * rho1 * sum_y2 + rho1 * gy
 
     sum_x1, sum_y1 = _sc_neighbor_weighted_sum(rho1, solid_mask)
-    Fx2 = G_12 * rho2 * sum_x1 + rho2 * gx
-    Fy2 = G_12 * rho2 * sum_y1 + rho2 * gy
+    Fx2 = -G_12 * rho2 * sum_x1 + rho2 * gx
+    Fy2 = -G_12 * rho2 * sum_y1 + rho2 * gy
 
     return Fx1, Fy1, Fx2, Fy2
 
@@ -507,7 +507,7 @@ def sc_two_component_force(
 def collide_sc_two_component(
     f1: torch.Tensor,
     f2: torch.Tensor,
-    G_12: float = 0.9,
+    G_12: float = -0.9,
     tau1: float = 1.0,
     tau2: float = 1.0,
     gx: float = 0.0,
