@@ -107,13 +107,13 @@ class TestSCTwoComponentForce:
         assert torch.allclose(Fx1, torch.zeros_like(Fx1), atol=1e-6)
         assert torch.allclose(Fy1, torch.zeros_like(Fy1), atol=1e-6)
 
-    def test_positive_coupling_repels_from_increasing_other_component(self) -> None:
-        """G12 > 0 must push component 1 away from increasing component-2 density."""
+    def test_negative_coupling_repels_from_increasing_other_component(self) -> None:
+        """G12 < 0 must push component 1 away from increasing component-2 density."""
         ny, nx = 16, 20
         x = torch.arange(nx, dtype=torch.float32).view(1, nx)
         rho1 = torch.ones((ny, nx))
         rho2 = (1.0 + 0.1 * torch.sin(2.0 * torch.pi * x / nx)).expand(ny, nx)
-        Fx1, _, _, _ = sc_two_component_force(rho1, rho2, G_12=1.0)
+        Fx1, _, _, _ = sc_two_component_force(rho1, rho2, G_12=-1.0)
         assert float(Fx1[:, 0].mean()) < 0.0
 
 
@@ -264,13 +264,13 @@ class TestSCTwoComponentForce3D:
         for t in (Fx1, Fy1, Fz1, Fx2, Fy2, Fz2):
             assert torch.allclose(t, torch.zeros_like(t), atol=1e-6)
 
-    def test_positive_coupling_repels_from_increasing_other_component_3d(self) -> None:
-        """G12 > 0 must push component 1 away from increasing component-2 density."""
+    def test_negative_coupling_repels_from_increasing_other_component_3d(self) -> None:
+        """G12 < 0 must push component 1 away from increasing component-2 density."""
         nz, ny, nx = 6, 8, 20
         x = torch.arange(nx, dtype=torch.float32).view(1, 1, nx)
         rho1 = torch.ones((nz, ny, nx))
         rho2 = (1.0 + 0.1 * torch.sin(2.0 * torch.pi * x / nx)).expand(nz, ny, nx)
-        Fx1, _, _, _, _, _ = sc_two_component_force_3d(rho1, rho2, G_12=1.0)
+        Fx1, _, _, _, _, _ = sc_two_component_force_3d(rho1, rho2, G_12=-1.0)
         assert float(Fx1[:, :, 0].mean()) < 0.0
 
 
