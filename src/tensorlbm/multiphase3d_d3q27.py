@@ -175,7 +175,7 @@ def sc_two_component_force_27(
     Args:
         rho1:        Density of component 1, shape ``(nz, ny, nx)``.
         rho2:        Density of component 2, shape ``(nz, ny, nx)``.
-        G_12:        Coupling constant (> 0 → repulsive → phase separation).
+        G_12:        Coupling constant (< 0 → repulsive → phase separation).
         gx:          x body-force acceleration.
         gy:          y body-force acceleration.
         gz:          z body-force acceleration (negative = downward if z is up).
