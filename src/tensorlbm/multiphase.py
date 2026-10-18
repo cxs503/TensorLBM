@@ -480,7 +480,7 @@ def sc_two_component_force(
     Args:
         rho1:        Density of component 1, shape ``(ny, nx)``.
         rho2:        Density of component 2, shape ``(ny, nx)``.
-        G_12:        Coupling constant.  G_12 > 0 ↔ repulsive ↔ phase separation.
+        G_12:        Coupling constant.  G_12 < 0 ↔ repulsive ↔ phase separation.
         gx:          Body-force acceleration in x (lattice units).
         gy:          Body-force acceleration in y (lattice units); negative = down.
         solid_mask:  Optional boolean mask of shape ``(ny, nx)``.  Solid/wall cells
