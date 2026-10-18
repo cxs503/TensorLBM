@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import math
 import platform
 import time
 from pathlib import Path
@@ -64,13 +63,12 @@ def save_contour(phi: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
     fig, ax = plt.subplots(figsize=(10, 5.8), constrained_layout=True)
     im = ax.imshow(field, origin="upper", cmap="RdBu_r", vmin=-1, vmax=1,
                    extent=(0, field.shape[1], field.shape[0], 0), interpolation="nearest")
-    ax.contour(field, levels=[0.0], colors="black", linewidths=1.0,
-               extent=(0, field.shape[1], field.shape[0], 0))
+    yy, xx = torch.meshgrid(torch.arange(field.shape[0]), torch.arange(field.shape[1]),
+                            indexing="ij")
+    ax.contour(xx.numpy(), yy.numpy(), field, levels=[0.0], colors="black", linewidths=1.0)
     ax.axhline(water_level, color="gold", linestyle="--", linewidth=0.8,
                label="initial pool level")
     stride = max(4, min(field.shape) // 35)
-    yy, xx = torch.meshgrid(torch.arange(field.shape[0]), torch.arange(field.shape[1]),
-                            indexing="ij")
     ax.quiver(xx[::stride, ::stride].numpy(), yy[::stride, ::stride].numpy(),
               u[::stride, ::stride], v[::stride, ::stride],
               color="k", alpha=0.35, scale=1.5, width=0.0015)
