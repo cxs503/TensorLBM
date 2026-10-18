@@ -107,6 +107,7 @@ AI turbulence closures and flow-model pipelines are useful foundations for AI-as
 - **[AI4S 应用目录 / AI4S Apps](docs/AI4S_APPS.md)** – 面向工业流体问题的 AI4Science 应用列表、输入输出约定与示例入口。
 - **[Browser Platform 说明](docs/PLATFORM.md)** – 平台架构、用户旅程、部署形态与与库边界说明。
 - **[Pre-trained Models](docs/PRETRAINED_MODELS.md)** – 可直接下载的 checkpoint 列表与使用说明。
+- **[液滴入水基准教程 / Droplet-Impact Benchmark](docs/benchmarks/droplet_impact.md)** – 2D Free-Energy case, phase-field contours, diagnostic curves, CSV history, and validation plan.
 - **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
   Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
 - **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
