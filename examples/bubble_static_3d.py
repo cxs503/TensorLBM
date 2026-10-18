@@ -49,7 +49,7 @@ class BubbleStaticConfig:
     ny: int = 96
     nz: int = 96
     radii: tuple[float, ...] = (8.0, 12.0, 16.0)
-    G12: float = 0.9
+    G12: float = -0.9
     tau: float = 1.0
     rho_heavy: float = 0.7
     rho_light: float = 0.3
@@ -65,7 +65,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--ny", type=int, default=96)
     p.add_argument("--nz", type=int, default=96)
     p.add_argument("--radii", type=float, nargs="+", default=[8.0, 12.0, 16.0])
-    p.add_argument("--G12", type=float, default=0.9)
+    p.add_argument("--G12", type=float, default=-0.9)
     p.add_argument("--tau", type=float, default=1.0)
     p.add_argument("--rho-heavy", type=float, default=0.7)
     p.add_argument("--rho-light", type=float, default=0.3)
