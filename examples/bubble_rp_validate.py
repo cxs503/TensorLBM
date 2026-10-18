@@ -92,7 +92,7 @@ class BubbleRPConfig:
     nz: int = 128
     R0: float = 16.0
     domain_multiple: float = 4.0  # nx must be ≥ domain_multiple * R0
-    G12: float = 0.9
+    G12: float = -0.9
     tau: float = 1.0
     rho_heavy: float = 0.7
     rho_light: float = 0.3
@@ -146,7 +146,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=4.0,
         help="Required nx/R0 ratio (default 4: nx must be ≥ 4·R0).",
     )
-    p.add_argument("--G12", type=float, default=0.9)
+    p.add_argument("--G12", type=float, default=-0.9)
     p.add_argument("--tau", type=float, default=1.0)
     p.add_argument("--rho-heavy", type=float, default=0.7)
     p.add_argument("--rho-light", type=float, default=0.3)

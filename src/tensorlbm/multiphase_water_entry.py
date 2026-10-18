@@ -90,7 +90,7 @@ class MultiphaseWaterEntryConfig:
     clearance: int = 4
     rho_water: float = 0.8
     rho_air: float = 0.4
-    G: float = 0.9
+    G: float = -0.9
     tau: float = 1.0
     g: float = 5e-5
     n_steps: int = 3000
