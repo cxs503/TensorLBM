@@ -1073,7 +1073,7 @@ def collide_cg_mrt_3d(
 def collide_sc_mrt_3d(
     f1,
     f2,
-    G_12=0.9,
+    G_12=-0.9,
     tau=1.0,
     gx=0.0,
     gy=0.0,
