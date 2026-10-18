@@ -88,7 +88,7 @@ class TestStaticDropletConfig:
             cfg.validate()
 
     def test_invalid_g12(self) -> None:
-        cfg = StaticDropletConfig(nx=60, ny=60, radii=(10.0,), scmc_G12=-0.5)
+        cfg = StaticDropletConfig(nx=60, ny=60, radii=(10.0,), scmc_G12=0.5)
         with pytest.raises(ValueError, match="scmc_G12"):
             cfg.validate()
 
@@ -265,6 +265,11 @@ class TestStaticDroplet3DConfig:
     def test_invalid_small_domain(self) -> None:
         cfg = StaticDroplet3DConfig(nx=10, ny=20, nz=20, radii=(3.0,))
         with pytest.raises(ValueError, match="nx, ny and nz"):
+            cfg.validate()
+
+    def test_invalid_positive_scmc_coupling(self) -> None:
+        cfg = StaticDroplet3DConfig(nx=20, ny=20, nz=20, radii=(4.0,), scmc_G12=0.5)
+        with pytest.raises(ValueError, match="scmc_G12 must be < 0"):
             cfg.validate()
 
     def test_smoke_run(self) -> None:

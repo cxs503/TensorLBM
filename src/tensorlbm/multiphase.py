@@ -471,7 +471,7 @@ def sc_two_component_force(
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute Shan-Chen interaction + gravity forces for two immiscible components.
 
-    The repulsive interaction (G_12 > 0) drives the two fluids apart and
+    The repulsive interaction (G_12 < 0) drives the two fluids apart and
     maintains a diffuse interface between them.
 
     The buoyancy force arises naturally: the heavier component sinks faster
@@ -480,7 +480,7 @@ def sc_two_component_force(
     Args:
         rho1:        Density of component 1, shape ``(ny, nx)``.
         rho2:        Density of component 2, shape ``(ny, nx)``.
-        G_12:        Coupling constant.  G_12 > 0 ↔ repulsive ↔ phase separation.
+        G_12:        Coupling constant.  G_12 < 0 ↔ repulsive ↔ phase separation.
         gx:          Body-force acceleration in x (lattice units).
         gy:          Body-force acceleration in y (lattice units); negative = down.
         solid_mask:  Optional boolean mask of shape ``(ny, nx)``.  Solid/wall cells
@@ -491,7 +491,8 @@ def sc_two_component_force(
         ``(Fx1, Fy1, Fx2, Fy2)`` – force fields for each component,
         each of shape ``(ny, nx)``.
     """
-    # Interaction: F_σ = −G · ρ_σ · Σᵢ wᵢ ρ_σ'(x+cᵢ) cᵢ
+    # Reverse gather samples x-c_i, so Σw_i c_i ρ(x-c_i) ≈ -cs²∇ρ.
+    # With F=-G ρ Σw_i c_i ρ'(x-c_i), G < 0 gives repulsion.
     sum_x2, sum_y2 = _sc_neighbor_weighted_sum(rho2, solid_mask)
     Fx1 = -G_12 * rho1 * sum_x2 + rho1 * gx
     Fy1 = -G_12 * rho1 * sum_y2 + rho1 * gy
@@ -506,7 +507,7 @@ def sc_two_component_force(
 def collide_sc_two_component(
     f1: torch.Tensor,
     f2: torch.Tensor,
-    G_12: float = 0.9,
+    G_12: float = -0.9,
     tau1: float = 1.0,
     tau2: float = 1.0,
     gx: float = 0.0,
@@ -547,7 +548,7 @@ def collide_sc_two_component(
     Args:
         f1:          Distribution of component 1, shape ``(9, ny, nx)``.
         f2:          Distribution of component 2, shape ``(9, ny, nx)``.
-        G_12:        SC coupling constant (> 0 for phase separation).
+        G_12:        SC coupling constant (< 0 for phase separation).
         tau1:        Relaxation time for component 1.
         tau2:        Relaxation time for component 2.
         gx:          x body-force acceleration.

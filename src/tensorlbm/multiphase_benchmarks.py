@@ -221,7 +221,7 @@ class StaticDropletConfig:
     radii:         Tuple of bubble radii (lattice units) to test.
     n_steps:       Time steps per radius to reach steady state.
     output_interval: Diagnostic sampling interval.
-    scmc_G12:      SC coupling constant (> 0 for phase separation).
+    scmc_G12:      SC coupling constant (< 0 for phase separation).
     scmc_tau:      Relaxation time for both SCMC components.
     scmc_rho_heavy: Density of the heavy (droplet) component.
     scmc_rho_light: Density of the light (surrounding) component.
@@ -243,7 +243,7 @@ class StaticDropletConfig:
     n_steps: int = 4000
     output_interval: int = 1000
     # SCMC parameters
-    scmc_G12: float = 0.9
+    scmc_G12: float = -0.9
     scmc_tau: float = 1.0
     scmc_rho_heavy: float = 0.7
     scmc_rho_light: float = 0.3
@@ -282,8 +282,8 @@ class StaticDropletConfig:
         if self.cg_rho_heavy <= self.cg_rho_light:
             msg = "cg_rho_heavy must exceed cg_rho_light"
             raise ValueError(msg)
-        if self.scmc_G12 <= 0:
-            msg = "scmc_G12 must be > 0 for SC phase separation"
+        if self.scmc_G12 >= 0:
+            msg = "scmc_G12 must be < 0 for SC phase separation"
             raise ValueError(msg)
 
     def resolved_run_name(self) -> str:
@@ -926,7 +926,7 @@ class StaticDroplet3DConfig:
     n_steps: int = 1200
     output_interval: int = 400
     # SCMC
-    scmc_G12: float = 0.9
+    scmc_G12: float = -0.9
     scmc_tau: float = 1.0
     scmc_rho_heavy: float = 0.7
     scmc_rho_light: float = 0.3
@@ -965,8 +965,8 @@ class StaticDroplet3DConfig:
         if self.cg_rho_heavy <= self.cg_rho_light:
             msg = "cg_rho_heavy must exceed cg_rho_light"
             raise ValueError(msg)
-        if self.scmc_G12 <= 0:
-            msg = "scmc_G12 must be > 0 for SC phase separation"
+        if self.scmc_G12 >= 0:
+            msg = "scmc_G12 must be < 0 for SC phase separation"
             raise ValueError(msg)
 
     def resolved_run_name(self) -> str:
@@ -1279,7 +1279,7 @@ class TwoPhaseChannelCompareConfig:
     n_steps: int = 8000
     output_interval: int = 2000
     # SCMC parameters
-    scmc_G12: float = 0.9
+    scmc_G12: float = -0.9
     scmc_tau_heavy: float = 1.0
     scmc_tau_light: float = 0.7
     scmc_rho_heavy: float = 0.7

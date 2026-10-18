@@ -136,10 +136,13 @@ def sc_two_component_force_3d(
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Shan-Chen interaction + body forces for two 3D components.
 
+    The neighbour sum gathers rho(x-c_i), hence its first moment approximates
+    -cs² grad(rho). With F=-G_12 rho Σw_i c_i rho'(x-c_i), G_12 < 0 is repulsive.
+
     Args:
         rho1:        Density of component 1, shape ``(nz, ny, nx)``.
         rho2:        Density of component 2, shape ``(nz, ny, nx)``.
-        G_12:        Coupling constant (> 0 → repulsive → phase separation).
+        G_12:        Coupling constant (< 0 → repulsive → phase separation).
         gx:          x body-force acceleration.
         gy:          y body-force acceleration.
         gz:          z body-force acceleration (negative = downward if z is up).
@@ -164,7 +167,7 @@ def sc_two_component_force_3d(
 def collide_sc_two_component_3d(
     f1: torch.Tensor,
     f2: torch.Tensor,
-    G_12: float = 0.9,
+    G_12: float = -0.9,
     tau1: float = 1.0,
     tau2: float = 1.0,
     gx: float = 0.0,
@@ -208,7 +211,7 @@ def collide_sc_two_component_3d(
     Args:
         f1:          Component-1 distribution, shape ``(19, nz, ny, nx)``.
         f2:          Component-2 distribution, shape ``(19, nz, ny, nx)``.
-        G_12:        SC coupling constant (> 0 for phase separation).
+        G_12:        SC coupling constant (< 0 for phase separation).
         tau1:        Relaxation time for component 1.
         tau2:        Relaxation time for component 2.
         gx:          x body-force acceleration.
@@ -1070,7 +1073,7 @@ def collide_cg_mrt_3d(
 def collide_sc_mrt_3d(
     f1,
     f2,
-    G_12=0.9,
+    G_12=-0.9,
     tau=1.0,
     gx=0.0,
     gy=0.0,
