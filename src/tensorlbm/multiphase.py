@@ -548,7 +548,7 @@ def collide_sc_two_component(
     Args:
         f1:          Distribution of component 1, shape ``(9, ny, nx)``.
         f2:          Distribution of component 2, shape ``(9, ny, nx)``.
-        G_12:        SC coupling constant (> 0 for phase separation).
+        G_12:        SC coupling constant (< 0 for phase separation).
         tau1:        Relaxation time for component 1.
         tau2:        Relaxation time for component 2.
         gx:          x body-force acceleration.
