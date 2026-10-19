@@ -1,7 +1,7 @@
 {
  "case": "cavity_natural_convection",
- "verdict": "terminal",
- "checked_at": "2026-10-20T03:51:21Z",
+ "verdict": "promote",
+ "checked_at": "2026-10-20T04:01:13Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -10,7 +10,7 @@
    "evidence": [
     {
      "v": "from tensorlbm.thermal import",
-     "f": "benchmarks/pending/cavity_natural_convection/driver.py",
+     "f": "benchmarks/verified/cavity_natural_convection/driver.py",
      "k": "grep:from tensorlbm.thermal import",
      "found": "from tensorlbm.thermal import",
      "ok": true,
@@ -18,7 +18,7 @@
     },
     {
      "v": "simulate_natural_convection",
-     "f": "benchmarks/pending/cavity_natural_convection/run.py",
+     "f": "benchmarks/verified/cavity_natural_convection/run.py",
      "k": "grep:from tensorlbm.thermal import simulate_natural_convection",
      "found": "simulate_natural_convection",
      "ok": true,
@@ -34,7 +34,7 @@
    "evidence": [
     {
      "v": -2.9048999611203556,
-     "f": "benchmarks/pending/cavity_natural_convection/result_rerun.json",
+     "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
      "k": "grids[1].nu_err_pct",
      "found": -2.9048999611203556,
      "ok": true,
@@ -42,7 +42,7 @@
     },
     {
      "v": -1.3581713873310013,
-     "f": "benchmarks/pending/cavity_natural_convection/result_rerun.json",
+     "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
      "k": "grids[2].nu_err_pct",
      "found": -1.3581713873310013,
      "ok": true,
@@ -50,7 +50,7 @@
     },
     {
      "v": -0.9738627404189896,
-     "f": "benchmarks/pending/cavity_natural_convection/result_rerun.json",
+     "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
      "k": "grids[1].u_max_err_pct",
      "found": -0.9738627404189896,
      "ok": true,
@@ -58,7 +58,7 @@
     },
     {
      "v": -0.5928760676418104,
-     "f": "benchmarks/pending/cavity_natural_convection/result_rerun.json",
+     "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
      "k": "grids[2].u_max_err_pct",
      "found": -0.5928760676418104,
      "ok": true,
@@ -66,7 +66,7 @@
     },
     {
      "v": -1.6689046390444617,
-     "f": "benchmarks/pending/cavity_natural_convection/result_rerun.json",
+     "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
      "k": "grids[1].v_max_err_pct",
      "found": -1.6689046390444617,
      "ok": true,
@@ -74,7 +74,7 @@
     },
     {
      "v": -0.680175884284258,
-     "f": "benchmarks/pending/cavity_natural_convection/result_rerun.json",
+     "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
      "k": "grids[2].v_max_err_pct",
      "found": -0.680175884284258,
      "ok": true,
@@ -90,7 +90,7 @@
    "evidence": [
     {
      "v": 5.93883218480389,
-     "f": "benchmarks/pending/cavity_natural_convection/result_rerun.json",
+     "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
      "k": "grids[0].nu_err_pct_abs",
      "found": 5.93883218480389,
      "ok": true,
@@ -98,7 +98,7 @@
     },
     {
      "v": 2.9048999611203556,
-     "f": "benchmarks/pending/cavity_natural_convection/result_rerun.json",
+     "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
      "k": "grids[1].nu_err_pct_abs",
      "found": 2.9048999611203556,
      "ok": true,
@@ -106,7 +106,7 @@
     },
     {
      "v": 1.3581713873310013,
-     "f": "benchmarks/pending/cavity_natural_convection/result_rerun.json",
+     "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
      "k": "grids[2].nu_err_pct_abs",
      "found": 1.3581713873310013,
      "ok": true,
@@ -122,7 +122,7 @@
    "evidence": [
     {
      "v": "de Vahl Davis 1983 Int. J. Numer. Methods Fluids 3:249-264",
-     "f": "benchmarks/pending/cavity_natural_convection/prereg.json",
+     "f": "benchmarks/verified/cavity_natural_convection/prereg.json",
      "k": "reference.source",
      "found": "de Vahl Davis 1983 Int. J. Numer. Methods Fluids 3:249-264",
      "ok": true,
@@ -130,7 +130,7 @@
     },
     {
      "v": 2.243,
-     "f": "benchmarks/pending/cavity_natural_convection/prereg.json",
+     "f": "benchmarks/verified/cavity_natural_convection/prereg.json",
      "k": "reference.Nu_ref",
      "found": 2.243,
      "ok": true,
@@ -138,27 +138,11 @@
     },
     {
      "v": "2026-10-20T03:30:00Z",
-     "f": "benchmarks/pending/cavity_natural_convection/prereg.json",
+     "f": "benchmarks/verified/cavity_natural_convection/prereg.json",
      "k": "reference.locked_at",
      "found": "2026-10-20T03:30:00Z",
      "ok": true,
      "note": "'2026-10-20T03:30:00Z' vs '2026-10-20T03:30:00Z'"
-    }
-   ],
-   "problems": []
-  },
-  {
-   "gate": "not_superseded",
-   "declared_pass": false,
-   "recomputed_pass": true,
-   "evidence": [
-    {
-     "v": "thermal_cavity",
-     "f": "benchmarks/pending/cavity_natural_convection/README.md",
-     "k": "grep:verified/thermal_cavity",
-     "found": "thermal_cavity",
-     "ok": true,
-     "note": "grep ok"
     }
    ],
    "problems": []
@@ -167,5 +151,5 @@
  "all_pass": true,
  "problems": [],
  "rc": 0,
- "gates_path": "benchmarks/pending/cavity_natural_convection/gates.json"
+ "gates_path": "benchmarks/verified/cavity_natural_convection/gates.json"
 }
