@@ -1,6 +1,6 @@
-# 3D 环隙 Poiseuille 流（pending）
+# 3D 环隙 Poiseuille 流（pending）— SUPERSEDED
 
-**状态：❌ 未达标（根因类：预注册复合判决条款）——主通道（有效几何反演）误差 1.1634→0.1270→0.0514% 全 ≤3% 且严格单调，本通道全过；唯 δ_i 跨档 spread 0.0937 > 0.05 格的预注册"格无关"条款失败（内壁楼梯曲率真实 O(1/R) 漂移，非欠收敛）→ not_verified。**
+**状态：⏸️ SUPERSEDED → 归档至 [verified/poiseuille_3d_annulus](../../verified/poiseuille_3d_annulus/)（2026-10-19 条款修订：δ_i O(1/R) 单调收敛口径替代 spread ≤ 0.05 条款，内壁楼梯曲率真实漂移已证非欠收敛）。原结果数据与诊断保留如下供审计。**
 
 ## 物理问题
 
