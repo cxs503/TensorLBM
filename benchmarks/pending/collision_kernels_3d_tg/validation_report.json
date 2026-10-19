@@ -1,0 +1,123 @@
+{
+  "case": "collision_kernels_3d_tg",
+  "verdict": "terminal",
+  "date": "2026-10-20",
+  "mission": "m69",
+  "branch": "agent/m69",
+  
+  "summary": {
+    "total_kernels": 6,
+    "pass": 1,
+    "fail": 5,
+    "overall": "TERMINAL"
+  },
+  
+  "kernels": {
+    "kbc_d3q19_patched": {
+      "status": "PASS",
+      "lattice": "D3Q19",
+      "fix": "PR #312 (2026-09-22)",
+      "gates": {
+        "G1_library_entry": true,
+        "G2_direct_observable": true,
+        "G3_monotone_convergence": true,
+        "G4_reference_locked": true
+      },
+      "max_err_pct": 0.6748,
+      "monotone_sequence": [-0.6748, -0.3576, -0.1608],
+      "evidence": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json"
+    },
+    
+    "cumulant_d3q27": {
+      "status": "FAIL",
+      "lattice": "D3Q27",
+      "failure_gate": "G3_monotone_convergence",
+      "max_err_pct": 0.4122,
+      "err_sequence_pct": [0.1825, 0.3738, 0.4122],
+      "monotone": false,
+      "evidence": "benchmarks/pending/collision_kernels_3d_tg/result.json"
+    },
+    
+    "cascaded_d3q27": {
+      "status": "FAIL",
+      "lattice": "D3Q27",
+      "failure_gate": "G3_monotone_convergence",
+      "max_err_pct": 0.4122,
+      "err_sequence_pct": [0.1826, 0.3738, 0.4122],
+      "monotone": false,
+      "evidence": "benchmarks/pending/collision_kernels_3d_tg/result.json"
+    },
+    
+    "mrt27": {
+      "status": "FAIL",
+      "lattice": "D3Q27",
+      "failure_gate": "G3_monotone_convergence",
+      "max_err_pct": 0.4232,
+      "err_sequence_pct": [0.2146, 0.4065, 0.4232],
+      "monotone": false,
+      "evidence": "benchmarks/pending/collision_kernels_3d_tg/result.json"
+    },
+    
+    "trt27": {
+      "status": "FAIL",
+      "lattice": "D3Q27",
+      "failure_gate": "G3_monotone_convergence",
+      "max_err_pct": 0.4713,
+      "err_sequence_pct": [0.3777, 0.4328, 0.4713],
+      "monotone": false,
+      "evidence": "benchmarks/pending/collision_kernels_3d_tg/result.json"
+    },
+    
+    "rlbm27": {
+      "status": "FAIL",
+      "lattice": "D3Q27",
+      "failure_gate": "G3_monotone_convergence",
+      "max_err_pct": 0.4030,
+      "err_sequence_pct": [0.3118, 0.3688, 0.4030],
+      "monotone": false,
+      "evidence": "benchmarks/pending/collision_kernels_3d_tg/result.json"
+    }
+  },
+  
+  "root_cause": {
+    "five_kernels_d3q27": "D3Q27 + 固定 Re τ 阶梯下单调条款结构性不可满足（bgk27 对照同败，非核特异）",
+    "mechanism": "格子离散项 ∝ k²·f(τ)，f(τ) 随 τ 增长快于 k² 随 N 缩小",
+    "kbc_old": "旧核 KBC 粘度不由 τ 设定（ν_eff ≈ 1/6 恒定），实质缺陷",
+    "kbc_patched": "PR #312 修复后剪切粘度由 τ 精确控制，四门全过"
+  },
+  
+  "gates_check": {
+    "script": "gates_check.py",
+    "rc": 0,
+    "all_pass": true,
+    "verified_file": "benchmarks/pending/collision_kernels_3d_tg/gates_verified.json",
+    "checked_at": "2026-10-20T01:18:34Z"
+  },
+  
+  "evidence_files": [
+    "benchmarks/pending/collision_kernels_3d_tg/gates.json",
+    "benchmarks/pending/collision_kernels_3d_tg/gates_verified.json",
+    "benchmarks/pending/collision_kernels_3d_tg/result.json",
+    "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json"
+  ],
+  
+  "upgrade_paths": [
+    {
+      "target": "KBC 修复核",
+      "action": "可单独归档为 verified/collision_kbc_d3q19_tg/",
+      "status": "证据充分，四门全过",
+      "decision": "owner 决策"
+    },
+    {
+      "target": "五核 D3Q27",
+      "action": "两条路径：(1) 接受条款修订 (2) 改锁固定 τ 变 Re 协议重跑",
+      "status": "需 owner 决策",
+      "decision": "owner 决策"
+    }
+  ],
+  
+  "budget": {
+    "gpu_hours": 0,
+    "note": "终裁完成，无后续计算"
+  }
+}
