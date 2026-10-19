@@ -1,0 +1,28 @@
+{
+  "case": "permeability3d",
+  "verdict": "promote",
+  "reason": "",
+  "gates": [
+    {"gate": "library_entry", "pass": true,
+     "evidence": [
+       {"v": "tensorlbm.solver3d.collide_bgk3d", "f": "benchmarks/verified/permeability3d/run.py", "k": "from tensorlbm.solver3d import collide_bgk3d, stream3d"},
+       {"v": "tensorlbm.boundaries3d.bounce_back_cells_3d", "f": "benchmarks/verified/permeability3d/run.py", "k": "from tensorlbm.boundaries3d import bounce_back_cells_3d"}
+     ]},
+    {"gate": "direct_observable", "pass": true,
+     "evidence": [
+       {"v": 0.046253, "f": "benchmarks/verified/permeability3d/result.json", "k": "amendment1_ladders.phi0.343.tiers[0].err"},
+       {"v": 0.03098, "f": "benchmarks/verified/permeability3d/result.json", "k": "amendment1_ladders.phi0.343.tiers[1].err"},
+       {"v": 0.020492, "f": "benchmarks/verified/permeability3d/result.json", "k": "amendment1_ladders.phi0.343.tiers[2].err"},
+       {"v": 0.014469, "f": "benchmarks/verified/permeability3d/result.json", "k": "amendment1_ladders.phi0.343.tiers[3].err"}
+     ]},
+    {"gate": "monotone_convergence", "pass": true, "mode": "abs_decrease",
+     "evidence": [
+       {"v": 0.046253, "f": "benchmarks/verified/permeability3d/result.json", "k": "amendment1_ladders.phi0.343.tiers[0].err"},
+       {"v": 0.014469, "f": "benchmarks/verified/permeability3d/result.json", "k": "amendment1_ladders.phi0.343.tiers[3].err"}
+     ]},
+    {"gate": "prereg_lock", "pass": true,
+     "evidence": [
+       {"v": "Zick & Homsy 1982 SC table locked in NOTES.md §1 before any run", "f": "benchmarks/verified/permeability3d/NOTES.md", "k": "section 1: Reference lock (anti-shopping; locked BEFORE any run)"}
+     ]}
+  ]
+}
