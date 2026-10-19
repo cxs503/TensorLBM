@@ -1,0 +1,48 @@
+{
+  "case": "sphere_re100_mem",
+  "status": "VERIFIED",
+  "verification_date": "2026-10-19",
+  "four_gates": {
+    "common_module_entry": {
+      "requirement": "src/tensorlbm 库路径驱动",
+      "actual": "D3Q19 + collide_mrt3d_low_memory + bouzidi_bounce_back_d3q19 (BFL interpolated boundary)",
+      "pass": true
+    },
+    "observable_within_3pct": {
+      "requirement": "|err| <= 3%",
+      "T1_err_pct": 2.7707656824703957,
+      "T2_err_pct": 2.5400861325477218,
+      "pass": true
+    },
+    "monotone_convergence": {
+      "requirement": "|err| strictly decreasing with D",
+      "T1_err": 2.7707656824703957,
+      "T2_err": 2.5400861325477218,
+      "monotone": true,
+      "pass": true
+    },
+    "preregistered_reference": {
+      "requirement": "Reference locked before running",
+      "cd_ref": 1.0917310910948732,
+      "source": "Schiller-Naumann 24/Re*(1+0.15*Re^0.687)",
+      "locked_before_run": true,
+      "pass": true
+    }
+  },
+  "result_files": {
+    "w8a_result": "verified/sphere_re100/w8a/result.json",
+    "t1_data": "verified/sphere_re100/w8a/t1_d40big_12k.json",
+    "t2_data": "verified/sphere_re100/w8a/t2_d60big_24k.json",
+    "verify_script": "verified/sphere_re100/w8a/verify.py"
+  },
+  "judgment": {
+    "pass": true,
+    "all_within_gate_and_steady": true,
+    "monotone_error_decrease": true
+  },
+  "evidence_sources": [
+    "verified/sphere_re100/w8a/result.json",
+    "verified/sphere_re100/w8a/bit_check.json",
+    "verified/sphere_re100/w8a/mem_sparse_D60big.json"
+  ]
+}
