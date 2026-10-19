@@ -1,0 +1,42 @@
+{
+  "case": "cavity_3d_full",
+  "closure_type": "superseded_cleanup",
+  "action": "归档清理 — 标记 superseded 并指向 verified/cavity_3d_full",
+  "date": "2026-10-19",
+  "verified_reference": {
+    "path": "benchmarks/verified/cavity_3d_full/result.json",
+    "verified_date": "2026-08-20",
+    "grids": {
+      "64": {
+        "u_min": -0.27142,
+        "err_pct_vs_ku": 1.338,
+        "3d_correction_pct": 29.11,
+        "steps": 100000
+      },
+      "96": {
+        "u_min": -0.27581,
+        "err_pct_vs_ku": 0.259,
+        "3d_correction_pct": 27.97,
+        "steps": 100000
+      }
+    },
+    "convergence": {
+      "err": [1.338, 0.259],
+      "monotone_decrease": true
+    }
+  },
+  "four_gates": {
+    "common_module": "PASS — src/tensorlbm 库驱动（solver3d + boundaries3d）",
+    "observable_within_3pct": "PASS — 96³ 档 0.259% ≤ 3%（64³ 档 1.338% ≤ 3%）",
+    "monotone_convergence": "PASS — 1.338% → 0.259% 严格单调下降",
+    "reference_locked_first": "PASS — Ku 参考先锁定后跑，verified_date=2026-08-20"
+  },
+  "cleanup_actions": [
+    "删除 run.py（碰撞格式诊断脚本）",
+    "删除 result.json（发散诊断结果，已并入 verified 侧）",
+    "简化 README.md 为 superseded 标记，指向 verified/cavity_3d_full",
+    "更新 pending/README.md 索引行（🟡 → ⏸️ superseded，晋级动作→归档完成）"
+  ],
+  "pending_directory_files_remaining": ["README.md"],
+  "verified_directory_untouched": true
+}
