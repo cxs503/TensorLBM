@@ -35,7 +35,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [taylor_aris_dispersion](taylor_aris_dispersion/) | ❌ | 容差 6/6 全过（0.05–0.26%）但单调 0/3（err=负 O(1/H²)+正地板 H≈50 变号） | 判据口径重锁或更大 H 阶梯（决策项） | 已判死 |
 | [collision_kernels_3d_tg](collision_kernels_3d_tg/) | ❌ | 容差/衰减全过（≤0.4713%）但单调 0/5（bgk27 对照同败=τ 阶梯结构性；KBC 黏度修复后 patched 阶梯 -0.67→-0.36→-0.16% 收敛） | 按修复后核重判（侧证据已有） | 侧证据已有 |
 | [hadamard_rybczynski_droplet](hadamard_rybczynski_droplet/) | ❌ | λ=ρ 锁死致 λ 阶梯不可运行；E1–E6 动态排除+15 案包络 0 存活 | 相面重建（M1，已落库）后重开 | 已判死 |
-| [cavity_3d_full](cavity_3d_full/) | 🟡 | 无——达标数据在 verified/cavity_3d_full（1.338→0.259% 单调）；本目录为 superseded 诊断稿 | 归档 PR 清理（删除或标记 superseded） | 0 |
+| [cavity_3d_full](cavity_3d_full/) | ⏸️ superseded | 已归档至 verified/cavity_3d_full（1.338→0.259% 单调收敛）；本目录为 superseded 诊断稿 | 归档完成（标记 superseded） | 0 |
 | [cavity_natural_convection](cavity_natural_convection/) | ❌ | 修复前旧档（库 thermal 壁 BC 双缺陷；库已修复且 2D 六案已 verified） | 按新库重跑预注册（对齐 thermal_cavity） | 小 |
 | [channel_turb](channel_turb/) | ❌ | 2D 槽道无转捩路径（Re_max 4200 < 5772）；RMS 4.59/5.61% 且细化更差 | 3D 槽道（新案例） | 高 |
 | [dit_turbulence](dit_turbulence/) | ❌ | 固定 C_s 跨网格不收敛（N256 +17.05%，C_s 微调不敏感） | dynamic Smagorinsky / 系综 / 更长运行 | 中 |
