@@ -18,7 +18,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 `verified/X/` 并同步更新本索引。达标不等于自动晋级——涉及参考裁决、
 口径修订、目录批次安排的决策项在各案例 README 的「晋级路径」中列明。
 
-## 案例总表（30）
+## 案例总表（27）
 
 | 案例 | 状态 | 卡点（一句话） | 晋级动作 | 预算 |
 |---|---|---|---|---|
@@ -36,7 +36,6 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [collision_kernels_3d_tg](collision_kernels_3d_tg/) | ❌ | 容差/衰减全过（≤0.4713%）但单调 0/5（bgk27 对照同败=τ 阶梯结构性；KBC 黏度修复后 patched 阶梯 -0.67→-0.36→-0.16% 收敛） | 按修复后核重判（侧证据已有） | 侧证据已有 |
 | [hadamard_rybczynski_droplet](hadamard_rybczynski_droplet/) | ❌ | λ=ρ 锁死致 λ 阶梯不可运行；E1–E6 动态排除+15 案包络 0 存活 | 相面重建（M1，已落库）后重开 | 已判死 |
 | [cavity_3d_full](cavity_3d_full/) | 🟡 | 无——达标数据在 verified/cavity_3d_full（1.338→0.259% 单调）；本目录为 superseded 诊断稿 | 归档 PR 清理（删除或标记 superseded） | 0 |
-| [cavity_natural_convection](cavity_natural_convection/) | ⏸️ | 终裁：物理问题已由 verified/thermal_cavity 承接（重跑确认逐位一致） | 归档 PR 标记 superseded | 0 |
 | [channel_turb](channel_turb/) | ❌ | 2D 槽道无转捩路径（Re_max 4200 < 5772）；RMS 4.59/5.61% 且细化更差 | 3D 槽道（新案例） | 高 |
 | [dit_turbulence](dit_turbulence/) | ❌ | 固定 C_s 跨网格不收敛（N256 +17.05%，C_s 微调不敏感） | dynamic Smagorinsky / 系综 / 更长运行 | 中 |
 | [rayleigh_benard](rayleigh_benard/) | ❌ | E=1.224→1.006→3.101% 非单调 + ny256 近临界臂拟合质量（二次延长散布 3.10/3.98% 仍超）；根因=格子算子 Ra_c 上移 | γ_ref 重锁格子算子特征值（新 prereg） | ~8 GPU·h/轮 |
