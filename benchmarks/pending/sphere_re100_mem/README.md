@@ -1,6 +1,8 @@
-# 球 Re=100 直接力法基准（sphere_re100_mem）（pending）
+# 球 Re=100 直接力法基准（sphere_re100_mem） ⏸️ SUPERSEDED
 
-**状态：🟡 达标待晋级——W8-A 大域阶梯（BFL 稀疏核解锁）T1 D40 +2.771% / T2 D60 +2.540% 双过 3% 门且 |err| 随 D 单调降（judgment.pass=true），晋级 verified/ 由库主裁定**
+**状态：⏸️ 已归档晋级 → `verified/sphere_re100_mem/`（agent/m61）**
+数据侧已闭环：W8-A 大域孪生 T1 D40 +2.7708% / T2 D60 +2.5401% 双过 3% 门且
+严格单调（judgment.pass=true）。完整文档见 `verified/sphere_re100_mem/README.md`。
 
 三代判档链（同一物理问题、逐代收窄）：W5-B 力法修复后 +11% 地板（FAIL）→ W7-B 域形修复定源入口钳制（FAIL 维持，压掉 ~7.2pp）→ W8-A 稀疏核解锁大域（**PASS 候选**）。三代机器档案全在本目录（`result.json` / `w7/` / `w8a/`）。
 
