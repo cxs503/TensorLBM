@@ -45,7 +45,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [dam_break_sc](dam_break_sc/) | ❌ | 仅 T=1 过门（a80 +2.49%）；T=2.96 档 -19%，err(T) 对 G 反向响应（构成本构/密度比缺口） | 未试杠杆：压力张量 SC 力 / guest-host 耦合 / 高密度比 EOS | 中 |
 | [capillary_invasion_washburn](capillary_invasion_washburn/) | ❌ | Washburn 指数 26.82→33.17% 反收敛；湿润相质量漂移 -60.7/-67.0%；W128 确定性 NaN | 修库（质量守恒/σ 可测/抗负分布）后新 prereg | 中（库为主） |
 | [forchheimer](forchheimer/) | ❌ | err_A 1.86–3.06% 平坦无 d 收敛、单调条款无判别力（参考受限；求解器侧已排除） | 锁弱惯性精确参考后重判或关闭 | 少量重跑 |
-| [permeability3d](permeability3d/) | 🟡 | φ=0.343 双规则 PASS（+4.63→+1.45% 单调降）；总判 FAIL 由稀释档拖累（fp32 注入地板+惯性修正已定源） | 晋级 φ=0.343 档（或 fp64/fs≥100 补跑稀释档） | 0 或 2φ×四档 |
+| [permeability3d](permeability3d/) | ⏸️ superseded | φ=0.343 档已晋级 verified/permeability3d（4.63%→1.45% 严格单调双规则 PASS）；稀释档 fp32 注入地板+惯性修正已定源 | 归档完成（φ=0.343 档） | 0 |
 | [permeability_fibrous](permeability_fibrous/) | ❌ | 三失效模式全定源（hex 参考侧 +2.4/+3.9%；sq 量化地板振荡；S1 真惯性）；单调三处破缺为实质败因 | 菜单：cut-cell 自产表 / 门放宽 1% / 购精确表 / 维持 FAIL；sq 0.30–0.60 现成候选 | cut-cell 全阵为大项 |
 | [poiseuille_3d_annulus](poiseuille_3d_annulus/) | ❌ | 主通道 1.16→0.05% 单调全过；唯 δ_i spread 0.094 > 0.05 预注册界（内壁楼梯曲率 O(1/R) 真实漂移，已证非欠收敛） | 条款修订（零计算）或补 R_o=160 档复核 | 0 或一档 |
 | [poiseuille_3d_ellipse](poiseuille_3d_ellipse/) | ❌ | a=20 档 s^Q 逐 bin 5.11% > 3%（a=40 档 2.43% 过线）；楼梯椭圆各向异性无单一尺度口径 | 加 a=40/80 高档（两档全 ≤3% 即达标） | 两档仿真 |
