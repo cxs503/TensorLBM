@@ -20,6 +20,8 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 
 ## 案例总表（30）
 
+**状态图例更新**：⏸️ 终裁完成（终裁文档已归档，无后续动作）
+
 | 案例 | 状态 | 卡点（一句话） | 晋级动作 | 预算 |
 |---|---|---|---|---|
 | [backward_step](backward_step/) | ❌ | τ 阶梯最好 -4.33% > 3%（BB 滑移伪差已定源；参考簇散布 ~6% 受限） | 参考裁决 + L4 细档（外推 -1.1%）或改判 Re=150/200 点 | CPU 日内 |
@@ -33,7 +35,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [couette_3d](couette_3d/) | ❌ | 唯一败因 G3 稳态判据：H128 fp32 未达 drift 门（判据坐 fp32 噪声带；fp64 四档 l2 ≤1.7337e-9 且跨机逐位） | 稳态口径裁定（fp64 踪迹或噪声带重锁） | ≤0.15 GPU·h |
 | [stokes_second_problem](stokes_second_problem/) | ⚠️ | 骨架（仅 run.py 设计稿，无机器结果，PROVENANCE 空块如实） | Phase-0 停批 → 冻结 prereg → H∈{40,80} | ≤0.1 GPU·h |
 | [taylor_aris_dispersion](taylor_aris_dispersion/) | ❌ | 容差 6/6 全过（0.05–0.26%）但单调 0/3（err=负 O(1/H²)+正地板 H≈50 变号） | 判据口径重锁或更大 H 阶梯（决策项） | 已判死 |
-| [collision_kernels_3d_tg](collision_kernels_3d_tg/) | ❌ | 容差/衰减全过（≤0.4713%）但单调 0/5（bgk27 对照同败=τ 阶梯结构性；KBC 黏度修复后 patched 阶梯 -0.67→-0.36→-0.16% 收敛） | 按修复后核重判（侧证据已有） | 侧证据已有 |
+| [collision_kernels_3d_tg](collision_kernels_3d_tg/) | ⏸️ | 终裁 TERMINAL：KBC 修复核四门全过 PASS（-0.67→-0.36→-0.16% 单调）；五核 D3Q27 单调性门结构性失败（bgk27 对照同败）；案例整体要求所有核通过，五核未过导致 TERMINAL | 终裁完成，无后续动作 | 0 |
 | [hadamard_rybczynski_droplet](hadamard_rybczynski_droplet/) | ❌ | λ=ρ 锁死致 λ 阶梯不可运行；E1–E6 动态排除+15 案包络 0 存活 | 相面重建（M1，已落库）后重开 | 已判死 |
 | [cavity_3d_full](cavity_3d_full/) | 🟡 | 无——达标数据在 verified/cavity_3d_full（1.338→0.259% 单调）；本目录为 superseded 诊断稿 | 归档 PR 清理（删除或标记 superseded） | 0 |
 | [cavity_natural_convection](cavity_natural_convection/) | ❌ | 修复前旧档（库 thermal 壁 BC 双缺陷；库已修复且 2D 六案已 verified） | 按新库重跑预注册（对齐 thermal_cavity） | 小 |
