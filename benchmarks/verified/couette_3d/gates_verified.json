@@ -1,7 +1,7 @@
 {
  "case": "couette_3d",
  "verdict": "promote",
- "checked_at": "2026-10-20T12:00:16Z",
+ "checked_at": "2026-10-20T12:17:38Z",
  "gates": [
   {
    "gate": "library_entry",
