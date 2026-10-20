@@ -1,0 +1,82 @@
+{
+  "case": "sphere_re100_mem",
+  "verdict": "promote",
+  "reason": "",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19",
+          "f": "benchmarks/verified/sphere_re100/w8a/run.py",
+          "k": "grep:from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19"
+        },
+        {
+          "v": "from tensorlbm.solver3d import (",
+          "f": "benchmarks/verified/sphere_re100/w8a/run.py",
+          "k": "grep:from tensorlbm.solver3d import ("
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": true,
+      "evidence": [
+        {
+          "v": 2.7707656824703957,
+          "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+          "k": "runs[0].err_pct"
+        },
+        {
+          "v": 2.5400861325477218,
+          "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+          "k": "runs[1].err_pct"
+        }
+      ]
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": true,
+      "mode": "abs_decrease",
+      "evidence": [
+        {
+          "v": 2.7707656824703957,
+          "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+          "k": "runs[0].err_pct"
+        },
+        {
+          "v": 2.5400861325477218,
+          "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+          "k": "runs[1].err_pct"
+        }
+      ]
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "Cd = 24/Re * (1 + 0.15*Re^0.687)",
+          "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+          "k": "reference.formula"
+        },
+        {
+          "v": 1.0917310910948732,
+          "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+          "k": "reference.cd_ref"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": []
+    }
+  ]
+}
