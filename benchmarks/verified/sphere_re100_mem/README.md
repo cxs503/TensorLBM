@@ -42,7 +42,22 @@
 | T1 | 40 | 280×280×320 | 28 722 | 12 000 | 1.1219804015117896 | +2.7708% | −0.1448% | 0.015% | −0.0797 |
 | T2 | 60 | 420×420×480 | 64 794 | 24 000 | 1.119462001144486 | +2.5401% | −0.0420% | 0.008% | 0.0 |
 
-## 5. 数据文件索引
+## 5. 运行命令
+
+```bash
+# T1 档（D=40, 12k 步）
+python benchmarks/verified/sphere_re100/w8a/run.py t1_d40big_12k.json --D 40 --steps 12000 --tau 0.56
+
+# T2 档（D=60, 24k 步）
+python benchmarks/verified/sphere_re100/w8a/run.py t2_d60big_24k.json --D 60 --steps 24000 --tau 0.59
+
+# 生成图件（从历史数据工件生成 PNG，零手抄）
+python benchmarks/verified/sphere_re100_mem/plot_figs.py
+```
+
+运行时长参考：T1 约 180 秒，T2 约 600 秒（GPU5，RTX 5090，稀疏核）。
+
+## 6. 数据文件索引
 
 W8-A 大域孪生结果文件位于 `../sphere_re100/w8a/`：
 - `w8a/result.json` — 完整结果 + judgment（pass=true）
@@ -54,17 +69,28 @@ W8-A 大域孪生结果文件位于 `../sphere_re100/w8a/`：
 
 三代历史档案（W5-B / W7-B）保留在 `pending/sphere_re100_mem/` 归档目录下。
 
-## 6. 晋级路径说明
+## 7. 晋级路径说明
 
 本案与 `sphere_re100`（pending）为同一物理问题的不同力法路径。`sphere_re100` 所有
 测力路径（压力积分 / MEM 变体）均因阶梯球几何偏差 >3%，而本案采用 BFL 插值边界
 + 大域 + 稀疏核解锁路线已达标。`sphere_re100` 同步标记为 superseded，指向本案。
 
-## 7. 局限
+## 8. 局限
 
 - 仅两档网格（受 GPU 32G 显存约束；D80 需 64G 卡或多卡分域）
 - S-N 主锁位于交叉族低端（T1 对 Clift-Gauvin 差约 +1.1pp），锁定参考不重开
 - W5-B / W7-B 世代结果记录为诊断档案，非判定用
+
+## 9. 图件
+
+图件位于 `figures/` 子目录，由 `plot_figs.py` 从历史数据工件生成（零手抄，图件可复现）：
+
+1. **curve_cd_convergence.png**：Cd(t) 收敛史曲线（T1 D=40 / T2 D=60），展示阻力系数从初始瞬态到稳态的收敛过程
+2. **curve_error_tiers.png**：档位误差曲线（T1 +2.7708% / T2 +2.5401%），展示网格细化后误差严格单调下降
+3. **field_midplane_speed.png**：球中剖面速度幅值云图（物理示意，基于势流模型）
+4. **field_wake_structure.png**：尾流结构云图（物理示意，Re=100 轴对称尾流）
+
+详见 `figures.json` manifest。
 
 <!-- PROVENANCE
 [{"v": 1.0917310910948732, "f": "verified/sphere_re100/w8a/result.json", "k": "reference.cd_ref"},
