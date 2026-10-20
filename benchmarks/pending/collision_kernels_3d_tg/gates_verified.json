@@ -1,7 +1,7 @@
 {
  "case": "collision_kernels_3d_tg",
  "verdict": "terminal",
- "checked_at": "2026-10-20T01:18:34Z",
+ "checked_at": "2026-10-20T14:21:23Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -194,10 +194,99 @@
     }
    ],
    "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "42163B",
+     "ok": true,
+     "note": "42163B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "9 个小节",
+     "ok": true,
+     "note": "9 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/curve_gamma_tau_spectrum.png curve 189368B div=256",
+     "ok": true,
+     "note": "figures/curve_gamma_tau_spectrum.png curve 189368B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/curve_error_convergence.png curve 129856B div=256",
+     "ok": true,
+     "note": "figures/curve_error_convergence.png curve 129856B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/curve_energy_decay_history.png curve 196988B div=256",
+     "ok": true,
+     "note": "figures/curve_energy_decay_history.png curve 196988B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:field_waiver",
+     "found": "云图豁免: 碰撞核弛豫谱验证无空间场量，图件为弛豫谱曲线与能量衰减史",
+     "ok": true,
+     "note": "云图豁免: 碰撞核弛豫谱验证无空间场量，图件为弛豫谱曲线与能量衰减史"
+    }
+   ],
+   "problems": []
   }
  ],
  "all_pass": true,
  "problems": [],
  "rc": 0,
- "gates_path": "benchmarks/pending/collision_kernels_3d_tg/gates.json"
+ "profile": "paper",
+ "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m103/TensorLBM/benchmarks/pending/collision_kernels_3d_tg/gates.json"
 }
