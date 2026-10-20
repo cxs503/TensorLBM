@@ -47,6 +47,16 @@
       "evidence": [
         {"v": "判定条款预注册于暂存 NOTES_sha256 链", "f": "benchmarks/pending/collision_kernels_3d_tg/README.md", "k": "grep:判定条款预注册于暂存 NOTES_sha256 链"}
       ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": []
     }
   ]
 }
