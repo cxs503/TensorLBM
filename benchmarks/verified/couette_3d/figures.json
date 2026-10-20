@@ -1,0 +1,23 @@
+{
+  "figures": [
+    {
+      "file": "figures/field_midplane_speed.png",
+      "kind": "field",
+      "caption": "中剖面速度场云图：H=32 fp64 档 z=16 截面 u_x(y) 分布，展示线性 Couette 剖面的空间均匀性",
+      "source": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/couette3d/gate/fp64/case_H32_fp64.json + plot_figs.py"
+    },
+    {
+      "file": "figures/curve_profile_vs_analytical.png",
+      "kind": "curve",
+      "caption": "u(y) 速度剖面 vs 解析解：fp64 四档（H=16/32/64/128）数值解与线性解析解对比，展示机器精度吻合",
+      "source": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/couette3d/gate/fp64/case_H{16,32,64,128}_fp64.json + plot_figs.py"
+    },
+    {
+      "file": "figures/curve_l2_convergence.png",
+      "kind": "curve",
+      "caption": "l₂ 误差收敛曲线：fp64 四档 l₂_rel_err 随网格尺寸 H 变化，H16/32/64 处于机器地板（1e-13 量级），H128 升至 1.73e-09",
+      "source": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/couette3d/gate/fp64/case_H{16,32,64,128}_fp64.json + plot_figs.py"
+    }
+  ],
+  "field_waiver": ""
+}
