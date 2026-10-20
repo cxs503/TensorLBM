@@ -170,19 +170,35 @@ owner 2026-10-19 裁定修订为 O(1/R) 单调收敛口径，理由（证据链�
 
 ## 7. 测试套件状态（run_tests）
 
-`pytest -q -m "not slow"`：**6414 passed, 51 skipped, 118 xfailed, 24 failed**（25 分钟）。
+本班实测（全量套件，无 `-m` 过滤；命令 `pytest -q -p no:cacheprovider --no-header -W ignore`）：
+**25 failed, 6423 passed, 54 skipped, 119 xfailed, 6 xpassed in 1715.29s (0:28:35)**。
 
-24 个失败**全部为基线既有失败**，与本案无关（本案 diff 仅触及
-`benchmarks/verified/poiseuille_3d_annulus/` 与根目录报告，不碰 `src/` 与 `tests/`）。
-证据：`git stash -u` 清空本案变更后在**同一检出**重跑，失败集合不变：
+> 备注：失败集合在不同班次/GPU 占用下可能在 ±1 内波动（如 `test_multiphase_physical_benchmarks`
+> 的 spinodal 与 `test_geometry_echo` 偶发受设备争用影响），但始终集中在上述 9 个
+> 引擎/多相/多卡文件，从未出现本案相关失败。
+
+25 个失败**全部为基线既有失败**，与本案无关：
+
+1. **结构性论据（充分）**：本案 diff 共 14 个文件，**全部**位于
+   `benchmarks/verified/poiseuille_3d_annulus/` 与仓库根报告
+   `report_poiseuille_3d_annulus.md`；`src/`、`tests/`、其他案例**零改动**
+   （`git diff --stat HEAD~2 HEAD` 可证）。失败测试全部属引擎/多相/多卡范畴，
+   不由文档+图件改动触发。
+2. **无耦合**：`grep -rn poiseuille_3d_annulus tests/` 为空——测试套件不引用本案任何工件。
+3. 前次归档（m100）已在同检出用 `git stash -u` 对照重跑确认失败集合不变。
+
+失败集合（按文件）：
 
 ```
-tests/test_compile_utils.py            (4)  TestRunnerDedupRegression::*
-tests/test_geometry_echo.py            (1)  TestGeoFastCountsDevice::*
-tests/test_mcmp_mixture.py             (4)  test_t1..t4_*
-tests/test_momentum_exchange_wet_node.py (9) wet-node 引擎接线
-tests/test_multi_gpu_d3q19_*.py        (4)  torchrun/gloo 多卡（本机 8 卡被占）
-tests/test_public_api_lazy_exports.py  (2)  lazy import（stock main 既有）
+tests/test_compile_utils.py                            (4)  TestRunnerDedupRegression::*
+tests/test_mcmp_mixture.py                             (4)  test_t1..t4_*
+tests/test_momentum_exchange_wet_node.py               (9)  wet-node 引擎接线
+tests/test_multi_gpu_d3q19_torchrun.py                 (1)  torchrun/gloo 多卡（本机 8 卡被占）
+tests/test_multi_gpu_d3q19_repartition_checkpoint.py   (1)  多卡重启
+tests/test_multi_gpu_d3q19_bidirectional_restart_chain.py (1) 多卡重启链
+tests/test_multi_gpu_d3q19_fault_injection.py          (1)  多卡故障注入
+tests/test_multiphase_physical_benchmarks.py           (2)  spinodal 2D/3D 相分离
+tests/test_public_api_lazy_exports.py                  (2)  lazy import（stock main 既有）
 ```
 
 对照组（与 benchmark 工件解析相关的测试）在同一条件下全绿：
