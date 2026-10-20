@@ -1,0 +1,236 @@
+{
+ "case": "poiseuille_3d_annulus",
+ "verdict": "promote",
+ "checked_at": "2026-10-20T21:07:17Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.boundaries3d",
+     "f": "benchmarks/verified/poiseuille_3d_annulus/run.py",
+     "k": "grep:from tensorlbm.boundaries3d",
+     "found": "from tensorlbm.boundaries3d",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "from tensorlbm.solver3d",
+     "f": "benchmarks/verified/poiseuille_3d_annulus/run.py",
+     "k": "grep:from tensorlbm.solver3d",
+     "found": "from tensorlbm.solver3d",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 1.1634,
+     "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+     "k": "per_grid[0].eff_max_bin_central_pct",
+     "found": 1.1634,
+     "ok": true,
+     "note": "1.1634 vs 1.1634"
+    },
+    {
+     "v": 0.127,
+     "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+     "k": "per_grid[1].eff_max_bin_central_pct",
+     "found": 0.127,
+     "ok": true,
+     "note": "0.127 vs 0.127"
+    },
+    {
+     "v": 0.0514,
+     "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+     "k": "per_grid[2].eff_max_bin_central_pct",
+     "found": 0.0514,
+     "ok": true,
+     "note": "0.0514 vs 0.0514"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 1.1634,
+     "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+     "k": "eff_errors_pct[0]",
+     "found": 1.1634,
+     "ok": true,
+     "note": "1.1634 vs 1.1634"
+    },
+    {
+     "v": 0.127,
+     "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+     "k": "eff_errors_pct[1]",
+     "found": 0.127,
+     "ok": true,
+     "note": "0.127 vs 0.127"
+    },
+    {
+     "v": 0.0514,
+     "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+     "k": "eff_errors_pct[2]",
+     "found": 0.0514,
+     "ok": true,
+     "note": "0.0514 vs 0.0514"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "参考先锁定后跑",
+     "f": "benchmarks/verified/poiseuille_3d_annulus/README.md",
+     "k": "grep:参考先锁定后跑",
+     "found": "参考先锁定后跑",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "none",
+     "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+     "k": "extrap",
+     "found": "none",
+     "ok": true,
+     "note": "'none' vs 'none'"
+    },
+    {
+     "v": "2026-10-19",
+     "f": "benchmarks/verified/poiseuille_3d_annulus/validation_report.json",
+     "k": "grep:2026-10-19",
+     "found": "2026-10-19",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": 0.0,
+     "f": "benchmarks/verified/poiseuille_3d_annulus/audit_recheck_m116.json",
+     "k": "max_rel_diff_over_keys",
+     "found": 0.0,
+     "ok": true,
+     "note": "0.0 vs 0.0"
+    },
+    {
+     "v": "CUDA_VISIBLE_DEVICES=5 PYTHONPATH=../../../src /nfs/wangxi/venvs/tensorlbm/bin/python run.py single 20 <out>.json --dump --device cuda:0",
+     "f": "benchmarks/verified/poiseuille_3d_annulus/audit_recheck_m116.json",
+     "k": "command",
+     "found": "CUDA_VISIBLE_DEVICES=5 PYTHONPATH=../../../src /nfs/wangxi/venvs/tensorlbm/bin/python run.py single 20 <out>.json --dump --device cuda:0",
+     "ok": true,
+     "note": "'CUDA_VISIBLE_DEVICES=5 PYTHONPATH=../../../src /nfs/wangxi/venvs/tensorlbm/bin/python run.py single 20 <out>.json --dump --device cuda:0' vs 'CUDA_VISIBLE_DEVICES=5 PYTHONPATH=../../../src /nfs/wangxi/venvs/tensorlbm/bin/python run.py single 20 <out>.json --dump --device cuda:0'"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "8079B",
+     "ok": true,
+     "note": "8079B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "9 个小节",
+     "ok": true,
+     "note": "9 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/diagram_annulus_geometry.png diagram 144351B div=256",
+     "ok": true,
+     "note": "figures/diagram_annulus_geometry.png diagram 144351B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/field_midplane_speed.png field 80185B div=256",
+     "ok": true,
+     "note": "figures/field_midplane_speed.png field 80185B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/curve_profile_vs_analytical.png curve 91589B div=256",
+     "ok": true,
+     "note": "figures/curve_profile_vs_analytical.png curve 91589B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[3]",
+     "found": "figures/curve_error_convergence.png curve 65709B div=256",
+     "ok": true,
+     "note": "figures/curve_error_convergence.png curve 65709B div=256"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "paper",
+ "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m116/TensorLBM/benchmarks/verified/poiseuille_3d_annulus/gates.json"
+}
