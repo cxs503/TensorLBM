@@ -1,0 +1,62 @@
+{
+  "case": "poiseuille_3d_annulus",
+  "verdict": "promote",
+  "reason": "",
+  "gates": [
+    {"gate": "library_entry", "pass": true,
+     "evidence": [
+       {"v": "from tensorlbm.boundaries3d", "f": "benchmarks/verified/poiseuille_3d_annulus/run.py",
+        "k": "grep:from tensorlbm.boundaries3d"},
+       {"v": "from tensorlbm.solver3d", "f": "benchmarks/verified/poiseuille_3d_annulus/run.py",
+        "k": "grep:from tensorlbm.solver3d"}
+     ]},
+    {"gate": "direct_observable", "pass": true,
+     "evidence": [
+       {"v": 1.1634, "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+        "k": "per_grid[0].eff_max_bin_central_pct"},
+       {"v": 0.127, "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+        "k": "per_grid[1].eff_max_bin_central_pct"},
+       {"v": 0.0514, "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+        "k": "per_grid[2].eff_max_bin_central_pct"}
+     ]},
+    {"gate": "monotone_convergence", "pass": true, "mode": "abs_decrease",
+     "evidence": [
+       {"v": 1.1634, "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+        "k": "eff_errors_pct[0]"},
+       {"v": 0.127, "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+        "k": "eff_errors_pct[1]"},
+       {"v": 0.0514, "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+        "k": "eff_errors_pct[2]"}
+     ]},
+    {"gate": "reference_locked_first", "pass": true,
+     "evidence": [
+       {"v": "参考先锁定后跑",
+        "f": "benchmarks/verified/poiseuille_3d_annulus/README.md",
+        "k": "grep:参考先锁定后跑"},
+       {"v": "none",
+        "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+        "k": "extrap"},
+       {"v": "2026-10-19",
+        "f": "benchmarks/verified/poiseuille_3d_annulus/validation_report.json",
+        "k": "grep:2026-10-19"},
+       {"v": 0.0,
+        "f": "benchmarks/verified/poiseuille_3d_annulus/audit_recheck_m116.json",
+        "k": "max_rel_diff_over_keys"},
+       {"v": "CUDA_VISIBLE_DEVICES=5 PYTHONPATH=../../../src /nfs/wangxi/venvs/tensorlbm/bin/python run.py single 20 <out>.json --dump --device cuda:0",
+        "f": "benchmarks/verified/poiseuille_3d_annulus/audit_recheck_m116.json",
+        "k": "command"}
+     ]},
+    {"gate": "case_readme", "pass": true,
+     "evidence": [
+       {"v": "README.md exists and passes mechanical checks",
+        "f": "benchmarks/verified/poiseuille_3d_annulus/README.md",
+        "k": "mechanical:>=1200B,>=2 sections,PROVENANCE,python,参考/锚"}
+     ]},
+    {"gate": "figures", "pass": true,
+     "evidence": [
+       {"v": "figures.json manifest with 1 diagram + 1 field + 2 curves",
+        "f": "benchmarks/verified/poiseuille_3d_annulus/figures.json",
+        "k": "mechanical:>=1 curve,>=1 field,PNG>=6KB,caption>=8,source 落地"}
+     ]}
+  ]
+}
