@@ -1,7 +1,7 @@
 {
  "case": "permeability3d",
  "verdict": "promote",
- "checked_at": "2026-10-20T01:42:13Z",
+ "checked_at": "2026-10-20T13:56:01Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -130,10 +130,91 @@
     }
    ],
    "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "5341B",
+     "ok": true,
+     "note": "5341B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "9 个小节",
+     "ok": true,
+     "note": "9 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/field_solid_geometry.png field 46787B div=256",
+     "ok": true,
+     "note": "figures/field_solid_geometry.png field 46787B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/field_velocity_midplane.png field 46770B div=256",
+     "ok": true,
+     "note": "figures/field_velocity_midplane.png field 46770B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/curve_convergence_k_vs_N.png curve 118972B div=256",
+     "ok": true,
+     "note": "figures/curve_convergence_k_vs_N.png curve 118972B div=256"
+    }
+   ],
+   "problems": []
   }
  ],
  "all_pass": true,
  "problems": [],
  "rc": 0,
- "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m64/TensorLBM/benchmarks/verified/permeability3d/gates.json"
+ "profile": "paper",
+ "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m102/TensorLBM/benchmarks/verified/permeability3d/gates.json"
 }
