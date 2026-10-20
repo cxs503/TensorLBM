@@ -168,7 +168,28 @@ owner 2026-10-19 裁定修订为 O(1/R) 单调收敛口径，理由（证据链�
 | 复用 redo 的诚信风险 | 复用可能掩盖漂移 | 本班独立重跑 R_o=20 档逐键复检（§4.2，偏差 0.0） |
 | 未做 R_o=40/80 重跑 | 复检覆盖单档 | 三档判决量同源于同一 run.py 逻辑；R_o=20 档为最粗档（误差最大），复检该档最有意义；预算纪律优先 |
 
-## 7. 结论
+## 7. 测试套件状态（run_tests）
+
+`pytest -q -m "not slow"`：**6414 passed, 51 skipped, 118 xfailed, 24 failed**（25 分钟）。
+
+24 个失败**全部为基线既有失败**，与本案无关（本案 diff 仅触及
+`benchmarks/verified/poiseuille_3d_annulus/` 与根目录报告，不碰 `src/` 与 `tests/`）。
+证据：`git stash -u` 清空本案变更后在**同一检出**重跑，失败集合不变：
+
+```
+tests/test_compile_utils.py            (4)  TestRunnerDedupRegression::*
+tests/test_geometry_echo.py            (1)  TestGeoFastCountsDevice::*
+tests/test_mcmp_mixture.py             (4)  test_t1..t4_*
+tests/test_momentum_exchange_wet_node.py (9) wet-node 引擎接线
+tests/test_multi_gpu_d3q19_*.py        (4)  torchrun/gloo 多卡（本机 8 卡被占）
+tests/test_public_api_lazy_exports.py  (2)  lazy import（stock main 既有）
+```
+
+对照组（与 benchmark 工件解析相关的测试）在同一条件下全绿：
+`tests/test_case_registry.py test_acoustic_attenuation_note.py test_autograd.py
+test_color_gradient2d.py` → **40 passed**。
+
+## 8. 结论
 
 `poiseuille_3d_annulus` 图档补强完成，交付终态 **verified / promote**：
 
