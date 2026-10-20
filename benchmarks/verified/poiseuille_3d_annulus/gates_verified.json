@@ -1,7 +1,7 @@
 {
  "case": "poiseuille_3d_annulus",
  "verdict": "promote",
- "checked_at": "2026-10-20T21:07:17Z",
+ "checked_at": "2026-10-20T21:14:15Z",
  "gates": [
   {
    "gate": "library_entry",
