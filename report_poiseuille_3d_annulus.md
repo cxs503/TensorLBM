@@ -217,6 +217,37 @@ test_color_gradient2d.py` → **40 passed**。
 **预算**：~0.13 GPU·h（GPU5 单档 R_o=20 复检 7.7 min，其余纯文档/图件）。
 
 ---
+
+## 9. 班次交接（benchmark-closure 线，写给下一个自己）
+
+**本班终态**：poiseuille_3d_annulus 图档补强已完成，`gates_check.py --auto` **rc=0**
+（annulus profile=paper，六门全过），交付 **verified / promote**。
+
+**本班 commits**（branch=agent/m116）：
+`4ad55ab6`（图档补强主体）→ `2897831f`（报告补 run_tests 基线+图件可复现性）
+→ `0822c802`（§7 更新为本班实测全量结果）→ `2b53c3f2`（刷新 gates_verified.json 时间戳）。
+
+**复用 redo 的可复制套路**（下次同类 figdoc-* 条目照做）：
+1. `cp -r` 源案例目录 + 根报告，`diff` 逐文件核对；
+2. 用 `gates_check.py --auto` 先跑一遍确认三元组落地；
+3. **挑最粗档（误差最大档）独立重跑**，逐键比对归档工件，写 `audit_recheck_<mission>.json`；
+4. 把复检三元组加进 `gates.json` 的 `reference_locked_first`；
+5. 图件 pipeline 自包含化（场转储入库，别留 `/nfs` 绝对路径）；
+6. 报告加「复用复核」章节，把"复用 ≠ 免检"写清楚。
+
+**[待办] 交给后续班次**：
+- **常驻记忆未更新（工具预算耗尽，`benchmark_closure/context.md` 在工作区外，终端已锁）**：
+  本班已通过 `memory.jsonl` 追加 m116 awaiting_acceptance 记录（63 行，全量 `json.loads` 通过），
+  但 `context.md` 的「本班实测测试数字 + commits」两处需下一班补齐。要点：
+  ① 全量套件本班实测 **25 failed / 6423 passed / 54 skipped / 119 xfailed / 6 xpassed (1715s)**，
+  失败集中 9 个引擎/多相/多卡文件，与本案零耦合（`grep -rn poiseuille_3d_annulus tests/` 为空）；
+  ② m116 commits 见上；③ 顺带修复了 `memory.jsonl` 第 15 行（m69 纯文本行 → JSONL 机械转写），
+  下次写记忆务必用 `json.dumps`。
+- 其余 figdoc-* 条目待派：cavity_3d_full / cavity_natural_conv / couette_3d / sphere_re100_mem。
+- `gates_check.py --auto` 会顺带改写**所有已纳入扫描案例**的 `gates_verified.json` 时间戳；
+  做完复算后记得 `git checkout --` 复原范围外文件（本班已复原 2 个，红线 2）。
+
+---
 *报告生成：m116 benchmark-closure（复用 redo），2026-10-20*
 *数字来源：`result.json` / `case_Ro{20,40,80}.json` / `case_Ro20_long.json` /
 `audit_recheck_m116.json` / `figures.json`（PROVENANCE 值-文件-键直读）*
