@@ -1,0 +1,228 @@
+{
+ "case": "cylinder_re40_st",
+ "verdict": "promote",
+ "checked_at": "2026-10-21T16:09:06Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm",
+     "f": "benchmarks/pending/cylinder_re40_st/w11/src/run_formal_w11a2.py",
+     "k": "grep:from tensorlbm",
+     "found": "from tensorlbm",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 2.149227254242388,
+     "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re20_D40.json",
+     "k": "err_pct",
+     "found": 2.149227254242388,
+     "ok": true,
+     "note": "2.149227254242388 vs 2.149227254242388"
+    },
+    {
+     "v": 1.9971024901712366,
+     "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re20_D80.json",
+     "k": "err_pct",
+     "found": 1.9971024901712366,
+     "ok": true,
+     "note": "1.9971024901712366 vs 1.9971024901712366"
+    },
+    {
+     "v": 2.235739827339853,
+     "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re40_D40.json",
+     "k": "err_pct",
+     "found": 2.235739827339853,
+     "ok": true,
+     "note": "2.235739827339853 vs 2.235739827339853"
+    },
+    {
+     "v": 1.9557005487173211,
+     "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re40_D80.json",
+     "k": "err_pct",
+     "found": 1.9557005487173211,
+     "ok": true,
+     "note": "1.9557005487173211 vs 1.9557005487173211"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 2.149227254242388,
+     "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re20_D40.json",
+     "k": "err_pct",
+     "found": 2.149227254242388,
+     "ok": true,
+     "note": "2.149227254242388 vs 2.149227254242388"
+    },
+    {
+     "v": 1.9971024901712366,
+     "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re20_D80.json",
+     "k": "err_pct",
+     "found": 1.9971024901712366,
+     "ok": true,
+     "note": "1.9971024901712366 vs 1.9971024901712366"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 2.235739827339853,
+     "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re40_D40.json",
+     "k": "err_pct",
+     "found": 2.235739827339853,
+     "ok": true,
+     "note": "2.235739827339853 vs 2.235739827339853"
+    },
+    {
+     "v": 1.9557005487173211,
+     "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re40_D80.json",
+     "k": "err_pct",
+     "found": 1.9557005487173211,
+     "ok": true,
+     "note": "1.9557005487173211 vs 1.9557005487173211"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "2026-10-21",
+     "f": "benchmarks/pending/cylinder_re40_st/w11/prereg/prereg_w11a2.md",
+     "k": "grep:冻结日期",
+     "found": "2026-10-21",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "2026-10-20T23:50:57+08:00",
+     "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/run_all_w11a2.log",
+     "k": "grep:开始时间",
+     "found": "2026-10-20T23:50:57+08:00",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "13471B",
+     "ok": true,
+     "note": "13471B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "6 个小节",
+     "ok": true,
+     "note": "6 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/re20_convergence.png curve 70649B div=256",
+     "ok": true,
+     "note": "figures/re20_convergence.png curve 70649B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/re40_convergence.png curve 68923B div=256",
+     "ok": true,
+     "note": "figures/re40_convergence.png curve 68923B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/error_convergence.png curve 59232B div=256",
+     "ok": true,
+     "note": "figures/error_convergence.png curve 59232B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:field_waiver",
+     "found": "云图豁免: 稳态圆柱绕流案例无瞬态空间场量输出，仅提供 Cd 收敛历程与网格收敛曲线",
+     "ok": true,
+     "note": "云图豁免: 稳态圆柱绕流案例无瞬态空间场量输出，仅提供 Cd 收敛历程与网格收敛曲线"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "paper",
+ "gates_path": "benchmarks/pending/cylinder_re40_st/gates.json"
+}
