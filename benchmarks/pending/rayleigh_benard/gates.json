@@ -1,0 +1,97 @@
+{
+  "case": "rayleigh_benard",
+  "verdict": "terminal",
+  "reason": "\u03b3_pred \u91cd\u9501\u540e ny=64/128 \u5168\u8fc7\u4f46 ny=256 \u8fd1\u4e34\u754c\u81c2\u62df\u5408\u8d28\u91cf\uff08\u7a97\u6563\u5e03 >2%\uff09\u5bfc\u81f4\u975e\u5355\u8c03\u6536\u655b",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm",
+          "f": "benchmarks/pending/rayleigh_benard/w11/formal/formal_run.py",
+          "k": "grep:from tensorlbm"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "evidence": [
+        {
+          "v": 0.2058754383315184,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.64"
+        },
+        {
+          "v": 0.7711099178929328,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.128"
+        },
+        {
+          "v": 3.0449477056955203,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.256"
+        },
+        {
+          "v": 4.531459217565237,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "arm_rows[11].rel_pct"
+        },
+        {
+          "v": -5.01967698332666,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "arm_rows[12].rel_pct"
+        }
+      ]
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": false,
+      "mode": "abs_decrease",
+      "evidence": [
+        {
+          "v": 0.2058754383315184,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.64"
+        },
+        {
+          "v": 0.7711099178929328,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.128"
+        },
+        {
+          "v": 3.0449477056955203,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.256"
+        }
+      ]
+    },
+    {
+      "gate": "ref_locked",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "lattice_predictions.json",
+          "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
+          "k": "levels[*].arms[*].gamma_pred"
+        },
+        {
+          "v": "2026-10-21",
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/preref_w12.md",
+          "k": "\u51bb\u7ed3\u65f6\u95f4"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": []
+    }
+  ]
+}
