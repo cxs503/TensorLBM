@@ -1,0 +1,292 @@
+{
+ "case": "collision_kernels_3d_tg",
+ "verdict": "terminal",
+ "checked_at": "2026-10-20T14:21:23Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "库入口：六核碰撞函数",
+     "f": "benchmarks/pending/collision_kernels_3d_tg/README.md",
+     "k": "grep:库入口：六核碰撞函数",
+     "found": "库入口：六核碰撞函数",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 0.4121706093349963,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.cumulant_d3q27.cases[2].err_e_pct",
+     "found": 0.4121706093349963,
+     "ok": true,
+     "note": "0.4121706093349963 vs 0.4121706093349963"
+    },
+    {
+     "v": 0.4121879599801708,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.cascaded_d3q27.cases[2].err_e_pct",
+     "found": 0.4121879599801708,
+     "ok": true,
+     "note": "0.4121879599801708 vs 0.4121879599801708"
+    },
+    {
+     "v": 0.42317019038319614,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.mrt27.cases[2].err_e_pct",
+     "found": 0.42317019038319614,
+     "ok": true,
+     "note": "0.42317019038319614 vs 0.42317019038319614"
+    },
+    {
+     "v": 0.47128549235811595,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.trt27.cases[2].err_e_pct",
+     "found": 0.47128549235811595,
+     "ok": true,
+     "note": "0.47128549235811595 vs 0.47128549235811595"
+    },
+    {
+     "v": 0.4029846334892684,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.rlbm27.cases[2].err_e_pct",
+     "found": 0.4029846334892684,
+     "ok": true,
+     "note": "0.4029846334892684 vs 0.4029846334892684"
+    },
+    {
+     "v": -0.6747755960422056,
+     "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json",
+     "k": "cases[0].err_e_pct",
+     "found": -0.6747755960422056,
+     "ok": true,
+     "note": "-0.6747755960422056 vs -0.6747755960422056"
+    },
+    {
+     "v": -0.35760649373544184,
+     "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json",
+     "k": "cases[1].err_e_pct",
+     "found": -0.35760649373544184,
+     "ok": true,
+     "note": "-0.35760649373544184 vs -0.35760649373544184"
+    },
+    {
+     "v": -0.1608216815443654,
+     "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json",
+     "k": "cases[2].err_e_pct",
+     "found": -0.1608216815443654,
+     "ok": true,
+     "note": "-0.1608216815443654 vs -0.1608216815443654"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": false,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.cumulant_d3q27.convergence.converged_monotone",
+     "found": false,
+     "ok": true,
+     "note": "False vs False"
+    },
+    {
+     "v": false,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.cascaded_d3q27.convergence.converged_monotone",
+     "found": false,
+     "ok": true,
+     "note": "False vs False"
+    },
+    {
+     "v": false,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.mrt27.convergence.converged_monotone",
+     "found": false,
+     "ok": true,
+     "note": "False vs False"
+    },
+    {
+     "v": false,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.trt27.convergence.converged_monotone",
+     "found": false,
+     "ok": true,
+     "note": "False vs False"
+    },
+    {
+     "v": false,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.rlbm27.convergence.converged_monotone",
+     "found": false,
+     "ok": true,
+     "note": "False vs False"
+    },
+    {
+     "v": false,
+     "f": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+     "k": "kernels.bgk27.convergence.converged_monotone",
+     "found": false,
+     "ok": true,
+     "note": "False vs False"
+    },
+    {
+     "v": true,
+     "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json",
+     "k": "convergence.converged_monotone",
+     "found": true,
+     "ok": true,
+     "note": "True vs True"
+    },
+    {
+     "v": -0.6747755960422056,
+     "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json",
+     "k": "cases[0].err_e_pct",
+     "found": -0.6747755960422056,
+     "ok": true,
+     "note": "-0.6747755960422056 vs -0.6747755960422056"
+    },
+    {
+     "v": -0.35760649373544184,
+     "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json",
+     "k": "cases[1].err_e_pct",
+     "found": -0.35760649373544184,
+     "ok": true,
+     "note": "-0.35760649373544184 vs -0.35760649373544184"
+    },
+    {
+     "v": -0.1608216815443654,
+     "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json",
+     "k": "cases[2].err_e_pct",
+     "found": -0.1608216815443654,
+     "ok": true,
+     "note": "-0.1608216815443654 vs -0.1608216815443654"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "判定条款预注册于暂存 NOTES_sha256 链",
+     "f": "benchmarks/pending/collision_kernels_3d_tg/README.md",
+     "k": "grep:判定条款预注册于暂存 NOTES_sha256 链",
+     "found": "判定条款预注册于暂存 NOTES_sha256 链",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "42163B",
+     "ok": true,
+     "note": "42163B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "9 个小节",
+     "ok": true,
+     "note": "9 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/curve_gamma_tau_spectrum.png curve 189368B div=256",
+     "ok": true,
+     "note": "figures/curve_gamma_tau_spectrum.png curve 189368B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/curve_error_convergence.png curve 129856B div=256",
+     "ok": true,
+     "note": "figures/curve_error_convergence.png curve 129856B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/curve_energy_decay_history.png curve 196988B div=256",
+     "ok": true,
+     "note": "figures/curve_energy_decay_history.png curve 196988B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:field_waiver",
+     "found": "云图豁免: 碰撞核弛豫谱验证无空间场量，图件为弛豫谱曲线与能量衰减史",
+     "ok": true,
+     "note": "云图豁免: 碰撞核弛豫谱验证无空间场量，图件为弛豫谱曲线与能量衰减史"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "paper",
+ "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m103/TensorLBM/benchmarks/pending/collision_kernels_3d_tg/gates.json"
+}

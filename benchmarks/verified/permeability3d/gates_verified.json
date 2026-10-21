@@ -1,0 +1,220 @@
+{
+ "case": "permeability3d",
+ "verdict": "promote",
+ "checked_at": "2026-10-20T13:56:01Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.solver3d import collide_bgk3d, stream3d",
+     "f": "benchmarks/verified/permeability3d/run.py",
+     "k": "grep:from tensorlbm.solver3d import collide_bgk3d, stream3d",
+     "found": "from tensorlbm.solver3d import collide_bgk3d, stream3d",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "from tensorlbm.boundaries3d import bounce_back_cells_3d",
+     "f": "benchmarks/verified/permeability3d/run.py",
+     "k": "grep:from tensorlbm.boundaries3d import bounce_back_cells_3d",
+     "found": "from tensorlbm.boundaries3d import bounce_back_cells_3d",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 0.04625290433934337,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[0].err",
+     "found": 0.04625290433934337,
+     "ok": true,
+     "note": "0.04625290433934337 vs 0.04625290433934337"
+    },
+    {
+     "v": 0.030980328885280795,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[1].err",
+     "found": 0.030980328885280795,
+     "ok": true,
+     "note": "0.030980328885280795 vs 0.030980328885280795"
+    },
+    {
+     "v": 0.020491718998708608,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[2].err",
+     "found": 0.020491718998708608,
+     "ok": true,
+     "note": "0.020491718998708608 vs 0.020491718998708608"
+    },
+    {
+     "v": 0.014468555124078408,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[3].err",
+     "found": 0.014468555124078408,
+     "ok": true,
+     "note": "0.014468555124078408 vs 0.014468555124078408"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 0.04625290433934337,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[0].err",
+     "found": 0.04625290433934337,
+     "ok": true,
+     "note": "0.04625290433934337 vs 0.04625290433934337"
+    },
+    {
+     "v": 0.014468555124078408,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[3].err",
+     "found": 0.014468555124078408,
+     "ok": true,
+     "note": "0.014468555124078408 vs 0.014468555124078408"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "2026-09-20",
+     "f": "benchmarks/verified/permeability3d/NOTES.md",
+     "k": "grep:fetched 2026-09-20",
+     "found": "2026-09-20",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "2026-09-21",
+     "f": "benchmarks/verified/permeability3d/NOTES_sha256_chain.txt",
+     "k": "grep:chain opened 2026-09-21 16:50:42",
+     "found": "2026-09-21",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "2026-09-21T10:11:37Z",
+     "f": "benchmarks/verified/permeability3d/case_phi0.343_N64.json",
+     "k": "created_utc",
+     "found": "2026-09-21T10:11:37Z",
+     "ok": true,
+     "note": "'2026-09-21T10:11:37Z' vs '2026-09-21T10:11:37Z'"
+    },
+    {
+     "v": "2026-09-21T11:20:43Z",
+     "f": "benchmarks/verified/permeability3d/case_phi0.343_N160_fs10.json",
+     "k": "created_utc",
+     "found": "2026-09-21T11:20:43Z",
+     "ok": true,
+     "note": "'2026-09-21T11:20:43Z' vs '2026-09-21T11:20:43Z'"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "5341B",
+     "ok": true,
+     "note": "5341B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "9 个小节",
+     "ok": true,
+     "note": "9 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/field_solid_geometry.png field 46787B div=256",
+     "ok": true,
+     "note": "figures/field_solid_geometry.png field 46787B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/field_velocity_midplane.png field 46770B div=256",
+     "ok": true,
+     "note": "figures/field_velocity_midplane.png field 46770B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/curve_convergence_k_vs_N.png curve 118972B div=256",
+     "ok": true,
+     "note": "figures/curve_convergence_k_vs_N.png curve 118972B div=256"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "paper",
+ "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m102/TensorLBM/benchmarks/verified/permeability3d/gates.json"
+}

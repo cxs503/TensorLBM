@@ -1,0 +1,62 @@
+{
+  "case": "collision_kernels_3d_tg",
+  "verdict": "terminal",
+  "reason": "五核（cumulant/cascaded/mrt/trt/rlbm）单调收敛门未过：D3Q27 + 固定 Re τ 阶梯下结构性不可满足（bgk27 对照同败，非核特异）。KBC 修复核（PR #312）四门全过，但案例整体要求所有核通过，五核单调性失败导致整体 TERMINAL。",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {"v": "库入口：六核碰撞函数", "f": "benchmarks/pending/collision_kernels_3d_tg/README.md", "k": "grep:库入口：六核碰撞函数"}
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": true,
+      "evidence": [
+        {"v": 0.4121706093349963, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.cumulant_d3q27.cases[2].err_e_pct"},
+        {"v": 0.4121879599801708, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.cascaded_d3q27.cases[2].err_e_pct"},
+        {"v": 0.42317019038319614, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.mrt27.cases[2].err_e_pct"},
+        {"v": 0.47128549235811595, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.trt27.cases[2].err_e_pct"},
+        {"v": 0.4029846334892684, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.rlbm27.cases[2].err_e_pct"},
+        {"v": -0.6747755960422056, "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json", "k": "cases[0].err_e_pct"},
+        {"v": -0.35760649373544184, "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json", "k": "cases[1].err_e_pct"},
+        {"v": -0.1608216815443654, "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json", "k": "cases[2].err_e_pct"}
+      ]
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": false,
+      "mode": "abs_decrease",
+      "evidence": [
+        {"v": false, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.cumulant_d3q27.convergence.converged_monotone"},
+        {"v": false, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.cascaded_d3q27.convergence.converged_monotone"},
+        {"v": false, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.mrt27.convergence.converged_monotone"},
+        {"v": false, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.trt27.convergence.converged_monotone"},
+        {"v": false, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.rlbm27.convergence.converged_monotone"},
+        {"v": false, "f": "benchmarks/pending/collision_kernels_3d_tg/result.json", "k": "kernels.bgk27.convergence.converged_monotone"},
+        {"v": true, "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json", "k": "convergence.converged_monotone"},
+        {"v": -0.6747755960422056, "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json", "k": "cases[0].err_e_pct"},
+        {"v": -0.35760649373544184, "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json", "k": "cases[1].err_e_pct"},
+        {"v": -0.1608216815443654, "f": "/nfs/wangxi/runs/bm_widen_w7_20260922/kbc_fix/tg/result.json", "k": "cases[2].err_e_pct"}
+      ]
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": [
+        {"v": "判定条款预注册于暂存 NOTES_sha256 链", "f": "benchmarks/pending/collision_kernels_3d_tg/README.md", "k": "grep:判定条款预注册于暂存 NOTES_sha256 链"}
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": []
+    }
+  ]
+}
