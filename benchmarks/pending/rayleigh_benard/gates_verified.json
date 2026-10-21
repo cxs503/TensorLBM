@@ -1,7 +1,7 @@
 {
  "case": "rayleigh_benard",
  "verdict": "terminal",
- "checked_at": "2026-10-21T17:35:35Z",
+ "checked_at": "2026-10-21T17:43:25Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -184,24 +184,8 @@
   {
    "gate": "figures",
    "declared_pass": true,
-   "recomputed_pass": false,
+   "recomputed_pass": true,
    "evidence": [
-    {
-     "v": true,
-     "f": "figures.json",
-     "k": "check:fig[0].source_file",
-     "found": "source 提到的文件不存在: plot_convergence.py",
-     "ok": false,
-     "note": "source 提到的文件不存在: plot_convergence.py"
-    },
-    {
-     "v": true,
-     "f": "figures.json",
-     "k": "check:fig[0].source_file",
-     "found": "source 提到的文件不存在: verdict_w12.json",
-     "ok": false,
-     "note": "source 提到的文件不存在: verdict_w12.json"
-    },
     {
      "v": true,
      "f": "figures.json",
@@ -209,22 +193,6 @@
      "found": "figures/convergence_curve.png curve 290050B div=256",
      "ok": true,
      "note": "figures/convergence_curve.png curve 290050B div=256"
-    },
-    {
-     "v": true,
-     "f": "figures.json",
-     "k": "check:fig[1].source_file",
-     "found": "source 提到的文件不存在: lattice_predictions.json",
-     "ok": false,
-     "note": "source 提到的文件不存在: lattice_predictions.json"
-    },
-    {
-     "v": true,
-     "f": "figures.json",
-     "k": "check:fig[1].source_file",
-     "found": "source 提到的文件不存在: plot_convergence.py",
-     "ok": false,
-     "note": "source 提到的文件不存在: plot_convergence.py"
     },
     {
      "v": true,
@@ -243,23 +211,12 @@
      "note": "云图豁免: 本案观测量为线性起稳增长率 γ（时间域标量），无空间场量；场量仅为中间过程（温度扰动本征模衰减），非判决直接观测量"
     }
    ],
-   "problems": [
-    "4/7 三元组复算不过",
-    "check:fig[0].source_file: source 提到的文件不存在: plot_convergence.py",
-    "check:fig[0].source_file: source 提到的文件不存在: verdict_w12.json",
-    "check:fig[1].source_file: source 提到的文件不存在: lattice_predictions.json",
-    "check:fig[1].source_file: source 提到的文件不存在: plot_convergence.py"
-   ]
+   "problems": []
   }
  ],
  "all_pass": false,
  "problems": [
-  "monotone_convergence: 序列非严格单调(abs_decrease): [0.2058754383315184, 0.7711099178929328, 3.0449477056955203]",
-  "figures: 4/7 三元组复算不过",
-  "figures: check:fig[0].source_file: source 提到的文件不存在: plot_convergence.py",
-  "figures: check:fig[0].source_file: source 提到的文件不存在: verdict_w12.json",
-  "figures: check:fig[1].source_file: source 提到的文件不存在: lattice_predictions.json",
-  "figures: check:fig[1].source_file: source 提到的文件不存在: plot_convergence.py"
+  "monotone_convergence: 序列非严格单调(abs_decrease): [0.2058754383315184, 0.7711099178929328, 3.0449477056955203]"
  ],
  "rc": 1,
  "profile": "paper",
