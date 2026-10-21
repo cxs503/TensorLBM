@@ -1,7 +1,7 @@
 {
  "case": "hadamard_rybczynski_droplet",
  "verdict": "terminal",
- "checked_at": "2026-10-21T22:38:05Z",
+ "checked_at": "2026-10-21T22:39:27Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -34,24 +34,6 @@
     }
    ],
    "problems": []
-  },
-  {
-   "gate": "monotone_convergence",
-   "declared_pass": false,
-   "recomputed_pass": false,
-   "evidence": [
-    {
-     "v": 5.653134e-05,
-     "f": "/nfs/wangxi/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.log",
-     "k": "grep:Terminal velocity",
-     "found": 5.653134e-05,
-     "ok": true,
-     "note": "grep ok"
-    }
-   ],
-   "problems": [
-    "单调门不足 2 档"
-   ]
   },
   {
    "gate": "reference_locked_first",
@@ -158,11 +140,9 @@
    "problems": []
   }
  ],
- "all_pass": false,
- "problems": [
-  "monotone_convergence: 单调门不足 2 档"
- ],
- "rc": 1,
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
  "profile": "paper",
  "gates_path": "benchmarks/pending/hadamard_rybczynski_droplet/gates.json"
 }

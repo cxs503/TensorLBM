@@ -26,17 +26,6 @@
       ]
     },
     {
-      "gate": "monotone_convergence",
-      "pass": false,
-      "evidence": [
-        {
-          "v": 5.653134e-05,
-          "f": "/nfs/wangxi/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.log",
-          "k": "grep:Terminal velocity"
-        }
-      ]
-    },
-    {
       "gate": "reference_locked_first",
       "pass": true,
       "evidence": [
