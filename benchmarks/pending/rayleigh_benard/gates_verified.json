@@ -1,7 +1,7 @@
 {
  "case": "rayleigh_benard",
  "verdict": "terminal",
- "checked_at": "2026-10-21T17:31:11Z",
+ "checked_at": "2026-10-21T17:35:35Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -102,30 +102,36 @@
    ]
   },
   {
-   "gate": "ref_locked",
+   "gate": "reference_locked_first",
    "declared_pass": true,
-   "recomputed_pass": false,
+   "recomputed_pass": true,
    "evidence": [
     {
-     "v": "lattice_predictions.json",
+     "v": -1.761689932441037,
      "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
-     "k": "levels[*].arms[*].gamma_pred",
-     "found": null,
-     "ok": false,
-     "note": "key miss: levels[*].arms[*].gamma_pred in /nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json"
+     "k": "levels[0].arms[0].gamma_pred",
+     "found": -1.761689932441037,
+     "ok": true,
+     "note": "-1.761689932441037 vs -1.761689932441037"
     },
     {
-     "v": "2026-10-21",
-     "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/preref_w12.md",
-     "k": "冻结时间",
-     "found": null,
-     "ok": false,
-     "note": "json unreadable: /nfs/wangxi/runs/bm_close/rayleigh_benard/preref_w12.md: Expecting value: line 1 column 1 (char 0)"
+     "v": -1.7729341986480927,
+     "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
+     "k": "levels[1].arms[0].gamma_pred",
+     "found": -1.7729341986480927,
+     "ok": true,
+     "note": "-1.7729341986480927 vs -1.7729341986480927"
+    },
+    {
+     "v": -1.7804092478691493,
+     "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
+     "k": "levels[2].arms[0].gamma_pred",
+     "found": -1.7804092478691493,
+     "ok": true,
+     "note": "-1.7804092478691493 vs -1.7804092478691493"
     }
    ],
-   "problems": [
-    "2/2 三元组复算不过"
-   ]
+   "problems": []
   },
   {
    "gate": "case_readme",
@@ -183,24 +189,77 @@
     {
      "v": true,
      "f": "figures.json",
-     "k": "check:manifest_exists",
-     "found": "figures.json 缺失",
+     "k": "check:fig[0].source_file",
+     "found": "source 提到的文件不存在: plot_convergence.py",
      "ok": false,
-     "note": "figures.json 缺失"
+     "note": "source 提到的文件不存在: plot_convergence.py"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0].source_file",
+     "found": "source 提到的文件不存在: verdict_w12.json",
+     "ok": false,
+     "note": "source 提到的文件不存在: verdict_w12.json"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/convergence_curve.png curve 290050B div=256",
+     "ok": true,
+     "note": "figures/convergence_curve.png curve 290050B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1].source_file",
+     "found": "source 提到的文件不存在: lattice_predictions.json",
+     "ok": false,
+     "note": "source 提到的文件不存在: lattice_predictions.json"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1].source_file",
+     "found": "source 提到的文件不存在: plot_convergence.py",
+     "ok": false,
+     "note": "source 提到的文件不存在: plot_convergence.py"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/lattice_ra_c_drift.png curve 125091B div=256",
+     "ok": true,
+     "note": "figures/lattice_ra_c_drift.png curve 125091B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:field_waiver",
+     "found": "云图豁免: 本案观测量为线性起稳增长率 γ（时间域标量），无空间场量；场量仅为中间过程（温度扰动本征模衰减），非判决直接观测量",
+     "ok": true,
+     "note": "云图豁免: 本案观测量为线性起稳增长率 γ（时间域标量），无空间场量；场量仅为中间过程（温度扰动本征模衰减），非判决直接观测量"
     }
    ],
    "problems": [
-    "1/1 三元组复算不过",
-    "check:manifest_exists: figures.json 缺失"
+    "4/7 三元组复算不过",
+    "check:fig[0].source_file: source 提到的文件不存在: plot_convergence.py",
+    "check:fig[0].source_file: source 提到的文件不存在: verdict_w12.json",
+    "check:fig[1].source_file: source 提到的文件不存在: lattice_predictions.json",
+    "check:fig[1].source_file: source 提到的文件不存在: plot_convergence.py"
    ]
   }
  ],
  "all_pass": false,
  "problems": [
   "monotone_convergence: 序列非严格单调(abs_decrease): [0.2058754383315184, 0.7711099178929328, 3.0449477056955203]",
-  "ref_locked: 2/2 三元组复算不过",
-  "figures: 1/1 三元组复算不过",
-  "figures: check:manifest_exists: figures.json 缺失"
+  "figures: 4/7 三元组复算不过",
+  "figures: check:fig[0].source_file: source 提到的文件不存在: plot_convergence.py",
+  "figures: check:fig[0].source_file: source 提到的文件不存在: verdict_w12.json",
+  "figures: check:fig[1].source_file: source 提到的文件不存在: lattice_predictions.json",
+  "figures: check:fig[1].source_file: source 提到的文件不存在: plot_convergence.py"
  ],
  "rc": 1,
  "profile": "paper",
