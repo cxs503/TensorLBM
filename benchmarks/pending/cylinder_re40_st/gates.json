@@ -1,0 +1,31 @@
+{
+  "case": "cylinder_re40_st",
+  "verdict": "promote",
+  "reason": "W11-A2 上游域扩展至 40D 后，四档网格（Re={20,40} × D={40,80}）全部通过 ≤3% 门限，且严格单调收敛",
+  "gates": [
+    {"gate": "library_entry", "pass": true,
+     "evidence": [
+       {"v": "from tensorlbm", "f": "benchmarks/pending/cylinder_re40_st/w11/src/run_formal_w11a2.py",
+        "k": "grep:from tensorlbm"}]},
+    {"gate": "direct_observable", "pass": true,
+     "evidence": [
+       {"v": 2.149227254242388, "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re20_D40.json", "k": "err_pct"},
+       {"v": 1.9971024901712366, "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re20_D80.json", "k": "err_pct"},
+       {"v": 2.235739827339853, "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re40_D40.json", "k": "err_pct"},
+       {"v": 1.9557005487173211, "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re40_D80.json", "k": "err_pct"}]},
+    {"gate": "monotone_convergence", "pass": true, "mode": "abs_decrease",
+     "evidence": [
+       {"v": 2.149227254242388, "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re20_D40.json", "k": "err_pct"},
+       {"v": 1.9971024901712366, "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re20_D80.json", "k": "err_pct"}]},
+    {"gate": "monotone_convergence", "pass": true, "mode": "abs_decrease",
+     "evidence": [
+       {"v": 2.235739827339853, "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re40_D40.json", "k": "err_pct"},
+       {"v": 1.9557005487173211, "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re40_D80.json", "k": "err_pct"}]},
+    {"gate": "reference_locked_first", "pass": true,
+     "evidence": [
+       {"v": "2026-10-21", "f": "benchmarks/pending/cylinder_re40_st/w11/prereg/prereg_w11a2.md", "k": "grep:冻结日期"},
+       {"v": "2026-10-20T23:50:57+08:00", "f": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/run_all_w11a2.log", "k": "grep:开始时间"}]},
+    {"gate": "case_readme", "pass": true, "evidence": []},
+    {"gate": "figures", "pass": true, "evidence": []}
+  ]
+}
