@@ -1,7 +1,7 @@
 {
  "case": "permeability3d",
  "verdict": "promote",
- "checked_at": "2026-10-20T01:42:13Z",
+ "checked_at": "2026-10-21T22:24:05Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -135,5 +135,6 @@
  "all_pass": true,
  "problems": [],
  "rc": 0,
- "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m64/TensorLBM/benchmarks/verified/permeability3d/gates.json"
+ "profile": "classic",
+ "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m155/TensorLBM/benchmarks/verified/permeability3d/gates.json"
 }

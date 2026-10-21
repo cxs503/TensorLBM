@@ -8,9 +8,9 @@
       "pass": true,
       "evidence": [
         {
-          "v": "from tensorlbm.cac_lbm import CACSim",
+          "v": "from tensorlbm.cac_lbm import CACSim, rho_of_phi, init_phi_droplet",
           "f": "/tmp/cac_hr_buoyancy.py",
-          "k": "grep:from tensorlbm.cac_lbm"
+          "k": "grep:from tensorlbm.cac_lbm import"
         }
       ]
     },
@@ -21,42 +21,63 @@
         {
           "v": -43.46,
           "f": "/nfs/wangxi/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.log",
-          "k": "grep:Relative error"
+          "k": "grep:Relative error:"
         }
       ]
     },
     {
       "gate": "monotone_convergence",
       "pass": false,
-      "mode": "insufficient_arms",
       "evidence": [
         {
-          "v": 1,
-          "f": "/nfs/wangxi/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.json",
-          "k": "count:grid_arms"
+          "v": 5.653134e-05,
+          "f": "/nfs/wangxi/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.log",
+          "k": "grep:Terminal velocity"
         }
       ]
     },
     {
-      "gate": "ref_locked",
+      "gate": "reference_locked_first",
       "pass": true,
       "evidence": [
         {
-          "v": "U_t = (2/3) a^2 g (rho_o - rho_i)(1+lambda)/(mu_o (2+3lambda))",
-          "f": "benchmarks/pending/hadamard_rybczynski_droplet/prereg.md",
-          "k": "section:1. Reference formula lock"
+          "v": 9.997714285714287e-05,
+          "f": "/nfs/wangxi/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.json",
+          "k": "U_t_ref"
         }
       ]
     },
     {
       "gate": "case_readme",
       "pass": true,
-      "evidence": []
+      "evidence": [
+        {
+          "v": 15165,
+          "f": "benchmarks/pending/hadamard_rybczynski_droplet/README.md",
+          "k": "file_size_bytes"
+        }
+      ]
     },
     {
       "gate": "figures",
       "pass": true,
-      "evidence": []
+      "evidence": [
+        {
+          "v": 3,
+          "f": "benchmarks/pending/hadamard_rybczynski_droplet/figures.json",
+          "k": "len(figures)"
+        },
+        {
+          "v": "figures/terminal_velocity_convergence.png",
+          "f": "benchmarks/pending/hadamard_rybczynski_droplet/figures.json",
+          "k": "figures[0].file"
+        },
+        {
+          "v": "curve",
+          "f": "benchmarks/pending/hadamard_rybczynski_droplet/figures.json",
+          "k": "figures[0].kind"
+        }
+      ]
     }
   ]
 }
