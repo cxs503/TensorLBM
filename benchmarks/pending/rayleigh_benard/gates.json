@@ -1,7 +1,7 @@
 {
   "case": "rayleigh_benard",
   "verdict": "terminal",
-  "reason": "\u03b3_pred \u91cd\u9501\u540e ny=64/128 \u5168\u8fc7\u4f46 ny=256 \u8fd1\u4e34\u754c\u81c2\u62df\u5408\u8d28\u91cf\uff08\u7a97\u6563\u5e03 >2%\uff09\u5bfc\u81f4\u975e\u5355\u8c03\u6536\u655b",
+  "reason": "γ_pred 重锁后 ny=64/128 全过但 ny=256 近临界臂拟合质量（窗散布 >2%）导致非单调收敛",
   "gates": [
     {
       "gate": "library_entry",
@@ -68,18 +68,23 @@
       ]
     },
     {
-      "gate": "ref_locked",
+      "gate": "reference_locked_first",
       "pass": true,
       "evidence": [
         {
-          "v": "lattice_predictions.json",
+          "v": -1.761689932441037,
           "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
-          "k": "levels[*].arms[*].gamma_pred"
+          "k": "levels[0].arms[0].gamma_pred"
         },
         {
-          "v": "2026-10-21",
-          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/preref_w12.md",
-          "k": "\u51bb\u7ed3\u65f6\u95f4"
+          "v": -1.7729341986480927,
+          "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
+          "k": "levels[1].arms[0].gamma_pred"
+        },
+        {
+          "v": -1.7804092478691493,
+          "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
+          "k": "levels[2].arms[0].gamma_pred"
         }
       ]
     },
@@ -91,7 +96,18 @@
     {
       "gate": "figures",
       "pass": true,
-      "evidence": []
+      "evidence": [
+        {
+          "v": "figures/convergence_curve.png",
+          "f": "benchmarks/pending/rayleigh_benard/figures.json",
+          "k": "figures[0].file"
+        },
+        {
+          "v": "figures/lattice_ra_c_drift.png",
+          "f": "benchmarks/pending/rayleigh_benard/figures.json",
+          "k": "figures[1].file"
+        }
+      ]
     }
   ]
 }

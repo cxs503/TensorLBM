@@ -1,0 +1,208 @@
+{
+ "case": "rayleigh_benard",
+ "verdict": "terminal",
+ "checked_at": "2026-10-21T17:31:11Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm",
+     "f": "benchmarks/pending/rayleigh_benard/w11/formal/formal_run.py",
+     "k": "grep:from tensorlbm",
+     "found": "from tensorlbm",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 0.2058754383315184,
+     "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+     "k": "E_ny.64",
+     "found": 0.2058754383315184,
+     "ok": true,
+     "note": "0.2058754383315184 vs 0.2058754383315184"
+    },
+    {
+     "v": 0.7711099178929328,
+     "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+     "k": "E_ny.128",
+     "found": 0.7711099178929328,
+     "ok": true,
+     "note": "0.7711099178929328 vs 0.7711099178929328"
+    },
+    {
+     "v": 3.0449477056955203,
+     "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+     "k": "E_ny.256",
+     "found": 3.0449477056955203,
+     "ok": true,
+     "note": "3.0449477056955203 vs 3.0449477056955203"
+    },
+    {
+     "v": 4.531459217565237,
+     "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+     "k": "arm_rows[11].rel_pct",
+     "found": 4.531459217565237,
+     "ok": true,
+     "note": "4.531459217565237 vs 4.531459217565237"
+    },
+    {
+     "v": -5.01967698332666,
+     "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+     "k": "arm_rows[12].rel_pct",
+     "found": -5.01967698332666,
+     "ok": true,
+     "note": "-5.01967698332666 vs -5.01967698332666"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": false,
+   "recomputed_pass": false,
+   "evidence": [
+    {
+     "v": 0.2058754383315184,
+     "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+     "k": "E_ny.64",
+     "found": 0.2058754383315184,
+     "ok": true,
+     "note": "0.2058754383315184 vs 0.2058754383315184"
+    },
+    {
+     "v": 0.7711099178929328,
+     "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+     "k": "E_ny.128",
+     "found": 0.7711099178929328,
+     "ok": true,
+     "note": "0.7711099178929328 vs 0.7711099178929328"
+    },
+    {
+     "v": 3.0449477056955203,
+     "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+     "k": "E_ny.256",
+     "found": 3.0449477056955203,
+     "ok": true,
+     "note": "3.0449477056955203 vs 3.0449477056955203"
+    }
+   ],
+   "problems": [
+    "序列非严格单调(abs_decrease): [0.2058754383315184, 0.7711099178929328, 3.0449477056955203]"
+   ]
+  },
+  {
+   "gate": "ref_locked",
+   "declared_pass": true,
+   "recomputed_pass": false,
+   "evidence": [
+    {
+     "v": "lattice_predictions.json",
+     "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
+     "k": "levels[*].arms[*].gamma_pred",
+     "found": null,
+     "ok": false,
+     "note": "key miss: levels[*].arms[*].gamma_pred in /nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json"
+    },
+    {
+     "v": "2026-10-21",
+     "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/preref_w12.md",
+     "k": "冻结时间",
+     "found": null,
+     "ok": false,
+     "note": "json unreadable: /nfs/wangxi/runs/bm_close/rayleigh_benard/preref_w12.md: Expecting value: line 1 column 1 (char 0)"
+    }
+   ],
+   "problems": [
+    "2/2 三元组复算不过"
+   ]
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "15975B",
+     "ok": true,
+     "note": "15975B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "6 个小节",
+     "ok": true,
+     "note": "6 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": false,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:manifest_exists",
+     "found": "figures.json 缺失",
+     "ok": false,
+     "note": "figures.json 缺失"
+    }
+   ],
+   "problems": [
+    "1/1 三元组复算不过",
+    "check:manifest_exists: figures.json 缺失"
+   ]
+  }
+ ],
+ "all_pass": false,
+ "problems": [
+  "monotone_convergence: 序列非严格单调(abs_decrease): [0.2058754383315184, 0.7711099178929328, 3.0449477056955203]",
+  "ref_locked: 2/2 三元组复算不过",
+  "figures: 1/1 三元组复算不过",
+  "figures: check:manifest_exists: figures.json 缺失"
+ ],
+ "rc": 1,
+ "profile": "paper",
+ "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m145/TensorLBM/benchmarks/pending/rayleigh_benard/gates.json"
+}

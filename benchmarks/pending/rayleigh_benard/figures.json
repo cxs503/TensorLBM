@@ -1,0 +1,17 @@
+{
+  "figures": [
+    {
+      "file": "figures/convergence_curve.png",
+      "kind": "curve",
+      "caption": "Convergence error E(ny) vs grid resolution and per-arm error distribution showing non-monotonic behavior",
+      "source": "verdict_w12.json + plot_convergence.py"
+    },
+    {
+      "file": "figures/lattice_ra_c_drift.png",
+      "kind": "curve",
+      "caption": "Lattice operator Ra_c drift vs grid resolution showing systematic upward shift",
+      "source": "lattice_predictions.json + plot_convergence.py"
+    }
+  ],
+  "field_waiver": "本案观测量为线性起稳增长率 γ（时间域标量），无空间场量；场量仅为中间过程（温度扰动本征模衰减），非判决直接观测量"
+}
