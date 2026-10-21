@@ -1,0 +1,30 @@
+Running cavity_natural_convection Ra=1e4 on cuda
+Grids: [64, 128, 256]
+Reference: Nu=2.243, u_max=16.178, v_max=19.617
+
+=== Grid N=64 ===
+  Nu = 2.109792 (err = -5.939%)
+  u_max = 15.857426 (err = -1.982%)
+  v_max = 18.962943 (err = -3.334%)
+  Steps: 32000 (steady at 22000)
+
+=== Grid N=128 ===
+  Nu = 2.177843 (err = -2.905%)
+  u_max = 16.020448 (err = -0.974%)
+  v_max = 19.289611 (err = -1.669%)
+  Steps: 115500 (steady at 105000)
+
+=== Grid N=256 ===
+  Nu = 2.212536 (err = -1.358%)
+  u_max = 16.082085 (err = -0.593%)
+  v_max = 19.483570 (err = -0.680%)
+  Steps: 457600 (steady at 416000)
+
+Results saved to /nfs/wangxi/tensor_eco/agent_work/m76/TensorLBM/benchmarks/pending/cavity_natural_convection/result_rerun.json
+
+=== Summary ===
+Nu errors: ['5.94%', '2.90%', '1.36%']
+Monotone convergence: True
+Passing grids (<=3%): [128, 256]
+
+✓ PASS: ≥2 grids pass with monotone convergence
