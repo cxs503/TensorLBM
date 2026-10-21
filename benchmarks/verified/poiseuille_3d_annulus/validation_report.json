@@ -15,9 +15,21 @@
       "name": "直接观测量 ≤3%",
       "status": "PASS",
       "details": {
-        "R_o_20": {"eff_max_pct": 1.1634, "threshold": 3.0, "pass": true},
-        "R_o_40": {"eff_max_pct": 0.1270, "threshold": 3.0, "pass": true},
-        "R_o_80": {"eff_max_pct": 0.0514, "threshold": 3.0, "pass": true}
+        "R_o_20": {
+          "eff_max_pct": 1.1634,
+          "threshold": 3.0,
+          "pass": true
+        },
+        "R_o_40": {
+          "eff_max_pct": 0.127,
+          "threshold": 3.0,
+          "pass": true
+        },
+        "R_o_80": {
+          "eff_max_pct": 0.0514,
+          "threshold": 3.0,
+          "pass": true
+        }
       },
       "source": "result.json per_grid[*].eff_max_bin_central_pct"
     },
@@ -25,7 +37,11 @@
       "name": "≥2档严格单调收敛",
       "status": "PASS",
       "details": {
-        "eff_errors": [1.1634, 0.1270, 0.0514],
+        "eff_errors": [
+          1.1634,
+          0.127,
+          0.0514
+        ],
         "monotone": true,
         "levels": 3
       },
@@ -40,7 +56,11 @@
       "name": "δ_i 条款修订（O(1/R) 收敛口径）",
       "status": "PASS",
       "details": {
-        "delta_i_minus_a": [-0.3807, -0.3216, -0.2870],
+        "delta_i_minus_a": [
+          -0.3807,
+          -0.3216,
+          -0.287
+        ],
         "delta_i_monotone": true,
         "delta_i_spread": 0.0937,
         "delta_i_original_clause": "FAIL (0.0937 > 0.05)",
@@ -61,5 +81,169 @@
     "frozen_by": "m65 benchmark-closure"
   },
   "source_result": "benchmarks/pending/poiseuille_3d_annulus/result.json",
-  "archive_result": "benchmarks/verified/poiseuille_3d_annulus/result.json"
+  "archive_result": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+  "closure_profile": "paper",
+  "redo_mission": "m116",
+  "redo_note": "m100 已完成图档补强且六门全过，因平台审批器缺陷误驳；审批器修复后 m116 为复用 redo：成果落地本 worktree（cp -r 逐文件核对）并独立重跑 R_o=20 档复检 （audit_recheck_m116.json，22 个判决量 max_rel_diff_over_keys = 0.0）",
+  "paper_gates": [
+    {
+      "gate": "library_entry",
+      "name": "G1 共性模块入口（tensorlbm 库路径驱动）",
+      "declared_pass": true,
+      "recomputed_pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm.boundaries3d",
+          "f": "benchmarks/verified/poiseuille_3d_annulus/run.py",
+          "k": "grep:from tensorlbm.boundaries3d"
+        },
+        {
+          "v": "from tensorlbm.solver3d",
+          "f": "benchmarks/verified/poiseuille_3d_annulus/run.py",
+          "k": "grep:from tensorlbm.solver3d"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "name": "G2 直接观测量 ≤3%",
+      "declared_pass": true,
+      "recomputed_pass": true,
+      "evidence": [
+        {
+          "v": 1.1634,
+          "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+          "k": "per_grid[0].eff_max_bin_central_pct"
+        },
+        {
+          "v": 0.127,
+          "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+          "k": "per_grid[1].eff_max_bin_central_pct"
+        },
+        {
+          "v": 0.0514,
+          "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+          "k": "per_grid[2].eff_max_bin_central_pct"
+        }
+      ]
+    },
+    {
+      "gate": "monotone_convergence",
+      "name": "G3 ≥2 档严格单调收敛",
+      "declared_pass": true,
+      "recomputed_pass": true,
+      "evidence": [
+        {
+          "v": 1.1634,
+          "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+          "k": "eff_errors_pct[0]"
+        },
+        {
+          "v": 0.127,
+          "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+          "k": "eff_errors_pct[1]"
+        },
+        {
+          "v": 0.0514,
+          "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+          "k": "eff_errors_pct[2]"
+        }
+      ]
+    },
+    {
+      "gate": "reference_locked_first",
+      "name": "G4 参考先锁定后跑",
+      "declared_pass": true,
+      "recomputed_pass": true,
+      "evidence": [
+        {
+          "v": "参考先锁定后跑",
+          "f": "benchmarks/verified/poiseuille_3d_annulus/README.md",
+          "k": "grep:参考先锁定后跑"
+        },
+        {
+          "v": "none",
+          "f": "benchmarks/verified/poiseuille_3d_annulus/result.json",
+          "k": "extrap"
+        },
+        {
+          "v": "2026-10-19",
+          "f": "benchmarks/verified/poiseuille_3d_annulus/validation_report.json",
+          "k": "grep:2026-10-19"
+        },
+        {
+          "v": 0.0,
+          "f": "benchmarks/verified/poiseuille_3d_annulus/audit_recheck_m116.json",
+          "k": "max_rel_diff_over_keys"
+        },
+        {
+          "v": "CUDA_VISIBLE_DEVICES=5 PYTHONPATH=../../../src /nfs/wangxi/venvs/tensorlbm/bin/python run.py single 20 <out>.json --dump --device cuda:0",
+          "f": "benchmarks/verified/poiseuille_3d_annulus/audit_recheck_m116.json",
+          "k": "command"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "name": "G5 案例细节介绍（paper 门，机械检查）",
+      "declared_pass": true,
+      "recomputed_pass": true,
+      "evidence": [
+        {
+          "v": "README.md exists and passes mechanical checks",
+          "f": "benchmarks/verified/poiseuille_3d_annulus/README.md",
+          "k": "mechanical:>=1200B,>=2 sections,PROVENANCE,python,参考/锚"
+        }
+      ]
+    },
+    {
+      "gate": "figures",
+      "name": "G6 图件（paper 门，机械检查）",
+      "declared_pass": true,
+      "recomputed_pass": true,
+      "evidence": [
+        {
+          "v": "figures.json manifest with 1 diagram + 1 field + 2 curves",
+          "f": "benchmarks/verified/poiseuille_3d_annulus/figures.json",
+          "k": "mechanical:>=1 curve,>=1 field,PNG>=6KB,caption>=8,source 落地"
+        }
+      ]
+    }
+  ],
+  "paper_gates_all_pass": true,
+  "gates_check": {
+    "cmd": "python /nfs/wangxi/tensor_eco/agent_work/benchmark_closure/gates_check.py --worktree <wt> --case poiseuille_3d_annulus --profile paper",
+    "rc": 0,
+    "profile": "paper",
+    "checked_at": "2026-10-20T20:27:17Z",
+    "report": "benchmarks/verified/poiseuille_3d_annulus/gates_verified.json"
+  },
+  "figures": [
+    {
+      "file": "figures/diagram_annulus_geometry.png",
+      "kind": "diagram",
+      "source": "benchmarks/verified/poiseuille_3d_annulus/case_Ro20.json a + R_o + delta_i/delta_o + G_Q + nu_lb + L_over_R（剖面形式见同目录 run.py 头注精确解）"
+    },
+    {
+      "file": "figures/field_midplane_speed.png",
+      "kind": "field",
+      "source": "benchmarks/verified/poiseuille_3d_annulus/case_Ro20_field.npz u_meas/fluid_np（run.py single 20 --dump 直出）"
+    },
+    {
+      "file": "figures/curve_profile_vs_analytical.png",
+      "kind": "curve",
+      "source": "benchmarks/verified/poiseuille_3d_annulus/case_Ro{20,40,80}.json r_bins + u_bins + delta_i/delta_o + G_Q"
+    },
+    {
+      "file": "figures/curve_error_convergence.png",
+      "kind": "curve",
+      "source": "benchmarks/verified/poiseuille_3d_annulus/result.json eff_errors_pct + nom_errors_pct"
+    }
+  ],
+  "audit_recheck": {
+    "artifact": "benchmarks/verified/poiseuille_3d_annulus/audit_recheck_m116.json",
+    "max_rel_diff_over_keys": 0.0,
+    "bit_identical_verdict_keys": true,
+    "field_rel_u_meas_diff": 0.0007035728096857456
+  }
 }

@@ -46,7 +46,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-WORKTREE_SRC = "/nfs/wangxi/worktrees/bm_w5/src"
+WORKTREE_SRC = "/nfs/wangxi/tensor_eco/agent_work/m102/TensorLBM/src"
 sys.path.insert(0, WORKTREE_SRC)
 
 import tensorlbm  # noqa: E402
@@ -661,6 +661,88 @@ def make_report(args: argparse.Namespace) -> dict:
     return report
 
 
+def dump_case(args: argparse.Namespace) -> None:
+    """Run a case and dump full 3D field data to npz for visualization."""
+    import numpy as np
+    
+    phi = args.phi
+    N = args.n
+    fs = args.force_scale
+    tau = args.tau
+    device = torch.device(args.device)
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Build geometry
+    solid = sphere_array_mask_3d(N, phi, device)
+    a_nom = nominal_radius(N, phi)
+    phi_actual = float(solid.sum()) / (N ** 3)
+    
+    # Initialize fields
+    f = torch.full((19, N, N, N), 1.0 / 19.0, device=device)
+    rho = torch.ones((N, N, N), device=device)
+    ux = torch.zeros((N, N, N), device=device)
+    uy = torch.zeros((N, N, N), device=device)
+    uz = torch.zeros((N, N, N), device=device)
+    
+    # Body force
+    a_x = fs * RE_TARGET * NU / (N * (1.0 - phi_actual))
+    
+    # Run to steady state
+    max_steps = args.max_steps if args.max_steps > 0 else 50000
+    steady_tol = 1e-6
+    
+    print(f"Dump case: phi={phi}, N={N}, fs={fs}, tau={tau}, max_steps={max_steps}")
+    
+    ux_prev = 0.0
+    history = []
+    
+    for step in range(max_steps):
+        # Collide
+        f = collide_bgk3d(f, tau)
+        
+        # Stream (periodic)
+        f = stream3d(f)
+        
+        # Body force (fluid-masked)
+        f = apply_body_force_3d(f, a_x)
+        f = torch.where(solid, f, f)  # mask solid nodes
+        
+        # Bounce-back
+        f = bounce_back_cells_3d(f, solid)
+        
+        # Macroscopic
+        rho, ux, uy, uz = macroscopic3d(f)
+        
+        # Steady detection
+        ux_mean = float(ux[~solid].mean()) if (~solid).any() else 0.0
+        if step > 0 and step % 100 == 0:
+            rel_change = abs(ux_mean - ux_prev) / (abs(ux_prev) + 1e-12)
+            history.append({"step": step, "ux_mean": ux_mean, "rel_change": rel_change})
+            if rel_change < steady_tol and step > 1000:
+                print(f"Steady at step {step}, ux_mean={ux_mean:.6e}")
+                break
+            ux_prev = ux_mean
+    
+    # Dump to npz
+    npz_path = out_dir / f"case_phi{phi}_N{N}_fs{fs:.0f}.npz"
+    np.savez_compressed(
+        npz_path,
+        solid=solid.cpu().numpy(),
+        ux=ux.cpu().numpy(),
+        uy=uy.cpu().numpy(),
+        uz=uz.cpu().numpy(),
+        rho=rho.cpu().numpy(),
+        phi=phi,
+        N=N,
+        a_nom=a_nom,
+        phi_actual=phi_actual,
+        steps_run=len(history) * 100,
+        ux_mean=ux_mean,
+    )
+    print(f"Dumped to {npz_path}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -681,6 +763,16 @@ def main() -> None:
     ap_rep.add_argument("--out-dir", default=".")
     ap_rep.add_argument("--formal-fs", type=float, default=10.0)
     ap_rep.set_defaults(func=make_report)
+
+    ap_dump = sub.add_parser("dump")
+    ap_dump.add_argument("--phi", type=float, required=True)
+    ap_dump.add_argument("--n", type=int, required=True)
+    ap_dump.add_argument("--force-scale", type=float, default=1.0)
+    ap_dump.add_argument("--tau", type=float, default=TAU)
+    ap_dump.add_argument("--device", default="cuda:5")
+    ap_dump.add_argument("--out-dir", default=".")
+    ap_dump.add_argument("--max-steps", type=int, default=50000)
+    ap_dump.set_defaults(func=dump_case)
 
     args = ap.parse_args()
     args.func(args)
