@@ -1,7 +1,7 @@
 {
  "case": "collision_kernels_3d_tg",
  "verdict": "terminal",
- "checked_at": "2026-10-21T22:24:05Z",
+ "checked_at": "2026-10-21T22:38:45Z",
  "gates": [
   {
    "gate": "library_entry",
