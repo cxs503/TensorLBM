@@ -51,7 +51,23 @@
       "gate": "monotone_convergence",
       "pass": false,
       "mode": "abs_decrease",
-      "evidence": []
+      "evidence": [
+        {
+          "v": 0.2058754383315184,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.64"
+        },
+        {
+          "v": 0.7711099178929328,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.128"
+        },
+        {
+          "v": 3.0449477056955203,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.256"
+        }
+      ]
     },
     {
       "gate": "reference_locked_first",
