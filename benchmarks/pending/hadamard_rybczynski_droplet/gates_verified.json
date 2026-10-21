@@ -1,7 +1,7 @@
 {
  "case": "hadamard_rybczynski_droplet",
  "verdict": "terminal",
- "checked_at": "2026-10-21T22:27:42Z",
+ "checked_at": "2026-10-21T22:38:05Z",
  "gates": [
   {
    "gate": "library_entry",
