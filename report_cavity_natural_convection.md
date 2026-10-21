@@ -46,6 +46,8 @@ T=1 │  ↑          ↓   │ T=0
 
 Nu 绝对误差严格单调递减：
 
+![Nu 误差收敛曲线](benchmarks/verified/cavity_natural_convection/figures/curve_nu_convergence.png)
+
 ```
 N=64   ████████████████████████████  5.94%
 N=128  ██████████████                2.91%
@@ -54,7 +56,17 @@ N=256  ██████                        1.36%
 
 收敛阶 ≈ O(h²)：5.94/2.91 ≈ 2.04，2.91/1.36 ≈ 2.14，与二阶 LBM 理论一致。
 
-## 5. 四门验证
+![多观测量误差对比](benchmarks/verified/cavity_natural_convection/figures/curve_error_comparison.png)
+
+![Nu 演化历史](benchmarks/verified/cavity_natural_convection/figures/curve_nu_history.png)
+
+## 5. 流场可视化
+
+![温度场分布](benchmarks/verified/cavity_natural_convection/figures/field_temperature.png)
+
+![速度幅值场](benchmarks/verified/cavity_natural_convection/figures/field_velocity_magnitude.png)
+
+## 6. 六门验证（paper 档）
 
 | 门 | 要求 | 结果 | 证据 |
 |----|------|------|------|
@@ -62,6 +74,8 @@ N=256  ██████                        1.36%
 | G2 观测量 | ≤3%（≥2 档） | ✅ | N=128: -2.91%, N=256: -1.36% |
 | G3 单调收敛 | ≥2 档严格递减 | ✅ | 5.94→2.91→1.36% |
 | G4 参考先锁 | prereg 先于运行 | ✅ | locked_at=2026-10-20T03:30:00Z |
+| G5 案例细节 | README ≥1200B, ≥2节, PROVENANCE, python命令, 参考锚 | ✅ | 5491B, 7节, 全满足 |
+| G6 图件 | ≥1曲线 + ≥1云图, PNG ≥6KB, caption ≥8字 | ✅ | 3曲线 + 2云图, 全满足 |
 
 ## 6. 修复前后对比
 
