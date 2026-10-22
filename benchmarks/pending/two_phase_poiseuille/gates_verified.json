@@ -1,0 +1,192 @@
+{
+ "case": "two_phase_poiseuille",
+ "verdict": "terminal",
+ "checked_at": "2026-10-22T10:32:15Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.multiphase import collide_sc_two_component",
+     "f": "benchmarks/pending/two_phase_poiseuille/w4b_lib.py",
+     "k": "grep:from tensorlbm.multiphase import collide_sc_two_component",
+     "found": "from tensorlbm.multiphase import collide_sc_two_component",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "from tensorlbm.porous_media import _two_phase_poiseuille_analytical",
+     "f": "benchmarks/pending/two_phase_poiseuille/run.py",
+     "k": "grep:from tensorlbm.porous_media import _two_phase_poiseuille_analytical",
+     "found": "from tensorlbm.porous_media import _two_phase_poiseuille_analytical",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 0.26821538643505377,
+     "f": "benchmarks/pending/two_phase_poiseuille/result.json",
+     "k": "part1.H64.max_rel_err",
+     "found": 0.26821538643505377,
+     "ok": true,
+     "note": "0.26821538643505377 vs 0.26821538643505377"
+    },
+    {
+     "v": 0.33173655541170183,
+     "f": "benchmarks/pending/two_phase_poiseuille/result.json",
+     "k": "part1.H128.max_rel_err",
+     "found": 0.33173655541170183,
+     "ok": true,
+     "note": "0.33173655541170183 vs 0.33173655541170183"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": false,
+   "recomputed_pass": false,
+   "evidence": [
+    {
+     "v": 0.26821538643505377,
+     "f": "benchmarks/pending/two_phase_poiseuille/result.json",
+     "k": "part1.H64.max_rel_err",
+     "found": 0.26821538643505377,
+     "ok": true,
+     "note": "0.26821538643505377 vs 0.26821538643505377"
+    },
+    {
+     "v": 0.33173655541170183,
+     "f": "benchmarks/pending/two_phase_poiseuille/result.json",
+     "k": "part1.H128.max_rel_err",
+     "found": 0.33173655541170183,
+     "ok": true,
+     "note": "0.33173655541170183 vs 0.33173655541170183"
+    }
+   ],
+   "problems": [
+    "序列非严格单调(abs_decrease): [0.26821538643505377, 0.33173655541170183]"
+   ]
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.porous_media import _two_phase_poiseuille_analytical",
+     "f": "benchmarks/pending/two_phase_poiseuille/run.py",
+     "k": "grep:from tensorlbm.porous_media import _two_phase_poiseuille_analytical",
+     "found": "from tensorlbm.porous_media import _two_phase_poiseuille_analytical",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "15028B",
+     "ok": true,
+     "note": "15028B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "7 个小节",
+     "ok": true,
+     "note": "7 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/curve_convergence.png curve 48642B div=256",
+     "ok": true,
+     "note": "figures/curve_convergence.png curve 48642B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/curve_error_profile.png curve 90927B div=256",
+     "ok": true,
+     "note": "figures/curve_error_profile.png curve 90927B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/curve_anti_convergence.png curve 40951B div=256",
+     "ok": true,
+     "note": "figures/curve_anti_convergence.png curve 40951B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[3]",
+     "found": "figures/field_velocity_profile.png field 140548B div=256",
+     "ok": true,
+     "note": "figures/field_velocity_profile.png field 140548B div=256"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": false,
+ "problems": [
+  "monotone_convergence: 序列非严格单调(abs_decrease): [0.26821538643505377, 0.33173655541170183]"
+ ],
+ "rc": 1,
+ "profile": "paper",
+ "gates_path": "benchmarks/pending/two_phase_poiseuille/gates.json"
+}
