@@ -1,0 +1,148 @@
+{
+ "case": "hadamard_rybczynski_droplet",
+ "verdict": "terminal",
+ "checked_at": "2026-10-21T22:39:27Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.cac_lbm import CACSim, rho_of_phi, init_phi_droplet",
+     "f": "/tmp/cac_hr_buoyancy.py",
+     "k": "grep:from tensorlbm.cac_lbm import",
+     "found": "from tensorlbm.cac_lbm import CACSim, rho_of_phi, init_phi_droplet",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": -43.46,
+     "f": "/nfs/wangxi/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.log",
+     "k": "grep:Relative error:",
+     "found": -43.46,
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 9.997714285714287e-05,
+     "f": "/nfs/wangxi/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.json",
+     "k": "U_t_ref",
+     "found": 9.997714285714287e-05,
+     "ok": true,
+     "note": "9.997714285714287e-05 vs 9.997714285714287e-05"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "15165B",
+     "ok": true,
+     "note": "15165B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "11 个小节",
+     "ok": true,
+     "note": "11 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/terminal_velocity_convergence.png curve 71161B div=256",
+     "ok": true,
+     "note": "figures/terminal_velocity_convergence.png curve 71161B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/droplet_trajectory.png curve 69528B div=256",
+     "ok": true,
+     "note": "figures/droplet_trajectory.png curve 69528B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/gate_assessment.png diagram 52801B div=256",
+     "ok": true,
+     "note": "figures/gate_assessment.png diagram 52801B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:field_waiver",
+     "found": "云图豁免: 本案为终端速度标量测量，无空间场量云图需求；所有图表均为时间序列曲线与评估图",
+     "ok": true,
+     "note": "云图豁免: 本案为终端速度标量测量，无空间场量云图需求；所有图表均为时间序列曲线与评估图"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "paper",
+ "gates_path": "benchmarks/pending/hadamard_rybczynski_droplet/gates.json"
+}
