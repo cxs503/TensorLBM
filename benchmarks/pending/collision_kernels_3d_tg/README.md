@@ -11,6 +11,8 @@
 
 对库碰撞核矩阵中此前零定量基准的 6 个高性能核（cumulant/cascaded/mrt/trt/rlbm/kbc）逐个建立 3D Taylor-Green 涡衰减定量基准，协议与已验证先例 `benchmarks/verified/taylor_green_3d/`（D3Q19 BGK）一致，仅替换碰撞核与对应格子；另附 collide_bgk27 参照对照（诊断用，非预注册核）。周期域 N³，k=2π/N，ν=U0·N/Re，τ=0.5+3ν；Re=24、U0=0.05、阶梯 N=64/96/128（τ=0.9/1.1/1.3）。初场 u=(U0·sin kx·cos ky·cos kz, −U0·cos kx·sin ky·cos kz, 0)、ρ=1、f0=f_eq；步序 collide(stream(f))；步数 auto（E/E0→e−10，record_every=50，下限 2000）。fp32（RTX 5090，TF32 matmul 关闭）。观测：γ_E_sim=−d(lnE)/dt（LSQ，t≥50 全采样）对解析 γ_E=6νk²——初场为波矢 (±k,±k,±k) 的 8 支平面波叠加，|κ|²=3k² ⇒ γ_vel=3νk²、γ_E=6νk²；D3Q27 与 D3Q19 的 cs² 同为 1/3，六核剪切模弛豫率均为 1/τ（源码核对），两格子解析式一致。3D TG 非 NS 精确解：涡拉伸使 γ_sim 略高于 6νk²（先例 BGK 量级），如实测量、无修正、无重标定。判定条款预注册于暂存 NOTES_sha256 链（judge() 语义与先例一致）。源钉定只读 worktree bm_w5（commit cf5709db3c）。库入口：六核碰撞函数 + d3q27.stream27_roll / solver3d.stream3d + equilibrium27/equilibrium3d + macroscopic，全程只调库函数。
 
+**参考锚定**：解析衰减率 γ_E=6νk² 来自 Taylor-Green 涡初场平面波叠加理论（|κ|²=3k²）；判定协议锚定已验证先例 `benchmarks/verified/taylor_green_3d/`（D3Q19 BGK，四门全过）；KBC 修复核参考 PR #312（2026-09-22）修复后剪切粘度由 τ 精确控制的实现。
+
 ## 计算结果现状
 
 ### 判定总表
