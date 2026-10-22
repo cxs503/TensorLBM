@@ -1,0 +1,204 @@
+{
+ "case": "couette_3d",
+ "verdict": "promote",
+ "checked_at": "2026-10-20T12:17:38Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.d3q19 import OPPOSITE, W_EXACT64, C, equilibrium3d, macroscopic3d",
+     "f": "benchmarks/verified/couette_3d/run.py",
+     "k": "grep:from tensorlbm.d3q19 import",
+     "found": "from tensorlbm.d3q19 import OPPOSITE, W_EXACT64, C, equilibrium3d, macroscopic3d",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "from tensorlbm.solver3d import collide_bgk3d, stream3d",
+     "f": "benchmarks/verified/couette_3d/run.py",
+     "k": "grep:from tensorlbm.solver3d import collide_bgk3d, stream3d",
+     "found": "from tensorlbm.solver3d import collide_bgk3d, stream3d",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 9.596262761960097e-14,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "grids.H16.l2_rel_err",
+     "found": 9.596262761960097e-14,
+     "ok": true,
+     "note": "9.596262761960097e-14 vs 9.596262761960097e-14"
+    },
+    {
+     "v": 6.700234659707114e-13,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "grids.H32.l2_rel_err",
+     "found": 6.700234659707114e-13,
+     "ok": true,
+     "note": "6.700234659707114e-13 vs 6.700234659707114e-13"
+    },
+    {
+     "v": 7.231638097112415e-13,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "grids.H64.l2_rel_err",
+     "found": 7.231638097112415e-13,
+     "ok": true,
+     "note": "7.231638097112415e-13 vs 7.231638097112415e-13"
+    },
+    {
+     "v": 1.733723620717403e-09,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "grids.H128.l2_rel_err",
+     "found": 1.733723620717403e-09,
+     "ok": true,
+     "note": "1.733723620717403e-09 vs 1.733723620717403e-09"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 7.246891871695247e-05,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "disclosure.G2a_fp32_floor.worst",
+     "found": 7.246891871695247e-05,
+     "ok": true,
+     "note": "7.246891871695247e-05 vs 7.246891871695247e-05"
+    },
+    {
+     "v": 1.733723620717403e-09,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "disclosure.G2b_scheme_exactness_fp64.worst",
+     "found": 1.733723620717403e-09,
+     "ok": true,
+     "note": "1.733723620717403e-09 vs 1.733723620717403e-09"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "2026-10-06",
+     "f": "benchmarks/verified/couette_3d/README.md",
+     "k": "grep:FROZEN 2026-10-06",
+     "found": "2026-10-06",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "analytical u(y) = U0*(y-0.5)/H_eff (linear Couette profile, half-way BB walls at y=0.5 and y=ny-1.5)",
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "reference",
+     "found": "analytical u(y) = U0*(y-0.5)/H_eff (linear Couette profile, half-way BB walls at y=0.5 and y=ny-1.5)",
+     "ok": true,
+     "note": "'analytical u(y) = U0*(y-0.5)/H_eff (linear Couette profile, half-way BB walls at y=0.5 and y=ny-1.5)' vs 'analytical u(y) = U0*(y-0.5)/H_eff (linear Couette profile, half-way BB walls at y=0.5 and y=ny-1.5)'"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "4731B",
+     "ok": true,
+     "note": "4731B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "9 个小节",
+     "ok": true,
+     "note": "9 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/field_midplane_speed.png field 57057B",
+     "ok": true,
+     "note": "figures/field_midplane_speed.png field 57057B"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/curve_profile_vs_analytical.png curve 186102B",
+     "ok": true,
+     "note": "figures/curve_profile_vs_analytical.png curve 186102B"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/curve_l2_convergence.png curve 71622B",
+     "ok": true,
+     "note": "figures/curve_l2_convergence.png curve 71622B"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "paper",
+ "gates_path": "benchmarks/verified/couette_3d/gates.json"
+}

@@ -1,0 +1,92 @@
+{
+ "case": "couette_3d",
+ "verdict": "promote",
+ "reason": "",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.d3q19 import OPPOSITE, W_EXACT64, C, equilibrium3d, macroscopic3d",
+     "f": "benchmarks/verified/couette_3d/run.py",
+     "k": "grep:from tensorlbm.d3q19 import"
+    },
+    {
+     "v": "from tensorlbm.solver3d import collide_bgk3d, stream3d",
+     "f": "benchmarks/verified/couette_3d/run.py",
+     "k": "grep:from tensorlbm.solver3d import collide_bgk3d, stream3d"
+    }
+   ]
+  },
+  {
+   "gate": "direct_observable",
+   "pass": true,
+   "evidence": [
+    {
+     "v": 9.596262761960097e-14,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "grids.H16.l2_rel_err"
+    },
+    {
+     "v": 6.700234659707114e-13,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "grids.H32.l2_rel_err"
+    },
+    {
+     "v": 7.231638097112415e-13,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "grids.H64.l2_rel_err"
+    },
+    {
+     "v": 1.733723620717403e-09,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "grids.H128.l2_rel_err"
+    }
+   ]
+  },
+  {
+   "gate": "monotone_convergence",
+   "pass": true,
+   "mode": "abs_decrease",
+   "evidence": [
+    {
+     "v": 7.246891871695247e-05,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "disclosure.G2a_fp32_floor.worst"
+    },
+    {
+     "v": 1.733723620717403e-09,
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "disclosure.G2b_scheme_exactness_fp64.worst"
+    }
+   ]
+  },
+  {
+   "gate": "reference_locked_first",
+   "pass": true,
+   "evidence": [
+    {
+     "v": "2026-10-06",
+     "f": "benchmarks/verified/couette_3d/README.md",
+     "k": "grep:FROZEN 2026-10-06"
+    },
+    {
+     "v": "analytical u(y) = U0*(y-0.5)/H_eff (linear Couette profile, half-way BB walls at y=0.5 and y=ny-1.5)",
+     "f": "benchmarks/verified/couette_3d/result.json",
+     "k": "reference"
+    }
+   ]
+  },
+  {
+   "gate": "case_readme",
+   "pass": true,
+   "evidence": []
+  },
+  {
+   "gate": "figures",
+   "pass": true,
+   "evidence": []
+  }
+ ]
+}
