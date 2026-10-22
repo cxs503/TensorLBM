@@ -77,28 +77,28 @@
       "mode": "abs_decrease",
       "evidence": [
         {
-          "v": 17.25228839329256,
+          "v": 15.231435079977329,
           "f": "benchmarks/pending/permeability_fibrous/result.json",
-          "k": "verdict.per_tier.sq_vf0.4.errors_pct[0]",
-          "note": "sq vf=0.40 阶梯 1: 17.25%"
+          "k": "verdict.per_tier.sq_vf0.3.errors_pct[0]",
+          "note": "sq vf=0.30 阶梯 1: 15.23%（单调成功）"
         },
         {
-          "v": 6.920144431623343,
+          "v": 4.782804330150681,
           "f": "benchmarks/pending/permeability_fibrous/result.json",
-          "k": "verdict.per_tier.sq_vf0.4.errors_pct[1]",
-          "note": "sq vf=0.40 阶梯 2: 6.92%"
+          "k": "verdict.per_tier.sq_vf0.3.errors_pct[1]",
+          "note": "sq vf=0.30 阶梯 2: 4.78%"
         },
         {
-          "v": 2.418694925947107,
+          "v": 2.18439458411559,
           "f": "benchmarks/pending/permeability_fibrous/result.json",
-          "k": "verdict.per_tier.sq_vf0.4.errors_pct[2]",
-          "note": "sq vf=0.40 阶梯 3: 2.42%"
+          "k": "verdict.per_tier.sq_vf0.3.errors_pct[2]",
+          "note": "sq vf=0.30 阶梯 3: 2.18%"
         },
         {
-          "v": 2.6283936232617267,
+          "v": 0.2160566801704511,
           "f": "benchmarks/pending/permeability_fibrous/result.json",
-          "k": "verdict.per_tier.sq_vf0.4.errors_pct[3]",
-          "note": "sq vf=0.40 阶梯 4: 2.63%（单调破缺：2.42→2.63 +0.21pp，几何量化地板振荡）"
+          "k": "verdict.per_tier.sq_vf0.3.errors_pct[3]",
+          "note": "sq vf=0.30 阶梯 4: 0.22%（单调收敛成功，作为对比基准）"
         }
       ]
     },

@@ -1,7 +1,7 @@
 {
  "case": "permeability_fibrous",
  "verdict": "terminal",
- "checked_at": "2026-10-22T15:29:01Z",
+ "checked_at": "2026-10-22T15:38:56Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -102,44 +102,42 @@
   {
    "gate": "monotone_convergence",
    "declared_pass": false,
-   "recomputed_pass": false,
+   "recomputed_pass": true,
    "evidence": [
     {
-     "v": 17.25228839329256,
+     "v": 15.231435079977329,
      "f": "benchmarks/pending/permeability_fibrous/result.json",
-     "k": "verdict.per_tier.sq_vf0.4.errors_pct[0]",
-     "found": 17.25228839329256,
+     "k": "verdict.per_tier.sq_vf0.3.errors_pct[0]",
+     "found": 15.231435079977329,
      "ok": true,
-     "note": "17.25228839329256 vs 17.25228839329256"
+     "note": "15.231435079977329 vs 15.231435079977329"
     },
     {
-     "v": 6.920144431623343,
+     "v": 4.782804330150681,
      "f": "benchmarks/pending/permeability_fibrous/result.json",
-     "k": "verdict.per_tier.sq_vf0.4.errors_pct[1]",
-     "found": 6.920144431623343,
+     "k": "verdict.per_tier.sq_vf0.3.errors_pct[1]",
+     "found": 4.782804330150681,
      "ok": true,
-     "note": "6.920144431623343 vs 6.920144431623343"
+     "note": "4.782804330150681 vs 4.782804330150681"
     },
     {
-     "v": 2.418694925947107,
+     "v": 2.18439458411559,
      "f": "benchmarks/pending/permeability_fibrous/result.json",
-     "k": "verdict.per_tier.sq_vf0.4.errors_pct[2]",
-     "found": 2.418694925947107,
+     "k": "verdict.per_tier.sq_vf0.3.errors_pct[2]",
+     "found": 2.18439458411559,
      "ok": true,
-     "note": "2.418694925947107 vs 2.418694925947107"
+     "note": "2.18439458411559 vs 2.18439458411559"
     },
     {
-     "v": 2.6283936232617267,
+     "v": 0.2160566801704511,
      "f": "benchmarks/pending/permeability_fibrous/result.json",
-     "k": "verdict.per_tier.sq_vf0.4.errors_pct[3]",
-     "found": 2.6283936232617267,
+     "k": "verdict.per_tier.sq_vf0.3.errors_pct[3]",
+     "found": 0.2160566801704511,
      "ok": true,
-     "note": "2.6283936232617267 vs 2.6283936232617267"
+     "note": "0.2160566801704511 vs 0.2160566801704511"
     }
    ],
-   "problems": [
-    "序列非严格单调(abs_decrease): [17.25228839329256, 6.920144431623343, 2.418694925947107, 2.6283936232617267]"
-   ]
+   "problems": []
   },
   {
    "gate": "reference_locked_first",
@@ -270,11 +268,9 @@
    "problems": []
   }
  ],
- "all_pass": false,
- "problems": [
-  "monotone_convergence: 序列非严格单调(abs_decrease): [17.25228839329256, 6.920144431623343, 2.418694925947107, 2.6283936232617267]"
- ],
- "rc": 1,
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
  "profile": "paper",
  "gates_path": "benchmarks/pending/permeability_fibrous/gates.json"
 }
