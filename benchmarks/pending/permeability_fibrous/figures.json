@@ -1,0 +1,29 @@
+{
+  "figures": [
+    {
+      "file": "figures/fig_sq_convergence.png",
+      "kind": "curve",
+      "caption": "Square array convergence ladders: relative error vs Sangani & Acrivos 1982 exact reference for vf=0.30/0.50/0.60 (all monotone, finest ≤3%) and vf=0.40 (monotonicity broken by 0.21pp)",
+      "source": "result.json verdict.per_tier.sq_vf{0.3,0.4,0.5,0.6}.errors_pct, plot_figures.py"
+    },
+    {
+      "file": "figures/fig_hex_convergence.png",
+      "kind": "curve",
+      "caption": "Hexagonal array convergence ladders: absolute relative error vs Gebart 1992 reference for vf=0.30/0.45/0.60 (disclosure, all monotone) and vf=0.70 (main, monotonicity broken by reference-side bias)",
+      "source": "result.json verdict.per_tier.hex_vf{0.3,0.45,0.6,0.7}.errors_pct, plot_figures.py"
+    },
+    {
+      "file": "figures/fig_error_summary.png",
+      "kind": "curve",
+      "caption": "Finest-rung error summary: all 10 tiers (sq 0.30-0.70, hex 0.30-0.75) showing pass/fail status against 3% gate; green=pass, red=fail",
+      "source": "result.json verdict.per_tier[*].finest_err_pct, plot_figures.py"
+    },
+    {
+      "file": "figures/fig_staircase_decomposition.png",
+      "kind": "curve",
+      "caption": "Hex near-packing staircase decomposition (DIAGNOSTICS.md D1): staircase artifact decays to zero as gap increases, revealing Gebart reference bias of +2.4% (vf=0.75) and +3.9% (vf=0.70)",
+      "source": "DIAGNOSTICS.md D1 staircase_decomposition, plot_figures.py"
+    }
+  ],
+  "field_waiver": "No spatial field quantities (velocity/pressure contours) are primary observables for this Darcy permeability benchmark; the observable is volume-averaged superficial velocity → permeability K. All diagnostic figures are convergence curves and error summaries."
+}
