@@ -1,0 +1,111 @@
+{
+  "case": "dam_break_sc",
+  "verdict": "terminal",
+  "reason": "结构性本构/密度比缺口 + 反向 G 依赖，非参数调优可解",
+  "date": "2026-10-22",
+  "mission": "m163",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm.multiphase import collide_sc_single_component, psi_exp",
+          "f": "benchmarks/pending/dam_break_sc/run.py",
+          "k": "grep:from tensorlbm.multiphase import collide_sc_single_component"
+        },
+        {
+          "v": "from tensorlbm.solver import stream",
+          "f": "benchmarks/pending/dam_break_sc/run.py",
+          "k": "grep:from tensorlbm.solver import stream"
+        },
+        {
+          "v": "from tensorlbm.boundaries import bounce_back_cells",
+          "f": "benchmarks/pending/dam_break_sc/run.py",
+          "k": "grep:from tensorlbm.boundaries import bounce_back_cells"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "evidence": [
+        {
+          "v": 2.49,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a80.err_pct_T1"
+        },
+        {
+          "v": -9.723,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a80.err_pct_T2"
+        },
+        {
+          "v": -19.086,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a80.err_pct_T2p96"
+        },
+        {
+          "v": 10.526,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a40.err_pct_T1"
+        },
+        {
+          "v": -7.579,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a40.err_pct_T2"
+        },
+        {
+          "v": -19.889,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a40.err_pct_T2p96"
+        }
+      ],
+      "note": "仅 T=1 a=80 过门 (+2.49% ≤ 3%)；T=2 和 T=2.96 系统性偏慢 (-9% 到 -19%)"
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": false,
+      "mode": "abs_decrease",
+      "evidence": [
+        {
+          "v": 10.526,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a40.err_pct_T1"
+        },
+        {
+          "v": 2.49,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a80.err_pct_T1"
+        }
+      ],
+      "note": "T=1 档间差 7.84% > 3%；T=2 和 T=2.96 无单调收敛趋势"
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "2026-09-29",
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "date"
+        },
+        {
+          "v": 1.326,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "reference_checkpoints.T=1.0"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": []
+    }
+  ]
+}
