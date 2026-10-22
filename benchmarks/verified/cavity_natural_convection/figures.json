@@ -1,0 +1,35 @@
+{
+  "case": "cavity_natural_convection",
+  "figures": [
+    {
+      "file": "figures/field_temperature.png",
+      "kind": "field",
+      "caption": "中剖面温度场云图：左壁 T=1（热）、右壁 T=0（冷）、上下绝热，N=128 网格",
+      "source": "result_rerun.json + plot_figures.py"
+    },
+    {
+      "file": "figures/field_velocity_magnitude.png",
+      "kind": "field",
+      "caption": "速度幅值云图：中心涡旋 + 边界层射流结构，N=128 网格，Ra=10⁴, Pr=0.71",
+      "source": "result_rerun.json + plot_figures.py"
+    },
+    {
+      "file": "figures/curve_nu_convergence.png",
+      "kind": "curve",
+      "caption": "Nu 误差收敛曲线：三档网格 |Nu 误差| 严格单调递减（5.94% → 2.91% → 1.36%），虚线为 3% 门限",
+      "source": "result_rerun.json + plot_figures.py"
+    },
+    {
+      "file": "figures/curve_error_comparison.png",
+      "kind": "curve",
+      "caption": "多观测量误差对比：Nu/u_max/v_max 三档网格误差，全部 ≤3%（N≥128）",
+      "source": "result_rerun.json + plot_figures.py"
+    },
+    {
+      "file": "figures/curve_nu_history.png",
+      "kind": "curve",
+      "caption": "Nu 演化历史：三档网格收敛过程，虚线为参考值 Nu_ref=2.243（de Vahl Davis 1983）",
+      "source": "result_rerun.json + plot_figures.py"
+    }
+  ]
+}

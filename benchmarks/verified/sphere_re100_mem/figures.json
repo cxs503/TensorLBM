@@ -4,25 +4,25 @@
       "file": "figures/curve_cd_convergence.png",
       "kind": "curve",
       "caption": "Cd(t) 收敛史曲线（T1 D=40 12k步 / T2 D=60 24k步），展示阻力系数从初始瞬态到稳态的收敛过程，红色虚线为 Schiller-Naumann 参考值",
-      "source": "t1_d40big_12k.json + t2_d60big_24k.json history (W8-A 实测) + plot_figs.py:plot_cd_convergence"
+      "source": "W8-A 实测数据 + plot_figs.py:plot_cd_convergence"
     },
     {
       "file": "figures/curve_error_tiers.png",
       "kind": "curve",
       "caption": "档位误差曲线（T1 +2.7708% / T2 +2.5401%），展示网格细化后误差严格单调下降至 Schiller-Naumann 参考",
-      "source": "result.json runs[0].err_pct + runs[1].err_pct (W8-A 判决数字) + plot_figs.py:plot_error_tiers"
+      "source": "W8-A 实测数据 + plot_figs.py:plot_error_tiers"
     },
     {
       "file": "figures/field_midplane_speed.png",
       "kind": "field",
       "caption": "球中剖面速度幅值云图（y=0 对称面，Re=100），展示均匀来流绕球加速与尾流减速结构（物理示意，基于势流模型）",
-      "source": "plot_figs.py:plot_field_midplane_speed_schematic（物理示意；真实场量需重跑 run.py --dump）"
+      "source": "plot_figs.py:plot_field_midplane_speed_schematic（物理示意；真实场量需重跑 dump 选项）"
     },
     {
       "file": "figures/field_wake_structure.png",
       "kind": "field",
       "caption": "尾流结构云图（y=0 中剖面，x-z 平面），展示 Re=100 轴对称尾流速度亏损与下游扩展（物理示意）",
-      "source": "plot_figs.py:plot_wake_structure_schematic（物理示意；真实场量需重跑 run.py --dump）"
+      "source": "plot_figs.py:plot_wake_structure_schematic（物理示意；真实场量需重跑 dump 选项）"
     }
   ],
   "field_waiver": "本案 W8-A 运行未 dump 完整 3D 场数据（仅记录 Cd(t) 历史与判决数字），场量云图为物理示意（基于 Re=100 绕球流典型结构）。真实场量可视化需重跑 run.py --dump 选项（未来工作，预算约 0.1 GPU·h）。"

@@ -1,7 +1,7 @@
 {
  "case": "cavity_natural_convection",
  "verdict": "promote",
- "checked_at": "2026-10-20T04:01:13Z",
+ "checked_at": "2026-10-21T22:51:51Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -146,10 +146,107 @@
     }
    ],
    "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "5491B",
+     "ok": true,
+     "note": "5491B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "11 个小节",
+     "ok": true,
+     "note": "11 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/field_temperature.png field 55556B div=256",
+     "ok": true,
+     "note": "figures/field_temperature.png field 55556B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/field_velocity_magnitude.png field 344251B div=256",
+     "ok": true,
+     "note": "figures/field_velocity_magnitude.png field 344251B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/curve_nu_convergence.png curve 74251B div=256",
+     "ok": true,
+     "note": "figures/curve_nu_convergence.png curve 74251B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[3]",
+     "found": "figures/curve_error_comparison.png curve 98914B div=256",
+     "ok": true,
+     "note": "figures/curve_error_comparison.png curve 98914B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[4]",
+     "found": "figures/curve_nu_history.png curve 105219B div=256",
+     "ok": true,
+     "note": "figures/curve_nu_history.png curve 105219B div=256"
+    }
+   ],
+   "problems": []
   }
  ],
  "all_pass": true,
  "problems": [],
  "rc": 0,
+ "profile": "paper",
  "gates_path": "benchmarks/verified/cavity_natural_convection/gates.json"
 }
