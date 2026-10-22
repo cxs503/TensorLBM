@@ -1,0 +1,23 @@
+{
+  "case": "cavity_natural_convection_ra1e4_dvd_rerun",
+  "reference": {
+    "source": "de Vahl Davis 1983 Int. J. Numer. Methods Fluids 3:249-264",
+    "Ra": 1e4,
+    "Pr": 0.71,
+    "Nu_ref": 2.243,
+    "u_max_ref": 16.178,
+    "v_max_ref": 19.617,
+    "locked_at": "2026-10-20T03:30:00Z",
+    "note": "与 verified/thermal_cavity 预注册同源（DVD 1983 表 II）"
+  },
+  "acceptance_criteria": {
+    "Nu_err_pct_le": 3.0,
+    "u_max_err_pct_le": 3.0,
+    "v_max_err_pct_le": 3.0,
+    "monotone_convergence": true,
+    "min_grids_passing": 2
+  },
+  "grids_planned": [64, 128, 256],
+  "library_entry": "tensorlbm.thermal.simulate_natural_convection",
+  "frozen_before_run": true
+}
