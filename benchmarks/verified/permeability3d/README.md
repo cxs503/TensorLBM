@@ -70,8 +70,48 @@ D3Q19 BGK，τ=1.0（ν=1/6 精确），全周期单胞；球 mask 由 `make_sph
 一个量级）与负 O(Re) 惯性修正拖累而未达标。φ=0.343 高固相档 a_body 大、
 离注入地板远，故全档通过。晋级动作仅针对 φ=0.343 档。
 
-## 6. 审计溯源
+## 6. 运行命令
+
+```bash
+# 单档运行（φ=0.343, N=64, fs=10）
+/nfs/wangxi/venvs/tensorlbm/bin/python run.py case --phi 0.343 --N 64 --fs 10
+
+# 四档全跑（φ=0.343, N=64/96/128/160）
+for N in 64 96 128 160; do
+  /nfs/wangxi/venvs/tensorlbm/bin/python run.py case --phi 0.343 --N $N --fs 10
+done
+
+# 生成 result.json（聚合所有 case_*.json）
+/nfs/wangxi/venvs/tensorlbm/bin/python run.py report
+
+# 独立验算（零 run.py 导入）
+/nfs/wangxi/venvs/tensorlbm/bin/python verify.py
+```
+
+## 7. 审计溯源
 
 - 预注册：`NOTES.md` §1 参考锁定在跑之前
 - SHA256 链：`NOTES_sha256_chain.txt`（pending 目录中）
 - 独立验算：`verify.py` 闭式复算，零手抄
+
+## 8. PROVENANCE 机器溯源
+
+所有判决数字直读工件，零手抄：
+
+| 判据值 | 来源文件 | 键路径 |
+|---|---|---|
+| err(N=64) = 4.6253% | result.json | amendment1_ladders.phi0.343.tiers[0].err |
+| err(N=96) = 3.0980% | result.json | amendment1_ladders.phi0.343.tiers[1].err |
+| err(N=128) = 2.0492% | result.json | amendment1_ladders.phi0.343.tiers[2].err |
+| err(N=160) = 1.4469% | result.json | amendment1_ladders.phi0.343.tiers[3].err |
+| K_table = 15.402 | run.py | ZH_TABLE (φ=0.343 行) |
+| cond_i_finest_le_tol = True | result.json | amendment1_ladders.phi0.343.cond_i_finest_le_tol |
+| cond_ii_finest_lt_coarsest = True | result.json | amendment1_ladders.phi0.343.cond_ii_finest_lt_coarsest |
+| cond_iii_intermediate_le_coarsest = True | result.json | amendment1_ladders.phi0.343.cond_iii_intermediate_le_coarsest |
+
+## 9. 图件索引
+
+见 `figures/` 目录与 `figures.json` manifest：
+- `field_solid_geometry.png`：孔隙结构切片（固体几何 φ=0.343, N=64）
+- `field_velocity_midplane.png`：渗透速度场云图（中剖面 z=0.5, N=64）
+- `curve_convergence_k_vs_N.png`：k vs N 收敛曲线（φ=0.343 四档）

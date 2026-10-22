@@ -1,0 +1,72 @@
+{
+  "case": "hadamard_rybczynski_droplet",
+  "verdict": "terminal",
+  "reason": "壁面约束效应（confinement ratio a/L=0.125）导致终端速度误差 -43.46%，远超 3% 门限；HR 解析解假设无限域，有限域基准物理设置不匹配",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm.cac_lbm import CACSim, rho_of_phi, init_phi_droplet",
+          "f": "/tmp/cac_hr_buoyancy.py",
+          "k": "grep:from tensorlbm.cac_lbm import"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "evidence": [
+        {
+          "v": -43.46,
+          "f": "/nfs/wangxi/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.log",
+          "k": "grep:Relative error:"
+        }
+      ]
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": [
+        {
+          "v": 9.997714285714287e-05,
+          "f": "/nfs/wangxi/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.json",
+          "k": "U_t_ref"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": [
+        {
+          "v": 15165,
+          "f": "benchmarks/pending/hadamard_rybczynski_droplet/README.md",
+          "k": "file_size_bytes"
+        }
+      ]
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": [
+        {
+          "v": 3,
+          "f": "benchmarks/pending/hadamard_rybczynski_droplet/figures.json",
+          "k": "len(figures)"
+        },
+        {
+          "v": "figures/terminal_velocity_convergence.png",
+          "f": "benchmarks/pending/hadamard_rybczynski_droplet/figures.json",
+          "k": "figures[0].file"
+        },
+        {
+          "v": "curve",
+          "f": "benchmarks/pending/hadamard_rybczynski_droplet/figures.json",
+          "k": "figures[0].kind"
+        }
+      ]
+    }
+  ]
+}

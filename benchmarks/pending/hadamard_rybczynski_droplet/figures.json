@@ -1,0 +1,23 @@
+{
+  "figures": [
+    {
+      "file": "figures/terminal_velocity_convergence.png",
+      "kind": "curve",
+      "caption": "终端速度收敛曲线：模拟值（蓝线）与参考值（红虚线）对比",
+      "source": "terminal_buoyancy.json + plot_figures.py"
+    },
+    {
+      "file": "figures/droplet_trajectory.png",
+      "kind": "curve",
+      "caption": "液滴质心垂直轨迹：质心位置随时间变化",
+      "source": "terminal_buoyancy.json + plot_figures.py"
+    },
+    {
+      "file": "figures/gate_assessment.png",
+      "kind": "diagram",
+      "caption": "四门评估柱状图：G1库入口(通过)、G2直接观测量(失败)、G3单调收敛(不足)、G4参考锁定(通过)",
+      "source": "terminal_buoyancy.json + plot_figures.py"
+    }
+  ],
+  "field_waiver": "本案为终端速度标量测量，无空间场量云图需求；所有图表均为时间序列曲线与评估图"
+}

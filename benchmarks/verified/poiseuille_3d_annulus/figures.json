@@ -1,0 +1,30 @@
+{
+  "case": "poiseuille_3d_annulus",
+  "profile": "paper",
+  "figures": [
+    {
+      "file": "figures/diagram_annulus_geometry.png",
+      "kind": "diagram",
+      "caption": "问题几何示意：同心环隙横截面（内柱 a、外壁 R_o、有效半径 δ_i/δ_o）与精确环形 Poiseuille 剖面 u(r)，内外壁 u=0 无滑移，轴向长 L/R=6",
+      "source": "benchmarks/verified/poiseuille_3d_annulus/case_Ro20.json a + R_o + delta_i/delta_o + G_Q + nu_lb + L_over_R（剖面形式见同目录 run.py 头注精确解）"
+    },
+    {
+      "file": "figures/field_midplane_speed.png",
+      "kind": "field",
+      "caption": "环隙横截面中剖面轴向速度 u_x 云图（R_o=20，内外壁无滑移，楼梯离散边界清晰可见）",
+      "source": "benchmarks/verified/poiseuille_3d_annulus/case_Ro20_field.npz u_meas/fluid_np（run.py single 20 --dump 直出）"
+    },
+    {
+      "file": "figures/curve_profile_vs_analytical.png",
+      "kind": "curve",
+      "caption": "三档网格（R_o=20/40/80）径向速度剖面 vs CH1 有效帧解析解（binned LBM 直读工件，最大误差 1.1634/0.1270/0.0514%）",
+      "source": "benchmarks/verified/poiseuille_3d_annulus/case_Ro{20,40,80}.json r_bins + u_bins + delta_i/delta_o + G_Q"
+    },
+    {
+      "file": "figures/curve_error_convergence.png",
+      "kind": "curve",
+      "caption": "CH1 有效帧（主判据）与 CH2 名义帧（披露）最大相对误差随网格细化单调收敛曲线，虚线为 3% 判据线",
+      "source": "benchmarks/verified/poiseuille_3d_annulus/result.json eff_errors_pct + nom_errors_pct"
+    }
+  ]
+}
