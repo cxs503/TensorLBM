@@ -40,7 +40,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [cavity_3d_full](cavity_3d_full/) | ⏸️ superseded | 已归档至 verified/cavity_3d_full（1.338→0.259% 单调收敛）；本目录为 superseded 诊断稿 | 归档完成（标记 superseded） | 0 |
 | [cavity_natural_convection](cavity_natural_convection/) | ❌ | 修复前旧档（库 thermal 壁 BC 双缺陷；库已修复且 2D 六案已 verified） | 按新库重跑预注册（对齐 thermal_cavity） | 小 |
 | [channel_turb](channel_turb/) | ❌ | 2D 槽道无转捩路径（Re_max 4200 < 5772）；RMS 4.59/5.61% 且细化更差 | 3D 槽道（新案例） | 高 |
-| [dit_turbulence](dit_turbulence/) | ❌ | 固定 C_s 跨网格不收敛（N256 +17.05%，C_s 微调不敏感） | dynamic Smagorinsky / 系综 / 更长运行 | 中 |
+| [dit_turbulence](dit_turbulence/) | ⏸️ | 固定 C_s 跨网格不收敛（N256 +17.05%，C_s 微调不敏感）；m167 终裁：DSMag 库实现缺陷（全局平均+稳定性问题），系综/更长运行不适用 | 终裁完成，无后续动作 | 0 |
 | [rayleigh_benard](rayleigh_benard/) | ❌ | E=1.224→1.006→3.101% 非单调 + ny256 近临界臂拟合质量（二次延长散布 3.10/3.98% 仍超）；根因=格子算子 Ra_c 上移 | γ_ref 重锁格子算子特征值（新 prereg） | ~8 GPU·h/轮 |
 | [rayleigh_taylor](rayleigh_taylor/) | ⛔ | SCMP 无生长窗口：λ=280 档扫到 vapor-spinodal 重力天花板 91%（g=6.5e-6）σ_sim 仍负；10/10 案例无增长 | 高密度比伪势引擎（或晋级引擎重设计后重开） | 高 |
 | [dam_break_3d_mm](dam_break_3d_mm/) | ❌ | 引擎级五连根因：12 检查点反收敛（T*=2 时 -2.25%→+7.53%）、质量门 -49.5/-62.2%、前锋推进与记账同开关 | 晋级引擎重设计（权重触发）后两档重跑 | 高 |
