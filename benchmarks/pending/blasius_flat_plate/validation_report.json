@@ -1,0 +1,90 @@
+{
+  "case": "blasius_flat_plate",
+  "mission": "m106",
+  "verdict": "terminal",
+  "timestamp": "2026-10-20T16:45:00Z",
+  "action_taken": "延长板长放大有效 Re_x（保持直接口径）",
+  "grids_tested": [
+    {
+      "name": "plate800",
+      "nx": 840,
+      "ny": 1400,
+      "plate_len": 800,
+      "probe_x_eff": 400,
+      "Re_x": 2000,
+      "collision": "bgk",
+      "cf_sim": 0.018969459459185597,
+      "cf_ref": 0.014850055524093632,
+      "cf_err_pct": 27.74,
+      "u_edge_over_U": 1.00407,
+      "l2_rel_err_profile": 0.1968,
+      "mass_drift_pct": 0.00597,
+      "finite": true,
+      "file": "R7p_plate800_bgk.json"
+    },
+    {
+      "name": "plate1600",
+      "nx": 1640,
+      "ny": 1400,
+      "plate_len": 1600,
+      "probe_x_eff": 800,
+      "Re_x": 4000,
+      "collision": "bgk",
+      "cf_sim": 0.014369460754096506,
+      "cf_ref": 0.010500574962083358,
+      "cf_err_pct": 36.84,
+      "u_edge_over_U": 1.01078,
+      "l2_rel_err_profile": 0.2379,
+      "mass_drift_pct": 0.00730,
+      "finite": true,
+      "file": "R8p_plate1600_bgk.json"
+    }
+  ],
+  "gates": {
+    "G1_library_entry": {
+      "pass": true,
+      "evidence": "tensorlbm 库路径驱动（run.py 第 30-35 行 import tensorlbm）"
+    },
+    "G2_direct_observable": {
+      "pass": false,
+      "best_err_pct": 27.74,
+      "worst_err_pct": 36.84,
+      "threshold": 3.0,
+      "evidence": "plate800 +27.74%, plate1600 +36.84%，均远超 3% 阈值"
+    },
+    "G3_monotone_convergence": {
+      "pass": false,
+      "trend": "反收敛",
+      "evidence": "误差随 Re_x 增加而单调增加：plate400 (Re_x=900) +27.38% → plate800 (Re_x=2000) +27.74% → plate1600 (Re_x=4000) +36.84%"
+    },
+    "G4_reference_locked": {
+      "pass": true,
+      "evidence": "Blasius ODE RK4 自解（h=0.005），f''(0)=0.3320573362151963，C_f=0.6641146724/√Re_x，参考先锁定后跑"
+    }
+  },
+  "root_cause": {
+    "mechanism": "累积位移效应（边缘加速）主导",
+    "explanation": [
+      "1. 边界层位移厚度 δ* 随 x 增加，导致流道有效截面积收缩",
+      "2. 流道收缩引起边缘加速 u_edge/U > 1（plate1600 达 1.011）",
+      "3. 边缘加速使有效 Re_x 增加，但误差也增加（位移效应的累积结果）",
+      "4. 延长板长会增加累积位移效应，使误差更大（非 README 预期的改善）",
+      "5. 误差在 x_eff=180 后趋于饱和（plate800 在 180-400 范围仅增加 0.75%）",
+      "6. 但继续延长到 x_eff=800 时误差急剧增加（plate1600 +36.84%）"
+    ],
+    "evidence": [
+      "plate400 多站位数据：x_eff=180 误差 +27.38%，x_eff=380 误差 +46.76%",
+      "plate800 多站位数据：x_eff=180 误差 +26.99%，x_eff=400 误差 +27.74%",
+      "plate1600 多站位数据：x_eff=180 误差 +26.86%，x_eff=800 误差 +36.84%",
+      "边缘加速与 x^(3/2) 成正比，验证累积位移效应假设"
+    ]
+  },
+  "comparison_with_previous": {
+    "plate200_Re900": {"err": 47.33, "note": "探针距板尾仅 20 格子，受板尾效应影响"},
+    "plate400_Re900": {"err": 27.38, "note": "探针距板尾 220 格子，远离板尾效应"},
+    "plate800_Re2000": {"err": 27.74, "note": "探针距板尾 400 格子，误差趋于饱和"},
+    "plate1600_Re4000": {"err": 36.84, "note": "探针距板尾 800 格子，累积位移效应主导"}
+  },
+  "conclusion": "延长板长不会改善误差，因为累积位移效应是主导因素。误差随 Re_x 增加而单调增加，无法通过简单延长板长达到 3% 阈值。需要改变物理设置（如增加域高、改变入口条件、使用压力修正等）才能解决位移效应问题。",
+  "recommendation": "维持 terminal 终态。晋级路径需要引擎级改造（如引入压力修正、改变边界条件、或使用外部流假设），而非简单参数调优。"
+}
