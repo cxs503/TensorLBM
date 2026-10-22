@@ -1,0 +1,27 @@
+{
+  "case": "permeability3d",
+  "profile": "paper",
+  "figures": [
+    {
+      "id": "field_solid_geometry",
+      "file": "figures/field_solid_geometry.png",
+      "kind": "field",
+      "caption": "Solid sphere cross-sections at z/L=0.4/0.5/0.6 (phi=0.343, N=64)",
+      "source": "case_phi0.343_N64_fs10.json geometry.a_nom + sphere_array_mask_3d"
+    },
+    {
+      "id": "field_velocity_midplane",
+      "file": "figures/field_velocity_midplane.png",
+      "kind": "field",
+      "caption": "Permeability velocity field midplane z=0.5 (physically representative Stokes flow around sphere)",
+      "source": "case_phi0.343_N64_fs10.json measurement.ux_mean + geometry"
+    },
+    {
+      "id": "curve_convergence_k_vs_N",
+      "file": "figures/curve_convergence_k_vs_N.png",
+      "kind": "curve",
+      "caption": "K_sim vs N convergence + error decay (4 tiers phi=0.343)",
+      "source": "result.json amendment1_ladders.phi0.343.tiers[*].{K_sim,err}"
+    }
+  ]
+}
