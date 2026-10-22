@@ -1,7 +1,7 @@
 {
   "case": "cavity_natural_convection",
   "verdict": "promote",
-  "reason": "修复后重跑通过全部四门：库入口✓、直接观测量≤3%✓（N=128: -2.91%, N=256: -1.36%）、单调收敛✓（5.94%→2.91%→1.36%）、参考先锁定✓",
+  "reason": "修复后重跑通过全部六门（paper 档）：原四门✓ + case_readme✓ + figures✓",
   "gates": [
     {
       "gate": "library_entry",
@@ -95,6 +95,63 @@
           "v": "2026-10-20T03:30:00Z",
           "f": "benchmarks/verified/cavity_natural_convection/prereg.json",
           "k": "reference.locked_at"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "README.md 存在且 ≥1200B",
+          "f": "benchmarks/verified/cavity_natural_convection/README.md",
+          "k": "check:exists"
+        },
+        {
+          "v": "≥2 个 ## 小节",
+          "f": "benchmarks/verified/cavity_natural_convection/README.md",
+          "k": "check:sections>=2"
+        },
+        {
+          "v": "PROVENANCE 块",
+          "f": "benchmarks/verified/cavity_natural_convection/README.md",
+          "k": "check:PROVENANCE"
+        },
+        {
+          "v": "python 运行命令",
+          "f": "benchmarks/verified/cavity_natural_convection/README.md",
+          "k": "check:run_command"
+        },
+        {
+          "v": "参考/锚字样",
+          "f": "benchmarks/verified/cavity_natural_convection/README.md",
+          "k": "check:reference_anchor"
+        }
+      ]
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "figures.json manifest 存在",
+          "f": "benchmarks/verified/cavity_natural_convection/figures.json",
+          "k": "check:manifest_exists"
+        },
+        {
+          "v": "≥1 曲线（curve）",
+          "f": "benchmarks/verified/cavity_natural_convection/figures.json",
+          "k": "check:curve_count"
+        },
+        {
+          "v": "≥1 云图（field）",
+          "f": "benchmarks/verified/cavity_natural_convection/figures.json",
+          "k": "check:field_count"
+        },
+        {
+          "v": "每图真 PNG 且 ≥6KB",
+          "f": "benchmarks/verified/cavity_natural_convection/figures/",
+          "k": "check:png_valid"
         }
       ]
     }

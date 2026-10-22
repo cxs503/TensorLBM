@@ -1,7 +1,7 @@
 {
  "case": "sphere_re100_mem",
  "verdict": "promote",
- "checked_at": "2026-10-20T09:39:19Z",
+ "checked_at": "2026-10-21T22:52:10Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -150,47 +150,101 @@
   {
    "gate": "figures",
    "declared_pass": true,
-   "recomputed_pass": true,
+   "recomputed_pass": false,
    "evidence": [
     {
      "v": true,
      "f": "figures.json",
+     "k": "check:fig[0].source_file",
+     "found": "source 提到的文件不存在: t1_d40big_12k.json",
+     "ok": false,
+     "note": "source 提到的文件不存在: t1_d40big_12k.json"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0].source_file",
+     "found": "source 提到的文件不存在: t2_d60big_24k.json",
+     "ok": false,
+     "note": "source 提到的文件不存在: t2_d60big_24k.json"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
      "k": "check:fig[0]",
-     "found": "figures/curve_cd_convergence.png curve 73351B",
+     "found": "figures/curve_cd_convergence.png curve 73351B div=256",
      "ok": true,
-     "note": "figures/curve_cd_convergence.png curve 73351B"
+     "note": "figures/curve_cd_convergence.png curve 73351B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1].source_file",
+     "found": "source 提到的文件不存在: result.json",
+     "ok": false,
+     "note": "source 提到的文件不存在: result.json"
     },
     {
      "v": true,
      "f": "figures.json",
      "k": "check:fig[1]",
-     "found": "figures/curve_error_tiers.png curve 61621B",
+     "found": "figures/curve_error_tiers.png curve 61621B div=256",
      "ok": true,
-     "note": "figures/curve_error_tiers.png curve 61621B"
+     "note": "figures/curve_error_tiers.png curve 61621B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2].source_file",
+     "found": "source 提到的文件不存在: run.py",
+     "ok": false,
+     "note": "source 提到的文件不存在: run.py"
     },
     {
      "v": true,
      "f": "figures.json",
      "k": "check:fig[2]",
-     "found": "figures/field_midplane_speed.png field 291385B",
+     "found": "figures/field_midplane_speed.png field 291385B div=256",
      "ok": true,
-     "note": "figures/field_midplane_speed.png field 291385B"
+     "note": "figures/field_midplane_speed.png field 291385B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[3].source_file",
+     "found": "source 提到的文件不存在: run.py",
+     "ok": false,
+     "note": "source 提到的文件不存在: run.py"
     },
     {
      "v": true,
      "f": "figures.json",
      "k": "check:fig[3]",
-     "found": "figures/field_wake_structure.png field 115794B",
+     "found": "figures/field_wake_structure.png field 115794B div=256",
      "ok": true,
-     "note": "figures/field_wake_structure.png field 115794B"
+     "note": "figures/field_wake_structure.png field 115794B div=256"
     }
    ],
-   "problems": []
+   "problems": [
+    "5/9 三元组复算不过",
+    "check:fig[0].source_file: source 提到的文件不存在: t1_d40big_12k.json",
+    "check:fig[0].source_file: source 提到的文件不存在: t2_d60big_24k.json",
+    "check:fig[1].source_file: source 提到的文件不存在: result.json",
+    "check:fig[2].source_file: source 提到的文件不存在: run.py",
+    "check:fig[3].source_file: source 提到的文件不存在: run.py"
+   ]
   }
  ],
- "all_pass": true,
- "problems": [],
- "rc": 0,
+ "all_pass": false,
+ "problems": [
+  "figures: 5/9 三元组复算不过",
+  "figures: check:fig[0].source_file: source 提到的文件不存在: t1_d40big_12k.json",
+  "figures: check:fig[0].source_file: source 提到的文件不存在: t2_d60big_24k.json",
+  "figures: check:fig[1].source_file: source 提到的文件不存在: result.json",
+  "figures: check:fig[2].source_file: source 提到的文件不存在: run.py",
+  "figures: check:fig[3].source_file: source 提到的文件不存在: run.py"
+ ],
+ "rc": 1,
  "profile": "paper",
  "gates_path": "benchmarks/verified/sphere_re100_mem/gates.json"
 }
