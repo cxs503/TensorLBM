@@ -83,7 +83,38 @@ PYTHONPATH=../../../src python run.py summarize <out_dir> --R 20 40 80
 ```
 
 工件：`result.json`（三档 + 复合判决）、`case_Ro20/40/80.json`（正式三档）、
-`case_Ro20_long.json`（90000 步平稳性证明）。
+`case_Ro20_long.json`（90000 步平稳性证明）、`case_Ro20_field.npz`（中剖面场转储，
+`run.py single 20 <out>.json --dump` 直出，供图件使用）。
+
+## 图件（paper 档）
+
+图件清单在 `figures.json`，全部由 `plot_figs.py` 从上述工件直读生成（零手抄）：
+
+```bash
+cd benchmarks/verified/poiseuille_3d_annulus
+python plot_figs.py          # 重新生成 figures/*.png + figures.json
+```
+
+| 图 | 类型 | 内容 | source（值-文件-键） |
+|---|---|---|---|
+| `figures/diagram_annulus_geometry.png` | diagram | 环隙横截面几何 + 精确剖面 u(r) 示意 | `case_Ro20.json` a/R_o/δ_i/δ_o/G_Q/nu_lb/L_over_R |
+| `figures/field_midplane_speed.png` | field | 中剖面轴向速度 u_x 云图（R_o=20，楼梯壁清晰） | `case_Ro20_field.npz` u_meas/fluid_np |
+| `figures/curve_profile_vs_analytical.png` | curve | 三档径向剖面 vs CH1 有效帧解析解 | `case_Ro{20,40,80}.json` r_bins/u_bins/δ/G_Q |
+| `figures/curve_error_convergence.png` | curve | CH1/CH2 误差收敛曲线 + 3% 判据线 | `result.json` eff_errors_pct/nom_errors_pct |
+
+## 复用复核（m116 redo）
+
+前次 mission（m100）已完成本图档补强且六门全过，因平台审批器缺陷被误驳；
+审批器当日修复后本班为**复用 redo**：成果原样落地，但**复用不免检**——
+在本 worktree 独立重跑 R_o=20 档并按值-文件-键逐键与归档工件比对：
+
+```bash
+CUDA_VISIBLE_DEVICES=5 PYTHONPATH=../../../src python run.py single 20 <out>.json --dump --device cuda:0
+```
+
+审计工件 `audit_recheck_m116.json`：`max_rel_diff_over_keys = 0.0`（22 个判决量
+含 `eff_max_bin_central_pct`、`delta_i_minus_a`、`delta_o_minus_Ro`、`G_fit_over_G_Q`
+全部 bit-identical）。场转储 u_meas 相对偏差 0.07%（GPU 归约顺序，不影响任何判决量）。
 
 <!-- PROVENANCE
 [{"v": 20, "f": "benchmarks/verified/poiseuille_3d_annulus/result.json", "k": "R_o_list[0]"},

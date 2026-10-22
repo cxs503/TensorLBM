@@ -1,0 +1,82 @@
+{
+  "case": "cavity_3d_full",
+  "verdict": "promote",
+  "reason": "",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm.boundaries3d import zou_he_moving_lid_3d",
+          "f": "benchmarks/verified/cavity_3d_full/run.py",
+          "k": "grep:from tensorlbm.boundaries3d import zou_he_moving_lid_3d"
+        },
+        {
+          "v": "from tensorlbm.solver3d import collide_trt3d, stream3d",
+          "f": "benchmarks/verified/cavity_3d_full/run.py",
+          "k": "grep:from tensorlbm.solver3d import collide_trt3d, stream3d"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": true,
+      "evidence": [
+        {
+          "v": 1.338,
+          "f": "benchmarks/verified/cavity_3d_full/result.json",
+          "k": "grids.64.err_pct_vs_ku"
+        },
+        {
+          "v": 0.259,
+          "f": "benchmarks/verified/cavity_3d_full/result.json",
+          "k": "grids.96.err_pct_vs_ku"
+        }
+      ]
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": true,
+      "mode": "abs_decrease",
+      "evidence": [
+        {
+          "v": 1.338,
+          "f": "benchmarks/verified/cavity_3d_full/result.json",
+          "k": "grids.64.err_pct_vs_ku"
+        },
+        {
+          "v": 0.259,
+          "f": "benchmarks/verified/cavity_3d_full/result.json",
+          "k": "grids.96.err_pct_vs_ku"
+        }
+      ]
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "Ku, Hirsh & Taylor (1987)",
+          "f": "benchmarks/verified/cavity_3d_full/README.md",
+          "k": "grep:Ku, Hirsh & Taylor (1987)"
+        },
+        {
+          "v": "2026-08-20",
+          "f": "benchmarks/verified/cavity_3d_full/result.json",
+          "k": "verified_date"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": []
+    }
+  ]
+}

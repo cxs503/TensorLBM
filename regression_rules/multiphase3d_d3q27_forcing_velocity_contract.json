@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "tensorlbm.multiphase3d_d3q27.forcing_velocity_contract",
+  "title": "Reject Guo forcing with mixture equilibrium velocity",
+  "project": "cxs503/TensorLBM",
+  "owner": "TensorLBM maintainers",
+  "category": "api_contract",
+  "severity": "error",
+  "lifecycle": "advisory",
+  "statement": "collide_sc_two_component_27 must raise ValueError when use_guo=True and u_eq='mixture'; documented valid configurations must remain accepted.",
+  "rationale": "The Guo branch applies a force correction in addition to the per-component equilibrium velocity shift. The current implementation documents that this combination breaks the intended mixture momentum-exchange identity.",
+  "scope": [
+    "src/tensorlbm/multiphase3d_d3q27.py::collide_sc_two_component_27",
+    "tests/test_mcmp_mixture_3d.py::test_t5_mixture_self_discrimination"
+  ],
+  "validator": {
+    "kind": "pytest",
+    "command": "python -m pytest -q tests/test_mcmp_mixture_3d.py",
+    "version": "pinned by the TensorLBM project environment"
+  },
+  "fixtures": {
+    "positive": "tests/test_mcmp_mixture_3d.py::test_t5_mixture_self_discrimination asserts ValueError for use_guo=True with u_eq='mixture' for both D3Q19 and D3Q27.",
+    "negative": "The same test checks invalid u_eq rejection; test_t0_default_path_bitwise_identical_to_explicit_self covers valid Guo forcing with the default/self convention, and mixture tests exercise the velocity-shift path."
+  },
+  "acceptance": {
+    "invalid_configuration": "raises ValueError with a message explaining that mixture equilibrium requires use_guo=False",
+    "valid_configuration": "default/self + Guo and mixture + velocity-shift continue to run without changing legacy default behavior"
+  },
+  "remediation": "Use u_eq='self' when use_guo=True, or use the velocity-shift forcing (use_guo=False) for u_eq='mixture'. Revisit the rule only alongside a derivation and tests that establish a correct alternative formulation.",
+  "reviewed_at": null,
+  "evidence": []
+}

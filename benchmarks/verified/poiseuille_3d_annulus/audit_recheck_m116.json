@@ -1,0 +1,164 @@
+{
+  "case": "poiseuille_3d_annulus",
+  "mission": "m116",
+  "purpose": "复用 redo 复核：m100 成果在本 worktree 落地后，独立重跑 R_o=20 档并逐键比对归档工件（复用不复检=手抄风险）",
+  "generated": "2026-10-20",
+  "device": "CUDA_VISIBLE_DEVICES=5 (GPU5)",
+  "command": "CUDA_VISIBLE_DEVICES=5 PYTHONPATH=../../../src /nfs/wangxi/venvs/tensorlbm/bin/python run.py single 20 <out>.json --dump --device cuda:0",
+  "recheck_json": "/nfs/wangxi/runs/bm_close/poiseuille_3d_annulus/recheck_m116/case_Ro20_recheck.json",
+  "archived_json": "/nfs/wangxi/tensor_eco/agent_work/m116/TensorLBM/benchmarks/verified/poiseuille_3d_annulus/case_Ro20.json",
+  "key_comparison": [
+    {
+      "key": "R_o",
+      "recheck": 20,
+      "archived": 20,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "a",
+      "recheck": 10.0,
+      "archived": 10.0,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "tau",
+      "recheck": 0.8,
+      "archived": 0.8,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "u_in",
+      "recheck": 0.02,
+      "archived": 0.02,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "ny",
+      "recheck": 43,
+      "archived": 43,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "nz",
+      "recheck": 43,
+      "archived": 43,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "nx",
+      "recheck": 120,
+      "archived": 120,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "L_over_R",
+      "recheck": 6.0,
+      "archived": 6.0,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "n_steps",
+      "recheck": 49400,
+      "archived": 49400,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "avg_steps",
+      "recheck": 400,
+      "archived": 400,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "steady",
+      "recheck": true,
+      "archived": true,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "eff_max_bin_central_pct",
+      "recheck": 1.163410482186485,
+      "archived": 1.163410482186485,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "eff_l2_bin_central_pct",
+      "recheck": 0.6219562790067822,
+      "archived": 0.6219562790067822,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "eff_max_cell_central_pct",
+      "recheck": 9.495396909992833,
+      "archived": 9.495396909992833,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "nom_max_bin_central_pct",
+      "recheck": 9.052893693206578,
+      "archived": 9.052893693206578,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "delta_i_minus_a",
+      "recheck": -0.38071546196587036,
+      "archived": -0.38071546196587036,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "delta_o_minus_Ro",
+      "recheck": 0.21048832262779626,
+      "archived": 0.21048832262779626,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "G_fit_over_G_Q",
+      "recheck": 0.9960497904220201,
+      "archived": 0.9960497904220201,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "Q_meas",
+      "recheck": 19.835883520776406,
+      "archived": 19.835883520776406,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "mass_drift_pct",
+      "recheck": 3.21499797187669,
+      "archived": 3.21499797187669,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "fd_max_rel_dev_pct",
+      "recheck": 3.487502453364967,
+      "archived": 3.487502453364967,
+      "rel_diff": 0.0
+    },
+    {
+      "key": "U_max_ref_eff",
+      "recheck": 0.030155360234722532,
+      "archived": 0.030155360234722532,
+      "rel_diff": 0.0
+    }
+  ],
+  "max_rel_diff_over_keys": 0.0,
+  "bit_identical_verdict_keys": true,
+  "field_dump_compare": {
+    "in_repo_npz": "benchmarks/verified/poiseuille_3d_annulus/case_Ro20_field.npz",
+    "previous_npz": "/nfs/wangxi/runs/bm_close/poiseuille_3d_annulus/figdump/case_Ro20_field.npz",
+    "max_abs_u_meas_diff": 2.136671128027956e-05,
+    "rel_u_meas_diff": 0.0007035728096857456,
+    "note": "U_max=0.03036；0.07% 差异来自 GPU 归约顺序，不改变任何一条误差/几何判决量（见 key_comparison，全 0）"
+  },
+  "gate_triples_recheck": {
+    "eff_errors_pct": [
+      1.1634,
+      0.127,
+      0.0514
+    ],
+    "eff_monotone": true,
+    "delta_spread_o": 0.0401,
+    "delta_spread_i": 0.0937
+  },
+  "conclusion": "独立重跑 R_o=20 档全部判决量与归档工件 bit-identical（最大相对偏差 0.0e+00）；本案判据数字可复算。"
+}

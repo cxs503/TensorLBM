@@ -1,0 +1,93 @@
+{
+  "case": "rayleigh_benard",
+  "verdict": "terminal",
+  "reason": "γ_pred 重锁后 ny=64/128 全过但 ny=256 近临界臂拟合质量（窗散布 >2%）导致非单调收敛",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm",
+          "f": "benchmarks/pending/rayleigh_benard/w11/formal/formal_run.py",
+          "k": "grep:from tensorlbm"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "evidence": [
+        {
+          "v": 0.2058754383315184,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.64"
+        },
+        {
+          "v": 0.7711099178929328,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.128"
+        },
+        {
+          "v": 3.0449477056955203,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "E_ny.256"
+        },
+        {
+          "v": 4.531459217565237,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "arm_rows[11].rel_pct"
+        },
+        {
+          "v": -5.01967698332666,
+          "f": "/nfs/wangxi/runs/bm_close/rayleigh_benard/verdict_w12.json",
+          "k": "arm_rows[12].rel_pct"
+        }
+      ]
+    },
+
+
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": [
+        {
+          "v": -1.761689932441037,
+          "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
+          "k": "levels[0].arms[0].gamma_pred"
+        },
+        {
+          "v": -1.7729341986480927,
+          "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
+          "k": "levels[1].arms[0].gamma_pred"
+        },
+        {
+          "v": -1.7804092478691493,
+          "f": "/nfs/wangxi/runs/bm_widen_w11_20261006/c_rayleigh_benard/ref/lattice_predictions.json",
+          "k": "levels[2].arms[0].gamma_pred"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "figures/convergence_curve.png",
+          "f": "benchmarks/pending/rayleigh_benard/figures.json",
+          "k": "figures[0].file"
+        },
+        {
+          "v": "figures/lattice_ra_c_drift.png",
+          "f": "benchmarks/pending/rayleigh_benard/figures.json",
+          "k": "figures[1].file"
+        }
+      ]
+    }
+  ]
+}
