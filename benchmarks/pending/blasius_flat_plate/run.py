@@ -57,11 +57,17 @@ GRIDS = {
     "plate200": dict(nx=240, ny=1400, le=20, plate_len=200, probe=200),
     "plate400": dict(nx=440, ny=1400, le=20, plate_len=400, probe=200),
     "plate400_y1600": dict(nx=440, ny=1600, le=20, plate_len=400, probe=200),
+    # m106: 延长板长，探针远离板尾效应
+    "plate800": dict(nx=840, ny=1400, le=20, plate_len=800, probe=420),  # x_eff=400, 距板尾400
+    "plate1600": dict(nx=1640, ny=1400, le=20, plate_len=1600, probe=820),  # x_eff=800, 距板尾800
 }
 
 # C_f stations in x_eff (= x - le): shared core + plate400-only tail.
 STATIONS_CORE = [30, 60, 90, 120, 150, 180]
 STATIONS_TAIL = [240, 300, 340, 380]
+# m106: 延长板长网格的站点
+STATIONS_PLATE800 = STATIONS_CORE + STATIONS_TAIL + [400]
+STATIONS_PLATE1600 = STATIONS_CORE + STATIONS_TAIL + [400, 800]
 
 CF_COEFF = 2.0 * 0.3320573362151963  # 0.6641146724303926, locked reference
 CF_COEFF_OLD = 0.664  # old-record convention (disclosure only)
@@ -149,6 +155,10 @@ def run_case(
     stations = list(STATIONS_CORE)
     if grid_name.startswith("plate400"):
         stations += STATIONS_TAIL
+    if grid_name == "plate800":
+        stations = list(STATIONS_PLATE800)
+    elif grid_name == "plate1600":
+        stations = list(STATIONS_PLATE1600)
     station_cols = [le + xe for xe in stations]
 
     plate = torch.zeros((ny, nx), dtype=torch.bool, device=device)

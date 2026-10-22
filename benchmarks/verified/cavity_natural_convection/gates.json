@@ -1,0 +1,102 @@
+{
+  "case": "cavity_natural_convection",
+  "verdict": "promote",
+  "reason": "修复后重跑通过全部四门：库入口✓、直接观测量≤3%✓（N=128: -2.91%, N=256: -1.36%）、单调收敛✓（5.94%→2.91%→1.36%）、参考先锁定✓",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm.thermal import",
+          "f": "benchmarks/verified/cavity_natural_convection/driver.py",
+          "k": "grep:from tensorlbm.thermal import"
+        },
+        {
+          "v": "simulate_natural_convection",
+          "f": "benchmarks/verified/cavity_natural_convection/run.py",
+          "k": "grep:from tensorlbm.thermal import simulate_natural_convection"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": true,
+      "evidence": [
+        {
+          "v": -2.9048999611203556,
+          "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
+          "k": "grids[1].nu_err_pct"
+        },
+        {
+          "v": -1.3581713873310013,
+          "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
+          "k": "grids[2].nu_err_pct"
+        },
+        {
+          "v": -0.9738627404189896,
+          "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
+          "k": "grids[1].u_max_err_pct"
+        },
+        {
+          "v": -0.5928760676418104,
+          "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
+          "k": "grids[2].u_max_err_pct"
+        },
+        {
+          "v": -1.6689046390444617,
+          "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
+          "k": "grids[1].v_max_err_pct"
+        },
+        {
+          "v": -0.680175884284258,
+          "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
+          "k": "grids[2].v_max_err_pct"
+        }
+      ]
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": true,
+      "mode": "abs_decrease",
+      "evidence": [
+        {
+          "v": 5.93883218480389,
+          "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
+          "k": "grids[0].nu_err_pct_abs"
+        },
+        {
+          "v": 2.9048999611203556,
+          "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
+          "k": "grids[1].nu_err_pct_abs"
+        },
+        {
+          "v": 1.3581713873310013,
+          "f": "benchmarks/verified/cavity_natural_convection/result_rerun.json",
+          "k": "grids[2].nu_err_pct_abs"
+        }
+      ]
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "de Vahl Davis 1983 Int. J. Numer. Methods Fluids 3:249-264",
+          "f": "benchmarks/verified/cavity_natural_convection/prereg.json",
+          "k": "reference.source"
+        },
+        {
+          "v": 2.243,
+          "f": "benchmarks/verified/cavity_natural_convection/prereg.json",
+          "k": "reference.Nu_ref"
+        },
+        {
+          "v": "2026-10-20T03:30:00Z",
+          "f": "benchmarks/verified/cavity_natural_convection/prereg.json",
+          "k": "reference.locked_at"
+        }
+      ]
+    }
+  ]
+}
