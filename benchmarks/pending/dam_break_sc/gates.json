@@ -1,0 +1,200 @@
+{
+  "case": "dam_break_sc",
+  "verdict": "terminal",
+  "reason": "结构性本构/密度比缺口 + 反向 G 依赖，非参数调优可解",
+  "date": "2026-10-22",
+  "mission": "m163",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "tensorlbm.multiphase.collide_sc_single_component",
+          "f": "benchmarks/pending/dam_break_sc/run.py",
+          "k": "line 42: from tensorlbm.multiphase import collide_sc_single_component"
+        },
+        {
+          "v": "tensorlbm.multiphase.psi_exp",
+          "f": "benchmarks/pending/dam_break_sc/run.py",
+          "k": "line 42: from tensorlbm.multiphase import psi_exp"
+        },
+        {
+          "v": "tensorlbm.solver.stream",
+          "f": "benchmarks/pending/dam_break_sc/run.py",
+          "k": "line 43: from tensorlbm.solver import stream"
+        },
+        {
+          "v": "tensorlbm.boundaries.bounce_back_cells",
+          "f": "benchmarks/pending/dam_break_sc/run.py",
+          "k": "line 44: from tensorlbm.boundaries import bounce_back_cells"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "evidence": [
+        {
+          "v": 2.49,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a80.err_pct_T1"
+        },
+        {
+          "v": -9.723,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a80.err_pct_T2"
+        },
+        {
+          "v": -19.086,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a80.err_pct_T2p96"
+        },
+        {
+          "v": 10.526,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a40.err_pct_T1"
+        },
+        {
+          "v": -7.579,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a40.err_pct_T2"
+        },
+        {
+          "v": -19.889,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a40.err_pct_T2p96"
+        }
+      ],
+      "note": "仅 T=1 a=80 过门 (+2.49% ≤ 3%)；T=2 和 T=2.96 系统性偏慢 (-9% 到 -19%)"
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": false,
+      "mode": "abs_decrease",
+      "evidence": [
+        {
+          "v": 10.526,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a40.err_pct_T1"
+        },
+        {
+          "v": 2.49,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "official_rerun_correct_convention.a80.err_pct_T1"
+        },
+        {
+          "v": 7.84,
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "two_grid_convergence_a40_vs_a80.baseline.T1.rel_err_pct"
+        }
+      ],
+      "note": "T=1 档间差 7.84% > 3%；T=2 和 T=2.96 无单调收敛趋势"
+    },
+    {
+      "gate": "reference_lock_in",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "2026-10-22",
+          "f": "benchmarks/pending/dam_break_sc/README.md",
+          "k": "line 3: 状态：⏸️ TERMINAL 终裁（2026-10-22 m163 闭环）"
+        },
+        {
+          "v": "Lethe digitisation",
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "reference_digitisation_lethe"
+        },
+        {
+          "v": "T=1.0 -> X=1.326",
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "reference_checkpoints.T=1.0"
+        },
+        {
+          "v": "T=2.0 -> X=2.360",
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "reference_checkpoints.T=2.0"
+        },
+        {
+          "v": "T=2.96 -> X=3.670",
+          "f": "benchmarks/pending/dam_break_sc/result.json",
+          "k": "reference_checkpoints.T=2.96"
+        }
+      ],
+      "note": "参考于 2026-10-22 锁定（m163 终裁前），基于 Lethe 官方数字化表"
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "15073 bytes",
+          "f": "benchmarks/pending/dam_break_sc/README.md",
+          "k": "file size >= 1200B"
+        },
+        {
+          "v": "6 sections",
+          "f": "benchmarks/pending/dam_break_sc/README.md",
+          "k": "grep -c '^## ' README.md >= 2"
+        },
+        {
+          "v": "PROVENANCE block present",
+          "f": "benchmarks/pending/dam_break_sc/README.md",
+          "k": "grep -c 'PROVENANCE' README.md >= 1"
+        },
+        {
+          "v": "python command present",
+          "f": "benchmarks/pending/dam_break_sc/README.md",
+          "k": "grep -c 'python' README.md >= 1"
+        },
+        {
+          "v": "reference/anchor present",
+          "f": "benchmarks/pending/dam_break_sc/README.md",
+          "k": "grep -c '参考\\|锚\\|reference\\|anchor' README.md >= 1"
+        }
+      ]
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "3 figures",
+          "f": "benchmarks/pending/dam_break_sc/figures.json",
+          "k": "figures array length >= 2"
+        },
+        {
+          "v": "3 curve plots",
+          "f": "benchmarks/pending/dam_break_sc/figures.json",
+          "k": "count kind=curve >= 1"
+        },
+        {
+          "v": "field_waiver documented",
+          "f": "benchmarks/pending/dam_break_sc/figures.json",
+          "k": "field_waiver field present with rationale"
+        },
+        {
+          "v": "fig_convergence_history.png",
+          "f": "benchmarks/pending/dam_break_sc/figures/fig_convergence_history.png",
+          "k": "file exists and size >= 6KB"
+        },
+        {
+          "v": "fig_error_vs_T.png",
+          "f": "benchmarks/pending/dam_break_sc/figures/fig_error_vs_T.png",
+          "k": "file exists and size >= 6KB"
+        },
+        {
+          "v": "fig_phase_diagram.png",
+          "f": "benchmarks/pending/dam_break_sc/figures/fig_phase_diagram.png",
+          "k": "file exists and size >= 6KB"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "gates_passed": 4,
+    "gates_total": 6,
+    "verdict_reason": "G2 (direct_observable) 和 G3 (monotone_convergence) 失败。根因：(1) SCMP psi_exp 密度比 ~12.3 远低于物理水/空气 ~1000，导致气体拖曳效应显著；(2) err(T=1) 与 err(T=2.96) 对 G 的依赖方向相反，单标度调参不可解；(3) 压力张量格式在溃坝工况下不稳定。",
+    "recommendation": "维持 TERMINAL 终裁。晋级路径需引擎级改造：(A) 高密度比伪势 EOS（Carnahan-Starling/Peng-Robinson，~10 GPU·h，有风险）；(B) 双组分 SC 模型（~20 GPU·h，引入新物理）；(C) 自由表面模型（~50-100 GPU·h，需新模型开发）。推荐路径 D：维持 TERMINAL，记录负结果。"
+  }
+}
