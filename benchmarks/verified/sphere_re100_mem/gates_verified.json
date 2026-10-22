@@ -1,0 +1,196 @@
+{
+ "case": "sphere_re100_mem",
+ "verdict": "promote",
+ "checked_at": "2026-10-20T09:39:19Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19",
+     "f": "benchmarks/verified/sphere_re100/w8a/run.py",
+     "k": "grep:from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19",
+     "found": "from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "from tensorlbm.solver3d import (",
+     "f": "benchmarks/verified/sphere_re100/w8a/run.py",
+     "k": "grep:from tensorlbm.solver3d import (",
+     "found": "from tensorlbm.solver3d import (",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 2.7707656824703957,
+     "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+     "k": "runs[0].err_pct",
+     "found": 2.7707656824703957,
+     "ok": true,
+     "note": "2.7707656824703957 vs 2.7707656824703957"
+    },
+    {
+     "v": 2.5400861325477218,
+     "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+     "k": "runs[1].err_pct",
+     "found": 2.5400861325477218,
+     "ok": true,
+     "note": "2.5400861325477218 vs 2.5400861325477218"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 2.7707656824703957,
+     "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+     "k": "runs[0].err_pct",
+     "found": 2.7707656824703957,
+     "ok": true,
+     "note": "2.7707656824703957 vs 2.7707656824703957"
+    },
+    {
+     "v": 2.5400861325477218,
+     "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+     "k": "runs[1].err_pct",
+     "found": 2.5400861325477218,
+     "ok": true,
+     "note": "2.5400861325477218 vs 2.5400861325477218"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "Cd = 24/Re * (1 + 0.15*Re^0.687)",
+     "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+     "k": "reference.formula",
+     "found": "Cd = 24/Re * (1 + 0.15*Re^0.687)",
+     "ok": true,
+     "note": "'Cd = 24/Re * (1 + 0.15*Re^0.687)' vs 'Cd = 24/Re * (1 + 0.15*Re^0.687)'"
+    },
+    {
+     "v": 1.0917310910948732,
+     "f": "benchmarks/verified/sphere_re100/w8a/result.json",
+     "k": "reference.cd_ref",
+     "found": 1.0917310910948732,
+     "ok": true,
+     "note": "1.0917310910948732 vs 1.0917310910948732"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "5691B",
+     "ok": true,
+     "note": "5691B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "9 个小节",
+     "ok": true,
+     "note": "9 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/curve_cd_convergence.png curve 73351B",
+     "ok": true,
+     "note": "figures/curve_cd_convergence.png curve 73351B"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/curve_error_tiers.png curve 61621B",
+     "ok": true,
+     "note": "figures/curve_error_tiers.png curve 61621B"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/field_midplane_speed.png field 291385B",
+     "ok": true,
+     "note": "figures/field_midplane_speed.png field 291385B"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[3]",
+     "found": "figures/field_wake_structure.png field 115794B",
+     "ok": true,
+     "note": "figures/field_wake_structure.png field 115794B"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "paper",
+ "gates_path": "benchmarks/verified/sphere_re100_mem/gates.json"
+}

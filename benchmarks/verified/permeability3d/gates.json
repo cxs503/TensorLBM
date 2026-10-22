@@ -87,6 +87,16 @@
      "k": "created_utc"
     }
    ]
+  },
+  {
+   "gate": "case_readme",
+   "pass": true,
+   "evidence": []
+  },
+  {
+   "gate": "figures",
+   "pass": true,
+   "evidence": []
   }
  ]
 }
