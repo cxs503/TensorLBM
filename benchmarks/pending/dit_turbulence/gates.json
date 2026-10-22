@@ -62,7 +62,7 @@
       ]
     },
     {
-      "gate": "ref_locked",
+      "gate": "reference_locked_first",
       "pass": true,
       "evidence": [
         {
