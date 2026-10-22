@@ -110,7 +110,29 @@
 
 ---
 
-## 4. 判据表
+## 4. 图件可视化
+
+### 4.1 碰撞核弛豫谱 γ_E(τ)
+
+![碰撞核弛豫谱](benchmarks/pending/collision_kernels_3d_tg/figures/curve_gamma_tau_spectrum.png)
+
+**图注**：碰撞核弛豫谱 γ_E(τ)：KBC D3Q19（PASS）与五 D3Q27 核（FAIL）在 τ=0.9/1.1/1.3 三档的模拟衰减率对比，虚线为解析值 6νk²。KBC 修复核的 γ_sim 与解析值高度吻合，五 D3Q27 核系统性偏高但偏差均 <0.5%。
+
+### 4.2 误差收敛曲线
+
+![误差收敛](benchmarks/pending/collision_kernels_3d_tg/figures/curve_error_convergence.png)
+
+**图注**：碰撞核误差收敛曲线 |err_E|(%) vs 网格 N：KBC 单调下降（0.67%→0.36%→0.16%），五 D3Q27 核非单调上升。红色虚线为 3% 容差阈值，所有核均满足容差要求，但仅 KBC 满足单调性要求。
+
+### 4.3 动能衰减史
+
+![动能衰减史](benchmarks/pending/collision_kernels_3d_tg/figures/curve_energy_decay_history.png)
+
+**图注**：动能衰减史 E(t)/E₀ 与瞬时衰减率 γ_E(t)：N=96 档位 KBC（PASS）与三 D3Q27 核（FAIL）对比，虚线为 LSQ 拟合值。左图半对数坐标显示指数衰减特征，右图瞬时衰减率在 t>200 后趋于稳定，验证 LSQ 拟合有效性。
+
+---
+
+## 5. 判据表
 
 ### 4.1 四门检查
 

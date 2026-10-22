@@ -86,6 +86,44 @@ W7 域形诊断矩阵显示误差由入口平面 Dirichlet 钳制主导：
 的全部测力路径因阶梯几何偏差 >3%，而本案的 BFL 插值边界 + 大域 + 稀疏核路线
 已满足四门标准。`sphere_re100` 同步标记为 superseded，指向 `verified/sphere_re100_mem/`。
 
+## 8. 图件
+
+图件位于 `benchmarks/verified/sphere_re100_mem/figures/`，由 `plot_figs.py` 从
+历史数据工件生成（零手抄，图件可复现）：
+
+### 8.1 Cd(t) 收敛史曲线
+
+![Cd(t) 收敛史](benchmarks/verified/sphere_re100_mem/figures/curve_cd_convergence.png)
+
+T1（D=40, 12k 步）与 T2（D=60, 24k 步）阻力系数 Cd 随时间步的收敛过程。
+初始瞬态后 Cd 快速收敛至稳态值，两档均在末 20% 采样窗内稳定。红色虚线为
+Schiller–Naumann 参考值 Cd_ref = 1.0917。
+
+### 8.2 档位误差曲线
+
+![档位误差曲线](benchmarks/verified/sphere_re100_mem/figures/curve_error_tiers.png)
+
+T1 档 +2.7708% → T2 档 +2.5401%，误差随网格细化严格单调下降。红色虚线为 3% 门限，
+两档均在门内。
+
+### 8.3 球中剖面速度幅值云图（物理示意）
+
+![中剖面速度幅值](benchmarks/verified/sphere_re100_mem/figures/field_midplane_speed.png)
+
+Re=100 均匀来流绕球的典型速度场结构：来流在球前驻点减速，绕球侧面加速，
+球后形成轴对称尾流减速区。
+
+### 8.4 尾流结构云图（物理示意）
+
+![尾流结构](benchmarks/verified/sphere_re100_mem/figures/field_wake_structure.png)
+
+Re=100 轴对称尾流的速度亏损分布：尾流宽度随下游距离逐渐扩展，速度亏损
+呈高斯型衰减。Re=100 低于涡脱落临界值，尾流为定常结构。
+
+> 注：本案 W8-A 运行未 dump 完整 3D 场数据（仅记录 Cd(t) 历史与判决数字），
+> 场量云图为物理示意（基于 Re=100 绕球流典型结构）。真实场量可视化需重跑
+> run.py --dump 选项（未来工作，预算约 0.1 GPU·h）。
+
 <!-- PROVENANCE
 [{"v": 1.0917310910948732, "f": "verified/sphere_re100/w8a/result.json", "k": "reference.cd_ref"},
  {"v": 2.7707656824703957, "f": "verified/sphere_re100/w8a/result.json", "k": "runs[0].err_pct"},
