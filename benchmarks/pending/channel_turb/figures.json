@@ -1,0 +1,23 @@
+{
+  "figures": [
+    {
+      "file": "figures/fig_uplus_profile.png",
+      "kind": "curve",
+      "caption": "u+ profile comparison: 3D channel L1/L2/L3 vs DNS (Moser 1999) and log law",
+      "source": "runs_3d/{L1,L2,L3}_result.json + dns_ref/mkm180.csv + plot_figures.py"
+    },
+    {
+      "file": "figures/fig_convergence.png",
+      "kind": "curve",
+      "caption": "Friction velocity convergence history: |u_tau error| vs step for all 3 grid levels",
+      "source": "runs_3d/{L1,L2,L3}_probe.log + plot_figures.py"
+    },
+    {
+      "file": "figures/fig_rms_convergence.png",
+      "kind": "curve",
+      "caption": "RMS error vs DNS in y+∈[30,100]: monotone grid convergence L1→L2→L3",
+      "source": "validation_report.json + plot_figures.py"
+    }
+  ],
+  "field_waiver": "No spatial field quantities (e.g. vorticity, pressure) are stored as 3D arrays in the result JSON; only wall-normal profiles. Cloud/field plot waived."
+}
