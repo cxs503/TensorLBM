@@ -52,7 +52,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [permeability_fibrous](permeability_fibrous/) | ❌ | 三失效模式全定源（hex 参考侧 +2.4/+3.9%；sq 量化地板振荡；S1 真惯性）；单调三处破缺为实质败因 | 菜单：cut-cell 自产表 / 门放宽 1% / 购精确表 / 维持 FAIL；sq 0.30–0.60 现成候选 | cut-cell 全阵为大项 |
 | [poiseuille_3d_annulus](poiseuille_3d_annulus/) | ⏸️ | **归档完成** → [verified/poiseuille_3d_annulus](../verified/poiseuille_3d_annulus/)（条款修订：δ_i spread 0.0937 → O(1/R) 单调收敛口径，内壁楼梯曲率真实漂移，已证非欠收敛） | — | 0 |
 | [poiseuille_3d_ellipse](poiseuille_3d_ellipse/) | ❌ | a=20 档 s^Q 逐 bin 5.11% > 3%（a=40 档 2.43% 过线）；楼梯椭圆各向异性无单一尺度口径 | 加 a=40/80 高档（两档全 ≤3% 即达标） | 两档仿真 |
-| [two_phase_poiseuille](two_phase_poiseuille/) | ❌ | SC-MCMP 结构性（等 τ 界面条带化 34.83% vs self 7.17%；不等 τ NaN）；问题类已由 verified/poiseuille_two_phase_cg 关闭 | SC 复活需先修库（稳定性+条带化）再预注册 | 修库+重跑 |
+| [two_phase_poiseuille](two_phase_poiseuille/) | ⏸️ 终裁 | SC-MCMP 结构性（等 τ 界面条带化 34.83% vs self 7.17%；不等 τ NaN）；问题类已由 verified/poiseuille_two_phase_cg 关闭 | SC 复活需先修库（稳定性+条带化）再预注册 | 修库+重跑 |
 
 **统计**：🟡 4 · 🔵 1 · ⚠️ 3 · ⛔ 1 · ❌ 21（共 30）
 
