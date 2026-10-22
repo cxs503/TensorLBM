@@ -1,0 +1,196 @@
+{
+ "case": "channel_turb_3d",
+ "verdict": "terminal",
+ "checked_at": "2026-10-22T20:30:14Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.wall_resolved_channel3d",
+     "f": "benchmarks/pending/channel_turb/runs_3d/run_probe.py",
+     "k": "grep:from tensorlbm",
+     "found": "from tensorlbm.wall_resolved_channel3d",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 20.43434670057914,
+     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "k": "grid_levels[0].rms_y30_100_pct",
+     "found": 20.43434670057914,
+     "ok": true,
+     "note": "20.43434670057914 vs 20.43434670057914"
+    },
+    {
+     "v": 11.665111463802477,
+     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "k": "grid_levels[1].rms_y30_100_pct",
+     "found": 11.665111463802477,
+     "ok": true,
+     "note": "11.665111463802477 vs 11.665111463802477"
+    },
+    {
+     "v": 5.330965065942242,
+     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "k": "grid_levels[2].rms_y30_100_pct",
+     "found": 5.330965065942242,
+     "ok": true,
+     "note": "5.330965065942242 vs 5.330965065942242"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 20.43434670057914,
+     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "k": "grid_levels[0].rms_y30_100_pct",
+     "found": 20.43434670057914,
+     "ok": true,
+     "note": "20.43434670057914 vs 20.43434670057914"
+    },
+    {
+     "v": 11.665111463802477,
+     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "k": "grid_levels[1].rms_y30_100_pct",
+     "found": 11.665111463802477,
+     "ok": true,
+     "note": "11.665111463802477 vs 11.665111463802477"
+    },
+    {
+     "v": 5.330965065942242,
+     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "k": "grid_levels[2].rms_y30_100_pct",
+     "found": 5.330965065942242,
+     "ok": true,
+     "note": "5.330965065942242 vs 5.330965065942242"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "reference_locked",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb",
+     "f": "benchmarks/pending/channel_turb/runs_3d/prereg.json",
+     "k": "sha256",
+     "found": "4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb",
+     "ok": true,
+     "note": "'4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb' vs '4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb'"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "5495B",
+     "ok": true,
+     "note": "5495B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "15 个小节",
+     "ok": true,
+     "note": "15 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/fig_uplus_profile.png curve 95758B div=256",
+     "ok": true,
+     "note": "figures/fig_uplus_profile.png curve 95758B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/fig_convergence.png curve 91123B div=256",
+     "ok": true,
+     "note": "figures/fig_convergence.png curve 91123B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/fig_rms_convergence.png curve 60532B div=256",
+     "ok": true,
+     "note": "figures/fig_rms_convergence.png curve 60532B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:field_waiver",
+     "found": "云图豁免: No spatial field quantities (e.g. vorticity, pressure) are s",
+     "ok": true,
+     "note": "云图豁免: No spatial field quantities (e.g. vorticity, pressure) are s"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "paper",
+ "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m186/TensorLBM/benchmarks/pending/channel_turb/gates.json"
+}
