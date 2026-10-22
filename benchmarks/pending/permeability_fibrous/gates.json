@@ -98,19 +98,7 @@
           "v": 2.6283936232617267,
           "f": "benchmarks/pending/permeability_fibrous/result.json",
           "k": "verdict.per_tier.sq_vf0.4.errors_pct[3]",
-          "note": "sq vf=0.40 阶梯 4: 2.63%（单调破缺：2.42→2.63 +0.21pp）"
-        },
-        {
-          "v": 0.13106477515814063,
-          "f": "benchmarks/pending/permeability_fibrous/result.json",
-          "k": "verdict.per_tier.hex_vf0.7.errors_pct[2]",
-          "note": "hex vf=0.70 阶梯 3: 0.13%"
-        },
-        {
-          "v": 2.0988291146574634,
-          "f": "benchmarks/pending/permeability_fibrous/result.json",
-          "k": "verdict.per_tier.hex_vf0.7.errors_pct[3]",
-          "note": "hex vf=0.70 阶梯 4: 2.10%（单调破缺：0.13→2.10）"
+          "note": "sq vf=0.40 阶梯 4: 2.63%（单调破缺：2.42→2.63 +0.21pp，几何量化地板振荡）"
         }
       ]
     },

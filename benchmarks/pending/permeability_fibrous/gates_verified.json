@@ -1,7 +1,7 @@
 {
  "case": "permeability_fibrous",
  "verdict": "terminal",
- "checked_at": "2026-10-22T15:21:50Z",
+ "checked_at": "2026-10-22T15:29:01Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -135,26 +135,10 @@
      "found": 2.6283936232617267,
      "ok": true,
      "note": "2.6283936232617267 vs 2.6283936232617267"
-    },
-    {
-     "v": 0.13106477515814063,
-     "f": "benchmarks/pending/permeability_fibrous/result.json",
-     "k": "verdict.per_tier.hex_vf0.7.errors_pct[2]",
-     "found": 0.13106477515814063,
-     "ok": true,
-     "note": "0.13106477515814063 vs 0.13106477515814063"
-    },
-    {
-     "v": 2.0988291146574634,
-     "f": "benchmarks/pending/permeability_fibrous/result.json",
-     "k": "verdict.per_tier.hex_vf0.7.errors_pct[3]",
-     "found": 2.0988291146574634,
-     "ok": true,
-     "note": "2.0988291146574634 vs 2.0988291146574634"
     }
    ],
    "problems": [
-    "序列非严格单调(abs_decrease): [17.25228839329256, 6.920144431623343, 2.418694925947107, 2.6283936232617267, 0.13106477515814063, 2.0988291146574634]"
+    "序列非严格单调(abs_decrease): [17.25228839329256, 6.920144431623343, 2.418694925947107, 2.6283936232617267]"
    ]
   },
   {
@@ -288,7 +272,7 @@
  ],
  "all_pass": false,
  "problems": [
-  "monotone_convergence: 序列非严格单调(abs_decrease): [17.25228839329256, 6.920144431623343, 2.418694925947107, 2.6283936232617267, 0.13106477515814063, 2.0988291146574634]"
+  "monotone_convergence: 序列非严格单调(abs_decrease): [17.25228839329256, 6.920144431623343, 2.418694925947107, 2.6283936232617267]"
  ],
  "rc": 1,
  "profile": "paper",
