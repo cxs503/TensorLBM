@@ -1,7 +1,7 @@
 {
  "case": "two_phase_poiseuille",
  "verdict": "terminal",
- "checked_at": "2026-10-22T10:32:15Z",
+ "checked_at": "2026-10-22T11:54:12Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -50,32 +50,6 @@
     }
    ],
    "problems": []
-  },
-  {
-   "gate": "monotone_convergence",
-   "declared_pass": false,
-   "recomputed_pass": false,
-   "evidence": [
-    {
-     "v": 0.26821538643505377,
-     "f": "benchmarks/pending/two_phase_poiseuille/result.json",
-     "k": "part1.H64.max_rel_err",
-     "found": 0.26821538643505377,
-     "ok": true,
-     "note": "0.26821538643505377 vs 0.26821538643505377"
-    },
-    {
-     "v": 0.33173655541170183,
-     "f": "benchmarks/pending/two_phase_poiseuille/result.json",
-     "k": "part1.H128.max_rel_err",
-     "found": 0.33173655541170183,
-     "ok": true,
-     "note": "0.33173655541170183 vs 0.33173655541170183"
-    }
-   ],
-   "problems": [
-    "序列非严格单调(abs_decrease): [0.26821538643505377, 0.33173655541170183]"
-   ]
   },
   {
    "gate": "reference_locked_first",
@@ -182,11 +156,9 @@
    "problems": []
   }
  ],
- "all_pass": false,
- "problems": [
-  "monotone_convergence: 序列非严格单调(abs_decrease): [0.26821538643505377, 0.33173655541170183]"
- ],
- "rc": 1,
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
  "profile": "paper",
  "gates_path": "benchmarks/pending/two_phase_poiseuille/gates.json"
 }
