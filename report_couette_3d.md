@@ -102,7 +102,32 @@ spanwise_std=0），漂移阈在机器地板以下。
 - dtype 诊断：`diag/diag_dtype.json`（fp32 时间线性累积证据）
 - 预注册：`w11/prereg.md`（FROZEN 2026-10-06，md5: c6ad6e2ecb9e85a1e51adfa76472ad6a）
 
-## 6. 局限与缓解
+## 6. 图件展示
+
+### 6.1 中剖面速度场云图
+
+![中剖面速度场](benchmarks/verified/couette_3d/figures/field_midplane_speed.png)
+
+**图 1**: H=32 fp64 档 z=16 截面 u_x(y) 分布云图。展示线性 Couette 剖面的空间均匀性——
+x/z 方向速度完全一致（spanwise_std=0），验证 3D 动壁半程反弹路径的正确性。
+
+### 6.2 u(y) 剖面 vs 解析解
+
+![速度剖面对比](benchmarks/verified/couette_3d/figures/curve_profile_vs_analytical.png)
+
+**图 2**: fp64 四档（H=16/32/64/128）数值解与线性解析解对比。子图标题显示各档 l₂ 误差——
+H16/32/64 处于机器地板（1e-13 量级），H128 升至 1.73e-09（仍远小于 3% 阈值）。
+数值解与解析解在视觉上完全重合，证明 LBM 离散误差为零或极小。
+
+### 6.3 l₂ 误差收敛曲线
+
+![收敛曲线](benchmarks/verified/couette_3d/figures/curve_l2_convergence.png)
+
+**图 3**: fp64 四档 l₂_rel_err 随网格尺寸 H 变化。H16/32/64 处于机器地板（1e-13 量级），
+H128 升至 1.73e-09（仍远小于 3% 阈值，约 6 个数量级余量）。红线为 3% 门限，
+橙线为 G2b 阈值（1e-7）。
+
+## 7. 局限与缓解
 
 | 局限 | 缓解 |
 |---|---|

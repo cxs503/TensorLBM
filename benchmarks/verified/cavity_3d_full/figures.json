@@ -1,0 +1,29 @@
+{
+  "figures": [
+    {
+      "file": "figures/field_midplane_speed.png",
+      "kind": "field",
+      "caption": "中剖面 z=0.5 速度幅值云图（64³, Re=1000），展示主涡结构与侧壁边界层",
+      "source": "case_643.npz (run.py single 64 --dump) + plot_figs.py:plot_field_midplane_speed"
+    },
+    {
+      "file": "figures/field_midplane_vorticity.png",
+      "kind": "field",
+      "caption": "中剖面 z=0.5 涡量 ω_z 云图（64³, Re=1000），展示涡心位置与角涡结构",
+      "source": "case_643.npz (run.py single 64 --dump) + plot_figs.py:plot_field_midplane_vorticity"
+    },
+    {
+      "file": "figures/curve_centerline_vs_ghia.png",
+      "kind": "curve",
+      "caption": "中心线 u(x=0.5,z=0.5) vs 2D Ghia 参考曲线（64³/96³），展示 3D 侧壁修正效应",
+      "source": "case_643.json + case_963.json (run.py both) + plot_figs.py:plot_curve_centerline"
+    },
+    {
+      "file": "figures/curve_convergence.png",
+      "kind": "curve",
+      "caption": "误差-网格收敛曲线（64³ 1.338% → 96³ 0.259%），展示单调收敛至 Ku 1987 参考",
+      "source": "result.json grids.64/96.err_pct_vs_ku (run.py both) + plot_figs.py:plot_curve_convergence"
+    }
+  ],
+  "field_waiver": ""
+}

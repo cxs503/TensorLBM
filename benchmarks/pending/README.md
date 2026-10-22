@@ -18,16 +18,16 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 `verified/X/` 并同步更新本索引。达标不等于自动晋级——涉及参考裁决、
 口径修订、目录批次安排的决策项在各案例 README 的「晋级路径」中列明。
 
+## 案例总表（27）
 ## 案例总表（29）
-
 **状态图例更新**：⏸️ 终裁完成（终裁文档已归档，无后续动作）
 
 | 案例 | 状态 | 卡点（一句话） | 晋级动作 | 预算 |
 |---|---|---|---|---|
 | [backward_step](backward_step/) | ❌ | τ 阶梯最好 -4.33% > 3%（BB 滑移伪差已定源；参考簇散布 ~6% 受限） | 参考裁决 + L4 细档（外推 -1.1%）或改判 Re=150/200 点 | CPU 日内 |
-| [blasius_flat_plate](blasius_flat_plate/) | ❌ | C_f 主门最好 +27.34%（有限 Re_x=900 物理位移主导；旧档首因 FD 权重 bug 已修） | 延长板长放大有效 Re_x，保持直接口径 | CPU 日内 |
+| [blasius_flat_plate](blasius_flat_plate/) | ⏸️ | 终裁 TERMINAL：延长板长后误差反收敛（plate400 +27.38% → plate800 +27.74% → plate1600 +36.84%），累积位移效应（边缘加速）主导，非参数调优可解 | 终裁完成，无后续动作 | 0 |
 | [bstep_3d](bstep_3d/) | ⚠️ | 唯一完整档 Re=100 +13.18%；re200/re400 两档记录损坏；无预注册阶梯 | 按冻结协议重制或新工况预注册 | ~10–20× 存量 |
-| [cylinder_re40_st](cylinder_re40_st/) | ❌ | formal 六档 err 5.43–6.06% 全超 3%；根因=上游域截断（up 10→40D 压 -2.84pp，40D 单点 +2.236% 已入门） | W11-A2：扩上游 up≥40D 六档重跑 | ≈25–35 GPU·h |
+| [cylinder_re40_st](cylinder_re40_st/) | ✅→📦 | W11-A2 晋级：上游域扩至 40D，四档全过 ≤3% 门（Re=20: 2.149→1.997%；Re=40: 2.236→1.956% 均严格单调） | 归档完成 → verified/cylinder_re40_st | 0 |
 | [naca_0012](naca_0012/) | ❌ | Cl 对锁定参考 0.132 全档 +85~99% 且不单调；参考图文自不一致（0.132 vs 0.26，预注册已判受限） | 参考重锁二选一或另寻 OA 一手源 | 秒级/档 |
 | [sphere_re100](sphere_re100/) | ⏸️ | 同问题已由 sphere_re100_mem BFL 路线闭环（阶梯几何偏差根因已定源） | 归档完成 → verified/sphere_re100_mem | 0 |
 | [sphere_re100_mem](sphere_re100_mem/) | ⏸️ | 已归档晋级（T1 +2.7708% / T2 +2.5401%，四门全过） | 归档完成 → verified/sphere_re100_mem | 0 |
@@ -37,6 +37,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [taylor_aris_dispersion](taylor_aris_dispersion/) | ❌ | 容差 6/6 全过（0.05–0.26%）但单调 0/3（err=负 O(1/H²)+正地板 H≈50 变号） | 判据口径重锁或更大 H 阶梯（决策项） | 已判死 |
 | [collision_kernels_3d_tg](collision_kernels_3d_tg/) | ⏸️ | 终裁 TERMINAL：KBC 修复核四门全过 PASS（-0.67→-0.36→-0.16% 单调）；五核 D3Q27 单调性门结构性失败（bgk27 对照同败）；案例整体要求所有核通过，五核未过导致 TERMINAL | 终裁完成，无后续动作 | 0 |
 | [hadamard_rybczynski_droplet](hadamard_rybczynski_droplet/) | ❌ | λ=ρ 锁死致 λ 阶梯不可运行；E1–E6 动态排除+15 案包络 0 存活 | 相面重建（M1，已落库）后重开 | 已判死 |
+| [cavity_3d_full](cavity_3d_full/) | 🟡 | 无——达标数据在 verified/cavity_3d_full（1.338→0.259% 单调）；本目录为 superseded 诊断稿 | 归档 PR 清理（删除或标记 superseded） | 0 |
 | [cavity_3d_full](cavity_3d_full/) | ⏸️ superseded | 已归档至 verified/cavity_3d_full（1.338→0.259% 单调收敛）；本目录为 superseded 诊断稿 | 归档完成（标记 superseded） | 0 |
 | [cavity_natural_convection](cavity_natural_convection/) | ❌ | 修复前旧档（库 thermal 壁 BC 双缺陷；库已修复且 2D 六案已 verified） | 按新库重跑预注册（对齐 thermal_cavity） | 小 |
 | [channel_turb](channel_turb/) | ❌ | 2D 槽道无转捩路径（Re_max 4200 < 5772）；RMS 4.59/5.61% 且细化更差 | 3D 槽道（新案例） | 高 |

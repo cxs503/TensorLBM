@@ -55,21 +55,23 @@ collide → stream → 掩码体力 → bounce-back。
 | 中2 | 128 | 15.0927 | 15.402 | +2.05 | 0.0067 | ✓ | 30 200 |
 | 细 | 160 | 15.1823 | 15.402 | **+1.45** | 0.0054 | ✓ | 42 400 |
 
-![收敛曲线](fig_permeability3d_convergence.png)
+![孔隙结构切片](benchmarks/verified/permeability3d/figures/field_solid_geometry.png)
+
+固体球阵列横截面（φ=0.343, N=64）：三个 z/L 切面展示简单立方周期球
+几何结构。球半径 a_nom 由 φ 与 N 确定，楼梯离散化引入的几何误差是
+一阶收敛的主要来源。
+
+![渗透速度场](benchmarks/verified/permeability3d/figures/field_velocity_midplane.png)
+
+渗透速度场中剖面云图（z=0.5）：流体绕球间隙流动，速度在球间狭窄通道
+处加速，符合 Stokes 渗透物理图像。⟨u_x⟩ 为流体区域平均速度。
+
+![收敛曲线](benchmarks/verified/permeability3d/figures/curve_convergence_k_vs_N.png)
 
 **误差严格单调下降**：4.63% → 3.10% → 2.05% → 1.45%，
-跨越四个数量级的误差衰减呈 ~O(1/N) 趋势（楼梯几何主导的一阶收敛）：
+跨越四个数量级的误差衰减呈 ~O(1/N) 趋势（楼梯几何主导的一阶收敛）。
 
-![误差衰减](fig_permeability3d_error_decay.png)
-
-### 3.2 模拟值与参考值对比
-
-![K 对比](fig_permeability3d_k_comparison.png)
-
-四档 K_sim 从参考值下方（渗透率偏低/曳力偏高）单调逼近 K_table=15.402，
-最细档偏差仅 1.45%。
-
-### 3.3 判定表
+### 3.2 判定表
 
 | 规则 | 判定条件 | φ=0.343 结果 | 判定 |
 |---|---|---|---|
