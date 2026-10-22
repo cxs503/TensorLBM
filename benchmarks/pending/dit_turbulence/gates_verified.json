@@ -1,0 +1,178 @@
+{
+ "case": "dit_turbulence",
+ "verdict": "terminal",
+ "checked_at": "2026-10-22T14:26:19Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "solver3d.stream3d",
+     "f": "benchmarks/pending/dit_turbulence/run.py",
+     "k": "grep:from tensorlbm.solver3d import stream3d",
+     "found": "solver3d.stream3d",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "turbulence.collide_smagorinsky_bgk3d",
+     "f": "benchmarks/pending/dit_turbulence/run.py",
+     "k": "grep:from tensorlbm.turbulence import",
+     "found": "turbulence.collide_smagorinsky_bgk3d",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 1.6857,
+     "f": "benchmarks/pending/dit_turbulence/result.json",
+     "k": "verdict.slope_err_pct_per_grid.128",
+     "found": 1.6857,
+     "ok": true,
+     "note": "1.6857 vs 1.6857"
+    },
+    {
+     "v": 17.05,
+     "f": "benchmarks/pending/dit_turbulence/result.json",
+     "k": "verdict.slope_err_pct_per_grid.256",
+     "found": 17.05,
+     "ok": true,
+     "note": "17.05 vs 17.05"
+    },
+    {
+     "v": 1.4491,
+     "f": "benchmarks/pending/dit_turbulence/result.json",
+     "k": "verdict.n_decay_per_grid.128",
+     "found": 1.4491,
+     "ok": true,
+     "note": "1.4491 vs 1.4491"
+    },
+    {
+     "v": 1.6932,
+     "f": "benchmarks/pending/dit_turbulence/result.json",
+     "k": "verdict.n_decay_per_grid.256",
+     "found": 1.6932,
+     "ok": true,
+     "note": "1.6932 vs 1.6932"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "Kolmogorov 1941: 惯性区能量谱 E(k)∝k^(−5/3)；DIT 衰减 E(t)∝t^(−n)，n≈1.2–1.5（Saffman 6/5、Batchelor 10/7、Comte-Bellot-Corrsin 实验）",
+     "f": "benchmarks/pending/dit_turbulence/result.json",
+     "k": "reference",
+     "found": "Kolmogorov 1941: 惯性区能量谱 E(k)∝k^(−5/3)；DIT 衰减 E(t)∝t^(−n)，n≈1.2–1.5（Saffman 6/5、Batchelor 10/7、Comte-Bellot-Corrsin 实验）",
+     "ok": true,
+     "note": "'Kolmogorov 1941: 惯性区能量谱 E(k)∝k^(−5/3)；DIT 衰减 E(t)∝t^(−n)，n≈1.2–1.5（Saffman 6/5、Batchelor 10/7、Comte-Bellot-Corrsin 实验）' vs 'Kolmogorov 1941: 惯性区能量谱 E(k)∝k^(−5/3)；DIT 衰减 E(t)∝t^(−n)，n≈1.2–1.5（Saffman 6/5、Batchelor 10/7、Comte-Bellot-Corrsin 实验）'"
+    },
+    {
+     "v": [
+      1.2,
+      1.5
+     ],
+     "f": "benchmarks/pending/dit_turbulence/result.json",
+     "k": "metrics.decay_band",
+     "found": [
+      1.2,
+      1.5
+     ],
+     "ok": true,
+     "note": "[1.2, 1.5] vs [1.2, 1.5]"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "10409B",
+     "ok": true,
+     "note": "10409B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "7 个小节",
+     "ok": true,
+     "note": "7 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/dit_convergence_diagnosis.png curve 143614B div=256",
+     "ok": true,
+     "note": "figures/dit_convergence_diagnosis.png curve 143614B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:field_waiver",
+     "found": "云图豁免: DIT 为统计均匀湍流，无空间场量（仅能谱 E(k) 与时间序列 E(t)），豁免场图",
+     "ok": true,
+     "note": "云图豁免: DIT 为统计均匀湍流，无空间场量（仅能谱 E(k) 与时间序列 E(t)），豁免场图"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "paper",
+ "gates_path": "benchmarks/pending/dit_turbulence/gates.json"
+}
