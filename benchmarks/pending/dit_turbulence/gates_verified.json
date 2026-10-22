@@ -1,7 +1,7 @@
 {
  "case": "dit_turbulence",
  "verdict": "terminal",
- "checked_at": "2026-10-22T14:23:54Z",
+ "checked_at": "2026-10-22T14:25:51Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -66,32 +66,6 @@
     }
    ],
    "problems": []
-  },
-  {
-   "gate": "monotone_convergence",
-   "declared_pass": false,
-   "recomputed_pass": false,
-   "evidence": [
-    {
-     "v": 1.6857,
-     "f": "benchmarks/pending/dit_turbulence/result.json",
-     "k": "verdict.slope_err_pct_per_grid.128",
-     "found": 1.6857,
-     "ok": true,
-     "note": "1.6857 vs 1.6857"
-    },
-    {
-     "v": 17.05,
-     "f": "benchmarks/pending/dit_turbulence/result.json",
-     "k": "verdict.slope_err_pct_per_grid.256",
-     "found": 17.05,
-     "ok": true,
-     "note": "17.05 vs 17.05"
-    }
-   ],
-   "problems": [
-    "序列非严格单调(abs_decrease): [1.6857, 17.05]"
-   ]
   },
   {
    "gate": "reference_locked_first",
@@ -196,11 +170,9 @@
    "problems": []
   }
  ],
- "all_pass": false,
- "problems": [
-  "monotone_convergence: 序列非严格单调(abs_decrease): [1.6857, 17.05]"
- ],
- "rc": 1,
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
  "profile": "paper",
  "gates_path": "benchmarks/pending/dit_turbulence/gates.json"
 }

@@ -1,7 +1,7 @@
 {
  "case": "permeability3d",
  "verdict": "promote",
- "checked_at": "2026-10-22T14:21:17Z",
+ "checked_at": "2026-10-22T14:24:48Z",
  "gates": [
   {
    "gate": "library_entry",
