@@ -1,0 +1,236 @@
+{
+ "case": "dam_break_sc",
+ "verdict": "terminal",
+ "checked_at": "2026-10-22T13:11:19Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.multiphase import collide_sc_single_component, psi_exp",
+     "f": "benchmarks/pending/dam_break_sc/run.py",
+     "k": "grep:from tensorlbm.multiphase import collide_sc_single_component",
+     "found": "from tensorlbm.multiphase import collide_sc_single_component, psi_exp",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "from tensorlbm.solver import stream",
+     "f": "benchmarks/pending/dam_break_sc/run.py",
+     "k": "grep:from tensorlbm.solver import stream",
+     "found": "from tensorlbm.solver import stream",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "from tensorlbm.boundaries import bounce_back_cells",
+     "f": "benchmarks/pending/dam_break_sc/run.py",
+     "k": "grep:from tensorlbm.boundaries import bounce_back_cells",
+     "found": "from tensorlbm.boundaries import bounce_back_cells",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 2.49,
+     "f": "benchmarks/pending/dam_break_sc/result.json",
+     "k": "official_rerun_correct_convention.a80.err_pct_T1",
+     "found": 2.49,
+     "ok": true,
+     "note": "2.49 vs 2.49"
+    },
+    {
+     "v": -9.723,
+     "f": "benchmarks/pending/dam_break_sc/result.json",
+     "k": "official_rerun_correct_convention.a80.err_pct_T2",
+     "found": -9.723,
+     "ok": true,
+     "note": "-9.723 vs -9.723"
+    },
+    {
+     "v": -19.086,
+     "f": "benchmarks/pending/dam_break_sc/result.json",
+     "k": "official_rerun_correct_convention.a80.err_pct_T2p96",
+     "found": -19.086,
+     "ok": true,
+     "note": "-19.086 vs -19.086"
+    },
+    {
+     "v": 10.526,
+     "f": "benchmarks/pending/dam_break_sc/result.json",
+     "k": "official_rerun_correct_convention.a40.err_pct_T1",
+     "found": 10.526,
+     "ok": true,
+     "note": "10.526 vs 10.526"
+    },
+    {
+     "v": -7.579,
+     "f": "benchmarks/pending/dam_break_sc/result.json",
+     "k": "official_rerun_correct_convention.a40.err_pct_T2",
+     "found": -7.579,
+     "ok": true,
+     "note": "-7.579 vs -7.579"
+    },
+    {
+     "v": -19.889,
+     "f": "benchmarks/pending/dam_break_sc/result.json",
+     "k": "official_rerun_correct_convention.a40.err_pct_T2p96",
+     "found": -19.889,
+     "ok": true,
+     "note": "-19.889 vs -19.889"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 10.526,
+     "f": "benchmarks/pending/dam_break_sc/result.json",
+     "k": "official_rerun_correct_convention.a40.err_pct_T1",
+     "found": 10.526,
+     "ok": true,
+     "note": "10.526 vs 10.526"
+    },
+    {
+     "v": 2.49,
+     "f": "benchmarks/pending/dam_break_sc/result.json",
+     "k": "official_rerun_correct_convention.a80.err_pct_T1",
+     "found": 2.49,
+     "ok": true,
+     "note": "2.49 vs 2.49"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "2026-09-29",
+     "f": "benchmarks/pending/dam_break_sc/result.json",
+     "k": "date",
+     "found": "2026-09-29",
+     "ok": true,
+     "note": "'2026-09-29' vs '2026-09-29'"
+    },
+    {
+     "v": 1.326,
+     "f": "benchmarks/pending/dam_break_sc/result.json",
+     "k": "reference_checkpoints.T=1.0",
+     "found": 1.326,
+     "ok": true,
+     "note": "1.326 vs 1.326"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "15073B",
+     "ok": true,
+     "note": "15073B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "6 个小节",
+     "ok": true,
+     "note": "6 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/fig_convergence_history.png curve 89488B div=256",
+     "ok": true,
+     "note": "figures/fig_convergence_history.png curve 89488B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/fig_error_vs_T.png curve 92923B div=256",
+     "ok": true,
+     "note": "figures/fig_error_vs_T.png curve 92923B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/fig_phase_diagram.png curve 76020B div=256",
+     "ok": true,
+     "note": "figures/fig_phase_diagram.png curve 76020B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:field_waiver",
+     "found": "云图豁免: No spatial field data (rho/u) archived in result.json; only ",
+     "ok": true,
+     "note": "云图豁免: No spatial field data (rho/u) archived in result.json; only "
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "paper",
+ "gates_path": "benchmarks/pending/dam_break_sc/gates.json"
+}
