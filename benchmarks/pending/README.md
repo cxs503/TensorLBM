@@ -48,7 +48,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [capillary_invasion_washburn](capillary_invasion_washburn/) | ❌ | Washburn 指数 26.82→33.17% 反收敛；湿润相质量漂移 -60.7/-67.0%；W128 确定性 NaN | 修库（质量守恒/σ 可测/抗负分布）后新 prereg | 中（库为主） |
 | [forchheimer](forchheimer/) | ❌ | err_A 1.86–3.06% 平坦无 d 收敛、单调条款无判别力（参考受限；求解器侧已排除） | 锁弱惯性精确参考后重判或关闭 | 少量重跑 |
 | [permeability3d](permeability3d/) | ⏸️ superseded | φ=0.343 档已晋级 verified/permeability3d（4.63%→1.45% 严格单调双规则 PASS）；稀释档 fp32 注入地板+惯性修正已定源 | 归档完成（φ=0.343 档） | 0 |
-| [permeability_fibrous](permeability_fibrous/) | ❌ | 三失效模式全定源（hex 参考侧 +2.4/+3.9%；sq 量化地板振荡；S1 真惯性）；单调三处破缺为实质败因 | 菜单：cut-cell 自产表 / 门放宽 1% / 购精确表 / 维持 FAIL；sq 0.30–0.60 现成候选 | cut-cell 全阵为大项 |
+| [permeability_fibrous](permeability_fibrous/) | ⏸️ | 终裁 TERMINAL：三失效模式全定源（hex 参考侧 +2.4/+3.9%；sq 量化地板振荡；S1 真惯性）；单调三处破缺为实质败因；sq 0.30/0.50/0.60 三档现成候选 | 终裁完成，菜单选项待 owner 决策（cut-cell 自产表 / 门放宽 1% / 购精确表 / 维持 FAIL + sq 候选） | 0（终裁文档） |
 | [poiseuille_3d_annulus](poiseuille_3d_annulus/) | ⏸️ | **归档完成** → [verified/poiseuille_3d_annulus](../verified/poiseuille_3d_annulus/)（条款修订：δ_i spread 0.0937 → O(1/R) 单调收敛口径，内壁楼梯曲率真实漂移，已证非欠收敛） | — | 0 |
 | [poiseuille_3d_ellipse](poiseuille_3d_ellipse/) | ❌ | a=20 档 s^Q 逐 bin 5.11% > 3%（a=40 档 2.43% 过线）；楼梯椭圆各向异性无单一尺度口径 | 加 a=40/80 高档（两档全 ≤3% 即达标） | 两档仿真 |
 | [two_phase_poiseuille](two_phase_poiseuille/) | ❌ | SC-MCMP 结构性（等 τ 界面条带化 34.83% vs self 7.17%；不等 τ NaN）；问题类已由 verified/poiseuille_two_phase_cg 关闭 | SC 复活需先修库（稳定性+条带化）再预注册 | 修库+重跑 |

@@ -1,0 +1,296 @@
+{
+ "case": "permeability_fibrous",
+ "verdict": "terminal",
+ "checked_at": "2026-10-22T15:21:50Z",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.boundaries import bounce_back_cells",
+     "f": "benchmarks/pending/permeability_fibrous/run.py",
+     "k": "grep:from tensorlbm.boundaries import bounce_back_cells",
+     "found": "from tensorlbm.boundaries import bounce_back_cells",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "from tensorlbm.d2q9 import equilibrium, macroscopic",
+     "f": "benchmarks/pending/permeability_fibrous/run.py",
+     "k": "grep:from tensorlbm.d2q9 import equilibrium, macroscopic",
+     "found": "from tensorlbm.d2q9 import equilibrium, macroscopic",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "from tensorlbm.solver import collide_bgk, stream",
+     "f": "benchmarks/pending/permeability_fibrous/run.py",
+     "k": "grep:from tensorlbm.solver import collide_bgk, stream",
+     "found": "from tensorlbm.solver import collide_bgk, stream",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "from tensorlbm.turbulent_channel import _apply_body_force_2d",
+     "f": "benchmarks/pending/permeability_fibrous/run.py",
+     "k": "grep:from tensorlbm.turbulent_channel import _apply_body_force_2d",
+     "found": "from tensorlbm.turbulent_channel import _apply_body_force_2d",
+     "ok": true,
+     "note": "grep ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "direct_observable",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 0.2160566801704511,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.sq_vf0.3.finest_err_pct",
+     "found": 0.2160566801704511,
+     "ok": true,
+     "note": "0.2160566801704511 vs 0.2160566801704511"
+    },
+    {
+     "v": 2.6283936232617267,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.sq_vf0.4.finest_err_pct",
+     "found": 2.6283936232617267,
+     "ok": true,
+     "note": "2.6283936232617267 vs 2.6283936232617267"
+    },
+    {
+     "v": 0.2424357355092388,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.sq_vf0.5.finest_err_pct",
+     "found": 0.2424357355092388,
+     "ok": true,
+     "note": "0.2424357355092388 vs 0.2424357355092388"
+    },
+    {
+     "v": 0.8756241746041393,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.sq_vf0.6.finest_err_pct",
+     "found": 0.8756241746041393,
+     "ok": true,
+     "note": "0.8756241746041393 vs 0.8756241746041393"
+    },
+    {
+     "v": 2.0988291146574634,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.hex_vf0.7.finest_err_pct",
+     "found": 2.0988291146574634,
+     "ok": true,
+     "note": "2.0988291146574634 vs 2.0988291146574634"
+    },
+    {
+     "v": 2.0250093124438706,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.hex_vf0.75.finest_err_pct",
+     "found": 2.0250093124438706,
+     "ok": true,
+     "note": "2.0250093124438706 vs 2.0250093124438706"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "monotone_convergence",
+   "declared_pass": false,
+   "recomputed_pass": false,
+   "evidence": [
+    {
+     "v": 17.25228839329256,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.sq_vf0.4.errors_pct[0]",
+     "found": 17.25228839329256,
+     "ok": true,
+     "note": "17.25228839329256 vs 17.25228839329256"
+    },
+    {
+     "v": 6.920144431623343,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.sq_vf0.4.errors_pct[1]",
+     "found": 6.920144431623343,
+     "ok": true,
+     "note": "6.920144431623343 vs 6.920144431623343"
+    },
+    {
+     "v": 2.418694925947107,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.sq_vf0.4.errors_pct[2]",
+     "found": 2.418694925947107,
+     "ok": true,
+     "note": "2.418694925947107 vs 2.418694925947107"
+    },
+    {
+     "v": 2.6283936232617267,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.sq_vf0.4.errors_pct[3]",
+     "found": 2.6283936232617267,
+     "ok": true,
+     "note": "2.6283936232617267 vs 2.6283936232617267"
+    },
+    {
+     "v": 0.13106477515814063,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.hex_vf0.7.errors_pct[2]",
+     "found": 0.13106477515814063,
+     "ok": true,
+     "note": "0.13106477515814063 vs 0.13106477515814063"
+    },
+    {
+     "v": 2.0988291146574634,
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "verdict.per_tier.hex_vf0.7.errors_pct[3]",
+     "found": 2.0988291146574634,
+     "ok": true,
+     "note": "2.0988291146574634 vs 2.0988291146574634"
+    }
+   ],
+   "problems": [
+    "序列非严格单调(abs_decrease): [17.25228839329256, 6.920144431623343, 2.418694925947107, 2.6283936232617267, 0.13106477515814063, 2.0988291146574634]"
+   ]
+  },
+  {
+   "gate": "reference_locked_first",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "Sangani-Acrivos 1982 精确数值门控",
+     "f": "benchmarks/pending/permeability_fibrous/prereg.md",
+     "k": "grep:Sangani-Acrivos 1982 精确数值门控",
+     "found": "Sangani-Acrivos 1982 精确数值门控",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "Gebart 横向渗透率基准",
+     "f": "benchmarks/pending/permeability_fibrous/prereg.md",
+     "k": "grep:Gebart 横向渗透率基准",
+     "found": "Gebart 横向渗透率基准",
+     "ok": true,
+     "note": "grep ok"
+    },
+    {
+     "v": "2026-09-28T23:08:16Z",
+     "f": "benchmarks/pending/permeability_fibrous/result.json",
+     "k": "created_utc",
+     "found": "2026-09-28T23:08:16Z",
+     "ok": true,
+     "note": "'2026-09-28T23:08:16Z' vs '2026-09-28T23:08:16Z'"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "case_readme",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:size>=1200B",
+     "found": "26285B",
+     "ok": true,
+     "note": "26285B"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:sections>=2",
+     "found": "7 个小节",
+     "ok": true,
+     "note": "7 个小节"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:PROVENANCE",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:run_command",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    },
+    {
+     "v": true,
+     "f": "README.md",
+     "k": "check:reference_anchor",
+     "found": "ok",
+     "ok": true,
+     "note": "ok"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "figures",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[0]",
+     "found": "figures/fig_sq_convergence.png curve 188844B div=256",
+     "ok": true,
+     "note": "figures/fig_sq_convergence.png curve 188844B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[1]",
+     "found": "figures/fig_hex_convergence.png curve 223280B div=256",
+     "ok": true,
+     "note": "figures/fig_hex_convergence.png curve 223280B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[2]",
+     "found": "figures/fig_error_summary.png curve 77251B div=256",
+     "ok": true,
+     "note": "figures/fig_error_summary.png curve 77251B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:fig[3]",
+     "found": "figures/fig_staircase_decomposition.png curve 116126B div=256",
+     "ok": true,
+     "note": "figures/fig_staircase_decomposition.png curve 116126B div=256"
+    },
+    {
+     "v": true,
+     "f": "figures.json",
+     "k": "check:field_waiver",
+     "found": "云图豁免: No spatial field quantities (velocity/pressure contours) are",
+     "ok": true,
+     "note": "云图豁免: No spatial field quantities (velocity/pressure contours) are"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": false,
+ "problems": [
+  "monotone_convergence: 序列非严格单调(abs_decrease): [17.25228839329256, 6.920144431623343, 2.418694925947107, 2.6283936232617267, 0.13106477515814063, 2.0988291146574634]"
+ ],
+ "rc": 1,
+ "profile": "paper",
+ "gates_path": "benchmarks/pending/permeability_fibrous/gates.json"
+}
