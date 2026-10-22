@@ -1,7 +1,7 @@
 {
  "case": "dit_turbulence",
  "verdict": "terminal",
- "checked_at": "2026-10-22T14:23:14Z",
+ "checked_at": "2026-10-22T14:23:54Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -94,7 +94,7 @@
    ]
   },
   {
-   "gate": "ref_locked",
+   "gate": "reference_locked_first",
    "declared_pass": true,
    "recomputed_pass": true,
    "evidence": [
