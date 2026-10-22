@@ -70,6 +70,7 @@ def run_case(
     out_path=None,
     resid_interval=5000,
     min_resid=1e-9,
+    dump_path=None,  # 新增：dump 完整 3D 场到 npz（云图生成用）
 ):
     nz = nx
     ny = nx
@@ -227,6 +228,19 @@ def run_case(
     result.update(m)
     if out_path:
         Path(out_path).write_text(json.dumps(result, indent=2))
+    
+    # 新增：dump 完整 3D 场到 npz（云图生成用）
+    if dump_path:
+        np.savez_compressed(
+            dump_path,
+            ux=ux_np,  # (nz, ny, nx) 归一化速度
+            uy=uy_np,
+            uz=uz_np,
+            nx=nx, ny=ny, nz=nz,
+            u_lid=u_lid, re=re
+        )
+        print(f"  dumped 3D field to {dump_path}", flush=True)
+    
     resid_str = f"{last_resid:.2e}" if last_resid is not None else "n/a"
     print(
         f"[nx={nx} nz={nz}] steps={step} resid={resid_str} t={elapsed:.0f}s "
@@ -248,20 +262,25 @@ def main():
     ap.add_argument("--device64", default="cuda:2")
     ap.add_argument("--device96", default="cuda:2")
     ap.add_argument("--steps", type=int, default=100000)
+    ap.add_argument("--dump", action="store_true", help="dump 3D field to npz")
     args = ap.parse_args()
 
     if args.mode == "single":
-        run_case(args.nx, steps=args.steps, device=torch.device(args.device), out_path=args.out)
+        dump_path = args.out.replace(".json", ".npz") if args.dump else None
+        run_case(args.nx, steps=args.steps, device=torch.device(args.device),
+                 out_path=args.out, dump_path=dump_path)
     else:
         out_dir = Path(args.out or "benchmarks/verified/cavity_3d_full")
         out_dir.mkdir(parents=True, exist_ok=True)
         grids = {}
         for nx, dev in ((64, args.device64), (96, args.device96)):
+            dump_path = out_dir / f"case_{nx}3.npz" if args.dump else None
             r = run_case(
                 nx,
                 steps=args.steps,
                 device=torch.device(dev),
                 out_path=str(out_dir / f"case_{nx}3.json"),
+                dump_path=str(dump_path) if dump_path else None,
             )
             grids[str(nx)] = r
         summary = {
