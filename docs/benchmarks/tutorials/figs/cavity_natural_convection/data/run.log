@@ -1,0 +1,5 @@
+device=cuda gpu=NVIDIA GeForce RTX 5090
+[n64] Nu=2.109792 (-5.939%) u_max=15.8574 (-1.982%) v_max=18.9629 (-3.334%) steps=32000 t_stop=22000 elapsed=30.5s
+[n128] Nu=2.177843 (-2.905%) u_max=16.0204 (-0.974%) v_max=19.2896 (-1.669%) steps=115500 t_stop=105000 elapsed=110.3s
+[n256] Nu=2.212536 (-1.358%) u_max=16.0821 (-0.593%) v_max=19.4836 (-0.680%) steps=457600 t_stop=416000 elapsed=437.7s
+scan_result.json written
