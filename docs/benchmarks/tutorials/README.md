@@ -1,4 +1,4 @@
-# TensorLBM 已验证 Benchmark 使用教程（32 案）
+# TensorLBM 已验证 Benchmark 使用教程（33 案）
 
 每个案例含：Benchmark 介绍、计算条件设置、软件使用步骤、计算结果（速度场 / 压力场等）、与文献或解析解的比较（阻力、表面压力系数等）。判据数字一律取自入库 `result.json` 机器档案；演示图为缩短时长的可视化档（`docs/benchmarks/demos/`），定量结论以存档扫描为准。
 
@@ -34,5 +34,6 @@
 | [PR 状态方程高密度比伪势液滴 Young–Laplace：σ 全自测与界面加密收敛（laplace_pr_eos）](tutorials/laplace_pr_eos.md) | 多相/热/声/多孔 | [md](tutorials/laplace_pr_eos.md) | [docx](tutorials/files/laplace_pr_eos.docx) | [pdf](tutorials/files/laplace_pr_eos.pdf) | `benchmarks/verified/laplace_pr_eos` |
 | [CAC 相场两相液滴 Young–Laplace：Route-B σ 标定与 R/密度比迁移（laplace_cac_phasefield）](tutorials/laplace_cac_phasefield.md) | 多相/热/声/多孔 | [md](tutorials/laplace_cac_phasefield.md) | [docx](tutorials/files/laplace_cac_phasefield.docx) | [pdf](tutorials/files/laplace_cac_phasefield.pdf) | `benchmarks/verified/laplace_cac_phasefield` |
 | [方腔自然对流（de Vahl Davis 基准）（thermal_cavity）](tutorials/thermal_cavity.md) | 多相/热/声/多孔 | [md](tutorials/thermal_cavity.md) | [docx](tutorials/files/thermal_cavity.docx) | [pdf](tutorials/files/thermal_cavity.pdf) | `benchmarks/verified/thermal_cavity` |
+| [方腔自然对流 Ra=10⁴ 重算与验证教程（cavity_natural_convection）](tutorials/cavity_natural_convection.md) | 多相/热/声/多孔 | [md](tutorials/cavity_natural_convection.md) | [docx](tutorials/files/cavity_natural_convection.docx) | [pdf](tutorials/files/cavity_natural_convection.pdf) | `benchmarks/verified/cavity_natural_convection` |
 | [平面声波：线性色散与衰减（acoustics）](tutorials/acoustics.md) | 多相/热/声/多孔 | [md](tutorials/acoustics.md) | [docx](tutorials/files/acoustics.docx) | [pdf](tutorials/files/acoustics.pdf) | `benchmarks/verified/acoustics` |
 | [周期圆柱方阵渗透率（Sangani–Acrivos 1982）（permeability）](tutorials/permeability.md) | 多相/热/声/多孔 | [md](tutorials/permeability.md) | [docx](tutorials/files/permeability.docx) | [pdf](tutorials/files/permeability.pdf) | `benchmarks/verified/permeability` |
