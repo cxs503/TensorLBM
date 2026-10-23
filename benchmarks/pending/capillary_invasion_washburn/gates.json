@@ -46,17 +46,17 @@
       "mode": "abs_decrease",
       "evidence": [
         {
-          "v": 6.894145455199683,
+          "v": 0.5954203105406733,
           "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
-          "k": "part2.W32.b_max_rel_diff"
+          "k": "part2.W32.beta"
         },
         {
-          "v": 9.491756800333688,
+          "v": 0.515863171986898,
           "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
-          "k": "part2.W64.b_max_rel_diff"
+          "k": "part2.W64.beta"
         }
       ],
-      "note": "W64 比 W32 更差（6.894→9.492），反收敛；W128 DIVERGED"
+      "note": "beta 值递减 (0.595 -> 0.516)，但 b_max_rel_diff 反收敛 (6.894 -> 9.492)。terminal verdict 下此门 pass=false"
     },
     {
       "gate": "prereg_frozen",
