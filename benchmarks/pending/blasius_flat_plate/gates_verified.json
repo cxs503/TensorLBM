@@ -1,0 +1,108 @@
+{
+ "case": "blasius_flat_plate",
+ "verdict": "terminal",
+ "checked_at": "2026-10-20T16:43:32Z",
+ "gates": [
+  {
+   "gate": "G1_library_entry",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": "/nfs/wangxi/runs/bm_widen_w7_20260922/blasius/src_patched/tensorlbm/__init__.py",
+     "f": "benchmarks/pending/blasius_flat_plate/results/R3p_plate400_trt_lam3_16.json",
+     "k": "tensorlbm_file",
+     "found": "/nfs/wangxi/runs/bm_widen_w7_20260922/blasius/src_patched/tensorlbm/__init__.py",
+     "ok": true,
+     "note": "'/nfs/wangxi/runs/bm_widen_w7_20260922/blasius/src_patched/tensorlbm/__init__.py' vs '/nfs/wangxi/runs/bm_widen_w7_20260922/blasius/src_patched/tensorlbm/__init__.py'"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "G2_direct_observable",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 27.73999011928537,
+     "f": "/nfs/wangxi/runs/bm_close/blasius_flat_plate/R7p_plate800_bgk.json",
+     "k": "Cf_err_pct",
+     "found": 27.73999011928537,
+     "ok": true,
+     "note": "27.73999011928537 vs 27.73999011928537"
+    },
+    {
+     "v": 36.84451380979947,
+     "f": "/nfs/wangxi/runs/bm_close/blasius_flat_plate/R8p_plate1600_bgk.json",
+     "k": "Cf_err_pct",
+     "found": 36.84451380979947,
+     "ok": true,
+     "note": "36.84451380979947 vs 36.84451380979947"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "G3_monotone_convergence",
+   "declared_pass": false,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 27.381498847328196,
+     "f": "benchmarks/pending/blasius_flat_plate/results/R3p_plate400_trt_lam3_16.json",
+     "k": "Cf_err_pct",
+     "found": 27.381498847328196,
+     "ok": true,
+     "note": "27.381498847328196 vs 27.381498847328196"
+    },
+    {
+     "v": 27.73999011928537,
+     "f": "/nfs/wangxi/runs/bm_close/blasius_flat_plate/R7p_plate800_bgk.json",
+     "k": "Cf_err_pct",
+     "found": 27.73999011928537,
+     "ok": true,
+     "note": "27.73999011928537 vs 27.73999011928537"
+    },
+    {
+     "v": 36.84451380979947,
+     "f": "/nfs/wangxi/runs/bm_close/blasius_flat_plate/R8p_plate1600_bgk.json",
+     "k": "Cf_err_pct",
+     "found": 36.84451380979947,
+     "ok": true,
+     "note": "36.84451380979947 vs 36.84451380979947"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "gate": "G4_reference_locked",
+   "declared_pass": true,
+   "recomputed_pass": true,
+   "evidence": [
+    {
+     "v": 0.3320573362151963,
+     "f": "benchmarks/pending/blasius_flat_plate/results/R3p_plate400_trt_lam3_16.json",
+     "k": "blasius_fpp0_ref",
+     "found": 0.3320573362151963,
+     "ok": true,
+     "note": "0.3320573362151963 vs 0.3320573362151963"
+    },
+    {
+     "v": 0.6641146724303926,
+     "f": "benchmarks/pending/blasius_flat_plate/results/R3p_plate400_trt_lam3_16.json",
+     "k": "cf_coeff_locked",
+     "found": 0.6641146724303926,
+     "ok": true,
+     "note": "0.6641146724303926 vs 0.6641146724303926"
+    }
+   ],
+   "problems": []
+  }
+ ],
+ "all_pass": true,
+ "problems": [],
+ "rc": 0,
+ "profile": "classic",
+ "gates_path": "benchmarks/pending/blasius_flat_plate/gates.json"
+}

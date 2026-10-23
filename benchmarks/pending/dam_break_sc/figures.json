@@ -1,0 +1,23 @@
+{
+  "figures": [
+    {
+      "file": "figures/fig_convergence_history.png",
+      "kind": "curve",
+      "caption": "Dam break front position X(T) comparison: reference (Lethe digitisation) vs simulation at a=40 and a=80 (baseline velocity_shift forcing). Shows systematic underprediction at T=2 and T=2.96.",
+      "source": "result.json official_rerun_correct_convention + reference_digitisation_lethe"
+    },
+    {
+      "file": "figures/fig_error_vs_T.png",
+      "kind": "curve",
+      "caption": "Relative error vs dimensionless time T for baseline (a=40, a=80) and Guo forcing (G=5.0, τ=0.8). Only T=1 at a=80 passes 3% threshold; T=2 and T=2.96 systematically fail.",
+      "source": "result.json official_rerun_correct_convention + guo_forcing_investigation"
+    },
+    {
+      "file": "figures/fig_phase_diagram.png",
+      "kind": "curve",
+      "caption": "Parameter space showing opposite G dependencies: decreasing G improves T=2.96 error but worsens T=1 error, making single-parameter tuning infeasible.",
+      "source": "result.json guo_forcing_investigation sweep data"
+    }
+  ],
+  "field_waiver": "No spatial field data (rho/u) archived in result.json; only scalar time series X(T). Field plots would require re-running simulation and extracting 2D arrays, which is beyond the scope of this terminal verdict documentation."
+}
