@@ -91,7 +91,7 @@
 ## 复现
 
 ```bash
-cd benchmarks/pending/channel_turb/runs_3d
+cd benchmarks/pending/channel_turb_3d/runs_3d
 CUDA_VISIBLE_DEVICES=5 /nfs/wangxi/venvs/tensorlbm/bin/python run_probe.py --level L1
 CUDA_VISIBLE_DEVICES=5 /nfs/wangxi/venvs/tensorlbm/bin/python run_probe.py --level L2
 CUDA_VISIBLE_DEVICES=5 /nfs/wangxi/venvs/tensorlbm/bin/python run_probe.py --level L3
@@ -101,11 +101,11 @@ CUDA_VISIBLE_DEVICES=5 /nfs/wangxi/venvs/tensorlbm/bin/python run_probe.py --lev
 原始数据：`runs_3d/{L1,L2,L3}_result.json`；DNS 参考：`dns_ref/mkm180.csv`。
 
 <!-- PROVENANCE
-[{"v": 20.43434670057914, "f": "benchmarks/pending/channel_turb/validation_report.json", "k": "grid_levels[0].rms_y30_100_pct"},
- {"v": 11.665111463802477, "f": "benchmarks/pending/channel_turb/validation_report.json", "k": "grid_levels[1].rms_y30_100_pct"},
- {"v": 5.330965065942242, "f": "benchmarks/pending/channel_turb/validation_report.json", "k": "grid_levels[2].rms_y30_100_pct"},
- {"v": -20.55, "f": "benchmarks/pending/channel_turb/validation_report.json", "k": "grid_levels[0].u_tau_err_pct"},
- {"v": -14.26, "f": "benchmarks/pending/channel_turb/validation_report.json", "k": "grid_levels[1].u_tau_err_pct"},
- {"v": -7.64, "f": "benchmarks/pending/channel_turb/validation_report.json", "k": "grid_levels[2].u_tau_err_pct"},
- {"v": "4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb", "f": "benchmarks/pending/channel_turb/runs_3d/prereg.json", "k": "sha256"}]
+[{"v": 20.43434670057914, "f": "benchmarks/pending/channel_turb_3d/validation_report.json", "k": "grid_levels[0].rms_y30_100_pct"},
+ {"v": 11.665111463802477, "f": "benchmarks/pending/channel_turb_3d/validation_report.json", "k": "grid_levels[1].rms_y30_100_pct"},
+ {"v": 5.330965065942242, "f": "benchmarks/pending/channel_turb_3d/validation_report.json", "k": "grid_levels[2].rms_y30_100_pct"},
+ {"v": -20.55, "f": "benchmarks/pending/channel_turb_3d/validation_report.json", "k": "grid_levels[0].u_tau_err_pct"},
+ {"v": -14.26, "f": "benchmarks/pending/channel_turb_3d/validation_report.json", "k": "grid_levels[1].u_tau_err_pct"},
+ {"v": -7.64, "f": "benchmarks/pending/channel_turb_3d/validation_report.json", "k": "grid_levels[2].u_tau_err_pct"},
+ {"v": "4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb", "f": "benchmarks/pending/channel_turb_3d/runs_3d/prereg.json", "k": "sha256"}]
 -->

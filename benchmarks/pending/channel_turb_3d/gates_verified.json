@@ -1,7 +1,7 @@
 {
  "case": "channel_turb_3d",
  "verdict": "terminal",
- "checked_at": "2026-10-22T20:30:14Z",
+ "checked_at": "2026-10-23T08:12:52Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -10,7 +10,7 @@
    "evidence": [
     {
      "v": "from tensorlbm.wall_resolved_channel3d",
-     "f": "benchmarks/pending/channel_turb/runs_3d/run_probe.py",
+     "f": "benchmarks/pending/channel_turb_3d/runs_3d/run_probe.py",
      "k": "grep:from tensorlbm",
      "found": "from tensorlbm.wall_resolved_channel3d",
      "ok": true,
@@ -26,7 +26,7 @@
    "evidence": [
     {
      "v": 20.43434670057914,
-     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
      "k": "grid_levels[0].rms_y30_100_pct",
      "found": 20.43434670057914,
      "ok": true,
@@ -34,7 +34,7 @@
     },
     {
      "v": 11.665111463802477,
-     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
      "k": "grid_levels[1].rms_y30_100_pct",
      "found": 11.665111463802477,
      "ok": true,
@@ -42,7 +42,7 @@
     },
     {
      "v": 5.330965065942242,
-     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
      "k": "grid_levels[2].rms_y30_100_pct",
      "found": 5.330965065942242,
      "ok": true,
@@ -58,7 +58,7 @@
    "evidence": [
     {
      "v": 20.43434670057914,
-     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
      "k": "grid_levels[0].rms_y30_100_pct",
      "found": 20.43434670057914,
      "ok": true,
@@ -66,7 +66,7 @@
     },
     {
      "v": 11.665111463802477,
-     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
      "k": "grid_levels[1].rms_y30_100_pct",
      "found": 11.665111463802477,
      "ok": true,
@@ -74,7 +74,7 @@
     },
     {
      "v": 5.330965065942242,
-     "f": "benchmarks/pending/channel_turb/validation_report.json",
+     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
      "k": "grid_levels[2].rms_y30_100_pct",
      "found": 5.330965065942242,
      "ok": true,
@@ -90,7 +90,7 @@
    "evidence": [
     {
      "v": "4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb",
-     "f": "benchmarks/pending/channel_turb/runs_3d/prereg.json",
+     "f": "benchmarks/pending/channel_turb_3d/runs_3d/prereg.json",
      "k": "sha256",
      "found": "4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb",
      "ok": true,
@@ -188,9 +188,11 @@
    "problems": []
   }
  ],
- "all_pass": true,
- "problems": [],
- "rc": 0,
+ "all_pass": false,
+ "problems": [
+  "case 不符: gates.json 声明 'channel_turb_3d' vs 请求 'channel_turb'"
+ ],
+ "rc": 1,
  "profile": "paper",
- "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m186/TensorLBM/benchmarks/pending/channel_turb/gates.json"
+ "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m186/TensorLBM/benchmarks/pending/channel_turb_3d/gates.json"
 }
