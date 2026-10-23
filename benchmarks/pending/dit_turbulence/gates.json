@@ -1,0 +1,89 @@
+{
+  "case": "dit_turbulence",
+  "verdict": "terminal",
+  "reason": "固定 C_s Smagorinsky LES 跨网格不收敛（N=256 谱斜率 +17.05% 超差）；Dynamic Smagorinsky 库实现缺陷（全局平均 + 稳定性问题）不足以解决；系综平均与更长运行不适用（系统性偏差非统计噪声）",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "solver3d.stream3d",
+          "f": "benchmarks/pending/dit_turbulence/run.py",
+          "k": "grep:from tensorlbm.solver3d import stream3d"
+        },
+        {
+          "v": "turbulence.collide_smagorinsky_bgk3d",
+          "f": "benchmarks/pending/dit_turbulence/run.py",
+          "k": "grep:from tensorlbm.turbulence import"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "evidence": [
+        {
+          "v": 1.6857,
+          "f": "benchmarks/pending/dit_turbulence/result.json",
+          "k": "verdict.slope_err_pct_per_grid.128"
+        },
+        {
+          "v": 17.05,
+          "f": "benchmarks/pending/dit_turbulence/result.json",
+          "k": "verdict.slope_err_pct_per_grid.256"
+        },
+        {
+          "v": 1.4491,
+          "f": "benchmarks/pending/dit_turbulence/result.json",
+          "k": "verdict.n_decay_per_grid.128"
+        },
+        {
+          "v": 1.6932,
+          "f": "benchmarks/pending/dit_turbulence/result.json",
+          "k": "verdict.n_decay_per_grid.256"
+        }
+      ]
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "Kolmogorov 1941: 惯性区能量谱 E(k)∝k^(−5/3)；DIT 衰减 E(t)∝t^(−n)，n≈1.2–1.5（Saffman 6/5、Batchelor 10/7、Comte-Bellot-Corrsin 实验）",
+          "f": "benchmarks/pending/dit_turbulence/result.json",
+          "k": "reference"
+        },
+        {
+          "v": [1.2, 1.5],
+          "f": "benchmarks/pending/dit_turbulence/result.json",
+          "k": "metrics.decay_band"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": []
+    }
+  ],
+  "dsmag_evaluation": {
+    "tau_0.501": {
+      "status": "unstable",
+      "nan_step": 609,
+      "note": "库实现在近零分子黏性时失稳"
+    },
+    "tau_0.51": {
+      "status": "stable_but_wrong",
+      "slope_N128": -7.706,
+      "slope_err_pct": -362.4,
+      "n_decay_N128": 1.732,
+      "note": "灾难性失败——全局平均 C_s² 非标准 Germano-Lilly 局部动态过程"
+    }
+  }
+}

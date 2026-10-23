@@ -1,6 +1,13 @@
-# 2D 溃坝 dam_break_sc（Shan-Chen 单组分伪势，Martin & Moyce 前沿 X(T)）（pending）
+# 2D 溃坝 dam_break_sc（Shan-Chen 单组分伪势，Martin & Moyce 前沿 X(T)）
 
-**状态：❌ 未达标（本构/密度比缺口，2026-09-29 二次判决）——修正时间轴与参考表双重错误后，仅最早检查点可达标（a=80, T=1: +2.49%），误差随 T 单调恶化到 -19%；err(T=1) 与 err(T=2.96) 对 G 的依赖方向相反，任何稳定 (G, τ) 组合都无法三检查点同过；质量守恒的 Guo 力已落库（opt-in）但与 velocity_shift 实质等价。**
+**状态：⏸️ TERMINAL 终裁（2026-10-22 m163 闭环）——根因=结构性本构/密度比缺口 + 反向 G 依赖，非参数调优可解。四门判决：G1✅ G2❌ G3❌ G4✅。详见 terminal_verdict_report.md 与 terminal_verdict_m163.md。**
+
+**历史摘要（2026-09-29 二次判决）**：修正时间轴与参考表双重错误后，仅最早检查点可达标（a=80, T=1: +2.49%），误差随 T 单调恶化到 -19%；err(T=1) 与 err(T=2.96) 对 G 的依赖方向相反，任何稳定 (G, τ) 组合都无法三检查点同过；质量守恒的 Guo 力已落库（opt-in）但与 velocity_shift 实质等价。
+
+**m163 新试杠杆（2026-10-22）**：
+- 压力张量 SC 力（Ramshaw-Phathanapirom scheme="pressure_tensor"）：a=80 在 step 460 NaN 失稳；a=40 虽跑完 1600 步但误差更大（T=1 +5.22%, T=2 -12.48%, T=2.96 -27.25%）
+- 高密度比 EOS（psi_eos_carnahan_starling / psi_eos_peng_robinson）：库能力已确认（verified/laplace_pr_eos T_r=0.55 密度比 123-556），但溃坝工况涉及大变形/自由表面/冲击，与静态液滴物理差异大；即使密度比提升，反向 G 依赖的结构性障碍仍在
+- Guest-host 耦合（collide_sc_two_component）：需重新标定共存曲线/表面张力/迁移率，引入新物理不确定性
 
 ## 物理问题
 
