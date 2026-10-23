@@ -1,0 +1,16 @@
+{
+ "figures": [
+  {
+   "file": "figures/fig_flow_evolution.png",
+   "kind": "field",
+   "caption": "2D dam-break density/phase-field evolution, 4 models x 5 times (240x120, 3000 steps): SC/FE front lost after T~1, SCMP hits domain wall, CG stalls.",
+   "source": "run_dam_break flow_step_*.png, /nfs/wangxi/runs/dam_break_report_20261023"
+  },
+  {
+   "file": "figures/fig_front_vs_MM.png",
+   "kind": "curve",
+   "caption": "Front position X(T): four models vs Martin & Moyce 1952 experimental 14-point digitisation (reference_digitisation_lethe). All four FAIL quantitatively.",
+   "source": "front_position_{sc,scmp,cg,fe}.csv + result.json reference_digitisation_lethe"
+  }
+ ]
+}
