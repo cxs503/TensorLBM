@@ -1,0 +1,145 @@
+{
+  "case": "capillary_invasion_washburn",
+  "verdict": "terminal",
+  "reason": "SC-MCMP 结构性缺陷：质量守恒失败（-60.7%/-67.0%）、σ 原理性不可测、W128 负分布 NaN；根因为多组分伪势耦合的结构性搅动，需库级重构方可修复",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm.multiphase import collide_sc_two_component",
+          "f": "benchmarks/pending/capillary_invasion_washburn/w4b_lib.py",
+          "k": "grep:from tensorlbm"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "evidence": [
+        {
+          "v": 19.08406210813467,
+          "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
+          "k": "part2.W32.beta_criterion_dev_pct"
+        },
+        {
+          "v": 3.1726343973796034,
+          "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
+          "k": "part2.W64.beta_criterion_dev_pct"
+        },
+        {
+          "v": 6.894145455199683,
+          "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
+          "k": "part2.W32.b_max_rel_diff"
+        },
+        {
+          "v": 9.491756800333688,
+          "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
+          "k": "part2.W64.b_max_rel_diff"
+        }
+      ]
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": false,
+      "mode": "abs_decrease",
+      "evidence": [
+        {
+          "v": 6.894145455199683,
+          "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
+          "k": "part2.W32.b_max_rel_diff"
+        },
+        {
+          "v": 9.491756800333688,
+          "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
+          "k": "part2.W64.b_max_rel_diff"
+        }
+      ],
+      "note": "W64 比 W32 更差（6.894→9.492），反收敛；W128 DIVERGED"
+    },
+    {
+      "gate": "prereg_frozen",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "40e5c80375bd34e15b39d0ee4e2da61cd54dd04ea1889a4983bc211527a083fb",
+          "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
+          "k": "prereg.snapshot_sha256"
+        },
+        {
+          "v": "26e2f9f556c9304be1bbe59271ae3241bd8a3c7a3b467cf7ab77fefebd00dca2",
+          "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
+          "k": "prereg.notes_sha256"
+        },
+        {
+          "v": true,
+          "f": "benchmarks/pending/capillary_invasion_washburn/result.json",
+          "k": "iron_rule.pass"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": []
+    }
+  ],
+  "failure_analysis": {
+    "mass_conservation": {
+      "W32_drift_pct": -60.677107119080844,
+      "W64_drift_pct": -66.97527211128853,
+      "root_cause": "SC-MCMP 多组分伪势耦合在侵入前沿产生持续搅动，湿润相质量账严重不守恒"
+    },
+    "sigma_unmeasurable": {
+      "explanation": "SC-MCMP 的伪势交互产生排斥力驱动相分离，但界面处的力是数值构造的，不与物理表面张力直接对应",
+      "consequence": "判据 b 的参考解只能去掉毛细项（nominal-μ ODE），绝对判据 +689%/+949% 部分来自参考本身缺项"
+    },
+    "negative_distribution_nan": {
+      "W128_status": "DIVERGED",
+      "nan_at_step": 164,
+      "root_cause": "水汇处气相耗尽层 → rho_g→0 → 分布函数变负（exp39/40/41）",
+      "deterministic": true,
+      "independent_of_driving": true,
+      "independent_of_domain_length": true
+    },
+    "sister_case_anti_convergence": {
+      "case": "two_phase_poiseuille",
+      "H64_max_rel_err": 0.26821538643505377,
+      "H128_max_rel_err": 0.33173655541170183,
+      "note": "同库同根因，W4-B Part 1 同样反收敛"
+    }
+  },
+  "upgrade_path": [
+    {
+      "priority": 1,
+      "action": "SC-MCMP 质量守恒修复",
+      "description": "检查边界条件实现，确保气 reservoir 与 water sink 的通量平衡；添加全局质量监控与自适应校正",
+      "estimated_cost_gpu_hours": 2
+    },
+    {
+      "priority": 2,
+      "action": "气相耗尽防护",
+      "description": "添加密度下限钳制（rho_g >= 1e-6）+ 分布函数非负性修复（负值重置为平衡态）",
+      "estimated_cost_gpu_hours": 1
+    },
+    {
+      "priority": 3,
+      "action": "σ 可测路径",
+      "description": "改用 Color-Gradient 模型（显式表面张力项）或 Free-Energy 模型（热力学一致，σ 可从自由能泛函计算）",
+      "estimated_cost_gpu_hours": 8,
+      "note": "需新预注册，判据 b 的参考解在 σ 可测后重锁"
+    },
+    {
+      "priority": 4,
+      "action": "维持 TERMINAL",
+      "description": "记录负结果，供后续库改进参考",
+      "estimated_cost_gpu_hours": 0
+    }
+  ]
+}
