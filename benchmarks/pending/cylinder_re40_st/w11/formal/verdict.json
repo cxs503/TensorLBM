@@ -1,0 +1,103 @@
+{
+ "schema": "w11-a-cyl-steady/verdict/v1",
+ "assembled_utc": "2026-10-12",
+ "assembler": "controller (machine-to-machine from ladder_summary.json; zero hand-copy)",
+ "sources": {
+  "ladder_summary": {
+   "path": "formal/ladder_summary.json",
+   "md5": "79d26936dd24d1d72104548c2fe08ddc"
+  },
+  "ref_lock": {
+   "path": "ref/ref_lock.json",
+   "md5": "4de75169bb8671ada586b5ca5232aabb"
+  },
+  "prereg": {
+   "path": "prereg/prereg.md",
+   "md5": "90860b9f7dffa777d66851d38883302f"
+  }
+ },
+ "clauses": {
+  "G1": "|Cd(D)-Cd_ref|/Cd_ref <= 3% at D in {40,80,160} all rungs (D160 hard rung)",
+  "G2": "strict monotone convergence: |err| non-increasing across D",
+  "G3": "per-rung Re relock chain (R_area recorded, nu back-derived from D_eff, machine chain)",
+  "R11": "if D160 still >3% -> honest FAIL, no gate edits, no parameter tuning (owner ruling: corrections do not count as direct simulation)"
+ },
+ "readings": {
+  "re20": {
+   "cd_ref_primary": 2.0001,
+   "rungs": [
+    {
+     "D": 40,
+     "cd": 2.1212576639754612,
+     "err_pct": 6.057580319757072,
+     "steps": 48000,
+     "stop_reason": "plateau"
+    },
+    {
+     "D": 80,
+     "cd": 2.1172753059375715,
+     "err_pct": 5.858472373259893,
+     "steps": 96000,
+     "stop_reason": "plateau"
+    },
+    {
+     "D": 160,
+     "cd": 2.1176905168536173,
+     "err_pct": 5.8792318810868105,
+     "steps": 192000,
+     "stop_reason": "plateau"
+    }
+   ],
+   "g1_all_within_3pct": false,
+   "g2_strict_monotone": false,
+   "g2_nonincreasing": false,
+   "err_diffs_pct": [
+    -0.199107946497179,
+    0.02075950782691738
+   ],
+   "g3_relock_chain_ok": true,
+   "ladder_complete": true,
+   "tier_verdict": "FAIL"
+  },
+  "re40": {
+   "cd_ref_primary": 1.498,
+   "rungs": [
+    {
+     "D": 40,
+     "cd": 1.5852098888020207,
+     "err_pct": 5.821754926703648,
+     "steps": 48000,
+     "stop_reason": "plateau"
+    },
+    {
+     "D": 80,
+     "cd": 1.5801115167974609,
+     "err_pct": 5.481409666052128,
+     "steps": 96000,
+     "stop_reason": "plateau"
+    },
+    {
+     "D": 160,
+     "cd": 1.5793775112093078,
+     "err_pct": 5.432410628124695,
+     "steps": 192000,
+     "stop_reason": "plateau"
+    }
+   ],
+   "g1_all_within_3pct": false,
+   "g2_strict_monotone": true,
+   "g2_nonincreasing": true,
+   "err_diffs_pct": [
+    -0.34034526065152004,
+    -0.04899903792743299
+   ],
+   "g3_relock_chain_ok": true,
+   "ladder_complete": true,
+   "tier_verdict": "FAIL"
+  }
+ },
+ "overall_verdict": "FAIL",
+ "adjudication": [
+  "Honest FAIL both Re tiers. G1 fails all six rungs: errors plateau at +5.43..+6.06% vs the Fornberg-1980 primary lock (cross-source spread <0.54%), i.e. a resolution-independent systematic of ~+5.5%, not under-convergence. re40 satisfies G2 (5.822->5.481->5.432, strict monotone) but the D160 rung stays above the 3% band; re20 also violates G2 (5.858->5.879 uptick +0.0208pp at D160, plateau-scale). G3 machine relock chain intact on every rung. R11 applies: no gate edit, no tuning. The ~+5.5% plateau character (not shrinking with D) matches a domain/blockage-class systematic, consistent with the campaign-wide Dirichlet-inlet family; recorded as diagnosis pointer only, not a gate input."
+ ]
+}

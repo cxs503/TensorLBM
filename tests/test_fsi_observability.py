@@ -1,4 +1,5 @@
 """Regression tests for FSI benchmark execution observability."""
+
 from __future__ import annotations
 
 import csv
@@ -9,7 +10,10 @@ import pytest
 import torch
 
 from tensorlbm.benchmark_observability import (
-    BenchmarkReporter, FsiCheckpoint, assert_benchmark_tensor_device, resolve_benchmark_device,
+    BenchmarkReporter,
+    FsiCheckpoint,
+    assert_benchmark_tensor_device,
+    resolve_benchmark_device,
 )
 
 
@@ -63,7 +67,9 @@ def test_reporter_serializes_nonfinite_metrics_as_null(tmp_path):
     reporter.start()
     reporter.finish(1, "FAILED", None, {"frequency_ratio": math.nan, "pass": False})
 
-    assert json.loads((tmp_path / "run_status.json").read_text())["metrics"]["frequency_ratio"] is None
+    assert (
+        json.loads((tmp_path / "run_status.json").read_text())["metrics"]["frequency_ratio"] is None
+    )
 
 
 def test_fsi_checkpoint_round_trip_is_atomic_and_cpu_portable(tmp_path):

@@ -20,44 +20,41 @@ import time
 import pytest
 import torch
 
+from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d
+from tensorlbm.boundaries_d3q27 import bounce_back_cells_27, far_field_bc_27
+from tensorlbm.cumulant import collide_cumulant_d3q19, collide_cumulant_d3q27
 from tensorlbm.d3q19 import (
-    C as C19,
-    W as W19,
     equilibrium3d,
     macroscopic3d,
 )
 from tensorlbm.d3q27 import (
-    C as C27,
-    W as W27,
     collide_bgk27,
     collide_mrt27,
     equilibrium27,
     macroscopic27,
     stream27_roll,
 )
+from tensorlbm.lbm_step import LBMStepExecutor
 from tensorlbm.solver3d import (
     collide_bgk3d,
     collide_mrt3d,
-    stream3d,
     correct_mass3d,
+    stream3d,
 )
-from tensorlbm.cumulant import collide_cumulant_d3q19, collide_cumulant_d3q27
-from tensorlbm.boundaries3d import far_field_bc_3d, bounce_back_cells_3d
-from tensorlbm.boundaries_d3q27 import far_field_bc_27, bounce_back_cells_27
 from tensorlbm.wall_function_common import (
     compute_u_tau,
     compute_y_plus,
     wall_function,
 )
-from tensorlbm.lbm_step import LBMStepExecutor
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
 SDAA = "sdaa:0"
-DEVICE = torch.device(SDAA if torch.sdaa.is_available() else "cpu")
+DEVICE = torch.device(
+    SDAA if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available() else "cpu"
+)
 DTYPE = torch.float32
 ATOL = 1e-6
 

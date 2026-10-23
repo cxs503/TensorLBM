@@ -1,0 +1,110 @@
+{
+  "case": "W8-A BFL sparse-kernel memory fix + sphere big-domain ladder",
+  "reference": {
+    "formula": "Cd = 24/Re * (1 + 0.15*Re^0.687)",
+    "re": 100.0,
+    "cd_ref": 1.0917310910948732,
+    "gate_pct": 3.0,
+    "cross_references": {
+      "schiller_naumann_0681": 1.0685190542670633,
+      "clift_gauvin": 1.1092345787735252
+    }
+  },
+  "bitwise_chain": {
+    "w7_driver_dense_vs_w8a_driver_dense_D20": {
+      "exact": true,
+      "detail": "6 shared steps x 4 quantities exact"
+    }
+  },
+  "t1_reproduction": {
+    "t1_sparse_d40big_vs_w7_h2big": {
+      "exact": true,
+      "detail": "240 shared steps x 4 quantities exact"
+    }
+  },
+  "runs": [
+    {
+      "file": "t1_d40big_12k.json",
+      "tier": "T1_d40big_12k",
+      "kernel": "sparse",
+      "D": 40,
+      "tau": 0.56,
+      "u_lb": 0.05,
+      "re_eff": 99.99999999999991,
+      "domain_lu": [
+        280,
+        280,
+        320
+      ],
+      "lat": 3.0,
+      "up": 3.0,
+      "down": 4.0,
+      "blockage": 0.0160285339468867,
+      "bfl_links": 28722,
+      "steps": 12000,
+      "diverged": false,
+      "tau_expected": 0.56,
+      "tau_ok": true,
+      "cd_window": 1.1219804015117896,
+      "cd_prev_window": 1.1236068972261422,
+      "drift_pct": -0.14475665095754808,
+      "n_window": 48,
+      "steady": true,
+      "cl_mean": 7.317915270745513e-05,
+      "cd_ref": 1.0917310910948732,
+      "err_pct": 2.7707656824703957,
+      "within_gate": true,
+      "cv_closure_rel_samples": 0.0025852464147355426,
+      "cv_closure_rel_window": 0.0001496104414234331,
+      "cv_samples": 50,
+      "mass_drift_ppm": -0.07971931784817472
+    },
+    {
+      "file": "t2_d60big_24k.json",
+      "tier": "T2_d60big_24k",
+      "kernel": "sparse",
+      "D": 60,
+      "tau": 0.59,
+      "u_lb": 0.05,
+      "re_eff": 100.00000000000004,
+      "domain_lu": [
+        420,
+        420,
+        480
+      ],
+      "lat": 3.0,
+      "up": 3.0,
+      "down": 4.0,
+      "blockage": 0.0160285339468867,
+      "bfl_links": 64794,
+      "steps": 24000,
+      "diverged": false,
+      "tau_expected": 0.5900000000000001,
+      "tau_ok": true,
+      "cd_window": 1.119462001144486,
+      "cd_prev_window": 1.1199324578286507,
+      "drift_pct": -0.0420075943755402,
+      "n_window": 96,
+      "steady": true,
+      "cl_mean": 3.264999069912268e-05,
+      "cd_ref": 1.0917310910948732,
+      "err_pct": 2.5400861325477218,
+      "within_gate": true,
+      "cv_closure_rel_samples": 0.00035842160128108464,
+      "cv_closure_rel_window": 7.813769713472235e-05,
+      "cv_samples": 50,
+      "mass_drift_ppm": 0.0
+    }
+  ],
+  "judgment": {
+    "case": "sphere Re=100, BFL big-domain ladder (W8-A stretch)",
+    "observable": "BFL per-link momentum ledger (laboratory frame), window-mean Cd",
+    "tiers": [
+      "T1_d40big_12k",
+      "T2_d60big_24k"
+    ],
+    "all_within_gate_and_steady": true,
+    "monotone_error_decrease": true,
+    "pass": true
+  }
+}

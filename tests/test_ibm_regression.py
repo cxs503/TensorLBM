@@ -18,28 +18,25 @@
 
 from __future__ import annotations
 
-import math
-
 import pytest
 import torch
 
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q27 import collide_bgk27, equilibrium27, macroscopic27
 from tensorlbm.ibm import (
-    ibm_delta_hat,
-    ibm_delta_4pt,
-    ibm_direct_forcing_3d,
     ibm_apply_body_force_3d,
+    ibm_delta_4pt,
+    ibm_delta_hat,
+    ibm_direct_forcing_3d,
 )
-from tensorlbm.ibm_vec import ibm_direct_forcing_3d_vec
 from tensorlbm.ibm_common import (
-    ibm_direct_forcing_3d_common,
-    ibm_apply_body_force_3d_common,
     derive_surface_markers_3d,
+    ibm_apply_body_force_3d_common,
+    ibm_direct_forcing_3d_common,
     macroscopic_velocity_3d,
 )
-from tensorlbm.d3q19 import C as C19, W as W19, equilibrium3d, macroscopic3d
-from tensorlbm.d3q27 import C as C27, W as W27, equilibrium27, macroscopic27, collide_bgk27
+from tensorlbm.ibm_vec import ibm_direct_forcing_3d_vec
 from tensorlbm.solver3d import collide_bgk3d, stream3d
-
 
 # =========================================================================== #
 # 辅助函数
@@ -199,7 +196,6 @@ class TestBugIdentification:
         这是 IBM 的基本物理不变量：力不能凭空产生或消失。
         """
         nz, ny, nx = 10, 10, 10
-        n_markers = 5
         torch.manual_seed(42)
         ux = torch.zeros(nz, ny, nx, dtype=torch.float32)
         uy = torch.zeros(nz, ny, nx, dtype=torch.float32)
@@ -505,7 +501,7 @@ class TestEquivalence:
         # 对于均匀流 ux=0.1，Σ(u_interp) ≈ 0.1 * N
         # 但由于球体对称性，x方向力不完全为零（球体在x方向有阻力）
         # 我们检查力守恒：网格力 = 标记力
-        u_interp_x = torch.zeros(n, dtype=torch.float32)
+        torch.zeros(n, dtype=torch.float32)
         # 手动验证：force sum 应等于 marker force sum
         # marker force = u_target - u_interp = -u_interp
         # force_grid sum = Σ marker_force（由 partition-of-unity 保证）

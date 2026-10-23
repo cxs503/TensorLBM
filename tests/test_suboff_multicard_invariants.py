@@ -2,12 +2,12 @@
 
 import torch
 
-from tensorlbm.suboff_resistance import _voxel_wetted_area, voxel_wetted_area_x_slab
 from examples.dg_suboff_cumulant_d3q27_multicard import (
     apply_halfway_bounce_back_27,
     pressure_drag_x_27,
     validate_suboff_voxel_resolution,
 )
+from tensorlbm.suboff_resistance import _voxel_wetted_area, voxel_wetted_area_x_slab
 
 
 def test_x_slab_wetted_area_matches_global_mask_without_cut_faces():

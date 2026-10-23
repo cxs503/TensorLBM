@@ -1,0 +1,125 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+=== B6 SUBOFF Re=1000 L=48 collision=mrt steps=20000 device=sdaa:0 ===
+setup: {
+ "Re": 1000.0,
+ "tau": 0.5072,
+ "u_lb": 0.05,
+ "nu_lb": 0.0024000000000000002,
+ "domain_lu": [
+  288,
+  102,
+  102
+ ],
+ "obstacle_cells": 837,
+ "near_wall_cells": 690,
+ "total_cells": 2996352,
+ "device": "sdaa:0",
+ "auto_collision": "mrt",
+ "auto_wall_treatment": "bounce_back"
+}
+[MON] step=   273 nlog=   27 win27_raw_cd_tot=2.371670 cd_p=0.358047 cd_f=2.013623
+[MON] step=   546 nlog=   54 win54_raw_cd_tot=2.005972 cd_p=0.307456 cd_f=1.698516
+[MON] step=   818 nlog=   81 win81_raw_cd_tot=1.823326 cd_p=0.287203 cd_f=1.536123
+[MON] step=  1091 nlog=  109 win109_raw_cd_tot=1.708194 cd_p=0.275337 cd_f=1.432857
+[MON] step=  1364 nlog=  136 win136_raw_cd_tot=1.634602 cd_p=0.268173 cd_f=1.366428
+[MON] step=  1637 nlog=  163 win163_raw_cd_tot=1.582578 cd_p=0.263207 cd_f=1.319371
+[MON] step=  1910 nlog=  191 win191_raw_cd_tot=1.542889 cd_p=0.259364 cd_f=1.283525
+[MON] step=  2183 nlog=  218 win218_raw_cd_tot=1.513686 cd_p=0.256453 cd_f=1.257233
+[MON] step=  2456 nlog=  245 win245_raw_cd_tot=1.490638 cd_p=0.254105 cd_f=1.236533
+[MON] step=  2728 nlog=  272 win272_raw_cd_tot=1.472019 cd_p=0.252174 cd_f=1.219845
+[MON] step=  3001 nlog=  300 win300_raw_cd_tot=1.456166 cd_p=0.250507 cd_f=1.205659
+[MON] step=  3274 nlog=  327 win327_raw_cd_tot=1.443409 cd_p=0.249156 cd_f=1.194253
+[MON] step=  3547 nlog=  354 win354_raw_cd_tot=1.432576 cd_p=0.248002 cd_f=1.184574
+[MON] step=  3820 nlog=  381 win381_raw_cd_tot=1.423263 cd_p=0.247005 cd_f=1.176258
+[MON] step=  4092 nlog=  409 win409_raw_cd_tot=1.414896 cd_p=0.246107 cd_f=1.168789
+[MON] step=  4365 nlog=  436 win436_raw_cd_tot=1.407840 cd_p=0.245347 cd_f=1.162493
+[MON] step=  4638 nlog=  463 win463_raw_cd_tot=1.401602 cd_p=0.244673 cd_f=1.156929
+[MON] step=  4911 nlog=  491 win491_raw_cd_tot=1.395856 cd_p=0.244053 cd_f=1.151804
+[MON] step=  5184 nlog=  518 win500_raw_cd_tot=1.346875 cd_p=0.237555 cd_f=1.109320
+[MON] step=  5457 nlog=  545 win500_raw_cd_tot=1.322546 cd_p=0.236248 cd_f=1.086298
+[MON] step=  5730 nlog=  573 win500_raw_cd_tot=1.311393 cd_p=0.235374 cd_f=1.076019
+[MON] step=  6003 nlog=  600 win500_raw_cd_tot=1.306350 cd_p=0.234921 cd_f=1.071429
+[MON] step=  6276 nlog=  627 win500_raw_cd_tot=1.303873 cd_p=0.234603 cd_f=1.069270
+[MON] step=  6549 nlog=  654 win500_raw_cd_tot=1.302569 cd_p=0.234344 cd_f=1.068225
+[MON] step=  6821 nlog=  682 win500_raw_cd_tot=1.301824 cd_p=0.234143 cd_f=1.067681
+[MON] step=  7094 nlog=  709 win500_raw_cd_tot=1.301414 cd_p=0.234012 cd_f=1.067403
+[MON] step=  7367 nlog=  736 win500_raw_cd_tot=1.301174 cd_p=0.233927 cd_f=1.067247
+[MON] step=  7640 nlog=  764 win500_raw_cd_tot=1.301026 cd_p=0.233872 cd_f=1.067154
+[MON] step=  7913 nlog=  791 win500_raw_cd_tot=1.300939 cd_p=0.233838 cd_f=1.067101
+[MON] step=  8186 nlog=  818 win500_raw_cd_tot=1.300885 cd_p=0.233817 cd_f=1.067068
+[MON] step=  8459 nlog=  845 win500_raw_cd_tot=1.300850 cd_p=0.233803 cd_f=1.067047
+[MON] step=  8732 nlog=  873 win500_raw_cd_tot=1.300827 cd_p=0.233794 cd_f=1.067033
+[MON] step=  9004 nlog=  900 win500_raw_cd_tot=1.300812 cd_p=0.233788 cd_f=1.067024
+[MON] step=  9277 nlog=  927 win500_raw_cd_tot=1.300803 cd_p=0.233785 cd_f=1.067018
+[MON] step=  9550 nlog=  955 win500_raw_cd_tot=1.300798 cd_p=0.233784 cd_f=1.067014
+[MON] step=  9823 nlog=  982 win500_raw_cd_tot=1.300796 cd_p=0.233785 cd_f=1.067011
+[MON] step= 10096 nlog= 1009 win500_raw_cd_tot=1.300796 cd_p=0.233785 cd_f=1.067010
+[MON] step= 10369 nlog= 1036 win500_raw_cd_tot=1.300796 cd_p=0.233787 cd_f=1.067010
+[MON] step= 10641 nlog= 1064 win500_raw_cd_tot=1.300798 cd_p=0.233788 cd_f=1.067010
+[MON] step= 10914 nlog= 1091 win500_raw_cd_tot=1.300798 cd_p=0.233788 cd_f=1.067010
+[MON] step= 11187 nlog= 1118 win500_raw_cd_tot=1.300799 cd_p=0.233789 cd_f=1.067010
+[MON] step= 11459 nlog= 1145 win500_raw_cd_tot=1.300802 cd_p=0.233791 cd_f=1.067011
+[MON] step= 11732 nlog= 1173 win500_raw_cd_tot=1.300803 cd_p=0.233791 cd_f=1.067012
+[MON] step= 12005 nlog= 1200 win500_raw_cd_tot=1.300804 cd_p=0.233792 cd_f=1.067013
+[MON] step= 12278 nlog= 1227 win500_raw_cd_tot=1.300806 cd_p=0.233792 cd_f=1.067013
+[MON] step= 12550 nlog= 1255 win500_raw_cd_tot=1.300806 cd_p=0.233792 cd_f=1.067014
+[MON] step= 12823 nlog= 1282 win500_raw_cd_tot=1.300807 cd_p=0.233792 cd_f=1.067015
+[MON] step= 13096 nlog= 1309 win500_raw_cd_tot=1.300807 cd_p=0.233792 cd_f=1.067015
+[MON] step= 13368 nlog= 1336 win500_raw_cd_tot=1.300807 cd_p=0.233792 cd_f=1.067015
+[MON] step= 13641 nlog= 1364 win500_raw_cd_tot=1.300807 cd_p=0.233792 cd_f=1.067016
+[MON] step= 13913 nlog= 1391 win500_raw_cd_tot=1.300808 cd_p=0.233792 cd_f=1.067016
+[MON] step= 14186 nlog= 1418 win500_raw_cd_tot=1.300808 cd_p=0.233792 cd_f=1.067016
+[MON] step= 14459 nlog= 1445 win500_raw_cd_tot=1.300808 cd_p=0.233792 cd_f=1.067016
+[MON] step= 14732 nlog= 1473 win500_raw_cd_tot=1.300808 cd_p=0.233791 cd_f=1.067017
+[MON] step= 15004 nlog= 1500 win500_raw_cd_tot=1.300808 cd_p=0.233792 cd_f=1.067017
+[MON] step= 15277 nlog= 1527 win500_raw_cd_tot=1.300808 cd_p=0.233792 cd_f=1.067017
+[MON] step= 15550 nlog= 1555 win500_raw_cd_tot=1.300808 cd_p=0.233791 cd_f=1.067017
+[MON] step= 15822 nlog= 1582 win500_raw_cd_tot=1.300808 cd_p=0.233791 cd_f=1.067017
+[MON] step= 16095 nlog= 1609 win500_raw_cd_tot=1.300808 cd_p=0.233791 cd_f=1.067017
+[MON] step= 16368 nlog= 1636 win500_raw_cd_tot=1.300808 cd_p=0.233791 cd_f=1.067017
+[MON] step= 16640 nlog= 1664 win500_raw_cd_tot=1.300808 cd_p=0.233791 cd_f=1.067017
+[MON] step= 16913 nlog= 1691 win500_raw_cd_tot=1.300808 cd_p=0.233792 cd_f=1.067017
+[MON] step= 17186 nlog= 1718 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+[MON] step= 17458 nlog= 1745 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+[MON] step= 17731 nlog= 1773 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+[MON] step= 18004 nlog= 1800 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+[MON] step= 18276 nlog= 1827 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+[MON] step= 18549 nlog= 1854 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+[MON] step= 18822 nlog= 1882 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+[MON] step= 19095 nlog= 1909 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+[MON] step= 19367 nlog= 1936 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+[MON] step= 19640 nlog= 1964 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+[MON] step= 19912 nlog= 1991 win500_raw_cd_tot=1.300809 cd_p=0.233792 cd_f=1.067017
+run finished: completed in 4399s (220.0 ms/step)
+final field saved to /root/TensorLBM_feat2/results_e2e_suboff_L48_standard/final_field.pt
+{
+ "Cd_pressure": 0.006816246453744651,
+ "Cd_friction": 0.031109077791681216,
+ "Cd_total": 0.03792532424542587,
+ "Cd_total_last5000": 0.03792534281124524,
+ "Cf_ref": 0.04199504732703608,
+ "error_pct_vs_Blasius": -9.69095962654185,
+ "convergence_windows": {
+  "25%": 0.040647,
+  "50%": 0.039286,
+  "75%": 0.037925,
+  "100%": 0.037925
+ }
+}
+results written to /root/TensorLBM_feat2/results_e2e_suboff_L48_standard/result.json
+RESULT Cd_p=0.006816 Cd_f=0.031109 Cd_tot=0.037925 (ref 0.041995) err=-9.69%

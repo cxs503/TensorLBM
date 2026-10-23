@@ -1,0 +1,89 @@
+{
+  "case": "cylinder_3d_re40",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "geometry": "z-axis extruded circular cylinder, infinite span (z periodic)",
+  "D_cells": 20,
+  "nx": 320,
+  "ny": 320,
+  "nz": 4,
+  "lateral_D": 16.0,
+  "blockage_pct": 6.25,
+  "span_cells": 4,
+  "n_solid_cells": 1268,
+  "n_near_cells": 240,
+  "Re": 40.0,
+  "u_in": 0.08,
+  "nu": 0.04,
+  "tau": 0.62,
+  "n_steps": 60000,
+  "n_finished": 60000,
+  "sample_interval": 100,
+  "avg_window_samples": 200,
+  "cd_pressure": 1.029794691130519,
+  "cd_friction": {
+    "standard": 0.33663308597169816,
+    "lagrange": 0.3329451488389168,
+    "faces": 0.30762116570258513,
+    "mix50": 0.32212712583714165
+  },
+  "cd_total": {
+    "standard": 1.366427777102217,
+    "lagrange": 1.3627398399694357,
+    "faces": 1.337415856833104,
+    "mix50": 1.3519218169676606
+  },
+  "cd": 1.366427777102217,
+  "err_pct": -8.904814859852195,
+  "ref_cd": 1.5,
+  "ref_cluster": [
+    1.48,
+    1.52
+  ],
+  "ref_sources": {
+    "Dennis & Chang 1970": 1.522,
+    "Fornberg 1985": 1.498,
+    "Takami & Keller 1969": 1.48
+  },
+  "plateau_windows": {
+    "standard@25%": 1.3910206826403737,
+    "lagrange@25%": 1.3871463824762031,
+    "faces@25%": 1.3620173884555697,
+    "mix50@25%": 1.3765190355479717,
+    "standard@50%": 1.366430978232529,
+    "lagrange@50%": 1.3627430217457004,
+    "faces@50%": 1.3374191727780271,
+    "mix50@50%": 1.351925075505278,
+    "standard@75%": 1.3664334414352197,
+    "lagrange@75%": 1.362745495280251,
+    "faces@75%": 1.3374213794304524,
+    "mix50@75%": 1.351927410432836,
+    "standard@100%": 1.366427777102217,
+    "lagrange@100%": 1.3627398399694357,
+    "faces@100%": 1.337415856833104,
+    "mix50@100%": 1.3519218169676606
+  },
+  "plateau_standard": [
+    1.3910206826403737,
+    1.366430978232529,
+    1.3664334414352197,
+    1.366427777102217
+  ],
+  "mass_drift_pct": 0.08959963671863913,
+  "finite": true,
+  "wall_s": 3225.1154565811157,
+  "compile_status": "eager",
+  "compile_mode_effective": "eager",
+  "compile_status_reason": null,
+  "modules_used": [
+    "solver3d.collide_bgk3d",
+    "solver3d.stream3d_roll",
+    "boundaries3d.bounce_back_cells_3d (half-way BB pre-stream, NoDynamics)",
+    "boundaries3d.far_field_bc_3d (bc_config: y\u00b1 far-field, z\u00b1 periodic)",
+    "drag_pressure.SurfaceMesh.from_cylinder",
+    "drag_pressure.get_near_wall_2d(axis='z')",
+    "drag_pressure.drag_pressure_integration (extrap=none, p0=far_field)",
+    "drag_pressure.drag_friction_integration (standard; others diagnostic)",
+    "benchmarks.compile_route.route_step -> tensorlbm.compile_utils"
+  ]
+}

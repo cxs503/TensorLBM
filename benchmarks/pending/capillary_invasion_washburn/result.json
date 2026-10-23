@@ -1,0 +1,95 @@
+{
+ "prereg": {
+  "snapshot_sha256": "40e5c80375bd34e15b39d0ee4e2da61cd54dd04ea1889a4983bc211527a083fb",
+  "notes_sha256": "26e2f9f556c9304be1bbe59271ae3241bd8a3c7a3b467cf7ab77fefebd00dca2",
+  "notes_mtime": "2026-09-21 00:51:32.652232092 +0800",
+  "snapshot_mtime": "2026-09-20 23:52:07.601598378 +0800"
+ },
+ "iron_rule": {
+  "physics_kernel_defs_found": [],
+  "pass": true
+ },
+ "part": "part2_capillary_invasion_washburn",
+ "part2": {
+  "W32": {
+   "status": "ok",
+   "completed_steps": 40000,
+   "drho_rule_check": true,
+   "dP": 0.0017578125,
+   "window": {
+    "thr1": 80.0,
+    "t1": 1500,
+    "t2": 12600,
+    "n_samples": 112
+   },
+   "beta": 0.5954203105406733,
+   "beta_criterion_dev_pct": 19.08406210813467,
+   "criterion_a_pass": false,
+   "beta_ode": 0.19952327471976875,
+   "b_max_rel_diff": 6.894145455199683,
+   "b_max_rel_diff_at_step": 12500,
+   "criterion_b_pass": false,
+   "b_reference": "nominal-mu ODE (no capillary; sigma unmeasurable)",
+   "fit_scale_attribution_only": 19.05,
+   "fit_rms_rel": 0.14812899907521598,
+   "umax_in_window": 0.074523,
+   "Ma_in_window": 0.12907762233245546,
+   "minf_overall": 0.000621,
+   "massw_drift_pct": -60.677107119080844,
+   "front_speed_mean_in_window": 0.03018018018018018
+  },
+  "W64": {
+   "status": "ok",
+   "completed_steps": 40000,
+   "drho_rule_check": true,
+   "dP": 0.000439453125,
+   "window": {
+    "thr1": 160.0,
+    "t1": 1900,
+    "t2": 6900,
+    "n_samples": 51
+   },
+   "beta": 0.515863171986898,
+   "beta_criterion_dev_pct": 3.1726343973796034,
+   "criterion_a_pass": false,
+   "beta_ode": 0.153640644256196,
+   "b_max_rel_diff": 9.491756800333688,
+   "b_max_rel_diff_at_step": 6000,
+   "criterion_b_pass": false,
+   "b_reference": "nominal-mu ODE (no capillary; sigma unmeasurable)",
+   "fit_scale_attribution_only": 25.48,
+   "fit_rms_rel": 0.3644854864941034,
+   "umax_in_window": 0.072953,
+   "Ma_in_window": 0.1263583025645723,
+   "minf_overall": 0.000366,
+   "massw_drift_pct": -66.97527211128853,
+   "front_speed_mean_in_window": 0.0498
+  },
+  "W128": {
+   "status": "DIVERGED",
+   "completed_steps": 100,
+   "drho_rule_check": true,
+   "dP": 0.00010986328125,
+   "window": {
+    "thr1": 320.0,
+    "t1": null,
+    "t2": 100,
+    "n_samples": 0
+   },
+   "attribution": "deterministic NaN at step 164; independent of driving (drho=0 reproduces) and domain length (nx=300 reproduces); gas-depleted layer at water sink -> rho_g->0 -> negative distributions (exp39/40/41)"
+  },
+  "criteria": {
+   "a_beta_vs_0.5_le_3pct": {
+    "W32": false,
+    "W64": false
+   },
+   "b_L_vs_ODE_le_3pct": {
+    "W32": false,
+    "W64": false
+   },
+   "W128": "DIVERGED",
+   "verdict": "FAIL"
+  }
+ },
+ "record": "benchmarks/pending/capillary_invasion_washburn (Wave-4 W4-B Part 2, FAIL)"
+}

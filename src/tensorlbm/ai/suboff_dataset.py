@@ -1,5 +1,5 @@
-import torch
 import numpy as np
+import torch
 from torch.utils.data import Dataset
 
 
@@ -29,10 +29,10 @@ def read_test_file1(path, num):
 
 def read_multi_re_cylinder_data1(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff1"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file1(old_path1, n_train)
     ux1 = read_train_file1(old_path2, n_train)
@@ -82,10 +82,10 @@ def read_test_file2(path, num):
 def read_multi_re_cylinder_data2(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff1"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file2(old_path1, n_train)
     ux1 = read_train_file2(old_path2, n_train)
@@ -138,10 +138,10 @@ def read_test_file7(path, num):
 
 def read_multi_re_cylinder_data7(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff4"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file7(old_path1, n_train)
     ux1 = read_train_file7(old_path2, n_train)
@@ -191,10 +191,10 @@ def read_test_file8(path, num):
 def read_multi_re_cylinder_data8(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff4"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file8(old_path1, n_train)
     ux1 = read_train_file8(old_path2, n_train)
@@ -247,10 +247,10 @@ def read_test_file11(path, num):
 
 def read_multi_re_cylinder_data11(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff6"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file11(old_path1, n_train)
     ux1 = read_train_file11(old_path2, n_train)
@@ -300,10 +300,10 @@ def read_test_file12(path, num):
 def read_multi_re_cylinder_data12(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff6"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file12(old_path1, n_train)
     ux1 = read_train_file12(old_path2, n_train)
@@ -356,10 +356,10 @@ def read_test_file13(path, num):
 
 def read_multi_re_cylinder_data13(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff7"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file13(old_path1, n_train)
     ux1 = read_train_file13(old_path2, n_train)
@@ -409,10 +409,10 @@ def read_test_file14(path, num):
 def read_multi_re_cylinder_data14(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff7"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file14(old_path1, n_train)
     ux1 = read_train_file14(old_path2, n_train)
@@ -465,10 +465,10 @@ def read_test_file15(path, num):
 
 def read_multi_re_cylinder_data15(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file15(old_path1, n_train)
     ux1 = read_train_file15(old_path2, n_train)
@@ -518,10 +518,10 @@ def read_test_file16(path, num):
 def read_multi_re_cylinder_data16(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file16(old_path1, n_train)
     ux1 = read_train_file16(old_path2, n_train)
@@ -576,10 +576,10 @@ def read_test_file17(path, num):
 
 def read_multi_re_cylinder_data17(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file17(old_path1, n_train)
     ux1 = read_train_file17(old_path2, n_train)
@@ -631,10 +631,10 @@ def read_test_file18(path, num):
 def read_multi_re_cylinder_data18(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file18(old_path1, n_train)
     ux1 = read_train_file18(old_path2, n_train)
@@ -687,10 +687,10 @@ def read_test_file23(path, num):
 
 def read_multi_re_cylinder_data23(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff12"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file23(old_path1, n_train)
     ux1 = read_train_file23(old_path2, n_train)
@@ -740,10 +740,10 @@ def read_test_file24(path, num):
 def read_multi_re_cylinder_data24(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff12"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file24(old_path1, n_train)
     ux1 = read_train_file24(old_path2, n_train)
@@ -796,10 +796,10 @@ def read_test_file25(path, num):
 
 def read_multi_re_cylinder_data25(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff13"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file25(old_path1, n_train)
     ux1 = read_train_file25(old_path2, n_train)
@@ -849,10 +849,10 @@ def read_test_file26(path, num):
 def read_multi_re_cylinder_data26(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff13"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file26(old_path1, n_train)
     ux1 = read_train_file26(old_path2, n_train)
@@ -907,10 +907,10 @@ def read_test_file27(path, num):
 
 def read_multi_re_cylinder_data27(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file27(old_path1, n_train)
     ux1 = read_train_file27(old_path2, n_train)
@@ -962,10 +962,10 @@ def read_test_file28(path, num):
 def read_multi_re_cylinder_data28(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file28(old_path1, n_train)
     ux1 = read_train_file28(old_path2, n_train)
@@ -1020,10 +1020,10 @@ def read_test_file28_addition(path, num):
 
 def read_multi_re_cylinder_data28_addition(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file28_addition(old_path1, n_train)
     ux1 = read_train_file28_addition(old_path2, n_train)
@@ -1078,10 +1078,10 @@ def read_test_file29(path, num):
 
 def read_multi_re_cylinder_data29(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file29(old_path1, n_train)
     ux1 = read_train_file29(old_path2, n_train)
@@ -1133,10 +1133,10 @@ def read_test_file30(path, num):
 def read_multi_re_cylinder_data30(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file30(old_path1, n_train)
     ux1 = read_train_file30(old_path2, n_train)
@@ -1189,10 +1189,10 @@ def read_test_file31(path, num):
 
 def read_multi_re_cylinder_data31(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff16"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file31(old_path1, n_train)
     ux1 = read_train_file31(old_path2, n_train)
@@ -1242,10 +1242,10 @@ def read_test_file32(path, num):
 def read_multi_re_cylinder_data32(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff16"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file32(old_path1, n_train)
     ux1 = read_train_file32(old_path2, n_train)
@@ -1298,10 +1298,10 @@ def read_test_file33(path, num):
 
 def read_multi_re_cylinder_data33(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff17"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file33(old_path1, n_train)
     ux1 = read_train_file33(old_path2, n_train)
@@ -1351,10 +1351,10 @@ def read_test_file34(path, num):
 def read_multi_re_cylinder_data34(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff17"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file34(old_path1, n_train)
     ux1 = read_train_file34(old_path2, n_train)
@@ -1407,10 +1407,10 @@ def read_test_file35(path, num, begin):
 
 def read_multi_re_cylinder_data35(n_train, n_test, begin_train, begin_test):
     root = "../../../../mnt/data3/xzx/suboff16"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file35(old_path1, n_train, begin_train)
     ux1 = read_train_file35(old_path2, n_train, begin_train)
@@ -1460,10 +1460,10 @@ def read_test_file36(path, num, begin):
 def read_multi_re_cylinder_data36(n_train, n_test, begin_train, begin_test):
 
     root = "../../../../mnt/data3/xzx/suboff16"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file36(old_path1, n_train, begin_train)
     ux1 = read_train_file36(old_path2, n_train, begin_train)
@@ -1510,10 +1510,10 @@ def read_test_file49(path, num):
 
 def read_multi_re_cylinder_data49(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file49(old_path1, n_train)
     ux1 = read_train_file49(old_path2, n_train)
@@ -1570,10 +1570,10 @@ def read_test_file26_1(path, num):
 
 def read_multi_re_cylinder_data26_1(n_train, n_test):
     root = "../../../../mnt/data3/xzx/re200"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file26_1(old_path1, n_train)
     ux1 = read_train_file26_1(old_path2, n_train)
@@ -1623,10 +1623,10 @@ def read_test_file26_2(path, num):
 def read_multi_re_cylinder_data26_2(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/re200"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file26_2(old_path1, n_train)
     ux1 = read_train_file26_2(old_path2, n_train)
@@ -1679,10 +1679,10 @@ def read_test_file26_3(path, num):
 
 def read_multi_re_cylinder_data26_3(n_train, n_test):
     root = "../../../../mnt/data3/xzx/re300"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file26_3(old_path1, n_train)
     ux1 = read_train_file26_3(old_path2, n_train)
@@ -1732,10 +1732,10 @@ def read_test_file26_4(path, num):
 def read_multi_re_cylinder_data26_4(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/re300"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file26_4(old_path1, n_train)
     ux1 = read_train_file26_4(old_path2, n_train)
@@ -1788,10 +1788,10 @@ def read_test_file26_5(path, num):
 
 def read_multi_re_cylinder_data26_5(n_train, n_test):
     root = "../../../../mnt/data3/xzx/re250"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file26_5(old_path1, n_train)
     ux1 = read_train_file26_5(old_path2, n_train)
@@ -1841,10 +1841,10 @@ def read_test_file26_6(path, num):
 def read_multi_re_cylinder_data26_6(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/re250"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file26_6(old_path1, n_train)
     ux1 = read_train_file26_6(old_path2, n_train)
@@ -1897,10 +1897,10 @@ def read_test_file65(path, num):
 
 def read_multi_re_cylinder_data65(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff33"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file65(old_path1, n_train)
     ux1 = read_train_file65(old_path2, n_train)
@@ -1950,10 +1950,10 @@ def read_test_file66(path, num):
 def read_multi_re_cylinder_data66(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff33"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file66(old_path1, n_train)
     ux1 = read_train_file66(old_path2, n_train)
@@ -2006,10 +2006,10 @@ def read_test_file69(path, num):
 
 def read_multi_re_cylinder_data69(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff33"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file69(old_path1, n_train)
     ux1 = read_train_file69(old_path2, n_train)
@@ -2059,10 +2059,10 @@ def read_test_file70(path, num):
 def read_multi_re_cylinder_data70(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff33"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file70(old_path1, n_train)
     ux1 = read_train_file70(old_path2, n_train)
@@ -2115,10 +2115,10 @@ def read_test_file70_addition(path, num):
 
 def read_multi_re_cylinder_data70_addition(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff33"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file70_addition(old_path1, n_train)
     ux1 = read_train_file70_addition(old_path2, n_train)
@@ -2171,10 +2171,10 @@ def read_test_file73(path, num):
 
 def read_multi_re_cylinder_data73(n_train, n_test):
     root = "./suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file73(old_path1, n_train)
     ux1 = read_train_file73(old_path2, n_train)
@@ -2226,10 +2226,10 @@ def read_test_file74(path, num):
 def read_multi_re_cylinder_data74(n_train, n_test):
 
     root = "./suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file74(old_path1, n_train)
     ux1 = read_train_file74(old_path2, n_train)
@@ -2284,10 +2284,10 @@ def read_test_file74_addition(path, num):
 
 def read_multi_re_cylinder_data74_addition(n_train, n_test):
     root = "./suboff8"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file74_addition(old_path1, n_train)
     ux1 = read_train_file74_addition(old_path2, n_train)
@@ -2339,10 +2339,10 @@ def read_test_file77(path, num):
 
 def read_multi_re_cylinder_data77(n_train, n_test):
     root = "../../../../mnt/data3/xzx/suboff6"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file77(old_path1, n_train)
     ux1 = read_train_file77(old_path2, n_train)
@@ -2392,10 +2392,10 @@ def read_test_file78(path, num):
 def read_multi_re_cylinder_data78(n_train, n_test):
 
     root = "../../../../mnt/data3/xzx/suboff6"
-    old_path1 = root + f"/p"
-    old_path2 = root + f"/ux"
-    old_path3 = root + f"/uy"
-    old_path4 = root + f"/uz"
+    old_path1 = root + "/p"
+    old_path2 = root + "/ux"
+    old_path3 = root + "/uy"
+    old_path4 = root + "/uz"
 
     press1 = read_train_file78(old_path1, n_train)
     ux1 = read_train_file78(old_path2, n_train)

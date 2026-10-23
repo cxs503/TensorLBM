@@ -24,6 +24,7 @@ if str(_APP_DIR) not in sys.path:
     sys.path.insert(0, str(_APP_DIR))
 
 from backend.routers.data_catalog import get_catalog, router  # noqa: E402
+
 from tensorlbm.data.catalog import FieldDataCatalog  # noqa: E402
 
 
@@ -66,6 +67,7 @@ def _asset_payload(asset_id: str = "p1", **overrides) -> dict:
 
 def _cube(value: float = 0.0, shape: tuple[int, ...] = (4, 4, 4)) -> list:
     """Build a nested list of the given shape filled with ``value``."""
+
     def build(dims: tuple[int, ...]) -> list:
         if len(dims) == 1:
             return [value for _ in range(dims[0])]
@@ -262,7 +264,9 @@ def test_quality_check_shape_mismatch(client):
 def test_quality_reports_endpoint(client):
     client.post("/api/data/assets", json=_asset_payload())
     client.post("/api/data/quality/check", json={"asset_id": "p1", "data": _cube(0.0)})
-    client.post("/api/data/quality/check", json={"asset_id": "p1", "data": _cube(1.05), "mass_field": True})
+    client.post(
+        "/api/data/quality/check", json={"asset_id": "p1", "data": _cube(1.05), "mass_field": True}
+    )
 
     r = client.get("/api/data/quality/p1/reports")
     assert r.status_code == 200
@@ -286,7 +290,12 @@ def test_quality_check_missing_asset_returns_404(client):
 def test_router_registered_in_main_app():
     from backend.main import app as platform_app
 
-    paths = {route.path for route in platform_app.routes}
+    # ``app.routes`` has no stable shape across FastAPI versions: newer
+    # releases keep ``include_router`` branches there as opaque
+    # ``_IncludedRouter`` objects that carry no ``.path`` attribute.  The
+    # OpenAPI path map is the public, version-stable view of every
+    # registered endpoint, so key the assertions off it instead.
+    paths = set(platform_app.openapi()["paths"])
     assert "/api/data/assets" in paths
     assert "/api/data/assets/{asset_id}" in paths
     assert "/api/data/assets/{asset_id}/metadata" in paths

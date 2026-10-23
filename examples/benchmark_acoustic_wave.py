@@ -14,7 +14,12 @@ LBM numerical sound speed is typically ~3-4% higher due to weak compressibility.
 """
 
 from __future__ import annotations
-import argparse, math, os, sys
+
+import argparse
+import math
+import os
+import sys
+
 import numpy as np
 import torch
 
@@ -50,7 +55,7 @@ def run_acoustic_wave(
     record_steps = list(range(20, steps + 1, 20))
     profiles = {}
 
-    print(f"  Acoustic wave propagation (Gaussian pulse)")
+    print("  Acoustic wave propagation (Gaussian pulse)")
     print(f"  cs_theory = {cs:.6f}, tau={tau}, delta={delta}")
     print(f"  Pulse at x={pulse_x}, sigma={pulse_sigma}")
     print(f"  Recording at steps: {record_steps}")

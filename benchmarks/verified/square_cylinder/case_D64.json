@@ -1,0 +1,122 @@
+{
+ "case": "square_cylinder_re100_w8b_dual_force",
+ "baseline_commit": "36224617f19 (bm_w8 worktree, read-only)",
+ "prereg": "sha256 b9928c156538aae1b56fc7c902f7d68950fd6a999ae9e345a687e7d04f65ea45, frozen 2026-09-28T11:24:03Z",
+ "D": 64,
+ "nx": 2560,
+ "ny": 2560,
+ "re": 100.0,
+ "u_in": 0.05,
+ "nu_lb": 0.032,
+ "tau": 0.596,
+ "sponge": {
+  "x0": 1920,
+  "width": 640,
+  "alpha": 10.0,
+  "power": 2.0
+ },
+ "seed": {
+  "st_seed": 0.14,
+  "ampl_frac": 0.1,
+  "periods": 2.0,
+  "steps": 18286
+ },
+ "force_columns": {
+  "wet": "surface-link MEM (single-sided fluid->solid links), diagnostic after prereg amendment 1",
+  "pair": "paired two-population MEM (momentum-budget closure), PRIMARY after prereg amendment 1",
+  "mem": "full-solid Ladd MEM (compute_obstacle_forces), reproduction column vs old archive",
+  "n_links_wet": 764,
+  "n_solid_cells": 4096
+ },
+ "steps": 120000,
+ "warmup_frac": 0.5,
+ "analyze_from": 60000,
+ "n_blocks": 12,
+ "compile_mode": "default",
+ "wet": {
+  "cd": 1.6139,
+  "cd_block_std": 0.004614,
+  "cd_block_min": 1.6078,
+  "cd_block_max": 1.6216,
+  "cd_blocks": [
+   1.6165,
+   1.6216,
+   1.6199,
+   1.6183,
+   1.6185,
+   1.6137,
+   1.6091,
+   1.6078,
+   1.6089,
+   1.6101,
+   1.611,
+   1.6117
+  ],
+  "st": 0.1479,
+  "st_crossing": 0.1465,
+  "cl_amp": 0.4429661349455514,
+  "err_cd_pct": 9.16,
+  "err_st_pct": 1.58
+ },
+ "mem": {
+  "cd": 1.487,
+  "cd_block_std": 0.003144,
+  "cd_block_min": 1.483,
+  "cd_block_max": 1.492,
+  "cd_blocks": [
+   1.4874,
+   1.492,
+   1.4914,
+   1.4903,
+   1.4905,
+   1.4872,
+   1.4841,
+   1.483,
+   1.4834,
+   1.4842,
+   1.485,
+   1.4857
+  ],
+  "st": 0.1479,
+  "st_crossing": 0.1465,
+  "cl_amp": 0.2973254489898681,
+  "err_cd_pct": 0.57,
+  "err_st_pct": 1.58
+ },
+ "pair": {
+  "cd": 1.487,
+  "cd_block_std": 0.003149,
+  "cd_block_min": 1.483,
+  "cd_block_max": 1.492,
+  "cd_blocks": [
+   1.4874,
+   1.492,
+   1.4914,
+   1.4903,
+   1.4905,
+   1.4872,
+   1.4841,
+   1.483,
+   1.4834,
+   1.4842,
+   1.485,
+   1.4857
+  ],
+  "st": 0.1479,
+  "st_crossing": 0.1465,
+  "cl_amp": 0.29579153815905246,
+  "err_cd_pct": 0.57,
+  "err_st_pct": 1.58
+ },
+ "ab_diff": {
+  "cd_wet_minus_mem": 0.1269,
+  "cd_pct_of_mem": 8.53,
+  "st_pct_of_mem": 0.0
+ },
+ "closure_pair_vs_wet_cd_pct": -7.86,
+ "closure_pair_vs_mem_cd_pct": 0.0,
+ "repro_vs_old_archive": null,
+ "finite": true,
+ "elapsed_s": 707.2,
+ "raw_traces_note": "120000 per-step samples x 6 columns retained at server staging bm_widen_w8_20260928/square_cylinder/formal (not in repo); verify_traces.py recomputes all stats from them"
+}

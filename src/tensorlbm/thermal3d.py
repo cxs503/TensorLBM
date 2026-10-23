@@ -27,6 +27,7 @@ __all__ = [
     "collide_thermal_bgk_3d",
     "stream_thermal_3d",
     "macroscopic_thermal_3d",
+    "apply_temperature_boundaries_3d",
     "apply_buoyancy_force_3d",
     "run_thermal_cavity_3d",
 ]
@@ -227,23 +228,66 @@ def _apply_temperature_boundaries_3d(
     T_hot: float,
     T_cold: float,
 ) -> torch.Tensor:
-    """Apply fixed-temperature and insulated boundaries to a D3Q7 field."""
-    g_new = g.clone()
-    g_new[:, :, :, 0] = g_new[:, :, :, 1]
-    g_new[:, :, :, -1] = g_new[:, :, :, -2]
-    g_new[:, :, 0, :] = g_new[:, :, 1, :]
-    g_new[:, :, -1, :] = g_new[:, :, -2, :]
-    g_new[:, 0, :, :] = g_new[:, 1, :, :]
-    g_new[:, -1, :, :] = g_new[:, -2, :, :]
+    """Apply fixed-temperature and insulated boundaries to a D3Q7 field.
 
-    zeros = torch.zeros_like(g_new[0, :, :, 0]).unsqueeze(-1)
-    g_new[:, :, :, 0] = equilibrium_thermal_3d(torch.full_like(zeros, T_hot), zeros, zeros, zeros)[
-        :, :, :, 0
-    ]
-    g_new[:, :, :, -1] = equilibrium_thermal_3d(
-        torch.full_like(zeros, T_cold), zeros, zeros, zeros
-    )[:, :, :, 0]
-    return g_new
+    Adiabatic walls (y = 0/ny-1, z = 0/nz-1): half-way bounce-back on the
+    wall-normal populations, unwrapping the wrap-around of the periodic
+    ``stream_thermal_3d``.  The q4 population leaving y=0 reappears at
+    y=ny-1 (post-stream ``g[4, :, -1, :]``), so it is read back from there
+    and reflected into q3 at y=0 (symmetrically for the other three walls).
+    Each wall pair exchanges energy in exact antisymmetry, so the net heat
+    flux through the adiabatic walls is identically zero.  The pre-fix rule
+    copied the whole distribution of the adjacent interior slab -- a
+    zero-gradient condition referencing interior arrivals instead of the
+    wall's own outgoing populations -- which acted as a spurious heat
+    source/sink (2026-09 evidence, 32^3 fp64 budget: ~1e-2/step already in
+    pure diffusion with wall-normal structure, -7.8e-3/step in developed
+    Ra=1e3 convection, -0.46/step at Ra=1e4, worsening under refinement).
+
+    Isothermal walls (x = 0 / x = nx-1): the whole slab is frozen to the
+    u=0 equilibrium ``w_i * T_wall`` (wall on the node), and the
+    fluid-pointing population (q1 at the hot wall, q2 at the cold wall)
+    receives the non-equilibrium carried by the first fluid column, taken
+    zero-sum from the resting population q0: the slab sum stays
+    ``sum(w) * T_wall`` while the effective isothermal surface sits on the
+    wall node (2D analogue: PR #300).
+    """
+    w = W_D3Q7.to(device=g.device, dtype=g.dtype)
+    w1, w2 = float(w[1]), float(w[2])
+    # non-equilibrium carried by the pointing population at the first fluid
+    # column (read from the pre-BC field; that column is untouched by every
+    # wall rule below)
+    T1 = g[:, :, :, 1].sum(dim=0)
+    Tn2 = g[:, :, :, -2].sum(dim=0)
+    neq_left = g[1, :, :, 1] - w1 * T1
+    neq_right = g[2, :, :, -2] - w2 * Tn2
+    g = g.clone()
+    # unwrap: the wall's own outgoing distribution after the periodic stream
+    # wrapped it around to the opposite wall -- snapshot before any write
+    refl_z0 = g[6, -1, :, :].clone()  # = g_pre[6, 0, :, :]   (z=0, -z)
+    refl_zn = g[5, 0, :, :].clone()  # = g_pre[5, nz-1, :, :] (+z)
+    refl_y0 = g[4, :, -1, :].clone()  # = g_pre[4, :, 0, :]   (y=0, -y)
+    refl_yn = g[3, :, 0, :].clone()  # = g_pre[3, :, ny-1, :] (+y)
+    # half-way bounce-back reflection back onto the emitting wall
+    g[5, 0, :, :] = refl_z0
+    g[6, -1, :, :] = refl_zn
+    g[3, :, 0, :] = refl_y0
+    g[4, :, -1, :] = refl_yn
+    # isothermal slabs: u=0 equilibrium for every population
+    g[:, :, :, 0] = w.view(7, 1, 1) * T_hot
+    g[:, :, :, -1] = w.view(7, 1, 1) * T_cold
+    # pull the effective isothermal surface onto the wall node: give the
+    # fluid-pointing population the bulk non-equilibrium it carries in
+    # steady conduction (w * tau_T * dT/dx), taken zero-sum from q0
+    g[1, :, :, 0] = g[1, :, :, 0] + neq_left
+    g[0, :, :, 0] = g[0, :, :, 0] - neq_left
+    g[2, :, :, -1] = g[2, :, :, -1] + neq_right
+    g[0, :, :, -1] = g[0, :, :, -1] - neq_right
+    return g
+
+
+# physics 命名空间兼容公共入口（与 2D thermal.apply_temperature_boundaries 同构）
+apply_temperature_boundaries_3d = _apply_temperature_boundaries_3d
 
 
 def run_thermal_cavity_3d(config: ThermalCavity3DConfig) -> dict[str, object]:

@@ -1,0 +1,181 @@
+== A5 bit-reproduction (iso2 default, W4 R28 s0.01) ==
+[a5_iso2_W4_R28] step 4000  sig_rec 0.008753  u_max 5.90e-05  drift 3.44e-13  cum=138.0s
+[a5_iso2_W4_R28] step 8000  sig_rec 0.009213  u_max 5.74e-05  drift 6.88e-13  cum=275.5s
+[a5_iso2_W4_R28] step 12000  sig_rec 0.009236  u_max 5.67e-05  drift 1.03e-12  cum=413.0s
+A5: series bit-equal=True (25/25 samples)  window_mean_equal=True  max_rel=0.000e+00
+== A1 sigma_eff ladder (iso4, 15 runs) ==
+[xb1_a1_W3_R20] step 4000  sig_rec 0.009477  u_max 1.85e-03  drift 3.44e-13  cum=562.3s
+[xb1_a1_W3_R20] step 8000  sig_rec 0.009485  u_max 2.24e-03  drift 6.89e-13  cum=711.5s
+[xb1_a1_W3_R20] step 12000  sig_rec 0.009497  u_max 1.42e-03  drift 1.03e-12  cum=860.8s
+[A1] W3 R20: sigma_eff 0.949428 (-5.057%)  cum=860.8s
+[xb1_a1_W3_R28] step 4000  sig_rec 0.009892  u_max 1.38e-03  drift 3.44e-13  cum=1010.1s
+[xb1_a1_W3_R28] step 8000  sig_rec 0.009496  u_max 1.56e-03  drift 6.88e-13  cum=1159.4s
+[xb1_a1_W3_R28] step 12000  sig_rec 0.009530  u_max 1.67e-03  drift 1.03e-12  cum=1308.7s
+[A1] W3 R28: sigma_eff 0.952862 (-4.714%)  cum=1308.7s
+[xb1_a1_W3_R40] step 4000  sig_rec 0.008349  u_max 1.11e-03  drift 3.43e-13  cum=1458.0s
+[xb1_a1_W3_R40] step 8000  sig_rec 0.009482  u_max 2.95e-03  drift 6.86e-13  cum=1607.3s
+[xb1_a1_W3_R40] step 12000  sig_rec 0.009609  u_max 2.90e-03  drift 1.03e-12  cum=1756.5s
+[A1] W3 R40: sigma_eff 0.956429 (-4.357%)  cum=1756.5s
+[xb1_a1_W4_R20] step 4000  sig_rec 0.009754  u_max 8.14e-05  drift 3.44e-13  cum=1905.9s
+[xb1_a1_W4_R20] step 8000  sig_rec 0.009725  u_max 6.89e-05  drift 6.89e-13  cum=2055.3s
+[xb1_a1_W4_R20] step 12000  sig_rec 0.009724  u_max 6.49e-05  drift 1.03e-12  cum=2204.6s
+[A1] W4 R20: sigma_eff 0.972414 (-2.759%)  cum=2204.7s
+[xb1_a1_W4_R28] step 4000  sig_rec 0.009307  u_max 5.75e-05  drift 3.44e-13  cum=2354.0s
+[xb1_a1_W4_R28] step 8000  sig_rec 0.009719  u_max 5.64e-05  drift 6.88e-13  cum=2503.4s
+[xb1_a1_W4_R28] step 12000  sig_rec 0.009722  u_max 5.63e-05  drift 1.03e-12  cum=2652.7s
+[A1] W4 R28: sigma_eff 0.971801 (-2.820%)  cum=2652.8s
+[xb1_a1_W4_R40] step 4000  sig_rec 0.007967  u_max 5.09e-05  drift 3.43e-13  cum=2802.1s
+[xb1_a1_W4_R40] step 8000  sig_rec 0.009258  u_max 5.17e-05  drift 6.87e-13  cum=2951.4s
+[xb1_a1_W4_R40] step 12000  sig_rec 0.009600  u_max 5.20e-05  drift 1.03e-12  cum=3100.7s
+[A1] W4 R40: sigma_eff 0.973288 (-2.671%)  cum=3100.7s
+[xb1_a1_W5_R20] step 4000  sig_rec 0.009775  u_max 2.32e-05  drift 3.46e-13  cum=3250.2s
+[xb1_a1_W5_R20] step 8000  sig_rec 0.009843  u_max 1.83e-05  drift 6.91e-13  cum=3399.5s
+[xb1_a1_W5_R20] step 12000  sig_rec 0.009844  u_max 1.83e-05  drift 1.04e-12  cum=3548.9s
+[A1] W5 R20: sigma_eff 0.984454 (-1.555%)  cum=3548.9s
+[xb1_a1_W5_R28] step 4000  sig_rec 0.009681  u_max 7.56e-05  drift 3.44e-13  cum=3698.3s
+[xb1_a1_W5_R28] step 8000  sig_rec 0.009874  u_max 1.44e-05  drift 6.88e-13  cum=3847.6s
+[xb1_a1_W5_R28] step 12000  sig_rec 0.009839  u_max 5.75e-05  drift 1.03e-12  cum=3996.9s
+[A1] W5 R28: sigma_eff 0.983438 (-1.656%)  cum=3996.9s
+[xb1_a1_W5_R40] step 4000  sig_rec 0.009257  u_max 1.69e-04  drift 3.44e-13  cum=4146.3s
+[xb1_a1_W5_R40] step 8000  sig_rec 0.010249  u_max 3.65e-05  drift 6.88e-13  cum=4295.6s
+[xb1_a1_W5_R40] step 12000  sig_rec 0.009974  u_max 1.25e-05  drift 1.03e-12  cum=4444.9s
+[A1] W5 R40: sigma_eff 0.981307 (-1.869%)  cum=4444.9s
+[xb1_a1_W6_R20] step 4000  sig_rec 0.010011  u_max 8.04e-06  drift 3.44e-13  cum=4594.3s
+[xb1_a1_W6_R20] step 8000  sig_rec 0.009911  u_max 7.93e-06  drift 6.88e-13  cum=4743.6s
+[xb1_a1_W6_R20] step 12000  sig_rec 0.009912  u_max 8.00e-06  drift 1.03e-12  cum=4893.0s
+[A1] W6 R20: sigma_eff 0.991202 (-0.880%)  cum=4893.0s
+[xb1_a1_W6_R28] step 4000  sig_rec 0.010565  u_max 2.02e-05  drift 3.44e-13  cum=5042.4s
+[xb1_a1_W6_R28] step 8000  sig_rec 0.009839  u_max 3.31e-05  drift 6.89e-13  cum=5191.7s
+[xb1_a1_W6_R28] step 12000  sig_rec 0.009903  u_max 2.54e-05  drift 1.03e-12  cum=5341.0s
+[A1] W6 R28: sigma_eff 0.989779 (-1.022%)  cum=5341.0s
+[xb1_a1_W6_R40] step 4000  sig_rec 0.011307  u_max 1.31e-04  drift 3.44e-13  cum=5490.3s
+[xb1_a1_W6_R40] step 8000  sig_rec 0.010004  u_max 5.10e-05  drift 6.88e-13  cum=5639.6s
+[xb1_a1_W6_R40] step 12000  sig_rec 0.009735  u_max 1.55e-05  drift 1.03e-12  cum=5788.8s
+[A1] W6 R40: sigma_eff 0.990394 (-0.961%)  cum=5788.8s
+[xb1_a1_W8_R20] step 4000  sig_rec 0.009981  u_max 2.35e-05  drift 3.44e-13  cum=5938.1s
+[xb1_a1_W8_R20] step 8000  sig_rec 0.010001  u_max 2.48e-06  drift 6.89e-13  cum=6087.4s
+[xb1_a1_W8_R20] step 12000  sig_rec 0.009999  u_max 2.47e-06  drift 1.03e-12  cum=6236.6s
+[A1] W8 R20: sigma_eff 0.999892 (-0.011%)  cum=6236.6s
+[xb1_a1_W8_R28] step 4000  sig_rec 0.009283  u_max 5.63e-05  drift 3.44e-13  cum=6385.9s
+[xb1_a1_W8_R28] step 8000  sig_rec 0.009931  u_max 8.85e-06  drift 6.89e-13  cum=6535.1s
+[xb1_a1_W8_R28] step 12000  sig_rec 0.009962  u_max 1.92e-06  drift 1.03e-12  cum=6684.3s
+[A1] W8 R28: sigma_eff 0.996248 (-0.375%)  cum=6684.3s
+[xb1_a1_W8_R40] step 4000  sig_rec 0.010621  u_max 1.78e-04  drift 3.45e-13  cum=6833.6s
+[xb1_a1_W8_R40] step 8000  sig_rec 0.010417  u_max 3.42e-05  drift 6.89e-13  cum=6982.9s
+[xb1_a1_W8_R40] step 12000  sig_rec 0.009789  u_max 6.86e-06  drift 1.03e-12  cum=7132.2s
+[A1] W8 R40: sigma_eff 0.993397 (-0.660%)  cum=7132.2s
+A1 G1: clause_a=False monotone=True PASS=False
+== A2 attribution (W4 R28, 2 runs) ==
+[a2_g4only] step 4000  sig_rec 0.009066  u_max 6.58e-05  drift 3.44e-13  cum=7278.9s
+[a2_g4only] step 8000  sig_rec 0.009467  u_max 6.14e-05  drift 6.88e-13  cum=7425.5s
+[a2_g4only] step 12000  sig_rec 0.009467  u_max 6.08e-05  drift 1.03e-12  cum=7572.2s
+[A2/g4only] sigma_eff 0.946344  cum=7572.2s
+[a2_l4only] step 4000  sig_rec 0.008989  u_max 5.34e-05  drift 3.44e-13  cum=7713.8s
+[a2_l4only] step 8000  sig_rec 0.009459  u_max 5.26e-05  drift 6.88e-13  cum=7855.4s
+[a2_l4only] step 12000  sig_rec 0.009481  u_max 6.60e-05  drift 1.03e-12  cum=7997.1s
+[A2/l4only] sigma_eff 0.948093  cum=7997.1s
+== A3 W=2 no-NaN evidence (3 runs) ==
+[xb1_a3_W2_R20] step 4000  sig_rec nan  u_max nan  drift nan  cum=8147.1s
+[xb1_a3_W2_R20] step 8000  sig_rec nan  u_max nan  drift nan  cum=8297.1s
+[xb1_a3_W2_R20] step 12000  sig_rec nan  u_max nan  drift nan  cum=8447.1s
+[A3] R20: nan_max=39845888 sigma_eff=nan  cum=8447.1s
+[xb1_a3_W2_R28] step 4000  sig_rec nan  u_max nan  drift nan  cum=8597.2s
+[xb1_a3_W2_R28] step 8000  sig_rec nan  u_max nan  drift nan  cum=8747.3s
+[xb1_a3_W2_R28] step 12000  sig_rec nan  u_max nan  drift nan  cum=8897.3s
+[A3] R28: nan_max=39845888 sigma_eff=nan  cum=8897.3s
+[xb1_a3_W2_R40] step 4000  sig_rec nan  u_max nan  drift nan  cum=9047.4s
+[xb1_a3_W2_R40] step 8000  sig_rec nan  u_max nan  drift nan  cum=9197.5s
+[xb1_a3_W2_R40] step 12000  sig_rec nan  u_max nan  drift nan  cum=9347.5s
+[A3] R40: nan_max=39845888 sigma_eff=nan  cum=9347.5s
+A3 PASS=False
+== A4 B5 dual-channel ch2 (iso4, sigma=0.1, fp32, CAP 100k) ==
+[a40/k0.5] step 5000  U 8.4788e-05  cy 64.1  u_max 5.82e-03  margin 23  cum=9545.7s
+[a40/k0.5] step 10000  U 1.1084e-04  cy 64.7  u_max 5.80e-03  margin 23  cum=9743.9s
+[a40/k0.5] step 15000  U 1.0824e-04  cy 65.2  u_max 5.81e-03  margin 23  cum=9942.1s
+[a40/k0.5] step 20000  U 1.0882e-04  cy 65.7  u_max 5.81e-03  margin 23  cum=10140.3s
+[A4 a40] ch2 err_signed -78.22%  (ch1 -72.23%)  steps 23800  t=943s
+[a20/k0.5] step 5000  U 3.7372e-04  cy 65.2  u_max 5.90e-03  margin 43  cum=10489.1s
+[a20/k0.5] step 10000  U 3.5600e-04  cy 66.9  u_max 5.89e-03  margin 43  cum=10687.2s
+[a20/k0.5] step 15000  U 3.6068e-04  cy 68.5  u_max 5.89e-03  margin 43  cum=10885.4s
+[A4 a20] ch2 err_signed -27.93%  (ch1 +4.80%)  steps 18500  t=733s
+A4 G2 (a40 ch2): err_signed=-0.7821703214720683 PASS=False
+== XB-1 battery complete ==
+{
+ "A1_gate": {
+  "protocol": "prereg_xb1.md \u00a75 A1; aggregation = mean over R (P1 verbatim)",
+  "bars": {
+   "3": {
+    "per_R": [
+     0.9494275853434764,
+     0.9528622388001765,
+     0.9564293452229456
+    ],
+    "bar_eff_ratio": 0.9529063897888662,
+    "abs_dev_pct": 4.709361021113379,
+    "R_spread_pct": 0.7347794027302764,
+    "one_minus_bar": 0.047093610211133785
+   },
+   "4": {
+    "per_R": [
+     0.9724142912061053,
+     0.9718014336608061,
+     0.9732878379678459
+    ],
+    "bar_eff_ratio": 0.9725011876115858,
+    "abs_dev_pct": 2.749881238841423,
+    "R_spread_pct": 0.1528434438923791,
+    "one_minus_bar": 0.02749881238841423
+   },
+   "5": {
+    "per_R": [
+     0.9844543865188161,
+     0.9834378752452904,
+     0.9813073085591789
+    ],
+    "bar_eff_ratio": 0.9830665234410952,
+    "abs_dev_pct": 1.6933476558904759,
+    "R_spread_pct": 0.3201286875908731,
+    "one_minus_bar": 0.01693347655890476
+   },
+   "6": {
+    "per_R": [
+     0.9912018395484542,
+     0.9897785633542304,
+     0.9903940419572245
+    ],
+    "bar_eff_ratio": 0.9904581482866363,
+    "abs_dev_pct": 0.9541851713363747,
+    "R_spread_pct": 0.14369877179423074,
+    "one_minus_bar": 0.009541851713363747
+   },
+   "8": {
+    "per_R": [
+     0.9998924323483738,
+     0.9962482244054386,
+     0.9933967197246294
+    ],
+    "bar_eff_ratio": 0.9965124588261473,
+    "abs_dev_pct": 0.34875411738527484,
+    "R_spread_pct": 0.6518445972462875,
+    "one_minus_bar": 0.0034875411738527484
+   }
+  },
+  "W_star": 8,
+  "seq_one_minus_bar": [
+   0.047093610211133785,
+   0.02749881238841423,
+   0.01693347655890476,
+   0.009541851713363747,
+   0.0034875411738527484
+  ],
+  "clause_a_W4_or_Wstar": false,
+  "clause_b_monotone_nonincreasing": true,
+  "G1_pass": false,
+  "u_max_disclosure": {
+   "W3_R20": 0.0014439488002078826,
+   "W3_R28": 0.001796641496561773,
+   "W3_R40": 0.0029024113169962714,
+   "W4_R20": 6.553047688874853e-05,
+   "W4_R28": 5.6343076407212506e-05,
+   "W4_R40": 5.243854270248673e-05,
+   "W5_R20":

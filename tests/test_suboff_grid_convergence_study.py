@@ -189,7 +189,7 @@ def test_study_artifact_is_json_serializable() -> None:
 
 def test_study_writes_machine_readable_artifact_file(tmp_path: Path) -> None:
     config = _small_study_config()
-    artifact = run_suboff_grid_convergence_study(config, output_path=tmp_path / "convergence.json")
+    run_suboff_grid_convergence_study(config, output_path=tmp_path / "convergence.json")
 
     artifact_path = tmp_path / "convergence.json"
     assert artifact_path.exists()

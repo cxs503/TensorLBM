@@ -1,0 +1,7 @@
+# ATTR nu=0.1 tau=0.8 trt lam=0.1875 ny=1265 steps=20000
+  x_eff= 15 Re=     8 Cf_err= +79.33% ue=1.1260 cf_ue= +50.09% u05/U=0.0538
+  x_eff= 30 Re=    15 Cf_err= +78.51% ue=1.1468 cf_ue= +45.36% u05/U=0.0381
+  x_eff= 50 Re=    25 Cf_err= +78.43% ue=1.1554 cf_ue= +43.68% u05/U=0.0295
+  x_eff= 70 Re=    35 Cf_err= +79.63% ue=1.1574 cf_ue= +44.26% u05/U=0.0251
+  x_eff= 90 Re=    45 Cf_err= +83.59% ue=1.1558 cf_ue= +47.76% u05/U=0.0227
+  x_eff=110 Re=    55 Cf_err=+102.49% ue=1.1496 cf_ue= +64.29% u05/U=0.0225

@@ -15,20 +15,21 @@ import numpy as np
 import pytest
 import torch
 
+from tensorlbm.d2q9 import C as C2D
+from tensorlbm.d2q9 import W as W2D
+from tensorlbm.d2q9 import equilibrium
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
 from tensorlbm.dg_advection import (
     cell_means_from_nodal,
-    collide_bgk_dg,
     dg_advect,
     dg_lbm_step,
-    dg_rhs,
     equilibrium_dg,
     get_ops,
     lobatto_nodes,
     macroscopic_dg,
     nodal_from_mean,
 )
-from tensorlbm.d2q9 import C as C2D, W as W2D, equilibrium, macroscopic
-from tensorlbm.d3q19 import C as C3D, W as W3D
 from tensorlbm.solver import stream
 
 DT = torch.float64

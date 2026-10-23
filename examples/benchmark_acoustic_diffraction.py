@@ -59,7 +59,7 @@ _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from tensorlbm.d3q19 import OPPOSITE, equilibrium3d, macroscopic3d  # noqa: E402
+from tensorlbm.d3q19 import OPPOSITE, equilibrium3d  # noqa: E402
 from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 
 # =========================================================================== #
@@ -279,9 +279,9 @@ def run_diffraction_benchmark(
     print(f"  第一零点角度: θ={theta_zero_deg:.1f}°", flush=True)
     print(f"  菲涅尔数 F: {fresnel_num:.4f} (<<1为远场)", flush=True)
     if fresnel_num < 0.1:
-        print(f"  → 远场条件满足, Fraunhofer近似有效", flush=True)
+        print("  → 远场条件满足, Fraunhofer近似有效", flush=True)
     else:
-        print(f"  → 近场效应显著, 使用精确Rayleigh-Sommerfeld积分", flush=True)
+        print("  → 近场效应显著, 使用精确Rayleigh-Sommerfeld积分", flush=True)
     print(f"  密度扰动 δρ: {delta_rho}", flush=True)
     print(f"  τ: {tau}", flush=True)
     print(f"  海绵层宽度: {sponge_width}", flush=True)
@@ -482,7 +482,7 @@ def run_diffraction_benchmark(
             flush=True,
         )
     else:
-        print(f"  [N/A] 旁瓣验证: 无旁瓣 (ka≤2π)", flush=True)
+        print("  [N/A] 旁瓣验证: 无旁瓣 (ka≤2π)", flush=True)
 
     all_pass = main_ok and side_ok
     print(flush=True)

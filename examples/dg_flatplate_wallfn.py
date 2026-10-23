@@ -17,12 +17,11 @@ import math
 
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.boundaries3d import far_field_bc_3d, bounce_back_cells_3d
-from tensorlbm.wall_model import wall_function_3d
-from tensorlbm.ibm import ibm_apply_body_force_3d
+from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d
+from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.solver3d import correct_mass3d, stream3d
 from tensorlbm.turbulence import collide_smagorinsky_mrt3d
+from tensorlbm.wall_model import wall_function_3d
 
 
 def run(re_L=1e6, L=128.0, nx=256, ny=96, nz=8, u_in=0.06, n_steps=3000, warmup=800, device="cuda"):

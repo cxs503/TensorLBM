@@ -6,9 +6,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / (
-    "assess_cylinder_causal_pair.py"
-)
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / ("assess_cylinder_causal_pair.py")
 SPEC = importlib.util.spec_from_file_location("cylinder_pair_assessor", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -48,25 +46,30 @@ def _result(
             "lateral_center_distance": 10.0,
         },
     }
-    path.write_text(json.dumps({
-        "schema": "tensorlbm-cylinder-bfl-control-volume-v4",
-        "configuration": configuration,
-        "result": {
-            "cd_control_volume": 1.44,
-            "cd_bfl_link": 1.44001,
-            "strouhal": 0.173,
-            "observer_difference_pct": 0.001,
-            "shedding_cycles_observed": 13.0,
-            "drag_stationarity": {"relative_range_pct": 0.7},
-        },
-        "acceptance": {
-            "numerical_quality_admitted": True,
-            "stationarity_target_met": True,
-            "force_observer_target_met": True,
-            "cycle_target_met": True,
-            "domain_reference_target_met": True,
-        },
-    }), encoding="utf-8")
+    path.write_text(
+        json.dumps(
+            {
+                "schema": "tensorlbm-cylinder-bfl-control-volume-v4",
+                "configuration": configuration,
+                "result": {
+                    "cd_control_volume": 1.44,
+                    "cd_bfl_link": 1.44001,
+                    "strouhal": 0.173,
+                    "observer_difference_pct": 0.001,
+                    "shedding_cycles_observed": 13.0,
+                    "drag_stationarity": {"relative_range_pct": 0.7},
+                },
+                "acceptance": {
+                    "numerical_quality_admitted": True,
+                    "stationarity_target_met": True,
+                    "force_observer_target_met": True,
+                    "cycle_target_met": True,
+                    "domain_reference_target_met": True,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
     return path
 
 

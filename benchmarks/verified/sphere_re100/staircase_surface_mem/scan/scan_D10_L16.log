@@ -1,0 +1,24 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[sphmem D=10 170x160x160] Re=100.0 u_in=0.06 nu=0.006000 tau=0.518000 dpS=0.141372
+[sphmem D=10 170x160x160] solid=515 surface=222 interior=293 (blockage 6.25%, domain 17.0D x 16.0D)
+[compile_route] sphere_re100_mem[D10]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
+[sphmem D=10 170x160x160] step=1000 Cd_mem_surf=1.3177 Cd_mem_all=1.3547 Cd_mem_int=0.0371 (616s)
+[sphmem D=10 170x160x160] step=2000 Cd_mem_surf=1.2703 Cd_mem_all=1.3082 Cd_mem_int=0.0379 (1149s)
+[sphmem D=10 170x160x160] step=3000 Cd_mem_surf=1.2518 Cd_mem_all=1.2899 Cd_mem_int=0.0381 (1619s)
+[sphmem D=10 170x160x160] === FINAL win=30 === Cd_mem_surface=1.2518 err_SN=+14.66% | Cd_mem_all=1.2899 Cd_mem_interior=0.0381 (1619s)
+[sphmem] saved benchmarks/pending/sphere_re100/scan/scan_D10_L16.json

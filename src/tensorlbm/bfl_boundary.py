@@ -19,8 +19,6 @@ Momentum exchange with BFL:
 """
 
 import torch
-import math
-from typing import Optional, Tuple
 
 
 def compute_q_values_cylinder(
@@ -57,7 +55,7 @@ def compute_q_values_cylinder(
     )
 
     # Distance from cylinder centre (in 2D: y-x plane)
-    dist = torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)  # (nz, ny, nx)
+    torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)  # (nz, ny, nx)
 
     q = torch.zeros(19, nz, ny, nx, device=solid.device, dtype=torch.float32)
 
@@ -112,7 +110,6 @@ def bfl_bounce_back(
       q ≥ 0.5:  f_opp_new = f_i(x+c)/(2q) + (2q-1)/(2q)·f_opp(x)
     """
     nz, ny, nx = solid.shape
-    device = f.device
 
     for i in range(18):
         if i == 18:
@@ -142,7 +139,7 @@ def bfl_bounce_back(
         f_2 = torch.roll(f[i], (-2 * dk, -2 * dj, -2 * di), dims=(0, 1, 2))
 
         # BFL interpolation
-        mask = has_link.float()
+        has_link.float()
         q_clamped = q_i.clamp(0.01, 0.99)
 
         # Case 1: q < 0.5

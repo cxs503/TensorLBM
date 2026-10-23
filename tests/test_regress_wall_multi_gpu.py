@@ -23,15 +23,14 @@ from __future__ import annotations
 import pytest
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C, W
-from tensorlbm.solver3d import stream3d, collide_bgk3d
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.multi_gpu import (
     DomainDecomposition,
-    MultiGPUSolver3D,
     MultiDeviceSolver3D,
+    MultiGPUSolver3D,
     halo_exchange_3d,
 )
-
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 # ---------------------------------------------------------------------------
 # Test fixtures
@@ -95,6 +94,7 @@ class TestBugIdentification:
         device. This is dead code that does nothing useful.
         """
         import inspect
+
         from tensorlbm import wall_shear
 
         source = inspect.getsource(wall_shear.wss_from_fneq_3d)
@@ -109,6 +109,7 @@ class TestBugIdentification:
         functions, but the inconsistency is a known design wart.
         """
         import inspect
+
         from tensorlbm.wall_model import compute_wall_slip_velocity, wall_function_3d
 
         slip_src = inspect.getsource(compute_wall_slip_velocity)
@@ -136,6 +137,7 @@ class TestBugIdentification:
     def test_halo_exchange_3d_contiguous_fix_present(self):
         """The .contiguous() fix is present in the current code."""
         import inspect
+
         from tensorlbm.multi_gpu import halo_exchange_3d
 
         source = inspect.getsource(halo_exchange_3d)
@@ -155,13 +157,13 @@ class TestWallFunctionEquivalence:
     def test_wall_function_common_equals_wall_model_3d(self, small_domain, domain_params):
         """wall_function_common.wall_function with pre-computed u_tau/y_plus
         must produce identical results to wall_model.wall_function_3d."""
-        from tensorlbm.wall_model import wall_function_3d
         from tensorlbm.wall_function_common import (
-            wall_function,
+            _near_wall_mask,
             compute_u_tau,
             compute_y_plus,
-            _near_wall_mask,
+            wall_function,
         )
+        from tensorlbm.wall_model import wall_function_3d
 
         f, solid, nz, ny, nx = small_domain
         nu = domain_params["nu"]
@@ -197,13 +199,13 @@ class TestWallFunctionEquivalence:
         self, small_domain, domain_params
     ):
         """Same equivalence for the Reichardt wall law."""
-        from tensorlbm.wall_model import wall_function_3d
         from tensorlbm.wall_function_common import (
-            wall_function,
+            _near_wall_mask,
             compute_u_tau,
             compute_y_plus,
-            _near_wall_mask,
+            wall_function,
         )
+        from tensorlbm.wall_model import wall_function_3d
 
         f, solid, nz, ny, nx = small_domain
         nu = domain_params["nu"]
@@ -425,10 +427,10 @@ class TestCombination:
         """Same combination but using wall_function_common instead of
         wall_model.wall_function_3d."""
         from tensorlbm.wall_function_common import (
-            wall_function,
+            _near_wall_mask,
             compute_u_tau,
             compute_y_plus,
-            _near_wall_mask,
+            wall_function,
         )
 
         f, solid, nz, ny, nx = small_domain
@@ -610,7 +612,7 @@ class TestWallShearBugs:
 
     def test_wss_from_fneq_2d_functional(self):
         """wss_from_fneq_2d should work (d2q9 has 'equilibrium')."""
-        from tensorlbm.d2q9 import equilibrium, macroscopic
+        from tensorlbm.d2q9 import equilibrium
         from tensorlbm.wall_shear import wss_from_fneq_2d
 
         ny, nx = 8, 8

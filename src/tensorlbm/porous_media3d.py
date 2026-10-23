@@ -251,7 +251,7 @@ class PorousDrainageConfig3D:
     n_tubes_y: int = 2
     n_tubes_x: int = 2
     tube_width: int = 4
-    G_12: float = 0.9
+    G_12: float = -0.9
     G_ads: float = 0.3
     tau_water: float = 1.0
     tau_gas: float = 1.0
@@ -281,8 +281,8 @@ class PorousDrainageConfig3D:
         if self.rho_water <= self.rho_gas:
             msg = "rho_water must exceed rho_gas"
             raise ValueError(msg)
-        if self.G_12 <= 0:
-            msg = "G_12 must be > 0"
+        if self.G_12 >= 0:
+            msg = "G_12 must be < 0 for phase separation"
             raise ValueError(msg)
         if self.medium not in {"random_spheres", "tube_array"}:
             msg = f"medium must be 'random_spheres' or 'tube_array', got {self.medium!r}"

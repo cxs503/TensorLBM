@@ -14,8 +14,10 @@ implementations) so the whole flow is testable without a real LBM run.
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import asdict
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
 
@@ -32,6 +34,8 @@ from tensorlbm.ml.training_job import TrainingJob, TrainingJobRegistry
 # SUBOFF LBM snapshot channels (data_dir/<channel>/*.npy)
 SUBOFF_CHANNELS = ("p", "ux", "uy", "uz")
 _CHANNEL_UNITS = {"p": "lu", "ux": "lu", "uy": "lu", "uz": "lu"}
+_REQUIRED_CKPT_KEYS = {"encoder", "decoder", "n_iter", "enc_optim", "enc_sched"}
+_DEFAULT_V03_CHECKPOINT = Path(__file__).resolve().parents[3] / "models" / "suboff_v0.3.pt"
 
 
 class SuboffPlatformPipeline:
@@ -43,6 +47,7 @@ class SuboffPlatformPipeline:
         self.training = TrainingJobRegistry.open(self.db_path)
         # serving registry shares the same SQLite ledger
         from tensorlbm.ml.serving import ModelRegistry
+
         self.serving = ModelRegistry.open(self.db_path)
 
     def close(self) -> None:
@@ -75,59 +80,71 @@ class SuboffPlatformPipeline:
             ch_dir = data_dir / channel
             if not ch_dir.is_dir():
                 continue
-            npy_files = sorted(
-                f for f in os.listdir(ch_dir) if f.endswith(".npy")
-            )
+            npy_files = sorted(f for f in os.listdir(ch_dir) if f.endswith(".npy"))
             if not npy_files:
                 continue
             sample = np.load(ch_dir / npy_files[0])
             shapes[channel] = tuple(sample.shape)
             asset_id = f"{name_prefix}:{channel}"
-            self.catalog.register_asset(AssetRecord(
-                asset_id=asset_id,
-                name=f"SUBOFF {channel}",
-                kind="field_product",
-                field_name=channel,
-                units=_CHANNEL_UNITS.get(channel, "lu"),
-                shape=str(sample.shape),
-                dtype=str(sample.dtype),
-                source_run_id=run_id,
-                tags=(name_prefix, "suboff"),
-            ))
+            self.catalog.register_asset(
+                AssetRecord(
+                    asset_id=asset_id,
+                    name=f"SUBOFF {channel}",
+                    kind="field_product",
+                    field_name=channel,
+                    units=_CHANNEL_UNITS.get(channel, "lu"),
+                    shape=str(sample.shape),
+                    dtype=str(sample.dtype),
+                    source_run_id=run_id,
+                    tags=(name_prefix, "suboff"),
+                )
+            )
             finite = bool(np.isfinite(sample).all())
-            self.catalog.record_quality(asset_id, [
-                QualityCheck("finiteness", finite,
-                             f"{channel}: {sample.shape} npy snapshots={len(npy_files)}"),
-            ])
+            self.catalog.record_quality(
+                asset_id,
+                [
+                    QualityCheck(
+                        "finiteness",
+                        finite,
+                        f"{channel}: {sample.shape} npy snapshots={len(npy_files)}",
+                    ),
+                ],
+            )
             asset_ids.append(asset_id)
 
         if not asset_ids:
             raise ValueError(f"no SUBOFF channel npy found under {data_dir}")
 
         dataset_asset_id = f"{name_prefix}:dataset"
-        self.catalog.register_asset(AssetRecord(
-            asset_id=dataset_asset_id,
-            name=f"SUBOFF dataset",
-            kind="dataset",
-            description=f"channels={list(shapes)}",
-            tags=(name_prefix, "suboff"),
-        ))
+        self.catalog.register_asset(
+            AssetRecord(
+                asset_id=dataset_asset_id,
+                name="SUBOFF dataset",
+                kind="dataset",
+                description=f"channels={list(shapes)}",
+                tags=(name_prefix, "suboff"),
+            )
+        )
         # lineage: each channel product -> dataset
         for asset_id in asset_ids:
-            self.catalog.add_lineage(LineageRecord(
-                source_id=asset_id, target_id=dataset_asset_id,
-                relation_type="derived_from", resource_type="product",
-            ))
+            self.catalog.add_lineage(
+                LineageRecord(
+                    source_id=asset_id,
+                    target_id=dataset_asset_id,
+                    relation_type="derived_from",
+                    resource_type="product",
+                )
+            )
 
         # dataset record in the shared ledger (int key for training jobs)
         from tensorlbm.ai.database import insert_dataset
+
         dataset_id = insert_dataset(
             self.training._conn,
             name=f"{name_prefix}-dataset",
             path=str(data_dir),
             n_samples=sum(
-                len([f for f in os.listdir(data_dir / c) if f.endswith(".npy")])
-                for c in shapes
+                len([f for f in os.listdir(data_dir / c) if f.endswith(".npy")]) for c in shapes
             ),
             metadata={"task": "suboff-surrogate", "channels": list(shapes)},
         )
@@ -160,10 +177,16 @@ class SuboffPlatformPipeline:
         """
         if train_fn is None:
             from tensorlbm.ai.suboff_train import train_suboff
+
             train_fn = train_suboff
 
-        config = asdict(train_cfg) if hasattr(train_cfg, "__dataclass_fields__") \
-            else dict(train_cfg) if isinstance(train_cfg, dict) else {"cfg": str(train_cfg)}
+        config = (
+            asdict(train_cfg)
+            if hasattr(train_cfg, "__dataclass_fields__")
+            else dict(train_cfg)
+            if isinstance(train_cfg, dict)
+            else {"cfg": str(train_cfg)}
+        )
         job = self.training.create_job(config, dataset_id=dataset_id)
         self.training.update_status(job.job_id, "running")
 
@@ -192,19 +215,30 @@ class SuboffPlatformPipeline:
         # lineage: product -> dataset -> job
         if dataset_asset_id is not None:
             job_asset_id = f"job:{job.job_id}"
-            self.catalog.register_asset(AssetRecord(
-                asset_id=job_asset_id, name=f"training job {job.job_id}",
-                kind="run",
-            ))
-            for pid in (product_asset_ids or []):
-                self.catalog.add_lineage(LineageRecord(
-                    source_id=pid, target_id=dataset_asset_id,
-                    relation_type="derived_from", resource_type="product",
-                ))
-            self.catalog.add_lineage(LineageRecord(
-                source_id=dataset_asset_id, target_id=job_asset_id,
-                relation_type="trained_on", resource_type="dataset",
-            ))
+            self.catalog.register_asset(
+                AssetRecord(
+                    asset_id=job_asset_id,
+                    name=f"training job {job.job_id}",
+                    kind="run",
+                )
+            )
+            for pid in product_asset_ids or []:
+                self.catalog.add_lineage(
+                    LineageRecord(
+                        source_id=pid,
+                        target_id=dataset_asset_id,
+                        relation_type="derived_from",
+                        resource_type="product",
+                    )
+                )
+            self.catalog.add_lineage(
+                LineageRecord(
+                    source_id=dataset_asset_id,
+                    target_id=job_asset_id,
+                    relation_type="trained_on",
+                    resource_type="dataset",
+                )
+            )
 
         self.training.update_status(job.job_id, "completed")
         return job, model_id
@@ -223,6 +257,7 @@ class SuboffPlatformPipeline:
         :func:`tensorlbm.ai.suboff_inference.predict_suboff`)."""
         if predict_fn is None:
             from tensorlbm.ai.suboff_inference import predict_suboff
+
             predict_fn = predict_suboff
         return predict_fn(predict_cfg)
 
@@ -261,3 +296,88 @@ class SuboffPlatformPipeline:
     def upstream_assets(self, asset_id: str) -> list[str]:
         """Transitive upstream assets of a dataset/model/job asset."""
         return self.catalog.upstream(asset_id)
+
+    def run_checkpoint_inference_demo(
+        self,
+        *,
+        data_dir: str | Path,
+        output_dir: str | Path,
+        checkpoint_path: str | Path | None = None,
+        snap_idx: int = 55,
+        test_set_offset: int = 1250,
+        device: str | None = None,
+        slice_axis: str = "z",
+        slice_index: int = 50,
+        channels: tuple[str, ...] = ("u", "p"),
+        predict_fn: Callable[[Any], dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """One-click v0.3 demo: checkpoint -> inference -> flow-field figures."""
+        from tensorlbm.ai.suboff_inference import (
+            SuboffPredictConfig,
+            render_suboff_flowfield_demo,
+        )
+        from tensorlbm.ai.suboff_utils import default_suboff_device, load_checkpoint
+
+        ckpt_path = Path(checkpoint_path or _DEFAULT_V03_CHECKPOINT).resolve()
+        if not ckpt_path.is_file():
+            raise FileNotFoundError(f"checkpoint not found: {ckpt_path}")
+        ckpt = load_checkpoint(str(ckpt_path), map_location="cpu")
+        missing = sorted(_REQUIRED_CKPT_KEYS.difference(ckpt.keys()))
+        if missing:
+            raise ValueError(f"checkpoint missing required keys: {missing}")
+
+        data_root = Path(data_dir).resolve()
+        for channel in SUBOFF_CHANNELS:
+            ch_dir = data_root / channel
+            if not ch_dir.is_dir():
+                raise ValueError(f"missing channel directory: {ch_dir}")
+            if not any(f.endswith(".npy") for f in os.listdir(ch_dir)):
+                raise ValueError(f"no .npy snapshots under: {ch_dir}")
+
+        out_root = Path(output_dir).resolve()
+        out_root.mkdir(parents=True, exist_ok=True)
+        cfg = SuboffPredictConfig(
+            checkpoint_path=str(ckpt_path),
+            data_dir=str(data_root),
+            snap_idx=int(snap_idx),
+            test_set_offset=int(test_set_offset),
+            device=device or default_suboff_device(),
+        )
+        inference = self.run_inference(cfg, predict_fn=predict_fn)
+        figure_manifest = render_suboff_flowfield_demo(
+            inference,
+            out_root,
+            slice_axis=slice_axis,
+            slice_index=slice_index,
+            channels=channels,
+            file_prefix="suboff_v03",
+        )
+
+        run_metadata = {
+            "demo": "suboff_v0.3_checkpoint_inference_flowfield",
+            "created_at": datetime.now(UTC).isoformat(),
+            "contract": {
+                "checkpoint": str(ckpt_path),
+                "data_dir": str(data_root),
+                "expected_layout": "data_dir/{p,ux,uy,uz}/*.npy",
+                "required_checkpoint_keys": sorted(_REQUIRED_CKPT_KEYS),
+            },
+            "inference": {
+                "snap_idx": int(snap_idx),
+                "test_set_offset": int(test_set_offset),
+                "device": cfg.device,
+                "metrics": {
+                    "mape": float(inference["mape"]),
+                    "rel_l2_avg": float(inference["rel_l2_avg"]),
+                    "mse_avg": float(inference["mse_avg"]),
+                },
+            },
+            "artifacts": {
+                "flowfield_figures": figure_manifest["files"],
+                "figure_manifest": figure_manifest,
+            },
+        }
+        metadata_path = out_root / "run_metadata.json"
+        metadata_path.write_text(json.dumps(run_metadata, indent=2), encoding="utf-8")
+        run_metadata["artifacts"]["run_metadata"] = str(metadata_path)
+        return run_metadata

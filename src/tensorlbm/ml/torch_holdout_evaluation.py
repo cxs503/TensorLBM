@@ -19,7 +19,6 @@ from tensorlbm.ml.torch_dataset_materialize import (
     materialize_torch_field_dataset,
 )
 
-
 _ALLOWED_SPLITS = ("val", "test")
 _COMPONENT_NAMES = ("u_x", "u_y")
 

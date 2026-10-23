@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass
 from math import isfinite
-import re
 from typing import Any
 
 _SCHEMA_VERSION = "tensorlbm.performance.r1"

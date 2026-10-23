@@ -1,11 +1,17 @@
 """Unit tests for auth/RBAC policy helpers."""
+
 from __future__ import annotations
 
 from backend import security
 from starlette.requests import Request
 
 
-def _req(path: str, method: str = "GET", headers: dict[str, str] | None = None, client_ip: str = "testclient") -> Request:
+def _req(
+    path: str,
+    method: str = "GET",
+    headers: dict[str, str] | None = None,
+    client_ip: str = "testclient",
+) -> Request:
     raw = []
     for k, v in (headers or {}).items():
         raw.append((k.lower().encode("latin-1"), v.encode("latin-1")))
@@ -27,6 +33,58 @@ def test_authorize_disabled_mode(monkeypatch):
     monkeypatch.setenv("TENSORLBM_AUTH_MODE", "disabled")
     ctx = security.authorize_request(_req("/api/jobs/", "GET"))
     assert ctx.role == "admin"
+
+
+def test_api_middleware_enforces_auth_and_rbac(client, monkeypatch):
+    monkeypatch.setenv("TENSORLBM_AUTH_MODE", "header")
+    monkeypatch.setenv("TENSORLBM_AUTH_TOKENS", "viewer-token:viewer")
+
+    assert client.get("/api/health").status_code == 200
+    assert client.get("/api/jobs/").status_code == 401
+
+    headers = {"X-API-Key": "viewer-token"}
+    assert client.get("/api/jobs/", headers=headers).status_code == 200
+    assert client.delete("/api/jobs/missing", headers=headers).status_code == 403
+
+
+def test_api_middleware_preserves_disabled_auth_default(client, monkeypatch):
+    monkeypatch.setenv("TENSORLBM_AUTH_MODE", "disabled")
+    monkeypatch.setenv("TENSORLBM_RATE_LIMIT_REQUESTS", "0")
+
+    assert client.get("/api/jobs/").status_code == 200
+
+
+def test_api_middleware_enforces_rate_limit(client, monkeypatch):
+    monkeypatch.setenv("TENSORLBM_AUTH_MODE", "disabled")
+    monkeypatch.setenv("TENSORLBM_RATE_LIMIT_REQUESTS", "1")
+    monkeypatch.setenv("TENSORLBM_RATE_LIMIT_WINDOW_S", "60")
+    _clear_rl_buckets()
+
+    assert client.get("/api/jobs/").status_code == 200
+    assert client.get("/api/jobs/").status_code == 429
+
+
+def test_websocket_middleware_enforces_auth(client, monkeypatch):
+    from starlette.websockets import WebSocketDisconnect
+
+    monkeypatch.setenv("TENSORLBM_AUTH_MODE", "header")
+    monkeypatch.setenv("TENSORLBM_AUTH_TOKENS", "viewer-token:viewer")
+
+    try:
+        with client.websocket_connect("/ws"):
+            raise AssertionError("Unauthenticated WebSocket connection was accepted")
+    except WebSocketDisconnect as exc:
+        assert exc.code == 4401
+
+    with client.websocket_connect("/ws", headers={"X-API-Key": "viewer-token"}) as ws:
+        assert ws.receive_json()["type"] == "init"
+
+
+def test_gzip_middleware_compresses_large_responses(client):
+    response = client.get("/openapi.json", headers={"Accept-Encoding": "gzip"})
+
+    assert response.status_code == 200
+    assert response.headers["content-encoding"] == "gzip"
 
 
 def test_authorize_requires_token_when_enabled(monkeypatch):
@@ -65,6 +123,7 @@ def test_authorize_admin_delete_allowed(monkeypatch):
 # ---------------------------------------------------------------------------
 # Rate-limiting tests
 # ---------------------------------------------------------------------------
+
 
 def _clear_rl_buckets():
     """Reset the in-process rate-limit state between tests."""
@@ -122,6 +181,7 @@ def test_rate_limit_is_per_ip(monkeypatch):
 def test_rate_limit_honours_x_forwarded_for(monkeypatch):
     monkeypatch.setenv("TENSORLBM_RATE_LIMIT_REQUESTS", "2")
     monkeypatch.setenv("TENSORLBM_RATE_LIMIT_WINDOW_S", "60")
+    monkeypatch.setenv("TENSORLBM_TRUST_PROXY_HEADERS", "true")
     _clear_rl_buckets()
     req = _req("/api/jobs/", headers={"x-forwarded-for": "203.0.113.5"}, client_ip="127.0.0.1")
     security.check_rate_limit(req)
@@ -132,6 +192,31 @@ def test_rate_limit_honours_x_forwarded_for(monkeypatch):
         assert exc.status_code == 429
     else:
         raise AssertionError("Expected 429 AuthorizationError")
+
+
+def test_rate_limit_ignores_untrusted_forwarded_for(monkeypatch):
+    monkeypatch.setenv("TENSORLBM_RATE_LIMIT_REQUESTS", "1")
+    monkeypatch.setenv("TENSORLBM_RATE_LIMIT_WINDOW_S", "60")
+    monkeypatch.delenv("TENSORLBM_TRUST_PROXY_HEADERS", raising=False)
+    _clear_rl_buckets()
+    request_a = _req(
+        "/api/jobs/",
+        headers={"x-forwarded-for": "203.0.113.5"},
+        client_ip="127.0.0.1",
+    )
+    request_b = _req(
+        "/api/jobs/",
+        headers={"x-forwarded-for": "203.0.113.6"},
+        client_ip="127.0.0.1",
+    )
+
+    security.check_rate_limit(request_a)
+    try:
+        security.check_rate_limit(request_b)
+    except security.AuthorizationError as exc:
+        assert exc.status_code == 429
+    else:
+        raise AssertionError("Untrusted X-Forwarded-For bypassed the rate limit")
 
 
 def test_rate_limit_window_expires(monkeypatch):

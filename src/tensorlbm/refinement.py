@@ -30,11 +30,9 @@ Dupuis & Chopard (2003) Int. J. Mod. Phys. B 17 169
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable
 
 import torch
 import torch.nn.functional as F
-
 
 # ---------------------------------------------------------------------------
 # Geometry helpers
@@ -117,9 +115,11 @@ def _coarse_to_fine_3d(f_coarse: torch.Tensor, ratio: int = 2) -> torch.Tensor:
     coarse cell and breaking the coarse→fine→coarse round trip at interfaces.
     """
     b19, nz, ny, nx = f_coarse.shape
-    f_up = (f_coarse.repeat_interleave(ratio, dim=1)
-            .repeat_interleave(ratio, dim=2)
-            .repeat_interleave(ratio, dim=3))
+    f_up = (
+        f_coarse.repeat_interleave(ratio, dim=1)
+        .repeat_interleave(ratio, dim=2)
+        .repeat_interleave(ratio, dim=3)
+    )
     return f_up.contiguous()
 
 

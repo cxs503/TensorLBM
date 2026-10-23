@@ -1,0 +1,27 @@
+{
+  "case": "couette_3d",
+  "locked_utc": "2026-10-06",
+  "reference_kind": "analytic",
+  "formula": "u_ana(y) = U0*(y-0.5)/H_eff, H_eff = ny-2 = H, fluid rows y=1..ny-2",
+  "wall_convention": "half-way bounce-back: effective walls at y=0.5 and y=ny-1.5 (locked to verified/couette_2d + skeleton docstring)",
+  "secondary": "tau_ana = nu*U0/H_eff",
+  "parameters": {
+    "tau": 0.8,
+    "nu_lb": 0.1,
+    "U0": 0.05
+  },
+  "diagnosis_provenance": {
+    "skeleton_run_py": {
+      "path": "worktree benchmarks/pending/couette_3d/run.py",
+      "sha256": "8409d4d1a4859bf566b0b632c0f944a9d8e082bede7842e64b24b474789c3f55"
+    },
+    "skeleton_README": {
+      "path": "worktree benchmarks/pending/couette_3d/README.md",
+      "sha256": "4db3e214f83fd763e03b85112f07f8ea88833d2fceaea4580e4cf8648e6971ca"
+    },
+    "verified_couette_2d_result": {
+      "path": "worktree benchmarks/verified/couette_2d/result.json",
+      "sha256": "3077916490916895d86581e37e9bcfe4f77a12f667e4f40bedd6a54f3ef2feea"
+    }
+  }
+}

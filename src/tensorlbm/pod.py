@@ -28,7 +28,7 @@ Lumley, J.L. (1967). "The structure of inhomogeneous turbulent flows."
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import torch
 
@@ -164,7 +164,6 @@ def compute_pod(
                 phi = torch.zeros(m_pts)
             Vh_rows.append(phi)
         Vh = torch.stack(Vh_rows, dim=0)  # (K, M)
-        U = eigvecs  # (N, N)
 
     k_max = min(n_modes, len(S), n_snaps, m_pts)
     n_modes_actual = k_max

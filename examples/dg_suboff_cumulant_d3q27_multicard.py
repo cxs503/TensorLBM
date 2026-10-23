@@ -9,8 +9,14 @@ Usage:
 """
 
 from __future__ import annotations
-import math, time, argparse, os, torch
+
+import argparse
+import os
+import time
+
+import torch
 import torch.distributed as dist
+
 from tensorlbm.d3q27 import C as C27
 from tensorlbm.suboff_farfield import build_suboff_far_field_metadata
 
@@ -275,8 +281,8 @@ def run_multicard(
         print(f"Per card: {nx_local}x{ny}x{nz} = {nx_local * ny * nz:,} cells")
         print(f"Re={re:.0e} tau={tau:.5f} | Experimental AFF-8 Ct ~ 0.004\n")
 
-    from tensorlbm.d3q27 import equilibrium27, macroscopic27
     from tensorlbm.cumulant import collide_cumulant_d3q27
+    from tensorlbm.d3q27 import equilibrium27, macroscopic27
     from tensorlbm.suboff_cad import build_suboff_mask
     from tensorlbm.suboff_resistance import voxel_wetted_area_x_slab
 

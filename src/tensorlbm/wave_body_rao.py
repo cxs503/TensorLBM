@@ -41,7 +41,6 @@ from dataclasses import dataclass
 
 import torch
 
-
 # ---------------------------------------------------------------------------
 # Hydrodynamic coefficients for a vertical circular cylinder (spar)
 # ---------------------------------------------------------------------------

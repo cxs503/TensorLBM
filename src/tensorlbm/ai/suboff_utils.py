@@ -12,24 +12,32 @@ from pathlib import Path
 
 import torch
 
-
 # ── Device helpers ──────────────────────────────────────────────────────────
 
 
 def default_suboff_device() -> str:
     """Return the best available device string for SUBOFF models.
 
-    Priority: SDAA (LoongArch accelerator) > CUDA > CPU.
+    Priority: SDAA (LoongArch accelerator) > CUDA > any other probed
+    torch-plugin accelerator (NPU/MLU/MUSA, via ``tensorlbm.hardware``) > CPU.
     """
     try:
         import torch_sdaa  # noqa: F401
 
-        if torch.sdaa.is_available():
+        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
             return "sdaa:0"
     except ImportError:
         pass
     if torch.cuda.is_available():
         return "cuda:0"
+    try:
+        from tensorlbm.hardware import probe
+
+        for name in ("npu", "mlu", "musa"):
+            if probe().has_backend(name):
+                return f"{name}:0"
+    except Exception:  # pragma: no cover - probe must not break training
+        pass
     return "cpu"
 
 
@@ -50,8 +58,8 @@ def build_suboff_model(device: torch.device | str | None = None):
     Returns:
         (encoder, decoder) tuple of nn.Module on the specified device.
     """
-    from tensorlbm.ai.nn.encoder_module import IrregSTEncoder2D
     from tensorlbm.ai.nn.decoder_module import IrregSTDecoder2D
+    from tensorlbm.ai.nn.encoder_module import IrregSTEncoder2D
 
     if device is None:
         device = torch.device(default_suboff_device())

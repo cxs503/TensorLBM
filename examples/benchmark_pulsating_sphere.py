@@ -28,8 +28,12 @@ only validates qualitatively.  This benchmark adds quantitative comparison.
 """
 
 from __future__ import annotations
-import argparse, math, os, sys
-import numpy as np
+
+import argparse
+import math
+import os
+import sys
+
 import torch
 from scipy.special import hankel1
 
@@ -107,7 +111,7 @@ def run_pulsating_sphere(
 
     lam = 2 * math.pi * cs / omega
     k = omega / cs
-    print(f"  Pulsating cylinder (density-scaling + pulse source)")
+    print("  Pulsating cylinder (density-scaling + pulse source)")
     print(f"  R0={R0}, delta_rho={delta_rho}, omega={omega}")
     print(f"  cs={cs:.4f}, lambda={lam:.1f}, k={k:.4f}")
     print(f"  Pulse: t0={pulse_t0}, sigma={pulse_sigma}")
@@ -159,7 +163,7 @@ def run_pulsating_sphere(
 
     # --- Analytical reference (Hankel function) ---
     h0_R0 = abs(hankel1(0, k * R0))
-    print(f"\n  Analytical reference (Hankel):")
+    print("\n  Analytical reference (Hankel):")
     print(f"    k={k:.4f}, k*R0={k * R0:.4f}, |H0(kR0)|={h0_R0:.6f}")
 
     # --- Peak amplitude at each monitor (time-gated: pulse passes before reflections) ---
@@ -169,7 +173,7 @@ def run_pulsating_sphere(
         peaks[r] = max(abs(x) for x in ts) if ts else 0.0
 
     # --- Quantitative comparison ---
-    print(f"\n  Quantitative comparison (peak |p'|):")
+    print("\n  Quantitative comparison (peak |p'|):")
     print(f"  {'r':>4s}  {'p_LBM':>10s} {'p_Hankel':>10s} {'ratio':>8s} {'err%':>6s}")
     far_field_errs = []
     for r in monitor_r:
@@ -182,7 +186,7 @@ def run_pulsating_sphere(
         print(f"  {r:4d}  {p_lbm:10.6f} {p_hankel:10.6f} {ratio:8.2f} {err:6.1f}")
 
     # --- Spatial decay ratio between consecutive monitors ---
-    print(f"\n  Spatial decay ratio (LBM vs Hankel):")
+    print("\n  Spatial decay ratio (LBM vs Hankel):")
     print(f"  {'pair':>12s}  {'LBM':>8s} {'Hankel':>8s} {'err%':>6s}")
     decay_errs = []
     for i in range(len(monitor_r) - 1):
@@ -198,7 +202,7 @@ def run_pulsating_sphere(
     # Near-field spatial decay (r < 60) is the most reliable quantitative metric:
     # it verifies wave propagation physics without depending on source coupling.
     # Far-field absolute amplitude (r >= 80) validates source strength.
-    print(f"\n  Verification:")
+    print("\n  Verification:")
     checks = []
 
     # 1. Wave generation
@@ -241,7 +245,7 @@ def run_pulsating_sphere(
 
     all_pass = all(c[1] for c in checks)
     print(f"\n  {'PASS' if all_pass else 'FAIL'} — pulsating cylinder acoustic radiation")
-    print(f"  Note: absolute amplitude ~30% low (volume-source coupling, not a bug);")
+    print("  Note: absolute amplitude ~30% low (volume-source coupling, not a bug);")
     print(f"  spatial decay {near_avg:.1f}% err confirms wave physics is correct.")
     return {"peaks": peaks, "checks": checks, "all_pass": all_pass}
 

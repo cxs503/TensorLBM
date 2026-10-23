@@ -63,6 +63,24 @@ Minimum requirements: **Python ≥ 3.11**, **PyTorch ≥ 2.0**.
 - Separate import groups with a blank line.
 - Keep `TYPE_CHECKING` guard for heavy imports only used in annotations.
 
+#### Adding a public export
+
+`tensorlbm/__init__.py` resolves its 786 exports lazily (PEP 562), so a bare
+`import tensorlbm` stays ~0.02 s instead of pulling ~190 submodules. A new
+export therefore needs **three** edits, not one:
+
+1. an entry in `_LAZY_ATTRS`: `"MyThing": ("my_module", "MyThing")`;
+2. the matching `from .my_module import MyThing` inside the `TYPE_CHECKING`
+   block (this is what mypy and IDEs read);
+3. the name in `__all__`.
+
+`tests/test_public_api_lazy_exports.py` fails if these disagree. Never add a
+module-level `from .x import y` to `__init__.py` — that silently restores the
+eager import cost, and the "bare import stays lazy" test will catch it.
+
+Relying on a module-level side effect firing at `import tensorlbm` no longer
+works either: side effects now run when the owning submodule is first used.
+
 ### Naming
 
 | Concept | Convention | Example |

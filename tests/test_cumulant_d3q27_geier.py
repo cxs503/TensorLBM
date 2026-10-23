@@ -34,12 +34,33 @@ from tensorlbm.d3q27 import equilibrium27, macroscopic27
 # moment helpers cannot mask a conservation failure.
 _D3Q27_C = torch.tensor(
     [
-        [0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0],
-        [0, 0, 1], [0, 0, -1], [1, 1, 0], [-1, 1, 0], [1, -1, 0],
-        [-1, -1, 0], [1, 0, 1], [-1, 0, 1], [1, 0, -1], [-1, 0, -1],
-        [0, 1, 1], [0, -1, 1], [0, 1, -1], [0, -1, -1], [1, 1, 1],
-        [-1, 1, 1], [1, -1, 1], [-1, -1, 1], [1, 1, -1], [-1, 1, -1],
-        [1, -1, -1], [-1, -1, -1],
+        [0, 0, 0],
+        [1, 0, 0],
+        [-1, 0, 0],
+        [0, 1, 0],
+        [0, -1, 0],
+        [0, 0, 1],
+        [0, 0, -1],
+        [1, 1, 0],
+        [-1, 1, 0],
+        [1, -1, 0],
+        [-1, -1, 0],
+        [1, 0, 1],
+        [-1, 0, 1],
+        [1, 0, -1],
+        [-1, 0, -1],
+        [0, 1, 1],
+        [0, -1, 1],
+        [0, 1, -1],
+        [0, -1, -1],
+        [1, 1, 1],
+        [-1, 1, 1],
+        [1, -1, 1],
+        [-1, -1, 1],
+        [1, 1, -1],
+        [-1, 1, -1],
+        [1, -1, -1],
+        [-1, -1, -1],
     ],
     dtype=torch.float64,
 )
@@ -113,9 +134,7 @@ def test_collision_conserves_mass_and_momentum(tau):
     f = _perturbed()
     before = _conserved_raw_moments(f)
     after = _conserved_raw_moments(
-        collide_cumulant_geier_d3q27(
-            f, tau=tau, omega_b=1.2, omega_odd=1.1, omega_even=0.9
-        )
+        collide_cumulant_geier_d3q27(f, tau=tau, omega_b=1.2, omega_odd=1.1, omega_even=0.9)
     )
     assert torch.allclose(after, before, rtol=0.0, atol=1e-12)
 
@@ -132,8 +151,7 @@ def test_relaxation_actually_damps_the_non_equilibrium_part():
     f = _perturbed(scale=1.0e-3)
     rho, ux, uy, uz = macroscopic27(f)
     before = (f - equilibrium27(rho, ux, uy, uz)).abs().max()
-    out = collide_cumulant_geier_d3q27(f, tau=0.55, omega_b=1.0,
-                                       omega_odd=1.0, omega_even=1.0)
+    out = collide_cumulant_geier_d3q27(f, tau=0.55, omega_b=1.0, omega_odd=1.0, omega_even=1.0)
     rho, ux, uy, uz = macroscopic27(out)
     after = (out - equilibrium27(rho, ux, uy, uz)).abs().max()
     assert after < before
@@ -158,6 +176,8 @@ def test_legacy_transform_is_not_a_cumulant_transform():
     assert geier[26].abs().max() < 1e-12
     assert legacy[26].abs().max() > 0.1
     assert torch.allclose(
-        legacy[26], torch.full(shape, 1.0 / 9.0, dtype=torch.float64),
-        rtol=0.0, atol=1e-6,
+        legacy[26],
+        torch.full(shape, 1.0 / 9.0, dtype=torch.float64),
+        rtol=0.0,
+        atol=1e-6,
     )

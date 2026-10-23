@@ -6,6 +6,7 @@ hold ``math.inf`` autocorrelation fields and tuples; ``json.dumps`` would
 emit non-standard ``Infinity`` tokens), dataclass-to-dict conversion for the
 stationarity report, and the mkdir + write step.
 """
+
 from __future__ import annotations
 
 import json

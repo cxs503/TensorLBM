@@ -13,8 +13,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import torch
 import pytest
+import torch
 
 from tensorlbm.apps.base import TrainingResult
 from tensorlbm.apps.mesh_gnn_flow import (
@@ -26,10 +26,10 @@ from tensorlbm.apps.mesh_gnn_flow import (
 from tensorlbm.ml.serving import FAMILY_GNN, InferenceService, ModelRegistry
 from tensorlbm.ml.training_job import TrainingJobRegistry
 
-
 # ---------------------------------------------------------------------------
 # Mock collaborators
 # ---------------------------------------------------------------------------
+
 
 def _mock_train_fn(dataset, model, cfg):
     """Save the (already built) model and return a fixed TrainingResult."""
@@ -56,6 +56,7 @@ def app():
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 def test_class_identity():
     assert MeshGNNFlow.name == "mesh_gnn_flow"

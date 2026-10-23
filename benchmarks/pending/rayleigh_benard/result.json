@@ -1,0 +1,10 @@
+{
+  "case": "rayleigh_benard",
+  "critical_captured": {
+    "Ra=1300": "u_max=9.2e-5≈0 静止(亚临界)",
+    "Ra=1e4": "u_max=0.027 对流",
+    "Ra=1e5": "u_max=0.122 强对流"
+  },
+  "analysis": "临界 Ra_c≈1708 转变被正确捕捉(1300 静止/1e4 流动)——热模型临界行为正确；但 Nu 判据(u_max 尺度对比/热通量)未完成(子 agent 中断)。注意与 cavity_natural_convection 同根因疑点(u_max 尺度 vs 理论)",
+  "verified": false
+}

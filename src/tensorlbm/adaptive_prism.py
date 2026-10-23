@@ -9,8 +9,6 @@ layer growth, not a fixed geometric sequence.
 """
 
 import torch
-import math
-from typing import Optional
 
 
 def generate_adaptive_prism(

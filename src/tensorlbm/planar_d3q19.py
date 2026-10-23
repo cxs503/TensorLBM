@@ -7,6 +7,7 @@ import math
 import torch
 
 from .cumulant import collide_cumulant_d2q9
+
 # D3Q19 directions grouped by their (cx,cy) D2Q9 marginal.  The group order
 # is the public D2Q9 direction order.
 PLANAR_D3Q19_GROUPS: tuple[tuple[int, ...], ...] = (
@@ -22,7 +23,25 @@ PLANAR_D3Q19_GROUPS: tuple[tuple[int, ...], ...] = (
 )
 
 _D3_TO_D2 = (
-    0, 1, 3, 2, 4, 0, 0, 5, 7, 8, 6, 1, 3, 1, 3, 2, 4, 2, 4,
+    0,
+    1,
+    3,
+    2,
+    4,
+    0,
+    0,
+    5,
+    7,
+    8,
+    6,
+    1,
+    3,
+    1,
+    3,
+    2,
+    4,
+    2,
+    4,
 )
 
 # Conditional D3Q19 weight inside each D2Q9 marginal, written as exact Python
@@ -58,9 +77,7 @@ def marginalize_d3q19_to_d2q9(populations: torch.Tensor) -> torch.Tensor:
         or populations.shape[0] != 19
     ):
         raise ValueError("populations must have shape (19,nz,ny,nx)")
-    return torch.stack([
-        populations[list(group)].sum(dim=0) for group in PLANAR_D3Q19_GROUPS
-    ])
+    return torch.stack([populations[list(group)].sum(dim=0) for group in PLANAR_D3Q19_GROUPS])
 
 
 def lift_d2q9_to_d3q19(populations: torch.Tensor) -> torch.Tensor:
@@ -78,7 +95,9 @@ def lift_d2q9_to_d3q19(populations: torch.Tensor) -> torch.Tensor:
     ):
         raise ValueError("populations must have shape (9,nz,ny,nx)")
     direction_map = torch.tensor(
-        _D3_TO_D2, dtype=torch.long, device=populations.device,
+        _D3_TO_D2,
+        dtype=torch.long,
+        device=populations.device,
     )
     ratios = torch.tensor(
         _D3_LIFT_RATIOS,

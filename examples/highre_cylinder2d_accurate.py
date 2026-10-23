@@ -6,24 +6,31 @@ Goal: establish an ACCURATE drag baseline for the high-Re fixes.
   Re=1000: 2D Cd≈1.5-1.8, St≈0.21 (literature 2D; 3D ≈1.0)
 Uses the 2D-validated flow order: collide→freeze→stream→[MEM force]→BB.
 """
-import sys, os, time, json, math
+
+import json
+import math
+import sys
+import time
+
 sys.path.insert(0, "/DATA/cxs_host/TensorLBM/src")
 
 import torch
-from tensorlbm.d2q9 import equilibrium, C as C2D
-from tensorlbm.turbulence import collide_smagorinsky_mrt
-from tensorlbm.solver import stream
+
 from tensorlbm.boundaries import far_field_bc_2d
+from tensorlbm.d2q9 import C as C2D
+from tensorlbm.d2q9 import equilibrium
+from tensorlbm.solver import stream
+from tensorlbm.turbulence import collide_smagorinsky_mrt
 
 
 def cylinder_mask(ny, nx, cx, cy, radius, device):
-    yy, xx = torch.meshgrid(torch.arange(ny, device=device),
-                            torch.arange(nx, device=device), indexing="ij")
-    return ((xx - cx)**2 + (yy - cy)**2).sqrt() < radius
+    yy, xx = torch.meshgrid(
+        torch.arange(ny, device=device), torch.arange(nx, device=device), indexing="ij"
+    )
+    return ((xx - cx) ** 2 + (yy - cy) ** 2).sqrt() < radius
 
 
-def run_cylinder(re, nx, ny, D, u_in, n_steps, device="cuda:0",
-                 cs=0.12, n_warmup_frac=0.3):
+def run_cylinder(re, nx, ny, D, u_in, n_steps, device="cuda:0", cs=0.12, n_warmup_frac=0.3):
     """2D cylinder, MRT+Smag, far-field BC, MEM drag + St from Cl zeros."""
     dev = torch.device(device)
     radius = D / 2.0
@@ -70,14 +77,23 @@ def run_cylinder(re, nx, ny, D, u_in, n_steps, device="cuda:0",
             print(f"  step {step:6d}: Cd={cd_avg:.4f} ({el:.0f}s)")
 
     cd_avg = sum(cd_list) / max(len(cd_list), 1)
-    cd_rms = math.sqrt(sum((c - cd_avg)**2 for c in cd_list) / max(len(cd_list), 1))
+    cd_rms = math.sqrt(sum((c - cd_avg) ** 2 for c in cd_list) / max(len(cd_list), 1))
     st = float("nan")
     if len(t_shed) > 3:
-        periods = [t_shed[i+1] - t_shed[i] for i in range(len(t_shed) - 1)]
+        periods = [t_shed[i + 1] - t_shed[i] for i in range(len(t_shed) - 1)]
         T = sum(periods) / len(periods)
         st = D / (T * u_in)
-    return {"re": re, "nx": nx, "ny": ny, "D": D, "tau": tau,
-            "cd": cd_avg, "cd_rms": cd_rms, "st": st, "steps": n_steps}
+    return {
+        "re": re,
+        "nx": nx,
+        "ny": ny,
+        "D": D,
+        "tau": tau,
+        "cd": cd_avg,
+        "cd_rms": cd_rms,
+        "st": st,
+        "steps": n_steps,
+    }
 
 
 if __name__ == "__main__":
@@ -93,15 +109,13 @@ if __name__ == "__main__":
     for nx, ny, D in [(100, 50, 16), (160, 80, 16), (240, 120, 16), (320, 160, 16)]:
         r = run_cylinder(100, nx, ny, D, 0.06, 20000, device)
         results.append(r)
-        print(f"  grid {nx}x{ny} D={D}: Cd={r['cd']:.4f} (ref 1.35) "
-              f"St={r['st']:.4f} (ref 0.165)")
+        print(f"  grid {nx}x{ny} D={D}: Cd={r['cd']:.4f} (ref 1.35) St={r['st']:.4f} (ref 0.165)")
 
     # Re=1000: long-run (literature 2D Cd≈1.5-1.8, St≈0.21)
     print("\n[Re=1000] long-run:")
     r = run_cylinder(1000, 320, 160, 16, 0.08, 40000, device)
     results.append(r)
-    print(f"  grid 320x160 D=16: Cd={r['cd']:.4f} (ref ~1.5-1.8) "
-          f"St={r['st']:.4f} (ref ~0.21)")
+    print(f"  grid 320x160 D=16: Cd={r['cd']:.4f} (ref ~1.5-1.8) St={r['st']:.4f} (ref ~0.21)")
 
     with open("/tmp/cyl2d_accurate.json", "w") as fp:
         json.dump(results, fp, indent=2)
