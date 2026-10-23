@@ -9,20 +9,23 @@ Tests every model configuration with consistent metrics:
 Run: .venv/bin/python3 benchmarks/bench_all_models.py
 """
 
-import json, math, time, sys
+import json
+import math
+import sys
+import time
 from pathlib import Path
+
 import torch
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from tensorlbm.d2q9 import equilibrium
 from tensorlbm.dam_break_3d import DamBreak3DConfig, run_dam_break_3d
 from tensorlbm.free_surface_lbm_2d import (
+    free_surface_step_2d,
     init_fill_rectangular_2d,
     init_flags_from_fill_2d,
-    free_surface_step_2d,
 )
-from tensorlbm.d2q9 import equilibrium
-
 
 # ===================================================================
 # Test case definitions

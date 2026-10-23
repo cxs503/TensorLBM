@@ -1,0 +1,23 @@
+{
+  "figures": [
+    {
+      "file": "figures/re20_convergence.png",
+      "kind": "curve",
+      "caption": "Re=20 拖曳系数收敛历程对比 D=40 与 D=80 网格",
+      "source": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/trace_re20_D40.npz"
+    },
+    {
+      "file": "figures/re40_convergence.png",
+      "kind": "curve",
+      "caption": "Re=40 拖曳系数收敛历程对比 D=40 与 D=80 网格",
+      "source": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/trace_re40_D40.npz"
+    },
+    {
+      "file": "figures/error_convergence.png",
+      "kind": "curve",
+      "caption": "网格收敛曲线：Re=20 与 Re=40 误差随网格分辨率变化",
+      "source": "/nfs/wangxi/runs/bm_close/cylinder_re40_st/w11a2/formal_w11a2/re20_D40.json"
+    }
+  ],
+  "field_waiver": "稳态圆柱绕流案例无瞬态空间场量输出，仅提供 Cd 收敛历程与网格收敛曲线"
+}

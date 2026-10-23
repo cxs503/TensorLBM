@@ -1,0 +1,121 @@
+== B1 baseline bit-check ==
+[b1_base_cs_Tr0p9_sc] stable=True conv=True steps=13000 u_max=5.2635e-02 ratio=5.48 t=8.1s cum=8.1s
+  bit-equal vs archive: True
+[b1_base_pr_Tr0p55_sc] stable=True conv=True steps=23000 u_max=2.0414e-01 ratio=480.43 t=13.4s cum=21.5s
+  bit-equal vs archive: True
+== B2 G2 response curve (42 arms) ==
+[b2_G2m0p02_cs_Tr0p9] stable=True conv=True steps=13000 u_max=5.4762e-02 ratio=5.48 t=9.7s cum=31.2s
+[b2_G2m0p02_cs_Tr0p7] stable=True conv=True steps=15000 u_max=1.8369e-01 ratio=54.89 t=11.2s cum=42.4s
+[b2_G2m0p02_cs_Tr0p6] stable=True conv=True steps=33000 u_max=2.6435e-01 ratio=366.47 t=24.6s cum=67.0s
+[b2_G2m0p02_pr_Tr0p9] stable=True conv=True steps=20000 u_max=3.8721e-02 ratio=5.29 t=14.6s cum=81.6s
+[b2_G2m0p02_pr_Tr0p7] stable=True conv=True steps=16000 u_max=1.2724e-01 ratio=36.49 t=11.7s cum=93.2s
+[b2_G2m0p02_pr_Tr0p6] stable=True conv=True steps=20000 u_max=1.8031e-01 ratio=146.26 t=14.6s cum=107.8s
+[b2_G2m0p02_pr_Tr0p55] stable=True conv=True steps=24000 u_max=2.1033e-01 ratio=408.26 t=17.5s cum=125.4s
+[b2_G2m0p05_cs_Tr0p9] stable=True conv=True steps=13000 u_max=5.8274e-02 ratio=5.48 t=9.7s cum=135.0s
+[b2_G2m0p05_cs_Tr0p7] stable=True conv=True steps=18000 u_max=1.9336e-01 ratio=51.97 t=13.4s cum=148.5s
+[b2_G2m0p05_cs_Tr0p6] stable=True conv=True steps=33000 u_max=2.7708e-01 ratio=273.93 t=24.6s cum=173.0s
+[b2_G2m0p05_pr_Tr0p9] stable=True conv=True steps=20000 u_max=4.1422e-02 ratio=5.3 t=14.6s cum=187.6s
+[b2_G2m0p05_pr_Tr0p7] stable=True conv=True steps=16000 u_max=1.3479e-01 ratio=35.42 t=11.7s cum=199.3s
+[b2_G2m0p05_pr_Tr0p6] stable=True conv=True steps=21000 u_max=1.8982e-01 ratio=129.76 t=15.3s cum=214.6s
+[b2_G2m0p05_pr_Tr0p55] stable=True conv=True steps=26000 u_max=2.2077e-01 ratio=315.02 t=19.0s cum=233.6s
+[b2_G2m0p08_cs_Tr0p9] stable=True conv=True steps=12000 u_max=6.2240e-02 ratio=5.48 t=8.9s cum=242.6s
+[b2_G2m0p08_cs_Tr0p7] stable=True conv=True steps=17000 u_max=2.0378e-01 ratio=48.69 t=12.7s cum=255.3s
+[b2_G2m0p08_cs_Tr0p6] stable=True conv=True steps=21000 u_max=2.9087e-01 ratio=202.56 t=15.7s cum=270.9s
+[b2_G2m0p08_pr_Tr0p9] stable=True conv=True steps=18000 u_max=4.4605e-02 ratio=5.3 t=12.9s cum=283.8s
+[b2_G2m0p08_pr_Tr0p7] stable=True conv=True steps=17000 u_max=1.4314e-01 ratio=34.11 t=12.1s cum=295.9s
+[b2_G2m0p08_pr_Tr0p6] stable=True conv=True steps=23000 u_max=2.0079e-01 ratio=112.88 t=16.5s cum=312.4s
+[b2_G2m0p08_pr_Tr0p55] stable=False conv=False steps=1000 u_max=None ratio=None t=0.7s cum=313.2s
+[b2_G2m0p1_cs_Tr0p9] stable=True conv=True steps=12000 u_max=6.5228e-02 ratio=5.47 t=8.9s cum=322.1s
+[b2_G2m0p1_cs_Tr0p7] stable=True conv=True steps=35000 u_max=2.1151e-01 ratio=46.3 t=26.1s cum=348.2s
+[b2_G2m0p1_cs_Tr0p6] stable=True conv=True steps=31000 u_max=3.0065e-01 ratio=164.7 t=23.1s cum=371.3s
+[b2_G2m0p1_pr_Tr0p9] stable=True conv=True steps=16000 u_max=4.7079e-02 ratio=5.3 t=11.7s cum=383.0s
+[b2_G2m0p1_pr_Tr0p7] stable=True conv=True steps=19000 u_max=1.4922e-01 ratio=33.08 t=13.9s cum=396.9s
+[b2_G2m0p1_pr_Tr0p6] stable=True conv=True steps=24000 u_max=2.0862e-01 ratio=101.6 t=17.5s cum=414.4s
+[b2_G2m0p1_pr_Tr0p55] stable=False conv=False steps=1000 u_max=None ratio=None t=0.7s cum=415.1s
+[b2_G2m0p15_cs_Tr0p9] stable=True conv=True steps=14000 u_max=7.4424e-02 ratio=5.45 t=10.4s cum=425.6s
+[b2_G2m0p15_cs_Tr0p7] stable=True conv=True steps=18000 u_max=2.3246e-01 ratio=39.69 t=13.4s cum=439.0s
+[b2_G2m0p15_cs_Tr0p6] stable=True conv=False steps=40000 u_max=3.2721e-01 ratio=96.49 t=29.8s cum=468.8s
+[b2_G2m0p15_pr_Tr0p9] stable=True conv=True steps=19000 u_max=5.4975e-02 ratio=5.28 t=13.9s cum=482.7s
+[b2_G2m0p15_pr_Tr0p7] stable=True conv=True steps=21000 u_max=1.6710e-01 ratio=29.88 t=15.3s cum=498.0s
+[b2_G2m0p15_pr_Tr0p6] stable=True conv=True steps=34000 u_max=2.3077e-01 ratio=74.32 t=24.8s cum=522.8s
+[b2_G2m0p15_pr_Tr0p55] stable=False conv=False steps=1000 u_max=None ratio=None t=0.7s cum=523.5s
+[b2_G2m0p2_cs_Tr0p9] stable=True conv=True steps=18000 u_max=8.6956e-02 ratio=5.4 t=13.4s cum=536.9s
+[b2_G2m0p2_cs_Tr0p7] stable=True conv=True steps=27000 u_max=2.5700e-01 ratio=32.46 t=20.1s cum=557.1s
+[b2_G2m0p2_cs_Tr0p6] stable=True conv=False steps=40000 u_max=3.5651e-01 ratio=55.77 t=29.8s cum=586.9s
+[b2_G2m0p2_pr_Tr0p9] stable=True conv=True steps=27000 u_max=6.6588e-02 ratio=5.23 t=19.7s cum=606.6s
+[b2_G2m0p2_pr_Tr0p7] stable=True conv=True steps=28000 u_max=1.8943e-01 ratio=25.67 t=20.4s cum=627.0s
+[b2_G2m0p2_pr_Tr0p6] stable=True conv=False steps=40000 u_max=2.5687e-01 ratio=50.16 t=29.2s cum=656.2s
+[b2_G2m0p2_pr_Tr0p55] stable=False conv=False steps=1000 u_max=None ratio=None t=0.7s cum=656.9s
+B3 selection: candidates=[-0.02, -0.05] best_g2=-0.02
+== B4(ii) Laplace channel ==
+[b4_edm_G20p0_L128_R12] start
+[b4_edm_G20p0_L128_R12] stable=True conv=True steps=10000 dp=0.02409 t=6.9s cum=663.9s
+[b4_edm_G20p0_L128_R16] start
+[b4_edm_G20p0_L128_R16] stable=True conv=True steps=8000 dp=0.01913 t=5.5s cum=669.4s
+[b4_edm_G20p0_L128_R20] start
+[b4_edm_G20p0_L128_R20] stable=True conv=True steps=8000 dp=0.01576 t=5.5s cum=675.0s
+[b4_edm_G20p0_L128_R24] start
+[b4_edm_G20p0_L128_R24] stable=True conv=True steps=9000 dp=0.01342 t=6.2s cum=681.2s
+[b4_edm_G20p0_L192_R18] start
+[b4_edm_G20p0_L192_R18] stable=True conv=True steps=15000 dp=0.01646 t=10.4s cum=691.6s
+[b4_edm_G20p0_L192_R24] start
+[b4_edm_G20p0_L192_R24] stable=True conv=True steps=12000 dp=0.01299 t=8.3s cum=699.9s
+[b4_edm_G20p0_L192_R30] start
+[b4_edm_G20p0_L192_R30] stable=True conv=True steps=13000 dp=0.01063 t=9.0s cum=709.0s
+[b4_edm_G20p0_L192_R36] start
+[b4_edm_G20p0_L192_R36] stable=True conv=True steps=19000 dp=0.00904 t=13.2s cum=722.1s
+[b4_edm_G20p0_L256_R24] start
+[b4_edm_G20p0_L256_R24] stable=True conv=True steps=22000 dp=0.01247 t=15.3s cum=737.4s
+[b4_edm_G20p0_L256_R32] start
+[b4_edm_G20p0_L256_R32] stable=True conv=True steps=19000 dp=0.00981 t=13.2s cum=750.6s
+[b4_edm_G20p0_L256_R40] start
+[b4_edm_G20p0_L256_R40] stable=True conv=True steps=21000 dp=0.00804 t=14.5s cum=765.1s
+[b4_edm_G20p0_L256_R48] start
+[b4_edm_G20p0_L256_R48] stable=True conv=True steps=25000 dp=0.00680 t=17.3s cum=782.5s
+[b4_edm_G2m0p02_L128_R12] start
+[b4_edm_G2m0p02_L128_R12] stable=True conv=True steps=10000 dp=-0.08241 t=8.4s cum=790.9s
+[b4_edm_G2m0p02_L128_R16] start
+[b4_edm_G2m0p02_L128_R16] stable=True conv=True steps=8000 dp=-0.08739 t=6.7s cum=797.7s
+[b4_edm_G2m0p02_L128_R20] start
+[b4_edm_G2m0p02_L128_R20] stable=True conv=True steps=7000 dp=-0.09051 t=5.9s cum=803.6s
+[b4_edm_G2m0p02_L128_R24] start
+[b4_edm_G2m0p02_L128_R24] stable=True conv=True steps=8000 dp=-0.09341 t=6.7s cum=810.3s
+[b4_edm_G2m0p02_L192_R18] start
+[b4_edm_G2m0p02_L192_R18] stable=True conv=True steps=16000 dp=-0.09001 t=13.5s cum=823.9s
+[b4_edm_G2m0p02_L192_R24] start
+[b4_edm_G2m0p02_L192_R24] stable=True conv=True steps=12000 dp=-0.09350 t=10.1s cum=834.0s
+[b4_edm_G2m0p02_L192_R30] start
+[b4_edm_G2m0p02_L192_R30] stable=True conv=True steps=14000 dp=-0.09584 t=11.8s cum=845.9s
+[b4_edm_G2m0p02_L192_R36] start
+[b4_edm_G2m0p02_L192_R36] stable=True conv=True steps=18000 dp=-0.09745 t=15.2s cum=861.1s
+[b4_edm_G2m0p02_L256_R24] start
+[b4_edm_G2m0p02_L256_R24] stable=True conv=True steps=23000 dp=-0.09398 t=19.4s cum=880.5s
+[b4_edm_G2m0p02_L256_R32] start
+[b4_edm_G2m0p02_L256_R32] stable=False conv=False steps=1000 dp=None t=0.8s cum=881.4s
+[b4_edm_G2m0p02_L256_R40] start
+[b4_edm_G2m0p02_L256_R40] stable=True conv=True steps=18000 dp=-0.09842 t=15.2s cum=896.6s
+[b4_edm_G2m0p02_L256_R48] start
+[b4_edm_G2m0p02_L256_R48] stable=True conv=True steps=26000 dp=-0.09958 t=21.9s cum=918.5s
+B4(ii) gate: {'resid_all_L': False, 'mono_not_degraded': False, 'baseline_mono': True, 'pass_gate': False}
+== B4(ii) sc-forcing disclosure ladder (L=256, controller ruling (c)) ==
+[b4_sc_G20p0_L256_R24] start
+[b4_sc_G20p0_L256_R24] stable=True conv=True steps=22000 dp=0.01247 t=12.9s cum=931.4s
+[b4_sc_G20p0_L256_R32] start
+[b4_sc_G20p0_L256_R32] stable=True conv=True steps=19000 dp=0.00981 t=11.1s cum=942.5s
+[b4_sc_G20p0_L256_R40] start
+[b4_sc_G20p0_L256_R40] stable=True conv=True steps=21000 dp=0.00805 t=12.3s cum=954.8s
+[b4_sc_G20p0_L256_R48] start
+[b4_sc_G20p0_L256_R48] stable=True conv=True steps=25000 dp=0.00680 t=14.6s cum=969.4s
+[b4_sc_G2m0p02_L256_R24] start
+[b4_sc_G2m0p02_L256_R24] stable=True conv=True steps=23000 dp=-0.09398 t=16.9s cum=986.3s
+[b4_sc_G2m0p02_L256_R32] start
+[b4_sc_G2m0p02_L256_R32] stable=False conv=False steps=1000 dp=None t=0.7s cum=987.1s
+[b4_sc_G2m0p02_L256_R40] start
+[b4_sc_G2m0p02_L256_R40] stable=True conv=True steps=18000 dp=-0.09841 t=13.2s cum=1000.3s
+[b4_sc_G2m0p02_L256_R48] start
+[b4_sc_G2m0p02_L256_R48] stable=True conv=True steps=26000 dp=-0.09958 t=19.1s cum=1019.5s
+== B6 edm spot-check ==
+[b6_edm_G2m0p02_cs_Tr0p6] stable=True conv=True steps=33000 u_max=2.6435e-01 ratio=366.47 t=28.3s cum=1047.8s
+[b6_edm_G2m0p02_pr_Tr0p55] stable=True conv=True steps=24000 u_max=2.1033e-01 ratio=408.26 t=20.2s cum=1068.1s
+wrote /nfs/wangxi/runs/x_campaign_20261004/xb_engine/out/xb2_v3_formal.json
+B5 pass = False

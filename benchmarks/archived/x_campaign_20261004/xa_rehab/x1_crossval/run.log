@@ -1,0 +1,21 @@
+B-CG ny64: gx=2.00231890e-05 (unit-gx umax=1997.683784 -> asserted analytic umax=0.040000)
+B-CG ny128: gx=4.84250616e-06 (unit-gx umax=8260.185676 -> asserted analytic umax=0.040000)
+=== B-CG arm b2m2_ny64 steps=60000 ===
+  relL2=0.003176 jb=33 frozen_tail20=1.27e-13 wall=59.8s
+=== B-CG arm b2m2_ny128 steps=200000 ===
+  relL2=0.002135 jb=65 frozen_tail20=7.07e-12 wall=199.2s
+=== B-CAC arm b2_a_ny100 (m1 replica) ===
+  rc=1 tail=
+  stderr tail: Traceback (most recent call last):
+  File "/nfs/wangxi/runs/x_campaign_20261004/xa_rehab/x1_crossval/scripts/b2_poiseuille_x1.py", line 19, in <module>
+    import cac_lbm as m
+ModuleNotFoundError: No module named 'cac_lbm'
+
+=== B-CAC arm b2_a_ny200 (m1 replica) ===
+  rc=1 tail=
+  stderr tail: Traceback (most recent call last):
+  File "/nfs/wangxi/runs/x_campaign_20261004/xa_rehab/x1_crossval/scripts/b2_poiseuille_x1.py", line 19, in <module>
+    import cac_lbm as m
+ModuleNotFoundError: No module named 'cac_lbm'
+
+x1 runs done

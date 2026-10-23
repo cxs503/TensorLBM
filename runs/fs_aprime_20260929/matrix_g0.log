@@ -1,0 +1,60 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+
+########## baseline  env={}
+  st= 100 T=0.000 X=1.500 front=12 H=1.125 iface=574 drift=-0.000521%
+  st= 200 T=0.000 X=2.000 front=16 H=1.125 iface=908 drift=-0.000559%
+[mat_g0_baseline] elapsed=41.4s iface 335->908 drift=-0.000559% X_end=2.000 H_end=1.125
+
+########## recv_closed  env={'TL_FS_ABL_RECVCLOSED': '1'}
+  st= 100 T=0.000 X=1.000 front=8 H=0.938 iface=335 drift=+0.000000%
+  st= 200 T=0.000 X=1.000 front=8 H=0.938 iface=335 drift=+0.000000%
+[mat_g0_recv_closed] elapsed=41.7s iface 335->335 drift=+0.000000% X_end=1.000 H_end=0.938
+
+########## graded_n3  env={'TL_FS_RECV_GRADED': '1', 'TL_FS_RECV_NMIN': '3'}
+  st= 100 T=0.000 X=1.375 front=11 H=1.000 iface=457 drift=+1.317431%
+  st= 200 T=0.000 X=1.625 front=13 H=1.000 iface=462 drift=+2.012959%
+[mat_g0_graded_n3] elapsed=42.1s iface 335->462 drift=+2.012959% X_end=1.625 H_end=1.000
+
+########## graded_n4  env={'TL_FS_RECV_GRADED': '1', 'TL_FS_RECV_NMIN': '4'}
+  st= 100 T=0.000 X=1.125 front=9 H=1.000 iface=399 drift=+0.884628%
+  st= 200 T=0.000 X=1.250 front=10 H=1.000 iface=436 drift=+1.751957%
+[mat_g0_graded_n4] elapsed=41.4s iface 335->436 drift=+1.751957% X_end=1.250 H_end=1.000
+
+########## graded_n5  env={'TL_FS_RECV_GRADED': '1', 'TL_FS_RECV_NMIN': '5'}
+  st= 100 T=0.000 X=1.125 front=9 H=0.938 iface=355 drift=+0.863101%
+  st= 200 T=0.000 X=1.125 front=9 H=0.938 iface=371 drift=+1.681468%
+[mat_g0_graded_n5] elapsed=41.5s iface 335->371 drift=+1.681468% X_end=1.125 H_end=0.938
+
+########## graded_n6  env={'TL_FS_RECV_GRADED': '1', 'TL_FS_RECV_NMIN': '6'}
+  st= 100 T=0.000 X=1.000 front=8 H=0.938 iface=335 drift=+0.000000%
+  st= 200 T=0.000 X=1.000 front=8 H=0.938 iface=335 drift=+0.000000%
+[mat_g0_graded_n6] elapsed=50.3s iface 335->335 drift=+0.000000% X_end=1.000 H_end=0.938
+
+########## graded_n3_m0  env={'TL_FS_RECV_GRADED': '1', 'TL_FS_RECV_NMIN': '3', 'TL_FS_RECV_MASS_EPS': '0.0'}
+  st= 100 T=0.000 X=1.500 front=12 H=1.125 iface=551 drift=+3.979435%
+  st= 200 T=0.000 X=2.000 front=16 H=1.125 iface=910 drift=+11.645330%
+[mat_g0_graded_n3_m0] elapsed=50.2s iface 335->910 drift=+11.645330% X_end=2.000 H_end=1.125
+
+=== SUMMARY mode=g0 a=8 g=0.0 steps=200 ===
+  baseline         front= 16 X= 2.000 H= 1.125 iface=  908 drift=-0.0006%
+  recv_closed      front=  8 X= 1.000 H= 0.938 iface=  335 drift=+0.0000%
+  graded_n3        front= 13 X= 1.625 H= 1.000 iface=  462 drift=+2.0130%
+  graded_n4        front= 10 X= 1.250 H= 1.000 iface=  436 drift=+1.7520%
+  graded_n5        front=  9 X= 1.125 H= 0.938 iface=  371 drift=+1.6815%
+  graded_n6        front=  8 X= 1.000 H= 0.938 iface=  335 drift=+0.0000%
+  graded_n3_m0     front= 16 X= 2.000 H= 1.125 iface=  910 drift=+11.6453%

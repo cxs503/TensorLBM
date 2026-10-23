@@ -1,4 +1,5 @@
 """Low-frequency, solver-independent health diagnostics for LBM populations."""
+
 from __future__ import annotations
 
 import math
@@ -43,7 +44,14 @@ def inspect_population_health(f: torch.Tensor) -> PopulationHealth:
     finite = math.isfinite(minimum_value) and math.isfinite(maximum_value)
     if not finite:
         return PopulationHealth(
-            False, minimum_value, None, None, maximum_value, None, None, None,
+            False,
+            minimum_value,
+            None,
+            None,
+            maximum_value,
+            None,
+            None,
+            None,
             None,
         )
 
@@ -81,9 +89,14 @@ def inspect_population_health(f: torch.Tensor) -> PopulationHealth:
     )
     density_minimum_value = float(density_minimum.item())
     density_maximum_value = float(density_maximum.item())
-    finite = all(math.isfinite(value) for value in (
-        density_minimum_value, density_maximum_value, maximum_speed,
-    ))
+    finite = all(
+        math.isfinite(value)
+        for value in (
+            density_minimum_value,
+            density_maximum_value,
+            maximum_speed,
+        )
+    )
     return PopulationHealth(
         finite,
         minimum_value,

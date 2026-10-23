@@ -21,6 +21,7 @@ Vectorization key:
   opp is an involution (opp[opp[d]] = d), so for each output direction e:
     f_out[e] = where(mask[opp[e]], f_bc[opp[e]], f[e])
 """
+
 from __future__ import annotations
 
 import torch

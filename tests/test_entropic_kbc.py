@@ -17,9 +17,12 @@ import math
 import pytest
 import torch
 
-from tensorlbm.d3q19 import C as C19, W as W19, equilibrium3d, macroscopic3d
-from tensorlbm.d3q27 import C as C27, W as W27, equilibrium27, macroscopic27
-
+from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import W as W19
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q27 import C as C27
+from tensorlbm.d3q27 import W as W27
+from tensorlbm.d3q27 import equilibrium27, macroscopic27
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -473,8 +476,8 @@ class TestKBCStability:
         assert (f > 0).all(), "Populations became negative"
 
     def test_kbc_d3q27_short_flow_stable(self):
-        from tensorlbm.entropic_kbc import collide_kbc_d3q27
         from tensorlbm.d3q27 import stream27
+        from tensorlbm.entropic_kbc import collide_kbc_d3q27
 
         torch.manual_seed(123)
         nz, ny, nx = 8, 8, 8
@@ -667,9 +670,9 @@ class TestKBCDiagnostics:
             make_channel_wall_mask_3d,
             sphere_mask,
         )
-        from tensorlbm.solver3d import collide_bgk3d, stream3d
-        from tensorlbm.obstacles import compute_obstacle_forces_3d
         from tensorlbm.entropic_kbc import collide_kbc_d3q19
+        from tensorlbm.obstacles import compute_obstacle_forces_3d
+        from tensorlbm.solver3d import collide_bgk3d, stream3d
 
         def _run(collision_fn, nx=16, ny=16, nz=16, steps=20, re=50):
             radius = max(4.0, nx * 0.08)
@@ -722,7 +725,8 @@ class TestNaturalKBCExperimental:
         tau = 0.500324
         expected = collide_natural_kbc_d3q19(f, tau)
         actual = _collide_natural_kbc_d3q19_unchecked(
-            f, torch.tensor(tau, dtype=f.dtype),
+            f,
+            torch.tensor(tau, dtype=f.dtype),
         )
 
         torch.testing.assert_close(actual, expected, rtol=0.0, atol=0.0)
@@ -750,7 +754,8 @@ class TestNaturalKBCExperimental:
         weights = W.to(dtype=f.dtype).view(19, 1, 1, 1)
         post = collide_natural_kbc_d3q19(f, tau=0.8)
         entropy_change = discrete_entropy(post, weights) - discrete_entropy(
-            f, weights,
+            f,
+            weights,
         )
 
         assert float(entropy_change.max()) < 1.0e-7

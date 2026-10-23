@@ -1,0 +1,33 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+  st=  40 T=0.200 X=1.750 H=0.938 iface=986 drift=-7.629e-07 fin=True
+  st=  80 T=0.400 X=2.750 H=0.938 iface=2558 drift=-6.358e-08 fin=True
+  st= 120 T=0.600 X=3.875 H=0.938 iface=3751 drift=-1.990e-05 fin=True
+  st= 160 T=0.800 X=4.750 H=0.938 iface=3966 drift=-1.063e-04 fin=True
+  st= 200 T=1.000 X=4.750 H=0.938 iface=4381 drift=-1.622e-04 fin=True
+  st= 240 T=1.200 X=4.750 H=0.938 iface=4747 drift=-2.155e-04 fin=True
+  st= 280 T=1.400 X=4.750 H=1.062 iface=4426 drift=-7.254e-04 fin=True
+  st= 320 T=1.600 X=4.750 H=1.125 iface=4269 drift=-9.824e-04 fin=True
+  st= 360 T=1.800 X=4.625 H=1.125 iface=3986 drift=-1.444e-03 fin=True
+  st= 400 T=2.000 X=4.750 H=1.062 iface=4319 drift=-1.761e-03 fin=True
+  st= 440 T=2.200 X=4.750 H=1.000 iface=4387 drift=-2.013e-03 fin=True
+  st= 480 T=2.400 X=4.625 H=1.125 iface=4203 drift=-2.034e-03 fin=True
+  st= 520 T=2.600 X=4.625 H=0.500 iface=3997 drift=-2.043e-03 fin=True
+  st= 560 T=2.800 X=4.625 H=0.875 iface=4163 drift=-2.401e-03 fin=True
+  st= 600 T=3.000 X=4.750 H=1.062 iface=3830 drift=-2.440e-03 fin=True
+  st= 620 T=3.100 X=4.750 H=1.125 iface=4004 drift=-2.441e-03 fin=True
+[hydrofill_rg0.1_c1] elapsed=40.4s

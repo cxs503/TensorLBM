@@ -7,13 +7,12 @@ for validation; the default is therefore ``withheld``.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from hashlib import sha256
-import json
 from math import isfinite
 from types import MappingProxyType
 from typing import Mapping
-
 
 _CONFIGURATIONS = frozenset(("bare_hull", "with_sail", "full"))
 _APPLICATIONS = frozenset(("suboff", "ch_hull", "korner_hull"))

@@ -1,0 +1,175 @@
+{
+  "schema": "tensorlbm.perimeter-boundary/1",
+  "physical_accuracy_qualified": false,
+  "cases": [
+    {
+      "file": "n32-fixed-c0.json",
+      "metrics": {
+        "marker_slip_m_s": 5.190260555487198e-18,
+        "off_marker_normal_slip_m_s": 0.007128128223537799,
+        "post_stream_marker_slip_m_s": 0.01846246903973832,
+        "force_map_error_Ns": 6.938893903907228e-18,
+        "moment_map_error_Nms": 3.469446951953614e-18,
+        "work_map_error_J": 1.0842021724855044e-19,
+        "momentum_error_kg_m_s": 2.814859456634622e-12,
+        "mass_relative_error": 4.884981308350689e-15
+      },
+      "gates": {
+        "marker_slip": true,
+        "off_marker_normal_slip": false,
+        "post_stream_slip": false,
+        "conservation": true
+      }
+    },
+    {
+      "file": "n32-fixed-c0.1.json",
+      "metrics": {
+        "marker_slip_m_s": 0.0011309939472520095,
+        "off_marker_normal_slip_m_s": 0.007471477862392368,
+        "post_stream_marker_slip_m_s": 0.018552153727680043,
+        "force_map_error_Ns": 2.7755575615628914e-17,
+        "moment_map_error_Nms": 6.938893903907228e-18,
+        "work_map_error_J": 1.0842021724855044e-19,
+        "momentum_error_kg_m_s": 2.910227614449923e-12,
+        "mass_relative_error": 5.10702591327572e-15
+      },
+      "gates": {
+        "marker_slip": false,
+        "off_marker_normal_slip": false,
+        "post_stream_slip": false,
+        "conservation": true
+      }
+    },
+    {
+      "file": "n32-moving-c0.json",
+      "metrics": {
+        "marker_slip_m_s": 5.204170427930421e-18,
+        "off_marker_normal_slip_m_s": 0.0035632534266073993,
+        "post_stream_marker_slip_m_s": 0.009231136071086199,
+        "force_map_error_Ns": 6.938893903907228e-18,
+        "moment_map_error_Nms": 3.469446951953614e-18,
+        "work_map_error_J": 2.168404344971009e-19,
+        "momentum_error_kg_m_s": 2.8840818622200004e-12,
+        "mass_relative_error": 4.9960036108132044e-15
+      },
+      "gates": {
+        "marker_slip": true,
+        "off_marker_normal_slip": false,
+        "post_stream_slip": false,
+        "conservation": true
+      }
+    },
+    {
+      "file": "n32-moving-c0.1.json",
+      "metrics": {
+        "marker_slip_m_s": 0.0005654969736259962,
+        "off_marker_normal_slip_m_s": 0.003735119301073961,
+        "post_stream_marker_slip_m_s": 0.009275989514537465,
+        "force_map_error_Ns": 3.469446951953614e-18,
+        "moment_map_error_Nms": 3.469446951953614e-18,
+        "work_map_error_J": 1.0842021724855044e-19,
+        "momentum_error_kg_m_s": 2.8875790647475696e-12,
+        "mass_relative_error": 4.884981308350689e-15
+      },
+      "gates": {
+        "marker_slip": false,
+        "off_marker_normal_slip": false,
+        "post_stream_slip": false,
+        "conservation": true
+      }
+    },
+    {
+      "file": "n64-fixed-c0.json",
+      "metrics": {
+        "marker_slip_m_s": 5.654566638025225e-18,
+        "off_marker_normal_slip_m_s": 0.0048986519683876855,
+        "post_stream_marker_slip_m_s": 0.019408561675085135,
+        "force_map_error_Ns": 6.938893903907228e-18,
+        "moment_map_error_Nms": 6.938893903907228e-18,
+        "work_map_error_J": 5.421010862427522e-20,
+        "momentum_error_kg_m_s": 1.4462986364094377e-11,
+        "mass_relative_error": 2.0872192862952943e-14
+      },
+      "gates": {
+        "marker_slip": true,
+        "off_marker_normal_slip": false,
+        "post_stream_slip": false,
+        "conservation": true
+      }
+    },
+    {
+      "file": "n64-fixed-c0.1.json",
+      "metrics": {
+        "marker_slip_m_s": 0.00023724446220100835,
+        "off_marker_normal_slip_m_s": 0.004670811764566968,
+        "post_stream_marker_slip_m_s": 0.019415602190656293,
+        "force_map_error_Ns": 6.938893903907228e-18,
+        "moment_map_error_Nms": 3.469446951953614e-18,
+        "work_map_error_J": 2.168404344971009e-19,
+        "momentum_error_kg_m_s": 1.4362400158063338e-11,
+        "mass_relative_error": 2.0872192862952943e-14
+      },
+      "gates": {
+        "marker_slip": false,
+        "off_marker_normal_slip": false,
+        "post_stream_slip": false,
+        "conservation": true
+      }
+    },
+    {
+      "file": "n64-moving-c0.json",
+      "metrics": {
+        "marker_slip_m_s": 3.510302644359693e-18,
+        "off_marker_normal_slip_m_s": 0.0024493259841939555,
+        "post_stream_marker_slip_m_s": 0.009704287788886745,
+        "force_map_error_Ns": 3.469446951953614e-18,
+        "moment_map_error_Nms": 3.469446951953614e-18,
+        "work_map_error_J": 5.421010862427522e-20,
+        "momentum_error_kg_m_s": 1.5297096922495257e-11,
+        "mass_relative_error": 2.0761170560490427e-14
+      },
+      "gates": {
+        "marker_slip": true,
+        "off_marker_normal_slip": false,
+        "post_stream_slip": false,
+        "conservation": true
+      }
+    },
+    {
+      "file": "n64-moving-c0.1.json",
+      "metrics": {
+        "marker_slip_m_s": 0.0001186222311005073,
+        "off_marker_normal_slip_m_s": 0.002335405882283591,
+        "post_stream_marker_slip_m_s": 0.009707807879821223,
+        "force_map_error_Ns": 3.469446951953614e-18,
+        "moment_map_error_Nms": 1.734723475976807e-18,
+        "work_map_error_J": 1.0842021724855044e-19,
+        "momentum_error_kg_m_s": 1.5339951531245788e-11,
+        "mass_relative_error": 2.098321516541546e-14
+      },
+      "gates": {
+        "marker_slip": true,
+        "off_marker_normal_slip": false,
+        "post_stream_slip": false,
+        "conservation": true
+      }
+    }
+  ],
+  "source_sha256": {
+    "src/tensorlbm/perimeter_boundary_2d.py": "f645953d87760d8f5606609df6e4d586171966ffd86caf0cc8ce00485a07b095",
+    "src/tensorlbm/ice_coupling_2d.py": "1100840642d6086ac25b21debe5a655c0200e458ba211d81776dd96c592aea07",
+    "src/tensorlbm/d2q9.py": "1065c3093e07dfa186d729412c4081c7e4ba0925db223e8083ff007d457adf4d",
+    "src/tensorlbm/solver.py": "6cef9523e393f4d584ef01620074c945fc94e44521884ff308ce25b7b59c39b3",
+    "examples/perimeter_boundary/run.py": "b01114af32ea1317050c74433e48d14a7439cfc8514379c2ea9125921e7fcc1a"
+  },
+  "artifact_sha256": {
+    "n32-fixed-c0.json": "89fa3a6c628f7cbba26a9d5f97e151871192a320dec4a1eb48b9dc92c05ff7a9",
+    "n32-fixed-c0.1.json": "82d7241a00235b23e3f1ab370f47f30e0687e0a185678d7c22c39739bb278a04",
+    "n32-moving-c0.json": "3a7625da383987f06539cc35d9b750ce50b13b54cdc34a4362bead82c856fd2d",
+    "n32-moving-c0.1.json": "87c35c38f5b742c2974eae96742269c9ee46f24aa66c94dbf3c7b61523379974",
+    "n64-fixed-c0.json": "325127576fb1f733b5d4e401715e42fe3e258a8c67d63d1ca78263f268617a05",
+    "n64-fixed-c0.1.json": "974fa537db022a2f9d5983ff0ac7530b72fa0e1bd12e05bd99a1338340fbd846",
+    "n64-moving-c0.json": "82c0e4edff9173975825b365d100304e163c6bb376b780957b805e473d29b822",
+    "n64-moving-c0.1.json": "75707751bab376a26e513932e3de8558189c6b8d8b3e46fe93a720bc41b978bf"
+  }
+}

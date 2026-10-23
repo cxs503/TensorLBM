@@ -45,9 +45,12 @@ def _record(width_radii: float, cd: float) -> dict[str, object]:
 
 
 def test_sphere_domain_pair_admits_small_direct_drag_change() -> None:
-    result = assess_sphere_domain_sensitivity_pair([
-        _record(16.0, 1.1756), _record(20.0, 1.1700),
-    ])
+    result = assess_sphere_domain_sensitivity_pair(
+        [
+            _record(16.0, 1.1756),
+            _record(20.0, 1.1700),
+        ]
+    )
 
     assert result["configuration_identity"]["admitted"] is True
     assert result["domain_sensitivity"]["drag_change_pct"] < 1.0
@@ -70,9 +73,12 @@ def test_sphere_domain_pair_rejects_changed_streamwise_domain() -> None:
 def test_sphere_domain_pair_rejects_numerically_rejected_source() -> None:
     expanded = _record(20.0, 1.1700)
     expanded["acceptance"]["numerical_quality_admitted"] = False
-    result = assess_sphere_domain_sensitivity_pair([
-        _record(16.0, 1.1756), expanded,
-    ])
+    result = assess_sphere_domain_sensitivity_pair(
+        [
+            _record(16.0, 1.1756),
+            expanded,
+        ]
+    )
 
     assert result["source_numerical_quality_admitted"] is False
     assert result["admitted_as_pair_sensitivity"] is False
@@ -81,9 +87,12 @@ def test_sphere_domain_pair_rejects_numerically_rejected_source() -> None:
 def test_sphere_domain_pair_rejects_changed_numerics() -> None:
     expanded = copy.deepcopy(_record(20.0, 1.1700))
     expanded["configuration"]["compile_natural_kbc"] = False
-    result = assess_sphere_domain_sensitivity_pair([
-        _record(16.0, 1.1756), expanded,
-    ])
+    result = assess_sphere_domain_sensitivity_pair(
+        [
+            _record(16.0, 1.1756),
+            expanded,
+        ]
+    )
 
     assert result["configuration_identity"]["identity_fields_equal"] is False
 
@@ -94,11 +103,13 @@ def test_sphere_domain_pair_requires_exactly_two_records() -> None:
 
 
 def test_sphere_three_domain_sequence_converges_without_reference_claim() -> None:
-    result = assess_sphere_domain_convergence([
-        _record(16.0, 1.1756),
-        _record(20.0, 1.1700),
-        _record(24.0, 1.1680),
-    ])
+    result = assess_sphere_domain_convergence(
+        [
+            _record(16.0, 1.1756),
+            _record(20.0, 1.1700),
+            _record(24.0, 1.1680),
+        ]
+    )
 
     assert result["domain_convergence"]["drag_monotonic"] is True
     assert result["domain_convergence"]["finest_drag_change_pct"] < 1.0
@@ -108,11 +119,13 @@ def test_sphere_three_domain_sequence_converges_without_reference_claim() -> Non
 
 
 def test_sphere_three_domain_sequence_can_physically_admit_direct_drag() -> None:
-    result = assess_sphere_domain_convergence([
-        _record(16.0, 1.11),
-        _record(20.0, 1.10),
-        _record(24.0, 1.095),
-    ])
+    result = assess_sphere_domain_convergence(
+        [
+            _record(16.0, 1.11),
+            _record(20.0, 1.10),
+            _record(24.0, 1.095),
+        ]
+    )
 
     assert result["domain_convergence"]["admitted"] is True
     assert result["reference"]["admitted"] is True
@@ -120,11 +133,13 @@ def test_sphere_three_domain_sequence_can_physically_admit_direct_drag() -> None
 
 
 def test_sphere_three_domain_sequence_rejects_nonmonotonic_drag() -> None:
-    result = assess_sphere_domain_convergence([
-        _record(16.0, 1.17),
-        _record(20.0, 1.16),
-        _record(24.0, 1.165),
-    ])
+    result = assess_sphere_domain_convergence(
+        [
+            _record(16.0, 1.17),
+            _record(20.0, 1.16),
+            _record(24.0, 1.165),
+        ]
+    )
 
     assert result["domain_convergence"]["drag_monotonic"] is False
     assert result["domain_convergence"]["admitted"] is False

@@ -1,4 +1,5 @@
 """Conservative, optionally regularized population rescaling for LBM AMR."""
+
 from __future__ import annotations
 
 import math
@@ -87,13 +88,17 @@ def regularize_nonequilibrium_second_order(f_neq: torch.Tensor) -> torch.Tensor:
     pi_xz = (cx * cz * f_neq).sum(dim=0)
     pi_yz = (cy * cz * f_neq).sum(dim=0)
     cs2 = 1.0 / 3.0
-    projected = 4.5 * w.view(q, 1, 1, 1) * (
-        (cx.square() - cs2) * pi_xx
-        + (cy.square() - cs2) * pi_yy
-        + (cz.square() - cs2) * pi_zz
-        + 2.0 * cx * cy * pi_xy
-        + 2.0 * cx * cz * pi_xz
-        + 2.0 * cy * cz * pi_yz
+    projected = (
+        4.5
+        * w.view(q, 1, 1, 1)
+        * (
+            (cx.square() - cs2) * pi_xx
+            + (cy.square() - cs2) * pi_yy
+            + (cz.square() - cs2) * pi_zz
+            + 2.0 * cx * cy * pi_xy
+            + 2.0 * cx * cz * pi_xz
+            + 2.0 * cy * cz * pi_yz
+        )
     )
     return _remove_conserved_roundoff(projected)
 
@@ -117,9 +122,14 @@ def rescale_nonequilibrium(
         raise ValueError("f must have shape (19|27,nz,ny,nx)")
     if not f.is_floating_point():
         raise TypeError("f must be floating point")
-    if not all(math.isfinite(value) and value > 0.0 for value in (
-        tau_source, tau_target, spatial_ratio,
-    )):
+    if not all(
+        math.isfinite(value) and value > 0.0
+        for value in (
+            tau_source,
+            tau_target,
+            spatial_ratio,
+        )
+    ):
         raise ValueError("tau values and spatial_ratio must be finite and positive")
     rho, ux, uy, uz = _macroscopic(f)
     equilibrium = _equilibrium(f.shape[0], rho, ux, uy, uz)

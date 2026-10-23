@@ -1,0 +1,61 @@
+{
+  "cases": [
+    {
+      "file": "driven-n32-dt0.0005.json",
+      "sha256": "8c1c9ddd193ce702895c29612beb5d5d93a6d3e26aad9116801484b53b0ce622",
+      "n": 32,
+      "dt_s": 0.0005,
+      "late_mean_force_N": 1.806992569713652,
+      "late_window_drift": 0.0789035007393637,
+      "steady_qualified": false,
+      "max_mass_error": 4.164446565368962e-13,
+      "max_momentum_error": 1.9733370493213442e-10,
+      "minimum_population": 0.02772385543765684
+    },
+    {
+      "file": "driven-n48-dt0.0005.json",
+      "sha256": "e213e34a6eb98228a91e506809a5bacaff243eae57968f867d1873db025a2bf6",
+      "n": 48,
+      "dt_s": 0.0005,
+      "late_mean_force_N": 1.789154479517736,
+      "late_window_drift": 0.07970348818925554,
+      "steady_qualified": false,
+      "max_mass_error": 3.8957725934096743e-13,
+      "max_momentum_error": 1.3875922633133086e-10,
+      "minimum_population": 0.02769692023163222
+    },
+    {
+      "file": "driven-n64-dt0.0005.json",
+      "sha256": "3576bee5eeb8222c40acc43757422779a8f5c93433a4ce18be39b9c57d7f025a",
+      "n": 64,
+      "dt_s": 0.0005,
+      "late_mean_force_N": 1.7812338230467353,
+      "late_window_drift": 0.08002659158829428,
+      "steady_qualified": false,
+      "max_mass_error": 3.5571545708990016e-13,
+      "max_momentum_error": 1.0700862418389079e-10,
+      "minimum_population": 0.027670073729011455
+    },
+    {
+      "file": "driven-n64-dt0.00025.json",
+      "sha256": "8f86feb0bf09c48406e4c554226c9a046d306b841acbc6417485462e3e35f7d6",
+      "n": 64,
+      "dt_s": 0.00025,
+      "late_mean_force_N": 1.7829831819502926,
+      "late_window_drift": 0.07995808850498864,
+      "steady_qualified": false,
+      "max_mass_error": 7.904787935331115e-13,
+      "max_momentum_error": 3.3447111746909286e-10,
+      "minimum_population": 0.02772388998599494
+    }
+  ],
+  "source_sha256": {
+    "examples/curved_boundary/driven.py": "d4ac1ed027d62426e992610feaa8f57487a167c63e4efc9fab7ed3733d344252",
+    "src/tensorlbm/curved_boundary_2d.py": "a826bb4bece205e43f990100ed480f0506d25ffa4630036f050e82b13cb99254",
+    "src/tensorlbm/solver.py": "6cef9523e393f4d584ef01620074c945fc94e44521884ff308ce25b7b59c39b3",
+    "src/tensorlbm/d2q9.py": "1065c3093e07dfa186d729412c4081c7e4ba0925db223e8083ff007d457adf4d"
+  },
+  "space_change": 0.004427038895565838,
+  "dt_eos_change": 0.000982105145839407,
+  "physical_accuracy_qualified": false
+}

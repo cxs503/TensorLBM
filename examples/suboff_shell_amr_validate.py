@@ -51,6 +51,7 @@ cumulant / cascaded), the full-stencil D3Q27 BFL bounce-back and the
 result schema gains a ``-d3q27`` suffix.  The D3Q19 path is bit-for-bit the
 legacy single-shell run.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -61,19 +62,19 @@ from dataclasses import asdict
 from pathlib import Path
 
 import torch
-
 from suboff_experimental_resistance import (
     MODEL_LENGTH_M,
     experimental_point,
     force_scale_newton,
     smooth_ramp_factor,
 )
+
+from tensorlbm.cascaded_collision import collide_cascaded_d3q27
 from tensorlbm.control_volume_force import (
     box_control_volume,
     observe_control_volume_force,
 )
 from tensorlbm.cumulant import collide_cumulant_d3q19, collide_cumulant_d3q27
-from tensorlbm.cascaded_collision import collide_cascaded_d3q27
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.d3q27 import equilibrium27, macroscopic27, stream27_roll
 from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d
@@ -195,7 +196,9 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cs-smag", type=float, default=0.05)
     p.add_argument("--cw-wale", type=float, default=0.5)
     p.add_argument(
-        "--wall-law", choices=("log", "reichardt", "musker"), default="reichardt",
+        "--wall-law",
+        choices=("log", "reichardt", "musker"),
+        default="reichardt",
     )
     p.add_argument("--wall-distance", type=float, default=0.5)
     p.add_argument("--stress-exchange-distance", type=float, default=0.0)
@@ -224,36 +227,47 @@ def run(args: argparse.Namespace) -> dict:
     point = experimental_point(args.hull_type, args.speed_knots)
     shape = (args.nz, args.ny, args.nx)
     center = (args.nx * args.center_x_fraction, args.ny / 2.0, args.nz / 2.0)
-    if (
-        center[0] - args.hull_length / 2.0 <= 1
-        or center[0] + args.hull_length / 2.0 >= args.nx - 1
-    ):
+    if center[0] - args.hull_length / 2.0 <= 1 or center[0] + args.hull_length / 2.0 >= args.nx - 1:
         raise ValueError("SUBOFF hull does not fit inside the streamwise domain")
     config = SuboffConfig()
 
     # ---- coarse hull (level-0 freeze mask for coarse cells the fine block
     # ---- does not own).
     solid_coarse, coarse_geometry = build_suboff_mask(
-        args.hull_type, args.nx, args.ny, args.nz,
-        cx=center[0], cy=center[1], cz=center[2], length=args.hull_length,
-        config=config, device=device,
+        args.hull_type,
+        args.nx,
+        args.ny,
+        args.nz,
+        cx=center[0],
+        cy=center[1],
+        cz=center[2],
+        length=args.hull_length,
+        config=config,
+        device=device,
     )
     if not bool(solid_coarse.any()):
         raise ValueError("no SUBOFF cells on the coarse grid")
     q_channels = _q_channels(args.lattice)
-    solid_coarse_q = solid_coarse.unsqueeze(0).expand(
-        q_channels, *shape,
-    ).contiguous()
+    solid_coarse_q = (
+        solid_coarse.unsqueeze(0)
+        .expand(
+            q_channels,
+            *shape,
+        )
+        .contiguous()
+    )
 
     # ---- body-fitted shell refinement region: hull-proximity surface shell
     # ---- + downstream wake, clipped laterally to the shell extent so the
     # ---- fine block stays body-fitted instead of spanning the full coarse
     # ---- domain height/depth (same pattern as amr_sphere_shell_validate.py).
     shell_mask = HullProximityRegion(
-        solid_coarse, margin=args.shell_margin,
+        solid_coarse,
+        margin=args.shell_margin,
     ).expand_mask()
     wake_mask = WakeRegion(
-        solid_coarse, extend_x=args.wake_cells,
+        solid_coarse,
+        extend_x=args.wake_cells,
     ).expand_mask()
     shell_idx = shell_mask.nonzero(as_tuple=False)
     if shell_idx.numel() == 0:
@@ -263,9 +277,9 @@ def run(args: argparse.Namespace) -> dict:
     sz0, sy0 = int(shell_idx[:, 0].min().item()), int(shell_idx[:, 1].min().item())
     sz1, sy1 = int(shell_idx[:, 0].max().item()), int(shell_idx[:, 1].max().item())
     wake_mask[:sz0, :, :] = False
-    wake_mask[sz1 + 1:, :, :] = False
+    wake_mask[sz1 + 1 :, :, :] = False
     wake_mask[:, :sy0, :] = False
-    wake_mask[:, sy1 + 1:, :] = False
+    wake_mask[:, sy1 + 1 :, :] = False
     refine_mask = shell_mask | wake_mask
     indices = refine_mask.nonzero(as_tuple=False)
     if indices.numel() == 0:
@@ -283,8 +297,7 @@ def run(args: argparse.Namespace) -> dict:
     z1 = min(args.nz - 1, z_max + pad)
     if min(x1 - x0, y1 - y0, z1 - z0) < 3:
         raise ValueError(
-            "refinement box too small: try a larger --wake-cells or a smaller "
-            "--shell-margin",
+            "refinement box too small: try a larger --wake-cells or a smaller --shell-margin",
         )
     box = BoxRegion(x0, x1, y0, y1, z0, z1)
     ratio, g = 2, 1
@@ -294,7 +307,9 @@ def run(args: argparse.Namespace) -> dict:
     collision_re = args.resolved_reynolds or physical_re
     nu_coarse = args.lattice_speed * args.hull_length / collision_re
     wall_nu_fine = physical_wall_lattice_viscosity(
-        args.lattice_speed, args.hull_length * 2.0, physical_re,
+        args.lattice_speed,
+        args.hull_length * 2.0,
+        physical_re,
     )
     tau_coarse = 0.5 + 3.0 * nu_coarse
 
@@ -315,9 +330,16 @@ def run(args: argparse.Namespace) -> dict:
         center[2] * ratio - z0 * ratio + g,
     )
     fine_solid, fine_geometry = build_suboff_mask(
-        args.hull_type, fine_shape[2], fine_shape[1], fine_shape[0],
-        cx=fine_center[0], cy=fine_center[1], cz=fine_center[2],
-        length=args.hull_length * 2.0, config=config, device=device,
+        args.hull_type,
+        fine_shape[2],
+        fine_shape[1],
+        fine_shape[0],
+        cx=fine_center[0],
+        cy=fine_center[1],
+        cz=fine_center[2],
+        length=args.hull_length * 2.0,
+        config=config,
+        device=device,
     )
     if not bool(fine_solid.any()):
         raise RuntimeError("fine block contains no SUBOFF cells")
@@ -325,11 +347,10 @@ def run(args: argparse.Namespace) -> dict:
     amr = StaticBlockAMR3D(
         coarse_f,
         StaticBlockAMRConfig(
-            box, tau_coarse=tau_coarse,
+            box,
+            tau_coarse=tau_coarse,
             reflux=not args.disable_reflux,
-            maximum_reflux_correction_fraction=(
-                args.maximum_reflux_correction_fraction
-            ),
+            maximum_reflux_correction_fraction=(args.maximum_reflux_correction_fraction),
             ghost_interpolation=args.ghost_interpolation,
         ),
         fine_solid=fine_solid,
@@ -340,22 +361,35 @@ def run(args: argparse.Namespace) -> dict:
     print("building fine-grid BFL link distances", flush=True)
     if args.lattice == "D3Q27":
         bfl_mask, bfl_q = compute_q_suboff_27(
-            fine_solid_g.shape[2], fine_solid_g.shape[1], fine_solid_g.shape[0],
-            *fine_center, args.hull_length * 2.0,
-            hull_type=args.hull_type, config=config, device=device,
+            fine_solid_g.shape[2],
+            fine_solid_g.shape[1],
+            fine_solid_g.shape[0],
+            *fine_center,
+            args.hull_length * 2.0,
+            hull_type=args.hull_type,
+            config=config,
+            device=device,
             solid_mask=fine_solid_g,
         )
     else:
         bfl_mask, bfl_q = compute_q_suboff(
-            fine_solid_g.shape[2], fine_solid_g.shape[1], fine_solid_g.shape[0],
-            *fine_center, args.hull_length * 2.0,
-            hull_type=args.hull_type, config=config, device=device,
+            fine_solid_g.shape[2],
+            fine_solid_g.shape[1],
+            fine_solid_g.shape[0],
+            *fine_center,
+            args.hull_length * 2.0,
+            hull_type=args.hull_type,
+            config=config,
+            device=device,
             solid_mask=fine_solid_g,
         )
     fine_near = get_near_wall_3d(fine_solid_g)
     fine_surface = SurfaceMesh.from_suboff(
-        fine_solid_g, fine_near, *fine_center,
-        args.hull_length * 2.0, args.hull_length * 2.0 / (2.0 * SUBOFF_L_D),
+        fine_solid_g,
+        fine_near,
+        *fine_center,
+        args.hull_length * 2.0,
+        args.hull_length * 2.0 / (2.0 * SUBOFF_L_D),
         config=config,
     )
     fine_area_weight, surface_area_diagnostics = bfl_surface_area_weights(
@@ -365,9 +399,14 @@ def run(args: argparse.Namespace) -> dict:
         boundary_mask=fine_near,
     )
     fine_surface.dA = fine_area_weight
-    solid_q = fine_solid_g.unsqueeze(0).expand(
-        q_channels, *fine_solid_g.shape,
-    ).contiguous()
+    solid_q = (
+        fine_solid_g.unsqueeze(0)
+        .expand(
+            q_channels,
+            *fine_solid_g.shape,
+        )
+        .contiguous()
+    )
 
     # ---- control volume on the fine grid (with ghost offset).  The fine
     # ---- block is a thin shell, so the requested margin is clamped to the
@@ -376,12 +415,8 @@ def run(args: argparse.Namespace) -> dict:
     fine_indices = fine_solid_g.nonzero(as_tuple=False)
     if fine_indices.numel() == 0:
         raise RuntimeError("fine block contains no SUBOFF cells")
-    z_min_f, y_min_f, x_min_f = (
-        int(fine_indices[:, axis].min().item()) for axis in range(3)
-    )
-    z_max_f, y_max_f, x_max_f = (
-        int(fine_indices[:, axis].max().item()) + 1 for axis in range(3)
-    )
+    z_min_f, y_min_f, x_min_f = (int(fine_indices[:, axis].min().item()) for axis in range(3))
+    z_max_f, y_max_f, x_max_f = (int(fine_indices[:, axis].max().item()) + 1 for axis in range(3))
     nz_f, ny_f, nx_f = fine_solid_g.shape
     resolved_margin = args.cv_margin
     for lower, upper, size in (
@@ -405,22 +440,30 @@ def run(args: argparse.Namespace) -> dict:
         )
     cv = box_control_volume(
         tuple(fine_solid_g.shape),
-        x0=x_min_f - resolved_margin, x1=x_max_f + resolved_margin,
-        y0=y_min_f - resolved_margin, y1=y_max_f + resolved_margin,
-        z0=z_min_f - resolved_margin, z1=z_max_f + resolved_margin,
+        x0=x_min_f - resolved_margin,
+        x1=x_max_f + resolved_margin,
+        y0=y_min_f - resolved_margin,
+        y1=y_max_f + resolved_margin,
+        z0=z_min_f - resolved_margin,
+        z1=z_max_f + resolved_margin,
         device=device,
     )
 
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sponge = build_sponge_sigma_3d(
-        shape, width=args.sponge_width, max_strength=args.sponge_strength,
-        device=device, faces=sponge_faces,
+        shape,
+        width=args.sponge_width,
+        max_strength=args.sponge_strength,
+        device=device,
+        faces=sponge_faces,
     )
 
     dx_fine_m = MODEL_LENGTH_M / (2.0 * args.hull_length)
     scale = force_scale_newton(
-        rho_water=args.rho_water, dx_m=dx_fine_m,
-        speed_mps=point.speed_mps, lattice_speed=args.lattice_speed,
+        rho_water=args.rho_water,
+        dx_m=dx_fine_m,
+        speed_mps=point.speed_mps,
+        lattice_speed=args.lattice_speed,
     )
 
     print(
@@ -449,7 +492,9 @@ def run(args: argparse.Namespace) -> dict:
         if args.lattice == "D3Q27":
             if args.collision_model == "cumulant_smagorinsky":
                 result = collide_cumulant_d3q27(
-                    state, tau=tau, C_s=args.cs_smag,
+                    state,
+                    tau=tau,
+                    C_s=args.cs_smag,
                 )
             else:
                 result = collide_cascaded_d3q27(state, tau)
@@ -474,7 +519,10 @@ def run(args: argparse.Namespace) -> dict:
         return stream3d(f)
 
     def advance(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         nonlocal max_reflux_residual, maximum_positivity_limited_fraction
         if level == 0:
@@ -483,15 +531,18 @@ def run(args: argparse.Namespace) -> dict:
             post_collision = torch.where(solid_coarse_q, before, collided)
             out = _stream(post_collision)
             out = non_equilibrium_far_field_bc_3d(
-                out, u_in=args.lattice_speed,
+                out,
+                u_in=args.lattice_speed,
             )
             if args.sponge_width > 0 and args.sponge_strength > 0.0:
                 out = apply_equilibrium_difference_sponge(
-                    out, sponge,
+                    out,
+                    sponge,
                     velocity_target=(args.lattice_speed, 0.0, 0.0),
                 )
             out = non_equilibrium_far_field_bc_3d(
-                out, u_in=args.lattice_speed,
+                out,
+                u_in=args.lattice_speed,
             )
             return AMRAdvanceResult(out, collided)
 
@@ -517,7 +568,10 @@ def run(args: argparse.Namespace) -> dict:
                 + uz_post * fine_surface.nz_n
             )
             bfl_out = _bouzidi_bounce_back_d3q27(
-                out, post_collision, bfl_mask, bfl_q,
+                out,
+                post_collision,
+                bfl_mask,
+                bfl_q,
                 wall_velocity=(
                     ux_post - activation * u_dot_n * fine_surface.nx_n,
                     uy_post - activation * u_dot_n * fine_surface.ny_n,
@@ -528,33 +582,44 @@ def run(args: argparse.Namespace) -> dict:
             assert isinstance(bfl_out, torch.Tensor)
             out = bfl_out
             out, _friction, _pressure = bfl_wall_function_d3q27(
-                out, post_collision, fine_solid_g, wall_nu_fine,
-                bfl_mask, bfl_q, y_val=args.wall_distance,
-                wall_law=args.wall_law, near_mask=fine_near,
+                out,
+                post_collision,
+                fine_solid_g,
+                wall_nu_fine,
+                bfl_mask,
+                bfl_q,
+                y_val=args.wall_distance,
+                wall_law=args.wall_law,
+                near_mask=fine_near,
                 area_weight=fine_area_weight,
                 wall_activation=activation,
                 apply_wall_stress=True,
             )
         else:
             wall_result = bfl_wall_function_3d(
-                out, post_collision, fine_solid_g, wall_nu_fine,
-                bfl_mask, bfl_q, y_val=args.wall_distance,
-                wall_law=args.wall_law, near_mask=fine_near,
-                bfl_wall_mode="wall_model_slip", wall_activation=activation,
+                out,
+                post_collision,
+                fine_solid_g,
+                wall_nu_fine,
+                bfl_mask,
+                bfl_q,
+                y_val=args.wall_distance,
+                wall_law=args.wall_law,
+                near_mask=fine_near,
+                bfl_wall_mode="wall_model_slip",
+                wall_activation=activation,
                 stress_exchange_distance=(
-                    args.stress_exchange_distance
-                    if args.stress_exchange_distance > 0.0 else None
+                    args.stress_exchange_distance if args.stress_exchange_distance > 0.0 else None
                 ),
                 wall_normals=(
-                    fine_surface.nx_n, fine_surface.ny_n, fine_surface.nz_n,
+                    fine_surface.nx_n,
+                    fine_surface.ny_n,
+                    fine_surface.nz_n,
                 ),
                 area_weight=fine_area_weight,
                 apply_wall_stress=True,
             )
-            if (
-                isinstance(wall_result, tuple)
-                and len(wall_result) == 4
-            ):
+            if isinstance(wall_result, tuple) and len(wall_result) == 4:
                 out, _friction, _pressure, _wall_diag = wall_result
             else:
                 out, _friction, _pressure = wall_result  # type: ignore[misc]
@@ -567,9 +632,17 @@ def run(args: argparse.Namespace) -> dict:
         if substep == 1 and current_step > args.warmup_steps:
             # one sample per coarse step, post-warmup only (same statistics
             # semantics as suboff_static_amr_resistance.py)
-            cv_force = float(observe_control_volume_force(
-                before, out, post_collision, cv, solid=fine_solid_g,
-            ).force_on_body[0].item())
+            cv_force = float(
+                observe_control_volume_force(
+                    before,
+                    out,
+                    post_collision,
+                    cv,
+                    solid=fine_solid_g,
+                )
+                .force_on_body[0]
+                .item()
+            )
             force_samples.append(cv_force)
         return AMRAdvanceResult(out, post_collision)
 
@@ -587,10 +660,8 @@ def run(args: argparse.Namespace) -> dict:
                     f"SUBOFF shell AMR run diverged (non-finite populations) "
                     f"at step {current_step}",
                 )
-            recent = force_samples[-min(len(force_samples), args.report_interval):]
-            recent_n = (
-                sum(recent) / len(recent) * scale if recent else math.nan
-            )
+            recent = force_samples[-min(len(force_samples), args.report_interval) :]
+            recent_n = sum(recent) / len(recent) * scale if recent else math.nan
             elapsed = time.time() - started
             print(
                 f"step={current_step}/{args.steps} recent_Rt={recent_n:.3f} N "
@@ -610,17 +681,11 @@ def run(args: argparse.Namespace) -> dict:
         block_size=max(1, len(resistance_history_n) // 8),
     )
     stationarity_dict = (
-        asdict(stationarity)
-        if hasattr(stationarity, "__dataclass_fields__")
-        else stationarity
+        asdict(stationarity) if hasattr(stationarity, "__dataclass_fields__") else stationarity
     )
-    reference_error_pct = (
-        abs(resistance_n - point.resistance_n) / point.resistance_n * 100.0
-    )
-    final_window = resistance_history_n[-min(len(resistance_history_n), args.report_interval):]
-    final_window_resistance_n = (
-        sum(final_window) / len(final_window) if final_window else math.nan
-    )
+    reference_error_pct = abs(resistance_n - point.resistance_n) / point.resistance_n * 100.0
+    final_window = resistance_history_n[-min(len(resistance_history_n), args.report_interval) :]
+    final_window_resistance_n = sum(final_window) / len(final_window) if final_window else math.nan
     finite = (
         bool(torch.isfinite(amr.coarse_f).all())
         and bool(torch.isfinite(amr.fine_f).all())
@@ -630,8 +695,7 @@ def run(args: argparse.Namespace) -> dict:
 
     result = {
         "schema": (
-            "tensorlbm-suboff-shell-amr-cv-v1"
-            + ("-d3q27" if args.lattice == "D3Q27" else "")
+            "tensorlbm-suboff-shell-amr-cv-v1" + ("-d3q27" if args.lattice == "D3Q27" else "")
         ),
         "status": "measured_candidate",
         "physical_validation": False,
@@ -669,20 +733,15 @@ def run(args: argparse.Namespace) -> dict:
             "cv_margin_resolved": resolved_margin,
             "reflux": not args.disable_reflux,
             "reflux_method": "face_local_conserved_moment_flux",
-            "maximum_reflux_correction_fraction": (
-                args.maximum_reflux_correction_fraction
-            ),
+            "maximum_reflux_correction_fraction": (args.maximum_reflux_correction_fraction),
             "ghost_interpolation": args.ghost_interpolation,
             "collision_model": args.collision_model,
             "les_model": args.les_model,
-            "les_constant": (
-                args.cw_wale if args.les_model == "wale" else args.cs_smag
-            ),
+            "les_constant": (args.cw_wale if args.les_model == "wale" else args.cs_smag),
             "wall_law": args.wall_law,
             "wall_distance": args.wall_distance,
             "stress_exchange_distance": (
-                args.stress_exchange_distance
-                if args.stress_exchange_distance > 0.0 else None
+                args.stress_exchange_distance if args.stress_exchange_distance > 0.0 else None
             ),
             "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
             "positivity_limiter_enabled": not args.disable_positivity_limiter,
@@ -716,9 +775,7 @@ def run(args: argparse.Namespace) -> dict:
             "force_scale_newton_per_lu": scale,
             "stationarity": stationarity_dict,
             "max_reflux_residual": max_reflux_residual,
-            "maximum_positivity_limited_fraction": (
-                maximum_positivity_limited_fraction
-            ),
+            "maximum_positivity_limited_fraction": (maximum_positivity_limited_fraction),
             "force_samples": len(force_samples),
             "statistics_window_steps": statistics_window,
             "finite": finite,

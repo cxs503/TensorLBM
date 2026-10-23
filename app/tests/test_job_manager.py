@@ -159,3 +159,21 @@ def test_orchestration_kpis(job_manager, waiter):
     assert kpi["max_workers"] >= 1
     assert "scheduler_profile" in kpi
     assert kpi["jobs_total"] >= 1
+
+
+def test_status_serialization_can_omit_large_results(job_manager, waiter):
+    """Status payloads can omit field arrays while preserving full results on demand."""
+    job_id = job_manager.submit(
+        name="large-result",
+        job_type="unit_test",
+        config={},
+        fn=lambda job: {"fields_data": [[1.0, 2.0]], "Cd_total": 1.2},
+    )
+    waiter(job_id, timeout=5.0)
+
+    job = job_manager.get_job(job_id)
+    assert job is not None
+    assert job.to_dict()["result"]["fields_data"] == [[1.0, 2.0]]
+    assert job.to_dict(include_result=False)["result"] == {}
+    listed = next(item for item in job_manager.list_jobs() if item["job_id"] == job_id)
+    assert listed["result"] == {}

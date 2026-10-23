@@ -18,7 +18,6 @@ import torch
 
 from tensorlbm import DGLBMSuboffConfig, build_dg_hull_band_mask, run_dg_lbm_suboff_flow
 
-
 # ---------------------------------------------------------------------------
 # DGLBMSuboffConfig
 # ---------------------------------------------------------------------------

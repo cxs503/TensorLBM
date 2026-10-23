@@ -1,0 +1,38 @@
+{
+  "note": "dam_break_sc forcing sweep, 2026-09-29. Real runs (CPU, eager, g=2e-4, M&M axis T_MM=t*sqrt(2g/a)). 'err' = 100*(X_sim-X_ref)/X_ref at T=1/2/2.96 with X_ref=1.326/2.360/3.670. mass_drift = max |mass-mass0|/mass0. forcing='proto' is the /root/db_guo.py prototype (non-mass-conserving source term) reproduced only to characterise the prior finding.",
+  "checkpoints_ref": {"T1": 1.326, "T2": 2.360, "T2.96": 3.670},
+  "a80_g2e4_1600steps": [
+    {"tag": "velocity_shift G5.0 tau1.0 (baseline)", "forcing": "velocity_shift", "G": 5.0, "tau": 1.0, "X": [1.359, 2.131, 2.970], "err": [2.49, -9.72, -19.09], "mass_drift": 1.4e-5},
+    {"tag": "velocity_shift G5.0 tau0.8", "forcing": "velocity_shift", "G": 5.0, "tau": 0.8, "X": [1.389, 2.177, 3.057], "err": [4.71, -7.75, -16.70], "mass_drift": 1.7e-5},
+    {"tag": "guo G5.0 tau0.8", "forcing": "guo", "G": 5.0, "tau": 0.8, "X": [1.401, 2.177, 3.045], "err": [5.66, -7.75, -17.04], "mass_drift": 1.7e-5},
+    {"tag": "guo G5.0 tau0.85", "forcing": "guo", "G": 5.0, "tau": 0.85, "X": [1.397, 2.165, 3.020], "err": [5.32, -8.28, -17.72], "mass_drift": 1.6e-5},
+    {"tag": "guo G5.0 tau0.9", "forcing": "guo", "G": 5.0, "tau": 0.9, "X": [1.389, 2.152, 2.984], "err": [4.71, -8.81, -18.68], "mass_drift": 1.5e-5},
+    {"tag": "guo G4.9 tau0.8", "forcing": "guo", "G": 4.9, "tau": 0.8, "X": [1.476, 2.290, 3.145], "err": [11.31, -2.98, -14.32], "mass_drift": 1.7e-5},
+    {"tag": "guo G4.8 tau0.8", "forcing": "guo", "G": 4.8, "tau": 0.8, "X": [1.564, 2.427, 3.284], "err": [17.91, 2.84, -10.51], "mass_drift": 1.8e-5},
+    {"tag": "guo G4.7 tau0.75", "forcing": "guo", "G": 4.7, "tau": 0.75, "X": [1.656, 2.611, 3.520], "err": [24.85, 10.64, -4.10], "mass_drift": 2.0e-5},
+    {"tag": "guo G4.8 tau0.7", "forcing": "guo", "G": 4.8, "tau": 0.7, "X": [1.576, 2.465, 3.382], "err": [18.86, 4.43, -7.85], "mass_drift": 2.1e-5},
+    {"tag": "guo G4.6 tau0.8", "forcing": "guo", "G": 4.6, "tau": 0.8, "X": [1.739, 2.752, 3.707], "err": [31.11, 16.61, 1.01], "mass_drift": 1.9e-5},
+    {"tag": "guo G4.6 tau0.7", "forcing": "guo", "G": 4.6, "tau": 0.7, "X": [1.756, 2.811, 3.809], "err": [32.39, 19.11, 3.80], "mass_drift": 2.2e-5},
+    {"tag": "guo G5.2 tau1.0", "forcing": "guo", "G": 5.2, "tau": 1.0, "X": [1.272, 2.052, 2.857], "err": [-4.11, -13.05, -22.15], "mass_drift": 1.5e-5},
+    {"tag": "PROTO(buggy) G5.0 tau0.8", "forcing": "proto", "G": 5.0, "tau": 0.8, "X": [1.384, 2.240, 3.349], "err": [4.38, -5.10, -8.74], "mass_drift": 1.1e-1},
+    {"tag": "PROTO(buggy) G4.8 tau0.8", "forcing": "proto", "G": 4.8, "tau": 0.8, "X": [1.514, 2.465, 3.599], "err": [14.14, 4.43, -1.93], "mass_drift": 3.1e-2},
+    {"tag": "PROTO(buggy) G4.6 tau0.8", "forcing": "proto", "G": 4.6, "tau": 0.8, "X": [1.710, 2.899, 4.174], "err": [28.96, 22.82, 13.74], "mass_drift": 5.9e-2}
+  ],
+  "g_dependence_guo_G5_tau0.8": [
+    {"g": 1e-4, "steps": 3400, "err": [8.05, -5.99, -16.14]},
+    {"g": 3e-4, "steps": 1150, "err": [4.18, 35.87, 69.62], "remark": "chaotic / boundary-limited"},
+    {"g": 2e-4, "steps": 1600, "err": [5.66, -7.75, -17.04]}
+  ],
+  "stability": {
+    "tau": "guo stable for tau>=~0.70 (tau=0.60/0.65 diverge at step 20-1020); self-excitation at G>=5.2 for tau<=0.8 (NaN at step 440)",
+    "G": "guo G<=5.0 stable; G=5.2 unstable at tau=0.8 but stable at tau=1.0; G=5.5/6.0 diverge immediately",
+    "remark": "the corrected (mass-conserving) Guo has the same stability envelope as velocity_shift; no extra stability penalty"
+  },
+  "two_grid_a40_vs_a80": {
+    "definition": "|X_a40 - X_a80| / X_a80",
+    "guo_G5.0_tau0.8": {"X_a40": [1.470, 2.231, 2.995], "X_a80": [1.401, 2.177, 3.045], "pct": [4.93, 2.48, 1.64]},
+    "guo_G5.0_tau0.85": {"X_a40": [1.466, 2.206, 2.965], "X_a80": [1.397, 2.165, 3.020], "pct": [4.94, 1.89, 1.82]},
+    "guo_G4.9_tau0.8": {"X_a40": [1.570, 2.381, 3.160], "X_a80": [1.476, 2.290, 3.145], "pct": [6.37, 3.97, 0.48]}
+  },
+  "verdict": "NOT met. No stable (G,tau) gives |err|<=3% at all three checkpoints (T=1 error and T=2.96 error have OPPOSITE monotonic dependence on G, so they cannot both be nulled); two-grid also fails at T=1 (>3%)."
+}

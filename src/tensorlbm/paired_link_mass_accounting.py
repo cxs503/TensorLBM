@@ -27,7 +27,7 @@ from dataclasses import dataclass
 
 import torch
 
-from .d3q19 import C, OPPOSITE
+from .d3q19 import OPPOSITE, C
 from .free_surface_lbm import INTERFACE, LIQUID
 
 

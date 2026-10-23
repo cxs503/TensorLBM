@@ -18,6 +18,7 @@ Loop per step::
 This runner does **not** modify any solver hot path.  Only existing
 operators are composed.
 """
+
 from __future__ import annotations
 
 import json
@@ -40,6 +41,7 @@ from .cascaded_collision import (
     collide_cascaded_d3q27,
 )
 from .cumulant import collide_cumulant_d3q27
+
 try:
     from .cumulant import collide_cumulant_d3q19
 except ImportError:
@@ -51,8 +53,8 @@ from .d3q27 import (
     correct_mass27,
     equilibrium27,
     macroscopic27,
-    stream27,
 )
+
 try:
     from .d3q27 import collide_rlbm27
 except ImportError:
@@ -61,6 +63,7 @@ try:
     from .d3q27 import collide_trt27
 except ImportError:
     collide_trt27 = None  # type: ignore[assignment]
+from .drag_pressure import SurfaceMesh, get_near_wall_3d
 from .entropic_kbc import (
     collide_kbc_d3q19,
     collide_kbc_d3q27,
@@ -71,18 +74,15 @@ from .solver3d import (
     collide_rlbm3d,
     collide_trt3d,
     correct_mass3d,
-    stream3d,
     stream3d_roll,
 )
 from .suboff_cad import SuboffHullType, build_suboff_mask
 from .suboff_resistance import _voxel_wetted_area
 from .wall_function_common import (
-    _near_wall_mask,
     compute_u_tau,
     compute_y_plus,
     wall_function,
 )
-from .drag_pressure import SurfaceMesh, drag_pressure_integration, drag_friction_integration, get_near_wall_3d
 
 __all__ = [
     "SuboffWallFnFullGridConfig",
@@ -110,6 +110,10 @@ COLLISION_FAMILIES: tuple[str, ...] = (
 
 LATTICES: tuple[str, ...] = ("D3Q27", "D3Q19")
 
+HULL_TYPES: tuple[str, ...] = ("BARE_HULL", "WITH_SAIL", "FULL")
+
+MESH_SOURCES: tuple[str, ...] = ("suboff", "gradient", "hybrid")
+
 # The 11 test combinations from the task specification.
 # D3Q27: all 7 families (MRT uses reduced grid 320×160×160 for memory).
 # D3Q19: 4 families (Cumulant, BGK, MRT, RLBM).
@@ -132,6 +136,7 @@ COMBINATIONS: list[tuple[str, str]] = [
 # Configuration
 # --------------------------------------------------------------------------- #
 
+
 @dataclass(frozen=True)
 class SuboffWallFnFullGridConfig:
     """Configuration for a single SUBOFF wall-function full-grid run.
@@ -153,19 +158,36 @@ class SuboffWallFnFullGridConfig:
     # Wall-function parameters
     y_val: float = 0.5
     wall_law: str = "log"
+    # Geometry: BARE_HULL (axisymmetric), WITH_SAIL, or FULL (AFF-8 style).
+    hull_type: str = "BARE_HULL"
+    # Surface-normal source for the pressure-drag mesh:
+    #   "suboff"   - analytical axisymmetric-hull normals (valid only for
+    #                BARE_HULL; appendage cells would get wrong normals)
+    #   "gradient" - generic voxel-gradient normals (any geometry)
+    #   "hybrid"   - analytical normals on hull-band near cells
+    #                (|r - r_hull(x)| <= 1.5 cells, incl. bow/stern caps),
+    #                gradient normals on appendage near cells
+    mesh_source: str = "suboff"
     # ITTC reference
     reference_Ct: float = 0.00405
     reference_source: str = "ITTC-1957"
 
     def __post_init__(self) -> None:
         if self.lattice.upper() not in LATTICES:
-            raise ValueError(
-                f"lattice must be one of {LATTICES}; got {self.lattice!r}"
-            )
+            raise ValueError(f"lattice must be one of {LATTICES}; got {self.lattice!r}")
         if self.collision.upper() not in COLLISION_FAMILIES:
             raise ValueError(
-                f"collision must be one of {COLLISION_FAMILIES}; "
-                f"got {self.collision!r}"
+                f"collision must be one of {COLLISION_FAMILIES}; got {self.collision!r}"
+            )
+        if self.hull_type.upper() not in HULL_TYPES:
+            raise ValueError(f"hull_type must be one of {HULL_TYPES}; got {self.hull_type!r}")
+        if self.mesh_source not in MESH_SOURCES:
+            raise ValueError(f"mesh_source must be one of {MESH_SOURCES}; got {self.mesh_source!r}")
+        if self.hull_type.upper() != "BARE_HULL" and self.mesh_source == "suboff":
+            raise ValueError(
+                "mesh_source='suboff' (analytical axisymmetric normals) is "
+                "only valid for hull_type='BARE_HULL'; use 'hybrid' or "
+                "'gradient' for appendage configurations"
             )
         if self.wall_law not in ("log", "reichardt", "gradient", "hybrid"):
             raise ValueError(
@@ -202,33 +224,33 @@ class SuboffWallFnFullGridConfig:
 
 # D3Q27 velocity vectors matching d3q27.py _C_DATA ordering.
 _D3Q27_SHIFTS: list[tuple[int, int, int]] = [
-    (0, 0, 0),        #  0: rest
-    (1, 0, 0),        #  1: +x
-    (-1, 0, 0),       #  2: -x
-    (0, 1, 0),        #  3: +y
-    (0, -1, 0),       #  4: -y
-    (0, 0, 1),        #  5: +z
-    (0, 0, -1),       #  6: -z
-    (1, 1, 0),        #  7: +x+y
-    (-1, 1, 0),       #  8: -x+y
-    (1, -1, 0),       #  9: +x-y
-    (-1, -1, 0),      # 10: -x-y
-    (1, 0, 1),        # 11: +x+z
-    (-1, 0, 1),       # 12: -x+z
-    (1, 0, -1),       # 13: +x-z
-    (-1, 0, -1),      # 14: -x-z
-    (0, 1, 1),        # 15: +y+z
-    (0, -1, 1),       # 16: -y+z
-    (0, 1, -1),       # 17: +y-z
-    (0, -1, -1),      # 18: -y-z
-    (1, 1, 1),        # 19: +x+y+z
-    (-1, 1, 1),       # 20: -x+y+z
-    (1, -1, 1),       # 21: +x-y+z
-    (-1, -1, 1),      # 22: -x-y+z
-    (1, 1, -1),       # 23: +x+y-z
-    (-1, 1, -1),      # 24: -x+y-z
-    (1, -1, -1),      # 25: +x-y-z
-    (-1, -1, -1),     # 26: -x-y-z
+    (0, 0, 0),  #  0: rest
+    (1, 0, 0),  #  1: +x
+    (-1, 0, 0),  #  2: -x
+    (0, 1, 0),  #  3: +y
+    (0, -1, 0),  #  4: -y
+    (0, 0, 1),  #  5: +z
+    (0, 0, -1),  #  6: -z
+    (1, 1, 0),  #  7: +x+y
+    (-1, 1, 0),  #  8: -x+y
+    (1, -1, 0),  #  9: +x-y
+    (-1, -1, 0),  # 10: -x-y
+    (1, 0, 1),  # 11: +x+z
+    (-1, 0, 1),  # 12: -x+z
+    (1, 0, -1),  # 13: +x-z
+    (-1, 0, -1),  # 14: -x-z
+    (0, 1, 1),  # 15: +y+z
+    (0, -1, 1),  # 16: -y+z
+    (0, 1, -1),  # 17: +y-z
+    (0, -1, -1),  # 18: -y-z
+    (1, 1, 1),  # 19: +x+y+z
+    (-1, 1, 1),  # 20: -x+y+z
+    (1, -1, 1),  # 21: +x-y+z
+    (-1, -1, 1),  # 22: -x-y+z
+    (1, 1, -1),  # 23: +x+y-z
+    (-1, 1, -1),  # 24: -x+y-z
+    (1, -1, -1),  # 25: +x-y-z
+    (-1, -1, -1),  # 26: -x-y-z
 ]
 
 
@@ -254,6 +276,7 @@ def stream27_roll(f: torch.Tensor) -> torch.Tensor:
 # --------------------------------------------------------------------------- #
 # Lattice dispatch helpers
 # --------------------------------------------------------------------------- #
+
 
 def _macroscopic(lattice: str, f: torch.Tensor):
     """Dispatch to the correct macroscopic function."""
@@ -304,6 +327,7 @@ def _correct_mass(lattice: str, f, target_mass):
 # --------------------------------------------------------------------------- #
 # Collision dispatch
 # --------------------------------------------------------------------------- #
+
 
 def _collide(
     lattice: str,
@@ -364,6 +388,7 @@ def _collide(
 # Drag computation (wall-function based)
 # --------------------------------------------------------------------------- #
 
+
 def _compute_drags(
     f: torch.Tensor,
     solid: torch.Tensor,
@@ -389,23 +414,72 @@ def _compute_drags(
     # Friction drag: Σ τ_w · (u_x / |u|) · near
     tau_w = u_tau * u_tau
     inv_umag = 1.0 / u_mag
-    drag_fric = float(
-        (tau_w * (ux * inv_umag) * mesh.near.to(f.dtype)).sum().item()
-    )
+    drag_fric = float((tau_w * (ux * inv_umag) * mesh.near.to(f.dtype)).sum().item())
 
     # Pressure drag using SurfaceMesh normals
     p = (rho - 1.0) / 3.0
     # Use mesh.nx_n (x-component of outward normal)
-    drag_pres = float(
-        (p * mesh.nx_n * mesh.dA).sum().item()
-    )
+    drag_pres = float((p * mesh.nx_n * mesh.dA).sum().item())
 
     return drag_fric, drag_pres
+
+
+def _hybrid_mesh(
+    base: SurfaceMesh,
+    solid: torch.Tensor,
+    near: torch.Tensor,
+    cx: float,
+    cy: float,
+    cz: float,
+    length: float,
+    radius: float,
+) -> SurfaceMesh:
+    """Analytical hull normals on hull-band near cells, voxel-gradient
+    normals on appendage near cells (sail / stern planes).
+
+    Hull band: near-wall fluid cells with ``0 <= xi <= 1`` whose radial
+    distance lies within 1.5 cells of the local hull radius, plus the
+    bow/stern cap cells (``xi`` outside ``[0, 1]``, which for the SUBOFF
+    CAD can only be adjacent to the hull caps — appendages live inside
+    the hull's axial extent).
+    """
+    from .suboff_cad import suboff_radius_profile
+
+    nz, ny, nx = solid.shape
+    device = solid.device
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=device, dtype=torch.float32),
+        torch.arange(ny, device=device, dtype=torch.float32),
+        torch.arange(nx, device=device, dtype=torch.float32),
+        indexing="ij",
+    )
+    x_bow = cx - length / 2.0
+    xi = (xx - x_bow) / length
+    r_cell = torch.sqrt((yy - cy) ** 2 + (zz - cz) ** 2)
+
+    r_hull = torch.as_tensor(
+        suboff_radius_profile(xi.cpu().numpy()) * radius,
+        device=device,
+        dtype=torch.float32,
+    )
+
+    near_f = near.to(device).bool()
+    in_axial = (xi >= 0.0) & (xi <= 1.0)
+    hull_band = near_f & in_axial & ((r_cell - r_hull).abs() <= 1.5)
+    caps = near_f & ~in_axial
+    use_analytic = hull_band | caps
+
+    grad = SurfaceMesh.from_gradient(solid, near)
+    nx_n = torch.where(use_analytic, base.nx_n, grad.nx_n)
+    ny_n = torch.where(use_analytic, base.ny_n, grad.ny_n)
+    nz_n = torch.where(use_analytic, base.nz_n, grad.nz_n)
+    return SurfaceMesh(near, nx_n, ny_n, nz_n)
 
 
 # --------------------------------------------------------------------------- #
 # Runner
 # --------------------------------------------------------------------------- #
+
 
 def run_suboff_wallfn_fullgrid(
     config: SuboffWallFnFullGridConfig | None = None,
@@ -433,7 +507,7 @@ def run_suboff_wallfn_fullgrid(
     cy = config.ny / 2.0
     cz = config.nz / 2.0
     solid, _stats = build_suboff_mask(
-        hull_type=SuboffHullType.BARE_HULL,
+        hull_type=SuboffHullType[config.hull_type.upper()],
         nx=config.nx,
         ny=config.ny,
         nz=config.nz,
@@ -445,13 +519,19 @@ def run_suboff_wallfn_fullgrid(
     )
     solid = solid.to(device)
 
-    # Build SurfaceMesh with analytical normals for SUBOFF hull
+    # Build SurfaceMesh; the normal source depends on mesh_source/hull_type.
     near = get_near_wall_3d(solid)
     # Compute max radius from SUBOFF geometry ratio (R/L ≈ 1/(2×8.57))
     from .suboff_cad import SuboffConfig
+
     suboff_config = SuboffConfig()
     max_radius = suboff_config.r_over_l * config.hull_length
-    mesh = SurfaceMesh.from_suboff(solid, near, cx, cy, cz, config.hull_length, max_radius)
+    if config.mesh_source == "gradient":
+        mesh = SurfaceMesh.from_gradient(solid, near)
+    else:
+        mesh = SurfaceMesh.from_suboff(solid, near, cx, cy, cz, config.hull_length, max_radius)
+        if config.mesh_source == "hybrid":
+            mesh = _hybrid_mesh(mesh, solid, near, cx, cy, cz, config.hull_length, max_radius)
     # Move mesh tensors to device
     mesh.near = mesh.near.to(device)
     mesh.nx_n = mesh.nx_n.to(device)
@@ -462,7 +542,7 @@ def run_suboff_wallfn_fullgrid(
     # Wetted area and dynamic pressure for Ct normalization
     wetted_area = _voxel_wetted_area(solid, 1.0)
     rho_lu = 1.0
-    dynamic_pressure = 0.5 * rho_lu * config.u_in ** 2 * wetted_area
+    dynamic_pressure = 0.5 * rho_lu * config.u_in**2 * wetted_area
 
     # --- 2. Initialize populations (on CPU, move to device) ---
     rho0 = torch.ones((config.nz, config.ny, config.nx))
@@ -497,7 +577,10 @@ def run_suboff_wallfn_fullgrid(
 
         # Compute friction velocity from log-law
         u_tau = compute_u_tau(
-            u_mag, nu, y_val=config.y_val, wall_law=config.wall_law,
+            u_mag,
+            nu,
+            y_val=config.y_val,
+            wall_law=config.wall_law,
         )
         y_plus = compute_y_plus(u_tau, nu, y_val=config.y_val)
 
@@ -506,8 +589,13 @@ def run_suboff_wallfn_fullgrid(
 
         # Apply wall function (Guo body force on near-wall cells)
         f = wall_function(
-            f, solid, u_tau, y_plus,
-            lattice=lattice, nu=nu, y_val=config.y_val,
+            f,
+            solid,
+            u_tau,
+            y_plus,
+            lattice=lattice,
+            nu=nu,
+            y_val=config.y_val,
         )
 
         # 4. Far-field BC (free-stream on inlet + lateral faces, zero-grad outlet)
@@ -521,18 +609,22 @@ def run_suboff_wallfn_fullgrid(
         ct_pres = drag_pres / dynamic_pressure if dynamic_pressure > 0 else 0.0
         ct_total = ct_fric + ct_pres
 
-        force_series.append({
-            "step": step,
-            "drag_fric": drag_fric,
-            "drag_pres": drag_pres,
-            "drag_total": drag_fric + drag_pres,
-        })
-        ct_series.append({
-            "step": step,
-            "ct_fric": ct_fric,
-            "ct_pres": ct_pres,
-            "ct_total": ct_total,
-        })
+        force_series.append(
+            {
+                "step": step,
+                "drag_fric": drag_fric,
+                "drag_pres": drag_pres,
+                "drag_total": drag_fric + drag_pres,
+            }
+        )
+        ct_series.append(
+            {
+                "step": step,
+                "ct_fric": ct_fric,
+                "ct_pres": ct_pres,
+                "ct_total": ct_total,
+            }
+        )
 
         # Mass correction every 100 steps
         if step % 100 == 0:
@@ -548,14 +640,8 @@ def run_suboff_wallfn_fullgrid(
     # --- 4. Build artifact ---
     # Use time-averaged Ct over last 50% of steps (after warmup)
     warmup = max(1, config.n_steps // 2)
-    ct_fric_avg = (
-        sum(e["ct_fric"] for e in ct_series[warmup:]) /
-        max(len(ct_series[warmup:]), 1)
-    )
-    ct_pres_avg = (
-        sum(e["ct_pres"] for e in ct_series[warmup:]) /
-        max(len(ct_series[warmup:]), 1)
-    )
+    ct_fric_avg = sum(e["ct_fric"] for e in ct_series[warmup:]) / max(len(ct_series[warmup:]), 1)
+    ct_pres_avg = sum(e["ct_pres"] for e in ct_series[warmup:]) / max(len(ct_series[warmup:]), 1)
     ct_total_avg = ct_fric_avg + ct_pres_avg
 
     artifact: dict[str, Any] = {
@@ -564,6 +650,8 @@ def run_suboff_wallfn_fullgrid(
         "physical_validation": False,
         "lattice": lattice,
         "collision": collision,
+        "hull_type": config.hull_type.upper(),
+        "mesh_source": config.mesh_source,
         "wall_function": f"log-law (κ=0.41, B=5.0, y_val={config.y_val})",
         "Re": config.re,
         "Ct_fric": ct_fric_avg,

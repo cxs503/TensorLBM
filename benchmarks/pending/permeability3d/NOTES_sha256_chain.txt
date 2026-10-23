@@ -1,0 +1,21 @@
+# NOTES.md preregistration hash chain (all sha256, server clock +0800)
+# chain opened 2026-09-21 16:50:42 +0800 by W6-A, BEFORE any run (formal or precheck).
+# preregistration baseline: NOTES.md == NOTES_prereg_snapshot.txt at open.
+be91649602098e1933bd8519a05d992897537a93514f5a7671322428565de43a  NOTES_prereg_snapshot.txt
+be91649602098e1933bd8519a05d992897537a93514f5a7671322428565de43a  NOTES.md
+# 2026-09-21 17:07:02 +0800  execution record 5.1 (fs precheck table; floor ACTIVE 6.65%>0.5%, formal fs=10 per frozen rule; no protocol change)
+ce9bee06de995a4451dbeb9cfdf101f6b5f077164924a4e61d2ce31814ec38e8  NOTES.md
+# 2026-09-21 17:42:32 +0800  amendment #1 (fs1 all-tier diagnostics + N=160 extension tier + fs3 floor probe; amended verdict rule (i)err(160)<=3% (ii)err(160)<err(64) (iii)no intermediate > err(64); frozen rule also reported; appended BEFORE the runs it governs)
+0b0214322dcd297387e38a16fcfda441f5df3052959c97cc36fd75c50c9c1b85  NOTES.md
+# 2026-09-21 18:03:55 +0800  tool repair 5.3 (run.py nu-constant bug in tau-probe derived block; nu_case fix + fixed-Re tau drive; wrong files archived as archived_*_nuconstbug.json; tau=1 formal values bit-identical)
+13152b07c22aeea5730c324c8b18a70abe99f68ebbf167876ef08773c2d61192  NOTES.md
+92970e356b9156e4174acca85c7ee46fc86be9bb07677353c24eebcc232e75b6  run.py
+# 2026-09-21 20:34:02 +0800  execution record 5.4 (amendment batch tables; tau probe rerun; report tool implements frozen 3-tier + amended 4-tier both emitted; verify.py mirrors)
+a438ecf01d8fae735a2ec430873ef8053b9d05d430955de4dcfc9a5de5475736  NOTES.md
+5f9be3b081e6cd27bd5b75c96528dc4d8b7df0a780852d0739e691ac5fc6290b  run.py
+41addf598c5f2b796d253a6165564af03241c8879578950dc41774001b11f81d  verify.py
+# 2026-09-21 20:36:15 +0800  verify repairs 5.5 (inverse k/K identity; case keying fs/tau; amended check placement) + closure (verify 170 checks 0 failures exit 0; verdicts frozen FAIL / amended FAIL; hashes of result.json and verify_out.txt below)
+e1db7cd6903e3f4c26664d973de3be581e3e250003acb3c6735f24d8fda5f034  NOTES.md
+d1e4eede3933acaa81e66b04a639e9c8fdb935827d729227c1c3326b81a3e076  verify.py
+92b86315c6b392a5f782369e79b4ea1ae3e4416a789eca8523f5a947293fabab  result.json
+577ea1d18a8366ff290d924f95c348e22c065905d1e692c0e86ff57b45c442b6  verify_out.txt

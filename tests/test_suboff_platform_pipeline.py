@@ -1,5 +1,7 @@
 """Tests for the SUBOFF full-pipeline integration (data->train->serve)."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -32,6 +34,34 @@ def _fake_train(cfg):
 
 def _fake_predict(cfg):
     return {"mape": 1.5, "rel_l2_avg": 2.3, "pred": np.zeros((3, 5))}
+
+
+def _fake_predict_demo(cfg):
+    n = 100 * 50 * 100
+    real = np.zeros((n, 5), dtype=np.float32)
+    pred = np.zeros((n, 5), dtype=np.float32)
+    pred[:, 4] = 0.1
+    error = pred - real
+    return {
+        "coords": np.zeros((n, 3), dtype=np.float32),
+        "real": real,
+        "pred": pred,
+        "error": error,
+        "input": np.zeros((20_000, 8), dtype=np.float32),
+        "mape": 1.0,
+        "rel_l2_avg": 2.0,
+        "mse_avg": 3.0,
+        "checkpoint": cfg.checkpoint_path,
+        "snap_idx": cfg.snap_idx,
+    }
+
+
+def test_suboff_v03_checkpoint_contract_loadable():
+    torch = pytest.importorskip("torch")
+    repo_root = Path(__file__).resolve().parent.parent
+    ckpt_path = repo_root / "models" / "suboff_v0.3.pt"
+    ckpt = torch.load(ckpt_path, map_location="cpu")
+    assert {"encoder", "decoder", "n_iter", "enc_optim", "enc_sched"} <= set(ckpt)
 
 
 def test_register_field_data(pipeline, field_data_dir):
@@ -113,3 +143,24 @@ def test_default_inference_fn(pipeline, field_data_dir):
     )
     assert out["model_id"] > 0
     assert "inference" not in out  # predict_cfg was None
+
+
+def test_checkpoint_inference_demo_artifacts(pipeline, field_data_dir, tmp_path):
+    pytest.importorskip("torch")
+    repo_root = Path(__file__).resolve().parent.parent
+    out = pipeline.run_checkpoint_inference_demo(
+        data_dir=field_data_dir,
+        output_dir=tmp_path / "demo_out",
+        checkpoint_path=repo_root / "models" / "suboff_v0.3.pt",
+        snap_idx=0,
+        test_set_offset=0,
+        predict_fn=_fake_predict_demo,
+    )
+
+    meta_path = tmp_path / "demo_out" / "run_metadata.json"
+    assert meta_path.is_file()
+    assert out["contract"]["expected_layout"] == "data_dir/{p,ux,uy,uz}/*.npy"
+    assert out["inference"]["metrics"]["mape"] == 1.0
+    figure_files = out["artifacts"]["flowfield_figures"]
+    assert len(figure_files) == 6
+    assert all(Path(p).is_file() for p in figure_files)

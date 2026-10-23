@@ -28,8 +28,10 @@ import math
 import pytest
 import torch
 
-from tensorlbm.d3q19 import C as C19, W as W19, equilibrium3d
+from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.d3q27 import equilibrium27
+from tensorlbm.fsi_common import FSIResult, fsi_step
 from tensorlbm.ibm_common import ibm_direct_forcing_3d_common
 from tensorlbm.sixdof import (
     FluidForcesMoments,
@@ -40,11 +42,9 @@ from tensorlbm.sixdof import (
 )
 from tensorlbm.sixdof_common import (
     RigidBodyState,
-    rigid_body_step,
     rigid_body_state_to_euler,
+    rigid_body_step,
 )
-from tensorlbm.fsi_common import fsi_step, FSIResult
-
 
 # =========================================================================== #
 # Helpers
@@ -328,8 +328,8 @@ class TestOriginalFSIArchitectureDifference:
         structural response (deflection, stress), not rigid-body state."""
         from tensorlbm.fsi import (
             StructuralProperties,
-            extract_fsi_loads,
             compute_structural_response,
+            extract_fsi_loads,
         )
 
         ny, nx = 20, 20

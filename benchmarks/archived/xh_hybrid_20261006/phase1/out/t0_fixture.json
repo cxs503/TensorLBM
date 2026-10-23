@@ -1,0 +1,131 @@
+{
+ "test": "t0_fixture",
+ "env": {
+  "host": "localhost.localdomain",
+  "time_utc": "2026-10-06T02:15:33Z",
+  "python": "3.12.13",
+  "torch": "2.11.0+cu128",
+  "cuda_available": false,
+  "OMP_NUM_THREADS": "16",
+  "torch_num_threads": 16,
+  "cuda_visible_devices": "",
+  "worktree": "/nfs/wangxi/worktrees/xh_hyb",
+  "worktree_sha": "4ba836c9977b9607788b9f0eca0a46a703bcc0e9",
+  "worktree_tracked_clean": true,
+  "prereg_md5_frozen": "80513afc24bd28a73225a2bc47132f1d",
+  "prereg_md5_live": "80513afc24bd28a73225a2bc47132f1d",
+  "engine_md5": {
+   "hybrid_cg_cac.py": "8ddc2b2fa3b125a81d0bcf958a1f8ad9",
+   "color_gradient2d.py": "350a3230c7a9578ab4353d6e95ca2db6",
+   "cac_lbm.py": "ccc671ee4738d9266967e74f1fd8924b",
+   "d2q9.py": "bc2be8ae3bf7538494e5eee7c6fc6e25",
+   "d3q19.py": "81ff92c8912d2d6dde638ef1d27825cb",
+   "solver.py": "5dd41e8002ba94eaad6f269bb98d5a72",
+   "boundaries.py": "a732dadf1860b78141dd8bb10cf77fee",
+   "boundaries3d.py": "0b5d1def0625a18243a8a2c761d63a18",
+   "phasefield/stream_boundary_contract.py": "4d6f4013950d50d58658183078cccbc7",
+   "E1_cg_reference.py": "e78c6d1eb22d628182636c0df74fb26a",
+   "E1prime_xh_common.py": "5045f0dc55c06760f3f6cd599767636b"
+  },
+  "evaluator_lock": {
+   "E1": "benchmarks/verified/poiseuille_two_phase_cg/cg_reference.py",
+   "E1prime": "probe/xh_common.py::two_layer",
+   "E2": "sigma_rec = dP*R (2D) / dP*R/2 (3D); dP from band means of the mechanical pressure (cs^2 rho in plain mode; cs^2 rho + Psi in pressure-form mode)",
+   "E3": "U_t = (2/3) a^2 g (rho_o - rho_i) (1+lambda) / (mu_o (2+3lambda)); locked hand example a=12, g=8.1e-6, rho_o=2, rho_i=1, nu=1/6 (tau=1), lambda=0.5 -> U_t=9.997714285714286e-4",
+   "E3_fixture_expected": 0.0009997714285714286
+  },
+  "script": "t0_fixture.py",
+  "script_md5": "a2647c793094ccb021c6ad07285aa1b1"
+ },
+ "results": {
+  "f1_e3_fixture": {
+   "U_t_locked_example": 0.0009997714285714288,
+   "expected": 0.0009997714285714286,
+   "rel_err": 2.1689000935638235e-16,
+   "pass_locked_example": true,
+   "U_t_w9b_rform": 0.0009997714285714288,
+   "rel_err_w9b": 2.1689000935638235e-16,
+   "pass_w9b_form": true,
+   "stokes_limit_rel": 3.333754365242851e-13,
+   "pass_stokes_limit": true,
+   "bubble_limit_rel": 4.999004872794104e-13,
+   "pass_bubble_limit": true,
+   "Re_locked_example": 0.14396708571428576
+  },
+  "f2_stencils": {
+   "iso2d": {
+    "x-wave": {
+     "grad_x": 0.010015649333634413,
+     "grad_y": 0.0,
+     "lap": 0.0019716337895955838
+    },
+    "y-wave": {
+     "grad_x": 1.0408340855860843e-17,
+     "grad_y": 0.010015649333634413,
+     "lap": 0.0019716337895949176
+    }
+   },
+   "iso3d": {
+    "x-wave": {
+     "grad": 0.010015649333634413,
+     "lap": 0.0019716337895955838
+    },
+    "y-wave": {
+     "grad": 0.010015649333634413,
+     "lap": 0.0019716337895955838
+    },
+    "z-wave": {
+     "grad": 0.010015649333634413,
+     "lap": 0.0019716337895949176
+    }
+   },
+   "pass": true
+  },
+  "f3_bitwise_engine_vs_library": {
+   "steps": 5000,
+   "bitwise_equal": true,
+   "pass": true
+  },
+  "f4_chemforce_vs_probe": {
+   "equal": true,
+   "max_abs_diff": 0.0,
+   "pass": true
+  },
+  "f5_pressure_algebra": {
+   "zeroth_moment_rel": 1.5410755487654162e-16,
+   "second_moment_rel": 1.7612291985890472e-16,
+   "pass": true
+  },
+  "f6_3d_smoke_plain": {
+   "stable": true,
+   "steps": 300,
+   "u_max": 0.0004737114905940116,
+   "rho_r_in": 1.0019568683214806,
+   "rho_b_out": 0.9982431503322134,
+   "contrast_C": 1.0037202539161239,
+   "mass_drift_r_per_step": 5.483943975864692e-17,
+   "mass_drift_b_per_step": 5.63116464434322e-17
+  },
+  "f7_3d_smoke_pform_rho2": {
+   "stable": true,
+   "steps": 300,
+   "u_max": 0.025833762083245865,
+   "rho_r_in": 0.8927104361828155,
+   "rho_b_out": 2.0170552193486606,
+   "contrast_C": 0.4425810595661759,
+   "mass_drift_r_per_step": 1.401768093535261e-17,
+   "mass_drift_b_per_step": 1.2498455076942024e-17
+  }
+ },
+ "gates": {
+  "g_f1_e3_locked_example": true,
+  "g_f1_e3_w9b_form": true,
+  "g_f1_e3_limits": true,
+  "g_f2_stencils": true,
+  "g_f3_bitwise": true,
+  "g_f4_chemforce": true,
+  "g_f5_pressure_algebra": true,
+  "g_f6_3d_plain": true,
+  "g_f7_3d_pform": true
+ }
+}

@@ -1,0 +1,39 @@
+{
+  "case": "naca_0012",
+  "status": "pending",
+  "verified": false,
+  "scope": "NACA0012 airfoil drag at Re=1000, alpha=0, 2D D2Q9 MRT, surface-only vs all-solid Ladd MEM",
+  "reference": {
+    "source": "Kurtulus 2015 (IJMAV 7(3):301) prose Cd(0deg)~0.12; independently cross-checked by Di Ilio et al. 2020 (arXiv:2006.10487) Table 1: Cd=0.119 (HLBM) / 0.119 (XFOIL) -> 0.8% agreement. The old script value 0.105 has no source and was rejected (-12.5%).",
+    "value": 0.12,
+    "cluster": [
+      0.1164,
+      0.1236
+    ]
+  },
+  "grids": [
+    {
+      "chord": 64,
+      "steps": 60000,
+      "cd_mem_surface": 0.229595440129439,
+      "cd_mem_all": 0.1227883659303188,
+      "cd_mem_interior": -0.10680609444777169,
+      "cl": 3.921488920847575e-06,
+      "err_surface_pct_vs_0.12": 91.32953344119917,
+      "err_all_pct_vs_0.12": 2.323638275265674
+    },
+    {
+      "chord": 128,
+      "steps": 60000,
+      "cd_mem_surface": 0.22127878246828908,
+      "cd_mem_all": 0.12113087127606072,
+      "cd_mem_interior": -0.10014902055263518,
+      "cl": 2.3410345117251073e-06,
+      "err_surface_pct_vs_0.12": 84.39898539024091,
+      "err_all_pct_vs_0.12": 0.9423927300506013
+    }
+  ],
+  "caliber_conflict": "The two standard MEM calibers disagree in OPPOSITE directions on this friction-dominated airfoil, and the apparent 'all-solid passes' result is a CANCELLATION ARTIFACT, not accuracy:\n  * surface-only MEM: +118.7% (C64) / +110.7% (C128) -> grossly OVER-predicts, and does not converge (-8% over the ladder).\n  * interior pseudo-force is NEGATIVE (-0.1068 / -0.1001) -- the opposite sign to the cylinder/sphere case.\n  * all-solid = surface + interior, so a +118% surface error is partly cancelled by a -89% interior error\n    to land at +17%/+15% vs 0.105 (or +2.3%/+0.9% vs 0.12).  Two errors cancelling is NOT a verified caliber.\n  * Cross-check: Cd_all span is 1.4% (looks converged) but Cd_surface span is 8% (diverges) -- the two\n    calibers disagree on whether this case converges at all.",
+  "diagnosis": "At alpha=0 the drag is friction-dominated (Cl = 0 to 4e-6, symmetric).  With a chord of only 64-128 cells the\nboundary layer spans 2-4 cells, so neither the surface-restricted momentum-exchange sum nor the interior term\nis a defensible force at this resolution.  The earlier performance blocker (collide_mrt 130 ms/step + stream 97\nms/step) was fixed by benchmarks/pending/naca_0012/fast_kernel.py (elementwise MRT + torch.roll streaming,\n288 -> 36 ms/step, 6-8x), which is what made these two 60000-step ladders possible at all.",
+  "verdict": "NOT ACCEPTED.  surface-only MEM is +110% and non-convergent; all-solid appears to pass only because its\nnegative interior term cancels the surface error.  Recorded honestly rather than promoted on a cancellation artifact."
+}

@@ -14,8 +14,8 @@ import math
 import pytest
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.d3q27 import equilibrium27, macroscopic27
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.d3q27 import equilibrium27
 from tensorlbm.thermal_common import (
     C_D3Q7,
     W_D3Q7,
@@ -381,8 +381,8 @@ class TestThermalComposability:
     @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])
     def test_compose_with_bgk(self, lattice: str) -> None:
         """thermal_step should accept BGK-collided f without error."""
-        from tensorlbm.solver3d import collide_bgk3d, stream3d
         from tensorlbm.d3q27 import collide_bgk27, stream27
+        from tensorlbm.solver3d import collide_bgk3d, stream3d
 
         f = _f3d19() if lattice == "D3Q19" else _f3d27()
         g = _g_thermal()

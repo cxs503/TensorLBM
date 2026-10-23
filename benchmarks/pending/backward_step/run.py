@@ -1,304 +1,604 @@
-#!/home/wxsc/anaconda3/envs/ftw-env/bin/python
-"""B26: 后向台阶 Re=100 再附着长度验证（Armaly 1984 参考 X_r/h≈3.0, 容差 ±3%）。
+#!/usr/bin/env python3
+"""Gartling (1990) 2-D backward-facing step benchmark — Re = 800, expansion ratio 2:1.
 
-几何: 台阶高 step_h 格, 膨胀比 ER=(ny-2)/(ny-1-step_h)≈1.94 (Armaly 实验 1.94)。
-      ny=101/step_h=49 → ER=1.9412; ny=161/step_h=78 → ER=1.9390 (两档网格, ER 恒定)。
-入口: 充分发展抛物线剖面 u(y)=4·U_max·y'·(H-y')/H^2, y'=y-(step_h-0.5), H=ny-1-step_h,
-      经 Zou/He 速度 BC 施加 (支持张量剖面)。
-Re = U_max·step_h/ν = 100 (Armaly 定义: 基于最大入口速度与台阶高)。
-再附着点: 台阶后壁面剪切 τ_w∝ux(y=1) 的过零点 (线性亚格插值), 距台阶下游立面
-          x = x_step-0.5 的距离归一化: X_r/h。
+观测量: 一级(下壁)再附着长度 X1, 以**下游通道高度 H** 归一化。
+参考值 (多源核对见 REFERENCE_AUDIT.md):
+    X1 / H     = 6.10     (Gartling 1990; Gresho et al.; ECN/TNO ECN-E-11-042)
+    X1 / h_step= 12.20    (同一物理量的台阶高归一化; Keskar&Lyn 12.19, Grigoriev&Dargush 12.18)
+    X2 / H     = 4.85     (上壁分离点, 二次核对)
+    X3 / H     = 10.48    (上壁再附着, 二次核对)
 
-实现说明（真实模拟, 无外推）:
-- run_backward_facing_step 为共性模块入口, 本脚本以 monkey-patch 注入三点,
-  不修改库文件 (共性模块缺口见 /tmp/bstep_gap2.md):
-  1) bfs._apply_bfs_inlet   -> 抛物线入口 (库内硬编码均匀入口)
-  2) bfs._apply_bfs_outlet  -> Zou/He 压力出口 (库内零梯度 copy, 质量漂移有界)
-  3) bfs.measure_reattachment_length -> 亚格插值测量 + 捕获速度场快照
-- 诊断: 入口剖面实际施加质量核对、分离泡最大回流、收敛序列。
-- 输出: run_dir/run_metadata.json (模块), VERIFIED_DIR/result.json (本脚本)。
+Gartling 口径 (关键 — 见 REFERENCE_AUDIT.md):
+    通道高 H, 台阶高 h = H/2 (ER = 2), 入口 = 上半通道, 充分发展抛物线
+    u(y) = 24 y (H/2 - y)  →  ū = 1, u_max = 1.5
+    Re = ū H / ν = 800      (**基于通道高 H**, 不是台阶高)
+    入口剖面在台阶平面处施加 (台阶上游无通道).
+
+格点映射:
+    ny = 2m + 1 (奇数)  →  下游壁到壁高 H = ny - 1 = 2m, 入口壁到壁高 = m = H/2.
+    台阶固体占 y = 0..m (共 m+1 行), 台阶下游立面在 x = x_step - 0.5.
+    下壁在 y=0.5, 上壁在 y=ny-0.5  (half-way bounce-back).
+    x_step = 8 个上游格 (入口在 x=0, 施加的抛物线在短上游通道内是精确定常解,
+    故等价于 Gartling 在台阶平面施加剖面).
+
+★ mode K 稳定化 (本文件; 见 STATUS.md / README §根因):
+    封闭域内 硬速度入口 (Zou/He velocity Dirichlet) + Zou/He 压力出口
+    (pressure Dirichlet) 会激发**封闭声学驻波** (周期 = L/c_s, 与实测振荡
+    周期精确吻合), 使质量漂移 ~ +4e-2/步、近壁剪应力信号被声学噪声淹没.
+    修复 (mode K):
+      (1) **pre-stream 半程 bounce-back** (库 Poiseuille 验证口径): 碰撞后、
+          流之前把固体格设为其前碰撞分布的反向 (fp[opp]), 再 stream —
+          壁面反射时相与库 Poiseuille 基准一致; 取代原来的 post-stream BB.
+      (2) **非平衡态海绵层** (make_sponge_strength): 下游末端 W 格外
+          f <- f - σ(x)·(f - f_eq), 只吸收非平衡(声学)分量, 逐格守恒
+          (Σ(f-f_eq)=0), 把出口附近的声学波吸收掉, 不扰动 X1 所在区域.
+    效果: 质量漂移 +4e-2/步 → +2e-7/步; rho 稳定 [0.992,1.008]; max|u|≈0.086.
+
+★ 鲁棒化测量 (本文件):
+    (a) **壁面剪应力多行探测**: 近壁 K 行 (K = min(6, m//2)) 的最小二乘线性
+        拟合斜率 du/dy 作为壁面剪应力 (∝ ν·du/dy), 而非单行 ux — 抑制
+        单行离散噪声; 同时报告 row1 口径作对照.
+    (b) **时间窗口平均**: 每隔 avg_stride 步采集一次近壁 K 行的瞬时剖面,
+        对末尾 avg_steps 步 (滑窗, 覆盖 ≥1 个声学周期) 求平均后再取零穿越,
+        消除残余声学振荡.
+    X1 = 下壁 du/dy 的 − → + 零穿越 (亚格线性插值), 距台阶立面 x=x_step−0.5,
+    以 H 归一化.
+
+用法:
+    run.py --m 64 96 --device sdaa:0 [--u 0.06] [--steps N N] [--compile-mode eager]
+    run.py --smoke --device sdaa:0          # 小网格短跑冒烟
 """
+
+from __future__ import annotations
+
+import argparse
 import json
-import os
 import sys
 import time
+from collections import deque
 from pathlib import Path
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks (compile_route)
 
-import numpy as np
-import torch
-
-import tensorlbm.backward_facing_step as bfs
-from tensorlbm.backward_facing_step import (
-    BackwardFacingStepConfig,
-    run_backward_facing_step,
-)
-from tensorlbm.boundaries import zou_he_inlet_velocity, zou_he_outlet_pressure
-from tensorlbm.solver import collide_bgk
-
-# 诊断: 强制 BGK 碰撞 (对照 MRT; τ=0.5585 时模块自动选 MRT)
-if os.environ.get("BFS_FORCE_BGK", "0") == "1":
-    bfs.collide_mrt = collide_bgk  # noqa: SLF001 (模块内 _collide_base 引用模块全局名)
-    print(">>> forced BGK collision (BFS_FORCE_BGK=1)", flush=True)
-
-# ---------------------------------------------------------------------------
-# 参数 (环境变量可覆盖)
-# ---------------------------------------------------------------------------
-NX = int(os.environ.get("BFS_NX", "500"))
-NY = int(os.environ.get("BFS_NY", "101"))
-STEP_H = int(os.environ.get("BFS_STEP_H", "49"))
-X_STEP = int(os.environ.get("BFS_X_STEP", "100"))
-U_MAX = float(os.environ.get("BFS_U_MAX", "0.05"))          # 抛物线最大入口速度
-RE = float(os.environ.get("BFS_RE", "100.0"))               # Re = U_max*h/nu
-N_STEPS = int(os.environ.get("BFS_N_STEPS", "300000"))
-OUT_INTERVAL = int(os.environ.get("BFS_OUT_INTERVAL", "10000"))
-DEVICE = os.environ.get("BFS_DEVICE", "cuda:1")
-ERR_TOL_PCT = float(os.environ.get("BFS_ERR_TOL", "3.0"))   # 达标容差 (%)
-ER_REF = float(os.environ.get("BFS_ER_REF", "1.94"))        # Armaly 实验膨胀比
-OUT_ROOT = Path(
-    os.environ.get(
-        "BFS_OUT_ROOT",
-        "/home/wxsc/cxs/TensorLBM/results_bench_b26_bfs_re100",
-    )
-)
-VERIFIED_DIR = Path(
-    os.environ.get("BFS_VERIFIED_DIR", "/home/wxsc/cxs/TensorLBM/benchmarks/verified/backward_step")
+import numpy as np  # noqa: E402
+import torch  # noqa: E402
+from compile_route import (  # noqa: E402
+    add_compile_mode_arg,
+    compile_mode_from_args,
+    compile_status_of,
+    route_step,
 )
 
-ER = (NY - 2) / (NY - 1 - STEP_H)   # 下游/上游通道高度比 (格)
-NU = U_MAX * STEP_H / RE
-TAU = 3.0 * NU + 0.5
+from tensorlbm.boundaries import (  # noqa: E402
+    make_sponge_strength,
+    zou_he_inlet_velocity,
+    zou_he_outlet_pressure,
+)
+from tensorlbm.d2q9 import OPPOSITE, equilibrium, macroscopic  # noqa: E402
+from tensorlbm.solver import collide_mrt, collide_rlbm, stream  # noqa: E402
+
+# ---------------------------------------------------------------------------
+# 参考值 (Gartling 1990, Re=800, ER=2) — 多源核对见 REFERENCE_AUDIT.md
+# ---------------------------------------------------------------------------
+REF_X1_H = 6.10  # X1 / H_channel  (恒等于 X1/h_step = 12.20)
+REF_X2_H = 4.85  # 上壁分离点 / H
+REF_X3_H = 10.48  # 上壁再附着 / H
+ERR_TOL_PCT = 3.0
+
+X_STEP = 8  # 上游格数 (入口 x=0 .. 台阶立面 x=X_STEP-0.5)
+
+# mode K 默认参数 (由 /tmp/test_bc3.py 验证: drift +2e-7/步, rho∈[0.992,1.008])
+DEFAULT_SPONGE_PEAK = 0.3
+DEFAULT_SPONGE_WIDTH_H = 3.0
+
+
+def _default_device() -> str:
+    try:
+        import torch_sdaa  # noqa: F401
+
+        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+            return "sdaa:0"
+    except Exception:
+        pass
+    if torch.cuda.is_available():
+        return "cuda:0"
+    return "cpu"
 
 
 # ---------------------------------------------------------------------------
-# 1) 抛物线入口 BC (monkey-patch 注入; 库内 _apply_bfs_inlet 硬编码均匀入口)
+# 几何 / 入口剖面
 # ---------------------------------------------------------------------------
-def make_parabolic_profile(ny: int, step_h: int, u_max: float) -> np.ndarray:
-    """充分发展抛物线剖面 (通道壁面在 y=step_h-0.5 与 y=ny-0.5, 高 H=ny-1-step_h)。"""
-    H = float(ny - 1 - step_h)
-    yp = np.arange(ny, dtype=np.float64) - (step_h - 0.5)
-    u = np.zeros(ny, dtype=np.float64)
-    inside = (yp >= 0.0) & (yp <= H)
-    u[inside] = 4.0 * u_max * yp[inside] * (H - yp[inside]) / (H * H)
-    return u
+def build_solid(ny: int, nx: int, m: int, x_step: int, device: torch.device) -> torch.Tensor:
+    """固体掩码: 上壁 (y=ny-1), 下壁 (y=0, x>=x_step), 台阶块 (y=0..m, x<x_step)."""
+    solid = torch.zeros((ny, nx), dtype=torch.bool, device=device)
+    solid[-1, :] = True
+    solid[0, x_step:] = True
+    solid[0 : m + 1, :x_step] = True
+    return solid
 
 
-def _parabolic_inlet(f: torch.Tensor, u_in: float, step_h: int) -> torch.Tensor:
-    """Zou/He 入口 BC, 施加抛物线速度剖面 (固体行随后被 bounce-back 覆盖)。"""
-    ny = f.shape[1]
-    u_profile = torch.tensor(
-        make_parabolic_profile(ny, step_h, float(u_in)),
-        dtype=f.dtype,
-        device=f.device,
-    )
-    return zou_he_inlet_velocity(f, u_profile, 0.0)
+def inlet_profile(ny: int, m: int, u_mean: float, device: torch.device, dtype) -> torch.Tensor:
+    """充分发展抛物线入口剖面 (整列 ny 行; 台阶固体行取 0).
 
-
-bfs._apply_bfs_inlet = _parabolic_inlet  # noqa: SLF001 (benchmark 脚本注入, 不改库)
-
-# 诊断: 均匀入口 A/B 对照 (BFS_UNIFORM_INLET=1 -> 覆盖为模块默认均匀入口)
-if os.environ.get("BFS_UNIFORM_INLET", "0") == "1":
-    bfs._apply_bfs_inlet = lambda f, u_in, step_h: zou_he_inlet_velocity(f, float(u_in))  # noqa: SLF001
-    print(">>> uniform inlet A/B (BFS_UNIFORM_INLET=1)", flush=True)
-
-
-# ---------------------------------------------------------------------------
-# 1b) 出口: Zou/He 压力出口 (密度锚定) 替代零梯度 copy
-#     原因: 出口流动未充分发展时 copy BC 持续质量漂移; 压力出口 rho=1 锚定, 漂移有界。
-# ---------------------------------------------------------------------------
-def _pressure_outlet(f: torch.Tensor) -> torch.Tensor:
-    return zou_he_outlet_pressure(f, 1.0)
-
-
-bfs._apply_bfs_outlet = _pressure_outlet  # noqa: SLF001 (同上)
-
-
-# ---------------------------------------------------------------------------
-# 2) 亚格插值再附着长度测量 + 速度场快照捕获
-# ---------------------------------------------------------------------------
-_captured: dict[str, list] = {"ux": []}   # 每次诊断点捕获 ux (按序 -> step=(i+1)*OUT_INTERVAL)
-
-
-def _zero_crossing_col(row: np.ndarray, x_step: int) -> float | None:
-    """row = ux[1, x_step:], 返回再附着点的连续列坐标 (从负到正过零点)。"""
-    pos = int(np.argmax(row > 0.0))
-    if pos == 0 or row[pos] <= 0.0:
-        return None
-    a, b = row[pos - 1], row[pos]
-    if b - a == 0.0:
-        return None
-    return x_step + (pos - 1) + (0.0 - a) / (b - a)
-
-
-def measure_reattach_subcell(ux: torch.Tensor, x_step: int, step_h: int) -> float:
-    """X_r/h: 距台阶下游立面 x=x_step-0.5 的归一化再附着长度。
-
-    壁面剪切 τ_w ∝ ux(y=1) (bounce-back 壁面位于 y=0.5, 线性近似),
-    τ_w=0 即 ux(y=1)=0 的过零点; 线性亚格插值消除整格量化误差。
+    入口通道壁到壁高 a = m, 底壁在 y = m + 0.5, 顶壁在 y = ny - 0.5.
+    u(s) ∝ 6 s (a - s) / a²,  s = y - (m + 0.5);  离散归一化使入口行均值 == u_mean.
     """
-    row = ux[1, x_step:].detach().cpu().numpy()
-    zc = _zero_crossing_col(row, x_step)
-    if zc is None:
-        return 0.0
-    return float((zc - (x_step - 0.5)) / step_h)
-
-
-def _measure_capture(ux: torch.Tensor, x_step: int, step_h: int) -> float:
-    xr_h = measure_reattach_subcell(ux, x_step, step_h)
-    _captured["ux"].append(ux.detach().cpu().numpy().copy())
-    return xr_h
-
-
-bfs.measure_reattachment_length = _measure_capture  # noqa: SLF001 (同上)
+    a = float(m)
+    y = np.arange(ny, dtype=np.float64)
+    s = y - (m + 0.5)
+    prof = np.zeros(ny, dtype=np.float64)
+    rows = np.arange(m + 1, ny - 1)  # 入口流体行: m+1 .. ny-2
+    ss = s[rows]
+    raw = 6.0 * ss * (a - ss) / (a * a)
+    raw_mean = raw.mean()
+    prof[rows] = raw / raw_mean * u_mean
+    return torch.tensor(prof, dtype=dtype, device=device)
 
 
 # ---------------------------------------------------------------------------
-# 3) 后处理诊断
+# 鲁棒再附着/分离测量: 多行壁面剪应力 + 亚格零穿越
 # ---------------------------------------------------------------------------
-def inlet_profile_check(ux: torch.Tensor, step_h: int, u_max: float) -> dict[str, float]:
-    """核对 x=0 列实际施加剖面与目标抛物线的偏差 (入口质量诊断)。"""
-    ny = ux.shape[0]
-    target = make_parabolic_profile(ny, step_h, u_max)
-    actual = ux[:, 0].detach().cpu().numpy()
-    H = ny - 1 - step_h
-    fluid = np.arange(step_h, ny - 1)
-    max_dev = float(np.abs(actual[fluid] - target[fluid]).max() / u_max)
-    return {"max_abs_dev_over_umax": max_dev}
+def _shear_weights(K: int, wall_first: bool) -> np.ndarray:
+    """K 行最小二乘斜率 du/dy 的线性权重 (对行序号按 y 递增).
+
+    profile_shear(x) = Σ_i w_i · ux[row_i, x] ∝ du/dy(x) (∝ 壁面剪应力/ν).
+    权重和为 0 ⇒ 对均匀偏移不敏感; 只在近壁线性区使用 (K 小).
+    """
+    # 相对 y 权重与绝对偏移无关 (斜率), 用 0..K-1 作坐标
+    y = np.arange(K, dtype=np.float64)
+    ym = y.mean()
+    w = y - ym
+    return w / float((w * w).sum())
 
 
-def separation_bubble_diag(ux: torch.Tensor, x_step: int) -> dict[str, float]:
-    """分离泡诊断: 最大回流强度 min(ux)/U_max 及其位置 (物理约定 X_r/h 同口径)。"""
-    u = ux.detach().cpu().numpy()
-    bubble = u[1:, x_step:]          # 台阶下游 (含台阶立面附近)
-    min_ux = float(bubble.min())
-    ys, xs = np.where(bubble == bubble.min())
+def _crossings(profile: np.ndarray, start_col: int) -> list[tuple[float, int]]:
+    """profile 中 col >= start_col 的所有过零点 (亚格列坐标, 符号方向).
+
+    方向 +1: − → +;  方向 −1: + → −.
+    """
+    out: list[tuple[float, int]] = []
+    p = np.asarray(profile, dtype=np.float64)
+    for c in range(start_col, len(p) - 1):
+        a, b = p[c], p[c + 1]
+        if a == b:
+            continue
+        if a <= 0.0 < b:
+            out.append((c + (0.0 - a) / (b - a), +1))
+        elif a >= 0.0 > b:
+            out.append((c + (0.0 - a) / (b - a), -1))
+    return out
+
+
+def _x1_from_shear(shear: np.ndarray, x_step: int, H: float) -> tuple[float, float]:
+    """下壁 − → + 零穿越 → (X1/H, X1_cells). 找不到 → nan."""
+    for xc, d in _crossings(shear, x_step):
+        if d == +1:
+            x1_cells = (xc) - (x_step - 0.5)
+            return x1_cells / H, x1_cells
+    return float("nan"), float("nan")
+
+
+def _x2x3_from_shear(shear: np.ndarray, x_step: int, H: float) -> tuple[float, float]:
+    """上壁 (+ → − 分离, 随后 − → + 再附) → (X2/H, X3/H)."""
+    x2 = x3 = float("nan")
+    for xc, d in _crossings(shear, x_step):
+        if d == -1 and x2 != x2:
+            x2 = (xc - (x_step - 0.5)) / H
+        elif d == +1 and x2 == x2 and x3 != x3:
+            x3 = (xc - (x_step - 0.5)) / H
+            break
+    return x2, x3
+
+
+def _rows_near_walls(ny: int, m: int, K: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """返回 (下壁近壁行, 下壁权重(按交付顺序), 上壁近壁行, 上壁权重).
+
+    交付顺序统一为"距壁由近到远", 使权重 w[0] 对应最近壁行 (斜率方向正确).
+    下壁 (y=0.5): 行 1,2,...,K  → y 递增 → 直接 _shear_weights.
+    上壁 (y=ny-0.5): 行 ny-2, ny-3, ..., ny-1-K → y 递减;
+        交付顺序"由近到远"= ny-2, ny-3, ... 即 y 递减, 需把坐标反向:
+        对 y 递减序列, 斜率 du/dy 权重取 _shear_weights(K)[::-1].
+    """
+    lo_rows = np.arange(1, K + 1)
+    up_rows = np.arange(ny - 2, ny - 2 - K, -1)  # 由近(ny-2)到远
+    w = _shear_weights(K, True)
+    w_lo = w                      # lo_rows: y 递增 (1..K), 由近到远
+    w_up = w[::-1]                # up_rows: y 递减, 行顺序由近到远 ⇒ 坐标反向
+    return lo_rows, w_lo, up_rows, w_up
+
+
+def measure_profile(
+    ux: torch.Tensor,
+    solid: torch.Tensor,
+    x_step: int,
+    ny: int,
+    m: int,
+    K: int,
+    lo_rows: np.ndarray,
+    w_lo: np.ndarray,
+    up_rows: np.ndarray,
+    w_up: np.ndarray,
+) -> dict[str, float | None]:
+    """从 (可含时间平均的) ux 场测量 X1/X2/X3.
+
+    主口径 = 多行最小二乘剪应力; 对照口径 = row1 (单行 ux).
+    """
+    H = float(ny - 1)  # = 2m
+    uxm = ux.masked_fill(solid, 0.0)
+
+    lo = uxm[lo_rows].detach().cpu().numpy().astype(np.float64)  # (K, nx)
+    up = uxm[up_rows].detach().cpu().numpy().astype(np.float64)
+
+    shear_lo = (w_lo[:, None] * lo).sum(axis=0)  # ∝ du/dy 下壁
+    shear_up = (w_up[:, None] * up).sum(axis=0)  # ∝ du/dy 上壁
+
+    x1_h, x1_cells = _x1_from_shear(shear_lo, x_step, H)
+    x2_h, x3_h = _x2x3_from_shear(shear_up, x_step, H)
+
+    # 对照: row1 (最近壁单行) / row2
+    row1 = uxm[1].detach().cpu().numpy().astype(np.float64)
+    r1_h, _ = _x1_from_shear(row1, x_step, H)
+    r1u = uxm[ny - 2].detach().cpu().numpy().astype(np.float64)
+    r1x2, r1x3 = _x2x3_from_shear(r1u, x_step, H)
+
     return {
-        "max_backflow_over_umax": min_ux / U_MAX,
-        "backflow_center_x_rel": float(xs[0]) / STEP_H,
+        "X1_H": x1_h,
+        "X1_h": (x1_cells / m) if x1_cells == x1_cells else float("nan"),
+        "X1_cells": x1_cells,
+        "X2_H": x2_h,
+        "X3_H": x3_h,
+        "X1_H_row1": r1_h,
+        "X2_H_row1": r1x2,
+        "X3_H_row1": r1x3,
     }
 
 
 # ---------------------------------------------------------------------------
-# 主流程
+# 单档网格运行
 # ---------------------------------------------------------------------------
+def run_grid(
+    m: int,
+    re: float,
+    u_in: float,
+    steps: int,
+    min_steps: int,
+    out_interval: int,
+    avg_steps: int,
+    avg_stride: int,
+    device: torch.device,
+    compile_mode: str | None,
+    L_over_H: float,
+    collision: str,
+    sponge_peak: float,
+    sponge_width_H: float,
+    prestream_bb: bool,
+    x_step: int = X_STEP,
+) -> dict:
+    ny = 2 * m + 1
+    H = ny - 1  # = 2m
+    L = int(round(L_over_H * H))
+    nx = x_step + L
+    nu = u_in * H / re
+    tau = 0.5 + 3.0 * nu
+
+    solid = build_solid(ny, nx, m, x_step, device)
+    u_prof = inlet_profile(ny, m, u_in, device, torch.float32)
+
+    # --- mode K 组件 (2): 非平衡态海绵层 ---
+    sponge_w = int(round(sponge_width_H * H))
+    sponge_x0 = nx - sponge_w
+    if sponge_peak > 0.0 and sponge_w > 0:
+        sigma = sponge_peak * make_sponge_strength(
+            ny, nx, sponge_x0, sponge_w, power=2.0, device=device
+        )
+    else:
+        sigma = torch.zeros((ny, nx), device=device)
+
+    # 初值: 上游抛物线, 下游 ~ u_in/2 (下游均值), 减小启动瞬态
+    rho0 = torch.ones((ny, nx), device=device)
+    ux0 = torch.zeros((ny, nx), device=device)
+    ux0[:, :x_step] = u_prof.view(ny, 1)
+    ux0[:, x_step:] = u_in / 2.0
+    ux0[solid] = 0.0
+    f = equilibrium(rho0, ux0, torch.zeros_like(ux0))
+
+    collide = {"mrt": collide_mrt, "rlbm": collide_rlbm}[collision]
+    opp = OPPOSITE.to(device)
+    solid3 = solid.unsqueeze(0)
+
+    def _noneq_sponge(f: torch.Tensor) -> torch.Tensor:
+        if sponge_peak <= 0.0:
+            return f
+        rho, ux, uy = macroscopic(f)
+        feq = equilibrium(rho, ux, uy)
+        return f - sigma.unsqueeze(0) * (f - feq)
+
+    if prestream_bb:
+
+        def _step(f):
+            fp = f.clone()
+            fc = collide(f, tau=tau)
+            # pre-stream 半程 BB (库 Poiseuille 验证口径)
+            fc = torch.where(solid3, fp[opp], fc)
+            f = stream(fc)
+            f = zou_he_inlet_velocity(f, u_prof, 0.0)
+            f = zou_he_outlet_pressure(f, 1.0)
+            return _noneq_sponge(f)
+
+    else:
+
+        def _step(f):
+            f = collide(f, tau=tau)
+            f = stream(f)
+            f = zou_he_inlet_velocity(f, u_prof, 0.0)
+            f = zou_he_outlet_pressure(f, 1.0)
+            f = torch.where(solid3, f[opp], f)  # post-stream BB (旧口径 A)
+            return _noneq_sponge(f)
+
+    step_fn = route_step(_step, compile_mode, name=f"bfs_gartling[m{m}]")
+
+    K = max(2, min(6, m // 2))
+    lo_rows, w_lo, up_rows, w_up = _rows_near_walls(ny, m, K)
+    K = len(lo_rows)
+    n_win = max(1, int(round(avg_steps / max(1, avg_stride))))
+    win: deque = deque(maxlen=n_win)
+    acc_lo = np.zeros(nx, dtype=np.float64)  # 全程累积 (时间平均)
+    acc_up = np.zeros(nx, dtype=np.float64)
+    n_acc = 0
+
+    series: list[dict] = []
+    t0 = time.time()
+    mass0 = None
+    plateau = False
+    prev_win_x1: float | None = None
+    stable_hits = 0
+
+    for step in range(1, steps + 1):
+        f = step_fn(f)
+        # 采集近壁 K 行 (多行剪应力剖面)
+        if step % avg_stride == 0:
+            ux = macroscopic(f)[1]
+            uxm = ux.masked_fill(solid, 0.0)
+            lo = uxm[lo_rows].detach().cpu().numpy().astype(np.float64)
+            up = uxm[up_rows].detach().cpu().numpy().astype(np.float64)
+            s_lo = (w_lo[:, None] * lo).sum(axis=0)
+            s_up = (w_up[:, None] * up).sum(axis=0)
+            win.append((s_lo, s_up))
+            acc_lo += s_lo
+            acc_up += s_up
+            n_acc += 1
+
+        if step % out_interval == 0 or step == steps:
+            rho, ux, uy = macroscopic(f)
+            mm = measure_profile(ux, solid, x_step, ny, m, K, lo_rows, w_lo, up_rows, w_up)
+            mass = float(rho.sum().item())
+            if mass0 is None:
+                mass0 = mass
+            # 滑窗时间平均
+            wlo = np.mean([s[0] for s in win], axis=0) if win else None
+            wup = np.mean([s[1] for s in win], axis=0) if win else None
+            if wlo is not None:
+                x1w, x1wc = _x1_from_shear(wlo, x_step, H)
+                x2w, x3w = _x2x3_from_shear(wup, x_step, H)
+            else:
+                x1w = x1wc = x2w = x3w = float("nan")
+            mm.update(
+                {
+                    "step": step,
+                    "X1_H_win": x1w,
+                    "X2_H_win": x2w,
+                    "X3_H_win": x3w,
+                    "max_speed": float(torch.sqrt(ux * ux + uy * uy).max().item()),
+                    "mass_drift": mass - mass0,
+                    "rho_min": float(rho.min().item()),
+                    "rho_max": float(rho.max().item()),
+                    "n_win": len(win),
+                }
+            )
+            series.append(mm)
+            print(
+                f"[m={m} H={H} nx={nx} K={K} win={n_win}] step={step:>7d} "
+                f"X1/H(win)={x1w:.4f} X1/H(row1)={mm['X1_H_row1']:.4f} "
+                f"X1/H(inst)={mm['X1_H']:.4f} "
+                f"X1/h={mm['X1_h']:.4f} X2/H={x2w:.3f} X3/H={x3w:.3f} "
+                f"max|u|={mm['max_speed']:.4f} drift={mm['mass_drift']:+.3e} "
+                f"rho[{mm['rho_min']:.4f},{mm['rho_max']:.4f}] "
+                f"t={time.time() - t0:.0f}s",
+                flush=True,
+            )
+            # 平台判据: 滑窗 X1/H 相对变化 < 0.2% 连续 3 次 (且 >= min_steps)
+            if step >= min_steps and x1w == x1w and prev_win_x1 is not None and prev_win_x1 == prev_win_x1:
+                rel = abs(x1w - prev_win_x1) / max(abs(prev_win_x1), 1e-12)
+                stable_hits = stable_hits + 1 if rel < 0.002 else 0
+                if stable_hits >= 3:
+                    plateau = True
+            prev_win_x1 = x1w
+            if plateau and step >= min_steps:
+                print(f"[m={m}] plateau reached at step={step}", flush=True)
+                break
+
+    elapsed = time.time() - t0
+    if not bool(torch.isfinite(f).all().item()):
+        raise RuntimeError(f"m={m}: non-finite populations")
+
+    # 全程时间平均 (最终稳健值)
+    mean_lo = acc_lo / max(1, n_acc)
+    mean_up = acc_up / max(1, n_acc)
+    x1_full, x1_full_cells = _x1_from_shear(mean_lo, x_step, H)
+    x2_full, x3_full = _x2x3_from_shear(mean_up, x_step, H)
+    # 滑窗 (末尾 avg_steps) 时间平均
+    wlo = np.mean([s[0] for s in win], axis=0)
+    wup = np.mean([s[1] for s in win], axis=0)
+    x1_win, x1_win_cells = _x1_from_shear(wlo, x_step, H)
+    x2_win, x3_win = _x2x3_from_shear(wup, x_step, H)
+
+    x1h = series[-1]["X1_H_win"] if series[-1]["X1_H_win"] == series[-1]["X1_H_win"] else x1_win
+    x1h_row1 = series[-1]["X1_H_row1"]
+    x1h_series = [s["X1_H_win"] for s in series]
+    tail = [v for v in x1h_series[-5:] if v == v]
+    tail_span = (max(tail) - min(tail)) if len(tail) >= 2 else float("nan")
+    err = (x1h - REF_X1_H) / REF_X1_H * 100.0
+
+    cs = compile_status_of(step_fn)
+    return {
+        "m": m,
+        "ny": ny,
+        "nx": nx,
+        "H": H,
+        "ER": float(H) / float(m),
+        "L_over_H": float(L) / float(H),
+        "u_in": u_in,
+        "re": re,
+        "nu_lb": nu,
+        "tau": round(tau, 6),
+        "collision": collision,
+        "mode": "K" if (prestream_bb and sponge_peak > 0) else "A",
+        "prestream_bb": prestream_bb,
+        "sponge_peak": sponge_peak,
+        "sponge_width_H": sponge_width_H,
+        "steps_run": series[-1]["step"],
+        "min_steps": min_steps,
+        "plateau": plateau,
+        "avg_steps": avg_steps,
+        "avg_stride": avg_stride,
+        "n_win_samples": n_win,
+        "K_rows": K,
+        "X1_H": round(x1h, 4),
+        "X1_h": round(x1h * 2.0, 4),
+        "X1_H_row1": round(x1h_row1, 4) if x1h_row1 == x1h_row1 else None,
+        "X1_H_fullavg": round(x1_full, 4) if x1_full == x1_full else None,
+        "X2_H": round(x2_win, 4) if x2_win == x2_win else None,
+        "X3_H": round(x3_win, 4) if x3_win == x3_win else None,
+        "X1_H_series": [round(v, 4) if v == v else None for v in x1h_series],
+        "err_pct": round(err, 3),
+        "tail_span_H": round(tail_span, 4) if tail_span == tail_span else None,
+        "max_speed": round(series[-1]["max_speed"], 5),
+        "rho_min": round(series[-1]["rho_min"], 5),
+        "rho_max": round(series[-1]["rho_max"], 5),
+        "mass_drift_rel": series[-1]["mass_drift"] / float(ny * nx),
+        "elapsed_s": round(elapsed, 1),
+        "compile_status": cs.get("compile_status"),
+        "compile_mode_effective": cs.get("compile_mode_effective"),
+        "compile_status_reason": cs.get("compile_status_reason"),
+        "finite": True,
+    }
+
+
 def main() -> None:
-    t_start = time.time()
-    config = BackwardFacingStepConfig(
-        nx=NX,
-        ny=NY,
-        step_h=STEP_H,
-        x_step=X_STEP,
-        u_in=U_MAX,
-        re=RE,
-        n_steps=N_STEPS,
-        output_interval=OUT_INTERVAL,
-        output_root=OUT_ROOT,
-        run_name=f"armaly_re{int(RE)}_er{ER:.4f}_h{STEP_H}",
-        seed=0,
-        device=DEVICE,
-        overwrite=True,
-        use_compile=False,
-    )
-    config.validate()
+    ap = argparse.ArgumentParser(description="Gartling 1990 BFS Re=800 ER=2 benchmark (mode K)")
+    ap.add_argument("--m", type=int, nargs="+", default=[64, 96], help="台阶半高 m (格); H=2m")
+    ap.add_argument("--u", type=float, default=0.06, help="入口平均速度 (格)")
+    ap.add_argument("--re", type=float, default=800.0)
+    ap.add_argument("--steps", type=int, nargs="+", default=None)
+    ap.add_argument("--min-steps", type=int, default=30000)
+    ap.add_argument("--out-interval", type=int, default=None)
+    ap.add_argument("--avg-steps", type=int, default=20000, help="时间平均滑窗步数 (>=1 声学周期)")
+    ap.add_argument("--avg-stride", type=int, default=20, help="时间平均采样间隔")
+    ap.add_argument("--L-over-H", type=float, default=20.0)
+    ap.add_argument("--collision", choices=["mrt", "rlbm"], default="mrt")
+    ap.add_argument("--sponge-peak", type=float, default=DEFAULT_SPONGE_PEAK)
+    ap.add_argument("--sponge-width-H", type=float, default=DEFAULT_SPONGE_WIDTH_H)
+    ap.add_argument("--no-prestream-bb", action="store_true")
+    ap.add_argument("--device", default=None)
+    ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--out", default="")
+    add_compile_mode_arg(ap)
+    args = ap.parse_args()
+
+    if args.smoke:
+        args.m = [16]
+        args.steps = [6000]
+        args.min_steps = 6000
+        args.out_interval = 1000
+        args.L_over_H = 20.0
+        args.avg_steps = 4000
+
+    device = torch.device(args.device if args.device else _default_device())
+    compile_mode = compile_mode_from_args(args)
+
+    # 默认步数: 至少覆盖若干气泡对流时 + 声学建立; 上限放宽到 200k
+    default_steps = {
+        m: max(40000, int(3.0 * (args.L_over_H * (2 * m)) / (args.u / 2.0))) for m in args.m
+    }
+    steps_list = args.steps or [default_steps[m] for m in args.m]
+    out_interval = args.out_interval or max(2000, min(steps_list[0] // 20, 5000))
+
     print(
-        f"=== B26 BFS Re={RE} (U_max*h/nu) nx={NX} ny={NY} step_h={STEP_H} "
-        f"ER={ER:.4f} (ref {ER_REF}) tau={TAU:.4f} nu={NU:.5f} n_steps={N_STEPS} "
-        f"device={DEVICE} err_tol={ERR_TOL_PCT}% ===",
+        f"=== Gartling BFS Re={args.re} ER=2 ref X1/H={REF_X1_H} (X1/h={REF_X1_H * 2:.2f}) "
+        f"u={args.u} collision={args.collision} L/H={args.L_over_H} device={device} "
+        f"compile={compile_mode!r} mode={'K' if not args.no_prestream_bb else 'A'} "
+        f"sponge(peak={args.sponge_peak},W={args.sponge_width_H}H) "
+        f"avg={args.avg_steps}min_steps={args.min_steps} ===",
         flush=True,
     )
+    out = Path(args.out) if args.out else None
+    if out:
+        out.mkdir(parents=True, exist_ok=True)
 
-    run_dir = run_backward_facing_step(config)
-    wall_t = time.time() - t_start
-
-    # ---- 后处理: 收敛性与最终 X_r/h ----
-    ux_snaps = _captured["ux"]
-    n_snap = len(ux_snaps)
-    steps_arr = [(i + 1) * OUT_INTERVAL for i in range(n_snap)]
-    xr_series = [
-        measure_reattach_subcell(torch.from_numpy(u), X_STEP, STEP_H) for u in ux_snaps
-    ]
-
-    final_ux = torch.from_numpy(ux_snaps[-1])
-    xr_h = measure_reattach_subcell(final_ux, X_STEP, STEP_H)          # 物理 (距台阶立面)
-    xr_h_mod = xr_h - 0.5 / STEP_H                                      # 模块约定 (距 x_step 列)
-    err_pct = (xr_h - 3.0) / 3.0 * 100.0
-
-    # 收敛判据: 最后 3 个快照 X_r/h 极差 ≤ 0.02 且最后两步变化 ≤ 0.01
-    last3 = xr_series[-3:]
-    converged = len(last3) >= 3 and (max(last3) - min(last3)) <= 0.02 and abs(last3[-1] - last3[-2]) <= 0.01
-    # 末两步速度场残差 (L∞, 归一化 U_max)
-    if n_snap >= 2:
-        resid = float(np.abs(ux_snaps[-1] - ux_snaps[-2]).max() / U_MAX)
-    else:
-        resid = float("nan")
-
-    inlet_diag = inlet_profile_check(final_ux, STEP_H, U_MAX)
-    bubble_diag = separation_bubble_diag(final_ux, X_STEP)
-
-    # 导出最终速度场 (npz), 供离线复核/壁面剪切分析
-    try:
-        np.savez(
-            run_dir / "final_ux.npz",
-            ux=ux_snaps[-1],
-            solid=np.asarray(bfs.make_bfs_solid_mask(NY, NX, STEP_H, X_STEP, torch.device("cpu")).numpy()),
+    grids: dict[str, dict] = {}
+    for m, steps in zip(args.m, steps_list):
+        g = run_grid(
+            m,
+            args.re,
+            args.u,
+            steps,
+            args.min_steps,
+            out_interval,
+            args.avg_steps,
+            args.avg_stride,
+            device,
+            compile_mode,
+            args.L_over_H,
+            args.collision,
+            args.sponge_peak,
+            args.sponge_width_H,
+            not args.no_prestream_bb,
         )
-    except Exception as exc:  # noqa: BLE001
-        print(f"npz dump failed: {exc}", flush=True)
+        grids[str(m)] = g
+        if out:
+            (out / f"case_m{m}.json").write_text(json.dumps(g, indent=2))
 
-    result = {
-        "case": "B26",
-        "name": "backward_facing_step_re100",
+    x1 = [g["X1_H"] for g in grids.values()]
+    errs = [g["err_pct"] for g in grids.values()]
+    span = (max(x1) - min(x1)) / (sum(x1) / len(x1)) * 100.0 if len(x1) > 1 else 0.0
+    within = all(abs(e) <= ERR_TOL_PCT for e in errs)
+    conv = span <= ERR_TOL_PCT if len(x1) > 1 else None
+
+    summary = {
+        "case": "backward_step_gartling_re800_er2",
+        "mode": "K (pre-stream halfway bounce-back + non-equilibrium sponge)",
         "reference": {
-            "source": "Armaly, Durst, Pereira & Schoenung, JFM 127:473-496 (1983), "
-                      "commonly cited as 'Armaly 1984'",
-            "re_definition": "Re = U_max * step_h / nu (最大入口速度)",
-            "xr_h_ref": 3.0,
-            "er_ref": ER_REF,
+            "source": "Gartling 1990 IJNMF 11(7):953-967; corroborated by ECN/TNO ECN-E-11-042 "
+            "§4 (X1=6.10, X2=4.85, X3=10.48) and arXiv:2507.16509 table "
+            "(Gartling/Gresho 12.20, Keskar&Lyn 12.19, Grigoriev&Dargush 12.18 in step-height units)",
+            "re_definition": "Re = u_mean * H_channel / nu  (= 800)",
+            "X1_over_H": REF_X1_H,
+            "X1_over_h_step": REF_X1_H * 2.0,
+            "X2_over_H": REF_X2_H,
+            "X3_over_H": REF_X3_H,
             "err_tol_pct": ERR_TOL_PCT,
         },
-        "geometry": {
-            "nx": NX, "ny": NY, "step_h_cells": STEP_H, "x_step": X_STEP,
-            "expansion_ratio": ER,
-            "er_dev_pct": (ER - ER_REF) / ER_REF * 100.0,
-            "inlet": "fully_developed_parabolic (Zou/He), U_max=%.4f" % U_MAX,
-            "outlet": "Zou/He pressure (rho=1)",
+        "measurement": {
+            "primary": "multi-row (K rows) least-squares wall shear du/dy ~ tau_w, time-window averaged over avg_steps",
+            "secondary": "row1 ux sign crossing (single-row reference)",
+            "avg_steps": args.avg_steps,
+            "avg_stride": args.avg_stride,
         },
-        "physics": {"re": RE, "nu": NU, "tau": TAU, "collision": "MRT (module auto, tau<0.60)"},
-        "result": {
-            "xr_h": xr_h,
-            "xr_h_module_convention": xr_h_mod,
-            "err_pct": err_pct,
-            "xr_series": xr_series,
-            "steps": steps_arr,
-            "converged": bool(converged),
-            "final_Linf_residual_over_Umax": resid,
-            "n_steps_run": N_STEPS,
-            "wall_time_s": round(wall_t, 1),
-            "device": str(DEVICE),
-            "inlet_profile_check": inlet_diag,
-            "separation_bubble": bubble_diag,
+        "grids": grids,
+        "convergence": {
+            "X1_H": x1,
+            "err_pct": errs,
+            "span_pct": round(span, 3),
+            "all_within_3pct": within,
+            "grid_span_within_3pct": conv,
         },
-        "verified": bool(converged and abs(err_pct) <= ERR_TOL_PCT),
-        "notes": (
-            "X_r/h 从台阶下游立面 (x=x_step-0.5) 起算; 壁面剪切 τ_w∝ux(y=1), "
-            "过零点线性亚格插值。模块自带 measure_reattachment_length 为整格量化 "
-            "(偏差 0.5 格 + 无插值), 本脚本测量为物理约定。"
-        ),
+        "verified": bool(within and (conv if conv is not None else True)),
     }
-
-    VERIFIED_DIR.mkdir(parents=True, exist_ok=True)
-    with (VERIFIED_DIR / "result.json").open("w", encoding="utf-8") as fh:
-        json.dump(result, fh, indent=2, ensure_ascii=False, default=float)
-
-    print(f"run_dir: {run_dir}", flush=True)
-    print(f"X_r/h = {xr_h:.4f}  (module conv {xr_h_mod:.4f})  ref 3.0  err {err_pct:+.2f}%", flush=True)
-    print(f"converged={converged}  resid={resid:.2e}  snapshots={n_snap}", flush=True)
-    print(f"inlet check: {inlet_diag}", flush=True)
-    print(f"bubble: {bubble_diag}", flush=True)
-    print(f"X_r series: {[round(v, 3) for v in xr_series]}", flush=True)
-    print(f"wall time: {wall_t:.0f}s  verified={result['verified']}", flush=True)
-    print(f"-> result.json at {VERIFIED_DIR / 'result.json'}", flush=True)
+    if out:
+        (out / "result.json").write_text(json.dumps(summary, indent=2))
+    print(json.dumps(summary["convergence"], indent=2), flush=True)
+    print(f"VERIFIED={summary['verified']}", flush=True)
+    print("DONE", flush=True)
 
 
 if __name__ == "__main__":

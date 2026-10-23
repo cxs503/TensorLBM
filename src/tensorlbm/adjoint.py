@@ -28,7 +28,6 @@ from typing import Literal
 import torch
 import torch.nn.functional as F
 
-
 ObjectiveType = Literal["drag", "lift", "pressure_loss", "mixing_uniformity"]
 
 
@@ -65,7 +64,7 @@ def _objective_lift(
     surf_top = mask & (~F.pad(mask, (0, 0, 0, 1))[: 1 + mask.shape[0] - 1, :])
     surf_bottom = mask & (~F.pad(mask, (0, 0, 1, 0))[1:, :])
     # trim to same shape
-    h = mask.shape[0]
+    mask.shape[0]
     surf_top = mask & ~(torch.roll(mask, -1, dims=0))
     surf_bottom = mask & ~(torch.roll(mask, 1, dims=0))
     lift = (p * surf_top.float()).sum() - (p * surf_bottom.float()).sum()
@@ -176,9 +175,6 @@ def adjoint_sensitivity(
     obj_fn = _OBJECTIVES.get(objective)
     if obj_fn is None:
         raise ValueError(f"Unknown objective '{objective}'. Choose from {list(_OBJECTIVES)}")
-
-    device = rho.device
-    dtype = rho.dtype
 
     # Make fields differentiable
     rho_d = rho.clone().detach().requires_grad_(True)
@@ -300,4 +296,4 @@ def adjoint_sensitivity(
     return result
 
 
-import math
+import math  # noqa: E402

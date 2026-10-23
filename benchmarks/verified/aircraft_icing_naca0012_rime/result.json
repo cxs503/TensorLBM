@@ -1,0 +1,300 @@
+{
+ "case": "aircraft_icing_naca0012_rime",
+ "description": "NACA 0012 IRT rime 结冰生产点 + 网格收敛阶梯 + LWC 线性族 + 确定性对（内部一致性判据族，无外部锚）",
+ "status": "verified",
+ "verified_date": "2026-10-06",
+ "physics": {
+  "airfoil": "NACA 0012",
+  "chord_phys_m": 0.5334,
+  "v_inf_m_s": 67.0,
+  "aoa_deg": 4.0,
+  "lwc_kg_m3": 0.0005,
+  "mvd_m": 2e-05,
+  "t_static_c": -10.0,
+  "t_exposure_s": 360.0,
+  "re": 2500000.0
+ },
+ "lattice": {
+  "stencil": "D3Q19 (2-D plane)",
+  "collision": "cumulant",
+  "c_s": 0.1,
+  "droplet_phase": "eulerian",
+  "eulerian_scheme": "donor2",
+  "rime_density_mode": "macklin",
+  "beta_window_mode": "clean",
+  "production_grid": {
+   "nx": 320,
+   "ny": 160,
+   "steps": 3000,
+   "warmup_steps": 6000
+  },
+  "chord_lu": 128.0,
+  "dx_phys_mm": 4.1671875,
+  "stokes": 0.15507320844153744
+ },
+ "reference": "internal-consistency gate family (closure / bitwise determinism / LWC linearity / mesh convergence + Richardson); no external experimental anchor",
+ "runs": {
+  "b1_prod": {
+   "grid": [
+    320,
+    160
+   ],
+   "steps": 3000,
+   "lwc_kg_m3": 0.0005,
+   "beta_pk": 0.9118858575820923,
+   "t_max_mm": 8.334375,
+   "euler_deposited_kg": 0.0017577295005006153,
+   "wall_s": 28.84636378288269
+  },
+  "ladder_L1": {
+   "grid": [
+    320,
+    160
+   ],
+   "steps": 3000,
+   "lwc_kg_m3": 0.0005,
+   "beta_pk": 0.9118858575820923,
+   "t_max_mm": 8.334375,
+   "euler_deposited_kg": 0.0017577295005006153,
+   "wall_s": 25.290787935256958
+  },
+  "ladder_L2": {
+   "grid": [
+    640,
+    320
+   ],
+   "steps": 6000,
+   "lwc_kg_m3": 0.0005,
+   "beta_pk": 0.9010616540908813,
+   "t_max_mm": 10.41796875,
+   "euler_deposited_kg": 0.000853333516638221,
+   "wall_s": 50.11722469329834
+  },
+  "ladder_L3": {
+   "grid": [
+    890,
+    445
+   ],
+   "steps": 8334,
+   "lwc_kg_m3": 0.0005,
+   "beta_pk": 0.9448534846305847,
+   "t_max_mm": 10.48820224719101,
+   "euler_deposited_kg": 0.0006144230436024478,
+   "wall_s": 80.34643959999084
+  },
+  "ladder_L4": {
+   "grid": [
+    1280,
+    640
+   ],
+   "steps": 13340,
+   "lwc_kg_m3": 0.0005,
+   "beta_pk": 0.9502304792404175,
+   "t_max_mm": 10.41796875,
+   "euler_deposited_kg": 0.0004138440236675265,
+   "wall_s": 187.23103165626526
+  },
+  "m20_lwc025": {
+   "grid": [
+    320,
+    160
+   ],
+   "steps": 3000,
+   "lwc_kg_m3": 0.00025,
+   "beta_pk": 0.9089720845222473,
+   "t_max_mm": 4.1671875,
+   "euler_deposited_kg": 0.0008855750331680612,
+   "wall_s": 24.948695182800293
+  },
+  "m20_lwc10": {
+   "grid": [
+    320,
+    160
+   ],
+   "steps": 3000,
+   "lwc_kg_m3": 0.001,
+   "beta_pk": 0.9216691255569458,
+   "t_max_mm": 20.8359375,
+   "euler_deposited_kg": 0.00347292380054454,
+   "wall_s": 24.959011554718018
+  },
+  "det_run1": {
+   "grid": [
+    320,
+    160
+   ],
+   "steps": 3000,
+   "lwc_kg_m3": 0.0005,
+   "beta_pk": 0.9118858575820923,
+   "t_max_mm": 8.334375,
+   "euler_deposited_kg": 0.0017577295005006153,
+   "wall_s": 24.933668613433838
+  },
+  "det_run2": {
+   "grid": [
+    320,
+    160
+   ],
+   "steps": 3000,
+   "lwc_kg_m3": 0.0005,
+   "beta_pk": 0.9118858575820923,
+   "t_max_mm": 8.334375,
+   "euler_deposited_kg": 0.0017577295005006153,
+   "wall_s": 24.95585799217224
+  }
+ },
+ "gates": {
+  "G1_lagrangian_closure": {
+   "value": 0.0,
+   "gate": "<=1e-12",
+   "pass": true,
+   "prior": "0.0 (eulerian-phase trivial ledger, IC-A)",
+   "source": "b1_b2/*/results.json::audit_lagr.closure_error"
+  },
+  "G2_eulerian_closure_rel": {
+   "value": 2.1112803247974744e-08,
+   "gate": "<=1e-6",
+   "pass": true,
+   "prior": 1.9798993102412833e-08,
+   "source": "b1_b2/*/results.json::audit_euler.closure_error"
+  },
+  "G7_determinism_bitwise": {
+   "value": "15/15 arrays sha256 equal",
+   "gate": "all arrays bitwise identical",
+   "pass": true,
+   "prior": "IC-A determinism pair ok",
+   "source": "b1_b2/det_run{1,2}/results.json::array_sha256"
+  },
+  "G9a_deposited_loglog": {
+   "value": 0.9857321513378035,
+   "gate": "[0.97,1.03]",
+   "pass": true,
+   "prior": 0.985732151337804,
+   "source": "b1_b2/{m20_lwc025,b1_prod,m20_lwc10}::euler_deposited_kg"
+  },
+  "G9b_deposited_r2": {
+   "value": 0.9998319535034143,
+   "gate": ">=0.999",
+   "pass": true,
+   "prior": 0.9998319535034143,
+   "source": "G9 deposited prop fit"
+  },
+  "G9c_deposited_prop_dev_pct": {
+   "value": 1.6637564370498552,
+   "gate": "<=3",
+   "pass": true,
+   "prior": 1.663756437049857,
+   "source": "G9 deposited prop fit"
+  },
+  "G9d_deposited_monotone": {
+   "value": true,
+   "gate": "strictly increasing",
+   "pass": true,
+   "prior": null,
+   "source": "deposited vs LWC"
+  },
+  "G10a_monotone_L1_L2_L3": {
+   "value": [
+    8.334375,
+    10.41796875,
+    10.48820224719101
+   ],
+   "gate": "t(L1)<t(L2)<t(L3) strict",
+   "pass": true,
+   "prior": [
+    8.334375,
+    10.41796875,
+    10.48820224719101
+   ],
+   "source": "b1_b2/ladder_*/results.json::t_max_mm"
+  },
+  "G10b_richardson_L3_pct": {
+   "value": -0.18836655744556974,
+   "gate": "|err|<=3%",
+   "pass": true,
+   "prior": -0.18836655744556974,
+   "source": "independent 3-point Richardson"
+  },
+  "G10c_richardson_L4_pct": {
+   "value": -0.8567480313912362,
+   "gate": "|err|<=3%",
+   "pass": true,
+   "prior": -0.8567480313912362,
+   "source": "same f_ext"
+  },
+  "G10d_richardson_meta": {
+   "value": {
+    "p": 4.593597963850595,
+    "f_ext_mm": 10.50799579713059,
+    "reproduces_prior": {
+     "p": 4.593597963850595,
+     "f_ext_mm": 10.50799579713059
+    }
+   },
+   "gate": "|p-prior|,|f_ext-prior| <=1e-9 rel",
+   "pass": true,
+   "prior": {
+    "p": 4.593597963850595,
+    "f_ext_mm": 10.50799579713059
+   },
+   "source": "richardson_nonuniform(dx[:3], t[:3])"
+  }
+ },
+ "disclosures": {
+  "G9_frozen_superlinear": {
+   "frozen_prop_dev_pct": [
+    -43.85026737967914,
+    -15.775401069518717,
+    6.6844919786096275
+   ],
+   "frozen_loglog": 1.4629997092781106,
+   "prior_frozen_prop_dev_pct": [
+    -43.85026737967914,
+    -15.775401069518713,
+    6.68449197860963
+   ],
+   "prior_frozen_loglog": 1.4629997092781117
+  },
+  "G9_half_rescaling": {
+   "frozen_dev_from_x2_pct": [
+    50.0,
+    26.666666666666668
+   ],
+   "deposited_dev_from_x2_pct": [
+    -0.7577317185363849,
+    -1.2099472770007038
+   ],
+   "prior": {
+    "frozen_dev_from_x2_pct": [
+     50.0,
+     26.66666666666666
+    ],
+    "deposited_dev_from_x2_pct": [
+     -0.7577317185363808,
+     -1.2099472770007003
+    ],
+    "__source__": "summary.json::matrix.half_rescaling.T-10"
+   }
+  },
+  "G10_L4_quantization": {
+   "t_max_mm_L4": 10.41796875,
+   "t_max_mm_L2": 10.41796875,
+   "L4_equals_L2": true,
+   "note": "L4 non-monotone = single-cell quantisation oscillation (disclosed per prereg E2; monotonicity gate is L1<L2<L3)",
+   "prior": {
+    "ladder_L1": 8.334375,
+    "ladder_L2": 10.41796875,
+    "ladder_L3": 10.48820224719101,
+    "ladder_L4": 10.41796875,
+    "__source__": "icing_conv_20260917/analysis.json::ladder.levels[].t_max_mm"
+   }
+  }
+ },
+ "provenance": {
+  "campaign_root": "/nfs/wangxi/runs/icing_bm_20261006",
+  "verdict_md5": "128625e189512600b54ce5af3dec385f",
+  "prereg_md5": "65b3565e6c0bbf450ef50b9ab8660a65",
+  "evidence_tree": "35856caa (pristine Phase-1 tree)",
+  "gallery_figs": 6
+ }
+}

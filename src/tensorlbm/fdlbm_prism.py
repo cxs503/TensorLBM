@@ -21,7 +21,6 @@ References:
 """
 
 import torch
-from typing import Optional
 
 
 class FDLBMPrismSolver:
@@ -176,9 +175,9 @@ def hybrid_step_lbm_fdlbm(
     The prism layer solves the Boltzmann equation on body-fitted mesh,
     coupled to Cartesian LBM at the interface via f values.
     """
-    from .turbulence import collide_smagorinsky_mrt3d
-    from .solver3d import stream3d
     from .boundaries3d import far_field_bc_3d
+    from .solver3d import stream3d
+    from .turbulence import collide_smagorinsky_mrt3d
 
     # LBM bulk step
     f = collide_smagorinsky_mrt3d(f, tau=tau, C_s=C_s)

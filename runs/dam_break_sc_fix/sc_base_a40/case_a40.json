@@ -1,0 +1,37 @@
+{
+  "T_max_eff": 3.0001294470454316,
+  "T_max_raw": 3.130495168499706,
+  "a": 40.0,
+  "checkpoints": {
+    "T1": {
+      "X_ref": 1.1,
+      "X_sim_T_eff": 1.74994,
+      "X_sim_T_raw": 1.694427,
+      "err_pct_T_eff": 59.085,
+      "err_pct_T_raw": 54.039
+    },
+    "T2": {
+      "X_ref": 1.8,
+      "X_sim_T_eff": 2.941586,
+      "X_sim_T_raw": 2.838854,
+      "err_pct_T_eff": 63.421,
+      "err_pct_T_raw": 57.714
+    },
+    "T3": {
+      "X_ref": 2.7,
+      "X_sim_T_eff": 3.849879,
+      "X_sim_T_raw": 3.758282,
+      "err_pct_T_eff": 42.588,
+      "err_pct_T_raw": 39.196
+    }
+  },
+  "dt_s": 11.457726398482919,
+  "g": 0.0002,
+  "g_eff": 0.0001836893203883495,
+  "mass_drift_max": 1.2578996980688865e-05,
+  "max_steps": 1400,
+  "max_u_max": 0.6933830380439758,
+  "nx": 256,
+  "ny": 128,
+  "sample_interval": 25
+}

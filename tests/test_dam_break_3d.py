@@ -8,7 +8,7 @@ import pytest
 import torch
 
 from tensorlbm.dam_break_3d import DamBreak3DConfig, run_dam_break_3d
-from tensorlbm.free_surface_lbm import GAS, LIQUID, init_fill_rectangular, init_flags_from_fill
+from tensorlbm.free_surface_lbm import GAS, init_fill_rectangular, init_flags_from_fill
 
 
 def _fs_config(tmp_path, **overrides):

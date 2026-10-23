@@ -1,0 +1,44 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+{
+  "oom": true,
+  "kernel": "sparse",
+  "D": 34,
+  "lat": 3.0,
+  "up": 3.0,
+  "down": 4.0,
+  "tau": 0.5255,
+  "steps_requested": 400,
+  "progress": {
+    "step": 1,
+    "phase": "loop"
+  },
+  "torch_peak_allocated_gib": 0.0,
+  "torch_peak_reserved_gib": 0.0,
+  "alloc_conf": "expandable_segments:True",
+  "traceback_tail": [
+    "        ^^^^^^^^^^",
+    "  File \"/root/TensorLBM_feat2/benchmarks/pending/sphere_re200/run.py\", line 121, in <lambda>",
+    "    return lambda f: collide_mrt3d_low_memory(f, tau=tau)",
+    "                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+    "  File \"/root/TensorLBM_feat2/src/tensorlbm/solver3d.py\", line 216, in collide_mrt3d_low_memory",
+    "    moments = matrix @ f_flat",
+    "              ~~~~~~~^~~~~~~~",
+    "RuntimeError: sdaa out of memory. Tried to allocate 9.18 GiB (SDAA 14; 14.94 GiB total capacity; 3.88 GiB already allocated; 9.74 GiB free; 4.95 GiB reserved in total by Torch-SDAA)"
+  ],
+  "error": "sdaa out of memory. Tried to allocate 9.18 GiB (SDAA 14; 14.94 GiB total capacity; 3.88 GiB already allocated; 9.74 GiB free; 4.95 GiB reserved in total by Torch-SDAA)"
+}

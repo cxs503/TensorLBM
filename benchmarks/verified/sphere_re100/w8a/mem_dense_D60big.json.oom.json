@@ -1,0 +1,28 @@
+{
+  "oom": true,
+  "kernel": "dense",
+  "D": 60,
+  "lat": 3.0,
+  "up": 3.0,
+  "down": 4.0,
+  "tau": 0.59,
+  "steps_requested": 600,
+  "progress": {
+    "step": 1,
+    "phase": "loop"
+  },
+  "torch_peak_allocated_gib": 30.045341968536377,
+  "torch_peak_reserved_gib": 30.763671875,
+  "alloc_conf": "expandable_segments:True",
+  "traceback_tail": [
+    "        ^^^^^^^^^^",
+    "  File \"/nfs/wangxi/runs/bm_widen_w8_20260928/bfl_mem/run_w8a.py\", line 132, in <lambda>",
+    "    return lambda f: collide_mrt3d_low_memory(f, tau=tau)",
+    "                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+    "  File \"/nfs/wangxi/runs/bm_widen_w8_20260928/bfl_mem/src_patched/tensorlbm/solver3d.py\", line 215, in collide_mrt3d_low_memory",
+    "    moments = matrix @ f_flat",
+    "              ~~~~~~~^~~~~~~~",
+    "torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 5.99 GiB. GPU 0 has a total capacity of 31.40 GiB of which 2.55 GiB is free. Including non-PyTorch memory, this process has 28.84 GiB memory in use. Of the allocated memory 28.15 GiB is allocated by PyTorch, and 93.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)"
+  ],
+  "error": "CUDA out of memory. Tried to allocate 5.99 GiB. GPU 0 has a total capacity of 31.40 GiB of which 2.55 GiB is free. Including non-PyTorch memory, this process has 28.84 GiB memory in use. Of the allocated memory 28.15 GiB is allocated by PyTorch, and 93.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)"
+}

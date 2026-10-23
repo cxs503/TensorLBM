@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import math
 
-import pytest
 import torch
 
 from tensorlbm.boundaries3d import sphere_mask
@@ -29,7 +28,6 @@ from tensorlbm.boundaries_d3q27 import (
 from tensorlbm.d3q27 import equilibrium27, macroscopic27, stream27
 from tensorlbm.obstacles import compute_obstacle_forces_27
 from tensorlbm.turbulence import collide_dynamic_smagorinsky_mrt27
-
 
 # ---------------------------------------------------------------------------
 # Helpers

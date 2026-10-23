@@ -1,0 +1,19 @@
+=== W1-off-055 02:31:09 ===
+[W1-off-055] steps=10000 band=off tau=0.55 n_if0=95 n_if_max=340 uy_max_ge2000=0.5003939867019653 uy_runmax=2.4140 nonfinite=None fail_closed=None cum={'i2l': 155239, 'i2g': 59110, 'l2i': 155334, 'g2i': 51415, 'g2i_capture': 0, 'starved': 231442} -> /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/w1_battery/W1-off-055.json
+=== W1-AB-055 02:32:25 ===
+[W1-AB-055] steps=10000 band=capture_mirror tau=0.55 n_if0=95 n_if_max=536 uy_max_ge2000=0.024401161819696426 uy_runmax=0.0260 nonfinite=None fail_closed=None cum={'i2l': 7851, 'i2g': 220252, 'l2i': 8070, 'g2i': 218208, 'g2i_capture': 215971, 'starved': 37119} -> /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/w1_battery/W1-AB-055.json
+=== W1-A-055 02:33:53 ===
+[W1-A-055] steps=10000 band=capture tau=0.55 n_if0=95 n_if_max=539 uy_max_ge2000=0.024015475064516068 uy_runmax=0.0256 nonfinite=None fail_closed=None cum={'i2l': 14740, 'i2g': 216344, 'l2i': 14826, 'g2i': 214795, 'g2i_capture': 211649, 'starved': 3791} -> /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/w1_battery/W1-A-055.json
+=== W1-B-055 02:35:18 ===
+[W1-B-055] steps=10000 band=mirror tau=0.55 n_if0=95 n_if_max=243 uy_max_ge2000=0.5005486011505127 uy_runmax=0.5006 nonfinite=None fail_closed=None cum={'i2l': 67718, 'i2g': 40859, 'l2i': 67967, 'g2i': 31732, 'g2i_capture': 0, 'starved': 141344} -> /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/w1_battery/W1-B-055.json
+=== W1-R-055 02:36:47 ===
+[W1-R-055] steps=10000 band=capture_rescue_mirror tau=0.55 n_if0=95 n_if_max=232 uy_max_ge2000=0.07403209805488586 uy_runmax=0.0880 nonfinite=None fail_closed=None cum={'i2l': 36749, 'i2g': 86236, 'l2i': 36989, 'g2i': 83025, 'g2i_capture': 74568, 'starved': 574474} -> /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/w1_battery/W1-R-055.json
+=== W1-AB-08 02:38:21 ===
+[W1-AB-08] steps=10000 band=capture_mirror tau=0.8 n_if0=95 n_if_max=565 uy_max_ge2000=0.01639748178422451 uy_runmax=0.0164 nonfinite=None fail_closed=None cum={'i2l': 22792, 'i2g': 234605, 'l2i': 22926, 'g2i': 232911, 'g2i_capture': 229633, 'starved': 26530} -> /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/w1_battery/W1-AB-08.json
+=== W1-AB-10 02:39:50 ===
+[W1-AB-10] steps=10000 band=capture_mirror tau=1.0 n_if0=95 n_if_max=577 uy_max_ge2000=0.014305606484413147 uy_runmax=0.0143 nonfinite=None fail_closed=None cum={'i2l': 2129, 'i2g': 237266, 'l2i': 2254, 'g2i': 235521, 'g2i_capture': 235072, 'starved': 17728} -> /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/w1_battery/W1-AB-10.json
+=== P-AB-10-static 02:41:16 ===
+[P-AB-10-static] steps=10000 band=capture_mirror tau=1.0 n_if0=143 n_if_max=1311 uy_max_ge2000=0.01834174618124962 uy_runmax=0.0183 nonfinite=None fail_closed=None cum={'i2l': 6106, 'i2g': 788393, 'l2i': 6289, 'g2i': 783509, 'g2i_capture': 782297, 'starved': 37992} -> /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/w1_battery/P-AB-10-static.json
+=== P-AB-10-fossil 02:44:21 ===
+[P-AB-10-fossil] steps=10000 band=capture_mirror tau=1.0 n_if0=144 n_if_max=1304 uy_max_ge2000=0.018429677933454514 uy_runmax=0.0184 nonfinite=None fail_closed=None cum={'i2l': 16006, 'i2g': 782037, 'l2i': 16178, 'g2i': 777570, 'g2i_capture': 774972, 'starved': 25809} -> /nfs/wangxi/runs/x_campaign_20261004/xc_freesurface/out/w1_battery/P-AB-10-fossil.json
+ALL_ARMS_DONE 02:47:22

@@ -33,7 +33,7 @@ Lorensen, W.E. & Cline, H.E. (1987). "Marching cubes: A high resolution 3D
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import torch
 

@@ -1,0 +1,20 @@
+xa2 rerun start; torch=2.11.0+cu128; dev=NVIDIA GeForce RTX 5090
+=== run sphere_N096_R12_ext steps=8000 ===
+  r_eq=15.8979 dp=+0.014024+-7.61e-07 gate=True wall=51.5s
+=== run sphere_N096_R16_ext steps=8000 ===
+  r_eq=18.5696 dp=+0.012115+-3.49e-07 gate=True wall=51.6s
+=== run sphere_N096_R21_ext steps=8000 ===
+  r_eq=22.5352 dp=+0.010052+-8.22e-08 gate=True wall=51.6s
+=== run sphere_N144_R18_ext steps=12000 ===
+  r_eq=24.9174 dp=+0.009003+-6.71e-07 gate=True wall=299.9s
+=== run sphere_N144_R24_ext steps=12000 ===
+  r_eq=28.5579 dp=+0.007864+-3.37e-07 gate=True wall=299.9s
+=== run sphere_N144_R32_ext steps=12000 ===
+  r_eq=34.6320 dp=+0.006503+-6.66e-08 gate=True wall=300.0s
+=== run sphere_N192_R24_ext steps=16000 ===
+  r_eq=33.8152 dp=+0.006626+-6.53e-07 gate=True wall=980.9s
+=== run sphere_N192_R32_ext steps=16000 ===
+  r_eq=38.5467 dp=+0.005820+-3.04e-07 gate=True wall=980.9s
+=== run sphere_N192_R43_ext steps=16000 ===
+  r_eq=46.7685 dp=+0.004804+-7.95e-08 gate=True wall=980.9s
+xa2 rerun done in 66.6 min

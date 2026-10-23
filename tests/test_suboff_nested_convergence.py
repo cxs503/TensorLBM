@@ -19,9 +19,7 @@ def _record(length: int, resistance: float) -> dict:
             "nu_water": 1.004e-6,
             "cs_smag": 0.05,
             "wall_law": "musker",
-            "wall_traction_source_scheme": (
-                "mass_conservative_post_collision_guo_v2"
-            ),
+            "wall_traction_source_scheme": ("mass_conservative_post_collision_guo_v2"),
             "appendage_link_scheme": "analytic_axisymmetric_bisection_v1",
             "stress_exchange_distance": (3.0 / 256.0) * finest,
             "inner_wall_margin": length / 15.0,
@@ -103,10 +101,7 @@ def _record(length: int, resistance: float) -> dict:
 
 
 def test_nested_three_grid_sequence_can_be_admitted() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
 
     result = assess_suboff_nested_convergence(records)
 
@@ -117,10 +112,7 @@ def test_nested_three_grid_sequence_can_be_admitted() -> None:
 
 
 def test_nested_convergence_fails_if_scaled_exchange_distance_changes() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
     changed = copy.deepcopy(records)
     changed[-1]["configuration"]["stress_exchange_distance"] = 1.5
 
@@ -131,8 +123,7 @@ def test_nested_convergence_fails_if_scaled_exchange_distance_changes() -> None:
 
 def test_nested_convergence_rejects_pre_correction_wall_source() -> None:
     records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90.0, 120.0, 150.0)
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90.0, 120.0, 150.0)
     ]
     records[0]["configuration"].pop("wall_traction_source_scheme")
 
@@ -144,10 +135,7 @@ def test_nested_convergence_rejects_pre_correction_wall_source() -> None:
 
 
 def test_nested_exchange_distance_is_normalized_by_finest_resolution() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
 
     result = assess_suboff_nested_convergence(records)
 
@@ -160,10 +148,7 @@ def test_nested_exchange_distance_is_normalized_by_finest_resolution() -> None:
 
 
 def test_nested_convergence_requires_all_observer_gates() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
     records[1]["acceptance"]["surface_observer_target_met"] = False
 
     result = assess_suboff_nested_convergence(records)
@@ -173,10 +158,7 @@ def test_nested_convergence_requires_all_observer_gates() -> None:
 
 
 def test_conservative_force_observer_supersedes_rejected_surface_pressure() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
     for record in records:
         record["acceptance"]["surface_observer_target_met"] = False
         record["acceptance"]["surface_observer_used_for_acceptance"] = False
@@ -189,10 +171,7 @@ def test_conservative_force_observer_supersedes_rejected_surface_pressure() -> N
 
 
 def test_legacy_result_can_prove_conservative_observer_from_recorded_closure() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
     for record in records:
         record["acceptance"]["surface_observer_target_met"] = False
         record["result"]["maximum_source_corrected_observer_difference_pct"] = 0.05
@@ -204,10 +183,7 @@ def test_legacy_result_can_prove_conservative_observer_from_recorded_closure() -
 
 
 def test_nested_convergence_rejects_unscaled_wall_exchange_gate() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
     records[0]["acceptance"]["wall_exchange_scaling_target_met"] = False
 
     result = assess_suboff_nested_convergence(records)
@@ -217,10 +193,7 @@ def test_nested_convergence_rejects_unscaled_wall_exchange_gate() -> None:
 
 
 def test_nested_convergence_rejects_missing_target_reynolds_duration() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
     records[0]["acceptance"]["target_reynolds_duration_target_met"] = False
 
     result = assess_suboff_nested_convergence(records)
@@ -230,10 +203,7 @@ def test_nested_convergence_rejects_missing_target_reynolds_duration() -> None:
 
 
 def test_nested_convergence_rejects_changed_interface_filter() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
     records[-1]["configuration"]["interface_filter_strength"] = 0.25
 
     result = assess_suboff_nested_convergence(records)
@@ -243,10 +213,7 @@ def test_nested_convergence_rejects_changed_interface_filter() -> None:
 
 
 def test_nested_convergence_rejects_unscaled_viscosity_continuation() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
     records[-1]["configuration"]["viscosity_ramp_end_step"] += 1
 
     result = assess_suboff_nested_convergence(records)
@@ -256,13 +223,10 @@ def test_nested_convergence_rejects_unscaled_viscosity_continuation() -> None:
 
 
 def test_nested_convergence_rejects_unscaled_inner_patch_geometry() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
+    records[-1]["configuration"]["inner_wall_margin"] = records[-2]["configuration"][
+        "inner_wall_margin"
     ]
-    records[-1]["configuration"]["inner_wall_margin"] = (
-        records[-2]["configuration"]["inner_wall_margin"]
-    )
 
     result = assess_suboff_nested_convergence(records)
 
@@ -271,10 +235,7 @@ def test_nested_convergence_rejects_unscaled_inner_patch_geometry() -> None:
 
 
 def test_v2_bare_record_uses_explicit_geometry_hull_type() -> None:
-    records = [
-        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
-        for length in (90, 120, 150)
-    ]
+    records = [_record(length, 88.0 + 200000.0 / (4.0 * length) ** 2) for length in (90, 120, 150)]
     records[-1]["schema"] = "tensorlbm-suboff-nested-amr-smoke-v2"
     records[-1]["configuration"].pop("hull_type")
     records[-1]["geometry"]["resolution"]["hull_type"] = "bare_hull"

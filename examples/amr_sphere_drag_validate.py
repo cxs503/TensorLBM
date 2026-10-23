@@ -8,6 +8,7 @@ twice per coarse step, and is conservatively restricted and refluxed.
 This is a validation runner: the result is compared against the uniform-grid
 sphere reference (Schiller-Naumann Cd) to test whether AMR preserves accuracy.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -19,13 +20,12 @@ from pathlib import Path
 
 import torch
 
-from tensorlbm.boundaries3d import far_field_bc_3d, sphere_mask
 from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19
+from tensorlbm.boundaries3d import far_field_bc_3d, sphere_mask
 from tensorlbm.control_volume_force import (
     box_control_volume,
     observe_control_volume_force,
 )
-from tensorlbm.cuda_memory_budget import require_cuda_memory_budget
 from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
@@ -53,7 +53,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--nx", type=int, default=160)
     p.add_argument("--ny", type=int, default=112)
     p.add_argument("--nz", type=int, default=112)
-    p.add_argument("--radius", type=float, default=8.0)      # coarse-grid sphere radius
+    p.add_argument("--radius", type=float, default=8.0)  # coarse-grid sphere radius
     p.add_argument("--reynolds", type=float, default=100.0)
     p.add_argument("--lattice-speed", type=float, default=0.06)
     p.add_argument("--wall-margin", type=int, default=6)
@@ -129,23 +129,39 @@ def main() -> None:
         cz * ratio - z0 * ratio + g,
     )
     fine_solid = sphere_mask(
-        fine_shape[2], fine_shape[1], fine_shape[0],
-        fine_center[0], fine_center[1], fine_center[2],
-        args.radius * ratio, device=device,
+        fine_shape[2],
+        fine_shape[1],
+        fine_shape[0],
+        fine_center[0],
+        fine_center[1],
+        fine_center[2],
+        args.radius * ratio,
+        device=device,
     )
     fine_solid_g = torch.zeros(
         (fine_shape[0] + 2 * g, fine_shape[1] + 2 * g, fine_shape[2] + 2 * g),
-        dtype=torch.bool, device=device,
+        dtype=torch.bool,
+        device=device,
     )
     fine_solid_g[g:-g, g:-g, g:-g] = fine_solid
     bfl_mask, bfl_q = compute_q_sphere(
-        fine_solid_g.shape[2], fine_solid_g.shape[1], fine_solid_g.shape[0],
-        fine_center[0], fine_center[1], fine_center[2],
-        args.radius * ratio, device=device,
+        fine_solid_g.shape[2],
+        fine_solid_g.shape[1],
+        fine_solid_g.shape[0],
+        fine_center[0],
+        fine_center[1],
+        fine_center[2],
+        args.radius * ratio,
+        device=device,
     )
-    solid_q = fine_solid_g.unsqueeze(0).expand(
-        19, *fine_solid_g.shape,
-    ).contiguous()
+    solid_q = (
+        fine_solid_g.unsqueeze(0)
+        .expand(
+            19,
+            *fine_solid_g.shape,
+        )
+        .contiguous()
+    )
 
     print(
         f"coarse={list(shape)} fine_box={[x0, x1, y0, y1, z0, z1]} "
@@ -157,7 +173,8 @@ def main() -> None:
     amr = StaticBlockAMR3D(
         coarse_f,
         StaticBlockAMRConfig(
-            box, tau_coarse=tau_coarse,
+            box,
+            tau_coarse=tau_coarse,
             reflux=not args.no_reflux,
             maximum_reflux_correction_fraction=args.max_reflux_fraction,
             ghost_interpolation=args.ghost_interpolation,
@@ -181,8 +198,10 @@ def main() -> None:
     )
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sigma = build_sponge_sigma_3d(
-        shape, width=args.sponge_width,
-        max_strength=args.sponge_strength, device=device,
+        shape,
+        width=args.sponge_width,
+        max_strength=args.sponge_strength,
+        device=device,
         faces=sponge_faces,
     )
     dynamic_area = 0.5 * args.lattice_speed**2 * math.pi * (args.radius * ratio) ** 2
@@ -194,7 +213,10 @@ def main() -> None:
     started = time.time()
 
     def advance(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         nonlocal max_reflux_residual, max_reflux_correction
         if level == 0:
@@ -207,7 +229,9 @@ def main() -> None:
             else:
                 out = far_field_bc_3d(out, u_in=args.lattice_speed)
             out = apply_equilibrium_difference_sponge(
-                out, sigma, velocity_target=(args.lattice_speed, 0.0, 0.0),
+                out,
+                sigma,
+                velocity_target=(args.lattice_speed, 0.0, 0.0),
             )
             if args.far_field_mode == "non_equilibrium_extrapolation":
                 out = non_equilibrium_far_field_bc_3d(out, u_in=args.lattice_speed)
@@ -226,9 +250,17 @@ def main() -> None:
         # correct here.
         out = bouzidi_bounce_back_d3q19(out, post_collision, bfl_mask, bfl_q)
         if substep == 1:  # one sample per coarse step
-            cv_force = float(observe_control_volume_force(
-                before, out, post_collision, cv, solid=fine_solid_g,
-            ).force_on_body[0].item())
+            cv_force = float(
+                observe_control_volume_force(
+                    before,
+                    out,
+                    post_collision,
+                    cv,
+                    solid=fine_solid_g,
+                )
+                .force_on_body[0]
+                .item()
+            )
             force_samples.append(cv_force)
         return AMRAdvanceResult(out, post_collision)
 
@@ -242,7 +274,7 @@ def main() -> None:
             float(ledger.replacement_mismatch.abs().max().item()),
         )
         if current_step % args.report_interval == 0:
-            recent = force_samples[-min(len(force_samples), args.report_interval):]
+            recent = force_samples[-min(len(force_samples), args.report_interval) :]
             recent_cd = sum(recent) / len(recent) / dynamic_area if recent else math.nan
             elapsed = time.time() - started
             print(
@@ -258,12 +290,11 @@ def main() -> None:
     reference = schiller_naumann_cd(args.reynolds)
     cd_history = [f_ / dynamic_area for f_ in selected]
     stationarity = assess_force_stationarity(
-        cd_history, block_size=max(1, len(cd_history) // 8),
+        cd_history,
+        block_size=max(1, len(cd_history) // 8),
     )
     stationarity_dict = (
-        asdict(stationarity)
-        if hasattr(stationarity, "__dataclass_fields__")
-        else stationarity
+        asdict(stationarity) if hasattr(stationarity, "__dataclass_fields__") else stationarity
     )
     reference_error = abs(cd - reference) / reference * 100.0
     result = {

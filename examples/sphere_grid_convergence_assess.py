@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Assess equivalent sphere-v3 grid records with source hashes."""
+
 from __future__ import annotations
 
 import argparse

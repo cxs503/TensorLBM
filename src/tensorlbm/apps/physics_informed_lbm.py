@@ -53,6 +53,7 @@ __all__ = [
 # Architecture
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class PinnArch:
     """Hyper-parameters describing a :class:`PINNMLP`."""
@@ -104,6 +105,7 @@ class PINNMLP(nn.Module):
 # Persistence
 # ---------------------------------------------------------------------------
 
+
 def save_pinn_model(model: nn.Module, path: str | Path) -> Path:
     """Serialize a :class:`PINNMLP` to a ``.pt`` state-dict + JSON arch."""
     p = Path(path)
@@ -132,6 +134,7 @@ def load_pinn_model(path: str | Path) -> PINNMLP:
 # ---------------------------------------------------------------------------
 # Physics helpers
 # ---------------------------------------------------------------------------
+
 
 def _taylor_green(xy: torch.Tensor) -> torch.Tensor:
     """Taylor–Green vortex: an exact steady solution of 2-D incompressible Euler.
@@ -209,6 +212,7 @@ def _sample_points(
 # The application
 # ---------------------------------------------------------------------------
 
+
 class PhysicsInformedLBM(AI4SApplication):
     """2-D steady incompressible-flow PINN as a platform application.
 
@@ -269,7 +273,13 @@ class PhysicsInformedLBM(AI4SApplication):
         points = _sample_points(x0, x1, y0, y1, n_points, seed, device)
         labels = field_fn(points).detach().clone()
         collocation = _sample_points(
-            x0, x1, y0, y1, n_collocation, seed + 1, device,
+            x0,
+            x1,
+            y0,
+            y1,
+            n_collocation,
+            seed + 1,
+            device,
         )
 
         return DataProduct(
@@ -402,6 +412,7 @@ class PhysicsInformedLBM(AI4SApplication):
 # Default training loop
 # ---------------------------------------------------------------------------
 
+
 def _train_pinn(
     dataset: Mapping[str, Any],
     model: nn.Module,
@@ -451,7 +462,7 @@ def _train_pinn(
             else:
                 cb = collocation
             cont, mom_x, mom_y = pde_residuals(model, cb, nu=nu)
-            physics_loss = (cont ** 2).mean() + (mom_x ** 2).mean() + (mom_y ** 2).mean()
+            physics_loss = (cont**2).mean() + (mom_x**2).mean() + (mom_y**2).mean()
         else:
             physics_loss = torch.zeros((), device=torch_device)
 
@@ -478,6 +489,7 @@ def _train_pinn(
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _to_coords(sample: Any) -> torch.Tensor:
     """Normalise a coordinate sample into a ``float32`` tensor of shape ``(..., 2)``."""
     if isinstance(sample, torch.Tensor):
@@ -489,8 +501,7 @@ def _to_coords(sample: Any) -> torch.Tensor:
         xy = torch.stack([x, y], dim=-1)
     else:
         raise TypeError(
-            "sample must be a (N,2)/(2,) tensor or a (x, y) pair, "
-            f"got {type(sample).__name__}",
+            f"sample must be a (N,2)/(2,) tensor or a (x, y) pair, got {type(sample).__name__}",
         )
     return xy
 

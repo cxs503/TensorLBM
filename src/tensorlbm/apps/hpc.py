@@ -116,6 +116,7 @@ class HpcRunSpec:
 # Scheduler loading (lazy, so the SDK stays importable without the backend)
 # ---------------------------------------------------------------------------
 
+
 def load_hpc_scheduler() -> HpcScheduler:
     """Import the platform HPC scheduler (SLURM/PBS wrappers).
 
@@ -143,6 +144,7 @@ def load_hpc_scheduler() -> HpcScheduler:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def build_hpc_job_id(app_name: str) -> str:
     """Build a deterministic platform job id: ``<app>_hpc_<8 hex chars>``."""
@@ -175,6 +177,7 @@ def build_produce_data_cmd(app_name: str, produce_cfg: Mapping[str, Any]) -> str
 # ---------------------------------------------------------------------------
 # Submission / query
 # ---------------------------------------------------------------------------
+
 
 def submit_app_hpc(
     app: AI4SApplication,

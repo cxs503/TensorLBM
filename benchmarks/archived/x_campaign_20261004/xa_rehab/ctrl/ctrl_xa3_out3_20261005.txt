@@ -1,0 +1,40 @@
+PASS C1.sigma_rec_quotes_exact 
+PASS C1.r_eq0_quotes_rel max rel 1.526e-12
+PASS C1.r24_family_identity mu not in init -> identical r_eq0
+PASS C2.W.stp_R16 rel 0.0e+00
+PASS C2.W.stp_R24 rel 0.0e+00
+PASS C2.W.stp_R32 rel 0.0e+00
+PASS C2.W.stp_R24_mu045 rel 0.0e+00
+PASS C3.P.stp_R16.health 
+  [C3] stp_R16: sigma_eff 0.006543204919  sigma_R0 0.006461216305
+PASS C3.P.stp_R16_b8.health 
+  [C3] stp_R16_b8: sigma_eff 0.006543277658  sigma_R0 0.006461288132
+PASS C3.P.stp_R24.health 
+  [C3] stp_R24: sigma_eff 0.006497685527  sigma_R0 0.006460991864
+PASS C3.P.stp_R32.health 
+  [C3] stp_R32: sigma_eff 0.006483279093  sigma_R0 0.006462582705
+PASS C3.P.stp_R24_mu045.health 
+  [C3] stp_R24_mu045: sigma_eff 0.00649785088  sigma_R0 0.006461156284
+PASS C4.ca_recompute_vs_archive max abs dev 0.00e+00
+PASS C4.RA_ratio_sh_recompute max abs dev 0.00e+00
+[C4] intercepted judge-original nominal-1/box deviation: 1.6869e-03
+[C5] reading A: in_band 6/11  C16a=0.9696 C16b=0.9774 C16c=0.9913 C24a=1.0213 C24b=1.0280 C24c=1.0403* C32a=1.0424* C32b=1.0488* C32c=1.0607* Wlad=0.9869 Re2=1.0694*
+[C5] reading B: in_band 6/11  C16a=0.9121* C16b=0.9195* C16c=0.9326* C24a=0.9599* C24b=0.9663 C24c=0.9778 C32a=0.9793 C32b=0.9853 C32c=0.9965 Wlad=0.9284* Re2=1.0051
+[C5] reading C: in_band 6/11  C16a=0.9696 C16b=0.9774 C16c=0.9913 C24a=1.0213 C24b=1.0280 C24c=1.0403* C32a=1.0424* C32b=1.0488* C32c=1.0607* Wlad=0.9724 Re2=1.0694*
+[C6] S1=False (in_a=6 in_b=6)  S2=False  S3=True
+[C6] G2_reeval monotone clauses: {'B.a': False, 'B.b': False, 'B.c': False, 'C.a': False, 'C.b': True, 'C.c': True}
+[C7] stp_R16: sigma_eff/rec-1 = -5.9265%
+[C7] stp_R16_b8: sigma_eff/rec-1 = -5.9255%
+[C7] stp_R24: sigma_eff/rec-1 = -6.0088%
+[C7] stp_R32: sigma_eff/rec-1 = -6.0513%
+[C7] stp_R24_mu045: sigma_eff/rec-1 = -6.0092%
+PASS C8.verdict_string_present 
+PASS C8.readings_match 
+PASS C8.in_band_counts judgment 6/6/6 vs mine 6/6/6
+PASS C8.S1 
+PASS C8.S2 
+PASS C8.S3 
+PASS C8.verdict_string KILLED: sigma-mismatch hypothesis rejected; T2 G1a FAIL stands; residu
+PASS C8.G3A_intercepts_vs_archive 
+
+=== 22 PASS, 0 FAIL ===

@@ -1,0 +1,1753 @@
+{
+  "fetch_utc": "2026-10-06T12:22:08Z",
+  "repo": "cxs503/TensorLBM",
+  "ref": "main",
+  "items": {
+    "main_sha": "bea7ec2f7f205179324de65c2ff024e9e78a5017",
+    "main_committer_date": "2026-10-06T09:01:33Z",
+    "commit_20cd23472": {
+      "sha": "20cd23472d81df7cd95495adf1c62dd1db6e218f",
+      "message": "sphere_re100 PROMOTED to verified: Cd +2.771%/+2.540% (D40/D60, span 0.231%, monotone)",
+      "date": "2026-10-05T09:36:13Z",
+      "files": [
+        {
+          "filename": "benchmarks/STATUS.md",
+          "status": "modified",
+          "additions": 12,
+          "deletions": 9
+        },
+        {
+          "filename": "benchmarks/TODO.md",
+          "status": "modified",
+          "additions": 2,
+          "deletions": 2
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/NOTES.md",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/NOTES_sha256_chain.txt",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/README.md",
+          "status": "added",
+          "additions": 152,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/README_w5b.md",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/REFERENCE_AUDIT.md",
+          "status": "added",
+          "additions": 55,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/chain_w7diag_D20.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/cv_instrument.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/formal_bb_D40.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/formal_bb_D60.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/formal_bfl_D40.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/formal_bfl_D60.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/loop_dense_D20.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/result.json",
+          "status": "added",
+          "additions": 106,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/result_w5b.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/run.py",
+          "status": "added",
+          "additions": 415,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/run_w5b_formal.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/README.md",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/compare_force_methods.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/base_D16.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/down16_D16.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/down4_D16.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/down4_D20.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/down8_D16.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/down8_D20.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/result.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/result_mem_surface.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/run.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/run_canonical.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/run_matrix.sh",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/run_mem_surface.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/launch_blockage.sh",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/launch_res.sh",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/launch_scan.sh",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D10_L16.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D10_L16.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D10_L32.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D12_L16.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D12_L24.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D12_L32.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D14_L16.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D14_L16.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D16_L16.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D16_L16.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D8_L16.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D8_L16.log",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan_p0_friction_summary.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/t1_d40big_12k.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/t2_d60big_24k.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/verify.py",
+          "status": "added",
+          "additions": 236,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/verify_w5b_formal.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/cv_instrument.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/accidental_re150_up2.75_D60.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/bit_gather.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/bit_roll.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/formal12k_bfl_D40.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/formal12k_bfl_D60.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/h1_mrt_tau0.53.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/h1_mrt_tau0.59.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/h2_big.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/h2_noneq.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/h2_up2.0.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/h2_up3.0.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/mem_D60_up2.75.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/p1_up4.0.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/t1_bgk.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/t1_magic.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/t1_mrt_base.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/t1_trt.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/v1_up2.75_down4.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/diag/v1_up2.75_down4_24k.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/formal_bb_D40.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/formal_bb_D60.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/formal_bfl_D40.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/formal_bfl_D60.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/result.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/run_diag.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7/verify.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w7_dense_h2_big.json",
+          "status": "added",
+          "additions": 1,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/README.md",
+          "status": "renamed",
+          "additions": 2,
+          "deletions": 2
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/bit_check.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/chain_w7diag_D20.json",
+          "status": "added",
+          "additions": 1,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/cv_instrument.py",
+          "status": "added",
+          "additions": 42,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/loop_dense_D20.json",
+          "status": "added",
+          "additions": 1,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/mem_dense_D60big.json.oom.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/mem_sparse_D60big.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/result.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/run.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/speed_probe.json",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/t1_d40big_12k.json",
+          "status": "added",
+          "additions": 1,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/t2_d60big_24k.json",
+          "status": "added",
+          "additions": 1,
+          "deletions": 0
+        },
+        {
+          "filename": "benchmarks/verified/sphere_re100/w8a/verify.py",
+          "status": "renamed",
+          "additions": 0,
+          "deletions": 0
+        }
+      ]
+    },
+    "benchmarks/verified/sphere_re100": [
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/NOTES.md",
+        "bytes": 13527,
+        "sha256": "489074a4899ccf4beb754734811f2bb4d100f0433f5a221b5c0db4c64748564c",
+        "remote_path": "benchmarks/verified/sphere_re100/NOTES.md",
+        "blob_sha": "3c3850820d2bc39c474693e24df6f27bed4c9603",
+        "git_size": 13527,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/NOTES_sha256_chain.txt",
+        "bytes": 1644,
+        "sha256": "72d4a469a48883e1960aa578ac71b8cfcd73fd01e78beefa37dd0cdb6d98e1f5",
+        "remote_path": "benchmarks/verified/sphere_re100/NOTES_sha256_chain.txt",
+        "blob_sha": "27216afe7989624ca45d489d437d981444782ba9",
+        "git_size": 1644,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/README.md",
+        "bytes": 8986,
+        "sha256": "3b2c046d4aef45745cbec1f4752074950aa683efed8d239910221e77574d2dd7",
+        "remote_path": "benchmarks/verified/sphere_re100/README.md",
+        "blob_sha": "4dc08caebb8d93792176b55e725392d57911f4d4",
+        "git_size": 8986,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/README_w5b.md",
+        "bytes": 12773,
+        "sha256": "bfa07db1ade4ffc11446b1a4822989bb94211e9c8fea31b87c2f090ac82c8fe1",
+        "remote_path": "benchmarks/verified/sphere_re100/README_w5b.md",
+        "blob_sha": "f4ebb65893cf870a6cd89e40d8ab7d722d1b2c3a",
+        "git_size": 12773,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/REFERENCE_AUDIT.md",
+        "bytes": 2630,
+        "sha256": "171b101e7959739b07e3b004ec09ae1e33cb5e500be450bcd29b0abcb93675cc",
+        "remote_path": "benchmarks/verified/sphere_re100/REFERENCE_AUDIT.md",
+        "blob_sha": "5c524c2c3ba3856eeac42f8187a28e439b959412",
+        "git_size": 2630,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/chain_w7diag_D20.json",
+        "bytes": 1247,
+        "sha256": "df6d43c2887902eecbae21d96fb7cb9d5256644b7a2c9191240bf60aa7a15296",
+        "remote_path": "benchmarks/verified/sphere_re100/chain_w7diag_D20.json",
+        "blob_sha": "a01bf70bc9123d9443ff242fec0a70a43c5ebcc6",
+        "git_size": 1247,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/cv_instrument.py",
+        "bytes": 1637,
+        "sha256": "35ad2c1f179216a5c195f493a304aca5cfc57049a21c68db8303023242f936b5",
+        "remote_path": "benchmarks/verified/sphere_re100/cv_instrument.py",
+        "blob_sha": "559aa92887e51659fbac83c579ed2d0ea4345a6f",
+        "git_size": 1637,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/formal_bb_D40.json",
+        "bytes": 76561,
+        "sha256": "3c0fd0113c06aace861d3032f104f53d3a25d238c527012ff8dd1052dd9bc175",
+        "remote_path": "benchmarks/verified/sphere_re100/formal_bb_D40.json",
+        "blob_sha": "c724487ce508d25fba1dc5ad8cdcb5f2a212bf92",
+        "git_size": 76561,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/formal_bb_D60.json",
+        "bytes": 75736,
+        "sha256": "82ef5890b586b491ea2b493814745456117a5f0847b0b8e2c88c7d8edcd2a87c",
+        "remote_path": "benchmarks/verified/sphere_re100/formal_bb_D60.json",
+        "blob_sha": "1f40693dc9d3c85e4eb8b826c8be1838845676d7",
+        "git_size": 75736,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/formal_bfl_D40.json",
+        "bytes": 52144,
+        "sha256": "904788084867ebda38c51b8aaac7417d5d04698e5a9015ff7f111102d8e741bb",
+        "remote_path": "benchmarks/verified/sphere_re100/formal_bfl_D40.json",
+        "blob_sha": "c24ca93a80bfaaef37893b68c4f6c39c5e01d24a",
+        "git_size": 52144,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/formal_bfl_D60.json",
+        "bytes": 52112,
+        "sha256": "4f5024d70f62fd7f7edea1e0c5f2c28e9633c52625a0ea7a0bd20584e3f78fc5",
+        "remote_path": "benchmarks/verified/sphere_re100/formal_bfl_D60.json",
+        "blob_sha": "bbd89f189cd403ce8208eb77ee882f677720b991",
+        "git_size": 52112,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/loop_dense_D20.json",
+        "bytes": 2262,
+        "sha256": "47f49e7421f8050af338a7756cd66331e830d20e121413ff959ec746c44925fd",
+        "remote_path": "benchmarks/verified/sphere_re100/loop_dense_D20.json",
+        "blob_sha": "5af389be537037e236536b18ba528f6c1d32ee07",
+        "git_size": 2262,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/result.json",
+        "bytes": 5697,
+        "sha256": "b4c13e0f862f41072a022fae6beb96d581337b72c3b929a2d25db28bdae52b08",
+        "remote_path": "benchmarks/verified/sphere_re100/result.json",
+        "blob_sha": "2ea6cb9dfdf15d1de6d541998ce847cc7f63a05e",
+        "git_size": 5697,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/result_w5b.json",
+        "bytes": 4499,
+        "sha256": "9263b8f69e464725d13662a33e5c3a1e7f2acb664774a248b2357950f39cefcb",
+        "remote_path": "benchmarks/verified/sphere_re100/result_w5b.json",
+        "blob_sha": "50ddebdfc8e41113cc155ea1d808e2c2476084fe",
+        "git_size": 4499,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/run.py",
+        "bytes": 14206,
+        "sha256": "73c26156f8a9a91c92384cd76df3cf2ba085d225ab998ededf78a259750ed947",
+        "remote_path": "benchmarks/verified/sphere_re100/run.py",
+        "blob_sha": "9c23d48729003d515de07788f68a4e563ea3a84e",
+        "git_size": 14206,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/run_w5b_formal.py",
+        "bytes": 9305,
+        "sha256": "8501ba9a04820b68a54af3eb52c92575dfb892b3540f34d7a104a06d8ae9e401",
+        "remote_path": "benchmarks/verified/sphere_re100/run_w5b_formal.py",
+        "blob_sha": "d9dfdef772a35767caba36f6b7c1ad505c266366",
+        "git_size": 9305,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/README.md",
+        "bytes": 12751,
+        "sha256": "21369b8b3f5b10d4554d7a0c93ce2cd010c175bc610a8e1ee0fc035630a21985",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/README.md",
+        "blob_sha": "19fdb7fe410ff8717bd87920cff1c556d79f117b",
+        "git_size": 12751,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/compare_force_methods.py",
+        "bytes": 8625,
+        "sha256": "d70d5d1987239a8d6cb43f75e0b0f38855fd3da6ea9f18fa7a30eb0a450c5b31",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/compare_force_methods.py",
+        "blob_sha": "dc70d3c5d72874d8889d2671e29a5c155d511728",
+        "git_size": 8625,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/probe.py",
+        "bytes": 11229,
+        "sha256": "029a7c7a9dcc4cbc57800ad1fe698fb3b14485bc1c80efee0c6d5ef1a8d593c6",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe.py",
+        "blob_sha": "ceab02ba673b4b4712c2acd5078a77bf0887e212",
+        "git_size": 11229,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/probe_runs/base_D16.log",
+        "bytes": 5098,
+        "sha256": "90c36a269f263f2d9b2b38d82188127d22682e9e531be4645f9ecab03d791a67",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/base_D16.log",
+        "blob_sha": "1b02541cc59dd4ee0b86eeb5a4acf0e5efaff65e",
+        "git_size": 5098,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/probe_runs/down16_D16.log",
+        "bytes": 5113,
+        "sha256": "27fdd9074dbd71abc2776be834515782ab36125086e61a70055fd5899cef808a",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/down16_D16.log",
+        "blob_sha": "60250f6bd36ab0b664d0faf1a944a790fba8edd2",
+        "git_size": 5113,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/probe_runs/down4_D16.log",
+        "bytes": 5108,
+        "sha256": "5a34bf33fc07402f9941a53447f37c10994b0aee1e1a02e73e9593a5104c9240",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/down4_D16.log",
+        "blob_sha": "c0fc8fa79a7ca6e5c898a4b2bad4cb2467d18f6b",
+        "git_size": 5108,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/probe_runs/down4_D20.log",
+        "bytes": 5119,
+        "sha256": "ae55b071bc96c3ebc982af2a6d41643d506db8c8c775a17f59d3ab469ecbbff1",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/down4_D20.log",
+        "blob_sha": "5037be900ea347d9dc0fa91a26ea7e2d7f666374",
+        "git_size": 5119,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/probe_runs/down8_D16.log",
+        "bytes": 5103,
+        "sha256": "b65427a274526bdb6e42068c624b7d6b200cf33b57ac97d5687240f91c40d474",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/down8_D16.log",
+        "blob_sha": "def3daaa9dfbaa5ddaceb6180bee08245ef77db8",
+        "git_size": 5103,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/probe_runs/down8_D20.log",
+        "bytes": 5140,
+        "sha256": "dd294dfc55ca434874e1a7fc8ead347eb7799774c7ec0dbbe3aa06c98bfbd679",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/probe_runs/down8_D20.log",
+        "blob_sha": "47f0c0a47b367995744a60abdd4ffccec968e4d0",
+        "git_size": 5140,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/result.json",
+        "bytes": 2980,
+        "sha256": "e181f1e1a913e9470873d6c75def7cbb088c0a6c713caa812879f83cdeae3bc7",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/result.json",
+        "blob_sha": "d24b5f5279bdc12a5b8a6e5d10d1c5029de3ab3e",
+        "git_size": 2980,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/result_mem_surface.json",
+        "bytes": 6517,
+        "sha256": "3c9503825c3979b05b7b3f5149a2f2f386a363507762ab0ab5758494a459b627",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/result_mem_surface.json",
+        "blob_sha": "bab0172cc5166694f29f08c2e157a2cf9a8fe5f6",
+        "git_size": 6517,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/run.py",
+        "bytes": 3655,
+        "sha256": "021191bb8c39183276f5bd787081fe180398783d7ea09754f5dc113f7562b0f9",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/run.py",
+        "blob_sha": "866fdb6c1eb7d39277dd99f3deaade80c3942500",
+        "git_size": 3655,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/run_canonical.py",
+        "bytes": 6418,
+        "sha256": "8e2e300a11b627efb777df701746608482e904deefa8132bccbb22ed3143f5a2",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/run_canonical.py",
+        "blob_sha": "e64cf637acf4a23b61f2c9c1c2252277b6f93f69",
+        "git_size": 6418,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/run_matrix.sh",
+        "bytes": 1266,
+        "sha256": "18c239b852e2657f7e9bcbbe45cc296c847e78aafb3cad1d9b4185f77b41f242",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/run_matrix.sh",
+        "blob_sha": "786f4edfa9d0ad8a30a91e585ab7979d20232ced",
+        "git_size": 1266,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/run_mem_surface.py",
+        "bytes": 12500,
+        "sha256": "c95f124866106e6c60aef5af47f9d0049f04df8574f27de65c9b417b56203d1b",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/run_mem_surface.py",
+        "blob_sha": "e26f721e6ce1388ea977ef21766cff2b52b48790",
+        "git_size": 12500,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/launch_blockage.sh",
+        "bytes": 756,
+        "sha256": "de957881d63d6e64a6a00c9405977811b8fabb41d7ab871636525614ad1c081e",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/launch_blockage.sh",
+        "blob_sha": "8a30a9c2c9283c2f9fac7376a98ed59b33714f30",
+        "git_size": 756,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/launch_res.sh",
+        "bytes": 759,
+        "sha256": "3050269b6dfae4b0e6a86008c09d743be4e986000d677fc60b8710948a843c63",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/launch_res.sh",
+        "blob_sha": "7d362885e4d3c1feee6bb6915288140e3fef78f3",
+        "git_size": 759,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/launch_scan.sh",
+        "bytes": 877,
+        "sha256": "e7118b42f336e273977aad3078ce8fe4ff2490c57d1b5a4c9e09bf25f909d5f8",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/launch_scan.sh",
+        "blob_sha": "1ca51f013650a3e94a543ef516dea34fcef3323e",
+        "git_size": 877,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D10_L16.json",
+        "bytes": 1761,
+        "sha256": "f22db01dec7327c29f1c38326d5fc8bf1d0718d95e027e75d39b438dc8c6ceea",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D10_L16.json",
+        "blob_sha": "176b5e6c4c3a2e0db3822f88cc3fe81db60446a5",
+        "git_size": 1761,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D10_L16.log",
+        "bytes": 1786,
+        "sha256": "9147f0bfec91bf78c61d5d5ae2ec5f605c85b9db1c8d576eaa7e1916d50d7fab",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D10_L16.log",
+        "blob_sha": "6d8cd2cb9e5e4f59fc5f8232e551baee6eff3fbd",
+        "git_size": 1786,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D10_L32.log",
+        "bytes": 1384,
+        "sha256": "b57c420c1d613de2564bffdc34aa3076f1c7747f814ee3c74ed911a89a210e62",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D10_L32.log",
+        "blob_sha": "d58120286cfd278ea421b73c1910239c8ac3dd0b",
+        "git_size": 1384,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D12_L16.log",
+        "bytes": 1285,
+        "sha256": "83bf0d645cfcdc510198821891fefa8c24c68c048f6b6d561d0912f209f09f89",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D12_L16.log",
+        "blob_sha": "927505071c1578bc3b9d9bc0f5a9951c6f8c19ee",
+        "git_size": 1285,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D12_L24.log",
+        "bytes": 1285,
+        "sha256": "6faf53c594fc5a4b45df95792d604e9a0d3e7c19e9011af1fe7f432c08c7d75a",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D12_L24.log",
+        "blob_sha": "37b94aef52057f86d611954c2d09865475025c40",
+        "git_size": 1285,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D12_L32.log",
+        "bytes": 1285,
+        "sha256": "569ab2d8f7b102947d046fad5f0a246dad7d5e68a5797a8f04ade98ce9d87519",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D12_L32.log",
+        "blob_sha": "a779b99315a419db911aa91a0f95ce980eb334d0",
+        "git_size": 1285,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D14_L16.json",
+        "bytes": 1764,
+        "sha256": "e5dbc9be095a1398ba602194bb6724a6be42558071dcf9548e718b1e5e42ef94",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D14_L16.json",
+        "blob_sha": "006be169981d139dc665956c181f2996c6777631",
+        "git_size": 1764,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D14_L16.log",
+        "bytes": 1887,
+        "sha256": "d672496299247e3819b3e01fa2ca4b9e9fe5bb3e3cb719f269766c5c9dc0ef0e",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D14_L16.log",
+        "blob_sha": "84a8d89abe9838421b2746373b1a8101079c1f55",
+        "git_size": 1887,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D16_L16.json",
+        "bytes": 1764,
+        "sha256": "a345e44edb9af775dba16d6b1311901722decb75344bb97a5f9370a927e0fd92",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D16_L16.json",
+        "blob_sha": "235ab55438dee4a226069aec980dbcf5e51edb77",
+        "git_size": 1764,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D16_L16.log",
+        "bytes": 1887,
+        "sha256": "76eb8bb7cbfb62f225484f3bcc9dd6f55bd4eac6c88678cd57994a67a60f3045",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D16_L16.log",
+        "blob_sha": "8c134f7a1099f658dc3c408153a1c354189f9051",
+        "git_size": 1887,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D8_L16.json",
+        "bytes": 1764,
+        "sha256": "4c935654e786f88ee423398bcad63624c763c195326386acd331eaf1c4b55dba",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D8_L16.json",
+        "blob_sha": "bd368d1299e3b25403251920cf84444f4610df9d",
+        "git_size": 1764,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan/scan_D8_L16.log",
+        "bytes": 1777,
+        "sha256": "d860ef64fe42a86f16d1351c4ff7523d89ee8457faa23a3db954dac7a807d8fe",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan/scan_D8_L16.log",
+        "blob_sha": "933ef12822a722e30347b236c5a59fb67ffb20b9",
+        "git_size": 1777,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/staircase_surface_mem/scan_p0_friction_summary.json",
+        "bytes": 6330,
+        "sha256": "8cbb2283a854fbcb02fa44683a9cb0261109237c133d5d4ce73ced1b71bc5ea3",
+        "remote_path": "benchmarks/verified/sphere_re100/staircase_surface_mem/scan_p0_friction_summary.json",
+        "blob_sha": "335954819e5f726980dd200976c4c025dd2aee5e",
+        "git_size": 6330,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/t1_d40big_12k.json",
+        "bytes": 32355,
+        "sha256": "2373d5162952ac5fe272016df8a575811766561711cce63407de4ddbadc72d58",
+        "remote_path": "benchmarks/verified/sphere_re100/t1_d40big_12k.json",
+        "blob_sha": "ac76fde9309e978816cf39278f550c640a476f72",
+        "git_size": 32355,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/t2_d60big_24k.json",
+        "bytes": 60927,
+        "sha256": "78d3eb6e839df50256bfe2dec445bb5397872384272664ab4180104442e9bf86",
+        "remote_path": "benchmarks/verified/sphere_re100/t2_d60big_24k.json",
+        "blob_sha": "71f1d9b4e07e4f69a3970df7b9206e82a76ff0ca",
+        "git_size": 60927,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/verify.py",
+        "bytes": 8731,
+        "sha256": "cf72b4e3671b33b410abb88dd5fc08ea04c77ac90c5562d84b70030a229ced13",
+        "remote_path": "benchmarks/verified/sphere_re100/verify.py",
+        "blob_sha": "68991efb552576010f5a5f553da2c9f3627eaa57",
+        "git_size": 8731,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/verify_w5b_formal.py",
+        "bytes": 7680,
+        "sha256": "068708e217a2456d17e3254d2fcbdc86c71d9af775fa450bb3603938344210e4",
+        "remote_path": "benchmarks/verified/sphere_re100/verify_w5b_formal.py",
+        "blob_sha": "c4c7513ef5bda4333a206219def0a3cb3be830d3",
+        "git_size": 7680,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/cv_instrument.py",
+        "bytes": 1637,
+        "sha256": "35ad2c1f179216a5c195f493a304aca5cfc57049a21c68db8303023242f936b5",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/cv_instrument.py",
+        "blob_sha": "559aa92887e51659fbac83c579ed2d0ea4345a6f",
+        "git_size": 1637,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/accidental_re150_up2.75_D60.json",
+        "bytes": 33248,
+        "sha256": "935653ea466c057536a3469afcffc0bdbb1f8e8b6e56caf0e813dfe34891b560",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/accidental_re150_up2.75_D60.json",
+        "blob_sha": "31ec84edbc88318e133ba6f81fe0573322cf0753",
+        "git_size": 33248,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/bit_gather.json",
+        "bytes": 1198,
+        "sha256": "59a5303e1e8b923889d847ce8c5dac48d73cb32e1e935238939548be3fb99615",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/bit_gather.json",
+        "blob_sha": "276faa2e5018a857debb78cfe00015dc815a9cd0",
+        "git_size": 1198,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/bit_roll.json",
+        "bytes": 1198,
+        "sha256": "59a5303e1e8b923889d847ce8c5dac48d73cb32e1e935238939548be3fb99615",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/bit_roll.json",
+        "blob_sha": "276faa2e5018a857debb78cfe00015dc815a9cd0",
+        "git_size": 1198,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/formal12k_bfl_D40.json",
+        "bytes": 32840,
+        "sha256": "0479c4cb9fb78331f3482c659f3c711d7139be3b6d5bf04f5180151a55f2c2fe",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/formal12k_bfl_D40.json",
+        "blob_sha": "774e6f657f9b6a059cf1b5c8766009ff9bcaa58a",
+        "git_size": 32840,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/formal12k_bfl_D60.json",
+        "bytes": 33139,
+        "sha256": "82122a5736022e32e86663d0e454e768bcb7a691746c13dbaf62bc8930a039b5",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/formal12k_bfl_D60.json",
+        "blob_sha": "96f5c5cc9677c496a48f014e93f16ce9429359be",
+        "git_size": 33139,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/h1_mrt_tau0.53.json",
+        "bytes": 29541,
+        "sha256": "7097f276e5675ef97200acf1b51974a611c464d1872e3f04633b4cc635af9e8c",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/h1_mrt_tau0.53.json",
+        "blob_sha": "75af44f81a08921f3e0b70d4ad33eeed1279c8a3",
+        "git_size": 29541,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/h1_mrt_tau0.59.json",
+        "bytes": 29505,
+        "sha256": "3baf22d424961c840c8dbf7f129a869d1af11be0f8f19934ea2208affe5f94fc",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/h1_mrt_tau0.59.json",
+        "blob_sha": "8c57f9e0d029db26bf664aae4b439fc683623c01",
+        "git_size": 29505,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/h2_big.json",
+        "bytes": 28893,
+        "sha256": "570ea4b9f7b83bae326bdd8b4559b64c85d858a4b250f8dddf377ddf816f428d",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/h2_big.json",
+        "blob_sha": "ef12c30b16a2036571bf618fae9ef11afc283d17",
+        "git_size": 28893,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/h2_noneq.json",
+        "bytes": 29530,
+        "sha256": "fd288614d045d397619dd6899c9c5ae649420ef22d350b4e93ad7001ba67b682",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/h2_noneq.json",
+        "blob_sha": "7c24b15a352757a2cfea22dc1ba54a9ddc0b1bc0",
+        "git_size": 29530,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/h2_up2.0.json",
+        "bytes": 29433,
+        "sha256": "f22d2cc7a6b27ca2b045914ada13fae1f76273c8ee4ebf3b7283d8d3c13838a7",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/h2_up2.0.json",
+        "blob_sha": "1741cb10485b0ab9dda189bde656feeaffe3167c",
+        "git_size": 29433,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/h2_up3.0.json",
+        "bytes": 29611,
+        "sha256": "bd2e3480316a0a48979138d0f30fbec0cbc3c872ace1d293d193dec5ff93cf4a",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/h2_up3.0.json",
+        "blob_sha": "413fd7ce25a6364e1e382382661f514b16c07d66",
+        "git_size": 29611,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/mem_D60_up2.75.json",
+        "bytes": 906,
+        "sha256": "cc3234e8d6ac3c640b4945f1e0c80b88fb2ac310672c5eab27fd878e9d5774ed",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/mem_D60_up2.75.json",
+        "blob_sha": "296e081ca2d2cc5517c06f301319b7acdb48e509",
+        "git_size": 906,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/p1_up4.0.json",
+        "bytes": 32937,
+        "sha256": "022d1ad135a67cc14c8bf9bd0d5b6cd460cf62e414726b76bc1ab17342a49512",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/p1_up4.0.json",
+        "blob_sha": "4eacdda983494efe4b001674c089e69f0a9bdbf1",
+        "git_size": 32937,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/t1_bgk.json",
+        "bytes": 29487,
+        "sha256": "4038cf57783b8554fbe79679b1981ceec6cd8a38527b3eccc18adc9d97f4d6be",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/t1_bgk.json",
+        "blob_sha": "3c1d665ad38f236fcea68bff27749eb5a0ee87ba",
+        "git_size": 29487,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/t1_magic.json",
+        "bytes": 29591,
+        "sha256": "bf48628c8ba0b0a0ba2217433ad84c5956b5c30f86fb38c2c4883464ae41bc17",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/t1_magic.json",
+        "blob_sha": "81233f719350022f81df99bca45c8d1b92d69acd",
+        "git_size": 29591,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/t1_mrt_base.json",
+        "bytes": 29522,
+        "sha256": "fa75631edd1bf6035823ab74d3c8e9a9abf870c1f40bd023a50fada69087cc2a",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/t1_mrt_base.json",
+        "blob_sha": "9d9861415d21c4f7de5cd0dc9a7767f11916619d",
+        "git_size": 29522,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/t1_trt.json",
+        "bytes": 29529,
+        "sha256": "21cde9e931124e99d332c52ff5dda8e7d545904b353fc72e6debbc6480446a8f",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/t1_trt.json",
+        "blob_sha": "7e2da884441de25b730c991dafba5486cae943a5",
+        "git_size": 29529,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/v1_up2.75_down4.json",
+        "bytes": 33080,
+        "sha256": "adb3aa0cc4803591bf375ba39466b6dd7a8ee20597f3d1bce5dab440ab79c6a3",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/v1_up2.75_down4.json",
+        "blob_sha": "7bdcbe81db718ef418d77ea74f253d990dbcf608",
+        "git_size": 33080,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/diag/v1_up2.75_down4_24k.json",
+        "bytes": 62282,
+        "sha256": "52a965d2e4a0c85d1be5d37c4c3c6f79687ee6f50129e76406e4fdcffd20658a",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/diag/v1_up2.75_down4_24k.json",
+        "blob_sha": "38ece6af53f3321d4e1220c0d119ce84606939bc",
+        "git_size": 62282,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/formal_bb_D40.json",
+        "bytes": 29370,
+        "sha256": "a7cc786b688efe69027156af008fe145efc10faf37b72c3f58625e185639606e",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/formal_bb_D40.json",
+        "blob_sha": "c6e7ec982b9e8011da1532f50d76a1975cb66c9f",
+        "git_size": 29370,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/formal_bb_D60.json",
+        "bytes": 29559,
+        "sha256": "aeb0d909dfb100690882db71b69c82b6837b14fa7bb56c330844ae498d534908",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/formal_bb_D60.json",
+        "blob_sha": "31adec72510afa4571a3c527272be04384b7007e",
+        "git_size": 29559,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/formal_bfl_D40.json",
+        "bytes": 61950,
+        "sha256": "1857ac848c815934f059255453291335d4273743a28e082d4895abe1d80bff0c",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/formal_bfl_D40.json",
+        "blob_sha": "891016410ff2c0e20920aa55de26232498f65421",
+        "git_size": 61950,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/formal_bfl_D60.json",
+        "bytes": 62531,
+        "sha256": "94223fdc072594fab0654513921ab0a102d1bfe570e6a6e36ded837b5d89ea44",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/formal_bfl_D60.json",
+        "blob_sha": "387f4e4484e39c566f06ed0713db1c4fb9ae5a9f",
+        "git_size": 62531,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/result.json",
+        "bytes": 5492,
+        "sha256": "8474e5941ff99d94172debf5278283e62c4245348ed58ce92d291ea1db3ab6bc",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/result.json",
+        "blob_sha": "492b83706b0a7016db1a98a330eaa546fd635e44",
+        "git_size": 5492,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/run_diag.py",
+        "bytes": 11156,
+        "sha256": "4ad4d51df97e61ba11efe422eadadc37ce2f44984534c4015ec6e2335c4f36c3",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/run_diag.py",
+        "blob_sha": "fc83d3d4f7b56320e1efd104420a0aa65f0f05b8",
+        "git_size": 11156,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7/verify.py",
+        "bytes": 6944,
+        "sha256": "7b3e1bc8dcbbda3be97b07be3612dcf1a853eef711c6a48bb16bb56b3f8af2da",
+        "remote_path": "benchmarks/verified/sphere_re100/w7/verify.py",
+        "blob_sha": "423c980dba37f429ba03cc0800ccf856e283e5f1",
+        "git_size": 6944,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w7_dense_h2_big.json",
+        "bytes": 28893,
+        "sha256": "570ea4b9f7b83bae326bdd8b4559b64c85d858a4b250f8dddf377ddf816f428d",
+        "remote_path": "benchmarks/verified/sphere_re100/w7_dense_h2_big.json",
+        "blob_sha": "ef12c30b16a2036571bf618fae9ef11afc283d17",
+        "git_size": 28893,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/README.md",
+        "bytes": 3281,
+        "sha256": "6892d01931fb14cc2e2c0230593469cd5b192100cfe88546dad6c755102d8bdd",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/README.md",
+        "blob_sha": "8bfcb369b15f83c085ebadf74b2584711c1f5194",
+        "git_size": 3281,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/bit_check.json",
+        "bytes": 2802,
+        "sha256": "5887284e3b934613dce8fef55412d606b5b6764e7c29c630410cd955ed768ec1",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/bit_check.json",
+        "blob_sha": "74eeab196b18911eea81f46ece828df49eb261f7",
+        "git_size": 2802,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/chain_w7diag_D20.json",
+        "bytes": 1247,
+        "sha256": "df6d43c2887902eecbae21d96fb7cb9d5256644b7a2c9191240bf60aa7a15296",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/chain_w7diag_D20.json",
+        "blob_sha": "a01bf70bc9123d9443ff242fec0a70a43c5ebcc6",
+        "git_size": 1247,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/cv_instrument.py",
+        "bytes": 1637,
+        "sha256": "35ad2c1f179216a5c195f493a304aca5cfc57049a21c68db8303023242f936b5",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/cv_instrument.py",
+        "blob_sha": "559aa92887e51659fbac83c579ed2d0ea4345a6f",
+        "git_size": 1637,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/loop_dense_D20.json",
+        "bytes": 2262,
+        "sha256": "47f49e7421f8050af338a7756cd66331e830d20e121413ff959ec746c44925fd",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/loop_dense_D20.json",
+        "blob_sha": "5af389be537037e236536b18ba528f6c1d32ee07",
+        "git_size": 2262,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/mem_dense_D60big.json.oom.json",
+        "bytes": 2019,
+        "sha256": "5da29b24882ab4c7496006d6439c2f50d0be35f65257146aad74b63ab7f0a284",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/mem_dense_D60big.json.oom.json",
+        "blob_sha": "af74f3a48804b530abae569d1f3e169efeac8d93",
+        "git_size": 2019,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/mem_sparse_D60big.json",
+        "bytes": 1453,
+        "sha256": "27b25e292e0b7d513f6a5e11805312b36bc26be793e962fd1bdfcaaaee791fbd",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/mem_sparse_D60big.json",
+        "blob_sha": "3540abacfcb975e9284319a673384497e404b2da",
+        "git_size": 1453,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/result.json",
+        "bytes": 2926,
+        "sha256": "192e28056a7a8c3cb84ab0b08e3cfa190e780e855b607e9aa8d898db07168a00",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/result.json",
+        "blob_sha": "70f1ec225cca579cb93940cc07841710e9b1b63b",
+        "git_size": 2926,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/run.py",
+        "bytes": 14159,
+        "sha256": "cbc894b5e031a3b67fb170eaacc61f38f8014937c033c3a0ae7810f3ff327e5b",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/run.py",
+        "blob_sha": "4cdd439128065c1c7c5fa4db42b1400804e84bdb",
+        "git_size": 14159,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/speed_probe.json",
+        "bytes": 1224,
+        "sha256": "4fbc086dcd4ae8ec214b5181b689ba72706f513a48355179cee17184d0d681bf",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/speed_probe.json",
+        "blob_sha": "e9a0579204cbe1fe81e6e2532e1b226e01a9ae1f",
+        "git_size": 1224,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/t1_d40big_12k.json",
+        "bytes": 32355,
+        "sha256": "2373d5162952ac5fe272016df8a575811766561711cce63407de4ddbadc72d58",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/t1_d40big_12k.json",
+        "blob_sha": "ac76fde9309e978816cf39278f550c640a476f72",
+        "git_size": 32355,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/t2_d60big_24k.json",
+        "bytes": 60927,
+        "sha256": "78d3eb6e839df50256bfe2dec445bb5397872384272664ab4180104442e9bf86",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/t2_d60big_24k.json",
+        "blob_sha": "71f1d9b4e07e4f69a3970df7b9206e82a76ff0ca",
+        "git_size": 60927,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__sphere_re100/w8a/verify.py",
+        "bytes": 8392,
+        "sha256": "dfd45106c0edfca1091da4624d275a682085d354b7b2e3fa648767fe4574a927",
+        "remote_path": "benchmarks/verified/sphere_re100/w8a/verify.py",
+        "blob_sha": "1257c9334e1b2d16184e827df331c2063d9daa5f",
+        "git_size": 8392,
+        "fetch_route": "git_blob_raw"
+      }
+    ],
+    "benchmarks/verified/couette_2d": [
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__couette_2d/README.md",
+        "bytes": 1286,
+        "sha256": "ae1c8eacd224c8326688ca2c926cd9d60b67bfe5e9aed1706f6a81358b1e8041",
+        "remote_path": "benchmarks/verified/couette_2d/README.md",
+        "blob_sha": "249682c1245ba04f504f7f1d99dad4d767f473ec",
+        "git_size": 1286,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__couette_2d/result.json",
+        "bytes": 1022,
+        "sha256": "3077916490916895d86581e37e9bcfe4f77a12f667e4f40bedd6a54f3ef2feea",
+        "remote_path": "benchmarks/verified/couette_2d/result.json",
+        "blob_sha": "18d2cef37743eb2d6a6d470adec39fac35ed0653",
+        "git_size": 1022,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/verified__couette_2d/run.py",
+        "bytes": 13754,
+        "sha256": "ff0f4c01a666516fd8cafd80c8c259fcf9cc143f2e354d1b902df0211fe018f5",
+        "remote_path": "benchmarks/verified/couette_2d/run.py",
+        "blob_sha": "f69bc5f5f1d1036e61ecd7632ae0b7dc49b34152",
+        "git_size": 13754,
+        "fetch_route": "git_blob_raw"
+      }
+    ],
+    "benchmarks/pending/couette_3d": [
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/pending__couette_3d/README.md",
+        "bytes": 1835,
+        "sha256": "4db3e214f83fd763e03b85112f07f8ea88833d2fceaea4580e4cf8648e6971ca",
+        "remote_path": "benchmarks/pending/couette_3d/README.md",
+        "blob_sha": "a478e274feefef7fe30b4da8723dbd44786aed2f",
+        "git_size": 1835,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/pending__couette_3d/run.py",
+        "bytes": 14472,
+        "sha256": "8409d4d1a4859bf566b0b632c0f944a9d8e082bede7842e64b24b474789c3f55",
+        "remote_path": "benchmarks/pending/couette_3d/run.py",
+        "blob_sha": "0477d6f737ceeb0052248925f74043a258eabc50",
+        "git_size": 14472,
+        "fetch_route": "git_blob_raw"
+      }
+    ],
+    "benchmarks/pending/sphere_re100_d3q27": [
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/pending__sphere_re100_d3q27/README.md",
+        "bytes": 1643,
+        "sha256": "86d13aaf88376e792e4056a4c538f045f341fbfca0d01b036f100ce190dc7c5f",
+        "remote_path": "benchmarks/pending/sphere_re100_d3q27/README.md",
+        "blob_sha": "4b8860c5f616314124a1d1433db0f8e15114d029",
+        "git_size": 1643,
+        "fetch_route": "git_blob_raw"
+      },
+      {
+        "path": "/nfs/wangxi/runs/bm_widen_w11_20261006/d_siblings/sphere27/diag/remote_pull/pending__sphere_re100_d3q27/run.py",
+        "bytes": 8097,
+        "sha256": "56aa84bb09a3a0c315be0b933cb6015a7f36397a4d014ac02958906867f92bbf",
+        "remote_path": "benchmarks/pending/sphere_re100_d3q27/run.py",
+        "blob_sha": "d9babd0432fb7fd2fc9f0e2cfdef060647d3d64c",
+        "git_size": 8097,
+        "fetch_route": "git_blob_raw"
+      }
+    ],
+    "listing_verified_top": [
+      "acoustics",
+      "aircraft_icing_naca0012_rime",
+      "cavity",
+      "cavity_3d_full",
+      "couette_2d",
+      "cylinder",
+      "cylinder_3d",
+      "droplet_oscillation",
+      "floating_body_free_decay",
+      "kovasznay_2d",
+      "laplace_cac_phasefield",
+      "laplace_droplet",
+      "laplace_pr_eos",
+      "maneuvering_steady_turn",
+      "permeability",
+      "poiseuille_2d",
+      "poiseuille_3d_duct",
+      "poiseuille_3d_pipe",
+      "poiseuille_two_phase_cg",
+      "shear_wave_decay",
+      "sod_shock_tube",
+      "sphere_re100",
+      "sphere_re200",
+      "square_cylinder",
+      "startup_poiseuille",
+      "stokes_first_problem",
+      "stokes_second_problem",
+      "suboff_re1000",
+      "taylor_couette",
+      "taylor_green_2d",
+      "taylor_green_3d",
+      "thermal_cavity",
+      "thermal_cavity_3d",
+      "wigley_hydrostatics",
+      "womersley"
+    ],
+    "listing_pending_top": [
+      "aircraft_icing_rg15_ipw2",
+      "backward_step",
+      "blasius_flat_plate",
+      "bstep_3d",
+      "capillary_invasion_washburn",
+      "cavity_3d_full",
+      "cavity_natural_convection",
+      "channel_turb",
+      "collision_kernels_3d_tg",
+      "couette_3d",
+      "cylinder_re40_st",
+      "dam_break_3d_mm",
+      "dam_break_sc",
+      "dit_turbulence",
+      "dtmb5415_resistance",
+      "forchheimer",
+      "hadamard_rybczynski_droplet",
+      "kcs_resistance",
+      "naca_0012",
+      "permeability3d",
+      "permeability_fibrous",
+      "poiseuille_3d_annulus",
+      "poiseuille_3d_ellipse",
+      "propeller_openwater",
+      "rayleigh_benard",
+      "rayleigh_taylor",
+      "series60_resistance",
+      "sphere_re100_d3q27",
+      "stokes_second_problem",
+      "stokes_sphere_dg",
+      "suboff_sail_resistance",
+      "taylor_aris_dispersion",
+      "two_phase_poiseuille"
+    ],
+    "benchmarks_commits_recent40": [
+      {
+        "sha": "2b37c9a8a967acc19396486b1a97722bcb91a67e",
+        "date": "2026-10-06T08:51:19Z",
+        "msg": "benchmarks: archive X campaign staging + XH hybrid engine (evidence, not library)"
+      },
+      {
+        "sha": "71481cba753696521bb8d3c2e45f26762550442d",
+        "date": "2026-10-06T07:14:05Z",
+        "msg": "Merge main 7cdcd3a4 into exp/icing-bm-archive: resolve benchmarks/STATUS.md"
+      },
+      {
+        "sha": "4554b00959d2b486abf61905ebb8c2731ea86312",
+        "date": "2026-10-06T05:21:27Z",
+        "msg": "docs: fix evidence path wording in icing rime README"
+      },
+      {
+        "sha": "704ca9919bfe7b050c0c3c6fad3ad9e065c64b68",
+        "date": "2026-10-06T05:21:23Z",
+        "msg": "benchmarks: aircraft icing campaign archive (NACA 0012 rime verified + RG-15 IPW2 pending)"
+      },
+      {
+        "sha": "7759e8b108b6a011acab9afa4a5800e65ca31ded",
+        "date": "2026-10-06T01:16:47Z",
+        "msg": "Merge pull request #329 from cxs503/feat2-octree-integrated"
+      },
+      {
+        "sha": "e02be2ab6c995ee169ca8ba61f5dc278f7e49b89",
+        "date": "2026-10-05T19:08:55Z",
+        "msg": "suboff_sail_resistance: honest block (L48 -2.78% but L52 -7.16%, span 4.37% > 3%)"
+      },
+      {
+        "sha": "62212227730607a65231f2f69df1f391d7bd3ad5",
+        "date": "2026-10-05T18:59:56Z",
+        "msg": "benchmark wrap-ups: sphere_re200 to a 4-ladder gate; naca_0012 honest caliber conflict"
+      },
+      {
+        "sha": "13b867183d9e1816256ee3037bfcfe71d2fada88",
+        "date": "2026-10-05T16:07:34Z",
+        "msg": "propeller_openwater: land the honest block in result.json with the real KP/KQ data"
+      },
+      {
+        "sha": "4011298e373ea2a57048b960cd23c053bea76f6f",
+        "date": "2026-10-05T16:02:53Z",
+        "msg": "FIX(ci): restore the trunk free-surface receiver gate (root cause of the red CI test job)"
+      },
+      {
+        "sha": "c18a47f1b1faeeda6a42f3c07bcfa919851ac052",
+        "date": "2026-10-05T15:50:41Z",
+        "msg": "FIX(library): GeometrySource.PARAMETRIC_HULL returned an EMPTY solid mask"
+      },
+      {
+        "sha": "e78fa2f051412e2fcb8345b3e7de50580c1e6f8e",
+        "date": "2026-10-05T15:43:37Z",
+        "msg": "Marine benchmark sweep 2 (10 agents): 3 more promotions (verified 27->30) + 7 diagnoses"
+      },
+      {
+        "sha": "80e94e517490967f8865292cbb898c151a2ffbea",
+        "date": "2026-10-05T13:01:27Z",
+        "msg": "12-agent marine benchmark sweep: 2 promotions + 10 honest blocks"
+      },
+      {
+        "sha": "20cd23472d81df7cd95495adf1c62dd1db6e218f",
+        "date": "2026-10-05T09:36:13Z",
+        "msg": "sphere_re100 PROMOTED to verified: Cd +2.771%/+2.540% (D40/D60, span 0.231%, monotone)"
+      },
+      {
+        "sha": "90bbbf55f44f92c651dbdb2d53785bc1eba4f6b3",
+        "date": "2026-10-05T06:14:17Z",
+        "msg": "Add color-gradient two-layer Poiseuille verified case"
+      },
+      {
+        "sha": "13891e6e3296509ba37bda49a2e80691bb83eb18",
+        "date": "2026-10-05T04:02:44Z",
+        "msg": "benchmarks: Wave-9 archive -- thermal_cavity_3d verified candidate, H-R droplet + fibrous permeability pending verdicts"
+      },
+      {
+        "sha": "a84745e56ff72dfea68444d9160b2e8183bf2c37",
+        "date": "2026-10-02T09:29:46Z",
+        "msg": "Merge pull request #323 from cxs503/exp/cac-phasefield-laplace"
+      },
+      {
+        "sha": "05c86ef581eb65289961773efbec6380813e7c50",
+        "date": "2026-10-02T07:40:11Z",
+        "msg": "Add CAC phase-field Laplace verified benchmark and cac_lbm module"
+      },
+      {
+        "sha": "0f99eb020df608cf3e251df4d6cbb85899d22ff5",
+        "date": "2026-10-02T07:36:32Z",
+        "msg": "Add PR-EOS Laplace verified benchmark and corrected-sign EOS pseudopotentials"
+      },
+      {
+        "sha": "2576ddaaca18a5f103c4ef010a6600996bd92040",
+        "date": "2026-10-01T12:04:38Z",
+        "msg": "style: ruff 0.16 markdown code-block formatting (dam_break_3d_mm/README.md)"
+      },
+      {
+        "sha": "455969e389b73880b32e3e0969333461f0f98863",
+        "date": "2026-10-01T11:42:02Z",
+        "msg": "style: ruff format + ruff check fixes for the CI lint gate"
+      },
+      {
+        "sha": "fbff7098effffd12525924a8cfb7d77c7d368d11",
+        "date": "2026-10-01T11:28:23Z",
+        "msg": "Merge origin/main (1f4ce7e) into feat2-octree-integrated -- resolve 12 conflicts"
+      },
+      {
+        "sha": "3842e88eac945a102569beefcdbfa6edf1415976",
+        "date": "2026-10-01T11:25:00Z",
+        "msg": "chore: run-artifact updates before merging upstream main"
+      },
+      {
+        "sha": "7e9edd434f9cd46c1d759d668935d58b718e6795",
+        "date": "2026-09-30T06:57:46Z",
+        "msg": "naca_0012 + backward_step: reference audits completed and scripts written (no verified promotion yet -- no converged measurements). naca_0012: adopted Kurtulus 2015 (Re=1000, alpha=0, Cd~0.12) as the low-Re numerical reference, explicitly excluding high-Re wind-tunnel data (Ladson/NASA TM-4074, Abbott, Gregory) which is a caliber mismatch; new run.py uses 2D D2Q9 MRT + surface-only Ladd MEM + 0.75% blockage + compile routing. backward_step: ECN/TNO ECN-E-11-042 confirms Gartling Re=800 X1=6.10 (H units) = 12.20 (h units) -- the same physical quantity; the task's 'X_r/h~6.1' was a factor-2 caliber error. run.py rewritten to the Gartling caliber (H=2, ER=2, u=24y(H/2-y) inlet, Re=uH/nu=800, shedding/reattachment by wall-shear zero crossing with sub-cell interpolation)"
+      },
+      {
+        "sha": "8b281a605b7291c3efd1ef31a0170d908a13c9a7",
+        "date": "2026-09-30T06:33:08Z",
+        "msg": "cylinder_3d: adopt the 40D-domain pair as preferred (D=20 +1.62%, D=40 -0.99%, span 2.61%) -- same caliber as verified/cylinder (beta=2.50%); 32D pair kept as alternative. 40D-D40 landed at 1.4852 (surface-only MEM, interior pseudo-force 0.0618)"
+      },
+      {
+        "sha": "5978d98ca555f1f9498a9fd493a6a9017a6a3f10",
+        "date": "2026-09-30T06:29:56Z",
+        "msg": "sphere_re100: honest blocked report -- surface-only MEM does NOT rescue it (D=12 +9.15%, D=18 +8.0-8.9%, converged but to a wrong value). Decisive negatives: (1) domain/blockage lever is void -- lateral 16->32 at D=10 gives step1000 = 1.3177 vs 1.3178 (bit-identical 4dp), the sphere near-field force is local; (2) an independent control-volume instrument agrees (D=16 1.1985, D=20 1.2130), so it is NOT a caliber bug but a STAIRCASE-GEOMETRY bias -- the sphere is doubly curved while cylinder_3d is singly curved, and the sphere interior fraction is 0.62-0.71; (3) refining does not reduce it (D=8 +14.5% -> D=12 +9.15% -> D=14 +10.19%). Needs a smooth boundary representation (octree R10 reached +1.59% but at 0.03 steps/s is infeasible) or D>=30 (exceeds 15 GiB/card). STATUS counts unchanged (21 verified / 20 pending). Also notes surface-only MEM is not a blank cheque -- it fixed cylinder_3d because that body is singly curved"
+      },
+      {
+        "sha": "21b439366b872b6b7f32c9d4dcc9f2a866307c99",
+        "date": "2026-09-30T04:19:52Z",
+        "msg": "cylinder_3d PROMOTED to verified (3rd new case this cycle): Cd +2.45%/-0.19% on two grids (span 2.64%). KEY FINDING -- the Ladd MEM sum must be restricted to SURFACE solid cells: Sigma_solid = Sigma_surface + Sigma_interior, and on a curved voxel body the interior cells carry a non-degenerate pseudo-force (0.043@D20, 0.063@D40). All-solid over-predicts (+5.3%/+4.0%) while surface-only recovers the correct answer. Also the true cause of the historical sphere MEM +264% failure. New docs/mem_surface_caliber_finding.md; reference ruling 2D numerical cluster 1.50 (not Tritton 1.54); nz periodicity bit-exact; STATUS.md 21 verified / 20 pending"
+      },
+      {
+        "sha": "05a3406b13b3b7aa3d785f0f58165d987e1c793b",
+        "date": "2026-09-29T21:19:04Z",
+        "msg": "benchmarks/STATUS.md: generated status table (19 verified / 21 pending) with per-case notes -- structural blockers (free-surface/multiphase) vs caliber blockers (reference convention) vs resolution blockers, plus the two reference-caliber false failures this cycle and the compile auto-fallback note"
+      },
+      {
+        "sha": "340e5207cd796f90f47867fc79d778a5c1097fff",
+        "date": "2026-09-29T21:07:29Z",
+        "msg": "Two near-miss results: sphere -- R8=1.1254 (+3.09%, only 0.09pp over) and R10=1.1093 (+1.59%), inter-grid span 1.48pp OK; KEY ambiguity: acceptance-r1 records R8 steady state as cd_mem=1.14 but cd_cv=1.07 (-2.0%, inside 3%) so a clean R8 rerun is needed to decide which instrument the benchmark adopts. Correction: the R10 number comes from octree-p3-final-r2.json (aa7b0fe), not from run_canonical.py (which also crashes on Tensor->JSON). cylinder_3d -- reference audit done (2D numerical cluster Cd=1.50 [1.48,1.52], NOT Tritton 1.54 finite-span experiment); transient D40 L16 = 1.525 (+1.7%) with friction rising 0.35->0.43 as D grows, supporting the resolution path; plateau runs were killed by host CPU oversubscription"
+      },
+      {
+        "sha": "77b4d1c5b91ace2db74d5bef6cec80b7b1ee85d1",
+        "date": "2026-09-29T20:46:40Z",
+        "msg": "Three deep diagnoses (all remain pending, each with a clear next step): sphere -- 'expand the domain' DISPROVEN (downstream 4D->8D makes it worse, -22%->-27%; repo v4 shows 10D/12D still +5.77%); the correct instrument is the control-volume momentum balance (CV Cd=1.376, nested-margin invariance <0.01%), the pressure-integral -17%/-49% is a measurement-caliber symptom. blasius -- three old hypotheses excluded (resolution, 0.5-cell wall offset, viscosity); the residual collapses to ONE mechanism: an effective-scale/effective-Re excess of ~1.65x (profile shape matches Blasius but is compressed to 0.77x); also found a delta*/theta/H measurement bug (needs local edge velocity) and a stagnation-point trap (uniform flow is a movable fixed point for the wall-aligned plate). cylinder_3d -- caliber ruling: 3D extruded + z-periodic == 2D infinite span, so the right reference is the 2D numerical cluster Cd~1.50 [1.48,1.52], NOT Tritton 1.54 (finite-span experiment, which itself inflated the old -11%); friction levers all fail (bfl_smooth +41% non-defensible, faces opposite direction, ratio degenerate)"
+      },
+      {
+        "sha": "d9a45c859bd96e45d7ca52375aee49c75ebfd406",
+        "date": "2026-09-29T20:22:37Z",
+        "msg": "square_cylinder PROMOTED to verified + compile auto-fallback: (1) reference audit (14 digitised points from original tables, REFERENCE_AUDIT.md) rules the correct convention = 2D free-stream low-blockage numerical cluster (Cd 1.48 in [1.44,1.52], St 0.147 in [0.145,0.149]); the old 'Okajima Cd~1.6' had no traceable source and a 2D solver must not be scored against 3D experiment. Results D=32 Cd +0.11%/St +0.82%, D=48 Cd +0.30%/St +0.68%, mesh span 0.19%/0.14% -- all <=3%. (2) compile_route._CompileWithEagerFallback: first-call try-compile, on teco/cmd failure prints a banner and transparently degrades to eager for the rest of the run (bit-identical, maxdiff 0.0, torch.equal=True on final_field); records compile_mode_effective/compile_status_reason in result.json. 20 tests pass. (3) run.py st_err_pct=None crash fixed (was killing runs only after the expensive grids). (4) blasius_flat_plate diagnosis logs"
+      },
+      {
+        "sha": "24982e406aa77b8eab7bc3f3be585c41b332fd27",
+        "date": "2026-09-29T19:15:13Z",
+        "msg": "Three-case triage (none promoted): blasius_flat_plate reference verified independently (f''(0)=0.332057, H=2.5911) -- bottleneck is near-wall resolution (delta* spans only 1.5 cells) + 0.5-cell bounce-back offset; mix50 degenerates to standard on plane walls. sphere: found and fixed an ENVIRONMENT-level SDAA torch.compile blocker (3-layer teco inductor bug: device codegen registration, stale Reduction binding, TecoScheduling._sizes) in compile_route.py. square_cylinder: most promising -- Cd -7.4%/St +5.9% with excellent grid convergence (0.2%), the issue is the REFERENCE convention (unconfined 2D numerical values Cd~1.44-1.50, St~0.145-0.148 would put it inside 3%). cylinder_3d: faces<standard (opposite of SUBOFF) so mix50 cannot fix it"
+      },
+      {
+        "sha": "af77f60a12b7b90a5fd975dd4098e4baa359d70d",
+        "date": "2026-09-29T18:49:26Z",
+        "msg": "suboff_re1000 入库 verified: run.py 接共享 torch.compile 路由 (compile_route.route_step，整步链编译，步相关分支/质量修正留 eager) + README(端到端达标证据 L=80 mix50 -1.15%/-1.36% vs Blasius 0.041995、收敛窗口单调、复现命令、耗时 3.39h) + result.json(verified:true, 端到端数据); 从 pending/ 移入 verified/，final_field.pt 大文件不入库"
+      },
+      {
+        "sha": "5c570650070fb9f47ee64750a904d8efec372c7c",
+        "date": "2026-09-29T18:41:24Z",
+        "msg": "suboff_re1000 END-TO-END VERIFIED: L=80 mix50 converges to Cd_tot=0.041513 (-1.15% vs Blasius 0.041995), final-field recheck 0.041424 (-1.36%) -- both <3%. L=48 mix50 = -3.17% (coarse), L=48 standard = -9.69%. Enabled by the 3.75x SDAA speedup (was blocked by 3.7s/step). Plus docs/free_surface_architecture_gaps.md (383 lines: both structural barriers with evidence chains, 27 tried levers with failure reasons, 13-case capability boundary table)"
+      },
+      {
+        "sha": "7a4647d90b2deb361082374e5fbcc807da90c720",
+        "date": "2026-09-29T14:45:53Z",
+        "msg": "dam_break breakthroughs + structural confirmations: (1) 3D H UNFREEZES for the first time (0.938 -> 0.750) with specular/slip wall BC (TL_FS_WALL_SLIP=1) -- root cause of the wall-column stagnation is the no-slip boundary layer flooding an 8-cell-wide column at nu~0.1; plus shell-mode init (TL_FS_SHELL_MODE=fill: shells at rho_gas, partial interface via Korner closure). Mass conserved 1.7e-6. (2) dam_break_sc structural barrier CONFIRMED as constitutive: psi_exp G<->coexistence ratio is monotonic (G4.6->6.8, G5.0->12.6, G5.4->18.4); err(T=1)=0 needs ratio~12.7 while err(T=2.96)=0 needs ratio~6.9 -- OPPOSITE requirements, so 'raise the density ratio' was the wrong direction. Pressure-tensor SC force is leading-order equivalent (shifts effective G by ~0.1 only). Repo's psi_carnahan_starling was broken (sign inverted, no spinodal)"
+      },
+      {
+        "sha": "1ea38e389ea1ffd17d5c190661694b7b4f9f48b3",
+        "date": "2026-09-29T14:25:54Z",
+        "msg": "free_surface: conservative gas-channel closures (TL_FS_GAS_CHANNEL=conserv|redist) + three-piece-set verdict (NEGATIVE on H)"
+      },
+      {
+        "sha": "34f5c218297958b1c274d17f4871bb3381a6181f",
+        "date": "2026-09-29T14:25:08Z",
+        "msg": "dam_break_sc: land opt-in Guo forcing + RETRACT the 'Guo is the decisive lever' finding (mass-conservation artifact)"
+      },
+      {
+        "sha": "acc5db6d2ee9be84e0d2f70112c9aeeb6df79f0e",
+        "date": "2026-09-29T13:33:48Z",
+        "msg": "CLEANUP + integrity fix: remove all leftover TL_FS_DBG debug blocks from topology_transaction (some referenced undefined _os/_os2 -> runtime NameError; a concurrent agent had left the module half-edited). Verified: syntax OK, imports OK, defaults correct (aprime=False, birth=legacy), functional code (to_i promotion) preserved. dam_break_sc rerun with correct convention: a=80 X(T=1)=1.359 vs MM 1.326 = +2.49% MEETS <3%, T=2 -9.72%, T=2.96 -19.09% (old +50% retracted). dam_break_3d_mm with FrankenSim column table: X(T=1)=+25.6%, T=2=-51.8% -- error sign flipped (now too slow), mass conserved to 1e-6, pseudo-film eliminated"
+      },
+      {
+        "sha": "c3ac62161a037058875278355ab645e7c5f5241d",
+        "date": "2026-09-29T13:20:38Z",
+        "msg": "dam_break_sc B20: fix M&M time convention (T=t*sqrt(2g/a)) + Lethe table; official re-run"
+      },
+      {
+        "sha": "857bbe8db1aa4af2b83a8e517b48af73240c518a",
+        "date": "2026-09-29T13:12:38Z",
+        "msg": "M&M reference ruling + error recompute (DECISIVE): T convention is t*sqrt(2g/a) (verified verbatim in Lethe's official post-processing and FrankenSim); the repo CORE already uses it rightly (dam_break.py:299, dam_break_3d.py:500) -- only the 3 benchmark scripts use sqrt(g/a). Recomputing with the correct table: the historical +50~82% errors were the product of a DOUBLE error (axis x sqrt2 AND wrong table). True errors land in +/-3-20%, with some points inside 3% (sc a=80 @T=1 = -0.15%/+2.4%; 3d a=32 @T=1 = +2.0%). The '>50%' claims must be retracted. Also A-prime halo fix: static-column drift -0.0059% -> -0.00023% (root cause: halo-promoted INTERFACE cells had their booked mass zeroed)"
+      },
+      {
+        "sha": "bbcb5d6b12d2229b7ba527fc3bc303b449067ac3",
+        "date": "2026-09-29T12:36:56Z",
+        "msg": "METHODOLOGY FIX + A-prime forensics: dam_break_sc M&M reference table was WRONG (T=1->1.5, T=2->2.7 mis-placed the T=3 value); corrected to 1.1/1.8/2.7 matching bench_fs_2d.py. With the correct table the SCMP gap widens from +10% to +36-65% -- the earlier 'only +10% constitutive gap' was an artefact of the bad reference. 3D free-surface + wall-BC remains best (+82% -> +14%, still not converging). 2D FS conservation measured 41%/232%. A-prime forensics: leak is in exchange/redistribution not the receive gate; 31 corner/finger envelope cells have only 1 liquid neighbour (the pseudo-film seeds)"
+      }
+    ]
+  }
+}

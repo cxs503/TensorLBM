@@ -13,11 +13,10 @@ from typing import Sequence
 
 import torch
 
-from .d3q19 import C, OPPOSITE
+from .d3q19 import OPPOSITE, C
 from .force_observation import ForceObservation
 from .marine_geometry import GeometryAsset, compile_d3q19_wall_links
 from .marine_resistance_contract import ResistanceForceContract, build_resistance_force_contract
-
 
 _METHOD = "d3q19_linkwise_momentum_exchange"
 _SAMPLE_PHASE = "post_stream_pre_bounce_back"

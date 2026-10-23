@@ -1,0 +1,48 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+  st=  20 T=0.100 X=1.375 H=0.938 iface=574 drift=-0.0000%
+  st=  40 T=0.200 X=1.875 H=0.938 iface=1209 drift=-0.0001%
+  st=  60 T=0.300 X=2.375 H=1.000 iface=2197 drift=-0.0001%
+  st=  80 T=0.400 X=2.875 H=1.062 iface=3395 drift=-0.0001%
+  st= 100 T=0.500 X=3.375 H=1.125 iface=3698 drift=-0.0100%
+  st= 120 T=0.600 X=3.750 H=1.062 iface=4065 drift=-0.0346%
+  st= 140 T=0.700 X=4.250 H=1.062 iface=4112 drift=-0.0349%
+  st= 160 T=0.800 X=4.625 H=1.062 iface=4024 drift=-0.0533%
+  st= 180 T=0.900 X=4.750 H=1.125 iface=4118 drift=-0.0573%
+  st= 200 T=1.000 X=4.625 H=1.062 iface=4213 drift=-0.0958%
+  st= 220 T=1.100 X=4.625 H=1.062 iface=4469 drift=-0.1472%
+  st= 240 T=1.200 X=4.750 H=1.062 iface=4452 drift=-0.1474%
+  st= 260 T=1.300 X=4.750 H=1.125 iface=4668 drift=-0.1630%
+  st= 280 T=1.400 X=4.625 H=1.125 iface=4763 drift=-0.1733%
+  st= 300 T=1.500 X=4.625 H=1.125 iface=4952 drift=-0.2081%
+  st= 320 T=1.600 X=4.750 H=1.062 iface=4654 drift=-0.2116%
+  st= 340 T=1.700 X=4.750 H=1.062 iface=4202 drift=-0.2233%
+  st= 360 T=1.800 X=4.750 H=1.125 iface=4514 drift=-0.2233%
+  st= 380 T=1.900 X=4.750 H=1.125 iface=4701 drift=-0.2669%
+  st= 400 T=2.000 X=4.750 H=1.125 iface=5061 drift=-0.2706%
+  st= 420 T=2.100 X=4.750 H=0.938 iface=5178 drift=-0.2717%
+  st= 440 T=2.200 X=4.750 H=0.938 iface=4953 drift=-0.2782%
+  st= 460 T=2.300 X=4.750 H=1.125 iface=4705 drift=-0.2820%
+  st= 480 T=2.400 X=4.750 H=1.125 iface=4795 drift=-0.2821%
+  st= 500 T=2.500 X=4.750 H=0.562 iface=5029 drift=-0.3025%
+  st= 520 T=2.600 X=4.750 H=0.562 iface=5043 drift=-0.3213%
+  st= 540 T=2.700 X=4.750 H=0.812 iface=4611 drift=-0.3449%
+  st= 560 T=2.800 X=4.750 H=1.062 iface=4697 drift=-0.3464%
+  st= 580 T=2.900 X=4.750 H=1.125 iface=4894 drift=-0.3476%
+  st= 600 T=3.000 X=4.750 H=0.875 iface=5025 drift=-0.3711%
+  st= 620 T=3.100 X=4.750 H=1.000 iface=4676 drift=-0.4019%
+[a8_g1e-04_rg0.1_wmhalfway_te1e-6_ap1] T_max=3.10 elapsed=42.2s max_err=189.9% drift=-0.40% iface=335->4676 X(T=1)~4.62

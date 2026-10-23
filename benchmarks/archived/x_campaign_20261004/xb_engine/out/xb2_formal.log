@@ -1,0 +1,17 @@
+== B1 baseline bit-check ==
+[b1_base_cs_Tr0p9_sc] stable=True conv=True steps=13000 u_max=5.2635e-02 ratio=5.48 t=7.6s cum=7.6s
+  bit-equal vs archive: True
+[b1_base_pr_Tr0p55_sc] stable=True conv=True steps=23000 u_max=2.0414e-01 ratio=480.43 t=12.4s cum=20.1s
+  bit-equal vs archive: True
+== B2 G2 response curve (42 arms) ==
+[b2_G2m0p02_cs_Tr0p9] stable=True conv=True steps=13000 u_max=5.4762e-02 ratio=5.48 t=9.0s cum=29.1s
+Traceback (most recent call last):
+  File "/nfs/wangxi/runs/x_campaign_20261004/xb_engine/xb2_formal.py", line 296, in <module>
+    r["drift"] = drift_block(r)
+                 ^^^^^^^^^^^^^^
+  File "/nfs/wangxi/runs/x_campaign_20261004/xb_engine/xb2_formal.py", line 280, in drift_block
+    all(o[phase]["err_mr"] is not None and
+  File "/nfs/wangxi/runs/x_campaign_20261004/xb_engine/xb2_formal.py", line 280, in <genexpr>
+    all(o[phase]["err_mr"] is not None and
+        ^
+NameError: name 'o' is not defined. Did you mean: 'os'?

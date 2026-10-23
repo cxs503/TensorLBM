@@ -1,0 +1,60 @@
+{
+  "case": "sphere_re100_pressure_integration_param_scan",
+  "date": "2026-08-19",
+  "module": "GeneralSimEngine PARAMETRIC_SPHERE (D3Q19, MRT auto), ForceMethod.BOTH",
+  "rule": "extrap='none' (真实模拟，禁外推); 只调 p0_method x friction_formula",
+  "grid_D40": "140x120x120 domain, 5000 steps, cuda:0",
+  "grid_D60": "210x180x180 domain, 8000 steps, cuda:0",
+  "Cd_ref_SN": 1.091731,
+  "scan_matrix": "p0_method x friction_formula: p0 four methods bit-identical (closed surface sum(n_hat dA)=0 => p0 is a mathematical no-op), so the informative dimension is friction only; each friction run records time-averaged cd_total (p0=far_field) + post-run single-frame 4x4 scan",
+  "D40_time_avg": {
+    "standard":  {"cd_pressure": 0.5564, "cd_friction": 0.3549, "cd_total": 0.9112, "err_pct": -16.53},
+    "2nd_order": {"cd_pressure": 0.5564, "cd_friction": -0.0255, "cd_total": 0.5309, "err_pct": -51.38},
+    "central":   {"cd_pressure": 0.5564, "cd_friction": 0.5578, "cd_total": 1.1142, "err_pct": 2.05},
+    "lagrange":  {"cd_pressure": 0.5564, "cd_friction": 0.3464, "cd_total": 0.9027, "err_pct": -17.31}
+  },
+  "D40_single_frame_p0_scan": {"near_wall": 0.545, "far_field": 0.545, "domain_avg": 0.545, "inlet": 0.545},
+  "D40_single_frame_friction_scan": {"standard": 0.3538, "2nd_order": -0.0258, "central": 0.5564, "lagrange": 0.3452},
+  "D60_central": {
+    "cd_pressure": 0.5498, "cd_friction": 0.5785, "cd_total": 1.1283, "err_pct": 3.35,
+    "window_means_5x1000_cd_total": [1.15114, 1.1369, 1.13166, 1.12916, 1.12828],
+    "single_frame_p0_scan": {"near_wall": 0.5575, "far_field": 0.5575, "domain_avg": 0.5575, "inlet": 0.5575},
+    "single_frame_friction_scan": {"standard": 0.3741, "2nd_order": -0.0182, "central": 0.5794, "lagrange": 0.368}
+  },
+  "faces_retest_2026-08-20": {
+    "module": "GeneralSimEngine + formula='faces' (edd3e80 per-wall-face shear, dA=1/face, staircase inner-corner double faces included; solid mask passed)",
+    "grid_D40": "140x120x120 domain, 5000 steps, cuda:1, time-avg last 100 samples",
+    "grid_D60": "210x180x180 domain, 8000 steps, cuda:1, time-avg last 100 samples",
+    "D40_faces": {"cd_pressure": 0.5564, "cd_friction": 0.4137, "cd_total": 0.9700, "err_pct": -11.15},
+    "D60_faces": {"cd_pressure": 0.5498, "cd_friction": 0.4396, "cd_total": 0.9894, "err_pct": -9.37,
+                  "window_means_5x1000_cd_total": [1.00994, 0.99708, 0.99248, 0.99023, 0.98943],
+                  "single_frame_friction_scan": {"standard": 0.3741, "2nd_order": -0.0182, "central": 0.5794, "lagrange": 0.368, "faces": 0.4405}},
+    "face_geometry_D40": {"wall_faces_total": 7470, "faces_per_axis": 2490, "near_cells": 4302,
+                          "faces_over_near": 1.7364, "flow_direction_faces_y_plus_z": 4980,
+                          "flow_effective_faces_over_near": 1.158,
+                          "measured_cd_f_faces_over_standard": 1.166},
+    "verdict": "not_verified",
+    "verdict_reason": "faces formula is CORRECT and converges (D40 -11.15% -> D60 -9.37%, window drift 0.08%), but only recovers +16% of friction (not the +40% 2D-cylinder extrapolation): on a 3D sphere the flow-direction friction comes only from y/z faces (4980 of 7470 wall faces); x faces (stagnation/wake staircase) contribute no Cd_x shear. Pressure term cd_p=-49% (G12 extrap='none') dominates residual. Both grids >3% hard gate -> stays pending/.",
+    "raw_outputs": [
+      "/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d40_far_field_none_faces/force_compare.json",
+      "/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d60_far_field_none_faces/force_compare.json"
+    ]
+  },
+  "verdict": "not_verified",
+  "verdict_reason": "best combo (p0=any, friction=central) gives D40 +2.05% but D60 +3.35% (>3%) — error INCREASES with refinement (+2.05% -> +3.35%), i.e. the D40 'pass' is a coincidental cancellation, not a converged result. Repo hard rule: refinement-worsening = fake result, do not save.",
+  "physical_analysis": {
+    "p0_noop": "sum(n_hat dA)=0 measured (closed staircase sphere) => constant p0 drops out of sum(p-p0) n dA exactly; all 4 p0_methods bit-identical at D40 (0.5450) and D60 (0.5575). G12's far_field fix direction is void; no p0 lever exists.",
+    "pressure_deficit": "cd_p=0.5564 (D40) / 0.5498 (D60) = -49% of SN total, unchanged by friction choice. G12: extrap='none' samples p at near-wall cell centers 0.5-1 cell off the wall, missing stagnation pressure rise. This is the -16.5% total-deficit root cause.",
+    "central_friction_overestimate": "tau=nu*u2 samples the second cell (1.5 cells from wall) with NO /1.5 normalization; asymptotically overestimates wall shear by 1.5x for a linear near-wall profile (standard tau=2*nu*u1 is the exact half-way BB shear). Measured cd_f central/standard = 1.57 (D40) / 1.55 (D60); u2/u1 ~ 3.1-3.15.",
+    "why_central_looks_good_at_D40": "pressure under-estimate (-49%) coincidentally cancels friction over-estimate (+50%) at D40. Under refinement pressure does not improve (0.5564->0.5498) while central friction keeps growing (0.5578->0.5785) => total overshoots to +3.35% at D60.",
+    "2nd_order_unphysical": "tau=nu*(3u1-u2) over-corrects on the sphere BL where u2/u1>3 => cd_f<0 (-0.0255). lagrange (3u1-u2/3) ~ standard (-17%), 2nd-order correction too small to matter."
+  },
+  "conclusion": "pressure-integration parameter space (p0_method x friction_formula, extrap='none') contains NO pass combination: all alternatives to standard are either worse (2nd_order -51%, lagrange -17%) or coincidentally-better-at-D40-but-diverging (central +2.05% -> +3.35%). Only remaining lever is pressure extrapolation (quadratic, B2 direction), which is FORBIDDEN for verified/. Sphere series (B1/B2/B3) stays pending/.",
+  "raw_outputs": [
+    "/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d40_far_field_none_standard/force_compare.json",
+    "/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d40_far_field_none_2nd_order/force_compare.json",
+    "/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d40_far_field_none_central/force_compare.json",
+    "/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d40_far_field_none_lagrange/force_compare.json",
+    "/home/wxsc/cxs/TensorLBM/results_fmcompare_sphere_re100_d60_far_field_none_central/force_compare.json"
+  ]
+}

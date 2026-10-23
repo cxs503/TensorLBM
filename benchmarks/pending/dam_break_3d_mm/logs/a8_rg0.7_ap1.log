@@ -1,0 +1,33 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+  st=  40 T=0.200 X=1.750 H=0.938 iface=979 drift=-0.0001%
+  st=  80 T=0.400 X=3.000 H=0.938 iface=2556 drift=-0.0001%
+  st= 120 T=0.600 X=4.250 H=0.938 iface=3878 drift=-0.0072%
+  st= 160 T=0.800 X=4.750 H=0.812 iface=3952 drift=-0.0790%
+  st= 200 T=1.000 X=4.750 H=0.375 iface=4127 drift=-0.1231%
+  st= 240 T=1.200 X=4.750 H=0.500 iface=4377 drift=-0.1457%
+  st= 280 T=1.400 X=4.750 H=1.000 iface=4895 drift=-0.2878%
+  st= 320 T=1.600 X=4.750 H=1.125 iface=4316 drift=-0.4315%
+  st= 360 T=1.800 X=4.750 H=1.062 iface=4665 drift=-0.4612%
+  st= 400 T=2.000 X=4.750 H=1.000 iface=4198 drift=-0.5163%
+  st= 440 T=2.200 X=4.750 H=0.688 iface=4112 drift=-0.6296%
+  st= 480 T=2.400 X=4.750 H=0.812 iface=4141 drift=-0.6399%
+  st= 520 T=2.600 X=4.750 H=0.938 iface=4820 drift=-0.6582%
+  st= 560 T=2.800 X=4.750 H=1.125 iface=3882 drift=-0.6964%
+  st= 600 T=3.000 X=4.750 H=0.938 iface=4178 drift=-0.7191%
+  st= 620 T=3.100 X=4.750 H=0.938 iface=4184 drift=-0.7197%
+[a8_g1e-04_rg0.7_wmhalfway_te1e-6_ap1] T_max=3.10 elapsed=41.6s max_err=197.7% drift=-0.72% iface=335->4184 X(T=1)~4.75

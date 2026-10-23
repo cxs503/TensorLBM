@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run the canonical Re=100 sphere BFL/control-volume validation."""
+
 from __future__ import annotations
 
 import argparse
@@ -60,28 +61,33 @@ def parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = parser().parse_args()
     config = SphereBFLControlVolumeConfig(
-        nx=args.nx, ny=args.ny, nz=args.nz, radius=args.radius,
-        reynolds=args.reynolds, lattice_speed=args.lattice_speed,
-        steps=args.steps, warmup_steps=args.warmup_steps,
-        ramp_steps=args.ramp_steps, sponge_width=args.sponge_width,
-        sponge_strength=args.sponge_strength, sponge_inlet=args.sponge_inlet,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        radius=args.radius,
+        reynolds=args.reynolds,
+        lattice_speed=args.lattice_speed,
+        steps=args.steps,
+        warmup_steps=args.warmup_steps,
+        ramp_steps=args.ramp_steps,
+        sponge_width=args.sponge_width,
+        sponge_strength=args.sponge_strength,
+        sponge_inlet=args.sponge_inlet,
         cv_margin=args.cv_margin,
         report_interval=args.report_interval,
         checkpoint_interval=args.checkpoint_interval,
-        checkpoint_path=args.checkpoint, resume=args.resume,
+        checkpoint_path=args.checkpoint,
+        resume=args.resume,
         allow_v2_checkpoint=args.allow_v2_checkpoint,
         statistics_window_steps=args.statistics_window_steps,
-        minimum_statistics_convective_times=(
-            args.minimum_statistics_convective_times
-        ),
-        far_field_mode=args.far_field_mode, device=args.device,
+        minimum_statistics_convective_times=(args.minimum_statistics_convective_times),
+        far_field_mode=args.far_field_mode,
+        device=args.device,
         collision_model=args.collision_model,
         collision_chunk_cells=args.collision_chunk_cells,
         compile_natural_kbc=args.compile_natural_kbc,
         projected_pressure_interval=args.projected_pressure_interval,
-        projected_pressure_reconstruction=(
-            args.projected_pressure_reconstruction
-        ),
+        projected_pressure_reconstruction=(args.projected_pressure_reconstruction),
     )
     result = run_sphere_bfl_control_volume(config)
     output = Path(args.output)

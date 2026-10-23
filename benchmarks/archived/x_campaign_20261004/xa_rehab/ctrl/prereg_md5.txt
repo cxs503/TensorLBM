@@ -1,0 +1,5 @@
+972dcd215cd11a478ca369c098c9e065  xa2_m2g2_noise/prereg.md
+53d1e1ab0f12115145ff3973955fbe75  xa3_t2_sigma/prereg.md
+a3aabc50457a890c7b41ab303e891520  xa4_m7_servo/prereg.md
+a1e9e8785d9f2a88fa3d4376921cf151  xa5_cg_beta/prereg.md
+8f63a945fc86e48bec429a3b25b6e306  x1_crossval/prereg.md

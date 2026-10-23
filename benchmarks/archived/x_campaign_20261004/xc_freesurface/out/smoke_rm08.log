@@ -1,0 +1,2 @@
+[VERIFY] patched(off) vs v1.1 bit-identity 250 steps: True
+[RUN] wrote out/smoke_w1_RM08.json; last t=10000 uy_max=0.017552677541971207 zombie=0 cap_cum=84623 starved_cum=40361

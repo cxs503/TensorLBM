@@ -10,13 +10,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import pytest
 
 from tensorlbm.suboff_validation_runner import (
     SuboffValidationConfig,
-    SuboffValidationEvidence,
     run_suboff_d3q19_mrt_validation,
 )
 from tensorlbm.wall_function_contract import (
@@ -24,7 +23,6 @@ from tensorlbm.wall_function_contract import (
     WallFunctionCapability,
     WallFunctionCompatibilityError,
 )
-
 
 # ---------------------------------------------------------------------------
 # Small-grid config factory

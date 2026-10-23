@@ -1,4 +1,5 @@
 """Matched inlet-sponge sensitivity audit for canonical sphere drag."""
+
 from __future__ import annotations
 
 import math
@@ -59,35 +60,26 @@ def assess_sphere_inlet_sponge_pair(
 
     baseline = parsed[0][1]
     required_present = all(
-        field in configuration
-        for _, configuration, _ in parsed
-        for field in _IDENTITY_FIELDS
+        field in configuration for _, configuration, _ in parsed for field in _IDENTITY_FIELDS
     )
     identity_equal = required_present and all(
-        parsed[1][1].get(field) == baseline.get(field)
-        for field in _IDENTITY_FIELDS
+        parsed[1][1].get(field) == baseline.get(field) for field in _IDENTITY_FIELDS
     )
     cd_values = [float(item[2]["cd_control_volume"]) for item in parsed]
-    drag_change_pct = (
-        abs(cd_values[1] - cd_values[0])
-        / max(abs(cd_values[1]), 1.0e-30)
-        * 100.0
-    )
-    references = {
-        float(item[2]["cd_reference_schiller_naumann"]) for item in parsed
-    }
+    drag_change_pct = abs(cd_values[1] - cd_values[0]) / max(abs(cd_values[1]), 1.0e-30) * 100.0
+    references = {float(item[2]["cd_reference_schiller_naumann"]) for item in parsed}
     reference_invariant = len(references) == 1
     reference = next(iter(references)) if reference_invariant else math.nan
-    reference_errors = [
-        abs(value - reference) / max(abs(reference), 1.0e-30) * 100.0
-        for value in cd_values
-    ] if reference_invariant else [math.inf, math.inf]
+    reference_errors = (
+        [abs(value - reference) / max(abs(reference), 1.0e-30) * 100.0 for value in cd_values]
+        if reference_invariant
+        else [math.inf, math.inf]
+    )
     provenance_admitted = (
         schema_valid and required_present and identity_equal and reference_invariant
     )
     sensitivity_within_tolerance = (
-        provenance_admitted and source_quality
-        and drag_change_pct <= maximum_drag_change_pct
+        provenance_admitted and source_quality and drag_change_pct <= maximum_drag_change_pct
     )
     return {
         "schema": "tensorlbm-sphere-inlet-sponge-sensitivity-v1",

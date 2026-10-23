@@ -1,4 +1,5 @@
 """Bounded-memory execution for strictly cell-local collision operators."""
+
 from __future__ import annotations
 
 import math
@@ -50,17 +51,17 @@ class NaturalKBCCollisionExecutor:
         if not math.isfinite(tau) or tau <= 0.5:
             raise ValueError("tau must be finite and greater than 0.5")
         self._call_count += 1
-        self._shape_signatures.add((
-            str(populations.device),
-            str(populations.dtype),
-            tuple(populations.shape),
-        ))
+        self._shape_signatures.add(
+            (
+                str(populations.device),
+                str(populations.dtype),
+                tuple(populations.shape),
+            )
+        )
         self._minimum_tau = min(self._minimum_tau, tau)
         self._maximum_tau = max(self._maximum_tau, tau)
         compute_populations = (
-            populations.to(torch.float64)
-            if self.compute_dtype == "float64"
-            else populations
+            populations.to(torch.float64) if self.compute_dtype == "float64" else populations
         )
         if not self.compile_enabled:
             result = collide_natural_kbc_d3q19(compute_populations, tau)
@@ -82,6 +83,7 @@ class NaturalKBCCollisionExecutor:
         if self.compile_enabled and self._compiled is not None:
             try:
                 from torch._dynamo.utils import counters
+
                 unique_graphs = int(counters["stats"]["unique_graphs"])
             except (ImportError, KeyError, TypeError, ValueError):
                 pass
@@ -99,12 +101,8 @@ class NaturalKBCCollisionExecutor:
                 }
                 for device, dtype, shape in sorted(self._shape_signatures)
             ],
-            "minimum_tau": (
-                self._minimum_tau if self._call_count else None
-            ),
-            "maximum_tau": (
-                self._maximum_tau if self._call_count else None
-            ),
+            "minimum_tau": (self._minimum_tau if self._call_count else None),
+            "maximum_tau": (self._maximum_tau if self._call_count else None),
             "torch_dynamo_process_unique_graphs": unique_graphs,
         }
 

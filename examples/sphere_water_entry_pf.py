@@ -16,15 +16,20 @@ Physics:
   - Compare penetration depth with analytical (drag coefficient)
 """
 
-import sys, math, torch, numpy as np
+import math
+import sys
+
+import numpy as np
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q27 import equilibrium27, macroscopic27, stream27, OPPOSITE as OPP27
-from tensorlbm.d3q27 import _c_on as _c27_on, _w_on as _w27_on
-from tensorlbm.d3q27 import collide_mrt27
-from tensorlbm.advanced_collision import collide_kbc_d3q27, collide_cascaded_d3q27
+from tensorlbm.advanced_collision import collide_cascaded_d3q27, collide_kbc_d3q27
 from tensorlbm.cumulant import collide_cumulant_d3q27
-from tensorlbm.turbulence import collide_smagorinsky_mrt27, _smagorinsky_tau
+from tensorlbm.d3q27 import OPPOSITE as OPP27
+from tensorlbm.d3q27 import _c_on as _c27_on
+from tensorlbm.d3q27 import _w_on as _w27_on
+from tensorlbm.d3q27 import collide_mrt27, equilibrium27, stream27
+from tensorlbm.turbulence import collide_smagorinsky_mrt27
 
 
 def run_sphere_entry(
@@ -99,7 +104,7 @@ def run_sphere_entry(
     vy_sphere = 0.0
     dy_accum = 0.0  # accumulated fractional displacement
 
-    print(f"=== Sphere Water Entry (Phase-Field + MRT) ===", flush=True)
+    print("=== Sphere Water Entry (Phase-Field + MRT) ===", flush=True)
     print(f"Grid: {nx}x{ny}x{nz}  R={R_sphere}  waterline y={y_water}", flush=True)
     print(
         f"Sphere start: cy={cy_s} (above water by {y_water - cy_s - R_sphere:.0f} cells)",
@@ -390,4 +395,4 @@ if __name__ == "__main__":
         f"Terminal velocity: v_sim={abs(vy[-1]):.4f} v_ana={v_term_ana:.4f} "
         f"(error={abs(abs(vy[-1]) - v_term_ana) / v_term_ana * 100:.1f}%)"
     )
-    print(f"Cd benchmark: 0.47 (Re~1000)")
+    print("Cd benchmark: 0.47 (Re~1000)")

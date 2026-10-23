@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Assess a fixed-resolution two-domain sphere sensitivity pair."""
+
 from __future__ import annotations
 
 import argparse
@@ -23,10 +24,12 @@ def main() -> None:
     records = []
     for path in (args.baseline, args.expanded):
         payload = path.read_bytes()
-        sources.append({
-            "path": str(path),
-            "sha256": hashlib.sha256(payload).hexdigest(),
-        })
+        sources.append(
+            {
+                "path": str(path),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        )
         records.append(json.loads(payload))
     result = assess_sphere_domain_sensitivity_pair(
         records,

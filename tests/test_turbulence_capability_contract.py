@@ -16,18 +16,15 @@ from tensorlbm.turbulence_capability_contract import (
     VERIFICATION_IMPLEMENTED_ONLY,
     VERIFICATION_NO_IMPLEMENTATION,
     WITHHELD_NO_CONTRACT_TESTS,
-    WITHHELD_NO_IMPLEMENTATION,
     WITHHELD_NO_PHYSICS_VALIDATION,
     WITHHELD_UNKNOWN_COLLISION,
     WITHHELD_UNKNOWN_FAMILY,
     WITHHELD_UNKNOWN_LATTICE,
-    TurbulenceCapability,
     TurbulenceWithheldError,
     require_turbulence_capability,
     turbulence_capability_matrix,
     turbulence_hot_path_audit,
 )
-
 
 # ---------------------------------------------------------------------------
 # Matrix structure

@@ -1,0 +1,5 @@
+[p3] m0_stock: C 1.9977692495590362 -> 1.0247447658819375 stable=True drift_r=4.9603061319018536e-17
+[p3] m1_chemforce: C 1.9977694446053949 -> 1.024546206388063 stable=True drift_r=4.9424418841278975e-17
+[p3] m2_correction: C 1.9977694446053949 -> 1.084432524562976 stable=True drift_r=3.159112933677464e-05
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/probe/out/p3_density_contrast.json
+GATES: {"g_m0_collapse_C_end_le_1.3": true, "g_m1_no_fix_C_end_le_1.3": true, "g_m2_rescue_C_end_ge_1.5": false, "g_m2_ledger_cost_gt_1e-6": true, "g_m0_ledger_clean_le_1e-13": true, "g_all_stable": true}

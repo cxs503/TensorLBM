@@ -1,0 +1,149 @@
+{
+  "case": "3.3_rime",
+  "grid": [
+    {
+      "tag": "s3000_d240",
+      "steps": 3000,
+      "dt_shot_s": 240.0,
+      "accel": 17066.666666666668,
+      "lwc_eff": 7.509333333333334,
+      "wall_s": 40.679375297855586,
+      "md5": "f29e0ce2a5497b7e29cedd7abbca743a",
+      "stats": {
+        "beta_max": 0.7880398631095886,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.7880398631095886,
+        "stag_s_over_c": 0.0,
+        "n_bins": 113
+      },
+      "impacted_kg_per_phys_s": 3.755831130547449e-07,
+      "impact_total_kg": 9.013994713313878e-05
+    },
+    {
+      "tag": "s3000_d120",
+      "steps": 3000,
+      "dt_shot_s": 120.0,
+      "accel": 8533.333333333334,
+      "lwc_eff": 3.754666666666667,
+      "wall_s": 40.177513951901346,
+      "md5": "2ca2f1883a9bf6988ea1ed3934962339",
+      "stats": {
+        "beta_max": 0.7880396842956543,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.7880396842956543,
+        "stag_s_over_c": 0.0,
+        "n_bins": 113
+      },
+      "impacted_kg_per_phys_s": 3.755829141027789e-07,
+      "impact_total_kg": 4.506994810071774e-05
+    },
+    {
+      "tag": "s3000_d300",
+      "steps": 3000,
+      "dt_shot_s": 300.0,
+      "accel": 21333.333333333336,
+      "lwc_eff": 9.386666666666668,
+      "wall_s": 40.19587957998738,
+      "md5": "aead46d9a0f542a8e9c2b59370fb4390",
+      "stats": {
+        "beta_max": 0.7880376577377319,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.7880376577377319,
+        "stag_s_over_c": 0.0,
+        "n_bins": 113
+      },
+      "impacted_kg_per_phys_s": 3.7558305621132604e-07,
+      "impact_total_kg": 0.00011267491936450824
+    },
+    {
+      "tag": "s3000_d600",
+      "steps": 3000,
+      "dt_shot_s": 600.0,
+      "accel": 42666.66666666667,
+      "lwc_eff": 18.773333333333337,
+      "wall_s": 40.16820799699053,
+      "md5": "077d78f7d13e489504cef89fdbb4a050",
+      "stats": {
+        "beta_max": 0.7880377769470215,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.7880377769470215,
+        "stag_s_over_c": 0.0,
+        "n_bins": 113
+      },
+      "impacted_kg_per_phys_s": 3.755835109586769e-07,
+      "impact_total_kg": 0.0002253501006634906
+    },
+    {
+      "tag": "s3000_d1200",
+      "steps": 3000,
+      "dt_shot_s": 1200.0,
+      "accel": 85333.33333333334,
+      "lwc_eff": 37.546666666666674,
+      "wall_s": 40.19258674187586,
+      "md5": "3b084a8daea1df57c041abf8560e9354",
+      "stats": {
+        "beta_max": 0.7880387306213379,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.7880387306213379,
+        "stag_s_over_c": 0.0,
+        "n_bins": 113
+      },
+      "impacted_kg_per_phys_s": 3.7558268672910344e-07,
+      "impact_total_kg": 0.0004506992409005761
+    },
+    {
+      "tag": "s800_d240",
+      "steps": 800,
+      "dt_shot_s": 240.0,
+      "accel": 64000.0,
+      "lwc_eff": 28.16,
+      "wall_s": 30.040689792018384,
+      "md5": "e2d967f9cde4a8146296510f9731437e",
+      "stats": {
+        "beta_max": 0.8065476417541504,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.8065476417541504,
+        "stag_s_over_c": 0.0,
+        "n_bins": 108
+      },
+      "impacted_kg_per_phys_s": 3.807323025739606e-07,
+      "impact_total_kg": 9.13757539819926e-05
+    },
+    {
+      "tag": "s1500_d240",
+      "steps": 1500,
+      "dt_shot_s": 240.0,
+      "accel": 34133.333333333336,
+      "lwc_eff": 15.018666666666668,
+      "wall_s": 33.48286453774199,
+      "md5": "fd4bbec55aae51af7dc81a0fad245db1",
+      "stats": {
+        "beta_max": 0.7933607697486877,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.7933607697486877,
+        "stag_s_over_c": 0.0,
+        "n_bins": 112
+      },
+      "impacted_kg_per_phys_s": 3.79366326797026e-07,
+      "impact_total_kg": 9.104792115977034e-05
+    },
+    {
+      "tag": "s6000_d240",
+      "steps": 6000,
+      "dt_shot_s": 240.0,
+      "accel": 8533.333333333334,
+      "lwc_eff": 3.754666666666667,
+      "wall_s": 54.337946123909205,
+      "md5": "9658ed9de3901fb53a9a9caa960dca03",
+      "stats": {
+        "beta_max": 0.7965003848075867,
+        "argmax_s_over_c": 0.0,
+        "beta_stag": 0.7965003848075867,
+        "stag_s_over_c": 0.0,
+        "n_bins": 114
+      },
+      "impacted_kg_per_phys_s": 3.800731747105601e-07,
+      "impact_total_kg": 9.121756011154503e-05
+    }
+  ]
+}

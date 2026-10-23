@@ -1,0 +1,452 @@
+{
+  "schema": "tensorlbm.static-cut-cell-study/1",
+  "cases": [
+    {
+      "case": "static-cut",
+      "artifact": "static-cut.json.gz",
+      "sha256": "32967b0523783b17e2574703244157a849ecd24eb17623dbfdc98a6d7f7f7097",
+      "steps": 12,
+      "duration_s": 0.12,
+      "initial_kind": "static",
+      "body": true,
+      "group_count": 114,
+      "merged_cell_count": 2,
+      "cfl_limit_s": 0.01529999999999997,
+      "peak_body_force_N": 2.2970935931273978e-14,
+      "total_body_impulse_Ns": [
+        -1.281093287008872e-15,
+        -1.1978265601619853e-15
+      ],
+      "max_mass_residual_kg": 4.541072379238287e-14,
+      "max_momentum_residual_Ns": 1.7780915628762273e-16,
+      "minimum_population_density_kg_m3": 27.777777777777718,
+      "restart_bitwise": true,
+      "initial_projection": {
+        "momentum_before_Ns": [
+          0.0,
+          0.0
+        ],
+        "mass_before_kg": 223.26000000000005,
+        "maximum_cell_population_change_kg": 1.1102230246251565e-16,
+        "momentum_after_Ns": [
+          0.0,
+          0.0
+        ],
+        "mass_after_kg": 223.26000000000002,
+        "energy_before": {
+          "kinetic_J": 0.0,
+          "compression_J": 0.0,
+          "mechanical_J": 0.0
+        },
+        "energy_after": {
+          "kinetic_J": 0.0,
+          "compression_J": 0.0,
+          "mechanical_J": 0.0,
+          "population_entropy_J": -5.901760561736561e-15
+        }
+      }
+    },
+    {
+      "case": "nonuniform-cut",
+      "artifact": "nonuniform-cut.json.gz",
+      "sha256": "788ff0134097c7b9a88d144f10b0efd6ea02e14ac164832ef0cc387a92e21d84",
+      "steps": 12,
+      "duration_s": 0.12,
+      "initial_kind": "waves",
+      "body": true,
+      "group_count": 114,
+      "merged_cell_count": 2,
+      "cfl_limit_s": 0.01529999999999997,
+      "peak_body_force_N": 0.5018119280077148,
+      "total_body_impulse_Ns": [
+        0.01664693848429401,
+        -0.04758425214000626
+      ],
+      "max_mass_residual_kg": 1.9243721199879715e-14,
+      "max_momentum_residual_Ns": 9.855289327675987e-15,
+      "minimum_population_density_kg_m3": 26.65733699356593,
+      "restart_bitwise": true,
+      "initial_projection": {
+        "momentum_before_Ns": [
+          -0.030092204197898376,
+          0.05852144941601356
+        ],
+        "mass_before_kg": 223.26261749740863,
+        "maximum_cell_population_change_kg": 5.9719778842171056e-05,
+        "momentum_after_Ns": [
+          -0.030092204197899264,
+          0.058521449416015336
+        ],
+        "mass_after_kg": 223.26261749740863,
+        "energy_before": {
+          "kinetic_J": 0.006654430605531978,
+          "compression_J": 9.532363421613088e-06,
+          "mechanical_J": 0.006663962968953591
+        },
+        "energy_after": {
+          "kinetic_J": 0.006654124587411415,
+          "compression_J": 9.530438308131011e-06,
+          "mechanical_J": 0.0066636550257195455,
+          "population_entropy_J": 0.00753615418563381
+        }
+      }
+    },
+    {
+      "case": "nonuniform-time-half",
+      "artifact": "nonuniform-time-half.json.gz",
+      "sha256": "a8f0c8b569f7fc826e451e6d7f3ffc881aa57e2b9be60e5715e058e0df0d6b4b",
+      "steps": 24,
+      "duration_s": 0.12,
+      "initial_kind": "waves",
+      "body": true,
+      "group_count": 114,
+      "merged_cell_count": 2,
+      "cfl_limit_s": 0.01529999999999997,
+      "peak_body_force_N": 0.5018119280077165,
+      "total_body_impulse_Ns": [
+        0.01661481623512692,
+        -0.04746677947266127
+      ],
+      "max_mass_residual_kg": 3.521391078037395e-14,
+      "max_momentum_residual_Ns": 8.021957664111623e-15,
+      "minimum_population_density_kg_m3": 26.649575865364884,
+      "restart_bitwise": true,
+      "initial_projection": {
+        "momentum_before_Ns": [
+          -0.030092204197898376,
+          0.05852144941601356
+        ],
+        "mass_before_kg": 223.26261749740863,
+        "maximum_cell_population_change_kg": 5.9719778842171056e-05,
+        "momentum_after_Ns": [
+          -0.030092204197899264,
+          0.058521449416015336
+        ],
+        "mass_after_kg": 223.26261749740863,
+        "energy_before": {
+          "kinetic_J": 0.006654430605531978,
+          "compression_J": 9.532363421613088e-06,
+          "mechanical_J": 0.006663962968953591
+        },
+        "energy_after": {
+          "kinetic_J": 0.006654124587411415,
+          "compression_J": 9.530438308131011e-06,
+          "mechanical_J": 0.0066636550257195455,
+          "population_entropy_J": 0.00753615418563381
+        }
+      }
+    },
+    {
+      "case": "nonuniform-grid-half",
+      "artifact": "nonuniform-grid-half.json.gz",
+      "sha256": "f8c322dab7a97724378a630de78a4d3c4aa65bf0d37c471f180ef57c46550b65",
+      "steps": 24,
+      "duration_s": 0.12,
+      "initial_kind": "waves",
+      "body": true,
+      "group_count": 450,
+      "merged_cell_count": 5,
+      "cfl_limit_s": 0.014599999999999972,
+      "peak_body_force_N": 0.5063417422690966,
+      "total_body_impulse_Ns": [
+        0.017142929046876802,
+        -0.04977783079522722
+      ],
+      "max_mass_residual_kg": 3.904748703195682e-14,
+      "max_momentum_residual_Ns": 1.2271054398299563e-14,
+      "minimum_population_density_kg_m3": 26.64314945410844,
+      "restart_bitwise": true,
+      "initial_projection": {
+        "momentum_before_Ns": [
+          -0.02801138272913306,
+          0.05841962932741751
+        ],
+        "mass_before_kg": 223.26266305317952,
+        "maximum_cell_population_change_kg": 1.4399354902730477e-05,
+        "momentum_after_Ns": [
+          -0.028011382729134837,
+          0.05841962932742106
+        ],
+        "mass_after_kg": 223.2626630531795,
+        "energy_before": {
+          "kinetic_J": 0.0066621748347983475,
+          "compression_J": 9.524269021397534e-06,
+          "mechanical_J": 0.006671699103819745
+        },
+        "energy_after": {
+          "kinetic_J": 0.006662081972048267,
+          "compression_J": 9.523747314433799e-06,
+          "mechanical_J": 0.0066716057193627,
+          "population_entropy_J": 0.007559290136286115
+        }
+      }
+    },
+    {
+      "case": "periodic-comoving",
+      "artifact": "periodic-comoving.json.gz",
+      "sha256": "636c2bf26e98c47210bb1d96ce6bf78349babc6ff8948e5c47bd8febf887cb76",
+      "steps": 12,
+      "duration_s": 0.12,
+      "initial_kind": "comoving",
+      "body": false,
+      "group_count": 120,
+      "merged_cell_count": 0,
+      "cfl_limit_s": 0.039999999999999994,
+      "peak_body_force_N": 0.0,
+      "total_body_impulse_Ns": [
+        0.0,
+        0.0
+      ],
+      "max_mass_residual_kg": 2.994132719535969e-14,
+      "max_momentum_residual_Ns": 5.287437154777308e-15,
+      "minimum_population_density_kg_m3": 24.988194444444368,
+      "restart_bitwise": true,
+      "initial_projection": {
+        "momentum_before_Ns": [
+          4.800000000000001,
+          -3.6000000000000014
+        ],
+        "mass_before_kg": 240.0,
+        "maximum_cell_population_change_kg": 0.0,
+        "momentum_after_Ns": [
+          4.800000000000001,
+          -3.6000000000000014
+        ],
+        "mass_after_kg": 240.0,
+        "energy_before": {
+          "kinetic_J": 0.07500000000000002,
+          "compression_J": 0.0,
+          "mechanical_J": 0.07500000000000002
+        },
+        "energy_after": {
+          "kinetic_J": 0.07500000000000002,
+          "compression_J": 0.0,
+          "mechanical_J": 0.07500000000000002,
+          "population_entropy_J": 0.0750000318395842
+        }
+      }
+    },
+    {
+      "case": "shear-16",
+      "artifact": "shear-16.json.gz",
+      "sha256": "b25bb6e011ca2ce692b45db9d4b46544150bb28e91bf5648e07736741b4b2f8c",
+      "steps": 10,
+      "duration_s": 0.1,
+      "initial_kind": "shear",
+      "body": false,
+      "group_count": 256,
+      "merged_cell_count": 0,
+      "cfl_limit_s": 0.019999999999999973,
+      "peak_body_force_N": 0.0,
+      "total_body_impulse_Ns": [
+        0.0,
+        0.0
+      ],
+      "max_mass_residual_kg": 1.3695641842836892e-14,
+      "max_momentum_residual_Ns": 3.71057351511439e-15,
+      "minimum_population_density_kg_m3": 27.76960639258412,
+      "restart_bitwise": true,
+      "initial_projection": {
+        "momentum_before_Ns": [
+          0.0,
+          0.0
+        ],
+        "mass_before_kg": 128.00000000000003,
+        "maximum_cell_population_change_kg": 0.0,
+        "momentum_after_Ns": [
+          0.0,
+          0.0
+        ],
+        "mass_after_kg": 128.00000000000003,
+        "energy_before": {
+          "kinetic_J": 3.1999999999995406e-07,
+          "compression_J": 3.2211270687791196e-16,
+          "mechanical_J": 3.2000000032206676e-07
+        },
+        "energy_after": {
+          "kinetic_J": 3.1999999999995406e-07,
+          "compression_J": 3.2211270687791196e-16,
+          "mechanical_J": 3.2000000032206676e-07,
+          "population_entropy_J": 3.1999999656432357e-07
+        }
+      },
+      "final_shear_amplitude_m_s": 8.882980056853437e-05,
+      "continuous_kinetic_reference_amplitude_m_s": 9.163754542397013e-05,
+      "semidiscrete_reference_amplitude_m_s": 8.836231200975251e-05,
+      "continuous_relative_error": 0.030639677682825824,
+      "time_relative_error": 0.00529058767419147
+    },
+    {
+      "case": "shear-32",
+      "artifact": "shear-32.json.gz",
+      "sha256": "dd613d282cf5701ebf0dcd622395b7052952f25268b514932fd48c5b1360d885",
+      "steps": 20,
+      "duration_s": 0.1,
+      "initial_kind": "shear",
+      "body": false,
+      "group_count": 1024,
+      "merged_cell_count": 0,
+      "cfl_limit_s": 0.009999999999999964,
+      "peak_body_force_N": 0.0,
+      "total_body_impulse_Ns": [
+        0.0,
+        0.0
+      ],
+      "max_mass_residual_kg": 1.084462381006901e-14,
+      "max_momentum_residual_Ns": 6.922847711754443e-15,
+      "minimum_population_density_kg_m3": 27.769485528989634,
+      "restart_bitwise": true,
+      "initial_projection": {
+        "momentum_before_Ns": [
+          0.0,
+          0.0
+        ],
+        "mass_before_kg": 128.0,
+        "maximum_cell_population_change_kg": 0.0,
+        "momentum_after_Ns": [
+          0.0,
+          0.0
+        ],
+        "mass_after_kg": 128.0,
+        "energy_before": {
+          "kinetic_J": 3.2000000000007555e-07,
+          "compression_J": 3.7895612573871953e-17,
+          "mechanical_J": 3.2000000003797117e-07
+        },
+        "energy_after": {
+          "kinetic_J": 3.2000000000007555e-07,
+          "compression_J": 3.7895612573871953e-17,
+          "mechanical_J": 3.2000000003797117e-07,
+          "population_entropy_J": 3.199999967812426e-07
+        }
+      },
+      "final_shear_amplitude_m_s": 9.015403663798821e-05,
+      "continuous_kinetic_reference_amplitude_m_s": 9.163754542397013e-05,
+      "semidiscrete_reference_amplitude_m_s": 8.984239199989936e-05,
+      "continuous_relative_error": 0.016188875194313845,
+      "time_relative_error": 0.0034687927508563394
+    },
+    {
+      "case": "shear-64",
+      "artifact": "shear-64.json.gz",
+      "sha256": "b53f454ecd846547acf1e0cd607f7c1f8f781caa33d635d880e37ce2e1293808",
+      "steps": 40,
+      "duration_s": 0.1,
+      "initial_kind": "shear",
+      "body": false,
+      "group_count": 4096,
+      "merged_cell_count": 0,
+      "cfl_limit_s": 0.004999999999999982,
+      "peak_body_force_N": 0.0,
+      "total_body_impulse_Ns": [
+        0.0,
+        0.0
+      ],
+      "max_mass_residual_kg": 1.4565171985170267e-14,
+      "max_momentum_residual_Ns": 7.115510437805117e-15,
+      "minimum_population_density_kg_m3": 27.76945533028052,
+      "restart_bitwise": true,
+      "initial_projection": {
+        "momentum_before_Ns": [
+          0.0,
+          0.0
+        ],
+        "mass_before_kg": 128.0,
+        "maximum_cell_population_change_kg": 0.0,
+        "momentum_after_Ns": [
+          0.0,
+          0.0
+        ],
+        "mass_after_kg": 128.0,
+        "energy_before": {
+          "kinetic_J": 3.2000000000003664e-07,
+          "compression_J": 1.44477022937887e-16,
+          "mechanical_J": 3.200000001445137e-07
+        },
+        "energy_after": {
+          "kinetic_J": 3.2000000000003664e-07,
+          "compression_J": 1.44477022937887e-16,
+          "mechanical_J": 3.200000001445137e-07,
+          "population_entropy_J": 3.199999975370748e-07
+        }
+      },
+      "final_shear_amplitude_m_s": 9.087485527949605e-05,
+      "continuous_kinetic_reference_amplitude_m_s": 9.163754542397013e-05,
+      "semidiscrete_reference_amplitude_m_s": 9.069896209095426e-05,
+      "continuous_relative_error": 0.008322900192769348,
+      "time_relative_error": 0.0019393076225658193
+    },
+    {
+      "case": "shear-32-time-half",
+      "artifact": "shear-32-time-half.json.gz",
+      "sha256": "d328c628085df062422d9872fbfe31f3c613d8317c2376487ccc85c084030ba0",
+      "steps": 40,
+      "duration_s": 0.1,
+      "initial_kind": "shear",
+      "body": false,
+      "group_count": 1024,
+      "merged_cell_count": 0,
+      "cfl_limit_s": 0.009999999999999964,
+      "peak_body_force_N": 0.0,
+      "total_body_impulse_Ns": [
+        0.0,
+        0.0
+      ],
+      "max_mass_residual_kg": 2.7659732143581195e-14,
+      "max_momentum_residual_Ns": 7.402065071993036e-15,
+      "minimum_population_density_kg_m3": 27.76948543013751,
+      "restart_bitwise": true,
+      "initial_projection": {
+        "momentum_before_Ns": [
+          0.0,
+          0.0
+        ],
+        "mass_before_kg": 128.0,
+        "maximum_cell_population_change_kg": 0.0,
+        "momentum_after_Ns": [
+          0.0,
+          0.0
+        ],
+        "mass_after_kg": 128.0,
+        "energy_before": {
+          "kinetic_J": 3.2000000000007555e-07,
+          "compression_J": 3.7895612573871953e-17,
+          "mechanical_J": 3.2000000003797117e-07
+        },
+        "energy_after": {
+          "kinetic_J": 3.2000000000007555e-07,
+          "compression_J": 3.7895612573871953e-17,
+          "mechanical_J": 3.2000000003797117e-07,
+          "population_entropy_J": 3.199999967812426e-07
+        }
+      },
+      "final_shear_amplitude_m_s": 8.999616240262136e-05,
+      "continuous_kinetic_reference_amplitude_m_s": 9.163754542397013e-05,
+      "semidiscrete_reference_amplitude_m_s": 8.984239199989936e-05,
+      "continuous_relative_error": 0.017911686893780726,
+      "time_relative_error": 0.0017115573094066004
+    }
+  ],
+  "static_nonuniform_transport_implemented": true,
+  "moving_geometry_implemented": false,
+  "physical_accuracy_qualified": false,
+  "continuous_kinetic_tau_s": 0.2,
+  "nominal_kinetic_viscosity_m2_s": 0.06666666666666667,
+  "roll_lbm_tau_mapping_used": false,
+  "refinement": {
+    "peak_force_time_half_relative_change": 3.318642790237007e-15,
+    "peak_force_grid_half_relative_change": 0.009026916277909061,
+    "threshold": 0.03,
+    "time_passed": true,
+    "grid_passed": true,
+    "shear_finest_continuous_error": 0.008322900192769348,
+    "shear_finest_passed": true,
+    "shear_errors_monotone": true,
+    "total_impulse_time_half_relative_change": 0.0024157947523081257,
+    "total_impulse_grid_half_relative_change": 0.04461137660777609,
+    "total_impulse_time_passed": true,
+    "total_impulse_grid_passed": false,
+    "dynamic_time_passed": true,
+    "dynamic_grid_passed": false
+  }
+}

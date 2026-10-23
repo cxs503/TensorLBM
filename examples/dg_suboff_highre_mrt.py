@@ -15,15 +15,15 @@ import math
 
 import torch
 
+from tensorlbm.boundaries3d import far_field_bc_3d
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.obstacles import compute_obstacle_forces_3d
+from tensorlbm.rans_ke import KESolver, collide_rans_ke
+from tensorlbm.solver3d import correct_mass3d, stream3d
 from tensorlbm.suboff_cad import build_suboff_mask
 from tensorlbm.suboff_resistance import _voxel_wetted_area
-from tensorlbm.boundaries3d import far_field_bc_3d
-from tensorlbm.wall_model import apply_wall_model_bounce_back
-from tensorlbm.obstacles import compute_obstacle_forces_3d
-from tensorlbm.solver3d import correct_mass3d, stream3d
 from tensorlbm.turbulence import collide_smagorinsky_mrt3d
-from tensorlbm.rans_ke import KESolver, collide_rans_ke
+from tensorlbm.wall_model import apply_wall_model_bounce_back
 
 
 def run(
@@ -75,7 +75,7 @@ def run(
     print(
         f"Re={re:.0e} tau={tau:.6f} nu_lat={nu_lat:.2e} RANS={'k-epsilon' if use_rans else 'no'} S={S:.0f}"
     )
-    print(f"experimental AFF-8 Ct ~ 0.004 ; prior BGK+channel Ct ~ 1.29 (320x)\n")
+    print("experimental AFF-8 Ct ~ 0.004 ; prior BGK+channel Ct ~ 1.29 (320x)\n")
 
     drag_samples = []
     for step in range(1, n_steps + 1):

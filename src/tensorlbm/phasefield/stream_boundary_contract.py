@@ -13,7 +13,7 @@ from typing import Literal
 
 import torch
 
-from ..d3q19 import C, OPPOSITE
+from ..d3q19 import OPPOSITE, C
 
 D3Q19_POPULATIONS = 19
 ADAPTER_STREAM_STAGE = "collision_then_adapter_stream"

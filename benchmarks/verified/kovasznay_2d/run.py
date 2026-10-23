@@ -43,6 +43,7 @@ max|N-S 残差| ≈ 1e-3，纯差分截断；恒等式 λ=ν(λ²−4π²) 成�
     run.py scan <out_dir> [--grids 32 64 128] [--xmax 3.0] [--outlet zerograd]
         [--re 40] [--u0 0.03] ...   → summary.json + result.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,14 +53,15 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
 
 import numpy as np
 import torch
+from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
+from tensorlbm.boundaries import zou_he_inlet_velocity
 from tensorlbm.d2q9 import equilibrium, macroscopic
 from tensorlbm.solver import collide_bgk, stream
-from tensorlbm.boundaries import zou_he_inlet_velocity
 
 CS2 = 1.0 / 3.0
 TWOPI = 2.0 * math.pi
@@ -71,8 +73,13 @@ def kov_lambda(re: float) -> float:
 
 
 def analytic_field(
-    nx: int, ny: int, u0: float, lam: float, xmax: float,
-    device: torch.device, dtype: torch.dtype,
+    nx: int,
+    ny: int,
+    u0: float,
+    lam: float,
+    xmax: float,
+    device: torch.device,
+    dtype: torch.dtype,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """解析 u/v 场（晶格坐标：x'=i/nx·xmax，y'=j/ny，y 周期 1）。"""
     y = torch.arange(ny, device=device, dtype=dtype)
@@ -93,8 +100,9 @@ def outlet_zero_gradient(f: torch.Tensor) -> torch.Tensor:
     return f
 
 
-def outlet_analytic_dirichlet(f: torch.Tensor, u_ana_col: torch.Tensor,
-                              v_ana_col: torch.Tensor) -> torch.Tensor:
+def outlet_analytic_dirichlet(
+    f: torch.Tensor, u_ana_col: torch.Tensor, v_ana_col: torch.Tensor
+) -> torch.Tensor:
     """解析 Dirichlet 出口：整列设为平衡态 f_eq(ρ=1, u_ana, v_ana)。"""
     ny = u_ana_col.shape[0]
     rho_c = torch.ones((ny, 1), device=f.device, dtype=f.dtype)
@@ -115,6 +123,7 @@ def run_case(
     device: str = "cpu",
     threads: int = 48,
     seed: int = 0,
+    compile_mode: str | None = "default",
 ) -> dict:
     torch.set_num_threads(threads)
     torch.manual_seed(seed)
@@ -123,7 +132,7 @@ def run_case(
     nx = int(round(ny * xmax))
 
     lam = kov_lambda(re)
-    nu = u0 * ny / re          # Re = U0·ny/ν（特征长度 = y 周期 = ny 格）
+    nu = u0 * ny / re  # Re = U0·ny/ν（特征长度 = y 周期 = ny 格）
     tau = 0.5 + 3.0 * nu
     ma_max = 2.0 * u0 / math.sqrt(CS2)
 
@@ -134,18 +143,24 @@ def run_case(
     u_in = u_ana[:, 0].contiguous()
     v_in = v_ana[:, 0].contiguous()
 
-    t0 = time.time()
-    l2_hist: list[tuple[int, torch.Tensor]] = []
-    step = 0
-    steady = False
-    for step in range(1, max_steps + 1):
+    # ---- 整步步进函数（共性 compile 路径；步序号与稳态监测留在编译域外）----
+    def _step(f):
         f = collide_bgk(f, tau)
         f = stream(f)
         if outlet == "zerograd":
             f = outlet_zero_gradient(f)
         else:
             f = outlet_analytic_dirichlet(f, u_ana[:, -1], v_ana[:, -1])
-        f = zou_he_inlet_velocity(f, u_in, v_in)
+        return zou_he_inlet_velocity(f, u_in, v_in)
+
+    step_fn = route_step(_step, compile_mode, name=f"kovasznay_2d[ny{ny}]")
+
+    t0 = time.time()
+    l2_hist: list[tuple[int, torch.Tensor]] = []
+    step = 0
+    steady = False
+    for step in range(1, max_steps + 1):
+        f = step_fn(f)
         if step % 500 == 0:
             _, ux, _ = macroscopic(f)
             # 场变化监测：‖u(t)−u(t−2500)‖₂/‖u(t)‖₂（float64 累加）。
@@ -154,7 +169,7 @@ def run_case(
             # 在 ~2000 步即收敛（实测 2000–40000 步误差完全平坦）。故阈值取 5e-5。
             l2_hist.append((step, ux.double()))
             if step >= min_steps and len(l2_hist) >= 5:
-                u_prev = l2_hist[-5][1]                    # 2500 步前的 u 场
+                u_prev = l2_hist[-5][1]  # 2500 步前的 u 场
                 num = float(((ux.double() - u_prev) ** 2).sum().sqrt().item())
                 den = float((ux.double() ** 2).sum().sqrt().item())
                 if num / max(den, 1e-12) < 5e-5:
@@ -172,13 +187,7 @@ def run_case(
     acc_u = torch.zeros((ny, nx), device=dev, dtype=torch.float64)
     acc_v = torch.zeros((ny, nx), device=dev, dtype=torch.float64)
     for _ in range(100):
-        f = collide_bgk(f, tau)
-        f = stream(f)
-        if outlet == "zerograd":
-            f = outlet_zero_gradient(f)
-        else:
-            f = outlet_analytic_dirichlet(f, u_ana[:, -1], v_ana[:, -1])
-        f = zou_he_inlet_velocity(f, u_in, v_in)
+        f = step_fn(f)
         _, ux, uy = macroscopic(f)
         acc_u += ux.to(torch.float64)
         acc_v += uy.to(torch.float64)
@@ -214,9 +223,11 @@ def run_case(
         "config": f"xmax={xmax} outlet={outlet}",
         "lattice": "D2Q9",
         "collision": "bgk",
-        "boundary": ("zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet"
-                     if outlet == "zerograd" else
-                     "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"),
+        "boundary": (
+            "zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet"
+            if outlet == "zerograd"
+            else "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"
+        ),
         "driving": "analytic Navier-Stokes solution (Kovasznay 1948), steady-state verification",
         "extrap": "none",
         "ny": ny,
@@ -229,6 +240,7 @@ def run_case(
         "nu_lb": nu,
         "tau": tau,
         "ma_max": ma_max,
+        "compile_mode": compile_mode,
         "min_steps": min_steps,
         "n_steps": step,
         "steady": steady,
@@ -250,14 +262,35 @@ def run_case(
     return result
 
 
-def scan(grids, re, u0, xmax, outlet, min_steps, max_steps, out_dir: str,
-         device: str = "cpu") -> dict:
+def scan(
+    grids,
+    re,
+    u0,
+    xmax,
+    outlet,
+    min_steps,
+    max_steps,
+    out_dir: str,
+    device: str = "cpu",
+    compile_mode: str | None = "default",
+) -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cases = []
     for ny in grids:
         p = out_dir / f"case_ny{ny}.json"
-        r = run_case(ny, re, u0, xmax, outlet, min_steps, max_steps, str(p), device=device)
+        r = run_case(
+            ny,
+            re,
+            u0,
+            xmax,
+            outlet,
+            min_steps,
+            max_steps,
+            str(p),
+            device=device,
+            compile_mode=compile_mode,
+        )
         cases.append(r)
         print(
             f"ny={r['ny']:3d} nx={r['nx']:3d} tau={r['tau']:.3f} steps={r['n_steps']:6d} "
@@ -278,19 +311,23 @@ def scan(grids, re, u0, xmax, outlet, min_steps, max_steps, out_dir: str,
             "u_max_rel_decreases": c128["u_max_rel_pct"] < c64["u_max_rel_pct"],
             "v_max_rel_decreases": c128["v_max_rel_pct"] < c64["v_max_rel_pct"],
         }
-        errs_64 = max(c64["u_l2_rel"], c64["v_l2_rel"],
-                      c64["u_max_rel_pct"] / 100.0, c64["v_max_rel_pct"] / 100.0)
-        errs_128 = max(c128["u_l2_rel"], c128["v_l2_rel"],
-                       c128["u_max_rel_pct"] / 100.0, c128["v_max_rel_pct"] / 100.0)
+        errs_64 = max(
+            c64["u_l2_rel"],
+            c64["v_l2_rel"],
+            c64["u_max_rel_pct"] / 100.0,
+            c64["v_max_rel_pct"] / 100.0,
+        )
+        errs_128 = max(
+            c128["u_l2_rel"],
+            c128["v_l2_rel"],
+            c128["u_max_rel_pct"] / 100.0,
+            c128["v_max_rel_pct"] / 100.0,
+        )
         max_err = max(errs_64, errs_128) * 100.0
         finite = all(r["finite"] for r in cases)
         min_steps_ok = all(r["n_steps"] >= min_steps for r in cases)
         conv_ok = all(conv.values())
-        verdict = (
-            "PASS"
-            if (finite and min_steps_ok and max_err <= 3.0 and conv_ok)
-            else "FAIL"
-        )
+        verdict = "PASS" if (finite and min_steps_ok and max_err <= 3.0 and conv_ok) else "FAIL"
         conv["max_err_pct"] = round(max_err, 4)
         conv["max_err_pct_64"] = round(errs_64 * 100.0, 4)
         conv["max_err_pct_128"] = round(errs_128 * 100.0, 4)
@@ -300,9 +337,11 @@ def scan(grids, re, u0, xmax, outlet, min_steps, max_steps, out_dir: str,
         "config": f"xmax={xmax} outlet={outlet}",
         "lattice": "D2Q9",
         "collision": "bgk",
-        "boundary": ("zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet"
-                     if outlet == "zerograd" else
-                     "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"),
+        "boundary": (
+            "zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet"
+            if outlet == "zerograd"
+            else "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"
+        ),
         "extrap": "none",
         "re": re,
         "lambda": kov_lambda(re),
@@ -311,11 +350,28 @@ def scan(grids, re, u0, xmax, outlet, min_steps, max_steps, out_dir: str,
         "min_steps": min_steps,
         "max_steps": max_steps,
         "per_grid": [
-            {k: r[k] for k in
-             ["ny", "nx", "tau", "nu_lb", "n_steps", "steady", "u_l2_rel", "v_l2_rel",
-              "u_l2_rel_interior", "v_l2_rel_interior", "u_max_rel_pct", "v_max_rel_pct",
-              "max_abs_err_u_over_u0", "max_abs_err_v_over_u0", "mass_drift_pct",
-              "finite", "elapsed_s"]}
+            {
+                k: r[k]
+                for k in [
+                    "ny",
+                    "nx",
+                    "tau",
+                    "nu_lb",
+                    "n_steps",
+                    "steady",
+                    "u_l2_rel",
+                    "v_l2_rel",
+                    "u_l2_rel_interior",
+                    "v_l2_rel_interior",
+                    "u_max_rel_pct",
+                    "v_max_rel_pct",
+                    "max_abs_err_u_over_u0",
+                    "max_abs_err_v_over_u0",
+                    "mass_drift_pct",
+                    "finite",
+                    "elapsed_s",
+                ]
+            }
             for r in cases
         ],
         "convergence_64_to_128": conv,
@@ -339,6 +395,7 @@ def main() -> None:
     p1.add_argument("--min-steps", type=int, default=20000)
     p1.add_argument("--max-steps", type=int, default=60000)
     p1.add_argument("--device", type=str, default="cpu")
+    add_compile_mode_arg(p1)
 
     p2 = sub.add_parser("scan")
     p2.add_argument("out_dir", type=str)
@@ -350,19 +407,62 @@ def main() -> None:
     p2.add_argument("--min-steps", type=int, default=20000)
     p2.add_argument("--max-steps", type=int, default=60000)
     p2.add_argument("--device", type=str, default="cpu")
+    add_compile_mode_arg(p2)
 
     args = ap.parse_args()
+    compile_mode = compile_mode_from_args(args)
     if args.mode == "single":
-        r = run_case(args.ny, args.re, args.u0, args.xmax, args.outlet,
-                     args.min_steps, args.max_steps, args.out_json, device=args.device)
-        print(json.dumps({k: r[k] for k in
-                          ["ny", "nx", "re", "lambda", "u0", "nu_lb", "tau", "ma_max",
-                           "n_steps", "steady", "u_l2_rel", "v_l2_rel",
-                           "u_max_rel_pct", "v_max_rel_pct", "mass_drift_pct",
-                           "elapsed_s"]}, indent=2))
+        r = run_case(
+            args.ny,
+            args.re,
+            args.u0,
+            args.xmax,
+            args.outlet,
+            args.min_steps,
+            args.max_steps,
+            args.out_json,
+            device=args.device,
+            compile_mode=compile_mode,
+        )
+        print(
+            json.dumps(
+                {
+                    k: r[k]
+                    for k in [
+                        "ny",
+                        "nx",
+                        "re",
+                        "lambda",
+                        "u0",
+                        "nu_lb",
+                        "tau",
+                        "ma_max",
+                        "n_steps",
+                        "steady",
+                        "u_l2_rel",
+                        "v_l2_rel",
+                        "u_max_rel_pct",
+                        "v_max_rel_pct",
+                        "mass_drift_pct",
+                        "elapsed_s",
+                    ]
+                },
+                indent=2,
+            )
+        )
     else:
-        s = scan(args.grids, args.re, args.u0, args.xmax, args.outlet,
-                 args.min_steps, args.max_steps, args.out_dir, device=args.device)
+        s = scan(
+            args.grids,
+            args.re,
+            args.u0,
+            args.xmax,
+            args.outlet,
+            args.min_steps,
+            args.max_steps,
+            args.out_dir,
+            device=args.device,
+            compile_mode=compile_mode,
+        )
         print(f"verdict: {s['verdict']}")
 
 

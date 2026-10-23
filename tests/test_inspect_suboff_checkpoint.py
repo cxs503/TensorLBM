@@ -39,21 +39,41 @@ def test_audit_groups_fine_substeps_and_reports_observer_closure() -> None:
         "wall_y_plus_mean_history": torch.tensor([50.0, 54.0]),
         "wall_y_plus_max_history": torch.tensor([80.0, 90.0]),
         "wall_rejected_fraction_history": torch.tensor([0.0, 0.001]),
-        "paired_primary_cv_samples": _pairs([
-            (10, 10.0), (10, 12.0), (12, 14.0), (12, 16.0),
-        ]),
+        "paired_primary_cv_samples": _pairs(
+            [
+                (10, 10.0),
+                (10, 12.0),
+                (12, 14.0),
+                (12, 16.0),
+            ]
+        ),
         "paired_bfl_total_samples": _pairs([(10, 11.1), (12, 15.1)]),
-        "numerical_momentum_source_samples": _pairs([
-            (10, 0.05), (10, 0.15), (12, 0.05), (12, 0.15),
-        ]),
-        "corrected_cv_samples": _pairs([
-            (10, 10.05), (10, 12.15), (12, 14.05), (12, 16.15),
-        ]),
+        "numerical_momentum_source_samples": _pairs(
+            [
+                (10, 0.05),
+                (10, 0.15),
+                (12, 0.05),
+                (12, 0.15),
+            ]
+        ),
+        "corrected_cv_samples": _pairs(
+            [
+                (10, 10.05),
+                (10, 12.15),
+                (12, 14.05),
+                (12, 16.15),
+            ]
+        ),
         "surface_total_samples": _pairs([(10, 12.0), (12, 16.0)]),
         "auxiliary_cv_samples": {
-            4: _pairs([
-                (10, 10.5), (10, 11.5), (12, 14.5), (12, 15.5),
-            ]),
+            4: _pairs(
+                [
+                    (10, 10.5),
+                    (10, 11.5),
+                    (12, 14.5),
+                    (12, 15.5),
+                ]
+            ),
         },
     }
 
@@ -64,9 +84,7 @@ def test_audit_groups_fine_substeps_and_reports_observer_closure() -> None:
     assert report["force_decomposition"]["mean_modeled_wall_shear_n"] == pytest.approx(6.1)
     assert report["wall_model_applicability"]["mean_observed_y_plus"] == pytest.approx(52.0)
     assert report["wall_model_applicability"]["ittc_exchange_y_plus_prior"] > 5000.0
-    assert report["partial_physical_result"]["force_stationarity"][
-        "sample_count"
-    ] == 2
+    assert report["partial_physical_result"]["force_stationarity"]["sample_count"] == 2
     closure = report["observer_closure"]
     assert closure["history_cv_vs_bfl"]["mean_residual_n"] == pytest.approx(0.1)
     assert closure["sampled_cv_vs_bfl"]["mean_difference_pct"] == pytest.approx(
@@ -77,8 +95,16 @@ def test_audit_groups_fine_substeps_and_reports_observer_closure() -> None:
 
 
 def test_grouping_accepts_one_or_more_samples_per_step() -> None:
-    grouped = MODULE._group_sample_means(_pairs([
-        (1, 2.0), (2, 3.0), (2, 5.0), (2, 7.0), (4, 11.0),
-    ]))
+    grouped = MODULE._group_sample_means(
+        _pairs(
+            [
+                (1, 2.0),
+                (2, 3.0),
+                (2, 5.0),
+                (2, 7.0),
+                (4, 11.0),
+            ]
+        )
+    )
 
     assert grouped.tolist() == [[1.0, 2.0], [2.0, 5.0], [4.0, 11.0]]

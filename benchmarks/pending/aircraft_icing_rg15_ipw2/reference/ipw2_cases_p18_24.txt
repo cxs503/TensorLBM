@@ -1,0 +1,79 @@
+===== PAGE 18 =====
+Effect of the ceiling gap in the CRM65 cases
+Both grids with gap and no-gap setups are provided as part of the workshop grids
+CRM65 Inboard section with gap, 
+viscous mesh on tunnel floor and 
+ceiling
+CRM65 Inboard section without 
+gap, symmetry boundaries on 
+tunnel floor and ceiling
+===== PAGE 19 =====
+Reference: NTNU UAV Icing Lab
+Cases 3.1-3.3: RG-15 Small Wing Low Speed Icing
+IPW-2
+Case no.
+AoA
+(deg.)
+Speed
+(m/s)
+Tstatic
+(°C)
+Ttotal
+(°C)
+Pstatic
+(kPa)
+MVD
+(µm)
+LWC
+(g/m3)
+Time 
+(min.)
+3.1 4 25 -2.0 -1.7 101.3 24 0.44 20
+3.2 4 25 -4.0 -3.7 101.3 24 0.44 20
+3.3 4 25 -10.0 -9.7 101.3 24 0.44 20
+580 mm
+===== PAGE 20 =====
+Airfoil RG-15
+Span 0.58 m
+Chord 0.30 m
+Airspeed 25 m/s
+Angle of attack 4 °
+Liquid water content (LWC) 0.52 g/m³ *
+Mean volume diameter (MVD) 27 microns *
+Duration 20 min
+Static temperature (glaze, mixed, rime) [−2, −4, −10] °C
+Reynolds numbers [5.7, 5.8, 6.0]×105
+Relative Humidity 95–100%
+Pressure 101.3 kPa
+Cases 3.1-3.3: RG-15 Small Wing Low Speed Icing
+*Note, these values were updated after IPW2. 
+Publication: Hann, R., Müller, N.C., Lindner, M., Wallisch, J. (2023).UAV Icing: Experimental validation data for predicting ice shapes at low Reynolds 
+numbers. SAE International Conference on Icing of Aircraft, Engines, and Structures.doi.org/10.4271/2023-01-1372
+===== PAGE 21 =====
+Droplet distribution for the low-speed icing cases (RG-15). 
+• Single bin MVD=27 µm is equivalent to the measured MVD=26.8 ± 1.5 µm. 
+Droplet Size
+[µm]
+LWC
+[%]
+7.3 5
+12.5 10
+18.7 20
+26.8 30
+36.8 20
+51.2 10
+81.3 5
+
+===== PAGE 22 =====
+Icing wind tunnel setup
+Cases 3.1-3.3: RG-15 Small Wing Low Speed Icing
+===== PAGE 23 =====
+Cases 3.1-3.3: RG-15 Small Wing Low Speed Icing
+===== PAGE 24 =====
+310 mm
+340 mm
+Chord =300 mm
+AOA = 4°
+30 mm
+Tunnel cross-section
+Cases 3.1-3.3: RG-15 Small Wing Low Speed Icing

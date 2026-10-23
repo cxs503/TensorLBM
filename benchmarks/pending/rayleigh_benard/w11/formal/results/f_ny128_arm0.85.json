@@ -1,0 +1,55 @@
+{
+ "ny": 128,
+ "frac": 0.85,
+ "Ra": 1451.720076104142,
+ "g_beta": 1.4312882150849264e-05,
+ "amp": 0.0001,
+ "dtype": "float64",
+ "mass_correct_every_step": true,
+ "runner": "batched",
+ "steps": 161364,
+ "sample_every": 268,
+ "windows": [
+  [
+   0.15,
+   0.9
+  ],
+  [
+   0.05,
+   0.75
+  ],
+  [
+   0.3,
+   1.0
+  ]
+ ],
+ "slopes_per_step": [
+  -1.863333641908461e-05,
+  -1.8634632127406197e-05,
+  -1.8638777430381268e-05
+ ],
+ "gammas_windows": [
+  -1.7749370939363236,
+  -1.7750605179282049,
+  -1.775455382908398
+ ],
+ "slope_spread_rel": 0.0002919689494489384,
+ "gamma_sim": -1.775150998257642,
+ "gamma_ref": -1.7709589026793033,
+ "rel_err": 0.002367133179655756,
+ "report_only": false,
+ "health": {
+  "a_first": 9.999999926326013e-05,
+  "a_last": 4.051756849926937e-06,
+  "e_folds": 3.2060196014565556,
+  "mass_drift_abs": 0.0,
+  "mass_drift_rel": 0.0,
+  "u_max": 1.029819785037739e-07,
+  "v_max": 0.00023395336686004496,
+  "theta_min": -0.0003508253876507439,
+  "theta_max": 0.0003508253876507439
+ },
+ "wall_seconds": 217.89325714111328,
+ "abort": null,
+ "seed_rows": "npz row 0 = lower ghost mirror; rows 1..d = fluid; last = upper ghost (E3a)"
+}

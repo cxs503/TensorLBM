@@ -1,0 +1,28 @@
+{
+  "oom": true,
+  "kernel": "sparse",
+  "D": 32,
+  "lat": 3.0,
+  "up": 3.0,
+  "down": 4.0,
+  "tau": 0.524,
+  "steps_requested": 400,
+  "progress": {
+    "step": 1,
+    "phase": "loop"
+  },
+  "torch_peak_allocated_gib": 0.0,
+  "torch_peak_reserved_gib": 0.0,
+  "alloc_conf": "expandable_segments:True",
+  "traceback_tail": [
+    "        ^^^^^^^^^^",
+    "  File \"/root/TensorLBM_feat2/benchmarks/pending/sphere_re200/run.py\", line 121, in <lambda>",
+    "    return lambda f: collide_mrt3d_low_memory(f, tau=tau)",
+    "                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+    "  File \"/root/TensorLBM_feat2/src/tensorlbm/solver3d.py\", line 217, in collide_mrt3d_low_memory",
+    "    moments_eq = matrix @ feq_flat",
+    "                 ~~~~~~~^~~~~~~~~~",
+    "RuntimeError: sdaa out of memory. Tried to allocate 7.66 GiB (SDAA 13; 14.94 GiB total capacity; 4.15 GiB already allocated; 2.90 GiB free; 11.78 GiB reserved in total by Torch-SDAA)"
+  ],
+  "error": "sdaa out of memory. Tried to allocate 7.66 GiB (SDAA 13; 14.94 GiB total capacity; 4.15 GiB already allocated; 2.90 GiB free; 11.78 GiB reserved in total by Torch-SDAA)"
+}

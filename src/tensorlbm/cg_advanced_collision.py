@@ -16,6 +16,7 @@ names emit ``DeprecationWarning`` and are retained only for API compatibility.
 from __future__ import annotations
 
 import warnings
+
 import torch
 
 from .collision_d3q19_advanced import (
@@ -24,7 +25,9 @@ from .collision_d3q19_advanced import (
     reconstruct_second_order_stress_d3q19,
     second_order_stress_d3q19,
 )
-from .d3q19 import C as C3D, OPPOSITE as OPP, equilibrium3d
+from .d3q19 import OPPOSITE as OPP
+from .d3q19 import C as C3D
+from .d3q19 import equilibrium3d
 from .multiphase3d import _grad_phase_field_3d
 from .turbulence import (
     _neq_stress_norm_3d,
@@ -79,7 +82,7 @@ def _recolor(
     """CG-specific phase recoloring (``A`` remains accepted for compatibility)."""
     del device, A
     cx, cy, cz = _views(f_total)
-    rho_safe = rho.clamp(min=1e-12)
+    rho.clamp(min=1e-12)
     phi, grad_mag, nx, ny, nz = _grad_phase_field_3d(rho_r, rho_b)
     del phi, grad_mag
     feq_r = equilibrium3d(rho_r, ux, uy, uz)

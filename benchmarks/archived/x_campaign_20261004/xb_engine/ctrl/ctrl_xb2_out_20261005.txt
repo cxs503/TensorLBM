@@ -1,0 +1,72 @@
+PASS P0.prereg_md5 
+PASS P0.runner_md5_v3 ca25c95af0ce253617a5e631a313bc11
+PASS P0.engine_md5 
+PASS P0.ref_md5.c_spurious_currents.json 
+PASS P0.ref_md5.cs_maxwell.json 
+PASS P0.ref_md5.pr_maxwell.json 
+PASS P0.ref_md5.b_laplace.json 
+PASS P0.step0_lineage pre-patch library multiphase lineage
+[conv] archive tail-5 (hist>=5, 24 rows): u_max==max 24  rho_l==mean 24  ratio 24; exempt=[('sc', 'pr', 0.95), ('edm', 'pr', 0.95)]
+PASS C1.exempt_only_pr095_guard_rows 
+PASS C1.u_max_convention 
+PASS C1.rho_convention_tail5_mean 24/24
+PASS C1.ratio_convention 
+PASS C2.B1.bit_equal.cs@0.9 diffs=[] ext_ok=True
+PASS C2.B1.bit_equal.pr@0.55 diffs=[] ext_ok=True
+PASS C2.B1_runner_claim 
+PASS C3.count_42 42
+PASS C3.grid_6x7 g2=[-0.2, -0.15, -0.1, -0.08, -0.05, -0.02] tiers=7
+PASS C3.pareto_42 
+PASS C3.arms_raw_recompute 0 bad: []
+[C3] dead/unstable arms (no u_max): [(-0.08, 'pr@0.55'), (-0.1, 'pr@0.55'), (-0.15, 'pr@0.55'), (-0.2, 'pr@0.55')]
+[C3] non-converged live arms: [(-0.08, 'pr@0.55'), (-0.1, 'pr@0.55'), (-0.15, 'cs@0.6'), (-0.15, 'pr@0.55'), (-0.2, 'cs@0.6'), (-0.2, 'pr@0.6'), (-0.2, 'pr@0.55')]
+PASS C4.per_g2_counts {-0.2: 3, -0.15: 6, -0.1: 6, -0.08: 6, -0.05: 7, -0.02: 7}
+PASS C4.candidates [-0.02, -0.05] vs mine [-0.05, -0.02]
+PASS C4.best_g2 -0.02 vs mine -0.02
+PASS C4.candidates_all_stable 
+[C5] unstable arms: [(-0.2, 'pr@0.55'), (-0.15, 'pr@0.55'), (-0.1, 'pr@0.55'), (-0.08, 'pr@0.55')]
+PASS C5.pr055_unstable_ge_008 [-0.2, -0.15, -0.1, -0.08]
+[C5] H1 u_max vs |G2| monotone-worse per tier; non-monotone tiers: []
+PASS C5.H1_monotone_worsening_all_tiers []
+PASS C6.baseline_G2_0.L128.sigma mine 0.3202261241 vs 0.3202261241
+PASS C6.baseline_G2_0.L128.rms mine 1.337e-05 vs 1.337e-05
+PASS C6.baseline_G2_0.L128.dp_max 
+PASS C6.baseline_G2_0.L128.resid_gate_signed signed=True abs=True stored=True dp_max=0.02409
+PASS C6.baseline_G2_0.L192.sigma mine 0.3264918016 vs 0.3264918016
+PASS C6.baseline_G2_0.L192.rms mine 1.645e-05 vs 1.645e-05
+PASS C6.baseline_G2_0.L192.dp_max 
+PASS C6.baseline_G2_0.L192.resid_gate_signed signed=True abs=True stored=True dp_max=0.01646
+PASS C6.baseline_G2_0.L256.sigma mine 0.3294222437 vs 0.3294222437
+PASS C6.baseline_G2_0.L256.rms mine 5.567e-06 vs 5.567e-06
+PASS C6.baseline_G2_0.L256.dp_max 
+PASS C6.baseline_G2_0.L256.resid_gate_signed signed=True abs=True stored=True dp_max=0.01247
+PASS C6.best_G2.L128.sigma mine 0.322189859 vs 0.322189859
+PASS C6.best_G2.L128.rms mine 1.866e-04 vs 1.866e-04
+PASS C6.best_G2.L128.dp_max 
+PASS C6.best_G2.L128.resid_gate_signed signed=False abs=True stored=False dp_max=-0.08241
+PASS C6.best_G2.L192.sigma mine 0.323597563 vs 0.323597563
+PASS C6.best_G2.L192.rms mine 1.003e-05 vs 1.003e-05
+PASS C6.best_G2.L192.dp_max 
+PASS C6.best_G2.L192.resid_gate_signed signed=False abs=True stored=False dp_max=-0.09001
+PASS C6.baseline_sigma_by_L_bits vs refs/b_laplace
+PASS C6.archref_quoted_ok 
+PASS C6.baseline_abs_diffs 
+PASS C6.baseline_clause_ii 
+PASS C6.gate_assembly 
+PASS C6.best_L256_incomplete_kills_both_readings 
+[C7] cs@0.6: base 0.25663 g2 0.26435 red 0.9708 pass5x=False
+[C7] pr@0.6: base 0.174278 g2 0.180314 red 0.9665 pass5x=False
+[C7] pr@0.55: base 0.204135 g2 0.21033 red 0.9706 pass5x=False
+PASS C7.tiers_recompute 
+PASS C7.overall_fail 
+PASS C8.b6.b6_edm_G2m0p02_cs_Tr0p6.sc_tie 
+PASS C8.b6.b6_edm_G2m0p02_cs_Tr0p6.edm_sc_rel rel=7.441e-06
+PASS C8.b6.b6_edm_G2m0p02_cs_Tr0p6.stable_conv 
+PASS C8.b6.b6_edm_G2m0p02_cs_Tr0p6.maxwell_lock 
+PASS C8.b6.b6_edm_G2m0p02_pr_Tr0p55.sc_tie 
+PASS C8.b6.b6_edm_G2m0p02_pr_Tr0p55.edm_sc_rel rel=0.000e+00
+PASS C8.b6.b6_edm_G2m0p02_pr_Tr0p55.stable_conv 
+PASS C8.b6.b6_edm_G2m0p02_pr_Tr0p55.maxwell_lock 
+PASS C9.prereg_anchor_rows 
+
+=== 62 PASS, 0 FAIL ===

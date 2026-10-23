@@ -26,19 +26,16 @@ from pathlib import Path
 
 import torch
 
-from .ibm import (
-    ibm_direct_forcing_3d,
-    ibm_apply_body_force_3d,
-    ibm_force_spread_3d,
-    ibm_velocity_interpolate_3d,
-)
+from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
 from .d3q19 import equilibrium3d, macroscopic3d
+from .ibm import (
+    ibm_apply_body_force_3d,
+    ibm_direct_forcing_3d,
+)
+from .propeller_cad import KP505_PRESET, PropellerGeometryConfig
 from .solver3d import stream3d
 from .turbulence import collide_smagorinsky_mrt3d
-from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
-from .propeller_cad import PropellerGeometryConfig, KP505_PRESET
 from .utils import get_reproducibility_metadata, prepare_run_dir, resolve_device
-
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -204,7 +201,7 @@ def run_ibm_propeller_benchmark(
     cz = nz // 2
     D = config.geometry.diameter
 
-    print(f"IBM Propeller Benchmark")
+    print("IBM Propeller Benchmark")
     print(f"  Device:     {device}")
     print(f"  Blades:     {config.geometry.n_blades}")
     print(f"  Diameter:   {D} lu")

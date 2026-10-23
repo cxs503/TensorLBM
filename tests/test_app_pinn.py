@@ -13,10 +13,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import torch
 import pytest
+import torch
 
-from tensorlbm.apps.base import DataProduct, TrainingResult
+from tensorlbm.apps.base import TrainingResult
 from tensorlbm.apps.physics_informed_lbm import (
     PINNMLP,
     PhysicsInformedLBM,
@@ -28,10 +28,10 @@ from tensorlbm.apps.physics_informed_lbm import (
 from tensorlbm.ml.serving import FAMILY_PINN, InferenceService, ModelRegistry
 from tensorlbm.ml.training_job import TrainingJobRegistry
 
-
 # ---------------------------------------------------------------------------
 # Mock collaborators
 # ---------------------------------------------------------------------------
+
 
 def _mock_train_fn(dataset, model, cfg):
     """Return a fixed TrainingResult without running the training loop."""
@@ -50,6 +50,7 @@ def app():
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 def test_class_identity():
     assert PhysicsInformedLBM.name == "physics_informed_lbm"
@@ -143,6 +144,7 @@ def test_build_model_and_infer(app):
 
 def test_pde_residual_zero_for_taylor_green():
     """The physics residual must vanish for the exact Euler reference field."""
+
     class PerfectField(torch.nn.Module):
         def forward(self, xy: torch.Tensor) -> torch.Tensor:
             return _taylor_green(xy)

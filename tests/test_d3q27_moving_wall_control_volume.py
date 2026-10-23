@@ -6,8 +6,8 @@ import pytest
 import torch
 
 from tensorlbm.d3q27 import (
-    C,
     OPPOSITE,
+    C,
     W,
     control_volume_momentum_balance27,
     moving_wall_linkwise_me_force_torque,

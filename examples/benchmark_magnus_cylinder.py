@@ -46,7 +46,6 @@ import os
 import sys
 import time
 
-import numpy as np
 import torch
 
 # Ensure src/ is importable even without PYTHONPATH
@@ -54,9 +53,8 @@ _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from tensorlbm.d3q19 import C, OPPOSITE, W, equilibrium3d, macroscopic3d  # noqa: E402
+from tensorlbm.d3q19 import OPPOSITE, C, W, equilibrium3d, macroscopic3d  # noqa: E402
 from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
-
 
 # --------------------------------------------------------------------------- #
 # Helpers
@@ -553,8 +551,8 @@ def run_magnus_benchmark(
     print(f"  圆柱体:     中心=({cx:.0f},{cy:.0f})  R={R}  D={D}", flush=True)
     print(f"  流动:       U={u_in}  τ={tau}  ν={nu_lat:.6f}  Re≈{Re_eff:.0f}", flush=True)
     print(f"  边界条件:   入口=速度BC  出口=海绵层(宽={sponge_width})  上下=海绵层", flush=True)
-    print(f"  圆柱体:     移动壁反弹边界 (moving-wall bounce-back)", flush=True)
-    print(f"  力测量:     动量交换法 (momentum exchange)", flush=True)
+    print("  圆柱体:     移动壁反弹边界 (moving-wall bounce-back)", flush=True)
+    print("  力测量:     动量交换法 (momentum exchange)", flush=True)
     print(f"  旋转率参数: α = {alpha_list}", flush=True)
     print(f"  步数:       {steps} (每个旋转率)  渐进={ramp_steps}步", flush=True)
     print(f"  设备:       {device}", flush=True)

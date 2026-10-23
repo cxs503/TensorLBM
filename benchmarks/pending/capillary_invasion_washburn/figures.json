@@ -1,0 +1,35 @@
+{
+  "figures": [
+    {
+      "file": "figures/fig_beta_convergence.png",
+      "kind": "curve",
+      "caption": "Washburn exponent beta comparison: W32 and W64 vs theoretical value 0.5",
+      "source": "result.json + plot_figures_en.py"
+    },
+    {
+      "file": "figures/fig_mass_drift.png",
+      "kind": "curve",
+      "caption": "Mass conservation drift history for water and gas phases (W32 and W64)",
+      "source": "out_part2_W32.json + out_part2_W64.json + plot_figures_en.py"
+    },
+    {
+      "file": "figures/fig_front_Lt.png",
+      "kind": "curve",
+      "caption": "Invasion front position L(t) vs Washburn power-law fit for W32 and W64",
+      "source": "out_part2_W32.json + out_part2_W64.json + result.json + plot_figures_en.py"
+    },
+    {
+      "file": "figures/fig_phase_field.png",
+      "kind": "field",
+      "caption": "Phase field phi=(rho_w-rho_g)/(rho_w+rho_g) snapshots at final state for W32 and W64",
+      "source": "out_part2_W32_final.npz + out_part2_W64_final.npz + plot_figures_en.py"
+    },
+    {
+      "file": "figures/fig_convergence_comparison.png",
+      "kind": "curve",
+      "caption": "Maximum relative deviation b_max_rel_diff across grid resolutions W32 and W64",
+      "source": "result.json + plot_figures_en.py"
+    }
+  ],
+  "field_waiver": ""
+}

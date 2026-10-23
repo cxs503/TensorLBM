@@ -16,33 +16,15 @@ Tests two canonical problems with exact analytical solutions:
 Usage:
   PYTHONPATH=src python examples/benchmark_validation.py [--gpu 0] [--quick]
 """
+
 from __future__ import annotations
 
 import argparse
 import math
-import sys
 import time
 
 import torch
 
-# ---------------------------------------------------------------------------
-# Lattice imports
-# ---------------------------------------------------------------------------
-from tensorlbm.d3q19 import C as C19, W as W19, equilibrium3d, macroscopic3d
-from tensorlbm.d3q27 import (
-    C as C27,
-    W as W27,
-    equilibrium27,
-    macroscopic27,
-    collide_bgk27,
-    collide_mrt27,
-)
-from tensorlbm.solver3d import (
-    collide_bgk3d,
-    collide_mrt3d,
-    correct_mass3d,
-    stream3d_roll,
-)
 from tensorlbm.boundaries3d import (
     bounce_back_cells_3d,
     far_field_bc_3d,
@@ -54,14 +36,56 @@ from tensorlbm.boundaries_d3q27 import (
 )
 from tensorlbm.cumulant import collide_cumulant_d3q27
 
+# ---------------------------------------------------------------------------
+# Lattice imports
+# ---------------------------------------------------------------------------
+from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q27 import (
+    C as C27,
+)
+from tensorlbm.d3q27 import (
+    collide_bgk27,
+    collide_mrt27,
+    equilibrium27,
+    macroscopic27,
+)
+from tensorlbm.solver3d import (
+    collide_bgk3d,
+    collide_mrt3d,
+    correct_mass3d,
+    stream3d_roll,
+)
+
 # D3Q27 roll streaming (defined in runner, but we need it standalone)
 _D3Q27_SHIFTS = [
-    (0, 0, 0), (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0),
-    (0, 0, 1), (0, 0, -1), (1, 1, 0), (-1, 1, 0), (1, -1, 0),
-    (-1, -1, 0), (1, 0, 1), (-1, 0, 1), (1, 0, -1), (-1, 0, -1),
-    (0, 1, 1), (0, -1, 1), (0, 1, -1), (0, -1, -1),
-    (1, 1, 1), (-1, 1, 1), (1, -1, 1), (-1, -1, 1),
-    (1, 1, -1), (-1, 1, -1), (1, -1, -1), (-1, -1, -1),
+    (0, 0, 0),
+    (1, 0, 0),
+    (-1, 0, 0),
+    (0, 1, 0),
+    (0, -1, 0),
+    (0, 0, 1),
+    (0, 0, -1),
+    (1, 1, 0),
+    (-1, 1, 0),
+    (1, -1, 0),
+    (-1, -1, 0),
+    (1, 0, 1),
+    (-1, 0, 1),
+    (1, 0, -1),
+    (-1, 0, -1),
+    (0, 1, 1),
+    (0, -1, 1),
+    (0, 1, -1),
+    (0, -1, -1),
+    (1, 1, 1),
+    (-1, 1, 1),
+    (1, -1, 1),
+    (-1, -1, 1),
+    (1, 1, -1),
+    (-1, 1, -1),
+    (1, -1, -1),
+    (-1, -1, -1),
 ]
 
 
@@ -180,19 +204,25 @@ def run_poiseuille(
 
     # Initialize: uniform density, zero velocity
     rho0 = torch.ones(nz, ny, nx, device=dev)
-    f = _equilibrium(lattice, rho0, torch.zeros_like(rho0),
-                     torch.zeros_like(rho0), torch.zeros_like(rho0), device=dev)
+    f = _equilibrium(
+        lattice,
+        rho0,
+        torch.zeros_like(rho0),
+        torch.zeros_like(rho0),
+        torch.zeros_like(rho0),
+        device=dev,
+    )
     initial_mass = float(f.sum().item())
 
     u_max_exact = force * H**2 / (8.0 * nu)
     cf_exact = 8.0 * nu / (u_max_exact * H) if u_max_exact > 0 else 0.0
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Poiseuille Flow: {lattice} {collision}")
     print(f"Grid: {nx}x{ny}x{nz}, tau={tau}, nu={nu:.6f}, force={force}")
     print(f"Steps={n_steps}, device={device}")
     print(f"u_max_exact={u_max_exact:.8f}, Cf_exact={cf_exact:.6f}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     t0 = time.time()
     for step in range(1, n_steps + 1):
@@ -218,8 +248,10 @@ def run_poiseuille(
             _, ux, _, _ = _macroscopic(lattice, f)
             u_profile = ux[:, 1:-1, :].mean(dim=(0, 2))
             u_max = float(u_profile.max().item())
-            print(f"  step {step:5d}/{n_steps}: u_max={u_max:.8f} "
-                  f"({u_max/u_max_exact*100:.2f}% exact), {elapsed:.1f}s")
+            print(
+                f"  step {step:5d}/{n_steps}: u_max={u_max:.8f} "
+                f"({u_max / u_max_exact * 100:.2f}% exact), {elapsed:.1f}s"
+            )
 
     # Extract final velocity profile
     _, ux, _, _ = _macroscopic(lattice, f)
@@ -234,8 +266,9 @@ def run_poiseuille(
     u_max_num = float(u_num.max())
 
     # Relative L2 error
-    l2_err = math.sqrt(sum((a - b)**2 for a, b in zip(u_num, u_ex))) / \
-             math.sqrt(sum(b**2 for b in u_ex))
+    l2_err = math.sqrt(sum((a - b) ** 2 for a, b in zip(u_num, u_ex))) / math.sqrt(
+        sum(b**2 for b in u_ex)
+    )
     max_err = max(abs(a - b) for a, b in zip(u_num, u_ex)) / abs(u_max_exact)
 
     # Wall shear stress from numerical gradient
@@ -244,21 +277,22 @@ def run_poiseuille(
     cf_num = 2.0 * tau_wall / u_max_num**2 if u_max_num > 1e-12 else 0.0
     cf_err = abs(cf_num - cf_exact) / abs(cf_exact) * 100 if cf_exact > 0 else 0.0
 
-    print(f"\n  --- Results ---")
-    print(f"  u_max:  num={u_max_num:.8f}, exact={u_max_exact:.8f}, "
-          f"err={abs(u_max_num-u_max_exact)/u_max_exact*100:.3f}%")
-    print(f"  L2 error: {l2_err*100:.3f}%")
-    print(f"  Max error: {max_err*100:.3f}%")
+    print("\n  --- Results ---")
+    print(
+        f"  u_max:  num={u_max_num:.8f}, exact={u_max_exact:.8f}, "
+        f"err={abs(u_max_num - u_max_exact) / u_max_exact * 100:.3f}%"
+    )
+    print(f"  L2 error: {l2_err * 100:.3f}%")
+    print(f"  Max error: {max_err * 100:.3f}%")
     print(f"  Cf:     num={cf_num:.6f}, exact={cf_exact:.6f}, err={cf_err:.2f}%")
 
     # Print profile comparison
     print(f"\n  {'y':>5s}  {'u_num':>12s}  {'u_exact':>12s}  {'err':>12s}")
     for yv, un, ue in zip(y_interior.cpu().numpy(), u_num, u_ex):
-        print(f"  {yv:5.1f}  {un:12.8f}  {ue:12.8f}  {abs(un-ue):12.2e}")
+        print(f"  {yv:5.1f}  {un:12.8f}  {ue:12.8f}  {abs(un - ue):12.2e}")
 
     passed = max_err < 0.01  # <1% max error
-    print(f"\n  {'PASS' if passed else 'FAIL'}: max_err={max_err*100:.3f}% "
-          f"(target < 1%)")
+    print(f"\n  {'PASS' if passed else 'FAIL'}: max_err={max_err * 100:.3f}% (target < 1%)")
     return {
         "benchmark": "poiseuille",
         "lattice": lattice,
@@ -307,9 +341,14 @@ def run_sphere_stokes(
 
     # Surface mask: solid cells with at least one fluid neighbour (6-connectivity)
     fluid = ~solid
-    surface = (solid & (torch.roll(fluid, 1, dims=0) | torch.roll(fluid, -1, dims=0)
-                        | torch.roll(fluid, 1, dims=1) | torch.roll(fluid, -1, dims=1)
-                        | torch.roll(fluid, 1, dims=2) | torch.roll(fluid, -1, dims=2)))
+    surface = solid & (
+        torch.roll(fluid, 1, dims=0)
+        | torch.roll(fluid, -1, dims=0)
+        | torch.roll(fluid, 1, dims=1)
+        | torch.roll(fluid, -1, dims=1)
+        | torch.roll(fluid, 1, dims=2)
+        | torch.roll(fluid, -1, dims=2)
+    )
 
     # Cross-section area of sphere for drag coefficient
     A_sphere = math.pi * radius**2
@@ -319,13 +358,13 @@ def run_sphere_stokes(
     # Stokes drag: Cd = 24/Re
     cd_stokes = 24.0 / re
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Sphere Flow (Stokes): {lattice} {collision}")
     print(f"Grid: {nx}x{ny}x{nz}, radius={radius}, Re={re}")
     print(f"u_in={u_in}, nu={nu:.6f}, tau={tau:.4f}")
     print(f"Steps={n_steps}, device={device}")
     print(f"Cd_stokes={cd_stokes:.4f}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Initialize: uniform flow
     rho0 = torch.ones(nz, ny, nx, device=dev)
@@ -361,9 +400,7 @@ def run_sphere_stokes(
             Cmat = C27.to(dev).to(f.dtype)
         # Mask to surface cells only (exclude interior solid)
         delta_f_surf = delta_f * surface.unsqueeze(0).to(f.dtype)
-        drag_force = float(
-            (Cmat[:, 0:1].view(-1, 1, 1, 1) * delta_f_surf).sum().item()
-        )
+        drag_force = float((Cmat[:, 0:1].view(-1, 1, 1, 1) * delta_f_surf).sum().item())
 
         # Mass correction every 200 steps
         if step % 200 == 0:
@@ -375,16 +412,18 @@ def run_sphere_stokes(
             cd_history.append(cd_total)
 
             elapsed = time.time() - t0
-            print(f"  step {step:5d}/{n_steps}: Cd={cd_total:.4f} "
-                  f"(Stokes={cd_stokes:.4f}, err={abs(cd_total-cd_stokes)/cd_stokes*100:.1f}%), "
-                  f"{elapsed:.1f}s")
+            print(
+                f"  step {step:5d}/{n_steps}: Cd={cd_total:.4f} "
+                f"(Stokes={cd_stokes:.4f}, err={abs(cd_total - cd_stokes) / cd_stokes * 100:.1f}%), "
+                f"{elapsed:.1f}s"
+            )
 
     # Use time-averaged Cd from last 50% of steps
     warmup = len(cd_history) // 2
     cd_avg = sum(cd_history[warmup:]) / max(len(cd_history[warmup:]), 1)
     cd_err = abs(cd_avg - cd_stokes) / cd_stokes * 100
 
-    print(f"\n  --- Results ---")
+    print("\n  --- Results ---")
     print(f"  Cd_num (avg):   {cd_avg:.4f}")
     print(f"  Cd_stokes:      {cd_stokes:.4f}")
     print(f"  Cd error:       {cd_err:.1f}%")
@@ -411,8 +450,7 @@ def run_sphere_stokes(
 def main():
     parser = argparse.ArgumentParser(description="TensorLBM benchmark validation")
     parser.add_argument("--gpu", type=int, default=0, help="GPU device ID")
-    parser.add_argument("--quick", action="store_true",
-                        help="Quick run with fewer steps")
+    parser.add_argument("--quick", action="store_true", help="Quick run with fewer steps")
     parser.add_argument("--poiseuille-only", action="store_true")
     parser.add_argument("--sphere-only", action="store_true")
     args = parser.parse_args()
@@ -444,9 +482,13 @@ def main():
         ]
         for lattice, collision, ny, nx, nz in configs:
             r = run_poiseuille(
-                lattice=lattice, collision=collision,
-                ny=ny, nx=nx, nz=nz,
-                force=1e-5, tau=1.0,
+                lattice=lattice,
+                collision=collision,
+                ny=ny,
+                nx=nx,
+                nz=nz,
+                force=1e-5,
+                tau=1.0,
                 n_steps=poiseuille_steps,
                 device=device,
             )
@@ -461,20 +503,27 @@ def main():
         ]
         for lattice, collision, nx, ny, nz, radius, u_in, re in configs:
             r = run_sphere_stokes(
-                lattice=lattice, collision=collision,
-                nx=nx, ny=ny, nz=nz,
-                radius=radius, u_in=u_in, re=re,
+                lattice=lattice,
+                collision=collision,
+                nx=nx,
+                ny=ny,
+                nz=nz,
+                radius=radius,
+                u_in=u_in,
+                re=re,
                 n_steps=sphere_steps,
                 device=device,
             )
             results.append(r)
 
     # --- Summary ---
-    print(f"\n{'='*60}")
-    print(f"BENCHMARK SUMMARY")
-    print(f"{'='*60}")
-    print(f"{'Benchmark':<20s} {'Lattice':<8s} {'Collision':<10s} "
-          f"{'Metric':<12s} {'Num':>10s} {'Exact':>10s} {'Err%':>8s} {'Result':>6s}")
+    print(f"\n{'=' * 60}")
+    print("BENCHMARK SUMMARY")
+    print(f"{'=' * 60}")
+    print(
+        f"{'Benchmark':<20s} {'Lattice':<8s} {'Collision':<10s} "
+        f"{'Metric':<12s} {'Num':>10s} {'Exact':>10s} {'Err%':>8s} {'Result':>6s}"
+    )
     print("-" * 90)
     for r in results:
         if r["benchmark"] == "poiseuille":
@@ -488,8 +537,10 @@ def main():
             exact = r["cd_stokes"]
             err = r["cd_err_pct"]
         status = "PASS" if r["passed"] else "FAIL"
-        print(f"{r['benchmark']:<20s} {r['lattice']:<8s} {r['collision']:<10s} "
-              f"{metric:<12s} {num:10.6f} {exact:10.6f} {err:8.2f} {status:>6s}")
+        print(
+            f"{r['benchmark']:<20s} {r['lattice']:<8s} {r['collision']:<10s} "
+            f"{metric:<12s} {num:10.6f} {exact:10.6f} {err:8.2f} {status:>6s}"
+        )
 
     n_pass = sum(1 for r in results if r["passed"])
     print(f"\n{n_pass}/{len(results)} benchmarks passed")

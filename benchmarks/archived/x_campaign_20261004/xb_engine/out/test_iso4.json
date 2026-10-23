@@ -1,0 +1,73 @@
+{
+ "benchmark": "xb1_discriminating_tests_iso4",
+ "prereg": "prereg_xb1.md section 4 (md5 634e02b525e2d5e054d0c4ad67fbb376)",
+ "gates": {
+  "T1_linear_G4_exact": true,
+  "T2_quadratic_L4_exact": true,
+  "T3_G4_order4": true,
+  "T3_L4_order4": true,
+  "T4_sphere_rot90_sym": true,
+  "T5_operator_source_equal": true,
+  "T5_traj_equal_fp32_ppp_32": true,
+  "T5_traj_equal_fp64_ppp_24": true,
+  "T5_traj_equal_fp32_wpp_16": true
+ },
+ "results": {
+  "T1_linear_G4_exact": "max|G4-grad| interior = 3.109e-15 (gate 1e-13)",
+  "T1_disclosure_iso2_linear": 2.220446049250313e-15,
+  "T2_quadratic_L4_exact": "max|L4-lap| interior = 7.390e-13 (gate 1e-12)",
+  "T2_disclosure_G4_quadratic_maxdev": 4.973799150320701e-14,
+  "T3_G4_order4": "phys err ratio 24/48 = 15.62 (gate 10..26)",
+  "T3_L4_order4": "phys err ratio 24/48 = 15.72 (gate 10..26)",
+  "T3_errors": {
+   "24": {
+    "lat": {
+     "g4": 0.00043677907494282797,
+     "l4": 0.00011526620872193138,
+     "g2": 0.008859706098309494,
+     "l2": 0.003493814718603272
+    },
+    "phys": {
+     "G4": 0.010482697798627871,
+     "L4": 0.06639333622383248,
+     "G2": 0.21263294635942787,
+     "L2": 2.0124372779154847
+    }
+   },
+   "48": {
+    "lat": {
+     "g4": 1.3979817460485489e-05,
+     "l4": 1.8336077122899086e-06,
+     "g2": 0.001117948125384044,
+     "l2": 0.00021973862569692193
+    },
+    "phys": {
+     "G4": 0.0006710312381033035,
+     "L4": 0.004224632169115949,
+     "G2": 0.05366151001843411,
+     "L2": 0.5062777936057081
+    }
+   }
+  },
+  "T3_disclosure_iso2_phys_ratios": {
+   "g2": 3.9624853323431073,
+   "l2": 3.974966517063519,
+   "note": "expected ~4 (2nd order)"
+  },
+  "T3_disclosure_lattice_abs_ratios": {
+   "g4": 31.24354636084494,
+   "l4": 62.863069319216976,
+   "note": "Fourier-symbol orders q^5 (G4) / q^6 (L4) of the per-lattice error, expected ~32/~64; not the h^4 accuracy gate"
+  },
+  "T3_iso4_improvement_24": 20.284181652862337,
+  "T4_sphere_rot90_sym": "max asym rel = 6.821e-16 (gate 1e-12)",
+  "T5_operator_source_equal": "iso_gradient_3d/iso_laplacian_3d source identical: True",
+  "T5_traj_equal_fp32_ppp_32": "f torch.equal=True, g torch.equal=True",
+  "T5_traj_equal_fp64_ppp_24": "f torch.equal=True, g torch.equal=True",
+  "T5_traj_equal_fp32_wpp_16": "f torch.equal=True, g torch.equal=True"
+ },
+ "all_pass": true,
+ "patched_md5": "edfa261570f867208d9763292f814b7e",
+ "generated_utc": "2026-10-04T06:25:50Z",
+ "code_sha256": "afd99bba0e39cbb696b957bbfbc2104080e01de0aa8e409c212e10ef4377583b"
+}

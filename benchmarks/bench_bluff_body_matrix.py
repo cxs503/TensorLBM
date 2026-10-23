@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import math
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import torch
@@ -29,7 +29,6 @@ from tensorlbm.boundaries3d import (
 )
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.ellipsoid_benchmark import (
-    EllipsoidConfig,
     build_ellipsoid_mask,
     reference_ellipsoid_cd,
 )
@@ -39,7 +38,6 @@ from tensorlbm.solver3d import correct_mass3d, stream3d
 from tensorlbm.turbulence import collide_smagorinsky_mrt3d
 from tensorlbm.utils import resolve_device
 from tensorlbm.wall_model import apply_wall_model_bounce_back
-
 
 # ---------------------------------------------------------------------------
 # Shared config

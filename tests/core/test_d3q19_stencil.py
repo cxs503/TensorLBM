@@ -9,7 +9,6 @@ from __future__ import annotations
 import pytest
 import torch
 
-from tensorlbm.d3q19 import C
 from tensorlbm.core.d3q19_stencil import (
     D3Q19_MOVING_Q,
     all_moving_neighbor_masks,
@@ -18,6 +17,7 @@ from tensorlbm.core.d3q19_stencil import (
     roll_from_pull_source,
     tensor_shift_for_q,
 )
+from tensorlbm.d3q19 import C
 
 
 def _oracle_shift(q: int) -> tuple[int, int, int]:

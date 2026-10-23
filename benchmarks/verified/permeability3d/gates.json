@@ -1,0 +1,102 @@
+{
+ "case": "permeability3d",
+ "verdict": "promote",
+ "reason": "",
+ "gates": [
+  {
+   "gate": "library_entry",
+   "pass": true,
+   "evidence": [
+    {
+     "v": "from tensorlbm.solver3d import collide_bgk3d, stream3d",
+     "f": "benchmarks/verified/permeability3d/run.py",
+     "k": "grep:from tensorlbm.solver3d import collide_bgk3d, stream3d"
+    },
+    {
+     "v": "from tensorlbm.boundaries3d import bounce_back_cells_3d",
+     "f": "benchmarks/verified/permeability3d/run.py",
+     "k": "grep:from tensorlbm.boundaries3d import bounce_back_cells_3d"
+    }
+   ]
+  },
+  {
+   "gate": "direct_observable",
+   "pass": true,
+   "evidence": [
+    {
+     "v": 0.04625290433934337,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[0].err"
+    },
+    {
+     "v": 0.030980328885280795,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[1].err"
+    },
+    {
+     "v": 0.020491718998708608,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[2].err"
+    },
+    {
+     "v": 0.014468555124078408,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[3].err"
+    }
+   ]
+  },
+  {
+   "gate": "monotone_convergence",
+   "pass": true,
+   "mode": "abs_decrease",
+   "evidence": [
+    {
+     "v": 0.04625290433934337,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[0].err"
+    },
+    {
+     "v": 0.014468555124078408,
+     "f": "benchmarks/verified/permeability3d/result.json",
+     "k": "amendment1_ladders.phi0.343.tiers[3].err"
+    }
+   ]
+  },
+  {
+   "gate": "reference_locked_first",
+   "pass": true,
+   "evidence": [
+    {
+     "v": "2026-09-20",
+     "f": "benchmarks/verified/permeability3d/NOTES.md",
+     "k": "grep:fetched 2026-09-20"
+    },
+    {
+     "v": "2026-09-21",
+     "f": "benchmarks/verified/permeability3d/NOTES_sha256_chain.txt",
+     "k": "grep:chain opened 2026-09-21 16:50:42"
+    },
+    {
+     "v": "2026-09-21T10:11:37Z",
+     "f": "benchmarks/verified/permeability3d/case_phi0.343_N64.json",
+     "k": "created_utc"
+    },
+    {
+     "v": "2026-09-21T11:20:43Z",
+     "f": "benchmarks/verified/permeability3d/case_phi0.343_N160_fs10.json",
+     "k": "created_utc"
+    }
+   ]
+  },
+  {
+   "gate": "case_readme",
+   "pass": true,
+   "evidence": []
+  },
+  {
+   "gate": "figures",
+   "pass": true,
+   "evidence": []
+  }
+ ]
+}

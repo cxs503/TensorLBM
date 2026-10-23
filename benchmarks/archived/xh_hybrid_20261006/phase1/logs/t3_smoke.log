@@ -1,0 +1,8 @@
+[t3] sigma channel: route=B W*=4.0 bar_eff(W*)=1.44853 sigma_input=0.00690356 (target 0.01)
+[t3] smoke_lam0.5_D32: stable=True U_sim=1.321403e-03 U_t=1.041667e-03 err=+26.8547% steady=5.9943% Cret=1.0190 umax=5.22e-03 
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/t3_hadroplet_SMOKE_partial.json
+[t3] smoke_lam2.0_D32: stable=True U_sim=1.329773e-03 U_t=1.041667e-03 err=+27.6582% steady=7.0371% Cret=1.0459 umax=5.82e-03 
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/t3_hadroplet_SMOKE_partial.json
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/t3_hadroplet_SMOKE.json
+GATES: {'smoke_only_no_gates': True}
+GPU LEDGER: {'r5_3d_arms_wall_s': {'sum': 31.274986743927002, 'source': '/nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/r5_pressure_probe.json', 'note': 'e2diag/e3diag carry no wall field (<=64^3 x <=10k diagnostic shorts); T1/T2 ran CPU fp64'}, 't3_wall_s': 30.463609218597412, 'gpu_h_cumulative': 0.017149609989590114, 'sl5_limit_gpu_h': 28.8, 'sl5_tripped': False}

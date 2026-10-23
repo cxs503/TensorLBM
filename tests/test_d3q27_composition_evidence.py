@@ -16,16 +16,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-import torch
-
-from tensorlbm.d3q27 import collide_mrt27, equilibrium27, macroscopic27
 from tensorlbm.d3q27_composition_evidence import (
     D3Q27_COMPOSITION_EVIDENCE_VERSION,
     EXPECTED_SOURCE_SHA256,
     run_d3q27_mrt_composition_probe,
 )
-
 
 # ---------------------------------------------------------------------------
 # Probe existence and version
@@ -39,7 +34,7 @@ def test_probe_version_is_declared() -> None:
 def test_expected_source_hash_matches_existing_audit() -> None:
     """The source hash must match the one already locked by the consistency audit."""
     assert (
-        EXPECTED_SOURCE_SHA256 == "4b1b55bf7b2aae49857f22d261e75666765764f5eeeb37050f105a17bafc10b5"
+        EXPECTED_SOURCE_SHA256 == "434974062b049b79605ede06e6b9853d7da7b3dba97da82f07d15ea57a2554e5"
     )
 
 

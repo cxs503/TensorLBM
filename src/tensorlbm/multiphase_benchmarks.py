@@ -124,9 +124,10 @@ def _measure_pressure_jump(
 ) -> tuple[float, float, float]:
     """Return ``(p_inside, p_outside, delta_p)`` from the total density.
 
-    The lattice pressure is ``p = cs² ρ = ρ / 3``.
-    Inside and outside averages exclude a transition band of 0.5 R around
-    the nominal radius to avoid contamination by the diffuse interface.
+    The current diagnostic is only the ideal-gas density proxy ``p* = cs² ρ``.
+    It omits the interaction/capillary stress and therefore is NOT a validated
+    mechanical-pressure measurement for Shan-Chen or color-gradient models.
+    Inside/outside averages exclude a transition band around the interface.
     """
     rho = f_total.sum(dim=0)  # (ny, nx)
     ny, nx = rho.shape
@@ -221,7 +222,7 @@ class StaticDropletConfig:
     radii:         Tuple of bubble radii (lattice units) to test.
     n_steps:       Time steps per radius to reach steady state.
     output_interval: Diagnostic sampling interval.
-    scmc_G12:      SC coupling constant (> 0 for phase separation).
+    scmc_G12:      SC coupling constant (< 0 for phase separation).
     scmc_tau:      Relaxation time for both SCMC components.
     scmc_rho_heavy: Density of the heavy (droplet) component.
     scmc_rho_light: Density of the light (surrounding) component.
@@ -243,7 +244,7 @@ class StaticDropletConfig:
     n_steps: int = 4000
     output_interval: int = 1000
     # SCMC parameters
-    scmc_G12: float = 0.9
+    scmc_G12: float = -0.9
     scmc_tau: float = 1.0
     scmc_rho_heavy: float = 0.7
     scmc_rho_light: float = 0.3
@@ -282,8 +283,8 @@ class StaticDropletConfig:
         if self.cg_rho_heavy <= self.cg_rho_light:
             msg = "cg_rho_heavy must exceed cg_rho_light"
             raise ValueError(msg)
-        if self.scmc_G12 <= 0:
-            msg = "scmc_G12 must be > 0 for SC phase separation"
+        if self.scmc_G12 >= 0:
+            msg = "scmc_G12 must be < 0 for SC phase separation"
             raise ValueError(msg)
 
     def resolved_run_name(self) -> str:
@@ -333,6 +334,8 @@ def _run_scmc_droplet(
         "delta_p": round(dp, 8),
         "sigma_eff": round(sigma_eff, 6),
         "max_spurious_u": round(max_u, 8),
+        "pressure_diagnostic": "ideal_gas_density_proxy",
+        "laplace_physical_validation": "NOT_VALIDATED",
     }
 
 
@@ -378,6 +381,8 @@ def _run_cg_droplet(
         "delta_p": round(dp, 8),
         "sigma_eff": round(sigma_eff, 6),
         "max_spurious_u": round(max_u, 8),
+        "pressure_diagnostic": "ideal_gas_density_proxy",
+        "laplace_physical_validation": "NOT_VALIDATED",
     }
 
 
@@ -444,7 +449,10 @@ def run_static_droplet(config: StaticDropletConfig) -> dict[str, object]:
         print(f"  σ_eff (fit) = {sigma_fit:.6f}   mean max_u = {mean_u:.3e}")
         results[model_name] = {
             "per_radius": per_r,
-            "sigma_eff_fit": round(sigma_fit, 8),
+            "sigma_eff_fit": round(sigma_fit, 8),  # legacy name; proxy-derived only
+            "sigma_eff_fit_proxy": round(sigma_fit, 8),
+            "pressure_diagnostic": "ideal_gas_density_proxy",
+            "laplace_physical_validation": "NOT_VALIDATED",
             "mean_max_spurious_u": round(mean_u, 8),
         }
 
@@ -454,9 +462,11 @@ def run_static_droplet(config: StaticDropletConfig) -> dict[str, object]:
         "config": {**asdict(config), "output_root": str(config.output_root)},
         "results": results,
         "note": (
-            "delta_p = P_inside - P_outside (lattice pressure cs2*rho). "
-            "sigma_eff_fit: slope of ΔP vs 1/R (Young-Laplace: ΔP = σ/R). "
-            "max_spurious_u: max velocity in static droplet (quality metric)."
+            "delta_p is computed from the ideal-gas density proxy cs2*rho, not "
+            "the full mechanical pressure including interaction/capillary stress. "
+            "sigma_eff_fit is retained for compatibility but is proxy-derived only; "
+            "the Laplace physical benchmark is NOT_VALIDATED for SCMC or CG. "
+            "max_spurious_u is the maximum velocity in the static droplet."
         ),
     }
     (run_dir / "static_droplet.json").write_text(
@@ -486,8 +496,8 @@ def _plot_laplace(results: dict[str, object], run_dir: Path) -> None:
         ax.plot(inv_r_line, [sigma * x for x in inv_r_line], "--", color=colours[model], alpha=0.7)
 
     ax.set_xlabel("1/R (lattice units⁻¹)")
-    ax.set_ylabel("ΔP (lattice units)")
-    ax.set_title("Laplace pressure test: ΔP vs 1/R")
+    ax.set_ylabel("Δp* = cs² Δρ (density proxy; not mechanical pressure)")
+    ax.set_title("Static-droplet density-pressure proxy vs 1/R (not validated)")
     ax.legend()
     ax.grid(True, alpha=0.3)
     fig.savefig(run_dir / "laplace_pressure.png", dpi=120, bbox_inches="tight")
@@ -602,6 +612,7 @@ def run_spinodal_decomposition(config: SpinodaleConfig) -> dict[str, object]:
 
     zero = torch.zeros((ny, nx), device=device)
     f = equilibrium(rho, zero, zero)
+    initial_mass = float(rho.sum().item())
 
     print(
         f"Spinodal decomposition  NX={nx}  NY={ny}  G={config.G}  "
@@ -634,6 +645,8 @@ def run_spinodal_decomposition(config: SpinodaleConfig) -> dict[str, object]:
 
     # Final state
     rho_final, _, _ = macroscopic(f)
+    final_mass = float(rho_final.sum().item())
+    relative_mass_drift = abs(final_mass - initial_mass) / max(abs(initial_mass), 1e-12)
     rho_liquid = float(rho_final.max().item())
     rho_gas = float(rho_final.min().item())
     density_ratio = rho_liquid / max(rho_gas, 1e-12)
@@ -646,6 +659,9 @@ def run_spinodal_decomposition(config: SpinodaleConfig) -> dict[str, object]:
         "rho_gas": round(rho_gas, 6),
         "density_ratio": round(density_ratio, 4),
         "phase_separated": phase_separated,
+        "initial_mass": round(initial_mass, 8),
+        "final_mass": round(final_mass, 8),
+        "relative_mass_drift": round(relative_mass_drift, 10),
         "diagnostics": diagnostics,
         "note": (
             "SCMP (Shan-Chen single-component) spinodal decomposition. "
@@ -926,7 +942,7 @@ class StaticDroplet3DConfig:
     n_steps: int = 1200
     output_interval: int = 400
     # SCMC
-    scmc_G12: float = 0.9
+    scmc_G12: float = -0.9
     scmc_tau: float = 1.0
     scmc_rho_heavy: float = 0.7
     scmc_rho_light: float = 0.3
@@ -965,8 +981,8 @@ class StaticDroplet3DConfig:
         if self.cg_rho_heavy <= self.cg_rho_light:
             msg = "cg_rho_heavy must exceed cg_rho_light"
             raise ValueError(msg)
-        if self.scmc_G12 <= 0:
-            msg = "scmc_G12 must be > 0 for SC phase separation"
+        if self.scmc_G12 >= 0:
+            msg = "scmc_G12 must be < 0 for SC phase separation"
             raise ValueError(msg)
 
     def resolved_run_name(self) -> str:
@@ -1177,6 +1193,7 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
     rho = (rho0 + noise).clamp(min=0.01)
     zero = torch.zeros((config.nz, config.ny, config.nx), device=device)
     f = equilibrium3d(rho, zero, zero, zero)
+    initial_mass = float(rho.sum().item())
     diagnostics: list[dict[str, object]] = []
 
     for step in range(1, config.n_steps + 1):
@@ -1203,6 +1220,8 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
             )
 
     rho_final, _, _, _ = macroscopic3d(f)
+    final_mass = float(rho_final.sum().item())
+    relative_mass_drift = abs(final_mass - initial_mass) / max(abs(initial_mass), 1e-12)
     rho_liquid = float(rho_final.max().item())
     rho_gas = float(rho_final.min().item())
     density_ratio = rho_liquid / max(rho_gas, 1e-12)
@@ -1215,6 +1234,9 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
         "rho_gas": round(rho_gas, 6),
         "density_ratio": round(density_ratio, 4),
         "phase_separated": phase_separated,
+        "initial_mass": round(initial_mass, 8),
+        "final_mass": round(final_mass, 8),
+        "relative_mass_drift": round(relative_mass_drift, 10),
         "diagnostics": diagnostics,
         "note": "3D SCMP spinodal decomposition benchmark on D3Q19.",
     }
@@ -1279,7 +1301,7 @@ class TwoPhaseChannelCompareConfig:
     n_steps: int = 8000
     output_interval: int = 2000
     # SCMC parameters
-    scmc_G12: float = 0.9
+    scmc_G12: float = -0.9
     scmc_tau_heavy: float = 1.0
     scmc_tau_light: float = 0.7
     scmc_rho_heavy: float = 0.7
@@ -1684,7 +1706,7 @@ def _generate_analysis(
         "1. Laplace Pressure Test (static circular droplet, periodic domain):",
         f"   SCMC (Shan-Chen two-component): σ_eff = {sigma_scmc:.4f} lu",
         f"   CG  (Color-Gradient):           σ_eff = {sigma_cg:.4f} lu",
-        "   → SCMC and CG both satisfy ΔP ∝ 1/R (Young-Laplace).",
+        "   → NOT VALIDATED: cs²ρ is only a density proxy; interaction/capillary stress is omitted.",
         f"   Spurious currents — SCMC: {u_scmc:.2e}, CG: {u_cg:.2e}",
         "",
         "2. Spinodal Decomposition (SCMP, Shan-Chen single-component):",

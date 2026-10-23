@@ -15,41 +15,20 @@ sub-contract matrices and translates vocabulary.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 from enum import Enum
 from hashlib import sha256
-import json
 from typing import Any, Mapping, Sequence
 
+from .accuracy_recommendation import (
+    PhysicalAccuracyEvidence,
+    recommend_by_physical_accuracy,
+)
+from .acoustics_capability_contract import (
+    acoustics_capability_matrix,
+)
 from .advanced_collision_contract import collision_capability_matrix
-from .general_capability_matrix import (
-    CapabilityRequest as _GMCRequest,
-    CapabilityStatus as _GMCStatus,
-    assess_capability as _assess_gmc,
-)
-from .wall_function_contract import (
-    WallFunctionCapability,
-    WallFunctionCompatibilityError,
-    WallFunctionRequest,
-    assess_wall_function,
-)
-from .wall_function_admission import (
-    WallFunctionRunRequest,
-    require_wall_function_run,
-)
-from .wall_refinement_combination_gate import (
-    CollisionFamily as WRCollisionFamily,
-    CombinationEvidence,
-    GateStatus,
-    GeometryKind,
-    GeometryOwnership,
-    Lattice as WRLattice,
-    PhysicsModel,
-    RefinementType,
-    WallRefinementCombination,
-    WallTreatment,
-    assess_wall_refinement_combination,
-)
 from .amr_capability_contract import (
     REQUIRED_FRONTEND_METADATA,
     local_refinement_capability_matrix,
@@ -57,15 +36,40 @@ from .amr_capability_contract import (
 from .boundary_capability_contract import (
     boundary_capability_matrix,
 )
+from .general_capability_matrix import (
+    CapabilityStatus as _GMCStatus,
+)
+from .general_capability_matrix import (
+    assess_capability as _assess_gmc,
+)
 from .turbulence_capability_contract import (
     turbulence_capability_matrix,
 )
-from .acoustics_capability_contract import (
-    acoustics_capability_matrix,
+from .wall_function_admission import (
+    WallFunctionRunRequest,
+    require_wall_function_run,
 )
-from .accuracy_recommendation import (
-    PhysicalAccuracyEvidence,
-    recommend_by_physical_accuracy,
+from .wall_function_contract import (
+    WallFunctionCapability,
+    WallFunctionCompatibilityError,
+    WallFunctionRequest,
+    assess_wall_function,
+)
+from .wall_refinement_combination_gate import (
+    CollisionFamily as WRCollisionFamily,
+)
+from .wall_refinement_combination_gate import (
+    GateStatus,
+    GeometryKind,
+    GeometryOwnership,
+    PhysicsModel,
+    RefinementType,
+    WallRefinementCombination,
+    WallTreatment,
+    assess_wall_refinement_combination,
+)
+from .wall_refinement_combination_gate import (
+    Lattice as WRLattice,
 )
 
 MATRIX_VERSION = "cross-module-composition-matrix-r1"

@@ -1,0 +1,160 @@
+{
+  "schema": "tensorlbm.uniform-swept-independent-audit/1",
+  "study_sha256": "b2b83de4a27af2356b22f2af7343011475997497eb4dd7f77931a65a7c8c8a85",
+  "auditor_sha256": "5dd62d089fd46cc04aa110ab64aba6c0d7bc0b768fd8d3de89ec63302c0747d2",
+  "reconstruction": "independent NumPy; no TensorLBM geometry or transport imports",
+  "cases": [
+    {
+      "case": "static",
+      "artifact": "static.json.gz",
+      "artifact_sha256": "c06be8da26301bf41d664885cf8cece4e2b8e58ac8af2c1c897157acca27b17c",
+      "steps": 20,
+      "birth_cells": 0,
+      "death_cells": 0,
+      "maxima": {
+        "population_update_error_kg": 8.326672684688674e-17,
+        "population_balance_residual_kg": 3.6637359812630166e-15,
+        "mass_balance_residual_kg": 7.743805596760467e-15,
+        "momentum_balance_residual_Ns": 5.440092820663267e-15,
+        "density_relative_error": 9.094947017729283e-16,
+        "velocity_error_m_s": 5.405033146201419e-16,
+        "gcl_residual_m2": 0.0,
+        "closure_residual_m_s": 1.5178830414797062e-18,
+        "density_free_energy_abs_J": 0.0,
+        "kinetic_energy_drift_J": 1.1090721397493825e-30,
+        "wall_mass_flux_kg": 1.3877787807814457e-15,
+        "cleanup_mass_abs_kg": 0.0
+      },
+      "total_body_impulse_Ns": [
+        -2.400857290751901e-15,
+        -4.718447854656915e-16
+      ],
+      "total_mass_balance_residual_kg": 1.6639467581569534e-14,
+      "total_momentum_balance_residual_Ns": [
+        -2.400857290751901e-15,
+        -4.163336342344337e-16
+      ],
+      "actual_flux_updates_reconstructed": true,
+      "raw_geometry_reconstructed": true,
+      "restart_bitwise_recorded": true,
+      "physical_accuracy_qualified": false,
+      "arbitrary_state_transport": false,
+      "passed": true
+    },
+    {
+      "case": "diagonal",
+      "artifact": "diagonal.json.gz",
+      "artifact_sha256": "d4976a1e09210e4604391d92ce045a17394dcd2ce58175077112ce753dbd3a77",
+      "steps": 20,
+      "birth_cells": 6,
+      "death_cells": 2,
+      "maxima": {
+        "population_update_error_kg": 1.6653345369377348e-16,
+        "population_balance_residual_kg": 1.4238610290817633e-14,
+        "mass_balance_residual_kg": 2.2901819329845807e-14,
+        "momentum_balance_residual_Ns": 1.1754486273218845e-14,
+        "density_relative_error": 9.549694368615747e-15,
+        "velocity_error_m_s": 5.856426454897701e-15,
+        "gcl_residual_m2": 1.0625181290357943e-17,
+        "closure_residual_m_s": 7.37257477290143e-18,
+        "density_free_energy_abs_J": 3.7863098138283655e-15,
+        "kinetic_energy_drift_J": 2.220446049250313e-16,
+        "wall_mass_flux_kg": 3.7470027081099033e-16,
+        "cleanup_mass_abs_kg": 1.0304257447302234e-15
+      },
+      "total_body_impulse_Ns": [
+        -9.96425164601078e-15,
+        -6.1999017031411086e-15
+      ],
+      "total_mass_balance_residual_kg": 3.1089714136456337e-14,
+      "total_momentum_balance_residual_Ns": [
+        -4.579669976578771e-15,
+        -7.126244039312724e-15
+      ],
+      "actual_flux_updates_reconstructed": true,
+      "raw_geometry_reconstructed": true,
+      "restart_bitwise_recorded": true,
+      "physical_accuracy_qualified": false,
+      "arbitrary_state_transport": false,
+      "passed": true
+    },
+    {
+      "case": "reverse",
+      "artifact": "reverse.json.gz",
+      "artifact_sha256": "b2bbb4f9f3aecd71cf10e02508ca6a90395f4caf977aecea7d16183c5d6bb103",
+      "steps": 20,
+      "birth_cells": 5,
+      "death_cells": 3,
+      "maxima": {
+        "population_update_error_kg": 1.3877787807814457e-16,
+        "population_balance_residual_kg": 3.774758283725532e-15,
+        "mass_balance_residual_kg": 7.729927808952652e-15,
+        "momentum_balance_residual_Ns": 7.0637939941775585e-15,
+        "density_relative_error": 4.592948243953288e-14,
+        "velocity_error_m_s": 4.7579995499091865e-14,
+        "gcl_residual_m2": 1.2197274440461925e-17,
+        "closure_residual_m_s": 6.938893903907228e-18,
+        "density_free_energy_abs_J": 6.1570896529398575e-15,
+        "kinetic_energy_drift_J": 1.1102230246251565e-15,
+        "wall_mass_flux_kg": 6.661338147750939e-16,
+        "cleanup_mass_abs_kg": 3.8635761256955476e-15
+      },
+      "total_body_impulse_Ns": [
+        5.06886199680423e-15,
+        2.0013504742344423e-14
+      ],
+      "total_mass_balance_residual_kg": 1.3212000937734561e-14,
+      "total_momentum_balance_residual_Ns": [
+        7.2196137956837e-15,
+        2.5075728530646995e-15
+      ],
+      "actual_flux_updates_reconstructed": true,
+      "raw_geometry_reconstructed": true,
+      "restart_bitwise_recorded": true,
+      "physical_accuracy_qualified": false,
+      "arbitrary_state_transport": false,
+      "passed": true
+    },
+    {
+      "case": "time-half",
+      "artifact": "time-half.json.gz",
+      "artifact_sha256": "654c2791d5378fde1c46614e8c39d00ea058dddea9c84d74e9c80784e0d9145a",
+      "steps": 40,
+      "birth_cells": 6,
+      "death_cells": 2,
+      "maxima": {
+        "population_update_error_kg": 1.1102230246251565e-16,
+        "population_balance_residual_kg": 1.4231671396913725e-14,
+        "mass_balance_residual_kg": 1.962926349241556e-14,
+        "momentum_balance_residual_Ns": 1.0281706042114536e-14,
+        "density_relative_error": 6.616573955398052e-14,
+        "velocity_error_m_s": 1.1310397063368782e-14,
+        "gcl_residual_m2": 8.555032767268433e-18,
+        "closure_residual_m_s": 5.637851296924623e-18,
+        "density_free_energy_abs_J": 3.805238672309014e-15,
+        "kinetic_energy_drift_J": 2.220446049250313e-16,
+        "wall_mass_flux_kg": 1.734723475976807e-16,
+        "cleanup_mass_abs_kg": 7.78023478975598e-16
+      },
+      "total_body_impulse_Ns": [
+        -8.902600878712974e-15,
+        -7.533904056167273e-15
+      ],
+      "total_mass_balance_residual_kg": 3.0899761915836876e-14,
+      "total_momentum_balance_residual_Ns": [
+        -7.65533469948565e-15,
+        -7.395993539827117e-15
+      ],
+      "actual_flux_updates_reconstructed": true,
+      "raw_geometry_reconstructed": true,
+      "restart_bitwise_recorded": true,
+      "physical_accuracy_qualified": false,
+      "arbitrary_state_transport": false,
+      "passed": true
+    }
+  ],
+  "scope": "uniform co-moving finite-volume D2Q9 flux verification only; no arbitrary fluid BGK solve",
+  "physical_accuracy_qualified": false,
+  "arbitrary_state_transport": false,
+  "passed": true
+}

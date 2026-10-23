@@ -286,8 +286,7 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
     ),
     ("bouzidi_interpolated", "D3Q27"): (
         "MECHANICS_TESTED",
-        "tensorlbm.interpolated_bc_common.bouzidi_bounce_back_3d_common / "
-        "compute_q_sphere_27",
+        "tensorlbm.interpolated_bc_common.bouzidi_bounce_back_3d_common / compute_q_sphere_27",
         "test_interp_bc_regression.py and test_bfl_fractional_distance.py: "
         "halfway/branch mechanics and analytic body-diagonal q; no physical validation",
     ),

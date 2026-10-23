@@ -1,0 +1,52 @@
+{
+  "case": "wigley_hydrostatics",
+  "status": "verified",
+  "verified": true,
+  "scope": "hydrostatic form coefficients of the Wigley parabolic hull (geometry + static closure only; NOT seakeeping / wave-body motion)",
+  "reference": {
+    "source": "closed-form Wigley (1934) parabolic hull integrals — standard seakeeping texts (Faltinsen, Lewis); independently re-derived with sympy",
+    "analytic": {
+      "C_B": "4/9",
+      "C_wp": "2/3",
+      "C_M": "2/3",
+      "C_P": "2/3",
+      "KB_T": "5/8",
+      "IT": "4/105",
+      "IL": "1/30"
+    }
+  },
+  "caliber": {
+    "method": "voxel mask (wigley_hull_mask, bitwise-identical to the library) integrated in memory-safe blocks",
+    "note": "pure geometry+statics closure; does not depend on the free-surface pressure field"
+  },
+  "grids": [
+    {
+      "L": 640,
+      "C_B": 0.45322,
+      "C_wp": 0.66555,
+      "C_M": 0.68164,
+      "C_P": 0.66489,
+      "KB_T": 0.63127,
+      "IT": 0.037822,
+      "IL": 0.033331
+    },
+    {
+      "L": 960,
+      "C_B": 0.45017,
+      "C_wp": 0.66594,
+      "C_M": 0.67483,
+      "C_P": 0.66709,
+      "KB_T": 0.62936,
+      "IT": 0.037938,
+      "IL": 0.033315
+    }
+  ],
+  "convergence": {
+    "max_abs_err_pct": 2.25,
+    "max_span_pct": 1.02,
+    "all_within_3pct": true,
+    "grid_span_within_3pct": true,
+    "note": "low-L voxel staircasing is large (C_B +21% at L=160); only L>=640 enters 3% — a recorded boundary condition"
+  },
+  "verdict": "PASS: every form coefficient <=3% at L=640/960, inter-grid span <=3%"
+}

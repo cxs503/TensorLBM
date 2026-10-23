@@ -4,6 +4,7 @@ This is a diagnostic-scale test only.  It uses a sinusoidal, sub-cell initial
 surface perturbation and records its Fourier amplitude/phase and the tracked
 liquid-mass ledger; it is not a ship-resistance validation.
 """
+
 from __future__ import annotations
 
 import math
@@ -63,8 +64,16 @@ def test_small_amplitude_gravity_wave_closed_mass_ledger_and_mode() -> None:
     for _ in range(1):
         ledger: dict[str, float] = {}
         f, fill, flags, mass, _ = free_surface_step(
-            f, fill, flags, solid, mass=mass, tau=0.8, gy=-1.0e-4,
-            rho_liquid=1.0, rho_gas=0.001, mass_ledger=ledger,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=0.8,
+            gy=-1.0e-4,
+            rho_liquid=1.0,
+            rho_gas=0.001,
+            mass_ledger=ledger,
         )
         ledgers.append(ledger)
 

@@ -31,7 +31,11 @@ Kirchhoff 积分 (使用正确的二维 Green 函数), 作为主要验证标准�
 """
 
 from __future__ import annotations
-import argparse, math, os, sys
+
+import argparse
+import math
+import os
+import sys
 
 import numpy as np
 import torch
@@ -41,14 +45,13 @@ _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import collide_bgk3d, stream3d
 from tensorlbm.acoustics import (
     AcousticObserver,
     FWHSurface,
     compute_fwh_far_field,
 )
-
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 # ---------------------------------------------------------------------------
 # 2D 频域 Kirchhoff 积分 (正确的 2D Green 函数)
@@ -269,7 +272,7 @@ def run_fwh_benchmark(
     k = omega / cs
     lam = 2.0 * math.pi * cs / omega
 
-    print(f"  脉动球单极子声源 + FW-H 远场外推")
+    print("  脉动球单极子声源 + FW-H 远场外推")
     print(f"  网格: {nx}×{ny}×{nz}, D3Q19 BGK, tau={tau}")
     print(f"  声源: R0={R0}, delta_rho={delta_rho}, omega={omega}")
     print(f"  控制面: R_ctrl={R_ctrl}, n_surface={n_surface}, arc_length={arc_length:.4f}")
@@ -334,7 +337,7 @@ def run_fwh_benchmark(
     # 方法 A: 3D FW-H 库 (compute_fwh_far_field, 物理单位)
     # =====================================================================
     print(f"\n  {'=' * 50}")
-    print(f"  方法 A: 3D FW-H 库 (compute_fwh_far_field, 物理单位)")
+    print("  方法 A: 3D FW-H 库 (compute_fwh_far_field, 物理单位)")
     print(f"  {'=' * 50}")
 
     # 控制面位置 (物理单位, 相对于中心)
@@ -360,14 +363,14 @@ def run_fwh_benchmark(
         c0=c0,
     )
 
-    print(f"  调用 compute_fwh_far_field...")
+    print("  调用 compute_fwh_far_field...")
     p_fwh_3d, _ = compute_fwh_far_field(surface, observers_fwh)
 
     # =====================================================================
     # 方法 B: 2D 频域 Kirchhoff 积分 (正确的 2D Green 函数, LBM 单位)
     # =====================================================================
     print(f"\n  {'=' * 50}")
-    print(f"  方法 B: 2D 频域 Kirchhoff 积分 (Hankel Green 函数)")
+    print("  方法 B: 2D 频域 Kirchhoff 积分 (Hankel Green 函数)")
     print(f"  {'=' * 50}")
 
     surf_pos_2d = np.column_stack(
@@ -391,7 +394,7 @@ def run_fwh_benchmark(
     )
 
     # B2: Sommerfeld 辐射条件 (∂p/∂n = ik·p)
-    print(f"  B2: Sommerfeld 辐射条件 (∂p/∂n = ik·p)...")
+    print("  B2: Sommerfeld 辐射条件 (∂p/∂n = ik·p)...")
     p_kirch_sommer = kirchhoff_2d_farfield(
         p_surf=surf_pressure,
         dpdn=None,
@@ -413,7 +416,7 @@ def run_fwh_benchmark(
     p_surf_peak = float(np.max(np.abs(surf_pressure)))
     delta_rho_eff = p_surf_peak / cs2
 
-    print(f"\n  解析参考 (Hankel 函数):")
+    print("\n  解析参考 (Hankel 函数):")
     print(f"    k={k:.4f}, k*R0={k * R0:.4f}, |H0(kR0)|={h0_R0:.6f}")
     print(f"    k*R_ctrl={k * R_ctrl:.4f}, |H0(kR_ctrl)|={h0_Rs:.6f}")
     print(f"    控制面峰值压力 |p_surf|={p_surf_peak:.6f} (LBM 单位)")
@@ -423,7 +426,7 @@ def run_fwh_benchmark(
     # 对比: FW-H / Kirchhoff vs 解析
     # =====================================================================
     print(f"\n  {'=' * 50}")
-    print(f"  FW-H / Kirchhoff vs 解析对比 (峰值振幅)")
+    print("  FW-H / Kirchhoff vs 解析对比 (峰值振幅)")
     print(f"  {'=' * 50}")
 
     # 解析解有两种形式:
@@ -431,7 +434,7 @@ def run_fwh_benchmark(
     #   (2) 有效公式: p'(r) = p_surf·|H0(kr)|/|H0(kR_ctrl)|    (隔离外推误差)
     # 有效公式用实际控制面压力作为参考, 隔离了 FW-H/Kirchhoff 外推误差。
 
-    print(f"\n  --- 有效公式 (以控制面压力为参考, 隔离外推误差) ---")
+    print("\n  --- 有效公式 (以控制面压力为参考, 隔离外推误差) ---")
     hdr = (
         f"  {'r':>4s}  {'p_3DFWH':>10s} {'p_KirFD':>10s} {'p_KirSm':>10s} "
         f"{'p_Hankel':>10s} {'e3D%':>6s} {'eFD%':>6s} {'eSm%':>6s}"
@@ -483,7 +486,7 @@ def run_fwh_benchmark(
         avg_err_2d = avg_err_sm
 
     # --- 任务公式对比 (含 LBM 仿真误差) ---
-    print(f"\n  --- 任务公式: p'(r) = cs²·δρ·|H0(kr)|/|H0(kR0)| ---")
+    print("\n  --- 任务公式: p'(r) = cs²·δρ·|H0(kr)|/|H0(kR0)| ---")
     hdr2 = f"  {'r':>4s}  {'p_KirSm':>10s} {'p_Hankel':>10s} {'err%':>6s}"
     print(hdr2)
     print(f"  {'-' * len(hdr2)}")
@@ -510,7 +513,7 @@ def run_fwh_benchmark(
     # 验证结果
     # =====================================================================
     print(f"\n  {'=' * 50}")
-    print(f"  验证结果")
+    print("  验证结果")
     print(f"  {'=' * 50}")
 
     checks = []
@@ -534,7 +537,7 @@ def run_fwh_benchmark(
 
     # 3D FW-H 振幅误差 (信息性 — 3D 公式用于 2D 问题, 预期误差较大)
     print(f"    [INFO] 3D FW-H 振幅误差: avg={avg_err_3d:.1f}%, max={max_err_3d:.1f}%")
-    print(f"           (3D Green 函数 1/r 用于 2D 问题, 预期误差较大)")
+    print("           (3D Green 函数 1/r 用于 2D 问题, 预期误差较大)")
 
     # 2D Kirchhoff 振幅误差 (主要验证标准)
     kirch_pass = max_err_2d < 20.0

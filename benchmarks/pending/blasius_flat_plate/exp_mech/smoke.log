@@ -1,0 +1,43 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+{
+  "config": {
+    "nx": 160,
+    "ny": 400,
+    "le": 20,
+    "plate_len": 120,
+    "probes": "60,120",
+    "U": 0.05,
+    "nu": 0.01,
+    "steps": 2000,
+    "avg": 50,
+    "wall": "bottom",
+    "outlet": "zouhe",
+    "top": "specular",
+    "collision": "bgk",
+    "device": "sdaa:6",
+    "out": "exp_mech/smoke.json"
+  },
+  "umax": 0.05558359995484352,
+  "mass_drift_pct": -0.0012451172634959267,
+  "finite": true,
+  "elapsed_s": 18.2,
+  "ny": 400,
+  "nx": 160
+}
+probe 60: Cf_err= +33.00% K=0.752 ue_in=1.1094 ue_far=0.9998 os=1.1094@5.127 H_U=0.200 H_ue=1.164 l2=0.126
+probe 120: Cf_err=+116.86% K=0.461 ue_in=1.0812 ue_far=1.0003 os=1.0812@4.137 H_U=0.199 H_ue=1.159 l2=0.216

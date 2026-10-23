@@ -8,7 +8,7 @@ source-level combination is callable; it never infers physical validity.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import IntEnum, Enum
+from enum import Enum, IntEnum
 from types import MappingProxyType
 from typing import Mapping
 

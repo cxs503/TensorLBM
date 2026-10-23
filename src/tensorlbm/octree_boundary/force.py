@@ -9,13 +9,22 @@ interface filter shell by a **fail-closed clearance gate**.
 Conventions
 -----------
 * ``ShellForceLedger.mem_force`` is the time-averaged MEM force over one
-  root step in **leaf lattice units**: ``sum_substeps w_leaf * F_sub / 2^d``
-  (``UniformSubcycleAverager`` convention — the finest level advances
-  ``2^d`` uniformly spaced substeps per root step and the force is their
-  mean).  With ``d_max=1`` and all leaves at depth 1 the weight is 1 and
-  ``mem_force = (F_s0 + F_s1) / 2``.
+  ledger window in **leaf lattice units**: ``sum_substeps w_leaf * F_sub /
+  n_substeps`` (``UniformSubcycleAverager`` convention — the finest level
+  advances ``n_substeps = host_substeps * 2^d`` uniformly spaced substeps
+  per window and the force is their mean).  With ``d_max=1``, all leaves at
+  depth 1 (weight 1) and the root-step call cadence (``host_substeps=2``)
+  ``mem_force = (F_s0 + F_s1 + F_s2 + F_s3) / 4`` — the instantaneous wall
+  *rate* in leaf units.
 * ``ShellForceLedger.cv_force`` is observed once per root step on the L1
-  block tensor (L1 lattice units).
+  block tensor (L1 lattice units) and is a **per-window impulse** (the
+  streaming import sums both L1 substeps).  To compare it with the MEM
+  ledger use :meth:`ShellForceLedger.wall_impulse_l1` (impulse) — under
+  the full-coverage cadence the wall applies its rate over
+  ``n_substeps * dt_leaf`` host time, so the impulse is
+  ``wall_momentum_l1 * n_substeps * dt_leaf`` (at ``d_max=1`` with the
+  legacy under-covering cadence this factor was 1, which is why the
+  historical rate-vs-impulse mix appeared to close).
 * The two forces live on different lattices (leaf ``dx=0.5`` vs L1
   ``dx=1``).  :func:`convert_leaf_force_to_l1` maps the leaf force into L1
   units with the convective scaling ``F_l1 = (dx_l^4 / dt_l^2) F_leaf``
@@ -23,12 +32,24 @@ Conventions
   impulse.  The acceptance comparison is done on the dimensionless Cd, so
   the example normalises each force with its own lattice's dynamic area
   (radius in that lattice's units) — the lattice factors cancel exactly.
+* **Mixed-depth shells (the per-level ``dx^2`` factor).**  ``d_max=2``
+  shells mix level-1 and level-2 leaves; a leaf impulse is carried in that
+  leaf's own lattice, so summing raw per-leaf impulses is only valid when
+  every leaf shares one ``dx``.  The per-leaf convective factor
+  ``(dx_leaf/dx_ref)^2 = 2^-2(level - ref)`` (:func:`leaf_spatial_force_factors`)
+  must therefore be folded into the aggregation weights — see
+  :func:`tensorlbm.octree_boundary.bfl.leaf_force_weights`
+  (``include_spatial=True``).  :func:`convert_leaf_force_to_l1` takes a
+  **single** ``dx_leaf`` and is fail-closed on a mixed-depth force: once
+  the per-leaf factors are folded, call it with the *reference* level's
+  ``dx_leaf`` only.
 * The CV clearance gate (fail-closed): the outer one-cell surface of the
   control volume must not intersect the shell-covered mask, the AMR
   interface filter shell, or the body, and the covered region + body must
   be fully enclosed.  Any violation raises ``ValueError`` — the CV is
   never silently moved.
 """
+
 from __future__ import annotations
 
 import math
@@ -41,21 +62,90 @@ from tensorlbm.control_volume_force import (
 )
 
 
-def substep_force_weights(octree) -> torch.Tensor:
-    """Per-leaf substep weight ``2^-(d_max - d_leaf)`` (see bfl module)."""
-    return 2.0 ** (-(octree.d_max - octree.leaf_level.to(torch.float64)))
+def substep_force_weights(
+    octree,
+    *,
+    include_spatial: bool = True,
+    reference_level: int = 1,
+    host_steps_per_shell_call: float = 1.0,
+) -> torch.Tensor:
+    """Per-leaf substep weight (time ``2^-(d_max-d_leaf)`` × spatial).
+
+    Delegates to :func:`tensorlbm.octree_boundary.bfl.leaf_force_weights`:
+    the time weight that de-duplicates the ``2^d_max`` lockstep substeps,
+    and (with ``include_spatial``, the default here because it is the
+    physically correct weight for the shell force) the per-leaf convective
+    factor ``(dx_leaf/dx_ref)^2`` that maps every leaf's impulse into the
+    common (reference-level) lattice.
+
+    ``host_steps_per_shell_call`` carries the shell-call cadence frame
+    (default ``1.0`` = the legacy one-call-per-host-lattice-step frame,
+    bit-identical to the historical weight); pass the host lattice steps
+    advanced per shell call — e.g. ``2.0`` under the ``pre_restrict_hook``
+    cadence that fires the shell once per outer-root step — see
+    :func:`tensorlbm.octree_boundary.bfl.leaf_force_weights`.
+    """
+    from tensorlbm.octree_boundary.bfl import leaf_force_weights
+
+    return leaf_force_weights(
+        octree,
+        include_spatial=include_spatial,
+        reference_level=reference_level,
+        host_steps_per_shell_call=host_steps_per_shell_call,
+    )
+
+
+def leaf_spatial_force_factors(
+    octree,
+    *,
+    reference_level: int = 1,
+) -> torch.Tensor:
+    """Per-leaf convective factor ``(dx_leaf/dx_ref)^2 = 2^-2(level-ref)``."""
+    from tensorlbm.octree_boundary.bfl import leaf_force_spatial_weights
+
+    return leaf_force_spatial_weights(octree, reference_level=reference_level)
+
+
+def _leaf_levels(leaf_levels) -> torch.Tensor | None:
+    if leaf_levels is None:
+        return None
+    return torch.as_tensor(leaf_levels).to(torch.float64).view(-1)
 
 
 def convert_leaf_force_to_l1(
-    leaf_force: torch.Tensor, dx_leaf: float, dt_leaf: float,
+    leaf_force: torch.Tensor,
+    dx_leaf: float,
+    dt_leaf: float,
+    *,
+    leaf_levels: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Convert a leaf-lattice force to L1 lattice units.
+    """Convert a **single-lattice** leaf-lattice force to L1 lattice units.
 
     ``F_phys = rho0 (dx^4/dt^2) F_lu`` in any lattice (rho0 = 1); the
     conversion factor between two convectively scaled lattices is
     ``(dx_l^4/dt_l^2) / (dx_c^4/dt_c^2)``, with the L1 lattice at
     ``dx_c = dt_c = 1``.
+
+    Fail-closed on mixed-depth shells: this routine assumes one ``dx_leaf``
+    for every contributing leaf, which is only true for a single-level
+    shell.  Pass ``leaf_levels`` (the per-leaf level vector) and it raises
+    ``ValueError`` when more than one level is present — in that case the
+    per-level ``(dx_leaf/dx_ref)^2`` factor must be folded *before*
+    summation (:func:`leaf_spatial_force_factors` /
+    ``bfl.leaf_force_weights(include_spatial=True)``), and this function is
+    then called with the reference level's ``dx_leaf``.
     """
+    lv = _leaf_levels(leaf_levels)
+    if lv is not None and lv.numel() > 0 and int(torch.unique(lv).numel()) > 1:
+        raise ValueError(
+            "convert_leaf_force_to_l1 assumes a single leaf dx, but the "
+            "shell has mixed leaf levels "
+            f"{sorted(int(x) for x in torch.unique(lv).tolist())}: fold the "
+            "per-level (dx_leaf/dx_ref)^2 factor into the aggregation "
+            "weights (leaf_spatial_force_factors / "
+            "leaf_force_weights(include_spatial=True)) and pass the "
+            "reference level's dx_leaf instead",
+        )
     scale = (float(dx_leaf) ** 4) / (float(dt_leaf) ** 2)
     return torch.as_tensor(leaf_force, dtype=torch.float64) * scale
 
@@ -65,17 +155,35 @@ class ShellForceLedger:
 
     One ledger instance covers one L1 root step; call
     :meth:`reset` between root steps (or construct a fresh instance).
+
+    **Mixed-depth caveat.**  The ledger sums whatever per-substep force it
+    is given; the *caller* must have applied the per-leaf weights
+    (:func:`substep_force_weights`, ``include_spatial=True``) — in
+    particular the per-level convective factor ``(dx_leaf/dx_ref)^2``.
+    Feeding it raw (time-only) per-leaf impulses from a ``d_max>=2`` shell
+    mixes ``dx=0.5`` and ``dx=0.25`` lattices and biases the total (see the
+    module docstring and
+    ``scripts/validate_shell_bfl_force_analytic_cpu.py``).
     """
 
     def __init__(
         self,
         octree,
         dtype: torch.dtype = torch.float64,
+        *,
+        host_substeps: int = 1,
     ) -> None:
         self.d_max = int(octree.d_max)
-        self.n_substeps = 1 << self.d_max
+        if int(host_substeps) != host_substeps or int(host_substeps) < 1:
+            raise ValueError(f"host_substeps must be a positive int, got {host_substeps!r}")
+        self.host_substeps = int(host_substeps)
+        # substeps per ledger window: host_substeps * 2^d — must match the
+        # cadence the stepper runs (``step_octree_shell(host_substeps=...)``)
+        self.n_substeps = self.host_substeps << self.d_max
         self._accum = torch.zeros(
-            3, dtype=dtype, device=octree.f_leaf.device,
+            3,
+            dtype=dtype,
+            device=octree.f_leaf.device,
         )
         self.cv_force: torch.Tensor | None = None
         self.cv_samples = 0
@@ -84,7 +192,9 @@ class ShellForceLedger:
     def add_substep_force(self, force: torch.Tensor) -> None:
         """Accumulate one substep's (already per-leaf weighted) MEM force."""
         f = torch.as_tensor(
-            force, dtype=self._accum.dtype, device=self._accum.device,
+            force,
+            dtype=self._accum.dtype,
+            device=self._accum.device,
         )
         if f.shape != (3,):
             raise ValueError(f"force must be (3,), got {tuple(f.shape)}")
@@ -95,15 +205,22 @@ class ShellForceLedger:
 
     @property
     def mem_force(self) -> torch.Tensor:
-        """Time-averaged MEM force over the root step (leaf lattice units).
+        """Time-averaged MEM force over the window (leaf lattice units).
+
+        This is the instantaneous wall *rate* (momentum per leaf lattice
+        step), independent of the window length: the substep mean of the
+        (per-leaf weighted) link exchange.
 
         Raises:
-            RuntimeError: when fewer than ``2^d`` substeps were accumulated.
+            RuntimeError: when the accumulated substep count does not equal
+                ``host_substeps * 2^d`` (i.e. the ledger cadence frame does
+                not match the stepper's).
         """
         if self.substep_count != self.n_substeps:
             raise RuntimeError(
-                "MEM force requires exactly 2^d substep samples "
-                f"(d={self.d_max}): observed {self.substep_count}",
+                "MEM force requires exactly host_substeps*2^d substep samples "
+                f"(host_substeps={self.host_substeps}, d={self.d_max}): "
+                f"observed {self.substep_count}",
             )
         return self._accum / self.n_substeps
 
@@ -136,11 +253,14 @@ class ShellForceLedger:
         carries the wall force) back onto the L1 grid — counting their
         in-place momentum deltas as fluid momentum change double-counts the
         wall transfer and overestimates the CV drag.  The wall force itself
-        is re-added explicitly via ``wall_mom_l1`` (the per-root-step leaf
-        MEM force in L1 units, :meth:`wall_momentum_l1`), which is the
-        physical momentum the shell injects into the L1 balance::
+        is re-added explicitly via ``wall_mom_l1`` — pass the per-window
+        wall *impulse* in L1 units (:meth:`wall_impulse_l1`, which pairs
+        with the per-window import; under the full-coverage cadence this is
+        ``n_substeps * dt_leaf`` times the rate :meth:`wall_momentum_l1`),
+        which is the physical momentum the shell injects into the L1
+        balance::
 
-            F_cv = import - dP_L1advance + wall_mom_l1
+            F_cv = import - dP_L1advance + wall_impulse_l1
 
         ``wall_mom_l1`` defaults to ``None`` (legacy behaviour: no explicit
         wall term, ``f_new`` taken as-is).
@@ -153,12 +273,18 @@ class ShellForceLedger:
                 summed = summed + post
             f_post_collision = summed
         result = observe_control_volume_force(
-            f_old, f_new, f_post_collision, control_volume, solid=solid,
+            f_old,
+            f_new,
+            f_post_collision,
+            control_volume,
+            solid=solid,
         )
         force = result.force_on_body
         if wall_mom_l1 is not None:
             w = torch.as_tensor(
-                wall_mom_l1, dtype=self._accum.dtype, device=self._accum.device,
+                wall_mom_l1,
+                dtype=self._accum.dtype,
+                device=self._accum.device,
             )
             if w.shape != (3,):
                 raise ValueError(f"wall_mom_l1 must be (3,), got {tuple(w.shape)}")
@@ -170,19 +296,40 @@ class ShellForceLedger:
         return self.cv_force
 
     def wall_momentum_l1(self, dx_leaf: float, dt_leaf: float) -> torch.Tensor:
-        """Per-root-step leaf wall force converted to L1 lattice units.
+        """Wall force *rate* in L1 lattice units (per L1 lattice step).
 
-        This is the momentum the shell wall injects into the L1 control
-        volume per root step (``mem_force`` is the substep-averaged MEM
-        force; the convective conversion
-        :func:`convert_leaf_force_to_l1` maps it into L1 units with the
-        same dynamic-area normalisation the CV uses, so ``Cd_cv == Cd_mem``
-        when the two closures agree).  Requires exactly ``2^d`` substeps
-        (see :attr:`mem_force`).
+        ``convert_leaf_force_to_l1(mem_force, dx_leaf, dt_leaf)`` maps the
+        substep-averaged MEM rate into L1 units.  NOTE: this is a rate, not
+        an impulse — for the CV wall term (which lives on the per-root-step
+        impulse scale) use :meth:`wall_impulse_l1`.  The two coincide only
+        under the legacy under-covering cadence where the shell integrated
+        exactly one L1 dt per root step; under the full-coverage cadence
+        (``host_substeps=2``) the wall acts over ``n_substeps * dt_leaf``
+        of host time per window.
         """
         return convert_leaf_force_to_l1(
-            self.mem_force, dx_leaf, dt_leaf,
+            self.mem_force,
+            dx_leaf,
+            dt_leaf,
         )
+
+    def wall_impulse_l1(self, dx_leaf: float, dt_leaf: float) -> torch.Tensor:
+        """Per-window leaf wall **impulse** in L1 lattice units.
+
+        The momentum the shell wall injects into the L1 control volume over
+        the ledger window: ``wall_momentum_l1 * n_substeps * dt_leaf`` (the
+        rate times the host time the wall is actually active).  This is the
+        quantity that pairs with :meth:`observe_cv_force`'s streaming
+        import (a per-window impulse) in the CV momentum balance
+        ``F_cv = import - dP + wall_impulse_l1``, and with the ledger's own
+        accumulated impulse ``sum_substeps F_sub`` mapped by
+        ``dx_leaf^4 / dt_leaf`` per substep.
+        """
+        return convert_leaf_force_to_l1(
+            self.mem_force,
+            dx_leaf,
+            dt_leaf,
+        ) * (float(self.n_substeps) * float(dt_leaf))
 
     def deviation_pct(
         self,
@@ -191,17 +338,18 @@ class ShellForceLedger:
         dt_leaf: float,
         axis: int = 0,
     ) -> float | None:
-        """MEM vs CV deviation on the streamwise axis in a common frame."""
+        """MEM vs CV deviation on the streamwise axis in a common frame.
+
+        Compares the ledger's per-window impulse (``wall_impulse_l1``) with
+        the CV force (a per-window impulse), so the two closures must agree
+        whenever the shell cadence covers the full host window.
+        """
         if self.cv_force is None or self.substep_count != self.n_substeps:
             return None
-        mem_l1 = convert_leaf_force_to_l1(
-            self.mem_force, dx_leaf, dt_leaf,
-        )
+        mem_l1 = self.wall_impulse_l1(dx_leaf, dt_leaf)
         cv = self.cv_force
         return (
-            abs(float(mem_l1[axis]) - float(cv[axis]))
-            / max(abs(float(cv[axis])), 1.0e-30)
-            * 100.0
+            abs(float(mem_l1[axis]) - float(cv[axis])) / max(abs(float(cv[axis])), 1.0e-30) * 100.0
         )
 
     def reset(self) -> None:
@@ -216,9 +364,12 @@ def _cv_surface(cv: torch.Tensor) -> torch.Tensor:
     """Outer one-cell shell of a (box) control-volume mask."""
     interior = cv.clone()
     for shift in (
-        (1, 0, 0), (-1, 0, 0),
-        (0, 1, 0), (0, -1, 0),
-        (0, 0, 1), (0, 0, -1),
+        (1, 0, 0),
+        (-1, 0, 0),
+        (0, 1, 0),
+        (0, -1, 0),
+        (0, 0, 1),
+        (0, 0, -1),
     ):
         interior &= torch.roll(cv, shift, dims=(0, 1, 2))
     return cv & ~interior
@@ -286,7 +437,12 @@ def build_shell_control_volume(
         )
     cv = box_control_volume(
         (int(nz), int(ny), int(nx)),
-        x0=x0, x1=x1, y0=y0, y1=y1, z0=z0, z1=z1,
+        x0=x0,
+        x1=x1,
+        y0=y0,
+        y1=y1,
+        z0=z0,
+        z1=z1,
         device=device,
     )
     surface = _cv_surface(cv)
@@ -295,8 +451,7 @@ def build_shell_control_volume(
     covered_g[ghost:-ghost, ghost:-ghost, ghost:-ghost] = covered
     if bool((surface & covered_g).any()):
         raise ValueError(
-            "CV surface intersects the shell interface (fail-closed) — "
-            "increase --cv-margin",
+            "CV surface intersects the shell interface (fail-closed) — increase --cv-margin",
         )
     if bool((covered_g & ~cv).any()):
         raise ValueError(
@@ -329,5 +484,6 @@ __all__ = [
     "ShellForceLedger",
     "build_shell_control_volume",
     "convert_leaf_force_to_l1",
+    "leaf_spatial_force_factors",
     "substep_force_weights",
 ]

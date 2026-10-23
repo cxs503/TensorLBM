@@ -22,7 +22,8 @@ def _flat_boundary(shape=(5, 7, 9)):
     for direction in (4, 8, 9, 16, 18):  # c_y=-1, solid below fluid node
         mask[(direction,) + cell] = True
     nx = torch.zeros(shape)
-    ny = torch.zeros(shape); ny[cell] = 1.0  # outward into fluid
+    ny = torch.zeros(shape)
+    ny[cell] = 1.0  # outward into fluid
     nz = torch.zeros(shape)
     return mask, q, (nx, ny, nz), cell
 
@@ -77,11 +78,12 @@ def test_directional_wall_distance_matches_vectorized_reference(q_count: int) ->
     mask = torch.rand((q_count, *shape), generator=generator) > 0.72
     mask[0] = False
     q = 0.05 + 0.9 * torch.rand(
-        (q_count, *shape), generator=generator, dtype=torch.float64,
+        (q_count, *shape),
+        generator=generator,
+        dtype=torch.float64,
     )
     raw_normals = tuple(
-        torch.randn(shape, generator=generator, dtype=torch.float64)
-        for _ in range(3)
+        torch.randn(shape, generator=generator, dtype=torch.float64) for _ in range(3)
     )
     magnitude = torch.sqrt(sum(component.square() for component in raw_normals))
     normals = tuple(component / magnitude for component in raw_normals)
@@ -116,11 +118,14 @@ def test_exchange_velocity_samples_linear_field_at_requested_wall_distance() -> 
     z, y, x = torch.meshgrid(
         torch.arange(shape[0], dtype=torch.float64),
         torch.arange(shape[1], dtype=torch.float64),
-        torch.arange(shape[2], dtype=torch.float64), indexing="ij",
+        torch.arange(shape[2], dtype=torch.float64),
+        indexing="ij",
     )
     samples = sample_wall_exchange_velocity(
         (2.0 * y + x, torch.zeros_like(x), torch.zeros_like(x)),
-        mask, q.double(), tuple(component.double() for component in normals),
+        mask,
+        q.double(),
+        tuple(component.double() for component in normals),
         exchange_distance=2.0,
     )
     assert int(samples.boundary.sum().item()) == 1
@@ -135,7 +140,11 @@ def test_exchange_velocity_rejects_nonpositive_distance() -> None:
     zero = torch.zeros(q.shape[1:])
     with pytest.raises(ValueError, match="exchange_distance"):
         sample_wall_exchange_velocity(
-            (zero, zero, zero), mask, q, normals, exchange_distance=0.0,
+            (zero, zero, zero),
+            mask,
+            q,
+            normals,
+            exchange_distance=0.0,
         )
 
 
@@ -143,7 +152,11 @@ def test_exchange_velocity_excludes_points_outside_domain() -> None:
     mask, q, normals, _ = _flat_boundary()
     zero = torch.zeros(q.shape[1:])
     samples = sample_wall_exchange_velocity(
-        (zero, zero, zero), mask, q, normals, exchange_distance=20.0,
+        (zero, zero, zero),
+        mask,
+        q,
+        normals,
+        exchange_distance=20.0,
     )
     assert not bool(samples.boundary.any())
     assert samples.velocity_x.numel() == 0
@@ -156,8 +169,12 @@ def test_exchange_velocity_excludes_solid_contaminated_stencil() -> None:
     # y2=2 from a y1=.5 boundary node at y=3 samples y=4.5.
     fluid[cell[0], 5, cell[2]] = False
     samples = sample_wall_exchange_velocity(
-        (zero, zero, zero), mask, q, normals,
-        exchange_distance=2.0, fluid_mask=fluid,
+        (zero, zero, zero),
+        mask,
+        q,
+        normals,
+        exchange_distance=2.0,
+        fluid_mask=fluid,
     )
     assert not bool(samples.boundary.any())
     assert samples.velocity_x.numel() == 0
@@ -170,7 +187,12 @@ def test_zero_flow_is_unchanged_and_has_zero_shear() -> None:
     zero = torch.zeros(shape)
     f = equilibrium3d(rho, zero, zero, zero)
     out, diagnostics = apply_spalding_exchange_wall_model(
-        f, mask, q, normals, nu=0.01, exchange_distance=2.0,
+        f,
+        mask,
+        q,
+        normals,
+        nu=0.01,
+        exchange_distance=2.0,
     )
     assert torch.allclose(out, f, atol=1e-7, rtol=0.0)
     assert diagnostics.boundary_nodes == 1
@@ -185,7 +207,12 @@ def test_assimilation_preserves_boundary_density() -> None:
     zero = torch.zeros(shape)
     f = equilibrium3d(rho, ux, zero, zero)
     out, diagnostics = apply_spalding_exchange_wall_model(
-        f, mask, q, normals, nu=1e-4, exchange_distance=2.0,
+        f,
+        mask,
+        q,
+        normals,
+        nu=1e-4,
+        exchange_distance=2.0,
     )
     rho_out, ux_out, _, _ = macroscopic3d(out)
     assert rho_out[cell].item() == pytest.approx(1.0, abs=2e-7)

@@ -1,0 +1,2 @@
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/t0_fixture.json
+GATES: {'g_f1_e3_locked_example': True, 'g_f1_e3_w9b_form': True, 'g_f1_e3_limits': True, 'g_f2_stencils': True, 'g_f3_bitwise': True, 'g_f4_chemforce': True, 'g_f5_pressure_algebra': True, 'g_f6_3d_plain': True, 'g_f7_3d_pform': True}

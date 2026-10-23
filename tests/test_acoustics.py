@@ -1,4 +1,5 @@
 """Tests for tensorlbm.acoustics – FWH aeroacoustic analogy."""
+
 from __future__ import annotations
 
 import math
@@ -8,6 +9,7 @@ import torch
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_surface(N: int = 8, T: int = 100, freq_hz: float = 500.0, dt: float = 1e-4):
     """Create a synthetic FWHSurface with a sinusoidal pressure signal."""
@@ -41,6 +43,7 @@ def _make_surface(N: int = 8, T: int = 100, freq_hz: float = 500.0, dt: float = 
 # AcousticObserver
 # ---------------------------------------------------------------------------
 
+
 def test_acoustic_observer_defaults():
     from tensorlbm.acoustics import AcousticObserver
 
@@ -60,6 +63,7 @@ def test_acoustic_observer_label():
 # FWHSurface
 # ---------------------------------------------------------------------------
 
+
 def test_fwh_surface_creation():
     surf = _make_surface(N=4, T=50)
     assert surf.pressure.shape == (4, 50)
@@ -71,6 +75,7 @@ def test_fwh_surface_creation():
 # ---------------------------------------------------------------------------
 # compute_fwh_far_field
 # ---------------------------------------------------------------------------
+
 
 def test_compute_fwh_far_field_shape():
     from tensorlbm.acoustics import AcousticObserver, compute_fwh_far_field
@@ -120,7 +125,10 @@ def test_compute_fwh_far_field_is_causal_for_delayed_source():
     surface = FWHSurface(
         positions=torch.tensor([[0.0, 0.0, 0.0]]),
         normals=torch.tensor([[1.0, 0.0, 0.0]]),
-        areas=torch.tensor([1.0]), pressure=pressure, dt=1.0, c0=1.0,
+        areas=torch.tensor([1.0]),
+        pressure=pressure,
+        dt=1.0,
+        c0=1.0,
     )
     p_prime, _ = compute_fwh_far_field(surface, [AcousticObserver(x=10.0, y=0.0)])
     assert torch.count_nonzero(p_prime[:, :10]).item() == 0
@@ -139,6 +147,7 @@ def test_compute_fwh_far_field_preserves_input_dtype():
 # ---------------------------------------------------------------------------
 # compute_spl_spectrum
 # ---------------------------------------------------------------------------
+
 
 def test_compute_spl_spectrum_shape():
     from tensorlbm.acoustics import compute_spl_spectrum
@@ -178,6 +187,7 @@ def test_spl_values_finite():
 # OASPL
 # ---------------------------------------------------------------------------
 
+
 def test_oaspl_returns_list():
     from tensorlbm.acoustics import oaspl
 
@@ -209,23 +219,20 @@ def test_oaspl_louder_signal_higher_spl():
 # extract_surface_pressure
 # ---------------------------------------------------------------------------
 
+
 def test_extract_surface_pressure_2d():
     from tensorlbm.acoustics import extract_surface_pressure
 
     T, ny, nx = 20, 16, 16
     rho_history = torch.ones(T, ny, nx)
     # Add a simple fluctuation to one row
-    rho_history[:, 5, :] = 1.0 + 0.01 * torch.sin(
-        torch.linspace(0, 2 * math.pi, T)
-    ).unsqueeze(-1)
+    rho_history[:, 5, :] = 1.0 + 0.01 * torch.sin(torch.linspace(0, 2 * math.pi, T)).unsqueeze(-1)
 
     surface_indices = torch.tensor([[5, 4], [5, 8], [5, 12]], dtype=torch.long)
     normals = torch.zeros(3, 3)
     normals[:, 1] = 1.0  # +y normal
     areas = torch.ones(3) * 1.0
-    surf = extract_surface_pressure(
-        rho_history, surface_indices, normals, areas, dt=1e-4
-    )
+    surf = extract_surface_pressure(rho_history, surface_indices, normals, areas, dt=1e-4)
     assert surf.pressure.shape == (3, T)
     # Mean of pressure fluctuations should be ~0
     assert surf.pressure.mean().abs().item() < 1e-6
@@ -234,6 +241,7 @@ def test_extract_surface_pressure_2d():
 # ---------------------------------------------------------------------------
 # compute_fwh_result convenience wrapper
 # ---------------------------------------------------------------------------
+
 
 def test_compute_fwh_result_fields():
     from tensorlbm.acoustics import AcousticObserver, FWHResult, compute_fwh_result

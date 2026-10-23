@@ -1,0 +1,32 @@
+{
+  "cases": [
+    {
+      "file": "fixed-link-n32.json",
+      "sha256": "a81c63b89a5e0fd936df9761a37aafc06bbbd89c74da3a9a10e4d9f0895afaa1",
+      "gates": {
+        "mass": true,
+        "momentum": true,
+        "excluded_interior": true
+      },
+      "max_mass_error": 4.773959005888173e-15,
+      "max_momentum_error": 3.774258683364451e-12
+    },
+    {
+      "file": "fixed-link-n64.json",
+      "sha256": "72cd9be5a49110f2cd1363108d8c54890fe2c6df1b1ee9a49761b9f4b66699d1",
+      "gates": {
+        "mass": true,
+        "momentum": true,
+        "excluded_interior": true
+      },
+      "max_mass_error": 2.0539125955565396e-14,
+      "max_momentum_error": 1.5696444144452926e-11
+    }
+  ],
+  "source_sha256": {
+    "examples/perimeter_boundary/fixed_link.py": "56ef30625678e897a93b088807f18299d4040d134f74c414699155d94a0b0e1d",
+    "src/tensorlbm/fixed_disk_boundary_2d.py": "d788d50f874bd7cc10f93378ec027c61d43bcd10d1bfffbbff35ab3e25987c07",
+    "src/tensorlbm/solver.py": "6cef9523e393f4d584ef01620074c945fc94e44521884ff308ce25b7b59c39b3",
+    "src/tensorlbm/d2q9.py": "1065c3093e07dfa186d729412c4081c7e4ba0925db223e8083ff007d457adf4d"
+  }
+}

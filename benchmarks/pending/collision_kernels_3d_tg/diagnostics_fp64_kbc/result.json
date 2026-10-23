@@ -1,0 +1,83 @@
+{
+  "benchmark": "kernel_coverage_taylor_green_3d",
+  "kernels": {
+    "kbc_d3q19": {
+      "lattice": "d3q19",
+      "module": "tensorlbm.entropic_kbc.collide_kbc_d3q19",
+      "params": "tau; max_iter=28, tol=1e-8 (defaults)",
+      "cases": [
+        {
+          "kernel": "kbc_d3q19",
+          "lattice": "d3q19",
+          "n": 64,
+          "re": 24.0,
+          "u0": 0.05,
+          "nu": 0.13333333333333333,
+          "tau": 0.9,
+          "k": 0.09817477042468103,
+          "re_eff": 3.8197186342054885,
+          "steps": 2000,
+          "record_every": 50,
+          "dtype": "float64",
+          "device": "cuda:5",
+          "finite": true,
+          "gamma_e_theory": 0.007710628438351061,
+          "gamma_e_sim": 0.008232673926042775,
+          "err_e_pct": 6.77046614119244,
+          "gamma_vel_theory": 0.0038553142191755305,
+          "gamma_vel_sim": 0.0041163369630213865,
+          "err_vel_pct": 6.770466141192416,
+          "gamma_task_formula_2d": 0.0025702094794503535,
+          "err_vs_task_formula_pct": 220.31139842357734,
+          "r2": 0.9756525417761073,
+          "gamma_e_half1": 0.009668146639887007,
+          "gamma_e_half2": 0.005436566648389943,
+          "e0_theory": 0.00031250000000000006,
+          "e0_meas": 0.00031250000000000006,
+          "ez0_meas": 0.0,
+          "ez_max": 2.608794726983807e-07,
+          "w_max": 0.002054263027606638,
+          "mass_drift_rel": -1.232347557333924e-13,
+          "n_samples": 40,
+          "wall_sec": 25.790443897247314
+        }
+      ],
+      "case_files": [
+        "case_kbc_d3q19_N64.json"
+      ],
+      "convergence": {
+        "kernel": "kbc_d3q19",
+        "grids": [
+          64
+        ],
+        "dropped_nonfinite": [],
+        "err_e_pct_per_grid": {
+          "64": 6.77046614119244
+        },
+        "err_vel_pct_per_grid": {
+          "64": 6.770466141192416
+        },
+        "r2_per_grid": {
+          "64": 0.9756525417761073
+        },
+        "converged_monotone": true,
+        "within_tol": false,
+        "within_tol_vel": false,
+        "exponential_r2_ok": false,
+        "tol_pct": 3.0,
+        "verified": false,
+        "judgment": "FAIL: see per-tier err_e_pct / monotonicity / R^2"
+      }
+    }
+  },
+  "env": {
+    "timestamp_utc": "2026-09-21T06:57:01.313947+00:00",
+    "tensorlbm_path": "/nfs/wangxi/worktrees/bm_w5/src/tensorlbm/__init__.py",
+    "worktree_commit": "cf5709db3c2bba273c64807e721071de110627d1",
+    "torch_version": "2.11.0+cu128",
+    "cuda_device": "NVIDIA GeForce RTX 5090",
+    "matmul_allow_tf32": false,
+    "cudnn_allow_tf32": true
+  },
+  "protocol": "3D Taylor-Green decay, periodic N^3, u0=0.05, Re=24 (tau=0.5+3*nu per tier), gamma_E_theory = 6*nu*k^2 with nu=u0*N/Re, k=2*pi/N; LSQ fit of ln E over recorded samples; verdict: |err_E|<=3% all tiers AND strictly decreasing AND R^2>=0.999 AND err_vel<=3% (precedent taylor_green_3d semantics)"
+}

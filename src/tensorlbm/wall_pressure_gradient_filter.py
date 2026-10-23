@@ -127,13 +127,9 @@ class WallPressureGradientFilter:
                 "time_constant_steps": self.time_constant_steps,
             },
             "state_initialized": initialized,
-            "mean": (
-                self._mean.detach().to(device="cpu").clone()
-                if initialized else None
-            ),
+            "mean": (self._mean.detach().to(device="cpu").clone() if initialized else None),
             "initialized": (
-                self._initialized.detach().to(device="cpu").clone()
-                if initialized else None
+                self._initialized.detach().to(device="cpu").clone() if initialized else None
             ),
         }
 
@@ -160,7 +156,8 @@ class WallPressureGradientFilter:
         mean = state.get("mean")
         initialized = state.get("initialized")
         if not isinstance(mean, torch.Tensor) or not isinstance(
-            initialized, torch.Tensor,
+            initialized,
+            torch.Tensor,
         ):
             raise ValueError("initialised filter checkpoint lacks tensors")
         if not mean.is_floating_point() or mean.ndim < 1 or mean.shape[-1] != 3:

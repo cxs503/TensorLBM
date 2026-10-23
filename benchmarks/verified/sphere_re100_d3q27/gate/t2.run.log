@@ -1,0 +1,14 @@
+step 2000/24000 (786s, 393 ms/step)
+step 4000/24000 (1572s, 393 ms/step)
+step 6000/24000 (2358s, 393 ms/step)
+step 8000/24000 (3145s, 393 ms/step)
+step 10000/24000 (3931s, 393 ms/step)
+step 12000/24000 (4718s, 393 ms/step)
+step 14000/24000 (5504s, 393 ms/step)
+step 16000/24000 (6290s, 393 ms/step)
+step 18000/24000 (7077s, 393 ms/step)
+step 20000/24000 (7864s, 393 ms/step)
+step 22000/24000 (8652s, 393 ms/step)
+step 24000/24000 (9440s, 393 ms/step)
+written gate/t2_D60_27.json
+last-8 cd mean: 1.1197244153259314

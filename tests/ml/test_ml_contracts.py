@@ -1,8 +1,8 @@
 """Tests for framework-neutral, evidence-gated ML task contracts."""
 
 import ast
-from dataclasses import FrozenInstanceError
 import json
+from dataclasses import FrozenInstanceError
 from pathlib import Path
 from types import MappingProxyType
 

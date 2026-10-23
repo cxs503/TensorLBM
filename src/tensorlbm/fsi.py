@@ -19,7 +19,6 @@ from typing import Literal
 
 import torch
 
-
 # ---------------------------------------------------------------------------
 # Data containers
 # ---------------------------------------------------------------------------
@@ -103,7 +102,6 @@ def extract_fsi_loads(
     induced normal force and a proxy shear force (velocity gradient × μ).
     """
     ny, nx = rho.shape
-    device = rho.device
 
     # Surface cells: solid nodes that have at least one fluid neighbour
     pad_mask = torch.nn.functional.pad(
@@ -143,7 +141,7 @@ def extract_fsi_loads(
 
     # Centroid of surface
     cx = surf_x.float().mean() * dx_phys
-    cy = surf_y.float().mean() * dx_phys
+    surf_y.float().mean() * dx_phys
 
     # Integrate (dA = dx_phys² per cell)
     dA = dx_phys**2
@@ -204,21 +202,19 @@ def compute_structural_response(
         "one_way" or "two_way" (simplified iterative).
     """
     E = props.youngs_modulus
-    nu = props.poisson_ratio
     rho_s = props.density
     L = props.length
     b = props.width
     h = props.thickness
-    zeta = props.damping_ratio
 
     # Beam second moment of area  I = b*h³/12
-    I = b * h**3 / 12.0
+    I_beam = b * h**3 / 12.0
 
     # Cantilever natural frequency: fn = (β_n L)² / (2π L²) * sqrt(EI / (ρA))
     # First mode: (βL)² ≈ 3.5160
     beta_L_sq = 3.5160
     A_cross = b * h
-    fn = (beta_L_sq / (2 * math.pi * L**2)) * math.sqrt(E * I / (rho_s * A_cross))
+    fn = (beta_L_sq / (2 * math.pi * L**2)) * math.sqrt(E * I_beam / (rho_s * A_cross))
 
     # Reduced velocity
     Vr = flow_speed / (fn * characteristic_length) if fn > 0 else 0.0
@@ -231,13 +227,13 @@ def compute_structural_response(
 
     def _deflection(F: float) -> float:
         """Cantilever tip deflection δ = F L³ / (3 E I)."""
-        return F * L**3 / (3.0 * E * I) if (E * I) > 0 else 0.0
+        return F * L**3 / (3.0 * E * I_beam) if (E * I_beam) > 0 else 0.0
 
     def _bending_stress(F: float) -> float:
         """Max bending stress at root: σ = M c / I, M = F L, c = h/2."""
         M = F * L
         c = h / 2.0
-        return M * c / I if I > 0 else 0.0
+        return M * c / I_beam if I_beam > 0 else 0.0
 
     iterations = 1
     residual = 0.0

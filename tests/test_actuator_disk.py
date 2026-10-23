@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import torch
+
 from tensorlbm.actuator_disk import (
     ActuatorDiskConfig,
     apply_actuator_disk,
     run_actuator_disk_benchmark,
 )
-from pathlib import Path
 
 
 def test_actuator_disk_config() -> None:

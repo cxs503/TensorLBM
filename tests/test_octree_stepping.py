@@ -12,6 +12,7 @@ Covers the four P2 acceptance items:
   ``StaticBlockAMR3D`` link by link (per-direction link counts, per-direction
   fine transfers, reflux ledger fields and final states).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -85,8 +86,12 @@ def _make_advance(shape: tuple[int, int, int], *, shell_collide_only: bool):
 
 def _sphere_shell(**kw):
     params = dict(
-        shape=(32, 32, 32), center=(16, 16, 16), radius=7,
-        bl_thickness_cells=3, d_max=1, device="cpu",
+        shape=(32, 32, 32),
+        center=(16, 16, 16),
+        radius=7,
+        bl_thickness_cells=3,
+        d_max=1,
+        device="cpu",
     )
     params.update(kw)
     return build_octree_shell(**params)
@@ -106,9 +111,7 @@ def _leaf_centers64(grid) -> torch.Tensor:
         coords = torch.cat((grid._l1_coords, grid._l2_coords), dim=0)
     else:
         coords = grid._l1_coords
-    return (coords.to(torch.float64) + 0.5) / (
-        2.0 ** grid.leaf_level.to(torch.float64)
-    )[:, None]
+    return (coords.to(torch.float64) + 0.5) / (2.0 ** grid.leaf_level.to(torch.float64))[:, None]
 
 
 def _pulse_equilibrium(
@@ -127,14 +130,13 @@ def _pulse_equilibrium(
         torch.arange(nx, dtype=torch.float64),
         indexing="ij",
     )
-    r2 = (
-        (xx - pulse_center[0]) ** 2
-        + (yy - pulse_center[1]) ** 2
-        + (zz - pulse_center[2]) ** 2
-    )
+    r2 = (xx - pulse_center[0]) ** 2 + (yy - pulse_center[1]) ** 2 + (zz - pulse_center[2]) ** 2
     rho = rho0 + amp * torch.exp(-r2 / (2.0 * sigma * sigma))
     return equilibrium3d(
-        rho, torch.full_like(rho, ux0), torch.zeros_like(rho), torch.zeros_like(rho),
+        rho,
+        torch.full_like(rho, ux0),
+        torch.zeros_like(rho),
+        torch.zeros_like(rho),
     )
 
 
@@ -182,12 +184,15 @@ def test_substep_scheduling_per_root_step() -> None:
         post = collide_bgk3d(l1, TAU_C)
         l1_new = stream3d(post)
         step_octree_shell(
-            grid, advance, l1.clone(), l1_new,
-            tau_coarse=TAU_C, l1_post=post, shell_level=1,
+            grid,
+            advance,
+            l1.clone(),
+            l1_new,
+            tau_coarse=TAU_C,
+            l1_post=post,
+            shell_level=1,
         )
-        assert [(level, s) for level, s, _ in calls] == [
-            (1, s) for s in range(expected)
-        ]
+        assert [(level, s) for level, s, _ in calls] == [(1, s) for s in range(expected)]
         assert all(abs(tau - TAU_F) < 1e-12 for _, _, tau in calls)
         assert bool(torch.isfinite(grid.f_leaf).all())
         assert bool(torch.isfinite(l1_new).all())
@@ -210,8 +215,14 @@ def test_substep_scheduling_two_root_steps() -> None:
         post = collide_bgk3d(l1, TAU_C)
         l1_new = stream3d(post)
         step_octree_shell(
-            grid, advance, l1.clone(), l1_new,
-            tau_coarse=TAU_C, l1_post=post, shell_level=1, ghost_plan=plan,
+            grid,
+            advance,
+            l1.clone(),
+            l1_new,
+            tau_coarse=TAU_C,
+            l1_post=post,
+            shell_level=1,
+            ghost_plan=plan,
         )
         l1 = l1_new
     assert calls == [0, 1, 0, 1]
@@ -238,8 +249,14 @@ def test_mass_conservation_uniform_free_stream() -> None:
         post = collide_bgk3d(l1, TAU_C)
         l1_new = stream3d(post)
         ledger = step_octree_shell(
-            grid, advance, l1_old, l1_new,
-            tau_coarse=TAU_C, l1_post=post, shell_level=1, ghost_plan=plan,
+            grid,
+            advance,
+            l1_old,
+            l1_new,
+            tau_coarse=TAU_C,
+            l1_post=post,
+            shell_level=1,
+            ghost_plan=plan,
         )
         worst_residual = max(worst_residual, abs(ledger.mass_residual))
         l1 = l1_new
@@ -263,7 +280,9 @@ def test_reflux_residual_smooth_pulse() -> None:
     grid = _sphere_shell()
     pulse_center = (25.0, 16.0, 16.0)  # inside the shell band on the +x side
     l1 = _pulse_equilibrium(
-        grid.meta["shape"], (16.0, 16.0, 16.0), pulse_center,
+        grid.meta["shape"],
+        (16.0, 16.0, 16.0),
+        pulse_center,
     )
     grid.f_leaf = _pulse_leaf(grid, pulse_center)
     plan = build_ghost_plan(grid, grid.meta["shape"])
@@ -278,8 +297,14 @@ def test_reflux_residual_smooth_pulse() -> None:
         post = collide_bgk3d(l1, TAU_C)
         l1_new = stream3d(post)
         ledger = step_octree_shell(
-            grid, advance, l1_old, l1_new,
-            tau_coarse=TAU_C, l1_post=post, shell_level=1, ghost_plan=plan,
+            grid,
+            advance,
+            l1_old,
+            l1_new,
+            tau_coarse=TAU_C,
+            l1_post=post,
+            shell_level=1,
+            ghost_plan=plan,
         )
         residual_sum += ledger.mass_residual
         worst = max(worst, abs(ledger.mass_residual))
@@ -310,34 +335,37 @@ def _run_block_step_captured(solver: StaticBlockAMR3D):
     coarse_old = solver.coarse_f.clone()
     coarse_new, coarse_post = solver._unpack_advance(
         advance(solver.coarse_f, tau_c, 0, -1),
-        solver.coarse_f.shape, require_flux_state=True,
+        solver.coarse_f.shape,
+        require_flux_state=True,
     )
     solver.coarse_f = coarse_new
     coarse_transfer = observe_kinetic_interface_transfer(
-        coarse_post, solver.coarse_interface_links,
+        coarse_post,
+        solver.coarse_interface_links,
     )
     fine_transfer = None
     for substep in range(config.ratio):
         alpha = substep / config.ratio
         solver._fill_ghost(
             torch.lerp(coarse_old, solver.coarse_f, alpha),
-            tau_source=tau_c, tau_target=tau_f,
+            tau_source=tau_c,
+            tau_target=tau_f,
         )
         fine_new, fine_post = solver._unpack_advance(
             advance(solver.fine_f, tau_f, 1, substep),
-            solver.fine_f.shape, require_flux_state=True,
+            solver.fine_f.shape,
+            require_flux_state=True,
         )
         observed = observe_kinetic_interface_transfer(
-            fine_post, solver.fine_interface_links,
+            fine_post,
+            solver.fine_interface_links,
             cell_volume=1.0 / config.ratio**3,
         )
-        fine_transfer = (
-            observed if fine_transfer is None else fine_transfer + observed
-        )
+        fine_transfer = observed if fine_transfer is None else fine_transfer + observed
         solver.fine_f = fine_new
     restricted = solver._restrict_physical(tau_source=tau_f, tau_target=tau_c)
     box = config.box
-    solver.coarse_f[:, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1] = restricted
+    solver.coarse_f[:, box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1] = restricted
     solver.coarse_f, report = apply_face_local_reflux(
         solver.coarse_f,
         solver.coarse_interface_links,
@@ -353,7 +381,10 @@ def _run_block_step_captured(solver: StaticBlockAMR3D):
         report.residual,
         report.limited_directions,
         report.raw_kinetic_mismatch,
-        0.0, 1.0, 0.0, 1.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
         report.maximum_applied_correction_fraction,
     )
     return coarse_transfer, fine_transfer, ledger
@@ -387,9 +418,14 @@ def test_plane_shell_matches_static_block_amr() -> None:
     l1_post = collide_bgk3d(l1, TAU_C)
     l1_new = stream3d(l1_post)
     shell_ledger = step_octree_shell(
-        shell, _make_advance(shape, shell_collide_only=True),
-        l1, l1_new,
-        tau_coarse=TAU_C, l1_post=l1_post, shell_level=1, ghost_plan=plan,
+        shell,
+        _make_advance(shape, shell_collide_only=True),
+        l1,
+        l1_new,
+        tau_coarse=TAU_C,
+        l1_post=l1_post,
+        shell_level=1,
+        ghost_plan=plan,
     )
     shell_fine_transfer = shell.meta["last_fine_transfer"]
 
@@ -410,16 +446,23 @@ def test_plane_shell_matches_static_block_amr() -> None:
 
     # ---- per-direction fine transfers --------------------------------------
     torch.testing.assert_close(
-        shell_fine_transfer.outgoing, ft_cap.outgoing, rtol=1e-12, atol=1e-12,
+        shell_fine_transfer.outgoing,
+        ft_cap.outgoing,
+        rtol=1e-12,
+        atol=1e-12,
     )
     torch.testing.assert_close(
-        shell_fine_transfer.incoming, ft_cap.incoming, rtol=1e-12, atol=1e-12,
+        shell_fine_transfer.incoming,
+        ft_cap.incoming,
+        rtol=1e-12,
+        atol=1e-12,
     )
     # coarse transfers come from identical inputs/links by construction
     torch.testing.assert_close(
         shell.meta["last_fine_transfer"].net_outgoing,
         (ft_cap.net_outgoing),
-        rtol=1e-12, atol=1e-12,
+        rtol=1e-12,
+        atol=1e-12,
     )
 
     # ---- reflux ledger, field by field -------------------------------------
@@ -430,8 +473,10 @@ def test_plane_shell_matches_static_block_amr() -> None:
         "residual",
     ):
         torch.testing.assert_close(
-            getattr(shell_ledger, attr), getattr(ref_ledger, attr),
-            rtol=1e-10, atol=1e-12,
+            getattr(shell_ledger, attr),
+            getattr(ref_ledger, attr),
+            rtol=1e-10,
+            atol=1e-12,
         )
     assert shell_ledger.shell_cells == ref_ledger.shell_cells
     assert shell_ledger.limited_directions == ref_ledger.limited_directions
@@ -443,10 +488,12 @@ def test_plane_shell_matches_static_block_amr() -> None:
     torch.testing.assert_close(
         shell.f_leaf,
         ref.fine_physical.reshape(Q, -1)[:, leaf_fine],
-        rtol=0.0, atol=1e-10,
+        rtol=0.0,
+        atol=1e-10,
     )
 
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(pytest.main([__file__, "-v"]))

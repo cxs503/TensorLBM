@@ -1,0 +1,50 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+{
+  "grid": "bot400",
+  "wall": "bottom",
+  "outlet": "zouhe",
+  "nx": 440,
+  "ny": 700,
+  "U": 0.05,
+  "nu": 0.01,
+  "tau": 0.53,
+  "Rex": 900.0,
+  "scale": 6.0,
+  "steps": 20000,
+  "elapsed_s": 461.0,
+  "umax_drift": 3.218697768527817e-05,
+  "mass_drift_pct": 0.0005478895548001669,
+  "finite": true,
+  "Cf_ref": 0.022133333333333335,
+  "fpp0": 0.3320573362152722,
+  "delta_star_ref": 10.324800000000002,
+  "theta_ref": 3.9840000000000004,
+  "upper": {
+    "label": "main",
+    "l2": 0.20385262424482106,
+    "max_rel_pct": 26.340563616227026,
+    "Cf_2nd": 0.03839877876453101,
+    "Cf_1st": 0.025860458612442017,
+    "Cf_err_2nd_pct": 73.48845827348347,
+    "Cf_err_1st_pct": 16.839418411254883,
+    "delta_star": -0.3364708423614502,
+    "delta_star_ref": 10.324800000000002,
+    "u1_over_U": 0.03232557326555252
+  },
+  "u_edge_over_U": 1.0005009174346924
+}

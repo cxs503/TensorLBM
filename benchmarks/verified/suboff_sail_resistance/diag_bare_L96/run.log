@@ -1,0 +1,42 @@
+=== BARE TIER L96 start 2026-10-08T18:50:32+08:00
+=== SUBOFF bare_hull Re=1000 L=96 collision=mrt steps=14400 device=cuda:6 ===
+
+setup: {
+ "Re": 1000.0,
+ "tau": 0.5144,
+ "u_lb": 0.05,
+ "nu_lb": 0.0048000000000000004,
+ "domain_lu": [
+  576,
+  203,
+  203
+ ],
+ "obstacle_cells": 7344,
+ "near_wall_cells": 2680,
+ "total_cells": 23736384,
+ "device": "cuda:6",
+ "auto_collision": "mrt",
+ "auto_wall_treatment": "bounce_back"
+}
+appendage stats: {"hull_type": "bare_hull", "label": "SUBOFF Bare Hull (AFF-1 inspired)", "L_D_ratio": 8.575, "r_over_l": 0.05831, "bow_fraction": 0.233, "stern_fraction": 0.252, "displacement_lu3": 7484.24, "wetted_area_lu2": 2908.4, "wetted_area_scope": "bare_hull_surface_of_revolution", "wetted_area_method": "profile_meridional_metric_quadrature", "bare_hull_wetted_area_lu2": 2908.4, "prismatic_coefficient": 0.7919, "sail_scale": 1.0, "fin_scale": 1.0, "solid_cells": 7344, "bare_hull_solid_cells": 7344, "appendage_solid_cells": 0, "fluid_cells": 23729040, "total_cells": 23736384, "nx": 576, "ny": 203, "nz": 203, "cx": 144.0, "cy": 101.5, "cz": 101.5, "length": 96.0, "radius": 5.597796143250689}
+appendage near cells (gradient normals): 0
+[compile_route] suboff_bare_hull[L96]: mode=None -> eager (compile_step passthrough)
+run finished: completed in 1366s (94.9 ms/step) compile_mode=None effective='eager' status='eager'
+{
+ "Cd_pressure": 0.005433196994680147,
+ "Cd_friction": 0.036677020526379625,
+ "Cd_total": 0.04211021752105977,
+ "Cd_total_last500": 0.04209585754887231,
+ "Cf_ref_blasius": 0.04199504732703608,
+ "error_pct_vs_Blasius_totalwetted": 0.2742470871072101,
+ "drag_increment_ratio_vs_verified_bare": 1.0143788855817537,
+ "convergence_windows": {
+  "25%": 0.052212,
+  "50%": 0.047195,
+  "75%": 0.042864,
+  "100%": 0.04211
+ }
+}
+results written to diag_bare_L96/result_L96.json
+RESULT bare_hull L=96 Cd_p=0.005433 Cd_f=0.036677 Cd_tot=0.042110 (ref 0.041995) err=+0.27%
+=== BARE TIER L96 exit 0 2026-10-08T19:13:46+08:00

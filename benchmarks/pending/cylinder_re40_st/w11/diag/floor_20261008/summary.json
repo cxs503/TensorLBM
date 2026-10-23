@@ -1,0 +1,89 @@
+{
+  "diagnostic_only": true,
+  "date": "2026-10-08",
+  "question": "decompose the +5.4-5.9% systematic Cd floor vs Fornberg (D40, Re=40, tau=0.6500216597361282, mask n_solid=1257 R_area=20.002887964817102 IDENTICAL in all runs)",
+  "single_variable_ladder": [
+    {
+      "run": "formal_re40_D40 (BASELINE)",
+      "up_d": 10.0,
+      "lx_d": 40.0,
+      "h_d": 20.0,
+      "cd": 1.5852098888020207,
+      "err_pct": 5.821754926703648,
+      "delta_vs_baseline_pp": 0.0
+    },
+    {
+      "run": "E-B_up20_lx50_h20",
+      "up_d": 20.0,
+      "lx_d": 50.0,
+      "h_d": 20.0,
+      "cd": 1.5427210274817453,
+      "err_pct": 2.9853823419055736,
+      "delta_vs_baseline_pp": -2.8363725847980747
+    },
+    {
+      "run": "E-A_up20_lx60_h20",
+      "up_d": 20.0,
+      "lx_d": 60.0,
+      "h_d": 20.0,
+      "cd": 1.5435162658547352,
+      "err_pct": 3.038469015669909,
+      "delta_vs_baseline_pp": -2.7832859110337393
+    },
+    {
+      "run": "E-C_up10_lx40_h40",
+      "up_d": 10.0,
+      "lx_d": 40.0,
+      "h_d": 40.0,
+      "cd": 1.5839477439189122,
+      "err_pct": 5.737499594052897,
+      "delta_vs_baseline_pp": -0.08425533265075114
+    },
+    {
+      "run": "E-D_up40_lx70_h20",
+      "up_d": 40.0,
+      "lx_d": 70.0,
+      "h_d": 20.0,
+      "cd": 1.5314928033831259,
+      "err_pct": 2.2358346717707533,
+      "delta_vs_baseline_pp": -3.585920254932895
+    }
+  ],
+  "upstream_convergence_h20_down30": [
+    {
+      "run": "formal_re40_D40 (BASELINE)",
+      "up_d": 10.0,
+      "lx_d": 40.0,
+      "h_d": 20.0,
+      "cd": 1.5852098888020207,
+      "err_pct": 5.821754926703648,
+      "delta_vs_baseline_pp": 0.0
+    },
+    {
+      "run": "E-B_up20_lx50_h20",
+      "up_d": 20.0,
+      "lx_d": 50.0,
+      "h_d": 20.0,
+      "cd": 1.5427210274817453,
+      "err_pct": 2.9853823419055736,
+      "delta_vs_baseline_pp": -2.8363725847980747
+    },
+    {
+      "run": "E-D_up40_lx70_h20",
+      "up_d": 40.0,
+      "lx_d": 70.0,
+      "h_d": 20.0,
+      "cd": 1.5314928033831259,
+      "err_pct": 2.2358346717707533,
+      "delta_vs_baseline_pp": -3.585920254932895
+    }
+  ],
+  "decomposition_pp_at_D40": {
+    "baseline_err": 5.821754926703648,
+    "upstream_10D_to_20D_E-B": "2.9854 - 5.8218 = -2.8365 pp",
+    "downstream_30D_to_40D_E-A_minus_E-B": "3.0385 - 2.9854 = +0.0531 pp (nil)",
+    "lateral_20D_to_40D_E-C": "5.7375 - 5.8218 = -0.0843 pp (nil)",
+    "note": "streamwise effect is ~entirely the upstream Dirichlet free-stream inlet"
+  },
+  "verdict_impact": "none: formal/ untouched, gates unchanged, honest FAIL stands"
+}

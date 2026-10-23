@@ -8,18 +8,15 @@ the production window adapter.  The output is an unvalidated diagnostic only.
 
 from __future__ import annotations
 
-from hashlib import sha256
 import json
+from hashlib import sha256
 from math import sqrt
 from typing import Any, cast
-
-import torch
 
 from .full_wet import D3Q19PopulationSnapshot, FullyWettedFlowConfig, run_fully_wetted_flow
 from .marine_geometry import GeometryAsset
 from .suboff_full_wet_production_window import run_suboff_full_wet_production_window
 from .suboff_real_state_force import SuboffRealStateForceConfig
-
 
 _SCHEMA = "suboff-full-wet-force-window-campaign-r1"
 _POPULATION_SOURCE = "full_wet_opt_in_production_snapshot"

@@ -6,6 +6,7 @@ links by exact Moller-Trumbore segment/triangle intersections, using a simple
 integer-cell spatial index to avoid testing every CAD triangle against every
 boundary link.
 """
+
 from __future__ import annotations
 
 import math
@@ -70,9 +71,14 @@ def _segment_triangle_q(
     tvec = origin - triangles[:, 0]
     u = np.einsum("ij,ij->i", tvec, pvec) * inverse
     qvec = np.cross(tvec, edge1)
-    v = np.einsum(
-        "ij,ij->i", np.broadcast_to(direction, qvec.shape), qvec,
-    ) * inverse
+    v = (
+        np.einsum(
+            "ij,ij->i",
+            np.broadcast_to(direction, qvec.shape),
+            qvec,
+        )
+        * inverse
+    )
     fraction = np.einsum("ij,ij->i", edge2, qvec) * inverse
     valid = (
         nonparallel
@@ -120,9 +126,11 @@ def refine_bfl_q_with_triangles(
     ):
         raise ValueError("target_solid must be a matching 3-D bool tensor")
     if (
-        vertices.ndim != 2 or vertices.shape[1] != 3
+        vertices.ndim != 2
+        or vertices.shape[1] != 3
         or not vertices.is_floating_point()
-        or faces.ndim != 2 or faces.shape[1] != 3
+        or faces.ndim != 2
+        or faces.shape[1] != 3
         or faces.dtype not in {torch.int32, torch.int64}
     ):
         raise ValueError("vertices/faces must have shapes (N,3)/(M,3)")
@@ -143,9 +151,7 @@ def refine_bfl_q_with_triangles(
     resolved_values: list[float] = []
 
     for lattice_direction in range(1, fluid_boundary_mask.shape[0]):
-        cx, cy, cz = (
-            int(value) for value in velocities[lattice_direction].tolist()
-        )
+        cx, cy, cz = (int(value) for value in velocities[lattice_direction].tolist())
         selected = fluid_boundary_mask[lattice_direction]
         if target_solid is not None:
             target_neighbor = torch.roll(
@@ -168,17 +174,18 @@ def refine_bfl_q_with_triangles(
                 tuple(np.floor(origin).astype(np.int64)),
                 tuple(np.floor(destination).astype(np.int64)),
             }
-            candidates = sorted({
-                triangle_index
-                for key in keys
-                for triangle_index in spatial_index.get(key, ())
-            })
+            candidates = sorted(
+                {triangle_index for key in keys for triangle_index in spatial_index.get(key, ())}
+            )
             fraction = (
                 _segment_triangle_q(
-                    origin, direction, triangles[candidates],
+                    origin,
+                    direction,
+                    triangles[candidates],
                     tolerance=tolerance,
                 )
-                if candidates else None
+                if candidates
+                else None
             )
             if fraction is None:
                 continue
@@ -186,7 +193,9 @@ def refine_bfl_q_with_triangles(
             direction_indices.append((int(z), int(y), int(x)))
         if direction_values:
             index_tensor = torch.tensor(
-                direction_indices, device=q_field.device, dtype=torch.long,
+                direction_indices,
+                device=q_field.device,
+                dtype=torch.long,
             )
             refined[
                 lattice_direction,
@@ -194,7 +203,9 @@ def refine_bfl_q_with_triangles(
                 index_tensor[:, 1],
                 index_tensor[:, 2],
             ] = torch.tensor(
-                direction_values, device=q_field.device, dtype=q_field.dtype,
+                direction_values,
+                device=q_field.device,
+                dtype=q_field.dtype,
             )
             resolved_count += len(direction_values)
             resolved_values.extend(direction_values)

@@ -1,0 +1,14 @@
+{"figures": [
+   {"file": "figures/curve_convergence.png", "kind": "curve",
+    "caption": "u_max convergence history for H64 and H128 grids showing steady approach to equilibrium",
+    "source": "out_part1.json + plot_figures.py"},
+   {"file": "figures/curve_error_profile.png", "kind": "curve",
+    "caption": "Relative error profile across channel for both grids exceeding 3% threshold",
+    "source": "out_part1.json + plot_figures.py"},
+   {"file": "figures/curve_anti_convergence.png", "kind": "curve",
+    "caption": "Anti-convergence bar chart: max rel error 26.82% (H64) vs 33.17% (H128)",
+    "source": "result.json + plot_figures.py"},
+   {"file": "figures/field_velocity_profile.png", "kind": "field",
+    "caption": "Simulation vs analytical velocity profiles for H64 and H128 grids",
+    "source": "out_part1.json + plot_figures.py"}],
+ "field_waiver": ""}

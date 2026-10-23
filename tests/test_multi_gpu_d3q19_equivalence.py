@@ -5,7 +5,6 @@ import torch
 
 from tensorlbm.multi_gpu import DomainDecomposition, MultiGPUSolver3D
 
-
 # (cx, cy, cz), in the conventional D3Q19 order.  The test deliberately
 # populates every population independently: comparing only density could hide
 # direction-specific halo mistakes.

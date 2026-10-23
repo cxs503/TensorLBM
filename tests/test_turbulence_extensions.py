@@ -40,6 +40,7 @@ from tensorlbm.d3q27 import equilibrium27, macroscopic27
 from tensorlbm.turbulence import (
     _nonperiodic_derivative,
     _nu_t_to_tau_eff,
+    _smagorinsky_tau,
     _vreman_nu_t_2d,
     _vreman_nu_t_3d,
     _wale_nu_t_2d,
@@ -93,13 +94,16 @@ class TestNuTHelpers:
         field = 2.0 * x - 3.0 * y + 4.0 * z + 1.0
 
         torch.testing.assert_close(
-            _nonperiodic_derivative(field, 2), torch.full_like(field, 2.0),
+            _nonperiodic_derivative(field, 2),
+            torch.full_like(field, 2.0),
         )
         torch.testing.assert_close(
-            _nonperiodic_derivative(field, 1), torch.full_like(field, -3.0),
+            _nonperiodic_derivative(field, 1),
+            torch.full_like(field, -3.0),
         )
         torch.testing.assert_close(
-            _nonperiodic_derivative(field, 0), torch.full_like(field, 4.0),
+            _nonperiodic_derivative(field, 0),
+            torch.full_like(field, 4.0),
         )
 
     def test_nonperiodic_derivative_does_not_wrap_opposite_face(self) -> None:
@@ -118,7 +122,8 @@ class TestNuTHelpers:
 
         assert bool((_nonperiodic_derivative(singleton, 0) == 0.0).all())
         torch.testing.assert_close(
-            _nonperiodic_derivative(pair, 0), torch.full_like(pair, 2.0),
+            _nonperiodic_derivative(pair, 0),
+            torch.full_like(pair, 2.0),
         )
 
     def test_wale_nu_t_2d_nonnegative(self) -> None:
@@ -554,3 +559,82 @@ class TestVremanMRT3D27:
         uz = torch.full_like(rho, -0.01)
         feq = equilibrium27(rho, ux, uy, uz)
         assert torch.allclose(collide_vreman_mrt27(feq, tau=0.7), feq, atol=1e-4)
+
+
+# ===========================================================================
+# tau_eff clamp semantics (regression: SGS silently inert at molecular tau >= 1)
+# ===========================================================================
+class TestTauEffClampSemantics:
+    """The upper clamp must bound the eddy-viscosity increment, never the SGS
+    model itself.
+
+    Before the fix, ``_TAU_EFF_MAX = 1.0`` clamped ``tau_eff`` to an absolute
+    1.0.  Since ``tau_eff >= tau`` always holds, every Smagorinsky / WALE /
+    Vreman / dynamic-Smagorinsky collision with molecular ``tau >= 1.0``
+    (i.e. ``omega <= 1``, a standard operating point) collapsed to exactly
+    the no-SGS collision — the models were silently inert.
+    """
+
+    def test_smagorinsky_tau_exceeds_molecular_tau_at_tau_one(self) -> None:
+        from tensorlbm.turbulence import _neq_stress_norm_3d
+
+        rho = torch.rand(4, 6, 8) + 0.5
+        f_neq = 0.05 * torch.randn(19, *rho.shape)
+        pi_norm = _neq_stress_norm_3d(f_neq)
+        for tau0 in (1.0, 1.4):
+            tau_eff = _smagorinsky_tau(tau0, pi_norm, rho, 0.1)
+            assert (tau_eff > tau0 + 1e-6).all(), (
+                f"tau0={tau0}: SGS correction clamped away (inert model)"
+            )
+
+    def test_smagorinsky_tau_preserves_overdissipation_guard(self) -> None:
+        from tensorlbm.turbulence import _tau_eff_max
+
+        rho = torch.ones(3)
+        huge = torch.full((3,), 1e12)
+        for tau0 in (0.51, 0.8, 1.0, 2.0):
+            tau_eff = _smagorinsky_tau(tau0, huge, rho, 0.1)
+            cap = _tau_eff_max(tau0)
+            assert (tau_eff <= cap + 1e-9).all()
+            # The high-Re regime keeps its historical guard strength:
+            # tau0 ~ 0.51 was capped at 1.0 before and stays ~1.01 now.
+            if tau0 == 0.51:
+                assert abs(cap - 1.01) < 1e-12
+            # The cap must always leave the model headroom to act.
+            assert cap > tau0
+
+    def test_nu_t_to_tau_eff_active_at_tau_one(self) -> None:
+        nu_t = torch.full((4, 6, 8), 0.05)
+        tau_eff = _nu_t_to_tau_eff(1.0, nu_t)
+        assert (tau_eff > 1.0).all(), "WALE/Vreman path inert at tau=1.0"
+        # Guard: nu_t <= 1/6 maps to tau_eff <= tau + 0.5.
+        tau_eff_sat = _nu_t_to_tau_eff(1.0, torch.full((4, 6, 8), 10.0))
+        assert (tau_eff_sat <= 1.5 + 1e-6).all()
+
+    def test_collide_smagorinsky_bgk3d_differs_from_no_sgs_at_tau_one(self) -> None:
+        from tensorlbm.turbulence import collide_smagorinsky_bgk3d
+
+        # A pure equilibrium field carries no non-equilibrium stress for the
+        # closure to act on — perturb it (as the SC force does in the
+        # multiphase tests).
+        torch.manual_seed(20260822)
+        f = _f3d19() + 0.05 * torch.randn(19, 4, 6, 8)
+        tau0 = 1.0
+        out_no = collide_smagorinsky_bgk3d(f, tau=tau0, C_s=0.0)
+        out_sgs = collide_smagorinsky_bgk3d(f, tau=tau0, C_s=0.1)
+        assert not torch.allclose(out_no, out_sgs, atol=1e-8)
+
+    def test_dynamic_smagorinsky_bgk3d_differs_from_no_sgs_at_tau_one(self) -> None:
+        from tensorlbm.d3q19 import equilibrium3d
+        from tensorlbm.turbulence import collide_dynamic_smagorinsky_bgk3d
+
+        torch.manual_seed(20260823)
+        f = _f3d19() + 0.05 * torch.randn(19, 4, 6, 8)
+        tau0 = 1.0
+        # No-SGS reference: the same BGK relaxation at the fixed molecular tau.
+        feq = equilibrium3d(*macroscopic3d(f))
+        out_no = f - (f - feq) / tau0
+        # The dynamic model derives Cs from the field itself; the derived
+        # eddy viscosity must lift tau_eff above tau0 = 1.0 somewhere.
+        out_sgs = collide_dynamic_smagorinsky_bgk3d(f, tau=tau0, lambda_clip=0.05)
+        assert not torch.allclose(out_no, out_sgs, atol=1e-8)

@@ -16,8 +16,9 @@ Both implemented for D3Q27 with Smagorinsky LES.
 from __future__ import annotations
 
 import torch
-from .d3q27 import C as C27, equilibrium27, macroscopic27
 
+from .d3q27 import C as C27
+from .d3q27 import equilibrium27, macroscopic27
 
 # ── Cached constants ──────────────────────────────────────────────────────────
 
@@ -53,16 +54,16 @@ def _get_c27_constants(device: torch.device, dtype: torch.dtype):
     H_yz = cy * cz
 
     # 3rd order Hermite basis (for cascaded)
-    H_xxx = cx**3 - 3 * cs2 * cx
-    H_yyy = cy**3 - 3 * cs2 * cy
-    H_zzz = cz**3 - 3 * cs2 * cz
-    H_xxy = (cx * cx - cs2) * cy + cx * cx * cy - cs2 * cy  # simplified
-    H_xxz = (cx * cx - cs2) * cz
-    H_xyy = cx * (cy * cy - cs2)
-    H_yyz = (cy * cy - cs2) * cz
-    H_xzz = cx * (cz * cz - cs2)
-    H_yzz = cy * (cz * cz - cs2)
-    H_xyz = cx * cy * cz
+    cx**3 - 3 * cs2 * cx
+    cy**3 - 3 * cs2 * cy
+    cz**3 - 3 * cs2 * cz
+    (cx * cx - cs2) * cy + cx * cx * cy - cs2 * cy  # simplified
+    (cx * cx - cs2) * cz
+    cx * (cy * cy - cs2)
+    (cy * cy - cs2) * cz
+    cx * (cz * cz - cs2)
+    cy * (cz * cz - cs2)
+    cx * cy * cz
 
     result = {
         "cx": cx,
@@ -129,7 +130,7 @@ def collide_kbc_d3q27(
     device = f.device
     p = _get_c27_constants(device, f.dtype)
     cx, cy, cz, w = p["cx"], p["cy"], p["cz"], p["w"]
-    cs2 = p["cs2"]
+    p["cs2"]
 
     # Macroscopic
     rho, ux, uy, uz = macroscopic27(f)
@@ -219,7 +220,7 @@ def collide_cascaded_d3q27(
     device = f.device
     p = _get_c27_constants(device, f.dtype)
     cx, cy, cz, w = p["cx"], p["cy"], p["cz"], p["w"]
-    cs2 = p["cs2"]
+    p["cs2"]
 
     # Macroscopic
     rho, ux, uy, uz = macroscopic27(f)

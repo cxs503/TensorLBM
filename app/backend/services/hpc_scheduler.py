@@ -1,8 +1,8 @@
 """HPC cluster job scheduler integration for TensorLBM platform.
 
-Provides SLURM and PBS/Torque job-submission wrappers so that simulation
-jobs can be dispatched to a cluster instead of running on the local thread
-pool.  Analogous to the HPC integration in PowerFlow and XFlow.
+Provides SLURM, PBS/Torque, and LSF job-submission wrappers so that
+simulation jobs can be dispatched to a cluster instead of running on the
+local thread pool.  Analogous to the HPC integration in PowerFlow and XFlow.
 
 Configuration
 -------------
@@ -11,15 +11,18 @@ Set the environment variable ``TENSORLBM_HPC_MODE`` to one of:
 * ``none``  – (default) local thread pool only, no HPC submission.
 * ``slurm`` – submit via SLURM ``sbatch``.
 * ``pbs``   – submit via PBS/Torque ``qsub``.
+* ``lsf``   – submit via LSF ``bsub`` (validated on a Sunway SWA LSF cluster).
 
 Additional optional environment variables:
 
-* ``TENSORLBM_HPC_PARTITION``  – default SLURM partition or PBS queue.
+* ``TENSORLBM_HPC_PARTITION``  – default SLURM partition, PBS/LSF queue.
 * ``TENSORLBM_HPC_NODES``      – default node count (default 1).
-* ``TENSORLBM_HPC_CPUS``       – CPUs per task (default 4).
+* ``TENSORLBM_HPC_CPUS``       – CPUs per task / LSF processes (default 4).
 * ``TENSORLBM_HPC_MEM``        – memory per node (default "8G").
 * ``TENSORLBM_HPC_WALLTIME``   – default walltime (default "02:00:00").
-* ``TENSORLBM_HPC_LOG_DIR``    – directory for scheduler stdout/stderr logs.
+* ``TENSORLBM_HPC_LOG_DIR``    – directory for scheduler stdout/stderr logs
+  and, for LSF, the batch script staged for execution.  On LSF this must
+  live on a filesystem shared with the execution nodes.
 """
 from __future__ import annotations
 
@@ -357,6 +360,235 @@ def submit_pbs(
 
 
 # ---------------------------------------------------------------------------
+# LSF submission
+# ---------------------------------------------------------------------------
+
+# bjobs STAT -> canonical lowercase state used across the platform.
+_LSF_STATE_MAP = {
+    "PEND": "pending",
+    "RUN": "running",
+    "DONE": "done",
+    "EXIT": "exit",
+    "PSUSP": "suspended",
+    "USUSP": "suspended",
+    "SSUSP": "suspended",
+    "EXITING": "exiting",   # transient SWA-LSF post-run state (observed on psn002)
+    "ZOMBI": "zombie",
+    "UNKWN": "unknown",
+}
+
+_LSF_STATUS_RE = re.compile(r"Status<([A-Z]+)>")
+_LSF_SUBMIT_RE = re.compile(r"Job\s+<([^>]+)>")
+
+
+def _lsf_log_path(job_id: str, log_dir: Path) -> str:
+    """LSF output template; ``%J`` is expanded by bsub to the numeric job id."""
+    return str(log_dir / f"{job_id}.%J.out")
+
+
+def _lsf_shell() -> str:
+    """Shell used to run the staged script on the execution node.
+
+    Stock LSF nodes have ``bash``; SWA/Sunway compute nodes ship a minimal
+    userland where only ``/bin/sh`` exists (observed live: ``execvp(/bin/
+    bash) failed``), hence the override knob.
+    """
+    return os.environ.get("TENSORLBM_HPC_LSF_SHELL", "bash")
+
+
+def _build_lsf_script(
+    job_id: str,
+    cmd: str,
+    *,
+    queue: str,
+    cpus: int,
+    log_dir: Path,
+    extra_options: list[str] | None = None,
+) -> str:
+    """Build an LSF batch script string.
+
+    The ``#BSUB`` directives are honoured by stock Platform/IBM LSF.  The
+    submitting wrapper (``submit_lsf``) also passes the same options on the
+    ``bsub`` command line, because SWA (Sunway) LSF parses command-line
+    options only and treats ``#BSUB`` lines as comments — keeping both makes
+    the script portable across LSF flavours.
+    """
+    log_dir.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "#!/bin/bash",
+        f"#BSUB -J tensorlbm_{job_id}",
+        f"#BSUB -q {queue}",
+        f"#BSUB -n {cpus}",
+        f"#BSUB -o {_lsf_log_path(job_id, log_dir)}",
+    ]
+    if extra_options:
+        lines.extend(f"#BSUB {opt}" for opt in extra_options)
+    lines += [
+        "",
+        # POSIX-compatible: SWA/Sunway compute nodes only provide /bin/sh.
+        "set -eu",
+        "set -o pipefail 2>/dev/null || true",
+        "",
+        cmd,
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def submit_lsf(
+    job_id: str,
+    cmd: str,
+    *,
+    queue: str | None = None,
+    cpus: int | None = None,
+    extra_options: list[str] | None = None,
+) -> dict[str, Any]:
+    """Submit a shell command to LSF via ``bsub``.
+
+    A shell wrapper script is written under the log directory (which must be
+    visible on the execution nodes — see ``TENSORLBM_HPC_LOG_DIR``) and
+    submitted as ``bsub -q <queue> -n <cpus> -J <name> -o <out> <shell>
+    <script>``.  SWA/Sunway LSF resolves the first command word directly
+    (no shell string), hence the explicit interpreter; stock LSF accepts it
+    unchanged.  The interpreter defaults to ``bash`` and can be overridden
+    with ``TENSORLBM_HPC_LSF_SHELL=sh`` for SWA clusters whose compute nodes
+    ship a minimal userland without ``/bin/bash``.
+
+    Walltime is deliberately NOT mapped to ``bsub -W``: SWA LSF rejects the
+    option ("wrong prog name -W") and queue defaults govern; pass
+    ``extra_options=["-W", "<minutes>"]`` on clusters that support it.
+
+    Args:
+        job_id:        Platform job identifier (used for naming).
+        cmd:           Shell command to run on the cluster node.
+        queue:         LSF queue (default: $TENSORLBM_HPC_PARTITION).
+        cpus:          Number of processes (``-n``).
+        extra_options: Additional raw ``bsub`` CLI options (e.g. node
+                       selection); also emitted as ``#BSUB`` directives.
+
+    Returns:
+        Dictionary with ``hpc_job_id``, ``script_path``, ``log_path``
+        (``%J`` template), ``status`` (``submitted``), ``backend`` (``lsf``).
+
+    Raises:
+        RuntimeError: If ``bsub`` is not found or returns non-zero.
+    """
+    if shutil.which("bsub") is None:
+        raise RuntimeError(
+            "bsub not found on PATH. "
+            "Ensure LSF is installed or set TENSORLBM_HPC_MODE=none."
+        )
+
+    resolved_queue = queue or _default_partition()
+    resolved_cpus = cpus or _default_cpus()
+    log_dir = _log_dir()
+    script = _build_lsf_script(
+        job_id, cmd,
+        queue=resolved_queue,
+        cpus=resolved_cpus,
+        log_dir=log_dir,
+        extra_options=extra_options,
+    )
+    # Stage under the log dir (not /tmp): LSF exec nodes must see the script.
+    log_dir.mkdir(parents=True, exist_ok=True)
+    script_path = log_dir / f"{job_id}.lsf"
+    script_path.write_text(script, encoding="utf-8")
+
+    argv = [
+        "bsub",
+        "-q", resolved_queue,
+        "-n", str(resolved_cpus),
+        "-J", f"tensorlbm_{job_id}",
+        "-o", _lsf_log_path(job_id, log_dir),
+    ]
+    if extra_options:
+        for opt in extra_options:
+            argv.extend(opt.split(" ", 1) if " " in opt else [opt])
+    argv += [_lsf_shell(), str(script_path)]
+
+    result = subprocess.run(argv, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise RuntimeError(f"bsub failed:\n{result.stderr}{result.stdout}")
+    match = _LSF_SUBMIT_RE.search(result.stdout)
+    if match is None:
+        raise RuntimeError(
+            f"could not parse bsub output for job id: {result.stdout!r}"
+        )
+    hpc_job_id = match.group(1)
+    logger.info("LSF job submitted: platform_id=%s lsf_id=%s", job_id, hpc_job_id)
+
+    return {
+        "hpc_job_id": hpc_job_id,
+        "script_path": str(script_path),
+        "log_path": _lsf_log_path(job_id, log_dir),
+        "status": "submitted",
+        "backend": "lsf",
+        "queue": resolved_queue,
+        "cpus": resolved_cpus,
+        "raw_submit_output": result.stdout.strip(),
+    }
+
+
+def query_lsf_status(hpc_job_id: str) -> dict[str, str]:
+    """Query LSF job status via ``bjobs -l``.
+
+    The long format is parsed (``Status<DONE>``) because short-format
+    column layout differs between stock LSF (``JOBID USER STAT ...``) and
+    SWA/Sunway LSF (``JOBID STAT USER ...``), while ``Status<...>`` is
+    stable across both.
+
+    Returns:
+        Dictionary with ``hpc_job_id``, ``state`` (mapped to pending /
+        running / done / exit / suspended / exiting / zombie / unknown),
+        ``raw_state``, and ``elapsed``.
+    """
+    if shutil.which("bjobs") is None:
+        return {"hpc_job_id": hpc_job_id, "state": "unknown", "raw_state": "",
+                "elapsed": "n/a"}
+
+    result = subprocess.run(
+        ["bjobs", "-l", hpc_job_id],
+        capture_output=True, text=True, check=False,
+    )
+    output = result.stdout + result.stderr
+    match = _LSF_STATUS_RE.search(output)
+    if match is None:
+        return {"hpc_job_id": hpc_job_id, "state": "unknown", "raw_state": "",
+                "elapsed": "n/a"}
+    raw_state = match.group(1)
+    return {
+        "hpc_job_id": hpc_job_id,
+        "state": _LSF_STATE_MAP.get(raw_state, raw_state.lower()),
+        "raw_state": raw_state,
+        "elapsed": "n/a",
+    }
+
+
+def cancel_lsf(hpc_job_id: str) -> dict[str, str]:
+    """Cancel an LSF job via ``bkill``.
+
+    Returns:
+        Dictionary with ``hpc_job_id`` and ``status`` (``cancelled``).
+
+    Raises:
+        RuntimeError: If ``bkill`` is missing or fails.
+    """
+    if shutil.which("bkill") is None:
+        raise RuntimeError(
+            "bkill not found on PATH. "
+            "Ensure LSF is installed or set TENSORLBM_HPC_MODE=none."
+        )
+    result = subprocess.run(
+        ["bkill", hpc_job_id],
+        capture_output=True, text=True, check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"bkill failed:\n{result.stderr}{result.stdout}")
+    logger.info("LSF job cancelled: %s", hpc_job_id)
+    return {"hpc_job_id": hpc_job_id, "status": "cancelled",
+            "raw_output": result.stdout.strip()}
+
+
+# ---------------------------------------------------------------------------
 # High-level dispatcher
 # ---------------------------------------------------------------------------
 
@@ -396,7 +628,8 @@ def submit_hpc_job(
     mode = hpc_mode()
     if mode == "none":
         raise ValueError(
-            "HPC mode is disabled. Set TENSORLBM_HPC_MODE=slurm or pbs to enable."
+            "HPC mode is disabled. Set TENSORLBM_HPC_MODE=slurm, pbs, or lsf "
+            "to enable."
         )
 
     if solver_cmd is None:
@@ -419,5 +652,14 @@ def submit_hpc_job(
         )
         result["solver_cmd"] = solver_cmd
         return result
+    elif mode == "lsf":
+        result = submit_lsf(
+            job_id, solver_cmd,
+            queue=partition, cpus=cpus,
+        )
+        result["solver_cmd"] = solver_cmd
+        return result
     else:
-        raise ValueError(f"Unknown HPC mode: {mode!r}. Choose from: none, slurm, pbs.")
+        raise ValueError(
+            f"Unknown HPC mode: {mode!r}. Choose from: none, slurm, pbs, lsf."
+        )

@@ -13,8 +13,9 @@ Reference:
   and on a hybrid RANS/LES approach"
 """
 
+from typing import Tuple
+
 import torch
-from typing import Optional, Tuple
 
 
 # ── Separation detection ──
@@ -175,11 +176,11 @@ def des_lbm_step(
     Returns:
         (f_new, nu_t, separated_mask).
     """
-    from .turbulence import collide_smagorinsky_mrt3d
-    from .solver3d import stream3d
-    from .wall_model import wall_function_3d
     from .boundaries3d import far_field_bc_3d
     from .d3q19 import macroscopic3d
+    from .solver3d import stream3d
+    from .turbulence import collide_smagorinsky_mrt3d
+    from .wall_model import wall_function_3d
 
     rho, ux, uy, uz = macroscopic3d(f)
     nu_t, separated = des_eddy_viscosity(

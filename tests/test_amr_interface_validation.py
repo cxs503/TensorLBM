@@ -10,12 +10,14 @@ from tensorlbm.refinement import BoxRegion
 
 
 def test_short_uniform_fine_interface_comparison_is_finite() -> None:
-    result = run_amr_interface_validation(AMRInterfaceValidationConfig(
-        shape_zyx=(12, 14, 24),
-        box=BoxRegion(x0=8, x1=16, y0=4, y1=10, z0=3, z1=9),
-        pulse_radius=1.5,
-        steps=3,
-    ))
+    result = run_amr_interface_validation(
+        AMRInterfaceValidationConfig(
+            shape_zyx=(12, 14, 24),
+            box=BoxRegion(x0=8, x1=16, y0=4, y1=10, z0=3, z1=9),
+            pulse_radius=1.5,
+            steps=3,
+        )
+    )
     metrics = result["result"]
     assert metrics["finite"] is True
     assert metrics["minimum_population"] > 0.0
@@ -37,14 +39,16 @@ def test_amr_interface_validation_is_public() -> None:
 
 
 def test_interface_validation_exercises_transition_filter() -> None:
-    result = run_amr_interface_validation(AMRInterfaceValidationConfig(
-        shape_zyx=(12, 14, 24),
-        box=BoxRegion(x0=8, x1=16, y0=4, y1=10, z0=3, z1=9),
-        pulse_radius=1.5,
-        steps=3,
-        interface_filter_width=1,
-        interface_filter_strength=0.2,
-    ))
+    result = run_amr_interface_validation(
+        AMRInterfaceValidationConfig(
+            shape_zyx=(12, 14, 24),
+            box=BoxRegion(x0=8, x1=16, y0=4, y1=10, z0=3, z1=9),
+            pulse_radius=1.5,
+            steps=3,
+            interface_filter_width=1,
+            interface_filter_strength=0.2,
+        )
+    )
 
     assert result["configuration"]["interface_filter_width"] == 1
     assert result["configuration"]["interface_filter_strength"] == 0.2
@@ -53,26 +57,30 @@ def test_interface_validation_exercises_transition_filter() -> None:
 
 
 def test_interface_validation_exercises_regularized_prolongation() -> None:
-    result = run_amr_interface_validation(AMRInterfaceValidationConfig(
-        shape_zyx=(12, 14, 24),
-        box=BoxRegion(x0=8, x1=16, y0=4, y1=10, z0=3, z1=9),
-        pulse_radius=1.5,
-        steps=3,
-        regularize_prolongation=True,
-    ))
+    result = run_amr_interface_validation(
+        AMRInterfaceValidationConfig(
+            shape_zyx=(12, 14, 24),
+            box=BoxRegion(x0=8, x1=16, y0=4, y1=10, z0=3, z1=9),
+            pulse_radius=1.5,
+            steps=3,
+            regularize_prolongation=True,
+        )
+    )
 
     assert result["configuration"]["regularize_prolongation"] is True
     assert result["acceptance"]["admitted"] is True
 
 
 def test_interface_validation_exercises_crossing_link_reflux() -> None:
-    result = run_amr_interface_validation(AMRInterfaceValidationConfig(
-        shape_zyx=(12, 14, 24),
-        box=BoxRegion(x0=8, x1=16, y0=4, y1=10, z0=3, z1=9),
-        pulse_radius=1.5,
-        steps=3,
-        reflux_correction_stencil="crossing_links",
-    ))
+    result = run_amr_interface_validation(
+        AMRInterfaceValidationConfig(
+            shape_zyx=(12, 14, 24),
+            box=BoxRegion(x0=8, x1=16, y0=4, y1=10, z0=3, z1=9),
+            pulse_radius=1.5,
+            steps=3,
+            reflux_correction_stencil="crossing_links",
+        )
+    )
 
     assert result["configuration"]["reflux_correction_stencil"] == "crossing_links"
     assert result["acceptance"]["admitted"] is True

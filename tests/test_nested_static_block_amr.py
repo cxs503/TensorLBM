@@ -1,4 +1,5 @@
 """Multi-level scheduling and conservation tests for nested static AMR."""
+
 from __future__ import annotations
 
 import pytest
@@ -52,7 +53,8 @@ def _four_level_configs() -> tuple[
 
 def test_three_levels_follow_exact_recursive_subcycling() -> None:
     hierarchy = NestedStaticBlockAMR3D(
-        _equilibrium((12, 12, 14)), _configs(),
+        _equilibrium((12, 12, 14)),
+        _configs(),
     )
     before = tuple(level.clone() for level in hierarchy.level_populations)
     calls: list[tuple[int, int, float]] = []
@@ -70,12 +72,24 @@ def test_three_levels_follow_exact_recursive_subcycling() -> None:
 
     assert [(level, substep) for level, substep, _ in calls] == [
         (0, -1),
-        (1, 0), (2, 0), (2, 1),
-        (1, 1), (2, 2), (2, 3),
+        (1, 0),
+        (2, 0),
+        (2, 1),
+        (1, 1),
+        (2, 2),
+        (2, 3),
     ]
-    assert [tau for _, _, tau in calls] == pytest.approx([
-        0.56, 0.62, 0.74, 0.74, 0.62, 0.74, 0.74,
-    ])
+    assert [tau for _, _, tau in calls] == pytest.approx(
+        [
+            0.56,
+            0.62,
+            0.74,
+            0.74,
+            0.62,
+            0.74,
+            0.74,
+        ]
+    )
     assert len(ledgers) == 2
     assert all(abs(ledger.mass_residual) < 1.0e-13 for ledger in ledgers)
     for actual, expected in zip(hierarchy.level_populations, before, strict=True):
@@ -84,7 +98,8 @@ def test_three_levels_follow_exact_recursive_subcycling() -> None:
 
 def test_four_levels_follow_eight_finest_substeps_and_conserve() -> None:
     hierarchy = NestedStaticBlockAMR3D(
-        _equilibrium((12, 12, 14)), _four_level_configs(),
+        _equilibrium((12, 12, 14)),
+        _four_level_configs(),
     )
     before = tuple(level.clone() for level in hierarchy.level_populations)
     calls: list[tuple[int, int]] = []
@@ -102,7 +117,10 @@ def test_four_levels_follow_eight_finest_substeps_and_conserve() -> None:
     ledgers = hierarchy.step(identity)
 
     assert [sum(level == expected for level, _ in calls) for expected in range(4)] == [
-        1, 2, 4, 8,
+        1,
+        2,
+        4,
+        8,
     ]
     assert [substep for level, substep in calls if level == 3] == list(range(8))
     assert len(ledgers) == 3
@@ -137,9 +155,7 @@ def test_three_level_mrt_step_remains_finite_and_conservative() -> None:
         )
 
     final_mass = float(hierarchy.coarse_f.sum())
-    assert all(
-        bool(torch.isfinite(level).all()) for level in hierarchy.level_populations
-    )
+    assert all(bool(torch.isfinite(level).all()) for level in hierarchy.level_populations)
     assert min(float(level.min()) for level in hierarchy.level_populations) > 0.0
     assert abs(final_mass - initial_mass) / initial_mass < 1.0e-7
     assert maximum_residual < 2.0e-11
@@ -153,7 +169,9 @@ def test_nested_hierarchy_requires_tau_chain_and_reflux() -> None:
         NestedStaticBlockAMR3D(coarse, (outer, wrong_tau))
 
     replacement_only = StaticBlockAMRConfig(
-        inner.box, tau_coarse=outer.tau_fine, reflux=False,
+        inner.box,
+        tau_coarse=outer.tau_fine,
+        reflux=False,
     )
     with pytest.raises(ValueError, match="reflux on every interface"):
         NestedStaticBlockAMR3D(coarse, (outer, replacement_only))
@@ -161,7 +179,8 @@ def test_nested_hierarchy_requires_tau_chain_and_reflux() -> None:
 
 def test_nested_hierarchy_accepts_dynamic_convective_tau_chain() -> None:
     hierarchy = NestedStaticBlockAMR3D(
-        _equilibrium((12, 12, 14)), _configs(),
+        _equilibrium((12, 12, 14)),
+        _configs(),
     )
     observed: dict[int, set[float]] = {0: set(), 1: set(), 2: set()}
 
@@ -195,12 +214,16 @@ def test_nested_interface_filters_preserve_uniform_state_and_conservation() -> N
         interface_filter_strength=0.25,
     )
     hierarchy = NestedStaticBlockAMR3D(
-        _equilibrium((12, 12, 14)), (outer, inner),
+        _equilibrium((12, 12, 14)),
+        (outer, inner),
     )
     before = tuple(level.clone() for level in hierarchy.level_populations)
 
     def identity(
-        state: torch.Tensor, tau: float, level: int, substep: int,
+        state: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         del tau, level, substep
         return AMRAdvanceResult(state.clone(), state.clone())
@@ -214,7 +237,8 @@ def test_nested_interface_filters_preserve_uniform_state_and_conservation() -> N
 
 def test_nested_hierarchy_reports_cell_savings() -> None:
     hierarchy = NestedStaticBlockAMR3D(
-        _equilibrium((12, 12, 14)), _configs(),
+        _equilibrium((12, 12, 14)),
+        _configs(),
     )
     assert len(hierarchy.level_populations) == 3
     assert hierarchy.total_allocated_cells < hierarchy.uniform_finest_equivalent_cells
@@ -235,7 +259,10 @@ def test_nested_hierarchy_accepts_an_explicit_device_per_fine_level() -> None:
     )
 
     def identity(
-        state: torch.Tensor, tau: float, level: int, substep: int,
+        state: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
     ) -> AMRAdvanceResult:
         del tau, level, substep
         return AMRAdvanceResult(state.clone(), state.clone())
@@ -300,7 +327,8 @@ def test_repeated_child_ledgers_accumulate_over_the_root_step() -> None:
 
 def test_restore_level_populations_relinks_nested_parent_state() -> None:
     hierarchy = NestedStaticBlockAMR3D(
-        _equilibrium((12, 12, 14)), _configs(),
+        _equilibrium((12, 12, 14)),
+        _configs(),
     )
     restored = tuple(level.clone() * 0.999 for level in hierarchy.level_populations)
 

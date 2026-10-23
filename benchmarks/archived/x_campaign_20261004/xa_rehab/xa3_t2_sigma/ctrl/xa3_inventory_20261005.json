@@ -1,0 +1,42 @@
+{
+ "stp_R16_P": {
+  "exists": true,
+  "md5": "cbdd11c52212a58ae28fb510529e2ed9"
+ },
+ "stp_R16_W": {
+  "exists": true,
+  "md5": "f3d9cc1fc411fe4470d980a21a6686c0"
+ },
+ "stp_R16_b8_P": {
+  "exists": true,
+  "md5": "7def3dee75fb1098e0ac1fcde05b1262"
+ },
+ "stp_R16_b8_W": {
+  "exists": true,
+  "md5": "86611ad2a2ef83f4ab217e390ed1d150"
+ },
+ "stp_R24_P": {
+  "exists": true,
+  "md5": "d0e7a15f95cd7e505e59c992b790ae8a"
+ },
+ "stp_R24_W": {
+  "exists": true,
+  "md5": "8469e39eab3806d07ff49c8d401e3212"
+ },
+ "stp_R32_P": {
+  "exists": true,
+  "md5": "659eb1749acde27fc7e75bee38e84b11"
+ },
+ "stp_R32_W": {
+  "exists": false,
+  "md5": null
+ },
+ "stp_R24_mu045_P": {
+  "exists": true,
+  "md5": "ef15c567c8910c07443e150e2cfe7578"
+ },
+ "stp_R24_mu045_W": {
+  "exists": false,
+  "md5": null
+ }
+}

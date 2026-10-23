@@ -8,8 +8,6 @@ from pathlib import Path
 
 import pytest
 
-from tensorlbm.runtime import ArtifactManifest, MetricEvidence, RunManifest, ValidationStatus
-
 from tensorlbm.data.field_r2 import (
     ArrayEncoding,
     ArrayManifestR2,
@@ -17,11 +15,9 @@ from tensorlbm.data.field_r2 import (
     AxisSemantic,
     AxisSpec,
     BlobRef,
-    ByteOrder,
     FieldDataProductR2,
-    MemoryOrder,
 )
-
+from tensorlbm.runtime import ArtifactManifest, MetricEvidence, RunManifest, ValidationStatus
 
 _CODE_SHA = "a" * 40
 

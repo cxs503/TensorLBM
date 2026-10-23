@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 from tensorlbm.free_surface_transaction_contract import (
+    D3Q19,
+    WITHHELD_D3Q19_ONLY,
+    WITHHELD_NO_POPULATION_TRANSFER,
+    WITHHELD_ROUNDOFF_NOT_EXACT,
     CellConversion,
     CellState,
-    D3Q19,
     OwnershipEvidence,
     PopulationTransferEvidence,
     RoundoffResidualEvidence,
     TransactionInput,
-    WITHHELD_D3Q19_ONLY,
-    WITHHELD_NO_POPULATION_TRANSFER,
-    WITHHELD_ROUNDOFF_NOT_EXACT,
     diagnose_korner_i_to_g_transaction,
 )
 

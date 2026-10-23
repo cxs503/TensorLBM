@@ -9,7 +9,6 @@ from tensorlbm.free_surface_closure_experiment import run_free_surface_closure_e
 from tensorlbm.free_surface_lbm import free_surface_step
 from tensorlbm.free_surface_topology_transaction import TopologyTransactionError
 
-
 CANONICAL_STAGES = (
     "before_collision",
     "after_collision_and_forcing",

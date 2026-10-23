@@ -1,7 +1,7 @@
 """Tests for Flow-Transformer full-pipeline integration."""
 
-import torch
 import pytest
+import torch
 
 from tensorlbm.ai.flow_transformer_platform_pipeline import (
     FlowTransformerPlatformPipeline,
@@ -16,10 +16,7 @@ def pipeline(tmp_path):
 
 
 def _snapshots(n=3, shape=(8, 8)):
-    return [
-        (torch.rand(shape), torch.rand(shape))
-        for _ in range(n)
-    ]
+    return [(torch.rand(shape), torch.rand(shape)) for _ in range(n)]
 
 
 def _fake_train(snapshots, out_path, arch=None, config=None):
@@ -39,7 +36,10 @@ def _fake_train(snapshots, out_path, arch=None, config=None):
 
 def test_full_integration(pipeline, tmp_path):
     out = pipeline.run(
-        tmp_path, _snapshots(), name_prefix="flow_tf", train_fn=_fake_train,
+        tmp_path,
+        _snapshots(),
+        name_prefix="flow_tf",
+        train_fn=_fake_train,
     )
     assert out["data_asset_id"] == "flow_tf:flow-field"
     assert out["dataset_asset_id"] == "flow_tf:dataset"
@@ -72,4 +72,5 @@ def test_empty_snapshots_rejected(pipeline, tmp_path):
 
 def test_default_train_fn_importable(pipeline):
     from tensorlbm.ai.transformer import train_flow_transformer_self_supervised
+
     assert callable(train_flow_transformer_self_supervised)

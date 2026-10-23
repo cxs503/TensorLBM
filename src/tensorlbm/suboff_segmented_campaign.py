@@ -13,7 +13,6 @@ from math import isfinite
 from pathlib import Path
 from typing import Any
 
-
 _MANIFEST_SCHEMA = "suboff-d3q27-segmented-run-v1"
 _CHECKPOINT_FORMAT = "suboff-d3q27-cumulant-xslab-v1"
 _REQUIRED_METADATA = frozenset(

@@ -1,0 +1,33 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+  st=  40 T=0.200 X=1.000 H=0.938 iface=335 drift=-7.629e-07 fin=True
+  st=  80 T=0.400 X=1.000 H=0.938 iface=335 drift=-1.017e-06 fin=True
+  st= 120 T=0.600 X=1.000 H=0.938 iface=335 drift=-9.537e-07 fin=True
+  st= 160 T=0.800 X=1.000 H=0.938 iface=335 drift=-1.526e-06 fin=True
+  st= 200 T=1.000 X=1.000 H=0.938 iface=335 drift=-2.734e-06 fin=True
+  st= 240 T=1.200 X=1.000 H=0.938 iface=335 drift=-3.115e-06 fin=True
+  st= 280 T=1.400 X=1.125 H=0.938 iface=335 drift=-3.560e-06 fin=True
+  st= 320 T=1.600 X=1.125 H=0.938 iface=335 drift=-3.688e-06 fin=True
+  st= 360 T=1.800 X=1.125 H=0.938 iface=335 drift=-3.942e-06 fin=True
+  st= 400 T=2.000 X=1.125 H=0.938 iface=335 drift=-3.942e-06 fin=True
+  st= 440 T=2.200 X=1.125 H=0.938 iface=335 drift=-4.133e-06 fin=True
+  st= 480 T=2.400 X=1.125 H=0.938 iface=335 drift=-4.260e-06 fin=True
+  st= 520 T=2.600 X=1.125 H=0.938 iface=343 drift=-3.878e-06 fin=True
+  st= 560 T=2.800 X=1.125 H=0.938 iface=351 drift=-4.705e-06 fin=True
+  st= 600 T=3.000 X=1.125 H=0.938 iface=351 drift=-4.832e-06 fin=True
+  st= 620 T=3.100 X=1.125 H=0.938 iface=351 drift=-4.450e-06 fin=True
+[hydro_rg1.0_c1] elapsed=43.1s

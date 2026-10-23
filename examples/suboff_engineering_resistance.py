@@ -6,6 +6,7 @@ the lowest and highest tow speeds calibrate a Reynolds-dependent multiplier
 on the ITTC-1957 friction baseline.  The four interior speeds are untouched
 holdout points.  Predictions are restricted to the calibrated speed range.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -51,20 +52,20 @@ def fit_endpoint_model(hull_type: str) -> dict:
         baseline_n, re, cf = ittc_friction_force(point.speed_knots)
         multiplier = intercept + slope * math.log10(re)
         predicted_n = baseline_n * multiplier
-        signed_error_pct = (
-            (predicted_n - point.resistance_n) / point.resistance_n * 100.0
+        signed_error_pct = (predicted_n - point.resistance_n) / point.resistance_n * 100.0
+        rows.append(
+            {
+                "role": "calibration" if index in (0, len(points) - 1) else "holdout",
+                "speed_knots": point.speed_knots,
+                "reynolds_number": re,
+                "ittc_cf": cf,
+                "effective_multiplier": multiplier,
+                "predicted_resistance_n": predicted_n,
+                "experimental_resistance_n": point.resistance_n,
+                "signed_error_pct": signed_error_pct,
+                "absolute_error_pct": abs(signed_error_pct),
+            }
         )
-        rows.append({
-            "role": "calibration" if index in (0, len(points) - 1) else "holdout",
-            "speed_knots": point.speed_knots,
-            "reynolds_number": re,
-            "ittc_cf": cf,
-            "effective_multiplier": multiplier,
-            "predicted_resistance_n": predicted_n,
-            "experimental_resistance_n": point.resistance_n,
-            "signed_error_pct": signed_error_pct,
-            "absolute_error_pct": abs(signed_error_pct),
-        })
     holdouts = [row for row in rows if row["role"] == "holdout"]
     return {
         "hull_type": hull_type,
@@ -74,7 +75,8 @@ def fit_endpoint_model(hull_type: str) -> dict:
         "calibrated_speed_range_knots": [points[0].speed_knots, points[-1].speed_knots],
         "rows": rows,
         "holdout_max_absolute_error_pct": max(row["absolute_error_pct"] for row in holdouts),
-        "holdout_mean_absolute_error_pct": sum(row["absolute_error_pct"] for row in holdouts) / len(holdouts),
+        "holdout_mean_absolute_error_pct": sum(row["absolute_error_pct"] for row in holdouts)
+        / len(holdouts),
         "holdout_target_pct": 5.0,
         "holdout_target_met": all(row["absolute_error_pct"] <= 5.0 for row in holdouts),
     }

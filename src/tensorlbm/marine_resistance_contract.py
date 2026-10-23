@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from math import isfinite, sqrt
 from typing import Any, Mapping
 
-
 Vector3 = tuple[float, float, float]
 
 

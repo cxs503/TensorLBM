@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import torch
 
-from .d3q19 import C, OPPOSITE, equilibrium3d
+from .d3q19 import OPPOSITE, C, equilibrium3d
 from .free_surface_lbm import GAS, INTERFACE, LIQUID
 
 

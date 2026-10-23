@@ -99,7 +99,12 @@ class Job:
         # Stored callable for manual retry (not serialised to to_dict)
         self._fn: Callable[[Job], dict[str, Any] | None] | None = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self, *, include_result: bool = True) -> dict[str, Any]:
+        """Serialize job metadata, optionally including potentially large results.
+
+        Status polling and WebSocket notifications should omit result arrays; callers
+        can retrieve completed results through the dedicated results endpoints.
+        """
         return {
             "job_id": self.job_id,
             "name": self.name,
@@ -113,7 +118,7 @@ class Job:
             "output_dir": str(self.output_dir),
             "logs": self.logs[-200:],
             "diagnostics": self.diagnostics[-50:],
-            "result": self.result,
+            "result": self.result if include_result else {},
             "cancel_requested": self.cancel_requested,
             "scheduler_profile": self.scheduler_profile,
             "scheduler_backend": self.scheduler_backend,
@@ -287,7 +292,9 @@ def _notify(job: Job) -> None:
     try:
         if _event_loop.is_closed():
             return
-        _event_loop.call_soon_threadsafe(_notify_queue.put_nowait, job.to_dict())
+        _event_loop.call_soon_threadsafe(
+            _notify_queue.put_nowait, job.to_dict(include_result=False),
+        )
     except RuntimeError:
         # Loop closed concurrently – treat as best-effort.
         return
@@ -480,7 +487,10 @@ def get_job(job_id: str) -> Job | None:
 
 def list_jobs() -> list[dict[str, Any]]:
     with _jobs_lock:
-        return [j.to_dict() for j in sorted(_jobs.values(), key=lambda j: j.created_at, reverse=True)]  # noqa: E501
+        return [
+            j.to_dict(include_result=False)
+            for j in sorted(_jobs.values(), key=lambda j: j.created_at, reverse=True)
+        ]  # noqa: E501
 
 
 def delete_job(job_id: str) -> bool:

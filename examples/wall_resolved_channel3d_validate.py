@@ -25,7 +25,9 @@ def main() -> None:
     parser.add_argument("--sample-interval", type=int, default=10)
     parser.add_argument("--report-interval", type=int, default=500)
     parser.add_argument("--checkpoint-interval", type=int, default=5000)
-    parser.add_argument("--collision-model", choices=("natural_kbc", "cumulant"), default="natural_kbc")
+    parser.add_argument(
+        "--collision-model", choices=("natural_kbc", "cumulant"), default="natural_kbc"
+    )
     parser.add_argument("--collision-chunk-cells", type=int, default=262144)
     parser.add_argument("--no-compile-natural-kbc", action="store_true")
     parser.add_argument(
@@ -38,10 +40,14 @@ def main() -> None:
     parser.add_argument("--spectral-mode-count", type=int, default=32)
     parser.add_argument("--spectral-max-wavenumber", type=int, default=4)
     parser.add_argument(
-        "--minimum-statistics-eddy-turnovers", type=float, default=2.0,
+        "--minimum-statistics-eddy-turnovers",
+        type=float,
+        default=2.0,
     )
     parser.add_argument(
-        "--stationarity-window-eddy-turnovers", type=float, default=1.0,
+        "--stationarity-window-eddy-turnovers",
+        type=float,
+        default=1.0,
     )
     parser.add_argument("--seed", type=int, default=20260802)
     parser.add_argument("--output", type=Path, required=True)
@@ -68,12 +74,8 @@ def main() -> None:
         random_noise_fraction=args.random_noise_fraction,
         spectral_mode_count=args.spectral_mode_count,
         spectral_max_wavenumber=args.spectral_max_wavenumber,
-        minimum_statistics_eddy_turnovers=(
-            args.minimum_statistics_eddy_turnovers
-        ),
-        stationarity_window_eddy_turnovers=(
-            args.stationarity_window_eddy_turnovers
-        ),
+        minimum_statistics_eddy_turnovers=(args.minimum_statistics_eddy_turnovers),
+        stationarity_window_eddy_turnovers=(args.stationarity_window_eddy_turnovers),
         seed=args.seed,
         device=args.device,
         output=args.output,

@@ -32,6 +32,7 @@ class AILesPlatformPipeline:
         self.catalog = FieldDataCatalog.open(self.db_path)
         self.training = TrainingJobRegistry.open(self.db_path)
         from tensorlbm.ml.serving import ModelRegistry
+
         self.serving = ModelRegistry.open(self.db_path)
 
     def close(self) -> None:
@@ -59,6 +60,7 @@ class AILesPlatformPipeline:
         """
         if pipeline_fn is None:
             from tensorlbm.ai.pipeline import run_ai_les_pipeline
+
             pipeline_fn = run_ai_les_pipeline
 
         result = pipeline_fn(str(work_dir), **(pipeline_kwargs or {}))
@@ -69,15 +71,23 @@ class AILesPlatformPipeline:
         model_id = self._register_model(result, name_prefix)
 
         # lineage: run -> dataset -> job -> model
-        self.catalog.add_lineage(LineageRecord(
-            source_id=run_asset_id, target_id=dataset_asset_id,
-            relation_type="derived_from", resource_type="run",
-        ))
+        self.catalog.add_lineage(
+            LineageRecord(
+                source_id=run_asset_id,
+                target_id=dataset_asset_id,
+                relation_type="derived_from",
+                resource_type="run",
+            )
+        )
         job_asset_id = f"{name_prefix}:job:{job.job_id}"
-        self.catalog.add_lineage(LineageRecord(
-            source_id=dataset_asset_id, target_id=job_asset_id,
-            relation_type="trained_on", resource_type="dataset",
-        ))
+        self.catalog.add_lineage(
+            LineageRecord(
+                source_id=dataset_asset_id,
+                target_id=job_asset_id,
+                relation_type="trained_on",
+                resource_type="dataset",
+            )
+        )
 
         return {
             "run_asset_id": run_asset_id,
@@ -93,41 +103,44 @@ class AILesPlatformPipeline:
 
     def _register_run(self, result: Any, name_prefix: str) -> str:
         asset_id = f"{name_prefix}:run:{result.run_id}"
-        self.catalog.register_asset(AssetRecord(
-            asset_id=asset_id,
-            name=f"AI-LES data run {result.run_id}",
-            kind="run",
-            description=f"data_source={result.data_source} "
-                        f"snapshots={result.n_snapshots}",
-            tags=(name_prefix, "ai-les"),
-        ))
+        self.catalog.register_asset(
+            AssetRecord(
+                asset_id=asset_id,
+                name=f"AI-LES data run {result.run_id}",
+                kind="run",
+                description=f"data_source={result.data_source} snapshots={result.n_snapshots}",
+                tags=(name_prefix, "ai-les"),
+            )
+        )
         return asset_id
 
     def _register_dataset(self, result: Any, name_prefix: str) -> str:
         asset_id = f"{name_prefix}:dataset:{result.dataset_id}"
-        self.catalog.register_asset(AssetRecord(
-            asset_id=asset_id,
-            name=f"AI-LES strain-rate dataset {result.dataset_id}",
-            kind="dataset",
-            description=f"n_samples={result.n_samples} "
-                        f"path={result.dataset_path}",
-            tags=(name_prefix, "ai-les"),
-        ))
+        self.catalog.register_asset(
+            AssetRecord(
+                asset_id=asset_id,
+                name=f"AI-LES strain-rate dataset {result.dataset_id}",
+                kind="dataset",
+                description=f"n_samples={result.n_samples} path={result.dataset_path}",
+                tags=(name_prefix, "ai-les"),
+            )
+        )
         return asset_id
 
     def _register_training_job(self, result: Any, name_prefix: str) -> TrainingJob:
         cfg = result.to_dict() if hasattr(result, "to_dict") else {}
         # only keep scalar config for the job record
         config = {
-            k: v for k, v in cfg.items()
-            if isinstance(v, (str, int, float, bool)) or v is None
+            k: v for k, v in cfg.items() if isinstance(v, (str, int, float, bool)) or v is None
         }
         job = self.training.create_job(
-            config, dataset_id=getattr(result, "dataset_id", None),
+            config,
+            dataset_id=getattr(result, "dataset_id", None),
         )
         self.training.update_status(job.job_id, "running")
         metrics = {
-            k: v for k, v in (getattr(result, "training", None) or {}).items()
+            k: v
+            for k, v in (getattr(result, "training", None) or {}).items()
             if isinstance(v, (int, float))
         }
         if metrics:
@@ -141,8 +154,11 @@ class AILesPlatformPipeline:
             path=str(result.model_path),
             arch={"family": "eddy_viscosity_mlp"},
             dataset_id=getattr(result, "dataset_id", None),
-            metrics={k: v for k, v in (getattr(result, "training", None) or {}).items()
-                     if isinstance(v, (int, float))},
+            metrics={
+                k: v
+                for k, v in (getattr(result, "training", None) or {}).items()
+                if isinstance(v, (int, float))
+            },
             family="eddy_viscosity_mlp",
         )
 

@@ -22,8 +22,8 @@
 
 | lattice | direct callable source SHA-256 |
 |---|---|
-| D3Q19 | `847e4b6d385ae9147e1a3b2e02a7de8f19fe1ff1c1ac66a8a900ac901d7f2b13` |
-| D3Q27 | `4b1b55bf7b2aae49857f22d261e75666765764f5eeeb37050f105a17bafc10b5` |
+| D3Q19 | `d1b45c86a5c40fbbdc019962939aae9aedcde7f9849af086ff9a2929a57b4e54` |
+| D3Q27 | `3e3d756dbc79847ea7729e74abb0ee8a227285ab6a9e02f5aeab064b8cf41ff0` |
 
 执行命令：
 
@@ -33,6 +33,6 @@ pytest -q tests/test_d3q19_d3q27_mrt_consistency.py
 
 ## dtype 边界（重点）
 
-审计输入明确限定为 `float32`，这不是 `float64` 精度声明。两个当前 MRT 实现的 cached moment matrices 均由 float32 tensor 构造；尤其 D3Q27 的 `_get_d3q27_mrt_matrices`（`d3q27.py`）无论 population dtype 都返回 `torch.float32` matrix 与 inverse。因此以 `float64` populations 调用 `collide_mrt27` 会在矩阵乘法处以 dtype mismatch `RuntimeError` 失败，而不是执行 float64 MRT。该限制由专门的 D3Q27 回归测试锁定。
+**2026-08-23 复审更新**：`_get_d3q19_mrt_matrices` 与 `_get_d3q27_mrt_matrices` 增加了可选 `dtype` 参数（默认仍为 `float32`，全部既有 float32 调用点逐位不变），两个直接碰撞入口 `collide_mrt3d` / `collide_mrt27` 以及各 MRT-SGS 内核现在按 population dtype 构造 cached matrices——float64 populations 不再在 `matrix @ f` 处 dtype-mismatch 崩溃，而是执行 float64 MRT。动因是 B3 校准路径（`autograd_calib`）在 float64 域上运行 closure-family 轴。复审在同一探针族上新增 `test_mrt_accepts_float64_populations`（两个 lattice 的 fp64 fixed-point 与守恒，容差 1e-10/1e-12），float32 探针全部原样通过；源码指纹按下表更新。
 
-这份 artifact 证明的是当前 float32 CPU 路径下的基础数值一致性；不外推到 float64、GPU/其他加速器、streaming/boundary/forcing 耦合、长时间稳定性或物理解精度。
+这份 artifact 证明 float32 与 float64 CPU 路径下的基础数值一致性；不外推到 GPU/其他加速器、streaming/boundary/forcing 耦合、长时间稳定性或物理解精度。

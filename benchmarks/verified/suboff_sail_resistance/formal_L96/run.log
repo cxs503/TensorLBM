@@ -1,0 +1,42 @@
+=== TIER L96 start 2026-10-08T17:12:04+08:00
+=== SUBOFF with_sail Re=1000 L=96 collision=mrt steps=14400 device=cuda:6 ===
+
+setup: {
+ "Re": 1000.0,
+ "tau": 0.5144,
+ "u_lb": 0.05,
+ "nu_lb": 0.0048000000000000004,
+ "domain_lu": [
+  576,
+  203,
+  203
+ ],
+ "obstacle_cells": 7392,
+ "near_wall_cells": 2740,
+ "total_cells": 23736384,
+ "device": "cuda:6",
+ "auto_collision": "mrt",
+ "auto_wall_treatment": "bounce_back"
+}
+appendage stats: {"hull_type": "with_sail", "label": "SUBOFF + Sail (AFF-3 inspired)", "L_D_ratio": 8.575, "r_over_l": 0.05831, "bow_fraction": 0.233, "stern_fraction": 0.252, "displacement_lu3": 7484.24, "wetted_area_lu2": 2908.4, "wetted_area_scope": "bare_hull_surface_of_revolution", "wetted_area_method": "profile_meridional_metric_quadrature", "bare_hull_wetted_area_lu2": 2908.4, "prismatic_coefficient": 0.7919, "sail_scale": 1.0, "fin_scale": 1.0, "sail_own_volume_lu3": 45.194, "sail_own_wetted_area_lu2": 91.748, "appendage_own_volume_lu3": 45.194, "appendage_own_wetted_area_lu2": 91.748, "appendage_wetted_area_method": "own_dimension_quadrature_scaled", "solid_cells": 7392, "bare_hull_solid_cells": 7344, "appendage_solid_cells": 48, "fluid_cells": 23728992, "total_cells": 23736384, "nx": 576, "ny": 203, "nz": 203, "cx": 144.0, "cy": 101.5, "cz": 101.5, "length": 96.0, "radius": 5.597796143250689}
+appendage near cells (gradient normals): 76
+[compile_route] suboff_with_sail[L96]: mode=None -> eager (compile_step passthrough)
+run finished: completed in 1366s (94.9 ms/step) compile_mode=None effective='eager' status='eager'
+{
+ "Cd_pressure": 0.007165424312493779,
+ "Cd_friction": 0.03548323698026606,
+ "Cd_total": 0.042648661292759835,
+ "Cd_total_last500": 0.04263239373136475,
+ "Cf_ref_blasius": 0.04199504732703608,
+ "error_pct_vs_Blasius_totalwetted": 1.5564072606794366,
+ "drag_increment_ratio_vs_verified_bare": 1.0552648496631203,
+ "convergence_windows": {
+  "25%": 0.053008,
+  "50%": 0.047866,
+  "75%": 0.04344,
+  "100%": 0.042649
+ }
+}
+results written to formal_L96/result_L96.json
+RESULT with_sail L=96 Cd_p=0.007165 Cd_f=0.035483 Cd_tot=0.042649 (ref 0.041995) err=+1.56%
+=== TIER L96 exit 0 2026-10-08T17:35:20+08:00

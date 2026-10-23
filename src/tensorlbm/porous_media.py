@@ -48,6 +48,23 @@ Wettability
     first component (water) near the wall (water-wet), while a negative
     value makes the wall oil/gas-wet.
 
+Coupling-sign convention (G_12)
+-------------------------------
+Because the SC cross force is evaluated with a reverse-gather neighbour sum
+(:func:`tensorlbm.multiphase.sc_two_component_force`), the *effective*
+interaction is ``-G_12``:
+
+* ``G_12 < 0`` — repulsive cross-interaction → **phase separation**
+  (≈ −2.5 at ρ ≈ 1 is an empirically verified segregation point).
+* ``G_12 > 0`` — attractive cross-interaction → **mixing/miscible model**
+  (interfaces diffuse away; no surface tension).
+* ``G_12 = 0`` — decoupled components; rejected by validation.
+
+Historical note: docstrings and ``LaplaceTestConfig.validate`` used to claim
+"``G_12 > 0`` for phase separation", which is the opposite of the implemented
+behaviour (see the W4-B verification campaign defect list); the sign error was
+in the documentation/validation only, never in the force kernel.
+
 References
 ----------
 Young (1805) Phil. Trans. R. Soc. 95 65
@@ -100,6 +117,61 @@ def _c_on(device: torch.device) -> torch.Tensor:
 
 def _w_on(device: torch.device) -> torch.Tensor:
     return W.to(device)
+
+
+def _full_swap_fields(
+    alpha: torch.Tensor,
+    rho_heavy: float,
+    rho_light: float,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Smooth "full-swap" two-component initial density fields.
+
+    ``alpha`` (in [0, 1], typically a tanh interface) selects the local
+    phase: where ``alpha == 1`` component 2 is the majority phase and the
+    fields are ``(rho_light, rho_heavy)``; where ``alpha == 0`` component 1
+    is majority and the fields are ``(rho_heavy, rho_light)``.
+
+    The key property is that the *total* density ``rho_1 + rho_2 =
+    rho_heavy + rho_light`` is uniform, so no pressure jump is seeded at the
+    interface.  This replaces the legacy 5 %-minority step initialisation,
+    whose ~2:1 total-density discontinuity produced spurious forces that
+    drove the default configurations to negative distributions and NaN
+    within ~10 steps (W4-B verification campaign, defect 1).
+    """
+    rho1 = rho_heavy * (1.0 - alpha) + rho_light * alpha
+    rho2 = rho_light * (1.0 - alpha) + rho_heavy * alpha
+    return rho1, rho2
+
+
+def _final_state_summary(
+    f_water: torch.Tensor,
+    f_gas: torch.Tensor,
+    interface_metrics: dict[str, float] | None = None,
+) -> dict[str, object]:
+    """Finite/boundedness summary of the terminal state (pure measurement).
+
+    Returned by every ``run_*`` entry point as ``final_state`` so tests can
+    assert ``finite`` / ``min_f_* > 0`` / bounded densities directly instead
+    of only checking output-dict keys (the legacy smoke tests could not see
+    NaN states, W4-B defect 8).
+    """
+    rho_w, _, _ = macroscopic(f_water)
+    rho_g, _, _ = macroscopic(f_gas)
+    rho_tot = rho_w + rho_g
+    summary: dict[str, object] = {
+        "finite": bool(torch.isfinite(f_water).all().item() and torch.isfinite(f_gas).all().item()),
+        "min_f_water": float(f_water.min().item()),
+        "min_f_gas": float(f_gas.min().item()),
+        "rho_water_min": float(rho_w.min().item()),
+        "rho_water_max": float(rho_w.max().item()),
+        "rho_gas_min": float(rho_g.min().item()),
+        "rho_gas_max": float(rho_g.max().item()),
+        "rho_total_min": float(rho_tot.min().item()),
+        "rho_total_max": float(rho_tot.max().item()),
+    }
+    if interface_metrics:
+        summary.update(interface_metrics)
+    return summary
 
 
 # ---------------------------------------------------------------------------
@@ -302,7 +374,11 @@ class LaplaceTestConfig:
     ----------
     nx, ny:          Domain size (square domain recommended).
     bubble_radius:   Gas-bubble radius in lattice units.
-    G_12:            SC coupling constant (> 0 for phase separation).
+    G_12:            SC coupling constant.  Sign convention (see module
+                     docstring): negative → repulsive → phase separation
+                     (≈ −2.5 at ρ ≈ 1 is a verified segregation point);
+                     positive → attractive → mixing model.  Zero is
+                     rejected (decoupled components, no surface tension).
     tau1, tau2:      Relaxation times for water and gas.
     rho_water:       Initial water density (outer phase).
     rho_gas:         Initial gas density (inner bubble).
@@ -343,8 +419,10 @@ class LaplaceTestConfig:
         if self.rho_water <= self.rho_gas:
             msg = "rho_water must exceed rho_gas"
             raise ValueError(msg)
-        if self.G_12 <= 0:
-            msg = "G_12 must be > 0 for SC phase separation"
+        # G_12 < 0 separates phases, G_12 > 0 models a mixing pair (module
+        # docstring); only the degenerate decoupled value is invalid.
+        if math.isnan(self.G_12) or self.G_12 == 0:
+            msg = "G_12 must be non-zero (negative = phase separation, positive = mixing)"
             raise ValueError(msg)
 
     def resolved_run_name(self) -> str:
@@ -419,13 +497,16 @@ def run_laplace_test(config: LaplaceTestConfig) -> dict[str, object]:
     )
     r_field = torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
 
-    # Smooth tanh interface to reduce initial transients
+    # Smooth tanh interface (width 3) with full-swap compositions across it:
+    # the total density stays uniform, so no pressure jump is seeded at the
+    # bubble rim.  This replaces the legacy 5 %-minority initialisation,
+    # whose ~2:1 total-density step drove the default configuration to NaN
+    # within ~20 steps (W4-B defect list, item 1).
     width = 3.0
     alpha = 0.5 * (1.0 - torch.tanh((r_field - R) / width))  # 1 inside, 0 outside
-    frac = 0.05
-
-    rho_gas_field = config.rho_gas * alpha + config.rho_gas * frac * (1.0 - alpha)
-    rho_water_field = config.rho_water * frac * alpha + config.rho_water * (1.0 - alpha)
+    rho_water_field, rho_gas_field = _full_swap_fields(
+        1.0 - alpha, config.rho_water, config.rho_gas
+    )
 
     zero = torch.zeros((ny, nx), device=device)
     f_water = equilibrium(rho_water_field, zero, zero)
@@ -436,6 +517,7 @@ def run_laplace_test(config: LaplaceTestConfig) -> dict[str, object]:
     )
 
     diagnostics: list[dict[str, object]] = []
+    nonfinite_step: int | None = None
 
     for step in range(1, config.n_steps + 1):
         # Periodic SC collision (no walls)
@@ -461,14 +543,33 @@ def run_laplace_test(config: LaplaceTestConfig) -> dict[str, object]:
             }
             diagnostics.append(diag)
             print(f"step={step:5d}  ΔP={dp:.6f}  σ_eff={sigma_eff:.4f}")
+            if not (torch.isfinite(f_water).all().item() and torch.isfinite(f_gas).all().item()):
+                nonfinite_step = step
+                print(f"  *** non-finite state at step {step}; aborting ***")
+                break
 
     final = diagnostics[-1]
+    # Interface-survival metric: gas-fraction contrast between the bubble
+    # interior and the far field (pure measurement, same masks as
+    # _measure_laplace_pressure).
+    rho_w_f, _, _ = macroscopic(f_water)
+    rho_g_f, _, _ = macroscopic(f_gas)
+    phi_f = rho_g_f / (rho_w_f + rho_g_f + 1e-12)
+    inside = r_field <= R * 0.6
+    outside = r_field >= R * 1.4
+    final_state = _final_state_summary(
+        f_water,
+        f_gas,
+        {"phi_contrast_inside_minus_outside": float(phi_f[inside].mean() - phi_f[outside].mean())},
+    )
     # Save metadata
     metadata: dict[str, object] = {
         "config": {**asdict(config), "output_root": str(config.output_root)},
         "final_delta_p": final["delta_p"],
         "sigma_eff": final["sigma_eff"],
         "bubble_radius": R,
+        "nonfinite_step": nonfinite_step,
+        "final_state": final_state,
         "note": "ΔP = σ/R (Young-Laplace 2D). sigma_eff = ΔP * R.",
         "diagnostics": diagnostics,
     }
@@ -500,14 +601,30 @@ class CapillaryInvasionConfig:
     ----------
     nx, ny:          Domain size.
     tube_width:      Tube interior width in lattice nodes (interior cells).
-    G_12:            SC coupling constant.
+    G_12:            SC coupling constant (negative = phase separation,
+                     positive = mixing; see module docstring).
     G_ads_water:     Adsorption parameter for water at walls (> 0 → water-wet).
     G_ads_gas:       Adsorption parameter for gas at walls (< 0 → repelled).
     tau_water:       Relaxation time for water.
     tau_gas:         Relaxation time for gas.
     rho_water:       Water density.
     rho_gas:         Gas density.
-    dp_inlet:        Pressure difference driving gas inlet (lattice units).
+    dp_inlet:        Pressure difference driving the gas inlet, in lattice
+                     pressure units (ΔP = cs²·ρ_tot·dρ).  The inlet column
+                     is overwritten every step with the equilibrium of the
+                     gas-rich coexistence composition scaled by ``1 + dρ``
+                     (constant-pressure reservoir); ``dρ`` is solved exactly
+                     from ``cs²·ρ₀·dρ·(1 + dρ) = dp_inlet`` with
+                     ``ρ₀ = rho_water + rho_gas``.
+    solid_seam:      If True (default) the last column ``x = nx - 1`` is
+                     made solid over the full tube height, burying the
+                     periodic-streaming seam inside a wall.  With periodic
+                     x-streaming, column 0 and column nx-1 are direct
+                     neighbours, so an inlet gas reservoir at x = 0 faces a
+                     virtual gas-water interface at the seam which
+                     destabilises the run at segregation couplings
+                     (densities diverge → NaN; W4-B amendment #2 §9.2,
+                     defect 9).  False restores the legacy geometry.
     n_steps:         Number of time steps.
     output_interval: Diagnostic sampling interval.
     """
@@ -523,6 +640,7 @@ class CapillaryInvasionConfig:
     rho_water: float = 0.7
     rho_gas: float = 0.3
     dp_inlet: float = 1e-4
+    solid_seam: bool = True
     n_steps: int = 4000
     output_interval: int = 500
     output_root: Path = Path("outputs")
@@ -552,9 +670,10 @@ class CapillaryInvasionConfig:
     def resolved_run_name(self) -> str:
         if self.run_name:
             return self.run_name
+        seam_tag = "" if self.solid_seam else "_noseam"
         return (
             f"capillary_tw{self.tube_width}_G{self.G_12:.2f}"
-            f"_Gads{self.G_ads_water:.2f}_nx{self.nx}_steps{self.n_steps}"
+            f"_Gads{self.G_ads_water:.2f}_nx{self.nx}_steps{self.n_steps}{seam_tag}"
         )
 
 
@@ -565,6 +684,19 @@ def _capillary_wall_mask(ny: int, nx: int, tube_width: int, device: torch.device
     y_lo = y_center - tube_width // 2
     y_hi = y_center + tube_width // 2
     solid[y_lo : y_hi + 1, :] = False
+    return solid
+
+
+def _capillary_mask(config: CapillaryInvasionConfig, device: torch.device) -> torch.Tensor:
+    """Tube wall mask for the invasion benchmark, seam rule included.
+
+    With ``config.solid_seam`` (default) the last column is made solid over
+    the full height so the periodic-streaming seam is buried inside a wall
+    (W4-B amendment #2 §9.2, defect 9).
+    """
+    solid = _capillary_wall_mask(config.ny, config.nx, config.tube_width, device)
+    if config.solid_seam:
+        solid[:, -1] = True
     return solid
 
 
@@ -598,8 +730,9 @@ def run_capillary_invasion(config: CapillaryInvasionConfig) -> dict[str, object]
         config: Benchmark configuration.
 
     Returns:
-        Dictionary with ``invasion_series`` (step, front_x, sqrt_t) and
-        ``washburn_exponent`` estimated by linear regression on log-log data.
+        Dictionary with ``invasion_series`` (step, front_x, sqrt_t),
+        ``washburn_exponent`` (slope β of log(front) vs log(t); 0.5 for
+        Washburn L ∝ √t), and ``final_state`` (finite/boundedness summary).
     """
     config.validate()
     device = resolve_device(config.device)
@@ -608,28 +741,47 @@ def run_capillary_invasion(config: CapillaryInvasionConfig) -> dict[str, object]
     )
 
     ny, nx = config.ny, config.nx
-    solid = _capillary_wall_mask(ny, nx, config.tube_width, device)
+    solid = _capillary_mask(config, device)
 
-    # Initial condition: tube filled with water, gas reservoir at left
-    zero = torch.zeros((ny, nx), device=device)
-    rho_w0 = torch.full((ny, nx), config.rho_water, device=device)
-    rho_g0 = torch.full((ny, nx), config.rho_gas * 0.05, device=device)
-
-    # Gas occupies the left 5 columns of the fluid zone (initial gas seed)
+    # Initial condition: tube filled with water, gas seed on the left.
+    # Smooth full-swap initialisation across a tanh interface centred at the
+    # same gas-seed width as before — uniform total density, no step
+    # (replaces the legacy 5 %-minority step, W4-B defect list item 1).
     gas_init_cols = max(2, nx // 20)
-    rho_g0[:, :gas_init_cols] = config.rho_gas
-    rho_w0[:, :gas_init_cols] = config.rho_water * 0.05
-
+    xs = torch.arange(nx, dtype=torch.float32, device=device).view(1, nx).expand(ny, nx)
+    alpha_gas = 0.5 * (1.0 + torch.tanh((xs - float(gas_init_cols)) / 3.0))  # 1 = gas
+    rho_w0, rho_g0 = _full_swap_fields(alpha_gas, config.rho_gas, config.rho_water)
+    zero = torch.zeros((ny, nx), device=device)
     f_water = equilibrium(rho_w0, zero, zero)
     f_gas = equilibrium(rho_g0, zero, zero)
 
+    # Constant-pressure gas reservoir at x = 0.  dp_inlet is load-bearing:
+    # the inlet column is overwritten every step with the equilibrium of the
+    # gas-rich coexistence (full-swap) composition scaled by (1 + dρ), so the
+    # imposed pressure difference is dp_inlet = cs²·ρ_tot·dρ (dρ solved
+    # exactly from the quadratic; previously dp_inlet was dead code and the
+    # inlet used a 5 %-minority step composition — W4-B defect 5).
+    rho0_pair = config.rho_water + config.rho_gas
+    drho_inlet = (math.sqrt(1.0 + 4.0 * config.dp_inlet / (_CS2 * rho0_pair)) - 1.0) / 2.0
+    scale_inlet = 1.0 + drho_inlet
+    zero_col = torch.zeros((ny, 1), device=device)
+    feq_w_inlet = equilibrium(
+        torch.full((ny, 1), config.rho_gas * scale_inlet, device=device), zero_col, zero_col
+    )
+    feq_g_inlet = equilibrium(
+        torch.full((ny, 1), config.rho_water * scale_inlet, device=device), zero_col, zero_col
+    )
+
     print(
         f"Capillary invasion  NX={nx}  NY={ny}  tube_width={config.tube_width}  "
-        f"G={config.G_12}  G_ads_w={config.G_ads_water}  steps={config.n_steps}"
+        f"G={config.G_12}  G_ads_w={config.G_ads_water}  "
+        f"dp_inlet={config.dp_inlet}  "
+        f"seam={config.solid_seam}  steps={config.n_steps}"
     )
 
     diagnostics: list[dict[str, object]] = []
     invasion_series: list[tuple[int, float, float]] = []
+    nonfinite_step: int | None = None
 
     for step in range(1, config.n_steps + 1):
         # Wettability: apply adsorption at solid nodes
@@ -663,14 +815,9 @@ def run_capillary_invasion(config: CapillaryInvasionConfig) -> dict[str, object]
         f_water = bounce_back_cells(f_water, solid)
         f_gas = bounce_back_cells(f_gas, solid)
 
-        # Re-inject gas at the left boundary (constant-pressure inlet)
-        rho_inlet_w = config.rho_water * 0.05
-        rho_inlet_g = config.rho_gas
-        rho_w_col = torch.full((ny, 1), rho_inlet_w, device=device)
-        rho_g_col = torch.full((ny, 1), rho_inlet_g, device=device)
-        zero_2d = torch.zeros((ny, 1), device=device)
-        f_water[:, :, 0:1] = equilibrium(rho_w_col, zero_2d, zero_2d)
-        f_gas[:, :, 0:1] = equilibrium(rho_g_col, zero_2d, zero_2d)
+        # Re-inject gas at the left boundary (constant-pressure reservoir)
+        f_water[:, :, 0:1] = feq_w_inlet
+        f_gas[:, :, 0:1] = feq_g_inlet
 
         if step % config.output_interval == 0 or step == config.n_steps:
             x_front = _measure_invasion_front(f_water, f_gas, solid)
@@ -683,8 +830,12 @@ def run_capillary_invasion(config: CapillaryInvasionConfig) -> dict[str, object]
             }
             diagnostics.append(diag)
             print(f"step={step:5d}  front_x={x_front:.1f}  √t={sqrt_t:.2f}")
+            if not (torch.isfinite(f_water).all().item() and torch.isfinite(f_gas).all().item()):
+                nonfinite_step = step
+                print(f"  *** non-finite state at step {step}; aborting ***")
+                break
 
-    # Estimate Washburn exponent by linear regression log(front) vs log(√t)
+    # Estimate Washburn exponent (slope of log(front) vs log(t))
     washburn_exp = _estimate_washburn_exponent(invasion_series)
 
     # Save results
@@ -694,13 +845,40 @@ def run_capillary_invasion(config: CapillaryInvasionConfig) -> dict[str, object]
         writer.writerow(["step", "front_x", "sqrt_t"])
         writer.writerows(invasion_series)
 
+    # Inlet pressure measurement (pure measurement): lattice pressure of the
+    # reservoir column, p_in = cs²·ρ_tot(x=0), minus the nominal coexistence
+    # reference p₀ = cs²·(rho_water + rho_gas).  The imposed difference
+    # p_in − p₀ equals dp_inlet by construction, which lets tests verify
+    # that dp_inlet is load-bearing (with the legacy dead-code inlet at
+    # 5 %-minority composition this difference was ≈ −0.22).  Note: the
+    # tube is sealed (no pressure outlet), so an inlet-vs-mid difference is
+    # NOT the right observable — the imposed pressure transmits domain-wide.
+    rho_w_fin, _, _ = macroscopic(f_water)
+    rho_g_fin, _, _ = macroscopic(f_gas)
+    p_field = _CS2 * (rho_w_fin + rho_g_fin)
+    fluid = ~solid
+    p_inlet = float(p_field[:, 0][fluid[:, 0]].mean().item())
+    p_ref = _CS2 * (config.rho_water + config.rho_gas)
+    final_state = _final_state_summary(
+        f_water,
+        f_gas,
+        {
+            "front_x": _measure_invasion_front(f_water, f_gas, solid),
+            "p_inlet": p_inlet,
+            "p_inlet_minus_coexistence_ref": p_inlet - p_ref,
+        },
+    )
+
     metadata: dict[str, object] = {
         "config": {**asdict(config), "output_root": str(config.output_root)},
         "invasion_series": diagnostics,
         "washburn_exponent": round(washburn_exp, 4),
+        "drho_inlet": drho_inlet,
+        "nonfinite_step": nonfinite_step,
+        "final_state": final_state,
         "note": (
-            "Washburn equation: L ∝ √t → log-log slope ≈ 0.5. "
-            "washburn_exponent is the measured log-log slope."
+            "Washburn equation: L ∝ √t → β = d log L / d log t ≈ 0.5. "
+            "washburn_exponent is that slope β (regression of log(front) on log(step))."
         ),
     }
     (run_dir / "run_metadata.json").write_text(
@@ -711,17 +889,24 @@ def run_capillary_invasion(config: CapillaryInvasionConfig) -> dict[str, object]
 
 
 def _estimate_washburn_exponent(series: list[tuple[int, float, float]]) -> float:
-    """Estimate Washburn exponent by linear regression on log-log data."""
-    valid = [(s, x, sq) for s, x, sq in series if x > 2.0 and sq > 0.0]
+    """Estimate the Washburn exponent β in L(t) ∝ t^β by log-log regression.
+
+    Regresses log(front position) on log(t) (the step number of each
+    sample), so the returned slope is β itself (β = 0.5 for the Washburn
+    law L ∝ √t).  The previous implementation regressed log(front) on
+    log(√t) and therefore returned 2β while documenting it as the Washburn
+    exponent (W4-B defect list, item 6).
+    """
+    valid = [(s, x, sq) for s, x, sq in series if x > 2.0 and s > 0]
     if len(valid) < 3:
         return float("nan")
     log_x = [math.log(x) for _, x, _ in valid]
-    log_sq = [math.log(sq) for _, _, sq in valid]
+    log_t = [math.log(s) for s, _, _ in valid]
     n = len(log_x)
     mean_lx = sum(log_x) / n
-    mean_ls = sum(log_sq) / n
-    num = sum((lx - mean_lx) * (ls - mean_ls) for lx, ls in zip(log_x, log_sq, strict=True))
-    den = sum((ls - mean_ls) ** 2 for ls in log_sq)
+    mean_lt = sum(log_t) / n
+    num = sum((lx - mean_lx) * (lt - mean_lt) for lx, lt in zip(log_x, log_t, strict=True))
+    den = sum((lt - mean_lt) ** 2 for lt in log_t)
     if abs(den) < 1e-15:
         return float("nan")
     return num / den
@@ -751,7 +936,8 @@ class TwoPhasePoiseuilleConfig:
     rho_water:       Water density.
     rho_gas:         Gas/oil density.
     G_x:             Body-force acceleration in x (lattice units).
-    G_12:            SC coupling constant.
+    G_12:            SC coupling constant (negative = phase separation,
+                     positive = mixing; see module docstring).
     n_steps:         Number of time steps to reach steady state.
     output_interval: Diagnostic sampling interval.
     """
@@ -843,15 +1029,13 @@ def run_two_phase_poiseuille(config: TwoPhasePoiseuilleConfig) -> dict[str, obje
     wall[0, :] = True
     wall[-1, :] = True
 
-    # Initial condition: water in lower half, gas in upper half
-    rho_w0 = torch.zeros((ny, nx), device=device)
-    rho_g0 = torch.zeros((ny, nx), device=device)
-    rho_w0[:half, :] = config.rho_water
-    rho_g0[half:, :] = config.rho_gas
-    # Small minority fraction to avoid zero density
-    frac = 0.05
-    rho_w0[half:, :] = config.rho_water * frac
-    rho_g0[:half, :] = config.rho_gas * frac
+    # Initial condition: water in the lower half, gas in the upper half.
+    # Smooth full-swap initialisation across a tanh interface at y = half
+    # (uniform total density; replaces the legacy 5 %-minority step, which
+    # NaN'd under the default configuration — W4-B defect list, item 1).
+    ys = torch.arange(ny, dtype=torch.float32, device=device).view(ny, 1).expand(ny, nx)
+    alpha_water = 0.5 * (1.0 - torch.tanh((ys - float(half)) / 3.0))  # 1 below
+    rho_w0, rho_g0 = _full_swap_fields(alpha_water, config.rho_water, config.rho_gas)
 
     zero = torch.zeros((ny, nx), device=device)
     f_water = equilibrium(rho_w0, zero, zero)
@@ -864,6 +1048,7 @@ def run_two_phase_poiseuille(config: TwoPhasePoiseuilleConfig) -> dict[str, obje
     )
 
     diagnostics: list[dict[str, object]] = []
+    nonfinite_step: int | None = None
 
     for step in range(1, config.n_steps + 1):
         f_water, f_gas = collide_sc_two_component(
@@ -887,7 +1072,6 @@ def run_two_phase_poiseuille(config: TwoPhasePoiseuilleConfig) -> dict[str, obje
             rho_safe = rho_tot.clamp(min=1e-12)
             # Mixture velocity
             ux = (f_water.sum(dim=0) * ux_w + f_gas.sum(dim=0) * ux_g) / rho_safe
-            ux_profile = ux[:, nx // 2].tolist()
 
             diag: dict[str, object] = {
                 "step": step,
@@ -895,6 +1079,10 @@ def run_two_phase_poiseuille(config: TwoPhasePoiseuilleConfig) -> dict[str, obje
             }
             diagnostics.append(diag)
             print(f"step={step:5d}  max_ux={diag['max_ux']:.6f}")
+            if not (torch.isfinite(f_water).all().item() and torch.isfinite(f_gas).all().item()):
+                nonfinite_step = step
+                print(f"  *** non-finite state at step {step}; aborting ***")
+                break
 
     # Final velocity profile
     rho_w, ux_w, _ = macroscopic(f_water)
@@ -906,13 +1094,23 @@ def run_two_phase_poiseuille(config: TwoPhasePoiseuilleConfig) -> dict[str, obje
     # Analytical solution (piecewise Poiseuille, Stokes + stress continuity)
     nu_w = config.nu_water()
     nu_g = config.nu_gas()
-    mu_ratio = nu_w / nu_g  # μ_w / μ_g (same density → ν ratio = μ ratio)
+    # μ_w / μ_g: the layered setup has equal majority-phase densities, so the
+    # dynamic-viscosity ratio equals the kinematic ratio.
+    mu_ratio = nu_w / nu_g
     analytical = _two_phase_poiseuille_analytical(ny, half, config.G_x, nu_w, nu_g, mu_ratio)
 
     # L2 error (excluding wall nodes)
     sim_arr = torch.tensor(ux_profile[1:-1])
     ana_arr = torch.tensor(analytical[1:-1])
     l2_err = float((sim_arr - ana_arr).norm() / (ana_arr.norm().clamp(min=1e-15)))
+
+    # Interface-survival metric: gas fraction contrast between the upper
+    # (gas) and lower (water) halves, wall rows excluded (pure measurement).
+    phi_fin = rho_g / (rho_w + rho_g + 1e-12)
+    contrast = float(
+        phi_fin[half + 2 : -2, :].mean().item() - phi_fin[2 : half - 2, :].mean().item()
+    )
+    final_state = _final_state_summary(f_water, f_gas, {"phi_contrast_upper_minus_lower": contrast})
 
     metadata: dict[str, object] = {
         "config": {**asdict(config), "output_root": str(config.output_root)},
@@ -921,6 +1119,9 @@ def run_two_phase_poiseuille(config: TwoPhasePoiseuilleConfig) -> dict[str, obje
         "l2_error_rel": round(l2_err, 6),
         "nu_water": round(nu_w, 6),
         "nu_gas": round(nu_g, 6),
+        "mu_ratio": round(mu_ratio, 6),
+        "nonfinite_step": nonfinite_step,
+        "final_state": final_state,
         "diagnostics": diagnostics,
         "note": "l2_error_rel = ||sim - analytical|| / ||analytical||.",
     }
@@ -943,7 +1144,9 @@ def _two_phase_poiseuille_analytical(
 
     The analytical solution assumes:
     * No-slip at walls (y=0 and y=ny-1).
-    * Continuous velocity and shear stress at the interface (y = half).
+    * Continuous velocity and *shear stress* at the interface (y = half),
+      expressed through the dynamic-viscosity ratio ``mu_ratio = μ_w / μ_g``
+      (equal to ν_w/ν_g for equal-density layers).
     * Each phase occupies a half-channel of height H/2.
 
     The solution in each half is parabolic (Stokes flow driven by G_x):
@@ -951,15 +1154,18 @@ def _two_phase_poiseuille_analytical(
     Lower half (water, 0 ≤ j ≤ half):
         u(j) = (G_x / (2 ν_w)) · j · (B - j)
 
-    where B is found from the stress-balance condition.
+    where B follows from the stress-balance condition.  ``mu_ratio`` is
+    load-bearing: it sets the stress-continuity condition (previously it was
+    an unused argument and the condition implicitly assumed μ_σ ∝ ν_σ;
+    W4-B defect list, item 7).
     """
-    # With Stokes: d²u/dy² = -G/ν in each layer.
+    # With Stokes: d²u/dy² = -G_x/ν_σ in each layer (per-unit-mass forcing).
     # u_w(y) = a_w y² + b_w y + c_w,  u_g(y) = a_g y² + b_g y + c_g
     # BCs:
     #   u_w(0) = 0                  (bottom wall)
     #   u_g(H) = 0                  (top wall, H = ny-1)
     #   u_w(h) = u_g(h)             (velocity continuity, h = half)
-    #   ν_w du_w/dy(h) = ν_g du_g/dy(h)  (stress continuity)
+    #   μ_w du_w/dy(h) = μ_g du_g/dy(h)  (stress continuity, μ_w/μ_g = mu_ratio)
     # where a_σ = -G_x / (2 ν_σ)
 
     H = float(ny - 1)
@@ -971,7 +1177,8 @@ def _two_phase_poiseuille_analytical(
     # u_w(y) = aw y² + bw y         (c_w = 0)
     # u_g(y) = ag y² + bg y + cg
     # u_g(H) = 0 → cg = -ag H² - bg H
-    # Stress: ν_w(2aw h + bw) = ν_g(2ag h + bg) → bw·ν_w - bg·ν_g = ν_g·2ag·h - ν_w·2aw·h
+    # Stress: mu_ratio·(2aw h + bw) = 2ag h + bg
+    #         → bw·mu_ratio - bg = 2ag·h - mu_ratio·2aw·h
     # Velocity: aw h² + bw h = ag h² + bg h + cg = ag h² + bg h + (-ag H² - bg H)
     #         = ag(h² - H²) + bg(h - H)
     # => bw h - bg(h - H) = ag(h² - H²) - aw h²
@@ -980,10 +1187,12 @@ def _two_phase_poiseuille_analytical(
     # [ν_w, -ν_g] [bw]   [ν_g·2ag·h - ν_w·2aw·h   ]
     # [h,   H-h ] [bg] = [ag(h-H)(h+H) - aw·h²     ]
 
-    # Solve 2×2 linear system
-    A00, A01 = nu_w, -nu_g
+    # Solve 2×2 linear system (stress row expressed via mu_ratio; for
+    # mu_ratio = ν_w/ν_g this is the previous system scaled by 1/ν_g, so
+    # equal-density callers get numerically identical profiles)
+    A00, A01 = mu_ratio, -1.0
     A10, A11 = h, H - h
-    b0 = nu_g * 2.0 * ag * h - nu_w * 2.0 * aw * h
+    b0 = 2.0 * ag * h - mu_ratio * 2.0 * aw * h
     b1 = ag * (h - H) * (h + H) - aw * h * h
 
     det = A00 * A11 - A01 * A10
@@ -1034,7 +1243,10 @@ class PorousDrainageConfig:
     tube_width:      Tube width (for ``"tube_array"``).
     seed:            Random seed (for ``"random_cylinders"``).
     model:           Multiphase model (``"sc"`` or ``"cg"``).
-    G_12:            SC coupling constant (or CG surface tension amplitude A).
+    G_12:            SC coupling constant (negative = phase separation,
+                     positive = mixing; see module docstring).  For the CG
+                     model this is rescaled to the surface-tension amplitude
+                     ``A = 0.04·G_12`` instead.
     G_ads_water:     Wall adsorption for water (SC model, > 0 → water-wet).
     G_ads_gas:       Wall adsorption for gas (SC model, < 0 → gas repelled).
     tau_water:       Relaxation time for water.
@@ -1206,14 +1418,14 @@ def run_porous_drainage(config: PorousDrainageConfig) -> dict[str, object]:
     )
     print(f"Run directory: {run_dir}")
 
-    # Initial condition: domain filled with water
-    frac = 0.05
-    rho_w0 = torch.full((ny, nx), config.rho_water, device=device)
-    rho_g0 = torch.full((ny, nx), config.rho_gas * frac, device=device)
-    # Gas reservoir: first 3 fluid columns
+    # Initial condition: domain filled with water, gas reservoir at left.
+    # Smooth full-swap initialisation across a tanh interface centred at the
+    # same gas-seed width (3 columns) — uniform total density, no step
+    # (replaces the legacy 5 %-minority step, W4-B defect list, item 1).
     gas_cols = 3
-    rho_g0[:, :gas_cols] = config.rho_gas
-    rho_w0[:, :gas_cols] = config.rho_water * frac
+    xs = torch.arange(nx, dtype=torch.float32, device=device).view(1, nx).expand(ny, nx)
+    alpha_gas = 0.5 * (1.0 + torch.tanh((xs - float(gas_cols)) / 3.0))  # 1 = gas
+    rho_w0, rho_g0 = _full_swap_fields(alpha_gas, config.rho_gas, config.rho_water)
 
     zero = torch.zeros((ny, nx), device=device)
     f_water = equilibrium(rho_w0, zero, zero)
@@ -1222,6 +1434,7 @@ def run_porous_drainage(config: PorousDrainageConfig) -> dict[str, object]:
     diagnostics: list[dict[str, object]] = []
     saturation_series: list[tuple[int, float, float]] = []
     breakthrough_step: int | None = None
+    nonfinite_step: int | None = None
 
     for step in range(1, config.n_steps + 1):
         # --- wettability adsorption (SC model only) ---
@@ -1265,9 +1478,10 @@ def run_porous_drainage(config: PorousDrainageConfig) -> dict[str, object]:
         f_water = bounce_back_cells(f_water, solid)
         f_gas = bounce_back_cells(f_gas, solid)
 
-        # --- gas injection at left boundary ---
-        rho_inlet_w = config.rho_water * frac
-        rho_inlet_g = config.rho_gas
+        # --- gas injection at left boundary (gas-rich coexistence
+        #     composition, consistent with the smooth full-swap init) ---
+        rho_inlet_w = config.rho_gas
+        rho_inlet_g = config.rho_water
         rho_w_col = torch.full((ny, 1), rho_inlet_w, device=device)
         rho_g_col = torch.full((ny, 1), rho_inlet_g, device=device)
         zero_2d = torch.zeros((ny, 1), device=device)
@@ -1295,6 +1509,10 @@ def run_porous_drainage(config: PorousDrainageConfig) -> dict[str, object]:
             diagnostics.append(diag)
             print(f"step={step:5d}  S_w={S_w:.4f}  S_g={S_g:.4f}")
             _save_saturation_snapshot(run_dir, step, f_water, f_gas, solid, config.model)
+            if not (torch.isfinite(f_water).all().item() and torch.isfinite(f_gas).all().item()):
+                nonfinite_step = step
+                print(f"  *** non-finite state at step {step}; aborting ***")
+                break
 
     # Save saturation CSV
     sat_csv = run_dir / "saturation.csv"
@@ -1303,10 +1521,15 @@ def run_porous_drainage(config: PorousDrainageConfig) -> dict[str, object]:
         writer.writerow(["step", "S_water", "S_gas"])
         writer.writerows(saturation_series)
 
+    s_w_final, _ = _measure_saturation(f_water, f_gas, solid)
+    final_state = _final_state_summary(f_water, f_gas, {"S_water": s_w_final})
+
     metadata: dict[str, object] = {
         "config": {**asdict(config), "output_root": str(config.output_root)},
         "porosity": round(porosity, 6),
         "breakthrough_step": breakthrough_step,
+        "nonfinite_step": nonfinite_step,
+        "final_state": final_state,
         "saturation_series": diagnostics,
         "note": (
             "Primary drainage: gas (non-wetting) displaces water (wetting). "

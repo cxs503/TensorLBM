@@ -13,7 +13,6 @@ Verifies:
 
 from __future__ import annotations
 
-import pytest
 import torch
 
 from tensorlbm import (
@@ -21,9 +20,9 @@ from tensorlbm import (
     collide_sc_two_component_27,
     equilibrium27,
     macroscopic27,
+    psi_exp,
     sc_two_component_force_27,
     stream27,
-    psi_exp,
 )
 
 DEVICE = torch.device("cpu")
@@ -80,6 +79,15 @@ class TestSCTwoComponentForce27:
         Fx1, Fy1, Fz1, Fx2, Fy2, Fz2 = sc_two_component_force_27(rho1, rho2, G_12=0.9)
         for t in (Fx1, Fy1, Fz1, Fx2, Fy2, Fz2):
             assert torch.allclose(t, torch.zeros_like(t), atol=1e-6)
+
+    def test_negative_coupling_repels_from_increasing_other_component(self) -> None:
+        """G12 < 0 must push component 1 away from increasing component-2 density."""
+        nz, ny, nx = 5, 6, 20
+        x = torch.arange(nx, dtype=torch.float32).view(1, 1, nx)
+        rho1 = torch.ones((nz, ny, nx))
+        rho2 = (1.0 + 0.1 * torch.sin(2.0 * torch.pi * x / nx)).expand(nz, ny, nx)
+        Fx1, _, _, _, _, _ = sc_two_component_force_27(rho1, rho2, G_12=-1.0)
+        assert float(Fx1[:, :, 0].mean()) < 0.0
 
     def test_body_force_added(self) -> None:
         """Body force should appear as rho * g in the total force."""

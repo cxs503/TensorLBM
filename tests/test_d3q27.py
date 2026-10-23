@@ -63,7 +63,10 @@ class TestEquilibrium27:
         equilibrium = equilibrium27(rho, zero, zero, zero)
 
         torch.testing.assert_close(
-            equilibrium[:, 0, 0, 0], W_EXACT64, rtol=0.0, atol=0.0,
+            equilibrium[:, 0, 0, 0],
+            W_EXACT64,
+            rtol=0.0,
+            atol=0.0,
         )
         assert torch.equal(W_EXACT64.float(), W27)
         assert not torch.equal(W27.double(), W_EXACT64)

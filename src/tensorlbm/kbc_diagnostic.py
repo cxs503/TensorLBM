@@ -37,12 +37,10 @@ from .entropic_kbc import (
     _kbc_decompose,
     _lattice_constants,
     discrete_entropy,
-    kbc_decompose_d3q19,
     solve_gamma_entropy,
 )
 from .obstacles import compute_obstacle_forces_3d
 from .solver3d import collide_bgk3d, stream3d
-
 
 # ---------------------------------------------------------------------------
 # Instrumented KBC collision (captures intermediate state)

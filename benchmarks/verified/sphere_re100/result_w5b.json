@@ -1,0 +1,165 @@
+{
+  "case": "sphere Re=100 direct-force benchmark (W5-B)",
+  "reference": {
+    "formula": "Cd = 24/Re * (1 + 0.15*Re^0.687)",
+    "re": 100.0,
+    "cd_ref": 1.0917310910948732,
+    "gate_pct": 3.0,
+    "cross_references": {
+      "schiller_naumann_0681": 1.0685190542670633,
+      "clift_gauvin": 1.1092345787735252
+    }
+  },
+  "runs": [
+    {
+      "file": "formal_bb_D40.json",
+      "route": "bb",
+      "D": 40,
+      "domain_lu": [
+        140,
+        140,
+        180
+      ],
+      "lat": 1.25,
+      "tau": 0.56,
+      "u_lb": 0.05,
+      "dpS_meta": 1.5707963267948968,
+      "dpS_independent": 1.5707963267948968,
+      "dpS_rel_diff": 0.0,
+      "steps_completed": 12000,
+      "steady": {
+        "window_mean": 1.2922772551177482,
+        "prev_window_mean": 1.2926845367682562,
+        "drift_pct": -0.03150665447938967,
+        "n_window": 48,
+        "criterion_pct": 0.3,
+        "min_steps": 8000,
+        "meets_criterion": true
+      },
+      "cd_judged": 1.2922772551177482,
+      "cl_mean": -0.00050300548687605,
+      "cd_ref_primary": 1.0917310910948732,
+      "err_pct": 18.369556904507647,
+      "gate": 0.03,
+      "within_gate": false,
+      "mass_drift_ppm": null
+    },
+    {
+      "file": "formal_bb_D60.json",
+      "route": "bb",
+      "D": 60,
+      "domain_lu": [
+        210,
+        210,
+        270
+      ],
+      "lat": 1.25,
+      "tau": 0.59,
+      "u_lb": 0.05,
+      "dpS_meta": 3.5342917352885177,
+      "dpS_independent": 3.5342917352885177,
+      "dpS_rel_diff": 0.0,
+      "steps_completed": 12000,
+      "steady": {
+        "window_mean": 1.2831206191931062,
+        "prev_window_mean": 1.2855419353077628,
+        "drift_pct": -0.18834983505046132,
+        "n_window": 48,
+        "criterion_pct": 0.3,
+        "min_steps": 8000,
+        "meets_criterion": true
+      },
+      "cd_judged": 1.2831206191931062,
+      "cl_mean": -0.00031804508846307924,
+      "cd_ref_primary": 1.0917310910948732,
+      "err_pct": 17.5308305918349,
+      "gate": 0.03,
+      "within_gate": false,
+      "mass_drift_ppm": null
+    },
+    {
+      "file": "formal_bfl_D40.json",
+      "route": "bfl",
+      "D": 40,
+      "domain_lu": [
+        200,
+        200,
+        180
+      ],
+      "lat": 2.0,
+      "tau": 0.56,
+      "u_lb": 0.05,
+      "dpS_meta": 1.5707963267948968,
+      "dpS_independent": 1.5707963267948968,
+      "dpS_rel_diff": 0.0,
+      "steps_completed": 12000,
+      "steady": {
+        "window_mean": 1.214927032369151,
+        "prev_window_mean": 1.215738661218524,
+        "drift_pct": -0.06676014140731741,
+        "n_window": 48,
+        "criterion_pct": 0.3,
+        "min_steps": 8000,
+        "meets_criterion": true
+      },
+      "cd_judged": 1.214927032369151,
+      "cl_mean": -0.0001329610158429149,
+      "cd_ref_primary": 1.0917310910948732,
+      "err_pct": 11.28445844211758,
+      "gate": 0.03,
+      "within_gate": false,
+      "mass_drift_ppm": 0.0,
+      "cv_mom_cd": 1.2154579657406333,
+      "cv_vs_ledger_rel_diff": 0.0004370084435827443
+    },
+    {
+      "file": "formal_bfl_D60.json",
+      "route": "bfl",
+      "D": 60,
+      "domain_lu": [
+        300,
+        300,
+        270
+      ],
+      "lat": 2.0,
+      "tau": 0.59,
+      "u_lb": 0.05,
+      "dpS_meta": 3.5342917352885177,
+      "dpS_independent": 3.5342917352885177,
+      "dpS_rel_diff": 0.0,
+      "steps_completed": 12000,
+      "steady": {
+        "window_mean": 1.2141675265765555,
+        "prev_window_mean": 1.2180145589517404,
+        "drift_pct": -0.3158445313244681,
+        "n_window": 48,
+        "criterion_pct": 0.3,
+        "min_steps": 8000,
+        "meets_criterion": false
+      },
+      "cd_judged": 1.2141675265765555,
+      "cl_mean": -3.615784093952428e-05,
+      "cd_ref_primary": 1.0917310910948732,
+      "err_pct": 11.214889498007558,
+      "gate": 0.03,
+      "within_gate": false,
+      "mass_drift_ppm": 0.0,
+      "cv_mom_cd": 1.2122991016267128,
+      "cv_vs_ledger_rel_diff": 0.0015388526780244283
+    }
+  ],
+  "judgment": {
+    "route": "bfl",
+    "observable": "directly measured BFL per-link momentum ledger (laboratory frame), window-mean Cd",
+    "n_grids": 2,
+    "all_within_gate": false,
+    "monotone_error_decrease": true,
+    "pass": false
+  },
+  "notes_chain": {
+    "chain_entries": 3,
+    "last_locked_hash": "489074a4899ccf4beb754734811f2bb4d100f0433f5a221b5c0db4c64748564c",
+    "current_notes_hash": "489074a4899ccf4beb754734811f2bb4d100f0433f5a221b5c0db4c64748564c",
+    "notes_matches_last_rev": true
+  }
+}

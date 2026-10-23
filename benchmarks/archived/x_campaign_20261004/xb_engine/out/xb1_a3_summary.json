@@ -1,0 +1,19 @@
+{
+ "gate": "no NaN (nan_f=nan_g=0 at every sample) in all 3 runs; baseline W=2 all NaN (M1 P1)",
+ "nan_max": {
+  "W2_R20": 39845888,
+  "W2_R28": 39845888,
+  "W2_R40": 39845888
+ },
+ "sigma_eff_ratio": {
+  "W2_R20": NaN,
+  "W2_R28": NaN,
+  "W2_R40": NaN
+ },
+ "u_max_disclosure": {
+  "W2_R20": NaN,
+  "W2_R28": NaN,
+  "W2_R40": NaN
+ },
+ "A3_pass": false
+}

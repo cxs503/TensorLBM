@@ -9,10 +9,9 @@ For each population i:
   ∂_t f_i = -c_i·∇f_i - (f_i - f_i^eq)/τ
 """
 
-import torch
-import torch.nn.functional as F
-import math, time
 from dataclasses import dataclass
+
+import torch
 
 
 @dataclass
@@ -114,7 +113,6 @@ class BoltzmannPrismSolver:
 
         f = self.f_prism
         c = self.c  # (19, 3)
-        h = self._h
 
         for _ in range(n_sub):
             # ---- Advection (wall-normal) ----
@@ -181,10 +179,10 @@ class LBMPrismHybrid:
 
     def step(self, f: torch.Tensor, tau: float, C_s: float = 0.05) -> torch.Tensor:
         """One LBM step + prism coupling."""
-        from .turbulence import collide_smagorinsky_mrt3d
-        from .solver3d import stream3d
-        from .wall_model import wall_function_3d
         from .boundaries3d import far_field_bc_3d
+        from .solver3d import stream3d
+        from .turbulence import collide_smagorinsky_mrt3d
+        from .wall_model import wall_function_3d
 
         # LBM bulk
         f = collide_smagorinsky_mrt3d(f, tau=tau, C_s=C_s)

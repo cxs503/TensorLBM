@@ -28,7 +28,6 @@ from tensorlbm.acoustic_beamforming import (
     clean_sc,
     compute_source_map,
     damas_deconvolve,
-    das_beamformer,
     run_acoustic_beamforming,
 )
 

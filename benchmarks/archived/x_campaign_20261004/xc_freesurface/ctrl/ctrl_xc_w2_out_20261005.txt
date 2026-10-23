@@ -1,0 +1,22 @@
+PASS A1 prereg md5 260dabf4 frozen (same file batch-1 verified against)
+PASS A2 runner md5 867a95a7 (NOTES-deployed --band variant) + engine_w1 8782d48d + attribution probe 4a04c248 on disk
+PASS A3 both main arms stamp identical frozen provenance (prereg/engine/lineage/ref_lock path/ halfway + capture_mirror ucap 0.03)
+PASS A4 selfcheck zero hand-written dynamics + no nonfinite, both arms
+PASS A5 artifact names == formal prereg-4 arms (probes must be DIAGNOSTIC_)
+PASS A6 params: a20 nx=144 ny=64 tau=1.0 steps=1118; a40 grid coarser->finer (a40 >= a20 nx, steps >= a20); g=2e-4 both  | a40: nx=288 steps=1581
+PASS B1 MY interp+err recompute (own impl of frozen rule) from series x ref_lock == stored Z_sim/Z_err/H_sim/H_err/max_abs for ALL 6 files
+PASS B2 headline ties: a20 max|Z|=%.3f (94.629) / a40=%.3f (114.770)  | 94.629 / 114.770
+PASS C1 mass gates: a20 drift 0.0008% / a40 0.0011% both <= 0.5% (claimed 0.0008/0.0011), gate_pass True
+PASS D1 judge_ladder.txt every row == MY values (12 rows), mono labels match frozen rule abs(fine)<abs(coarse)
+PASS D2 MY ladder verdict: mass pass / max|Z|<=3%% both=False / mono_z=%s / mono_h=%s -> LADDER FAIL (matches judge_ladder footer)  | gate3=False monoZ=False monoH=False
+PASS D3 W1 success criterion machine-side: v1.1 a20=55.386 a40=39.340 (I load the archives); narrowing=False (both worsen: +39.243 / +75.430 pp) -> FAIL honest
+PASS E1 births: capture_mirror 133546 (~119.5/step over 1118 steps; claimed 133546 119/step); rescue 251628 = 1.88x (claimed 251628 ~1.9x)
+PASS E2 caliber split @T*=1.23: Z_frozen=2.65 vs Z_mass=1.25 (claimed 2.65 vs 1.25, band 28 cells ahead)
+PASS E3 Z_mass (ledger mass>0.1 caliber) lag range -60.9..-13.3% across 9 checkpoints (claimed -13.3..-60.9: lag, not wall band)
+PASS E4 rescue band spread: max Z_frozen=7.10 ~ domain edge nx/20=7.2 (claimed 7.1 vs 7.2)
+PASS F1 mirror-only Z 56.169/40.906 ~ v1.1 (55.386/39.340): front lag unchanged by wall closure (claimed 56.169/40.906)
+PASS F2 H_sim EXACTLY identical across capture_mirror/mirror/rescueM per grid (H improvement orthogonal to birth mechanism)
+PASS G1 FULL RERUN both arms + judge: identical to formal on every non-volatile field (series/judgment/mass/params/ladder text) = deterministic reproducible formal record
+PASS G2 originals restored bit-exact (pre==post md5 inventory)
+
+mine: PASS 20 FAIL 0

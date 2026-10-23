@@ -9,7 +9,6 @@ from tensorlbm.d3q27_temporal_reflux import D3Q27InterfaceFluxPacket
 from tensorlbm.fixed_nested_patch_schedule import CellExtent3D, FixedNestedPatchScheduleD3Q27
 from tensorlbm.fixed_nested_patch_step import run_fixed_nested_patch_step_d3q27
 
-
 FaceKey = tuple[int, int]
 
 

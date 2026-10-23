@@ -1,0 +1,15 @@
+[r5] T1 channel: W*=4.0 sigma_input=0.00138071
+[xh-droplet2d] step 2000/6000
+[xh-droplet2d] step 4000/6000
+[xh-droplet2d] step 6000/6000
+[r5-2d] rho2: C 0.5002 -> 0.5014 ret=1.0024 umax=2.96e-04 stable=True
+[r5-2d] rho10: C 0.1010 -> 0.1010 ret=1.0000 umax=9.30e-06 stable=False
+[r5-3d] step 2000/10000 (6s, 3 ms/step)
+[r5-3d] step 4000/10000 (13s, 3 ms/step)
+[r5-3d] step 6000/10000 (19s, 3 ms/step)
+[r5-3d] step 8000/10000 (25s, 3 ms/step)
+[r5-3d] step 10000/10000 (31s, 3 ms/step)
+[r5-3d] pA_rho2_3d: {'stable': True, 'C_init': 0.5006452700403328, 'C_end': 0.5016559040823289, 'C_retention': 1.0020186629185863, 'u_max_final': 0.0005613430754099545, 'mass_drift_r_per_step': 2.9565866570846898e-08, 'mass_drift_b_per_step': 1.6498823123212107e-08, 'sigma_rec_end': 0.0014477342994494435}
+[r5-3d] pB_rho10_3d: {'stable': False, 'C_init': None, 'C_end': None, 'C_retention': None, 'u_max_final': None, 'mass_drift_r_per_step': None, 'mass_drift_b_per_step': None, 'sigma_rec_end': None}
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/phase1/out/r5_pressure_probe.json
+GATES: {'g_r5_ledger_le_1e-10_3d': False, 'g_r5_stable_3d': False, 'g_r5_umax_le_1e-2': True, 'g_r5_rho2_contrast_retention_ge_0.9': True, 'g_r5_rho10_contrast_retention_ge_0.9': False}

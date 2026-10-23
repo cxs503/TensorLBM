@@ -120,3 +120,13 @@
   `specular_reflection(f, mask)`（D2Q9 优先；移动壁亦可复用 G17 BFL 模板）
 - **备注**：半无限域截断判据 H≳4δ=4√(νt)：τ=0.8、t=9000 时 H=100 不达标
   （max_rel 10.5%），H=200 达标（0.094%）；详见 /tmp/stokes1_gap.md
+
+### G21. 孤儿碰撞/湍流模块（有实现未验证未导出——勿用，待验证）
+- **ddes.py**（延迟 DES）：无引用无测试无导出——疑似早期开发残留
+- **des_turbulence.py**（DES）：同左
+- **rans_wall_bc.py**（RANS 壁函数）：同左
+- **d3q27_collide.py**（D3Q27 碰撞）：同左——注意 cumulant_smag 的 D3Q27 是另一路径
+- **hybrid_solver.py**（混合求解器）：同左
+- **prism_solver.py**（棱柱求解器）：同左
+- **处理**：不导出（无验证导出会误导），标记待验证；若后续 benchmark 需要先补测试
+- **已补齐导出的高级碰撞**（2026-08-19, eac50cb）：cascaded_collision（collide_cascaded_d3q19/d3q27）+ entropic_kbc（collide_kbc_d3q19/d3q27 等）——有测试有引用，已顶层导出

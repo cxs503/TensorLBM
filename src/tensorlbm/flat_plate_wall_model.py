@@ -1,4 +1,5 @@
 """Finite flat-plate external-flow benchmark for the BFL wall-stress model."""
+
 from __future__ import annotations
 
 import math
@@ -63,7 +64,9 @@ class FlatPlateWallModelConfig:
     @property
     def wall_nu(self) -> float:
         return physical_wall_lattice_viscosity(
-            self.lattice_speed, self.plate_length, self.reynolds,
+            self.lattice_speed,
+            self.plate_length,
+            self.reynolds,
         )
 
     @property
@@ -151,13 +154,21 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
     f = equilibrium3d(rho, ux, zero, zero, device=device)
     solid_q = solid.unsqueeze(0).expand_as(f)
     cv = box_control_volume(
-        shape, x0=x0 - config.cv_margin, x1=x1 + config.cv_margin,
-        y0=plate_y - config.cv_margin, y1=plate_y + config.cv_margin + 1,
-        z0=0, z1=config.nz, periodic_axes=("z",), device=device,
+        shape,
+        x0=x0 - config.cv_margin,
+        x1=x1 + config.cv_margin,
+        y0=plate_y - config.cv_margin,
+        y1=plate_y + config.cv_margin + 1,
+        z0=0,
+        z1=config.nz,
+        periodic_axes=("z",),
+        device=device,
     )
     sigma = build_sponge_sigma_3d(
-        shape, width=config.sponge_width,
-        max_strength=config.sponge_strength, device=device,
+        shape,
+        width=config.sponge_width,
+        max_strength=config.sponge_strength,
+        device=device,
         faces=("x+", "y-", "y+"),
     )
     friction_history: list[float] = []
@@ -174,11 +185,13 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         assert checkpoint is not None
         state = torch.load(checkpoint, map_location=device, weights_only=True)
         expected = {
-            "shape_zyx": list(shape), "plate_length": config.plate_length,
+            "shape_zyx": list(shape),
+            "plate_length": config.plate_length,
             "plate_start_fraction": config.plate_start_fraction,
             "reynolds": config.reynolds,
             "resolved_reynolds": config.resolved_reynolds,
-            "lattice_speed": config.lattice_speed, "wall_law": config.wall_law,
+            "lattice_speed": config.lattice_speed,
+            "wall_law": config.wall_law,
             "stress_exchange_distance": config.stress_exchange_distance,
             "wall_diagnostic_interval": config.wall_diagnostic_interval,
             "ramp_steps": config.ramp_steps,
@@ -200,9 +213,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         wall_y_plus_min_history = state["wall_y_plus_min_history"].tolist()
         wall_y_plus_mean_history = state["wall_y_plus_mean_history"].tolist()
         wall_y_plus_max_history = state["wall_y_plus_max_history"].tolist()
-        wall_rejected_fraction_history = state[
-            "wall_rejected_fraction_history"
-        ].tolist()
+        wall_rejected_fraction_history = state["wall_rejected_fraction_history"].tolist()
         maximum_limited_fraction = float(state["maximum_limited_fraction"])
         if start_step >= config.steps:
             raise ValueError("checkpoint already reached or exceeded requested steps")
@@ -211,71 +222,88 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         if checkpoint is None:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
-        atomic_torch_save({
-            "schema": "tensorlbm-flat-plate-checkpoint-v4",
-            "configuration": {
-                "shape_zyx": list(shape), "plate_length": config.plate_length,
-                "plate_start_fraction": config.plate_start_fraction,
-                "reynolds": config.reynolds,
-                "resolved_reynolds": config.resolved_reynolds,
-                "lattice_speed": config.lattice_speed,
-                "wall_law": config.wall_law,
-                "stress_exchange_distance": config.stress_exchange_distance,
-                "wall_diagnostic_interval": config.wall_diagnostic_interval,
-                "ramp_steps": config.ramp_steps,
-                "sponge_width": config.sponge_width,
-                "sponge_strength": config.sponge_strength,
-                "cv_margin": config.cv_margin,
-                "smagorinsky_cs": config.smagorinsky_cs,
-                "positivity_limiter": config.positivity_limiter,
-                "link_force_frame": "laboratory_after_wall_activation",
-                "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
+        atomic_torch_save(
+            {
+                "schema": "tensorlbm-flat-plate-checkpoint-v4",
+                "configuration": {
+                    "shape_zyx": list(shape),
+                    "plate_length": config.plate_length,
+                    "plate_start_fraction": config.plate_start_fraction,
+                    "reynolds": config.reynolds,
+                    "resolved_reynolds": config.resolved_reynolds,
+                    "lattice_speed": config.lattice_speed,
+                    "wall_law": config.wall_law,
+                    "stress_exchange_distance": config.stress_exchange_distance,
+                    "wall_diagnostic_interval": config.wall_diagnostic_interval,
+                    "ramp_steps": config.ramp_steps,
+                    "sponge_width": config.sponge_width,
+                    "sponge_strength": config.sponge_strength,
+                    "cv_margin": config.cv_margin,
+                    "smagorinsky_cs": config.smagorinsky_cs,
+                    "positivity_limiter": config.positivity_limiter,
+                    "link_force_frame": "laboratory_after_wall_activation",
+                    "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
+                },
+                "step": step,
+                "populations": f.detach().cpu(),
+                "friction_history": torch.tensor(friction_history, dtype=torch.float64),
+                "control_volume_history": torch.tensor(cv_history, dtype=torch.float64),
+                "bfl_total_history": torch.tensor(bfl_total_history, dtype=torch.float64),
+                "wall_y_plus_min_history": torch.tensor(
+                    wall_y_plus_min_history,
+                    dtype=torch.float64,
+                ),
+                "wall_y_plus_mean_history": torch.tensor(
+                    wall_y_plus_mean_history,
+                    dtype=torch.float64,
+                ),
+                "wall_y_plus_max_history": torch.tensor(
+                    wall_y_plus_max_history,
+                    dtype=torch.float64,
+                ),
+                "wall_rejected_fraction_history": torch.tensor(
+                    wall_rejected_fraction_history,
+                    dtype=torch.float64,
+                ),
+                "maximum_limited_fraction": maximum_limited_fraction,
             },
-            "step": step,
-            "populations": f.detach().cpu(),
-            "friction_history": torch.tensor(friction_history, dtype=torch.float64),
-            "control_volume_history": torch.tensor(cv_history, dtype=torch.float64),
-            "bfl_total_history": torch.tensor(bfl_total_history, dtype=torch.float64),
-            "wall_y_plus_min_history": torch.tensor(
-                wall_y_plus_min_history, dtype=torch.float64,
-            ),
-            "wall_y_plus_mean_history": torch.tensor(
-                wall_y_plus_mean_history, dtype=torch.float64,
-            ),
-            "wall_y_plus_max_history": torch.tensor(
-                wall_y_plus_max_history, dtype=torch.float64,
-            ),
-            "wall_rejected_fraction_history": torch.tensor(
-                wall_rejected_fraction_history, dtype=torch.float64,
-            ),
-            "maximum_limited_fraction": maximum_limited_fraction,
-        }, checkpoint)
+            checkpoint,
+        )
 
     def outer(state: torch.Tensor) -> torch.Tensor:
         return non_equilibrium_far_field_bc_3d(
-            state, u_in=config.lattice_speed,
+            state,
+            u_in=config.lattice_speed,
             faces=("x-", "x+", "y-", "y+"),
         )
 
     for step in range(start_step + 1, config.steps + 1):
         old = f
         collided = collide_cumulant_d3q19(
-            f, config.tau, C_s=config.smagorinsky_cs,
+            f,
+            config.tau,
+            C_s=config.smagorinsky_cs,
         )
         if config.positivity_limiter:
             collided, diagnostic = limit_nonequilibrium_for_positivity(collided)
             maximum_limited_fraction = max(
-                maximum_limited_fraction, diagnostic.limited_fraction,
+                maximum_limited_fraction,
+                diagnostic.limited_fraction,
             )
         post = torch.where(solid_q, old, collided)
         f = outer(stream3d(post))
         collect_wall_diagnostics = (
-            step > config.warmup_steps
-            and step % config.wall_diagnostic_interval == 0
+            step > config.warmup_steps and step % config.wall_diagnostic_interval == 0
         )
         wall_result = bfl_wall_function_3d(
-            f, post, solid, config.wall_nu, bfl_mask, bfl_q,
-            near_mask=near, wall_normals=(normal_x, normal_y, normal_z),
+            f,
+            post,
+            solid,
+            config.wall_nu,
+            bfl_mask,
+            bfl_q,
+            near_mask=near,
+            wall_normals=(normal_x, normal_y, normal_z),
             bfl_wall_mode="wall_model_slip",
             wall_activation=_ramp(step, config.ramp_steps),
             wall_law=config.wall_law,
@@ -290,15 +318,27 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         if config.positivity_limiter:
             f, diagnostic = limit_nonequilibrium_for_positivity(f)
             maximum_limited_fraction = max(
-                maximum_limited_fraction, diagnostic.limited_fraction,
+                maximum_limited_fraction,
+                diagnostic.limited_fraction,
             )
         f = apply_equilibrium_difference_sponge(
-            f, sigma, velocity_target=(config.lattice_speed, 0.0, 0.0),
+            f,
+            sigma,
+            velocity_target=(config.lattice_speed, 0.0, 0.0),
         )
         f = outer(f)
-        cv_force = float(observe_control_volume_force(
-            old, f, post, cv, solid=solid, periodic_axes=("z",),
-        ).force_on_body[0].item())
+        cv_force = float(
+            observe_control_volume_force(
+                old,
+                f,
+                post,
+                cv,
+                solid=solid,
+                periodic_axes=("z",),
+            )
+            .force_on_body[0]
+            .item()
+        )
         if step > config.warmup_steps:
             friction_history.append(friction)
             cv_history.append(cv_force)
@@ -314,11 +354,13 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         if not bool(torch.isfinite(f).all()):
             raise FloatingPointError(f"flat-plate benchmark diverged at step {step}")
         if config.report_interval and step % config.report_interval == 0:
-            recent = friction_history[-min(len(friction_history), config.report_interval):]
+            recent = friction_history[-min(len(friction_history), config.report_interval) :]
             recent_cf = (
-                sum(recent) / len(recent)
+                sum(recent)
+                / len(recent)
                 / (0.5 * config.lattice_speed**2 * 2.0 * config.plate_length * config.nz)
-                if recent else math.nan
+                if recent
+                else math.nan
             )
             print(
                 f"flat_plate step={step}/{config.steps} recent_Cf={recent_cf:.7f} "
@@ -326,7 +368,8 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
                 flush=True,
             )
         if (
-            checkpoint is not None and config.checkpoint_interval
+            checkpoint is not None
+            and config.checkpoint_interval
             and step % config.checkpoint_interval == 0
         ):
             save_checkpoint(step)
@@ -346,17 +389,15 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
     bfl_mean = sum(selected_bfl) / len(selected_bfl)
     cf_reference = ittc_1957_friction_coefficient(config.reynolds)
     stationarity = assess_force_stationarity(
-        cf_history, block_size=max(1, len(cf_history) // 8),
+        cf_history,
+        block_size=max(1, len(cf_history) // 8),
     )
     reference_error = abs(cf - cf_reference) / cf_reference * 100.0
-    observer_difference = (
-        abs(cv_mean - bfl_mean) / max(abs(cv_mean), 1e-30) * 100.0
-    )
+    observer_difference = abs(cv_mean - bfl_mean) / max(abs(cv_mean), 1e-30) * 100.0
     limiter_acceptable = maximum_limited_fraction <= 1e-3
     maximum_rejected_fraction = max(wall_rejected_fraction_history, default=0.0)
     exchange_sampling_acceptable = (
-        bool(wall_rejected_fraction_history)
-        and maximum_rejected_fraction <= 0.01
+        bool(wall_rejected_fraction_history) and maximum_rejected_fraction <= 0.01
     )
     admitted = (
         reference_error <= 5.0
@@ -368,18 +409,22 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
     return {
         "schema": "tensorlbm-flat-plate-wall-model-v4",
         "configuration": {
-            "shape_zyx": list(shape), "plate_length": config.plate_length,
+            "shape_zyx": list(shape),
+            "plate_length": config.plate_length,
             "plate_start_fraction": config.plate_start_fraction,
             "reynolds": config.reynolds,
             "resolved_reynolds": config.resolved_reynolds,
             "lattice_speed": config.lattice_speed,
-            "wall_nu": config.wall_nu, "tau": config.tau,
-            "steps": config.steps, "warmup_steps": config.warmup_steps,
+            "wall_nu": config.wall_nu,
+            "tau": config.tau,
+            "steps": config.steps,
+            "warmup_steps": config.warmup_steps,
             "ramp_steps": config.ramp_steps,
             "sponge_width": config.sponge_width,
             "sponge_strength": config.sponge_strength,
             "cv_margin": config.cv_margin,
-            "wall_law": config.wall_law, "device": config.device,
+            "wall_law": config.wall_law,
+            "device": config.device,
             "stress_exchange_distance": config.stress_exchange_distance,
             "smagorinsky_cs": config.smagorinsky_cs,
             "positivity_limiter": config.positivity_limiter,
@@ -389,9 +434,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "wall_diagnostic_interval": config.wall_diagnostic_interval,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
-            "statistics_window_steps_requested": (
-                config.statistics_window_steps
-            ),
+            "statistics_window_steps_requested": (config.statistics_window_steps),
             "statistics_window_steps_resolved": statistics_window,
         },
         "result": {
@@ -408,7 +451,8 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
                 "y_plus_min": min(wall_y_plus_min_history, default=None),
                 "y_plus_mean": (
                     sum(wall_y_plus_mean_history) / len(wall_y_plus_mean_history)
-                    if wall_y_plus_mean_history else None
+                    if wall_y_plus_mean_history
+                    else None
                 ),
                 "y_plus_max": max(wall_y_plus_max_history, default=None),
                 "maximum_rejected_fraction": maximum_rejected_fraction,

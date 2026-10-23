@@ -1,0 +1,12 @@
+[p1-pois] p1a_eq_stock: relL2=0.0021093922113859876 stable=True bit=True
+[p1-pois] p1b_eq_force: relL2=0.00014944621232994772 stable=True bit=None
+[p1-pois] p1b_mu2_stock: relL2=0.0031758772063957786 stable=True bit=None
+[p1-pois] p1b_mu2_force: relL2=0.0012463006944133269 stable=True bit=None
+[p1-drop] p1c_e0_stock: sigma_rec=0.006653720745247449 ratio=None stable=True
+[p1-drop] p1c_e1_R20_b0.9_s0.002: sigma_rec=0.0028942892801203657 ratio=1.4471446400601828 stable=True
+[p1-drop] p1c_e2_R28_b0.9_s0.002: sigma_rec=0.002899820015091009 ratio=1.4499100075455045 stable=True
+[p1-drop] p1c_e3_R20_b0.9_s0.004: sigma_rec=0.005792605589927391 ratio=1.4481513974818476 stable=True
+[p1-drop] p1c_e4_R20_b0.6_s0.002: sigma_rec=0.002134254521707346 ratio=1.067127260853673 stable=True
+[p1-drop] p1c_e5_R28_b0.6_s0.002: sigma_rec=0.002144807980808988 ratio=1.072403990404494 stable=True
+[out] /nfs/wangxi/runs/xh_hybrid_20261006/probe/out/p1_cg_force_compat.json
+GATES: {"g_p1a_rell2": true, "g_p1a_bitwise": true, "g_drift_le_1e-12": true, "g_p1b_eq_force_rell2": true, "g_p1b_mu2_stock_rell2": true, "g_p1b_mu2_force_rell2": true, "g_p1c_linearity_2x": true, "g_p1c_spread_le_8pct": false, "g_p1c_umax_le_2e-2": true, "g_all_stable": true}

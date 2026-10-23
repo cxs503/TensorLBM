@@ -14,14 +14,15 @@ Gradients are one-sided when the opposite neighbour is missing (sentinel),
 which is the correct fallback for a shell whose inner neighbour is SOLID
 (wall) and outer neighbour is SHELL_OUTSIDE (ghost-filled).
 """
+
 from __future__ import annotations
 
 import functools
 
 import torch
 
-from tensorlbm.d3q27 import macroscopic27
 from tensorlbm.d3q19 import macroscopic3d
+from tensorlbm.d3q27 import macroscopic27
 
 # sentinels (must match geometry.py)
 SHELL_OUTSIDE = -1
@@ -38,14 +39,18 @@ _AXIS_DIRS = ((1, 2), (3, 4), (5, 6))  # x, y, z: (+, -)
 
 @functools.lru_cache(maxsize=16)
 def _leaf_mrt_matrices(
-    Q: int, device: torch.device, dtype: torch.dtype,
+    Q: int,
+    device: torch.device,
+    dtype: torch.dtype,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Cache native sparse-LES MRT matrices in the population dtype."""
     if Q == 27:
         from tensorlbm.turbulence import _get_d3q27_mrt_matrices
+
         M, M_inv = _get_d3q27_mrt_matrices(device)
     elif Q == 19:
         from tensorlbm.solver3d import _get_d3q19_mrt_matrices
+
         M, M_inv = _get_d3q19_mrt_matrices(device)
     else:
         raise NotImplementedError(f"leaf LES supports D3Q19/D3Q27, got Q={Q}")
@@ -62,8 +67,13 @@ def _leaf_macros(f: torch.Tensor, Q: int):
 
 
 def _gather_velocity(
-    f: torch.Tensor, d: int, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
-    neighbor_table: torch.Tensor, n_leaf: int,
+    f: torch.Tensor,
+    d: int,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    neighbor_table: torch.Tensor,
+    n_leaf: int,
     *,
     neighbor_velocity: torch.Tensor | None = None,
     neighbor_distance: torch.Tensor | None = None,
@@ -97,6 +107,7 @@ def _gather_velocity(
     gz = torch.where(valid, uz[idx], torch.zeros_like(uz))
     return gx, gy, gz, valid
 
+
 def _gradient(f, d: int, u, neighbor_table, n_leaf, dx):
     """One-sided central difference ∂u/∂x_d via neighbour gather.
 
@@ -106,22 +117,43 @@ def _gradient(f, d: int, u, neighbor_table, n_leaf, dx):
     """
     dp, dm = _AXIS_DIRS[d]
     gp, _, _, vp = _gather_velocity(
-        f, dp, u, torch.zeros_like(u), torch.zeros_like(u), neighbor_table, n_leaf,
+        f,
+        dp,
+        u,
+        torch.zeros_like(u),
+        torch.zeros_like(u),
+        neighbor_table,
+        n_leaf,
     )
     gm, _, _, vm = _gather_velocity(
-        f, dm, u, torch.zeros_like(u), torch.zeros_like(u), neighbor_table, n_leaf,
+        f,
+        dm,
+        u,
+        torch.zeros_like(u),
+        torch.zeros_like(u),
+        neighbor_table,
+        n_leaf,
     )
     dx_t = torch.as_tensor(dx, dtype=u.dtype, device=u.device)
     central = (gp - gm) / (2.0 * dx_t)
     one_sided_p = (gp - u) / dx_t
     one_sided_m = (u - gm) / dx_t
-    return torch.where(vp & vm, central, torch.where(vp, one_sided_p,
-                       torch.where(vm, one_sided_m, torch.zeros_like(u))))
+    return torch.where(
+        vp & vm,
+        central,
+        torch.where(vp, one_sided_p, torch.where(vm, one_sided_m, torch.zeros_like(u))),
+    )
 
 
 def _gradient_centers(
-    f, d: int, u, neighbor_table, leaf_center, n_leaf,
-    *, neighbor_velocity: torch.Tensor | None = None,
+    f,
+    d: int,
+    u,
+    neighbor_table,
+    leaf_center,
+    n_leaf,
+    *,
+    neighbor_velocity: torch.Tensor | None = None,
     neighbor_distance: torch.Tensor | None = None,
 ):
     """Gradient using actual neighbour centre distances along spatial axis.
@@ -132,12 +164,24 @@ def _gradient_centers(
     """
     dp, dm = _AXIS_DIRS[d]
     gp, _, _, vp = _gather_velocity(
-        f, dp, u, torch.zeros_like(u), torch.zeros_like(u), neighbor_table, n_leaf,
+        f,
+        dp,
+        u,
+        torch.zeros_like(u),
+        torch.zeros_like(u),
+        neighbor_table,
+        n_leaf,
         neighbor_velocity=neighbor_velocity,
         neighbor_distance=neighbor_distance,
     )
     gm, _, _, vm = _gather_velocity(
-        f, dm, u, torch.zeros_like(u), torch.zeros_like(u), neighbor_table, n_leaf,
+        f,
+        dm,
+        u,
+        torch.zeros_like(u),
+        torch.zeros_like(u),
+        neighbor_table,
+        n_leaf,
         neighbor_velocity=neighbor_velocity,
         neighbor_distance=neighbor_distance,
     )
@@ -145,6 +189,7 @@ def _gradient_centers(
         dp_t = neighbor_distance[dp].to(dtype=u.dtype, device=u.device)
         dm_t = neighbor_distance[dm].to(dtype=u.dtype, device=u.device)
     else:
+
         def _distance(direction: int, valid: torch.Tensor) -> torch.Tensor:
             nb = neighbor_table[direction]
             idx = nb.clamp(min=0)
@@ -156,13 +201,17 @@ def _gradient_centers(
                 delta[row, axis_vec].abs().clamp_min(1e-12),
                 torch.ones_like(u),
             )
+
         dp_t = _distance(dp, vp)
         dm_t = _distance(dm, vm)
     central = (gp - gm) / (dp_t + dm_t).clamp_min(1e-12)
     one_sided_p = (gp - u) / dp_t.clamp_min(1e-12)
     one_sided_m = (u - gm) / dm_t.clamp_min(1e-12)
-    return torch.where(vp & vm, central, torch.where(vp, one_sided_p,
-                       torch.where(vm, one_sided_m, torch.zeros_like(u))))
+    return torch.where(
+        vp & vm,
+        central,
+        torch.where(vp, one_sided_p, torch.where(vm, one_sided_m, torch.zeros_like(u))),
+    )
 
 
 def _dx_per_leaf(leaf_level: torch.Tensor, base_dx: float = 0.5) -> torch.Tensor:
@@ -176,6 +225,17 @@ def _dx_per_leaf(leaf_level: torch.Tensor, base_dx: float = 0.5) -> torch.Tensor
     return 2.0 ** (-leaf_level.to(torch.float64))
 
 
+_WALE_VARIANTS = ("nicoud_ducros", "legacy_det")
+
+# Library robustness fix (highre/v3.2, 2026-10-12): cumulative number of
+# leaves whose nicoud_ducros nu_t came out non-finite on the fp32 path and
+# was recomputed in float64 by the fallback below (see the inline comment in
+# ``leaf_wale_nu_t``).  Read-only diagnostic: drivers snapshot it per root
+# step.  Expected 0 on healthy runs; sustained activity is a disclosure
+# signal, never a tuning knob.
+WALE_FP64_FALLBACK_LEAVES: int = 0
+
+
 def leaf_wale_nu_t(
     f: torch.Tensor,
     neighbor_table: torch.Tensor,
@@ -185,6 +245,7 @@ def leaf_wale_nu_t(
     leaf_center: torch.Tensor | None = None,
     neighbor_velocity: torch.Tensor | None = None,
     neighbor_distance: torch.Tensor | None = None,
+    wale_variant: str = "nicoud_ducros",
 ) -> torch.Tensor:
     """WALE eddy viscosity on octree leaves (neighbour-gather gradients).
 
@@ -203,6 +264,23 @@ def leaf_wale_nu_t(
             assembled by the sharded stepper, including REMOTE/FANOUT links.
         neighbor_distance: optional ``(Q,n_leaf)`` positive centre distances
             matching ``neighbor_velocity``.
+        wale_variant: WALE operator algebra.
+
+            * ``"nicoud_ducros"`` (default) — the Nicoud–Ducros (1999)
+              operator used by the regular-grid
+              :func:`tensorlbm.turbulence._wale_nu_t_3d`:
+              ``nu_t = (C_w dx)^2 (SdSd)^{3/2} / ((SS)^{5/2} + (SdSd)^{5/4})``
+              with ``S^d`` the traceless symmetric part of the squared
+              velocity-gradient tensor ``g @ g``.  ``S^d`` is quadratic in
+              the gradients, so ``nu_t -> 0`` linearly as the strain -> 0
+              (correct LES behaviour: no shear, no eddy viscosity).
+            * ``"legacy_det"`` — the historical determinant form
+              ``nu_t = (C_w dx)^2 |det S|^{2/3} / (|S|^5 + |det S|^{5/3})``,
+              which scales as ``S^{-3}`` and **diverges as the shear -> 0**
+              (wall-chain decomposition 2026-10-11: median raw
+              ``nu_t/nu_mol = 9.2e5`` on the Re=100 sphere control,
+              clamps saturated everywhere).  Kept selectable for A/B only;
+              it is a proven defect.
 
     Returns:
         nu_t (n_leaf,) >= 0.
@@ -215,8 +293,9 @@ def leaf_wale_nu_t(
 
     if os.environ.get("OCTREE_DEBUG_NAN"):
         bad_f = ~torch.isfinite(f)
-        bad_m = ~(torch.isfinite(rho) & torch.isfinite(ux)
-                  & torch.isfinite(uy) & torch.isfinite(uz))
+        bad_m = ~(
+            torch.isfinite(rho) & torch.isfinite(ux) & torch.isfinite(uy) & torch.isfinite(uz)
+        )
         if bool(bad_f.any()):
             print(
                 f"[dbg] leaf_wale_nu_t: f INPUT non-finite {int(bad_f.sum().item())} "
@@ -245,18 +324,26 @@ def leaf_wale_nu_t(
     if leaf_level is not None:
         dx = _dx_per_leaf(leaf_level)
     grad = (
-        (lambda f, d, u, nbt, n_leaf: _gradient_centers(
-            f, d, u, nbt, leaf_center, n_leaf,
-            neighbor_velocity=neighbor_velocity,
-            neighbor_distance=neighbor_distance))
-        if leaf_center is not None else
-        (lambda f, d, u, nbt, n_leaf, dx=dx: _gradient(f, d, u, nbt, n_leaf, dx))
+        (
+            lambda f, d, u, nbt, n_leaf: _gradient_centers(
+                f,
+                d,
+                u,
+                nbt,
+                leaf_center,
+                n_leaf,
+                neighbor_velocity=neighbor_velocity,
+                neighbor_distance=neighbor_distance,
+            )
+        )
+        if leaf_center is not None
+        else (lambda f, d, u, nbt, n_leaf, dx=dx: _gradient(f, d, u, nbt, n_leaf, dx))
     )
 
     # velocity gradient tensor g_ij = ∂u_i / ∂x_j (axis 0=x, 1=y, 2=z)
-    g11 = grad(f, 0, ux, nbt, n_leaf)   # ∂ux/∂x
-    g12 = grad(f, 1, ux, nbt, n_leaf)   # ∂ux/∂y
-    g13 = grad(f, 2, ux, nbt, n_leaf)   # ∂ux/∂z
+    g11 = grad(f, 0, ux, nbt, n_leaf)  # ∂ux/∂x
+    g12 = grad(f, 1, ux, nbt, n_leaf)  # ∂ux/∂y
+    g13 = grad(f, 2, ux, nbt, n_leaf)  # ∂ux/∂z
     g21 = grad(f, 0, uy, nbt, n_leaf)
     g22 = grad(f, 1, uy, nbt, n_leaf)
     g23 = grad(f, 2, uy, nbt, n_leaf)
@@ -265,17 +352,118 @@ def leaf_wale_nu_t(
     g33 = grad(f, 2, uz, nbt, n_leaf)
 
     # S_ij = (g_ij + g_ji)/2
-    S11 = 0.5 * (g11 + g11); S12 = 0.5 * (g12 + g21); S13 = 0.5 * (g13 + g31)
-    S21 = S12;              S22 = 0.5 * (g22 + g22); S23 = 0.5 * (g23 + g32)
-    S31 = S13;              S32 = S23;              S33 = 0.5 * (g33 + g33)
+    S11 = 0.5 * (g11 + g11)
+    S12 = 0.5 * (g12 + g21)
+    S13 = 0.5 * (g13 + g31)
+    S21 = S12
+    S22 = 0.5 * (g22 + g22)
+    S23 = 0.5 * (g23 + g32)
+    S31 = S13
+    S32 = S23
+    S33 = 0.5 * (g33 + g33)
 
-    S2 = (S11**2 + S22**2 + S33**2
-          + 2 * (S12**2 + S13**2 + S23**2))          # |S|²
-    S3 = (S11 * (S22 * S33 - S23 * S32)
-          - S12 * (S21 * S33 - S23 * S31)
-          + S13 * (S21 * S32 - S22 * S31))           # det(S)
+    S2 = S11**2 + S22**2 + S33**2 + 2 * (S12**2 + S13**2 + S23**2)  # |S|²
+    S3 = (
+        S11 * (S22 * S33 - S23 * S32)
+        - S12 * (S21 * S33 - S23 * S31)
+        + S13 * (S21 * S32 - S22 * S31)
+    )  # det(S)
 
-    # WALE: nu_t = (C_w dx)² * S3^(2/3) / (S2^(5/2) + S3^(5/3))
+    variant = str(wale_variant)
+    if variant not in _WALE_VARIANTS:
+        raise ValueError(f"wale_variant must be one of {_WALE_VARIANTS}, got {wale_variant!r}")
+    if variant == "nicoud_ducros":
+        # Nicoud–Ducros operator (the regular-grid _wale_nu_t_3d form):
+        # g2 = g @ g, S^d = sym(g2) - tr(g2)/3 * I, and
+        #   nu_t = (C_w dx)^2 * (SdSd)^{3/2} / ((SS)^{5/2} + (SdSd)^{5/4})
+        # S^d is quadratic in the gradients -> nu_t vanishes linearly as
+        # the strain -> 0 (fixes the legacy form's S^{-3} divergence).
+        g2_11 = g11 * g11 + g12 * g21 + g13 * g31
+        g2_12 = g11 * g12 + g12 * g22 + g13 * g32
+        g2_13 = g11 * g13 + g12 * g23 + g13 * g33
+        g2_21 = g21 * g11 + g22 * g21 + g23 * g31
+        g2_22 = g21 * g12 + g22 * g22 + g23 * g32
+        g2_23 = g21 * g13 + g22 * g23 + g23 * g33
+        g2_31 = g31 * g11 + g32 * g21 + g33 * g31
+        g2_32 = g31 * g12 + g32 * g22 + g33 * g32
+        g2_33 = g31 * g13 + g32 * g23 + g33 * g33
+
+        tr_g2 = g2_11 + g2_22 + g2_33
+        inv3 = 1.0 / 3.0
+        Sd_11 = g2_11 - tr_g2 * inv3
+        Sd_22 = g2_22 - tr_g2 * inv3
+        Sd_33 = g2_33 - tr_g2 * inv3
+        Sd_12 = 0.5 * (g2_12 + g2_21)
+        Sd_13 = 0.5 * (g2_13 + g2_31)
+        Sd_23 = 0.5 * (g2_23 + g2_32)
+        Sd_norm2 = Sd_11**2 + Sd_22**2 + Sd_33**2 + 2.0 * (Sd_12**2 + Sd_13**2 + Sd_23**2)
+
+        eps = 1e-30
+        num = torch.clamp(Sd_norm2, min=0.0) ** 1.5
+        den = torch.clamp(S2, min=0.0) ** 2.5 + torch.clamp(Sd_norm2, min=0.0) ** 1.25 + eps
+        nu_t = (C_w * dx) ** 2 * num / den
+        # fp32 overflow fallback (highre/v3.2, 2026-10-12).  Mechanism of
+        # the 2026-10-12 a1 step-150 FloatingPointError (10/3284016 leaves):
+        # with fp32 gradients the numerator ``num = Sd_norm2**1.5 ~ |g|^6``
+        # overflows fp32 (max ~3.4e38) at |g| >~ 2.6e6 while the denominator
+        # ``den = S2**2.5 + Sd_norm2**1.25 ~ |g|^5`` stays finite to
+        # |g| >~ 3.6e7; beyond that BOTH are Inf and the ratio evaluates to
+        # Inf/Inf = NaN.  The ``100*nu_mol`` clamp in ``leaf_les_collide``
+        # bounds +Inf but cannot rescue NaN, so the fail-closed guard fires.
+        # The g_ij themselves are finite far past that band (|g| ~ 1e7 is
+        # ordinary fp32), so recomputing the WHOLE ratio in float64 from the
+        # g_ij components restores a finite nu_t; healthy leaves keep the
+        # fp32 arithmetic bit-for-bit (the fallback only ever writes the
+        # non-finite positions).
+        bad = ~torch.isfinite(nu_t)
+        n_bad = int(bad.sum().item())
+        if n_bad:
+            global WALE_FP64_FALLBACK_LEAVES
+            WALE_FP64_FALLBACK_LEAVES += n_bad
+            idx = torch.nonzero(bad, as_tuple=False).squeeze(-1)
+            (
+                g11b,
+                g12b,
+                g13b,
+                g21b,
+                g22b,
+                g23b,
+                g31b,
+                g32b,
+                g33b,
+            ) = (t[idx].to(torch.float64) for t in (g11, g12, g13, g21, g22, g23, g31, g32, g33))
+            g2_11b = g11b * g11b + g12b * g21b + g13b * g31b
+            g2_12b = g11b * g12b + g12b * g22b + g13b * g32b
+            g2_13b = g11b * g13b + g12b * g23b + g13b * g33b
+            g2_21b = g21b * g11b + g22b * g21b + g23b * g31b
+            g2_22b = g21b * g12b + g22b * g22b + g23b * g32b
+            g2_23b = g21b * g13b + g22b * g23b + g23b * g33b
+            g2_31b = g31b * g11b + g32b * g21b + g33b * g31b
+            g2_32b = g31b * g12b + g32b * g22b + g33b * g32b
+            g2_33b = g31b * g13b + g32b * g23b + g33b * g33b
+            tr_g2b = g2_11b + g2_22b + g2_33b
+            Sd_11b = g2_11b - tr_g2b * inv3
+            Sd_22b = g2_22b - tr_g2b * inv3
+            Sd_33b = g2_33b - tr_g2b * inv3
+            Sd_12b = 0.5 * (g2_12b + g2_21b)
+            Sd_13b = 0.5 * (g2_13b + g2_31b)
+            Sd_23b = 0.5 * (g2_23b + g2_32b)
+            Sd_norm2b = (
+                Sd_11b**2 + Sd_22b**2 + Sd_33b**2 + 2.0 * (Sd_12b**2 + Sd_13b**2 + Sd_23b**2)
+            )
+            S12b = 0.5 * (g12b + g21b)
+            S13b = 0.5 * (g13b + g31b)
+            S23b = 0.5 * (g23b + g32b)
+            S2b = g11b**2 + g22b**2 + g33b**2 + 2.0 * (S12b**2 + S13b**2 + S23b**2)
+            numb = torch.clamp(Sd_norm2b, min=0.0) ** 1.5
+            denb = torch.clamp(S2b, min=0.0) ** 2.5 + torch.clamp(Sd_norm2b, min=0.0) ** 1.25 + eps
+            dx_bad = dx[idx].to(torch.float64) if torch.is_tensor(dx) else float(dx)
+            nu_t[idx] = ((C_w * dx_bad) ** 2 * (numb / denb)).to(nu_t.dtype)
+        nu_t = torch.where(S2 > 1e-24, nu_t, torch.zeros_like(nu_t))
+        return torch.clamp(nu_t, min=0.0)
+
+    # legacy_det (DEFECT — kept verbatim for A/B; see docstring):
+    # nu_t = (C_w dx)² * S3^(2/3) / (S2^(5/2) + S3^(5/3))
     # Use sign-preserving real power for possibly-negative S3, and guard the
     # 0/0 case (no shear -> nu_t must be exactly 0, not NaN).
     S2_safe = S2.clamp_min(1e-30)
@@ -305,12 +493,20 @@ def leaf_smagorinsky_nu_t(
     if leaf_level is not None:
         dx = _dx_per_leaf(leaf_level)
     grad = (
-        (lambda f, d, u, nbt, n_leaf: _gradient_centers(
-            f, d, u, nbt, leaf_center, n_leaf,
-            neighbor_velocity=neighbor_velocity,
-            neighbor_distance=neighbor_distance))
-        if leaf_center is not None else
-        (lambda f, d, u, nbt, n_leaf, dx=dx: _gradient(f, d, u, nbt, n_leaf, dx))
+        (
+            lambda f, d, u, nbt, n_leaf: _gradient_centers(
+                f,
+                d,
+                u,
+                nbt,
+                leaf_center,
+                n_leaf,
+                neighbor_velocity=neighbor_velocity,
+                neighbor_distance=neighbor_distance,
+            )
+        )
+        if leaf_center is not None
+        else (lambda f, d, u, nbt, n_leaf, dx=dx: _gradient(f, d, u, nbt, n_leaf, dx))
     )
 
     g11 = grad(f, 0, ux, nbt, n_leaf)
@@ -323,8 +519,7 @@ def leaf_smagorinsky_nu_t(
     g32 = grad(f, 1, uz, nbt, n_leaf)
     g33 = grad(f, 2, uz, nbt, n_leaf)
 
-    S2 = (g11**2 + g22**2 + g33**2
-          + 0.5 * ((g12 + g21)**2 + (g13 + g31)**2 + (g23 + g32)**2))
+    S2 = g11**2 + g22**2 + g33**2 + 0.5 * ((g12 + g21) ** 2 + (g13 + g31) ** 2 + (g23 + g32) ** 2)
     nu_t = (C_s * dx) ** 2 * torch.sqrt(S2.clamp(min=0.0))
     return torch.clamp(nu_t, min=0.0)
 
@@ -342,24 +537,39 @@ def leaf_les_collide(
     leaf_center: torch.Tensor | None = None,
     neighbor_velocity: torch.Tensor | None = None,
     neighbor_distance: torch.Tensor | None = None,
+    wale_variant: str = "nicoud_ducros",
 ) -> torch.Tensor:
     """MRT collision with LES on octree leaves (stable at tau->0.5).
 
     The sub-grid eddy viscosity comes from neighbour-table gathers (spatially
     correct on the SoA shell); D3Q19 and D3Q27 both use native MRT matrices,
     so a sparse Morton leaf set is never passed through a regular-grid roll.
+    ``wale_variant`` selects the WALE operator algebra (default
+    ``"nicoud_ducros"``; ``"legacy_det"`` is the historical divergent form,
+    kept for A/B — see :func:`leaf_wale_nu_t`).
     """
     Q = f.shape[0]
     if model == "wale":
-        nu_t = leaf_wale_nu_t(f, neighbor_table, C_w, leaf_level=leaf_level,
-                              leaf_center=leaf_center,
-                              neighbor_velocity=neighbor_velocity,
-                              neighbor_distance=neighbor_distance)
+        nu_t = leaf_wale_nu_t(
+            f,
+            neighbor_table,
+            C_w,
+            leaf_level=leaf_level,
+            leaf_center=leaf_center,
+            neighbor_velocity=neighbor_velocity,
+            neighbor_distance=neighbor_distance,
+            wale_variant=wale_variant,
+        )
     else:
-        nu_t = leaf_smagorinsky_nu_t(f, neighbor_table, C_s, leaf_level=leaf_level,
-                                    leaf_center=leaf_center,
-                                    neighbor_velocity=neighbor_velocity,
-                                    neighbor_distance=neighbor_distance)
+        nu_t = leaf_smagorinsky_nu_t(
+            f,
+            neighbor_table,
+            C_s,
+            leaf_level=leaf_level,
+            leaf_center=leaf_center,
+            neighbor_velocity=neighbor_velocity,
+            neighbor_distance=neighbor_distance,
+        )
 
     # Cap the eddy viscosity so tau_eff stays healthy (nu_t >> nu_molecular
     # would over-relax the MRT shear rows and destabilise the shell).
@@ -376,12 +586,15 @@ def leaf_les_collide(
 
     device = f.device
     from tensorlbm.turbulence import _nu_t_to_tau_eff
+
     if Q == 27:
-        from tensorlbm.d3q27 import macroscopic27, equilibrium27
+        from tensorlbm.d3q27 import equilibrium27, macroscopic27
+
         rho, ux, uy, uz = macroscopic27(f.view(Q, 1, 1, -1))
         feq = equilibrium27(rho, ux, uy, uz)
     elif Q == 19:
-        from tensorlbm.d3q19 import macroscopic3d, equilibrium3d
+        from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+
         rho, ux, uy, uz = macroscopic3d(f.view(Q, 1, 1, -1))
         feq = equilibrium3d(rho, ux, uy, uz)
     else:
@@ -424,3 +637,159 @@ def leaf_les_collide(
     m_post = m + s * (meq - m)
     f_out = (M_inv @ m_post).view(Q, 1, 1, n)
     return f_out
+
+
+# ---------------------------------------------------------------------------
+# BGK-Smagorinsky leaf collision (uniform-formal-tier operator parity)
+# ---------------------------------------------------------------------------
+
+
+def leaf_neq_stress_norm(f_neq: torch.Tensor) -> torch.Tensor:
+    """Frobenius norm of the non-equilibrium stress on ``(Q, n_leaf)`` leaves.
+
+    ``|Pi^neq|_F = sqrt(Pi_xx^2 + Pi_yy^2 + Pi_zz^2 + 2(Pi_xy^2 + Pi_xz^2 +
+    Pi_yz^2))`` with ``Pi_ab = sum_q c_qa c_qb (f - feq)_q`` — the same
+    contraction as ``turbulence._neq_stress_norm_3d`` (D3Q19), extended to
+    D3Q27 by using the D3Q27 velocity set.  Purely local: no neighbour
+    gathers, so no sentinel handling is needed.
+    """
+    Q = f_neq.shape[0]
+    if Q == 19:
+        from tensorlbm.d3q19 import C as C_VEC
+    elif Q == 27:
+        from tensorlbm.d3q27 import C as C_VEC
+    else:
+        raise NotImplementedError(f"leaf BGK-Smag supports D3Q19/D3Q27, got Q={Q}")
+    c = C_VEC.to(f_neq.device).float()  # (Q, 3)
+    cx = c[:, 0].unsqueeze(1)
+    cy = c[:, 1].unsqueeze(1)
+    cz = c[:, 2].unsqueeze(1)
+    pi_xx = (cx * cx * f_neq).sum(dim=0)
+    pi_yy = (cy * cy * f_neq).sum(dim=0)
+    pi_zz = (cz * cz * f_neq).sum(dim=0)
+    pi_xy = (cx * cy * f_neq).sum(dim=0)
+    pi_xz = (cx * cz * f_neq).sum(dim=0)
+    pi_yz = (cy * cz * f_neq).sum(dim=0)
+    radicand = pi_xx**2 + pi_yy**2 + pi_zz**2 + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2)
+    return torch.sqrt(torch.clamp(radicand, min=1e-30))
+
+
+def leaf_bgk_smag_tau_eff(
+    tau: float | torch.Tensor,
+    pi_norm: torch.Tensor,
+    rho: torch.Tensor,
+    C_s: float,
+) -> torch.Tensor:
+    """Smagorinsky effective relaxation time per leaf.
+
+    ``tau_eff = 0.5 (tau + sqrt(tau^2 + 18 C_s^2 |Pi^neq|_F / rho))`` — the
+    uniform formal tier's ``turbulence._smagorinsky_tau`` formula, with
+    ``tau`` additionally allowed to be a per-leaf tensor ``(n_leaf,)`` (the
+    convective chain of a mixed-depth shell).  The same clamps apply:
+    ``[_TAU_EFF_MIN, max(_TAU_EFF_FLOOR, tau + _TAU_EFF_HEADROOM)]``, i.e.
+    the eddy viscosity never exceeds ``_TAU_EFF_HEADROOM / 3``.
+    """
+    from tensorlbm.turbulence import (
+        _TAU_EFF_FLOOR,
+        _TAU_EFF_HEADROOM,
+        _TAU_EFF_MIN,
+    )
+
+    rho_safe = torch.clamp(rho, min=1e-12)
+    discriminant = tau**2 + 18.0 * C_s**2 * pi_norm / rho_safe
+    tau_eff = 0.5 * (tau + torch.sqrt(torch.clamp(discriminant, min=0.0)))
+    if isinstance(tau, torch.Tensor):
+        upper = torch.clamp(tau + _TAU_EFF_HEADROOM, min=_TAU_EFF_FLOOR)
+    else:
+        upper = max(_TAU_EFF_FLOOR, tau + _TAU_EFF_HEADROOM)
+    return torch.clamp(torch.clamp(tau_eff, min=_TAU_EFF_MIN), max=upper)
+
+
+def leaf_bgk_smag_collide(
+    f: torch.Tensor,
+    tau: float | torch.Tensor,
+    C_s: float = 0.05,
+    *,
+    nu_t: torch.Tensor | None = None,
+    cap_nu_t_factor: float = 100.0,
+    return_diagnostics: bool = False,
+) -> torch.Tensor | tuple[torch.Tensor, dict]:
+    """D3Q19/D3Q27 BGK collision with Smagorinsky SGS on SoA shell leaves.
+
+    With ``nu_t=None`` this is the leaf (sparse SoA) form of the uniform
+    formal tier's locked ``bgk_smag`` operator
+    (``turbulence.collide_smagorinsky_bgk3d``): the eddy viscosity comes
+    from the local non-equilibrium stress, so the operator is purely local
+    — no ``neighbor_table`` gathers, no one-sided-gradient sentinel
+    handling — and the relaxation is the full BGK update
+    ``f' = f - (f - feq) / tau_eff``.  ``tau`` may be a scalar or a
+    per-leaf tensor (mixed-depth convective chain).
+
+    With ``nu_t`` supplied (e.g. ``leaf_smagorinsky_nu_t``, the
+    velocity-gradient form with neighbour gathers) the given eddy
+    viscosity is used directly under the SGS discipline
+    ``nu_t <= cap_nu_t_factor * nu_molecular`` (default 100x), on top of
+    the same ``tau_eff`` headroom clamp as the uniform tier.
+
+    Args:
+        f: ``(Q, n_leaf)`` leaf populations (Q = 19 or 27).
+        tau: molecular relaxation time — scalar or ``(n_leaf,)``.
+        C_s: Smagorinsky constant (formal tier default 0.05).
+        nu_t: optional externally computed eddy viscosity ``(n_leaf,)``.
+        cap_nu_t_factor: cap for the externally supplied ``nu_t`` branch.
+        return_diagnostics: also return ``{"tau_eff", "nu_t", "pi_norm"}``
+            where ``nu_t`` is the *applied* eddy viscosity
+            ``(tau_eff - tau)/3`` (after every clamp), matching both
+            branches.
+
+    Returns:
+        ``f_post`` of shape ``(Q, n_leaf)`` (or ``(f_post, diagnostics)``).
+    """
+    Q = f.shape[0]
+    if Q == 27:
+        from tensorlbm.d3q27 import equilibrium27, macroscopic27
+
+        rho, ux, uy, uz = macroscopic27(f.view(Q, 1, 1, -1))
+        feq = equilibrium27(rho, ux, uy, uz).view(Q, -1)
+    elif Q == 19:
+        from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+
+        rho, ux, uy, uz = macroscopic3d(f.view(Q, 1, 1, -1))
+        feq = equilibrium3d(rho, ux, uy, uz).view(Q, -1)
+    else:
+        raise NotImplementedError(f"leaf BGK-Smag supports D3Q19/D3Q27, got Q={Q}")
+    rho = rho.reshape(-1)
+    f_neq = f - feq
+    if nu_t is None:
+        pi_norm = leaf_neq_stress_norm(f_neq)
+        tau_eff = leaf_bgk_smag_tau_eff(tau, pi_norm, rho, C_s)
+        nu_t_used = (tau_eff - tau) / 3.0
+    else:
+        from tensorlbm.turbulence import (
+            _TAU_EFF_FLOOR,
+            _TAU_EFF_HEADROOM,
+            _TAU_EFF_MIN,
+        )
+
+        if nu_t.shape != f.shape[1:]:
+            raise ValueError("nu_t must have shape (n_leaf,)")
+        tau_base = tau if isinstance(tau, torch.Tensor) else torch.full_like(rho, float(tau))
+        nu_mol = (tau_base - 0.5) / 3.0
+        cap = cap_nu_t_factor * torch.clamp(nu_mol, min=1e-12)
+        nu_t_used = nu_t.clamp(min=0.0).clamp(max=cap)
+        tau_eff = torch.clamp(tau_base + 3.0 * nu_t_used, min=_TAU_EFF_MIN)
+        upper = torch.clamp(tau_base + _TAU_EFF_HEADROOM, min=_TAU_EFF_FLOOR)
+        tau_eff = torch.clamp(tau_eff, max=upper)
+        # the headroom clamp acts on tau_eff, so the *applied* eddy
+        # viscosity is what tau_eff realises, not the raw capped input —
+        # same semantics as the nu_t=None branch below
+        nu_t_used = (tau_eff - tau_base) / 3.0
+        pi_norm = leaf_neq_stress_norm(f_neq)
+    post = f - f_neq / tau_eff.unsqueeze(0)
+    if return_diagnostics:
+        return post, {
+            "tau_eff": tau_eff,
+            "nu_t": nu_t_used,
+            "pi_norm": pi_norm,
+        }
+    return post

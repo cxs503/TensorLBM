@@ -22,8 +22,6 @@ Flow is laminar/transitional — ideal for direct LBM simulation.
 
 from __future__ import annotations
 
-import csv
-import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,11 +34,9 @@ from .boundaries import (
     compute_obstacle_forces,
     make_channel_wall_mask,
 )
-from .d2q9 import equilibrium, macroscopic
+from .d2q9 import equilibrium
 from .solver import collide_mrt, correct_mass, stream
-from .turbulence import collide_smagorinsky_mrt
-from .utils import get_reproducibility_metadata, prepare_run_dir, resolve_device
-
+from .utils import resolve_device
 
 # ---------------------------------------------------------------------------
 # Reference data: Sheldahl & Klimas (1981) NACA 0012 @ Re=360k

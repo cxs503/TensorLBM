@@ -1,0 +1,20 @@
+[r5] T1 channel: W*=4.0 sigma_input=0.00138071
+[xh-droplet2d] step 2000/6000
+[xh-droplet2d] step 4000/6000
+[xh-droplet2d] step 6000/6000
+[r5-2d] rho2: C 0.5003 -> 0.1747 ret=0.3491 umax=1.82e-01 stable=True
+[r5-2d] rho10: C 0.1011 -> 0.1011 ret=1.0000 umax=9.30e-06 stable=False
+Traceback (most recent call last):
+  File "/nfs/wangxi/runs/xh_hybrid_20261006/phase1/scripts/r5_pressure_probe.py", line 234, in <module>
+    main()
+  File "/nfs/wangxi/runs/xh_hybrid_20261006/phase1/scripts/r5_pressure_probe.py", line 203, in main
+    rec = run_3d_droplet(64, 16.0, 10000, ri, ro, sig, W, device=dev)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nfs/wangxi/runs/xh_hybrid_20261006/phase1/scripts/r5_pressure_probe.py", line 110, in run_3d_droplet
+    c19 = C3.to(torch.float64, device=dev)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: to() received an invalid combination of arguments - got (torch.dtype, device=torch.device), but expected one of:
+ * (torch.device device = None, torch.dtype dtype = None, bool non_blocking = False, bool copy = False, *, torch.memory_format memory_format = None)
+ * (torch.dtype dtype, bool non_blocking = False, bool copy = False, *, torch.memory_format memory_format = None)
+ * (Tensor tensor, bool non_blocking = False, bool copy = False, *, torch.memory_format memory_format = None)
+
