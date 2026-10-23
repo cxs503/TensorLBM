@@ -13,6 +13,9 @@
 目的：verified/couette_2d 的 3D 孪生，验证库 3D 动壁半程反弹
 （pre-streaming 动壁 BB + 动量注入）路径。
 
+**参考锚定**：解析精确解 u(y) = U0·(y−0.5)/H_eff（线性 Couette 剖面），
+对任意 Re 成立，无近似。参考先锁定后跑（prereg.md FROZEN 2026-10-06）。
+
 ## 共性模块
 
 库 solver 路径（tensorlbm.d3q19 + tensorlbm.solver3d）：
