@@ -1,0 +1,272 @@
+{
+  "mission": "m219",
+  "case": "cavity_natural_convection",
+  "tutorial": "docs/benchmarks/tutorials/cavity_natural_convection.md",
+  "rerun": {
+    "script": "docs/benchmarks/tutorials/figs/cavity_natural_convection/rerun_scan.py",
+    "driver": "benchmarks/verified/cavity_natural_convection/driver.py",
+    "data_dir": "docs/benchmarks/tutorials/figs/cavity_natural_convection/data",
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 5090",
+    "torch": "2.11.0+cu128",
+    "thermal_sha12": "598889356088",
+    "grids": [
+      64,
+      128,
+      256
+    ],
+    "reference": {
+      "source": "de Vahl Davis 1983, Int. J. Numer. Methods Fluids 3, 249-264",
+      "Nu": 2.243,
+      "u_max": 16.178,
+      "v_max": 19.617
+    }
+  },
+  "key_numbers": {
+    "nu": {
+      "64": 2.1097919940948486,
+      "128": 2.1778430938720703,
+      "256": 2.2125362157821655
+    },
+    "nu_err_pct": {
+      "64": -5.93883218480389,
+      "128": -2.9048999611203556,
+      "256": -1.3581713873310013
+    },
+    "u_max_nd": {
+      "64": 15.857425842247908,
+      "128": 16.020448485855017,
+      "256": 16.08208450977691
+    },
+    "v_max_nd": {
+      "64": 18.962942891847348,
+      "128": 19.28961097695865,
+      "256": 19.483569896779958
+    },
+    "nu_err_monotone": true,
+    "n_pass_3pct": 2,
+    "richardson": {
+      "p_obs": 0.9719688079459496,
+      "nu_inf": 2.2486179205144796,
+      "nu_inf_err_pct": 0.25046457933480765,
+      "nu_inf_linear": 2.246561765670776,
+      "nu_inf_linear_err_pct": 0.15879472451074633
+    },
+    "steps_run": {
+      "64": 32000,
+      "128": 115500,
+      "256": 457600
+    },
+    "elapsed_s": {
+      "64": 30.5,
+      "128": 110.3,
+      "256": 437.7
+    }
+  },
+  "checks": [
+    {
+      "id": "C1_rerun_executed_in_worktree",
+      "desc": "三档网格在本 mission 工作树内实跑（GPU 真跑，非引用存档）",
+      "value": {
+        "grids": [
+          64,
+          128,
+          256
+        ],
+        "steps_run": [
+          32000,
+          115500,
+          457600
+        ],
+        "elapsed_s": [
+          30.5,
+          110.3,
+          437.7
+        ],
+        "device": "cuda",
+        "gpu": "NVIDIA GeForce RTX 5090",
+        "done_json": true
+      },
+      "pass": true
+    },
+    {
+      "id": "C2_bitwise_match_archive",
+      "desc": "三档 Nu/u_max/v_max 与入库 result_rerun.json 逐位一致（Δ=0）",
+      "value": {
+        "64": {
+          "dnu": 0.0,
+          "du": 0.0,
+          "dv": 0.0,
+          "same_steps": true,
+          "same_tstop": true
+        },
+        "128": {
+          "dnu": 0.0,
+          "du": 0.0,
+          "dv": 0.0,
+          "same_steps": true,
+          "same_tstop": true
+        },
+        "256": {
+          "dnu": 0.0,
+          "du": 0.0,
+          "dv": 0.0,
+          "same_steps": true,
+          "same_tstop": true
+        }
+      },
+      "pass": true
+    },
+    {
+      "id": "C3_nu_err_monotone",
+      "desc": "Nu 相对误差三档严格单调下降",
+      "value": {
+        "nu_err_pct": [
+          -5.93883218480389,
+          -2.9048999611203556,
+          -1.3581713873310013
+        ],
+        "abs": [
+          5.93883218480389,
+          2.9048999611203556,
+          1.3581713873310013
+        ],
+        "monotone": true
+      },
+      "pass": true
+    },
+    {
+      "id": "C4_at_least_two_grids_within_3pct",
+      "desc": "≥2 档三观测量全部 ≤3%",
+      "value": {
+        "n_pass_3pct": 2,
+        "per_case": [
+          {
+            "grid": 64,
+            "nu": 2.1097919940948486,
+            "u_max_nd": 15.857425842247908,
+            "v_max_nd": 18.962942891847348,
+            "steps_run": 32000,
+            "t_stop": 22000,
+            "steady_triggered": true,
+            "nu_err_pct_abs": 5.93883218480389,
+            "u_max_err_pct_abs": 1.9815438110526198,
+            "v_max_err_pct_abs": 3.3341342109020387,
+            "all_obs_within_3pct": false
+          },
+          {
+            "grid": 128,
+            "nu": 2.1778430938720703,
+            "u_max_nd": 16.020448485855017,
+            "v_max_nd": 19.28961097695865,
+            "steps_run": 115500,
+            "t_stop": 105000,
+            "steady_triggered": true,
+            "nu_err_pct_abs": 2.9048999611203556,
+            "u_max_err_pct_abs": 0.9738627404189896,
+            "v_max_err_pct_abs": 1.6689046390444617,
+            "all_obs_within_3pct": true
+          },
+          {
+            "grid": 256,
+            "nu": 2.2125362157821655,
+            "u_max_nd": 16.08208450977691,
+            "v_max_nd": 19.483569896779958,
+            "steps_run": 457600,
+            "t_stop": 416000,
+            "steady_triggered": true,
+            "nu_err_pct_abs": 1.3581713873310013,
+            "u_max_err_pct_abs": 0.5928760676418104,
+            "v_max_err_pct_abs": 0.680175884284258,
+            "all_obs_within_3pct": true
+          }
+        ]
+      },
+      "pass": true
+    },
+    {
+      "id": "C5_reference_pre_registered",
+      "desc": "参考值为预注册（prereg.json，locked 于运行前）",
+      "value": {
+        "source": "de Vahl Davis 1983, Int. J. Numer. Methods Fluids 3, 249-264",
+        "Nu": 2.243,
+        "u_max": 16.178,
+        "v_max": 19.617
+      },
+      "pass": true
+    },
+    {
+      "id": "C6_figures_from_own_data",
+      "desc": "教程 5 张图全部由本 mission 自跑 data/ 生成（脚本与数据同目录入库）",
+      "value": {
+        "figures": [
+          "fig1_fields.png",
+          "fig2_profiles.png",
+          "fig3_grid_convergence.png",
+          "fig4_nu_wall.png",
+          "fig5_nu_history.png"
+        ],
+        "n_figures": 5,
+        "generator": "plot_figures.py",
+        "data_sources": [
+          "scan_result.json",
+          "fields_n64.npz",
+          "fields_n128.npz",
+          "fields_n256.npz"
+        ]
+      },
+      "pass": true
+    },
+    {
+      "id": "C7_tutorial_structure",
+      "desc": "教程八节结构齐全且行数落在 140-220 区间",
+      "value": {
+        "n_lines": 220,
+        "n_figures_in_md": 5,
+        "n_refs": 8,
+        "sections": [
+          "## 1. Benchmark 介绍",
+          "## 2. 计算条件设置",
+          "## 3. 软件使用步骤",
+          "## 4. 计算结果",
+          "## 5. 与文献 / 基准解的比较",
+          "## 6. 局限与口径披露",
+          "## 7. 复现说明",
+          "## 8. 结论"
+        ]
+      },
+      "pass": true
+    },
+    {
+      "id": "C8_steady_and_conservation",
+      "desc": "稳态达成 + 左右壁 Nu 对称性自检",
+      "value": {
+        "64": {
+          "steady_triggered": true,
+          "t_stop": 22000,
+          "nu_sym_abs": 0.00017118453979492188,
+          "T_min": 0.0,
+          "T_max": 1.0
+        },
+        "128": {
+          "steady_triggered": true,
+          "t_stop": 105000,
+          "nu_sym_abs": 0.0005412101745605469,
+          "T_min": 0.0,
+          "T_max": 1.0
+        },
+        "256": {
+          "steady_triggered": true,
+          "t_stop": 416000,
+          "nu_sym_abs": 0.0021097660064697266,
+          "T_min": 0.0,
+          "T_max": 1.0
+        }
+      },
+      "pass": true
+    }
+  ],
+  "checks_passed": 8,
+  "checks_total": 8,
+  "all_passed": true
+}
