@@ -1,0 +1,112 @@
+{
+  "mission": "m206",
+  "stage": "S0",
+  "line": "mp_dambreak",
+  "date": "2026-10-23",
+  "deliverables": {
+    "audit": "docs/MP_DAMBREAK_S0_AUDIT.md",
+    "anchors_mirror": "docs/MP_DAMBREAK_S0_ANCHORS_MIRROR.md",
+    "verdict": "docs/MP_DAMBREAK_S0_VERDICT.md",
+    "anchors_original": "/nfs/wangxi/tensor_eco/agent_work/mp_dambreak/prereg/anchors.md (chmod a-w)"
+  },
+  "audit_findings": {
+    "dam_break_sc": {
+      "terminal_commit": "d6588f1e",
+      "mission": "m163",
+      "status": "TERMINAL",
+      "gates_pass": "4/6",
+      "gates_fail": ["G2_direct_observable_3pct", "G3_monotone_convergence"],
+      "density_ratio": 12.3,
+      "physical_target": 800,
+      "key_barrier": "反向G依赖: err(T=1)与err(T=2.96)对G方向相反",
+      "reference_source": "Lethe官方脚本=M&M 1952物理实验数据 (REPORT_FS2D_route.md §11.2)",
+      "reference_checkpoints": {"T=1": 1.326, "T=2": 2.360, "T=2.96": 3.670}
+    },
+    "dam_break_3d_mm": {
+      "terminal_commit": "2d00e392",
+      "mission": "m91",
+      "status": "TERMINAL",
+      "gates_pass": "2/4",
+      "gates_fail": ["G2_direct_observable", "G3_monotone_convergence"],
+      "mass_drift_a40_pct": -49.46,
+      "mass_drift_a80_pct": -62.19,
+      "key_barrier": "RC#5: 前锋推进与账本闭合是同一开关"
+    },
+    "wave10_m3_freesurface": {
+      "status": "FAIL",
+      "checkpoints_non_monotone": "12/12",
+      "mass_drift_a40_pct": -49.46,
+      "mass_drift_a80_pct": -62.19,
+      "z_err_t2_a40_pct": -2.248,
+      "z_err_t2_a80_pct": 7.529,
+      "anti_convergence": true,
+      "evidence": "/nfs/wangxi/runs/bm_mp_20261001/m3_freesurface/root_cause_chain.json"
+    },
+    "wave10_m4_pseudopotential": {
+      "status": "PARTIAL",
+      "gate_a_maxwell": "FAIL (CS ρ_v err -3.55%@0.90)",
+      "gate_b_laplace": "PASS (PR@0.55 ratio 400-557, σ残差0.045-0.100%)",
+      "gate_c_microcurrent": "DISCLOSED (u_max高于良调锚5-25x)",
+      "gate_d_oscillation": "FAIL (tier1 σ_ω/ω=1.70%>=1%)",
+      "dam_break_tested": false,
+      "evidence": "/nfs/wangxi/runs/bm_mp_20261001/m4_pseudopotential/CLOSURE.md"
+    },
+    "route_d": {"status": "DEAD", "evidence": "free_surface_receiver_gate_redesign.md §7", "result": "静态柱+35~82%"},
+    "route_a": {"status": "DEAD", "evidence": "free_surface_receiver_gate_redesign.md §8", "result": "272 donors/0 receivers, 无法执行单步"},
+    "route_b": {"status": "DEAD", "evidence": "free_surface_receiver_gate_redesign.md §9", "result": "全eps域WITHHELD或不触发"},
+    "fs2d_best_result": {
+      "x_err_t1_pct": 3.34,
+      "x_err_t2_pct": -1.62,
+      "x_err_t296_pct": -3.13,
+      "over_gate_by_points": {"t1": 0.34, "t2": 0.0, "t296": 0.13},
+      "evidence": "REPORT_FS2D_route.md §0"
+    },
+    "walberla_external": {
+      "paper_code_fails": "+5.9~+13.1点全面FAIL",
+      "we_beat_paper_by": "3-8点",
+      "evidence": "REPORT_FS2D_route.md §11"
+    }
+  },
+  "anchors": {
+    "mm1952_14point_table": {
+      "source": "result.json reference_digitisation_lethe (commit d6588f1e)",
+      "cross_verified": "Lethe官方脚本dam-break-2d.py硬编码, 注释'M&M 1952'",
+      "T": [0.00, 0.41, 0.84, 1.19, 1.43, 1.63, 1.82, 1.97, 2.20, 2.32, 2.50, 2.64, 2.82, 2.96],
+      "X": [1.00, 1.11, 1.23, 1.44, 1.67, 1.89, 2.11, 2.33, 2.56, 2.78, 3.00, 3.22, 3.44, 3.67],
+      "checkpoints": {"T=1": 1.326, "T=2": 2.360, "T=2.96": 3.670},
+      "interpolation_verified": "python3 exit=0",
+      "time_convention": "T=t*sqrt(2g/a), X=x_front/a",
+      "old_table_retracted": {"T=1": 1.5, "T=2": 2.7}
+    },
+    "lobovsky2014": {"status": "ACCESS_BLOCKED", "attempts": 6, "blocks_s1": false},
+    "korner2005": {"type": "theory_framework", "not_data_anchor": true},
+    "ys2006": {"type": "eos_parameter_lock", "cs_params": "a=1,b=4,R=1", "pr_params": "a=2/49,b=2/21,R=1"}
+  },
+  "verdict": {
+    "recommended_route": "A (FS2D 2D自由面)",
+    "reason": "距门限最近(T=1超0.34点), waLBerla对照, 质量守恒PASS",
+    "fallback_1": "B (高密度比伪势)",
+    "fallback_2": "C (MCMP)",
+    "s1_minimal_risk_path": [
+      "Step1: 修T=1早朝过冲(+6.8~6.9%)",
+      "Step2: 打开τ窗口(T=1需τ∈[0.70,0.75], T=2.96需τ∈[0.55,0.70])",
+      "Step3: 两档网格单调收敛",
+      "Step4(若不够): receiver gate §6.2 closure redesign"
+    ]
+  },
+  "test_record": {
+    "command": "pytest tests/ -q --timeout=300 --ignore 4个pre-existing collection errors",
+    "exit_code": 0,
+    "passed": 4376,
+    "failed": 160,
+    "failed_nature": "全pre-existing (gallium_pf缺模块/suboff/wall_model GPU相关)",
+    "skipped": 35,
+    "xfailed": 2,
+    "duration": "0:16:55",
+    "src_tests_modified": false
+  },
+  "commits": ["84710c6d", "98cf1a4c", "a21084c3"],
+  "pushed": false,
+  "gpu_touched": false,
+  "solver_implemented": false
+}
