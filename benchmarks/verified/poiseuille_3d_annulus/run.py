@@ -259,6 +259,7 @@ def run_case(
     L_over_R: int = 6,
     compile_mode: str | None = "default",
     avg_steps: int = 400,
+    dump_field: bool = False,
 ) -> dict:
     torch.manual_seed(seed)
     nu = (tau - 0.5) / 3.0
@@ -456,6 +457,25 @@ def run_case(
         "uref_bins_eff": m_eff["uref_bins"],
         "uref_bins_nom": m_nom["uref_bins"],
     }
+    # Dump field data if requested
+    if dump_field:
+        dump_path = out_path.replace('.json', '_field.npz')
+        np.savez_compressed(
+            dump_path,
+            u_meas=u_meas,
+            d_np=d_np,
+            fluid_np=fluid_np,
+            R_o=R_o,
+            a=a,
+            yc=yc,
+            zc=zc,
+            delta_i=delta_i,
+            delta_o=delta_o,
+            G_Q=G_Q,
+            u_ref_cell_eff=u_ref_cell_eff,
+        )
+        print(f"Field data dumped to {dump_path}")
+
     Path(out_path).write_text(json.dumps(result, indent=2))
     return result
 
@@ -578,6 +598,7 @@ def scan(
     L_over_R=6,
     min_steps=0,
     max_steps=0,
+    dump_field=False,
 ):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -599,6 +620,7 @@ def scan(
             seed=seed,
             L_over_R=L_over_R,
             compile_mode=compile_mode,
+            dump_field=dump_field,
         )
         cases.append(r)
         print(
@@ -630,6 +652,7 @@ def main() -> None:
     p1.add_argument("--L-over-R", type=int, default=6)
     p1.add_argument("--device", type=str, default="cuda:0")
     p1.add_argument("--seed", type=int, default=0)
+    p1.add_argument("--dump", action="store_true", help="dump field data to npz")
     add_compile_mode_arg(p1)
 
     p2 = sub.add_parser("scan")
@@ -643,6 +666,7 @@ def main() -> None:
     p2.add_argument("--L-over-R", type=int, default=6)
     p2.add_argument("--device", type=str, default="cuda:0")
     p2.add_argument("--seed", type=int, default=0)
+    p2.add_argument("--dump", action="store_true", help="dump field data to npz")
     add_compile_mode_arg(p2)
 
     p3 = sub.add_parser("summarize")
@@ -677,6 +701,7 @@ def main() -> None:
             device,
             L_over_R=args.L_over_R,
             compile_mode=compile_mode,
+            dump_field=args.dump,
         )
     else:
         scan(
@@ -691,6 +716,7 @@ def main() -> None:
             L_over_R=args.L_over_R,
             min_steps=args.min_steps,
             max_steps=args.max_steps,
+            dump_field=args.dump,
         )
 
 
