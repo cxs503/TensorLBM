@@ -40,6 +40,8 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [cavity_3d_full](cavity_3d_full/) | 🟡 | 无——达标数据在 verified/cavity_3d_full（1.338→0.259% 单调）；本目录为 superseded 诊断稿 | 归档 PR 清理（删除或标记 superseded） | 0 |
 | [cavity_3d_full](cavity_3d_full/) | ⏸️ superseded | 已归档至 verified/cavity_3d_full（1.338→0.259% 单调收敛）；本目录为 superseded 诊断稿 | 归档完成（标记 superseded） | 0 |
 | [cavity_natural_convection](cavity_natural_convection/) | ❌ | 修复前旧档（库 thermal 壁 BC 双缺陷；库已修复且 2D 六案已 verified） | 按新库重跑预注册（对齐 thermal_cavity） | 小 |
+| [channel_turb](channel_turb/) | ⏸️ | 3D 槽道转捩成功，单调收敛（20.43→11.67→5.33%），但最佳 5.33% > 3%（域尺寸不足 Lx/h=8.26 vs DNS 12.6 + 统计不充分 1.45 涡旋数） | 终裁完成；晋级需 L4 400×64×132 匹配 DNS 域 + 3-5 涡旋数 | 0（已终裁） |
+| [dit_turbulence](dit_turbulence/) | ❌ | 固定 C_s 跨网格不收敛（N256 +17.05%，C_s 微调不敏感） | dynamic Smagorinsky / 系综 / 更长运行 | 中 |
 | [channel_turb](channel_turb/) | ❌ | 2D 槽道无转捩路径（Re_max 4200 < 5772）；RMS 4.59/5.61% 且细化更差 | 3D 槽道（新案例） | 高 |
 | [dit_turbulence](dit_turbulence/) | ⏸️ | 固定 C_s 跨网格不收敛（N256 +17.05%，C_s 微调不敏感）；m167 终裁：DSMag 库实现缺陷（全局平均+稳定性问题），系综/更长运行不适用 | 终裁完成，无后续动作 | 0 |
 | [rayleigh_benard](rayleigh_benard/) | ❌ | E=1.224→1.006→3.101% 非单调 + ny256 近临界臂拟合质量（二次延长散布 3.10/3.98% 仍超）；根因=格子算子 Ra_c 上移 | γ_ref 重锁格子算子特征值（新 prereg） | ~8 GPU·h/轮 |

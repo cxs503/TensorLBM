@@ -1,7 +1,7 @@
 {
  "case": "collision_kernels_3d_tg",
  "verdict": "terminal",
- "checked_at": "2026-10-22T15:26:34Z",
+ "checked_at": "2026-10-22T20:30:14Z",
  "gates": [
   {
    "gate": "library_entry",
@@ -200,5 +200,5 @@
  "problems": [],
  "rc": 0,
  "profile": "classic",
- "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m169/TensorLBM/benchmarks/pending/collision_kernels_3d_tg/gates.json"
+ "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m186/TensorLBM/benchmarks/pending/collision_kernels_3d_tg/gates.json"
 }
