@@ -1,6 +1,6 @@
-# 毛细侵入 capillary_invasion_washburn（Washburn 律 β 与 L(t)）（pending）
+# 毛细侵入 capillary_invasion_washburn（Washburn 律 β 与 L(t)）（终裁）
 
-**状态：❌ 未达标（SC-MCMP 结构性搅动，Wave-4 W4-B Part 2 判决，2026-09-21）——β 判据 19.08%（W32）/3.17%（W64，压线仍 FAIL）；L(t) 对 nominal-μ ODE 绝对判据 +689%/+949%（b_max_rel_diff 6.894/9.492）；湿润相质量漂移 -60.7%/-67.0%；W128 确定性 NaN@164 步；σ 原理性不可测使 ODE 参考只能去掉毛细项。姊妹案例 two_phase_poiseuille（同库 Part 1）26.82%→33.17% 反收敛，同根因。**
+**状态：🛑 终裁 TERMINAL（m195 闭环，2026-10-23）——SC-MCMP 结构性缺陷：β 判据 19.08%（W32）/3.17%（W64）；L(t) 绝对判据 689%/949%（b_max_rel_diff 6.894/9.492，档间反收敛）；湿润相质量漂移 -60.7%/-67.0%；W128 确定性 NaN@164 步；σ 原理性不可测。根因：多组分伪势耦合的结构性搅动，需库级重构方可修复。**
 
 ## 物理问题
 
@@ -121,3 +121,30 @@ PYTHONPATH=../../../src python run.py --W {32,64,128}
  {"v": 0.33173655541170183, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/two_phase_poiseuille/result.json", "k": "part1.H128.max_rel_err"},
  {"v": false, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/pending/two_phase_poiseuille/result.json", "k": "part1.criteria.criterion_monotone_decreasing"}]
 -->
+
+## 终裁裁定（m195，2026-10-23）
+
+**verdict = terminal**
+
+根因证据链：
+1. **质量守恒失败**：湿润相质量漂移 -60.7%（W32）/ -67.0%（W64），远超 1% 可接受范围
+2. **σ 原理性不可测**：SC-MCMP 伪势交互产生排斥力驱动相分离，但界面力为数值构造，不与物理表面张力直接对应
+3. **负分布 NaN**：W128 在 164 步确定性发散，气相耗尽层导致分布函数变负
+4. **档间反收敛**：b_max_rel_diff 从 W32 的 6.894 恶化到 W64 的 9.492，违反单调收敛要求
+
+四门判决：
+- G1 共性模块入口：✓（from tensorlbm.multiphase import collide_sc_two_component）
+- G2 直接观测量 ≤3%：✗（β 偏差 19.08%/3.17%，b_max_rel_diff 689%/949%）
+- G3 ≥2 档单调收敛：✗（W64 比 W32 更差，反收敛）
+- G4 预注册冻结：✓（snapshot_sha256 + notes_sha256 双锁，iron_rule pass）
+
+结论：SC-MCMP 模型存在结构性缺陷，需库级重构（质量守恒修复 + σ 可测路径 + 负分布防护）方可晋级。当前维持 TERMINAL 终裁，记录负结果供后续改进参考。
+
+## 图件
+
+- `figures/fig_beta_convergence.png`：Washburn 指数 β 对比（W32/W64 vs 理论 0.5）
+- `figures/fig_mass_drift.png`：质量守恒漂移史（湿润相/气相）
+- `figures/fig_front_Lt.png`：侵入前沿 L(t) 与 Washburn 拟合
+- `figures/fig_phase_field.png`：相场快照（W32/W64 终态）
+- `figures/fig_convergence_comparison.png`：b_max_rel_diff 档间对比
+
