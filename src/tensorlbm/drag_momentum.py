@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import torch
 
-from .d3q19 import C, OPPOSITE
+from .d3q19 import OPPOSITE, C
 
 
 def drag_momentum_exchange_vec(

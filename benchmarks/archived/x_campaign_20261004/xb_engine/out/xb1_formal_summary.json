@@ -1,0 +1,212 @@
+{
+ "benchmark": "xb1_formal_iso4",
+ "prereg": "prereg_xb1.md frozen 2026-10-04 md5 634e02b525e2d5e054d0c4ad67fbb376",
+ "engine": "src_patched/tensorlbm/cac_lbm.py md5 edfa261570f867208d9763292f814b7e (default iso2 bit-identical, proven by tests/test_iso4.py)",
+ "A1_gate": {
+  "protocol": "prereg_xb1.md \u00a75 A1; aggregation = mean over R (P1 verbatim)",
+  "bars": {
+   "3": {
+    "per_R": [
+     0.9494275853434764,
+     0.9528622388001765,
+     0.9564293452229456
+    ],
+    "bar_eff_ratio": 0.9529063897888662,
+    "abs_dev_pct": 4.709361021113379,
+    "R_spread_pct": 0.7347794027302764,
+    "one_minus_bar": 0.047093610211133785
+   },
+   "4": {
+    "per_R": [
+     0.9724142912061053,
+     0.9718014336608061,
+     0.9732878379678459
+    ],
+    "bar_eff_ratio": 0.9725011876115858,
+    "abs_dev_pct": 2.749881238841423,
+    "R_spread_pct": 0.1528434438923791,
+    "one_minus_bar": 0.02749881238841423
+   },
+   "5": {
+    "per_R": [
+     0.9844543865188161,
+     0.9834378752452904,
+     0.9813073085591789
+    ],
+    "bar_eff_ratio": 0.9830665234410952,
+    "abs_dev_pct": 1.6933476558904759,
+    "R_spread_pct": 0.3201286875908731,
+    "one_minus_bar": 0.01693347655890476
+   },
+   "6": {
+    "per_R": [
+     0.9912018395484542,
+     0.9897785633542304,
+     0.9903940419572245
+    ],
+    "bar_eff_ratio": 0.9904581482866363,
+    "abs_dev_pct": 0.9541851713363747,
+    "R_spread_pct": 0.14369877179423074,
+    "one_minus_bar": 0.009541851713363747
+   },
+   "8": {
+    "per_R": [
+     0.9998924323483738,
+     0.9962482244054386,
+     0.9933967197246294
+    ],
+    "bar_eff_ratio": 0.9965124588261473,
+    "abs_dev_pct": 0.34875411738527484,
+    "R_spread_pct": 0.6518445972462875,
+    "one_minus_bar": 0.0034875411738527484
+   }
+  },
+  "W_star": 8,
+  "seq_one_minus_bar": [
+   0.047093610211133785,
+   0.02749881238841423,
+   0.01693347655890476,
+   0.009541851713363747,
+   0.0034875411738527484
+  ],
+  "clause_a_W4_or_Wstar": false,
+  "clause_b_monotone_nonincreasing": true,
+  "G1_pass": false,
+  "u_max_disclosure": {
+   "W3_R20": 0.0014439488002078826,
+   "W3_R28": 0.001796641496561773,
+   "W3_R40": 0.0029024113169962714,
+   "W4_R20": 6.553047688874853e-05,
+   "W4_R28": 5.6343076407212506e-05,
+   "W4_R40": 5.243854270248673e-05,
+   "W5_R20": 1.834563733552778e-05,
+   "W5_R28": 0.00016390333855830684,
+   "W5_R40": 1.637122549567125e-05,
+   "W6_R20": 8.020989312993412e-06,
+   "W6_R28": 2.7569097740880127e-05,
+   "W6_R40": 1.547042136054854e-05,
+   "W8_R20": 2.4713993621139062e-06,
+   "W8_R28": 2.1677564860116058e-06,
+   "W8_R40": 2.170869202223268e-05
+  },
+  "drift_disclosure": {
+   "W3_R20": 8.611116376225635e-13,
+   "W3_R28": 8.601966848201842e-13,
+   "W3_R40": 8.585763664790526e-13,
+   "W4_R20": 8.613633574676886e-13,
+   "W4_R28": 8.595814424881936e-13,
+   "W4_R40": 8.58647253905536e-13,
+   "W5_R20": 8.634414466234609e-13,
+   "W5_R28": 8.60596100366762e-13,
+   "W5_R40": 8.593522789631264e-13,
+   "W6_R20": 8.60673044491983e-13,
+   "W6_R28": 8.61201676827123e-13,
+   "W6_R40": 8.604691682653185e-13,
+   "W8_R20": 8.608386677919592e-13,
+   "W8_R28": 8.612188248395005e-13,
+   "W8_R40": 8.615754563389259e-13
+  }
+ },
+ "A2_attribution": {
+  "note": "diagnostic attribution arms; runner-side module-function surgery restored in finally; not gated (prereg A2)",
+  "attribution_doc": {
+   "g4only": "gradient iso4 (G4), chemical-potential Laplacian iso2: m.chemical_potential_iso4 := lambda -> m.chemical_potential",
+   "l4only": "gradient iso2, chemical-potential Laplacian iso4: m.iso_gradient_3d_iso4 := lambda -> m.iso_gradient_3d"
+  },
+  "sigma_eff_ratio": {
+   "g4only": 0.9463444251913189,
+   "l4only": 0.9480928245456904
+  },
+  "context": {
+   "iso4_full": 0.9718014336608061,
+   "iso2_default": 0.9235675731544108,
+   "law_baseline_1_minus": "1 - sigma_effbar(W) ~ 1.1/W^2 (M1 P1)"
+  }
+ },
+ "A3_gate": {
+  "gate": "no NaN (nan_f=nan_g=0 at every sample) in all 3 runs; baseline W=2 all NaN (M1 P1)",
+  "nan_max": {
+   "W2_R20": 39845888,
+   "W2_R28": 39845888,
+   "W2_R40": 39845888
+  },
+  "sigma_eff_ratio": {
+   "W2_R20": NaN,
+   "W2_R28": NaN,
+   "W2_R40": NaN
+  },
+  "u_max_disclosure": {
+   "W2_R20": NaN,
+   "W2_R28": NaN,
+   "W2_R40": NaN
+  },
+  "A3_pass": false
+ },
+ "A4_gate": {
+  "rule": "prereg A4: gate G2 |err_signed(ch2, a40)| <= 3%; a20 = pre-declared bonus sigma-sensitivity arm (no gate); controller ruling 1: a40 wall-arrest dominated in ch1 -> honest FAIL if ch2 still dominated",
+  "ch2_a40_err_signed": -0.7821703214720683,
+  "ch2_a20_err_signed": -0.27932639787249325,
+  "ch1_machine": {
+   "a40": {
+    "source": "refs/b5_a40_k0.5.json",
+    "err_signed": -0.7222637705568704,
+    "sigma_model": 0.10823730488377745,
+    "grad_scheme": "iso2(M1 default)",
+    "U_platform": 0.00013886811472156482,
+    "steps_run": 24600
+   },
+   "a20": {
+    "source": "refs/b5_a20_k0.5.json",
+    "err_signed": 0.04804290970150138,
+    "sigma_model": 0.10823730488377745,
+    "grad_scheme": "iso2(M1 default)",
+    "U_platform": 0.0005240214548507507,
+    "steps_run": 18100
+   }
+  },
+  "G2_pass": false
+ },
+ "A5_bitrepro": {
+  "archived_sigma_rec_window_mean": 0.009235675731544109,
+  "run_sigma_rec_window_mean": 0.009235675731544109,
+  "window_mean_bit_equal": true,
+  "per_sample": {
+   "sigma_rec": {
+    "n_match": 25,
+    "n_total_arch": 25,
+    "n_total_run": 25
+   },
+   "dP": {
+    "n_match": 25,
+    "n_total_arch": 25,
+    "n_total_run": 25
+   },
+   "p_in": {
+    "n_match": 25,
+    "n_total_arch": 25,
+    "n_total_run": 25
+   },
+   "p_out": {
+    "n_match": 25,
+    "n_total_arch": 25,
+    "n_total_run": 25
+   },
+   "phi_integral": {
+    "n_match": 25,
+    "n_total_arch": 25,
+    "n_total_run": 25
+   }
+  },
+  "all_sigma_rec_bit_equal": true,
+  "max_rel_diff_sigma_rec": 0.0,
+  "stack_note": "mp_w10+M1 overlay vs mp_w11+xb src_patched; per prereg A5: disclose, never gate; A1 cross-W monotone clause unaffected."
+ },
+ "outputs": {
+  "A1": "out/xb1_a1_W{3,4,5,6,8}_R{20,28,40}.json + out/xb1_a1_summary.json",
+  "A2": "out/xb1_a2_{g4only,l4only}.json + out/xb1_a2_summary.json",
+  "A3": "out/xb1_a3_W2_R{20,28,40}.json + out/xb1_a3_summary.json",
+  "A4": "out/xb1_a4_b5_iso4_a{40,20}_k0.5.json + out/xb1_a4_summary.json",
+  "A5": "out/xb1_a5_bitrepro_W4_R28.json + out/xb1_a5_bitcompare.json"
+ },
+ "wall_total_s": 11024.1
+}

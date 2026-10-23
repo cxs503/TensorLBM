@@ -1,781 +1,2126 @@
+"""TensorLBM — PyTorch Lattice Boltzmann solvers and AI4S tooling.
+
+The public API is large (see :data:`__all__`, 786 names) and spans the whole
+library: lattice primitives, collision operators, boundary conditions, AMR,
+turbulence closures, marine/benchmark cases and the AI stack.  Importing all
+of it eagerly pulled ~150k lines and ~190 submodules into memory on every
+``import tensorlbm`` — wasted work for the common case of touching a handful
+of symbols, and a real cost for CLIs, workers and serving processes.
+
+Resolution is therefore deferred.  Every exported name is registered in
+:data:`_LAZY_ATTRS` against the *same* submodule the eager version imported it
+from, and :pep:`562` ``__getattr__`` imports that submodule on first access,
+caching the result in module globals so later lookups cost nothing.  What this
+does and does not change:
+
+* ``tensorlbm.<name>`` and ``from tensorlbm import <name>`` behave exactly as
+  before, for all 786 exports.  Submodule attributes (``tensorlbm.d2q9``) that
+  the eager ``from .x import y`` statements created as a side effect still
+  resolve, including submodules that were only bound transitively — the
+  fallback branch resolves any real submodule via ``find_spec``.
+* Because the target submodule is unchanged, every import-time side effect
+  still happens, just at first use.  Two that matter: ``tensorlbm.cases``
+  registers the built-in cases when imported (touching any of its exports
+  triggers it, so ``list_cases()`` is never short), and the benchmark drivers
+  call ``matplotlib.use("Agg")`` at module scope — that now runs when the
+  plotting module is first used rather than at package import, which is the
+  point at which it is actually needed.
+* ``AttributeError`` is still raised for unknown names and ``dir()`` still
+  reports the full surface, so ``hasattr`` and tab-completion are unaffected.
+
+The ``TYPE_CHECKING`` block repeats the original import statements verbatim so
+mypy, IDEs and static analysers keep seeing precise types.
+
+``tests/test_public_api_lazy_exports.py`` locks the invariants: every
+``__all__`` entry resolves, the table agrees with the ``TYPE_CHECKING`` block,
+and a bare import stays lazy.
+"""
+
+from __future__ import annotations
+
+import importlib as _importlib
+import importlib.util as _importlib_util
+from typing import TYPE_CHECKING, Any
+
 from ._version import __version__
-from .backends import get_backend, set_backend
-from .amr_capability_contract import (
-    LocalRefinementCapability,
-    LocalRefinementWithheldError,
-    REQUIRED_FRONTEND_METADATA,
-    local_refinement_capability_matrix,
-    require_local_refinement_capability,
-)
-from .boundary_capability_contract import (
-    BoundaryConditionCapability,
-    BoundaryConditionWithheldError,
-    boundary_capability_matrix,
-    require_boundary_condition_capability,
-)
-from .turbulence_capability_contract import (
-    TurbulenceCapability,
-    TurbulenceWithheldError,
-    turbulence_capability_matrix,
-    require_turbulence_capability,
-    turbulence_hot_path_audit,
-)
-from .wall_function_contract import (
-    ValidationLevel,
-    WallFunctionCapability,
-    WallFunctionCompatibilityError,
-)
-from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
-from .adaptive_refinement import (
-    AdaptationSchedule,
-    AdaptiveSolver2D,
-    AdaptiveSolver3D,
-    AMRPatch2D,
-    AMRPatch3D,
-    boundary_layer_indicator_2d,
-    boundary_layer_indicator_3d,
-    gradient_indicator_2d,
-    gradient_indicator_3d,
-    mark_cells_for_refinement,
-    MAX_VR_LEVELS,
-    nonequilibrium_indicator_2d,
-    nonequilibrium_indicator_3d,
-    vorticity_indicator_2d,
-    vorticity_indicator_3d,
+
+# ---------------------------------------------------------------------------
+# Lazy export table: public name -> (submodule, attribute within it).
+# Generated from the previous eager import block.  When adding an export, add
+# it here *and* to the TYPE_CHECKING block and __all__; the API test fails
+# otherwise.
+# ---------------------------------------------------------------------------
+_LAZY_ATTRS: dict[str, tuple[str, str]] = {
+    "AIPipelineResult": ("ai", "AIPipelineResult"),
+    "AMRAdvanceResult": ("static_block_amr", "AMRAdvanceResult"),
+    "AMRInterfaceValidationConfig": ("amr_interface_validation", "AMRInterfaceValidationConfig"),
+    "AMRPatch2D": ("adaptive_refinement", "AMRPatch2D"),
+    "AMRPatch3D": ("adaptive_refinement", "AMRPatch3D"),
+    "AccuracyRecommendation": ("accuracy_recommendation", "AccuracyRecommendation"),
+    "AcousticObserver": ("acoustics", "AcousticObserver"),
+    "AcousticsCapability": ("acoustics_capability_contract", "AcousticsCapability"),
+    "AcousticsWithheldError": ("acoustics_capability_contract", "AcousticsWithheldError"),
+    "ActuatorDiskConfig": ("actuator_disk", "ActuatorDiskConfig"),
+    "AdaptationSchedule": ("adaptive_refinement", "AdaptationSchedule"),
+    "AdaptiveSolver2D": ("adaptive_refinement", "AdaptiveSolver2D"),
+    "AdaptiveSolver3D": ("adaptive_refinement", "AdaptiveSolver3D"),
+    "AirfoilConfig": ("airfoil_benchmark", "AirfoilConfig"),
+    "BCKind": ("boundary_registry", "BCKind"),
+    "BCPhase": ("boundary_registry", "BCPhase"),
+    "BC_ID_NONE": ("boundary_registry", "BC_ID_NONE"),
+    "BFLWallPressureDiagnostics": ("drag_pressure", "BFLWallPressureDiagnostics"),
+    "BackwardFacingStepConfig": ("backward_facing_step", "BackwardFacingStepConfig"),
+    "BandTopology": ("dg_band", "BandTopology"),
+    "BoundaryCondition": ("protocols", "BoundaryCondition"),
+    "BoundaryConditionCapability": ("boundary_capability_contract", "BoundaryConditionCapability"),
+    "BoundaryConditionRegistry": ("boundary_registry", "BoundaryConditionRegistry"),
+    "BoundaryConditionWithheldError": (
+        "boundary_capability_contract",
+        "BoundaryConditionWithheldError",
+    ),
+    "BoundaryType": ("general_sim", "BoundaryType"),
+    "BoxCase": ("autograd_calib", "BoxCase"),
+    "C": ("d2q9", "C"),
+    "C27": ("d3q27", "C"),
+    "C3D": ("d3q19", "C"),
+    "CADGeometryEngine": ("ship_cad3d", "CADGeometryEngine"),
+    "CHTConfig": ("conjugate_ht", "CHTConfig"),
+    "CHTState": ("conjugate_ht", "CHTState"),
+    "CYLINDER_RE100_CD_REFERENCE": ("cylinder_bfl_control_volume", "CYLINDER_RE100_CD_REFERENCE"),
+    "CYLINDER_RE100_ST_REFERENCE": ("cylinder_bfl_control_volume", "CYLINDER_RE100_ST_REFERENCE"),
+    "C_D2Q5": ("thermal", "C_D2Q5"),
+    "C_D3Q7": ("thermal3d", "C_D3Q7"),
+    "CalibResult": ("autograd_calib", "CalibResult"),
+    "CallbackReporter": ("reporters", "CallbackReporter"),
+    "CapillaryInvasionConfig": ("porous_media", "CapillaryInvasionConfig"),
+    "CaseBase": ("cases", "CaseBase"),
+    "CaseRunResult": ("cases", "CaseRunResult"),
+    "CaseUnits": ("cases", "CaseUnits"),
+    "CavitationConfig": ("cavitation", "CavitationConfig"),
+    "CheckpointError": ("checkpoint", "CheckpointError"),
+    "CollisionCapability": ("advanced_collision_contract", "CollisionCapability"),
+    "CollisionKernelWithheldError": ("advanced_collision_contract", "CollisionKernelWithheldError"),
+    "CollisionModel": ("general_sim", "CollisionModel"),
+    "CollisionOperator": ("protocols", "CollisionOperator"),
+    "CollisionViscosityAuditConfig": ("collision_viscosity_audit", "CollisionViscosityAuditConfig"),
+    "CombinationEvidence": ("wall_refinement_combination_gate", "CombinationEvidence"),
+    "CombinationGateDecision": ("wall_refinement_combination_gate", "CombinationGateDecision"),
+    "CompositionDecision": ("cross_module_composition_matrix", "CompositionDecision"),
+    "CompositionRequest": ("cross_module_composition_matrix", "CompositionRequest"),
+    "CompositionStatus": ("cross_module_composition_matrix", "CompositionStatus"),
+    "ControlVolumeForceResult": ("control_volume_force", "ControlVolumeForceResult"),
+    "ConvergenceEvidence": ("accuracy_recommendation", "ConvergenceEvidence"),
+    "CylinderBFLControlVolumeConfig": (
+        "cylinder_bfl_control_volume",
+        "CylinderBFLControlVolumeConfig",
+    ),
+    "CylinderFlowConfig": ("cylinder_flow", "CylinderFlowConfig"),
+    "D2Q9": ("constants", "D2Q9"),
+    "DFSEMInlet": ("synthetic_inflow", "DFSEMInlet"),
+    "DGLBMConfig": ("dg_lbm", "DGLBMConfig"),
+    "DGLBMSuboffConfig": ("dg_lbm", "DGLBMSuboffConfig"),
+    "DamBreakConfig": ("dam_break", "DamBreakConfig"),
+    "DiagnosticPoint": ("utils", "DiagnosticPoint"),
+    "DigitalFilterInlet": ("synthetic_inflow", "DigitalFilterInlet"),
+    "DomainDecomposition": ("multi_gpu", "DomainDecomposition"),
+    "DoubleWellFreeEnergy": ("phasefield", "DoubleWellFreeEnergy"),
+    "DragHistory": ("autograd_calib", "DragHistory"),
+    "DragMonitor": ("yplus_guide", "DragMonitor"),
+    "DragTarget": ("autograd_calib", "DragTarget"),
+    "EarlyStopReporter": ("reporters", "EarlyStopReporter"),
+    "EarlyStopSpec": ("scan_runner", "EarlyStopSpec"),
+    "EddyViscosityDataset": ("ai", "EddyViscosityDataset"),
+    "EddyViscosityMLP": ("ai", "EddyViscosityMLP"),
+    "EllipsoidConfig": ("ellipsoid_benchmark", "EllipsoidConfig"),
+    "ErrorMetric": ("accuracy_recommendation", "ErrorMetric"),
+    "ExportSpec": ("cases", "ExportSpec"),
+    "FWHResult": ("acoustics", "FWHResult"),
+    "FWHSurface": ("acoustics", "FWHSurface"),
+    "FieldSampleReporter": ("reporters", "FieldSampleReporter"),
+    "FlatPlateWallModelConfig": ("flat_plate_wall_model", "FlatPlateWallModelConfig"),
+    "FlowFieldTransformer": ("ai", "FlowFieldTransformer"),
+    "FlowTransformerArch": ("ai", "FlowTransformerArch"),
+    "FlowTransformerTrainConfig": ("ai", "FlowTransformerTrainConfig"),
+    "FreeEnergyAdapterStreamLoopConfig": ("phasefield", "FreeEnergyAdapterStreamLoopConfig"),
+    "FreeEnergyAdapterStreamLoopResult": ("phasefield", "FreeEnergyAdapterStreamLoopResult"),
+    "FreeEnergyCHDiagnosticResult": ("phasefield", "FreeEnergyCHDiagnosticResult"),
+    "FreeEnergyCHValidationConfig": ("phasefield", "FreeEnergyCHValidationConfig"),
+    "FreeEnergyCollisionOnlyConfig": ("phasefield", "FreeEnergyCollisionOnlyConfig"),
+    "FreeEnergyCollisionOnlyResult": ("phasefield", "FreeEnergyCollisionOnlyResult"),
+    "FreeEnergyCollisionOnlyState": ("phasefield", "FreeEnergyCollisionOnlyState"),
+    "FreeEnergyDropletConfig": ("multiphase_benchmarks", "FreeEnergyDropletConfig"),
+    "GENERIC_PRESET": ("propeller_cad", "GENERIC_PRESET"),
+    "GHIA_RE100": ("lid_driven_cavity", "GHIA_RE100"),
+    "GHIA_RE1000": ("lid_driven_cavity", "GHIA_RE1000"),
+    "GHIA_RE400": ("lid_driven_cavity", "GHIA_RE400"),
+    "GeneralSimConfig": ("general_sim", "GeneralSimConfig"),
+    "GeneralSimEngine": ("general_sim", "GeneralSimEngine"),
+    "GeometryConfig": ("general_sim", "GeometryConfig"),
+    "GeometryKind": ("wall_refinement_combination_gate", "GeometryKind"),
+    "GeometryOwnership": ("wall_refinement_combination_gate", "GeometryOwnership"),
+    "GeometrySource": ("general_sim", "GeometrySource"),
+    "HullCase": ("autograd_calib", "HullCase"),
+    "HullFreeSurfaceConfig": ("hull_free_surface", "HullFreeSurfaceConfig"),
+    "IBMPropellerConfig": ("propeller_ibm", "IBMPropellerConfig"),
+    "InterfaceFilterControlVolumeClearance": (
+        "amr_interface_filter",
+        "InterfaceFilterControlVolumeClearance",
+    ),
+    "KESolver": ("rans_ke", "KESolver"),
+    "KNOWN_TASKS": ("zoo", "KNOWN_TASKS"),
+    "KOmegaSSTSolver": ("rans_ke", "KOmegaSSTSolver"),
+    "KP505_PRESET": ("propeller_cad", "KP505_PRESET"),
+    "KPIDefinition": ("accuracy_recommendation", "KPIDefinition"),
+    "LBMDatabase": ("ai", "LBMDatabase"),
+    "LBMSimulation": ("simulation", "LBMSimulation"),
+    "LBMStepExecutor": ("lbm_step", "LBMStepExecutor"),
+    "LBMUnitConverter": ("unit_converter", "LBMUnitConverter"),
+    "LaplaceTestConfig": ("porous_media", "LaplaceTestConfig"),
+    "LatticeModel": ("general_sim", "LatticeModel"),
+    "LidDrivenCavityConfig": ("lid_driven_cavity", "LidDrivenCavityConfig"),
+    "LocalRefinementCapability": ("amr_capability_contract", "LocalRefinementCapability"),
+    "LocalRefinementWithheldError": ("amr_capability_contract", "LocalRefinementWithheldError"),
+    "MAX_VR_LEVELS": ("adaptive_refinement", "MAX_VR_LEVELS"),
+    "ModelInfo": ("zoo", "ModelInfo"),
+    "ModelZoo": ("zoo", "ModelZoo"),
+    "MultiDeviceSolver3D": ("multi_gpu", "MultiDeviceSolver3D"),
+    "MultiGPUSolver2D": ("multi_gpu", "MultiGPUSolver2D"),
+    "MultiGPUSolver3D": ("multi_gpu", "MultiGPUSolver3D"),
+    "MultiphaseBenchmarkSuiteConfig": ("multiphase_benchmarks", "MultiphaseBenchmarkSuiteConfig"),
+    "MultiphaseWaterEntryConfig": ("multiphase_water_entry", "MultiphaseWaterEntryConfig"),
+    "NaturalKBCCollisionExecutor": ("chunked_collision", "NaturalKBCCollisionExecutor"),
+    "NestedControlVolumeAssessment": ("control_volume_force", "NestedControlVolumeAssessment"),
+    "NestedStaticBlockAMR3D": ("static_block_amr", "NestedStaticBlockAMR3D"),
+    "OPPOSITE": ("d2q9", "OPPOSITE"),
+    "OPPOSITE27": ("d3q27", "OPPOSITE"),
+    "OPPOSITE3D": ("d3q19", "OPPOSITE"),
+    "OutputConfig": ("general_sim", "OutputConfig"),
+    "OutputFormat": ("general_sim", "OutputFormat"),
+    "PhysicalAccuracyEvidence": ("accuracy_recommendation", "PhysicalAccuracyEvidence"),
+    "PhysicsConfig": ("general_sim", "PhysicsConfig"),
+    "PhysicsModel": ("wall_refinement_combination_gate", "PhysicsModel"),
+    "PipelineFlowConfig": ("pipeline_flow", "PipelineFlowConfig"),
+    "PointOutcome": ("scan_runner", "PointOutcome"),
+    "PopulationRefluxLedger": ("static_block_amr", "PopulationRefluxLedger"),
+    "PorousDrainageConfig": ("porous_media", "PorousDrainageConfig"),
+    "PorousDrainageConfig3D": ("porous_media3d", "PorousDrainageConfig3D"),
+    "PositivityDiagnostics": ("population_positivity", "PositivityDiagnostics"),
+    "PostProcessingAudit": ("acoustics_capability_contract", "PostProcessingAudit"),
+    "PropellerBenchmarkConfig": ("propeller_benchmark", "PropellerBenchmarkConfig"),
+    "PropellerGeometryConfig": ("propeller_cad", "PropellerGeometryConfig"),
+    "REQUIRED_FRONTEND_METADATA": ("amr_capability_contract", "REQUIRED_FRONTEND_METADATA"),
+    "RefinementType": ("wall_refinement_combination_gate", "RefinementType"),
+    "Reporter": ("reporters", "Reporter"),
+    "ReporterBase": ("reporters", "ReporterBase"),
+    "ResistanceComponentAudit": ("resistance_component_audit", "ResistanceComponentAudit"),
+    "RotatingCylinderConfig": ("rotating_cylinder", "RotatingCylinderConfig"),
+    "RunningStats": ("postprocess", "RunningStats"),
+    "ScanExecutor": ("scan_runner", "ScanExecutor"),
+    "ScanPlan": ("scan_runner", "ScanPlan"),
+    "ScanPoint": ("scan_runner", "ScanPoint"),
+    "ScanVariable": ("scan_runner", "ScanVariable"),
+    "ShipHullFlowConfig": ("ship_flow", "ShipHullFlowConfig"),
+    "ShipHullType": ("ship_cad", "ShipHullType"),
+    "SloshingTankConfig": ("sloshing_tank", "SloshingTankConfig"),
+    "SolverCheckpoint": ("checkpoint", "SolverCheckpoint"),
+    "SolverConfig": ("general_sim", "SolverConfig"),
+    "SpaldingWallDiagnostics": ("spalding_wall_model", "SpaldingWallDiagnostics"),
+    "SpatialConvergenceAssessment": ("spatial_convergence", "SpatialConvergenceAssessment"),
+    "SphereBFLControlVolumeConfig": ("sphere_bfl_control_volume", "SphereBFLControlVolumeConfig"),
+    "SphereFlowConfig": ("sphere_flow", "SphereFlowConfig"),
+    "SphereFlowD3Q27Config": ("d3q27_sphere_flow", "SphereFlowD3Q27Config"),
+    "SphereWaterEntryConfig": ("sphere_water_entry", "SphereWaterEntryConfig"),
+    "Spinodal3DConfig": ("multiphase_benchmarks", "Spinodal3DConfig"),
+    "SpinodaleConfig": ("multiphase_benchmarks", "SpinodaleConfig"),
+    "StaticBlockAMR3D": ("static_block_amr", "StaticBlockAMR3D"),
+    "StaticBlockAMRConfig": ("static_block_amr", "StaticBlockAMRConfig"),
+    "StaticDroplet3DConfig": ("multiphase_benchmarks", "StaticDroplet3DConfig"),
+    "StaticDropletConfig": ("multiphase_benchmarks", "StaticDropletConfig"),
+    "StaticDropletDiagnosticResult": ("phasefield", "StaticDropletDiagnosticResult"),
+    "StepContext": ("reporters", "StepContext"),
+    "Streamline": ("streamlines", "Streamline"),
+    "SubContractResult": ("cross_module_composition_matrix", "SubContractResult"),
+    "SubContractStatus": ("cross_module_composition_matrix", "SubContractStatus"),
+    "SuboffConfig": ("suboff_cad", "SuboffConfig"),
+    "SuboffGeometryResolution": ("suboff_static_amr", "SuboffGeometryResolution"),
+    "SuboffHullType": ("suboff_cad", "SuboffHullType"),
+    "SuboffNestedStaticAMRPlan": ("suboff_static_amr", "SuboffNestedStaticAMRPlan"),
+    "SuboffResistanceBenchmarkConfig": ("suboff_resistance", "SuboffResistanceBenchmarkConfig"),
+    "SuboffStaticAMRPlan": ("suboff_static_amr", "SuboffStaticAMRPlan"),
+    "SurfaceAreaWeightDiagnostics": ("surface_area_weights", "SurfaceAreaWeightDiagnostics"),
+    "ThermalCavity3DConfig": ("thermal3d", "ThermalCavity3DConfig"),
+    "ThroughputReporter": ("reporters", "ThroughputReporter"),
+    "TrainConfig": ("ai", "TrainConfig"),
+    "TriangleMesh": ("ship_cad3d", "TriangleMesh"),
+    "TurbulenceCapability": ("turbulence_capability_contract", "TurbulenceCapability"),
+    "TurbulenceStatsAccumulator": ("turbulence_stats", "TurbulenceStatsAccumulator"),
+    "TurbulenceWithheldError": ("turbulence_capability_contract", "TurbulenceWithheldError"),
+    "TurbulentChannelConfig": ("turbulent_channel", "TurbulentChannelConfig"),
+    "TwoPhaseChannelCompareConfig": ("multiphase_benchmarks", "TwoPhaseChannelCompareConfig"),
+    "TwoPhasePoiseuilleConfig": ("porous_media", "TwoPhasePoiseuilleConfig"),
+    "ValidationLevel": ("wall_function_contract", "ValidationLevel"),
+    "W": ("d2q9", "W"),
+    "W27": ("d3q27", "W"),
+    "W3D": ("d3q19", "W"),
+    "W_D2Q5": ("thermal", "W_D2Q5"),
+    "W_D3Q7": ("thermal3d", "W_D3Q7"),
+    "WallExchangeInterfaceClearance": ("spalding_wall_model", "WallExchangeInterfaceClearance"),
+    "WallExchangeSamples": ("spalding_wall_model", "WallExchangeSamples"),
+    "WallExchangeYPlusAggregate": ("wall_exchange_yplus", "WallExchangeYPlusAggregate"),
+    "WallExchangeYPlusSummary": ("wall_exchange_yplus", "WallExchangeYPlusSummary"),
+    "WallFunctionCapability": ("wall_function_contract", "WallFunctionCapability"),
+    "WallFunctionCompatibilityError": ("wall_function_contract", "WallFunctionCompatibilityError"),
+    "WallFunctionRunRequest": ("wall_function_admission", "WallFunctionRunRequest"),
+    "WallRefinementCollisionFamily": ("wall_refinement_combination_gate", "CollisionFamily"),
+    "WallRefinementCombination": ("wall_refinement_combination_gate", "WallRefinementCombination"),
+    "WallRefinementGateStatus": ("wall_refinement_combination_gate", "GateStatus"),
+    "WallRefinementLattice": ("wall_refinement_combination_gate", "Lattice"),
+    "WallTreatment": ("wall_refinement_combination_gate", "WallTreatment"),
+    "ZooValidation": ("zoo", "ZooValidation"),
+    "acoustics_capability_matrix": ("acoustics_capability_contract", "acoustics_capability_matrix"),
+    "acoustics_post_processing_audit": (
+        "acoustics_capability_contract",
+        "acoustics_post_processing_audit",
+    ),
+    "aggregate_wall_exchange_yplus_summaries": (
+        "wall_exchange_yplus",
+        "aggregate_wall_exchange_yplus_summaries",
+    ),
+    "airy_wave_velocity_3d": ("wave_bc", "airy_wave_velocity_3d"),
+    "apparent_viscosity_power_law": ("non_newtonian", "apparent_viscosity_power_law"),
+    "apply_actuator_disk": ("actuator_disk", "apply_actuator_disk"),
+    "apply_body_force_shift": ("powerlaw", "apply_body_force_shift"),
+    "apply_boundary_conditions": ("boundary_registry", "apply_boundary_conditions"),
+    "apply_buoyancy_force": ("thermal", "apply_buoyancy_force"),
+    "apply_buoyancy_force_3d": ("thermal3d", "apply_buoyancy_force_3d"),
+    "apply_cavitation_force": ("cavitation", "apply_cavitation_force"),
+    "apply_cht_interface": ("conjugate_ht", "apply_cht_interface"),
+    "apply_dfsem_inlet_2d": ("synthetic_inflow", "apply_dfsem_inlet_2d"),
+    "apply_dfsem_inlet_3d": ("synthetic_inflow", "apply_dfsem_inlet_3d"),
+    "apply_equilibrium_difference_sponge": ("sponge_layer", "apply_equilibrium_difference_sponge"),
+    "apply_inlet_profile_2d": ("inlet_profiles", "apply_inlet_profile_2d"),
+    "apply_inlet_profile_3d": ("inlet_profiles", "apply_inlet_profile_3d"),
+    "apply_jonswap_inlet_3d": ("wave_bc", "apply_jonswap_inlet_3d"),
+    "apply_rough_wall_bounce_back": ("roughness", "apply_rough_wall_bounce_back"),
+    "apply_simple_channel_boundaries": ("boundaries", "apply_simple_channel_boundaries"),
+    "apply_simple_channel_boundaries_3d": ("boundaries3d", "apply_simple_channel_boundaries_3d"),
+    "apply_spalding_exchange_wall_model": (
+        "spalding_wall_model",
+        "apply_spalding_exchange_wall_model",
+    ),
+    "apply_suboff_appendage_halfway_links": (
+        "suboff_static_amr",
+        "apply_suboff_appendage_halfway_links",
+    ),
+    "apply_target_sponge_2d": ("sponge_bc", "apply_target_sponge_2d"),
+    "apply_target_sponge_3d": ("sponge_bc", "apply_target_sponge_3d"),
+    "apply_viscous_sponge_2d": ("sponge_bc", "apply_viscous_sponge_2d"),
+    "apply_viscous_sponge_3d": ("sponge_bc", "apply_viscous_sponge_3d"),
+    "apply_wall_wettability_sc": ("porous_media", "apply_wall_wettability_sc"),
+    "apply_water_entry_boundaries_3d": ("boundaries3d", "apply_water_entry_boundaries_3d"),
+    "apply_wave_inlet_3d": ("wave_bc", "apply_wave_inlet_3d"),
+    "apply_zou_he_channel_boundaries": ("boundaries", "apply_zou_he_channel_boundaries"),
+    "apply_zou_he_channel_boundaries_27": (
+        "boundaries_d3q27",
+        "apply_zou_he_channel_boundaries_27",
+    ),
+    "apply_zou_he_channel_boundaries_3d": ("boundaries3d", "apply_zou_he_channel_boundaries_3d"),
+    "area_average_2d": ("surface_integrals", "area_average_2d"),
+    "area_average_3d": ("surface_integrals", "area_average_3d"),
+    "assess_composition": ("cross_module_composition_matrix", "assess_composition"),
+    "assess_flat_plate_convergence": ("flat_plate_convergence", "assess_flat_plate_convergence"),
+    "assess_interface_filter_control_volume_clearance": (
+        "amr_interface_filter",
+        "assess_interface_filter_control_volume_clearance",
+    ),
+    "assess_nested_control_volume_invariance": (
+        "control_volume_force",
+        "assess_nested_control_volume_invariance",
+    ),
+    "assess_spatial_convergence": ("spatial_convergence", "assess_spatial_convergence"),
+    "assess_sphere_domain_convergence": (
+        "sphere_domain_sensitivity",
+        "assess_sphere_domain_convergence",
+    ),
+    "assess_sphere_domain_inlet_factorial": (
+        "sphere_boundary_factorial",
+        "assess_sphere_domain_inlet_factorial",
+    ),
+    "assess_sphere_domain_sensitivity_pair": (
+        "sphere_domain_sensitivity",
+        "assess_sphere_domain_sensitivity_pair",
+    ),
+    "assess_sphere_inlet_sponge_pair": (
+        "sphere_boundary_sensitivity",
+        "assess_sphere_inlet_sponge_pair",
+    ),
+    "assess_suboff_geometry_resolution": ("suboff_static_amr", "assess_suboff_geometry_resolution"),
+    "assess_suboff_nested_convergence": (
+        "suboff_nested_convergence",
+        "assess_suboff_nested_convergence",
+    ),
+    "assess_wall_exchange_interface_clearance": (
+        "spalding_wall_model",
+        "assess_wall_exchange_interface_clearance",
+    ),
+    "assess_wall_refinement_combination": (
+        "wall_refinement_combination_gate",
+        "assess_wall_refinement_combination",
+    ),
+    "assign_points_to_gpus": ("scan_runner", "assign_points_to_gpus"),
+    "audit_resistance_components": ("resistance_component_audit", "audit_resistance_components"),
+    "auto_decompose": ("multi_gpu", "auto_decompose"),
+    "bfl_surface_area_weights": ("surface_area_weights", "bfl_surface_area_weights"),
+    "blasius_profile": ("inlet_profiles", "blasius_profile"),
+    "bounce_back_cells": ("boundaries", "bounce_back_cells"),
+    "bounce_back_cells_27": ("boundaries_d3q27", "bounce_back_cells_27"),
+    "bounce_back_cells_3d": ("boundaries3d", "bounce_back_cells_3d"),
+    "boundary_capability_matrix": ("boundary_capability_contract", "boundary_capability_matrix"),
+    "boundary_condition_registry": ("boundary_registry", "boundary_condition_registry"),
+    "boundary_layer_indicator_2d": ("adaptive_refinement", "boundary_layer_indicator_2d"),
+    "boundary_layer_indicator_3d": ("adaptive_refinement", "boundary_layer_indicator_3d"),
+    "bounded_drag": ("autograd_calib", "bounded_drag"),
+    "bouzidi_bounce_back": ("interpolated_bc", "bouzidi_bounce_back"),
+    "bouzidi_bounce_back_3d": ("interpolated_bc", "bouzidi_bounce_back_3d"),
+    "box_control_volume": ("control_volume_force", "box_control_volume"),
+    "bubble_centroid_velocity_3d": ("free_surface_common", "bubble_centroid_velocity_3d"),
+    "build_airfoil_mask": ("airfoil_benchmark", "build_airfoil_mask"),
+    "build_anisotropic_sponge_sigma_3d": ("sponge_layer", "build_anisotropic_sponge_sigma_3d"),
+    "build_band_topology": ("dg_band", "build_band_topology"),
+    "build_bc_mask": ("boundary_registry", "build_bc_mask"),
+    "build_dg_hull_band_mask": ("dg_lbm", "build_dg_hull_band_mask"),
+    "build_dg_shell_mask": ("dg_lbm", "build_dg_shell_mask"),
+    "build_ellipsoid_mask": ("ellipsoid_benchmark", "build_ellipsoid_mask"),
+    "build_fine_suboff_mask": ("suboff_static_amr", "build_fine_suboff_mask"),
+    "build_flow_token_batch": ("ai", "build_flow_token_batch"),
+    "build_mean_equilibrium_2d": ("sponge_bc", "build_mean_equilibrium_2d"),
+    "build_mean_equilibrium_3d": ("sponge_bc", "build_mean_equilibrium_3d"),
+    "build_nested_fine_suboff_mask": ("suboff_static_amr", "build_nested_fine_suboff_mask"),
+    "build_propeller_mask": ("propeller_cad", "build_propeller_mask"),
+    "build_ship_hull_mask": ("ship_cad", "build_hull_mask"),
+    "build_sponge_sigma_3d": ("sponge_layer", "build_sponge_sigma_3d"),
+    "build_suboff_mask": ("suboff_cad", "build_suboff_mask"),
+    "calibrate": ("autograd_calib", "calibrate"),
+    "case_checkpoint_path": ("checkpoint", "case_checkpoint_path"),
+    "cd_from_force": ("autograd_calib", "cd_from_force"),
+    "central_difference": ("powerlaw", "central_difference"),
+    "central_gradient_3d": ("phasefield", "central_gradient_3d"),
+    "check_bc_consistency": ("boundary_registry", "check_bc_consistency"),
+    "check_bc_overlaps": ("boundary_registry", "check_bc_overlaps"),
+    "cht_solid_diffusion_step": ("conjugate_ht", "cht_solid_diffusion_step"),
+    "collide_advanced_3d": ("advanced_collision_contract", "collide_advanced_3d"),
+    "collide_ai_les_bgk": ("ai", "collide_ai_les_bgk"),
+    "collide_bgk": ("solver", "collide_bgk"),
+    "collide_bgk27": ("d3q27", "collide_bgk27"),
+    "collide_bgk3d": ("solver3d", "collide_bgk3d"),
+    "collide_bgk_dg": ("dg_advection", "collide_bgk_dg"),
+    "collide_cascaded_d3q19": ("cascaded_collision", "collide_cascaded_d3q19"),
+    "collide_cascaded_d3q27": ("cascaded_collision", "collide_cascaded_d3q27"),
+    "collide_cumulant_d2q9": ("cumulant", "collide_cumulant_d2q9"),
+    "collide_cumulant_d3q19": ("cumulant", "collide_cumulant_d3q19"),
+    "collide_cumulant_d3q27": ("cumulant", "collide_cumulant_d3q27"),
+    "collide_cumulant_geier_d3q27": ("cumulant", "collide_cumulant_geier_d3q27"),
+    "collide_cumulant_smag_d3q27": ("cumulant_smag", "collide_cumulant_smag_d3q27"),
+    "collide_dg_lbm": ("dg_lbm", "collide_dg_lbm"),
+    "collide_dynamic_smagorinsky_bgk": ("turbulence", "collide_dynamic_smagorinsky_bgk"),
+    "collide_dynamic_smagorinsky_bgk3d": ("turbulence", "collide_dynamic_smagorinsky_bgk3d"),
+    "collide_in_z_chunks": ("chunked_collision", "collide_in_z_chunks"),
+    "collide_kbc_d3q19": ("entropic_kbc", "collide_kbc_d3q19"),
+    "collide_kbc_d3q27": ("entropic_kbc", "collide_kbc_d3q27"),
+    "collide_mrt": ("solver", "collide_mrt"),
+    "collide_mrt27": ("d3q27", "collide_mrt27"),
+    "collide_mrt3d": ("solver3d", "collide_mrt3d"),
+    "collide_natural_kbc_d3q19": ("entropic_kbc", "collide_natural_kbc_d3q19"),
+    "collide_planar_cumulant_d3q19": ("planar_d3q19", "collide_planar_cumulant_d3q19"),
+    "collide_power_law_bgk": ("non_newtonian", "collide_power_law_bgk"),
+    "collide_powerlaw_bgk": ("powerlaw", "collide_powerlaw_bgk"),
+    "collide_rans_3d": ("rans_common", "collide_rans_3d"),
+    "collide_rans_bgk27": ("rans_common", "collide_rans_bgk27"),
+    "collide_rans_bgk3d": ("rans_common", "collide_rans_bgk3d"),
+    "collide_rans_ke": ("rans_ke", "collide_rans_ke"),
+    "collide_rans_komega_sst": ("rans_ke", "collide_rans_komega_sst"),
+    "collide_rans_mrt27": ("rans_common", "collide_rans_mrt27"),
+    "collide_rans_mrt3d": ("rans_common", "collide_rans_mrt3d"),
+    "collide_rlbm": ("solver", "collide_rlbm"),
+    "collide_rlbm27": ("d3q27", "collide_rlbm27"),
+    "collide_rlbm3d": ("solver3d", "collide_rlbm3d"),
+    "collide_sc_single_component": ("multiphase", "collide_sc_single_component"),
+    "collide_sc_single_component_27": ("multiphase3d_d3q27", "collide_sc_single_component_27"),
+    "collide_sc_single_component_3d": ("multiphase3d", "collide_sc_single_component_3d"),
+    "collide_sc_two_component": ("multiphase", "collide_sc_two_component"),
+    "collide_sc_two_component_27": ("multiphase3d_d3q27", "collide_sc_two_component_27"),
+    "collide_sc_two_component_3d": ("multiphase3d", "collide_sc_two_component_3d"),
+    "collide_smagorinsky_bgk": ("turbulence", "collide_smagorinsky_bgk"),
+    "collide_smagorinsky_bgk27": ("turbulence", "collide_smagorinsky_bgk27"),
+    "collide_smagorinsky_bgk3d": ("turbulence", "collide_smagorinsky_bgk3d"),
+    "collide_smagorinsky_mrt": ("turbulence", "collide_smagorinsky_mrt"),
+    "collide_smagorinsky_mrt27": ("turbulence", "collide_smagorinsky_mrt27"),
+    "collide_smagorinsky_mrt3d": ("turbulence", "collide_smagorinsky_mrt3d"),
+    "collide_thermal_bgk": ("thermal", "collide_thermal_bgk"),
+    "collide_thermal_bgk_3d": ("thermal3d", "collide_thermal_bgk_3d"),
+    "collide_trt": ("solver", "collide_trt"),
+    "collide_trt27": ("d3q27", "collide_trt27"),
+    "collide_trt3d": ("solver3d", "collide_trt3d"),
+    "collide_vreman_bgk": ("turbulence", "collide_vreman_bgk"),
+    "collide_vreman_bgk27": ("turbulence", "collide_vreman_bgk27"),
+    "collide_vreman_bgk3d": ("turbulence", "collide_vreman_bgk3d"),
+    "collide_vreman_mrt27": ("turbulence", "collide_vreman_mrt27"),
+    "collide_vreman_mrt3d": ("turbulence", "collide_vreman_mrt3d"),
+    "collide_wale_bgk": ("turbulence", "collide_wale_bgk"),
+    "collide_wale_bgk27": ("turbulence", "collide_wale_bgk27"),
+    "collide_wale_bgk3d": ("turbulence", "collide_wale_bgk3d"),
+    "collide_wale_mrt27": ("turbulence", "collide_wale_mrt27"),
+    "collide_wale_mrt3d": ("turbulence", "collide_wale_mrt3d"),
+    "collision_capability_matrix": ("advanced_collision_contract", "collision_capability_matrix"),
+    "collision_then_adapter_stream": ("phasefield", "collision_then_adapter_stream"),
+    "color_gradient_step": ("multiphase", "color_gradient_step"),
+    "color_gradient_step_3d": ("multiphase3d", "color_gradient_step_3d"),
+    "compare_all_methods": ("momentum_exchange", "compare_all_methods"),
+    "compare_ghia": ("lid_driven_cavity", "compare_ghia"),
+    "compute_added_mass_2d": ("postprocess", "compute_added_mass_2d"),
+    "compute_added_mass_3d": ("postprocess", "compute_added_mass_3d"),
+    "compute_divergence": ("postprocess", "compute_divergence"),
+    "compute_drag_lift_coefficients": ("postprocess", "compute_drag_lift_coefficients"),
+    "compute_enstrophy_2d": ("postprocess", "compute_enstrophy_2d"),
+    "compute_fwh_far_field": ("acoustics", "compute_fwh_far_field"),
+    "compute_fwh_result": ("acoustics", "compute_fwh_result"),
+    "compute_kinetic_energy": ("postprocess", "compute_kinetic_energy"),
+    "compute_lambda2_criterion": ("postprocess", "compute_lambda2_criterion"),
+    "compute_obstacle_forces": ("boundaries", "compute_obstacle_forces"),
+    "compute_obstacle_forces_27": ("obstacles", "compute_obstacle_forces_27"),
+    "compute_obstacle_forces_3d": ("obstacles", "compute_obstacle_forces_3d"),
+    "compute_obstacle_moments_3d": ("obstacles", "compute_obstacle_moments_3d"),
+    "compute_pressure_coefficient": ("postprocess", "compute_pressure_coefficient"),
+    "compute_q_circle": ("interpolated_bc", "compute_q_circle"),
+    "compute_q_criterion": ("postprocess", "compute_q_criterion"),
+    "compute_q_generic_3d": ("preprocess_geo", "compute_q_generic_3d"),
+    "compute_q_sphere": ("interpolated_bc", "compute_q_sphere"),
+    "compute_q_suboff": ("interpolated_bc_suboff", "compute_q_suboff"),
+    "compute_recirculation_length": ("postprocess", "compute_recirculation_length"),
+    "compute_residence_time_2d": ("streamlines", "compute_residence_time_2d"),
+    "compute_reynolds_stresses": ("turbulence_stats", "compute_reynolds_stresses"),
+    "compute_rough_wall_slip_velocity": ("roughness", "compute_rough_wall_slip_velocity"),
+    "compute_spl_spectrum": ("acoustics", "compute_spl_spectrum"),
+    "compute_strouhal_fft": ("postprocess", "compute_strouhal_fft"),
+    "compute_turbulence_intensity": ("turbulence_stats", "compute_turbulence_intensity"),
+    "compute_turbulence_length_scale": ("turbulence_stats", "compute_turbulence_length_scale"),
+    "compute_velocity_magnitude": ("postprocess", "compute_velocity_magnitude"),
+    "compute_vorticity": ("cylinder_flow", "compute_vorticity"),
+    "compute_vorticity_2d": ("postprocess", "compute_vorticity_2d"),
+    "compute_vorticity_3d": ("postprocess", "compute_vorticity_3d"),
+    "configure_cpu_threads": ("utils", "configure_cpu_threads"),
+    "configure_logging": ("logging_config", "configure_logging"),
+    "convective_refined_tau": ("static_block_amr", "convective_refined_tau"),
+    "correct_mass": ("solver", "correct_mass"),
+    "correct_mass27": ("d3q27", "correct_mass27"),
+    "correct_mass3d": ("solver3d", "correct_mass3d"),
+    "create_parametric_hull_mesh": ("ship_cad3d", "create_parametric_hull_mesh"),
+    "cs_power": ("autograd_calib", "cs_power"),
+    "cylinder_mask": ("boundaries", "cylinder_mask"),
+    "damp_interface_nonequilibrium": ("amr_interface_filter", "damp_interface_nonequilibrium"),
+    "derive_missing_mask": ("boundary_registry", "derive_missing_mask"),
+    "dg_advect": ("dg_advection", "dg_advect"),
+    "dg_advect_band": ("dg_band", "dg_advect_band"),
+    "dg_compute_velocity_gradients": ("dg_lbm", "dg_compute_velocity_gradients"),
+    "dg_lbm_rhs": ("dg_advection", "dg_lbm_rhs"),
+    "dg_lbm_step": ("dg_advection", "dg_lbm_step"),
+    "dg_lbm_step_band": ("dg_band", "dg_lbm_step_band"),
+    "dg_rhs": ("dg_advection", "dg_rhs"),
+    "dg_rhs_band": ("dg_band", "dg_rhs_band"),
+    "diagnose_static_droplet": ("phasefield", "diagnose_static_droplet"),
+    "differentiable_step": ("autograd_path", "differentiable_step"),
+    "discrete_entropy": ("entropic_kbc", "discrete_entropy"),
+    "dispatch": ("reporters", "dispatch"),
+    "drag_targets_from_sidecars": ("autograd_calib", "drag_targets_from_sidecars"),
+    "eager_load_state_dict": ("checkpoint", "eager_load_state_dict"),
+    "eager_state_dict": ("checkpoint", "eager_state_dict"),
+    "effective_bfl_wall_distance": ("spalding_wall_model", "effective_bfl_wall_distance"),
+    "ellipsoid_statistics": ("ellipsoid_benchmark", "ellipsoid_statistics"),
+    "equilibrium": ("d2q9", "equilibrium"),
+    "equilibrium27": ("d3q27", "equilibrium27"),
+    "equilibrium3d": ("d3q19", "equilibrium3d"),
+    "equilibrium_dg": ("dg_advection", "equilibrium_dg"),
+    "equilibrium_thermal": ("thermal", "equilibrium_thermal"),
+    "equilibrium_thermal_3d": ("thermal3d", "equilibrium_thermal_3d"),
+    "estimate_droplet_radius": ("phasefield", "estimate_droplet_radius"),
+    "estimate_exchange_yplus": ("yplus_guide", "estimate_exchange_yplus"),
+    "estimate_strouhal_from_lift": ("cylinder_bfl_control_volume", "estimate_strouhal_from_lift"),
+    "estimate_yplus": ("yplus_guide", "estimate_yplus"),
+    "evaluate": ("autograd_calib", "evaluate"),
+    "export_checkpoint_vtk": ("vtk_export", "export_checkpoint_vtk"),
+    "export_hull_stl": ("ship_cad", "export_hull_stl"),
+    "export_mesh_gltf": ("ship_cad3d", "export_mesh_gltf"),
+    "export_mesh_stl_ascii": ("ship_cad3d", "export_mesh_stl_ascii"),
+    "export_suboff_stl": ("suboff_cad", "export_suboff_stl"),
+    "export_vtk_2d": ("vtk_export", "export_vtk_2d"),
+    "export_vtk_3d": ("vtk_export", "export_vtk_3d"),
+    "extract_les_samples_2d": ("ai", "extract_les_samples_2d"),
+    "extract_surface_pressure": ("acoustics", "extract_surface_pressure"),
+    "extract_velocity_profile": ("postprocess", "extract_velocity_profile"),
+    "extract_wake_profile": ("postprocess", "extract_wake_profile"),
+    "faltinsen_natural_frequency": ("sloshing_tank", "faltinsen_natural_frequency"),
+    "far_field_bc_27": ("boundaries_d3q27", "far_field_bc_27"),
+    "far_field_bc_3d": ("boundaries3d", "far_field_bc_3d"),
+    "flow_step_image_path": ("utils", "flow_step_image_path"),
+    "fluid_momentum": ("control_volume_force", "fluid_momentum"),
+    "force_coefficients": ("surface_integrals", "force_coefficients"),
+    "force_minus_phi_grad_mu": ("phasefield", "force_minus_phi_grad_mu"),
+    "force_mu_grad_phi": ("phasefield", "force_mu_grad_phi"),
+    "free_energy_step": ("multiphase", "free_energy_step"),
+    "free_energy_step_3d": ("phasefield.ch_validation", "free_energy_step_3d"),
+    "free_energy_step_3d_27": ("multiphase3d_d3q27", "free_energy_step_3d_27"),
+    "free_surface_step": ("free_surface_lbm", "free_surface_step"),
+    "free_surface_step_27": ("free_surface_lbm_27", "free_surface_step_27"),
+    "free_surface_step_2d": ("free_surface_lbm_2d", "free_surface_step_2d"),
+    "free_surface_vof_collide_3d": ("free_surface_common", "free_surface_vof_collide_3d"),
+    "free_surface_vof_step": ("free_surface_common", "free_surface_vof_step"),
+    "generate_hull_body_plan": ("ship_cad", "generate_hull_body_plan"),
+    "generate_hull_previews": ("ship_cad", "generate_hull_previews"),
+    "generate_hull_sideprofile": ("ship_cad", "generate_hull_sideprofile"),
+    "generate_hull_waterplane": ("ship_cad", "generate_hull_waterplane"),
+    "generate_suboff_previews": ("suboff_cad", "generate_suboff_previews"),
+    "get_backend": ("backends", "get_backend"),
+    "get_case": ("cases", "get_case"),
+    "get_ops": ("dg_advection", "get_ops"),
+    "get_reproducibility_metadata": ("utils", "get_reproducibility_metadata"),
+    "git_code_sha": ("scan_runner", "git_code_sha"),
+    "gradient_indicator_2d": ("adaptive_refinement", "gradient_indicator_2d"),
+    "gradient_indicator_3d": ("adaptive_refinement", "gradient_indicator_3d"),
+    "gravity_force_3d": ("free_surface_common", "gravity_force_3d"),
+    "grid_quality_metrics": ("yplus_guide", "grid_quality_metrics"),
+    "guo_force_delta_3d": ("free_surface_common", "guo_force_delta_3d"),
+    "halo_exchange_2d": ("multi_gpu", "halo_exchange_2d"),
+    "halo_exchange_3d": ("multi_gpu", "halo_exchange_3d"),
+    "hull_block_coefficient": ("ship_cad", "hull_block_coefficient"),
+    "hull_statistics": ("ship_cad", "hull_statistics"),
+    "hybrid_advect": ("dg_band", "hybrid_advect"),
+    "hybrid_step": ("dg_band", "hybrid_step"),
+    "ibm_apply_body_force_2d": ("ibm", "ibm_apply_body_force_2d"),
+    "ibm_apply_body_force_3d": ("ibm", "ibm_apply_body_force_3d"),
+    "ibm_delta_4pt": ("ibm", "ibm_delta_4pt"),
+    "ibm_delta_hat": ("ibm", "ibm_delta_hat"),
+    "ibm_direct_forcing": ("ibm", "ibm_direct_forcing"),
+    "ibm_direct_forcing_3d": ("ibm", "ibm_direct_forcing_3d"),
+    "ibm_force_spread": ("ibm", "ibm_force_spread"),
+    "ibm_force_spread_3d": ("ibm", "ibm_force_spread_3d"),
+    "ibm_velocity_interpolate": ("ibm", "ibm_velocity_interpolate"),
+    "ibm_velocity_interpolate_3d": ("ibm", "ibm_velocity_interpolate_3d"),
+    "import_mesh_stl": ("ship_cad3d", "import_mesh_stl"),
+    "init_fill_rectangular": ("free_surface_lbm", "init_fill_rectangular"),
+    "init_fill_rectangular_27": ("free_surface_lbm_27", "init_fill_rectangular_27"),
+    "init_fill_rectangular_2d": ("free_surface_lbm_2d", "init_fill_rectangular_2d"),
+    "init_flags_from_fill": ("free_surface_lbm", "init_flags_from_fill"),
+    "init_flags_from_fill_27": ("free_surface_lbm_27", "init_flags_from_fill_27"),
+    "init_free_energy_g": ("multiphase", "init_free_energy_g"),
+    "init_free_energy_g_3d": ("phasefield.evolution_adapter", "init_free_energy_g_3d"),
+    "init_free_energy_g_3d_27": ("multiphase3d_d3q27", "init_free_energy_g_3d_27"),
+    "init_mass_from_fill": ("free_surface_lbm", "init_mass_from_fill"),
+    "init_mass_from_fill_27": ("free_surface_lbm_27", "init_mass_from_fill_27"),
+    "init_phi_bubble_3d": ("free_surface_common", "init_phi_bubble_3d"),
+    "init_phi_rayleigh_taylor_3d": ("free_surface_common", "init_phi_rayleigh_taylor_3d"),
+    "init_population_from_fill": ("free_surface_lbm", "init_population_from_fill"),
+    "initialize_free_energy_collision_only_state": (
+        "phasefield",
+        "initialize_free_energy_collision_only_state",
+    ),
+    "initialize_static_droplet": ("phasefield", "initialize_static_droplet"),
+    "integrate_bfl_projected_pressure": ("drag_pressure", "integrate_bfl_projected_pressure"),
+    "interface_compression_3d": ("free_surface_common", "interface_compression_3d"),
+    "interface_normal_3d": ("free_surface_common", "interface_normal_3d"),
+    "interface_shell_blend": ("amr_interface_filter", "interface_shell_blend"),
+    "ittc_1957_friction_coefficient": ("flat_plate_wall_model", "ittc_1957_friction_coefficient"),
+    "jonswap_spectrum": ("wave_bc", "jonswap_spectrum"),
+    "jonswap_wave_velocity_3d": ("wave_bc", "jonswap_wave_velocity_3d"),
+    "kbc_decompose_d3q19": ("entropic_kbc", "kbc_decompose_d3q19"),
+    "kbc_decompose_d3q27": ("entropic_kbc", "kbc_decompose_d3q27"),
+    "kcs_hull_mask": ("ship_cad", "kcs_hull_mask"),
+    "komega_sst_collision_d2q9": ("rans_ke", "komega_sst_collision_d2q9"),
+    "laplacian_3d": ("phasefield", "laplacian_3d"),
+    "legacy_snapshot_image_path": ("utils", "legacy_snapshot_image_path"),
+    "lift_d2q9_to_d3q19": ("planar_d3q19", "lift_d2q9_to_d3q19"),
+    "limit_nonequilibrium_for_positivity": (
+        "population_positivity",
+        "limit_nonequilibrium_for_positivity",
+    ),
+    "list_cases": ("cases", "list_cases"),
+    "load_case_checkpoint": ("checkpoint", "load_case_checkpoint"),
+    "load_checkpoint": ("checkpoint", "load_checkpoint"),
+    "load_config": ("config_io", "load_config"),
+    "load_config_json": ("config_io", "load_config_json"),
+    "load_config_yaml": ("config_io", "load_config_yaml"),
+    "load_dataset_pt": ("ai", "load_dataset_pt"),
+    "load_drag_history": ("autograd_calib", "load_drag_history"),
+    "load_flow_transformer_model": ("ai", "load_flow_transformer_model"),
+    "load_model": ("ai", "load_model"),
+    "load_solver_checkpoint": ("checkpoint", "load_solver_checkpoint"),
+    "lobatto_nodes": ("dg_advection", "lobatto_nodes"),
+    "local_refinement_capability_matrix": (
+        "amr_capability_contract",
+        "local_refinement_capability_matrix",
+    ),
+    "log_law_profile": ("inlet_profiles", "log_law_profile"),
+    "log_law_velocity": ("turbulent_channel", "log_law_velocity"),
+    "logger": ("logging_config", "logger"),
+    "macroscopic": ("d2q9", "macroscopic"),
+    "macroscopic27": ("d3q27", "macroscopic27"),
+    "macroscopic3d": ("d3q19", "macroscopic3d"),
+    "macroscopic_dg": ("dg_advection", "macroscopic_dg"),
+    "macroscopic_thermal": ("thermal", "macroscopic_thermal"),
+    "macroscopic_thermal_3d": ("thermal3d", "macroscopic_thermal_3d"),
+    "make_bfs_solid_mask": ("backward_facing_step", "make_bfs_solid_mask"),
+    "make_cavity_wall_mask": ("lid_driven_cavity", "make_cavity_wall_mask"),
+    "make_channel_wall_mask": ("boundaries", "make_channel_wall_mask"),
+    "make_channel_wall_mask_27": ("boundaries_d3q27", "make_channel_wall_mask_27"),
+    "make_channel_wall_mask_3d": ("boundaries3d", "make_channel_wall_mask_3d"),
+    "make_pipeline_wall_mask": ("pipeline_flow", "make_pipeline_wall_mask"),
+    "make_random_cylinder_medium": ("porous_media", "make_random_cylinder_medium"),
+    "make_random_sphere_medium": ("porous_media3d", "make_random_sphere_medium"),
+    "make_sloshing_wall_mask": ("sloshing_tank", "make_sloshing_wall_mask"),
+    "make_tank_wall_mask_3d": ("boundaries3d", "make_tank_wall_mask_3d"),
+    "make_tube_array_medium": ("porous_media", "make_tube_array_medium"),
+    "make_tube_array_medium_3d": ("porous_media3d", "make_tube_array_medium_3d"),
+    "marginalize_d3q19_to_d2q9": ("planar_d3q19", "marginalize_d3q19_to_d2q9"),
+    "mark_cells_for_refinement": ("adaptive_refinement", "mark_cells_for_refinement"),
+    "mass_flow_rate_2d": ("surface_integrals", "mass_flow_rate_2d"),
+    "mass_flow_rate_3d": ("surface_integrals", "mass_flow_rate_3d"),
+    "maximum_planar_plane_spread": ("planar_d3q19", "maximum_planar_plane_spread"),
+    "mean_curvature_3d": ("free_surface_common", "mean_curvature_3d"),
+    "measure_reattachment_length": ("backward_facing_step", "measure_reattachment_length"),
+    "measure_strouhal": ("pipeline_flow", "measure_strouhal"),
+    "mixing_layer_thickness_3d": ("free_surface_common", "mixing_layer_thickness_3d"),
+    "moment_coefficients": ("surface_integrals", "moment_coefficients"),
+    "momentum_exchange_bfl": ("momentum_exchange", "momentum_exchange_bfl"),
+    "momentum_exchange_galilean": ("momentum_exchange", "momentum_exchange_galilean"),
+    "momentum_exchange_pressure_friction": (
+        "momentum_exchange",
+        "momentum_exchange_pressure_friction",
+    ),
+    "momentum_exchange_standard": ("momentum_exchange", "momentum_exchange_standard"),
+    "momentum_exchange_stress": ("momentum_exchange", "momentum_exchange_stress"),
+    "moving_wall_bounce_back": ("rotating_cylinder", "moving_wall_bounce_back"),
+    "moving_wall_bounce_back_3d": ("propeller_benchmark", "moving_wall_bounce_back_3d"),
+    "naca4_surface": ("airfoil_benchmark", "naca4_surface"),
+    "nodal_from_mean": ("dg_advection", "nodal_from_mean"),
+    "non_equilibrium_far_field_bc_3d": (
+        "external_open_boundary",
+        "non_equilibrium_far_field_bc_3d",
+    ),
+    "nonequilibrium_indicator_2d": ("adaptive_refinement", "nonequilibrium_indicator_2d"),
+    "nonequilibrium_indicator_3d": ("adaptive_refinement", "nonequilibrium_indicator_3d"),
+    "nu_from_re": ("lbm_re_tau", "nu_from_re"),
+    "nu_from_tau": ("lbm_re_tau", "nu_from_tau"),
+    "oaspl": ("acoustics", "oaspl"),
+    "observe_control_volume_force": ("control_volume_force", "observe_control_volume_force"),
+    "obstacle_force": ("autograd_path", "obstacle_force"),
+    "open_catalog": ("scan_runner", "open_catalog"),
+    "parabolic_profile": ("inlet_profiles", "parabolic_profile"),
+    "periodic_chemical_potential_and_korteweg_force": (
+        "phasefield",
+        "periodic_chemical_potential_and_korteweg_force",
+    ),
+    "phase_volume_smoothed": ("phasefield", "phase_volume_smoothed"),
+    "phase_volume_threshold": ("phasefield", "phase_volume_threshold"),
+    "plan_exchange_yplus_refinement": ("yplus_guide", "plan_exchange_yplus_refinement"),
+    "plan_nested_suboff_static_amr": ("suboff_static_amr", "plan_nested_suboff_static_amr"),
+    "plan_suboff_static_amr": ("suboff_static_amr", "plan_suboff_static_amr"),
+    "poly_to_mask_2d": ("preprocess_geo", "poly_to_mask_2d"),
+    "poly_to_mask_and_q_2d": ("preprocess_geo", "poly_to_mask_and_q_2d"),
+    "power_law_profile": ("inlet_profiles", "power_law_profile"),
+    "powerlaw_viscosity": ("powerlaw", "powerlaw_viscosity"),
+    "predict_nu_t_2d": ("ai", "predict_nu_t_2d"),
+    "predict_tau_eff_2d": ("ai", "predict_tau_eff_2d"),
+    "prepare_run_dir": ("utils", "prepare_run_dir"),
+    "pressure_drop": ("surface_integrals", "pressure_drop"),
+    "propeller_statistics": ("propeller_cad", "propeller_statistics"),
+    "psi_cavitation": ("cavitation", "psi_cavitation"),
+    "psi_exp": ("multiphase", "psi_exp"),
+    "psi_linear": ("multiphase", "psi_linear"),
+    "psi_power": ("multiphase", "psi_power"),
+    "random_porosity_mask_2d": ("preprocess_geo", "random_porosity_mask_2d"),
+    "random_porosity_mask_3d": ("preprocess_geo", "random_porosity_mask_3d"),
+    "re_from_tau": ("lbm_re_tau", "re_from_tau"),
+    "recommend_by_physical_accuracy": ("accuracy_recommendation", "recommend_by_physical_accuracy"),
+    "recommend_grid": ("yplus_guide", "recommend_grid"),
+    "reconstruct_bfl_wall_pressure": ("drag_pressure", "reconstruct_bfl_wall_pressure"),
+    "reconstruct_flow_field": ("ai", "reconstruct_flow_field"),
+    "reference_cl_cd": ("airfoil_benchmark", "reference_cl_cd"),
+    "reference_ellipsoid_cd": ("ellipsoid_benchmark", "reference_ellipsoid_cd"),
+    "register_case": ("cases", "register_case"),
+    "require_acoustics_capability": (
+        "acoustics_capability_contract",
+        "require_acoustics_capability",
+    ),
+    "require_boundary_condition_capability": (
+        "boundary_capability_contract",
+        "require_boundary_condition_capability",
+    ),
+    "require_local_refinement_capability": (
+        "amr_capability_contract",
+        "require_local_refinement_capability",
+    ),
+    "require_turbulence_capability": (
+        "turbulence_capability_contract",
+        "require_turbulence_capability",
+    ),
+    "require_wall_function_run": ("wall_function_admission", "require_wall_function_run"),
+    "resolve_device": ("utils", "resolve_device"),
+    "resolve_zoo_root": ("zoo", "resolve_zoo_root"),
+    "rollout": ("autograd_path", "rollout"),
+    "rotating_wall_velocity": ("rotating_cylinder", "rotating_wall_velocity"),
+    "rotating_wall_velocity_3d": ("propeller_benchmark", "rotating_wall_velocity_3d"),
+    "roughness_b_correction": ("roughness", "roughness_b_correction"),
+    "run_actuator_disk_benchmark": ("actuator_disk", "run_actuator_disk_benchmark"),
+    "run_ai_dns_pipeline": ("ai", "run_ai_dns_pipeline"),
+    "run_ai_les_pipeline": ("ai", "run_ai_les_pipeline"),
+    "run_airfoil_benchmark": ("airfoil_benchmark", "run_airfoil_benchmark"),
+    "run_amr_interface_validation": ("amr_interface_validation", "run_amr_interface_validation"),
+    "run_backward_facing_step": ("backward_facing_step", "run_backward_facing_step"),
+    "run_capillary_invasion": ("porous_media", "run_capillary_invasion"),
+    "run_case": ("cases", "run_case"),
+    "run_cavitation_flow": ("cavitation", "run_cavitation_flow"),
+    "run_closed_periodic_free_energy_diagnostic": (
+        "phasefield",
+        "run_closed_periodic_free_energy_diagnostic",
+    ),
+    "run_collision_viscosity_audit": ("collision_viscosity_audit", "run_collision_viscosity_audit"),
+    "run_conjugate_ht_2d": ("conjugate_ht", "run_conjugate_ht_2d"),
+    "run_cylinder_bfl_control_volume": (
+        "cylinder_bfl_control_volume",
+        "run_cylinder_bfl_control_volume",
+    ),
+    "run_cylinder_flow": ("cylinder_flow", "run_cylinder_flow"),
+    "run_dam_break": ("dam_break", "run_dam_break"),
+    "run_dg_lbm_sphere_flow": ("dg_lbm", "run_dg_lbm_sphere_flow"),
+    "run_dg_lbm_suboff_flow": ("dg_lbm", "run_dg_lbm_suboff_flow"),
+    "run_ellipsoid_benchmark": ("ellipsoid_benchmark", "run_ellipsoid_benchmark"),
+    "run_flat_plate_wall_model": ("flat_plate_wall_model", "run_flat_plate_wall_model"),
+    "run_free_energy_adapter_stream_loop": ("phasefield", "run_free_energy_adapter_stream_loop"),
+    "run_free_energy_collision_only": ("phasefield", "run_free_energy_collision_only"),
+    "run_free_energy_droplet": ("multiphase_benchmarks", "run_free_energy_droplet"),
+    "run_hull_free_surface": ("hull_free_surface", "run_hull_free_surface"),
+    "run_ibm_propeller_benchmark": ("propeller_ibm", "run_ibm_propeller_benchmark"),
+    "run_laplace_test": ("porous_media", "run_laplace_test"),
+    "run_lid_driven_cavity": ("lid_driven_cavity", "run_lid_driven_cavity"),
+    "run_multiphase_benchmark_suite": ("multiphase_benchmarks", "run_multiphase_benchmark_suite"),
+    "run_multiphase_water_entry": ("multiphase_water_entry", "run_multiphase_water_entry"),
+    "run_pipeline_flow": ("pipeline_flow", "run_pipeline_flow"),
+    "run_porous_drainage": ("porous_media", "run_porous_drainage"),
+    "run_porous_drainage_3d": ("porous_media3d", "run_porous_drainage_3d"),
+    "run_propeller_benchmark": ("propeller_benchmark", "run_propeller_benchmark"),
+    "run_rotating_cylinder": ("rotating_cylinder", "run_rotating_cylinder"),
+    "run_scan_point": ("scan_runner", "run_scan_point"),
+    "run_ship_hull_flow": ("ship_flow", "run_ship_hull_flow"),
+    "run_sloshing_tank": ("sloshing_tank", "run_sloshing_tank"),
+    "run_sphere_bfl_control_volume": ("sphere_bfl_control_volume", "run_sphere_bfl_control_volume"),
+    "run_sphere_flow": ("sphere_flow", "run_sphere_flow"),
+    "run_sphere_flow_d3q27": ("d3q27_sphere_flow", "run_sphere_flow_d3q27"),
+    "run_sphere_water_entry": ("sphere_water_entry", "run_sphere_water_entry"),
+    "run_spinodal_decomposition": ("multiphase_benchmarks", "run_spinodal_decomposition"),
+    "run_spinodal_decomposition_3d": ("multiphase_benchmarks", "run_spinodal_decomposition_3d"),
+    "run_static_droplet": ("multiphase_benchmarks", "run_static_droplet"),
+    "run_static_droplet_3d": ("multiphase_benchmarks", "run_static_droplet_3d"),
+    "run_suboff_resistance_benchmark": ("suboff_resistance", "run_suboff_resistance_benchmark"),
+    "run_thermal_cavity_3d": ("thermal3d", "run_thermal_cavity_3d"),
+    "run_turbulent_channel": ("turbulent_channel", "run_turbulent_channel"),
+    "run_two_phase_channel_compare": ("multiphase_benchmarks", "run_two_phase_channel_compare"),
+    "run_two_phase_poiseuille": ("porous_media", "run_two_phase_poiseuille"),
+    "sample_wall_exchange_velocity": ("spalding_wall_model", "sample_wall_exchange_velocity"),
+    "save_case_checkpoint": ("checkpoint", "save_case_checkpoint"),
+    "save_checkpoint": ("checkpoint", "save_checkpoint"),
+    "save_config_json": ("config_io", "save_config_json"),
+    "save_dataset_pt": ("ai", "save_dataset_pt"),
+    "save_flow_transformer_model": ("ai", "save_flow_transformer_model"),
+    "save_hdf5": ("io", "save_hdf5"),
+    "save_model": ("ai", "save_model"),
+    "save_solver_checkpoint": ("checkpoint", "save_solver_checkpoint"),
+    "save_vtk": ("io", "save_vtk"),
+    "save_vtk_binary": ("io", "save_vtk_binary"),
+    "save_vts": ("io", "save_vts"),
+    "save_xdmf": ("io", "save_xdmf"),
+    "sc_single_component_force": ("multiphase", "sc_single_component_force"),
+    "sc_two_component_force": ("multiphase", "sc_two_component_force"),
+    "sc_two_component_force_27": ("multiphase3d_d3q27", "sc_two_component_force_27"),
+    "sc_two_component_force_3d": ("multiphase3d", "sc_two_component_force_3d"),
+    "schiller_naumann_cd": ("sphere_bfl_control_volume", "schiller_naumann_cd"),
+    "schnerr_sauer_source": ("cavitation", "schnerr_sauer_source"),
+    "seed_points_line_2d": ("streamlines", "seed_points_line_2d"),
+    "seed_points_line_3d": ("streamlines", "seed_points_line_3d"),
+    "seed_points_uniform_2d": ("streamlines", "seed_points_uniform_2d"),
+    "seed_points_uniform_3d": ("streamlines", "seed_points_uniform_3d"),
+    "series60_hull_mask": ("ship_cad", "series60_hull_mask"),
+    "set_backend": ("backends", "set_backend"),
+    "ship_lbm_parameters": ("ship_cad", "ship_lbm_parameters"),
+    "ship_resistance_estimate": ("ship_cad", "ship_resistance_estimate"),
+    "smoothstep5": ("sponge_layer", "smoothstep5"),
+    "solve_gamma_entropy": ("entropic_kbc", "solve_gamma_entropy"),
+    "solve_spalding_friction_velocity": ("spalding_wall_model", "solve_spalding_friction_velocity"),
+    "spalding_u_plus_from_y_plus": ("spalding_wall_model", "spalding_u_plus_from_y_plus"),
+    "spalding_y_plus": ("spalding_wall_model", "spalding_y_plus"),
+    "sphere_mask": ("boundaries3d", "sphere_mask"),
+    "split_points": ("scan_runner", "split_points"),
+    "sponge_profile": ("sponge_bc", "sponge_profile"),
+    "strain_rate_magnitude_2d": ("non_newtonian", "strain_rate_magnitude_2d"),
+    "strain_rate_shear_rate_2d": ("powerlaw", "strain_rate_shear_rate_2d"),
+    "strain_rate_tensor_2d": ("ai", "strain_rate_tensor_2d"),
+    "stream": ("solver", "stream"),
+    "stream27": ("d3q27", "stream27"),
+    "stream27_roll": ("d3q27", "stream27_roll"),
+    "stream3d": ("solver3d", "stream3d"),
+    "stream_d3q19_adapter": ("phasefield.stream_boundary_contract", "stream_d3q19_adapter"),
+    "stream_free_energy_adapter": (
+        "phasefield.stream_boundary_contract",
+        "stream_free_energy_adapter",
+    ),
+    "stream_thermal": ("thermal", "stream_thermal"),
+    "stream_thermal_3d": ("thermal3d", "stream_thermal_3d"),
+    "streaming_momentum_import": ("control_volume_force", "streaming_momentum_import"),
+    "streamlines_to_dict": ("streamlines", "streamlines_to_dict"),
+    "suboff_hull_mask": ("suboff_cad", "suboff_hull_mask"),
+    "suboff_radius_profile": ("suboff_cad", "suboff_radius_profile"),
+    "suboff_statistics": ("suboff_cad", "suboff_statistics"),
+    "summarize_wall_exchange_yplus": ("wall_exchange_yplus", "summarize_wall_exchange_yplus"),
+    "surface_force_2d": ("surface_integrals", "surface_force_2d"),
+    "surface_force_3d": ("surface_integrals", "surface_force_3d"),
+    "surface_moment_2d": ("surface_integrals", "surface_moment_2d"),
+    "surface_moment_3d": ("surface_integrals", "surface_moment_3d"),
+    "surface_tension_force_3d": ("free_surface_common", "surface_tension_force_3d"),
+    "synthetic_targets": ("autograd_calib", "synthetic_targets"),
+    "synthetic_turbulence_2d": ("inlet_profiles", "synthetic_turbulence_2d"),
+    "tau_from_re": ("lbm_re_tau", "tau_from_re"),
+    "tau_from_viscosity": ("powerlaw", "tau_from_viscosity"),
+    "theoretical_block_coefficient": ("ship_cad", "theoretical_block_coefficient"),
+    "total_liquid_inventory": ("free_surface_lbm", "total_liquid_inventory"),
+    "total_liquid_inventory_27": ("free_surface_lbm_27", "total_liquid_inventory_27"),
+    "trace_streamlines_2d": ("streamlines", "trace_streamlines_2d"),
+    "trace_streamlines_3d": ("streamlines", "trace_streamlines_3d"),
+    "train_eddy_viscosity_model": ("ai", "train_eddy_viscosity_model"),
+    "train_flow_transformer_self_supervised": ("ai", "train_flow_transformer_self_supervised"),
+    "triton_fused_load_state_dict": ("checkpoint", "triton_fused_load_state_dict"),
+    "triton_fused_state_dict": ("checkpoint", "triton_fused_state_dict"),
+    "turbulence_capability_matrix": (
+        "turbulence_capability_contract",
+        "turbulence_capability_matrix",
+    ),
+    "turbulence_hot_path_audit": ("turbulence_capability_contract", "turbulence_hot_path_audit"),
+    "turbulence_stats_from_checkpoints": ("turbulence_stats", "turbulence_stats_from_checkpoints"),
+    "velocity_gradients_2d": ("powerlaw", "velocity_gradients_2d"),
+    "viscous_sublayer_velocity": ("turbulent_channel", "viscous_sublayer_velocity"),
+    "vof_advect_upwind_3d": ("free_surface_common", "vof_advect_upwind_3d"),
+    "vorticity_indicator_2d": ("adaptive_refinement", "vorticity_indicator_2d"),
+    "vorticity_indicator_3d": ("adaptive_refinement", "vorticity_indicator_3d"),
+    "voxelize_stl_3d": ("preprocess_geo", "voxelize_stl_3d"),
+    "wall_function_3d": ("wall_model", "wall_function_3d"),
+    "wall_function_d3q27": ("wall_model", "wall_function_d3q27"),
+    "wigley_hull_mask": ("obstacles", "wigley_hull_mask"),
+    "windowed_cd": ("autograd_calib", "windowed_cd"),
+    "womersley_profile": ("inlet_profiles", "womersley_profile"),
+    "write_back_exports": ("dg_band", "write_back_exports"),
+    "write_legacy_snapshot_alias": ("utils", "write_legacy_snapshot_alias"),
+    "yplus_recommendation": ("yplus_guide", "yplus_recommendation"),
+    "zoo_info": ("zoo", "info"),
+    "zoo_list_models": ("zoo", "list_models"),
+    "zoo_load": ("zoo", "load"),
+    "zoo_register": ("zoo", "register"),
+    "zoo_validate": ("zoo", "validate"),
+    "zou_he_inlet_velocity": ("boundaries", "zou_he_inlet_velocity"),
+    "zou_he_inlet_velocity_27": ("boundaries_d3q27", "zou_he_inlet_velocity_27"),
+    "zou_he_inlet_velocity_3d": ("boundaries3d", "zou_he_inlet_velocity_3d"),
+    "zou_he_inlet_velocity_profile_3d": ("wave_bc", "zou_he_inlet_velocity_profile_3d"),
+    "zou_he_inlet_velocity_z": ("boundaries3d", "zou_he_inlet_velocity_z"),
+    "zou_he_moving_lid": ("lid_driven_cavity", "zou_he_moving_lid"),
+    "zou_he_outlet_pressure": ("boundaries", "zou_he_outlet_pressure"),
+    "zou_he_outlet_pressure_27": ("boundaries_d3q27", "zou_he_outlet_pressure_27"),
+    "zou_he_outlet_pressure_3d": ("boundaries3d", "zou_he_outlet_pressure_3d"),
+    "zou_he_outlet_pressure_z": ("boundaries3d", "zou_he_outlet_pressure_z"),
+}
+
+# Submodules the eager ``from .x import y`` statements bound on the package as
+# a side effect and that are not shadowed by an exported name.
+_EAGER_BOUND_SUBMODULES: frozenset[str] = frozenset(
+    {
+        "accuracy_recommendation",
+        "acoustics",
+        "acoustics_capability_contract",
+        "actuator_disk",
+        "adaptive_refinement",
+        "advanced_collision_contract",
+        "ai",
+        "airfoil_benchmark",
+        "amr_capability_contract",
+        "amr_interface_filter",
+        "amr_interface_validation",
+        "autograd_calib",
+        "autograd_path",
+        "backends",
+        "backward_facing_step",
+        "boundaries",
+        "boundaries3d",
+        "boundaries_d3q27",
+        "boundary_capability_contract",
+        "boundary_registry",
+        "cascaded_collision",
+        "cases",
+        "cavitation",
+        "checkpoint",
+        "chunked_collision",
+        "collision_viscosity_audit",
+        "config_io",
+        "conjugate_ht",
+        "constants",
+        "control_volume_force",
+        "cross_module_composition_matrix",
+        "cumulant",
+        "cumulant_smag",
+        "cylinder_bfl_control_volume",
+        "cylinder_flow",
+        "d2q9",
+        "d3q19",
+        "d3q27",
+        "d3q27_sphere_flow",
+        "dam_break",
+        "dg_advection",
+        "dg_band",
+        "dg_lbm",
+        "drag_pressure",
+        "ellipsoid_benchmark",
+        "entropic_kbc",
+        "external_open_boundary",
+        "flat_plate_convergence",
+        "flat_plate_wall_model",
+        "free_surface_common",
+        "free_surface_lbm",
+        "free_surface_lbm_27",
+        "free_surface_lbm_2d",
+        "general_sim",
+        "hull_free_surface",
+        "ibm",
+        "inlet_profiles",
+        "interpolated_bc",
+        "interpolated_bc_suboff",
+        "io",
+        "lbm_step",
+        "lid_driven_cavity",
+        "logging_config",
+        "momentum_exchange",
+        "multi_gpu",
+        "multiphase",
+        "multiphase3d",
+        "multiphase3d_d3q27",
+        "multiphase_benchmarks",
+        "multiphase_water_entry",
+        "non_newtonian",
+        "obstacles",
+        "phasefield",
+        "pipeline_flow",
+        "planar_d3q19",
+        "population_positivity",
+        "porous_media",
+        "porous_media3d",
+        "postprocess",
+        "powerlaw",
+        "preprocess_geo",
+        "propeller_benchmark",
+        "propeller_cad",
+        "propeller_ibm",
+        "protocols",
+        "rans_common",
+        "rans_ke",
+        "reporters",
+        "resistance_component_audit",
+        "rotating_cylinder",
+        "roughness",
+        "scan_runner",
+        "ship_cad",
+        "ship_cad3d",
+        "ship_flow",
+        "simulation",
+        "sloshing_tank",
+        "solver",
+        "solver3d",
+        "spalding_wall_model",
+        "spatial_convergence",
+        "sphere_bfl_control_volume",
+        "sphere_boundary_factorial",
+        "sphere_boundary_sensitivity",
+        "sphere_domain_sensitivity",
+        "sphere_flow",
+        "sphere_water_entry",
+        "sponge_bc",
+        "sponge_layer",
+        "static_block_amr",
+        "streamlines",
+        "suboff_cad",
+        "suboff_nested_convergence",
+        "suboff_resistance",
+        "suboff_static_amr",
+        "surface_area_weights",
+        "surface_integrals",
+        "synthetic_inflow",
+        "thermal",
+        "thermal3d",
+        "turbulence",
+        "turbulence_capability_contract",
+        "turbulence_stats",
+        "turbulent_channel",
+        "unit_converter",
+        "utils",
+        "vtk_export",
+        "wall_exchange_yplus",
+        "wall_function_admission",
+        "wall_function_contract",
+        "wall_model",
+        "wall_refinement_combination_gate",
+        "wave_bc",
+        "yplus_guide",
+        "zoo",
+    }
 )
 
-from .backward_facing_step import (
-    BackwardFacingStepConfig,
-    make_bfs_solid_mask,
-    measure_reattachment_length,
-    run_backward_facing_step,
-)
-from .boundaries import (
-    apply_simple_channel_boundaries,
-    apply_zou_he_channel_boundaries,
-    bounce_back_cells,
-    compute_obstacle_forces,
-    cylinder_mask,
-    make_channel_wall_mask,
-    zou_he_inlet_velocity,
-    zou_he_outlet_pressure,
-)
-from .boundaries3d import (
-    apply_simple_channel_boundaries_3d,
-    apply_water_entry_boundaries_3d,
-    apply_zou_he_channel_boundaries_3d,
-    bounce_back_cells_3d,
-    far_field_bc_3d,
-    make_channel_wall_mask_3d,
-    make_tank_wall_mask_3d,
-    sphere_mask,
-    zou_he_inlet_velocity_3d,
-    zou_he_inlet_velocity_z,
-    zou_he_outlet_pressure_3d,
-    zou_he_outlet_pressure_z,
-)
-from .wall_model import wall_function_3d, wall_function_d3q27
-from .boundaries_d3q27 import (
-    apply_zou_he_channel_boundaries_27,
-    bounce_back_cells_27,
-    far_field_bc_27,
-    make_channel_wall_mask_27,
-    zou_he_inlet_velocity_27,
-    zou_he_outlet_pressure_27,
-)
-from .checkpoint import load_checkpoint, save_checkpoint
-from .chunked_collision import (
-    NaturalKBCCollisionExecutor,
-    collide_in_z_chunks,
-)
-from .config_io import load_config, load_config_json, load_config_yaml, save_config_json
-from .constants import D2Q9
-from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
-from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
-from .d3q19 import OPPOSITE as OPPOSITE3D
-from .d3q19 import C as C3D
-from .d3q19 import W as W3D
-from .d3q19 import equilibrium3d, macroscopic3d
-from .d3q27 import OPPOSITE as OPPOSITE27
-from .d3q27 import C as C27
-from .d3q27 import W as W27
-from .d3q27 import (
-    collide_bgk27,
-    collide_mrt27,
-    collide_rlbm27,
-    collide_trt27,
-    correct_mass27,
-    equilibrium27,
-    macroscopic27,
-    stream27,
-    stream27_roll,
-)
-from .free_surface_lbm_27 import (
-    free_surface_step_27,
-    init_fill_rectangular_27,
-    init_flags_from_fill_27,
-    init_mass_from_fill_27,
-    total_liquid_inventory_27,
-)
-from .advanced_collision_contract import (
-    CollisionCapability,
-    CollisionKernelWithheldError,
-    collide_advanced_3d,
-    collision_capability_matrix,
-)
-from .collision_viscosity_audit import (
-    CollisionViscosityAuditConfig,
-    run_collision_viscosity_audit,
-)
-from .wall_refinement_combination_gate import (
-    CollisionFamily as WallRefinementCollisionFamily,
-    CombinationEvidence,
-    CombinationGateDecision,
-    GateStatus as WallRefinementGateStatus,
-    GeometryKind,
-    GeometryOwnership,
-    Lattice as WallRefinementLattice,
-    PhysicsModel,
-    RefinementType,
-    WallRefinementCombination,
-    WallTreatment,
-    assess_wall_refinement_combination,
-)
-from .accuracy_recommendation import (
-    AccuracyRecommendation,
-    ConvergenceEvidence,
-    ErrorMetric,
-    KPIDefinition,
-    PhysicalAccuracyEvidence,
-    recommend_by_physical_accuracy,
-)
-from .cross_module_composition_matrix import (
-    CompositionDecision,
-    CompositionRequest,
-    CompositionStatus,
-    SubContractResult,
-    SubContractStatus,
-    assess_composition,
-)
-from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
-from .dam_break import DamBreakConfig, run_dam_break
-from .hull_free_surface import HullFreeSurfaceConfig, run_hull_free_surface
-from .ibm import (
-    ibm_apply_body_force_2d,
-    ibm_apply_body_force_3d,
-    ibm_delta_4pt,
-    ibm_delta_hat,
-    ibm_direct_forcing,
-    ibm_direct_forcing_3d,
-    ibm_force_spread,
-    ibm_force_spread_3d,
-    ibm_velocity_interpolate,
-    ibm_velocity_interpolate_3d,
-)
-from .interpolated_bc import (
-    bouzidi_bounce_back,
-    bouzidi_bounce_back_3d,
-    compute_q_circle,
-    compute_q_sphere,
-)
-from .interpolated_bc_suboff import compute_q_suboff
-from .acoustics import (
-    AcousticObserver,
-    FWHResult,
-    FWHSurface,
-    compute_fwh_far_field,
-    compute_fwh_result,
-    compute_spl_spectrum,
-    extract_surface_pressure,
-    oaspl,
-)
-from .acoustics_capability_contract import (
-    AcousticsCapability,
-    AcousticsWithheldError,
-    PostProcessingAudit,
-    acoustics_capability_matrix,
-    acoustics_post_processing_audit,
-    require_acoustics_capability,
-)
-from .conjugate_ht import (
-    CHTConfig,
-    CHTState,
-    apply_cht_interface,
-    cht_solid_diffusion_step,
-    run_conjugate_ht_2d,
-)
-from .io import save_hdf5, save_vtk, save_vtk_binary, save_vts, save_xdmf
-from .vtk_export import (
-    export_checkpoint_vtk,
-    export_vtk_2d,
-    export_vtk_3d,
-)
-from .lid_driven_cavity import (
-    GHIA_RE100,
-    GHIA_RE400,
-    GHIA_RE1000,
-    LidDrivenCavityConfig,
-    compare_ghia,
-    make_cavity_wall_mask,
-    run_lid_driven_cavity,
-    zou_he_moving_lid,
-)
-from .logging_config import configure_logging, logger
-from .multiphase import (
-    collide_sc_single_component,
-    collide_sc_two_component,
-    color_gradient_step,
-    free_energy_step,
-    init_free_energy_g,
-    psi_exp,
-    psi_linear,
-    psi_power,
-    sc_single_component_force,
-    sc_two_component_force,
-)
-from .multiphase3d import (
-    collide_sc_single_component_3d,
-    collide_sc_two_component_3d,
-    color_gradient_step_3d,
-    free_energy_step_3d,
-    init_free_energy_g_3d,
-    sc_two_component_force_3d,
-)
-from .multiphase3d_d3q27 import (
-    collide_sc_single_component_27,
-    collide_sc_two_component_27,
-    free_energy_step_3d_27,
-    init_free_energy_g_3d_27,
-    sc_two_component_force_27,
-)
-from .multiphase_benchmarks import (
-    FreeEnergyDropletConfig,
-    MultiphaseBenchmarkSuiteConfig,
-    Spinodal3DConfig,
-    SpinodaleConfig,
-    StaticDroplet3DConfig,
-    StaticDropletConfig,
-    TwoPhaseChannelCompareConfig,
-    run_free_energy_droplet,
-    run_multiphase_benchmark_suite,
-    run_spinodal_decomposition,
-    run_spinodal_decomposition_3d,
-    run_static_droplet,
-    run_static_droplet_3d,
-    run_two_phase_channel_compare,
-)
-from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
-from .non_newtonian import (
-    apparent_viscosity_power_law,
-    collide_power_law_bgk,
-    strain_rate_magnitude_2d,
-)
-from .obstacles import (
-    compute_obstacle_forces_3d,
-    compute_obstacle_forces_27,
-    compute_obstacle_moments_3d,
-    wigley_hull_mask,
-)
-from .momentum_exchange import (
-    momentum_exchange_standard,
-    momentum_exchange_galilean,
-    momentum_exchange_bfl,
-    momentum_exchange_stress,
-    momentum_exchange_pressure_friction,
-    compare_all_methods,
-)
-from .pipeline_flow import (
-    PipelineFlowConfig,
-    make_pipeline_wall_mask,
-    measure_strouhal,
-    run_pipeline_flow,
-)
-from .porous_media import (
-    CapillaryInvasionConfig,
-    LaplaceTestConfig,
-    PorousDrainageConfig,
-    TwoPhasePoiseuilleConfig,
-    apply_wall_wettability_sc,
-    make_random_cylinder_medium,
-    make_tube_array_medium,
-    run_capillary_invasion,
-    run_laplace_test,
-    run_porous_drainage,
-    run_two_phase_poiseuille,
-)
-from .porous_media3d import (
-    PorousDrainageConfig3D,
-    make_random_sphere_medium,
-    make_tube_array_medium_3d,
-    run_porous_drainage_3d,
-)
-from .postprocess import (
-    RunningStats,
-    compute_added_mass_2d,
-    compute_added_mass_3d,
-    compute_divergence,
-    compute_drag_lift_coefficients,
-    compute_enstrophy_2d,
-    compute_kinetic_energy,
-    compute_lambda2_criterion,
-    compute_pressure_coefficient,
-    compute_q_criterion,
-    compute_recirculation_length,
-    compute_strouhal_fft,
-    compute_velocity_magnitude,
-    compute_vorticity_2d,
-    compute_vorticity_3d,
-    extract_velocity_profile,
-    extract_wake_profile,
-)
-from .preprocess_geo import (
-    compute_q_generic_3d,
-    poly_to_mask_2d,
-    poly_to_mask_and_q_2d,
-    random_porosity_mask_2d,
-    random_porosity_mask_3d,
-    voxelize_stl_3d,
-)
-from .protocols import BoundaryCondition, CollisionOperator
-from .rotating_cylinder import (
-    RotatingCylinderConfig,
-    moving_wall_bounce_back,
-    rotating_wall_velocity,
-    run_rotating_cylinder,
-)
-from .utils import configure_cpu_threads
-from .propeller_cad import (
-    PropellerGeometryConfig,
-    build_propeller_mask,
-    propeller_statistics,
-    KP505_PRESET,
-    GENERIC_PRESET,
-)
-from .propeller_benchmark import (
-    PropellerBenchmarkConfig,
-    moving_wall_bounce_back_3d,
-    rotating_wall_velocity_3d,
-    run_propeller_benchmark,
-)
-from .actuator_disk import (
-    ActuatorDiskConfig,
-    apply_actuator_disk,
-    run_actuator_disk_benchmark,
-)
-from .airfoil_benchmark import (
-    AirfoilConfig,
-    naca4_surface,
-    build_airfoil_mask,
-    run_airfoil_benchmark,
-    reference_cl_cd,
-)
-from .propeller_ibm import (
-    IBMPropellerConfig,
-    run_ibm_propeller_benchmark,
-)
-from .rans_ke import (
-    KESolver,
-    KOmegaSSTSolver,
-    collide_rans_ke,
-    collide_rans_komega_sst,
-    komega_sst_collision_d2q9,
-)
-from .rans_common import (
-    collide_rans_3d,
-    collide_rans_bgk27,
-    collide_rans_bgk3d,
-    collide_rans_mrt27,
-    collide_rans_mrt3d,
-)
-from .ship_cad import (  # noqa: I001
-    ShipHullType,
-    export_hull_stl,
-    generate_hull_body_plan,
-    generate_hull_previews,
-    generate_hull_sideprofile,
-    generate_hull_waterplane,
-    hull_block_coefficient,
-    hull_statistics,
-    kcs_hull_mask,
-    series60_hull_mask,
-    ship_lbm_parameters,
-    ship_resistance_estimate,
-    theoretical_block_coefficient,
-)
-from .ship_cad import (
-    build_hull_mask as build_ship_hull_mask,
-)
-from .ship_cad3d import (
-    CADGeometryEngine,
-    TriangleMesh,
-    create_parametric_hull_mesh,
-    export_mesh_gltf,
-    export_mesh_stl_ascii,
-    import_mesh_stl,
-)
-from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
-from .simulation import LBMSimulation
-from .sloshing_tank import (
-    SloshingTankConfig,
-    faltinsen_natural_frequency,
-    make_sloshing_wall_mask,
-    run_sloshing_tank,
-)
-from .solver import collide_bgk, collide_mrt, collide_rlbm, collide_trt, correct_mass, stream
-from .solver3d import (
-    collide_bgk3d,
-    collide_mrt3d,
-    collide_rlbm3d,
-    collide_trt3d,
-    correct_mass3d,
-    stream3d,
-)
-from .sphere_flow import SphereFlowConfig, run_sphere_flow
-from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
-from .dg_lbm import (
-    DGLBMConfig,
-    DGLBMSuboffConfig,
-    build_dg_hull_band_mask,
-    build_dg_shell_mask,
-    collide_dg_lbm,
-    dg_compute_velocity_gradients,
-    run_dg_lbm_sphere_flow,
-    run_dg_lbm_suboff_flow,
-)
-from .dg_advection import (
-    collide_bgk_dg,
-    dg_advect,
-    dg_lbm_rhs,
-    dg_lbm_step,
-    dg_rhs,
-    equilibrium_dg,
-    get_ops,
-    lobatto_nodes,
-    macroscopic_dg,
-    nodal_from_mean,
-)
-from .dg_band import (
-    BandTopology,
-    build_band_topology,
-    dg_advect_band,
-    dg_lbm_step_band,
-    dg_rhs_band,
-    hybrid_advect,
-    hybrid_step,
-    write_back_exports,
-)
-from .ellipsoid_benchmark import (
-    EllipsoidConfig,
-    build_ellipsoid_mask,
-    ellipsoid_statistics,
-    reference_ellipsoid_cd,
-    run_ellipsoid_benchmark,
-)
-from .suboff_cad import (
-    SuboffConfig,
-    SuboffHullType,
-    build_suboff_mask,
-    export_suboff_stl,
-    generate_suboff_previews,
-    suboff_hull_mask,
-    suboff_radius_profile,
-    suboff_statistics,
-)
-from .suboff_resistance import (
-    SuboffResistanceBenchmarkConfig,
-    run_suboff_resistance_benchmark,
-)
-from .thermal import (
-    C_D2Q5,
-    W_D2Q5,
-    apply_buoyancy_force,
-    collide_thermal_bgk,
-    equilibrium_thermal,
-    macroscopic_thermal,
-    stream_thermal,
-)
-from .thermal3d import (
-    C_D3Q7,
-    W_D3Q7,
-    ThermalCavity3DConfig,
-    apply_buoyancy_force_3d,
-    collide_thermal_bgk_3d,
-    equilibrium_thermal_3d,
-    macroscopic_thermal_3d,
-    run_thermal_cavity_3d,
-    stream_thermal_3d,
-)
-from .turbulence import (
-    collide_dynamic_smagorinsky_bgk,
-    collide_dynamic_smagorinsky_bgk3d,
-    collide_smagorinsky_bgk,
-    collide_smagorinsky_bgk3d,
-    collide_smagorinsky_bgk27,
-    collide_smagorinsky_mrt,
-    collide_smagorinsky_mrt3d,
-    collide_smagorinsky_mrt27,
-    collide_vreman_bgk,
-    collide_vreman_bgk3d,
-    collide_vreman_bgk27,
-    collide_vreman_mrt3d,
-    collide_vreman_mrt27,
-    collide_wale_bgk,
-    collide_wale_bgk3d,
-    collide_wale_bgk27,
-    collide_wale_mrt3d,
-    collide_wale_mrt27,
-)
-from .turbulent_channel import (
-    TurbulentChannelConfig,
-    log_law_velocity,
-    run_turbulent_channel,
-    viscous_sublayer_velocity,
-)
-from .unit_converter import LBMUnitConverter
-from .utils import (
-    DiagnosticPoint,
-    flow_step_image_path,
-    get_reproducibility_metadata,
-    legacy_snapshot_image_path,
-    prepare_run_dir,
-    resolve_device,
-    write_legacy_snapshot_alias,
-)
-from .wave_bc import (
-    airy_wave_velocity_3d,
-    apply_jonswap_inlet_3d,
-    apply_wave_inlet_3d,
-    jonswap_spectrum,
-    jonswap_wave_velocity_3d,
-    zou_he_inlet_velocity_profile_3d,
-)
-from .cumulant import (
-    collide_cumulant_d2q9,
-    collide_cumulant_d3q19,
-    collide_cumulant_d3q27,
-    collide_cumulant_geier_d3q27,
-)
-from .cumulant_smag import collide_cumulant_smag_d3q27
-from .planar_d3q19 import (
-    collide_planar_cumulant_d3q19,
-    lift_d2q9_to_d3q19,
-    marginalize_d3q19_to_d2q9,
-    maximum_planar_plane_spread,
-)
-from .yplus_guide import (
-    DragMonitor,
-    estimate_exchange_yplus,
-    estimate_yplus,
-    grid_quality_metrics,
-    plan_exchange_yplus_refinement,
-    recommend_grid,
-    yplus_recommendation,
-)
-from .streamlines import (
-    Streamline,
-    trace_streamlines_2d,
-    trace_streamlines_3d,
-    seed_points_uniform_2d,
-    seed_points_line_2d,
-    seed_points_uniform_3d,
-    seed_points_line_3d,
-    compute_residence_time_2d,
-    streamlines_to_dict,
-)
-from .surface_integrals import (
-    mass_flow_rate_2d,
-    mass_flow_rate_3d,
-    area_average_2d,
-    area_average_3d,
-    surface_force_2d,
-    surface_force_3d,
-    surface_moment_2d,
-    surface_moment_3d,
-    pressure_drop,
-    force_coefficients,
-    moment_coefficients,
-)
-from .inlet_profiles import (
-    log_law_profile,
-    power_law_profile,
-    parabolic_profile,
-    blasius_profile,
-    womersley_profile,
-    synthetic_turbulence_2d,
-    apply_inlet_profile_2d,
-    apply_inlet_profile_3d,
-)
-from .synthetic_inflow import (
-    DFSEMInlet,
-    DigitalFilterInlet,
-    apply_dfsem_inlet_2d,
-    apply_dfsem_inlet_3d,
-)
-from .roughness import (
-    roughness_b_correction,
-    compute_rough_wall_slip_velocity,
-    apply_rough_wall_bounce_back,
-)
-from .sponge_bc import (
-    sponge_profile,
-    apply_viscous_sponge_2d,
-    apply_viscous_sponge_3d,
-    apply_target_sponge_2d,
-    apply_target_sponge_3d,
-    build_mean_equilibrium_2d,
-    build_mean_equilibrium_3d,
-)
-from .turbulence_stats import (
-    TurbulenceStatsAccumulator,
-    compute_reynolds_stresses,
-    compute_turbulence_intensity,
-    compute_turbulence_length_scale,
-    turbulence_stats_from_checkpoints,
-)
-from .multi_gpu import (
-    DomainDecomposition,
-    MultiGPUSolver2D,
-    MultiGPUSolver3D,
-    MultiDeviceSolver3D,
-    halo_exchange_2d,
-    halo_exchange_3d,
-    auto_decompose,
+# Names this module needs at runtime that are not part of the public surface.
+_PRIVATE_GLOBALS = frozenset(
+    {"annotations", "Any", "TYPE_CHECKING", "_importlib", "_importlib_util"}
 )
 
-from .general_sim import (
-    BoundaryCondition,
-    BoundaryType,
-    CollisionModel,
-    GeneralSimConfig,
-    GeneralSimEngine,
-    GeometryConfig,
-    GeometrySource,
-    LatticeModel,
-    OutputConfig,
-    OutputFormat,
-    PhysicsConfig,
-    SolverConfig,
-)
-from .lbm_step import LBMStepExecutor
-from .amr_interface_filter import (
-    InterfaceFilterControlVolumeClearance,
-    assess_interface_filter_control_volume_clearance,
-    damp_interface_nonequilibrium,
-    interface_shell_blend,
-)
-from .static_block_amr import (
-    AMRAdvanceResult,
-    NestedStaticBlockAMR3D,
-    PopulationRefluxLedger,
-    StaticBlockAMR3D,
-    StaticBlockAMRConfig,
-    convective_refined_tau,
-)
-from .amr_interface_validation import (
-    AMRInterfaceValidationConfig,
-    run_amr_interface_validation,
-)
-from .spatial_convergence import (
-    SpatialConvergenceAssessment,
-    assess_spatial_convergence,
-)
-from .suboff_static_amr import (
-    SuboffGeometryResolution,
-    SuboffNestedStaticAMRPlan,
-    SuboffStaticAMRPlan,
-    apply_suboff_appendage_halfway_links,
-    assess_suboff_geometry_resolution,
-    build_nested_fine_suboff_mask,
-    build_fine_suboff_mask,
-    plan_nested_suboff_static_amr,
-    plan_suboff_static_amr,
-)
-from .suboff_nested_convergence import assess_suboff_nested_convergence
-from .control_volume_force import (
-    ControlVolumeForceResult,
-    NestedControlVolumeAssessment,
-    assess_nested_control_volume_invariance,
-    box_control_volume,
-    fluid_momentum,
-    observe_control_volume_force,
-    streaming_momentum_import,
-)
-from .spalding_wall_model import (
-    SpaldingWallDiagnostics,
-    WallExchangeInterfaceClearance,
-    WallExchangeSamples,
-    apply_spalding_exchange_wall_model,
-    assess_wall_exchange_interface_clearance,
-    effective_bfl_wall_distance,
-    sample_wall_exchange_velocity,
-    solve_spalding_friction_velocity,
-    spalding_u_plus_from_y_plus,
-    spalding_y_plus,
-)
-from .sphere_boundary_sensitivity import assess_sphere_inlet_sponge_pair
-from .sphere_boundary_factorial import assess_sphere_domain_inlet_factorial
-from .sphere_domain_sensitivity import (
-    assess_sphere_domain_convergence,
-    assess_sphere_domain_sensitivity_pair,
-)
-from .resistance_component_audit import (
-    ResistanceComponentAudit,
-    audit_resistance_components,
-)
-from .wall_exchange_yplus import (
-    WallExchangeYPlusAggregate,
-    WallExchangeYPlusSummary,
-    aggregate_wall_exchange_yplus_summaries,
-    summarize_wall_exchange_yplus,
-)
-from .sponge_layer import (
-    apply_equilibrium_difference_sponge,
-    build_anisotropic_sponge_sigma_3d,
-    build_sponge_sigma_3d,
-    smoothstep5,
-)
-from .population_positivity import (
-    PositivityDiagnostics,
-    limit_nonequilibrium_for_positivity,
-)
-from .sphere_bfl_control_volume import (
-    SphereBFLControlVolumeConfig,
-    run_sphere_bfl_control_volume,
-    schiller_naumann_cd,
-)
-from .external_open_boundary import non_equilibrium_far_field_bc_3d
-from .cylinder_bfl_control_volume import (
-    CYLINDER_RE100_CD_REFERENCE,
-    CYLINDER_RE100_ST_REFERENCE,
-    CylinderBFLControlVolumeConfig,
-    estimate_strouhal_from_lift,
-    run_cylinder_bfl_control_volume,
-)
-from .flat_plate_wall_model import (
-    FlatPlateWallModelConfig,
-    ittc_1957_friction_coefficient,
-    run_flat_plate_wall_model,
-)
-from .flat_plate_convergence import assess_flat_plate_convergence
-from .surface_area_weights import (
-    SurfaceAreaWeightDiagnostics,
-    bfl_surface_area_weights,
-)
-from .drag_pressure import (
-    BFLWallPressureDiagnostics,
-    integrate_bfl_projected_pressure,
-    reconstruct_bfl_wall_pressure,
-)
+
+def _resolve_submodule(name: str) -> Any:
+    """Import ``tensorlbm.<name>`` if it is a real submodule, else ``None``.
+
+    Covers submodules that used to appear as package attributes only because
+    something imported them transitively (``tensorlbm.lattice``,
+    ``tensorlbm.core``, ...): binding them by hand would rot, so probe instead.
+    """
+    if name in _EAGER_BOUND_SUBMODULES:
+        return _importlib.import_module(f"{__name__}.{name}")
+    try:
+        found = _importlib_util.find_spec(f"{__name__}.{name}") is not None
+    except (ImportError, AttributeError, ValueError):
+        return None
+    return _importlib.import_module(f"{__name__}.{name}") if found else None
+
+
+def __getattr__(name: str) -> Any:
+    """Resolve a public export or submodule on first access (:pep:`562`)."""
+    target = _LAZY_ATTRS.get(name)
+    if target is not None:
+        submodule, attr = target
+        value = getattr(_importlib.import_module(f"{__name__}.{submodule}"), attr)
+    else:
+        value = _resolve_submodule(name)
+        if value is None:
+            raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    globals()[name] = value  # cache: later lookups never re-enter __getattr__
+    return value
+
+
+def _iter_submodule_names() -> frozenset[str]:
+    """Names of every importable ``tensorlbm.*`` submodule, discovered once.
+
+    Listing them keeps ``dir(tensorlbm)`` a faithful superset of the eager
+    package's attributes: under eager imports a submodule showed up only if
+    something happened to import it, so ``lattice``, ``core``, ``stl_geometry``
+    and ~18 others appeared purely by transitive accident.  Discovery is a
+    single cached directory scan and never imports anything.
+    """
+    global _SUBMODULE_NAMES
+    if _SUBMODULE_NAMES is None:
+        import pkgutil
+
+        _SUBMODULE_NAMES = frozenset(info.name for info in pkgutil.iter_modules(__path__))
+    return _SUBMODULE_NAMES
+
+
+_SUBMODULE_NAMES: frozenset[str] | None = None
+
+
+def __dir__() -> list[str]:
+    loaded = set(globals()) - _PRIVATE_GLOBALS - {"_SUBMODULE_NAMES"}
+    return sorted(loaded | set(_LAZY_ATTRS) | _EAGER_BOUND_SUBMODULES | _iter_submodule_names())
+
+
+if TYPE_CHECKING:  # pragma: no cover - static-analysis only
+    from .accuracy_recommendation import (
+        AccuracyRecommendation,
+        ConvergenceEvidence,
+        ErrorMetric,
+        KPIDefinition,
+        PhysicalAccuracyEvidence,
+        recommend_by_physical_accuracy,
+    )
+    from .acoustics import (
+        AcousticObserver,
+        FWHResult,
+        FWHSurface,
+        compute_fwh_far_field,
+        compute_fwh_result,
+        compute_spl_spectrum,
+        extract_surface_pressure,
+        oaspl,
+    )
+    from .acoustics_capability_contract import (
+        AcousticsCapability,
+        AcousticsWithheldError,
+        PostProcessingAudit,
+        acoustics_capability_matrix,
+        acoustics_post_processing_audit,
+        require_acoustics_capability,
+    )
+    from .actuator_disk import (
+        ActuatorDiskConfig,
+        apply_actuator_disk,
+        run_actuator_disk_benchmark,
+    )
+    from .adaptive_refinement import (
+        MAX_VR_LEVELS,
+        AdaptationSchedule,
+        AdaptiveSolver2D,
+        AdaptiveSolver3D,
+        AMRPatch2D,
+        AMRPatch3D,
+        boundary_layer_indicator_2d,
+        boundary_layer_indicator_3d,
+        gradient_indicator_2d,
+        gradient_indicator_3d,
+        mark_cells_for_refinement,
+        nonequilibrium_indicator_2d,
+        nonequilibrium_indicator_3d,
+        vorticity_indicator_2d,
+        vorticity_indicator_3d,
+    )
+    from .advanced_collision_contract import (
+        CollisionCapability,
+        CollisionKernelWithheldError,
+        collide_advanced_3d,
+        collision_capability_matrix,
+    )
+    from .ai import (
+        AIPipelineResult,
+        EddyViscosityDataset,
+        EddyViscosityMLP,
+        FlowFieldTransformer,
+        FlowTransformerArch,
+        FlowTransformerTrainConfig,
+        LBMDatabase,
+        TrainConfig,
+        build_flow_token_batch,
+        collide_ai_les_bgk,
+        extract_les_samples_2d,
+        load_dataset_pt,
+        load_flow_transformer_model,
+        load_model,
+        predict_nu_t_2d,
+        predict_tau_eff_2d,
+        reconstruct_flow_field,
+        run_ai_dns_pipeline,
+        run_ai_les_pipeline,
+        save_dataset_pt,
+        save_flow_transformer_model,
+        save_model,
+        strain_rate_tensor_2d,
+        train_eddy_viscosity_model,
+        train_flow_transformer_self_supervised,
+    )
+    from .airfoil_benchmark import (
+        AirfoilConfig,
+        build_airfoil_mask,
+        naca4_surface,
+        reference_cl_cd,
+        run_airfoil_benchmark,
+    )
+    from .amr_capability_contract import (
+        REQUIRED_FRONTEND_METADATA,
+        LocalRefinementCapability,
+        LocalRefinementWithheldError,
+        local_refinement_capability_matrix,
+        require_local_refinement_capability,
+    )
+    from .amr_interface_filter import (
+        InterfaceFilterControlVolumeClearance,
+        assess_interface_filter_control_volume_clearance,
+        damp_interface_nonequilibrium,
+        interface_shell_blend,
+    )
+    from .amr_interface_validation import (
+        AMRInterfaceValidationConfig,
+        run_amr_interface_validation,
+    )
+    from .autograd_calib import (
+        BoxCase,
+        CalibResult,
+        DragHistory,
+        DragTarget,
+        HullCase,
+        bounded_drag,
+        calibrate,
+        cd_from_force,
+        cs_power,
+        drag_targets_from_sidecars,
+        evaluate,
+        load_drag_history,
+        synthetic_targets,
+        windowed_cd,
+    )
+    from .autograd_path import (
+        differentiable_step,
+        obstacle_force,
+        rollout,
+    )
+    from .backends import get_backend, set_backend
+    from .backward_facing_step import (
+        BackwardFacingStepConfig,
+        make_bfs_solid_mask,
+        measure_reattachment_length,
+        run_backward_facing_step,
+    )
+    from .boundaries import (
+        apply_simple_channel_boundaries,
+        apply_zou_he_channel_boundaries,
+        bounce_back_cells,
+        compute_obstacle_forces,
+        cylinder_mask,
+        make_channel_wall_mask,
+        zou_he_inlet_velocity,
+        zou_he_outlet_pressure,
+    )
+    from .boundaries3d import (
+        apply_simple_channel_boundaries_3d,
+        apply_water_entry_boundaries_3d,
+        apply_zou_he_channel_boundaries_3d,
+        bounce_back_cells_3d,
+        far_field_bc_3d,
+        make_channel_wall_mask_3d,
+        make_tank_wall_mask_3d,
+        sphere_mask,
+        zou_he_inlet_velocity_3d,
+        zou_he_inlet_velocity_z,
+        zou_he_outlet_pressure_3d,
+        zou_he_outlet_pressure_z,
+    )
+    from .boundaries_d3q27 import (
+        apply_zou_he_channel_boundaries_27,
+        bounce_back_cells_27,
+        far_field_bc_27,
+        make_channel_wall_mask_27,
+        zou_he_inlet_velocity_27,
+        zou_he_outlet_pressure_27,
+    )
+    from .boundary_capability_contract import (
+        BoundaryConditionCapability,
+        BoundaryConditionWithheldError,
+        boundary_capability_matrix,
+        require_boundary_condition_capability,
+    )
+    from .boundary_registry import (
+        BC_ID_NONE,
+        BCKind,
+        BCPhase,
+        BoundaryConditionRegistry,
+        apply_boundary_conditions,
+        boundary_condition_registry,
+        build_bc_mask,
+        check_bc_consistency,
+        check_bc_overlaps,
+        derive_missing_mask,
+    )
+    from .cascaded_collision import collide_cascaded_d3q19, collide_cascaded_d3q27
+    from .cases import (
+        CaseBase,
+        CaseRunResult,
+        CaseUnits,
+        ExportSpec,
+        get_case,
+        list_cases,
+        register_case,
+        run_case,
+    )
+    from .cavitation import (
+        CavitationConfig,
+        apply_cavitation_force,
+        psi_cavitation,
+        run_cavitation_flow,
+        schnerr_sauer_source,
+    )
+    from .checkpoint import (
+        CheckpointError,
+        SolverCheckpoint,
+        case_checkpoint_path,
+        eager_load_state_dict,
+        eager_state_dict,
+        load_case_checkpoint,
+        load_checkpoint,
+        load_solver_checkpoint,
+        save_case_checkpoint,
+        save_checkpoint,
+        save_solver_checkpoint,
+        triton_fused_load_state_dict,
+        triton_fused_state_dict,
+    )
+    from .chunked_collision import (
+        NaturalKBCCollisionExecutor,
+        collide_in_z_chunks,
+    )
+    from .collision_viscosity_audit import (
+        CollisionViscosityAuditConfig,
+        run_collision_viscosity_audit,
+    )
+    from .config_io import load_config, load_config_json, load_config_yaml, save_config_json
+    from .conjugate_ht import (
+        CHTConfig,
+        CHTState,
+        apply_cht_interface,
+        cht_solid_diffusion_step,
+        run_conjugate_ht_2d,
+    )
+    from .constants import D2Q9
+    from .control_volume_force import (
+        ControlVolumeForceResult,
+        NestedControlVolumeAssessment,
+        assess_nested_control_volume_invariance,
+        box_control_volume,
+        fluid_momentum,
+        observe_control_volume_force,
+        streaming_momentum_import,
+    )
+    from .cross_module_composition_matrix import (
+        CompositionDecision,
+        CompositionRequest,
+        CompositionStatus,
+        SubContractResult,
+        SubContractStatus,
+        assess_composition,
+    )
+    from .cumulant import (
+        collide_cumulant_d2q9,
+        collide_cumulant_d3q19,
+        collide_cumulant_d3q27,
+        collide_cumulant_geier_d3q27,
+    )
+    from .cumulant_smag import collide_cumulant_smag_d3q27
+    from .cylinder_bfl_control_volume import (
+        CYLINDER_RE100_CD_REFERENCE,
+        CYLINDER_RE100_ST_REFERENCE,
+        CylinderBFLControlVolumeConfig,
+        estimate_strouhal_from_lift,
+        run_cylinder_bfl_control_volume,
+    )
+    from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
+    from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
+    from .d3q19 import OPPOSITE as OPPOSITE3D
+    from .d3q19 import C as C3D
+    from .d3q19 import W as W3D
+    from .d3q19 import equilibrium3d, macroscopic3d
+    from .d3q27 import OPPOSITE as OPPOSITE27
+    from .d3q27 import C as C27
+    from .d3q27 import W as W27
+    from .d3q27 import (
+        collide_bgk27,
+        collide_mrt27,
+        collide_rlbm27,
+        collide_trt27,
+        correct_mass27,
+        equilibrium27,
+        macroscopic27,
+        stream27,
+        stream27_roll,
+    )
+    from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
+    from .dam_break import DamBreakConfig, run_dam_break
+    from .dg_advection import (
+        collide_bgk_dg,
+        dg_advect,
+        dg_lbm_rhs,
+        dg_lbm_step,
+        dg_rhs,
+        equilibrium_dg,
+        get_ops,
+        lobatto_nodes,
+        macroscopic_dg,
+        nodal_from_mean,
+    )
+    from .dg_band import (
+        BandTopology,
+        build_band_topology,
+        dg_advect_band,
+        dg_lbm_step_band,
+        dg_rhs_band,
+        hybrid_advect,
+        hybrid_step,
+        write_back_exports,
+    )
+    from .dg_lbm import (
+        DGLBMConfig,
+        DGLBMSuboffConfig,
+        build_dg_hull_band_mask,
+        build_dg_shell_mask,
+        collide_dg_lbm,
+        dg_compute_velocity_gradients,
+        run_dg_lbm_sphere_flow,
+        run_dg_lbm_suboff_flow,
+    )
+    from .drag_pressure import (
+        BFLWallPressureDiagnostics,
+        integrate_bfl_projected_pressure,
+        reconstruct_bfl_wall_pressure,
+    )
+    from .ellipsoid_benchmark import (
+        EllipsoidConfig,
+        build_ellipsoid_mask,
+        ellipsoid_statistics,
+        reference_ellipsoid_cd,
+        run_ellipsoid_benchmark,
+    )
+    from .entropic_kbc import (
+        collide_kbc_d3q19,
+        collide_kbc_d3q27,
+        collide_natural_kbc_d3q19,
+        discrete_entropy,
+        kbc_decompose_d3q19,
+        kbc_decompose_d3q27,
+        solve_gamma_entropy,
+    )
+    from .external_open_boundary import non_equilibrium_far_field_bc_3d
+    from .flat_plate_convergence import assess_flat_plate_convergence
+    from .flat_plate_wall_model import (
+        FlatPlateWallModelConfig,
+        ittc_1957_friction_coefficient,
+        run_flat_plate_wall_model,
+    )
+    from .free_surface_common import (
+        bubble_centroid_velocity_3d,
+        free_surface_vof_collide_3d,
+        free_surface_vof_step,
+        gravity_force_3d,
+        guo_force_delta_3d,
+        init_phi_bubble_3d,
+        init_phi_rayleigh_taylor_3d,
+        interface_compression_3d,
+        interface_normal_3d,
+        mean_curvature_3d,
+        mixing_layer_thickness_3d,
+        surface_tension_force_3d,
+        vof_advect_upwind_3d,
+    )
+    from .free_surface_lbm import (
+        free_surface_step,
+        init_fill_rectangular,
+        init_flags_from_fill,
+        init_mass_from_fill,
+        init_population_from_fill,
+        total_liquid_inventory,
+    )
+    from .free_surface_lbm_2d import free_surface_step_2d, init_fill_rectangular_2d
+    from .free_surface_lbm_27 import (
+        free_surface_step_27,
+        init_fill_rectangular_27,
+        init_flags_from_fill_27,
+        init_mass_from_fill_27,
+        total_liquid_inventory_27,
+    )
+    from .general_sim import (
+        BoundaryType,
+        CollisionModel,
+        GeneralSimConfig,
+        GeneralSimEngine,
+        GeometryConfig,
+        GeometrySource,
+        LatticeModel,
+        OutputConfig,
+        OutputFormat,
+        PhysicsConfig,
+        SolverConfig,
+    )
+    from .hull_free_surface import HullFreeSurfaceConfig, run_hull_free_surface
+    from .ibm import (
+        ibm_apply_body_force_2d,
+        ibm_apply_body_force_3d,
+        ibm_delta_4pt,
+        ibm_delta_hat,
+        ibm_direct_forcing,
+        ibm_direct_forcing_3d,
+        ibm_force_spread,
+        ibm_force_spread_3d,
+        ibm_velocity_interpolate,
+        ibm_velocity_interpolate_3d,
+    )
+    from .inlet_profiles import (
+        apply_inlet_profile_2d,
+        apply_inlet_profile_3d,
+        blasius_profile,
+        log_law_profile,
+        parabolic_profile,
+        power_law_profile,
+        synthetic_turbulence_2d,
+        womersley_profile,
+    )
+    from .interpolated_bc import (
+        bouzidi_bounce_back,
+        bouzidi_bounce_back_3d,
+        compute_q_circle,
+        compute_q_sphere,
+    )
+    from .interpolated_bc_suboff import compute_q_suboff
+    from .io import save_hdf5, save_vtk, save_vtk_binary, save_vts, save_xdmf
+    from .lbm_re_tau import (
+        nu_from_re,
+        nu_from_tau,
+        re_from_tau,
+        tau_from_re,
+    )
+    from .lbm_step import LBMStepExecutor
+    from .lid_driven_cavity import (
+        GHIA_RE100,
+        GHIA_RE400,
+        GHIA_RE1000,
+        LidDrivenCavityConfig,
+        compare_ghia,
+        make_cavity_wall_mask,
+        run_lid_driven_cavity,
+        zou_he_moving_lid,
+    )
+    from .logging_config import configure_logging, logger
+    from .momentum_exchange import (
+        compare_all_methods,
+        momentum_exchange_bfl,
+        momentum_exchange_galilean,
+        momentum_exchange_pressure_friction,
+        momentum_exchange_standard,
+        momentum_exchange_stress,
+    )
+    from .multi_gpu import (
+        DomainDecomposition,
+        MultiDeviceSolver3D,
+        MultiGPUSolver2D,
+        MultiGPUSolver3D,
+        auto_decompose,
+        halo_exchange_2d,
+        halo_exchange_3d,
+    )
+    from .multiphase import (
+        collide_sc_single_component,
+        collide_sc_two_component,
+        color_gradient_step,
+        free_energy_step,
+        init_free_energy_g,
+        psi_exp,
+        psi_linear,
+        psi_power,
+        sc_single_component_force,
+        sc_two_component_force,
+    )
+    from .multiphase3d import (
+        collide_sc_single_component_3d,
+        collide_sc_two_component_3d,
+        color_gradient_step_3d,
+        sc_two_component_force_3d,
+    )
+    from .multiphase3d_d3q27 import (
+        collide_sc_single_component_27,
+        collide_sc_two_component_27,
+        free_energy_step_3d_27,
+        init_free_energy_g_3d_27,
+        sc_two_component_force_27,
+    )
+    from .multiphase_benchmarks import (
+        FreeEnergyDropletConfig,
+        MultiphaseBenchmarkSuiteConfig,
+        Spinodal3DConfig,
+        SpinodaleConfig,
+        StaticDroplet3DConfig,
+        StaticDropletConfig,
+        TwoPhaseChannelCompareConfig,
+        run_free_energy_droplet,
+        run_multiphase_benchmark_suite,
+        run_spinodal_decomposition,
+        run_spinodal_decomposition_3d,
+        run_static_droplet,
+        run_static_droplet_3d,
+        run_two_phase_channel_compare,
+    )
+    from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
+    from .non_newtonian import (
+        apparent_viscosity_power_law,
+        collide_power_law_bgk,
+        strain_rate_magnitude_2d,
+    )
+    from .obstacles import (
+        compute_obstacle_forces_3d,
+        compute_obstacle_forces_27,
+        compute_obstacle_moments_3d,
+        wigley_hull_mask,
+    )
+    from .phasefield import (
+        DoubleWellFreeEnergy,
+        FreeEnergyAdapterStreamLoopConfig,
+        FreeEnergyAdapterStreamLoopResult,
+        FreeEnergyCHDiagnosticResult,
+        FreeEnergyCHValidationConfig,
+        FreeEnergyCollisionOnlyConfig,
+        FreeEnergyCollisionOnlyResult,
+        FreeEnergyCollisionOnlyState,
+        StaticDropletDiagnosticResult,
+        central_gradient_3d,
+        collision_then_adapter_stream,
+        diagnose_static_droplet,
+        estimate_droplet_radius,
+        force_minus_phi_grad_mu,
+        force_mu_grad_phi,
+        initialize_free_energy_collision_only_state,
+        initialize_static_droplet,
+        laplacian_3d,
+        periodic_chemical_potential_and_korteweg_force,
+        phase_volume_smoothed,
+        phase_volume_threshold,
+        run_closed_periodic_free_energy_diagnostic,
+        run_free_energy_adapter_stream_loop,
+        run_free_energy_collision_only,
+    )
+    from .phasefield.ch_validation import free_energy_step_3d
+    from .phasefield.evolution_adapter import init_free_energy_g_3d
+    from .phasefield.stream_boundary_contract import (
+        stream_d3q19_adapter,
+        stream_free_energy_adapter,
+    )
+    from .pipeline_flow import (
+        PipelineFlowConfig,
+        make_pipeline_wall_mask,
+        measure_strouhal,
+        run_pipeline_flow,
+    )
+    from .planar_d3q19 import (
+        collide_planar_cumulant_d3q19,
+        lift_d2q9_to_d3q19,
+        marginalize_d3q19_to_d2q9,
+        maximum_planar_plane_spread,
+    )
+    from .population_positivity import (
+        PositivityDiagnostics,
+        limit_nonequilibrium_for_positivity,
+    )
+    from .porous_media import (
+        CapillaryInvasionConfig,
+        LaplaceTestConfig,
+        PorousDrainageConfig,
+        TwoPhasePoiseuilleConfig,
+        apply_wall_wettability_sc,
+        make_random_cylinder_medium,
+        make_tube_array_medium,
+        run_capillary_invasion,
+        run_laplace_test,
+        run_porous_drainage,
+        run_two_phase_poiseuille,
+    )
+    from .porous_media3d import (
+        PorousDrainageConfig3D,
+        make_random_sphere_medium,
+        make_tube_array_medium_3d,
+        run_porous_drainage_3d,
+    )
+    from .postprocess import (
+        RunningStats,
+        compute_added_mass_2d,
+        compute_added_mass_3d,
+        compute_divergence,
+        compute_drag_lift_coefficients,
+        compute_enstrophy_2d,
+        compute_kinetic_energy,
+        compute_lambda2_criterion,
+        compute_pressure_coefficient,
+        compute_q_criterion,
+        compute_recirculation_length,
+        compute_strouhal_fft,
+        compute_velocity_magnitude,
+        compute_vorticity_2d,
+        compute_vorticity_3d,
+        extract_velocity_profile,
+        extract_wake_profile,
+    )
+    from .powerlaw import (
+        apply_body_force_shift,
+        central_difference,
+        collide_powerlaw_bgk,
+        powerlaw_viscosity,
+        strain_rate_shear_rate_2d,
+        tau_from_viscosity,
+        velocity_gradients_2d,
+    )
+    from .preprocess_geo import (
+        compute_q_generic_3d,
+        poly_to_mask_2d,
+        poly_to_mask_and_q_2d,
+        random_porosity_mask_2d,
+        random_porosity_mask_3d,
+        voxelize_stl_3d,
+    )
+    from .propeller_benchmark import (
+        PropellerBenchmarkConfig,
+        moving_wall_bounce_back_3d,
+        rotating_wall_velocity_3d,
+        run_propeller_benchmark,
+    )
+    from .propeller_cad import (
+        GENERIC_PRESET,
+        KP505_PRESET,
+        PropellerGeometryConfig,
+        build_propeller_mask,
+        propeller_statistics,
+    )
+    from .propeller_ibm import (
+        IBMPropellerConfig,
+        run_ibm_propeller_benchmark,
+    )
+    from .protocols import BoundaryCondition, CollisionOperator
+    from .rans_common import (
+        collide_rans_3d,
+        collide_rans_bgk3d,
+        collide_rans_bgk27,
+        collide_rans_mrt3d,
+        collide_rans_mrt27,
+    )
+    from .rans_ke import (
+        KESolver,
+        KOmegaSSTSolver,
+        collide_rans_ke,
+        collide_rans_komega_sst,
+        komega_sst_collision_d2q9,
+    )
+    from .reporters import (
+        CallbackReporter,
+        EarlyStopReporter,
+        FieldSampleReporter,
+        Reporter,
+        ReporterBase,
+        StepContext,
+        ThroughputReporter,
+        dispatch,
+    )
+    from .resistance_component_audit import (
+        ResistanceComponentAudit,
+        audit_resistance_components,
+    )
+    from .rotating_cylinder import (
+        RotatingCylinderConfig,
+        moving_wall_bounce_back,
+        rotating_wall_velocity,
+        run_rotating_cylinder,
+    )
+    from .roughness import (
+        apply_rough_wall_bounce_back,
+        compute_rough_wall_slip_velocity,
+        roughness_b_correction,
+    )
+    from .scan_runner import (
+        EarlyStopSpec,
+        PointOutcome,
+        ScanExecutor,
+        ScanPlan,
+        ScanPoint,
+        ScanVariable,
+        assign_points_to_gpus,
+        git_code_sha,
+        open_catalog,
+        run_scan_point,
+        split_points,
+    )
+    from .ship_cad import (  # noqa: I001
+        ShipHullType,
+        export_hull_stl,
+        generate_hull_body_plan,
+        generate_hull_previews,
+        generate_hull_sideprofile,
+        generate_hull_waterplane,
+        hull_block_coefficient,
+        hull_statistics,
+        kcs_hull_mask,
+        series60_hull_mask,
+        ship_lbm_parameters,
+        ship_resistance_estimate,
+        theoretical_block_coefficient,
+    )
+    from .ship_cad import (
+        build_hull_mask as build_ship_hull_mask,
+    )
+    from .ship_cad3d import (
+        CADGeometryEngine,
+        TriangleMesh,
+        create_parametric_hull_mesh,
+        export_mesh_gltf,
+        export_mesh_stl_ascii,
+        import_mesh_stl,
+    )
+    from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
+    from .simulation import LBMSimulation
+    from .sloshing_tank import (
+        SloshingTankConfig,
+        faltinsen_natural_frequency,
+        make_sloshing_wall_mask,
+        run_sloshing_tank,
+    )
+    from .solver import collide_bgk, collide_mrt, collide_rlbm, collide_trt, correct_mass, stream
+    from .solver3d import (
+        collide_bgk3d,
+        collide_mrt3d,
+        collide_rlbm3d,
+        collide_trt3d,
+        correct_mass3d,
+        stream3d,
+    )
+    from .spalding_wall_model import (
+        SpaldingWallDiagnostics,
+        WallExchangeInterfaceClearance,
+        WallExchangeSamples,
+        apply_spalding_exchange_wall_model,
+        assess_wall_exchange_interface_clearance,
+        effective_bfl_wall_distance,
+        sample_wall_exchange_velocity,
+        solve_spalding_friction_velocity,
+        spalding_u_plus_from_y_plus,
+        spalding_y_plus,
+    )
+    from .spatial_convergence import (
+        SpatialConvergenceAssessment,
+        assess_spatial_convergence,
+    )
+    from .sphere_bfl_control_volume import (
+        SphereBFLControlVolumeConfig,
+        run_sphere_bfl_control_volume,
+        schiller_naumann_cd,
+    )
+    from .sphere_boundary_factorial import assess_sphere_domain_inlet_factorial
+    from .sphere_boundary_sensitivity import assess_sphere_inlet_sponge_pair
+    from .sphere_domain_sensitivity import (
+        assess_sphere_domain_convergence,
+        assess_sphere_domain_sensitivity_pair,
+    )
+    from .sphere_flow import SphereFlowConfig, run_sphere_flow
+    from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
+    from .sponge_bc import (
+        apply_target_sponge_2d,
+        apply_target_sponge_3d,
+        apply_viscous_sponge_2d,
+        apply_viscous_sponge_3d,
+        build_mean_equilibrium_2d,
+        build_mean_equilibrium_3d,
+        sponge_profile,
+    )
+    from .sponge_layer import (
+        apply_equilibrium_difference_sponge,
+        build_anisotropic_sponge_sigma_3d,
+        build_sponge_sigma_3d,
+        smoothstep5,
+    )
+    from .static_block_amr import (
+        AMRAdvanceResult,
+        NestedStaticBlockAMR3D,
+        PopulationRefluxLedger,
+        StaticBlockAMR3D,
+        StaticBlockAMRConfig,
+        convective_refined_tau,
+    )
+    from .streamlines import (
+        Streamline,
+        compute_residence_time_2d,
+        seed_points_line_2d,
+        seed_points_line_3d,
+        seed_points_uniform_2d,
+        seed_points_uniform_3d,
+        streamlines_to_dict,
+        trace_streamlines_2d,
+        trace_streamlines_3d,
+    )
+    from .suboff_cad import (
+        SuboffConfig,
+        SuboffHullType,
+        build_suboff_mask,
+        export_suboff_stl,
+        generate_suboff_previews,
+        suboff_hull_mask,
+        suboff_radius_profile,
+        suboff_statistics,
+    )
+    from .suboff_nested_convergence import assess_suboff_nested_convergence
+    from .suboff_resistance import (
+        SuboffResistanceBenchmarkConfig,
+        run_suboff_resistance_benchmark,
+    )
+    from .suboff_static_amr import (
+        SuboffGeometryResolution,
+        SuboffNestedStaticAMRPlan,
+        SuboffStaticAMRPlan,
+        apply_suboff_appendage_halfway_links,
+        assess_suboff_geometry_resolution,
+        build_fine_suboff_mask,
+        build_nested_fine_suboff_mask,
+        plan_nested_suboff_static_amr,
+        plan_suboff_static_amr,
+    )
+    from .surface_area_weights import (
+        SurfaceAreaWeightDiagnostics,
+        bfl_surface_area_weights,
+    )
+    from .surface_integrals import (
+        area_average_2d,
+        area_average_3d,
+        force_coefficients,
+        mass_flow_rate_2d,
+        mass_flow_rate_3d,
+        moment_coefficients,
+        pressure_drop,
+        surface_force_2d,
+        surface_force_3d,
+        surface_moment_2d,
+        surface_moment_3d,
+    )
+    from .synthetic_inflow import (
+        DFSEMInlet,
+        DigitalFilterInlet,
+        apply_dfsem_inlet_2d,
+        apply_dfsem_inlet_3d,
+    )
+    from .thermal import (
+        C_D2Q5,
+        W_D2Q5,
+        apply_buoyancy_force,
+        collide_thermal_bgk,
+        equilibrium_thermal,
+        macroscopic_thermal,
+        stream_thermal,
+    )
+    from .thermal3d import (
+        C_D3Q7,
+        W_D3Q7,
+        ThermalCavity3DConfig,
+        apply_buoyancy_force_3d,
+        collide_thermal_bgk_3d,
+        equilibrium_thermal_3d,
+        macroscopic_thermal_3d,
+        run_thermal_cavity_3d,
+        stream_thermal_3d,
+    )
+    from .turbulence import (
+        collide_dynamic_smagorinsky_bgk,
+        collide_dynamic_smagorinsky_bgk3d,
+        collide_smagorinsky_bgk,
+        collide_smagorinsky_bgk3d,
+        collide_smagorinsky_bgk27,
+        collide_smagorinsky_mrt,
+        collide_smagorinsky_mrt3d,
+        collide_smagorinsky_mrt27,
+        collide_vreman_bgk,
+        collide_vreman_bgk3d,
+        collide_vreman_bgk27,
+        collide_vreman_mrt3d,
+        collide_vreman_mrt27,
+        collide_wale_bgk,
+        collide_wale_bgk3d,
+        collide_wale_bgk27,
+        collide_wale_mrt3d,
+        collide_wale_mrt27,
+    )
+    from .turbulence_capability_contract import (
+        TurbulenceCapability,
+        TurbulenceWithheldError,
+        require_turbulence_capability,
+        turbulence_capability_matrix,
+        turbulence_hot_path_audit,
+    )
+    from .turbulence_stats import (
+        TurbulenceStatsAccumulator,
+        compute_reynolds_stresses,
+        compute_turbulence_intensity,
+        compute_turbulence_length_scale,
+        turbulence_stats_from_checkpoints,
+    )
+    from .turbulent_channel import (
+        TurbulentChannelConfig,
+        log_law_velocity,
+        run_turbulent_channel,
+        viscous_sublayer_velocity,
+    )
+    from .unit_converter import LBMUnitConverter
+    from .utils import (
+        DiagnosticPoint,
+        configure_cpu_threads,
+        flow_step_image_path,
+        get_reproducibility_metadata,
+        legacy_snapshot_image_path,
+        prepare_run_dir,
+        resolve_device,
+        write_legacy_snapshot_alias,
+    )
+    from .vtk_export import (
+        export_checkpoint_vtk,
+        export_vtk_2d,
+        export_vtk_3d,
+    )
+    from .wall_exchange_yplus import (
+        WallExchangeYPlusAggregate,
+        WallExchangeYPlusSummary,
+        aggregate_wall_exchange_yplus_summaries,
+        summarize_wall_exchange_yplus,
+    )
+    from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
+    from .wall_function_contract import (
+        ValidationLevel,
+        WallFunctionCapability,
+        WallFunctionCompatibilityError,
+    )
+    from .wall_model import wall_function_3d, wall_function_d3q27
+    from .wall_refinement_combination_gate import (
+        CollisionFamily as WallRefinementCollisionFamily,
+    )
+    from .wall_refinement_combination_gate import (
+        CombinationEvidence,
+        CombinationGateDecision,
+        GeometryKind,
+        GeometryOwnership,
+        PhysicsModel,
+        RefinementType,
+        WallRefinementCombination,
+        WallTreatment,
+        assess_wall_refinement_combination,
+    )
+    from .wall_refinement_combination_gate import (
+        GateStatus as WallRefinementGateStatus,
+    )
+    from .wall_refinement_combination_gate import (
+        Lattice as WallRefinementLattice,
+    )
+    from .wave_bc import (
+        airy_wave_velocity_3d,
+        apply_jonswap_inlet_3d,
+        apply_wave_inlet_3d,
+        jonswap_spectrum,
+        jonswap_wave_velocity_3d,
+        zou_he_inlet_velocity_profile_3d,
+    )
+    from .yplus_guide import (
+        DragMonitor,
+        estimate_exchange_yplus,
+        estimate_yplus,
+        grid_quality_metrics,
+        plan_exchange_yplus_refinement,
+        recommend_grid,
+        yplus_recommendation,
+    )
+    from .zoo import KNOWN_TASKS, ModelInfo, ModelZoo, ZooValidation, resolve_zoo_root
+    from .zoo import info as zoo_info
+    from .zoo import list_models as zoo_list_models
+    from .zoo import load as zoo_load
+    from .zoo import register as zoo_register
+    from .zoo import validate as zoo_validate
 
 __all__ = [
     "__version__",
-    # Adaptive mesh refinement (AMR)
     "AdaptationSchedule",
     "AMRPatch2D",
     "AMRPatch3D",
     "AdaptiveSolver2D",
     "AdaptiveSolver3D",
+    "init_population_from_fill",
     "nonequilibrium_indicator_2d",
+    "nu_from_re",
+    "nu_from_tau",
+    "re_from_tau",
+    "tau_from_re",
     "vorticity_indicator_2d",
     "gradient_indicator_2d",
     "nonequilibrium_indicator_3d",
@@ -859,13 +2204,11 @@ __all__ = [
     "BFLWallPressureDiagnostics",
     "integrate_bfl_projected_pressure",
     "reconstruct_bfl_wall_pressure",
-    # D2Q9 lattice
     "C",
     "W",
     "OPPOSITE",
     "equilibrium",
     "macroscopic",
-    # 2D boundaries
     "cylinder_mask",
     "make_channel_wall_mask",
     "bounce_back_cells",
@@ -874,23 +2217,19 @@ __all__ = [
     "zou_he_outlet_pressure",
     "apply_simple_channel_boundaries",
     "apply_zou_he_channel_boundaries",
-    # 2D solvers
     "collide_bgk",
     "collide_mrt",
     "collide_rlbm",
     "collide_trt",
     "stream",
     "correct_mass",
-    # 2D runner
     "CylinderFlowConfig",
     "run_cylinder_flow",
     "compute_vorticity",
-    # Rotating cylinder (Magnus effect)
     "RotatingCylinderConfig",
     "run_rotating_cylinder",
     "rotating_wall_velocity",
     "moving_wall_bounce_back",
-    # Lid-driven cavity benchmark
     "LidDrivenCavityConfig",
     "run_lid_driven_cavity",
     "zou_he_moving_lid",
@@ -899,33 +2238,27 @@ __all__ = [
     "GHIA_RE100",
     "GHIA_RE400",
     "GHIA_RE1000",
-    # Backward-facing step benchmark
     "BackwardFacingStepConfig",
     "run_backward_facing_step",
     "make_bfs_solid_mask",
     "measure_reattachment_length",
-    # Near-bed pipeline flow benchmark
     "PipelineFlowConfig",
     "run_pipeline_flow",
     "make_pipeline_wall_mask",
     "measure_strouhal",
-    # Sloshing tank benchmark
     "SloshingTankConfig",
     "run_sloshing_tank",
     "make_sloshing_wall_mask",
     "faltinsen_natural_frequency",
-    # Turbulent channel flow benchmark
     "TurbulentChannelConfig",
     "run_turbulent_channel",
     "log_law_velocity",
     "viscous_sublayer_velocity",
-    # D3Q19 lattice
     "C3D",
     "W3D",
     "OPPOSITE3D",
     "equilibrium3d",
     "macroscopic3d",
-    # 3D boundaries
     "sphere_mask",
     "make_channel_wall_mask_3d",
     "make_tank_wall_mask_3d",
@@ -937,58 +2270,46 @@ __all__ = [
     "apply_simple_channel_boundaries_3d",
     "apply_zou_he_channel_boundaries_3d",
     "apply_water_entry_boundaries_3d",
-    # 3D solvers
     "collide_bgk3d",
     "collide_mrt3d",
     "collide_rlbm3d",
     "collide_trt3d",
     "stream3d",
     "correct_mass3d",
-    # 3D runners
     "SphereFlowConfig",
     "run_sphere_flow",
-    # Single-phase sphere water entry (3D)
     "SphereWaterEntryConfig",
     "run_sphere_water_entry",
     "wigley_hull_mask",
-    # Ellipsoid benchmark (prolate spheroid)
     "EllipsoidConfig",
     "build_ellipsoid_mask",
     "ellipsoid_statistics",
     "reference_ellipsoid_cd",
     "run_ellipsoid_benchmark",
-    # Obstacle forces
     "compute_obstacle_forces_3d",
     "compute_obstacle_forces_27",
     "compute_obstacle_moments_3d",
-    # Momentum exchange variants
     "momentum_exchange_standard",
     "momentum_exchange_galilean",
     "momentum_exchange_bfl",
     "momentum_exchange_stress",
     "momentum_exchange_pressure_friction",
     "compare_all_methods",
-    # Turbulence
     "collide_smagorinsky_bgk",
     "collide_smagorinsky_mrt",
     "collide_smagorinsky_bgk3d",
     "collide_smagorinsky_mrt3d",
-    # WALE turbulence
     "collide_wale_bgk",
     "collide_wale_bgk3d",
     "collide_wale_bgk27",
-    # Vreman turbulence
     "collide_vreman_bgk",
     "collide_vreman_bgk3d",
     "collide_vreman_bgk27",
-    # Wave BC
     "airy_wave_velocity_3d",
     "zou_he_inlet_velocity_profile_3d",
     "apply_wave_inlet_3d",
-    # Marine / ship
     "ShipHullFlowConfig",
     "run_ship_hull_flow",
-    # Ship CAD module
     "ShipHullType",
     "series60_hull_mask",
     "kcs_hull_mask",
@@ -1003,7 +2324,6 @@ __all__ = [
     "build_ship_hull_mask",
     "ship_lbm_parameters",
     "ship_resistance_estimate",
-    # SUBOFF submarine CAD module
     "SuboffHullType",
     "SuboffConfig",
     "suboff_radius_profile",
@@ -1014,7 +2334,6 @@ __all__ = [
     "export_suboff_stl",
     "SuboffResistanceBenchmarkConfig",
     "run_suboff_resistance_benchmark",
-    # Propeller benchmark
     "PropellerGeometryConfig",
     "build_propeller_mask",
     "propeller_statistics",
@@ -1032,7 +2351,6 @@ __all__ = [
     "import_mesh_stl",
     "export_mesh_stl_ascii",
     "export_mesh_gltf",
-    # Multiphase models – D2Q9
     "psi_linear",
     "psi_exp",
     "psi_power",
@@ -1043,18 +2361,15 @@ __all__ = [
     "color_gradient_step",
     "free_energy_step",
     "init_free_energy_g",
-    # Multiphase models – D3Q19
     "sc_two_component_force_3d",
     "collide_sc_two_component_3d",
     "collide_sc_single_component_3d",
     "color_gradient_step_3d",
     "init_free_energy_g_3d",
     "free_energy_step_3d",
-    # Multiphase models – D3Q27
     "sc_two_component_force_27",
     "collide_sc_two_component_27",
     "collide_sc_single_component_27",
-    # Multiphase benchmark suite
     "StaticDropletConfig",
     "run_static_droplet",
     "FreeEnergyDropletConfig",
@@ -1069,13 +2384,10 @@ __all__ = [
     "run_two_phase_channel_compare",
     "MultiphaseBenchmarkSuiteConfig",
     "run_multiphase_benchmark_suite",
-    # Dam-break benchmark
     "DamBreakConfig",
     "run_dam_break",
-    # Multiphase water-entry benchmark
     "MultiphaseWaterEntryConfig",
     "run_multiphase_water_entry",
-    # Porous-media gas-water displacement benchmarks
     "make_random_cylinder_medium",
     "make_tube_array_medium",
     "apply_wall_wettability_sc",
@@ -1087,19 +2399,16 @@ __all__ = [
     "run_two_phase_poiseuille",
     "PorousDrainageConfig",
     "run_porous_drainage",
-    # 3D porous-media benchmarks
     "make_random_sphere_medium",
     "make_tube_array_medium_3d",
     "PorousDrainageConfig3D",
     "run_porous_drainage_3d",
-    # Immersed Boundary Method (IBM)
     "ibm_delta_hat",
     "ibm_delta_4pt",
     "ibm_velocity_interpolate",
     "ibm_force_spread",
     "ibm_direct_forcing",
     "ibm_apply_body_force_2d",
-    # Shared utilities
     "DiagnosticPoint",
     "resolve_device",
     "prepare_run_dir",
@@ -1109,16 +2418,25 @@ __all__ = [
     "write_legacy_snapshot_alias",
     "save_checkpoint",
     "load_checkpoint",
+    "save_solver_checkpoint",
+    "load_solver_checkpoint",
+    "save_case_checkpoint",
+    "load_case_checkpoint",
+    "case_checkpoint_path",
+    "CheckpointError",
+    "SolverCheckpoint",
+    "eager_state_dict",
+    "eager_load_state_dict",
+    "triton_fused_state_dict",
+    "triton_fused_load_state_dict",
     "save_vtk",
     "save_vtk_binary",
     "save_vts",
     "save_hdf5",
     "save_xdmf",
-    # VTK export (new)
     "export_vtk_2d",
     "export_vtk_3d",
     "export_checkpoint_vtk",
-    # Aeroacoustics FWH (new)
     "AcousticObserver",
     "FWHSurface",
     "FWHResult",
@@ -1127,7 +2445,6 @@ __all__ = [
     "compute_spl_spectrum",
     "extract_surface_pressure",
     "oaspl",
-    # Conjugate heat transfer (new)
     "CHTConfig",
     "CHTState",
     "cht_solid_diffusion_step",
@@ -1156,7 +2473,6 @@ __all__ = [
     "load_config_yaml",
     "save_config_json",
     "load_config_json",
-    # D3Q27 lattice
     "C27",
     "W27",
     "OPPOSITE27",
@@ -1168,49 +2484,75 @@ __all__ = [
     "collide_mrt27",
     "collide_smagorinsky_bgk27",
     "collide_smagorinsky_mrt27",
-    # D3Q27 boundaries
     "bounce_back_cells_27",
     "zou_he_inlet_velocity_27",
     "zou_he_outlet_pressure_27",
     "make_channel_wall_mask_27",
     "apply_zou_he_channel_boundaries_27",
     "far_field_bc_27",
-    # D3Q27 runner
     "SphereFlowD3Q27Config",
     "run_sphere_flow_d3q27",
-    # Interpolated BC
     "bouzidi_bounce_back",
     "compute_q_circle",
     "bouzidi_bounce_back_3d",
     "compute_q_sphere",
-    # Logging
     "logger",
     "configure_logging",
-    # Minimal D2Q9 scaffold
     "D2Q9",
     "LBMSimulation",
-    # Common timestep executor
     "LBMStepExecutor",
-    # Pre-processing geometry
+    "Reporter",
+    "ReporterBase",
+    "StepContext",
+    "dispatch",
+    "CallbackReporter",
+    "ThroughputReporter",
+    "EarlyStopReporter",
+    "FieldSampleReporter",
+    "ScanPlan",
+    "ScanExecutor",
+    "ScanPoint",
+    "ScanVariable",
+    "EarlyStopSpec",
+    "PointOutcome",
+    "assign_points_to_gpus",
+    "split_points",
+    "run_scan_point",
+    "open_catalog",
+    "git_code_sha",
     "poly_to_mask_2d",
     "poly_to_mask_and_q_2d",
     "voxelize_stl_3d",
     "random_porosity_mask_2d",
     "random_porosity_mask_3d",
     "compute_q_generic_3d",
-    # Unit converter
     "LBMUnitConverter",
-    # Non-Newtonian (power-law) rheology
     "strain_rate_magnitude_2d",
     "apparent_viscosity_power_law",
     "collide_power_law_bgk",
-    # Thermal LBM (D2Q9 + D2Q5 double-distribution)
     "C_D2Q5",
     "W_D2Q5",
     "equilibrium_thermal",
     "collide_thermal_bgk",
     "stream_thermal",
     "macroscopic_thermal",
+    "differentiable_step",
+    "BoxCase",
+    "CalibResult",
+    "DragHistory",
+    "DragTarget",
+    "HullCase",
+    "bounded_drag",
+    "calibrate",
+    "cd_from_force",
+    "cs_power",
+    "drag_targets_from_sidecars",
+    "evaluate",
+    "load_drag_history",
+    "synthetic_targets",
+    "windowed_cd",
+    "obstacle_force",
+    "rollout",
     "apply_buoyancy_force",
     "C_D3Q7",
     "W_D3Q7",
@@ -1221,25 +2563,19 @@ __all__ = [
     "macroscopic_thermal_3d",
     "apply_buoyancy_force_3d",
     "run_thermal_cavity_3d",
-    # IBM 3D
     "ibm_velocity_interpolate_3d",
     "ibm_force_spread_3d",
     "ibm_direct_forcing_3d",
     "ibm_apply_body_force_3d",
-    # Dynamic Smagorinsky
     "collide_dynamic_smagorinsky_bgk",
     "collide_dynamic_smagorinsky_bgk3d",
-    # Wave BC additions
     "jonswap_spectrum",
     "jonswap_wave_velocity_3d",
     "apply_jonswap_inlet_3d",
-    # Free-surface hull benchmark
     "HullFreeSurfaceConfig",
     "run_hull_free_surface",
-    # Multi-backend dispatch
     "get_backend",
     "set_backend",
-    # AI turbulence (HPC + AI demo)
     "EddyViscosityDataset",
     "EddyViscosityMLP",
     "LBMDatabase",
@@ -1257,7 +2593,6 @@ __all__ = [
     "collide_ai_les_bgk",
     "run_ai_dns_pipeline",
     "run_ai_les_pipeline",
-    # Transformer-based self-supervised flow model
     "FlowTransformerArch",
     "FlowTransformerTrainConfig",
     "FlowFieldTransformer",
@@ -1266,7 +2601,6 @@ __all__ = [
     "save_flow_transformer_model",
     "load_flow_transformer_model",
     "reconstruct_flow_field",
-    # Cumulant LBM
     "collide_cumulant_d2q9",
     "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
@@ -1275,7 +2609,6 @@ __all__ = [
     "lift_d2q9_to_d3q19",
     "marginalize_d3q19_to_d2q9",
     "maximum_planar_plane_spread",
-    # Streamline / pathline tracing
     "Streamline",
     "trace_streamlines_2d",
     "trace_streamlines_3d",
@@ -1285,7 +2618,6 @@ __all__ = [
     "seed_points_line_3d",
     "compute_residence_time_2d",
     "streamlines_to_dict",
-    # Surface & volume integrals
     "mass_flow_rate_2d",
     "mass_flow_rate_3d",
     "area_average_2d",
@@ -1297,7 +2629,6 @@ __all__ = [
     "pressure_drop",
     "force_coefficients",
     "moment_coefficients",
-    # Turbulent inlet profiles
     "log_law_profile",
     "power_law_profile",
     "parabolic_profile",
@@ -1306,16 +2637,13 @@ __all__ = [
     "synthetic_turbulence_2d",
     "apply_inlet_profile_2d",
     "apply_inlet_profile_3d",
-    # Synthetic turbulent inflow (DFSEM + Digital Filter Method)
     "DFSEMInlet",
     "DigitalFilterInlet",
     "apply_dfsem_inlet_2d",
     "apply_dfsem_inlet_3d",
-    # Wall roughness BC (equivalent sand-grain)
     "roughness_b_correction",
     "compute_rough_wall_slip_velocity",
     "apply_rough_wall_bounce_back",
-    # Sponge / absorbing-layer outlet BC
     "sponge_profile",
     "apply_viscous_sponge_2d",
     "apply_viscous_sponge_3d",
@@ -1323,13 +2651,11 @@ __all__ = [
     "apply_target_sponge_3d",
     "build_mean_equilibrium_2d",
     "build_mean_equilibrium_3d",
-    # Turbulence statistics (Reynolds stresses, TKE, Tu)
     "TurbulenceStatsAccumulator",
     "compute_reynolds_stresses",
     "compute_turbulence_intensity",
     "compute_turbulence_length_scale",
     "turbulence_stats_from_checkpoints",
-    # Multi-GPU domain decomposition
     "DomainDecomposition",
     "MultiGPUSolver2D",
     "MultiGPUSolver3D",
@@ -1337,7 +2663,241 @@ __all__ = [
     "halo_exchange_2d",
     "halo_exchange_3d",
     "auto_decompose",
-    # Collision physical-property audit
     "CollisionViscosityAuditConfig",
     "run_collision_viscosity_audit",
+    "CaseBase",
+    "CaseUnits",
+    "CaseRunResult",
+    "ExportSpec",
+    "get_case",
+    "list_cases",
+    "register_case",
+    "run_case",
+    "BC_ID_NONE",
+    "BCKind",
+    "BCPhase",
+    "BoundaryCondition",
+    "BoundaryConditionRegistry",
+    "apply_boundary_conditions",
+    "boundary_condition_registry",
+    "build_bc_mask",
+    "check_bc_consistency",
+    "check_bc_overlaps",
+    "derive_missing_mask",
+    "LocalRefinementCapability",
+    "LocalRefinementWithheldError",
+    "REQUIRED_FRONTEND_METADATA",
+    "local_refinement_capability_matrix",
+    "require_local_refinement_capability",
+    "BoundaryConditionCapability",
+    "BoundaryConditionWithheldError",
+    "boundary_capability_matrix",
+    "require_boundary_condition_capability",
+    "TurbulenceCapability",
+    "TurbulenceWithheldError",
+    "turbulence_capability_matrix",
+    "require_turbulence_capability",
+    "turbulence_hot_path_audit",
+    "ValidationLevel",
+    "WallFunctionCapability",
+    "WallFunctionCompatibilityError",
+    "WallFunctionRunRequest",
+    "require_wall_function_run",
+    "boundary_layer_indicator_2d",
+    "boundary_layer_indicator_3d",
+    "MAX_VR_LEVELS",
+    "far_field_bc_3d",
+    "wall_function_3d",
+    "wall_function_d3q27",
+    "collide_rlbm27",
+    "collide_trt27",
+    "stream27_roll",
+    "free_surface_step_27",
+    "init_fill_rectangular_27",
+    "init_flags_from_fill_27",
+    "init_mass_from_fill_27",
+    "total_liquid_inventory_27",
+    "CollisionCapability",
+    "CollisionKernelWithheldError",
+    "collide_advanced_3d",
+    "collision_capability_matrix",
+    "WallRefinementCollisionFamily",
+    "CombinationEvidence",
+    "CombinationGateDecision",
+    "WallRefinementGateStatus",
+    "GeometryKind",
+    "GeometryOwnership",
+    "WallRefinementLattice",
+    "PhysicsModel",
+    "RefinementType",
+    "WallRefinementCombination",
+    "WallTreatment",
+    "assess_wall_refinement_combination",
+    "AccuracyRecommendation",
+    "ConvergenceEvidence",
+    "ErrorMetric",
+    "KPIDefinition",
+    "PhysicalAccuracyEvidence",
+    "recommend_by_physical_accuracy",
+    "CompositionDecision",
+    "CompositionRequest",
+    "CompositionStatus",
+    "SubContractResult",
+    "SubContractStatus",
+    "assess_composition",
+    "compute_q_suboff",
+    "AcousticsCapability",
+    "AcousticsWithheldError",
+    "PostProcessingAudit",
+    "acoustics_capability_matrix",
+    "acoustics_post_processing_audit",
+    "require_acoustics_capability",
+    "free_energy_step_3d_27",
+    "init_free_energy_g_3d_27",
+    "DoubleWellFreeEnergy",
+    "FreeEnergyCHValidationConfig",
+    "FreeEnergyCHDiagnosticResult",
+    "FreeEnergyCollisionOnlyConfig",
+    "FreeEnergyCollisionOnlyResult",
+    "FreeEnergyCollisionOnlyState",
+    "FreeEnergyAdapterStreamLoopConfig",
+    "FreeEnergyAdapterStreamLoopResult",
+    "StaticDropletDiagnosticResult",
+    "central_gradient_3d",
+    "collision_then_adapter_stream",
+    "diagnose_static_droplet",
+    "estimate_droplet_radius",
+    "force_minus_phi_grad_mu",
+    "force_mu_grad_phi",
+    "initialize_free_energy_collision_only_state",
+    "initialize_static_droplet",
+    "laplacian_3d",
+    "periodic_chemical_potential_and_korteweg_force",
+    "phase_volume_smoothed",
+    "phase_volume_threshold",
+    "run_free_energy_adapter_stream_loop",
+    "run_free_energy_collision_only",
+    "run_closed_periodic_free_energy_diagnostic",
+    "stream_d3q19_adapter",
+    "stream_free_energy_adapter",
+    "bubble_centroid_velocity_3d",
+    "free_surface_vof_collide_3d",
+    "free_surface_vof_step",
+    "gravity_force_3d",
+    "guo_force_delta_3d",
+    "init_phi_bubble_3d",
+    "init_phi_rayleigh_taylor_3d",
+    "interface_compression_3d",
+    "interface_normal_3d",
+    "mean_curvature_3d",
+    "mixing_layer_thickness_3d",
+    "surface_tension_force_3d",
+    "vof_advect_upwind_3d",
+    "free_surface_step",
+    "init_fill_rectangular",
+    "init_flags_from_fill",
+    "init_mass_from_fill",
+    "total_liquid_inventory",
+    "free_surface_step_2d",
+    "init_fill_rectangular_2d",
+    "CavitationConfig",
+    "apply_cavitation_force",
+    "psi_cavitation",
+    "run_cavitation_flow",
+    "schnerr_sauer_source",
+    "apply_body_force_shift",
+    "central_difference",
+    "collide_powerlaw_bgk",
+    "powerlaw_viscosity",
+    "strain_rate_shear_rate_2d",
+    "tau_from_viscosity",
+    "velocity_gradients_2d",
+    "collide_cascaded_d3q19",
+    "collide_cascaded_d3q27",
+    "collide_kbc_d3q19",
+    "collide_kbc_d3q27",
+    "collide_natural_kbc_d3q19",
+    "discrete_entropy",
+    "kbc_decompose_d3q19",
+    "kbc_decompose_d3q27",
+    "solve_gamma_entropy",
+    "ActuatorDiskConfig",
+    "apply_actuator_disk",
+    "run_actuator_disk_benchmark",
+    "AirfoilConfig",
+    "naca4_surface",
+    "build_airfoil_mask",
+    "run_airfoil_benchmark",
+    "reference_cl_cd",
+    "IBMPropellerConfig",
+    "run_ibm_propeller_benchmark",
+    "KESolver",
+    "KOmegaSSTSolver",
+    "collide_rans_ke",
+    "collide_rans_komega_sst",
+    "komega_sst_collision_d2q9",
+    "collide_rans_3d",
+    "collide_rans_bgk27",
+    "collide_rans_bgk3d",
+    "collide_rans_mrt27",
+    "collide_rans_mrt3d",
+    "DGLBMConfig",
+    "DGLBMSuboffConfig",
+    "build_dg_hull_band_mask",
+    "build_dg_shell_mask",
+    "collide_dg_lbm",
+    "dg_compute_velocity_gradients",
+    "run_dg_lbm_sphere_flow",
+    "run_dg_lbm_suboff_flow",
+    "collide_bgk_dg",
+    "dg_advect",
+    "dg_lbm_rhs",
+    "dg_lbm_step",
+    "dg_rhs",
+    "equilibrium_dg",
+    "get_ops",
+    "lobatto_nodes",
+    "macroscopic_dg",
+    "nodal_from_mean",
+    "BandTopology",
+    "build_band_topology",
+    "dg_advect_band",
+    "dg_lbm_step_band",
+    "dg_rhs_band",
+    "hybrid_advect",
+    "hybrid_step",
+    "write_back_exports",
+    "collide_vreman_mrt3d",
+    "collide_vreman_mrt27",
+    "collide_wale_mrt3d",
+    "collide_wale_mrt27",
+    "collide_cumulant_smag_d3q27",
+    "DragMonitor",
+    "estimate_exchange_yplus",
+    "estimate_yplus",
+    "grid_quality_metrics",
+    "plan_exchange_yplus_refinement",
+    "recommend_grid",
+    "yplus_recommendation",
+    "KNOWN_TASKS",
+    "ModelInfo",
+    "ModelZoo",
+    "ZooValidation",
+    "resolve_zoo_root",
+    "zoo_register",
+    "zoo_load",
+    "zoo_list_models",
+    "zoo_info",
+    "zoo_validate",
+    "BoundaryType",
+    "CollisionModel",
+    "GeneralSimConfig",
+    "GeneralSimEngine",
+    "GeometryConfig",
+    "GeometrySource",
+    "LatticeModel",
+    "OutputConfig",
+    "OutputFormat",
+    "PhysicsConfig",
+    "SolverConfig",
 ]

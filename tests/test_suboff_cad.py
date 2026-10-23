@@ -278,27 +278,30 @@ def test_wetted_area_includes_meridional_slope_and_matches_surface_mesh() -> Non
     radius = length / (2.0 * 8.57)
     stats = suboff_statistics("bare_hull", length, radius)
     mesh = suboff_mesh_data(
-        "bare_hull", length=length, radius=radius,
-        n_axial=300, n_circ=120,
+        "bare_hull",
+        length=length,
+        radius=radius,
+        n_axial=300,
+        n_circ=120,
     )
     triangles = np.asarray(mesh["positions"]).reshape(-1, 3, 3)
-    triangle_area = 0.5 * np.linalg.norm(
-        np.cross(
-            triangles[:, 1] - triangles[:, 0],
-            triangles[:, 2] - triangles[:, 0],
-        ),
-        axis=1,
-    ).sum()
+    triangle_area = (
+        0.5
+        * np.linalg.norm(
+            np.cross(
+                triangles[:, 1] - triangles[:, 0],
+                triangles[:, 2] - triangles[:, 0],
+            ),
+            axis=1,
+        ).sum()
+    )
 
     assert stats["wetted_area_scope"] == "bare_hull_surface_of_revolution"
     assert stats["wetted_area_method"] == "profile_meridional_metric_quadrature"
     assert stats["wetted_area_lu2"] == pytest.approx(triangle_area, rel=2e-3)
     # The former circumference-only integral omitted bow/stern slope.
     xi = np.linspace(0.0, 1.0, 2000)
-    slope_free = (
-        2.0 * np.pi * radius * length
-        * np.trapezoid(suboff_radius_profile(xi), xi)
-    )
+    slope_free = 2.0 * np.pi * radius * length * np.trapezoid(suboff_radius_profile(xi), xi)
     assert stats["wetted_area_lu2"] > 1.01 * slope_free
 
 

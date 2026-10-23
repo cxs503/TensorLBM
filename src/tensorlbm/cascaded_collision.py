@@ -39,8 +39,10 @@ import functools
 import numpy as np
 import torch
 
-from .d3q19 import C as _C19, equilibrium3d, macroscopic3d
-from .d3q27 import C as _C27, equilibrium27, macroscopic27
+from .d3q19 import C as _C19
+from .d3q19 import equilibrium3d, macroscopic3d
+from .d3q27 import C as _C27
+from .d3q27 import equilibrium27, macroscopic27
 
 # ---------------------------------------------------------------------------
 # Moment degree orderings

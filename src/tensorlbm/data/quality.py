@@ -77,9 +77,7 @@ def check_field_product(
         checks.append(_mass_conservation_check(arr, product.field_name, mass_tol))
     passed = sum(1 for c in checks if c.passed)
     score = round(100 * passed / len(checks)) if checks else 0
-    status = "passed" if passed == len(checks) else (
-        "warning" if passed > 0 else "failed"
-    )
+    status = "passed" if passed == len(checks) else ("warning" if passed > 0 else "failed")
     return FieldQualityResult(tuple(checks), score, status)
 
 
@@ -92,5 +90,8 @@ def validate_field_product(
 ) -> Sequence[QualityCheck]:
     """Convenience: return just the check list (for catalog.record_quality)."""
     return check_field_product(
-        product, arr, mass_field=mass_field, mass_tol=mass_tol,
+        product,
+        arr,
+        mass_field=mass_field,
+        mass_tol=mass_tol,
     ).checks

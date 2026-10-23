@@ -1,0 +1,288 @@
+{
+ "utc": "2026-10-05T09:43:26Z",
+ "battery_status": "non-verdict attribution instrument",
+ "case_a": {
+  "MCMP": {
+   "sigma_sph_by_N": {
+    "96": 0.11221872515472958,
+    "144": 0.11229502402623733,
+    "192": 0.1121408026025281
+   },
+   "err_by_N_pct": {
+    "96": 0.4718715937933545,
+    "144": 0.5401836371738816,
+    "192": 0.40210583368287706
+   },
+   "F_sigma_err_range_pct": 0.13807780349100454,
+   "sigma_sph_band_rel_pct": 0.13742997641844867,
+   "u_max_tail_by_N": {
+    "96": 0.011513847741298378,
+    "144": 0.010889740932422379,
+    "192": 0.01054272463079542
+   },
+   "density_ratio": 6.024629928164556,
+   "mode": "consumed frozen archive (zero GPU)"
+  },
+  "SC": {
+   "sigma_by_L": {
+    "128": 0.32022612409321427,
+    "192": 0.32649180156335816,
+    "256": 0.32942224369200646
+   },
+   "F_sigma_pct": 2.826270208179986,
+   "rms_residual_by_L": {
+    "128": 1.3365527341200082e-05,
+    "192": 1.6449187847296293e-05,
+    "256": 5.567287731739233e-06
+   },
+   "resid_gate_by_L": {
+    "128": true,
+    "192": true,
+    "256": true
+   },
+   "u_max_Lmax": 0.20619037747383118,
+   "sim_ratio_field": "per-run ratio field (400-557 band per CLOSURE)",
+   "density_ratio": "400-557 (per-run, file field)",
+   "mode": "consumed frozen archive (zero GPU)"
+  },
+  "CAC": {
+   "sigma_eff_by_R": {
+    "16.0": 0.006543204919041093,
+    "24.0": 0.006497685526737044,
+    "32.0": 0.006483279093117686
+   },
+   "F_sigma_pct": 0.9207944922423941,
+   "u_max_tail": {
+    "16.0": 6.339430588153727e-06,
+    "24.0": 7.141984747255978e-06,
+    "32.0": 7.773696340082904e-06
+   },
+   "sigma_in": 0.007,
+   "sigma_eff_over_in": {
+    "16.0": 0.9347435598630133,
+    "24.0": 0.9282407895338635,
+    "32.0": 0.9261827275882408
+   },
+   "density_ratio": 1.0,
+   "mode": "consumed XA-3 variant-P outputs (dedup per prereg \u00a72)"
+  },
+  "CG": {
+   "sigma_eff_R_ladder_L200": {
+    "20": 0.009365472676328424,
+    "30": 0.010358946670356375,
+    "40": 0.00865855096577467
+   },
+   "F_sigma_pct": 17.972703552826587,
+   "anchor_128_25": 0.010619020900319402,
+   "u_max_final_by_R": {
+    "20": 0.0021213337690471276,
+    "30": 0.005045848021344475,
+    "40": 0.004692149130847462
+   },
+   "u_max_final_anchor_128_25": 0.0015040066198390167,
+   "density_ratio": 13.0,
+   "mode": "consumed XA-5 beta=0.7 outputs (dedup per prereg \u00a72); health: XA-5 frozen gate 0/40 (erratum-terminal); X1-caliber recheck: plateau 4/4 fail - disclosure-grade",
+   "health_recheck_x1_caliber": {
+    "200_20": {
+     "stable_no_nan": true,
+     "mass_pass_x1_caliber": true,
+     "u_max_plateau_last4": 0.14359289972304248,
+     "u_max_plateau_tail20": 0.1919171491578987,
+     "u_max_plateau_pass_x1_caliber": false,
+     "health_xa5_frozen_pass": false
+    },
+    "200_30": {
+     "stable_no_nan": true,
+     "mass_pass_x1_caliber": true,
+     "u_max_plateau_last4": 0.2583443357491626,
+     "u_max_plateau_tail20": 1.123918482622862,
+     "u_max_plateau_pass_x1_caliber": false,
+     "health_xa5_frozen_pass": false
+    },
+    "200_40": {
+     "stable_no_nan": true,
+     "mass_pass_x1_caliber": true,
+     "u_max_plateau_last4": 0.47884455453408087,
+     "u_max_plateau_tail20": 0.7450923197890182,
+     "u_max_plateau_pass_x1_caliber": false,
+     "health_xa5_frozen_pass": false
+    },
+    "128_25": {
+     "stable_no_nan": true,
+     "mass_pass_x1_caliber": true,
+     "u_max_plateau_last4": 0.028190840149241735,
+     "u_max_plateau_tail20": 0.026772325432593645,
+     "u_max_plateau_pass_x1_caliber": false,
+     "health_xa5_frozen_pass": false
+    }
+   },
+   "attribution": "protocol-level: spurious currents still evolving at 30000-step protocol end; not a consumption-file defect; fresh same-protocol runs would fail identically"
+  }
+ },
+ "case_b": {
+  "CG": {
+   "arms": [
+    {
+     "name": "b2m2_ny64",
+     "relL2": 0.0031758772065282755,
+     "j_first_blue": 33,
+     "gx": 2.00231890175514e-05,
+     "u_max_ratio": 1.001481931306848,
+     "mass_drift_r_per_step": 2.2044825224535694e-14,
+     "mass_drift_b_per_step": 2.2004087441018783e-14,
+     "steps": 60000,
+     "u_max_frozen_rel_tail20": 1.2741428457675955e-13,
+     "stable": true
+    },
+    {
+     "name": "b2m2_ny128",
+     "relL2": 0.002134633594666037,
+     "j_first_blue": 65,
+     "gx": 4.8425061574970525e-06,
+     "u_max_ratio": 1.000805937553531,
+     "mass_drift_r_per_step": 3.880245458276477e-14,
+     "mass_drift_b_per_step": 3.9609062696399635e-14,
+     "steps": 200000,
+     "u_max_frozen_rel_tail20": 7.065730151255251e-12,
+     "stable": true
+    }
+   ],
+   "family_gate_3pct": [
+    true,
+    true
+   ],
+   "mu_ratio": 2.0
+  },
+  "CAC": {
+   "arms": {
+    "100": {
+     "Eu": 0.07702678080491326,
+     "Eu_liquid": 0.07992026357944254,
+     "Eu_gas": 0.07461554515947219,
+     "u_center_num": 9.380025417022128e-05,
+     "u_center_ana": 9.999999999999999e-05,
+     "stationarity_rel_max_over_window": 0.026007764972746372,
+     "ana_vs_fd_max_abs": 4.21610583321379e-17
+    },
+    "200": {
+     "Eu": 0.35547575773274687,
+     "Eu_liquid": 0.36718081863621754,
+     "Eu_gas": 0.34572154031318797,
+     "u_center_num": 6.228112934179123e-05,
+     "u_center_ana": 0.0001,
+     "stationarity_rel_max_over_window": 0.09795709047466516,
+     "ana_vs_fd_max_abs": 9.8936790048977e-18
+    }
+   },
+   "receipt_ny100_vs_m1": {
+    "rel_diff_Eu": 0.0,
+    "rel_diff_u_center": 0.0,
+    "pass_1e-9": true
+   },
+   "mu_ratio": 2.0,
+   "mu_law": "harmonic"
+  },
+  "MCMP": {
+   "arms": {
+    "H64": {
+     "mu_ratio_measured": 2.0215418925016726,
+     "nominal_M": 2.0,
+     "err_recomputed": {
+      "n": 55,
+      "max_rel_err_pct": 27.040218588220462,
+      "mean_rel_err_pct": 14.248968390643062
+     },
+     "err_archived": {
+      "n": 55,
+      "max_rel_err_pct": 27.04022228717804,
+      "mean_rel_err_pct": 14.248968660831451
+     },
+     "recompute_match": false,
+     "u_max_ratio_sim_over_b_permass": 1.3203994234418683,
+     "u_max_ratio_sim_over_b_pervolume": 1.1445270345314376
+    },
+    "H128": {
+     "mu_ratio_measured": 2.0288857603587025,
+     "nominal_M": 2.0,
+     "err_recomputed": {
+      "n": 110,
+      "max_rel_err_pct": 33.638003557645035,
+      "mean_rel_err_pct": 15.6922135304085
+     },
+     "err_archived": {
+      "n": 110,
+      "max_rel_err_pct": 33.63800346851349,
+      "mean_rel_err_pct": 15.692214667797089
+     },
+     "recompute_match": false,
+     "u_max_ratio_sim_over_b_permass": 1.3741046493344453,
+     "u_max_ratio_sim_over_b_pervolume": 1.1895684646633218
+    }
+   },
+   "fd_validation": {
+    "H64": {
+     "max_abs_fd_residual": 2.6690008167983004e-18,
+     "scale_ref": 4.357233941555023e-06,
+     "note": "interior per-layer residual of consumed analytic (machine-archived values)"
+    },
+    "H128": {
+     "max_abs_fd_residual": 1.2249790483191692e-17,
+     "scale_ref": 4.3595561385154726e-06,
+     "note": "interior per-layer residual of consumed analytic (machine-archived values)"
+    }
+   },
+   "mode": "consumed + pure post-processing (zero GPU)"
+  }
+ },
+ "case_c": {
+  "CAC": {
+   "arm": "C16b (R16, lambda=1, Ca_ach~0.10)",
+   "D_I": 0.11067408161154652,
+   "Ca_ach": 0.0987896504918149,
+   "ratio_sh": 0.9774008270184361,
+   "in_band_0p96_1p04": true,
+   "mode": "consumed frozen t2 verdict (zero GPU)"
+  },
+  "CG": {
+   "status": "NOT SUPPORTED by frozen kernel",
+   "evidence": "x1_crossval/ctrl/p0_probe_cg_shear.json (P0 CPU probe; stationary bounce_back_cells only)"
+  }
+ },
+ "receipts": {
+  "m2_sigma_ref_assert": "OK",
+  "m4_sigma_L_assert": "OK (<=1e-8 vs prereg 8-decimal quotes)",
+  "t2_C16b_assert": "OK",
+  "b_cac_ny100_determinism": {
+   "rel_diff_Eu": 0.0,
+   "rel_diff_u_center": 0.0,
+   "pass_1e-9": true
+  },
+  "mcmp_analytic_recompute": {
+   "H64": false,
+   "H128": false
+  }
+ },
+ "sources": {
+  "m2_alternative_all18": {
+   "md5": "b37fbd1eda9fd1e7f4846e1cdc8184a2"
+  },
+  "m2_poiseuille_confirm3d": {
+   "md5": "4b301fe557ae03ffd4deb0adf2be6292"
+  },
+  "m4_b_laplace": {
+   "md5": "b5520a4065413aa9b1256f9b61a3e1f9"
+  },
+  "t2_verdict": {
+   "md5": "98294db1878e26f2b45c1ea9d385db31"
+  },
+  "m1_b2_a_ny100": {
+   "md5": "fa62f6ff6eb459ea6d79c564f26f939b"
+  },
+  "b_cg_poiseuille": {
+   "md5": "8bca5559efdb86b010a25adeacf47e5d"
+  },
+  "p0_probe_cg_shear": {
+   "md5": "56751d9b6f16e226ca7b2cb48424b35c"
+  }
+ }
+}

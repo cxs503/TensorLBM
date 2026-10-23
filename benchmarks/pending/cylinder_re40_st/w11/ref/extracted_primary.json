@@ -1,0 +1,186 @@
+{
+  "fornberg1980": {
+    "source": "Fornberg 1980, JFM 98(4):819-855, doi:10.1017/S0022112080000419",
+    "file": "pdf/fornberg1980.pdf (author-hosted: colorado.edu/amath attached-files jcp_80_fl_p_cyl.pdf)",
+    "text_dump": "ref/fornberg1980_fulltext.txt",
+    "cd_inline": {
+      "20": {
+        "cd": 2.0001,
+        "pm": 0.0002
+      },
+      "40": {
+        "cd": 1.498,
+        "pm": 0.0005
+      },
+      "100": {
+        "cd": 1.058,
+        "pm": 0.001
+      }
+    },
+    "dennis1976_quote": {
+      "re20_cd": 1.998,
+      "re40_cd": 1.494
+    },
+    "norm_statement_found": true
+  },
+  "gautier2013": {
+    "source": "Gautier, Biau & Lamballais 2013, arXiv:1310.6641 (submitted to Comput. Fluids)",
+    "file": "pdf/refsol1310.6641.pdf + LaTeX source ref/refsol_src/CF2012.tex",
+    "comparison_table_re40": {
+      "Tritton": {
+        "cd": 1.48,
+        "theta_s": null,
+        "lw": null,
+        "a": null,
+        "b": null
+      },
+      "Dennis & Chang": {
+        "cd": 1.52,
+        "theta_s": 126.2,
+        "lw": 2.35,
+        "a": null,
+        "b": null
+      },
+      "Fornberg": {
+        "cd": 1.5,
+        "theta_s": 124.4,
+        "lw": 2.24,
+        "a": null,
+        "b": null
+      },
+      "He & Doolen": {
+        "cd": 1.5,
+        "theta_s": 127.2,
+        "lw": 2.25,
+        "a": null,
+        "b": null
+      },
+      "Ye et al.": {
+        "cd": 1.52,
+        "theta_s": null,
+        "lw": 2.27,
+        "a": null,
+        "b": null
+      },
+      "Calhoun": {
+        "cd": 1.62,
+        "theta_s": 125.8,
+        "lw": 2.18,
+        "a": null,
+        "b": null
+      },
+      "Russel & Wang": {
+        "cd": 1.6,
+        "theta_s": null,
+        "lw": 2.29,
+        "a": null,
+        "b": null
+      },
+      "Tseng & Ferziger": {
+        "cd": 1.53,
+        "theta_s": null,
+        "lw": 2.21,
+        "a": null,
+        "b": null
+      },
+      "Linnick & Fasel": {
+        "cd": 1.54,
+        "theta_s": 126.4,
+        "lw": 2.28,
+        "a": 0.72,
+        "b": 0.6
+      },
+      "Chung": {
+        "cd": 1.54,
+        "theta_s": null,
+        "lw": 2.3,
+        "a": null,
+        "b": null
+      },
+      "Le et al.": {
+        "cd": 1.56,
+        "theta_s": null,
+        "lw": 2.22,
+        "a": null,
+        "b": null
+      },
+      "Ding et al.": {
+        "cd": 1.58,
+        "theta_s": 127.2,
+        "lw": 2.35,
+        "a": null,
+        "b": null
+      },
+      "Taira & Colonius": {
+        "cd": 1.54,
+        "theta_s": 126.3,
+        "lw": 2.3,
+        "a": 0.73,
+        "b": 0.6
+      },
+      "Posdziec & R. Grundmann": {
+        "cd": 1.49,
+        "theta_s": null,
+        "lw": null,
+        "a": null,
+        "b": null
+      },
+      "Patil & Lakshisha": {
+        "cd": 1.56,
+        "theta_s": 127.3,
+        "lw": 2.14,
+        "a": null,
+        "b": null
+      },
+      "Bouchon et al.": {
+        "cd": 1.5,
+        "theta_s": 126.6,
+        "lw": 2.26,
+        "a": 0.71,
+        "b": 0.6
+      },
+      "Present reference solution": {
+        "cd": 1.49,
+        "theta_s": 126.4,
+        "lw": 2.24,
+        "a": 0.71,
+        "b": 0.59
+      }
+    },
+    "own_sensitivity": {
+      "grid": [
+        "coarse Nr100 Nth512",
+        "fine Nr200 Nth1024"
+      ],
+      "r_inf_values": [
+        30,
+        40,
+        50
+      ],
+      "cd": [
+        1.4903,
+        1.5153,
+        1.5024,
+        1.4906,
+        1.4931,
+        1.4943
+      ],
+      "lw": [
+        2.234,
+        2.2628,
+        2.2507,
+        2.2346,
+        2.236,
+        2.2369
+      ],
+      "theta_s": [
+        126.4117,
+        126.2627,
+        126.3315,
+        126.4059,
+        126.3945,
+        126.3888
+      ]
+    }
+  }
+}

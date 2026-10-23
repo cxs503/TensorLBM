@@ -14,6 +14,7 @@ This is a validation runner: compares adaptive-AMR Cd against Schiller-Naumann
 and the uniform-grid controls. status=measured_candidate, physical_validation
 is only set when the run passes all gates.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,16 +32,16 @@ from tensorlbm.adaptive_refinement import (
     nonequilibrium_indicator_3d,
 )
 from tensorlbm.boundaries3d import bounce_back_cells_3d, sphere_mask
-from tensorlbm.cumulant import collide_cumulant_d3q19
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
-from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.control_volume_force import (
     box_control_volume,
     observe_control_volume_force,
 )
-from tensorlbm.sphere_bfl_control_volume import schiller_naumann_cd
+from tensorlbm.cumulant import collide_cumulant_d3q19
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
+from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.solver3d import stream3d
+from tensorlbm.sphere_bfl_control_volume import schiller_naumann_cd
 from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
     build_sponge_sigma_3d,
@@ -81,8 +82,7 @@ def parser() -> argparse.ArgumentParser:
         choices=("non_equilibrium_extrapolation", "legacy_hard_equilibrium"),
         default="non_equilibrium_extrapolation",
     )
-    p.add_argument("--indicator", choices=("nonequilibrium", "vorticity"),
-                   default="nonequilibrium")
+    p.add_argument("--indicator", choices=("nonequilibrium", "vorticity"), default="nonequilibrium")
     p.add_argument("--output", required=True)
     return p
 
@@ -96,8 +96,7 @@ def main() -> None:
 
     shape = (args.nz, args.ny, args.nx)
     cx, cy, cz = args.nx * 0.5, args.ny / 2.0, args.nz / 2.0
-    solid = sphere_mask(args.nx, args.ny, args.nz, cx, cy, cz,
-                        args.radius, device=device)
+    solid = sphere_mask(args.nx, args.ny, args.nz, cx, cy, cz, args.radius, device=device)
     solid_q = solid.unsqueeze(0).expand(19, *shape).contiguous()
     shape_q = (19, *shape)
 
@@ -132,8 +131,10 @@ def main() -> None:
     )
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sigma = build_sponge_sigma_3d(
-        shape, width=args.sponge_width,
-        max_strength=args.sponge_strength, device=device,
+        shape,
+        width=args.sponge_width,
+        max_strength=args.sponge_strength,
+        device=device,
         faces=sponge_faces,
     )
     dynamic_area = 0.5 * args.lattice_speed**2 * math.pi * args.radius**2
@@ -153,7 +154,7 @@ def main() -> None:
         """
         b = patch.box
         r = patch.ratio
-        coarse_slice = solid[b.z0:b.z1, b.y0:b.y1, b.x0:b.x1]
+        coarse_slice = solid[b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1]
         return (
             coarse_slice.repeat_interleave(r, dim=0)
             .repeat_interleave(r, dim=1)
@@ -175,7 +176,9 @@ def main() -> None:
             if p.f is state:
                 local = _patch_solid_mask(p)
                 return torch.where(
-                    local.unsqueeze(0).expand_as(state), state, collided,
+                    local.unsqueeze(0).expand_as(state),
+                    state,
+                    collided,
                 )
         return collided
 
@@ -194,14 +197,18 @@ def main() -> None:
                 state = non_equilibrium_far_field_bc_3d(state, u_in=args.lattice_speed)
             else:
                 from tensorlbm.boundaries3d import far_field_bc_3d
+
                 state = far_field_bc_3d(state, u_in=args.lattice_speed)
             state = apply_equilibrium_difference_sponge(
-                state, sigma, velocity_target=(args.lattice_speed, 0.0, 0.0),
+                state,
+                sigma,
+                velocity_target=(args.lattice_speed, 0.0, 0.0),
             )
             if args.far_field_mode == "non_equilibrium_extrapolation":
                 state = non_equilibrium_far_field_bc_3d(state, u_in=args.lattice_speed)
             else:
                 from tensorlbm.boundaries3d import far_field_bc_3d
+
                 state = far_field_bc_3d(state, u_in=args.lattice_speed)
             return state
         # Patch tensors are interior; the border is re-injected from the
@@ -228,19 +235,32 @@ def main() -> None:
             # collide is deterministic and side-effect free, so recompute
             # it from the pre-step state.
             post_collide = collide_fn(before)
-            cv_force = float(observe_control_volume_force(
-                before, solver.coarse_f, post_collide, cv, solid=solid,
-            ).force_on_body[0].item())
+            cv_force = float(
+                observe_control_volume_force(
+                    before,
+                    solver.coarse_f,
+                    post_collide,
+                    cv,
+                    solid=solid,
+                )
+                .force_on_body[0]
+                .item()
+            )
             forces.append(cv_force)
         patch_counts.append(len(solver.patches))
         if solver.should_adapt(current_step):
             rho, ux, uy, uz = macroscopic3d(solver.coarse_f)
             if args.indicator == "vorticity":
                 from tensorlbm.adaptive_refinement import vorticity_indicator_3d
+
                 indicator = vorticity_indicator_3d(ux, uy, uz)
             else:
                 indicator = nonequilibrium_indicator_3d(
-                    solver.coarse_f, rho, ux, uy, uz,
+                    solver.coarse_f,
+                    rho,
+                    ux,
+                    uy,
+                    uz,
                 )
             print(
                 f"  adapt@{current_step}: indicator max={float(indicator.max()):.3e} "
@@ -251,12 +271,11 @@ def main() -> None:
             )
             solver.adapt(indicator)
         if args.report_interval and current_step % args.report_interval == 0:
-            recent = forces[-min(len(forces), args.report_interval):]
-            recent_cd = (sum(recent) / len(recent) / dynamic_area
-                         if recent else math.nan)
+            recent = forces[-min(len(forces), args.report_interval) :]
+            recent_cd = sum(recent) / len(recent) / dynamic_area if recent else math.nan
             print(
                 f"step={current_step}/{args.steps} recent_Cd={recent_cd:.6f} "
-                f"patches={len(solver.patches)} steps/s={current_step/(time.time()-started):.2f}",
+                f"patches={len(solver.patches)} steps/s={current_step / (time.time() - started):.2f}",
                 flush=True,
             )
         if not bool(torch.isfinite(solver.coarse_f).all()):
@@ -269,12 +288,11 @@ def main() -> None:
     reference = schiller_naumann_cd(args.reynolds)
     cd_history = [f_ / dynamic_area for f_ in selected]
     stationarity = assess_force_stationarity(
-        cd_history, block_size=max(1, len(cd_history) // 8),
+        cd_history,
+        block_size=max(1, len(cd_history) // 8),
     )
     stationarity_dict = (
-        asdict(stationarity)
-        if hasattr(stationarity, "__dataclass_fields__")
-        else stationarity
+        asdict(stationarity) if hasattr(stationarity, "__dataclass_fields__") else stationarity
     )
     reference_error = abs(cd - reference) / reference * 100.0
     result = {
@@ -310,9 +328,7 @@ def main() -> None:
             "mean_force_lu": mean_force,
             "dynamic_area_lu2": dynamic_area,
             "stationarity": stationarity_dict,
-            "mean_patch_count": (
-                sum(patch_counts) / len(patch_counts) if patch_counts else 0.0
-            ),
+            "mean_patch_count": (sum(patch_counts) / len(patch_counts) if patch_counts else 0.0),
             "max_patch_count": max(patch_counts, default=0),
             "wall_time_s": time.time() - started,
         },

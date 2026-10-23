@@ -1,0 +1,215 @@
+{
+  "source": {
+    "paper": "Forslund, Larsson, Hellstrom, Lundstrom 2023, Steady-State Transitions in Ordered Porous Media, Transp Porous Med 148:545-569",
+    "doi": "10.1007/s11242-023-01966-w",
+    "figure": "Fig. 6 (top)",
+    "series_A": "Koch & Ladd 1997 JFM 349:31-66 as transcribed by Forslund et al.",
+    "series_B": "Forslund et al. 2023 FDM (artificial compressibility, staircase)",
+    "geometry": "square array of circular cylinders, single periodic cell, phi_s = 0.40 (adjudicated: y-intercept matches Sangani-Acrivos f(0.40) = 217.89 to 0.26%; see NOTES section 2)",
+    "y_axis_semantics": "numerically the f-form G*L^2/(mu*U_int) per the Stokes cross-check; the axis label reads F_delta/(mu*U_Darcy)",
+    "x_axis_semantics": "Re_Darcy = U_Darcy*D_p/nu"
+  },
+  "calibration": {
+    "x_ticks_pt": {
+      "220.0": 0.0,
+      "260.73": 50.0,
+      "301.45": 100.0,
+      "342.17": 150.0,
+      "382.9": 200.0
+    },
+    "y_ticks_pt": {
+      "74.08": 375.0,
+      "91.87": 350.0,
+      "109.69": 325.0,
+      "127.49": 300.0,
+      "145.31": 275.0,
+      "163.1": 250.0,
+      "180.93": 225.0
+    },
+    "x_units_per_pt": 1.227777,
+    "x_offset": -270.1134,
+    "y_units_per_pt": -1.403846,
+    "y_offset": 478.9844
+  },
+  "A_koch_ladd_1997": {
+    "y0_stokes": 217.439,
+    "points": [
+      {
+        "pt": [
+          219.704,
+          186.306
+        ],
+        "re_darcy": -0.366,
+        "y": 217.439,
+        "R": 1.0
+      },
+      {
+        "pt": [
+          240.53,
+          158.08
+        ],
+        "re_darcy": 25.204,
+        "y": 257.064,
+        "R": 1.182235
+      },
+      {
+        "pt": [
+          258.183,
+          142.256
+        ],
+        "re_darcy": 46.878,
+        "y": 279.279,
+        "R": 1.284402
+      },
+      {
+        "pt": [
+          279.223,
+          129.331
+        ],
+        "re_darcy": 72.71,
+        "y": 297.424,
+        "R": 1.36785
+      },
+      {
+        "pt": [
+          304.419,
+          118.853
+        ],
+        "re_darcy": 103.645,
+        "y": 312.133,
+        "R": 1.435497
+      },
+      {
+        "pt": [
+          328.845,
+          111.273
+        ],
+        "re_darcy": 133.635,
+        "y": 322.774,
+        "R": 1.484435
+      },
+      {
+        "pt": [
+          346.083,
+          93.501
+        ],
+        "re_darcy": 154.799,
+        "y": 347.723,
+        "R": 1.599175
+      },
+      {
+        "pt": [
+          362.548,
+          78.164
+        ],
+        "re_darcy": 175.015,
+        "y": 369.254,
+        "R": 1.698196
+      },
+      {
+        "pt": [
+          378.016,
+          64.276
+        ],
+        "re_darcy": 194.006,
+        "y": 388.751,
+        "R": 1.787862
+      }
+    ]
+  },
+  "B_fdm_2023": {
+    "y0_stokes": 219.156,
+    "points": [
+      {
+        "pt": [
+          220.346,
+          185.083
+        ],
+        "re_darcy": 0.422,
+        "y": 219.156,
+        "R": 1.0
+      },
+      {
+        "pt": [
+          225.169,
+          180.996
+        ],
+        "re_darcy": 6.344,
+        "y": 224.894,
+        "R": 1.026182
+      },
+      {
+        "pt": [
+          234.542,
+          167.489
+        ],
+        "re_darcy": 17.852,
+        "y": 243.856,
+        "R": 1.112705
+      },
+      {
+        "pt": [
+          247.218,
+          151.962
+        ],
+        "re_darcy": 33.415,
+        "y": 265.653,
+        "R": 1.212164
+      },
+      {
+        "pt": [
+          263.113,
+          139.357
+        ],
+        "re_darcy": 52.931,
+        "y": 283.349,
+        "R": 1.29291
+      },
+      {
+        "pt": [
+          282.098,
+          128.927
+        ],
+        "re_darcy": 76.24,
+        "y": 297.991,
+        "R": 1.359721
+      },
+      {
+        "pt": [
+          304.076,
+          120.112
+        ],
+        "re_darcy": 103.224,
+        "y": 310.366,
+        "R": 1.416188
+      },
+      {
+        "pt": [
+          328.952,
+          112.497
+        ],
+        "re_darcy": 133.766,
+        "y": 321.056,
+        "R": 1.464966
+      },
+      {
+        "pt": [
+          348.458,
+          90.733
+        ],
+        "re_darcy": 157.715,
+        "y": 351.609,
+        "R": 1.604378
+      },
+      {
+        "pt": [
+          369.165,
+          70.62
+        ],
+        "re_darcy": 183.139,
+        "y": 379.845,
+        "R": 1.733217
+      }
+    ]
+  }
+}

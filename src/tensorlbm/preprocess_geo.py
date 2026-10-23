@@ -873,8 +873,6 @@ def build_near_wall_refinement_mask(
     if isinstance(mask, np.ndarray):
         mask = torch.from_numpy(mask.astype(np.bool_))
 
-    device = mask.device
-
     # Friction velocity estimate: u_tau = U_inf * sqrt(Cf/2)
     # Schlichting flat plate: Cf ≈ 0.026 / Re^(1/7)
     cf = 0.026 / (re ** (1.0 / 7.0))

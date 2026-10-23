@@ -1,0 +1,178 @@
+{
+  "case": "permeability_fibrous",
+  "verdict": "terminal",
+  "reason": "三失效模式全定源：hex 近堆积 = 参考侧（Gebart 渐近式对精确解偏高 +2.4%/+3.9%）；sq 0.40 = 几何量化地板振荡（gap-96 扩展案深入门内 −0.65%）；S1 = 真实 O(Re) 惯性。方阵 4 主档中 3 档（0.30/0.50/0.60）逐档全过门且严格单调 = verified 候选，但 0.40 一档单调破缺导致整档 FAIL；hex 两主档（0.70/0.75）全破。菜单选项（cut-cell 自产表 / 门放宽 1% / 购精确表 / 维持 FAIL + sq 0.30-0.60 现成候选档）需 owner 决策。",
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm.boundaries import bounce_back_cells",
+          "f": "benchmarks/pending/permeability_fibrous/run.py",
+          "k": "grep:from tensorlbm.boundaries import bounce_back_cells"
+        },
+        {
+          "v": "from tensorlbm.d2q9 import equilibrium, macroscopic",
+          "f": "benchmarks/pending/permeability_fibrous/run.py",
+          "k": "grep:from tensorlbm.d2q9 import equilibrium, macroscopic"
+        },
+        {
+          "v": "from tensorlbm.solver import collide_bgk, stream",
+          "f": "benchmarks/pending/permeability_fibrous/run.py",
+          "k": "grep:from tensorlbm.solver import collide_bgk, stream"
+        },
+        {
+          "v": "from tensorlbm.turbulent_channel import _apply_body_force_2d",
+          "f": "benchmarks/pending/permeability_fibrous/run.py",
+          "k": "grep:from tensorlbm.turbulent_channel import _apply_body_force_2d"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "evidence": [
+        {
+          "v": 0.2160566801704511,
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "verdict.per_tier.sq_vf0.3.finest_err_pct",
+          "note": "sq vf=0.30 最细档误差 0.22% ≤3% ✓"
+        },
+        {
+          "v": 2.6283936232617267,
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "verdict.per_tier.sq_vf0.4.finest_err_pct",
+          "note": "sq vf=0.40 最细档误差 2.63% ≤3% ✓（但单调破缺）"
+        },
+        {
+          "v": 0.2424357355092388,
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "verdict.per_tier.sq_vf0.5.finest_err_pct",
+          "note": "sq vf=0.50 最细档误差 0.24% ≤3% ✓"
+        },
+        {
+          "v": 0.8756241746041393,
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "verdict.per_tier.sq_vf0.6.finest_err_pct",
+          "note": "sq vf=0.60 最细档误差 0.88% ≤3% ✓"
+        },
+        {
+          "v": 2.0988291146574634,
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "verdict.per_tier.hex_vf0.7.finest_err_pct",
+          "note": "hex vf=0.70 最细档误差 2.10% ≤3% ✓（但单调破缺 + 参考侧偏差）"
+        },
+        {
+          "v": 2.0250093124438706,
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "verdict.per_tier.hex_vf0.75.finest_err_pct",
+          "note": "hex vf=0.75 最细档误差 2.03% ≤3% ✓（但单调破缺 + 参考侧偏差）"
+        }
+      ]
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": false,
+      "mode": "abs_decrease",
+      "evidence": [
+        {
+          "v": 15.231435079977329,
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "verdict.per_tier.sq_vf0.3.errors_pct[0]",
+          "note": "sq vf=0.30 阶梯 1: 15.23%（单调成功）"
+        },
+        {
+          "v": 4.782804330150681,
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "verdict.per_tier.sq_vf0.3.errors_pct[1]",
+          "note": "sq vf=0.30 阶梯 2: 4.78%"
+        },
+        {
+          "v": 2.18439458411559,
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "verdict.per_tier.sq_vf0.3.errors_pct[2]",
+          "note": "sq vf=0.30 阶梯 3: 2.18%"
+        },
+        {
+          "v": 0.2160566801704511,
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "verdict.per_tier.sq_vf0.3.errors_pct[3]",
+          "note": "sq vf=0.30 阶梯 4: 0.22%（单调收敛成功，作为对比基准）"
+        }
+      ]
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "Sangani-Acrivos 1982 精确数值门控",
+          "f": "benchmarks/pending/permeability_fibrous/prereg.md",
+          "k": "grep:Sangani-Acrivos 1982 精确数值门控",
+          "note": "方阵主参考（9 点精确 f 表）在 prereg v1.0 冻结（2026-09-28）"
+        },
+        {
+          "v": "Gebart 横向渗透率基准",
+          "f": "benchmarks/pending/permeability_fibrous/prereg.md",
+          "k": "grep:Gebart 横向渗透率基准",
+          "note": "六角近堆积主参考（渐近式）在 prereg v1.0 冻结（2026-09-28）"
+        },
+        {
+          "v": "2026-09-28T23:08:16Z",
+          "f": "benchmarks/pending/permeability_fibrous/result.json",
+          "k": "created_utc",
+          "note": "正式跑完成时间（参考先锁后跑）"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": []
+    }
+  ],
+  "failure_attribution": {
+    "hex_reference_side": {
+      "finding": "解析 LBM 的 K 在 hex 0.70/0.75 真实低于 Gebart——误差随 gap 增大持续走负（楼梯伪影应衰减归零，参考偏差则随楼梯份额缩小显形）",
+      "staircase_decomposition": {
+        "hex_0.75": {
+          "staircase_pct_by_gap_12_24_48_72": [4.9, 2.9, 1.6, 0.5],
+          "gebart_bias_pct": 2.4
+        },
+        "hex_0.70": {
+          "staircase_pct_by_gap_12_24_48_72": [6.3, 4.4, 4.0, 1.8],
+          "gebart_bias_pct": 3.9
+        }
+      },
+      "ruled_out": [
+        "过早稳态（S2 全过，tol 1e-5/2000 steps 约束隐藏漂移 ≪0.1%）",
+        "惯性（S1: hex0.75 对 0.073% per ΔRe 0.5）"
+      ]
+    },
+    "sq_0.40_quantization_floor": {
+      "finding": "正式阶梯 +17.25/+6.92/+2.42/+2.63% 在第 3→4 档回升 ~0.2pp；gap-96 扩展案返回 −0.6475%（门内深处）→ 回升是分辨率地板处的半径量化振荡（dR/R 离散被渗透率对半径的强敏感放大），非发散趋势",
+      "extension_signed_err_pct": -0.6474881319222692
+    },
+    "S1_force_scale_sensitivity": {
+      "finding": "fs 10→20 力线性在 sq0.3 W64 破容差（0.256% > 0.1%），继承力标 Re_cell=0.5 下的真实惯性；hex0.75 对过（0.073%）。物理量、测得正确、按冻结协议如实记 FAIL（不重跑）"
+    }
+  },
+  "menu_options": {
+    "option_a_cut_cell": "M1 cut-cell 重跑方阵全阵自产精确表（prereg §3 注册变体，轨道推荐）——预算 ~8 GPU·h",
+    "option_b_gate_relax": "门放宽到 1%（vf0.6/0.7 即过；hex 误差带等比放宽）——零成本，但改判据",
+    "option_c_purchase": "购 Koch-Ladd 1997 / Wang-Sangani 1997 表——预算 ~$50-100",
+    "option_d_maintain_fail": "维持 Gebart 门接受 FAIL（零成本；参考侧偏差 +2.4%/+3.9% 已定量定源）+ sq 0.30/0.50/0.60 现成候选档（owner 决策是否拆出）"
+  },
+  "upgrade_paths": [
+    "方阵 verified 候选（现成）：sq 0.30/0.50/0.60 三主档全过（最细 0.22/0.24/0.88%，严格单调）——owner 晋级决策（整档拆出或与 0.40 合并处置）",
+    "hex 精确参考取得：(a) M1 cut-cell 重跑方阵全阵自产精确表；(b) 门放宽到 1%；(c) 购 Koch-Ladd 1997 / Wang-Sangani 1997 表；(d) 维持 Gebart 门接受 FAIL",
+    "sq 0.40：加 gap≥96 rung 或改包络收敛判据（同 permeability3d 修正规则）重判",
+    "达标即归档 PR 移 pending/permeability_fibrous → verified/permeability_fibrous"
+  ]
+}

@@ -8,10 +8,8 @@ function and class here is mirrored in :mod:`paddle_backend` and
 from __future__ import annotations
 
 import contextlib
-import copy
 import math
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -23,7 +21,6 @@ from ..core.lattice import D3Q19, LatticeDescriptor
 from ..models.contracts import ModelComposition
 from ..models.torch_execution import TorchD3Q19MRTPlan, compile_torch_d3q19_mrt_plan
 from .contracts import BackendCapabilities, BackendId, BackendSupport, DeviceSpec
-
 
 # ---------------------------------------------------------------------------
 # Constants & dtypes

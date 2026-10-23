@@ -15,20 +15,27 @@ Validation:
   - Gas pressure oscillation amplitude
 """
 
-import sys, math, time, torch
+import math
+import sys
+import time
+
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C as C3D, W as W3D, OPPOSITE as OPP
-from tensorlbm.solver3d import stream3d, collide_bgk3d
-from tensorlbm.free_surface_lbm import (
-    init_flags_from_fill,
-    _init_new,
-    GAS,
-    LIQUID,
-    INTERFACE,
-    SOLID,
-)
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import OPPOSITE as OPP
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.free_surface_lbm import (
+    GAS,
+    INTERFACE,
+    LIQUID,
+    SOLID,
+    _init_new,
+    init_flags_from_fill,
+)
+from tensorlbm.solver3d import stream3d
 
 _SHIFT_SPECS = [(a, s) for a in [0, 1, 2] for s in [-1, 1]]
 
@@ -167,7 +174,7 @@ def run_sloshing(nx=96, ny=64, nz=8, n_steps=3000, device="sdaa:0", use_gas=True
     h = fill_height
     omega_analytical = math.sqrt(gz * math.pi / L * math.tanh(math.pi * h / L))
 
-    print(f"=== Sloshing (coupled) ===", flush=True)
+    print("=== Sloshing (coupled) ===", flush=True)
     print(f"Grid: {nx}x{ny}x{nz} steps={n_steps} device={device}", flush=True)
     print(f"Water: tilted (tilt={tilt}) Gas: {'ON' if use_gas else 'OFF'}", flush=True)
     print(

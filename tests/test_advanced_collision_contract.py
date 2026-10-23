@@ -4,11 +4,9 @@ import pytest
 import torch
 
 from tensorlbm.advanced_collision_contract import (
-    WITHHELD_NO_D3Q27_CM_KERNEL,
-    WITHHELD_NO_D3Q27_KBC_KERNEL,
     CollisionKernelWithheldError,
-    collision_capability_matrix,
     collide_advanced_3d,
+    collision_capability_matrix,
 )
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.d3q27 import equilibrium27

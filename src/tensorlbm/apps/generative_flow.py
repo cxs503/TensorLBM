@@ -55,6 +55,7 @@ __all__ = [
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _to_tensor(x: Any) -> torch.Tensor:
     """Coerce ``x`` into a float32 ``torch.Tensor``."""
     if isinstance(x, torch.Tensor):
@@ -104,6 +105,7 @@ def _sinusoidal_embedding(t: torch.Tensor, dim: int) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Architecture
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class DiffusionArch:
@@ -214,6 +216,7 @@ class DenoiseCNN(nn.Module):
 # The DDPM wrapper (forward noising chain + learned reverse process)
 # ---------------------------------------------------------------------------
 
+
 class DDPM(nn.Module):
     """Denoising Diffusion Probabilistic Model wrapping a denoiser network.
 
@@ -254,16 +257,10 @@ class DDPM(nn.Module):
         self.register_buffer("alphas_cumprod", alphas_cumprod)
         self.register_buffer("alphas_cumprod_prev", alphas_cumprod_prev)
         self.register_buffer("sqrt_alphas_cumprod", torch.sqrt(alphas_cumprod))
-        self.register_buffer(
-            "sqrt_one_minus_alphas_cumprod", torch.sqrt(1.0 - alphas_cumprod)
-        )
+        self.register_buffer("sqrt_one_minus_alphas_cumprod", torch.sqrt(1.0 - alphas_cumprod))
         self.register_buffer("sqrt_recip_alphas", torch.sqrt(1.0 / alphas))
-        self.register_buffer(
-            "sqrt_recipm1_alphas_cumprod", torch.sqrt(1.0 / alphas_cumprod - 1.0)
-        )
-        posterior_variance = (
-            betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
-        )
+        self.register_buffer("sqrt_recipm1_alphas_cumprod", torch.sqrt(1.0 / alphas_cumprod - 1.0))
+        posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
         self.register_buffer("posterior_variance", posterior_variance)
 
     def _make_betas(self) -> torch.Tensor:
@@ -271,9 +268,7 @@ class DDPM(nn.Module):
             steps = self.timesteps + 1
             x = torch.linspace(0, self.timesteps, steps)
             s = 0.008
-            alphas_cumprod = torch.cos(
-                ((x / self.timesteps) + s) / (1.0 + s) * math.pi / 2.0
-            ) ** 2
+            alphas_cumprod = torch.cos(((x / self.timesteps) + s) / (1.0 + s) * math.pi / 2.0) ** 2
             alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
             betas = 1.0 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
             return torch.clamp(betas, 0.0001, 0.02)
@@ -286,7 +281,10 @@ class DDPM(nn.Module):
         return self.denoiser(x, t)
 
     def q_sample(
-        self, x0: torch.Tensor, t: torch.Tensor, noise: torch.Tensor | None = None,
+        self,
+        x0: torch.Tensor,
+        t: torch.Tensor,
+        noise: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Forward noising step: ``x_t = sqrt(abar_t) x0 + sqrt(1 - abar_t) eps``."""
         if noise is None:
@@ -401,6 +399,7 @@ def build_diffusion_model(arch: Mapping[str, Any] | DiffusionArch | None = None)
 # Persistence
 # ---------------------------------------------------------------------------
 
+
 def save_diffusion_model(model: DDPM, path: str | Path) -> Path:
     """Serialize a :class:`DDPM` (denoiser weights + schedule buffers) to disk."""
     p = Path(path)
@@ -428,6 +427,7 @@ def load_diffusion_model(path: str | Path) -> DDPM:
 # ---------------------------------------------------------------------------
 # Synthetic flow-field generators
 # ---------------------------------------------------------------------------
+
 
 def _random_vortex_field(
     nx: int,
@@ -492,6 +492,7 @@ def _run_les_snapshots(
 # The application
 # ---------------------------------------------------------------------------
 
+
 class GenerativeFlow(AI4SApplication):
     """DDPM generative model of 2-D velocity fields as an AI4S application.
 
@@ -547,7 +548,10 @@ class GenerativeFlow(AI4SApplication):
 
         if self._produce_fn is not None:
             snapshots = self._produce_fn(
-                nx=nx, ny=ny, n_snapshots=n_snapshots, seed=seed,
+                nx=nx,
+                ny=ny,
+                n_snapshots=n_snapshots,
+                seed=seed,
             )
         elif data_source == "vortex":
             snapshots = [
@@ -569,10 +573,7 @@ class GenerativeFlow(AI4SApplication):
         if not snapshots:
             raise ValueError("velocity-snapshot production returned no snapshots")
 
-        fields = [
-            torch.stack([_to_tensor(ux), _to_tensor(uy)], dim=0)
-            for ux, uy in snapshots
-        ]
+        fields = [torch.stack([_to_tensor(ux), _to_tensor(uy)], dim=0) for ux, uy in snapshots]
         first = fields[0]
         return DataProduct(
             name="2D velocity-field snapshots (generative flow)",
@@ -690,11 +691,11 @@ class GenerativeFlow(AI4SApplication):
                 generated = model.sample_from(x_t.to(next(model.parameters()).device))
             out = generated[0] if single else generated
         else:
-            n_samples, channels, ny, nx, device, seed = _resolve_generation_spec(
-                sample, model
-            )
+            n_samples, channels, ny, nx, device, seed = _resolve_generation_spec(sample, model)
             generated = model.sample(
-                (n_samples, channels, ny, nx), device=device, seed=seed,
+                (n_samples, channels, ny, nx),
+                device=device,
+                seed=seed,
             )
             out = generated[0] if n_samples == 1 else generated
 
@@ -713,6 +714,7 @@ class GenerativeFlow(AI4SApplication):
 # ---------------------------------------------------------------------------
 # Default DDPM training loop
 # ---------------------------------------------------------------------------
+
 
 def _train_ddpm(
     dataset: Mapping[str, Any],
@@ -763,6 +765,7 @@ def _train_ddpm(
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _parse_shape(shape: Any, default_channels: int) -> tuple[int, int, int]:
     """Parse a ``(ny, nx)`` / ``(C, ny, nx)`` / scalar shape into ``(C, ny, nx)``."""
     if isinstance(shape, int):
@@ -776,7 +779,8 @@ def _parse_shape(shape: Any, default_channels: int) -> tuple[int, int, int]:
 
 
 def _resolve_generation_spec(
-    sample: Any, model: DDPM,
+    sample: Any,
+    model: DDPM,
 ) -> tuple[int, int, int, int, torch.device, int]:
     """Resolve a generation request into ``(n, C, ny, nx, device, seed)``."""
     denoiser = model.denoiser

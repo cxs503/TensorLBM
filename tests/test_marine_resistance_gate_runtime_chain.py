@@ -13,7 +13,6 @@ from tensorlbm.marine_reference_manifest import build_marine_reference_manifest
 from tensorlbm.marine_resistance_artifact import build_marine_resistance_artifact
 from tensorlbm.marine_run_provenance import build_marine_run_provenance
 
-
 ROOT = Path(__file__).parents[1]
 
 

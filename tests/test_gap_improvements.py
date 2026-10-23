@@ -9,9 +9,7 @@ These tests run without FastAPI and exercise the pure-Python/PyTorch modules:
 
 from __future__ import annotations
 
-import pytest
 import torch
-
 
 # ---------------------------------------------------------------------------
 # synthetic_inflow
@@ -133,7 +131,6 @@ def test_viscous_sponge_2d_conserves_shape() -> None:
     from tensorlbm import (
         apply_viscous_sponge_2d,
         equilibrium,
-        macroscopic,
         sponge_profile,
     )
 

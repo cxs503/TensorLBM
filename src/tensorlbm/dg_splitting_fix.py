@@ -10,8 +10,10 @@ at high Reynolds numbers.
 """
 
 import math
+
 import torch
-from .dg_advection import collide_bgk_dg, _Ops
+
+from .dg_advection import _Ops, collide_bgk_dg
 
 
 def dg_lbm_step_band_split(

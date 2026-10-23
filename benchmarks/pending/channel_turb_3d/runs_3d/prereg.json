@@ -1,0 +1,75 @@
+{
+  "schema": "prereg-v1",
+  "case": "channel_turb_3d",
+  "mission": "m186",
+  "timestamp": "2026-10-23T10:00:00Z",
+  "physical_problem": "3D periodic wall-resolved channel flow at Re_tau=180, body-force driven, compared against Moser-Kim-Mansour (1999) DNS",
+  "reference": {
+    "source": "Moser, Kim & Mansour (1999), Phys. Fluids 11, 943",
+    "re_tau": 180.0,
+    "file": "benchmarks/pending/channel_turb/dns_ref/mkm180.csv"
+  },
+  "observable": {
+    "primary": "u+ profile RMS error vs DNS in y+ ∈ [30, 100]",
+    "threshold_pct": 3.0,
+    "secondary": [
+      "Reynolds stress -u'v'+ RMS error vs DNS",
+      "centerline velocity U_cl+ vs DNS",
+      "friction velocity u_tau+ consistency"
+    ]
+  },
+  "grid_levels": [
+    {
+      "level": "L1",
+      "nx": 64,
+      "ny": 32,
+      "nz": 32,
+      "Lx_over_h": 2.06,
+      "Lz_over_h": 1.03,
+      "dy_plus": 5.81,
+      "expected": "under-resolved (domain too small), but fast probe for transition"
+    },
+    {
+      "level": "L2",
+      "nx": 128,
+      "ny": 48,
+      "nz": 64,
+      "Lx_over_h": 4.13,
+      "Lz_over_h": 2.06,
+      "dy_plus": 3.87,
+      "expected": "half DNS size, should capture large-scale structures"
+    },
+    {
+      "level": "L3",
+      "nx": 256,
+      "ny": 64,
+      "nz": 128,
+      "Lx_over_h": 8.26,
+      "Lz_over_h": 4.13,
+      "dy_plus": 2.90,
+      "expected": "near DNS size (MKM: Lx/h=12.6, Lz/h=4.2), target accuracy"
+    }
+  ],
+  "numerics": {
+    "lattice": "D3Q19",
+    "collision": "natural_kbc",
+    "initialization": "spectral_solenoidal",
+    "u_tau": 0.003,
+    "re_tau": 180.0,
+    "boundary": "periodic(x,z) + bounce-back(y±) + Guo body force"
+  },
+  "budget": {
+    "steps_per_level": 50000,
+    "warmup": 20000,
+    "statistics_window": 30000,
+    "sample_interval": 10,
+    "gpu": "GPU5",
+    "estimated_gpu_hours_per_level": 2.0
+  },
+  "decision_criteria": {
+    "promote": "≥2 grid levels with u+ RMS error ≤3% AND monotone convergence",
+    "terminal": "no transition (Reynolds stress ≈0) OR error >3% non-monotone OR instability"
+  },
+  "frozen": true,
+  "sha256": "4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb"
+}

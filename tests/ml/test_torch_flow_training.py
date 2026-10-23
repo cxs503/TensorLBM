@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import ast
-from dataclasses import replace
-from hashlib import sha256
 import io
 import json
+from dataclasses import replace
+from hashlib import sha256
 from pathlib import Path
 from types import MappingProxyType
 
@@ -256,7 +256,6 @@ def test_writer_ast_delegates_to_existing_components_without_other_training_stac
         for node in ast.walk(tree)
         if isinstance(node, ast.Call) and isinstance(node.func, (ast.Name, ast.Attribute))
     }
-    forbidden_nodes = (ast.For, ast.While, ast.ClassDef)
     assert "materialize_torch_velocity_snapshots" in calls
     assert "train_flow_transformer_self_supervised" in calls
     assert not any(token in source.lower() for token in ("paddle", "mindspore", "cuda", "sdaa"))

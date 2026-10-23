@@ -24,7 +24,7 @@ from __future__ import annotations
 import csv
 import json
 import math
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal
 
@@ -32,15 +32,14 @@ import matplotlib
 import torch
 
 from .boundaries3d import bounce_back_cells_3d, free_slip_cells_3d
-from .d3q19 import equilibrium3d, macroscopic3d
+from .d3q19 import equilibrium3d
 from .free_surface_lbm import (
+    INTERFACE,
+    LIQUID,
     free_surface_step,
     init_fill_rectangular,
     init_flags_from_fill,
     init_mass_from_fill,
-    LIQUID,
-    INTERFACE,
-    GAS,
 )
 from .multiphase3d import (
     collide_cg_mrt_3d,
@@ -53,13 +52,11 @@ from .multiphase3d import (
 )
 from .solver3d import stream3d
 from .utils import (
-    flow_step_image_path,
     prepare_run_dir,
     resolve_device,
 )
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -525,8 +522,8 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
         f"rho_h={config.rho_heavy} rho_l={config.rho_light}  "
         f"free_slip={config.free_slip_y}"
         + (f"  C_s={config.C_s}" if config.collision == "mrt_smag" else "")
-        + (f"  guo" if config.use_guo else "")
-        + (f"  hydro" if config.hydrostatic_init else "")
+        + ("  guo" if config.use_guo else "")
+        + ("  hydro" if config.hydrostatic_init else "")
         + f"  steps={config.n_steps}"
     )
     print(f"Run directory: {run_dir}")

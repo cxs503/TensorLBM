@@ -15,13 +15,13 @@ import math
 
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.ship_cad import build_hull_mask, ShipHullType
-from tensorlbm.suboff_resistance import _ittc57_friction_coefficient, _voxel_wetted_area
 from tensorlbm.boundaries3d import far_field_bc_3d
-from tensorlbm.wall_model import wall_function_3d
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.ship_cad import build_hull_mask
 from tensorlbm.solver3d import correct_mass3d, stream3d
+from tensorlbm.suboff_resistance import _ittc57_friction_coefficient, _voxel_wetted_area
 from tensorlbm.turbulence import collide_smagorinsky_mrt3d
+from tensorlbm.wall_model import wall_function_3d
 
 
 def run(

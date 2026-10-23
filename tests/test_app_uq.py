@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import torch
 import pytest
+import torch
 
 from tensorlbm.apps.base import DataProduct, TrainingResult
 from tensorlbm.apps.uncertainty_quantification import (
@@ -24,10 +24,10 @@ from tensorlbm.apps.uncertainty_quantification import (
 from tensorlbm.ml.serving import FAMILY_UQ, InferenceService, ModelRegistry
 from tensorlbm.ml.training_job import TrainingJobRegistry
 
-
 # ---------------------------------------------------------------------------
 # Mock collaborators
 # ---------------------------------------------------------------------------
+
 
 def _mock_velocity_snapshots(nx: int, ny: int, seed: int):
     """Deterministic turbulent-looking velocity fields (no solver run)."""
@@ -70,6 +70,7 @@ def app():
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 def test_class_identity():
     assert UncertaintyQuantification.name == "uncertainty_quantification"

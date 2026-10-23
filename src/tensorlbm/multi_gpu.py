@@ -49,18 +49,23 @@ References
 Succi S., et al. (2001) "Lattice Boltzmann for distributed and large-scale
 simulations." *Comput. Phys. Commun.* 134(3).
 """
+
 from __future__ import annotations
 
+import hashlib
 import os
 from dataclasses import dataclass, field
 from typing import Callable
 
 import torch
+import torch.distributed as dist
 
+from .d3q19 import C
 
 # ---------------------------------------------------------------------------
 # Domain decomposition
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DomainDecomposition:
@@ -73,6 +78,7 @@ class DomainDecomposition:
         slabs:      List of ``(x_start, x_end)`` tuples for each device.
                     Automatically computed from *devices* and *nx_global*.
     """
+
     devices: list[str]
     nx_global: int
     overlap: int = 1
@@ -85,7 +91,7 @@ class DomainDecomposition:
     def _compute_slabs(self) -> list[tuple[int, int]]:
         n = len(self.devices)
         base = self.nx_global // n
-        rem  = self.nx_global % n
+        rem = self.nx_global % n
         slabs = []
         start = 0
         for i in range(n):
@@ -110,6 +116,7 @@ class DomainDecomposition:
 # Halo exchange
 # ---------------------------------------------------------------------------
 
+
 def halo_exchange_2d(
     slabs: list[torch.Tensor],
     decomp: DomainDecomposition,
@@ -117,11 +124,11 @@ def halo_exchange_2d(
     """Exchange one-cell ghost layers between adjacent D2Q9 slabs."""
     ov = decomp.overlap
     for i in range(len(slabs) - 1):
-        right_of_i     = slabs[i][:, :, -ov - 1:-1]
+        right_of_i = slabs[i][:, :, -ov - 1 : -1]
         left_ghost_ip1 = slabs[i + 1][:, :, :ov]
         left_ghost_ip1.copy_(right_of_i.to(left_ghost_ip1.device))
 
-        left_of_ip1  = slabs[i + 1][:, :, ov:2 * ov]
+        left_of_ip1 = slabs[i + 1][:, :, ov : 2 * ov]
         right_ghost_i = slabs[i][:, :, -ov:]
         right_ghost_i.copy_(left_of_ip1.to(right_ghost_i.device))
     return slabs
@@ -138,11 +145,11 @@ def halo_exchange_3d(
     """
     ov = decomp.overlap
     for i in range(len(slabs) - 1):
-        r = slabs[i][:, :, :, -ov - 1:-1]
+        r = slabs[i][:, :, :, -ov - 1 : -1]
         lg = slabs[i + 1][:, :, :, :ov]
         lg.copy_(r.to(lg.device))
 
-        l_ = slabs[i + 1][:, :, :, ov:2 * ov]
+        l_ = slabs[i + 1][:, :, :, ov : 2 * ov]
         rg = slabs[i][:, :, :, -ov:]
         rg.copy_(l_.to(rg.device))
     return slabs
@@ -151,6 +158,7 @@ def halo_exchange_3d(
 # ---------------------------------------------------------------------------
 # Far-field BC with pre-computed feq cache (multi-GPU safe)
 # ---------------------------------------------------------------------------
+
 
 def build_feq_cache_d3q19(nz, ny, nx, u_in, device, uy=0.0, uz=0.0):
     """Pre-compute feq slices for D3Q19 far-field BC (call once per slab).
@@ -163,16 +171,20 @@ def build_feq_cache_d3q19(nz, ny, nx, u_in, device, uy=0.0, uz=0.0):
     # Inlet: x=0 plane (nz, ny)
     rho_in = torch.ones(nz, ny, dtype=torch.float32, device=device)
     feq_in = equilibrium3d(
-        rho_in, torch.full_like(rho_in, u_in),
-        torch.full_like(rho_in, uy), torch.full_like(rho_in, uz),
+        rho_in,
+        torch.full_like(rho_in, u_in),
+        torch.full_like(rho_in, uy),
+        torch.full_like(rho_in, uz),
         device=device,
     )[:, :, :, 0]  # (19, nz, ny)
 
     # y- lateral: y=0 plane (nz, nx)
     rho_ym = torch.ones(nz, nx, dtype=torch.float32, device=device)
     feq_ym = equilibrium3d(
-        rho_ym, torch.full_like(rho_ym, u_in),
-        torch.full_like(rho_ym, uy), torch.full_like(rho_ym, uz),
+        rho_ym,
+        torch.full_like(rho_ym, u_in),
+        torch.full_like(rho_ym, uy),
+        torch.full_like(rho_ym, uz),
         device=device,
     )[:, :, 0, :]  # (19, nz, nx)
     feq_yp = feq_ym.clone()
@@ -180,8 +192,10 @@ def build_feq_cache_d3q19(nz, ny, nx, u_in, device, uy=0.0, uz=0.0):
     # z- lateral: z=0 plane (ny, nx)
     rho_zm = torch.ones(ny, nx, dtype=torch.float32, device=device)
     feq_zm = equilibrium3d(
-        rho_zm, torch.full_like(rho_zm, u_in),
-        torch.full_like(rho_zm, uy), torch.full_like(rho_zm, uz),
+        rho_zm,
+        torch.full_like(rho_zm, u_in),
+        torch.full_like(rho_zm, uy),
+        torch.full_like(rho_zm, uz),
         device=device,
     )[:, 0, :, :]  # (19, ny, nx)
     feq_zp = feq_zm.clone()
@@ -195,23 +209,29 @@ def build_feq_cache_d3q27(nz, ny, nx, u_in, device, uy=0.0, uz=0.0):
 
     rho_in = torch.ones(nz, ny, dtype=torch.float32, device=device)
     feq_in = equilibrium27(
-        rho_in, torch.full_like(rho_in, u_in),
-        torch.full_like(rho_in, uy), torch.full_like(rho_in, uz),
+        rho_in,
+        torch.full_like(rho_in, u_in),
+        torch.full_like(rho_in, uy),
+        torch.full_like(rho_in, uz),
         device=device,
     )[:, :, :, 0]
 
     rho_ym = torch.ones(nz, nx, dtype=torch.float32, device=device)
     feq_ym = equilibrium27(
-        rho_ym, torch.full_like(rho_ym, u_in),
-        torch.full_like(rho_ym, uy), torch.full_like(rho_ym, uz),
+        rho_ym,
+        torch.full_like(rho_ym, u_in),
+        torch.full_like(rho_ym, uy),
+        torch.full_like(rho_ym, uz),
         device=device,
     )[:, :, 0, :]
     feq_yp = feq_ym.clone()
 
     rho_zm = torch.ones(ny, nx, dtype=torch.float32, device=device)
     feq_zm = equilibrium27(
-        rho_zm, torch.full_like(rho_zm, u_in),
-        torch.full_like(rho_zm, uy), torch.full_like(rho_zm, uz),
+        rho_zm,
+        torch.full_like(rho_zm, u_in),
+        torch.full_like(rho_zm, uy),
+        torch.full_like(rho_zm, uz),
         device=device,
     )[:, 0, :, :]
     feq_zp = feq_zm.clone()
@@ -232,7 +252,7 @@ def far_field_bc_cached(f, feq_cache, has_left=True, has_right=True):
     feq_in, feq_ym, feq_yp, feq_zm, feq_zp = feq_cache
 
     if has_left:
-        f[:, :, :, 0] = feq_in       # inlet
+        f[:, :, :, 0] = feq_in  # inlet
     if has_right:
         f[:, :, :, -1] = f[:, :, :, -2]  # outlet (zero gradient)
 
@@ -248,6 +268,7 @@ def far_field_bc_cached(f, feq_cache, has_left=True, has_right=True):
 # ---------------------------------------------------------------------------
 # Multi-GPU 2-D solver
 # ---------------------------------------------------------------------------
+
 
 class MultiGPUSolver2D:
     """Multi-GPU D2Q9 LBM solver using x-axis domain decomposition.
@@ -285,9 +306,7 @@ class MultiGPUSolver2D:
                 nx_global=nx,
                 overlap=decomp.overlap,
             )
-        assert decomp.nx_global == nx, (
-            f"decomp.nx_global ({decomp.nx_global}) != nx ({nx})"
-        )
+        assert decomp.nx_global == nx, f"decomp.nx_global ({decomp.nx_global}) != nx ({nx})"
         self.decomp = decomp
         self.ny = ny
         self._step_count = 0
@@ -325,9 +344,9 @@ class MultiGPUSolver2D:
         f_out = torch.zeros((q, ny, nx), dtype=self.slabs[0].dtype)
         for slab, (x0, x1) in zip(self.slabs, self._x_ranges):
             x0g_local = ov if x0 > 0 else 0
-            x1g_local = slab.shape[2] - ov if x1 < nx else slab.shape[2]
+            slab.shape[2] - ov if x1 < nx else slab.shape[2]
             local_width = x1 - x0
-            f_out[:, :, x0:x1] = slab[:, :, x0g_local:x0g_local + local_width].cpu()
+            f_out[:, :, x0:x1] = slab[:, :, x0g_local : x0g_local + local_width].cpu()
         return f_out
 
     @property
@@ -338,6 +357,7 @@ class MultiGPUSolver2D:
 # ---------------------------------------------------------------------------
 # Multi-GPU 3-D solver
 # ---------------------------------------------------------------------------
+
 
 class MultiGPUSolver3D:
     """Multi-GPU D3Q19/D3Q27 LBM solver using x-axis domain decomposition.
@@ -519,14 +539,17 @@ class MultiGPUSolver3D:
         # Import collision functions lazily to avoid circular imports
         if collision == "bgk":
             from tensorlbm.solver3d import collide_bgk3d as _collide
+
             def collide_fn(f):
                 return _collide(f, tau)
         elif collision == "mrt":
             from tensorlbm.solver3d import collide_mrt3d as _collide
+
             def collide_fn(f):
                 return _collide(f, tau)
         elif collision == "mrt_smag":
             from tensorlbm.turbulence import collide_smagorinsky_mrt3d as _collide
+
             def collide_fn(f):
                 return _collide(f, tau=tau, C_s=cs_smag)
         else:
@@ -563,7 +586,8 @@ class MultiGPUSolver3D:
         # Step 7: far-field BC (with has_left/has_right)
         for i in range(n):
             self.slabs[i] = far_field_bc_cached(
-                self.slabs[i], self._slab_feq_caches[i],
+                self.slabs[i],
+                self._slab_feq_caches[i],
                 has_left=self._slab_has_left[i],
                 has_right=self._slab_has_right[i],
             )
@@ -572,6 +596,7 @@ class MultiGPUSolver3D:
         if mass_correction_interval > 0 and im is not None and step % mass_correction_interval == 0:
             f_gathered = self.gather()
             from tensorlbm.solver3d import correct_mass3d
+
             f_gathered = correct_mass3d(f_gathered, im)
             # Re-scatter corrected field (including ghost cells)
             ov = self.decomp.overlap
@@ -607,7 +632,7 @@ class MultiGPUSolver3D:
         for slab, (x0, x1) in zip(self.slabs, self._x_ranges):
             x0g_local = ov if x0 > 0 else 0
             local_width = x1 - x0
-            f_out[:, :, :, x0:x1] = slab[:, :, :, x0g_local:x0g_local + local_width].cpu()
+            f_out[:, :, :, x0:x1] = slab[:, :, :, x0g_local : x0g_local + local_width].cpu()
         return f_out
 
     @property
@@ -618,6 +643,7 @@ class MultiGPUSolver3D:
 # ---------------------------------------------------------------------------
 # Convenience: auto-detect and use all available GPUs
 # ---------------------------------------------------------------------------
+
 
 def auto_decompose(
     f_global: torch.Tensor,
@@ -641,6 +667,7 @@ def auto_decompose(
 
     nx = f_global.shape[-1]
     return DomainDecomposition(devices=devices, nx_global=nx)
+
 
 class MultiDeviceSolver3D:
     """Device-agnostic multi-device D3Q19 LBM solver via x-axis decomposition.
@@ -834,7 +861,6 @@ class MultiDeviceSolver3D:
 # ---------------------------------------------------------------------------
 # Convenience: auto-detect and use all available GPUs
 # ---------------------------------------------------------------------------
-
 
 
 class D3Q19GlooTransport:

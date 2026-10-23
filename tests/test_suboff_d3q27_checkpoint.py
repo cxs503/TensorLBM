@@ -1,12 +1,15 @@
 """CPU TDD for D3Q27 restart equivalence."""
 
 from __future__ import annotations
+
 import importlib.util
 from pathlib import Path
+
 import pytest
 import torch
-from tensorlbm.d3q27 import equilibrium27
+
 from tensorlbm.cumulant import collide_cumulant_d3q27
+from tensorlbm.d3q27 import equilibrium27
 
 
 @pytest.fixture(scope="module")

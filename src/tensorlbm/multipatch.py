@@ -17,14 +17,11 @@ a sub-step, communicating via L0 (restrict-update-inject cycle).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable
 
 import torch
-import torch.nn.functional as F
 
 from .refinement import BoxRegion, _coarse_to_fine_3d, _fine_to_coarse_3d
-from .surface_refinement import surface_shell_mask, refined_bounding_box, _make_wall_3d
-
+from .surface_refinement import _make_wall_3d
 
 # ---------------------------------------------------------------------------
 # Proper 3D injection (faces + edges + corners)

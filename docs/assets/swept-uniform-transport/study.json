@@ -1,0 +1,75 @@
+{
+  "schema": "tensorlbm.uniform-swept-study/1",
+  "source_sha256": {
+    "src/tensorlbm/swept_uniform_transport_2d.py": "b44e2afeee4a8c5fce88501546d142bd4fb6dd53296c79f11c31474c53a53a85",
+    "src/tensorlbm/swept_rectangle_geometry_2d.py": "1b773d692a0a08ef204e29c76e8af6cfac39608ac957ece85d2b98c1c482381f",
+    "src/tensorlbm/moving_boundary_2d.py": "0d66e0afc75d84df3da2eeb0a003e90c4ed973dad2c6d58ce3b65fed40d10059",
+    "src/tensorlbm/d2q9.py": "1065c3093e07dfa186d729412c4081c7e4ba0925db223e8083ff007d457adf4d",
+    "examples/swept_uniform_transport/run.py": "99b55728d1339a27ae7532f3d425b21a44025b49193b5e963e83798cfadc28e2"
+  },
+  "cases": [
+    {
+      "case": "static",
+      "artifact": "static.json.gz",
+      "sha256": "c06be8da26301bf41d664885cf8cece4e2b8e58ac8af2c1c897157acca27b17c",
+      "restart_bitwise": true,
+      "birth_cells": 0,
+      "death_cells": 0,
+      "max_density_relative_error": 9.094947017729283e-16,
+      "max_velocity_error_m_s": 5.405033146201419e-16,
+      "max_momentum_balance_residual_Ns": 5.3637649877202875e-15,
+      "total_body_impulse_Ns": [
+        -1.457167719820518e-16,
+        3.469446951953614e-17
+      ]
+    },
+    {
+      "case": "diagonal",
+      "artifact": "diagonal.json.gz",
+      "sha256": "d4976a1e09210e4604391d92ce045a17394dcd2ce58175077112ce753dbd3a77",
+      "restart_bitwise": true,
+      "birth_cells": 6,
+      "death_cells": 2,
+      "max_density_relative_error": 9.549694368615747e-15,
+      "max_velocity_error_m_s": 5.856426454897701e-15,
+      "max_momentum_balance_residual_Ns": 1.2309597785531423e-14,
+      "total_body_impulse_Ns": [
+        -4.899726457896492e-15,
+        1.7937040741600185e-15
+      ]
+    },
+    {
+      "case": "reverse",
+      "artifact": "reverse.json.gz",
+      "sha256": "b2bbb4f9f3aecd71cf10e02508ca6a90395f4caf977aecea7d16183c5d6bb103",
+      "restart_bitwise": true,
+      "birth_cells": 5,
+      "death_cells": 3,
+      "max_density_relative_error": 4.592948243953288e-14,
+      "max_velocity_error_m_s": 4.7579995499091865e-14,
+      "max_momentum_balance_residual_Ns": 7.526965162263366e-15,
+      "total_body_impulse_Ns": [
+        3.969047313034935e-15,
+        1.7888468484272835e-14
+      ]
+    },
+    {
+      "case": "time-half",
+      "artifact": "time-half.json.gz",
+      "sha256": "654c2791d5378fde1c46614e8c39d00ea058dddea9c84d74e9c80784e0d9145a",
+      "restart_bitwise": true,
+      "birth_cells": 6,
+      "death_cells": 2,
+      "max_density_relative_error": 6.616573955398052e-14,
+      "max_velocity_error_m_s": 1.1310397063368782e-14,
+      "max_momentum_balance_residual_Ns": 1.0571404862602662e-14,
+      "total_body_impulse_Ns": [
+        -5.287437154777308e-15,
+        2.2013640910145682e-15
+      ]
+    }
+  ],
+  "physical_accuracy_qualified": false,
+  "arbitrary_state_transport": false,
+  "scope": "uniform co-moving equilibrium, shared-face FV flux plus diffuse moving-wall flux, no BGK or nonuniform solution"
+}

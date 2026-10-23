@@ -11,12 +11,13 @@ not a numerical approximation during drag calculation.
 Usage:
   # Preprocessing (once)
   mesh = SurfaceMesh.from_cylinder(solid, cx, cy, R)
-  
+
   # During simulation (every step)
   cd_p, cl = drag_pressure_integration(f, mesh, dpS)
   cd_f = drag_friction_integration(f, mesh, dpS, nu)
   cd_tot, cd_p, cd_f = drag_total(f, mesh, dpS, nu)
 """
+
 from __future__ import annotations
 
 import math
@@ -37,22 +38,22 @@ def _macroscopic(f):
 
 class SurfaceMesh:
     """Precomputed surface mesh with normals.
-    
+
     Attributes:
         near: Near-wall boolean mask (nz, ny, nx)
         nx_n, ny_n, nz_n: Surface normal components (nz, ny, nx), normalized
         dA: Surface area element per cell (nz, ny, nx), default 1.0
     """
-    
+
     def __init__(self, near, nx_n, ny_n, nz_n, dA=None):
         self.near = near
         self.nx_n = nx_n
         self.ny_n = ny_n
         self.nz_n = nz_n
         self.dA = dA if dA is not None else torch.ones_like(near, dtype=torch.float32)
-    
+
     @classmethod
-    def from_cylinder(cls, solid, near, cx, cy, R, axis='z', cz=None):
+    def from_cylinder(cls, solid, near, cx, cy, R, axis="z", cz=None):
         """Analytical normal for 2D extruded cylinder.
 
         The cylinder cross-section lies in the plane perpendicular to *axis*;
@@ -69,29 +70,32 @@ class SurfaceMesh:
         nz, ny, nx = solid.shape
         device = solid.device
 
-        if axis == 'z':
+        if axis == "z":
             yy, xx = torch.meshgrid(
                 torch.arange(ny, device=device, dtype=torch.float32),
                 torch.arange(nx, device=device, dtype=torch.float32),
-                indexing='ij')
+                indexing="ij",
+            )
             nx_n = ((xx - cx) / R).unsqueeze(0).expand(nz, ny, nx)
             ny_n = ((yy - cy) / R).unsqueeze(0).expand(nz, ny, nx)
             nz_n = torch.zeros_like(nx_n)
-        elif axis == 'y':
+        elif axis == "y":
             cz_c = cz if cz is not None else nz / 2.0
             zz, xx = torch.meshgrid(
                 torch.arange(nz, device=device, dtype=torch.float32),
                 torch.arange(nx, device=device, dtype=torch.float32),
-                indexing='ij')
+                indexing="ij",
+            )
             nx_n = ((xx - cx) / R).unsqueeze(1).expand(nz, ny, nx)
             nz_n = ((zz - cz_c) / R).unsqueeze(1).expand(nz, ny, nx)
             ny_n = torch.zeros_like(nx_n)
-        elif axis == 'x':
+        elif axis == "x":
             cz_c = cz if cz is not None else nz / 2.0
             zz, yy = torch.meshgrid(
                 torch.arange(nz, device=device, dtype=torch.float32),
                 torch.arange(ny, device=device, dtype=torch.float32),
-                indexing='ij')
+                indexing="ij",
+            )
             ny_n = ((yy - cy) / R).unsqueeze(2).expand(nz, ny, nx)
             nz_n = ((zz - cz_c) / R).unsqueeze(2).expand(nz, ny, nx)
             nx_n = torch.zeros_like(ny_n)
@@ -103,11 +107,11 @@ class SurfaceMesh:
         ny_n = ny_n / norm * near.float()
         nz_n = nz_n / norm * near.float()
         return cls(near, nx_n, ny_n, nz_n)
-    
+
     @classmethod
     def from_sphere(cls, solid, near, cx, cy, cz, R):
         """Analytical normal for 3D sphere.
-        
+
         n = ((x-cx)/R, (y-cy)/R, (z-cz)/R) at each near-wall cell.
         dA = 1.0 (default; 1/max|n| overestimates staircase area).
         """
@@ -117,7 +121,8 @@ class SurfaceMesh:
             torch.arange(nz, device=device, dtype=torch.float32),
             torch.arange(ny, device=device, dtype=torch.float32),
             torch.arange(nx, device=device, dtype=torch.float32),
-            indexing='ij')
+            indexing="ij",
+        )
         nx_n = (xx - cx) / R
         ny_n = (yy - cy) / R
         nz_n = (zz - cz) / R
@@ -126,7 +131,7 @@ class SurfaceMesh:
         ny_n = ny_n / norm * near.float()
         nz_n = nz_n / norm * near.float()
         return cls(near, nx_n, ny_n, nz_n)
-    
+
     @classmethod
     def from_suboff(cls, solid, near, cx, cy, cz, length, radius, config=None):
         """Analytical outward normal for SUBOFF axisymmetric bare hull.
@@ -165,7 +170,8 @@ class SurfaceMesh:
             torch.arange(nz, device=device, dtype=torch.float32),
             torch.arange(ny, device=device, dtype=torch.float32),
             torch.arange(nx, device=device, dtype=torch.float32),
-            indexing='ij')
+            indexing="ij",
+        )
 
         x_bow = cx - length / 2.0
         xi_t = (xx - x_bow) / length  # 0 at bow, 1 at stern
@@ -178,13 +184,12 @@ class SurfaceMesh:
         dr_dxi = (r_plus - r_minus) / (2.0 * eps)
 
         # dr/dx in lattice units = (dr/dxi) * R_max / L
-        dr_dx = torch.tensor(
-            dr_dxi * radius / length, device=device, dtype=torch.float32)
+        dr_dx = torch.tensor(dr_dxi * radius / length, device=device, dtype=torch.float32)
 
         # Azimuthal angle components
         dy = yy - cy
         dz = zz - cz
-        r_cell = torch.sqrt(dy ** 2 + dz ** 2).clamp(min=1e-10)
+        r_cell = torch.sqrt(dy**2 + dz**2).clamp(min=1e-10)
         cos_theta = dy / r_cell
         sin_theta = dz / r_cell
 
@@ -203,7 +208,7 @@ class SurfaceMesh:
         ny_n = torch.where(outside, torch.zeros_like(ny_n), ny_n)
         nz_n = torch.where(outside, torch.zeros_like(nz_n), nz_n)
 
-        norm = torch.sqrt(nx_n ** 2 + ny_n ** 2 + nz_n ** 2).clamp(min=1e-10)
+        norm = torch.sqrt(nx_n**2 + ny_n**2 + nz_n**2).clamp(min=1e-10)
         near_f = near.float()
         nx_n = nx_n / norm * near_f
         ny_n = ny_n / norm * near_f
@@ -213,7 +218,7 @@ class SurfaceMesh:
     @classmethod
     def from_ellipsoid(cls, solid, near, cx, cy, cz, a, b, c):
         """Analytical normal for 3D ellipsoid.
-        
+
         Ellipsoid: (x/a)² + (y/b)² + (z/c)² = 1
         Normal: n = (x/a², y/b², z/c²) / |n|
         """
@@ -223,7 +228,8 @@ class SurfaceMesh:
             torch.arange(nz, device=device, dtype=torch.float32),
             torch.arange(ny, device=device, dtype=torch.float32),
             torch.arange(nx, device=device, dtype=torch.float32),
-            indexing='ij')
+            indexing="ij",
+        )
         nx_n = (xx - cx) / (a * a)
         ny_n = (yy - cy) / (b * b)
         nz_n = (zz - cz) / (c * c)
@@ -232,7 +238,7 @@ class SurfaceMesh:
         ny_n = ny_n / norm * near.float()
         nz_n = nz_n / norm * near.float()
         return cls(near, nx_n, ny_n, nz_n)
-    
+
     @classmethod
     def from_naca(cls, solid, near, x_le, y_c, chord, m=0.04, p=0.40, t=0.12):
         """Analytical normal for NACA 4-digit airfoil (2D extruded).
@@ -267,7 +273,8 @@ class SurfaceMesh:
             torch.arange(nz, device=device, dtype=torch.float32),
             torch.arange(ny, device=device, dtype=torch.float32),
             torch.arange(nx, device=device, dtype=torch.float32),
-            indexing='ij')
+            indexing="ij",
+        )
         # NACA x coordinate (normalized 0-1)
         xc = (xx - x_le) / chord
         xc = xc.clamp(min=1e-6, max=1.0)
@@ -276,24 +283,28 @@ class SurfaceMesh:
         # y_camber_lattice = y_c + camber(x) * chord
         camber = torch.where(
             xc < p,
-            (m / (p ** 2)) * (2.0 * p * xc - xc ** 2),
-            (m / ((1.0 - p) ** 2)) * ((1.0 - 2.0 * p) + 2.0 * p * xc - xc ** 2),
+            (m / (p**2)) * (2.0 * p * xc - xc**2),
+            (m / ((1.0 - p) ** 2)) * ((1.0 - 2.0 * p) + 2.0 * p * xc - xc**2),
         )
         y_camber_lattice = y_c + camber * chord
 
         # --- Thickness derivative dy_t/dx ---
-        dydx_t = 5.0 * t * (
-            0.2969 / (2.0 * torch.sqrt(xc))
-            - 0.1260
-            - 0.7032 * xc
-            + 0.8529 * xc ** 2
-            - 0.4060 * xc ** 3
+        dydx_t = (
+            5.0
+            * t
+            * (
+                0.2969 / (2.0 * torch.sqrt(xc))
+                - 0.1260
+                - 0.7032 * xc
+                + 0.8529 * xc**2
+                - 0.4060 * xc**3
+            )
         )
 
         # --- Camber line derivative dy_camber/dx ---
         dydx_camber = torch.where(
             xc < p,
-            (m / (p ** 2)) * (2.0 * p - 2.0 * xc),
+            (m / (p**2)) * (2.0 * p - 2.0 * xc),
             (m / ((1.0 - p) ** 2)) * (2.0 * p - 2.0 * xc),
         )
 
@@ -314,10 +325,11 @@ class SurfaceMesh:
         ny_n = ny_n / norm * near.float()
         nz_n = nz_n / norm * near.float()
         return cls(near, nx_n, ny_n, nz_n)
-    
+
     @classmethod
-    def from_stl(cls, solid, near, vertices, faces, face_normals, origin, spacing,
-                 dA_method="none"):
+    def from_stl(
+        cls, solid, near, vertices, faces, face_normals, origin, spacing, dA_method="none"
+    ):
         """STL-derived surface normals for arbitrary geometry.
 
         Thin wrapper around :func:`tensorlbm.stl_geometry.SurfaceMesh_from_stl`
@@ -333,55 +345,61 @@ class SurfaceMesh:
         from .stl_geometry import SurfaceMesh_from_stl
 
         return SurfaceMesh_from_stl(
-            solid, near, vertices, faces, face_normals, origin, spacing,
+            solid,
+            near,
+            vertices,
+            faces,
+            face_normals,
+            origin,
+            spacing,
             dA_method=dA_method,
         )
 
     @classmethod
     def from_gradient(cls, solid, near):
         """Generic normal from gradient of solid mask (for arbitrary geometry).
-        
+
         dA = |∇solid| (gradient magnitude) accounts for surface orientation:
         face-aligned dA=1, diagonal dA=√2, curved dA varies.
         """
         nx_grad = torch.zeros_like(solid, dtype=torch.float32)
         ny_grad = torch.zeros_like(solid, dtype=torch.float32)
         nz_grad = torch.zeros_like(solid, dtype=torch.float32)
-        
+
         nx_grad[:, :, 1:-1] = (solid[:, :, 2:].float() - solid[:, :, :-2].float()) / 2
         ny_grad[:, 1:-1, :] = (solid[:, 2:, :].float() - solid[:, :-2, :].float()) / 2
         nz_grad[1:-1, :, :] = (solid[2:, :, :].float() - solid[:-2, :, :].float()) / 2
-        
+
         nx_n = -nx_grad * near.float()
         ny_n = -ny_grad * near.float()
         nz_n = -nz_grad * near.float()
-        
+
         norm = torch.sqrt(nx_n**2 + ny_n**2 + nz_n**2).clamp(min=1e-10)
         # dA = 1.0 (surface area per cell, default)
         # Note: |∇solid| via central difference gives 0.5 for face-aligned
         # walls (wrong by 2×). Use dA=1.0 for all cells.
-        return cls(near, nx_n/norm, ny_n/norm, nz_n/norm)
-    
+        return cls(near, nx_n / norm, ny_n / norm, nz_n / norm)
+
     @classmethod
     def from_square_prism(cls, solid, near, cx, cy, D):
         """Analytical normal for 2D square prism (axis-aligned).
-        
+
         Front face: n=(-1,0), Back: n=(1,0), Top: n=(0,-1), Bottom: n=(0,1)
         """
         nz, ny, nx = solid.shape
         device = solid.device
         nx_n = torch.zeros(nz, ny, nx, dtype=torch.float32, device=device)
         ny_n = torch.zeros(nz, ny, nx, dtype=torch.float32, device=device)
-        
+
         # Front face (x = cx-1, solid at cx): normal = (-1, 0)
-        nx_n[:, :, cx-1] = -1.0
+        nx_n[:, :, cx - 1] = -1.0
         # Back face (x = cx+D, solid at cx+D-1): normal = (1, 0)
-        nx_n[:, :, cx+D] = 1.0
+        nx_n[:, :, cx + D] = 1.0
         # Bottom face (y = cy-D//2-1): normal = (0, -1)
-        ny_n[:, cy-D//2-1, :] = -1.0
+        ny_n[:, cy - D // 2 - 1, :] = -1.0
         # Top face (y = cy+D//2): normal = (0, 1)
-        ny_n[:, cy+D//2, :] = 1.0
-        
+        ny_n[:, cy + D // 2, :] = 1.0
+
         # Only keep near-wall cells
         nx_n = nx_n * near.float()
         ny_n = ny_n * near.float()
@@ -389,7 +407,68 @@ class SurfaceMesh:
         return cls(near, nx_n, ny_n, nz_n)
 
 
-def get_near_wall_2d(solid, axis='z'):
+def suboff_smooth_q(solid, near, cx, cy, cz, length, radius, config=None):
+    """q_smooth = true wall distance ``r_cell - R(x)`` for the SUBOFF hull.
+
+    For each near-wall fluid cell, ``r_cell = sqrt((y-cy)^2 + (z-cz)^2)``
+    is the radial distance from the hull axis and
+    ``R(x) = suboff_radius_profile(xi) * radius`` is the local smooth-body
+    radius in lattice units (xi = normalized axial coordinate, 0 at bow,
+    1 at stern).  ``q_smooth`` is therefore the true distance from the cell
+    centre to the *smooth* hull surface — the voxel staircase wall sits at
+    a different distance.  Values are clamped to ``[0.05, 1.0]`` (same
+    convention as the 3D-cylinder D20 7-formula study).
+
+    Feed the result to :func:`drag_friction_integration` with
+    ``formula='bfl'`` or ``'bfl_smooth'`` to get ``tau = nu * u_1 / q_smooth``,
+    the BFL correction using the analytic body distance instead of the
+    half-way bounce-back gap q=0.5.  On the 3D cylinder D20 (Re=40) this
+    moved the total-drag error from -11.3% (standard) to -3.69%.
+
+    Parameters
+    ----------
+    solid : torch.Tensor, bool, shape (nz, ny, nx)
+        Solid mask (hull axis along x).
+    near : torch.Tensor, bool, shape (nz, ny, nx)
+        Near-wall mask (only these cells get a nonzero q).
+    cx, cy, cz : float
+        Hull centre coordinates (cells); the engine places the SUBOFF at
+        ``(nx*0.25, ny*0.5, nz*0.5)``.
+    length : float
+        Hull length in lattice units (resolution L).
+    radius : float
+        Maximum hull radius in lattice units (R_max / dx).
+    config : SuboffConfig or None
+        Geometry configuration (defaults to real DARPA SUBOFF).
+
+    Returns
+    -------
+    torch.Tensor
+        ``q_smooth`` field, same shape as *solid*, zero outside *near*.
+    """
+
+    from .suboff_cad import SuboffConfig, suboff_radius_profile
+
+    if config is None:
+        config = SuboffConfig()
+    nz, ny, nx = solid.shape
+    device = solid.device
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=device, dtype=torch.float32),
+        torch.arange(ny, device=device, dtype=torch.float32),
+        torch.arange(nx, device=device, dtype=torch.float32),
+        indexing="ij",
+    )
+    x_bow = cx - length / 2.0
+    xi_np = ((xx - x_bow) / length).cpu().numpy()
+    r_norm = suboff_radius_profile(xi_np, config)  # normalised [0, 1]
+    r_lu = torch.tensor(r_norm * radius, device=device, dtype=torch.float32)
+    r_cell = torch.sqrt((yy - cy) ** 2 + (zz - cz) ** 2)
+    q = (r_cell - r_lu).clamp(0.05, 1.0)
+    return q * near.to(device=device).float()
+
+
+def get_near_wall_2d(solid, axis="z"):
     """Near-wall mask for 2D extruded geometries.
 
     Detects fluid cells adjacent to solid cells in the 2D cross-section
@@ -406,21 +485,27 @@ def get_near_wall_2d(solid, axis='z'):
     nz, ny, nx = solid.shape
     fluid = ~solid
     near = torch.zeros_like(solid)
-    if axis == 'z':
+    if axis == "z":
         for z in range(nz):
-            s = solid[z]; f = fluid[z]; n = torch.zeros_like(s)
+            s = solid[z]
+            f = fluid[z]
+            n = torch.zeros_like(s)
             n[:, 1:-1] |= (s[:, 2:] | s[:, :-2]) & f[:, 1:-1]
             n[1:-1, :] |= (s[2:, :] | s[:-2, :]) & f[1:-1, :]
             near[z] = n
-    elif axis == 'y':
+    elif axis == "y":
         for y in range(ny):
-            s = solid[:, y, :]; f = fluid[:, y, :]; n = torch.zeros_like(s)
+            s = solid[:, y, :]
+            f = fluid[:, y, :]
+            n = torch.zeros_like(s)
             n[:, 1:-1] |= (s[:, 2:] | s[:, :-2]) & f[:, 1:-1]
             n[1:-1, :] |= (s[2:, :] | s[:-2, :]) & f[1:-1, :]
             near[:, y, :] = n
-    elif axis == 'x':
+    elif axis == "x":
         for x in range(nx):
-            s = solid[:, :, x]; f = fluid[:, :, x]; n = torch.zeros_like(s)
+            s = solid[:, :, x]
+            f = fluid[:, :, x]
+            n = torch.zeros_like(s)
             n[:, 1:-1] |= (s[:, 2:] | s[:, :-2]) & f[:, 1:-1]
             n[1:-1, :] |= (s[2:, :] | s[:-2, :]) & f[1:-1, :]
             near[:, :, x] = n
@@ -457,7 +542,9 @@ def _shift_along_normal_dominant(field, mesh, steps):
     # Bug 32: device sync
     _dev = field.device
     if nx_n.device != _dev:
-        nx_n = nx_n.to(_dev); ny_n = ny_n.to(_dev); nz_n = nz_n.to(_dev)
+        nx_n = nx_n.to(_dev)
+        ny_n = ny_n.to(_dev)
+        nz_n = nz_n.to(_dev)
     abs_nx = nx_n.abs()
     abs_ny = ny_n.abs()
     abs_nz = nz_n.abs()
@@ -470,11 +557,11 @@ def _shift_along_normal_dominant(field, mesh, steps):
     # Six shifted copies.
     # +x direction (nx_n>0): sample at i+steps → roll by -steps in dims=2
     fx_pos = torch.roll(field, -steps, dims=2)
-    fx_neg = torch.roll(field,  steps, dims=2)
+    fx_neg = torch.roll(field, steps, dims=2)
     fy_pos = torch.roll(field, -steps, dims=1)
-    fy_neg = torch.roll(field,  steps, dims=1)
+    fy_neg = torch.roll(field, steps, dims=1)
     fz_pos = torch.roll(field, -steps, dims=0)
-    fz_neg = torch.roll(field,  steps, dims=0)
+    fz_neg = torch.roll(field, steps, dims=0)
 
     x_pos_mask = dom_x & (nx_n > 0)
     x_neg_mask = dom_x & (nx_n < 0)
@@ -613,9 +700,7 @@ def reconstruct_bfl_wall_pressure(
             + 0.5 * q_link * (q_link + 1.0) * p3
         )
         link_length = math.sqrt(cx * cx + cy * cy + cz * cz)
-        alignment = -(
-            cx * normals[0] + cy * normals[1] + cz * normals[2]
-        ) / link_length
+        alignment = -(cx * normals[0] + cy * normals[1] + cz * normals[2]) / link_length
         weight = torch.where(
             usable,
             alignment.clamp_min(0.0),
@@ -698,9 +783,8 @@ def integrate_bfl_projected_pressure(
             continue
         q_link = q[direction]
         active_q = q_link[link]
-        if (
-            not bool(torch.isfinite(active_q).all())
-            or bool(((active_q <= 0.0) | (active_q > 1.0)).any())
+        if not bool(torch.isfinite(active_q).all()) or bool(
+            ((active_q <= 0.0) | (active_q > 1.0)).any()
         ):
             raise ValueError("active BFL q values must be finite and lie in (0,1]")
         offset_one = (-cz, -cy, -cx)
@@ -725,7 +809,9 @@ def integrate_bfl_projected_pressure(
         wall = torch.where(usable, wall, pressure)
         link_pressure_sum = wall[link].sum()
         force += link_pressure_sum * torch.tensor(
-            (cx, cy, cz), dtype=pressure.dtype, device=device,
+            (cx, cy, cz),
+            dtype=pressure.dtype,
+            device=device,
         )
         axial_active.append(link)
         axial_q_values.append(active_q)
@@ -737,7 +823,9 @@ def integrate_bfl_projected_pressure(
         active_q = torch.cat(axial_q_values)
     else:
         active_stack = torch.zeros(
-            (0, *pressure.shape), dtype=torch.bool, device=device,
+            (0, *pressure.shape),
+            dtype=torch.bool,
+            device=device,
         )
         active_any = torch.zeros_like(pressure, dtype=torch.bool)
         active_q = torch.empty(0, dtype=pressure.dtype, device=device)
@@ -752,9 +840,17 @@ def integrate_bfl_projected_pressure(
     return tuple(float(value.item()) for value in force), diagnostics
 
 
-def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall',
-                              solid=None, p0_inlet_width=5,
-                              fluid_boundary_mask=None, q_field=None):
+def drag_pressure_integration(
+    f,
+    mesh,
+    dpS,
+    extrap="none",
+    p0_method="near_wall",
+    solid=None,
+    p0_inlet_width=5,
+    fluid_boundary_mask=None,
+    q_field=None,
+):
     """Pressure drag: 3D force vector from pressure × normal × dA.
 
     F = -Σ (p_wall - p_0) · n · dA  (force on wall, negative of fluid force)
@@ -807,23 +903,23 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
         mask_float = mask_float.to(p.device)
     if solid is not None and solid.device != p.device:
         solid = solid.to(p.device)
-    if p0_method == 'near_wall':
+    if p0_method == "near_wall":
         n_p0 = mask_float.sum().clamp(min=1.0)
         p0 = (p * mask_float).sum() / n_p0
-    elif p0_method == 'far_field':
+    elif p0_method == "far_field":
         # Bulk fluid cells (fluid but NOT near-wall) — stable free-stream ref
         if solid is None:
             raise ValueError("solid mask required for p0_method='far_field'")
         far_mask = (~solid).float() * (1.0 - mask_float)
         n_p0 = far_mask.sum().clamp(min=1.0)
         p0 = (p * far_mask).sum() / n_p0
-    elif p0_method == 'domain_avg':
+    elif p0_method == "domain_avg":
         if solid is None:
             raise ValueError("solid mask required for p0_method='domain_avg'")
         fluid_mask = (~solid).float()
         n_p0 = fluid_mask.sum().clamp(min=1.0)
         p0 = (p * fluid_mask).sum() / n_p0
-    elif p0_method == 'inlet':
+    elif p0_method == "inlet":
         if solid is None:
             raise ValueError("solid mask required for p0_method='inlet'")
         inlet_mask = (~solid).float()
@@ -831,32 +927,36 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
         n_p0 = inlet_mask.sum().clamp(min=1.0)
         p0 = (p * inlet_mask).sum() / n_p0
     else:
-        raise ValueError(f"p0_method must be 'near_wall', 'far_field', "
-                         f"'domain_avg', or 'inlet', got '{p0_method}'")
+        raise ValueError(
+            f"p0_method must be 'near_wall', 'far_field', "
+            f"'domain_avg', or 'inlet', got '{p0_method}'"
+        )
     p_corr = p - p0
 
-    if extrap == 'none':
+    if extrap == "none":
         p_wall = p_corr
-    elif extrap == 'linear':
+    elif extrap == "linear":
         p2 = _shift_along_normal_dominant(p_corr, mesh, steps=1)
         p_wall = 2.0 * p_corr - p2
-    elif extrap == 'quadratic':
+    elif extrap == "quadratic":
         p2 = _shift_along_normal_dominant(p_corr, mesh, steps=1)
         p3 = _shift_along_normal_dominant(p_corr, mesh, steps=2)
         p_wall = 3.0 * p_corr - 3.0 * p2 + p3
-    elif extrap == 'bfl_quadratic':
+    elif extrap == "bfl_quadratic":
         if solid is None or fluid_boundary_mask is None or q_field is None:
             raise ValueError(
-                "solid, fluid_boundary_mask and q_field are required for "
-                "extrap='bfl_quadratic'",
+                "solid, fluid_boundary_mask and q_field are required for extrap='bfl_quadratic'",
             )
         p_wall, _ = reconstruct_bfl_wall_pressure(
-            p_corr, mesh, fluid_boundary_mask, q_field, solid=solid,
+            p_corr,
+            mesh,
+            fluid_boundary_mask,
+            q_field,
+            solid=solid,
         )
     else:
         raise ValueError(
-            "extrap must be 'none', 'linear', 'quadratic', or "
-            f"'bfl_quadratic'; got '{extrap}'",
+            f"extrap must be 'none', 'linear', 'quadratic', or 'bfl_quadratic'; got '{extrap}'",
         )
 
     mask = mask_float * mesh.dA
@@ -866,7 +966,30 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
     return float(fpx.item() / dpS), float(fpy.item() / dpS), float(fpz.item() / dpS)
 
 
-def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard'):
+def _wall_face_counts(solid):
+    """Per-fluid-cell wall-face counts (nfx, nfy, nfz) of a voxel solid.
+
+    ``nfx[i]`` counts how many of the cell's x-neighbours (i±1 in x) are
+    solid, i.e. the number of solid-adjacent faces normal to x.  Shared by
+    the 'faces' and 'mix50' friction formulas.
+    """
+    fluid = ~solid
+    nfx = torch.zeros_like(solid, dtype=torch.float32)
+    nfy = torch.zeros_like(solid, dtype=torch.float32)
+    nfz = torch.zeros_like(solid, dtype=torch.float32)
+    # x faces (solid at ±x)
+    nfx[:, :, 1:-1] += (solid[:, :, 2:] & fluid[:, :, 1:-1]).float()
+    nfx[:, :, 1:-1] += (solid[:, :, :-2] & fluid[:, :, 1:-1]).float()
+    # y faces (solid at ±y)
+    nfy[:, 1:-1, :] += (solid[:, 2:, :] & fluid[:, 1:-1, :]).float()
+    nfy[:, 1:-1, :] += (solid[:, :-2, :] & fluid[:, 1:-1, :]).float()
+    # z faces (solid at ±z)
+    nfz[1:-1, :, :] += (solid[2:, :, :] & fluid[1:-1, :, :]).float()
+    nfz[1:-1, :, :] += (solid[:-2, :, :] & fluid[1:-1, :, :]).float()
+    return nfx, nfy, nfz
+
+
+def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula="standard", solid=None):
     """Friction drag via 3D wall shear stress.
 
     Multiple friction formulas are supported via the *formula* parameter.
@@ -885,7 +1008,13 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
     'central'       τ = ν·u_2                                          (task spec)
     'lagrange'      τ = ν·(3·u_1 − u_2/3)                              linear+quad
     'bfl'           τ = ν·u_1/q  (requires q_wall)                     linear
-    'bfl_lagrange'  τ = ν·(3·u_1 − u_2/3)/(2·q)  (requires q_wall)    linear+quad
+    'bfl_smooth'    τ = ν·u_1/q_smooth  (alias of 'bfl'; q_wall is the
+                    distance to the SMOOTH body surface, e.g. from
+                    suboff_smooth_q, not the voxel half-gap)           linear
+    'bfl_lagrange'  τ = ν·(u_1(q+1)/q − u_2·q/(q+1))  (requires q_wall)
+                                                                       linear+quad
+    'faces'         per-wall-face shear, dA=1 per face (requires solid)  linear
+    'mix50'         Cd_f = 0.5·(standard + faces) (requires solid)      —
     ==============  =================================================  ===========
 
     The 'lagrange' formula is the exact second-order derivative for the
@@ -894,6 +1023,30 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
     and quadratic velocity profiles and is expected to converge best
     under grid refinement for smooth boundary layers.
 
+    'bfl_lagrange' is the exact second-order Lagrange derivative on the
+    non-uniform grid with the wall at 0, u_1 at distance q and u_2 at
+    q+1 (q = actual fractional wall distance, e.g. from a Bouzidi
+    intersection or the analytic body distance).  It reduces to 'lagrange'
+    when q=0.5.
+
+    'faces' integrates over the voxel staircase wall faces instead of
+    near-wall cells: every fluid-solid face contributes its own shear
+    (half-way BB: τ = 2ν·u_t with u_t tangential to the face), with dA=1
+    per face.  This is the exact discrete friction of the voxelized body.
+    Cells with two wall faces (staircase inner corners) then contribute
+    both faces, which the cell-based 'standard' formula misses.  On a
+    planar wall both give the same result.  The returned force is the
+    sum of the face shear vectors; mesh.dA is not applied (faces are
+    unit area).
+
+    'mix50' evaluates 'standard' and 'faces' on the same field and returns
+    their arithmetic mean.  The two bracket the smooth-body continuum
+    friction: 'standard' (near-wall cell sum) is a lower bound that misses
+    staircase inner-corner faces, while 'faces' (staircase-exact) is an
+    upper bound because the voxel stair area exceeds the smooth wet area.
+    The midpoint is the simplest principled interpolation between the two
+    (SUBOFF Re=1000 L=96: Cd_tot = +0.25% vs Blasius 0.0420).
+
     Parameters
     ----------
     q_wall : torch.Tensor or None, shape (nz, ny, nx)
@@ -901,56 +1054,104 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
         Used when formula='bfl' or formula='bfl_lagrange'.
     formula : str
         Friction formula: 'standard' (default), '2nd_order', 'central',
-        'lagrange', 'bfl', or 'bfl_lagrange'.
+        'lagrange', 'bfl', 'bfl_lagrange', or 'faces'.
+    solid : torch.Tensor or None, shape (nz, ny, nx), bool
+        Solid mask.  Required for formula='faces'.
 
     Verified on Couette flow: Cf error = 0.00% (standard, q_wall=None).
     """
     rho, ux, uy, uz = _macroscopic(f)
     nx, ny, nz = mesh.nx_n, mesh.ny_n, mesh.nz_n
     u_dot_n = ux * nx + uy * ny + uz * nz
-    ut_x = ux - u_dot_n * nx   # u_1 tangential (near-wall cell)
+    ut_x = ux - u_dot_n * nx  # u_1 tangential (near-wall cell)
     ut_y = uy - u_dot_n * ny
     ut_z = uz - u_dot_n * nz
 
-    if formula == 'standard':
+    if formula == "standard":
         # τ = 2ν · u_1  (1st-order forward difference, Δn=0.5)
         tau_x = 2.0 * nu * ut_x
         tau_y = 2.0 * nu * ut_y
         tau_z = 2.0 * nu * ut_z
-    elif formula == 'bfl':
-        # τ = ν · u_1 / q  (BFL corrected; q=0.5 → standard)
+    elif formula in ("bfl", "bfl_smooth"):
+        # τ = ν · u_1 / q  (BFL corrected; q=0.5 → standard).
+        # 'bfl_smooth' is an alias: q_wall is then the distance to the
+        # SMOOTH body surface (e.g. suboff_smooth_q), not the voxel gap.
         if q_wall is None:
-            raise ValueError("formula='bfl' requires q_wall tensor")
+            raise ValueError(f"formula='{formula}' requires q_wall tensor")
         inv_q = 1.0 / q_wall.clamp(min=1e-6)
         tau_x = nu * ut_x * inv_q
         tau_y = nu * ut_y * inv_q
         tau_z = nu * ut_z * inv_q
-    elif formula == 'bfl_lagrange':
-        # τ = ν·(3·u_1 − u_2/3) / (2·q)  [2nd-order Lagrange with BFL wall distance]
-        # Reduces to 'lagrange' when q=0.5: τ = ν·(3·u_1 − u_2/3).
-        # Combines non-uniform-grid 2nd-order accuracy (Lagrange) with the
-        # actual BFL wall distance q, giving 2nd-order friction for BFL.
+    elif formula == "bfl_lagrange":
+        # τ = ν·[u_1·(q+1)/q − u_2·q/(q+1)]  [exact 2nd-order Lagrange
+        # derivative at the wall for samples at 0 (wall, u=0), q (u_1),
+        # q+1 (u_2) — see docstring; reduces to 'lagrange' at q=0.5]
         if q_wall is None:
             raise ValueError("formula='bfl_lagrange' requires q_wall tensor")
         ut2_x = _shift_along_normal_dominant(ut_x, mesh, steps=1)
         ut2_y = _shift_along_normal_dominant(ut_y, mesh, steps=1)
         ut2_z = _shift_along_normal_dominant(ut_z, mesh, steps=1)
-        inv_2q = 1.0 / (2.0 * q_wall.clamp(min=1e-6))
-        tau_x = nu * (3.0 * ut_x - ut2_x / 3.0) * inv_2q
-        tau_y = nu * (3.0 * ut_y - ut2_y / 3.0) * inv_2q
-        tau_z = nu * (3.0 * ut_z - ut2_z / 3.0) * inv_2q
-    elif formula in ('2nd_order', 'central', 'lagrange'):
+        q_c = q_wall.clamp(min=1e-6)
+        coeff1 = (q_c + 1.0) / q_c
+        coeff2 = q_c / (q_c + 1.0)
+        tau_x = nu * (coeff1 * ut_x - coeff2 * ut2_x)
+        tau_y = nu * (coeff1 * ut_y - coeff2 * ut2_y)
+        tau_z = nu * (coeff1 * ut_z - coeff2 * ut2_z)
+    elif formula == "faces":
+        # Staircase-exact: integrate over fluid-solid wall faces.  For each
+        # face the half-way BB shear is τ = 2ν·u_t with u_t tangential to
+        # the (axis-aligned) face, dA = 1 per face.  Per cell the three
+        # force components receive 2ν·u_x from every y/z-face, 2ν·u_y from
+        # every x/z-face, and 2ν·u_z from every x/y-face.
+        if solid is None:
+            raise ValueError("formula='faces' requires solid mask")
+        if solid.device != ux.device:
+            solid = solid.to(ux.device)
+        nfx, nfy, nfz = _wall_face_counts(solid)
+        tau_x = 2.0 * nu * ux * (nfy + nfz)
+        tau_y = 2.0 * nu * uy * (nfx + nfz)
+        tau_z = 2.0 * nu * uz * (nfx + nfy)
+        # unit face area; mesh.dA intentionally not applied
+        ffx = tau_x.sum()
+        ffy = tau_y.sum()
+        ffz = tau_z.sum()
+        return float(ffx.item() / dpS), float(ffy.item() / dpS), float(ffz.item() / dpS)
+    elif formula == "mix50":
+        # Cd_f = 0.5·(standard + faces): midpoint interpolation between the
+        # cell-based near-wall sum (lower bound: misses staircase
+        # inner-corner faces) and the staircase-exact per-face sum (upper
+        # bound: stair area exceeds the smooth wet area).  The smooth-body
+        # continuum friction lies between the two; equal weighting is the
+        # simple midpoint (SUBOFF Re=1000 L=96: +0.25% vs Blasius 0.0420).
+        # Implemented by delegating to the 'standard' and 'faces' code
+        # paths and averaging their returned values, so the documented
+        # identity mix50 == 0.5·(standard + faces) holds exactly
+        # (componentwise).  A duplicated inline sum with a different
+        # multiplication order is only equal up to floating-point
+        # re-association, which is visible on components whose exact value
+        # is 0 by symmetry (cancellation residues of order 1e-9 vs terms
+        # of order 1e-2).
+        if solid is None:
+            raise ValueError("formula='mix50' requires solid mask")
+        f_std = drag_friction_integration(f, mesh, dpS, nu, formula="standard")
+        f_fc = drag_friction_integration(f, mesh, dpS, nu, formula="faces", solid=solid)
+        return (
+            0.5 * (f_std[0] + f_fc[0]),
+            0.5 * (f_std[1] + f_fc[1]),
+            0.5 * (f_std[2] + f_fc[2]),
+        )
+    elif formula in ("2nd_order", "central", "lagrange"):
         # Need u_2: tangential velocity at second cell from wall.
         # Shift velocity one cell along dominant normal into the fluid.
         ut2_x = _shift_along_normal_dominant(ut_x, mesh, steps=1)
         ut2_y = _shift_along_normal_dominant(ut_y, mesh, steps=1)
         ut2_z = _shift_along_normal_dominant(ut_z, mesh, steps=1)
-        if formula == '2nd_order':
+        if formula == "2nd_order":
             # τ = ν·(3·u_1 − u_2)  [task-specified 2nd-order forward diff]
             tau_x = nu * (3.0 * ut_x - ut2_x)
             tau_y = nu * (3.0 * ut_y - ut2_y)
             tau_z = nu * (3.0 * ut_z - ut2_z)
-        elif formula == 'central':
+        elif formula == "central":
             # τ = ν·u_2  [task-specified central/forward diff, Δn=0.5]
             tau_x = nu * ut2_x
             tau_y = nu * ut2_y
@@ -964,7 +1165,8 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
     else:
         raise ValueError(
             f"formula must be 'standard', '2nd_order', 'central', "
-            f"'lagrange', 'bfl', or 'bfl_lagrange'; got '{formula}'"
+            f"'lagrange', 'bfl', 'bfl_smooth', 'bfl_lagrange', 'faces', "
+            f"or 'mix50'; got '{formula}'"
         )
 
     mask = mesh.near.float() * mesh.dA
@@ -976,7 +1178,7 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
 
 def drag_total(f, mesh, dpS, nu):
     """Total drag = pressure + friction (3D).
-    
+
     Returns: (Cd_total_x, Cd_p_x, Cd_f_x) — x-component only.
     For full 3D force, call drag_pressure_integration and drag_friction_integration directly.
     """

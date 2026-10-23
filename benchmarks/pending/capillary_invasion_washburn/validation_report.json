@@ -1,0 +1,94 @@
+{
+  "case": "capillary_invasion_washburn",
+  "verdict": "terminal",
+  "timestamp": "2026-10-23T08:30:00Z",
+  "gates": {
+    "library_entry": {
+      "pass": true,
+      "value": "from tensorlbm.multiphase import collide_sc_two_component",
+      "source": "benchmarks/pending/capillary_invasion_washburn/w4b_lib.py"
+    },
+    "direct_observable": {
+      "pass": false,
+      "values": {
+        "W32_beta_dev_pct": 19.08406210813467,
+        "W64_beta_dev_pct": 3.1726343973796034,
+        "W32_b_max_rel_diff": 6.894145455199683,
+        "W64_b_max_rel_diff": 9.491756800333688
+      },
+      "source": "benchmarks/pending/capillary_invasion_washburn/result.json",
+      "threshold": 3.0,
+      "note": "All observables exceed 3% threshold; W32 beta deviation 19.08%, W64 3.17%"
+    },
+    "monotone_convergence": {
+      "pass": false,
+      "values": {
+        "W32_b_max_rel_diff": 6.894145455199683,
+        "W64_b_max_rel_diff": 9.491756800333688
+      },
+      "source": "benchmarks/pending/capillary_invasion_washburn/result.json",
+      "note": "Anti-convergence: W64 (9.492) > W32 (6.894); W128 DIVERGED at step 164"
+    },
+    "prereg_frozen": {
+      "pass": true,
+      "values": {
+        "snapshot_sha256": "40e5c80375bd34e15b39d0ee4e2da61cd54dd04ea1889a4983bc211527a083fb",
+        "notes_sha256": "26e2f9f556c9304be1bbe59271ae3241bd8a3c7a3b467cf7ab77fefebd00dca2",
+        "iron_rule_pass": true
+      },
+      "source": "benchmarks/pending/capillary_invasion_washburn/result.json"
+    }
+  },
+  "failure_analysis": {
+    "mass_conservation": {
+      "W32_drift_pct": -60.677107119080844,
+      "W64_drift_pct": -66.97527211128853,
+      "root_cause": "SC-MCMP multi-component pseudopotential coupling generates persistent agitation at invasion front, causing severe water mass non-conservation"
+    },
+    "sigma_unmeasurable": {
+      "explanation": "SC-MCMP pseudopotential interaction generates repulsive force driving phase separation, but interfacial force is numerically constructed and does not correspond to physical surface tension",
+      "consequence": "Criterion b reference ODE must drop capillary term (nominal-mu), absolute criterion +689%/+949% partially from reference itself missing terms"
+    },
+    "negative_distribution_nan": {
+      "W128_status": "DIVERGED",
+      "nan_at_step": 164,
+      "root_cause": "Gas-depleted layer at water sink -> rho_g->0 -> distribution functions become negative (exp39/40/41)",
+      "deterministic": true,
+      "independent_of_driving": true,
+      "independent_of_domain_length": true
+    },
+    "sister_case_anti_convergence": {
+      "case": "two_phase_poiseuille",
+      "H64_max_rel_err": 0.26821538643505377,
+      "H128_max_rel_err": 0.33173655541170183,
+      "note": "Same library, same root cause; W4-B Part 1 also shows anti-convergence"
+    }
+  },
+  "upgrade_path": [
+    {
+      "priority": 1,
+      "action": "SC-MCMP mass conservation fix",
+      "description": "Check boundary condition implementation to ensure gas reservoir and water sink flux balance; add global mass monitoring and adaptive correction",
+      "estimated_cost_gpu_hours": 2
+    },
+    {
+      "priority": 2,
+      "action": "Gas depletion protection",
+      "description": "Add density lower bound clamping (rho_g >= 1e-6) + distribution function non-negativity repair (negative values reset to equilibrium)",
+      "estimated_cost_gpu_hours": 1
+    },
+    {
+      "priority": 3,
+      "action": "Sigma measurable path",
+      "description": "Switch to Color-Gradient model (explicit surface tension term) or Free-Energy model (thermodynamically consistent, sigma computable from free energy functional)",
+      "estimated_cost_gpu_hours": 8,
+      "note": "Requires new preregistration; criterion b reference solution re-locked after sigma becomes measurable"
+    },
+    {
+      "priority": 4,
+      "action": "Maintain TERMINAL",
+      "description": "Record negative result for future library improvement reference",
+      "estimated_cost_gpu_hours": 0
+    }
+  ]
+}

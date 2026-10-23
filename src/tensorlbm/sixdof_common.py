@@ -33,7 +33,6 @@ import torch
 from .sixdof import (
     FluidForcesMoments,
     SixDOFBody,
-    _update_quaternion,
     quaternion_to_rotation_matrix,
     rotation_matrix_to_euler,
     step_sixdof,

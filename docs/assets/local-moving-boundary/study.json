@@ -1,0 +1,74 @@
+{
+  "schema": "local-moving-study/1",
+  "cases": [
+    {
+      "case": "cross-grid",
+      "artifact": "cross-grid.json",
+      "sha256": "613ec00bfffaf67d6fe7bd092339f072b227c3437fae55f1be0468256136b005",
+      "restart_bitwise": true,
+      "covered": 20,
+      "exposed": 19,
+      "mass_drift": -8.86757334228605e-12,
+      "max_momentum_residual": 9.35918009759007e-14,
+      "minimum_population": 0.01848722106597761,
+      "wall_impulse": [
+        -5.924006825218653,
+        0.035338952078250885
+      ]
+    },
+    {
+      "case": "co-moving",
+      "artifact": "co-moving.json",
+      "sha256": "2d27c2b536ffdf98b2cf8295777de4f3854101165aeb9b8a6dbfc4345b7a9791",
+      "restart_bitwise": true,
+      "covered": 20,
+      "exposed": 19,
+      "mass_drift": -1.1596057447604835e-11,
+      "max_momentum_residual": 1.5643042416968456e-13,
+      "minimum_population": 0.01832047901828606,
+      "wall_impulse": [
+        0.4112878785159314,
+        -0.026481559608499183
+      ]
+    },
+    {
+      "case": "periodic-wrap",
+      "artifact": "periodic-wrap.json",
+      "sha256": "b95ce552ee824cf0301e178531976a7c32c3267c00f64fbbc1bffe4fc18f0197",
+      "restart_bitwise": true,
+      "covered": 20,
+      "exposed": 19,
+      "mass_drift": -9.777068044058979e-12,
+      "max_momentum_residual": 9.64783808399261e-14,
+      "minimum_population": 0.01848742947750335,
+      "wall_impulse": [
+        -5.93205457475476,
+        0.025285458815388684
+      ]
+    },
+    {
+      "case": "step-half",
+      "artifact": "step-half.json",
+      "sha256": "78379745302064a5b410aa79c70c53c08980bf182474fd3d7695c5e29556d4ae",
+      "restart_bitwise": true,
+      "covered": 77,
+      "exposed": 78,
+      "mass_drift": -1.5643308870494366e-10,
+      "max_momentum_residual": 4.503064587879635e-13,
+      "minimum_population": 0.01717177574349951,
+      "wall_impulse": [
+        -10.943991246560037,
+        0.6979248302260117
+      ]
+    }
+  ],
+  "refinement": {
+    "diffusive_scaling": true,
+    "relative_impulse_change": 0.07630160046649691,
+    "threshold": 0.03,
+    "passed": false
+  },
+  "physical_accuracy_qualified": false,
+  "global_rescale": false,
+  "exact_swept_volume": false
+}

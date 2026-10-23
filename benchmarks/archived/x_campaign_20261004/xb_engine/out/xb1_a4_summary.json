@@ -1,0 +1,24 @@
+{
+ "rule": "prereg A4: gate G2 |err_signed(ch2, a40)| <= 3%; a20 = pre-declared bonus sigma-sensitivity arm (no gate); controller ruling 1: a40 wall-arrest dominated in ch1 -> honest FAIL if ch2 still dominated",
+ "ch2_a40_err_signed": -0.7821703214720683,
+ "ch2_a20_err_signed": -0.27932639787249325,
+ "ch1_machine": {
+  "a40": {
+   "source": "refs/b5_a40_k0.5.json",
+   "err_signed": -0.7222637705568704,
+   "sigma_model": 0.10823730488377745,
+   "grad_scheme": "iso2(M1 default)",
+   "U_platform": 0.00013886811472156482,
+   "steps_run": 24600
+  },
+  "a20": {
+   "source": "refs/b5_a20_k0.5.json",
+   "err_signed": 0.04804290970150138,
+   "sigma_model": 0.10823730488377745,
+   "grad_scheme": "iso2(M1 default)",
+   "U_platform": 0.0005240214548507507,
+   "steps_run": 18100
+  }
+ },
+ "G2_pass": false
+}

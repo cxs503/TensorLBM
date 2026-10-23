@@ -10,12 +10,17 @@ Uses the verified phase-field + Fakhari anti-diffusion framework:
   - Gas mass conservation: p_gas = p_gas0·(V0/V)^γ
 """
 
-import sys, math, torch, numpy as np
+import sys
+
+import numpy as np
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import equilibrium3d, C as C3D, W as W3D
-from tensorlbm.solver3d import stream3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.solver3d import stream3d
 
 
 def run_piston_compression(
@@ -90,7 +95,7 @@ def run_piston_compression(
         phi, torch.zeros_like(phi), torch.zeros_like(phi), torch.zeros_like(phi), c, w
     )
 
-    print(f"=== Piston Compression ===", flush=True)
+    print("=== Piston Compression ===", flush=True)
     print(f"Grid: {nx}×{ny}×{nz}  Interface at y={y_gas_start}", flush=True)
     print(f"Piston velocity: u={u_piston} (upward)", flush=True)
     print(f"V0_gas={V0_gas:.0f} cells  p_gas0={p_gas0:.4f}  γ={gamma}", flush=True)

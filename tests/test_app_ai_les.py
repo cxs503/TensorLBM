@@ -8,8 +8,8 @@ training loop (``train_fn``) so the test stays fast and deterministic.
 
 from __future__ import annotations
 
-import torch
 import pytest
+import torch
 
 from tensorlbm.apps.ai_les_app import AILesApp
 from tensorlbm.apps.base import DataProduct, TrainingResult
@@ -187,4 +187,5 @@ def test_train_default_fn_uses_real_trainer(tmp_path):
     assert result.arch.get("hidden_features") == 8
     # the checkpoint was actually written to disk
     from pathlib import Path
+
     assert Path(result.model_path).exists()

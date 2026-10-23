@@ -9,24 +9,28 @@ Reports Ct_total at steps 200/400/600/800/1000.
 
 from __future__ import annotations
 
-import math
 import time
 
 import pytest
 import torch
 
-from tensorlbm.d3q19 import C as C19, equilibrium3d, OPPOSITE as OPP19
-from tensorlbm.solver3d import collide_mrt3d, correct_mass3d, stream3d
-from tensorlbm.turbulence import collide_smagorinsky_mrt3d
-from tensorlbm.boundaries3d import bounce_back_cells_3d
-from tensorlbm.suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask
-from tensorlbm.interpolated_bc import bouzidi_bounce_back_3d
-from tensorlbm.interpolated_bc_suboff import compute_q_suboff
-from tensorlbm.interpolated_bc_suboff import _suboff_radius_norm_torch
 from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19
-from tensorlbm.wall_model import compute_bfl_link_normal
-from tensorlbm.suboff_cad import suboff_radius_profile
+from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import OPPOSITE as OPP19
+from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.interpolated_bc import bouzidi_bounce_back_3d
+from tensorlbm.interpolated_bc_suboff import _suboff_radius_norm_torch, compute_q_suboff
+from tensorlbm.solver3d import correct_mass3d, stream3d
+from tensorlbm.suboff_cad import (
+    SuboffConfig,
+    SuboffHullType,
+    build_suboff_mask,
+    suboff_radius_profile,
+)
 from tensorlbm.suboff_resistance import _voxel_wetted_area
+from tensorlbm.turbulence import collide_smagorinsky_mrt3d
+from tensorlbm.wall_model import compute_bfl_link_normal
 
 C19_SHIFTS = [(int(C19[q, 0]), int(C19[q, 1]), int(C19[q, 2])) for q in range(19)]
 OPP_LIST = [int(x) for x in OPP19.tolist()]
@@ -45,17 +49,33 @@ def test_bfl_link_masks_follow_d3q19_xyz_directions() -> None:
     nx, ny, nz, length = 80, 40, 40, 32.0
     cx, cy, cz = nx * 0.35, ny / 2.0, nz / 2.0
     solid, _ = build_suboff_mask(
-        SuboffHullType.BARE_HULL, nx=nx, ny=ny, nz=nz,
-        cx=cx, cy=cy, cz=cz, length=length, device="cpu",
+        SuboffHullType.BARE_HULL,
+        nx=nx,
+        ny=ny,
+        nz=nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        length=length,
+        device="cpu",
         config=SuboffConfig(),
     )
     masks, _ = compute_q_suboff(
-        nx, ny, nz, cx, cy, cz, length, device="cpu",
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        length,
+        device="cpu",
     )
     for direction in range(1, 19):
         dcx, dcy, dcz = (int(v) for v in C19[direction].tolist())
         neighbour = torch.roll(
-            solid, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
+            solid,
+            shifts=(-dcz, -dcy, -dcx),
+            dims=(0, 1, 2),
         )
         expected = ~solid & neighbour
         assert torch.equal(masks[direction], expected), direction
@@ -65,14 +85,35 @@ def test_bfl_q_reuses_solver_cad_mask_without_changing_links() -> None:
     nx, ny, nz, length = 80, 40, 40, 32.0
     cx, cy, cz = nx * 0.35, ny / 2.0, nz / 2.0
     solid, _ = build_suboff_mask(
-        "bare_hull", nx, ny, nz, cx=cx, cy=cy, cz=cz,
-        length=length, device="cpu",
+        "bare_hull",
+        nx,
+        ny,
+        nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        length=length,
+        device="cpu",
     )
     built_mask, built_q = compute_q_suboff(
-        nx, ny, nz, cx, cy, cz, length, device="cpu",
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        length,
+        device="cpu",
     )
     reused_mask, reused_q = compute_q_suboff(
-        nx, ny, nz, cx, cy, cz, length, device="cpu",
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        length,
+        device="cpu",
         solid_mask=solid,
     )
 
@@ -80,7 +121,14 @@ def test_bfl_q_reuses_solver_cad_mask_without_changing_links() -> None:
     assert torch.equal(reused_q, built_q)
     with pytest.raises(ValueError, match="solid_mask"):
         compute_q_suboff(
-            nx, ny, nz, cx, cy, cz, length, device="cpu",
+            nx,
+            ny,
+            nz,
+            cx,
+            cy,
+            cz,
+            length,
+            device="cpu",
             solid_mask=solid.float(),
         )
 
@@ -89,15 +137,37 @@ def test_full_hull_uses_halfway_links_on_voxel_appendages() -> None:
     nx, ny, nz, length = 120, 60, 60, 48.0
     cx, cy, cz = nx * 0.35, ny / 2.0, nz / 2.0
     bare, _ = build_suboff_mask(
-        "bare_hull", nx, ny, nz, cx=cx, cy=cy, cz=cz,
-        length=length, device="cpu",
+        "bare_hull",
+        nx,
+        ny,
+        nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        length=length,
+        device="cpu",
     )
     full, _ = build_suboff_mask(
-        "full", nx, ny, nz, cx=cx, cy=cy, cz=cz,
-        length=length, device="cpu",
+        "full",
+        nx,
+        ny,
+        nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        length=length,
+        device="cpu",
     )
     masks, q = compute_q_suboff(
-        nx, ny, nz, cx, cy, cz, length, hull_type="full", device="cpu",
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        length,
+        hull_type="full",
+        device="cpu",
     )
     appendage_links = 0
     for direction in range(1, 19):
@@ -163,23 +233,39 @@ def test_wall_model_slip_bfl_preserves_uniform_tangential_flow() -> None:
         masks[(direction,) + cell] = True
 
     slip = bouzidi_bounce_back_d3q19(
-        f_streamed, f_prev, masks, q,
-        wall_velocity=(ux, zero, zero), wall_density=rho,
+        f_streamed,
+        f_prev,
+        masks,
+        q,
+        wall_velocity=(ux, zero, zero),
+        wall_density=rho,
     )
     stationary = bouzidi_bounce_back_d3q19(
-        f_streamed, f_prev, masks, q,
+        f_streamed,
+        f_prev,
+        masks,
+        q,
     )
 
     assert torch.allclose(slip[(slice(None),) + cell], f_prev[(slice(None),) + cell], atol=1e-14)
     assert not torch.allclose(stationary[(slice(None),) + cell], f_prev[(slice(None),) + cell])
 
     _, slip_force = bouzidi_bounce_back_d3q19(
-        f_streamed, f_prev, masks, q,
-        wall_velocity=(ux, zero, zero), wall_density=rho,
-        return_force=True, force_frame="wall",
+        f_streamed,
+        f_prev,
+        masks,
+        q,
+        wall_velocity=(ux, zero, zero),
+        wall_density=rho,
+        return_force=True,
+        force_frame="wall",
     )
     _, stationary_force = bouzidi_bounce_back_d3q19(
-        f_streamed, f_prev, masks, q, return_force=True,
+        f_streamed,
+        f_prev,
+        masks,
+        q,
+        return_force=True,
     )
     assert slip_force[0] == pytest.approx(0.0, abs=1e-14)
     assert stationary_force[0] > 0.0
@@ -289,10 +375,24 @@ def test_moving_bfl_laboratory_force_closes_nonequilibrium_control_volume() -> N
     zero = torch.zeros_like(rho)
     old = equilibrium3d(rho, ux, zero, zero)
     solid = sphere_mask(
-        nx, ny, nz, cx, cy, cz, radius, device=torch.device("cpu"),
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        radius,
+        device=torch.device("cpu"),
     )
     masks, q = compute_q_sphere(
-        nx, ny, nz, cx, cy, cz, radius, device=torch.device("cpu"),
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        radius,
+        device=torch.device("cpu"),
     )
     # A deterministic non-equilibrium perturbation makes the two force frames
     # observably different while keeping every population positive.
@@ -307,20 +407,40 @@ def test_moving_bfl_laboratory_force_closes_nonequilibrium_control_volume() -> N
         -normal_speed * nz_n,
     )
     updated, laboratory_force = bouzidi_bounce_back_d3q19(
-        streamed, old, masks, q,
-        wall_velocity=wall_velocity, wall_density=rho,
-        return_force=True, force_frame="laboratory",
+        streamed,
+        old,
+        masks,
+        q,
+        wall_velocity=wall_velocity,
+        wall_density=rho,
+        return_force=True,
+        force_frame="laboratory",
     )
     _, wall_frame_force = bouzidi_bounce_back_d3q19(
-        streamed, old, masks, q,
-        wall_velocity=wall_velocity, wall_density=rho,
-        return_force=True, force_frame="wall",
+        streamed,
+        old,
+        masks,
+        q,
+        wall_velocity=wall_velocity,
+        wall_density=rho,
+        return_force=True,
+        force_frame="wall",
     )
     cv = box_control_volume(
-        shape, x0=5, x1=18, y0=4, y1=17, z0=4, z1=17,
+        shape,
+        x0=5,
+        x1=18,
+        y0=4,
+        y1=17,
+        z0=4,
+        z1=17,
     )
     cv_force = observe_control_volume_force(
-        old, updated, old, cv, solid=solid,
+        old,
+        updated,
+        old,
+        cv,
+        solid=solid,
     ).force_on_body
 
     assert cv_force[0].item() == pytest.approx(laboratory_force[0], abs=1e-11)
@@ -348,12 +468,20 @@ def test_wall_model_startup_ramps_relative_normal_velocity_not_bfl_population() 
         masks[(direction,) + cell] = True
 
     out, friction, pressure = bfl_wall_function_3d(
-        f_prev.clone(), f_prev, solid, 0.02, masks, q,
-        near_mask=near, bfl_wall_mode="wall_model_slip",
+        f_prev.clone(),
+        f_prev,
+        solid,
+        0.02,
+        masks,
+        q,
+        near_mask=near,
+        bfl_wall_mode="wall_model_slip",
         wall_activation=0.0,
     )
     assert torch.allclose(
-        out[(slice(None),) + cell], f_prev[(slice(None),) + cell], atol=1e-14,
+        out[(slice(None),) + cell],
+        f_prev[(slice(None),) + cell],
+        atol=1e-14,
     )
     assert friction == pytest.approx(0.0, abs=1e-14)
     # D3Q19 weights are float32 constants, even for this float64 state.
@@ -379,7 +507,12 @@ def test_wall_normal_and_shear_activation_are_independent() -> None:
         masks[(direction,) + cell] = True
 
     out, friction, _ = bfl_wall_function_3d(
-        f_prev.clone(), f_prev, solid, 0.02, masks, q,
+        f_prev.clone(),
+        f_prev,
+        solid,
+        0.02,
+        masks,
+        q,
         near_mask=near,
         bfl_wall_mode="wall_model_slip",
         wall_activation=0.0,
@@ -388,7 +521,9 @@ def test_wall_normal_and_shear_activation_are_independent() -> None:
     )
 
     assert not torch.allclose(
-        out[(slice(None),) + cell], f_prev[(slice(None),) + cell], atol=1e-14,
+        out[(slice(None),) + cell],
+        f_prev[(slice(None),) + cell],
+        atol=1e-14,
     )
     assert friction == pytest.approx(0.0, abs=1e-14)
 
@@ -414,8 +549,12 @@ def test_independent_wall_activation_rejects_out_of_range(
 
     with pytest.raises(ValueError, match=message):
         bfl_wall_function_3d(
-            f.clone(), f, torch.zeros(shape, dtype=torch.bool), 0.02,
-            torch.zeros_like(f, dtype=torch.bool), torch.full_like(f, 0.5),
+            f.clone(),
+            f,
+            torch.zeros(shape, dtype=torch.bool),
+            0.02,
+            torch.zeros_like(f, dtype=torch.bool),
+            torch.full_like(f, 0.5),
             **options,
         )
 
@@ -438,16 +577,23 @@ def test_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
     q = torch.full_like(f, 0.5)
 
     out, friction, _ = bfl_wall_function_3d(
-        f.clone(), f, solid, 1e-3, masks, q,
-        near_mask=near, apply_bfl=False, use_guo=True,
-        wall_activation=1.0, y_val=0.5,
+        f.clone(),
+        f,
+        solid,
+        1e-3,
+        masks,
+        q,
+        near_mask=near,
+        apply_bfl=False,
+        use_guo=True,
+        wall_activation=1.0,
+        y_val=0.5,
     )
     population_change = (out - f).sum(dim=(1, 2, 3))
-    fluid_momentum_change = (
-        population_change[:, None] * C19.to(f)
-    ).sum(dim=0)
+    fluid_momentum_change = (population_change[:, None] * C19.to(f)).sum(dim=0)
     assert fluid_momentum_change[0].item() == pytest.approx(
-        -friction, abs=5e-11,
+        -friction,
+        abs=5e-11,
     )
 
 
@@ -476,21 +622,38 @@ def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> N
     ny[:, 1, :] = 1.0
 
     local_out, local_friction, _ = bfl_wall_function_3d(
-        f.clone(), f, solid, 1e-3, masks, q,
-        near_mask=near, apply_bfl=False, wall_normals=(nx, ny, nz),
-        wall_law="reichardt", y_val=0.5,
+        f.clone(),
+        f,
+        solid,
+        1e-3,
+        masks,
+        q,
+        near_mask=near,
+        apply_bfl=False,
+        wall_normals=(nx, ny, nz),
+        wall_law="reichardt",
+        y_val=0.5,
     )
     exchange_out, exchange_friction, _, diagnostics = bfl_wall_function_3d(
-        f.clone(), f, solid, 1e-3, masks, q,
-        near_mask=near, apply_bfl=False, wall_normals=(nx, ny, nz),
-        wall_law="reichardt", stress_exchange_distance=2.0,
+        f.clone(),
+        f,
+        solid,
+        1e-3,
+        masks,
+        q,
+        near_mask=near,
+        apply_bfl=False,
+        wall_normals=(nx, ny, nz),
+        wall_law="reichardt",
+        stress_exchange_distance=2.0,
         return_wall_diagnostics=True,
     )
     assert exchange_friction != pytest.approx(local_friction, rel=1e-5)
     population_change = (exchange_out - f).sum(dim=(1, 2, 3))
     momentum_change = (population_change[:, None] * C19.to(f)).sum(dim=0)
     assert momentum_change[0].item() == pytest.approx(
-        -exchange_friction, abs=5e-11,
+        -exchange_friction,
+        abs=5e-11,
     )
     assert torch.isfinite(exchange_out).all()
     assert torch.isfinite(local_out).all()
@@ -509,8 +672,7 @@ def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> N
     assert diagnostics.shear_force[0] == pytest.approx(exchange_friction)
     assert diagnostics.wall_shear_axial_profile is not None
     assert sum(
-        item["signed_shear_x_sum_lu"]
-        for item in diagnostics.wall_shear_axial_profile
+        item["signed_shear_x_sum_lu"] for item in diagnostics.wall_shear_axial_profile
     ) == pytest.approx(exchange_friction)
     assert diagnostics.link_force_decomposition is None
 
@@ -565,7 +727,8 @@ def test_wall_diagnostics_include_actual_bfl_link_force_decomposition() -> None:
     assert total[0] == pytest.approx(pressure, abs=1e-12)
     for component in range(3):
         assert total[component] == pytest.approx(
-            normal[component] + tangential[component], abs=1e-12,
+            normal[component] + tangential[component],
+            abs=1e-12,
         )
         assert total[component] == pytest.approx(
             decomposition["stationary_interpolation_force"][component]
@@ -589,7 +752,12 @@ def test_exchange_location_requires_positive_distance() -> None:
     q = torch.full_like(f, 0.5)
     with pytest.raises(ValueError, match="stress_exchange_distance"):
         bfl_wall_function_3d(
-            f, f, solid, 0.01, masks, q,
+            f,
+            f,
+            solid,
+            0.01,
+            masks,
+            q,
             stress_exchange_distance=0.0,
         )
 
@@ -616,7 +784,12 @@ def test_exchange_diagnostics_measure_tangential_pressure_gradient() -> None:
     ny[:, 1, :] = 1.0
 
     _, _, _, diagnostics = bfl_wall_function_3d(
-        f.clone(), f, solid, 1.0e-3, masks, q,
+        f.clone(),
+        f,
+        solid,
+        1.0e-3,
+        masks,
+        q,
         near_mask=near,
         apply_bfl=False,
         wall_normals=(nx, ny, nz),
@@ -637,7 +810,8 @@ def test_exchange_diagnostics_measure_tangential_pressure_gradient() -> None:
 
 def test_d3q27_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
     """D3Q27 uses the same area/volume traction contract as D3Q19."""
-    from tensorlbm.d3q27 import C as C27, equilibrium27
+    from tensorlbm.d3q27 import C as C27
+    from tensorlbm.d3q27 import equilibrium27
     from tensorlbm.wall_model import bfl_wall_function_d3q27
 
     shape = (3, 5, 5)
@@ -654,16 +828,22 @@ def test_d3q27_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
     area = torch.full(shape, 0.75, dtype=torch.float64)
 
     out, friction, _ = bfl_wall_function_d3q27(
-        f.clone(), f, solid, 1e-3, masks, q,
-        near_mask=near, apply_bfl=False, area_weight=area,
+        f.clone(),
+        f,
+        solid,
+        1e-3,
+        masks,
+        q,
+        near_mask=near,
+        apply_bfl=False,
+        area_weight=area,
         wall_activation=0.4,
     )
     population_change = (out - f).sum(dim=(1, 2, 3))
-    fluid_momentum_change = (
-        population_change[:, None] * C27.to(f)
-    ).sum(dim=0)
+    fluid_momentum_change = (population_change[:, None] * C27.to(f)).sum(dim=0)
     assert fluid_momentum_change[0].item() == pytest.approx(
-        -friction, abs=5e-11,
+        -friction,
+        abs=5e-11,
     )
 
 
@@ -681,7 +861,11 @@ def test_mature_wall_solver_implements_finite_distinct_musker_law() -> None:
         _solve_wall_law(speed, 1e-5, 0.5, "unknown", near)
 
     high_y_plus = _solve_wall_law(
-        speed.float(), 5e-7, 0.5, "musker", near,
+        speed.float(),
+        5e-7,
+        0.5,
+        "musker",
+        near,
     )
     assert torch.isfinite(high_y_plus).all()
     assert high_y_plus.item() > 0.0
@@ -705,7 +889,11 @@ def test_moving_bfl_requires_density() -> None:
     velocity = (torch.zeros_like(f[0]),) * 3
     with pytest.raises(ValueError, match="wall_density"):
         bouzidi_bounce_back_d3q19(
-            f, f, masks, q, wall_velocity=velocity,
+            f,
+            f,
+            masks,
+            q,
+            wall_velocity=velocity,
         )
 
 
@@ -716,7 +904,11 @@ def test_zero_boundary_fraction_is_transparent() -> None:
     masks[7, 1, 1, 1] = True
     q = torch.full_like(f, 0.31)
     out = bouzidi_bounce_back_d3q19(
-        f, f_prev, masks, q, boundary_fraction=0.0,
+        f,
+        f_prev,
+        masks,
+        q,
+        boundary_fraction=0.0,
     )
     assert torch.equal(out, f)
 
@@ -932,7 +1124,7 @@ if __name__ == "__main__":
 
     if len(keys) == 2:
         k0, k1 = keys[0], keys[1]
-        print(f"\nStaircase vs BFL Ct_total:")
+        print("\nStaircase vs BFL Ct_total:")
         for step in steps_list:
             if step in all_results[k0] and step in all_results[k1]:
                 cs = all_results[k0][step]["Ct_total"]

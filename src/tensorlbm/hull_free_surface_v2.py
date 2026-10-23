@@ -24,27 +24,27 @@ Usage:
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from typing import Literal
-
 import math
+from dataclasses import asdict, dataclass
+
 import torch
 
-from .d3q19 import equilibrium3d, macroscopic3d, C as C3D, OPPOSITE as OPP, W as W3D
-from .solver3d import stream3d, correct_mass3d
-from .boundaries3d import far_field_bc_3d
-from .cg_advanced_collision import collide_cg_kbc_3d, collide_cg_cumulant_3d, collide_cg_cascaded_3d
+from .cg_advanced_collision import collide_cg_kbc_3d
+from .core.d3q19_stencil import assert_no_direct_phase_links
+from .d3q19 import OPPOSITE as OPP
+from .d3q19 import C as C3D
+from .d3q19 import W as W3D
+from .d3q19 import equilibrium3d, macroscopic3d
 from .free_surface_lbm import (
+    GAS,
+    LIQUID,
     free_surface_step,
     init_flags_from_fill,
     init_mass_from_fill,
-    GAS,
-    LIQUID,
-    INTERFACE,
 )
-from .core.d3q19_stencil import assert_no_direct_phase_links
-from .ship_cad import build_hull_mask, ShipHullType
 from .hydrodynamics import ittc57_friction_coefficient, voxel_wetted_area
+from .ship_cad import build_hull_mask
+from .solver3d import correct_mass3d, stream3d
 from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
 from .wall_function_contract import WallFunctionCapability
 
@@ -353,15 +353,12 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
     f_r_solid_eq = equilibrium3d(
         rho_solid_r, torch.zeros_like(ux0), torch.zeros_like(ux0), torch.zeros_like(ux0)
     )
-    f_b_solid_eq = equilibrium3d(
-        rho_solid_b, torch.zeros_like(ux0), torch.zeros_like(ux0), torch.zeros_like(ux0)
-    )
+    equilibrium3d(rho_solid_b, torch.zeros_like(ux0), torch.zeros_like(ux0), torch.zeros_like(ux0))
 
     # Wake survey plane
     wake_x = int(nx * 0.7)
 
     fric_list = []
-    pres_list = []
     wave_list = []
     topology_safety = []
     df, dp = 0.0, 0.0  # init for wall function
@@ -505,7 +502,7 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
     dt = __import__("time").time() - t0
     cf = abs(sum(fric_list) / max(len(fric_list), 1)) / dyn_p_S if fric_list else 0.0
 
-    print(f"\n=== Final Results ===", flush=True)
+    print("\n=== Final Results ===", flush=True)
     if cfg.use_free_surface:
         eta_avg = sum(wave_list) / max(len(wave_list), 1) if wave_list else 0.0
         cw = g_lat * eta_avg**2 * ny / (u_in**2 * S) if g_lat > 0 else 0.0

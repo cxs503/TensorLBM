@@ -8,7 +8,6 @@ import pytest
 import torch
 
 from tensorlbm.d3q19 import equilibrium3d
-from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID
 from tensorlbm.free_surface_closure_experiment import (
     DIAGNOSTIC_NOT_PHYSICAL_CLOSURE,
     FAILED_DIAGNOSTIC,
@@ -16,6 +15,7 @@ from tensorlbm.free_surface_closure_experiment import (
     ClosureExperimentError,
     run_free_surface_closure_experiment,
 )
+from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID
 
 
 def test_real_step_matrix_records_independent_inventory_ledger_ownership_and_topology_evidence() -> (

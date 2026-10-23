@@ -40,7 +40,7 @@ def cd_stokes(re: float, order: int = 1) -> float:
         return float("inf")
     cd = 24.0 / re
     if order >= 1:
-        cd *= (1.0 + 3.0 * re / 16.0)  # Oseen / first Stokes-series correction
+        cd *= 1.0 + 3.0 * re / 16.0  # Oseen / first Stokes-series correction
     return cd
 
 
@@ -48,7 +48,7 @@ def cd_schiller_naumann(re: float) -> float:
     """Schiller & Naumann (1933). Valid 0.1 <= Re <= 1000 (good to ~1-2%)."""
     if re <= 0.0:
         return float("inf")
-    return 24.0 / re * (1.0 + 0.15 * (re ** 0.687))
+    return 24.0 / re * (1.0 + 0.15 * (re**0.687))
 
 
 # Achenbach (1972) [4] smooth-sphere experimental points (Re, Cd).
@@ -106,15 +106,15 @@ def cd_cgw(re: float) -> float:
     if re < 0.1:
         return cd_stokes(re, order=0)
     if re < 1.0:
-        return 24.0 / re * (1.0 + 0.1315 * re ** 0.82 - 0.189 * re ** 0.63)
+        return 24.0 / re * (1.0 + 0.1315 * re**0.82 - 0.189 * re**0.63)
     if re < 200.0:
-        return 24.0 / re * (1.0 + 0.1935 * re ** 0.6305)
+        return 24.0 / re * (1.0 + 0.1935 * re**0.6305)
     if re < 400.0:
         lg = math.log10(re)
         return 10.0 ** (1.6435 - 1.1242 * lg + 0.1559 * lg * lg)
     if re < 3000.0:
         lg = math.log10(re)
-        return 10.0 ** (-2.4571 + 2.5558 * lg - 0.9297 * lg * lg + 0.1049 * lg ** 3)
+        return 10.0 ** (-2.4571 + 2.5558 * lg - 0.9297 * lg * lg + 0.1049 * lg**3)
     return cd_achenbach(re)
 
 
@@ -168,7 +168,7 @@ def cd_reference(re: float, source: str = "theory") -> float:
 
 def blockage_ratio(diameter: float, cross_section: float) -> float:
     """Area blockage ratio of a sphere in a square duct of given side."""
-    return (math.pi * (diameter / 2.0) ** 2) / (cross_section ** 2)
+    return (math.pi * (diameter / 2.0) ** 2) / (cross_section**2)
 
 
 def blockage_correction(cd_measured: float, beta: float) -> float:
@@ -185,5 +185,4 @@ def blockage_correction(cd_measured: float, beta: float) -> float:
 if __name__ == "__main__":
     print("Re        Cd(theory)  Cd(CGW)   Cd(Achenbach)")
     for r in [0.1, 0.5, 1, 5, 10, 20, 50, 100, 200, 500, 1000, 1e4, 1e5, 2e5]:
-        print(f"{r:8.1e}  {cd_reference(r):9.4f}  {cd_cgw(r):8.4f}  "
-              f"{cd_achenbach(r):12.4f}")
+        print(f"{r:8.1e}  {cd_reference(r):9.4f}  {cd_cgw(r):8.4f}  {cd_achenbach(r):12.4f}")

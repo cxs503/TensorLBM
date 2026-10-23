@@ -8,13 +8,20 @@ Bubble motion: buoyancy = (rho_liq - rho_gas) * g * V
 No gas leakage (hard wall), no Körner cell conversion, no streaming issues.
 """
 
-import sys, math, time, torch
+import math
+import sys
+import time
+
+import torch
 
 sys.path.insert(0, "/root/TensorLBM_test/src")
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C as C3D, W as W3D, OPPOSITE as OPP
-from tensorlbm.solver3d import stream3d, collide_bgk3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import OPPOSITE as OPP
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import W as W3D
+from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.ibm import ibm_direct_forcing_3d
+from tensorlbm.solver3d import stream3d
 
 
 def run_ibm_bubble(nx=64, ny=96, nz=16, n_steps=3000, device="sdaa:0"):
@@ -76,7 +83,7 @@ def run_ibm_bubble(nx=64, ny=96, nz=16, n_steps=3000, device="sdaa:0"):
     # Bubble mask (for gas pressure measurement)
     bubble_mask = (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2 < R**2
 
-    print(f"=== IBM Bubble Rise ===", flush=True)
+    print("=== IBM Bubble Rise ===", flush=True)
     print(f"Grid: {nx}x{ny}x{nz} R={R} markers={n_markers} steps={n_steps}", flush=True)
     print(f"rho_liq={rho_liq} rho_gas={rho_gas} gz={gz}", flush=True)
     print(f"V_bubble={V_bubble:.0f} buoyancy={(rho_liq - rho_gas) * gz * V_bubble:.2f}", flush=True)

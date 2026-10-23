@@ -1,4 +1,5 @@
 """Curved-wall ownership and force closure on the deepest static-AMR level."""
+
 from __future__ import annotations
 
 import torch
@@ -40,10 +41,24 @@ def test_deepest_level_exclusively_owns_curved_wall_and_force() -> None:
     nz, ny, nx = hierarchy.finest_f.shape[1:]
     cx, cy, cz, radius = nx / 2.0, ny / 2.0, nz / 2.0, 2.5
     solid = sphere_mask(
-        nx, ny, nz, cx, cy, cz, radius, device=torch.device("cpu"),
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        radius,
+        device=torch.device("cpu"),
     )
     links, q = compute_q_sphere(
-        nx, ny, nz, cx, cy, cz, radius, device=torch.device("cpu"),
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        radius,
+        device=torch.device("cpu"),
     )
     near = get_near_wall_3d(solid)
     control_volume = box_control_volume(
@@ -81,13 +96,15 @@ def test_deepest_level_exclusively_owns_curved_wall_and_force() -> None:
                 bfl_wall_mode="wall_model_slip",
                 wall_activation=1.0,
             )
-            cv_force = float(observe_control_volume_force(
-                state,
-                out,
-                post_collision,
-                control_volume,
-                solid=solid,
-            ).force_on_body[0])
+            cv_force = float(
+                observe_control_volume_force(
+                    state,
+                    out,
+                    post_collision,
+                    control_volume,
+                    solid=solid,
+                ).force_on_body[0]
+            )
             paired_forces.append((cv_force, pressure + friction))
         return AMRAdvanceResult(out, post_collision)
 
@@ -102,11 +119,6 @@ def test_deepest_level_exclusively_owns_curved_wall_and_force() -> None:
     assert wall_calls_by_level == [0, 0, 12]
     assert len(paired_forces) == 12
     for cv_force, bfl_plus_stress in paired_forces:
-        difference_pct = (
-            abs(cv_force - bfl_plus_stress)
-            / max(abs(cv_force), 1.0e-30)
-            * 100.0
-        )
+        difference_pct = abs(cv_force - bfl_plus_stress) / max(abs(cv_force), 1.0e-30) * 100.0
         assert difference_pct < 0.002
     assert maximum_reflux_residual < 2.0e-10
-

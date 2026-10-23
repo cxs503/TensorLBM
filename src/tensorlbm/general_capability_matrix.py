@@ -7,12 +7,11 @@ independently existing legacy functions have been integration-verified.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 from enum import Enum
 from hashlib import sha256
-import json
 from typing import Any, Mapping, Sequence
-
 
 MATRIX_VERSION = "general-capability-matrix-r1"
 

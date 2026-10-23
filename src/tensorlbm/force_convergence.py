@@ -7,6 +7,7 @@ and insufficient Student-t confidence in the time mean.  Batch range remains
 reported as an unsteady-load diagnostic but is not itself a mean-convergence
 criterion.
 """
+
 from __future__ import annotations
 
 import math
@@ -20,10 +21,37 @@ if TYPE_CHECKING:
 
 
 _T975 = (
-    math.inf, 12.706, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365,
-    2.306, 2.262, 2.228, 2.201, 2.179, 2.160, 2.145, 2.131,
-    2.120, 2.110, 2.101, 2.093, 2.086, 2.080, 2.074, 2.069,
-    2.064, 2.060, 2.056, 2.052, 2.048, 2.045, 2.042,
+    math.inf,
+    12.706,
+    4.303,
+    3.182,
+    2.776,
+    2.571,
+    2.447,
+    2.365,
+    2.306,
+    2.262,
+    2.228,
+    2.201,
+    2.179,
+    2.160,
+    2.145,
+    2.131,
+    2.120,
+    2.110,
+    2.101,
+    2.093,
+    2.086,
+    2.080,
+    2.074,
+    2.069,
+    2.064,
+    2.060,
+    2.056,
+    2.052,
+    2.048,
+    2.045,
+    2.042,
 )
 
 
@@ -104,8 +132,9 @@ def assess_force_stationarity(
             fft_size = 1 << (2 * len(array) - 1).bit_length()
             transform = np.fft.rfft(centered, n=fft_size)
             autocovariance = np.fft.irfft(
-                transform * np.conjugate(transform), n=fft_size,
-            )[:len(array)]
+                transform * np.conjugate(transform),
+                n=fft_size,
+            )[: len(array)]
             autocorrelation = autocovariance / autocovariance[0]
             nonpositive = np.flatnonzero(autocorrelation[1:] <= 0.0)
             autocorrelation_zero_crossing_lag = (
@@ -113,17 +142,20 @@ def assess_force_stationarity(
             )
             integrated_autocorrelation_time = max(
                 1.0,
-                1.0 + 2.0 * float(np.sum(
-                    autocorrelation[1:autocorrelation_zero_crossing_lag],
-                )),
+                1.0
+                + 2.0
+                * float(
+                    np.sum(
+                        autocorrelation[1:autocorrelation_zero_crossing_lag],
+                    )
+                ),
             )
             effective_sample_count = min(
                 float(len(array)),
                 float(len(array)) / integrated_autocorrelation_time,
             )
             autocorrelation_standard_error = (
-                math.sqrt(variance / max(effective_sample_count, 1.0))
-                / scale_for_error * 100.0
+                math.sqrt(variance / max(effective_sample_count, 1.0)) / scale_for_error * 100.0
             )
             power = np.abs(np.fft.rfft(centered)) ** 2
             power[0] = 0.0
@@ -137,30 +169,34 @@ def assess_force_stationarity(
                     power[peak] / power[candidates].sum(),
                 )
     block_count = len(values) // block_size
-    blocks = tuple(
-        sum(values[index * block_size:(index + 1) * block_size]) / block_size
-        for index in range(block_count)
-    ) if finite else ()
+    blocks = (
+        tuple(
+            sum(values[index * block_size : (index + 1) * block_size]) / block_size
+            for index in range(block_count)
+        )
+        if finite
+        else ()
+    )
     if not blocks:
         return ForceStationarityReport(
-            sample_count=len(values), block_size=block_size,
-            block_count=0, mean=math.nan, block_means=(),
-            relative_range_pct=math.inf, half_mean_drift_pct=math.inf,
-            linear_trend_pct=math.inf, standard_error_pct=math.inf,
+            sample_count=len(values),
+            block_size=block_size,
+            block_count=0,
+            mean=math.nan,
+            block_means=(),
+            relative_range_pct=math.inf,
+            half_mean_drift_pct=math.inf,
+            linear_trend_pct=math.inf,
+            standard_error_pct=math.inf,
             confidence95_half_width_pct=math.inf,
-            autocorrelation_zero_crossing_lag=(
-                autocorrelation_zero_crossing_lag
-            ),
-            integrated_autocorrelation_time_steps=(
-                integrated_autocorrelation_time
-            ),
+            autocorrelation_zero_crossing_lag=(autocorrelation_zero_crossing_lag),
+            integrated_autocorrelation_time_steps=(integrated_autocorrelation_time),
             effective_sample_count=effective_sample_count,
-            autocorrelation_standard_error_pct=(
-                autocorrelation_standard_error
-            ),
+            autocorrelation_standard_error_pct=(autocorrelation_standard_error),
             dominant_period_steps=dominant_period_steps,
             dominant_period_power_fraction=dominant_period_power_fraction,
-            finite=finite, sufficiently_sampled=False,
+            finite=finite,
+            sufficiently_sampled=False,
         )
 
     mean = sum(blocks) / len(blocks)
@@ -170,26 +206,24 @@ def assess_force_stationarity(
     relative_range = (max(blocks) - min(blocks)) / scale * 100.0
     if len(blocks) == 1:
         return ForceStationarityReport(
-            sample_count=len(values), block_size=block_size,
-            block_count=1, mean=mean, block_means=blocks,
+            sample_count=len(values),
+            block_size=block_size,
+            block_count=1,
+            mean=mean,
+            block_means=blocks,
             relative_range_pct=relative_range,
             half_mean_drift_pct=math.inf,
             linear_trend_pct=math.inf,
             standard_error_pct=math.inf,
             confidence95_half_width_pct=math.inf,
-            autocorrelation_zero_crossing_lag=(
-                autocorrelation_zero_crossing_lag
-            ),
-            integrated_autocorrelation_time_steps=(
-                integrated_autocorrelation_time
-            ),
+            autocorrelation_zero_crossing_lag=(autocorrelation_zero_crossing_lag),
+            integrated_autocorrelation_time_steps=(integrated_autocorrelation_time),
             effective_sample_count=effective_sample_count,
-            autocorrelation_standard_error_pct=(
-                autocorrelation_standard_error
-            ),
+            autocorrelation_standard_error_pct=(autocorrelation_standard_error),
             dominant_period_steps=dominant_period_steps,
             dominant_period_power_fraction=dominant_period_power_fraction,
-            finite=finite, sufficiently_sampled=False,
+            finite=finite,
+            sufficiently_sampled=False,
         )
     split = len(blocks) // 2
     early = sum(blocks[:split]) / split
@@ -200,9 +234,9 @@ def assess_force_stationarity(
     x_mean = (len(blocks) - 1) / 2.0
     denominator = sum((index - x_mean) ** 2 for index in range(len(blocks)))
     slope = (
-        sum((index - x_mean) * (value - mean) for index, value in enumerate(blocks))
-        / denominator
-        if denominator > 0.0 else math.inf
+        sum((index - x_mean) * (value - mean) for index, value in enumerate(blocks)) / denominator
+        if denominator > 0.0
+        else math.inf
     )
     trend = abs(slope) * max(len(blocks) - 1, 1) / scale * 100.0
     if len(blocks) > 1:
@@ -211,23 +245,24 @@ def assess_force_stationarity(
     else:
         standard_error = math.inf
     return ForceStationarityReport(
-        sample_count=len(values), block_size=block_size,
-        block_count=len(blocks), mean=mean, block_means=blocks,
+        sample_count=len(values),
+        block_size=block_size,
+        block_count=len(blocks),
+        mean=mean,
+        block_means=blocks,
         relative_range_pct=relative_range,
         half_mean_drift_pct=half_drift,
-        linear_trend_pct=trend, standard_error_pct=standard_error,
-        confidence95_half_width_pct=(
-            _student_t_975(len(blocks) - 1) * standard_error
-        ),
+        linear_trend_pct=trend,
+        standard_error_pct=standard_error,
+        confidence95_half_width_pct=(_student_t_975(len(blocks) - 1) * standard_error),
         autocorrelation_zero_crossing_lag=autocorrelation_zero_crossing_lag,
-        integrated_autocorrelation_time_steps=(
-            integrated_autocorrelation_time
-        ),
+        integrated_autocorrelation_time_steps=(integrated_autocorrelation_time),
         effective_sample_count=effective_sample_count,
         autocorrelation_standard_error_pct=autocorrelation_standard_error,
         dominant_period_steps=dominant_period_steps,
         dominant_period_power_fraction=dominant_period_power_fraction,
-        finite=finite, sufficiently_sampled=len(blocks) >= minimum_blocks,
+        finite=finite,
+        sufficiently_sampled=len(blocks) >= minimum_blocks,
     )
 
 
