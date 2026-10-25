@@ -1,0 +1,625 @@
+benchmarks/archived/xh_hybrid_20261006/engine/hybrid_cg_cac.py:50:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/ice_lid_navier_slip.py:11:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/ice_lid_navier_slip.py:19:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/ice_lid_navier_slip.py:19:29: F401 [*] `tensorlbm.d3q19.C` imported but unused
+benchmarks/ice_lid_navier_slip.py:19:32: F401 [*] `tensorlbm.d3q19.W` imported but unused
+benchmarks/ice_lid_navier_slip.py:19:35: F401 [*] `tensorlbm.d3q19.OPPOSITE` imported but unused
+benchmarks/ice_lid_navier_slip.py:68:11: F541 [*] f-string without any placeholders
+benchmarks/ice_lid_navier_slip.py:231:5: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/ice_lid_navier_slip.py:231:38: F401 [*] `tensorlbm.d3q19.C` imported but unused
+benchmarks/ice_lid_navier_slip.py:231:50: F401 [*] `tensorlbm.d3q19.W` imported but unused
+benchmarks/ice_lid_navier_slip.py:283:11: F541 [*] f-string without any placeholders
+benchmarks/pending/blasius_flat_plate/_mech.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/blasius_flat_plate/_mech.py:14:1: E401 [*] Multiple imports on one line
+benchmarks/pending/capillary_invasion_washburn/plot_figures.py:12:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/capillary_invasion_washburn/plot_figures.py:13:8: F401 [*] `sys` imported but unused
+benchmarks/pending/capillary_invasion_washburn/plot_figures_en.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/capillary_invasion_washburn/plot_figures_en.py:14:8: F401 [*] `sys` imported but unused
+benchmarks/pending/channel_turb_3d/plot_figures.py:3:1: E401 [*] Multiple imports on one line
+benchmarks/pending/channel_turb_3d/plot_figures.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/channel_turb_3d/plot_figures.py:5:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/channel_turb_3d/plot_figures.py:8:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/channel_turb_3d/plot_figures.py:48:17: E722 Do not use bare `except`
+benchmarks/pending/channel_turb_3d/runs_3d/analyze_levels.py:3:1: E401 [*] Multiple imports on one line
+benchmarks/pending/channel_turb_3d/runs_3d/analyze_levels.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/channel_turb_3d/runs_3d/analyze_levels.py:5:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/channel_turb_3d/runs_3d/postprocess.py:3:1: E401 [*] Multiple imports on one line
+benchmarks/pending/channel_turb_3d/runs_3d/postprocess.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/channel_turb_3d/runs_3d/postprocess.py:5:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/channel_turb_3d/runs_3d/run_probe.py:6:1: E401 [*] Multiple imports on one line
+benchmarks/pending/channel_turb_3d/runs_3d/run_probe.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/channel_turb_3d/runs_3d/run_probe.py:6:17: F401 [*] `json` imported but unused
+benchmarks/pending/channel_turb_3d/runs_3d/run_probe.py:10:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/channel_turb_3d/runs_3d/run_probe.py:10:8: F401 [*] `torch` imported but unused
+benchmarks/pending/collision_kernels_3d_tg/plot_energy_decay.py:8:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/collision_kernels_3d_tg/plot_energy_decay.py:25:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/collision_kernels_3d_tg/plot_energy_decay.py:96:23: F541 [*] f-string without any placeholders
+benchmarks/pending/collision_kernels_3d_tg/plot_figs.py:11:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/collision_kernels_3d_tg/plot_figs.py:12:17: F401 [*] `numpy` imported but unused
+benchmarks/pending/cylinder_re40_st/plot_figures.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/dam_break_sc/measure_coexistence.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/dam_break_sc/measure_coexistence.py:12:17: F401 [*] `numpy` imported but unused
+benchmarks/pending/dam_break_sc/measure_coexistence.py:16:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/dam_break_sc/measure_coexistence.py:20:5: F401 [*] `tensorlbm.multiphase.make_psi_eos` imported but unused
+benchmarks/pending/dam_break_sc/measure_coexistence.py:23:34: F401 [*] `tensorlbm.boundaries.bounce_back_cells` imported but unused
+benchmarks/pending/dam_break_sc/plot_figures.py:9:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/dit_turbulence/plot_figures.py:8:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/dtmb5415_resistance/_build_geometry.py:89:11: F541 [*] f-string without any placeholders
+benchmarks/pending/dtmb5415_resistance/run.py:55:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/dtmb5415_resistance/run.py:66:29: F401 [*] `tensorlbm.d3q19.equilibrium3d` imported but unused
+benchmarks/pending/hadamard_rybczynski_droplet/plot_figures.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/naca_0012/fast_kernel.py:29:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/naca_0012/microprof.py:18:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/naca_0012/microprof.py:18:17: F401 [*] `numpy` imported but unused
+benchmarks/pending/naca_0012/run.py:57:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/naca_0012/speed_probe.py:20:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/naca_0012/test_conv_stream.py:5:8: F401 [*] `time` imported but unused
+benchmarks/pending/naca_0012/test_conv_stream.py:14:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/naca_0012/test_conv_stream.py:19:25: F401 [*] `fast_kernel._mats` imported but unused
+benchmarks/pending/naca_0012/test_conv_stream.py:19:32: F401 [*] `fast_kernel.fast_collide_mrt` imported but unused
+benchmarks/pending/naca_0012/test_perf.py:16:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/permeability_fibrous/plot_figures.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/permeability_fibrous/plot_figures.py:9:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/permeability_fibrous/plot_figures.py:10:17: F401 [*] `numpy` imported but unused
+benchmarks/pending/permeability_fibrous/plot_figures.py:62:30: F541 [*] f-string without any placeholders
+benchmarks/pending/propeller_openwater/run.py:61:5: F401 [*] `tensorlbm.propeller_cad.propeller_statistics` imported but unused
+benchmarks/pending/rayleigh_benard/figures/plot_convergence.py:8:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/rayleigh_benard/figures/plot_convergence.py:9:17: F401 [*] `numpy` imported but unused
+benchmarks/pending/rayleigh_benard/formal_run_w12.py:18:21: F401 [*] `pathlib.Path` imported but unused
+benchmarks/pending/series60_resistance/_probe_geom.py:3:1: E401 [*] Multiple imports on one line
+benchmarks/pending/series60_resistance/_probe_geom.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/series60_resistance/_probe_geom.py:9:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/series60_resistance/_probe_geom.py:11:5: F401 [*] `tensorlbm.ship_cad.theoretical_block_coefficient` imported but unused
+benchmarks/pending/series60_resistance/run.py:54:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/pending/series60_resistance/run.py:65:29: F401 [*] `tensorlbm.d3q19.equilibrium3d` imported but unused
+benchmarks/pending/two_phase_poiseuille/plot_figures.py:11:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/verified/cavity_3d_full/plot_figs.py:15:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/verified/cavity_natural_convection/plot_figures.py:14:8: F401 [*] `sys` imported but unused
+benchmarks/verified/couette_3d/plot_figs.py:12:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/verified/permeability3d/plot_figs.py:12:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/verified/permeability3d/plot_figs.py:13:8: F401 [*] `math` imported but unused
+benchmarks/verified/permeability3d/plot_figs.py:193:7: F541 [*] f-string without any placeholders
+benchmarks/verified/poiseuille_3d_annulus/plot_figs.py:21:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/verified/sphere_re100_mem/plot_figs.py:18:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/verified/sphere_re200/probe_mem.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/verified/sphere_re200/probe_mem.py:8:1: E401 [*] Multiple imports on one line
+benchmarks/verified/sphere_re200/probe_mem.py:8:8: F401 [*] `math` imported but unused
+benchmarks/verified/sphere_re200/probe_mem.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+benchmarks/verified/wigley_hydrostatics/wigley_hydro_full.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/balanced_local_moving_boundary/audit.py:2:1: E401 [*] Multiple imports on one line
+examples/balanced_local_moving_boundary/audit.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/balanced_local_moving_boundary/run.py:2:1: E401 [*] Multiple imports on one line
+examples/balanced_local_moving_boundary/run.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/curved_boundary/audit.py:2:1: E401 [*] Multiple imports on one line
+examples/curved_boundary/audit.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/curved_boundary/audit_developed.py:2:1: E401 [*] Multiple imports on one line
+examples/curved_boundary/audit_developed.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/curved_boundary/audit_driven.py:2:1: E401 [*] Multiple imports on one line
+examples/curved_boundary/audit_driven.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/curved_boundary/developed.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/curved_boundary/developed.py:3:1: E401 [*] Multiple imports on one line
+examples/curved_boundary/driven.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/curved_boundary/driven.py:3:1: E401 [*] Multiple imports on one line
+examples/curved_boundary/qualify_developed.py:6:1: E401 [*] Multiple imports on one line
+examples/curved_boundary/qualify_developed.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+examples/curved_boundary/run.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/curved_boundary/run.py:3:1: E401 [*] Multiple imports on one line
+examples/droplet_impact.py:11:1: I001 [*] Import block is un-sorted or un-formatted
+examples/ice_coupling/audit_evidence.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/ice_coupling/audit_evidence.py:20:5: I001 [*] Import block is un-sorted or un-formatted
+examples/ice_coupling/plot_evidence.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+examples/ice_coupling/run_benchmark.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/ice_coupling/run_benchmark.py:7:8: F401 [*] `subprocess` imported but unused
+examples/ice_coupling/run_benchmark.py:8:17: F401 [*] `numpy` imported but unused
+examples/ice_coupling/run_benchmark.py:26:5: I001 [*] Import block is un-sorted or un-formatted
+examples/live_feedback/audit.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+examples/live_feedback/run.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/local_moving_boundary/audit.py:2:1: E401 [*] Multiple imports on one line
+examples/local_moving_boundary/audit.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/local_moving_boundary/run.py:2:1: E401 [*] Multiple imports on one line
+examples/local_moving_boundary/run.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/moving_boundary/audit_evidence.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/moving_boundary/run_benchmark.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/perimeter_boundary/audit.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/perimeter_boundary/audit.py:3:1: E401 [*] Multiple imports on one line
+examples/perimeter_boundary/audit.py:6:52: F401 [*] `tensorlbm.ice_coupling_2d.cross2` imported but unused
+examples/perimeter_boundary/audit_fixed_link.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/perimeter_boundary/audit_fixed_link.py:3:1: E401 [*] Multiple imports on one line
+examples/perimeter_boundary/fixed_link.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/perimeter_boundary/fixed_link.py:3:1: E401 [*] Multiple imports on one line
+examples/perimeter_boundary/fixed_link.py:5:30: F401 [*] `tensorlbm.d2q9.OPPOSITE` imported but unused
+examples/perimeter_boundary/fixed_link.py:5:39: F401 [*] `tensorlbm.d2q9.macroscopic` imported but unused
+examples/perimeter_boundary/fixed_link.py:6:30: F401 [*] `tensorlbm.solver.collide_bgk_matmul` imported but unused
+examples/perimeter_boundary/run.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/perimeter_boundary/run.py:3:1: E401 [*] Multiple imports on one line
+examples/perimeter_boundary/run.py:3:21: F401 [*] `math` imported but unused
+examples/static_cut_cell_bgk/audit.py:7:1: E401 [*] Multiple imports on one line
+examples/static_cut_cell_bgk/audit.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+examples/static_cut_cell_bgk/run.py:2:1: E401 [*] Multiple imports on one line
+examples/static_cut_cell_bgk/run.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/static_cut_cell_bgk/run.py:5:52: F401 [*] `tensorlbm.cut_cell_bgk_2d.C` imported but unused
+examples/swept_rectangle_geometry/audit.py:2:1: E401 [*] Multiple imports on one line
+examples/swept_rectangle_geometry/audit.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/swept_rectangle_geometry/run.py:2:1: E401 [*] Multiple imports on one line
+examples/swept_rectangle_geometry/run.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+examples/swept_uniform_transport/audit.py:6:1: E401 [*] Multiple imports on one line
+examples/swept_uniform_transport/audit.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+examples/swept_uniform_transport/run.py:2:1: E401 [*] Multiple imports on one line
+examples/swept_uniform_transport/run.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/ai/suboff_inference.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/ai/suboff_inference.py:9:8: F401 [*] `csv` imported but unused
+src/tensorlbm/ai/suboff_inference.py:13:25: F401 [*] `dataclasses.asdict` imported but unused
+src/tensorlbm/ai/suboff_inference.py:233:5: F841 Local variable `pred_result` is assigned to but never used
+src/tensorlbm/ai/suboff_inference.py:514:12: F401 [*] `glob` imported but unused
+src/tensorlbm/backends/torch_5op_step.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/backends/triton_backend.py:51:41: F401 [*] `tensorlbm.d3q19.OPPOSITE` imported but unused
+src/tensorlbm/balanced_local_moving_boundary_2d.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/balanced_local_moving_boundary_2d.py:7:8: F401 [*] `math` imported but unused
+src/tensorlbm/balanced_local_moving_boundary_2d.py:9:48: F401 [*] `.moving_boundary_2d.equilibrium` imported but unused
+src/tensorlbm/balanced_local_moving_boundary_2d.py:27:40: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:32:25: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:38:35: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:41:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:42:28: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:43:24: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:48:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:49:28: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:50:24: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:50:73: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:51:35: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:54:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:65:35: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:68:42: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:74:12: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:75:16: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:76:38: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:84:40: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:85:46: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:88:29: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:92:35: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:98:29: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:101:47: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:106:29: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:113:58: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:115:32: E701 Multiple statements on one line (colon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:123:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:123:52: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:123:63: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:123:76: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:127:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:127:88: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:127:127: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:134:33: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:134:65: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/balanced_local_moving_boundary_2d.py:134:95: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/curved_boundary_2d.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/curved_boundary_2d.py:23:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/curved_boundary_2d.py:25:34: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/curved_boundary_2d.py:26:34: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/curved_boundary_2d.py:26:55: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/curved_boundary_2d.py:28:35: E701 Multiple statements on one line (colon)
+src/tensorlbm/curved_boundary_2d.py:29:25: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/curved_boundary_2d.py:30:51: E701 Multiple statements on one line (colon)
+src/tensorlbm/curved_boundary_2d.py:36:45: E701 Multiple statements on one line (colon)
+src/tensorlbm/curved_boundary_2d.py:37:38: E701 Multiple statements on one line (colon)
+src/tensorlbm/curved_boundary_2d.py:39:23: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/curved_boundary_2d.py:40:42: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/curved_boundary_2d.py:43:46: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/curved_boundary_2d.py:45:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/curved_boundary_2d.py:48:17: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/cut_cell_bgk_2d.py:25:24: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:25:49: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:32:45: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:33:38: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:35:57: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:38:68: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:39:54: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:43:47: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:43:60: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:49:27: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:51:36: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:57:116: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:58:66: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:72:24: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:72:40: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:74:26: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:74:59: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:74:94: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:74:133: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:76:50: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:77:30: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:77:48: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:78:56: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:78:100: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:79:57: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:82:31: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:82:59: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:86:20: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:91:48: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:92:27: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:93:37: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:94:79: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:95:36: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:96:50: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:102:53: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:102:84: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:104:41: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:105:35: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:108:55: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:108:84: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:110:41: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:111:35: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:112:25: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:114:29: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:115:23: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:127:71: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:138:71: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:144:93: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:146:33: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:148:81: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:152:23: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:153:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:153:66: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:155:30: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:160:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:160:51: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:160:101: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:161:24: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:161:67: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:162:62: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:166:22: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:166:52: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:166:68: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:166:111: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:169:21: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:175:41: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:176:36: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:177:41: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:179:44: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:180:53: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:182:42: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:182:43: F841 Local variable `incoming` is assigned to but never used
+src/tensorlbm/cut_cell_bgk_2d.py:185:41: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:190:13: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:191:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:192:47: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:193:30: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:195:50: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:197:125: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:198:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:198:54: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:198:83: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:210:27: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:210:57: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:221:195: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:222:34: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:223:66: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:224:51: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:225:48: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:230:73: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:231:52: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:233:33: E701 Multiple statements on one line (colon)
+src/tensorlbm/cut_cell_bgk_2d.py:235:37: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:238:22: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:238:36: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/cut_cell_bgk_2d.py:238:79: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/feedback_moving_disk.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/feedback_moving_disk.py:51:37: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/feedback_moving_disk.py:51:74: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/feedback_moving_disk.py:58:33: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/feedback_moving_disk.py:90:36: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/fixed_disk_boundary_2d.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/fixed_disk_boundary_2d.py:9:19: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/fixed_disk_boundary_2d.py:10:38: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/fixed_disk_boundary_2d.py:11:28: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/fixed_disk_boundary_2d.py:13:28: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/fixed_disk_boundary_2d.py:16:26: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/free_surface_ice_lid.py:23:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/free_surface_ice_lid.py:30:26: F401 [*] `.d3q19.OPPOSITE` imported but unused
+src/tensorlbm/free_surface_ice_lid.py:32:5: F401 [*] `.boundaries3d._D3Q19_MIRROR_Y` imported but unused
+src/tensorlbm/free_surface_ice_lid.py:33:5: F401 [*] `.boundaries3d.bounce_back_cells_3d` imported but unused
+src/tensorlbm/free_surface_ice_lid.py:36:51: F401 [*] `.navier_slip_bc.slip_length_to_beta` imported but unused
+src/tensorlbm/free_surface_ice_lid.py:38:5: F401 [*] `.free_surface_lbm.GAS` imported but unused
+src/tensorlbm/free_surface_ice_lid.py:38:10: F401 [*] `.free_surface_lbm.LIQUID` imported but unused
+src/tensorlbm/free_surface_ice_lid.py:38:18: F401 [*] `.free_surface_lbm.INTERFACE` imported but unused
+src/tensorlbm/free_surface_ice_lid.py:38:29: F401 [*] `.free_surface_lbm.SOLID` imported but unused
+src/tensorlbm/ice_coupling_2d.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/ice_coupling_2d.py:94:9: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/ice_coupling_2d.py:254:9: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/ice_coupling_2d.py:259:12: E701 Multiple statements on one line (colon)
+src/tensorlbm/ice_coupling_2d.py:260:45: E701 Multiple statements on one line (colon)
+src/tensorlbm/ice_coupling_2d.py:288:33: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/ice_coupling_2d.py:288:40: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/ice_coupling_2d.py:293:28: E701 Multiple statements on one line (colon)
+src/tensorlbm/ice_coupling_2d.py:294:36: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/local_moving_boundary_2d.py:7:8: F401 [*] `math` imported but unused
+src/tensorlbm/local_moving_boundary_2d.py:27:40: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:32:25: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:38:35: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:41:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:42:28: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:43:24: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:48:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:49:28: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:50:24: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:50:73: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:51:35: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:54:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:61:35: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:68:12: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:69:16: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:70:38: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:74:29: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:75:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:75:56: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:80:29: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:83:47: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:85:35: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:90:58: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:92:32: E701 Multiple statements on one line (colon)
+src/tensorlbm/local_moving_boundary_2d.py:100:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:100:52: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:100:63: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:100:76: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:104:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:104:79: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:104:118: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:111:33: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:111:65: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/local_moving_boundary_2d.py:111:95: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/maneuvering.py:44:36: F401 [*] `dataclasses.field` imported but unused
+src/tensorlbm/maneuvering.py:45:20: F401 [*] `typing.Optional` imported but unused
+src/tensorlbm/maneuvering.py:313:5: F841 Local variable `M` is assigned to but never used
+src/tensorlbm/maneuvering.py:314:5: F841 Local variable `A` is assigned to but never used
+src/tensorlbm/maneuvering.py:407:5: F841 Local variable `c` is assigned to but never used
+src/tensorlbm/moving_boundary_2d.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/moving_boundary_2d.py:35:20: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:38:45: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:47:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:48:28: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:49:24: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:49:73: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:50:35: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:52:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:58:35: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:59:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:60:37: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:60:64: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:60:77: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:61:38: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:62:49: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:66:41: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:66:57: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:66:86: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:68:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:69:53: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:71:53: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:72:50: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:73:34: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:74:47: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:75:46: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:76:19: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:88:35: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:101:34: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:101:56: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:104:29: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:104:79: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/moving_boundary_2d.py:104:115: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/navier_slip_bc.py:36:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/navier_slip_bc.py:40:36: F401 [*] `.d3q19.macroscopic3d` imported but unused
+src/tensorlbm/perimeter_boundary_2d.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/suboff_cmk_kbc_runner.py:285:9: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/swept_rectangle_geometry_2d.py:8:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/swept_rectangle_geometry_2d.py:41:24: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:53:15: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:64:30: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:65:58: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:86:36: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:87:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:88:24: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:92:18: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:96:40: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:98:33: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:104:40: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:106:33: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:115:46: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:116:17: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:117:24: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:127:34: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:132:46: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:135:64: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:137:22: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:138:25: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:139:31: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:139:50: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:140:46: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:141:46: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:165:61: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:170:35: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_rectangle_geometry_2d.py:177:36: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+src/tensorlbm/swept_uniform_transport_2d.py:20:99: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_uniform_transport_2d.py:24:65: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_uniform_transport_2d.py:28:21: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:39:62: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_uniform_transport_2d.py:49:33: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:51:32: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:54:34: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_uniform_transport_2d.py:61:19: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:65:76: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_uniform_transport_2d.py:66:33: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:67:33: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:67:54: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:86:25: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:86:55: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:94:154: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_uniform_transport_2d.py:95:34: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:95:65: E702 Multiple statements on one line (semicolon)
+src/tensorlbm/swept_uniform_transport_2d.py:96:165: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_uniform_transport_2d.py:99:89: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_uniform_transport_2d.py:100:85: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_uniform_transport_2d.py:101:47: E701 Multiple statements on one line (colon)
+src/tensorlbm/swept_uniform_transport_2d.py:107:51: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_balanced_local_moving_boundary.py:1:8: F401 [*] `copy` imported but unused
+tests/test_balanced_local_moving_boundary.py:9:42: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:16:22: E701 Multiple statements on one line (colon)
+tests/test_balanced_local_moving_boundary.py:16:33: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:22:34: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:22:52: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:23:23: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:31:34: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:31:62: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:32:54: E701 Multiple statements on one line (colon)
+tests/test_balanced_local_moving_boundary.py:36:34: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:39:37: E701 Multiple statements on one line (colon)
+tests/test_balanced_local_moving_boundary.py:44:35: E701 Multiple statements on one line (colon)
+tests/test_balanced_local_moving_boundary.py:47:34: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:47:55: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:48:35: E701 Multiple statements on one line (colon)
+tests/test_balanced_local_moving_boundary.py:52:34: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:52:45: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:53:15: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:59:34: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:61:35: E701 Multiple statements on one line (colon)
+tests/test_balanced_local_moving_boundary.py:68:38: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:68:64: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:70:25: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:80:21: E702 Multiple statements on one line (semicolon)
+tests/test_balanced_local_moving_boundary.py:86:24: E701 Multiple statements on one line (colon)
+tests/test_curved_boundary_2d.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_curved_boundary_2d.py:10:22: E702 Multiple statements on one line (semicolon)
+tests/test_curved_boundary_2d.py:15:44: E702 Multiple statements on one line (semicolon)
+tests/test_curved_boundary_2d.py:22:20: E701 Multiple statements on one line (colon)
+tests/test_curved_boundary_2d.py:23:9: E701 Multiple statements on one line (colon)
+tests/test_curved_boundary_2d.py:37:45: E702 Multiple statements on one line (semicolon)
+tests/test_curved_boundary_2d.py:44:35: E701 Multiple statements on one line (colon)
+tests/test_curved_boundary_2d.py:48:44: E702 Multiple statements on one line (semicolon)
+tests/test_curved_boundary_2d.py:48:55: E702 Multiple statements on one line (semicolon)
+tests/test_curved_boundary_2d.py:49:19: E701 Multiple statements on one line (colon)
+tests/test_curved_boundary_2d.py:50:23: E701 Multiple statements on one line (colon)
+tests/test_curved_boundary_2d.py:51:21: E701 Multiple statements on one line (colon)
+tests/test_curved_boundary_2d.py:52:9: E701 Multiple statements on one line (colon)
+tests/test_curved_boundary_2d.py:53:35: E701 Multiple statements on one line (colon)
+tests/test_cut_cell_bgk_2d.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_cut_cell_bgk_2d.py:1:8: F401 [*] `copy` imported but unused
+tests/test_cut_cell_bgk_2d.py:9:16: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:16:19: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:16:44: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:16:75: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:16:101: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:18:35: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:30:21: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:30:41: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:31:21: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:39:21: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:40:23: E701 Multiple statements on one line (colon)
+tests/test_cut_cell_bgk_2d.py:45:67: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:46:23: E701 Multiple statements on one line (colon)
+tests/test_cut_cell_bgk_2d.py:62:19: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:63:47: E701 Multiple statements on one line (colon)
+tests/test_cut_cell_bgk_2d.py:69:22: E701 Multiple statements on one line (colon)
+tests/test_cut_cell_bgk_2d.py:78:21: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:78:39: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:79:35: E701 Multiple statements on one line (colon)
+tests/test_cut_cell_bgk_2d.py:83:19: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:83:44: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:83:62: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:84:50: E701 Multiple statements on one line (colon)
+tests/test_cut_cell_bgk_2d.py:88:50: E701 Multiple statements on one line (colon)
+tests/test_cut_cell_bgk_2d.py:92:35: E701 Multiple statements on one line (colon)
+tests/test_cut_cell_bgk_2d.py:96:42: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:98:24: E702 Multiple statements on one line (semicolon)
+tests/test_cut_cell_bgk_2d.py:98:45: E702 Multiple statements on one line (semicolon)
+tests/test_feedback_moving_disk.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_feedback_moving_disk.py:8:35: E702 Multiple statements on one line (semicolon)
+tests/test_feedback_moving_disk.py:8:54: E702 Multiple statements on one line (semicolon)
+tests/test_feedback_moving_disk.py:12:20: E701 Multiple statements on one line (colon)
+tests/test_feedback_moving_disk.py:16:42: E702 Multiple statements on one line (semicolon)
+tests/test_feedback_moving_disk.py:26:47: E701 Multiple statements on one line (colon)
+tests/test_feedback_moving_disk.py:29:24: E701 Multiple statements on one line (colon)
+tests/test_fixed_disk_boundary_2d.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_fixed_disk_boundary_2d.py:7:9: E702 Multiple statements on one line (semicolon)
+tests/test_fixed_disk_boundary_2d.py:7:49: E702 Multiple statements on one line (semicolon)
+tests/test_fixed_disk_boundary_2d.py:9:43: E702 Multiple statements on one line (semicolon)
+tests/test_fixed_disk_boundary_2d.py:21:46: E702 Multiple statements on one line (semicolon)
+tests/test_fixed_disk_boundary_2d.py:23:45: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_local_moving_boundary.py:1:8: F401 [*] `copy` imported but unused
+tests/test_local_moving_boundary.py:9:34: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:16:22: E701 Multiple statements on one line (colon)
+tests/test_local_moving_boundary.py:16:33: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:22:26: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:22:44: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:23:23: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:31:26: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:31:54: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:32:54: E701 Multiple statements on one line (colon)
+tests/test_local_moving_boundary.py:36:26: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:39:37: E701 Multiple statements on one line (colon)
+tests/test_local_moving_boundary.py:44:35: E701 Multiple statements on one line (colon)
+tests/test_local_moving_boundary.py:47:26: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:47:47: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:48:35: E701 Multiple statements on one line (colon)
+tests/test_local_moving_boundary.py:52:26: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:52:37: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:53:15: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:59:26: E702 Multiple statements on one line (semicolon)
+tests/test_local_moving_boundary.py:61:35: E701 Multiple statements on one line (colon)
+tests/test_moving_boundary_2d.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_moving_boundary_2d.py:4:54: F401 [*] `tensorlbm.moving_boundary_2d.equilibrium` imported but unused
+tests/test_moving_boundary_2d.py:4:67: F401 [*] `tensorlbm.moving_boundary_2d.momentum` imported but unused
+tests/test_moving_boundary_2d.py:24:27: E701 Multiple statements on one line (colon)
+tests/test_moving_boundary_2d.py:33:26: E701 Multiple statements on one line (colon)
+tests/test_moving_boundary_2d.py:38:27: E701 Multiple statements on one line (colon)
+tests/test_moving_boundary_2d.py:44:47: E701 Multiple statements on one line (colon)
+tests/test_moving_boundary_2d.py:45:37: E702 Multiple statements on one line (semicolon)
+tests/test_moving_boundary_2d.py:46:43: E701 Multiple statements on one line (colon)
+tests/test_moving_boundary_2d.py:48:24: E701 Multiple statements on one line (colon)
+tests/test_navier_slip_bc.py:8:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_navier_slip_bc.py:15:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_navier_slip_bc.py:15:29: F401 [*] `tensorlbm.d3q19.C` imported but unused
+tests/test_navier_slip_bc.py:15:32: F401 [*] `tensorlbm.d3q19.W` imported but unused
+tests/test_navier_slip_bc.py:15:35: F401 [*] `tensorlbm.d3q19.OPPOSITE` imported but unused
+tests/test_perimeter_boundary_2d.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_perimeter_boundary_2d.py:14:36: E702 Multiple statements on one line (semicolon)
+tests/test_swept_rectangle_geometry.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_swept_rectangle_geometry.py:1:8: F401 [*] `math` imported but unused
+tests/test_swept_rectangle_geometry.py:44:17: E702 Multiple statements on one line (semicolon)
+tests/test_swept_rectangle_geometry.py:48:11: E702 Multiple statements on one line (semicolon)
+tests/test_swept_rectangle_geometry.py:55:27: E702 Multiple statements on one line (semicolon)
+tests/test_swept_rectangle_geometry.py:55:48: E702 Multiple statements on one line (semicolon)
+tests/test_swept_rectangle_geometry.py:62:31: E702 Multiple statements on one line (semicolon)
+tests/test_swept_rectangle_geometry.py:74:23: E701 Multiple statements on one line (colon)
+tests/test_swept_rectangle_geometry.py:80:50: E701 Multiple statements on one line (colon)
+tests/test_swept_rectangle_geometry.py:82:39: E701 Multiple statements on one line (colon)
+tests/test_swept_rectangle_geometry.py:83:35: E701 Multiple statements on one line (colon)
+tests/test_swept_rectangle_geometry.py:87:35: E701 Multiple statements on one line (colon)
+tests/test_swept_uniform_transport.py:1:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_swept_uniform_transport.py:9:64: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:9:86: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:10:23: E701 Multiple statements on one line (colon)
+tests/test_swept_uniform_transport.py:11:45: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:11:70: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:13:25: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:25:30: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:25:50: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:27:26: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:27:68: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:29:35: E701 Multiple statements on one line (colon)
+tests/test_swept_uniform_transport.py:34:30: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:34:45: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:35:56: E701 Multiple statements on one line (colon)
+tests/test_swept_uniform_transport.py:40:30: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:40:41: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:42:31: E702 Multiple statements on one line (semicolon)
+tests/test_swept_uniform_transport.py:43:39: E701 Multiple statements on one line (colon)
+tests/test_swept_uniform_transport.py:45:57: E701 Multiple statements on one line (colon)
+tests/test_swept_uniform_transport.py:50:35: E701 Multiple statements on one line (colon)
+tests/test_triton_fused.py:18:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_triton_fused.py:24:5: F401 [*] `tensorlbm.triton_fused.DEFAULT_BLOCK_X` imported but unused
+tests/test_triton_fused.py:25:5: F401 [*] `tensorlbm.triton_fused.DEFAULT_BLOCK_Y` imported but unused
+Found 623 errors.
+[*] 207 fixable with the `--fix` option (5 hidden fixes can be enabled with the `--unsafe-fixes` option).

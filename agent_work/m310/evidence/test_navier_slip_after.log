@@ -1,0 +1,51 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________________ test_navier_slip_mass_conservation ______________________
+
+    def test_navier_slip_mass_conservation():
+        """Test that Navier slip BC conserves mass."""
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
+        # Setup
+        nz, ny, nx = 4, 21, 16
+        rho_init = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
+        ux_init = torch.zeros_like(rho_init)
+        uy_init = torch.zeros_like(rho_init)
+        uz_init = torch.zeros_like(rho_init)
+    
+        f = equilibrium3d(rho_init, ux_init, uy_init, uz_init)
+    
+        # Wall masks
+        bottom_mask = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
+        bottom_mask[:, 0, :] = True
+        top_mask = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
+        top_mask[:, -1, :] = True
+    
+        # Initial mass
+        mass_initial = f.sum().item()
+    
+        # Apply some flow with Navier slip
+        for step in range(100):
+            rho, ux, uy, uz = macroscopic3d(f)
+            feq = equilibrium3d(rho, ux, uy, uz)
+            f = f - (f - feq) / 1.0
+            f = stream3d(f)
+            f = navier_slip_cells_3d(f, bottom_mask, axis=1, Ls=2.0)
+            f = navier_slip_cells_3d(f, top_mask, axis=1, Ls=2.0)
+    
+        # Final mass
+        mass_final = f.sum().item()
+    
+        # Check mass conservation
+        mass_drift = abs(mass_final - mass_initial)
+>       assert mass_drift < 1e-6, f"Navier slip should conserve mass, but drift is {mass_drift}"
+E       AssertionError: Navier slip should conserve mass, but drift is 0.0001220703125
+E       assert 0.0001220703125 < 1e-06
+
+tests/test_navier_slip_bc.py:150: AssertionError
+============================== collection-ignore ===============================
+(fastapi absent): 5 files: test_apps_api.py, test_data_catalog_api.py, test_demo_mount.py, test_drag_echo_api.py, test_drag_surrogate_api.py
+(triton absent): 11 files: test_checkpoint.py, test_hardware_portability.py, test_precision_policy.py, test_reporters.py, test_selective_halo_exchange.py, test_triton_fused.py, test_triton_fused_asymmetric.py, test_triton_kernel_smag_closure.py, test_triton_obstacle_wall_parity.py, test_triton_suboff_mass_reduce.py, test_voxel_accel.py
+=========================== short test summary info ============================
+FAILED tests/test_navier_slip_bc.py::test_navier_slip_mass_conservation - Ass...
+1 failed in 1.22s
