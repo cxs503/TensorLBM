@@ -87,6 +87,27 @@ jobs:
           name: coverage-xml-py${{ matrix.python-version }}
           path: coverage.xml
 
+  # The FastAPI platform has its own dependency set and test suite under
+  # app/. Keep it separate from the numerical library matrix so failures have
+  # an unambiguous owner and app dependencies do not leak into the solver job.
+  platform-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            app/requirements.txt
+      - name: Install solver and platform test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" -r app/requirements.txt
+      - name: Run fast platform tests
+        run: PYTHONPATH=src pytest -q app/tests
+
   package-build:
     runs-on: ubuntu-latest
     steps:
