@@ -150,7 +150,7 @@ def smooth_side_area(L_lb: float, B_lb: float, T_lb: float) -> float:
     b = L_lb / 2.0
     jac = np.sqrt((a * g_xi * T_lb) ** 2 + (b * T_lb) ** 2 + (b * a * g_zeta) ** 2)
     # merge the two 1-D weight vectors
-    w = (zw[:, None] * xw[None, :])
+    w = zw[:, None] * xw[None, :]
     return float((jac * w).sum())
 
 
@@ -163,9 +163,7 @@ def smooth_wetted_area(variant: str, L_lb: float, B_lb: float, T_lb: float) -> d
         from numpy.polynomial.legendre import leggauss
 
         zg, zw = leggauss(3000)
-        a_top = (B_lb * L_lb / 2.0) * float(
-            (np.clip(1.0 - zg**2, 0.0, 1.0) ** 0.45 * zw).sum()
-        )
+        a_top = (B_lb * L_lb / 2.0) * float((np.clip(1.0 - zg**2, 0.0, 1.0) ** 0.45 * zw).sum())
         return {"S_side": 2.0 * s_one, "S_top": a_top, "S_total": 2.0 * s_one + a_top}
     # double body: below-WL hull + its mirror (two halves, two sides each)
     return {"S_side": 4.0 * s_one, "S_top": 0.0, "S_total": 4.0 * s_one}
@@ -305,7 +303,9 @@ def main() -> None:
         default="mix50",
         choices=["standard", "2nd_order", "central", "lagrange", "bfl", "faces", "mix50"],
     )
-    ap.add_argument("--p0", default="near_wall", choices=["near_wall", "far_field", "domain_avg", "inlet"])
+    ap.add_argument(
+        "--p0", default="near_wall", choices=["near_wall", "far_field", "domain_avg", "inlet"]
+    )
     ap.add_argument("--out", default=None)
     add_compile_mode_arg(ap)
     args = ap.parse_args()
@@ -456,7 +456,9 @@ def main() -> None:
         k = int(len(log) * frac)
         seg = log[max(0, k - n_win) : k]
         if seg:
-            conv[f"{int(frac * 100)}%"] = round(sum(e["cd_total"] for e in seg) / len(seg) * rescale, 6)
+            conv[f"{int(frac * 100)}%"] = round(
+                sum(e["cd_total"] for e in seg) / len(seg) * rescale, 6
+            )
 
     result = {
         "case": f"KCS parametric hull ({variant}) Re=1000",

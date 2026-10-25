@@ -15,14 +15,13 @@ All numerical assertions use ``torch.allclose`` with relaxed tolerances
 appropriate for fp32 LBM summation-order differences (verified at 1.6%
 relative vs PyTorch ref in earlier benchmarks).
 """
+
 from __future__ import annotations
 
 import pytest
 import torch
 
 from tensorlbm.triton_fused import (
-    DEFAULT_BLOCK_X,
-    DEFAULT_BLOCK_Y,
     TritonFusedSolver3D,
     is_available,
     make_lattice_tensors,
@@ -31,10 +30,10 @@ from tensorlbm.triton_fused import (
     triton_stream,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="module")
 def dev() -> str:
@@ -62,6 +61,7 @@ def _equilibrium_field(n: int, dev: str, seed: int = 0) -> torch.Tensor:
 # 1. Module surface
 # ---------------------------------------------------------------------------
 
+
 def test_is_available_on_cuda(dev: str) -> None:
     assert is_available() is True
 
@@ -83,6 +83,7 @@ def test_lattice_tensors_padded_and_correct(dev: str) -> None:
 # 2. Streaming correctness vs torch.roll (the perf_solver reference)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize("n", [16, 32, 64])
 def test_stream_bit_exact_vs_torch_roll(n: int, dev: str) -> None:
     """Triton pull-stream must be bit-exact with torch.roll periodic shift."""
@@ -95,9 +96,7 @@ def test_stream_bit_exact_vs_torch_roll(n: int, dev: str) -> None:
     # pure PyTorch.  Identical address arithmetic -> identical result.
     ref = torch.empty_like(f)
     for q in range(19):
-        ref[q] = torch.roll(f[q],
-                            shifts=(_CZ[q], _CY[q], _CX[q]),
-                            dims=(0, 1, 2))
+        ref[q] = torch.roll(f[q], shifts=(_CZ[q], _CY[q], _CX[q]), dims=(0, 1, 2))
     diff = (out_tri - ref).abs().max().item()
     assert diff == 0.0, f"max|triton_stream - torch.roll 19-dir| = {diff}"
 
@@ -105,6 +104,7 @@ def test_stream_bit_exact_vs_torch_roll(n: int, dev: str) -> None:
 # ---------------------------------------------------------------------------
 # 3. Fused vs separate collide+stream
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("n", [16, 32, 64])
 def test_fused_matches_separate_collide_stream(n: int, dev: str) -> None:
@@ -123,6 +123,7 @@ def test_fused_matches_separate_collide_stream(n: int, dev: str) -> None:
 # ---------------------------------------------------------------------------
 # 4. Class behaviour
 # ---------------------------------------------------------------------------
+
 
 def test_class_step_returns_fresh_tensor_with_correct_shape(dev: str) -> None:
     n = 32
@@ -155,7 +156,7 @@ def test_class_transient_memory_two_x(dev: str) -> None:
     """Transient memory should be just two ping-pong buffers, not 5.4x f."""
     n = 64
     solver = TritonFusedSolver3D(nz=n, ny=n, nx=n, tau=0.6, device=dev)
-    expected = 2 * 19 * n ** 3 * 4  # 2 buffers, fp32
+    expected = 2 * 19 * n**3 * 4  # 2 buffers, fp32
     actual = solver.transient_memory_bytes()
     assert actual == expected, f"expected {expected}, got {actual}"
 
@@ -167,8 +168,7 @@ def test_class_rejects_cpu_device() -> None:
 
 def test_class_rejects_bad_dtype(dev: str) -> None:
     with pytest.raises(ValueError, match="Unsupported dtype"):
-        TritonFusedSolver3D(nz=8, ny=8, nx=8, tau=0.6,
-                             device=dev, dtype=torch.int32)
+        TritonFusedSolver3D(nz=8, ny=8, nx=8, tau=0.6, device=dev, dtype=torch.int32)
 
 
 def test_step_no_alias_race_non_equilibrium_blob(dev: str) -> None:
@@ -203,8 +203,7 @@ def test_step_no_alias_race_non_equilibrium_blob(dev: str) -> None:
     # Direct ping-pong check: consecutive outputs must be distinct tensors.
     a = solver.step(f0.clone())
     b = solver.step(a)
-    assert a.data_ptr() != b.data_ptr(), \
-        "consecutive step() outputs must alternate buffers"
+    assert a.data_ptr() != b.data_ptr(), "consecutive step() outputs must alternate buffers"
 
     m0 = f0.sum(dtype=torch.float64).item()
 
@@ -230,12 +229,14 @@ def test_step_no_alias_race_non_equilibrium_blob(dev: str) -> None:
     rel = err / max(g.abs().max().item(), 1e-12)
     assert rel < 1e-4, (
         f"50-step trajectory diverged from race-free reference: "
-        f"max|diff|={err:.3e}, rel={rel:.3e} (input/output aliasing race)")
+        f"max|diff|={err:.3e}, rel={rel:.3e} (input/output aliasing race)"
+    )
 
 
 # ---------------------------------------------------------------------------
 # 5. Reduced-precision storage
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("dtype", [torch.float16, torch.bfloat16])
 def test_reduced_precision_mass_conserved(dtype: torch.dtype, dev: str) -> None:
@@ -258,6 +259,7 @@ def test_reduced_precision_mass_conserved(dtype: torch.dtype, dev: str) -> None:
 # ---------------------------------------------------------------------------
 # 6. Sanity: solver is actually fast
 # ---------------------------------------------------------------------------
+
 
 def test_benchmark_returns_finite_time(dev: str) -> None:
     """The benchmark() helper must return a positive, finite number."""

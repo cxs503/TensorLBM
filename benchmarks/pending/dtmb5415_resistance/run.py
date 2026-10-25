@@ -54,7 +54,6 @@ sys.path.insert(0, str(_REPO_ROOT / "benchmarks"))  # compile_route
 
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
-
 from compile_route import (  # noqa: E402
     add_compile_mode_arg,
     compile_mode_from_args,
@@ -63,7 +62,6 @@ from compile_route import (  # noqa: E402
 )
 
 from tensorlbm.boundaries3d import far_field_bc_3d  # noqa: E402
-from tensorlbm.d3q19 import equilibrium3d  # noqa: E402
 from tensorlbm.drag_pressure import (  # noqa: E402
     drag_friction_integration,
     drag_pressure_integration,
@@ -87,19 +85,19 @@ from tensorlbm.lbm_step_correct import lbm_step_correct  # noqa: E402
 # DTMB 5415 full-scale principal dimensions (standard_models_detailed.py,
 # Stern et al. 1996 DTMB 5415 model tests)
 # ---------------------------------------------------------------------------
-LPP = 142.0        # m, length between perpendiculars
-LWL = 153.0        # m, length at waterline
-BEAM = 19.06       # m
-DRAFT = 6.15       # m
-CB = 0.507         # block coefficient
-U_PHYS = 1.0e-3    # m/s (sets dt/Re only; low-Re family)
+LPP = 142.0  # m, length between perpendiculars
+LWL = 153.0  # m, length at waterline
+BEAM = 19.06  # m
+DRAFT = 6.15  # m
+CB = 0.507  # block coefficient
+U_PHYS = 1.0e-3  # m/s (sets dt/Re only; low-Re family)
 
 # DTMB 5415 model-test total resistance (INSEAN towing tank; second-hand
 # constants from a sibling repo CI test citing Olivieri 2001 / Stern 2000).
 # C_T normalised by wetted surface; Cf_ITTC57 at Re ~ 1.2e7.
 C_T_EXP = {0.28: 4.2e-3, 0.35: 5.1e-3, 0.41: 6.8e-3}
-CF_ITTC57_EXP = 2.91e-3          # at Re ~ 1.2e7  (Fr=0.28)
-CR_RESIDUAL_EXP = 0.94e-3        # form + wave residual (Fr=0.28)
+CF_ITTC57_EXP = 2.91e-3  # at Re ~ 1.2e7  (Fr=0.28)
+CR_RESIDUAL_EXP = 0.94e-3  # form + wave residual (Fr=0.28)
 EXP_FR = 0.28
 
 
@@ -218,11 +216,13 @@ def main() -> None:
     ap.add_argument("--device", default=None)
     ap.add_argument("--collision", default="mrt", choices=["mrt", "smagorinsky"])
     ap.add_argument(
-        "--friction", default="mix50",
+        "--friction",
+        default="mix50",
         choices=["standard", "2nd_order", "central", "lagrange", "bfl_smooth", "faces", "mix50"],
     )
-    ap.add_argument("--p0", default="near_wall",
-                    choices=["near_wall", "far_field", "domain_avg", "inlet"])
+    ap.add_argument(
+        "--p0", default="near_wall", choices=["near_wall", "far_field", "domain_avg", "inlet"]
+    )
     ap.add_argument("--out", default=None)
     add_compile_mode_arg(ap)
     args = ap.parse_args()
@@ -282,20 +282,44 @@ def main() -> None:
         ),
     )
 
-    print(f"=== DTMB 5415 L={L} geometry={args.geometry} friction={args.friction} "
-          f"steps={args.steps} device={args.device} ===", flush=True)
+    print(
+        f"=== DTMB 5415 L={L} geometry={args.geometry} friction={args.friction} "
+        f"steps={args.steps} device={args.device} ===",
+        flush=True,
+    )
     engine = GeneralSimEngine(config)
     setup = engine.setup()
-    print("setup:", json.dumps(
-        {k: setup[k] for k in (
-            "Re", "tau", "u_lb", "nu_lb", "domain_lu", "obstacle_cells",
-            "near_wall_cells", "total_cells", "device",
-            "auto_collision", "auto_wall_treatment")}, indent=1), flush=True)
+    print(
+        "setup:",
+        json.dumps(
+            {
+                k: setup[k]
+                for k in (
+                    "Re",
+                    "tau",
+                    "u_lb",
+                    "nu_lb",
+                    "domain_lu",
+                    "obstacle_cells",
+                    "near_wall_cells",
+                    "total_cells",
+                    "device",
+                    "auto_collision",
+                    "auto_wall_treatment",
+                )
+            },
+            indent=1,
+        ),
+        flush=True,
+    )
 
     run_info, elapsed = run_engine_routed(engine, compile_mode)
-    print(f"run: {run_info['status']} in {elapsed:.0f}s "
-          f"({elapsed/max(run_info['steps'],1)*1000:.1f} ms/step) "
-          f"compile={run_info.get('compile_status')}", flush=True)
+    print(
+        f"run: {run_info['status']} in {elapsed:.0f}s "
+        f"({elapsed / max(run_info['steps'], 1) * 1000:.1f} ms/step) "
+        f"compile={run_info.get('compile_status')}",
+        flush=True,
+    )
 
     # ---- post-process -----------------------------------------------------
     u_lb = engine.uc.u_lb
@@ -360,7 +384,8 @@ def main() -> None:
         "geometry_source": (
             "zenodo/CNR-INSEAN official DTMB 5415 baseline point cloud -> "
             "underwater clip (T=6.15m); external, see _build_geometry.py"
-            if args.geometry == "stl" else "ship_cad Series60 parametric proxy"
+            if args.geometry == "stl"
+            else "ship_cad Series60 parametric proxy"
         ),
         "device": args.device,
         "L_cells": L,
@@ -409,11 +434,17 @@ def main() -> None:
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
     (out_dir / "result.json").write_text(json.dumps(result, indent=2))
-    print(f"\nCd_p={cd_p:.6f} Cd_f={cd_f:.6f} Cd_tot={cd_tot:.6f} "
-          f"(Blasius={cf_blasius:.6f}, ITTC57={cf_ittc:.6f}, exp_CT={ct_exp:.6f})", flush=True)
-    print(f"err vs Blasius={err_blasius:.2f}%  vs ITTC57={err_ittc:.2f}%  "
-          f"vs exp C_T={err_exp:.2f}%  (no-wave bound err={err_exp_bound:.2f}%)", flush=True)
-    print(f"result -> {out_dir/'result.json'}", flush=True)
+    print(
+        f"\nCd_p={cd_p:.6f} Cd_f={cd_f:.6f} Cd_tot={cd_tot:.6f} "
+        f"(Blasius={cf_blasius:.6f}, ITTC57={cf_ittc:.6f}, exp_CT={ct_exp:.6f})",
+        flush=True,
+    )
+    print(
+        f"err vs Blasius={err_blasius:.2f}%  vs ITTC57={err_ittc:.2f}%  "
+        f"vs exp C_T={err_exp:.2f}%  (no-wave bound err={err_exp_bound:.2f}%)",
+        flush=True,
+    )
+    print(f"result -> {out_dir / 'result.json'}", flush=True)
 
 
 if __name__ == "__main__":

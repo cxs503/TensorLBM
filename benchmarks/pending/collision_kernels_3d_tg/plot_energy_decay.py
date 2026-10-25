@@ -6,9 +6,10 @@ Shows E(t)/E0 decay + LSQ fit for KBC (PASS) vs cumulant (D3Q27, FAIL).
 """
 
 import csv
-import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 HERE = Path(__file__).parent
 
@@ -23,6 +24,7 @@ kernels_showcase = {
 
 # Read result.json for gamma_theory and gamma_sim
 import json
+
 with open(HERE / "result.json") as f:
     rdata = json.load(f)
 
@@ -41,24 +43,21 @@ for kname, info in kernels_showcase.items():
     steps = np.array(steps)
     energies = np.array(energies)
     E0 = energies[0]
-    
-    ax.semilogy(steps, energies / E0, 
-                color=info["color"], linewidth=2, 
-                label=info["label"])
-    
+
+    ax.semilogy(steps, energies / E0, color=info["color"], linewidth=2, label=info["label"])
+
     # Overlay LSQ fit line
     kernel_data = rdata["kernels"][kname]
     case = [c for c in kernel_data["cases"] if c["n"] == info["N"]][0]
     gamma_sim = case["gamma_e_sim"]
     fit_line = np.exp(-gamma_sim * steps)
-    ax.semilogy(steps, fit_line, 
-                color=info["color"], linestyle="--", alpha=0.5, linewidth=1)
+    ax.semilogy(steps, fit_line, color=info["color"], linestyle="--", alpha=0.5, linewidth=1)
 
 ax.set_xlabel("Time step t", fontsize=11)
 ax.set_ylabel("E(t) / E₀", fontsize=11)
-ax.set_title("Kinetic Energy Decay (N=96, Re=24)", fontsize=12, fontweight='bold')
-ax.legend(fontsize=9, loc='upper right')
-ax.grid(True, alpha=0.3, linestyle=':')
+ax.set_title("Kinetic Energy Decay (N=96, Re=24)", fontsize=12, fontweight="bold")
+ax.legend(fontsize=9, loc="upper right")
+ax.grid(True, alpha=0.3, linestyle=":")
 ax.set_ylim(1e-5, 2)
 
 # Right panel: -d(ln E)/dt instantaneous decay rate
@@ -73,16 +72,21 @@ for kname, info in kernels_showcase.items():
             energies.append(float(row["energy"]))
     steps = np.array(steps)
     energies = np.array(energies)
-    
+
     # Compute instantaneous -d(ln E)/dt via central differences
     lnE = np.log(energies)
     gamma_inst = -np.gradient(lnE, steps)
-    
+
     # Skip first point (noisy)
-    ax2.plot(steps[1:], gamma_inst[1:], 
-             color=info["color"], linewidth=1.5, alpha=0.8,
-             label=info["label"])
-    
+    ax2.plot(
+        steps[1:],
+        gamma_inst[1:],
+        color=info["color"],
+        linewidth=1.5,
+        alpha=0.8,
+        label=info["label"],
+    )
+
     # Horizontal line: gamma_sim (LSQ fit)
     kernel_data = rdata["kernels"][kname]
     case = [c for c in kernel_data["cases"] if c["n"] == info["N"]][0]
@@ -92,21 +96,26 @@ for kname, info in kernels_showcase.items():
 
 # Add theory annotation
 case_kbc = [c for c in rdata["kernels"]["kbc_d3q19"]["cases"] if c["n"] == 96][0]
-ax2.text(0.98, 0.95, f"γ_theory = {case_kbc['gamma_e_theory']:.5f}\n" +
-                      f"(analytical 6νk²)", 
-         transform=ax2.transAxes, 
-         fontsize=9, verticalalignment='top', horizontalalignment='right',
-         bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+ax2.text(
+    0.98,
+    0.95,
+    f"γ_theory = {case_kbc['gamma_e_theory']:.5f}\n" + "(analytical 6νk²)",
+    transform=ax2.transAxes,
+    fontsize=9,
+    verticalalignment="top",
+    horizontalalignment="right",
+    bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5),
+)
 
 ax2.set_xlabel("Time step t", fontsize=11)
 ax2.set_ylabel("Instantaneous γ_E = -d(ln E)/dt", fontsize=11)
-ax2.set_title("Instantaneous Decay Rate (N=96)", fontsize=12, fontweight='bold')
-ax2.legend(fontsize=9, loc='lower right')
-ax2.grid(True, alpha=0.3, linestyle=':')
+ax2.set_title("Instantaneous Decay Rate (N=96)", fontsize=12, fontweight="bold")
+ax2.legend(fontsize=9, loc="lower right")
+ax2.grid(True, alpha=0.3, linestyle=":")
 
 plt.tight_layout()
 
 output_path = HERE / "figures" / "curve_energy_decay_history.png"
-plt.savefig(output_path, dpi=150, bbox_inches='tight')
+plt.savefig(output_path, dpi=150, bbox_inches="tight")
 print(f"Saved: {output_path} ({output_path.stat().st_size} bytes)")
 plt.close()

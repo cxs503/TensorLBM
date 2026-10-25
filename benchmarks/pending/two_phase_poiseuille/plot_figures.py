@@ -8,10 +8,12 @@ Generates:
 
 All data from out_part1.json and result.json (zero hand-copied).
 """
+
 import json
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,9 +23,11 @@ DATA = CASE_DIR / "out_part1.json"
 RESULTS = CASE_DIR / "result.json"
 FIG_DIR = CASE_DIR / "figures"
 
+
 def load_data():
     with open(DATA) as f:
         return json.load(f)
+
 
 def plot_convergence_curve(d, save_path):
     """Plot u_max convergence history for H64 and H128."""
@@ -43,6 +47,7 @@ def plot_convergence_curve(d, save_path):
     plt.close(fig)
     print(f"Saved {save_path}")
 
+
 def plot_error_profile(d, save_path):
     """Plot relative error vs position across channel for both grids."""
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -58,9 +63,15 @@ def plot_error_profile(d, save_path):
             rel_err_pct = [0.0] * len(rel_err)
         ny = d[key]["ny"]
         y_pos = np.linspace(0, ny - 1, ny)
-        ax.plot(y_pos, rel_err_pct, marker=marker, markersize=3,
-                color=color, label=f"{key} rel_err_pct (max={d[key]['center_err_mask_simmax']['max_rel_err_pct']:.1f}%)",
-                alpha=0.7)
+        ax.plot(
+            y_pos,
+            rel_err_pct,
+            marker=marker,
+            markersize=3,
+            color=color,
+            label=f"{key} rel_err_pct (max={d[key]['center_err_mask_simmax']['max_rel_err_pct']:.1f}%)",
+            alpha=0.7,
+        )
     ax.axhline(y=3.0, color="red", linestyle="--", alpha=0.5, label="3% threshold")
     ax.axhline(y=-3.0, color="red", linestyle="--", alpha=0.5)
     ax.set_xlabel("y position (lattice units)")
@@ -72,6 +83,7 @@ def plot_error_profile(d, save_path):
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
     print(f"Saved {save_path}")
+
 
 def plot_velocity_profile(d, save_path):
     """Plot sim vs analytical velocity profiles side by side."""
@@ -86,7 +98,9 @@ def plot_velocity_profile(d, save_path):
         ax.plot(u_ana, y_pos, "k--", label="Analytical", linewidth=1.5)
         ax.set_xlabel("u (lattice units)")
         ax.set_ylabel("y position")
-        ax.set_title(f"{key} (ny={ny}): Sim vs Analytical\nu_max ratio = {d[key]['u_max_ratio']:.4f}")
+        ax.set_title(
+            f"{key} (ny={ny}): Sim vs Analytical\nu_max ratio = {d[key]['u_max_ratio']:.4f}"
+        )
         ax.legend()
         ax.grid(True, alpha=0.3)
     fig.suptitle("Two-Phase Poiseuille: Velocity Profiles", fontsize=14)
@@ -95,17 +109,22 @@ def plot_velocity_profile(d, save_path):
     plt.close(fig)
     print(f"Saved {save_path}")
 
+
 def plot_convergence_error(r, save_path):
     """Plot max_rel_err comparison between H64 and H128 showing anti-convergence."""
     fig, ax = plt.subplots(figsize=(6, 4))
     grids = ["H64", "H128"]
-    errs = [r["part1"]["H64"]["max_rel_err"] * 100,
-            r["part1"]["H128"]["max_rel_err"] * 100]
+    errs = [r["part1"]["H64"]["max_rel_err"] * 100, r["part1"]["H128"]["max_rel_err"] * 100]
     bars = ax.bar(grids, errs, color=["blue", "orange"], edgecolor="black")
     ax.axhline(y=3.0, color="red", linestyle="--", label="3% threshold", linewidth=1.5)
     for bar, val in zip(bars, errs):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
-                f"{val:.2f}%", ha="center", fontsize=11)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.5,
+            f"{val:.2f}%",
+            ha="center",
+            fontsize=11,
+        )
     ax.set_ylabel("Max relative error (%)")
     ax.set_title("Two-Phase Poiseuille SC-MCMP: Error Anti-Convergence\n(26.82% → 33.17%)")
     ax.legend()
@@ -114,6 +133,7 @@ def plot_convergence_error(r, save_path):
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
     print(f"Saved {save_path}")
+
 
 def main():
     FIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -132,6 +152,7 @@ def main():
 
     # Figure 4: Anti-convergence bar chart
     plot_convergence_error(r, FIG_DIR / "curve_anti_convergence.png")
+
 
 if __name__ == "__main__":
     main()

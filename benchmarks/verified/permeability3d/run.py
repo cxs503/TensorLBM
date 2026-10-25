@@ -664,7 +664,7 @@ def make_report(args: argparse.Namespace) -> dict:
 def dump_case(args: argparse.Namespace) -> None:
     """Run a case and dump full 3D field data to npz for visualization."""
     import numpy as np
-    
+
     phi = args.phi
     N = args.n
     fs = args.force_scale
@@ -672,48 +672,48 @@ def dump_case(args: argparse.Namespace) -> None:
     device = torch.device(args.device)
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Build geometry
     solid = sphere_array_mask_3d(N, phi, device)
     a_nom = nominal_radius(N, phi)
-    phi_actual = float(solid.sum()) / (N ** 3)
-    
+    phi_actual = float(solid.sum()) / (N**3)
+
     # Initialize fields
     f = torch.full((19, N, N, N), 1.0 / 19.0, device=device)
     rho = torch.ones((N, N, N), device=device)
     ux = torch.zeros((N, N, N), device=device)
     uy = torch.zeros((N, N, N), device=device)
     uz = torch.zeros((N, N, N), device=device)
-    
+
     # Body force
     a_x = fs * RE_TARGET * NU / (N * (1.0 - phi_actual))
-    
+
     # Run to steady state
     max_steps = args.max_steps if args.max_steps > 0 else 50000
     steady_tol = 1e-6
-    
+
     print(f"Dump case: phi={phi}, N={N}, fs={fs}, tau={tau}, max_steps={max_steps}")
-    
+
     ux_prev = 0.0
     history = []
-    
+
     for step in range(max_steps):
         # Collide
         f = collide_bgk3d(f, tau)
-        
+
         # Stream (periodic)
         f = stream3d(f)
-        
+
         # Body force (fluid-masked)
         f = apply_body_force_3d(f, a_x)
         f = torch.where(solid, f, f)  # mask solid nodes
-        
+
         # Bounce-back
         f = bounce_back_cells_3d(f, solid)
-        
+
         # Macroscopic
         rho, ux, uy, uz = macroscopic3d(f)
-        
+
         # Steady detection
         ux_mean = float(ux[~solid].mean()) if (~solid).any() else 0.0
         if step > 0 and step % 100 == 0:
@@ -723,7 +723,7 @@ def dump_case(args: argparse.Namespace) -> None:
                 print(f"Steady at step {step}, ux_mean={ux_mean:.6e}")
                 break
             ux_prev = ux_mean
-    
+
     # Dump to npz
     npz_path = out_dir / f"case_phi{phi}_N{N}_fs{fs:.0f}.npz"
     np.savez_compressed(
