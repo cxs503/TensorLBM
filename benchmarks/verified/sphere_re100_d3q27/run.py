@@ -22,6 +22,7 @@ driver machine-checks domain/tau/steps/re_eff/u_lb against the pulled
 archive JSONs (t1/t2 tier files) and refuses to run on mismatch
 (zero hand-copied judgment numbers).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -119,18 +120,33 @@ def far_field27_inplace(f: torch.Tensor, u_in: float) -> torch.Tensor:
     def mk(shape, val):
         return torch.full(shape, val, dtype=dt, device=f.device)
 
-    feq_in = equilibrium27(mk((nz, ny, 1), 1.0), mk((nz, ny, 1), u_in),
-                           mk((nz, ny, 1), 0.0), mk((nz, ny, 1), 0.0), device=f.device)
+    feq_in = equilibrium27(
+        mk((nz, ny, 1), 1.0),
+        mk((nz, ny, 1), u_in),
+        mk((nz, ny, 1), 0.0),
+        mk((nz, ny, 1), 0.0),
+        device=f.device,
+    )
     f[:, :, :, 0] = feq_in[:, :, :, 0]
     del feq_in
     f[:, :, :, -1] = f[:, :, :, -2]
-    feq_y = equilibrium27(mk((nz, 1, nx), 1.0), mk((nz, 1, nx), u_in),
-                          mk((nz, 1, nx), 0.0), mk((nz, 1, nx), 0.0), device=f.device)
+    feq_y = equilibrium27(
+        mk((nz, 1, nx), 1.0),
+        mk((nz, 1, nx), u_in),
+        mk((nz, 1, nx), 0.0),
+        mk((nz, 1, nx), 0.0),
+        device=f.device,
+    )
     f[:, 0, :, :] = feq_y[:, 0, :, :]
     f[:, -1, :, :] = feq_y[:, -1, :, :]
     del feq_y
-    feq_z = equilibrium27(mk((1, ny, nx), 1.0), mk((1, ny, nx), u_in),
-                          mk((1, ny, nx), 0.0), mk((1, ny, nx), 0.0), device=f.device)
+    feq_z = equilibrium27(
+        mk((1, ny, nx), 1.0),
+        mk((1, ny, nx), u_in),
+        mk((1, ny, nx), 0.0),
+        mk((1, ny, nx), 0.0),
+        device=f.device,
+    )
     f[:, :, 0, :] = feq_z[:, :, 0, :]
     f[:, :, -1, :] = feq_z[:, :, -1, :]
     del feq_z
@@ -152,11 +168,14 @@ def cv_box_force_exact_27(f_pre_stream, solid, margin=6):
     zs, ys, xs = torch.nonzero(solid, as_tuple=True)
     m = margin
     nz, ny, nx = solid.shape
-    z0 = max(int(zs.min()) - m, 2); z1 = min(int(zs.max()) + m, nz - 3)
-    y0 = max(int(ys.min()) - m, 2); y1 = min(int(ys.max()) + m, ny - 3)
-    x0 = max(int(xs.min()) - m, 2); x1 = min(int(xs.max()) + m, nx - 3)
+    z0 = max(int(zs.min()) - m, 2)
+    z1 = min(int(zs.max()) + m, nz - 3)
+    y0 = max(int(ys.min()) - m, 2)
+    y1 = min(int(ys.max()) + m, ny - 3)
+    x0 = max(int(xs.min()) - m, 2)
+    x1 = min(int(xs.max()) + m, nx - 3)
     inbox = torch.zeros_like(solid)
-    inbox[z0:z1 + 1, y0:y1 + 1, x0:x1 + 1] = True
+    inbox[z0 : z1 + 1, y0 : y1 + 1, x0 : x1 + 1] = True
     c = C.to(dev)
     T = torch.zeros(3, device=dev, dtype=torch.float64)
     for i in range(1, 27):
@@ -233,9 +252,16 @@ class MemSampler:
         while not self._stop.is_set():
             try:
                 out = subprocess.run(
-                    ["nvidia-smi", "-i", self.physical_gpu,
-                     "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
-                    capture_output=True, text=True, timeout=10,
+                    [
+                        "nvidia-smi",
+                        "-i",
+                        self.physical_gpu,
+                        "--query-gpu=memory.used",
+                        "--format=csv,noheader,nounits",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
                 )
                 v = int(out.stdout.strip().splitlines()[0])
                 if v > self.max_mib:
@@ -312,7 +338,9 @@ def run_case(out_path, D, steps, lat, up, down, tau, ulb, sample, cv_tail=0, mem
     if sampler is not None:
         sampler.__enter__()
 
-    bfl_mask, bfl_q = compute_q_sphere_common(nx, ny, nz, cx_lb, cy_lb, cz_lb, R_lb, dev, lattice="D3Q27")
+    bfl_mask, bfl_q = compute_q_sphere_common(
+        nx, ny, nz, cx_lb, cy_lb, cz_lb, R_lb, dev, lattice="D3Q27"
+    )
     n_links = int(bfl_mask[1:].sum().item())
     q_active = bfl_q[1:][bfl_mask[1:]]
     links = bfl_boundary_link_indices(bfl_mask, bfl_q, lattice="D3Q27")
@@ -331,8 +359,11 @@ def run_case(out_path, D, steps, lat, up, down, tau, ulb, sample, cv_tail=0, mem
     ux0 = torch.full((nz, ny, nx), float(ulb), dtype=torch.float32, device=dev)
     ux0[solid] = 0.0
     feq27_perq_into(
-        f, torch.ones((nz, ny, nx), dtype=torch.float32, device=dev), ux0,
-        torch.zeros_like(ux0), torch.zeros_like(ux0),
+        f,
+        torch.ones((nz, ny, nx), dtype=torch.float32, device=dev),
+        ux0,
+        torch.zeros_like(ux0),
+        torch.zeros_like(ux0),
     )
     del ux0
     target_mass = float(f.sum().item())
@@ -361,8 +392,7 @@ def run_case(out_path, D, steps, lat, up, down, tau, ulb, sample, cv_tail=0, mem
             cd = float(force3[0].item()) / dpS
             cl = float(force3[1].item()) / dpS
             cs = float(force3[2].item()) / dpS
-            entry = {"step": step, "cd": cd, "cl": cl, "cs": cs,
-                     "mass": float(f.sum().item())}
+            entry = {"step": step, "cd": cd, "cl": cl, "cs": cs, "mass": float(f.sum().item())}
             if cv_tail > 0 and step > steps - cv_tail:
                 cv, _ = cv_box_force_exact_27(f_pre_stream, solid)
                 entry["cv_mom_cd"] = cv[0] / dpS
@@ -379,7 +409,11 @@ def run_case(out_path, D, steps, lat, up, down, tau, ulb, sample, cv_tail=0, mem
             el = time.time() - t0
             print(f"step {step}/{steps} ({el:.0f}s, {el / step * 1000:.0f} ms/step)", flush=True)
 
-    peak_loop = float(torch.cuda.max_memory_allocated()) / 2**30 if (mem_stats and dev.type == "cuda") else None
+    peak_loop = (
+        float(torch.cuda.max_memory_allocated()) / 2**30
+        if (mem_stats and dev.type == "cuda")
+        else None
+    )
     if sampler is not None:
         sampler.__exit__()
 
@@ -390,8 +424,13 @@ def run_case(out_path, D, steps, lat, up, down, tau, ulb, sample, cv_tail=0, mem
         "kernel": "sparse",
         "route": "bfl",
         "treat": "hard",
-        "mirrored_impl": ["feq27_perq_into", "collide27_inplace", "bb27_solid_scatter",
-                          "far_field27_inplace", "correct_mass27_inplace"],
+        "mirrored_impl": [
+            "feq27_perq_into",
+            "collide27_inplace",
+            "bb27_solid_scatter",
+            "far_field27_inplace",
+            "correct_mass27_inplace",
+        ],
         "mirrored_ab_evidence": "diag/ab27.json (torch.equal P1-P5)",
         "D": D,
         "lat": lat,
@@ -457,8 +496,19 @@ def main():
         args.tau = 0.56 if args.D == 40 else 0.59
     PROGRESS["phase"] = "run"
     try:
-        run_case(args.out, args.D, args.steps, args.lat, args.up, args.down,
-                 args.tau, args.ulb, args.sample, args.cv_tail, args.mem_stats)
+        run_case(
+            args.out,
+            args.D,
+            args.steps,
+            args.lat,
+            args.up,
+            args.down,
+            args.tau,
+            args.ulb,
+            args.sample,
+            args.cv_tail,
+            args.mem_stats,
+        )
     except (torch.cuda.OutOfMemoryError, RuntimeError) as exc:
         if "out of memory" not in str(exc).lower() and not isinstance(
             exc, torch.cuda.OutOfMemoryError

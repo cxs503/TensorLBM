@@ -32,6 +32,7 @@ coefficients; no LBM flow, no hull coupling, no free-surface, no radiation
 memory / damping validation.  The damped memory path is reported as a
 diagnostic only.  See README.md / NOTES.md.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -113,8 +114,15 @@ def measure_omega_lsq_sine(t: np.ndarray, x: np.ndarray, omega_guess: float) -> 
 # --------------------------------------------------------------------------- #
 # model construction
 # --------------------------------------------------------------------------- #
-def build_case(dof: int, name: str, mass: float, added_mass: float,
-               stiffness: float, inertia_diag: tuple, waterplane_area: float):
+def build_case(
+    dof: int,
+    name: str,
+    mass: float,
+    added_mass: float,
+    stiffness: float,
+    inertia_diag: tuple,
+    waterplane_area: float,
+):
     """Assemble body/hydrostatics/radiation for a single-DOF mode."""
     inertia = torch.diag(torch.tensor(inertia_diag, dtype=torch.float32))
     body = BodyProperties6DOF(
@@ -138,8 +146,9 @@ def build_case(dof: int, name: str, mass: float, added_mass: float,
     return body, hydro, radiation
 
 
-def run_undamped(dof, name, mass, added_mass, stiffness, inertia_diag,
-                 waterplane_area, dt, n_periods):
+def run_undamped(
+    dof, name, mass, added_mass, stiffness, inertia_diag, waterplane_area, dt, n_periods
+):
     body, hydro, radiation = build_case(
         dof, name, mass, added_mass, stiffness, inertia_diag, waterplane_area
     )
@@ -197,8 +206,9 @@ def run_undamped(dof, name, mass, added_mass, stiffness, inertia_diag,
     }
 
 
-def run_damped_diagnostic(dof, name, mass, added_mass, stiffness, inertia_diag,
-                          waterplane_area, B0, dt, n_periods, wmax):
+def run_damped_diagnostic(
+    dof, name, mass, added_mass, stiffness, inertia_diag, waterplane_area, B0, dt, n_periods, wmax
+):
     """Diagnostic only: constant B(w)=B0 over [0, wmax].
 
     Analytic viscous reference: zeta = B0 / (2 sqrt((M+A) C)),
@@ -242,7 +252,7 @@ def run_damped_diagnostic(dof, name, mass, added_mass, stiffness, inertia_diag,
         "omega_meas": zc["omega_meas"],
         "omega_meas_vs_d_analytic_pct": (zc["omega_meas"] - omega_d) / omega_d * 100.0,
         "amp_first_period": float(np.abs(pos[: max(1, int(T / dt))]).max()),
-        "amp_last_period": float(np.abs(pos[-max(1, int(T / dt)):]).max()),
+        "amp_last_period": float(np.abs(pos[-max(1, int(T / dt)) :]).max()),
         "wall_s": wall_s,
         "criterion": "diagnostic-only",
     }
@@ -263,17 +273,29 @@ def main() -> int:
     # Case definitions.  omega_n is set by the chosen (stiffness, m_eff).
     #   heave: C = rho g A_wp = 2000,  m_eff = 1000 + 1000 = 2000  -> wn = 1.000
     #   roll : C = rho g grad GM_T = 4905, m_eff = 800 + 800 = 1600 -> wn = 1.751
-    heave = dict(dof=2, name="heave", mass=1000.0, added_mass=1000.0,
-                 stiffness=2000.0, inertia_diag=(1.0, 1.0, 1.0),
-                 waterplane_area=2000.0 / (RHO * G))
-    roll = dict(dof=3, name="roll", mass=1000.0, added_mass=800.0,
-                stiffness=4905.0, inertia_diag=(800.0, 1.0, 1.0),
-                waterplane_area=1.0)
+    heave = dict(
+        dof=2,
+        name="heave",
+        mass=1000.0,
+        added_mass=1000.0,
+        stiffness=2000.0,
+        inertia_diag=(1.0, 1.0, 1.0),
+        waterplane_area=2000.0 / (RHO * G),
+    )
+    roll = dict(
+        dof=3,
+        name="roll",
+        mass=1000.0,
+        added_mass=800.0,
+        stiffness=4905.0,
+        inertia_diag=(800.0, 1.0, 1.0),
+        waterplane_area=1.0,
+    )
 
     cases = []
     for spec in (heave, roll):
         wn = math.sqrt(spec["stiffness"] / (spec["mass"] + spec["added_mass"]))
-        dt_coarse = 0.5 / wn        # omega_n dt = 0.5
+        dt_coarse = 0.5 / wn  # omega_n dt = 0.5
         for tag, dt in (("coarse", dt_coarse), ("fine", dt_coarse / 2.0)):
             spec_run = {k: v for k, v in spec.items()}
             r = run_undamped(**spec_run, dt=dt, n_periods=args.periods)
@@ -301,11 +323,21 @@ def main() -> int:
         # finite-band delayed-kernel convolution.  NOT part of the criteria.
         for dt in (0.02, 0.05):
             for B0 in (50.0, 200.0):
-                damped.append(run_damped_diagnostic(
-                    heave["dof"], heave["name"], heave["mass"], heave["added_mass"],
-                    heave["stiffness"], heave["inertia_diag"], heave["waterplane_area"],
-                    B0=B0, dt=dt, n_periods=40, wmax=math.pi / dt,
-                ))
+                damped.append(
+                    run_damped_diagnostic(
+                        heave["dof"],
+                        heave["name"],
+                        heave["mass"],
+                        heave["added_mass"],
+                        heave["stiffness"],
+                        heave["inertia_diag"],
+                        heave["waterplane_area"],
+                        B0=B0,
+                        dt=dt,
+                        n_periods=40,
+                        wmax=math.pi / dt,
+                    )
+                )
 
     TOL = 3.0
     verdict = {
@@ -317,9 +349,15 @@ def main() -> int:
             v["discrete_meas_err_pct"] < 0.5 for v in spans.values()
         ),
     }
-    verdict["pass"] = all(verdict[k] for k in
-                          ("each_level_within_tol", "each_case_span_within_tol",
-                           "eig_exact", "integrator_matches_discrete_theory"))
+    verdict["pass"] = all(
+        verdict[k]
+        for k in (
+            "each_level_within_tol",
+            "each_case_span_within_tol",
+            "eig_exact",
+            "integrator_matches_discrete_theory",
+        )
+    )
 
     result = {
         "benchmark": "floating_body_free_decay",
@@ -358,16 +396,31 @@ def main() -> int:
 
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
-    (out / "result.json").write_text(
-        json.dumps(result, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    (out / "result.json").write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
 
-    print(json.dumps({"verdict": verdict, "spans": spans,
-                      "damped": [{k: v[k] for k in
-                                  ("B0", "zeta", "omega_meas_vs_d_analytic_pct",
-                                   "amp_first_period", "amp_last_period")}
-                                 for v in damped]},
-                     indent=2, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "verdict": verdict,
+                "spans": spans,
+                "damped": [
+                    {
+                        k: v[k]
+                        for k in (
+                            "B0",
+                            "zeta",
+                            "omega_meas_vs_d_analytic_pct",
+                            "amp_first_period",
+                            "amp_last_period",
+                        )
+                    }
+                    for v in damped
+                ],
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0 if verdict["pass"] else 1
 
 

@@ -41,8 +41,7 @@ References
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 import torch
 
@@ -53,6 +52,7 @@ __all__ = [
     "analytic_transient",
     "NOMINAL_TANKER_PRIME",
 ]
+
 
 # --------------------------------------------------------------------------- #
 # helper: non-dimensional (SNAME prime) -> dimensional conversion
@@ -99,8 +99,8 @@ NOMINAL_TANKER_PRIME = {
     "Y_r": 0.05,
     "N_v": -0.095,
     "N_r": -0.08,
-    "Y_delta": -0.16,   # rudder side force to port for delta > 0 (starboard)
-    "N_delta": 0.04,    # bow-to-starboard yaw couple for delta > 0
+    "Y_delta": -0.16,  # rudder side force to port for delta > 0 (starboard)
+    "N_delta": 0.04,  # bow-to-starboard yaw couple for delta > 0
 }
 
 
@@ -191,8 +191,7 @@ class ManeuveringModel:
 
     def nonlinear_force(self, v: float) -> torch.Tensor:
         """Cross-flow (``|v| v``) lateral force / yaw moment."""
-        return torch.tensor([self.Y_vv * abs(v) * v, self.N_vv * abs(v) * v],
-                            dtype=torch.float64)
+        return torch.tensor([self.Y_vv * abs(v) * v, self.N_vv * abs(v) * v], dtype=torch.float64)
 
     def has_nonlinear(self) -> bool:
         return self.Y_vv != 0.0 or self.N_vv != 0.0
@@ -215,8 +214,16 @@ class ManeuveringModel:
         ev = torch.linalg.eigvals(torch.linalg.solve(self.mass_matrix(), A))
         stable = bool(torch.all(ev.real < 0).item())
         return SteadyTurn(
-            delta=delta, v=v, r=r, R=R, R_over_L=R / self.L, beta_deg=beta,
-            K=K, det=det, stable=stable, speed=math.hypot(self.U, v),
+            delta=delta,
+            v=v,
+            r=r,
+            R=R,
+            R_over_L=R / self.L,
+            beta_deg=beta,
+            K=K,
+            det=det,
+            stable=stable,
+            speed=math.hypot(self.U, v),
         )
 
     def _steady_turn_nonlinear(self, delta: float) -> tuple[float, float]:
@@ -235,8 +242,7 @@ class ManeuveringModel:
             return -(N_v * v + self.N_vv * abs(v) * v + N_d * delta) / N_r
 
         def f(v: float) -> float:
-            return (Y_v * v + (Y_r - mU) * r_of(v)
-                    + self.Y_vv * abs(v) * v + Y_d * delta)
+            return Y_v * v + (Y_r - mU) * r_of(v) + self.Y_vv * abs(v) * v + Y_d * delta
 
         lo, hi = -3.0 * self.U, 3.0 * self.U
         flo, fhi = f(lo), f(hi)
@@ -285,8 +291,7 @@ def _rhs(model: ManeuveringModel, q: torch.Tensor, delta: float) -> torch.Tensor
     M = model.mass_matrix()
     A = model.damping_matrix()
     v = float(q[0])
-    return torch.linalg.solve(M, A @ q + model.input_vector(delta)
-                              + model.nonlinear_force(v))
+    return torch.linalg.solve(M, A @ q + model.input_vector(delta) + model.nonlinear_force(v))
 
 
 def simulate_turn(
@@ -310,11 +315,13 @@ def simulate_turn(
 
     Returns a dict of histories (python floats for v/r; tensors for x/y).
     """
-    M = model.mass_matrix()
-    A = model.damping_matrix()
+    # Model accessors are invoked for their validation side effect; the
+    # coefficients themselves are unused on this nonlinear time-marching path.
+    model.mass_matrix()
+    model.damping_matrix()
 
-    q = torch.zeros(2, dtype=torch.float64)      # v, r
-    pos = torch.zeros(2, dtype=torch.float64)    # x, y
+    q = torch.zeros(2, dtype=torch.float64)  # v, r
+    pos = torch.zeros(2, dtype=torch.float64)  # x, y
     psi = 0.0
 
     v_hist: list[float] = []
@@ -353,8 +360,10 @@ def simulate_turn(
             pos = torch.tensor([x_new, y_new], dtype=torch.float64)
             psi = psi_new
         elif integrator == "rk4":
+
             def f(state: torch.Tensor) -> torch.Tensor:
                 return _rhs(model, state, d_now)
+
             k1 = f(q)
             k2 = f(q + 0.5 * dt * k1)
             k3 = f(q + 0.5 * dt * k2)
@@ -404,7 +413,7 @@ def analytic_transient(model: ManeuveringModel, delta: float, t) -> tuple:
     A = model.damping_matrix().numpy()
     b = model.input_vector(delta).numpy()
     L = np.linalg.solve(M, A)
-    c = np.linalg.solve(M, b)
+    _c = np.linalg.solve(M, b)  # particular solution; mode analysis below uses q_ss
     q_ss = np.linalg.solve(A, -b)
     evals, evecs = np.linalg.eig(L)
     coeff = np.linalg.solve(evecs, -q_ss)

@@ -58,7 +58,6 @@ from tensorlbm.propeller_benchmark import (
 from tensorlbm.propeller_cad import (
     PropellerGeometryConfig,
     build_propeller_mask,
-    propeller_statistics,
 )
 from tensorlbm.solver3d import stream3d
 from tensorlbm.turbulence import collide_smagorinsky_mrt3d
@@ -126,9 +125,7 @@ def run_j(
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
     ux0 = torch.full_like(rho0, u_in)
     ux0[mask0] = 0.0
-    f = equilibrium3d(
-        rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0), device=device
-    )
+    f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0), device=device)
     previous_mask = mask0
 
     impulse_x = impulse_t = 0.0
@@ -139,7 +136,14 @@ def run_j(
     for step in range(1, n_total + 1):
         azimuth_deg = math.degrees((step * omega) % (2.0 * math.pi))
         mask = build_propeller_mask(
-            nx, ny, nz, cx, cy, cz, angle_deg=azimuth_deg, config=geometry,
+            nx,
+            ny,
+            nz,
+            cx,
+            cy,
+            cz,
+            angle_deg=azimuth_deg,
+            config=geometry,
             device=str(device),
         )
         wall_mask = make_channel_wall_mask_3d(nz, ny, nx, mask, device=device)
@@ -158,8 +162,11 @@ def run_j(
         released = previous_mask & ~mask
         if bool(released.any()):
             equilibrium = equilibrium3d(
-                torch.ones_like(rho0), torch.full_like(rho0, u_in),
-                torch.zeros_like(rho0), torch.zeros_like(rho0), device=device,
+                torch.ones_like(rho0),
+                torch.full_like(rho0, u_in),
+                torch.zeros_like(rho0),
+                torch.zeros_like(rho0),
+                device=device,
             )
             f[:, released] = equilibrium[:, released]
         previous_mask = mask
@@ -249,16 +256,24 @@ def main() -> None:
     print(
         f"[cfg] device={device} D={args.diameter} dom={args.nx}x{args.ny}x{args.nz} "
         f"rpm={args.rpm:.6g} tau={args.tau} nu={nu:.4g} Re_D={re_d:.1f} "
-        f"steps/rev={2*math.pi/(2*math.pi*args.rpm):.0f} Cs={args.cs}",
+        f"steps/rev={2 * math.pi / (2 * math.pi * args.rpm):.0f} Cs={args.cs}",
         flush=True,
     )
 
     if args.mode == "smoke":
         j = float(args.arg or 0.7)
         r = run_j(
-            j_target=j, geometry=geometry, nx=args.nx, ny=args.ny, nz=args.nz,
-            rpm=args.rpm, tau=args.tau, cs=args.cs, warmup_steps=20,
-            sample_steps=args.sample, device=device,
+            j_target=j,
+            geometry=geometry,
+            nx=args.nx,
+            ny=args.ny,
+            nz=args.nz,
+            rpm=args.rpm,
+            tau=args.tau,
+            cs=args.cs,
+            warmup_steps=20,
+            sample_steps=args.sample,
+            device=device,
         )
         print(json.dumps(r, indent=2), flush=True)
         return
@@ -266,9 +281,17 @@ def main() -> None:
     if args.mode == "single":
         j = float(args.arg or 0.7)
         r = run_j(
-            j_target=j, geometry=geometry, nx=args.nx, ny=args.ny, nz=args.nz,
-            rpm=args.rpm, tau=args.tau, cs=args.cs, warmup_steps=args.warmup,
-            sample_steps=args.sample, device=device,
+            j_target=j,
+            geometry=geometry,
+            nx=args.nx,
+            ny=args.ny,
+            nz=args.nz,
+            rpm=args.rpm,
+            tau=args.tau,
+            cs=args.cs,
+            warmup_steps=args.warmup,
+            sample_steps=args.sample,
+            device=device,
         )
         print(json.dumps(r, indent=2), flush=True)
         if args.out:
@@ -281,9 +304,17 @@ def main() -> None:
     for j in js:
         print(f"[J={j}] running ...", flush=True)
         r = run_j(
-            j_target=j, geometry=geometry, nx=args.nx, ny=args.ny, nz=args.nz,
-            rpm=args.rpm, tau=args.tau, cs=args.cs, warmup_steps=args.warmup,
-            sample_steps=args.sample, device=device,
+            j_target=j,
+            geometry=geometry,
+            nx=args.nx,
+            ny=args.ny,
+            nz=args.nz,
+            rpm=args.rpm,
+            tau=args.tau,
+            cs=args.cs,
+            warmup_steps=args.warmup,
+            sample_steps=args.sample,
+            device=device,
         )
         print(
             f"[J={j}] KT={r['kt']:.5f} KQ={r['kq']:.5f} eta={r['eta_o']:.4f} "
@@ -309,9 +340,16 @@ def main() -> None:
         "rotation": "Ladd moving-wall bounce-back, re-voxelised mask per step",
         "load_caliber": "moving-wall same-operator reaction + report_propeller_linkwise_loads",
         "numerics": {
-            "nx": args.nx, "ny": args.ny, "nz": args.nz, "tau": args.tau,
-            "nu": nu, "re_d": re_d, "cs": args.cs, "rpm": args.rpm,
-            "warmup_steps": args.warmup, "sample_steps": args.sample,
+            "nx": args.nx,
+            "ny": args.ny,
+            "nz": args.nz,
+            "tau": args.tau,
+            "nu": nu,
+            "re_d": re_d,
+            "cs": args.cs,
+            "rpm": args.rpm,
+            "warmup_steps": args.warmup,
+            "sample_steps": args.sample,
         },
         "reference": {
             "name": "DTMB 4119 open-water experiment",
