@@ -9,7 +9,7 @@ cd /tmp/workspace/cxs503/TensorLBM
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-pip install -r platform/requirements.txt
+pip install -r app/requirements.txt
 ```
 
 ## 2) Core quality checks
@@ -30,7 +30,7 @@ PYTHONPATH=src python examples/sphere_flow_3d.py --nx 60 --ny 30 --nz 30 --n-ste
 ## 4) Start the web platform
 
 ```bash
-cd /tmp/workspace/cxs503/TensorLBM/platform
+cd /tmp/workspace/cxs503/TensorLBM/app
 bash start.sh
 ```
 
