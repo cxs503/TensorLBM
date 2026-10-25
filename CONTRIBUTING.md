@@ -29,7 +29,7 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 
 # Install in editable mode with all dev dependencies
 pip install -e ".[dev]"
-pip install -r platform/requirements.txt
+pip install -r app/requirements.txt
 ```
 
 Minimum requirements: **Python ≥ 3.11**, **PyTorch ≥ 2.0**.
