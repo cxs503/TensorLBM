@@ -101,10 +101,7 @@ def scan(roots: list[tuple[Path, str]]) -> dict[str, Any]:
                         if alias.name != "*" and child in files:
                             record(source, child, node.lineno, "from-member", node.module + ":" + alias.name)
             elif isinstance(node, ast.Call):
-                func = node.func
-                name = func.id if isinstance(func, ast.Name) else (
-                    f"{func.value.id}.{func.attr}" if isinstance(func, ast.Attribute)
-                    and isinstance(func.value, ast.Name) else "")
+                name = ast.unparse(node.func)
                 if name in {"__import__", "importlib.import_module", "import_module",
                             "importlib.util.find_spec", "find_spec"}:
                     target = literal_module(node)
