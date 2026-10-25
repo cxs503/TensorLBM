@@ -23,19 +23,19 @@ frontend).  Built with FastAPI's `TestClient`, so no live server is required.
 Fast suite (default, ~10 s on CPU):
 
 ```bash
-PYTHONPATH=src pytest platform/tests -q
+PYTHONPATH=src pytest app/tests -q
 ```
 
 Full suite (includes solver smoke runs and benchmark suites, ~5–20 min):
 
 ```bash
-PLATFORM_SLOW_TESTS=1 PYTHONPATH=src pytest platform/tests -q
+PLATFORM_SLOW_TESTS=1 PYTHONPATH=src pytest app/tests -q
 ```
 
 Enable WebSocket tests:
 
 ```bash
-PLATFORM_WS_TESTS=1 PYTHONPATH=src pytest platform/tests/test_websocket.py -q
+PLATFORM_WS_TESTS=1 PYTHONPATH=src pytest app/tests/test_websocket.py -q
 ```
 
 ## Discovered & fixed defects
