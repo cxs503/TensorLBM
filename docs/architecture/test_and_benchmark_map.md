@@ -53,3 +53,19 @@ This inventory does **not** assert that the current CI omits app tests, that ver
 3. Inspect `benchmarks/STATUS.md` and representative entries in each lifecycle state.
 4. Generate a manifest of benchmark IDs, source revisions, criteria, results, and missing fields.
 5. Run fast solver and app test suites independently; run physics/GPU/performance suites only on suitable runners and label unavailable hardware checks as not run.
+
+
+## Confirmed CI and documentation gap
+
+The current `.github/workflows/ci.yml` installs `.[dev]` and invokes `pytest` without specifying `app/tests`; `pyproject.toml` sets `testpaths = ["tests"]`. The workflow's ruff command also omits `app` and `app/tests`. Therefore the visible standard CI workflow does not explicitly validate the platform test suite or lint the platform backend. This should be corrected only after checking whether another workflow is intentionally responsible for those checks.
+
+Contributor-facing setup also refers to `platform/requirements.txt` and `platform/start.sh`, while the current tree contains `app/requirements.txt` and `app/start.sh`. Confirm and repair these stale paths as a small documentation fix; do not assume the deployment layout can be changed from docs alone.
+
+## Suggested immediate low-risk PR
+
+1. Correct contributor/developer workflow paths to match the current repository, after confirming the supported startup command.
+2. Add a distinct CI job for `app/tests` using `app/requirements.txt` (or a documented minimal test extra), rather than mixing platform dependencies into the solver package extras.
+3. Add a platform backend lint scope if the current codebase can pass it; otherwise create a bounded baseline and fix violations incrementally.
+4. Keep numerical solver tests and physics benchmarks independent from platform test results so green checks retain clear meaning.
+
+No tests have been run as part of this inventory. These findings are based on workflow and configuration contents only.
