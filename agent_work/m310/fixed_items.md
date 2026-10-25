@@ -25,7 +25,17 @@
 - **修法**：`ruff format src tests examples benchmarks`（116 files reformatted）
 - **修后**：`1533 files already formatted`，退出码 0 → `evidence/ruff_format_check_after.txt`
 
-## FIX-003 [test] test_compile_utils::TestRunnerDedupRegression ×4 — 真缺陷（merge 丢代码）
+## FIX-003 [lint] mypy core gate — 从"从未执行"到确证为绿
+
+- **类别**：静态质量 / 被遮挡的门禁
+- **基线证据**：`baseline/ci_logs/job_120817846451.log` 步骤 7 `Type check (mypy core gate)` = **skipped**——前序 `Lint (ruff)` 一失败就中止，这个门在 main 上从来没真正跑过。
+- **根因**：无（门本身不红，只是被 ruff 遮挡）。
+- **修法**：无需修代码。本地等价补跑以确认解封后是绿是红。
+- **修后**：`Success: no issues found in 4 source files`，退出码 0 → `evidence/mypy_core_gate_after.txt`
+- **口径注记（重要，防误判）**：必须加 `--follow-imports=silent` 才是 CI 这个 core gate 的口径。不加时 mypy 会递归拉进不在该门清单内的传递依赖，报 2029 条——那是下一步 `Type check (mypy full advisory)` 的范畴，且该步骤 `continue-on-error: true`。**不要把 2029 条当成 core gate 红**。
+- **未验证**：`mypy full advisory`（continue-on-error）与 `Check docs-implementation consistency`（`python scripts/check_platform_docs_consistency.py` → 本地实跑输出 `[docs-consistency] OK`，退出 0）均非阻断门；docs-consistency 本地已确证绿。
+
+## FIX-004 [test] test_compile_utils::TestRunnerDedupRegression ×4 — 真缺陷（merge 丢代码）
 
 - **类别**：真实代码缺陷 / 非环境、非 lint
 - **基线证据**：`baseline/ci_logs/job_120817846396.log` 与 `job_120817846337.log` 的 short test summary：
@@ -34,6 +44,20 @@
 - **修法**：恢复 `SuboffCmkKbcConfig.compile_mode: str | None = None` 与 `__post_init__` 校验（① 走 `compile_utils.validate_compile_mode` 单一真源白名单；② 与 `use_triton_step` 互斥；③ KBC 拒绝，因为熵二分每步 `.item()` 不可编译）。**未改任何测试断言**（测试原文保持逐字不变）。
 - **说明（honest）**：本次只恢复了配置契约（字段 + 校验），**未**恢复循环内的 `compile_step` 数值路径——重接编译路径需 CUDA + 数值等价复验，超出本次 CI 清零范围。已在下方 [待办] T-002 登记。
 - **修后**：`20 passed, 2 skipped, 1 xpassed` → `evidence/test_compile_utils_after.log`
+
+---
+
+## 回归取证（重排改动量最大的部分必须证明数值零变化）
+
+`ruff format` 重排了 116 个文件（主要是 `cut_cell_bgk_2d.py` 这类短名模块与配套测试），
+故须证明格式化没有改动物理/数值语义：
+
+| 数据集 | 命令 | 结果 | 工件 |
+|---|---|---|---|
+| 本次改动直接相关 + 重排主体 | pytest 12 个重排模块（cut_cell / moving_boundary / swept / curved / ice_coupling / fixed_disk / octree_sharding…） | **116 passed, 3 skipped, exit=0** | `evidence/regression_reformatted_modules.log` |
+| 受影响语义面 | pytest compile_utils + navier_slip + cut_cell + aircraft_icing + suboff_pipeline | **1 failed, 124 passed, 2 skipped, 4 xpassed**（唯一 failed = 已登记候选 QUAL-CI-NAVIERSLIP-1） | `evidence/regression_target_modules.log` |
+
+即：本次唯一残留的 test 失败都在已登记的 QUAL 候选清单内，无新增红。
 
 ---
 
@@ -74,7 +98,7 @@
 ## [待办] 交给后续班次
 
 - **T-001**：`tests/ci_quarantine.txt` 仍有 141 行历史豁免（本次未动）。QUAL-CI 的目标是"存量红清零"，quarantine 是**非严格 xfail**，会掩盖真红——建议后续班次逐条复跑，把"确实已修好"的行删掉、把"仍红"的行登记为 QUAL 候选。
-- **T-002**：FIX-003 只恢复了 `compile_mode` 的配置契约，**未**重接 `suboff_cmk_kbc_runner` 循环内的 `compile_step` 数值路径（需 CUDA + eager/compiled 等价复验）。
+- **T-002**：FIX-004 只恢复了 `compile_mode` 的配置契约，**未**重接 `suboff_cmk_kbc_runner` 循环内的 `compile_step` 数值路径（需 CUDA + eager/compiled 等价复验）。
 - **T-003**：`test (3.11)` 与 `test (3.12)` 是两个独立矩阵作业，本次本地只能在单一解释器（3.12）上等价复跑；py3.11 侧结论以 CI 日志同源失败为准（本次 7 个失败在两矩阵完全一致）。
 - **T-004**：`package-build` 在 CI 为 success，本环境无 `pip`/`build`，**不可本地复现**，仅记录 CI 结论。
 - **T-005**：本环境无 `triton`/`fastapi`，`tests/conftest.py` 自动忽略 16 个测试文件（5 fastapi + 11 triton）；CI 装了 triton，实际覆盖面比本地大。残余风险：这 11 个 triton 文件在 CI 上的通过性本次未取得本地等价证据。

@@ -1,0 +1,7 @@
+........................................................................ [ 61%]
+............................................ss                           [100%]
+============================== collection-ignore ===============================
+(fastapi absent): 5 files: test_apps_api.py, test_data_catalog_api.py, test_demo_mount.py, test_drag_echo_api.py, test_drag_surrogate_api.py
+(triton absent): 11 files: test_checkpoint.py, test_hardware_portability.py, test_precision_policy.py, test_reporters.py, test_selective_halo_exchange.py, test_triton_fused.py, test_triton_fused_asymmetric.py, test_triton_kernel_smag_closure.py, test_triton_obstacle_wall_parity.py, test_triton_suboff_mass_reduce.py, test_voxel_accel.py
+116 passed, 3 skipped in 150.94s (0:02:30)
+exit=0
