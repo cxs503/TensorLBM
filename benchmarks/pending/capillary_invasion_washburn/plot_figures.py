@@ -10,10 +10,10 @@ All data read from result.json + out_part2_W*.json + out_part2_W*_final.npz.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,14 +22,16 @@ CASE_DIR = Path(__file__).resolve().parent
 FIG_DIR = CASE_DIR / "figures"
 FIG_DIR.mkdir(exist_ok=True)
 
-plt.rcParams.update({
-    "font.size": 11,
-    "axes.labelsize": 12,
-    "axes.titlesize": 13,
-    "legend.fontsize": 10,
-    "figure.dpi": 150,
-    "font.family": "DejaVu Sans",  # fallback to English labels
-})
+plt.rcParams.update(
+    {
+        "font.size": 11,
+        "axes.labelsize": 12,
+        "axes.titlesize": 13,
+        "legend.fontsize": 10,
+        "figure.dpi": 150,
+        "font.family": "DejaVu Sans",  # fallback to English labels
+    }
+)
 
 
 def load_series(W):
@@ -51,10 +53,13 @@ def plot_beta_convergence():
     W64 = r["part2"]["W64"]
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    bars = ax.bar(["W32", "W64"],
-                  [W32["beta"], W64["beta"]],
-                  color=["#d62728", "#ff7f0e"],
-                  alpha=0.8, width=0.5)
+    bars = ax.bar(
+        ["W32", "W64"],
+        [W32["beta"], W64["beta"]],
+        color=["#d62728", "#ff7f0e"],
+        alpha=0.8,
+        width=0.5,
+    )
     ax.axhline(0.5, color="k", ls="--", lw=1.5, label="理论 β=0.5")
     ax.set_ylabel("Washburn 指数 β")
     ax.set_title("毛细侵入 Washburn 指数 β（理论 0.5）")
@@ -64,9 +69,14 @@ def plot_beta_convergence():
     for bar, w in zip(bars, ["W32", "W64"]):
         val = bar.get_height()
         dev = W32["beta_criterion_dev_pct"] if w == "W32" else W64["beta_criterion_dev_pct"]
-        ax.text(bar.get_x() + bar.get_width()/2, val + 0.005,
-                f"β={val:.3f}\n(偏差 {dev:.1f}%)",
-                ha="center", va="bottom", fontsize=9)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            val + 0.005,
+            f"β={val:.3f}\n(偏差 {dev:.1f}%)",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
 
     ax.set_xlabel("网格宽度 W (格子单位)")
     fig.tight_layout()
@@ -136,8 +146,14 @@ def plot_front_Lt():
             A_fit = np.exp(log_A)
             t_full = np.linspace(t1, steps[-1], 200)
             L_fit = A_fit * t_full**beta_fit
-            ax.plot(t_full, L_fit, color=color, ls="--", lw=1.5,
-                    label=f"拟合 L={A_fit:.1f}·t^{beta_fit:.3f}")
+            ax.plot(
+                t_full,
+                L_fit,
+                color=color,
+                ls="--",
+                lw=1.5,
+                label=f"拟合 L={A_fit:.1f}·t^{beta_fit:.3f}",
+            )
 
     ax.set_xlabel("步数 t")
     ax.set_ylabel("侵入前沿位置 L(t)")
@@ -160,8 +176,7 @@ def plot_phase_field():
         solid = d["solid"]
 
         phi_plot = np.where(solid, np.nan, phi)
-        im = axes[i].imshow(phi_plot, aspect="auto", origin="lower",
-                            cmap="RdBu_r", vmin=-1, vmax=1)
+        im = axes[i].imshow(phi_plot, aspect="auto", origin="lower", cmap="RdBu_r", vmin=-1, vmax=1)
         axes[i].set_title(f"W={W} 相场 φ (终态)")
         axes[i].set_xlabel("x (格子单位)")
         axes[i].set_ylabel("y (格子单位)")
@@ -192,8 +207,14 @@ def plot_convergence_comparison():
     ax.legend()
 
     for bar, val in zip(bars, vals):
-        ax.text(bar.get_x() + bar.get_width()/2, val + 0.1,
-                f"{val:.3f}", ha="center", va="bottom", fontsize=10)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            val + 0.1,
+            f"{val:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
 
     ax.set_xlabel("网格宽度")
     fig.tight_layout()

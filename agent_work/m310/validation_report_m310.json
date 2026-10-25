@@ -1,0 +1,96 @@
+{
+  "mission": 310,
+  "schema": "qual-ci-m310/v1",
+  "repo": "TensorLBM",
+  "branch": "agent/m310",
+  "baseline_ref": "main@6ab2d9e4",
+  "baseline_ci_run": 40075503423,
+  "note": "所有数字由 agent_work/m310/baseline/ 下的原始工件直读；不手抄。",
+  "jobs": [
+    {
+      "job": "lint",
+      "ci_job_id": 120817846451,
+      "baseline": "failure",
+      "baseline_step": "Lint (ruff) -> 'Found 623 errors.' (CI 日志 job_120817846451.log:9438)",
+      "root_cause": "main 侧累积漂移：E701/E702 单行多语句（剪贴板式短名模块）、I001 导入乱序、F401 未用导入、E401 一行多导入、F541 空 f-string、F841 未用变量、E722 裸 except。非任何单一 PR 自有文件。",
+      "fix": "ruff --fix（197 项自动可修）+ ruff format 重排 116 个文件（E701/E702 等 416 项由格式化消解）+ 6 项手工：E722 显式异常类型、4 处 F841 去未用局部变量、maneuvering.py 保留访问器校验副作用。禁改测试断言。",
+      "after": "All checks passed! (0 errors)",
+      "evidence": [
+        "agent_work/m310/baseline/ci_logs/job_120817846451.log",
+        "agent_work/m310/baseline/ruff_check.txt",
+        "agent_work/m310/baseline/ruff_format.txt",
+        "agent_work/m310/evidence/ruff_check_after.txt",
+        "agent_work/m310/evidence/ruff_format_check_after.txt"
+      ]
+    },
+    {
+      "job": "lint (step: Format check)",
+      "ci_job_id": 120817846451,
+      "baseline": "skipped (前序 Lint 步骤失败即中止，从未执行)",
+      "root_cause": "同 lint 漂移：116 个文件未按 ruff format 规范化。",
+      "fix": "ruff format src tests examples benchmarks 全量重排。",
+      "after": "1533 files already formatted (exit 0)",
+      "evidence": [
+        "agent_work/m310/baseline/ruff_format.txt",
+        "agent_work/m310/evidence/ruff_format_check_after.txt"
+      ]
+    },
+    {
+      "job": "test (3.11) / test (3.12) — test_compile_utils::TestRunnerDedupRegression (4 例)",
+      "ci_job_id": [120817846396, 120817846337],
+      "baseline": "failure: TypeError: SuboffCmkKbcConfig.__init__() got an unexpected keyword argument 'compile_mode'",
+      "root_cause": "真缺陷（merge 丢代码，非环境）：merge commit 8b2672bc（PR #342, 2026-10-10）把分支 83810c6b 合入时，SuboffCmkKbcConfig 的 compile_mode 字段 + __post_init__ 校验 + 循环内 compile_step 分支整段丢失，但其使用方（compile_utils、suboff_torch_distributed、aircraft_icing、tests）全在。已用 git show 逐版比对：4ba836c9 与 666a00ea 有 12 行 compile_mode，83810c6b 为 0 行，合并结果继承 0 行。",
+      "fix": "恢复 SuboffCmkKbcConfig.compile_mode 字段与 __post_init__ 三态校验（whitelist / use_triton_step 互斥 / KBC 拒绝），复用 tensorlbm.compile_utils.validate_compile_mode 单一真源。未改任何测试断言。",
+      "after": "tests/test_compile_utils.py: 20 passed, 2 skipped, 1 xpassed",
+      "evidence": [
+        "agent_work/m310/baseline/ci_logs/job_120817846396.log",
+        "agent_work/m310/evidence/test_compile_utils_after.log"
+      ]
+    },
+    {
+      "job": "test (3.11) / test (3.12) — test_multiphase_physical_benchmarks (2 例 slow)",
+      "ci_job_id": [120817846396, 120817846337],
+      "baseline": "failure: test_spinodal_2d_physically_separates - assert 1.21822e-05 < 1e-05; test_spinodal_3d_physically_separates - assert 1.0 > 2.0",
+      "root_cause": "未清偿（honest 保留）。实测为真物理语义缺陷而非 lint：2D 在 1200 步后 density_ratio=1.0002、3D=1.0，rho_std 单调衰减（step100 5.1e-4 -> step1200 3.3e-5），即 Shan-Chen 单组分势场在当前 psi_exp/参数下根本没进入 spinodal 失稳，噪声被扩散抹平；质量漂移 1.2e-5 只是同一次失敗的伴生读数（float64 下 3D 漂移 0.0 而 ratio 仍 1.0，证明漂移不是分离失败的原因）。判为物理/参数实现缺陷。",
+      "fix": "不修（不静默改实现以迎合断言，也不改断言阈值放行）。登记为 QUAL 审计候选 QUAL-CI-SPINODAL-1，交 owner 裁决（候选处置：核对 psi_exp 势阱深度/G 的临界值、SC 强制力项是否漏 -G*psi*sum(w psi c) 归一、或 benchmark 参数本身不适用）。",
+      "after": "仍红（如实记账）",
+      "evidence": [
+        "agent_work/m310/baseline/ci_logs/job_120817846396.log",
+        "agent_work/m310/evidence/test_spinodal_after.log"
+      ]
+    },
+    {
+      "job": "test (3.11) / test (3.12) — test_navier_slip_bc::test_navier_slip_mass_conservation",
+      "ci_job_id": [120817846396, 120817846337],
+      "baseline": "failure: AssertionError: Navier slip should conserve mass, but drift is 0.0001220703125 (assert 1.22e-4 < 1e-6)",
+      "root_cause": "实现无缺陷、断言口径与环境不可比（非物理缺陷）。本地等价复跑做了对照：同一循环在 float64 下 drift = 0.0（精确守恒），float32 下 drift = 1.22e-4；且【完全不加 Navier slip BC】时 drift 同为 1.22e-4——漂移全部来自 float32 下 equilibrium3d/stream3d 的舍入，与 slip BC 无关。断言用绝对阈值 1e-6，而初始总质量 1344，实际相对误差 9.08e-8。",
+      "fix": "不修（未确证为 BC 缺陷，按纪律不静默改实现；亦不改断言阈值放行）。登记为 QUAL-CI-NAVIERSLIP-1，候选处置建议（交 owner）：断言改为相对误差或 float64 对照。",
+      "after": "仍红（如实记账）",
+      "evidence": [
+        "agent_work/m310/baseline/ci_logs/job_120817846396.log",
+        "agent_work/m310/evidence/test_navier_slip_after.log"
+      ]
+    },
+    {
+      "job": "package-build",
+      "ci_job_id": 120817846177,
+      "baseline": "success",
+      "root_cause": "-",
+      "fix": "-",
+      "after": "success（无需处置；本环境无 pip/build，不可本地复现，仅记录 CI 结论）",
+      "evidence": ["agent_work/m310/baseline/ci_logs/job_120817846177.log"]
+    }
+  ],
+  "summary": {
+    "baseline_red_jobs": ["lint", "test (3.11)", "test (3.12)"],
+    "ruf_errors_before": 623,
+    "ruf_errors_after": 0,
+    "ruf_format_unformatted_before": 116,
+    "ruf_format_unformatted_after": 0,
+    "test_failures_before_312": 7,
+    "test_failures_fixed": 4,
+    "test_failures_remaining": 3,
+    "test_assertions_modified": 0,
+    "qual_candidates_opened": ["QUAL-CI-SPINODAL-1", "QUAL-CI-NAVIERSLIP-1"]
+  }
+}

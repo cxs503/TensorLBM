@@ -58,8 +58,8 @@ from .cac_lbm import (
     shifted_neighbors,
 )
 from .d2q9 import C as C_2D
-from .d3q19 import C as C_3D
 from .d3q19 import W_EXACT64
+from .d3q19 import C as C_3D
 
 CS2 = 1.0 / 3.0
 
@@ -95,8 +95,7 @@ __all__ = [
 # library functional forms; re-receipted by the Phase-1 t0 fixture).
 # ---------------------------------------------------------------------------
 
-_DIRS2D = [(0, 0), (1, 0), (-1, 0), (0, 1), (0, -1),
-           (1, 1), (1, -1), (-1, 1), (-1, -1)]
+_DIRS2D = [(0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
 _W2D = [4.0 / 9.0] + [1.0 / 9.0] * 4 + [1.0 / 36.0] * 4
 _SUM_W_NONREST_2D = 5.0 / 9.0
 
@@ -139,13 +138,13 @@ def stencil_selftest_2d(n: int = 64, period: float = 16.0) -> dict:
             torch.cos(k * x),
             -k * torch.sin(k * x),
             torch.zeros_like(x),
-            -(k ** 2) * torch.cos(k * x),
+            -(k**2) * torch.cos(k * x),
         ),
         "y-wave": (
             torch.cos(k * y),
             torch.zeros_like(y),
             -k * torch.sin(k * y),
-            -(k ** 2) * torch.cos(k * y),
+            -(k**2) * torch.cos(k * y),
         ),
     }.items():
         gx, gy = iso_grad2d(fld)
@@ -190,8 +189,7 @@ def chem_force3d(phi01: torch.Tensor, sigma: float, width: float, axes: str = "p
     """
     beta_fe, k = free_energy_params(sigma, width)
     nb = shifted_neighbors(phi01, axes=axes)
-    mu = 4.0 * beta_fe * phi01 * (phi01 - 1.0) * (phi01 - 0.5) \
-        - k * iso_laplacian_3d(phi01, nb)
+    mu = 4.0 * beta_fe * phi01 * (phi01 - 1.0) * (phi01 - 0.5) - k * iso_laplacian_3d(phi01, nb)
     grad = iso_gradient_3d(nb, phi01.device)
     return tuple(mu * g for g in grad)
 
@@ -284,9 +282,12 @@ def mechanical_pressure_2d(
     if pform is not None:
         psi = pressure_correction_2d(
             phi01_of(f_r, f_b),
-            pform["sigma"], pform["width"],
-            pform["rho_r_bulk"], pform["rho_b_bulk"],
-            pform.get("p0"), pform.get("korteweg", True),
+            pform["sigma"],
+            pform["width"],
+            pform["rho_r_bulk"],
+            pform["rho_b_bulk"],
+            pform.get("p0"),
+            pform.get("korteweg", True),
         )
         p = p + psi
     return p
@@ -302,9 +303,12 @@ def mechanical_pressure_3d(
     if pform is not None:
         psi = pressure_correction_3d(
             phi01_of(f_r, f_b),
-            pform["sigma"], pform["width"],
-            pform["rho_r_bulk"], pform["rho_b_bulk"],
-            pform.get("p0"), pform.get("korteweg", True),
+            pform["sigma"],
+            pform["width"],
+            pform["rho_r_bulk"],
+            pform["rho_b_bulk"],
+            pform.get("p0"),
+            pform.get("korteweg", True),
             pform.get("axes", "ppp"),
         )
         p = p + psi
@@ -334,7 +338,7 @@ def _cg_phase_gradient_2d(rho_r, rho_b):
     phi = (rho_r - rho_b) / n_safe
     dphi_dx = 0.5 * (torch.roll(phi, -1, dims=-1) - torch.roll(phi, 1, dims=-1))
     dphi_dy = 0.5 * (torch.roll(phi, -1, dims=-2) - torch.roll(phi, 1, dims=-2))
-    mag = torch.sqrt(dphi_dx ** 2 + dphi_dy ** 2)
+    mag = torch.sqrt(dphi_dx**2 + dphi_dy**2)
     mag_safe = torch.clamp(mag, min=1e-12)
     return phi, dphi_dx / mag_safe, dphi_dy / mag_safe, mag
 
@@ -392,15 +396,18 @@ def hybrid_two_tau_step(
     uy_eq = uy + 0.5 * gyf
 
     cu = cx * ux_eq.unsqueeze(0) + cy * uy_eq.unsqueeze(0)
-    u_sq = (ux_eq ** 2 + uy_eq ** 2).unsqueeze(0)
+    u_sq = (ux_eq**2 + uy_eq**2).unsqueeze(0)
 
     corr = None
     if pform is not None:
         psi = pressure_correction_2d(
             phi01_of(f_r, f_b),
-            pform["sigma"], pform["width"],
-            pform["rho_r_bulk"], pform["rho_b_bulk"],
-            pform.get("p0"), pform.get("korteweg", True),
+            pform["sigma"],
+            pform["width"],
+            pform["rho_r_bulk"],
+            pform["rho_b_bulk"],
+            pform.get("p0"),
+            pform.get("korteweg", True),
         )
         corr = _pressure_corr_populations(psi, w_v)
 
@@ -420,6 +427,7 @@ def hybrid_two_tau_step(
         tau_eff = (rho_r * tau_r + rho_b * tau_b) / rho_s
         f_post = (f_r + f_b) - ((f_r + f_b) - _feq(rho)) / tau_eff + _guo(rho, tau_eff)
     else:
+
         def _collide(f_sig, rho_sig, tau, corr_sig):
             feq = w_v * rho_sig.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq)
             if corr_sig is not None:
@@ -431,9 +439,8 @@ def hybrid_two_tau_step(
         else:
             frac_r = (rho_r / rho_s).unsqueeze(0)
             frac_b = (rho_b / rho_s).unsqueeze(0)
-            f_post = (
-                _collide(f_r, rho_r, tau_r, corr * frac_r)
-                + _collide(f_b, rho_b, tau_b, corr * frac_b)
+            f_post = _collide(f_r, rho_r, tau_r, corr * frac_r) + _collide(
+                f_b, rho_b, tau_b, corr * frac_b
             )
 
     # Masked densities avoid spurious color gradients at solid boundaries
@@ -468,7 +475,7 @@ def _cg_phase_gradient_3d(rho_r, rho_b):
     dphi_dx = 0.5 * (torch.roll(phi, -1, dims=-1) - torch.roll(phi, 1, dims=-1))
     dphi_dy = 0.5 * (torch.roll(phi, -1, dims=-2) - torch.roll(phi, 1, dims=-2))
     dphi_dz = 0.5 * (torch.roll(phi, -1, dims=-3) - torch.roll(phi, 1, dims=-3))
-    mag = torch.sqrt(dphi_dx ** 2 + dphi_dy ** 2 + dphi_dz ** 2)
+    mag = torch.sqrt(dphi_dx**2 + dphi_dy**2 + dphi_dz**2)
     mag_safe = torch.clamp(mag, min=1e-12)
     return (phi, dphi_dx / mag_safe, dphi_dy / mag_safe, dphi_dz / mag_safe, mag)
 
@@ -532,15 +539,18 @@ def hybrid_two_tau_step_3d(
     uz_eq = uz + 0.5 * gzf
 
     cu = cx * ux_eq.unsqueeze(0) + cy * uy_eq.unsqueeze(0) + cz * uz_eq.unsqueeze(0)
-    u_sq = (ux_eq ** 2 + uy_eq ** 2 + uz_eq ** 2).unsqueeze(0)
+    u_sq = (ux_eq**2 + uy_eq**2 + uz_eq**2).unsqueeze(0)
 
     corr = None
     if pform is not None:
         psi = pressure_correction_3d(
             phi01_of(f_r, f_b),
-            pform["sigma"], pform["width"],
-            pform["rho_r_bulk"], pform["rho_b_bulk"],
-            pform.get("p0"), pform.get("korteweg", True),
+            pform["sigma"],
+            pform["width"],
+            pform["rho_r_bulk"],
+            pform["rho_b_bulk"],
+            pform.get("p0"),
+            pform.get("korteweg", True),
             pform.get("axes", "ppp"),
         )
         corr = _pressure_corr_populations(psi, w_v)
@@ -564,6 +574,7 @@ def hybrid_two_tau_step_3d(
             feq = feq + corr
         f_post = (f_r + f_b) - ((f_r + f_b) - feq) / tau_eff + _guo(rho, tau_eff)
     else:
+
         def _collide(f_sig, rho_sig, tau, corr_sig):
             feq = _base_feq(rho_sig)
             if corr_sig is not None:
@@ -575,9 +586,8 @@ def hybrid_two_tau_step_3d(
         else:
             frac_r = (rho_r / rho_s).unsqueeze(0)
             frac_b = (rho_b / rho_s).unsqueeze(0)
-            f_post = (
-                _collide(f_r, rho_r, tau_r, corr * frac_r)
-                + _collide(f_b, rho_b, tau_b, corr * frac_b)
+            f_post = _collide(f_r, rho_r, tau_r, corr * frac_r) + _collide(
+                f_b, rho_b, tau_b, corr * frac_b
             )
 
     rho_r_safe = rho_r if solid_mask is None else rho_r.masked_fill(solid_mask, 0.0)
@@ -655,9 +665,13 @@ def init_droplet_fields_2d(
     psi = None
     if pform is not None:
         psi = pressure_correction_2d(
-            frac, pform["sigma"], pform["width"],
-            pform["rho_r_bulk"], pform["rho_b_bulk"],
-            pform.get("p0"), pform.get("korteweg", True),
+            frac,
+            pform["sigma"],
+            pform["width"],
+            pform["rho_r_bulk"],
+            pform["rho_b_bulk"],
+            pform.get("p0"),
+            pform.get("korteweg", True),
         )
     return (
         _equilibrium_rest_2d(rho_r, psi, dtype, device),
@@ -695,9 +709,13 @@ def init_droplet_fields_3d(
     psi = None
     if pform is not None:
         psi = pressure_correction_3d(
-            frac, pform["sigma"], pform["width"],
-            pform["rho_r_bulk"], pform["rho_b_bulk"],
-            pform.get("p0"), pform.get("korteweg", True),
+            frac,
+            pform["sigma"],
+            pform["width"],
+            pform["rho_r_bulk"],
+            pform["rho_b_bulk"],
+            pform.get("p0"),
+            pform.get("korteweg", True),
             pform.get("axes", "ppp"),
         )
     return (
@@ -735,9 +753,13 @@ def init_layers_fields_2d(
     psi = None
     if pform is not None:
         psi = pressure_correction_2d(
-            frac_r, pform["sigma"], pform["width"],
-            pform["rho_r_bulk"], pform["rho_b_bulk"],
-            pform.get("p0"), pform.get("korteweg", True),
+            frac_r,
+            pform["sigma"],
+            pform["width"],
+            pform["rho_r_bulk"],
+            pform["rho_b_bulk"],
+            pform.get("p0"),
+            pform.get("korteweg", True),
         )
     return (
         _equilibrium_rest_2d(rho_r, psi, dtype, device),
@@ -776,8 +798,14 @@ def droplet_sigma_series_2d(
     from .solver import stream
 
     f_r, f_b = init_droplet_fields_2d(
-        n, radius, w_init, rho_r_bulk=rho_r_bulk, rho_b_bulk=rho_b_bulk,
-        pform=pform, dtype=dtype, device=device,
+        n,
+        radius,
+        w_init,
+        rho_r_bulk=rho_r_bulk,
+        rho_b_bulk=rho_b_bulk,
+        pform=pform,
+        dtype=dtype,
+        device=device,
     )
     m_r0, m_b0 = float(f_r.sum()), float(f_b.sum())
     c9 = C_2D.to(dtype).to(device)
@@ -788,6 +816,7 @@ def droplet_sigma_series_2d(
     b_mask = r >= 1.3 * radius
 
     import time as _time
+
     t0 = _time.perf_counter()
     series = []
     for step in range(1, steps + 1):
@@ -796,8 +825,14 @@ def droplet_sigma_series_2d(
         fx, fy = chem_force2d(phi01, sigma, width)
         gxf, gyf = fx / rho, fy / rho
         f_r, f_b = hybrid_two_tau_step(
-            f_r, f_b, tau_r=1.0, tau_b=1.0, beta=beta,
-            gxf=gxf, gyf=gyf, pform=pform,
+            f_r,
+            f_b,
+            tau_r=1.0,
+            tau_b=1.0,
+            beta=beta,
+            gxf=gxf,
+            gyf=gyf,
+            pform=pform,
         )
         f_r = stream(f_r)
         f_b = stream(f_b)
@@ -810,19 +845,26 @@ def droplet_sigma_series_2d(
             phi01 = 0.5 * (1.0 + (rho_r - rho_b) / rho_t)
             p = mechanical_pressure_2d(f_r, f_b, pform)
             win, wout = phi01 > 0.9, phi01 < 0.1
-            dp = (float(p[win].mean() - p[wout].mean())
-                  if (win.any() and wout.any()) else float("nan"))
+            dp = (
+                float(p[win].mean() - p[wout].mean())
+                if (win.any() and wout.any())
+                else float("nan")
+            )
             f = f_r + f_b
             u = (f * c9[:, 0].view(9, 1, 1)).sum(dim=0) / rho_t
             v = (f * c9[:, 1].view(9, 1, 1)).sum(dim=0) / rho_t
-            series.append({
-                "step": step, "dP": dp, "sigma_rec": dp * radius,
-                "u_max": float(torch.sqrt(u ** 2 + v ** 2).max()),
-                "rho_r_in": float((rho_r * r_mask).sum() / r_mask.sum()),
-                "rho_b_out": float((rho_b * b_mask).sum() / b_mask.sum()),
-                "mass_r_rel": abs(float(f_r.sum()) - m_r0) / abs(m_r0),
-                "mass_b_rel": abs(float(f_b.sum()) - m_b0) / abs(m_b0),
-            })
+            series.append(
+                {
+                    "step": step,
+                    "dP": dp,
+                    "sigma_rec": dp * radius,
+                    "u_max": float(torch.sqrt(u**2 + v**2).max()),
+                    "rho_r_in": float((rho_r * r_mask).sum() / r_mask.sum()),
+                    "rho_b_out": float((rho_b * b_mask).sum() / b_mask.sum()),
+                    "mass_r_rel": abs(float(f_r.sum()) - m_r0) / abs(m_r0),
+                    "mass_b_rel": abs(float(f_b.sum()) - m_b0) / abs(m_b0),
+                }
+            )
         if progress_every and step % progress_every == 0:
             print(f"[xh-droplet2d] step {step}/{steps}", flush=True)
     return {
@@ -848,13 +890,18 @@ def droplet_diagnostics_3d(f_r, f_b, pform, r_mask, b_mask, gravity_scale=1.0):
     jz = ((fr64 + fb64) * c[:, 2].view(19, 1, 1, 1)).sum(dim=0)
     p = mechanical_pressure_3d(fr64, fb64, pform)
     win, wout = phi01 > 0.9, phi01 < 0.1
-    dP = (float(p[win].mean() - p[wout].mean())
-          if (win.any() and wout.any()) else float("nan"))
-    umax = float((jx ** 2 + jy ** 2 + jz ** 2).div(rho * rho).sqrt().max())
+    dP = float(p[win].mean() - p[wout].mean()) if (win.any() and wout.any()) else float("nan")
+    umax = float((jx**2 + jy**2 + jz**2).div(rho * rho).sqrt().max())
     return {
-        "rho_r": rho_r, "rho_b": rho_b, "rho": rho, "phi01": phi01,
-        "jx": jx, "jy": jy, "jz": jz,
-        "u_max": umax, "dP": dP,
+        "rho_r": rho_r,
+        "rho_b": rho_b,
+        "rho": rho,
+        "phi01": phi01,
+        "jx": jx,
+        "jy": jy,
+        "jz": jz,
+        "u_max": umax,
+        "dP": dP,
         "rho_r_in": float((rho_r * r_mask).sum() / r_mask.sum()),
         "rho_b_out": float((rho_b * b_mask).sum() / b_mask.sum()),
     }

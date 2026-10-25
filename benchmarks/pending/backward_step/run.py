@@ -190,7 +190,9 @@ def _x2x3_from_shear(shear: np.ndarray, x_step: int, H: float) -> tuple[float, f
     return x2, x3
 
 
-def _rows_near_walls(ny: int, m: int, K: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def _rows_near_walls(
+    ny: int, m: int, K: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """返回 (下壁近壁行, 下壁权重(按交付顺序), 上壁近壁行, 上壁权重).
 
     交付顺序统一为"距壁由近到远", 使权重 w[0] 对应最近壁行 (斜率方向正确).
@@ -202,8 +204,8 @@ def _rows_near_walls(ny: int, m: int, K: int) -> tuple[np.ndarray, np.ndarray, n
     lo_rows = np.arange(1, K + 1)
     up_rows = np.arange(ny - 2, ny - 2 - K, -1)  # 由近(ny-2)到远
     w = _shear_weights(K, True)
-    w_lo = w                      # lo_rows: y 递增 (1..K), 由近到远
-    w_up = w[::-1]                # up_rows: y 递减, 行顺序由近到远 ⇒ 坐标反向
+    w_lo = w  # lo_rows: y 递增 (1..K), 由近到远
+    w_up = w[::-1]  # up_rows: y 递减, 行顺序由近到远 ⇒ 坐标反向
     return lo_rows, w_lo, up_rows, w_up
 
 
@@ -407,7 +409,12 @@ def run_grid(
                 flush=True,
             )
             # 平台判据: 滑窗 X1/H 相对变化 < 0.2% 连续 3 次 (且 >= min_steps)
-            if step >= min_steps and x1w == x1w and prev_win_x1 is not None and prev_win_x1 == prev_win_x1:
+            if (
+                step >= min_steps
+                and x1w == x1w
+                and prev_win_x1 is not None
+                and prev_win_x1 == prev_win_x1
+            ):
                 rel = abs(x1w - prev_win_x1) / max(abs(prev_win_x1), 1e-12)
                 stable_hits = stable_hits + 1 if rel < 0.002 else 0
                 if stable_hits >= 3:

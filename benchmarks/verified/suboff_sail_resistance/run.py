@@ -182,9 +182,10 @@ class SuboffAppendageEngine(GeneralSimEngine):
             indexing="ij",
         )
         xi = ((xx - (cx_lb - length_lb / 2.0)) / length_lb).clamp(0.0, 1.0)
-        r_loc = torch.from_numpy(suboff_radius_profile(xi.detach().cpu().numpy())).to(
-            dev
-        ).float() * radius_lb
+        r_loc = (
+            torch.from_numpy(suboff_radius_profile(xi.detach().cpu().numpy())).to(dev).float()
+            * radius_lb
+        )
         r = torch.sqrt((yy - cy_lb) ** 2 + (zz - cz_lb) ** 2)
         app_solid = self.solid & (r > (r_loc + 0.5))
 
@@ -315,10 +316,21 @@ def main() -> None:
     ap.add_argument(
         "--friction",
         default="mix50",
-        choices=["standard", "2nd_order", "central", "lagrange", "bfl", "bfl_smooth",
-                 "bfl_lagrange", "faces", "mix50"],
+        choices=[
+            "standard",
+            "2nd_order",
+            "central",
+            "lagrange",
+            "bfl",
+            "bfl_smooth",
+            "bfl_lagrange",
+            "faces",
+            "mix50",
+        ],
     )
-    ap.add_argument("--p0", default="near_wall", choices=["near_wall", "far_field", "domain_avg", "inlet"])
+    ap.add_argument(
+        "--p0", default="near_wall", choices=["near_wall", "far_field", "domain_avg", "inlet"]
+    )
     ap.add_argument("--save-field", action="store_true", help="persist final field (~1.8 GB)")
     ap.add_argument("--out", default=None)
     add_compile_mode_arg(ap)
@@ -335,8 +347,7 @@ def main() -> None:
     viscosity = U_PHYS * SUBOFF_LENGTH_M / 1000.0  # Re = u*L/nu = 1000
 
     out_dir = Path(
-        args.out
-        or str(_REPO_ROOT / f"results_e2e_suboff_{hull_type}_L{L}_{args.collision}")
+        args.out or str(_REPO_ROOT / f"results_e2e_suboff_{hull_type}_L{L}_{args.collision}")
     )
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -393,8 +404,16 @@ def main() -> None:
             {
                 k: setup_info[k]
                 for k in (
-                    "Re", "tau", "u_lb", "nu_lb", "domain_lu", "obstacle_cells",
-                    "near_wall_cells", "total_cells", "device", "auto_collision",
+                    "Re",
+                    "tau",
+                    "u_lb",
+                    "nu_lb",
+                    "domain_lu",
+                    "obstacle_cells",
+                    "near_wall_cells",
+                    "total_cells",
+                    "device",
+                    "auto_collision",
                     "auto_wall_treatment",
                 )
             },
@@ -473,8 +492,15 @@ def main() -> None:
             f_final, mesh, dpS_wet, extrap="none", p0_method=p0, solid=solid
         )
         row = {"cd_p": fx_p}
-        for formula in ("standard", "2nd_order", "central", "lagrange", "bfl_smooth",
-                        "faces", "mix50"):
+        for formula in (
+            "standard",
+            "2nd_order",
+            "central",
+            "lagrange",
+            "bfl_smooth",
+            "faces",
+            "mix50",
+        ):
             kwargs = {"solid": solid}
             if formula == "bfl_smooth":
                 kwargs["q_wall"] = q_smooth
@@ -595,9 +621,14 @@ def main() -> None:
             {
                 k: result[k]
                 for k in (
-                    "Cd_pressure", "Cd_friction", "Cd_total", "Cd_total_last500",
-                    "Cf_ref_blasius", "error_pct_vs_Blasius_totalwetted",
-                    "drag_increment_ratio_vs_verified_bare", "convergence_windows",
+                    "Cd_pressure",
+                    "Cd_friction",
+                    "Cd_total",
+                    "Cd_total_last500",
+                    "Cf_ref_blasius",
+                    "error_pct_vs_Blasius_totalwetted",
+                    "drag_increment_ratio_vs_verified_bare",
+                    "convergence_windows",
                 )
             },
             indent=1,
