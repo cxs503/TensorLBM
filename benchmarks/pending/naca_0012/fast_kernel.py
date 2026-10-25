@@ -31,7 +31,8 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from tensorlbm.d2q9 import C as _C, equilibrium
+from tensorlbm.d2q9 import C as _C
+from tensorlbm.d2q9 import equilibrium
 from tensorlbm.solver import _M_D2Q9_DATA, _M_D2Q9_INV_DATA
 
 _S_E = 1.64
@@ -156,7 +157,7 @@ def selftest(C: int = 24, device: str = "sdaa:3") -> None:
     got = fast_collide_mrt(f, tau, tau_field=tf)
     torch.sdaa.synchronize()
     dr = (got - ref).abs().max().item()
-    print(f"M-mrt tau_field: max|diff|={dr:.3e}  rel={dr/ref.abs().max().item():.3e}")
+    print(f"M-mrt tau_field: max|diff|={dr:.3e}  rel={dr / ref.abs().max().item():.3e}")
     ref2 = collide_mrt(f, tau)
     got2 = fast_collide_mrt(f, tau)
     torch.sdaa.synchronize()

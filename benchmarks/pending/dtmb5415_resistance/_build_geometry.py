@@ -22,6 +22,7 @@ This script:
 The output STL is committed so ``run.py`` does not depend on the sibling
 project at run time.
 """
+
 from __future__ import annotations
 
 import sys
@@ -52,20 +53,20 @@ def main() -> None:
     mesh = generate_official_5415_mesh()
     verts = np.asarray(mesh["vertices"], dtype=np.float64)
     faces = np.asarray(mesh["indices"], dtype=np.int64).reshape(-1, 3)
-    print(f"official mesh: {verts.shape[0]} verts, {faces.shape[0]} tris, "
-          f"match={mesh['match_pct']}%")
+    print(
+        f"official mesh: {verts.shape[0]} verts, {faces.shape[0]} tris, match={mesh['match_pct']}%"
+    )
 
     # Keep triangles whose centroid is at/below the waterline.
     cz = verts[faces, 2].mean(axis=1)
     keep = cz <= Z_WL
     faces_u = faces[keep]
-    print(f"underwater clip: kept {faces_u.shape[0]}/{faces.shape[0]} tris "
-          f"(centroid z <= {Z_WL})")
+    print(f"underwater clip: kept {faces_u.shape[0]}/{faces.shape[0]} tris (centroid z <= {Z_WL})")
 
     _GEOM.mkdir(parents=True, exist_ok=True)
     stl_path = _GEOM / "dtmb5415_underwater.stl"
     write_stl(stl_path, verts, faces_u, binary=True)
-    print(f"wrote {stl_path} ({stl_path.stat().st_size/1e6:.2f} MB)")
+    print(f"wrote {stl_path} ({stl_path.stat().st_size / 1e6:.2f} MB)")
 
     # ---- voxel sanity: numerical Cb of the underwater body --------------
     L_cells = 250
@@ -78,15 +79,18 @@ def main() -> None:
     ny = int(np.ceil(2 * y_half / dx))
     nz = int(np.ceil((Z_WL - z_min) / dx))
     solid = voxelize_stl(
-        verts, faces_u, (nx, ny, nz),
-        origin=(x_min, -y_half, z_min), spacing=(dx, dx, dx),
+        verts,
+        faces_u,
+        (nx, ny, nz),
+        origin=(x_min, -y_half, z_min),
+        spacing=(dx, dx, dx),
     )
     n_solid = int(solid.sum().item())
     volume = n_solid * dx**3
     cb_num = volume / (LPP * BEAM * DRAFT)
     print(f"grid {nx}x{ny}x{nz} dx={dx:.3f} m  solid={n_solid}")
     print(f"underwater volume = {volume:.1f} m^3  ->  Cb_num = {cb_num:.4f}")
-    print(f"(reference Cb = 0.507, wetted surface ~2972 m^2)")
+    print("(reference Cb = 0.507, wetted surface ~2972 m^2)")
 
 
 if __name__ == "__main__":

@@ -49,26 +49,28 @@ MIN_STEPS = {64: 0, 128: 103_000, 256: 414_000}
 def run_case(nx: int, device: torch.device, out_dir: str) -> dict:
     """运行单档网格，返回观测量 dict。"""
     import os
+
     os.makedirs(out_dir, exist_ok=True)
-    
+
     t_hot, t_cold = 1.0, 0.0
     f, g, wall, p = driver.make_fields(nx, RA, PR, TAU, device)
     tau_T, g_beta = p["tau_T"], p["g_beta"]
-    
+
     max_steps = MAX_STEPS[nx]
     min_steps = MIN_STEPS[nx]
     every = 1000
-    
+
     # 记录 thermal 库 hash
     import tensorlbm.thermal as th_mod
+
     th_sha = hashlib.sha256(open(th_mod.__file__, "rb").read()).hexdigest()[:12]
-    
+
     log_path = f"{out_dir}/case_ra1e4_n{nx}.log"
     log = open(log_path, "w", buffering=1)
     log.write(f"# case ra1e4_n{nx} thermal={th_mod.__file__} sha12={th_sha}\n")
     log.write(f"# params {json.dumps(p)} tau=0.6 device={device}\n")
     log.write("# step nu_left nu_right nu u_max_nd v_max_nd drift\n")
-    
+
     prev = None
     quiet = 0
     t_stop = None
@@ -76,15 +78,16 @@ def run_case(nx: int, device: torch.device, out_dir: str) -> dict:
     hist = []
     t0 = time.time()
     step = 0
-    
+
     while step < target:
         step += 1
         f, g = driver.advance(f, g, wall, TAU, tau_T, g_beta, t_hot, t_cold)
-        
+
         if step % every == 0:
             obs = driver.observables(f, g, p, t_hot, t_cold)
             drift = (
-                0.0 if prev is None
+                0.0
+                if prev is None
                 else max(abs(obs[k] - prev[k]) for k in ("nu", "nu_left", "nu_right"))
             )
             log.write(
@@ -93,7 +96,7 @@ def run_case(nx: int, device: torch.device, out_dir: str) -> dict:
             )
             hist.append({"step": step, "nu": obs["nu"], "drift": drift})
             prev = obs
-            
+
             if t_stop is None:
                 if prev is not None and step > every and step >= min_steps and drift < 1e-4:
                     quiet += 1
@@ -103,13 +106,15 @@ def run_case(nx: int, device: torch.device, out_dir: str) -> dict:
                     t_stop = step
                     target = min(max_steps, step + max(10_000, step // 10))
                     log.write(f"# steady trigger at {step}; verification segment to {target}\n")
-    
+
     elapsed = time.time() - t0
-    
+
     # 最终观测量
     obs = driver.observables(f, g, p, t_hot, t_cold)
-    nu_at_stop = next((h["nu"] for h in reversed(hist) if h["step"] <= t_stop), None) if t_stop else None
-    
+    nu_at_stop = (
+        next((h["nu"] for h in reversed(hist) if h["step"] <= t_stop), None) if t_stop else None
+    )
+
     result = {
         "tag": f"ra1e4_n{nx}",
         "ra": RA,
@@ -126,38 +131,40 @@ def run_case(nx: int, device: torch.device, out_dir: str) -> dict:
         **obs,
         "nu_history": hist,
     }
-    
-    log.write(f"# final: nu={obs['nu']:.8f} u_max_nd={obs['u_max_nd']:.6f} v_max_nd={obs['v_max_nd']:.6f}\n")
+
+    log.write(
+        f"# final: nu={obs['nu']:.8f} u_max_nd={obs['u_max_nd']:.6f} v_max_nd={obs['v_max_nd']:.6f}\n"
+    )
     log.close()
-    
+
     return result
 
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     out_dir = str(Path(__file__).resolve().parent)
-    
+
     print(f"Running cavity_natural_convection Ra=1e4 on {device}")
     print(f"Grids: {GRIDS}")
     print(f"Reference: Nu={NU_REF}, u_max={U_MAX_REF}, v_max={V_MAX_REF}")
     print()
-    
+
     results = []
     for nx in GRIDS:
         print(f"=== Grid N={nx} ===")
         res = run_case(nx, device, out_dir)
         results.append(res)
-        
+
         nu_err = 100 * (res["nu"] - NU_REF) / NU_REF
         u_err = 100 * (res["u_max_nd"] - U_MAX_REF) / U_MAX_REF
         v_err = 100 * (res["v_max_nd"] - V_MAX_REF) / V_MAX_REF
-        
+
         print(f"  Nu = {res['nu']:.6f} (err = {nu_err:+.3f}%)")
         print(f"  u_max = {res['u_max_nd']:.6f} (err = {u_err:+.3f}%)")
         print(f"  v_max = {res['v_max_nd']:.6f} (err = {v_err:+.3f}%)")
         print(f"  Steps: {res['steps_run']} (steady at {res['t_stop']})")
         print()
-    
+
     # 保存结果
     output = {
         "case": "cavity_natural_convection_ra1e4_rerun",
@@ -176,23 +183,23 @@ def main():
         },
         "grids": results,
     }
-    
+
     out_path = Path(out_dir) / "result_rerun.json"
     with open(out_path, "w") as f:
         json.dump(output, f, indent=2)
-    
+
     print(f"Results saved to {out_path}")
-    
+
     # 收敛性检查
     nu_errs = [abs(100 * (r["nu"] - NU_REF) / NU_REF) for r in results]
-    monotone = all(nu_errs[i] > nu_errs[i+1] for i in range(len(nu_errs)-1))
+    monotone = all(nu_errs[i] > nu_errs[i + 1] for i in range(len(nu_errs) - 1))
     passing = [i for i, e in enumerate(nu_errs) if e <= 3.0]
-    
+
     print("\n=== Summary ===")
     print(f"Nu errors: {[f'{e:.2f}%' for e in nu_errs]}")
     print(f"Monotone convergence: {monotone}")
     print(f"Passing grids (<=3%): {[GRIDS[i] for i in passing]}")
-    
+
     if len(passing) >= 2 and monotone:
         print("\n✓ PASS: ≥2 grids pass with monotone convergence")
     else:

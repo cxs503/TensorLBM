@@ -31,6 +31,7 @@ import torch
 
 from .advanced_collision_contract import collide_advanced_3d
 from .boundaries3d import far_field_bc_3d
+from .compile_utils import validate_compile_mode
 from .d3q19 import equilibrium3d, macroscopic3d
 from .obstacles import compute_obstacle_forces_3d
 from .solver3d import correct_mass3d, stream3d
@@ -102,6 +103,12 @@ class SuboffCmkKbcConfig:
     # ITTC reference
     reference_Ct: float = 0.00405
     reference_source: str = "ITTC-1957"
+    # Step-backend switch (opt-in, default off): ``None`` keeps the inline
+    # PyTorch path eager; the two whitelisted ``torch.compile`` modes are
+    # validated by :func:`tensorlbm.compile_utils.validate_compile_mode`
+    # (cudagraphs-class modes are rejected structurally).  The knob was
+    # dropped from this dataclass by the merge in 8b2672bc; restored here.
+    compile_mode: str | None = None
 
     def __post_init__(self) -> None:
         if self.collision.upper() not in {"CM", "CUMULANT", "KBC"}:
@@ -125,6 +132,15 @@ class SuboffCmkKbcConfig:
             raise ValueError("re must be > 0")
         if self.hull_length <= 0.0:
             raise ValueError("hull_length must be > 0")
+        if self.compile_mode is not None:
+            validate_compile_mode(self.compile_mode)
+            if self.use_triton_step:
+                raise ValueError("compile_mode and use_triton_step are mutually exclusive")
+            if self.collision.upper() == "KBC":
+                raise ValueError(
+                    "compile_mode does not support KBC: the per-step entropy "
+                    "bisection calls .item() and cannot be compiled"
+                )
         if self.use_triton_step and self.collision.upper() == "KBC":
             raise ValueError(
                 "use_triton_step=True does not support KBC: the entropy "
@@ -277,15 +293,15 @@ def run_suboff_cmk_kbc(
                 "tensorlbm.triton_suboff_step_distributed explicitly)."
             )
         if device.type != "cuda":
-            raise RuntimeError(
-                f"use_triton_step=True requires a CUDA device; got {device}"
-            )
+            raise RuntimeError(f"use_triton_step=True requires a CUDA device; got {device}")
         # Local import: Triton/CUDA must not become a hard dependency of
         # the default import path.
         from .backends.triton_backend import (
             TritonStepState,
-            is_available as _triton_is_available,
             triton_suboff_step,
+        )
+        from .backends.triton_backend import (
+            is_available as _triton_is_available,
         )
 
         if not _triton_is_available():

@@ -228,7 +228,7 @@ def run_case(
     result.update(m)
     if out_path:
         Path(out_path).write_text(json.dumps(result, indent=2))
-    
+
     # 新增：dump 完整 3D 场到 npz（云图生成用）
     if dump_path:
         np.savez_compressed(
@@ -236,11 +236,14 @@ def run_case(
             ux=ux_np,  # (nz, ny, nx) 归一化速度
             uy=uy_np,
             uz=uz_np,
-            nx=nx, ny=ny, nz=nz,
-            u_lid=u_lid, re=re
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            u_lid=u_lid,
+            re=re,
         )
         print(f"  dumped 3D field to {dump_path}", flush=True)
-    
+
     resid_str = f"{last_resid:.2e}" if last_resid is not None else "n/a"
     print(
         f"[nx={nx} nz={nz}] steps={step} resid={resid_str} t={elapsed:.0f}s "
@@ -267,8 +270,13 @@ def main():
 
     if args.mode == "single":
         dump_path = args.out.replace(".json", ".npz") if args.dump else None
-        run_case(args.nx, steps=args.steps, device=torch.device(args.device),
-                 out_path=args.out, dump_path=dump_path)
+        run_case(
+            args.nx,
+            steps=args.steps,
+            device=torch.device(args.device),
+            out_path=args.out,
+            dump_path=dump_path,
+        )
     else:
         out_dir = Path(args.out or "benchmarks/verified/cavity_3d_full")
         out_dir.mkdir(parents=True, exist_ok=True)

@@ -22,15 +22,24 @@ def _install_thermal_shim() -> None:
     if "tensorlbm.thermal" in _sys.modules:
         return
     import numpy as _np
+
     m = _types.ModuleType("tensorlbm.thermal")
     m.C_D2Q5 = _np.array([[0, 1, 0, -1, 0], [0, 0, 1, 0, -1]], dtype=_np.float64).T
     m.W_D2Q5 = _np.array([2.0 / 6, 1.0 / 6, 1.0 / 6, 1.0 / 6, 1.0 / 6])
+
     def _stub(*a, **k):
         raise NotImplementedError("thermal shim stub")
-    for _n in ("apply_buoyancy_force", "collide_thermal_bgk", "equilibrium_thermal",
-               "macroscopic_thermal", "stream_thermal"):
+
+    for _n in (
+        "apply_buoyancy_force",
+        "collide_thermal_bgk",
+        "equilibrium_thermal",
+        "macroscopic_thermal",
+        "stream_thermal",
+    ):
         setattr(m, _n, _stub)
     _sys.modules["tensorlbm.thermal"] = m
+
 
 _install_thermal_shim()
 
@@ -44,8 +53,9 @@ import numpy as np
 import torch
 
 # Use the worktree src path
-WORKTREE_SRC = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                              "..", "..", "..", "src"))
+WORKTREE_SRC = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "src")
+)
 if not os.path.isdir(WORKTREE_SRC):
     WORKTREE_SRC = "/nfs/wangxi/tensor_eco/agent_work/m167/TensorLBM/src"
 _sys.path.insert(0, WORKTREE_SRC)
@@ -84,7 +94,9 @@ def random_solenoidal_field(n, m0, u_rms, seed):
     ux_h -= KX * kdotu / K2_safe
     uy_h -= KY * kdotu / K2_safe
     uz_h -= KZ * kdotu / K2_safe
-    ux_h[0, 0, 0] = 0; uy_h[0, 0, 0] = 0; uz_h[0, 0, 0] = 0
+    ux_h[0, 0, 0] = 0
+    uy_h[0, 0, 0] = 0
+    uz_h[0, 0, 0] = 0
     ux = np.fft.irfftn(ux_h, s=(n, n, n)).real
     uy = np.fft.irfftn(uy_h, s=(n, n, n)).real
     uz = np.fft.irfftn(uz_h, s=(n, n, n)).real
@@ -98,10 +110,14 @@ def ic_divergence(u):
     ky = np.fft.fftfreq(u.shape[1]) * u.shape[1]
     kz = np.fft.fftfreq(u.shape[1]) * u.shape[1]
     KZ, KY, KX = np.meshgrid(kz, ky, kx, indexing="ij")
-    ux_h = np.fft.rfftn(u[0]); uy_h = np.fft.rfftn(u[1]); uz_h = np.fft.rfftn(u[2])
+    ux_h = np.fft.rfftn(u[0])
+    uy_h = np.fft.rfftn(u[1])
+    uz_h = np.fft.rfftn(u[2])
     div_h = 1j * KX * ux_h + 1j * KY * uy_h + 1j * KZ * uz_h
-    return float(np.sqrt(np.mean(np.abs(div_h)**2)) /
-                 (np.sqrt(np.mean(np.abs(ux_h)**2 + np.abs(uy_h)**2 + np.abs(uz_h)**2)) + 1e-30))
+    return float(
+        np.sqrt(np.mean(np.abs(div_h) ** 2))
+        / (np.sqrt(np.mean(np.abs(ux_h) ** 2 + np.abs(uy_h) ** 2 + np.abs(uz_h) ** 2)) + 1e-30)
+    )
 
 
 def build_shells(n, device):
@@ -132,21 +148,24 @@ def velocity_derivative_skewness(ux, uy, uz, n):
     kx = torch.fft.rfftfreq(n, device=ux.device) * 2.0 * math.pi
     dux_dx = torch.fft.irfftn(
         torch.fft.rfftn(ux, dim=(0, 1, 2), norm="ortho") * (1j * kx).view(1, 1, -1),
-        s=(n, n, n), dim=(0, 1, 2), norm="ortho",
+        s=(n, n, n),
+        dim=(0, 1, 2),
+        norm="ortho",
     )
     d = dux_dx.double()
     m2 = float((d * d).mean().item())
     m3 = float((d * d * d).mean().item())
     if m2 <= 0:
         return 0.0
-    return m3 / (m2 ** 1.5)
+    return m3 / (m2**1.5)
 
 
 # ---------------------------------------------------------------------------
 # 主循环
 # ---------------------------------------------------------------------------
-def run_case(n, u_rms, m0, tau, steps, record_every, seed, device, threads,
-             filter_width=2, lambda_clip=0.0):
+def run_case(
+    n, u_rms, m0, tau, steps, record_every, seed, device, threads, filter_width=2, lambda_clip=0.0
+):
     torch.set_num_threads(threads)
     dev = torch.device(device)
 
@@ -182,8 +201,9 @@ def run_case(n, u_rms, m0, tau, steps, record_every, seed, device, threads,
     wall0 = time.time()
     for step in range(1, steps + 1):
         f = stream3d(f)
-        f = collide_dynamic_smagorinsky_bgk3d(f, tau, filter_width=filter_width,
-                                                lambda_clip=lambda_clip)
+        f = collide_dynamic_smagorinsky_bgk3d(
+            f, tau, filter_width=filter_width, lambda_clip=lambda_clip
+        )
         if step % record_every == 0:
             _, uxm, uym, uzm = macroscopic3d(f)
             u2 = uxm**2 + uym**2 + uzm**2
@@ -211,22 +231,37 @@ def run_case(n, u_rms, m0, tau, steps, record_every, seed, device, threads,
     tau_L = L_int / u_rms if u_rms > 0 else float("inf")
 
     return {
-        "n": n, "times": times, "energies": energies,
-        "u_rms_history": urms_list, "u_max_history": umax_list,
-        "spectra": spec_arr, "skewness": skew_list,
-        "tau_L": tau_L, "Re_L": re_L, "L_int": L_int,
+        "n": n,
+        "times": times,
+        "energies": energies,
+        "u_rms_history": urms_list,
+        "u_max_history": umax_list,
+        "spectra": spec_arr,
+        "skewness": skew_list,
+        "tau_L": tau_L,
+        "Re_L": re_L,
+        "L_int": L_int,
         "mass_conservation": abs(mass_end - mass0) / mass0,
-        "ic_div_rel": div_rel, "wall_s": wall, "kmax": kmax,
-        "collision": "dsmag", "filter_width": filter_width,
+        "ic_div_rel": div_rel,
+        "wall_s": wall,
+        "kmax": kmax,
+        "collision": "dsmag",
+        "filter_width": filter_width,
         "lambda_clip": lambda_clip,
     }
 
 
 def fit_spectrum(S, kmin, kmax):
     if S.shape[0] == 0:
-        return {"slope": float("nan"), "r2": float("nan"), "kmin": kmin, "kmax": kmax,
-                "n_snapshots": 0, "slope_per_snapshot_mean": float("nan"),
-                "slope_per_snapshot_std": float("nan")}
+        return {
+            "slope": float("nan"),
+            "r2": float("nan"),
+            "kmin": kmin,
+            "kmax": kmax,
+            "n_snapshots": 0,
+            "slope_per_snapshot_mean": float("nan"),
+            "slope_per_snapshot_std": float("nan"),
+        }
     k = np.arange(S.shape[1])
     m = (k >= kmin) & (k <= kmax)
     lk, lS = np.log(k[m] + 1e-30), np.log(S[:, m] + 1e-30)
@@ -236,11 +271,15 @@ def fit_spectrum(S, kmin, kmax):
     a, b = np.polyfit(lk, np.log(Sbar[m] + 1e-30), 1)
     slope = float(a)
     resid = np.log(Sbar[m] + 1e-30) - (b + a * lk)
-    ss_tot = (np.log(Sbar[m] + 1e-30) - np.log(Sbar[m] + 1e-30).mean()) @ \
-             (np.log(Sbar[m] + 1e-30) - np.log(Sbar[m] + 1e-30).mean())
+    ss_tot = (np.log(Sbar[m] + 1e-30) - np.log(Sbar[m] + 1e-30).mean()) @ (
+        np.log(Sbar[m] + 1e-30) - np.log(Sbar[m] + 1e-30).mean()
+    )
     r2 = float(1.0 - resid @ resid / (ss_tot + 1e-30))
     return {
-        "slope": slope, "r2": r2, "kmin": kmin, "kmax": kmax,
+        "slope": slope,
+        "r2": r2,
+        "kmin": kmin,
+        "kmax": kmax,
         "n_snapshots": int(len(S)),
         "slope_per_snapshot_mean": float(per.mean()),
         "slope_per_snapshot_std": float(per.std()),
@@ -253,9 +292,10 @@ def fit_decay(t, E, frac_lo, frac_hi):
         return {"n": float("nan"), "r2": float("nan"), "frac_lo": frac_lo, "frac_hi": frac_hi}
     a, b = np.polyfit(np.log(t[mask]), np.log(E[mask]), 1)
     n_decay = float(-a)
-    pred = np.exp(b) * t[mask]**a
-    r2 = float(1.0 - np.sum((E[mask] - pred)**2) /
-               (np.sum((E[mask] - E[mask].mean())**2) + 1e-30))
+    pred = np.exp(b) * t[mask] ** a
+    r2 = float(
+        1.0 - np.sum((E[mask] - pred) ** 2) / (np.sum((E[mask] - E[mask].mean()) ** 2) + 1e-30)
+    )
     return {"n": n_decay, "r2": r2, "frac_lo": frac_lo, "frac_hi": frac_hi}
 
 
@@ -267,10 +307,15 @@ def judge(results, tol_pct=3.0):
     n_dec = {n: by_n[n]["decay_fit"]["n"] for n in ns}
     within_slope = all(abs(e) <= tol_pct for e in slope_errs.values())
     n_in_band = all(1.2 <= n_dec[n] <= 1.5 for n in ns)
-    conv_slope = (len(ns) >= 2 and
-                  abs(slopes[ns[1]] - slopes[ns[0]]) / abs(KOLMOGOROV_SLOPE) * 100.0 <= tol_pct)
-    conv_n = (len(ns) >= 2 and n_dec[ns[0]] != 0 and
-              abs(n_dec[ns[1]] - n_dec[ns[0]]) / abs(n_dec[ns[0]]) * 100.0 <= tol_pct)
+    conv_slope = (
+        len(ns) >= 2
+        and abs(slopes[ns[1]] - slopes[ns[0]]) / abs(KOLMOGOROV_SLOPE) * 100.0 <= tol_pct
+    )
+    conv_n = (
+        len(ns) >= 2
+        and n_dec[ns[0]] != 0
+        and abs(n_dec[ns[1]] - n_dec[ns[0]]) / abs(n_dec[ns[0]]) * 100.0 <= tol_pct
+    )
     verified = bool(within_slope and n_in_band and conv_slope and conv_n and len(ns) >= 2)
     return {
         "grids": ns,
@@ -317,12 +362,23 @@ def main():
     for n in grids:
         kmin = args.kmin or int(2 * args.m0 + 2)
         kmax = args.kmax or max(kmin + 2, int(round(0.34 * n / 2)))
-        print(f"=== N={n}³ dsmag  tau={args.tau}  steps={args.steps}  "
-              f"filter_width={args.filter_width} ===", flush=True)
+        print(
+            f"=== N={n}³ dsmag  tau={args.tau}  steps={args.steps}  "
+            f"filter_width={args.filter_width} ===",
+            flush=True,
+        )
         res = run_case(
-            n, args.u_rms, args.m0, args.tau, args.steps, args.record_every,
-            args.seed, args.device, args.threads,
-            filter_width=args.filter_width, lambda_clip=args.lambda_clip,
+            n,
+            args.u_rms,
+            args.m0,
+            args.tau,
+            args.steps,
+            args.record_every,
+            args.seed,
+            args.device,
+            args.threads,
+            filter_width=args.filter_width,
+            lambda_clip=args.lambda_clip,
         )
         t = np.asarray(res["times"])
         E = np.asarray(res["energies"])
@@ -333,7 +389,7 @@ def main():
         t_mask = (t >= t_dev) & (t <= t_end)
         if t_mask.sum() < 2:
             t_mask = np.zeros_like(t, dtype=bool)
-            t_mask[len(t)//3:2*len(t)//3] = True
+            t_mask[len(t) // 3 : 2 * len(t) // 3] = True
         spec_fit = fit_spectrum(spec_arr[t_mask], kmin, kmax)
         decay_fit = fit_decay(t, E, args.tfrac_lo, args.tfrac_hi)
         res["spectrum_fit"] = spec_fit
@@ -343,17 +399,30 @@ def main():
         results.append(res)
 
         case_json = {
-            "n": n, "collision": "dsmag", "tau": args.tau,
-            "filter_width": args.filter_width, "lambda_clip": args.lambda_clip,
-            "steps": args.steps, "record_every": args.record_every,
-            "seed": args.seed, "u_rms": args.u_rms, "m0": args.m0,
-            "kmin": kmin, "kmax": kmax,
-            "t_dev_mult": args.t_dev_mult, "t_end_mult": args.t_end_mult,
-            "tfrac_lo": args.tfrac_lo, "tfrac_hi": args.tfrac_hi,
-            "spectrum_fit": spec_fit, "decay_fit": decay_fit,
-            "tau_L": tau_L, "Re_L": res["Re_L"], "L_int": res["L_int"],
+            "n": n,
+            "collision": "dsmag",
+            "tau": args.tau,
+            "filter_width": args.filter_width,
+            "lambda_clip": args.lambda_clip,
+            "steps": args.steps,
+            "record_every": args.record_every,
+            "seed": args.seed,
+            "u_rms": args.u_rms,
+            "m0": args.m0,
+            "kmin": kmin,
+            "kmax": kmax,
+            "t_dev_mult": args.t_dev_mult,
+            "t_end_mult": args.t_end_mult,
+            "tfrac_lo": args.tfrac_lo,
+            "tfrac_hi": args.tfrac_hi,
+            "spectrum_fit": spec_fit,
+            "decay_fit": decay_fit,
+            "tau_L": tau_L,
+            "Re_L": res["Re_L"],
+            "L_int": res["L_int"],
             "mass_conservation": res["mass_conservation"],
-            "ic_div_rel": res["ic_div_rel"], "wall_s": res["wall_s"],
+            "ic_div_rel": res["ic_div_rel"],
+            "wall_s": res["wall_s"],
             "skewness_summary": [(s, float(v)) for s, v in res["skewness"]],
         }
         case_fn = f"case_N{n}_dsmag.json"
@@ -363,14 +432,18 @@ def main():
         data_fn = f"data_N{n}_dsmag.npz"
         np.savez_compressed(
             os.path.join(args.out, data_fn),
-            times=t, energies=E,
+            times=t,
+            energies=E,
             u_rms=np.array(res["u_rms_history"]),
             u_max=np.array(res["u_max_history"]),
             spectra=spec_arr,
         )
         case_files.append({"json": case_fn, "npz": data_fn})
-        print(f"  slope={spec_fit['slope']:.4f}  err={spec_fit['slope'] - KOLMOGOROV_SLOPE:+.4f}  "
-              f"n_decay={decay_fit['n']:.4f}  wall={res['wall_s']:.1f}s", flush=True)
+        print(
+            f"  slope={spec_fit['slope']:.4f}  err={spec_fit['slope'] - KOLMOGOROV_SLOPE:+.4f}  "
+            f"n_decay={decay_fit['n']:.4f}  wall={res['wall_s']:.1f}s",
+            flush=True,
+        )
 
     verdict = judge(results)
     summary = {

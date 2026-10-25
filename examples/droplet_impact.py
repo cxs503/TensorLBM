@@ -8,6 +8,7 @@ Run:
   PYTHONPATH=src python examples/droplet_impact.py --fast --overwrite
   PYTHONPATH=src python examples/droplet_impact.py --device cuda --overwrite
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,6 +19,7 @@ import time
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import torch
@@ -32,14 +34,23 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--nx", type=int, default=240)
     p.add_argument("--ny", type=int, default=160)
     p.add_argument("--radius", type=float, default=14.0)
-    p.add_argument("--gap", type=float, default=8.0,
-                   help="Initial gap between droplet bottom and pool interface (cells)")
-    p.add_argument("--water-level", type=float, default=100.0,
-                   help="Initial pool interface y coordinate; y increases downward")
+    p.add_argument(
+        "--gap",
+        type=float,
+        default=8.0,
+        help="Initial gap between droplet bottom and pool interface (cells)",
+    )
+    p.add_argument(
+        "--water-level",
+        type=float,
+        default=100.0,
+        help="Initial pool interface y coordinate; y increases downward",
+    )
     p.add_argument("--n-steps", type=int, default=3000)
     p.add_argument("--output-interval", type=int, default=150)
-    p.add_argument("--g", type=float, default=2.0e-5,
-                   help="Downward body acceleration in lattice units")
+    p.add_argument(
+        "--g", type=float, default=2.0e-5, help="Downward body acceleration in lattice units"
+    )
     p.add_argument("--tau-f", type=float, default=0.8)
     p.add_argument("--tau-g", type=float, default=0.8)
     p.add_argument("--A", type=float, default=0.04)
@@ -55,25 +66,43 @@ def parser() -> argparse.ArgumentParser:
     return p
 
 
-def save_contour(phi: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
-                 step: int, path: Path, water_level: float) -> None:
+def save_contour(
+    phi: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, step: int, path: Path, water_level: float
+) -> None:
     field = phi.detach().cpu().numpy()
     u = ux.detach().cpu().numpy()
     v = uy.detach().cpu().numpy()
     fig, ax = plt.subplots(figsize=(10, 5.8), constrained_layout=True)
-    im = ax.imshow(field, origin="upper", cmap="RdBu_r", vmin=-1, vmax=1,
-                   extent=(0, field.shape[1], field.shape[0], 0), interpolation="nearest")
-    yy, xx = torch.meshgrid(torch.arange(field.shape[0]), torch.arange(field.shape[1]),
-                            indexing="ij")
+    im = ax.imshow(
+        field,
+        origin="upper",
+        cmap="RdBu_r",
+        vmin=-1,
+        vmax=1,
+        extent=(0, field.shape[1], field.shape[0], 0),
+        interpolation="nearest",
+    )
+    yy, xx = torch.meshgrid(
+        torch.arange(field.shape[0]), torch.arange(field.shape[1]), indexing="ij"
+    )
     ax.contour(xx.numpy(), yy.numpy(), field, levels=[0.0], colors="black", linewidths=1.0)
-    ax.axhline(water_level, color="gold", linestyle="--", linewidth=0.8,
-               label="initial pool level")
+    ax.axhline(water_level, color="gold", linestyle="--", linewidth=0.8, label="initial pool level")
     stride = max(4, min(field.shape) // 35)
-    ax.quiver(xx[::stride, ::stride].numpy(), yy[::stride, ::stride].numpy(),
-              u[::stride, ::stride], v[::stride, ::stride],
-              color="k", alpha=0.35, scale=1.5, width=0.0015)
-    ax.set(xlabel="x [lattice cells]", ylabel="y [lattice cells]",
-           title=f"Droplet impact into a liquid pool — step {step}")
+    ax.quiver(
+        xx[::stride, ::stride].numpy(),
+        yy[::stride, ::stride].numpy(),
+        u[::stride, ::stride],
+        v[::stride, ::stride],
+        color="k",
+        alpha=0.35,
+        scale=1.5,
+        width=0.0015,
+    )
+    ax.set(
+        xlabel="x [lattice cells]",
+        ylabel="y [lattice cells]",
+        title=f"Droplet impact into a liquid pool — step {step}",
+    )
     ax.legend(loc="upper right")
     fig.colorbar(im, ax=ax, label="order parameter φ (liquid ≈ +1, gas ≈ −1)")
     fig.savefig(path, dpi=150)
@@ -147,23 +176,35 @@ def main() -> None:
             "phi_max": float(phi.max().item()),
         }
         rows.append(row)
-        save_contour(phi, ux, uy, step, out / "contours" / f"phase_{step:07d}.png",
-                     args.water_level)
+        save_contour(
+            phi, ux, uy, step, out / "contours" / f"phase_{step:07d}.png", args.water_level
+        )
 
     record(0)
     for step in range(1, args.n_steps + 1):
         f, g = free_energy_step(
-            f, g, tau_f=args.tau_f, tau_g=args.tau_g, A=args.A, B=args.B,
-            kappa=args.kappa, Gamma=args.Gamma, gx=0.0, gy=args.g,
-            rho_heavy=1.0, rho_light=0.1,
+            f,
+            g,
+            tau_f=args.tau_f,
+            tau_g=args.tau_g,
+            A=args.A,
+            B=args.B,
+            kappa=args.kappa,
+            Gamma=args.Gamma,
+            gx=0.0,
+            gy=args.g,
+            rho_heavy=1.0,
+            rho_light=0.1,
         )
         f, g = stream(f), stream(g)
         if step % args.output_interval == 0 or step == args.n_steps:
             record(step)
             last = rows[-1]
-            print(f"step={step:6d} mass_drift={last['relative_phase_mass_drift']:.3e} "
-                  f"max_u={last['max_speed']:.3e} "
-                  f"centroid_y={last['upper_region_liquid_centroid_y']:.2f}")
+            print(
+                f"step={step:6d} mass_drift={last['relative_phase_mass_drift']:.3e} "
+                f"max_u={last['max_speed']:.3e} "
+                f"centroid_y={last['upper_region_liquid_centroid_y']:.2f}"
+            )
 
     with (out / "history.csv").open("w", newline="", encoding="utf-8") as fp:
         writer = csv.DictWriter(fp, fieldnames=list(rows[0]))
@@ -205,11 +246,16 @@ def main() -> None:
     axes[1, 1].plot(steps, [row["kinetic_energy_proxy"] for row in rows], marker="o")
     axes[1, 1].set(title="Kinetic-energy proxy", xlabel="step", ylabel="sum(ρ|u|²/2)")
     axes[1, 0].axis("off")
-    axes[1, 0].text(0, 0.9, f"2-D free-energy droplet impact\nGrid: {nx} × {ny}\n"
-                    f"Steps: {args.n_steps}\nDevice: {device}\n"
-                    f"Final mass drift: {final['relative_phase_mass_drift']:.3e}\n"
-                    f"Elapsed: {elapsed:.1f} s\n\nExploratory result — not reference validated.",
-                    va="top", family="monospace")
+    axes[1, 0].text(
+        0,
+        0.9,
+        f"2-D free-energy droplet impact\nGrid: {nx} × {ny}\n"
+        f"Steps: {args.n_steps}\nDevice: {device}\n"
+        f"Final mass drift: {final['relative_phase_mass_drift']:.3e}\n"
+        f"Elapsed: {elapsed:.1f} s\n\nExploratory result — not reference validated.",
+        va="top",
+        family="monospace",
+    )
     fig.savefig(out / "diagnostic_curves.png", dpi=160)
     plt.close(fig)
     print(f"Artifacts written to: {out}")

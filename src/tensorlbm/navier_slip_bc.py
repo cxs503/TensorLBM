@@ -37,13 +37,12 @@ from __future__ import annotations
 
 import torch
 
-from .d3q19 import C, W, OPPOSITE, macroscopic3d
 from .boundaries3d import (
     _D3Q19_MIRROR_X,
     _D3Q19_MIRROR_Y,
     _D3Q19_MIRROR_Z,
 )
-
+from .d3q19 import OPPOSITE, C, W
 
 # Mirror tables indexed by axis
 _MIRRORS = {0: _D3Q19_MIRROR_X, 1: _D3Q19_MIRROR_Y, 2: _D3Q19_MIRROR_Z}
@@ -99,26 +98,26 @@ def navier_slip_cells_3d(
         Updated distribution tensor.
     """
     beta = slip_length_to_beta(Ls)
-    
+
     # Get mirror table for this axis
     mirror_dev = _MIRRORS[axis].to(f.device)
     opp_dev = OPPOSITE.to(f.device)
     c_dev = C.to(f.device).float()
     w_dev = W.to(f.device).float()
-    
+
     # 对所有方向应用插值
     # Bounce-back: f_q = f_{opp(q)}
     f_bb = f[opp_dev]  # (19, nz, ny, nx)
-    
+
     # Specular reflection: f_q = f_{mirror(q)}
     f_mirror = f[mirror_dev]  # (19, nz, ny, nx)
-    
+
     # 插值: f_q = (1 - β) * f_bb + β * f_mirror
     f_slip = (1.0 - beta) * f_bb + beta * f_mirror
-    
+
     # 在壁面处应用
     f = torch.where(mask.unsqueeze(0), f_slip, f)
-    
+
     # 添加移动壁面修正 - 只对反弹部分(1-β)应用
     if abs(u_wall) > 1e-12:
         rho_w = 1.0
@@ -127,36 +126,36 @@ def navier_slip_cells_3d(
         # c_q · u_wall = c_q,x * u_wall
         cu_wall = c_dev[:, 0] * u_wall  # (19,)
         correction = 2.0 * w_dev * rho_w * 3.0 * cu_wall  # (19,)
-        
+
         # 只对反弹部分(1-β)应用修正
         correction_weighted = (1.0 - beta) * correction
-        
+
         # 应用到壁面单元(所有方向)
         f = f + correction_weighted.view(19, 1, 1, 1) * mask.unsqueeze(0).float()
-    
+
     return f
 
 
 def _macroscopic_wall(f_wall: torch.Tensor):
     """Compute macroscopic quantities from wall distributions.
-    
+
     Args:
         f_wall: Distribution tensor at wall cells, shape (19, n_wall).
-    
+
     Returns:
         rho, ux, uy, uz: Macroscopic quantities, each shape (n_wall,).
     """
     c_dev = C.to(f_wall.device).float()
-    
+
     # Density: ρ = Σ f_q
     rho = f_wall.sum(dim=0)
-    
+
     # Momentum: ρu = Σ f_q * c_q
-    momentum = torch.einsum('qw,qc->wc', f_wall, c_dev)
-    
+    momentum = torch.einsum("qw,qc->wc", f_wall, c_dev)
+
     # Velocity: u = momentum / ρ
     ux = momentum[:, 0] / rho
     uy = momentum[:, 1] / rho
     uz = momentum[:, 2] / rho
-    
+
     return rho, ux, uy, uz

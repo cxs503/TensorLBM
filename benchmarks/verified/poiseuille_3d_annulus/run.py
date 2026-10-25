@@ -459,7 +459,7 @@ def run_case(
     }
     # Dump field data if requested
     if dump_field:
-        dump_path = out_path.replace('.json', '_field.npz')
+        dump_path = out_path.replace(".json", "_field.npz")
         np.savez_compressed(
             dump_path,
             u_meas=u_meas,

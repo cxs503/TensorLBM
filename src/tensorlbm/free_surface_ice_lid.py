@@ -27,27 +27,25 @@ from typing import Optional
 
 import torch
 
-from .d3q19 import C, W, OPPOSITE
 from .boundaries3d import (
-    _D3Q19_MIRROR_Y,
-    bounce_back_cells_3d,
     free_slip_cells_3d,
 )
-from .navier_slip_bc import navier_slip_cells_3d, slip_length_to_beta
+from .d3q19 import C, W
 from .free_surface_lbm import (
-    GAS, LIQUID, INTERFACE, SOLID,
     free_surface_step,
     init_fill_rectangular,
     init_flags_from_fill,
     init_mass_from_fill,
 )
+from .navier_slip_bc import navier_slip_cells_3d
 
 
 class IceLidMode(Enum):
     """Ice lid boundary condition modes."""
-    FULL_SLIP = "full_slip"           # Specular reflection (mirror)
+
+    FULL_SLIP = "full_slip"  # Specular reflection (mirror)
     SPECIFIED_VELOCITY = "specified"  # Moving lid with prescribed velocity
-    NAVIER_SLIP = "navier"            # Partial slip, parameterized by Ls
+    NAVIER_SLIP = "navier"  # Partial slip, parameterized by Ls
 
 
 def apply_ice_lid_bc(
@@ -247,6 +245,7 @@ def init_ice_lid_domain(
 
     # Initialize distributions to equilibrium (rest)
     from .d3q19 import equilibrium3d
+
     rho_init = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
     ux_init = torch.zeros((nz, ny, nx), dtype=torch.float32, device=device)
     uy_init = torch.zeros((nz, ny, nx), dtype=torch.float32, device=device)

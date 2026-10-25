@@ -53,7 +53,6 @@ sys.path.insert(0, str(_REPO_ROOT / "benchmarks"))  # compile_route
 
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
-
 from compile_route import (  # noqa: E402
     add_compile_mode_arg,
     compile_mode_from_args,
@@ -62,7 +61,6 @@ from compile_route import (  # noqa: E402
 )
 
 from tensorlbm.boundaries3d import far_field_bc_3d  # noqa: E402
-from tensorlbm.d3q19 import equilibrium3d  # noqa: E402
 from tensorlbm.drag_pressure import (  # noqa: E402
     drag_friction_integration,
     drag_pressure_integration,
@@ -86,13 +84,13 @@ from tensorlbm.ship_cad import _series60_half_beam, series60_hull_mask  # noqa: 
 # --------------------------------------------------------------------------- #
 # Series 60 model geometry (Todd 20-ft model convention) and physics
 # --------------------------------------------------------------------------- #
-L_M = 6.096          # m, Todd Series 60 standard model length (20 ft)
-L_B = 6.5            # length/beam
-B_T = 2.74           # beam/draft  (Series 60 Cb=0.60 proportions)
-B_M = L_M / L_B      # beam [m]
-T_M = B_M / B_T      # draft [m]
+L_M = 6.096  # m, Todd Series 60 standard model length (20 ft)
+L_B = 6.5  # length/beam
+B_T = 2.74  # beam/draft  (Series 60 Cb=0.60 proportions)
+B_M = L_M / L_B  # beam [m]
+T_M = B_M / B_T  # draft [m]
 CB = 0.60
-U_PHYS = 1.0e-3      # m/s (sets dt / Re only; Re=1000 family)
+U_PHYS = 1.0e-3  # m/s (sets dt / Re only; Re=1000 family)
 
 # Todd (1963) Series 60 Cb=0.60 model-test total-resistance coefficient, Cb model
 # L=20 ft towed in fresh water.  Values are commonly-cited anchors for the
@@ -140,9 +138,7 @@ class Series60Engine(GeneralSimEngine):
         cy = ny * 0.5
         cz_keel = nz * 0.5 - draft_lb / 2.0
         self._cx, self._cy, self._cz_keel = cx, cy, cz_keel
-        return series60_hull_mask(
-            nx, ny, nz, cx, cy, cz_keel, length_lb, beam_lb, draft_lb, device
-        )
+        return series60_hull_mask(nx, ny, nz, cx, cy, cz_keel, length_lb, beam_lb, draft_lb, device)
 
     def _build_surface_mesh(self, device):
         # Gradient normals for the general hull (base else-branch does this,
@@ -168,7 +164,9 @@ def analytic_wetted_areas(length_lb: float, beam_lb: float, draft_lb: float) -> 
     dYdx_p = (beam_lb / 2.0) * dYdx / (length_lb / 2.0)
     dYdz_p = (beam_lb / 2.0) * dYdz / draft_lb
     gram = np.sqrt(1.0 + dYdx_p**2 + dYdz_p**2)
-    s_lat = 2.0 * float(np.trapezoid(np.trapezoid(gram, z, axis=1) * draft_lb, x)) * (length_lb / 2.0)
+    s_lat = (
+        2.0 * float(np.trapezoid(np.trapezoid(gram, z, axis=1) * draft_lb, x)) * (length_lb / 2.0)
+    )
     # deck: flat top at ζ=1, area = ∫ 2*(B/2)*(1-ξ^2)^0.51 dξ * (L/2)
     deck_hb = _series60_half_beam(x, np.ones_like(x))
     s_deck = 2.0 * float(np.trapezoid(deck_hb, x)) * (beam_lb / 2.0) * (length_lb / 2.0)
@@ -274,11 +272,15 @@ def main() -> None:
         default="mix50",
         choices=["standard", "2nd_order", "central", "lagrange", "faces", "mix50"],
     )
-    ap.add_argument("--p0", default="near_wall",
-                    choices=["near_wall", "far_field", "domain_avg", "inlet"])
-    ap.add_argument("--area-caliber", default="total",
-                    choices=["total", "lateral", "cylinder"],
-                    help="wetted-area reference: analytic total (lat+deck), lateral only, or pi*B*L")
+    ap.add_argument(
+        "--p0", default="near_wall", choices=["near_wall", "far_field", "domain_avg", "inlet"]
+    )
+    ap.add_argument(
+        "--area-caliber",
+        default="total",
+        choices=["total", "lateral", "cylinder"],
+        help="wetted-area reference: analytic total (lat+deck), lateral only, or pi*B*L",
+    )
     ap.add_argument("--save-field", action="store_true")
     ap.add_argument("--out", default=None)
     add_compile_mode_arg(ap)
@@ -342,11 +344,29 @@ def main() -> None:
     )
     engine = Series60Engine(config)
     setup = engine.setup()
-    print("setup:", json.dumps(
-        {k: setup[k] for k in (
-            "Re", "tau", "u_lb", "nu_lb", "domain_lu", "obstacle_cells",
-            "near_wall_cells", "total_cells", "device",
-            "auto_collision", "auto_wall_treatment")}, indent=1), flush=True)
+    print(
+        "setup:",
+        json.dumps(
+            {
+                k: setup[k]
+                for k in (
+                    "Re",
+                    "tau",
+                    "u_lb",
+                    "nu_lb",
+                    "domain_lu",
+                    "obstacle_cells",
+                    "near_wall_cells",
+                    "total_cells",
+                    "device",
+                    "auto_collision",
+                    "auto_wall_treatment",
+                )
+            },
+            indent=1,
+        ),
+        flush=True,
+    )
     if setup["obstacle_cells"] == 0:
         raise SystemExit("FATAL: empty solid mask — Series60 geometry not built")
 
@@ -357,12 +377,21 @@ def main() -> None:
     areas = analytic_wetted_areas(L_lb, B_lb, T_lb)
     n_faces = near_wall_face_count(engine.solid)
     from tensorlbm.ship_cad import hull_block_coefficient
+
     cb_num = hull_block_coefficient(engine.solid, B_lb, T_lb, L_lb)
     geom = {
-        "L_M": L_M, "B_M": B_M, "T_M": T_M, "L_B": L_B, "B_T": B_T,
-        "L_lb": L_lb, "B_lb": B_lb, "T_lb": T_lb,
-        "half_beam_cells": B_lb / 2.0, "draft_cells": T_lb,
-        "Cb_theory": CB, "Cb_numeric": cb_num,
+        "L_M": L_M,
+        "B_M": B_M,
+        "T_M": T_M,
+        "L_B": L_B,
+        "B_T": B_T,
+        "L_lb": L_lb,
+        "B_lb": B_lb,
+        "T_lb": T_lb,
+        "half_beam_cells": B_lb / 2.0,
+        "draft_cells": T_lb,
+        "Cb_theory": CB,
+        "Cb_numeric": cb_num,
         "S_lateral_lb2": areas["S_lateral_lb2"],
         "S_deck_lb2": areas["S_deck_lb2"],
         "S_total_lb2": areas["S_total_lb2"],
@@ -377,7 +406,8 @@ def main() -> None:
     print(
         f"run finished: {run_info['status']} in {elapsed:.0f}s "
         f"({elapsed / max(run_info['steps'], 1) * 1000:.1f} ms/step) "
-        f"compile={run_info.get('compile_status')}", flush=True,
+        f"compile={run_info.get('compile_status')}",
+        flush=True,
     )
 
     # ---- post-process ----
@@ -402,10 +432,10 @@ def main() -> None:
     # every candidate wetted-area caliber (lattice units^2), evaluated on the
     # SAME field so the choice of reference area is auditable in one run.
     calibers = {
-        "analytic_total": areas["S_total_lb2"],      # smooth lateral + waterline deck
+        "analytic_total": areas["S_total_lb2"],  # smooth lateral + waterline deck
         "analytic_lateral": areas["S_lateral_lb2"],  # smooth lateral only (ships' S_wet)
-        "wet_faces": float(n_faces),                 # voxel staircase wet faces
-        "cylinder_piBL": math.pi * B_lb * L_lb,      # barge/cylinder proxy
+        "wet_faces": float(n_faces),  # voxel staircase wet faces
+        "cylinder_piBL": math.pi * B_lb * L_lb,  # barge/cylinder proxy
     }
     cad = {}
     for name, S_ref in calibers.items():
@@ -421,17 +451,23 @@ def main() -> None:
             "cd_tot_mix50_window": cp + cf,
         }
         fxp, _, _ = drag_pressure_integration(
-            f_final, mesh, dpS_c, extrap="none", p0_method=args.p0, solid=solid)
+            f_final, mesh, dpS_c, extrap="none", p0_method=args.p0, solid=solid
+        )
         row["cd_p_final"] = fxp
         for formula in ("standard", "faces", "mix50"):
             fxf, _, _ = drag_friction_integration(
-                f_final, mesh, dpS_c, nu_lb, formula=formula, solid=solid)
+                f_final, mesh, dpS_c, nu_lb, formula=formula, solid=solid
+            )
             row[f"cd_f_{formula}"] = fxf
         row["cd_tot_standard"] = fxp + row["cd_f_standard"]
         row["cd_tot_faces"] = fxp + row["cd_f_faces"]
         row["cd_tot_mix50"] = fxp + row["cd_f_mix50"]
-        row["err_total_mix50_pct_vs_Blasius"] = (row["cd_tot_mix50"] - cf_blasius) / cf_blasius * 100.0
-        row["err_friction_mix50_pct_vs_Blasius"] = (row["cd_f_mix50"] - cf_blasius) / cf_blasius * 100.0
+        row["err_total_mix50_pct_vs_Blasius"] = (
+            (row["cd_tot_mix50"] - cf_blasius) / cf_blasius * 100.0
+        )
+        row["err_friction_mix50_pct_vs_Blasius"] = (
+            (row["cd_f_mix50"] - cf_blasius) / cf_blasius * 100.0
+        )
         cad[name] = row
 
     caliber_map = {
@@ -455,11 +491,13 @@ def main() -> None:
     final_checks = {}
     for p0 in ("near_wall", "far_field", "domain_avg", "inlet"):
         fx_p, _, _ = drag_pressure_integration(
-            f_final, mesh, dpS_wet, extrap="none", p0_method=p0, solid=solid)
+            f_final, mesh, dpS_wet, extrap="none", p0_method=p0, solid=solid
+        )
         row = {"cd_p": fx_p}
         for formula in ("standard", "2nd_order", "central", "lagrange", "faces", "mix50"):
             fxf, _, _ = drag_friction_integration(
-                f_final, mesh, dpS_wet, nu_lb, formula=formula, solid=solid)
+                f_final, mesh, dpS_wet, nu_lb, formula=formula, solid=solid
+            )
             row[f"cd_f_{formula}"] = fxf
         row["cd_tot_standard"] = row["cd_p"] + row["cd_f_standard"]
         row["cd_tot_mix50"] = row["cd_p"] + row["cd_f_mix50"]
@@ -495,10 +533,11 @@ def main() -> None:
     conv = {}
     for frac in (0.25, 0.5, 0.75, 1.0):
         k = int(len(log) * frac)
-        seg = log[max(0, k - n_win):k]
+        seg = log[max(0, k - n_win) : k]
         if seg:
             conv[f"{int(frac * 100)}%"] = round(
-                sum(e["cd_total"] for e in seg) / len(seg) * rescale, 6)
+                sum(e["cd_total"] for e in seg) / len(seg) * rescale, 6
+            )
 
     result = {
         "case": "Series 60 (Cb=0.60) bare-hull resistance Re=1000",
@@ -551,12 +590,29 @@ def main() -> None:
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
     (out_dir / "result.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
-    print(json.dumps({k: result[k] for k in (
-        "Cd_pressure", "Cd_friction", "Cd_total", "references",
-        "error_pct_vs_Blasius", "error_pct_friction_vs_Blasius",
-        "convergence_windows")}, indent=1), flush=True)
-    print(f"RESULT Cd_p={cd_p:.6f} Cd_f={cd_f:.6f} Cd_tot={cd_tot:.6f} "
-          f"(Blasius {cf_blasius:.6f}) err={err_blasius:+.2f}%", flush=True)
+    print(
+        json.dumps(
+            {
+                k: result[k]
+                for k in (
+                    "Cd_pressure",
+                    "Cd_friction",
+                    "Cd_total",
+                    "references",
+                    "error_pct_vs_Blasius",
+                    "error_pct_friction_vs_Blasius",
+                    "convergence_windows",
+                )
+            },
+            indent=1,
+        ),
+        flush=True,
+    )
+    print(
+        f"RESULT Cd_p={cd_p:.6f} Cd_f={cd_f:.6f} Cd_tot={cd_tot:.6f} "
+        f"(Blasius {cf_blasius:.6f}) err={err_blasius:+.2f}%",
+        flush=True,
+    )
     print(f"result -> {out_dir / 'result.json'}", flush=True)
 
 
