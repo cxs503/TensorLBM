@@ -109,6 +109,44 @@ U_PHYS = 1.0e-3  # m/s (any value; sets dt only)
 
 
 # --------------------------------------------------------------------------- #
+# τ ladder override (SIR-1b / m298 instrument)
+# --------------------------------------------------------------------------- #
+def _tau_target_override() -> float | None:
+    """Target BGK/MRT relaxation time from ``SUBOFF_TAU_TARGET`` (τ ladder).
+
+    The ladder prescribes τ directly, because τ is the *relaxation* knob while
+    ν_lb = (τ-0.5)/3 is what reaches the solver.  Writing τ through
+    ``PhysicsConfig.viscosity`` is not possible in one shot: that field is a
+    *physical* viscosity [m²/s], and :class:`LBMUnitConverter` picks u_lb for a
+    low Mach number and then derives ν_lb = u_lb·nx/Re from it.  The override
+    therefore pins ν_lb (hence τ) exactly and solves for the physical viscosity
+    that reproduces it, keeping every other setup path untouched.
+
+    Returns ``None`` when unset -> zero behaviour change (frozen E2 chain).
+    """
+    raw = os.environ.get("SUBOFF_TAU_TARGET")
+    if raw is None or raw == "":
+        return None
+    return float(raw)
+
+
+def _physical_viscosity_for_tau(tau: float, resolution: int, u_lb: float) -> float:
+    """Physical viscosity that makes ``LBMUnitConverter.nu_lb`` hit ``tau``.
+
+    ``nu_lb = (tau - 0.5) / 3`` and ``nu_lb = u_lb · nx / Re`` with
+    ``Re = u_phys·L_phys/nu_phys``, hence
+
+        nu_phys = u_phys · L_phys · nu_lb / (u_lb · nx)
+
+    which depends only on the frozen physical constants and the lattice state.
+    """
+    nu_lb = (tau - 0.5) / 3.0
+    if nu_lb <= 0.0:
+        raise SystemExit(f"[tau-override] tau={tau} <= 0.5 gives nu_lb <= 0")
+    return U_PHYS * SUBOFF_LENGTH_M * nu_lb / (u_lb * resolution)
+
+
+# --------------------------------------------------------------------------- #
 # Appendage-aware engine (override only geometry + surface normals)
 # --------------------------------------------------------------------------- #
 class SuboffAppendageEngine(GeneralSimEngine):
@@ -217,8 +255,39 @@ def frontal_dpS(u_lb: float, radius_lb: float) -> float:
 
 
 def ittc1957_cf(re: float) -> float:
-    """ITTC 1957 model-ship correlation line (TURBULENT)."""
-    return 0.075 / (math.log10(re) - 2.0) ** 2
+    """ITTC 1957 model-ship correlation line (TURBULENT).
+
+    The line has a pole at Re = 100 (log10 Re = 2); returning ``nan`` there is
+    the honest answer rather than a division error, because the correlation is
+    simply undefined at that abscissa.
+    """
+    if re <= 0.0:
+        return float("nan")
+    den = math.log10(re) - 2.0
+    if abs(den) < 1e-12:
+        return float("nan")
+    return 0.075 / den**2
+
+
+def blasius_cf(re: float) -> float:
+    """Blasius laminar flat-plate Cf = 1.328/sqrt(Re)."""
+    return 1.328 / math.sqrt(re)
+
+
+def wetted_reference(u_lb: float, radius_lb: float, length_lb: float, hull_type: str) -> float:
+    """Total-wetted-area dynamic pressure ``0.5 u² S`` (frozen normalization).
+
+    ``S = π(2 R_lb)L + A_appendage_own`` with the appendage area from the
+    analytic quadrature of :mod:`tensorlbm.suboff_cad`.  Single source of truth
+    for both the probe and the post-run coefficient, so the two calibers are
+    identical by construction.
+    """
+    from tensorlbm.suboff_cad import SuboffConfig, suboff_statistics
+
+    st = suboff_statistics(hull_type, float(length_lb), radius_lb, SuboffConfig())
+    a_app = float(st.get("appendage_own_wetted_area_lu2") or 0.0)
+    s_total = math.pi * (2.0 * radius_lb) * float(length_lb) + a_app
+    return 0.5 * u_lb**2 * s_total
 
 
 # --------------------------------------------------------------------------- #
@@ -273,6 +342,32 @@ def run_engine_routed(engine: GeneralSimEngine, compile_mode: str | None) -> tup
     name = f"suboff_{engine._hull_type}[L{sol.resolution}]"
     step_fn = route_step(_step, compile_mode, name=name)
 
+    # ---- FA anchor family probe (SIR-1b / m298; opt-in, read-only) --------
+    probe = None
+    if os.environ.get("SUBOFF_ANCHOR_PROBE"):
+        from tau_anchor_probe import AnchorProbe  # noqa: PLC0415
+
+        geo = engine.config.geometry
+        dx_p = engine.config.physics.reference_length / sol.resolution
+        r_lb_p = (geo.suboff_radius or geo.suboff_length / 8.57) / dx_p
+        dpS_probe = wetted_reference(u_in, r_lb_p, geo.suboff_length / dx_p, engine._hull_type)
+        probe = AnchorProbe(
+            solid=solid,
+            near=engine.near,
+            cx=engine.nx * 0.25,
+            length=geo.suboff_length / dx_p,
+            dpS=dpS_probe,
+            u_lb=u_in,
+            path=os.environ["SUBOFF_ANCHOR_PROBE"],
+            cadence=int(os.environ.get("SUBOFF_ANCHOR_CADENCE", "200")),
+        )
+        print(
+            f"[anchor-probe] {os.environ['SUBOFF_ANCHOR_PROBE']} "
+            f"cadence={probe.cadence} links={probe.n_links} "
+            f"crossing_cells={probe.n_crossing} thirds={probe.n_thirds}",
+            flush=True,
+        )
+
     n_steps = sol.max_steps
     t0 = time.time()
     for step in range(1, n_steps + 1):
@@ -286,11 +381,34 @@ def run_engine_routed(engine: GeneralSimEngine, compile_mode: str | None) -> tup
             engine.f = correct_mass_fn(engine.f, target_mass)
         if out.save_forces and step % sol.force_sample_interval == 0:
             engine._sample_forces(dpS, nu_lb)
+        if probe is not None and step % probe.cadence == 0:
+            probe.sample(engine.f, step, tau, nu_lb)
         if out.save_macroscopic and step % sol.snapshot_interval == 0:
             engine._save_snapshot()
         if step % div_check == 0 and not torch.isfinite(engine.f).all():
             break
     elapsed = time.time() - t0
+
+    if probe is not None:
+        probe.close()
+        print(
+            f"[anchor-probe] samples={probe.n_samples} "
+            f"max_identity_residual={probe.max_identity_residual:.3e}",
+            flush=True,
+        )
+        probe_info = {
+            "path": os.environ.get("SUBOFF_ANCHOR_PROBE"),
+            "cadence": probe.cadence,
+            "samples": probe.n_samples,
+            "n_links": probe.n_links,
+            "n_crossing_cells": probe.n_crossing,
+            "thirds_cells": probe.n_thirds,
+            "max_identity_residual": probe.max_identity_residual,
+            "dpS_wetted": dpS_probe,
+            "caliber": "dpS = 0.5*u_lb^2*S_total_wetted (same as Cd_total)",
+        }
+    else:
+        probe_info = None
 
     compile_status = compile_status_of(step_fn)
     info = {
@@ -302,6 +420,7 @@ def run_engine_routed(engine: GeneralSimEngine, compile_mode: str | None) -> tup
         "compile_status": compile_status["compile_status"],
         "compile_mode_effective": compile_status["compile_mode_effective"],
         "compile_status_reason": compile_status["compile_status_reason"],
+        "anchor_probe": probe_info,
     }
     return info, elapsed
 
@@ -345,6 +464,16 @@ def main() -> None:
         CollisionModel.SMAGORINSKY_MRT if args.collision == "smagorinsky" else CollisionModel.MRT
     )
     viscosity = U_PHYS * SUBOFF_LENGTH_M / 1000.0  # Re = u*L/nu = 1000
+    tau_target = _tau_target_override()
+    if tau_target is not None:
+        # u_lb is fixed by the converter default (0.05); solve nu_phys so that
+        # the derived lattice viscosity lands exactly on (tau-0.5)/3.
+        viscosity = _physical_viscosity_for_tau(tau_target, L, 0.05)
+        print(
+            f"[tau-override] target tau={tau_target} -> nu_phys={viscosity:.6e} m^2/s "
+            f"(nu_lb={(tau_target - 0.5) / 3.0:.6f})",
+            flush=True,
+        )
 
     out_dir = Path(
         args.out or str(_REPO_ROOT / f"results_e2e_suboff_{hull_type}_L{L}_{args.collision}")
@@ -610,6 +739,24 @@ def main() -> None:
         "final_field_saved": bool(args.save_field),
         "finite": bool(torch.isfinite(engine.f).all().item()),
         "diverged": run_info.get("diverged", False),
+        "tau_target_override": tau_target,
+        "effective_Re_lattice": float(u_lb * float(L) / nu_lb),
+        "tau_coupling": {
+            "note": (
+                "u_lb and L are frozen by the benchmark, so the ladder knob tau "
+                "is itself the Reynolds knob: nu_lb=(tau-0.5)/3 and "
+                "Re_lattice = u_lb*L/nu_lb.  Each ladder arm therefore sits at a "
+                "different effective Reynolds number and must be judged against "
+                "a reference re-evaluated at that same Re."
+            ),
+            "u_lb": float(u_lb),
+            "L_cells": int(L),
+            "nu_lb": float(nu_lb),
+            "Re_lattice": float(u_lb * float(L) / nu_lb),
+            "blasius_cf_at_this_Re": blasius_cf(u_lb * float(L) / nu_lb),
+            "ittc1957_cf_at_this_Re": ittc1957_cf(u_lb * float(L) / nu_lb),
+        },
+        "anchor_probe": run_info.get("anchor_probe"),
         "solid_cells": int(engine.solid.sum().item()) if engine.solid is not None else None,
         "near_wall_cells": int(engine.near.sum().item()) if engine.near is not None else None,
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
