@@ -69,3 +69,21 @@ Contributor-facing setup also refers to `platform/requirements.txt` and `platfor
 4. Keep numerical solver tests and physics benchmarks independent from platform test results so green checks retain clear meaning.
 
 No tests have been run as part of this inventory. These findings are based on workflow and configuration contents only.
+
+## First CI baseline — run 40173673100 (2026-10-25)
+
+Observed on the architecture-governance branch; this is not a passing gate:
+
+- `package-build`: passed (wheel build and metadata/install smoke check).
+- `lint`: failed at `ruff check src tests examples benchmarks` with **623 findings**; formatter, mypy, and docs-consistency steps were skipped. This command does not lint `app/`. Because the architecture PR did not modify solver/test source in these scopes, treat this as existing lint debt unless a comparison proves otherwise; do not bulk-auto-fix it as part of a structural-only change.
+- `platform-test`: **46 failed, 614 passed, 48 skipped, 8 errors**. Visible failure clusters include stale frontend/i18n paths and missing built `frontend-vue/dist/index.html`, API/route expectation mismatches, fixture/model signature drift, missing `torch` in tests, and imports expecting `tensorlbm.d3q19.equilibrium`.
+- Python 3.11 and 3.12 solver jobs were still running at the last status check; final outcomes remain unconfirmed here.
+
+### Triage policy
+
+1. Separate failures into CI setup/fixture defects, stale tests or paths, real product regressions, and pre-existing lint debt.
+2. For each platform failure, compare the same test on `main` before attributing it to a refactor.
+3. Fix one coherent cluster at a time. Do not change solver numerics or relax physics/API assertions merely to obtain a green check.
+4. Keep the platform suite visible while the baseline is unresolved. If a fast gate is needed, split by explicit markers and retain a separate full-suite job; do not silently exclude failing tests.
+5. Enforce import-layer rules only after a reliable static import graph exists; dynamic imports must be reported as uncertain.
+
