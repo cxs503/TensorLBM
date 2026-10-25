@@ -59,6 +59,23 @@
 
 即：本次唯一残留的 test 失败都在已登记的 QUAL 候选清单内，无新增红。
 
+## R1 纪律机器证明：测试断言语义零改动
+
+本次 `ruff format` 大范围重排了 `tests/` 下的文件（引号风格、空格、`if x: assert` 拆行等），
+肉眼看 diff 无法排除"顺手改了断言"的嫌疑。故做机器证明：对基线 `6ab2d9e4` 与
+HEAD 的 `tests/` 全部 `.py` 做 AST 解析，用 `ast.dump(Assert.test)` 作为断言指纹集合比对
+——该指纹天然免疫引号/空格/换行/拆行等纯格式差异，只捕捉语义变化。
+
+| 项 | 值 |
+|---|---|
+| 基线 assert 节点数 | **12878** |
+| HEAD assert 节点数 | **12878** |
+| removed assert 节点数 | **0** |
+| added assert 节点数 | **0** |
+| **判决** | **PASS — 断言语义零改动** |
+
+工件：`evidence/r1_assert_ast_proof.txt`（脚本全文与输出）
+
 ---
 
 ## 未清偿项（honest 披露，登记为 QUAL 审计候选，不静默修）
