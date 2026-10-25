@@ -108,6 +108,34 @@ jobs:
       - name: Run fast platform tests
         run: PYTHONPATH=src pytest -q app/tests
 
+  # Structural audit has an independent signal: it must run even when
+  # the repository-wide Ruff gate is already red for unrelated legacy findings.
+  architecture-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test AST import graph scanner
+        run: python tests/test_audit_import_graph.py
+      - name: Generate import graph reports
+        run: |
+          mkdir -p artifacts/architecture
+          python tools/audit_import_graph.py \
+            --root src/tensorlbm=tensorlbm \
+            --root app/backend=app.backend \
+            --root tests=tests \
+            --root app/tests=app.tests \
+            --json-out artifacts/architecture/import-audit.json \
+            --markdown-out artifacts/architecture/import-audit.md
+      - name: Upload architecture audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: tensorlbm-import-graph-audit
+          path: artifacts/architecture/
+          if-no-files-found: error
+
   package-build:
     runs-on: ubuntu-latest
     steps:
