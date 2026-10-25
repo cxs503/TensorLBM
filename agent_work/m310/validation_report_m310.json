@@ -131,6 +131,17 @@
     "ruff_errors_before": 623,
     "ruff_errors_after": 0,
     "ruff_format_unformatted_before": 116,
-    "ruff_format_unformatted_after": 0
+    "ruff_format_unformatted_after": 0,
+    "r1_assert_semantics_changed": 0
+  },
+  "r1_discipline_proof": {
+    "claim": "测试断言语义零改动（禁改断言过门）",
+    "method": "对基线 6ab2d9e4 与 HEAD 的 tests/ 全部 .py 做 AST 解析，以 ast.dump(Assert.test) 为指纹集合比对；该比对免疫引号/空格/换行/拆行等纯格式差异",
+    "baseline_assert_nodes": 12878,
+    "head_assert_nodes": 12878,
+    "removed_assert_nodes": 0,
+    "added_assert_nodes": 0,
+    "verdict": "PASS",
+    "evidence": "agent_work/m310/evidence/r1_assert_ast_proof.txt"
   }
 }
