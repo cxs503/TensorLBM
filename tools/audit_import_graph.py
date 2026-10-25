@@ -86,12 +86,20 @@ def scan(roots: list[tuple[Path, str]]) -> dict[str, Any]:
                     target = resolve_relative(source, is_package, node.level, node.module)
                     if target:
                         record(source, target, node.lineno, "from-relative", "." * node.level + (node.module or ""))
+                        for alias in node.names:
+                            child = target + "." + alias.name
+                            if alias.name != "*" and child in files:
+                                record(source, child, node.lineno, "from-relative-member", "." * node.level + (node.module or "") + ":" + alias.name)
                     else:
                         imports.append({"source": source, "target": None, "line": node.lineno,
                                         "kind": "from-relative-unresolved", "raw": "." * node.level + (node.module or ""),
                                         "internal": None})
                 elif node.module:
                     record(source, node.module, node.lineno, "from", node.module)
+                    for alias in node.names:
+                        child = node.module + "." + alias.name
+                        if alias.name != "*" and child in files:
+                            record(source, child, node.lineno, "from-member", node.module + ":" + alias.name)
             elif isinstance(node, ast.Call):
                 func = node.func
                 name = func.id if isinstance(func, ast.Name) else (
