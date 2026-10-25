@@ -129,6 +129,14 @@ jobs:
             --root app/tests=app.tests \
             --json-out artifacts/architecture/import-audit.json \
             --markdown-out artifacts/architecture/import-audit.md
+      - name: Publish architecture audit summary
+        if: always()
+        run: |
+          if [ -f artifacts/architecture/import-audit.md ]; then
+            cat artifacts/architecture/import-audit.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Architecture audit report was not generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Upload architecture audit
         uses: actions/upload-artifact@v4
         with:
