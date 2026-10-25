@@ -69,3 +69,21 @@ Contributor-facing setup also refers to `platform/requirements.txt` and `platfor
 4. Keep numerical solver tests and physics benchmarks independent from platform test results so green checks retain clear meaning.
 
 No tests have been run as part of this inventory. These findings are based on workflow and configuration contents only.
+
+## First CI baseline — run 40173673100 (2026-10-25)
+
+This is an observed baseline from the architecture-governance branch, not a passing gate:
+
+- `package-build`: passed (wheel build and metadata/install smoke check).
+- `lint`: failed at `ruff check src tests examples benchmarks` with **623 findings**; the formatter, mypy, and docs-consistency steps were skipped because the lint step failed. This command does not lint `app/`. Since this PR does not edit solver/test source files in those scopes, treat this as existing repository lint debt unless a baseline comparison proves otherwise; do not bulk-auto-fix it as part of a structural-only PR.
+- `platform-test`: **46 failed, 614 passed, 48 skipped, 8 errors**. The failures are mixed and must not be papered over by weakening assertions. Visible clusters include stale frontend/i18n paths and missing built `frontend-vue/dist/index.html`, route/API expectation mismatches, fixture/model signature drift, missing `torch` in tests, and imports expecting `tensorlbm.d3q19.equilibrium`.
+- Python 3.11 and 3.12 solver jobs were still running when this note was first recorded; their final outcomes must be fetched before declaring the run complete.
+
+### Triage policy
+
+1. Separate failures into (a) CI setup/fixture defects, (b) stale tests or paths, (c) real product regressions, and (d) pre-existing lint debt.
+2. For each platform failure, identify the owning module and check the same test on `main` before attributing it to this PR.
+3. Fix one coherent cluster at a time. Do not change solver numerics or relax physics/API assertions just to obtain a green check.
+4. Keep the platform test job visible and failing while the baseline is unresolved. If the suite is too broad for a fast gate, split by explicit test markers and maintain a separate non-optional full-suite job; do not silently exclude failing tests.
+5. Add import-layer enforcement only after a reliable static import graph exists; dynamic imports must be reported as uncertain, not treated as proven safe.
+
