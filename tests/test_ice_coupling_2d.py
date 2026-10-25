@@ -16,9 +16,7 @@ from tensorlbm.ice_coupling_2d import (
 
 
 def test_mapping_force_moment_and_work():
-    positions = torch.tensor(
-        [[0.132, 0.267], [0.349, 0.456]], dtype=torch.float64
-    )
+    positions = torch.tensor([[0.132, 0.267], [0.349, 0.456]], dtype=torch.float64)
     mapping = bilinear_map(positions, (24, 24), 0.025)
     y, x = torch.meshgrid(
         torch.arange(24, dtype=torch.float64) * 0.025,
@@ -27,14 +25,10 @@ def test_mapping_force_moment_and_work():
     )
     grid = torch.stack((x, y), dim=-1).reshape(-1, 2)
     forces = torch.tensor([[3.0, -5.0], [-2.0, 7.0]], dtype=torch.float64)
-    velocity = grid @ torch.tensor(
-        [[0.2, -0.1], [0.3, 0.4]], dtype=torch.float64
-    )
+    velocity = grid @ torch.tensor([[0.2, -0.1], [0.3, 0.4]], dtype=torch.float64)
     spread = mapping.T @ forces
 
-    torch.testing.assert_close(
-        spread.sum(0), forces.sum(0), rtol=0, atol=1e-14
-    )
+    torch.testing.assert_close(spread.sum(0), forces.sum(0), rtol=0, atol=1e-14)
     torch.testing.assert_close(
         cross2(grid, spread).sum(),
         cross2(positions, forces).sum(),
@@ -60,9 +54,7 @@ def test_real_coupling_and_mid_exchange_restart():
         second = resumed.step()
 
     torch.testing.assert_close(sim.f, resumed.f, rtol=0, atol=0)
-    torch.testing.assert_close(
-        sim.dem.positions, resumed.dem.positions, rtol=0, atol=0
-    )
+    torch.testing.assert_close(sim.dem.positions, resumed.dem.positions, rtol=0, atol=0)
     assert first == second
     assert first["fluid_kinetic_J"] > 0
     assert max(abs(v) for v in first["momentum_residual_kg_m_s"]) < 1e-10

@@ -149,7 +149,12 @@ def run_case(
     n_interior = int(interior.sum().item())
 
     sponge = sponge_profile(
-        nx, int(nx - SPONGE_D * D), nx - 1, amplitude=SPONGE_AMPL, exponent=SPONGE_EXP, device=device
+        nx,
+        int(nx - SPONGE_D * D),
+        nx - 1,
+        amplitude=SPONGE_AMPL,
+        exponent=SPONGE_EXP,
+        device=device,
     )
 
     rho0 = torch.ones((ny, nx), device=device)

@@ -3,6 +3,7 @@
 Usage: python speed_probe.py [C ...] [--device sdaa:0] [--steps 40]
 Writes speed_probe.json next to this file.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,9 +19,16 @@ for _p in (_REPO / "src", _REPO / "benchmarks", _HERE.parent):
         sys.path.insert(0, str(_p))
 
 import torch  # noqa: E402
-
 from fast_kernel import fast_collide_mrt, fast_stream  # noqa: E402
-from run import SPONGE_ALPHA, SPONGE_C, UPSTREAM_C, DOWNSTREAM_C, HALFHEIGHT_C, airfoil_mask  # noqa: E402
+from run import (  # noqa: E402
+    DOWNSTREAM_C,
+    HALFHEIGHT_C,
+    SPONGE_ALPHA,
+    SPONGE_C,
+    UPSTREAM_C,
+    airfoil_mask,
+)
+
 from tensorlbm.boundaries import far_field_bc_2d, make_sponge_strength  # noqa: E402
 from tensorlbm.d2q9 import equilibrium  # noqa: E402
 
@@ -35,7 +43,9 @@ def build(C, device):
     nu = u_in * C / re
     tau = 0.5 + 3.0 * nu
     solid = airfoil_mask(nx, ny, float(C), 0.0, x_le, y_c, dev)
-    sigma = make_sponge_strength(ny, nx, int(nx - SPONGE_C * C), int(SPONGE_C * C), power=2.0, device=dev)
+    sigma = make_sponge_strength(
+        ny, nx, int(nx - SPONGE_C * C), int(SPONGE_C * C), power=2.0, device=dev
+    )
     tau_field = tau * (1.0 + SPONGE_ALPHA * sigma)
     rho0 = torch.ones((ny, nx), device=dev)
     ux0 = torch.full_like(rho0, u_in)
@@ -65,11 +75,26 @@ def main():
     out = {}
     for C in a.grids:
         dev, f, tau, tau_field, solid, nx, ny = build(C, a.device)
-        ms_fast = timeit(lambda ff: far_field_bc_2d(fast_stream(fast_collide_mrt(ff, tau, tau_field=tau_field)), 0.1, solid), f, a.steps, dev)
+        ms_fast = timeit(
+            lambda ff: far_field_bc_2d(
+                fast_stream(fast_collide_mrt(ff, tau, tau_field=tau_field)), 0.1, solid
+            ),
+            f,
+            a.steps,
+            dev,
+        )
         rec = {"C": C, "nx": nx, "ny": ny, "ms_per_step_fast": ms_fast}
         try:
             from tensorlbm.solver import collide_mrt, stream
-            ms_lib = timeit(lambda ff: far_field_bc_2d(stream(collide_mrt(ff, tau, tau_field=tau_field)), 0.1, solid), f, min(a.steps, 8), dev)
+
+            ms_lib = timeit(
+                lambda ff: far_field_bc_2d(
+                    stream(collide_mrt(ff, tau, tau_field=tau_field)), 0.1, solid
+                ),
+                f,
+                min(a.steps, 8),
+                dev,
+            )
             rec["ms_per_step_lib"] = ms_lib
             rec["speedup"] = ms_lib / ms_fast
         except Exception as e:  # noqa: BLE001

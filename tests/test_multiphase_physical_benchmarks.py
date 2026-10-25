@@ -5,6 +5,7 @@ actual phase separation in 2-D and 3-D and run on main/nightly CI, not PR smoke
 jobs. A density ratio alone is a coarse morphology criterion, not a coexistence
 curve validation; EOS/Maxwell and grid-convergence studies remain separate work.
 """
+
 from __future__ import annotations
 
 import math
@@ -52,7 +53,9 @@ def test_spinodal_3d_reports_mass_conservation(tmp_path: Path) -> None:
     assert "relative_mass_drift" in result
     assert math.isfinite(float(result["relative_mass_drift"]))
     assert float(result["relative_mass_drift"]) < 1e-5
-    assert (tmp_path / "spinodal_3d" / "spinodal_3d_G-4.0_rho0.70_n12x12x12_steps3" / "spinodal_3d.json").exists()
+    assert (
+        tmp_path / "spinodal_3d" / "spinodal_3d_G-4.0_rho0.70_n12x12x12_steps3" / "spinodal_3d.json"
+    ).exists()
 
 
 @pytest.mark.slow

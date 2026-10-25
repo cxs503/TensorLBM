@@ -57,18 +57,18 @@ for _p in (_REPO / "src", _REPO / "benchmarks", _HERE.parent):
 import torch  # noqa: E402
 from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
 
+# Fast elementwise-equivalent MRT collision + roll-streaming.  The library's
+# collide_mrt / stream hit pathologically slow SDAA kernels (131 / 105 ms per
+# step at 1472x1024); these drop-in replacements are numerically identical to
+# f32 round-off (see fast_kernel.py --selftest) and run at ~10-20 ms/step.
+from fast_kernel import fast_collide_mrt, fast_stream  # noqa: E402
+
 from tensorlbm.boundaries import (  # noqa: E402
     compute_obstacle_forces,
     far_field_bc_2d,
     make_sponge_strength,
 )
 from tensorlbm.d2q9 import equilibrium  # noqa: E402
-
-# Fast elementwise-equivalent MRT collision + roll-streaming.  The library's
-# collide_mrt / stream hit pathologically slow SDAA kernels (131 / 105 ms per
-# step at 1472x1024); these drop-in replacements are numerically identical to
-# f32 round-off (see fast_kernel.py --selftest) and run at ~10-20 ms/step.
-from fast_kernel import fast_collide_mrt, fast_stream  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Reference convention (audited in REFERENCE_AUDIT.md) -- see constants below
@@ -204,7 +204,9 @@ def run_case(
 
     def _step(f):
         # collide -> stream -> far-field (applies half-way BB last)
-        return far_field_bc_2d(fast_stream(fast_collide_mrt(f, tau, tau_field=tau_field)), u_in, solid)
+        return far_field_bc_2d(
+            fast_stream(fast_collide_mrt(f, tau, tau_field=tau_field)), u_in, solid
+        )
 
     step_fn = route_step(_step, compile_mode, name=f"naca0012_re{int(re)}[C{C}]")
 

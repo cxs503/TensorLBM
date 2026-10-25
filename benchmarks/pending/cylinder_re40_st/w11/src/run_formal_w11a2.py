@@ -134,13 +134,13 @@ def main() -> None:
         cd = fx / dyn_p
         cd_hist.append(cd)
         f = far_field_bc_2d(f, U_LB, solid)
-        
+
         # §6 plateau check
         if len(cd_hist) >= last_n:
             mean_cd = float(np.mean(cd_hist[-last_n:]))
             trace_cd.append(mean_cd)
             trace_t.append(step)
-            
+
             if step >= check_from and step % check_every == 0:
                 if len(trace_cd) >= 2:
                     m_prev = trace_cd[-2]
@@ -194,6 +194,7 @@ def main() -> None:
 
     out_dir = f"{BASE}/formal_w11a2"
     import os
+
     os.makedirs(out_dir, exist_ok=True)
     out_path = f"{out_dir}/{name}.json"
     with open(out_path, "w") as fp:
@@ -202,8 +203,10 @@ def main() -> None:
     trace_path = f"{out_dir}/trace_{name}.npz"
     np.savez_compressed(trace_path, t=np.array(trace_t), cd=np.array(trace_cd))
 
-    print(f"[{name}] cd={cd_final:.6f} ref={cd_ref:.4f} err={err_pct:+.4f}% "
-          f"steps={plateau_at} t={wall_s:.0f}s -> {out_path}")
+    print(
+        f"[{name}] cd={cd_final:.6f} ref={cd_ref:.4f} err={err_pct:+.4f}% "
+        f"steps={plateau_at} t={wall_s:.0f}s -> {out_path}"
+    )
 
 
 if __name__ == "__main__":

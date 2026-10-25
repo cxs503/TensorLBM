@@ -6,29 +6,27 @@ as callable library functions.
 
 from __future__ import annotations
 
-import csv
 import os
 import random
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import torch
 import torch.nn.functional as F
+from einops import repeat
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from einops import repeat
-
 from .suboff_utils import (
+    _move_to_device,
     build_suboff_model,
     default_suboff_device,
     get_suboff_coords,
     load_checkpoint,
     pointwise_rel_loss,
-    _move_to_device,
 )
 
 _DEMO_CHANNEL_TO_INDEX = {"p": 0, "ux": 1, "uy": 2, "uz": 3, "u": 4}
@@ -230,7 +228,6 @@ def predict_suboff(cfg: SuboffPredictConfig | None = None) -> dict[str, Any]:
     # Run inference
     all_avg_loss = []
     torch_avg_loss = []
-    pred_result = None
     input_data = None
     pred = None
 
@@ -511,7 +508,6 @@ def _load_npy_data(data_dir: str, max_snaps: int | None = None) -> torch.Tensor 
     Returns:
         Tensor of shape [n_snaps, total_points, 4] or None.
     """
-    import glob
 
     channels = ("p", "ux", "uy", "uz")
     result: list[torch.Tensor] | None = None

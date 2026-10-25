@@ -12,26 +12,98 @@
 用法：
   python plot_figs.py
 """
+
 import json
 import sys
 from pathlib import Path
 
-import numpy as np
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 # 2D Ghia Re=1000 参考数据（库内）
-GHIA_Y = [0.0, 0.0547, 0.0625, 0.0703, 0.1016, 0.1719, 0.2813, 0.4531, 0.5,
-          0.5625, 0.6172, 0.7344, 0.8516, 0.9531, 0.9609, 0.9688, 0.9766, 1.0]
-GHIA_U = [0.0, -0.0372, -0.0477, -0.059, -0.1084, -0.2109, -0.278, -0.1872,
-          -0.1548, -0.1015, -0.0643, 0.0234, 0.1458, 0.3822, 0.4031, 0.4273,
-          0.4531, 1.0]
-GHIA_X = [0.0, 0.0625, 0.0703, 0.0781, 0.1016, 0.1563, 0.1719, 0.2266, 0.2344,
-          0.3203, 0.4063, 0.5, 0.5703, 0.6797, 0.6875, 0.6953, 0.7031, 1.0]
-GHIA_V = [0.0, -0.0911, -0.1018, -0.1153, -0.1566, -0.2109, -0.2262, -0.2578,
-          -0.2615, -0.2615, -0.2188, -0.1548, -0.1015, 0.0234, 0.0285, 0.033,
-          0.035, 0.0]
+GHIA_Y = [
+    0.0,
+    0.0547,
+    0.0625,
+    0.0703,
+    0.1016,
+    0.1719,
+    0.2813,
+    0.4531,
+    0.5,
+    0.5625,
+    0.6172,
+    0.7344,
+    0.8516,
+    0.9531,
+    0.9609,
+    0.9688,
+    0.9766,
+    1.0,
+]
+GHIA_U = [
+    0.0,
+    -0.0372,
+    -0.0477,
+    -0.059,
+    -0.1084,
+    -0.2109,
+    -0.278,
+    -0.1872,
+    -0.1548,
+    -0.1015,
+    -0.0643,
+    0.0234,
+    0.1458,
+    0.3822,
+    0.4031,
+    0.4273,
+    0.4531,
+    1.0,
+]
+GHIA_X = [
+    0.0,
+    0.0625,
+    0.0703,
+    0.0781,
+    0.1016,
+    0.1563,
+    0.1719,
+    0.2266,
+    0.2344,
+    0.3203,
+    0.4063,
+    0.5,
+    0.5703,
+    0.6797,
+    0.6875,
+    0.6953,
+    0.7031,
+    1.0,
+]
+GHIA_V = [
+    0.0,
+    -0.0911,
+    -0.1018,
+    -0.1153,
+    -0.1566,
+    -0.2109,
+    -0.2262,
+    -0.2578,
+    -0.2615,
+    -0.2615,
+    -0.2188,
+    -0.1548,
+    -0.1015,
+    0.0234,
+    0.0285,
+    0.033,
+    0.035,
+    0.0,
+]
 
 CASE_DIR = Path(__file__).parent
 FIG_DIR = CASE_DIR / "figures"
@@ -58,37 +130,43 @@ def plot_field_midplane_speed(npz64):
     uy = npz64["uy"]
     uz = npz64["uz"]
     nz, ny, nx = ux.shape
-    
+
     # 中剖面 z = nz//2
     z_mid = nz // 2
     ux_mid = ux[z_mid]  # (ny, nx)
     uy_mid = uy[z_mid]
     uz_mid = uz[z_mid]
-    
+
     # 速度幅值
     speed = np.sqrt(ux_mid**2 + uy_mid**2 + uz_mid**2)
-    
+
     fig, ax = plt.subplots(figsize=(7, 6))
     x = np.linspace(0, 1, nx)
     y = np.linspace(0, 1, ny)
     X, Y = np.meshgrid(x, y)
-    
+
     # 云图
     im = ax.contourf(X, Y, speed, levels=20, cmap="viridis")
     cbar = fig.colorbar(im, ax=ax, label="Speed (lattice units)")
-    
+
     # 流线（稀疏）
     skip = 4
-    ax.quiver(X[::skip, ::skip], Y[::skip, ::skip],
-              ux_mid[::skip, ::skip], uy_mid[::skip, ::skip],
-              color="white", alpha=0.5, scale=10)
-    
+    ax.quiver(
+        X[::skip, ::skip],
+        Y[::skip, ::skip],
+        ux_mid[::skip, ::skip],
+        uy_mid[::skip, ::skip],
+        color="white",
+        alpha=0.5,
+        scale=10,
+    )
+
     ax.set_xlabel("x", fontsize=12)
     ax.set_ylabel("y", fontsize=12)
     ax.set_title("Midplane Speed Magnitude (z=0.5, N=64, Re=1000)", fontsize=13)
     ax.set_aspect("equal")
     fig.tight_layout()
-    
+
     out = FIG_DIR / "field_midplane_speed.png"
     fig.savefig(out, dpi=150)
     plt.close(fig)
@@ -100,34 +178,34 @@ def plot_field_midplane_vorticity(npz64):
     ux = npz64["ux"]
     uy = npz64["uy"]
     nz, ny, nx = ux.shape
-    
+
     z_mid = nz // 2
     ux_mid = ux[z_mid]
     uy_mid = uy[z_mid]
-    
+
     # 涡量 ω_z = ∂v/∂x - ∂u/∂y
     dx = 1.0 / (nx - 1)
     dy = 1.0 / (ny - 1)
     dvy_dx = np.gradient(uy_mid, dx, axis=1)
     dux_dy = np.gradient(ux_mid, dy, axis=0)
     vorticity = dvy_dx - dux_dy
-    
+
     fig, ax = plt.subplots(figsize=(7, 6))
     x = np.linspace(0, 1, nx)
     y = np.linspace(0, 1, ny)
     X, Y = np.meshgrid(x, y)
-    
+
     # 对称色标
     vmax = np.abs(vorticity).max() * 0.8
     im = ax.contourf(X, Y, vorticity, levels=20, cmap="RdBu_r", vmin=-vmax, vmax=vmax)
     cbar = fig.colorbar(im, ax=ax, label="ω_z (1/s)")
-    
+
     ax.set_xlabel("x", fontsize=12)
     ax.set_ylabel("y", fontsize=12)
     ax.set_title("Midplane Vorticity ω_z (z=0.5, N=64, Re=1000)", fontsize=13)
     ax.set_aspect("equal")
     fig.tight_layout()
-    
+
     out = FIG_DIR / "field_midplane_vorticity.png"
     fig.savefig(out, dpi=150)
     plt.close(fig)
@@ -173,8 +251,9 @@ def plot_curve_convergence():
     ax.set_xticks(grids)
     ax.set_ylim(0, 2.0)
     for i, (g, e) in enumerate(zip(grids, errs)):
-        ax.annotate(f"{e}%", (g, e), textcoords="offset points",
-                    xytext=(10, 5), fontsize=11, color="green")
+        ax.annotate(
+            f"{e}%", (g, e), textcoords="offset points", xytext=(10, 5), fontsize=11, color="green"
+        )
     fig.tight_layout()
     out = FIG_DIR / "curve_convergence.png"
     fig.savefig(out, dpi=150)

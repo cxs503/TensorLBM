@@ -27,6 +27,7 @@ slipstream, no nonlinear (cross-flow / Abkowitz higher-order) hull terms, and no
 LBM end-to-end hull-in-flow coupling -- that end-to-end path is a structural
 blocker (free surface; see benchmarks/STATUS.md).  See README.md / NOTES.md.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -53,26 +54,33 @@ from tensorlbm.maneuvering import (  # noqa: E402
 # --------------------------------------------------------------------------- #
 # ship (KVLCC2-class large tanker, full scale)
 # --------------------------------------------------------------------------- #
-L = 320.0        # length between perpendiculars [m]
-B = 58.0         # beam [m]
-D = 20.8         # draft [m]
-CB = 0.81        # block coefficient
-RHO = 1000.0     # water density [kg/m^3]
-U = 7.97         # forward speed [m/s] (~15.5 kn)
+L = 320.0  # length between perpendiculars [m]
+B = 58.0  # beam [m]
+D = 20.8  # draft [m]
+CB = 0.81  # block coefficient
+RHO = 1000.0  # water density [kg/m^3]
+U = 7.97  # forward speed [m/s] (~15.5 kn)
 MASS = RHO * CB * L * B * D
 IZ = MASS * (0.25 * L) ** 2
 
 RUDDERS_DEG = (10.0, 20.0)
 # two time-step levels (fine = coarse / 4)
 DT_LEVELS = {"coarse": 1.0, "fine": 0.25}
-T_END = 600.0            # enough for ~14 slow time constants
+T_END = 600.0  # enough for ~14 slow time constants
 
 
 def build_model() -> ManeuveringModel:
     dim = prime_to_dimensional(NOMINAL_TANKER_PRIME, L, D, U, RHO)
     return ManeuveringModel(
-        L=L, d=D, U=U, mass=MASS, inertia_z=IZ, x_G=0.0, rho=RHO,
-        name="kvlcc2-class tanker", **dim,
+        L=L,
+        d=D,
+        U=U,
+        mass=MASS,
+        inertia_z=IZ,
+        x_G=0.0,
+        rho=RHO,
+        name="kvlcc2-class tanker",
+        **dim,
     )
 
 
@@ -100,17 +108,19 @@ def steady_measure(sim: dict, t_frac: float = 0.5) -> dict:
         "v_std": float(v.std()),
         "r_std": float(r.std()),
         "R_circle": circle_fit_radius(x, y),
-        "x": x, "y": y,
+        "x": x,
+        "y": y,
     }
 
 
-def run_case(model: ManeuveringModel, delta_deg: float, level: str, dt: float,
-             integrator: str) -> dict:
+def run_case(
+    model: ManeuveringModel, delta_deg: float, level: str, dt: float, integrator: str
+) -> dict:
     delta = math.radians(delta_deg)
     n_steps = int(round(T_END / dt))
 
     ana = model.steady_turn(delta)
-    R_geo_ana = ana.speed / abs(ana.r)      # geometric turning radius V/|r|
+    R_geo_ana = ana.speed / abs(ana.r)  # geometric turning radius V/|r|
 
     t0 = time.time()
     sim = simulate_turn(model, delta, dt, n_steps, integrator=integrator)
@@ -172,11 +182,11 @@ def run_nonlinear_diagnostic(base: ManeuveringModel, delta_deg: float = 20.0) ->
     import dataclasses
 
     delta = math.radians(delta_deg)
-    Y_vv = -1.2e6    # reduces |v| (drag opposes sway)
-    N_vv = -8.0e7    # cross-flow yaw damping
+    Y_vv = -1.2e6  # reduces |v| (drag opposes sway)
+    N_vv = -8.0e7  # cross-flow yaw damping
     model = dataclasses.replace(base, Y_vv=Y_vv, N_vv=N_vv)
 
-    ana = model.steady_turn(delta)               # nonlinear bisection equilibrium
+    ana = model.steady_turn(delta)  # nonlinear bisection equilibrium
     dt = DT_LEVELS["fine"]
     n_steps = int(round(T_END / dt))
     sim = simulate_turn(model, delta, dt, n_steps, integrator="rk4")
@@ -199,8 +209,9 @@ def run_nonlinear_diagnostic(base: ManeuveringModel, delta_deg: float = 20.0) ->
         "R_ana": R_ana,
         "R_meas": R_meas,
         "integrator_vs_rootfind_R_pct": (R_meas - R_ana) / R_ana * 100.0,
-        "integrator_vs_rootfind_beta_pct": (math.degrees(math.atan2(-m["v"], U))
-                                            - ana.beta_deg) / ana.beta_deg * 100.0,
+        "integrator_vs_rootfind_beta_pct": (math.degrees(math.atan2(-m["v"], U)) - ana.beta_deg)
+        / ana.beta_deg
+        * 100.0,
         "criterion": "diagnostic-only",
     }
 
@@ -221,7 +232,7 @@ def physical_plausibility(model: ManeuveringModel) -> dict:
         },
         "published_ranges": {
             "tactical_diameter_over_L": "~2.5-4.5 (large tanker, 20-35 deg rudder; "
-                                        "KVLCC2 SIMMAN sim D_T/L ~3)",
+            "KVLCC2 SIMMAN sim D_T/L ~3)",
             "steady_drift_angle_deg": "~10-25 (large tanker steady turn)",
             "nomoto_K_prime": "~0.5-3 (large tanker)",
         },
@@ -247,8 +258,8 @@ def main() -> int:
     A = model.damping_matrix().numpy()
     b = model.input_vector(delta_ref).numpy()
     q_lib = np.array([model.steady_turn(delta_ref).v, model.steady_turn(delta_ref).r])
-    q_np = np.linalg.solve(A, -b)                       # independent route
-    K_r = model.nomoto_K() * delta_ref                  # independent route
+    q_np = np.linalg.solve(A, -b)  # independent route
+    K_r = model.nomoto_K() * delta_ref  # independent route
     route_agree_pct = {
         "numpy_vs_library_r": abs(q_np[1] - q_lib[1]) / abs(q_lib[1]) * 100.0,
         "nomoto_vs_library_r": abs(K_r - q_lib[1]) / abs(q_lib[1]) * 100.0,
@@ -270,8 +281,9 @@ def main() -> int:
     # ---- per-rudder two-level span ---------------------------------------- #
     spans = {}
     for ddeg in RUDDERS_DEG:
-        rs = [c for c in cases if c["delta_deg"] == ddeg
-              and c["integrator"] == "semi_implicit_euler"]
+        rs = [
+            c for c in cases if c["delta_deg"] == ddeg and c["integrator"] == "semi_implicit_euler"
+        ]
         Rs = [c["R_meas"] for c in rs]
         betas = [c["beta_meas_deg"] for c in rs]
         # transient error per level (this IS dt-dependent, unlike the fixed point)
@@ -294,21 +306,30 @@ def main() -> int:
         "tolerance_pct": TOL,
         "each_level_R_within_tol": all(abs(c["R_err_pct"]) <= TOL for c in cases),
         "each_level_beta_within_tol": all(abs(c["beta_err_pct"]) <= TOL for c in cases),
-        "two_level_span_within_tol": all(v["R_span_pct"] <= TOL and v["beta_span_pct"] <= TOL
-                                         for v in spans.values()),
+        "two_level_span_within_tol": all(
+            v["R_span_pct"] <= TOL and v["beta_span_pct"] <= TOL for v in spans.values()
+        ),
         "analytic_routes_agree": all(v < 1e-6 for v in route_agree_pct.values()),
         "transient_rk4_fine_within_tol": all(c["transient_r_err_pct"] <= TOL for c in rk4),
         "transient_euler_fine_within_tol": all(c["transient_r_err_pct"] <= TOL for c in euler),
-        "transient_refinement_ratio_gt_3": all(v["transient_refinement_ratio"] > 3.0
-                                               for v in spans.values()),
-        "directionally_stable": all(model.steady_turn(math.radians(d)).stable
-                                    for d in RUDDERS_DEG),
+        "transient_refinement_ratio_gt_3": all(
+            v["transient_refinement_ratio"] > 3.0 for v in spans.values()
+        ),
+        "directionally_stable": all(model.steady_turn(math.radians(d)).stable for d in RUDDERS_DEG),
     }
-    verdict["pass"] = all(verdict[k] for k in (
-        "each_level_R_within_tol", "each_level_beta_within_tol",
-        "two_level_span_within_tol", "analytic_routes_agree",
-        "transient_rk4_fine_within_tol", "transient_euler_fine_within_tol",
-        "transient_refinement_ratio_gt_3", "directionally_stable"))
+    verdict["pass"] = all(
+        verdict[k]
+        for k in (
+            "each_level_R_within_tol",
+            "each_level_beta_within_tol",
+            "two_level_span_within_tol",
+            "analytic_routes_agree",
+            "transient_rk4_fine_within_tol",
+            "transient_euler_fine_within_tol",
+            "transient_refinement_ratio_gt_3",
+            "directionally_stable",
+        )
+    )
 
     result = {
         "benchmark": "maneuvering_steady_turn",
@@ -322,16 +343,23 @@ def main() -> int:
         "dtype": "float64 (library + metrics)",
         "ship": {
             "class": "KVLCC2-class large tanker (full scale)",
-            "L_m": L, "B_m": B, "draft_m": D, "Cb": CB, "U_m_s": U,
-            "mass_kg": MASS, "Iz_kg_m2": IZ,
+            "L_m": L,
+            "B_m": B,
+            "draft_m": D,
+            "Cb": CB,
+            "U_m_s": U,
+            "mass_kg": MASS,
+            "Iz_kg_m2": IZ,
         },
         "derivatives": {
             "prime_input": NOMINAL_TANKER_PRIME,
             "dimensional": dim,
-            "note": ("representative KVLCC2-class linear derivative set "
-                     "(order-of-magnitude consistent with published PMM/MMG data, "
-                     "Yasukawa & Yoshimura 2015 / SIMMAN 2008); caller-supplied, "
-                     "NOT a digit-exact reprint and NOT extracted from an LBM flow."),
+            "note": (
+                "representative KVLCC2-class linear derivative set "
+                "(order-of-magnitude consistent with published PMM/MMG data, "
+                "Yasukawa & Yoshimura 2015 / SIMMAN 2008); caller-supplied, "
+                "NOT a digit-exact reprint and NOT extracted from an LBM flow."
+            ),
         },
         "reference": {
             "analytic_fixed_point": "solve A q = -b for q=[v,r]; R=V/|r|, beta=atan2(-v,U)",
@@ -344,8 +372,7 @@ def main() -> int:
                 "Lewis (ed.) (1989) Principles of Naval Architecture Vol.III ch.9",
             ],
         },
-        "modes": {"eigenvalues": modes["eigenvalues"],
-                  "time_constants": modes["time_constants"]},
+        "modes": {"eigenvalues": modes["eigenvalues"], "time_constants": modes["time_constants"]},
         "acceptance": (
             "steady R and drift angle beta within 3% of the analytic fixed point at "
             "every (rudder, dt) level; two-level span <=3%; independent algebraic "
@@ -370,17 +397,36 @@ def main() -> int:
 
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
-    (out / "result.json").write_text(json.dumps(result, indent=2, sort_keys=True),
-                                     encoding="utf-8")
-    print(json.dumps({"verdict": verdict, "spans": spans,
-                      "route_agree": route_agree_pct,
-                      "nonlinear_diagnostic": nonlinear,
-                      "cases": [{k: c[k] for k in
-                                 ("delta_deg", "level", "integrator", "dt",
-                                  "R_over_L_meas", "beta_meas_deg",
-                                  "R_err_pct", "beta_err_pct", "transient_r_err_pct")}
-                                for c in cases]},
-                     indent=2, sort_keys=True))
+    (out / "result.json").write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
+    print(
+        json.dumps(
+            {
+                "verdict": verdict,
+                "spans": spans,
+                "route_agree": route_agree_pct,
+                "nonlinear_diagnostic": nonlinear,
+                "cases": [
+                    {
+                        k: c[k]
+                        for k in (
+                            "delta_deg",
+                            "level",
+                            "integrator",
+                            "dt",
+                            "R_over_L_meas",
+                            "beta_meas_deg",
+                            "R_err_pct",
+                            "beta_err_pct",
+                            "transient_r_err_pct",
+                        )
+                    }
+                    for c in cases
+                ],
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0 if verdict["pass"] else 1
 
 

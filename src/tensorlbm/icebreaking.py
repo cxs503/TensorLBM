@@ -104,7 +104,6 @@ class IcebreakingForceLedger:
         return record
 
 
-
 def integrate_surface_traction(
     positions_m: "Sequence[Sequence[float]]",
     tractions_pa: "Sequence[Sequence[float]]",
@@ -146,8 +145,12 @@ def integrate_surface_traction(
             total_force[axis] += force[axis]
             total_moment[axis] += moment[axis]
     return WrenchSI(
-        fx_n=total_force[0], fy_n=total_force[1], fz_n=total_force[2],
-        mx_nm=total_moment[0], my_nm=total_moment[1], mz_nm=total_moment[2],
+        fx_n=total_force[0],
+        fy_n=total_force[1],
+        fz_n=total_force[2],
+        mx_nm=total_moment[0],
+        my_nm=total_moment[1],
+        mz_nm=total_moment[2],
     )
 
 

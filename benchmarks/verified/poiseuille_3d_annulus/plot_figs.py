@@ -18,6 +18,7 @@ Regenerate with:
       case_Ro20_field.json --dump --device cuda:0     # refreshes the npz dump
   python plot_figs.py
 """
+
 from __future__ import annotations
 
 import json
@@ -25,6 +26,7 @@ import math
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,9 +37,7 @@ FIG_DIR.mkdir(exist_ok=True)
 
 # In-repo field dump (produced by run.py --dump); legacy absolute path as fallback.
 DUMP = CASE_DIR / "case_Ro20_field.npz"
-DUMP_FALLBACK = Path(
-    "/nfs/wangxi/runs/bm_close/poiseuille_3d_annulus/figdump/case_Ro20_field.npz"
-)
+DUMP_FALLBACK = Path("/nfs/wangxi/runs/bm_close/poiseuille_3d_annulus/figdump/case_Ro20_field.npz")
 RESULT = CASE_DIR / "result.json"
 RO_TIERS = (20, 40, 80)
 
@@ -54,7 +54,8 @@ def _dump_path() -> Path:
         print(f"[warn] {DUMP.name} missing, falling back to {DUMP_FALLBACK}")
         return DUMP_FALLBACK
     raise FileNotFoundError(
-        f"field dump not found: {DUMP} (run `run.py single 20 ... --dump` first)")
+        f"field dump not found: {DUMP} (run `run.py single 20 ... --dump` first)"
+    )
 
 
 def plot_field_midplane():
@@ -121,8 +122,13 @@ def plot_profile_vs_analytical():
         u_analytical = annulus_u(r_fine, G_Q, case["delta_o"], case["delta_i"], nu)
 
         ax.plot(u_analytical, r_fine, "k-", lw=1.5, label="analytical (eff frame)")
-        ax.plot(u_bins, r_bins, "ro", ms=4,
-                label=f"LBM bins (err={case['eff_max_bin_central_pct']:.4f}%)")
+        ax.plot(
+            u_bins,
+            r_bins,
+            "ro",
+            ms=4,
+            label=f"LBM bins (err={case['eff_max_bin_central_pct']:.4f}%)",
+        )
         ax.axvline(0.0, color="gray", ls=":", lw=0.8)
 
         ax.set_xlabel(r"$u_x$ (lattice)")
@@ -158,22 +164,42 @@ def plot_geometry_schematic():
     th = np.linspace(0, 2 * np.pi, 400)
     ax1.fill(R_o * np.cos(th), R_o * np.sin(th), color="#dbe6f0", zorder=0)
     ax1.fill(a * np.cos(th), a * np.sin(th), color="#95a5a6", zorder=1)
-    ax1.plot(delta_o * np.cos(th), delta_o * np.sin(th), "b--", lw=1.1,
-             label=r"effective outer $\delta_o$")
-    ax1.plot(delta_i * np.cos(th), delta_i * np.sin(th), "r--", lw=1.1,
-             label=r"effective inner $\delta_i$")
+    ax1.plot(
+        delta_o * np.cos(th),
+        delta_o * np.sin(th),
+        "b--",
+        lw=1.1,
+        label=r"effective outer $\delta_o$",
+    )
+    ax1.plot(
+        delta_i * np.cos(th),
+        delta_i * np.sin(th),
+        "r--",
+        lw=1.1,
+        label=r"effective inner $\delta_i$",
+    )
     ax1.plot([0, R_o], [0, 0], "k-", lw=1)
-    ax1.annotate("", xy=(R_o, 0), xytext=(a, 0),
-                 arrowprops=dict(arrowstyle="<->", color="k"))
+    ax1.annotate("", xy=(R_o, 0), xytext=(a, 0), arrowprops=dict(arrowstyle="<->", color="k"))
     ax1.text((a + R_o) / 2, 1.2, r"gap ($R_o-a$)", ha="center", fontsize=9)
     ax1.text(0, -a / 2, r"$a$" + f"={a:g}", ha="center", va="center", fontsize=9)
-    ax1.text(-0.5 * R_o, 0.75 * R_o, f"$R_o$={R_o:g}", fontsize=9,
-             bbox=dict(fc="w", ec="none", alpha=0.75))
+    ax1.text(
+        -0.5 * R_o,
+        0.75 * R_o,
+        f"$R_o$={R_o:g}",
+        fontsize=9,
+        bbox=dict(fc="w", ec="none", alpha=0.75),
+    )
     ax1.plot([0, R_o * np.cos(np.pi / 4)], [0, R_o * np.sin(np.pi / 4)], "k-", lw=0.8)
     ax1.text(0.62 * R_o, 0.30 * R_o, r"$r$", fontsize=10)
-    ax1.text(R_o * 0.95, -R_o * 0.72, "outer wall\nno-slip", fontsize=8, ha="center",
-             bbox=dict(fc="w", ec="none", alpha=0.65))
-    ax1.set_title(f"Annulus cross-section ($a/R_o$ = {a/R_o:g})")
+    ax1.text(
+        R_o * 0.95,
+        -R_o * 0.72,
+        "outer wall\nno-slip",
+        fontsize=8,
+        ha="center",
+        bbox=dict(fc="w", ec="none", alpha=0.65),
+    )
+    ax1.set_title(f"Annulus cross-section ($a/R_o$ = {a / R_o:g})")
     ax1.set_xlabel("y (lattice)")
     ax1.set_ylabel("z (lattice)")
     ax1.set_aspect("equal")
@@ -182,8 +208,13 @@ def plot_geometry_schematic():
 
     # --- (b) exact profile + axial development ---
     r = np.linspace(delta_i, delta_o, 400)
-    ax2.plot(r, annulus_u(r, G_Q, delta_o, delta_i, nu), "b-", lw=2,
-             label=f"exact $u(r)$ @ $R_o$={R_o:g} (CH1 frame)")
+    ax2.plot(
+        r,
+        annulus_u(r, G_Q, delta_o, delta_i, nu),
+        "b-",
+        lw=2,
+        label=f"exact $u(r)$ @ $R_o$={R_o:g} (CH1 frame)",
+    )
     ax2.axhline(0, color="gray", ls=":", lw=1)
     ax2.axvline(delta_i, color="r", ls="--", lw=1)
     ax2.axvline(delta_o, color="b", ls="--", lw=1)
@@ -195,9 +226,11 @@ def plot_geometry_schematic():
     ax2.legend(fontsize=8)
     ax2.grid(alpha=0.25)
 
-    fig.suptitle("Problem schematic: concentric-annulus Poiseuille flow "
-                 "(Zou-He inlet velocity / outlet pressure, L/R = "
-                 f"{case['L_over_R']:g} lattice lengths)")
+    fig.suptitle(
+        "Problem schematic: concentric-annulus Poiseuille flow "
+        "(Zou-He inlet velocity / outlet pressure, L/R = "
+        f"{case['L_over_R']:g} lattice lengths)"
+    )
     fig.tight_layout()
     out = FIG_DIR / "diagram_annulus_geometry.png"
     fig.savefig(out, dpi=150)
@@ -230,8 +263,7 @@ def plot_error_convergence():
     ax.grid(True, which="both", alpha=0.3)
 
     for Ro, e in zip(Ro_list, eff_errs):
-        ax.annotate(f"{e:.4f}%", (Ro, e), textcoords="offset points",
-                    xytext=(10, 6), fontsize=9)
+        ax.annotate(f"{e:.4f}%", (Ro, e), textcoords="offset points", xytext=(10, 6), fontsize=9)
 
     fig.tight_layout()
     out = FIG_DIR / "curve_error_convergence.png"
@@ -253,41 +285,42 @@ def write_manifest(out_dir: Path) -> Path:
                 "file": "figures/diagram_annulus_geometry.png",
                 "kind": "diagram",
                 "caption": "问题几何示意：同心环隙横截面（内柱 a、外壁 R_o、有效半径 δ_i/δ_o）"
-                           "与精确环形 Poiseuille 剖面 u(r)，内外壁 u=0 无滑移，轴向长 L/R=6",
+                "与精确环形 Poiseuille 剖面 u(r)，内外壁 u=0 无滑移，轴向长 L/R=6",
                 "source": "benchmarks/verified/poiseuille_3d_annulus/case_Ro20.json "
-                          "a + R_o + delta_i/delta_o + G_Q + nu_lb + L_over_R"
-                          "（剖面形式见同目录 run.py 头注精确解）",
+                "a + R_o + delta_i/delta_o + G_Q + nu_lb + L_over_R"
+                "（剖面形式见同目录 run.py 头注精确解）",
             },
             {
                 "file": "figures/field_midplane_speed.png",
                 "kind": "field",
                 "caption": "环隙横截面中剖面轴向速度 u_x 云图（R_o=20，内外壁无滑移，"
-                           "楼梯离散边界清晰可见）",
+                "楼梯离散边界清晰可见）",
                 "source": "benchmarks/verified/poiseuille_3d_annulus/case_Ro20_field.npz"
-                          " u_meas/fluid_np（run.py single 20 --dump 直出）",
+                " u_meas/fluid_np（run.py single 20 --dump 直出）",
             },
             {
                 "file": "figures/curve_profile_vs_analytical.png",
                 "kind": "curve",
                 "caption": f"三档网格（R_o=20/40/80）径向速度剖面 vs CH1 有效帧解析解"
-                           f"（binned LBM 直读工件，最大误差 {eff[0]:.4f}/{eff[1]:.4f}/"
-                           f"{eff[2]:.4f}%）",
+                f"（binned LBM 直读工件，最大误差 {eff[0]:.4f}/{eff[1]:.4f}/"
+                f"{eff[2]:.4f}%）",
                 "source": "benchmarks/verified/poiseuille_3d_annulus/"
-                          "case_Ro{20,40,80}.json r_bins + u_bins + delta_i/delta_o + G_Q",
+                "case_Ro{20,40,80}.json r_bins + u_bins + delta_i/delta_o + G_Q",
             },
             {
                 "file": "figures/curve_error_convergence.png",
                 "kind": "curve",
                 "caption": "CH1 有效帧（主判据）与 CH2 名义帧（披露）最大相对误差随网格"
-                           "细化单调收敛曲线，虚线为 3% 判据线",
+                "细化单调收敛曲线，虚线为 3% 判据线",
                 "source": "benchmarks/verified/poiseuille_3d_annulus/result.json "
-                          "eff_errors_pct + nom_errors_pct",
+                "eff_errors_pct + nom_errors_pct",
             },
         ],
     }
     manifest_path = out_dir / "figures.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
-                             encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     print(f"Saved {manifest_path}")
     return manifest_path
 

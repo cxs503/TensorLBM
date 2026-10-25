@@ -137,7 +137,6 @@ def test_surface_traction_rejects_invalid_samples(positions, tractions, areas) -
         integrate_surface_traction(positions, tractions, areas)
 
 
-
 def test_particle_traction_integration_returns_forces_for_dem() -> None:
     from tensorlbm.icebreaking import integrate_particle_tractions_2d
 
