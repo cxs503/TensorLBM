@@ -48,3 +48,13 @@ These are logical groupings observed in the current tree, not a proposal to move
 - **Confirmed**: directly visible in the files listed above.
 - **Hypothesis**: likely risk inferred from structure; must be verified by import graph or runtime tests.
 - **Not assessed**: requires execution, full-tree scanning, or additional source review.
+
+
+## Additional confirmed findings from CI and contributor documentation
+
+| Area | Evidence | Confirmed observation | Required action |
+|---|---|---|---|
+| CI test scope | `.github/workflows/ci.yml` | The workflow's pytest command runs with the repository's configured `testpaths`; the workflow does not include an explicit `app/tests` command. The lint command covers `src tests examples benchmarks`, not `app` or `frontend-vue`. | Confirm intended platform test policy. If `app/tests` is production-critical, add a separate explicit job with app dependencies; add suitable lint/type checks deliberately rather than assuming solver CI covers it. |
+| Contributor setup drift | `CONTRIBUTING.md`, `docs/development_workflow.md` | Both instruct installing `platform/requirements.txt` and starting from `platform/`, but the current tree places the implementation under `app/` and lists `app/requirements.txt`, not `platform/`. | Fix documentation to the current layout after checking deployment scripts and supported launch modes. This is a confirmed documentation/tree mismatch, not proof deployment is broken. |
+| Root API ambiguity | `README.md`, `src/tensorlbm/__init__.py`, `src/tensorlbm/api.py`, `src/tensorlbm/experimental.py` | README describes a “small, explicit public API”, while package-root exports are intentionally broad (786 names per package docstring); a separate curated API and experimental API already exist. | Make the contract explicit: stable minimal API, legacy root compatibility surface, and experimental surface. Add migration guidance before changing exports. |
+| Benchmark status freshness | `benchmarks/STATUS.md` | The file header says generated 2026-10-05 and the count note says refreshed 2026-10-09, while the repository tree has many more entries in lifecycle folders than the listed case table. | Treat this file as a curated status report, not a live directory inventory. Add a generated manifest/count check or state the precise scope of the report. |
