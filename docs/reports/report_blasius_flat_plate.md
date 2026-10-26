@@ -54,19 +54,19 @@ $$C_f = \frac{2 f''(0)}{\sqrt{Re_x}} = \frac{0.6641146724}{\sqrt{Re_x}}$$
 
 ### 4.1 误差随 Re_x 变化
 
-![误差随 Re_x 变化](fig_blasius_error_vs_rex.png)
+![误差随 Re_x 变化](../assets/fig_blasius_error_vs_rex.png)
 
 **观察**: 三档网格的误差均远超 3% 阈值，且随 Re_x 增加而单调增加。plate400 (Re_x=900) +27.38% → plate800 (Re_x=2000) +27.74% → plate1600 (Re_x=4000) +36.84%。
 
 ### 4.2 边缘加速随 x_eff 变化
 
-![边缘加速随 x_eff 变化](fig_blasius_edge_acceleration.png)
+![边缘加速随 x_eff 变化](../assets/fig_blasius_edge_acceleration.png)
 
 **观察**: 边缘加速 u_edge/U > 1 且随 x_eff 累积，验证了位移厚度累积效应假设。plate1600 在 x_eff=800 处达 1.011。
 
 ### 4.3 误差与边缘加速的相关性
 
-![误差与边缘加速的相关性](fig_blasius_error_vs_edge_accel.png)
+![误差与边缘加速的相关性](../assets/fig_blasius_error_vs_edge_accel.png)
 
 **观察**: 误差与边缘加速呈正相关，颜色编码显示 Re_x 越大误差越大。累积位移效应是主导因素。
 

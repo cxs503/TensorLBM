@@ -96,6 +96,14 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 markers = [
     "slow: long-running simulation campaigns. Deselected on pull requests (CI runs -m 'not slow' there for fast feedback) and executed in full on pushes to main, the nightly cron and manual dispatch. Locally: 'pytest -m \"not slow\"' to skip, bare 'pytest' to include.",
+    "unit: local function/class contracts with no solver execution or I/O.",
+    "integration: module and backend interaction tests.",
+    "physics: conservation, analytical-solution, convergence and known physical-invariance checks.",
+    "regression: guards a previously observed defect from recurring.",
+    "benchmark: explicit reference quantities with tolerances (acceptance).",
+    "performance: throughput, memory, scaling and hardware-dependent budgets.",
+    "gpu: requires a CUDA/accelerator device; skipped on CPU-only runners.",
+    "platform: API, orchestration and end-to-end user-workflow tests under app/.",
 ]
 # pytest-timeout is a dev extra; CI passes --timeout explicitly (600s on the
 # fast PR scope, 1800s for the slow campaigns) so a hung solver fails loudly
