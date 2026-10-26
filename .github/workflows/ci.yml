@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
 
+# Explicit bash enables pipefail: tee must never hide pytest failures.
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   # A new push to the same ref supersedes in-flight runs; main is never
   # cancelled so the nightly/slow signal stays intact.
@@ -48,6 +53,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
@@ -64,14 +70,25 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      # Pull requests get the fast signal; pushes to main, the nightly cron and
+      - name: Record test environment
+        if: always()
+        run: |
+          mkdir -p artifacts/ci
+          {
+            python -VV
+            uname -a
+            python -m pip freeze --all
+          } 2>&1 | tee artifacts/ci/environment.txt
+      # Pull requests and feature-branch pushes get the fast signal; pushes to main, the nightly cron and
       # manual dispatches run the slow simulation campaigns too.  --timeout
       # activates pytest-timeout (already a dev extra, previously unused) so a
       # hung solver fails the job instead of burning the 6h runner limit.
       - name: Select test scope
         id: scope
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "pull_request" ] || {
+            [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" != "refs/heads/main" ];
+          }; then
             echo 'args=-m "not slow" --timeout=600' >> "$GITHUB_OUTPUT"
             echo "scope=fast (slow campaigns deselected)" >> "$GITHUB_STEP_SUMMARY"
           else
@@ -79,7 +96,18 @@ jobs:
             echo "scope=full (including slow campaigns)" >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Run tests with coverage
-        run: pytest -q ${{ steps.scope.outputs.args }} --cov=tensorlbm --cov-report=term-missing --cov-report=xml
+        run: |
+          pytest -q ${{ steps.scope.outputs.args }} -o timeout_func_only=false \
+            --cov=tensorlbm --cov-report=term-missing --cov-report=xml \
+            --durations=30 --junitxml=artifacts/ci/junit.xml \
+            2>&1 | tee artifacts/ci/pytest.log
+      - name: Upload test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-diagnostics-py${{ matrix.python-version }}
+          path: artifacts/ci/
+          if-no-files-found: warn
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
@@ -92,6 +120,7 @@ jobs:
   # an unambiguous owner and app dependencies do not leak into the solver job.
   platform-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -105,8 +134,27 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]" -r app/requirements.txt
+      - name: Record test environment
+        if: always()
+        run: |
+          mkdir -p artifacts/ci
+          {
+            python -VV
+            uname -a
+            python -m pip freeze --all
+          } 2>&1 | tee artifacts/ci/environment.txt
       - name: Run fast platform tests
-        run: PYTHONPATH=src pytest -q app/tests
+        run: |
+          PYTHONPATH=src pytest -q app/tests --timeout=600 -o timeout_func_only=false \
+            --durations=30 --junitxml=artifacts/ci/junit.xml \
+            2>&1 | tee artifacts/ci/pytest.log
+      - name: Upload platform diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-test-diagnostics-py3.12
+          path: artifacts/ci/
+          if-no-files-found: warn
 
   # File placement is a separate, dependency-free gate. Historical files are
   # grandfathered by exact path; new root clutter and raw outputs are rejected.

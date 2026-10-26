@@ -10,6 +10,7 @@ import csv as csv_mod
 import io
 import json
 import zipfile
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -17,9 +18,21 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from .. import job_manager
+from ..file_paths import safe_job_path
 from ..file_patterns import list_step_images
 
 router = APIRouter()
+
+
+def _checked_checkpoint_directory(root: Path, directory: Path) -> Path:
+    """Check the directory and files load_checkpoint actually opens."""
+    resolved = safe_job_path(root, directory)
+    if resolved is None:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    for name in ("checkpoint_f.pt", "checkpoint_meta.json"):
+        if safe_job_path(root, resolved / name) is None:
+            raise HTTPException(status_code=403, detail="Forbidden")
+    return resolved
 
 
 # ---------------------------------------------------------------------------
@@ -240,13 +253,14 @@ async def field_data(
                 raise ValueError("No checkpoint files found in job output")
             ckpt_path = ckpts[-1].parent
         else:
-            candidate = (job.output_dir / checkpoint).resolve()
-            if not str(candidate).startswith(str(job.output_dir.resolve())):
+            candidate = safe_job_path(job.output_dir, checkpoint)
+            if candidate is None:
                 raise HTTPException(status_code=403, detail="Forbidden")
             ckpt_path = candidate.parent if candidate.suffix == ".pt" else candidate
             if not (ckpt_path / "checkpoint_f.pt").exists():
                 raise HTTPException(status_code=404, detail="Checkpoint not found")
 
+        ckpt_path = _checked_checkpoint_directory(job.output_dir, ckpt_path)
         f_tensor, step, _meta = load_checkpoint(ckpt_path)
 
         # Support both 2-D (D2Q9) and 3-D (D3Q19/D3Q27) with slice extraction
@@ -694,13 +708,14 @@ async def export_results(
             ckpt_dir = ckpt_files[-1].parent
         else:
             # caller may pass either the .pt file path or the directory path
-            candidate = (job.output_dir / checkpoint).resolve()
-            if not str(candidate).startswith(str(job.output_dir.resolve())):
+            candidate = safe_job_path(job.output_dir, checkpoint)
+            if candidate is None:
                 raise HTTPException(status_code=403, detail="Forbidden")
             ckpt_dir = candidate.parent if candidate.suffix == ".pt" else candidate
             if not (ckpt_dir / "checkpoint_f.pt").exists():
                 raise HTTPException(status_code=404, detail="Checkpoint not found")
 
+        ckpt_dir = _checked_checkpoint_directory(job.output_dir, ckpt_dir)
         f_tensor, step, _meta = load_checkpoint(ckpt_dir)
         is_3d = f_tensor.ndim == 4  # (Q, nz, ny, nx) for 3-D
 
@@ -882,13 +897,14 @@ async def field_data_3d(
                 raise ValueError("No checkpoint files found in job output")
             ckpt_path = ckpts[-1].parent
         else:
-            candidate = (job.output_dir / checkpoint).resolve()
-            if not str(candidate).startswith(str(job.output_dir.resolve())):
+            candidate = safe_job_path(job.output_dir, checkpoint)
+            if candidate is None:
                 raise HTTPException(status_code=403, detail="Forbidden")
             ckpt_path = candidate.parent if candidate.suffix == ".pt" else candidate
             if not (ckpt_path / "checkpoint_f.pt").exists():
                 raise HTTPException(status_code=404, detail="Checkpoint not found")
 
+        ckpt_path = _checked_checkpoint_directory(job.output_dir, ckpt_path)
         f_tensor, step, _meta = load_checkpoint(ckpt_path)
 
         if f_tensor.ndim != 4:
@@ -1043,13 +1059,14 @@ async def export_vtk(
                 raise ValueError("No checkpoint files found in job output")
             ckpt_path = ckpts[-1].parent
         else:
-            candidate = (job.output_dir / checkpoint).resolve()
-            if not str(candidate).startswith(str(job.output_dir.resolve())):
+            candidate = safe_job_path(job.output_dir, checkpoint)
+            if candidate is None:
                 raise HTTPException(status_code=403, detail="Forbidden")
             ckpt_path = candidate.parent if candidate.suffix == ".pt" else candidate
             if not (ckpt_path / "checkpoint_f.pt").exists():
                 raise HTTPException(status_code=404, detail="Checkpoint not found")
 
+        ckpt_path = _checked_checkpoint_directory(job.output_dir, ckpt_path)
         f_tensor, step, _meta = load_checkpoint(ckpt_path)
         fields_list: list[str] | None = (
             [f.strip() for f in fields.split(",") if f.strip()] if fields else None
@@ -1325,7 +1342,12 @@ async def study_compare(study_group: str) -> dict:
             continue
         if study_meta.get("group") != study_group:
             continue
-        result = jd.get("result") or {}
+        # list_jobs intentionally omits potentially large result arrays.
+        # Retrieve only matching jobs; deletion between list and lookup is valid.
+        job = job_manager.get_job(jd["job_id"])
+        if job is None:
+            continue
+        result = job.result or {}
         metrics = _extract_scalar_metrics(result) if isinstance(result, dict) else {}
         rows.append({
             "job_id": jd["job_id"],
@@ -1350,7 +1372,8 @@ async def study_compare(study_group: str) -> dict:
         for r in completed:
             all_keys.update(r["metrics"].keys())
         for mk in sorted(all_keys):
-            vals = [r["metrics"][mk] for r in completed if mk in r["metrics"]]
+            metric_rows = [r for r in completed if mk in r["metrics"]]
+            vals = [r["metrics"][mk] for r in metric_rows]
             if not vals:
                 continue
             best_idx = int(min(range(len(vals)), key=lambda i: vals[i]))
@@ -1358,7 +1381,7 @@ async def study_compare(study_group: str) -> dict:
                 "min": min(vals),
                 "max": max(vals),
                 "mean": sum(vals) / len(vals),
-                "best_job_id": completed[best_idx]["job_id"],
+                "best_job_id": metric_rows[best_idx]["job_id"],
             }
 
     return {

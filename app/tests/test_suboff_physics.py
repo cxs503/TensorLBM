@@ -458,10 +458,9 @@ class TestSuboffPostprocessEndpoints:
     @pytest.fixture()
     def completed_suboff_job(self, tmp_path, monkeypatch):
         """Inject a synthetic completed 3-D job into the job manager."""
-        import json
-
         import torch
 
+        from tensorlbm.checkpoint import save_checkpoint
         from tensorlbm.d3q19 import equilibrium3d
 
         from backend.routers import suboff as _suboff  # type: ignore[import-not-found]
@@ -487,18 +486,18 @@ class TestSuboffPostprocessEndpoints:
         # Write checkpoint
         ckpt_dir = tmp_path / "ckpt"
         ckpt_dir.mkdir()
-        torch.save(f, ckpt_dir / "checkpoint_f.pt")
-        (ckpt_dir / "meta.json").write_text(json.dumps({"step": 10, "tau": 0.6}))
+        save_checkpoint(f, 10, ckpt_dir, extra={"tau": 0.6})
 
         # Create completed job
         job_id = "test_suboff_pp_job"
+        monkeypatch.setattr(_jm, "_OUTPUT_ROOT", tmp_path)
         job = _jm.Job(
             job_id=job_id,
             name="test suboff",
             job_type="suboff_solve",
             config={},
-            output_dir=tmp_path,
         )
+        job.output_dir = tmp_path
         job.status = _jm.JobStatus.COMPLETED
         job.result = {}
         _jm._jobs[job_id] = job  # type: ignore[attr-defined]
@@ -578,10 +577,9 @@ class TestSuboffPostprocessEndpoints:
 
     def test_2d_job_returns_422(self, client, tmp_path, monkeypatch) -> None:
         """A 2-D checkpoint should raise 422 on SubOff endpoints."""
-        import json
-
         import torch
 
+        from tensorlbm.checkpoint import save_checkpoint
         from tensorlbm.d2q9 import equilibrium
 
         from backend import job_manager as _jm  # type: ignore[import-not-found]
@@ -594,17 +592,17 @@ class TestSuboffPostprocessEndpoints:
 
         ckpt_dir = tmp_path / "ckpt2d"
         ckpt_dir.mkdir()
-        torch.save(f2d, ckpt_dir / "checkpoint_f.pt")
-        (ckpt_dir / "meta.json").write_text(json.dumps({"step": 5, "tau": 0.6}))
+        save_checkpoint(f2d, 5, ckpt_dir, extra={"tau": 0.6})
 
         job_id = "test_suboff_2d_job"
+        monkeypatch.setattr(_jm, "_OUTPUT_ROOT", tmp_path)
         job = _jm.Job(
             job_id=job_id,
             name="test 2d",
             job_type="cylinder_flow",
             config={},
-            output_dir=tmp_path,
         )
+        job.output_dir = tmp_path
         job.status = _jm.JobStatus.COMPLETED
         job.result = {}
         _jm._jobs[job_id] = job  # type: ignore[attr-defined]
