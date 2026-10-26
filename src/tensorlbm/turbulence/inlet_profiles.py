@@ -340,7 +340,7 @@ def apply_inlet_profile_2d(
     Returns:
         Updated distribution tensor with inlet populations set.
     """
-    from .d2q9 import equilibrium  # noqa: PLC0415
+    from tensorlbm.d2q9 import equilibrium  # noqa: PLC0415
 
     ny = u_profile.numel()
     device = f.device
@@ -371,7 +371,7 @@ def apply_inlet_profile_3d(
     Returns:
         Updated distribution tensor with inlet populations set.
     """
-    from .d3q19 import equilibrium3d  # noqa: PLC0415
+    from tensorlbm.d3q19 import equilibrium3d  # noqa: PLC0415
 
     nz, ny = u_profile.shape
     device = f.device
