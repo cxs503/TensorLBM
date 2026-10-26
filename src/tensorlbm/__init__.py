@@ -116,12 +116,12 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     ),
     "CylinderFlowConfig": ("cylinder_flow", "CylinderFlowConfig"),
     "D2Q9": ("constants", "D2Q9"),
-    "DFSEMInlet": ("synthetic_inflow", "DFSEMInlet"),
+    "DFSEMInlet": ("turbulence.synthetic_inflow", "DFSEMInlet"),
     "DGLBMConfig": ("dg_lbm", "DGLBMConfig"),
     "DGLBMSuboffConfig": ("dg_lbm", "DGLBMSuboffConfig"),
     "DamBreakConfig": ("dam_break", "DamBreakConfig"),
     "DiagnosticPoint": ("utils", "DiagnosticPoint"),
-    "DigitalFilterInlet": ("synthetic_inflow", "DigitalFilterInlet"),
+    "DigitalFilterInlet": ("turbulence.synthetic_inflow", "DigitalFilterInlet"),
     "DomainDecomposition": ("multi_gpu", "DomainDecomposition"),
     "DoubleWellFreeEnergy": ("phasefield", "DoubleWellFreeEnergy"),
     "DragHistory": ("autograd_calib", "DragHistory"),
@@ -166,9 +166,9 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
         "amr_interface_filter",
         "InterfaceFilterControlVolumeClearance",
     ),
-    "KESolver": ("rans_ke", "KESolver"),
+    "KESolver": ("turbulence.rans_ke", "KESolver"),
     "KNOWN_TASKS": ("zoo", "KNOWN_TASKS"),
-    "KOmegaSSTSolver": ("rans_ke", "KOmegaSSTSolver"),
+    "KOmegaSSTSolver": ("turbulence.rans_ke", "KOmegaSSTSolver"),
     "KP505_PRESET": ("propeller_cad", "KP505_PRESET"),
     "KPIDefinition": ("accuracy_recommendation", "KPIDefinition"),
     "LBMDatabase": ("ai", "LBMDatabase"),
@@ -252,9 +252,9 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "ThroughputReporter": ("reporters", "ThroughputReporter"),
     "TrainConfig": ("ai", "TrainConfig"),
     "TriangleMesh": ("ship_cad3d", "TriangleMesh"),
-    "TurbulenceCapability": ("turbulence_capability_contract", "TurbulenceCapability"),
-    "TurbulenceStatsAccumulator": ("turbulence_stats", "TurbulenceStatsAccumulator"),
-    "TurbulenceWithheldError": ("turbulence_capability_contract", "TurbulenceWithheldError"),
+    "TurbulenceCapability": ("turbulence.turbulence_capability_contract", "TurbulenceCapability"),
+    "TurbulenceStatsAccumulator": ("turbulence.turbulence_stats", "TurbulenceStatsAccumulator"),
+    "TurbulenceWithheldError": ("turbulence.turbulence_capability_contract", "TurbulenceWithheldError"),
     "TurbulentChannelConfig": ("turbulent_channel", "TurbulentChannelConfig"),
     "TwoPhaseChannelCompareConfig": ("multiphase_benchmarks", "TwoPhaseChannelCompareConfig"),
     "TwoPhasePoiseuilleConfig": ("porous_media", "TwoPhasePoiseuilleConfig"),
@@ -295,11 +295,11 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "apply_buoyancy_force_3d": ("thermal3d", "apply_buoyancy_force_3d"),
     "apply_cavitation_force": ("cavitation", "apply_cavitation_force"),
     "apply_cht_interface": ("conjugate_ht", "apply_cht_interface"),
-    "apply_dfsem_inlet_2d": ("synthetic_inflow", "apply_dfsem_inlet_2d"),
-    "apply_dfsem_inlet_3d": ("synthetic_inflow", "apply_dfsem_inlet_3d"),
+    "apply_dfsem_inlet_2d": ("turbulence.synthetic_inflow", "apply_dfsem_inlet_2d"),
+    "apply_dfsem_inlet_3d": ("turbulence.synthetic_inflow", "apply_dfsem_inlet_3d"),
     "apply_equilibrium_difference_sponge": ("boundary.sponge_layer", "apply_equilibrium_difference_sponge"),
-    "apply_inlet_profile_2d": ("inlet_profiles", "apply_inlet_profile_2d"),
-    "apply_inlet_profile_3d": ("inlet_profiles", "apply_inlet_profile_3d"),
+    "apply_inlet_profile_2d": ("turbulence.inlet_profiles", "apply_inlet_profile_2d"),
+    "apply_inlet_profile_3d": ("turbulence.inlet_profiles", "apply_inlet_profile_3d"),
     "apply_jonswap_inlet_3d": ("wave_bc", "apply_jonswap_inlet_3d"),
     "apply_rough_wall_bounce_back": ("roughness", "apply_rough_wall_bounce_back"),
     "apply_simple_channel_boundaries": ("boundary.boundaries", "apply_simple_channel_boundaries"),
@@ -371,7 +371,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "audit_resistance_components": ("resistance_component_audit", "audit_resistance_components"),
     "auto_decompose": ("multi_gpu", "auto_decompose"),
     "bfl_surface_area_weights": ("surface_area_weights", "bfl_surface_area_weights"),
-    "blasius_profile": ("inlet_profiles", "blasius_profile"),
+    "blasius_profile": ("turbulence.inlet_profiles", "blasius_profile"),
     "bounce_back_cells": ("boundary.boundaries", "bounce_back_cells"),
     "bounce_back_cells_27": ("boundary.boundaries_d3q27", "bounce_back_cells_27"),
     "bounce_back_cells_3d": ("boundary.boundaries3d", "bounce_back_cells_3d"),
@@ -422,8 +422,8 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "collide_cumulant_geier_d3q27": ("cumulant", "collide_cumulant_geier_d3q27"),
     "collide_cumulant_smag_d3q27": ("cumulant_smag", "collide_cumulant_smag_d3q27"),
     "collide_dg_lbm": ("dg_lbm", "collide_dg_lbm"),
-    "collide_dynamic_smagorinsky_bgk": ("turbulence", "collide_dynamic_smagorinsky_bgk"),
-    "collide_dynamic_smagorinsky_bgk3d": ("turbulence", "collide_dynamic_smagorinsky_bgk3d"),
+    "collide_dynamic_smagorinsky_bgk": ("turbulence.turbulence", "collide_dynamic_smagorinsky_bgk"),
+    "collide_dynamic_smagorinsky_bgk3d": ("turbulence.turbulence", "collide_dynamic_smagorinsky_bgk3d"),
     "collide_in_z_chunks": ("chunked_collision", "collide_in_z_chunks"),
     "collide_kbc_d3q19": ("entropic_kbc", "collide_kbc_d3q19"),
     "collide_kbc_d3q27": ("entropic_kbc", "collide_kbc_d3q27"),
@@ -434,13 +434,13 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "collide_planar_cumulant_d3q19": ("planar_d3q19", "collide_planar_cumulant_d3q19"),
     "collide_power_law_bgk": ("non_newtonian", "collide_power_law_bgk"),
     "collide_powerlaw_bgk": ("powerlaw", "collide_powerlaw_bgk"),
-    "collide_rans_3d": ("rans_common", "collide_rans_3d"),
-    "collide_rans_bgk27": ("rans_common", "collide_rans_bgk27"),
-    "collide_rans_bgk3d": ("rans_common", "collide_rans_bgk3d"),
-    "collide_rans_ke": ("rans_ke", "collide_rans_ke"),
-    "collide_rans_komega_sst": ("rans_ke", "collide_rans_komega_sst"),
-    "collide_rans_mrt27": ("rans_common", "collide_rans_mrt27"),
-    "collide_rans_mrt3d": ("rans_common", "collide_rans_mrt3d"),
+    "collide_rans_3d": ("turbulence.rans_common", "collide_rans_3d"),
+    "collide_rans_bgk27": ("turbulence.rans_common", "collide_rans_bgk27"),
+    "collide_rans_bgk3d": ("turbulence.rans_common", "collide_rans_bgk3d"),
+    "collide_rans_ke": ("turbulence.rans_ke", "collide_rans_ke"),
+    "collide_rans_komega_sst": ("turbulence.rans_ke", "collide_rans_komega_sst"),
+    "collide_rans_mrt27": ("turbulence.rans_common", "collide_rans_mrt27"),
+    "collide_rans_mrt3d": ("turbulence.rans_common", "collide_rans_mrt3d"),
     "collide_rlbm": ("solver", "collide_rlbm"),
     "collide_rlbm27": ("d3q27", "collide_rlbm27"),
     "collide_rlbm3d": ("solver3d", "collide_rlbm3d"),
@@ -450,27 +450,27 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "collide_sc_two_component": ("multiphase", "collide_sc_two_component"),
     "collide_sc_two_component_27": ("multiphase3d_d3q27", "collide_sc_two_component_27"),
     "collide_sc_two_component_3d": ("multiphase3d", "collide_sc_two_component_3d"),
-    "collide_smagorinsky_bgk": ("turbulence", "collide_smagorinsky_bgk"),
-    "collide_smagorinsky_bgk27": ("turbulence", "collide_smagorinsky_bgk27"),
-    "collide_smagorinsky_bgk3d": ("turbulence", "collide_smagorinsky_bgk3d"),
-    "collide_smagorinsky_mrt": ("turbulence", "collide_smagorinsky_mrt"),
-    "collide_smagorinsky_mrt27": ("turbulence", "collide_smagorinsky_mrt27"),
-    "collide_smagorinsky_mrt3d": ("turbulence", "collide_smagorinsky_mrt3d"),
+    "collide_smagorinsky_bgk": ("turbulence.turbulence", "collide_smagorinsky_bgk"),
+    "collide_smagorinsky_bgk27": ("turbulence.turbulence", "collide_smagorinsky_bgk27"),
+    "collide_smagorinsky_bgk3d": ("turbulence.turbulence", "collide_smagorinsky_bgk3d"),
+    "collide_smagorinsky_mrt": ("turbulence.turbulence", "collide_smagorinsky_mrt"),
+    "collide_smagorinsky_mrt27": ("turbulence.turbulence", "collide_smagorinsky_mrt27"),
+    "collide_smagorinsky_mrt3d": ("turbulence.turbulence", "collide_smagorinsky_mrt3d"),
     "collide_thermal_bgk": ("thermal", "collide_thermal_bgk"),
     "collide_thermal_bgk_3d": ("thermal3d", "collide_thermal_bgk_3d"),
     "collide_trt": ("solver", "collide_trt"),
     "collide_trt27": ("d3q27", "collide_trt27"),
     "collide_trt3d": ("solver3d", "collide_trt3d"),
-    "collide_vreman_bgk": ("turbulence", "collide_vreman_bgk"),
-    "collide_vreman_bgk27": ("turbulence", "collide_vreman_bgk27"),
-    "collide_vreman_bgk3d": ("turbulence", "collide_vreman_bgk3d"),
-    "collide_vreman_mrt27": ("turbulence", "collide_vreman_mrt27"),
-    "collide_vreman_mrt3d": ("turbulence", "collide_vreman_mrt3d"),
-    "collide_wale_bgk": ("turbulence", "collide_wale_bgk"),
-    "collide_wale_bgk27": ("turbulence", "collide_wale_bgk27"),
-    "collide_wale_bgk3d": ("turbulence", "collide_wale_bgk3d"),
-    "collide_wale_mrt27": ("turbulence", "collide_wale_mrt27"),
-    "collide_wale_mrt3d": ("turbulence", "collide_wale_mrt3d"),
+    "collide_vreman_bgk": ("turbulence.turbulence", "collide_vreman_bgk"),
+    "collide_vreman_bgk27": ("turbulence.turbulence", "collide_vreman_bgk27"),
+    "collide_vreman_bgk3d": ("turbulence.turbulence", "collide_vreman_bgk3d"),
+    "collide_vreman_mrt27": ("turbulence.turbulence", "collide_vreman_mrt27"),
+    "collide_vreman_mrt3d": ("turbulence.turbulence", "collide_vreman_mrt3d"),
+    "collide_wale_bgk": ("turbulence.turbulence", "collide_wale_bgk"),
+    "collide_wale_bgk27": ("turbulence.turbulence", "collide_wale_bgk27"),
+    "collide_wale_bgk3d": ("turbulence.turbulence", "collide_wale_bgk3d"),
+    "collide_wale_mrt27": ("turbulence.turbulence", "collide_wale_mrt27"),
+    "collide_wale_mrt3d": ("turbulence.turbulence", "collide_wale_mrt3d"),
     "collision_capability_matrix": ("advanced_collision_contract", "collision_capability_matrix"),
     "collision_then_adapter_stream": ("phasefield", "collision_then_adapter_stream"),
     "color_gradient_step": ("multiphase", "color_gradient_step"),
@@ -498,12 +498,12 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "compute_q_suboff": ("interpolated_bc_suboff", "compute_q_suboff"),
     "compute_recirculation_length": ("postprocess", "compute_recirculation_length"),
     "compute_residence_time_2d": ("streamlines", "compute_residence_time_2d"),
-    "compute_reynolds_stresses": ("turbulence_stats", "compute_reynolds_stresses"),
+    "compute_reynolds_stresses": ("turbulence.turbulence_stats", "compute_reynolds_stresses"),
     "compute_rough_wall_slip_velocity": ("roughness", "compute_rough_wall_slip_velocity"),
     "compute_spl_spectrum": ("acoustics", "compute_spl_spectrum"),
     "compute_strouhal_fft": ("postprocess", "compute_strouhal_fft"),
-    "compute_turbulence_intensity": ("turbulence_stats", "compute_turbulence_intensity"),
-    "compute_turbulence_length_scale": ("turbulence_stats", "compute_turbulence_length_scale"),
+    "compute_turbulence_intensity": ("turbulence.turbulence_stats", "compute_turbulence_intensity"),
+    "compute_turbulence_length_scale": ("turbulence.turbulence_stats", "compute_turbulence_length_scale"),
     "compute_velocity_magnitude": ("postprocess", "compute_velocity_magnitude"),
     "compute_vorticity": ("cylinder_flow", "compute_vorticity"),
     "compute_vorticity_2d": ("postprocess", "compute_vorticity_2d"),
@@ -634,7 +634,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "kbc_decompose_d3q19": ("entropic_kbc", "kbc_decompose_d3q19"),
     "kbc_decompose_d3q27": ("entropic_kbc", "kbc_decompose_d3q27"),
     "kcs_hull_mask": ("ship_cad", "kcs_hull_mask"),
-    "komega_sst_collision_d2q9": ("rans_ke", "komega_sst_collision_d2q9"),
+    "komega_sst_collision_d2q9": ("turbulence.rans_ke", "komega_sst_collision_d2q9"),
     "laplacian_3d": ("phasefield", "laplacian_3d"),
     "legacy_snapshot_image_path": ("utils", "legacy_snapshot_image_path"),
     "lift_d2q9_to_d3q19": ("planar_d3q19", "lift_d2q9_to_d3q19"),
@@ -658,7 +658,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
         "amr_capability_contract",
         "local_refinement_capability_matrix",
     ),
-    "log_law_profile": ("inlet_profiles", "log_law_profile"),
+    "log_law_profile": ("turbulence.inlet_profiles", "log_law_profile"),
     "log_law_velocity": ("turbulent_channel", "log_law_velocity"),
     "logger": ("logging_config", "logger"),
     "macroscopic": ("d2q9", "macroscopic"),
@@ -713,7 +713,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "observe_control_volume_force": ("control_volume_force", "observe_control_volume_force"),
     "obstacle_force": ("autograd_path", "obstacle_force"),
     "open_catalog": ("scan_runner", "open_catalog"),
-    "parabolic_profile": ("inlet_profiles", "parabolic_profile"),
+    "parabolic_profile": ("turbulence.inlet_profiles", "parabolic_profile"),
     "periodic_chemical_potential_and_korteweg_force": (
         "phasefield",
         "periodic_chemical_potential_and_korteweg_force",
@@ -725,7 +725,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "plan_suboff_static_amr": ("suboff_static_amr", "plan_suboff_static_amr"),
     "poly_to_mask_2d": ("preprocess_geo", "poly_to_mask_2d"),
     "poly_to_mask_and_q_2d": ("preprocess_geo", "poly_to_mask_and_q_2d"),
-    "power_law_profile": ("inlet_profiles", "power_law_profile"),
+    "power_law_profile": ("turbulence.inlet_profiles", "power_law_profile"),
     "powerlaw_viscosity": ("powerlaw", "powerlaw_viscosity"),
     "predict_nu_t_2d": ("ai", "predict_nu_t_2d"),
     "predict_tau_eff_2d": ("ai", "predict_tau_eff_2d"),
@@ -759,7 +759,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
         "require_local_refinement_capability",
     ),
     "require_turbulence_capability": (
-        "turbulence_capability_contract",
+        "turbulence.turbulence_capability_contract",
         "require_turbulence_capability",
     ),
     "require_wall_function_run": ("boundary.wall_function_admission", "require_wall_function_run"),
@@ -885,7 +885,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "surface_moment_3d": ("surface_integrals", "surface_moment_3d"),
     "surface_tension_force_3d": ("free_surface_common", "surface_tension_force_3d"),
     "synthetic_targets": ("autograd_calib", "synthetic_targets"),
-    "synthetic_turbulence_2d": ("inlet_profiles", "synthetic_turbulence_2d"),
+    "synthetic_turbulence_2d": ("turbulence.inlet_profiles", "synthetic_turbulence_2d"),
     "tau_from_re": ("lbm_re_tau", "tau_from_re"),
     "tau_from_viscosity": ("powerlaw", "tau_from_viscosity"),
     "theoretical_block_coefficient": ("ship_cad", "theoretical_block_coefficient"),
@@ -898,11 +898,11 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "triton_fused_load_state_dict": ("checkpoint", "triton_fused_load_state_dict"),
     "triton_fused_state_dict": ("checkpoint", "triton_fused_state_dict"),
     "turbulence_capability_matrix": (
-        "turbulence_capability_contract",
+        "turbulence.turbulence_capability_contract",
         "turbulence_capability_matrix",
     ),
-    "turbulence_hot_path_audit": ("turbulence_capability_contract", "turbulence_hot_path_audit"),
-    "turbulence_stats_from_checkpoints": ("turbulence_stats", "turbulence_stats_from_checkpoints"),
+    "turbulence_hot_path_audit": ("turbulence.turbulence_capability_contract", "turbulence_hot_path_audit"),
+    "turbulence_stats_from_checkpoints": ("turbulence.turbulence_stats", "turbulence_stats_from_checkpoints"),
     "velocity_gradients_2d": ("powerlaw", "velocity_gradients_2d"),
     "viscous_sublayer_velocity": ("turbulent_channel", "viscous_sublayer_velocity"),
     "vof_advect_upwind_3d": ("free_surface_common", "vof_advect_upwind_3d"),
@@ -913,7 +913,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "wall_function_d3q27": ("boundary.wall_model", "wall_function_d3q27"),
     "wigley_hull_mask": ("obstacles", "wigley_hull_mask"),
     "windowed_cd": ("autograd_calib", "windowed_cd"),
-    "womersley_profile": ("inlet_profiles", "womersley_profile"),
+    "womersley_profile": ("turbulence.inlet_profiles", "womersley_profile"),
     "write_back_exports": ("dg_band", "write_back_exports"),
     "write_legacy_snapshot_alias": ("utils", "write_legacy_snapshot_alias"),
     "yplus_recommendation": ("yplus_guide", "yplus_recommendation"),
@@ -994,7 +994,7 @@ _EAGER_BOUND_SUBMODULES: frozenset[str] = frozenset(
         "general_sim",
         "hull_free_surface",
         "ibm",
-        "inlet_profiles",
+        "turbulence.inlet_profiles",
         "interpolated_bc",
         "interpolated_bc_suboff",
         "io",
@@ -1023,8 +1023,8 @@ _EAGER_BOUND_SUBMODULES: frozenset[str] = frozenset(
         "propeller_cad",
         "propeller_ibm",
         "protocols",
-        "rans_common",
-        "rans_ke",
+        "turbulence.rans_common",
+        "turbulence.rans_ke",
         "reporters",
         "resistance_component_audit",
         "rotating_cylinder",
@@ -1055,12 +1055,12 @@ _EAGER_BOUND_SUBMODULES: frozenset[str] = frozenset(
         "suboff_static_amr",
         "surface_area_weights",
         "surface_integrals",
-        "synthetic_inflow",
+        "turbulence.synthetic_inflow",
         "thermal",
         "thermal3d",
-        "turbulence",
-        "turbulence_capability_contract",
-        "turbulence_stats",
+        "turbulence.turbulence",
+        "turbulence.turbulence_capability_contract",
+        "turbulence.turbulence_stats",
         "turbulent_channel",
         "unit_converter",
         "utils",
@@ -1082,6 +1082,11 @@ _PRIVATE_GLOBALS = frozenset(
 )
 
 
+# Subpackages that flat root modules have been relocated into. The
+# _resolve_submodule shim probes each so `tensorlbm.<module>` keeps resolving.
+_RELOCATED_PACKAGES: tuple[str, ...] = ("boundary", "turbulence")
+
+
 def _resolve_submodule(name: str) -> Any:
     """Import ``tensorlbm.<name>`` if it is a real submodule, else ``None``.
 
@@ -1089,12 +1094,14 @@ def _resolve_submodule(name: str) -> Any:
     something imported them transitively (``tensorlbm.lattice``,
     ``tensorlbm.core``, ...): binding them by hand would rot, so probe instead.
     """
-    # Compatibility shim for modules relocated into the boundary package.
-    try:
-        if _importlib_util.find_spec(f"{__name__}.boundary.{name}") is not None:
-            return _importlib.import_module(f"{__name__}.boundary.{name}")
-    except (ImportError, AttributeError, ValueError):
-        pass
+    # Compatibility shim for flat modules relocated into subpackages
+    # (boundary, turbulence, ...). Extend this tuple as more are grouped.
+    for _pkg in _RELOCATED_PACKAGES:
+        try:
+            if _importlib_util.find_spec(f"{__name__}.{_pkg}.{name}") is not None:
+                return _importlib.import_module(f"{__name__}.{_pkg}.{name}")
+        except (ImportError, AttributeError, ValueError):
+            continue
     if name in _EAGER_BOUND_SUBMODULES:
         return _importlib.import_module(f"{__name__}.{name}")
     try:
@@ -1547,7 +1554,7 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         ibm_velocity_interpolate,
         ibm_velocity_interpolate_3d,
     )
-    from .inlet_profiles import (
+    from .turbulence.inlet_profiles import (
         apply_inlet_profile_2d,
         apply_inlet_profile_3d,
         blasius_profile,
@@ -1774,14 +1781,14 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         run_ibm_propeller_benchmark,
     )
     from .protocols import BoundaryCondition, CollisionOperator
-    from .rans_common import (
+    from .turbulence.rans_common import (
         collide_rans_3d,
         collide_rans_bgk3d,
         collide_rans_bgk27,
         collide_rans_mrt3d,
         collide_rans_mrt27,
     )
-    from .rans_ke import (
+    from .turbulence.rans_ke import (
         KESolver,
         KOmegaSSTSolver,
         collide_rans_ke,
@@ -1975,7 +1982,7 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         surface_moment_2d,
         surface_moment_3d,
     )
-    from .synthetic_inflow import (
+    from .turbulence.synthetic_inflow import (
         DFSEMInlet,
         DigitalFilterInlet,
         apply_dfsem_inlet_2d,
@@ -2001,7 +2008,7 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         run_thermal_cavity_3d,
         stream_thermal_3d,
     )
-    from .turbulence import (
+    from .turbulence.turbulence import (
         collide_dynamic_smagorinsky_bgk,
         collide_dynamic_smagorinsky_bgk3d,
         collide_smagorinsky_bgk,
@@ -2021,14 +2028,14 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         collide_wale_mrt3d,
         collide_wale_mrt27,
     )
-    from .turbulence_capability_contract import (
+    from .turbulence.turbulence_capability_contract import (
         TurbulenceCapability,
         TurbulenceWithheldError,
         require_turbulence_capability,
         turbulence_capability_matrix,
         turbulence_hot_path_audit,
     )
-    from .turbulence_stats import (
+    from .turbulence.turbulence_stats import (
         TurbulenceStatsAccumulator,
         compute_reynolds_stresses,
         compute_turbulence_intensity,
