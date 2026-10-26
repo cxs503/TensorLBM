@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-26",
+  "source_revision": "ad3d19ae6e5f55f02ac691f6719d4a5ae68f4cdc",
+  "scope": "Report relocation and identical-image deduplication only; no numerical revalidation.",
+  "review_status": "implemented_pending_independent_review",
+  "compatibility": "Root report/image paths are removed without redirects. Repository references are updated; unknown external links require updating or a source_revision permalink.",
+  "reports": [
+    {
+      "old_path": "report_couette_3d.md",
+      "new_path": "docs/reports/report_couette_3d.md",
+      "original_sha256": "3891cf59a92cd546bde647aa75ced532e80b5fcaf4d494e6029623bcd0e0e1aa",
+      "original_bytes": 6467,
+      "link_rewrites": {
+        "benchmarks/verified/couette_3d/figures/field_midplane_speed.png": "../../benchmarks/verified/couette_3d/figures/field_midplane_speed.png",
+        "benchmarks/verified/couette_3d/figures/curve_profile_vs_analytical.png": "../../benchmarks/verified/couette_3d/figures/curve_profile_vs_analytical.png",
+        "benchmarks/verified/couette_3d/figures/curve_l2_convergence.png": "../../benchmarks/verified/couette_3d/figures/curve_l2_convergence.png"
+      }
+    },
+    {
+      "old_path": "report_capillary_invasion_washburn.md",
+      "new_path": "docs/reports/report_capillary_invasion_washburn.md",
+      "original_sha256": "1b3e3bb5e63cafca07d4f4f805ddd2aee409ec34c020202bfd6b2b8d9e836568",
+      "original_bytes": 9129,
+      "link_rewrites": {
+        "fig_beta_convergence.png": "../../benchmarks/pending/capillary_invasion_washburn/figures/fig_beta_convergence.png",
+        "fig_mass_drift.png": "../../benchmarks/pending/capillary_invasion_washburn/figures/fig_mass_drift.png",
+        "fig_front_Lt.png": "../../benchmarks/pending/capillary_invasion_washburn/figures/fig_front_Lt.png",
+        "fig_phase_field.png": "../../benchmarks/pending/capillary_invasion_washburn/figures/fig_phase_field.png",
+        "fig_convergence_comparison.png": "../../benchmarks/pending/capillary_invasion_washburn/figures/fig_convergence_comparison.png"
+      }
+    }
+  ],
+  "deduplicated_images": [
+    {
+      "old_path": "fig_beta_convergence.png",
+      "canonical_path": "benchmarks/pending/capillary_invasion_washburn/figures/fig_beta_convergence.png",
+      "sha256": "0fb6e061adad5f0c6a0581105a44869415cde61fb539735fb84310a4ffdb39fa",
+      "bytes": 59886
+    },
+    {
+      "old_path": "fig_mass_drift.png",
+      "canonical_path": "benchmarks/pending/capillary_invasion_washburn/figures/fig_mass_drift.png",
+      "sha256": "407722590513f93148c20ccde6a7d8ec63fd8b8cd077bb0e44b49c5e72677b3c",
+      "bytes": 106676
+    },
+    {
+      "old_path": "fig_front_Lt.png",
+      "canonical_path": "benchmarks/pending/capillary_invasion_washburn/figures/fig_front_Lt.png",
+      "sha256": "9d458770438f231ab7ade151da689bdde6d08edbb457cff39ed74fa083db438b",
+      "bytes": 83362
+    },
+    {
+      "old_path": "fig_phase_field.png",
+      "canonical_path": "benchmarks/pending/capillary_invasion_washburn/figures/fig_phase_field.png",
+      "sha256": "a1dd1cab06f5674e9278a6ea7fd30cb3d8eedf77bd3577bb3ab8a0d13a7b1cb5",
+      "bytes": 175747
+    },
+    {
+      "old_path": "fig_convergence_comparison.png",
+      "canonical_path": "benchmarks/pending/capillary_invasion_washburn/figures/fig_convergence_comparison.png",
+      "sha256": "c80086552a08646ebe37e7f38ba004c367075e344def16998f04454144c93bcd",
+      "bytes": 44612
+    }
+  ],
+  "preserved_files": [
+    {
+      "path": "benchmarks/verified/couette_3d/figures/field_midplane_speed.png",
+      "sha256": "0f95e3547fa8c319bb2ba5ef4e225358941f89d67a609461011ec792c75d161e",
+      "bytes": 57057
+    },
+    {
+      "path": "benchmarks/verified/couette_3d/figures/curve_profile_vs_analytical.png",
+      "sha256": "ffab64a32edc7963c43f5ba12734e376d70af495730ff11fd219d50621a86621",
+      "bytes": 186102
+    },
+    {
+      "path": "benchmarks/verified/couette_3d/figures/curve_l2_convergence.png",
+      "sha256": "3c7cdef5d4311b5d776dc6a722a14c65a74537714771b7cc46ca9324a63ae3d9",
+      "bytes": 71622
+    },
+    {
+      "path": "benchmarks/pending/couette_3d/w11/gate/fp64/case_H16_fp64.json",
+      "sha256": "7b8ef2d59200a5ee3921048db110c302da505c6e79e42e94ba709162bd08eec5",
+      "bytes": 1929
+    },
+    {
+      "path": "benchmarks/pending/couette_3d/w11/gate/fp64/case_H32_fp64.json",
+      "sha256": "8e2e254e1ec967d2d62ab4b82035cde0f955f316ff04b3c4816919afd72a1e00",
+      "bytes": 2481
+    },
+    {
+      "path": "benchmarks/pending/couette_3d/w11/gate/fp64/case_H64_fp64.json",
+      "sha256": "3dbd00052ea1cc10253a45e2edc0e818df7335125ffa4d5b54be44b77a85c3ae",
+      "bytes": 3506
+    },
+    {
+      "path": "benchmarks/pending/couette_3d/w11/gate/fp64/case_H128_fp64.json",
+      "sha256": "d8bab4996016e45d012b69e88c748c9116dc83273926f29b247ba9dd450eddec",
+      "bytes": 5551
+    },
+    {
+      "path": "benchmarks/pending/couette_3d/w11/gate/fp32/case_H32_fp32.json",
+      "sha256": "a0a98e7545b45aa497745a6030d7cb1c18febe78daf98ae4b176f4c06708d84c",
+      "bytes": 2461
+    },
+    {
+      "path": "benchmarks/pending/couette_3d/w11/gate/fp32/case_H64_fp32.json",
+      "sha256": "f8e79e30d8d4161f35b2e34ae8bccbbf1aaad568959a3a0362e0c733e2f3373b",
+      "bytes": 3493
+    },
+    {
+      "path": "benchmarks/pending/couette_3d/w11/gate/fp32/case_H128_fp32.json",
+      "sha256": "25a0389b1f343d0fed6c890e09d25b1a321be188c69ab8c41d9aa0dc0c5c7629",
+      "bytes": 5523
+    },
+    {
+      "path": "benchmarks/pending/couette_3d/w11/gate/verdict_v2.json",
+      "sha256": "50f1064b05e83419bf1b48209a3e1b6218c7c008205c9642cadd44152f2bee97",
+      "bytes": 2710
+    },
+    {
+      "path": "benchmarks/pending/couette_3d/w11/diag/diag_dtype.json",
+      "sha256": "cfe15504da264441af2dcb38bf610f9c4068329889051e3aeb13b6c3608586f9",
+      "bytes": 10252
+    },
+    {
+      "path": "benchmarks/pending/couette_3d/w11/prereg.md",
+      "sha256": "f7d70e47cfc84b1766292de8ca96e4be31013c8035a0f3ed5b950af1de0d784b",
+      "bytes": 10560
+    },
+    {
+      "path": "benchmarks/verified/couette_3d/result.json",
+      "sha256": "f0a1200f20022a30ffc00cf2e38198ccad6e4bc0fb9f81e5d10f822f3947bfaa",
+      "bytes": 4465
+    },
+    {
+      "path": "benchmarks/verified/couette_3d/gates.json",
+      "sha256": "d6bac5dc259618ebfef3163c4e88ab78579da6540365273a1ef0cf9b07a63be8",
+      "bytes": 2144
+    },
+    {
+      "path": "benchmarks/verified/couette_3d/gates_verified.json",
+      "sha256": "11c2e12163c87ad2c852ad1e794a066c994eae0176777c392e9924c13cd7855c",
+      "bytes": 5392
+    },
+    {
+      "path": "benchmarks/pending/capillary_invasion_washburn/result.json",
+      "sha256": "6f38752b690bb0d1a3207bf1aa77028f19451842041312a22da83b4e20cacc58",
+      "bytes": 2756
+    },
+    {
+      "path": "benchmarks/pending/capillary_invasion_washburn/out_part2_W32.json",
+      "sha256": "54b85992fc0c72cab8ca6902366caefab502bdb48483997897bf9679c94e220f",
+      "bytes": 51018
+    },
+    {
+      "path": "benchmarks/pending/capillary_invasion_washburn/out_part2_W64.json",
+      "sha256": "1abc8f0b8dbd36ad5a321760d87af62e521cdd2cc1ee14e1d54903dbac14a0a5",
+      "bytes": 51554
+    },
+    {
+      "path": "benchmarks/pending/capillary_invasion_washburn/out_part2_W32_final.npz",
+      "sha256": "a26e6b2306760f859d1150e418e94876c75b410778f94088d82f1c221845652d",
+      "bytes": 62378
+    },
+    {
+      "path": "benchmarks/pending/capillary_invasion_washburn/out_part2_W64_final.npz",
+      "sha256": "e7d7a64e04503c0d04b32d332a8d3842218a6d7b8a37d6b30ef0dcf261f93aee",
+      "bytes": 104102
+    },
+    {
+      "path": "benchmarks/pending/capillary_invasion_washburn/gates.json",
+      "sha256": "f897f8305fa8e7f27812f4ccf1ec0ef3dbe64f7ae754a2f172eef0039acdc0ba",
+      "bytes": 5029
+    },
+    {
+      "path": "benchmarks/pending/capillary_invasion_washburn/validation_report.json",
+      "sha256": "74775f2a1a3f6c7af873bc572065639cb89252ef4f04d7084555399c5c86aa31",
+      "bytes": 4029
+    },
+    {
+      "path": "benchmarks/pending/capillary_invasion_washburn/figures.json",
+      "sha256": "23466387213cb7463317993c476a89725e2f39ef0724f11fe07b231add018645",
+      "bytes": 1301
+    }
+  ],
+  "local_validation": {
+    "python": "3.11.2",
+    "commands": [
+      {
+        "command": "python tests/test_repository_layout.py -v",
+        "result": "12 tests passed"
+      },
+      {
+        "command": "python tests/test_repository_report_migration.py -v",
+        "result": "6 tests passed"
+      },
+      {
+        "command": "python tests/test_audit_import_graph.py -v",
+        "result": "3 tests passed"
+      },
+      {
+        "command": "python tools/check_repository_layout.py",
+        "result": "passed"
+      },
+      {
+        "command": ".venv/bin/ruff check tools/check_repository_layout.py tests/test_repository_layout.py tests/test_repository_report_migration.py",
+        "result": "passed"
+      },
+      {
+        "command": ".venv/bin/ruff format --check tools/check_repository_layout.py tests/test_repository_layout.py tests/test_repository_report_migration.py",
+        "result": "passed"
+      },
+      {
+        "command": "git diff --check && git diff --cached --check",
+        "result": "passed"
+      }
+    ],
+    "additional_checks": [
+      "All 31 original report/image/evidence fingerprints were compared to git show <source_revision>:<path> and matched.",
+      "Touched Markdown inline local links resolve; not a full Markdown parser or remote-link/anchor check.",
+      "git diff HEAD --stat -- src/ is empty."
+    ],
+    "not_run": [
+      "Numerical solver or physics campaigns",
+      "GPU validation",
+      "External /nfs artifact access",
+      "Remote CI",
+      "Independent acceptance"
+    ],
+    "raw_local_log": "artifacts/runs/report-assets-migration/checks.log (ignored local output)"
+  }
+}
