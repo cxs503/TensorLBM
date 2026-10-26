@@ -166,14 +166,22 @@ def run_arm(arm: str, tau_target: float, py: str) -> dict:
     cmd = [
         py,
         str(RUN_PY),
-        "--hull-type", "with_sail",
-        "--resolution", str(RESOLUTION),
-        "--steps", str(STEPS),
-        "--device", DEVICE,
-        "--collision", COLLISION,
-        "--friction", FRICTION,
-        "--p0", P0,
-        "--out", str(out_dir),
+        "--hull-type",
+        "with_sail",
+        "--resolution",
+        str(RESOLUTION),
+        "--steps",
+        str(STEPS),
+        "--device",
+        DEVICE,
+        "--collision",
+        COLLISION,
+        "--friction",
+        FRICTION,
+        "--p0",
+        P0,
+        "--out",
+        str(out_dir),
     ]
 
     print(
@@ -185,21 +193,25 @@ def run_arm(arm: str, tau_target: float, py: str) -> dict:
     t0 = time.time()
     try:
         proc = subprocess.run(
-            cmd, cwd=str(RUN_PY.parent), env=env, capture_output=True,
-            text=True, timeout=TIMEOUT_S,
+            cmd,
+            cwd=str(RUN_PY.parent),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT_S,
         )
         rc, timed_out, stdout, stderr = proc.returncode, False, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired as exc:
+
         def _txt(v):
             if v is None:
                 return ""
             return v.decode("utf-8", "replace") if isinstance(v, bytes) else v
+
         rc, timed_out, stdout, stderr = None, True, _txt(exc.stdout), _txt(exc.stderr)
     wall = time.time() - t0
 
-    (out_dir / "run.log").write_text(
-        f"$ {' '.join(cmd)}\n\n{stdout}\n--- stderr ---\n{stderr}"
-    )
+    (out_dir / "run.log").write_text(f"$ {' '.join(cmd)}\n\n{stdout}\n--- stderr ---\n{stderr}")
 
     row = {
         "arm": arm,
@@ -301,8 +313,19 @@ def rebuild_arm(arm: str, tau_target: float) -> dict:
 # Anchor series reduction
 # --------------------------------------------------------------------------- #
 ANCHOR_KEYS = (
-    "mem_fx", "mem_bgsub_fx", "E0_x", "E1_x", "E2_x", "NEQ_x",
-    "ct", "e0", "ct_bgsub", "rho_fwd", "rho_mid", "rho_aft", "D_QW",
+    "mem_fx",
+    "mem_bgsub_fx",
+    "E0_x",
+    "E1_x",
+    "E2_x",
+    "NEQ_x",
+    "ct",
+    "e0",
+    "ct_bgsub",
+    "rho_fwd",
+    "rho_mid",
+    "rho_aft",
+    "D_QW",
 )
 
 
@@ -314,7 +337,7 @@ def reduce_anchors(path: str, tail: int = 12) -> dict:
     rows = [json.loads(line) for line in p.read_text().splitlines() if line.strip()]
     if not rows:
         return {"present": False, "reason": "empty"}
-    win = rows[-min(tail, len(rows)):]
+    win = rows[-min(tail, len(rows)) :]
     n = len(win)
     means = {k: sum(float(r[k]) for r in win) / n for k in ANCHOR_KEYS}
     return {
@@ -442,8 +465,14 @@ def build_verdict(arms: dict, anchor_red: dict, interp_receipts: list[dict], py:
         },
         "arms": {a: arms[a] for a in ARM_ORDER},
         "gates": {
-            "G1_total_drag_positive": {"per_arm": g1, "all_positive": gates["G1_total_drag_positive"]},
-            "G2_magnitude_vs_reference": {"per_arm": g2, "any_in_band_frozen": gates["G2_magnitude_within_50pct_frozen_ref"]},
+            "G1_total_drag_positive": {
+                "per_arm": g1,
+                "all_positive": gates["G1_total_drag_positive"],
+            },
+            "G2_magnitude_vs_reference": {
+                "per_arm": g2,
+                "any_in_band_frozen": gates["G2_magnitude_within_50pct_frozen_ref"],
+            },
             "G3_monotone_in_tau": g3,
         },
         "gates_summary": gates,
@@ -496,7 +525,7 @@ def main() -> None:
         "--reassemble",
         action="store_true",
         help="rebuild verdict.json from finished result_L*.json on disk; "
-             "runs no simulation (physics numbers untouched, post-processing only)",
+        "runs no simulation (physics numbers untouched, post-processing only)",
     )
     args = ap.parse_args()
 
@@ -528,7 +557,9 @@ def main() -> None:
         py, receipts = select_interpreter()
         print(f"python  : {py} (torch+CUDA self-test ok)", flush=True)
         for rec in receipts:
-            print(f"  probe {rec.get('python')}: ok={rec.get('ok')} {rec.get('err', '')}", flush=True)
+            print(
+                f"  probe {rec.get('python')}: ok={rec.get('ok')} {rec.get('err', '')}", flush=True
+            )
 
         for arm in ARM_ORDER:
             row = run_arm(arm, TAU_LADDER[arm], py)
@@ -542,7 +573,9 @@ def main() -> None:
             )
             # incremental dump so a crash never loses finished arms
             (STAGING / "arms_partial.json").write_text(
-                json.dumps({"arms": arms, "anchor_family": anchor_red}, indent=2, ensure_ascii=False)
+                json.dumps(
+                    {"arms": arms, "anchor_family": anchor_red}, indent=2, ensure_ascii=False
+                )
             )
 
     verdict = build_verdict(arms, anchor_red, receipts, py)
