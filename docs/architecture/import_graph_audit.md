@@ -22,3 +22,30 @@ The JSON report contains discovered modules, internal import edges, cross-layer 
 - Cross-layer edges depend on the supplied root prefixes. For the intended boundary, scrutinize any tensorlbm-to-app.backend edge.
 - The scanner does not inspect JavaScript/TypeScript imports, string references in docs/configuration, entry-point metadata, or third-party package resolution.
 - Do not move or rename modules based only on this report. Compare public API use, runtime imports, tests, CI, docs, and benchmark references first.
+
+## Missing internal targets (2026-10-26 compatibility repair)
+
+Reports now include `unresolved_internal_imports`, with source module, line,
+import kind and target, and a matching Markdown section. A target under a supplied
+root prefix that is absent from the discovered modules/namespace prefixes is
+reported rather than silently disappearing from edge statistics. External imports
+are not checked. This is not symbol-level validation (`from pkg import symbol`)
+and cannot validate runtime aliases or optional environment-dependent imports.
+
+Use `--fail-on-unresolved` to make missing internal targets fail the command;
+reports are still written before returning nonzero. The default remains advisory
+because the current baseline contains 11 findings, including frozen legacy
+snapshots intentionally loaded under a different package by their tests. These
+are not suppressed and should be classified before enabling a mandatory global
+strict gate. New relocation work must also pass the real-runtime compatibility
+suite, not merely show fewer static edges:
+
+```bash
+PYTHONPATH=src pytest -q tests/test_legacy_import_paths.py
+```
+
+Physical legacy-path modules alias the canonical module in `sys.modules`, so
+private helpers and mutable state are shared, not copied. The turbulence package
+lazily delegates the old LES module's attributes (including private helpers) and
+preserves its `__all__`. Bare imports remain lazy; first symbol access loads the
+numerical implementation. These guarantees are distinct from numerical accuracy.

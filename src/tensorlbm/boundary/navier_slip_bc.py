@@ -37,12 +37,13 @@ from __future__ import annotations
 
 import torch
 
+from tensorlbm.d3q19 import OPPOSITE, C, W
+
 from .boundaries3d import (
     _D3Q19_MIRROR_X,
     _D3Q19_MIRROR_Y,
     _D3Q19_MIRROR_Z,
 )
-from tensorlbm.d3q19 import OPPOSITE, C, W
 
 # Mirror tables indexed by axis
 _MIRRORS = {0: _D3Q19_MIRROR_X, 1: _D3Q19_MIRROR_Y, 2: _D3Q19_MIRROR_Z}
