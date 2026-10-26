@@ -1,0 +1,6 @@
+.....s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s.s                     [100%]
+============================== collection-ignore ===============================
+(fastapi absent): 5 files: test_apps_api.py, test_data_catalog_api.py, test_demo_mount.py, test_drag_echo_api.py, test_drag_surrogate_api.py
+=========================== short test summary info ============================
+SKIPPED [24] tests/test_navier_slip_bc.py:159: CUDA unavailable
+28 passed, 24 skipped in 1.13s

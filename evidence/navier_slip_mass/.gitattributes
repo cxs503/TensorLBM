@@ -1,0 +1,2 @@
+# Preserve the captured pytest traceback, including whitespace-only source lines.
+baseline.log whitespace=-blank-at-eol
