@@ -417,11 +417,11 @@ def collide_rans_ke(
 
     lattice_u = lattice.upper()
     if lattice_u == "D3Q19":
-        from .d3q19 import macroscopic3d
+        from tensorlbm.d3q19 import macroscopic3d
 
         _, ux, uy, uz = macroscopic3d(f)
     elif lattice_u == "D3Q27":
-        from .d3q27 import macroscopic27
+        from tensorlbm.d3q27 import macroscopic27
 
         _, ux, uy, uz = macroscopic27(f)
     else:
@@ -891,11 +891,11 @@ def collide_rans_sa(
 
     lattice_u = lattice.upper()
     if lattice_u == "D3Q19":
-        from .d3q19 import macroscopic3d
+        from tensorlbm.d3q19 import macroscopic3d
 
         _, ux, uy, uz = macroscopic3d(f)
     elif lattice_u == "D3Q27":
-        from .d3q27 import macroscopic27
+        from tensorlbm.d3q27 import macroscopic27
 
         _, ux, uy, uz = macroscopic27(f)
     else:
@@ -930,7 +930,7 @@ def komega_sst_collision_d2q9(
     Returns:
         Post-collision distribution function, same shape as ``f``.
     """
-    from .d2q9 import C_X, C_Y, W  # noqa: PLC0415
+    from tensorlbm.d2q9 import C_X, C_Y, W  # noqa: PLC0415
 
     rho = f.sum(dim=0)
     ux = (f * C_X.view(9, 1, 1)).sum(dim=0) / rho.clamp(min=1e-10)
