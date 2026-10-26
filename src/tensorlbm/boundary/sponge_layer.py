@@ -95,11 +95,11 @@ def apply_equilibrium_difference_sponge(
     if sigma.shape != f.shape[1:]:
         raise ValueError("sigma must have the spatial population shape")
     if f.shape[0] == 19:
-        from .d3q19 import equilibrium3d, macroscopic3d
+        from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 
         equilibrium, macro = equilibrium3d, macroscopic3d
     elif f.shape[0] == 27:
-        from .d3q27 import equilibrium27, macroscopic27
+        from tensorlbm.d3q27 import equilibrium27, macroscopic27
 
         equilibrium, macro = equilibrium27, macroscopic27
     else:

@@ -40,11 +40,11 @@ def _validate_lattice(lattice: str) -> str:
 def _macroscopic(lattice: str, f: torch.Tensor):
     """Dispatch to the correct macroscopic function for *lattice*."""
     if lattice == "D3Q19":
-        from .d3q19 import macroscopic3d
+        from tensorlbm.d3q19 import macroscopic3d
 
         return macroscopic3d(f)
     elif lattice == "D3Q27":
-        from .d3q27 import macroscopic27
+        from tensorlbm.d3q27 import macroscopic27
 
         return macroscopic27(f)
     raise ValueError(f"Unsupported lattice: {lattice!r}")
@@ -253,11 +253,11 @@ def _apply_body_force(
     recomputing macroscopic fields from *f*.
     """
     if lattice == "D3Q19":
-        from .d3q19 import C as C_LAT
+        from tensorlbm.d3q19 import C as C_LAT
 
         q = 19
     elif lattice == "D3Q27":
-        from .d3q27 import C as C_LAT
+        from tensorlbm.d3q27 import C as C_LAT
 
         q = 27
     else:
@@ -304,9 +304,9 @@ def _apply_body_force(
         _ux, _uy, _uz = ux, uy, uz
     else:
         if lattice == "D3Q19":
-            from .d3q19 import macroscopic3d as _macro
+            from tensorlbm.d3q19 import macroscopic3d as _macro
         else:
-            from .d3q27 import macroscopic27 as _macro
+            from tensorlbm.d3q27 import macroscopic27 as _macro
         _rho, _ux, _uy, _uz = _macro(f)
     cu_u = cx * _ux.unsqueeze(0) + cy * _uy.unsqueeze(0) + cz * _uz.unsqueeze(0)
     u_dot_f = (_ux * fx + _uy * fy + _uz * fz).unsqueeze(0)
@@ -534,11 +534,11 @@ def apply_wall_function(
     # --- 1. Bounce-back for viscous sublayer cells ---
     if n_bb > 0:
         if lattice == "D3Q19":
-            from .d3q19 import OPPOSITE as OPP
+            from tensorlbm.d3q19 import OPPOSITE as OPP
 
             opp = OPP.to(f.device)
         else:
-            from .d3q27 import OPPOSITE as OPP
+            from tensorlbm.d3q27 import OPPOSITE as OPP
 
             opp = OPP.to(f.device)
         bb_mask = use_bb.unsqueeze(0).expand_as(f)

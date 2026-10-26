@@ -25,8 +25,8 @@ from __future__ import annotations
 
 import torch
 
-from .d3q27 import OPPOSITE as OPPOSITE27
-from .d3q27 import equilibrium27
+from tensorlbm.d3q27 import OPPOSITE as OPPOSITE27
+from tensorlbm.d3q27 import equilibrium27
 
 # ---------------------------------------------------------------------------
 # Module-level direction-index constants (derived from the fixed D3Q27 lattice).

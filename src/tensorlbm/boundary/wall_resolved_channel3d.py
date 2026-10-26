@@ -10,11 +10,11 @@ from pathlib import Path
 import torch
 
 from .boundaries3d import bounce_back_cells_3d
-from .chunked_collision import NaturalKBCCollisionExecutor, collide_in_z_chunks
-from .cumulant import collide_cumulant_d3q19
-from .d3q19 import C, equilibrium3d, macroscopic3d_low_memory
-from .solver3d import stream3d
-from .spalding_wall_model import spalding_u_plus_from_y_plus
+from tensorlbm.chunked_collision import NaturalKBCCollisionExecutor, collide_in_z_chunks
+from tensorlbm.cumulant import collide_cumulant_d3q19
+from tensorlbm.d3q19 import C, equilibrium3d, macroscopic3d_low_memory
+from tensorlbm.solver3d import stream3d
+from tensorlbm.spalding_wall_model import spalding_u_plus_from_y_plus
 from .wall_model import guo_body_force_d3q19
 
 
