@@ -256,6 +256,8 @@ def resistance_breakdown_3d(
         Dictionary with keys ``CT``, ``Cf``, ``Cp``, ``F_total_lu``,
         ``F_viscous_lu``, ``F_pressure_lu``, ``area_ref_lu2``.
     """
+    import torch  # noqa: PLC0415
+
     from .obstacles import compute_obstacle_forces_3d  # noqa: PLC0415
 
     nz, ny, nx = rho.shape

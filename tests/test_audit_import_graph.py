@@ -9,6 +9,7 @@ AUDIT = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(AUDIT)
 
+
 class ImportGraphAuditTests(unittest.TestCase):
     def test_relative_edges_and_cycle_detection(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -30,7 +31,8 @@ class ImportGraphAuditTests(unittest.TestCase):
             (root / "__init__.py").write_text("", encoding="utf-8")
             (root / "loader.py").write_text(
                 "import importlib\nname = get_module_name()\nimportlib.import_module(name)\n",
-                encoding="utf-8")
+                encoding="utf-8",
+            )
             data = AUDIT.scan([(root, "pkg")])
             self.assertEqual(len(data["dynamic_imports"]), 1)
             self.assertEqual(data["dynamic_imports"][0]["status"], "dynamic-target-unknown")
@@ -42,6 +44,7 @@ class ImportGraphAuditTests(unittest.TestCase):
             (root / "broken.py").write_text("def broken(:\n", encoding="utf-8")
             data = AUDIT.scan([(root, "pkg")])
             self.assertEqual(len(data["parse_errors"]), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
