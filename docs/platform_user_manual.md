@@ -65,6 +65,23 @@ bash start.sh
 PYTHONPATH=../src uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+#### 后端模块与测试约定
+
+正式启动脚本和平台测试统一使用 `backend` 命名空间。HTTP 测试应复用
+`app/tests/conftest.py` 中的 `app`、`client`、`job_manager` fixtures，避免绕过
+应用 lifespan，或在同一进程混用 `backend.*` 与 `app.backend.*`。
+Python 会将这两种导入加载成不同的模块，因此它们**不是共享任务状态的别名**。
+路由加载使用当前包的相对导入；单独以 `app.backend.main` 启动时也应全程保持该命名空间。
+`jobs`、`postprocess`、`solver`、`orchestration` 属于必需路由，导入失败会阻止启动，
+而不是静默变成 404；其余可选路由仍会记录警告。
+
+任务列表与 WebSocket 通知只传输轻量摘要（不包含完整 `result`）。结果聚合接口
+应按任务 ID 读取真实结果，再提取指标，不要为了聚合而扩大轮询响应。
+
+作业文件下载和带 checkpoint 参数的后处理接口使用解析后的路径包含关系校验，
+拒绝越界路径和指向目录外的现有符号链接。此检查不是原子文件打开，不能防御
+具有输出目录写权限的攻击者在检查与读取之间替换文件；部署时仍须限制输出目录写权限。
+
 ### 2.4 打开浏览器 / Open in browser
 
 * 单页应用：<http://localhost:8000/>

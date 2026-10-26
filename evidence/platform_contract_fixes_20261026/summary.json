@@ -1,0 +1,181 @@
+{
+  "baseline_revision": "90332d1bc24b4aeffd58bc40dfd62e4a876562c3",
+  "scope": "CPU sandbox, same venv; not remote CI or physical/GPU acceptance",
+  "original_case_count": 716,
+  "baseline_original": {
+    "error": 8,
+    "failure": 39,
+    "passed": 621,
+    "skipped": 48
+  },
+  "current_original": {
+    "failure": 30,
+    "passed": 638,
+    "skipped": 48
+  },
+  "baseline_new_contract_tests": {
+    "failure": 37,
+    "passed": 24
+  },
+  "current_new_contract_tests": {
+    "passed": 61
+  },
+  "current_full_platform": {
+    "failure": 30,
+    "passed": 699,
+    "skipped": 48
+  },
+  "recovered_original_cases": [
+    "app.tests.test_engineering_features.TestDoEAPI::test_doe_group_tag_in_jobs",
+    "app.tests.test_gap_improvements.TestLiveMetricsAPI::test_live_metrics_empty_completed_job",
+    "app.tests.test_gap_improvements.TestLiveMetricsAPI::test_live_metrics_since_step_filter",
+    "app.tests.test_gap_improvements.TestLiveMetricsAPI::test_live_metrics_with_diagnostics",
+    "app.tests.test_simulations_generic_run_api::test_generic_run_status_reads_from_job_manager_only",
+    "app.tests.test_study_compare.TestStudyCompare::test_group_with_jobs_returns_200",
+    "app.tests.test_study_compare.TestStudyCompare::test_multiple_jobs_metric_summary",
+    "app.tests.test_study_compare.TestStudyCompare::test_time_series_extracted_as_final_and_mean",
+    "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_2d_job_returns_422",
+    "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_boundary_layer_endpoint_returns_200",
+    "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_compare_endpoint_returns_200",
+    "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_cp_hull_endpoint_returns_200",
+    "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_cross_sections_endpoint_returns_200",
+    "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_resistance_report_endpoint_returns_200",
+    "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_skin_friction_endpoint_returns_200",
+    "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_wake_profile_endpoint_returns_200",
+    "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_yplus_endpoint_returns_200"
+  ],
+  "passed_to_nonpassed": [],
+  "newly_skipped": [],
+  "remaining_failures": {
+    "app.tests.test_frontend_ai_flow_ui::test_index_contains_ai_flow_ui": {
+      "status": "failure",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist."
+    },
+    "app.tests.test_frontend_cad3d_ui::test_index_contains_cad3d_ui": {
+      "status": "failure",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist."
+    },
+    "app.tests.test_frontend_navigation_consistency::test_top_nav_uses_data_tab_binding": {
+      "status": "failure",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist."
+    },
+    "app.tests.test_frontend_navigation_consistency::test_tab_sequence_includes_geo3d_and_event_binding": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_core.js'"
+    },
+    "app.tests.test_frontend_navigation_consistency::test_projects_panel_uses_data_action_binding": {
+      "status": "failure",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist."
+    },
+    "app.tests.test_frontend_navigation_consistency::test_projects_module_binds_delegated_actions": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_projects.js'"
+    },
+    "app.tests.test_frontend_orchestration_ui::test_index_contains_orchestration_ui": {
+      "status": "failure",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist."
+    },
+    "app.tests.test_frontend_ux_improvements::test_ws_handler_toasts_on_job_complete": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_core.js'"
+    },
+    "app.tests.test_frontend_ux_improvements::test_shortcuts_modal_exists_in_html": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/index.html'"
+    },
+    "app.tests.test_frontend_ux_improvements::test_question_mark_key_opens_shortcuts_modal": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_core.js'"
+    },
+    "app.tests.test_frontend_ux_improvements::test_job_card_renders_progress_bar": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_core.js'"
+    },
+    "app.tests.test_frontend_ux_improvements::test_abcompare_tab_in_postprocess_html": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/index.html'"
+    },
+    "app.tests.test_frontend_ux_improvements::test_abcompare_functions_exist_in_postprocess_js": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_postprocess.js'"
+    },
+    "app.tests.test_frontend_ux_improvements::test_showppmergedtab_calls_abcomparepopulateselects": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_core.js'"
+    },
+    "app.tests.test_frontend_ux_improvements::test_en_i18n_has_new_keys": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/en.json'"
+    },
+    "app.tests.test_frontend_ux_improvements::test_zh_i18n_has_same_new_keys": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/zh.json'"
+    },
+    "app.tests.test_frontend_workflow_ops_ui::test_index_contains_workflow_ops_ui": {
+      "status": "failure",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist."
+    },
+    "app.tests.test_i18n::test_en_json_is_valid": {
+      "status": "failure",
+      "message": "AssertionError: platform/frontend/static/i18n/en.json not found\nassert False\n +  where False = exists()\n +    where exists = PosixPath('/home/user/TensorLBM/app/frontend/static/i18n/en.json').exists"
+    },
+    "app.tests.test_i18n::test_zh_json_is_valid": {
+      "status": "failure",
+      "message": "AssertionError: platform/frontend/static/i18n/zh.json not found\nassert False\n +  where False = exists()\n +    where exists = PosixPath('/home/user/TensorLBM/app/frontend/static/i18n/zh.json').exists"
+    },
+    "app.tests.test_i18n::test_i18n_key_parity": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/en.json'"
+    },
+    "app.tests.test_i18n::test_critical_keys_present_in_both": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/en.json'"
+    },
+    "app.tests.test_i18n::test_static_i18n_files_served": {
+      "status": "failure",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist."
+    },
+    "app.tests.test_i18n::test_i18n_js_served": {
+      "status": "failure",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist."
+    },
+    "app.tests.test_platform_basic::test_root_serves_spa": {
+      "status": "failure",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist."
+    },
+    "app.tests.test_platform_basic::test_spa_fallback": {
+      "status": "failure",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist."
+    },
+    "app.tests.test_suboff_physics.TestBoundaryLayerAtStation::test_yplus_computed_when_tau_w_supplied": {
+      "status": "failure",
+      "message": "AssertionError: assert 'y_plus' in {'delta': 0.0, 'delta_star': 0.0, 'theta': 0.0, 'H': nan, ...}"
+    },
+    "app.tests.test_suboff_physics.TestSuboffSolveEndpoint::test_invalid_hull_type_returns_422": {
+      "status": "failure",
+      "message": "assert 200 == 422\n +  where 200 = <Response [200 OK]>.status_code"
+    },
+    "app.tests.test_suboff_physics.TestSuboffI18nKeys::test_en_suboff_physics_keys_present": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/en.json'"
+    },
+    "app.tests.test_suboff_physics.TestSuboffI18nKeys::test_zh_suboff_physics_keys_present": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/zh.json'"
+    },
+    "app.tests.test_suboff_physics.TestSuboffI18nKeys::test_en_and_zh_have_same_suboff_keys": {
+      "status": "failure",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/en.json'"
+    }
+  },
+  "raw_artifact_sha256": {
+    "platform-baseline.xml": "321aba1123e78e98a10b7fa7a1dd5da48aafc44ca3f59a371c5a40c664dd309f",
+    "platform-final.xml": "c5dc22fa8576107cdefca032d5d30746d2c1c1adff600bb534b170beff9a7aad",
+    "baseline-contract-final.xml": "4ffc22c8997b7bca550c2c6dee779d9227c2b7f4795b498cdb3c956467a5e429",
+    "platform-baseline.log": "789fe687c44553271e5fd2d17c133d40cef5fe2256e0e8840189b944855243e2",
+    "platform-final.log": "310254c20b7570477e5a335b49ac5ae78c70f75022de8580cecc377ad3d702c9",
+    "baseline-contract-final.log": "0323fdba686b36765ab102a64dc49c083352411fd393d80e554bb35c856f6a27",
+    "environment.txt": "e4cf3fbded3bb75fe1eb6dcc05eb9b4ccb215b8cf4e672cc10311ef794bbe3ad",
+    "governance.xml": "ad2bcba8ad0ef41e0319102c757032a76c9e887751da0efab07c49cbb19e9d84"
+  }
+}
