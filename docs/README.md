@@ -36,6 +36,8 @@ A navigable index of the documentation in this directory, grouped by topic.
 
 | Document | Description |
 |---|---|
+| [Couette 3D historical report](reports/report_couette_3d.md) | Archived fp64 acceptance claim and provenance; relocation is not revalidation |
+| [Washburn historical report](reports/report_capillary_invasion_washburn.md) | TERMINAL / failed benchmark report; original negative results retained |
 | [REGRESSION_REPORT.md](reports/REGRESSION_REPORT.md) | Core regression baseline report |
 | [REGRESSION_REPORT_interp_bc.md](reports/REGRESSION_REPORT_interp_bc.md) | Regression report: interpolated bounce-back boundary condition |
 | [REGRESSION_REPORT_sliding_mesh.md](reports/REGRESSION_REPORT_sliding_mesh.md) | Regression report: sliding-mesh boundary |
@@ -135,6 +137,14 @@ The regression reports listed under *Benchmarks & Validation* also live in
 `reports/`.
 
 ---
+
+## Repository maintenance
+
+- [Layout and artifact policy](architecture/repository_layout.md) — where files belong,
+  historical exceptions, automated checks and safe migration batches.
+- [Architecture/refactoring plan](architecture/REPOSITORY_REFACTORING_PLAN.md) —
+  dependency boundaries and phased acceptance.
+- [Migration candidates](architecture/migration_manifest.csv) — proposed moves, not completed work.
 
 ## See Also
 
