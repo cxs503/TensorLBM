@@ -61,14 +61,14 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 
-from .d2q9 import C as C2D
-from .d2q9 import equilibrium, macroscopic
-from .d3q19 import C as C3D
-from .d3q19 import equilibrium3d, macroscopic3d
-from .d3q27 import C as C27
-from .d3q27 import _get_d3q27_mrt_matrices, equilibrium27, macroscopic27
-from .solver import _get_d2q9_mrt_matrices
-from .solver3d import _get_d3q19_mrt_matrices
+from tensorlbm.d2q9 import C as C2D
+from tensorlbm.d2q9 import equilibrium, macroscopic
+from tensorlbm.d3q19 import C as C3D
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q27 import C as C27
+from tensorlbm.d3q27 import _get_d3q27_mrt_matrices, equilibrium27, macroscopic27
+from tensorlbm.solver import _get_d2q9_mrt_matrices
+from tensorlbm.solver3d import _get_d3q19_mrt_matrices
 
 # ---------------------------------------------------------------------------
 # Stability constants
