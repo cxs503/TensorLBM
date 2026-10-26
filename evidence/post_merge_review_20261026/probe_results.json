@@ -1,0 +1,34 @@
+{
+  "source_revision": "90332d1bc24b4aeffd58bc40dfd62e4a876562c3",
+  "python": "3.11.2",
+  "namespace_identity": {
+    "same_source_file": true,
+    "same_module_object": false,
+    "same_registry_object": false,
+    "same_job_class": false,
+    "served_namespace_finds_job": true,
+    "alternate_namespace_finds_job": false
+  },
+  "job_result_contract": {
+    "direct_job_result": {
+      "drag_coefficient": 0.8,
+      "series": [
+        0.7,
+        0.8
+      ]
+    },
+    "list_jobs_result": {},
+    "list_jobs_study_group": "probe",
+    "note": "study_compare currently reads metrics from list_jobs_result, which is empty"
+  },
+  "path_containment": {
+    "source": "app/backend/routers/jobs.py",
+    "function_line": 352,
+    "source_sha256": "d64c44c0c0c2a81cab5ee00e32420a6ef6bf7fd29f541b0b8388f1ed02bacc87",
+    "normal_child_accepted": true,
+    "unrelated_parent_escape_rejected": true,
+    "same_prefix_sibling_accepted": true,
+    "sibling_actually_within_root": false,
+    "scope": "local pure-function probe only; no HTTP request or real file disclosure"
+  }
+}

@@ -30,10 +30,11 @@ class _FakeJob:
         self.logs = logs or []
         self.error = error
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self, *, include_result: bool = True) -> dict[str, Any]:
         return {
             "status": self.status.value,
             "config": self.config,
+            "result": self.result if include_result else {},
         }
 
 

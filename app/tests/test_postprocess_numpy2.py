@@ -6,8 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
-
-from app.backend.routers import postprocess
+from backend.routers import postprocess
 
 
 def test_acoustics_spectrum_integrates_band_power_without_np_trapz(

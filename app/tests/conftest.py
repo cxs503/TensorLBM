@@ -1,11 +1,8 @@
-"""Pytest fixtures for the TensorLBM Platform test-suite.
+"""Shared fixtures for the TensorLBM platform test suite.
 
-The ``platform`` directory shadows Python's stdlib :mod:`platform` module
-when added directly to ``sys.path``, so we instead append the directory
-containing ``backend/`` (i.e. ``platform/``) under a private alias by
-prepending it to ``sys.path`` *after* ensuring stdlib ``platform`` has
-already been imported.  This keeps imports such as
-``from backend.main import app`` working without breaking anything else.
+Use the served ``backend`` namespace (also used by ``app/start.sh``). Mixing
+it with ``app.backend`` creates independent module state and job registries.
+All HTTP tests should use these fixtures, including the application lifespan.
 """
 from __future__ import annotations
 
