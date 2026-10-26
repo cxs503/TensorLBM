@@ -1,4 +1,6 @@
 import importlib.util
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -36,6 +38,53 @@ class ImportGraphAuditTests(unittest.TestCase):
             data = AUDIT.scan([(root, "pkg")])
             self.assertEqual(len(data["dynamic_imports"]), 1)
             self.assertEqual(data["dynamic_imports"][0]["status"], "dynamic-target-unknown")
+
+    def test_missing_internal_targets_are_visible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "pkg"
+            root.mkdir()
+            (root / "__init__.py").write_text("", encoding="utf-8")
+            (root / "user.py").write_text(
+                "from pkg.missing import value\nimport external.missing\n"
+                "from .missing_relative import value\n",
+                encoding="utf-8",
+            )
+            data = AUDIT.scan([(root, "pkg")])
+            self.assertEqual(
+                {item["target"] for item in data["unresolved_internal_imports"]},
+                {"pkg.missing", "pkg.missing_relative"},
+            )
+            self.assertIn("Unresolved internal imports: **2**", AUDIT.markdown_report(data))
+            # A physical alias is visible as an edge, not a missing target.
+            (root / "missing.py").write_text("from .user import value\n", encoding="utf-8")
+            data = AUDIT.scan([(root, "pkg")])
+            self.assertEqual(len(data["unresolved_internal_imports"]), 1)
+            self.assertIn({"source": "pkg.user", "target": "pkg.missing"}, data["edges"])
+
+    def test_strict_cli_reports_before_failing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "pkg"
+            root.mkdir()
+            (root / "broken.py").write_text("import pkg.missing\n", encoding="utf-8")
+            output = Path(tmp) / "audit.json"
+            command = [
+                sys.executable,
+                str(SCRIPT),
+                "--repo",
+                tmp,
+                "--root",
+                "pkg=pkg",
+                "--json-out",
+                str(output),
+            ]
+            advisory = subprocess.run(command, capture_output=True, text=True)
+            self.assertEqual(advisory.returncode, 0, advisory.stderr)
+            strict = subprocess.run(
+                command + ["--fail-on-unresolved"], capture_output=True, text=True
+            )
+            self.assertEqual(strict.returncode, 1, strict.stderr)
+            self.assertTrue(output.exists())
+            self.assertIn("pkg.missing", strict.stdout)
 
     def test_syntax_error_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
