@@ -142,3 +142,14 @@ matching and index changes cannot establish provenance or compatibility.
 - **D: tests/API/modules.** Map test categories, quarantine IDs and public import
   consumers before moving tests or flattening the legacy API into subpackages.
   No bulk source moves, tolerance changes or benchmark promotions in a layout patch.
+
+### Updated inventory after PR #412 and compatibility repair
+
+The 78 legacy root paths above describe the earlier report/assets batch, not the
+current inventory. At `14f200c`, there are 20 tracked root files: 17 canonical
+metadata files and three existing legacy scripts. The policy lists four legacy
+root paths, one of which (`agent_memory_context_update.md`) no longer exists.
+There remain 392 tracked historical `runs/` files and one model-weight exception.
+The boundary/turbulence compatibility repair adds only source alias modules,
+tests and documentation, not generated results. See the repair report for checks
+and limitations.

@@ -690,6 +690,8 @@ def apply_boundary_conditions(
     shape = (f.shape[1], f.shape[2], f.shape[3])
     device = f.device
 
+    from tensorlbm.d3q19 import OPPOSITE
+
     from .boundaries3d import (
         bounce_back_cells_3d,
         far_field_bc_3d,
@@ -697,7 +699,6 @@ def apply_boundary_conditions(
         zou_he_moving_lid_3d,
         zou_he_outlet_pressure_3d,
     )
-    from tensorlbm.d3q19 import OPPOSITE
 
     for bc in bcs:
         if bc.phase is not phase:
