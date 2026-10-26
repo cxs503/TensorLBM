@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import torch
 
-from .d3q19 import OPPOSITE, C
+from tensorlbm.d3q19 import OPPOSITE, C
 
 
 def bouzidi_bounce_back_wallsurface(

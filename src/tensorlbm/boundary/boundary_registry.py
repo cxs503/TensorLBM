@@ -461,9 +461,9 @@ def check_bc_consistency(
 
 def _lattice_c(lattice: str, device: torch.device) -> torch.Tensor:
     if lattice.upper() == "D3Q19":
-        from .d3q19 import C
+        from tensorlbm.d3q19 import C
     elif lattice.upper() == "D3Q27":
-        from .d3q27 import C
+        from tensorlbm.d3q27 import C
     else:
         raise ValueError(f"unsupported lattice {lattice!r}; expected D3Q19 or D3Q27")
     return C.to(device)
@@ -697,7 +697,7 @@ def apply_boundary_conditions(
         zou_he_moving_lid_3d,
         zou_he_outlet_pressure_3d,
     )
-    from .d3q19 import OPPOSITE
+    from tensorlbm.d3q19 import OPPOSITE
 
     for bc in bcs:
         if bc.phase is not phase:
