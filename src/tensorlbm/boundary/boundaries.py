@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 
-from .d2q9 import OPPOSITE, C, equilibrium, macroscopic
+from tensorlbm.d2q9 import OPPOSITE, C, equilibrium, macroscopic
 
 
 def cylinder_mask(
@@ -312,7 +312,7 @@ def porous_jump_2d(
     Returns:
         Updated distribution tensor.
     """
-    from .d2q9 import equilibrium, macroscopic
+    from tensorlbm.d2q9 import equilibrium, macroscopic
 
     if jump_col < 1 or jump_col >= f.shape[2] - 1:
         return f
@@ -359,7 +359,7 @@ def fan_model_2d(
     Returns:
         Updated distribution tensor.
     """
-    from .d2q9 import equilibrium, macroscopic
+    from tensorlbm.d2q9 import equilibrium, macroscopic
 
     if fan_col < 1 or fan_col >= f.shape[2] - 1:
         return f
@@ -449,7 +449,7 @@ def nscbc_outlet_2d(
     Returns:
         Updated distribution tensor.
     """
-    from .d2q9 import equilibrium, macroscopic
+    from tensorlbm.d2q9 import equilibrium, macroscopic
 
     rho, ux, uy = macroscopic(f)
 

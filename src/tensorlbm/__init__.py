@@ -65,17 +65,17 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "AdaptiveSolver2D": ("adaptive_refinement", "AdaptiveSolver2D"),
     "AdaptiveSolver3D": ("adaptive_refinement", "AdaptiveSolver3D"),
     "AirfoilConfig": ("airfoil_benchmark", "AirfoilConfig"),
-    "BCKind": ("boundary_registry", "BCKind"),
-    "BCPhase": ("boundary_registry", "BCPhase"),
-    "BC_ID_NONE": ("boundary_registry", "BC_ID_NONE"),
+    "BCKind": ("boundary.boundary_registry", "BCKind"),
+    "BCPhase": ("boundary.boundary_registry", "BCPhase"),
+    "BC_ID_NONE": ("boundary.boundary_registry", "BC_ID_NONE"),
     "BFLWallPressureDiagnostics": ("drag_pressure", "BFLWallPressureDiagnostics"),
     "BackwardFacingStepConfig": ("backward_facing_step", "BackwardFacingStepConfig"),
     "BandTopology": ("dg_band", "BandTopology"),
     "BoundaryCondition": ("protocols", "BoundaryCondition"),
-    "BoundaryConditionCapability": ("boundary_capability_contract", "BoundaryConditionCapability"),
-    "BoundaryConditionRegistry": ("boundary_registry", "BoundaryConditionRegistry"),
+    "BoundaryConditionCapability": ("boundary.boundary_capability_contract", "BoundaryConditionCapability"),
+    "BoundaryConditionRegistry": ("boundary.boundary_registry", "BoundaryConditionRegistry"),
     "BoundaryConditionWithheldError": (
-        "boundary_capability_contract",
+        "boundary.boundary_capability_contract",
         "BoundaryConditionWithheldError",
     ),
     "BoundaryType": ("general_sim", "BoundaryType"),
@@ -103,8 +103,8 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "CollisionModel": ("general_sim", "CollisionModel"),
     "CollisionOperator": ("protocols", "CollisionOperator"),
     "CollisionViscosityAuditConfig": ("collision_viscosity_audit", "CollisionViscosityAuditConfig"),
-    "CombinationEvidence": ("wall_refinement_combination_gate", "CombinationEvidence"),
-    "CombinationGateDecision": ("wall_refinement_combination_gate", "CombinationGateDecision"),
+    "CombinationEvidence": ("boundary.wall_refinement_combination_gate", "CombinationEvidence"),
+    "CombinationGateDecision": ("boundary.wall_refinement_combination_gate", "CombinationGateDecision"),
     "CompositionDecision": ("cross_module_composition_matrix", "CompositionDecision"),
     "CompositionRequest": ("cross_module_composition_matrix", "CompositionRequest"),
     "CompositionStatus": ("cross_module_composition_matrix", "CompositionStatus"),
@@ -156,8 +156,8 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "GeneralSimConfig": ("general_sim", "GeneralSimConfig"),
     "GeneralSimEngine": ("general_sim", "GeneralSimEngine"),
     "GeometryConfig": ("general_sim", "GeometryConfig"),
-    "GeometryKind": ("wall_refinement_combination_gate", "GeometryKind"),
-    "GeometryOwnership": ("wall_refinement_combination_gate", "GeometryOwnership"),
+    "GeometryKind": ("boundary.wall_refinement_combination_gate", "GeometryKind"),
+    "GeometryOwnership": ("boundary.wall_refinement_combination_gate", "GeometryOwnership"),
     "GeometrySource": ("general_sim", "GeometrySource"),
     "HullCase": ("autograd_calib", "HullCase"),
     "HullFreeSurfaceConfig": ("hull_free_surface", "HullFreeSurfaceConfig"),
@@ -198,7 +198,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "OutputFormat": ("general_sim", "OutputFormat"),
     "PhysicalAccuracyEvidence": ("accuracy_recommendation", "PhysicalAccuracyEvidence"),
     "PhysicsConfig": ("general_sim", "PhysicsConfig"),
-    "PhysicsModel": ("wall_refinement_combination_gate", "PhysicsModel"),
+    "PhysicsModel": ("boundary.wall_refinement_combination_gate", "PhysicsModel"),
     "PipelineFlowConfig": ("pipeline_flow", "PipelineFlowConfig"),
     "PointOutcome": ("scan_runner", "PointOutcome"),
     "PopulationRefluxLedger": ("static_block_amr", "PopulationRefluxLedger"),
@@ -209,7 +209,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "PropellerBenchmarkConfig": ("propeller_benchmark", "PropellerBenchmarkConfig"),
     "PropellerGeometryConfig": ("propeller_cad", "PropellerGeometryConfig"),
     "REQUIRED_FRONTEND_METADATA": ("amr_capability_contract", "REQUIRED_FRONTEND_METADATA"),
-    "RefinementType": ("wall_refinement_combination_gate", "RefinementType"),
+    "RefinementType": ("boundary.wall_refinement_combination_gate", "RefinementType"),
     "Reporter": ("reporters", "Reporter"),
     "ReporterBase": ("reporters", "ReporterBase"),
     "ResistanceComponentAudit": ("resistance_component_audit", "ResistanceComponentAudit"),
@@ -258,7 +258,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "TurbulentChannelConfig": ("turbulent_channel", "TurbulentChannelConfig"),
     "TwoPhaseChannelCompareConfig": ("multiphase_benchmarks", "TwoPhaseChannelCompareConfig"),
     "TwoPhasePoiseuilleConfig": ("porous_media", "TwoPhasePoiseuilleConfig"),
-    "ValidationLevel": ("wall_function_contract", "ValidationLevel"),
+    "ValidationLevel": ("boundary.wall_function_contract", "ValidationLevel"),
     "W": ("d2q9", "W"),
     "W27": ("d3q27", "W"),
     "W3D": ("d3q19", "W"),
@@ -266,16 +266,16 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "W_D3Q7": ("thermal3d", "W_D3Q7"),
     "WallExchangeInterfaceClearance": ("spalding_wall_model", "WallExchangeInterfaceClearance"),
     "WallExchangeSamples": ("spalding_wall_model", "WallExchangeSamples"),
-    "WallExchangeYPlusAggregate": ("wall_exchange_yplus", "WallExchangeYPlusAggregate"),
-    "WallExchangeYPlusSummary": ("wall_exchange_yplus", "WallExchangeYPlusSummary"),
-    "WallFunctionCapability": ("wall_function_contract", "WallFunctionCapability"),
-    "WallFunctionCompatibilityError": ("wall_function_contract", "WallFunctionCompatibilityError"),
-    "WallFunctionRunRequest": ("wall_function_admission", "WallFunctionRunRequest"),
-    "WallRefinementCollisionFamily": ("wall_refinement_combination_gate", "CollisionFamily"),
-    "WallRefinementCombination": ("wall_refinement_combination_gate", "WallRefinementCombination"),
-    "WallRefinementGateStatus": ("wall_refinement_combination_gate", "GateStatus"),
-    "WallRefinementLattice": ("wall_refinement_combination_gate", "Lattice"),
-    "WallTreatment": ("wall_refinement_combination_gate", "WallTreatment"),
+    "WallExchangeYPlusAggregate": ("boundary.wall_exchange_yplus", "WallExchangeYPlusAggregate"),
+    "WallExchangeYPlusSummary": ("boundary.wall_exchange_yplus", "WallExchangeYPlusSummary"),
+    "WallFunctionCapability": ("boundary.wall_function_contract", "WallFunctionCapability"),
+    "WallFunctionCompatibilityError": ("boundary.wall_function_contract", "WallFunctionCompatibilityError"),
+    "WallFunctionRunRequest": ("boundary.wall_function_admission", "WallFunctionRunRequest"),
+    "WallRefinementCollisionFamily": ("boundary.wall_refinement_combination_gate", "CollisionFamily"),
+    "WallRefinementCombination": ("boundary.wall_refinement_combination_gate", "WallRefinementCombination"),
+    "WallRefinementGateStatus": ("boundary.wall_refinement_combination_gate", "GateStatus"),
+    "WallRefinementLattice": ("boundary.wall_refinement_combination_gate", "Lattice"),
+    "WallTreatment": ("boundary.wall_refinement_combination_gate", "WallTreatment"),
     "ZooValidation": ("zoo", "ZooValidation"),
     "acoustics_capability_matrix": ("acoustics_capability_contract", "acoustics_capability_matrix"),
     "acoustics_post_processing_audit": (
@@ -283,27 +283,27 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
         "acoustics_post_processing_audit",
     ),
     "aggregate_wall_exchange_yplus_summaries": (
-        "wall_exchange_yplus",
+        "boundary.wall_exchange_yplus",
         "aggregate_wall_exchange_yplus_summaries",
     ),
     "airy_wave_velocity_3d": ("wave_bc", "airy_wave_velocity_3d"),
     "apparent_viscosity_power_law": ("non_newtonian", "apparent_viscosity_power_law"),
     "apply_actuator_disk": ("actuator_disk", "apply_actuator_disk"),
     "apply_body_force_shift": ("powerlaw", "apply_body_force_shift"),
-    "apply_boundary_conditions": ("boundary_registry", "apply_boundary_conditions"),
+    "apply_boundary_conditions": ("boundary.boundary_registry", "apply_boundary_conditions"),
     "apply_buoyancy_force": ("thermal", "apply_buoyancy_force"),
     "apply_buoyancy_force_3d": ("thermal3d", "apply_buoyancy_force_3d"),
     "apply_cavitation_force": ("cavitation", "apply_cavitation_force"),
     "apply_cht_interface": ("conjugate_ht", "apply_cht_interface"),
     "apply_dfsem_inlet_2d": ("synthetic_inflow", "apply_dfsem_inlet_2d"),
     "apply_dfsem_inlet_3d": ("synthetic_inflow", "apply_dfsem_inlet_3d"),
-    "apply_equilibrium_difference_sponge": ("sponge_layer", "apply_equilibrium_difference_sponge"),
+    "apply_equilibrium_difference_sponge": ("boundary.sponge_layer", "apply_equilibrium_difference_sponge"),
     "apply_inlet_profile_2d": ("inlet_profiles", "apply_inlet_profile_2d"),
     "apply_inlet_profile_3d": ("inlet_profiles", "apply_inlet_profile_3d"),
     "apply_jonswap_inlet_3d": ("wave_bc", "apply_jonswap_inlet_3d"),
     "apply_rough_wall_bounce_back": ("roughness", "apply_rough_wall_bounce_back"),
-    "apply_simple_channel_boundaries": ("boundaries", "apply_simple_channel_boundaries"),
-    "apply_simple_channel_boundaries_3d": ("boundaries3d", "apply_simple_channel_boundaries_3d"),
+    "apply_simple_channel_boundaries": ("boundary.boundaries", "apply_simple_channel_boundaries"),
+    "apply_simple_channel_boundaries_3d": ("boundary.boundaries3d", "apply_simple_channel_boundaries_3d"),
     "apply_spalding_exchange_wall_model": (
         "spalding_wall_model",
         "apply_spalding_exchange_wall_model",
@@ -312,19 +312,19 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
         "suboff_static_amr",
         "apply_suboff_appendage_halfway_links",
     ),
-    "apply_target_sponge_2d": ("sponge_bc", "apply_target_sponge_2d"),
-    "apply_target_sponge_3d": ("sponge_bc", "apply_target_sponge_3d"),
-    "apply_viscous_sponge_2d": ("sponge_bc", "apply_viscous_sponge_2d"),
-    "apply_viscous_sponge_3d": ("sponge_bc", "apply_viscous_sponge_3d"),
+    "apply_target_sponge_2d": ("boundary.sponge_bc", "apply_target_sponge_2d"),
+    "apply_target_sponge_3d": ("boundary.sponge_bc", "apply_target_sponge_3d"),
+    "apply_viscous_sponge_2d": ("boundary.sponge_bc", "apply_viscous_sponge_2d"),
+    "apply_viscous_sponge_3d": ("boundary.sponge_bc", "apply_viscous_sponge_3d"),
     "apply_wall_wettability_sc": ("porous_media", "apply_wall_wettability_sc"),
-    "apply_water_entry_boundaries_3d": ("boundaries3d", "apply_water_entry_boundaries_3d"),
+    "apply_water_entry_boundaries_3d": ("boundary.boundaries3d", "apply_water_entry_boundaries_3d"),
     "apply_wave_inlet_3d": ("wave_bc", "apply_wave_inlet_3d"),
-    "apply_zou_he_channel_boundaries": ("boundaries", "apply_zou_he_channel_boundaries"),
+    "apply_zou_he_channel_boundaries": ("boundary.boundaries", "apply_zou_he_channel_boundaries"),
     "apply_zou_he_channel_boundaries_27": (
-        "boundaries_d3q27",
+        "boundary.boundaries_d3q27",
         "apply_zou_he_channel_boundaries_27",
     ),
-    "apply_zou_he_channel_boundaries_3d": ("boundaries3d", "apply_zou_he_channel_boundaries_3d"),
+    "apply_zou_he_channel_boundaries_3d": ("boundary.boundaries3d", "apply_zou_he_channel_boundaries_3d"),
     "area_average_2d": ("surface_integrals", "area_average_2d"),
     "area_average_3d": ("surface_integrals", "area_average_3d"),
     "assess_composition": ("cross_module_composition_matrix", "assess_composition"),
@@ -364,7 +364,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
         "assess_wall_exchange_interface_clearance",
     ),
     "assess_wall_refinement_combination": (
-        "wall_refinement_combination_gate",
+        "boundary.wall_refinement_combination_gate",
         "assess_wall_refinement_combination",
     ),
     "assign_points_to_gpus": ("scan_runner", "assign_points_to_gpus"),
@@ -372,11 +372,11 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "auto_decompose": ("multi_gpu", "auto_decompose"),
     "bfl_surface_area_weights": ("surface_area_weights", "bfl_surface_area_weights"),
     "blasius_profile": ("inlet_profiles", "blasius_profile"),
-    "bounce_back_cells": ("boundaries", "bounce_back_cells"),
-    "bounce_back_cells_27": ("boundaries_d3q27", "bounce_back_cells_27"),
-    "bounce_back_cells_3d": ("boundaries3d", "bounce_back_cells_3d"),
-    "boundary_capability_matrix": ("boundary_capability_contract", "boundary_capability_matrix"),
-    "boundary_condition_registry": ("boundary_registry", "boundary_condition_registry"),
+    "bounce_back_cells": ("boundary.boundaries", "bounce_back_cells"),
+    "bounce_back_cells_27": ("boundary.boundaries_d3q27", "bounce_back_cells_27"),
+    "bounce_back_cells_3d": ("boundary.boundaries3d", "bounce_back_cells_3d"),
+    "boundary_capability_matrix": ("boundary.boundary_capability_contract", "boundary_capability_matrix"),
+    "boundary_condition_registry": ("boundary.boundary_registry", "boundary_condition_registry"),
     "boundary_layer_indicator_2d": ("adaptive_refinement", "boundary_layer_indicator_2d"),
     "boundary_layer_indicator_3d": ("adaptive_refinement", "boundary_layer_indicator_3d"),
     "bounded_drag": ("autograd_calib", "bounded_drag"),
@@ -385,28 +385,28 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "box_control_volume": ("control_volume_force", "box_control_volume"),
     "bubble_centroid_velocity_3d": ("free_surface_common", "bubble_centroid_velocity_3d"),
     "build_airfoil_mask": ("airfoil_benchmark", "build_airfoil_mask"),
-    "build_anisotropic_sponge_sigma_3d": ("sponge_layer", "build_anisotropic_sponge_sigma_3d"),
+    "build_anisotropic_sponge_sigma_3d": ("boundary.sponge_layer", "build_anisotropic_sponge_sigma_3d"),
     "build_band_topology": ("dg_band", "build_band_topology"),
-    "build_bc_mask": ("boundary_registry", "build_bc_mask"),
+    "build_bc_mask": ("boundary.boundary_registry", "build_bc_mask"),
     "build_dg_hull_band_mask": ("dg_lbm", "build_dg_hull_band_mask"),
     "build_dg_shell_mask": ("dg_lbm", "build_dg_shell_mask"),
     "build_ellipsoid_mask": ("ellipsoid_benchmark", "build_ellipsoid_mask"),
     "build_fine_suboff_mask": ("suboff_static_amr", "build_fine_suboff_mask"),
     "build_flow_token_batch": ("ai", "build_flow_token_batch"),
-    "build_mean_equilibrium_2d": ("sponge_bc", "build_mean_equilibrium_2d"),
-    "build_mean_equilibrium_3d": ("sponge_bc", "build_mean_equilibrium_3d"),
+    "build_mean_equilibrium_2d": ("boundary.sponge_bc", "build_mean_equilibrium_2d"),
+    "build_mean_equilibrium_3d": ("boundary.sponge_bc", "build_mean_equilibrium_3d"),
     "build_nested_fine_suboff_mask": ("suboff_static_amr", "build_nested_fine_suboff_mask"),
     "build_propeller_mask": ("propeller_cad", "build_propeller_mask"),
     "build_ship_hull_mask": ("ship_cad", "build_hull_mask"),
-    "build_sponge_sigma_3d": ("sponge_layer", "build_sponge_sigma_3d"),
+    "build_sponge_sigma_3d": ("boundary.sponge_layer", "build_sponge_sigma_3d"),
     "build_suboff_mask": ("suboff_cad", "build_suboff_mask"),
     "calibrate": ("autograd_calib", "calibrate"),
     "case_checkpoint_path": ("checkpoint", "case_checkpoint_path"),
     "cd_from_force": ("autograd_calib", "cd_from_force"),
     "central_difference": ("powerlaw", "central_difference"),
     "central_gradient_3d": ("phasefield", "central_gradient_3d"),
-    "check_bc_consistency": ("boundary_registry", "check_bc_consistency"),
-    "check_bc_overlaps": ("boundary_registry", "check_bc_overlaps"),
+    "check_bc_consistency": ("boundary.boundary_registry", "check_bc_consistency"),
+    "check_bc_overlaps": ("boundary.boundary_registry", "check_bc_overlaps"),
     "cht_solid_diffusion_step": ("conjugate_ht", "cht_solid_diffusion_step"),
     "collide_advanced_3d": ("advanced_collision_contract", "collide_advanced_3d"),
     "collide_ai_les_bgk": ("ai", "collide_ai_les_bgk"),
@@ -486,7 +486,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "compute_fwh_result": ("acoustics", "compute_fwh_result"),
     "compute_kinetic_energy": ("postprocess", "compute_kinetic_energy"),
     "compute_lambda2_criterion": ("postprocess", "compute_lambda2_criterion"),
-    "compute_obstacle_forces": ("boundaries", "compute_obstacle_forces"),
+    "compute_obstacle_forces": ("boundary.boundaries", "compute_obstacle_forces"),
     "compute_obstacle_forces_27": ("obstacles", "compute_obstacle_forces_27"),
     "compute_obstacle_forces_3d": ("obstacles", "compute_obstacle_forces_3d"),
     "compute_obstacle_moments_3d": ("obstacles", "compute_obstacle_moments_3d"),
@@ -516,9 +516,9 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "correct_mass3d": ("solver3d", "correct_mass3d"),
     "create_parametric_hull_mesh": ("ship_cad3d", "create_parametric_hull_mesh"),
     "cs_power": ("autograd_calib", "cs_power"),
-    "cylinder_mask": ("boundaries", "cylinder_mask"),
+    "cylinder_mask": ("boundary.boundaries", "cylinder_mask"),
     "damp_interface_nonequilibrium": ("amr_interface_filter", "damp_interface_nonequilibrium"),
-    "derive_missing_mask": ("boundary_registry", "derive_missing_mask"),
+    "derive_missing_mask": ("boundary.boundary_registry", "derive_missing_mask"),
     "dg_advect": ("dg_advection", "dg_advect"),
     "dg_advect_band": ("dg_band", "dg_advect_band"),
     "dg_compute_velocity_gradients": ("dg_lbm", "dg_compute_velocity_gradients"),
@@ -559,8 +559,8 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "extract_velocity_profile": ("postprocess", "extract_velocity_profile"),
     "extract_wake_profile": ("postprocess", "extract_wake_profile"),
     "faltinsen_natural_frequency": ("sloshing_tank", "faltinsen_natural_frequency"),
-    "far_field_bc_27": ("boundaries_d3q27", "far_field_bc_27"),
-    "far_field_bc_3d": ("boundaries3d", "far_field_bc_3d"),
+    "far_field_bc_27": ("boundary.boundaries_d3q27", "far_field_bc_27"),
+    "far_field_bc_3d": ("boundary.boundaries3d", "far_field_bc_3d"),
     "flow_step_image_path": ("utils", "flow_step_image_path"),
     "fluid_momentum": ("control_volume_force", "fluid_momentum"),
     "force_coefficients": ("surface_integrals", "force_coefficients"),
@@ -669,14 +669,14 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "macroscopic_thermal_3d": ("thermal3d", "macroscopic_thermal_3d"),
     "make_bfs_solid_mask": ("backward_facing_step", "make_bfs_solid_mask"),
     "make_cavity_wall_mask": ("lid_driven_cavity", "make_cavity_wall_mask"),
-    "make_channel_wall_mask": ("boundaries", "make_channel_wall_mask"),
-    "make_channel_wall_mask_27": ("boundaries_d3q27", "make_channel_wall_mask_27"),
-    "make_channel_wall_mask_3d": ("boundaries3d", "make_channel_wall_mask_3d"),
+    "make_channel_wall_mask": ("boundary.boundaries", "make_channel_wall_mask"),
+    "make_channel_wall_mask_27": ("boundary.boundaries_d3q27", "make_channel_wall_mask_27"),
+    "make_channel_wall_mask_3d": ("boundary.boundaries3d", "make_channel_wall_mask_3d"),
     "make_pipeline_wall_mask": ("pipeline_flow", "make_pipeline_wall_mask"),
     "make_random_cylinder_medium": ("porous_media", "make_random_cylinder_medium"),
     "make_random_sphere_medium": ("porous_media3d", "make_random_sphere_medium"),
     "make_sloshing_wall_mask": ("sloshing_tank", "make_sloshing_wall_mask"),
-    "make_tank_wall_mask_3d": ("boundaries3d", "make_tank_wall_mask_3d"),
+    "make_tank_wall_mask_3d": ("boundary.boundaries3d", "make_tank_wall_mask_3d"),
     "make_tube_array_medium": ("porous_media", "make_tube_array_medium"),
     "make_tube_array_medium_3d": ("porous_media3d", "make_tube_array_medium_3d"),
     "marginalize_d3q19_to_d2q9": ("planar_d3q19", "marginalize_d3q19_to_d2q9"),
@@ -751,7 +751,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
         "require_acoustics_capability",
     ),
     "require_boundary_condition_capability": (
-        "boundary_capability_contract",
+        "boundary.boundary_capability_contract",
         "require_boundary_condition_capability",
     ),
     "require_local_refinement_capability": (
@@ -762,7 +762,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
         "turbulence_capability_contract",
         "require_turbulence_capability",
     ),
-    "require_wall_function_run": ("wall_function_admission", "require_wall_function_run"),
+    "require_wall_function_run": ("boundary.wall_function_admission", "require_wall_function_run"),
     "resolve_device": ("utils", "resolve_device"),
     "resolve_zoo_root": ("zoo", "resolve_zoo_root"),
     "rollout": ("autograd_path", "rollout"),
@@ -851,14 +851,14 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "set_backend": ("backends", "set_backend"),
     "ship_lbm_parameters": ("ship_cad", "ship_lbm_parameters"),
     "ship_resistance_estimate": ("ship_cad", "ship_resistance_estimate"),
-    "smoothstep5": ("sponge_layer", "smoothstep5"),
+    "smoothstep5": ("boundary.sponge_layer", "smoothstep5"),
     "solve_gamma_entropy": ("entropic_kbc", "solve_gamma_entropy"),
     "solve_spalding_friction_velocity": ("spalding_wall_model", "solve_spalding_friction_velocity"),
     "spalding_u_plus_from_y_plus": ("spalding_wall_model", "spalding_u_plus_from_y_plus"),
     "spalding_y_plus": ("spalding_wall_model", "spalding_y_plus"),
-    "sphere_mask": ("boundaries3d", "sphere_mask"),
+    "sphere_mask": ("boundary.boundaries3d", "sphere_mask"),
     "split_points": ("scan_runner", "split_points"),
-    "sponge_profile": ("sponge_bc", "sponge_profile"),
+    "sponge_profile": ("boundary.sponge_bc", "sponge_profile"),
     "strain_rate_magnitude_2d": ("non_newtonian", "strain_rate_magnitude_2d"),
     "strain_rate_shear_rate_2d": ("powerlaw", "strain_rate_shear_rate_2d"),
     "strain_rate_tensor_2d": ("ai", "strain_rate_tensor_2d"),
@@ -878,7 +878,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "suboff_hull_mask": ("suboff_cad", "suboff_hull_mask"),
     "suboff_radius_profile": ("suboff_cad", "suboff_radius_profile"),
     "suboff_statistics": ("suboff_cad", "suboff_statistics"),
-    "summarize_wall_exchange_yplus": ("wall_exchange_yplus", "summarize_wall_exchange_yplus"),
+    "summarize_wall_exchange_yplus": ("boundary.wall_exchange_yplus", "summarize_wall_exchange_yplus"),
     "surface_force_2d": ("surface_integrals", "surface_force_2d"),
     "surface_force_3d": ("surface_integrals", "surface_force_3d"),
     "surface_moment_2d": ("surface_integrals", "surface_moment_2d"),
@@ -909,8 +909,8 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "vorticity_indicator_2d": ("adaptive_refinement", "vorticity_indicator_2d"),
     "vorticity_indicator_3d": ("adaptive_refinement", "vorticity_indicator_3d"),
     "voxelize_stl_3d": ("preprocess_geo", "voxelize_stl_3d"),
-    "wall_function_3d": ("wall_model", "wall_function_3d"),
-    "wall_function_d3q27": ("wall_model", "wall_function_d3q27"),
+    "wall_function_3d": ("boundary.wall_model", "wall_function_3d"),
+    "wall_function_d3q27": ("boundary.wall_model", "wall_function_d3q27"),
     "wigley_hull_mask": ("obstacles", "wigley_hull_mask"),
     "windowed_cd": ("autograd_calib", "windowed_cd"),
     "womersley_profile": ("inlet_profiles", "womersley_profile"),
@@ -922,16 +922,16 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "zoo_load": ("zoo", "load"),
     "zoo_register": ("zoo", "register"),
     "zoo_validate": ("zoo", "validate"),
-    "zou_he_inlet_velocity": ("boundaries", "zou_he_inlet_velocity"),
-    "zou_he_inlet_velocity_27": ("boundaries_d3q27", "zou_he_inlet_velocity_27"),
-    "zou_he_inlet_velocity_3d": ("boundaries3d", "zou_he_inlet_velocity_3d"),
+    "zou_he_inlet_velocity": ("boundary.boundaries", "zou_he_inlet_velocity"),
+    "zou_he_inlet_velocity_27": ("boundary.boundaries_d3q27", "zou_he_inlet_velocity_27"),
+    "zou_he_inlet_velocity_3d": ("boundary.boundaries3d", "zou_he_inlet_velocity_3d"),
     "zou_he_inlet_velocity_profile_3d": ("wave_bc", "zou_he_inlet_velocity_profile_3d"),
-    "zou_he_inlet_velocity_z": ("boundaries3d", "zou_he_inlet_velocity_z"),
+    "zou_he_inlet_velocity_z": ("boundary.boundaries3d", "zou_he_inlet_velocity_z"),
     "zou_he_moving_lid": ("lid_driven_cavity", "zou_he_moving_lid"),
-    "zou_he_outlet_pressure": ("boundaries", "zou_he_outlet_pressure"),
-    "zou_he_outlet_pressure_27": ("boundaries_d3q27", "zou_he_outlet_pressure_27"),
-    "zou_he_outlet_pressure_3d": ("boundaries3d", "zou_he_outlet_pressure_3d"),
-    "zou_he_outlet_pressure_z": ("boundaries3d", "zou_he_outlet_pressure_z"),
+    "zou_he_outlet_pressure": ("boundary.boundaries", "zou_he_outlet_pressure"),
+    "zou_he_outlet_pressure_27": ("boundary.boundaries_d3q27", "zou_he_outlet_pressure_27"),
+    "zou_he_outlet_pressure_3d": ("boundary.boundaries3d", "zou_he_outlet_pressure_3d"),
+    "zou_he_outlet_pressure_z": ("boundary.boundaries3d", "zou_he_outlet_pressure_z"),
 }
 
 # Submodules the eager ``from .x import y`` statements bound on the package as
@@ -953,11 +953,11 @@ _EAGER_BOUND_SUBMODULES: frozenset[str] = frozenset(
         "autograd_path",
         "backends",
         "backward_facing_step",
-        "boundaries",
-        "boundaries3d",
-        "boundaries_d3q27",
-        "boundary_capability_contract",
-        "boundary_registry",
+        "boundary.boundaries",
+        "boundary.boundaries3d",
+        "boundary.boundaries_d3q27",
+        "boundary.boundary_capability_contract",
+        "boundary.boundary_registry",
         "cascaded_collision",
         "cases",
         "cavitation",
@@ -1045,8 +1045,8 @@ _EAGER_BOUND_SUBMODULES: frozenset[str] = frozenset(
         "sphere_domain_sensitivity",
         "sphere_flow",
         "sphere_water_entry",
-        "sponge_bc",
-        "sponge_layer",
+        "boundary.sponge_bc",
+        "boundary.sponge_layer",
         "static_block_amr",
         "streamlines",
         "suboff_cad",
@@ -1065,11 +1065,11 @@ _EAGER_BOUND_SUBMODULES: frozenset[str] = frozenset(
         "unit_converter",
         "utils",
         "vtk_export",
-        "wall_exchange_yplus",
-        "wall_function_admission",
-        "wall_function_contract",
-        "wall_model",
-        "wall_refinement_combination_gate",
+        "boundary.wall_exchange_yplus",
+        "boundary.wall_function_admission",
+        "boundary.wall_function_contract",
+        "boundary.wall_model",
+        "boundary.wall_refinement_combination_gate",
         "wave_bc",
         "yplus_guide",
         "zoo",
@@ -1089,6 +1089,12 @@ def _resolve_submodule(name: str) -> Any:
     something imported them transitively (``tensorlbm.lattice``,
     ``tensorlbm.core``, ...): binding them by hand would rot, so probe instead.
     """
+    # Compatibility shim for modules relocated into the boundary package.
+    try:
+        if _importlib_util.find_spec(f"{__name__}.boundary.{name}") is not None:
+            return _importlib.import_module(f"{__name__}.boundary.{name}")
+    except (ImportError, AttributeError, ValueError):
+        pass
     if name in _EAGER_BOUND_SUBMODULES:
         return _importlib.import_module(f"{__name__}.{name}")
     try:
@@ -1271,7 +1277,7 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         measure_reattachment_length,
         run_backward_facing_step,
     )
-    from .boundaries import (
+    from .boundary.boundaries import (
         apply_simple_channel_boundaries,
         apply_zou_he_channel_boundaries,
         bounce_back_cells,
@@ -1281,7 +1287,7 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         zou_he_inlet_velocity,
         zou_he_outlet_pressure,
     )
-    from .boundaries3d import (
+    from .boundary.boundaries3d import (
         apply_simple_channel_boundaries_3d,
         apply_water_entry_boundaries_3d,
         apply_zou_he_channel_boundaries_3d,
@@ -1295,7 +1301,7 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         zou_he_outlet_pressure_3d,
         zou_he_outlet_pressure_z,
     )
-    from .boundaries_d3q27 import (
+    from .boundary.boundaries_d3q27 import (
         apply_zou_he_channel_boundaries_27,
         bounce_back_cells_27,
         far_field_bc_27,
@@ -1303,13 +1309,13 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         zou_he_inlet_velocity_27,
         zou_he_outlet_pressure_27,
     )
-    from .boundary_capability_contract import (
+    from .boundary.boundary_capability_contract import (
         BoundaryConditionCapability,
         BoundaryConditionWithheldError,
         boundary_capability_matrix,
         require_boundary_condition_capability,
     )
-    from .boundary_registry import (
+    from .boundary.boundary_registry import (
         BC_ID_NONE,
         BCKind,
         BCPhase,
@@ -1892,7 +1898,7 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
     )
     from .sphere_flow import SphereFlowConfig, run_sphere_flow
     from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
-    from .sponge_bc import (
+    from .boundary.sponge_bc import (
         apply_target_sponge_2d,
         apply_target_sponge_3d,
         apply_viscous_sponge_2d,
@@ -1901,7 +1907,7 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         build_mean_equilibrium_3d,
         sponge_profile,
     )
-    from .sponge_layer import (
+    from .boundary.sponge_layer import (
         apply_equilibrium_difference_sponge,
         build_anisotropic_sponge_sigma_3d,
         build_sponge_sigma_3d,
@@ -2051,23 +2057,23 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         export_vtk_2d,
         export_vtk_3d,
     )
-    from .wall_exchange_yplus import (
+    from .boundary.wall_exchange_yplus import (
         WallExchangeYPlusAggregate,
         WallExchangeYPlusSummary,
         aggregate_wall_exchange_yplus_summaries,
         summarize_wall_exchange_yplus,
     )
-    from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
-    from .wall_function_contract import (
+    from .boundary.wall_function_admission import WallFunctionRunRequest, require_wall_function_run
+    from .boundary.wall_function_contract import (
         ValidationLevel,
         WallFunctionCapability,
         WallFunctionCompatibilityError,
     )
-    from .wall_model import wall_function_3d, wall_function_d3q27
-    from .wall_refinement_combination_gate import (
+    from .boundary.wall_model import wall_function_3d, wall_function_d3q27
+    from .boundary.wall_refinement_combination_gate import (
         CollisionFamily as WallRefinementCollisionFamily,
     )
-    from .wall_refinement_combination_gate import (
+    from .boundary.wall_refinement_combination_gate import (
         CombinationEvidence,
         CombinationGateDecision,
         GeometryKind,
@@ -2078,10 +2084,10 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         WallTreatment,
         assess_wall_refinement_combination,
     )
-    from .wall_refinement_combination_gate import (
+    from .boundary.wall_refinement_combination_gate import (
         GateStatus as WallRefinementGateStatus,
     )
-    from .wall_refinement_combination_gate import (
+    from .boundary.wall_refinement_combination_gate import (
         Lattice as WallRefinementLattice,
     )
     from .wave_bc import (
