@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import importlib
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -22,7 +23,8 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 from . import job_manager  # noqa: E402
 from .middleware import install_production_middleware  # noqa: E402
 
-# Import routers; skip any that are incomplete (under active development)
+# Core routers must load successfully. Optional feature routers may be absent.
+_REQUIRED_ROUTERS = frozenset({"jobs", "postprocess", "solver", "orchestration"})
 _router_imports: dict[str, object] = {}
 for _name, _mod in [
     ("agent", "agent"),
@@ -56,8 +58,10 @@ for _name, _mod in [
     ("xflow_streaming", "xflow_streaming"),
 ]:
     try:
-        _router_imports[_name] = __import__(f"backend.routers.{_mod}", fromlist=[_mod])
+        _router_imports[_name] = importlib.import_module(f".routers.{_mod}", package=__package__)
     except Exception as e:
+        if _name in _REQUIRED_ROUTERS:
+            raise
         import logging
 
         logging.warning(f"Router {_mod} not available, skipping: {e}")

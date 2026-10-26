@@ -23,7 +23,7 @@ Programmatic use (from job callbacks)
 --------------------------------------
 ::
 
-    from app.backend.routers.notifications import notify_job_event
+    from backend.routers.notifications import notify_job_event
 
     await notify_job_event(job, event="completed")
 """
