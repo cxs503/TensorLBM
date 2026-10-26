@@ -28,8 +28,8 @@ from dataclasses import dataclass
 
 import torch
 
-from .d3q19 import C
-from .drag_pressure import SurfaceMesh, get_near_wall_3d
+from tensorlbm.d3q19 import C
+from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d
 
 __all__ = [
     "LevelWallChain",
@@ -91,7 +91,7 @@ def suboff_surface_mesh(
     """
     if mesh_source not in {"suboff", "gradient", "hybrid"}:
         raise ValueError(f"unsupported mesh_source: {mesh_source}")
-    from .suboff_cad import SuboffConfig, suboff_radius_profile
+    from tensorlbm.suboff_cad import SuboffConfig, suboff_radius_profile
 
     max_radius = SuboffConfig().r_over_l * length
     if mesh_source == "gradient":

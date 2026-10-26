@@ -50,7 +50,7 @@ _CY2D = torch.tensor([0, 0, 1, 0, -1, 1, 1, -1, -1], dtype=torch.float32)
 
 def _feq_2d(rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     """Compute D2Q9 equilibrium distributions."""
-    from .d2q9 import equilibrium  # noqa: PLC0415
+    from tensorlbm.d2q9 import equilibrium  # noqa: PLC0415
 
     return equilibrium(rho, ux, uy)
 
@@ -182,13 +182,13 @@ def wss_from_fneq_3d(
     Returns:
         WSS magnitude field, shape ``(nz, ny, nx)``.
     """
-    from .d3q19 import C as C3D  # noqa: PLC0415
-    from .d3q19 import equilibrium3d
+    from tensorlbm.d3q19 import C as C3D  # noqa: PLC0415
+    from tensorlbm.d3q19 import equilibrium3d
 
     device = f.device
     c = C3D.to(device).float()  # (19, 3)
 
-    from .d3q19 import W as _W3D  # noqa: PLC0415,F401
+    from tensorlbm.d3q19 import W as _W3D  # noqa: PLC0415,F401
 
     _W3D.to(device)  # kept for device validation only
     f_eq = equilibrium3d(rho, ux, uy, uz)
