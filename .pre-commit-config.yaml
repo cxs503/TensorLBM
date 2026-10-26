@@ -1,0 +1,41 @@
+# Pre-commit hooks for TensorLBM.
+# Install:  pip install pre-commit && pre-commit install
+# Run all:  pre-commit run --all-files
+#
+# These mirror the CI gates (ruff, ruff-format, repository-layout policy) so
+# contributors catch the same failures locally before pushing.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^(src|tests|examples|benchmarks|app|tools)/
+      - id: ruff-format
+        files: ^(src|tests|examples|benchmarks|app|tools)/
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+        exclude: \.md$
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=5120]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+
+  # Local gate: enforce the repository-layout policy (root-file / generated /
+  # model / large-file rules). Fail-closed — do not regenerate exceptions to
+  # hide new findings; request a policy review instead.
+  - repo: local
+    hooks:
+      - id: repository-layout
+        name: repository-layout
+        entry: python tools/check_repository_layout.py
+        language: system
+        pass_filenames: false
+        always_run: true
