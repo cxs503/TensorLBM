@@ -145,6 +145,15 @@ def scan(roots: list[tuple[Path, str]]) -> dict[str, Any]:
     for module in sorted(files):
         if module not in indices:
             visit(module)
+    # An internal-looking target missing from the supplied roots must not
+    # silently disappear from architecture metrics. Namespace prefixes in
+    # `known` are valid; member imports are only recorded when discovered.
+    prefixes = tuple(prefix for _, prefix in roots)
+    unresolved = [
+        item for item in imports
+        if item["target"] and item["target"] not in known
+        and any(item["target"] == p or item["target"].startswith(p + ".") for p in prefixes)
+    ]
     cross_layer = []
     for source, target in sorted(edges):
         sl = next((p for _, p in roots if source == p or source.startswith(p + ".")), "other")
@@ -158,6 +167,7 @@ def scan(roots: list[tuple[Path, str]]) -> dict[str, Any]:
             "imports": sorted(imports, key=lambda x: (x["source"], x["line"], x["target"] or "")),
             "dynamic_imports": sorted(dynamic, key=lambda x: (x["source"], x["line"])),
             "cycles": sorted(cycles), "cross_layer_edges": cross_layer, "parse_errors": errors,
+            "unresolved_internal_imports": unresolved,
             "notes": ["Only statically resolved imports between discovered modules become graph edges.",
                       "Dynamic imports are uncertainty signals, not proof of runtime success.",
                       "Namespace package prefixes are treated as internal; third-party resolution is not attempted.",
@@ -170,7 +180,8 @@ def markdown_report(data: dict[str, Any]) -> str:
              f"- Dynamic import sites: **{len(data['dynamic_imports'])}**",
              f"- Import cycles: **{len(data['cycles'])}**",
              f"- Cross-layer edges: **{len(data['cross_layer_edges'])}**",
-             f"- Parse/read errors: **{len(data['parse_errors'])}**", "",
+             f"- Parse/read errors: **{len(data['parse_errors'])}**",
+             f"- Unresolved internal imports: **{len(data['unresolved_internal_imports'])}**", "",
              "> Static evidence only. Dynamic imports and runtime behavior need separate validation.", "",
              "## Import cycles", ""]
     lines.extend(["- " + " <-> ".join(c) for c in data["cycles"]] or ["- None detected."])
@@ -183,6 +194,9 @@ def markdown_report(data: dict[str, Any]) -> str:
     if data["parse_errors"]:
         lines += ["", "## Parse/read errors", ""]
         lines.extend([f"- {e['path']}: {e['error']}" for e in data["parse_errors"]])
+    lines += ["", "## Unresolved internal imports", ""]
+    lines.extend([f"- {i['source']}:{i['line']} -> {i['target']} ({i['kind']})"
+                  for i in data["unresolved_internal_imports"]] or ["- None detected."])
     lines += ["", "## Scope", ""]
     lines.extend([f"- {x['path']} -> {x['module_prefix']}" for x in data["scope"]])
     return "\n".join(lines) + "\n"
@@ -193,6 +207,8 @@ def main() -> int:
     parser.add_argument("--root", action="append", default=[], metavar="PATH=PREFIX")
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--markdown-out", type=Path)
+    parser.add_argument("--fail-on-unresolved", action="store_true",
+                        help="Fail for internal-looking imports absent from the supplied roots")
     args = parser.parse_args()
     repo = args.repo.resolve()
     specs = args.root or ["src/tensorlbm=tensorlbm", "app/backend=app.backend",
@@ -209,7 +225,7 @@ def main() -> int:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(summary, encoding="utf-8")
     print(summary, end="")
-    return 1 if data["parse_errors"] else 0
+    return 1 if data["parse_errors"] or (args.fail_on_unresolved and data["unresolved_internal_imports"]) else 0
 
 if __name__ == "__main__":
     raise SystemExit(main())

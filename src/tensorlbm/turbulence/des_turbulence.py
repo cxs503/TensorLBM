@@ -179,8 +179,9 @@ def des_lbm_step(
     from tensorlbm.boundaries3d import far_field_bc_3d
     from tensorlbm.d3q19 import macroscopic3d
     from tensorlbm.solver3d import stream3d
-    from .turbulence import collide_smagorinsky_mrt3d
     from tensorlbm.wall_model import wall_function_3d
+
+    from .turbulence import collide_smagorinsky_mrt3d
 
     rho, ux, uy, uz = macroscopic3d(f)
     nu_t, separated = des_eddy_viscosity(
