@@ -1,2 +1,0 @@
-Success: no issues found in 4 source files
-exit=0
