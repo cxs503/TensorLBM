@@ -1,2 +1,0 @@
-All checks passed!
-ruff_check_exit=0
