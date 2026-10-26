@@ -136,6 +136,14 @@ The regression reports listed under *Benchmarks & Validation* also live in
 
 ---
 
+## Repository maintenance
+
+- [Layout and artifact policy](architecture/repository_layout.md) — where files belong,
+  historical exceptions, automated checks and safe migration batches.
+- [Architecture/refactoring plan](architecture/REPOSITORY_REFACTORING_PLAN.md) —
+  dependency boundaries and phased acceptance.
+- [Migration candidates](architecture/migration_manifest.csv) — proposed moves, not completed work.
+
 ## See Also
 
 - **[Root README](../README.md)** — project overview, installation, quick-start

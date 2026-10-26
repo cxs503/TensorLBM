@@ -15,7 +15,7 @@
 > D2Q9 · D3Q19 · D3Q27 · BGK · MRT · TRT · RLBM · Cumulant · LES · RANS · AMR · DG-LBM · AI turbulence closure · Multi-GPU
 
 ```bash
-# 30-second quick-start: lid-driven cavity at Re=400
+# Quick-start: cylinder flow at Re=200
 pip install -e .
 PYTHONPATH=src python examples/cylinder_flow.py --nx 128 --ny 48 --re 200 --n-steps 500
 ```
@@ -65,7 +65,7 @@ AI turbulence closures and flow-model pipelines are useful foundations for AI-as
 
 ## What TensorLBM provides
 
-- A small, explicit public API in `src/tensorlbm/__init__.py`
+- A curated stable API in `tensorlbm.api`, with legacy lazy root exports in `tensorlbm`
 - **D2Q9**, **D3Q19**, and **D3Q27** lattice primitives (`equilibrium`, `macroscopic`, lattice constants)
 - **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D
 - **Adaptive Mesh Refinement (AMR)**: dynamic patch management for D2Q9 and D3Q19, up to 5 refinement levels with Filippova–Hänel interface exchange, and multiple refinement indicators (non-equilibrium, vorticity, gradient, boundary-layer)
@@ -183,7 +183,7 @@ writes a GIF to:
 outputs/lid_driven_cavity/demo_gif/lid_driven_cavity_demo.gif
 ```
 
-![Lid-driven cavity demo](outputs/lid_driven_cavity/demo_gif/lid_driven_cavity_demo.gif)
+The GIF is generated locally by the command above; it is not included in a clean checkout.
 
 
 ## Run the ship CAD-to-flow workflow

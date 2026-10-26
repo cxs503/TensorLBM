@@ -108,6 +108,20 @@ jobs:
       - name: Run fast platform tests
         run: PYTHONPATH=src pytest -q app/tests
 
+  # File placement is a separate, dependency-free gate. Historical files are
+  # grandfathered by exact path; new root clutter and raw outputs are rejected.
+  repository-layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test repository layout checker
+        run: python tests/test_repository_layout.py -v
+      - name: Check repository layout
+        run: python tools/check_repository_layout.py
+
   # Structural audit has an independent signal: it must run even when
   # the repository-wide Ruff gate is already red for unrelated legacy findings.
   architecture-audit:
