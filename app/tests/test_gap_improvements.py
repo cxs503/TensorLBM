@@ -389,15 +389,6 @@ class TestTurbulenceStats:
 # API-level tests (FastAPI TestClient)
 # ---------------------------------------------------------------------------
 
-@pytest.fixture(scope="module")
-def client():
-    from fastapi.testclient import TestClient
-
-    from app.backend.main import app
-
-    return TestClient(app)
-
-
 class TestDFSEMAPI:
     def test_dfsem_preview_default(self, client) -> None:
         r = client.post("/api/postprocess/dfsem-preview", json={})
@@ -488,11 +479,9 @@ class TestTurbulenceStatsAPI:
         r = client.get("/api/postprocess/turbulence-stats/nonexistent_job_id")
         assert r.status_code == 404
 
-    def test_turbulence_stats_not_completed(self, client) -> None:
+    def test_turbulence_stats_not_completed(self, client, job_manager) -> None:
         """Job not yet completed should return 409."""
-        import json as json_mod
-
-        from app.backend import job_manager as jm
+        jm = job_manager
 
         # Create a synthetic running job
         import threading
@@ -516,9 +505,9 @@ class TestLiveMetricsAPI:
         r = client.get("/api/jobs/nonexistent_id/live-metrics")
         assert r.status_code == 404
 
-    def test_live_metrics_empty_completed_job(self, client) -> None:
+    def test_live_metrics_empty_completed_job(self, client, job_manager) -> None:
         """A completed job with no diagnostics should return empty list."""
-        from app.backend import job_manager as jm
+        jm = job_manager
 
         job_id = jm.submit("empty-job", "test", {}, lambda job: {})
         import time
@@ -536,9 +525,9 @@ class TestLiveMetricsAPI:
         assert "diagnostics" in data
         assert "status" in data
 
-    def test_live_metrics_with_diagnostics(self, client) -> None:
+    def test_live_metrics_with_diagnostics(self, client, job_manager) -> None:
         """A job that pushes diagnostics should expose them via the endpoint."""
-        from app.backend import job_manager as jm
+        jm = job_manager
 
         def _job_with_diags(job):
             for s in range(1, 4):
@@ -559,9 +548,9 @@ class TestLiveMetricsAPI:
         assert len(data["diagnostics"]) == 3
         assert data["diagnostics"][0]["step"] == 1
 
-    def test_live_metrics_since_step_filter(self, client) -> None:
+    def test_live_metrics_since_step_filter(self, client, job_manager) -> None:
         """since_step parameter should filter out older records."""
-        from app.backend import job_manager as jm
+        jm = job_manager
 
         def _push_many(job):
             for s in range(1, 11):

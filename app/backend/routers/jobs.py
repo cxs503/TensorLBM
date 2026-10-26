@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from .. import job_manager
+from ..file_paths import safe_job_path
 from ..services import hpc_scheduler
 
 if TYPE_CHECKING:
@@ -350,10 +351,7 @@ async def live_metrics(
 
 
 def _safe_job_path(root: Path, rel_path: str) -> Path | None:
-    target = (root / rel_path).resolve()
-    if not str(target).startswith(str(root.resolve())):
-        return None
-    return target
+    return safe_job_path(root, rel_path)
 
 
 # ---------------------------------------------------------------------------
