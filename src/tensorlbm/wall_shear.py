@@ -183,7 +183,7 @@ def wss_from_fneq_3d(
         WSS magnitude field, shape ``(nz, ny, nx)``.
     """
     from .d3q19 import C as C3D  # noqa: PLC0415
-    from .d3q19 import equilibrium as eq3d
+    from .d3q19 import equilibrium3d
 
     device = f.device
     c = C3D.to(device).float()  # (19, 3)
@@ -191,7 +191,7 @@ def wss_from_fneq_3d(
     from .d3q19 import W as _W3D  # noqa: PLC0415,F401
 
     _W3D.to(device)  # kept for device validation only
-    f_eq = eq3d(rho, ux, uy, uz)
+    f_eq = equilibrium3d(rho, ux, uy, uz)
     f_neq = f - f_eq  # (19, nz, ny, nx)
 
     prefactor = -(1.0 - 0.5 / tau)

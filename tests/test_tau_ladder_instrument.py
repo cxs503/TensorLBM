@@ -297,6 +297,18 @@ def test_probe_jsonl_is_written_per_sample(tmp_path):
     assert len(lines) == 3
     assert [ln["step"] for ln in lines] == [1, 2, 3]
     for ln in lines:
-        for key in ("mem_fx", "mem_bgsub_fx", "E0_x", "E1_x", "E2_x", "NEQ_x",
-                    "ct", "e0", "rho_fwd", "rho_mid", "rho_aft", "D_QW"):
+        for key in (
+            "mem_fx",
+            "mem_bgsub_fx",
+            "E0_x",
+            "E1_x",
+            "E2_x",
+            "NEQ_x",
+            "ct",
+            "e0",
+            "rho_fwd",
+            "rho_mid",
+            "rho_aft",
+            "D_QW",
+        ):
             assert key in ln
