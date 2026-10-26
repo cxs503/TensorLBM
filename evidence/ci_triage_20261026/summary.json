@@ -1,0 +1,537 @@
+{
+  "date": "2026-10-26",
+  "baseline_commit": "ad3d19ae6e5f55f02ac691f6719d4a5ae68f4cdc",
+  "merged_commit": "49eabc4abc26bfdfe5805890e95fb41d180c95c5",
+  "environment_note": "CPU Python 3.11.2 / torch 2.2.2+cu121 / numpy 1.26.4; same environment for both revisions and fixes, not exact remote CI.",
+  "platform_counts": {
+    "baseline": {
+      "passed": 606,
+      "skipped": 48,
+      "failed": 54,
+      "error": 8
+    },
+    "merged_before_fix": {
+      "passed": 606,
+      "skipped": 48,
+      "failed": 54,
+      "error": 8
+    },
+    "working_tree_after_fix": {
+      "passed": 613,
+      "skipped": 48,
+      "failed": 47,
+      "error": 8
+    }
+  },
+  "baseline_vs_merged_changed_outcomes": [],
+  "fixed_nodes": [
+    "app.tests.test_suboff_physics.TestResistanceBreakdown3D::test_returns_expected_keys",
+    "app.tests.test_suboff_physics.TestResistanceBreakdown3D::test_CT_nonnegative",
+    "app.tests.test_suboff_physics.TestResistanceBreakdown3D::test_CT_equals_Cf_plus_Cp_approximately",
+    "app.tests.test_suboff_physics.TestSkinFrictionHull::test_returns_correct_keys",
+    "app.tests.test_suboff_physics.TestSkinFrictionHull::test_cf_nonnegative",
+    "app.tests.test_suboff_physics.TestYPlusHull::test_returns_expected_keys",
+    "app.tests.test_suboff_physics.TestYPlusHull::test_yplus_nonnegative"
+  ],
+  "new_regressions": [],
+  "remaining_categories": {
+    "local_numpy_1_compatibility": 4,
+    "study_metadata_or_result_aggregation": 4,
+    "frontend_contract_or_missing_build": 28,
+    "live_metrics_route_contract": 3,
+    "local_torch_compile_backend_cache": 4,
+    "test_double_to_dict_signature": 1,
+    "boundary_layer_yplus_early_return": 1,
+    "hull_type_input_validation": 1,
+    "job_fixture_constructor_contract": 9
+  },
+  "remaining_failures": [
+    {
+      "node": "app.tests.test_cad_3d_api::test_cad3d_lbm_bridge",
+      "status": "failed",
+      "message": "AssertionError: {\"detail\":\"module 'numpy' has no attribute 'trapezoid'\"}",
+      "category": "local_numpy_1_compatibility"
+    },
+    {
+      "node": "app.tests.test_cad_api::test_hull_preview",
+      "status": "failed",
+      "message": "AssertionError: {\"detail\":\"module 'numpy' has no attribute 'trapezoid'\"}",
+      "category": "local_numpy_1_compatibility"
+    },
+    {
+      "node": "app.tests.test_cad_api::test_hull_mask_small",
+      "status": "failed",
+      "message": "AssertionError: {\"detail\":\"module 'numpy' has no attribute 'trapezoid'\"}",
+      "category": "local_numpy_1_compatibility"
+    },
+    {
+      "node": "app.tests.test_engineering_features.TestDoEAPI::test_doe_group_tag_in_jobs",
+      "status": "failed",
+      "message": "assert None is not None",
+      "category": "study_metadata_or_result_aggregation"
+    },
+    {
+      "node": "app.tests.test_frontend_ai_flow_ui::test_index_contains_ai_flow_ui",
+      "status": "failed",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist.",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_cad3d_ui::test_index_contains_cad3d_ui",
+      "status": "failed",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist.",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_navigation_consistency::test_top_nav_uses_data_tab_binding",
+      "status": "failed",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist.",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_navigation_consistency::test_tab_sequence_includes_geo3d_and_event_binding",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_core.js'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_navigation_consistency::test_projects_panel_uses_data_action_binding",
+      "status": "failed",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist.",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_navigation_consistency::test_projects_module_binds_delegated_actions",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_projects.js'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_orchestration_ui::test_index_contains_orchestration_ui",
+      "status": "failed",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist.",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_ux_improvements::test_ws_handler_toasts_on_job_complete",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_core.js'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_ux_improvements::test_shortcuts_modal_exists_in_html",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/index.html'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_ux_improvements::test_question_mark_key_opens_shortcuts_modal",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_core.js'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_ux_improvements::test_job_card_renders_progress_bar",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_core.js'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_ux_improvements::test_abcompare_tab_in_postprocess_html",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/index.html'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_ux_improvements::test_abcompare_functions_exist_in_postprocess_js",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_postprocess.js'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_ux_improvements::test_showppmergedtab_calls_abcomparepopulateselects",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/js/app_core.js'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_ux_improvements::test_en_i18n_has_new_keys",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/en.json'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_ux_improvements::test_zh_i18n_has_same_new_keys",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/zh.json'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_frontend_workflow_ops_ui::test_index_contains_workflow_ops_ui",
+      "status": "failed",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist.",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_gap_improvements.TestLiveMetricsAPI::test_live_metrics_empty_completed_job",
+      "status": "failed",
+      "message": "assert 404 == 200",
+      "category": "live_metrics_route_contract"
+    },
+    {
+      "node": "app.tests.test_gap_improvements.TestLiveMetricsAPI::test_live_metrics_with_diagnostics",
+      "status": "failed",
+      "message": "assert 404 == 200",
+      "category": "live_metrics_route_contract"
+    },
+    {
+      "node": "app.tests.test_gap_improvements.TestLiveMetricsAPI::test_live_metrics_since_step_filter",
+      "status": "failed",
+      "message": "assert 404 == 200",
+      "category": "live_metrics_route_contract"
+    },
+    {
+      "node": "app.tests.test_generic_sim_api::test_compile_mode_routing[default-default-torch.compile(mode='default')]",
+      "status": "failed",
+      "message": "AssertionError: Traceback (most recent call last):",
+      "category": "local_torch_compile_backend_cache"
+    },
+    {
+      "node": "app.tests.test_generic_sim_api::test_compile_mode_routing[max-autotune-no-cudagraphs-max-autotune-no-cudagraphs-torch.compile(mode='max-autotune-no-cudagraphs')]",
+      "status": "failed",
+      "message": "AssertionError: Traceback (most recent call last):",
+      "category": "local_torch_compile_backend_cache"
+    },
+    {
+      "node": "app.tests.test_generic_sim_api::test_compile_default_matches_eager_numerics",
+      "status": "failed",
+      "message": "AssertionError: Traceback (most recent call last):",
+      "category": "local_torch_compile_backend_cache"
+    },
+    {
+      "node": "app.tests.test_generic_sim_api::test_parity_with_benchmark_cavity_compiled",
+      "status": "failed",
+      "message": "KeyError: 140262174559760",
+      "category": "local_torch_compile_backend_cache"
+    },
+    {
+      "node": "app.tests.test_i18n::test_en_json_is_valid",
+      "status": "failed",
+      "message": "AssertionError: platform/frontend/static/i18n/en.json not found",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_i18n::test_zh_json_is_valid",
+      "status": "failed",
+      "message": "AssertionError: platform/frontend/static/i18n/zh.json not found",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_i18n::test_i18n_key_parity",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/en.json'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_i18n::test_critical_keys_present_in_both",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/en.json'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_i18n::test_static_i18n_files_served",
+      "status": "failed",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist.",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_i18n::test_i18n_js_served",
+      "status": "failed",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist.",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_platform_basic::test_root_serves_spa",
+      "status": "failed",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist.",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_platform_basic::test_spa_fallback",
+      "status": "failed",
+      "message": "RuntimeError: File at path /home/user/TensorLBM/frontend-vue/dist/index.html does not exist.",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_postprocess_numpy2::test_acoustics_spectrum_integrates_band_power_without_np_trapz",
+      "status": "failed",
+      "message": "AttributeError: module 'numpy' has no attribute 'trapezoid'",
+      "category": "local_numpy_1_compatibility"
+    },
+    {
+      "node": "app.tests.test_simulations_generic_run_api::test_generic_run_status_reads_from_job_manager_only",
+      "status": "failed",
+      "message": "TypeError: _FakeJob.to_dict() got an unexpected keyword argument 'include_result'",
+      "category": "test_double_to_dict_signature"
+    },
+    {
+      "node": "app.tests.test_study_compare.TestStudyCompare::test_group_with_jobs_returns_200",
+      "status": "failed",
+      "message": "AssertionError: assert 'drag_coefficient' in {}",
+      "category": "study_metadata_or_result_aggregation"
+    },
+    {
+      "node": "app.tests.test_study_compare.TestStudyCompare::test_multiple_jobs_metric_summary",
+      "status": "failed",
+      "message": "AssertionError: assert 'drag_coefficient' in {}",
+      "category": "study_metadata_or_result_aggregation"
+    },
+    {
+      "node": "app.tests.test_study_compare.TestStudyCompare::test_time_series_extracted_as_final_and_mean",
+      "status": "failed",
+      "message": "AssertionError: assert 'saturation_series_final' in {}",
+      "category": "study_metadata_or_result_aggregation"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestBoundaryLayerAtStation::test_yplus_computed_when_tau_w_supplied",
+      "status": "failed",
+      "message": "AssertionError: assert 'y_plus' in {'delta': 0.0, 'delta_star': 0.0, 'theta': 0.0, 'H': nan, ...}",
+      "category": "boundary_layer_yplus_early_return"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffSolveEndpoint::test_invalid_hull_type_returns_422",
+      "status": "failed",
+      "message": "assert 200 == 422",
+      "category": "hull_type_input_validation"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_cp_hull_endpoint_returns_200",
+      "status": "error",
+      "message": "failed on setup with \"TypeError: Job.__init__() got an unexpected keyword argument 'output_dir'\"",
+      "category": "job_fixture_constructor_contract"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_skin_friction_endpoint_returns_200",
+      "status": "error",
+      "message": "failed on setup with \"TypeError: Job.__init__() got an unexpected keyword argument 'output_dir'\"",
+      "category": "job_fixture_constructor_contract"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_boundary_layer_endpoint_returns_200",
+      "status": "error",
+      "message": "failed on setup with \"TypeError: Job.__init__() got an unexpected keyword argument 'output_dir'\"",
+      "category": "job_fixture_constructor_contract"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_wake_profile_endpoint_returns_200",
+      "status": "error",
+      "message": "failed on setup with \"TypeError: Job.__init__() got an unexpected keyword argument 'output_dir'\"",
+      "category": "job_fixture_constructor_contract"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_cross_sections_endpoint_returns_200",
+      "status": "error",
+      "message": "failed on setup with \"TypeError: Job.__init__() got an unexpected keyword argument 'output_dir'\"",
+      "category": "job_fixture_constructor_contract"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_yplus_endpoint_returns_200",
+      "status": "error",
+      "message": "failed on setup with \"TypeError: Job.__init__() got an unexpected keyword argument 'output_dir'\"",
+      "category": "job_fixture_constructor_contract"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_resistance_report_endpoint_returns_200",
+      "status": "error",
+      "message": "failed on setup with \"TypeError: Job.__init__() got an unexpected keyword argument 'output_dir'\"",
+      "category": "job_fixture_constructor_contract"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_compare_endpoint_returns_200",
+      "status": "error",
+      "message": "failed on setup with \"TypeError: Job.__init__() got an unexpected keyword argument 'output_dir'\"",
+      "category": "job_fixture_constructor_contract"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffPostprocessEndpoints::test_2d_job_returns_422",
+      "status": "failed",
+      "message": "TypeError: Job.__init__() got an unexpected keyword argument 'output_dir'",
+      "category": "job_fixture_constructor_contract"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffI18nKeys::test_en_suboff_physics_keys_present",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/en.json'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffI18nKeys::test_zh_suboff_physics_keys_present",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/zh.json'",
+      "category": "frontend_contract_or_missing_build"
+    },
+    {
+      "node": "app.tests.test_suboff_physics.TestSuboffI18nKeys::test_en_and_zh_have_same_suboff_keys",
+      "status": "failed",
+      "message": "FileNotFoundError: [Errno 2] No such file or directory: '/home/user/TensorLBM/app/frontend/static/i18n/en.json'",
+      "category": "frontend_contract_or_missing_build"
+    }
+  ],
+  "baseline_and_merged_lint_findings": [
+    {
+      "file": "verified/suboff_sail_resistance/gen_tau_ladder_report.py",
+      "rule": "F541",
+      "line": 66
+    },
+    {
+      "file": "verified/suboff_sail_resistance/tau_anchor_probe.py",
+      "rule": "I001",
+      "line": 39
+    }
+  ],
+  "mechanical_ast_proof": [
+    {
+      "path": "benchmarks/verified/suboff_sail_resistance/gen_tau_ladder_report.py",
+      "normalized_ast_equal": true
+    },
+    {
+      "path": "benchmarks/verified/suboff_sail_resistance/run_tau_ladder.py",
+      "normalized_ast_equal": true
+    },
+    {
+      "path": "benchmarks/verified/suboff_sail_resistance/tau_anchor_probe.py",
+      "normalized_ast_equal": true
+    },
+    {
+      "path": "tests/test_audit_import_graph.py",
+      "normalized_ast_equal": true
+    },
+    {
+      "path": "tests/test_tau_ladder_instrument.py",
+      "normalized_ast_equal": true
+    }
+  ],
+  "proof_scope": "Import ordering and constant-only f-strings normalized; not proof of arbitrary import-order side-effect equivalence.",
+  "raw_artifacts": [
+    {
+      "path": "artifacts/runs/ci-triage/focused-after.log",
+      "bytes": 328,
+      "sha256": "16d9687e416f51b7d8f9e31832b0987a22610a2925e5e3d0d1b4867206299b0b",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/format-after.txt",
+      "bytes": 29,
+      "sha256": "12f7a06693801aa4d23feed453644a4838497968d5788c205b7d382490eedf61",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/format-baseline.txt",
+      "bytes": 20018,
+      "sha256": "d9fde9f8c34d92d53a825b4eeb1d9f68d60c5a12107db6239aa933eb68dc9fe8",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/format-current.txt",
+      "bytes": 20018,
+      "sha256": "f0cd1de60f27ac94f4c7ddc5bb7a34bf8d1d0d7de2318745834a995d5f5fce45",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/format-final.txt",
+      "bytes": 29,
+      "sha256": "3445b0631a1d66e79295281a32f5960b280ce4cb7a9ed82970db4765001a8bea",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/library-bounded.log",
+      "bytes": 2458,
+      "sha256": "6cf0c21cf4f727f247b798e3d988025f6ca87f3a364b9ad6272ff182387d9139",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/library-bounded.xml",
+      "bytes": 79942,
+      "sha256": "e1eb3fa240b4f59529071aee0e64605b0aad288116c6c1be079730f1a9f97655",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/library-collection.log",
+      "bytes": 594247,
+      "sha256": "4bb7741fd7c92b59a83c303510793e9f67833c5aea46bb70ea80ee9fc3056b33",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/main-run.json",
+      "bytes": 7783,
+      "sha256": "5ffc9a34df46510be8ab9144cb057109617bb7a9b478c23d0c0cc4ca8868d644",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/mypy-core-current.log",
+      "bytes": 158,
+      "sha256": "e8ff267f8320d7d16175725272e017c913782843451b8121ee4ba42d14cff35e",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/new-regressions-baseline.log",
+      "bytes": 24573,
+      "sha256": "b1e413e5fa698aa9be09e17b0d9a3c7f86bddb7798ca5091bca5e6f98fd9b5ba",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/platform-after.log",
+      "bytes": 192368,
+      "sha256": "91d5b9349ac15cd839caed6e273eae363c77b0f160976be8f8d37a40c24ba66f",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/platform-after.xml",
+      "bytes": 273508,
+      "sha256": "9f357343b24696b083ec371f1a086aad1297ec6df90ec88ac23fb087e5722c4b",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/platform-baseline.log",
+      "bytes": 227571,
+      "sha256": "e284c28d5e35d1346bc395e7364d6e88f877fea28ade4943bf1999a9434e6b23",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/platform-baseline.xml",
+      "bytes": 309146,
+      "sha256": "f918b4d510b09389b046e2094955cbbc767ac3bf5ab0c65802d6085fee6bfc5a",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/platform-current.log",
+      "bytes": 222535,
+      "sha256": "7456b430b40186124a2065f7072e76b9c730be857ea19476358ce3f7fc342f2e",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/platform-current.xml",
+      "bytes": 301856,
+      "sha256": "1362898871a090bf44f88cd8eb9918710c464eebbb0ec029fb929e77f60aa2fb",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/ruff-baseline.json",
+      "bytes": 1883,
+      "sha256": "6ead21d424c34912df3da9e28c42fb19590ddab13b62ccbc7ef2feb2d9dbaf4c",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/ruff-current.json",
+      "bytes": 1827,
+      "sha256": "b94b0dfcee047b2c3d1d6a2aa1b7927472c8318de63dfc722651e29ec8658461",
+      "storage": "ignored local workspace output; not committed"
+    },
+    {
+      "path": "artifacts/runs/ci-triage/suboff-imports-after.log",
+      "bytes": 113,
+      "sha256": "dcacac5621a4846539ef3e94b78e62c5d840e382cdf959a05d910489cc00597f",
+      "storage": "ignored local workspace output; not committed"
+    }
+  ]
+}
