@@ -439,7 +439,7 @@ def apply_dfsem_inlet_2d(
     Returns:
         Updated distribution tensor.
     """
-    from .boundaries import zou_he_inlet_velocity
+    from tensorlbm.boundaries import zou_he_inlet_velocity
 
     ny = f.shape[1]
     device = f.device
@@ -473,7 +473,7 @@ def apply_dfsem_inlet_3d(
     Returns:
         Updated distribution tensor.
     """
-    from .boundaries3d import zou_he_inlet_velocity_3d
+    from tensorlbm.boundaries3d import zou_he_inlet_velocity_3d
 
     device = f.device
     u_in = (u_mean + u_fluct.to(device)).clamp(min=0.0)

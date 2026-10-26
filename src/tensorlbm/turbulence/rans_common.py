@@ -22,9 +22,9 @@ from __future__ import annotations
 
 import torch
 
-from .d3q19 import equilibrium3d, macroscopic3d
-from .d3q27 import _get_d3q27_mrt_matrices, equilibrium27, macroscopic27
-from .solver3d import _get_d3q19_mrt_matrices
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q27 import _get_d3q27_mrt_matrices, equilibrium27, macroscopic27
+from tensorlbm.solver3d import _get_d3q19_mrt_matrices
 from .turbulence import _nu_t_to_tau_eff
 
 __all__ = [
