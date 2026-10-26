@@ -460,13 +460,6 @@ class TestDoELibrary:
 # API-level tests
 # ===========================================================================
 
-@pytest.fixture(scope="module")
-def client():
-    from fastapi.testclient import TestClient
-    from app.backend.main import app
-    return TestClient(app)
-
-
 class TestProbeSpectrumAPI:
     def test_with_explicit_signal(self, client) -> None:
         import math
@@ -663,9 +656,9 @@ class TestDoEAPI:
         })
         assert r.status_code == 422
 
-    def test_doe_group_tag_in_jobs(self, client) -> None:
+    def test_doe_group_tag_in_jobs(self, client, job_manager) -> None:
         """All submitted jobs must carry the same doe_group tag."""
-        from app.backend import job_manager as jm
+        jm = job_manager
 
         r = client.post("/api/solve/doe", json={
             "solver_type": "lid_driven_cavity",

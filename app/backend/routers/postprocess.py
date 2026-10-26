@@ -1342,7 +1342,12 @@ async def study_compare(study_group: str) -> dict:
             continue
         if study_meta.get("group") != study_group:
             continue
-        result = jd.get("result") or {}
+        # list_jobs intentionally omits potentially large result arrays.
+        # Retrieve only matching jobs; deletion between list and lookup is valid.
+        job = job_manager.get_job(jd["job_id"])
+        if job is None:
+            continue
+        result = job.result or {}
         metrics = _extract_scalar_metrics(result) if isinstance(result, dict) else {}
         rows.append({
             "job_id": jd["job_id"],
@@ -1367,7 +1372,8 @@ async def study_compare(study_group: str) -> dict:
         for r in completed:
             all_keys.update(r["metrics"].keys())
         for mk in sorted(all_keys):
-            vals = [r["metrics"][mk] for r in completed if mk in r["metrics"]]
+            metric_rows = [r for r in completed if mk in r["metrics"]]
+            vals = [r["metrics"][mk] for r in metric_rows]
             if not vals:
                 continue
             best_idx = int(min(range(len(vals)), key=lambda i: vals[i]))
@@ -1375,7 +1381,7 @@ async def study_compare(study_group: str) -> dict:
                 "min": min(vals),
                 "max": max(vals),
                 "mean": sum(vals) / len(vals),
-                "best_job_id": completed[best_idx]["job_id"],
+                "best_job_id": metric_rows[best_idx]["job_id"],
             }
 
     return {
