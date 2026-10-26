@@ -42,7 +42,7 @@ import json
 
 import torch
 
-from tensorlbm.d3q19 import C, OPPOSITE, W, macroscopic3d
+from tensorlbm.d3q19 import OPPOSITE, C, W, macroscopic3d
 
 __all__ = ["AnchorProbe", "build_axial_thirds"]
 
@@ -158,9 +158,10 @@ class AnchorProbe:
         u0sq = u0 * u0
         total = 0.0
         for lk in self.links:
-            dsum = f[lk["i"]].reshape(-1)[lk["idx_f"]].sum() + f[lk["opp"]].reshape(-1)[
-                lk["idx_s"]
-            ].sum()
+            dsum = (
+                f[lk["i"]].reshape(-1)[lk["idx_f"]].sum()
+                + f[lk["opp"]].reshape(-1)[lk["idx_s"]].sum()
+            )
             cdotu = lk["d"][0] * u0
             bg = 2.0 * 1.0 * lk["w"] * (1.0 + 4.5 * cdotu * cdotu - 1.5 * u0sq)
             total += lk["cx"] * (float(dsum.item()) - lk["n"] * bg)
