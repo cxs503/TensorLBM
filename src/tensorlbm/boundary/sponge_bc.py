@@ -110,7 +110,7 @@ def apply_viscous_sponge_2d(
     Returns:
         Updated distribution tensor (same shape as *f*).
     """
-    from .d2q9 import equilibrium
+    from tensorlbm.d2q9 import equilibrium
 
     alpha = sponge.view(1, -1)  # (1, nx)
     tau_eff = tau0 / (1.0 + alpha)  # (1, nx), reduced τ in sponge
@@ -149,9 +149,9 @@ def apply_viscous_sponge_3d(
         Updated distribution tensor.
     """
     if lattice == "D3Q27":
-        from .d3q27 import equilibrium27 as equil
+        from tensorlbm.d3q27 import equilibrium27 as equil
     else:
-        from .d3q19 import equilibrium3d as equil
+        from tensorlbm.d3q19 import equilibrium3d as equil
 
     alpha = sponge.view(1, 1, -1)  # (1, 1, nx)
     tau_eff = tau0 / (1.0 + alpha)  # (1, 1, nx)
@@ -228,7 +228,7 @@ def build_mean_equilibrium_2d(
     Returns:
         Equilibrium distribution ``f_eq``, shape ``(9, ny, nx)``.
     """
-    from .d2q9 import equilibrium
+    from tensorlbm.d2q9 import equilibrium
 
     return equilibrium(rho_mean, ux_mean, uy_mean)
 
@@ -251,10 +251,10 @@ def build_mean_equilibrium_3d(
         Equilibrium distribution.
     """
     if lattice == "D3Q27":
-        from .d3q27 import equilibrium27
+        from tensorlbm.d3q27 import equilibrium27
 
         return equilibrium27(rho_mean, ux_mean, uy_mean, uz_mean)
-    from .d3q19 import equilibrium3d
+    from tensorlbm.d3q19 import equilibrium3d
 
     return equilibrium3d(rho_mean, ux_mean, uy_mean, uz_mean)
 
