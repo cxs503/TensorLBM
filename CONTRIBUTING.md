@@ -17,6 +17,10 @@ Thank you for your interest in contributing!  This document describes the projec
 ## 1. Development Setup
 
 Canonical workflow: see `docs/development_workflow.md`.
+File placement and artifact rules: see [repository layout policy](docs/architecture/repository_layout.md).
+Before opening a PR, run `python tools/check_repository_layout.py`. Do not add
+one-off scripts at the repository root or expand historical exceptions merely to
+silence the check. Layout-only changes must not alter solver algorithms or tolerances.
 
 ```bash
 # Clone the repository
@@ -65,7 +69,7 @@ Minimum requirements: **Python ≥ 3.11**, **PyTorch ≥ 2.0**.
 
 #### Adding a public export
 
-`tensorlbm/__init__.py` resolves its 786 exports lazily (PEP 562), so a bare
+`tensorlbm/__init__.py` resolves its legacy root exports lazily (PEP 562), so a bare
 `import tensorlbm` stays ~0.02 s instead of pulling ~190 submodules. A new
 export therefore needs **three** edits, not one:
 

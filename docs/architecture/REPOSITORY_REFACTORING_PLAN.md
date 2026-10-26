@@ -2,10 +2,16 @@
 
 ## Status
 
-- Phase: 0 — establish an evidence-based baseline and migration rules.
-- Target branch: `refactor/repository-architecture-governance`
+- Phase: initial inventory exists; low-risk Phase 2 governance is being implemented.
+- Working branch: `arena/d059dc71-tensorlbm`
 - Base branch: `main`
 - This document does not authorize bulk file moves. Structural changes must follow an inventory of imports, public APIs, tests, CI workflows, documentation links, and benchmark provenance.
+
+Implementation entry points:
+[layout and artifact policy](repository_layout.md),
+[exact-path historical exceptions](repository_layout_policy.json), and
+[first migration candidates](migration_manifest.csv).
+The hygiene gate does not imply the complete structural audit or migration is finished.
 
 ## Why this work is needed
 
