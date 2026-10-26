@@ -1,0 +1,73 @@
+{
+  "python": "3.11.2",
+  "torch": "2.2.2+cu121",
+  "device": "cpu",
+  "cuda_available": false,
+  "torch_threads": 1,
+  "cases": [
+    {
+      "dtype": "torch.float32",
+      "with_boundary": true,
+      "initial_native_mass": 1344.0003662109375,
+      "final_native_mass": 1344.00048828125,
+      "native_absolute_drift": 0.0001220703125,
+      "original_1e_6_gate_passed": false,
+      "population_signed_drift_float64": 0.00046634674072265625,
+      "max_population_absolute_drift_float64": 0.00046634674072265625,
+      "operator_signed_changes_float64": {
+        "collision": -0.00010585784912109375,
+        "streaming": 0.0,
+        "boundary": 0.00057220458984375
+      },
+      "max_boundary_step_absolute_change_float64": 5.7220458984375e-06
+    },
+    {
+      "dtype": "torch.float32",
+      "with_boundary": false,
+      "initial_native_mass": 1344.0003662109375,
+      "final_native_mass": 1344.00048828125,
+      "native_absolute_drift": 0.0001220703125,
+      "original_1e_6_gate_passed": false,
+      "population_signed_drift_float64": 0.00046062469482421875,
+      "max_population_absolute_drift_float64": 0.00046062469482421875,
+      "operator_signed_changes_float64": {
+        "collision": 0.00046062469482421875,
+        "streaming": 0.0,
+        "boundary": 0.0
+      },
+      "max_boundary_step_absolute_change_float64": 0.0
+    },
+    {
+      "dtype": "torch.float64",
+      "with_boundary": true,
+      "initial_native_mass": 1344.0,
+      "final_native_mass": 1344.0,
+      "native_absolute_drift": 0.0,
+      "original_1e_6_gate_passed": true,
+      "population_signed_drift_float64": 2.984279490192421e-13,
+      "max_population_absolute_drift_float64": 2.984279490192421e-13,
+      "operator_signed_changes_float64": {
+        "collision": 2.984279490192421e-13,
+        "streaming": 0.0,
+        "boundary": 0.0
+      },
+      "max_boundary_step_absolute_change_float64": 0.0
+    },
+    {
+      "dtype": "torch.float64",
+      "with_boundary": false,
+      "initial_native_mass": 1344.0,
+      "final_native_mass": 1344.0,
+      "native_absolute_drift": 0.0,
+      "original_1e_6_gate_passed": true,
+      "population_signed_drift_float64": 2.984279490192421e-13,
+      "max_population_absolute_drift_float64": 2.984279490192421e-13,
+      "operator_signed_changes_float64": {
+        "collision": 2.984279490192421e-13,
+        "streaming": 0.0,
+        "boundary": 0.0
+      },
+      "max_boundary_step_absolute_change_float64": 0.0
+    }
+  ]
+}

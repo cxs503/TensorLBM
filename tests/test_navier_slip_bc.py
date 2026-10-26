@@ -14,7 +14,7 @@ import torch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from tensorlbm.boundaries3d import bounce_back_cells_3d, free_slip_cells_3d
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q19 import C, equilibrium3d, macroscopic3d
 from tensorlbm.navier_slip_bc import navier_slip_cells_3d, slip_length_to_beta
 from tensorlbm.solver3d import stream3d
 
@@ -112,12 +112,18 @@ def test_navier_slip_Ls_inf_equals_free_slip():
 
 
 def test_navier_slip_mass_conservation():
-    """Test that Navier slip BC conserves mass."""
+    """Check 100-step conservation in binary64, keeping the absolute 1e-6 gate.
+
+    At this domain's mass (1344), one float32 ULP is 1.22e-4.  Both the
+    collision and boundary arithmetic introduce rounding; the original gate
+    fails even without the boundary.  Test the evolution in float64; the isolated
+    boundary test below separately covers float32 without collision error.
+    """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Setup
     nz, ny, nx = 4, 21, 16
-    rho_init = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
+    rho_init = torch.ones((nz, ny, nx), dtype=torch.float64, device=device)
     ux_init = torch.zeros_like(rho_init)
     uy_init = torch.zeros_like(rho_init)
     uz_init = torch.zeros_like(rho_init)
@@ -133,7 +139,7 @@ def test_navier_slip_mass_conservation():
     # Initial mass
     mass_initial = f.sum().item()
 
-    # Apply some flow with Navier slip
+    # Evolve the stationary equilibrium with Navier slip
     for step in range(100):
         rho, ux, uy, uz = macroscopic3d(f)
         feq = equilibrium3d(rho, ux, uy, uz)
@@ -148,6 +154,57 @@ def test_navier_slip_mass_conservation():
     # Check mass conservation
     mass_drift = abs(mass_final - mass_initial)
     assert mass_drift < 1e-6, f"Navier slip should conserve mass, but drift is {mass_drift}"
+
+
+@pytest.mark.parametrize(
+    "device",
+    [
+        "cpu",
+        pytest.param(
+            "cuda",
+            marks=pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA unavailable"),
+        ),
+    ],
+)
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+@pytest.mark.parametrize("axis", [0, 1, 2])
+@pytest.mark.parametrize("Ls", [0.0, 0.25, 2.0, float("inf")])
+def test_navier_slip_local_conservation_and_momentum(device, dtype, axis, Ls):
+    """Audit the boundary alone on non-equilibrium, nonuniform populations.
+
+    Both reflection maps are permutations: local density is unchanged,
+    normal momentum reverses, and tangential momentum scales by 2*beta-1.
+    These moment identities are an oracle independent of the mirror tables.
+    Accumulate in float64 to distinguish population rounding from reduction
+    rounding.  The 8-epsilon local budget covers the two products and sum
+    in the interpolation, not an empirical full-simulation drift allowance.
+    """
+    generator = torch.Generator().manual_seed(310)
+    f = (0.01 + 0.1 * torch.rand((19, 3, 4, 5), generator=generator, dtype=dtype)).to(device)
+    before = f.clone()
+    mask = torch.zeros((3, 4, 5), dtype=torch.bool, device=device)
+    mask[:, 0, :] = True
+    mask[1, 2, ::2] = True
+
+    result = navier_slip_cells_3d(f, mask, axis=axis, Ls=Ls)
+
+    assert result.dtype == dtype
+    assert result.device == f.device
+    assert torch.equal(f, before), "Boundary must not mutate its input"
+    assert torch.equal(result[:, ~mask], before[:, ~mask])
+
+    rho_before = before.double().sum(dim=0)
+    rho_after = result.double().sum(dim=0)
+    budget = 8 * torch.finfo(dtype).eps * rho_before
+    assert torch.all((rho_after - rho_before).abs() <= budget)
+    assert abs((result.double() - before.double()).sum().item()) <= budget[mask].sum().item()
+
+    velocities = C.to(device=device, dtype=torch.float64)
+    momentum_before = torch.einsum("qzyx,qa->azyx", before.double(), velocities)
+    momentum_after = torch.einsum("qzyx,qa->azyx", result.double(), velocities)
+    expected = (2 * slip_length_to_beta(Ls) - 1) * momentum_before
+    expected[axis] = -momentum_before[axis]
+    assert torch.all((momentum_after[:, mask] - expected[:, mask]).abs() <= budget[mask])
 
 
 if __name__ == "__main__":
