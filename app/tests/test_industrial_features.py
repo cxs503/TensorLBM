@@ -258,7 +258,7 @@ class TestOscillatingAirfoil:
 class TestHPCSchedulerService:
     def test_none_mode_raises(self):
         with patch.dict(os.environ, {"TENSORLBM_HPC_MODE": "none"}):
-            from app.backend.services.hpc_scheduler import submit_hpc_job
+            from backend.services.hpc_scheduler import submit_hpc_job
             with pytest.raises(ValueError, match="disabled"):
                 submit_hpc_job("test_job", "/tmp/test_output")
 
@@ -268,7 +268,7 @@ class TestHPCSchedulerService:
             with patch.object(_shutil, "which", return_value=None):
                 from importlib import reload
 
-                from app.backend.services import hpc_scheduler
+                from backend.services import hpc_scheduler
                 reload(hpc_scheduler)
                 with pytest.raises((RuntimeError, ValueError)):
                     hpc_scheduler.submit_hpc_job("test_job", "/tmp/test_output")
@@ -289,7 +289,7 @@ class TestHPCSchedulerService:
         import pathlib
         import tempfile
 
-        from app.backend.services.hpc_scheduler import _build_slurm_script
+        from backend.services.hpc_scheduler import _build_slurm_script
         with tempfile.TemporaryDirectory() as d:
             script = _build_slurm_script(
                 "abc123", "echo hello",
@@ -304,7 +304,7 @@ class TestHPCSchedulerService:
         import pathlib
         import tempfile
 
-        from app.backend.services.hpc_scheduler import _build_pbs_script
+        from backend.services.hpc_scheduler import _build_pbs_script
         with tempfile.TemporaryDirectory() as d:
             script = _build_pbs_script(
                 "abc123", "echo hello",
@@ -315,7 +315,7 @@ class TestHPCSchedulerService:
         assert "echo hello" in script
 
     def test_default_solver_cmd_is_not_placeholder(self):
-        from app.backend.services.hpc_scheduler import _default_solver_cmd
+        from backend.services.hpc_scheduler import _default_solver_cmd
 
         cmd = _default_solver_cmd("abc123", "/tmp/test_output")
         assert "run_metadata.json" in cmd
