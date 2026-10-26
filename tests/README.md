@@ -28,5 +28,11 @@ Dependency-free repository checks can run directly:
 
 ```bash
 python tests/test_repository_layout.py -v
+python tests/test_repository_report_migration.py -v
 python tests/test_audit_import_graph.py
 ```
+
+`test_repository_report_migration.py` protects the first report/asset relocation:
+original report bodies (apart from documented link changes and a migration note),
+canonical image hashes and archived numerical evidence must remain intact. These
+are provenance checks, not an endorsement of the reports' physical conclusions.

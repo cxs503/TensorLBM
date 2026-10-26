@@ -28,7 +28,7 @@ alone does not establish reproducibility or access to a GPU.
 | Scope | Command | What it does not prove |
 |---|---|---|
 | File placement | `python tools/check_repository_layout.py` | Link validity, numerical correctness or completed migration |
-| Governance tooling | `python tests/test_repository_layout.py -v` and `python tests/test_audit_import_graph.py` | Runtime import behavior |
+| Governance tooling | `python tests/test_repository_layout.py -v`, `python tests/test_repository_report_migration.py -v`, and `python tests/test_audit_import_graph.py` | Runtime import behavior |
 | Lint / format | `ruff check src tests examples benchmarks` and `ruff format --check src tests examples benchmarks` | Numerical correctness; existing unrelated debt can still fail |
 | Fast library suite | `pytest -q -m "not slow" --timeout=600` | GPU/long-campaign acceptance; fast scope still has environment-dependent tests |
 | Focused regression | `pytest -q tests/test_<module>.py` | Whole-library acceptance |

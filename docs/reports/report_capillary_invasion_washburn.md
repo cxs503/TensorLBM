@@ -1,5 +1,15 @@
 # 毛细侵入 Washburn 基准测试终裁报告
 
+<!-- repository-layout-note:start -->
+> **归档迁移说明（2026-10-26）**：本报告从仓库根目录迁入 `docs/reports/`。
+> 下文数值、判据、根因判断与 **TERMINAL / 未通过** 的历史结论保持原样；
+> 本次没有重跑计算或重新验证这些判断。五张图片统一引用 benchmark 中逐字节相同的副本。
+> 第 4.3 节的命令以及非链接的仓库路径仍以**仓库根目录**为基准，而非本文所在目录。
+>
+> [案例与数据目录](../../benchmarks/pending/capillary_invasion_washburn/)、
+> [迁移记录与 SHA-256](../architecture/migrations/report-assets-2026-10-26.json)。
+<!-- repository-layout-note:end -->
+
 **案例名称**: capillary_invasion_washburn  
 ** verdict**: TERMINAL (终裁)  
 **日期**: 2026-10-23  
@@ -75,31 +85,31 @@ $$L(t) \propto t^{\beta}, \quad \beta_{theory} = 0.5$$
 
 #### 图 1: Washburn 指数对比
 
-![Washburn 指数对比](fig_beta_convergence.png)
+![Washburn 指数对比](../../benchmarks/pending/capillary_invasion_washburn/figures/fig_beta_convergence.png)
 
 W32 和 W64 的 Washburn 指数 β 与理论值 0.5 的对比。虚线为理论值，柱状图为模拟结果。W32 偏差 19.08%，W64 偏差 3.17%。
 
 #### 图 2: 质量守恒漂移
 
-![质量守恒漂移](fig_mass_drift.png)
+![质量守恒漂移](../../benchmarks/pending/capillary_invasion_washburn/figures/fig_mass_drift.png)
 
 湿润相和气相的质量漂移随模拟步数的变化。两条曲线均显示严重的质量不守恒，W32 最终漂移 -60.7%，W64 漂移 -67.0%。
 
 #### 图 3: 侵入前沿 L(t)
 
-![侵入前沿](fig_front_Lt.png)
+![侵入前沿](../../benchmarks/pending/capillary_invasion_washburn/figures/fig_front_Lt.png)
 
 侵入前沿位置 L(t) 随时间的演化。实线为模拟结果，虚线为幂律拟合 L = A·t^β。拟合参数显示 β 偏离理论值。
 
 #### 图 4: 相场快照
 
-![相场快照](fig_phase_field.png)
+![相场快照](../../benchmarks/pending/capillary_invasion_washburn/figures/fig_phase_field.png)
 
 W32 和 W64 的终态相场分布。红色表示湿润相 (ρ_w - ρ_g > 0)，蓝色表示非湿润相。可见界面处存在明显的数值扰动。
 
 #### 图 5: 收敛性对比
 
-![收敛性对比](fig_convergence_comparison.png)
+![收敛性对比](../../benchmarks/pending/capillary_invasion_washburn/figures/fig_convergence_comparison.png)
 
 b_max_rel_diff 在不同网格下的对比。虚线为 3% 门限。W64 的误差 (9.492) 大于 W32 (6.894)，显示反收敛行为。
 

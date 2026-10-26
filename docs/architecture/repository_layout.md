@@ -83,6 +83,9 @@ Rules:
 `repository_layout_policy.json` records the initial inventory at commit
 `ad3d19ae6e5f55f02ac691f6719d4a5ae68f4cdc`: 11 canonical root files,
 85 legacy root files, 392 generated-directory files, one model and two large files.
+After the 2026-10-26 report/assets batch, seven root exceptions were retired;
+78 legacy root paths remain. The migration ledger records the original hashes:
+[report/assets batch](migrations/report-assets-2026-10-26.json).
 Categories may overlap. Existing debt remains visible and usable, but exceptions
 are exact paths, not directory exemptions. Historical exceptions are not evidence
 that a file is correct, maintained or safe to remove.
@@ -120,9 +123,18 @@ matching and index changes cannot establish provenance or compatibility.
 
 ## Next batches, in order
 
-- **A: reports/assets.** First review the Couette report and the Blasius report/three
-  image bundle. Blasius references external `/nfs/...` data, so preserve those
-  provenance gaps rather than rewriting the report as reproducible or verified.
+- **A: reports/assets.** Couette and Washburn reports have been relocated, with five
+  byte-identical Washburn images deduplicated (implementation complete, independent
+  review pending). Root report/image URLs are retired without redirects; update
+  external links to the new paths or use the ledger's source-revision permalink.
+  The Blasius report/three-image bundle remains pending: it references external
+  `/nfs/...` data, so preserve those gaps rather than claiming reproducibility.
+  `python tests/test_repository_report_migration.py -v` checks archived report-body
+  hashes after undoing link rewrites/removing the migration note, asset/evidence
+  hashes, local links, manifest statuses and retirement of root exceptions.
+  It needs neither Git history nor a numerical runtime. Historical text is frozen
+  for traceability; future scientific corrections should be explicit errata, not
+  silent edits to these original reports.
 - **B: standalone debug scripts.** Classify maintained vs archived, replace personal
   paths only when execution can be validated, and retain historical invocation notes.
 - **C: evidence lifecycle.** Introduce a benchmark manifest/schema and artifact
