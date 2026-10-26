@@ -1,5 +1,21 @@
 # couette_3d 闭环报告：稳态口径裁定与 fp64 晋级
 
+<!-- repository-layout-note:start -->
+> **归档迁移说明（2026-10-26）**：本报告从仓库根目录迁入 `docs/reports/`。
+> 下文数值、判据、历史晋级结论及原始外部路径保持不变；本次仅核对文件与链接，
+> **未重跑求解器，未重新批准物理结论**。命令及非链接的仓库路径仍以仓库根目录为基准。
+>
+> 仓库内已有的 W11 副本：[fp64 四档](../../benchmarks/pending/couette_3d/w11/gate/fp64/)、
+> [fp32 三档](../../benchmarks/pending/couette_3d/w11/gate/fp32/)、
+> [verdict_v2.json](../../benchmarks/pending/couette_3d/w11/gate/verdict_v2.json)、
+> [dtype 诊断](../../benchmarks/pending/couette_3d/w11/diag/diag_dtype.json)、
+> [预注册](../../benchmarks/pending/couette_3d/w11/prereg.md)。
+> 判决与预注册副本的 MD5 分别与下文声明一致；外部 `/nfs/...` 文件本次未访问，
+> 其他副本不据此宣称与外部源完全一致。
+>
+> [迁移记录与 SHA-256](../architecture/migrations/report-assets-2026-10-26.json)。
+<!-- repository-layout-note:end -->
+
 **Mission**: m62 · **案例**: couette_3d · **日期**: 2026-10-19
 **终态**: ✅ 晋级 verified/couette_3d（fp64 四档）
 
@@ -106,14 +122,14 @@ spanwise_std=0），漂移阈在机器地板以下。
 
 ### 6.1 中剖面速度场云图
 
-![中剖面速度场](benchmarks/verified/couette_3d/figures/field_midplane_speed.png)
+![中剖面速度场](../../benchmarks/verified/couette_3d/figures/field_midplane_speed.png)
 
 **图 1**: H=32 fp64 档 z=16 截面 u_x(y) 分布云图。展示线性 Couette 剖面的空间均匀性——
 x/z 方向速度完全一致（spanwise_std=0），验证 3D 动壁半程反弹路径的正确性。
 
 ### 6.2 u(y) 剖面 vs 解析解
 
-![速度剖面对比](benchmarks/verified/couette_3d/figures/curve_profile_vs_analytical.png)
+![速度剖面对比](../../benchmarks/verified/couette_3d/figures/curve_profile_vs_analytical.png)
 
 **图 2**: fp64 四档（H=16/32/64/128）数值解与线性解析解对比。子图标题显示各档 l₂ 误差——
 H16/32/64 处于机器地板（1e-13 量级），H128 升至 1.73e-09（仍远小于 3% 阈值）。
@@ -121,7 +137,7 @@ H16/32/64 处于机器地板（1e-13 量级），H128 升至 1.73e-09（仍远�
 
 ### 6.3 l₂ 误差收敛曲线
 
-![收敛曲线](benchmarks/verified/couette_3d/figures/curve_l2_convergence.png)
+![收敛曲线](../../benchmarks/verified/couette_3d/figures/curve_l2_convergence.png)
 
 **图 3**: fp64 四档 l₂_rel_err 随网格尺寸 H 变化。H16/32/64 处于机器地板（1e-13 量级），
 H128 升至 1.73e-09（仍远小于 3% 阈值，约 6 个数量级余量）。红线为 3% 门限，

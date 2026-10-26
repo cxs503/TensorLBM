@@ -36,6 +36,8 @@ A navigable index of the documentation in this directory, grouped by topic.
 
 | Document | Description |
 |---|---|
+| [Couette 3D historical report](reports/report_couette_3d.md) | Archived fp64 acceptance claim and provenance; relocation is not revalidation |
+| [Washburn historical report](reports/report_capillary_invasion_washburn.md) | TERMINAL / failed benchmark report; original negative results retained |
 | [REGRESSION_REPORT.md](reports/REGRESSION_REPORT.md) | Core regression baseline report |
 | [REGRESSION_REPORT_interp_bc.md](reports/REGRESSION_REPORT_interp_bc.md) | Regression report: interpolated bounce-back boundary condition |
 | [REGRESSION_REPORT_sliding_mesh.md](reports/REGRESSION_REPORT_sliding_mesh.md) | Regression report: sliding-mesh boundary |

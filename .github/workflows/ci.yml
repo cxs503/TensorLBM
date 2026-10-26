@@ -119,6 +119,8 @@ jobs:
           python-version: "3.12"
       - name: Test repository layout checker
         run: python tests/test_repository_layout.py -v
+      - name: Check migrated report and asset provenance
+        run: python tests/test_repository_report_migration.py -v
       - name: Check repository layout
         run: python tools/check_repository_layout.py
 
