@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 
-from .d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
+from tensorlbm.d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
 
 # ---------------------------------------------------------------------------
 # Module-level direction-index constants (derived from the fixed D3Q19 lattice).
@@ -765,7 +765,7 @@ def porous_jump_3d(
     Returns:
         Updated distribution tensor.
     """
-    from .d3q19 import equilibrium3d, macroscopic3d
+    from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 
     rho, ux, uy, uz = macroscopic3d(f)
 
@@ -827,7 +827,7 @@ def fan_model_3d(
     Returns:
         Updated distribution tensor.
     """
-    from .d3q19 import equilibrium3d, macroscopic3d
+    from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 
     rho, ux, uy, uz = macroscopic3d(f)
 
@@ -887,7 +887,7 @@ def nscbc_outlet_3d(
     Returns:
         Updated distribution tensor.
     """
-    from .d3q19 import equilibrium3d, macroscopic3d
+    from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 
     rho, ux, uy, uz = macroscopic3d(f)
 

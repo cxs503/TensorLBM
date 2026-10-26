@@ -14,7 +14,7 @@ from dataclasses import asdict, dataclass
 import torch
 import torch.nn.functional as F
 
-from .propeller_benchmark import moving_wall_bounce_back_3d
+from tensorlbm.propeller_benchmark import moving_wall_bounce_back_3d
 
 KAPPA = 0.41
 B_CONST = 5.0
@@ -350,7 +350,7 @@ def compute_bfl_link_normal(
     the wall-model slip direction consistent with the same surface used by
     BFL, unlike a staircase-mask finite-difference gradient.
     """
-    from .d3q19 import C, W
+    from tensorlbm.d3q19 import C, W
 
     if fluid_boundary_mask.ndim != 4 or fluid_boundary_mask.shape[0] != 19:
         raise ValueError("fluid_boundary_mask must have shape (19,nz,ny,nx)")
@@ -447,9 +447,9 @@ def wall_function_3d(
         ``(f_with_force, drag_friction_x, drag_pressure_x)``.  Total drag =
         friction + pressure.
     """
-    from .d3q19 import OPPOSITE as OPP_19
-    from .d3q19 import macroscopic3d
-    from .ibm import ibm_apply_body_force_3d
+    from tensorlbm.d3q19 import OPPOSITE as OPP_19
+    from tensorlbm.d3q19 import macroscopic3d
+    from tensorlbm.ibm import ibm_apply_body_force_3d
 
     fluid = ~solid
     if near_mask is not None:
@@ -710,8 +710,8 @@ def wall_function_d3q27(
     Returns:
         ``(f_with_force, drag_friction_x, drag_pressure_x)``.
     """
-    from .d3q27 import C as C27
-    from .d3q27 import macroscopic27
+    from tensorlbm.d3q27 import C as C27
+    from tensorlbm.d3q27 import macroscopic27
 
     device = f.device
     c = C27.to(device=device, dtype=f.dtype)
@@ -878,7 +878,7 @@ def guo_body_force_d3q19(
     Returns:
         Updated distribution, same shape as *f*.
     """
-    from .d3q19 import C as C_LAT
+    from tensorlbm.d3q19 import C as C_LAT
 
     device = f.device
     c = C_LAT.to(device=device, dtype=f.dtype)
@@ -919,7 +919,7 @@ def guo_body_force_d3q27(
 
     D3Q27 analogue of :func:`guo_body_force_d3q19`.
     """
-    from .d3q27 import C as C27
+    from tensorlbm.d3q27 import C as C27
 
     device = f.device
     c = C27.to(device=device, dtype=f.dtype)
@@ -1130,8 +1130,8 @@ def bfl_wall_function_3d(
         ``return_wall_diagnostics`` is true, a fourth applicability and
         exchange-sample diagnostic object is returned.
     """
-    from .bfl_d3q19 import bouzidi_bounce_back_d3q19
-    from .d3q19 import macroscopic3d, macroscopic3d_low_memory
+    from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19
+    from tensorlbm.d3q19 import macroscopic3d, macroscopic3d_low_memory
 
     recover_macroscopic = macroscopic3d_low_memory if use_low_memory_macroscopic else macroscopic3d
 
@@ -1267,7 +1267,7 @@ def bfl_wall_function_3d(
         bfl_force = (0.0, 0.0, 0.0)
 
     if bfl_wall_mode == "spalding_exchange":
-        from .spalding_wall_model import apply_spalding_exchange_wall_model
+        from tensorlbm.spalding_wall_model import apply_spalding_exchange_wall_model
 
         f, wall_diagnostics = apply_spalding_exchange_wall_model(
             f,
@@ -1310,7 +1310,7 @@ def bfl_wall_function_3d(
     stress_near = near
     stress_y: float | torch.Tensor = y_val
     if stress_exchange_distance is not None:
-        from .spalding_wall_model import sample_wall_exchange_velocity
+        from tensorlbm.spalding_wall_model import sample_wall_exchange_velocity
 
         samples = sample_wall_exchange_velocity(
             (ux, uy, uz),
@@ -1381,7 +1381,7 @@ def bfl_wall_function_3d(
             )
         else:
             # Legacy simple forcing (ibm_apply_body_force_3d)
-            from .ibm import ibm_apply_body_force_3d
+            from tensorlbm.ibm import ibm_apply_body_force_3d
 
             f = ibm_apply_body_force_3d(f, fx, fy, fz)
 
@@ -1634,7 +1634,7 @@ def bfl_wall_function_d3q27(
     Uses D3Q27 Guo forcing with the correct lattice weights
     (8/27, 2/27, 1/54, 1/216).
     """
-    from .d3q27 import macroscopic27
+    from tensorlbm.d3q27 import macroscopic27
 
     if not 0.0 <= wall_activation <= 1.0:
         raise ValueError("wall_activation must be in [0,1]")

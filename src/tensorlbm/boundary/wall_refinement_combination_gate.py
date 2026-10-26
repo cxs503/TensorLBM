@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from .advanced_collision_contract import collision_capability_matrix
+from tensorlbm.advanced_collision_contract import collision_capability_matrix
 
 
 class Lattice(str, Enum):
