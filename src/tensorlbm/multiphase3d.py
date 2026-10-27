@@ -1210,16 +1210,20 @@ def collide_sc_mrt_3d(
 # ---------------------------------------------------------------------------
 
 
-def init_hydrostatic_pressure_3d(f, solid_mask, gy, water_height):
+def init_hydrostatic_pressure_3d(f, solid_mask, gy, water_height, rho0=None):
     """Initialise hydrostatic pressure gradient for dam-break IC.
 
     Mirrors waLBerla's ``initHydrostaticPressure`` in DamBreakRectangular.
     Sets rho(y) = rho0*(1+|gy|*(h-y)/cs²) in fluid, then recomputes f_eq.
+    ``rho0`` defaults to the domain mean density (multiphase convention);
+    free-surface callers pass the liquid density explicitly since their gas
+    cells carry no populations and would dilute the mean.
     """
     device = f.device
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
     ys = torch.arange(ny, dtype=torch.float32, device=device).view(1, ny, 1)
-    rho0 = macroscopic3d(f)[0].mean()
+    if rho0 is None:
+        rho0 = macroscopic3d(f)[0].mean()
     cs2 = 1.0 / 3.0
     hydro = rho0 * (1.0 + abs(gy) * (water_height - ys) / cs2)
     hydro = hydro.clamp(min=rho0 * 0.5, max=rho0 * 2.0)

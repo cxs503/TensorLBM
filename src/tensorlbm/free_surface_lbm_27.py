@@ -1,5 +1,8 @@
 """Free-surface LBM (D3Q27) — full Körner model with mass tracking.
 
+Reference mechanics (Körner et al. 2005; Thürey 2007; waLBerla
+``free_surface``), mirroring :mod:`free_surface_lbm` (D3Q19).
+
 Implements the complete Körner et al. (2005) free-surface LBM for the D3Q27
 lattice, mirroring the D3Q19 implementation in :mod:`free_surface_lbm` but
 using all 27 velocity directions (6 face + 12 edge + 8 corner).
@@ -17,6 +20,8 @@ References: Körner et al. (2005), waLBerla free_surface/
 """
 
 from __future__ import annotations
+
+import os
 
 import torch
 
@@ -61,6 +66,69 @@ _OPP = OPP27
 
 # Precompute (cx, cy, cz) shifts for all 27 directions
 _C27_SHIFTS = [(int(C27[q, 0]), int(C27[q, 1]), int(C27[q, 2])) for q in range(27)]
+
+
+# D3Q27 specular mirror tables (built from the stencil: flip one component).
+def _build_mirror_27(axis: int) -> "torch.Tensor":
+    _key = {}
+    for _q in range(27):
+        _key[(int(C27[_q, 0]), int(C27[_q, 1]), int(C27[_q, 2]))] = _q
+    out = []
+    for _q in range(27):
+        _c = [int(C27[_q, 0]), int(C27[_q, 1]), int(C27[_q, 2])]
+        _c[axis] = -_c[axis]
+        out.append(_key[tuple(_c)])
+    return torch.tensor(out, dtype=torch.long)
+
+
+_D3Q27_MIRROR_X = _build_mirror_27(0)
+_D3Q27_MIRROR_Y = _build_mirror_27(1)
+_D3Q27_MIRROR_Z = _build_mirror_27(2)
+
+
+def _env_bool_27(name: str, default: bool = False) -> bool:
+    """Read an opt-out boolean env gate for A/B diagnosis of the FS fixes."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() not in ("0", "false", "no", "")
+
+
+def _specular_wall_mirror_index_27(slip_mask, device):
+    """Per-link specular reflected source indices for D3Q27 slip walls.
+
+    For every link ``q`` at a fluid cell whose pull source lies in a slip
+    wall, the reflected link reverses each coordinate component of ``c_q``
+    for which the corresponding signed axis neighbour is a slip wall (a face
+    wall reverses one component -> specular; an edge/corner reverses two or
+    three -> full bounce).  Returns a ``(27, nz, ny, nx)`` int64 tensor of
+    source link indices to gather from ``f_post``.
+    """
+    smx = slip_mask.roll(1, dims=2)
+    spx = slip_mask.roll(-1, dims=2)
+    smy = slip_mask.roll(1, dims=1)
+    spy = slip_mask.roll(-1, dims=1)
+    smz = slip_mask.roll(1, dims=0)
+    spz = slip_mask.roll(-1, dims=0)
+    off2idx = {(sx, sy, sz): q for q, (sx, sy, sz) in enumerate(_C27_SHIFTS)}
+    table = torch.zeros((27, 2, 2, 2), dtype=torch.long)
+    for q, (cx, cy, cz) in enumerate(_C27_SHIFTS):
+        for fx in (0, 1):
+            for fy in (0, 1):
+                for fz in (0, 1):
+                    table[q, fx, fy, fz] = off2idx[
+                        (-cx if fx else cx, -cy if fy else cy, -cz if fz else cz)
+                    ]
+    table = table.to(device)
+    idx = torch.empty((27,) + tuple(slip_mask.shape), dtype=torch.long, device=device)
+    for q, (cx, cy, cz) in enumerate(_C27_SHIFTS):
+        fx = ((cx > 0) & smx) | ((cx < 0) & spx)
+        fy = ((cy > 0) & smy) | ((cy < 0) & spy)
+        fz = ((cz > 0) & smz) | ((cz < 0) & spz)
+        idx[q] = table[q, fx.long(), fy.long(), fz.long()]
+    return idx
+
+
 
 
 def _stream27_roll(f: torch.Tensor) -> torch.Tensor:
@@ -191,7 +259,16 @@ def _init_new_27(
     uya = (uy_stack * sl_f).sum(dim=0)
     uza = (uz_stack * sl_f).sum(dim=0)
     cnt = sl_f.sum(dim=0).clamp(min=1)
-    rho_f = torch.full_like(ux, float(rho_init))
+    if rho_init is None:
+        # Neighbour-averaged *active* density (waLBerla EquilibriumRefilling).
+        rho = f.sum(0)
+        rho_stack = torch.stack([roll_from_pull_source_27(rho, q) for q in D3Q27_MOVING_Q])
+        rho_nb = (rho_stack * sl_f).sum(dim=0) / cnt
+        rho_f = torch.where(sl_f.sum(dim=0) > 0, rho_nb, torch.zeros_like(rho_nb))
+    elif isinstance(rho_init, torch.Tensor):
+        rho_f = rho_init.to(f.dtype)
+    else:
+        rho_f = torch.full_like(ux, float(rho_init))
     feq = equilibrium27(rho_f, uxa / cnt, uya / cnt, uza / cnt)
     return torch.where(mask.unsqueeze(0), feq, f)
 
@@ -349,22 +426,32 @@ def free_surface_step_27(
     collision: str = "bgk",
     mass_ledger: dict | None = None,
     freeze_topology: bool = False,
+    bubble_pressure: float | None = None,
+    cell_conversion_threshold: float = 1e-2,
+    cell_conversion_force_threshold: float = 0.1,
+    free_slip_mask: torch.Tensor | None = None,
+    free_slip_all: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """One free-surface LBM timestep (full Körner model) for D3Q27.
 
-    This mirrors :func:`free_surface_lbm.free_surface_step` but uses the
-    D3Q27 lattice with 27 velocity directions.
+    Reference mechanics (Körner et al. 2005; Thürey 2007; waLBerla
+    ``free_surface``), mirroring :func:`free_surface_lbm.free_surface_step`:
 
-    Pipeline:
-      1. Macroscopic + collision (BGK or MRT, optional SGS)
-      2. Guo gravity force
-      3. Stream (pull scheme)
-      4. Zero gas cells
-      5. Anti-bounce-back (ABB) for interface cells (gas pressure boundary)
-      6. Wall BCs (bounce-back)
-      7. Mass exchange (Körner independent mass variable)
-      8. Topology conversion (G→I, I→L, I→G) + mass redistribution
-      9. Halo/isolation cleanup
+      1. Macroscopic + collision (BGK or MRT, optional SGS; skipped in
+         SOLID/GAS) + single fill-weighted Guo force (Körner eq. 15)
+      2. Pull streaming + gas zeroing
+      2c. ABB gas-pressure reconstruction (Thürey eq. 4.5) with Laplace
+          pressure (``surface_tension``) and ``bubble_pressure`` support
+      3. Fluid-side half-way wall bounce-back, with selective specular
+         (free-slip) reflection on ``free_slip_mask`` / y-walls / all walls
+      4. Körner mass exchange (eq. 9): full-weight L/I links, fill-averaged
+         I/I links with the Thürey table-4.1 selector, no gas flux
+      5. Conversion marking: only INTERFACE converts (fill > 1+κ / < -κ plus
+         forced neighbourhood rules)
+      5a. Even excess redistribution to surviving + conversion-driven new
+          receivers (local donor density)
+      5b. Conversion (I→L keeps PDFs), conversion-driven envelope + LIQUID
+          demotion, no clamp, no isolation stage
 
     Args:
         f: Distribution tensor of shape ``(27, nz, ny, nx)``.
@@ -376,10 +463,9 @@ def free_surface_step_27(
         gx, gy, gz: Body force components (Guo forcing).
         rho_liquid: Liquid density (lattice units).
         rho_gas: Gas density (lattice units).
-        surface_tension: Surface tension coefficient (0 = disabled).
-        C_s: SGS model constant (0 = no SGS).  Interpreted as the
-            Smagorinsky constant, WALE constant, or Vreman constant
-            depending on *sgs_model*.
+        surface_tension: Surface tension coefficient for the Laplace pressure
+            jump in the ABB gas density (0 = disabled).
+        C_s: SGS model constant (0 = no SGS).
         sgs_model: SGS model name — ``'smagorinsky'``, ``'wale'``, or
             ``'vreman'``.  Only used when ``C_s > 0``.
         free_slip_y: Apply free-slip on y-walls.
@@ -387,6 +473,12 @@ def free_surface_step_27(
         collision: 'bgk' or 'mrt'.
         mass_ledger: Optional dict for mass tracking diagnostics.
         freeze_topology: If True, skip topology conversion (diagnostic mode).
+        bubble_pressure: Optional override of the ABB gas reference density
+            (enclosed, possibly pressurised gas volume).
+        cell_conversion_threshold: κ for fill > 1+κ / fill < -κ conversion.
+        cell_conversion_force_threshold: κ_f for the forced rules.
+        free_slip_mask: Optional boolean mask of free-slip (specular) walls.
+        free_slip_all: Free-slip on all solid walls.
 
     Returns:
         Tuple ``(f, fill, flags, mass, df)`` where ``df`` is the wall
@@ -412,11 +504,24 @@ def free_surface_step_27(
 
     # ---- 1. Macroscopic + collision ----
     rho, ux, uy, uz = macroscopic27(f)
+    if _env_bool_27("TL_FS_INPUT_GUARD", True):
+        ux = ux.clamp(-0.5, 0.5)
+        uy = uy.clamp(-0.5, 0.5)
+        uz = uz.clamp(-0.5, 0.5)
     rho_s = rho.clamp(min=1e-6, max=rho_liquid * 3.0)
-    ux_eq = (ux + tau * gx).clamp(-0.5, 0.5)
-    uy_eq = (uy + tau * gy).clamp(-0.5, 0.5)
-    uz_eq = (uz + tau * gz).clamp(-0.5, 0.5)
+    liquid_pre = flags == LIQUID
+    iface_pre = flags == INTERFACE
+    active_pre = liquid_pre | iface_pre
+    fill_pre = torch.where(
+        active_pre, (mass / rho_s.clamp(min=1e-6)).clamp(0.0, 1.0), torch.zeros_like(mass)
+    )
+    force_weight = torch.where(iface_pre, fill_pre, torch.ones_like(fill_pre))
+    force_weight = torch.where(active_pre, force_weight, torch.zeros_like(force_weight))
+    ux_eq = (ux + 0.5 * force_weight * gx).clamp(-0.5, 0.5)
+    uy_eq = (uy + 0.5 * force_weight * gy).clamp(-0.5, 0.5)
+    uz_eq = (uz + 0.5 * force_weight * gz).clamp(-0.5, 0.5)
     feq = equilibrium27(rho_s, ux_eq, uy_eq, uz_eq)
+    f_pre_collision = f
 
     # For non-BGK: set gas cells to small equilibrium (prevent NaN)
     if collision != "bgk":
@@ -461,43 +566,26 @@ def free_surface_step_27(
         else:
             f = f_collide - (f_collide - feq) / tau
 
-    # Guo gravity force (only when gravity is non-zero)
+    # Single Guo body force (Körner eq. 15: F = a * rho * fill at INTERFACE,
+    # F = a * rho at LIQUID), with the full second-order Guo source term.
     if gx != 0.0 or gy != 0.0 or gz != 0.0:
         cs2 = 1.0 / 3.0
         cx = c_dev[:, 0].view(27, 1, 1, 1)
         cy = c_dev[:, 1].view(27, 1, 1, 1)
         cz = c_dev[:, 2].view(27, 1, 1, 1)
         w_dev = _W.to(device).float().view(27, 1, 1, 1)
-        ng = non_gas.float()
-        Fx = rho_liquid * gx * ng
-        Fy = rho_liquid * gy * ng
-        Fz = rho_liquid * gz * ng
-        cu_force = cx * Fx.unsqueeze(0) + cy * Fy.unsqueeze(0) + cz * Fz.unsqueeze(0)
-        f = f + (1.0 - 0.5 / tau) * w_dev * cu_force / cs2
-
-    # Surface tension force (curvature correction, standard Körner)
-    if surface_tension > 0:
-        cx = c_dev[:, 0].view(27, 1, 1, 1)
-        cy = c_dev[:, 1].view(27, 1, 1, 1)
-        cz = c_dev[:, 2].view(27, 1, 1, 1)
-        w_dev = _W.to(device).float().view(27, 1, 1, 1)
-        cs2 = 1.0 / 3.0
-        fill_field = mass / rho_s.clamp(min=1e-6)
-        grad_x = 0.5 * (fill_field.roll(-1, dims=2) - fill_field.roll(1, dims=2))
-        grad_y = 0.5 * (fill_field.roll(-1, dims=1) - fill_field.roll(1, dims=1))
-        grad_z = 0.5 * (fill_field.roll(-1, dims=0) - fill_field.roll(1, dims=0))
-        mag = (grad_x**2 + grad_y**2 + grad_z**2).sqrt().clamp(min=1e-10)
-        nx, ny_n, nz_n = -grad_x / mag, -grad_y / mag, -grad_z / mag
-        kappa = 0.5 * (
-            (nx.roll(-1, dims=2) - nx.roll(1, dims=2))
-            + (ny_n.roll(-1, dims=1) - ny_n.roll(1, dims=1))
-            + (nz_n.roll(-1, dims=0) - nz_n.roll(1, dims=0))
+        Fx = rho_s * gx * force_weight
+        Fy = rho_s * gy * force_weight
+        Fz = rho_s * gz * force_weight
+        cu = (cx * ux + cy * uy + cz * uz) / cs2
+        forcing = (
+            ((cx - ux) * Fx + (cy - uy) * Fy + (cz - uz) * Fz) / cs2
+            + cu * (cx * Fx + cy * Fy + cz * Fz) / cs2
         )
-        Fx_st = surface_tension * kappa * grad_x
-        Fy_st = surface_tension * kappa * grad_y
-        Fz_st = surface_tension * kappa * grad_z
-        cu_st = cx * Fx_st.unsqueeze(0) + cy * Fy_st.unsqueeze(0) + cz * Fz_st.unsqueeze(0)
-        f = f + (1.0 - 0.5 / tau) * w_dev * cu_st / cs2
+        f = f + (1.0 - 0.5 / tau) * w_dev * forcing
+
+    # NOTE: surface tension is carried as a Laplace pressure jump inside the
+    # ABB gas density below (Thürey 2007 §4.2), not as a CSF body force.
 
     # Clamp f for numerical stability
     f = f.clamp(min=0.0, max=rho_liquid * 3.0)
@@ -505,6 +593,11 @@ def free_surface_step_27(
     # Remove NaN for non-BGK
     if collision != "bgk":
         f = torch.nan_to_num(f, nan=0.0, posinf=0.0, neginf=0.0)
+
+    # Collision is skipped in SOLID and GAS cells (reference dynamics apply
+    # only to liquid/interface cells).
+    f = torch.where(solid_mask.unsqueeze(0), f_pre_collision, f)
+    f = torch.where((flags == GAS).unsqueeze(0), torch.zeros_like(f), f)
 
     # Preserve post-collision outgoing populations for ABB
     f_post = torch.where(non_gas.unsqueeze(0), f, torch.zeros_like(f))
@@ -516,6 +609,12 @@ def free_surface_step_27(
     # ---- 2b. Zero gas cells AFTER streaming ----
     gas_mask_pre = flags == GAS
     f = torch.where(gas_mask_pre.unsqueeze(0), torch.zeros_like(f), f)
+    if _env_bool_27("TL_FS_INPUT_GUARD", True):
+        f = torch.nan_to_num(f, nan=0.0, posinf=0.0, neginf=0.0).clamp(
+            min=0.0, max=rho_liquid * 3.0
+        )
+    # Freeze the pure streamed state before ABB for the mass exchange.
+    f_exchange = f
 
     # ---- 2c. Anti-bounce-back for interface cells (gas pressure) ----
     iface_abb = flags == INTERFACE
@@ -524,36 +623,109 @@ def free_surface_step_27(
         [flags.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2) for sx, sy, sz in _C27_SHIFTS]
     )  # (27, nz, ny, nx)
     need_abb = iface_abb.unsqueeze(0) & (neighbor_flags == GAS)
-    # Standard Körner ABB: f_q(x) = f_eq_gas + f_eq_gas[opp] - f_post[opp]
-    rho_g_field = torch.full_like(rho, float(rho_gas))
-    f_eq_gas = equilibrium27(rho_g_field, ux, uy, uz)
-    f_abb = f_eq_gas + f_eq_gas[_OPP.to(device)] - f_post[_OPP.to(device)]
+    _opp_dev = _OPP.to(device)
+    _rho_pc, _ux_pc, _uy_pc, _uz_pc = macroscopic27(f_post)
+    if _env_bool_27("TL_FS_INPUT_GUARD", True):
+        _ux_pc = _ux_pc.clamp(-0.5, 0.5)
+        _uy_pc = _uy_pc.clamp(-0.5, 0.5)
+        _uz_pc = _uz_pc.clamp(-0.5, 0.5)
+    _rho_gas_base = float(bubble_pressure) if bubble_pressure is not None else float(rho_gas)
+    rho_g_field = torch.full_like(rho, _rho_gas_base)
+    if surface_tension > 0:
+        # Laplace pressure jump inside the ABB gas density: Δρ = 3σκ, ±0.1.
+        gx_f = 0.5 * (fill_pre.roll(-1, dims=2) - fill_pre.roll(1, dims=2))
+        gy_f = 0.5 * (fill_pre.roll(-1, dims=1) - fill_pre.roll(1, dims=1))
+        gz_f = 0.5 * (fill_pre.roll(-1, dims=0) - fill_pre.roll(1, dims=0))
+        mag = (gx_f**2 + gy_f**2 + gz_f**2).sqrt().clamp(min=1e-10)
+        nx_n, ny_n, nz_n = -gx_f / mag, -gy_f / mag, -gz_f / mag
+        kappa = 0.5 * (
+            (nx_n.roll(-1, dims=2) - nx_n.roll(1, dims=2))
+            + (ny_n.roll(-1, dims=1) - ny_n.roll(1, dims=1))
+            + (nz_n.roll(-1, dims=0) - nz_n.roll(1, dims=0))
+        )
+        delta_rho = (3.0 * float(surface_tension) * kappa).clamp(-0.1, 0.1)
+        rho_g_field = rho_g_field + torch.where(
+            iface_abb, delta_rho, torch.zeros_like(delta_rho)
+        )
+    # Standard Körner ABB: f_q(x) = f_eq_gas + f_eq_gas[opp] - f_post[opp].
+    # Consistent only for rho_gas O(rho_liquid); use rho_gas = rho_liquid for
+    # an open free surface (pressure-matched ambient).
+    f_eq_gas = equilibrium27(rho_g_field, _ux_pc, _uy_pc, _uz_pc)
+    f_abb = f_eq_gas + f_eq_gas[_opp_dev] - f_post[_opp_dev]
     abb_delta = torch.where(need_abb, f_abb - f, torch.zeros_like(f))
     if mass_ledger is not None:
         mass_ledger["abb_population_delta"] = float(abb_delta.sum())
     f = torch.where(need_abb, f_abb, f)
 
-    # ---- 3. Wall BCs ----
+    # ---- 3. Wall BCs (fluid-side half-way bounce-back + selective slip) ----
+    _wall_mode = os.environ.get("TL_FS_WALL_MODE", "halfway").strip().lower()
+    if _wall_mode != "legacy":
+        _src_solid = torch.stack(
+            [
+                solid_mask.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
+                for sx, sy, sz in _C27_SHIFTS
+            ]
+        )  # (27,nz,ny,nx): pull source x - c_q lies in SOLID
+        _fluid_bb = (~solid_mask).unsqueeze(0) & _src_solid
+        _f_reflect = f_post[_opp_dev]
+        _slip = free_slip_mask
+        if _slip is None and free_slip_all:
+            _slip = solid_mask
+        if _slip is not None:
+            _src_slip = torch.stack(
+                [
+                    _slip.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
+                    for sx, sy, sz in _C27_SHIFTS
+                ]
+            )
+            _mir_idx = _specular_wall_mirror_index_27(_slip, device)
+            _f_reflect = torch.where(
+                _fluid_bb & _src_slip, torch.gather(f_post, 0, _mir_idx), _f_reflect
+            )
+        elif free_slip_y and y_wall_mask is not None:
+            _src_y = torch.stack(
+                [
+                    y_wall_mask.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
+                    for sx, sy, sz in _C27_SHIFTS
+                ]
+            )
+            _f_reflect = torch.where(
+                _fluid_bb & _src_y, f_post[_D3Q27_MIRROR_Y.to(device)], _f_reflect
+            )
+        f = torch.where(_fluid_bb, _f_reflect, f)
     f = bounce_back_cells_27(f, solid_mask)
 
-    # ---- 4. Mass exchange (standard Körner, independent mass variable) ----
-    f.sum(dim=0)
+    # ---- 4. Mass exchange (Körner eq. 9 / Thürey table 4.1) ----
     iface_mask = flags == INTERFACE
-    f_opp_nb = f_post[_OPP.to(device)]  # (27, nz, ny, nx)
+    f_opp_nb = f_post[_opp_dev]  # (27, nz, ny, nx)
     iface_27 = iface_mask.unsqueeze(0)
     from_liq = iface_27 & (neighbor_flags == LIQUID)
-    iface_27 & (neighbor_flags == GAS)
     from_iface = iface_27 & (neighbor_flags == INTERFACE)
-    mass_delta_liquid = torch.where(from_liq, f - f_opp_nb, torch.zeros_like(f))
+    diff = f_exchange - f_opp_nb
+    mass_delta_liquid = torch.where(from_liq, diff, torch.zeros_like(f))
+    fill_nb = torch.stack(
+        [fill_pre] + [roll_from_pull_source_27(fill_pre, q) for q in D3Q27_MOVING_Q]
+    )
+    ii_weight = 0.5 * (fill_pre.unsqueeze(0) + fill_nb)
+    liq_nbr_count = (neighbor_flags == LIQUID).sum(dim=0)
+    liq_nbr_at_source = torch.stack(
+        [liq_nbr_count]
+        + [roll_from_pull_source_27(liq_nbr_count, q) for q in D3Q27_MOVING_Q]
+    )
+    gas_nbr_here = (neighbor_flags == GAS).any(dim=0).unsqueeze(0)
+    ii_dead = from_iface & (liq_nbr_at_source == 0) & ~gas_nbr_here
     mass_delta_interface = torch.where(
-        from_iface,
-        (f - f_opp_nb) * 0.5,
-        torch.zeros_like(f),
+        from_iface & ~ii_dead, ii_weight * diff, torch.zeros_like(f)
     )
     mass_delta = (mass_delta_liquid + mass_delta_interface).sum(0)
-    mass = torch.where(~solid_mask, mass + mass_delta, mass)
+    mass_delta = torch.nan_to_num(mass_delta, nan=0.0, posinf=0.0, neginf=0.0)
+    mass = torch.where(iface_mask, mass + mass_delta, mass)
     mass_after_exchange_value = float(mass.sum())
-    fill = torch.where(~solid_mask, (mass / rho_liquid).clamp(0.0, 1.0), fill)
+    # Post-boundary local density: fill = mass / rho_local (unclamped).
+    rho_new = f.sum(dim=0).clamp(min=1e-6)
+    fill = torch.where(iface_mask, mass / rho_new, fill_pre)
+    fill = torch.where(liquid_pre, torch.ones_like(fill), fill)
+    fill = torch.where(gas_mask_pre | solid_mask, torch.zeros_like(fill), fill)
 
     if mass_ledger is not None:
         mass_ledger["exchange"] = mass_after_exchange_value
@@ -576,18 +748,23 @@ def free_surface_step_27(
     interface_mask = flags == INTERFACE
     liquid_mask = flags == LIQUID
 
-    # Gas → Interface (received mass from streaming)
-    to_iface = gas_mask & (fill > 0.01) & (~solid_mask)
-    to_liq = interface_mask & (fill >= 0.999) & (~solid_mask)
-    to_gas = (interface_mask | liquid_mask) & (fill <= 0.01) & (~solid_mask)
+    # ---- 5. Conversion marking (interface-only + forced rules) ----
+    _kappa = float(cell_conversion_threshold)
+    _kappa_f = float(cell_conversion_force_threshold)
+    to_liq = interface_mask & (fill > 1.0 + _kappa)
+    to_gas = interface_mask & (fill < -_kappa)
+    _has_gas_nb = (neighbor_flags == GAS).any(dim=0)
+    _has_liq_nb = (neighbor_flags == LIQUID).any(dim=0)
+    _has_if_nb = (neighbor_flags == INTERFACE).any(dim=0)
+    to_liq = to_liq | (interface_mask & ~_has_gas_nb & ((fill > 1.0 - _kappa_f) | ~_has_if_nb))
+    to_gas = to_gas | (interface_mask & ~_has_liq_nb & ((fill < _kappa_f) | ~_has_if_nb))
+    to_gas = to_gas & ~to_liq  # liquid priority on the double trigger
 
-    # ---- 5a. Körner mass redistribution (excess → interface neighbors) ----
-    excess = torch.where(to_liq, mass - rho_liquid, torch.zeros_like(mass)) + torch.where(
+    # ---- 5a. Even excess redistribution (local donor density) ----
+    excess = torch.where(to_liq, mass - rho_new, torch.zeros_like(mass)) + torch.where(
         to_gas, mass, torch.zeros_like(mass)
     )
-    # Existing interface cells receive first
     recv_iface = interface_mask & ~to_liq & ~to_gas
-    # Promote adjacent gas halo to receivers if a converting interface has none
     adjacent_converting = torch.stack(all_moving_neighbor_masks_27(to_liq)).any(dim=0)
     recv_new = gas_mask & adjacent_converting & ~solid_mask
     recv_mask = recv_iface | recv_new
@@ -604,52 +781,39 @@ def free_surface_step_27(
     mass = mass + redistribution_increment
     mass_after_redistribution = float(mass.sum())
 
-    # Clamp mass to [0, rho_liquid]
-    mass = mass.clamp(0.0, rho_liquid)
+    # No clamp (the reference model has none).
     mass_after_clamp = float(mass.sum())
 
-    # ---- 5b. Topology conversion ----
-    # G→I: init newly converted gas cells with equilibrium
-    f = _init_new_27(f, flags, to_iface, rho_gas, device, ux, uy, uz)
-    flags = torch.where(to_iface, torch.full_like(flags, INTERFACE), flags)
-
-    # I→L
+    # ---- 5b. Topology conversion (I→L keeps PDFs) ----
     flags = torch.where(to_liq, torch.full_like(flags, LIQUID), flags)
     fill = torch.where(to_liq, torch.ones_like(fill), fill)
-    mass = torch.where(to_liq, torch.full_like(mass, rho_liquid), mass)
+    mass = torch.where(to_liq, rho_new, mass)
 
-    # I→G (or L→G, though L→G shouldn't happen normally)
     flags = torch.where(to_gas, torch.full_like(flags, GAS), flags)
     fill = torch.where(to_gas, torch.zeros_like(fill), fill)
     mass = torch.where(to_gas, torch.zeros_like(mass), mass)
     f = torch.where(to_gas.unsqueeze(0), torch.zeros_like(f), f)
     mass_after_conversion = float(mass.sum())
 
-    # ---- 5c. Halo boundary (gas cells adjacent to liquid/interface → INTERFACE) ----
-    shifted_flags = torch.stack(all_moving_neighbor_masks_27(flags))
-    is_neighbor = ((shifted_flags == LIQUID) | (shifted_flags == INTERFACE)).any(dim=0)
-    to_i = ((gas_mask | to_gas) & is_neighbor & ~solid_mask) | recv_new
-    f = _init_new_27(f, flags, to_i, rho_gas, device, ux, uy, uz)
+    # ---- 5c. Conversion-driven envelope + LIQUID demotion ----
+    to_i = recv_new & (flags == GAS) & ~solid_mask
+    f = _init_new_27(f, flags, to_i, None, device, ux, uy, uz)
     flags = torch.where(to_i, torch.full_like(flags, INTERFACE), flags)
-    fill = torch.where(to_i & ~recv_new, torch.zeros_like(fill), fill)
-    mass = torch.where(to_i & ~recv_new, torch.zeros_like(mass), mass)
+    rho_fill = torch.where(to_i, f.sum(dim=0).clamp(min=1e-6), rho_new)
+    fill = torch.where(to_i, mass / rho_fill.clamp(min=1e-6), fill)
+    liq_adj_new_gas = torch.stack(all_moving_neighbor_masks_27(to_gas)).any(dim=0)
+    demote = (flags == LIQUID) & liq_adj_new_gas & ~solid_mask
+    flags = torch.where(demote, torch.full_like(flags, INTERFACE), flags)
+    fill = torch.where(demote, mass / rho_fill.clamp(min=1e-6), fill)
+    fill = torch.where(flags == INTERFACE, mass / rho_fill.clamp(min=1e-6), fill)
+    fill = torch.where(flags == LIQUID, torch.ones_like(fill), fill)
+    fill = torch.where((flags == GAS) | solid_mask, torch.zeros_like(fill), fill)
 
-    # ---- 5d. Isolation cleanup (isolated interface → gas) ----
-    interface_mask = flags == INTERFACE
-    has_neighbor = (
-        (torch.stack(all_moving_neighbor_masks_27(flags)) == LIQUID)
-        | (torch.stack(all_moving_neighbor_masks_27(flags)) == INTERFACE)
-    ).any(dim=0)
-    isolated = interface_mask & ~has_neighbor & ~solid_mask
-    flags = torch.where(isolated, torch.full_like(flags, GAS), flags)
-    fill = torch.where(isolated, torch.zeros_like(fill), fill)
-    mass = torch.where(isolated, torch.zeros_like(mass), mass)
-    f = torch.where(isolated.unsqueeze(0), torch.zeros_like(f), f)
+    # No isolation stage (forced rules at marking time cover it).
+    mass_after_isolation = float(mass.sum())
 
     # ---- 5e. Solid enforcement ----
     flags = torch.where(solid_mask, torch.full_like(flags, SOLID), flags)
-
-    mass_after_isolation = float(mass.sum())
 
     if mass_ledger is not None:
         mass_ledger["redistribution"] = mass_after_redistribution
