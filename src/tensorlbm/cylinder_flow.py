@@ -118,6 +118,7 @@ class CylinderFlowConfig:
     mrt_s_eps: float = 1.54
     mrt_s_q: float = 1.7
     save_field_npz: bool = True
+    save_initial_snapshot: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
@@ -453,6 +454,36 @@ def _run_cylinder_flow_backend(
     fy_steps: list[object] = []
     diameter = 2.0 * config.radius
     dyn_pressure = 0.5 * config.u_in**2 * diameter
+
+    if config.save_initial_snapshot and config.resume_checkpoint is None:
+        rho_init, ux_init, uy_init = _backend_macroscopic(ops, f, device=device)
+        zeros_init = ops.zeros((config.ny, config.nx), device=device)
+        ux_init = ops.where(obstacle, zeros_init, ux_init)
+        uy_init = ops.where(obstacle, zeros_init, uy_init)
+        speed_init = ops.sqrt(ux_init * ux_init + uy_init * uy_init)
+        mass_init = ops.float_scalar(ops.sum_val(rho_init))
+        point0 = DiagnosticPoint(
+            step=0,
+            mass=mass_init,
+            mass_drift=mass_init - initial_mass,
+            max_speed=ops.float_scalar(ops.max_val(speed_init)),
+            mean_rho=ops.float_scalar(ops.mean(rho_init)),
+        )
+        diag0: dict[str, object] = {**asdict(point0), "cd": 0.0, "cl": 0.0}
+        diagnostics.append(diag0)
+        _save_flow_snapshot(
+            run_dir,
+            0,
+            speed_init,
+            _compute_vorticity_np(_to_numpy(ux_init), _to_numpy(uy_init)),
+            obstacle,
+            ux=ux_init,
+            uy=uy_init,
+            rho=rho_init,
+            save_field_npz=config.save_field_npz,
+        )
+        if diagnostic_callback is not None:
+            diagnostic_callback(diag0)
 
     logger.info(
         "Running D2Q9 cylinder flow backend=%s device=%s NX=%s NY=%s tau=%.4f steps=%s output_interval=%s",
@@ -847,6 +878,36 @@ def run_cylinder_flow(
 
     diameter = 2.0 * config.radius
     dyn_pressure = 0.5 * config.u_in**2 * diameter
+
+    if config.save_initial_snapshot and config.resume_checkpoint is None:
+        rho_init, ux_init, uy_init = macroscopic(f)
+        ux_init = ux_init.masked_fill(obstacle, 0.0)
+        uy_init = uy_init.masked_fill(obstacle, 0.0)
+        speed_init = torch.sqrt(ux_init * ux_init + uy_init * uy_init)
+        mass_init = float(rho_init.sum().item())
+        point0 = DiagnosticPoint(
+            step=0,
+            mass=mass_init,
+            mass_drift=mass_init - initial_mass,
+            max_speed=float(speed_init.max().item()),
+            mean_rho=float(rho_init.mean().item()),
+        )
+        diag0: dict[str, object] = {**asdict(point0), "cd": 0.0, "cl": 0.0}
+        diagnostics.append(diag0)
+        vort_init = compute_vorticity(ux_init, uy_init)
+        _save_flow_snapshot(
+            run_dir,
+            0,
+            speed_init,
+            vort_init,
+            obstacle,
+            ux=ux_init,
+            uy=uy_init,
+            rho=rho_init,
+            save_field_npz=config.save_field_npz,
+        )
+        if diagnostic_callback is not None:
+            diagnostic_callback(diag0)
 
     # Optionally JIT-compile the hot-path kernels
     # Select collision operator: use f, tau=... form (tau captured in lambda)

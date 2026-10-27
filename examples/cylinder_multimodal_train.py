@@ -162,6 +162,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Also export trajectories to HDF5 and register R2 FieldDataCatalog products",
     )
+    parser.add_argument(
+        "--save-initial-snapshot",
+        dest="save_initial_snapshot",
+        action="store_true",
+        help="Include step=0 initial field snapshots so models learn t=0 cold-start transitions",
+    )
     return parser
 
 
@@ -198,6 +204,7 @@ def _generate_split_runs(
                 device=args.device,
                 overwrite=True,
                 save_field_npz=True,
+                save_initial_snapshot=bool(args.save_initial_snapshot),
             )
             dirs.append(run_cylinder_flow(cfg))
     return dirs
