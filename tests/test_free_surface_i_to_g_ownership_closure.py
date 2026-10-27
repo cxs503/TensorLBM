@@ -277,43 +277,43 @@ def test_i_to_g_transaction_rejects_liquid_to_gas_and_receiver_capacity_overflow
 
 
 @pytest.mark.parametrize("failure", ("zero_receiver", "combined_capacity"))
-def test_free_surface_step_i_to_g_failure_is_withheld_and_leaves_state_and_ledgers_unchanged(
+def test_free_surface_step_i_to_g_settles_through_plain_excess_and_opt_in_is_noop(
     failure: str,
 ) -> None:
+    # The experimental I→G ownership closure is retired: the solver no longer
+    # withholds receiver-less I→G conversions.  Reference semantics settle the
+    # donor through the plain excess path (receiver fill is allowed to absorb
+    # the overshoot per Thürey's redistribution), so the retired opt-in flag
+    # must be a strict no-op and the underfilled donor must convert to GAS.
     from tensorlbm.free_surface_lbm import free_surface_step
 
     f, fill, flags, mass, solid = _state()
     donor, receiver = (1, 1, 2), (1, 1, 3)
-    fill[donor] = 0.0
-    mass[donor] = 0.0
+    fill[donor] = -0.05
+    mass[donor] = -0.05
     if failure == "zero_receiver":
         flags[receiver] = GAS
     else:
-        fill[donor] = mass[donor] = 0.01
         fill[receiver] = mass[receiver] = 0.995
-    before = tuple(field.clone() for field in (f, fill, flags, mass))
-    runtime = {"nested": {"steps": ["unchanged"]}}
-    ownership = {"nested": {"latest": ["unchanged"]}}
-    audit = {"nested": {"audit": ["unchanged"]}}
-    with pytest.raises(
-        TopologyTransactionError, match="WITHHELD.*entire free_surface_step topology candidate"
-    ):
-        free_surface_step(
-            f,
-            fill,
-            flags,
-            solid,
-            mass=mass,
-            runtime_ledger=runtime,
-            ownership_ledger=ownership,
-            conversion_density_audit_ledger=audit,
-            enable_i_to_g_ownership_closure=True,
-        )
-    for actual, expected in zip((f, fill, flags, mass), before):
-        assert torch.equal(actual, expected)
-    assert runtime == {"nested": {"steps": ["unchanged"]}}
-    assert ownership == {"nested": {"latest": ["unchanged"]}}
-    assert audit == {"nested": {"audit": ["unchanged"]}}
+    enabled = free_surface_step(
+        f.clone(),
+        fill.clone(),
+        flags.clone(),
+        solid,
+        mass=mass.clone(),
+        enable_i_to_g_ownership_closure=True,
+    )
+    disabled = free_surface_step(
+        f.clone(),
+        fill.clone(),
+        flags.clone(),
+        solid,
+        mass=mass.clone(),
+        enable_i_to_g_ownership_closure=False,
+    )
+    for observed, expected in zip(enabled, disabled):
+        assert torch.equal(observed, expected)
+    assert int(enabled[2][donor].item()) == GAS
 
 
 def test_default_step_does_not_construct_i_to_g_proposal_and_matches_explicit_disabled(

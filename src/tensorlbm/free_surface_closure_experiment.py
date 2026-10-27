@@ -332,7 +332,9 @@ def _run_case(
                     solid,
                     mass=mass,
                     tau=1.0,
-                    rho_gas=1.0e-3,
+                    # Pressure-matched gas: the reference Körner ABB (Thürey
+                    # eq. 4.5) requires an O(rho_liquid) gas reference.
+                    rho_gas=1.0,
                     freeze_topology=freeze_topology,
                     runtime_ledger=runtime,
                     ownership_ledger=ownership,

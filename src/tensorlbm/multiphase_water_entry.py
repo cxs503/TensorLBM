@@ -18,7 +18,10 @@ Initial condition:
     Heavy fluid (water) fills the lower portion ``y < water_level``.
     Light fluid (air) fills the upper portion.
 Sphere/cylinder:
-    Rigid bounce-back obstacle, initially centred above the water surface.
+    Rigid obstacle with *prescribed constant downward velocity* (``v_entry``),
+    initially centred above the water surface.  Moving bounce-back (Ladd 1994)
+    with fresh/cleared-node treatment; impact force via the moving-wall
+    momentum-exchange method.  ``v_entry=0`` recovers the static obstacle.
 Gravity:
     Acts in the −y (2-D) or −z (3-D) direction.
 
@@ -91,6 +94,11 @@ class MultiphaseWaterEntryConfig:
     rho_water: float = 0.8
     rho_air: float = 0.4
     G: float = -0.9
+    # CG surface-tension coefficient (positive; decoupled from the SC coupling
+    # G — the legacy A = G*0.04 was negative, i.e. anti-tension).
+    A_surface: float = 0.04
+    # Prescribed downward entry speed (lattice units per step); 0 = static.
+    v_entry: float = 0.02
     tau: float = 1.0
     g: float = 5e-5
     n_steps: int = 3000
@@ -119,6 +127,12 @@ class MultiphaseWaterEntryConfig:
             raise ValueError(msg)
         if self.water_level <= 0 or self.water_level >= self.ny:
             msg = "water_level must be in (0, ny)"
+            raise ValueError(msg)
+        if self.v_entry < 0:
+            msg = "v_entry must be >= 0"
+            raise ValueError(msg)
+        if self.A_surface < 0:
+            msg = "A_surface must be >= 0 (negative A is anti-tension)"
             raise ValueError(msg)
 
     def resolved_run_name(self) -> str:
@@ -339,6 +353,223 @@ def _momentum_exchange_3d(
 
 
 # ---------------------------------------------------------------------------
+# Prescribed-velocity moving body (Ladd 1994)
+# ---------------------------------------------------------------------------
+
+_D2Q9_OPP = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.long)
+_D3Q19_OPP = torch.tensor(
+    [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17],
+    dtype=torch.long,
+)
+_D2Q9_W = torch.tensor(
+    [4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36],
+    dtype=torch.float32,
+)
+_CS2 = 1.0 / 3.0
+
+
+def _pull_source_in_2d(mask: torch.Tensor) -> torch.Tensor:
+    """``(9, ny, nx)``: pull source ``x - c_q`` lies in ``mask`` (q=0: self)."""
+    c = C2.to(mask.device)
+    out = [mask]
+    for q in range(1, 9):
+        out.append(
+            torch.roll(mask, shifts=(int(c[q, 1]), int(c[q, 0])), dims=(0, 1))
+        )
+    return torch.stack(out)
+
+
+def _link_into_2d(mask: torch.Tensor) -> torch.Tensor:
+    """``(9, ny, nx)``: downstream neighbour ``x + c_q`` lies in ``mask``."""
+    c = C2.to(mask.device)
+    out = [mask]
+    for q in range(1, 9):
+        out.append(
+            torch.roll(mask, shifts=(-int(c[q, 1]), -int(c[q, 0])), dims=(0, 1))
+        )
+    return torch.stack(out)
+
+
+def _pull_source_in_3d(mask: torch.Tensor) -> torch.Tensor:
+    """``(19, nz, ny, nx)``: pull source ``x - c_q`` lies in ``mask``."""
+    c = C3.to(mask.device)
+    out = [mask]
+    for q in range(1, 19):
+        out.append(
+            torch.roll(
+                mask,
+                shifts=(int(c[q, 2]), int(c[q, 1]), int(c[q, 0])),
+                dims=(0, 1, 2),
+            )
+        )
+    return torch.stack(out)
+
+
+def _link_into_3d(mask: torch.Tensor) -> torch.Tensor:
+    """``(19, nz, ny, nx)``: downstream neighbour ``x + c_q`` lies in ``mask``."""
+    c = C3.to(mask.device)
+    out = [mask]
+    for q in range(1, 19):
+        out.append(
+            torch.roll(
+                mask,
+                shifts=(-int(c[q, 2]), -int(c[q, 1]), -int(c[q, 0])),
+                dims=(0, 1, 2),
+            )
+        )
+    return torch.stack(out)
+
+
+def _moving_wall_bb_2d(f, f_pre, body, solid, uw_x, uw_y):
+    """Fluid-side moving bounce-back (Ladd 1994) on body links, D2Q9.
+
+    ``f`` is post-stream, ``f_pre`` post-collision (pre-stream) of the same
+    component.  For a fluid cell whose pull source lies in the moving ``body``:
+    ``f_q = f_pre[opp(q)] + 2 w_q rho (c_q . u_w) / cs²`` with the
+    component's own pre-stream density.  Static walls are left to the
+    runner's post-stream bounce-back.
+    """
+    device = f.device
+    fluid = ~solid
+    src = _pull_source_in_2d(body)
+    link = fluid.unsqueeze(0) & src
+    if not bool(link.any()):
+        return f
+    opp = _D2Q9_OPP.to(device)
+    c = C2.to(device).float()
+    w = _D2Q9_W.to(device).view(9, 1, 1)
+    rho = f_pre.sum(dim=0)
+    cuw = c[:, 0].view(9, 1, 1) * uw_x + c[:, 1].view(9, 1, 1) * uw_y
+    f_refl = f_pre[opp] + 2.0 * w * rho.unsqueeze(0) * cuw / _CS2
+    return torch.where(link, f_refl, f)
+
+
+def _moving_wall_bb_3d(f, f_pre, body, solid, uw_x, uw_y, uw_z):
+    """Fluid-side moving bounce-back (Ladd 1994) on body links, D3Q19."""
+    from .d3q19 import W as W3
+
+    device = f.device
+    fluid = ~solid
+    src = _pull_source_in_3d(body)
+    link = fluid.unsqueeze(0) & src
+    if not bool(link.any()):
+        return f
+    opp = _D3Q19_OPP.to(device)
+    c = C3.to(device).float()
+    w = W3.to(device).view(19, 1, 1, 1)
+    rho = f_pre.sum(dim=0)
+    cuw = (
+        c[:, 0].view(19, 1, 1, 1) * uw_x
+        + c[:, 1].view(19, 1, 1, 1) * uw_y
+        + c[:, 2].view(19, 1, 1, 1) * uw_z
+    )
+    f_refl = f_pre[opp] + 2.0 * w * rho.unsqueeze(0) * cuw / _CS2
+    return torch.where(link, f_refl, f)
+
+
+def _refill_cleared_2d(f, cleared, fluid):
+    """Refill cleared (solid→fluid) nodes with neighbour-averaged equilibrium."""
+    if not bool(cleared.any()):
+        return f
+    device = f.device
+    c = C2.to(device).float()
+    rho = f.sum(dim=0)
+    rho_safe = rho.clamp(min=1e-12)
+    ux = (f * c[:, 0].view(9, 1, 1)).sum(dim=0) / rho_safe
+    uy = (f * c[:, 1].view(9, 1, 1)).sum(dim=0) / rho_safe
+    stacks = [(fluid, rho, ux, uy)]
+    nb_f, nb_r, nb_x, nb_y = [], [], [], []
+    for q in range(1, 9):
+        shift = (int(c[q, 1]), int(c[q, 0]))
+        nb_f.append(torch.roll(fluid, shifts=shift, dims=(0, 1)))
+        nb_r.append(torch.roll(rho, shifts=shift, dims=(0, 1)))
+        nb_x.append(torch.roll(ux, shifts=shift, dims=(0, 1)))
+        nb_y.append(torch.roll(uy, shifts=shift, dims=(0, 1)))
+    nb_f = torch.stack(nb_f).to(f.dtype)
+    cnt = nb_f.sum(dim=0).clamp(min=1.0)
+    rho_m = (torch.stack(nb_r).to(f.dtype) * nb_f).sum(dim=0) / cnt
+    ux_m = (torch.stack(nb_x).to(f.dtype) * nb_f).sum(dim=0) / cnt
+    uy_m = (torch.stack(nb_y).to(f.dtype) * nb_f).sum(dim=0) / cnt
+    feq = equilibrium(rho_m, ux_m, uy_m)
+    filled = (nb_f.sum(dim=0) > 0) & cleared
+    return torch.where(filled.unsqueeze(0), feq, f)
+
+
+def _refill_cleared_3d(f, cleared, fluid):
+    """Refill cleared (solid→fluid) nodes with neighbour-averaged equilibrium."""
+    if not bool(cleared.any()):
+        return f
+    device = f.device
+    c = C3.to(device).float()
+    rho = f.sum(dim=0)
+    rho_safe = rho.clamp(min=1e-12)
+    ux = (f * c[:, 0].view(19, 1, 1, 1)).sum(dim=0) / rho_safe
+    uy = (f * c[:, 1].view(19, 1, 1, 1)).sum(dim=0) / rho_safe
+    uz = (f * c[:, 2].view(19, 1, 1, 1)).sum(dim=0) / rho_safe
+    nb_f, nb_r, nb_x, nb_y, nb_z = [], [], [], [], []
+    for q in range(1, 19):
+        shift = (int(c[q, 2]), int(c[q, 1]), int(c[q, 0]))
+        nb_f.append(torch.roll(fluid, shifts=shift, dims=(0, 1, 2)))
+        nb_r.append(torch.roll(rho, shifts=shift, dims=(0, 1, 2)))
+        nb_x.append(torch.roll(ux, shifts=shift, dims=(0, 1, 2)))
+        nb_y.append(torch.roll(uy, shifts=shift, dims=(0, 1, 2)))
+        nb_z.append(torch.roll(uz, shifts=shift, dims=(0, 1, 2)))
+    nb_f = torch.stack(nb_f).to(f.dtype)
+    cnt = nb_f.sum(dim=0).clamp(min=1.0)
+    rho_m = (torch.stack(nb_r).to(f.dtype) * nb_f).sum(dim=0) / cnt
+    ux_m = (torch.stack(nb_x).to(f.dtype) * nb_f).sum(dim=0) / cnt
+    uy_m = (torch.stack(nb_y).to(f.dtype) * nb_f).sum(dim=0) / cnt
+    uz_m = (torch.stack(nb_z).to(f.dtype) * nb_f).sum(dim=0) / cnt
+    feq = equilibrium3d(rho_m, ux_m, uy_m, uz_m)
+    filled = (nb_f.sum(dim=0) > 0) & cleared
+    return torch.where(filled.unsqueeze(0), feq, f)
+
+
+def _momentum_exchange_moving_2d(f1_pre, f2_pre, body, fluid, uw_x, uw_y):
+    """Moving-wall momentum-exchange force on the body (Ladd), D2Q9.
+
+    ``F = Σ 2 c_i [f̃_i − w_i ρ (c_i . u_w)/cs²]`` over fluid cells and links
+    entering the body, with post-collision (pre-stream) populations.  At
+    ``u_w = 0`` this reduces to the static Ladd force.
+    """
+    device = f1_pre.device
+    f_tot = f1_pre + f2_pre
+    rho = f_tot.sum(dim=0)
+    into = _link_into_2d(body)
+    link = fluid.unsqueeze(0) & into
+    c = C2.to(device).float()
+    w = _D2Q9_W.to(device).view(9, 1, 1)
+    cuw = c[:, 0].view(9, 1, 1) * uw_x + c[:, 1].view(9, 1, 1) * uw_y
+    contrib = (f_tot - w * rho.unsqueeze(0) * cuw / _CS2) * link.to(f_tot.dtype)
+    fx = 2.0 * float((c[:, 0].view(9, 1, 1) * contrib).sum().item())
+    fy = 2.0 * float((c[:, 1].view(9, 1, 1) * contrib).sum().item())
+    return fx, fy
+
+
+def _momentum_exchange_moving_3d(f1_pre, f2_pre, body, fluid, uw_x, uw_y, uw_z):
+    """Moving-wall momentum-exchange force on the body (Ladd), D3Q19."""
+    from .d3q19 import W as W3
+
+    device = f1_pre.device
+    f_tot = f1_pre + f2_pre
+    rho = f_tot.sum(dim=0)
+    into = _link_into_3d(body)
+    link = fluid.unsqueeze(0) & into
+    c = C3.to(device).float()
+    w = W3.to(device).view(19, 1, 1, 1)
+    cuw = (
+        c[:, 0].view(19, 1, 1, 1) * uw_x
+        + c[:, 1].view(19, 1, 1, 1) * uw_y
+        + c[:, 2].view(19, 1, 1, 1) * uw_z
+    )
+    contrib = (f_tot - w * rho.unsqueeze(0) * cuw / _CS2) * link.to(f_tot.dtype)
+    fx = 2.0 * float((c[:, 0].view(19, 1, 1, 1) * contrib).sum().item())
+    fy = 2.0 * float((c[:, 1].view(19, 1, 1, 1) * contrib).sum().item())
+    fz = 2.0 * float((c[:, 2].view(19, 1, 1, 1) * contrib).sum().item())
+    return fx, fy, fz
+
+
+# ---------------------------------------------------------------------------
 # Snapshot
 # ---------------------------------------------------------------------------
 
@@ -396,12 +627,14 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
 
     force_series: list[dict[str, object]] = []
 
+    trajectory: list[dict[str, object]] = []
     if config.mode == "2d":
         ny, nx = config.ny, config.nx
         cx, cy = config.sphere_center_2d
         wall = _wall_mask_2d(ny, nx, device)
         sphere = _circle_mask(ny, nx, cx, cy, config.radius, device)
         solid = wall | sphere
+        cy_float = float(cy)
 
         if config.model == "cg":
             f1, f2 = _init_two_phase_cg_2d(
@@ -425,16 +658,38 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
             )
 
         gy = -config.g
+        v_entry = float(config.v_entry)
 
         for step in range(1, config.n_steps + 1):
+            # Prescribed rigid-body motion (down = -y), resting on the floor.
+            cy_prev = cy_float
+            cy_float = max(cy_float - v_entry, config.radius + 1.5)
+            v_eff = cy_prev - cy_float
+            sphere_new = _circle_mask(ny, nx, cx, cy_float, config.radius, device)
+            if v_eff > 0.0:
+                cleared = sphere & ~sphere_new & ~wall
+                fresh = sphere_new & ~sphere
+                f1 = _refill_cleared_2d(f1, cleared, ~(wall | sphere_new))
+                f2 = _refill_cleared_2d(f2, cleared, ~(wall | sphere_new))
+                if config.model == "cg":
+                    # CG convention: no populations inside the obstacle.
+                    f1 = torch.where(
+                        fresh.unsqueeze(0), torch.zeros_like(f1), f1
+                    )
+                    f2 = torch.where(
+                        fresh.unsqueeze(0), torch.zeros_like(f2), f2
+                    )
+                sphere = sphere_new
+                solid = wall | sphere
+            uw_y = -v_eff
+
             if config.model == "cg":
-                A_surface = config.G * 0.04
                 # f1=red=heavy(water), f2=blue=light(air)
                 f1, f2 = color_gradient_step(
                     f1,
                     f2,
                     tau=config.tau,
-                    A=A_surface,
+                    A=config.A_surface,
                     gy=gy,
                     solid_mask=solid,
                 )
@@ -449,11 +704,18 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
                     solid_mask=solid,
                 )
 
+            f1_pre, f2_pre = f1, f2
             f1 = stream(f1)
             f2 = stream(f2)
 
+            if v_eff > 0.0:
+                f1 = _moving_wall_bb_2d(f1, f1_pre, sphere, solid, 0.0, uw_y)
+                f2 = _moving_wall_bb_2d(f2, f2_pre, sphere, solid, 0.0, uw_y)
+
             if step % config.output_interval == 0 or step == config.n_steps:
-                fx_s, fy_s = _momentum_exchange_2d(f1, f2, sphere)
+                fx_s, fy_s = _momentum_exchange_moving_2d(
+                    f1_pre, f2_pre, sphere, ~solid, 0.0, uw_y
+                )
 
             f1 = bounce_back_cells(f1, solid)
             f2 = bounce_back_cells(f2, solid)
@@ -472,9 +734,10 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
                     "mean_rho_water": round(float(rho_w[~solid].mean().item()), 6),
                 }
                 force_series.append(entry)
+                trajectory.append({"step": step, "cy": round(cy_float, 4)})
                 print(
                     f"step={step:5d}  Fx={fx_s:.4e}  Fy={fy_s:.4e}  "
-                    f"mean_ρ_water={entry['mean_rho_water']:.4f}"
+                    f"mean_ρ_water={entry['mean_rho_water']:.4f}  cy={cy_float:.2f}"
                 )
                 _save_snapshot_2d(run_dir, step, rho_w, rho_a, sphere)
 
@@ -485,6 +748,7 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
         wall = _wall_mask_3d(nz, ny, nx, device)
         sphere = _sphere_mask_3d(nz, ny, nx, cx, cy, cz, config.radius, device)
         solid = wall | sphere
+        cz_float = float(cz)
 
         f1, f2 = _init_two_phase_3d(
             nz,
@@ -497,8 +761,24 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
             device,
         )
         gz = -config.g
+        v_entry = float(config.v_entry)
 
         for step in range(1, config.n_steps + 1):
+            # Prescribed rigid-body motion (down = -z), resting on the floor.
+            cz_prev = cz_float
+            cz_float = max(cz_float - v_entry, config.radius + 1.5)
+            v_eff = cz_prev - cz_float
+            sphere_new = _sphere_mask_3d(
+                nz, ny, nx, cx, cy, cz_float, config.radius, device
+            )
+            if v_eff > 0.0:
+                cleared = sphere & ~sphere_new & ~wall
+                f1 = _refill_cleared_3d(f1, cleared, ~(wall | sphere_new))
+                f2 = _refill_cleared_3d(f2, cleared, ~(wall | sphere_new))
+                sphere = sphere_new
+                solid = wall | sphere
+            uw_z = -v_eff
+
             f1, f2 = collide_sc_two_component_3d(
                 f1,
                 f2,
@@ -508,11 +788,18 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
                 gz=gz,
                 solid_mask=solid,
             )
+            f1_pre, f2_pre = f1, f2
             f1 = stream3d(f1)
             f2 = stream3d(f2)
 
+            if v_eff > 0.0:
+                f1 = _moving_wall_bb_3d(f1, f1_pre, sphere, solid, 0.0, 0.0, uw_z)
+                f2 = _moving_wall_bb_3d(f2, f2_pre, sphere, solid, 0.0, 0.0, uw_z)
+
             if step % config.output_interval == 0 or step == config.n_steps:
-                fx_s, fy_s, fz_s = _momentum_exchange_3d(f1, f2, sphere)
+                fx_s, fy_s, fz_s = _momentum_exchange_moving_3d(
+                    f1_pre, f2_pre, sphere, ~solid, 0.0, 0.0, uw_z
+                )
 
             f1 = bounce_back_cells_3d(f1, solid)
             f2 = bounce_back_cells_3d(f2, solid)
@@ -525,7 +812,11 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
                     "fz": round(fz_s, 8),
                 }
                 force_series.append(entry)
-                print(f"step={step:5d}  Fx={fx_s:.4e}  Fy={fy_s:.4e}  Fz={fz_s:.4e}")
+                trajectory.append({"step": step, "cz": round(cz_float, 4)})
+                print(
+                    f"step={step:5d}  Fx={fx_s:.4e}  Fy={fy_s:.4e}  Fz={fz_s:.4e}  "
+                    f"cz={cz_float:.2f}"
+                )
 
     # ----- write outputs -----
     forces_csv = run_dir / "forces.csv"
@@ -538,8 +829,11 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
     metadata = {
         "config": {**asdict(config), "output_root": str(config.output_root)},
         "forces": force_series,
+        "sphere_trajectory": trajectory,
         "note": (
-            "Impact force computed via Ladd momentum-exchange method. "
+            "Prescribed-velocity water entry: the sphere descends at v_entry "
+            "(lattice units per step) with moving bounce-back. Impact force "
+            "via the moving-wall Ladd momentum-exchange method. "
             "Fy (2-D) / Fz (3-D) is the vertical force on the sphere."
         ),
     }

@@ -70,6 +70,11 @@ def _closed_gravity_wave_state() -> tuple[torch.Tensor, ...]:
 
 
 def _advance(f, fill, flags, solid, mass, *, steps: int, gy: float) -> tuple[torch.Tensor, ...]:
+    # Pressure-matched gas (rho_gas = rho_liquid): the reference Körner ABB
+    # (Thürey eq. 4.5) is consistent only for an O(rho_liquid) gas reference
+    # density (waLBerla ``BubbleModelConstantPressure``).  A rarefied gas
+    # reference makes reconstructed populations negative and the interface
+    # collapses; that regime belonged to the removed legacy ABB variants.
     for _ in range(steps):
         f, fill, flags, mass, _ = free_surface_step(
             f,
@@ -80,7 +85,7 @@ def _advance(f, fill, flags, solid, mass, *, steps: int, gy: float) -> tuple[tor
             tau=0.8,
             gy=gy,
             rho_liquid=1.0,
-            rho_gas=0.001,
+            rho_gas=1.0,
         )
     return f, fill, flags, mass
 
@@ -101,11 +106,11 @@ def test_closed_static_plane_conserves_composite_liquid_inventory() -> None:
     assert _inventory(f, fill, flags) == pytest.approx(initial, abs=1.0e-5 * initial)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="P0 blocker: liquid/interface link flux updates only the interface mass field",
-)
 def test_closed_dam_break_conserves_composite_liquid_inventory() -> None:
+    # Former P0 blocker (liquid/interface link flux updates only the
+    # interface mass field): fixed by the reference alignment.  The Körner
+    # exchange increment is defined from the PDF transfer, so the liquid-PDF
+    # gain and the interface-mass loss balance to float rounding.
     f, fill, flags, solid, mass = _closed_dam_break_state()
     initial = _inventory(f, fill, flags)
     f, fill, flags, _ = _advance(f, fill, flags, solid, mass, steps=4, gy=-1.0e-4)

@@ -73,10 +73,16 @@ def test_free_surface_dam_break_caller_writes_a_101_step_quality_curve(tmp_path)
     }
     assert all(required <= record.keys() for record in curve)
     assert all(record["directLG"] == 0 and record["finite"] for record in curve)
-    # Post-fix static column: no spurious phase conversions or mass
-    # redistribution (the exchange-layer gate + H1/H2 keep it static).
-    assert all(abs(record["conversion"]) <= 1.0e-5 for record in curve)
-    assert all(abs(record["redistribution"]) <= 1.0e-5 for record in curve)
+    # Dynamic collapse: gravity drives real conversions/redistribution (the
+    # reference exchange has no receiver gate sealing the column), while the
+    # tracked-mass budget stays conserved to ~1e-3 relative.
+    assert any(abs(record["conversion"]) > 1.0e-5 for record in curve)
+    assert any(abs(record["redistribution"]) > 1.0e-5 for record in curve)
+    assert metadata["free_surface_quality_gate"]["topology_changed"] is True
+    assert metadata["free_surface_topology_events"], "collapse must produce topology events"
+    assert all(
+        abs(record["relative_cumulative_drift"]) < 1.0e-2 for record in curve
+    )
     assert [record["time"] for record in curve] == [float(step) for step in range(1, 102)]
     assert curve[0]["initial_mass"] == pytest.approx(1008.0)
     assert curve[0]["cumulative_drift"] == pytest.approx(curve[0]["instantaneous_mass_drift"])
@@ -100,9 +106,11 @@ def test_free_surface_caller_fails_closed_when_accounting_tolerance_is_exceeded(
         run_name="fs_fail_closed",
         free_surface_unexplained_tolerance=0.0,
     )
-    # Post-fix: mass conservation holds to float32 precision even at
-    # zero tolerance — the fix removed the mass sources (was: raised).
-    run_dam_break_3d(config)
+    # Zero absolute tolerance is unphysical: float32 summation rounding on
+    # the O(1000) tracked total leaves a ~1e-5 residual even when every
+    # operator is attributed, so the gate correctly fails closed.
+    with pytest.raises(RuntimeError, match="fail-closed"):
+        run_dam_break_3d(config)
 
 
 def test_free_surface_caller_fails_closed_on_topology_normalized_drift(tmp_path) -> None:
@@ -142,21 +150,10 @@ def test_drift_slope_is_terminal_rolling_linear_regression(steps, expected_windo
 
 
 @pytest.mark.slow
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "456fdb1 gated mass-exchange receivers on fill > 1e-3, but the interface "
-        "envelope is born at fill = 0 (init_flags_from_fill), so receivers can "
-        "never fill and the column is sealed: gravity cannot reclassify topology "
-        "on main (front frozen, liquid/interface counts constant, conversion 0 at "
-        "every step, any gravity, even at t* ~ 18).  Pre-456fdb1 the dam collapsed "
-        "vigorously (front 10 -> 31, interface envelope 272 -> 5232 in 400 steps) "
-        "— the halo explosion that commit set out to kill.  Dynamic collapse needs "
-        "the receiver gate redesigned together with the to_gas mass booking; until "
-        "then this guard xfails, and turns XPASS (red) once the physics is fixed."
-    ),
-)
 def test_free_surface_dam_break_gravity_changes_topology(tmp_path) -> None:
+    # Former strict-xfail guard (456fdb1 sealed the column via the receiver
+    # gate): the reference alignment removed the gate, so gravity-driven
+    # collapse now reclassifies cells as required.
     """Gravity-driven collapse must reclassify cells (dynamic-topology guard)."""
     config = DamBreak3DConfig(
         nx=32,

@@ -1,4 +1,9 @@
-"""Runtime regression for the L/I paired bulk-debit mass budget."""
+"""Runtime regression for the Körner L/I exchange mass budget.
+
+The legacy paired bulk debit is retired (waLBerla tracks mass only at
+INTERFACE cells; LIQUID has no mass field to debit).  ``paired`` mode is a
+deprecated no-op: the Körner exchange credit is attributed in full instead.
+"""
 
 from __future__ import annotations
 
@@ -50,28 +55,29 @@ def _run(*, paired: bool) -> list[dict[str, object]]:
     return steps  # type: ignore[return-value]
 
 
-def test_three_step_closed_runtime_pairs_each_liquid_interface_credit_without_global_correction() -> (
-    None
-):
+def test_three_step_closed_runtime_attributes_korner_exchange_without_paired_debit() -> None:
     legacy = _run(paired=False)
     paired = _run(paired=True)
     assert len(legacy) == len(paired) == 3
 
     for old, new in zip(legacy, paired):
         assert old["direct_liquid_gas_links"] == new["direct_liquid_gas_links"] == 0
+        # The retired switch is a numeric no-op: both modes run the same
+        # reference exchange; only the requested-mode label echoes the flag.
+        for key in (
+            "mass_drift",
+            "liquid_interface_interface_credit",
+            "liquid_interface_neighbor_credit",
+            "liquid_interface_bulk_debit",
+            "unexplained_residual",
+        ):
+            assert float(new[key]) == pytest.approx(float(old[key]), abs=0.0)
         assert old["liquid_interface_paired"] is False
         assert new["liquid_interface_paired"] is True
+        # Real exchange happens, and no bulk debit is applied: LIQUID cells
+        # carry no mass field in the reference scheme.
         assert abs(float(new["liquid_interface_interface_credit"])) > 1.0e-6
-        assert float(new["liquid_interface_bulk_debit"]) == pytest.approx(
-            -float(new["liquid_interface_interface_credit"]), abs=5.0e-6
-        )
-        assert float(new["liquid_interface_paired_residual"]) == pytest.approx(0.0, abs=5.0e-6)
-        # The legacy mode's tracked-mass drift is precisely its unpaired L/I
-        # credit; paired mode removes that contribution link by link.
-        assert float(old["unexplained_residual"]) == pytest.approx(
-            float(old["liquid_interface_interface_credit"]), abs=5.0e-6
-        )
-        assert abs(float(new["mass_drift"])) < abs(float(old["mass_drift"])) + 5.0e-6
-        assert abs(float(new["unexplained_residual"])) < 5.0e-6
-        assert new["closed_domain_conserved"] is True
-        assert "not a physical/PV closure claim" in str(new["diagnostic"])
+        assert float(new["liquid_interface_bulk_debit"]) == pytest.approx(0.0, abs=0.0)
+        # The Körner credit is attributed in full, so the residual is pure
+        # float32 summation rounding on totals of O(30).
+        assert abs(float(new["unexplained_residual"])) < 1.0e-5
