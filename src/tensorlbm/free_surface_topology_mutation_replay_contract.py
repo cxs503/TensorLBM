@@ -62,6 +62,7 @@ _REQUIRED_INPUTS = (
     "ux",
     "uy",
     "uz",
+    "rho",
     "i_to_g_increment",
     "i_to_g_ownership",
 )
