@@ -51,6 +51,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Path to checkpoint directory to resume from",
     )
+    parser.add_argument(
+        "--no-field-npz",
+        dest="no_field_npz",
+        action="store_true",
+        help="Disable saving per-output-step numerical NPZ field snapshots",
+    )
     return parser
 
 
@@ -72,6 +78,7 @@ def main() -> None:
         num_threads=args.num_threads,
         overwrite=args.overwrite,
         resume_checkpoint=args.resume_checkpoint,
+        save_field_npz=not args.no_field_npz,
     )
     run_cylinder_flow(config)
 
