@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import torch
 
 from tensorlbm.cylinder_flow import _save_flow_snapshot
 
 
-def test_save_flow_snapshot_exports_numerical_fields(tmp_path):
+def test_save_flow_snapshot_exports_numerical_fields(tmp_path: Path) -> None:
     ny, nx = 8, 16
     ux = torch.full((ny, nx), 0.08, dtype=torch.float32)
     uy = torch.zeros((ny, nx), dtype=torch.float32)
@@ -30,9 +32,7 @@ def test_save_flow_snapshot_exports_numerical_fields(tmp_path):
     path = tmp_path / "fields_step_000020.npz"
     assert path.is_file()
     with np.load(path, allow_pickle=False) as fields:
-        assert set(fields.files) == {
-            "step", "ux", "uy", "rho", "speed", "vorticity", "solid_mask"
-        }
+        assert set(fields.files) == {"step", "ux", "uy", "rho", "speed", "vorticity", "solid_mask"}
         assert int(fields["step"]) == 20
         assert fields["ux"].shape == (ny, nx)
         assert fields["uy"].shape == (ny, nx)
@@ -42,4 +42,29 @@ def test_save_flow_snapshot_exports_numerical_fields(tmp_path):
         np.testing.assert_allclose(fields["ux"], 0.08)
         np.testing.assert_allclose(fields["rho"], 1.0)
         np.testing.assert_array_equal(fields["solid_mask"], obstacle.numpy())
+    assert (tmp_path / "flow_step_000020.png").is_file()
+
+
+def test_save_flow_snapshot_can_disable_npz_export(tmp_path: Path) -> None:
+    ny, nx = 8, 16
+    ux = torch.full((ny, nx), 0.08, dtype=torch.float32)
+    uy = torch.zeros((ny, nx), dtype=torch.float32)
+    rho = torch.ones((ny, nx), dtype=torch.float32)
+    obstacle = torch.zeros((ny, nx), dtype=torch.bool)
+    speed = torch.sqrt(ux * ux + uy * uy)
+    vort = np.zeros((ny, nx), dtype=np.float32)
+
+    _save_flow_snapshot(
+        tmp_path,
+        20,
+        speed,
+        vort,
+        obstacle,
+        ux=ux,
+        uy=uy,
+        rho=rho,
+        save_field_npz=False,
+    )
+
+    assert not (tmp_path / "fields_step_000020.npz").exists()
     assert (tmp_path / "flow_step_000020.png").is_file()
