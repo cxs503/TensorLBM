@@ -90,3 +90,17 @@ The next stage should implement a trajectory-aware dataset loader and baseline
 forecast task, then report relative field error, vorticity error, force-history
 error where applicable, physical diagnostics, wall-clock cost, and an explicit
 comparison against persistence or another simple baseline.
+
+## 6. Stage 2 implementation status
+
+Stage 2 and Stage 3 are now implemented and benchmark-validated on CPU:
+
+- **Quality gates, spin-up trimming (`trim_trajectory_spinup`), multi-frame/multi-step sliding windows, trajectory-level split manifest, and R2 catalog bridge**:
+  `src/tensorlbm/ai/cylinder_multimodal_data.py`
+- **Patchified multimodal flow-force transformer (`history_steps` temporal diffs + `pushforward_steps` unrolled autoregressive training) & persistence evaluator**:
+  `src/tensorlbm/ai/cylinder_multimodal_model.py`
+- **Runnable multi-Re & variable-radius CLI**:
+  `examples/cylinder_multimodal_train.py` (`--min-step`, `--history-steps`, `--pushforward-steps`, `--train-radii`, `--val-radii`, `--test-radii`)
+- **Architecture & Stage-2/Stage-3 benchmark specification**:
+  `docs/plans/multimodal-cylinder-training-spec.md`
+
