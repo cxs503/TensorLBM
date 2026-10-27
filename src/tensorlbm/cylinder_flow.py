@@ -523,6 +523,9 @@ def _run_cylinder_flow_backend(
                 speed,
                 _compute_vorticity_np(_to_numpy(ux), _to_numpy(uy)),
                 obstacle,
+                ux=ux,
+                uy=uy,
+                rho=rho,
             )
             if diagnostic_callback is not None:
                 diagnostic_callback(diag_entry)
@@ -592,10 +595,35 @@ def _save_flow_snapshot(
     speed: object,
     vort: object,
     obstacle: object,
+    *,
+    ux: object,
+    uy: object,
+    rho: object,
 ) -> None:
+    """Save a visualization and lossless numerical fields for ML datasets.
+
+    Arrays are stored in NumPy NPZ format without pickle. Velocity and density
+    fields use lattice units; solid_mask is boolean and vorticity uses the same
+    grid-difference convention as the plotted field.
+    """
     speed_np = _to_numpy(speed)
     vort_np = _to_numpy(vort)
-    obs_np = _to_numpy(obstacle)
+    obs_np = _to_numpy(obstacle).astype(np.bool_, copy=False)
+    ux_np = _to_numpy(ux).astype(np.float32, copy=False)
+    uy_np = _to_numpy(uy).astype(np.float32, copy=False)
+    rho_np = _to_numpy(rho).astype(np.float32, copy=False)
+
+    fields_path = run_dir / f"fields_step_{step:06d}.npz"
+    np.savez_compressed(
+        fields_path,
+        step=np.asarray(step, dtype=np.int64),
+        ux=ux_np,
+        uy=uy_np,
+        rho=rho_np,
+        speed=speed_np.astype(np.float32, copy=False),
+        vorticity=vort_np.astype(np.float32, copy=False),
+        solid_mask=obs_np,
+    )
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4), constrained_layout=True)
     im0 = axes[0].imshow(speed_np, origin="lower", cmap="viridis")
@@ -954,7 +982,7 @@ def run_cylinder_flow(
             )
 
             vort = compute_vorticity(ux, uy)
-            _save_flow_snapshot(run_dir, step, speed, vort, obstacle)
+            _save_flow_snapshot(run_dir, step, speed, vort, obstacle, ux=ux, uy=uy, rho=rho)
             if diagnostic_callback is not None:
                 diagnostic_callback(diag_entry)
 
