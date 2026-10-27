@@ -100,7 +100,9 @@ Stage 2 and Stage 3 are now implemented and benchmark-validated on CPU:
 - **Patchified multimodal flow-force transformer (`history_steps` temporal diffs + `pushforward_steps` unrolled autoregressive training) & persistence evaluator**:
   `src/tensorlbm/ai/cylinder_multimodal_model.py`
 - **Runnable multi-Re & variable-radius CLI**:
-  `examples/cylinder_multimodal_train.py` (`--min-step`, `--history-steps`, `--pushforward-steps`, `--train-radii`, `--val-radii`, `--test-radii`)
+  `examples/cylinder_multimodal_train.py` (`--min-step`, `--history-steps`, `--pushforward-steps`, `--train-radii`, `--val-radii`, `--test-radii`, `--save-initial-snapshot`)
+- **Pure condition-to-trajectory cold-start AI inference CLI (Scheme A, zero LBM solver)**:
+  `examples/cylinder_multimodal_infer.py` (`CylinderConditionSpec`, `forecast_from_conditions`)
 - **Architecture & Stage-2/Stage-3 benchmark specification**:
   `docs/plans/multimodal-cylinder-training-spec.md`
 

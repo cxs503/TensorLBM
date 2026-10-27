@@ -27,6 +27,7 @@ divergence-consistency, aerodynamic force, and cross-modal alignment losses.
 from __future__ import annotations
 
 import copy
+import csv
 import json
 import math
 import time
@@ -34,17 +35,20 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn, optim
 from torch.utils.data import DataLoader
 
 from .cylinder_multimodal_data import (
+    SDF_CLIP_VOXELS_2D,
     CylinderMultimodalDataset,
     CylinderNormalization,
     CylinderTrajectoryRecord,
     MultimodalDatasetManifest,
     collate_cylinder_multimodal,
+    normalized_sdf_2d,
 )
 
 if TYPE_CHECKING:
@@ -59,11 +63,16 @@ __all__ = [
     "MultimodalTrainResult",
     "ForecastEvaluationReport",
     "RolloutStepMetrics",
+    "CylinderConditionSpec",
+    "ConditionForecastStep",
+    "ConditionForecastResult",
     "compute_vorticity_batch",
     "compute_divergence_batch",
     "train_multimodal_cylinder_forecaster",
     "evaluate_forecaster_vs_persistence",
     "rollout_trajectory_forecast",
+    "build_cylinder_initial_state",
+    "forecast_from_conditions",
     "save_multimodal_forecaster",
     "load_multimodal_forecaster",
 ]
@@ -1413,3 +1422,359 @@ def load_multimodal_forecaster(
     model.to(device)
     model.eval()
     return model
+
+
+# ---------------------------------------------------------------------------
+# Pure condition-to-trajectory cold-start AI inference (zero LBM solver)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class CylinderConditionSpec:
+    """Scalar simulation conditions sufficient for pure-AI cold-start forecasting."""
+
+    nx: int = 96
+    ny: int = 48
+    u_in: float = 0.06
+    re: float = 65.0
+    radius: float = 5.0
+    n_steps: int = 160
+    output_interval: int = 20
+    cx_fraction: float = 0.25
+    cy_fraction: float = 0.5
+    sdf_clip_voxels: float = SDF_CLIP_VOXELS_2D
+
+    @property
+    def nu(self) -> float:
+        return self.u_in * 2.0 * self.radius / self.re
+
+    @property
+    def tau(self) -> float:
+        return 3.0 * self.nu + 0.5
+
+    def validate(self) -> None:
+        if self.nx < 16 or self.ny < 8:
+            raise ValueError(f"nx and ny must be >= (16, 8); got ({self.nx}, {self.ny})")
+        if self.u_in <= 0.0 or self.re <= 0.0 or self.radius <= 0.0:
+            raise ValueError("u_in, re, and radius must be strictly positive")
+        if self.n_steps < 1 or self.output_interval < 1:
+            raise ValueError("n_steps and output_interval must be >= 1")
+        if self.tau <= 0.5:
+            raise ValueError(f"Non-physical relaxation time tau={self.tau} <= 0.5")
+
+    def target_steps(self) -> tuple[int, ...]:
+        steps = list(range(self.output_interval, self.n_steps + 1, self.output_interval))
+        if steps and steps[-1] != self.n_steps:
+            steps.append(self.n_steps)
+        elif not steps:
+            steps = [self.n_steps]
+        return tuple(steps)
+
+
+@dataclass(frozen=True, slots=True)
+class ConditionForecastStep:
+    """Single step output from :func:`forecast_from_conditions` in lattice units."""
+
+    step: int
+    ux: np.ndarray
+    uy: np.ndarray
+    rho: np.ndarray
+    speed: np.ndarray
+    vorticity: np.ndarray
+    cd: float
+    cl: float
+
+
+@dataclass(frozen=True, slots=True)
+class ConditionForecastResult:
+    """Complete pure-AI trajectory forecast produced solely from scalar conditions."""
+
+    conditions: CylinderConditionSpec
+    solid_mask: np.ndarray
+    sdf_norm: np.ndarray
+    steps: tuple[ConditionForecastStep, ...]
+    wall_seconds: float
+    ms_per_step: float
+
+    def save_artifacts(
+        self,
+        output_dir: str | Path,
+        *,
+        run_name: str = "ai_condition_forecast",
+        save_field_npz: bool = True,
+        save_png: bool = True,
+    ) -> Path:
+        """Write solver-compatible NPZ/PNG snapshots, ``forces.csv``, and ``run_metadata.json``."""
+        from tensorlbm.cylinder_flow import _save_flow_snapshot
+        from tensorlbm.utils import get_reproducibility_metadata
+
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        c = self.conditions
+        include_init = bool(self.steps) and self.steps[0].step == 0
+        initial_mass = float(c.nx * c.ny)
+        diagnostics: list[dict[str, Any]] = []
+
+        for frame in self.steps:
+            if save_png:
+                _save_flow_snapshot(
+                    out,
+                    frame.step,
+                    frame.speed,
+                    frame.vorticity,
+                    self.solid_mask,
+                    ux=frame.ux,
+                    uy=frame.uy,
+                    rho=frame.rho,
+                    save_field_npz=save_field_npz,
+                )
+            elif save_field_npz:
+                np.savez_compressed(
+                    out / f"fields_step_{frame.step:06d}.npz",
+                    step=np.asarray(frame.step, dtype=np.int64),
+                    ux=frame.ux,
+                    uy=frame.uy,
+                    rho=frame.rho,
+                    speed=frame.speed,
+                    vorticity=frame.vorticity,
+                    solid_mask=self.solid_mask,
+                )
+
+            mass = float(frame.rho.sum())
+            diagnostics.append(
+                {
+                    "step": frame.step,
+                    "mass": mass,
+                    "mass_drift": mass - initial_mass,
+                    "max_speed": float(frame.speed.max()),
+                    "mean_rho": float(frame.rho.mean()),
+                    "cd": frame.cd,
+                    "cl": frame.cl,
+                }
+            )
+
+        forces_csv = out / "forces.csv"
+        with forces_csv.open("w", newline="", encoding="utf-8") as fh:
+            writer = csv.writer(fh)
+            writer.writerow(["step", "cd", "cl"])
+            for d in diagnostics:
+                writer.writerow([d["step"], d["cd"], d["cl"]])
+
+        repro = get_reproducibility_metadata()
+        if not repro.get("git_commit"):
+            repro["git_commit"] = "ai-surrogate-local"
+
+        metadata: dict[str, Any] = {
+            "solver_mode": "ai_multimodal_surrogate",
+            "config": {
+                "nx": c.nx,
+                "ny": c.ny,
+                "u_in": c.u_in,
+                "re": c.re,
+                "radius": c.radius,
+                "n_steps": c.n_steps,
+                "output_interval": c.output_interval,
+                "collision": "ai_surrogate",
+                "run_name": run_name,
+                "save_field_npz": save_field_npz,
+                "save_initial_snapshot": include_init,
+            },
+            "derived": {"nu": c.nu, "tau": c.tau},
+            "reproducibility": repro,
+            "restart": {"resumed": False},
+            "diagnostics": diagnostics,
+            "inference_timing": {
+                "wall_seconds": self.wall_seconds,
+                "ms_per_step": self.ms_per_step,
+                "predicted_steps": len(self.steps) - (1 if include_init else 0),
+            },
+        }
+        (out / "run_metadata.json").write_text(
+            f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
+            encoding="utf-8",
+        )
+        return out
+
+
+def build_cylinder_initial_state(
+    conditions: CylinderConditionSpec,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Analytically construct ``(solid_mask, sdf_norm, ux0, uy0, rho0)`` at ``step=0``."""
+    conditions.validate()
+    from tensorlbm.boundary.boundaries import cylinder_mask
+
+    cx = float(conditions.nx) * float(conditions.cx_fraction)
+    cy = float(conditions.ny) * float(conditions.cy_fraction)
+    mask_t = cylinder_mask(
+        conditions.nx,
+        conditions.ny,
+        cx,
+        cy,
+        conditions.radius,
+        device=torch.device("cpu"),
+    )
+    solid_mask = np.ascontiguousarray(mask_t.numpy(), dtype=np.bool_)
+    if np.all(solid_mask):
+        raise ValueError("Cylinder radius covers the entire computational domain")
+
+    sdf_norm = normalized_sdf_2d(solid_mask, clip_voxels=conditions.sdf_clip_voxels)
+    ux0 = np.full((conditions.ny, conditions.nx), conditions.u_in, dtype=np.float32)
+    ux0[solid_mask] = 0.0
+    uy0 = np.zeros((conditions.ny, conditions.nx), dtype=np.float32)
+    rho0 = np.ones((conditions.ny, conditions.nx), dtype=np.float32)
+    return solid_mask, sdf_norm, ux0, uy0, rho0
+
+
+def forecast_from_conditions(
+    model_or_checkpoint: MultimodalCylinderForecaster | str | Path,
+    conditions: CylinderConditionSpec,
+    *,
+    normalization: CylinderNormalization | None = None,
+    device: str = "cpu",
+    include_initial_step: bool = True,
+) -> ConditionForecastResult:
+    """Directly forecast a cylinder-flow trajectory from scalar conditions without running LBM."""
+    conditions.validate()
+    dev = torch.device(device)
+
+    if isinstance(model_or_checkpoint, (str, Path)):
+        ckpt_path = Path(model_or_checkpoint)
+        model = load_multimodal_forecaster(ckpt_path, device=device)
+        if normalization is None:
+            sidecar = Path(f"{ckpt_path}.json")
+            if sidecar.is_file():
+                meta = json.loads(sidecar.read_text(encoding="utf-8"))
+                if isinstance(meta.get("normalization"), dict):
+                    normalization = CylinderNormalization(**meta["normalization"])
+    else:
+        model = model_or_checkpoint.to(dev)
+        model.eval()
+
+    norm = normalization or CylinderNormalization()
+    u_scale, rho_scale = norm.scales_for_run(conditions.u_in)
+
+    t0 = time.perf_counter()
+    solid_mask, sdf_norm, ux0, uy0, rho0 = build_cylinder_initial_state(conditions)
+
+    geom = (
+        torch.stack(
+            [
+                torch.from_numpy(solid_mask).to(dtype=torch.float32),
+                torch.from_numpy(sdf_norm),
+            ],
+            dim=0,
+        )
+        .unsqueeze(0)
+        .to(dev)
+    )
+    f0_norm = torch.stack(
+        [
+            torch.from_numpy(ux0 / u_scale),
+            torch.from_numpy(uy0 / u_scale),
+            torch.from_numpy((rho0 - norm.rho_offset) / rho_scale),
+        ],
+        dim=0,
+    ).to(dev)
+
+    hist_len = model.arch.history_steps
+    cur_hist_fields = f0_norm.unsqueeze(0).unsqueeze(1).expand(1, hist_len, 3, -1, -1).contiguous()
+    cur_hist_forces = torch.zeros((1, hist_len, 2), dtype=torch.float32, device=dev)
+    cur_norm = cur_hist_fields[:, -1]
+    cur_force = cur_hist_forces[:, -1]
+    has_force = torch.ones((1,), dtype=torch.bool, device=dev)
+    has_vis = torch.zeros((1,), dtype=torch.bool, device=dev)
+
+    outputs: list[ConditionForecastStep] = []
+    if include_initial_step:
+        ux0_t = torch.from_numpy(ux0)
+        uy0_t = torch.from_numpy(uy0)
+        vort0 = compute_vorticity_batch(ux0_t.unsqueeze(0), uy0_t.unsqueeze(0))[0].numpy()
+        speed0 = np.sqrt(ux0 * ux0 + uy0 * uy0).astype(np.float32, copy=False)
+        outputs.append(
+            ConditionForecastStep(
+                step=0,
+                ux=ux0,
+                uy=uy0,
+                rho=rho0,
+                speed=speed0,
+                vorticity=np.ascontiguousarray(vort0, dtype=np.float32),
+                cd=0.0,
+                cl=0.0,
+            )
+        )
+
+    target_steps = conditions.target_steps()
+    prev_step = 0
+    with torch.no_grad():
+        for next_step in target_steps:
+            delta_step = float(next_step - prev_step)
+            physics_cond = torch.tensor(
+                [
+                    [
+                        math.log10(max(conditions.re, 1e-6)),
+                        conditions.u_in,
+                        conditions.tau - 0.5,
+                        conditions.radius / float(conditions.ny),
+                        float(conditions.ny) / float(conditions.nx),
+                        delta_step / 100.0,
+                    ]
+                ],
+                dtype=torch.float32,
+                device=dev,
+            )
+            out = model(
+                cur_norm,
+                geom,
+                physics_cond,
+                history_fields=cur_hist_fields,
+                history_forces=cur_hist_forces,
+                force_t=cur_force,
+                has_force=has_force,
+                visual_t=None,
+                has_visual=has_vis,
+            )
+            cur_norm = out.field_next_norm
+            cur_force = out.force_next
+            if hist_len > 1:
+                cur_hist_fields = torch.cat(
+                    [cur_hist_fields[:, 1:], cur_norm.unsqueeze(1)],
+                    dim=1,
+                )
+                cur_hist_forces = torch.cat(
+                    [cur_hist_forces[:, 1:], cur_force.unsqueeze(1)],
+                    dim=1,
+                )
+            else:
+                cur_hist_fields = cur_norm.unsqueeze(1)
+                cur_hist_forces = cur_force.unsqueeze(1)
+
+            ux_p = cur_norm[0, 0] * u_scale
+            uy_p = cur_norm[0, 1] * u_scale
+            rho_p = norm.rho_offset + cur_norm[0, 2] * rho_scale
+            speed_p = torch.sqrt(ux_p.pow(2) + uy_p.pow(2))
+            vort_p = compute_vorticity_batch(ux_p.unsqueeze(0), uy_p.unsqueeze(0))[0]
+
+            outputs.append(
+                ConditionForecastStep(
+                    step=next_step,
+                    ux=np.ascontiguousarray(ux_p.cpu().numpy(), dtype=np.float32),
+                    uy=np.ascontiguousarray(uy_p.cpu().numpy(), dtype=np.float32),
+                    rho=np.ascontiguousarray(rho_p.cpu().numpy(), dtype=np.float32),
+                    speed=np.ascontiguousarray(speed_p.cpu().numpy(), dtype=np.float32),
+                    vorticity=np.ascontiguousarray(vort_p.cpu().numpy(), dtype=np.float32),
+                    cd=float(cur_force[0, 0].item()),
+                    cl=float(cur_force[0, 1].item()),
+                )
+            )
+            prev_step = next_step
+
+    wall_sec = time.perf_counter() - t0
+    n_pred = max(len(target_steps), 1)
+    return ConditionForecastResult(
+        conditions=conditions,
+        solid_mask=solid_mask,
+        sdf_norm=sdf_norm,
+        steps=tuple(outputs),
+        wall_seconds=wall_sec,
+        ms_per_step=(wall_sec * 1000.0) / float(n_pred),
+    )
