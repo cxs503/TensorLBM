@@ -9,8 +9,40 @@ package's core imports.
 from __future__ import annotations
 
 import importlib
+from typing import Any
 
 from ..backends import get_backend, set_backend  # re-export for convenience
+from .cylinder_multimodal_data import (
+    CylinderMultimodalDataset,
+    CylinderMultimodalSample,
+    CylinderNormalization,
+    CylinderSnapshotFrame,
+    CylinderTrajectoryRecord,
+    CylinderTrajectorySummary,
+    MultimodalDatasetManifest,
+    TrajectoryValidationError,
+    collate_cylinder_multimodal,
+    export_cylinder_run_to_r2_catalog,
+    normalized_sdf_2d,
+    signed_distance_field_2d,
+    split_cylinder_trajectories,
+    trim_trajectory_spinup,
+    validate_cylinder_trajectory,
+)
+from .cylinder_multimodal_model import (
+    ForecastEvaluationReport,
+    MultimodalCylinderArch,
+    MultimodalCylinderForecaster,
+    MultimodalCylinderOutput,
+    MultimodalTrainConfig,
+    MultimodalTrainResult,
+    RolloutStepMetrics,
+    evaluate_forecaster_vs_persistence,
+    load_multimodal_forecaster,
+    rollout_trajectory_forecast,
+    save_multimodal_forecaster,
+    train_multimodal_cylinder_forecaster,
+)
 from .database import (
     LBMDatabase,
     connect,
@@ -135,6 +167,34 @@ __all__ = [
     "save_flow_transformer_model",
     "load_flow_transformer_model",
     "reconstruct_flow_field",
+    # cylinder-flow multimodal dataset & forecasting
+    "TrajectoryValidationError",
+    "CylinderSnapshotFrame",
+    "CylinderTrajectoryRecord",
+    "CylinderTrajectorySummary",
+    "CylinderNormalization",
+    "MultimodalDatasetManifest",
+    "CylinderMultimodalSample",
+    "CylinderMultimodalDataset",
+    "signed_distance_field_2d",
+    "normalized_sdf_2d",
+    "validate_cylinder_trajectory",
+    "trim_trajectory_spinup",
+    "split_cylinder_trajectories",
+    "collate_cylinder_multimodal",
+    "export_cylinder_run_to_r2_catalog",
+    "MultimodalCylinderArch",
+    "MultimodalCylinderOutput",
+    "MultimodalCylinderForecaster",
+    "MultimodalTrainConfig",
+    "MultimodalTrainResult",
+    "ForecastEvaluationReport",
+    "RolloutStepMetrics",
+    "train_multimodal_cylinder_forecaster",
+    "evaluate_forecaster_vs_persistence",
+    "rollout_trajectory_forecast",
+    "save_multimodal_forecaster",
+    "load_multimodal_forecaster",
 ]
 
 # SUBOFF 3D surrogate modules
@@ -176,7 +236,7 @@ _OPTIONAL_SUBOFF_EXPORTS = {
 }
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     """Load optional SUBOFF symbols only when callers explicitly request them."""
     module_name = _OPTIONAL_SUBOFF_EXPORTS.get(name)
     if module_name is None:
