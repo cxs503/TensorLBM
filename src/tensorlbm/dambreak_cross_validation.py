@@ -82,7 +82,9 @@ class CrossValidationConfig:
     tau: float = 0.8
     gravity: float = 1e-4
     rho_liquid: float = 1.0
-    rho_gas: float = 0.1
+    # Pressure-matched ambient (ABB consistency requires rho_gas = rho_liquid
+    # for an open free surface; NOT a real light-fluid density).
+    rho_gas: float = 1.0
     # SGS constants (used when sgs_model != 'none')
     C_smag: float = 0.1
     C_wale: float = 0.5

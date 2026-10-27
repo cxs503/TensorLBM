@@ -213,6 +213,8 @@ def test_runtime_ledger_checkpoints_and_evidence_come_from_built_plan(monkeypatc
 def test_real_topology_campaign_matches_baseline_conversion_contract() -> None:
     f, fill, flags, mass, solid = _state()
     for _ in range(10):
+        # Pressure-matched gas: the reference Körner ABB (Thürey eq. 4.5)
+        # requires an O(rho_liquid) gas reference density.
         f, fill, flags, mass, _ = free_surface_step(
             f,
             fill,
@@ -220,7 +222,7 @@ def test_real_topology_campaign_matches_baseline_conversion_contract() -> None:
             solid,
             mass=mass,
             tau=1.0,
-            rho_gas=1.0e-3,
+            rho_gas=1.0,
             paired_liquid_interface_debit=True,
         )
         assert _direct_lg(flags) == 0

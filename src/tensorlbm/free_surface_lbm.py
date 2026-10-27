@@ -1,13 +1,18 @@
 """Free-surface LBM (D3Q19) — full Körner model with mass tracking.
 
-Implements the complete Körner et al. (2005) free-surface LBM:
+Implements the complete Körner et al. (2005) free-surface LBM with the
+reference (waLBerla ``free_surface`` / Thürey 2007) mechanics:
   - Cell types: GAS / INTERFACE / LIQUID / SOLID
-  - Mass tracking: independent mass variable (mass ≠ rho)
-  - Mass redistribution: excess mass distributed to interface neighbors
-  - Interface gas pressure: anti-bounce-back at interface cells
-  - Neighbor flags: prevents isolated cells
+  - Independent tracked mass (mass ≠ rho); fill = mass / rho_local
+  - Single Guo body force, fill-weighted at INTERFACE (Körner eq. 15)
+  - ABB gas-pressure reconstruction with Laplace/bubble pressure
+  - Fluid-side half-way walls with selective free-slip
+  - Körner mass exchange (eq. 9) with the Thürey table-4.1 I/I selector
+  - Interface-only conversion (1+κ/-κ + forced rules), even excess
+    redistribution, conversion-driven envelope (no clamp, no halo sweep)
 
-References: Körner et al. (2005), waLBerla free_surface/, Maarten-vd-Sande/lbm
+References: Körner et al. (2005), Thürey (2007), waLBerla free_surface/,
+Maarten-vd-Sande/lbm
 """
 
 from __future__ import annotations
@@ -184,12 +189,25 @@ def _append_runtime_ledger(
     isolation = mass_after_isolation - mass_after_conversion
     boundary = mass_end - mass_after_isolation
     mass_drift = mass_end - mass_start
-    paired_net = exchange_liquid_credit + exchange_bulk_debit
-    # A paired L/I transfer is internal only after its explicit liquid-source
-    # debit has been applied; a legacy one-sided credit remains unexplained.
-    paired_explained = paired_net if paired_liquid_interface_debit else 0.0
-    explained = paired_explained + redistribution + clamp + conversion + isolation + boundary
+    paired_net = exchange_liquid_credit + exchange_interface_credit + exchange_bulk_debit
+    # ``paired_liquid_interface_debit`` is a deprecated no-op switch: the
+    # legacy paired bulk debit no longer exists (LIQUID fill is pinned at 1).
+    # The Körner exchange is attributed in full instead.
+    explained = (
+        exchange_liquid_credit
+        + exchange_interface_credit
+        + redistribution
+        + clamp
+        + conversion
+        + isolation
+        + boundary
+    )
     unexplained = mass_drift - explained
+    # Float32 summation rounding on an O(10) tracked total leaves an absolute
+    # residual of a few e-6 even when every operator is attributed in full,
+    # so the conserved/diagnostic boundary is relative to the step total.
+    _conserved_tol = 1.0e-6 * max(1.0, abs(float(mass_start)))
+    _ledger_balances = abs(float(unexplained)) <= _conserved_tol
     step_number = len(steps) + 1
     # Keep raw operator activity distinct from a root-cause claim.  In
     # particular ABB is a population reconstruction observation, not a
@@ -325,11 +343,11 @@ def _append_runtime_ledger(
         "paired_residual": float(paired_net),
         "paired": bool(paired_liquid_interface_debit),
         # roundoff even though every link has an equal/opposite counterpart.
-        "closed_domain_conserved": abs(float(unexplained)) <= 1.0e-6,
+        "closed_domain_conserved": _ledger_balances,
         "diagnostic": (
-            "one-sided liquid/interface mass credit or unpaired interface/interface credit"
-            if abs(float(unexplained)) > 1.0e-6
-            else "tracked-mass ledger balances; not a physical/PV closure claim"
+            "tracked-mass ledger balances; not a physical/PV closure claim"
+            if _ledger_balances
+            else "one-sided liquid/interface mass credit or unpaired interface/interface credit"
         ),
         "operator_attribution": attribution,
         "residual_reconciliation": reconciliation,
@@ -714,14 +732,34 @@ def free_surface_step(
     enable_i_to_g_ownership_closure=False,
     capture_replay_stages=False,
     replay_capture=None,
+    cell_conversion_threshold=1e-2,
+    cell_conversion_force_threshold=0.1,
+    free_slip_mask=None,
+    free_slip_all=False,
 ):
     """One free-surface LBM timestep (full Körner model).
 
-    Added vs simplified version:
-      - Mass tracking (independent mass variable)
-      - Mass redistribution during cell conversion
-      - Interface gas pressure (anti-bounce-back)
-      - Neighbor flags (prevents isolated cells)
+    Reference mechanics (Körner et al. 2005; Thürey 2007; waLBerla
+    ``free_surface``; Maarten-vd-Sande/lbm):
+
+      1. BGK/MRT/KBC collision (skipped in SOLID/GAS) + single Guo body force
+         (fill-weighted at INTERFACE, Körner eq. 15)
+      2. Pull streaming + gas zeroing
+      2c. ABB gas-pressure reconstruction (Thürey eq. 4.5) with Laplace
+          pressure (``surface_tension``) and ``bubble_pressure`` support
+      3. Fluid-side half-way wall bounce-back, with selective specular
+         (free-slip) reflection on ``free_slip_mask`` / y-walls / all walls
+      4. Körner mass exchange (eq. 9): full-weight L/I links, fill-averaged
+         I/I links with the Thürey table-4.1 selector, no gas flux
+      5. Conversion marking: only INTERFACE converts (fill > 1+κ / < -κ plus
+         forced neighbourhood rules)
+      5a. Even excess redistribution to surviving + conversion-driven new
+          receivers (local donor density)
+      5b. Topology transaction: conversion (I→L keeps PDFs), conversion-driven
+          envelope + LIQUID demotion, no clamp, no isolation stage
+
+    ``paired_liquid_interface_debit`` and ``enable_i_to_g_ownership_closure``
+    are deprecated no-ops retained for call compatibility.
     """
     if not isinstance(enable_i_to_g_ownership_closure, bool):
         raise ValueError("enable_i_to_g_ownership_closure must be bool")
@@ -800,9 +838,26 @@ def free_surface_step(
         uy = uy.clamp(-0.5, 0.5)
         uz = uz.clamp(-0.5, 0.5)
     rho_s = rho.clamp(min=1e-6, max=rho_liquid * 3.0)
-    ux_eq = (ux + tau * gx).clamp(-0.5, 0.5)
-    uy_eq = (uy + tau * gy).clamp(-0.5, 0.5)
-    uz_eq = (uz + tau * gz).clamp(-0.5, 0.5)
+    # Pre-collision cell-type masks.  The Körner body force (eq. 15) acts on
+    # LIQUID at full strength and on INTERFACE weighted by the fill fraction;
+    # GAS and SOLID cells carry no liquid and are excluded from both the force
+    # and the collision below (waLBerla ``ForceDensitySweep`` /
+    # ``free_surface::InterfaceCell`` dynamics).
+    liquid_pre = flags == LIQUID
+    iface_pre = flags == INTERFACE
+    active_pre = liquid_pre | iface_pre
+    force_weight = torch.where(
+        iface_pre, fill.clamp(0.0, 1.0), torch.ones_like(fill)
+    )
+    force_weight = torch.where(active_pre, force_weight, torch.zeros_like(force_weight))
+    # Second-order Guo forcing shifts the equilibrium velocity by F*dt/2rho
+    # (Guo et al. 2002).  The legacy ``tau * g`` shift double-counted gravity
+    # together with the explicit Guo source below (measured gain 1.5x/1.375x
+    # instead of 1.0x); a single Guo force with the half-step shift gives an
+    # exact momentum gain of F per step.
+    ux_eq = (ux + 0.5 * force_weight * gx).clamp(-0.5, 0.5)
+    uy_eq = (uy + 0.5 * force_weight * gy).clamp(-0.5, 0.5)
+    uz_eq = (uz + 0.5 * force_weight * gz).clamp(-0.5, 0.5)
     feq = equilibrium3d(rho_s, ux_eq, uy_eq, uz_eq)
 
     # For advanced operators: set gas cells to small equilibrium (prevent NaN)
@@ -868,43 +923,32 @@ def free_surface_step(
         else:
             f = f_collide - (f_collide - feq) / tau
 
-    # Guo gravity force (only when gravity is non-zero)
+    # Guo body force (only when gravity is non-zero).  Single mechanism with the
+    # full second-order Guo source term; the legacy truncated ``(c.F)`` form is
+    # only first-order accurate.  Körner eq. 15: F = a * rho * fill at
+    # INTERFACE, F = a * rho at LIQUID, zero elsewhere.
     if gx != 0.0 or gy != 0.0 or gz != 0.0:
         cs2 = 1.0 / 3.0
         cx = c_dev[:, 0].view(19, 1, 1, 1)
         cy = c_dev[:, 1].view(19, 1, 1, 1)
         cz = c_dev[:, 2].view(19, 1, 1, 1)
         w_dev = _W.to(device).float().view(19, 1, 1, 1)
-        ng = non_gas.float()
-        Fx = rho_liquid * gx * ng
-        Fy = rho_liquid * gy * ng
-        Fz = rho_liquid * gz * ng
-        cu_force = cx * Fx.unsqueeze(0) + cy * Fy.unsqueeze(0) + cz * Fz.unsqueeze(0)
-        f = f + (1.0 - 0.5 / tau) * w_dev * cu_force / cs2
-
-    # Surface tension force (curvature correction, standard Körner)
-    if surface_tension > 0:
-        cx = c_dev[:, 0].view(19, 1, 1, 1)
-        cy = c_dev[:, 1].view(19, 1, 1, 1)
-        cz = c_dev[:, 2].view(19, 1, 1, 1)
-        w_dev = _W.to(device).float().view(19, 1, 1, 1)
-        cs2 = 1.0 / 3.0
-        fill_field = mass / rho_s.clamp(min=1e-6)
-        grad_x = 0.5 * (fill_field.roll(-1, dims=2) - fill_field.roll(1, dims=2))
-        grad_y = 0.5 * (fill_field.roll(-1, dims=1) - fill_field.roll(1, dims=1))
-        grad_z = 0.5 * (fill_field.roll(-1, dims=0) - fill_field.roll(1, dims=0))
-        mag = (grad_x**2 + grad_y**2 + grad_z**2).sqrt().clamp(min=1e-10)
-        nx, ny, nz = -grad_x / mag, -grad_y / mag, -grad_z / mag
-        kappa = 0.5 * (
-            (nx.roll(-1, dims=2) - nx.roll(1, dims=2))
-            + (ny.roll(-1, dims=1) - ny.roll(1, dims=1))
-            + (nz.roll(-1, dims=0) - nz.roll(1, dims=0))
+        Fx = rho_s * gx * force_weight
+        Fy = rho_s * gy * force_weight
+        Fz = rho_s * gz * force_weight
+        cu = (cx * ux + cy * uy + cz * uz) / cs2
+        forcing = (
+            ((cx - ux) * Fx + (cy - uy) * Fy + (cz - uz) * Fz) / cs2
+            + cu * (cx * Fx + cy * Fy + cz * Fz) / cs2
         )
-        Fx_st = surface_tension * kappa * grad_x
-        Fy_st = surface_tension * kappa * grad_y
-        Fz_st = surface_tension * kappa * grad_z
-        cu_st = cx * Fx_st.unsqueeze(0) + cy * Fy_st.unsqueeze(0) + cz * Fz_st.unsqueeze(0)
-        f = f + (1.0 - 0.5 / tau) * w_dev * cu_st / cs2
+        f = f + (1.0 - 0.5 / tau) * w_dev * forcing
+
+    # NOTE: surface tension is intentionally *not* a CSF body force here.
+    # The reference free-surface closure (Thürey 2007 §4.2, waLBerla
+    # ``GetLaplacePressure.h``) carries surface tension as a Laplace pressure
+    # jump inside the ABB gas density; see section 2c below.  The legacy
+    # ``surface_tension * kappa * grad`` body force is removed; the
+    # ``surface_tension`` argument now feeds the Laplace term.
 
     # Clamp f to non-negative (numerical stability, prevents negative rho → NaN)
     f = f.clamp(min=0.0, max=rho_liquid * 3.0)
@@ -912,6 +956,17 @@ def free_surface_step(
     # Remove NaN for non-BGK
     if collision != "bgk":
         f = torch.nan_to_num(f, nan=0.0, posinf=0.0, neginf=0.0)
+
+    # Collision is skipped in SOLID and GAS cells (waLBerla applies the LBM
+    # dynamics only to liquid/interface cells; gas has no populations).  The
+    # legacy path collided everywhere, letting the wall/gas state feed back
+    # into the fluid through the next streaming step.
+    f = torch.where((solid_mask | ~active_pre).unsqueeze(0), f_collide, f)
+    f = torch.where(
+        (~active_pre & ~solid_mask).unsqueeze(0),
+        torch.zeros_like(f),
+        f,
+    )
     if inventory_stages is not None:
         inventory_stages["after_collision_and_forcing"] = inventory_measurement(
             f,
@@ -971,81 +1026,49 @@ def free_surface_step(
     # Standard Körner ABB (pressure boundary) for a missing pull population:
     # f_q(x,t+dt) = f_q^eq(rho_g,u_g) + f_barq^eq(rho_g,u_g)
     #                 - f_barq^*(x,t).  With u_g=u_interface this fixes p_g.
-    # The implementation has no separate gas velocity field, so use the local
-    # interface velocity from the pre-collision macroscopics.
-    _abb_mode = os.environ.get("TL_FS_ABB_MODE", "legacy").strip().lower()
-    rho_g_field = torch.full_like(rho, float(rho_gas))
-    # ------------------------------------------------------------------
-    # Hydrostatic free-surface pressure closure (OPT-IN: TL_FS_ABB_MODE in
-    # {"hydro","hydrofill"}; legacy is bit-for-bit preserved otherwise).
-    #
-    # Physics (Körner 2005 / Thürey 2007 free-surface pressure boundary).
-    # On a free surface the ambient pressure is p_gas = rho_gas c_s^2 and the
-    # standard ABB below already imposes it.  What the legacy form omits is the
-    # *interfacial pressure closure* of a finite liquid column: a static column
-    # of height H is in hydrostatic equilibrium (grad p = rho_l g_vec), so the
-    # pressure the interface must "see" at depth below the local free surface is
-    #
-    #     p_int(x) = p_gas + (p_fill(x) - p_gas) + rho_l * g_vec . (x - x_ref)
-    #
-    # with
-    #   * p_fill = c_s^2 [ rho_gas + (rho_l - rho_gas) fill ]  -- Körner pressure
-    #     closure: a half-full interface cell carries the fill-weighted
-    #     pressure, not the full rho_l (the H~W cube has a large fill gradient).
-    #   * x_ref  = local free-surface height in the same vertical column, so the
-    #     hydrostatic head rho_l g_vec.(x - x_ref) vanishes on the surface and
-    #     grows with depth (the H~W-column hydrostatic imbalance).
-    #
-    # Both terms collapse to one equivalent ABB reference density
-    #
-    #     rho_ref(x) = rho_gas + (rho_l - rho_gas) fill
-    #                  + coef * rho_l * (g_vec . (x - x_ref)) / c_s^2
-    #
-    # so the same ABB arithmetic can be reused.  TL_FS_HYDRO_COEF (default 1)
-    # scales the head term (0 = fill-consistent pressure only).
-    # ------------------------------------------------------------------
-    if _abb_mode in ("hydro", "hydrofill"):
-        _cs2 = 1.0 / 3.0
-        _coef = float(os.environ.get("TL_FS_HYDRO_COEF", "1.0"))
-        rho_ref = torch.full_like(rho, float(rho_gas))
-        if _abb_mode == "hydrofill":
-            rho_ref = rho_ref + (float(rho_liquid) - float(rho_gas)) * fill
-        _gvec = (float(gx), float(gy), float(gz))
-        _gax = max(range(3), key=lambda k: abs(_gvec[k]))
-        if _coef != 0.0 and _gvec[_gax] != 0.0:
-            idxb = torch.arange(rho.shape[_gax], device=device, dtype=rho.dtype)
-            view = [1, 1, 1]
-            view[_gax] = rho.shape[_gax]
-            idxb = idxb.view(view)
-            nongas_f = (flags != GAS).to(rho.dtype)
-            _ref = torch.where(nongas_f > 0, idxb, torch.full_like(nongas_f, -1.0))
-            ref = _ref.amax(dim=_gax, keepdim=True)
-            # x - x_ref along the gravity axis (<= 0 below the free surface)
-            dpos = idxb - ref
-            rho_ref = rho_ref + _coef * float(rho_liquid) * _gvec[_gax] * dpos / _cs2
-        rho_g_field = rho_ref.clamp(min=0.0)
-    f_eq_gas = equilibrium3d(rho_g_field, ux, uy, uz)
-    # Candidate physics: the legacy form subtracts the *local post-collision*
-    # outgoing population f_post[opp], whose magnitude is O(rho_interface) ~
-    # O(rho_liquid).  At high density ratio (rho_gas << rho_liquid) that makes
-    # every reconstructed population strongly negative -- the interface
-    # density then collapses and u = m/rho diverges.  The variants below keep
-    # the equilibrium part at the gas pressure and only carry the outgoing
-    # non-equilibrium stress, which is the physically meaningful content of a
-    # free-surface pressure boundary.
-    if _abb_mode == "eq":
-        f_abb = f_eq_gas.expand_as(f)
-    elif _abb_mode == "eqref":
-        f_eq_local = equilibrium3d(rho_s, ux, uy, uz)
-        f_abb = f_eq_gas + (f_post[_OPP.to(device)] - f_eq_local[_OPP.to(device)])
-    elif _abb_mode == "eqrefflip":
-        f_eq_local = equilibrium3d(rho_s, ux, uy, uz)
-        f_abb = f_eq_gas - (f_post[_OPP.to(device)] - f_eq_local[_OPP.to(device)])
-    elif _abb_mode == "sumeq":
-        f_eq_local = equilibrium3d(rho_s, ux, uy, uz)
-        f_abb = f_eq_gas + f_eq_gas[_OPP.to(device)] - f_eq_local[_OPP.to(device)]
-    else:
-        f_abb = f_eq_gas + f_eq_gas[_OPP.to(device)] - f_post[_OPP.to(device)]
+    # The gas velocity is the local *post-collision* interface velocity: at
+    # stream time the PDF field holds the post-collision state (waLBerla
+    # ``ReconstructInterfaceCellABB`` reads the post-collision PDFs).
+    _opp_dev = _OPP.to(device)
+    _rho_pc, _ux_pc, _uy_pc, _uz_pc = macroscopic3d(f_post)
+    if _env_bool("TL_FS_INPUT_GUARD", True):
+        _ux_pc = _ux_pc.clamp(-0.5, 0.5)
+        _uy_pc = _uy_pc.clamp(-0.5, 0.5)
+        _uz_pc = _uz_pc.clamp(-0.5, 0.5)
+    # Gas reference density: the bubble pressure overrides rho_gas when given
+    # (enclosed, possibly pressurised gas volume; waLBerla ``BubbleModel``).
+    _rho_gas_base = float(bubble_pressure) if bubble_pressure is not None else float(rho_gas)
+    rho_g_field = torch.full_like(rho, _rho_gas_base)
+    if surface_tension > 0:
+        # Laplace pressure jump inside the ABB gas density (Thürey 2007 §4.2,
+        # waLBerla ``computeDeltaRhoLaplacePressure``): Δρ = Δp/cs² with
+        # Δp = 2σH and the total curvature κ = 2H = div(n) computed below, so
+        # Δρ = 3σκ, limited to ±0.1 as in the reference implementation.
+        fill_field = fill.clamp(0.0, 1.0)
+        grad_x = 0.5 * (fill_field.roll(-1, dims=2) - fill_field.roll(1, dims=2))
+        grad_y = 0.5 * (fill_field.roll(-1, dims=1) - fill_field.roll(1, dims=1))
+        grad_z = 0.5 * (fill_field.roll(-1, dims=0) - fill_field.roll(1, dims=0))
+        mag = (grad_x**2 + grad_y**2 + grad_z**2).sqrt().clamp(min=1e-10)
+        nx, ny_n, nz_n = -grad_x / mag, -grad_y / mag, -grad_z / mag
+        kappa = 0.5 * (
+            (nx.roll(-1, dims=2) - nx.roll(1, dims=2))
+            + (ny_n.roll(-1, dims=1) - ny_n.roll(1, dims=1))
+            + (nz_n.roll(-1, dims=0) - nz_n.roll(1, dims=0))
+        )
+        delta_rho = (3.0 * float(surface_tension) * kappa).clamp(-0.1, 0.1)
+        rho_g_field = rho_g_field + torch.where(
+            iface_abb, delta_rho, torch.zeros_like(delta_rho)
+        )
+    f_eq_gas = equilibrium3d(rho_g_field, _ux_pc, _uy_pc, _uz_pc)
+    # The reference ABB subtracts the *local post-collision* outgoing
+    # population f_post[opp] (magnitude O(rho_liquid)).  This is consistent
+    # only when the gas reference density is O(rho_liquid): for an open free
+    # surface the correct choice is rho_gas = rho_liquid (pressure-matched
+    # ambient, waLBerla ``BubbleModelConstantPressure``/Pohl 2008).  A small
+    # rho_gas (e.g. a real air density) makes every reconstructed population
+    # negative and the interface collapses -- that is why the legacy
+    # TL_FS_ABB_MODE variants existed; they are removed with the fix.
+    f_abb = f_eq_gas + f_eq_gas[_opp_dev] - f_post[_opp_dev]
     abb_delta = torch.where(need_abb, f_abb - f, torch.zeros_like(f))
     if mass_ledger is not None:
         # This is a population (not tracked-liquid-mass) change.  Keeping it
@@ -1053,39 +1076,29 @@ def free_surface_step(
         # the subsequent liquid/interface mass stencil.
         mass_ledger["abb_population_delta"] = float(abb_delta.sum())
         mass_ledger["abb_population_abs_delta"] = float(abb_delta.abs().sum())
-    # ABLATION (diagnostic only): TL_FS_ABL_ABB suppresses the gas-pressure
-    # anti-bounce-back reconstruction to test whether it drives the interface.
-    if _env_bool("TL_FS_ABL_ABB", False):
-        f = torch.where(need_abb, f, f)
-    else:
-        f = torch.where(need_abb, f_abb, f)
+    f = torch.where(need_abb, f_abb, f)
     if inventory_stages is not None:
         inventory_stages["after_abb"] = inventory_measurement(
             f, fill, flags, mass, rho_liquid=rho_liquid
         )
 
     # ---- 3. Wall BCs ----
-    # OPT-IN hydrostatic-consistent half-way bounce-back (TL_FS_WALL_MODE).
+    # Fluid-side half-way bounce-back (default; the reference-correct form).
     #
-    # Legacy: ``bounce_back_cells_3d`` reflects at the SOLID cell via an in-place
-    # q <-> opp(q) swap.  In this pull-stream framework the *fluid* cell adjacent
-    # to a wall reads its wall-entering populations from that solid cell BEFORE
-    # the swap, i.e. it samples the post-collision solid state (and, on step 1,
-    # the zero initial solid state).  The one-step budget shows the resulting
-    # spurious wall-layer deficit: rho 1.0 -> 0.694 and u_y spike -0.20 EVEN AT
-    # g = 0 (gravity-independent), which drives the boundary layer into free
-    # vibration and feeds the interface chain (pseudo-wetting film creep).
+    # The legacy ``bounce_back_cells_3d`` reflects at the SOLID cell via an
+    # in-place q <-> opp(q) swap.  In this pull-stream framework the *fluid*
+    # cell adjacent to a wall reads its wall-entering populations from that
+    # solid cell BEFORE the swap, i.e. it samples the post-collision solid
+    # state (and, on step 1, the zero initial solid state).  The one-step
+    # budget shows the resulting spurious wall-layer deficit: rho 1.0 -> 0.81
+    # and a u spike of -0.20 EVEN AT g = 0 (gravity-independent).
     #
-    # Corrected form reflects at the *fluid* side using its own outgoing
-    # populations (true half-way BB).  ``halfway_hydro`` additionally adds the
-    # hydrostatic pressure head of a static column p = rho_l g_vec.(x - x_ref):
-    #     f_q(x_f) = f_post[opp(q)](x_f) - 2 w_q rho_l (g_vec.c_q) / cs^2
-    # (the discrete drop p(x_f) - p(x_f - c_q) mirrored into the entering
-    # population, so it vanishes at the free surface x_ref and supports the fluid
-    # against gravity near the wall).  Both collapse to a single where;
-    # TL_FS_WALL_HYDRO_COEF (default 1) scales the head term.
-    _wall_mode = os.environ.get("TL_FS_WALL_MODE", "legacy").strip().lower()
-    if _wall_mode in ("halfway", "halfway_hydro"):
+    # The corrected form reflects at the *fluid* side using its own outgoing
+    # populations (true half-way BB): f_q(x_f) = f_post[opp(q)](x_f).
+    # ``TL_FS_WALL_MODE=legacy`` restores the old post-stream solid-swap-only
+    # path for A/B comparison.
+    _wall_mode = os.environ.get("TL_FS_WALL_MODE", "halfway").strip().lower()
+    if _wall_mode != "legacy":
         _src_solid = torch.stack(
             [
                 solid_mask.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
@@ -1093,23 +1106,42 @@ def free_surface_step(
             ]
         )  # (19,nz,ny,nx): pull source x - c_q lies in SOLID
         _fluid_bb = (~solid_mask).unsqueeze(0) & _src_solid
-        # OPT-IN free-slip reflection (TL_FS_WALL_SLIP=1): reverse only the
-        # wall-normal components of the wall-entering link instead of the whole
-        # population.  Removes the no-slip boundary-layer stagnation of the
-        # wall-adjacent column (see ``_specular_wall_mirror_index``).
-        if _env_bool("TL_FS_WALL_SLIP", False):
-            _mir_idx = _specular_wall_mirror_index(solid_mask, device)
-            _f_reflect = torch.gather(f_post, 0, _mir_idx)
-        else:
-            _f_reflect = f_post[_OPP.to(device)]
-        if _wall_mode == "halfway_hydro" and (gx != 0.0 or gy != 0.0 or gz != 0.0):
-            _cs2_w = 1.0 / 3.0
-            _coef_w = float(os.environ.get("TL_FS_WALL_HYDRO_COEF", "1.0"))
-            _gvec_w = torch.tensor([float(gx), float(gy), float(gz)], device=device)
-            _gc_w = (c_dev * _gvec_w.view(1, 3)).sum(dim=1)  # (19,) = g_vec . c_q
-            _w19_w = _W.to(device).float()
-            _head_w = (-2.0 / _cs2_w) * _coef_w * float(rho_liquid) * _w19_w * _gc_w  # (19,)
-            _f_reflect = _f_reflect + _head_w.view(19, 1, 1, 1)
+        _f_reflect = f_post[_OPP.to(device)]
+        # Selective free-slip (specular) reflection: links whose pull source
+        # lies in a free-slip wall reverse only the wall-normal component
+        # (waLBerla ``FreeSlip``), all other wall links bounce back.  The
+        # y-wall form matches the historical ``free_slip_y``/``y_wall_mask``
+        # contract; ``free_slip_mask``/``free_slip_all`` generalise it to an
+        # arbitrary slip-wall set (dam-break validation uses free-slip on all
+        # walls, waLBerla ``DamBreakRectangular.prm``).
+        _slip_mask = free_slip_mask
+        if _slip_mask is None and free_slip_all:
+            _slip_mask = solid_mask
+        if _slip_mask is not None:
+            _src_slip = torch.stack(
+                [
+                    _slip_mask.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
+                    for sx, sy, sz in _C19_SHIFTS
+                ]
+            )
+            _mir_idx = _specular_wall_mirror_index(_slip_mask, device)
+            _f_reflect = torch.where(
+                _fluid_bb & _src_slip, torch.gather(f_post, 0, _mir_idx), _f_reflect
+            )
+        elif free_slip_y and y_wall_mask is not None:
+            from .boundary.boundaries3d import _D3Q19_MIRROR_Y
+
+            _src_y = torch.stack(
+                [
+                    y_wall_mask.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
+                    for sx, sy, sz in _C19_SHIFTS
+                ]
+            )
+            _f_reflect = torch.where(
+                _fluid_bb & _src_y,
+                f_post[_D3Q19_MIRROR_Y.to(device)],
+                _f_reflect,
+            )
         f = torch.where(_fluid_bb, _f_reflect, f)
     f = bounce_back_cells_3d(f, solid_mask)
     if free_slip_y and y_wall_mask is not None:
@@ -1164,252 +1196,52 @@ def free_surface_step(
             rho_liquid=rho_liquid,
         )
 
-    # ---- 4. Mass exchange (standard Körner, independent mass variable) ----
+    # ---- 4. Mass exchange (Koerner eq. 9 / Thuerey table 4.1) ----
     # (no .any() sync — multicard-safe under TCCL; torch.where handles empty masks)
+    #
+    # Every INTERFACE cell receives over every D3Q19 link (no receiver gate):
+    #   * L/I link:  dm = f_in - f_out            (full weight, Koerner eq. 9)
+    #   * I/I link:  dm = 0.5 (eps + eps_nb) (f_in - f_out), skipped when the
+    #     pull source has no LIQUID neighbour while the cell itself has no GAS
+    #     neighbour (Thuerey table 4.1; waLBerla ``useSimpleMassExchange=false``).
+    #   * gas link:  no mass flux (gas is a pressure boundary, not a liquid
+    #     mass reservoir).
+    # f_in is the pure streamed state (frozen pre-ABB in f_exchange); f_out is
+    # the local post-collision outgoing population.  LIQUID cells are never
+    # debited: their fill is pinned at 1 by definition (waLBerla never touches
+    # the liquid fill; the legacy paired bulk debit is removed).
     iface_mask = flags == INTERFACE
-    # F1: unified interface birth/receive semantics.
-    # Every INTERFACE cell is a legal mass-exchange receiver — including a
-    # freshly-born envelope cell at fill = 0.  The previous ``fill > 1e-3``
-    # gate sealed the column: ``init_flags_from_fill`` / ``to_i`` birth the
-    # envelope at fill = 0, so a gated receiver could never fill and no
-    # L/I -> I/L conversion could ever fire (front frozen at X = 1.0).
-    # Conservation is restored by pairing every I/I link (antisymmetric half
-    # weight) and every L/I link with an explicit bulk debit below, so an
-    # ungated receiver is a *transfer*, never a source.
-    # Default receiver gate = the trunk behaviour: an INTERFACE cell must already
-    # carry some tracked mass (fill > 1e-3) to be a legal mass-exchange receiver.
-    # (The earlier F1 "open gate" ``recv_ok = iface_mask`` let a freshly-born
-    # empty envelope cell siphon real liquid mass in — a gravity-independent
-    # ~0.04 cell/step pseudo-wetting film that polluted X/H AND pushed the
-    # per-step mass drift to ~7e-4, tripping the topology-normalized-drift gate
-    # in tests/test_dam_break_3d*.py.  It is retained below as an opt-in.)
-    recv_ok = iface_mask & (fill > 1e-3)
-    # OPT-IN (diagnostic): the F1 open gate, every INTERFACE cell may receive.
-    if _env_bool("TL_FS_RECV_OPEN", False):
-        recv_ok = iface_mask
-    # F1': GRADED receive gate — resolves the "freeze vs pseudo-advance" tension.
-    #
-    # The F1 open gate (``recv_ok = iface_mask``) treats *every* INTERFACE cell
-    # as a legal mass-exchange receiver, including a freshly-born envelope cell
-    # at fill = 0.  ``init_flags_from_fill`` / the halo promotion birth that
-    # envelope with an equilibrium population at rho_liquid but tracked mass 0.
-    # A single D3Q19 link into such an empty shell then siphons real liquid mass
-    # into it (gravity-independent, ~0.04 cell/step): once mass >= 0.999 rho_L
-    # the cell converts to LIQUID and the halo lifts the next GAS cell to
-    # INTERFACE -> a pseudo-wetting film that pollutes X and H.
-    #
-    # The pre-F1 strict gate (fill > 1e-3) closed *all* empty shells, which also
-    # sealed the genuine gravity-driven spread (front frozen at X = 1.0).
-    #
-    # The graded gate distinguishes the two cases by the *support* of the shell:
-    #   tier 1 (established): the INTERFACE cell already carries tracked liquid
-    #     mass (mass > m_eps) -> always a legal receiver (real interface).
-    #   tier 2 (supported birth): a fresh / empty shell (mass <= m_eps) may
-    #     receive only when it is backed by a *real liquid surface*, i.e. it has
-    #     at least N_MIN of its D3Q19 neighbours in LIQUID.  A lone corner finger
-    #     (1-2 liquid links) — the pseudo-film seed — is locked out; a proper
-    #     face (>= 3-4 liquid links) is admitted so gravity-driven spreading can
-    #     still fill the leading interface.
-    if _env_bool("TL_FS_RECV_GRADED", False):
-        m_eps = float(os.environ.get("TL_FS_RECV_MASS_EPS", "0.01")) * rho_liquid
-        n_min = int(os.environ.get("TL_FS_RECV_NMIN", "3"))
-        established = mass > m_eps
-        n_liq_nbr_pre = (neighbor_flags == LIQUID).sum(dim=0)
-        supported = n_liq_nbr_pre >= n_min
-        recv_ok = iface_mask & (established | supported)
-    # ABLATION (diagnostic only): TL_FS_ABL_RECVCLOSED restores the pre-F1
-    # fill gate so a freshly-born envelope cell at fill=0 cannot receive.
-    if _env_bool("TL_FS_ABL_RECVCLOSED", False):
-        recv_ok = iface_mask & (fill > 1e-3)
-    # EXPERIMENTAL knobs: apply the gate to the L/I and I/I channels separately.
-    _liq_only = _env_bool("TL_FS_RECV_LIQ_ONLY", False)
-    _iface_only = _env_bool("TL_FS_RECV_IFACE_ONLY", False)
-    recv_ok_liq = recv_ok if not _iface_only else iface_mask
-    recv_ok_iface = recv_ok if not _liq_only else iface_mask
-    recv_19 = recv_ok_liq.unsqueeze(0)
-    recv_19_iface = recv_ok_iface.unsqueeze(0)
-
-    # --- A-prime exchange closure (OPT-IN: TL_FS_APRIME=1) ----------------
-    # Design doc §6.2 closure redesign, exchange end.
-    #
-    # Legacy: the L/I channel is paired by the explicit bulk debit below, but
-    # the I/I channel is a bare per-cell half-weight whose net vanishes only
-    # when the receiver gate is *symmetric across every link*.  A graded gate
-    # (graded_n3..n5) is asymmetric (one endpoint established, the other not):
-    # measured 288 asymmetric I/I links, +1.7..2% static-column drift.  Even
-    # the open gate still siphons real liquid into the fill=0 shells born at
-    # mass 0 while their populations sit at rho_liquid -- the pseudo-wetting
-    # film.
-    #
-    # A-prime fixes both ends of the exchange:
-    #  (a) legal-receiver promotion (per-link): an I/I link is legal only when
-    #      BOTH endpoints are legal receivers;  an L/I link only when its
-    #      INTERFACE target is a legal receiver.
-    #  (b) fill~=0 guard, paired accounting: a link is dead when EITHER
-    #      endpoint is an *unsupported* near-empty shell (mass <= eps_shell and
-    #      fewer than n_min LIQUID neighbours) -- the pseudo-film seed.  The
-    #      predicate is a symmetric function of the undirected link, so the
-    #      paired half-weight stays exactly antisymmetric and the I/I net is
-    #      identically zero.  No global rescale, no topology mutation.
-    #
-    # Legacy behaviour is untouched unless the switch is set (bit-identical).
-    if _env_bool("TL_FS_APRIME", False):
-        _nbr_recv = torch.stack(list(all_moving_neighbor_masks(recv_ok_iface)))
-        _nbr_recv = torch.cat([recv_ok_iface.unsqueeze(0), _nbr_recv], dim=0)
-        _eps_shell = float(os.environ.get("TL_FS_APRIME_SHELL_EPS", "0.01")) * rho_liquid
-        _n_min = int(os.environ.get("TL_FS_APRIME_NMIN", "3"))
-        _n_liq_nbr = (neighbor_flags == LIQUID).sum(dim=0)
-        _shell = (mass <= _eps_shell) & iface_mask
-        _unsupported = _shell & (_n_liq_nbr < _n_min)
-        _live_mv = ~_unsupported.unsqueeze(0) & ~torch.stack(
-            list(all_moving_neighbor_masks(_unsupported))
-        )
-        # Index 0 (rest direction) is a no-op link: keep it live so the (19,)
-        # mask aligns with ``neighbor_flags``.
-        _live = torch.cat([torch.ones_like(_live_mv[:1]), _live_mv], dim=0)
-        recv_19 = recv_ok_liq.unsqueeze(0) & _live
-        recv_19_iface = recv_ok_iface.unsqueeze(0) & _nbr_recv & _live
     # neighbor_flags always computed in anti-bounce-back above (no None check)
     # For pull link q at x, the opposing outgoing population belongs to x
     # itself: f_bar(q)^*(x).  Sampling it at x-c_q mixes two different links.
     f_opp_nb = f_post[_OPP.to(device)]  # (19, nz, ny, nx)
-    from_liq = recv_19 & (neighbor_flags == LIQUID)
-    from_iface = recv_19_iface & (neighbor_flags == INTERFACE)
-    mass_delta_liquid = torch.where(from_liq, f_exchange - f_opp_nb, torch.zeros_like(f))
-    mass_delta_interface = torch.where(
-        from_iface, (f_exchange - f_opp_nb) * 0.5, torch.zeros_like(f)
+    from_liq = iface_mask.unsqueeze(0) & (neighbor_flags == LIQUID)
+    from_iface = iface_mask.unsqueeze(0) & (neighbor_flags == INTERFACE)
+    diff = f_exchange - f_opp_nb
+    mass_delta_liquid = torch.where(from_liq, diff, torch.zeros_like(f))
+    # I/I fill-averaged weight 0.5 (eps(x) + eps(x - c_q)) from the
+    # pre-exchange fill field.
+    fill_nb = torch.stack(
+        [fill] + [roll_from_pull_source(fill, q) for q in D3Q19_MOVING_Q]
+    )  # (19, nz, ny, nx): fill at the pull source x - c_q
+    ii_weight = 0.5 * (fill.unsqueeze(0) + fill_nb)
+    # Thuerey table 4.1 selector: an I/I link is dead when its pull source has
+    # no LIQUID neighbour while the receiving cell has no GAS neighbour.
+    liq_nbr_count = (neighbor_flags == LIQUID).sum(dim=0)
+    liq_nbr_at_source = torch.stack(
+        [liq_nbr_count] + [roll_from_pull_source(liq_nbr_count, q) for q in D3Q19_MOVING_Q]
     )
-    # ------------------------------------------------------------------
-    # OPT-IN free-surface (gas) mass-flux channel: TL_FS_GAS_CHANNEL.
-    #
-    # The legacy path hard-zeroes the gas channel ("gas is a pressure boundary,
-    # not a liquid-mass reservoir").  That makes the interface cells unable to
-    # empty through the free surface, so the residual column height H is frozen
-    # and the front is throttled.  The Körner exchange sums over *every* D3Q19
-    # link; for a gas-valued pull source the incoming population is the
-    # anti-bounce-back reconstruction f_abb and the outgoing is the local
-    # post-collision population f_opp_nb, so the gas contribution to a tracked
-    # interface cell is (f_abb[q] - f_opp_nb[q]) summed over the gas links.
-    #
-    # The bare form (TL_FS_GAS_CHANNEL=1 / "naive") is a NON-CONSERVATIVE
-    # source/sink: the mass an interface cell vents into the gas is simply
-    # dropped from the tracked field (measured drift -3.4e-2 at rho_gas=1).
-    # Two CONSERVATIVE closures are provided, both paired per D3Q19 link:
-    #   * "conserv"/"paired" (gas-side receipt): the same amount is credited to
-    #     the gas pull-source x-c_q, so gas cells accumulate real mass and are
-    #     promoted by the mass gate.  This is the L/I bulk-debit pattern applied
-    #     to the gas channel; the global link sum is identically zero.
-    #   * "redist"/"paired_redist": the vented mass is kept inside the liquid
-    #     system.  The interface cell is debited (mass_delta_gas) and the same
-    #     amount is returned to the Körner redistribution pool so surviving
-    #     interface neighbours receive it -- donor + receivers net to exactly
-    #     zero, no new interface is born in the gas (no pseudo-film), and the
-    #     cell is free to empty so H can actually collapse.
-    # ------------------------------------------------------------------
-    _gc_mode = os.environ.get("TL_FS_GAS_CHANNEL", "0").strip().lower()
-    _gc_on = _gc_mode in (
-        "1",
-        "true",
-        "yes",
-        "naive",
-        "conserv",
-        "paired",
-        "redist",
-        "paired_redist",
-    )
-    _gc_conserv_credit = _gc_mode in ("conserv", "paired")
-    _gc_conserv_redist = _gc_mode in ("redist", "paired_redist")
-    if _gc_on:
-        mass_delta_gas = torch.where(need_abb, f_abb - f_opp_nb, torch.zeros_like(f))
-    else:
-        mass_delta_gas = torch.zeros_like(f)
-    mass_delta_gas_credit = torch.zeros_like(mass)
-    gas_redist_excess = torch.zeros_like(mass)
-    if _gc_conserv_credit:
-        # Per-link receipt on the gas pull-source x-c_q (identical roll pattern
-        # to the L/I bulk debit below), so every vent is matched by a gain.
-        mass_delta_gas_credit = -torch.stack(
-            [
-                mass_delta_gas[q].roll((-sz, -sy, -sx), dims=(0, 1, 2))
-                for q, (sx, sy, sz) in enumerate(_C19_SHIFTS)
-            ]
-        ).sum(0)
-    if _gc_conserv_redist:
-        # Interface cell net gas vent (negative = loss); its magnitude is
-        # returned to the redistribution pool.  The cell is already debited by
-        # mass_delta_gas, so donor + receivers net to exactly zero.
-        gas_redist_excess = (-mass_delta_gas.sum(0)).clamp(min=0.0)
-    # A L/I credit at interface target x is paired link-by-link with a debit
-    # at its pull source x-c_q.  This uses only existing D3Q19 links; it is
-    # neither a global rescale nor a topology mutation.
-    mass_delta_bulk_debit = -torch.stack(
-        [
-            mass_delta_liquid[q].roll((-sz, -sy, -sx), dims=(0, 1, 2))
-            for q, (sx, sy, sz) in enumerate(_C19_SHIFTS)
-        ]
-    ).sum(0)
-    mass_delta = (
-        mass_delta_liquid
-        +
-        # Gas is a pressure boundary, not a liquid-mass reservoir.  Adding
-        # its reconstructed population here spuriously creates tracked liquid
-        # mass in a quiescent closed column (unless TL_FS_GAS_CHANNEL is set to
-        # one of the opt-in free-surface mass-flux closures above).
-        mass_delta_gas
-        + mass_delta_interface
-    ).sum(0) + mass_delta_gas_credit
-    if paired_liquid_interface_debit:
-        valid_bulk_owner = flags == LIQUID
-        invalid_debit = mass_delta_bulk_debit.masked_select(~valid_bulk_owner)
-        if bool((invalid_debit.abs() > 1.0e-8).any()):
-            raise RuntimeError("L/I paired debit has no LIQUID bulk owner")
-        mass_delta = mass_delta + torch.where(
-            valid_bulk_owner, mass_delta_bulk_debit, torch.zeros_like(mass_delta_bulk_debit)
-        )
-    if _env_bool("TL_FS_INPUT_GUARD", True):
-        # (c) Bound the tracked-mass increment: a non-finite or runaway exchange
-        # delta must not be committed to the independent mass field.
-        mass_delta_preclamp = mass_delta
-        mass_delta = torch.nan_to_num(mass_delta, nan=0.0, posinf=0.0, neginf=0.0).clamp(
-            -float(rho_liquid), float(rho_liquid)
-        )
-    else:
-        mass_delta_preclamp = mass_delta
-    if _env_bool("TL_FS_DBG", False) and mass_ledger is not None:
-        mass_ledger["dbg_mass_delta_preclamp_sum"] = float(mass_delta_preclamp.sum())
-        mass_ledger["dbg_mass_delta_postclamp_sum"] = float(mass_delta.sum())
-        mass_ledger["dbg_mass_delta_absmax"] = float(mass_delta_preclamp.abs().max())
-        mass_ledger["dbg_clamp_touch"] = float(
-            (mass_delta_preclamp.abs() > float(rho_liquid)).sum()
-        )
-        mass_ledger["dbg_debit_nonliq_abs"] = float(
-            mass_delta_bulk_debit.masked_select(~(flags == LIQUID)).abs().sum()
-        )
-        # A-prime leak forensics: the I/I (interface-interface) channel is
-        # applied as a per-cell half-weight, so its net requires BOTH link
-        # endpoints to pass the receiver gate.  An asymmetric gate (one endpoint
-        # established, the other not) breaks the antisymmetry and leaks.
-        mass_ledger["dbg_mass_delta_interface_sum"] = float(mass_delta_interface.sum())
-        mass_ledger["dbg_mass_delta_liquid_sum"] = float(mass_delta_liquid.sum())
-        mass_ledger["dbg_mass_delta_bulk_debit_sum"] = float(mass_delta_bulk_debit.sum())
-        _ii_gate = torch.stack(list(all_moving_neighbor_masks(recv_ok_iface)))
-        # asymmetric I/I links: gate(x) xor gate(pull source y) on I/I links.
-        _ii_nb = neighbor_flags[list(D3Q19_MOVING_Q)]
-        _ii_asym = (_ii_nb == INTERFACE) & recv_ok_iface.unsqueeze(0) & ~_ii_gate
-        mass_ledger["dbg_ii_asym_links"] = float(_ii_asym.sum())
-        # isolation-level forensics: is the L/I bulk debit landing on a
-        # near-empty LIQUID owner (mass < eps) and driving it negative?
-        _liq = flags == LIQUID
-        _eps = 0.01 * rho_liquid
-        _deb = mass_delta_bulk_debit
-        _deb_liq = _liq & (_deb != 0.0)
-        mass_ledger["dbg_debit_liq_cells"] = float(_deb_liq.sum())
-        mass_ledger["dbg_debit_liq_nearempty"] = float((_deb_liq & (mass <= _eps)).sum())
-        mass_ledger["dbg_debit_liq_sum"] = float(_deb.masked_select(_liq).sum())
-        _post_liq = (mass + mass_delta).masked_select(_liq)
-        mass_ledger["dbg_min_liq_post"] = float(_post_liq.min()) if _post_liq.numel() else 0.0
-        mass_ledger["dbg_neg_liq_post"] = float((_post_liq < 0).sum())
-        mass_ledger["dbg_neg_all_post"] = float(((mass + mass_delta) < 0).sum())
+    gas_nbr_here = (neighbor_flags == GAS).any(dim=0).unsqueeze(0)
+    ii_dead = from_iface & (liq_nbr_at_source == 0) & ~gas_nbr_here
+    live_iface = from_iface & ~ii_dead
+    mass_delta_interface = torch.where(live_iface, ii_weight * diff, torch.zeros_like(f))
+    mass_delta = (mass_delta_liquid + mass_delta_interface).sum(0)
+    # The exchange increment is committed as-is (no clamp): over/undershoot is
+    # the physical conversion trigger (fill > 1 + kappa / fill < -kappa) and
+    # the redistribution/conversion pair below settles it conservatively.
+    # Only non-finite values are sanitised (last line of defence before the
+    # independent mass field is committed).
+    mass_delta = torch.nan_to_num(mass_delta, nan=0.0, posinf=0.0, neginf=0.0)
     mass = torch.where(~solid_mask, mass + mass_delta, mass)
     if _env_bool("TL_FS_DIAG_FIELD", False):
         globals()["_FS_DIAG"] = {
@@ -1423,7 +1255,15 @@ def free_surface_step(
             "mass_delta_liquid": mass_delta_liquid.clone().sum(0),
         }
     mass_after_exchange_value = float(mass.sum())
-    fill = torch.where(~solid_mask, (mass / rho_liquid).clamp(0.0, 1.0), fill)
+    # Post-boundary local density: the fill level is mass / rho_local
+    # (waLBerla ``TotalMassComputer`` convention: m = fill * rho_local), with
+    # LIQUID pinned at 1 and GAS/SOLID at 0.  The interface fill is
+    # deliberately unclamped so the conversion gates below read the true
+    # over/undershoot (fill > 1 + kappa / fill < -kappa).
+    rho_new = f.sum(dim=0).clamp(min=1e-6)
+    fill = torch.where(iface_mask, mass / rho_new, fill)
+    fill = torch.where(liquid_pre, torch.ones_like(fill), fill)
+    fill = torch.where(gas_mask_pre | solid_mask, torch.zeros_like(fill), fill)
     if inventory_stages is not None:
         inventory_stages["after_mass_exchange"] = inventory_measurement(
             f,
@@ -1436,9 +1276,7 @@ def free_surface_step(
         mass_ledger["exchange"] = float(mass.sum())
         mass_ledger["exchange_liquid_delta"] = float(mass_delta_liquid.sum())
         mass_ledger["exchange_interface_delta"] = float(mass_delta_interface.sum())
-        mass_ledger["exchange_bulk_debit"] = float(
-            mass_delta_bulk_debit.sum() if paired_liquid_interface_debit else 0.0
-        )
+        mass_ledger["exchange_bulk_debit"] = 0.0
         mass_ledger["exchange_gas_delta"] = 0.0
         mass_ledger["fill_mass_after_exchange"] = float((fill * rho_liquid).sum())
 
@@ -1467,9 +1305,7 @@ def free_surface_step(
                 abb_population_delta=float(abb_delta.sum()),
                 exchange_liquid_credit=float(mass_delta_liquid.sum()),
                 exchange_interface_credit=float(mass_delta_interface.sum()),
-                exchange_bulk_debit=float(
-                    mass_delta_bulk_debit.sum() if paired_liquid_interface_debit else 0.0
-                ),
+                exchange_bulk_debit=0.0,
                 paired_liquid_interface_debit=paired_liquid_interface_debit,
                 conversion_evidence=conversion_evidence,
             )
@@ -1524,207 +1360,64 @@ def free_surface_step(
     interface_mask = flags == INTERFACE
     liquid_mask = flags == LIQUID
 
-    # (a) Mass-based conversion gates.  ``fill`` is already
-    # ``clamp(mass/rho_liquid, 0, 1)``, so it is sign-blind: a numerically
-    # negative-mass INTERFACE cell reads as fill = 0 (indistinguishable from an
-    # empty cell) and an over-full cell reads as fill = 1.  Reading the tracked
-    # mass directly means a negative cell can never be mistaken for a full I→L
-    # donor, and I→G only fires on a genuinely (near-)empty non-negative cell.
-    if _env_bool("TL_FS_MASS_GATE", True):
-        mass_gate = mass.clamp(min=0.0)
-        _tog_eps = float(os.environ.get("TL_FS_TOGAS_EPS", "0.01")) * rho_liquid
-        to_iface = gas_mask & (mass_gate > 0.01 * rho_liquid) & (~solid_mask)
-        # ABLATION (diagnostic only): TL_FS_ABL_TOIFACE suppresses the gas->interface birth.
-        if _env_bool("TL_FS_ABL_TOIFACE", False):
-            to_iface = torch.zeros_like(to_iface)
-        to_liq = interface_mask & (mass >= 0.999 * rho_liquid) & (~solid_mask)
-        if _env_bool("TL_FS_TOGAS_NONNEG", False):
-            # A numerically negative-mass cell must not enter I→G either: its
-            # sign aliases into the redistribution and the conversion then
-            # deletes it, which is the observed tracked-mass leak.  Leave it to
-            # the conservation-preserving clamp, which settles it without a net
-            # source/sink.
-            to_gas = (
-                (interface_mask | liquid_mask)
-                & (mass >= 0.0)
-                & (mass <= 0.01 * rho_liquid)
-                & (~solid_mask)
-            )
-        else:
-            to_gas = (interface_mask | liquid_mask) & (mass_gate <= _tog_eps) & (~solid_mask)
-    else:
-        # Legacy fill-gated path (A/B reference).
-        to_iface = gas_mask & (fill > 0.01) & (~solid_mask)
-        to_liq = interface_mask & (fill >= 0.999) & (~solid_mask)
-        to_gas = (interface_mask | liquid_mask) & (fill <= 0.01) & (~solid_mask)
-
+    # ---- 5. Cell conversion marking (waLBerla ``FindInterfaceCellConversion``).
+    # Only INTERFACE cells convert.  Threshold conversion at fill > 1 + kappa
+    # (to LIQUID) and fill < -kappa (to GAS), with forced conversion for cells
+    # that lost their required neighbourhood:
+    #   * forced LIQUID: no GAS neighbour and (fill > 1 - kappa_f or no
+    #     INTERFACE neighbour);
+    #   * forced GAS: no LIQUID neighbour and (fill < kappa_f or no INTERFACE
+    #     neighbour).
+    # There is no direct LIQUID -> GAS conversion and no GAS -> INTERFACE
+    # birth by mass: the envelope is rebuilt conversion-driven around cells
+    # that actually converted (waLBerla ``CellConversionSweep``).
+    _kappa = float(cell_conversion_threshold)
+    _kappa_f = float(cell_conversion_force_threshold)
+    to_iface = torch.zeros_like(gas_mask)
+    to_liq = interface_mask & (fill > 1.0 + _kappa)
+    to_gas = interface_mask & (fill < -_kappa)
+    # neighbor_flags still describes the pre-conversion flags (flags are
+    # untouched between the ABB section and here).
+    _has_gas_nb = (neighbor_flags == GAS).any(dim=0)
+    _has_liq_nb = (neighbor_flags == LIQUID).any(dim=0)
+    _has_if_nb = (neighbor_flags == INTERFACE).any(dim=0)
+    to_liq = to_liq | (interface_mask & ~_has_gas_nb & ((fill > 1.0 - _kappa_f) | ~_has_if_nb))
+    to_gas = to_gas | (interface_mask & ~_has_liq_nb & ((fill < _kappa_f) | ~_has_if_nb))
+    # Liquid priority on the (pathological) double trigger, as in the
+    # reference if/else chain.
+    to_gas = to_gas & ~to_liq
     # ---- 5a. Körner mass redistribution (excess → interface neighbors) ----
-    # Excess mass at converting cells (vectorized, no bool sync)
-    # I→L overflow and I→G independent-mass ownership are different
-    # transactions.  The latter is an opt-in experimental diagnostic/proposal:
-    # default solver arithmetic and topology stay bit-for-bit on the legacy
-    # path until a strict local closure representation is established.
-    i_to_g = to_gas & interface_mask
-    # Disabled is the exact legacy solver path: this diagnostic/proposal must
-    # not alter its tensors, topology, or existing campaign ledgers.  Only the
-    # opt-in proposal removes I→G mass from the legacy redistribution before it
-    # stages its own all-or-nothing candidate.
-    redistribution_to_g = (
-        to_gas if not enable_i_to_g_ownership_closure else (to_gas & ~interface_mask)
+    # Excess mass at converting cells (vectorized, no bool sync).
+    # I->L overflow:  excess = m - rho_donor (fill - 1 in mass units);
+    # I->G residual:  excess = m (the leftover tracked mass, usually a small
+    # negative value).  Both are distributed evenly over the surviving
+    # INTERFACE neighbours and the conversion-driven new receivers below
+    # (waLBerla ``ExcessMassDistributionSweepInterfaceEvenly`` with
+    # ``EvenlyAllInterface``).  Negative excess is distributed as-is; the
+    # donor reset in the topology transaction pairs it exactly, so conversion
+    # neither creates nor destroys mass when receivers exist.
+    excess_to_liq = mass - rho_new
+    excess_to_g = mass
+    excess = torch.where(to_liq, excess_to_liq, torch.zeros_like(mass)) + torch.where(
+        to_gas, excess_to_g, torch.zeros_like(mass)
     )
-    # (b) Positive-overflow-only excess.  The legacy expression adds an
-    # INTERFACE cell's raw (possibly negative) mass as "excess"; a negative
-    # contribution aliases the sign and cancels a genuine positive overflow
-    # elsewhere, so the redistributed sum quietly nets to ~0 and the clamped
-    # conversion destroys the difference.  Keep only the non-negative part.
-    exp_pos_on = _env_bool("TL_FS_EXP_POS", True)
-    if exp_pos_on:
-        excess_to_liq = (mass - rho_liquid).clamp(min=0.0)
-        excess_to_g = mass.clamp(min=0.0)
-    else:
-        excess_to_liq = mass - rho_liquid
-        excess_to_g = mass
-    excess = (
-        torch.where(to_liq, excess_to_liq, torch.zeros_like(mass))
-        + torch.where(redistribution_to_g, excess_to_g, torch.zeros_like(mass))
-    ).clamp(min=0.0)
-    # Conservative gas-channel ("redist") pairing: the mass each interface cell
-    # vents through its gas links (already debited from that cell via
-    # mass_delta_gas above) is returned to the redistribution pool here, so
-    # surviving interface neighbours receive it and the global tracked mass is
-    # unchanged.  Zero unless TL_FS_GAS_CHANNEL is "redist"/"paired_redist".
-    if _gc_conserv_redist:
-        excess = excess + gas_redist_excess
-    # (b) Explicit donor for the negative mass that I→G clears.  Clamping the
-    # positive excess discards the negative part; the negative cell must then be
-    # settled *explicitly*, otherwise the conversion deletes it (a spurious
-    # source) and the conservation-preserving clamp re-owns it (a double count).
-    # The donor therefore (i) zeroes the negative INTERFACE donor cell itself and
-    # (ii) charges the same negative amount to surviving INTERFACE receivers over
-    # the moving D3Q19 links.  Donor + receivers net to exactly zero.
-    donor_on = _env_bool("TL_FS_EXP_DONOR", False)
-    neg_donor = (
-        torch.where(redistribution_to_g & (mass < 0.0), mass, torch.zeros_like(mass))
-        if donor_on
-        else torch.zeros_like(mass)
-    )
-    # Existing interface cells receive first.  If a converting interface has
-    # none, promote its adjacent gas halo to receivers in this same step; a
-    # conversion must never silently discard excess merely because topology
-    # propagation runs later in the step.
+    # Receivers: surviving INTERFACE cells plus gas cells adjacent to a
+    # converting I->L cell (promoted to INTERFACE by the transaction, which
+    # keeps their credited mass).
     recv_iface = interface_mask & ~to_liq & ~to_gas
-    # Only positive overflow needs a newly promoted gas receiver.  An emptying
-    # interface retains the established interface-only redistribution path.
     adjacent_converting = torch.stack(all_moving_neighbor_masks(to_liq)).any(dim=0)
     recv_new = gas_mask & adjacent_converting & ~solid_mask
-    # ABLATION (diagnostic only): TL_FS_ABL_RECVNEW suppresses promoting gas
-    # cells adjacent to a converting cell into redistribution receivers.
-    if _env_bool("TL_FS_ABL_RECVNEW", False):
-        recv_new = torch.zeros_like(recv_new)
     recv_mask = recv_iface | recv_new
-    i_to_g_ownership = None
-    if enable_i_to_g_ownership_closure and bool(i_to_g.any()):
-        strict_failure_capture = None
-        builder_invocation = {
-            "flags": flags,
-            "mass": mass,
-            "to_gas": i_to_g,
-            "to_liq": to_liq,
-            "solid_mask": solid_mask,
-            "gas_flag": GAS,
-            "liquid_flag": LIQUID,
-            "interface_flag": INTERFACE,
-            "rho_liquid": rho_liquid,
-        }
-        if capture_replay_stages and replay_capture is not None:
-            # Freeze before the builder receives any writable value.  The
-            # capture also defines the exact detached strict-error replay.
-            strict_failure_capture = capture_strict_failure_invocation(
-                builder_invocation,
-                builder="i_to_g_ownership",
-            )
-        # Keep capture disabled on the legacy call path.  Opt-in replay capture
-        # makes the builder a transactional boundary: it may not retain or
-        # mutate solver-owned fields, even on its exceptional path.
-        builder_inputs = (
-            {
-                name: value.detach().clone() if isinstance(value, torch.Tensor) else value
-                for name, value in builder_invocation.items()
-            }
-            if strict_failure_capture is not None
-            else builder_invocation
-        )
-        try:
-            i_to_g_ownership = build_i_to_g_ownership_transaction(
-                builder_inputs["flags"],
-                builder_inputs["mass"],
-                to_gas=builder_inputs["to_gas"],
-                to_liq=builder_inputs["to_liq"],
-                solid_mask=builder_inputs["solid_mask"],
-                gas_flag=GAS,
-                liquid_flag=LIQUID,
-                interface_flag=INTERFACE,
-                rho_liquid=rho_liquid,
-            )
-        except TopologyTransactionError as error:
-            if strict_failure_capture is not None:
-                replay_capture["strict_failure_evidence"] = publish_strict_failure_evidence(
-                    strict_failure_capture,
-                    error,
-                )
-            raise
     # Count receiving cells per donor over every moving D3Q19 link.
     shifted_recv = torch.stack(all_moving_neighbor_masks(recv_mask))
     n_recv = shifted_recv.sum(dim=0).float().clamp(min=1.0)
     # Excess per receiving neighbor
     excess_per_nb = excess / n_recv
-    # (b) Explicit negative-mass donor: charge the discarded negative mass to
-    # surviving INTERFACE cells only, over the same moving D3Q19 links.  The
-    # distributing to_gas donor is itself a (converting) INTERFACE cell, so
-    # this is exactly "to_gas INTERFACE as donor, credit landing on surviving
-    # INTERFACE".
-    if donor_on and bool(neg_donor.any()):
-        shifted_recv_iface = torch.stack(all_moving_neighbor_masks(recv_iface))
-        n_cnt = shifted_recv_iface.sum(dim=0)
-        n_recv_iface = n_cnt.float().clamp(min=1.0)
-        neg_per_nb = neg_donor / n_recv_iface
-        neg_dist = torch.stack(
-            [roll_to_neighbor(neg_per_nb, q) * recv_iface for q in D3Q19_MOVING_Q]
-        ).sum(dim=0)
-        # Only the part that actually has a surviving-INTERFACE receiver may be
-        # self-credited; a receiver-less donor is left to the clamp.
-        distributable = torch.where(n_cnt > 0, neg_donor, torch.zeros_like(neg_donor))
-        neg_increment = -distributable + neg_dist
-    else:
-        neg_increment = torch.zeros_like(mass)
-
     # Aggregate every D3Q19 receiver contribution in the mass dtype, then
-    # commit it once.  Sequential float32 rebinding rounds the same mass field
-    # 18 times and leaves a transaction residual when conversion removes the
-    # donor excess.  This preserves each link/mask contribution and topology;
-    # only their deterministic same-dtype aggregation precedes one commit.
-    legacy_redistribution_increment = (
-        torch.stack([roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q]).sum(
-            dim=0
-        )
-        + neg_increment
-    )
-    # ABLATION (diagnostic only): TL_FS_ABL_REDIST suppresses the Körner
-    # excess-mass redistribution entirely (conversion still clamps).
-    if _env_bool("TL_FS_ABL_REDIST", False):
-        legacy_redistribution_increment = torch.zeros_like(legacy_redistribution_increment)
-    if _env_bool("TL_FS_DBG", False) and mass_ledger is not None:
-        mass_ledger["dbg_redist_inc_sum"] = float(legacy_redistribution_increment.sum())
-        mass_ledger["dbg_excess_sum"] = float(excess.sum())
-        mass_ledger["dbg_excess_max"] = float(excess.max())
-        mass_ledger["dbg_recv_sum"] = float(recv_mask.sum())
-        mass_ledger["dbg_recv_new_sum"] = float(recv_new.sum())
-        mass_ledger["dbg_to_liq_sum"] = float(to_liq.sum())
-        mass_ledger["dbg_to_gas_sum"] = float(to_gas.sum())
-        mass_ledger["dbg_to_iface_sum"] = float(to_iface.sum())
-        mass_ledger["dbg_min_mass"] = float(mass.min())
-        mass_ledger["dbg_max_mass"] = float(mass.max())
-        mass_ledger["dbg_nrecv_zero"] = float((n_recv < 1.0).sum())
+    # commit it once.
+    legacy_redistribution_increment = torch.stack(
+        [roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q]
+    ).sum(dim=0)
     redistribution_link_evidence = ()
     if runtime_ledger is not None or ownership_ledger is not None:
         links = []
@@ -1747,12 +1440,6 @@ def free_surface_step(
                     }
                 )
         redistribution_link_evidence = tuple(links)
-    # Publish I→G debit/credit paths through the same topology evidence
-    # channel; each receiver is a declared surviving INTERFACE owner.
-    redistribution_link_evidence = redistribution_link_evidence + tuple(
-        {**link, "mass_delta": float(link["credit"])}
-        for link in (() if i_to_g_ownership is None else i_to_g_ownership.links)
-    )
     plan = build_topology_transaction(
         f,
         fill,
@@ -1763,7 +1450,7 @@ def free_surface_step(
         to_gas=to_gas,
         recv_new=recv_new,
         redistribution_increment=legacy_redistribution_increment,
-        i_to_g_increment=None if i_to_g_ownership is None else i_to_g_ownership.receiver_increment,
+        rho=rho_new,
         rho_liquid=rho_liquid,
         rho_gas=rho_gas,
         solid_mask=solid_mask,
@@ -1784,29 +1471,9 @@ def free_surface_step(
             or conversion_density_audit_ledger is not None
         ),
         redistribution_link_evidence=redistribution_link_evidence,
-        i_to_g_ownership=i_to_g_ownership,
         capture_replay_stages=capture_replay_stages,
     )
     f, fill, flags, mass = commit_topology_transaction(plan)
-    # ------------------------------------------------------------------
-    # OPT-IN LIQUID -> INTERFACE demotion: TL_FS_LIQ_TO_IFACE=1.
-    #
-    # The legacy conversion gates are one-way for the liquid flag: an
-    # INTERFACE cell fills to m >= 0.999 rho_l and becomes LIQUID, but a
-    # LIQUID cell only ever leaves the liquid state by draining to m <= eps
-    # (LIQUID -> GAS).  A LIQUID cell that loses *part* of its mass to an
-    # adjacent interface receiver (the paired L/I bulk debit) therefore stays
-    # flagged LIQUID at fill << 1.  Measured in the a=8 column: the interior
-    # drains to fill ~0.3-0.8 while remaining LIQUID -> the column "hollows
-    # out" instead of collapsing and H stays pinned at its initial value.
-    # Demoting the drained LIQUID cells back to INTERFACE restores the
-    # flag <-> mass consistency that the free-surface model assumes.
-    # ------------------------------------------------------------------
-    if _env_bool("TL_FS_LIQ_TO_IFACE", False):
-        _rel = float(os.environ.get("TL_FS_LIQ_TO_IFACE_REL", "0.01"))
-        _l2i = (flags == LIQUID) & (mass < (1.0 - _rel) * float(rho_liquid))
-        flags = torch.where(_l2i, torch.full_like(flags, INTERFACE), flags)
-        fill = torch.where(_l2i, (mass / float(rho_liquid)).clamp(0.0, 1.0), fill)
     if replay_capture is not None and plan.replay_evidence is not None:
         replay_capture["evidence"] = plan.replay_evidence
     if inventory_reconciliation_ledger is not None:
@@ -1852,9 +1519,7 @@ def free_surface_step(
             abb_population_delta=float(abb_delta.sum()),
             exchange_liquid_credit=float(mass_delta_liquid.sum()),
             exchange_interface_credit=float(mass_delta_interface.sum()),
-            exchange_bulk_debit=float(
-                mass_delta_bulk_debit.sum() if paired_liquid_interface_debit else 0.0
-            ),
+            exchange_bulk_debit=0.0,
             paired_liquid_interface_debit=paired_liquid_interface_debit,
             conversion_evidence=plan.conversion_evidence,
         )

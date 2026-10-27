@@ -120,9 +120,18 @@ def test_actual_zero_independent_mass_delta_i_to_l_is_preserved_in_transaction_e
     solid = torch.zeros(shape, dtype=torch.bool)
     zero = torch.zeros(shape)
     f = torch.stack([torch.full(shape, 1.0 / 19.0) for _ in range(19)])
+    from tensorlbm.core.d3q19_stencil import all_moving_neighbor_masks
+
     empty = torch.zeros(shape, dtype=torch.bool)
     to_liq = empty.clone()
     to_liq[1, 1, 2] = True
+    # A direct-builder I→L input must carry the conversion-driven envelope
+    # the solver always derives (gas adjacent to a converting cell); without
+    # it the candidate would leave direct LIQUID/GAS links, which the
+    # reference topology never produces.
+    adjacent = torch.stack(all_moving_neighbor_masks(to_liq)).any(dim=0)
+    recv_new = (flags == 0) & adjacent & ~solid
+    assert bool(recv_new.any())
     plan = build_topology_transaction(
         f,
         fill,
@@ -131,7 +140,7 @@ def test_actual_zero_independent_mass_delta_i_to_l_is_preserved_in_transaction_e
         to_iface=empty,
         to_liq=to_liq,
         to_gas=empty,
-        recv_new=empty,
+        recv_new=recv_new,
         redistribution_increment=torch.zeros_like(mass),
         rho_liquid=1.0,
         rho_gas=0.001,

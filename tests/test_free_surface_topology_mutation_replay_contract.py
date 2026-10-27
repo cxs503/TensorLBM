@@ -260,81 +260,44 @@ def _strict_i_to_g_step_inputs(*, receiver: bool) -> dict[str, torch.Tensor]:
     }
 
 
-def test_strict_failure_capture_freezes_preinvocation_state_and_isolates_adversarial_builder(
+def test_retired_opt_in_never_consults_ownership_builder_and_settles_plain_excess(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # The experimental I→G ownership closure is retired: the solver never
+    # calls the ownership builder, so even an adversarial builder cannot
+    # affect the step.  The receiver-less donor settles through the plain
+    # excess path (forced I→G conversion) and the normal ledgers publish.
     import tensorlbm.free_surface_lbm as solver
 
     inputs = _strict_i_to_g_step_inputs(receiver=False)
-    before = {name: value.clone() for name, value in inputs.items()}
     ledgers = {
         "runtime": {"published": "runtime"},
         "ownership": {"published": "ownership"},
         "inventory": {"published": "inventory"},
     }
     replay_capture: dict[str, object] = {}
-    expected = (
-        "WITHHELD: entire free_surface_step topology candidate I→G donor has no legal "
-        "INTERFACE receiver"
-    )
-    received: dict[str, torch.Tensor] = {}
 
-    def adversarial_builder(
-        flags: torch.Tensor,
-        mass: torch.Tensor,
-        *,
-        to_gas: torch.Tensor,
-        to_liq: torch.Tensor,
-        solid_mask: torch.Tensor,
-        **_: object,
-    ) -> object:
-        received.update(
-            {
-                "flags": flags,
-                "mass": mass,
-                "to_gas": to_gas,
-                "to_liq": to_liq,
-                "solid_mask": solid_mask,
-            }
-        )
-        flags.fill_(SOLID)
-        mass.fill_(123.0)
-        to_gas.fill_(False)
-        to_liq.fill_(True)
-        solid_mask.fill_(True)
-        raise TopologyTransactionError(expected)
-
+    def adversarial_builder(*args: object, **kwargs: object) -> object:
+        raise AssertionError("retired opt-in must never consult the ownership builder")
     monkeypatch.setattr(solver, "build_i_to_g_ownership_transaction", adversarial_builder)
-    with pytest.raises(TopologyTransactionError, match="no legal INTERFACE receiver"):
-        solver.free_surface_step(
-            **inputs,
-            enable_i_to_g_ownership_closure=True,
-            capture_replay_stages=True,
-            replay_capture=replay_capture,
-            runtime_ledger=ledgers["runtime"],
-            ownership_ledger=ledgers["ownership"],
-            inventory_reconciliation_ledger=ledgers["inventory"],
-        )
-
-    assert set(received) == {"flags", "mass", "to_gas", "to_liq", "solid_mask"}
-    assert all(received[name] is not inputs[name] for name in ("flags", "mass", "solid_mask"))
-    assert all(torch.equal(inputs[name], before[name]) for name in before)
-    assert ledgers == {
-        "runtime": {"published": "runtime"},
-        "ownership": {"published": "ownership"},
-        "inventory": {"published": "inventory"},
-    }
-    assert "evidence" not in replay_capture
-    evidence = replay_capture["strict_failure_evidence"]
-    restored = restore_strict_failure_invocation(evidence)
-    assert all(
-        torch.equal(restored[name], before[name]) for name in ("flags", "mass", "solid_mask")
+    result = solver.free_surface_step(
+        **inputs,
+        enable_i_to_g_ownership_closure=True,
+        capture_replay_stages=True,
+        replay_capture=replay_capture,
+        runtime_ledger=ledgers["runtime"],
+        ownership_ledger=ledgers["ownership"],
+        inventory_reconciliation_ledger=ledgers["inventory"],
     )
-    assert torch.equal(restored["to_gas"], before["flags"] == INTERFACE)
-    assert torch.equal(restored["to_liq"], torch.zeros_like(before["solid_mask"]))
-    report = audit_strict_failure_replay(evidence)
-    assert report.status == STRICT_FAILURE_REPLAYED_EXACT
-    assert report.error_message == expected
+    assert int(result[2][2, 2, 2].item()) == GAS
+    assert "evidence" in replay_capture
+    assert "strict_failure_evidence" not in replay_capture
+    assert ledgers["runtime"]["published"] == "runtime"
+    assert ledgers["ownership"]["published"] == "ownership"
+    assert ledgers["inventory"]["published"] == "inventory"
+    assert "steps" in ledgers["runtime"]
+    assert "latest" in ledgers["ownership"]
+    assert "status" in ledgers["inventory"]
 
 
 def test_opt_in_builder_clones_preserve_successful_i_to_g_numeric_result() -> None:
@@ -355,43 +318,16 @@ def test_opt_in_builder_clones_preserve_successful_i_to_g_numeric_result() -> No
     assert "evidence" in replay_capture
 
 
-def test_default_capture_false_preserves_builder_input_identity(
+def test_retired_opt_in_never_builds_i_to_g_proposal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import tensorlbm.free_surface_lbm as solver
 
     inputs = _strict_i_to_g_step_inputs(receiver=True)
-    received: dict[str, torch.Tensor] = {}
-    original = solver.build_i_to_g_ownership_transaction
 
-    def record_builder(
-        flags: torch.Tensor,
-        mass: torch.Tensor,
-        *,
-        to_gas: torch.Tensor,
-        to_liq: torch.Tensor,
-        solid_mask: torch.Tensor,
-        **kwargs: object,
-    ) -> object:
-        received.update(
-            {
-                "flags": flags,
-                "mass": mass,
-                "to_gas": to_gas,
-                "to_liq": to_liq,
-                "solid_mask": solid_mask,
-            }
-        )
-        return original(
-            flags,
-            mass,
-            to_gas=to_gas,
-            to_liq=to_liq,
-            solid_mask=solid_mask,
-            **kwargs,
-        )
+    def record_builder(*args: object, **kwargs: object) -> object:
+        raise AssertionError("retired opt-in must never build an I→G proposal")
 
     monkeypatch.setattr(solver, "build_i_to_g_ownership_transaction", record_builder)
-    solver.free_surface_step(**inputs, enable_i_to_g_ownership_closure=True)
-    assert received["flags"] is inputs["flags"]
-    assert received["solid_mask"] is inputs["solid_mask"]
+    result = solver.free_surface_step(**inputs, enable_i_to_g_ownership_closure=True)
+    assert int(result[2][2, 2, 2].item()) == GAS
