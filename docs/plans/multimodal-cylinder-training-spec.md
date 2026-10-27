@@ -147,7 +147,39 @@ python examples/cylinder_multimodal_train.py \
 
 ---
 
-## 6. 边界声明与 GPU 大规模基准路线（Stage 4 展望）
+## 6. 方案 A：仅输入标量计算条件直接输出完整流场与气动力（零 LBM 求解器）
+
+为支持“只输入计算条件直接输出结果”的纯 AI 端到端推演工作流，现已补齐从 `step = 0` 初场数据覆盖到纯条件推理 CLI 的完整链路：
+
+1. **求解器支持导出 `step = 0` 初场快照**：`CylinderFlowConfig.save_initial_snapshot: bool = False`（CLI `--save-initial-snapshot`），训练时传入 `--save-initial-snapshot` 后，`CylinderMultimodalDataset` 自动将静止冷启动步 `[0, ..., 0] -> [Δt, 2Δt]` 纳入多步历史与 Pushforward 训练分布。
+2. **纯标量条件推理 API（`CylinderConditionSpec` + `forecast_from_conditions`）**：
+   - 用户只需提供 `(nx, ny, u_in, re, radius, n_steps, output_interval)` 与权重路径；
+   - `build_cylinder_initial_state()` 自动解析构造圆柱布尔掩码 `solid_mask`、精确 2D `SDF` 与 `t = 0` 均匀初场，**全程不调用 LBM 求解器**；
+   - `ConditionForecastResult.save_artifacts()` 直接写出与 LBM 求解器 100% 契约兼容的 `fields_step_XXXXXX.npz`、`flow_step_XXXXXX.png`、`forces.csv` 与 `run_metadata.json`。
+3. **独立条件推理命令行入口（`examples/cylinder_multimodal_infer.py`）**：
+   ```bash
+   # 1) 训练包含 step=0 冷启动跃迁的权重（只需运行一次）
+   python examples/cylinder_multimodal_train.py \
+     --generate-smoke --save-initial-snapshot \
+     --output-dir outputs/cylinder_multimodal_scheme_a \
+     --nx 96 --ny 48 --u-in 0.06 --n-steps 160 --output-interval 20 \
+     --history-steps 2 --pushforward-steps 2 \
+     --train-re 25 55 85 --train-radii 4.0 6.0 \
+     --val-re 40 --val-radii 5.0 --test-re 70 --test-radii 5.0 \
+     --epochs 40 --batch-size 8 --seed 42
+
+   # 2) 仅输入标量计算条件，零求解器直接输出流场 (.npz/.png) 与 forces.csv
+   python examples/cylinder_multimodal_infer.py \
+     --checkpoint outputs/cylinder_multimodal_scheme_a/checkpoints/multimodal_forecaster.pt \
+     --output-dir outputs/ai_forecast_re70_r5 \
+     --nx 96 --ny 48 --u-in 0.06 --re 70 --radius 5.0 \
+     --n-steps 160 --output-interval 20
+   ```
+   - **双重未见工况（`Re = 70, radius = 5.0`）纯 AI 冷启动实测（CPU）**：8 次自回归跳步（`step = 0 -> 160`）总推理耗时仅 **`191.04 ms`（`23.88 ms/hop`，较同工况 D2Q9 LBM 提速 `25.8×`）**；末步 `step = 160` 流体速度相对 $L_2$ 误差为 **`0.1865`**（较均匀初场基线 `0.3176` 降低 **`-41.3%`**），末步预测阻力 $C_d = 2.7080$（LBM 真值 `2.9476`），固体内部速度严格为 `0.0`。
+
+---
+
+## 7. 边界声明与 GPU 大规模基准路线（Stage 4 展望）
 
 - **科学诚实声明**：Stage 2 与 Stage 3 的 CPU 实测证明了多步时序历史（$H=2$）+ Pushforward 自回归训练（$K=2$）在**跨雷诺数 + 变圆柱半径双重未见测试集**上显著降低单步与多步自回归涡量累积误差；受限于 CPU 冒烟步数（`220` 步），该验证仍属于中短程瞬态发展区，不等同于充分发展卡门涡街长周期统计基准（如时均 $\overline{C_d}$ 与 Strouhal 数 $St$ 频谱误差）。
 - **GPU 生产训练下一步建议**：

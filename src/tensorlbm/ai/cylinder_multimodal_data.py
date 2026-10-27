@@ -368,6 +368,7 @@ def _validate_step_cadence(
     output_interval: int,
     n_steps: int,
     resumed: bool,
+    include_initial_step: bool = False,
 ) -> None:
     if len(steps) < 2:
         raise TrajectoryValidationError(
@@ -382,6 +383,8 @@ def _validate_step_cadence(
             expected.append(n_steps)
         elif not expected:
             expected = [n_steps]
+        if include_initial_step:
+            expected = [0, *expected]
         if steps != expected:
             raise TrajectoryValidationError(
                 f"Snapshot steps {steps} do not match expected cadence {expected}"
@@ -580,11 +583,15 @@ def validate_cylinder_trajectory(
 
     # Check 4: strictly increasing steps agreeing with output_interval cadence
     resumed = bool(restart.get("resumed", False)) if isinstance(restart, dict) else False
+    include_initial = bool(cfg.get("save_initial_snapshot", False)) or (
+        bool(seen_steps) and seen_steps[0] == 0
+    )
     _validate_step_cadence(
         seen_steps,
         output_interval=output_interval,
         n_steps=n_steps,
         resumed=resumed,
+        include_initial_step=include_initial,
     )
     if set(forces.keys()) != set(seen_steps):
         raise TrajectoryValidationError(
@@ -690,7 +697,6 @@ def split_cylinder_trajectories(
     seen_ids: dict[str, str] = {}
     seen_dirs: dict[Path, str] = {}
     summaries: list[CylinderTrajectorySummary] = []
-    min_required = (history_steps + rollout_steps - 1) * step_stride + 1
 
     for split_name, group in (
         ("train", train_runs),
@@ -699,6 +705,9 @@ def split_cylinder_trajectories(
     ):
         for raw_traj in group:
             traj = trim_trajectory_spinup(raw_traj, min_step=min_step)
+            has_t0 = traj.frames[0].step == 0
+            hist_span = 0 if has_t0 else (history_steps - 1) * step_stride
+            min_required = hist_span + rollout_steps * step_stride + 1
             if traj.run_id in seen_ids:
                 raise ValueError(
                     f"Trajectory leakage: run_id {traj.run_id!r} appears in both "
@@ -882,9 +891,11 @@ class CylinderMultimodalDataset(Dataset[CylinderMultimodalSample]):
 
         history_span = (history_steps - 1) * step_stride
         rollout_span = rollout_steps * step_stride
-        min_required = history_span + rollout_span + 1
 
         for t_idx, traj in enumerate(self.trajectories):
+            has_t0 = traj.frames[0].step == 0
+            start_ref = 0 if has_t0 else history_span
+            min_required = start_ref + rollout_span + 1
             if len(traj.frames) < min_required:
                 raise ValueError(
                     f"Trajectory {traj.run_id!r} has only {len(traj.frames)} kept frames "
@@ -902,8 +913,8 @@ class CylinderMultimodalDataset(Dataset[CylinderMultimodalSample]):
             self._mask_cache.append(mask_t)
             self._geom_cache.append(geom_t)
             self._scales.append(self.normalization.scales_for_run(traj.u_in))
-            # ref_idx is the index of current step t; history precedes it, rollout follows it
-            for ref_idx in range(history_span, len(traj.frames) - rollout_span):
+            # ref_idx is the index of current step t; stationary t<=0 left-pads at step=0
+            for ref_idx in range(start_ref, len(traj.frames) - rollout_span):
                 self._index.append((t_idx, ref_idx))
 
     def __len__(self) -> int:
@@ -939,7 +950,8 @@ class CylinderMultimodalDataset(Dataset[CylinderMultimodalSample]):
         hist_raw_list: list[torch.Tensor] = []
         hist_force_list: list[torch.Tensor] = []
         for h in range(self.history_steps - 1, -1, -1):
-            h_frame = traj.frames[ref_idx - h * self.step_stride]
+            h_idx = max(0, ref_idx - h * self.step_stride)
+            h_frame = traj.frames[h_idx]
             f_norm, f_raw = self._encode_fields(h_frame, u_scale, rho_scale)
             hist_norm_list.append(f_norm)
             hist_raw_list.append(f_raw)
