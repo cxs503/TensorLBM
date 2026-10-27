@@ -469,7 +469,8 @@ def _read_birth_mode() -> tuple[str, float]:
     ``TL_FS_BIRTH_MODE`` controls how a freshly (re)born, mass-carrying zero
     INTERFACE envelope cell is seeded:
 
-      ``legacy``  equilibrium(rho_liquid)  -- current behaviour
+      ``legacy``  equilibrium(rho_liquid)  -- historical constant-density birth
+    The default is ``nbr`` (waLBerla ``EquilibriumRefilling``).
       ``zero``    f = 0
       ``gas``     equilibrium(rho_gas)
       ``env``     equilibrium(TL_FS_BIRTH_RHO)  -- decoupled from rho_gas
@@ -479,7 +480,7 @@ def _read_birth_mode() -> tuple[str, float]:
     """
     import os as _os
 
-    mode = _os.environ.get("TL_FS_BIRTH_MODE", "legacy").strip().lower()
+    mode = _os.environ.get("TL_FS_BIRTH_MODE", "nbr").strip().lower()
     rho_env = float(_os.environ.get("TL_FS_BIRTH_RHO", "0.0"))
     return mode, rho_env
 
@@ -494,7 +495,10 @@ def _birth_density_field(f, flags, rho_liquid, rho_gas, mode, rho_env, liquid_fl
         return torch.full_like(f.sum(0), float(rho_env))
     if mode == "nbr":
         # Neighbour-averaged *active* density: a shell backed by liquid inherits
-        # a liquid-scale density, a gas-only shell inherits near-zero.
+        # a liquid-scale density.  A shell with no active neighbour (all of its
+        # neighbours converted to gas in this same sweep) still carries kept
+        # conversion mass, so it must be refilled at liquid scale: a zero
+        # fallback would leave zero PDFs and explode fill = mass / rho.
         active = (flags == liquid_flag) | (flags == interface_flag)
         nb = torch.stack(all_moving_neighbor_masks(active)).to(f.dtype)
         cnt = nb.sum(dim=0).clamp(min=1.0)
@@ -502,7 +506,9 @@ def _birth_density_field(f, flags, rho_liquid, rho_gas, mode, rho_env, liquid_fl
         rho_nb = (torch.stack([roll_from_pull_source(rho, q) for q in D3Q19_MOVING_Q]) * nb).sum(
             dim=0
         ) / cnt
-        return torch.where(nb.sum(dim=0) > 0, rho_nb, torch.zeros_like(rho_nb))
+        return torch.where(
+            nb.sum(dim=0) > 0, rho_nb, torch.full_like(rho_nb, float(rho_liquid))
+        )
     return None
 
 
@@ -736,10 +742,13 @@ def _validate_candidate(
         raise TopologyTransactionError("topology candidate has an invalid flag value")
     if not bool((flags[solid_mask] == solid_flag).all()):
         raise TopologyTransactionError("topology candidate violates solid flag consistency")
-    if bool((fill < 0).any()) or bool((fill > 1).any()):
-        raise TopologyTransactionError("topology candidate fill is outside [0, 1]")
-    if bool((mass < 0).any()):
-        raise TopologyTransactionError("topology candidate has negative mass")
+    # Sanity bounds (not physics): redistribution can transiently push a
+    # receiver above fill 1 or slightly below 0, and conversion settles it on
+    # the next step (waLBerla leaves fill unclamped for the same reason).
+    if bool((fill < -0.1).any()) or bool((fill > 10.0).any()):
+        raise TopologyTransactionError("topology candidate fill is outside [-0.1, 10]")
+    if bool((mass < -0.1).any()) or bool((mass > 10.0).any()):
+        raise TopologyTransactionError("topology candidate mass is outside [-0.1, 10]")
     try:
         assert_no_direct_phase_links(flags, liquid_flag, gas_flag, "direct LIQUID-GAS D3Q19")
     except ValueError as error:
@@ -773,8 +782,15 @@ def build_topology_transaction(
     i_to_g_increment: torch.Tensor | None = None,
     i_to_g_ownership: IToGOwnershipTransaction | None = None,
     capture_replay_stages: bool = False,
+    rho: torch.Tensor | None = None,
 ) -> TopologyTransactionPlan:
-    """Build a detached candidate in the legacy conversion/halo/cleanup order.
+    """Build a detached candidate in the reference conversion/envelope order.
+
+    Redistribution, then conversion (I→L keeps PDFs, donor retains its local
+    density; I→G zeroes), then the conversion-driven envelope (new receivers
+    promoted, LIQUID demotion next to fresh gas).  There is no clamp and no
+    isolation sweep.  ``rho`` is the post-boundary local density used for the
+    donor reset and the receiver fill refresh (``rho_liquid`` when omitted).
 
     With I→G ownership, this is an all-or-nothing ``free_surface_step``
     topology candidate: any capacity or accounting failure is WITHHELD, with
@@ -829,6 +845,7 @@ def build_topology_transaction(
             "ux": ux.clone(),
             "uy": uy.clone(),
             "uz": uz.clone(),
+            "rho": None if rho is None else rho.clone(),
             "i_to_g_increment": None if i_to_g_increment is None else i_to_g_increment.clone(),
             "i_to_g_ownership": _serialize_i_to_g_ownership(i_to_g_ownership),
         }
@@ -884,10 +901,9 @@ def build_topology_transaction(
             rho_liquid=rho_liquid,
         )
     mass_after_redistribution = float(cmass.sum())
-    # F2 conservation fix: replace the silent clamp with a conservation-
-    # preserving one.  Restrict the correction to the movable (non-solid) cells
-    # so the solid interior is never credited or debited.
-    cmass = conservative_clamp_conserve(cmass, rho_liquid, weight=(~solid_mask).to(cmass.dtype))
+    # No clamp: the reference model has none.  Conversion + redistribution are
+    # conservative by construction when receivers exist; receiver-less
+    # conversion loss is ledger-attributed, never reshuffled across the domain.
     if replay_stages is not None:
         replay_stages["clamp"] = tuple(value.clone() for value in (cf, cfill, cflags, cmass))
     if inventory_stages is not None:
@@ -904,26 +920,21 @@ def build_topology_transaction(
     flags_before_conversion = cflags.clone() if capture_evidence else None
     f_before_conversion = cf.clone() if capture_evidence else None
 
-    # H2: to_liq conversion reinitializes f at the rho_liquid equilibrium
-    # (neighbor-averaged velocity) instead of inheriting interface
-    # populations that were inflated by ABB gas-pressure reconstruction.
-    cf = _init_new(cf, cflags, to_liq, rho_liquid, ux, uy, uz, liquid_flag, interface_flag)
+    # I→L conversion keeps the donor PDFs (waLBerla ``CellConversionSweep``).
+    # The donor already shed its excess (m - rho_donor) through the
+    # redistribution above, so it retains rho_donor of tracked mass at fill 1;
+    # donor + receivers net to exactly zero.  I→G zeroes PDFs, mass and fill.
+    if rho is not None:
+        _rho_reset = rho.to(cmass.dtype)
+    else:
+        _rho_reset = torch.full_like(cmass, float(rho_liquid))
     cflags = torch.where(to_liq, torch.full_like(cflags, liquid_flag), cflags)
     cfill = torch.where(to_liq, torch.ones_like(cfill), cfill)
-    cmass = torch.where(to_liq, torch.full_like(cmass, rho_liquid), cmass)
+    cmass = torch.where(to_liq, _rho_reset, cmass)
     cflags = torch.where(to_gas, torch.full_like(cflags, gas_flag), cflags)
     cfill = torch.where(to_gas, torch.zeros_like(cfill), cfill)
     cmass = torch.where(to_gas, torch.zeros_like(cmass), cmass)
     cf = torch.where(to_gas.unsqueeze(0), torch.zeros_like(cf), cf)
-    # F2b: pair the redistribution credit with the conversion donor debit on the
-    # post-clamp conversion field, so the to_liq relabel cannot fabricate mass.
-    cmass = pair_conversion_conservation(
-        cmass,
-        float(mass.sum()),
-        combined_increment,
-        (~solid_mask),
-        float(rho_liquid),
-    )
     if i_to_g_ownership is not None:
         # No f transfer: independent mass/fill and population density are
         # separate representations at INTERFACE, so copying f would double count.
@@ -948,15 +959,12 @@ def build_topology_transaction(
     mass_after_conversion_field = cmass.clone() if capture_evidence else None
     f_after_conversion = cf.clone() if capture_evidence else None
 
-    shifted_flags = torch.stack(all_moving_neighbor_masks(cflags))
-    # H1: halo promotion requires a directly adjacent LIQUID cell.  A gas
-    # cell neighbouring only interface cells must not self-propagate the
-    # interface layer (quiescent column 743->32291 interface explosion).
-    is_neighbor = (shifted_flags == liquid_flag).any(dim=0)
-    to_i = ((gas_mask | to_gas) & is_neighbor & ~solid_mask) | recv_new
-    # ABLATION (diagnostic only): TL_FS_ABL_HALO suppresses the gas->interface
-    # envelope halo promotion (only residual recv_new receivers survive).
-
+    # Conversion-driven envelope (waLBerla ``CellConversionSweep``): only gas
+    # cells that received conversion excess (recv_new) are promoted to
+    # INTERFACE, keeping their credited mass; there is no unconditional halo
+    # sweep.  New cells are refilled with neighbour-averaged density/velocity
+    # (``EquilibriumRefilling``).
+    to_i = recv_new & (cflags == gas_flag) & ~solid_mask
     cf = _init_new_birth(
         cf,
         cflags,
@@ -972,41 +980,48 @@ def build_topology_transaction(
         interface_flag,
     )
     cflags = torch.where(to_i, torch.full_like(cflags, interface_flag), cflags)
-    # A-prime: bring the halo/isolation boundary under the same per-link
-    # legality predicate as the exchange end.  A gas cell that is promoted to
-    # INTERFACE because it directly neighbours LIQUID is normally reset to
-    # mass/fill 0 (the "unsupported birth" convention).  But a cell that the
-    # redistribution / conversion pairing has already credited with tracked
-    # mass is, by the A-prime receiver predicate, a *legal receiver*: zeroing
-    # it destroys booked mass (the isolation-stage residual).  Keep that mass
-    # and treat the cell as a receiver; only truly empty shells are zeroed.
-    _aprime = _read_aprime()
-    if _aprime:
-        _carry = to_i & (cmass > 0.0)
-        cfill = torch.where(_carry, (cmass / float(rho_liquid)).clamp(0.0, 1.0), cfill)
-        _halo_zero = to_i & ~recv_new & ~_carry
-    else:
-        _halo_zero = to_i & ~recv_new
-    cfill = torch.where(_halo_zero, torch.zeros_like(cfill), cfill)
-    cmass = torch.where(_halo_zero, torch.zeros_like(cmass), cmass)
+    # A promoted gas cell has no pre-conversion density of its own; normalise
+    # its kept mass by the refilled (neighbour-averaged) density, matching the
+    # reference order (refill before excess distribution).
+    _rho_fill = _rho_reset.clone()
+    _rho_fill = torch.where(to_i, cf.sum(dim=0).clamp(min=1e-6), _rho_fill)
+    cfill = torch.where(to_i, cmass / _rho_fill.clamp(min=1e-6), cfill)
+    # LIQUID demotion: a LIQUID cell adjacent to freshly converted GAS loses
+    # its closed neighbourhood and becomes INTERFACE, keeping both its PDFs
+    # and its tracked mass (same sweep, reversed direction).
+    _liq_adj_new_gas = torch.stack(all_moving_neighbor_masks(to_gas)).any(dim=0)
+    _demote = (cflags == liquid_flag) & _liq_adj_new_gas & ~solid_mask
+    cflags = torch.where(_demote, torch.full_like(cflags, interface_flag), cflags)
+    cfill = torch.where(_demote, cmass / _rho_fill.clamp(min=1e-6), cfill)
+
     if replay_stages is not None:
         replay_stages["halo_boundary"] = tuple(
             value.clone() for value in (cf, cfill, cflags, cmass)
         )
-    interface_mask = cflags == interface_flag
-    has_neighbor = (
-        (torch.stack(all_moving_neighbor_masks(cflags)) == liquid_flag)
-        | (torch.stack(all_moving_neighbor_masks(cflags)) == interface_flag)
-    ).any(dim=0)
-    isolated = interface_mask & ~has_neighbor & ~solid_mask
-    cflags = torch.where(isolated, torch.full_like(cflags, gas_flag), cflags)
-    cfill = torch.where(isolated, torch.zeros_like(cfill), cfill)
-    cmass = torch.where(isolated, torch.zeros_like(cmass), cmass)
-    cf = torch.where(isolated.unsqueeze(0), torch.zeros_like(cf), cf)
+    # No isolation stage: an interface cell that lost its neighbourhood is
+    # converted by the forced rules at marking time; the stage is recorded as
+    # a no-op for ledger/replay schema compatibility.
+
     if replay_stages is not None:
         replay_stages["isolated_interface"] = tuple(
             value.clone() for value in (cf, cfill, cflags, cmass)
         )
+    # Refresh the interface fill from the settled mass (m / rho_local) so
+    # redistribution receivers (whose mass changed above) carry a consistent
+    # fill into the next step.
+    cfill = torch.where(
+        cflags == interface_flag, cmass / _rho_fill.clamp(min=1e-6), cfill
+    )
+    # Post-envelope observation boundary for redistribution *receivers* only:
+    # recv_new receivers are still GAS at the pre-halo conversion snapshot
+    # above and are promoted to INTERFACE by the envelope.  The ownership
+    # ledger contract requires the actual post-topology owner, so links are
+    # stamped from the settled state while conversion cells keep the
+    # pre-halo boundary.
+    flags_after_envelope = cflags.clone() if capture_evidence else None
+    fill_after_envelope = cfill.clone() if capture_evidence else None
+    mass_after_envelope = cmass.clone() if capture_evidence else None
+    f_after_envelope = cf.clone() if capture_evidence else None
     cflags = torch.where(solid_mask, torch.full_like(cflags, solid_flag), cflags)
     if replay_stages is not None:
         replay_stages["solid_enforcement"] = tuple(
@@ -1067,16 +1082,16 @@ def build_topology_transaction(
                         mass_before_redistribution[dz, dy, dx]
                     ),
                     "receiver_flag_before": int(flags_before_conversion[rz, ry, rx]),
-                    "receiver_flag_after": int(flags_after_conversion[rz, ry, rx]),
+                    "receiver_flag_after": int(flags_after_envelope[rz, ry, rx]),
                     "receiver_fill_before": float(fill_before_conversion[rz, ry, rx]),
-                    "receiver_fill_after": float(fill_after_conversion[rz, ry, rx]),
+                    "receiver_fill_after": float(fill_after_envelope[rz, ry, rx]),
                     "receiver_mass_before": float(mass_before_redistribution[rz, ry, rx]),
-                    "receiver_mass_after": float(mass_after_conversion_field[rz, ry, rx]),
+                    "receiver_mass_after": float(mass_after_envelope[rz, ry, rx]),
                     "receiver_f_before": tuple(
                         float(value) for value in f_before_conversion[:, rz, ry, rx]
                     ),
                     "receiver_f_after": tuple(
-                        float(value) for value in f_after_conversion[:, rz, ry, rx]
+                        float(value) for value in f_after_envelope[:, rz, ry, rx]
                     ),
                 }
             )
