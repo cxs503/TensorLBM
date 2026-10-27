@@ -378,7 +378,8 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
                 tau=tau,
                 gz=gz,
                 rho_liquid=1.0,
-                rho_gas=0.001,
+                # Pressure-matched ambient (ABB consistency; see dam_break_3d).
+                rho_gas=1.0,
             )
             f_b = f_b * 0.0  # not used in Körner mode
         else:

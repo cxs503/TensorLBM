@@ -9,7 +9,7 @@ import pytest
 import torch
 
 from tensorlbm.d3q19 import equilibrium3d
-from tensorlbm.free_surface_lbm import GAS, INTERFACE, free_surface_step
+from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID, free_surface_step
 from tensorlbm.free_surface_topology_transaction import TopologyTransactionError
 
 
@@ -54,19 +54,47 @@ def _legacy_step(state: _State) -> _State:
 
 
 def _strict_step(state: _State, capture: dict[str, object]) -> _State:
-    f, fill, flags, mass, solid = _failure_inputs()
-    del f, fill, flags, mass
-    result = free_surface_step(
-        state.f,
-        state.fill,
-        state.flags,
-        solid,
-        mass=state.mass,
-        enable_i_to_g_ownership_closure=True,
-        capture_replay_stages=True,
-        replay_capture=capture,
+    # The solver no longer stages the experimental I→G ownership closure
+    # (reference mechanics settle I→G through the plain excess path), so the
+    # strict failure is driven through the standalone ownership builder on
+    # the same receiver-less input.  The evidence channel is unchanged.
+    from tensorlbm.free_surface_topology_transaction import (
+        build_i_to_g_ownership_transaction,
+        capture_strict_failure_invocation,
+        publish_strict_failure_evidence,
     )
-    return _State(*result[:4])
+
+    _f, _fill, _flags, _mass, solid = _failure_inputs()
+    invocation: dict[str, object] = {
+        "flags": state.flags,
+        "mass": state.mass,
+        "to_gas": state.flags == INTERFACE,
+        "to_liq": torch.zeros_like(state.flags, dtype=torch.bool),
+        "solid_mask": solid,
+        "gas_flag": GAS,
+        "liquid_flag": LIQUID,
+        "interface_flag": INTERFACE,
+        "rho_liquid": 1.0,
+    }
+    frozen = capture_strict_failure_invocation(invocation, builder="i_to_g_ownership")
+    try:
+        build_i_to_g_ownership_transaction(
+            state.flags,
+            state.mass,
+            to_gas=invocation["to_gas"],
+            to_liq=invocation["to_liq"],
+            solid_mask=solid,
+            gas_flag=GAS,
+            liquid_flag=LIQUID,
+            interface_flag=INTERFACE,
+            rho_liquid=1.0,
+        )
+    except TopologyTransactionError as error:
+        capture["strict_failure_evidence"] = publish_strict_failure_evidence(
+            frozen, error
+        )
+        raise
+    raise AssertionError("receiver-less I→G ownership must fail closed")
 
 
 def _equal(left: _State, right: _State) -> bool:

@@ -133,7 +133,10 @@ def test_closed_frozen_abb_transaction_conserves_when_every_link_has_an_owner() 
     assert after.total == pytest.approx(inventory.total, abs=5.0e-5)
 
 
-def test_multistep_closed_runtime_attributes_unexplained_one_sided_exchange_drift() -> None:
+def test_multistep_closed_runtime_attributes_one_sided_exchange_credit_in_full() -> None:
+    # Reference ledger semantics: the one-sided Körner L/I exchange credit is
+    # an attributed operator delta, not unexplained drift.  The residual is
+    # pure float32 summation rounding on the O(30) tracked total.
     f, fill, flags, solid, _ = _state()
     mass = fill.clone()
     runtime: dict[str, object] = {}
@@ -156,11 +159,7 @@ def test_multistep_closed_runtime_attributes_unexplained_one_sided_exchange_drif
     assert all(
         step["mass_unit"] == "lattice liquid mass (sum of independent mass field)" for step in steps
     )
-    assert all(not step["closed_domain_conserved"] for step in steps)
-    assert all(abs(step["unexplained_residual"]) > 1.0e-6 for step in steps)
-    assert all(
-        step["unexplained_residual"]
-        == pytest.approx(step["liquid_interface_interface_credit"], abs=5.0e-6)
-        for step in steps
-    )
-    assert all("one-sided liquid/interface" in step["diagnostic"] for step in steps)
+    assert all(abs(step["liquid_interface_interface_credit"]) > 1.0e-6 for step in steps)
+    assert all(abs(step["unexplained_residual"]) < 1.0e-5 for step in steps)
+    assert all(step["closed_domain_conserved"] for step in steps)
+    assert all("not a physical/PV closure claim" in step["diagnostic"] for step in steps)
