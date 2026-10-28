@@ -9,6 +9,7 @@ import torch
 
 from tensorlbm import CylinderFlowConfig, run_cylinder_flow
 from tensorlbm.ai import (
+    CylinderConditionSpec,
     CylinderMultimodalDataset,
     MultimodalCylinderArch,
     MultimodalCylinderForecaster,
@@ -18,6 +19,7 @@ from tensorlbm.ai import (
     collate_cylinder_multimodal,
     evaluate_forecaster_vs_persistence,
     export_cylinder_run_to_r2_catalog,
+    forecast_from_conditions,
     load_multimodal_forecaster,
     normalized_sdf_2d,
     rollout_trajectory_forecast,
@@ -431,3 +433,99 @@ def test_stage3_pushforward_and_variable_geometry_generalization(tmp_path: Path)
     )
     assert len(rollout) == 3
     assert rollout[0].model_rel_l2_velocity < rollout[0].persistence_rel_l2_velocity
+
+
+@pytest.mark.unit
+def test_scheme_a_pure_condition_to_trajectory_forecast(tmp_path: Path) -> None:
+    def _gen_with_t0(name: str, re_val: float, radius: float) -> Path:
+        return run_cylinder_flow(
+            CylinderFlowConfig(
+                nx=48,
+                ny=24,
+                u_in=0.06,
+                re=re_val,
+                radius=radius,
+                n_steps=60,
+                output_interval=15,
+                output_root=tmp_path,
+                run_name=name,
+                overwrite=True,
+                save_field_npz=True,
+                save_initial_snapshot=True,
+            )
+        )
+
+    train_trajs = [
+        validate_cylinder_trajectory(_gen_with_t0("t0_re25_r3", 25.0, 3.0)),
+        validate_cylinder_trajectory(_gen_with_t0("t0_re55_r4", 55.0, 4.0)),
+    ]
+    assert [f.step for f in train_trajs[0].frames] == [0, 15, 30, 45, 60]
+
+    manifest = split_cylinder_trajectories(
+        train_trajs,
+        history_steps=2,
+        rollout_steps=2,
+    )
+    train_ds = CylinderMultimodalDataset(
+        train_trajs,
+        normalization=manifest.normalization,
+        history_steps=2,
+        rollout_steps=2,
+        load_visual=True,
+    )
+    arch = MultimodalCylinderArch(
+        patch_size=(4, 4),
+        history_steps=2,
+        d_model=48,
+        n_heads=4,
+        n_layers=2,
+        ffn_dim=96,
+    )
+    cfg = MultimodalTrainConfig(
+        epochs=28,
+        batch_size=4,
+        learning_rate=3e-3,
+        pushforward_steps=2,
+        pushforward_decay=0.7,
+        seed=11,
+        device="cpu",
+    )
+    ckpt_path = tmp_path / "scheme_a.pt"
+    train_multimodal_cylinder_forecaster(
+        train_ds,
+        arch=arch,
+        config=cfg,
+        manifest=manifest,
+        save_weights_path=ckpt_path,
+    )
+
+    # Pure condition-only inference on unseen (Re=40, radius=3.5) with zero LBM solver calls
+    cond = CylinderConditionSpec(
+        nx=48,
+        ny=24,
+        u_in=0.06,
+        re=40.0,
+        radius=3.5,
+        n_steps=60,
+        output_interval=15,
+    )
+    ai_res = forecast_from_conditions(ckpt_path, cond, device="cpu")
+    assert [s.step for s in ai_res.steps] == [0, 15, 30, 45, 60]
+
+    ai_out_dir = ai_res.save_artifacts(tmp_path / "ai_predicted_run")
+    validated_ai_traj = validate_cylinder_trajectory(ai_out_dir, require_visual_png=True)
+    assert [f.step for f in validated_ai_traj.frames] == [0, 15, 30, 45, 60]
+
+    # Verify against ground-truth LBM on the same unseen condition
+    gt_traj = validate_cylinder_trajectory(_gen_with_t0("gt_re40_r3p5", 40.0, 3.5))
+    assert np.array_equal(ai_res.solid_mask, gt_traj.solid_mask)
+    fluid = (~ai_res.solid_mask).astype(np.float32)
+
+    init_vel = np.stack([ai_res.steps[0].ux, ai_res.steps[0].uy], axis=0)
+    for pred_step, gt_frame in zip(ai_res.steps[1:], gt_traj.frames[1:]):
+        assert float(np.max(pred_step.speed[ai_res.solid_mask])) == 0.0
+        pred_vel = np.stack([pred_step.ux, pred_step.uy], axis=0)
+        true_vel = np.stack([gt_frame.ux, gt_frame.uy], axis=0)
+        ai_err = np.sqrt(np.sum(((pred_vel - true_vel) ** 2) * fluid[None]))
+        init_err = np.sqrt(np.sum(((init_vel - true_vel) ** 2) * fluid[None]))
+        assert ai_err < init_err
