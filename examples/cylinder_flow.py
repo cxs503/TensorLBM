@@ -57,6 +57,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable saving per-output-step numerical NPZ field snapshots",
     )
+    parser.add_argument(
+        "--save-initial-snapshot",
+        dest="save_initial_snapshot",
+        action="store_true",
+        help="Also export step=0 initial field snapshot and force entry",
+    )
     return parser
 
 
@@ -79,6 +85,7 @@ def main() -> None:
         overwrite=args.overwrite,
         resume_checkpoint=args.resume_checkpoint,
         save_field_npz=not args.no_field_npz,
+        save_initial_snapshot=args.save_initial_snapshot,
     )
     run_cylinder_flow(config)
 
