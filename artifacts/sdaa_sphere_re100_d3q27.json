@@ -1,0 +1,482 @@
+{
+  "case": "sphere_re100_d3q27",
+  "case_dir": "benchmarks/verified/sphere_re100_d3q27",
+  "generated_utc": "2026-10-29T14:00:55Z",
+  "runner": "scripts/sdaa_sweep_sphere_re100_d3q27.py",
+  "device_evidence": {
+    "device_evidence_line": "torch.sdaa.get_device_name(0) = '/dev/tcaicard27'",
+    "torch_version": "2.7.1",
+    "torch_sdaa_module": "3.1.1a3+gite3971b9",
+    "sdaa_is_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_device_name_0": "/dev/tcaicard27",
+    "sdaa_current_device": 0,
+    "torch_device_used": "sdaa:0",
+    "probe_sum_sdaa": 84.0,
+    "probe_sum_cpu": 84.0,
+    "probe_matches_cpu": true,
+    "cuda_available": false,
+    "cpu_impersonation_guard": "torch.cuda.is_available() is False on this host, so no CUDA run can be mistaken for the SDAA run; the case driver allocates every field on device='sdaa:0' (device=torch.device(DEV) with DEV=W27_DEV)",
+    "host": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38"
+  },
+  "triton": {
+    "scanned": [
+      "benchmarks/verified/sphere_re100_d3q27/run.py",
+      "src/tensorlbm/bfl_common.py",
+      "src/tensorlbm/d3q27.py",
+      "src/tensorlbm/general_sim.py",
+      "src/tensorlbm/boundaries3d.py"
+    ],
+    "triton_imports_in_entry_chain": [],
+    "triton_runtime_installed": "3.4.0",
+    "triton_required_by_entry": false,
+    "bypass": "not required: no triton kernel on the run.py import/exec path (d3q27 stream27_roll is pure torch.roll); TRITON_INTERPRET set to 1 defensively but never exercised"
+  },
+  "environment": {
+    "W27_DEV": "sdaa:0",
+    "TRITON_INTERPRET": "1",
+    "python": "3.11.6",
+    "argv": [
+      "scripts/sdaa_sweep_sphere_re100_d3q27.py",
+      "--assemble-only",
+      "--tiers",
+      "8:1200,16:1400",
+      "--budget-s",
+      "1120"
+    ],
+    "git_commit": "0d417663",
+    "git_branch": "agent/m42"
+  },
+  "protocol": {
+    "source": "benchmarks/verified/sphere_re100_d3q27/{README.md,prereg.md,run.py,verify.py}",
+    "u_lb": 0.05,
+    "re_target": 100.0,
+    "tau_rule": "tau = 0.5 + 3*u_lb*D/re_target (archived tiers: D40->0.56, D60->0.59)",
+    "padding": {
+      "lat": 3.0,
+      "up": 3.0,
+      "down": 4.0
+    },
+    "sample_interval": 50,
+    "cd_window_definition": "mean cd over sampled steps with 0.8*steps < step <= steps; drift vs 0.6*steps < step <= 0.8*steps (verify.window_cd)",
+    "gates_applied": {
+      "G1_accuracy": "|err| <= 3% per tier",
+      "G2_monotone": "err strictly decreasing with resolution",
+      "G3_health": "drift < 0.3%, cv_closure <= 1e-2, |mass ppm| <= 100, finite",
+      "G4_disclosure": "cross-stencil / collision rows are disclosures, not gates"
+    },
+    "deviations_from_archived_tiers": [
+      "reduced lattice resolution D (archived D40/D60 take ~24 min / ~2.6 h loop time per tier on a 32 GB CUDA card; the wall-clock budget here is <= 20 min)",
+      "tau recomputed per D to hold Re=100 (the same rule reproduces the archived tau values 0.56/0.59 exactly -- see tau_rule_check)",
+      "force-sample interval (50 steps) and Cd window definition unchanged"
+    ]
+  },
+  "tau_rule_check": {
+    "D40": {
+      "rule": 0.56,
+      "archived": 0.56,
+      "ok": true
+    },
+    "D60": {
+      "rule": 0.59,
+      "archived": 0.59,
+      "ok": true
+    }
+  },
+  "reference": {
+    "cd_ref": 1.0917310910948732,
+    "sha256_pins": {
+      "result.json": {
+        "sha256_actual": "b4c13e0f862f41072a022fae6beb96d581337b72c3b929a2d25db28bdae52b08",
+        "sha256_declared": "b4c13e0f862f41072a022fae6beb96d581337b72c3b929a2d25db28bdae52b08",
+        "match": true
+      },
+      "t1_d40big_12k.json": {
+        "sha256_actual": "2373d5162952ac5fe272016df8a575811766561711cce63407de4ddbadc72d58",
+        "sha256_declared": "2373d5162952ac5fe272016df8a575811766561711cce63407de4ddbadc72d58",
+        "match": true
+      },
+      "t2_d60big_24k.json": {
+        "sha256_actual": "78d3eb6e839df50256bfe2dec445bb5397872384272664ab4180104442e9bf86",
+        "sha256_declared": "78d3eb6e839df50256bfe2dec445bb5397872384272664ab4180104442e9bf86",
+        "match": true
+      },
+      "manifest.json": {
+        "sha256_actual": "dca81aa6fe8aaad48b9b1ef20ad6236be2d556ac227affd5f13fae6609af177d",
+        "sha256_declared": "dca81aa6fe8aaad48b9b1ef20ad6236be2d556ac227affd5f13fae6609af177d",
+        "match": true
+      }
+    },
+    "source": "benchmarks/verified/sphere_re100_d3q27/diag/remote_pull/verified__sphere_re100/result.json",
+    "archived_tier_results": {
+      "T1_D40": {
+        "cd_window": 1.1222091369579943,
+        "err_pct": 2.791717311316592
+      },
+      "T2_D60": {
+        "cd_window": 1.1197800349898392,
+        "err_pct": 2.569217284710319
+      }
+    }
+  },
+  "device_smoke": {
+    "D": 6,
+    "steps": 40,
+    "domain_lu": [
+      42,
+      42,
+      48
+    ],
+    "tau": 0.509,
+    "re_eff": 99.99999999999993,
+    "wall_s": 7.276901006698608,
+    "finite": true,
+    "sdaa_peak_allocated_GiB": 0.04518890380859375,
+    "tier_json": "artifacts/sdaa_sphere_re100_d3q27_tiers/T_D6_s40.json"
+  },
+  "tiers": [
+    {
+      "file": "T_D8_s1200.json",
+      "steps_used": 1200,
+      "cd_window": 1.2415132401494624,
+      "n_window": 5,
+      "cd_prev20": 1.2515898561774779,
+      "n_prev20": 5,
+      "err_pct": 13.719692539339148,
+      "err_ok": false,
+      "g3": {
+        "drift_pct": 0.8116398361408022,
+        "drift_ok": false,
+        "cv_closure": 0.025883044764204,
+        "cv_ok": false,
+        "mass_drift_ppm": -0.07785098278691414,
+        "mass_ok": true,
+        "finite": true,
+        "archive_twin": null,
+        "twin_ok": false
+      },
+      "meta": {
+        "D": 8,
+        "domain_lu": [
+          56,
+          56,
+          64
+        ],
+        "tau": 0.512,
+        "u_lb": 0.05,
+        "re_eff": 99.99999999999991,
+        "bfl_links": 1778,
+        "wall_s": 419.7725999355316,
+        "mass_drift_ppm": -0.07785098278691414,
+        "diverged": false
+      },
+      "status": "RAN",
+      "harness_wall_s": null,
+      "tier_wall_loop_s": 419.7725999355316,
+      "ms_per_step": 349.81049994627637,
+      "conv_steps": 1280.0,
+      "conv_times_covered": 0.9375,
+      "Mcells": 0.200704,
+      "re_eff": 99.99999999999991,
+      "re_lock_ok": true,
+      "tier_json": "artifacts/sdaa_sphere_re100_d3q27_tiers/T_D8_s1200.json",
+      "cd_history_trace": {
+        "10pct": {
+          "step": 100,
+          "cd": 1.2391898374667967
+        },
+        "20pct": {
+          "step": 250,
+          "cd": 1.376706210031156
+        },
+        "30pct": {
+          "step": 350,
+          "cd": 1.3128524790279994
+        },
+        "50pct": {
+          "step": 600,
+          "cd": 1.2665931255993186
+        },
+        "70pct": {
+          "step": 850,
+          "cd": 1.2543519087868402
+        },
+        "90pct": {
+          "step": 1100,
+          "cd": 1.2407721646245162
+        },
+        "100pct": {
+          "step": 1200,
+          "cd": 1.2381558227174474
+        }
+      },
+      "sdaa_peak_allocated_GiB": null,
+      "sdaa_peak_source": "not recorded for this tier"
+    },
+    {
+      "file": "T_D16_s1400.json",
+      "steps_used": 1400,
+      "cd_window": 1.176184188285583,
+      "n_window": 6,
+      "cd_prev20": 1.1965014713666784,
+      "n_prev20": 6,
+      "err_pct": 7.735705054072762,
+      "err_ok": false,
+      "g3": {
+        "drift_pct": 1.7273895775380244,
+        "drift_ok": false,
+        "cv_closure": 0.06032770719224993,
+        "cv_ok": false,
+        "mass_drift_ppm": 0.07785113430659707,
+        "mass_ok": true,
+        "finite": true,
+        "archive_twin": null,
+        "twin_ok": false
+      },
+      "meta": {
+        "D": 16,
+        "domain_lu": [
+          112,
+          112,
+          128
+        ],
+        "tau": 0.524,
+        "u_lb": 0.05,
+        "re_eff": 99.99999999999991,
+        "bfl_links": 7322,
+        "wall_s": 1608.0994911193848,
+        "mass_drift_ppm": 0.07785113430659707,
+        "diverged": false
+      },
+      "status": "RAN",
+      "harness_wall_s": null,
+      "tier_wall_loop_s": 1608.0994911193848,
+      "ms_per_step": 1148.6424936567034,
+      "conv_steps": 2560.0,
+      "conv_times_covered": 0.546875,
+      "Mcells": 1.605632,
+      "re_eff": 99.99999999999991,
+      "re_lock_ok": true,
+      "tier_json": "artifacts/sdaa_sphere_re100_d3q27_tiers/T_D16_s1400.json",
+      "cd_history_trace": {
+        "10pct": {
+          "step": 150,
+          "cd": 1.4225794680442543
+        },
+        "20pct": {
+          "step": 300,
+          "cd": 1.2445306659427926
+        },
+        "30pct": {
+          "step": 400,
+          "cd": 1.2620785602854172
+        },
+        "50pct": {
+          "step": 700,
+          "cd": 1.2195188926571598
+        },
+        "70pct": {
+          "step": 1000,
+          "cd": 1.1914942470376437
+        },
+        "90pct": {
+          "step": 1250,
+          "cd": 1.1744718978061564
+        },
+        "100pct": {
+          "step": 1400,
+          "cd": 1.172582212135786
+        }
+      },
+      "sdaa_peak_allocated_GiB": null,
+      "sdaa_peak_source": "not recorded for this tier"
+    }
+  ],
+  "gate_table": [
+    {
+      "gate": "T.D8.re_eff_lock",
+      "threshold": "|re_eff-100| <= 1e-6",
+      "value": 99.99999999999991,
+      "verdict": "PASS",
+      "note": "Re held fixed by tau = 0.5+3*u_lb*D/Re (tau is the tier meta value)",
+      "source": "tier meta re_eff"
+    },
+    {
+      "gate": "T.D16.re_eff_lock",
+      "threshold": "|re_eff-100| <= 1e-6",
+      "value": 99.99999999999991,
+      "verdict": "PASS",
+      "note": "Re held fixed by tau = 0.5+3*u_lb*D/Re (tau is the tier meta value)",
+      "source": "tier meta re_eff"
+    },
+    {
+      "gate": "G1.accuracy.D8",
+      "threshold": "|err_pct| <= 3.0",
+      "value": 13.719692539339148,
+      "verdict": "FAIL",
+      "note": "cd_window=1.2415132401 vs cd_ref=1.0917310910949",
+      "source": "verify.tier_verdict"
+    },
+    {
+      "gate": "G1.accuracy.D16",
+      "threshold": "|err_pct| <= 3.0",
+      "value": 7.735705054072762,
+      "verdict": "FAIL",
+      "note": "cd_window=1.1761841883 vs cd_ref=1.0917310910949",
+      "source": "verify.tier_verdict"
+    },
+    {
+      "gate": "G2.monotone",
+      "threshold": "err(T2) < err(T1) (strict)",
+      "value": [
+        13.719692539339148,
+        7.735705054072762
+      ],
+      "verdict": "PASS",
+      "note": "D8 -> D16",
+      "source": "verify.py G2"
+    },
+    {
+      "gate": "G3.D8.drift",
+      "threshold": "drift_pct < 0.3",
+      "value": 0.8116398361408022,
+      "verdict": "FAIL",
+      "note": "cd_prev20=1.2515898562 (n=5 vs 5)",
+      "source": "verify.tier_verdict"
+    },
+    {
+      "gate": "G3.D8.cv_closure",
+      "threshold": "cv_closure <= 1e-2",
+      "value": 0.025883044764204,
+      "verdict": "FAIL",
+      "note": "BFL sparse Cd vs exact CV momentum-box Cd over the (0.8,1.0] window",
+      "source": "verify.tier_verdict"
+    },
+    {
+      "gate": "G3.D8.mass_drift",
+      "threshold": "|mass_drift_ppm| <= 100",
+      "value": -0.07785098278691414,
+      "verdict": "PASS",
+      "note": "",
+      "source": "verify.tier_verdict"
+    },
+    {
+      "gate": "G3.D8.finite",
+      "threshold": "no NaN/Inf through the loop",
+      "value": true,
+      "verdict": "PASS",
+      "note": "",
+      "source": "verify.tier_verdict"
+    },
+    {
+      "gate": "G3.D8.archive_twin_param_guard",
+      "threshold": "archived-tier twin guard armed",
+      "value": null,
+      "verdict": "NOT_APPLICABLE",
+      "note": "run.py check_against_archive is keyed to D in (40,60); a reduced tier has no archived twin, so this sub-gate cannot be armed -- substituted by the ref.archive_sha256_pin row (no threshold changed)",
+      "source": "run.py check_against_archive"
+    },
+    {
+      "gate": "G3.D16.drift",
+      "threshold": "drift_pct < 0.3",
+      "value": 1.7273895775380244,
+      "verdict": "FAIL",
+      "note": "cd_prev20=1.1965014714 (n=6 vs 6)",
+      "source": "verify.tier_verdict"
+    },
+    {
+      "gate": "G3.D16.cv_closure",
+      "threshold": "cv_closure <= 1e-2",
+      "value": 0.06032770719224993,
+      "verdict": "FAIL",
+      "note": "BFL sparse Cd vs exact CV momentum-box Cd over the (0.8,1.0] window",
+      "source": "verify.tier_verdict"
+    },
+    {
+      "gate": "G3.D16.mass_drift",
+      "threshold": "|mass_drift_ppm| <= 100",
+      "value": 0.07785113430659707,
+      "verdict": "PASS",
+      "note": "",
+      "source": "verify.tier_verdict"
+    },
+    {
+      "gate": "G3.D16.finite",
+      "threshold": "no NaN/Inf through the loop",
+      "value": true,
+      "verdict": "PASS",
+      "note": "",
+      "source": "verify.tier_verdict"
+    },
+    {
+      "gate": "G3.D16.archive_twin_param_guard",
+      "threshold": "archived-tier twin guard armed",
+      "value": null,
+      "verdict": "NOT_APPLICABLE",
+      "note": "run.py check_against_archive is keyed to D in (40,60); a reduced tier has no archived twin, so this sub-gate cannot be armed -- substituted by the ref.archive_sha256_pin row (no threshold changed)",
+      "source": "run.py check_against_archive"
+    },
+    {
+      "gate": "ref.archive_sha256_pin",
+      "threshold": "all declared pins match",
+      "value": {
+        "result.json": true,
+        "t1_d40big_12k.json": true,
+        "t2_d60big_24k.json": true,
+        "manifest.json": true
+      },
+      "verdict": "PASS",
+      "note": "cd_ref machine-read from the pinned archive, never typed by hand",
+      "source": "gate/verdict27.json ref_sha256"
+    },
+    {
+      "gate": "env.device_is_sdaa",
+      "threshold": "fields computed on 'sdaa:0'",
+      "value": "torch.sdaa.get_device_name(0) = '/dev/tcaicard27'",
+      "verdict": "PASS",
+      "note": "torch.cuda unavailable -> CPU/CUDA results cannot masquerade as SDAA",
+      "source": "torch.sdaa"
+    },
+    {
+      "gate": "env.sdaa_live_compute",
+      "threshold": "peak SDAA allocation > 0 and finite",
+      "value": 0.04518890380859375,
+      "verdict": "PASS",
+      "note": "in-process D6/40-step D3Q27 sphere run: torch.sdaa.max_memory_allocated() after the run, history finite",
+      "source": "torch.sdaa (this process)"
+    }
+  ],
+  "overall_verdict": "FAIL",
+  "wall_clock_s": 2039.0,
+  "wall_clock": {
+    "budget_s": 1120.0,
+    "measured_harness_wall_s": 2039.0,
+    "wall_source": "parsed from artifacts/logs/sweep.log (the run's own summary line) + log file stat",
+    "measured_in_this_process": false,
+    "assemble_only_pass_s": 13.017752647399902,
+    "per_tier_loop_s": {
+      "D8": 419.7725999355316,
+      "D16": 1608.0994911193848
+    },
+    "per_tier_ms_per_step": {
+      "D8": 349.81049994627637,
+      "D16": 1148.6424936567034
+    },
+    "pre_run_probe_ms_per_step": {
+      "D12": 325.11019865671796,
+      "D16": 459.4455297787984
+    },
+    "slowdown_vs_probe": {
+      "D16": 2.5
+    },
+    "over_budget": true,
+    "overrun_s": 919.0,
+    "shared_card_note": "the SDAA device is shared with other tenants (several tensorlbm sweep processes are resident on /dev/tcaicard27); per-step cost measured in the pre-run probe was reproduced for the first tier but degraded for the second, which is the machine explanation of the budget overrun below"
+  },
+  "assemble_only": true,
+  "artifacts": {
+    "tier_json_dir": "artifacts/sdaa_sphere_re100_d3q27_tiers",
+    "this_json": "artifacts/sdaa_sphere_re100_d3q27.json",
+    "report_md": "docs/sdaa_sweep/sphere_re100_d3q27.md"
+  }
+}

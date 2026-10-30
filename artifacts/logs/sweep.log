@@ -1,0 +1,33 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+torch.sdaa.get_device_name(0) = '/dev/tcaicard27'
+[tier] D=8 steps=1200 tau=0.512000 domain_x=64 conv_steps=1280
+written /root/tp-agent/work/m42/artifacts/sdaa_sphere_re100_d3q27_tiers/T_D8_s1200.json
+last-8 cd mean: 1.2443270646440963
+[tier] D=8 cd_window=1.2415132401 err=13.7197% drift=0.8116% cv=0.025883044764204 mass=-0.07785098278691414 wall=421s
+[tier] D=16 steps=1400 tau=0.524000 domain_x=128 conv_steps=2560
+written /root/tp-agent/work/m42/artifacts/sdaa_sphere_re100_d3q27_tiers/T_D16_s1400.json
+last-8 cd mean: 1.1797604326463196
+[tier] D=16 cd_window=1.1761841883 err=7.7357% drift=1.7274% cv=0.06032770719224993 mass=0.07785113430659707 wall=1612s
+
+overall verdict: FAIL  (wall 2039s)
+  PASS           T.D8.re_eff_lock                 |re_eff-100| <= 1e-6
+  PASS           T.D16.re_eff_lock                |re_eff-100| <= 1e-6
+  FAIL           G1.accuracy.D8                   |err_pct| <= 3.0
+  FAIL           G1.accuracy.D16                  |err_pct| <= 3.0
+  PASS           G2.monotone                      err(T2) < err(T1) (strict)
+  FAIL           G3.D8.drift                      drift_pct < 0.3
+  FAIL           G3.D8.cv_closure                 cv_closure <= 1e-2
+  PASS           G3.D8.mass_drift                 |mass_drift_ppm| <= 100
+  PASS           G3.D8.finite                     no NaN/Inf through the loop
+  NOT_APPLICABLE G3.D8.archive_twin_param_guard   archived-tier twin guard armed
+  FAIL           G3.D16.drift                     drift_pct < 0.3
+  FAIL           G3.D16.cv_closure                cv_closure <= 1e-2
+  PASS           G3.D16.mass_drift                |mass_drift_ppm| <= 100
+  PASS           G3.D16.finite                    no NaN/Inf through the loop
+  NOT_APPLICABLE G3.D16.archive_twin_param_guard  archived-tier twin guard armed
+  PASS           ref.archive_sha256_pin           all declared pins match
+  PASS           env.device_is_sdaa               fields computed on 'sdaa:0'
+  PASS           env.sdaa_memory.D8               SDAA allocator saw the tier live
+  PASS           env.sdaa_memory.D16              SDAA allocator saw the tier live
+wrote artifacts/sdaa_sphere_re100_d3q27.json and docs/sdaa_sweep/sphere_re100_d3q27.md
