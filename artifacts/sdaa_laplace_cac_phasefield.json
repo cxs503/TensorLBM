@@ -1,0 +1,513 @@
+{
+  "benchmark": "laplace_cac_phasefield",
+  "case_dir": "benchmarks/verified/laplace_cac_phasefield",
+  "case_entrypoint": "benchmarks/verified/laplace_cac_phasefield/run.py",
+  "sweep_script": "scripts/sdaa_sweep_laplace_cac_phasefield.py",
+  "branch": "agent/m24",
+  "device_evidence": {
+    "requested_device": "sdaa:0",
+    "torch_version": "2.7.1",
+    "torch_sdaa_import_error": null,
+    "device_name_line": "/dev/tcaicard27",
+    "device_count": 1,
+    "total_memory_gb": 16.039,
+    "sdaa_available": true,
+    "probe_tensor_device": "sdaa:0",
+    "probe_tensor_device_type": "sdaa",
+    "has_torch_sdaa_attr": true
+  },
+  "triton": {
+    "triton_installed_version": "3.4.0",
+    "triton_import_hits_per_file": {
+      "tensorlbm/cac_lbm.py": 0,
+      "tensorlbm/d3q19.py": 0,
+      "tensorlbm/boundaries3d.py": 0,
+      "tensorlbm/phasefield/stream_boundary_contract.py": 0
+    },
+    "call_path_requires_triton": false,
+    "TRITON_INTERPRET_env": null,
+    "workaround": "none needed: no triton import in the cac_lbm call path"
+  },
+  "config": {
+    "tier": "reduced (case recommends 128^3 b1 / 96^3 b3, 12000 steps)",
+    "grid": [
+      64,
+      64,
+      64
+    ],
+    "radius": 20.0,
+    "steps": 10000,
+    "sample_every": 500,
+    "window": "last 2000 steps",
+    "arms": [
+      "b3_rho100"
+    ],
+    "planned_arms_full_case": [
+      "b1_R20",
+      "b1_R32",
+      "b1_R48",
+      "b3_rho10",
+      "b3_rho100"
+    ],
+    "dtype": "torch.float64",
+    "device": "sdaa:0"
+  },
+  "criteria_source": {
+    "module": "benchmarks/verified/laplace_cac_phasefield/run.py (imported live)",
+    "sigma_target": 0.01,
+    "bar_eff_W4": 0.9238958795895513,
+    "sigma_model_input": 0.010823730488377745,
+    "gates": {
+      "per_arm_err_pct": 1.5,
+      "b1_spread_pct": 1.0,
+      "u_max": 0.0002,
+      "drift_10k": 1e-06
+    },
+    "note": "criteria/calibration read from the case module, not transcribed"
+  },
+  "arms": {
+    "b3_rho100": {
+      "kind": "b3",
+      "arg": 100.0,
+      "params": {
+        "shape": [
+          64,
+          64,
+          64
+        ],
+        "radius": 20.0,
+        "rho_l": 1.0,
+        "rho_g": 0.01,
+        "mu_l": 0.1,
+        "mu_g": 0.001,
+        "nu": 0.1,
+        "sigma": 0.010823730488377745,
+        "W": 4.0,
+        "M_mob": 0.05,
+        "p0": 0.01,
+        "n_steps": 10000,
+        "axes": "ppp",
+        "mu_law": "harmonic",
+        "dtype": "torch.float64",
+        "device": "sdaa:0",
+        "window": "last 2000 steps, samples every 500"
+      },
+      "sigma_target": 0.01,
+      "sigma_model_input": 0.010823730488377745,
+      "sigma_rec_window_mean": 0.00999432666508884,
+      "sigma_rec_rel_err": 0.0005673334911160746,
+      "err_pct": 0.05673334911160746,
+      "dP_window_mean": 0.0009994326665088839,
+      "u_max_window": 6.787214269826273e-05,
+      "phi_drift_rel_at_10k": 8.611516727276873e-13,
+      "phi_drift_rel_last": 8.611516727276873e-13,
+      "nan_free": true,
+      "phi_integral_rel_drift_max": 8.611516727276873e-13,
+      "series_len": 21,
+      "tail_sigma_rec": [
+        0.00999437219195513,
+        0.009994322443100008,
+        0.009994316710148377,
+        0.009994295315151839
+      ],
+      "series": [
+        {
+          "step": 1,
+          "phi_integral": 34337.147195430094,
+          "phi_drift_rel": 0.0,
+          "p_in": 0.010006236719243123,
+          "p_out": 0.010000269488762183,
+          "dP": 5.967230480940708e-06,
+          "sigma_rec": 5.967230480940708e-05,
+          "u_max": 0.0014897056368243927,
+          "rho_min": 0.010000000000000595,
+          "rho_max": 0.9999999960128828,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 0.49902963638305664
+        },
+        {
+          "step": 500,
+          "phi_integral": 34337.147195428675,
+          "phi_drift_rel": 4.132002366680586e-14,
+          "p_in": 0.01087965662052666,
+          "p_out": 0.010000037515179703,
+          "dP": 0.0008796191053469567,
+          "sigma_rec": 0.008796191053469567,
+          "u_max": 0.0006852287406383686,
+          "rho_min": 0.009999982403289111,
+          "rho_max": 1.0000470698539035,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 64.01976728439331
+        },
+        {
+          "step": 1000,
+          "phi_integral": 34337.147195427126,
+          "phi_drift_rel": 8.64542033643938e-14,
+          "p_in": 0.011177957871342951,
+          "p_out": 0.010000102284398276,
+          "dP": 0.0011778555869446754,
+          "sigma_rec": 0.011778555869446754,
+          "u_max": 0.00025984008537570803,
+          "rho_min": 0.009999980958833343,
+          "rho_max": 1.0004930259324054,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 117.75301694869995
+        },
+        {
+          "step": 1500,
+          "phi_integral": 34337.14719542566,
+          "phi_drift_rel": 1.290456123747937e-13,
+          "p_in": 0.0111206581997895,
+          "p_out": 0.010000160140993425,
+          "dP": 0.001120498058796075,
+          "sigma_rec": 0.01120498058796075,
+          "u_max": 0.00011172635276020125,
+          "rho_min": 0.009999980112865563,
+          "rho_max": 1.0002345846749925,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 171.55010390281677
+        },
+        {
+          "step": 2000,
+          "phi_integral": 34337.14719542421,
+          "phi_drift_rel": 1.714251238279279e-13,
+          "p_in": 0.011013686726808953,
+          "p_out": 0.010000220264715807,
+          "dP": 0.001013466462093146,
+          "sigma_rec": 0.01013466462093146,
+          "u_max": 0.00012640462131759353,
+          "rho_min": 0.009999979809511162,
+          "rho_max": 0.9999387510046304,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 225.45417523384094
+        },
+        {
+          "step": 2500,
+          "phi_integral": 34337.1471954227,
+          "phi_drift_rel": 2.1528791818192182e-13,
+          "p_in": 0.010972071457863726,
+          "p_out": 0.010000289113911022,
+          "dP": 0.000971782343952704,
+          "sigma_rec": 0.00971782343952704,
+          "u_max": 0.00010360083991969099,
+          "rho_min": 0.009999979776746909,
+          "rho_max": 0.9998907146238909,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 279.3091366291046
+        },
+        {
+          "step": 3000,
+          "phi_integral": 34337.147195421225,
+          "phi_drift_rel": 2.5830312230685306e-13,
+          "p_in": 0.010979927802863726,
+          "p_out": 0.010000363629883933,
+          "dP": 0.0009795641729797924,
+          "sigma_rec": 0.009795641729797924,
+          "u_max": 8.924548358545695e-05,
+          "rho_min": 0.00999997977311742,
+          "rho_max": 0.9999382224338081,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 333.0583817958832
+        },
+        {
+          "step": 3500,
+          "phi_integral": 34337.14719541976,
+          "phi_drift_rel": 3.0089453131725294e-13,
+          "p_in": 0.01099683511239897,
+          "p_out": 0.010000437734504219,
+          "dP": 0.0009963973778947515,
+          "sigma_rec": 0.009963973778947515,
+          "u_max": 8.405791741015944e-05,
+          "rho_min": 0.009999979784155889,
+          "rho_max": 0.999978105942399,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 386.83667850494385
+        },
+        {
+          "step": 4000,
+          "phi_integral": 34337.147195418285,
+          "phi_drift_rel": 3.439097354421842e-13,
+          "p_in": 0.011004207063497883,
+          "p_out": 0.010000508906797427,
+          "dP": 0.0010036981567004555,
+          "sigma_rec": 0.010036981567004555,
+          "u_max": 7.768018465856128e-05,
+          "rho_min": 0.00999997983097773,
+          "rho_max": 0.9999908007906657,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 440.6711757183075
+        },
+        {
+          "step": 4500,
+          "phi_integral": 34337.1471954168,
+          "phi_drift_rel": 3.871368371243811e-13,
+          "p_in": 0.011003438473092477,
+          "p_out": 0.010000580652764591,
+          "dP": 0.0010028578203278866,
+          "sigma_rec": 0.010028578203278866,
+          "u_max": 7.582913134990999e-05,
+          "rho_min": 0.00999997989185762,
+          "rho_max": 0.9999838692528354,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 494.3259394168854
+        },
+        {
+          "step": 5000,
+          "phi_integral": 34337.147195415324,
+          "phi_drift_rel": 4.301520412493123e-13,
+          "p_in": 0.011000858257346067,
+          "p_out": 0.010000652477388983,
+          "dP": 0.0010002057799570838,
+          "sigma_rec": 0.010002057799570838,
+          "u_max": 7.399578101713245e-05,
+          "rho_min": 0.009999979986680273,
+          "rho_max": 0.9999764791418462,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 547.9127721786499
+        },
+        {
+          "step": 5500,
+          "phi_integral": 34337.147195413854,
+          "phi_drift_rel": 4.729553478169778e-13,
+          "p_in": 0.010999668179253687,
+          "p_out": 0.010000724537253518,
+          "dP": 0.0009989436420001687,
+          "sigma_rec": 0.009989436420001687,
+          "u_max": 7.171354440281461e-05,
+          "rho_min": 0.009999980314610527,
+          "rho_max": 0.9999745742572472,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 601.5118699073792
+        },
+        {
+          "step": 6000,
+          "phi_integral": 34337.147195412384,
+          "phi_drift_rel": 5.157586543846434e-13,
+          "p_in": 0.010999809810507688,
+          "p_out": 0.010000796521348398,
+          "dP": 0.0009990132891592902,
+          "sigma_rec": 0.009990132891592902,
+          "u_max": 6.980840101977956e-05,
+          "rho_min": 0.009999980837109063,
+          "rho_max": 0.99997588337624,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 655.074206829071
+        },
+        {
+          "step": 6500,
+          "phi_integral": 34337.147195410886,
+          "phi_drift_rel": 5.594095511813717e-13,
+          "p_in": 0.011000292717876128,
+          "p_out": 0.010000868366337764,
+          "dP": 0.0009994243515383649,
+          "sigma_rec": 0.009994243515383649,
+          "u_max": 6.87445758146094e-05,
+          "rho_min": 0.009999981248682632,
+          "rho_max": 0.9999773438230886,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 708.6302781105042
+        },
+        {
+          "step": 7000,
+          "phi_integral": 34337.1471954094,
+          "phi_drift_rel": 6.026366528635685e-13,
+          "p_in": 0.011000571848943456,
+          "p_out": 0.01000094029503304,
+          "dP": 0.0009996315539104166,
+          "sigma_rec": 0.009996315539104166,
+          "u_max": 6.813841805597737e-05,
+          "rho_min": 0.009999981499773799,
+          "rho_max": 0.9999779029772778,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 762.2881076335907
+        },
+        {
+          "step": 7500,
+          "phi_integral": 34337.14719540794,
+          "phi_drift_rel": 6.452280618739684e-13,
+          "p_in": 0.01100061273214623,
+          "p_out": 0.010001012328613492,
+          "dP": 0.0009996004035327383,
+          "sigma_rec": 0.009996004035327383,
+          "u_max": 6.776270493792076e-05,
+          "rho_min": 0.009999981639510257,
+          "rho_max": 0.9999778942347303,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 815.9179308414459
+        },
+        {
+          "step": 8000,
+          "phi_integral": 34337.14719540646,
+          "phi_drift_rel": 6.882432659988997e-13,
+          "p_in": 0.011000583363745845,
+          "p_out": 0.010001084257376043,
+          "dP": 0.0009994991063698028,
+          "sigma_rec": 0.009994991063698028,
+          "u_max": 6.761217906327261e-05,
+          "rho_min": 0.009999981778416489,
+          "rho_max": 0.9999778225400489,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 869.8430497646332
+        },
+        {
+          "step": 8500,
+          "phi_integral": 34337.14719540498,
+          "phi_drift_rel": 7.314703676810966e-13,
+          "p_in": 0.011000593517731687,
+          "p_out": 0.010001156298536174,
+          "dP": 0.000999437219195513,
+          "sigma_rec": 0.00999437219195513,
+          "u_max": 6.767962332546489e-05,
+          "rho_min": 0.009999981980723356,
+          "rho_max": 0.9999778761877718,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 923.5369987487793
+        },
+        {
+          "step": 9000,
+          "phi_integral": 34337.147195403486,
+          "phi_drift_rel": 7.749093669205592e-13,
+          "p_in": 0.01100066036732055,
+          "p_out": 0.010001228123010549,
+          "dP": 0.0009994322443100008,
+          "sigma_rec": 0.009994322443100008,
+          "u_max": 6.774385624086607e-05,
+          "rho_min": 0.009999982114722746,
+          "rho_max": 0.9999780133503121,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 977.2372941970825
+        },
+        {
+          "step": 9500,
+          "phi_integral": 34337.147195402045,
+          "phi_drift_rel": 8.168650832591621e-13,
+          "p_in": 0.01100073183572364,
+          "p_out": 0.010001300164708802,
+          "dP": 0.0009994316710148377,
+          "sigma_rec": 0.009994316710148377,
+          "u_max": 6.780822524160056e-05,
+          "rho_min": 0.009999982201216322,
+          "rho_max": 0.9999781566764157,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 1031.0087416172028
+        },
+        {
+          "step": 10000,
+          "phi_integral": 34337.147195400525,
+          "phi_drift_rel": 8.611516727276873e-13,
+          "p_in": 0.011000801846889768,
+          "p_out": 0.010001372315374584,
+          "dP": 0.0009994295315151839,
+          "sigma_rec": 0.009994295315151839,
+          "u_max": 6.787214269826273e-05,
+          "rho_min": 0.009999982224861667,
+          "rho_max": 0.9999782768182474,
+          "nan_f": 0,
+          "nan_g": 0,
+          "wall_s": 1084.6912503242493
+        }
+      ],
+      "compute_tensor_device": "sdaa:0",
+      "wall_time_s": 1084.694015264511,
+      "ms_per_step": 108.46940152645111
+    }
+  },
+  "gates": {
+    "checks": [
+      {
+        "criterion": "per_arm |sigma_rec/0.01 - 1| <= 1.5% [b3_rho100]",
+        "gate": 1.5,
+        "value": 0.05673334911160746,
+        "unit": "percent",
+        "verdict": "PASS"
+      },
+      {
+        "criterion": "B1 R-ladder spread (max-min)/mean <= 1.0%",
+        "gate": 1.0,
+        "value": null,
+        "unit": "percent",
+        "verdict": "NOT_EVALUATED",
+        "reason": "needs the 3-radius ladder R in {20,32,48} at 128^3 (case README); measured throughput on this card puts a single R=32/R=48 arm at ~166 min (12000 steps), far beyond the <=20 min sweep budget; only a single radius fits, at 64^3"
+      },
+      {
+        "criterion": "spurious velocity max|u| (in window) <= 0.0002",
+        "gate": 0.0002,
+        "value": 6.787214269826273e-05,
+        "unit": "-",
+        "verdict": "PASS"
+      },
+      {
+        "criterion": "NaN-free over the whole run",
+        "gate": true,
+        "value": true,
+        "unit": "bool",
+        "verdict": "PASS"
+      },
+      {
+        "criterion": "phi integral drift @10k steps <= 1e-06",
+        "gate": 1e-06,
+        "value": 8.611516727276873e-13,
+        "unit": "-",
+        "verdict": "PASS"
+      },
+      {
+        "criterion": "arm coverage: B1 R in {20,32,48} (128^3) + B3 rho-ratio in {10,100}",
+        "gate": true,
+        "value": {
+          "ran": [
+            "b3_rho100"
+          ],
+          "not_run": [
+            "b1_R20",
+            "b1_R32",
+            "b1_R48",
+            "b3_rho10"
+          ]
+        },
+        "unit": "arms",
+        "verdict": "FAIL",
+        "reason": "reduced tier: not all 5 arms fit the wall-clock budget"
+      }
+    ],
+    "n_pass": 4,
+    "n_fail": 1,
+    "n_not_evaluated": 1,
+    "case_verified_on_sdaa": false,
+    "overall_verdict": "FAIL"
+  },
+  "wall_time_s": 1084.753306388855,
+  "throughput": {
+    "measured_ms_per_step_per_arm": {
+      "b3_rho100": 108.47
+    },
+    "measured_grid": 64,
+    "ms_per_step_per_cell": 0.00041377792940693324,
+    "assumption": "step cost ~ linear in cell count (checked by setup probe)",
+    "full_case_hours_by_group": {
+      "b1 @128^3 x3": 8.68,
+      "b3 @96^3 x2": 2.44
+    },
+    "estimate_full_case_hours_on_this_card": 11.12
+  },
+  "status": "FAIL"
+}
