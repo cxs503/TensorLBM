@@ -1,0 +1,85 @@
+{
+  "schema": "channel_turb_3d_diagnostic_v2",
+  "mission_id": 490,
+  "case": "channel_turb_3d",
+  "verdict": "terminal",
+  "honest_fail": true,
+  "diagnosis_date": "2026-10-30",
+  "reference": {
+    "source": "Moser, Kim & Mansour (1999), Phys. Fluids 11, 943",
+    "re_tau": 180.0,
+    "file": "dns_ref/mkm180.csv"
+  },
+  "grid_levels": [
+    {
+      "level": "L1",
+      "grid": "64x32x32",
+      "Lx_over_h": 4.266666666666667,
+      "Lz_over_h": 2.1333333333333333,
+      "dy_plus": 12.0,
+      "u_tau_target": 0.003,
+      "u_tau_measured": 0.002383514601031955,
+      "u_tau_err_pct": -20.549513298934837,
+      "u_cl_plus": 21.587728766517507,
+      "rms_y30_100_pct": 20.43434670057914,
+      "eddy_turnovers": 3.0,
+      "profile_samples": 3000
+    },
+    {
+      "level": "L2",
+      "grid": "128x48x64",
+      "Lx_over_h": 5.565217391304348,
+      "Lz_over_h": 2.782608695652174,
+      "dy_plus": 7.826086956521739,
+      "u_tau_target": 0.003,
+      "u_tau_measured": 0.0025722959308612857,
+      "u_tau_err_pct": -14.256802304623815,
+      "u_cl_plus": 20.088856699566044,
+      "rms_y30_100_pct": 11.665111463802477,
+      "eddy_turnovers": 1.956521739130435,
+      "profile_samples": 3000
+    },
+    {
+      "level": "L3",
+      "grid": "256x64x128",
+      "Lx_over_h": 8.258064516129032,
+      "Lz_over_h": 4.129032258064516,
+      "dy_plus": 5.806451612903226,
+      "u_tau_target": 0.003,
+      "u_tau_measured": 0.002770791905384009,
+      "u_tau_err_pct": -7.640269820533037,
+      "u_cl_plus": 19.292300106336672,
+      "rms_y30_100_pct": 5.330965065942242,
+      "eddy_turnovers": 1.4516129032258063,
+      "profile_samples": 3000
+    }
+  ],
+  "convergence": {
+    "monotone": true,
+    "trend": [20.43434670057914, 11.665111463802477, 5.330965065942242]
+  },
+  "gates": {
+    "G1_library_entry": {"pass": true, "evidence": "from tensorlbm.wall_resolved_channel3d"},
+    "G2_direct_observable": {"pass": false, "evidence": "Best RMS=5.33% > 3% threshold"},
+    "G3_monotone_convergence": {"pass": true, "evidence": "20.43% → 11.67% → 5.33%"},
+    "G4_reference_locked": {"pass": true, "evidence": "prereg.json sha256 verified"}
+  },
+  "root_causes": [
+    "Domain size insufficient: Lx/h=8.26 vs DNS 12.6 (65% of required)",
+    "Statistics inadequate: 1.45 eddy turnovers vs required ≥2.0",
+    "Wall model limitation: first-order bounce-back, no wall_offset correction",
+    "Grid resolution: dy+=5.81, DNS typically requires dy+≈1 near wall"
+  ],
+  "upgrade_paths": [
+    {"path": "A", "description": "Enlarge domain to Lx/h=12.6 + extend statistics to 3.5 eddy turnovers", "budget_gpu_h": 8, "expected_rms": "2-3%"},
+    {"path": "B", "description": "Enable Spalding wall model + wall_offset=0.5", "budget_gpu_h": 2, "expected_u_tau_improvement": "2-3%"},
+    {"path": "C", "description": "Near-wall grid refinement (tanh stretching, dy+≈1)", "budget_gpu_h": 3, "expected_improvement": "log-law resolution"},
+    {"path": "D", "description": "Maintain TERMINAL, record negative result", "budget_gpu_h": 0, "value": "Proves 3D scheme has no systematic bias"}
+  ],
+  "figures": [
+    "figures/fig_uplus_profile.png",
+    "figures/fig_convergence.png",
+    "figures/fig_rms_convergence.png"
+  ],
+  "report": "docs/reports/report_channel_turb_3d_m490.md"
+}
