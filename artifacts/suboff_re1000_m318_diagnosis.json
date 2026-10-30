@@ -1,0 +1,361 @@
+{
+  "case": "suboff_re1000",
+  "case_path": "benchmarks/verified/suboff_re1000",
+  "mission_id": 319,
+  "shift": "m318",
+  "generated_at": "2026-10-30 03:54:00",
+  "reference": {
+    "name": "Blasius laminar flat plate Cf = 1.328/sqrt(Re)",
+    "Re": 1000.0,
+    "Cf_ref": 0.04199504732703608,
+    "normalisation": "wetted area S = pi*D*L, dpS = 0.5*u^2*pi*D*L",
+    "gate_pct": 3.0
+  },
+  "environment": {
+    "python": "3.11.6",
+    "torch": "2.7.1",
+    "host": "36cb7828dbd5",
+    "cpu_count": 128,
+    "torch_sdaa": "3.1.1a3+gite3971b9",
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "cuda_available": false
+  },
+  "case_integrity": {
+    "run.py": true,
+    "README.md": true,
+    "result.json": true,
+    "verify.py": true,
+    "verify.py_note": "MISSING before m318 (sibling verified cases sphere_re100/sphere_re200/permeability3d all ship one); added in m318",
+    "archived_force_history": "missing before m318 -> run.py now writes forces_history.json (raw per-sample forces) so the verifier can recompute window means instead of trusting summaries"
+  },
+  "runs": [
+    {
+      "run_dir": "runs/m318/suboff_L48_mix50_s600",
+      "timing": {
+        "status": "completed",
+        "elapsed_s": 172,
+        "ms_per_step": 287.5,
+        "compile_mode_requested": "default",
+        "compile_mode_effective": "eager",
+        "compile_status": "eager_fallback",
+        "L_cells": 48,
+        "collision": "mrt",
+        "steps": 600,
+        "device": "sdaa:0",
+        "total_cells": 2996352,
+        "compile_error_excerpt": "teco_inductor: Error in codegen for ComputedBuffer / not find generator -> InductorError"
+      },
+      "config": {
+        "L_cells": 48,
+        "grid": "288x102x102",
+        "n_cells": 2996352,
+        "steps": 600,
+        "friction_formula": null,
+        "device": "sdaa:0",
+        "collision": "mrt"
+      },
+      "cd": {
+        "Cd_pressure": 0.008796008313802612,
+        "Cd_friction": 0.05269870352617717,
+        "Cd_total": 0.06149471183997978,
+        "Cd_total_last5000": 0.061494711839979795,
+        "Cf_ref": 0.04199504732703608,
+        "error_pct_vs_Blasius": 46.43324809492469,
+        "convergence_windows": {
+          "25%": 0.085456,
+          "50%": 0.072805,
+          "75%": 0.06595,
+          "100%": 0.061495
+        },
+        "window_samples": 60,
+        "window_steps": 600
+      },
+      "result_acceptance": null,
+      "verify": {
+        "status": "FAIL",
+        "reason": null,
+        "gate_pct": 3.0,
+        "gates": {
+          "geometry": {
+            "pass": false,
+            "domain_lu": [
+              288,
+              102,
+              102
+            ],
+            "r_max_err_pct": -20.108988599170903,
+            "L_D_analytic": 8.575,
+            "L_D_voxel": 10.73312629199899,
+            "Cp_voxel": 0.7085331627112109,
+            "Cp_analytic": 0.7919,
+            "Cp_err_pct": -10.527445042150415,
+            "blockage": 0.002018454484641552
+          },
+          "final_field": {
+            "pass": false,
+            "cd_p": 0.007260392522017554,
+            "cd_f_mix50": 0.03950581825595465,
+            "cd_tot_mix50": 0.0467662107779722,
+            "err_pct": 11.361252706255403,
+            "mix50_bounds_ok": true
+          },
+          "history": {
+            "pass": false,
+            "n_samples": 60,
+            "cd_p": 0.008796008313802612,
+            "cd_tot": 0.06149471183997978,
+            "err_pct": 46.43324809492469,
+            "drift_pct_last20_vs_prev20": -5.74238528908775,
+            "converged": false,
+            "identity_ok": true
+          }
+        }
+      }
+    },
+    {
+      "run_dir": "runs/m318/suboff_L24_smoke_s200",
+      "timing": {
+        "status": "completed",
+        "elapsed_s": 69,
+        "ms_per_step": 346.4,
+        "compile_mode_requested": "default",
+        "compile_mode_effective": "eager",
+        "compile_status": "eager_fallback",
+        "L_cells": 24,
+        "collision": "mrt",
+        "steps": 200,
+        "device": "sdaa:0",
+        "total_cells": 374544,
+        "compile_error_excerpt": "teco_inductor: Error in codegen for ComputedBuffer / not find generator -> InductorError"
+      },
+      "config": {
+        "L_cells": 24,
+        "grid": "144x51x51",
+        "n_cells": 374544,
+        "steps": 200,
+        "friction_formula": null,
+        "device": "sdaa:0",
+        "collision": "mrt"
+      },
+      "cd": {
+        "Cd_pressure": 0.02118562691046572,
+        "Cd_friction": 0.040238373705194334,
+        "Cd_total": 0.06142400061566006,
+        "Cd_total_last5000": 0.06142400061566004,
+        "Cf_ref": 0.04199504732703608,
+        "error_pct_vs_Blasius": 46.26486818152904,
+        "convergence_windows": {
+          "25%": 0.065486,
+          "50%": 0.064649,
+          "75%": 0.062956,
+          "100%": 0.061424
+        },
+        "window_samples": 20,
+        "window_steps": 200
+      },
+      "result_acceptance": null,
+      "verify": {
+        "status": "FAIL",
+        "reason": null,
+        "gate_pct": 3.0,
+        "gates": {
+          "geometry": {
+            "pass": false,
+            "domain_lu": [
+              144,
+              51,
+              51
+            ],
+            "r_max_err_pct": -49.47248787978017,
+            "L_D_analytic": 8.575,
+            "L_D_voxel": 16.97056274847714,
+            "Cp_voxel": 0.5688581664778181,
+            "Cp_analytic": 0.7919,
+            "Cp_err_pct": -28.16540390480894,
+            "blockage": 0.0015378700336441398
+          },
+          "final_field": {
+            "pass": false,
+            "cd_p": 0.02195187286322335,
+            "cd_f_mix50": 0.03404070194284099,
+            "cd_tot_mix50": 0.055992574806064344,
+            "err_pct": 33.33137684075609,
+            "mix50_bounds_ok": true
+          },
+          "history": {
+            "pass": false,
+            "n_samples": 20,
+            "cd_p": 0.02118562691046572,
+            "cd_tot": 0.06142400061566006,
+            "err_pct": 46.26486818152904,
+            "drift_pct_last20_vs_prev20": -3.551969952056673,
+            "converged": false,
+            "identity_ok": true
+          }
+        }
+      }
+    }
+  ],
+  "geometry_gate_table": [
+    {
+      "L_cells": 24,
+      "domain_lu": [
+        144,
+        51,
+        51
+      ],
+      "n_cells": 374544,
+      "R_lb_analytic": 1.3994490358126723,
+      "r_max_voxel_lu": 0.7071067811865476,
+      "r_max_err_pct": -49.47248787978017,
+      "L_D_analytic": 8.575,
+      "L_D_voxel": 16.97056274847714,
+      "Cp_voxel": 0.5688581664778181,
+      "Cp_analytic": 0.7919,
+      "Cp_err_pct": -28.16540390480894,
+      "blockage": 0.0015378700336441398,
+      "solid_cells": 84,
+      "pass": false
+    },
+    {
+      "L_cells": 32,
+      "domain_lu": [
+        192,
+        68,
+        68
+      ],
+      "n_cells": 887808,
+      "R_lb_analytic": 1.8659320477502297,
+      "r_max_voxel_lu": 1.4142135623730951,
+      "r_max_err_pct": -24.208731819670252,
+      "L_D_analytic": 8.575,
+      "L_D_voxel": 11.31370849898476,
+      "Cp_voxel": 0.6999621970332529,
+      "Cp_analytic": 0.7919,
+      "Cp_err_pct": -11.609774335995345,
+      "blockage": 0.001946366741321981,
+      "solid_cells": 245,
+      "pass": false
+    },
+    {
+      "L_cells": 48,
+      "domain_lu": [
+        288,
+        102,
+        102
+      ],
+      "n_cells": 2996352,
+      "R_lb_analytic": 2.7988980716253447,
+      "r_max_voxel_lu": 2.23606797749979,
+      "r_max_err_pct": -20.108988599170903,
+      "L_D_analytic": 8.575,
+      "L_D_voxel": 10.73312629199899,
+      "Cp_voxel": 0.7085331627112109,
+      "Cp_analytic": 0.7919,
+      "Cp_err_pct": -10.527445042150415,
+      "blockage": 0.002018454484641552,
+      "solid_cells": 837,
+      "pass": false
+    },
+    {
+      "L_cells": 64,
+      "domain_lu": [
+        384,
+        135,
+        135
+      ],
+      "n_cells": 6998400,
+      "R_lb_analytic": 3.7318640955004594,
+      "r_max_voxel_lu": 3.5355339059327378,
+      "r_max_err_pct": -5.260914774587816,
+      "L_D_analytic": 8.575,
+      "L_D_voxel": 9.050966799187808,
+      "Cp_voxel": 0.7956713137704529,
+      "Cp_analytic": 0.7919,
+      "Cp_err_pct": 0.47623611193999377,
+      "blockage": 0.002414266113191843,
+      "solid_cells": 2228,
+      "pass": true
+    },
+    {
+      "L_cells": 80,
+      "domain_lu": [
+        480,
+        169,
+        169
+      ],
+      "n_cells": 13709280,
+      "R_lb_analytic": 4.664830119375574,
+      "r_max_voxel_lu": 4.527692569068709,
+      "r_max_err_pct": -2.939818745751497,
+      "L_D_analytic": 8.575,
+      "L_D_voxel": 8.834522085987723,
+      "Cp_voxel": 0.7869746405958847,
+      "Cp_analytic": 0.7919,
+      "Cp_err_pct": -0.6219673448813379,
+      "blockage": 0.0023808691184967756,
+      "solid_cells": 4304,
+      "pass": true
+    },
+    {
+      "L_cells": 96,
+      "domain_lu": [
+        576,
+        203,
+        203
+      ],
+      "n_cells": 23736384,
+      "R_lb_analytic": 5.597796143250689,
+      "r_max_voxel_lu": 5.522680508593631,
+      "r_max_err_pct": -1.3418787096708815,
+      "L_D_analytic": 8.575,
+      "L_D_voxel": 8.69143162008178,
+      "Cp_voxel": 0.7771008881348765,
+      "Cp_analytic": 0.7919,
+      "Cp_err_pct": -1.8688106913907696,
+      "blockage": 0.002329588169232011,
+      "solid_cells": 7344,
+      "pass": true
+    }
+  ],
+  "compile_path": {
+    "requested": "default (torch.compile)",
+    "sdaa_backend": "teco_inductor (Torch-SDAA 3.1.1a3)",
+    "observed": "InductorError: AssertionError ('Error in codegen for ComputedBuffer' / 'not find generator') on the whole-step LBM chain",
+    "workaround": "benchmarks/compile_route.py auto eager fallback: first step attempted compiled, then every later step runs eager (bitwise identical to --compile-mode eager); routing banner + compile_status='eager_fallback' persisted in result.json",
+    "triton_usable_on_sdaa": false,
+    "cpu_fallback_used": false,
+    "cpu_fallback_note": "not needed for correctness (SDAA eager runs fine); CPU is slower for the same grid, so the workaround is eager-on-SDAA, not CPU"
+  },
+  "root_cause_of_6_previous_failures": [
+    "no finish call (4/6): the dispatch default is the PASS tier -- L=80 grid 480x169x169, 12000-20000 steps; historical cost 3.39 h on sdaa:2, i.e. longer than a shift window, so the agent hit the mission timeout without ever publishing",
+    "worktree unchanged (2/6): nothing in the case advertises a budget-feasible tier or an independent verifier, so an agent that could not finish the long run had nothing smaller and valid to do",
+    "no failure ever came from a crash: run.py imports and runs to completion on SDAA (see runs[]), so the case was never 'broken', it was 'too expensive as dispatched'",
+    "SDAA torch.compile always falls back to eager (teco upstream limitation, audited) - previously undocumented in this case directory, adding confusion about a 'triton kernel problem'"
+  ],
+  "fixes_applied_in_m318": [
+    "run.py: archive the raw per-sample force history (forces_history.json) so every judged number is independently recomputable",
+    "verify.py (NEW): 4-gate independent verifier (geometry Cb/L/B, forces from final field, raw-history window+drift with 1e-9 identity check, 3% acceptance) with PASS/FAIL/WITHHELD exit codes",
+    "README.md: mission-tier table with measured wall time per tier + compile-path (teco) explanation + verify.py usage",
+    "scripts/suboff_re1000_m318_report.py + this script: figure + diagnosis generators (numbers injected programmatically)"
+  ],
+  "budget_note": {
+    "launched_but_terminated": "runs/m318/suboff_L48_mix50_s12000.log (L=48, 12000 steps, launched 03:07, killed at 03:48 when the shift call budget ran out; no partial harvest is written by run.py)",
+    "measured_throughput": "L=48 (3.0M cells) 287.5-363 ms/step on sdaa:0; L=24 (0.37M cells) 346 ms/step under contention / 112 ms/step idle",
+    "implied_cost": "L=48/12000 steps = 58-73 min; L=80 (13.7M cells, the PASS tier) = 3.4 h historical / >=5 h extrapolated on this node",
+    "delivered_runs": "L=48/600 steps (172 s) and L=24/200 steps (69 s) - both completed and verified; no number in this report comes from a truncated run"
+  },
+  "artifacts": {
+    "diagnosis": "artifacts/suboff_re1000_m318_diagnosis.json",
+    "geometry_gate_table": "artifacts/suboff_re1000_m318_geometry_table.json",
+    "figures": "artifacts/figs_m318/{fig1_field,fig2_convergence,fig3_geometry}.png + figures.json",
+    "run_outputs": [
+      "runs/m318/suboff_L48_mix50_s600/{result.json,forces_history.json,verify_report.json}",
+      "runs/m318/suboff_L24_smoke_s200/{result.json,forces_history.json,verify_report.json}",
+      "runs/m318/*.log (incl. the terminated 12000-step launch log)"
+    ],
+    "retention_note": "final_field.pt (227 MB at L=48, 1.8 GB at L=80) is deleted from the worktree after verification; the field-gate numbers survive in verify_report.json, and the history gate can be recomputed from forces_history.json alone",
+    "report": "tensor reports id 244 (mission 319)"
+  }
+}

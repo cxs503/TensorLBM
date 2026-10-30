@@ -155,7 +155,9 @@ python benchmarks/verified/suboff_re1000/run.py \
 
 ## 工件
 
-- `run.py` —— 本 benchmark 入口（已接 `compile_route` 整步编译路由）
+- `run.py` —— 本 benchmark 入口（已接 `compile_route` 整步编译路由；
+  归档原始逐样本力历史 `forces_history.json`，供 verify.py 独立重算）
+- `verify.py` —— 独立复核器（几何门 / 力门 / 历史门 / 3% 判定门，见下节）
 - `result.json` —— verified 结果 + 端到端数据 + 耗时
 - 大文件 `final_field.pt`（1.8 GB）**不入库**，落在
   `results_e2e_suboff_L80_mix50/final_field.pt`（供后续逐公式重算）
@@ -168,3 +170,57 @@ python benchmarks/verified/suboff_re1000/run.py \
 - 历史演化：standard 公式 L=80/96 系统性 −10%（对照），faces 公式过冲
   +6.5~+10.6%（上界），mix50 取两界中点达标；分析详见 git 历史
   （`benchmarks/pending/suboff_re1000/result.json` @5c57065 之前）。
+
+## 单次派单可用分级（m318 诊断，2026-10-30 实测）
+
+本机（Hygon/SDAA 单卡节点：torch 2.7.1 + torch_sdaa 3.1.1a3，1 个 SDAA 设备）
+实测吞吐与可用分级，供后续派单选择"能在预算内跑完并交物"的档位：
+
+| 档位 | 命令要点 | 网格 | 步数 | 本机实测/推算耗时 | 物理结论 |
+|------|----------|------|------|------------------|----------|
+| smoke | `--resolution 24 --steps 200` | 144×51×51（0.37M cells, 112 ms/step） | 200 | **22 s** | 不作物理结论：几何门 R_max=−49%（艇半径仅 0.7 格），Cd +46% |
+| 粗网格 | `--resolution 32 --steps 6000` | 192×68×68（0.89M cells） | 6000 | ~16 min（推算） | 几何门仍 FAIL（R −24%） |
+| 中网格 | `--resolution 48 --steps 12000` | 288×102×102（3.0M cells, 287–363 ms/step 实测） | 12000 | **58–73 min**（实测吞吐外推；本班次跑到 41 min 因调用预算中止，未取数）| 几何门 R −20% / Cp −10.5%；未收敛窗仍 >3% |
+| 达标档 | `--resolution 80 --steps 12000` | 480×169×169（13.7M cells） | 12000 | sdaa:2 历史 **3.4 h**；本机按 cells 外推 ≥5 h | **−1.15%（窗口）/ −1.36%（终场重算）✅** |
+
+**结论**：本用例的"达标档"是 3.4 h 级长跑，**超出单次派单时间预算**。
+此前多次 FAIL（未调用 finish / 工作树无改动）即源于直接对着 12000–20000 步
+L=80 配置起跑。后续派单应二选一：
+1. **诊断档**（≤75 min）：跑中网格档 + `verify.py`，如实报"未收敛 >3%"，并把
+   几何/收敛趋势作为结论；
+2. **达标档**：预先按长跑申请预算（>4 h），或复用已入库的 L=80 结果
+   （`result.json`）并用 `verify.py` 独立复核，不要重跑。
+
+### 编译路径（SDAA / teco）
+
+`--compile-mode default` 在本机**必然**落到 audited eager fallback：
+teco_inductor 在整步 LBM 链上报
+`Error in codegen for ComputedBuffer(...) / not find generator` →
+`InductorError: AssertionError`，`compile_route` 捕获后打印 banner 并**逐位
+等价**于 `--compile-mode eager` 继续跑（`compile_status='eager_fallback'`
+写入 `result.json`）。即：**本用例在 SDAA 上不存在 triton 通路，绕行方案就是
+eager（SDAA 卡内）**；CPU 也可跑但同样尺寸下更慢（L=48 单步 >1 s，未测完）。
+这不是本用例的缺陷，是 teco 上游限制（见 `benchmarks/compile_route.py`）。
+
+## 独立复核（verify.py）
+
+`verify.py` 用归档原始数据**重算**全部判据（不信任 `result.json` 摘要），
+四道门：
+
+1. **几何门**：体素掩码 vs 解析 SUBOFF 回转体（`suboff_cad.suboff_statistics`）
+   —— L/D、R_max、Cp(=Cb)、域堵塞；|ΔR|<20%、|ΔCp|<15% 才认为阻力可信。
+2. **力门**：从 `final_field.pt` 重算 Cd_p / Cd_f（standard / faces / mix50
+   三口径），湿面积 πDL 归一。
+3. **历史门**：从 `forces_history.json`（run.py 归档的原始逐样本力历史）
+   重算窗口均值与漂移（末 20% vs 前 20%，门槛 |drift|<1%），并与
+   `result.json` 的摘要做 1e-9 量级恒等核对。
+4. **判定门**：|误差| ≤ 3%（对 Blasius `1.328/√Re`），窗口均值与终场重算
+   **两个口径都要过**。
+
+```bash
+python benchmarks/verified/suboff_re1000/verify.py                       # 复核本目录
+python benchmarks/verified/suboff_re1000/verify.py runs/m318/suboff_L48_mix50_s12000 --write
+python benchmarks/verified/suboff_re1000/verify.py --geometry-table 24 32 48 64 80 96
+```
+退出码：0=PASS、1=FAIL、2=WITHHELD（归档数据缺失）。缺 `forces_history.json`
+或 `final_field.pt` 时对应门返回 WITHHELD 而不是伪造 PASS。

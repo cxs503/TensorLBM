@@ -514,6 +514,36 @@ def main() -> None:
         "engine_modules": setup_info.get("modules_used", []),
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
+    # Persist the RAW per-sample force history so verify.py can recompute
+    # every judged number independently (window means, drift, gate) without
+    # trusting the summaries above.
+    _hist_keys = ("step", "cd_pressure", "cd_friction", "cd_total", "cl")
+    history = [{k: float(e[k]) for k in _hist_keys if k in e} for e in log]
+    (out_dir / "forces_history.json").write_text(
+        json.dumps(
+            {
+                "case": "suboff_re1000",
+                "L_cells": L,
+                "R_lb": R_lb,
+                "u_lb": u_lb,
+                "nu_lb": nu_lb,
+                "dpS_wet": dpS_wet,
+                "dpS_front": dpS_front,
+                "rescale_frontal_to_wetted": rescale,
+                "force_sample_interval": engine.config.solver.force_sample_interval,
+                "pressure_extrap": engine.config.solver.pressure_extrap,
+                "p0_method": engine.config.solver.p0_method,
+                "friction_formula": engine.config.solver.friction_formula,
+                "n_samples": len(history),
+                "units": "cd_* are in the engine frontal-area frame; multiply by rescale for pi*D*L",
+                "samples": history,
+            },
+            ensure_ascii=False,
+        )
+    )
+    result["forces_history_file"] = "forces_history.json"
+    result["forces_history_samples"] = len(history)
+
     result_path = out_dir / "result.json"
     result_path.write_text(json.dumps(result, indent=2, ensure_ascii=False))
     print(
