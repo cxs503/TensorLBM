@@ -1,0 +1,97 @@
+{
+  "benchmark": "poiseuille_3d_duct",
+  "lattice": "D3Q19",
+  "device": {
+    "type": "sdaa",
+    "device_str": "sdaa:0",
+    "is_available": true,
+    "device_count": 1,
+    "device_name": "/dev/tcaicard15"
+  },
+  "triton_workaround": false,
+  "triton_interpret_env": "0",
+  "compile_mode": "eager",
+  "compile_note": "SDAA teco_inductor cannot compile full LBM step chain; eager fallback is the only viable path (see compile_route.py docstring)",
+  "grid": {
+    "W": 32,
+    "H": 32,
+    "nx": 128,
+    "ny": 34,
+    "nz": 34
+  },
+  "config": {
+    "tau": 0.8,
+    "nu_lb": 0.10000000000000002,
+    "u_in": 0.005,
+    "Re": 1.5999999999999996,
+    "min_steps": 10000,
+    "max_steps": 20000,
+    "avg_steps": 200
+  },
+  "timing": {
+    "elapsed_sim_s": 812.0,
+    "elapsed_total_s": 826.4,
+    "wall_clock_limit_s": 1200,
+    "within_limit": true
+  },
+  "results": {
+    "n_steps": 20000,
+    "steady": false,
+    "da": 0.4264,
+    "db": 0.4264,
+    "eff_max_cell_central_pct": 0.1214,
+    "eff_l2_cell_central_pct": 0.1267,
+    "nom_max_cell_central_pct": 4.649,
+    "nom_l2_cell_central_pct": 3.5723,
+    "G_fit_over_G_Q": 1.00126,
+    "G_int_over_G_Q": 1.00469,
+    "Po_exact": 56.90830756476641,
+    "Po_sim": 51.46509276346811,
+    "Po_sim_err_pct": -9.5649,
+    "Po_Q": 51.22492451760756,
+    "umax_over_umean_meas": 1.98811,
+    "umax_over_umean_exact": 2.096256013504483,
+    "mass_drift_pct": 0.1888,
+    "finite": true
+  },
+  "criteria": {
+    "CH1_eff_max_le_3pct": {
+      "value": 0.1214,
+      "threshold": 3.0,
+      "pass": true
+    },
+    "CH1_da_db_spread_le_0.05": {
+      "note": "single档 — spread N/A; da/db recorded for cross-档 comparison",
+      "da": 0.4264,
+      "db": 0.4264,
+      "pass": null
+    },
+    "CH2_nom_max_le_3pct": {
+      "value": 4.649,
+      "threshold": 3.0,
+      "pass": false
+    },
+    "steady_state": {
+      "value": false,
+      "n_steps": 20000,
+      "umax_last_10": [
+        0.009978,
+        0.009978,
+        0.009978,
+        0.009978,
+        0.009978,
+        0.009978,
+        0.009978,
+        0.009978,
+        0.009978,
+        0.009978
+      ],
+      "pass": false
+    },
+    "finite_result": {
+      "value": true,
+      "pass": true
+    }
+  },
+  "overall_verdict": "FAIL"
+}
