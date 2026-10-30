@@ -1,0 +1,82 @@
+{
+  "case": "cavity_natural_convection",
+  "reference": "de Vahl Davis 1983, Ra=1e4, Pr=0.71",
+  "Nu_ref": 2.243,
+  "u_max_ref": 16.178,
+  "v_max_ref": 19.617,
+  "device_evidence": {
+    "torch.sdaa.get_device_name(0)": "/dev/tcaicard6"
+  },
+  "device_type": "sdaa",
+  "triton_interpret": "not set",
+  "note": "Reduced config (nx=32, steps=2000) for tool timeout. Coarse grid → accuracy gates expected to FAIL.",
+  "grids": [
+    {
+      "nx": 32,
+      "steps": 2000,
+      "elapsed_s": 29.62,
+      "nu_grad2": 1.8923251628875732,
+      "nu_left": 1.8914251327514648,
+      "nu_right": 1.8932251930236816,
+      "nu_ref": 2.243,
+      "nu_err_pct": -15.6342,
+      "nu_err_pct_abs": 15.6342,
+      "u_max_nd": 18.103925,
+      "v_max_nd": 20.003754,
+      "u_max_err_pct": 11.9046,
+      "v_max_err_pct": 1.9715,
+      "u_max_err_pct_abs": 11.9046,
+      "v_max_err_pct_abs": 1.9715,
+      "T_min": 0.0,
+      "T_max": 1.0,
+      "tag": "ra1e4_n32_feasibility",
+      "status": "ok"
+    }
+  ],
+  "gates": {
+    "library_entry": {
+      "pass": true,
+      "evidence": "from tensorlbm.thermal import (equilibrium, temperature_equilibrium, ...)"
+    },
+    "direct_observable": {
+      "pass": false,
+      "nu_err_pct_abs": [
+        15.6342
+      ],
+      "u_max_err_pct_abs": [
+        11.9046
+      ],
+      "v_max_err_pct_abs": [
+        1.9715
+      ],
+      "threshold_pct": 3.0,
+      "nu_pass": false,
+      "u_max_pass": false,
+      "v_max_pass": true
+    },
+    "monotone_convergence": {
+      "pass": true,
+      "reason": "only 1 grid (feasibility test)",
+      "nu_err_pct_abs": [
+        15.6342
+      ]
+    },
+    "reference_locked_first": {
+      "pass": true,
+      "evidence": "de Vahl Davis 1983, Nu_ref=2.243, pre-registered 2026-10-20"
+    },
+    "case_readme": {
+      "pass": true,
+      "exists": true,
+      "size_bytes": 5491
+    },
+    "figures": {
+      "pass": true,
+      "figures_dir_exists": true,
+      "figures_json_exists": true
+    }
+  },
+  "wall_clock_s": 30.22,
+  "overall_verdict": "FAIL",
+  "run_error": null
+}
