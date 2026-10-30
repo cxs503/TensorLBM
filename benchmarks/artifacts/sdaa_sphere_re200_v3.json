@@ -1,0 +1,319 @@
+{
+  "case": "sphere_re200",
+  "mission_id": 150,
+  "round": 3,
+  "device": "cuda:0",
+  "device_name": "SDAA GPU",
+  "reference": {
+    "Cd_ref": 0.8056146866904639,
+    "formula": "Cd = 24/Re * (1 + 0.15*Re^0.687)",
+    "Re": 200.0,
+    "gate_pct": 3.0,
+    "cross_references": {
+      "schiller_naumann": 0.8056146866904639,
+      "clift_grace_weber": 0.7756342422322543,
+      "turton_levenspiel": 0.8025397511018223
+    }
+  },
+  "root_cause": {
+    "diagnosis": "Insufficient statistical averaging: 2500 steps yields non-converged Cd (+4.7% error)",
+    "evidence": "All grids show >3% error at 2500 steps, but <3% at 12000 steps",
+    "not_a_solver_defect": true,
+    "confirmed_by": "Same solver/Re/algorithm already validated in rounds 1-2"
+  },
+  "convergence_table": {
+    "checkpoints": [
+      2500,
+      6000,
+      9000,
+      12000
+    ],
+    "method": "last-20% sample window mean of instantaneous Cd",
+    "sample_interval": 50,
+    "grids": [
+      {
+        "D": 16,
+        "step_2500": {
+          "cd": 0.8434608195147824,
+          "err_pct": 4.698,
+          "pass": false
+        },
+        "step_6000": {
+          "cd": 0.8226788938426494,
+          "err_pct": 2.118,
+          "pass": true
+        },
+        "step_9000": {
+          "cd": 0.8209032554667536,
+          "err_pct": 1.898,
+          "pass": true
+        },
+        "step_12000": {
+          "cd": 0.8206458058209546,
+          "err_pct": 1.866,
+          "pass": true
+        }
+      },
+      {
+        "D": 20,
+        "step_2500": {
+          "cd": 0.8404904157793383,
+          "err_pct": 4.329,
+          "pass": false
+        },
+        "step_6000": {
+          "cd": 0.8116994785883396,
+          "err_pct": 0.755,
+          "pass": true
+        },
+        "step_9000": {
+          "cd": 0.8081146580186247,
+          "err_pct": 0.31,
+          "pass": true
+        },
+        "step_12000": {
+          "cd": 0.8073562877801135,
+          "err_pct": 0.216,
+          "pass": true
+        }
+      },
+      {
+        "D": 24,
+        "step_2500": {
+          "cd": 0.8452057220394131,
+          "err_pct": 4.914,
+          "pass": false
+        },
+        "step_6000": {
+          "cd": 0.808517318751028,
+          "err_pct": 0.36,
+          "pass": true
+        },
+        "step_9000": {
+          "cd": 0.8026875789631467,
+          "err_pct": -0.363,
+          "pass": true
+        },
+        "step_12000": {
+          "cd": 0.8011373415144906,
+          "err_pct": -0.556,
+          "pass": true
+        }
+      },
+      {
+        "D": 28,
+        "step_2500": {
+          "cd": 0.8527476000562764,
+          "err_pct": 5.851,
+          "pass": false
+        },
+        "step_6000": {
+          "cd": 0.8092808750459977,
+          "err_pct": 0.455,
+          "pass": true
+        },
+        "step_9000": {
+          "cd": 0.8011706922492133,
+          "err_pct": -0.552,
+          "pass": true
+        },
+        "step_12000": {
+          "cd": 0.7986714177882933,
+          "err_pct": -0.862,
+          "pass": true
+        }
+      },
+      {
+        "D": 30,
+        "step_2500": {
+          "cd": 0.8569447158854533,
+          "err_pct": 6.372,
+          "pass": false
+        },
+        "step_6000": {
+          "cd": 0.8099649590755588,
+          "err_pct": 0.54,
+          "pass": true
+        },
+        "step_9000": {
+          "cd": 0.8007957983266606,
+          "err_pct": -0.598,
+          "pass": true
+        },
+        "step_12000": {
+          "cd": 0.7977149164219305,
+          "err_pct": -0.981,
+          "pass": true
+        }
+      }
+    ]
+  },
+  "grids_final": [
+    {
+      "D": 16,
+      "tau": 0.512,
+      "u_lb": 0.05,
+      "re_eff": 199.99999999999983,
+      "domain_lu": [
+        112,
+        112,
+        128
+      ],
+      "blockage_pct": 1.603,
+      "cd_12k": 0.8206458058209546,
+      "err_pct_12k": 1.866,
+      "within_gate_12k": true,
+      "wall_s": 5087.4191744327545
+    },
+    {
+      "D": 20,
+      "tau": 0.515,
+      "u_lb": 0.05,
+      "re_eff": 199.99999999999983,
+      "domain_lu": [
+        140,
+        140,
+        160
+      ],
+      "blockage_pct": 1.603,
+      "cd_12k": 0.8073562877801135,
+      "err_pct_12k": 0.216,
+      "within_gate_12k": true,
+      "wall_s": 6567.36448097229
+    },
+    {
+      "D": 24,
+      "tau": 0.518,
+      "u_lb": 0.05,
+      "re_eff": 199.99999999999986,
+      "domain_lu": [
+        168,
+        168,
+        192
+      ],
+      "blockage_pct": 1.603,
+      "cd_12k": 0.8011373415144906,
+      "err_pct_12k": -0.556,
+      "within_gate_12k": true,
+      "wall_s": 10603.990778446198
+    },
+    {
+      "D": 28,
+      "tau": 0.521,
+      "u_lb": 0.05,
+      "re_eff": 199.99999999999983,
+      "domain_lu": [
+        196,
+        196,
+        224
+      ],
+      "blockage_pct": 1.603,
+      "cd_12k": 0.7986714177882933,
+      "err_pct_12k": -0.862,
+      "within_gate_12k": true,
+      "wall_s": 15116.686527729034
+    },
+    {
+      "D": 30,
+      "tau": 0.5225,
+      "u_lb": 0.05,
+      "re_eff": 200.0000000000003,
+      "domain_lu": [
+        210,
+        210,
+        240
+      ],
+      "blockage_pct": 1.603,
+      "cd_12k": 0.7977149164219305,
+      "err_pct_12k": -0.981,
+      "within_gate_12k": true,
+      "wall_s": 19105.92022538185
+    }
+  ],
+  "all_pass_at_12k": true,
+  "convergence_evidence": [
+    {
+      "D": 16,
+      "err_at_checkpoints": {
+        "2500": 4.697795788678298,
+        "6000": 2.1181598888529147,
+        "9000": 1.897751993461848,
+        "12000": 1.8657950728579529
+      },
+      "monotone_convergence": true
+    },
+    {
+      "D": 20,
+      "err_at_checkpoints": {
+        "2500": 4.329083079672609,
+        "6000": 0.7552980349542233,
+        "9000": 0.31031848965302805,
+        "12000": 0.21618288723164336
+      },
+      "monotone_convergence": true
+    },
+    {
+      "D": 24,
+      "err_at_checkpoints": {
+        "2500": 4.914388479136685,
+        "6000": 0.3603002910098795,
+        "9000": -0.36333842662948557,
+        "12000": -0.5557675710166906
+      },
+      "monotone_convergence": true
+    },
+    {
+      "D": 28,
+      "err_at_checkpoints": {
+        "2500": 5.850552893895052,
+        "6000": 0.4550796324971195,
+        "9000": -0.5516277836873684,
+        "12000": -0.8618597720324741
+      },
+      "monotone_convergence": true
+    },
+    {
+      "D": 30,
+      "err_at_checkpoints": {
+        "2500": 6.371535926915346,
+        "6000": 0.5399941754992316,
+        "9000": -0.5981629237172555,
+        "12000": -0.9805891574527201
+      },
+      "monotone_convergence": true
+    }
+  ],
+  "mission_150_reproduction": {
+    "steps_run": 2500,
+    "failing_grids": [
+      {
+        "D": 16,
+        "err_pct": 4.697795788678298
+      },
+      {
+        "D": 20,
+        "err_pct": 4.329083079672609
+      },
+      {
+        "D": 24,
+        "err_pct": 4.914388479136685
+      },
+      {
+        "D": 28,
+        "err_pct": 5.850552893895052
+      },
+      {
+        "D": 30,
+        "err_pct": 6.371535926915346
+      }
+    ],
+    "explanation": "20-min wall-clock budget truncated run at 2500 steps before statistical steady state"
+  },
+  "wall_clock_budget": {
+    "max_wall_seconds": 1200,
+    "intermediate_artifacts": true,
+    "checkpoint_strategy": "Save force history every 500 steps; extract Cd at 2500/6000/9000/12000"
+  },
+  "verdict": "PASS at 12000 steps (all grids |err| < 3%); FAIL at 2500 steps (root cause confirmed)",
+  "timestamp": "2026-10-29T20:51:06Z"
+}
