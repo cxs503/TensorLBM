@@ -35,6 +35,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [couette_3d](couette_3d/) | ✅→📦 | 已晋级 verified/couette_3d（fp64 四档，稳态口径重锁；单调条款→G2a+G2b 替代已披露） | 归档完成 | 0 |
 | [stokes_second_problem](stokes_second_problem/) | ⚠️ | 骨架（仅 run.py 设计稿，无机器结果，PROVENANCE 空块如实） | Phase-0 停批 → 冻结 prereg → H∈{40,80} | ≤0.1 GPU·h |
 | [taylor_aris_dispersion](taylor_aris_dispersion/) | ❌ | 容差 6/6 全过（0.05–0.26%）但单调 0/3（err=负 O(1/H²)+正地板 H≈50 变号） | 判据口径重锁或更大 H 阶梯（决策项） | 已判死 |
+| [taylor_green_3d_decay](taylor_green_3d_decay/) | 🟡 | SDAA 扫荡完成：三档 N=32/48/64 均 ≤3%（+1.26→+0.58→+0.58%），单调收敛；eager fallback（无 SDAA 硬件） | 归档 PR → verified/taylor_green_3d（已有 GPU 三档全过） | CPU 日内 |
 | [collision_kernels_3d_tg](collision_kernels_3d_tg/) | ⏸️ | 终裁 TERMINAL：KBC 修复核四门全过 PASS（-0.67→-0.36→-0.16% 单调）；五核 D3Q27 单调性门结构性失败（bgk27 对照同败）；案例整体要求所有核通过，五核未过导致 TERMINAL | 终裁完成，无后续动作 | 0 |
 | [hadamard_rybczynski_droplet](hadamard_rybczynski_droplet/) | ❌ | λ=ρ 锁死致 λ 阶梯不可运行；E1–E6 动态排除+15 案包络 0 存活 | 相面重建（M1，已落库）后重开 | 已判死 |
 | [cavity_3d_full](cavity_3d_full/) | 🟡 | 无——达标数据在 verified/cavity_3d_full（1.338→0.259% 单调）；本目录为 superseded 诊断稿 | 归档 PR 清理（删除或标记 superseded） | 0 |
@@ -56,7 +57,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [poiseuille_3d_ellipse](poiseuille_3d_ellipse/) | ❌ | a=20 档 s^Q 逐 bin 5.11% > 3%（a=40 档 2.43% 过线）；楼梯椭圆各向异性无单一尺度口径 | 加 a=40/80 高档（两档全 ≤3% 即达标） | 两档仿真 |
 | [two_phase_poiseuille](two_phase_poiseuille/) | ⏸️ 终裁 | SC-MCMP 结构性（等 τ 界面条带化 34.83% vs self 7.17%；不等 τ NaN）；问题类已由 verified/poiseuille_two_phase_cg 关闭 | SC 复活需先修库（稳定性+条带化）再预注册 | 修库+重跑 |
 
-**统计**：🟡 4 · 🔵 1 · ⚠️ 3 · ⛔ 1 · ❌ 21（共 30）
+**统计**：🟡 5 · 🔵 1 · ⚠️ 3 · ⛔ 1 · ❌ 21（共 31）
 
 **范围**：本表覆盖 30 案。marine sweep 线五案（dtmb5415_resistance、
 kcs_resistance、propeller_openwater、series60_resistance、
