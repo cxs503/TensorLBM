@@ -1,0 +1,16 @@
+{
+  "device": "sdaa:0",
+  "torch": "2.7.1",
+  "torch_sdaa": "3.1.1a3+gite3971b9",
+  "N": 64,
+  "tau": 0.9,
+  "steps": 100,
+  "wall_sec": 35.73,
+  "gamma_theory": 0.007710628438351061,
+  "gamma_sim": 0.007722020351980908,
+  "err_pct": 0.1477,
+  "R2": 0.999993,
+  "old_err_pct": 8.5904,
+  "old_R2": 0.9788,
+  "fix_confirmed": true
+}

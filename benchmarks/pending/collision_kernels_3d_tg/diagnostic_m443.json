@@ -1,0 +1,104 @@
+{
+  "benchmark": "collision_kernels_3d_tg",
+  "mission_id": 443,
+  "verdict": "HONEST-FAIL",
+  "date": "2026-10-30",
+  "diagnosis": {
+    "kbc_d3q19": {
+      "root_cause": "旧核 bug：熵求解覆盖剪切弛豫，ν_eff 不随 τ 变化",
+      "fix_status": "PR #312 已合入当前代码，SDAA 实测确认修复有效",
+      "fix_evidence_code": [
+        "sigma = 1.0 - 1.0 / tau  # 剪切弛豫因子",
+        "s_relaxed = sigma * s    # 剪切投影按 (1-1/τ) 弛豫",
+        "return feq + s_relaxed + beta.unsqueeze(0) * h  # 正确 KBC 形式"
+      ],
+      "old_results": {
+        "N64_tau09_err_pct": 8.5904,
+        "N64_tau09_R2": 0.978800,
+        "N96_tau11_err_pct": -16.1851,
+        "N96_tau11_R2": 0.999990,
+        "N128_tau13_err_pct": -36.5120,
+        "N128_tau13_R2": 0.999971
+      },
+      "sdaa_verification": {
+        "device": "sdaa:0",
+        "torch_version": "2.7.1",
+        "torch_sdaa_version": "3.1.1a3+gite3971b9",
+        "N": 64,
+        "steps": 100,
+        "results": [
+          {"tau": 0.9, "err_pct": 0.1477, "R2": 0.999993, "old_err_pct": 8.5904, "improvement": "58x"},
+          {"tau": 1.1, "err_pct": 0.0031, "R2": 0.999997, "old_err_pct": -16.1851, "improvement": "5221x"},
+          {"tau": 1.3, "err_pct": -0.0151, "R2": 0.999999, "old_err_pct": -36.5120, "improvement": "2418x"}
+        ],
+        "all_within_3pct": true,
+        "all_R2_ge_0.999": true,
+        "conclusion": "KBC 修复核在 SDAA 上验证通过：误差从 +8.59%/-16.19%/-36.51% 降至 +0.15%/+0.003%/-0.015%，改善 58~5221 倍"
+      },
+      "recommended_action": "使用当前代码重跑 KBC 完整三档阶梯（N=64/96/128，各 2000+ steps），预期四门全过 PASS"
+    },
+    "five_d3q27_kernels": {
+      "root_cause": "协议结构问题：固定 Re + 增加 N → 增加 τ → 增加离散化误差",
+      "evidence": [
+        "五核容差门全过（max |err| = 0.47% ≪ 3%）",
+        "五核指数性门全过（R² ≥ 0.999995 ≫ 0.999）",
+        "bgk27 对照同样不单调（+0.31% → +0.33% → +0.33%）",
+        "证明非核特异，而是 (τ, Re, k) 耦合主导"
+      ],
+      "kernels": {
+        "cumulant_d3q27": {"N64_err": 0.1825, "N96_err": 0.3738, "N128_err": 0.4122, "monotone": false},
+        "cascaded_d3q27": {"N64_err": 0.1826, "N96_err": 0.3738, "N128_err": 0.4122, "monotone": false},
+        "mrt27": {"N64_err": 0.2146, "N96_err": 0.4065, "N128_err": 0.4232, "monotone": false},
+        "trt27": {"N64_err": 0.3777, "N96_err": 0.4328, "N128_err": 0.4713, "monotone": false},
+        "rlbm27": {"N64_err": 0.3118, "N96_err": 0.3688, "N128_err": 0.4030, "monotone": false}
+      },
+      "recommended_actions": [
+        "方案 A：Owner 接受披露放行（容差/指数性 6 倍裕度通过）",
+        "方案 B：改固定 τ 变 Re 协议重预注册（如 Re=12/24/48）"
+      ]
+    }
+  },
+  "gates_summary": {
+    "tolerance_gate": {
+      "threshold": "|err_E| ≤ 3%",
+      "five_d3q27": "PASS (max 0.47%)",
+      "kbc_old": "FAIL (max 36.51%)",
+      "kbc_fixed_sdaa": "PASS (max 0.15%)"
+    },
+    "exponential_gate": {
+      "threshold": "R² ≥ 0.999",
+      "five_d3q27": "PASS (min 0.999995)",
+      "kbc_old": "FAIL (min 0.9788)",
+      "kbc_fixed_sdaa": "PASS (min 0.999993)"
+    },
+    "monotonicity_gate": {
+      "threshold": "|err_E| 严格下降",
+      "five_d3q27": "FAIL (0/6 通过，协议结构问题)",
+      "kbc_old": "PASS",
+      "kbc_fixed_sdaa_N64_100steps": "FAIL (0.15% → 0.003% → 0.015%，但步数不足，需完整阶梯确认)"
+    }
+  },
+  "device_evidence": {
+    "platform": "SDAA",
+    "torch_version": "2.7.1",
+    "torch_sdaa_version": "3.1.1a3+gite3971b9",
+    "device_count": 1,
+    "device_used": "sdaa:0",
+    "tests_run": [
+      {"N": 16, "steps": 100, "purpose": "quick_verification"},
+      {"N": 32, "steps": 50, "purpose": "tau_sweep"},
+      {"N": 64, "steps": 100, "purpose": "full_verification"}
+    ],
+    "performance": "~36s per 100 steps at N=64 on SDAA"
+  },
+  "incomplete_items": [
+    "KBC 完整阶梯重跑（N=64/96/128，各 2000+ steps）：SDAA 速度慢（~36s/100steps@N=64），完整阶梯需 ~3 小时",
+    "五核替代协议测试：需 owner 决策协议修订方向"
+  ],
+  "final_verdict": {
+    "kbc_d3q19_old": "FAIL（实质）",
+    "kbc_d3q19_fixed": "预期 PASS（SDAA N=64 快速验证：err < 0.15%，R² > 0.999993）",
+    "five_d3q27": "HONEST-FAIL（容差/指数性 PASS，单调性 FAIL 为协议结构限制）",
+    "case_overall": "TERMINAL（需 owner 裁决协议修订或接受披露）"
+  }
+}
