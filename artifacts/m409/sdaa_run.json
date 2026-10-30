@@ -1,0 +1,19 @@
+{
+  "device_evidence": {
+    "torch_version": "2.7.1",
+    "torch_sdaa_version": "3.1.1a3+gite3971b9",
+    "device_name": "/dev/tcaicard13",
+    "device_count": 1,
+    "current_device": 0
+  },
+  "cases": {
+    "H29": {
+      "centerline_err_max_over_umax_pct": 0.082,
+      "profile_l2_max_pct": 0.103,
+      "profile_pointwise_max_over_umax_pct": 0.082,
+      "elapsed_s": 70.1,
+      "wall_clock_s": 70.7,
+      "t_end": 12635
+    }
+  }
+}

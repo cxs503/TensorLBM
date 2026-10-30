@@ -1,0 +1,157 @@
+{
+  "mission_id": 409,
+  "case": "startup_poiseuille",
+  "device_evidence": {
+    "torch_version": "2.7.1",
+    "torch_sdaa_version": "3.1.1a3+gite3971b9",
+    "device_name": "/dev/tcaicard13",
+    "device_count": 1,
+    "current_device": 0
+  },
+  "sdaa_run_summary": {
+    "H29": {
+      "centerline_err_max_over_umax_pct": 0.082,
+      "profile_l2_max_pct": 0.103,
+      "profile_pointwise_max_over_umax_pct": 0.082,
+      "elapsed_s": 70.1,
+      "wall_clock_s": 70.7,
+      "t_end": 12635
+    },
+    "H59_partial": {
+      "steps": 17425,
+      "elapsed_s": 89.2,
+      "center_u": 0.029732,
+      "finite": true
+    },
+    "H59": {
+      "centerline_err_max_over_umax_pct": 0.4286206356722324,
+      "profile_l2_max_pct": 0.42892279076097034,
+      "profile_pointwise_max_over_umax_pct": 0.42862058128633845,
+      "elapsed_s": 291.5,
+      "t_end": 52235,
+      "finite": true,
+      "mass_drift_pct": 0.0006878974757602127
+    }
+  },
+  "verified_results": {
+    "H59": {
+      "centerline_err_max_over_umax_pct": 0.2879102122821618,
+      "profile_l2_max_pct": 0.2910038310912985,
+      "profile_pointwise_max_over_umax_pct": 0.28791015789626784,
+      "elapsed_s": 66.6,
+      "t_end": 52235
+    },
+    "H119": {
+      "centerline_err_max_over_umax_pct": 0.16531640209999782,
+      "profile_l2_max_pct": 0.22484521932756535,
+      "profile_pointwise_max_over_umax_pct": 0.15535496643604108,
+      "elapsed_s": 257.3,
+      "t_end": 212435
+    }
+  },
+  "criteria": [
+    {
+      "name": "centerline_err_max_H59",
+      "measured": 0.28791,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "centerline_err_max_H119",
+      "measured": 0.165316,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "profile_l2_max_H59",
+      "measured": 0.291004,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "profile_l2_max_H119",
+      "measured": 0.224845,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "profile_ptp_max_H59",
+      "measured": 0.28791,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "profile_ptp_max_H119",
+      "measured": 0.155355,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "grid_convergence_centerline",
+      "measured": [
+        0.2879102122821618,
+        0.16531640209999782
+      ],
+      "threshold": "monotone decrease",
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "mass_drift_H59",
+      "measured": 0.009993,
+      "threshold": 1.0,
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "mass_drift_H119",
+      "measured": 0.160665,
+      "threshold": 1.0,
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "finite_H59",
+      "measured": true,
+      "threshold": true,
+      "unit": "bool",
+      "pass": true
+    },
+    {
+      "name": "finite_H119",
+      "measured": true,
+      "threshold": true,
+      "unit": "bool",
+      "pass": true
+    },
+    {
+      "name": "centerline_err_max_H59_SDAA",
+      "measured": 0.428621,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "profile_l2_max_H59_SDAA",
+      "measured": 0.428923,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "name": "profile_ptp_max_H59_SDAA",
+      "measured": 0.428621,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    }
+  ],
+  "all_pass": true,
+  "status": "VERIFIED"
+}
