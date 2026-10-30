@@ -1,0 +1,51 @@
+{
+  "mission_id": 355,
+  "case": "acoustics",
+  "category": "verified",
+  "device": "sdaa:0",
+  "device_name": "/dev/tcaicard7",
+  "torch_version": "2.7.1",
+  "benchmark_type": "D2Q9 plane acoustic wave - linear dispersion & attenuation",
+  "physics": "Linear acoustics: plane wave propagation in periodic domain, BGK collision",
+  "reference": "Discrete eigenvalue of linearized collide-then-stream operator",
+  "cases_run": [
+    {"N": 16, "tau": 1.0, "eps": 1e-3, "ny": 8},
+    {"N": 32, "tau": 1.0, "eps": 1e-3, "ny": 8},
+    {"N": 64, "tau": 1.0, "eps": 1e-3, "ny": 8}
+  ],
+  "results": {
+    "N16": {
+      "cpu_c_err_pct": 0.218983,
+      "sdaa_c_err_pct": 0.218983,
+      "cpu_wall_s": 0.347,
+      "sdaa_wall_s": 2.412,
+      "bitwise_match": true,
+      "c_diff": 0.0
+    },
+    "N32": {
+      "cpu_c_err_pct": 0.053930,
+      "sdaa_c_err_pct": 0.053930,
+      "cpu_wall_s": 0.787,
+      "sdaa_wall_s": 5.392,
+      "bitwise_match": true,
+      "c_diff": 0.0
+    },
+    "N64": {
+      "cpu_c_err_pct": 0.013461,
+      "sdaa_c_err_pct": 0.013461,
+      "cpu_wall_s": 6.198,
+      "sdaa_wall_s": 10.763,
+      "bitwise_match": true,
+      "c_diff": 0.0
+    }
+  },
+  "verdict": "PASS",
+  "portability": "bitwise_identical",
+  "max_absolute_diff": 0.0,
+  "notes": "All 3 grid sizes produce bitwise-identical results between CPU (fp64) and SDAA (fp64). Wave speed convergence: N=16 +0.219%, N=32 +0.054%, N=64 +0.013% (monotone, matches CPU reference exactly). SDAA is ~5-7x slower than single-thread CPU for this small 2D benchmark (expected: SDAA optimized for large 3D workloads).",
+  "evidence_files": [
+    "benchmarks/verified/acoustics/result_sdaa.json",
+    "benchmarks/verified/acoustics/run_sdaa.py"
+  ],
+  "timestamp": "2026-01-15T00:00:00Z"
+}
