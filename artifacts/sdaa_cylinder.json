@@ -1,0 +1,58 @@
+{
+  "mission": "sdaa_sweep_cylinder",
+  "device": "sdaa:0",
+  "torch_version": "2.7.1",
+  "results": {
+    "re20_st": {
+      "case": "cylinder_re20_st",
+      "reference": "Schäfer-Turek 2D-1 (Nabh 1998)",
+      "D_cells": 15,
+      "nx": 330,
+      "ny": 61,
+      "n_steps": 20000,
+      "cd": 6.836762,
+      "cl": -0.122846,
+      "ref_cd": 5.57953523384,
+      "ref_cl": 0.010618948146,
+      "err_cd_pct": 22.5328,
+      "err_cl_pct": -1256.852,
+      "elapsed_s": 244.4
+    },
+    "re100": {
+      "case": "cylinder_re100",
+      "reference": "Braza et al. 1986 (JFM 165)",
+      "D": 24,
+      "nx": 960,
+      "ny": 960,
+      "n_steps": 15000,
+      "cd": 1.3531,
+      "st": 0.157,
+      "ref_cd": 1.35,
+      "ref_st": 0.1645,
+      "err_cd_pct": 0.23,
+      "st_err_pct": -4.53,
+      "elapsed_s": 1816.8
+    },
+    "re200": {
+      "case": "cylinder_re200",
+      "reference": "Braza et al. 1986 (JFM 165)",
+      "D": 24,
+      "nx": 960,
+      "ny": 960,
+      "n_steps": 15000,
+      "cd": 1.2319,
+      "st": 0.0567,
+      "ref_cd": 1.33,
+      "ref_st": 0.195,
+      "err_cd_pct": -7.38,
+      "st_err_pct": -70.91,
+      "elapsed_s": 1831.7
+    }
+  },
+  "verdicts": {
+    "re20_st": "FAIL",
+    "re100": "FAIL",
+    "re200": "FAIL"
+  },
+  "overall": "FAIL"
+}
