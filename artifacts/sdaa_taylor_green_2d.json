@@ -1,0 +1,60 @@
+{
+  "case": "taylor_green_2d",
+  "device_evidence": {
+    "device": "sdaa:0",
+    "device_name": "/dev/tcaicard13",
+    "device_count": 1,
+    "total_memory_miB": 16039018496,
+    "torch_version": "2.7.1",
+    "torch_sdaa_version": "3.1.1a3+gite3971b9"
+  },
+  "config": {
+    "n": 128,
+    "re": 100,
+    "u0": 0.05,
+    "dtype": "float32",
+    "steps": 4900,
+    "record_every": 100,
+    "nu": 0.064,
+    "tau": 0.692,
+    "k": 0.04908738521234052
+  },
+  "theory": {
+    "gamma_E_theory": 0.0006168502750680849,
+    "gamma_vel_theory": 0.00030842513753404245
+  },
+  "simulation": {
+    "gamma_E_sim": 0.0006165949802017397,
+    "gamma_vel_sim": 0.0003084028429757256,
+    "err_E_pct": -0.04138684485745478,
+    "err_vel_pct": -0.007228515319822669,
+    "r2": 0.9999996205811765,
+    "mass_drift_rel": 5.221366882324219e-05,
+    "n_samples": 49,
+    "wall_sec": 19.842819452285767
+  },
+  "criteria": {
+    "gamma_E_deviation_pct": {
+      "value": 0.04138684485745478,
+      "threshold": 1.0,
+      "unit": "%",
+      "PASS": true
+    },
+    "gamma_vel_deviation_pct": {
+      "value": 0.007228515319822669,
+      "threshold": 1.0,
+      "unit": "%",
+      "PASS": true
+    },
+    "r2_fit": {
+      "value": 0.9999996205811765,
+      "threshold": 0.999,
+      "unit": "",
+      "PASS": true
+    }
+  },
+  "overall": "PASS",
+  "triton_note": "triton 已安装但未设 TRITON_INTERPRET=1；本案例不直接依赖 triton，仅 torch.compile 间接使用",
+  "compile_mode_effective": "eager",
+  "compile_status": "eager (SDAA torch.compile 后端不完整，使用 eager 路径)"
+}
