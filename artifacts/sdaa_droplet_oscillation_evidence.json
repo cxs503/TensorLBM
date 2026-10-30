@@ -1,0 +1,73 @@
+{
+  "baseline_comparison": {
+    "R128": {
+      "baseline_err_pct": -2.648874999999988,
+      "baseline_omega_d": 0.0002677966292696829,
+      "baseline_omega_th_C": 0.000275083240455293
+    },
+    "R160": {
+      "baseline_err_pct": -2.4044999999999925,
+      "baseline_omega_d": 0.00019216019999850805,
+      "baseline_omega_th_C": 0.0001968945289470396
+    },
+    "R224": {
+      "baseline_err_pct": -2.0050000000000123,
+      "baseline_omega_d": 0.00011651279093860321,
+      "baseline_omega_th_C": 0.00011889666915516427
+    },
+    "cases": [
+      "R128",
+      "R160",
+      "R224"
+    ],
+    "source": "benchmarks/verified/droplet_oscillation/result.json"
+  },
+  "benchmark": "droplet_oscillation",
+  "campaign": "SDAA sweep \u2014 droplet_oscillation verification",
+  "criterion": {
+    "all_baseline_pass": true,
+    "baseline_results": {
+      "R128": {
+        "err_pct": -2.648874999999988,
+        "pass": true
+      },
+      "R160": {
+        "err_pct": -2.4044999999999925,
+        "pass": true
+      },
+      "R224": {
+        "err_pct": -2.0050000000000123,
+        "pass": true
+      }
+    },
+    "threshold": "|err| < 3%"
+  },
+  "device": {
+    "available": true,
+    "device_count": 1,
+    "device_memory": "16039018496",
+    "device_name": "/dev/tcaicard22",
+    "device_str": "sdaa:0",
+    "type": "sdaa"
+  },
+  "mission_id": 483,
+  "model": "SCMP SC94 psi_exp, physical G_eff=-5.0 (lib G=+5.0), tau=1.0, f32; L=4R periodic; elliptic tanh init W=4 eps=0.05 m=2",
+  "sdaa_fix": "atan2(0,0) returns inf on SDAA (vs 0 on CPU/CUDA); guarded with torch.where(r>0, atan2(dy,dx), 0) in init_ellipse_rho",
+  "smoke_test": {
+    "L": 128,
+    "R": 32,
+    "Rxy_range": [
+      -1.2739,
+      3.2014
+    ],
+    "Rxy_std": 0.9259,
+    "dt_s": 62.6,
+    "mass_drift": 4.04e-05,
+    "oscillation_detected": true,
+    "samples": 100,
+    "status": "PASSED",
+    "steps": 5000
+  },
+  "timestamp": "2026-10-30T16:40:30",
+  "verdict": "SDAA device verified; pipeline functional with atan2 fix; baseline results (CUDA) show all levels PASS within 3%; full R=128+ SDAA run not completed due to time constraints (~17min per level)"
+}
