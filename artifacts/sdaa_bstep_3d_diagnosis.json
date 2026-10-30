@@ -1,0 +1,113 @@
+{
+  "case": "bstep_3d",
+  "mission_id": 462,
+  "diagnosis_date": "2026-01-30",
+  "status": "honest-FAIL",
+  "summary": "三维背向台阶(展向周期)案例在SDAA设备上因计算性能不足无法完成验证；Re=100档存在+13.2%系统误差(已知LBM低Re分离泡bounce-back滑移误差)；Re=200/400档为损坏记录(早退/测量失效)。",
+
+  "hardware": {
+    "device_type": "sdaa",
+    "device_name": "/dev/tcaicard8",
+    "torch_sdaa_version": "3.1.1a3+gite3971b9",
+    "torch_version": "2.7.1",
+    "cuda_available": false,
+    "sdaa_available": true,
+    "sdaa_device_count": 1
+  },
+
+  "performance_benchmark": {
+    "grid_H40": {"cells": 2624000, "ms_per_step_sdaa": 117.5, "ms_per_step_rtx3090": 12.0, "slowdown_factor": 9.8, "est_20k_steps_sdaa_s": 2350, "est_20k_steps_rtx3090_s": 250},
+    "grid_H20": {"cells": 328000, "ms_per_step_sdaa": 77.7, "est_50k_steps_sdaa_s": 3883},
+    "grid_H10": {"cells": 40000, "ms_per_step_sdaa": 56.8, "est_100k_steps_sdaa_s": 5681},
+    "agent_timeout_s": 120,
+    "conclusion": "SDAA性能约为RTX 3090的1/10，agent单次工具调用超时120s不足以完成任何有意义的模拟步数(H=40需2350s/20000步)"
+  },
+
+  "existing_results": {
+    "H40_Re100": {
+      "grid": "400x82x80",
+      "xr_h_measured": 3.3955459594726562,
+      "xr_h_reference": 3.0,
+      "error_pct": 13.184865315755209,
+      "steps_run": 20000,
+      "converged": false,
+      "wall_time_s": 250.2,
+      "device": "cuda:0",
+      "spanwise_std": 0.0,
+      "inlet_profile_max_dev": 6.45e-7,
+      "flux_ratio": 1.0003,
+      "mass_drift": -135.25,
+      "xr_series": [1.20, 2.06, 2.79, 3.37, 3.55, 3.52, 3.49, 3.53, 3.50, 3.40],
+      "assessment": "未收敛(converged=false)，X_r仍在漂移；误差+13.2%远超3%阈值"
+    },
+    "H49_Re200": {
+      "grid": "490x101x98",
+      "xr_h_measured": 0.0,
+      "xr_h_reference": 5.5,
+      "error_pct": -100.0,
+      "steps_run": 500,
+      "converged": false,
+      "wall_time_s": 35.5,
+      "device": "cuda:1",
+      "assessment": "仅500步早退，流场未发展，X_r=0为测量失效非物理结果"
+    },
+    "H49_Re400": {
+      "grid": "490x101x98",
+      "xr_h_measured": 0.0,
+      "xr_h_reference": 8.0,
+      "error_pct": -100.0,
+      "steps_run": 30000,
+      "converged": true,
+      "wall_time_s": 761.9,
+      "device": "cuda:0",
+      "collision": "rlbm",
+      "xr_series": [0.0, 0.015, 0.027, 0.0, 0.0, 4.48, 0.0, 0.0, 0.0, 0.0, 0.012, 0.048, 0.0, 0.0, 0.0],
+      "assessment": "X_r序列杂乱(0/4.48/0交替)，再附着检测失效；mass_drift=-7373严重；RLBM在τ=0.528可能不稳定"
+    }
+  },
+
+  "root_causes": [
+    {
+      "id": "RC1",
+      "category": "environment",
+      "severity": "critical",
+      "description": "SDAA设备性能约为RTX 3090的1/10，H=40网格117.5ms/步，20000步需39分钟，远超agent 120s超时限制",
+      "evidence": "benchmark: H=40, 20 steps in 2.35s = 117.5ms/step on sdaa:0 vs ~12ms/step on RTX 3090"
+    },
+    {
+      "id": "RC2",
+      "category": "algorithm",
+      "severity": "high",
+      "description": "Re=100低Re分离泡+13.2%系统误差——LBM bounce-back滑移误差∝(τ-0.5)·Δx，与2D backward_step案例同族(+9~15%)",
+      "evidence": "result_H40.json: xr_h=3.396 vs ref 3.0, err=+13.2%; 2D同族案例已定源为格点伪差"
+    },
+    {
+      "id": "RC3",
+      "category": "protocol",
+      "severity": "high",
+      "description": "Re=200/400档记录损坏：Re=200仅500步早退；Re=400 X_r序列杂乱、mass_drift=-7373",
+      "evidence": "result_re200_H49.json: n_steps_run=500; result_re400_H49.json: xr_series erratic, mass_drift=-7373"
+    },
+    {
+      "id": "RC4",
+      "category": "protocol",
+      "severity": "medium",
+      "description": "无预注册(NOTES)、无参考锁(ref_lock)、无停损/稳态判据——遗留档格式",
+      "evidence": "README.md: '从未按战役预注册协议重跑'"
+    }
+  ],
+
+  "error_table": [
+    {"case": "H40_Re100", "quantity": "X_r/h", "measured": 3.3955, "reference": 3.0, "error_pct": 13.18, "within_3pct": false},
+    {"case": "H49_Re200", "quantity": "X_r/h", "measured": 0.0, "reference": 5.5, "error_pct": -100.0, "within_3pct": false, "note": "early abort, invalid"},
+    {"case": "H49_Re400", "quantity": "X_r/h", "measured": 0.0, "reference": 8.0, "error_pct": -100.0, "within_3pct": false, "note": "measurement failure"}
+  ],
+
+  "recommendations": [
+    "需要CUDA设备(RTX 3090或更好)才能完成验证计算",
+    "Re=100需改用interpolated bounce-back或grid refinement降低滑移误差",
+    "Re=200/400需全新预注册+足够步数(≥100k)重新运行",
+    "建议改用Re=800高Re工况(3D展向结构更有区分度，X_r≈6-7)",
+    "SDAA设备适用于小规模验证(h≤10)或算法开发，不适合全尺寸benchmark"
+  ]
+}
