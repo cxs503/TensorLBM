@@ -1,0 +1,131 @@
+{
+  "case": "couette_2d",
+  "device_evidence": {
+    "device": "sdaa:0",
+    "sdaa_available": true,
+    "sdaa_count": 1,
+    "sdaa_device_name": "/dev/tcaicard10"
+  },
+  "configuration": {
+    "H_list": [
+      40,
+      80
+    ],
+    "tau": 0.8,
+    "U0": 0.05,
+    "collision": "bgk",
+    "min_steps": 10000,
+    "max_steps": 60000,
+    "compile_mode": "eager"
+  },
+  "triton_workaround": "TRITON_INTERPRET=1 not needed: compile_mode='eager' bypasses torch.compile entirely.",
+  "results": [
+    {
+      "H_eff": 40,
+      "ny": 42,
+      "nx": 40,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U0": 0.05,
+      "Re": 19.999999999999996,
+      "Ma": 0.08660254037844388,
+      "min_steps": 10000,
+      "n_steps": 10000,
+      "compile_mode": "eager",
+      "steady": true,
+      "l2_rel_err": 0.00012365799236018502,
+      "max_abs_err": 5.8257579803461246e-06,
+      "max_rel_err_masked_pct": 0.020232588745828447,
+      "u_top_row_num": 0.04937555268406868,
+      "u_top_row_ana": 0.049375,
+      "u_top_row_err_pct": 0.0011193601390938515,
+      "tau_ana": 0.00012500000000000003,
+      "tau_num": 0.0001250010938980641,
+      "tau_err_pct": 0.0008751184512505517,
+      "total_x_momentum": 40.33876037597656,
+      "mass_drift_pct": 0.0007193428606783287,
+      "finite": true,
+      "elapsed_s": 47.3
+    },
+    {
+      "H_eff": 80,
+      "ny": 82,
+      "nx": 80,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U0": 0.05,
+      "Re": 39.99999999999999,
+      "Ma": 0.08660254037844388,
+      "min_steps": 10000,
+      "n_steps": 10000,
+      "compile_mode": "eager",
+      "steady": true,
+      "l2_rel_err": 0.00012292163090932593,
+      "max_abs_err": 8.947700262065816e-06,
+      "max_rel_err_masked_pct": 0.02089242865568622,
+      "u_top_row_num": 0.04968841373920441,
+      "u_top_row_ana": 0.0496875,
+      "u_top_row_err_pct": 0.001838971983706647,
+      "tau_ana": 6.250000000000001e-05,
+      "tau_num": 6.250111456913286e-05,
+      "tau_err_pct": 0.0017833106125478278,
+      "total_x_momentum": 160.678466796875,
+      "mass_drift_pct": 0.0005210317440823075,
+      "finite": true,
+      "elapsed_s": 46.9
+    }
+  ],
+  "criteria": [
+    {
+      "H": 40,
+      "criterion": "max_rel_err_masked_pct <= 3%",
+      "value": 0.020232588745828447,
+      "threshold": 3.0,
+      "pass": true
+    },
+    {
+      "H": 40,
+      "criterion": "steady == True",
+      "value": true,
+      "threshold": true,
+      "pass": true
+    },
+    {
+      "H": 40,
+      "criterion": "finite == True",
+      "value": true,
+      "threshold": true,
+      "pass": true
+    },
+    {
+      "H": 80,
+      "criterion": "max_rel_err_masked_pct <= 3%",
+      "value": 0.02089242865568622,
+      "threshold": 3.0,
+      "pass": true
+    },
+    {
+      "H": 80,
+      "criterion": "steady == True",
+      "value": true,
+      "threshold": true,
+      "pass": true
+    },
+    {
+      "H": 80,
+      "criterion": "finite == True",
+      "value": true,
+      "threshold": true,
+      "pass": true
+    },
+    {
+      "H": "40->80",
+      "criterion": "convergence (error decreases with finer grid)",
+      "value": "0.0202% -> 0.0209%",
+      "threshold": "monotonic decrease",
+      "pass": false
+    }
+  ],
+  "overall_pass": false,
+  "wall_clock_s": 97.0
+}
