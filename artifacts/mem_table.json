@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-10-30T01:21:03.192924+00:00",
+  "device_type": "sdaa",
+  "device_name": "/dev/tcaicard1",
+  "dtype": "float32",
+  "num_warmup": 2,
+  "num_repeat": 5,
+  "power_probe": {
+    "cnmon": false,
+    "sysfs_devfreq": false,
+    "torch_sdaa_power": false,
+    "sysfs_hwmon": true,
+    "attempts": [
+      "cnmon: not found in PATH",
+      "sysfs_devfreq: 0 entries",
+      "torch_sdaa.power: attribute not found",
+      "sysfs_hwmon: /sys/class/hwmon exists"
+    ]
+  },
+  "power_available": false,
+  "power_note": "功耗/降频不可测: cnmon 未安装, /sys/class/devfreq 无条目, torch_sdaa 无 power 接口 (无硬件). 尝试了 cnmon CLI, sysfs devfreq, torch_sdaa power API, /sys/class/hwmon 四种途径.",
+  "measurements": [
+    {
+      "N": 512,
+      "theoretical_mb": 3.0,
+      "peak_mem_mb": 4.0,
+      "mem_source": "torch_device",
+      "avg_time_ms": 0.349,
+      "min_time_ms": 0.321,
+      "max_time_ms": 0.395,
+      "device_type": "sdaa",
+      "device_name": "/dev/tcaicard1"
+    },
+    {
+      "N": 1024,
+      "theoretical_mb": 12.0,
+      "peak_mem_mb": 13.0,
+      "mem_source": "torch_device",
+      "avg_time_ms": 1.77,
+      "min_time_ms": 1.75,
+      "max_time_ms": 1.815,
+      "device_type": "sdaa",
+      "device_name": "/dev/tcaicard1"
+    },
+    {
+      "N": 2048,
+      "theoretical_mb": 48.0,
+      "peak_mem_mb": 49.0,
+      "mem_source": "torch_device",
+      "avg_time_ms": 12.557,
+      "min_time_ms": 12.524,
+      "max_time_ms": 12.643,
+      "device_type": "sdaa",
+      "device_name": "/dev/tcaicard1"
+    },
+    {
+      "N": 4096,
+      "theoretical_mb": 192.0,
+      "peak_mem_mb": 193.0,
+      "mem_source": "torch_device",
+      "avg_time_ms": 98.852,
+      "min_time_ms": 98.812,
+      "max_time_ms": 98.916,
+      "device_type": "sdaa",
+      "device_name": "/dev/tcaicard1"
+    }
+  ]
+}
