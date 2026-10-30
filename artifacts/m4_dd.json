@@ -1,0 +1,87 @@
+{
+  "mission_id": 368,
+  "task": "M4\u00b7P2 \u8de8\u5361\u57df\u5206\u89e3\u6846\u67b6\u56fa\u5316",
+  "timestamp": "2026-10-30T07:03:26",
+  "config": {
+    "grid": [
+      32,
+      16,
+      16
+    ],
+    "n_devices": 4,
+    "n_steps": 20,
+    "tau": 0.6,
+    "lattice": "D3Q19"
+  },
+  "correctness": {
+    "passed": true,
+    "l2_error": 0.0,
+    "max_error": 0.0,
+    "mean_error": 0.0,
+    "single_card_time_ms": 2187.3975209891796,
+    "multi_card_time_ms": 8115.793749690056
+  },
+  "performance": {
+    "passed": true,
+    "speedup": 0.24326611994280456,
+    "efficiency": 0.06081652998570114,
+    "single_card_time_ms": 2000.2758894115686,
+    "multi_card_time_ms": 8222.58311137557,
+    "single_card_mlups": 0.08190870112832167,
+    "multi_card_mlups": 0.019925611913041635,
+    "note": "CPU simulation - real speedup requires multi-GPU hardware"
+  },
+  "device_evidence": [
+    {
+      "rank": 0,
+      "device": "cpu",
+      "nz_local": 8,
+      "ny": 16,
+      "nx": 16,
+      "memory_bytes": 194560,
+      "compute_time_ms": 93.30167593434453,
+      "halo_time_ms": 2.095067035406828,
+      "total_time_ms": 95.39674296975136
+    },
+    {
+      "rank": 1,
+      "device": "cpu",
+      "nz_local": 8,
+      "ny": 16,
+      "nx": 16,
+      "memory_bytes": 194560,
+      "compute_time_ms": 109.46339797228575,
+      "halo_time_ms": 2.4567020125687122,
+      "total_time_ms": 111.92009998485446
+    },
+    {
+      "rank": 2,
+      "device": "cpu",
+      "nz_local": 8,
+      "ny": 16,
+      "nx": 16,
+      "memory_bytes": 194560,
+      "compute_time_ms": 119.45951953530312,
+      "halo_time_ms": 2.329033985733986,
+      "total_time_ms": 121.7885535210371
+    },
+    {
+      "rank": 3,
+      "device": "cpu",
+      "nz_local": 8,
+      "ny": 16,
+      "nx": 16,
+      "memory_bytes": 194560,
+      "compute_time_ms": 117.88759296759963,
+      "halo_time_ms": 1.8934939987957478,
+      "total_time_ms": 119.78108696639538
+    }
+  ],
+  "summary": {
+    "correctness_passed": true,
+    "performance_passed": true,
+    "l2_error": 0.0,
+    "speedup": 0.24326611994280456,
+    "efficiency": 0.06081652998570114
+  }
+}
