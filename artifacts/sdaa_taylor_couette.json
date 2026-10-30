@@ -1,0 +1,80 @@
+{
+  "case": "taylor_couette",
+  "device_evidence": {
+    "torch_version": "2.7.1",
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_device_name": "/dev/tcaicard2",
+    "sdaa_device_properties": "_SDAADeviceProperties(name='/dev/tcaicard2', total_memory=15296MiB)"
+  },
+  "benchmark_result": {
+    "ri": 24,
+    "ro": 48,
+    "n_grid": 99,
+    "Re_i": null,
+    "tau": 0.65,
+    "omega_i": 0.001736111111111111,
+    "n_steps": 2350,
+    "steady": false,
+    "wall_clock_seconds": 15.244002342224121,
+    "device": "sdaa",
+    "min_mult_used": 0.1,
+    "max_mult_used": 0.2,
+    "avg_steps_used": 50,
+    "profile_max_rel_bin_central_pct": 1.7947768189027835,
+    "profile_l2_rel_bin_central_pct": 1.556368527854552,
+    "percell_max_rel_central_pct": 3.526247489798451,
+    "nominal_max_rel_bin_central_pct": 6.73966878005039,
+    "ri_eff": 23.652868105345103,
+    "ro_eff": 45.3411204318438,
+    "delta_i": -0.3471318946548969,
+    "delta_o": -2.658879568156202,
+    "T_if_inner_err_pct": 7.27438818535453,
+    "T_if_outer_err_pct": 26.083078217708632,
+    "T_fw_outer_err_pct": -26.48205782213649,
+    "T_if_balance_pct": 33.357466403063164,
+    "T_lw_inner_ratio_disclosed": 2.2295086110960227,
+    "T_lw_outer_ratio_disclosed": -1.5890899008024209,
+    "M_ref_from_Bfit": 0.8384432857338626
+  },
+  "criteria_gates": {
+    "profile_max_le_3pct": {
+      "value": 1.7947768189027835,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    "profile_l2_le_3pct": {
+      "value": 1.556368527854552,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    "torque_crosscheck_all_within_3pct": {
+      "values": {
+        "T_if_inner_err_pct": 7.27438818535453,
+        "T_if_outer_err_pct": 26.083078217708632,
+        "T_fw_outer_err_pct": -26.48205782213649,
+        "T_if_balance_pct": 33.357466403063164
+      },
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": false
+    },
+    "steady_state_reached": {
+      "value": false,
+      "pass": false
+    },
+    "wall_clock_le_20min": {
+      "value": 15.244002342224121,
+      "threshold": 1200.0,
+      "unit": "seconds",
+      "pass": true
+    },
+    "OVERALL": {
+      "pass": false
+    }
+  },
+  "verdict": "FAIL",
+  "notes": "Reduced step counts used for SDAA testing (min_mult=0.1, max_mult=0.2, avg_steps=50). Full benchmark requires min_mult=3.5, max_mult=10.0, avg_steps=1000 (~40k steps). With reduced steps, simulation may not fully converge, so some criteria may FAIL. This demonstrates SDAA functionality, not production-quality convergence."
+}
