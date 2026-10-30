@@ -275,6 +275,8 @@ def run_grid(
     sponge_width_H: float,
     prestream_bb: bool,
     x_step: int = X_STEP,
+    checkpoint_dir: str | None = None,
+    resume: bool = False,
 ) -> dict:
     ny = 2 * m + 1
     H = ny - 1  # = 2m
@@ -297,12 +299,22 @@ def run_grid(
         sigma = torch.zeros((ny, nx), device=device)
 
     # 初值: 上游抛物线, 下游 ~ u_in/2 (下游均值), 减小启动瞬态
-    rho0 = torch.ones((ny, nx), device=device)
-    ux0 = torch.zeros((ny, nx), device=device)
-    ux0[:, :x_step] = u_prof.view(ny, 1)
-    ux0[:, x_step:] = u_in / 2.0
-    ux0[solid] = 0.0
-    f = equilibrium(rho0, ux0, torch.zeros_like(ux0))
+    start_step = 0
+    ckpt_path = None
+    if checkpoint_dir:
+        ckpt_path = Path(checkpoint_dir) / f"ckpt_m{m}.pt"
+        if resume and ckpt_path.exists():
+            ckpt = torch.load(ckpt_path, weights_only=True)
+            f = ckpt["f"].to(device)
+            start_step = ckpt["step"]
+            print(f"[checkpoint] resumed m={m} from step {start_step}", flush=True)
+    if start_step == 0:
+        rho0 = torch.ones((ny, nx), device=device)
+        ux0 = torch.zeros((ny, nx), device=device)
+        ux0[:, :x_step] = u_prof.view(ny, 1)
+        ux0[:, x_step:] = u_in / 2.0
+        ux0[solid] = 0.0
+        f = equilibrium(rho0, ux0, torch.zeros_like(ux0))
 
     collide = {"mrt": collide_mrt, "rlbm": collide_rlbm}[collision]
     opp = OPPOSITE.to(device)
@@ -355,7 +367,7 @@ def run_grid(
     prev_win_x1: float | None = None
     stable_hits = 0
 
-    for step in range(1, steps + 1):
+    for step in range(start_step + 1, steps + 1):
         f = step_fn(f)
         # 采集近壁 K 行 (多行剪应力剖面)
         if step % avg_stride == 0:
@@ -370,6 +382,11 @@ def run_grid(
             acc_up += s_up
             n_acc += 1
 
+        # Periodic checkpoint save (every 4000 steps)
+        if ckpt_path and step % 4000 == 0:
+            torch.save({"f": f.cpu(), "step": step}, ckpt_path)
+            print(f"[checkpoint] periodic save at step {step}", flush=True)
+        
         if step % out_interval == 0 or step == steps:
             rho, ux, uy = macroscopic(f)
             mm = measure_profile(ux, solid, x_step, ny, m, K, lo_rows, w_lo, up_rows, w_up)
@@ -423,6 +440,12 @@ def run_grid(
             if plateau and step >= min_steps:
                 print(f"[m={m}] plateau reached at step={step}", flush=True)
                 break
+
+    # Save checkpoint
+    if ckpt_path:
+        Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
+        torch.save({"f": f.cpu(), "step": steps}, ckpt_path)
+        print(f"[checkpoint] saved m={m} at step {steps} -> {ckpt_path}", flush=True)
 
     elapsed = time.time() - t0
     if not bool(torch.isfinite(f).all().item()):
@@ -509,6 +532,8 @@ def main() -> None:
     ap.add_argument("--device", default=None)
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--out", default="")
+    ap.add_argument("--checkpoint-dir", default=None, help="Directory for checkpoint files")
+    ap.add_argument("--resume", action="store_true", help="Resume from checkpoint if available")
     add_compile_mode_arg(ap)
     args = ap.parse_args()
 
@@ -560,6 +585,8 @@ def main() -> None:
             args.sponge_peak,
             args.sponge_width_H,
             not args.no_prestream_bb,
+            checkpoint_dir=args.checkpoint_dir,
+            resume=args.resume,
         )
         grids[str(m)] = g
         if out:

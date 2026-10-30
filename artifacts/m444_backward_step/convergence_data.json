@@ -1,0 +1,41 @@
+{
+  "convergence_data": [
+    {"step": 1000, "X1_H_win": 0.5195, "X1_H_inst": 0.8905},
+    {"step": 2000, "X1_H_win": 0.7946, "X1_H_inst": 0.9138},
+    {"step": 3000, "X1_H_win": 0.8950, "X1_H_inst": 0.3469},
+    {"step": 4000, "X1_H_win": 0.9797, "X1_H_inst": 0.4968},
+    {"step": 5000, "X1_H_win": 1.1724, "X1_H_inst": 1.5959},
+    {"step": 6000, "X1_H_win": 0.4106, "X1_H_inst": 1.7605},
+    {"step": 7000, "X1_H_win": 1.5664, "X1_H_inst": 1.9154},
+    {"step": 8000, "X1_H_win": 1.7470, "X1_H_inst": 2.0754},
+    {"step": 10000, "X1_H_win": 2.2227, "X1_H_inst": 2.3592},
+    {"step": 12000, "X1_H_win": 2.3349, "X1_H_inst": 2.5714},
+    {"step": 14000, "X1_H_win": 2.6782, "X1_H_inst": 2.7899},
+    {"step": 16000, "X1_H_win": 2.7672, "X1_H_inst": 2.9532},
+    {"step": 18000, "X1_H_win": 3.0303, "X1_H_inst": 3.1160},
+    {"step": 20000, "X1_H_win": 3.1034, "X1_H_inst": 3.2618},
+    {"step": 22000, "X1_H_win": 3.3179, "X1_H_inst": 3.3799},
+    {"step": 24000, "X1_H_win": 3.3768, "X1_H_inst": 3.5114},
+    {"step": 26000, "X1_H_win": 3.5570, "X1_H_inst": 3.6021},
+    {"step": 28000, "X1_H_win": 3.6024, "X1_H_inst": 3.7090},
+    {"step": 30000, "X1_H_win": 3.7535, "X1_H_inst": 3.7920},
+    {"step": 32000, "X1_H_win": 3.7893, "X1_H_inst": 3.8712},
+    {"step": 34000, "X1_H_win": 3.9133, "X1_H_inst": 3.9508},
+    {"step": 36000, "X1_H_win": 3.9446, "X1_H_inst": 4.0098},
+    {"step": 38000, "X1_H_win": 4.0112, "X1_H_inst": 4.0804}
+  ],
+  "reference": {
+    "X1_H": 6.10,
+    "source": "Gartling 1990"
+  },
+  "simulation_params": {
+    "m": 16,
+    "H": 32,
+    "nx": 648,
+    "Re": 800,
+    "u_in": 0.06,
+    "tau": 0.5072,
+    "device": "sdaa:0",
+    "speed_s_per_1000_steps": 14.0
+  }
+}

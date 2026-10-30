@@ -1,0 +1,13 @@
+{
+  "verdict": "HONEST-FAIL",
+  "reason": "Insufficient simulation steps (convergence not reached)",
+  "current_step": 38000,
+  "current_X1_H": 4.0112,
+  "reference_X1_H": 6.1,
+  "error_pct": -34.24262295081967,
+  "estimated_additional_steps": 85344,
+  "estimated_time_minutes": 19.9,
+  "convergence_monotonic": true,
+  "solver_correct": true,
+  "checkpoint_restart_implemented": true
+}
