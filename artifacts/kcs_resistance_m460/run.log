@@ -1,0 +1,99 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+=== KCS resistance Re=1000 L=48 variant=double collision=mrt steps=20000 device=sdaa:0 ===
+setup: {
+ "Re": 1000.0,
+ "tau": 0.5072,
+ "u_lb": 0.05,
+ "nu_lb": 0.0024000000000000002,
+ "domain_lu": [
+  240,
+  45,
+  43
+ ],
+ "obstacle_cells": 880,
+ "near_wall_cells": 788,
+ "total_cells": 464400,
+ "device": "sdaa:0",
+ "auto_collision": "mrt",
+ "auto_wall_treatment": "bounce_back"
+}
+L_lb=48.0 B_lb=6.720 T_lb=2.254 smooth_area={"S_side": 766.2992051436831, "S_top": 0.0, "S_total": 766.2992051436831}
+[compile_route] kcs_resistance[L48]: mode='default' -> torch.compile(mode='default') + auto eager fallback [sdaa-teco_inductor]
+C1030 14:02:18.660000 97412 site-packages/torch/_inductor/scheduler.py:1204] [0/0] Error in codegen for ComputedBuffer(name='buf7', layout=FixedLayout('sdaa:0', torch.float32, size=[43, 45, 240], stride=[10800, 240, 1]), data=Pointwise(device=device(type='sdaa', index=0), dtype=torch.float32, inner_fn=<function make_pointwise.<locals>.inner.<locals>.inner_fn at 0x7ffe4aab3920>, ranges=[43, 45, 240]))
+not find generator
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[compile_route] !!! torch.compile FAILED on this device -> EAGER FALLBACK
+[compile_route]   step    : kcs_resistance[L48]
+[compile_route]   mode    : 'default' (teco/inductor tag: sdaa-teco_inductor)
+[compile_route]   reason  : InductorError: AssertionError: 
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"
+
+[compile_route]   effect  : this step + every later step run EAGER
+[compile_route]             (bitwise-identical to --compile-mode eager)
+[compile_route]   detail  : see compile_route.py docstring, 'Compile-time device support & the automatic eager fallback'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  step 1000/20000  samples=100  Cd_last=0.055853  elapsed=78s
+  step 2000/20000  samples=200  Cd_last=0.053879  elapsed=147s
+  step 3000/20000  samples=300  Cd_last=0.053734  elapsed=216s
+  step 4000/20000  samples=400  Cd_last=0.053698  elapsed=285s
+  step 5000/20000  samples=500  Cd_last=0.053675  elapsed=354s
+  [checkpoint] step 5000 saved to runs/kcs_resistance_L48_double_mrt/checkpoints/ckpt_step5000.pt
+  step 6000/20000  samples=600  Cd_last=0.053661  elapsed=423s
+  step 7000/20000  samples=700  Cd_last=0.053653  elapsed=491s
+  step 8000/20000  samples=800  Cd_last=0.053650  elapsed=560s
+  step 9000/20000  samples=900  Cd_last=0.053648  elapsed=629s
+  step 10000/20000  samples=1000  Cd_last=0.053647  elapsed=697s
+  [checkpoint] step 10000 saved to runs/kcs_resistance_L48_double_mrt/checkpoints/ckpt_step10000.pt
+  step 11000/20000  samples=1100  Cd_last=0.053647  elapsed=766s
+  step 12000/20000  samples=1200  Cd_last=0.053646  elapsed=834s
+  step 13000/20000  samples=1300  Cd_last=0.053646  elapsed=903s
+  step 14000/20000  samples=1400  Cd_last=0.053646  elapsed=971s
+  step 15000/20000  samples=1500  Cd_last=0.053646  elapsed=1040s
+  [checkpoint] step 15000 saved to runs/kcs_resistance_L48_double_mrt/checkpoints/ckpt_step15000.pt
+  step 16000/20000  samples=1600  Cd_last=0.053646  elapsed=1109s
+  step 17000/20000  samples=1700  Cd_last=0.053646  elapsed=1177s
+  step 18000/20000  samples=1800  Cd_last=0.053646  elapsed=1246s
+  step 19000/20000  samples=1900  Cd_last=0.053646  elapsed=1314s
+  step 20000/20000  samples=2000  Cd_last=0.053646  elapsed=1383s
+  [checkpoint] step 20000 saved to runs/kcs_resistance_L48_double_mrt/checkpoints/ckpt_step20000.pt
+run finished: completed in 1383s (69.1 ms/step) effective='eager' status='eager_fallback'
+{
+ "Cd_pressure_legacy": 0.0140646454981816,
+ "Cd_friction_legacy": 0.041943362036690225,
+ "Cd_total_legacy": 0.056008007534871826,
+ "Cf_ref_Blasius": 0.04199504732703608,
+ "error_pct_total_legacy_vs_Blasius": 33.36812576661704,
+ "convergence_windows": {
+  "25%": 0.05949,
+  "50%": 0.057753,
+  "75%": 0.056012,
+  "100%": 0.056008
+ },
+ "steady_state": {
+  "steady_start_frac": 0.5,
+  "steady_start_sample": 1000,
+  "steady_end_sample": 2000,
+  "window_length_samples": 1000,
+  "Cd_pressure": 0.0140646454981816,
+  "Cd_friction": 0.041943362036690225,
+  "Cd_total": 0.056008007534871826,
+  "window_Cd_totals": [
+   0.05600843,
+   0.05600782,
+   0.05600778
+  ],
+  "max_drift_pct": 0.0012,
+  "converged": true,
+  "convergence_tol_pct": 1.0,
+  "err_pct_Cf_vs_Blasius": -0.1231,
+  "err_pct_Cp_vs_Blasius": 33.4912,
+  "err_pct_Cd_total_vs_Blasius": 33.3681
+ },
+ "verdict": "HONEST-FAIL"
+}
+results written to runs/kcs_resistance_L48_double_mrt/result.json
+RESULT [steady] Cd_p=0.014065 Cd_f=0.041943 Cd_tot=0.056008 (ref 0.041995) err_Cf=-0.12% err_Cp=+33.49% err_tot=+33.37% drift=0.00% converged=True verdict=HONEST-FAIL

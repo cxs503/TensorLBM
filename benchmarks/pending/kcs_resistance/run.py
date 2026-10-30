@@ -35,10 +35,28 @@ Force post-processing reuses the common modules
 the wetted-area reference, and the whole time-stepping chain is routed
 through benchmarks/compile_route.route_step (verified-benchmark standard).
 
+Convergence protocol (m460 revision)
+-------------------------------------
+Previous runs (1500 steps) showed Cf within 3% of Blasius but Cd_total
++62.6% — diagnosed as transient pollution, not algorithm error.  This
+revision implements:
+
+  1. Steady-state window: skip the first ``--steady-start-frac`` fraction
+     of the force log as transient; time-average only over the remainder.
+  2. Three-window convergence check: divide the steady-state portion into
+     3 equal sub-windows; report per-window Cd and the max pairwise drift.
+     Convergence = max drift < ``--convergence-tol`` (default 1%).
+  3. Separate reporting: Cf (friction), Cp (pressure/form), Cd_total with
+     individual errors vs Blasius Cf_ref.
+  4. If converged Cd_total still >3%: report HONEST-FAIL with grid-evidence
+     note; do NOT relax criteria.
+
 Usage:
   python run.py [--resolution 96] [--steps 20000] [--device sdaa:0]
                 [--variant double|half] [--collision mrt]
                 [--friction mix50] [--out DIR] [--compile-mode default]
+                [--steady-start-frac 0.5] [--convergence-tol 0.01]
+                [--checkpoint-interval 5000] [--resume DIR]
 """
 
 from __future__ import annotations
@@ -132,13 +150,19 @@ def smooth_side_area(L_lb: float, B_lb: float, T_lb: float) -> float:
     Surface r(xi,zeta) = (L/2 xi, (B/2) g, T zeta); |r_xi x r_zeta| dxi dzeta
     integrated with Gauss-Legendre quadrature (handles the integrable
     (1-xi^2)^-0.55 / zeta^-0.76 endpoint singularities of the derivatives).
+
+    FIX (m460): zeta ∈ [0,1] but leggauss returns [-1,1] points.
+    Map t ∈ [-1,1] -> zeta = (t+1)/2 ∈ [0,1], weight *= 1/2.
     """
     from numpy.polynomial.legendre import leggauss
 
-    xg, xw = leggauss(3000)
-    zg, zw = leggauss(3000)
-    xi = xg[None, :]
-    zeta = zg[:, None]
+    xg, xw = leggauss(3000)  # xi on [-1, 1] — correct domain
+    tg, tw = leggauss(3000)  # t on [-1, 1] — to be mapped
+    zeta_g = (tg + 1.0) / 2.0  # map to [0, 1]
+    zw = tw / 2.0  # Jacobian of the mapping dt/dzeta = 2 -> weight/2
+
+    xi = xg[None, :]  # shape (1, N)
+    zeta = zeta_g[:, None]  # shape (M, 1)
     g = _kcs_g(xi * np.ones_like(zeta), zeta * np.ones_like(xi))
     # partials
     xi_c = np.clip(xi, -1.0, 1.0)
@@ -149,7 +173,7 @@ def smooth_side_area(L_lb: float, B_lb: float, T_lb: float) -> float:
     a = B_lb / 2.0
     b = L_lb / 2.0
     jac = np.sqrt((a * g_xi * T_lb) ** 2 + (b * T_lb) ** 2 + (b * a * g_zeta) ** 2)
-    # merge the two 1-D weight vectors
+    # merge the two 1-D weight vectors (xi weight × zeta weight)
     w = zw[:, None] * xw[None, :]
     return float((jac * w).sum())
 
@@ -162,8 +186,12 @@ def smooth_wetted_area(variant: str, L_lb: float, B_lb: float, T_lb: float) -> d
         # wall in the single-phase half-body model: no free surface)
         from numpy.polynomial.legendre import leggauss
 
-        zg, zw = leggauss(3000)
-        a_top = (B_lb * L_lb / 2.0) * float((np.clip(1.0 - zg**2, 0.0, 1.0) ** 0.45 * zw).sum())
+        xg, xw = leggauss(3000)
+        # Waterplane half-beam integral: ∫ (B/2)(1-xi^2)^0.45 dxi over [-1,1]
+        # This is already on [-1,1] so no mapping needed.
+        a_top = (B_lb * L_lb / 2.0) * float(
+            (np.clip(1.0 - xg**2, 0.0, 1.0) ** 0.45 * xw).sum()
+        )
         return {"S_side": 2.0 * s_one, "S_top": a_top, "S_total": 2.0 * s_one + a_top}
     # double body: below-WL hull + its mirror (two halves, two sides each)
     return {"S_side": 4.0 * s_one, "S_top": 0.0, "S_total": 4.0 * s_one}
@@ -210,8 +238,6 @@ class KCSEngine(GeneralSimEngine):
         self._T_lb = T_lb
 
     def _geometry_bounding_box(self):
-        # hull bbox in physical units: bow at x=0, centred on y, keel at z=0.
-        # For the double body the height is 2*T.
         H = KCS_T_M if self._variant == "half" else 2.0 * KCS_T_M
         return (0.0, KCS_LPP_M, -KCS_BWL_M / 2.0, KCS_BWL_M / 2.0, 0.0, H)
 
@@ -221,8 +247,12 @@ class KCSEngine(GeneralSimEngine):
         )
 
 
-def run_engine_routed(engine, compile_mode):
-    """Drive the engine's time-stepping chain through compile_route (as suboff)."""
+def run_engine_routed(engine, compile_mode, checkpoint_interval=0, checkpoint_dir=None):
+    """Drive the engine's time-stepping chain through compile_route (as suboff).
+
+    Supports optional checkpointing: every ``checkpoint_interval`` steps, save
+    the distribution function and force log to ``checkpoint_dir``.
+    """
     sol = engine.config.solver
     out = engine.config.output
 
@@ -276,6 +306,16 @@ def run_engine_routed(engine, compile_mode):
             engine._sample_forces(dpS, nu_lb)
         if step % div_check == 0 and not torch.isfinite(engine.f).all():
             break
+        if step % 1000 == 0:
+            n_samples = len(engine.forces_log)
+            cd_last = engine.forces_log[-1]['cd_total'] * dpS if n_samples > 0 else float('nan')
+            print(f'  step {step}/{n_steps}  samples={n_samples}  Cd_last={cd_last:.6f}  elapsed={time.time()-t0:.0f}s', flush=True)
+        # Checkpoint
+        if checkpoint_interval > 0 and checkpoint_dir is not None and step % checkpoint_interval == 0:
+            Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
+            ckpt_path = Path(checkpoint_dir) / f"ckpt_step{step}.pt"
+            torch.save({"f": engine.f.cpu(), "step": step, "forces_log": engine.forces_log}, ckpt_path)
+            print(f"  [checkpoint] step {step} saved to {ckpt_path}", flush=True)
     elapsed = time.time() - t0
     compile_status = compile_status_of(step_fn)
     info = {
@@ -289,6 +329,114 @@ def run_engine_routed(engine, compile_mode):
         "dpS_engine": dpS,
     }
     return info, elapsed
+
+
+def compute_steady_state_averages(
+    forces_log: list,
+    rescale: float,
+    steady_start_frac: float = 0.5,
+    n_windows: int = 3,
+    convergence_tol: float = 0.01,
+) -> dict:
+    """Compute time-averaged Cd over the steady-state window with convergence check.
+
+    Parameters
+    ----------
+    forces_log : list of dicts with keys cd_pressure, cd_friction, cd_total
+    rescale : float, engine dpS / wetted-area dpS
+    steady_start_frac : fraction of log to skip as transient
+    n_windows : number of sub-windows for convergence check
+    convergence_tol : max pairwise drift (relative) for convergence
+
+    Returns
+    -------
+    dict with keys:
+        steady_start_idx, steady_end_idx, window_length,
+        Cd_pressure, Cd_friction, Cd_total,
+        window_Cd_totals (list of per-window averages),
+        max_drift_pct, converged (bool),
+        err_pct_Cf_vs_Blasius, err_pct_Cp_vs_Blasius, err_pct_Cd_total_vs_Blasius
+    """
+    n = len(forces_log)
+    if n == 0:
+        return {
+            "steady_start_idx": 0, "steady_end_idx": 0, "window_length": 0,
+            "Cd_pressure": float("nan"), "Cd_friction": float("nan"), "Cd_total": float("nan"),
+            "window_Cd_totals": [], "max_drift_pct": float("nan"), "converged": False,
+            "err_pct_Cf_vs_Blasius": float("nan"),
+            "err_pct_Cp_vs_Blasius": float("nan"),
+            "err_pct_Cd_total_vs_Blasius": float("nan"),
+        }
+
+    cf_ref = 1.328 / math.sqrt(RE_TARGET)
+
+    # Determine steady-state window
+    start_idx = int(n * steady_start_frac)
+    if start_idx >= n:
+        start_idx = max(0, n - 1)
+    steady = forces_log[start_idx:]
+    ns = len(steady)
+    if ns == 0:
+        steady = forces_log[max(0, n - 1):]
+        ns = len(steady)
+        start_idx = n - ns
+
+    # Full steady-state average
+    cd_p = sum(e["cd_pressure"] for e in steady) / ns * rescale
+    cd_f = sum(e["cd_friction"] for e in steady) / ns * rescale
+    cd_tot = cd_p + cd_f
+
+    # Sub-window averages for convergence check
+    win_size = ns // n_windows
+    window_avgs = []
+    if win_size > 0:
+        for w in range(n_windows):
+            w_start = w * win_size
+            w_end = (w + 1) * win_size if w < n_windows - 1 else ns
+            seg = steady[w_start:w_end]
+            if seg:
+                avg = sum(e["cd_total"] for e in seg) / len(seg) * rescale
+                window_avgs.append(round(avg, 8))
+            else:
+                window_avgs.append(float("nan"))
+    else:
+        window_avgs = [cd_tot]
+
+    # Max pairwise drift
+    valid_avgs = [v for v in window_avgs if not math.isnan(v) and v != 0]
+    max_drift = 0.0
+    if len(valid_avgs) >= 2:
+        for i in range(len(valid_avgs)):
+            for j in range(i + 1, len(valid_avgs)):
+                drift = abs(valid_avgs[i] - valid_avgs[j]) / abs(valid_avgs[i]) * 100.0
+                max_drift = max(max_drift, drift)
+    else:
+        max_drift = float("nan")
+
+    converged = max_drift < convergence_tol * 100.0 if not math.isnan(max_drift) else False
+
+    # Individual errors vs Blasius Cf_ref
+    err_cf = (cd_f - cf_ref) / cf_ref * 100.0
+    err_cp = (cd_p - 0.0) / cf_ref * 100.0 if cf_ref != 0 else float("nan")  # Cp has no Blasius ref; report as fraction of Cf_ref
+    err_tot = (cd_tot - cf_ref) / cf_ref * 100.0
+
+    return {
+        "steady_start_idx": start_idx,
+        "steady_end_idx": n,
+        "window_length_samples": ns,
+        "steady_start_frac": steady_start_frac,
+        "Cd_pressure": cd_p,
+        "Cd_friction": cd_f,
+        "Cd_total": cd_tot,
+        "window_Cd_totals": window_avgs,
+        "max_drift_pct": round(max_drift, 4) if not math.isnan(max_drift) else float("nan"),
+        "converged": converged,
+        "convergence_tol_pct": convergence_tol * 100.0,
+        "err_pct_Cf_vs_Blasius": round(err_cf, 4),
+        "err_pct_Cp_vs_Blasius": round(err_cp, 4),
+        "err_pct_Cd_total_vs_Blasius": round(err_tot, 4),
+        "Cf_ref_Blasius": cf_ref,
+    }
 
 
 def main() -> None:
@@ -307,6 +455,18 @@ def main() -> None:
         "--p0", default="near_wall", choices=["near_wall", "far_field", "domain_avg", "inlet"]
     )
     ap.add_argument("--out", default=None)
+    ap.add_argument(
+        "--steady-start-frac", type=float, default=0.5,
+        help="Fraction of force log to skip as transient (default 0.5)",
+    )
+    ap.add_argument(
+        "--convergence-tol", type=float, default=0.01,
+        help="Max pairwise drift between sub-windows for convergence (default 0.01 = 1%%)",
+    )
+    ap.add_argument(
+        "--checkpoint-interval", type=int, default=0,
+        help="Save checkpoint every N steps (0 = disabled)",
+    )
     add_compile_mode_arg(ap)
     args = ap.parse_args()
     if not args.device:
@@ -402,7 +562,16 @@ def main() -> None:
     )
     print(f"L_lb={L_lb} B_lb={B_lb:.3f} T_lb={T_lb:.3f} smooth_area={json.dumps(area)}", flush=True)
 
-    run_info, elapsed = run_engine_routed(engine, compile_mode)
+    # Verify smooth area is finite (quadrature domain bug guard)
+    if math.isnan(area["S_total"]) or area["S_total"] <= 0:
+        print("ERROR: smooth wetted area is NaN or non-positive — quadrature domain bug!", flush=True)
+        sys.exit(1)
+
+    run_info, elapsed = run_engine_routed(
+        engine, compile_mode,
+        checkpoint_interval=args.checkpoint_interval,
+        checkpoint_dir=str(out_dir / "checkpoints") if args.checkpoint_interval > 0 else None,
+    )
     print(
         f"run finished: {run_info['status']} in {elapsed:.0f}s "
         f"({elapsed / max(run_info['steps'], 1) * 1000:.1f} ms/step) "
@@ -420,13 +589,23 @@ def main() -> None:
     rescale = dpS_engine / dpS_wet  # engine cd -> wetted-area cd
 
     log = engine.forces_log
-    n_win = min(1000, len(log))
-    win = log[-n_win:]
-    cd_p = sum(e["cd_pressure"] for e in win) / n_win * rescale
-    cd_f = sum(e["cd_friction"] for e in win) / n_win * rescale
-    cd_tot = cd_p + cd_f
 
-    # final-field recompute with all friction formulas / p0 methods
+    # ---- Steady-state time-averaging with convergence check ----
+    ss = compute_steady_state_averages(
+        log, rescale,
+        steady_start_frac=args.steady_start_frac,
+        n_windows=3,
+        convergence_tol=args.convergence_tol,
+    )
+
+    # ---- Legacy full-log average (for comparison) ----
+    n_win = min(1000, len(log))
+    win = log[-n_win:] if n_win > 0 else []
+    cd_p_legacy = sum(e["cd_pressure"] for e in win) / max(len(win), 1) * rescale
+    cd_f_legacy = sum(e["cd_friction"] for e in win) / max(len(win), 1) * rescale
+    cd_tot_legacy = cd_p_legacy + cd_f_legacy
+
+    # ---- final-field recompute with all friction formulas / p0 methods ----
     final_checks = {}
     f_final = engine.f
     mesh = engine.mesh
@@ -448,9 +627,8 @@ def main() -> None:
         final_checks[p0] = row
 
     cf_ref = 1.328 / math.sqrt(RE_TARGET)
-    err_tot = (cd_tot - cf_ref) / cf_ref * 100.0
-    err_f_mix50 = (final_checks[args.p0]["cd_f_mix50"] - cf_ref) / cf_ref * 100.0
 
+    # ---- Convergence sequence: Cd_total at 25/50/75/100% of log ----
     conv = {}
     for frac in (0.25, 0.5, 0.75, 1.0):
         k = int(len(log) * frac)
@@ -459,6 +637,18 @@ def main() -> None:
             conv[f"{int(frac * 100)}%"] = round(
                 sum(e["cd_total"] for e in seg) / len(seg) * rescale, 6
             )
+
+    # ---- Verdict ----
+    err_tot_ss = ss["err_pct_Cd_total_vs_Blasius"]
+    err_cf_ss = ss["err_pct_Cf_vs_Blasius"]
+    converged = ss["converged"]
+
+    if converged and abs(err_tot_ss) < 3.0:
+        verdict = "PASS"
+    elif converged and abs(err_tot_ss) >= 3.0:
+        verdict = "HONEST-FAIL"
+    else:
+        verdict = "NOT_CONVERGED"
 
     result = {
         "case": f"KCS parametric hull ({variant}) Re=1000",
@@ -489,14 +679,36 @@ def main() -> None:
         "rescale_engine_to_wetted": rescale,
         "friction_formula_primary": args.friction,
         "p0_method": args.p0,
-        "Cd_pressure": cd_p,
-        "Cd_friction": cd_f,
-        "Cd_total": cd_tot,
-        "Cf_ref_Blasius": cf_ref,
-        "error_pct_total_vs_Blasius": err_tot,
-        "error_pct_friction_mix50_vs_Blasius": err_f_mix50,
-        "convergence_windows": conv,
+        # --- Steady-state averages (primary result) ---
+        "steady_state": {
+            "steady_start_frac": args.steady_start_frac,
+            "steady_start_sample": ss["steady_start_idx"],
+            "steady_end_sample": ss["steady_end_idx"],
+            "window_length_samples": ss["window_length_samples"],
+            "Cd_pressure": ss["Cd_pressure"],
+            "Cd_friction": ss["Cd_friction"],
+            "Cd_total": ss["Cd_total"],
+            "window_Cd_totals": ss["window_Cd_totals"],
+            "max_drift_pct": ss["max_drift_pct"],
+            "converged": ss["converged"],
+            "convergence_tol_pct": ss["convergence_tol_pct"],
+            "err_pct_Cf_vs_Blasius": ss["err_pct_Cf_vs_Blasius"],
+            "err_pct_Cp_vs_Blasius": ss["err_pct_Cp_vs_Blasius"],
+            "err_pct_Cd_total_vs_Blasius": ss["err_pct_Cd_total_vs_Blasius"],
+        },
+        # --- Legacy full-log average (for comparison with m439) ---
+        "Cd_pressure_legacy": cd_p_legacy,
+        "Cd_friction_legacy": cd_f_legacy,
+        "Cd_total_legacy": cd_tot_legacy,
+        "error_pct_total_legacy_vs_Blasius": (cd_tot_legacy - cf_ref) / cf_ref * 100.0,
+        # --- Final-field checks ---
         "final_field_checks": final_checks,
+        "error_pct_friction_mix50_vs_Blasius": (final_checks[args.p0]["cd_f_mix50"] - cf_ref) / cf_ref * 100.0,
+        # --- Convergence sequence ---
+        "convergence_windows": conv,
+        # --- Verdict ---
+        "verdict": verdict,
+        "Cf_ref_Blasius": cf_ref,
         "solid_cells": int(engine.solid.sum().item()),
         "near_wall_cells": int(engine.near.sum().item()),
         "finite": bool(torch.isfinite(engine.f).all().item()),
@@ -510,12 +722,14 @@ def main() -> None:
             {
                 k: result[k]
                 for k in (
-                    "Cd_pressure",
-                    "Cd_friction",
-                    "Cd_total",
+                    "Cd_pressure_legacy",
+                    "Cd_friction_legacy",
+                    "Cd_total_legacy",
                     "Cf_ref_Blasius",
-                    "error_pct_total_vs_Blasius",
+                    "error_pct_total_legacy_vs_Blasius",
                     "convergence_windows",
+                    "steady_state",
+                    "verdict",
                 )
             },
             indent=1,
@@ -524,8 +738,11 @@ def main() -> None:
     )
     print(f"results written to {result_path}", flush=True)
     print(
-        f"RESULT Cd_p={cd_p:.6f} Cd_f={cd_f:.6f} Cd_tot={cd_tot:.6f} "
-        f"(ref {cf_ref:.6f}) err_tot={err_tot:+.2f}%",
+        f"RESULT [steady] Cd_p={ss['Cd_pressure']:.6f} Cd_f={ss['Cd_friction']:.6f} "
+        f"Cd_tot={ss['Cd_total']:.6f} (ref {cf_ref:.6f}) "
+        f"err_Cf={ss['err_pct_Cf_vs_Blasius']:+.2f}% err_Cp={ss['err_pct_Cp_vs_Blasius']:+.2f}% "
+        f"err_tot={ss['err_pct_Cd_total_vs_Blasius']:+.2f}% "
+        f"drift={ss['max_drift_pct']:.2f}% converged={ss['converged']} verdict={verdict}",
         flush=True,
     )
 
