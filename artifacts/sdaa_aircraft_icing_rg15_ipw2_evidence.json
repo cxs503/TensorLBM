@@ -1,0 +1,75 @@
+{
+  "case": "aircraft_icing_rg15_ipw2",
+  "sdaa_evidence": {
+    "torch_version": "2.7.1",
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_device_name": "/dev/tcaicard10",
+    "sdaa_device_properties": {
+      "name": "/dev/tcaicard10",
+      "total_memory_miB": 16039018496
+    },
+    "sdaa_tensor_test": true
+  },
+  "run_config": {
+    "device": "sdaa:0",
+    "mode": "quick",
+    "steps": 500,
+    "warmup": 1000,
+    "shots": 1,
+    "threshold_pct": 3.0
+  },
+  "results": {
+    "3.3_rime": {
+      "case": "3.3_rime",
+      "device": "sdaa:0",
+      "shots": 1,
+      "steps": 500,
+      "warmup": 1000,
+      "wall_s": 94.16263340972364,
+      "beta_pk": 0.8056145906448364,
+      "frozen_kg": 0.0004432664372484742,
+      "closure_error": 1.46646005054939e-16,
+      "n_f_stag": 1.0,
+      "n_ice_cells": 37,
+      "stag_ice_mm": 9.565414680364462,
+      "rendered_over_frozen": 0.9999999999999998
+    }
+  },
+  "comparison": {
+    "3.3_rime": {
+      "beta_pk": {
+        "sim": 0.8056145906448364,
+        "ref": 0.7880398631095886,
+        "error_pct": 2.230183,
+        "pass": true
+      },
+      "frozen_kg": {
+        "sim": 0.0004432664372484742,
+        "ref": 0.00042884286382963675,
+        "error_pct": 3.36337,
+        "pass": false
+      },
+      "n_f_stag": {
+        "sim": 1.0,
+        "ref": 1.0,
+        "error_pct": 0.0,
+        "pass": true
+      },
+      "stag_ice_mm": {
+        "sim": 9.565414680364462,
+        "ref": 1.0144744679569833,
+        "error_pct": 842.893585,
+        "pass": false
+      },
+      "n_ice_cells": {
+        "sim": 37,
+        "ref": 36,
+        "match": false
+      }
+    }
+  },
+  "verdict": "HONEST-FAIL",
+  "timestamp": "2026-10-30T16:45:57Z",
+  "git_hash": "0d417663"
+}
