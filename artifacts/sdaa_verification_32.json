@@ -1,0 +1,57 @@
+{
+  "purpose": "SDAA execution verification (32^3 coarse grid)",
+  "device": {
+    "torch.sdaa.get_device_name(0)": "/dev/tcaicard3",
+    "torch.sdaa.device_count()": 1,
+    "/dev/tcaicard*_count": 32,
+    "/dev/tcaicard*_nodes": [
+      "/dev/tcaicard0",
+      "/dev/tcaicard1",
+      "/dev/tcaicard10",
+      "/dev/tcaicard11",
+      "/dev/tcaicard12",
+      "/dev/tcaicard13",
+      "/dev/tcaicard14",
+      "/dev/tcaicard15",
+      "/dev/tcaicard16",
+      "/dev/tcaicard17",
+      "/dev/tcaicard18",
+      "/dev/tcaicard19",
+      "/dev/tcaicard2",
+      "/dev/tcaicard20",
+      "/dev/tcaicard21",
+      "/dev/tcaicard22",
+      "/dev/tcaicard23",
+      "/dev/tcaicard24",
+      "/dev/tcaicard25",
+      "/dev/tcaicard26",
+      "/dev/tcaicard27",
+      "/dev/tcaicard28",
+      "/dev/tcaicard29",
+      "/dev/tcaicard3",
+      "/dev/tcaicard30",
+      "/dev/tcaicard31",
+      "/dev/tcaicard4",
+      "/dev/tcaicard5",
+      "/dev/tcaicard6",
+      "/dev/tcaicard7",
+      "/dev/tcaicard8",
+      "/dev/tcaicard9"
+    ]
+  },
+  "config": {
+    "nx": 32,
+    "steps": 3000,
+    "re": 1000,
+    "u_lid": 0.06,
+    "tau": 0.50576
+  },
+  "result": {
+    "u_min_3d": -0.20695,
+    "u_min_err_pct": 24.775,
+    "elapsed_s": 80.4,
+    "finite": true
+  },
+  "note": "32^3 grid too coarse for <3% accuracy; demonstrates SDAA execution; authoritative results from 64^3/96^3 in repo",
+  "timestamp": "2026-10-29T20:30:46Z"
+}
