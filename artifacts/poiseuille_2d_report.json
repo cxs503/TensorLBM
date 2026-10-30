@@ -1,0 +1,29 @@
+{
+  "case": "B13_poiseuille_2d",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "boundary": "zou_he_pressure_inlet/outlet + half-way bounce-back (pre-streaming)",
+  "driving": "pressure_difference",
+  "extrap": "none",
+  "convergence": [
+    {
+      "H": 20,
+      "Re": 5.33,
+      "l2_rel_err": 0.011973,
+      "u_max_err_pct": 1.2117,
+      "max_rel_err_pct": 1.2117,
+      "n_steps": 5000,
+      "steady": false
+    },
+    {
+      "H": 60,
+      "Re": 16.0,
+      "l2_rel_err": 0.001914,
+      "u_max_err_pct": 0.1768,
+      "max_rel_err_pct": 0.2234,
+      "n_steps": 40800,
+      "steady": true
+    }
+  ],
+  "verdict": "FAIL"
+}
