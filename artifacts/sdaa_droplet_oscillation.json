@@ -1,0 +1,42 @@
+{
+  "benchmark": "droplet_oscillation",
+  "device_evidence": {
+    "device_type": "sdaa",
+    "device_count": 1,
+    "device_name": "/dev/tcaicard1"
+  },
+  "device_used": "sdaa:0",
+  "radii": [64, 80, 96],
+  "total_wall_time_s": null,
+  "results": {},
+  "criteria": {},
+  "criteria_errors": [],
+  "all_criteria_pass": null,
+  "status": "IN_PROGRESS",
+  "timestamp": "2026-01-XX",
+  "notes": [
+    "SDAA sweep is currently running on device /dev/tcaicard1",
+    "Device evidence confirmed: torch.sdaa.get_device_name(0) = '/dev/tcaicard1'",
+    "Script successfully started and is executing the benchmark on SDAA",
+    "Static Laplace simulation for R=64 is in progress",
+    "Full results will be populated upon completion",
+    "Reduced radii from [128, 160, 224] to [64, 80, 96] for SDAA sweep budget",
+    "Original benchmark takes ~1 hour on RTX 5090",
+    "Criteria validation uses same thresholds as original benchmark",
+    "No Triton dependency - pure PyTorch operations",
+    "R=32 caused NaN issues (droplet too small for model), starting from R=64",
+    "Simulation is running but taking longer than expected - may need more time or larger budget"
+  ],
+  "script_path": "scripts/sdaa_sweep_droplet_oscillation.py",
+  "minimal_script_path": "scripts/sdaa_sweep_droplet_oscillation_minimal.py",
+  "documentation_path": "docs/sdaa_sweep/droplet_oscillation.md",
+  "run_log": "/tmp/sdaa_droplet_minimal.log",
+  "process_id": 3224426,
+  "validation_criteria": {
+    "err_le_3pct_all_levels": "PENDING",
+    "err_monotone_decreasing": "PENDING",
+    "simulated_ge_4_periods_all_levels": "PENDING",
+    "sigma_omega_rel_lt_1pct_all_levels": "PENDING",
+    "mass_drift_lt_2e3_all_levels": "PENDING"
+  }
+}
