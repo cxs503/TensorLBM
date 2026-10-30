@@ -95,6 +95,7 @@ A navigable index of the documentation in this directory, grouped by topic.
 | [phasefield_static_droplet_r1.md](phasefield_static_droplet_r1.md) | Static droplet validation |
 | [phasefield_stream_boundary_contract_r1.md](phasefield_stream_boundary_contract_r1.md) | Phase-field streaming boundary contract |
 | [free_surface_architecture_gaps.md](free_surface_architecture_gaps.md) | **Architecture-gap ledger** for free-surface / multiphase: two structural obstacles (2D SCMP constitutive + 3D Körner channel coupling) with measured evidence, why parameter tuning cannot close them, required architecture changes, the full tried-lever list, and the capability boundary table |
+| [benchmarks/phasefield_water_entry_survey_20261030.md](benchmarks/phasefield_water_entry_survey_20261030.md) | **Phase-field water entry survey + gap analysis**: GitHub has no public phase-field-LBM water-entry implementation (searched 2026-10-30); 10 closest repos compared, the De Rosis & Tafuni (2022) four-case benchmark template with reference numbers, TensorLBM capability matrix (CAC viable, 2D free-energy/Allen-Cahn ruled out), measured probe numbers (hydrostatics 2.1%, wall-phase mass source), and the Wagner wedge anchor inconsistency (4/π) |
 
 ---
 

@@ -14,6 +14,19 @@ companion code (GPL-3.0) was used ONLY as an equation-level oracle
 (controller license line 2026-09-29): no line- or structure-level
 transcription.
 
+W11-WE additions (2026-10-30, water-entry line; all opt-in, defaults
+bit-identical to the W10 frozen version):
+  * ``CACSim(wall_phi_policy=...)`` — ghost phase-field value at solid nodes.
+    ``"freeze"`` (default) keeps whatever the bounce leaves there, i.e. the
+    value seeded at initialisation; ``"neumann"`` overwrites it every step
+    with the mean of the fluid neighbours (zero normal gradient, neutral
+    wetting).  Motivation and machine evidence: the freeze policy pins the
+    ghost to the *initial* interface, which is a standing mass source once
+    gravity moves the interface (pending/phasefield_water_entry/NOTES.md P1).
+  * ``CACSim.apply_boundaries`` / ``stream`` / ``collide`` split out of
+    ``step`` so a moving body can override the post-stream boundary step
+    without re-implementing the collision physics.
+
 Library reuse (worktree /nfs/wangxi/worktrees/bm_w9/src, via sys.path):
   tensorlbm.d3q19            C, W_EXACT64, OPPOSITE
   tensorlbm.boundaries3d     bounce_back_cells_3d  (full-way post-side BB)
@@ -310,6 +323,7 @@ class CACSim:
         gravity_mode: str = "uniform",
         axes: str = "ppp",
         wall_mask: torch.Tensor | None = None,
+        wall_phi_policy: str = "freeze",
         device: torch.device = torch.device("cpu"),
         dtype: torch.dtype = torch.float32,
     ):
@@ -326,6 +340,9 @@ class CACSim:
         self.lam_coef = 4.0 / width
         self.p0 = p0
         self.axes = axes
+        if wall_phi_policy not in ("freeze", "neumann"):
+            raise ValueError(f"unknown wall_phi_policy {wall_phi_policy!r}")
+        self.wall_phi_policy = wall_phi_policy
         self.wall_mask = wall_mask
         self.fluid_mask = (
             torch.ones(shape, dtype=torch.bool, device=device) if wall_mask is None else ~wall_mask
@@ -361,9 +378,67 @@ class CACSim:
         self.phi_u_prev = tuple(phi0 * zero[a] for a in range(3))
         self.phi0 = phi0.clone()
 
+    def set_wall_mask(self, mask: torch.Tensor | None) -> None:
+        """Replace the solid mask and rebuild the derived per-step tensors.
+
+        Needed by the moving-body driver (``tensorlbm.cac_moving_body``), which
+        hands in a new mask every step.  Cleared (solid -> fluid) nodes must be
+        re-initialised by the caller *before* the next collision; this method
+        only re-derives ``fluid_mask`` / ``fm_f`` / ``inv_tau_f``.
+        """
+        self.wall_mask = mask
+        self.fluid_mask = (
+            torch.ones(self.shape, dtype=torch.bool, device=self.device)
+            if mask is None
+            else ~mask
+        )
+        fm = self.fluid_mask
+        self.fm_f = fm.to(self.dtype).unsqueeze(0)
+        self.inv_tau_f = torch.where(
+            fm,
+            torch.full(self.shape, 1.0 / self.tau_f, dtype=self.dtype, device=self.device),
+            torch.zeros(self.shape, dtype=self.dtype, device=self.device),
+        ).unsqueeze(0)
+
     # -- one step ----------------------------------------------------------
 
-    def step(self) -> None:
+    def refresh_solid_ghosts(self, mask: torch.Tensor | None = None) -> None:
+        """Neumann (zero-normal-gradient) ghost phase field at solid nodes.
+
+        Only active with ``wall_phi_policy="neumann"``.  The default
+        ``"freeze"`` policy leaves whatever the bounce-back leaves in the
+        solid, i.e. the phase field seeded at initialisation; once gravity
+        moves the interface that frozen ghost becomes a standing source of
+        mass at every wall (see pending/phasefield_water_entry/NOTES.md).
+        Here each solid node receives the mean of its fluid neighbours and is
+        written back as a rest equilibrium, so the isotropic stencil sees
+        ``dphi/dn = 0`` (neutral wetting, 90 degrees).
+
+        ``mask`` restricts the refresh to a subset of the solid (the moving-body
+        driver passes its *static* walls only: a moving body must take its
+        ghost content from the bounce-back swap, otherwise every step
+        overwrites it with a rest state and injects mass).
+        """
+        if self.wall_phi_policy != "neumann" or self.wall_mask is None:
+            return
+        target = self.wall_mask if mask is None else (self.wall_mask & mask)
+        if not bool(target.any()):
+            return
+        fm = self.fluid_mask
+        phi = self.f.sum(dim=0)
+        zero = torch.zeros(self.shape, dtype=self.dtype, device=self.device)
+        pf = torch.where(fm, phi, zero)
+        cnt = shifted_neighbors(fm.to(self.dtype), axes=self.axes).sum(dim=0)
+        has = target & (cnt > 0)
+        if not bool(has.any()):
+            return
+        ghost = shifted_neighbors(pf, axes=self.axes).sum(dim=0) / cnt.clamp(min=1.0)
+        phi_new = torch.where(has, ghost, phi)
+        feq = f_equilibrium(phi_new, zero, self.wv, self.cf)
+        self.f = torch.where(has.unsqueeze(0), feq, self.f)
+
+    def collide(self) -> None:
+        """CAC h-LBE + HCH g-LBE collision (no streaming, no boundaries)."""
         fm = self.fluid_mask
         phi = self.f.sum(dim=0)  # Eq.(12)
         rho = rho_of_phi(phi, self.rho_l, self.rho_g)  # Eq.(13)
@@ -401,15 +476,26 @@ class CACSim:
         gsrc = g_force(F, u, grad, self.drho, inv_tau_g, self.wv, self.cf)
         self.g = self.g + inv_tau_g * (geq - self.g) + self.fm_f * gsrc
 
+    def stream(self) -> None:
+        """Stream both distributions (periodic or mixed non-wrapping pulls)."""
         if self.axes == "ppp":
             self.f = stream_d3q19_adapter(self.f, boundary="periodic")
             self.g = stream_d3q19_adapter(self.g, boundary="periodic")
         else:
             self.f = stream_mixed(self.f, axes=self.axes)
             self.g = stream_mixed(self.g, axes=self.axes)
+
+    def apply_boundaries(self) -> None:
+        """Post-stream full-way bounce on the static ``wall_mask``."""
         if self.wall_mask is not None:
             self.f = bounce_back_cells_3d(self.f, self.wall_mask)
             self.g = bounce_back_cells_3d(self.g, self.wall_mask)
+
+    def step(self) -> None:
+        self.refresh_solid_ghosts()
+        self.collide()
+        self.stream()
+        self.apply_boundaries()
         self.step_count += 1
 
 

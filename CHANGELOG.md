@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`tensorlbm.cac_moving_body`** — prescribed-motion rigid bodies inside a CAC
+  two-phase simulation: moving-wall bounce-back (Ladd 1994), momentum-exchange
+  force, wedge/disc geometry, fresh-node refill. `cac_lbm.CACSim` gained
+  `set_wall_mask()`, `refresh_solid_ghosts(mask=...)` and a split
+  `collide()/stream()/apply_boundaries()` stepper (the shared `step()` is
+  unchanged in effect: `tests/test_cac_smoke.py` still 10 passed).
+- `tests/test_cac_moving_body.py` (15 tests): static-body phase-mass
+  conservation (guards a 73 % loss), driver-vs-plain-step equivalence, Ladd
+  term restricted to boundary links, Archimedes buoyancy gate
+  (`F_y = rho_l g V`, 2000-step probe gives 1.025), force symmetry.
+- `benchmarks/pending/phasefield_water_entry/`: survey + prereg + `probe/p1_mass_source.py`
+  (10-arm wall/phase mass-source attribution) + `probe/p2_mem_buoyancy.py`
+  (Archimedes gate) + `run_s2_wedge.py` (wedge entry vs Wagner).
+
+### Fixed
+- **`wagner_theory` wedge anchor** (blocker B6): the three literature
+  conventions are now explicit and documented; the anchor is `pi^2/4`
+  (`F = rho V^2 pi^2 c / (4 tan beta) = rho V^3 pi^3 t / (8 tan^2 beta)`),
+  i.e. `dF/dt / (rho V^3) = pi^3 / (8 tan^2 beta)` — **pi^3, not pi^2** as an
+  earlier prereg note said. For `rho = 1000`, `V = 1 m/s`, `t = 2 ms`, the
+  angle ladder 2/3/4 deg now reads 6.357 / 2.822 / 1.585 kN/m; the legacy
+  8.093 kN/m was 4/pi too large and is `deprecated`.
+- **Moving solids no longer destroy phase mass**: the first implementation
+  bounced on the fluid side only and never refreshed the body ghosts, so a
+  static 4x4 column in a uniform `phi = 1` field lost 73 % of the phase
+  integral in 100 steps. The body now uses the same full-way swap as
+  `bounce_back_cells_3d` (mass conserved to < 1e-6 over 120 steps).
+- The Ladd wall-velocity term is applied on **boundary links only** (applying
+  it on interior solid nodes pumped the body interior and diverged by step
+  26), samples `rho` at the fluid node it streams into, and is enabled for
+  the phase distribution too (`move_phase_field=True`): with it off, a
+  8 deg / `V = 0.01` entry produced NaN within 250-300 steps.
+
 ### Changed
 - **Public API is now resolved lazily** (`tensorlbm/__init__.py`, PEP 562):
   the 153 eager `from .x import y` statements are replaced by a
