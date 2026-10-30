@@ -1,0 +1,44 @@
+{
+  "mission_id": 467,
+  "case": "blasius_flat_plate",
+  "verdict": "HONEST-FAIL",
+  "summary": "LBM with standard half-way bounce-back cannot achieve <3% C_f accuracy due to first-order near-wall resolution limitation",
+  "best_result": {
+    "run": "R6p",
+    "grid": "plate400_y1600",
+    "collision": "trt",
+    "cf_sim": 0.028190,
+    "cf_ref": 0.022137,
+    "cf_err_pct": 27.34,
+    "first_cell_rel_err_pct": 27.05,
+    "u_edge_over_U": 1.07974
+  },
+  "error_decomposition": {
+    "edge_velocity_effect_pct": 21.0,
+    "near_wall_resolution_pct": 27.0,
+    "residual_after_edge_correction_pct": 9.23
+  },
+  "correction_methods": {
+    "edge_velocity_correction": {
+      "cf_corr": 0.02418,
+      "cf_err_pct": 9.23,
+      "error_reduction_pp": 18.11
+    }
+  },
+  "root_cause": "Standard half-way bounce-back BC has first-order accuracy near wall; first fluid node at y=0.5 overpredicts velocity by ~27%",
+  "grid_convergence": {
+    "plate200": {"cf_err_pct": 47.33, "first_cell_err_pct": 45.56},
+    "plate400": {"cf_err_pct": 27.38, "first_cell_err_pct": 27.08},
+    "plate400_y1600": {"cf_err_pct": 27.34, "first_cell_err_pct": 27.05}
+  },
+  "recommendations": [
+    "Implement interpolated bounce-back for second-order accuracy",
+    "Or use wall models/wall functions for high-Re flows",
+    "Or use grid stretching with finer resolution near wall",
+    "Current implementation suitable for qualitative analysis only"
+  ],
+  "data_files": [
+    "results/R6p_plate400_y1600_trt.json",
+    "docs/m467_diagnostic_report.md"
+  ]
+}
