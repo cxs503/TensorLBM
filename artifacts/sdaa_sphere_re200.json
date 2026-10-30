@@ -1,0 +1,129 @@
+{
+  "case": "sphere_re200",
+  "device": "sdaa",
+  "device_evidence": {
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "device_name": "/dev/tcaicard11",
+    "torch_sdaa_get_device_name_0": "/dev/tcaicard11"
+  },
+  "config": {
+    "D": 16,
+    "steps": 2500,
+    "lat": 3.0,
+    "up": 3.0,
+    "down": 4.0,
+    "kernel": "sparse",
+    "treat": "hard",
+    "tau": 0.512,
+    "u_lb": 0.05,
+    "sample_interval": 50,
+    "steps_note": "Reduced from 12000 (README rec) to fit 20-min wall clock on sdaa"
+  },
+  "meta_from_run": {
+    "kernel": "sparse",
+    "route": "bfl",
+    "collision": "mrt",
+    "treat": "hard",
+    "D": 16,
+    "lat": 3.0,
+    "up": 3.0,
+    "down": 4.0,
+    "tau": 0.512,
+    "u_lb": 0.05,
+    "nu_lb": 0.0040000000000000036,
+    "re_eff": 199.99999999999983,
+    "steps": 2500,
+    "diverged": false,
+    "domain_lu": [
+      112,
+      112,
+      128
+    ],
+    "dpS": 0.25132741228718347,
+    "R_lb": 8.0,
+    "center_lu": [
+      56.0,
+      56.0,
+      56.0
+    ],
+    "blockage": 0.0160285339468867,
+    "cd_ref_at_re_eff": 0.8056146866904641,
+    "mass_drift_ppm": 7.0844317121895894,
+    "bfl_links": 4530,
+    "q_min": 0.045643944293260574,
+    "q_max": 1.0,
+    "stream": "roll",
+    "wall_s": 1075.9118435382843
+  },
+  "reference": {
+    "formula": "Cd = 24/Re * (1 + 0.15*Re^0.687)",
+    "re": 200.0,
+    "cd_ref": 0.8056146866904639,
+    "gate_pct": 3.0
+  },
+  "computed": {
+    "cd_window": 0.8434608195147824,
+    "cd_prev_window": 0.8551377868108269,
+    "drift_pct": -1.3655071119699773,
+    "n_window": 10,
+    "err_pct": 4.697795788678298,
+    "tau_expected": 0.512,
+    "tau_ok": true,
+    "re_ok": true,
+    "steady_ok": false,
+    "within_gate": false,
+    "cv_closure_rel_pct": null,
+    "cv_closure_window_pct": null,
+    "cv_samples": 0
+  },
+  "judgments": [
+    {
+      "criterion": "Re locked at 200",
+      "value": 199.99999999999983,
+      "expected": 200.0,
+      "tolerance": 1e-06,
+      "pass": true
+    },
+    {
+      "criterion": "tau matches Re=200 law",
+      "value": 0.512,
+      "expected": 0.512,
+      "tolerance": 1e-09,
+      "pass": true
+    },
+    {
+      "criterion": "Steady convergence (|drift| < 0.3%, steps >= 8000, tau_ok)",
+      "value": {
+        "drift_pct": -1.3655071119699773,
+        "steps": 2500,
+        "tau_ok": true
+      },
+      "expected": {
+        "|drift|": "< 0.3%",
+        "steps": ">= 8000",
+        "tau_ok": true
+      },
+      "pass": false
+    },
+    {
+      "criterion": "Cd error vs Schiller-Naumann (gate 3%)",
+      "value": {
+        "cd_window": 0.8434608195147824,
+        "cd_ref": 0.8056146866904639,
+        "err_pct": 4.697795788678298
+      },
+      "expected": "|err| <= 3%",
+      "pass": false
+    },
+    {
+      "criterion": "No divergence",
+      "value": false,
+      "expected": false,
+      "pass": true
+    }
+  ],
+  "wall_clock_s": 1080.1737480163574,
+  "status": "FAIL",
+  "triton_workaround": null
+}
