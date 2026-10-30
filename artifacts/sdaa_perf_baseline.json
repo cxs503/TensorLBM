@@ -1,0 +1,51 @@
+{
+  "case": "cavity_3d_full",
+  "device": "sdaa:0",
+  "device_note": "SDAA:0 exclusive (/dev/tcaicard0)",
+  "device_properties": {
+    "name": "/dev/tcaicard0",
+    "total_memory_mib": 16039018496
+  },
+  "nx": 64,
+  "ny": 64,
+  "nz": 64,
+  "re": 1000,
+  "u_lid": 0.06,
+  "collision": "trt",
+  "lattice": "D3Q19",
+  "steps": 5000,
+  "warmup_steps": 100,
+  "runs": [
+    {
+      "wall_s": 140.403,
+      "mlups": 9.3354,
+      "mem_gib": 0.1819
+    },
+    {
+      "wall_s": 198.7826,
+      "mlups": 6.5937,
+      "mem_gib": 0.1819
+    },
+    {
+      "wall_s": 217.5288,
+      "mlups": 6.0255,
+      "mem_gib": 0.1819
+    },
+    {
+      "wall_s": 351.5806,
+      "mlups": 3.7281,
+      "mem_gib": 0.1819
+    },
+    {
+      "wall_s": 364.6723,
+      "mlups": 3.5942,
+      "mem_gib": 0.1819
+    }
+  ],
+  "cv_pct": 38.81,
+  "median_wall_s": 217.5288,
+  "mean_wall_s": 254.5935,
+  "std_wall_s": 98.8078,
+  "mean_mlups": 5.8554,
+  "cv_pass": false
+}
