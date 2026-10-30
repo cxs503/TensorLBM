@@ -1,0 +1,96 @@
+{
+  "case": "cavity_re100_ghia_sdaa",
+  "description": "方腔流 Re=100，D2Q9 MRT，Ghia(1982) 验证，SDAA 设备运行",
+  "lattice": "D2Q9",
+  "collision": "mrt",
+  "boundary": "V3: pre-streaming 半程反弹(三静止壁) + zou_he_moving_lid(顶盖)",
+  "reference": "Ghia 1982 Re=100 中线表值 + 涡心 (0.6172, 0.7344)",
+  "device_evidence": "/dev/tcaicard11",
+  "device_available": true,
+  "triton_interpret_workaround": true,
+  "triton_interpret_env": "1",
+  "compile_mode": "eager",
+  "grids": {
+    "32": {
+      "nx": 32,
+      "re": 100.0,
+      "u_lid": 0.06,
+      "tau": 0.5576,
+      "steps": 10000,
+      "compile_mode": "eager",
+      "elapsed_s": 54.1,
+      "last_resid": 0.08895614743232727,
+      "u_mid": -0.21110567450523376,
+      "u_mid_ghia": -0.20581,
+      "u_bot": -0.025954750482924283,
+      "v_mid": 0.06321159563958645,
+      "vortex": [
+        0.6338,
+        0.755
+      ],
+      "vortex_ghia": [
+        0.6172,
+        0.7344
+      ],
+      "rmse_u": 0.013767954868834874,
+      "rmse_v": 0.01521203198460614,
+      "max_abs_dev_pct": 2.2479876071810687
+    },
+    "48": {
+      "nx": 48,
+      "re": 100.0,
+      "u_lid": 0.06,
+      "tau": 0.5864,
+      "steps": 10000,
+      "compile_mode": "eager",
+      "elapsed_s": 49.1,
+      "last_resid": 0.049927935004234314,
+      "u_mid": -0.21436350047588348,
+      "u_mid_ghia": -0.20581,
+      "u_bot": -0.03256554470863193,
+      "v_mid": 0.05382013134658334,
+      "vortex": [
+        0.6117,
+        0.7467
+      ],
+      "vortex_ghia": [
+        0.6172,
+        0.7344
+      ],
+      "rmse_u": 0.009252683480367396,
+      "rmse_v": 0.01013296842731061,
+      "max_abs_dev_pct": 1.9034586855173146
+    }
+  },
+  "convergence": {
+    "max_abs_dev_pct": [
+      2.2479876071810687,
+      1.9034586855173146
+    ],
+    "err_decreased": true,
+    "all_under_3pct": true,
+    "pass": true
+  },
+  "criteria": [
+    {
+      "name": "max_abs_dev_pct (32²) <= 3%",
+      "value": 2.2479876071810687,
+      "threshold": 3.0,
+      "pass": true
+    },
+    {
+      "name": "max_abs_dev_pct (48²) <= 3%",
+      "value": 1.9034586855173146,
+      "threshold": 3.0,
+      "pass": true
+    },
+    {
+      "name": "err_decreased (48² < 32²)",
+      "value": true,
+      "threshold": true,
+      "pass": true
+    }
+  ],
+  "total_elapsed_s": 103.7,
+  "verified": true
+}
