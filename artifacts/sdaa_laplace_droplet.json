@@ -1,0 +1,235 @@
+{
+  "benchmark": "laplace_droplet",
+  "case_dir": "benchmarks/verified/laplace_droplet",
+  "device_evidence": {
+    "torch_version": "2.7.1",
+    "device_name": "/dev/tcaicard16",
+    "device_ok": true,
+    "device_error": "",
+    "get_device_name_call": "torch.sdaa.get_device_name(0)"
+  },
+  "config": {
+    "model": "SCMP SC94 psi_exp (psi=1-exp(-rho)), G_eff=-5.0, tau=1.0",
+    "library_G": 5.0,
+    "eos": "p(rho) = rho/3 + G_eff*psi^2/6 (G_eff=-5.0)",
+    "compile_mode": "eager",
+    "triton_interpret": "1",
+    "triton_note": "Eager path does not invoke triton kernels; TRITON_INTERPRET set as precaution for transitive imports.",
+    "sdaa_compile_note": "SDAA teco_inductor (Torch-SDAA) incomplete for LBM step chain; eager mode used (see compile_route.py docstring)."
+  },
+  "criteria": {
+    "laplace": "2D dp=sigma/R, 3D dp=2*sigma/R; per-radius sigma within 3% of fit; R2>=0.999; |intercept|<=3% of slope/Rmax",
+    "thresholds": {
+      "max_dev_sigma_pct": 3.0,
+      "R2_min": 0.999,
+      "intercept_frac_pct_max": 3.0
+    }
+  },
+  "dims": {
+    "2d": {
+      "sigma_eff_fit": 0.05611818042694571,
+      "slope_free": 0.05564212588208953,
+      "intercept_free": 2.349947624746388e-05,
+      "R2": 0.9999995465207815,
+      "max_dev_sigma_pct": 0.801813608489927,
+      "intercept_frac_pct": 0.6521093706501202,
+      "pass_laplace": true,
+      "per_radius": [
+        {
+          "R_init": 15.0,
+          "R_eq": 15.440663999700893,
+          "p_in": 0.03884253899256388,
+          "p_out": 0.0352157490948836,
+          "dp": 0.0036267898976802826,
+          "rho_in": 1.9646416505177815,
+          "rho_out": 0.16081585983435312,
+          "max_u": 0.13846361637115479,
+          "sigma_i": 0.056000044207590825,
+          "dev_sigma_pct": 0.21051327476427226,
+          "step": 6000,
+          "mass_drift": 4.6940730140795475e-05,
+          "converged": true
+        },
+        {
+          "R_init": 25.0,
+          "R_eq": 25.288031978452484,
+          "p_in": 0.03723022465904554,
+          "p_out": 0.035005525996287666,
+          "dp": 0.0022246986627578735,
+          "rho_in": 1.9523704449335735,
+          "rho_out": 0.15911202132701874,
+          "max_u": 0.13947822650273642,
+          "sigma_i": 0.056258250926241586,
+          "dev_sigma_pct": 0.24959914635546218,
+          "step": 8000,
+          "mass_drift": 6.949297083295495e-05,
+          "converged": true
+        },
+        {
+          "R_init": 40.0,
+          "R_eq": 40.34251415142246,
+          "p_in": 0.036285712073246636,
+          "p_out": 0.03488351528843244,
+          "dp": 0.0014021967848141987,
+          "rho_in": 1.9450894196828206,
+          "rho_out": 0.15813379486401877,
+          "max_u": 0.13956592480341592,
+          "sigma_i": 0.05656814363444589,
+          "dev_sigma_pct": 0.801813608489927,
+          "step": 16000,
+          "mass_drift": 0.0001287051961225913,
+          "converged": true
+        }
+      ]
+    },
+    "3d": {
+      "sigma_eff_fit": 0.05523467090841251,
+      "slope_free": 0.05256823793446446,
+      "intercept_free": 0.00019819557568285807,
+      "R2": 0.9997493855853133,
+      "max_dev_sigma_pct": 1.940812952947115,
+      "intercept_frac_pct": 4.010328035288016,
+      "pass_laplace": false,
+      "per_radius": [
+        {
+          "R_init": 10.0,
+          "R_eq": 10.636760060255337,
+          "p_in": 0.046516445775826774,
+          "p_out": 0.0362507589161396,
+          "dp": 0.01026568685968717,
+          "rho_in": 2.02062718073527,
+          "rho_out": 0.16957218448321024,
+          "max_u": 0.13624952733516693,
+          "sigma_i": 0.054596823990104265,
+          "dev_sigma_pct": 1.154794457571574,
+          "step": 4000,
+          "mass_drift": 6.339131639106717e-05,
+          "converged": true
+        },
+        {
+          "R_init": 15.0,
+          "R_eq": 15.424265934258889,
+          "p_in": 0.0430276890595754,
+          "p_out": 0.035771988332271576,
+          "dp": 0.0072557007273038225,
+          "rho_in": 1.995640516281128,
+          "rho_out": 0.16544226308663687,
+          "max_u": 0.13663770258426666,
+          "sigma_i": 0.0559569287786649,
+          "dev_sigma_pct": 1.3076168616085384,
+          "step": 4000,
+          "mass_drift": 6.174740792942363e-05,
+          "converged": true
+        },
+        {
+          "R_init": 20.0,
+          "R_eq": 20.298451419161523,
+          "p_in": 0.041061644752820335,
+          "p_out": 0.03551376610994339,
+          "dp": 0.005547878642876943,
+          "rho_in": 1.9812262852986653,
+          "rho_out": 0.16327262918154398,
+          "max_u": 0.13753436505794525,
+          "sigma_i": 0.056306672555920693,
+          "dev_sigma_pct": 1.940812952947115,
+          "step": 4000,
+          "mass_drift": 6.032748420867351e-05,
+          "converged": true
+        }
+      ]
+    }
+  },
+  "2d_config": {
+    "radii": [
+      15.0,
+      25.0,
+      40.0
+    ],
+    "L": [
+      60,
+      100,
+      160
+    ],
+    "max_steps": 30000,
+    "min_steps": 6000,
+    "sample_interval": 1000
+  },
+  "3d_config": {
+    "radii": [
+      10.0,
+      15.0,
+      20.0
+    ],
+    "L": [
+      40,
+      60,
+      80
+    ],
+    "max_steps": 20000,
+    "min_steps": 4000,
+    "sample_interval": 500,
+    "note": "Reduced radii (R=10,15,20 vs original 15,25,40) due to SDAA wall-clock constraint; original R=40/L=160 would take ~65 min."
+  },
+  "criteria_results": [
+    {
+      "dimension": "2D",
+      "criterion": "per_radius_sigma_consistency",
+      "value": 0.801813608489927,
+      "threshold": "<= 3.0%",
+      "status": "PASS"
+    },
+    {
+      "dimension": "2D",
+      "criterion": "linear_fit_R2",
+      "value": 0.9999995465207815,
+      "threshold": ">= 0.999",
+      "status": "PASS"
+    },
+    {
+      "dimension": "2D",
+      "criterion": "intercept_fraction",
+      "value": 0.6521093706501202,
+      "threshold": "<= 3.0%",
+      "status": "PASS"
+    },
+    {
+      "dimension": "2D",
+      "criterion": "laplace_overall",
+      "value": true,
+      "threshold": "all three above PASS",
+      "status": "PASS"
+    },
+    {
+      "dimension": "3D",
+      "criterion": "per_radius_sigma_consistency",
+      "value": 1.940812952947115,
+      "threshold": "<= 3.0%",
+      "status": "PASS"
+    },
+    {
+      "dimension": "3D",
+      "criterion": "linear_fit_R2",
+      "value": 0.9997493855853133,
+      "threshold": ">= 0.999",
+      "status": "PASS"
+    },
+    {
+      "dimension": "3D",
+      "criterion": "intercept_fraction",
+      "value": 4.010328035288016,
+      "threshold": "<= 3.0%",
+      "status": "FAIL"
+    },
+    {
+      "dimension": "3D",
+      "criterion": "laplace_overall",
+      "value": false,
+      "threshold": "all three above PASS",
+      "status": "FAIL"
+    }
+  ],
+  "overall_pass": false,
+  "status": "FAIL",
+  "wall_clock_s": 1787.9261860400438,
+  "wall_clock_min": 29.798769767334065
+}
