@@ -1,0 +1,131 @@
+{
+  "hard_threshold_pct": 15.0,
+  "target_pct": 3.0,
+  "checks": [
+    {
+      "name": "dam_break",
+      "status": "FAIL",
+      "n_checks": 8,
+      "n_fail_15pct": 6,
+      "n_fail_3pct": 7,
+      "details": [
+        {
+          "case": "coarse_L12",
+          "T": 1.0,
+          "metric": "KO_err_pct",
+          "error_pct": 4.17,
+          "pass_15pct": true,
+          "pass_3pct": false
+        },
+        {
+          "case": "coarse_L12",
+          "T": 1.0,
+          "metric": "MM_err_pct",
+          "error_pct": 102.38,
+          "pass_15pct": false,
+          "pass_3pct": false
+        },
+        {
+          "case": "coarse_L12",
+          "T": 2.0,
+          "metric": "KO_err_pct",
+          "error_pct": 56.76,
+          "pass_15pct": false,
+          "pass_3pct": false
+        },
+        {
+          "case": "coarse_L12",
+          "T": 2.0,
+          "metric": "MM_err_pct",
+          "error_pct": 19.65,
+          "pass_15pct": false,
+          "pass_3pct": false
+        },
+        {
+          "case": "fine_L24",
+          "T": 1.0,
+          "metric": "KO_err_pct",
+          "error_pct": 2.61,
+          "pass_15pct": true,
+          "pass_3pct": true
+        },
+        {
+          "case": "fine_L24",
+          "T": 1.0,
+          "metric": "MM_err_pct",
+          "error_pct": 106.82,
+          "pass_15pct": false,
+          "pass_3pct": false
+        },
+        {
+          "case": "fine_L24",
+          "T": 2.0,
+          "metric": "KO_err_pct",
+          "error_pct": 58.31,
+          "pass_15pct": false,
+          "pass_3pct": false
+        },
+        {
+          "case": "fine_L24",
+          "T": 2.0,
+          "metric": "MM_err_pct",
+          "error_pct": 24.18,
+          "pass_15pct": false,
+          "pass_3pct": false
+        }
+      ]
+    },
+    {
+      "name": "droplet_spreading",
+      "status": "FAIL",
+      "n_checks": 6,
+      "n_fail_15pct": 6,
+      "n_fail_3pct": 6,
+      "details": [
+        {
+          "case": "coarse_R8",
+          "metric": "err_beta_max_pct",
+          "error_pct": 28.8,
+          "pass_15pct": false,
+          "pass_3pct": false
+        },
+        {
+          "case": "coarse_R8",
+          "metric": "err_exponent_pct",
+          "error_pct": 124.68,
+          "pass_15pct": false,
+          "pass_3pct": false
+        },
+        {
+          "case": "coarse_R8",
+          "metric": "err_prefactor_pct",
+          "error_pct": 42.86,
+          "pass_15pct": false,
+          "pass_3pct": false
+        },
+        {
+          "case": "fine_R16",
+          "metric": "err_beta_max_pct",
+          "error_pct": 64.52,
+          "pass_15pct": false,
+          "pass_3pct": false
+        },
+        {
+          "case": "fine_R16",
+          "metric": "err_exponent_pct",
+          "error_pct": 69.91,
+          "pass_15pct": false,
+          "pass_3pct": false
+        },
+        {
+          "case": "fine_R16",
+          "metric": "err_prefactor_pct",
+          "error_pct": 89.9,
+          "pass_15pct": false,
+          "pass_3pct": false
+        }
+      ]
+    }
+  ],
+  "overall_pass": false
+}
