@@ -1,0 +1,14 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+{
+  "timestamp": "2026-10-30T08:45:07Z",
+  "torch_version": "2.7.1",
+  "sdaa_available": true,
+  "sdaa_device_count": 1,
+  "cuda_available": false,
+  "tensorlbm_path": "/root/tp-agent/work/m410/src/tensorlbm/__init__.py",
+  "compute_note": "SDAA device 0 used for simulations; CPU fallback available",
+  "wall_clock_note": "Full 30k-step run: ~100 min on SDAA (plate400_y1600); 500-step diagnostic: ~106s",
+  "git_commit": "0d41766351ae67153544403727859843c981aaf6",
+  "git_branch": "agent/m410"
+}
