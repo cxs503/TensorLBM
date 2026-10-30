@@ -1,0 +1,61 @@
+{
+  "case": "sphere_re100_mem",
+  "device": "sdaa",
+  "device_evidence": {
+    "device_type": "sdaa",
+    "device_count": 1,
+    "current_device": 0,
+    "device_name": "/dev/tcaicard3"
+  },
+  "timestamp": "2026-10-29T13:24:31.141771",
+  "reference": {
+    "cd_ref": 1.0917310910948732,
+    "Re": 100.0,
+    "formula": "24/Re * (1 + 0.15*Re^0.687)"
+  },
+  "runs": {
+    "t1": {
+      "success": false,
+      "wall_time_s": null,
+      "error": "sdaa out of memory. Tried to allocate 990.00 MiB (SDAA 0; 14.94 GiB total capacity; 2.23 GiB already allocated; 1.38 GiB free; 2.29 GiB reserved in total by Torch-SDAA)",
+      "D": 40,
+      "steps": 12000,
+      "tau": 0.56
+    },
+    "t2": {
+      "success": false,
+      "wall_time_s": null,
+      "error": "sdaa out of memory. Tried to allocate 1.72 GiB (SDAA 0; 14.94 GiB total capacity; 2.56 GiB already allocated; 287.97 MiB free; 3.39 GiB reserved in total by Torch-SDAA)",
+      "D": 60,
+      "steps": 24000,
+      "tau": 0.59
+    }
+  },
+  "judgments": null,
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": "Uses tensorlbm.bfl_d3q19, tensorlbm.solver3d, etc."
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "reason": "Runs failed due to OOM",
+      "t1_error": "sdaa out of memory. Tried to allocate 990.00 MiB (SDAA 0; 14.94 GiB total capacity; 2.23 GiB already allocated; 1.38 GiB free; 2.29 GiB reserved in total by Torch-SDAA)",
+      "t2_error": "sdaa out of memory. Tried to allocate 1.72 GiB (SDAA 0; 14.94 GiB total capacity; 2.56 GiB already allocated; 287.97 MiB free; 3.39 GiB reserved in total by Torch-SDAA)"
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": false,
+      "reason": "Runs failed due to OOM"
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "cd_ref": 1.0917310910948732,
+      "formula": "24/Re * (1 + 0.15*Re^0.687)"
+    }
+  ],
+  "all_pass": false
+}
