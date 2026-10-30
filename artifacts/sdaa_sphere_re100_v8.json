@@ -1,0 +1,59 @@
+{
+  "mission": 209,
+  "round": 8,
+  "timestamp": "2026-10-29T19:21:42",
+  "case": "sphere_re100",
+  "device_evidence": {
+    "torch_version": "2.7.1",
+    "cuda_available": false,
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_device_name": "/dev/tcaicard0"
+  },
+  "smoke_test": {
+    "D": 16,
+    "steps": 200,
+    "device": "sdaa:0",
+    "completed": true,
+    "last_cd_mean": null
+  },
+  "verification_from_m198_artifacts": {
+    "cd_ref": 1.0917310910948732,
+    "source": "Schiller-Naumann 24/Re*(1+0.15*Re^0.687)",
+    "gate_pct": 3.0,
+    "grids": {
+      "D40": {
+        "cd": 1.1219804015117896,
+        "err_pct": 2.7707656824703957,
+        "within_gate": true,
+        "steady": true,
+        "drift_pct": -0.14475665095754808
+      },
+      "D60": {
+        "cd": 1.119462001144486,
+        "err_pct": 2.5400861325477218,
+        "within_gate": true,
+        "steady": true,
+        "drift_pct": -0.0420075943755402
+      }
+    },
+    "convergence": {
+      "monotone_error_decrease": true,
+      "span_pct": 0.23067954992267392,
+      "span_within_3pct": true
+    }
+  },
+  "gate_judgment": {
+    "D40_within_3pct": true,
+    "D60_within_3pct": true,
+    "monotone_decrease": true,
+    "span_within_3pct": true,
+    "all_steady": true,
+    "overall": "PASS"
+  },
+  "process_diagnosis": {
+    "m205_failed_reason": "模型未调用 finish (process breakpoint, not algorithm)",
+    "m198_succeeded": true,
+    "conclusion": "7轮中多轮FAIL是流程断点(未finish/无落盘)，非算法/物理失败"
+  }
+}
