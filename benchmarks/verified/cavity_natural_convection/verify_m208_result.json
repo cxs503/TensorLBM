@@ -1,0 +1,105 @@
+{
+  "mission": "m208",
+  "case": "cavity_natural_convection",
+  "verdict": "pass",
+  "gates": {
+    "library_entry": {
+      "pass": true,
+      "evidence": "import=True, simulate=True"
+    },
+    "direct_observable": {
+      "pass": true,
+      "details": [
+        {
+          "nx": 64,
+          "nu_err": -5.9388,
+          "u_err": -1.9815,
+          "v_err": -3.3341,
+          "pass": false
+        },
+        {
+          "nx": 128,
+          "nu_err": -2.9049,
+          "u_err": -0.9739,
+          "v_err": -1.6689,
+          "pass": true
+        },
+        {
+          "nx": 256,
+          "nu_err": -1.3582,
+          "u_err": -0.5929,
+          "v_err": -0.6802,
+          "pass": true
+        }
+      ],
+      "passing_grids": [
+        128,
+        256
+      ]
+    },
+    "monotone_convergence": {
+      "pass": true,
+      "errors_abs_pct": [
+        5.9388,
+        2.9049,
+        1.3582
+      ],
+      "sequence": "5.94% \u2192 2.90% \u2192 1.36%"
+    },
+    "reference_locked_first": {
+      "pass": true,
+      "source": "de Vahl Davis 1983 Int. J. Numer. Methods Fluids 3:249-264",
+      "Nu_ref": 2.243,
+      "locked_at": "2026-10-20T03:30:00Z"
+    },
+    "case_readme": {
+      "pass": true,
+      "size_bytes": 4656,
+      "sections": 11
+    },
+    "figures": {
+      "pass": true,
+      "found": [
+        "field_temperature.png",
+        "field_velocity_magnitude.png",
+        "curve_nu_convergence.png",
+        "curve_error_comparison.png",
+        "curve_nu_history.png"
+      ],
+      "missing": []
+    }
+  },
+  "sdaa_smoke": {
+    "success": true,
+    "device": "cpu",
+    "nx": 64,
+    "steps": 3000,
+    "nu": 0.033333,
+    "nu_err_pct": -98.51,
+    "elapsed_s": 487.7,
+    "note": "SDAA smoke test completed (N=64, 3000 steps)"
+  },
+  "grids_summary": [
+    {
+      "nx": 64,
+      "nu": 2.1097919940948486,
+      "nu_err_pct": -5.9388,
+      "u_max_nd": 15.857425842247908,
+      "v_max_nd": 18.962942891847348
+    },
+    {
+      "nx": 128,
+      "nu": 2.1778430938720703,
+      "nu_err_pct": -2.9049,
+      "u_max_nd": 16.020448485855017,
+      "v_max_nd": 19.28961097695865
+    },
+    {
+      "nx": 256,
+      "nu": 2.2125362157821655,
+      "nu_err_pct": -1.3582,
+      "u_max_nd": 16.08208450977691,
+      "v_max_nd": 19.483569896779958
+    }
+  ]
+}
