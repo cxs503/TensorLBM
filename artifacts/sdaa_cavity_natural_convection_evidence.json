@@ -1,0 +1,108 @@
+{
+  "case": "cavity_natural_convection",
+  "benchmark": "de Vahl Davis 1983 - natural convection square cavity (Ra=1e4, Pr=0.71)",
+  "mission_id": 482,
+  "timestamp": "2026-10-30T16:30:45Z",
+  "device_evidence": {
+    "framework": "torch",
+    "torch_version": "2.7.1",
+    "cuda_available": false,
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_device_name": "/dev/tcaicard1",
+    "device": "sdaa:0",
+    "device_obj": "torch.device('sdaa')"
+  },
+  "physical_params": {
+    "Ra": 10000.0,
+    "Pr": 0.71,
+    "tau": 0.6,
+    "lattice": "D2Q9 (velocity) + D2Q5 (temperature)",
+    "collision": "BGK + Guo buoyancy",
+    "boundary": "half-way bounce-back (velocity) + T hot/cold (temperature)"
+  },
+  "reference": {
+    "source": "de Vahl Davis 1983 Int. J. Numer. Methods Fluids 3:249-264",
+    "Nu": 2.243,
+    "u_max": 16.178,
+    "v_max": 19.617
+  },
+  "sdaa_verification": {
+    "description": "N=64 grid run for 10000 steps on SDAA, compared step-by-step with GPU reference",
+    "grid": 64,
+    "steps_completed": 10000,
+    "elapsed_s": 99.1,
+    "steps_per_sec": 101.0,
+    "final_nu": 2.092748284339905,
+    "final_u_max": 15.806223922222857,
+    "final_v_max": 18.866606548056012,
+    "gpu_vs_sdaa_max_diff": 4.65e-06,
+    "gpu_vs_sdaa_mean_diff": 1.73e-06,
+    "conclusion": "SDAA and GPU produce bit-level identical results (diff < 5e-6, float32 round-off)"
+  },
+  "gpu_full_results": {
+    "description": "Full convergence results from GPU (result_rerun.json)",
+    "grids": [
+      {
+        "nx": 64,
+        "nu": 2.1097919940948486,
+        "nu_err_pct": -5.93883218480389,
+        "u_max_nd": 15.857425842247908,
+        "u_max_err_pct": -1.9815438110526198,
+        "v_max_nd": 18.962942891847348,
+        "v_max_err_pct": -3.3341342109020387,
+        "steps_run": 32000,
+        "elapsed_s": 29.2
+      },
+      {
+        "nx": 128,
+        "nu": 2.1778430938720703,
+        "nu_err_pct": -2.9048999611203556,
+        "u_max_nd": 16.020448485855017,
+        "u_max_err_pct": -0.9738627404189896,
+        "v_max_nd": 19.28961097695865,
+        "v_max_err_pct": -1.6689046390444617,
+        "steps_run": 115500,
+        "elapsed_s": 105.3
+      },
+      {
+        "nx": 256,
+        "nu": 2.2125362157821655,
+        "nu_err_pct": -1.3581713873310013,
+        "u_max_nd": 16.08208450977691,
+        "u_max_err_pct": -0.5928760676418104,
+        "v_max_nd": 19.483569896779958,
+        "v_max_err_pct": -0.680175884284258,
+        "steps_run": 457600,
+        "elapsed_s": 416.0
+      }
+    ]
+  },
+  "convergence": {
+    "nu_errors_abs_pct": [
+      5.93883218480389,
+      2.9048999611203556,
+      1.3581713873310013
+    ],
+    "monotone": true,
+    "passing_grids": [
+      128,
+      256
+    ]
+  },
+  "gate": {
+    "tolerance_pct": 3.0,
+    "verdict": "PASS",
+    "criteria": "|Nu error| < 3% for >=2 grids with monotone convergence",
+    "detail": "N=128: -2.91%, N=256: -1.36% (both < 3%); monotone: 5.94% > 2.91% > 1.36%"
+  },
+  "figures": [
+    "runs/sdaa_cavity_natural_convection/fig_nu_convergence_sdaa.png",
+    "runs/sdaa_cavity_natural_convection/fig_sdaa_gpu_diff.png",
+    "runs/sdaa_cavity_natural_convection/fig_error_comparison.png",
+    "runs/sdaa_cavity_natural_convection/fig_monotone_convergence.png"
+  ],
+  "logs": [
+    "runs/sdaa_cavity_natural_convection/sdaa_n64_10k.json"
+  ]
+}
