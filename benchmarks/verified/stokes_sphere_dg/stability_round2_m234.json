@@ -1,0 +1,46 @@
+{
+  "verification_round": 2,
+  "mission_id": 234,
+  "date": "2026-10-29",
+  "agent": "m234",
+  "verdict": "PASS",
+  "checks": {
+    "L1_md5_integrity": {
+      "reference_table.json": {"actual": "af32757f9398e3f85b2bd0022c7a8efd", "expected": "af32757f9398e3f85b2bd0022c7a8efd", "match": true},
+      "prereg.md": {"actual": "db0ffc4342ecc1db42c73a66f38cb925", "expected": "db0ffc4342ecc1db42c73a66f38cb925", "match": true}
+    },
+    "L2_verify_recompute": {
+      "tool": "verify.py",
+      "main_gate_all_pass": true,
+      "s_gates_all_pass": true,
+      "convergence_gate_all_pass": true,
+      "wall_total_h": 40.12,
+      "budget_limit_h": 46.0,
+      "budget_pass": true,
+      "OVERALL": "PASS",
+      "tiers_recomputed": 12,
+      "tiers_passing": 12,
+      "worst_err_pct": -2.88,
+      "worst_tier": "phi0p02_R8_tau1p0"
+    },
+    "L3_codepath_rerun": {
+      "tier": "phi0p005_R8_tau1p0",
+      "steps_run": 10,
+      "device": "cpu",
+      "K_step10": 1.4378894529,
+      "U_sup_step10": 1.031296533057e-03,
+      "F_ME_step10": 1.915874543508e-01,
+      "mass_drift": 3.82e-10,
+      "all_finite": true,
+      "physically_reasonable": true,
+      "note": "10-step sanity check; full rerun requires GPU (~18h on CPU for smallest tier)"
+    }
+  },
+  "conclusion": "stokes_sphere_dg maintains VERIFIED status. All 12 tiers pass independent re-judgment. MD5 integrity confirmed. Code path functional.",
+  "limitations": [
+    "Full rerun not performed (no GPU in current environment; ~18h CPU for smallest tier)",
+    "Trajectory comparison limited to 10 steps (code path sanity only)",
+    "Bit-reproducible confirmation deferred to GPU environment"
+  ],
+  "report_id": 146
+}
