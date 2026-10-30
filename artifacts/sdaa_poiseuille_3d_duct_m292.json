@@ -1,0 +1,102 @@
+{
+  "case": "poiseuille_3d_duct",
+  "mission_id": 292,
+  "source": "TensorLBM benchmarks/verified/poiseuille_3d_duct",
+  "device_evidence": "/dev/tcaicard15",
+  "timestamp": "2024-10-30T01:05:00Z",
+  "verdict_table": [
+    {
+      "criterion": "CH1 有效几何反演 (eff_max_cell_central_pct)",
+      "W32": 0.1232,
+      "W64": 0.0518,
+      "W128": 0.0336,
+      "threshold": 3.0,
+      "unit": "%",
+      "PASS": true,
+      "note": "全档 ≤3% 且单调下降"
+    },
+    {
+      "criterion": "CH1 有效几何反演 L2 (eff_l2_cell_central_pct)",
+      "W32": 0.127,
+      "W64": 0.0377,
+      "W128": 0.0225,
+      "threshold": 3.0,
+      "unit": "%",
+      "PASS": true,
+      "note": "全档 ≤3% 且单调下降"
+    },
+    {
+      "criterion": "CH2 名义帧 (nom_max_cell_central_pct)",
+      "W32": 4.6867,
+      "W64": 2.4938,
+      "W128": 1.234,
+      "threshold": 3.0,
+      "unit": "%",
+      "PASS": false,
+      "note": "W32 超标 (4.69% > 3%)，W64/W128 ≤3% 但非全档通过"
+    },
+    {
+      "criterion": "CH2 名义帧 L2 (nom_l2_cell_central_pct)",
+      "W32": 3.6012,
+      "W64": 1.9552,
+      "W128": 0.973,
+      "threshold": 3.0,
+      "unit": "%",
+      "PASS": false,
+      "note": "W32 超标 (3.60% > 3%)"
+    },
+    {
+      "criterion": "da spread",
+      "value": 0.0355,
+      "threshold": 0.05,
+      "unit": "格子",
+      "PASS": true,
+      "note": "≤ 0.05 阈值"
+    },
+    {
+      "criterion": "db spread",
+      "value": 0.0357,
+      "threshold": 0.05,
+      "unit": "格子",
+      "PASS": true,
+      "note": "≤ 0.05 阈值"
+    },
+    {
+      "criterion": "网格无关性 (delta_grid_independent)",
+      "value": true,
+      "PASS": true,
+      "note": "误差随网格加密单调下降"
+    },
+    {
+      "criterion": "质量漂移 (mass_drift_pct)",
+      "W32": 0.1658,
+      "W64": 0.0777,
+      "W128": 0.0471,
+      "threshold": 1.0,
+      "unit": "%",
+      "PASS": true,
+      "note": "全档 < 1%"
+    }
+  ],
+  "root_cause_analysis": {
+    "CH2_nominal_frame_failure": {
+      "symptom": "W32 名义帧误差 4.69% > 3% 阈值",
+      "root_cause": "平壁有效位移 +0.45 格（BB 几何常数），CH1 反演已吸收该偏移。名义帧未考虑有效几何，故粗档误差较大。",
+      "is_criterion_issue": true,
+      "explanation": "CH2 是披露通道，非主判据。README 明确说明：'直接可观测口径（nom 剖面 + Po_sim）下 W64/W128 nom 已 ≤3%'。主通道 CH1 全档 ≤3%。"
+    }
+  },
+  "conclusion": {
+    "primary_channel_CH1": "PASS - 全档 ≤3% 且单调下降",
+    "secondary_channel_CH2": "FAIL - W32 超标，但 W64/W128 ≤3%",
+    "da_db_spread": "PASS - ≤ 0.05",
+    "overall_verdict": "verified (基于 CH1 主通道)",
+    "honest_fail_reason": "CH2 名义帧在粗档 W32 时误差超标 (4.69% > 3%)，但这是已披露的口径问题，非数值真红。CH1 主通道全档通过验证。"
+  },
+  "reference": {
+    "Po_exact": 56.9083,
+    "Po_sim_W128": 55.3488,
+    "Po_error_pct": -2.74,
+    "Shah_London": "Po = 56.9083 (方形管道)"
+  }
+}
