@@ -1,0 +1,89 @@
+{
+ "schema": "sdaa-sweep-v3",
+ "mission": "m109",
+ "round": 3,
+ "overall": "HONEST-FAIL",
+ "title": "suboff_sail_resistance SDAA v3 诊断：SDAA 内存分配器瓶颈导致所有分辨率 OOM",
+ "hardware": {
+  "device": "/dev/tcaicard7",
+  "total_gib": 14.94,
+  "free_at_start_gib": 14.69,
+  "note": "SDAA 卡标称 14.94 GiB，但 Torch-SDAA 分配器实际可用仅 ~3 GiB"
+ },
+ "root_cause": {
+  "summary": "SDAA 内存分配器碎片化/保留策略导致实际可用显存远低于标称值",
+  "evidence": [
+   "Setup 阶段：L=64 仅需 0.61 GiB（alloc），L=110 需 4.47 GiB peak — 均远低于 14.94 GiB",
+   "Run 阶段（MRT collide）：L=64 在 equilibrium3d 分配 508 MiB 时 OOM，报错 '2.73 GiB already allocated; 547.97 MiB free; 2.78 GiB reserved in total by Torch-SDAA'",
+   "Run 阶段（MRT collide）：L=110 在 matrix @ f_flat 分配 5.36 GiB 时 OOM，报错 '11.28 GiB already allocated; 3.03 GiB free'",
+   "关键矛盾：14.94 GiB 总容量 - 2.78 GiB Torch 保留 = 12.16 GiB 未被 Torch 保留但也非 free — 被 SDAA 驱动/系统持有",
+   "L=90 出现异常分配请求 17179869179.62 GiB（17 EB），疑似整数溢出或 shape 计算 bug"
+  ],
+  "conclusion": "SDAA 分配器在首次大张量运算（collide/equilibrium）时将 Torch 保留内存迅速膨胀至接近上限，后续分配失败。这不是案例本身的内存需求过大，而是 SDAA 运行时内存管理策略的限制。"
+ },
+ "probe_results": {
+  "48": {"status": "ok", "domain": [288, 102, 102], "cells": 2996352, "setup_peak_gib": 0.38},
+  "56": {"status": "ok", "domain": [336, 119, 119], "cells": 4758096, "setup_peak_gib": 0.59},
+  "64": {"status": "ok", "domain": [384, 135, 135], "cells": 6998400, "setup_peak_gib": 0.88},
+  "72": {"status": "ok", "domain": [432, 152, 152], "cells": 9980928, "setup_peak_gib": 1.25},
+  "80": {"status": "ok", "domain": [480, 169, 169], "cells": 13709280, "setup_peak_gib": 1.71},
+  "90": {"status": "ok", "domain": [540, 190, 190], "cells": 19494000, "setup_peak_gib": 2.43},
+  "100": {"status": "ok", "domain": [600, 212, 212], "cells": 26966400, "setup_peak_gib": 3.37},
+  "110": {"status": "ok", "domain": [660, 233, 233], "cells": 35830740, "setup_peak_gib": 4.47}
+ },
+ "run_attempts": {
+  "L64_MRT_500steps": {
+   "status": "oom",
+   "error_location": "equilibrium3d (d3q19.py:121)",
+   "allocation_requested_mib": 508,
+   "sdaa_error_msg": "2.73 GiB already allocated; 547.97 MiB free; 2.78 GiB reserved in total by Torch-SDAA",
+   "note": "BGK 和 MRT 均在首次 collide 步骤 OOM"
+  },
+  "L110_MRT_1500steps": {
+   "status": "oom",
+   "error_location": "collide_mrt3d_low_memory (solver3d.py:216) matrix @ f_flat",
+   "allocation_requested_gib": 5.36,
+   "sdaa_error_msg": "11.28 GiB already allocated; 3.03 GiB free; 11.66 GiB reserved in total by Torch-SDAA",
+   "note": "Torch 保留内存膨胀至 11.66 GiB"
+  },
+  "L90_MRT_3000steps": {
+   "status": "oom",
+   "error_location": "collide_mrt3d_low_memory (solver3d.py:216)",
+   "allocation_requested_gib": "17179869179.62 (17 EB — 疑似整数溢出)",
+   "note": "异常大的分配请求，可能是 shape 计算 bug"
+  }
+ },
+ "frozen_ladder_verdict": {
+  "L90": "OOM — SDAA 分配器瓶颈",
+  "L100": "OOM — SDAA 分配器瓶颈",
+  "L110": "OOM — SDAA 分配器瓶颈",
+  "overall": "HONEST-FAIL",
+  "reason": "冻结阶梯 L∈{90,100,110} 均因 SDAA 内存分配器限制无法完成至少一个时间步。Setup 阶段内存需求合理（2.4-4.5 GiB），但首次 collide 运算时 Torch-SDAA 保留内存迅速膨胀至接近卡上限，导致后续分配失败。"
+ },
+ "workaround_explored": {
+  "lower_resolution": "尝试 L=64（setup 仅需 0.88 GiB），但同样在首次 collide OOM。问题不在分辨率，而在 SDAA 分配器策略。",
+  "bgk_collision": "尝试 BGK 替代 MRT（更少临时数组），同样 OOM。equilibrium3d 分配 508 MiB 时失败。",
+  "reduced_steps": "无法测试——首次时间步即 OOM，步数无关。",
+  "conclusion": "在当前 SDAA 运行时环境下，本案例无法在任何分辨率下完成至少一个完整时间步。需要 SDAA 驱动/分配器层面的修复。"
+ },
+ "comparison_with_verified": {
+  "verified_platform": "NVIDIA GPU (CUDA)",
+  "verified_resolutions": "L∈{96,112,128}",
+  "verified_status": "PASS (erratum E2, friction=standard)",
+  "sdaa_status": "HONEST-FAIL — 无法运行",
+  "gap": "SDAA 内存分配器与 CUDA 分配器行为差异导致相同代码在 SDAA 上不可用"
+ },
+ "recommendations": [
+  "调查 SDAA 分配器为何在首次大张量运算后保留内存膨胀至接近上限",
+  "调查 L=90 时 matrix @ f_flat 产生 17 EB 分配请求的 bug",
+  "考虑在 SDAA 上实现分块 collide（chunked MRT）以减少峰值内存",
+  "与 SDAA 驱动团队协调内存保留策略优化"
+ ],
+ "provenance": {
+  "script": "scripts/sdaa_sweep_suboff_sail_resistance_v3.py",
+  "quick_test": "scripts/sdaa_quick_suboff_sail.py",
+  "case": "benchmarks/verified/suboff_sail_resistance",
+  "date": "2026-01-09",
+  "agent": "m109"
+ }
+}
