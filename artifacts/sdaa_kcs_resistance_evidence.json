@@ -1,0 +1,121 @@
+{
+  "case": "kcs_resistance",
+  "title": "KCS (KRISO Container Ship) parametric hull resistance, Re=1000 laminar",
+  "benchmark_path": "benchmarks/pending/kcs_resistance",
+  "timestamp": "2026-10-30 12:24:18",
+  "device_evidence": {
+    "sdaa_available": true,
+    "sdaa_device_name": "/dev/tcaicard18",
+    "sdaa_device_count": 1,
+    "sdaa_matmul_ok": true,
+    "torch_version": "2.7.1"
+  },
+  "run_config": {
+    "resolution": 48,
+    "steps": 1500,
+    "device": "sdaa:0",
+    "variant": "double",
+    "collision": "mrt",
+    "friction": "mix50",
+    "compile_mode": "eager"
+  },
+  "run_info": {
+    "status": "completed",
+    "n_steps": 1500,
+    "elapsed_s": 95.6,
+    "ms_per_step": 63.76,
+    "compile_mode_effective": "eager",
+    "compile_status": "eager",
+    "finite": true,
+    "diverged": false,
+    "domain_lu": [
+      240,
+      45,
+      43
+    ],
+    "n_cells": 464400,
+    "solid_cells": 880,
+    "near_wall_cells": 788,
+    "Re": 1000.0,
+    "u_lb": 0.05,
+    "nu_lb": 0.0024000000000000002,
+    "tau": 0.5072,
+    "smooth_area": {
+      "S_side": 755.2607773428008,
+      "S_top": 0.0,
+      "S_total": 755.2607773428008
+    },
+    "voxel_smooth_ratio": 1.0433482363169766
+  },
+  "run_source": "pre_existing",
+  "criteria": {
+    "step": "criteria_verification",
+    "cf_ref_Blasius": 0.04199504732703608,
+    "threshold_pct": 3.0,
+    "time_averaged": {
+      "Cd_pressure": 0.015185373208637469,
+      "Cd_friction": 0.05311339772256346,
+      "Cd_total": 0.06829877093120093,
+      "error_pct_total_vs_Blasius": 62.63529934690828,
+      "convergence_windows": {
+        "25%": 0.090846,
+        "50%": 0.077815,
+        "75%": 0.071829,
+        "100%": 0.068299
+      }
+    },
+    "final_field_near_wall": {
+      "cd_p": 0.014376308898651291,
+      "cd_f_standard": 0.04187394029873922,
+      "cd_f_faces": 0.044331455440698345,
+      "cd_f_mix50": 0.04310269786971878,
+      "cd_tot_mix50": 0.05747900676837007,
+      "err_f_mix50_pct": 2.6375742216859046,
+      "err_tot_mix50_pct": 36.87091794599679,
+      "err_f_standard_pct": -0.2883840738498047,
+      "err_f_faces_pct": 5.56353251722163
+    },
+    "checks": {
+      "time_averaged_cd_total_vs_Blasius": {
+        "value": 0.06829877093120093,
+        "reference": 0.04199504732703608,
+        "error_pct": 62.63529934690828,
+        "threshold_pct": 3.0,
+        "pass": false,
+        "note": "Primary metric (same as suboff_re1000): last-1000-sample window mean, rescaled to smooth wetted area"
+      },
+      "final_field_cd_f_mix50_vs_Blasius": {
+        "value": 0.04310269786971878,
+        "reference": 0.04199504732703608,
+        "error_pct": 2.6375742216859046,
+        "threshold_pct": 3.0,
+        "pass": true,
+        "note": "Friction-only check: final-field mix50 friction coefficient vs Blasius Cf"
+      },
+      "final_field_cd_tot_mix50_vs_Blasius": {
+        "value": 0.05747900676837007,
+        "reference": 0.04199504732703608,
+        "error_pct": 36.87091794599679,
+        "threshold_pct": 3.0,
+        "pass": false,
+        "note": "Total drag (friction+pressure) vs Blasius Cf — inflated by hull pressure drag"
+      }
+    },
+    "verdict": "PARTIAL_PASS",
+    "reason": "Friction coefficient within 3% of Blasius (final-field mix50), but time-averaged total Cd not converged — pressure drag + transient inflates total. More steps needed for time-averaged convergence."
+  },
+  "bug_fixes_applied": [
+    {
+      "file": "benchmarks/pending/kcs_resistance/run.py",
+      "function": "smooth_side_area",
+      "bug": "zeta quadrature used Gauss-Legendre points in [-1,1] but hull parameterization requires zeta in [0,1]; produced NaN in wetted area, cascading to all Cd NaN",
+      "fix": "Map zeta = (zg + 1) * 0.5 and scale weight by 0.5 (Jacobian dzeta/dt)"
+    },
+    {
+      "file": "benchmarks/pending/kcs_resistance/run.py",
+      "function": "smooth_side_area / smooth_wetted_area",
+      "bug": "leggauss(3000) created 9M-element matrices, taking >45s per call (timeout risk)",
+      "fix": "Reduced to leggauss(500) — <0.7% area difference, 1.3s per call"
+    }
+  ]
+}

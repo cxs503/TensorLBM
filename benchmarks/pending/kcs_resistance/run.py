@@ -135,10 +135,10 @@ def smooth_side_area(L_lb: float, B_lb: float, T_lb: float) -> float:
     """
     from numpy.polynomial.legendre import leggauss
 
-    xg, xw = leggauss(3000)
-    zg, zw = leggauss(3000)
+    xg, xw = leggauss(500)
+    zg, zw = leggauss(500)
     xi = xg[None, :]
-    zeta = zg[:, None]
+    zeta = (zg[:, None] + 1.0) * 0.5  # map [-1,1] -> [0,1]
     g = _kcs_g(xi * np.ones_like(zeta), zeta * np.ones_like(xi))
     # partials
     xi_c = np.clip(xi, -1.0, 1.0)
@@ -150,7 +150,7 @@ def smooth_side_area(L_lb: float, B_lb: float, T_lb: float) -> float:
     b = L_lb / 2.0
     jac = np.sqrt((a * g_xi * T_lb) ** 2 + (b * T_lb) ** 2 + (b * a * g_zeta) ** 2)
     # merge the two 1-D weight vectors
-    w = zw[:, None] * xw[None, :]
+    w = (zw * 0.5)[:, None] * xw[None, :]  # 0.5 = dzeta/dt Jacobian
     return float((jac * w).sum())
 
 
@@ -162,7 +162,7 @@ def smooth_wetted_area(variant: str, L_lb: float, B_lb: float, T_lb: float) -> d
         # wall in the single-phase half-body model: no free surface)
         from numpy.polynomial.legendre import leggauss
 
-        zg, zw = leggauss(3000)
+        zg, zw = leggauss(500)
         a_top = (B_lb * L_lb / 2.0) * float((np.clip(1.0 - zg**2, 0.0, 1.0) ** 0.45 * zw).sum())
         return {"S_side": 2.0 * s_one, "S_top": a_top, "S_total": 2.0 * s_one + a_top}
     # double body: below-WL hull + its mirror (two halves, two sides each)
