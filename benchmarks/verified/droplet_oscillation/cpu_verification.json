@@ -1,0 +1,53 @@
+{
+  "cpu_verification": {
+    "device": "cpu",
+    "torch_cuda_available": false,
+    "smoke_test": {
+      "radius": 16,
+      "steps": 200,
+      "passed": true,
+      "dt_s": 17.155677258968353
+    },
+    "existing_result_validation": {
+      "R128": {
+        "err_pct": -2.648874999999988,
+        "r2": 0.9998009692193768,
+        "mass_drift": 0.0008060812974970717,
+        "sigma_omega_rel_pct": 0.16555246281531177,
+        "gamma_over_omega_d": 0.21646733265651538,
+        "err_ok": true,
+        "r2_ok": true,
+        "mass_ok": true,
+        "sigma_ok": true,
+        "status": "PASS"
+      },
+      "R160": {
+        "err_pct": -2.4044999999999925,
+        "r2": 0.999791523151254,
+        "mass_drift": 0.0010699027408452024,
+        "sigma_omega_rel_pct": 0.15025886321018808,
+        "gamma_over_omega_d": 0.20567347230480074,
+        "err_ok": true,
+        "r2_ok": true,
+        "mass_ok": true,
+        "sigma_ok": true,
+        "status": "PASS"
+      },
+      "R224": {
+        "err_pct": -2.0050000000000123,
+        "r2": 0.9997268373769486,
+        "mass_drift": 0.0017364456784679523,
+        "sigma_omega_rel_pct": 0.14501629268541488,
+        "gamma_over_omega_d": 0.19259641024635007,
+        "err_ok": true,
+        "r2_ok": true,
+        "mass_ok": true,
+        "sigma_ok": true,
+        "status": "PASS"
+      }
+    },
+    "overall_pass": true,
+    "monotone_convergence": true
+  },
+  "verdict": "CPU code path verified via smoke test; existing GPU results validated against PASS criteria"
+}
