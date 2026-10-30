@@ -1,0 +1,234 @@
+{
+  "case": "dambreak3d_sdaa_vs_cpu",
+  "mission": "M12",
+  "status": "HONEST_FAIL",
+  "reason": "CPU baseline mass drift 4.4759%/1e4 steps exceeds 1%/1e4 threshold. Criterion invalid. Action: fix CPU-side mass conservation first.",
+  "config": {
+    "a": 8,
+    "g": 0.0001,
+    "tau": 0.8,
+    "rho_gas": 1.0,
+    "cpu_steps": 80,
+    "sdaa_steps": 100,
+    "domain": {
+      "nx": 40,
+      "ny": 20,
+      "nz": 16
+    },
+    "note": "rho_gas=1.0 (density ratio 1:1) required for stability; rho_gas=0.1 triggers TopologyTransactionError at step 2"
+  },
+  "cpu_baseline": {
+    "device": "cpu",
+    "elapsed_s": 79.96202158927917,
+    "m0": 960.0,
+    "final_mass_drift_rel": -0.00035807291666666664,
+    "final_mass_drift_pct": -0.035807291666666664,
+    "drift_per_1e4_steps": -0.044759114583333336,
+    "drift_per_1e4_steps_pct": -4.475911458333334,
+    "mass_drift_pct": -0.035807291666666664,
+    "series": [
+      {
+        "step": 10,
+        "T": 0.05,
+        "mass": 959.8392333984375,
+        "mass_drift_rel": -0.0001674652099609375,
+        "mass_drift_pct": -0.01674652099609375
+      },
+      {
+        "step": 20,
+        "T": 0.1,
+        "mass": 959.625,
+        "mass_drift_rel": -0.000390625,
+        "mass_drift_pct": -0.0390625
+      },
+      {
+        "step": 30,
+        "T": 0.15,
+        "mass": 959.5902099609375,
+        "mass_drift_rel": -0.0004268646240234375,
+        "mass_drift_pct": -0.04268646240234375
+      },
+      {
+        "step": 40,
+        "T": 0.2,
+        "mass": 959.7428588867188,
+        "mass_drift_rel": -0.0002678553263346354,
+        "mass_drift_pct": -0.026785532633463543
+      },
+      {
+        "step": 50,
+        "T": 0.25,
+        "mass": 959.7592163085938,
+        "mass_drift_rel": -0.00025081634521484375,
+        "mass_drift_pct": -0.025081634521484375
+      },
+      {
+        "step": 60,
+        "T": 0.3,
+        "mass": 959.6593627929688,
+        "mass_drift_rel": -0.0003548304239908854,
+        "mass_drift_pct": -0.03548304239908854
+      },
+      {
+        "step": 70,
+        "T": 0.35000000000000003,
+        "mass": 959.622314453125,
+        "mass_drift_rel": -0.00039342244466145836,
+        "mass_drift_pct": -0.039342244466145836
+      },
+      {
+        "step": 80,
+        "T": 0.4,
+        "mass": 959.65625,
+        "mass_drift_rel": -0.00035807291666666664,
+        "mass_drift_pct": -0.035807291666666664
+      }
+    ]
+  },
+  "sdaa_run": {
+    "available": true,
+    "device": "sdaa:0",
+    "elapsed_s": 42.469882011413574,
+    "final_mass_drift_rel": -0.0003501256306966146,
+    "final_mass_drift_pct": -0.03501256306966146,
+    "drift_per_1e4_steps": -0.035012563069661454,
+    "series": [
+      {
+        "step": 10,
+        "T": 0.05,
+        "mass": 959.8386840820312,
+        "mass_drift_rel": -0.00016803741455078124,
+        "mass_drift_pct": -0.016803741455078125
+      },
+      {
+        "step": 20,
+        "T": 0.1,
+        "mass": 959.6243286132812,
+        "mass_drift_rel": -0.00039132436116536457,
+        "mass_drift_pct": -0.039132436116536454
+      },
+      {
+        "step": 30,
+        "T": 0.15,
+        "mass": 959.589599609375,
+        "mass_drift_rel": -0.00042750040690104165,
+        "mass_drift_pct": -0.042750040690104164
+      },
+      {
+        "step": 40,
+        "T": 0.2,
+        "mass": 959.7424926757812,
+        "mass_drift_rel": -0.0002682367960611979,
+        "mass_drift_pct": -0.02682367960611979
+      },
+      {
+        "step": 50,
+        "T": 0.25,
+        "mass": 959.7587890625,
+        "mass_drift_rel": -0.00025126139322916664,
+        "mass_drift_pct": -0.025126139322916664
+      },
+      {
+        "step": 60,
+        "T": 0.3,
+        "mass": 959.658935546875,
+        "mass_drift_rel": -0.00035527547200520836,
+        "mass_drift_pct": -0.035527547200520836
+      },
+      {
+        "step": 70,
+        "T": 0.35000000000000003,
+        "mass": 959.6217041015625,
+        "mass_drift_rel": -0.0003940582275390625,
+        "mass_drift_pct": -0.03940582275390625
+      },
+      {
+        "step": 80,
+        "T": 0.4,
+        "mass": 959.65576171875,
+        "mass_drift_rel": -0.00035858154296875,
+        "mass_drift_pct": -0.035858154296875
+      },
+      {
+        "step": 90,
+        "T": 0.45,
+        "mass": 959.6802368164062,
+        "mass_drift_rel": -0.0003330866495768229,
+        "mass_drift_pct": -0.03330866495768229
+      },
+      {
+        "step": 100,
+        "T": 0.5,
+        "mass": 959.6638793945312,
+        "mass_drift_rel": -0.0003501256306966146,
+        "mass_drift_pct": -0.03501256306966146
+      }
+    ]
+  },
+  "l2_comparison": {
+    "common_steps": [
+      10,
+      20,
+      30,
+      40,
+      50,
+      60,
+      70,
+      80
+    ],
+    "per_step": [
+      {
+        "step": 10,
+        "l2_rel": 0.0,
+        "l2_pct": 0.0
+      },
+      {
+        "step": 20,
+        "l2_rel": 0.0,
+        "l2_pct": 0.0
+      },
+      {
+        "step": 30,
+        "l2_rel": 0.0,
+        "l2_pct": 0.0
+      },
+      {
+        "step": 40,
+        "l2_rel": 0.0,
+        "l2_pct": 0.0
+      },
+      {
+        "step": 50,
+        "l2_rel": 0.0,
+        "l2_pct": 0.0
+      },
+      {
+        "step": 60,
+        "l2_rel": 0.0,
+        "l2_pct": 0.0
+      },
+      {
+        "step": 70,
+        "l2_rel": 0.0,
+        "l2_pct": 0.0
+      },
+      {
+        "step": 80,
+        "l2_rel": 0.0,
+        "l2_pct": 0.0
+      }
+    ],
+    "max_l2_rel": 0.0,
+    "mean_l2_rel": 0.0,
+    "final_l2_rel": 0.0,
+    "max_l2_pct": 0.0,
+    "mean_l2_pct": 0.0
+  },
+  "l2_error": 0.0,
+  "mass_drift_pct": -0.035807291666666664,
+  "criteria": {
+    "cpu_drift_threshold_1e4": 0.01,
+    "cpu_drift_warning_1e4": 0.001,
+    "l2_threshold": 0.01
+  }
+}
