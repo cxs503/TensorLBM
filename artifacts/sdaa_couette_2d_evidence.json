@@ -1,0 +1,50 @@
+{
+  "case": "couette_2d_sdaa_sweep",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "boundary": "moving top wall + stationary bottom wall, half-way bounce-back",
+  "reference": "analytical u(y) = U0*y/H",
+  "device": {
+    "type": "sdaa",
+    "available": true,
+    "name": "/dev/tcaicard23",
+    "count": 1,
+    "device_str": "sdaa:0"
+  },
+  "threshold_pct": 3.0,
+  "grids": {
+    "H40": {
+      "H": 40,
+      "Re": 19.999999999999996,
+      "l2_rel_err": 0.00012365799236018502,
+      "max_rel_err_pct": 0.020232588745828447,
+      "u_top_row_err_pct": 0.0011193601390938515,
+      "tau_err_pct": 0.0008751184512505517,
+      "n_steps": 10000,
+      "steady": true,
+      "elapsed_s": 44.8,
+      "pass": true
+    },
+    "H80": {
+      "H": 80,
+      "Re": 39.99999999999999,
+      "l2_rel_err": 0.00012292163090932593,
+      "max_rel_err_pct": 0.02089242865568622,
+      "u_top_row_err_pct": 0.001838971983706647,
+      "tau_err_pct": 0.0017833106125478278,
+      "n_steps": 10000,
+      "steady": true,
+      "elapsed_s": 46.2,
+      "pass": true
+    }
+  },
+  "convergence": {
+    "max_rel_err_pct": [
+      0.020232588745828447,
+      0.02089242865568622
+    ],
+    "err_decreased": false
+  },
+  "all_criteria_pass": true,
+  "verdict": "PASS"
+}
