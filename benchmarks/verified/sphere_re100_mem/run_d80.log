@@ -1,0 +1,17 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+
+============================================================
+Running D=80, steps=24000
+Domain padding: lat=1.5, up=1.5, down=2.0
+Device: /dev/tcaicard0
+============================================================
+
+Domain size: 320 x 320 x 360 = 36.86M cells
+Traceback (most recent call last):
+  File "/root/tp-agent/work/m243/benchmarks/verified/sphere_re100_mem/run_d80_final.py", line 255, in <module>
+    main()
+  File "/root/tp-agent/work/m243/benchmarks/verified/sphere_re100_mem/run_d80_final.py", line 127, in main
+    n_links = int(bfl_mask[1:].sum().item())
+                  ^^^^^^^^^^^^^^^^^^
+RuntimeError: sdaa out of memory. Tried to allocate 4.95 GiB (SDAA 0; 14.94 GiB total capacity; 11.43 GiB already allocated; 2.42 GiB free; 11.68 GiB reserved in total by Torch-SDAA)
