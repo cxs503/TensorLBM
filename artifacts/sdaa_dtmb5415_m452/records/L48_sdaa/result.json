@@ -1,0 +1,85 @@
+{
+  "case": "DTMB 5415 bare-hull resistance",
+  "benchmark": "dtmb5415_resistance",
+  "verified": false,
+  "geometry": "DTMB5415 underwater bare hull STL (dtmb5415_underwater.stl)",
+  "geometry_source": "zenodo/CNR-INSEAN official DTMB 5415 baseline point cloud -> underwater clip (T=6.15m); external, see _build_geometry.py",
+  "device": "sdaa:0",
+  "L_cells": 48,
+  "domain_lu": [
+    288,
+    102,
+    99
+  ],
+  "n_cells": 2908224,
+  "solid_cells": 11524,
+  "near_wall_cells": 5067,
+  "Re": 1000.0,
+  "Fr_run": 2.679299876813859e-05,
+  "collision": "mrt",
+  "friction_formula_primary": "mix50",
+  "n_steps": 1600,
+  "elapsed_s": 357.4,
+  "compile_status": "eager_fallback",
+  "compile_mode_effective": "eager",
+  "dpS_wet": 0.4315928082241235,
+  "S_wet_phys_m2": 3021.749092024731,
+  "S_wet_lb": 345.27424657929873,
+  "Cd_pressure": 0.5549020453594806,
+  "Cd_friction": 0.631162797834719,
+  "Cd_total": 1.1860648431941996,
+  "references": {
+    "blasius_Cf_Re1000": 0.04199504732703608,
+    "ittc57_Cf": 0.075,
+    "exp_CT_Fr0.28": 0.0042,
+    "exp_Fr": 0.28,
+    "exp_Cf_ITTC57": 0.00291,
+    "exp_residual_form_wave": 0.00094
+  },
+  "errors_pct": {
+    "vs_blasius": 2724.2969556808202,
+    "vs_ittc57": 1481.4197909255995,
+    "vs_exp_CT": 28139.63912367142
+  },
+  "no_wave_friction_bound": {
+    "value": 0.0032592000000000003,
+    "err_vs_exp_CT_pct": -22.399999999999988,
+    "note": "single-phase (no free surface) LBM cannot produce wave-making; even a perfect friction+form result caps here, so the Fr-similar experimental C_T frame is unreachable by construction."
+  },
+  "final_field_checks": {
+    "near_wall": {
+      "cd_p": 0.48806732224797883,
+      "cd_f_standard": 0.4568650275068497,
+      "cd_f_faces": 0.464627329152217,
+      "cd_f_mix50": 0.46074617832953335,
+      "cd_tot_standard": 0.9449323497548285,
+      "cd_tot_mix50": 0.9488135005775122
+    },
+    "far_field": {
+      "cd_p": 0.4793820032682971,
+      "cd_f_standard": 0.4568650275068497,
+      "cd_f_faces": 0.464627329152217,
+      "cd_f_mix50": 0.46074617832953335,
+      "cd_tot_standard": 0.9362470307751468,
+      "cd_tot_mix50": 0.9401281815978304
+    },
+    "domain_avg": {
+      "cd_p": 0.47939719469595843,
+      "cd_f_standard": 0.4568650275068497,
+      "cd_f_faces": 0.464627329152217,
+      "cd_f_mix50": 0.46074617832953335,
+      "cd_tot_standard": 0.9362622222028081,
+      "cd_tot_mix50": 0.9401433730254918
+    },
+    "inlet": {
+      "cd_p": 0.47773873963297514,
+      "cd_f_standard": 0.4568650275068497,
+      "cd_f_faces": 0.464627329152217,
+      "cd_f_mix50": 0.46074617832953335,
+      "cd_tot_standard": 0.9346037671398248,
+      "cd_tot_mix50": 0.9384849179625085
+    }
+  },
+  "diverged": false,
+  "timestamp": "2026-10-30 13:04:59"
+}
