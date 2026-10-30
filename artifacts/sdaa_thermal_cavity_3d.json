@@ -1,0 +1,105 @@
+{
+  "case": "thermal_cavity_3d",
+  "track": "W9-A SDAA sweep",
+  "device_evidence": {
+    "backend": "sdaa",
+    "available": true,
+    "device_count": 1,
+    "device_name": "/dev/tcaicard12",
+    "torch_version": "2.7.1"
+  },
+  "run_configs": [
+    {
+      "ra": 1000.0,
+      "n": 32,
+      "steps": 40000,
+      "label": "ra1e3_n32"
+    }
+  ],
+  "reference_nu": {
+    "1e3": 1.07065,
+    "1e4": 2.05552,
+    "1e5": 4.3411
+  },
+  "results": [
+    {
+      "ra_key": "1e3",
+      "config": {
+        "pr": 0.71,
+        "ra": 1000.0,
+        "tau_f": 0.6,
+        "n": 32,
+        "steps": 40000,
+        "dtype": "fp32",
+        "bb": "post",
+        "force": "post_raw",
+        "force_mask": true,
+        "nu": 0.033333333333333326,
+        "alpha": 0.04694835680751173,
+        "tau_T": 0.6877934272300469,
+        "g_beta": 5.253080550894758e-05,
+        "L": 31.0
+      },
+      "reference_nu": 1.07065,
+      "nu_win": 1.0576208058525534,
+      "err_pct": -1.2169424319288975,
+      "window": {
+        "window_rows": 17,
+        "nu_win": 1.0576208058525534,
+        "nu_hot_win": 1.0576232040629667,
+        "nu_cold_win": 1.0576184076421402,
+        "window_drift_pct": -1.244556786363458e-05,
+        "hot_cold_imbal_pct": 0.0004535104453289818,
+        "last_row": {
+          "step": 39999,
+          "nu_hot": 1.0576229095458984,
+          "nu_cold": 1.057618260383606,
+          "nu": 1.0576205849647522,
+          "u_max": 0.005237685516476631,
+          "sumT": 16383.427734375,
+          "T_min": 0.0,
+          "T_max": 1.0
+        }
+      },
+      "nan_at": null,
+      "gates": {
+        "nu_err_le_3pct": {
+          "value": -1.2169424319288975,
+          "threshold": 3.0,
+          "pass": true
+        },
+        "monotone_decreasing": {
+          "value": null,
+          "threshold": ">=3 grids required",
+          "pass": false,
+          "note": "NOT_RUN: only 1 grid executed (wall-clock limit)"
+        },
+        "no_nan": {
+          "value": null,
+          "threshold": null,
+          "pass": true
+        },
+        "window_drift_lt_0.1pct": {
+          "value": -1.244556786363458e-05,
+          "threshold": 0.1,
+          "pass": true
+        },
+        "hot_cold_imbal_lt_1pct": {
+          "value": 0.0004535104453289818,
+          "threshold": 1.0,
+          "pass": true
+        }
+      },
+      "probe_file": "/root/tp-agent/work/m69/benchmarks/verified/thermal_cavity_3d/out/probe_sdaa_ra1e3_n32.json"
+    }
+  ],
+  "overall_pass": true,
+  "elapsed_total_s": 910.2319722175598,
+  "wall_clock_limit_s": 1200,
+  "workarounds": [],
+  "notes": [
+    "Only ra1e3 N=32 40000 steps executed (smallest recommended tier).",
+    "Monotonicity gate NOT_RUN: requires >=3 grids per Ra, wall-clock limit prevents full ladder.",
+    "No triton dependency in this case; pure torch tensor ops on sdaa device."
+  ]
+}
