@@ -1,0 +1,16 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[h=16 nz=16 Re=100] step=  2000 xr_new=2.2908 (reattached) xr_legacy=2.290373619993344 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step=  4000 xr_new=3.1756 (reattached) xr_legacy=3.1755581695092565 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step=  6000 xr_new=3.1159 (reattached) xr_legacy=3.115832539340229 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step=  8000 xr_new=3.104 (reattached) xr_legacy=3.1041300405454333 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step= 10000 xr_new=3.102 (reattached) xr_legacy=3.102052092857717 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step= 12000 xr_new=3.1002 (reattached) xr_legacy=3.100290941742675 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step= 14000 xr_new=3.1055 (reattached) xr_legacy=3.105585172059516 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step= 16000 xr_new=3.1061 (reattached) xr_legacy=3.1061294596984306 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step= 18000 xr_new=3.1089 (reattached) xr_legacy=3.108879842027149 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step= 20000 xr_new=3.1105 (reattached) xr_legacy=3.110493881900158 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step= 22000 xr_new=3.1112 (reattached) xr_legacy=3.111153080380154 zeroed_planes=0/16 max|u|=0.0498
+[h=16 nz=16 Re=100] step= 24000 xr_new=3.1121 (reattached) xr_legacy=3.1120413923565864 zeroed_planes=0/16 max|u|=0.0498
+{"tag": "re100_H16_nz16_umax0.05", "measurement_new": {"xr_h": 3.112082087302078, "xr_status": "reattached", "xr_n_negative_runs": 1, "xr_corner_attached": true, "xr_min_rel": -0.03193352293844024, "xr_backflow_start_h": 0.03125, "xr_backflow_end_h": 3.03125, "xr_planes_mean": 3.112082087302078, "xr_planes_std": 0.0, "xr_planes_min": 3.112082087302078, "xr_planes_max": 3.112082087302078, "xr_planes_valid": 16, "xr_planes_invalid": 0, "xr_plane_statuses": {"reattached": 16}}}
+-> artifacts/cpu_repro_H16_tau0524.json

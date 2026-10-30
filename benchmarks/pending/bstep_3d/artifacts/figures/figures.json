@@ -1,0 +1,18 @@
+[
+  {
+    "name": "fig1_wall_profiles.png",
+    "caption": "Near-wall tangential velocity along the stepped wall for both tau-matched ladder rungs; dashed/red = robust closure, dotted/orange = pre-fix estimator, shaded = detected backflow region."
+  },
+  {
+    "name": "fig2_convergence.png",
+    "caption": "X_r/h versus lattice step for the robust (solid) and pre-fix (dashed) estimators on identical fields; black band = Armaly Re=100 reference +/-3%."
+  },
+  {
+    "name": "fig3_grid_trend.png",
+    "caption": "X_r/h versus grid resolution for the tau-matched Re=100 ladder, with the Armaly reference and the +/-3% acceptance band; square = tau/Ma cross-check."
+  },
+  {
+    "name": "fig4_field_contour.png",
+    "caption": "Spanwise mid-plane streamwise velocity field of the re-run case; the dashed line marks the measured reattachment closure X_r/h."
+  }
+]

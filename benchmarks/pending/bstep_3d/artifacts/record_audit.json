@@ -1,0 +1,108 @@
+{
+  "mission": "m469",
+  "checks": [
+    "separated flow but xr_h==0.0 -> estimator failure",
+    "converged=true on invalid measurement -> convergence criterion failure",
+    "n_steps<2000 -> aborted record"
+  ],
+  "records": {
+    "result_H40.json": {
+      "re": 100.0,
+      "grid": [
+        400,
+        82,
+        80
+      ],
+      "step_h": 40,
+      "tau": 0.56,
+      "u_max_est": 0.05,
+      "n_steps_run": 20000,
+      "converged": false,
+      "xr_h": 3.3955459594726562,
+      "xr_h_ref": 3.0,
+      "err_pct": 13.184865315755209,
+      "max_backflow_over_umax": -0.09803728200495243,
+      "backflow_x_rel_h": 1.475,
+      "xr_series_zero_frac": 0.0,
+      "xr_series": [
+        1.2003662586212158,
+        2.055009365081787,
+        2.787071943283081,
+        3.3748576641082764,
+        3.5526585578918457,
+        3.51521635055542,
+        3.492872953414917,
+        3.527574062347412,
+        3.4980499744415283,
+        3.3955459594726562
+      ],
+      "mass_drift_final": -135.25,
+      "inconsistent": false,
+      "n_steps_lt_2000": false
+    },
+    "result_re200_H49.json": {
+      "re": 200.0,
+      "grid": [
+        490,
+        101,
+        98
+      ],
+      "step_h": 49,
+      "tau": 0.5367500000000001,
+      "u_max_est": 0.05,
+      "n_steps_run": 500,
+      "converged": false,
+      "xr_h": 0.0,
+      "xr_h_ref": 5.5,
+      "err_pct": -100.0,
+      "max_backflow_over_umax": -0.004788748628925532,
+      "backflow_x_rel_h": 0.12244897959183673,
+      "xr_series_zero_frac": 1.0,
+      "xr_series": [
+        0.0
+      ],
+      "mass_drift_final": 550.5,
+      "inconsistent": false,
+      "n_steps_lt_2000": true
+    },
+    "result_re400_H49.json": {
+      "re": 400.0,
+      "grid": [
+        490,
+        101,
+        98
+      ],
+      "step_h": 49,
+      "tau": 0.5275625,
+      "u_max_est": 0.075,
+      "n_steps_run": 30000,
+      "converged": true,
+      "xr_h": 0.0,
+      "xr_h_ref": 8.0,
+      "err_pct": -100.0,
+      "max_backflow_over_umax": -0.17536846299966177,
+      "backflow_x_rel_h": 4.346938775510204,
+      "xr_series_zero_frac": 0.6666666666666666,
+      "xr_series": [
+        0.0,
+        0.014654821716248989,
+        0.02738189697265625,
+        0.0,
+        0.0,
+        4.4838433265686035,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.011860906146466732,
+        0.048060983419418335,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mass_drift_final": -7373.0,
+      "inconsistent": true,
+      "n_steps_lt_2000": false
+    }
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "mission": "m469",
+  "case": "bstep_3d",
+  "reference": {
+    "source": "Armaly, Durst, Pereira & Schoenung, JFM 127:473-496 (1983)",
+    "xr_h_ref_re100": 3.0,
+    "re_definition": "Re = U_max * h / nu",
+    "er_ref": 1.94
+  },
+  "ladder": [
+    {
+      "tag": "re100_H20_nz16_umax0.1",
+      "grid": {
+        "nx": 200,
+        "ny": 41,
+        "nz": 16,
+        "nz_default_for_2h": 40,
+        "step_h": 20,
+        "x_step": 40,
+        "expansion_ratio": 1.95,
+        "cells": 131200
+      },
+      "physics": {
+        "re": 100.0,
+        "u_max": 0.1,
+        "nu": 0.02,
+        "tau": 0.56,
+        "collision": "bgk",
+        "lattice": "D3Q19",
+        "spanwise": "periodic",
+        "protocol": "tau-matched ladder (nu fixed, U_max*h fixed)"
+      },
+      "run": {
+        "steps": 24000,
+        "interval": 2000,
+        "n_steps_run": 24000,
+        "wall_time_s": 1091.4,
+        "ms_per_step": 45.47,
+        "device": "cpu",
+        "torch_threads": 16
+      },
+      "er_dev_pct": 0.5154639175257737,
+      "xr_h_new_steady": 3.1774627567226292,
+      "xr_h_new_final": 3.1769319267778795,
+      "xr_status_final": "reattached",
+      "xr_planes_valid": 16,
+      "xr_planes_invalid": 0,
+      "xr_planes_std": 0.0,
+      "min_rel_backflow": -0.026099406337986387,
+      "backflow_span_h": [
+        0.025,
+        3.125
+      ],
+      "xr_h_legacy_steady_meanfield": 3.1775430667300353,
+      "xr_h_legacy_steady_planes": 3.1775430666305535,
+      "err_pct_new": 5.915425224087642,
+      "err_pct_legacy": 5.918102224334509,
+      "estimator_delta_h": -8.03100074060481e-05,
+      "node_sensitivity": {
+        "xr_h_at_y1": 3.1769319267778795,
+        "xr_h_at_y2": 3.2378111392922384,
+        "delta": 0.060879212514358905
+      }
+    },
+    {
+      "tag": "re100_H16_nz16_umax0.125",
+      "grid": {
+        "nx": 160,
+        "ny": 33,
+        "nz": 16,
+        "nz_default_for_2h": 32,
+        "step_h": 16,
+        "x_step": 32,
+        "expansion_ratio": 1.9375,
+        "cells": 84480
+      },
+      "physics": {
+        "re": 100.0,
+        "u_max": 0.125,
+        "nu": 0.02,
+        "tau": 0.56,
+        "collision": "bgk",
+        "lattice": "D3Q19",
+        "spanwise": "periodic",
+        "protocol": "tau-matched ladder (nu fixed, U_max*h fixed)"
+      },
+      "run": {
+        "steps": 24000,
+        "interval": 2000,
+        "n_steps_run": 24000,
+        "wall_time_s": 844.2,
+        "ms_per_step": 35.18,
+        "device": "cpu",
+        "torch_threads": 16
+      },
+      "er_dev_pct": -0.12886597938144057,
+      "xr_h_new_steady": 3.124946112738081,
+      "xr_h_new_final": 3.12465072424305,
+      "xr_status_final": "reattached",
+      "xr_planes_valid": 16,
+      "xr_planes_invalid": 0,
+      "xr_planes_std": 0.0,
+      "min_rel_backflow": -0.03176136563221613,
+      "backflow_span_h": [
+        0.03125,
+        3.09375
+      ],
+      "xr_h_legacy_steady_meanfield": 3.1251115463579424,
+      "xr_h_legacy_steady_planes": 3.1251115469372905,
+      "err_pct_new": 4.164870424602704,
+      "err_pct_legacy": 4.17038487859808,
+      "estimator_delta_h": -0.00016543361986132155,
+      "node_sensitivity": {
+        "xr_h_at_y1": 3.12465072424305,
+        "xr_h_at_y2": 3.1605048191732403,
+        "delta": 0.03585409493019043
+      }
+    }
+  ],
+  "tau_cross_check": {
+    "tag": "re100_H16_nz16_umax0.05",
+    "grid": {
+      "nx": 160,
+      "ny": 33,
+      "nz": 16,
+      "nz_default_for_2h": 32,
+      "step_h": 16,
+      "x_step": 32,
+      "expansion_ratio": 1.9375,
+      "cells": 84480
+    },
+    "physics": {
+      "re": 100.0,
+      "u_max": 0.05,
+      "nu": 0.008,
+      "tau": 0.524,
+      "collision": "bgk",
+      "lattice": "D3Q19",
+      "spanwise": "periodic",
+      "protocol": "tau-matched ladder (nu fixed, U_max*h fixed)"
+    },
+    "run": {
+      "steps": 24000,
+      "interval": 2000,
+      "n_steps_run": 24000,
+      "wall_time_s": 849.5,
+      "ms_per_step": 35.39,
+      "device": "cpu",
+      "torch_threads": 16
+    },
+    "xr_h_new_steady": 3.111254896042169,
+    "xr_status_final": "reattached",
+    "err_pct_new": 3.70849653473897,
+    "note": "same Re and grid as the H16 ladder rung but tau=0.524 / U_max=0.05 instead of tau=0.56 / U_max=0.125: isolates the (tau-0.5) slip + compressibility confound that the tau-matched protocol removes",
+    "node_sensitivity": {
+      "xr_h_at_y1": 3.112082087302078,
+      "xr_h_at_y2": 3.146251118657906,
+      "delta": 0.03416903135582805
+    }
+  },
+  "refinement": {
+    "h_coarse": 20,
+    "h_fine": 16,
+    "d_xr_h": -0.05251664398454814,
+    "monotone_toward_reference": true
+  },
+  "extrapolation": {
+    "model": "X_r/h = a + b*h  (linear in grid spacing, pts = CPU ladder + legacy H=40)",
+    "points": [
+      [
+        20.0,
+        3.1774627567226292
+      ],
+      [
+        16.0,
+        3.124946112738081
+      ],
+      [
+        40.0,
+        3.3955459594726562
+      ]
+    ],
+    "slope_per_cell": 0.011155369911863429,
+    "h0_limit": 2.950048905210582,
+    "h0_err_pct": -1.6650364929806056,
+    "rms_residual": 0.003262899568389472
+  },
+  "gate": {
+    "err_tol_pct": 3.0,
+    "all_within_3pct": false,
+    "note": "campaign gate is <=3% on the direct observable plus a >=2-grid monotone ladder"
+  }
+}

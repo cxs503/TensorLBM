@@ -47,9 +47,14 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/wxsc/cxs/TensorLBM/src")
+# 仓库内 src 优先 (不使用机器相关绝对路径): <repo>/benchmarks/pending/bstep_3d/run*.py
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+for _p in (str(Path(__file__).resolve().parent), str(_REPO_ROOT / "src")):
+    if Path(_p).is_dir() and _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import numpy as np
+import reattach as _reattach  # 稳健再附着估计器 (本目录)
 import torch
 
 import tensorlbm.boundaries3d as _b3d
@@ -194,42 +199,33 @@ def outlet_pressure_bc(f: torch.Tensor, rho_out: float = 1.0) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # 再附着长度测量 (壁面剪切过零亚格插值, 展向平均 + 展向散布)
 # ---------------------------------------------------------------------------
-def _zero_crossing_col(row: np.ndarray, x_step: int) -> float | None:
-    """row = ux[1, x_step:]; 返回再附着点连续列坐标 (负→正过零点, 线性插值)。"""
-    pos = int(np.argmax(row > 0.0))
-    if pos == 0 or row[pos] <= 0.0:
-        return None
-    a, b = row[pos - 1], row[pos]
-    if b - a == 0.0:
-        return None
-    return x_step + (pos - 1) + (0.0 - a) / (b - a)
-
-
 def measure_reattach_3d(
     ux: torch.Tensor,
     x_step: int,
     step_h: int,
-) -> dict[str, float]:
+    u_max: float | None = None,
+    smooth: int = 3,
+    rel_thresh: float = 1e-3,
+) -> dict:
     """X_r/h: 距台阶下游立面 x=x_step-0.5 的归一化再附着长度。
-    - xr_h: 展向平均场 (mean over z) 的过零插值 —— 等价 2D 观测量;
-    - xr_planes_*: 各 z 平面 xr(z) 的均值/标准差 (展向均匀性)。"""
-    nz = ux.shape[0]
-    ux_np = ux.detach().cpu().numpy()
-    xr_planes: list[float] = []
-    for z in range(nz):
-        zc = _zero_crossing_col(ux_np[z, 1, x_step:], x_step)
-        xr_planes.append(0.0 if zc is None else float((zc - (x_step - 0.5)) / step_h))
-    xr_arr = np.array(xr_planes)
-    row_mean = ux_np[:, 1, x_step:].mean(axis=0)
-    zc_mean = _zero_crossing_col(row_mean, x_step)
-    xr_main = 0.0 if zc_mean is None else float((zc_mean - (x_step - 0.5)) / step_h)
-    return {
-        "xr_h": xr_main,
-        "xr_planes_mean": float(xr_arr.mean()),
-        "xr_planes_std": float(xr_arr.std()),
-        "xr_planes_min": float(xr_arr.min()),
-        "xr_planes_max": float(xr_arr.max()),
-    }
+
+    稳健估计器 (见本目录 reattach.py): 取**最长回流段**的终止过零点 (主分离泡
+    闭合点), 而不是首个过零点; 并用 status 区分「无回流」「域内未再附着」
+    与「正常再附着」——旧实现把三者一律写成 xr_h=0.0, 这正是 re200/re400
+    档记录损坏的来源。
+
+    - xr_h: 展向平均场 (mean over z, y=1) 的闭合点 —— 等价 2D 观测量;
+    - xr_planes_*: 各 z 平面 xr(z) 的均值/标准差 (展向均匀性)。
+    """
+    return _reattach.measure_planes(
+        ux.detach().cpu().numpy(),
+        x_step,
+        step_h,
+        y=1,
+        smooth=smooth,
+        rel_thresh=rel_thresh,
+        u_scale=u_max,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -352,19 +348,22 @@ def run_case(
             uy = uy.masked_fill(solid, 0.0)
             uz = uz.masked_fill(solid, 0.0)
             speed = torch.sqrt(ux * ux + uy * uy + uz * uz)
-            meas = measure_reattach_3d(ux, x_step, h)
+            meas = measure_reattach_3d(ux, x_step, h, u_max)
             diag = {
                 "step": s,
                 "mass_drift": float(rho.sum().item()) - initial_mass,
                 "max_speed": float(speed.max().item()),
                 "xr_h": meas["xr_h"],
+                "xr_status": meas["xr_status"],
                 "xr_z_std": meas["xr_planes_std"],
             }
             diagnostics.append(diag)
+            xr_txt = "n/a" if meas["xr_h"] is None else f"{meas['xr_h']:.4f}"
+            std_txt = "n/a" if meas["xr_planes_std"] is None else f"{meas['xr_planes_std']:.4f}"
             print(
                 f"  step={s:6d} mass_drift={diag['mass_drift']:+.3e} "
-                f"max|u|={diag['max_speed']:.5f} xr/h={meas['xr_h']:.4f} "
-                f"(z-std {meas['xr_planes_std']:.4f})",
+                f"max|u|={diag['max_speed']:.5f} xr/h={xr_txt} "
+                f"({meas['xr_status']}, z-std {std_txt})",
                 flush=True,
             )
             if quick and s >= quick:
@@ -377,15 +376,21 @@ def run_case(
 
     xr_series = [d["xr_h"] for d in diagnostics]
     steps_arr = [d["step"] for d in diagnostics]
-    last3 = xr_series[-3:]
+    # 只在「已定位到闭合点」的样本上判稳态 (旧实现把无效样本当 0.0, 会得到 converged=true)
+    valid_xr = [v for v in xr_series if v is not None]
+    last3 = valid_xr[-3:]
+    converge_meas = measure_reattach_3d(ux_f, x_step, h, u_max)
     converged = (
-        len(last3) >= 3 and (max(last3) - min(last3)) <= 0.02 and abs(last3[-1] - last3[-2]) <= 0.01
+        len(last3) >= 3
+        and (max(last3) - min(last3)) <= 0.02
+        and abs(last3[-1] - last3[-2]) <= 0.01
+        and converge_meas["xr_status"] == _reattach.REATTACHED
     )
 
     inlet_diag = inlet_profile_check(ux_f, h, u_max)
     span_diag = spanwise_uniformity(ux_f, solid, u_max)
     bubble_diag = separation_bubble_diag(ux_f, x_step, h, u_max)
-    meas_final = measure_reattach_3d(ux_f, x_step, h)
+    meas_final = converge_meas
 
     out_dir.mkdir(parents=True, exist_ok=True)
     np.savez(
@@ -427,7 +432,14 @@ def run_case(
         },
         "result": {
             "xr_h": meas_final["xr_h"],
-            "xr_h_err_pct": (meas_final["xr_h"] - xr_ref) / xr_ref * 100.0,
+            "xr_status": meas_final["xr_status"],
+            "xr_n_negative_runs": meas_final["xr_n_negative_runs"],
+            "xr_corner_attached": meas_final["xr_corner_attached"],
+            "xr_planes_valid": meas_final["xr_planes_valid"],
+            "xr_planes_invalid": meas_final["xr_planes_invalid"],
+            "xr_h_err_pct": (
+                None if meas_final["xr_h"] is None else (meas_final["xr_h"] - xr_ref) / xr_ref * 100.0
+            ),
             "xr_planes_mean": meas_final["xr_planes_mean"],
             "xr_planes_std": meas_final["xr_planes_std"],
             "xr_planes_min": meas_final["xr_planes_min"],
@@ -466,7 +478,9 @@ def main() -> None:
     ap.add_argument("--steps", type=int, default=int(os.environ.get("B3DHR_STEPS", 300000)))
     ap.add_argument("--interval", type=int, default=10000)
     ap.add_argument("--quick", type=int, default=0, help="quick sanity run (steps)")
-    ap.add_argument("--device", default="cuda:1")
+    ap.add_argument(
+        "--device", default="cuda:1" if torch.cuda.is_available() else "cpu"
+    )
     ap.add_argument("--collision", default="bgk", choices=["bgk", "mrt", "rlbm", "trt"])
     ap.add_argument("--no-compile", action="store_true", help="disable torch.compile")
     ap.add_argument("--u-max", type=float, default=0.05)
@@ -478,12 +492,14 @@ def main() -> None:
         help="initial velocity field: full-x parabolic (default) or upstream-channel only",
     )
     ap.add_argument("--out", default="/tmp/bstep3d_runs_highre")
-    ap.add_argument("--verified", default="/home/wxsc/cxs/TensorLBM/benchmarks/verified/bstep_3d")
+    ap.add_argument("--verified", default=str(_REPO_ROOT / "benchmarks/verified/bstep_3d"))
     ap.add_argument(
         "--scan", action="store_true", help="run h=49 and h=78, write convergence summary"
     )
     ap.add_argument("--device0", default="cuda:1")
-    ap.add_argument("--device1", default="cuda:1")
+    ap.add_argument(
+        "--device1", default="cuda:1" if torch.cuda.is_available() else "cpu"
+    )
     args = ap.parse_args()
 
     err_tol_pct = 3.0
@@ -516,11 +532,14 @@ def main() -> None:
             init=args.init,
         )
         cases.append(r)
+        res = r["result"]
+        xr_txt = "n/a" if res["xr_h"] is None else f"{res['xr_h']:.4f}"
+        err_txt = "n/a" if res["xr_h_err_pct"] is None else f"{res['xr_h_err_pct']:+.2f}%"
         print(
-            f"H={h}: X_r/h = {r['result']['xr_h']:.4f} "
-            f"err {r['result']['xr_h_err_pct']:+.2f}% "
-            f"converged={r['result']['converged']} wall={r['result']['wall_time_s']:.0f}s "
-            f"finite={r['result']['finite']}",
+            f"H={h}: X_r/h = {xr_txt} ({res['xr_status']}) "
+            f"err {err_txt} "
+            f"converged={res['converged']} wall={res['wall_time_s']:.0f}s "
+            f"finite={res['finite']}",
             flush=True,
         )
 
@@ -535,11 +554,16 @@ def main() -> None:
     if args.scan and len(cases) >= 2:
         errs = [c["result"]["xr_h_err_pct"] for c in cases]
         xrs = [c["result"]["xr_h"] for c in cases]
-        grid_converged = abs(xrs[1] - xrs[0]) < 0.15 and errs[1] <= errs[0] + 1e-12
+        # a missing reattachment point is "not measured", never "0.0"
+        measurable = all(e is not None and x is not None for e, x in zip(errs, xrs))
+        grid_converged = measurable and (
+            abs(xrs[1] - xrs[0]) < 0.15 and errs[1] <= errs[0] + 1e-12
+        )
         per_case_ok = all(c["result"]["converged"] for c in cases)
         all_finite = all(c["result"]["finite"] for c in cases)
         passed = (
-            all_finite
+            measurable
+            and all_finite
             and all(abs(e) <= err_tol_pct for e in errs)
             and grid_converged
             and per_case_ok
@@ -567,8 +591,8 @@ def main() -> None:
         with (vdir / f"result_re{int(args.re)}.json").open("w", encoding="utf-8") as fh:
             json.dump(summary, fh, indent=2, ensure_ascii=False, default=float)
         print(
-            f"=== scan summary: xr_h = {[round(v, 4) for v in xrs]}, "
-            f"err% = {[round(v, 2) for v in errs]}, "
+            f"=== scan summary: xr_h = {[None if v is None else round(v, 4) for v in xrs]}, "
+            f"err% = {[None if v is None else round(v, 2) for v in errs]}, "
             f"grid_converged={grid_converged}, verified={passed} ===",
             flush=True,
         )
