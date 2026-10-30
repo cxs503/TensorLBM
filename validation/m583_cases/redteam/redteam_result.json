@@ -1,0 +1,25 @@
+{
+  "test_name": "red_team_bad_value_injection",
+  "description": "Inject bad values into all 3 cases and verify gates turn RED",
+  "tests": {
+    "poiseuille_bad": {
+      "injected_l2_err": 0.15,
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "gate_red": true
+    },
+    "couette_bad": {
+      "injected_l2_err": 0.08,
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "gate_red": true
+    },
+    "taylor_green_bad": {
+      "injected_err_e_pct": 8.5,
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "gate_red": true
+    }
+  },
+  "overall_red_team_pass": true
+}

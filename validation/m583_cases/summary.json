@@ -1,0 +1,27 @@
+{
+  "mission": "m583",
+  "poiseuille": {
+    "l2_rel_err": 0.004427389750777578,
+    "max_rel_err_pct": 0.4607460528920279,
+    "u_max_err_pct": 0.43285726531736896,
+    "steady": true,
+    "gate_pass": true
+  },
+  "couette": {
+    "l2_rel_err": 0.00012073206190792412,
+    "max_rel_err_pct": 0.018209881252710204,
+    "u_top_err_pct": 0.00012343442892276754,
+    "steady": true,
+    "gate_pass": true
+  },
+  "taylor_green": {
+    "err_e_pct": -0.010008425661025376,
+    "err_vel_pct": -0.01822392604032989,
+    "r2": 0.99999995104423,
+    "gate_pass": true
+  },
+  "overall_verdict": "PASS",
+  "all_cases_green": true,
+  "red_team_pass": true,
+  "figures_count": 6
+}

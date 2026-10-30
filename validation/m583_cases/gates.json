@@ -1,0 +1,145 @@
+{
+  "mission": "m583_validation_framework",
+  "date": "2026-10-30",
+  "cases": {
+    "poiseuille_2d": {
+      "gates": [
+        {
+          "gate": "G1_library_entry",
+          "pass": true,
+          "evidence": "tensorlbm primitives (d2q9, collide_bgk, stream, zou_he)"
+        },
+        {
+          "gate": "G2_direct_observable",
+          "pass": true,
+          "evidence": "L2 relative error = 0.004427 (threshold: 0.03)"
+        },
+        {
+          "gate": "G3_monotone_convergence",
+          "pass": true,
+          "evidence": "Max rel error = 0.4607% < 3%"
+        },
+        {
+          "gate": "G4_reference_locked",
+          "pass": true,
+          "evidence": "Analytical: u(y) = 4*u_max*(y/H)*(1-y/H), u_max=0.040000"
+        },
+        {
+          "gate": "G5_steady_state",
+          "pass": true,
+          "evidence": "Steady state reached: True, steps=14200"
+        },
+        {
+          "gate": "G6_mass_conservation",
+          "pass": true,
+          "evidence": "Mass drift = 0.000000%"
+        },
+        {
+          "gate": "G7_finite_values",
+          "pass": true,
+          "evidence": "All values finite: True"
+        }
+      ],
+      "summary": {
+        "overall_pass": true,
+        "l2_rel_err": 0.004427389750777578,
+        "max_rel_err_pct": 0.4607460528920279,
+        "u_max_err_pct": 0.43285726531736896,
+        "steady": true
+      }
+    },
+    "couette_2d": {
+      "gates": [
+        {
+          "gate": "G1_library_entry",
+          "pass": true,
+          "evidence": "tensorlbm primitives (d2q9, collide_bgk, stream, moving-wall BB)"
+        },
+        {
+          "gate": "G2_direct_observable",
+          "pass": true,
+          "evidence": "L2 relative error = 1.207321e-04 (threshold: 0.03)"
+        },
+        {
+          "gate": "G3_monotone_convergence",
+          "pass": true,
+          "evidence": "Max rel error = 0.0182% < 3%"
+        },
+        {
+          "gate": "G4_reference_locked",
+          "pass": true,
+          "evidence": "Analytical: u(y) = U0*y/H_eff, U0=0.05"
+        },
+        {
+          "gate": "G5_steady_state",
+          "pass": true,
+          "evidence": "Steady state reached: True, steps=3000"
+        },
+        {
+          "gate": "G6_mass_conservation",
+          "pass": true,
+          "evidence": "Mass drift = 0.000879%"
+        },
+        {
+          "gate": "G7_finite_values",
+          "pass": true,
+          "evidence": "All values finite: True"
+        }
+      ],
+      "summary": {
+        "overall_pass": true,
+        "l2_rel_err": 0.00012073206190792412,
+        "max_rel_err_pct": 0.018209881252710204,
+        "u_top_err_pct": 0.00012343442892276754,
+        "steady": true
+      }
+    },
+    "taylor_green_2d": {
+      "gates": [
+        {
+          "gate": "G1_library_entry",
+          "pass": true,
+          "evidence": "tensorlbm primitives (d2q9, collide_bgk, stream)"
+        },
+        {
+          "gate": "G2_direct_observable",
+          "pass": true,
+          "evidence": "Energy decay rate error = -0.0100% (threshold: 3%)"
+        },
+        {
+          "gate": "G3_monotone_convergence",
+          "pass": true,
+          "evidence": "Velocity decay rate error = -0.0182% < 3%"
+        },
+        {
+          "gate": "G4_reference_locked",
+          "pass": true,
+          "evidence": "Analytical: \u03b3_E=4\u03bdk\u00b2=1.233701e-03, \u03b3_vel=2\u03bdk\u00b2=6.168503e-04"
+        },
+        {
+          "gate": "G5_fit_quality",
+          "pass": true,
+          "evidence": "R\u00b2 = 1.000000 > 0.99"
+        },
+        {
+          "gate": "G6_mass_conservation",
+          "pass": true,
+          "evidence": "Mass drift = 6.270409e-05"
+        },
+        {
+          "gate": "G7_consistency",
+          "pass": true,
+          "evidence": "Half-split consistency: \u03b3\u2081=1.233339e-03, \u03b3\u2082=1.233742e-03"
+        }
+      ],
+      "summary": {
+        "overall_pass": true,
+        "err_e_pct": -0.010008425661025376,
+        "err_vel_pct": -0.01822392604032989,
+        "r2": 0.99999995104423
+      }
+    }
+  },
+  "overall_verdict": "PASS",
+  "all_cases_green": true
+}
