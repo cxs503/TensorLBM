@@ -1,0 +1,55 @@
+{
+  "benchmark": "sphere_re100",
+  "device": "sdaa:0",
+  "device_name": "/dev/tcaicard0",
+  "reference": {
+    "cd_ref_formula": "Schiller-Naumann: 24/Re * (1 + 0.15 * Re^0.687)",
+    "re_target": 100
+  },
+  "tiers": {
+    "D10": {
+      "D": 10,
+      "status": "SUCCESS",
+      "re_eff": 100.0,
+      "tau": 0.53,
+      "u_lb": 0.10000000000000009,
+      "domain_lu": [
+        80,
+        70,
+        70
+      ],
+      "n_solid": 515,
+      "n_bfl_links": 1794,
+      "steps": 500,
+      "cd_ref": 1.0917310910948732,
+      "cd_avg": 1.2060513685028973,
+      "cd_error_pct": 10.471468509097308,
+      "peak_mem_gib": 0.3808445930480957,
+      "wall_time_s": 235.39917087554932,
+      "ms_per_step": 470.79834175109863,
+      "mass_drift_ppm": 306.6848517000734
+    },
+    "D20": {
+      "D": 20,
+      "status": "SUCCESS",
+      "re_eff": 100.0,
+      "tau": 0.53,
+      "u_lb": 0.050000000000000044,
+      "domain_lu": [
+        160,
+        140,
+        140
+      ],
+      "n_solid": 4169,
+      "n_bfl_links": 7242,
+      "steps": 1000,
+      "cd_ref": 1.0917310910948732,
+      "cd_avg": 1.205620550526449,
+      "cd_error_pct": 10.432006595814594,
+      "peak_mem_gib": 3.0434694290161133,
+      "wall_time_s": 477.4879803657532,
+      "ms_per_step": 477.4879803657532,
+      "mass_drift_ppm": -0.07982553331438808
+    }
+  }
+}
