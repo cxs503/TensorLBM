@@ -1,0 +1,224 @@
+{
+  "case": "poiseuille_3d_annulus",
+  "device": "sdaa",
+  "device_evidence": {
+    "has_sdaa": true,
+    "sdaa_available": true,
+    "device_name": "/dev/tcaicard11",
+    "device_count": 1,
+    "current_device": 0
+  },
+  "run_result": {
+    "case": "poiseuille_3d_annulus",
+    "lattice": "D3Q19",
+    "collision": "bgk",
+    "boundary": "zou_he_velocity_inlet(x=0) + zou_he_pressure_outlet(x=nx-1) + swap bounce-back on ALL solid cells (outer d>R_o and inner column d<a, post-streaming)",
+    "R_o": 20,
+    "a": 10.0,
+    "a_ratio": 0.5,
+    "ny": 43,
+    "nz": 43,
+    "nx": 120,
+    "L_over_R": 6.0,
+    "tau": 0.8,
+    "nu_lb": 0.10000000000000002,
+    "u_in": 0.02,
+    "rho_out": 1.0,
+    "Re": 3.9999999999999996,
+    "Ma": 0.05223111818266772,
+    "G_nom": 0.00023812540159112762,
+    "U_max_nom": 0.030155650142838365,
+    "min_steps": 500,
+    "n_steps": 3000,
+    "avg_steps": 400,
+    "steady": false,
+    "compile_mode": null,
+    "fit_c": [
+      -0.4997227461556879,
+      0.24181372267577003,
+      0.0005563270869376685
+    ],
+    "fit_cond": 293.8056139856452,
+    "G_fit": 0.00022253083477506743,
+    "delta_i": 9.89121113896191,
+    "delta_o": 20.208452279535273,
+    "delta_i_minus_a": -0.10878886103808938,
+    "delta_o_minus_Ro": 0.20845227953527257,
+    "delta_i_allbins": 9.836053708882492,
+    "delta_o_allbins": 20.2483099328471,
+    "delta_i_minus_a_allbins": -0.16394629111750803,
+    "delta_o_minus_Ro_allbins": 0.2483099328470999,
+    "G_Q": 0.0002239580565093458,
+    "G_fit_over_G_Q": 0.993627281123424,
+    "G_int_over_G_Q": 1.0406063433603672,
+    "G_int": 0.00023305217425028483,
+    "dp_inlet_outlet": 0.029073715209960938,
+    "U_max_ref_eff": 0.030213461183073123,
+    "u_mean_eff": 0.020032079223705913,
+    "eff_max_bin_central_pct": 3.2374703689054414,
+    "eff_l2_bin_central_pct": 1.5120157774667902,
+    "eff_max_cell_central_pct": 8.251923236321991,
+    "nom_max_bin_central_pct": 3.798248379321658,
+    "nom_l2_bin_central_pct": 2.296058259586199,
+    "nom_max_cell_central_pct": 10.146900356533134,
+    "nom_max_bin_central_dp_pct": 2.8849888970944235,
+    "Q_meas": 19.543445060611703,
+    "N_fluid_cells": 940,
+    "A_nom": 942.4777960769379,
+    "N_over_A_nom": 0.9973709767092108,
+    "u_center": 0.030265172943472862,
+    "u_peak_err_vs_nom_pct": 0.36319164108788893,
+    "fd_max_rel_dev_pct": 3.4984190555609156,
+    "mass_drift_pct": 2.8985258221609342,
+    "finite": true,
+    "elapsed_s": 97.6,
+    "r_bins": [
+      10.45728,
+      11.38035,
+      12.34283,
+      13.38828,
+      14.41605,
+      15.41257,
+      16.44859,
+      17.40443,
+      18.41118,
+      19.47297
+    ],
+    "w_bins": [
+      56,
+      68,
+      76,
+      92,
+      88,
+      100,
+      104,
+      104,
+      120,
+      132
+    ],
+    "u_bins": [
+      0.00794906,
+      0.01636005,
+      0.0231162,
+      0.02792638,
+      0.02991759,
+      0.02952557,
+      0.02688202,
+      0.02261542,
+      0.01605657,
+      0.00757522
+    ],
+    "uref_bins_eff": [
+      0.00697091,
+      0.01628139,
+      0.02326615,
+      0.02796771,
+      0.02999459,
+      0.02961813,
+      0.02696993,
+      0.02261534,
+      0.01610745,
+      0.00722448
+    ],
+    "uref_bins_nom": [
+      0.00582073,
+      0.01562684,
+      0.02296385,
+      0.02787321,
+      0.02994666,
+      0.02947265,
+      0.02658516,
+      0.02189277,
+      0.01491118,
+      0.00540444
+    ],
+    "stdout_tail": "[compile_route] poiseuille_3d_annulus[Ro20]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]\n",
+    "stderr_tail": "/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n"
+  },
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm.boundaries3d",
+          "f": "/root/tp-agent/work/m32/benchmarks/verified/poiseuille_3d_annulus/run.py",
+          "k": "grep:from tensorlbm.boundaries3d"
+        },
+        {
+          "v": "from tensorlbm.solver3d",
+          "f": "/root/tp-agent/work/m32/benchmarks/verified/poiseuille_3d_annulus/run.py",
+          "k": "grep:from tensorlbm.solver3d"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "evidence": [
+        {
+          "v": 3.2374703689054414,
+          "f": "SDAA run result",
+          "k": "eff_max_bin_central_pct"
+        }
+      ],
+      "threshold": "<=3%"
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": null,
+      "evidence": [],
+      "reason": "Single\u6863 run (R_o=20 only); monotone convergence requires >=2\u6863",
+      "status": "NOT_EVALUATED"
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "\u89e3\u6790\u89e3\u9884\u6ce8\u518c",
+          "f": "/root/tp-agent/work/m32/benchmarks/verified/poiseuille_3d_annulus/README.md",
+          "k": "grep:\u7cbe\u786e\u89e3\u6790\u89e3"
+        },
+        {
+          "v": "none",
+          "f": "SDAA run result",
+          "k": "extrap"
+        }
+      ]
+    },
+    {
+      "gate": "case_readme",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "README.md exists",
+          "f": "/root/tp-agent/work/m32/benchmarks/verified/poiseuille_3d_annulus/README.md",
+          "k": "size=8079B"
+        }
+      ]
+    },
+    {
+      "gate": "figures",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "figures.json exists",
+          "f": "/root/tp-agent/work/m32/benchmarks/verified/poiseuille_3d_annulus/figures.json",
+          "k": "manifest"
+        }
+      ]
+    }
+  ],
+  "wall_clock_s": 102.4,
+  "wall_clock_limit_s": 1200,
+  "triton_workaround": false,
+  "triton_workaround_note": "No triton dependency in this case; compile_route handles SDAA inductor fallback internally.",
+  "compile_mode": "eager",
+  "compile_mode_reason": "SDAA teco_inductor backend is incomplete for LBM step chain; eager mode avoids compile overhead.",
+  "steps_config": {
+    "min_steps": 500,
+    "max_steps": 3000,
+    "note": "Feasible smaller\u6863 to complete within wall-clock budget"
+  }
+}
