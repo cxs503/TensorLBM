@@ -1,0 +1,43 @@
+{
+  "case": "cylinder_3d_re40",
+  "description": "3D z-axis extruded circular cylinder, infinite span (z-periodic), Re=40",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "reference": {
+    "cd_ref": 1.5,
+    "cluster": [
+      1.48,
+      1.52
+    ],
+    "convention": "2D free-stream NUMERICAL cluster Cd\u22481.50 [1.48,1.52]: Dennis&Chang 1970 1.522 / Fornberg 1985 1.498 / Takami&Keller 1969 1.48. NOT Tritton 1959 \u22481.54 (finite-span experiment)."
+  },
+  "force_method": "Ladd MEM, surface-only (wall-adjacent cells)",
+  "device": "cpu",
+  "compile_mode_requested": "default",
+  "utc_start": "2026-10-29T18:23:29.944054+00:00",
+  "grids": {
+    "D10_L16": {
+      "D": 10,
+      "nx": 160,
+      "ny": 160,
+      "nz": 1,
+      "lateral_D": 16.0,
+      "blockage_pct": 6.25,
+      "steps": 1000,
+      "u_in": 0.08,
+      "tau": 0.56,
+      "cd_mem_surface": 1.9379,
+      "cd_mem_all": 1.9587,
+      "cd_mem_interior": 0.0208,
+      "cd_pressure": 1.2274,
+      "err_pct": 29.19,
+      "within_3pct": false,
+      "elapsed_s": 100.8,
+      "compile_status": "compiled",
+      "status": "completed"
+    }
+  },
+  "utc_end": "2026-10-29T18:25:10.745843+00:00",
+  "all_passed": false,
+  "verdict": "FAIL"
+}

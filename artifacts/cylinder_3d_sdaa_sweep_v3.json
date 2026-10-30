@@ -1,0 +1,63 @@
+{
+  "case": "cylinder_3d_re40",
+  "description": "3D z-axis extruded circular cylinder, infinite span (z-periodic), Re=40",
+  "lattice": "D3Q19",
+  "collision": "bgk",
+  "reference": {
+    "cd_ref": 1.5,
+    "cluster": [
+      1.48,
+      1.52
+    ],
+    "convention": "2D free-stream NUMERICAL cluster Cd\u22481.50 [1.48,1.52]: Dennis&Chang 1970 1.522 / Fornberg 1985 1.498 / Takami&Keller 1969 1.48. NOT Tritton 1959 \u22481.54 (finite-span experiment)."
+  },
+  "force_method": "Ladd MEM, surface-only (wall-adjacent cells)",
+  "device": "sdaa:0",
+  "compile_mode_requested": null,
+  "utc_start": "2026-10-29T18:26:39.312658+00:00",
+  "grids": {
+    "D20_L40": {
+      "D": 20,
+      "nx": 800,
+      "ny": 800,
+      "nz": 1,
+      "lateral_D": 40.0,
+      "blockage_pct": 2.5,
+      "steps": 30000,
+      "u_in": 0.08,
+      "tau": 0.62,
+      "cd_mem_surface": 1.5245,
+      "cd_mem_all": 1.5674,
+      "cd_mem_interior": 0.0429,
+      "cd_pressure": 0.9717,
+      "err_pct": 1.64,
+      "within_3pct": true,
+      "elapsed_s": 3077.7,
+      "compile_status": "eager",
+      "status": "completed"
+    },
+    "D40_L40": {
+      "D": 40,
+      "nx": 1600,
+      "ny": 1600,
+      "nz": 1,
+      "lateral_D": 40.0,
+      "blockage_pct": 2.5,
+      "steps": 30000,
+      "u_in": 0.08,
+      "tau": 0.74,
+      "cd_mem_surface": 1.4894,
+      "cd_mem_all": 1.5515,
+      "cd_mem_interior": 0.0621,
+      "cd_pressure": 0.9482,
+      "err_pct": -0.71,
+      "within_3pct": true,
+      "elapsed_s": 9228.0,
+      "compile_status": "eager",
+      "status": "completed"
+    }
+  },
+  "utc_end": "2026-10-29T21:51:44.993519+00:00",
+  "all_passed": true,
+  "verdict": "PASS"
+}

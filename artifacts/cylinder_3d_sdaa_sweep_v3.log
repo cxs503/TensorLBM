@@ -1,0 +1,68 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+================================================================================
+SDAA SWEEP: cylinder_3d benchmark (independent driver v3)
+================================================================================
+Device: sdaa:0
+Grids: [20, 40]
+Steps: 30000
+Lateral: 40.0D
+nz: 1
+Compile mode: None
+Output: artifacts/cylinder_3d_sdaa_sweep_v3.json
+Checkpoint dir: artifacts/checkpoints
+================================================================================
+
+================================================================================
+Running grid D=20
+================================================================================
+[cyl3d D=20 800x800x1] Re=40.0 u_in=0.08 nu=0.040000 tau=0.620000 dpS=0.0640
+[cyl3d D=20 800x800x1] solid=317 surface=56 interior=261 (blockage 2.50%, span 1 cells = 0.05D)
+[compile_route] cylinder_3d_re40[D20]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
+[cyl3d D=20 800x800x1] Checkpoint saved at step 5000
+[cyl3d D=20 800x800x1] step=5000 Cd_mem_surf=1.6683 Cd_mem_all=1.7118 (535s)
+[cyl3d D=20 800x800x1] Checkpoint saved at step 10000
+[cyl3d D=20 800x800x1] step=10000 Cd_mem_surf=1.6007 Cd_mem_all=1.6440 (1050s)
+[cyl3d D=20 800x800x1] Checkpoint saved at step 15000
+[cyl3d D=20 800x800x1] step=15000 Cd_mem_surf=1.5755 Cd_mem_all=1.6187 (1543s)
+[cyl3d D=20 800x800x1] Checkpoint saved at step 20000
+[cyl3d D=20 800x800x1] step=20000 Cd_mem_surf=1.5627 Cd_mem_all=1.6058 (2060s)
+[cyl3d D=20 800x800x1] Checkpoint saved at step 25000
+[cyl3d D=20 800x800x1] step=25000 Cd_mem_surf=1.5267 Cd_mem_all=1.5697 (2563s)
+[cyl3d D=20 800x800x1] Checkpoint saved at step 30000
+[cyl3d D=20 800x800x1] step=30000 Cd_mem_surf=1.5245 Cd_mem_all=1.5674 (3078s)
+[cyl3d D=20 800x800x1] FINAL Cd_mem_surface=1.5245 (err=+1.64%) Cd_mem_all=1.5674 Cd_mem_interior=0.0429 compile=eager elapsed=3078s
+
+================================================================================
+Running grid D=40
+================================================================================
+[cyl3d D=40 1600x1600x1] Re=40.0 u_in=0.08 nu=0.080000 tau=0.740000 dpS=0.1280
+[cyl3d D=40 1600x1600x1] solid=1257 surface=112 interior=1145 (blockage 2.50%, span 1 cells = 0.03D)
+[compile_route] cylinder_3d_re40[D40]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]
+[cyl3d D=40 1600x1600x1] Checkpoint saved at step 5000
+[cyl3d D=40 1600x1600x1] step=5000 Cd_mem_surf=1.7766 Cd_mem_all=1.8507 (1632s)
+[cyl3d D=40 1600x1600x1] Checkpoint saved at step 10000
+[cyl3d D=40 1600x1600x1] step=10000 Cd_mem_surf=1.6540 Cd_mem_all=1.7231 (3297s)
+[cyl3d D=40 1600x1600x1] Checkpoint saved at step 15000
+[cyl3d D=40 1600x1600x1] step=15000 Cd_mem_surf=1.6021 Cd_mem_all=1.6690 (4824s)
+[cyl3d D=40 1600x1600x1] Checkpoint saved at step 20000
+[cyl3d D=40 1600x1600x1] step=20000 Cd_mem_surf=1.5736 Cd_mem_all=1.6392 (6306s)
+[cyl3d D=40 1600x1600x1] Checkpoint saved at step 25000
+[cyl3d D=40 1600x1600x1] step=25000 Cd_mem_surf=1.5009 Cd_mem_all=1.5636 (7729s)
+[cyl3d D=40 1600x1600x1] Checkpoint saved at step 30000
+[cyl3d D=40 1600x1600x1] step=30000 Cd_mem_surf=1.4894 Cd_mem_all=1.5515 (9228s)
+[cyl3d D=40 1600x1600x1] FINAL Cd_mem_surface=1.4894 (err=-0.71%) Cd_mem_all=1.5515 Cd_mem_interior=0.0621 compile=eager elapsed=9228s
+
+================================================================================
+SUMMARY
+================================================================================
+Grid            Cd_surf    Cd_all     err%       within 3%  status    
+--------------------------------------------------------------------------------
+D20_L40         1.5245     1.5674     +1.64      True       completed 
+D40_L40         1.4894     1.5515     -0.71      True       completed 
+================================================================================
+Verdict: PASS
+================================================================================
+
+Result saved to: artifacts/cylinder_3d_sdaa_sweep_v3.json
+Checkpoints cleaned up
