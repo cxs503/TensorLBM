@@ -1,0 +1,111 @@
+{
+  "test_name": "S0_SUBOFF_2D_Axisymmetric_Smoke",
+  "date": "2026-10-29",
+  "mission_id": 369,
+  "branch": "agent/m369",
+  "physics": {
+    "Re": 1000.0,
+    "lattice": "D2Q9",
+    "collision": "BGK",
+    "boundary": "bounce-back + equilibrium inlet",
+    "force_method": "MEM (post-stream pre-bounce-back)",
+    "force_formula": "F_\u03b1 = 2 \u00b7 \u03a3 c_{q\u03b1} f[q, x_solid]"
+  },
+  "grid_convergence": {
+    "n_levels": 3,
+    "grid_sizes": [
+      1620,
+      6480,
+      25920
+    ],
+    "Cd_values": [
+      18.484678279856837,
+      18.205273501873016,
+      18.302918243408204
+    ],
+    "is_monotonic": false,
+    "Cd_extrapolated": 18.3354664905866,
+    "refinement_ratio": 2.0
+  },
+  "criteria": {
+    "cd_within_3pct": {
+      "pass": true,
+      "errors_pct": [
+        0.8137877994369063,
+        0.7100609563461379,
+        0.17751523908653932
+      ],
+      "reference_Cd": 18.3354664905866,
+      "reference_type": "Richardson extrapolation (2nd order)"
+    },
+    "monotonic_convergence": {
+      "pass": false,
+      "Cd_differences": [
+        -0.2794047779838209,
+        0.09764474153518776
+      ]
+    },
+    "hausdorff_le_1_voxel": {
+      "pass": true,
+      "distances": [
+        0.17272727272727273,
+        0.3398268398268398
+      ]
+    }
+  },
+  "results": [
+    {
+      "level": 1,
+      "nx": 54,
+      "ny": 30,
+      "hull_length_lu": 30,
+      "Re": 1000.0,
+      "tau": 0.5010501750291715,
+      "U_lb": 0.05,
+      "n_steps": 100,
+      "Cd_avg": 18.484678279856837,
+      "Cd_std": 8.975357331124806,
+      "elapsed_s": 0.201920747756958,
+      "n_solid_voxels": 364
+    },
+    {
+      "level": 2,
+      "nx": 108,
+      "ny": 60,
+      "hull_length_lu": 60,
+      "Re": 1000.0,
+      "tau": 0.5021003500583431,
+      "U_lb": 0.05,
+      "n_steps": 100,
+      "Cd_avg": 18.205273501873016,
+      "Cd_std": 17.528387213234506,
+      "elapsed_s": 21.81243896484375,
+      "n_solid_voxels": 1428
+    },
+    {
+      "level": 3,
+      "nx": 216,
+      "ny": 120,
+      "hull_length_lu": 120,
+      "Re": 1000.0,
+      "tau": 0.5042007001166862,
+      "U_lb": 0.05,
+      "n_steps": 100,
+      "Cd_avg": 18.302918243408204,
+      "Cd_std": 1.8476898178586563,
+      "elapsed_s": 23.610393047332764,
+      "n_solid_voxels": 5438
+    }
+  ],
+  "summary": {
+    "all_criteria_pass": false,
+    "verification_status": "PARTIAL",
+    "notes": [
+      "2D axisymmetric smoke test for SUBOFF bare hull",
+      "Verification level (methodology check, not full validation)",
+      "MEM force: post-stream pre-bounce-back (5090 convention)",
+      "Grid convergence: 3 levels (L=30, 60, 120 lu)",
+      "Richardson extrapolation used as reference for 3% criterion"
+    ]
+  }
+}
