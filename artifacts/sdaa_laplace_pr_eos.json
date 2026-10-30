@@ -1,0 +1,378 @@
+{
+  "benchmark": "laplace_pr_eos",
+  "prereg": "prereg_v2.md \u00a75(b), frozen 2026-10-01",
+  "device_evidence": {
+    "device_type": "sdaa",
+    "device_name": "/dev/tcaicard23",
+    "torch_version": "2.7.1",
+    "sdaa_device_count": 1
+  },
+  "triton_bypass": true,
+  "triton_bypass_note": "TRITON_INTERPRET=1 set as precaution; this benchmark does not use triton kernels directly (verified by source inspection of make_psi_eos, collide_sc_single_component, stream).",
+  "configuration": {
+    "eos": "pr",
+    "T_r": 0.55,
+    "T": 0.04010547044515562,
+    "G": 1.0,
+    "tau": 1.0,
+    "forcing": "edm",
+    "L_grid": [
+      128,
+      192,
+      256
+    ],
+    "base_R": [
+      12,
+      16,
+      20,
+      24
+    ],
+    "geometry": "R/L_preserved",
+    "max_steps": 15000,
+    "min_steps": 2000,
+    "sample": 500,
+    "conv_tol": 1e-05,
+    "dtype": "float32"
+  },
+  "verdict": {
+    "primary": {
+      "gated": true,
+      "per_L": {
+        "128": {
+          "n": 4,
+          "sigma": 0.321043197834349,
+          "intercept": 0.0004534978998712337,
+          "rms_residual": 1.756442729152867e-05,
+          "dp_max": 0.024087377137038856,
+          "resid_gate": true,
+          "points": [
+            {
+              "r_eff": 13.575423049926759,
+              "inv_r_eff": 0.07366252943442489,
+              "dp": 0.024087377137038856,
+              "tag": "primary_L128_R12"
+            },
+            {
+              "r_eff": 17.218271255493164,
+              "inv_r_eff": 0.05807783982268074,
+              "dp": 0.019128567341249438,
+              "tag": "primary_L128_R16"
+            },
+            {
+              "r_eff": 20.97633056640625,
+              "inv_r_eff": 0.047672780367101354,
+              "dp": 0.015755001723300667,
+              "tag": "primary_L128_R20"
+            },
+            {
+              "r_eff": 24.80122184753418,
+              "inv_r_eff": 0.04032059412828579,
+              "dp": 0.01338706916430965,
+              "tag": "primary_L128_R24"
+            }
+          ]
+        },
+        "192": {
+          "n": 4,
+          "sigma": 0.32555817825986727,
+          "intercept": 0.0002571091251794052,
+          "rms_residual": 6.3335901443109285e-06,
+          "dp_max": 0.01646553452592343,
+          "resid_gate": true,
+          "points": [
+            {
+              "r_eff": 20.080129623413086,
+              "inv_r_eff": 0.04980047533328755,
+              "dp": 0.01646553452592343,
+              "tag": "primary_L192_R18"
+            },
+            {
+              "r_eff": 25.59023208618164,
+              "inv_r_eff": 0.03907741034283099,
+              "dp": 0.012984900898300112,
+              "tag": "primary_L192_R24"
+            },
+            {
+              "r_eff": 31.264602661132812,
+              "inv_r_eff": 0.03198505385910978,
+              "dp": 0.010676711716223508,
+              "tag": "primary_L192_R30"
+            },
+            {
+              "r_eff": 37.031602478027345,
+              "inv_r_eff": 0.027003962374929594,
+              "dp": 0.009040568571072072,
+              "tag": "primary_L192_R36"
+            }
+          ]
+        },
+        "256": {
+          "n": 4,
+          "sigma": 0.32148085954991035,
+          "intercept": 0.00039190591016542535,
+          "rms_residual": 4.6202951933837376e-05,
+          "dp_max": 0.01247516693547368,
+          "resid_gate": true,
+          "points": [
+            {
+              "r_eff": 26.661059188842774,
+              "inv_r_eff": 0.037507887174208145,
+              "dp": 0.01247516693547368,
+              "tag": "primary_L256_R24"
+            },
+            {
+              "r_eff": 34.02418975830078,
+              "inv_r_eff": 0.02939085418649927,
+              "dp": 0.00981865031644702,
+              "tag": "primary_L256_R32"
+            },
+            {
+              "r_eff": 41.60438079833985,
+              "inv_r_eff": 0.024035930371060908,
+              "dp": 0.008056413172744215,
+              "tag": "primary_L256_R40"
+            },
+            {
+              "r_eff": 49.30421676635742,
+              "inv_r_eff": 0.020282240862658767,
+              "dp": 0.006971501873340458,
+              "tag": "primary_L256_R48"
+            }
+          ]
+        }
+      },
+      "sigma_by_L": {
+        "128": 0.321043197834349,
+        "192": 0.32555817825986727,
+        "256": 0.32148085954991035
+      },
+      "abs_sigma_diffs": [
+        0.004514980425518289,
+        0.004077318709956923
+      ],
+      "clause_i_resid": true,
+      "clause_ii_monotone_nonincreasing": true,
+      "pass_both": true
+    },
+    "stability": {
+      "all_stable": true
+    },
+    "mass_conservation": {
+      "all_pass": true
+    },
+    "psi_domain": {
+      "no_clamp_trigger": true
+    },
+    "sim_ratio_disclosure": {
+      "all_above_100": true
+    }
+  },
+  "run_summaries": [
+    {
+      "tag": "primary_L128_R12",
+      "L": 128,
+      "R": 12.0,
+      "stable": true,
+      "converged": true,
+      "steps_run": 8500,
+      "wall_s": 81.6,
+      "rho_l": 8.05174217224121,
+      "rho_v": 0.02013622932136059,
+      "dp": 0.024087377137038856,
+      "r_eff": 13.575423049926759,
+      "ratio": 399.8634522750439,
+      "mass_rate_per_step": 8.605799511738543e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L128_R16",
+      "L": 128,
+      "R": 16.0,
+      "stable": true,
+      "converged": true,
+      "steps_run": 6500,
+      "wall_s": 61.7,
+      "rho_l": 8.039983940124511,
+      "rho_v": 0.0183334618806839,
+      "dp": 0.019128567341249438,
+      "r_eff": 17.218271255493164,
+      "ratio": 438.54150364233294,
+      "mass_rate_per_step": 6.321765785953024e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L128_R20",
+      "L": 128,
+      "R": 20.0,
+      "stable": true,
+      "converged": true,
+      "steps_run": 6500,
+      "wall_s": 63.4,
+      "rho_l": 8.03188591003418,
+      "rho_v": 0.01719510406255722,
+      "dp": 0.015755001723300667,
+      "r_eff": 20.97633056640625,
+      "ratio": 467.1030707818639,
+      "mass_rate_per_step": 6.5464653196999074e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L128_R24",
+      "L": 128,
+      "R": 24.0,
+      "stable": true,
+      "converged": true,
+      "steps_run": 6500,
+      "wall_s": 61.0,
+      "rho_l": 8.026153945922852,
+      "rho_v": 0.016423759609460832,
+      "dp": 0.01338706916430965,
+      "r_eff": 24.80122184753418,
+      "ratio": 488.69163558016413,
+      "mass_rate_per_step": 6.841053125457487e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L192_R18",
+      "L": 192,
+      "R": 18.0,
+      "stable": true,
+      "converged": true,
+      "steps_run": 13000,
+      "wall_s": 158.2,
+      "rho_l": 8.033597373962403,
+      "rho_v": 0.017415541410446166,
+      "dp": 0.01646553452592343,
+      "r_eff": 20.080129623413086,
+      "ratio": 461.2889823306728,
+      "mass_rate_per_step": 7.473507875880427e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L192_R24",
+      "L": 192,
+      "R": 24.0,
+      "stable": true,
+      "converged": true,
+      "steps_run": 11000,
+      "wall_s": 162.3,
+      "rho_l": 8.025172805786132,
+      "rho_v": 0.01627972722053528,
+      "dp": 0.012984900898300112,
+      "r_eff": 25.59023208618164,
+      "ratio": 492.9549922472389,
+      "mass_rate_per_step": 6.748434048755034e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L192_R30",
+      "L": 192,
+      "R": 30.0,
+      "stable": true,
+      "converged": true,
+      "steps_run": 12000,
+      "wall_s": 155.0,
+      "rho_l": 8.019540214538575,
+      "rho_v": 0.015550010465085506,
+      "dp": 0.010676711716223508,
+      "r_eff": 31.264602661132812,
+      "ratio": 515.725711731505,
+      "mass_rate_per_step": 5.90197930641803e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L192_R36",
+      "L": 192,
+      "R": 36.0,
+      "stable": true,
+      "converged": false,
+      "steps_run": 15000,
+      "wall_s": 115.7,
+      "rho_l": 8.015523719787598,
+      "rho_v": 0.01505457703024149,
+      "dp": 0.009040568571072072,
+      "r_eff": 37.031602478027345,
+      "ratio": 532.4310144141607,
+      "mass_rate_per_step": 5.852380433432351e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L256_R24",
+      "L": 256,
+      "R": 24.0,
+      "stable": true,
+      "converged": false,
+      "steps_run": 15000,
+      "wall_s": 159.1,
+      "rho_l": 8.023932456970215,
+      "rho_v": 0.01611858084797859,
+      "dp": 0.01247516693547368,
+      "r_eff": 26.661059188842774,
+      "ratio": 497.806384609628,
+      "mass_rate_per_step": 6.704085087835376e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L256_R32",
+      "L": 256,
+      "R": 32.0,
+      "stable": true,
+      "converged": false,
+      "steps_run": 15000,
+      "wall_s": 160.3,
+      "rho_l": 8.017435455322266,
+      "rho_v": 0.015282156318426133,
+      "dp": 0.00981865031644702,
+      "r_eff": 34.02418975830078,
+      "ratio": 524.6272376925903,
+      "mass_rate_per_step": 5.6362641474339424e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L256_R40",
+      "L": 256,
+      "R": 40.0,
+      "stable": true,
+      "converged": false,
+      "steps_run": 15000,
+      "wall_s": 161.5,
+      "rho_l": 8.013097763061523,
+      "rho_v": 0.014753661677241325,
+      "dp": 0.008056413172744215,
+      "r_eff": 41.60438079833985,
+      "ratio": 543.1260346319552,
+      "mass_rate_per_step": 6.138911260573293e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    },
+    {
+      "tag": "primary_L256_R48",
+      "L": 256,
+      "R": 48.0,
+      "stable": true,
+      "converged": false,
+      "steps_run": 15000,
+      "wall_s": 160.2,
+      "rho_l": 8.010404777526855,
+      "rho_v": 0.014389587193727493,
+      "dp": 0.006971501873340458,
+      "r_eff": 49.30421676635742,
+      "ratio": 556.6806517575875,
+      "mass_rate_per_step": 6.81682111722658e-09,
+      "mass_rate_gate_pass": true,
+      "clamp_exposure": false
+    }
+  ],
+  "wall_total_s": 1500.0,
+  "timestamp_utc": "2026-10-29T13:07:17.169223+00:00"
+}
