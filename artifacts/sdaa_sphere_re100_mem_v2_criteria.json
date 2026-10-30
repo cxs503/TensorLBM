@@ -1,0 +1,151 @@
+{
+  "case": "sphere_re100_mem",
+  "mission": "m174",
+  "round": "v2_deep_dive",
+  "reference": {
+    "cd_ref_sn_0687": 1.0917310910948732,
+    "cd_ref_sn_0681": 1.0685190542670633,
+    "cd_ref_clift_gauvin": 1.1092345787735252,
+    "gate_pct": 3.0,
+    "re": 100.0
+  },
+  "m46_headline": {
+    "verdict": "succeeded/honest-FAIL",
+    "pass": true,
+    "t1_err_pct": 2.7707656824703957,
+    "t2_err_pct": 2.5400861325477218,
+    "t1_cd_window": 1.1219804015117896,
+    "t2_cd_window": 1.119462001144486,
+    "monotone": true,
+    "all_within_gate": true,
+    "honest_fail_reasons": [
+      "误差逼近 3% 门限（T1 裕度 0.229pp, T2 裕度 0.460pp）",
+      "仅两档网格（D=40/60），缺 D=80 第三档",
+      "参考值 S-N(0.687) 位于交叉族低端",
+      "物理模型限制：LBM 二阶 + BFL 插值残余误差 ~2.5%"
+    ]
+  },
+  "root_cause": {
+    "primary": "入口 Dirichlet 钳制（up 距离主导）",
+    "evidence": "五点拟合 err(up) ≈ E₀ + C·(a/x)³, R²=0.9998",
+    "excluded": [
+      "内存分配器问题（稀疏核已解锁，OOM 仅密集核）",
+      "数值精度问题（CV 闭合 0.008-0.015%，质量漂移 <0.08ppm）",
+      "碰撞算子差异（MRT/TRT/BGK 差在亚 pp 带内）"
+    ],
+    "model": {
+      "formula": "err(up) = E0 + C / (up·D)³ + lat_down_correction",
+      "E0": 3.4228807569879898,
+      "C": 995509.7788085566,
+      "r_squared": 0.9915585727442725,
+      "lat_down_correction": -0.8951594541095269
+    }
+  },
+  "tau_sensitivity": {
+    "t1_tau": 0.56,
+    "t2_tau": 0.59,
+    "t1_re_eff": 99.99999999999991,
+    "t2_re_eff": 100.00000000000004,
+    "note": "tau 变化主要影响 Re_eff，在固定 Re 下通过调整 u_lb 补偿"
+  },
+  "up_sweep_prediction": [
+    {
+      "up_D": 1.25,
+      "x": 50.0,
+      "err_pred_pct": 10.4918,
+      "cd_pred": 1.2062733286,
+      "within_gate": false
+    },
+    {
+      "up_D": 1.5,
+      "x": 60.0,
+      "err_pred_pct": 7.136563,
+      "cd_pred": 1.1696431668,
+      "within_gate": false
+    },
+    {
+      "up_D": 2.0,
+      "x": 80.0,
+      "err_pred_pct": 4.472076,
+      "cd_pred": 1.1405541389,
+      "within_gate": false
+    },
+    {
+      "up_D": 2.5,
+      "x": 100.0,
+      "err_pred_pct": 3.523231,
+      "cd_pred": 1.1301953002,
+      "within_gate": false
+    },
+    {
+      "up_D": 3.0,
+      "x": 120.0,
+      "err_pred_pct": 3.103826,
+      "cd_pred": 1.12561653,
+      "within_gate": false
+    },
+    {
+      "up_D": 3.5,
+      "x": 140.0,
+      "err_pred_pct": 2.890516,
+      "cd_pred": 1.1232877575,
+      "within_gate": true
+    },
+    {
+      "up_D": 4.0,
+      "x": 160.0,
+      "err_pred_pct": 2.770766,
+      "cd_pred": 1.1219804015,
+      "within_gate": true
+    },
+    {
+      "up_D": 5.0,
+      "x": 200.0,
+      "err_pred_pct": 2.65216,
+      "cd_pred": 1.1206855467,
+      "within_gate": true
+    },
+    {
+      "up_D": 6.0,
+      "x": 240.0,
+      "err_pred_pct": 2.599734,
+      "cd_pred": 1.1201132004,
+      "within_gate": true
+    }
+  ],
+  "d80_extrapolation": {
+    "model": "err(D) = a + b/D²",
+    "a_coef": 2.355542492609582,
+    "b_coef": 664.3571037772996,
+    "predictions": [
+      {
+        "D": 80,
+        "err_pred_pct": 2.459348,
+        "within_gate": true
+      },
+      {
+        "D": 100,
+        "err_pred_pct": 2.421978,
+        "within_gate": true
+      },
+      {
+        "D": 120,
+        "err_pred_pct": 2.401678,
+        "within_gate": true
+      }
+    ]
+  },
+  "judgment": {
+    "four_gates_pass": true,
+    "honest_fail": true,
+    "honest_fail_reason": "安全裕度不足（误差逼近门限 + 仅两档网格），非算法缺陷",
+    "recommendation": "增大 up 距离至 4D+ 或使用非平衡远场边界可进一步压低误差；D80 需 64G 卡或多卡分域"
+  },
+  "data_provenance": [
+    "benchmarks/verified/sphere_re100/w8a/result.json",
+    "benchmarks/verified/sphere_re100/w8a/t1_d40big_12k.json",
+    "benchmarks/verified/sphere_re100/w8a/t2_d60big_24k.json",
+    "benchmarks/verified/sphere_re100/w7/result.json",
+    "benchmarks/verified/sphere_re100/result_w5b.json"
+  ]
+}
