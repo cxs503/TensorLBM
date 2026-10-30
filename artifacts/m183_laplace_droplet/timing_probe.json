@@ -1,0 +1,71 @@
+{
+  "rows": [
+    {
+      "label": "D2Q9 R=15 L=60",
+      "dim": 2,
+      "R": 15,
+      "L": 60,
+      "n_cells": 3600,
+      "ms_per_step": 5.082621239125729,
+      "threads": 8,
+      "note": "CPU, eager, measured under concurrent sweep load"
+    },
+    {
+      "label": "D2Q9 R=25 L=100",
+      "dim": 2,
+      "R": 25,
+      "L": 100,
+      "n_cells": 10000,
+      "ms_per_step": 9.111127350479364,
+      "threads": 8,
+      "note": "CPU, eager, measured under concurrent sweep load"
+    },
+    {
+      "label": "D2Q9 R=40 L=160",
+      "dim": 2,
+      "R": 40,
+      "L": 160,
+      "n_cells": 25600,
+      "ms_per_step": 19.461970077827573,
+      "threads": 8,
+      "note": "CPU, eager, measured under concurrent sweep load"
+    },
+    {
+      "label": "D3Q19 R=15 L=60",
+      "dim": 3,
+      "R": 15,
+      "L": 60,
+      "n_cells": 216000,
+      "ms_per_step": 155.75421624816954,
+      "threads": 8,
+      "note": "CPU, eager, measured under concurrent sweep load"
+    },
+    {
+      "label": "D3Q19 R=25 L=100",
+      "dim": 3,
+      "R": 25,
+      "L": 100,
+      "n_cells": 1000000,
+      "ms_per_step": 640.2841836679727,
+      "threads": 8,
+      "note": "CPU, eager, measured under concurrent sweep load"
+    },
+    {
+      "label": "D3Q19 R=40 L=160",
+      "dim": 3,
+      "R": 40,
+      "L": 160,
+      "n_cells": 4096000,
+      "ms_per_step": 2337.7649488393217,
+      "threads": 8,
+      "note": "CPU, eager, measured under concurrent sweep load"
+    }
+  ],
+  "threads": 8,
+  "nsteps": 8,
+  "assumed_steps": 6000,
+  "serial_total_s_at_6000_steps": 19004.75440453738,
+  "torch": "2.7.1",
+  "cuda_available": false,
+  "load_note": "measured while the 7 sweep jobs were running (load ~1.0/core)"
+}

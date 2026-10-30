@@ -1,0 +1,46 @@
+{
+  "what": "naive discrete SC pressure-tensor route for sigma vs Laplace sigma",
+  "formula": "sigma = int (P_rr - P_tt) dr, P_ab = rho c_s^2 d_ab + (G_eff/2) sum_i w_i (psi psi') e_ia e_ib",
+  "G_eff": -5.0,
+  "variants": {
+    "v1": "psi(x)psi(x+e_i)",
+    "v2": "[(psi(x)+psi(x+e_i))/2]^2",
+    "v3": "psi(x+e_i)^2"
+  },
+  "rows": [
+    {
+      "R_init": 15.0,
+      "R_eq": 15.440663999700893,
+      "sigma_laplace": 0.056000293465065965,
+      "v1": 0.025407003616878768,
+      "v1_rel_diff_pct": 54.63058844016927,
+      "v2": 0.009114779089332625,
+      "v2_rel_diff_pct": 83.72369406417737,
+      "v3": -0.01435483846030846,
+      "v3_rel_diff_pct": 125.63350577664968
+    },
+    {
+      "R_init": 25.0,
+      "R_eq": 25.288031978452484,
+      "sigma_laplace": 0.05623312952352252,
+      "v1": 0.02824977290286657,
+      "v1_rel_diff_pct": 49.76311448031789,
+      "v2": 0.012620537007552462,
+      "v2_rel_diff_pct": 77.5567585967748,
+      "v3": -0.006017330147365995,
+      "v3_rel_diff_pct": 110.70068516255871
+    },
+    {
+      "R_init": 40.0,
+      "R_eq": 40.34251415142246,
+      "sigma_laplace": 0.05656168126865278,
+      "v1": 0.03042725123175852,
+      "v1_rel_diff_pct": 46.205186003511365,
+      "v2": 0.014288795340267441,
+      "v2_rel_diff_pct": 74.7376757200701,
+      "v3": -0.0036992719418659226,
+      "v3_rel_diff_pct": 106.54024395826455
+    }
+  ],
+  "verdict": "FAIL - none of the three naive tensor variants reproduces the Laplace sigma (46-126% deviation); reported as an honest negative cross-check, NOT used in the accuracy verdict. Cause: the one-sided/naive SC pressure tensor is not divergence-consistent on D2Q9 (fourth-moment anisotropy across a W~4 interface); a divergence-consistent (gradient-corrected) tensor would be needed, which is out of scope here (library must not be modified)."
+}
