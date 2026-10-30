@@ -1,0 +1,13 @@
+{
+  "title": "Mission 89：质检席·报告复审 batch 4,5,6 — 进展报告",
+  "summary": "完成报告 ID 4,5,6 复审。判定：Report 4=MINOR, Report 5=MINOR, Report 6=PASS。数字溯源 3/3 命中。质检汇总报告已发布为 Report ID 18。",
+  "scenario_key": "report-qa",
+  "mission_id": 89,
+  "tags": [
+    "质检",
+    "进展报告",
+    "batch456"
+  ],
+  "markdown": "# Mission 89：质检席·报告复审 batch 4,5,6 — 进展报告\n\n## 1 目的\n\n作为专职报告质检 agent，逐篇复审报告 ID 4, 5, 6（对应 mission_id 12, 85, 1），\n执行结构五节检查、数字溯源抽查、honest-FAIL 纪律审查、图检查、结论超证据检查，\n输出判定（PASS/MINOR/RESUBMIT）及缺陷清单。\n\n## 2 方法\n\n1. 通过 Tensor API 登录获取 token，GET /tensor/reports/{id} 获取报告 markdown 全文\n2. 逐篇过质检单（5项检查）\n3. 数字溯源：到 /root/tp-agent/work/m{mission_id}/ 的 docs/*.md 与 artifacts/*.json 里 grep 复核\n4. 生成 docs/qa_batch_4_5_6.md 质检报告\n5. POST /tensor/reports 发布质检汇总报告（scenario_key=report-qa, mission_id=89）\n\n## 3 关键结果\n\n### 3.1 复审判定汇总\n\n| 报告 ID | mission_id | 判定 | 缺陷数 |\n|---|---|---|---|\n| 4 | 12 | MINOR | 2（结构缺独立局限节、无图理由） |\n| 5 | 85 | MINOR | 3（结构缺独立局限节、关键结果过薄、工件路径偏差） |\n| 6 | 1 | PASS | 0 |\n\n### 3.2 数字溯源验证结果\n\n从 `m12/artifacts/sdaa_acoustics.json` 程序化提取验证数据：\n\n| 指标 | 工件值 | 报告引用值 | 偏差 |\n|---|---|---|---|\n| 收敛点数 | 3 | 3 | 0 |\n| 最大波速误差 | 0.2190% | 0.2190% | <0.0001% |\n| 最大衰减误差 | 1.3145% | 1.3145% | <0.0001% |\n| 总墙钟 | 15.3386s | 15.3386s | 0 |\n\n**数字溯源**: Report 4 的 3 个抽查数字 3/3 命中；Report 5 的 3 个数字 3/3 命中（但路径引用 m12 而非 m85）。\n\n### 3.3 质检报告发布\n\n- 质检汇总报告已发布为 Report ID 18\n- 标题：【QA】批次质检 4,5,6\n- scenario_key: report-qa\n- mission_id: 89\n\n## 4 审计与局限\n\n### 4.1 审计发现\n\n- Report 4 数字完全可溯源，质量良好，仅结构小瑕疵\n- Report 5 为元报告，技术内容薄，工件路径引用不规范\n- Report 6 为 honest-FAIL 典范，正确处理工件缺失情况\n\n### 4.2 局限性\n\n1. 仅复审了 3 篇报告，未覆盖全量报告\n2. Report 6 引用的 git commit（34082c3/d533a44/e96f663）不在 TensorLBM 仓库中，无法在本仓库验证\n3. 数字溯源仅抽查 3 个关键数字/篇，未做全量比对\n\n## 5 结论\n\n本批次 3 篇报告复审完成：\n- **PASS**: 1 篇（Report 6）\n- **MINOR**: 2 篇（Report 4, 5）\n- **RESUBMIT**: 0 篇\n\n无需派返工单。质检报告已发布为 Report ID 18。\n",
+  "figures": []
+}
