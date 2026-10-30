@@ -1,0 +1,931 @@
+{
+  "case": "suboff_sail_resistance",
+  "case_dir": "benchmarks/verified/suboff_sail_resistance",
+  "repo": "/root/tp-agent/work/m63",
+  "entry_md5": "9d3f7f7091766a1df02ab47806d5f2b0",
+  "generated": "2026-10-29 14:06:24",
+  "device_evidence": {
+    "torch": "2.7.1",
+    "requested_device": "sdaa:0",
+    "torch_sdaa": "3.1.1a3+gite3971b9",
+    "sdaa_available": true,
+    "device_line": "/dev/tcaicard25",
+    "device_count": 1,
+    "mem_free_gib": 14.687,
+    "mem_total_gib": 14.938,
+    "liveness_check": {
+      "op": "sdaa: torch.ones(4)*2 -> sum().item()",
+      "value": 8.0,
+      "pass": true
+    }
+  },
+  "device_evidence_line": "/dev/tcaicard25",
+  "caliber": {
+    "reference": "Blasius Cf = 1.328/sqrt(Re), Re=1000, total wetted area S = pi(2R_lb)L + A_sail_own",
+    "cf_ref_recomputed": 0.04199504732703608,
+    "ladder": [
+      96,
+      112,
+      128
+    ],
+    "steps_rule": "steps = 150*L (prereg.md, frozen)",
+    "frozen": {
+      "collision": "mrt",
+      "friction": "standard (erratum E2 primary)",
+      "p0": "near_wall",
+      "compile_mode": "eager",
+      "mass_correction_interval": 200,
+      "force_sample_interval": 10,
+      "u_lb": 0.05
+    },
+    "window": "mean of last 1000 force samples (= last 10000 steps)",
+    "gates": {
+      "G1": "finest |err| <= 3.0%",
+      "G2": "|err| non-increasing along ladder",
+      "G3": "common-module entry (GeneralSimEngine + suboff_cad + drag_pressure)",
+      "G4": "window drift <= 2.5%",
+      "G5": "sail cells = frozen mask table +-2 and sail y-thickness == 2"
+    }
+  },
+  "triton_bypass": {
+    "needed": false,
+    "triton_interpret_set": false,
+    "why": "the executed path (eager D3Q19 MRT chain via lbm_step_correct) imports no triton kernel; the compiled route is unusable on SDAA (torch.compile -> teco_inductor, upstream L5 defect), and compile-mode=eager is the prereg-frozen parameter anyway, so no TRITON_INTERPRET detour was required"
+  },
+  "tiers": {
+    "96": {
+      "resolution_L": 96,
+      "caliber_steps": 14400,
+      "caliber_hint": "README.md / prereg.md: ladder L={96,112,128}, steps=150*L",
+      "domain": [
+        576,
+        203,
+        203
+      ],
+      "total_cells": 23736384,
+      "compile_route_line": "[compile_route] suboff_with_sail[L96]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+      "sail_geometry": {
+        "sail_cells": 48,
+        "sail_y_thickness": 2,
+        "stats_appendage_solid_cells": 48,
+        "domain": [
+          576,
+          203,
+          203
+        ]
+      },
+      "feasible_on_device": false,
+      "blocked_reason": "RuntimeError: sdaa out of memory. Tried to allocate 17179869182.15 GiB (SDAA 0; 14.94 GiB total capacity; 7.47 GiB already allocated; 6.70 GiB free; 7.73 GiB reserved in total by Torch-SDAA)",
+      "note": "frozen tier cannot run on this SDAA card -> caliber run skipped; accuracy/window gates withheld and recorded FAIL"
+    },
+    "112": {
+      "resolution_L": 112,
+      "caliber_steps": 16800,
+      "caliber_hint": "README.md / prereg.md: ladder L={96,112,128}, steps=150*L",
+      "domain": [
+        672,
+        237,
+        237
+      ],
+      "total_cells": 37745568,
+      "compile_route_line": "[compile_route] suboff_with_sail[L112]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+      "sail_geometry": {
+        "sail_cells": 70,
+        "sail_y_thickness": 2,
+        "stats_appendage_solid_cells": 70,
+        "domain": [
+          672,
+          237,
+          237
+        ]
+      },
+      "feasible_on_device": false,
+      "blocked_reason": "RuntimeError: sdaa out of memory. Tried to allocate 2.67 GiB (SDAA 0; 14.94 GiB total capacity; 9.21 GiB already allocated; 4.84 GiB free; 9.60 GiB reserved in total by Torch-SDAA)",
+      "note": "frozen tier cannot run on this SDAA card -> caliber run skipped; accuracy/window gates withheld and recorded FAIL"
+    },
+    "128": {
+      "resolution_L": 128,
+      "caliber_steps": 19200,
+      "caliber_hint": "README.md / prereg.md: ladder L={96,112,128}, steps=150*L",
+      "domain": [
+        768,
+        271,
+        271
+      ],
+      "total_cells": 56402688,
+      "compile_route_line": "[compile_route] suboff_with_sail[L128]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+      "sail_geometry": {
+        "sail_cells": 126,
+        "sail_y_thickness": 2,
+        "stats_appendage_solid_cells": 126,
+        "domain": [
+          768,
+          271,
+          271
+        ]
+      },
+      "feasible_on_device": false,
+      "blocked_reason": "RuntimeError: sdaa out of memory. Tried to allocate 3.99 GiB (SDAA 0; 14.94 GiB total capacity; 8.93 GiB already allocated; 5.13 GiB free; 9.31 GiB reserved in total by Torch-SDAA)",
+      "note": "frozen tier cannot run on this SDAA card -> caliber run skipped; accuracy/window gates withheld and recorded FAIL"
+    }
+  },
+  "supplementary_reduced_grid": {
+    "attempted": true,
+    "reason": "no frozen ladder tier fits this card -> the largest grid that does is run purely as device-capacity / throughput evidence; it NEVER enters a gate decision and its Cd is not compared to a gate threshold",
+    "candidates": [
+      72,
+      70,
+      68,
+      64
+    ],
+    "attempts": [
+      {
+        "L": 72,
+        "ok": false,
+        "wall_clock_s": 17.81,
+        "ms_per_step": null,
+        "domain": [
+          432,
+          152,
+          152
+        ],
+        "blocked_reason": "RuntimeError: sdaa out of memory. Tried to allocate 5.95 GiB (SDAA 0; 14.94 GiB total capacity; 3.85 GiB already allocated; 5.21 GiB free; 9.22 GiB reserved in total by Torch-SDAA)",
+        "sail_geometry": {
+          "sail_cells": 18,
+          "sail_y_thickness": 1,
+          "stats_appendage_solid_cells": 18,
+          "domain": [
+            432,
+            152,
+            152
+          ]
+        }
+      },
+      {
+        "L": 70,
+        "ok": false,
+        "wall_clock_s": 16.73,
+        "ms_per_step": null,
+        "domain": [
+          420,
+          148,
+          148
+        ],
+        "blocked_reason": "RuntimeError: sdaa out of memory. Tried to allocate 5.48 GiB (SDAA 0; 14.94 GiB total capacity; 3.55 GiB already allocated; 5.95 GiB free; 8.48 GiB reserved in total by Torch-SDAA)",
+        "sail_geometry": {
+          "sail_cells": 18,
+          "sail_y_thickness": 1,
+          "stats_appendage_solid_cells": 18,
+          "domain": [
+            420,
+            148,
+            148
+          ]
+        }
+      },
+      {
+        "L": 68,
+        "ok": true,
+        "wall_clock_s": 26.48,
+        "ms_per_step": 737.9,
+        "domain": [
+          408,
+          144,
+          144
+        ],
+        "blocked_reason": null,
+        "sail_geometry": {
+          "sail_cells": 24,
+          "sail_y_thickness": 1,
+          "stats_appendage_solid_cells": 24,
+          "domain": [
+            408,
+            144,
+            144
+          ]
+        }
+      }
+    ],
+    "chosen_L": 68,
+    "wall_clock_derived_steps": 406,
+    "caliber_steps_at_this_L": 10200,
+    "step_shortfall_factor": 25.123,
+    "run": {
+      "resolution_L": 68,
+      "caliber_steps": 10200,
+      "run_steps_requested": 406,
+      "supplementary": true,
+      "note": "off-ladder, wall-clock-capped; Cd/err NOT used for any gate",
+      "domain": [
+        408,
+        144,
+        144
+      ],
+      "total_cells": 8460288,
+      "compile_route_line": "[compile_route] suboff_with_sail[L68]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+      "sail_geometry": {
+        "sail_cells": 24,
+        "sail_y_thickness": 1,
+        "stats_appendage_solid_cells": 24,
+        "domain": [
+          408,
+          144,
+          144
+        ]
+      },
+      "ok": true,
+      "run_steps": 406,
+      "run_device": "sdaa:0",
+      "cd_total_window": 0.0831243664268973,
+      "cd_pressure": 0.012796443206784044,
+      "cd_friction": 0.07032792322011326,
+      "cf_ref_runner": 0.04199504732703608,
+      "cf_ref_recomputed": 0.04199504732703608,
+      "cf_ref_match": true,
+      "err_pct": 97.93849922246068,
+      "err_pct_runner": 97.93849922246068,
+      "err_runner_match": true,
+      "drift_pct": 7.9142110160854315,
+      "convergence_windows": {
+        "25%": 0.122243,
+        "50%": 0.100915,
+        "75%": 0.090268,
+        "100%": 0.083124
+      },
+      "window_samples": 40,
+      "ms_per_step": 734.49,
+      "loop_elapsed_s": 298.2,
+      "finite": true,
+      "diverged": false,
+      "appendage_solid_cells_result": 24,
+      "wetted_area_lu2": 1740.1505414465553,
+      "compile_mode_effective": "eager",
+      "compile_status": "eager",
+      "entry_fields_ok": true
+    }
+  },
+  "runs": {
+    "frozen_L96_probe2": {
+      "tag": "frozen_L96_probe2",
+      "resolution_L": 96,
+      "requested_steps": 2,
+      "device": "sdaa:0",
+      "command": "/root/tp-agent/work/m63/benchmarks/verified/suboff_sail_resistance/run.py --hull-type with_sail --resolution 96 --steps 2 --device sdaa:0 --collision mrt --friction standard --p0 near_wall --compile-mode eager --out /root/tp-agent/work/m63/runs/sdaa_sweep_suboff_sail_resistance/frozen_L96_probe2",
+      "wall_clock_s": 23.76,
+      "returncode": 1,
+      "ok": false,
+      "run_status": "failed",
+      "log_path": "runs/sdaa_sweep_suboff_sail_resistance/frozen_L96_probe2.log",
+      "result_path": null,
+      "log_parsed": {
+        "domain": [
+          576,
+          203,
+          203
+        ],
+        "total_cells": 23736384,
+        "appendage_solid_cells_log": 48,
+        "compile_route_line": "[compile_route] suboff_with_sail[L96]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+        "oom": true,
+        "oom_line": "RuntimeError: sdaa out of memory. Tried to allocate 17179869182.15 GiB (SDAA 0; 14.94 GiB total capacity; 7.47 GiB already allocated; 6.70 GiB free; 7.73 GiB reserved in total by Torch-SDAA)",
+        "traceback_tail": "RuntimeError: sdaa out of memory. Tried to allocate 17179869182.15 GiB (SDAA 0; 14.94 GiB total capacity; 7.47 GiB already allocated; 6.70 GiB free; 7.73 GiB reserved in total by Torch-SDAA)"
+      },
+      "result": null,
+      "oom_line": "RuntimeError: sdaa out of memory. Tried to allocate 17179869182.15 GiB (SDAA 0; 14.94 GiB total capacity; 7.47 GiB already allocated; 6.70 GiB free; 7.73 GiB reserved in total by Torch-SDAA)",
+      "traceback_tail": "RuntimeError: sdaa out of memory. Tried to allocate 17179869182.15 GiB (SDAA 0; 14.94 GiB total capacity; 7.47 GiB already allocated; 6.70 GiB free; 7.73 GiB reserved in total by Torch-SDAA)"
+    },
+    "frozen_L112_probe2": {
+      "tag": "frozen_L112_probe2",
+      "resolution_L": 112,
+      "requested_steps": 2,
+      "device": "sdaa:0",
+      "command": "/root/tp-agent/work/m63/benchmarks/verified/suboff_sail_resistance/run.py --hull-type with_sail --resolution 112 --steps 2 --device sdaa:0 --collision mrt --friction standard --p0 near_wall --compile-mode eager --out /root/tp-agent/work/m63/runs/sdaa_sweep_suboff_sail_resistance/frozen_L112_probe2",
+      "wall_clock_s": 29.4,
+      "returncode": 1,
+      "ok": false,
+      "run_status": "failed",
+      "log_path": "runs/sdaa_sweep_suboff_sail_resistance/frozen_L112_probe2.log",
+      "result_path": null,
+      "log_parsed": {
+        "domain": [
+          672,
+          237,
+          237
+        ],
+        "total_cells": 37745568,
+        "appendage_solid_cells_log": 70,
+        "compile_route_line": "[compile_route] suboff_with_sail[L112]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+        "oom": true,
+        "oom_line": "RuntimeError: sdaa out of memory. Tried to allocate 2.67 GiB (SDAA 0; 14.94 GiB total capacity; 9.21 GiB already allocated; 4.84 GiB free; 9.60 GiB reserved in total by Torch-SDAA)",
+        "traceback_tail": "RuntimeError: sdaa out of memory. Tried to allocate 2.67 GiB (SDAA 0; 14.94 GiB total capacity; 9.21 GiB already allocated; 4.84 GiB free; 9.60 GiB reserved in total by Torch-SDAA)"
+      },
+      "result": null,
+      "oom_line": "RuntimeError: sdaa out of memory. Tried to allocate 2.67 GiB (SDAA 0; 14.94 GiB total capacity; 9.21 GiB already allocated; 4.84 GiB free; 9.60 GiB reserved in total by Torch-SDAA)",
+      "traceback_tail": "RuntimeError: sdaa out of memory. Tried to allocate 2.67 GiB (SDAA 0; 14.94 GiB total capacity; 9.21 GiB already allocated; 4.84 GiB free; 9.60 GiB reserved in total by Torch-SDAA)"
+    },
+    "frozen_L128_probe2": {
+      "tag": "frozen_L128_probe2",
+      "resolution_L": 128,
+      "requested_steps": 2,
+      "device": "sdaa:0",
+      "command": "/root/tp-agent/work/m63/benchmarks/verified/suboff_sail_resistance/run.py --hull-type with_sail --resolution 128 --steps 2 --device sdaa:0 --collision mrt --friction standard --p0 near_wall --compile-mode eager --out /root/tp-agent/work/m63/runs/sdaa_sweep_suboff_sail_resistance/frozen_L128_probe2",
+      "wall_clock_s": 36.19,
+      "returncode": 1,
+      "ok": false,
+      "run_status": "failed",
+      "log_path": "runs/sdaa_sweep_suboff_sail_resistance/frozen_L128_probe2.log",
+      "result_path": null,
+      "log_parsed": {
+        "domain": [
+          768,
+          271,
+          271
+        ],
+        "total_cells": 56402688,
+        "appendage_solid_cells_log": 126,
+        "compile_route_line": "[compile_route] suboff_with_sail[L128]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+        "oom": true,
+        "oom_line": "RuntimeError: sdaa out of memory. Tried to allocate 3.99 GiB (SDAA 0; 14.94 GiB total capacity; 8.93 GiB already allocated; 5.13 GiB free; 9.31 GiB reserved in total by Torch-SDAA)",
+        "traceback_tail": "RuntimeError: sdaa out of memory. Tried to allocate 3.99 GiB (SDAA 0; 14.94 GiB total capacity; 8.93 GiB already allocated; 5.13 GiB free; 9.31 GiB reserved in total by Torch-SDAA)"
+      },
+      "result": null,
+      "oom_line": "RuntimeError: sdaa out of memory. Tried to allocate 3.99 GiB (SDAA 0; 14.94 GiB total capacity; 8.93 GiB already allocated; 5.13 GiB free; 9.31 GiB reserved in total by Torch-SDAA)",
+      "traceback_tail": "RuntimeError: sdaa out of memory. Tried to allocate 3.99 GiB (SDAA 0; 14.94 GiB total capacity; 8.93 GiB already allocated; 5.13 GiB free; 9.31 GiB reserved in total by Torch-SDAA)"
+    },
+    "fallback_L72_pilot10": {
+      "tag": "fallback_L72_pilot10",
+      "resolution_L": 72,
+      "requested_steps": 10,
+      "device": "sdaa:0",
+      "command": "/root/tp-agent/work/m63/benchmarks/verified/suboff_sail_resistance/run.py --hull-type with_sail --resolution 72 --steps 10 --device sdaa:0 --collision mrt --friction standard --p0 near_wall --compile-mode eager --out /root/tp-agent/work/m63/runs/sdaa_sweep_suboff_sail_resistance/fallback_L72_pilot10",
+      "wall_clock_s": 17.81,
+      "returncode": 1,
+      "ok": false,
+      "run_status": "failed",
+      "log_path": "runs/sdaa_sweep_suboff_sail_resistance/fallback_L72_pilot10.log",
+      "result_path": null,
+      "log_parsed": {
+        "domain": [
+          432,
+          152,
+          152
+        ],
+        "total_cells": 9980928,
+        "appendage_solid_cells_log": 18,
+        "compile_route_line": "[compile_route] suboff_with_sail[L72]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+        "oom": true,
+        "oom_line": "RuntimeError: sdaa out of memory. Tried to allocate 5.95 GiB (SDAA 0; 14.94 GiB total capacity; 3.85 GiB already allocated; 5.21 GiB free; 9.22 GiB reserved in total by Torch-SDAA)",
+        "traceback_tail": "RuntimeError: sdaa out of memory. Tried to allocate 5.95 GiB (SDAA 0; 14.94 GiB total capacity; 3.85 GiB already allocated; 5.21 GiB free; 9.22 GiB reserved in total by Torch-SDAA)"
+      },
+      "result": null,
+      "oom_line": "RuntimeError: sdaa out of memory. Tried to allocate 5.95 GiB (SDAA 0; 14.94 GiB total capacity; 3.85 GiB already allocated; 5.21 GiB free; 9.22 GiB reserved in total by Torch-SDAA)",
+      "traceback_tail": "RuntimeError: sdaa out of memory. Tried to allocate 5.95 GiB (SDAA 0; 14.94 GiB total capacity; 3.85 GiB already allocated; 5.21 GiB free; 9.22 GiB reserved in total by Torch-SDAA)"
+    },
+    "fallback_L70_pilot10": {
+      "tag": "fallback_L70_pilot10",
+      "resolution_L": 70,
+      "requested_steps": 10,
+      "device": "sdaa:0",
+      "command": "/root/tp-agent/work/m63/benchmarks/verified/suboff_sail_resistance/run.py --hull-type with_sail --resolution 70 --steps 10 --device sdaa:0 --collision mrt --friction standard --p0 near_wall --compile-mode eager --out /root/tp-agent/work/m63/runs/sdaa_sweep_suboff_sail_resistance/fallback_L70_pilot10",
+      "wall_clock_s": 16.73,
+      "returncode": 1,
+      "ok": false,
+      "run_status": "failed",
+      "log_path": "runs/sdaa_sweep_suboff_sail_resistance/fallback_L70_pilot10.log",
+      "result_path": null,
+      "log_parsed": {
+        "domain": [
+          420,
+          148,
+          148
+        ],
+        "total_cells": 9199680,
+        "appendage_solid_cells_log": 18,
+        "compile_route_line": "[compile_route] suboff_with_sail[L70]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+        "oom": true,
+        "oom_line": "RuntimeError: sdaa out of memory. Tried to allocate 5.48 GiB (SDAA 0; 14.94 GiB total capacity; 3.55 GiB already allocated; 5.95 GiB free; 8.48 GiB reserved in total by Torch-SDAA)",
+        "traceback_tail": "RuntimeError: sdaa out of memory. Tried to allocate 5.48 GiB (SDAA 0; 14.94 GiB total capacity; 3.55 GiB already allocated; 5.95 GiB free; 8.48 GiB reserved in total by Torch-SDAA)"
+      },
+      "result": null,
+      "oom_line": "RuntimeError: sdaa out of memory. Tried to allocate 5.48 GiB (SDAA 0; 14.94 GiB total capacity; 3.55 GiB already allocated; 5.95 GiB free; 8.48 GiB reserved in total by Torch-SDAA)",
+      "traceback_tail": "RuntimeError: sdaa out of memory. Tried to allocate 5.48 GiB (SDAA 0; 14.94 GiB total capacity; 3.55 GiB already allocated; 5.95 GiB free; 8.48 GiB reserved in total by Torch-SDAA)"
+    },
+    "fallback_L68_pilot10": {
+      "tag": "fallback_L68_pilot10",
+      "resolution_L": 68,
+      "requested_steps": 10,
+      "device": "sdaa:0",
+      "command": "/root/tp-agent/work/m63/benchmarks/verified/suboff_sail_resistance/run.py --hull-type with_sail --resolution 68 --steps 10 --device sdaa:0 --collision mrt --friction standard --p0 near_wall --compile-mode eager --out /root/tp-agent/work/m63/runs/sdaa_sweep_suboff_sail_resistance/fallback_L68_pilot10",
+      "wall_clock_s": 26.48,
+      "returncode": 0,
+      "ok": true,
+      "run_status": "ok",
+      "log_path": "runs/sdaa_sweep_suboff_sail_resistance/fallback_L68_pilot10.log",
+      "result_path": "runs/sdaa_sweep_suboff_sail_resistance/fallback_L68_pilot10/result_L68.json",
+      "log_parsed": {
+        "domain": [
+          408,
+          144,
+          144
+        ],
+        "total_cells": 8460288,
+        "appendage_solid_cells_log": 24,
+        "compile_route_line": "[compile_route] suboff_with_sail[L68]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+        "loop_elapsed_s": 7.0,
+        "ms_per_step_log": 737.9
+      },
+      "result": {
+        "case": "SUBOFF with_sail Re=1000",
+        "benchmark": "suboff_sail_resistance",
+        "hull_type": "with_sail",
+        "device": "sdaa:0",
+        "grid": "408x144x144",
+        "domain_lu": [
+          408,
+          144,
+          144
+        ],
+        "n_cells": 8460288,
+        "L_cells": 68,
+        "R_lb": 3.965105601469238,
+        "L_D": 8.574803149606298,
+        "Re": 1000.0,
+        "u_lb": 0.05,
+        "nu_lb": 0.0034000000000000002,
+        "tau": 0.5102,
+        "collision": "mrt",
+        "Cs": null,
+        "compile_mode": null,
+        "compile_mode_effective": "eager",
+        "compile_status": "eager",
+        "compile_status_reason": null,
+        "n_steps": 10,
+        "elapsed_s": 7.4,
+        "ms_per_step": 737.94,
+        "dpS_type": "wetted_area_0.5*u^2*(pi*D*L + A_appendage)",
+        "S_bare_piDL_lb2": 1694.1175414465554,
+        "S_appendage_own_lb2": 46.033,
+        "S_total_wetted_lb2": 1740.1505414465553,
+        "appendage_stats": {
+          "hull_type": "with_sail",
+          "label": "SUBOFF + Sail (AFF-3 inspired)",
+          "L_D_ratio": 8.575,
+          "r_over_l": 0.05831,
+          "bow_fraction": 0.233,
+          "stern_fraction": 0.252,
+          "displacement_lu3": 2659.87,
+          "wetted_area_lu2": 1459.25,
+          "wetted_area_scope": "bare_hull_surface_of_revolution",
+          "wetted_area_method": "profile_meridional_metric_quadrature",
+          "bare_hull_wetted_area_lu2": 1459.25,
+          "prismatic_coefficient": 0.7919,
+          "sail_scale": 1.0,
+          "fin_scale": 1.0,
+          "sail_own_volume_lu3": 16.062,
+          "sail_own_wetted_area_lu2": 46.033,
+          "appendage_own_volume_lu3": 16.062,
+          "appendage_own_wetted_area_lu2": 46.033,
+          "appendage_wetted_area_method": "own_dimension_quadrature_scaled",
+          "solid_cells": 2507,
+          "bare_hull_solid_cells": 2483,
+          "appendage_solid_cells": 24,
+          "fluid_cells": 8457781,
+          "total_cells": 8460288,
+          "nx": 408,
+          "ny": 144,
+          "nz": 144,
+          "cx": 102.0,
+          "cy": 72.0,
+          "cz": 72.0,
+          "length": 68.0,
+          "radius": 3.965105601469238
+        },
+        "appendage_near_cells_gradient_normals": 48,
+        "dpS_wetted": 2.1751881768081947,
+        "dpS_engine_frontal": 0.061740394789862416,
+        "rescale_frontal_to_totalwetted": 0.028383932685979565,
+        "pressure_extrap": "none",
+        "p0_method": "near_wall",
+        "friction_formula_primary": "standard",
+        "Cd_pressure": 0.12026383457779824,
+        "Cd_friction": 0.12638829170090773,
+        "Cd_total": 0.24665212627870597,
+        "Cd_total_last500": 0.24665212627870597,
+        "Cd_total_bare_frame_piDL": 0.2533542216476571,
+        "drag_increment_ratio_vs_verified_bare": 6.102964746830292,
+        "Cf_ref_blasius": 0.04199504732703608,
+        "reference_cross_check": {
+          "ittc1957_Cf_Re1e7": 0.003,
+          "ittc1957_Cf_Re2e6": 0.004054304100826604,
+          "darpa_aff8_experimental_Ct_Re2e6": 0.004,
+          "note": "ITTC-1957 and the DARPA AFF-8 tow-tank Ct=0.004 are turbulent model/full-scale (Re~2e6-1.2e7) references. At Re=1000 the flow is laminar, so the primary reference is Blasius Cf=1.328/sqrt(Re)=0.041995 on the total wetted area — the same caliber as the verified bare-hull case."
+        },
+        "error_pct_vs_Blasius_totalwetted": 487.33622647905264,
+        "window_samples": 1,
+        "window_steps": 10,
+        "convergence_windows": {
+          "100%": 0.246652
+        },
+        "final_field_checks": {
+          "near_wall": {
+            "cd_p": 0.12026383457779824,
+            "cd_f_standard": 0.12638829170090776,
+            "cd_f_2nd_order": 0.07122178589923768,
+            "cd_f_central": 0.11836065165212394,
+            "cd_f_lagrange": 0.15012887786663245,
+            "cd_f_bfl_smooth": 0.3338902813451911,
+            "cd_f_faces": 0.14258866572526785,
+            "cd_f_mix50": 0.1344884787130878,
+            "cd_tot_standard": 0.246652126278706,
+            "cd_tot_mix50": 0.25475231329088605,
+            "gain_faces_over_standard": 0.128179389137544,
+            "uniform_faces_standard_ratio": 1.2075820385665075,
+            "w_ratio_calibrated": 0.3825121382239608,
+            "cd_f_weighted_ratio": 0.13639182601718197,
+            "cd_tot_weighted_ratio": 0.25665566059498024
+          },
+          "far_field": {
+            "cd_p": 0.12026243707255435,
+            "cd_f_standard": 0.12638829170090776,
+            "cd_f_2nd_order": 0.07122178589923768,
+            "cd_f_central": 0.11836065165212394,
+            "cd_f_lagrange": 0.15012887786663245,
+            "cd_f_bfl_smooth": 0.3338902813451911,
+            "cd_f_faces": 0.14258866572526785,
+            "cd_f_mix50": 0.1344884787130878,
+            "cd_tot_standard": 0.2466507287734621,
+            "cd_tot_mix50": 0.25475091578564213,
+            "gain_faces_over_standard": 0.128179389137544,
+            "uniform_faces_standard_ratio": 1.2075820385665075,
+            "w_ratio_calibrated": 0.3825121382239608,
+            "cd_f_weighted_ratio": 0.13639182601718197,
+            "cd_tot_weighted_ratio": 0.2566542630897363
+          },
+          "domain_avg": {
+            "cd_p": 0.12026245077358616,
+            "cd_f_standard": 0.12638829170090776,
+            "cd_f_2nd_order": 0.07122178589923768,
+            "cd_f_central": 0.11836065165212394,
+            "cd_f_lagrange": 0.15012887786663245,
+            "cd_f_bfl_smooth": 0.3338902813451911,
+            "cd_f_faces": 0.14258866572526785,
+            "cd_f_mix50": 0.1344884787130878,
+            "cd_tot_standard": 0.24665074247449392,
+            "cd_tot_mix50": 0.254750929486674,
+            "gain_faces_over_standard": 0.128179389137544,
+            "uniform_faces_standard_ratio": 1.2075820385665075,
+            "w_ratio_calibrated": 0.3825121382239608,
+            "cd_f_weighted_ratio": 0.13639182601718197,
+            "cd_tot_weighted_ratio": 0.25665427679076813
+          },
+          "inlet": {
+            "cd_p": 0.12026243707255435,
+            "cd_f_standard": 0.12638829170090776,
+            "cd_f_2nd_order": 0.07122178589923768,
+            "cd_f_central": 0.11836065165212394,
+            "cd_f_lagrange": 0.15012887786663245,
+            "cd_f_bfl_smooth": 0.3338902813451911,
+            "cd_f_faces": 0.14258866572526785,
+            "cd_f_mix50": 0.1344884787130878,
+            "cd_tot_standard": 0.2466507287734621,
+            "cd_tot_mix50": 0.25475091578564213,
+            "gain_faces_over_standard": 0.128179389137544,
+            "uniform_faces_standard_ratio": 1.2075820385665075,
+            "w_ratio_calibrated": 0.3825121382239608,
+            "cd_f_weighted_ratio": 0.13639182601718197,
+            "cd_tot_weighted_ratio": 0.2566542630897363
+          }
+        },
+        "q_smooth_stats": {
+          "mean": 0.36132383346557617,
+          "min": 0.05000000074505806,
+          "max": 1.0
+        },
+        "final_field_saved": false,
+        "finite": true,
+        "diverged": false,
+        "tau_target_override": null,
+        "effective_Re_lattice": 1000.0,
+        "tau_coupling": {
+          "note": "u_lb and L are frozen by the benchmark, so the ladder knob tau is itself the Reynolds knob: nu_lb=(tau-0.5)/3 and Re_lattice = u_lb*L/nu_lb.  Each ladder arm therefore sits at a different effective Reynolds number and must be judged against a reference re-evaluated at that same Re.",
+          "u_lb": 0.05,
+          "L_cells": 68,
+          "nu_lb": 0.0034000000000000002,
+          "Re_lattice": 1000.0,
+          "blasius_cf_at_this_Re": 0.04199504732703608,
+          "ittc1957_cf_at_this_Re": 0.075
+        },
+        "anchor_probe": null,
+        "solid_cells": 2507,
+        "near_wall_cells": 1460,
+        "timestamp": "2026-10-29 14:01:03"
+      },
+      "oom_line": null,
+      "traceback_tail": null
+    },
+    "fallback_L68_406": {
+      "tag": "fallback_L68_406",
+      "resolution_L": 68,
+      "requested_steps": 406,
+      "device": "sdaa:0",
+      "command": "/root/tp-agent/work/m63/benchmarks/verified/suboff_sail_resistance/run.py --hull-type with_sail --resolution 68 --steps 406 --device sdaa:0 --collision mrt --friction standard --p0 near_wall --compile-mode eager --out /root/tp-agent/work/m63/runs/sdaa_sweep_suboff_sail_resistance/fallback_L68_406",
+      "wall_clock_s": 316.97,
+      "returncode": 0,
+      "ok": true,
+      "run_status": "ok",
+      "log_path": "runs/sdaa_sweep_suboff_sail_resistance/fallback_L68_406.log",
+      "result_path": "runs/sdaa_sweep_suboff_sail_resistance/fallback_L68_406/result_L68.json",
+      "log_parsed": {
+        "domain": [
+          408,
+          144,
+          144
+        ],
+        "total_cells": 8460288,
+        "appendage_solid_cells_log": 24,
+        "compile_route_line": "[compile_route] suboff_with_sail[L68]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]",
+        "loop_elapsed_s": 298.0,
+        "ms_per_step_log": 734.5
+      },
+      "result": {
+        "case": "SUBOFF with_sail Re=1000",
+        "benchmark": "suboff_sail_resistance",
+        "hull_type": "with_sail",
+        "device": "sdaa:0",
+        "grid": "408x144x144",
+        "domain_lu": [
+          408,
+          144,
+          144
+        ],
+        "n_cells": 8460288,
+        "L_cells": 68,
+        "R_lb": 3.965105601469238,
+        "L_D": 8.574803149606298,
+        "Re": 1000.0,
+        "u_lb": 0.05,
+        "nu_lb": 0.0034000000000000002,
+        "tau": 0.5102,
+        "collision": "mrt",
+        "Cs": null,
+        "compile_mode": null,
+        "compile_mode_effective": "eager",
+        "compile_status": "eager",
+        "compile_status_reason": null,
+        "n_steps": 406,
+        "elapsed_s": 298.2,
+        "ms_per_step": 734.49,
+        "dpS_type": "wetted_area_0.5*u^2*(pi*D*L + A_appendage)",
+        "S_bare_piDL_lb2": 1694.1175414465554,
+        "S_appendage_own_lb2": 46.033,
+        "S_total_wetted_lb2": 1740.1505414465553,
+        "appendage_stats": {
+          "hull_type": "with_sail",
+          "label": "SUBOFF + Sail (AFF-3 inspired)",
+          "L_D_ratio": 8.575,
+          "r_over_l": 0.05831,
+          "bow_fraction": 0.233,
+          "stern_fraction": 0.252,
+          "displacement_lu3": 2659.87,
+          "wetted_area_lu2": 1459.25,
+          "wetted_area_scope": "bare_hull_surface_of_revolution",
+          "wetted_area_method": "profile_meridional_metric_quadrature",
+          "bare_hull_wetted_area_lu2": 1459.25,
+          "prismatic_coefficient": 0.7919,
+          "sail_scale": 1.0,
+          "fin_scale": 1.0,
+          "sail_own_volume_lu3": 16.062,
+          "sail_own_wetted_area_lu2": 46.033,
+          "appendage_own_volume_lu3": 16.062,
+          "appendage_own_wetted_area_lu2": 46.033,
+          "appendage_wetted_area_method": "own_dimension_quadrature_scaled",
+          "solid_cells": 2507,
+          "bare_hull_solid_cells": 2483,
+          "appendage_solid_cells": 24,
+          "fluid_cells": 8457781,
+          "total_cells": 8460288,
+          "nx": 408,
+          "ny": 144,
+          "nz": 144,
+          "cx": 102.0,
+          "cy": 72.0,
+          "cz": 72.0,
+          "length": 68.0,
+          "radius": 3.965105601469238
+        },
+        "appendage_near_cells_gradient_normals": 48,
+        "dpS_wetted": 2.1751881768081947,
+        "dpS_engine_frontal": 0.061740394789862416,
+        "rescale_frontal_to_totalwetted": 0.028383932685979565,
+        "pressure_extrap": "none",
+        "p0_method": "near_wall",
+        "friction_formula_primary": "standard",
+        "Cd_pressure": 0.012796443206784044,
+        "Cd_friction": 0.07032792322011326,
+        "Cd_total": 0.0831243664268973,
+        "Cd_total_last500": 0.08312436642689731,
+        "Cd_total_bare_frame_piDL": 0.08538304321060033,
+        "drag_increment_ratio_vs_verified_bare": 2.0567634488288395,
+        "Cf_ref_blasius": 0.04199504732703608,
+        "reference_cross_check": {
+          "ittc1957_Cf_Re1e7": 0.003,
+          "ittc1957_Cf_Re2e6": 0.004054304100826604,
+          "darpa_aff8_experimental_Ct_Re2e6": 0.004,
+          "note": "ITTC-1957 and the DARPA AFF-8 tow-tank Ct=0.004 are turbulent model/full-scale (Re~2e6-1.2e7) references. At Re=1000 the flow is laminar, so the primary reference is Blasius Cf=1.328/sqrt(Re)=0.041995 on the total wetted area — the same caliber as the verified bare-hull case."
+        },
+        "error_pct_vs_Blasius_totalwetted": 97.93849922246068,
+        "window_samples": 40,
+        "window_steps": 400,
+        "convergence_windows": {
+          "25%": 0.122243,
+          "50%": 0.100915,
+          "75%": 0.090268,
+          "100%": 0.083124
+        },
+        "final_field_checks": {
+          "near_wall": {
+            "cd_p": 0.008983627830200711,
+            "cd_f_standard": 0.05029436066318116,
+            "cd_f_2nd_order": 0.00645506858655714,
+            "cd_f_central": 0.06898647626162979,
+            "cd_f_lagrange": 0.05244604947843813,
+            "cd_f_bfl_smooth": 0.12767807943276716,
+            "cd_f_faces": 0.05637761535840145,
+            "cd_f_mix50": 0.053335988010791306,
+            "cd_tot_standard": 0.05927798849338187,
+            "cd_tot_mix50": 0.06231961584099202,
+            "gain_faces_over_standard": 0.12095301769436029,
+            "uniform_faces_standard_ratio": 1.2075820385665075,
+            "w_ratio_calibrated": 0.41732426114695853,
+            "cd_f_weighted_ratio": 0.05383892558734988,
+            "cd_tot_weighted_ratio": 0.0628225534175506
+          },
+          "far_field": {
+            "cd_p": 0.008964364179485863,
+            "cd_f_standard": 0.05029436066318116,
+            "cd_f_2nd_order": 0.00645506858655714,
+            "cd_f_central": 0.06898647626162979,
+            "cd_f_lagrange": 0.05244604947843813,
+            "cd_f_bfl_smooth": 0.12767807943276716,
+            "cd_f_faces": 0.05637761535840145,
+            "cd_f_mix50": 0.053335988010791306,
+            "cd_tot_standard": 0.05925872484266702,
+            "cd_tot_mix50": 0.06230035219027717,
+            "gain_faces_over_standard": 0.12095301769436029,
+            "uniform_faces_standard_ratio": 1.2075820385665075,
+            "w_ratio_calibrated": 0.41732426114695853,
+            "cd_f_weighted_ratio": 0.05383892558734988,
+            "cd_tot_weighted_ratio": 0.06280328976683575
+          },
+          "domain_avg": {
+            "cd_p": 0.008964367604743813,
+            "cd_f_standard": 0.05029436066318116,
+            "cd_f_2nd_order": 0.00645506858655714,
+            "cd_f_central": 0.06898647626162979,
+            "cd_f_lagrange": 0.05244604947843813,
+            "cd_f_bfl_smooth": 0.12767807943276716,
+            "cd_f_faces": 0.05637761535840145,
+            "cd_f_mix50": 0.053335988010791306,
+            "cd_tot_standard": 0.05925872826792497,
+            "cd_tot_mix50": 0.06230035561553512,
+            "gain_faces_over_standard": 0.12095301769436029,
+            "uniform_faces_standard_ratio": 1.2075820385665075,
+            "w_ratio_calibrated": 0.41732426114695853,
+            "cd_f_weighted_ratio": 0.05383892558734988,
+            "cd_tot_weighted_ratio": 0.0628032931920937
+          },
+          "inlet": {
+            "cd_p": 0.008962166020195988,
+            "cd_f_standard": 0.05029436066318116,
+            "cd_f_2nd_order": 0.00645506858655714,
+            "cd_f_central": 0.06898647626162979,
+            "cd_f_lagrange": 0.05244604947843813,
+            "cd_f_bfl_smooth": 0.12767807943276716,
+            "cd_f_faces": 0.05637761535840145,
+            "cd_f_mix50": 0.053335988010791306,
+            "cd_tot_standard": 0.05925652668337715,
+            "cd_tot_mix50": 0.06229815403098729,
+            "gain_faces_over_standard": 0.12095301769436029,
+            "uniform_faces_standard_ratio": 1.2075820385665075,
+            "w_ratio_calibrated": 0.41732426114695853,
+            "cd_f_weighted_ratio": 0.05383892558734988,
+            "cd_tot_weighted_ratio": 0.06280109160754586
+          }
+        },
+        "q_smooth_stats": {
+          "mean": 0.36132383346557617,
+          "min": 0.05000000074505806,
+          "max": 1.0
+        },
+        "final_field_saved": false,
+        "finite": true,
+        "diverged": false,
+        "tau_target_override": null,
+        "effective_Re_lattice": 1000.0,
+        "tau_coupling": {
+          "note": "u_lb and L are frozen by the benchmark, so the ladder knob tau is itself the Reynolds knob: nu_lb=(tau-0.5)/3 and Re_lattice = u_lb*L/nu_lb.  Each ladder arm therefore sits at a different effective Reynolds number and must be judged against a reference re-evaluated at that same Re.",
+          "u_lb": 0.05,
+          "L_cells": 68,
+          "nu_lb": 0.0034000000000000002,
+          "Re_lattice": 1000.0,
+          "blasius_cf_at_this_Re": 0.04199504732703608,
+          "ittc1957_cf_at_this_Re": 0.075
+        },
+        "anchor_probe": null,
+        "solid_cells": 2507,
+        "near_wall_cells": 1460,
+        "timestamp": "2026-10-29 14:06:21"
+      },
+      "oom_line": null,
+      "traceback_tail": null
+    }
+  },
+  "gates": [
+    {
+      "id": "G1",
+      "gate": "finest |err| <= 3.0%",
+      "status": "FAIL",
+      "detail": "not evaluable on this device: finest frozen tier L128 produced no window mean (RuntimeError: sdaa out of memory. Tried to allocate 3.99 GiB (SDAA 0; 14.94 GiB total capacity; 8.93 GiB already allocated; 5.13 GiB free; 9.31 GiB reserved in total by Torch-SDAA)) -> gate recorded FAIL (honest-FAIL, no downgrade, no CPU substitution)",
+      "value_pct": null,
+      "threshold_pct": 3.0,
+      "evaluable": false
+    },
+    {
+      "id": "G2",
+      "gate": "|err| non-increasing along ladder",
+      "status": "FAIL",
+      "detail": "not evaluable on this device: missing tiers ['L96', 'L112', 'L128'] -> FAIL (honest-FAIL)",
+      "seq_pct": [
+        null,
+        null,
+        null
+      ],
+      "evaluable": false
+    },
+    {
+      "id": "G3",
+      "gate": "common-module entry (GeneralSimEngine + suboff_cad + drag_pressure)",
+      "status": "PASS",
+      "detail": "frozen run.py imports={'general_sim': True, 'suboff_cad': True, 'drag_pressure': True}; ladder tier executed on sdaa=False; executed evidence from the supplementary off-ladder arm=True (disclosed: the ladder itself never executed on this card); provenance fields (S_total_wetted_lb2/dpS_type/appendage_stats) present=True",
+      "source_scan": {
+        "general_sim": true,
+        "suboff_cad": true,
+        "drag_pressure": true,
+        "compile_route": true,
+        "md5": "9d3f7f7091766a1df02ab47806d5f2b0"
+      },
+      "evaluable": true,
+      "ladder_executed": false,
+      "supplementary_executed": true
+    },
+    {
+      "id": "G4",
+      "gate": "window drift <= 2.5%",
+      "status": "FAIL",
+      "detail": "not evaluable on this device: no frozen ladder tier produced convergence windows -> FAIL (honest-FAIL)",
+      "drift_pct": {
+        "96": null,
+        "112": null,
+        "128": null
+      },
+      "threshold_pct": 2.5,
+      "evaluable": false
+    },
+    {
+      "id": "G5",
+      "gate": "sail cells match frozen mask table +-2 and y-thickness == 2",
+      "status": "PASS",
+      "detail": "L96: cells=48 (exp 48+-2) y-thickness=2 (exp 2); L112: cells=70 (exp 70+-2) y-thickness=2 (exp 2); L128: cells=126 (exp 126+-2) y-thickness=2 (exp 2)",
+      "table": [
+        {
+          "L": 96,
+          "sail_cells": 48,
+          "expected": 48,
+          "cells_ok": true,
+          "y_thickness": 2,
+          "thickness_ok": true
+        },
+        {
+          "L": 112,
+          "sail_cells": 70,
+          "expected": 70,
+          "cells_ok": true,
+          "y_thickness": 2,
+          "thickness_ok": true
+        },
+        {
+          "L": 128,
+          "sail_cells": 126,
+          "expected": 126,
+          "cells_ok": true,
+          "y_thickness": 2,
+          "thickness_ok": true
+        }
+      ],
+      "evaluable": true
+    }
+  ],
+  "OVERALL": "FAIL",
+  "wall_clock_s": 485.3,
+  "honest_fail": "FAIL is reported because gates that cannot be evaluated on this card (G1/G2 and the run-dependent part of G4) are recorded FAIL, per the case rule 'any gate failing => FAIL'. No threshold was relaxed and no CPU number is presented as an sdaa number."
+}
