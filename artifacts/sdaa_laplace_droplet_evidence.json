@@ -1,0 +1,74 @@
+{
+  "benchmark": "laplace_droplet",
+  "device": "sdaa",
+  "device_evidence": {
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_devices": [
+      {
+        "index": 0,
+        "name": "/dev/tcaicard15",
+        "total_memory_mb": 15296
+      }
+    ],
+    "torch_version": "2.7.1"
+  },
+  "model": "SCMP SC94 psi_exp, G_eff=-5.0, tau=1.0, G_lib=+5.0",
+  "dims": {
+    "2d": {
+      "dim": 2,
+      "sigma_eff_fit": 0.05611229630305291,
+      "sigma_eff_ref": 0.05611173338787406,
+      "sigma_diff_pct": 0.001003204044604759,
+      "R2": 0.9999999360612745,
+      "max_dev_sigma_pct": 0.812384025296401,
+      "intercept_frac_pct": 0.6412244345071161,
+      "pass_laplace": true,
+      "per_radius": [
+        {
+          "R_init": 15,
+          "R_eq": 15.440663999700893,
+          "dp": 0.003626730293035507,
+          "sigma_i": 0.05599912387229803,
+          "dev_sigma_pct": 0.20168918082349177,
+          "step": 4000,
+          "converged": true,
+          "mass_drift": 3.269313725253235e-05,
+          "max_u": 0.1384622702995936,
+          "rho_in": 1.9646412531534831,
+          "rho_out": 0.1608158548672994
+        },
+        {
+          "R_init": 25,
+          "R_eq": 25.288031978452484,
+          "dp": 0.0022238480548063913,
+          "sigma_i": 0.056236740725163374,
+          "dev_sigma_pct": 0.22177745397971765,
+          "step": 7500,
+          "converged": true,
+          "mass_drift": 6.545486577104001e-05,
+          "max_u": 0.13947783410549164,
+          "rho_in": 1.9523640076319377,
+          "rho_out": 0.1591121256351471
+        },
+        {
+          "R_init": 40,
+          "R_eq": 40.34251415142246,
+          "dp": 0.0014021967848141987,
+          "sigma_i": 0.05656814363444589,
+          "dev_sigma_pct": 0.812384025296401,
+          "step": 16000,
+          "converged": true,
+          "mass_drift": 0.0001287051961225913,
+          "max_u": 0.13956592480341592,
+          "rho_in": 1.9450894196828206,
+          "rho_out": 0.15813379486401877
+        }
+      ],
+      "slope_free": 0.05564417080342754,
+      "intercept_free": 2.3108074858527058e-05
+    }
+  },
+  "verdict": "PASS",
+  "note": "SDAA 2D results match CPU reference to <0.02% in all quantities. Laplace law verified."
+}
