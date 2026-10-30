@@ -1,0 +1,9 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Starting ny=32...
+  ny=32: u_l2=0.001800 v_l2=0.030197 u_mr=1.333% v_mr=2.282% steps=20000 wall=134.9s
+Starting ny=64...
+  ny=64: u_l2=0.001650 v_l2=0.027111 u_mr=1.241% v_mr=1.646% steps=20000 wall=134.4s
+Starting ny=128...
+  ny=128: u_l2=0.001574 v_l2=0.025533 u_mr=1.186% v_mr=1.567% steps=20000 wall=135.6s
+DONE

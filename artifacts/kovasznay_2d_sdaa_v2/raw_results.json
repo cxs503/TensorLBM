@@ -1,0 +1,50 @@
+{
+  "results": [
+    {
+      "ny": 32,
+      "nx": 96,
+      "tau": 0.572,
+      "nu_lb": 0.024,
+      "n_steps": 20000,
+      "steady": true,
+      "u_l2_rel": 0.00180003,
+      "v_l2_rel": 0.03019734,
+      "u_max_rel_pct": 1.333259,
+      "v_max_rel_pct": 2.282233,
+      "finite": true,
+      "elapsed_s": 134.9,
+      "device": "sdaa"
+    },
+    {
+      "ny": 64,
+      "nx": 192,
+      "tau": 0.644,
+      "nu_lb": 0.048,
+      "n_steps": 20000,
+      "steady": true,
+      "u_l2_rel": 0.00164957,
+      "v_l2_rel": 0.02711138,
+      "u_max_rel_pct": 1.240847,
+      "v_max_rel_pct": 1.646246,
+      "finite": true,
+      "elapsed_s": 134.4,
+      "device": "sdaa"
+    },
+    {
+      "ny": 128,
+      "nx": 384,
+      "tau": 0.788,
+      "nu_lb": 0.096,
+      "n_steps": 20000,
+      "steady": true,
+      "u_l2_rel": 0.00157401,
+      "v_l2_rel": 0.02553321,
+      "u_max_rel_pct": 1.185501,
+      "v_max_rel_pct": 1.566871,
+      "finite": true,
+      "elapsed_s": 135.6,
+      "device": "sdaa"
+    }
+  ],
+  "timestamp": "2026-10-29T20:29:31"
+}

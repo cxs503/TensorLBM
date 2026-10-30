@@ -1,0 +1,183 @@
+{
+  "case": "B18_kovasznay_2d",
+  "run_id": "sdaa_kovasznay_2d_v2",
+  "device_info": {
+    "torch_sdaa_available": true,
+    "torch_sdaa_device_count": 1,
+    "torch_sdaa_device_name_0": "/dev/tcaicard1",
+    "dev_tcaicard_nodes": [
+      "/dev/tcaicard0",
+      "/dev/tcaicard1",
+      "/dev/tcaicard10",
+      "/dev/tcaicard11",
+      "/dev/tcaicard12",
+      "/dev/tcaicard13",
+      "/dev/tcaicard14",
+      "/dev/tcaicard15",
+      "/dev/tcaicard16",
+      "/dev/tcaicard17",
+      "/dev/tcaicard18",
+      "/dev/tcaicard19",
+      "/dev/tcaicard2",
+      "/dev/tcaicard20",
+      "/dev/tcaicard21",
+      "/dev/tcaicard22",
+      "/dev/tcaicard23",
+      "/dev/tcaicard24",
+      "/dev/tcaicard25",
+      "/dev/tcaicard26",
+      "/dev/tcaicard27",
+      "/dev/tcaicard28",
+      "/dev/tcaicard29",
+      "/dev/tcaicard3",
+      "/dev/tcaicard30",
+      "/dev/tcaicard31",
+      "/dev/tcaicard4",
+      "/dev/tcaicard5",
+      "/dev/tcaicard6",
+      "/dev/tcaicard7",
+      "/dev/tcaicard8",
+      "/dev/tcaicard9"
+    ],
+    "dev_tcaicard_count": 32
+  },
+  "config": {
+    "re": 40.0,
+    "u0": 0.03,
+    "xmax": 3.0,
+    "outlet": "zerograd",
+    "lambda": -0.9637405441957689,
+    "grids": [
+      32,
+      64,
+      128
+    ],
+    "min_steps": 20000,
+    "max_steps": 60000,
+    "device": "sdaa",
+    "compile_mode": "eager"
+  },
+  "criteria": [
+    {
+      "name": "u_L2_rel_ny64",
+      "value_pct": 0.165,
+      "threshold_pct": 3.0,
+      "pass": true
+    },
+    {
+      "name": "v_L2_rel_ny64",
+      "value_pct": 2.7111,
+      "threshold_pct": 3.0,
+      "pass": true
+    },
+    {
+      "name": "u_L2_rel_ny128",
+      "value_pct": 0.1574,
+      "threshold_pct": 3.0,
+      "pass": true
+    },
+    {
+      "name": "v_L2_rel_ny128",
+      "value_pct": 2.5533,
+      "threshold_pct": 3.0,
+      "pass": true
+    },
+    {
+      "name": "u_masked_max_rel_ny64",
+      "value_pct": 1.2408,
+      "threshold_pct": 3.0,
+      "pass": true
+    },
+    {
+      "name": "v_masked_max_rel_ny64",
+      "value_pct": 1.6462,
+      "threshold_pct": 3.0,
+      "pass": true
+    },
+    {
+      "name": "u_masked_max_rel_ny128",
+      "value_pct": 1.1855,
+      "threshold_pct": 3.0,
+      "pass": true
+    },
+    {
+      "name": "v_masked_max_rel_ny128",
+      "value_pct": 1.5669,
+      "threshold_pct": 3.0,
+      "pass": true
+    },
+    {
+      "name": "convergence_64_to_128",
+      "value": {
+        "u_l2_decreases": true,
+        "v_l2_decreases": true,
+        "u_max_rel_decreases": true,
+        "v_max_rel_decreases": true
+      },
+      "threshold": "all four metrics decrease",
+      "pass": true
+    },
+    {
+      "name": "min_steps_ok",
+      "value": true,
+      "threshold": "n_steps >= 20000",
+      "pass": true
+    },
+    {
+      "name": "finite",
+      "value": true,
+      "threshold": "all fields finite",
+      "pass": true
+    }
+  ],
+  "verdict": "PASS",
+  "per_grid_results": [
+    {
+      "ny": 32,
+      "nx": 96,
+      "tau": 0.572,
+      "nu_lb": 0.024,
+      "n_steps": 20000,
+      "steady": true,
+      "u_l2_rel": 0.00180003,
+      "v_l2_rel": 0.03019734,
+      "u_max_rel_pct": 1.333259,
+      "v_max_rel_pct": 2.282233,
+      "finite": true,
+      "elapsed_s": 134.9,
+      "device": "sdaa"
+    },
+    {
+      "ny": 64,
+      "nx": 192,
+      "tau": 0.644,
+      "nu_lb": 0.048,
+      "n_steps": 20000,
+      "steady": true,
+      "u_l2_rel": 0.00164957,
+      "v_l2_rel": 0.02711138,
+      "u_max_rel_pct": 1.240847,
+      "v_max_rel_pct": 1.646246,
+      "finite": true,
+      "elapsed_s": 134.4,
+      "device": "sdaa"
+    },
+    {
+      "ny": 128,
+      "nx": 384,
+      "tau": 0.788,
+      "nu_lb": 0.096,
+      "n_steps": 20000,
+      "steady": true,
+      "u_l2_rel": 0.00157401,
+      "v_l2_rel": 0.02553321,
+      "u_max_rel_pct": 1.185501,
+      "v_max_rel_pct": 1.566871,
+      "finite": true,
+      "elapsed_s": 135.6,
+      "device": "sdaa"
+    }
+  ],
+  "wall_clock_total_s": 404.9,
+  "timestamp": "2026-10-29T20:29:31"
+}
