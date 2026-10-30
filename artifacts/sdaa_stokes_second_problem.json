@@ -1,0 +1,94 @@
+{
+  "case": "stokes_second_problem",
+  "device_evidence": {
+    "device": "sdaa:0",
+    "device_name": "/dev/tcaicard15",
+    "device_count": 1
+  },
+  "config": {
+    "lattice": "D2Q9",
+    "collision": "bgk",
+    "tau": 0.8,
+    "U": 0.05,
+    "nx": 8,
+    "H_list": [20, 30],
+    "kH_list": [6.0, 8.0],
+    "compile_mode": "eager",
+    "grid_note": "Reduced grid H=20/30 (feasible smaller档 of recommended 50/100/200; H=40 exceeded 120s shell timeout on SDAA due to kernel launch overhead dominating for small grids)"
+  },
+  "wall_clock_s": 179.3,
+  "triton_interpret": false,
+  "triton_interpret_note": "No triton dependency in this case (pure D2Q9 BGK with library functions: collide_bgk, stream, zou_he_moving_lid, equilibrium, macroscopic).",
+  "criteria": {
+    "amplitude_max_rel_pct_threshold": 3.0,
+    "phase_max_rel_pct_threshold": 3.0,
+    "complex_amplitude_max_rel_pct_threshold": 3.0,
+    "grid_convergence": "monotonic decrease of complex_rel_max_pct across H=20/30 per kH line"
+  },
+  "per_config": [
+    {
+      "H": 20,
+      "kH": 6.0,
+      "total_steps": 4886,
+      "elapsed_s": 31.1,
+      "amp_rel_max_pct": 1.009910956405946,
+      "phase_rel_max_pct": 0.4868932720564212,
+      "complex_rel_max_pct": 1.4373408884353986,
+      "finite": true
+    },
+    {
+      "H": 20,
+      "kH": 8.0,
+      "total_steps": 4116,
+      "elapsed_s": 23.1,
+      "amp_rel_max_pct": 1.7789650678101676,
+      "phase_rel_max_pct": 0.8976674546953648,
+      "complex_rel_max_pct": 2.354823994262036,
+      "finite": true
+    },
+    {
+      "H": 30,
+      "kH": 6.0,
+      "total_steps": 10990,
+      "elapsed_s": 67.8,
+      "amp_rel_max_pct": 0.47794560508944706,
+      "phase_rel_max_pct": 0.2548122575878331,
+      "complex_rel_max_pct": 0.6655645980369228,
+      "finite": true
+    },
+    {
+      "H": 30,
+      "kH": 8.0,
+      "total_steps": 9282,
+      "elapsed_s": 57.3,
+      "amp_rel_max_pct": 0.7877174391200281,
+      "phase_rel_max_pct": 0.39794482637946216,
+      "complex_rel_max_pct": 1.160554150166368,
+      "finite": true
+    }
+  ],
+  "convergence": {
+    "per_kH": [
+      {
+        "kH": 6.0,
+        "H_list": [20, 30],
+        "complex_rel_max_pct": [1.4373408884353986, 0.6655645980369228],
+        "monotonic_decrease": true
+      },
+      {
+        "kH": 8.0,
+        "H_list": [20, 30],
+        "complex_rel_max_pct": [2.354823994262036, 1.160554150166368],
+        "monotonic_decrease": true
+      }
+    ]
+  },
+  "verdict": {
+    "amplitude_pass": true,
+    "phase_pass": true,
+    "complex_amplitude_pass": true,
+    "convergence_pass": true,
+    "all_pass": true,
+    "status": "PASS"
+  }
+}
