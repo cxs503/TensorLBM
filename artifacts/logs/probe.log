@@ -1,0 +1,43 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+{
+ "device_evidence_line": "torch.sdaa.get_device_name(0) = '/dev/tcaicard27'",
+ "torch_device_used": "sdaa:0",
+ "cuda_available": false
+}
+written /root/tp-agent/work/m42/artifacts/sdaa_sphere_re100_d3q27_tiers/T_D12_s300.json
+last-8 cd mean: 1.3777589164504562
+written /root/tp-agent/work/m42/artifacts/sdaa_sphere_re100_d3q27_tiers/T_D16_s300.json
+last-8 cd mean: 1.2795241598967222
+[
+ {
+  "D": 12,
+  "steps": 300,
+  "domain_lu": [
+   84,
+   84,
+   96
+  ],
+  "tau": 0.518,
+  "re_eff": 99.99999999999993,
+  "Mcells": 0.677376,
+  "loop_wall_s": 97.53305959701538,
+  "harness_wall_s": 99.41490769386292,
+  "ms_per_step": 325.11019865671796
+ },
+ {
+  "D": 16,
+  "steps": 300,
+  "domain_lu": [
+   112,
+   112,
+   128
+  ],
+  "tau": 0.524,
+  "re_eff": 99.99999999999991,
+  "Mcells": 1.605632,
+  "loop_wall_s": 137.83365893363953,
+  "harness_wall_s": 141.59971857070923,
+  "ms_per_step": 459.4455297787984
+ }
+]
