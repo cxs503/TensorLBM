@@ -60,7 +60,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `dam_break_3d_mm` | STRUCTURAL: X/H mutually exclusive (same mass channel) |
 | `dam_break_sc` | STRUCTURAL: constitutive barrier (err(T=1)=0 needs density ratio 12.7, err(T=2.96)=0 needs 6.9) |
 | `dit_turbulence` | in progress |
-| `dtmb5415_resistance` | STRUCTURAL: real geometry ok (zenodo cloud -> STL, Cb 0.53) but single-phase LBM has no wave-making (-22% gap even with perfect Cf) |
+| `dtmb5415_resistance` | geometry FIXED (m452): waterline-clipped STL was open -> voxel body Cb 18 (35x displacement), staircase wetted area 16x smooth -> Cd_tot 1.18; capping the waterline gives Cd_tot 0.045 (Blasius +7.9% at L=32). Caliber re-based: friction-vs-Blasius is the only pass/fail frame; exp C_T(Fr=0.28) stays NOT COMPARABLE (-22.4% no-wave floor, structural). Valid resolution L >= 48 (T/dx >= 2, Cb -10.4%). See docs/sdaa_triage/DTMB5415_DIAGNOSIS.md |
 | `forchheimer` | in progress |
 | `kcs_resistance` | reference audited (MDPI 2020 KCS Cb 0.6505, Fr=0.26 EFT Ct 3.55e-3); caliber = Blasius friction low-Re; runner ready, converged run pending |
 | `naca_0012` | BLOCKED: perf fixed via fast_kernel (288->36 ms/step); CD_REF corrected to 0.12 (Kurtulus + Di Ilio 2020 0.119; old 0.105 rejected); surface-MEM +82% on a friction-dominated airfoil |
