@@ -1,0 +1,46 @@
+{
+  "case": "thermal_cavity_3d",
+  "description": "3D differentially-heated cubic cavity natural convection (D3Q19 BGK + D3Q7 temperature, Pr=0.71)",
+  "recommended_steps": {
+    "ra1e3": {
+      "32": 40000,
+      "48": 90000,
+      "64": 160000
+    },
+    "ra1e4": {
+      "32": 60000,
+      "48": 120000,
+      "64": 200000,
+      "96": 360000,
+      "128": 640000
+    },
+    "ra1e5": {
+      "64": 200000,
+      "96": 360000,
+      "128": 800000
+    }
+  },
+  "steady_state_criteria": {
+    "window_drift_threshold_pct": 0.01,
+    "min_samples_for_window": 10,
+    "window_fraction": 0.2,
+    "hot_cold_imbalance_threshold_pct": 0.1,
+    "max_ma": 0.1
+  },
+  "physics": {
+    "pr": 0.71,
+    "tau_f": 0.6,
+    "T_hot": 1.0,
+    "T_cold": 0.0,
+    "bb": "post",
+    "force": "post_raw",
+    "force_mask": true
+  },
+  "reference": {
+    "cluster_median": {
+      "ra1e3": 1.07065,
+      "ra1e4": 2.05552,
+      "ra1e5": 4.3411
+    }
+  }
+}

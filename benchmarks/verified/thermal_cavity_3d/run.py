@@ -22,6 +22,8 @@ equilibrium/bounce/zou_he/far_field）。配方（判据档冻结）：
 用法：
   python run.py --ra 1e4 --n 64 --steps 200000            # 单案
   python run.py --ra 1e3 --n 32 --steps 40000 --device cpu  # CPU 冒烟
+  python run.py --ra 1e4 --n 64 --auto-steady               # 自动稳态检测
+  python run.py --ra 1e4 --n 64 --config thermal_cavity_3d_config.json  # 加载配置
 判据档完整阶梯步数见 README.md 判据表；out/ 内为正式档机器档案
 （probe_fm_*.json，wall_fields_end 原语可独立重算 Nu）。
 """
@@ -32,6 +34,7 @@ import argparse
 import json
 import time
 from pathlib import Path
+from typing import Optional
 
 import torch
 
@@ -48,6 +51,79 @@ from tensorlbm.thermal3d import (
 from tensorlbm.thermal_common import apply_buoyancy_3d
 
 
+def _compute_window_drift(hist: list[dict], window_fraction: float = 0.2) -> float:
+    """Compute Nu window drift percentage from history.
+
+    Window drift = (mean(last 10% of window) - mean(first 10% of window)) / mean(window) * 100
+    Positive means Nu is still increasing (not yet steady).
+    """
+    if len(hist) < 10:
+        return float("nan")
+    n_window = max(int(len(hist) * window_fraction), 4)
+    window = hist[-n_window:]
+    n_sub = max(len(window) // 10, 1)
+    first_sub = window[:n_sub]
+    last_sub = window[-n_sub:]
+    nu_first = sum(r["nu"] for r in first_sub) / len(first_sub)
+    nu_last = sum(r["nu"] for r in last_sub) / len(last_sub)
+    nu_mean = sum(r["nu"] for r in window) / len(window)
+    if nu_mean == 0:
+        return float("nan")
+    return (nu_last - nu_first) / nu_mean * 100.0
+
+
+def _check_steady_state(
+    hist: list[dict],
+    window_drift_threshold_pct: float = 0.01,
+    hot_cold_imbalance_threshold_pct: float = 0.1,
+    window_fraction: float = 0.2,
+) -> dict:
+    """Check if simulation has reached steady state.
+
+    Returns dict with convergence metrics and boolean flag.
+    """
+    if len(hist) < 10:
+        return {"converged": False, "reason": "insufficient_samples", "metrics": {}}
+
+    window_drift = _compute_window_drift(hist, window_fraction)
+    last = hist[-1]
+    nu_hot = last["nu_hot"]
+    nu_cold = last["nu_cold"]
+    if nu_hot + nu_cold == 0:
+        imbalance = float("nan")
+    else:
+        imbalance = abs(nu_hot - nu_cold) / ((nu_hot + nu_cold) / 2) * 100.0
+
+    converged = (
+        abs(window_drift) < window_drift_threshold_pct
+        and imbalance < hot_cold_imbalance_threshold_pct
+    )
+
+    return {
+        "converged": converged,
+        "window_drift_pct": window_drift,
+        "hot_cold_imbalance_pct": imbalance,
+        "n_samples": len(hist),
+        "reason": "converged" if converged else "not_converged",
+    }
+
+
+def _load_config(config_path: Path) -> dict:
+    """Load configuration from JSON file."""
+    with open(config_path) as f:
+        return json.load(f)
+
+
+def _get_recommended_steps(config: dict, ra: float, n: int) -> Optional[int]:
+    """Get recommended steps from config for given Ra and N."""
+    ra_key = f"ra{ra:.0e}".replace("e+0", "e")
+    if ra_key in config.get("recommended_steps", {}):
+        ra_steps = config["recommended_steps"][ra_key]
+        if str(n) in ra_steps:
+            return ra_steps[str(n)]
+    return None
+
+
 def main() -> None:
     p = argparse.ArgumentParser(
         description="3D cubic thermal cavity (W9-A): D3Q19+D3Q7, full-way BB, "
@@ -55,7 +131,7 @@ def main() -> None:
     )
     p.add_argument("--ra", type=float, required=True, help="Rayleigh number")
     p.add_argument("--n", type=int, required=True, help="cubic grid size")
-    p.add_argument("--steps", type=int, required=True)
+    p.add_argument("--steps", type=int, default=None, help="total steps (optional if --auto-steady or --config)")
     p.add_argument("--pr", type=float, default=0.71)
     p.add_argument("--tau_f", type=float, default=0.6)
     p.add_argument("--sample", type=int, default=500)
@@ -67,7 +143,61 @@ def main() -> None:
         help="output directory (default: <entry>/out)",
     )
     p.add_argument("--tag", default=None, help="archive tag (default: fm_ra{RA}_n{N})")
+    p.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="path to JSON config file with recommended steps and steady-state criteria",
+    )
+    p.add_argument(
+        "--auto-steady",
+        action="store_true",
+        help="automatically extend simulation until steady-state convergence",
+    )
+    p.add_argument(
+        "--max-steps",
+        type=int,
+        default=2000000,
+        help="maximum steps for auto-steady mode (default: 2M)",
+    )
+    p.add_argument(
+        "--steady-drift-threshold",
+        type=float,
+        default=None,
+        help="window drift threshold %% for steady-state (overrides config)",
+    )
     args = p.parse_args()
+
+    # Load config if provided
+    config = None
+    if args.config:
+        config_path = Path(args.config)
+        if not config_path.is_absolute():
+            config_path = Path(__file__).resolve().parent / config_path
+        config = _load_config(config_path)
+        print(f"[config] loaded {config_path}")
+
+    # Determine steps
+    steps = args.steps
+    if steps is None and config is not None:
+        rec = _get_recommended_steps(config, args.ra, args.n)
+        if rec is not None:
+            steps = rec
+            print(f"[config] recommended steps for ra={args.ra:.0e} n={args.n}: {steps}")
+
+    if steps is None and not args.auto_steady:
+        p.error("--steps is required unless --auto-steady or --config provides recommended steps")
+
+    # Get steady-state criteria
+    steady_criteria = {}
+    if config and "steady_state_criteria" in config:
+        steady_criteria = config["steady_state_criteria"]
+    if args.steady_drift_threshold is not None:
+        steady_criteria["window_drift_threshold_pct"] = args.steady_drift_threshold
+
+    window_drift_threshold = steady_criteria.get("window_drift_threshold_pct", 0.01)
+    imbalance_threshold = steady_criteria.get("hot_cold_imbalance_threshold_pct", 0.1)
+    window_fraction = steady_criteria.get("window_fraction", 0.2)
 
     torch.set_grad_enabled(False)
     dev = torch.device(args.device)
@@ -110,7 +240,17 @@ def main() -> None:
     nan_at = None
     sumT0 = None
     t0 = time.time()
-    for step in range(args.steps):
+
+    # Determine total steps for the loop
+    if args.auto_steady:
+        max_steps = args.max_steps
+        print(f"[auto-steady] mode enabled, max_steps={max_steps}, drift_threshold={window_drift_threshold}%")
+    else:
+        max_steps = steps
+
+    actual_steps = 0
+    converged_at = None
+    for step in range(max_steps):
         rho, ux, uy, uz = macroscopic3d(f)
         # wall-node macroscopic u is bounce-back garbage; zero it before the
         # temperature collision (#300 2D same-family fix)
@@ -131,7 +271,7 @@ def main() -> None:
         f = stream3d(f)
         f = bounce_back_cells_3d(f, wall)
 
-        if step % args.sample == 0 or step == args.steps - 1:
+        if step % args.sample == 0 or step == max_steps - 1:
             if not torch.isfinite(T).all() or not torch.isfinite(f).all():
                 nan_at = step
                 break
@@ -155,7 +295,32 @@ def main() -> None:
                 }
             )
 
+            # Check steady-state convergence in auto mode
+            if args.auto_steady and len(hist) >= 20 and converged_at is None:
+                ss = _check_steady_state(hist, window_drift_threshold, imbalance_threshold, window_fraction)
+                if ss["converged"]:
+                    converged_at = step
+                    print(
+                        f"[auto-steady] CONVERGED at step {step}: "
+                        f"drift={ss['window_drift_pct']:.4f}%, "
+                        f"imbalance={ss['hot_cold_imbalance_pct']:.4f}%, "
+                        f"samples={ss['n_samples']}"
+                    )
+                    actual_steps = step + 1
+                    break
+
+            # Progress logging every 10k steps
+            if step > 0 and step % 10000 == 0:
+                nu_val = hist[-1]["nu"] if hist else float("nan")
+                print(f"[{tag}] step={step} Nu={nu_val:.5f} u_max={hist[-1]['u_max']:.4e}")
+
+        actual_steps = step + 1
+
     elapsed = time.time() - t0
+
+    # Compute final steady-state metrics
+    ss_final = _check_steady_state(hist, window_drift_threshold, imbalance_threshold, window_fraction)
+
     # end-state wall fields: raw primitive for independent Nu recomputation
     # (exact decimal print of the stored binary values)
     wall_fields_end = {
@@ -185,7 +350,10 @@ def main() -> None:
             "ra": args.ra,
             "tau_f": args.tau_f,
             "n": args.n,
-            "steps": args.steps,
+            "steps": actual_steps,
+            "steps_requested": steps,
+            "auto_steady": args.auto_steady,
+            "converged_at": converged_at,
             "dtype": args.dtype,
             "bb": "post",
             "force": "post_raw",
@@ -196,9 +364,20 @@ def main() -> None:
             "g_beta": beta,
             "L": L,
         },
+        "steady_state": {
+            "converged": ss_final["converged"],
+            "window_drift_pct": ss_final.get("window_drift_pct", float("nan")),
+            "hot_cold_imbalance_pct": ss_final.get("hot_cold_imbalance_pct", float("nan")),
+            "n_samples": ss_final.get("n_samples", 0),
+            "convergence_criteria": {
+                "window_drift_threshold_pct": window_drift_threshold,
+                "hot_cold_imbalance_threshold_pct": imbalance_threshold,
+                "window_fraction": window_fraction,
+            },
+        },
         "nan_at": nan_at,
         "elapsed_s": elapsed,
-        "steps_per_s": args.steps / max(elapsed, 1e-9),
+        "steps_per_s": actual_steps / max(elapsed, 1e-9),
         "sumT0": sumT0,
         "history": hist,
         "wall_fields_end": wall_fields_end,
@@ -213,7 +392,10 @@ def main() -> None:
         f"[{tag}] Pr={args.pr} tau_f={args.tau_f} {args.dtype} bb=post "
         f"force=post_raw+force_mask tau_T-0.5={tau_T - 0.5:.3e} "
         f"nan_at={nan_at} Nu_last={last.get('nu', float('nan')):.5f} "
-        f"u_max={last.get('u_max', float('nan')):.4e} {elapsed:.0f}s -> {path}"
+        f"u_max={last.get('u_max', float('nan')):.4e} "
+        f"steps={actual_steps} converged={ss_final['converged']} "
+        f"drift={ss_final.get('window_drift_pct', float('nan')):.4f}% "
+        f"{elapsed:.0f}s -> {path}"
     )
 
 
