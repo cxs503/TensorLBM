@@ -1,0 +1,14 @@
+{
+  "smoke_test": "sphere_re100_cpu_minimal",
+  "sparse": {
+    "cd_mean": 5.696765716628821,
+    "cd_ref": 2.609548786835539,
+    "err_pct": 118.30462589423307
+  },
+  "dense": {
+    "cd_mean": 5.696765716628821,
+    "cd_ref": 2.609548786835539,
+    "err_pct": 118.30462589423307
+  },
+  "bit_identical": true
+}
