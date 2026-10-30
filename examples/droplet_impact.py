@@ -109,6 +109,21 @@ def save_contour(
     plt.close(fig)
 
 
+def _initial_phase_field(
+    xx: torch.Tensor,
+    yy: torch.Tensor,
+    radius: float,
+    center_x: float,
+    center_y: float,
+    water_level: float,
+    interface_width: float,
+) -> torch.Tensor:
+    pool_phi = torch.tanh((yy - water_level) / interface_width)
+    r = torch.sqrt((xx - center_x) ** 2 + (yy - center_y) ** 2)
+    drop_phi = torch.tanh((radius - r) / interface_width)
+    return torch.maximum(pool_phi, drop_phi).clamp(-1.0, 1.0)
+
+
 def main() -> None:
     args = parser().parse_args()
     if args.fast:
@@ -137,11 +152,7 @@ def main() -> None:
     x = torch.arange(nx, dtype=torch.float32, device=device)
     yy, xx = torch.meshgrid(y, x, indexing="ij")
     cy, cx = args.water_level - args.radius - args.gap, nx / 2.0
-    r = torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
-    pool_phi = torch.tanh((args.water_level - yy) / args.interface_width)
-    drop_phi = torch.tanh((args.radius - r) / args.interface_width)
-    # Union of pool and droplet phases; both represent the same liquid phase.
-    phi0 = torch.maximum(pool_phi, drop_phi).clamp(-1.0, 1.0)
+    phi0 = _initial_phase_field(xx, yy, args.radius, cx, cy, args.water_level, args.interface_width)
     rho0 = torch.ones((ny, nx), dtype=torch.float32, device=device)
     zero = torch.zeros_like(rho0)
     f = equilibrium(rho0, zero, zero)
@@ -236,7 +247,7 @@ def main() -> None:
     (out / "run_metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
 
     steps = [int(row["step"]) for row in rows]
-    fig, axes = plt.subplots(2, 2, figsize=(11, 7.5), constrained_layout=True)
+    fig, axes = plt.subplots(2, 3, figsize=(11, 7.5), constrained_layout=True)
     axes[0, 0].plot(steps, [row["relative_phase_mass_drift"] for row in rows], marker="o")
     axes[0, 0].set(title="Relative phase-mass drift", xlabel="step", ylabel="relative drift")
     axes[0, 1].plot(steps, [row["upper_region_liquid_centroid_y"] for row in rows], marker="o")
@@ -256,6 +267,7 @@ def main() -> None:
         va="top",
         family="monospace",
     )
+    axes[1, 2].axis("off")
     fig.savefig(out / "diagnostic_curves.png", dpi=160)
     plt.close(fig)
     print(f"Artifacts written to: {out}")
