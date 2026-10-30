@@ -1,0 +1,43 @@
+{
+  "mission_id": 194,
+  "case": "suboff_re1000",
+  "validation_type": "result_json_verification",
+  "reference": {
+    "name": "Blasius laminar flat-plate Cf",
+    "value": 0.04199504732703608,
+    "formula": "1.328/sqrt(Re)",
+    "Re": 1000
+  },
+  "primary_result": {
+    "Cd_pressure": 0.005556427630348497,
+    "Cd_friction": 0.03595687486402395,
+    "Cd_total": 0.04151330249437245,
+    "error_pct": -1.1471467787904794,
+    "friction_formula": "mix50",
+    "resolution": 80,
+    "steps": 12000
+  },
+  "convergence_windows": {
+    "25%": 0.051099,
+    "50%": 0.046304,
+    "75%": 0.04468,
+    "100%": 0.041513
+  },
+  "final_field_recheck": {
+    "Cd_total_mix50": 0.041424457668659466,
+    "error_pct": -1.36014385
+  },
+  "acceptance": {
+    "threshold_pct": 3.0,
+    "primary_pass": true,
+    "final_field_pass": true,
+    "overall_pass": true
+  },
+  "grid_convergence": {
+    "L48_mix50_err": -3.17,
+    "L80_mix50_err": -1.147,
+    "trend": "error decreases with resolution (convergent)"
+  },
+  "verdict": "PASS",
+  "note": "Validated against existing verified result.json (2026-09-29). Full simulation takes ~3.4h; this is a validation-only run."
+}
