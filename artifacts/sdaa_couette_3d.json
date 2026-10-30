@@ -1,0 +1,122 @@
+{
+  "case": "couette_3d",
+  "sweep_device": "sdaa",
+  "device_evidence": {
+    "torch_version": "2.7.1",
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_get_device_name_0": "/dev/tcaicard2",
+    "sdaa_current_device": 0
+  },
+  "triton_interpret": null,
+  "triton_bypass": "not needed \u2014 case uses pure torch ops, no triton kernels",
+  "config": {
+    "H_values": [
+      8
+    ],
+    "tau": 0.8,
+    "U0": 0.05,
+    "min_steps": 200,
+    "max_steps": 500,
+    "lattice": "D3Q19",
+    "collision": "BGK",
+    "boundary": "moving top wall + stationary bottom wall, half-way BB"
+  },
+  "results_fp32": [
+    {
+      "H": 8,
+      "ny": 10,
+      "nx": 8,
+      "nz": 8,
+      "dtype": "float32",
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U0": 0.05,
+      "n_steps": 500,
+      "steady": true,
+      "l2_rel_err": 5.866149538581604e-06,
+      "max_abs_err": 2.622604370096371e-07,
+      "max_rel_err_masked_pct": 0.0015139579772949219,
+      "u_top_err_pct": 0.00010331471761067708,
+      "tau_err_pct": -0.00031090208463258046,
+      "uz_max": 1.8626444830971423e-09,
+      "ux_spanwise_std": 0.0,
+      "mass_drift_pct": 8.58307375893045e-05,
+      "finite": true,
+      "elapsed_s": 7.0
+    }
+  ],
+  "results_fp64": [
+    {
+      "H": 8,
+      "ny": 10,
+      "nx": 8,
+      "nz": 8,
+      "dtype": "float64",
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U0": 0.05,
+      "n_steps": 500,
+      "steady": true,
+      "l2_rel_err": 1.6165870021629923e-14,
+      "max_abs_err": 9.020562075079397e-16,
+      "max_rel_err_masked_pct": 1.9243865760169383e-12,
+      "u_top_err_pct": 1.9243865760169383e-12,
+      "tau_err_pct": 1.9949319973733278e-12,
+      "uz_max": 0.0,
+      "ux_spanwise_std": 0.0,
+      "mass_drift_pct": -1.8651746813701022e-12,
+      "finite": true,
+      "elapsed_s": 7.1
+    }
+  ],
+  "gates": [
+    {
+      "gate": "G1_direct_observable",
+      "criterion": "l2_rel_err <= 3% for all grids (fp32)",
+      "pass": true,
+      "values": {
+        "8": 5.866149538581604e-06
+      }
+    },
+    {
+      "gate": "G2a_fp32_floor",
+      "criterion": "l2_rel_err <= 1e-3 for all fp32 grids",
+      "pass": true,
+      "values": {
+        "8": 5.866149538581604e-06
+      }
+    },
+    {
+      "gate": "G2b_fp64_scheme_exactness",
+      "criterion": "l2_rel_err <= 1e-7 for all fp64 grids",
+      "pass": true,
+      "values": {
+        "8": 1.6165870021629923e-14
+      }
+    },
+    {
+      "gate": "G3_steady_state",
+      "criterion": "steady=true, |mass_drift|<1%, uz_max<1e-6, spanwise_std<1e-6 (fp64)",
+      "pass": true,
+      "details": [
+        {
+          "H": 8,
+          "steady": true,
+          "mass_drift_pct": -1.8651746813701022e-12,
+          "uz_max": 0.0,
+          "ux_spanwise_std": 0.0,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "gate": "G4_library_entry",
+      "criterion": "tensorlbm.d3q19 + tensorlbm.solver3d importable and functional on sdaa",
+      "pass": true,
+      "evidence": "all solver calls executed on sdaa without error"
+    }
+  ],
+  "all_pass": true,
+  "total_wall_clock_s": 14.1
+}
