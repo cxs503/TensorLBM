@@ -1,0 +1,62 @@
+{
+  "device": "sdaa:0",
+  "torch_version": "2.7.1",
+  "sdaa_version": "3.1.1a3+gite3971b9",
+  "sdaa_device_name": "/dev/tcaicard4",
+  "sdaa_device_count": 1,
+  "timestamp": "2025-10-30T08:30:00",
+  "runs": [
+    {
+      "h": 10,
+      "grid": [100, 20, 20],
+      "device": "sdaa:0",
+      "steps": 3000,
+      "wall_time_s": 75.2,
+      "xr_h": 2.8861,
+      "xr_h_err_pct": -3.80,
+      "er_eff": 2.0,
+      "er_dev_pct": 3.09,
+      "status": "OK"
+    },
+    {
+      "h": 16,
+      "grid": [160, 33, 32],
+      "device": "sdaa:0",
+      "steps": 3000,
+      "wall_time_s": 78.0,
+      "xr_h": 2.9082,
+      "xr_h_err_pct": -3.06,
+      "er_eff": 1.9375,
+      "er_dev_pct": 0.13,
+      "status": "OK"
+    },
+    {
+      "h": 24,
+      "grid": [240, 49, 48],
+      "device": "sdaa:0",
+      "steps": 3000,
+      "wall_time_s": 84.5,
+      "xr_h": 2.3802,
+      "xr_h_err_pct": -20.66,
+      "er_eff": 1.9583,
+      "er_dev_pct": 0.94,
+      "status": "OK (not converged)"
+    }
+  ],
+  "diagnosis": {
+    "er_inconsistency": "CRITICAL: ER varies from 1.9375 to 2.0 across resolutions",
+    "convergence": "NOT MONOTONIC: H=24 is much worse than H=10/16",
+    "root_causes": [
+      "ER discretization error (H=10: +3.1%)",
+      "Grid resolution bias (coarse grid overpredicts separation bubble)",
+      "Insufficient convergence steps (3000 too few)"
+    ]
+  },
+  "verdict": "HONEST_FAIL",
+  "criteria_check": {
+    "finest_error_le_3pct": false,
+    "monotonic_convergence": false,
+    "finest_two_differ_le_1pct": false,
+    "pass": false
+  }
+}

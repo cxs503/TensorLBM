@@ -1,0 +1,35 @@
+{
+  "case": "bstep_3d_sdaa_resolution\u68af\u5b50",
+  "reference": {
+    "xr_h_ref": 3.0,
+    "er_ref": 1.94
+  },
+  "device": "sdaa:0",
+  "results": [
+    {
+      "h": 24,
+      "nx": 240,
+      "ny": 49,
+      "nz": 48,
+      "x_step": 48,
+      "er_nominal": 1.9583333333333333,
+      "er_dev_pct": 0.945017182130583,
+      "tau": 0.536,
+      "nu": 0.012000000000000002,
+      "xr_h": 2.3802196979522705,
+      "xr_h_err_pct": -20.65934340159098,
+      "xr_planes_mean": 2.3802194595336914,
+      "xr_planes_std": 0.0,
+      "xr_series": [
+        2.3802196979522705
+      ],
+      "steps": [
+        3000
+      ],
+      "wall_time_s": 84.52308773994446,
+      "inlet_max_dev": 3.725290299849693e-07,
+      "n_steps": 3000,
+      "status": "OK"
+    }
+  ]
+}

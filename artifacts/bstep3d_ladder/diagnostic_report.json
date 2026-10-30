@@ -1,0 +1,68 @@
+{
+  "case": "bstep_3d_sdaa_diagnostic",
+  "mission_id": 411,
+  "verdict": "HONEST_FAIL",
+  "reference": {
+    "xr_h_ref": 3.0,
+    "er_ref": 1.94
+  },
+  "results": [
+    {
+      "h": 10,
+      "nx": 100,
+      "ny": 20,
+      "nz": 20,
+      "er": 2.0,
+      "er_dev_pct": 3.09,
+      "xr_h": 2.8861,
+      "err_pct": -3.8,
+      "steps": 3000,
+      "wall_s": 75.2
+    },
+    {
+      "h": 16,
+      "nx": 160,
+      "ny": 33,
+      "nz": 32,
+      "er": 1.9375,
+      "er_dev_pct": 0.13,
+      "xr_h": 2.9082,
+      "err_pct": -3.06,
+      "steps": 3000,
+      "wall_s": 78.0
+    },
+    {
+      "h": 24,
+      "nx": 240,
+      "ny": 49,
+      "nz": 48,
+      "er": 1.9583,
+      "er_dev_pct": 0.94,
+      "xr_h": 2.3802,
+      "err_pct": -20.66,
+      "steps": 3000,
+      "wall_s": 84.5
+    }
+  ],
+  "analysis": {
+    "er_inconsistency": true,
+    "monotonic_convergence": false,
+    "converged": false,
+    "root_causes": [
+      "ER discretization error (H=10: +3.1%)",
+      "Grid resolution bias (coarse grid)",
+      "Insufficient convergence steps"
+    ],
+    "error_budget_h10": {
+      "er_contribution_pct": 3.09,
+      "grid_bias_pct": -6.89,
+      "net_pct": -3.8
+    }
+  },
+  "criteria_check": {
+    "finest_error_le_3pct": false,
+    "monotonic_convergence": false,
+    "finest_two_differ_le_1pct": false,
+    "pass": false
+  }
+}
