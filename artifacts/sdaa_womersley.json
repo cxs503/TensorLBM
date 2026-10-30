@@ -1,0 +1,529 @@
+{
+  "case": "womersley",
+  "device": "sdaa",
+  "device_name": "/dev/tcaicard23",
+  "triton_interpret": "1",
+  "compile_bypass_note": "torch.compile fails on SDAA (teco_inductor incomplete); compile_route auto-fallback to eager is used. TRITON_INTERPRET=1 set as precaution but does not fix the inductor backend gap.",
+  "grid_H_list": [
+    29,
+    59
+  ],
+  "alpha_list": [
+    4.0,
+    8.0
+  ],
+  "tau": 0.8,
+  "u_peak_target": 0.03,
+  "nx": 16,
+  "tol_pct": 3.0,
+  "per_grid": [
+    {
+      "H": 29,
+      "ny": 31,
+      "nx": 16,
+      "H_eff": 29.0,
+      "alpha": 4.0,
+      "omega": 0.007609988109393581,
+      "T_int": 826,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "a0": 0.00020515717991891145,
+      "u_peak_ana": 0.03,
+      "Ma": 0.05196152422706632,
+      "skip_periods": 7,
+      "skip_steps": 5782,
+      "measure_periods": 4,
+      "n_meas_steps": 3304,
+      "total_steps": 9086,
+      "profile_l2_instant_max_pct": 1.7040360075449685,
+      "profile_l2_max_pct": 0.41944355194947147,
+      "profile_pointwise_max_over_upeak_pct": 0.4146096124268698,
+      "complex_rel_max_pct": 2.934026843116117,
+      "center_complex_rel_pct": 0.3933229989914369,
+      "mass_drift_pct": 0.0023441931413338657,
+      "finite": true,
+      "elapsed_s": 84.66,
+      "compile_info": {
+        "compile_status": "eager_fallback",
+        "compile_mode_effective": "eager",
+        "compile_status_reason": "InductorError: AssertionError: self.reduction_shape [1, 9, 496], index 2*i1, self.ncw [9, 496, 1],                                                          graph_ncw [9, 496, 1], graph_reduction_shape [1, 9, 496]\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n"
+      },
+      "phase_table": [
+        {
+          "step": 5783,
+          "phase_deg": 1.5,
+          "l2_rel_instant": 0.01609690170794693,
+          "l2_rel_peaknorm": 0.003945532068764758,
+          "u_ref_norm": 0.03197816084262915,
+          "max_abs_over_upeak": 0.003880146872256198
+        },
+        {
+          "step": 5886,
+          "phase_deg": 46.41,
+          "l2_rel_instant": 0.00324550345881171,
+          "l2_rel_peaknorm": 0.0027148059857229883,
+          "u_ref_norm": 0.10913069446014563,
+          "max_abs_over_upeak": 0.0030181761670356345
+        },
+        {
+          "step": 5989,
+          "phase_deg": 91.32,
+          "l2_rel_instant": 0.0020158692545579745,
+          "l2_rel_peaknorm": 0.001977849730107643,
+          "u_ref_norm": 0.12800328884705342,
+          "max_abs_over_upeak": 0.002708798768551411
+        },
+        {
+          "step": 6092,
+          "phase_deg": 136.24,
+          "l2_rel_instant": 0.006391878521570605,
+          "l2_rel_peaknorm": 0.00364204198758989,
+          "u_ref_norm": 0.07433727428439614,
+          "max_abs_over_upeak": 0.0037604169555461218
+        },
+        {
+          "step": 6196,
+          "phase_deg": 181.58,
+          "l2_rel_instant": 0.017040360075449686,
+          "l2_rel_peaknorm": 0.0041944355194947144,
+          "u_ref_norm": 0.032113301152109704,
+          "max_abs_over_upeak": 0.004146096124268698
+        },
+        {
+          "step": 6299,
+          "phase_deg": 226.49,
+          "l2_rel_instant": 0.0034522377450077867,
+          "l2_rel_peaknorm": 0.0028902147186908537,
+          "u_ref_norm": 0.10922438521385415,
+          "max_abs_over_upeak": 0.0031526795743029813
+        },
+        {
+          "step": 6402,
+          "phase_deg": 271.4,
+          "l2_rel_instant": 0.0019239719852957092,
+          "l2_rel_peaknorm": 0.0018871940543846325,
+          "u_ref_norm": 0.12796995366367295,
+          "max_abs_over_upeak": 0.002619135269148777
+        },
+        {
+          "step": 6505,
+          "phase_deg": 316.31,
+          "l2_rel_instant": 0.006093284041847227,
+          "l2_rel_peaknorm": 0.003465455739945975,
+          "u_ref_norm": 0.07419918416201643,
+          "max_abs_over_upeak": 0.0036178630969089035
+        }
+      ]
+    },
+    {
+      "H": 59,
+      "ny": 61,
+      "nx": 16,
+      "H_eff": 59.0,
+      "alpha": 4.0,
+      "omega": 0.001838552140189601,
+      "T_int": 3417,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "a0": 4.956540888015068e-05,
+      "u_peak_ana": 0.03,
+      "Ma": 0.05196152422706632,
+      "skip_periods": 7,
+      "skip_steps": 23919,
+      "measure_periods": 4,
+      "n_meas_steps": 13668,
+      "total_steps": 37587,
+      "profile_l2_instant_max_pct": 0.4833721234348066,
+      "profile_l2_max_pct": 0.10689352047235916,
+      "profile_pointwise_max_over_upeak_pct": 0.10580116108252549,
+      "complex_rel_max_pct": 0.46694756476216676,
+      "center_complex_rel_pct": 0.09415828738858026,
+      "mass_drift_pct": 0.0011819329356243654,
+      "finite": true,
+      "elapsed_s": 299.76,
+      "compile_info": {
+        "compile_status": "eager_fallback",
+        "compile_mode_effective": "eager",
+        "compile_status_reason": "InductorError: AssertionError: self.reduction_shape [1, 9, 976], index 2*i1, self.ncw [9, 976, 1],                                                          graph_ncw [9, 976, 1], graph_reduction_shape [1, 9, 976]\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n"
+      },
+      "phase_table": [
+        {
+          "step": 23920,
+          "phase_deg": 359.76,
+          "l2_rel_instant": 0.003712556431242036,
+          "l2_rel_peaknorm": 0.0008246508287306049,
+          "u_ref_norm": 0.04133461090512797,
+          "max_abs_over_upeak": 0.0009449723487565274
+        },
+        {
+          "step": 24347,
+          "phase_deg": 44.74,
+          "l2_rel_instant": 0.0007171863481820091,
+          "l2_rel_peaknorm": 0.0005883853214560408,
+          "u_ref_norm": 0.1526675139240908,
+          "max_abs_over_upeak": 0.0007614122736226464
+        },
+        {
+          "step": 24774,
+          "phase_deg": 89.72,
+          "l2_rel_instant": 0.0005101862300520667,
+          "l2_rel_peaknorm": 0.000503096695504014,
+          "u_ref_norm": 0.18350147087309537,
+          "max_abs_over_upeak": 0.0006713774964842503
+        },
+        {
+          "step": 25201,
+          "phase_deg": 134.71,
+          "l2_rel_instant": 0.0015633609758012655,
+          "l2_rel_peaknorm": 0.0009236728904989119,
+          "u_ref_norm": 0.10994506697616603,
+          "max_abs_over_upeak": 0.0009430959421568321
+        },
+        {
+          "step": 25628,
+          "phase_deg": 179.69,
+          "l2_rel_instant": 0.004833721234348066,
+          "l2_rel_peaknorm": 0.0010689352047235916,
+          "u_ref_norm": 0.04115158789078407,
+          "max_abs_over_upeak": 0.001058011610825255
+        },
+        {
+          "step": 26055,
+          "phase_deg": 224.67,
+          "l2_rel_instant": 0.0009335112922417251,
+          "l2_rel_peaknorm": 0.0007651526943761566,
+          "u_ref_norm": 0.15252651728448774,
+          "max_abs_over_upeak": 0.0008484468111041403
+        },
+        {
+          "step": 26482,
+          "phase_deg": 269.65,
+          "l2_rel_instant": 0.00042430164253181066,
+          "l2_rel_peaknorm": 0.0004184989818642261,
+          "u_ref_norm": 0.18354244408980055,
+          "max_abs_over_upeak": 0.0005836398509541143
+        },
+        {
+          "step": 26909,
+          "phase_deg": 314.63,
+          "l2_rel_instant": 0.0012780675013380181,
+          "l2_rel_peaknorm": 0.0007564578363179351,
+          "u_ref_norm": 0.11014067968570655,
+          "max_abs_over_upeak": 0.0008093511497479893
+        }
+      ]
+    },
+    {
+      "H": 29,
+      "ny": 31,
+      "nx": 16,
+      "H_eff": 29.0,
+      "alpha": 8.0,
+      "omega": 0.030439952437574323,
+      "T_int": 206,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "a0": 0.0008548649624291444,
+      "u_peak_ana": 0.03,
+      "Ma": 0.05196152422706632,
+      "skip_periods": 27,
+      "skip_steps": 5562,
+      "measure_periods": 4,
+      "n_meas_steps": 824,
+      "total_steps": 6386,
+      "profile_l2_instant_max_pct": 5.784835703143416,
+      "profile_l2_max_pct": 1.554772926417209,
+      "profile_pointwise_max_over_upeak_pct": 1.7415005879738792,
+      "complex_rel_max_pct": 4.89002079625917,
+      "center_complex_rel_pct": 1.6483311068493058,
+      "mass_drift_pct": 0.0002953314193806445,
+      "finite": true,
+      "elapsed_s": 25.6,
+      "compile_info": {
+        "compile_status": "eager_fallback",
+        "compile_mode_effective": "eager",
+        "compile_status_reason": "InductorError: AssertionError: self.reduction_shape [1, 9, 496], index 2*i1, self.ncw [9, 496, 1],                                                          graph_ncw [9, 496, 1], graph_reduction_shape [1, 9, 496]\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n"
+      },
+      "phase_table": [
+        {
+          "step": 5563,
+          "phase_deg": 342.32,
+          "l2_rel_instant": 0.05784835703143416,
+          "l2_rel_peaknorm": 0.015443081690089908,
+          "u_ref_norm": 0.03818579112267151,
+          "max_abs_over_upeak": 0.01734990864175791
+        },
+        {
+          "step": 5588,
+          "phase_deg": 25.92,
+          "l2_rel_instant": 0.026840787633493016,
+          "l2_rel_peaknorm": 0.01390501556519245,
+          "u_ref_norm": 0.0741028781450091,
+          "max_abs_over_upeak": 0.015077518742595842
+        },
+        {
+          "step": 5614,
+          "phase_deg": 71.27,
+          "l2_rel_instant": 0.006489346229113265,
+          "l2_rel_peaknorm": 0.006289923282231094,
+          "u_ref_norm": 0.13864469455908654,
+          "max_abs_over_upeak": 0.009784910825920076
+        },
+        {
+          "step": 5640,
+          "phase_deg": 116.62,
+          "l2_rel_instant": 0.010835983801113142,
+          "l2_rel_peaknorm": 0.009323694779482378,
+          "u_ref_norm": 0.12307746814195553,
+          "max_abs_over_upeak": 0.013873627389224843
+        },
+        {
+          "step": 5666,
+          "phase_deg": 161.96,
+          "l2_rel_instant": 0.05712990899321021,
+          "l2_rel_peaknorm": 0.01554772926417209,
+          "u_ref_norm": 0.03892801779589526,
+          "max_abs_over_upeak": 0.017415005879738793
+        },
+        {
+          "step": 5691,
+          "phase_deg": 205.56,
+          "l2_rel_instant": 0.02743176012335243,
+          "l2_rel_peaknorm": 0.014069018194602484,
+          "u_ref_norm": 0.07336162956284745,
+          "max_abs_over_upeak": 0.015218568515896341
+        },
+        {
+          "step": 5717,
+          "phase_deg": 250.91,
+          "l2_rel_instant": 0.006639754023005775,
+          "l2_rel_peaknorm": 0.0064254360924704875,
+          "u_ref_norm": 0.13842338666914789,
+          "max_abs_over_upeak": 0.00981679179266311
+        },
+        {
+          "step": 5743,
+          "phase_deg": 296.26,
+          "l2_rel_instant": 0.01061073760539373,
+          "l2_rel_peaknorm": 0.00916321043724567,
+          "u_ref_norm": 0.12352672811923156,
+          "max_abs_over_upeak": 0.013793121985858706
+        }
+      ]
+    },
+    {
+      "H": 59,
+      "ny": 61,
+      "nx": 16,
+      "H_eff": 59.0,
+      "alpha": 8.0,
+      "omega": 0.007354208560758404,
+      "T_int": 854,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "a0": 0.0002063598537512328,
+      "u_peak_ana": 0.03,
+      "Ma": 0.05196152422706632,
+      "skip_periods": 27,
+      "skip_steps": 23058,
+      "measure_periods": 4,
+      "n_meas_steps": 3416,
+      "total_steps": 26474,
+      "profile_l2_instant_max_pct": 2.818435830112994,
+      "profile_l2_max_pct": 0.39002913636049447,
+      "profile_pointwise_max_over_upeak_pct": 0.4239197409935166,
+      "complex_rel_max_pct": 2.8991836017094896,
+      "center_complex_rel_pct": 0.37494785330215674,
+      "mass_drift_pct": 0.00010631142807203286,
+      "finite": true,
+      "elapsed_s": 96.67,
+      "compile_info": {
+        "compile_status": "eager_fallback",
+        "compile_mode_effective": "eager",
+        "compile_status_reason": "InductorError: AssertionError: self.reduction_shape [1, 9, 976], index 2*i1, self.ncw [9, 976, 1],                                                          graph_ncw [9, 976, 1], graph_reduction_shape [1, 9, 976]\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n"
+      },
+      "phase_table": [
+        {
+          "step": 23059,
+          "phase_deg": 356.26,
+          "l2_rel_instant": 0.027326382243201035,
+          "l2_rel_peaknorm": 0.003784132249889828,
+          "u_ref_norm": 0.02822957879420719,
+          "max_abs_over_upeak": 0.00415804865266981
+        },
+        {
+          "step": 23165,
+          "phase_deg": 40.92,
+          "l2_rel_instant": 0.0038926571362583825,
+          "l2_rel_peaknorm": 0.0027911635008501757,
+          "u_ref_norm": 0.14617037315714307,
+          "max_abs_over_upeak": 0.003176192971427455
+        },
+        {
+          "step": 23272,
+          "phase_deg": 86.01,
+          "l2_rel_instant": 0.0012063707247664396,
+          "l2_rel_peaknorm": 0.0012063480225666268,
+          "u_ref_norm": 0.20385063017395078,
+          "max_abs_over_upeak": 0.0025559785791853112
+        },
+        {
+          "step": 23379,
+          "phase_deg": 131.09,
+          "l2_rel_instant": 0.004108035252829601,
+          "l2_rel_peaknorm": 0.002910578003208346,
+          "u_ref_norm": 0.14443262760051337,
+          "max_abs_over_upeak": 0.0036989914505799796
+        },
+        {
+          "step": 23486,
+          "phase_deg": 176.18,
+          "l2_rel_instant": 0.02818435830112994,
+          "l2_rel_peaknorm": 0.0039002913636049445,
+          "u_ref_norm": 0.028210392670545936,
+          "max_abs_over_upeak": 0.004239197409935166
+        },
+        {
+          "step": 23592,
+          "phase_deg": 220.85,
+          "l2_rel_instant": 0.00405434541640812,
+          "l2_rel_peaknorm": 0.0029033653566891164,
+          "u_ref_norm": 0.14598262724204636,
+          "max_abs_over_upeak": 0.003173997093542172
+        },
+        {
+          "step": 23699,
+          "phase_deg": 265.93,
+          "l2_rel_instant": 0.001214777312735867,
+          "l2_rel_peaknorm": 0.0012147633055952143,
+          "u_ref_norm": 0.20385211585896942,
+          "max_abs_over_upeak": 0.002533392702165858
+        },
+        {
+          "step": 23806,
+          "phase_deg": 311.02,
+          "l2_rel_instant": 0.00396253700684464,
+          "l2_rel_peaknorm": 0.002811179541801586,
+          "u_ref_norm": 0.14462237312559367,
+          "max_abs_over_upeak": 0.0036495635620348993
+        }
+      ]
+    }
+  ],
+  "convergence": [
+    {
+      "alpha": 4.0,
+      "H_list": [
+        29,
+        59
+      ],
+      "l2_max_pct": [
+        0.41944355194947147,
+        0.10689352047235916
+      ],
+      "complex_max_pct": [
+        2.934026843116117,
+        0.46694756476216676
+      ],
+      "err_decreased": true
+    },
+    {
+      "alpha": 8.0,
+      "H_list": [
+        29,
+        59
+      ],
+      "l2_max_pct": [
+        1.554772926417209,
+        0.39002913636049447
+      ],
+      "complex_max_pct": [
+        4.89002079625917,
+        2.8991836017094896
+      ],
+      "err_decreased": true
+    }
+  ],
+  "c4_err_decreased": true,
+  "verdicts": [
+    {
+      "H": 29,
+      "alpha": 4.0,
+      "c1_l2_fixed_scale": {
+        "value_pct": 0.41944355194947147,
+        "threshold_pct": 3.0,
+        "pass": true
+      },
+      "c2_pointwise_over_upeak": {
+        "value_pct": 0.4146096124268698,
+        "threshold_pct": 3.0,
+        "pass": true
+      },
+      "c3_complex_amplitude": {
+        "value_pct": 2.934026843116117,
+        "threshold_pct": 3.0,
+        "pass": true
+      }
+    },
+    {
+      "H": 59,
+      "alpha": 4.0,
+      "c1_l2_fixed_scale": {
+        "value_pct": 0.10689352047235916,
+        "threshold_pct": 3.0,
+        "pass": true
+      },
+      "c2_pointwise_over_upeak": {
+        "value_pct": 0.10580116108252549,
+        "threshold_pct": 3.0,
+        "pass": true
+      },
+      "c3_complex_amplitude": {
+        "value_pct": 0.46694756476216676,
+        "threshold_pct": 3.0,
+        "pass": true
+      }
+    },
+    {
+      "H": 29,
+      "alpha": 8.0,
+      "c1_l2_fixed_scale": {
+        "value_pct": 1.554772926417209,
+        "threshold_pct": 3.0,
+        "pass": true
+      },
+      "c2_pointwise_over_upeak": {
+        "value_pct": 1.7415005879738792,
+        "threshold_pct": 3.0,
+        "pass": true
+      },
+      "c3_complex_amplitude": {
+        "value_pct": 4.89002079625917,
+        "threshold_pct": 3.0,
+        "pass": false
+      }
+    },
+    {
+      "H": 59,
+      "alpha": 8.0,
+      "c1_l2_fixed_scale": {
+        "value_pct": 0.39002913636049447,
+        "threshold_pct": 3.0,
+        "pass": true
+      },
+      "c2_pointwise_over_upeak": {
+        "value_pct": 0.4239197409935166,
+        "threshold_pct": 3.0,
+        "pass": true
+      },
+      "c3_complex_amplitude": {
+        "value_pct": 2.8991836017094896,
+        "threshold_pct": 3.0,
+        "pass": true
+      }
+    }
+  ],
+  "all_tol_pass": false,
+  "overall_pass": false,
+  "status": "FAIL"
+}
