@@ -1,0 +1,59 @@
+{
+  "case": "aircraft_icing_naca0012_rime",
+  "method": "3-point Richardson on non-uniform grid (corrected)",
+  "t_max": {
+    "ladder": [
+      {
+        "name": "ladder_L1",
+        "nx": 320,
+        "dx": 0.003125,
+        "t_max": 8.334375
+      },
+      {
+        "name": "ladder_L2",
+        "nx": 640,
+        "dx": 0.0015625,
+        "t_max": 10.41796875
+      },
+      {
+        "name": "ladder_L3",
+        "nx": 890,
+        "dx": 0.0011235955056179776,
+        "t_max": 10.48820224719101
+      },
+      {
+        "name": "ladder_L4",
+        "nx": 1280,
+        "dx": 0.00078125,
+        "t_max": 10.41796875
+      }
+    ],
+    "f_ext_mm": 10.50799579713059,
+    "p": 4.593597963850581,
+    "l3_err_pct": -0.18836655744556974,
+    "gate_pass": 1.0
+  },
+  "beta_pk": {
+    "f_ext": 0.9449134342699906,
+    "p": 20.0,
+    "l3_err_pct": -0.006344458363239996
+  },
+  "l4_check": {
+    "t_max": 10.41796875,
+    "err_pct": -0.8567480313912362,
+    "gate_pass": 1.0
+  },
+  "disclosure": {
+    "t_max_mm_L4": 10.41796875,
+    "t_max_mm_L2": 10.41796875,
+    "L4_equals_L2": true,
+    "note": "L4 non-monotone = single-cell quantisation oscillation (disclosed per prereg E2; monotonicity gate is L1<L2<L3)",
+    "prior": {
+      "ladder_L1": 8.334375,
+      "ladder_L2": 10.41796875,
+      "ladder_L3": 10.48820224719101,
+      "ladder_L4": 10.41796875,
+      "__source__": "icing_conv_20260917/analysis.json::ladder.levels[].t_max_mm"
+    }
+  }
+}

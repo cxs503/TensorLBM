@@ -1,0 +1,74 @@
+{
+  "case": "aircraft_icing_naca0012_rime",
+  "analysis": "SDAA sweep v2 \u2014 independent gate re-evaluation (FIXED Richardson)",
+  "total_gates": 11,
+  "pass_count": 11,
+  "fail_count": 0,
+  "verdict": "PASS",
+  "gates": {
+    "G1_lagrangian_closure": {
+      "value": 0.0,
+      "gate": "<=1e-12",
+      "pass": true
+    },
+    "G2_eulerian_closure_rel": {
+      "value": 1.987100363987887e-08,
+      "gate": "<=1e-6",
+      "pass": true
+    },
+    "G7_determinism_bitwise": {
+      "value": "15/15",
+      "gate": "all equal",
+      "pass": true
+    },
+    "G9a_deposited_loglog": {
+      "value": 0.9857321513378028,
+      "gate": "[0.97,1.03]",
+      "pass": 1.0
+    },
+    "G9b_deposited_r2": {
+      "value": 0.9999962766941128,
+      "gate": ">=0.999",
+      "pass": 1.0
+    },
+    "G9c_deposited_prop_dev_pct": {
+      "value": 1.0627186601616618,
+      "gate": "<=3",
+      "pass": 1.0
+    },
+    "G9d_deposited_monotone": {
+      "value": true,
+      "gate": "strictly increasing",
+      "pass": true
+    },
+    "G10a_monotone_L1_L2_L3": {
+      "value": [
+        8.334375,
+        10.41796875,
+        10.48820224719101
+      ],
+      "gate": "strict monotone",
+      "pass": true
+    },
+    "G10b_richardson_L3_pct": {
+      "value": -0.18836655744556974,
+      "gate": "|err|<=3%",
+      "pass": 1.0,
+      "f_ext": 10.50799579713059,
+      "p": 4.593597963850581
+    },
+    "G10c_richardson_L4_pct": {
+      "value": -0.8567480313912362,
+      "gate": "|err|<=3%",
+      "pass": 1.0
+    },
+    "G10d_richardson_meta": {
+      "value": {
+        "p": 4.593597963850581,
+        "f_ext_mm": 10.50799579713059
+      },
+      "gate": "meta",
+      "pass": true
+    }
+  }
+}
