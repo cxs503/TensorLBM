@@ -1,0 +1,17 @@
+{
+  "case": "re20_st",
+  "D_cells": 10,
+  "nx": 220,
+  "ny": 41,
+  "n_steps": 2000,
+  "status": "UNSTABLE",
+  "cd": null,
+  "cl": null,
+  "err_cd_pct": null,
+  "err_cl_pct": null,
+  "ref_cd": 5.57953523384,
+  "ref_cl": 0.010618948146,
+  "finite": true,
+  "wall_s": 50.0,
+  "note": "NaN after ~1500 steps; grid too coarse (radius=5 cells) for stable LBM. Cd diverged from ~10.3 at step 500 to NaN by step 2000."
+}

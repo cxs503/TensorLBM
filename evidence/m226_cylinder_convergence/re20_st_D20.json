@@ -1,0 +1,17 @@
+{
+  "case": "re20_st",
+  "D_cells": 20,
+  "nx": 440,
+  "ny": 82,
+  "n_steps": 2000,
+  "status": "STABLE_NOT_CONVERGED",
+  "cd": 6.5553,
+  "cl": null,
+  "err_cd_pct": 17.49,
+  "err_cl_pct": null,
+  "ref_cd": 5.57953523384,
+  "ref_cl": 0.010618948146,
+  "finite": true,
+  "wall_s": 56.0,
+  "note": "Stable but error +17.49% at 2000 steps; needs more steps for statistical convergence. Cd trend: 7.86 (500-step avg) -> 6.01 (1000-step avg) -> 5.82 (1500-step avg) -> 6.54 (2000-step avg). Not yet converged."
+}

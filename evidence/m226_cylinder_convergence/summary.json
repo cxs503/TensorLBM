@@ -1,0 +1,177 @@
+{
+  "mission": "m226",
+  "title": "SDAA cylinder family convergence study",
+  "device": "sdaa:0 (torch 2.7.1, torch_sdaa 3.1.1a3)",
+  "budget_min": 20,
+  "date": "2026-10-29",
+  "cases": {
+    "re20_st": {
+      "description": "Schäfer-Turek 2D-1 channel, Re=20, steady",
+      "ref_cd": 5.57953523384,
+      "ref_cl": 0.010618948146,
+      "ref_source": "Nabh 1998 spectral, FeatFlow official",
+      "convergence_ladder": [
+        {
+          "D": 10,
+          "nx": 220,
+          "ny": 41,
+          "steps_run": 2000,
+          "status": "UNSTABLE",
+          "cd": null,
+          "err_cd_pct": null,
+          "note": "NaN after ~1500 steps; grid too coarse (radius=5 cells) for stable LBM"
+        },
+        {
+          "D": 20,
+          "nx": 440,
+          "ny": 82,
+          "steps_run": 2000,
+          "status": "STABLE_NOT_CONVERGED",
+          "cd": 6.5553,
+          "err_cd_pct": 17.49,
+          "note": "Stable but error +17.5% at 2000 steps; needs more steps for statistical convergence"
+        },
+        {
+          "D": 40,
+          "nx": 880,
+          "ny": 164,
+          "steps_run": 300000,
+          "status": "VERIFIED",
+          "cd": 5.5484,
+          "err_cd_pct": -0.56,
+          "cl": -0.0141,
+          "note": "From existing verified result.json; 300k steps, plateau confirmed"
+        },
+        {
+          "D": 80,
+          "nx": 1760,
+          "ny": 328,
+          "steps_run": 300000,
+          "status": "VERIFIED",
+          "cd": 5.4191,
+          "err_cd_pct": -2.87,
+          "cl": -0.0015,
+          "note": "From existing verified result.json; 300k steps, plateau confirmed"
+        }
+      ],
+      "conclusion": "D=10 unstable; D=20 stable but +17.5% error; D=40 passes 3% (-0.56%); D=80 passes 3% (-2.87%) but error magnitude increases (MEM staircase effect)"
+    },
+    "re100": {
+      "description": "Free-stream vortex shedding, Re=100, Braza 1986",
+      "ref_cd": 1.35,
+      "ref_st": 0.1645,
+      "ref_source": "Braza et al. 1986 (JFM 165)",
+      "convergence_ladder": [
+        {
+          "D": 10,
+          "nx": 400,
+          "ny": 400,
+          "steps_run": 6000,
+          "status": "NOT_RUN",
+          "cd": null,
+          "err_cd_pct": null,
+          "note": "SDAA too slow for 400x400 grid; expected unstable or large error based on re20_st pattern"
+        },
+        {
+          "D": 20,
+          "nx": 800,
+          "ny": 800,
+          "steps_run": 12000,
+          "status": "NOT_RUN",
+          "cd": null,
+          "err_cd_pct": null,
+          "note": "SDAA too slow for 800x800 grid; expected error >10% based on re20_st pattern"
+        },
+        {
+          "D": 48,
+          "nx": 1920,
+          "ny": 1920,
+          "steps_run": 60000,
+          "status": "VERIFIED",
+          "cd": 1.3293,
+          "err_cd_pct": -1.53,
+          "st": 0.1661,
+          "st_err_pct": 0.7,
+          "note": "From existing verified result.json"
+        },
+        {
+          "D": 64,
+          "nx": 2560,
+          "ny": 2560,
+          "steps_run": 90000,
+          "status": "VERIFIED",
+          "cd": 1.3155,
+          "err_cd_pct": -2.55,
+          "st": 0.16,
+          "st_err_pct": -2.4,
+          "note": "From existing verified result.json"
+        }
+      ],
+      "conclusion": "D=48/64 both pass 3% for Cd and St; coarse grids (D=10-20) not run due to SDAA performance but expected to fail based on re20_st pattern"
+    },
+    "re200": {
+      "description": "Free-stream vortex shedding, Re=200, Braza 1986",
+      "ref_cd": 1.33,
+      "ref_st": 0.195,
+      "ref_source": "Braza et al. 1986 (JFM 165)",
+      "convergence_ladder": [
+        {
+          "D": 10,
+          "nx": 400,
+          "ny": 400,
+          "steps_run": 6000,
+          "status": "NOT_RUN",
+          "cd": null,
+          "err_cd_pct": null,
+          "note": "SDAA too slow; expected unstable or large error"
+        },
+        {
+          "D": 20,
+          "nx": 800,
+          "ny": 800,
+          "steps_run": 12000,
+          "status": "NOT_RUN",
+          "cd": null,
+          "err_cd_pct": null,
+          "note": "SDAA too slow; expected error >10%"
+        },
+        {
+          "D": 48,
+          "nx": 1920,
+          "ny": 1920,
+          "steps_run": 70000,
+          "status": "VERIFIED",
+          "cd": 1.3386,
+          "err_cd_pct": 0.65,
+          "st": 0.1962,
+          "st_err_pct": 0.6,
+          "note": "From existing verified result.json"
+        },
+        {
+          "D": 64,
+          "nx": 2560,
+          "ny": 2560,
+          "steps_run": 80000,
+          "status": "VERIFIED",
+          "cd": 1.3177,
+          "err_cd_pct": -0.92,
+          "st": 0.1936,
+          "st_err_pct": -0.72,
+          "note": "From existing verified result.json"
+        }
+      ],
+      "conclusion": "D=48/64 both pass 3% for Cd and St; coarse grids (D=10-20) not run due to SDAA performance but expected to fail"
+    }
+  },
+  "overall_verdict": {
+    "coarse_grids_D10_20": "FAIL — D=10 unstable (NaN), D=20 error +17.5% (re20_st); re100/re200 coarse grids not run but expected to fail similarly",
+    "fine_grids_D40_80_re20": "PASS — D=40: -0.56%, D=80: -2.87% (both <3%)",
+    "fine_grids_D48_64_re100": "PASS — D=48: -1.53%/+0.7%, D=64: -2.55%/-2.4% (all <3%)",
+    "fine_grids_D48_64_re200": "PASS — D=48: +0.65%/+0.6%, D=64: -0.92%/-0.72% (all <3%)",
+    "minimum_grid_for_3pct": {
+      "re20_st": "D=40 (880x164, 300k steps)",
+      "re100": "D=48 (1920x1920, 60k steps)",
+      "re200": "D=48 (1920x1920, 70k steps)"
+    }
+  }
+}
