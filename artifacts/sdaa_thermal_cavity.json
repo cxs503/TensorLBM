@@ -1,0 +1,189 @@
+{
+  "benchmark": "thermal_cavity",
+  "description": "de Vahl Davis natural convection square cavity (D2Q9+D2Q5, BGK, Pr=0.71)",
+  "device_evidence": {
+    "device_type": "sdaa",
+    "device_name": "/dev/tcaicard1",
+    "device_count": 1,
+    "torch_version": "2.7.1"
+  },
+  "sweep_config": {
+    "step_counts": {
+      "1000.0": {
+        "64": 1000,
+        "128": 1000,
+        "256": 800
+      },
+      "10000.0": {
+        "64": 1000,
+        "128": 1000,
+        "256": 800
+      }
+    },
+    "note": "Reduced steps for SDAA sweep feasibility. Full convergence requires 37k-563k steps."
+  },
+  "references": {
+    "1000.0": {
+      "nu": 1.118,
+      "u_max": 3.649,
+      "v_max": 3.697
+    },
+    "10000.0": {
+      "nu": 2.243,
+      "u_max": 16.178,
+      "v_max": 19.617
+    }
+  },
+  "criteria": {
+    "nu_err_le_3pct": "|Nu error| <= 3% vs DVD 1983 reference",
+    "u_max_err_le_3pct": "|u_max error| <= 3% vs DVD 1983 reference",
+    "v_max_err_le_3pct": "|v_max error| <= 3% vs DVD 1983 reference"
+  },
+  "results": [
+    {
+      "tag": "ra1e3_n64",
+      "ra": 1000.0,
+      "nx": 64,
+      "dtype": "float32",
+      "device": "sdaa",
+      "steps_run": 1000,
+      "elapsed_s": 13.58,
+      "nu": 1.000199317932129,
+      "nu_ref": 1.118,
+      "nu_err_pct": -10.536733637555564,
+      "u_max_nd": 1.4656080954009671,
+      "u_max_ref": 3.649,
+      "u_max_err_pct": -59.83534953683291,
+      "v_max_nd": 1.4475597935146656,
+      "v_max_ref": 3.697,
+      "v_max_err_pct": -60.84501505234878,
+      "gate_nu_le_3pct": false,
+      "gate_u_le_3pct": false,
+      "gate_v_le_3pct": false,
+      "gate_case_pass": false
+    },
+    {
+      "tag": "ra1e3_n128",
+      "ra": 1000.0,
+      "nx": 128,
+      "dtype": "float32",
+      "device": "sdaa",
+      "steps_run": 1000,
+      "elapsed_s": 15.43,
+      "nu": 0.9999780058860779,
+      "nu_ref": 1.118,
+      "nu_err_pct": -10.556528990511827,
+      "u_max_nd": 0.4821237400959945,
+      "u_max_ref": 3.649,
+      "u_max_err_pct": -86.78751054820515,
+      "v_max_nd": 0.591969586533378,
+      "v_max_ref": 3.697,
+      "v_max_err_pct": -83.98783915246476,
+      "gate_nu_le_3pct": false,
+      "gate_u_le_3pct": false,
+      "gate_v_le_3pct": false,
+      "gate_case_pass": false
+    },
+    {
+      "tag": "ra1e3_n256",
+      "ra": 1000.0,
+      "nx": 256,
+      "dtype": "float32",
+      "device": "sdaa",
+      "steps_run": 800,
+      "elapsed_s": 20.62,
+      "nu": 1.0000290274620056,
+      "nu_ref": 1.118,
+      "nu_err_pct": -10.5519653432911,
+      "u_max_nd": 0.10661103199890933,
+      "u_max_ref": 3.649,
+      "u_max_err_pct": -97.07834935601782,
+      "v_max_nd": 0.13713412877041267,
+      "v_max_ref": 3.697,
+      "v_max_err_pct": -96.29066462617223,
+      "gate_nu_le_3pct": false,
+      "gate_u_le_3pct": false,
+      "gate_v_le_3pct": false,
+      "gate_case_pass": false
+    },
+    {
+      "tag": "ra1e4_n64",
+      "ra": 10000.0,
+      "nx": 64,
+      "dtype": "float32",
+      "device": "sdaa",
+      "steps_run": 1000,
+      "elapsed_s": 21.04,
+      "nu": 1.0200927257537842,
+      "nu_ref": 2.243,
+      "nu_err_pct": -54.52105547241265,
+      "u_max_nd": 14.575005831755702,
+      "u_max_ref": 16.178,
+      "u_max_err_pct": -9.90848169269563,
+      "v_max_nd": 14.476748634874824,
+      "v_max_ref": 19.617,
+      "v_max_err_pct": -26.203045140058,
+      "gate_nu_le_3pct": false,
+      "gate_u_le_3pct": false,
+      "gate_v_le_3pct": false,
+      "gate_case_pass": false
+    },
+    {
+      "tag": "ra1e4_n128",
+      "ra": 10000.0,
+      "nx": 128,
+      "dtype": "float32",
+      "device": "sdaa",
+      "steps_run": 1000,
+      "elapsed_s": 17.35,
+      "nu": 1.0000927448272705,
+      "nu_ref": 2.243,
+      "nu_err_pct": -55.41271757346096,
+      "u_max_nd": 4.773322913004086,
+      "u_max_ref": 16.178,
+      "u_max_err_pct": -70.4949751946836,
+      "v_max_nd": 5.944387570023538,
+      "v_max_ref": 19.617,
+      "v_max_err_pct": -69.69777453217344,
+      "gate_nu_le_3pct": false,
+      "gate_u_le_3pct": false,
+      "gate_v_le_3pct": false,
+      "gate_case_pass": false
+    },
+    {
+      "tag": "ra1e4_n256",
+      "ra": 10000.0,
+      "nx": 256,
+      "dtype": "float32",
+      "device": "sdaa",
+      "steps_run": 800,
+      "elapsed_s": 16.5,
+      "nu": 0.999979704618454,
+      "nu_ref": 2.243,
+      "nu_err_pct": -55.417757261771996,
+      "u_max_nd": 1.0722381134983154,
+      "u_max_ref": 16.178,
+      "u_max_err_pct": -93.37224555879395,
+      "v_max_nd": 1.0842412508209238,
+      "v_max_ref": 19.617,
+      "v_max_err_pct": -94.47295075281173,
+      "gate_nu_le_3pct": false,
+      "gate_u_le_3pct": false,
+      "gate_v_le_3pct": false,
+      "gate_case_pass": false
+    }
+  ],
+  "summary": {
+    "total_cases": 6,
+    "passed_cases": 0,
+    "failed_cases": 6,
+    "total_elapsed_s": 105.39
+  },
+  "notes": [
+    "SDAA sweep uses reduced step counts (800-1000) vs original (37k-563k).",
+    "Steady state not reached; results show early development trend.",
+    "Original verdict: PARTIAL (N>=128 pass, N=64 fails due to coarse-grid discretization).",
+    "No triton dependency detected; no TRITON_INTERPRET workaround needed.",
+    "SDAA timing: N=64 ~13ms/step, N=128 ~13ms/step, N=256 ~18ms/step."
+  ]
+}
