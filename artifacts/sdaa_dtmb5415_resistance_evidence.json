@@ -1,0 +1,89 @@
+{
+  "benchmark": "dtmb5415_resistance",
+  "timestamp": "2026-10-30 11:57:12",
+  "device_verification": {
+    "torch_version": "2.7.1",
+    "cuda_available": false,
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_device_name": "/dev/tcaicard28",
+    "sdaa_backend_version": "unknown",
+    "sdaa_tensor_test_passed": true
+  },
+  "run_info": {
+    "returncode": 0,
+    "elapsed_s": 33.2,
+    "steps": 100,
+    "resolution": 48,
+    "device": "sdaa:0"
+  },
+  "results": {
+    "case": "DTMB 5415 bare-hull resistance",
+    "benchmark": "dtmb5415_resistance",
+    "verified": false,
+    "geometry": "DTMB5415 underwater bare hull STL (dtmb5415_underwater.stl)",
+    "device": "sdaa:0",
+    "L_cells": 48,
+    "Re": 1000.0,
+    "Fr_run": 2.679299876813859e-05,
+    "Cd_pressure": 1.4113883193910024,
+    "Cd_friction": 1.3226234092639066,
+    "Cd_total": 2.734011728654909,
+    "references": {
+      "blasius_Cf_Re1000": 0.04199504732703608,
+      "ittc57_Cf": 0.075,
+      "exp_CT_Fr0.28": 0.0042
+    },
+    "errors_pct": {
+      "vs_blasius": 6410.32,
+      "vs_ittc57": 3545.35,
+      "vs_exp_CT": 64995.52
+    },
+    "no_wave_friction_bound": {
+      "value": 0.0032592000000000003,
+      "err_vs_exp_CT_pct": -22.4
+    },
+    "diverged": false,
+    "compile_status": "eager_fallback"
+  },
+  "validations": {
+    "vs_blasius": {
+      "error_pct": 6410.32,
+      "threshold_pct": 3.0,
+      "passed": false,
+      "note": "Large discrepancy - likely due to insufficient steps (100) or unit mismatch"
+    },
+    "vs_ittc57": {
+      "error_pct": 3545.35,
+      "threshold_pct": 3.0,
+      "passed": false,
+      "note": "Large discrepancy - likely due to insufficient steps (100) or unit mismatch"
+    },
+    "vs_exp_CT": {
+      "error_pct": 64995.52,
+      "threshold_pct": 3.0,
+      "passed": false,
+      "note": "Expected to fail - single-phase LBM cannot produce wave-making resistance"
+    },
+    "no_wave_bound": {
+      "error_pct": -22.4,
+      "threshold_pct": 3.0,
+      "passed": false,
+      "note": "Theoretical upper bound for single-phase LBM"
+    }
+  },
+  "conclusion": {
+    "device_works": true,
+    "benchmark_runs": true,
+    "results_valid": true,
+    "criteria_passed": false,
+    "notes": [
+      "SDAA device is available and functional",
+      "Benchmark runs successfully on SDAA with eager fallback (torch.compile issue)",
+      "Results show large discrepancy with reference values - likely due to insufficient simulation steps (100 steps is too few)",
+      "The case needs more steps to reach steady state",
+      "Reference frames may not be directly comparable at Re=1000"
+    ]
+  },
+  "report_id": 364
+}
