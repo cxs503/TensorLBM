@@ -1,0 +1,186 @@
+{
+  "case": "cylinder_3d_re40",
+  "description": "3D extruded circular cylinder, infinite span (z-periodic), Re=40. Primary Cd = Ladd MEM restricted to surface solid cells.",
+  "sweep_script": "scripts/sdaa_sweep_cylinder_3d.py",
+  "source_case": "benchmarks/verified/cylinder_3d",
+  "device_evidence": {
+    "device_requested": "sdaa:0",
+    "device_type": "sdaa",
+    "device_name": "/dev/tcaicard0",
+    "probe_tensor_device": "sdaa:0",
+    "probe_ok": true
+  },
+  "triton": {
+    "available": true,
+    "version": "3.4.0",
+    "required_for_step_chain": false,
+    "TRITON_INTERPRET_env": null,
+    "note": "Eager mode: step chain uses pure PyTorch ops (no triton kernels). TRITON_INTERPRET not needed."
+  },
+  "compile_mode": "eager (SDAA teco-inductor fallback \u2014 same as run.py)",
+  "reference": {
+    "cd_ref": 1.5,
+    "cluster": [
+      1.48,
+      1.52
+    ],
+    "sources": {
+      "Dennis & Chang 1970": 1.522,
+      "Fornberg 1985": 1.498,
+      "Takami & Keller 1969": 1.48
+    },
+    "convention": "2D free-stream numerical cluster; NOT Tritton 1959 (finite-span experiment)."
+  },
+  "configuration": {
+    "grids": [
+      {
+        "D": 20,
+        "lateral": 32,
+        "nz": 1,
+        "steps": 10000,
+        "sample": 500
+      },
+      {
+        "D": 40,
+        "lateral": 32,
+        "nz": 1,
+        "steps": 4000,
+        "sample": 500
+      }
+    ],
+    "u_in": 0.08,
+    "Re": 40.0,
+    "tolerance_pct": 3.0,
+    "span_tolerance_pct": 3.0,
+    "note": "Steps reduced from README-recommended 30000 to fit 20-min wall budget. Cd may not be fully plateaued \u2014 see convergence history in each grid result."
+  },
+  "grid_results": [
+    {
+      "D": 20,
+      "nx": 640,
+      "ny": 640,
+      "nz": 1,
+      "lateral_D": 32,
+      "blockage_pct": 3.125,
+      "Re": 40.0,
+      "u_in": 0.08,
+      "nu": 0.04,
+      "tau": 0.62,
+      "n_steps_requested": 10000,
+      "n_steps_finished": 10000,
+      "n_samples": 20,
+      "avg_window": 20,
+      "n_solid_cells": 317,
+      "n_surface_cells": 56,
+      "n_interior_cells": 261,
+      "cd_mem_surface": 1.5993144363164902,
+      "err_surf_pct": 6.620962421099345,
+      "cd_mem_all_final": 1.5811622142791748,
+      "cd_mem_interior_final": 0.04344433546066284,
+      "mass_drift_pct": 0.03528596855177154,
+      "finite": true,
+      "diverged": false,
+      "wall_s": 598.1579787731171,
+      "cd_mem_surface_history": [
+        1.94066,
+        1.779113,
+        1.698352,
+        1.649301,
+        1.618823,
+        1.598187,
+        1.583353,
+        1.573013,
+        1.564506,
+        1.557346,
+        1.55207,
+        1.547938,
+        1.544863,
+        1.542643,
+        1.541229,
+        1.540469,
+        1.539942,
+        1.53826,
+        1.53848,
+        1.53774
+      ]
+    },
+    {
+      "D": 40,
+      "nx": 1280,
+      "ny": 1280,
+      "nz": 1,
+      "lateral_D": 32,
+      "blockage_pct": 3.125,
+      "Re": 40.0,
+      "u_in": 0.08,
+      "nu": 0.08,
+      "tau": 0.74,
+      "n_steps_requested": 4000,
+      "n_steps_finished": 4000,
+      "n_samples": 8,
+      "avg_window": 8,
+      "n_solid_cells": 1257,
+      "n_surface_cells": 112,
+      "n_interior_cells": 1145,
+      "cd_mem_surface": 1.7436875205021352,
+      "err_surf_pct": 16.245834700142346,
+      "cd_mem_all_final": 1.670250901952386,
+      "cd_mem_interior_final": 0.06733974441885948,
+      "mass_drift_pct": 0.016616839037761424,
+      "finite": true,
+      "diverged": false,
+      "wall_s": 621.8732914924622,
+      "cd_mem_surface_history": [
+        1.986011,
+        1.877241,
+        1.789733,
+        1.725683,
+        1.695118,
+        1.649501,
+        1.623323,
+        1.602889
+      ]
+    }
+  ],
+  "cd_mem_surface_by_grid": [
+    1.5993144363164902,
+    1.7436875205021352
+  ],
+  "err_surf_pct_by_grid": [
+    6.620962421099345,
+    16.245834700142346
+  ],
+  "grid_span_pct": 9.624872279043,
+  "gates": [
+    {
+      "gate_id": "G1",
+      "description": "D=20 cd_mem_surface within 3.0% of Cd_ref=1.5",
+      "cd_mem_surface": 1.5993144363164902,
+      "err_pct": 6.620962421099345,
+      "tolerance_pct": 3.0,
+      "pass": false
+    },
+    {
+      "gate_id": "G2",
+      "description": "D=40 cd_mem_surface within 3.0% of Cd_ref=1.5",
+      "cd_mem_surface": 1.7436875205021352,
+      "err_pct": 16.245834700142346,
+      "tolerance_pct": 3.0,
+      "pass": false
+    },
+    {
+      "gate_id": "G3",
+      "description": "grid span |cd(D40)\u2212cd(D20)|/Cd_ref \u2264 3.0%",
+      "cd_D20": 1.5993144363164902,
+      "cd_D40": 1.7436875205021352,
+      "span_pct": 9.624872279043,
+      "tolerance_pct": 3.0,
+      "pass": false
+    }
+  ],
+  "all_gates_pass": false,
+  "verdict": "FAIL",
+  "total_wall_s": 1220.0906097888947,
+  "total_wall_min": 20.33,
+  "timestamp": "2026-10-29T13:07:09"
+}
