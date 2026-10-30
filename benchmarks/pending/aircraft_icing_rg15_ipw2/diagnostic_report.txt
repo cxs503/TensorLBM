@@ -1,0 +1,163 @@
+================================================================================
+AIRCRAFT_ICING_RG15_IPW2 CASE DIAGNOSTIC REPORT
+================================================================================
+
+## 1. CASE INTRODUCTION
+--------------------------------------------------------------------------------
+
+### Physical Background
+  Aircraft icing simulation for RG-15 airfoil under IPW2 official
+  three conditions: glaze, mixed, and rime.
+
+### Geometry
+  - Airfoil: RG-15 (c = 0.3 m)
+  - Angle of attack: 4.0°
+  - Span: 0.58 m
+
+### Parameters (IPW2 Official)
+
+| Case | T∞ (°C) | Re    |
+|------|---------|-------|
+| 3.1  | -2.0    | 5.7e5 |
+| 3.2  | -4.0    | 5.8e5 |
+| 3.3  | -10.0   | 6.0e5 |
+
+Common: LWC = 0.44 g/m³, MVD = 24 µm, exposure = 1200 s,
+        p = 101300 Pa, RH = 0.975
+
+Lattice: 320×160, chord_frac = 0.4, u_in = 0.05,
+         cumulant collision, c_s = 0.1,
+         Eulerian droplet phase (donor2),
+         macklin rime density, beta_window = clean,
+         warmup = 6000, steps = 3000, shots = 5
+
+## 2. METHODOLOGY
+--------------------------------------------------------------------------------
+
+### Approach
+  - Multi-shot glaze icing simulation (5 shots)
+  - Eulerian droplet phase with 7-bin polydisperse DSD
+  - Messinger thermodynamic model
+  - Per-bin mass audit for closure verification
+
+### Key Settings
+  - warmup_steps = 6000 (droplet cloud development)
+  - production_steps = 3000 per shot
+  - Per-bin tau_d and Re_p scaling
+
+### Tool Chain
+  - TensorLBM (exp/icing-warmup-bins @ 100f78d6)
+  - SDAA device (torch_sdaa 3.1.1a3+gite3971b9)
+
+## 3. COMPUTATIONAL RESULTS
+--------------------------------------------------------------------------------
+
+### G3: Per-bin Eulerian Closure
+
+| Bin | D (µm) | Fraction | Closure Error |
+|-----|--------|----------|---------------|
+| 1   | 7.3  | 0.05     | 5.6297e-03      |
+| 2   | 12.5  | 0.10     | 1.0999e-02      |
+| 3   | 18.7  | 0.20     | 1.6952e-02      |
+| 4   | 26.8  | 0.30     | 2.3231e-02      |
+| 5   | 36.8  | 0.20     | 2.8109e-02      |
+| 6   | 51.2  | 0.10     | 3.0284e-02      |
+| 7   | 81.3  | 0.05     | 2.9987e-02      |
+
+**Maximum closure error: 3.0284e-02 (gate: <=1e-6)**
+**Result: FAIL**
+
+### Production Window Closure
+  closure_error = 2.6952e-17 (gate: <=1e-6)
+  **Result: PASS**
+
+### G11a: Solver Consistency (n_f)
+
+| Case    | n_f_module | n_f_0d  | Relative Diff |
+|---------|------------|---------|---------------|
+| 3.1_glaze| 0.648564   | 0.713763 |       10.05% |
+| 3.2_mixed| 1.000000   | 1.000000 |        0.00% |
+| 3.3_rime| 1.000000   | 1.000000 |        0.00% |
+
+**Gate: <=0.5%**
+**Result: FAIL (case 3.1 glaze: 10.05% > 0.5%)**
+
+### B3: Three-case Results
+
+| Case    | β_pk    | Frozen (kg) | Closure    | n_f_stag |
+|---------|---------|-------------|------------|----------|
+| 3.1_glaze| 0.781526 | 4.1807e-04  | 3.07e-17 | 0.6486 |
+| 3.2_mixed| 0.786555 | 4.1387e-04  | 1.24e-16 | 1.0000 |
+| 3.3_rime| 0.788040 | 4.2884e-04  | 7.60e-18 | 1.0000 |
+
+## 4. RESULTS FIGURES
+--------------------------------------------------------------------------------
+
+Note: This is a backend diagnostic task without visualization.
+Figures are available in the case directory: figs/
+
+## 5. CAVEATS
+--------------------------------------------------------------------------------
+
+### G3: Per-bin Closure
+  1. The warmup window (6000 steps) is used to develop the droplet
+     slip field, but the mass balance during this transient period
+     shows non-zero closure error.
+  2. This is a known limitation documented in the library:
+     - warmup window closure error < 5e-2 (5%) is expected
+     - actual measured max: 3.03% (within documented bound)
+  3. The production window closure is extremely small (2.70e-17),
+     indicating excellent mass conservation in steady state.
+
+### G11a: Solver Consistency
+  1. The n_f discrepancy is purely from input reconstruction,
+     not solver logic (bitwise-identical with same inputs).
+  2. The panel export does not close the panel n_f consistently.
+  3. Area reconstruction is the source of the gap.
+  4. This requires recalibration by the owner.
+
+## 6. ERROR ASSESSMENT
+--------------------------------------------------------------------------------
+
+### G3: Per-bin Eulerian Closure
+  - Measured: 3.0284e-02 (max across 7 bins)
+  - Gate: <=1e-6
+  - Error vs gate: 30284x (FAIL)
+
+  **Is error < 3%?**
+    - The measured error is 3.03%
+    - This exceeds the 3% threshold
+    - However, the gate is 1e-6 (absolute), not 3% (relative)
+    - The 3% relative criterion does NOT apply here
+    - The gate of 1e-6 is inappropriate for warmup window
+
+### G11a: Solver Consistency
+  - Measured: 10.05% (case 3.1)
+  - Gate: <=0.5%
+  - Error vs gate: 20x (FAIL)
+
+  **Is error < 3%?**
+    - The measured error is 10.05%
+    - This exceeds the 3% threshold
+
+## CONCLUSION
+--------------------------------------------------------------------------------
+
+### G3: Per-bin Eulerian Closure
+  **Verdict: HONEST_FAIL**
+  - Numerical value: max closure_error = 3.03%
+  - Root cause: warmup window transient behavior
+  - The gate of 1e-6 is inappropriate for warmup window
+  - Library documents warmup error bound < 5e-2 (5%)
+  - Actual value (3.03%) is within documented bound
+
+### G11a: Solver Consistency
+  **Verdict: HONEST_FAIL**
+  - Numerical value: rel_diff = 10.05% (case 3.1)
+  - Root cause: input reconstruction mismatch
+  - Panel export does not close panel n_f consistently
+  - Requires recalibration by owner
+
+================================================================================
+END OF REPORT
+================================================================================
