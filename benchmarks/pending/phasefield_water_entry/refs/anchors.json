@@ -1,0 +1,152 @@
+{
+  "schema": "tensorlbm.benchmark.anchors/v1",
+  "benchmark": "phasefield_water_entry",
+  "locked_on": "2026-10-30",
+  "status": "pending",
+  "usage_rule": "Only anchors with kind in {analytic, experiment} may gate a verdict. 'code_to_code' entries are cross-checks, never gates. Values transcribed from the cited sources are marked transcribed=true; re-read the published version before promoting a case to verified/.",
+
+  "analytic": [
+    {
+      "id": "wagner_wedge_added_mass",
+      "kind": "analytic",
+      "case": "S2_wedge_constant_velocity",
+      "source": "Wagner (1932) ZAMM 12:193-215; as stated in De Rosis & Tafuni (2022) Eq.(45)",
+      "formula": {
+        "wetted_half_width": "c(t) = (pi/2) * V * t / tan(zeta)",
+        "force": "F_W(t) = rho_l * pi^2 * V^2 * a_W(t) / (4 * tan(zeta)),  a_W(t) = c(t)",
+        "dimensionless_slope": "dF/dt / (rho_l * V^3) = pi^2 / (8 * tan(zeta)^2)"
+      },
+      "targets": {
+        "zeta_deg_2": {"c_over_Vt": 44.982, "force_slope_over_rhoV3": 1011.68},
+        "zeta_deg_3": {"c_over_Vt": 29.973, "force_slope_over_rhoV3": 449.18},
+        "zeta_deg_4": {"c_over_Vt": 22.463, "force_slope_over_rhoV3": 252.30}
+      },
+      "repo_crosscheck": {
+        "verified": false,
+        "note": "src/tensorlbm/wagner_theory.py wagner_wedge_total_force returns 1.2732x (4/pi) the integral of its own wagner_wedge_pressure leading term and 1.2732x the analytic force above. wagner_wedge_slamming_coefficient returns pi/tan(beta), which contradicts its own docstring C_s = pi^2/(2 tan^2 beta). Do NOT use these two functions as gates until fixed (blocker B6).",
+        "measured_example": {
+          "zeta_deg": 2.0,
+          "t_s": 0.002,
+          "rho": 1000.0,
+          "V": 1.0,
+          "c_m": 0.089963,
+          "repo_total_force_kN_per_m": 8.093,
+          "pressure_leading_integral_kN_per_m": 6.357,
+          "pressure_full_integral_kN_per_m": 291.910,
+          "ratio_repo_over_analytic": 1.27324
+        }
+      }
+    },
+    {
+      "id": "wagner_sphere_coefficient",
+      "kind": "analytic",
+      "case": "S4_sphere_constant_velocity",
+      "source": "Wagner (1932); repo module src/tensorlbm/wagner_theory.py",
+      "formula": "C_F = F / (rho V^2 pi R^2) = pi * sqrt(h / (2R))",
+      "repo_crosscheck": {
+        "verified": true,
+        "note": "wagner_sphere_force and wagner_sphere_force_coefficient are mutually consistent: F = rho V^2 (pi^2/2) a R with a = sqrt(2Rh) yields exactly pi*sqrt(h/2R) after non-dimensionalisation (checked 2026-10-30)."
+      }
+    },
+    {
+      "id": "hydrostatic_gradient",
+      "kind": "analytic",
+      "case": "S0_still_water_tank",
+      "source": "hydrostatics",
+      "formula": "dp/dy = -rho(phi) * g",
+      "gate": {"abs_rel_error": 0.03}
+    }
+  ],
+
+  "experiment": [
+    {
+      "id": "colicchio2009_freefall_cylinder",
+      "kind": "experiment",
+      "case": "S3_cylinder_constant_velocity_or_freefall",
+      "source": "Colicchio, Greco, Miozzi & Lugni (2009), 24th Int. Workshop on Water Waves and Floating Bodies; values as tabulated in De Rosis & Tafuni (2022) Table 1",
+      "transcribed": true,
+      "transcription_note": "Table 1 of the accepted manuscript; only the two headline peaks are unambiguous. The time-series tables in that manuscript's Fig.4 are column-ambiguous after text extraction and MUST be re-read from the published version before use.",
+      "setup": {
+        "cylinder_diameter_m": 0.3,
+        "impact_velocity_m_per_s": 2.55,
+        "fluid": "quiescent water",
+        "published_lattice_resolution": "domain 8000 x 3200, diameter 400 cells"
+      },
+      "reference_peaks": {
+        "max_qdot_y_m_per_s": {"experiment": 0.8912, "level_set_numeric": 0.7868, "sph": 0.8798, "de_rosis_lbm": 0.9955},
+        "minus_min_qy_m": {"experiment": 0.4423, "level_set_numeric": 0.4185, "sph": 0.4455, "de_rosis_lbm": 0.4459}
+      },
+      "gates": {
+        "max_qdot_y_abs_rel_error": 0.12,
+        "minus_min_qy_abs_rel_error": 0.05
+      }
+    },
+    {
+      "id": "fekken2004_rising_cylinder",
+      "kind": "experiment",
+      "case": "S4b_rising_cylinder",
+      "source": "Fekken (2004) PhD thesis; Campbell & Vignjevic (2012); values as tabulated in De Rosis & Tafuni (2022) Table 2",
+      "transcribed": true,
+      "setup": {
+        "cylinder_diameter_m": 2.0,
+        "solid_to_water_density_ratio": 0.6,
+        "initial_center_depth_over_D": 2.5,
+        "domain_width_over_D": 3.0,
+        "water_depth_over_D": 3.5,
+        "published_lattice_resolution": "300 x 500"
+      },
+      "reference_peaks": {
+        "max_qdot_y_m_per_s": {"fekken_numeric": 2.3165, "sph": 2.6184, "de_rosis_lbm": 2.5079},
+        "max_qy_m": {"fekken_numeric": 5.2368, "sph": 5.5396, "de_rosis_lbm": 5.4700}
+      },
+      "gates": {"optional_case": true, "abs_rel_error": 0.05}
+    },
+    {
+      "id": "fekken2004_pitch_decay",
+      "kind": "experiment",
+      "case": "S4c_half_submerged_cube",
+      "source": "Fekken (2004) VOF study; De Rosis & Tafuni (2022) Section 3.1",
+      "transcribed": true,
+      "reference": {"equilibrium_pitch_angle_deg": 45.0, "cube_side_m": 0.1, "submerged_fraction": 0.5},
+      "gates": {"optional_case": true, "note": "qualitative only; reference gives the analytic equilibrium angle, not an envelope"}
+    }
+  ],
+
+  "code_to_code": [
+    {
+      "id": "tclb_d2q9_pf_velocity",
+      "kind": "code_to_code",
+      "use": "cross-check of interface evolution on non-entry cases only",
+      "repo": "https://github.com/CFD-GO/TCLB",
+      "cases": [
+        "example/multiphase/d2q9_pf_velocity/cm_dam_break.xml",
+        "example/multiphase/d2q9_pf_velocity/Droplet_Falling_2D.xml",
+        "example/multiphase/d2q9_pf_velocity/RayleighTaylorInstability.xml",
+        "example/multiphase/d3q27_pf_velocity/ContactAngle_45.xml"
+      ],
+      "note": "Same model family (conservative phase field, Fakhari-Mitchell). GPL-3.0: equation-level comparison only, no code or case-file transcription."
+    }
+  ],
+
+  "model_reference": {
+    "primary_paper": {
+      "citation": "De Rosis, A. & Tafuni, A. (2022). A phase-field lattice Boltzmann method for the solution of water-entry and water-exit problems. Computer-Aided Civil and Infrastructure Engineering 37(7):832-847.",
+      "doi": "10.1111/mice.12651",
+      "public_manuscript": "https://pure.manchester.ac.uk/ws/files/177869532/CACAIE_DeRosis_Tafuni.pdf"
+    },
+    "published_parameters": {
+      "rho_water_kg_per_m3": 1000.0,
+      "nu_water_m2_per_s": 1e-6,
+      "rho_air_kg_per_m3": 1.225,
+      "nu_air_m2_per_s": 1.5e-5,
+      "density_ratio": 816.0,
+      "viscosity_ratio": 15.0,
+      "gravity_m_per_s2": 9.81,
+      "mobility_M": 0.1,
+      "interface_width_cells": 4.0,
+      "sigma_lattice": 1e-5,
+      "collision": "central-moments MRT (BGK run blows up at t approx 0.2 s, their Fig.5)",
+      "solid_coupling": "immersed boundary + Adams-Bashforth rigid body"
+    }
+  }
+}
