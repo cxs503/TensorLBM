@@ -1,0 +1,180 @@
+{
+  "case": "poiseuille_3d_pipe",
+  "benchmark_dir": "benchmarks/verified/poiseuille_3d_pipe",
+  "round": "m74 round-2 (single tier R=20)",
+  "device": {
+    "torch_version": "2.7.1",
+    "torch_sdaa_version": "3.1.1a3+gite3971b9",
+    "sdaa_is_available": true,
+    "sdaa_device_count": 1,
+    "device_name_0": "/dev/tcaicard26",
+    "tensor_device_type": "sdaa",
+    "tensor_device_str": "sdaa:0",
+    "device_line": "torch.sdaa.get_device_name(0) = /dev/tcaicard26 | torch_sdaa 3.1.1a3+gite3971b9 | torch 2.7.1 | is_available=True | count=1 | probe tensor on sdaa:0",
+    "independent_tensor_probe": {
+      "what": "re-imported run.py, built pipe_setup(20,6,'sdaa:0') + equilibrium3d and ran 3 full step chains",
+      "pipe_setup_devices": [
+        "sdaa:0",
+        "sdaa:0",
+        "sdaa:0"
+      ],
+      "f_device": "sdaa:0",
+      "f_shape": [
+        19,
+        43,
+        43,
+        120
+      ],
+      "wall_cells": 71040,
+      "fluid_cells_2d": 1257,
+      "finite_after_3_steps": true,
+      "sdaa_memory_allocated_MB": 20.65,
+      "cuda_used": false,
+      "conclusion": "computation tensors genuinely on SDAA; no CPU/CUDA fallback anywhere in the step chain"
+    }
+  },
+  "config": {
+    "R": 20,
+    "mode": "velocity",
+    "tau": 0.8,
+    "u_in": 0.02,
+    "min_steps": 20000,
+    "max_steps": 20000,
+    "compile_mode": "eager",
+    "compile_mode_note": "eager passthrough through benchmarks/compile_route.route_step; Torch-SDAA 3.1.1a3 teco_inductor cannot compile the LBM step chain (known L5 defect, documented in compile_route docstring), so route_step('default') would fall back to eager anyway — choosing 'eager' explicitly only removes the failed-compile wall clock, numerics identical.",
+    "triton_interpreter": "not needed: --compile-mode eager does not enter torch.compile/inductor, so TRITON_INTERPRET=1 is not required. No triton kernel is JIT-traced on this path.",
+    "device": "sdaa:0",
+    "seed": 0,
+    "case_json_reference": [
+      "case_R20.json",
+      "case_R40.json"
+    ],
+    "steps_reference": "README lower bound 20000 (steady drift <1e-5 gate)"
+  },
+  "metrics": {
+    "R": 20,
+    "Re": 8.2,
+    "Ma": 0.06928203230275509,
+    "n_steps": 20000,
+    "steady": true,
+    "finite": true,
+    "nx": 120,
+    "ny": 43,
+    "nz": 43,
+    "R_eff_Q": 20.10873059827026,
+    "R_fit": 20.233042053660707,
+    "Q_ratio_Q": 1.0000000000000002,
+    "Q": 25.40675384743372,
+    "Q_ana": 26.405086253422212,
+    "max_rel_bin_central_Q_pct": 2.3571841448556548,
+    "l2_rel_err_Q": 0.010555504397696513,
+    "max_rel_err_central_Q_pct": 6.4493408140857165,
+    "u_max_err_pct": -1.121184229850771,
+    "u_center_pred_err_pct": -0.04314650216773752,
+    "fd_max_rel_dev_pct": 0.6411223665194659,
+    "mass_drift_pct": 0.6076834032355041,
+    "u_max_dp_err_pct": -22.937119450096894,
+    "elapsed_s": 479.9,
+    "voxels": 221880
+  },
+  "gates": [
+    {
+      "gate": "G1 radial-averaged profile max rel err (R_eff^Q, central region)",
+      "value": 2.3571841448556548,
+      "criterion": "<= 3.0%  (README primary metric)",
+      "verdict": "PASS",
+      "note": "absolute normalization U_max=2*u_in; comparison radius from measured Q"
+    },
+    {
+      "gate": "G2 centre-line u_center vs nominal analytic U_max=2*u_in",
+      "value": -1.121184229850771,
+      "criterion": "|err| <= 3.0%  (README nominal direct channel)",
+      "verdict": "PASS",
+      "note": "no radius inversion at all — strictest literal reading of the case"
+    },
+    {
+      "gate": "G3 fields finite",
+      "value": true,
+      "criterion": "True",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "gate": "G4 steady criterion (u_max drift <1e-5 / 2000 steps)",
+      "value": true,
+      "criterion": "steady == True at min_steps <= n_steps <= max_steps",
+      "verdict": "PASS",
+      "note": "n_steps=20000 (min 20000, max 20000)"
+    },
+    {
+      "gate": "G5 hydraulic radius R_eff^Q - R reproducibility",
+      "value": 0.10873059827025955,
+      "criterion": "+0.110 ± 0.05 (README: +0.109 @R=20)",
+      "verdict": "PASS",
+      "note": "independent integral observable (flow rate), not a profile fit"
+    },
+    {
+      "gate": "G6 flow-rate identity Q/Q_ana^Q",
+      "value": 1.0000000000000002,
+      "criterion": "|ratio-1| <= 1e-06 (identity by construction)",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "gate": "G7 radial profile L2 rel err (R_eff^Q)",
+      "value": 0.010555504397696513,
+      "criterion": "<= 3.0% (same 3% budget as G1)",
+      "verdict": "PASS",
+      "note": "reported as-is by the case; same numeric budget as the primary metric"
+    }
+  ],
+  "n_gates": 7,
+  "n_pass": 7,
+  "verdict": "PASS",
+  "verdict_reason": "all original criteria met on SDAA, single tier R=20",
+  "wall_clock_s": 501.79,
+  "throughput_steps_per_s": 39.9,
+  "scope_note": "Single grid tier only (R=20, README step lower bound). The README multi-grid convergence ladder (R=20 -> R=40) is NOT executed in this round, so the case-level 'verified' attribute of the full ladder is not claimed here; this artifact records the R=20 tier verdict under the unchanged 3% criterion.",
+  "reproducibility_vs_readme": {
+    "primary_max_rel_bin_pct": {
+      "measured": 2.3571841448556548,
+      "readme": 2.15,
+      "delta_pp": 0.207,
+      "note": "same tier/steps; diff from averaging-window/steady-stop bookkeeping, both well inside the 3% gate"
+    },
+    "u_max_err_pct": {
+      "measured": -1.121184229850771,
+      "readme": -1.12,
+      "delta_pp": -0.001
+    },
+    "R_eff_Q": {
+      "measured": 20.10873059827026,
+      "readme": 20.1088
+    },
+    "R_fit_minus_R": {
+      "measured": 0.233,
+      "readme": 0.227
+    }
+  },
+  "disclosed_diagnostics": {
+    "per_cell_max_rel_err_central_pct": {
+      "value": 6.4493408140857165,
+      "status": "DISCLOSED, not a gate",
+      "why": "staircase single-cell scatter at the outer central cells; README 披露 1 (6.45% at R=20) — reproduces the documented value"
+    },
+    "u_max_dp_err_pct": {
+      "value": -22.937119450096894,
+      "status": "DISCLOSED, not a gate",
+      "why": "Hagen-Poiseuille u_max inferred from measured dp using the flat-wall midpoint R+0.5 (not the hydraulic radius); README keeps this as a diagnostic only"
+    },
+    "mass_drift_pct": {
+      "value": 0.6076834032355041,
+      "status": "DISCLOSED, not a gate",
+      "why": "Zou-He velocity-inlet/pressure-outlet pair is not exactly mass conserving step-to-step; not a criterion in the case"
+    },
+    "fd_max_rel_dev_pct": {
+      "value": 0.6411223665194659,
+      "status": "fully-developed check, PASS-grade (<1%)"
+    }
+  }
+}
