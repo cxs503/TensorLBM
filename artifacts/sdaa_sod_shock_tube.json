@@ -1,0 +1,197 @@
+{
+ "case": "sod_shock_tube_isothermal_d2q9",
+ "device": "/dev/tcaicard1",
+ "device_evidence": "torch.sdaa.get_device_name(0) = '/dev/tcaicard1'",
+ "device_count": 1,
+ "triton_interpret": false,
+ "triton_note": "No triton dependency in core path (equilibrium/stream/collide_bgk are pure torch ops)",
+ "wall_clock_total_s": 8.662,
+ "case_wall_times": {
+  "2000": 1.6854751110076904,
+  "4000": 2.7804195880889893
+ },
+ "verified": true,
+ "reference": "isothermal Riemann solution (p=rho/3)",
+ "tau": 0.8,
+ "nu": 0.1,
+ "ny": 4,
+ "gates": {
+  "stability_no_nan_neg": {
+   "pass": true,
+   "gate": "stability_no_nan_neg"
+  },
+  "L2_rho_nx2000_le_3pct": {
+   "pass": true,
+   "gate": "L2_rho_nx2000_le_3pct"
+  },
+  "L2_rho_nx4000_le_3pct": {
+   "pass": true,
+   "gate": "L2_rho_nx4000_le_3pct"
+  },
+  "W_rel_nx2000_le_3pct": {
+   "pass": true,
+   "gate": "W_rel_nx2000_le_3pct"
+  },
+  "W_rel_nx4000_le_3pct": {
+   "pass": true,
+   "gate": "W_rel_nx4000_le_3pct"
+  },
+  "rho_mid_rel_nx2000_le_3pct": {
+   "pass": true,
+   "gate": "rho_mid_rel_nx2000_le_3pct"
+  },
+  "rho_mid_rel_nx4000_le_3pct": {
+   "pass": true,
+   "gate": "rho_mid_rel_nx4000_le_3pct"
+  },
+  "u_mid_rel_nx2000_le_3pct": {
+   "pass": true,
+   "gate": "u_mid_rel_nx2000_le_3pct"
+  },
+  "u_mid_rel_nx4000_le_3pct": {
+   "pass": true,
+   "gate": "u_mid_rel_nx4000_le_3pct"
+  },
+  "monotone_convergence": {
+   "pass": true,
+   "gate": "monotone_convergence"
+  }
+ },
+ "sod_cases": [
+  {
+   "nx": 2000,
+   "steps": 400,
+   "first_bad_step": null,
+   "rho_star": 0.49662330512277264,
+   "u_star": 0.4041010082298968,
+   "Ma_mid": 0.6999234776439902,
+   "per_t": {
+    "100": {
+     "L2_rho": 0.007765313790679664,
+     "L2_u": 0.016272086775336342,
+     "L2_rho_smooth": 0.004399685493092734,
+     "shock_x": 1080,
+     "osc_frac": 0.026725252469380695,
+     "rho_mid": 0.49631717801094055,
+     "u_mid": 0.403642863035202
+    },
+    "200": {
+     "L2_rho": 0.006759822569527636,
+     "L2_u": 0.012839370645016196,
+     "L2_rho_smooth": 0.004214698544155437,
+     "shock_x": 1162,
+     "osc_frac": 0.02795398235321045,
+     "rho_mid": 0.4964544475078583,
+     "u_mid": 0.4038253128528595
+    },
+    "300": {
+     "L2_rho": 0.009346078269953843,
+     "L2_u": 0.022028239618974408,
+     "L2_rho_smooth": 0.0041534884242595375,
+     "shock_x": 1243,
+     "osc_frac": 0.018287142117818195,
+     "rho_mid": 0.496509850025177,
+     "u_mid": 0.40389755368232727
+    },
+    "400": {
+     "L2_rho": 0.008419504156503239,
+     "L2_u": 0.018119784925306713,
+     "L2_rho_smooth": 0.004234871693499358,
+     "shock_x": 1324,
+     "osc_frac": 0.027646422386169434,
+     "rho_mid": 0.49654269218444824,
+     "u_mid": 0.4039335548877716
+    }
+   },
+   "wall_time_s": 1.685,
+   "W_fit": 0.8129999999999975,
+   "W_ana": 0.8137348504459936,
+   "W_rel": -0.000903058834942763,
+   "rho_mid_rel": -0.00016232210106303685,
+   "u_mid_rel": -0.000414384865948999,
+   "L2_rho_final": 0.008419504156503239,
+   "L2_u_final": 0.018119784925306713,
+   "osc_frac_final": 0.027646422386169434
+  },
+  {
+   "nx": 4000,
+   "steps": 800,
+   "first_bad_step": null,
+   "rho_star": 0.49662330512277264,
+   "u_star": 0.4041010082298968,
+   "Ma_mid": 0.6999234776439902,
+   "per_t": {
+    "200": {
+     "L2_rho": 0.004595789684229748,
+     "L2_u": 0.00872908224372093,
+     "L2_rho_smooth": 0.0028564132632950315,
+     "shock_x": 2162,
+     "osc_frac": 0.02795398235321045,
+     "rho_mid": 0.4964544475078583,
+     "u_mid": 0.4038253128528595
+    },
+    "400": {
+     "L2_rho": 0.005448490145906856,
+     "L2_u": 0.01172580567410606,
+     "L2_rho_smooth": 0.0027293595988701954,
+     "shock_x": 2324,
+     "osc_frac": 0.027646422386169434,
+     "rho_mid": 0.49654269218444824,
+     "u_mid": 0.4039335548877716
+    },
+    "600": {
+     "L2_rho": 0.006358326211514263,
+     "L2_u": 0.015003319939400296,
+     "L2_rho_smooth": 0.0026432149813845115,
+     "shock_x": 2487,
+     "osc_frac": 0.0166091521581014,
+     "rho_mid": 0.49657297134399414,
+     "u_mid": 0.40397608280181885
+    },
+    "800": {
+     "L2_rho": 0.0045834432944540605,
+     "L2_u": 0.008727699638356786,
+     "L2_rho_smooth": 0.0026555924230252763,
+     "shock_x": 2650,
+     "osc_frac": 0.026324947675069172,
+     "rho_mid": 0.4965907037258148,
+     "u_mid": 0.4039970338344574
+    }
+   },
+   "wall_time_s": 2.78,
+   "W_fit": 0.813499999999998,
+   "W_ana": 0.8137348504459936,
+   "W_rel": -0.00028860807161800323,
+   "rho_mid_rel": -6.564612780256333e-05,
+   "u_mid_rel": -0.0002572980351988088,
+   "L2_rho_final": 0.0045834432944540605,
+   "L2_u_final": 0.008727699638356786,
+   "osc_frac_final": 0.026324947675069172
+  }
+ ],
+ "acoustic_supplementary": [
+  {
+   "eps": 0.01,
+   "first_bad_step": null,
+   "Ma_mid": 0.010000354188647247,
+   "W_fit": 0.5799999999999942,
+   "W_ana": 0.5802443401255193,
+   "W_rel": -0.0004210986796911175,
+   "u_mid_rel": -0.0018757861648315852,
+   "L2_rho_final": 0.01891169255675415,
+   "wall_time_s": 1.476
+  },
+  {
+   "eps": 0.25,
+   "first_bad_step": null,
+   "Ma_mid": 0.2557588100609286,
+   "W_fit": 0.6564999999999989,
+   "W_ana": 0.6558830800977263,
+   "W_rel": 0.0009405943238856035,
+   "u_mid_rel": -0.000407703110234835,
+   "L2_rho_final": 0.007946997980058117,
+   "wall_time_s": 2.698
+  }
+ ],
+ "note": "Reference is the ISOTHERMAL Riemann solution (p=rho/3). gamma=1.4 Sod solution is NOT applicable to D2Q9."
+}
