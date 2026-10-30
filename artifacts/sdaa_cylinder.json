@@ -1,0 +1,129 @@
+{
+  "case": "cylinder_family",
+  "device": "sdaa:0",
+  "device_name": "/dev/tcaicard20",
+  "torch_version": "2.7.1",
+  "triton_interpret": "1",
+  "compile_mode": "eager",
+  "workarounds": [
+    "eager mode (no torch.compile) \u2014 teco_inductor backend incomplete on SDAA",
+    "TRITON_INTERPRET=1 \u2014 triton ops run in interpreter mode"
+  ],
+  "grid_reduction_note": "D reduced from verified (40-80) to 10-20 for 20-min wall clock on SDAA; steps reduced from 60k-300k to 6k-8k",
+  "results": {
+    "re20_st": {
+      "subcase": "re20_st",
+      "D": 20,
+      "nx": 440,
+      "ny": 82,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "U_mean_lb": 0.10000000000000002,
+      "n_steps": 6000,
+      "steps_completed": 6000,
+      "avg_window": 1500,
+      "cd": 6.1468,
+      "cd_ref": 5.57953523384,
+      "cd_err_pct": 10.17,
+      "cl": -0.046355,
+      "cl_ref": 0.010618948146,
+      "cl_err_pct": -536.53,
+      "finite": true,
+      "elapsed_s": 80.5
+    },
+    "re100": {
+      "subcase": "re100",
+      "D": 10,
+      "nx": 400,
+      "ny": 400,
+      "re": 100.0,
+      "u_in": 0.05,
+      "nu_lb": 0.005,
+      "tau": 0.515,
+      "sponge_alpha": 10.0,
+      "seed_st": 0.165,
+      "seed_steps": 2424,
+      "n_steps": 8000,
+      "warmup_frac": 0.5,
+      "analyze_from": 4000,
+      "cd": 1.5702,
+      "cd_ref": 1.35,
+      "cd_err_pct": 16.31,
+      "st": 0.1497,
+      "st_ref": 0.1645,
+      "st_err_pct": -8.99,
+      "cl_amp": 0.4944201087951659,
+      "finite": true,
+      "elapsed_s": 204.7
+    },
+    "re200": {
+      "subcase": "re200",
+      "D": 10,
+      "nx": 400,
+      "ny": 400,
+      "re": 200.0,
+      "u_in": 0.08,
+      "nu_lb": 0.004,
+      "tau": 0.512,
+      "sponge_alpha": 10.0,
+      "seed_st": 0.195,
+      "seed_steps": 1282,
+      "n_steps": 8000,
+      "warmup_frac": 0.5,
+      "analyze_from": 4000,
+      "cd": 1.7806,
+      "cd_ref": 1.33,
+      "cd_err_pct": 33.88,
+      "st": 0.1819,
+      "st_ref": 0.195,
+      "st_err_pct": -6.7,
+      "cl_amp": 0.9782342240214348,
+      "finite": true,
+      "elapsed_s": 201.0
+    }
+  },
+  "criteria": [
+    {
+      "name": "re20_st Cd",
+      "value": 6.1468,
+      "ref": 5.57953523384,
+      "err_pct": 10.17,
+      "tol_pct": 5.0,
+      "pass": false
+    },
+    {
+      "name": "re100 Cd",
+      "value": 1.5702,
+      "ref": 1.35,
+      "err_pct": 16.31,
+      "tol_pct": 5.0,
+      "pass": false
+    },
+    {
+      "name": "re100 St",
+      "value": 0.1497,
+      "ref": 0.1645,
+      "err_pct": -8.99,
+      "tol_pct": 5.0,
+      "pass": false
+    },
+    {
+      "name": "re200 Cd",
+      "value": 1.7806,
+      "ref": 1.33,
+      "err_pct": 33.88,
+      "tol_pct": 5.0,
+      "pass": false
+    },
+    {
+      "name": "re200 St",
+      "value": 0.1819,
+      "ref": 0.195,
+      "err_pct": -6.7,
+      "tol_pct": 5.0,
+      "pass": false
+    }
+  ],
+  "total_elapsed_s": 486.8,
+  "all_pass": false
+}
