@@ -1,0 +1,109 @@
+{
+  "case": "startup_poiseuille",
+  "claim": "transient (start-up) plane-channel flow reaches the analytical Fourier-series solution within the a-priori 3% budget on the SDAA device",
+  "verdict": "FAIL",
+  "thresholds_pct": {
+    "centerline": 3.0,
+    "profile_l2": 3.0,
+    "profile_pointwise": 3.0,
+    "grid_convergence": "strictly decreasing"
+  },
+  "device_evidence": {
+    "requested_device": "sdaa",
+    "device_name": "/dev/tcaicard25",
+    "torch_version": "2.7.1",
+    "accelerator_backend_version": "3.1.1a3+gite3971b9",
+    "compile_status": "eager_fallback",
+    "compile_mode_effective": "eager",
+    "compile_status_reason": "InductorError: AssertionError: self.reduction_shape [1, 9, 1936], index 2*i1, self.ncw [9, 1936, 1],                                                          graph_ncw [9, 1936, 1], graph_reduction_shape [1, 9, 1936]\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+    "visible_devices_env": "25",
+    "host": "36cb7828dbd5",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "python": "3.11.6"
+  },
+  "grids": [
+    {
+      "H": 59,
+      "H_eff": 59.0,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "a": 6.894570525711003e-06,
+      "u_max_final": 0.03,
+      "Ma": 0.05196152422706632,
+      "t_end_steps": 52235,
+      "metrics_pct": {
+        "centerline_err_max_over_umax_pct": 0.4286206356722324,
+        "profile_l2_max_pct": 0.42892279076097034,
+        "profile_pointwise_max_over_umax_pct": 0.42862058128633845
+      },
+      "thresholds_pct": {
+        "centerline": 3.0,
+        "profile_l2": 3.0,
+        "profile_pointwise": 3.0
+      },
+      "pass": true,
+      "finite": true,
+      "mass_drift_pct": 0.0006878974757602127,
+      "compile_mode": "default",
+      "compile_status": "eager_fallback",
+      "compile_mode_effective": "eager",
+      "compile_status_reason": "InductorError: AssertionError: self.reduction_shape [1, 9, 976], index 2*i1, self.ncw [9, 976, 1],                                                          graph_ncw [9, 976, 1], graph_reduction_shape [1, 9, 976]\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+      "device_info": {
+        "device": "sdaa",
+        "torch_version": "2.7.1",
+        "device_name": "/dev/tcaicard25",
+        "backend_version": "3.1.1a3+gite3971b9"
+      },
+      "elapsed_s": 229.5
+    },
+    {
+      "H": 119,
+      "H_eff": 119.0,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "a": 1.6947955652849378e-06,
+      "u_max_final": 0.03,
+      "Ma": 0.05196152422706632,
+      "t_end_steps": 212435,
+      "metrics_pct": {
+        "centerline_err_max_over_umax_pct": 0.4763477722028708,
+        "profile_l2_max_pct": 0.4636501630914785,
+        "profile_pointwise_max_over_umax_pct": 0.47632292355814326
+      },
+      "thresholds_pct": {
+        "centerline": 3.0,
+        "profile_l2": 3.0,
+        "profile_pointwise": 3.0
+      },
+      "pass": true,
+      "finite": true,
+      "mass_drift_pct": 0.006860136384303327,
+      "compile_mode": "default",
+      "compile_status": "eager_fallback",
+      "compile_mode_effective": "eager",
+      "compile_status_reason": "InductorError: AssertionError: self.reduction_shape [1, 9, 1936], index 2*i1, self.ncw [9, 1936, 1],                                                          graph_ncw [9, 1936, 1], graph_reduction_shape [1, 9, 1936]\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+      "device_info": {
+        "device": "sdaa",
+        "torch_version": "2.7.1",
+        "device_name": "/dev/tcaicard25",
+        "backend_version": "3.1.1a3+gite3971b9"
+      },
+      "elapsed_s": 872.1
+    }
+  ],
+  "convergence": {
+    "metric": "centerline_err_max_over_umax_pct",
+    "values": [
+      0.4286206356722324,
+      0.4763477722028708
+    ],
+    "err_decreased_H_to_2H": false
+  },
+  "cross_device": null,
+  "scan_summary_status": "NOT_PASSED",
+  "figures": [
+    "sdaa_out/figures/fig_profiles.png",
+    "sdaa_out/figures/fig_centerline.png",
+    "sdaa_out/figures/fig_convergence.png"
+  ]
+}

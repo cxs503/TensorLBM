@@ -70,13 +70,46 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmark
 
 import numpy as np
 import torch
-from compile_route import add_compile_mode_arg, compile_mode_from_args, route_step  # noqa: E402
+from compile_route import (  # noqa: E402
+    add_compile_mode_arg,
+    compile_mode_from_args,
+    compile_status_of,
+    route_step,
+)
 
 from tensorlbm.d2q9 import OPPOSITE, equilibrium, macroscopic
 from tensorlbm.solver import collide_bgk, stream
 from tensorlbm.turbulent_channel import _apply_body_force_2d
 
 DEVICE = torch.device("cpu")
+
+
+def device_info() -> dict:
+    """Record which accelerator actually ran the steps (SDAA/CUDA/CPU).
+
+    ``compile_route`` may silently fall back to eager on SDAA (see its
+    docstring, defect L5), so every artifact must carry the *effective*
+    device + backend version, not just the requested one.
+    """
+    info = {
+        "device": str(DEVICE),
+        "torch_version": torch.__version__,
+        "device_name": None,
+        "backend_version": None,
+    }
+    t = str(DEVICE)
+    try:
+        if t.startswith("sdaa"):
+            import torch_sdaa  # noqa: F401
+
+            info["device_name"] = torch.sdaa.get_device_name(DEVICE.index or 0)
+            info["backend_version"] = getattr(torch_sdaa.version, "__version__", None)
+        elif t.startswith("cuda"):
+            info["device_name"] = torch.cuda.get_device_name(DEVICE.index or 0)
+            info["backend_version"] = torch.version.cuda
+    except Exception as exc:  # evidence must never abort a run
+        info["device_name"] = f"unavailable: {exc}"
+    return info
 
 TSTAR_MARKS = [0.05, 0.125, 0.25, 0.5, 0.75, 1.0, 1.5]
 TSTAR_CENTER_MIN = 0.02
@@ -159,6 +192,7 @@ def run_case(
             _, ux, _ = macroscopic(f)
             snaps[step] = ux.mean(dim=1).cpu().numpy().astype(np.float64)[1 : ny - 1]
     elapsed = time.time() - t0
+    cs = compile_status_of(step_fn)  # one-shot fallback decision is final now
 
     # ---- analysis (float64) -------------------------------------------------
     c_err_max = 0.0
@@ -215,6 +249,10 @@ def run_case(
         "center_every": CENTER_EVERY,
         "tstar_center_min": TSTAR_CENTER_MIN,
         "compile_mode": compile_mode,
+        "compile_status": cs["compile_status"],
+        "compile_mode_effective": cs["compile_mode_effective"],
+        "compile_status_reason": cs["compile_status_reason"],
+        "device_info": device_info(),
         "seed": seed,
         "centerline_err_max_over_umax_pct": c_err_max * 100.0,
         "profile_l2_max_pct": float(np.max(l2_list)) * 100.0,
@@ -224,6 +262,10 @@ def run_case(
         "mass_drift_pct": (float(f.sum().item()) - initial_mass) / initial_mass * 100.0,
         "finite": bool(torch.isfinite(f).all().item()),
         "elapsed_s": round(elapsed, 1),
+        # all marked snapshots, keyed by t*, so the field evidence
+        # (profiles at every a-priori mark) survives in the artifact
+        "profiles": {f"{ts:g}": [round(float(v), 8) for v in snaps[st]]
+                     for st, ts in sorted(mark_steps.items())},
         "y_profile": [round(float(v), 6) for v in y_phys],
         "u_final_num": [round(float(v), 8) for v in snaps[sorted(mark_steps)[-1]]],
     }
@@ -275,6 +317,10 @@ def scan(
         "tau": tau,
         "u_max_target": u_max,
         "tol_pct": tol_pct,
+        # provenance of the machine that produced this summary
+        "device_info": rs[0]["device_info"],
+        "compile_status": rs[0]["compile_status"],
+        "compile_mode_effective": rs[0]["compile_mode_effective"],
         "per_grid": [
             {
                 k: r[k]

@@ -1,0 +1,229 @@
+{
+  "case": "startup_poiseuille_convergence",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern), x-periodic",
+  "driving": "constant body force a (library _apply_body_force_2d)",
+  "extrap": "none",
+  "H_list": [
+    59,
+    119
+  ],
+  "tau": 0.8,
+  "u_max_target": 0.03,
+  "tol_pct": 3.0,
+  "device_info": {
+    "device": "sdaa",
+    "torch_version": "2.7.1",
+    "device_name": "/dev/tcaicard25",
+    "backend_version": "3.1.1a3+gite3971b9"
+  },
+  "compile_status": "eager_fallback",
+  "compile_mode_effective": "eager",
+  "per_grid": [
+    {
+      "case": "startup_poiseuille",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern, f_pre[OPPOSITE] at wall rows; walls at 0.5 / ny-1.5, H_eff = ny-2), x-periodic",
+      "driving": "constant body force a=8*nu*u_max/H^2 via library _apply_body_force_2d, composed collide->halfway-BB->force->stream",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "force": "tensorlbm.turbulent_channel._apply_body_force_2d",
+        "wall": "pre-streaming half-way BB via library OPPOSITE table (verified/poiseuille_2d pattern; see gap note)",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 59,
+      "ny": 61,
+      "nx": 16,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "H_eff": 59.0,
+      "a": 6.894570525711003e-06,
+      "u_max_final": 0.03,
+      "Ma": 0.05196152422706632,
+      "t_end": 52235,
+      "tstar_marks": [
+        0.05,
+        0.125,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ],
+      "center_every": 20,
+      "tstar_center_min": 0.02,
+      "compile_mode": "default",
+      "compile_status": "eager_fallback",
+      "compile_mode_effective": "eager",
+      "compile_status_reason": "InductorError: AssertionError: self.reduction_shape [1, 9, 976], index 2*i1, self.ncw [9, 976, 1],                                                          graph_ncw [9, 976, 1], graph_reduction_shape [1, 9, 976]\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+      "device_info": {
+        "device": "sdaa",
+        "torch_version": "2.7.1",
+        "device_name": "/dev/tcaicard25",
+        "backend_version": "3.1.1a3+gite3971b9"
+      },
+      "seed": 0,
+      "centerline_err_max_over_umax_pct": 0.4286206356722324,
+      "profile_l2_max_pct": 0.42892279076097034,
+      "profile_pointwise_max_over_umax_pct": 0.42862058128633845,
+      "profile_table": [
+        {
+          "step": 1740,
+          "tstar": 0.05,
+          "l2_rel": 0.0015935006316712358,
+          "max_abs_over_umax": 0.0005435798593998616
+        },
+        {
+          "step": 4351,
+          "tstar": 0.125,
+          "l2_rel": 0.00160603246410946,
+          "max_abs_over_umax": 0.0010794411130972173
+        },
+        {
+          "step": 8702,
+          "tstar": 0.25,
+          "l2_rel": 0.0016478635564955147,
+          "max_abs_over_umax": 0.001459419922875821
+        },
+        {
+          "step": 17405,
+          "tstar": 0.5,
+          "l2_rel": 0.0016973878663178476,
+          "max_abs_over_umax": 0.0016296043135513815
+        },
+        {
+          "step": 26107,
+          "tstar": 0.75,
+          "l2_rel": 0.0036829461124682165,
+          "max_abs_over_umax": 0.0036570460249401907
+        },
+        {
+          "step": 34810,
+          "tstar": 1.0,
+          "l2_rel": 0.004238124430205136,
+          "max_abs_over_umax": 0.004233208853971516
+        },
+        {
+          "step": 52215,
+          "tstar": 1.5,
+          "l2_rel": 0.004289227907609703,
+          "max_abs_over_umax": 0.004286205812863385
+        }
+      ],
+      "mass_drift_pct": 0.0006878974757602127,
+      "finite": true,
+      "elapsed_s": 229.5
+    },
+    {
+      "case": "startup_poiseuille",
+      "lattice": "D2Q9",
+      "collision": "bgk",
+      "boundary": "pre-streaming half-way bounce-back (verified/poiseuille_2d pattern, f_pre[OPPOSITE] at wall rows; walls at 0.5 / ny-1.5, H_eff = ny-2), x-periodic",
+      "driving": "constant body force a=8*nu*u_max/H^2 via library _apply_body_force_2d, composed collide->halfway-BB->force->stream",
+      "extrap": "none",
+      "entries": {
+        "collide": "tensorlbm.solver.collide_bgk",
+        "stream": "tensorlbm.solver.stream",
+        "force": "tensorlbm.turbulent_channel._apply_body_force_2d",
+        "wall": "pre-streaming half-way BB via library OPPOSITE table (verified/poiseuille_2d pattern; see gap note)",
+        "ic_measure": "tensorlbm.d2q9.equilibrium / macroscopic"
+      },
+      "H": 119,
+      "ny": 121,
+      "nx": 16,
+      "tau": 0.8,
+      "nu_lb": 0.10000000000000002,
+      "H_eff": 119.0,
+      "a": 1.6947955652849378e-06,
+      "u_max_final": 0.03,
+      "Ma": 0.05196152422706632,
+      "t_end": 212435,
+      "tstar_marks": [
+        0.05,
+        0.125,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ],
+      "center_every": 20,
+      "tstar_center_min": 0.02,
+      "compile_mode": "default",
+      "compile_status": "eager_fallback",
+      "compile_mode_effective": "eager",
+      "compile_status_reason": "InductorError: AssertionError: self.reduction_shape [1, 9, 1936], index 2*i1, self.ncw [9, 1936, 1],                                                          graph_ncw [9, 1936, 1], graph_reduction_shape [1, 9, 1936]\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+      "device_info": {
+        "device": "sdaa",
+        "torch_version": "2.7.1",
+        "device_name": "/dev/tcaicard25",
+        "backend_version": "3.1.1a3+gite3971b9"
+      },
+      "seed": 0,
+      "centerline_err_max_over_umax_pct": 0.4763477722028708,
+      "profile_l2_max_pct": 0.4636501630914785,
+      "profile_pointwise_max_over_umax_pct": 0.47632292355814326,
+      "profile_table": [
+        {
+          "step": 7080,
+          "tstar": 0.05,
+          "l2_rel": 0.002476933912757231,
+          "max_abs_over_umax": 0.0009285382616685522
+        },
+        {
+          "step": 17701,
+          "tstar": 0.125,
+          "l2_rel": 0.00235485633919066,
+          "max_abs_over_umax": 0.0016365753438026913
+        },
+        {
+          "step": 35402,
+          "tstar": 0.25,
+          "l2_rel": 0.0020458638170239977,
+          "max_abs_over_umax": 0.0018651701978267498
+        },
+        {
+          "step": 70805,
+          "tstar": 0.5,
+          "l2_rel": 0.0009593630950415255,
+          "max_abs_over_umax": 0.0010228726068159158
+        },
+        {
+          "step": 106207,
+          "tstar": 0.75,
+          "l2_rel": 0.004029954394233071,
+          "max_abs_over_umax": 0.004134136752408901
+        },
+        {
+          "step": 141610,
+          "tstar": 1.0,
+          "l2_rel": 0.004585446308521226,
+          "max_abs_over_umax": 0.0047102322766895644
+        },
+        {
+          "step": 212415,
+          "tstar": 1.5,
+          "l2_rel": 0.004636501630914785,
+          "max_abs_over_umax": 0.004763229235581433
+        }
+      ],
+      "mass_drift_pct": 0.006860136384303327,
+      "finite": true,
+      "elapsed_s": 872.1
+    }
+  ],
+  "convergence": {
+    "metric": "centerline_err_max_over_umax_pct",
+    "values": [
+      0.4286206356722324,
+      0.4763477722028708
+    ],
+    "err_decreased": false
+  },
+  "passed": false,
+  "status": "NOT_PASSED"
+}
