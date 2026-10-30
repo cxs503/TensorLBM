@@ -1,0 +1,66 @@
+{
+  "mission_id": 359,
+  "case": "sphere_re100",
+  "round": "round-2-reverification",
+  "reason_for_selection": "All 43 verified cases covered (report 269); selected highest-attempt case (sphere_re100=13 attempts) per protocol",
+  "device_evidence": {
+    "device": "sdaa:0",
+    "torch_sdaa_version": "3.1.1a3+gite3971b9",
+    "setup_wall_time_s": 1.943,
+    "compile_status": "eager (no torch.compile)",
+    "test_domain_D20": [
+      120,
+      100,
+      100
+    ],
+    "bfl_links_D20": 7242,
+    "limitation": "D=40/12k OOM on SDAA 14.94 GiB; D=16/2k timeout >120s"
+  },
+  "verification_results": {
+    "t1_d40": {
+      "D": 40,
+      "domain": [
+        280,
+        280,
+        320
+      ],
+      "steps": 12000,
+      "bfl_links": 28722,
+      "cd_window": 1.1219804015117893,
+      "cd_ref": 1.0917310910948732,
+      "err_pct": 2.7707656824703757,
+      "within_gate": true,
+      "drift_pct": -0.14475665095758758,
+      "steady": true,
+      "cv_closure_window_pct": 0.014961044142343312,
+      "mass_drift_ppm": -0.07971931784817472
+    },
+    "t2_d60": {
+      "D": 60,
+      "domain": [
+        420,
+        420,
+        480
+      ],
+      "steps": 24000,
+      "bfl_links": 64794,
+      "cd_window": 1.1194620011444858,
+      "cd_ref": 1.0917310910948732,
+      "err_pct": 2.5400861325477018,
+      "within_gate": true,
+      "drift_pct": -0.0420075943755402,
+      "steady": true,
+      "cv_closure_window_pct": 0.00781376971349207,
+      "mass_drift_ppm": 0.0
+    },
+    "bitwise_chain": {
+      "w7_vs_w8a_dense_D20": true,
+      "t1_sparse_vs_w7_h2big": true
+    },
+    "monotonic_convergence": true,
+    "error_span_pct": 0.2306795499226739,
+    "judgment": "PASS"
+  },
+  "report_id": 276,
+  "report_url": "http://127.0.0.1:8010/api/v1/tensor/reports/276"
+}

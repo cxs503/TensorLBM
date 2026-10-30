@@ -1,0 +1,14 @@
+{
+  "device": "sdaa:0",
+  "torch_sdaa_version": "3.1.1a3+gite3971b9",
+  "setup_wall_time_s": 1.943,
+  "D": 20,
+  "domain": [
+    120,
+    100,
+    100
+  ],
+  "n_links": 7242,
+  "compile_status": "eager (no torch.compile)",
+  "note": "Full simulation (D=40/12k steps) OOM on SDAA 14.94 GiB; D=16/2k steps exceeded 120s timeout. Using existing verified results (t1_d40big_12k.json, t2_d60big_24k.json) for analysis. Device evidence captured from setup phase only."
+}
