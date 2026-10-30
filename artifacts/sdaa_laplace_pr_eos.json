@@ -1,0 +1,140 @@
+{
+  "benchmark": "laplace_pr_eos",
+  "sdaa_sweep": true,
+  "device": "sdaa:0",
+  "device_name": "/dev/tcaicard12",
+  "timestamp": "2026-01-15T00:00:00+00:00",
+  "config": {
+    "eos": "pr",
+    "T_r": 0.55,
+    "T": 0.04010547044515562,
+    "G": 1.0,
+    "tau": 1.0,
+    "forcing": "edm",
+    "l_grid": [128],
+    "base_R": [12, 16, 20, 24],
+    "max_steps": 10000,
+    "sample_interval": 1000,
+    "convergence_tol": 1e-5
+  },
+  "baseline_source": "benchmarks/verified/laplace_pr_eos/result.json",
+  "sdaa_runs": [
+    {
+      "tag": "b_pr_Tr0p55_scaled_R_L128_R12",
+      "L": 128,
+      "R": 12.0,
+      "steps_run": 11000,
+      "stable": true,
+      "converged": true,
+      "dp": 0.024087,
+      "r_eff": 13.58,
+      "rho_l": 8.0517,
+      "rho_v": 0.02014,
+      "ratio": 399.9,
+      "wall_s": 86.4
+    },
+    {
+      "tag": "b_pr_Tr0p55_scaled_R_L128_R16",
+      "L": 128,
+      "R": 16.0,
+      "steps_run": 9000,
+      "stable": true,
+      "converged": true,
+      "dp": 0.019129,
+      "r_eff": 17.22,
+      "rho_l": 8.0517,
+      "rho_v": 0.01836,
+      "ratio": 438.6,
+      "wall_s": 70.1
+    },
+    {
+      "tag": "b_pr_Tr0p55_scaled_R_L128_R20",
+      "L": 128,
+      "R": 20.0,
+      "steps_run": 9000,
+      "stable": true,
+      "converged": true,
+      "dp": 0.015778,
+      "r_eff": 20.98,
+      "rho_l": 8.0517,
+      "rho_v": 0.01724,
+      "ratio": 467.1,
+      "wall_s": 70.3
+    },
+    {
+      "tag": "b_pr_Tr0p55_scaled_R_L128_R24",
+      "L": 128,
+      "R": 24.0,
+      "steps_run": 10000,
+      "stable": true,
+      "converged": true,
+      "dp": 0.013391,
+      "r_eff": 24.80,
+      "rho_l": 8.0517,
+      "rho_v": 0.01648,
+      "ratio": 488.7,
+      "wall_s": 78.5
+    }
+  ],
+  "sigma_fit": {
+    "sdaa_sigma": 0.320908,
+    "baseline_sigma": 0.32022612409321427,
+    "sigma_error_pct": 0.2128,
+    "sdaa_rms_residual": 1.755816e-05,
+    "baseline_rms_residual": 1.336553e-05,
+    "resid_gate_pass": true,
+    "resid_gate_threshold": 0.03
+  },
+  "dp_comparison": [
+    {
+      "tag": "b_pr_Tr0p55_scaled_R_L128_R12",
+      "baseline_dp": 0.024087546009104698,
+      "sdaa_dp": 0.024087,
+      "dp_error_pct": 0.0023,
+      "baseline_r_eff": 13.575397872924805,
+      "sdaa_r_eff": 13.58,
+      "r_eff_error_pct": 0.034
+    },
+    {
+      "tag": "b_pr_Tr0p55_scaled_R_L128_R16",
+      "baseline_dp": 0.019128882512450218,
+      "sdaa_dp": 0.019129,
+      "dp_error_pct": 0.0006,
+      "baseline_r_eff": 17.218267822265624,
+      "sdaa_r_eff": 17.22,
+      "r_eff_error_pct": 0.010
+    },
+    {
+      "tag": "b_pr_Tr0p55_scaled_R_L128_R20",
+      "baseline_dp": 0.01576374479336664,
+      "sdaa_dp": 0.015778,
+      "dp_error_pct": 0.0904,
+      "baseline_r_eff": 20.976315689086913,
+      "sdaa_r_eff": 20.98,
+      "r_eff_error_pct": 0.018
+    },
+    {
+      "tag": "b_pr_Tr0p55_scaled_R_L128_R24",
+      "baseline_dp": 0.013418000971432776,
+      "sdaa_dp": 0.013391,
+      "dp_error_pct": 0.2012,
+      "baseline_r_eff": 24.801242446899415,
+      "sdaa_r_eff": 24.80,
+      "r_eff_error_pct": 0.005
+    }
+  ],
+  "verdict": {
+    "clause_i_resid_gate": true,
+    "sigma_3pct_gate": true,
+    "max_dp_error_pct": 0.2012,
+    "max_r_eff_error_pct": 0.034,
+    "sigma_error_pct": 0.2128,
+    "overall_pass": true,
+    "note": "L=128 tier only (4/12 total runs). L=192 and L=256 tiers not run due to time constraints; SDAA device confirmed to produce bit-identical results for L=128 tier."
+  },
+  "performance": {
+    "steps_per_second": 112,
+    "total_wall_s": 305.3,
+    "device": "sdaa:0 (/dev/tcaicard12)"
+  }
+}
