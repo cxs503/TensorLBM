@@ -1,10 +1,11 @@
 {
-  "schema": "channel_turb_3d_validation_v1",
+  "schema": "channel_turb_3d_validation_v2",
   "case": "channel_turb_3d",
+  "mission": "m458",
   "reference": {
     "source": "Moser, Kim & Mansour (1999), Phys. Fluids 11, 943",
     "re_tau": 180.0,
-    "file": "benchmarks/pending/channel_turb/dns_ref/mkm180.csv"
+    "file": "benchmarks/pending/channel_turb_3d/dns_ref/mkm180.csv"
   },
   "grid_levels": [
     {
@@ -19,7 +20,8 @@
       "u_cl_plus": 21.587728766517507,
       "rms_y30_100_pct": 20.43434670057914,
       "eddy_turnovers": 3.0,
-      "profile_samples": 3000
+      "profile_samples": 3000,
+      "source": "m186 replay"
     },
     {
       "level": "L2",
@@ -33,7 +35,8 @@
       "u_cl_plus": 20.088856699566044,
       "rms_y30_100_pct": 11.665111463802477,
       "eddy_turnovers": 1.956521739130435,
-      "profile_samples": 3000
+      "profile_samples": 3000,
+      "source": "m186 replay"
     },
     {
       "level": "L3",
@@ -47,17 +50,37 @@
       "u_cl_plus": 19.292300106336672,
       "rms_y30_100_pct": 5.330965065942242,
       "eddy_turnovers": 1.4516129032258063,
-      "profile_samples": 3000
+      "profile_samples": 3000,
+      "source": "m186 replay"
+    },
+    {
+      "level": "L4",
+      "grid": "396x64x132",
+      "Lx_over_h": 12.774193548387096,
+      "Lz_over_h": 4.258064516129032,
+      "dy_plus": 5.806451612903226,
+      "u_tau_target": 0.003,
+      "u_tau_measured": null,
+      "u_tau_err_pct": null,
+      "u_cl_plus": null,
+      "rms_y30_100_pct": null,
+      "eddy_turnovers": 4.112903225806452,
+      "profile_samples": 8500,
+      "source": "m458 pending",
+      "status": "pending_sdaa_execution"
     }
   ],
   "convergence": {
     "monotone": true,
-    "trend": [
-      20.43434670057914,
-      11.665111463802477,
-      5.330965065942242
-    ]
+    "trend": [20.43434670057914, 11.665111463802477, 5.330965065942242],
+    "l4_pending": true
   },
-  "verdict": "terminal",
-  "reason": "Best RMS=5.33% > 3% or non-monotone"
+  "verdict": "pending",
+  "reason": "L3 RMS=5.33% > 3% (HONEST-FAIL). L4 with DNS-matched domain (Lx/h=12.77) and extended statistics (4.1 eddy turnovers) pending SDAA execution.",
+  "fix_summary": {
+    "domain_length": "Lx/h: 8.26 → 12.77 (DNS: 12.6)",
+    "statistics_window": "eddy_turnovers: 1.45 → 4.1",
+    "u_tau_measurement": "wall-shear gradient → force balance",
+    "expected_improvement": "RMS 5.33% → <3% (projected)"
+  }
 }

@@ -1,0 +1,89 @@
+{
+  "mission": "m458",
+  "case": "channel_turb_3d",
+  "description": "SDAA验证案例扫荡——channel_turb_3d域长修复+统计窗扩展",
+  "sdaa_device": "pending (no GPU available in dev env)",
+  "timestamp": "2026-10-30T00:00:00Z",
+  "baseline_levels": [
+    {
+      "level": "L1",
+      "grid": "64x32x32",
+      "Lx_over_h": 4.27,
+      "Lz_over_h": 2.13,
+      "dy_plus": 12.0,
+      "steps": 50000,
+      "warmup": 20000,
+      "eddy_turnovers": 3.0,
+      "profile_samples": 3000,
+      "u_tau_target": 0.003,
+      "u_tau_measured": 0.002383514601031955,
+      "u_tau_err_pct": -20.55,
+      "rms_y30_100_pct": 20.4343,
+      "source": "m186 replay"
+    },
+    {
+      "level": "L2",
+      "grid": "128x48x64",
+      "Lx_over_h": 5.57,
+      "Lz_over_h": 2.78,
+      "dy_plus": 7.83,
+      "steps": 50000,
+      "warmup": 20000,
+      "eddy_turnovers": 1.96,
+      "profile_samples": 3000,
+      "u_tau_target": 0.003,
+      "u_tau_measured": 0.0025722959308612857,
+      "u_tau_err_pct": -14.26,
+      "rms_y30_100_pct": 11.6651,
+      "source": "m186 replay"
+    },
+    {
+      "level": "L3",
+      "grid": "256x64x128",
+      "Lx_over_h": 8.26,
+      "Lz_over_h": 4.13,
+      "dy_plus": 5.81,
+      "steps": 50000,
+      "warmup": 20000,
+      "eddy_turnovers": 1.45,
+      "profile_samples": 3000,
+      "u_tau_target": 0.003,
+      "u_tau_measured": 0.002770791905384009,
+      "u_tau_err_pct": -7.64,
+      "rms_y30_100_pct": 5.3310,
+      "source": "m186 replay"
+    }
+  ],
+  "fixed_levels": [
+    {
+      "level": "L4",
+      "grid": "396x64x132",
+      "Lx_over_h": 12.77,
+      "Lz_over_h": 4.26,
+      "dy_plus": 5.81,
+      "steps": 125000,
+      "warmup": 40000,
+      "eddy_turnovers": 4.0,
+      "profile_samples": 8000,
+      "u_tau_target": 0.003,
+      "u_tau_measurement": "force_balance",
+      "expected_rms_y30_100_pct": "<3.0 (projected)",
+      "source": "m458 new"
+    }
+  ],
+  "convergence_baseline": {
+    "monotone": true,
+    "trend": [20.4343, 11.6651, 5.3310],
+    "best_rms": 5.3310,
+    "threshold": 3.0,
+    "passes": false
+  },
+  "fix_summary": {
+    "domain_length": "Lx/h: 8.26 → 12.77 (DNS: 12.6)",
+    "statistics_window": "eddy_turnovers: 1.45 → 4.0",
+    "u_tau_measurement": "wall-shear gradient → force balance",
+    "expected_improvement": "RMS 5.33% → <3% (projected)"
+  },
+  "threshold_rms_pct": 3.0,
+  "verdict": "pending (L4 requires SDAA execution)"
+}

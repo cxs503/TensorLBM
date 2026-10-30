@@ -1,0 +1,105 @@
+{
+  "schema": "prereg-v2",
+  "case": "channel_turb_3d",
+  "mission": "m458",
+  "parent_mission": "m186",
+  "timestamp": "2026-10-30T00:00:00Z",
+  "physical_problem": "3D periodic wall-resolved channel flow at Re_tau=180, body-force driven, compared against Moser-Kim-Mansour (1999) DNS",
+  "reference": {
+    "source": "Moser, Kim & Mansour (1999), Phys. Fluids 11, 943",
+    "re_tau": 180.0,
+    "file": "benchmarks/pending/channel_turb/dns_ref/mkm180.csv"
+  },
+  "observable": {
+    "primary": "u+ profile RMS error vs DNS in y+ ∈ [30, 100]",
+    "threshold_pct": 3.0,
+    "secondary": [
+      "Reynolds stress -u'v'+ RMS error vs DNS",
+      "centerline velocity U_cl+ vs DNS",
+      "friction velocity u_tau+ consistency (force balance)"
+    ]
+  },
+  "grid_levels": [
+    {
+      "level": "L1",
+      "nx": 64,
+      "ny": 32,
+      "nz": 32,
+      "Lx_over_h": 4.27,
+      "Lz_over_h": 2.13,
+      "dy_plus": 12.0,
+      "steps": 50000,
+      "warmup": 20000,
+      "expected": "under-resolved baseline (replay from m186)"
+    },
+    {
+      "level": "L2",
+      "nx": 128,
+      "ny": 48,
+      "nz": 64,
+      "Lx_over_h": 5.57,
+      "Lz_over_h": 2.78,
+      "dy_plus": 7.83,
+      "steps": 50000,
+      "warmup": 20000,
+      "expected": "mid-resolution baseline (replay from m186)"
+    },
+    {
+      "level": "L3",
+      "nx": 256,
+      "ny": 64,
+      "nz": 128,
+      "Lx_over_h": 8.26,
+      "Lz_over_h": 4.13,
+      "dy_plus": 5.81,
+      "steps": 50000,
+      "warmup": 20000,
+      "expected": "near-DNS baseline (replay from m186), RMS=5.33%"
+    },
+    {
+      "level": "L4",
+      "nx": 396,
+      "ny": 64,
+      "nz": 132,
+      "Lx_over_h": 12.77,
+      "Lz_over_h": 4.26,
+      "dy_plus": 5.81,
+      "steps": 125000,
+      "warmup": 40000,
+      "expected": "DNS-matched domain (Lx/h≈12.6, Lz/h≈4.2) + extended statistics (≥4 eddy turnovers)"
+    }
+  ],
+  "numerics": {
+    "lattice": "D3Q19",
+    "collision": "natural_kbc",
+    "initialization": "spectral_solenoidal",
+    "u_tau": 0.003,
+    "re_tau": 180.0,
+    "boundary": "periodic(x,z) + bounce-back(y±) + Guo body force",
+    "u_tau_measurement": "force_balance (tau_w = rho*a_x*H/2)"
+  },
+  "budget": {
+    "L1_steps": 50000,
+    "L1_warmup": 20000,
+    "L2_steps": 50000,
+    "L2_warmup": 20000,
+    "L3_steps": 50000,
+    "L3_warmup": 20000,
+    "L4_steps": 120000,
+    "L4_warmup": 40000,
+    "sample_interval": 10,
+    "gpu": "SDAA",
+    "estimated_gpu_hours_L4": 8.0
+  },
+  "decision_criteria": {
+    "promote": "≥2 grid levels with u+ RMS error ≤3% AND monotone convergence",
+    "terminal": "no transition (Reynolds stress ≈0) OR error >3% non-monotone OR instability",
+    "honest_fail": "monotone convergence but best RMS > 3% — document error budget (discretization vs statistics)"
+  },
+  "fix_description": {
+    "domain_length": "L4: Lx/h=12.77 (was 8.26 in L3), matching DNS 12.6",
+    "statistics_window": "L4: 80000 avg steps → ~4.0 eddy turnovers (was 30000 → 1.45 in L3)",
+    "u_tau_measurement": "force balance instead of wall-shear gradient"
+  },
+  "frozen": true
+}
