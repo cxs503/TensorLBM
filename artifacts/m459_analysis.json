@@ -1,0 +1,41 @@
+{
+  "total_steps": 25000,
+  "num_segments": 5,
+  "final_X1_H": 2.0473395298822714,
+  "final_err_pct": -66.43705688717587,
+  "within_tolerance": false,
+  "converged": false,
+  "reference_X1_H": 6.1,
+  "segments_summary": [
+    {
+      "seg_id": 1,
+      "end_step": 5000,
+      "final_X1_H": NaN,
+      "err_pct": NaN
+    },
+    {
+      "seg_id": 2,
+      "end_step": 10000,
+      "final_X1_H": 0.6060281469668268,
+      "err_pct": -90.06511234480612
+    },
+    {
+      "seg_id": 3,
+      "end_step": 15000,
+      "final_X1_H": 1.0909473706164465,
+      "err_pct": -82.11561687514022
+    },
+    {
+      "seg_id": 4,
+      "end_step": 20000,
+      "final_X1_H": 1.0611711051359944,
+      "err_pct": -82.60375237481978
+    },
+    {
+      "seg_id": 5,
+      "end_step": 25000,
+      "final_X1_H": 2.0473395298822714,
+      "err_pct": -66.43705688717587
+    }
+  ]
+}
