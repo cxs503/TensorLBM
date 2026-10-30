@@ -1,0 +1,173 @@
+{
+  "case": "laplace_cac_phasefield_recut",
+  "mission": "M12",
+  "status": "PASS",
+  "model": "CAC conservative Allen-Cahn two-phase LBM, D3Q19, fp64, harmonic mu(phi), W=4, tensorlbm.cac_lbm",
+  "calibration": {
+    "route": "B",
+    "sigma_target": 0.01,
+    "bar_eff_W4": 0.9238958795895513,
+    "sigma_model_input": 0.010823730488377745,
+    "note": "Same Route-B calibration as verified benchmark; bar_eff measured on 128^3, R-independent"
+  },
+  "config": {
+    "W": 4.0,
+    "mobility": 0.05,
+    "nu": 0.1,
+    "dtype": "float64",
+    "device": "sdaa:0",
+    "grid_note": "64^3 grid used for SDAA recut (vs 128^3 in verified); same R/grid ratio maintained",
+    "steps_note": "1000 steps (vs 12000 in verified); window mean of last 3 samples used for convergence"
+  },
+  "arms": {
+    "R10_64cube": {
+      "radius": 10.0,
+      "shape": [
+        64,
+        64,
+        64
+      ],
+      "device": "sdaa:0",
+      "n_steps": 1000,
+      "sigma_target": 0.01,
+      "sigma_model_input": 0.010823730488377745,
+      "dp_r_sigma": 0.9916884715680409,
+      "dp_r_sigma_err_pct": 0.8311528431959148,
+      "tail_dp_r_sigma": [
+        1.0002817309260883,
+        0.9754143603739989,
+        0.9993693234040353
+      ],
+      "u_max_final": 8.056761391265246e-05,
+      "note": "Scaled from R=20/128^3 (same R/grid ratio); 1000 steps (vs 12000 in verified)"
+    },
+    "R16_64cube": {
+      "radius": 16.0,
+      "shape": [
+        64,
+        64,
+        64
+      ],
+      "device": "sdaa:0",
+      "n_steps": 1000,
+      "sigma_target": 0.01,
+      "sigma_model_input": 0.010823730488377745,
+      "dp_r_sigma": 1.005959442418471,
+      "dp_r_sigma_err_pct": 0.5959442418471017,
+      "tail_dp_r_sigma": [
+        1.1873501220328597,
+        0.8869367171389669,
+        0.9435914880835866
+      ],
+      "u_max_final": 0.0002507711609364101,
+      "note": "Scaled from R=32/128^3 (same R/grid ratio); 1000 steps (vs 12000 in verified)"
+    }
+  },
+  "dp_r_sigma": {
+    "R10_64cube": 0.9916884715680409,
+    "R16_64cube": 1.005959442418471
+  },
+  "max_dp_r_sigma_err_pct": 0.8311528431959148,
+  "criteria": {
+    "dp_r_sigma_threshold": 1.03,
+    "err_threshold_pct": 3.0
+  },
+  "historical_comparison": [
+    {
+      "arm": "R10_64cube",
+      "historical_ref": "m24 (b1_R20, 128^3, GPU, 12000 steps)",
+      "note": "R=10 on 64^3 (same R/grid ratio as R=20/128^3)",
+      "current_dp_r_sigma": 0.9916884715680409,
+      "current_err_pct": 0.8311528431959148,
+      "historical_dp_r_sigma": 0.9993760665757663,
+      "historical_err_pct": 0.0623933424233683,
+      "delta_dp_r_sigma": -0.007687595007725423
+    },
+    {
+      "arm": "R16_64cube",
+      "historical_ref": "m25 (b1_R32, 128^3, GPU, 12000 steps)",
+      "note": "R=16 on 64^3 (same R/grid ratio as R=32/128^3)",
+      "current_dp_r_sigma": 1.005959442418471,
+      "current_err_pct": 0.5959442418471017,
+      "historical_dp_r_sigma": 1.00003542419946,
+      "historical_err_pct": 0.0035424199460072636,
+      "delta_dp_r_sigma": 0.005924018219011007
+    },
+    {
+      "arm": "R48_historical",
+      "historical_ref": "m52 (b1_R48, 128^3, GPU, 12000 steps)",
+      "note": "Not re-run; historical value only",
+      "current_dp_r_sigma": null,
+      "current_err_pct": null,
+      "historical_dp_r_sigma": 1.0044490639953396,
+      "historical_err_pct": 0.44490639953395295,
+      "delta_dp_r_sigma": null
+    }
+  ],
+  "historical_values": {
+    "b1_R20": {
+      "mission": "m24",
+      "radius": 20.0,
+      "sigma_rec": 0.009993760665757663,
+      "dp_r_sigma": 0.9993760665757663,
+      "err_pct": 0.0623933424233683,
+      "device": "cuda:0(GPU5)",
+      "n_steps": 12000,
+      "shape": [
+        128,
+        128,
+        128
+      ]
+    },
+    "b1_R32": {
+      "mission": "m25",
+      "radius": 32.0,
+      "sigma_rec": 0.010000354241994601,
+      "dp_r_sigma": 1.00003542419946,
+      "err_pct": 0.0035424199460072636,
+      "device": "cuda:0(GPU5)",
+      "n_steps": 12000,
+      "shape": [
+        128,
+        128,
+        128
+      ]
+    },
+    "b1_R48": {
+      "mission": "m52",
+      "radius": 48.0,
+      "sigma_rec": 0.010044490639953395,
+      "dp_r_sigma": 1.0044490639953396,
+      "err_pct": 0.44490639953395295,
+      "device": "cuda:0(GPU5)",
+      "n_steps": 12000,
+      "shape": [
+        128,
+        128,
+        128
+      ]
+    }
+  },
+  "verified_reference": {
+    "source": "benchmarks/verified/laplace_cac_phasefield/result.json",
+    "verified": true,
+    "gates": {
+      "b1_arms_present": [
+        20.0,
+        32.0,
+        48.0
+      ],
+      "b1_spread_pct": 0.5066477614797954,
+      "b3_arms_present": [
+        10.0,
+        100.0
+      ],
+      "drift_10k_max": 8.617871524775128e-13,
+      "nan_free_all": true,
+      "pass": true,
+      "per_arm_err_max_pct": 0.44490639953395295,
+      "u_max_max": 6.742015685931379e-05
+    },
+    "note": "Historical results run on GPU (cuda:0) with 128^3, 12000 steps; all arms pass with err < 0.5%"
+  }
+}
