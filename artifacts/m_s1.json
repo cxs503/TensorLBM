@@ -1,0 +1,80 @@
+{
+  "mission": "M-S1\u00b7P2",
+  "case": "sphere_re100_D40",
+  "timestamp": "2026-10-30T07:14:00Z",
+  "reference": {
+    "cd_ref_sn": 1.0917310910948732,
+    "cd_ref_cg": 1.1092345787735252,
+    "source_primary": "Schiller-Naumann 24/Re*(1+0.15*Re^0.687)",
+    "source_secondary": "Clift-Gauvin",
+    "Re": 100.0
+  },
+  "cpu_baseline": {
+    "source": "benchmarks/verified/sphere_re100/result.json",
+    "grid": "D40",
+    "domain_lu": [
+      280,
+      280,
+      320
+    ],
+    "collision": "MRT",
+    "force_method": "BFL_momentum_ledger",
+    "steps": 12000,
+    "Cd_total": 1.1219804015117896,
+    "err_pct_vs_SN": 2.77
+  },
+  "sdaa_run": {
+    "device": "sdaa:0",
+    "collision": "BGK",
+    "domain_lu": [
+      200,
+      200,
+      240
+    ],
+    "total_cells": 9600000,
+    "tau": 0.5599999999999999,
+    "u_lb": 0.05,
+    "Re": 100.00000000000001,
+    "steps_completed": 100,
+    "diverged": false,
+    "t_setup_s": 1.81,
+    "t_run_s": 37.65,
+    "ms_per_step": 376.5,
+    "Cd_pressure": 5.787085772763437,
+    "Cd_friction": 1.2007485234677873,
+    "Cd_total": 6.987834296231225,
+    "Cd_window_mean": -0.14075409093117014,
+    "n_window_samples": 4,
+    "diag_sha256": "e12e5b0b34c1b6099359eef86f1c4641c97067d9c66276874ada126f4959b2b2"
+  },
+  "criteria": {
+    "c1_cd_vs_cpu_1pct": {
+      "pass": false,
+      "cpu_cd": 1.1219804015117896,
+      "sdaa_cd": -0.14075409093117014,
+      "err_pct": 112.54514702231108,
+      "threshold_pct": 1.0
+    },
+    "c2_cd_vs_ref_3pct": {
+      "pass": false,
+      "ref_cd": 1.0917310910948732,
+      "sdaa_cd": -0.14075409093117014,
+      "err_pct": 112.89274365082073,
+      "threshold_pct": 3.0
+    },
+    "c3_cross_card_bitexact": {
+      "pass": false,
+      "note": "HONEST-FAIL: only 1 SDAA device(s)",
+      "sdaa_count": 1,
+      "sdaa0_sha256": "e12e5b0b34c1b6099359eef86f1c4641c97067d9c66276874ada126f4959b2b2"
+    }
+  },
+  "overall_pass": false,
+  "device_evidence": {
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_device_name": "/dev/tcaicard0",
+    "sdaa_total_memory": "16039018496",
+    "torch_version": "2.7.1"
+  }
+}
