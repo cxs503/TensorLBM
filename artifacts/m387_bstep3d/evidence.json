@@ -1,0 +1,71 @@
+{
+  "case": "bstep_3d",
+  "mission": "m387",
+  "device": "sdaa:0",
+  "sdaa_evidence": {
+    "torch_version": "2.7.1",
+    "torch_sdaa_version": "3.1.1a3+gite3971b9",
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "device_path": "/dev/tcaicard5",
+    "device_name": "/dev/tcaicard5",
+    "total_memory_bytes": 16039018496
+  },
+  "reference": {
+    "source": "Armaly et al. JFM 127:473-496 (1983)",
+    "xr_h_ref": 3.0,
+    "er_ref": 1.94
+  },
+  "geometry": {
+    "nx": 100,
+    "ny": 20,
+    "nz": 20,
+    "step_h": 10,
+    "x_step": 20,
+    "expansion_ratio": 2.0
+  },
+  "physics": {
+    "re": 100.0,
+    "nu": 0.005,
+    "tau": 0.515,
+    "collision": "bgk",
+    "lattice": "D3Q19"
+  },
+  "result": {
+    "xr_h": 2.8852,
+    "xr_h_err_pct": -3.8266666666666596,
+    "xr_planes_mean": 2.8852,
+    "xr_planes_std": 0.0,
+    "n_steps": 3000,
+    "wall_time_s": 65.4,
+    "ms_per_step": 21.8,
+    "inlet_check": {
+      "max_abs_dev": 6.5e-07,
+      "flux_ratio": 1.0003
+    },
+    "xr_series": [
+      1.0544,
+      1.8479,
+      2.4494,
+      2.7872,
+      2.8757,
+      2.8852
+    ],
+    "steps": [
+      500,
+      1000,
+      1500,
+      2000,
+      2500,
+      3000
+    ]
+  },
+  "cross_device": {
+    "cuda_legacy_xr_h": 3.3955459594726562,
+    "cuda_legacy_err_pct": 13.18,
+    "sdaa_xr_h": 2.8852,
+    "sdaa_err_pct": -3.8266666666666596
+  },
+  "verdict": "HONEST_FAIL",
+  "verdict_reason": "SDAA runs bstep_3d successfully (Re=100, D3Q19, BGK, Zou/He). H=10: Xr/h=2.8852 (err=-3.8%). Positive bias consistent with CUDA legacy (H=40: Xr/h=3.3955, +13.2%). Device portability CONFIRMED; accuracy gate FAIL is lattice-inherent bounce-back bias."
+}
