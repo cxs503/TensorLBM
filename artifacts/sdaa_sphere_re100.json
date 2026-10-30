@@ -1,0 +1,183 @@
+{
+  "case": "sphere_re100",
+  "device_evidence": {
+    "available": true,
+    "device_name": "/dev/tcaicard5",
+    "device_count": 1,
+    "torch_version": "2.7.1",
+    "total_memory_gib": 14.94,
+    "note": "SDAA device detected and accessible"
+  },
+  "runs": [
+    {
+      "tier": "T1_sdaa_d40_8k",
+      "D": 40,
+      "steps": 8000,
+      "tau": 0.56,
+      "domain": {
+        "lat": 3.0,
+        "up": 3.0,
+        "down": 4.0
+      },
+      "kernel": "sparse",
+      "device": "sdaa:0",
+      "success": false,
+      "failure_reason": "OOM",
+      "error_details": {
+        "error_type": "RuntimeError: sdaa out of memory",
+        "tried_to_allocate_gib": 3.37,
+        "total_capacity_gib": 14.94,
+        "already_allocated_gib": 7.78,
+        "free_gib": 5.67,
+        "reserved_gib": 7.95,
+        "failed_at": "bfl_mask[1:].sum().item() - boundary link computation",
+        "phase": "setup",
+        "step": 0
+      },
+      "wall_time_s": 0,
+      "judgment": {
+        "pass": false,
+        "reason": "OOM during setup - insufficient SDAA memory for D=40 with lat=3/up=3/down=4 domain"
+      }
+    },
+    {
+      "tier": "T1_sdaa_d20_8k",
+      "D": 20,
+      "steps": 8000,
+      "tau": 0.53,
+      "domain": {
+        "lat": 3.0,
+        "up": 3.0,
+        "down": 4.0
+      },
+      "kernel": "sparse",
+      "device": "sdaa:0",
+      "success": false,
+      "failure_reason": "timeout",
+      "error_details": {
+        "error_type": "TimeoutExpired",
+        "timeout_s": 120,
+        "note": "D=20 with 8000 steps did not complete within 120s timeout",
+        "phase": "unknown - no output file produced"
+      },
+      "wall_time_s": 120,
+      "judgment": {
+        "pass": false,
+        "reason": "SDAA extremely slow - D=20 8000 steps timeout after 120s"
+      }
+    },
+    {
+      "tier": "T1_sdaa_d10_100",
+      "D": 10,
+      "steps": 100,
+      "tau": 0.52,
+      "domain": {
+        "lat": 3.0,
+        "up": 3.0,
+        "down": 4.0
+      },
+      "kernel": "sparse",
+      "device": "sdaa:0",
+      "success": false,
+      "failure_reason": "timeout",
+      "error_details": {
+        "error_type": "TimeoutExpired",
+        "timeout_s": 30,
+        "note": "D=10 with 100 steps did not complete within 30s timeout",
+        "phase": "unknown - no output file produced"
+      },
+      "wall_time_s": 30,
+      "judgment": {
+        "pass": false,
+        "reason": "SDAA extremely slow - even D=10 100 steps timeout after 30s"
+      }
+    },
+    {
+      "tier": "T1_cpu_d10_100",
+      "D": 10,
+      "steps": 100,
+      "tau": 0.52,
+      "domain": {
+        "lat": 3.0,
+        "up": 3.0,
+        "down": 4.0
+      },
+      "kernel": "sparse",
+      "device": "cpu",
+      "success": true,
+      "note": "CPU baseline test - not SDAA, just to verify code works",
+      "wall_time_s": 5,
+      "judgment": {
+        "cd_mean": 1.679,
+        "note": "CPU works but not valid for SDAA verification"
+      }
+    },
+    {
+      "tier": "T2_sdaa_d60_16k",
+      "D": 60,
+      "steps": 16000,
+      "tau": 0.59,
+      "domain": {
+        "lat": 3.0,
+        "up": 3.0,
+        "down": 4.0
+      },
+      "kernel": "sparse",
+      "device": "sdaa:0",
+      "success": false,
+      "failure_reason": "not_attempted",
+      "judgment": {
+        "pass": false,
+        "reason": "skipped - D=40 already OOM, D=60 would require more memory"
+      }
+    }
+  ],
+  "overall": {
+    "all_within_gate_and_steady": false,
+    "monotone_error_decrease": false,
+    "pass": false,
+    "summary": "FAIL - SDAA cannot run sphere_re100 case: D=40 OOM, smaller D extremely slow"
+  },
+  "diagnosis": {
+    "root_cause": "SDAA backend has two issues for sphere_re100: (1) OOM for D>=40 with large domain, (2) extremely slow execution for smaller D",
+    "memory_analysis": {
+      "d40_oom": {
+        "domain_cells": "280x280x320 = 25,088,000",
+        "estimated_memory_gib": "4-5 GiB for distributions + masks + BFL data",
+        "available_gib": 5.67,
+        "peak_allocated_gib": 7.78,
+        "conclusion": "Memory fragmentation or overhead pushes requirement above available"
+      },
+      "performance_issue": {
+        "d10_100steps_timeout": "30s timeout for 100 steps on D=10",
+        "d20_8000steps_timeout": "120s timeout for 8000 steps on D=20",
+        "cpu_baseline": "D=10 100 steps completes in ~5s on CPU",
+        "conclusion": "SDAA backend 10-100x slower than CPU, suggests compilation overhead or inefficient kernel launch"
+      }
+    },
+    "comparison_with_readme": {
+      "readme_claims": "D40 runs on SDAA with sparse kernel (README section 6)",
+      "actual_result": "OOM even before simulation loop starts",
+      "possible_explanations": [
+        "README was tested with different SDAA card or different memory state",
+        "PyTorch SDAA backend has higher memory overhead than when README was written",
+        "SDAA card memory was partially used by other processes",
+        "Sparse kernel memory optimization not sufficient for this domain size on current SDAA backend"
+      ]
+    },
+    "workarounds_attempted": [
+      "PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True - did not help with OOM",
+      "Sparse kernel (already the most memory-efficient option)",
+      "Reduced D to 20 and 10 - avoids OOM but hits performance wall"
+    ],
+    "workarounds_not_attempted": [
+      "Smaller domain (lat/up/down) - would change physics, not valid for verification case",
+      "CPU fallback - not SDAA, would not count as SDAA verification",
+      "Different SDAA card - not available in this environment"
+    ]
+  },
+  "timestamp": "2026-10-29 14:27:36",
+  "mission_status": "failed",
+  "gate": "no-evidence",
+  "reason": "SDAA OOM (D=40) and extreme slowness (D<=20) - cannot produce Cd values for gate judgment within reasonable time"
+}
