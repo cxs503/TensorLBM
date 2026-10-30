@@ -1,0 +1,43 @@
+{
+  "mission_id": 182,
+  "case": "cavity_natural_convection",
+  "scenario_key": "sdaa_cavity_natural_convection_ra1e4",
+  "reference": {
+    "source": "de Vahl Davis 1983 Int. J. Numer. Methods Fluids 3:249-264",
+    "Nu": 2.243,
+    "u_max": 16.178,
+    "v_max": 19.617
+  },
+  "quick_verify": {
+    "nx": 64,
+    "steps": 30000,
+    "elapsed_s": 264.3,
+    "nu_grad2": 2.128794,
+    "nu_grad1": 2.122205,
+    "nu_halfway": 0.0,
+    "nu_err_pct": -5.092,
+    "u_max": 0.013834,
+    "u_max_err_pct": -99.914,
+    "last_resid_u": 1.0200310498476028e-06,
+    "last_resid_T": 6.61611557006836e-05,
+    "tau_T": 0.640845
+  },
+  "rerun_data_summary": {
+    "grids": 3,
+    "nu_errors": [
+      5.939,
+      2.905,
+      1.358
+    ],
+    "monotone": true,
+    "passing_grids": [
+      128,
+      256
+    ],
+    "verdict_pass": true
+  },
+  "gates_verified": true,
+  "gates_path": "/root/tp-agent/work/m182/benchmarks/verified/cavity_natural_convection/gates_verified.json",
+  "thermal_sha12": "598889356088",
+  "timestamp": "2026-10-29T17:08:51Z"
+}
