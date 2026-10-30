@@ -10,11 +10,17 @@ integration, wetted-area normalisation, standard vs mix50 friction).
 
 Geometry
 --------
-* ``--geometry stl`` (default): the genuine DTMB 5415 underwater bare hull
-  ``geometry/dtmb5415_underwater.stl``, extracted (waterline clip at
-  T = 6.15 m) from the zenodo / CNR-INSEAN official 5415 baseline point
-  cloud -- see ``_build_geometry.py`` for provenance.  Voxelised through the
-  shared ``tensorlbm.stl_geometry`` module by ``GeneralSimEngine``
+* ``--geometry stl`` (default): the genuine DTMB 5415 underwater bare hull,
+  extracted (waterline clip at T = 6.15 m) from the zenodo / CNR-INSEAN
+  official 5415 baseline point cloud -- see ``_build_geometry.py`` for
+  provenance.  The clip leaves the surface **open** at the waterline, which
+  makes the voxeliser fill a pillar below z = T (Cb ~ 18, 35x the
+  displacement -- this is what made m438 report Cd_total ~ 1.18 instead of
+  0.045).  ``_close_waterline.py`` therefore writes the watertight
+  ``geometry/dtmb5415_underwater_closed.stl`` (+ ``.capinfo.json``) and that
+  file is the default; the raw clipped ``dtmb5415_underwater.stl`` is still
+  accepted and reproduces the broken body.  Voxelised through the shared
+  ``tensorlbm.stl_geometry`` module by ``GeneralSimEngine``
   (``GeometrySource.STL_FILE``).
 * ``--geometry series60``: parametric Series 60 (Cb=0.60) proxy via
   ``GeometrySource.PARAMETRIC_HULL`` -- the ONLY hull shape ``ship_cad`` can
@@ -100,6 +106,23 @@ CF_ITTC57_EXP = 2.91e-3  # at Re ~ 1.2e7  (Fr=0.28)
 CR_RESIDUAL_EXP = 0.94e-3  # form + wave residual (Fr=0.28)
 EXP_FR = 0.28
 
+# ---------------------------------------------------------------------------
+# Acceptance caliber (see docs/sdaa_triage/DTMB5415_DIAGNOSIS.md)
+# ---------------------------------------------------------------------------
+#: Platform acceptance band.  It is only meaningful when the simulated and the
+#: reference quantity are the same dimensionless number at the same similarity
+#: point (same Re / Fr / reference area).
+CRITERION_BAND_PCT = 3.0
+#: Geometry gates: the hull is thin (T/Lpp = 4.3 %), so at benchmark
+#: resolutions the draft can degenerate to ~1 cell.  Below 2 cells the voxel
+#: body is a staircase plank, not the hull.
+GEOM_MIN_T_OVER_DX = 2.0
+GEOM_CB_TOL = 0.15
+#: A Cd averaged over a force window that still drifts more than this between
+#: its two halves is not a steady value and is not reported as one.
+FORCE_STEADY_TOL_PCT = 2.0
+DISPLACEMENT_M3 = CB * LPP * BEAM * DRAFT
+
 
 def _default_device() -> str:
     try:
@@ -114,25 +137,295 @@ def _default_device() -> str:
     return "cpu"
 
 
-def _stl_wetted_area_lb(stl_path: Path, l_cells: int, z_wl: float) -> tuple[float, float]:
-    """True wetted surface (both sides) of the underwater STL, in lattice units².
+def stl_wetted_area_breakdown(stl_path: Path, l_cells: int, z_wl: float) -> dict:
+    """Wetted surface of the underwater hull, in m2 and lattice units2.
 
-    Returns (S_wet_phys_m2, S_wet_lb).
+    The waterline-closed STL produced by ``_close_waterline.py`` carries an
+    extra *cap* disk at ``z = T`` that keeps the mesh watertight (required by
+    the inside/outside voxeliser) but is **not** a wetted surface: it must be
+    excluded from the drag normalisation, otherwise S_wet roughly doubles
+    (+2955 m2) and every Cd halves.  The cap triangles are the last ones of the
+    file and their count is recorded in ``<stl>.capinfo.json``; using that
+    sidecar keeps the exclusion exact, whereas a geometric (near-horizontal)
+    test also drops ~18 m2 of real hull surface just under the waterline.
+    Both areas are reported so nothing is silently dropped.
     """
     from tensorlbm.stl_geometry import read_stl
 
     verts, faces, _ = read_stl(str(stl_path))
     verts = np.asarray(verts, dtype=np.float64)
-    faces = np.asarray(faces, dtype=np.int64)
+    faces = np.asarray(faces, dtype=np.int64).reshape(-1, 3)
     cz = verts[faces, 2].mean(axis=1)
-    tri = verts[faces[cz <= z_wl]]
-    a = tri[:, 1] - tri[:, 0]
-    b = tri[:, 2] - tri[:, 0]
+    a = verts[faces[:, 1]] - verts[faces[:, 0]]
+    b = verts[faces[:, 2]] - verts[faces[:, 0]]
     area = 0.5 * np.linalg.norm(np.cross(a, b), axis=1)
-    s_phys = float(area.sum())
+
+    # The cap triangles are appended last by ``_close_waterline.py``, which
+    # also writes ``<stl>.capinfo.json`` (``cap_triangle_count``).  Using the
+    # sidecar keeps the exclusion exact - a purely geometric test would also
+    # drop the few near-horizontal hull triangles that sit just under the
+    # waterline.  Without a sidecar the file is treated as a plain open
+    # surface (no cap), which is the pre-existing behaviour.
+    side = Path(str(stl_path) + ".capinfo.json")
+    n_cap, cap_src = 0, "none"
+    if side.exists():
+        try:
+            n_cap = int(json.loads(side.read_text()).get("cap_triangle_count", 0))
+            cap_src = "sidecar"
+        except Exception:  # pragma: no cover - malformed sidecar
+            n_cap, cap_src = 0, "sidecar-unreadable"
+    wet = cz <= z_wl
+    cap_mask = np.zeros_like(wet)
+    if 0 < n_cap <= wet.size:
+        cap_mask[-n_cap:] = True
+        wet = wet & ~cap_mask
+
     dx = LPP / l_cells
-    s_lb = s_phys / dx**2
-    return s_phys, s_lb
+    return {
+        "stl": str(stl_path),
+        "cap_source": cap_src,
+        "z_waterline_m": z_wl,
+        "wetted_area_m2": float(area[wet].sum()),
+        "cap_area_m2": float(area[cap_mask].sum()),
+        "lattice_dx_m": dx,
+        "wetted_area_lb": float(area[wet].sum()) / dx**2,
+        "cap_area_lb": float(area[cap_mask].sum()) / dx**2,
+        "n_tri_wetted": int(wet.sum()),
+        "n_tri_cap": int(cap_mask.sum()),
+    }
+
+
+def _stl_wetted_area_lb(stl_path: Path, l_cells: int, z_wl: float) -> tuple[float, float]:
+    """(S_wet_phys_m2, S_wet_lb) of the underwater hull; see breakdown above."""
+    d = stl_wetted_area_breakdown(stl_path, l_cells, z_wl)
+    return d["wetted_area_m2"], d["wetted_area_lb"]
+
+
+def geometry_resolution_report(
+    *,
+    n_solid_cells: int,
+    dx_m: float,
+    stair_wall_faces: int,
+    smooth_wetted_lb: float,
+    near_wall_cells: int | None = None,
+) -> dict:
+    """Is the *body that is actually integrated* the DTMB 5415 hull?
+
+    Two independent checks, both at the resolution of the run:
+
+    ``T/dx``  the draft spans at least ``GEOM_MIN_T_OVER_DX`` cells.  The hull
+              is thin (T/Lpp = 4.3 %), so at 32-48 cells per Lpp the draft is
+              1-2 cells and the body degenerates into a staircase plank.
+    ``Cb``    voxel displacement vs ``Cb*L*B*T`` within ``GEOM_CB_TOL``.
+
+    ``stair_over_smooth_wetted_area`` additionally quantifies the bias that a
+    smooth-area normalisation suffers when the integrated staircase surface is
+    much larger (it multiplies the raw wall-force sum by exactly that ratio).
+    """
+    vol = n_solid_cells * dx_m**3
+    ratio = vol / DISPLACEMENT_M3
+    t_over_dx = DRAFT / dx_m
+    b_over_dx = BEAM / dx_m
+    return {
+        "n_solid_cells": int(n_solid_cells),
+        "dx_m": dx_m,
+        "L_over_dx": LPP / dx_m,
+        "B_over_dx": b_over_dx,
+        "T_over_dx": t_over_dx,
+        "near_wall_cells": near_wall_cells,
+        "displacement_voxel_m3": vol,
+        "displacement_reference_m3": DISPLACEMENT_M3,
+        "cb_voxel": vol / (LPP * BEAM * DRAFT),
+        "cb_reference": CB,
+        "cb_error_pct": (ratio - 1.0) * 100.0,
+        "stair_wall_faces": int(stair_wall_faces),
+        "smooth_wetted_lb": smooth_wetted_lb,
+        "stair_over_smooth_wetted_area": (
+            stair_wall_faces / smooth_wetted_lb if smooth_wetted_lb else float("nan")
+        ),
+        "thickness_resolved": bool(t_over_dx >= GEOM_MIN_T_OVER_DX),
+        "beam_resolved": bool(b_over_dx >= 8.0),
+        "cb_within_tolerance": bool(abs(ratio - 1.0) <= GEOM_CB_TOL),
+        "verdict": (
+            "VALID"
+            if (t_over_dx >= GEOM_MIN_T_OVER_DX and abs(ratio - 1.0) <= GEOM_CB_TOL)
+            else "UNDER_RESOLVED"
+        ),
+    }
+
+
+def _window_stats(values) -> dict:
+    """Drift of a sampled force history: 2nd-half mean vs 1st-half mean."""
+    v = np.asarray(list(values), dtype=np.float64)
+    if v.size < 4:
+        return {
+            "n": int(v.size),
+            "mean": float(v.mean()) if v.size else float("nan"),
+            "drift_pct": float("nan"),
+            "steady": False,
+        }
+    h = v.size // 2
+    m1, m2 = v[:h].mean(), v[h:].mean()
+    drift = (m2 - m1) / abs(m2) * 100.0 if m2 else float("inf")
+    return {
+        "n": int(v.size),
+        "mean": float(v.mean()),
+        "first_half_mean": float(m1),
+        "second_half_mean": float(m2),
+        "drift_pct": float(drift),
+        "steady": bool(abs(drift) <= FORCE_STEADY_TOL_PCT),
+    }
+
+
+def resistance_criteria(
+    *,
+    re: float,
+    cd_p: float,
+    cd_f: float,
+    cd_tot: float,
+    cf_blasius: float,
+    cf_ittc57: float,
+    ct_exp: float,
+    exp_fr: float,
+    fr_run: float,
+    no_wave_floor_pct: float,
+    geometry: dict,
+    force_window_drift_pct: float,
+) -> dict:
+    """Split the 3 % acceptance band into *comparable* and *non-comparable* frames.
+
+    The m438 SDAA validation applied ``|error| <= 3 %`` to ``Cd_total`` vs the
+    Fr = 0.28 model-test ``C_T``.  That comparison is not well posed - the run
+    is Re = 1000, single-phase, no free surface - so the band can never be met
+    (the fs-free structural floor is already ``no_wave_floor_pct``).  Each
+    frame below states what is being compared with what, whether that is
+    like-for-like, and only then a pass/fail.  ``verdict`` is the case-level
+    statement.
+    """
+
+    def _err(sim: float, ref: float) -> float:
+        return (sim - ref) / ref * 100.0 if ref else float("nan")
+
+    err_f_blasius = _err(cd_f, cf_blasius)
+    err_f_ittc = _err(cd_f, cf_ittc57)
+    err_tot_exp = _err(cd_tot, ct_exp)
+
+    frames = {
+        "friction_vs_blasius_laminar": {
+            "comparable": True,
+            "quantity_sim": "Cd_friction (wall shear over wetted area, mix50)",
+            "quantity_ref": "Blasius laminar flat plate Cf = 1.328/sqrt(Re)",
+            "re": re,
+            "sim": cd_f,
+            "ref": cf_blasius,
+            "err_pct": err_f_blasius,
+            "band_pct": CRITERION_BAND_PCT,
+            "pass": bool(abs(err_f_blasius) <= CRITERION_BAND_PCT),
+            "note": (
+                "same Reynolds number, same reference length, friction against "
+                "friction: this is the repo's calibrated in-frame friction "
+                "check (SUBOFF Re=1000 L=96: Cd_tot +0.25 % vs 0.0420)"
+            ),
+        },
+        "friction_vs_ittc1957": {
+            "comparable": False,
+            "quantity_sim": "Cd_friction",
+            "quantity_ref": "ITTC-1957 Cf = 0.075/(log10 Re - 2)^2",
+            "sim": cd_f,
+            "ref": cf_ittc57,
+            "err_pct": err_f_ittc,
+            "reason": (
+                "ITTC-1957 is the turbulent flat-plate line; at Re = 1000 the "
+                "boundary layer is laminar, so the reference is the wrong "
+                "branch, not a target"
+            ),
+            "pass": None,
+        },
+        "total_vs_ittc1957": {
+            "comparable": False,
+            "quantity_sim": "Cd_total = Cd_pressure + Cd_friction",
+            "quantity_ref": "ITTC-1957 Cf (friction only)",
+            "sim": cd_tot,
+            "ref": cf_ittc57,
+            "err_pct": _err(cd_tot, cf_ittc57),
+            "reason": (
+                "category error: form/pressure drag is added on the left and "
+                "absent on the right.  It was this pairing that produced the "
+                "1400-2700 % 'errors' reported by the m438 sweep"
+            ),
+            "pass": None,
+        },
+        "total_vs_exp_CT_fr0.28": {
+            "comparable": False,
+            "quantity_sim": "Cd_total (Re = %.0f, Fr = %.4f, single-phase)" % (re, fr_run),
+            "quantity_ref": "model-test C_T at Fr = %.2f, Re ~ 1.2e7" % exp_fr,
+            "sim": cd_tot,
+            "ref": ct_exp,
+            "err_pct": err_tot_exp,
+            "reason": (
+                "four orders of magnitude in Re and no free surface: wave-making "
+                "resistance is absent by construction.  Even a perfect friction "
+                "result lands at %.1f %% of the experimental C_T" % no_wave_floor_pct
+            ),
+            "structural_floor_pct": no_wave_floor_pct,
+            "pass": None,
+        },
+    }
+
+    in_frame = frames["friction_vs_blasius_laminar"]
+    if geometry["verdict"] != "VALID":
+        verdict = "WITHHELD_GEOMETRY"
+        why = (
+            "the voxelised body is not the DTMB 5415 hull at this resolution "
+            "(T/dx = %.2f, Cb error %+.1f %%, staircase/smooth wetted-area "
+            "ratio %.2f): no drag coefficient computed on it is meaningful"
+            % (
+                geometry["T_over_dx"],
+                geometry["cb_error_pct"],
+                geometry["stair_over_smooth_wetted_area"],
+            )
+        )
+    elif abs(force_window_drift_pct) > FORCE_STEADY_TOL_PCT:
+        verdict = "WITHHELD_UNSTEADY"
+        why = (
+            "force window still drifting %+.1f %% between the two halves of the "
+            "averaging window (> %.1f %%): Cd is not a steady value yet"
+            % (force_window_drift_pct, FORCE_STEADY_TOL_PCT)
+        )
+    elif in_frame["pass"]:
+        verdict = "PASS_IN_FRAME"
+        why = (
+            "friction coefficient agrees with the Blasius laminar line to "
+            "%+.2f %% (< %.1f %%); the Fr-similar experimental C_T frame is "
+            "declared NOT COMPARABLE instead of failed"
+            % (in_frame["err_pct"], CRITERION_BAND_PCT)
+        )
+    else:
+        verdict = "HONEST_FAIL"
+        why = (
+            "in-frame friction error %+.2f %% exceeds the %.1f %% band at "
+            "T/dx = %.2f" % (in_frame["err_pct"], CRITERION_BAND_PCT, geometry["T_over_dx"])
+        )
+
+    return {
+        "band_pct": CRITERION_BAND_PCT,
+        "frame_used_for_pass_fail": "friction_vs_blasius_laminar",
+        "frames": frames,
+        "geometry_verdict": geometry["verdict"],
+        "force_window_drift_pct": force_window_drift_pct,
+        "verdict": verdict,
+        "verdict_reason": why,
+        "m438_criterion": "|Cd_total - C_T(Fr=0.28)| / C_T <= 3 %",
+        "m438_criterion_well_posed": False,
+        "m438_root_cause": [
+            "Cd_total compared against a friction-only / Fr-similar reference "
+            "(category + similarity mismatch)",
+            "waterline-clipped STL is open -> voxel body Cb ~ 18 (35x "
+            "displacement) -> staircase wetted area ~15x smooth -> Cd inflated "
+            "by the same factor",
+            "no geometry gate and no force-window steady check in the runner",
+        ],
+    }
 
 
 def run_engine_routed(engine: GeneralSimEngine, compile_mode: str | None):
@@ -210,7 +503,9 @@ def run_engine_routed(engine: GeneralSimEngine, compile_mode: str | None):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--geometry", default="stl", choices=["stl", "series60"])
-    ap.add_argument("--stl-path", default=str(_HERE / "geometry" / "dtmb5415_underwater.stl"))
+    _closed = _HERE / "geometry" / "dtmb5415_underwater_closed.stl"
+    _default_stl = _closed if _closed.exists() else _HERE / "geometry" / "dtmb5415_underwater.stl"
+    ap.add_argument("--stl-path", default=str(_default_stl))
     ap.add_argument("--resolution", type=int, default=48)
     ap.add_argument("--steps", type=int, default=8000)
     ap.add_argument("--device", default=None)
@@ -331,6 +626,21 @@ def main() -> None:
         s_wet_lb = math.pi * (2 * R_lb) * float(L)
         s_wet_phys = math.pi * BEAM * LPP
 
+    wetted_bd = (
+        stl_wetted_area_breakdown(Path(args.stl_path), L, DRAFT)
+        if args.geometry == "stl"
+        else {
+            "stl": None,
+            "wetted_area_m2": s_wet_phys,
+            "cap_area_m2": 0.0,
+            "lattice_dx_m": LPP / L,
+            "wetted_area_lb": s_wet_lb,
+            "cap_area_lb": 0.0,
+            "n_tri_wetted": None,
+            "n_tri_cap": None,
+        }
+    )
+
     L_lb = float(L)
     dpS_wet = 0.5 * u_lb**2 * s_wet_lb
     dpS_front = 0.5 * u_lb**2 * L_lb**2  # engine default for STL (resolution²)
@@ -362,19 +672,50 @@ def main() -> None:
         row["cd_tot_mix50"] = row["cd_p"] + row["cd_f_mix50"]
         final_checks[p0] = row
 
+    # ---- geometry validation at the *run* resolution ---------------------
+    solid_np = engine.solid.cpu().numpy().astype(np.int8)
+    stair_faces = int(
+        np.abs(np.diff(solid_np, axis=2)).sum()
+        + np.abs(np.diff(solid_np, axis=1)).sum()
+        + np.abs(np.diff(solid_np, axis=0)).sum()
+    )
+    geom_val = geometry_resolution_report(
+        n_solid_cells=int(solid_np.sum()),
+        dx_m=LPP / L,
+        stair_wall_faces=stair_faces,
+        smooth_wetted_lb=s_wet_lb,
+        near_wall_cells=setup["near_wall_cells"],
+    )
+
+    # ---- acceptance frames ----------------------------------------------
     Re = setup["Re"]
     cf_blasius = 1.328 / math.sqrt(Re) if Re > 0 else float("nan")
     cf_ittc = 0.075 / (math.log10(Re) - 2.0) ** 2 if Re > 1e2 else float("nan")
-
-    # experimental frame (Fr similarity) -- NOT self-consistent with Re=1000
     fr_run = U_PHYS / math.sqrt(9.81 * LPP)
     ct_exp = C_T_EXP[EXP_FR]
-    err_blasius = (cd_tot - cf_blasius) / cf_blasius * 100
-    err_ittc = (cd_tot - cf_ittc) / cf_ittc * 100
-    err_exp = (cd_tot - ct_exp) / ct_exp * 100
     # best achievable with a no-wave single-phase solver: friction(+form) only
     friction_only_bound = CF_ITTC57_EXP + (1.12 - 1.0) * CF_ITTC57_EXP
     err_exp_bound = (friction_only_bound - ct_exp) / ct_exp * 100
+
+    win_stats = _window_stats([e["cd_friction"] for e in win])
+    win_stats_p = _window_stats([e["cd_pressure"] for e in win])
+    criteria = resistance_criteria(
+        re=Re,
+        cd_p=cd_p,
+        cd_f=cd_f,
+        cd_tot=cd_tot,
+        cf_blasius=cf_blasius,
+        cf_ittc57=cf_ittc,
+        ct_exp=ct_exp,
+        exp_fr=EXP_FR,
+        fr_run=fr_run,
+        no_wave_floor_pct=err_exp_bound,
+        geometry=geom_val,
+        force_window_drift_pct=win_stats_p["drift_pct"],
+    )
+    err_blasius = criteria["frames"]["friction_vs_blasius_laminar"]["err_pct"]
+    err_ittc = criteria["frames"]["friction_vs_ittc1957"]["err_pct"]
+    err_exp = criteria["frames"]["total_vs_exp_CT_fr0.28"]["err_pct"]
 
     result = {
         "case": "DTMB 5415 bare-hull resistance",
@@ -416,9 +757,23 @@ def main() -> None:
             "exp_residual_form_wave": CR_RESIDUAL_EXP,
         },
         "errors_pct": {
-            "vs_blasius": err_blasius,
-            "vs_ittc57": err_ittc,
-            "vs_exp_CT": err_exp,
+            "vs_blasius_friction_Cd_f": err_blasius,
+            "vs_ittc57_friction_Cd_f": err_ittc,
+            "vs_exp_CT_total_Cd": err_exp,
+            "note": (
+                "only the first entry is a like-for-like comparison; the other "
+                "two are kept for traceability with the m438 sweep and are "
+                "flagged non-comparable in 'criteria'"
+            ),
+        },
+        "criteria": criteria,
+        "verdict": criteria["verdict"],
+        "verdict_reason": criteria["verdict_reason"],
+        "geometry_validation": geom_val,
+        "wetted_area_breakdown": wetted_bd,
+        "force_window": {
+            "cd_friction": win_stats,
+            "cd_pressure": win_stats_p,
         },
         "no_wave_friction_bound": {
             "value": friction_only_bound,
@@ -440,10 +795,24 @@ def main() -> None:
         flush=True,
     )
     print(
-        f"err vs Blasius={err_blasius:.2f}%  vs ITTC57={err_ittc:.2f}%  "
-        f"vs exp C_T={err_exp:.2f}%  (no-wave bound err={err_exp_bound:.2f}%)",
+        f"err Cd_f vs Blasius={err_blasius:.2f}% (in-frame, band {CRITERION_BAND_PCT:.1f}%) | "
+        f"Cd_f vs ITTC57={err_ittc:.2f}% (not comparable) | "
+        f"Cd_tot vs exp C_T={err_exp:.2f}% (not comparable)",
         flush=True,
     )
+    print(
+        f"geometry: T/dx={geom_val['T_over_dx']:.2f} B/dx={geom_val['B_over_dx']:.2f} "
+        f"Cb={geom_val['cb_voxel']:.3f} ({geom_val['cb_error_pct']:+.1f}%) "
+        f"A_stair/A_smooth={geom_val['stair_over_smooth_wetted_area']:.2f} "
+        f"-> {geom_val['verdict']}",
+        flush=True,
+    )
+    print(
+        f"force window drift: Cd_f {win_stats['drift_pct']:+.2f}% "
+        f"Cd_p {win_stats_p['drift_pct']:+.2f}% (steady tol {FORCE_STEADY_TOL_PCT:.1f}%)",
+        flush=True,
+    )
+    print(f"VERDICT: {criteria['verdict']} -- {criteria['verdict_reason']}", flush=True)
     print(f"result -> {out_dir / 'result.json'}", flush=True)
 
 

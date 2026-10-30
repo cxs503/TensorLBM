@@ -1,0 +1,10 @@
+{
+  "source_stl": "/root/tp-agent/work/m454/benchmarks/pending/dtmb5415_resistance/geometry/dtmb5415_underwater.stl",
+  "closed": true,
+  "waterline_z_m": 6.15,
+  "n_body_triangles": 87532,
+  "cap_triangle_count": 942,
+  "cap_vertex_count": 4,
+  "cap_area_m2": 2955.4056720804674,
+  "wetted_area_m2": 3021.749092024731
+}
