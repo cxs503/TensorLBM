@@ -139,15 +139,39 @@ def wagner_wedge_pressure(
         return float(p_in) if inside else 0.0
 
 
-def wagner_wedge_total_force(t: float, params: WedgeEntryParams) -> float:
-    """Wagner 楔形体总砰击力 (单位展长)。
+def wagner_wedge_added_mass_force(t: float, params: WedgeEntryParams) -> float:
+    """Wagner 楔形体砰击力（压力主项积分，单位展长）。
 
-    F(t) = ρ V² π c(t) / tan(β)
+    ``F(t) = ρ V² π² c(t) / (4 tan β)``，即对
+    :func:`wagner_wedge_pressure` 的主项 ``ρV²·π/(2tanβ)·√(1-(x/c)²)``
+    在湿区 ``x ∈ [-c, c]`` 上积分的结果
+    (``∫√(1-ξ²)dξ = π/2``，故系数 ``π/(2tanβ)·π/2 = π²/(4tanβ)``)。
+
+    等价形式（与文献 De Rosis & Tafuni 2022 Eq.(45) 一致）::
+
+        c(t) = (π/2) V t / tan β
+        F(t) = ρ V² π² c(t) / (4 tan β) = ρ V³ π³ t / (8 tan² β)
+
+    因此 ``dF/dt = ρ V³ π³ / (8 tan² β)``，这是入水基准实际比较的量
+    （Wagner 力与 t 成正比，逐点值会被"起始时刻"的定义放大误差）。
+
+    Notes
+    -----
+    文献中楔形砰击力存在 **两套并列的系数约定**，两者相差 2 倍：
+
+    * ``π²/4``（本函数）：Wagner 压力场主项在湿区上的积分。De Rosis &
+      Tafuni (2022) Eq.(45) 与其实验对比表使用这一支。
+    * ``π²/2``（见 :func:`wagner_wedge_plate_added_mass_force`）：由平板
+      附加质量 ``m_a = ρπc²/2`` 的 ``F = V·dm_a/dt`` 直接求导得到。
+
+    差 2 倍的来源是"自由面抬升修正 π/2 是否同时进入 c(t) 与附加质量"。
+    本仓库的 **基准锚固定为 π²/4 支**（与自身压力式自洽、与文献表自洽）；
+    换用另一支必须整体替换，不得混用。
 
     Parameters
     ----------
     t : float
-        入水时间。
+        从接触水面开始的时间。
     params : WedgeEntryParams
         楔形体参数。
 
@@ -157,24 +181,73 @@ def wagner_wedge_total_force(t: float, params: WedgeEntryParams) -> float:
         总砰击力 (单位展长)。
     """
     c = wagner_wetted_halfwidth(t, params)
-    return params.rho * params.v_entry**2 * math.pi * c / math.tan(params.beta)
+    return params.rho * params.v_entry**2 * math.pi**2 * c / (4.0 * math.tan(params.beta))
 
 
-def wagner_wedge_slamming_coefficient(params: WedgeEntryParams) -> float:
-    """Wagner 楔形体砰击系数 C_s。
+def wagner_wedge_plate_added_mass_force(t: float, params: WedgeEntryParams) -> float:
+    """楔形砰击力的另一支约定（平板附加质量求导，单位展长）。
 
-    定义: F = C_s * ½ ρ V² * 2c
-    其中 C_s = π² / (2 tan²β)  (Wagner 理论)
+    ``F = V · d(m_a)/dt``，取平板附加质量 ``m_a = ρ π c²/2``、``c = (π/2)Vt/tanβ``::
 
-    或等价地: 无量纲力系数
-        C_F = F / (ρ V² c) = π / tan(β)
+        F = ρ V² π² c(t) / (2 tan β) = 2 × wagner_wedge_added_mass_force(t)
+
+    仅用于**约定对照/敏感性披露**，不作为本仓库基准的锚（见
+    :func:`wagner_wedge_added_mass_force` 的 Notes）。
+    """
+    return 2.0 * wagner_wedge_added_mass_force(t, params)
+
+
+def wagner_wedge_force_slope(params: WedgeEntryParams) -> float:
+    """Wagner 楔形砰击力的时间斜率 ``dF/dt``（单位展长，π²/4 约定）。
+
+    ``dF/dt = ρ V³ π³ / (8 tan² β)``
+
+    这是入水基准与解析锚比较的**无量纲化对象**：
+    ``(dF/dt) / (ρ V³) = π³ / (8 tan² β)``
+    （ζ = 2°/3°/4° → 3178.5 / 1411.3 / 792.6）。
+    """
+    tan_b = math.tan(params.beta)
+    return params.rho * params.v_entry**3 * math.pi**3 / (8.0 * tan_b**2)
+
+
+def wagner_wedge_total_force(t: float, params: WedgeEntryParams) -> float:
+    """Wagner 楔形体总砰击力 (单位展长)。
+
+    .. deprecated:: 0.3.1
+       本函数在 2026-10-30 之前返回 ``ρV²πc/tanβ``，是
+       :func:`wagner_wedge_added_mass_force` 的 **4/π 倍**，既与其自身
+       :func:`wagner_wedge_pressure` 的积分不一致，也与 De Rosis &
+       Tafuni (2022) Eq.(45) 不一致（实测 ζ=2°、t=2 ms、ρ=1000、V=1 m/s：
+       8.093 kN/m vs 6.357 kN/m）。现已改为转发
+       :func:`wagner_wedge_added_mass_force`；需要旧值请显式写
+       ``4/π × wagner_wedge_added_mass_force(...)`` 并说明理由。
 
     Returns
     -------
     float
-        砰击系数 π/tan(β)。
+        总砰击力 (单位展长)，π²/4 约定。
     """
-    return math.pi / math.tan(params.beta)
+    return wagner_wedge_added_mass_force(t, params)
+
+
+def wagner_wedge_slamming_coefficient(params: WedgeEntryParams) -> float:
+    """Wagner 楔形无量纲力系数 ``C_F = F / (ρ V² c)``。
+
+    .. deprecated:: 0.3.1
+       2026-10-30 之前返回 ``π/tanβ``，与自身 docstring 声明的两种形式
+       （``C_s = π²/(2tan²β)`` 与 ``C_F = π/tanβ``）都不自洽。现按唯一
+       自洽归一化实现：
+
+       ``C_F = F / (ρ V² c) = π² / (4 tan β)``
+
+       （代入 :func:`wagner_wedge_added_mass_force`）。
+
+    Returns
+    -------
+    float
+        ``π²/(4 tan β)``。
+    """
+    return math.pi**2 / (4.0 * math.tan(params.beta))
 
 
 # ---------------------------------------------------------------------------
