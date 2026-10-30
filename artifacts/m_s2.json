@@ -1,0 +1,29 @@
+{
+  "mission_id": 364,
+  "task": "M-S2\u00b7P2: Dam Break 3D GPU vs CPU",
+  "timestamp": "2026-10-30 06:55:53",
+  "config": {
+    "nx": 80,
+    "ny": 30,
+    "nz": 30,
+    "dam_width": 30,
+    "fill_height": 29,
+    "model": "cg",
+    "gravity": 5e-05,
+    "n_steps": 1000,
+    "output_interval": 100,
+    "overwrite": true
+  },
+  "cpu": {
+    "device": "cpu",
+    "run_dir": "/tmp/dam_break_3d_comparison/dam_break_3d/cpu_baseline",
+    "elapsed_s": 1786.3476664498448,
+    "mass_drift": {
+      "error": "no diagnostics"
+    }
+  },
+  "gpu": {
+    "status": "skipped",
+    "reason": "SDAA not available"
+  }
+}
