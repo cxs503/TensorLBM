@@ -1,0 +1,36 @@
+{
+  "L_cells": 16,
+  "grid": "96x34x34",
+  "n_cells": 110976,
+  "n_steps": 60,
+  "Cd_pressure": 0.0005370365040483066,
+  "Cd_friction": 0.02736064353188921,
+  "Cd_total": 0.027897680035937518,
+  "error_pct_vs_Blasius": -33.56911871372696,
+  "compile_status": "eager_fallback",
+  "compile_mode_effective": "eager",
+  "acceptance": {
+    "verdict": "COARSE_GRID",
+    "quotable_as_benchmark_result": false,
+    "cf_ref": 0.04199504732703608,
+    "cd_total": 0.027897680035937518,
+    "error_pct_vs_Blasius": -33.56911871372696,
+    "within_3pct": false,
+    "window_drift_pct": 1.2436327850503363e-14,
+    "converged": true,
+    "grid_adequate": false,
+    "steps_adequate": false,
+    "criteria": {
+      "L_cells_min": 48,
+      "n_steps_min": 4000,
+      "max_abs_err_pct": 3.0,
+      "max_window_drift_pct": 1.0
+    },
+    "reasons": [
+      "L_cells=16 < 48: hull radius resolved by too few cells (discretisation error dominates; registered coarse control is L=48)",
+      "n_steps=60 < 4000: transient window mean, not steady state",
+      "|error| 33.57% > 3.0% vs Blasius 0.041995"
+    ]
+  },
+  "device": "sdaa:0"
+}

@@ -16,6 +16,13 @@ routed through the shared compile module ``benchmarks.compile_route``
 The step-dependent branches (mass-correction cadence, force sampling,
 divergence guard) stay OUTSIDE the compiled closure, in the eager driver loop.
 
+Acceptance gate (shift m336): the run also writes an ``acceptance`` block via
+``acceptance_gate.assess`` — a coarse-grid / short / still-drifting run is
+labelled ``COARSE_GRID`` / ``SHORT_RUN`` / ``NOT_CONVERGED`` and printed with
+``DO NOT quote this number as the benchmark result``.  Only ``PASS`` makes the
+``Cd_tot`` quotable as the verified result, so a transient probe can never be
+reported as this benchmark (see DIAGNOSIS_M336.md).
+
 Usage:
   python run.py [--resolution 80] [--steps 20000] [--device cuda:2]
                 [--collision mrt|smagorinsky] [--out DIR]
@@ -41,6 +48,12 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # <repo>/benchmarks
+
+# Per-case directory: holds the acceptance gate (pure, unit-tested in
+# tests/test_suboff_re1000_acceptance_gate.py).
+_CASE_DIR = Path(__file__).resolve().parent
+if str(_CASE_DIR) not in sys.path:
+    sys.path.insert(0, str(_CASE_DIR))
 
 
 def _default_device() -> str:
@@ -69,6 +82,7 @@ from compile_route import (  # noqa: E402
     route_step,
 )
 
+from acceptance_gate import assess, banner  # noqa: E402
 from tensorlbm.boundaries3d import far_field_bc_3d  # noqa: E402
 from tensorlbm.d3q19 import equilibrium3d  # noqa: E402
 from tensorlbm.drag_pressure import (  # noqa: E402
@@ -446,6 +460,20 @@ def main() -> None:
     ref_name = "Blasius Cf=1.328/sqrt(Re)=0.0420 (wetted-area pi*D*L)"
     err_pct = (cd_tot_wet - cf_ref) / cf_ref * 100.0
 
+    # ---- acceptance gate (m336 diagnosis) ---------------------------------
+    # A short/coarse run returns a wake-development transient (e.g. the m319
+    # shift's +46 % Cd_tot) that must never be quoted as the benchmark result;
+    # the gate labels such runs COARSE_GRID / SHORT_RUN / NOT_CONVERGED and
+    # only PASS makes the number quotable.  Pure function -> unit tested.
+    assessment = assess(
+        L_cells=L,
+        n_steps=run_info["steps"],
+        cd_total=cd_tot_wet,
+        cd_total_recent=cd_tot_wet2,
+        cf_ref=cf_ref,
+    )
+    print(banner(assessment), flush=True)
+
     # time-convergence: window means at several checkpoints
     conv = {}
     for frac in (0.25, 0.5, 0.75, 1.0):
@@ -507,6 +535,7 @@ def main() -> None:
         "final_field_checks": final_checks,
         "q_smooth_stats": q_stats,
         "final_field_saved": True,
+        "acceptance": assessment,
         "finite": bool(torch.isfinite(engine.f).all().item()),
         "diverged": run_info.get("diverged", False),
         "solid_cells": int(engine.solid.sum().item()) if engine.solid is not None else None,
@@ -539,7 +568,8 @@ def main() -> None:
     # quick summary line for logs
     print(
         f"RESULT Cd_p={cd_p_wet:.6f} Cd_f={cd_f_wet:.6f} "
-        f"Cd_tot={cd_tot_wet:.6f} (ref {cf_ref:.6f}) err={err_pct:+.2f}%",
+        f"Cd_tot={cd_tot_wet:.6f} (ref {cf_ref:.6f}) err={err_pct:+.2f}% "
+        f"verdict={assessment['verdict']}",
         flush=True,
     )
 

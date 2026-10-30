@@ -168,3 +168,14 @@ python benchmarks/verified/suboff_re1000/run.py \
 - 历史演化：standard 公式 L=80/96 系统性 −10%（对照），faces 公式过冲
   +6.5~+10.6%（上界），mix50 取两界中点达标；分析详见 git 历史
   （`benchmarks/pending/suboff_re1000/result.json` @5c57065 之前）。
+
+<!-- diag-m336:start -->
+### m336 诊断：`eager_fallback` ≠ 精度缺陷（自动生成，勿手改）
+
+* 根因：Torch-SDAA `3.1.1a3+gite3971b9` 的 `teco_inductor` codegen 缺件 — `InductorError` @ `File "/usr/lib64/python3.11/site-packages/torch_sdaa/_inductor/codegen/teco.py", line 2073, in infer_expand_dim` （lowering 阶段失败，产出前即回退）。
+* 路由中性：`default`(回退) 与 `eager` 同初场 L16 `max|Δf| = 0.0`（逐位相同），`Cd_total` 差 = 0.0。
+* m319 的 `Cd_tot = 0.061495`（+46.43%）是**未收敛瞬态**，不是 Triton 绕行：L=24 的 step 10–200 窗均值 0.061424（-0.12% vs 报价）；L=32 的 step 10–210 窗均值 0.061394（-0.16% vs 报价） —— 即报价与「粗网格 + 仅 ~200 步窗口」的瞬态均值不可区分。
+* 修复：`acceptance_gate.py`（`assess`/`banner`）接入 `run.py`，`result.json` 写 `acceptance` 块；非 verified 配置（L<48 / 步数<4000 / 窗口漂移>1%）标记 `COARSE_GRID`/`SHORT_RUN`/`NOT_CONVERGED` 并打印 `DO NOT quote this number as the benchmark result`。
+* 单测：`tests/test_suboff_re1000_acceptance_gate.py`（10 项）。明细见 [`DIAGNOSIS_M336.md`](DIAGNOSIS_M336.md)。
+* registered 主结果未变：L=80/12000 步 `Cd_tot = 0.041513`（-1.15%）。
+<!-- diag-m336:end -->

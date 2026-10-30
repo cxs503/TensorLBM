@@ -1,0 +1,520 @@
+{
+  "case": "suboff_re1000",
+  "generated": "2026-10-30 04:45:36",
+  "command": "diagnose_sdaa_fallback.py --stages probe --device sdaa:0 --json /tmp/diag_suboff.json",
+  "probe": {
+    "device": "sdaa:0",
+    "torch": "2.7.1",
+    "torch_sdaa": "3.1.1a3+gite3971b9",
+    "sdaa_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_device_name": "/dev/tcaicard24",
+    "sdaa_inductor_tag": "sdaa-teco_inductor",
+    "probe_steps": 110976,
+    "compile_attempt_wall_s": 14.86,
+    "compile_status": "eager_fallback",
+    "compile_mode_effective": "eager",
+    "compile_status_reason": "InductorError: AssertionError: \n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+    "exc_type": "InductorError",
+    "exc_msg": "AssertionError: \n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+    "traceback_tail": "_inductor/loop_body.py\", line 476, in __call__\n    return InterpreterShim(graph, submodules).run(V.get_ops_handler())\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/site-packages/torch/_inductor/loop_body.py\", line 60, in run\n    return super().run(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/site-packages/torch/fx/interpreter.py\", line 171, in run\n    self.env[node] = self.run_node(node)\n                     ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/site-packages/torch/_inductor/loop_body.py\", line 56, in run_node\n    return super().run_node(n)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/site-packages/torch/fx/interpreter.py\", line 240, in run_node\n    return getattr(self, n.op)(n.target, args, kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/site-packages/torch/fx/interpreter.py\", line 344, in call_method\n    return getattr(self_obj, target)(*args_tail, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/site-packages/torch/_inductor/sizevars.py\", line 913, in load\n    return self._inner.load(name, self._simplify(index))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/site-packages/torch/_inductor/codegen/common.py\", line 2457, in load\n    out = self.kernel.load(name, index)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/site-packages/torch_sdaa/_inductor/codegen/teco.py\", line 2080, in load\n    dims, orders = self.infer_expand_dim(name)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/tp-agent/work/m337/benchmarks/compile_route.py\", line 205, in _reanchor_infer_expand_dim\n    return _orig_infer_expand_dim(self, name)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/tp-agent/work/m337/benchmarks/compile_route.py\", line 205, in _reanchor_infer_expand_dim\n    return _orig_infer_expand_dim(self, name)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/site-packages/torch_sdaa/_inductor/codegen/teco.py\", line 2073, in infer_expand_dim\n    assert meta_key in meta.expand_dims\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntorch._inductor.exc.InductorError: AssertionError: \n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n",
+    "failure_layer": "inductor/teco",
+    "root_cause": "device backend (torch.compile lowering on teco_inductor) incomplete — raised before any output was produced, so the eager fallback is exact"
+  },
+  "neutrality": {
+    "L": 16,
+    "steps": 200,
+    "device": "sdaa:0",
+    "setup": {
+      "total_cells": 110976,
+      "obstacle_cells": 17,
+      "domain_lu": [
+        96,
+        34,
+        34
+      ]
+    },
+    "eager": {
+      "run_info": {
+        "status": "completed",
+        "steps": 200,
+        "snapshots": 0,
+        "force_samples": 20,
+        "diverged": false,
+        "compile_status": "eager",
+        "compile_mode_effective": "eager",
+        "compile_status_reason": null
+      },
+      "ms_per_step": 54.155287742614746,
+      "cd": {
+        "n_samples": 20,
+        "rescale_frontal_to_wetted": 0.02915518824609734,
+        "Cd_pressure": 0.0020399379378187492,
+        "Cd_friction": 0.024799237061819017,
+        "Cd_total": 0.026839174999637772,
+        "Cd_total_recent": 0.026839174999637772,
+        "error_pct_vs_Blasius": -36.08966602507214,
+        "convergence_windows": {
+          "25%": 0.027374069849434433,
+          "50%": 0.027767111426936497,
+          "75%": 0.02734920447890621,
+          "100%": 0.026839174999637772
+        },
+        "window_drift_pct": 0.0
+      }
+    },
+    "default": {
+      "run_info": {
+        "status": "completed",
+        "steps": 200,
+        "snapshots": 0,
+        "force_samples": 20,
+        "diverged": false,
+        "compile_status": "eager_fallback",
+        "compile_mode_effective": "eager",
+        "compile_status_reason": "InductorError: AssertionError: \n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n"
+      },
+      "ms_per_step": 123.44311475753784,
+      "cd": {
+        "n_samples": 20,
+        "rescale_frontal_to_wetted": 0.02915518824609734,
+        "Cd_pressure": 0.0020399379378187492,
+        "Cd_friction": 0.024799237061819017,
+        "Cd_total": 0.026839174999637772,
+        "Cd_total_recent": 0.026839174999637772,
+        "error_pct_vs_Blasius": -36.08966602507214,
+        "convergence_windows": {
+          "25%": 0.027374069849434433,
+          "50%": 0.027767111426936497,
+          "75%": 0.02734920447890621,
+          "100%": 0.026839174999637772
+        },
+        "window_drift_pct": 0.0
+      }
+    },
+    "field_max_abs_diff": 0.0,
+    "field_max_abs_scale": 0.33379805088043213,
+    "field_bitwise_identical": true,
+    "cd_total_diff": 0.0,
+    "forces_bitwise_identical": true
+  },
+  "crossdevice": {
+    "L": 16,
+    "steps": 120,
+    "devices": {
+      "cpu": {
+        "ms_per_step": 1214.9136583010356,
+        "cd": {
+          "n_samples": 12,
+          "rescale_frontal_to_wetted": 0.02915518824609734,
+          "Cd_pressure": 0.0015432934087113096,
+          "Cd_friction": 0.02608927340099388,
+          "Cd_total": 0.027632566809705193,
+          "Cd_total_recent": 0.027632566809705193,
+          "error_pct_vs_Blasius": -34.200415123914944,
+          "convergence_windows": {
+            "25%": 0.02663593950474185,
+            "50%": 0.02789840407376712,
+            "75%": 0.02781275712173422,
+            "100%": 0.027632566809705193
+          },
+          "window_drift_pct": 0.0
+        }
+      },
+      "sdaa:0": {
+        "ms_per_step": 45.03587086995443,
+        "cd": {
+          "n_samples": 12,
+          "rescale_frontal_to_wetted": 0.02915518824609734,
+          "Cd_pressure": 0.001542733779186019,
+          "Cd_friction": 0.02608927025660102,
+          "Cd_total": 0.02763200403578704,
+          "Cd_total_recent": 0.02763200403578704,
+          "error_pct_vs_Blasius": -34.20175521984047,
+          "convergence_windows": {
+            "25%": 0.026636180878267447,
+            "50%": 0.02789768003593752,
+            "75%": 0.02781218052558912,
+            "100%": 0.02763200403578704
+          },
+          "window_drift_pct": 0.0
+        }
+      }
+    },
+    "field_max_abs_diff": 3.5762786865234375e-07,
+    "field_max_rel_diff": 1.0713764374858545e-06,
+    "cd_total_diff": -5.627739181508773e-07,
+    "cd_total_rel_diff_pct": -0.0020366327964625353,
+    "device_independent": true
+  },
+  "sweep": {
+    "device": "sdaa:0",
+    "friction": "mix50",
+    "m319_quoted": 0.061495,
+    "field_npz": "/tmp/diag_suboff_re1000_field_L32.npz",
+    "closest_to_m319": {
+      "L_cells": 32,
+      "steps": 400,
+      "Cd_total": 0.05384148554023672,
+      "delta": -0.007653514459763283,
+      "rel_delta_pct": -12.445750808623925,
+      "verdict": "COARSE_GRID"
+    },
+    "runs": [
+      {
+        "L_cells": 16,
+        "steps": 600,
+        "grid": "96x34x34",
+        "n_cells": 110976,
+        "device": "sdaa:0",
+        "friction": "mix50",
+        "elapsed_s": 38.189186573028564,
+        "ms_per_step": 63.648644288380936,
+        "compile_status": "eager_fallback",
+        "compile_status_reason": "InductorError: AssertionError: \n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+        "cd": {
+          "n_samples": 60,
+          "rescale_frontal_to_wetted": 0.02915518824609734,
+          "Cd_pressure": 0.0022845541971579,
+          "Cd_friction": 0.02165571202118559,
+          "Cd_total": 0.023940266218343487,
+          "Cd_total_recent": 0.023940266218343487,
+          "error_pct_vs_Blasius": -42.99264379461496,
+          "convergence_windows": {
+            "25%": 0.02734920447890621,
+            "50%": 0.02584189130473359,
+            "75%": 0.02470089150818266,
+            "100%": 0.023940266218343487
+          },
+          "window_drift_pct": 0.0
+        },
+        "acceptance": {
+          "verdict": "COARSE_GRID",
+          "quotable_as_benchmark_result": false,
+          "cf_ref": 0.04199504732703608,
+          "cd_total": 0.023940266218343487,
+          "error_pct_vs_Blasius": -42.99264379461496,
+          "within_3pct": false,
+          "window_drift_pct": 0.0,
+          "converged": true,
+          "grid_adequate": false,
+          "steps_adequate": false,
+          "criteria": {
+            "L_cells_min": 48,
+            "n_steps_min": 4000,
+            "max_abs_err_pct": 3.0,
+            "max_window_drift_pct": 1.0
+          },
+          "reasons": [
+            "L_cells=16 < 48: hull radius resolved by too few cells (discretisation error dominates; registered coarse control is L=48)",
+            "n_steps=600 < 4000: transient window mean, not steady state",
+            "|error| 42.99% > 3.0% vs Blasius 0.041995"
+          ]
+        },
+        "delta_vs_m319": -0.03755473378165651
+      },
+      {
+        "L_cells": 24,
+        "steps": 900,
+        "grid": "144x51x51",
+        "n_cells": 374544,
+        "device": "sdaa:0",
+        "friction": "mix50",
+        "elapsed_s": 78.40529537200928,
+        "ms_per_step": 87.11699485778809,
+        "compile_status": "eager_fallback",
+        "compile_status_reason": "InductorError: AssertionError: \n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+        "cd": {
+          "n_samples": 90,
+          "sample_step_interval": 10,
+          "cd_total_series": [
+            0.07336742617313119,
+            0.06518839475356267,
+            0.06420744303655225,
+            0.060710625742207,
+            0.06395374680083592,
+            0.06462733974259313,
+            0.06415131794092295,
+            0.06514033519111352,
+            0.0640005565498704,
+            0.06114627398087353,
+            0.06088418563643789,
+            0.06011455300707572,
+            0.059598861986402546,
+            0.05894464291784567,
+            0.05829683532149506,
+            0.05782111891208581,
+            0.057308647749701215,
+            0.0566940008101222,
+            0.056331221283240335,
+            0.05599248477713192,
+            0.055551166480996644,
+            0.05513435017666279,
+            0.05475893835487234,
+            0.05439837777638345,
+            0.0540663140029126,
+            0.05374332902942985,
+            0.053436099119119125,
+            0.05317631622146249,
+            0.052917790198313254,
+            0.05267007823869251,
+            0.05244075689510834,
+            0.05221199161257728,
+            0.0519810585745756,
+            0.05178165861146939,
+            0.05160440046991688,
+            0.05139884499921617,
+            0.051227972733408726,
+            0.05102986759818338,
+            0.05086345088189372,
+            0.050745016056033085,
+            0.05059265709274852,
+            0.05046102067137729,
+            0.050327284457553044,
+            0.050204056914996374,
+            0.05009834970879628,
+            0.04997763061943484,
+            0.0498590695765415,
+            0.04976008541326472,
+            0.049674167802099926,
+            0.049590238771177506,
+            0.04950993737664933,
+            0.04943428747696241,
+            0.049368710226066474,
+            0.04930188757493885,
+            0.049239566370431816,
+            0.04917591944576318,
+            0.049112798572503544,
+            0.049051069617149924,
+            0.0489894995363829,
+            0.04892826220961117,
+            0.04886870542291112,
+            0.04881227581765749,
+            0.048759783654241974,
+            0.04871662272487994,
+            0.04867659956860343,
+            0.048630229372591906,
+            0.0485856376893138,
+            0.04854941516620361,
+            0.048522893701879066,
+            0.04849149037456267,
+            0.04845894491549588,
+            0.048426669543226324,
+            0.04839524679790489,
+            0.04836428125833827,
+            0.04833382853063174,
+            0.048306292916862684,
+            0.04828036017114518,
+            0.04825321026956694,
+            0.04822833845303335,
+            0.048205245149233175,
+            0.04818413601249243,
+            0.048164238735792876,
+            0.04814619852648346,
+            0.0481312351883347,
+            0.04811910511364713,
+            0.04809770470683093,
+            0.04807538988850515,
+            0.04805779541067482,
+            0.04804610400637361,
+            0.048031247467252514
+          ],
+          "first_window_mean": 0.058944425730401526,
+          "first_window_steps": [
+            10,
+            300
+          ],
+          "rescale_frontal_to_wetted": 0.02915518824609734,
+          "Cd_pressure": 0.021495840073615886,
+          "Cd_friction": 0.031028532330090227,
+          "Cd_total": 0.05252437240370609,
+          "Cd_total_recent": 0.05252437240370609,
+          "error_pct_vs_Blasius": 25.072778212804426,
+          "convergence_windows": {
+            "25%": 0.060871160407766384,
+            "50%": 0.056340025759775564,
+            "75%": 0.05398991259744891,
+            "100%": 0.05252437240370609
+          },
+          "window_drift_pct": 0.0
+        },
+        "acceptance": {
+          "verdict": "COARSE_GRID",
+          "quotable_as_benchmark_result": false,
+          "cf_ref": 0.04199504732703608,
+          "cd_total": 0.05252437240370609,
+          "error_pct_vs_Blasius": 25.072778212804426,
+          "within_3pct": false,
+          "window_drift_pct": 0.0,
+          "converged": true,
+          "grid_adequate": false,
+          "steps_adequate": false,
+          "criteria": {
+            "L_cells_min": 48,
+            "n_steps_min": 4000,
+            "max_abs_err_pct": 3.0,
+            "max_window_drift_pct": 1.0
+          },
+          "reasons": [
+            "L_cells=24 < 48: hull radius resolved by too few cells (discretisation error dominates; registered coarse control is L=48)",
+            "n_steps=900 < 4000: transient window mean, not steady state",
+            "|error| 25.07% > 3.0% vs Blasius 0.041995"
+          ]
+        },
+        "delta_vs_m319": -0.008970627596293912
+      },
+      {
+        "L_cells": 32,
+        "steps": 400,
+        "grid": "192x68x68",
+        "n_cells": 887808,
+        "device": "sdaa:0",
+        "friction": "mix50",
+        "elapsed_s": 114.40946936607361,
+        "ms_per_step": 286.023673415184,
+        "compile_status": "eager_fallback",
+        "compile_status_reason": "InductorError: AssertionError: \n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+        "cd": {
+          "n_samples": 40,
+          "sample_step_interval": 10,
+          "cd_total_series": [
+            0.11645656143342854,
+            0.07547125288218225,
+            0.07078194086930784,
+            0.06798819382066228,
+            0.06082425720456773,
+            0.06215640869768771,
+            0.06278849272995969,
+            0.06166113008249525,
+            0.06017013974954854,
+            0.059195181521153176,
+            0.06079484058189097,
+            0.058613798837815784,
+            0.054783738677841975,
+            0.05463776222525048,
+            0.053956702619240966,
+            0.0530193490125297,
+            0.05251439046666501,
+            0.05186963370369558,
+            0.05117682135014168,
+            0.05048794511447101,
+            0.04993286064356511,
+            0.04943453163630975,
+            0.04884342731772117,
+            0.04809388829653554,
+            0.047618911867579335,
+            0.047261551784538794,
+            0.04686099072250085,
+            0.046404202951295916,
+            0.04597924768945039,
+            0.0455966578255733,
+            0.04523475492232192,
+            0.04487819417704526,
+            0.04454764616642728,
+            0.044237957892547926,
+            0.043920609877661713,
+            0.0436119518061799,
+            0.043348045230364195,
+            0.043094352801018164,
+            0.042831857726607844,
+            0.0425792386936876
+          ],
+          "first_window_mean": 0.05717916041052023,
+          "first_window_steps": [
+            10,
+            300
+          ],
+          "rescale_frontal_to_wetted": 0.02915518824609734,
+          "Cd_pressure": 0.005898503326473579,
+          "Cd_friction": 0.04794298221376312,
+          "Cd_total": 0.05384148554023672,
+          "Cd_total_recent": 0.05384148554023672,
+          "error_pct_vs_Blasius": 28.20913171247695,
+          "convergence_windows": {
+            "25%": 0.06974935589909931,
+            "50%": 0.06196742707902681,
+            "75%": 0.057179160410520215,
+            "100%": 0.05384148554023672
+          },
+          "window_drift_pct": 0.0
+        },
+        "acceptance": {
+          "verdict": "COARSE_GRID",
+          "quotable_as_benchmark_result": false,
+          "cf_ref": 0.04199504732703608,
+          "cd_total": 0.05384148554023672,
+          "error_pct_vs_Blasius": 28.20913171247695,
+          "within_3pct": false,
+          "window_drift_pct": 0.0,
+          "converged": true,
+          "grid_adequate": false,
+          "steps_adequate": false,
+          "criteria": {
+            "L_cells_min": 48,
+            "n_steps_min": 4000,
+            "max_abs_err_pct": 3.0,
+            "max_window_drift_pct": 1.0
+          },
+          "reasons": [
+            "L_cells=32 < 48: hull radius resolved by too few cells (discretisation error dominates; registered coarse control is L=48)",
+            "n_steps=400 < 4000: transient window mean, not steady state",
+            "|error| 28.21% > 3.0% vs Blasius 0.041995"
+          ]
+        },
+        "delta_vs_m319": -0.007653514459763283
+      },
+      {
+        "L_cells": 32,
+        "steps": 1200,
+        "grid": "192x68x68",
+        "n_cells": 887808,
+        "device": "sdaa:0",
+        "friction": "mix50",
+        "elapsed_s": 164.41847729682922,
+        "ms_per_step": 137.0153977473577,
+        "compile_status": "eager_fallback",
+        "compile_status_reason": "InductorError: AssertionError: \n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n",
+        "cd": {
+          "n_samples": 120,
+          "rescale_frontal_to_wetted": 0.02915518824609734,
+          "Cd_pressure": 0.004851059780184175,
+          "Cd_friction": 0.03862496123006496,
+          "Cd_total": 0.04347602101024912,
+          "Cd_total_recent": 0.04347602101024912,
+          "error_pct_vs_Blasius": 3.5265436699712898,
+          "convergence_windows": {
+            "25%": 0.057179160410520215,
+            "50%": 0.04942922428179918,
+            "75%": 0.04564281597917649,
+            "100%": 0.04347602101024912
+          },
+          "window_drift_pct": 0.0
+        },
+        "acceptance": {
+          "verdict": "COARSE_GRID",
+          "quotable_as_benchmark_result": false,
+          "cf_ref": 0.04199504732703608,
+          "cd_total": 0.04347602101024912,
+          "error_pct_vs_Blasius": 3.5265436699712898,
+          "within_3pct": false,
+          "window_drift_pct": 0.0,
+          "converged": true,
+          "grid_adequate": false,
+          "steps_adequate": false,
+          "criteria": {
+            "L_cells_min": 48,
+            "n_steps_min": 4000,
+            "max_abs_err_pct": 3.0,
+            "max_window_drift_pct": 1.0
+          },
+          "reasons": [
+            "L_cells=32 < 48: hull radius resolved by too few cells (discretisation error dominates; registered coarse control is L=48)",
+            "n_steps=1200 < 4000: transient window mean, not steady state",
+            "|error| 3.53% > 3.0% vs Blasius 0.041995"
+          ]
+        },
+        "delta_vs_m319": -0.018018978989750883
+      }
+    ]
+  }
+}
