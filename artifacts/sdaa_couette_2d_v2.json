@@ -1,0 +1,196 @@
+{
+  "case": "couette_2d",
+  "mission_id": 220,
+  "runner": "native",
+  "repo": "TensorLBM",
+  "timestamp": "2026-10-29T20:31:11Z",
+  "device": {
+    "name": "/dev/tcaicard13",
+    "sdaa_available": true,
+    "torch_version": "2.7.1",
+    "torch_sdaa_version": "3.1.1a3+gite3971b9",
+    "dev_nodes": [
+      "/dev/tcaicard0",
+      "/dev/tcaicard1",
+      "/dev/tcaicard2",
+      "/dev/tcaicard3",
+      "/dev/tcaicard4",
+      "/dev/tcaicard5",
+      "/dev/tcaicard6",
+      "/dev/tcaicard7",
+      "/dev/tcaicard8",
+      "/dev/tcaicard9",
+      "/dev/tcaicard10",
+      "/dev/tcaicard11",
+      "/dev/tcaicard12",
+      "/dev/tcaicard13",
+      "/dev/tcaicard14",
+      "/dev/tcaicard15",
+      "/dev/tcaicard16",
+      "/dev/tcaicard17",
+      "/dev/tcaicard18",
+      "/dev/tcaicard19",
+      "/dev/tcaicard20",
+      "/dev/tcaicard21",
+      "/dev/tcaicard22",
+      "/dev/tcaicard23",
+      "/dev/tcaicard24",
+      "/dev/tcaicard25",
+      "/dev/tcaicard26",
+      "/dev/tcaicard27",
+      "/dev/tcaicard28",
+      "/dev/tcaicard29",
+      "/dev/tcaicard30",
+      "/dev/tcaicard31"
+    ],
+    "active_device": "/dev/tcaicard13"
+  },
+  "parameters": {
+    "H_list": [
+      40,
+      80
+    ],
+    "tau": 0.8,
+    "U0": 0.05,
+    "collision": "bgk",
+    "lattice": "D2Q9",
+    "boundary": "moving top wall + stationary bottom wall, half-way bounce-back (pre-streaming)",
+    "extrap": "none"
+  },
+  "gates": {
+    "gate_1_max_rel_H40": {
+      "metric": "max_rel_err_masked_pct",
+      "value": 0.018097294701467804,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    "gate_2_max_rel_H80": {
+      "metric": "max_rel_err_masked_pct",
+      "value": 0.01858958491571969,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    "gate_3_l2_rel_H40": {
+      "metric": "l2_rel_err",
+      "value": 0.00012050486945230309,
+      "threshold": 0.03,
+      "unit": "relative",
+      "pass": true
+    },
+    "gate_4_l2_rel_H80": {
+      "metric": "l2_rel_err",
+      "value": 0.00010770979573942868,
+      "threshold": 0.03,
+      "unit": "relative",
+      "pass": true
+    },
+    "gate_5_u_top_err_H40": {
+      "metric": "u_top_row_err_pct",
+      "value": 0.0011042703556064105,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    "gate_6_u_top_err_H80": {
+      "metric": "u_top_row_err_pct",
+      "value": 0.001868961742084202,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    "gate_7_tau_err_H40": {
+      "metric": "tau_err_pct",
+      "value": 0.000852193587854051,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    "gate_8_tau_err_H80": {
+      "metric": "tau_err_pct",
+      "value": 0.0018210350712609398,
+      "threshold": 3.0,
+      "unit": "%",
+      "pass": true
+    },
+    "gate_9_steady_H40": {
+      "metric": "steady",
+      "value": true,
+      "threshold": true,
+      "unit": "bool",
+      "pass": true
+    },
+    "gate_10_steady_H80": {
+      "metric": "steady",
+      "value": true,
+      "threshold": true,
+      "unit": "bool",
+      "pass": true
+    },
+    "gate_11_convergence_l2": {
+      "metric": "l2_rel_err convergence (H40->H80)",
+      "value": true,
+      "threshold": true,
+      "unit": "bool",
+      "pass": true
+    },
+    "gate_12_finite_H40": {
+      "metric": "finite",
+      "value": true,
+      "threshold": true,
+      "unit": "bool",
+      "pass": true
+    },
+    "gate_13_finite_H80": {
+      "metric": "finite",
+      "value": true,
+      "threshold": true,
+      "unit": "bool",
+      "pass": true
+    }
+  },
+  "overall_pass": true,
+  "wall_clock_s": {
+    "H40": 11.4,
+    "H80": 20.3,
+    "total": 31.700000000000003
+  },
+  "results": {
+    "H40": {
+      "H_eff": 40,
+      "Re": 19.999999999999996,
+      "n_steps": 10000,
+      "l2_rel_err": 0.00012050486945230309,
+      "max_rel_err_pct": 0.018097294701467804,
+      "u_top_err_pct": 0.0011042703556064105,
+      "tau_err_pct": 0.000852193587854051,
+      "steady": true,
+      "finite": true,
+      "mass_drift_pct": 0.0009736559932413742
+    },
+    "H80": {
+      "H_eff": 80,
+      "Re": 39.99999999999999,
+      "n_steps": 10000,
+      "l2_rel_err": 0.00010770979573942868,
+      "max_rel_err_pct": 0.01858958491571969,
+      "u_top_err_pct": 0.001868961742084202,
+      "tau_err_pct": 0.0018210350712609398,
+      "steady": true,
+      "finite": true,
+      "mass_drift_pct": 0.00030517578125
+    }
+  },
+  "convergence": {
+    "l2_rel_err_decreased": true,
+    "l2_H40": 0.00012050486945230309,
+    "l2_H80": 0.00010770979573942868,
+    "max_rel_H40": 0.018097294701467804,
+    "max_rel_H80": 0.01858958491571969
+  },
+  "reference": "analytical u(y) = U0*y/H (linear Couette profile)",
+  "threshold_max_rel_pct": 3.0,
+  "compile_mode": "default",
+  "compile_status": "eager_fallback (SDAA teco_inductor incomplete for LBM step chain)"
+}
