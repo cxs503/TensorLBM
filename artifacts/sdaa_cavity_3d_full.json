@@ -1,0 +1,75 @@
+{
+  "case": "cavity_3d_full",
+  "device_evidence": {
+    "device": "sdaa",
+    "device_name": "/dev/tcaicard5",
+    "sdaa_available": true,
+    "torch_version": "2.7.1"
+  },
+  "configuration": {
+    "re": 1000,
+    "u_lid": 0.06,
+    "collision": "TRT",
+    "boundary": "V3-3D: pre-streaming bounce-back + Zou-He moving lid",
+    "reference": "Ku, Hirsh & Taylor (1987) u_min(0.5,0.5)=-0.2751",
+    "triton_interpret": false,
+    "note": "No triton dependency in core modules (solver3d, boundaries3d, d3q19)"
+  },
+  "grids": {
+    "64": {
+      "nx": 64,
+      "steps": 100000,
+      "last_resid": 0.03741780295968056,
+      "elapsed_s": 3066.7,
+      "u_min_3d_mid": -0.27142,
+      "u_min_err_pct_vs_3d_ref": 1.337,
+      "uz_midplane_max_abs": 0.001963,
+      "max_abs_dev_pct_vs2d": 21.3041,
+      "rmse_u_vs2d": 0.09255,
+      "rmse_v_vs2d": 0.09758,
+      "finite": true,
+      "mass_drift": 708.59375
+    },
+    "96": {
+      "nx": 96,
+      "steps": 100000,
+      "last_resid": 0.03978994861245155,
+      "elapsed_s": 4283.9,
+      "u_min_3d_mid": -0.27582,
+      "u_min_err_pct_vs_3d_ref": 0.26,
+      "uz_midplane_max_abs": 0.0013,
+      "max_abs_dev_pct_vs2d": 21.2624,
+      "rmse_u_vs2d": 0.09528,
+      "rmse_v_vs2d": 0.09383,
+      "finite": true,
+      "mass_drift": 2425.375
+    }
+  },
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": "Uses tensorlbm.solver3d, tensorlbm.boundaries3d, tensorlbm.d3q19"
+    },
+    {
+      "gate": "direct_observable",
+      "pass": true,
+      "evidence": "64\u00b3 err=1.337%, 96\u00b3 err=0.260% (threshold \u22643%)"
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": true,
+      "evidence": "64\u00b3\u219296\u00b3: 1.337%\u21920.260% (strict decrease)"
+    },
+    {
+      "gate": "reference_locked_first",
+      "pass": true,
+      "evidence": "Ku, Hirsh & Taylor (1987) u_min=-0.2751 pre-registered"
+    }
+  ],
+  "summary": {
+    "all_gates_pass": true,
+    "total_wall_clock_s": 7351.5,
+    "monotone_convergence": true
+  }
+}
