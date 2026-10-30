@@ -1,0 +1,107 @@
+{
+  "scenario_key": "blasius_flat_plate",
+  "mission_id": 386,
+  "timestamp": "2026-10-30T07:46:14Z",
+  "device": {
+    "sdaa_available": true,
+    "device_path": "/dev/tcaicard6",
+    "device_count": 1,
+    "torch_version": "2.7.1",
+    "device_name": "/dev/tcaicard6"
+  },
+  "sdaa_execution_proof": {
+    "description": "Ran 5000-step D2Q9 BGK LBM on sdaa:0 (80x200 grid with plate BB + Zou-He outlet). Completed 5000 steps in ~85s. Full plate200/plate400 grids exceed 120s shell timeout on SDAA; physics results from verified CPU runs.",
+    "grid": "80x200 mini",
+    "steps_completed": 5000,
+    "elapsed_s": 85.3,
+    "umax_at_5000": 0.057401,
+    "status": "EXECUTED_BUT_UNDERSIZED"
+  },
+  "benchmark_status": "HONEST_FAIL",
+  "reference": {
+    "solution": "Blasius ODE f'''+f*f''/2=0, RK4 shooting h=0.005",
+    "fpp0": 0.3320573362151963,
+    "cf_formula": "C_f = 0.6641146724/sqrt(Re_x)",
+    "probe_x_eff": 180,
+    "Re_x": 900,
+    "cf_ref": 0.022137155747679754,
+    "gate_pct": 3.0
+  },
+  "results_summary": {
+    "best_corrected_fd_err_pct": 27.34,
+    "best_grid": "plate400_y1600 TRT",
+    "worst_corrected_fd_err_pct": 47.33,
+    "worst_grid": "plate200 BGK",
+    "all_within_3pct": false,
+    "monotone_plate200_to_plate400": true,
+    "baseline_reproduction": {
+      "old_record_pct": 102.0,
+      "R1_buggy_reproduced_pct": 101.91,
+      "within_5pp": true
+    }
+  },
+  "runs": [
+    {
+      "name": "R1p",
+      "grid": "plate200",
+      "collision": "bgk",
+      "x_eff": 180,
+      "Re_x": 900,
+      "cf_err_pct": 47.33,
+      "L2": 0.2788
+    },
+    {
+      "name": "R2p",
+      "grid": "plate200",
+      "collision": "trt",
+      "x_eff": 180,
+      "Re_x": 900,
+      "cf_err_pct": 47.1,
+      "L2": 0.2759
+    },
+    {
+      "name": "R3p",
+      "grid": "plate400",
+      "collision": "trt",
+      "x_eff": 180,
+      "Re_x": 900,
+      "cf_err_pct": 27.38,
+      "L2": 0.199
+    },
+    {
+      "name": "R4p",
+      "grid": "plate400",
+      "collision": "bgk",
+      "x_eff": 180,
+      "Re_x": 900,
+      "cf_err_pct": 28.1,
+      "L2": 0.2045
+    },
+    {
+      "name": "R5p",
+      "grid": "plate400_y1600",
+      "collision": "bgk",
+      "x_eff": 180,
+      "Re_x": 900,
+      "cf_err_pct": 28.07,
+      "L2": 0.2044
+    },
+    {
+      "name": "R6p",
+      "grid": "plate400_y1600",
+      "collision": "trt",
+      "x_eff": 180,
+      "Re_x": 900,
+      "cf_err_pct": 27.34,
+      "L2": 0.1989
+    }
+  ],
+  "root_cause": "Cumulative displacement effect (edge acceleration): boundary layer displacement thickness delta* grows with x, contracting effective flow area, causing u_edge/U > 1 (up to 1.011 at plate1600). This is a structural issue of the confined-domain LBM setup for external flow, not a numerical bug.",
+  "judgment": {
+    "main_gate": "FAIL (best 27.34% >> 3% threshold)",
+    "monotonicity": "PASS (plate400 < plate200)",
+    "baseline_reproduction": "PASS (101.91% vs old 102.0%)",
+    "verdict": "HONEST_FAIL \u2014 terminal, requires engine-level changes (pressure correction, external flow BC, or adaptive mesh)"
+  },
+  "verify_py": "ALL PASS (V1-V4: reference derivation, FD weights, JSON consistency, judgment gates)"
+}
