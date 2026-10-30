@@ -1,0 +1,863 @@
+{
+  "case": "aircraft_icing_naca0012_rime",
+  "kind": "SDAA validation sweep (independent runner)",
+  "script": "scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py",
+  "case_dir": "benchmarks/verified/aircraft_icing_naca0012_rime",
+  "criterion_\u53e3\u5f84": "case README/result.json gate family (internal consistency): G1 Lagrangian closure, G2 Eulerian closure, G7 IC-A bitwise determinism, G9 LWC linearity (log-log slope / R^2 / dev / monotone), G10 mesh ladder + 3-point Richardson vs IC-A prior",
+  "device_evidence": {
+    "compute_device": "sdaa",
+    "torch_version": "2.7.1",
+    "torch_sdaa_module": true,
+    "triton_interpret_env": "1",
+    "triton_imported": true,
+    "compile_mode": null,
+    "note_compile": "case run.py uses compile_mode=None (plain torch ops); the compiled variants are never built, so no triton kernel path is entered and TRITON_INTERPRET=1 is a belt-and-braces guard only",
+    "sdaa_is_available": true,
+    "sdaa_device_count": 1,
+    "sdaa_device_name": "/dev/tcaicard24",
+    "sdaa_smoke_matmul_ok": true,
+    "sdaa_memory_allocated_bytes_after_smoke": 1064960
+  },
+  "device_evidence_line": "torch.sdaa.get_device_name(0) = '/dev/tcaicard24' (sdaa available=True, count=1, torch=2.7.1, compute device='sdaa', cuda used=False)",
+  "triton": {
+    "required": false,
+    "TRITON_INTERPRET": "1",
+    "triton_imported_at_end": true,
+    "bypass_note": "entry imports no triton and compile_mode=None keeps both compile_unit variants un-built; TRITON_INTERPRET=1 set in env as a guard and recorded here, nothing was interpreted"
+  },
+  "wall_clock": {
+    "budget_s": 1150.0,
+    "sweep_wall_s": 1047.666532754898,
+    "per_run_s": {
+      "b1_prod": 356.8836991786957,
+      "m20_lwc025": 352.26829838752747,
+      "m20_lwc10": 333.26147985458374
+    },
+    "skipped": [
+      {
+        "name": "det_run1",
+        "reason": "wall budget",
+        "spent_s": 1047.6664500236511,
+        "est_next_s": 333.26147985458374
+      },
+      {
+        "name": "det_run2",
+        "reason": "wall budget",
+        "spent_s": 1047.6664743423462,
+        "est_next_s": 333.26147985458374
+      },
+      {
+        "name": "ladder_L2",
+        "reason": "wall budget",
+        "spent_s": 1047.666484117508,
+        "est_next_s": 333.26147985458374
+      },
+      {
+        "name": "ladder_L3",
+        "reason": "wall budget",
+        "spent_s": 1047.6664927005768,
+        "est_next_s": 333.26147985458374
+      },
+      {
+        "name": "ladder_L4",
+        "reason": "wall budget",
+        "spent_s": 1047.6665208339691,
+        "est_next_s": 333.26147985458374
+      }
+    ],
+    "note": "task cap 1200 s (20 min) for the whole sweep"
+  },
+  "runs": {
+    "b1_prod": {
+      "name": "b1_prod",
+      "grid": [
+        320,
+        160
+      ],
+      "steps": 3000,
+      "warmup_steps": 6000,
+      "lwc": 0.0005,
+      "wall_s": 356.8836991786957,
+      "device": "sdaa",
+      "device_peak_mem_bytes": 47904768,
+      "beta_e_pk": 0.9207170009613037,
+      "euler_deposited_kg": 0.001753472626770997,
+      "audit_lagr": {
+        "seeded": 0.0,
+        "frozen": 0.0009953818554537391,
+        "exited": 0.0,
+        "trapped": 0.0,
+        "airborne": 0.0,
+        "pending": 0.0007782915334974827,
+        "closure_error": 0.0
+      },
+      "audit_euler": {
+        "initial_fill": 0.06959270508280835,
+        "inlet_in": 0.033508374400389215,
+        "lat_in": 0.0,
+        "deposited": 0.001753472626770997,
+        "encased": 2.020070743504417e-05,
+        "outlet_out": 0.034190162949665204,
+        "lat_out": 2.413545098522301e-06,
+        "airborne": 0.06713483147826026,
+        "closure_error": 1.7691691259473083e-08,
+        "warmup_inlet_in": 0.0,
+        "warmup_outlet_in": -0.0,
+        "warmup_outlet_out": 0.0,
+        "warmup_lat_in": 0.0,
+        "warmup_lat_out": 0.0,
+        "warmup_deposited": 0.0,
+        "warmup_bflux_raw": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "closure_error_full": 2.0768750544351224,
+        "outlet_in": 0.0
+      },
+      "n_ice_cells": 15,
+      "ice_area_pct_chord2": 0.091552734375,
+      "t_max_mm": 8.334375,
+      "upper_horn_mm": 4.1671875,
+      "lower_horn_mm": 8.334375,
+      "t_stag_mm": 12.5015625,
+      "cd0": 0.06051417440176009,
+      "cl0": 0.19971211440861222,
+      "cd_end": 0.09745883289724587,
+      "cl_end": 0.07385176140815018,
+      "cd_drift_pct": 61.05124767993402,
+      "array_sha256": [
+        [
+          "airfoil",
+          "d6d5f9fda632973128f9eaa5b5a62593e19f67891e6d4e143dbb29571b5dcd02"
+        ],
+        [
+          "solid",
+          "2542f8beeff08cdfd49cd32b57aaab98a21c876c33674b061521155ebdc7c1ba"
+        ],
+        [
+          "m_w",
+          "80e03f45f6d904baf6dc9d3700a7d7fed560f8a375d95f10f7a7605fd7eb5499"
+        ],
+        [
+          "impact_mass",
+          "8eafc7bd411c1f02b9e972a83d2b0a4164eefc5ef51e6b63ad7acc78be4ad44f"
+        ],
+        [
+          "s_grid",
+          "05db2727218f95b5df2ed85874c492c4a3e166bd7fd9ce9c38d0f00c4522c9ab"
+        ],
+        [
+          "beta_grid",
+          "8eafc7bd411c1f02b9e972a83d2b0a4164eefc5ef51e6b63ad7acc78be4ad44f"
+        ],
+        [
+          "stag",
+          "983eb4c460e30f31052a608410023671337a4104f1c20044df4fbae815d3e559"
+        ],
+        [
+          "hist_step",
+          "7aaee97c3319ebd07e64e104eaf5da617f22e7c4ca3bfa239f78bae496240a3a"
+        ],
+        [
+          "hist_t",
+          "fa585134e5ec340b8d0c2d07f16df90ba8045f7f153eab812b180842ce07b263"
+        ],
+        [
+          "hist_cd",
+          "22b8ccce7b46647765b6378fb3bc87a2e2358c89f4751952efe4dc21c48942f6"
+        ],
+        [
+          "hist_cl",
+          "b523be87a65ed061e52195c06de0b548fcc4eea3ed642f74ccadeb21734813ee"
+        ],
+        [
+          "hist_ice",
+          "c715d8fa76c3fa027f1b619b6617d7f908b1bcf3bf69458034a35d6bfaa21d18"
+        ],
+        [
+          "alpha_e",
+          "199fb8681a29edc7aba0bb49ff39d89d25f8bf49495f8ea66eebf714fb690e0b"
+        ],
+        [
+          "impact_mass_e",
+          "cec7f8cba039744e6d456b24f9456a81cf5c333a2626ee10a9259ed9c88555a5"
+        ],
+        [
+          "beta_e_grid",
+          "db0687f44fc147a52c4a3e6b49c75d8ef4059cc42e74ea57cd642578df066181"
+        ]
+      ],
+      "artifacts_dir": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod",
+      "artifacts": {
+        "beta_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_curve.csv",
+        "beta_euler_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_eulerian.csv",
+        "profile_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/ice_profile.csv",
+        "json": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/icing_metrics.json",
+        "npz": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/result.npz",
+        "ice_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/ice_shape.png",
+        "beta_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_curve.png",
+        "beta_compare_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_compare.png",
+        "history_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/history.png"
+      },
+      "guards": {
+        "m_w_finite": true,
+        "impact_mass_finite": true,
+        "deposited_positive": true,
+        "ice_nonzero": true,
+        "wall_under_3600s": true
+      },
+      "guards_pass": true
+    },
+    "m20_lwc025": {
+      "name": "m20_lwc025",
+      "grid": [
+        320,
+        160
+      ],
+      "steps": 3000,
+      "warmup_steps": 6000,
+      "lwc": 0.00025,
+      "wall_s": 352.26829838752747,
+      "device": "sdaa",
+      "device_peak_mem_bytes": 47904768,
+      "beta_e_pk": 0.9198480248451233,
+      "euler_deposited_kg": 0.0008843854971582778,
+      "audit_lagr": {
+        "seeded": 0.0,
+        "frozen": 0.00033179395181791305,
+        "exited": 0.0,
+        "trapped": 0.0,
+        "airborne": 0.0,
+        "pending": 0.0005563076457215377,
+        "closure_error": 0.0
+      },
+      "audit_euler": {
+        "initial_fill": 0.034796352541404174,
+        "inlet_in": 0.016754187200194608,
+        "lat_in": 0.0,
+        "deposited": 0.0008843854971582778,
+        "encased": 3.716119882568057e-06,
+        "outlet_out": 0.017095339795414336,
+        "lat_out": 1.2001595211875263e-06,
+        "airborne": 0.03356589899076543,
+        "closure_error": 1.592889280597874e-08,
+        "warmup_inlet_in": 0.0,
+        "warmup_outlet_in": -0.0,
+        "warmup_outlet_out": 0.0,
+        "warmup_lat_in": 0.0,
+        "warmup_lat_out": 0.0,
+        "warmup_deposited": 0.0,
+        "warmup_bflux_raw": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "closure_error_full": 2.076875049011212,
+        "outlet_in": 0.0
+      },
+      "n_ice_cells": 5,
+      "ice_area_pct_chord2": 0.030517578125,
+      "t_max_mm": 4.1671875,
+      "upper_horn_mm": 0.0,
+      "lower_horn_mm": 4.1671875,
+      "t_stag_mm": 8.334375,
+      "cd0": 0.06051417440176009,
+      "cl0": 0.19971211440861222,
+      "cd_end": 0.09918760042637585,
+      "cl_end": 0.06590550765395163,
+      "cd_drift_pct": 63.90804535786731,
+      "array_sha256": [
+        [
+          "airfoil",
+          "d6d5f9fda632973128f9eaa5b5a62593e19f67891e6d4e143dbb29571b5dcd02"
+        ],
+        [
+          "solid",
+          "df7dcd20d7827f2acc86b024f5d6d3beb221cfbccc273cb826b8360b2aa748bf"
+        ],
+        [
+          "m_w",
+          "8a59350f23f1fcff38a69dcdbe84e13048c7e061bc8d39a9d5063fc213dff1cf"
+        ],
+        [
+          "impact_mass",
+          "8eafc7bd411c1f02b9e972a83d2b0a4164eefc5ef51e6b63ad7acc78be4ad44f"
+        ],
+        [
+          "s_grid",
+          "05db2727218f95b5df2ed85874c492c4a3e166bd7fd9ce9c38d0f00c4522c9ab"
+        ],
+        [
+          "beta_grid",
+          "8eafc7bd411c1f02b9e972a83d2b0a4164eefc5ef51e6b63ad7acc78be4ad44f"
+        ],
+        [
+          "stag",
+          "983eb4c460e30f31052a608410023671337a4104f1c20044df4fbae815d3e559"
+        ],
+        [
+          "hist_step",
+          "7aaee97c3319ebd07e64e104eaf5da617f22e7c4ca3bfa239f78bae496240a3a"
+        ],
+        [
+          "hist_t",
+          "fa585134e5ec340b8d0c2d07f16df90ba8045f7f153eab812b180842ce07b263"
+        ],
+        [
+          "hist_cd",
+          "8c3da1c29584d841064a44e19bff8fc3e933991601e4320c49817f1f357536be"
+        ],
+        [
+          "hist_cl",
+          "911ce353302ec21c35a64d339bdf4301f38dd3a6fbb9a09b9bf1612e5bebf622"
+        ],
+        [
+          "hist_ice",
+          "ca2804cf6c699143d2c50a87b16ba0b3442e5ec4939927a6107cb74852bb6c2a"
+        ],
+        [
+          "alpha_e",
+          "ca4ff8d241240fc0bbfb98a17bef7c54a68f841d0624ef84680bc828b00617cf"
+        ],
+        [
+          "impact_mass_e",
+          "e51fa211bca7d7916bf791c7417e09b644bc417b7dcb59e965e54051d998c792"
+        ],
+        [
+          "beta_e_grid",
+          "2fc598385e3c643fce9ca10cd6071cd2610f413aaa1fe819d0c6c1ab45642295"
+        ]
+      ],
+      "artifacts_dir": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025",
+      "artifacts": {
+        "beta_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/beta_curve.csv",
+        "beta_euler_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/beta_eulerian.csv",
+        "profile_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/ice_profile.csv",
+        "json": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/icing_metrics.json",
+        "npz": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/result.npz",
+        "ice_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/ice_shape.png",
+        "beta_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/beta_curve.png",
+        "beta_compare_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/beta_compare.png",
+        "history_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/history.png"
+      },
+      "guards": {
+        "m_w_finite": true,
+        "impact_mass_finite": true,
+        "deposited_positive": true,
+        "ice_nonzero": true,
+        "wall_under_3600s": true
+      },
+      "guards_pass": true
+    },
+    "m20_lwc10": {
+      "name": "m20_lwc10",
+      "grid": [
+        320,
+        160
+      ],
+      "steps": 3000,
+      "warmup_steps": 6000,
+      "lwc": 0.001,
+      "wall_s": 333.26147985458374,
+      "device": "sdaa",
+      "device_peak_mem_bytes": 47904768,
+      "beta_e_pk": 0.9287117123603821,
+      "euler_deposited_kg": 0.003474130990327216,
+      "audit_lagr": {
+        "seeded": 0.0,
+        "frozen": 0.0024552752434525565,
+        "exited": 0.0,
+        "trapped": 0.0,
+        "airborne": 0.0,
+        "pending": 0.001113286901626943,
+        "closure_error": 0.0
+      },
+      "audit_euler": {
+        "initial_fill": 0.1391854101656167,
+        "inlet_in": 0.06701674880077843,
+        "lat_in": 0.0,
+        "deposited": 0.003474130990327216,
+        "encased": 9.443107977761425e-05,
+        "outlet_out": 0.06837771489540082,
+        "lat_out": 4.877316359258448e-06,
+        "airborne": 0.1342510082906484,
+        "closure_error": 1.7488265883919398e-08,
+        "warmup_inlet_in": 0.0,
+        "warmup_outlet_in": -0.0,
+        "warmup_outlet_out": 0.0,
+        "warmup_lat_in": 0.0,
+        "warmup_lat_out": 0.0,
+        "warmup_deposited": 0.0,
+        "warmup_bflux_raw": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "closure_error_full": 2.076875053809208,
+        "outlet_in": 0.0
+      },
+      "n_ice_cells": 37,
+      "ice_area_pct_chord2": 0.225830078125,
+      "t_max_mm": 20.8359375,
+      "upper_horn_mm": 12.5015625,
+      "lower_horn_mm": 20.8359375,
+      "t_stag_mm": 25.003125,
+      "cd0": 0.06051417440176009,
+      "cl0": 0.19971211440861222,
+      "cd_end": 0.040762289427220814,
+      "cl_end": 0.07019494660198687,
+      "cd_drift_pct": -32.64009658861805,
+      "array_sha256": [
+        [
+          "airfoil",
+          "d6d5f9fda632973128f9eaa5b5a62593e19f67891e6d4e143dbb29571b5dcd02"
+        ],
+        [
+          "solid",
+          "4a0a7cc2411386236fc5f13e54483d49d81980a9b29f16f9171cda01be7fbfdf"
+        ],
+        [
+          "m_w",
+          "93e529ca80da6096e6288266b2a75c4175d50e267dd4dfce1e62f0b08f373219"
+        ],
+        [
+          "impact_mass",
+          "8eafc7bd411c1f02b9e972a83d2b0a4164eefc5ef51e6b63ad7acc78be4ad44f"
+        ],
+        [
+          "s_grid",
+          "05db2727218f95b5df2ed85874c492c4a3e166bd7fd9ce9c38d0f00c4522c9ab"
+        ],
+        [
+          "beta_grid",
+          "8eafc7bd411c1f02b9e972a83d2b0a4164eefc5ef51e6b63ad7acc78be4ad44f"
+        ],
+        [
+          "stag",
+          "983eb4c460e30f31052a608410023671337a4104f1c20044df4fbae815d3e559"
+        ],
+        [
+          "hist_step",
+          "7aaee97c3319ebd07e64e104eaf5da617f22e7c4ca3bfa239f78bae496240a3a"
+        ],
+        [
+          "hist_t",
+          "fa585134e5ec340b8d0c2d07f16df90ba8045f7f153eab812b180842ce07b263"
+        ],
+        [
+          "hist_cd",
+          "a42c8b0e7b3018fd82e9c8c6296bdbacc9d6059406bbd973f691062869daae3e"
+        ],
+        [
+          "hist_cl",
+          "5cbdaddb0f8273f6125c25a51180760167a6c95b640594e59c07df0e65acc287"
+        ],
+        [
+          "hist_ice",
+          "b7cc3a74b0dec7c77ab21d97e74fd15059f93cbd7037409cd2c121b4f26d773a"
+        ],
+        [
+          "alpha_e",
+          "afdb5bc2b864066d24ea1ec8a6c4440de0b2f743400664665c2942a6d0eca296"
+        ],
+        [
+          "impact_mass_e",
+          "f8f30ecc2fa44e3fd20b3aceee4ba05fa4419dead0498730d65e7c5c0da5d87a"
+        ],
+        [
+          "beta_e_grid",
+          "918de0b025b04c14b6aa80a357a8b8e5464d7e61e0203ec397917b27c1105071"
+        ]
+      ],
+      "artifacts_dir": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10",
+      "artifacts": {
+        "beta_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/beta_curve.csv",
+        "beta_euler_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/beta_eulerian.csv",
+        "profile_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/ice_profile.csv",
+        "json": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/icing_metrics.json",
+        "npz": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/result.npz",
+        "ice_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/ice_shape.png",
+        "beta_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/beta_curve.png",
+        "beta_compare_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/beta_compare.png",
+        "history_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/history.png"
+      },
+      "guards": {
+        "m_w_finite": true,
+        "impact_mass_finite": true,
+        "deposited_positive": true,
+        "ice_nonzero": true,
+        "wall_under_3600s": true
+      },
+      "guards_pass": true
+    },
+    "ladder_L1": {
+      "name": "ladder_L1",
+      "grid": [
+        320,
+        160
+      ],
+      "steps": 3000,
+      "warmup_steps": 6000,
+      "lwc": 0.0005,
+      "wall_s": 356.8836991786957,
+      "device": "sdaa",
+      "device_peak_mem_bytes": 47904768,
+      "beta_e_pk": 0.9207170009613037,
+      "euler_deposited_kg": 0.001753472626770997,
+      "audit_lagr": {
+        "seeded": 0.0,
+        "frozen": 0.0009953818554537391,
+        "exited": 0.0,
+        "trapped": 0.0,
+        "airborne": 0.0,
+        "pending": 0.0007782915334974827,
+        "closure_error": 0.0
+      },
+      "audit_euler": {
+        "initial_fill": 0.06959270508280835,
+        "inlet_in": 0.033508374400389215,
+        "lat_in": 0.0,
+        "deposited": 0.001753472626770997,
+        "encased": 2.020070743504417e-05,
+        "outlet_out": 0.034190162949665204,
+        "lat_out": 2.413545098522301e-06,
+        "airborne": 0.06713483147826026,
+        "closure_error": 1.7691691259473083e-08,
+        "warmup_inlet_in": 0.0,
+        "warmup_outlet_in": -0.0,
+        "warmup_outlet_out": 0.0,
+        "warmup_lat_in": 0.0,
+        "warmup_lat_out": 0.0,
+        "warmup_deposited": 0.0,
+        "warmup_bflux_raw": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "closure_error_full": 2.0768750544351224,
+        "outlet_in": 0.0
+      },
+      "n_ice_cells": 15,
+      "ice_area_pct_chord2": 0.091552734375,
+      "t_max_mm": 8.334375,
+      "upper_horn_mm": 4.1671875,
+      "lower_horn_mm": 8.334375,
+      "t_stag_mm": 12.5015625,
+      "cd0": 0.06051417440176009,
+      "cl0": 0.19971211440861222,
+      "cd_end": 0.09745883289724587,
+      "cl_end": 0.07385176140815018,
+      "cd_drift_pct": 61.05124767993402,
+      "array_sha256": [
+        [
+          "airfoil",
+          "d6d5f9fda632973128f9eaa5b5a62593e19f67891e6d4e143dbb29571b5dcd02"
+        ],
+        [
+          "solid",
+          "2542f8beeff08cdfd49cd32b57aaab98a21c876c33674b061521155ebdc7c1ba"
+        ],
+        [
+          "m_w",
+          "80e03f45f6d904baf6dc9d3700a7d7fed560f8a375d95f10f7a7605fd7eb5499"
+        ],
+        [
+          "impact_mass",
+          "8eafc7bd411c1f02b9e972a83d2b0a4164eefc5ef51e6b63ad7acc78be4ad44f"
+        ],
+        [
+          "s_grid",
+          "05db2727218f95b5df2ed85874c492c4a3e166bd7fd9ce9c38d0f00c4522c9ab"
+        ],
+        [
+          "beta_grid",
+          "8eafc7bd411c1f02b9e972a83d2b0a4164eefc5ef51e6b63ad7acc78be4ad44f"
+        ],
+        [
+          "stag",
+          "983eb4c460e30f31052a608410023671337a4104f1c20044df4fbae815d3e559"
+        ],
+        [
+          "hist_step",
+          "7aaee97c3319ebd07e64e104eaf5da617f22e7c4ca3bfa239f78bae496240a3a"
+        ],
+        [
+          "hist_t",
+          "fa585134e5ec340b8d0c2d07f16df90ba8045f7f153eab812b180842ce07b263"
+        ],
+        [
+          "hist_cd",
+          "22b8ccce7b46647765b6378fb3bc87a2e2358c89f4751952efe4dc21c48942f6"
+        ],
+        [
+          "hist_cl",
+          "b523be87a65ed061e52195c06de0b548fcc4eea3ed642f74ccadeb21734813ee"
+        ],
+        [
+          "hist_ice",
+          "c715d8fa76c3fa027f1b619b6617d7f908b1bcf3bf69458034a35d6bfaa21d18"
+        ],
+        [
+          "alpha_e",
+          "199fb8681a29edc7aba0bb49ff39d89d25f8bf49495f8ea66eebf714fb690e0b"
+        ],
+        [
+          "impact_mass_e",
+          "cec7f8cba039744e6d456b24f9456a81cf5c333a2626ee10a9259ed9c88555a5"
+        ],
+        [
+          "beta_e_grid",
+          "db0687f44fc147a52c4a3e6b49c75d8ef4059cc42e74ea57cd642578df066181"
+        ]
+      ],
+      "artifacts_dir": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod",
+      "artifacts": {
+        "beta_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_curve.csv",
+        "beta_euler_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_eulerian.csv",
+        "profile_csv": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/ice_profile.csv",
+        "json": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/icing_metrics.json",
+        "npz": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/result.npz",
+        "ice_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/ice_shape.png",
+        "beta_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_curve.png",
+        "beta_compare_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_compare.png",
+        "history_png": "/root/tp-agent/work/m13/artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/history.png"
+      },
+      "guards": {
+        "m_w_finite": true,
+        "impact_mass_finite": true,
+        "deposited_positive": true,
+        "ice_nonzero": true,
+        "wall_under_3600s": true
+      },
+      "guards_pass": true,
+      "reused_from": "b1_prod"
+    }
+  },
+  "run_order": [
+    "b1_prod",
+    "m20_lwc025",
+    "m20_lwc10",
+    "ladder_L1"
+  ],
+  "skipped_runs": [
+    {
+      "name": "det_run1",
+      "reason": "wall budget",
+      "spent_s": 1047.6664500236511,
+      "est_next_s": 333.26147985458374
+    },
+    {
+      "name": "det_run2",
+      "reason": "wall budget",
+      "spent_s": 1047.6664743423462,
+      "est_next_s": 333.26147985458374
+    },
+    {
+      "name": "ladder_L2",
+      "reason": "wall budget",
+      "spent_s": 1047.666484117508,
+      "est_next_s": 333.26147985458374
+    },
+    {
+      "name": "ladder_L3",
+      "reason": "wall budget",
+      "spent_s": 1047.6664927005768,
+      "est_next_s": 333.26147985458374
+    },
+    {
+      "name": "ladder_L4",
+      "reason": "wall budget",
+      "spent_s": 1047.6665208339691,
+      "est_next_s": 333.26147985458374
+    }
+  ],
+  "ladder_L1_source": "reused b1_prod (identical config: 320x160, 3000/6000 steps, LWC 0.5 g/m^3)",
+  "gates": {
+    "G1_lagrangian_closure": {
+      "value": 0.0,
+      "gate": "<=1e-12",
+      "pass": true,
+      "source": "this script",
+      "note": "worst over 4 run(s): ['b1_prod', 'ladder_L1', 'm20_lwc025', 'm20_lwc10']",
+      "prior_nvidia": "0.0 (eulerian-phase trivial ledger, IC-A)"
+    },
+    "G2_eulerian_closure_rel": {
+      "value": 1.7691691259473083e-08,
+      "gate": "<=1e-6",
+      "pass": true,
+      "source": "this script",
+      "note": "worst over 4 run(s): ['b1_prod', 'ladder_L1', 'm20_lwc025', 'm20_lwc10']",
+      "prior_nvidia": 1.9798993102412833e-08
+    },
+    "G7_determinism_bitwise": {
+      "value": null,
+      "gate": "all arrays bitwise identical",
+      "pass": false,
+      "source": "this script",
+      "note": "NOT_RUN: det_pair (det_run1, det_run2) not both executed",
+      "prior_nvidia": "IC-A determinism pair ok"
+    },
+    "G9a_deposited_loglog": {
+      "value": 0.9869524395629171,
+      "gate": "[0.97,1.03]",
+      "pass": true,
+      "source": "this script",
+      "note": "deposited vs LWC (0.25/0.5/1.0 g/m^3)",
+      "prior_nvidia": 0.985732151337804
+    },
+    "G9b_deposited_r2": {
+      "value": 0.9998826455789217,
+      "gate": ">=0.999",
+      "pass": true,
+      "source": "this script",
+      "note": "prop fit k=3.483401e+00 kg per (kg/m^3)",
+      "prior_nvidia": 0.9998319535034143
+    },
+    "G9c_deposited_prop_dev_pct": {
+      "value": 1.554259549798597,
+      "gate": "<=3",
+      "pass": true,
+      "source": "this script",
+      "note": "per point pct=[1.554259549798597, 0.6759014167208979, 0.2661165760426625]",
+      "prior_nvidia": 1.663756437049857
+    },
+    "G9d_deposited_monotone": {
+      "value": true,
+      "gate": "strictly increasing",
+      "pass": true,
+      "source": "this script",
+      "note": "deposited vs LWC"
+    },
+    "G10a_monotone_L1_L2_L3": {
+      "value": null,
+      "gate": "see README",
+      "pass": false,
+      "source": "this script",
+      "note": "NOT_RUN: ladder incomplete (completed: ['ladder_L1'])"
+    },
+    "G10b_richardson_L3_pct": {
+      "value": null,
+      "gate": "see README",
+      "pass": false,
+      "source": "this script",
+      "note": "NOT_RUN: ladder incomplete (completed: ['ladder_L1'])"
+    },
+    "G10c_richardson_L4_pct": {
+      "value": null,
+      "gate": "see README",
+      "pass": false,
+      "source": "this script",
+      "note": "NOT_RUN: ladder incomplete (completed: ['ladder_L1'])"
+    },
+    "G10d_richardson_meta": {
+      "value": null,
+      "gate": "see README",
+      "pass": false,
+      "source": "this script",
+      "note": "NOT_RUN: ladder incomplete (completed: ['ladder_L1'])"
+    }
+  },
+  "gates_summary": {
+    "n_pass": 6,
+    "n_total": 11,
+    "all_pass": false
+  },
+  "reproduction_vs_nvidia_prior": {
+    "b1_prod": {
+      "sdaa": {
+        "t_max_mm": 8.334375,
+        "euler_deposited_kg": 0.001753472626770997,
+        "beta_e_pk": 0.9207170009613037
+      },
+      "nvidia_prior": {
+        "grid": [
+          320,
+          160
+        ],
+        "steps": 3000,
+        "lwc_kg_m3": 0.0005,
+        "beta_pk": 0.9118858575820923,
+        "t_max_mm": 8.334375,
+        "euler_deposited_kg": 0.0017577295005006153,
+        "wall_s": 28.84636378288269
+      },
+      "rel_dev": {
+        "t_max": 0.0,
+        "euler_deposited": -0.002421802517626292,
+        "beta_pk": 0.009684483321879355
+      }
+    },
+    "m20_lwc025": {
+      "sdaa": {
+        "t_max_mm": 4.1671875,
+        "euler_deposited_kg": 0.0008843854971582778
+      },
+      "nvidia_prior": {
+        "t_max_mm": 4.1671875,
+        "euler_deposited_kg": 0.0008855750331680612
+      }
+    },
+    "m20_lwc10": {
+      "sdaa": {
+        "t_max_mm": 20.8359375,
+        "euler_deposited_kg": 0.003474130990327216
+      },
+      "nvidia_prior": {
+        "t_max_mm": 20.8359375,
+        "euler_deposited_kg": 0.00347292380054454
+      }
+    }
+  },
+  "verdict": {
+    "overall": "FAIL",
+    "reason": "honest-FAIL: not every gate could be evaluated/PASS on sdaa within the wall cap; see gates[*].note and skipped_runs for the exact reasons"
+  },
+  "log_tail": [
+    "b1_prod:   [icing] step  2500/3000 t_eq=  300.00 s cd=0.13274 ice=  12 drops=      0 impacts=0",
+    "b1_prod:   [icing-e] step  2500 deposited=1.4810e-03 kg",
+    "b1_prod:   [icing] step  3000/3000 t_eq=  360.00 s cd=0.09746 ice=  15 drops=      0 impacts=0",
+    "b1_prod:   [icing-e] step  3000 deposited=1.7535e-03 kg",
+    "m20_lwc025:   [icing] chord=128 lu AoA=4.0 deg airfoil=1355 cells LE=(96,80)",
+    "m20_lwc025:   [icing] dx=4.1672e-03 m dt=3.1098e-06 s St=0.1551 tau_d=397.0 steps Re_lu=2500000",
+    "m20_lwc025:   [icing] k(accel)=3.859e+04 phys.drops/step=1.333e+06 parcels/step=1998.88 (x667) t_equiv=360.00 s (target 360 s, realtime would need 1.16e+08 steps)",
+    "m20_lwc025:   [icing] beta window: mode=clean steps [199, 799) (pre-ice reference geometry)",
+    "m20_lwc025:   [icing] warmup done: cd0=0.06051 cl0=0.19971",
+    "m20_lwc025:   [icing-e] eulerian cloud: alpha_in=9.647e-03 shadow_min=9.647e-06 drag=stokes (re_p_scale=0.000e+00) scheme=donor2 init_fill=3.480e-02 kg",
+    "m20_lwc025:   [icing] step   500/3000 t_eq=   60.00 s cd=0.06845 ice=   0 drops=      0 impacts=0",
+    "m20_lwc025:   [icing-e] step   500 deposited=1.2748e-04 kg",
+    "m20_lwc025:   [icing] step  1000/3000 t_eq=  120.00 s cd=0.07147 ice=   0 drops=      0 impacts=0",
+    "m20_lwc025:   [icing-e] step  1000 deposited=3.0042e-04 kg",
+    "m20_lwc025:   [icing] step  1500/3000 t_eq=  180.00 s cd=0.05931 ice=   0 drops=      0 impacts=0",
+    "m20_lwc025:   [icing-e] step  1500 deposited=4.5708e-04 kg",
+    "m20_lwc025:   [icing] step  2000/3000 t_eq=  240.00 s cd=0.05579 ice=   0 drops=      0 impacts=0",
+    "m20_lwc025:   [icing-e] step  2000 deposited=6.0165e-04 kg",
+    "m20_lwc025:   [icing] step  2500/3000 t_eq=  300.00 s cd=0.08492 ice=   2 drops=      0 impacts=0",
+    "m20_lwc025:   [icing-e] step  2500 deposited=7.4467e-04 kg",
+    "m20_lwc025:   [icing] step  3000/3000 t_eq=  360.00 s cd=0.09919 ice=   5 drops=      0 impacts=0",
+    "m20_lwc025:   [icing-e] step  3000 deposited=8.8439e-04 kg",
+    "m20_lwc10:   [icing] chord=128 lu AoA=4.0 deg airfoil=1355 cells LE=(96,80)",
+    "m20_lwc10:   [icing] dx=4.1672e-03 m dt=3.1098e-06 s St=0.1551 tau_d=397.0 steps Re_lu=2500000",
+    "m20_lwc10:   [icing] k(accel)=3.859e+04 phys.drops/step=5.333e+06 parcels/step=1999.63 (x2667) t_equiv=360.00 s (target 360 s, realtime would need 1.16e+08 steps)",
+    "m20_lwc10:   [icing] beta window: mode=clean steps [199, 436) (pre-ice reference geometry)",
+    "m20_lwc10:   [icing] warmup done: cd0=0.06051 cl0=0.19971",
+    "m20_lwc10:   [icing-e] eulerian cloud: alpha_in=3.859e-02 shadow_min=3.859e-05 drag=stokes (re_p_scale=0.000e+00) scheme=donor2 init_fill=1.392e-01 kg",
+    "m20_lwc10:   [icing] step   500/3000 t_eq=   60.00 s cd=0.06845 ice=   0 drops=      0 impacts=0",
+    "m20_lwc10:   [icing-e] step   500 deposited=5.0992e-04 kg",
+    "m20_lwc10:   [icing] step  1000/3000 t_eq=  120.00 s cd=0.05476 ice=   7 drops=      0 impacts=0",
+    "m20_lwc10:   [icing-e] step  1000 deposited=1.2024e-03 kg",
+    "m20_lwc10:   [icing] step  1500/3000 t_eq=  180.00 s cd=0.11425 ice=  16 drops=      0 impacts=0",
+    "m20_lwc10:   [icing-e] step  1500 deposited=1.8189e-03 kg",
+    "m20_lwc10:   [icing] step  2000/3000 t_eq=  240.00 s cd=0.08810 ice=  24 drops=      0 impacts=0",
+    "m20_lwc10:   [icing-e] step  2000 deposited=2.3866e-03 kg",
+    "m20_lwc10:   [icing] step  2500/3000 t_eq=  300.00 s cd=0.07128 ice=  30 drops=      0 impacts=0",
+    "m20_lwc10:   [icing-e] step  2500 deposited=2.9381e-03 kg",
+    "m20_lwc10:   [icing] step  3000/3000 t_eq=  360.00 s cd=0.04076 ice=  37 drops=      0 impacts=0",
+    "m20_lwc10:   [icing-e] step  3000 deposited=3.4741e-03 kg"
+  ],
+  "generated_utc": "2026-10-29T12:55:07Z"
+}
