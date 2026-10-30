@@ -1,0 +1,17 @@
+{
+  "device": "cpu",
+  "compile_mode": "eager",
+  "n": 64,
+  "steps": 200,
+  "err_e_pct": 1.1279877948993924,
+  "r2": 0.9999976774563297,
+  "mass_drift_rel": 3.337860107421875e-06,
+  "wall_sec": 30.782214641571045,
+  "checks": {
+    "code_runs": true,
+    "err_e_within_3pct": true,
+    "r2_above_0999": true,
+    "mass_drift_small": true
+  },
+  "passed": true
+}
