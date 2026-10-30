@@ -1,0 +1,64 @@
+{
+  "file": "/root/tp-agent/work/m454/benchmarks/pending/dtmb5415_resistance/geometry/dtmb5415_underwater_closed.stl",
+  "rows": [
+    {
+      "L_cells": 24,
+      "dx_m": 5.916666666666667,
+      "draft_over_dx": 1.0394366197183098,
+      "beam_over_dx": 3.221408450704225,
+      "grid": [
+        29,
+        8,
+        4
+      ],
+      "solid_cells": 61,
+      "volume_m3": 12634.589699074077,
+      "cb_voxel": 0.7590576936869987,
+      "cb_reference": 0.507,
+      "cb_error_pct": 49.715521437277886,
+      "stair_wall_faces": 119,
+      "smooth_wetted_lb": 170.74197302740495,
+      "stair_over_smooth": 0.6969580934905789
+    },
+    {
+      "L_cells": 32,
+      "dx_m": 4.4375,
+      "draft_over_dx": 1.3859154929577466,
+      "beam_over_dx": 4.295211267605634,
+      "grid": [
+        37,
+        9,
+        5
+      ],
+      "solid_cells": 79,
+      "volume_m3": 6903.068603515625,
+      "cb_voxel": 0.4147208147116721,
+      "cb_reference": 0.507,
+      "cb_error_pct": -18.201022739315153,
+      "stair_wall_faces": 222,
+      "smooth_wetted_lb": 303.5412853820533,
+      "stair_over_smooth": 0.7313667388624877
+    },
+    {
+      "L_cells": 48,
+      "dx_m": 2.9583333333333335,
+      "draft_over_dx": 2.0788732394366196,
+      "beam_over_dx": 6.44281690140845,
+      "grid": [
+        53,
+        11,
+        6
+      ],
+      "solid_cells": 292,
+      "volume_m3": 7560.041377314817,
+      "cb_voxel": 0.45419025933730256,
+      "cb_reference": 0.507,
+      "cb_error_pct": -10.416122418677986,
+      "stair_wall_faces": 580,
+      "smooth_wetted_lb": 682.9678921096198,
+      "stair_over_smooth": 0.849234651732218
+    }
+  ],
+  "closed": true,
+  "wetted_area_m2": 5977.1547641051975
+}

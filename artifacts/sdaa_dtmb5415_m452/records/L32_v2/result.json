@@ -1,0 +1,198 @@
+{
+  "case": "DTMB 5415 bare-hull resistance",
+  "benchmark": "dtmb5415_resistance",
+  "verified": false,
+  "geometry": "DTMB5415 underwater bare hull STL (dtmb5415_underwater_closed.stl)",
+  "geometry_source": "zenodo/CNR-INSEAN official DTMB 5415 baseline point cloud -> underwater clip (T=6.15m); external, see _build_geometry.py",
+  "device": "sdaa:0",
+  "L_cells": 32,
+  "domain_lu": [
+    192,
+    68,
+    66
+  ],
+  "n_cells": 861696,
+  "solid_cells": 79,
+  "near_wall_cells": 217,
+  "Re": 1000.0,
+  "Fr_run": 2.679299876813859e-05,
+  "collision": "mrt",
+  "friction_formula_primary": "mix50",
+  "n_steps": 3000,
+  "elapsed_s": 644.8,
+  "compile_status": "eager_fallback",
+  "compile_mode_effective": "eager",
+  "dpS_wet": 0.19181902587738822,
+  "S_wet_phys_m2": 3021.749092024731,
+  "S_wet_lb": 153.45522070191055,
+  "Cd_pressure": 0.010211318827726244,
+  "Cd_friction": 0.05710342321462176,
+  "Cd_total": 0.067314742042348,
+  "references": {
+    "blasius_Cf_Re1000": 0.04199504732703608,
+    "ittc57_Cf": 0.075,
+    "exp_CT_Fr0.28": 0.0042,
+    "exp_Fr": 0.28,
+    "exp_Cf_ITTC57": 0.00291,
+    "exp_residual_form_wave": 0.00094
+  },
+  "errors_pct": {
+    "vs_blasius_friction_Cd_f": 35.97656592676115,
+    "vs_ittc57_friction_Cd_f": -23.862102380504318,
+    "vs_exp_CT_total_Cd": 1502.7319533892382,
+    "note": "only the first entry is a like-for-like comparison; the other two are kept for traceability with the m438 sweep and are flagged non-comparable in 'criteria'"
+  },
+  "criteria": {
+    "band_pct": 3.0,
+    "frame_used_for_pass_fail": "friction_vs_blasius_laminar",
+    "frames": {
+      "friction_vs_blasius_laminar": {
+        "comparable": true,
+        "quantity_sim": "Cd_friction (wall shear over wetted area, mix50)",
+        "quantity_ref": "Blasius laminar flat plate Cf = 1.328/sqrt(Re)",
+        "re": 1000.0,
+        "sim": 0.05710342321462176,
+        "ref": 0.04199504732703608,
+        "err_pct": 35.97656592676115,
+        "band_pct": 3.0,
+        "pass": false,
+        "note": "same Reynolds number, same reference length, friction against friction: this is the repo's calibrated in-frame friction check (SUBOFF Re=1000 L=96: Cd_tot +0.25 % vs 0.0420)"
+      },
+      "friction_vs_ittc1957": {
+        "comparable": false,
+        "quantity_sim": "Cd_friction",
+        "quantity_ref": "ITTC-1957 Cf = 0.075/(log10 Re - 2)^2",
+        "sim": 0.05710342321462176,
+        "ref": 0.075,
+        "err_pct": -23.862102380504318,
+        "reason": "ITTC-1957 is the turbulent flat-plate line; at Re = 1000 the boundary layer is laminar, so the reference is the wrong branch, not a target",
+        "pass": null
+      },
+      "total_vs_ittc1957": {
+        "comparable": false,
+        "quantity_sim": "Cd_total = Cd_pressure + Cd_friction",
+        "quantity_ref": "ITTC-1957 Cf (friction only)",
+        "sim": 0.067314742042348,
+        "ref": 0.075,
+        "err_pct": -10.247010610202667,
+        "reason": "category error: form/pressure drag is added on the left and absent on the right.  It was this pairing that produced the 1400-2700 % 'errors' reported by the m438 sweep",
+        "pass": null
+      },
+      "total_vs_exp_CT_fr0.28": {
+        "comparable": false,
+        "quantity_sim": "Cd_total (Re = 1000, Fr = 0.0000, single-phase)",
+        "quantity_ref": "model-test C_T at Fr = 0.28, Re ~ 1.2e7",
+        "sim": 0.067314742042348,
+        "ref": 0.0042,
+        "err_pct": 1502.7319533892382,
+        "reason": "four orders of magnitude in Re and no free surface: wave-making resistance is absent by construction.  Even a perfect friction result lands at -22.4 % of the experimental C_T",
+        "structural_floor_pct": -22.399999999999988,
+        "pass": null
+      }
+    },
+    "geometry_verdict": "UNDER_RESOLVED",
+    "force_window_drift_pct": -4.294718819992614,
+    "verdict": "WITHHELD_GEOMETRY",
+    "verdict_reason": "the voxelised body is not the DTMB 5415 hull at this resolution (T/dx = 1.39, Cb error -18.2 %, staircase/smooth wetted-area ratio 1.45): no drag coefficient computed on it is meaningful",
+    "m438_criterion": "|Cd_total - C_T(Fr=0.28)| / C_T <= 3 %",
+    "m438_criterion_well_posed": false,
+    "m438_root_cause": [
+      "Cd_total compared against a friction-only / Fr-similar reference (category + similarity mismatch)",
+      "waterline-clipped STL is open -> voxel body Cb ~ 18 (35x displacement) -> staircase wetted area ~15x smooth -> Cd inflated by the same factor",
+      "no geometry gate and no force-window steady check in the runner"
+    ]
+  },
+  "verdict": "WITHHELD_GEOMETRY",
+  "verdict_reason": "the voxelised body is not the DTMB 5415 hull at this resolution (T/dx = 1.39, Cb error -18.2 %, staircase/smooth wetted-area ratio 1.45): no drag coefficient computed on it is meaningful",
+  "geometry_validation": {
+    "n_solid_cells": 79,
+    "dx_m": 4.4375,
+    "L_over_dx": 32.0,
+    "B_over_dx": 4.295211267605634,
+    "T_over_dx": 1.3859154929577466,
+    "near_wall_cells": 217,
+    "displacement_voxel_m3": 6903.068603515625,
+    "displacement_reference_m3": 8439.064686,
+    "cb_voxel": 0.4147208147116721,
+    "cb_reference": 0.507,
+    "cb_error_pct": -18.201022739315153,
+    "stair_wall_faces": 222,
+    "smooth_wetted_lb": 153.45522070191055,
+    "stair_over_smooth_wetted_area": 1.4466760986336131,
+    "thickness_resolved": false,
+    "beam_resolved": false,
+    "cb_within_tolerance": false,
+    "verdict": "UNDER_RESOLVED"
+  },
+  "wetted_area_breakdown": {
+    "stl": "/root/tp-agent/work/m454/benchmarks/pending/dtmb5415_resistance/geometry/dtmb5415_underwater_closed.stl",
+    "cap_source": "sidecar",
+    "z_waterline_m": 6.15,
+    "wetted_area_m2": 3021.749092024731,
+    "cap_area_m2": 2955.4056851759474,
+    "lattice_dx_m": 4.4375,
+    "wetted_area_lb": 153.45522070191055,
+    "cap_area_lb": 150.08606534517804,
+    "n_tri_wetted": 87532,
+    "n_tri_cap": 942
+  },
+  "force_window": {
+    "cd_friction": {
+      "n": 300,
+      "mean": 0.008557439855697641,
+      "first_half_mean": 0.009041843715143234,
+      "second_half_mean": 0.008073035996252049,
+      "drift_pct": -12.000537583889866,
+      "steady": false
+    },
+    "cd_pressure": {
+      "n": 300,
+      "mean": 0.00153025408629522,
+      "first_half_mean": 0.001562423351667045,
+      "second_half_mean": 0.0014980848209233952,
+      "drift_pct": -4.294718819992614,
+      "steady": false
+    }
+  },
+  "no_wave_friction_bound": {
+    "value": 0.0032592000000000003,
+    "err_vs_exp_CT_pct": -22.399999999999988,
+    "note": "single-phase (no free surface) LBM cannot produce wave-making; even a perfect friction+form result caps here, so the Fr-similar experimental C_T frame is unreachable by construction."
+  },
+  "final_field_checks": {
+    "near_wall": {
+      "cd_p": 0.009992885982758095,
+      "cd_f_standard": 0.054063676243814855,
+      "cd_f_faces": 0.0536511529177774,
+      "cd_f_mix50": 0.053857414580796126,
+      "cd_tot_standard": 0.06405656222657295,
+      "cd_tot_mix50": 0.06385030056355422
+    },
+    "far_field": {
+      "cd_p": 0.010015714595876584,
+      "cd_f_standard": 0.054063676243814855,
+      "cd_f_faces": 0.0536511529177774,
+      "cd_f_mix50": 0.053857414580796126,
+      "cd_tot_standard": 0.06407939083969144,
+      "cd_tot_mix50": 0.0638731291766727
+    },
+    "domain_avg": {
+      "cd_p": 0.010015709133759926,
+      "cd_f_standard": 0.054063676243814855,
+      "cd_f_faces": 0.0536511529177774,
+      "cd_f_mix50": 0.053857414580796126,
+      "cd_tot_standard": 0.06407938537757478,
+      "cd_tot_mix50": 0.06387312371455606
+    },
+    "inlet": {
+      "cd_p": 0.010017233064307329,
+      "cd_f_standard": 0.054063676243814855,
+      "cd_f_faces": 0.0536511529177774,
+      "cd_f_mix50": 0.053857414580796126,
+      "cd_tot_standard": 0.06408090930812219,
+      "cd_tot_mix50": 0.06387464764510345
+    }
+  },
+  "diverged": false,
+  "timestamp": "2026-10-30 13:41:20"
+}

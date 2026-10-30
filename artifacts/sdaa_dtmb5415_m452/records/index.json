@@ -1,0 +1,58 @@
+{
+  "L24_sdaa": {
+    "label": "open STL L=24 sdaa:0 1200 steps (legacy run.py)",
+    "geometry": "open",
+    "code": "legacy",
+    "stl": "geometry/dtmb5415_underwater.stl",
+    "record": "artifacts/sdaa_dtmb5415_m452/records/L24_sdaa/result.json"
+  },
+  "L24_cpu": {
+    "label": "open STL L=24 cpu 1200 steps (legacy run.py)",
+    "geometry": "open",
+    "code": "legacy",
+    "stl": "geometry/dtmb5415_underwater.stl",
+    "record": "artifacts/sdaa_dtmb5415_m452/records/L24_cpu/result.json"
+  },
+  "L32": {
+    "label": "open STL L=32 sdaa:0 1200 steps (legacy run.py)",
+    "geometry": "open",
+    "code": "legacy",
+    "stl": "geometry/dtmb5415_underwater.stl",
+    "record": "artifacts/sdaa_dtmb5415_m452/records/L32/result.json"
+  },
+  "L48_sdaa": {
+    "label": "open STL L=48 sdaa:0 1600 steps (legacy run.py)",
+    "geometry": "open",
+    "code": "legacy",
+    "stl": "geometry/dtmb5415_underwater.stl",
+    "record": "artifacts/sdaa_dtmb5415_m452/records/L48_sdaa/result.json"
+  },
+  "L32_closed": {
+    "label": "closed STL L=32 sdaa:0 2000 steps (legacy run.py)",
+    "geometry": "closed",
+    "code": "legacy",
+    "stl": "geometry/dtmb5415_underwater_closed.stl",
+    "record": "artifacts/sdaa_dtmb5415_m452/records/L32_closed/result.json"
+  },
+  "L48_v2": {
+    "label": "closed STL L=48 sdaa:0 3000 steps (patched run.py)",
+    "geometry": "closed",
+    "code": "patched",
+    "stl": "/root/tp-agent/work/m454/benchmarks/pending/dtmb5415_resistance/geometry/dtmb5415_underwater_closed.stl",
+    "record": "artifacts/sdaa_dtmb5415_m452/records/L48_v2/result.json"
+  },
+  "L32_v2": {
+    "label": "closed STL L=32 sdaa:0 3000 steps",
+    "geometry": "closed",
+    "code": "patched",
+    "stl": "geometry/dtmb5415_underwater_closed.stl",
+    "record": "artifacts/sdaa_dtmb5415_m452/records/L32_v2/result.json"
+  },
+  "L48_long": {
+    "label": "closed STL L=48 sdaa:0 10000 steps",
+    "geometry": "closed",
+    "code": "patched",
+    "stl": "geometry/dtmb5415_underwater_closed.stl",
+    "record": "artifacts/sdaa_dtmb5415_m452/records/L48_long/result.json"
+  }
+}
