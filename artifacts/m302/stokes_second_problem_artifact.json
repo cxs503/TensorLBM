@@ -1,0 +1,46 @@
+{
+  "mission_id": 302,
+  "case": "stokes_second_problem",
+  "scenario_key": "stokes_second_problem",
+  "status": "VERIFIED",
+  "device": "GPU 6 (original scan) / CPU (diagnostic re-run)",
+  "torch_version": "2.7.1",
+  "diagnosis": {
+    "original_scan": {
+      "date": "2026-09-19",
+      "device": "GPU 6",
+      "torch": "2.11.0+cu128",
+      "status": "VERIFIED",
+      "all_pass_tol": true,
+      "all_monotone_convergence": true
+    },
+    "diagnostic_rerun": {
+      "date": "2026-10-29",
+      "device": "CPU",
+      "torch": "2.7.1",
+      "mode": "eager",
+      "case": "H=50, kH=6",
+      "amp_rel_max_pct": 0.181,
+      "phase_rel_max_pct": 0.106,
+      "complex_rel_max_pct": 0.302,
+      "finite": true,
+      "note": "CPU run confirms numerical correctness; full scan too slow on CPU, original GPU scan data used for report"
+    }
+  },
+  "results": {
+    "kH6_H50": {"amp_rel_max_pct": 0.182, "phase_rel_max_pct": 0.106, "complex_rel_max_pct": 0.303, "finite": true},
+    "kH6_H100": {"amp_rel_max_pct": 0.052, "phase_rel_max_pct": 0.042, "complex_rel_max_pct": 0.109, "finite": true},
+    "kH6_H200": {"amp_rel_max_pct": 0.017, "phase_rel_max_pct": 0.023, "complex_rel_max_pct": 0.053, "finite": true},
+    "kH8_H50": {"amp_rel_max_pct": 0.310, "phase_rel_max_pct": 0.147, "complex_rel_max_pct": 0.425, "finite": true},
+    "kH8_H100": {"amp_rel_max_pct": 0.072, "phase_rel_max_pct": 0.036, "complex_rel_max_pct": 0.108, "finite": true},
+    "kH8_H200": {"amp_rel_max_pct": 0.010, "phase_rel_max_pct": 0.008, "complex_rel_max_pct": 0.020, "finite": true}
+  },
+  "tolerance": 3.0,
+  "all_below_tolerance": true,
+  "convergence": {
+    "kH6": {"H": [50, 100, 200], "complex_err": [0.303, 0.109, 0.053], "monotone": true},
+    "kH8": {"H": [50, 100, 200], "complex_err": [0.425, 0.108, 0.020], "monotone": true}
+  },
+  "max_error_pct": 0.425,
+  "verdict": "PASS — all 6 configurations below 3% tolerance, both kH lines show monotone convergence"
+}
