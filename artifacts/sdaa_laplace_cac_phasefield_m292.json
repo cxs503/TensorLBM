@@ -1,0 +1,121 @@
+{
+  "mission_id": 292,
+  "benchmark": "laplace_cac_phasefield",
+  "case_dir": "benchmarks/verified/laplace_cac_phasefield",
+  "diagnosis": {
+    "original_verdict": "HONEST_FAIL",
+    "failure_mode": "臂覆盖 FAIL (arm coverage insufficient)",
+    "root_cause": "SDAA 要求网格分辨率阶梯（grid resolution ladder）以证明收敛性，但本案例每个臂组仅使用单一网格尺寸（B1: 128³, B3: 96³），缺少多档网格以计算 spread 和收敛趋势",
+    "numerical_checks": {
+      "per_arm_err_max_pct": 0.44490639953395295,
+      "per_arm_err_threshold": 1.5,
+      "per_arm_err_status": "PASS",
+      "u_max_max": 6.742015685931379e-05,
+      "u_max_threshold": 0.0002,
+      "u_max_status": "PASS",
+      "drift_10k_max": 8.617871524775128e-13,
+      "drift_10k_threshold": 1e-06,
+      "drift_10k_status": "PASS",
+      "nan_free_all": true,
+      "nan_free_status": "PASS",
+      "b1_spread_pct": 0.5066477614797954,
+      "b1_spread_threshold": 1.0,
+      "b1_spread_status": "PASS (in result.json) / NOT_EVALUATED (in SDAA scan)"
+    },
+    "arm_coverage_analysis": {
+      "b1_arms_present": [20.0, 32.0, 48.0],
+      "b1_arms_required": [20.0, 32.0, 48.0],
+      "b1_grid_levels": [128],
+      "b1_grid_levels_required": "≥2 (e.g., 96, 128 or 128, 192)",
+      "b3_arms_present": [10.0, 100.0],
+      "b3_arms_required": [10.0, 100.0],
+      "b3_grid_levels": [96],
+      "b3_grid_levels_required": "≥2 (e.g., 64, 96 or 96, 128)",
+      "coverage_status": "FAIL — 缺少网格分辨率阶梯",
+      "explanation": "SDAA 的'臂覆盖'不仅要求参数臂（R/ρ比）齐全，还要求每个参数臂至少有 2 档网格分辨率以证明数值收敛。当前案例 B1 三臂均固定在 128³，B3 两臂均固定在 96³，无法计算网格收敛趋势，故 SDAA 判定'臂覆盖 FAIL'且'B1 spread NOT_EVALUATED'。"
+    },
+    "why_honest_fail": "数值判据（per-arm err, u_max, drift, NaN-free）全部 PASS，但 SDAA 流程要求臂覆盖（含网格阶梯）作为前置条件。缺少网格阶梯 → B1 spread 无法在 SDAA 口径下评估（NOT_EVALUATED）→ 臂覆盖 FAIL → overall FAIL。这是流程要求而非数值不合格，故为 HONEST_FAIL（诚实失败：数值合格但覆盖不足）。"
+  },
+  "per_arm_verdict_table": [
+    {
+      "arm": "b1_R20",
+      "kind": "b1",
+      "arg": 20.0,
+      "grid": "128³",
+      "sigma_rec": 0.009993760665757663,
+      "err_pct": 0.0624,
+      "u_max": 6.734e-05,
+      "drift_10k": 8.618e-13,
+      "nan_free": true,
+      "numerical_pass": true,
+      "grid_convergence": "NOT_EVALUATED (single grid level)"
+    },
+    {
+      "arm": "b1_R32",
+      "kind": "b1",
+      "arg": 32.0,
+      "grid": "128³",
+      "sigma_rec": 0.010000354241994601,
+      "err_pct": 0.0035,
+      "u_max": 6.139e-05,
+      "drift_10k": 8.604e-13,
+      "nan_free": true,
+      "numerical_pass": true,
+      "grid_convergence": "NOT_EVALUATED (single grid level)"
+    },
+    {
+      "arm": "b1_R48",
+      "kind": "b1",
+      "arg": 48.0,
+      "grid": "128³",
+      "sigma_rec": 0.010044490639953395,
+      "err_pct": 0.4449,
+      "u_max": 6.083e-05,
+      "drift_10k": 8.579e-13,
+      "nan_free": true,
+      "numerical_pass": true,
+      "grid_convergence": "NOT_EVALUATED (single grid level)"
+    },
+    {
+      "arm": "b3_rho10",
+      "kind": "b3",
+      "arg": 10.0,
+      "grid": "96³",
+      "sigma_rec": 0.009995520561068904,
+      "err_pct": 0.0448,
+      "u_max": 5.022e-05,
+      "drift_10k": 8.616e-13,
+      "nan_free": true,
+      "numerical_pass": true,
+      "grid_convergence": "NOT_EVALUATED (single grid level)"
+    },
+    {
+      "arm": "b3_rho100",
+      "kind": "b3",
+      "arg": 100.0,
+      "grid": "96³",
+      "sigma_rec": 0.009993821686061161,
+      "err_pct": 0.0618,
+      "u_max": 6.742e-05,
+      "drift_10k": 8.616e-13,
+      "nan_free": true,
+      "numerical_pass": true,
+      "grid_convergence": "NOT_EVALUATED (single grid level)"
+    }
+  ],
+  "device_evidence": {
+    "device": "cuda:0(GPU5)",
+    "dtype": "torch.float64",
+    "fp64": true,
+    "note": "所有臂均在同一 GPU 设备以 fp64 运行，跨设备一致性由 README 披露（σ_rec 跨设备一致到 ~1e-5）"
+  },
+  "recommendation": {
+    "fix_type": "add_grid_ladder",
+    "description": "为 B1 至少一臂（建议 R=20）和 B3 至少一臂（建议 ρ=100）增加第二档网格分辨率（B1: 96³ 或 192³; B3: 64³ 或 128³），以证明网格收敛性",
+    "estimated_cost": "单臂约 25 分钟（GPU fp64），新增 2-4 臂约 50-100 分钟",
+    "expected_outcome": "臂覆盖 PASS → overall PASS（数值判据已全部合格）",
+    "code_change_required": false,
+    "note": "run.py 已支持 --arms 参数选择单臂运行，无需修改业务代码，只需增加新的臂定义并运行"
+  },
+  "verdict": "HONEST_FAIL — 数值合格但臂覆盖（网格阶梯）不足；修复路径明确（补跑缺失网格档位），不改业务代码"
+}
