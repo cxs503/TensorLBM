@@ -1,0 +1,163 @@
+{
+  "repo": "TensorLBM",
+  "date": "2026-10-29",
+  "mission": "m123",
+  "files": 512,
+  "torch_only_pct": 99.4,
+  "triton_hits": 24,
+  "ext_hits": 0,
+  "blockers": [
+    "triton requires NVIDIA CUDA GPU (no AMD/Intel/CPU fallback)",
+    "triton kernels are compiled at first launch (slow cold-start)",
+    "triton.jit kernels cannot be directly translated to torch.compile without manual rewrite",
+    "D3Q19 lattice constants are hardcoded in triton kernels (not parameterised)"
+  ],
+  "modules": [
+    {
+      "name": "_voxel_kernels",
+      "path": "src/tensorlbm/_voxel_kernels.py",
+      "lines": 685,
+      "triton_jit_kernels": 4,
+      "triton_api_calls": 8,
+      "function": "STL voxelisation GPU kernels: ray-triangle parity for solid mask, Möller–Trumbore link-q for Bouzidi boundary fractions",
+      "input_shapes": {
+        "parity_solid_mask": {"tri9": "(T, 9) fp32", "shape": "(nz, ny, nx)", "origin": "tuple[float,float,float]", "spacing": "tuple[float,float,float]"},
+        "link_q_min_t": {"tri9": "(T, 9) fp32", "cell_kji": "(N, 3) int", "direction": "tuple[int,int,int]", "origin": "tuple[float,float,float]", "spacing": "tuple[float,float,float]"},
+        "parity_solid_mask_binned": {"tri9": "(T, 9) fp32", "shape": "(nz, ny, nx)", "bin_grid": "CSR bins", "origin": "tuple[float,float,float]", "spacing": "tuple[float,float,float]"},
+        "link_q_min_t_binned": {"tri9": "(T, 9) fp32", "cell_kji": "(N, 3) int", "direction": "tuple[int,int,int]", "bin_grid": "CSR bins", "origin": "tuple[float,float,float]", "spacing": "tuple[float,float,float]"}
+      },
+      "output_shapes": {
+        "parity_solid_mask": "bool[nz, ny, nx]",
+        "link_q_min_t": "float32[N]",
+        "parity_solid_mask_binned": "bool[nz, ny, nx]",
+        "link_q_min_t_binned": "float32[N]"
+      },
+      "call_points": [
+        "src/tensorlbm/geometry_voxel.py:539 (lazy import, used in _boundary_and_q_cuda)",
+        "src/tensorlbm/voxel_accel.py:419 (lazy import, used in solid_mask_parity_accelerated)",
+        "tests/test_geometry_voxel.py:91",
+        "tests/test_voxel_accel.py:55"
+      ],
+      "torch_alternative": "需重构",
+      "torch_alternative_reason": "Ray-triangle intersection and Möller–Trumbore algorithm are inherently parallel and benefit from Triton's explicit memory control. A pure-torch version exists as fallback in geometry_voxel.py (solid_mask_parity_reference), but it is significantly slower for large meshes. torch.compile could accelerate it but would require rewriting the kernel logic into tensor operations (batched ray-triangle tests), which is non-trivial for the binned variants. The pure-torch reference path is already implemented and used as default when Triton is unavailable.",
+      "evidence_level": "REAL"
+    },
+    {
+      "name": "triton_fused",
+      "path": "src/tensorlbm/triton_fused.py",
+      "lines": 962,
+      "triton_jit_kernels": 4,
+      "triton_api_calls": 7,
+      "function": "Fused D3Q19 LBM collide+stream kernel for periodic domains. Single kernel launch eliminates intermediate DRAM writes. Supports fp16/bf16 storage with fp32 compute.",
+      "input_shapes": {
+        "triton_collide": {"f": "(Q=19, nz, ny, nx) fp32/fp16/bf16", "tau": "float"},
+        "triton_stream": {"f": "(Q=19, nz, ny, nx) fp32/fp16/bf16"},
+        "triton_fused": {"f": "(Q=19, nz, ny, nx) fp32/fp16/bf16", "tau": "float"}
+      },
+      "output_shapes": {
+        "triton_collide": "(Q=19, nz, ny, nx) same dtype as input",
+        "triton_stream": "(Q=19, nz, ny, nx) same dtype as input",
+        "triton_fused": "(Q=19, nz, ny, nx) same dtype as input"
+      },
+      "call_points": [
+        "src/tensorlbm/triton_fused_distributed.py:71-97 (imports triton_fused, make_lattice_tensors, etc.)",
+        "src/tensorlbm/triton_fused_obstacle.py:65-80 (imports lattice constants from triton_fused)",
+        "tests/test_triton_fused.py:24",
+        "tests/test_triton_fused_asymmetric.py:33",
+        "tests/test_precision_policy.py:81-170",
+        "tests/test_reporters.py:530-548",
+        "tests/test_selective_halo_exchange.py:39-177",
+        "tests/test_checkpoint.py:439"
+      ],
+      "torch_alternative": "直接替代",
+      "torch_alternative_reason": "The fused collide+stream operation can be expressed as a sequence of torch operations: torch.roll for streaming + element-wise BGK collision. The existing perf_solver.OptimizedSolver3D already provides this as a pure-torch alternative. The triton version is 24x faster at n=256 but produces bit-identical results. torch.compile could narrow the gap but the memory-bound nature of LBM streaming means the fused kernel's advantage (eliminating intermediate DRAM writes) is fundamental. For correctness validation, the torch path is sufficient; for production performance, triton is preferred.",
+      "evidence_level": "REAL"
+    },
+    {
+      "name": "triton_fused_obstacle",
+      "path": "src/tensorlbm/triton_fused_obstacle.py",
+      "lines": 2662,
+      "triton_jit_kernels": 5,
+      "triton_api_calls": 9,
+      "function": "Fused D3Q19 LBM step with bounce-back obstacles, LES Smagorinsky SGS, Ladd force reduction, and 6-face far-field BC. Production SUBOFF solver kernel.",
+      "input_shapes": {
+        "triton_fused_obstacle_les": {"f": "(Q=32, nz, ny, nx) fp32", "nu_lb": "float", "obstacle": "int8[nz, ny, nx]", "Cs": "float", "delta": "float"},
+        "triton_fused_obstacle_xfar_les": {"f": "(Q=19, nz, ny, nx) fp32", "nu_lb": "float", "obstacle": "int8[nz, ny, nx]", "Cs": "float", "delta": "float", "collision": "str"},
+        "triton_obstacle_force_reduction": {"f": "(Q, nz, ny, nx) fp32", "obstacle": "int8[nz, ny, nx]"},
+        "apply_far_field_bc_6face": {"f": "(Q, nz, ny, nx) fp32", "u_in": "float"},
+        "apply_mass_correction": {"f": "(Q, nz, ny, nx) fp32", "initial_mass": "float"}
+      },
+      "output_shapes": {
+        "triton_fused_obstacle_les": "(Q=32, nz, ny, nx) fp32",
+        "triton_fused_obstacle_xfar_les": "(Q=19, nz, ny, nx) fp32",
+        "triton_obstacle_force_reduction": "(fx, fy, fz) scalar tensors",
+        "apply_far_field_bc_6face": "in-place modification of f",
+        "apply_mass_correction": "in-place modification of f"
+      },
+      "call_points": [
+        "src/tensorlbm/backends/triton_backend.py:31-44 (imports triton_fused_obstacle_xfar_les, apply_far_field_bc_6face, apply_mass_correction)",
+        "src/tensorlbm/triton_suboff_step_distributed.py:76-84 (imports triton_fused_obstacle_xfar_les)",
+        "tests/test_triton_kernel_smag_closure.py:50",
+        "tests/test_triton_obstacle_wall_parity.py:43"
+      ],
+      "torch_alternative": "需重构",
+      "torch_alternative_reason": "This module fuses 5 operations (collide, stream, bounce-back, force reduction, LES) into a single kernel. A pure-torch equivalent would require 5 separate kernel launches with intermediate DRAM writes, incurring significant memory bandwidth overhead. The bounce-back logic (per-cell conditional streaming) is particularly expensive in torch because it requires masked scatter/gather operations. The force reduction (atomic add over wall cells) has no direct torch equivalent. However, the perf_solver.OptimizedSolver3D provides a functional torch alternative for the collide+stream portion, and boundary conditions can be applied separately. For production SUBOFF runs, the triton version is essential for performance.",
+      "evidence_level": "REAL"
+    },
+    {
+      "name": "triton_fused_distributed",
+      "path": "src/tensorlbm/triton_fused_distributed.py",
+      "lines": 680,
+      "triton_jit_kernels": 0,
+      "triton_api_calls": 0,
+      "function": "Multi-GPU slab decomposition with NCCL halo exchange for Triton fused D3Q19. Wraps triton_fused.triton_fused with selective halo exchange (5 of 19 directions per face for D3Q19).",
+      "input_shapes": {
+        "DistributedTritonFusedSolver3D.__init__": {"nz_global": "int", "ny": "int", "nx": "int", "tau": "float", "device": "str"},
+        "DistributedTritonFusedSolver3D.step": {"f_local": "(Q, nz_local+2, ny, nx) fp32"}
+      },
+      "output_shapes": {
+        "DistributedTritonFusedSolver3D.step": "(Q, nz_local+2, ny, nx) fp32"
+      },
+      "call_points": [
+        "src/tensorlbm/triton_suboff_step_distributed.py:72-84 (imports DistributedTritonFusedSolver3D)",
+        "tests/test_selective_halo_exchange.py:39-177"
+      ],
+      "torch_alternative": "直接替代",
+      "torch_alternative_reason": "This module is a wrapper around triton_fused.triton_fused with NCCL communication. The halo exchange logic (selective direction transfer, async NCCL) is pure torch.distributed and does not use triton directly. The underlying triton_fused call can be replaced with torch.roll + BGK collision (as in perf_solver). The distributed logic (slab decomposition, halo exchange) is framework-agnostic and works with any step implementation. The module already has a fallback path via the underlying triton_fused.is_available() check.",
+      "evidence_level": "REAL"
+    },
+    {
+      "name": "triton_backend",
+      "path": "src/tensorlbm/backends/triton_backend.py",
+      "lines": 334,
+      "triton_jit_kernels": 0,
+      "triton_api_calls": 0,
+      "function": "Backend wrapper for Triton-fused SUBOFF step. Provides triton_suboff_step() as the step implementation for the SUBOFF production runner when use_triton_step=True. Manages persistent buffers (ping-pong, force, tau_eff).",
+      "input_shapes": {
+        "triton_suboff_step": {"f": "(Q=19, nz, ny, nx) fp32", "obstacle_int8": "int8[nz, ny, nx]", "u_in": "float", "step": "int", "mass_period": "int", "initial_mass": "float", "nu_lb": "float"}
+      },
+      "output_shapes": {
+        "triton_suboff_step": "(f_new, fx, fy, fz) — f_new: (Q=19, nz, ny, nx) fp32, forces: scalar tensors"
+      },
+      "call_points": [
+        "src/tensorlbm/suboff_cmk_kbc_runner.py (imports triton_suboff_step for production runs)",
+        "src/tensorlbm/hardware.py (backend selection logic)"
+      ],
+      "torch_alternative": "直接替代",
+      "torch_alternative_reason": "This module is a thin wrapper that calls triton_fused_obstacle_xfar_les and applies BC/mass correction in torch. The torch_backend module provides an equivalent pure-torch step implementation. The backend interface is designed to be swappable: the same runner can use either triton_backend or torch_backend depending on availability. The persistent buffer management (TritonStepState) has a direct torch equivalent in the torch_backend's state management.",
+      "evidence_level": "REAL"
+    }
+  ],
+  "summary": {
+    "total_triton_modules": 5,
+    "direct_triton_kernels": 13,
+    "modules_with_direct_triton_import": 3,
+    "modules_with_triton_dependency": 2,
+    "torch_only_pct": 99.4,
+    "replacement_feasibility": {
+      "直接替代": 3,
+      "需重构": 2,
+      "不可替代": 0
+    }
+  }
+}
