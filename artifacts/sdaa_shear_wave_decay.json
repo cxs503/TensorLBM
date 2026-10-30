@@ -1,0 +1,134 @@
+{
+  "benchmark": "shear_wave_decay",
+  "description": "2D decaying shear wave: u=U0·sin(2πy/H)·e^{-νk²t}, viscous dissipation check",
+  "device": "sdaa",
+  "device_evidence": "torch.sdaa.get_device_name(0) = '/dev/tcaicard9' (device_count=1)",
+  "device_name": "/dev/tcaicard9",
+  "triton_interpret": "1",
+  "triton_workaround": "none",
+  "compile_mode": "eager (SDAA torch.compile known to fallback)",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "boundary": "periodic",
+  "formula": "gamma_vel_theory = nu·k², nu=(tau-1/2)/3, k=2π/H; gamma_e_theory = 2·gamma_vel_theory",
+  "cases": [
+    {
+      "H": 64,
+      "tau": 0.8,
+      "u0": 0.05,
+      "nu": 0.10000000000000002,
+      "k": 0.09817477042468103,
+      "steps": 3200,
+      "record_every": 100,
+      "dtype": "float32",
+      "device": "sdaa",
+      "gamma_vel_theory": 0.0009638285547938827,
+      "gamma_vel_sim": 0.00096429986655322,
+      "err_vel_pct": 0.04889995808829706,
+      "r2_vel": 0.9999999998070237,
+      "gamma_vel_half1": 0.0009642746042450984,
+      "gamma_vel_half2": 0.0009643182791726338,
+      "gamma_e_theory": 0.0019276571095877654,
+      "gamma_e_sim": 0.0019286118200171013,
+      "err_e_pct": 0.04952698405682889,
+      "r2_e": 0.9999999997873833,
+      "mass_drift_rel": 1.144409043263311e-05,
+      "n_samples": 32,
+      "wall_sec": 9.68222713470459
+    },
+    {
+      "H": 128,
+      "tau": 0.8,
+      "u0": 0.05,
+      "nu": 0.10000000000000002,
+      "k": 0.04908738521234052,
+      "steps": 10000,
+      "record_every": 100,
+      "dtype": "float32",
+      "device": "sdaa",
+      "gamma_vel_theory": 0.00024095713869847068,
+      "gamma_vel_sim": 0.000240951522344526,
+      "err_vel_pct": -0.0023308518581450495,
+      "r2_vel": 0.9999999996628183,
+      "gamma_vel_half1": 0.0002409516013694293,
+      "gamma_vel_half2": 0.0002409456837560551,
+      "gamma_e_theory": 0.00048191427739694136,
+      "gamma_e_sim": 0.00048190323357407664,
+      "err_e_pct": -0.002291657123001239,
+      "r2_e": 0.9999999998786023,
+      "mass_drift_rel": 2.771616477659311e-05,
+      "n_samples": 100,
+      "wall_sec": 30.678104877471924
+    }
+  ],
+  "convergence": {
+    "grids": [
+      64,
+      128
+    ],
+    "err_vel_pct_per_grid": {
+      "64": 0.04889995808829706,
+      "128": -0.0023308518581450495
+    },
+    "err_e_pct_per_grid": {
+      "64": 0.04952698405682889,
+      "128": -0.002291657123001239
+    },
+    "r2_vel_per_grid": {
+      "64": 0.9999999998070237,
+      "128": 0.9999999996628183
+    },
+    "converged_monotone": true,
+    "within_tol": true,
+    "exponential_r2_ok": true,
+    "tol_pct": 3.0,
+    "verified": true
+  },
+  "criteria": [
+    {
+      "name": "速度衰减率偏差 H=64",
+      "value": "+0.0489%",
+      "threshold": "≤ 3.0%",
+      "pass": true
+    },
+    {
+      "name": "速度衰减率偏差 H=128",
+      "value": "-0.0023%",
+      "threshold": "≤ 3.0%",
+      "pass": true
+    },
+    {
+      "name": "动能衰减率偏差 H=64",
+      "value": "+0.0495%",
+      "threshold": "≤ 3.0%",
+      "pass": true
+    },
+    {
+      "name": "动能衰减率偏差 H=128",
+      "value": "-0.0023%",
+      "threshold": "≤ 3.0%",
+      "pass": true
+    },
+    {
+      "name": "网格收敛（|err| 单调下降）",
+      "value": "True",
+      "threshold": "True",
+      "pass": true
+    },
+    {
+      "name": "指数衰减 R² H=64",
+      "value": "1.000000",
+      "threshold": "≥ 0.999",
+      "pass": true
+    },
+    {
+      "name": "指数衰减 R² H=128",
+      "value": "1.000000",
+      "threshold": "≥ 0.999",
+      "pass": true
+    }
+  ],
+  "all_criteria_pass": true,
+  "total_wall_sec": 40.360332012176514,
+  "verdict": "PASS"
+}
