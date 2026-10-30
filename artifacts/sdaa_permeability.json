@@ -1,0 +1,127 @@
+{
+  "benchmark": "permeability_square_array_2d",
+  "created_utc": "2026-10-29T13:13:25Z",
+  "device_evidence": {
+    "device": "sdaa:0",
+    "device_name": "/dev/tcaicard6",
+    "torch_version": "2.7.1"
+  },
+  "settings": {
+    "tau": 1.0,
+    "nu": 0.16666666666666666,
+    "Re_target": 0.05,
+    "force_scale": 10.0,
+    "sample_every": 200,
+    "drift_tol": 1e-05,
+    "meas_samples": 10,
+    "post_steady": 2000,
+    "ladder": {
+      "0.3": [
+        26,
+        52
+      ],
+      "0.5": [
+        40,
+        80
+      ]
+    }
+  },
+  "cases": [
+    {
+      "phi": 0.3,
+      "d": 26,
+      "force_scale": 10.0,
+      "steps_run": 27000,
+      "steady_step": null,
+      "steady_detected": false,
+      "phi_actual": 0.29142011834319526,
+      "k_sim": 10.001360803334169,
+      "k_ref": 9.384978481188394,
+      "err_pct": 6.567754240260371,
+      "Re_cell": 0.5393697620571083,
+      "Ma": 0.0712587978482542,
+      "wall_seconds": 111.57967295870185,
+      "device": "sdaa:0"
+    },
+    {
+      "phi": 0.3,
+      "d": 52,
+      "force_scale": 10.0,
+      "steps_run": 56200,
+      "steady_step": 54200,
+      "steady_detected": true,
+      "phi_actual": 0.29770710059171596,
+      "k_sim": 38.62362270978841,
+      "k_ref": 37.53991392475358,
+      "err_pct": 2.8868174477092667,
+      "Re_cell": 0.5161191524017327,
+      "Ma": 0.03451817086542889,
+      "wall_seconds": 248.09776689857244,
+      "device": "sdaa:0"
+    },
+    {
+      "phi": 0.5,
+      "d": 40,
+      "force_scale": 10.0,
+      "steps_run": 51200,
+      "steady_step": 49200,
+      "steady_detected": true,
+      "phi_actual": 0.495625,
+      "k_sim": 7.6427044501957395,
+      "k_ref": 6.008825462397898,
+      "err_pct": 27.191320467241887,
+      "Re_cell": 0.6415212226066513,
+      "Ma": 0.07108159838579593,
+      "wall_seconds": 233.72890414111316,
+      "device": "sdaa:0"
+    },
+    {
+      "phi": 0.5,
+      "d": 80,
+      "force_scale": 10.0,
+      "steps_run": 90600,
+      "steady_step": 88600,
+      "steady_detected": true,
+      "phi_actual": 0.49953125,
+      "k_sim": 26.533977423179678,
+      "k_ref": 24.03530184959159,
+      "err_pct": 10.395856849330753,
+      "Re_cell": 0.552496764825635,
+      "Ma": 0.03360257901166982,
+      "wall_seconds": 414.3993559796363,
+      "device": "sdaa:0"
+    }
+  ],
+  "gates": [
+    {
+      "phi": 0.3,
+      "err_chain_pct": [
+        6.567754240260371,
+        2.8868174477092667
+      ],
+      "strictly_decreasing": true,
+      "finest_err_pct": 2.8868174477092667,
+      "finest_le_3pct": true,
+      "gate_pass": true
+    },
+    {
+      "phi": 0.5,
+      "err_chain_pct": [
+        27.191320467241887,
+        10.395856849330753
+      ],
+      "strictly_decreasing": true,
+      "finest_err_pct": 10.395856849330753,
+      "finest_le_3pct": false,
+      "gate_pass": false
+    }
+  ],
+  "overall_pass": false,
+  "notes": {
+    "reduced_ladder": "Used reduced ladder (phi=0.3: [26,52], phi=0.5: [40,80]) to stay within 20 min wall time",
+    "reduced_post_steady": "POST_STEADY=2000 (vs original 8000) since S2 sensitivity not needed",
+    "reduced_meas_samples": "MEAS_SAMPLES=10 (vs original 20) for 2000-step measurement window",
+    "triton_bypass": "No triton dependency in core kernels; TRITON_INTERPRET not needed",
+    "compile_mode": "eager (no torch.compile for SDAA due to teco_inductor limitations)"
+  }
+}
