@@ -1,0 +1,1370 @@
+=== RAW GREP OUTPUT: TensorLBM ===
+/root/tp-agent/work/m401/app/backend/agent_core.py:1112:    if re.search(r"\bgpu\b|cuda|显卡|sdaa|太初", low):
+/root/tp-agent/work/m401/app/backend/agent_core.py:1113:        device = "sdaa:0"
+/root/tp-agent/work/m401/app/backend/main.py:376:        import torch_sdaa
+/root/tp-agent/work/m401/app/backend/main.py:378:        sdaa_ok = torch.sdaa.is_available()
+/root/tp-agent/work/m401/app/backend/main.py:379:        n_sdaas = torch.sdaa.device_count() if sdaa_ok else 0
+/root/tp-agent/work/m401/app/backend/main.py:380:        sdaa_names = [torch.sdaa.get_device_name(i) for i in range(n_sdaas)] if sdaa_ok else []
+/root/tp-agent/work/m401/app/backend/main.py:385:            ["cpu"] + [f"sdaa:{i}" for i in range(n_sdaas)] + [f"cuda:{i}" for i in range(n_gpus)]
+/root/tp-agent/work/m401/app/backend/main.py:388:        sdaa_ok = False
+/root/tp-agent/work/m401/app/backend/main.py:389:        n_sdaas = 0
+/root/tp-agent/work/m401/app/backend/main.py:390:        sdaa_names = []
+/root/tp-agent/work/m401/app/backend/main.py:411:        "sdaa_available": sdaa_ok,
+/root/tp-agent/work/m401/app/backend/main.py:412:        "sdaa_count": n_sdaas,
+/root/tp-agent/work/m401/app/backend/main.py:413:        "sdaa_names": sdaa_names,
+/root/tp-agent/work/m401/app/backend/routers/ai_suboff.py:65:    sdaa = getattr(torch, "sdaa", None)
+/root/tp-agent/work/m401/app/backend/routers/ai_suboff.py:66:    if sdaa is not None and hasattr(sdaa, "empty_cache"):
+/root/tp-agent/work/m401/app/backend/routers/ai_suboff.py:67:        sdaa.empty_cache()
+/root/tp-agent/work/m401/app/backend/routers/ai_suboff.py:96:    device: str = Field(default_suboff_device(), description="推理设备 (cpu/sdaa:0/cuda:0)")
+/root/tp-agent/work/m401/app/backend/routers/cylinder_bench.py:42:        ("sdaa", "float32", torch.float32, torch.device("sdaa")),
+/root/tp-agent/work/m401/app/backend/routers/cylinder_bench.py:43:        ("sdaa", "bfloat16", torch.bfloat16, torch.device("sdaa")),
+/root/tp-agent/work/m401/app/backend/routers/cylinder_bench.py:65:            if dev_name == "sdaa":
+/root/tp-agent/work/m401/app/backend/routers/cylinder_bench.py:66:                torch.sdaa.synchronize()
+/root/tp-agent/work/m401/app/backend/routers/cylinder_bench.py:74:            if dev_name == "sdaa":
+/root/tp-agent/work/m401/app/backend/routers/cylinder_bench.py:75:                torch.sdaa.synchronize()
+/root/tp-agent/work/m401/app/backend/routers/cylinder_compare.py:5:SDAA f32: device='sdaa:0', dtype=float32 — SDAA accelerated.
+/root/tp-agent/work/m401/app/backend/routers/cylinder_compare.py:36:_sims: dict[str, dict] = {}  # keys: "cpu_f32", "sdaa_f32"
+/root/tp-agent/work/m401/app/backend/routers/cylinder_compare.py:113:    if device_str.startswith("sdaa"):
+/root/tp-agent/work/m401/app/backend/routers/cylinder_compare.py:114:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/app/backend/routers/cylinder_compare.py:177:    if device_str.startswith("sdaa"):
+/root/tp-agent/work/m401/app/backend/routers/cylinder_compare.py:178:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/app/backend/routers/cylinder_compare.py:250:            ("sdaa:0", "float32", "sdaa_f32"),
+/root/tp-agent/work/m401/app/backend/routers/cylinder_device_sim.py:137:            if device == "sdaa":
+/root/tp-agent/work/m401/app/backend/routers/cylinder_device_sim.py:138:                torch.sdaa.synchronize()
+/root/tp-agent/work/m401/app/backend/routers/simulations.py:320:def _next_sdaa_card() -> int:
+/root/tp-agent/work/m401/app/backend/routers/simulations.py:685:    card = _next_sdaa_card()
+/root/tp-agent/work/m401/app/backend/routers/simulations.py:686:    device = torch.device(f"sdaa:{card}")
+/root/tp-agent/work/m401/app/backend/routers/simulations.py:688:        torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/app/backend/schemas/solver.py:87:    device: str = Field("cpu", description="Torch device (cpu / sdaa:0 / cuda:0 …)")
+/root/tp-agent/work/m401/app/backend/schemas/solver.py:111:    device: str = Field("cpu", description="Torch device (cpu / sdaa:0 / cuda:0 …)")
+/root/tp-agent/work/m401/app/tests/test_solver_api.py:169:            "device": "sdaa:0",
+/root/tp-agent/work/m401/benchmarks/bench_accuracy.py:419:        choices=["cpu", "sdaa", "cuda"],
+/root/tp-agent/work/m401/benchmarks/bench_bluff_body_matrix.py:329:    parser.add_argument("--device", default="cpu", help="cpu or sdaa or cuda")
+/root/tp-agent/work/m401/benchmarks/bench_dam_break.py:202:        choices=["cpu", "sdaa", "cuda", "mps"],
+/root/tp-agent/work/m401/benchmarks/bench_fs_2d.py:57:DEVICE = "sdaa" if torch.sdaa.is_available() else "cpu"
+/root/tp-agent/work/m401/benchmarks/bench_mlups.py:6:    PYTHONPATH=src python benchmarks/bench_mlups.py [--device cpu|sdaa|cuda|mps] [--compile]
+/root/tp-agent/work/m401/benchmarks/bench_mlups.py:156:    parser.add_argument("--device", default="cpu", choices=["cpu", "sdaa", "cuda", "mps"])
+/root/tp-agent/work/m401/benchmarks/bench_multiphase.py:163:        choices=["cpu", "sdaa", "cuda", "mps"],
+/root/tp-agent/work/m401/benchmarks/compile_route.py:47:``torch_sdaa._inductor.codegen.teco``) whose backend is still incomplete
+/root/tp-agent/work/m401/benchmarks/compile_route.py:48:for the whole LBM step chain.  :func:`_enable_sdaa_inductor` shims the
+/root/tp-agent/work/m401/benchmarks/compile_route.py:111:def _enable_sdaa_inductor() -> str | None:
+/root/tp-agent/work/m401/benchmarks/compile_route.py:114:    ``torch_sdaa`` ships its own inductor device codegen, but importing plain
+/root/tp-agent/work/m401/benchmarks/compile_route.py:115:    ``torch_sdaa`` does **not** register it: ``torch._inductor.codegen.common
+/root/tp-agent/work/m401/benchmarks/compile_route.py:122:    Importing ``torch_sdaa._inductor`` registers the ``sdaa`` device codegen and
+/root/tp-agent/work/m401/benchmarks/compile_route.py:129:    ``AttributeError: 'torch_sdaa._C._SDAADeviceProperties' object has no
+/root/tp-agent/work/m401/benchmarks/compile_route.py:138:        import torch_sdaa  # noqa: F401,PLC0415
+/root/tp-agent/work/m401/benchmarks/compile_route.py:142:        import torch_sdaa._inductor  # noqa: F401,PLC0415
+/root/tp-agent/work/m401/benchmarks/compile_route.py:164:        from torch_sdaa._inductor.codegen.teco import (
+/root/tp-agent/work/m401/benchmarks/compile_route.py:182:    #     File ".../torch_sdaa/_inductor/codegen/teco.py", line 2073
+/root/tp-agent/work/m401/benchmarks/compile_route.py:195:        from torch_sdaa._inductor.codegen.teco import TecoKernel as _TecoKernel
+/root/tp-agent/work/m401/benchmarks/compile_route.py:210:    return "sdaa-teco_inductor"
+/root/tp-agent/work/m401/benchmarks/compile_route.py:213:_SDAA_INDUCTOR_TAG = _enable_sdaa_inductor()
+/root/tp-agent/work/m401/benchmarks/pending/backward_step/run.py:48:    run.py --m 64 96 --device sdaa:0 [--u 0.06] [--steps N N] [--compile-mode eager]
+/root/tp-agent/work/m401/benchmarks/pending/backward_step/run.py:49:    run.py --smoke --device sdaa:0          # 小网格短跑冒烟
+/root/tp-agent/work/m401/benchmarks/pending/backward_step/run.py:97:        import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/benchmarks/pending/backward_step/run.py:99:        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+/root/tp-agent/work/m401/benchmarks/pending/backward_step/run.py:100:            return "sdaa:0"
+/root/tp-agent/work/m401/benchmarks/pending/blasius_flat_plate/_diag.py:47:    ap.add_argument("--device", default="sdaa:4")
+/root/tp-agent/work/m401/benchmarks/pending/blasius_flat_plate/_exp.py:276:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/pending/blasius_flat_plate/_mech.py:93:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/pending/blasius_flat_plate/_study.py:70:    ap.add_argument("--device", default="sdaa:5")
+/root/tp-agent/work/m401/benchmarks/pending/cylinder_re40_st/run_freestream.py:62:    run.py --D 20 40 --device sdaa:0 [--steps 30000 40000]
+/root/tp-agent/work/m401/benchmarks/pending/cylinder_re40_st/run_freestream.py:302:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/pending/dtmb5415_resistance/run.py:34:      [--steps 8000] [--device sdaa:0] [--collision mrt|smagorinsky]
+/root/tp-agent/work/m401/benchmarks/pending/dtmb5415_resistance/run.py:106:        import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/benchmarks/pending/dtmb5415_resistance/run.py:108:        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+/root/tp-agent/work/m401/benchmarks/pending/dtmb5415_resistance/run.py:109:            return "sdaa:0"
+/root/tp-agent/work/m401/benchmarks/pending/kcs_resistance/run.py:39:  python run.py [--resolution 96] [--steps 20000] [--device sdaa:0]
+/root/tp-agent/work/m401/benchmarks/pending/kcs_resistance/run.py:65:        import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/benchmarks/pending/kcs_resistance/run.py:67:        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+/root/tp-agent/work/m401/benchmarks/pending/kcs_resistance/run.py:68:            return "sdaa:0"
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/fast_kernel.py:146:def selftest(C: int = 24, device: str = "sdaa:3") -> None:
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/fast_kernel.py:158:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/fast_kernel.py:163:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/fast_kernel.py:168:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/fast_kernel.py:181:        dev = sys.argv[i + 1] if len(sys.argv) > i + 1 else "sdaa:3"
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/microprof.py:3:Usage: python microprof.py [C] [--device sdaa:0]
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/microprof.py:27:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/microprof.py:31:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/microprof.py:74:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/run.py:154:    device: str = "sdaa:0",
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/run.py:327:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/speed_probe.py:3:Usage: python speed_probe.py [C ...] [--device sdaa:0] [--steps 40]
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/speed_probe.py:61:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/speed_probe.py:65:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/speed_probe.py:72:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/test_conv_stream.py:42:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/test_conv_stream.py:50:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/test_perf.py:61:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/test_perf.py:65:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/benchmarks/pending/naca_0012/test_perf.py:73:    ap.add_argument("--device", default="sdaa:7")
+/root/tp-agent/work/m401/benchmarks/pending/propeller_openwater/run.py:240:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/pending/series60_resistance/run.py:33:  PYTHONPATH=src python run.py --resolution 72 --steps 12000 --device sdaa:0
+/root/tp-agent/work/m401/benchmarks/pending/series60_resistance/run.py:107:        import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/benchmarks/pending/series60_resistance/run.py:109:        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+/root/tp-agent/work/m401/benchmarks/pending/series60_resistance/run.py:110:            return "sdaa:0"
+/root/tp-agent/work/m401/benchmarks/verified/cylinder_3d/_probe_formulas.py:20:      --device sdaa:0 --out /tmp/cyl3d_probe_D20.json
+/root/tp-agent/work/m401/benchmarks/verified/cylinder_3d/_probe_formulas.py:91:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/verified/cylinder_3d/_ref2d_re40.py:51:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/verified/cylinder_3d/run.py:73:        [--device sdaa:0] [--compile-mode eager]
+/root/tp-agent/work/m401/benchmarks/verified/cylinder_3d/run.py:75:        [--device sdaa:0] [--compile-mode eager]
+/root/tp-agent/work/m401/benchmarks/verified/cylinder_3d/run.py:166:    device: str = "sdaa:0",
+/root/tp-agent/work/m401/benchmarks/verified/cylinder_3d/run.py:421:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/run.py:71:DEV = os.environ.get("W8A_DEV") or ("cuda:0" if torch.cuda.is_available() else "sdaa:0")
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/probe.py:28:import torch_sdaa  # noqa: F401,E402
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/probe.py:31:    import torch_sdaa._inductor  # noqa: F401,E402
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/probe.py:33:    print(f"[warn] torch_sdaa._inductor not imported: {_exc}", flush=True)
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/probe.py:77:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/run_canonical.py:12:    run_canonical.py --radius 9 --width-over-r 16 --device sdaa:8 --output out.json
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/run_canonical.py:29:    import torch_sdaa  # noqa: F401,E402
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/run_canonical.py:30:    import torch_sdaa._inductor  # noqa: F401,E402  registers sdaa codegen
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/run_canonical.py:32:    print(f"[warn] torch_sdaa._inductor not imported: {exc}", flush=True)
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/run_canonical.py:106:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/run_mem_surface.py:40:        [--steps 6000] [--device sdaa:0] [--compile-mode eager]
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/run_mem_surface.py:89:    device: str = "sdaa:0",
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re100/staircase_surface_mem/run_mem_surface.py:254:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re200/probe_mem.py:14:import torch_sdaa  # noqa: F401  (registers torch.sdaa)
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re200/probe_mem.py:35:DEV = os.environ.get("W8A_DEV", "sdaa:2")
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re200/probe_mem.py:84:        torch.sdaa.empty_cache()
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re200/probe_mem.py:85:        torch.sdaa.reset_peak_memory_stats()
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re200/probe_mem.py:98:        peak = torch.sdaa.max_memory_allocated() / 2**30
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re200/probe_mem.py:99:        reserved = torch.sdaa.max_memory_reserved() / 2**30
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re200/probe_mem.py:106:        torch.sdaa.empty_cache()
+/root/tp-agent/work/m401/benchmarks/verified/sphere_re200/probe_mem.py:110:            torch.sdaa.empty_cache()
+/root/tp-agent/work/m401/benchmarks/verified/square_cylinder/run.py:45:    run.py --D 32 48 --device sdaa:0 [--compile-mode default|eager] [--out DIR]
+/root/tp-agent/work/m401/benchmarks/verified/square_cylinder/run.py:76:        import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/benchmarks/verified/square_cylinder/run.py:78:        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+/root/tp-agent/work/m401/benchmarks/verified/square_cylinder/run.py:79:            return "sdaa:0"
+/root/tp-agent/work/m401/benchmarks/verified/square_cylinder/run.py:324:        help="torch device, e.g. sdaa:0 / cuda:0 (auto-detect if unset)",
+/root/tp-agent/work/m401/benchmarks/verified/suboff_re1000/run.py:53:        import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/benchmarks/verified/suboff_re1000/run.py:55:        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+/root/tp-agent/work/m401/benchmarks/verified/suboff_re1000/run.py:56:            return "sdaa:0"
+/root/tp-agent/work/m401/benchmarks/verified/suboff_re1000/run.py:227:        "--device", default=None, help="torch device, e.g. sdaa:0 / cuda:0 (auto if unset)"
+/root/tp-agent/work/m401/benchmarks/verified/suboff_sail_resistance/run.py:41:                --device sdaa:2 --collision mrt --friction mix50 \
+/root/tp-agent/work/m401/benchmarks/verified/suboff_sail_resistance/run.py:64:        import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/benchmarks/verified/suboff_sail_resistance/run.py:66:        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+/root/tp-agent/work/m401/benchmarks/verified/suboff_sail_resistance/run.py:67:            return "sdaa:0"
+/root/tp-agent/work/m401/benchmarks/verified/suboff_sail_resistance/run.py:433:    ap.add_argument("--device", default=None, help="torch device, e.g. sdaa:0 (auto if unset)")
+/root/tp-agent/work/m401/examples/backward_facing_step.py:55:    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu")
+/root/tp-agent/work/m401/examples/bench_3d_accuracy.py:57:    device="sdaa",
+/root/tp-agent/work/m401/examples/bench_3d_accuracy.py:86:    device="sdaa",
+/root/tp-agent/work/m401/examples/bench_3d_accuracy.py:112:    device="sdaa",
+/root/tp-agent/work/m401/examples/bench_3d_accuracy.py:135:    device="sdaa",
+/root/tp-agent/work/m401/examples/bench_3d_accuracy.py:163:        device="sdaa",
+/root/tp-agent/work/m401/examples/bench_ahmed_body.py:89:def run_ahmed(slant_deg=25.0, device="sdaa:0", n_steps=1500, warmup=400):
+/root/tp-agent/work/m401/examples/bench_ahmed_body.py:183:    a.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/bench_caarc_building.py:66:def run_caarc_building(device="sdaa:4", n_steps=1500, warmup=400):
+/root/tp-agent/work/m401/examples/bench_caarc_building.py:154:    a.add_argument("--device", default="sdaa:4")
+/root/tp-agent/work/m401/examples/bench_silsoe_cube.py:64:def run_silsoe_cube(device="sdaa:9", n_steps=1500, warmup=400):
+/root/tp-agent/work/m401/examples/bench_silsoe_cube.py:151:    a.add_argument("--device", default="sdaa:9")
+/root/tp-agent/work/m401/examples/bench_soccer_ball.py:57:def run_soccer_ball(device="sdaa:8", n_steps=1500, warmup=400):
+/root/tp-agent/work/m401/examples/bench_soccer_ball.py:144:    a.add_argument("--device", default="sdaa:8")
+/root/tp-agent/work/m401/examples/bench_tube_bundle.py:60:def run_tube_bundle(device="sdaa:5", n_steps=1500, warmup=400):
+/root/tp-agent/work/m401/examples/bench_tube_bundle.py:147:    a.add_argument("--device", default="sdaa:5")
+/root/tp-agent/work/m401/examples/benchmark_flag_flapping.py:1008:    parser.add_argument("--device", default="cpu", help="设备: cpu / cuda / sdaa:N")
+/root/tp-agent/work/m401/examples/benchmark_magnus_cylinder.py:726:        help="设备: cpu / cuda / sdaa:N",
+/root/tp-agent/work/m401/examples/benchmark_stefan_freezing.py:814:    p.add_argument("--device", default="cpu", help="Device: cpu / cuda / sdaa")
+/root/tp-agent/work/m401/examples/benchmark_turek_hron.py:999:    parser.add_argument("--device", default="cpu", help="设备: cpu / cuda / sdaa:N")
+/root/tp-agent/work/m401/examples/bfl_fast_piston.py:20:def run_bfl_fast(piston_speed=0.05, n_steps=4000, device="sdaa:9"):
+/root/tp-agent/work/m401/examples/bfl_fast_piston.py:131:    p.add_argument("--device", default="sdaa:9")
+/root/tp-agent/work/m401/examples/bhaga_weber_benchmark.py:33:def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000, device="sdaa:0"):
+/root/tp-agent/work/m401/examples/bhaga_weber_benchmark.py:309:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/bubble_expansion.py:34:def run_bubble_expansion(nx=64, ny=64, nz=64, n_steps=3000, device="sdaa:3"):
+/root/tp-agent/work/m401/examples/bubble_expansion.py:232:    p.add_argument("--device", default="sdaa:3")
+/root/tp-agent/work/m401/examples/bubble_fakhari_vs_rp.py:58:def run_fakhari_bubble(nx=64, n_steps=3000, device="sdaa:0", p_ratio=1.5, gamma=1.4):
+/root/tp-agent/work/m401/examples/bubble_fakhari_vs_rp.py:380:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/bubble_ibm.py:27:def run_ibm_bubble(nx=64, ny=96, nz=16, n_steps=3000, device="sdaa:0"):
+/root/tp-agent/work/m401/examples/bubble_ibm.py:183:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/bubble_pf_csf_vs_rp.py:72:    device="sdaa:0",
+/root/tp-agent/work/m401/examples/bubble_pf_csf_vs_rp.py:369:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/bubble_rise_pf3.py:72:    device="sdaa:0",
+/root/tp-agent/work/m401/examples/bubble_rise_pf3.py:378:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/cylinder_flow.py:28:        "--device", choices=["cpu", "sdaa", "cuda"], default="cpu", help="Execution device"
+/root/tp-agent/work/m401/examples/dam_break.py:40:    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu")
+/root/tp-agent/work/m401/examples/dg_suboff_cumulant_d3q27_multicard.py:81:    device = torch.device(f"sdaa:{local_rank + device_offset}")
+/root/tp-agent/work/m401/examples/dg_suboff_cumulant_d3q27_multicard.py:82:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/examples/dg_suboff_cumulant_d3q27_multicard_cuda.py:4:Changes: tccl -> nccl, sdaa -> cuda, added voxel_wetted_area_x_slab helper,
+/root/tp-agent/work/m401/examples/dg_suboff_mrt_d3q19.py:16:    PYTHONPATH=src python examples/dg_suboff_mrt_d3q19.py --device sdaa:0 --lattice d3q27 --steps 600
+/root/tp-agent/work/m401/examples/dg_suboff_mrt_d3q19.py:339:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/dg_suboff_mrt_d3q19_cuda.py:4:Changes: sdaa:0 -> cuda:0, added JSON result output.
+/root/tp-agent/work/m401/examples/dg_suboff_mrt_d3q19_multicard.py:92:    device = torch.device(f"sdaa:{local_rank + device_offset}")
+/root/tp-agent/work/m401/examples/dg_suboff_mrt_d3q19_multicard.py:93:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:8:  D3Q27 (sdaa:0-6): Cumulant, BGK, MRT, TRT, CM, KBC, RLBM
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:9:  D3Q19 (sdaa:7-10): Cumulant, BGK, MRT, RLBM
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:30:    # D3Q27 (7 cards: sdaa:0-6)
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:34:        "device": "sdaa:0",
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:43:        "device": "sdaa:1",
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:52:        "device": "sdaa:2",
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:61:        "device": "sdaa:3",
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:70:        "device": "sdaa:4",
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:79:        "device": "sdaa:5",
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:88:        "device": "sdaa:6",
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:94:    # D3Q19 (4 cards: sdaa:7-10)
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:98:        "device": "sdaa:7",
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:107:        "device": "sdaa:8",
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:116:        "device": "sdaa:9",
+/root/tp-agent/work/m401/examples/dg_suboff_wallfn_fullgrid.py:125:        "device": "sdaa:10",
+/root/tp-agent/work/m401/examples/hull_fs_d3q27_pf.py:14:    python examples/hull_fs_d3q27_pf.py --hull wigley --collision cumulant --device sdaa:0
+/root/tp-agent/work/m401/examples/hull_fs_d3q27_pf.py:47:    device="sdaa:0",
+/root/tp-agent/work/m401/examples/hull_fs_d3q27_pf.py:375:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/lid_driven_cavity.py:39:    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu")
+/root/tp-agent/work/m401/examples/multiphase_water_entry.py:54:    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu")
+/root/tp-agent/work/m401/examples/octree_distributed_validate.py:106:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/octree_distributed_validate.py:137:    # One device per process: rank -> sdaa:{rank} (32 devices available).
+/root/tp-agent/work/m401/examples/octree_distributed_validate.py:138:    dev = torch.device(f"sdaa:{rank % torch.sdaa.device_count()}")
+/root/tp-agent/work/m401/examples/octree_distributed_validate.py:139:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/examples/octree_integrated_validate.py:224:    dev = torch.device(f"sdaa:{rank % 32}")
+/root/tp-agent/work/m401/examples/octree_integrated_validate.py:225:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/examples/pipeline_flow.py:46:        choices=["cpu", "sdaa", "cuda", "mps"],
+/root/tp-agent/work/m401/examples/piston_compression_pf.py:27:    nx=32, ny=64, nz=32, n_steps=2000, device="sdaa:0", u_piston=0.02, gamma=1.4
+/root/tp-agent/work/m401/examples/piston_compression_pf.py:280:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/piston_k_adiabatic.py:21:def run_piston_k_adiabatic(nx=64, ny=32, nz=32, n_steps=4000, device="sdaa:3", ps=0.01):
+/root/tp-agent/work/m401/examples/piston_k_adiabatic.py:161:    p.add_argument("--device", default="sdaa:3")
+/root/tp-agent/work/m401/examples/piston_virtual.py:26:def run_piston_virtual(nx=64, ny=32, nz=32, n_steps=4000, device="sdaa:3", ps=0.01):
+/root/tp-agent/work/m401/examples/piston_virtual.py:153:    p.add_argument("--device", default="sdaa:3")
+/root/tp-agent/work/m401/examples/propeller_improved.py:59:    device="sdaa:0",
+/root/tp-agent/work/m401/examples/propeller_improved.py:321:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/propeller_openwater_d3q27.py:16:    PYTHONPATH=src python examples/propeller_openwater_d3q27.py --device sdaa:0
+/root/tp-agent/work/m401/examples/propeller_openwater_d3q27.py:108:def run_openwater(J=0.5, device="sdaa:0", n_steps=2000, warmup=500):
+/root/tp-agent/work/m401/examples/propeller_openwater_d3q27.py:275:    a.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/rotating_cylinder.py:31:    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda", "mps"], default="cpu")
+/root/tp-agent/work/m401/examples/ship_hull_flow.py:140:        "--device", choices=["cpu", "sdaa", "cuda"], default="cpu", help="Execution device"
+/root/tp-agent/work/m401/examples/sloshing_coupled.py:118:def run_sloshing(nx=96, ny=64, nz=8, n_steps=3000, device="sdaa:0", use_gas=True):
+/root/tp-agent/work/m401/examples/sloshing_coupled.py:277:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/sloshing_tank.py:56:        choices=["cpu", "sdaa", "cuda", "mps"],
+/root/tp-agent/work/m401/examples/sphere_flow_3d.py:27:        "--device", choices=["cpu", "sdaa", "cuda"], default="cpu", help="Execution device"
+/root/tp-agent/work/m401/examples/sphere_flow_d3q27.py:256:        "--device", choices=["cpu", "sdaa", "cuda"], default="cpu", help="Execution device"
+/root/tp-agent/work/m401/examples/sphere_moving.py:27:def run_moving_sphere(nx=128, ny=64, nz=64, n_steps=3000, device="sdaa:0", stationary=False):
+/root/tp-agent/work/m401/examples/sphere_moving.py:251:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/sphere_water_entry.py:126:        "--device", choices=["cpu", "sdaa", "cuda"], default="cpu", help="Execution device"
+/root/tp-agent/work/m401/examples/sphere_water_entry_pf.py:36:    nx=48, ny=128, nz=48, n_steps=4000, device="sdaa:0", R_sphere=6.0, gz=0.001, collision="mrt27"
+/root/tp-agent/work/m401/examples/sphere_water_entry_pf.py:370:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/suboff_convergence_study.py:9:    PYTHONPATH=src python examples/suboff_convergence_study.py [--device sdaa:0] [--steps 100000]
+/root/tp-agent/work/m401/examples/suboff_convergence_study.py:43:    device_str: str = "sdaa:0",
+/root/tp-agent/work/m401/examples/suboff_convergence_study.py:48:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/examples/suboff_convergence_study.py:220:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/examples/turbulent_channel.py:47:        choices=["cpu", "sdaa", "cuda", "mps"],
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_3geo_worker.py:99:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_3geo_worker.py:100:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_3geo_worker.py:253:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_3geo_worker.py:282:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_3geo_worker.py:283:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_3geo_worker.py:409:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_3geo_worker.py:439:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_3geo_worker.py:440:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_3geo_worker.py:569:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_test.py:69:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_test.py:70:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_axis_swap_test.py:212:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_bench_launcher.py:22:# ── Configuration: (sdaa_id, case_name) ────────────────────────────────────
+/root/tp-agent/work/m401/experiments/archived/_bench_launcher.py:99:            "device": f"sdaa:{did}",
+/root/tp-agent/work/m401/experiments/archived/_bench_worker.py:411:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_bench_worker.py:412:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_bench_worker.py:631:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_bfl_cyl_2nd_order_worker.py:25:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_bfl_cyl_2nd_order_worker.py:55:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_bfl_cyl_2nd_order_worker.py:56:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_bfl_cyl_2nd_order_worker.py:218:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_bfl_dyn_test.py:5:torch.sdaa.set_device(int(sys.argv[1]))
+/root/tp-agent/work/m401/experiments/archived/_bfl_dyn_test.py:23:device = torch.device(f'sdaa:{int(sys.argv[1])}')
+/root/tp-agent/work/m401/experiments/archived/_bfl_v2_test.py:5:torch.sdaa.set_device(int(sys.argv[1]) if len(sys.argv) > 1 else 0)
+/root/tp-agent/work/m401/experiments/archived/_bfl_v2_test.py:23:device = torch.device(f'sdaa:{int(sys.argv[1]) if len(sys.argv) > 1 else 0}')
+/root/tp-agent/work/m401/experiments/archived/_bfs_cavity_fix_worker.py:674:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_bfs_cavity_fix_worker.py:675:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_bfs_prism_bench_worker.py:465:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_bfs_prism_bench_worker.py:466:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_collision_comparison_worker.py:261:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_collision_comparison_worker.py:262:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_collision_worker.py:96:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_collision_worker.py:97:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_common_interface_worker.py:94:        "note": "D=48 gives Cd_tot=2.17 (45% high). D=96 with MRT(no smag) gives 2.22. Trying MRT+Smag(Cs=0.05) matching verified cylinder_large_sdaa16.py.",
+/root/tp-agent/work/m401/experiments/archived/_common_interface_worker.py:144:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_common_interface_worker.py:145:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_common_interface_worker.py:309:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_cyl_collision_d3q27_worker.py:127:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_cyl_collision_d3q27_worker.py:128:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_cyl_collision_d3q27_worker.py:224:        "device": f"sdaa:{did}",
+/root/tp-agent/work/m401/experiments/archived/_cyl_collision_worker.py:71:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_cyl_collision_worker.py:72:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_cyl_collision_worker.py:186:        "device": f"sdaa:{did}",
+/root/tp-agent/work/m401/experiments/archived/_d24_compare.py:5:torch.sdaa.set_device(int(sys.argv[1]) if len(sys.argv) > 1 else 0)
+/root/tp-agent/work/m401/experiments/archived/_d24_compare.py:23:device = torch.device(f'sdaa:{int(sys.argv[1]) if len(sys.argv) > 1 else 0}')
+/root/tp-agent/work/m401/experiments/archived/_d3q27_serial_runner.py:143:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_d3q27_serial_runner.py:144:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_d3q27_serial_runner.py:304:        "device": f"sdaa:{did}",
+/root/tp-agent/work/m401/experiments/archived/_d3q27_worker.py:160:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_d3q27_worker.py:161:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_d3q27_worker.py:338:        "device": f"sdaa:{did}",
+/root/tp-agent/work/m401/experiments/archived/_diag_viv_force.py:9:import torch_sdaa  # noqa
+/root/tp-agent/work/m401/experiments/archived/_diag_viv_force.py:17:device = torch.device(f"sdaa:{dev_id}")
+/root/tp-agent/work/m401/experiments/archived/_diag_viv_force.py:18:torch.sdaa.set_device(dev_id)
+/root/tp-agent/work/m401/experiments/archived/_domain_sens_worker.py:41:    torch.sdaa.empty_cache()
+/root/tp-agent/work/m401/experiments/archived/_domain_sens_worker.py:128:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_domain_sens_worker.py:129:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_domain_sens_worker.py:130:    torch.sdaa.empty_cache()
+/root/tp-agent/work/m401/experiments/archived/_domain_sens_worker.py:157:    torch.sdaa.empty_cache()
+/root/tp-agent/work/m401/experiments/archived/_finegrid_worker.py:12:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_finegrid_worker.py:13:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_free_surface_vof_worker.py:32:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_free_surface_vof_worker.py:80:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_free_surface_vof_worker.py:81:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_free_surface_vof_worker.py:189:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_free_surface_vof_worker.py:190:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_free_surface_vof_worker.py:310:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_free_surface_vof_worker.py:311:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_free_surface_vof_worker.py:431:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_free_surface_vof_worker.py:432:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_fix_worker.py:25:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_fix_worker.py:69:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_fix_worker.py:70:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_fix_worker.py:222:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_ibm_worker.py:25:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_ibm_worker.py:51:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_ibm_worker.py:52:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_ibm_worker.py:201:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_worker.py:70:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_worker.py:71:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_fsi_falling_worker.py:243:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_fsi_galloping_fix_worker.py:26:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_fsi_galloping_fix_worker.py:55:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_fsi_galloping_fix_worker.py:56:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_fsi_galloping_fix_worker.py:225:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_fsi_galloping_worker.py:63:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_fsi_galloping_worker.py:64:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_fsi_galloping_worker.py:210:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_fsi_rotating_fix_worker.py:27:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_fsi_rotating_fix_worker.py:84:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_fsi_rotating_fix_worker.py:85:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_fsi_rotating_fix_worker.py:250:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_fsi_rotating_worker.py:95:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_fsi_rotating_worker.py:96:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_fsi_rotating_worker.py:237:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_fix2_worker.py:33:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_fix2_worker.py:66:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_fix2_worker.py:67:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_fix2_worker.py:230:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_fix_worker.py:26:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_fix_worker.py:57:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_fix_worker.py:58:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_fix_worker.py:194:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_worker.py:67:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_worker.py:68:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_fsi_viv_worker.py:223:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_fullmatrix_worker.py:242:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_fullmatrix_worker.py:243:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_fullmatrix_worker.py:388:        "device": f"sdaa:{did}",
+/root/tp-agent/work/m401/experiments/archived/_grid_conv_worker.py:60:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_grid_conv_worker.py:61:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_ibm_common_worker.py:237:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_ibm_common_worker.py:238:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_ibm_common_worker.py:475:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_kbc_comparison_worker.py:254:    device_str = "sdaa:4"
+/root/tp-agent/work/m401/experiments/archived/_kbc_comparison_worker.py:256:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_long_worker.py:313:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_long_worker.py:314:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_long_worker.py:343:            "device": f"sdaa:{did}",
+/root/tp-agent/work/m401/experiments/archived/_long_worker.py:366:        run_key = f"{case}_{nx}x{ny}x{nz}_Cs{cs}_{wl}_sdaa{did}"
+/root/tp-agent/work/m401/experiments/archived/_matrix_worker.py:343:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_matrix_worker.py:344:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_matrix_worker.py:509:        "device": f"sdaa:{did}",
+/root/tp-agent/work/m401/experiments/archived/_quick_me_test.py:5:torch.sdaa.set_device(0)
+/root/tp-agent/work/m401/experiments/archived/_quick_me_test.py:23:device = torch.device('sdaa:0')
+/root/tp-agent/work/m401/experiments/archived/_repro_worker.py:82:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_repro_worker.py:83:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_sdaa_couette_bbfix_worker.py:61:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_sdaa_couette_bbfix_worker.py:62:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_sdaa_couette_bbfix_worker.py:146:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_sdaa_suboff_bbfix_worker.py:33:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_sdaa_suboff_bbfix_worker.py:34:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_sdaa_suboff_bbfix_worker.py:147:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_smoke_loglaw_p0fix.py:20:device = torch.device("sdaa:12")
+/root/tp-agent/work/m401/experiments/archived/_smoke_loglaw_p0fix.py:21:torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_smoke_wallfn_highre.py:22:device = torch.device("sdaa:12")
+/root/tp-agent/work/m401/experiments/archived/_smoke_wallfn_highre.py:23:torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_testA_yplus.py:64:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_testA_yplus.py:65:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_testD_masscorr.py:27:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_testD_masscorr.py:28:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_testH_long.py:59:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_testH_long.py:60:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/_thermal_cavity_fix_worker.py:21:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_thermal_cavity_fix_worker.py:31:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_thermal_cavity_fix_worker.py:32:    device = f"sdaa:{device_id}"
+/root/tp-agent/work/m401/experiments/archived/_thermal_cavity_long_worker.py:19:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_thermal_cavity_long_worker.py:29:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_thermal_cavity_long_worker.py:30:    device = f"sdaa:{device_id}"
+/root/tp-agent/work/m401/experiments/archived/_thermal_common_launcher.py:9:Output: thermal_common_sdaa{N}.json + .npy for each benchmark.
+/root/tp-agent/work/m401/experiments/archived/_thermal_common_launcher.py:44:        p = OUTPUT_DIR / f"thermal_common_{case}_sdaa{did}{ext}"
+/root/tp-agent/work/m401/experiments/archived/_thermal_common_launcher.py:50:    out_path = OUTPUT_DIR / f"thermal_common_{case}_sdaa{did}.json"
+/root/tp-agent/work/m401/experiments/archived/_thermal_common_launcher.py:51:    log_file = LOG_DIR / f"log_thermal_{case}_sdaa{did}.txt"
+/root/tp-agent/work/m401/experiments/archived/_thermal_common_worker.py:26:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_thermal_common_worker.py:87:    device = f"sdaa:{device_id}"
+/root/tp-agent/work/m401/experiments/archived/_thermal_common_worker.py:88:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_thermal_heated_cyl_worker.py:21:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_thermal_heated_cyl_worker.py:42:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_thermal_heated_cyl_worker.py:43:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_thermal_heated_cyl_worker.py:171:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/_vof_dam_break_fix_worker.py:25:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_vof_dam_break_fix_worker.py:47:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_vof_dam_break_fix_worker.py:48:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_vof_dam_break_tuned_worker.py:26:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/_vof_dam_break_tuned_worker.py:48:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/_vof_dam_break_tuned_worker.py:49:    torch.sdaa.set_device(device_id)
+/root/tp-agent/work/m401/experiments/archived/_wallfn_worker32.py:54:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/_wallfn_worker32.py:55:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/ahmed_ellipsoid_worker.py:114:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/ahmed_ellipsoid_worker.py:115:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/ahmed_ellipsoid_worker.py:263:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/ahmed_ellipsoid_worker.py:343:        device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/ahmed_ellipsoid_worker.py:344:        torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/ahmed_ellipsoid_worker.py:348:        tag = f"ahmed_re1000_sdaa{device_id}"
+/root/tp-agent/work/m401/experiments/archived/ahmed_ellipsoid_worker.py:372:        device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/ahmed_ellipsoid_worker.py:373:        torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/ahmed_ellipsoid_worker.py:378:        tag = f"ellipsoid_re100_sdaa{device_id}"
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:104:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:105:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:200:        "case": "cylinder_bb_fix", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:225:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:226:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:321:        "case": "sphere_bb_fix", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:346:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:347:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:449:        "case": "suboff_bb_fix", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:474:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:475:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_4bench_worker.py:573:        "case": "naca0012_bb_fix", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:135:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:136:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:238:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:303:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:304:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:406:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:476:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:477:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:577:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:643:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:644:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_allgeo_worker.py:755:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:133:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:134:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:235:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:299:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:300:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:354:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:355:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:412:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:413:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:471:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bb_fix_retest_worker.py:472:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:16:  python bfl_common_sdaa_worker.py <test> <device_id> <output_path>
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:136:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:137:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:282:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:327:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:328:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:485:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:535:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:536:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:673:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:713:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:714:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:862:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bfl_common_sdaa_worker.py:903:        print("Usage: python bfl_common_sdaa_worker.py <test> <device_id> <output_path>")
+/root/tp-agent/work/m401/experiments/archived/bfl_complete_worker.py:251:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bfl_complete_worker.py:252:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bfl_complete_worker.py:401:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bfl_complete_worker.py:437:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bfl_complete_worker.py:438:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bfl_complete_worker.py:613:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bfl_complete_worker.py:663:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bfl_complete_worker.py:664:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bfl_complete_worker.py:829:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bfs_bbfix_retest_worker.py:284:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bfs_bbfix_retest_worker.py:285:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/biggrid_worker.py:267:    device = torch.device(f"sdaa:{card_id}")
+/root/tp-agent/work/m401/experiments/archived/biggrid_worker.py:268:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/biggrid_worker.py:274:    label = f"[{case_name} {wall_law} sdaa:{card_id}]"
+/root/tp-agent/work/m401/experiments/archived/biggrid_worker.py:286:            "device": f"sdaa:{card_id}",
+/root/tp-agent/work/m401/experiments/archived/biggrid_worker.py:295:    out = Path(f"/tmp/biggrid_{case_name}_{wall_law}_sdaa{card_id}.json")
+/root/tp-agent/work/m401/experiments/archived/blasius_flatplate_worker.py:41:    """Run flat plate Blasius benchmark on sdaa:<device_id>."""
+/root/tp-agent/work/m401/experiments/archived/blasius_flatplate_worker.py:42:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/blasius_flatplate_worker.py:43:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/blasius_flatplate_worker.py:228:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bluff_signfix_launcher.py:19:# (sdaa_id, worker_script, Re, n_steps, warmup, output_json_path, case_name)
+/root/tp-agent/work/m401/experiments/archived/bluff_signfix_launcher.py:104:            "device": f"sdaa:{did}",
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_common_worker.py:131:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_common_worker.py:132:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_common_worker.py:269:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_common_worker.py:421:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_common_worker.py:422:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_common_worker.py:498:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_common_worker.py:499:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_common_worker.py:640:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_retest_worker.py:128:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_retest_worker.py:129:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_retest_worker.py:265:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_retest_worker.py:416:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_retest_worker.py:417:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_retest_worker.py:500:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_retest_worker.py:501:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/bug29_ship_retest_worker.py:647:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/channel_worker.py:256:    parser.add_argument("--device", type=str, default="sdaa")
+/root/tp-agent/work/m401/experiments/archived/channel_worker.py:260:    if args.device == "sdaa":
+/root/tp-agent/work/m401/experiments/archived/channel_worker.py:261:        if hasattr(torch, 'sdaa') and torch.sdaa.device_count() > 0:
+/root/tp-agent/work/m401/experiments/archived/channel_worker.py:262:            device = torch.device("sdaa:0")
+/root/tp-agent/work/m401/experiments/archived/conv_fdm_proto.py:127:    if device.startswith('sdaa'):
+/root/tp-agent/work/m401/experiments/archived/conv_fdm_proto.py:128:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/experiments/archived/conv_fdm_proto.py:135:    if device.startswith('sdaa'):
+/root/tp-agent/work/m401/experiments/archived/conv_fdm_proto.py:136:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/experiments/archived/conv_fdm_proto.py:147:    dev = sys.argv[1] if len(sys.argv) > 1 else 'sdaa:0'
+/root/tp-agent/work/m401/experiments/archived/couette_poiseuille_3d.py:96:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/couette_poiseuille_3d.py:97:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/couette_poiseuille_3d.py:252:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/couette_poiseuille_3d.py:286:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/couette_poiseuille_3d.py:287:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/couette_poiseuille_3d.py:434:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/couette_poiseuille_3d.py:469:    output_path = sys.argv[3] if len(sys.argv) > 3 else f"{mode}_3d_sdaa{device_id}.json"
+/root/tp-agent/work/m401/experiments/archived/cumulant_bluff_launcher.py:114:            "case": key, "device": f"sdaa:{did}", "Re": re,
+/root/tp-agent/work/m401/experiments/archived/cumulant_bluff_worker.py:88:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/cumulant_bluff_worker.py:89:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/cumulant_bluff_worker.py:183:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/cylinder_bfl_friction_fix_worker.py:97:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/cylinder_bfl_friction_fix_worker.py:98:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/cylinder_bfl_friction_fix_worker.py:239:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/cylinder_drag_crossval_worker.py:76:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/cylinder_drag_crossval_worker.py:77:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/cylinder_drag_crossval_worker.py:216:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/cylinder_drag_crossval_worker.py:243:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/cylinder_drag_crossval_worker.py:244:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/cylinder_drag_crossval_worker.py:375:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/cylinder_large_sdaa16.py:43:    output_path = sys.argv[1] if len(sys.argv) > 1 else "cylinder_large_sdaa16.json"
+/root/tp-agent/work/m401/experiments/archived/cylinder_large_sdaa16.py:70:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/cylinder_large_sdaa16.py:71:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/cylinder_large_sdaa16.py:218:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/cylinder_launcher.py:82:            "device": f"sdaa:{did}",
+/root/tp-agent/work/m401/experiments/archived/cylinder_worker.py:76:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/cylinder_worker.py:77:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/cylinder_worker.py:155:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/drivaer_t106a_worker.py:220:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/drivaer_t106a_worker.py:221:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/drivaer_t106a_worker.py:408:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/drivaer_t106a_worker.py:506:        device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/drivaer_t106a_worker.py:507:        torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/drivaer_t106a_worker.py:511:        tag = f"drivaer_re1000_sdaa{device_id}"
+/root/tp-agent/work/m401/experiments/archived/drivaer_t106a_worker.py:543:        device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/drivaer_t106a_worker.py:544:        torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/drivaer_t106a_worker.py:549:        tag = f"t106a_re1000_sdaa{device_id}"
+/root/tp-agent/work/m401/experiments/archived/dtmb5415_simplified_worker.py:44:    """Run DTMB 5415 (simplified Series 60) ship hull drag on sdaa:<device_id>."""
+/root/tp-agent/work/m401/experiments/archived/dtmb5415_simplified_worker.py:45:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/dtmb5415_simplified_worker.py:46:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/dtmb5415_simplified_worker.py:224:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/env_porous_bench_worker.py:83:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/env_porous_bench_worker.py:84:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/env_porous_bench_worker.py:207:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/env_porous_bench_worker.py:252:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/env_porous_bench_worker.py:253:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/env_porous_bench_worker.py:431:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:285:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:286:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:409:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:427:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:428:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:545:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:565:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:566:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:682:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:703:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:704:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/external_flow_benchmarks_worker.py:822:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:236:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:237:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:343:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:370:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:371:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:485:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:514:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:515:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:645:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:677:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:678:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/external_flow_common_worker.py:792:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/fine_signfix_worker.py:330:    device = torch.device(f"sdaa:{card_id}")
+/root/tp-agent/work/m401/experiments/archived/fine_signfix_worker.py:331:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/fine_signfix_worker.py:337:    label = f"[{case_name} sdaa:{card_id}]"
+/root/tp-agent/work/m401/experiments/archived/fine_signfix_worker.py:350:            "device": f"sdaa:{card_id}",
+/root/tp-agent/work/m401/experiments/archived/fine_signfix_worker.py:361:    out = Path(f"/tmp/fine_signfix_{tag}_sdaa{card_id}.json")
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:111:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:112:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:220:        "case": "cyl_re3900_20pct", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:257:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:258:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:358:        "case": "naca_re1000_from_naca", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:393:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:394:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:532:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:593:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:594:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/fix2_benchmarks_worker.py:765:        "case": "channel_retau180_rans_ke_long", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:113:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:114:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:220:        "case": "cyl_re3900_3d_rans", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:253:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:254:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:352:        "case": "naca_re1000_grad", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:386:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:387:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:531:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:587:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:588:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/fix_benchmarks_worker.py:727:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/flatplate_cs_worker.py:118:    parser.add_argument("--device", type=str, default="sdaa")
+/root/tp-agent/work/m401/experiments/archived/flatplate_cs_worker.py:123:    if device_str == "sdaa":
+/root/tp-agent/work/m401/experiments/archived/flatplate_cs_worker.py:125:        if hasattr(torch, 'sdaa') and torch.sdaa.device_count() > 0:
+/root/tp-agent/work/m401/experiments/archived/flatplate_cs_worker.py:126:            device = torch.device("sdaa:0")
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:18:  PYTHONPATH=src python force_methods_test_worker.py --case cylinder  --device sdaa:12
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:19:  PYTHONPATH=src python force_methods_test_worker.py --case couette   --device sdaa:13
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:20:  PYTHONPATH=src python force_methods_test_worker.py --case poiseuille --device sdaa:14
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:21:  PYTHONPATH=src python force_methods_test_worker.py --case suboff    --device sdaa:15
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:32:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:132:def run_couette(device: str = "sdaa:13", ny: int = 34, n_steps: int = 3000):
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:135:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:257:def run_poiseuille(device: str = "sdaa:14", ny: int = 34, n_steps: int = 5000):
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:260:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:379:def run_cylinder(device: str = "sdaa:12", n_steps: int = 5000):
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:382:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:526:def run_suboff(device: str = "sdaa:15", n_steps: int = 5000):
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:529:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:679:    parser.add_argument("--device", default="sdaa:12", help="SDAA device (e.g., sdaa:12)")
+/root/tp-agent/work/m401/experiments/archived/force_methods_test_worker.py:699:    outfile = f"force_methods_results_sdaa{dev_id}.json"
+/root/tp-agent/work/m401/experiments/archived/friction_formula_conv_worker.py:48:    device = torch.device("sdaa:0")  # SDAA_VISIBLE_DEVICES remaps to 0
+/root/tp-agent/work/m401/experiments/archived/friction_formula_conv_worker.py:49:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/friction_formula_conv_worker.py:147:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/friction_formula_conv_worker.py:183:    device = torch.device("sdaa:0")  # SDAA_VISIBLE_DEVICES remaps to 0
+/root/tp-agent/work/m401/experiments/archived/friction_formula_conv_worker.py:184:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/friction_formula_conv_worker.py:264:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/friction_formula_conv_worker.py:325:    device = torch.device("sdaa:0")  # SDAA_VISIBLE_DEVICES remaps to 0
+/root/tp-agent/work/m401/experiments/archived/friction_formula_conv_worker.py:326:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/friction_formula_conv_worker.py:393:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:108:    device = torch.device("sdaa:0")  # SDAA_VISIBLE_DEVICES remaps to 0
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:109:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:226:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:254:    device = torch.device("sdaa:0")  # SDAA_VISIBLE_DEVICES remaps to 0
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:255:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:348:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:373:    device = torch.device("sdaa:0")  # SDAA_VISIBLE_DEVICES remaps to 0
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:374:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:479:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:507:        out = f"friction_test1_poiseuille3d_sdaa{device_id}.json"
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:511:        out = f"friction_test2_couette_ny{ny}_sdaa{device_id}.json"
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:515:        out = f"friction_test3_poiseuille_ny{ny}_sdaa{device_id}.json"
+/root/tp-agent/work/m401/experiments/archived/friction_verify.py:521:            out = f"friction_test3_poiseuille_ny{ny}_sdaa{device_id}.json"
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bbfix_worker.py:70:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bbfix_worker.py:71:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bbfix_worker.py:180:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bbfix_worker.py:230:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bbfix_worker.py:231:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bbfix_worker.py:428:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bbfix_worker.py:429:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bbfix_worker.py:514:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bfl_worker.py:57:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bfl_worker.py:58:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/grid_conv_bfl_worker.py:189:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:161:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:162:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:266:        "case": "cyl_re3900_3d", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:293:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:294:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:396:        "case": "cube_re40000_3d", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:426:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:427:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:528:        "case": "naca_re1000_3d", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:555:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:556:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/high_re_3d_common_worker.py:658:        "case": "sphere_re100_3d", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/high_re_turb_worker.py:473:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/high_re_turb_worker.py:474:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/hybrid_wallfn_launcher.py:178:    device = torch.device(f"sdaa:{sdda_id}")
+/root/tp-agent/work/m401/experiments/archived/hybrid_wallfn_launcher.py:179:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/hybrid_wallfn_launcher.py:236:                    "case": case_name, "sdaa": sdda_id, "status": "DIVERGED",
+/root/tp-agent/work/m401/experiments/archived/hybrid_wallfn_launcher.py:257:        "sdaa": sdda_id,
+/root/tp-agent/work/m401/experiments/archived/hybrid_wallfn_launcher.py:416:            r = {"case": case_name, "sdaa": sdda_id, "status": "ERROR",
+/root/tp-agent/work/m401/experiments/archived/hybrid_worker.py:84:    device = torch.device(f"sdaa:{sdda_id}")
+/root/tp-agent/work/m401/experiments/archived/hybrid_worker.py:85:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/hybrid_worker.py:148:                r = {'case': case_name, 'sdaa': sdda_id, 'status': 'DIVERGED',
+/root/tp-agent/work/m401/experiments/archived/hybrid_worker.py:161:    r = {'case': case_name, 'sdaa': sdda_id, 'status': 'OK',
+/root/tp-agent/work/m401/experiments/archived/improved_launcher.py:60:OUTPUT_FILES = {f"/tmp/improved_sdaa{card}_{case}_{improved}.json"
+/root/tp-agent/work/m401/experiments/archived/improved_worker.py:553:    device = torch.device(f"sdaa:{card_id}")
+/root/tp-agent/work/m401/experiments/archived/improved_worker.py:554:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/improved_worker.py:560:    tag = f"[{case_name} {label} sdaa:{card_id}]"
+/root/tp-agent/work/m401/experiments/archived/improved_worker.py:572:            "device": f"sdaa:{card_id}",
+/root/tp-agent/work/m401/experiments/archived/internal_flow_benchmarks_worker.py:169:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/internal_flow_benchmarks_worker.py:170:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/internal_flow_benchmarks_worker.py:329:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/internal_flow_benchmarks_worker.py:330:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/internal_flow_benchmarks_worker.py:466:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/internal_flow_benchmarks_worker.py:467:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/internal_flow_benchmarks_worker.py:616:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/internal_flow_benchmarks_worker.py:617:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/kvlcc2_ship_worker.py:44:    """Run KVLCC2 ship hull drag benchmark on sdaa:<device_id>."""
+/root/tp-agent/work/m401/experiments/archived/kvlcc2_ship_worker.py:45:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/kvlcc2_ship_worker.py:46:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/kvlcc2_ship_worker.py:226:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/launch_drivaer_t106a.py:24:# ── Configuration: (sdaa_id, benchmark, tag) ───────────────────────────────
+/root/tp-agent/work/m401/experiments/archived/launch_drivaer_t106a.py:26:    (8,  "drivaer", "drivaer_re1000_sdaa8"),
+/root/tp-agent/work/m401/experiments/archived/launch_drivaer_t106a.py:27:    (9,  "drivaer", "drivaer_re1000_sdaa9"),
+/root/tp-agent/work/m401/experiments/archived/launch_drivaer_t106a.py:28:    (10, "t106a",   "t106a_re1000_sdaa10"),
+/root/tp-agent/work/m401/experiments/archived/launch_drivaer_t106a.py:29:    (11, "t106a",   "t106a_re1000_sdaa11"),
+/root/tp-agent/work/m401/experiments/archived/launch_ship_bench.py:17:DEVICES = ["sdaa:8", "sdaa:9", "sdaa:10", "sdaa:11", "sdaa:12"]
+/root/tp-agent/work/m401/experiments/archived/launch_suboff_bfl_cs.py:19:    ("staircase_Cs005",  "sdaa:20", False, 0.05, "/tmp/suboff_sdaa20_staircase.json"),
+/root/tp-agent/work/m401/experiments/archived/launch_suboff_bfl_cs.py:20:    ("bfl_Cs005",        "sdaa:21", True,  0.05, "/tmp/suboff_sdaa21_bfl.json"),
+/root/tp-agent/work/m401/experiments/archived/launch_suboff_bfl_cs.py:21:    ("bfl_Cs003",        "sdaa:22", True,  0.03, "/tmp/suboff_sdaa22_cs003.json"),
+/root/tp-agent/work/m401/experiments/archived/launch_suboff_bfl_cs.py:22:    ("bfl_Cs007",        "sdaa:23", True,  0.07, "/tmp/suboff_sdaa23_cs007.json"),
+/root/tp-agent/work/m401/experiments/archived/lid_cavity_cosine_hill_worker.py:624:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/lid_cavity_cosine_hill_worker.py:625:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/longstep_worker.py:99:            print(f"[SUBOFF {nx}³ sdaa:{device.index}] step {step}: "
+/root/tp-agent/work/m401/experiments/archived/longstep_worker.py:219:            print(f"[{hull.value} {nx}³ sdaa:{device.index}] step {step}: "
+/root/tp-agent/work/m401/experiments/archived/longstep_worker.py:312:    device = torch.device(f"sdaa:{card_id}")
+/root/tp-agent/work/m401/experiments/archived/longstep_worker.py:313:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/longstep_worker.py:325:    tag = f"[{case_name} sdaa:{card_id}]"
+/root/tp-agent/work/m401/experiments/archived/longstep_worker.py:336:            "device": f"sdaa:{card_id}",
+/root/tp-agent/work/m401/experiments/archived/maxgrid_launcher.py:22:    ("suboff_384",        "sdaa:0", "/tmp/maxgrid_suboff_384.json"),
+/root/tp-agent/work/m401/experiments/archived/maxgrid_launcher.py:23:    ("suboff_448",        "sdaa:1", "/tmp/maxgrid_suboff_448.json"),
+/root/tp-agent/work/m401/experiments/archived/maxgrid_launcher.py:24:    ("kvlcc2",            "sdaa:2", "/tmp/maxgrid_kvlcc2.json"),
+/root/tp-agent/work/m401/experiments/archived/maxgrid_launcher.py:25:    ("wigley",            "sdaa:3", "/tmp/maxgrid_wigley.json"),
+/root/tp-agent/work/m401/experiments/archived/maxgrid_launcher.py:26:    ("flatplate_cs005",   "sdaa:4", "/tmp/maxgrid_flatplate_cs005.json"),
+/root/tp-agent/work/m401/experiments/archived/maxgrid_launcher.py:27:    ("cylinder_re200",    "sdaa:5", "/tmp/maxgrid_cylinder_re200.json"),
+/root/tp-agent/work/m401/experiments/archived/maxgrid_launcher.py:28:    ("sphere_re100",      "sdaa:6", "/tmp/maxgrid_sphere_re100.json"),
+/root/tp-agent/work/m401/experiments/archived/maxgrid_launcher.py:29:    ("flatplate_cs0",     "sdaa:7", "/tmp/maxgrid_flatplate_cs0.json"),
+/root/tp-agent/work/m401/experiments/archived/maxgrid_worker.py:9:        --case suboff_384 --device sdaa:0 --output /tmp/r_suboff_384.json
+/root/tp-agent/work/m401/experiments/archived/maxgrid_worker.py:536:                        help="Device string, e.g. sdaa:0")
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:25:import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:102:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:103:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:185:    result = {"case":"cylinder_D48_Re200","device":f"sdaa:{device_id}","D":D,"Re":Re,
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:201:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:202:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:279:    result = {"case":"couette_3d","device":f"sdaa:{device_id}","grid":f"{nx}x{ny}x{nz}",
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:296:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:297:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:377:    result = {"case":"poiseuille_3d","device":f"sdaa:{device_id}","grid":f"{nx}x{ny}x{nz}",
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:397:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:398:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:474:    result = {"case":"suboff_Re1000","device":f"sdaa:{device_id}","Re":Re,
+/root/tp-agent/work/m401/experiments/archived/mem_vs_pf_worker.py:490:    output_path = sys.argv[3] if len(sys.argv) > 3 else f"mem_vs_pf_{case}_sdaa{device_id}.json"
+/root/tp-agent/work/m401/experiments/archived/naca0012_sweep_worker.py:187:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/naca0012_sweep_worker.py:188:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/naca0012_worker.py:180:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/naca0012_worker.py:181:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/naca0012_worker_v2.py:92:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/naca0012_worker_v2.py:93:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/naca0012_worker_v3.py:63:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/naca0012_worker_v3.py:64:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/naca4412_cambered_worker.py:168:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/naca4412_cambered_worker.py:169:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/naca4412_cambered_worker.py:294:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/naca_bfl_wall_me_test.py:165:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/naca_bfl_wall_me_test.py:166:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/naca_bfl_wall_me_test.py:364:    out_path = Path(f"/root/TensorLBM_dev/naca_bfl_wall_me_results_sdaa{device_id}.json")
+/root/tp-agent/work/m401/experiments/archived/naca_chord400_4card.py:65:    torch.sdaa.set_device(did)
+/root/tp-agent/work/m401/experiments/archived/naca_chord400_4card.py:66:    d = torch.device(f'sdaa:{did}')
+/root/tp-agent/work/m401/experiments/archived/naca_chord400_4card.py:109:        torch.sdaa.set_device(cards[rank])
+/root/tp-agent/work/m401/experiments/archived/naca_chord400_4card.py:125:    torch.sdaa.set_device(cards[0])
+/root/tp-agent/work/m401/experiments/archived/naca_chord400_4card.py:130:    torch.sdaa.set_device(cards[-1])
+/root/tp-agent/work/m401/experiments/archived/naca_chord400_4card.py:135:        torch.sdaa.set_device(cards[rank])
+/root/tp-agent/work/m401/experiments/archived/naca_chord400_4card.py:147:            torch.sdaa.set_device(cards[rank])
+/root/tp-agent/work/m401/experiments/archived/naca_chord400_4card.py:158:    torch.sdaa.set_device(cards[rank])
+/root/tp-agent/work/m401/experiments/archived/naca_grid_conv_worker.py:38:torch.sdaa.set_device(did)
+/root/tp-agent/work/m401/experiments/archived/naca_grid_conv_worker.py:39:d = torch.device(f'sdaa:{did}')
+/root/tp-agent/work/m401/experiments/archived/naca_large_domain_worker.py:85:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/naca_large_domain_worker.py:86:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/naca_large_domain_worker.py:208:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:172:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:173:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:265:        "case": "cube_re40000", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:289:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:290:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:381:        "case": "delta_wing", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:406:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:407:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:504:        "case": "naca0012_hr", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:528:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:529:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/new_bench_common_worker.py:627:        "case": "cyl_re40", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/new_bench_large_worker.py:157:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/new_bench_large_worker.py:158:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/new_bench_large_worker.py:378:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/new_benchmarks_worker.py:166:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/new_benchmarks_worker.py:167:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/new_benchmarks_worker.py:418:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/optimal_universal_worker.py:623:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/optimal_universal_worker.py:624:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/optimize_bench_worker.py:170:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/optimize_bench_worker.py:171:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/optimize_bench_worker.py:378:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/pg_parallel_launcher.py:3:α=0.3 on sdaa:0, α=0.5 on sdaa:1, α=0.7 on sdaa:2, α=1.0 on sdaa:3
+/root/tp-agent/work/m401/experiments/archived/pg_parallel_launcher.py:43:        print(f"\nLaunching α={alpha} on sdaa:{did} ...")
+/root/tp-agent/work/m401/experiments/archived/pg_parallel_launcher.py:57:        print(f"Waiting for α={alpha} on sdaa:{did} (PID {proc.pid})...")
+/root/tp-agent/work/m401/experiments/archived/pg_parallel_launcher.py:60:            print(f"  α={alpha} on sdaa:{did}: COMPLETED (rc={rc})")
+/root/tp-agent/work/m401/experiments/archived/pg_parallel_launcher.py:62:            print(f"  α={alpha} on sdaa:{did}: FAILED (rc={rc})")
+/root/tp-agent/work/m401/experiments/archived/pg_worker.py:38:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/pg_worker.py:39:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/pg_worker.py:56:    log(f"Worker: alpha={alpha} device=sdaa:{did} grid={grid}³ steps={n_steps}")
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:142:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:143:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:249:        "case": "cyl_re3900_rans_ke", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:283:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:284:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:391:        "case": "naca_re6e6_rans_ke", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:425:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:426:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:531:        "case": "cube_re40000_rans_ke", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:574:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:575:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/rans_ke_bench_worker.py:746:        "case": "channel_retau180_rans_ke", "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/rans_sa_worker.py:190:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/rans_sa_worker.py:191:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/rans_sa_worker.py:317:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/rettest_v2_launcher.py:40:        print(f"Launching {case_name} on sdaa:{dev_id} -> {out_path}")
+/root/tp-agent/work/m401/experiments/archived/rettest_v2_launcher.py:61:            print(f"  {case_name:30s} sdaa:{dev_id:2d}  {data['ref_name']}={val:.6f} ref={ref} err={err:.1f}% {status}")
+/root/tp-agent/work/m401/experiments/archived/rettest_v2_launcher.py:63:            print(f"  {case_name:30s} sdaa:{dev_id:2d}  FAILED (rc={rc})")
+/root/tp-agent/work/m401/experiments/archived/rettest_v3_collect.py:43:            print(f"  {case_name:30s} sdaa:{dev_id:2d}  {rn}={val:.6f} ref={ref} err={err:.1f}% {status} ({grid}, {elapsed:.0f}s)")
+/root/tp-agent/work/m401/experiments/archived/rettest_v3_collect.py:46:            print(f"  {case_name:30s} sdaa:{dev_id:2d}  MISSING (no JSON)")
+/root/tp-agent/work/m401/experiments/archived/rettest_v3_launcher.py:49:        print(f"Launching {case_name} on sdaa:{dev_id} -> {out_path}")
+/root/tp-agent/work/m401/experiments/archived/rettest_v3_launcher.py:74:            print(f"  {case_name:30s} sdaa:{dev_id:2d}  {rn}={val:.6f} ref={ref} err={err:.1f}% {status}")
+/root/tp-agent/work/m401/experiments/archived/rettest_v3_launcher.py:76:            print(f"  {case_name:30s} sdaa:{dev_id:2d}  FAILED (rc={rc})")
+/root/tp-agent/work/m401/experiments/archived/rettest_v3_worker.py:680:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/rettest_v3_worker.py:681:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/rettest_v3_worker.py:809:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/rettest_v4_worker.py:432:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/rettest_v4_worker.py:433:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/rettest_v4_worker.py:527:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/rettest_v5_worker.py:487:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/rettest_v5_worker.py:488:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/rettest_v5_worker.py:627:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/rettest_v6_worker.py:543:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/rettest_v6_worker.py:544:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/rettest_v6_worker.py:704:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/rettest_worker.py:672:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/rettest_worker.py:673:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/rettest_worker.py:801:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/ship_bench_worker.py:4:    PYTHONPATH=src python ship_bench_worker.py --hull WIGLEY --device sdaa:8
+/root/tp-agent/work/m401/experiments/archived/ship_bench_worker.py:5:    PYTHONPATH=src python ship_bench_worker.py --hull SERIES60 --device sdaa:9
+/root/tp-agent/work/m401/experiments/archived/ship_bench_worker.py:179:    parser.add_argument("--device", type=str, default="sdaa:0")
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:103:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:183:            msg = (f"  [staircase sdaa:30] step {step:4d}: Ct_fric={cf_avg:.5f} "
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:198:        "label": "KVLCC2_staircase_sdaa30",
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:217:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:261:    print(f"  [BFL sdaa:31] Computing ellipsoid q-field "
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:264:    sys.stderr.write(f"  [BFL sdaa:31] Computing ellipsoid q-field "
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:276:    print(f"  [BFL sdaa:31] Q-field ready: {n_links} boundary links "
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:278:    sys.stderr.write(f"  [BFL sdaa:31] Q-field ready: {n_links} boundary links "
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:328:            print(f"  [BFL sdaa:31] DIVERGED at step {step}", file=sys.stderr)
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:340:            msg = (f"  [BFL sdaa:31] step {step:4d}: Ct_fric={cf_avg:.5f} "
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:355:        "label": "KVLCC2_BFL_sdaa31",
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:395:        r1 = run_staircase("sdaa:30", nx, ny, nz, hull_length, u_in, re, n_steps, warmup, cs)
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:402:        results.append({"label": "KVLCC2_staircase_sdaa30", "boundary": "staircase_wallfn",
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:408:        r2 = run_bfl("sdaa:31", nx, ny, nz, hull_length, u_in, re, n_steps, warmup, cs)
+/root/tp-agent/work/m401/experiments/archived/ship_bfl_agent.py:415:        results.append({"label": "KVLCC2_BFL_sdaa31", "boundary": "BFL_ellipsoid+wallfn",
+/root/tp-agent/work/m401/experiments/archived/sphere_3d_drag_worker.py:63:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/sphere_3d_drag_worker.py:64:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/sphere_3d_drag_worker.py:259:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/sphere_extrap_worker.py:51:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/sphere_extrap_worker.py:52:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/sphere_extrap_worker.py:171:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/sphere_gridconv_re100_worker.py:69:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/sphere_gridconv_re100_worker.py:70:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/sphere_gridconv_re100_worker.py:214:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/sphere_worker.py:39:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/sphere_worker.py:40:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/sphere_worker.py:118:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/st_naca_fix_worker.py:178:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/st_naca_fix_worker.py:179:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/st_naca_fix_worker.py:277:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/st_naca_fix_worker.py:344:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/st_naca_fix_worker.py:345:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/st_naca_fix_worker.py:445:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/st_naca_fix_worker.py:515:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/st_naca_fix_worker.py:516:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/st_naca_fix_worker.py:609:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d.py:107:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:100:def compare_tensors(name, t_cpu, t_sdaa):
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:103:    ts = t_sdaa.float().cpu()
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:125:def print_step(step, f_cpu, f_sdaa, drag_cpu, drag_sdaa):
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:126:    max_f, mean_f, _, _ = compare_tensors("f", f_cpu, f_sdaa)
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:129:    rho_s, ux_s, uy_s, uz_s = macroscopic_from_f(f_sdaa)
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:136:    ddrag = drag_sdaa - drag_cpu
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:139:          f"{max_uz:10.3e}  {drag_cpu:12.6f}  {drag_sdaa:12.6f}  "
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:162:    sd = torch.device("sdaa:0")
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:164:    f_sdaa = f_cpu.clone().to(sd)
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:165:    solid_sdaa = solid_cpu.clone().to(sd)
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:182:        f_sdaa, df_sdaa, dp_sdaa = step(f_sdaa, solid_sdaa, nu)
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:183:        drag_sdaa = (df_sdaa + dp_sdaa) if math.isfinite(df_sdaa) else float("nan")
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:186:            print_step(step_num, f_cpu, f_sdaa, drag_cpu, drag_sdaa)
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:197:    _print_deep_compare(f_cpu, f_sdaa, solid_cpu)
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:200:def _print_deep_compare(f_cpu, f_sdaa, solid):
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:203:    rho_s, ux_s, uy_s, uz_s = macroscopic_from_f(f_sdaa)
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:209:            f"f[{k}]", f_cpu[k].unsqueeze(0), f_sdaa[k].unsqueeze(0),
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:229:        diff = (f_sdaa.cpu() - f_cpu.cpu()).abs()
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_conv3d_align.py:231:        print(f"    {label:>6s}: mean|f_sdaa - f_cpu| = {df_region:.3e}")
+/root/tp-agent/work/m401/experiments/archived/standalone_mrt_matmul.py:88:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/experiments/archived/standalone_suboff_bench.py:8:    PYTHONPATH=src python standalone_suboff_bench.py [--device sdaa:0] [--steps 5000]
+/root/tp-agent/work/m401/experiments/archived/standalone_suboff_bench.py:208:    parser.add_argument("--device", default="sdaa:0", help="Torch device (sdaa:0, cuda:0, cpu)")
+/root/tp-agent/work/m401/experiments/archived/stl_ship_worker.py:133:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/stl_ship_worker.py:134:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/stl_ship_worker.py:265:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/stl_ship_worker.py:321:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/stl_ship_worker.py:322:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/stl_ship_worker.py:460:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_3d_drag_worker.py:60:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_3d_drag_worker.py:61:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_3d_drag_worker.py:265:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_3d_fast.py:21:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_3d_fast.py:22:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_3d_fast.py:120:        "case": tag, "device": f"sdaa:{device_id}", "Re": Re, "L": L,
+/root/tp-agent/work/m401/experiments/archived/suboff_appendage_worker.py:70:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_appendage_worker.py:71:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_appendage_worker.py:263:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_best_rans_worker.py:106:    tag = f"[sdaa:{device_id} {cfg['label']}]"
+/root/tp-agent/work/m401/experiments/archived/suboff_best_rans_worker.py:108:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_best_rans_worker.py:109:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_best_rans_worker.py:279:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_bfl_cmp_worker.py:48:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_bfl_cmp_worker.py:49:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_bfl_cmp_worker.py:232:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_bfl_friction_fix_worker.py:86:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_bfl_friction_fix_worker.py:87:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_bfl_friction_fix_worker.py:229:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_blockage_worker.py:87:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_blockage_worker.py:88:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_blockage_worker.py:220:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_collision_cmp_worker.py:59:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_collision_cmp_worker.py:60:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_collision_cmp_worker.py:184:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_cs_sweep_worker.py:46:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_cs_sweep_worker.py:47:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_cs_sweep_worker.py:172:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_full_hull_runner.py:289:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/experiments/archived/suboff_grid_conv_re1000_worker.py:60:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_grid_conv_re1000_worker.py:61:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_grid_conv_re1000_worker.py:253:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_grid_conv_re1000_worker.py:364:            torch.sdaa.empty_cache()
+/root/tp-agent/work/m401/experiments/archived/suboff_normal_cmp_worker.py:38:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_normal_cmp_worker.py:39:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_normal_cmp_worker.py:198:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_pressure_extrap_worker.py:44:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_pressure_extrap_worker.py:45:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_pressure_extrap_worker.py:199:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_re_sweep_worker.py:74:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_re_sweep_worker.py:75:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_re_sweep_worker.py:211:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_stl_worker.py:12:device = torch.device(f"sdaa:{sys.argv[1] if len(sys.argv)>1 else 0}")
+/root/tp-agent/work/m401/experiments/archived/suboff_time_conv_worker.py:48:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_time_conv_worker.py:49:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_time_conv_worker.py:174:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_turbcomp_worker.py:96:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_turbcomp_worker.py:97:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_turbcomp_worker.py:99:    tag = f"[sdaa:{device_id} Re={Re} {model}]"
+/root/tp-agent/work/m401/experiments/archived/suboff_turbcomp_worker.py:246:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_turbcomp_worker.py:311:        out_file = output_dir / f"suboff_{re_case}_{model}_sdaa{device_id}.json"
+/root/tp-agent/work/m401/experiments/archived/suboff_turbcomp_worker.py:313:        print(f"Running {re_case} model={model} on sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_turbcomp_worker.py:319:    combined_path = output_dir / f"suboff_{re_case}_summary_sdaa{device_id}.json"
+/root/tp-agent/work/m401/experiments/archived/suboff_wallfn_highre_worker.py:110:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_wallfn_highre_worker.py:111:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_wallfn_highre_worker.py:335:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/suboff_wallfn_loglaw_worker.py:69:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/suboff_wallfn_loglaw_worker.py:70:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/suboff_wallfn_loglaw_worker.py:300:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/test_dglbm_comparison.py:5:  1. DG-LBM hybrid (use_real_dg=True) on sdaa:4
+/root/tp-agent/work/m401/experiments/archived/test_dglbm_comparison.py:6:  2. Wall function baseline on sdaa:5
+/root/tp-agent/work/m401/experiments/archived/test_dglbm_comparison.py:188:    dg_result = run_dglbm(NX, NY, NZ, HL, 200.0, 200, "sdaa:4", dg_band=3, dg_substeps=32,
+/root/tp-agent/work/m401/experiments/archived/test_dglbm_comparison.py:215:    dg_full = run_dglbm(NX, NY, NZ, HL, float(best_re), N_STEPS, "sdaa:4",
+/root/tp-agent/work/m401/experiments/archived/test_dglbm_comparison.py:222:    wf_result = run_wallfn(NX, NY, NZ, HL, 2e6, N_STEPS, "sdaa:5", cs=0.05,
+/root/tp-agent/work/m401/experiments/archived/test_dglbm_final.py:5:WallFn: 64³, Re=2e6, 500 steps, sdaa:5
+/root/tp-agent/work/m401/experiments/archived/test_dglbm_final.py:78:WF_DEV = "sdaa:5"
+/root/tp-agent/work/m401/experiments/archived/test_dynamic_smag_comparison.py:11:    PYTHONPATH=src python test_dynamic_smag_comparison.py [--device sdaa:0]
+/root/tp-agent/work/m401/experiments/archived/test_dynamic_smag_comparison.py:224:    parser.add_argument("--device", default="sdaa:0", help="Torch device")
+/root/tp-agent/work/m401/experiments/archived/test_gradient_wall_law.py:209:    {"device": "sdaa:0", "hull": "SUBOFF", "wall_law": "log",
+/root/tp-agent/work/m401/experiments/archived/test_gradient_wall_law.py:212:    {"device": "sdaa:1", "hull": "SUBOFF", "wall_law": "gradient",
+/root/tp-agent/work/m401/experiments/archived/test_gradient_wall_law.py:216:    {"device": "sdaa:2", "hull": "KVLCC2", "wall_law": "log",
+/root/tp-agent/work/m401/experiments/archived/test_gradient_wall_law.py:219:    {"device": "sdaa:3", "hull": "KVLCC2", "wall_law": "gradient",
+/root/tp-agent/work/m401/experiments/archived/test_gradient_wall_law.py:263:        for dev in ["sdaa:0", "sdaa:1", "sdaa:2", "sdaa:3"]:
+/root/tp-agent/work/m401/experiments/archived/test_ibm_stability_sdaa.py:135:    device = torch.device("sdaa:0")
+/root/tp-agent/work/m401/experiments/archived/test_ibm_stability_sdaa.py:136:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/test_multi_card_suboff.py:32:def halo_exchange_3d_sdaa(slabs, decomp):
+/root/tp-agent/work/m401/experiments/archived/test_multi_card_suboff.py:58:_mg.halo_exchange_3d = halo_exchange_3d_sdaa
+/root/tp-agent/work/m401/experiments/archived/test_multi_card_suboff.py:139:    if not (hasattr(torch, 'sdaa') and torch.sdaa.is_available()):
+/root/tp-agent/work/m401/experiments/archived/test_multi_card_suboff.py:144:    device_count = torch.sdaa.device_count()
+/root/tp-agent/work/m401/experiments/archived/test_multi_card_suboff.py:151:    print(f"\nUsing {n_devices} SDAA cards (sdaa:{device_offset} to sdaa:{device_offset+n_devices-1})")
+/root/tp-agent/work/m401/experiments/archived/test_multi_card_suboff.py:178:    devices = [f"sdaa:{device_offset + i}" for i in range(n_devices)]
+/root/tp-agent/work/m401/experiments/archived/test_multi_card_suboff.py:242:    halo_exchange_3d_sdaa(slabs, decomp)
+/root/tp-agent/work/m401/experiments/archived/test_pg_correction.py:102:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/test_pg_correction.py:103:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:14:    PYTHONPATH=src python test_wall_function_common_sdaa.py
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:195:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:196:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:301:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:322:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:323:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:436:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:457:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:458:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:557:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:580:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:581:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/test_wall_function_common_sdaa.py:667:        "device": f"sdaa:{device_id}",
+/root/tp-agent/work/m401/experiments/archived/universal_bench_test.py:64:                    u_in=0.06, n_steps=2000, warmup=500, device="sdaa:8"):
+/root/tp-agent/work/m401/experiments/archived/universal_bench_test.py:154:                   n_steps=2000, warmup=500, device="sdaa:8"):
+/root/tp-agent/work/m401/experiments/archived/universal_bench_test.py:267:                   device="sdaa:8"):
+/root/tp-agent/work/m401/experiments/archived/universal_bench_test.py:355:    p.add_argument("--device", default="sdaa:8", help="SDAA device")
+/root/tp-agent/work/m401/experiments/archived/verify_bfl.py:444:    torch.sdaa.set_device(device_t)
+/root/tp-agent/work/m401/experiments/archived/verify_bfl.py:562:    device = f"sdaa:{device_id}"
+/root/tp-agent/work/m401/experiments/archived/verify_bfl.py:594:    out_path = Path(f"/root/TensorLBM_dev/bfl_verification_results_sdaa{device_id}.json")
+/root/tp-agent/work/m401/experiments/archived/verify_wall_bugs.py:29:DEV = torch.device("sdaa:8")
+/root/tp-agent/work/m401/experiments/archived/verify_wallfn_bare.py:53:    device = torch.device(f"sdaa:{did}")
+/root/tp-agent/work/m401/experiments/archived/verify_wallfn_bare.py:54:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/verify_wallfn_double_treatment.py:157:    device = torch.device(f"sdaa:{cfg.device_id}")
+/root/tp-agent/work/m401/experiments/archived/verify_wallfn_double_treatment.py:158:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/verify_wallfn_large.py:104:    device = torch.device(f"sdaa:{cfg.device_id}")
+/root/tp-agent/work/m401/experiments/archived/verify_wallfn_large.py:105:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/verify_wallfn_worker.py:30:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/verify_wallfn_worker.py:31:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/wallfn_bfl_survey_test.py:64:    dev = f"sdaa:{device_id}"
+/root/tp-agent/work/m401/experiments/archived/wallfn_bfl_survey_test.py:65:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/experiments/archived/wallfn_bfl_survey_test.py:175:    dev = f"sdaa:{device_id}"
+/root/tp-agent/work/m401/experiments/archived/wallfn_bfl_survey_test.py:176:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/experiments/archived/wallfn_bfl_survey_test.py:267:    dev = f"sdaa:{device_id}"
+/root/tp-agent/work/m401/experiments/archived/wallfn_bfl_survey_test.py:268:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/experiments/archived/wallfn_bfl_survey_test.py:366:    dev = f"sdaa:{device_id}"
+/root/tp-agent/work/m401/experiments/archived/wallfn_bfl_survey_test.py:367:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/experiments/archived/wallfn_bfl_survey_test.py:509:    out_file = Path(f"wallfn_bfl_survey_results_sdaa{device}.json")
+/root/tp-agent/work/m401/experiments/archived/wallfn_config_compare.py:105:    device = torch.device("sdaa:4")
+/root/tp-agent/work/m401/experiments/archived/wallfn_config_compare.py:106:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/wallfn_verify_test.py:88:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/wallfn_verify_test.py:89:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/wallfn_verify_test.py:209:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/wallfn_verify_test.py:210:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/wallfn_verify_test.py:326:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/experiments/archived/wallfn_verify_test.py:327:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/experiments/archived/wf_phase2_test.py:337:    parser.add_argument('--device', type=str, default='sdaa:4')
+/root/tp-agent/work/m401/experiments/archived/wf_phase3_test.py:342:    parser.add_argument('--device', type=str, default='sdaa:4')
+/root/tp-agent/work/m401/experiments/archived/wf_timing_test.py:308:    parser.add_argument('--device', type=str, default='sdaa:4')
+/root/tp-agent/work/m401/scripts/_suboff_collide_bench.py:14:import torch_sdaa  # noqa: E402,F401
+/root/tp-agent/work/m401/scripts/_suboff_collide_bench.py:28:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_collide_bench.py:32:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_collide_bench.py:42:    dev = torch.device("sdaa:0")
+/root/tp-agent/work/m401/scripts/_suboff_collide_bench.py:43:    torch.sdaa.set_device(0)
+/root/tp-agent/work/m401/scripts/_suboff_component_bench.py:18:import torch_sdaa  # noqa: E402,F401
+/root/tp-agent/work/m401/scripts/_suboff_component_bench.py:30:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_component_bench.py:34:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_component_bench.py:42:    dev = "sdaa:0"
+/root/tp-agent/work/m401/scripts/_suboff_component_bench.py:45:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_e2e_monitor.py:12:      --device sdaa:0 --collision mrt --friction mix50 --out DIR
+/root/tp-agent/work/m401/scripts/_suboff_e2e_opt.py:30:import torch_sdaa  # noqa: E402,F401
+/root/tp-agent/work/m401/scripts/_suboff_e2e_opt.py:104:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_e2e_opt.py:107:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_e2e_opt.py:114:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/scripts/_suboff_e2e_opt.py:122:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_e2e_opt.py:141:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_e2e_opt.py:151:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_fast_step.py:26:import torch_sdaa  # noqa: E402,F401
+/root/tp-agent/work/m401/scripts/_suboff_fast_step.py:187:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/scripts/_suboff_fast_step.py:194:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_fast_step.py:212:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_fast_step.py:216:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_fast_step.py:223:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_fast_step.py:247:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_fast_step.py:267:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_fast_step.py:272:            torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_gemm_bench.py:13:import torch_sdaa  # noqa: E402,F401
+/root/tp-agent/work/m401/scripts/_suboff_gemm_bench.py:21:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_gemm_bench.py:25:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_gemm_bench.py:38:    dev = torch.device("sdaa:0")
+/root/tp-agent/work/m401/scripts/_suboff_gemm_bench.py:39:    torch.sdaa.set_device(0)
+/root/tp-agent/work/m401/scripts/_suboff_microbench.py:13:import torch_sdaa  # noqa: E402,F401
+/root/tp-agent/work/m401/scripts/_suboff_microbench.py:16:DEV = torch.device("sdaa:0")
+/root/tp-agent/work/m401/scripts/_suboff_microbench.py:17:torch.sdaa.set_device(0)
+/root/tp-agent/work/m401/scripts/_suboff_microbench.py:23:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_microbench.py:27:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_ops_profile.py:18:import torch_sdaa  # noqa: E402,F401
+/root/tp-agent/work/m401/scripts/_suboff_ops_profile.py:91:    ap.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/scripts/_suboff_ops_profile.py:98:    torch.sdaa.set_device(dev.index or 0)
+/root/tp-agent/work/m401/scripts/_suboff_ops_profile.py:103:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_ops_profile.py:108:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_ops_profile.py:119:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_profile.py:36:        torch.sdaa.synchronize() if hasattr(torch, "sdaa") else None
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:14:import torch_sdaa  # noqa: E402,F401
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:22:    eng = build(L, "sdaa:0")
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:23:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:40:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:44:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:49:                torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:50:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:58:    s = torch.sdaa.Event(enable_timing=True)
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:59:    e = torch.sdaa.Event(enable_timing=True)
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:62:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:67:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:71:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:79:    torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:89:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stepbreak.py:93:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stream_bench.py:13:import torch_sdaa  # noqa: E402,F401
+/root/tp-agent/work/m401/scripts/_suboff_stream_bench.py:16:DEV = torch.device("sdaa:0")
+/root/tp-agent/work/m401/scripts/_suboff_stream_bench.py:17:torch.sdaa.set_device(0)
+/root/tp-agent/work/m401/scripts/_suboff_stream_bench.py:24:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/_suboff_stream_bench.py:28:        torch.sdaa.synchronize()
+/root/tp-agent/work/m401/scripts/bench_fe.py:12:import torch_sdaa
+/root/tp-agent/work/m401/scripts/bench_fe.py:276:    device = "sdaa" if torch.sdaa.is_available() else "cpu"
+/root/tp-agent/work/m401/scripts/bench_fe_water_entry.py:15:import torch_sdaa
+/root/tp-agent/work/m401/scripts/bench_fe_water_entry.py:195:    parser.add_argument("--device", default="sdaa" if torch.sdaa.is_available() else "cpu")
+/root/tp-agent/work/m401/scripts/bench_fe_water_entry_3d.py:11:import torch_sdaa
+/root/tp-agent/work/m401/scripts/bench_fe_water_entry_3d.py:130:    p.add_argument("--device", default="sdaa" if torch.sdaa.is_available() else "cpu")
+/root/tp-agent/work/m401/scripts/gallium_pf_grid_diagnostic.py:80:    p.add_argument("--device", default="sdaa:0")
+/root/tp-agent/work/m401/scripts/make_demo_gif.py:28:    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu")
+/root/tp-agent/work/m401/scripts/verification/test_drag_momentum_verification.py:52:def run_couette(device="sdaa:4"):
+/root/tp-agent/work/m401/scripts/verification/test_drag_momentum_verification.py:167:def run_poiseuille(device="sdaa:4"):
+/root/tp-agent/work/m401/scripts/verification/test_drag_momentum_verification.py:308:        "sdaa:4"
+/root/tp-agent/work/m401/scripts/verification/test_drag_momentum_verification.py:309:        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available()
+/root/tp-agent/work/m401/scripts/verification/test_wall_function_poiseuille.py:194:    device = "sdaa:0" if torch.sdaa.is_available() else "cpu"
+/root/tp-agent/work/m401/scripts/verification/test_wall_function_poiseuille.py:196:    print(f"SDAA device count: {torch.sdaa.device_count()}")
+/root/tp-agent/work/m401/src/tensorlbm/ai/suboff_train_ddp.py:66:    device = torch.device(f"sdaa:{local_rank}")
+/root/tp-agent/work/m401/src/tensorlbm/ai/suboff_train_ddp.py:67:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/src/tensorlbm/ai/suboff_train_ddp.py:134:            device=f"sdaa:{local_rank}",
+/root/tp-agent/work/m401/src/tensorlbm/ai/suboff_train_ddp.py:150:            device=f"sdaa:{local_rank}",
+/root/tp-agent/work/m401/src/tensorlbm/ai/suboff_utils.py:25:        import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/src/tensorlbm/ai/suboff_utils.py:27:        if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available():
+/root/tp-agent/work/m401/src/tensorlbm/ai/suboff_utils.py:28:            return "sdaa:0"
+/root/tp-agent/work/m401/src/tensorlbm/benchmark_observability.py:42:    elif device.type == "sdaa":
+/root/tp-agent/work/m401/src/tensorlbm/benchmark_observability.py:43:        sdaa = getattr(torch, "sdaa", None)
+/root/tp-agent/work/m401/src/tensorlbm/benchmark_observability.py:44:        if sdaa is None:
+/root/tp-agent/work/m401/src/tensorlbm/benchmark_observability.py:48:            metadata["available"] = sdaa.is_available()
+/root/tp-agent/work/m401/src/tensorlbm/benchmark_observability.py:49:            metadata["device_count"] = sdaa.device_count() if metadata["available"] else 0
+/root/tp-agent/work/m401/src/tensorlbm/boltzmann_prism.py:42:        device: str = "sdaa:0",
+/root/tp-agent/work/m401/src/tensorlbm/boltzmann_prism.py:161:        self, solid: torch.Tensor, n_prism: int = 5, nu: float = 2.4e-6, device: str = "sdaa:0"
+/root/tp-agent/work/m401/src/tensorlbm/dg_lbm.py:743:    device: str = "sdaa:0",
+/root/tp-agent/work/m401/src/tensorlbm/dg_lbm.py:756:        cfg = suboff_recommended_config(device="sdaa:0")
+/root/tp-agent/work/m401/src/tensorlbm/hardware.py:50:    ("sdaa", ("torch_sdaa",)),  # Hygon / LoongArch DCU-class
+/root/tp-agent/work/m401/src/tensorlbm/hardware.py:308:        (name for name in ("sdaa", "cuda", "npu", "mlu", "musa", "mps") if name in available_names),
+/root/tp-agent/work/m401/src/tensorlbm/hardware.py:363:        "backend (npu/mlu/sdaa/musa/cpu); Triton fused kernels are "
+/root/tp-agent/work/m401/src/tensorlbm/hardware.py:391:            ``sdaa``/``musa``/``mps``/``cpu``), a reduced-precision token
+/root/tp-agent/work/m401/src/tensorlbm/hull_free_surface_v2.py:93:    device: str = "sdaa:0"
+/root/tp-agent/work/m401/src/tensorlbm/hybrid_solver.py:14:  solver = HybridSolver(solid, n_prism_layers=5, nu=2.4e-6, device='sdaa:0')
+/root/tp-agent/work/m401/src/tensorlbm/hybrid_solver.py:118:        device: str = "sdaa:0",
+/root/tp-agent/work/m401/src/tensorlbm/multi_gpu.py:675:    A *common module* that works with any device family (``cuda``, ``sdaa``,
+/root/tp-agent/work/m401/src/tensorlbm/multi_gpu.py:695:        devices:     List of device strings, e.g. ``["sdaa:0", "sdaa:1"]``.
+/root/tp-agent/work/m401/src/tensorlbm/multi_gpu.py:712:            devices=[f"sdaa:{i}" for i in range(8)],
+/root/tp-agent/work/m401/src/tensorlbm/perf_solver.py:266:    ...                           device="sdaa:0")
+/root/tp-agent/work/m401/src/tensorlbm/prism_solver.py:199:    if dev.startswith("sdaa"):
+/root/tp-agent/work/m401/src/tensorlbm/prism_solver.py:202:        _t.sdaa.set_device(int(dev.split(":")[1]))
+/root/tp-agent/work/m401/src/tensorlbm/reporters.py:339:        elif device_type == "sdaa" and hasattr(torch, "sdaa"):
+/root/tp-agent/work/m401/src/tensorlbm/reporters.py:340:            torch.sdaa.synchronize()
+/root/tp-agent/work/m401/src/tensorlbm/suboff_cmk_kbc_runner.py:78:    on ``sdaa:0``.  For fast tests, override ``nx/ny/nz/n_steps/device``.
+/root/tp-agent/work/m401/src/tensorlbm/suboff_cmk_kbc_runner.py:90:    device: str = "sdaa:0"
+/root/tp-agent/work/m401/src/tensorlbm/suboff_cmk_kbc_runner.py:385:        "device": "sdaa",
+/root/tp-agent/work/m401/src/tensorlbm/suboff_trt_runner.py:113:    device: str = "sdaa:0"
+/root/tp-agent/work/m401/src/tensorlbm/suboff_wallfn_fullgrid_runner.py:145:    on ``sdaa:0``.  For fast tests, override ``nx/ny/nz/n_steps/device``.
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:10:    import torch_sdaa  # noqa: F401
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:12:    torch_sdaa = None
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:54:def is_sdaa_available() -> bool:
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:57:        return bool(hasattr(torch, "sdaa") and torch.sdaa.is_available())
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:69:    if is_sdaa_available():
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:70:        return "sdaa"
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:88:    if resolved.type == "sdaa":
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:89:        torch.sdaa.synchronize()  # type: ignore[attr-defined]
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:105:        device_name: ``"cpu"``, ``"sdaa"``, ``"sdaa:0"``, ``"cuda"``, ``"cuda:1"``,
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:121:    if base == "sdaa":
+/root/tp-agent/work/m401/src/tensorlbm/utils.py:122:        if not is_sdaa_available():
+/root/tp-agent/work/m401/teaching/01_couette_exact.py:35:    dev = torch.device(f'sdaa:{device_id}')
+/root/tp-agent/work/m401/teaching/01_couette_exact.py:36:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/teaching/02_poiseuille_exact.py:30:    dev = torch.device(f'sdaa:{device_id}')
+/root/tp-agent/work/m401/teaching/02_poiseuille_exact.py:31:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/teaching/03_cylinder_drag.py:36:    dev = torch.device(f'sdaa:{device_id}')
+/root/tp-agent/work/m401/teaching/03_cylinder_drag.py:37:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/teaching/04_sphere_drag.py:35:    dev = torch.device(f'sdaa:{device_id}')
+/root/tp-agent/work/m401/teaching/04_sphere_drag.py:36:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/teaching/05_suboff_best.py:36:    dev = torch.device(f'sdaa:{device_id}')
+/root/tp-agent/work/m401/teaching/05_suboff_best.py:37:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/teaching/05_suboff_drag.py:49:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/teaching/05_suboff_drag.py:50:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/teaching/05_suboff_drag.py:185:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/teaching/05_suboff_drag.py:186:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/teaching/06_bb_bug_fix.py:14:    PYTHONPATH=src python teaching/06_bb_bug_fix.py [--device sdaa:14]
+/root/tp-agent/work/m401/teaching/06_bb_bug_fix.py:31:                n_steps=2000, device="sdaa:14"):
+/root/tp-agent/work/m401/teaching/06_bb_bug_fix.py:69:def run(device="sdaa:14"):
+/root/tp-agent/work/m401/teaching/06_bb_bug_fix.py:99:    parser.add_argument("--device", default="sdaa:14", help="Device")
+/root/tp-agent/work/m401/teaching/06_direction_agnostic.py:39:    dev = torch.device(f'sdaa:{device_id}')
+/root/tp-agent/work/m401/teaching/06_direction_agnostic.py:40:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/teaching/06_direction_agnostic.py:81:    print(f"Device: sdaa:{device_id}")
+/root/tp-agent/work/m401/teaching/07_stl_geometry.py:43:    dev = torch.device(f'sdaa:{device_id}')
+/root/tp-agent/work/m401/teaching/07_stl_geometry.py:44:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/teaching/08_momentum_exchange.py:61:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/teaching/08_momentum_exchange.py:62:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/teaching/08_wall_function.py:106:    device = torch.device(f"sdaa:{device_id}")
+/root/tp-agent/work/m401/teaching/08_wall_function.py:107:    torch.sdaa.set_device(device)
+/root/tp-agent/work/m401/teaching/09_wall_function.py:49:    dev = torch.device(f'sdaa:{device_id}')
+/root/tp-agent/work/m401/teaching/09_wall_function.py:50:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/teaching/10_bfl_interpolated.py:62:    dev = torch.device(f'sdaa:{device_id}')
+/root/tp-agent/work/m401/teaching/10_bfl_interpolated.py:63:    torch.sdaa.set_device(dev)
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:23:import torch_sdaa
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:40:def test_couette(device="sdaa:8"):
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:111:def test_poiseuille(device="sdaa:9"):
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:182:def test_cylinder(device="sdaa:10"):
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:255:def test_sphere(device="sdaa:12"):
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:317:def test_suboff(device="sdaa:13"):
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:384:def test_bb_bug_fix(device="sdaa:14"):
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:450:        ("couette", lambda: test_couette("sdaa:8")),
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:451:        ("poiseuille", lambda: test_poiseuille("sdaa:9")),
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:452:        ("cylinder", lambda: test_cylinder("sdaa:10")),
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:453:        ("sphere", lambda: test_sphere("sdaa:12")),
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:454:        ("suboff", lambda: test_suboff("sdaa:13")),
+/root/tp-agent/work/m401/teaching/run_mem_tests.py:455:        ("bb_bug_fix", lambda: test_bb_bug_fix("sdaa:14")),
+/root/tp-agent/work/m401/tests/backends/test_torch_backend.py:50:    [DeviceSpec("cuda", "float32"), DeviceSpec("sdaa", "float32"), DeviceSpec("cpu", "float64")],
+/root/tp-agent/work/m401/tests/ml/test_ml_contracts.py:98:    assert "sdaa" not in repr(BACKEND_REGISTRY).lower()
+/root/tp-agent/work/m401/tests/ml/test_torch_dataset_flow_training.py:237:@pytest.mark.parametrize("device", ("cuda", "sdaa", " cpu ", "cpu:0"))
+/root/tp-agent/work/m401/tests/ml/test_torch_dataset_flow_training.py:334:    for forbidden in ("optimizer", "cuda", "sdaa", "model("):
+/root/tp-agent/work/m401/tests/ml/test_torch_dataset_materialize.py:339:        "sdaa",
+/root/tp-agent/work/m401/tests/ml/test_torch_flow_training.py:227:    for device in ("cuda", "sdaa", "mps", " cpu ", "cpu:0"):
+/root/tp-agent/work/m401/tests/ml/test_torch_flow_training.py:261:    assert not any(token in source.lower() for token in ("paddle", "mindspore", "cuda", "sdaa"))
+/root/tp-agent/work/m401/tests/ml/test_torch_holdout_evaluation.py:317:    for forbidden in ("cuda", "sdaa", "gpu"):
+/root/tp-agent/work/m401/tests/ml/test_torch_materialize.py:296:    assert "sdaa" not in source.lower()
+/root/tp-agent/work/m401/tests/test_acoustic_campaign_regression_gate.py:79:    root = Path(__file__).parents[1] / "validation_logs" / "acoustic_sdaa_campaign_20260710T141500Z"
+/root/tp-agent/work/m401/tests/test_acoustic_campaign_regression_gate.py:81:        Path(__file__).parents[1] / "configs" / "acoustic_sdaa_campaign_20260710T141500Z_gate.json"
+/root/tp-agent/work/m401/tests/test_hardware_portability.py:193:    assert {"cpu", "cuda", "npu", "mlu", "sdaa", "musa", "mps"} <= names
+/root/tp-agent/work/m401/tests/test_lbm_step.py:54:SDAA = "sdaa:0"
+/root/tp-agent/work/m401/tests/test_lbm_step.py:56:    SDAA if getattr(torch, "sdaa", None) is not None and torch.sdaa.is_available() else "cpu"
+/root/tp-agent/work/m401/tests/test_lbm_step.py:640:        if DEVICE.type == "sdaa":
+/root/tp-agent/work/m401/tests/test_lbm_step.py:641:            torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tests/test_lbm_step.py:647:        if DEVICE.type == "sdaa":
+/root/tp-agent/work/m401/tests/test_lbm_step.py:648:            torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tests/test_lbm_step.py:668:        if DEVICE.type == "sdaa":
+/root/tp-agent/work/m401/tests/test_lbm_step.py:669:            torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tests/test_lbm_step.py:673:        if DEVICE.type == "sdaa":
+/root/tp-agent/work/m401/tests/test_lbm_step.py:674:            torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tests/test_lbm_step.py:741:        if DEVICE.type == "sdaa":
+/root/tp-agent/work/m401/tests/test_lbm_step.py:742:            torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tests/test_lbm_step.py:753:        if DEVICE.type == "sdaa":
+/root/tp-agent/work/m401/tests/test_lbm_step.py:754:            torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tests/test_lbm_step.py:778:        if DEVICE.type == "sdaa":
+/root/tp-agent/work/m401/tests/test_lbm_step.py:779:            torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tests/test_lbm_step.py:783:        if DEVICE.type == "sdaa":
+/root/tp-agent/work/m401/tests/test_lbm_step.py:784:            torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tests/test_lbm_verification.py:27:def test_step_a_shear_wave(device="sdaa:0"):
+/root/tp-agent/work/m401/tests/test_lbm_verification.py:82:def test_step_b_couette(device="sdaa:0"):
+/root/tp-agent/work/m401/tests/test_lbm_verification.py:147:def test_step_c_poiseuille(device="sdaa:0"):
+/root/tp-agent/work/m401/tests/test_lbm_verification.py:206:def test_step_d_friction(device="sdaa:0"):
+/root/tp-agent/work/m401/tests/test_lbm_verification.py:273:    device = "sdaa:0" if torch.sdaa.is_available() else "cpu"
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:5:with arbitrary device strings (cuda / sdaa / cpu) and that the per-card
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:28:def _sdaa_available() -> bool:
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:29:    return hasattr(torch, "sdaa") and torch.sdaa.is_available()
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:32:def _sdaa_count() -> int:
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:33:    return torch.sdaa.device_count() if _sdaa_available() else 0
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:36:skip_no_sdaa = pytest.mark.skipif(not _sdaa_available(), reason="no SDAA backend available")
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:37:skip_few_sdaa = pytest.mark.skipif(_sdaa_count() < 2, reason="fewer than 2 SDAA devices")
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:38:skip_few_sdaa4 = pytest.mark.skipif(_sdaa_count() < 4, reason="fewer than 4 SDAA devices")
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:90:    def test_constructor_accepts_sdaa_strings(self):
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:91:        dd = DomainDecomposition(devices=["sdaa:0", "sdaa:1"], nx_global=8)
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:93:        assert dd.devices == ["sdaa:0", "sdaa:1"]
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:97:        dd = DomainDecomposition(devices=["cpu", "sdaa:0"], nx_global=6)
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:105:    def test_from_devices_sdaa(self):
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:109:            device_type="sdaa",
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:111:        assert dd.devices == ["sdaa:0", "sdaa:1", "sdaa:2"]
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:136:    def test_explicit_sdaa_type(self):
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:138:        dd = auto_decompose(f, device_type="sdaa", n_devices=2)
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:139:        assert dd.devices == ["sdaa:0", "sdaa:1"]
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:147:    @skip_no_sdaa
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:148:    def test_auto_detect_sdaa_when_no_cuda(self):
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:153:        assert all(d.startswith("sdaa:") for d in dd.devices)
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:154:        assert dd.n_devices == _sdaa_count()
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:158:        dd = auto_decompose(f, device_type="sdaa", n_devices=4)
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:160:        assert dd.devices == [f"sdaa:{i}" for i in range(4)]
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:168:@skip_few_sdaa
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:172:    def test_two_sdaa_slabs_exchange_ghosts(self):
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:175:        # Slab 0 on sdaa:0, slab 1 on sdaa:1
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:176:        s0 = torch.randn(19, nz, ny, nx_local + 2 * ov, device="sdaa:0")
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:177:        s1 = torch.randn(19, nz, ny, nx_local + 2 * ov, device="sdaa:1")
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:179:            devices=["sdaa:0", "sdaa:1"],
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:187:        expected_right_ghost = s1[:, :, :, ov : 2 * ov].to("sdaa:0")
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:191:        expected_left_ghost = s0[:, :, :, -2 * ov : -ov].to("sdaa:1")
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:194:    def test_three_sdaa_slabs_periodic_ring(self):
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:197:        devices = ["sdaa:0", "sdaa:1", "sdaa:2"]
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:394:@skip_few_sdaa
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:398:    def test_two_sdaa_cards_periodic_stream_equivalence(self):
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:410:            devices=["sdaa:0", "sdaa:1"],
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:420:    def test_four_sdaa_cards_bgk_collision_equivalence(self):
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:437:            devices=[f"sdaa:{i}" for i in range(4)],
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:447:    def test_sdaa_force_all_reduce(self):
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:461:            devices=[f"sdaa:{i}" for i in range(4)],
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:469:    def test_sdaa_gather_macroscopic(self):
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:477:            devices=[f"sdaa:{i}" for i in range(4)],
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:492:@skip_few_sdaa4
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:517:            devices=[f"sdaa:{i}" for i in range(n_cards)],
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:545:            devices=[f"sdaa:{i}" for i in range(n_cards)],
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:559:        if _sdaa_count() < 8:
+/root/tp-agent/work/m401/tests/test_multi_device_sdaa_common.py:573:            devices=[f"sdaa:{i}" for i in range(n_cards)],
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:9:  6. SDAA smoke test (sdaa:0, tiny grid)
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:73:    def test_default_device_is_sdaa0(self) -> None:
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:75:        assert cfg.device == "sdaa:0"
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:222:        assert artifact["device"] == "sdaa"
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:294:    def sdaa_available(self) -> bool:
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:295:        return hasattr(torch, "sdaa") and torch.sdaa.device_count() > 0
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:298:        not (hasattr(torch, "sdaa") and torch.sdaa.device_count() > 0),
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:301:    def test_sdaa_cm_smagorinsky(self, sdaa_available: bool) -> None:
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:305:            device="sdaa:0",
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:315:        assert artifact["device"] == "sdaa"
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:318:        not (hasattr(torch, "sdaa") and torch.sdaa.device_count() > 0),
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:322:    def test_sdaa_all_combinations(
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:326:        sdaa_available: bool,
+/root/tp-agent/work/m401/tests/test_suboff_cmk_kbc_runner.py:331:            device="sdaa:0",
+/root/tp-agent/work/m401/tests/test_suboff_trt_runner.py:66:        assert cfg.device == "sdaa:0"
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:9:  6. SDAA smoke test (sdaa:0, tiny grid)
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:77:    def test_default_device_is_sdaa0(self) -> None:
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:79:        assert cfg.device == "sdaa:0"
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:377:    def sdaa_available(self) -> bool:
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:378:        return hasattr(torch, "sdaa") and torch.sdaa.device_count() > 0
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:381:        not (hasattr(torch, "sdaa") and torch.sdaa.device_count() > 0),
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:384:    def test_sdaa_bgk_d3q19(self, sdaa_available: bool) -> None:
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:388:            device="sdaa:0",
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:398:        assert artifact["device"] == "sdaa"
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:401:        not (hasattr(torch, "sdaa") and torch.sdaa.device_count() > 0),
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:404:    def test_sdaa_cumulant_d3q27(self, sdaa_available: bool) -> None:
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:408:            device="sdaa:0",
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:418:        assert artifact["device"] == "sdaa"
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:421:        not (hasattr(torch, "sdaa") and torch.sdaa.device_count() > 0),
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:425:    def test_sdaa_all_combinations(
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:429:        sdaa_available: bool,
+/root/tp-agent/work/m401/tests/test_suboff_wallfn_fullgrid_runner.py:434:            device="sdaa:0",
+/root/tp-agent/work/m401/tests/test_utils.py:56:        assert configure_cpu_threads("sdaa:0", 2) == current
+/root/tp-agent/work/m401/tools/scratch/gather_gpu_test.py:6:dev = torch.device('sdaa:0')
+/root/tp-agent/work/m401/tools/scratch/gather_gpu_test.py:13:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/gather_gpu_test.py:19:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/gather_gpu_test.py:27:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/gather_gpu_test.py:34:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/gather_test.py:6:dev = torch.device('sdaa:0')
+/root/tp-agent/work/m401/tools/scratch/gather_test.py:20:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/gather_test.py:28:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/gather_test.py:36:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/ghost_fill_test.py:6:dev = torch.device('sdaa:0')
+/root/tp-agent/work/m401/tools/scratch/ghost_fill_test.py:23:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/ghost_fill_test.py:33:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/item_test.py:6:dev = torch.device('sdaa:0')
+/root/tp-agent/work/m401/tools/scratch/item_test.py:24:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/item_test.py:35:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/nonzero_test.py:6:dev = torch.device('sdaa:0')
+/root/tp-agent/work/m401/tools/scratch/nonzero_test.py:13:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/nonzero_test.py:19:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/nonzero_test.py:26:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/octree_timed.py:89:sys.argv = ['octree_sphere_validate.py', '--device', 'sdaa:0', '--nx', '96', '--ny', '64', '--nz', '64',
+/root/tp-agent/work/m401/tools/scratch/reflux_item_test.py:6:dev = torch.device('sdaa:0')
+/root/tp-agent/work/m401/tools/scratch/reflux_item_test.py:38:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/reflux_item_test.py:54:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/reflux_item_test.py:65:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/rescale_test.py:7:dev = torch.device('sdaa:0')
+/root/tp-agent/work/m401/tools/scratch/rescale_test.py:17:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/stream_gather_batch_test.py:6:dev = torch.device('sdaa:0')
+/root/tp-agent/work/m401/tools/scratch/stream_gather_batch_test.py:26:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/stream_gather_batch_test.py:39:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/trilinear_test.py:6:dev = torch.device('sdaa:0')
+/root/tp-agent/work/m401/tools/scratch/trilinear_test.py:32:torch.sdaa.synchronize()
+/root/tp-agent/work/m401/tools/scratch/trilinear_test.py:40:torch.sdaa.synchronize()
+
+=== COUNT ===
+1366
