@@ -1,6 +1,7 @@
 # Womersley 振荡流（2D 通道, D2Q9）— 受迫振荡层流解析解 benchmark
 
-**判定: 达标 (VERIFIED)** — 4/4 配置全部门限通过 + 单调网格收敛（α=4 与 α=8 两条线）。
+**判定: 达标 (VERIFIED)** — H∈{59, 119} 共 4 配置全部门限通过 + 单调网格收敛（α=4 与 α=8 两条线）。
+**H=29 扩展扫描**: α=4 临界通过 (2.93%)，α=8 复振幅 4.89% 超标 → **HONEST_FAIL**（Stokes BL 分辨率物理极限）。
 
 ## 解析解
 
@@ -71,6 +72,49 @@
   （第 2–6 行仅 0.4–0.8%），H=119 降到 1.6%→0.5% 区间，属真实收敛。
 - mass drift ≤0.08%，全程 finite。
 
+## 扩展扫描：H=29 粗网格诊断（scan_out/result_extended.json）
+
+| H_eff | α | δ=H/(α√2) [lu] | BL 网格点 | L2 max | 逐点/u_peak max | 复振幅 max | 判定 |
+|---|---|---|---|---|---|---|---|
+| 29  | 4 | 5.12 | ~5 | 0.420% | 0.416% | 2.934% | ⚠️ 临界通过 |
+| 29  | 8 | 2.56 | ~2.5 | 1.554% | 1.741% | **4.890%** | ❌ HONEST_FAIL |
+| 59  | 4 | 10.43 | ~10 | 0.110% | 0.109% | 0.467% | ✅ 通过 |
+| 59  | 8 | 5.21 | ~5 | 0.389% | 0.423% | 2.900% | ✅ 通过 |
+| 119 | 4 | 21.04 | ~21 | 0.046% | 0.048% | 0.144% | ✅ 通过 |
+| 119 | 8 | 10.52 | ~10 | 0.101% | 0.107% | 0.450% | ✅ 通过 |
+
+### H=29, α=8 HONEST_FAIL 根因分析
+
+Stokes 振荡边界层厚度公式：
+
+    δ = H / (α · √2)
+
+对 H=29, α=8：δ = 29 / (8 × 1.414) ≈ **2.56 格子单位**。
+
+在 half-way bounce-back 约定下，壁面位于 y=0.5 和 y=H+1.5，第一流体行在
+y=1.5（距壁面 1.0 lu）。BL 厚度仅 2.56 lu 意味着：
+- 第一流体行（y=1.5）位于 BL 内部（距壁面 1.0 lu < δ=2.56 lu）
+- 第二流体行（y=2.5）距壁面 2.0 lu，仍在 BL 内
+- 第三流体行（y=3.5）距壁面 3.0 lu > δ，已出 BL
+
+**BL 内仅有 ~2.5 个网格点**，远低于准确分辨振荡边界层所需的 5–10 个网格点。
+这导致：
+1. 壁面剪切率离散误差大 → 复振幅相位/幅值偏差
+2. 误差集中在第一流体行（实测该行复振幅误差 ~12%，其余行 <1%）
+3. H→2H 收敛正常（4.89% → 2.90%），证明是分辨率问题而非算法缺陷
+
+**结论**：H=29, α=8 的 4.89% 超标是**物理分辨率极限**，非代码 bug。
+要在此配置下通过 3% 门限，需 δ ≥ 5 lu → α ≤ H/(5√2) ≈ 4.1，
+即 α=8 在 H=29 网格上物理上不可行。
+
+### 最小网格分辨率建议
+
+| α | 最小 H_eff (δ≥5 lu) | 推荐 H_eff (δ≥10 lu) |
+|---|---|---|
+| 4 | ≥29 | ≥57 |
+| 8 | ≥57 | ≥113 |
+| 12 | ≥85 | ≥170 |
+
 ## 入口申报（零手写内核，grep 自检通过）
 
 - collide: `tensorlbm.solver.collide_bgk`
@@ -100,9 +144,8 @@
 
 ## 复现
 
-    cd /nfs/wangxi/runs/bm_widen_20260919/unsteady_analytic/womersley
-    CUDA_VISIBLE_DEVICES=6 /nfs/wangxi/venvs/tensorlbm/bin/python run.py scan scan_out
-    # 或单点: run.py single 119 8 /tmp/case.json --device cuda
-
-库只读挂载: `sys.path.insert(0, "/nfs/wangxi/worktrees/bm_relaunch/src")`
-(main @ 64a979de)。运行 2026-09-19, GPU 6, torch 2.11.0+cu128。
+    cd benchmarks/verified/womersley
+    python run.py scan scan_out --H 59 119 --alpha 4.0 8.0 --device cpu
+    # 扩展扫描（含 H=29 诊断）:
+    python run.py scan scan_out_extended --H 29 59 119 --alpha 4.0 8.0 --device cpu
+    # 或单点: run.py single 119 8 /tmp/case.json --device cpu
