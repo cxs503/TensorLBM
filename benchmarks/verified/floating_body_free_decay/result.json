@@ -28,7 +28,7 @@
       "omega_n_dt": 0.5,
       "omega_n_eig": 1.0,
       "stiffness": 2000.0,
-      "wall_s": 0.6174604892730713
+      "wall_s": 1.0171563625335693
     },
     {
       "amplitude": 0.00012598815374076366,
@@ -56,7 +56,7 @@
       "omega_n_dt": 0.25,
       "omega_n_eig": 1.0,
       "stiffness": 2000.0,
-      "wall_s": 1.0817890167236328
+      "wall_s": 2.051971435546875
     },
     {
       "amplitude": 0.00011213133984711021,
@@ -84,7 +84,7 @@
       "omega_n_dt": 0.5303300858899106,
       "omega_n_eig": 1.7508926391601562,
       "stiffness": 4905.0,
-      "wall_s": 0.5801496505737305
+      "wall_s": 0.9554779529571533
     },
     {
       "amplitude": 5.454047641251236e-05,
@@ -112,67 +112,10 @@
       "omega_n_dt": 0.2651650429449553,
       "omega_n_eig": 1.7508926391601562,
       "stiffness": 4905.0,
-      "wall_s": 1.0865190029144287
+      "wall_s": 1.9844670295715332
     }
   ],
-  "damped_memory_diagnostic": [
-    {
-      "B0": 50.0,
-      "amp_first_period": 9.600623343430925e-06,
-      "amp_last_period": 1.5682335288147442e-05,
-      "case": "heave",
-      "criterion": "diagnostic-only",
-      "dt": 0.02,
-      "omega_d_analytic": 0.9999218719480037,
-      "omega_meas": 1.0086783457920818,
-      "omega_meas_vs_d_analytic_pct": 0.8757158023775493,
-      "omega_n_analytic": 1.0,
-      "wall_s": 67.94121432304382,
-      "zeta": 0.0125
-    },
-    {
-      "B0": 200.0,
-      "amp_first_period": 8.560812602809165e-06,
-      "amp_last_period": 9.797290113056079e-05,
-      "case": "heave",
-      "criterion": "diagnostic-only",
-      "dt": 0.02,
-      "omega_d_analytic": 0.998749217771909,
-      "omega_meas": 1.030624765517325,
-      "omega_meas_vs_d_analytic_pct": 3.1915467044396477,
-      "omega_n_analytic": 1.0,
-      "wall_s": 62.26512885093689,
-      "zeta": 0.05
-    },
-    {
-      "B0": 50.0,
-      "amp_first_period": 2.405009036010597e-05,
-      "amp_last_period": 1.458826500311261e-05,
-      "case": "heave",
-      "criterion": "diagnostic-only",
-      "dt": 0.05,
-      "omega_d_analytic": 0.9999218719480037,
-      "omega_meas": 1.0000761808649088,
-      "omega_meas_vs_d_analytic_pct": 0.015432097370210129,
-      "omega_n_analytic": 1.0,
-      "wall_s": 20.24674916267395,
-      "zeta": 0.0125
-    },
-    {
-      "B0": 200.0,
-      "amp_first_period": 2.1539584849961102e-05,
-      "amp_last_period": 5.064750439487398e-06,
-      "case": "heave",
-      "criterion": "diagnostic-only",
-      "dt": 0.05,
-      "omega_d_analytic": 0.998749217771909,
-      "omega_meas": 0.9986113893100692,
-      "omega_meas_vs_d_analytic_pct": -0.013800107112696275,
-      "omega_n_analytic": 1.0,
-      "wall_s": 26.400012493133545,
-      "zeta": 0.05
-    }
-  ],
+  "damped_memory_diagnostic": [],
   "device": "cpu",
   "dtype": "float32 (json metrics in float64)",
   "evidence_boundary": "Caller-synthesised body and hydrodynamic coefficients. No LBM flow, hull coupling, free surface, or radiation-memory (damping) validation. The damped memory path is a reported diagnostic only, NOT part of the acceptance criteria.",

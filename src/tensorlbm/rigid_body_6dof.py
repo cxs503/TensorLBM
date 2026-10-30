@@ -182,7 +182,7 @@ def compute_retardation_function(
             for j in range(6):
                 B_fine[:, i, j] = torch.from_numpy(
                     __import__("numpy").interp(
-                        omega_fine.numpy(), omega.numpy(), B[:, i, j].numpy()
+                        omega_fine.cpu().numpy(), omega.cpu().numpy(), B[:, i, j].cpu().numpy()
                     )
                 )
         omega_int = omega_fine
