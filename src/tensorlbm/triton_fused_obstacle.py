@@ -98,6 +98,7 @@ __all__ = [
     "apply_inflow_zou_he",
     "apply_outflow_zero_gradient",
     "create_suboff_obstacle_torch",
+    "torch_fused_obstacle_xfar_les",
 ]
 
 
@@ -2660,3 +2661,239 @@ def create_suboff_obstacle_torch(
     # matches the kernel's expected (nz, ny, nx) format.
     # Streamwise = z (axis 0), span = y (axis 1), lateral = x (axis 2).
     return obstacle.contiguous()
+
+
+# ---------------------------------------------------------------------------
+# Pure PyTorch equivalent implementation
+# ---------------------------------------------------------------------------
+
+def torch_fused_obstacle_xfar_les(
+    f: torch.Tensor,
+    nu_lb: float,
+    obstacle: torch.Tensor,
+    Cs: float,
+    delta: float,
+    *,
+    collision: str = "BGK",
+    out: torch.Tensor | None = None,
+    tau_eff: torch.Tensor | None = None,
+    fx_buf: torch.Tensor | None = None,
+    fy_buf: torch.Tensor | None = None,
+    fz_buf: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Pure PyTorch equivalent of triton_fused_obstacle_xfar_les.
+    
+    This implementation provides the same semantics as the Triton kernel.
+    The key insight is that the kernel does: collide(BB(stream(f))), not
+    BB(stream(collide(f))). The collision happens AFTER bounce-back.
+    
+    Semantics (matching test_triton_obstacle_wall_parity.py):
+    1. Stream: f_streamed[q, x] = f[q, x - c_q]
+    2. Bounce-back: f_bb[q, x] = f_streamed[opp[q], x] for solid cells
+    3. Compute macroscopic variables on f_bb
+    4. Compute equilibrium feq from f_bb
+    5. Collide: f_out = f_bb - omega * (f_bb - feq)
+    
+    Args:
+        f: Distribution tensor of shape (Q=19, nz, ny, nx), fp32.
+        nu_lb: Molecular kinematic viscosity in lattice units.
+        obstacle: int8[NZ, NY, NX] mask (1 = wall, 0 = fluid).
+        Cs: Smagorinsky constant.
+        delta: LES filter width (lattice units).
+        collision: One of "BGK", "CM", "CUMULANT".
+        out: Optional output tensor (must match shape/dtype of f).
+        tau_eff: Optional [NZ, NY, NX] per-cell effective relaxation time.
+        fx_buf, fy_buf, fz_buf: Optional scalar tensors for force accumulation.
+    
+    Returns:
+        Tensor holding the post-step distribution.
+    """
+    if obstacle.shape != f.shape[1:]:
+        raise ValueError(
+            f"obstacle shape {tuple(obstacle.shape)} does not match "
+            f"f's spatial shape {tuple(f.shape[1:])}"
+        )
+    Q, nz, ny, nx = f.shape
+    if Q != 19:
+        raise ValueError(f"Expected Q=19 (production D3Q19), got Q={Q}")
+    if out is None:
+        out = torch.empty_like(f)
+    
+    device = f.device
+    lat = _lattice_tensors_canonical(str(device))
+    
+    # Extract lattice constants (first 19 lanes)
+    cx = lat["cxi"][:19].to(device)  # (19,)
+    cy = lat["cyi"][:19].to(device)
+    cz = lat["czi"][:19].to(device)
+    cxf = lat["cxf"][:19].to(device)
+    cyf = lat["cyf"][:19].to(device)
+    czf = lat["czf"][:19].to(device)
+    w = lat["w"][:19].to(device)
+    opp = _OPPOSITE.to(device)
+    
+    # === Step 1: Streaming ===
+    # f_streamed[q, x] = f[q, x - c_q]
+    f_streamed = torch.zeros_like(f)
+    for q in range(19):
+        # Source coordinates with periodic wrap
+        src_x = torch.arange(nx, device=device) - cx[q]
+        src_x = (src_x + nx) % nx
+        src_y = torch.arange(ny, device=device) - cy[q]
+        src_y = (src_y + ny) % ny
+        src_z = torch.arange(nz, device=device) - cz[q]
+        src_z = (src_z + nz) % nz
+        
+        # Gather from source
+        f_streamed[q] = f[q][src_z[:, None, None], src_y[None, :, None], src_x[None, None, :]]
+    
+    # === Step 2: Full-way bounce-back ===
+    # For solid cells: f_bb[q, x] = f_streamed[opp[q], x]
+    is_wall = obstacle > 0  # (nz, ny, nx)
+    # For solid cells: f_bb[q, x] = f_streamed[opp[q], x]
+    f_bb = f_streamed.clone()
+    for q in range(19):
+        f_bb[q] = torch.where(is_wall, f_streamed[opp[q]], f_streamed[q])
+    
+    # === Step 3: Compute macroscopic variables on f_bb ===
+    rho = f_bb.sum(dim=0)  # (nz, ny, nx)
+    rho_safe = torch.where(rho > 1e-12, rho, torch.tensor(1e-12, device=device))
+    
+    ux = (cxf[:, None, None, None] * f_bb).sum(dim=0) / rho_safe
+    uy = (cyf[:, None, None, None] * f_bb).sum(dim=0) / rho_safe
+    uz = (czf[:, None, None, None] * f_bb).sum(dim=0) / rho_safe
+    
+    usq = ux * ux + uy * uy + uz * uz
+    
+    # === Step 4: Compute equilibrium ===
+    cxf_4d = cxf[:, None, None, None]
+    cyf_4d = cyf[:, None, None, None]
+    czf_4d = czf[:, None, None, None]
+    w_4d = w[:, None, None, None]
+    
+    cu = cxf_4d * ux[None, :, :, :] + cyf_4d * uy[None, :, :, :] + czf_4d * uz[None, :, :, :]
+    feq = rho_safe[None, :, :, :] * w_4d * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq[None, :, :, :])
+    
+    # === Step 5: Non-equilibrium ===
+    fneq = f_bb - feq
+    
+    # === Step 6: Compute relaxation rate omega ===
+    tau_mol = 3.0 * nu_lb + 0.5
+    
+    use_external_tau = tau_eff is not None
+    use_smag = (not use_external_tau) and (Cs * Cs * delta * delta > 0.0)
+    
+    if use_external_tau:
+        omega = 1.0 / tau_eff
+    elif use_smag:
+        # Smagorinsky closure
+        pi_xx = (cxf_4d * cxf_4d * fneq).sum(dim=0)
+        pi_yy = (cyf_4d * cyf_4d * fneq).sum(dim=0)
+        pi_zz = (czf_4d * czf_4d * fneq).sum(dim=0)
+        pi_xy = (cxf_4d * cyf_4d * fneq).sum(dim=0)
+        pi_xz = (cxf_4d * czf_4d * fneq).sum(dim=0)
+        pi_yz = (cyf_4d * czf_4d * fneq).sum(dim=0)
+        
+        # |Pi| = sqrt(pi_xx^2 + pi_yy^2 + pi_zz^2 + 2*(pi_xy^2 + pi_xz^2 + pi_yz^2))
+        pi_norm = torch.sqrt(
+            pi_xx * pi_xx + pi_yy * pi_yy + pi_zz * pi_zz +
+            2.0 * (pi_xy * pi_xy + pi_xz * pi_xz + pi_yz * pi_yz)
+        )
+        
+        Cs_delta_sq = Cs * Cs * delta * delta
+        # tau_eff = 0.5 * (tau_mol + sqrt(tau_mol^2 + 18 * Cs^2 * delta^2 * |Pi| / rho))
+        tau_eff_computed = 0.5 * (
+            tau_mol + torch.sqrt(tau_mol * tau_mol + 18.0 * Cs_delta_sq * pi_norm / rho_safe)
+        )
+        # Clamp to [0.5001, max(1.0, tau_mol + 0.5)]
+        tau_eff_max = max(1.0, tau_mol + 0.5)
+        tau_eff_computed = torch.clamp(tau_eff_computed, min=0.5001, max=tau_eff_max)
+        omega = 1.0 / tau_eff_computed
+    else:
+        omega = torch.tensor(1.0 / tau_mol, device=device)
+    
+    # === Step 7: Collision ===
+    if collision == "BGK":
+        f_post = f_bb - omega * (f_bb - feq)
+    elif collision == "CM":
+        # Cascaded central moments - simplified implementation
+        # For now, fall back to BGK-like relaxation
+        # TODO: Implement full CM collision
+        f_post = f_bb - omega * (f_bb - feq)
+    elif collision == "CUMULANT":
+        # Cumulant collision
+        pi_xx = (cxf_4d * cxf_4d * fneq).sum(dim=0)
+        pi_yy = (cyf_4d * cyf_4d * fneq).sum(dim=0)
+        pi_zz = (czf_4d * czf_4d * fneq).sum(dim=0)
+        pi_xy = (cxf_4d * cyf_4d * fneq).sum(dim=0)
+        pi_xz = (cxf_4d * czf_4d * fneq).sum(dim=0)
+        pi_yz = (cyf_4d * czf_4d * fneq).sum(dim=0)
+        
+        omega_b = 1.0
+        trace = pi_xx + pi_yy + pi_zz
+        delta_b = (omega_b - omega) * trace / 3.0
+        
+        pi_xx_s = pi_xx - omega * pi_xx - delta_b
+        pi_yy_s = pi_yy - omega * pi_yy - delta_b
+        pi_zz_s = pi_zz - omega * pi_zz - delta_b
+        pi_xy_s = pi_xy - omega * pi_xy
+        pi_xz_s = pi_xz - omega * pi_xz
+        pi_yz_s = pi_yz - omega * pi_yz
+        
+        cs2 = 1.0 / 3.0
+        h_xx = cxf_4d * cxf_4d - cs2
+        h_yy = cyf_4d * cyf_4d - cs2
+        h_zz = czf_4d * czf_4d - cs2
+        h_xy = cxf_4d * cyf_4d
+        h_xz = cxf_4d * czf_4d
+        h_yz = cyf_4d * czf_4d
+        
+        fneq_reg = 4.5 * w_4d * (
+            h_xx * pi_xx_s[None, :, :, :] +
+            h_yy * pi_yy_s[None, :, :, :] +
+            h_zz * pi_zz_s[None, :, :, :] +
+            2.0 * h_xy * pi_xy_s[None, :, :, :] +
+            2.0 * h_xz * pi_xz_s[None, :, :, :] +
+            2.0 * h_yz * pi_yz_s[None, :, :, :]
+        )
+        
+        fneq_ho_unrel = 4.5 * w_4d * (
+            h_xx * pi_xx[None, :, :, :] +
+            h_yy * pi_yy[None, :, :, :] +
+            h_zz * pi_zz[None, :, :, :] +
+            2.0 * h_xy * pi_xy[None, :, :, :] +
+            2.0 * h_xz * pi_xz[None, :, :, :] +
+            2.0 * h_yz * pi_yz[None, :, :, :]
+        )
+        
+        fneq_ho = fneq - fneq_ho_unrel
+        omega_even = 1.0
+        fneq_ho_s = (1.0 - omega_even) * fneq_ho
+        
+        f_post = feq + fneq_reg + fneq_ho_s
+    else:
+        raise ValueError(f"Unknown collision type: {collision}")
+    
+    # === Step 8: Force computation (Ladd 1994) ===
+    # Note: The force is computed on f_streamed (pre-bounce-back), not f_bb
+    compute_force = fx_buf is not None and fy_buf is not None and fz_buf is not None
+    if compute_force:
+        is_wall_f = is_wall.to(torch.float32)
+        fx_cell = (cxf[:, None, None, None] * f_streamed).sum(dim=0)
+        fy_cell = (cyf[:, None, None, None] * f_streamed).sum(dim=0)
+        fz_cell = (czf[:, None, None, None] * f_streamed).sum(dim=0)
+        
+        # Mask fluid cells and apply Ladd ×2
+        fx_cell = 2.0 * fx_cell * is_wall_f
+        fy_cell = 2.0 * fy_cell * is_wall_f
+        fz_cell = 2.0 * fz_cell * is_wall_f
+        
+        # Accumulate forces
+        fx_buf.add_(fx_cell.sum())
+        fy_buf.add_(fy_cell.sum())
+        fz_buf.add_(fz_cell.sum())
+    
+    # === Step 9: Write output ===
+    out.copy_(f_post)
+    return out
+
