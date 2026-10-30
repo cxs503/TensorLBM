@@ -1,0 +1,123 @@
+{
+  "case": "permeability3d",
+  "device": "sdaa:0",
+  "device_name": "/dev/tcaicard8",
+  "device_properties": "_SDAADeviceProperties(name='/dev/tcaicard8', total_memory=15296MiB)",
+  "torch_version": "2.7.1",
+  "tensorlbm_file": "/root/tp-agent/work/m29/src/tensorlbm/__init__.py",
+  "triton_interpret_set": true,
+  "phi": 0.343,
+  "k_table": 15.402,
+  "tol": 0.03,
+  "tiers": [
+    {
+      "N": 64,
+      "err": 0.0462922015564704,
+      "err_pct": 4.6292,
+      "K_sim": 14.720553184940014,
+      "K_table": 15.402,
+      "k_sim": 33.993785049794255,
+      "k_ref": 32.48976241935561,
+      "Ma_max": 0.007829678477719426,
+      "steady_detected": true,
+      "steps_run": 14200,
+      "wall_seconds": 228.29,
+      "phi_actual": 0.3424644470214844,
+      "mass_drift_max_rel": 7.522104377244859e-05,
+      "smoke": false
+    },
+    {
+      "N": 96,
+      "err": 0.4154037554780736,
+      "err_pct": 41.5404,
+      "K_sim": 26.34638888690691,
+      "K_table": 15.402,
+      "k_sim": 42.73513446547104,
+      "k_ref": 73.10196544355013,
+      "Ma_max": 0.002571688499301672,
+      "steady_detected": false,
+      "steps_run": 2000,
+      "wall_seconds": 52.02,
+      "phi_actual": 0.3426864058883102,
+      "mass_drift_max_rel": 2.013315290260725e-05,
+      "smoke": true
+    }
+  ],
+  "tiers_skipped": [
+    {
+      "N": 128,
+      "reason": "too slow on SDAA for 20-min budget"
+    },
+    {
+      "N": 160,
+      "reason": "too slow on SDAA for 20-min budget"
+    }
+  ],
+  "gates": [
+    {
+      "gate": "library_entry",
+      "pass": true,
+      "evidence": [
+        {
+          "v": "from tensorlbm.solver3d import collide_bgk3d, stream3d",
+          "f": "scripts/sdaa_sweep_permeability3d.py",
+          "k": "import"
+        },
+        {
+          "v": "from tensorlbm.boundaries3d import bounce_back_cells_3d",
+          "f": "scripts/sdaa_sweep_permeability3d.py",
+          "k": "import"
+        }
+      ]
+    },
+    {
+      "gate": "direct_observable",
+      "pass": false,
+      "evidence": [
+        {
+          "v": 0.0462922015564704,
+          "N": 64,
+          "err_pct": "4.6292%",
+          "smoke": false
+        },
+        {
+          "v": 0.4154037554780736,
+          "N": 96,
+          "err_pct": "41.5404%",
+          "smoke": true
+        }
+      ]
+    },
+    {
+      "gate": "monotone_convergence",
+      "pass": false,
+      "mode": "abs_decrease",
+      "evidence": [
+        {
+          "v": 0.0462922015564704,
+          "N": 64,
+          "smoke": false
+        },
+        {
+          "v": 0.4154037554780736,
+          "N": 96,
+          "smoke": true
+        }
+      ]
+    },
+    {
+      "gate": "finest_le_tol_3pct",
+      "pass": false,
+      "evidence": [
+        {
+          "v": 0.4154037554780736,
+          "N": 96,
+          "tol": 0.03
+        }
+      ]
+    }
+  ],
+  "all_pass": false,
+  "total_wall_seconds": 280.32,
+  "created_utc": "2026-10-29T13:13:03Z"
+}
