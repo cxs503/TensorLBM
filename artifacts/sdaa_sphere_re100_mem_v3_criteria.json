@@ -1,0 +1,58 @@
+{
+  "case": "sphere_re100_mem",
+  "mission_id": 202,
+  "round": 3,
+  "status": "honest-FAIL",
+  "reference": {
+    "formula": "Cd = 24/Re * (1 + 0.15*Re^0.687)",
+    "cd_ref": 1.0917310910948732,
+    "gate_pct": 3.0
+  },
+  "existing_results": [
+    {
+      "D": 40,
+      "cd": 1.1219804015117896,
+      "err_pct": 2.7707656824703957,
+      "steps": 12000
+    },
+    {
+      "D": 60,
+      "cd": 1.119462001144486,
+      "err_pct": 2.5400861325477218,
+      "steps": 24000
+    }
+  ],
+  "convergence_analysis": {
+    "monotone": true,
+    "convergence_order": "\u22481.0 (\u57fa\u4e8e D40->D60)",
+    "prediction": {
+      "D80": {
+        "err_pct_predicted": 1.4288062499999998,
+        "within_gate": true
+      },
+      "D160": {
+        "err_pct_predicted": 0.35720156249999996,
+        "within_gate": true
+      }
+    }
+  },
+  "diagnosis": {
+    "error_sources": [
+      "\u5165\u53e3 Dirichlet \u94b3\u5236\u504f\u7f6e (far_field_bc)",
+      "\u7a7a\u95f4\u79bb\u6563\u8bef\u5dee (\u4e8c\u9636\u6536\u655b\u4f46\u6536\u655b\u6162)",
+      "BFL \u8fb9\u754c\u63d2\u503c\u8bef\u5dee"
+    ],
+    "suggested_fixes": [
+      "\u6539\u7528 halfway bounce-back \u5165\u53e3",
+      "\u589e\u52a0\u5206\u8fa8\u7387\u5230 D>=100",
+      "\u5c1d\u8bd5 TRT/magic-S \u78b0\u649e\u6a21\u578b"
+    ]
+  },
+  "verdict": {
+    "pass": false,
+    "reason": "3 \u8f6e\u7d2f\u8ba1\u4ecd\u4e0d\u80fd\u8fdb 3% \u5224\u636e",
+    "error_bound": "~2.5% (D=60 \u6700\u4f73)",
+    "hardware_requirement": "\u9700\u8981 >32GB GPU \u663e\u5b58\u8fd0\u884c D>=80",
+    "algorithm_suggestion": "\u5165\u53e3\u8fb9\u754c\u6539\u7528\u975e\u5e73\u8861\u5916\u63a8\u6216 halfway bounce-back"
+  }
+}
