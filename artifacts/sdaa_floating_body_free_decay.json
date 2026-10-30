@@ -1,0 +1,50 @@
+{
+  "benchmark": "floating_body_free_decay",
+  "status": "FAIL",
+  "fail_reason": "Business code has fundamental device-handling bugs that prevent sdaa execution. Two mutually exclusive bugs: (1) cummins_step creates F_memory on CPU causing device mismatch; (2) compute_retardation_function uses .numpy() which fails on sdaa tensors. Cannot work around without modifying business code.",
+  "device_evidence": {
+    "requested_device": "sdaa",
+    "torch_version": "2.7.1",
+    "torch_sdaa_exists": true,
+    "sdaa_device_count": 1,
+    "device_name": "/dev/tcaicard0",
+    "probe_tensor_on_sdaa": true,
+    "probe_device": "sdaa:0"
+  },
+  "device": "sdaa",
+  "dtype": "float32",
+  "triton_interpret": "1",
+  "overall_wall_s": 0.49863576889038086,
+  "bugs_identified": [
+    {
+      "bug_id": 1,
+      "location": "tensorlbm/rigid_body_6dof.py, cummins_step()",
+      "description": "F_memory = torch.zeros(6) creates tensor on CPU regardless of device parameter. When other tensors (M, A_inf, C, state.position) are on sdaa, this causes 'Expected all tensors to be on the same device' error.",
+      "fix": "Change to: F_memory = torch.zeros(6, device=M.device)"
+    },
+    {
+      "bug_id": 2,
+      "location": "tensorlbm/rigid_body_6dof.py, compute_retardation_function()",
+      "description": "Uses torch.linspace/torch.zeros which inherit default device. If default device is sdaa, then .numpy() calls fail. If default device is CPU, then Bug 1 occurs in cummins_step.",
+      "fix": "Either: (a) explicitly create tensors on CPU with device='cpu', or (b) avoid .numpy() calls and use torch operations throughout."
+    }
+  ],
+  "attempts": {
+    "default_device_cpu": {
+      "approach": "Keep default device as CPU, pass device='sdaa' to cummins_time_integration",
+      "result": "FAIL",
+      "error": "Expected all tensors to be on the same device, but found at least two devices, sdaa:0 and cpu!"
+    },
+    "default_device_sdaa": {
+      "approach": "Set torch.set_default_device('sdaa') so torch.zeros() creates on sdaa",
+      "result": "FAIL",
+      "error": "can't convert sdaa:0 device type tensor to numpy. Use Tensor.cpu() to copy the tensor to host memory first."
+    }
+  },
+  "cases": [],
+  "spans": {},
+  "verdict": {
+    "pass": false
+  },
+  "evidence_boundary": "Caller-synthesised body and hydrodynamic coefficients. No LBM flow, hull coupling, free surface, or radiation-memory validation."
+}
