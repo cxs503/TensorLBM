@@ -1,0 +1,31 @@
+{
+  "tag": "sdaa_minimal_c33_rime",
+  "case": "3.3_rime",
+  "status": "completed",
+  "device_evidence": {
+    "device": "/dev/tcaicard14",
+    "torch_sdaa_version": "3.1.1a3+gite3971b9",
+    "torch_version": "2.7.1",
+    "compile_status": "eager",
+    "wall_time_s": 39.757,
+    "step_rate_steps_per_s": 5.03,
+    "memory_allocated_bytes": 1024
+  },
+  "config": {
+    "nx": 320,
+    "ny": 160,
+    "steps": 200,
+    "warmup": 500,
+    "shots": 1,
+    "device": "sdaa",
+    "t_exposure": 240.0
+  },
+  "results": {
+    "frozen_kg": 0.00010220157528299494,
+    "closure_error": 6.338704686863045e-17,
+    "ice_cells": 8,
+    "beta_pk": 0.8180059194564819,
+    "n_f_stag": 1.0
+  },
+  "wall_time_s": 39.757
+}
