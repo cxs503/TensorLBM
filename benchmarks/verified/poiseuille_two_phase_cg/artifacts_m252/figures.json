@@ -1,0 +1,22 @@
+[
+  {
+    "name": "profile_eq_ny64",
+    "caption": "eq_ny64: LBM vs analytic velocity profile (relL2=0.211%)"
+  },
+  {
+    "name": "profile_eq_ny128",
+    "caption": "eq_ny128: LBM vs analytic velocity profile (relL2=0.155%)"
+  },
+  {
+    "name": "profile_g10_ny64",
+    "caption": "g10_ny64: LBM vs analytic velocity profile (relL2=1.092%)"
+  },
+  {
+    "name": "profile_g10_ny128",
+    "caption": "g10_ny128: LBM vs analytic velocity profile (relL2=0.560%)"
+  },
+  {
+    "name": "convergence_umax",
+    "caption": "Convergence history of u_max for all 4 arms (log scale)"
+  }
+]
