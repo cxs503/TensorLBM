@@ -1,0 +1,331 @@
+{
+  "benchmark": "maneuvering_steady_turn",
+  "sdaa_sweep": true,
+  "device_evidence": {
+    "device_type": "sdaa",
+    "device_name": "/dev/tcaicard17",
+    "torch_version": "2.7.1",
+    "default_dtype": "torch.float64",
+    "probe_tensor_device": "sdaa:0",
+    "get_device_name_call": "torch.sdaa.get_device_name(0)"
+  },
+  "workarounds": [
+    {
+      "what": "torch.Tensor.numpy monkey-patched to .cpu().numpy() for sdaa tensors",
+      "why": "analytic_transient and cross-route verification call .numpy() on tensors created on sdaa; torch does not support .numpy() on non-CPU tensors",
+      "impact": "All torch.linalg operations (solve, eigvals, matmul) execute on sdaa. Only the final host-side numpy extraction is routed through CPU. No numerical results are affected."
+    },
+    {
+      "what": "TRITON_INTERPRET not needed",
+      "why": "This benchmark uses pure torch + numpy; no triton kernels.",
+      "impact": "None"
+    },
+    {
+      "what": "T_END reduced from 600 s to 300 s",
+      "why": "sdaa kernel-launch overhead for 2x2 tensor ops makes the full configuration exceed the 120 s shell timeout",
+      "impact": "Still >7x the slowest modal time constant (tau=42.1 s). Steady-state window captures >3.5 e-foldings. All eight criteria remain testable."
+    }
+  ],
+  "ship": {
+    "class": "KVLCC2-class large tanker (full scale)",
+    "L_m": 320.0,
+    "B_m": 58.0,
+    "draft_m": 20.8,
+    "Cb": 0.81,
+    "U_m_s": 7.97,
+    "mass_kg": 312698880.0,
+    "Iz_kg_m2": 2001272832000.0
+  },
+  "config": {
+    "rudders_deg": [
+      10.0,
+      20.0
+    ],
+    "dt_levels": {
+      "coarse": 1.0,
+      "fine": 0.25
+    },
+    "T_end_s": 300.0,
+    "T_end_note": "reduced from 600 s (verified benchmark) to 300 s for sdaa wall-clock feasibility; still >7x slowest time constant",
+    "tolerance_pct": 3.0,
+    "integrators": [
+      "semi_implicit_euler",
+      "rk4"
+    ]
+  },
+  "derivatives": {
+    "prime_input": {
+      "Y_v": -0.65,
+      "Y_r": 0.05,
+      "N_v": -0.095,
+      "N_r": -0.08,
+      "Y_delta": -0.16,
+      "N_delta": 0.04
+    },
+    "dimensional": {
+      "Y_v": -17240704.0,
+      "Y_r": 424386560.0,
+      "N_v": -806334464.0,
+      "N_r": -217285918720.0,
+      "Y_delta": -33823608.832,
+      "N_delta": 2705888706.56
+    },
+    "note": "representative KVLCC2-class linear derivative set (caller-supplied, NOT extracted from an LBM flow or PMM experiment)"
+  },
+  "modes": {
+    "eigenvalues": [
+      -0.023731341710409498,
+      -0.13997768340666158
+    ],
+    "time_constants": [
+      42.13836757326539,
+      7.143995926084955
+    ],
+    "directionally_stable": true
+  },
+  "analytic_route_agreement_pct": {
+    "numpy_vs_library_r": 2.79497427185397e-14,
+    "nomoto_vs_library_r": 2.79497427185397e-14
+  },
+  "cases": [
+    {
+      "level": "coarse",
+      "delta_deg": 10.0,
+      "integrator": "semi_implicit_euler",
+      "dt": 1.0,
+      "n_steps": 300,
+      "wall_s": 1.6340641975402832,
+      "v_ana": -1.0868145481170857,
+      "r_ana": 0.006206581196277436,
+      "R_ana": 1296.0048666865448,
+      "R_over_L_ana": 4.050015208395452,
+      "beta_ana_deg": 7.765140372877559,
+      "K_ana": 0.035561090775195474,
+      "v_meas": -1.078328933073111,
+      "r_meas": 0.006166283641730325,
+      "R_meas": 1304.2892255783192,
+      "R_over_L_meas": 4.075903829932248,
+      "beta_meas_deg": 7.705242985387456,
+      "R_circle_fit": 1306.325357386669,
+      "R_err_pct": 0.6392228227471712,
+      "beta_err_pct": -0.7713625847552595,
+      "R_circle_err_pct": 0.7963311686097589,
+      "r_err_pct": -0.6492713665178633,
+      "steady_r_std": 3.849107430637455e-05,
+      "transient_r_err_pct": 0.5085785331914052,
+      "transient_v_err_pct": 0.4600597013787523
+    },
+    {
+      "level": "fine",
+      "delta_deg": 10.0,
+      "integrator": "semi_implicit_euler",
+      "dt": 0.25,
+      "n_steps": 1200,
+      "wall_s": 7.010842800140381,
+      "v_ana": -1.0868145481170857,
+      "r_ana": 0.006206581196277436,
+      "R_ana": 1296.0048666865448,
+      "R_over_L_ana": 4.050015208395452,
+      "beta_ana_deg": 7.765140372877559,
+      "K_ana": 0.035561090775195474,
+      "v_meas": -1.0780189152510369,
+      "r_meas": 0.00616481139013915,
+      "R_meas": 1304.5939683219674,
+      "R_over_L_meas": 4.076856151006148,
+      "beta_meas_deg": 7.7030543417703825,
+      "R_circle_fit": 1306.7728261563323,
+      "R_err_pct": 0.6627368350384426,
+      "beta_err_pct": -0.7995480844626224,
+      "R_circle_err_pct": 0.8308579501956318,
+      "r_err_pct": -0.672992180676514,
+      "steady_r_std": 3.9429154289388074e-05,
+      "transient_r_err_pct": 0.1242279362296123,
+      "transient_v_err_pct": 0.11406288901409899
+    },
+    {
+      "level": "coarse",
+      "delta_deg": 20.0,
+      "integrator": "semi_implicit_euler",
+      "dt": 1.0,
+      "n_steps": 300,
+      "wall_s": 1.69091796875,
+      "v_ana": -2.1736290962341713,
+      "r_ana": 0.012413162392554872,
+      "R_ana": 665.510290043244,
+      "R_over_L_ana": 2.0797196563851377,
+      "beta_ana_deg": 15.255070075145442,
+      "K_ana": 0.035561090775195474,
+      "v_meas": -2.156657866146222,
+      "r_meas": 0.01233256728346065,
+      "R_meas": 669.4987293968458,
+      "R_over_L_meas": 2.092183529365143,
+      "beta_meas_deg": 15.141450255027904,
+      "R_circle_fit": 670.4978324912784,
+      "R_err_pct": 0.5993054372371268,
+      "beta_err_pct": -0.7448003814984442,
+      "R_circle_err_pct": 0.7494313044671703,
+      "r_err_pct": -0.6492713665178633,
+      "steady_r_std": 7.69821486127491e-05,
+      "transient_r_err_pct": 0.5085785331914052,
+      "transient_v_err_pct": 0.4600597013787523
+    },
+    {
+      "level": "fine",
+      "delta_deg": 20.0,
+      "integrator": "semi_implicit_euler",
+      "dt": 0.25,
+      "n_steps": 1200,
+      "wall_s": 7.126185894012451,
+      "v_ana": -2.1736290962341713,
+      "r_ana": 0.012413162392554872,
+      "R_ana": 665.510290043244,
+      "R_over_L_ana": 2.0797196563851377,
+      "beta_ana_deg": 15.255070075145442,
+      "K_ana": 0.035561090775195474,
+      "v_meas": -2.1560378305020738,
+      "r_meas": 0.0123296227802783,
+      "R_meas": 669.645482282387,
+      "R_over_L_meas": 2.0926421321324593,
+      "beta_meas_deg": 15.137296894538778,
+      "R_circle_fit": 670.7093578010488,
+      "R_err_pct": 0.6213566192754515,
+      "beta_err_pct": -0.7720264805505371,
+      "R_circle_err_pct": 0.7812152322193134,
+      "r_err_pct": -0.672992180676514,
+      "steady_r_std": 7.885830857877615e-05,
+      "transient_r_err_pct": 0.1242279362296123,
+      "transient_v_err_pct": 0.11406288901409899
+    },
+    {
+      "level": "fine_rk4",
+      "delta_deg": 10.0,
+      "integrator": "rk4",
+      "dt": 0.25,
+      "n_steps": 1200,
+      "wall_s": 20.887449026107788,
+      "v_ana": -1.0868145481170857,
+      "r_ana": 0.006206581196277436,
+      "R_ana": 1296.0048666865448,
+      "R_over_L_ana": 4.050015208395452,
+      "beta_ana_deg": 7.765140372877559,
+      "K_ana": 0.035561090775195474,
+      "v_meas": -1.0779015164346035,
+      "r_meas": 0.006164253871881505,
+      "R_meas": 1304.7094080476713,
+      "R_over_L_meas": 4.077216900148973,
+      "beta_meas_deg": 7.702225531352493,
+      "R_circle_fit": 1306.8996250671355,
+      "R_err_pct": 0.6716441878325009,
+      "beta_err_pct": -0.810221560769431,
+      "R_circle_err_pct": 0.840641780030116,
+      "r_err_pct": -0.6819748756580847,
+      "steady_r_std": 3.985469231487878e-05,
+      "transient_r_err_pct": 5.8315090863578954e-08,
+      "transient_v_err_pct": 2.5741687629282914e-08
+    },
+    {
+      "level": "fine_rk4",
+      "delta_deg": 20.0,
+      "integrator": "rk4",
+      "dt": 0.25,
+      "n_steps": 1200,
+      "wall_s": 21.3453528881073,
+      "v_ana": -2.1736290962341713,
+      "r_ana": 0.012413162392554872,
+      "R_ana": 665.510290043244,
+      "R_over_L_ana": 2.0797196563851377,
+      "beta_ana_deg": 15.255070075145442,
+      "K_ana": 0.035561090775195474,
+      "v_meas": -2.155803032869207,
+      "r_meas": 0.01232850774376301,
+      "R_meas": 669.7010744834956,
+      "R_over_L_meas": 2.092815857760924,
+      "beta_meas_deg": 15.13572404048112,
+      "R_circle_fit": 670.7699997893869,
+      "R_err_pct": 0.6297099388169178,
+      "beta_err_pct": -0.7823368498239005,
+      "R_circle_err_pct": 0.7903273360057488,
+      "r_err_pct": -0.6819748756580847,
+      "steady_r_std": 7.970938462975756e-05,
+      "transient_r_err_pct": 5.8315090863578954e-08,
+      "transient_v_err_pct": 2.5741687629282914e-08
+    }
+  ],
+  "spans": {
+    "10deg": {
+      "R_span_pct": 0.023361930833902714,
+      "beta_span_pct": 0.028408636861077825,
+      "max_R_err_pct": 0.6627368350384426,
+      "max_beta_err_pct": 0.7995480844626224,
+      "transient_r_err_coarse_pct": 0.5085785331914052,
+      "transient_r_err_fine_pct": 0.1242279362296123,
+      "transient_refinement_ratio": 4.093914369239719
+    },
+    "20deg": {
+      "R_span_pct": 0.021917413264579796,
+      "beta_span_pct": 0.027434163432252377,
+      "max_R_err_pct": 0.6213566192754515,
+      "max_beta_err_pct": 0.7720264805505371,
+      "transient_r_err_coarse_pct": 0.5085785331914052,
+      "transient_r_err_fine_pct": 0.1242279362296123,
+      "transient_refinement_ratio": 4.093914369239719
+    }
+  },
+  "criteria": [
+    {
+      "id": "C1",
+      "name": "Each level |R_err| <= 3%",
+      "pass": true,
+      "max_value": 0.6716441878325009
+    },
+    {
+      "id": "C2",
+      "name": "Each level |beta_err| <= 3%",
+      "pass": true,
+      "max_value": 0.810221560769431
+    },
+    {
+      "id": "C3",
+      "name": "Two-level span <= 3% (R and beta)",
+      "pass": true,
+      "max_value": 0.028408636861077825
+    },
+    {
+      "id": "C4",
+      "name": "Independent algebraic routes agree < 1e-6%",
+      "pass": true,
+      "max_value": 2.79497427185397e-14
+    },
+    {
+      "id": "C5",
+      "name": "Euler transient r(t) err at fine <= 3%",
+      "pass": true,
+      "max_value": 0.1242279362296123
+    },
+    {
+      "id": "C6",
+      "name": "Transient refinement ratio > 3",
+      "pass": true,
+      "max_value": 4.093914369239719
+    },
+    {
+      "id": "C7",
+      "name": "RK4 transient r(t) err at fine <= 3%",
+      "pass": true,
+      "max_value": 5.8315090863578954e-08
+    },
+    {
+      "id": "C8",
+      "name": "Directionally stable",
+      "pass": true,
+      "max_value": -0.023731341710409498
+    }
+  ],
+  "verdict": {
+    "pass": true,
+    "all_criteria_pass": true,
+    "tolerance_pct": 3.0
+  },
+  "wall_clock_total_s": 59.88847279548645,
+  "evidence_boundary": "Caller-supplied representative KVLCC2-class LINEAR derivatives. No LBM flow, no free surface, no rudder/propeller slipstream, no nonlinear cross-flow/higher-order Abkowitz terms, no LBM end-to-end hull-in-flow maneuvering. End-to-end fluid-maneuvering coupling is a structural blocker (free surface)."
+}
