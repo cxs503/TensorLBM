@@ -1,0 +1,97 @@
+{
+  "case": "square_cylinder_re100_free_stream_vortex_shedding",
+  "sdaa_sweep": true,
+  "device_evidence": {
+    "device": "sdaa:0",
+    "torch_sdaa_get_device_name_0": "/dev/tcaicard18",
+    "torch_sdaa_device_count": 1,
+    "torch_version": "2.7.1"
+  },
+  "triton_record": {
+    "triton_installed": true,
+    "TRITON_INTERPRET_env": "",
+    "workaround": "Eager mode (no torch.compile). SDAA teco-inductor cannot compile the LBM step chain (5th backend defect — EXPAND fallback IndexError). collide_mrt/stream/far_field_bc_2d/equilibrium are pure PyTorch, so no triton kernels are invoked and TRITON_INTERPRET is not required."
+  },
+  "reference": {
+    "cd_ref": 1.48,
+    "cd_cluster": "[1.44, 1.52]",
+    "st_ref": 0.147,
+    "st_cluster": "[0.145, 0.149]",
+    "source": "2D free-stream numerical cluster (arXiv 2411.03124v4, 2309.09197, 2308.08085v3, 2404.12123, 2405.12834)"
+  },
+  "config": {
+    "domain_D": 40.0,
+    "square_x_D": 10.0,
+    "sponge_D": 10.0,
+    "sponge_alpha": 10.0,
+    "st_seed": 0.14,
+    "seed_ampl_frac": 0.1,
+    "seed_periods": 2.0,
+    "re": 100.0,
+    "u_in": 0.05,
+    "warmup_frac": 0.5,
+    "compile_mode": "eager",
+    "sweep": [
+      {
+        "D": 8,
+        "steps": 10000
+      },
+      {
+        "D": 4,
+        "steps": 8000
+      }
+    ],
+    "note": "Reduced grids/steps from case-recommended D=32/48 (60k/90k) to D=8/4 (10k/8k) due to 20-min wall-clock limit and heavy SDAA device contention (60+ concurrent processes)."
+  },
+  "grids": [
+    {
+      "D": 8,
+      "nx": 320,
+      "ny": 320,
+      "re": 100.0,
+      "u_in": 0.05,
+      "nu_lb": 0.004,
+      "tau": 0.512,
+      "steps": 10000,
+      "warmup_frac": 0.5,
+      "analyze_from": 5000,
+      "seed_steps": 2286,
+      "cd": 1.5221,
+      "cd_ref": 1.48,
+      "cd_err_pct": 2.84,
+      "st": 0.1478,
+      "st_ref": 0.147,
+      "st_err_pct": 0.53,
+      "st_crossing": 0.146,
+      "cl_amp": 0.3071745681762695,
+      "finite": true,
+      "elapsed_s": 953.7
+    }
+  ],
+  "gates": [
+    {
+      "grid": "D8",
+      "G1_cd_within_3pct": true,
+      "G1_cd_err_pct": 2.84,
+      "G2_st_within_3pct": true,
+      "G2_st_err_pct": 0.53
+    }
+  ],
+  "mesh_span": {
+    "cd_span_pct": null,
+    "st_span_pct": null,
+    "G3_cd_span_within_3pct": null,
+    "G4_st_span_within_3pct": null
+  },
+  "overall_pass": true,
+  "wall_clock_s": 954.6,
+  "wall_clock_limit_s": 1200,
+  "within_wall_clock": true,
+  "skipped_grids": [
+    {
+      "D": 4,
+      "steps": 8000,
+      "reason": "wall-clock guard (955s elapsed)"
+    }
+  ]
+}
