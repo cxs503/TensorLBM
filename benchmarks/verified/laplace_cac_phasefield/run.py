@@ -24,6 +24,8 @@ Gates: per-arm |sigma_rec/0.01 - 1| <= 1.5%, B1 spread <= 1%,
 Usage: python run.py [--arms b1_R20,b1_R32,b1_R48,b3_rho10,b3_rho100]
                      [--device auto] [--sigma auto] [--steps 12000]
                      [--out DIR]
+                     [--grid-ladder N1,N2,N3]  # grid convergence study
+                     [--quick]                  # reduced steps for testing
 """
 
 from __future__ import annotations
@@ -61,6 +63,9 @@ NU = 0.1  # both phases (frozen)
 W_INT = 4.0
 DEFAULT_ARMS = ("b1_R20", "b1_R32", "b1_R48", "b3_rho10", "b3_rho100")
 
+# Default grid sizes per arm kind
+DEFAULT_GRID = {"b1": (128, 128, 128), "b3": (96, 96, 96)}
+
 GATES = {
     "per_arm_err_pct": 1.5,
     "b1_spread_pct": 1.0,
@@ -70,14 +75,22 @@ GATES = {
 
 
 def run_arm(
-    kind: str, arg: float, sigma: float, device: torch.device, dtype: torch.dtype, n_steps: int
+    kind: str,
+    arg: float,
+    sigma: float,
+    device: torch.device,
+    dtype: torch.dtype,
+    n_steps: int,
+    shape: tuple | None = None,
 ) -> dict:
     if kind == "b1":
-        shape = (128, 128, 128)
+        if shape is None:
+            shape = DEFAULT_GRID["b1"]
         radius = float(arg)
         rho_l, rho_g = 1.0, 0.01
     else:
-        shape = (96, 96, 96)
+        if shape is None:
+            shape = DEFAULT_GRID["b3"]
         radius = 20.0
         rho_l, rho_g = 1.0, 1.0 / float(arg)
     mu_l, mu_g = NU * rho_l, NU * rho_g
@@ -137,7 +150,7 @@ def run_arm(
             if it % 2000 == 0:
                 s = series[-1]
                 print(
-                    f"[{kind}/{arg:g}] step {it}  sig_rec {s['sigma_rec']:.5f}  "
+                    f"[{kind}/{arg:g}@{shape[0]}^3] step {it}  sig_rec {s['sigma_rec']:.5f}  "
                     f"u_max {s['u_max']:.2e}  drift {s['phi_drift_rel']:.2e}",
                     flush=True,
                 )
@@ -172,7 +185,10 @@ def run_arm(
         / SIGMA_TARGET,
         "dP_window_mean": sum(s["dP"] for s in win) / len(win),
         "u_max_window": max(s["u_max"] for s in win),
-        "B4_drift_rel_at_10k": next(s["phi_drift_rel"] for s in series if s["step"] == 10_000),
+        "B4_drift_rel_at_10k": next(
+            (s["phi_drift_rel"] for s in series if s["step"] == 10_000),
+            series[-1]["phi_drift_rel"] if series else float("nan"),
+        ),
         "nan_free": all(s["nan_f"] == 0 and s["nan_g"] == 0 for s in series),
         "series_len": len(series),
         "tail_sigma_rec": [s["sigma_rec"] for s in win],
@@ -254,6 +270,34 @@ def score(arms: dict) -> dict:
     return gates
 
 
+def run_grid_convergence(
+    kind: str,
+    arg: float,
+    sigma: float,
+    device: torch.device,
+    dtype: torch.dtype,
+    n_steps: int,
+    grid_ladder: list[int],
+) -> list[dict]:
+    """Run a single arm across multiple grid resolutions for convergence study."""
+    results = []
+    for N in grid_ladder:
+        shape = (N, N, N)
+        label = f"{kind}/{arg:g}@{N}^3"
+        print(f"===== {label} on {device} (sigma={sigma:.15g}) =====", flush=True)
+        t0 = time.time()
+        arm_result = run_arm(kind, arg, sigma, device, dtype, n_steps, shape=shape)
+        arm_result["wall_time_s"] = time.time() - t0
+        arm_result["grid_N"] = N
+        results.append(summarize(arm_result))
+        print(
+            f"  -> sigma_rec={results[-1]['sigma_rec_window_mean']:.6f} "
+            f"err={results[-1]['err_pct']:.4f}%  time={arm_result['wall_time_s']:.1f}s",
+            flush=True,
+        )
+    return results
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arms", default=",".join(DEFAULT_ARMS))
@@ -263,6 +307,16 @@ def main() -> None:
     )
     ap.add_argument("--steps", type=int, default=N_STEPS)
     ap.add_argument("--out", default=str(Path(__file__).resolve().parent))
+    ap.add_argument(
+        "--grid-ladder",
+        default=None,
+        help="Grid convergence: comma-separated N values, e.g. 48,64,96,128",
+    )
+    ap.add_argument(
+        "--quick",
+        action="store_true",
+        help="Quick mode: 2000 steps instead of 12000 (for testing only)",
+    )
     args = ap.parse_args()
 
     if args.device == "auto":
@@ -271,6 +325,7 @@ def main() -> None:
         device = torch.device(args.device)
     sigma = SIGMA_ROUTE_B if args.sigma == "auto" else float(args.sigma)
     dtype = torch.float64
+    n_steps = 2000 if args.quick else args.steps
 
     # iron rule: zero hand-written collide/stream kernels in this file
     src = open(os.path.abspath(__file__)).read()
@@ -278,13 +333,31 @@ def main() -> None:
     grep = {p: len(re.findall(p, src)) for p in pats}
     assert all(v == 0 for v in grep.values()), grep
 
+    grid_ladder = None
+    if args.grid_ladder:
+        grid_ladder = [int(x) for x in args.grid_ladder.split(",")]
+
     arms: dict = {}
-    for arm in args.arms.split(","):
-        arm = arm.strip()
-        kind = "b1" if arm.startswith("b1") else "b3"
-        arg = float(arm.split("_R")[1] if kind == "b1" else arm.split("_rho")[1])
-        print(f"===== {arm} on {device} (sigma={sigma:.15g}) =====", flush=True)
-        arms[arm] = summarize(run_arm(kind, arg, sigma, device, dtype, args.steps))
+    grid_convergence: dict = {}
+
+    if grid_ladder:
+        # Grid convergence mode: run selected arms across multiple grids
+        print(f"*** Grid convergence study: N = {grid_ladder} ***", flush=True)
+        for arm in args.arms.split(","):
+            arm = arm.strip()
+            kind = "b1" if arm.startswith("b1") else "b3"
+            arg = float(arm.split("_R")[1] if kind == "b1" else arm.split("_rho")[1])
+            grid_convergence[arm] = run_grid_convergence(
+                kind, arg, sigma, device, dtype, n_steps, grid_ladder
+            )
+    else:
+        # Standard mode
+        for arm in args.arms.split(","):
+            arm = arm.strip()
+            kind = "b1" if arm.startswith("b1") else "b3"
+            arg = float(arm.split("_R")[1] if kind == "b1" else arm.split("_rho")[1])
+            print(f"===== {arm} on {device} (sigma={sigma:.15g}) =====", flush=True)
+            arms[arm] = summarize(run_arm(kind, arg, sigma, device, dtype, n_steps))
 
     results = {
         "benchmark": "laplace_cac_phasefield",
@@ -312,21 +385,35 @@ def main() -> None:
             "nan_free": True,
         },
         "arms": arms,
-        "gates": score(arms),
+        "grid_convergence": grid_convergence if grid_convergence else None,
+        "gates": score(arms) if arms else None,
     }
-    results["verified"] = results["gates"]["pass"]
+    results["verified"] = results["gates"]["pass"] if results["gates"] else None
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "result.json").write_text(
         json.dumps(results, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    g = results["gates"]
-    print(
-        f"\narms={len(arms)} err_max={g['per_arm_err_max_pct']:.4f}% "
-        f"spread={g['b1_spread_pct']:.4f}% u_max={g['u_max_max']:.2e} "
-        f"drift={g['drift_10k_max']:.2e} PASS={g['pass']}"
-    )
+
+    if arms:
+        g = results["gates"]
+        print(
+            f"\narms={len(arms)} err_max={g['per_arm_err_max_pct']:.4f}% "
+            f"spread={g['b1_spread_pct']:.4f}% u_max={g['u_max_max']:.2e} "
+            f"drift={g['drift_10k_max']:.2e} PASS={g['pass']}"
+        )
+    if grid_convergence:
+        print("\n*** Grid Convergence Summary ***")
+        for arm_name, arm_results in grid_convergence.items():
+            print(f"\n  {arm_name}:")
+            for r in arm_results:
+                print(
+                    f"    N={r['params']['shape'][0]}: "
+                    f"sigma_rec={r['sigma_rec_window_mean']:.6f} "
+                    f"err={r['err_pct']:.4f}%"
+                )
+
     print(f"Saved -> {out / 'result.json'}")
 
 
