@@ -1,0 +1,72 @@
+{
+  "generated_by": "check_sdaa_equivalence_m288.py",
+  "purpose": "device provenance for the sphere_re100_mem ladder in shift m288",
+  "requirement": "physical device line (/dev/tcaicardN + sdaa:N), not CPU posing as GPU",
+  "environment": {
+    "device_line": "device=sdaa:0 name=/dev/tcaicard25 sdaa_count=1 cuda_available=False visible=25",
+    "real_device": "sdaa:0",
+    "sdaa_0_name": "/dev/tcaicard25",
+    "sdaa_device_count": 1,
+    "sdaa_is_available": true,
+    "torch_sdaa": "3.1.1a3+gite3971b9",
+    "torch": "2.7.1",
+    "cuda_is_available": false,
+    "sdaa_visible_devices": "25",
+    "device_kernel_checksum": 8.0,
+    "host": "36cb7828dbd5",
+    "probe": "live"
+  },
+  "driver_equivalence": {
+    "status": "rerun file missing: /tmp/m288/d20_dense_sdaa_m288.json"
+  },
+  "full_tier_reexecution": {
+    "T1_d40big_12k": {
+      "status": "attempted in shift m288 and blocked by device memory",
+      "error": "sdaa out of memory. Tried to allocate 17179869182.96 GiB (SDAA 0; 14.94 GiB total capacity; 6.32 GiB already allocated; 8.23 GiB free; 6.46 GiB reserved in total by Torch-SDAA)",
+      "steps_requested": 1200,
+      "phase": "loop",
+      "traceback_tail": [
+        "    moments = matrix @ f_flat",
+        "              ~~~~~~~^~~~~~~~",
+        "RuntimeError: sdaa out of memory. Tried to allocate 17179869182.96 GiB (SDAA 0; 14.94 GiB total capacity; 6.32 GiB already allocated; 8.23 GiB free; 6.46 GiB reserved in total by Torch-SDAA)"
+      ]
+    },
+    "T2_d60big_24k": {
+      "status": "not attempted in this shift (budget/throughput)"
+    }
+  },
+  "why_full_tiers_cannot_be_reexecuted_here": {
+    "partition_total_gib": 14.94,
+    "archived_D60_peak_after_setup_gib": 26.25937557220459,
+    "archived_D60_peak_loop_gib": 26.672595977783203,
+    "archived_D60_peak_reserved_gib": 30.201171875,
+    "measured_throughput_note": "D=20 dense driver measured >1.1 s/step on this partition (the RTX-5090 archive did 100 ms/step at D=40), so a 12k-step D=40 tier would need >3.5 h of wall time even if it fit in memory."
+  },
+  "conclusion": "pipeline_executes_on_sdaa: device line present and a 40-step D=20 case ran to completion on sdaa:0, but the 300-step bit-exact equivalence could not be closed (device-side stall after ~40-50 steps); full-scale T1/T2 re-execution NOT possible on this 14.94 GiB partition (archived D=60 peak 26.26 GiB setup / 30.20 GiB reserved; D=40 MRT moment temporary > free memory) -> per-tier device provenance for the archived Cd numbers is WITHHELD, the numerical gate itself is unaffected.",
+  "sdaa_execution_smoke": {
+    "file": "sdaa_smoke_d20_40steps_m288.json",
+    "case": "D3Q19 dense BFL, D=20, lat=2.0/up=1.25/down=2.25, tau=0.56, 40 steps",
+    "completed_steps": 40,
+    "diverged": false,
+    "device_line": "device=sdaa:0 name=/dev/tcaicard25 sdaa_count=1 cuda_available=False visible=25",
+    "samples": [
+      [
+        10,
+        22.706705866338744
+      ],
+      [
+        20,
+        11.409643405977096
+      ],
+      [
+        30,
+        4.759931511825205
+      ],
+      [
+        40,
+        2.013692763557167
+      ]
+    ],
+    "note": "longer runs on this partition stall device-side after ~40-50 steps (reproduced for 50/100/300-step attempts), so the 300-step D=20 bit-exact equivalence against loop_dense_D20.json could not be closed."
+  }
+}

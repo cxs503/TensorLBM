@@ -1,0 +1,100 @@
+{
+  "generated_by": "fetch_mission_provenance_m288.py",
+  "source": "GET $TENSOR_API_BASE/tensor/missions/{46,174,202,243}",
+  "case": "sphere_re100_mem",
+  "missions": {
+    "46": {
+      "status": "succeeded",
+      "finished_status": "succeeded",
+      "created_at": "2026-10-29T13:14:47.518212+00:00",
+      "checks": "artifacts/sdaa_sphere_re100_mem.json 存在且含设备证据行；判据数值全部脚本算出零手抄；honest-FAIL 如实记录",
+      "headline_excerpt": "## SDAA 验证案例扫荡完成：sphere_re100_mem\n\n### 任务完成情况\n\n✅ **已完成所有交付物**，诚实记录 FAIL 状态。\n\n### 交付物清单\n\n1. **scripts/sdaa_sweep_sphere_re100_mem.py** (9.5 KB)\n   - 独立运行脚本，不改业务代码\n   - 张量放置到 'sdaa:0",
+      "changed_files": null,
+      "on_disk_changes": null,
+      "explicit_verdict_token": false,
+      "device_line_present": true,
+      "cd_err_pct_quoted": [],
+      "quoted_errors_inside_gate_3pct": false,
+      "claims_honest_fail": true
+    },
+    "174": {
+      "status": "succeeded",
+      "finished_status": "succeeded",
+      "created_at": "2026-10-29T15:57:18.826020+00:00",
+      "checks": "脚本运行成功 | 判据 JSON 格式正确 | 收敛曲线图生成 | 报告 API 发布成功 (ID:102)",
+      "headline_excerpt": "## SDAA sphere_re100_mem v2 下探诊断完成\n\n### 任务目标\n对 sphere_re100_mem 案例进行二阶下探诊断，分析 m46 轮次 honest-FAIL 根因。\n\n### 完成内容\n\n1. **读取 m46 headline 判据**：\n   - T1 (D=40): Cd=1.121980, err=+2.7708%",
+      "changed_files": null,
+      "on_disk_changes": null,
+      "explicit_verdict_token": false,
+      "device_line_present": false,
+      "cd_err_pct_quoted": [
+        2.7708
+      ],
+      "quoted_errors_inside_gate_3pct": true,
+      "claims_honest_fail": true
+    },
+    "202": {
+      "status": "succeeded",
+      "finished_status": "succeeded",
+      "created_at": "2026-10-29T18:37:46.746332+00:00",
+      "checks": "- 收敛性分析：D40→D60 误差从 2.77% 降至 2.54%，单调下降\\n- 收敛阶计算：p≈0.21（基于 D40→D60）\\n- 误差预测：D=80 预测 1.43%，D=160 预测 0.36%\\n- 报告发布：成功 POST /tensor/reports，报告 ID=119\\n- 诊断结论：honest-FAIL（3轮累计仍不能稳定进入3%判据）",
+      "headline_excerpt": "## 任务完成总结\n\n### 1. 诊断分析\n- **已有数据**：D=40 (Cd=1.12198, err=2.77%)，D=60 (Cd=1.11946, err=2.54%)\n- **收敛性**：误差单调下降，收敛阶 p≈0.21（基于 D40→D60）\n- **误差预测**：D=80 预测 1.43%，D=160 预测 0.36%\n\n### 2. ",
+      "changed_files": null,
+      "on_disk_changes": null,
+      "explicit_verdict_token": false,
+      "device_line_present": false,
+      "cd_err_pct_quoted": [
+        2.54,
+        2.77
+      ],
+      "quoted_errors_inside_gate_3pct": true,
+      "claims_honest_fail": true
+    },
+    "243": {
+      "status": "succeeded",
+      "finished_status": "succeeded",
+      "created_at": "2026-10-29T23:24:08.443871+00:00",
+      "checks": "python analyze_convergence.py 成功执行，输出 D=40 (err=2.78%) 和 D=60 (err=2.54%) 均 <3%，单调收敛，生成 3 张图表",
+      "headline_excerpt": "## 任务完成总结 (m243)\n\n### 已完成工作\n\n1. **统计收敛分析**\n   - 对 D=40 和 D=60 两档进行了完整的窗口统计分析\n   - 计算了不同窗口大小 (50, 100, 200, 400) 下的 Cd 均值、标准误差和 95% 置信区间\n   - D=40: Cd=1.12212, 误差=2.78%, 误差棒=0.019%\n",
+      "changed_files": null,
+      "on_disk_changes": null,
+      "explicit_verdict_token": false,
+      "device_line_present": false,
+      "cd_err_pct_quoted": [
+        2.54,
+        2.78
+      ],
+      "quoted_errors_inside_gate_3pct": true,
+      "claims_honest_fail": false
+    }
+  },
+  "honest_fail_comparison": {
+    "rounds": [
+      "46",
+      "174",
+      "202",
+      "243"
+    ],
+    "quoted_cd_err_pct": {
+      "174": [
+        2.7708
+      ],
+      "202": [
+        2.54,
+        2.77
+      ],
+      "243": [
+        2.54,
+        2.78
+      ]
+    },
+    "all_rounds_quote_same_numbers": false,
+    "any_round_has_explicit_verdict": false,
+    "any_round_has_device_line": true,
+    "readme_window_rule": "last 20% of samples, window-mean Cd, gate |err| <= 3%",
+    "finding": "All earlier rounds quote the same window-mean errors inside the README 3% gate ({\"174\": [2.7708], \"202\": [2.54, 2.77], \"243\": [2.54, 2.78]}), yet none of them emits an explicit 'VERDICT: PASS/FAIL' token and none carries a physical device line (/dev/tcaicardN, sdaa:N) for the judged run.  The recurring honest-FAIL is therefore a *process* failure (no machine-readable verdict + no device provenance), not a numerical gate failure; m202 additionally invented a stricter 'must hold over 3 rounds' criterion that the README does not contain (criterion drift, rejected here).",
+    "criterion_drift_rejected": [
+      "m202: 'honest-FAIL because 3 rounds still not stably inside 3%' -- README gates on a single pre-registered reference and the two-tier monotone ladder, not on cross-round stability."
+    ]
+  }
+}

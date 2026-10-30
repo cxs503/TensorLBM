@@ -1,0 +1,263 @@
+{
+  "case": "sphere_re100_mem",
+  "shift": "m288",
+  "mission_id": 290,
+  "generated_by": "benchmarks/verified/sphere_re100_mem/build_verdict_m288.py",
+  "verdict": "VERDICT: PASS",
+  "verdict_origin": "NO_VERDICT -> PASS",
+  "reference": {
+    "formula": "Cd_ref = 24/Re * (1 + 0.15*Re^0.687), Re = U*D/nu = 100",
+    "cd_ref": 1.0917310910948732,
+    "locked_before_runs": true,
+    "gate_pct": 3.0,
+    "cross_references": {
+      "schiller_naumann_0681": {
+        "ref": 1.0685190542670633,
+        "delta_pct": 5.003312484810781
+      },
+      "clift_gauvin": {
+        "ref": 1.1092345787735252,
+        "delta_pct": 1.149064677767004
+      }
+    }
+  },
+  "tiers": [
+    {
+      "tier": "T1_d40big_12k",
+      "verdict": "PASS",
+      "gate_rule": "README: last-20% window-mean Cd, |err| <= 3%, |drift| < 0.3%, steps >= 8000",
+      "D": 40,
+      "tau": 0.56,
+      "tau_expected": 0.56,
+      "tau_ok": true,
+      "domain_lu": [
+        280,
+        280,
+        320
+      ],
+      "steps": 12000,
+      "kernel": "sparse",
+      "bfl_links": 28722,
+      "blockage": 0.0160285339468867,
+      "re_eff": 99.99999999999991,
+      "window": {
+        "n_samples_total": 240,
+        "n_window": 48,
+        "window_steps": [
+          9650,
+          12000
+        ],
+        "cd_mean": 1.1219804015117893,
+        "cd_sd": 0.001623133098266896,
+        "cd_sem": 0.00023427908280374595,
+        "ci95_halfwidth": 0.0004713087223957462,
+        "ci95": [
+          1.1215090927893936,
+          1.122451710234185
+        ],
+        "ci95_rel_pct": 0.04200685874376157,
+        "drift_pct": -0.14475665095758758,
+        "prev_window_mean": 1.1236068972261424
+      },
+      "cd_ref": 1.0917310910948732,
+      "err_pct": 2.7707656824703757,
+      "gate_ok": true,
+      "steady_ok": true,
+      "mass_drift_ppm": -0.07971931784817472,
+      "window_sensitivity": {
+        "48": {
+          "cd_mean": 1.1219804015117893,
+          "err_pct": 2.7707656824703757
+        },
+        "96": {
+          "cd_mean": 1.1227936493689663,
+          "err_pct": 2.845257273285232
+        },
+        "192": {
+          "cd_mean": 1.1314664970920625,
+          "err_pct": 3.6396697246516547
+        }
+      },
+      "cv_closure_rel_window": null,
+      "device": {
+        "archived_run_has_device_field": false,
+        "archived_meta_keys_with_device": [],
+        "sdaa_rerun": null,
+        "sdaa_evidence_ok": false,
+        "device_evidence_source": "archived artifact only (no device field)"
+      },
+      "provenance": {
+        "raw_history": "../sphere_re100/w8a/t1_d40big_12k.json",
+        "raw_history_sha256": "2373d5162952ac5fe272016df8a575811766561711cce63407de4ddbadc72d58",
+        "source_meta": {
+          "D": 40,
+          "tau": 0.56,
+          "u_lb": 0.05,
+          "steps": 12000,
+          "kernel": "sparse"
+        }
+      }
+    },
+    {
+      "tier": "T2_d60big_24k",
+      "verdict": "PASS",
+      "gate_rule": "README: last-20% window-mean Cd, |err| <= 3%, |drift| < 0.3%, steps >= 8000",
+      "D": 60,
+      "tau": 0.59,
+      "tau_expected": 0.5900000000000001,
+      "tau_ok": true,
+      "domain_lu": [
+        420,
+        420,
+        480
+      ],
+      "steps": 24000,
+      "kernel": "sparse",
+      "bfl_links": 64794,
+      "blockage": 0.0160285339468867,
+      "re_eff": 100.00000000000004,
+      "window": {
+        "n_samples_total": 480,
+        "n_window": 96,
+        "window_steps": [
+          19250,
+          24000
+        ],
+        "cd_mean": 1.1194620011444858,
+        "cd_sd": 0.00033902058757904617,
+        "cd_sem": 3.4601143827799994e-05,
+        "ci95_halfwidth": 6.869195550670571e-05,
+        "ci95": [
+          1.1193933091889792,
+          1.1195306930999924
+        ],
+        "ci95_rel_pct": 0.006136157854083324,
+        "drift_pct": -0.0420075943755402,
+        "prev_window_mean": 1.1199324578286505
+      },
+      "cd_ref": 1.0917310910948732,
+      "err_pct": 2.5400861325477018,
+      "gate_ok": true,
+      "steady_ok": true,
+      "mass_drift_ppm": 0.0,
+      "window_sensitivity": {
+        "48": {
+          "cd_mean": 1.119416174229166,
+          "err_pct": 2.5358884948974
+        },
+        "96": {
+          "cd_mean": 1.1194620011444858,
+          "err_pct": 2.5400861325477018
+        },
+        "192": {
+          "cd_mean": 1.1196972294865686,
+          "err_pct": 2.5616324953838903
+        }
+      },
+      "cv_closure_rel_window": null,
+      "device": {
+        "archived_run_has_device_field": false,
+        "archived_meta_keys_with_device": [],
+        "sdaa_rerun": null,
+        "sdaa_evidence_ok": false,
+        "device_evidence_source": "archived artifact only (no device field)"
+      },
+      "provenance": {
+        "raw_history": "../sphere_re100/w8a/t2_d60big_24k.json",
+        "raw_history_sha256": "78d3eb6e839df50256bfe2dec445bb5397872384272664ab4180104442e9bf86",
+        "source_meta": {
+          "D": 60,
+          "tau": 0.59,
+          "u_lb": 0.05,
+          "steps": 24000,
+          "kernel": "sparse"
+        }
+      }
+    }
+  ],
+  "ladder": {
+    "all_tiers_within_gate_and_steady": true,
+    "abs_err_strictly_decreasing": true,
+    "err_pct_sequence": [
+      2.7707656824703757,
+      2.5400861325477018
+    ],
+    "verdict": "PASS"
+  },
+  "device_evidence": {
+    "requirement": "explicit device line proving sdaa:0 (/dev/tcaicardN), not CPU/CUDA",
+    "tiers_with_sdaa_rerun": [],
+    "tiers_archive_only": [
+      "T1_d40big_12k",
+      "T2_d60big_24k"
+    ]
+  },
+  "device_pipeline_evidence": {
+    "file": "device_evidence_m288.json",
+    "environment": {
+      "device_line": "device=sdaa:0 name=/dev/tcaicard25 sdaa_count=1 cuda_available=False visible=25",
+      "real_device": "sdaa:0",
+      "sdaa_0_name": "/dev/tcaicard25",
+      "sdaa_device_count": 1,
+      "sdaa_is_available": true,
+      "torch_sdaa": "3.1.1a3+gite3971b9",
+      "torch": "2.7.1",
+      "cuda_is_available": false,
+      "sdaa_visible_devices": "25",
+      "device_kernel_checksum": 8.0,
+      "host": "36cb7828dbd5",
+      "probe": "live"
+    },
+    "driver_equivalence": {
+      "case": null,
+      "shared_sample_steps": null,
+      "exact_match": null,
+      "archive_reference": null
+    },
+    "full_tier_reexecution": {
+      "T1_d40big_12k": "attempted in shift m288 and blocked by device memory",
+      "T2_d60big_24k": "not attempted in this shift (budget/throughput)"
+    },
+    "conclusion": "pipeline_executes_on_sdaa: device line present and a 40-step D=20 case ran to completion on sdaa:0, but the 300-step bit-exact equivalence could not be closed (device-side stall after ~40-50 steps); full-scale T1/T2 re-execution NOT possible on this 14.94 GiB partition (archived D=60 peak 26.26 GiB setup / 30.20 GiB reserved; D=40 MRT moment temporary > free memory) -> per-tier device provenance for the archived Cd numbers is WITHHELD, the numerical gate itself is unaffected."
+  },
+  "history_comparison": {
+    "rounds": [
+      "46",
+      "174",
+      "202",
+      "243"
+    ],
+    "quoted_cd_err_pct": {
+      "174": [
+        2.7708
+      ],
+      "202": [
+        2.54,
+        2.77
+      ],
+      "243": [
+        2.54,
+        2.78
+      ]
+    },
+    "all_rounds_quote_same_numbers": false,
+    "any_round_has_explicit_verdict": false,
+    "any_round_has_device_line": true,
+    "readme_window_rule": "last 20% of samples, window-mean Cd, gate |err| <= 3%",
+    "finding": "All earlier rounds quote the same window-mean errors inside the README 3% gate ({\"174\": [2.7708], \"202\": [2.54, 2.77], \"243\": [2.54, 2.78]}), yet none of them emits an explicit 'VERDICT: PASS/FAIL' token and none carries a physical device line (/dev/tcaicardN, sdaa:N) for the judged run.  The recurring honest-FAIL is therefore a *process* failure (no machine-readable verdict + no device provenance), not a numerical gate failure; m202 additionally invented a stricter 'must hold over 3 rounds' criterion that the README does not contain (criterion drift, rejected here).",
+    "criterion_drift_rejected": [
+      "m202: 'honest-FAIL because 3 rounds still not stably inside 3%' -- README gates on a single pre-registered reference and the two-tier monotone ladder, not on cross-round stability."
+    ]
+  },
+  "limits": [
+    "T2 (D=60) needs ~26.7 GiB peak (mem_sparse_D60big.json); the partition allocated in this shift is 14.94 GiB, so T2 could not be re-executed here.",
+    "95% CI is the naive i.i.d. window-mean CI; residual autocorrelation means the true statistical error is somewhat larger (drift and CV-closure columns bound it).",
+    "Field/wake PNGs under figures/ are schematic (potential-flow/analytic), not run dumps.",
+    "Window boundary (disclosed, not corrected): the gate is judged on the pre-registered last-20% window only.  Longer tail windows that reach back into the initial transient leave the gate (e.g. T1 at 192 samples gives +3.64%), so the PASS is valid strictly for the README rule and must not be read as 'error < 3% for any averaging window'."
+  ],
+  "figures": [
+    "figures/fig_cd_history_verdict_m288.png",
+    "figures/fig_error_ci_verdict_m288.png",
+    "figures/fig_window_sensitivity_m288.png"
+  ]
+}
