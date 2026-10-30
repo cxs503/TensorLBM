@@ -65,6 +65,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `kcs_resistance` | reference audited (MDPI 2020 KCS Cb 0.6505, Fr=0.26 EFT Ct 3.55e-3); caliber = Blasius friction low-Re; runner ready, converged run pending |
 | `naca_0012` | BLOCKED: perf fixed via fast_kernel (288->36 ms/step); CD_REF corrected to 0.12 (Kurtulus + Di Ilio 2020 0.119; old 0.105 rejected); surface-MEM +82% on a friction-dominated airfoil |
 | `permeability3d` | in progress |
+| `phasefield_water_entry` | BLOCKED (new 2026-10-30): phase-field (CAC) entry case pre-registered (S0-S4, Wagner/Colicchio anchors) but S2 cannot start -- no moving solid + MEM force in `cac_lbm`, wall-to-phase mass source (phi +1.5e-3 / 6000 steps, interface +0.61 cell creep), and the repo Wagner wedge force is 4/pi off its own pressure integral. Probes: S0 hydrostatics dp/dy 2.1% PASS but mass/interface gates FAIL; S1 static body straddling interface PASS (max\|u\| 1.0e-3, phi overshoot <=0.8%). Not a validation claim. See `pending/phasefield_water_entry/` + `docs/benchmarks/phasefield_water_entry_survey_20261030.md` |
 | `poiseuille_3d_annulus` | in progress |
 | `poiseuille_3d_ellipse` | in progress |
 | `propeller_openwater` | STRUCTURAL x3: CAD chord/area -32%/-24%; Re mismatch ~600x; low-tip-Mach gate vs mask time-resolution mutually exclusive |
