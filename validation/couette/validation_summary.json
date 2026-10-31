@@ -1,0 +1,18 @@
+{
+  "l2_error_pct": 0.9143,
+  "no_slip_top_pct": 0.0001,
+  "no_slip_bottom_pct": 0.0,
+  "l2_pass": true,
+  "top_pass": true,
+  "bottom_pass": true,
+  "all_pass": true,
+  "re": 40.0,
+  "tau": 0.56,
+  "nx": 16,
+  "ny": 16,
+  "n_steps": 5000,
+  "u_top": 0.05,
+  "nu": 0.02,
+  "figure1": "/root/tp-agent/work/m635/validation/couette/couette_velocity_profile.png",
+  "figure2": "/root/tp-agent/work/m635/validation/couette/couette_error_distribution.png"
+}
