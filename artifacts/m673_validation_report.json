@@ -1,0 +1,10 @@
+{
+  "mission_id": 673,
+  "wind_profile_log_law_error": 0.0,
+  "wind_profile_valid": true,
+  "current_profile_uniform_error": 0.0,
+  "current_profile_valid": true,
+  "temperature_field_conservative": true,
+  "temperature_field_valid": true,
+  "all_criteria_pass": true
+}
