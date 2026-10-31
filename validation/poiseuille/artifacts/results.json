@@ -1,0 +1,45 @@
+{
+  "config": {
+    "ny": 97,
+    "nx": 97,
+    "H": 96,
+    "Re": 200.0,
+    "u_max_target": 0.1,
+    "nu": 0.032,
+    "tau": 0.596,
+    "G": 2.777777777777778e-06,
+    "n_steps": 4000,
+    "diffusion_time": 288000.0
+  },
+  "results": {
+    "u_max_sim": 0.0017882854632705202,
+    "u_mean_sim": 0.0014878541137268583,
+    "ratio": 1.201922585535705,
+    "l2_error_pct": 71.8884423528863,
+    "mass_closure": 3.684763315079607e-13
+  },
+  "criteria": {
+    "criterion1_L2_le_2pct": {
+      "value": 71.8884423528863,
+      "threshold": 2.0,
+      "pass": false
+    },
+    "criterion2_ratio_1_5_pm_3pct": {
+      "value": 19.871827630953,
+      "threshold": 3.0,
+      "pass": false
+    },
+    "criterion3_mass_closure_le_1e6": {
+      "value": 3.684763315079607e-13,
+      "threshold": 1e-06,
+      "pass": true
+    },
+    "criterion4_tau_self_consistent": {
+      "value": 0.0,
+      "threshold": 1e-12,
+      "pass": true
+    }
+  },
+  "overall_pass": false,
+  "notes": "Honest FAIL: 4000 steps insufficient for steady state (need ~288,000 steps)"
+}
