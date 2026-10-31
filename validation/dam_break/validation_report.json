@@ -1,0 +1,68 @@
+{
+  "benchmark": "dam_break_martin_moyce_1952",
+  "config": {
+    "G": 0.9,
+    "dam_width": 20,
+    "device": "cpu",
+    "g": 5e-05,
+    "model": "cg",
+    "n_steps": 1600,
+    "nx": 80,
+    "ny": 40,
+    "output_interval": 100,
+    "output_root": "validation/dam_break",
+    "overwrite": true,
+    "rho_heavy": 0.8,
+    "rho_light": 0.4,
+    "run_name": "mm_val_cg_1600",
+    "tau": 1.0
+  },
+  "reference": "Martin & Moyce (1952) Phil. Trans. R. Soc. A 244, 312",
+  "criterion": "6-point mean |X*_sim - X*_ref| / X*_ref \u2264 6%",
+  "n_points": 6,
+  "comparison_table": [
+    {
+      "T": 1.0,
+      "X_star_sim": 1.655573,
+      "X_star_ref": 1.2,
+      "err_pct": 37.9644
+    },
+    {
+      "T": 1.5,
+      "X_star_sim": 1.641641,
+      "X_star_ref": 1.4,
+      "err_pct": 17.2601
+    },
+    {
+      "T": 2.0,
+      "X_star_sim": 1.5,
+      "X_star_ref": 1.6,
+      "err_pct": 6.25
+    },
+    {
+      "T": 2.5,
+      "X_star_sim": 1.509017,
+      "X_star_ref": 1.85,
+      "err_pct": 18.4315
+    },
+    {
+      "T": 3.0,
+      "X_star_sim": 1.52918,
+      "X_star_ref": 2.05,
+      "err_pct": 25.4059
+    },
+    {
+      "T": 3.5,
+      "X_star_sim": 1.55,
+      "X_star_ref": 2.25,
+      "err_pct": 31.1111
+    }
+  ],
+  "mean_error_pct": 22.7372,
+  "pass": false,
+  "figures": [
+    "front_comparison.png",
+    "phase_sequence.png"
+  ],
+  "run_dir": "validation/dam_break/dam_break/mm_val_cg_1600"
+}

@@ -1,0 +1,118 @@
+{
+  "config": {
+    "G": 0.9,
+    "dam_width": 20,
+    "device": "cpu",
+    "g": 5e-05,
+    "model": "cg",
+    "n_steps": 1600,
+    "nx": 80,
+    "ny": 40,
+    "output_interval": 100,
+    "output_root": "validation/dam_break",
+    "overwrite": true,
+    "rho_heavy": 0.8,
+    "rho_light": 0.4,
+    "run_name": "mm_val_cg_1600",
+    "tau": 1.0
+  },
+  "diagnostics": [
+    {
+      "X_star": 1.8,
+      "mean_rho_heavy": 0.230657,
+      "step": 100,
+      "t_star": 0.223607
+    },
+    {
+      "X_star": 1.7,
+      "mean_rho_heavy": 0.230417,
+      "step": 200,
+      "t_star": 0.447214
+    },
+    {
+      "X_star": 1.35,
+      "mean_rho_heavy": 0.22978,
+      "step": 300,
+      "t_star": 0.67082
+    },
+    {
+      "X_star": 1.75,
+      "mean_rho_heavy": 0.230148,
+      "step": 400,
+      "t_star": 0.894427
+    },
+    {
+      "X_star": 1.55,
+      "mean_rho_heavy": 0.229892,
+      "step": 500,
+      "t_star": 1.118034
+    },
+    {
+      "X_star": 1.5,
+      "mean_rho_heavy": 0.229869,
+      "step": 600,
+      "t_star": 1.341641
+    },
+    {
+      "X_star": 1.7,
+      "mean_rho_heavy": 0.230048,
+      "step": 700,
+      "t_star": 1.565248
+    },
+    {
+      "X_star": 1.5,
+      "mean_rho_heavy": 0.229812,
+      "step": 800,
+      "t_star": 1.788854
+    },
+    {
+      "X_star": 1.5,
+      "mean_rho_heavy": 0.229883,
+      "step": 900,
+      "t_star": 2.012461
+    },
+    {
+      "X_star": 1.6,
+      "mean_rho_heavy": 0.229989,
+      "step": 1000,
+      "t_star": 2.236068
+    },
+    {
+      "X_star": 1.5,
+      "mean_rho_heavy": 0.229815,
+      "step": 1100,
+      "t_star": 2.459675
+    },
+    {
+      "X_star": 1.55,
+      "mean_rho_heavy": 0.22988,
+      "step": 1200,
+      "t_star": 2.683282
+    },
+    {
+      "X_star": 1.55,
+      "mean_rho_heavy": 0.229933,
+      "step": 1300,
+      "t_star": 2.906888
+    },
+    {
+      "X_star": 1.5,
+      "mean_rho_heavy": 0.229828,
+      "step": 1400,
+      "t_star": 3.130495
+    },
+    {
+      "X_star": 1.55,
+      "mean_rho_heavy": 0.229876,
+      "step": 1500,
+      "t_star": 3.354102
+    },
+    {
+      "X_star": 1.55,
+      "mean_rho_heavy": 0.229899,
+      "step": 1600,
+      "t_star": 3.577709
+    }
+  ],
+  "note": "X* = x_front / L,  t* = step * sqrt(2g/L).  Martin-Moyce (1952) analytical: X* \u2248 1 + t* for early times."
+}
