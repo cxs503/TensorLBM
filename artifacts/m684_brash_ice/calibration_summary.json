@@ -1,0 +1,152 @@
+{
+  "calibrated_cd": 0.9465624999999999,
+  "brash_ice_drag_error_vs_experiment": 0.0006561201855521475,
+  "concentration_dependence_captured": true,
+  "n_pieces": 12223,
+  "dem_drag_n": 376106.92314452474,
+  "empirical_drag_n": 375860.31360582,
+  "concentration_sweep": [
+    {
+      "concentration": 0.1,
+      "dem_drag_n": 69626.00387678703,
+      "matsumura_drag_n": 62643.38560097001,
+      "kujala_drag_n": 428505.8810634358,
+      "su_drag_n": 2777.6193000000003,
+      "error_ratio": 0.11146617011244192
+    },
+    {
+      "concentration": 0.2,
+      "dem_drag_n": 139862.71370450538,
+      "matsumura_drag_n": 125286.77120194002,
+      "kujala_drag_n": 857011.7621268716,
+      "su_drag_n": 5555.238600000001,
+      "error_ratio": 0.11634063487095163
+    },
+    {
+      "concentration": 0.3,
+      "dem_drag_n": 204300.068389385,
+      "matsumura_drag_n": 187930.15680291,
+      "kujala_drag_n": 1285517.6431903075,
+      "su_drag_n": 8332.857899999999,
+      "error_ratio": 0.08710635836718211
+    },
+    {
+      "concentration": 0.4,
+      "dem_drag_n": 267952.9332017424,
+      "matsumura_drag_n": 250573.54240388004,
+      "kujala_drag_n": 1714023.5242537432,
+      "su_drag_n": 11110.477200000001,
+      "error_ratio": 0.06935844315857531
+    },
+    {
+      "concentration": 0.5,
+      "dem_drag_n": 328132.2210060975,
+      "matsumura_drag_n": 313216.92800485005,
+      "kujala_drag_n": 2142529.405317179,
+      "su_drag_n": 13888.0965,
+      "error_ratio": 0.047619689958189285
+    },
+    {
+      "concentration": 0.6,
+      "dem_drag_n": 397339.7669404023,
+      "matsumura_drag_n": 375860.31360582,
+      "kujala_drag_n": 2571035.286380615,
+      "su_drag_n": 16665.715799999998,
+      "error_ratio": 0.057147436313557294
+    },
+    {
+      "concentration": 0.7,
+      "dem_drag_n": 455646.9828805661,
+      "matsumura_drag_n": 438503.6992067901,
+      "kujala_drag_n": 2999541.167444051,
+      "su_drag_n": 19443.335099999997,
+      "error_ratio": 0.03909495793259334
+    },
+    {
+      "concentration": 0.8,
+      "dem_drag_n": 525414.2110505947,
+      "matsumura_drag_n": 501147.0848077601,
+      "kujala_drag_n": 3428047.0485074865,
+      "su_drag_n": 22220.954400000002,
+      "error_ratio": 0.048423161539777236
+    },
+    {
+      "concentration": 0.9,
+      "dem_drag_n": 588190.1319202464,
+      "matsumura_drag_n": 563790.47040873,
+      "kujala_drag_n": 3856552.929570922,
+      "su_drag_n": 24998.5737,
+      "error_ratio": 0.043277889202042494
+    }
+  ],
+  "speed_sweep": [
+    {
+      "speed_m_s": 0.5,
+      "dem_drag_n": 24833.735433775142,
+      "matsumura_drag_n": 23491.26960036375,
+      "kujala_drag_n": 1992758.8215951538,
+      "su_drag_n": 5595.715799999999,
+      "error_ratio": 0.057147436313557294
+    },
+    {
+      "speed_m_s": 1.0,
+      "dem_drag_n": 99334.94173510057,
+      "matsumura_drag_n": 93965.078401455,
+      "kujala_drag_n": 2185517.6431903075,
+      "su_drag_n": 7809.715799999999,
+      "error_ratio": 0.057147436313557294
+    },
+    {
+      "speed_m_s": 1.5,
+      "dem_drag_n": 223503.61890397663,
+      "matsumura_drag_n": 211421.42640327374,
+      "kujala_drag_n": 2378276.4647854613,
+      "su_drag_n": 11499.7158,
+      "error_ratio": 0.05714743631355902
+    },
+    {
+      "speed_m_s": 2.0,
+      "dem_drag_n": 397339.7669404023,
+      "matsumura_drag_n": 375860.31360582,
+      "kujala_drag_n": 2571035.286380615,
+      "su_drag_n": 16665.715799999998,
+      "error_ratio": 0.057147436313557294
+    },
+    {
+      "speed_m_s": 2.5,
+      "dem_drag_n": 620843.385844378,
+      "matsumura_drag_n": 587281.7400090938,
+      "kujala_drag_n": 2763794.1079757684,
+      "su_drag_n": 23307.715799999998,
+      "error_ratio": 0.05714743631355638
+    },
+    {
+      "speed_m_s": 3.0,
+      "dem_drag_n": 894014.4756159065,
+      "matsumura_drag_n": 845685.705613095,
+      "kujala_drag_n": 2956552.929570922,
+      "su_drag_n": 31425.715799999998,
+      "error_ratio": 0.05714743631355902
+    },
+    {
+      "speed_m_s": 3.5,
+      "dem_drag_n": 1216853.036254983,
+      "matsumura_drag_n": 1151072.2104178239,
+      "kujala_drag_n": 3149311.751166076,
+      "su_drag_n": 41019.7158,
+      "error_ratio": 0.05714743631355804
+    },
+    {
+      "speed_m_s": 4.0,
+      "dem_drag_n": 1589359.067761609,
+      "matsumura_drag_n": 1503441.25442328,
+      "kujala_drag_n": 3342070.5727612297,
+      "su_drag_n": 52089.7158,
+      "error_ratio": 0.057147436313557294
+    }
+  ],
+  "acceptance": {
+    "brash_ice_drag_error_vs_experiment < 0.2": true,
+    "concentration_dependence_captured": true
+  }
+}
