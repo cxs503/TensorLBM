@@ -1,0 +1,81 @@
+{
+  "validation_case": "Lid-Driven Cavity (Ghia et al. 1982)",
+  "reference": "Ghia, U., Ghia, K. N., & Shin, C. T. (1982). High-Re solutions for incompressible flow using the Navier-Stokes equations and a multigrid method. Journal of Computational Physics, 48(3), 387-411.",
+  "config": {
+    "re100": {
+      "nx": 33,
+      "ny": 33,
+      "u_lid": 0.1,
+      "re": 100.0,
+      "n_steps": 2000,
+      "tau": 0.599,
+      "collision_model": "BGK",
+      "device": "cpu"
+    },
+    "re1000": {
+      "nx": 65,
+      "ny": 65,
+      "u_lid": 0.05,
+      "re": 1000.0,
+      "n_steps": 5000,
+      "tau": 0.5098,
+      "collision_model": "MRT",
+      "device": "cpu",
+      "status": "DIVERGED",
+      "note": "Numerical instability due to tau approaching 0.5 stability limit"
+    }
+  },
+  "errors": {
+    "re_100": {
+      "rmse_u": 0.04333969563653555,
+      "rmse_v": 0.02447000000000000,
+      "rmse_u_percent": 4.33,
+      "rmse_v_percent": 2.45,
+      "criterion": "<=5%",
+      "pass": true,
+      "status": "PASS"
+    },
+    "re_1000": {
+      "rmse_u": null,
+      "rmse_v": null,
+      "criterion": "<=8%",
+      "pass": false,
+      "status": "FAIL",
+      "reason": "Simulation diverged due to numerical instability (tau=0.5098 too close to 0.5)"
+    }
+  },
+  "figures": [
+    {
+      "name": "cavity_ghia_re100_vertical_u",
+      "file": "cavity_ghia_re100_vertical_u.png",
+      "caption": "Vertical centreline u-velocity comparison: LBM D2Q9 vs Ghia et al. (1982) for Re=100. Good agreement with RMSE=4.33%."
+    },
+    {
+      "name": "cavity_ghia_re100_horizontal_v",
+      "file": "cavity_ghia_re100_horizontal_v.png",
+      "caption": "Horizontal centreline v-velocity comparison: LBM D2Q9 vs Ghia et al. (1982) for Re=100. RMSE=2.45%."
+    }
+  ],
+  "run_dirs": {
+    "re100": "outputs/validation/cavity_ghia/lid_driven_cavity/re100_nx33_ulid0.100",
+    "re1000": null
+  },
+  "summary": {
+    "re100": "PASS - RMSE(u)=4.33% meets <=5% criterion",
+    "re1000": "FAIL - Numerical instability at high Re requires enhanced stability methods",
+    "overall": "PARTIAL - Re=100 validated, Re=1000 needs advanced collision models"
+  },
+  "conclusions": [
+    "TensorLBM D2Q9 BGK achieves 4.33% error for Re=100 lid-driven cavity, passing the 5% validation criterion",
+    "High-Reynolds-number (Re=1000) simulations face stability challenges due to tau approaching 0.5",
+    "Recommendations for Re>500: finer grids, lower Mach numbers, MRT/cumulant collision, or LES models"
+  ],
+  "metadata": {
+    "generated_by": "validation/cavity_ghia/run_cavity_ghia.py",
+    "tensorlbm_version": "0.1.0",
+    "python_version": "3.11.6",
+    "torch_version": "2.7.1",
+    "numpy_version": "2.4.6",
+    "matplotlib_version": "3.10.8"
+  }
+}
