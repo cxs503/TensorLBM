@@ -1,0 +1,23 @@
+{
+  "ny": 65,
+  "nx": 32,
+  "H": 64,
+  "Re": 37.0,
+  "U_bar": 0.02,
+  "nu": 0.034594594594594595,
+  "tau": 0.6037837837837838,
+  "F_x": 2.027027027027027e-06,
+  "u_max_analytical": 0.03,
+  "u_max_numerical": 0.029994621872901917,
+  "u_max_error": 0.00017927090326941286,
+  "u_max_U_bar_ratio": 1.4997310936450958,
+  "u_max_u_mean_ratio": 1.4807178068673643,
+  "L2_relative": 0.0033321404560868197,
+  "mass_residual": 0.0,
+  "drift": 4.284083843231201e-08,
+  "steady_pass": true,
+  "L2_pass": true,
+  "n_steps": 4000,
+  "elapsed_s": 35.778419971466064,
+  "note": "Initialized from analytical solution to test stability"
+}
