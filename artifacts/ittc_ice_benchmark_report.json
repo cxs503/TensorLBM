@@ -1,0 +1,121 @@
+{
+  "report_metadata": {
+    "title": "ITTC Ice Pool Test Benchmarking Report",
+    "standard": "ITTC 7.5-04-01-01.1",
+    "generated_at": "2026-10-31T04:18:24Z",
+    "framework_version": "1.0.0",
+    "mission_id": 718
+  },
+  "acceptance_criteria": {
+    "ship_types_validated": {
+      "value": 4,
+      "threshold": ">= 3",
+      "unit": "count",
+      "pass": true
+    },
+    "auto_report_generated": {
+      "value": true,
+      "threshold": "== True",
+      "unit": "bool",
+      "pass": true
+    },
+    "reproducibility_across_runs": {
+      "value": 1.316367272103816e-16,
+      "threshold": "< 0.02",
+      "unit": "ratio",
+      "pass": true
+    }
+  },
+  "ice_properties": {
+    "thickness_m": 0.8,
+    "flexural_strength_Pa": 500000.0,
+    "crushing_strength_Pa": 3000000.0,
+    "density_kg_m3": 900.0,
+    "E_modulus_Pa": 5000000000.0,
+    "friction_coefficient": 0.05
+  },
+  "run_metadata": {
+    "n_ships": 4,
+    "n_reproducibility_runs": 5,
+    "timestamp": "2026-10-31T04:18:24Z",
+    "model": "ITTC_Lindqvist_Riska_combined",
+    "framework_version": "1.0.0"
+  },
+  "ship_results": [
+    {
+      "ship_key": "container_vessel",
+      "ship_type": "container",
+      "predicted_resistance_kN": 3115.1164877779165,
+      "reference_resistance_kN": 2850.0,
+      "relative_error": 0.09302332904488299,
+      "error_within_15pct": true,
+      "components": {
+        "breaking_N": 2128114.2117510843,
+        "clearance_N": 68940.70244156914,
+        "open_water_N": 904415.4711852631,
+        "friction_N": 13646.102400000003,
+        "total_N": 3115116.4877779167
+      },
+      "run_timestamp": "2026-10-31T04:18:24Z",
+      "run_hash": "12d0585bad6ad98c"
+    },
+    {
+      "ship_key": "bulk_carrier",
+      "ship_type": "bulk",
+      "predicted_resistance_kN": 3454.562875599966,
+      "reference_resistance_kN": 3200.0,
+      "relative_error": 0.07955089862498937,
+      "error_within_15pct": true,
+      "components": {
+        "breaking_N": 2639165.564011444,
+        "clearance_N": 68370.69344090144,
+        "open_water_N": 736719.9967076206,
+        "friction_N": 10306.621440000003,
+        "total_N": 3454562.875599966
+      },
+      "run_timestamp": "2026-10-31T04:18:24Z",
+      "run_hash": "a8559259e2e93cf9"
+    },
+    {
+      "ship_key": "research_vessel",
+      "ship_type": "research",
+      "predicted_resistance_kN": 736.5982884010214,
+      "reference_resistance_kN": 680.0,
+      "relative_error": 0.08323277706032553,
+      "error_within_15pct": true,
+      "components": {
+        "breaking_N": 580723.8527781555,
+        "clearance_N": 9140.79100556743,
+        "open_water_N": 144261.61290729843,
+        "friction_N": 2472.0317099999997,
+        "total_N": 736598.2884010214
+      },
+      "run_timestamp": "2026-10-31T04:18:24Z",
+      "run_hash": "17f00bce1df544b2"
+    },
+    {
+      "ship_key": "tanker",
+      "ship_type": "tanker",
+      "predicted_resistance_kN": 2666.4396056536652,
+      "reference_resistance_kN": 2450.0,
+      "relative_error": 0.08834269618516949,
+      "error_within_15pct": true,
+      "components": {
+        "breaking_N": 1897490.1907300884,
+        "clearance_N": 51770.57414520486,
+        "open_water_N": 706786.613354372,
+        "friction_N": 10392.227424000002,
+        "total_N": 2666439.605653665
+      },
+      "run_timestamp": "2026-10-31T04:18:24Z",
+      "run_hash": "93f759a142f1135b"
+    }
+  ],
+  "summary": {
+    "total_ships_tested": 4,
+    "ships_within_tolerance": 4,
+    "max_relative_error": 0.09302332904488299,
+    "mean_relative_error": 0.08603742522884185,
+    "all_criteria_pass": true
+  }
+}
