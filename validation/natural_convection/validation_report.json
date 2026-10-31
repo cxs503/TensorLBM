@@ -1,0 +1,54 @@
+{
+  "benchmark": "de Vahl Davis (1983) - Natural Convection in Differentially Heated Square Cavity",
+  "method": "Double-distribution Lattice Boltzmann Method (D2Q9 + D2Q5)",
+  "configuration": {
+    "geometry": "Square cavity (L \u00d7 L)",
+    "left_wall": "T_hot = 1.0 (isothermal)",
+    "right_wall": "T_cold = 0.0 (isothermal)",
+    "top_bottom_walls": "Adiabatic, no-slip",
+    "gravity": "Downward (-y direction)",
+    "approximation": "Boussinesq",
+    "prandtl": 0.71
+  },
+  "numerical_setup": {
+    "grid_size": "33\u00d733",
+    "collision_model": "BGK with Guo force for buoyancy",
+    "boundary_conditions": {
+      "velocity": "Half-way bounce-back (no-slip)",
+      "temperature_left_right": "Non-equilibrium extrapolation (isothermal)",
+      "temperature_top_bottom": "Adiabatic (reflective)"
+    },
+    "relaxation_time": {
+      "flow": 0.6,
+      "temperature": "computed from Pr and nu"
+    }
+  },
+  "results": {
+    "Ra_1e4": {
+      "rayleigh": 10000.0,
+      "prandtl": 0.71,
+      "grid": "33\u00d733",
+      "steps": 5000,
+      "nu_reference": 2.194,
+      "nu_computed": 1.9991,
+      "error_absolute": 0.19489999999999985,
+      "error_relative_percent": 8.883318140382855,
+      "criterion_5percent": false,
+      "status": "FAIL"
+    },
+    "Ra_1e5": {
+      "rayleigh": 100000.0,
+      "prandtl": 0.71,
+      "grid": "33\u00d733",
+      "steps": 1500,
+      "nu_reference": 4.446,
+      "nu_computed": 3.3132,
+      "error_absolute": 1.1327999999999996,
+      "error_relative_percent": 25.479082321187573,
+      "criterion_5percent": false,
+      "status": "FAIL"
+    }
+  },
+  "overall_pass": false,
+  "conclusion": "Both cases did not meet the 5% criterion. See analysis below."
+}
