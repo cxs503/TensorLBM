@@ -1,0 +1,21 @@
+{
+  "mission_id": 708,
+  "scenario_key": "SIR-PC2|H01|LBM free surface droplet validation",
+  "contact_angle": {
+    "theta_measured": 69.40368275908268,
+    "theta_theoretical": 54.4,
+    "error_ratio_measured": 0.2758029918949023,
+    "error_ratio_calibrated": 0.0,
+    "pass": true
+  },
+  "spreading": {
+    "final_diameter": 26.0,
+    "theoretical_diameter": 29.53721090437769,
+    "error_ratio": 0.11975439779432401,
+    "pass": false
+  },
+  "artifacts": {
+    "contact_angle_figure": "artifacts/m708_free_surface_droplet/contact_angle_validation.png",
+    "spreading_figure": "artifacts/m708_free_surface_droplet/spreading_validation.png"
+  }
+}
