@@ -1,5 +1,8 @@
 # TensorLBM
 
+**Tensor ecosystem vision and boundary contract:** [AI-era ecosystem vision](https://github.com/cxs503/TensorPlatform/blob/main/docs/architecture/TENSOR_ECOSYSTEM_AI_ERA_VISION.md). Read this before adding cross-project features.
+**Project charter:** [TensorLBM — lattice Boltzmann solver charter](docs/PROJECT_CHARTER.md) — ownership, non-goals, integration contract, and quality gates.
+
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 **System-wide overview:** [Tensor Ecosystem System Overview](https://github.com/cxs503/TensorPhysics/blob/main/docs/SYSTEM_OVERVIEW.md) — architecture, repository boundaries, shared contracts, end-to-end workflow and icebreaker application roadmap.
