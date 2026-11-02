@@ -14,7 +14,7 @@
 [![Browser Platform](https://img.shields.io/badge/Browser%20Platform-FastAPI%20%2B%20WebUI-0ea5e9)](docs/PLATFORM.md)
 [![HPC Benchmarks](https://img.shields.io/badge/HPC%20Benchmarks-Validated%20Cases-16a34a)](#quantitative-validation-summary)
 
-> **An AI4Science Platform for Industrial Fluid Dynamics.**
+> **A specialist lattice Boltzmann solver for AI-assisted fluid dynamics.**
 > D2Q9 · D3Q19 · D3Q27 · BGK · MRT · TRT · RLBM · Cumulant · LES · RANS · AMR · DG-LBM · AI turbulence closure · Multi-GPU
 
 ```bash
@@ -55,16 +55,16 @@ AI turbulence closures and flow-model pipelines are useful foundations for AI-as
 
 ## What's new in v0.3
 
-- **Platform 升级可见化**：新增 `app/backend/` FastAPI 服务化平台，覆盖 28 个业务路由与统一作业管理。
+- **Solver reference application**: `app/backend/` provides an optional FastAPI interface for launching and inspecting TensorLBM jobs; it is not the general-purpose TensorPlatform.
 - **AI pipeline 三件套**：SUBOFF、AI-LES、Flow-Transformer 三条 AI4Science 流水线已接入平台骨架。
-- **LLM Agent 集成**：`app/backend/agent_core.py` 提供平台级 agent 编排能力，支持自然语言驱动任务。
+- **Local agent integration example**: `app/backend/agent_core.py` demonstrates task entry points for this solver; cross-project agent runtime and orchestration belong to TensorPlatform.
 - **库 + 平台双形态**：保留 `src/tensorlbm/` 研究库能力，同时面向浏览器与后端场景提供工程入口。
 
 ## 3 个差异化
 
 1. **真实工业 case**：以 SUBOFF 等工业流体场景为核心，覆盖工程导向数据与验证路径。  
-2. **完整闭环**：从几何/数据准备、仿真求解、AI 训练到推理服务形成端到端交付链路。  
-3. **浏览器 + Agent**：浏览器平台与 LLM Agent 协同，降低复杂 CFD+AI 工作流使用门槛。
+2. **Solver workflow example**：展示几何/数据准备、仿真求解、AI 训练与推理的可组合流程；通用跨领域编排由 TensorPlatform 负责。  
+3. **Browser + Agent demo**：提供面向 TensorLBM 的示范界面与 Agent 接入样例，不替代通用 TensorPlatform。
 
 ## What TensorLBM provides
 
