@@ -14,7 +14,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://github.com/cxs503/TensorLBM)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
 
-TensorLBM 是一个面向 **AI4S（AI for Science）** 的综合平台，以 PyTorch LBM 求解器为核心，提供从仿真数据生产、模型训练到推理服务的闭环能力，并保持可复现的工程与科研工作流。
+TensorLBM 是 Tensor 生态中的专业格子 Boltzmann（LBM）求解器，以 PyTorch 数值内核为核心，并包含可选的示范应用、数据生成和模型训练工具。它不是通用 Agent 平台：跨仓库任务编排与持续运行属于 TensorPlatform，科学工作流和验收属于 TensorPhysics。
 
 ## 面向 Agent 科研工厂的职责
 
