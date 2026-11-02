@@ -1,5 +1,9 @@
 # TensorLBM
 
+**Tensor 生态愿景：** [AI 时代 Tensor 生态总纲](https://github.com/cxs503/TensorPlatform/blob/main/docs/architecture/TENSOR_ECOSYSTEM_AI_ERA_VISION.md)。
+
+**本项目定位：** [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) — 项目职责、明确不负责的内容、集成边界、质量门槛和 Agent 开发规则。
+
 **系统总览：** [Tensor 生态系统总览](https://github.com/cxs503/TensorPhysics/blob/main/docs/SYSTEM_OVERVIEW.md) — 统一架构、仓库职责、共享契约、端到端工作流与破冰应用路线。
 
 二维 LBM–DEM 联算已可运行：[P1 报告](docs/tensordem_coupling_p1.md)。真实求解器、重启与守恒证据已保存；滑移 IBM 和颗粒敏感性尚未达标。
