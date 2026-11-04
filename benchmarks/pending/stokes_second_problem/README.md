@@ -2,6 +2,16 @@
 
 **状态：⚠️ 未按战役标准验证（遗留档）——目录内只有 run.py 骨架（B25 批次设计），无任何机器结果档（result/verdict/probe/evidence 均不存在），战役三条判据从未在该案例上运行过。**
 
+**首次机器判定（2026-11-03，本目录 result.json / case_H*.json / diag_H*.json）**：
+门 10%-mask max 相对误差 H=40 **2.160%** / H=80 **1.012%**（门 3%），
+加密不变差 ✓、周期稳态差 0.0299%/0.0232%·U0（门 0.5%）✓ ⇒ 案例自身判据 **VERIFIED**。
+诊断档（非 prereg）：δ/Δx=4 (H=16) **15.76%**（分辨率不足即失效，使用边界 δ/Δx≥10）、
+δ/Δx=40 (H=160) **1.452%**。
+**诚实披露**：prereg 原文 5%-mask 口径实测 5.157%（>3%）——掩码口径冲突未解决，
+故**不自行晋级 `verified/`**，留 pending 待审计确认口径（详见 `docs/stokes_second_problem_verification_20261103.md`）。
+本轮另修 3 个骨架缺陷（判决档 `numpy.bool_` 序列化崩溃、scan 打印 KeyError、`np.interp` 降序坐标失真），
+回归守卫 `tests/test_stokes_second_problem_benchmark.py`（4 passed）。
+
 ## 物理问题
 
 Stokes 第二问题（振荡平板）：无限平板在自身平面内以 U(t)=U0·cos(ωt) 振荡，一侧半无限静止流体经充分长时间后趋于周期稳态 Stokes 层，满足 ∂u/∂t = ν∂²u/∂y²，解析解 u(y,t) = U0·e^(−y/δ)·cos(ωt − y/δ)，其中 δ = √(2ν/ω) 为 Stokes 层厚度（黏性扩散穿透深度）。骨架设计取 δ = H/4（H 为域高），即 ω = 32ν/H²。这是振荡边界层（Stokes 层）的经典直接可观测基准：全场剖面 u(y) 对解析解逐点比较，且自带周期稳态自检（同相位早/晚周期剖面差）。对库的价值：验证 D2Q9 上 pre-streaming half-way 移动壁反弹在时变壁速 U(t) 下的动量注入正确性——与 verified/couette_2d、pending/couette_3d（恒定壁速）同一动壁路径的时间非定常扩展。
