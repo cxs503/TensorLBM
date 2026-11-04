@@ -20,8 +20,6 @@ import json
 import math
 from pathlib import Path
 
-import numpy as np
-
 _HERE = Path(__file__).resolve().parent
 _REPO_ROOT = _HERE.parents[2]
 LPP, BEAM, DRAFT, CB = 142.0, 19.06, 6.15, 0.507
@@ -123,12 +121,20 @@ def md_tables(rows: list[dict], probe_rows: list[dict]) -> dict:
         res.append(
             "| {run} | {fam} | {dev} | {L} | {tdx:.2f} | {n} | {cp:.5f} | {cf:.5f} | "
             "{ct:.5f} | {eb:+.2f} % | {et:+.0f} % | {dr} | {gv} | {v} |".format(
-                run=r["run"], fam=r["geometry_family"], dev=r["device"], L=r["L_cells"],
-                tdx=r["T_over_dx"], n=r["n_steps"], cp=r["Cd_pressure"], cf=r["Cd_friction"],
-                ct=r["Cd_total"], eb=r["err_friction_vs_Blasius_pct"],
+                run=r["run"],
+                fam=r["geometry_family"],
+                dev=r["device"],
+                L=r["L_cells"],
+                tdx=r["T_over_dx"],
+                n=r["n_steps"],
+                cp=r["Cd_pressure"],
+                cf=r["Cd_friction"],
+                ct=r["Cd_total"],
+                eb=r["err_friction_vs_Blasius_pct"],
                 et=r["err_total_vs_expCT_pct"],
                 dr=("--" if drift is None else "%.2f %%" % drift),
-                gv=(r["geometry_verdict"] or "--"), v=(r["verdict"] or "legacy"),
+                gv=(r["geometry_verdict"] or "--"),
+                v=(r["verdict"] or "legacy"),
             )
         )
     geo = [
@@ -141,9 +147,15 @@ def md_tables(rows: list[dict], probe_rows: list[dict]) -> dict:
             "| {stl} | {L} | {dx:.3f} | {t:.2f} | {b:.2f} | {n} | {cb:.3f} | "
             "{e:+.1f} % | {a:.2f} | {v} |".format(
                 stl=("capped" if r["stl"].endswith("_closed.stl") else "open"),
-                L=_probe_L(r), dx=r["dx_m"], t=r["T_over_dx"], b=r["B_over_dx"],
-                n=r["n_solid_cells"], cb=r["cb_voxel"], e=r["cb_error_pct"],
-                a=r["stair_over_smooth_wetted_area"], v=r["verdict"],
+                L=_probe_L(r),
+                dx=r["dx_m"],
+                t=r["T_over_dx"],
+                b=r["B_over_dx"],
+                n=r["n_solid_cells"],
+                cb=r["cb_voxel"],
+                e=r["cb_error_pct"],
+                a=r["stair_over_smooth_wetted_area"],
+                v=r["verdict"],
             )
         )
     return {"resistance": "\n".join(res), "geometry": "\n".join(geo)}
@@ -188,27 +200,36 @@ def figures(rows: list[dict], probe_rows: list[dict], outdir: Path) -> list[str]
     fig, ax = plt.subplots(figsize=(7.6, 5.0))
     re_ = 1000.0
     cf_bl = blasius(re_)
-    for fam, style in (("open", dict(color="tab:red", marker="o")),
-                       ("closed", dict(color="tab:green", marker="s"))):
-        pts = sorted([r for r in rows if r["geometry_family"] == fam],
-                     key=lambda r: r["L_cells"])
+    for fam, style in (
+        ("open", dict(color="tab:red", marker="o")),
+        ("closed", dict(color="tab:green", marker="s")),
+    ):
+        pts = sorted([r for r in rows if r["geometry_family"] == fam], key=lambda r: r["L_cells"])
         if not pts:
             continue
         L = [r["L_cells"] for r in pts]
-        ax.plot(L, [r["Cd_total"] for r in pts], ls="--", lw=1.0,
-                label=f"Cd_total, {fam} STL", **style)
+        ax.plot(
+            L, [r["Cd_total"] for r in pts], ls="--", lw=1.0, label=f"Cd_total, {fam} STL", **style
+        )
         ax.plot(L, [r["Cd_friction"] for r in pts], ls="-", lw=1.4, **style)
     ax.axhline(cf_bl, color="k", lw=1.2, label=f"Blasius Cf(Re=1000) = {cf_bl:.4f}")
-    ax.fill_between([0, 200], cf_bl * (1 - BAND_PCT / 100), cf_bl * (1 + BAND_PCT / 100),
-                    color="k", alpha=0.12, label="+/-3 % band")
-    ax.axhline(C_T_EXP_FR028, color="tab:purple", ls=":", lw=1.2,
-               label="exp C_T(Fr=0.28) = 4.2e-3")
+    ax.fill_between(
+        [0, 200],
+        cf_bl * (1 - BAND_PCT / 100),
+        cf_bl * (1 + BAND_PCT / 100),
+        color="k",
+        alpha=0.12,
+        label="+/-3 % band",
+    )
+    ax.axhline(C_T_EXP_FR028, color="tab:purple", ls=":", lw=1.2, label="exp C_T(Fr=0.28) = 4.2e-3")
     ax.set_yscale("log")
     ax.set_xlim(left=0)
     ax.set_xlabel("L cells over Lpp")
     ax.set_ylabel("drag coefficient (log)")
-    ax.set_title("DTMB 5415 @ Re=1000: open (pillar body) vs capped STL\n"
-                 "solid line = Cd_friction, dashed = Cd_total")
+    ax.set_title(
+        "DTMB 5415 @ Re=1000: open (pillar body) vs capped STL\n"
+        "solid line = Cd_friction, dashed = Cd_total"
+    )
     ax.legend(fontsize=7.5, loc="center right")
     ax.grid(alpha=0.25, which="both")
     fig.tight_layout()
@@ -225,12 +246,14 @@ def figures(rows: list[dict], probe_rows: list[dict], outdir: Path) -> list[str]
             if not pts:
                 continue
             name = "open (m438)" if fam.endswith("underwater.stl") else "capped (fix B)"
-            ax.plot([_probe_L(r) for r in pts],
-                    [1.0 + r["cb_error_pct"] / 100.0 for r in pts],
-                    marker="o", label=f"voxel displacement / reference - {name}")
+            ax.plot(
+                [_probe_L(r) for r in pts],
+                [1.0 + r["cb_error_pct"] / 100.0 for r in pts],
+                marker="o",
+                label=f"voxel displacement / reference - {name}",
+            )
         ax.axhline(1.0, color="k", lw=1.0, label="reference (Cb = 0.507)")
-        ax.axhspan(0.85, 1.15, color="tab:green", alpha=0.12,
-                   label="+/-15 % geometry gate")
+        ax.axhspan(0.85, 1.15, color="tab:green", alpha=0.12, label="+/-15 % geometry gate")
         ax.set_yscale("log")
         ax.set_xlabel("L cells over Lpp")
         ax.set_ylabel("voxel displacement / Cb*L*B*T  (log)")
@@ -263,33 +286,38 @@ def error_judgement_rows(rows: list[dict], probe_rows: list[dict]) -> str:
             "{b:+.2f} % | {fx:+.2f} % (L={L}) | {yn} |".format(
                 ref=f["ref_Cf_Blasius_Re"],
                 b=(b["err_friction_vs_Blasius_pct"] if b else float("nan")),
-                fx=f["err_friction_vs_Blasius_pct"], L=f["L_cells"],
+                fx=f["err_friction_vs_Blasius_pct"],
+                L=f["L_cells"],
                 yn=("**是**" if abs(f["err_friction_vs_Blasius_pct"]) <= BAND_PCT else "**否**"),
             )
         )
         out.append(
             "| Cd_total vs C_T(Fr=0.28) = {ref:.1e} | 实验（Re~1.2e7，含兴波） | "
             "{b:+.0f} % | {fx:+.0f} % (L={L}) | 否（单相无自由面，地板 −22.4%，结构性） |".format(
-                ref=C_T_EXP_FR028, b=(b["err_total_vs_expCT_pct"] if b else float("nan")),
-                fx=f["err_total_vs_expCT_pct"], L=f["L_cells"],
+                ref=C_T_EXP_FR028,
+                b=(b["err_total_vs_expCT_pct"] if b else float("nan")),
+                fx=f["err_total_vs_expCT_pct"],
+                L=f["L_cells"],
             )
         )
-    fixed_probe = [r for r in probe_rows
-                   if r["stl"].endswith("_closed.stl") and _probe_L(r) == 48]
-    open_probe = [r for r in probe_rows
-                  if r["stl"].endswith("underwater.stl") and _probe_L(r) == 32]
+    fixed_probe = [r for r in probe_rows if r["stl"].endswith("_closed.stl") and _probe_L(r) == 48]
+    open_probe = [
+        r for r in probe_rows if r["stl"].endswith("underwater.stl") and _probe_L(r) == 32
+    ]
     if fixed_probe and open_probe:
         out.append(
             "| Cb_voxel vs 0.507 | 母型值 | {:+.1f} % (L=32) | {:+.1f} % (L=48) | "
             "否（体素粗网格离散，15% 闸门内） |".format(
-                open_probe[0]["cb_error_pct"], fixed_probe[0]["cb_error_pct"])
+                open_probe[0]["cb_error_pct"], fixed_probe[0]["cb_error_pct"]
+            )
         )
     par = device_parity(rows)["pairs"]
     if par:
         p0 = par[0]
         out.append(
             "| Cd_total sdda:0 vs cpu | 同参数 CPU | — | {:.2e} % (L={}) | **是** |".format(
-                p0["rel_diff_pct"], p0["L_cells"])
+                p0["rel_diff_pct"], p0["L_cells"]
+            )
         )
     return "\n".join(out)
 
@@ -314,17 +342,21 @@ def inject_doc(path: Path, doc: dict) -> None:
         if j == -1:
             # first fill: replace the bare marker (and swallow a legacy
             # end-marker if the block was already wrapped)
-            text = text[:i] + block + text[i + len(k):]
+            text = text[:i] + block + text[i + len(k) :]
         else:
-            text = text[:i] + block + text[j + len(end):]
+            text = text[:i] + block + text[j + len(end) :]
     path.write_text(text)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--runs", default=str(_REPO_ROOT / "artifacts" / "sdaa_dtmb5415_m452" / "records"))
+    ap.add_argument(
+        "--runs", default=str(_REPO_ROOT / "artifacts" / "sdaa_dtmb5415_m452" / "records")
+    )
     ap.add_argument("--out", default=str(_REPO_ROOT / "artifacts" / "sdaa_dtmb5415_diagnosis.json"))
-    ap.add_argument("--doc", default=str(_REPO_ROOT / "docs" / "sdaa_triage" / "DTMB5415_DIAGNOSIS.md"))
+    ap.add_argument(
+        "--doc", default=str(_REPO_ROOT / "docs" / "sdaa_triage" / "DTMB5415_DIAGNOSIS.md")
+    )
     args = ap.parse_args()
     runs = Path(args.runs)
     out = Path(args.out)
@@ -342,8 +374,11 @@ def main() -> None:
     broken = [r for r in rows if r["geometry_family"] == "open"]
     valid = [r for r in fixed if r["geometry_verdict"] == "VALID"] or fixed
     steady = [r for r in valid if r["force_window_steady"]] or valid
-    best = max(steady, key=lambda r: (r["L_cells"], -abs(r["err_friction_vs_Blasius_pct"]))) \
-        if steady else None
+    best = (
+        max(steady, key=lambda r: (r["L_cells"], -abs(r["err_friction_vs_Blasius_pct"])))
+        if steady
+        else None
+    )
 
     doc = {
         "case": "dtmb5415_resistance",
@@ -360,7 +395,7 @@ def main() -> None:
                 "Cf_ITTC57_at_Re_1.2e7": CF_ITTC57_EXP,
                 "C_R_residual_form_wave": CR_RESIDUAL_EXP,
                 "source": "INSEAN/Olivieri 2001, Stern 2000 (second-hand constants "
-                          "already present in run.py)",
+                "already present in run.py)",
             },
         },
         "reference_values_at_run_re": {
@@ -368,16 +403,16 @@ def main() -> None:
             "Cf_Blasius_laminar": blasius(1000.0),
             "Cf_ITTC57_turbulent": ittc57(1000.0),
             "note": "ITTC-1957 is a turbulent line and is the wrong branch at "
-                    "Re = 1000; it is kept only for traceability",
+            "Re = 1000; it is kept only for traceability",
         },
         "geometry_validation": {
             "reference": probe.get("reference"),
             "probe": probe.get("probe"),
             "rows": probe_rows,
             "finding": "the waterline-clipped STL has 942 open boundary edges, so "
-                       "the voxeliser fills a pillar below the waterline: at L=48 "
-                       "the integrated body is 35x the reference displacement with "
-                       "a staircase wetted area ~16x the smooth area",
+            "the voxeliser fills a pillar below the waterline: at L=48 "
+            "the integrated body is 35x the reference displacement with "
+            "a staircase wetted area ~16x the smooth area",
         },
         "resistance_coefficient_table": rows,
         "device_parity": device_parity(rows),
@@ -386,9 +421,9 @@ def main() -> None:
                 "id": "C1",
                 "name": "caliber / similarity mismatch in the pass-fail comparison",
                 "evidence": "Cd_total (Re=1000, single-phase) vs C_T (Re~1.2e7, "
-                            "Fr=0.28, wave-making included)",
+                "Fr=0.28, wave-making included)",
                 "magnitude": "even a perfect friction result lands -22.4 % below the "
-                             "experimental C_T (no-wave floor computed by run.py itself)",
+                "experimental C_T (no-wave floor computed by run.py itself)",
                 "fixable_in_budget": False,
                 "action": "criterion re-based; frame declared NOT_COMPARABLE",
             },
@@ -396,29 +431,29 @@ def main() -> None:
                 "id": "C2",
                 "name": "open waterline -> voxel body is a pillar, not the hull",
                 "evidence": "942 boundary edges in the committed STL; engine solid "
-                            "mask Cb = 18.7 at L=24, 18.05 at L=32, 17.9 at L=48 "
-                            "(reference 0.507); staircase/smooth wetted area = 15-16",
+                "mask Cb = 18.7 at L=24, 18.05 at L=32, 17.9 at L=48 "
+                "(reference 0.507); staircase/smooth wetted area = 15-16",
                 "magnitude": "multiplies the raw wall-force sum by ~15x, exactly the "
-                             "observed Cd_friction / Cf_Blasius = 12.5 at L=32",
+                "observed Cd_friction / Cf_Blasius = 12.5 at L=32",
                 "fixable_in_budget": True,
                 "action": "_close_waterline.py caps the waterline (sidecar records "
-                          "the cap) + run.py voxel-geometry gate",
+                "the cap) + run.py voxel-geometry gate",
             },
             {
                 "id": "C3",
                 "name": "category error in the reported error percentages",
                 "evidence": "errors_pct compared Cd_total against friction-only "
-                            "Blasius/ITTC lines -> 2708 % / 1472 % 'errors'",
+                "Blasius/ITTC lines -> 2708 % / 1472 % 'errors'",
                 "magnitude": "O(10^3) % spurious error, swamped the real signal",
                 "fixable_in_budget": True,
                 "action": "friction-vs-friction is the only pass/fail frame; the "
-                          "other pairings carry comparable=false",
+                "other pairings carry comparable=false",
             },
             {
                 "id": "C4",
                 "name": "no force-window steady check",
                 "evidence": "Cd averaged over the trailing 1000 samples regardless of "
-                            "whether the window still drifts",
+                "whether the window still drifts",
                 "magnitude": "unquantified until now",
                 "fixable_in_budget": True,
                 "action": "_window_stats() drift gate (2 %) -> WITHHELD_UNSTEADY",
@@ -428,10 +463,10 @@ def main() -> None:
                 "name": "hull is thin: T/dx = 1.0-2.8 at benchmark resolutions",
                 "evidence": "T = 6.15 m vs dx = 5.9/4.4/3.0/2.2 m at L=24/32/48/64",
                 "magnitude": "draft spans 1-3 cells; below 2 cells the body is a "
-                             "staircase plank and Cb error exceeds 15 %",
+                "staircase plank and Cb error exceeds 15 %",
                 "fixable_in_budget": False,
                 "action": "documented resolution requirement (L >= 48 -> T/dx >= 2); "
-                          "below it the case reports WITHHELD_GEOMETRY",
+                "below it the case reports WITHHELD_GEOMETRY",
             },
         ],
         "fixes_applied": [
@@ -450,11 +485,11 @@ def main() -> None:
         ],
         "verdict": {
             "geometry": "FIXED - voxel body is now the DTMB 5415 hull (Cb error -10.4 % "
-                        "at L=48, within the 15 % gate)",
+            "at L=48, within the 15 % gate)",
             "device_parity": "sdaa:0 reproduces cpu to <1e-4 % on Cd",
             "in_frame_accuracy": None,
             "experimental_frame": "NOT COMPARABLE - unchanged structural limit "
-                                  "(single-phase, no wave-making)",
+            "(single-phase, no wave-making)",
             "conclusion": None,
         },
         "artifacts": {},
@@ -490,16 +525,21 @@ def main() -> None:
             f"vs Blasius {best['ref_Cf_Blasius_Re']:.6f} = "
             f"{best['err_friction_vs_Blasius_pct']:+.2f} % "
             f"({'inside' if ok else 'outside'} the band), "
-            + ("but its force window is still drifting and the L=32 -> L=48 pair does "
-               "not show grid convergence, so the value is reported as unsteady, not "
-               "as an accuracy claim." if not steady_ok else
-               "with a settled force window.")
+            + (
+                "but its force window is still drifting and the L=32 -> L=48 pair does "
+                "not show grid convergence, so the value is reported as unsteady, not "
+                "as an accuracy claim."
+                if not steady_ok
+                else "with a settled force window."
+            )
         )
     if broken and fixed:
         # apples-to-apples: same L, same STL family difference only.  L=32 is the
         # best-documented pair (1200-step open vs 2000-step capped).
         common = sorted({r["L_cells"] for r in broken} & {r["L_cells"] for r in fixed})
-        L_pair = 32 if 32 in common else (common[-1] if common else min(r["L_cells"] for r in broken))
+        L_pair = (
+            32 if 32 in common else (common[-1] if common else min(r["L_cells"] for r in broken))
+        )
         b = min([r for r in broken if r["L_cells"] == L_pair], key=lambda r: r["n_steps"])
         f = min([r for r in fixed if r["L_cells"] == L_pair], key=lambda r: r["n_steps"])
         doc["before_after"] = {

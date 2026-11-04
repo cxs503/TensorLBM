@@ -106,8 +106,8 @@ def test_gates_use_the_case_thresholds(art):
     for g in art["gate_table"]:
         lim = g.get("limit")
         if lim is not None:
-            passed_by_hand = (abs(g["value"]) <= abs(lim)) if "MAIN" in g["gate"] else (
-                g["value"] <= lim
+            passed_by_hand = (
+                (abs(g["value"]) <= abs(lim)) if "MAIN" in g["gate"] else (g["value"] <= lim)
             )
             assert g["pass"] is bool(passed_by_hand), g
     assert art["n_gates"] == len(art["gate_table"])
@@ -134,5 +134,4 @@ def test_coverage_is_disclosed(art):
     assert cov["tiers_reference"] == 12
     if cov["tiers_executed"] < 12:
         assert art["overall_verdict"] == "PARTIAL_PASS"
-        assert any(v["convergence_gate"] == "NOT_EVALUATED"
-                   for v in art["convergence"].values())
+        assert any(v["convergence_gate"] == "NOT_EVALUATED" for v in art["convergence"].values())

@@ -129,8 +129,6 @@ def _specular_wall_mirror_index_27(slip_mask, device):
     return idx
 
 
-
-
 def _stream27_roll(f: torch.Tensor) -> torch.Tensor:
     """D3Q27 streaming via torch.roll (pull scheme).
 
@@ -578,10 +576,9 @@ def free_surface_step_27(
         Fy = rho_s * gy * force_weight
         Fz = rho_s * gz * force_weight
         cu = (cx * ux + cy * uy + cz * uz) / cs2
-        forcing = (
-            ((cx - ux) * Fx + (cy - uy) * Fy + (cz - uz) * Fz) / cs2
-            + cu * (cx * Fx + cy * Fy + cz * Fz) / cs2
-        )
+        forcing = ((cx - ux) * Fx + (cy - uy) * Fy + (cz - uz) * Fz) / cs2 + cu * (
+            cx * Fx + cy * Fy + cz * Fz
+        ) / cs2
         f = f + (1.0 - 0.5 / tau) * w_dev * forcing
 
     # NOTE: surface tension is carried as a Laplace pressure jump inside the
@@ -644,9 +641,7 @@ def free_surface_step_27(
             + (nz_n.roll(-1, dims=0) - nz_n.roll(1, dims=0))
         )
         delta_rho = (3.0 * float(surface_tension) * kappa).clamp(-0.1, 0.1)
-        rho_g_field = rho_g_field + torch.where(
-            iface_abb, delta_rho, torch.zeros_like(delta_rho)
-        )
+        rho_g_field = rho_g_field + torch.where(iface_abb, delta_rho, torch.zeros_like(delta_rho))
     # Standard Körner ABB: f_q(x) = f_eq_gas + f_eq_gas[opp] - f_post[opp].
     # Consistent only for rho_gas O(rho_liquid); use rho_gas = rho_liquid for
     # an open free surface (pressure-matched ambient).
@@ -709,14 +704,11 @@ def free_surface_step_27(
     ii_weight = 0.5 * (fill_pre.unsqueeze(0) + fill_nb)
     liq_nbr_count = (neighbor_flags == LIQUID).sum(dim=0)
     liq_nbr_at_source = torch.stack(
-        [liq_nbr_count]
-        + [roll_from_pull_source_27(liq_nbr_count, q) for q in D3Q27_MOVING_Q]
+        [liq_nbr_count] + [roll_from_pull_source_27(liq_nbr_count, q) for q in D3Q27_MOVING_Q]
     )
     gas_nbr_here = (neighbor_flags == GAS).any(dim=0).unsqueeze(0)
     ii_dead = from_iface & (liq_nbr_at_source == 0) & ~gas_nbr_here
-    mass_delta_interface = torch.where(
-        from_iface & ~ii_dead, ii_weight * diff, torch.zeros_like(f)
-    )
+    mass_delta_interface = torch.where(from_iface & ~ii_dead, ii_weight * diff, torch.zeros_like(f))
     mass_delta = (mass_delta_liquid + mass_delta_interface).sum(0)
     mass_delta = torch.nan_to_num(mass_delta, nan=0.0, posinf=0.0, neginf=0.0)
     mass = torch.where(iface_mask, mass + mass_delta, mass)
@@ -746,7 +738,6 @@ def free_surface_step_27(
 
     gas_mask = flags == GAS
     interface_mask = flags == INTERFACE
-    liquid_mask = flags == LIQUID
 
     # ---- 5. Conversion marking (interface-only + forced rules) ----
     _kappa = float(cell_conversion_threshold)

@@ -4,6 +4,20 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+_LEGACY_FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
+
+pytestmark = pytest.mark.skipif(
+    not _LEGACY_FRONTEND.is_dir(),
+    reason=(
+        "legacy native-JS frontend (app/frontend) was deleted in 66efae5e "
+        "'Remove old native-JS frontend, serve Vue3 dist from backend'; the Vue 3 "
+        "app in frontend-vue/ has no equivalent assertions yet, so these checks "
+        "target code that no longer exists"
+    ),
+)
+
 _HERE = Path(__file__).parent
 _STATIC_I18N = _HERE.parent / "frontend" / "static" / "i18n"
 

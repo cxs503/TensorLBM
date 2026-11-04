@@ -15,7 +15,6 @@ from tensorlbm.free_surface_lbm import (
     INTERFACE,
     LIQUID,
     free_surface_step,
-    total_liquid_inventory,
 )
 
 
@@ -73,11 +72,7 @@ def test_frozen_mixed_topology_ledger_attributes_exchange_to_liquid_interface_ru
     # post-streaming density, not a copy of the mass field.  ABB rarefaction
     # (rho_gas=0.001) pulls interface density below 1, so fill exceeds mass.
     interface = out_flags == INTERFACE
-    assert bool(
-        torch.allclose(
-            out_mass[interface], (out_fill * out_f.sum(dim=0))[interface]
-        )
-    )
+    assert bool(torch.allclose(out_mass[interface], (out_fill * out_f.sum(dim=0))[interface]))
     assert ledger["interface_start"] == 12.0
     assert ledger["liquid_start"] == 36.0
     assert ledger["gas_start"] == 0.0
@@ -97,9 +92,7 @@ def test_frozen_mixed_topology_conserves_composite_liquid_inventory() -> None:
 
     def korner_total(f_, mass_, flags_) -> float:
         rho = f_.sum(dim=0)
-        return float(
-            rho[flags_ == LIQUID].sum() + mass_[flags_ == INTERFACE].sum()
-        )
+        return float(rho[flags_ == LIQUID].sum() + mass_[flags_ == INTERFACE].sum())
 
     before = korner_total(f, mass, flags)
 
