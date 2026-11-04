@@ -388,9 +388,7 @@ class CACSim:
         """
         self.wall_mask = mask
         self.fluid_mask = (
-            torch.ones(self.shape, dtype=torch.bool, device=self.device)
-            if mask is None
-            else ~mask
+            torch.ones(self.shape, dtype=torch.bool, device=self.device) if mask is None else ~mask
         )
         fm = self.fluid_mask
         self.fm_f = fm.to(self.dtype).unsqueeze(0)

@@ -90,9 +90,7 @@ def _strict_step(state: _State, capture: dict[str, object]) -> _State:
             rho_liquid=1.0,
         )
     except TopologyTransactionError as error:
-        capture["strict_failure_evidence"] = publish_strict_failure_evidence(
-            frozen, error
-        )
+        capture["strict_failure_evidence"] = publish_strict_failure_evidence(frozen, error)
         raise
     raise AssertionError("receiver-less I→G ownership must fail closed")
 

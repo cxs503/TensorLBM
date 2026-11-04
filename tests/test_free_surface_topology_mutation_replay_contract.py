@@ -21,9 +21,7 @@ from tensorlbm.free_surface_topology_mutation_replay_contract import (
 )
 from tensorlbm.free_surface_topology_transaction import (
     ReplayEvidence,
-    TopologyTransactionError,
     build_topology_transaction,
-    restore_strict_failure_invocation,
 )
 
 
@@ -279,6 +277,7 @@ def test_retired_opt_in_never_consults_ownership_builder_and_settles_plain_exces
 
     def adversarial_builder(*args: object, **kwargs: object) -> object:
         raise AssertionError("retired opt-in must never consult the ownership builder")
+
     monkeypatch.setattr(solver, "build_i_to_g_ownership_transaction", adversarial_builder)
     result = solver.free_surface_step(
         **inputs,

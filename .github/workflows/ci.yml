@@ -43,8 +43,15 @@ jobs:
         run: ruff check src tests examples benchmarks
       - name: Format check (ruff format)
         run: ruff format --check src tests examples benchmarks
+      # The gate is intentionally scoped to the four core modules: with the
+      # default --follow-imports=normal mypy also *reports* on every module
+      # those four import (1500+ strict findings across backends/ai/, i.e. the
+      # same signal as the advisory full run below), so the gate could never
+      # go green and stopped being a "core" gate.  --follow-imports=silent
+      # keeps full checking of the four files *and* uses the real annotations
+      # of their dependencies, while the whole-package signal stays advisory.
       - name: Type check (mypy core gate)
-        run: mypy src/tensorlbm/d2q9.py src/tensorlbm/d3q19.py src/tensorlbm/solver.py src/tensorlbm/utils.py --ignore-missing-imports
+        run: mypy --follow-imports=silent src/tensorlbm/d2q9.py src/tensorlbm/d3q19.py src/tensorlbm/solver.py src/tensorlbm/utils.py --ignore-missing-imports
       - name: Type check (mypy full advisory)
         run: mypy src/tensorlbm --ignore-missing-imports
         continue-on-error: true

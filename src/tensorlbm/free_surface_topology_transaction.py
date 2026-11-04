@@ -506,9 +506,7 @@ def _birth_density_field(f, flags, rho_liquid, rho_gas, mode, rho_env, liquid_fl
         rho_nb = (torch.stack([roll_from_pull_source(rho, q) for q in D3Q19_MOVING_Q]) * nb).sum(
             dim=0
         ) / cnt
-        return torch.where(
-            nb.sum(dim=0) > 0, rho_nb, torch.full_like(rho_nb, float(rho_liquid))
-        )
+        return torch.where(nb.sum(dim=0) > 0, rho_nb, torch.full_like(rho_nb, float(rho_liquid)))
     return None
 
 
@@ -849,7 +847,6 @@ def build_topology_transaction(
             "i_to_g_increment": None if i_to_g_increment is None else i_to_g_increment.clone(),
             "i_to_g_ownership": _serialize_i_to_g_ownership(i_to_g_ownership),
         }
-    gas_mask = cflags == gas_flag
     _birth_mode, _birth_rho = _read_birth_mode()
     cf = _init_new_birth(
         cf,
@@ -1009,9 +1006,7 @@ def build_topology_transaction(
     # Refresh the interface fill from the settled mass (m / rho_local) so
     # redistribution receivers (whose mass changed above) carry a consistent
     # fill into the next step.
-    cfill = torch.where(
-        cflags == interface_flag, cmass / _rho_fill.clamp(min=1e-6), cfill
-    )
+    cfill = torch.where(cflags == interface_flag, cmass / _rho_fill.clamp(min=1e-6), cfill)
     # Post-envelope observation boundary for redistribution *receivers* only:
     # recv_new receivers are still GAS at the pre-halo conversion snapshot
     # above and are promoted to INTERFACE by the envelope.  The ownership

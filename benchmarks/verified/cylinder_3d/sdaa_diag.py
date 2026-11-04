@@ -32,11 +32,10 @@ ERR_BUDGET = 3.0  # percent
 SPAN_BUDGET = 3.0  # percent
 
 # Import benchmark modules
-from tensorlbm.d3q19 import equilibrium3d  # noqa: E402
-from tensorlbm.solver3d import collide_bgk3d, stream3d_roll  # noqa: E402
 from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d  # noqa: E402
+from tensorlbm.d3q19 import equilibrium3d  # noqa: E402
 from tensorlbm.obstacles import compute_obstacle_forces_3d  # noqa: E402
-from tensorlbm.drag_pressure import get_near_wall_2d  # noqa: E402
+from tensorlbm.solver3d import collide_bgk3d, stream3d_roll  # noqa: E402
 
 
 def cylinder3d_mask(nx, ny, nz, cx, cy, radius, device):

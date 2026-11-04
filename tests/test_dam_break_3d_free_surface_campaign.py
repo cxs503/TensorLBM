@@ -80,9 +80,7 @@ def test_free_surface_dam_break_caller_writes_a_101_step_quality_curve(tmp_path)
     assert any(abs(record["redistribution"]) > 1.0e-5 for record in curve)
     assert metadata["free_surface_quality_gate"]["topology_changed"] is True
     assert metadata["free_surface_topology_events"], "collapse must produce topology events"
-    assert all(
-        abs(record["relative_cumulative_drift"]) < 1.0e-2 for record in curve
-    )
+    assert all(abs(record["relative_cumulative_drift"]) < 1.0e-2 for record in curve)
     assert [record["time"] for record in curve] == [float(step) for step in range(1, 102)]
     assert curve[0]["initial_mass"] == pytest.approx(1008.0)
     assert curve[0]["cumulative_drift"] == pytest.approx(curve[0]["instantaneous_mass_drift"])

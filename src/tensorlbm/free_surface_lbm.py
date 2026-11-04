@@ -38,12 +38,9 @@ from .free_surface_inventory_reconciliation import (
     inventory_stage_deltas,
 )
 from .free_surface_topology_transaction import (
-    TopologyTransactionError,
-    build_i_to_g_ownership_transaction,
+    build_i_to_g_ownership_transaction,  # noqa: F401  (re-export: contract tests monkeypatch it here)
     build_topology_transaction,
-    capture_strict_failure_invocation,
     commit_topology_transaction,
-    publish_strict_failure_evidence,
 )
 from .solver3d import _get_d3q19_mrt_matrices
 from .turbulence import (
@@ -846,9 +843,7 @@ def free_surface_step(
     liquid_pre = flags == LIQUID
     iface_pre = flags == INTERFACE
     active_pre = liquid_pre | iface_pre
-    force_weight = torch.where(
-        iface_pre, fill.clamp(0.0, 1.0), torch.ones_like(fill)
-    )
+    force_weight = torch.where(iface_pre, fill.clamp(0.0, 1.0), torch.ones_like(fill))
     force_weight = torch.where(active_pre, force_weight, torch.zeros_like(force_weight))
     # Second-order Guo forcing shifts the equilibrium velocity by F*dt/2rho
     # (Guo et al. 2002).  The legacy ``tau * g`` shift double-counted gravity
@@ -937,10 +932,9 @@ def free_surface_step(
         Fy = rho_s * gy * force_weight
         Fz = rho_s * gz * force_weight
         cu = (cx * ux + cy * uy + cz * uz) / cs2
-        forcing = (
-            ((cx - ux) * Fx + (cy - uy) * Fy + (cz - uz) * Fz) / cs2
-            + cu * (cx * Fx + cy * Fy + cz * Fz) / cs2
-        )
+        forcing = ((cx - ux) * Fx + (cy - uy) * Fy + (cz - uz) * Fz) / cs2 + cu * (
+            cx * Fx + cy * Fy + cz * Fz
+        ) / cs2
         f = f + (1.0 - 0.5 / tau) * w_dev * forcing
 
     # NOTE: surface tension is intentionally *not* a CSF body force here.
@@ -1056,9 +1050,7 @@ def free_surface_step(
             + (nz_n.roll(-1, dims=0) - nz_n.roll(1, dims=0))
         )
         delta_rho = (3.0 * float(surface_tension) * kappa).clamp(-0.1, 0.1)
-        rho_g_field = rho_g_field + torch.where(
-            iface_abb, delta_rho, torch.zeros_like(delta_rho)
-        )
+        rho_g_field = rho_g_field + torch.where(iface_abb, delta_rho, torch.zeros_like(delta_rho))
     f_eq_gas = equilibrium3d(rho_g_field, _ux_pc, _uy_pc, _uz_pc)
     # The reference ABB subtracts the *local post-collision* outgoing
     # population f_post[opp] (magnitude O(rho_liquid)).  This is consistent
@@ -1358,7 +1350,6 @@ def free_surface_step(
         return f, fill, flags, mass, df
     gas_mask = flags == GAS
     interface_mask = flags == INTERFACE
-    liquid_mask = flags == LIQUID
 
     # ---- 5. Cell conversion marking (waLBerla ``FindInterfaceCellConversion``).
     # Only INTERFACE cells convert.  Threshold conversion at fill > 1 + kappa

@@ -435,9 +435,31 @@ if _ASSETS_DIR.exists():
     app.mount("/assets", StaticFiles(directory=_ASSETS_DIR), name="assets")
 
 
+def _frontend_index() -> Path:
+    """Return the built SPA entry point, or raise an actionable 404.
+
+    ``frontend-vue/dist`` is a git-ignored build artifact, so a plain source
+    checkout (and therefore CI) has no ``index.html`` unless the Vue app was
+    built.  Returning ``FileResponse`` for a missing path raises a bare
+    ``RuntimeError`` (HTTP 500); a 404 that names the build step is the honest
+    answer for both the browser and the API client.
+    """
+    index = _FRONTEND_DIR / "index.html"
+    if not index.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "frontend build not found at frontend-vue/dist/index.html; "
+                "build it with `npm ci && npm run build` inside frontend-vue/ "
+                "(dist/ is a build artifact and is not tracked)"
+            ),
+        )
+    return index
+
+
 @app.get("/", include_in_schema=False)
 async def root() -> FileResponse:
-    return FileResponse(_FRONTEND_DIR / "index.html")
+    return FileResponse(_frontend_index())
 
 
 _DEMO_PAGE = _REPO_ROOT / "demos" / "echo_slider.html"
@@ -467,4 +489,4 @@ async def demo_page() -> FileResponse:
 @app.get("/{full_path:path}", include_in_schema=False)
 async def spa_fallback(full_path: str) -> FileResponse:  # noqa: ARG001
     """Return index.html for all non-API client-side routes (SPA fallback)."""
-    return FileResponse(_FRONTEND_DIR / "index.html")
+    return FileResponse(_frontend_index())
