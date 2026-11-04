@@ -365,10 +365,11 @@ class TestThermalRadiationAPI:
         assert data["n_surfaces"] == 2
 
     def test_thermal_radiation_with_surfaces(self, client):
+        """Equal-area enclosure: the equal-view-factor default is physical here."""
         payload = {
             "surfaces": [
                 {"temperature_K": 450.0, "emissivity": 0.9, "solar_absorptance": 0.6, "area_m2": 2.0},
-                {"temperature_K": 290.0, "emissivity": 0.8, "solar_absorptance": 0.5, "area_m2": 1.5},
+                {"temperature_K": 290.0, "emissivity": 0.8, "solar_absorptance": 0.5, "area_m2": 2.0},
             ],
             "solar_enabled": True,
             "solar_irradiance": 1000.0,
@@ -378,6 +379,22 @@ class TestThermalRadiationAPI:
         data = resp.json()
         assert data["solar_enabled"] is True
         assert data["n_surfaces"] == 2
+
+    def test_thermal_radiation_unequal_areas_fail_closed_with_400(self, client):
+        """Unequal areas + no view factors cannot be closed: 400, not a 0 %-energy lie.
+
+        Pre-fix this request returned 200 with fluxes whose radiative energy
+        balance was ~14 % off (docs/thermal_radiation_radiosity_verification_r1.md).
+        """
+        payload = {
+            "surfaces": [
+                {"temperature_K": 450.0, "emissivity": 0.9, "solar_absorptance": 0.6, "area_m2": 2.0},
+                {"temperature_K": 290.0, "emissivity": 0.8, "solar_absorptance": 0.5, "area_m2": 1.5},
+            ]
+        }
+        resp = client.post("/api/postprocess/thermal-radiation", json=payload)
+        assert resp.status_code == 400
+        assert "reciprocity" in resp.json()["detail"]
 
     def test_thermal_radiation_solar_off(self, client):
         resp = client.post(

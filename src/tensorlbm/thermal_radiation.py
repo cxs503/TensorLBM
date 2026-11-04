@@ -63,6 +63,8 @@ __all__ = [
     "solar_flux_on_surface",
     "compute_net_radiation_flux",
     "radiosity_matrix_solve",
+    "validate_view_factors",
+    "radiative_energy_residual",
     "apply_radiation_source",
     "run_radiation_step",
     "RadiationResult",
@@ -112,9 +114,13 @@ class RadiationEnclosureConfig:
     view_factors: list[list[float]] | None = None
     # Physical reference temperature [K] for lattice→SI conversion
     T_ref: float = 300.0
-    # Number of fixed-point iterations for radiosity solve
+    # Number of fixed-point iterations for the fallback radiosity solve
+    # (the primary path is an exact linear solve; see radiosity_matrix_solve)
     max_iter: int = 50
     tol: float = 1e-6
+    # Relative tolerance for view-factor closure / reciprocity and for the
+    # enclosure radiative energy balance (see validate_view_factors)
+    view_factor_tol: float = 1e-6
 
 
 @dataclass
@@ -196,6 +202,72 @@ def _build_view_factor_matrix(n: int, vf_list: list[list[float]] | None) -> torc
     return F
 
 
+def validate_view_factors(
+    view_factors: torch.Tensor,
+    areas: Sequence[float],
+    tol: float = 1e-6,
+) -> dict:
+    """Fail-closed validation of a view-factor matrix against enclosure physics.
+
+    Two statements are checked, both necessary for a physically meaningful
+    grey-diffuse enclosure:
+
+    * **reciprocity** ``A_i F_ij = A_j F_ji`` (the energy exchanged by a surface
+      pair must be the same seen from either side);
+    * **closure** ``Σ_j F_ij = 1`` (all radiation leaving ``i`` lands somewhere
+      in the enclosure).  A row sum below one is a legitimate *open* enclosure
+      (the deficit leaves to an unmodelled environment) and is reported, not
+      rejected.
+
+    Non-negativity is required unconditionally.  Violations raise
+    ``ValueError`` instead of silently returning a non-conservative flux.
+
+    Returns
+    -------
+    dict with ``closed`` (bool), ``max_row_sum_dev`` and
+    ``max_reciprocity_dev`` (relative deviations).
+    """
+    F = view_factors
+    n = F.shape[0]
+    A = torch.tensor(list(areas), dtype=torch.float64)
+    if A.shape[0] != n:
+        raise ValueError(f"areas must have {n} entries, got {A.shape[0]}")
+    if bool((F < 0).any()):
+        raise ValueError("view factors must be non-negative")
+
+    row_sums = F.sum(dim=1)
+    row_sum_dev = float((row_sums - 1.0).abs().max().item()) if n else 0.0
+    closed = bool(n > 0 and row_sum_dev <= tol)
+
+    exchange = A.unsqueeze(1) * F                      # S_ij = A_i F_ij
+    scale = float(exchange.abs().max().item()) or 1.0
+    reciprocity_dev = float((exchange - exchange.T).abs().max().item()) / scale
+    if reciprocity_dev > tol:
+        raise ValueError(
+            "view factors violate reciprocity A_i*F_ij = A_j*F_ji "
+            f"(max relative deviation {reciprocity_dev:.3e} > tol {tol:.1e}); "
+            "the equal-view-factor default is only consistent for equal areas, "
+            "so pass an explicit reciprocity-consistent view_factors matrix. "
+            f"areas={A.tolist()}, F={F.tolist()}"
+        )
+
+    return {
+        "closed": closed,
+        "max_row_sum_dev": row_sum_dev,
+        "max_reciprocity_dev": reciprocity_dev,
+    }
+
+
+def radiative_energy_residual(net_flux: Sequence[float], areas: Sequence[float]) -> float:
+    """Return ``Σ_i q_i A_i`` [W] for an enclosure.
+
+    This is the net radiative power leaving all surfaces.  For a closed,
+    reciprocity-consistent enclosure without solar input it must be zero; with
+    solar input it must equal ``-Σ_i A_i q_solar,i`` (the absorbed solar power).
+    """
+    return float(sum(q * a for q, a in zip(net_flux, areas)))
+
+
 # ---------------------------------------------------------------------------
 # Radiosity matrix solve
 # ---------------------------------------------------------------------------
@@ -229,15 +301,35 @@ def radiosity_matrix_solve(
     else:
         q_solar = torch.zeros(n, dtype=torch.float64)
 
-    for _ in range(max_iter):
-        # Irradiation G_i = Σ_j F_ij J_j + q_solar_i
-        G = F @ J + q_solar
-        # Updated radiosity
-        J_new = eps * sigma * T**4 + (1.0 - eps) * G
-        if (J_new - J).abs().max().item() < tol:
+    # Radiosity system (Modest 2013 §5.4 / net-radiation method):
+    #   J = ε σ T⁴ + (1 − ε)(F J + q_solar)
+    #   (I − diag(1 − ε) F) J = ε σ T⁴ + (1 − ε) q_solar
+    # Solved exactly.  The previous undamped fixed-point iteration only
+    # converged for spectral radius (1 − ε)·‖F‖ < 1 and, with the old default
+    # max_iter=50 / tol=1e-6, under-resolved low-emissivity enclosures by up to
+    # +7.3 % (ε = 0.05 two-plate case; see
+    # tests/test_thermal_radiation_analytic.py and
+    # docs/thermal_radiation_radiosity_verification_r1.md).
+    system = torch.eye(n, dtype=torch.float64) - (1.0 - eps).unsqueeze(1) * F
+    rhs = eps * sigma * T**4 + (1.0 - eps) * q_solar
+    solved = True
+    try:
+        J = torch.linalg.solve(system, rhs)
+    except RuntimeError:  # singular system, e.g. every surface with ε = 0
+        solved = False
+        J = eps * sigma * T**4
+
+    if not solved:
+        # Fallback undamped fixed-point iteration, kept only for the singular
+        # case above where the linear system has no unique solution.
+        for _ in range(max_iter):
+            # Irradiation G_i = Σ_j F_ij J_j + q_solar_i
+            G = F @ J + q_solar
+            J_new = eps * sigma * T**4 + (1.0 - eps) * G
+            if (J_new - J).abs().max().item() < tol:
+                J = J_new
+                break
             J = J_new
-            break
-        J = J_new
 
     G = F @ J + q_solar
     q_net = J - G  # positive = net outgoing flux [W/m²]
@@ -291,6 +383,10 @@ def compute_net_radiation_flux(
                 s.solar_absorptance * cfg.solar.irradiance * cos45 for s in cfg.surfaces
             ]
 
+    areas = [s.area for s in cfg.surfaces]
+    vf_tensor = _build_view_factor_matrix(n, cfg.view_factors)
+    vf_diag = validate_view_factors(vf_tensor, areas, tol=cfg.view_factor_tol)
+
     J, G, q_net = radiosity_matrix_solve(
         cfg.surfaces,
         view_factors=cfg.view_factors,
@@ -298,6 +394,21 @@ def compute_net_radiation_flux(
         max_iter=cfg.max_iter,
         tol=cfg.tol,
     )
+
+    # Energy balance of a closed enclosure: Σ_i q_i A_i = −Σ_i A_i q_solar,i
+    # (net power leaving the surfaces equals the absorbed solar input).
+    if vf_diag["closed"]:
+        residual = radiative_energy_residual(q_net, areas)
+        solar_power = float(sum(a * q for a, q in zip(areas, solar_per_surface)))
+        scale = float(sum(abs(q) * a for q, a in zip(q_net, areas))) or 1.0
+        tol_power = cfg.view_factor_tol * scale
+        if abs(residual + solar_power) > tol_power:
+            raise ValueError(
+                "radiative energy balance violated: sum(q_i*A_i) = "
+                f"{residual:.6e} W vs absorbed solar power {solar_power:.6e} W "
+                f"(|imbalance| = {abs(residual + solar_power):.3e} W "
+                f"> {tol_power:.3e} W tolerance)"
+            )
 
     T_list = [s.temperature for s in cfg.surfaces]
     A_list = [s.area for s in cfg.surfaces]

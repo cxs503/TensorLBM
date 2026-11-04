@@ -3314,7 +3314,14 @@ async def thermal_radiation(req: ThermalRadiationRequest) -> dict:
     normals[:, 1] = 1.0   # default upward normals
 
     cfg = RadiationEnclosureConfig(surfaces=surf_props, solar=solar)
-    result = run_radiation_step(cfg, surface_normals=normals)
+    try:
+        result = run_radiation_step(cfg, surface_normals=normals)
+    except ValueError as exc:
+        # Fail closed: a view-factor / radiative-energy-balance violation means
+        # the requested surface set cannot be closed physically (e.g. unequal
+        # areas combined with the equal-view-factor default).  Surface the
+        # reason as 400 instead of returning non-conservative fluxes (or 500).
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return result
 
 
