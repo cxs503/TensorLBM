@@ -1,0 +1,155 @@
+{
+  "schema": "tensorlbm.verification.registry.v1",
+  "generated_by": "tests/validation/lbm_analytic_chain.py --emit",
+  "device": "cpu",
+  "torch_version": "2.7.1",
+  "threshold_pct": 1.0,
+  "measurements": [
+    {
+      "key": "shear_wave",
+      "quantity": "ν (kinematic viscosity)",
+      "measured": 0.16666307416482892,
+      "expected": 0.16666666666666666,
+      "rel_err_pct": 0.0021555011026408444,
+      "threshold_pct": 1.0,
+      "settings": {
+        "grid": [
+          64,
+          4,
+          4
+        ],
+        "tau": 1.0,
+        "steps": 100,
+        "A_init": 0.010000000707805157,
+        "A_final": 0.008516032248735428,
+        "nu_expected": 0.16666666666666666,
+        "device": "cpu"
+      },
+      "passed": true
+    },
+    {
+      "key": "couette",
+      "quantity": "max abs(u-u_exact)/U (wall-normal profile)",
+      "measured": 0.0013256002040148984,
+      "expected": 0.0,
+      "rel_err_pct": 0.0013256002040148984,
+      "threshold_pct": 1.0,
+      "settings": {
+        "grid": [
+          80,
+          12,
+          4
+        ],
+        "tau": 1.0,
+        "steps": 2000,
+        "u_top": 0.05,
+        "u_numeric": [
+          0.002381,
+          0.007143,
+          0.011904,
+          0.016666,
+          0.021428,
+          0.02619,
+          0.030952,
+          0.035714,
+          0.040476,
+          0.045238
+        ],
+        "u_exact": [
+          0.002381,
+          0.007143,
+          0.011905,
+          0.016667,
+          0.021429,
+          0.02619,
+          0.030952,
+          0.035714,
+          0.040476,
+          0.045238
+        ],
+        "device": "cpu"
+      },
+      "passed": true
+    },
+    {
+      "key": "poiseuille",
+      "quantity": "max abs(u-u_exact)/u_max (parabolic profile)",
+      "measured": 0.33778921522276295,
+      "expected": 0.0,
+      "rel_err_pct": 0.33778921522276295,
+      "threshold_pct": 1.0,
+      "settings": {
+        "grid": [
+          80,
+          12,
+          4
+        ],
+        "tau": 1.0,
+        "steps": 3000,
+        "nu": 0.16666666666666666,
+        "G": 0.00016666666666666666,
+        "H": 10,
+        "u_max_numeric": 0.012417,
+        "u_max_exact": 0.012375,
+        "device": "cpu"
+      },
+      "passed": true
+    },
+    {
+      "key": "wall_friction",
+      "quantity": "Cf (skin-friction coefficient)",
+      "measured": 0.6348939612507819,
+      "expected": 0.6349206349206349,
+      "rel_err_pct": 0.004201103001844897,
+      "threshold_pct": 1.0,
+      "settings": {
+        "grid": [
+          80,
+          12,
+          4
+        ],
+        "tau": 1.0,
+        "steps": 3000,
+        "u_top": 0.05,
+        "u_wall": 0.0023808523546904325,
+        "gap": 10.5,
+        "device": "cpu"
+      },
+      "passed": true
+    }
+  ],
+  "withheld_claims": [
+    {
+      "id": "step_e_cylinder_cd_grid_convergence",
+      "claim": "圆柱 Re=200 压力积分 Cd 网格收敛：D=24 1.48(14.1%) / D=48 1.42(9.5%) / D=96 1.39(7.2%) / D=200 1.29(0.8%)，参考 Cd=1.30",
+      "status": "WITHHELD",
+      "reason": "全仓检索不到任何可执行的圆柱 Re=200 Cd 收敛脚本或测试（Step E 从未落成代码，只有文档表格），所以这五个数字没有任何可复算证据。另外基准归属存疑：Schäfer–Turek(1996) DFG 二维基准是 Re=100、Cd≈3.22–3.24；Re=200 二维圆柱常用文献值 Cd≈1.34。文档把 1.30 归给 Schäfer–Turek 并据此算 0.8%，Re 与基准归属都需要重新核实后再定判据。",
+      "cost": "D=200 需约 4.4M 格点 × 数万步，CPU 单机数十分钟至数小时量级；本机 load15≈122/128，本轮不启动该重算。",
+      "required_to_close": "① 提供圆柱 Re=200 算例脚本（几何/边界/收敛判据可复现）；② 先跑 D=24/48 证明误差随加密单调下降；③ 引用可核对的参考值区间并说明选值理由；④ 再谈 D=96/200 的成本与结论。"
+    },
+    {
+      "id": "bug6_bounce_back_timing_4_76pct",
+      "claim": "Bug 6：反弹放在迁移之后（全路反弹）导致 4.76% 剖面误差",
+      "status": "WITHHELD",
+      "reason": "m3579 实测不复现：定常 Couette 通道里反弹放在流前/流后收敛到同一解（实测差 <1e-3 个百分点）；4.76% 精确等于 0.5/(ny-1.5)=0.5/10.5，是壁面全路 vs 半路约定的解析偏移，不是该错法的实测误差。",
+      "cost": "已完成复算（tests/test_lbm_verification.py::test_step_b_bounce_back_order_only_affects_transient）。",
+      "required_to_close": "若确有非定常算例会产生 4.76% 量级误差，需给出该算例（含启动瞬态取数时刻）；否则文档应把该条改写为「壁面约定」说明。"
+    }
+  ],
+  "negative_controls": {
+    "tau_perturbation": {
+      "what": "shear-wave viscosity with tau perturbed by +0.02 (nu +4.0%)",
+      "nu_nominal": 0.16666666666666666,
+      "nu_perturbed": 0.17324846396940052,
+      "deviation_pct": 3.9491,
+      "threshold_pct": 1.0,
+      "judged_fail": true
+    },
+    "bounce_back_order": {
+      "before_stream_err_pct": 0.0013,
+      "after_stream_err_pct": 0.0013,
+      "analytic_wall_convention_offset_pct": 4.7619,
+      "finding": "文档称反弹时机错导致 4.76% 误差；实测两种次序收敛到同一定常解（Couette 定常，次序只影响瞬态）。4.76% = 0.5/10.5 是壁面全路/半路约定的解析偏移，非本链实测误差。"
+    }
+  }
+}

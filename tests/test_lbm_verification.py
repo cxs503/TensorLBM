@@ -1,302 +1,130 @@
 #!/usr/bin/env python3
-"""LBM 100% 解析解验证脚本
+"""LBM 100% 解析解验证（Step A–D）—— 绑定判据版。
 
-运行所有4个验证案例, 每个都有精确解析解:
-  Step A: 剪切波衰减 → 验证粘度ν (误差<1%)
-  Step B: Couette流 → 验证反弹+无滑移 (误差<1%)
-  Step C: Poiseuille流 → 验证体力+速度剖面 (误差<1%)
-  Step D: 摩擦阻力 → 验证壁面剪切应力 (误差<1%)
+历史（m3579 验证欠账）：本文件四个用例原先只 ``print`` 误差后 ``return passed``，
+pytest 从不校验返回值（``PytestReturnNotNoneWarning``），因此**任何误差都会"通过"**；
+再加上四个用例被 ``tests/ci_quarantine.txt`` 整体摘出 CI 闸门、设备硬编码
+``sdaa:0``（CPU-only CI 直接 collect 失败），验证面等于失效。
 
-用法: PYTHONPATH=src python tests/test_lbm_verification.py
+现在：计算集中在 ``tests/validation/lbm_analytic_chain.py``（测试与文档注册表
+共用的单一真源），本文件只做**绑定断言**，默认 CPU（可用
+``TENSORLBM_VERIFY_DEVICE=sdaa:0`` 切加速卡）。文档数字由
+``tests/test_lbm_verification_registry.py`` 做漂移判定。
+
+判定阈值与教学模块声明一致：相对误差 < 1% 为 PASS。
 """
 
-import math
 import sys
+from pathlib import Path
 
-import numpy as np
-import torch
+sys.path.insert(0, str(Path(__file__).resolve().parent / "validation"))
 
-# 添加src到路径
-sys.path.insert(0, "src")
+import lbm_analytic_chain as chain  # noqa: E402
 
-from tensorlbm.boundaries3d import bounce_back_cells_3d
-from tensorlbm.d3q19 import C, W, equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import collide_bgk3d, stream3d
+THRESHOLD_PCT = chain.THRESHOLD_PCT
 
 
-def test_step_a_shear_wave(device="sdaa:0"):
-    """Step A: 剪切波衰减 — 验证粘度ν
-
-    物理: u_y(x,t) = A·cos(kx)·exp(-νk²t)
-    精确解: ν = -ln(A_t/A_0) / (k²·t)
-    """
-    print("\n" + "=" * 60)
-    print("  Step A: 剪切波衰减 (粘度验证)")
-    print("=" * 60)
-
-    d = torch.device(device)
-    nx, ny, nz = 64, 4, 4
-    tau = 1.0
-    nu_expected = (tau - 0.5) / 3.0
-    k = 2 * math.pi / nx
-    A0 = 0.01
-
-    # 初始化: u_y(x) = A·cos(kx)
-    uy = torch.zeros(nz, ny, nx, device=d)
-    for i in range(nx):
-        uy[:, :, i] = A0 * math.cos(k * i)
-    f = equilibrium3d(
-        torch.ones(nz, ny, nx, device=d),
-        torch.zeros(nz, ny, nx, device=d),
-        uy,
-        torch.zeros(nz, ny, nx, device=d),
+# ---------------------------------------------------------------------------
+# Step A: 剪切波衰减 → 粘度 ν
+# ---------------------------------------------------------------------------
+def test_step_a_shear_wave(device="auto"):
+    """ν_measured vs ν=(τ-0.5)/3，相对误差 < 1%。"""
+    m = chain.run_shear_wave(device)
+    print(f"\n  Step A: ν_num={m.measured:.8f} ν_exact={m.expected:.8f} "
+          f"err={m.rel_err_pct:.4f}% (device={m.settings['device']})")
+    assert m.rel_err_pct < THRESHOLD_PCT, (
+        f"Step A 剪切波粘度误差 {m.rel_err_pct:.4f}% ≥ {THRESHOLD_PCT}% "
+        f"(ν_num={m.measured:.8f}, ν_exact={m.expected:.8f})"
     )
 
-    # 测量初始振幅
-    _, _, uy0, _ = macroscopic3d(f)
-    A_init = uy0[0, 0, 0].item()
 
-    # 运行100步
-    for _ in range(100):
-        f = collide_bgk3d(f, tau=tau)
-        f = stream3d(f)
-
-    # 测量最终振幅
-    _, _, uy_f, _ = macroscopic3d(f)
-    A_final = uy_f[0, 0, 0].item()
-
-    # 计算粘度
-    nu_measured = -math.log(abs(A_final / A_init)) / (k**2 * 100)
-    err = abs(nu_measured - nu_expected) / nu_expected * 100
-
-    print(f"  τ={tau}, ν_expected={nu_expected:.6f}")
-    print(f"  A_init={A_init:.6f}, A_final={A_final:.6f}")
-    print(f"  ν_measured={nu_measured:.6f}")
-    print(f"  误差={err:.2f}%")
-
-    passed = err < 1.0
-    print(f"  结果: {'PASS ✓' if passed else 'FAIL ✗'} (阈值<1%)")
-    return passed
-
-
-def test_step_b_couette(device="sdaa:0"):
-    """Step B: Couette流 — 验证反弹+无滑移
-
-    物理: u(y) = U·(y-0.5)/(ny-1-0.5)
-    半路反弹: 壁面在y=0.5
-    """
-    print("\n" + "=" * 60)
-    print("  Step B: Couette流 (反弹+无滑移验证)")
-    print("=" * 60)
-
-    d = torch.device(device)
-    nx, ny, nz = 80, 12, 4
-    u_top = 0.05
-    tau = 1.0
-
-    # 底壁固体(反弹), 顶壁用平衡态(运动)
-    solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=d)
-    solid[:, 0, :] = True
-    sm = solid.unsqueeze(0).expand(19, nz, ny, nx)
-
-    f = equilibrium3d(
-        torch.ones(nz, ny, nx, device=d),
-        torch.zeros(nz, ny, nx, device=d),
-        torch.zeros(nz, ny, nx, device=d),
-        torch.zeros(nz, ny, nx, device=d),
+def test_step_a_negative_control_tau_perturbation(device="auto"):
+    """负控：粘度偏 4% 时必须被判 FAIL —— 证明 1% 阈值真的有牙齿。"""
+    nc = chain.negative_control_tau_perturbation(device)
+    print(f"\n  负控: ν 偏离 {nc['deviation_pct']:.2f}%")
+    assert nc["judged_fail"] is True, (
+        f"负控失败：粘度偏 {nc['deviation_pct']:.2f}% 却仍被判 PASS，判据无灵敏度"
     )
 
-    for step in range(2000):
-        f_pre = f.clone()
-        # 1. 碰撞
-        f = collide_bgk3d(f, tau=tau)
-        # 2. NoDynamics: 恢复固体格点
-        for q in range(19):
-            f[q] = torch.where(sm[q], f_pre[q], f[q])
-        # 3. 半路反弹 (流之前)
-        f = bounce_back_cells_3d(f, solid)
-        # 4. 顶壁运动平衡态
-        rho1 = torch.ones(nz, ny, nx, device=d)
-        feq_top = equilibrium3d(
-            rho1, torch.full_like(rho1, u_top), torch.zeros_like(rho1), torch.zeros_like(rho1)
-        )
-        f[:, :, -1, :] = feq_top[:, :, -1, :]
-        # 5. 迁移
-        f = stream3d(f)
-        # 6. 进出口周期性
-        f[:, :, :, 0] = f[:, :, :, -2]
-        f[:, :, :, -1] = f[:, :, :, -2]
 
-    # 验证速度剖面
-    rho, ux, _, _ = macroscopic3d(f)
-    u = ux[0, 1:-1, nx // 2].cpu().numpy()
-    y = np.arange(1, ny - 1)
-    u_exact = u_top * (y - 0.5) / (ny - 1 - 0.5)
-    max_err = np.max(np.abs(u - u_exact) / u_top) * 100
-
-    print(f"  u_top={u_top}, ny={ny}, τ={tau}")
-    print(f"  u_num  ={np.round(u, 6)}")
-    print(f"  u_exact={np.round(u_exact, 6)}")
-    print(f"  max_err={max_err:.2f}%")
-
-    passed = max_err < 1.0
-    print(f"  结果: {'PASS ✓' if passed else 'FAIL ✗'} (阈值<1%)")
-    return passed
-
-
-def test_step_c_poiseuille(device="sdaa:0"):
-    """Step C: Poiseuille流 — 验证体力+速度剖面
-
-    物理: u(y) = G/(2ν)·(y-0.5)·(H+0.5-y)
-    """
-    print("\n" + "=" * 60)
-    print("  Step C: Poiseuille流 (体力+速度剖面验证)")
-    print("=" * 60)
-
-    d = torch.device(device)
-    nx, ny, nz = 80, 12, 4
-    tau = 1.0
-    nu = (tau - 0.5) / 3.0
-    H = ny - 2
-    u_max = 0.05
-    G = 2 * nu * u_max / H**2
-
-    solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=d)
-    solid[:, 0, :] = True
-    solid[:, -1, :] = True
-    sm = solid.unsqueeze(0).expand(19, nz, ny, nx)
-    c = C.to(d).float()
-    w = W.to(d).float()
-
-    f = equilibrium3d(
-        torch.ones(nz, ny, nx, device=d),
-        torch.zeros(nz, ny, nx, device=d),
-        torch.zeros(nz, ny, nx, device=d),
-        torch.zeros(nz, ny, nx, device=d),
+# ---------------------------------------------------------------------------
+# Step B: Couette 流 → 反弹位置（半路 0.5）+ 无滑移
+# ---------------------------------------------------------------------------
+def test_step_b_couette(device="auto"):
+    """剖面 max|u-u_exact|/U < 1%（半路反弹，壁面在 y=0.5）。"""
+    m = chain.run_couette(device)
+    print(f"\n  Step B: max_err={m.rel_err_pct:.4f}% (device={m.settings['device']})")
+    assert m.rel_err_pct < THRESHOLD_PCT, (
+        f"Step B Couette 剖面误差 {m.rel_err_pct:.4f}% ≥ {THRESHOLD_PCT}%"
     )
 
-    for step in range(3000):
-        f_pre = f.clone()
-        f = collide_bgk3d(f, tau=tau)
-        for q in range(19):
-            f[q] = torch.where(sm[q], f_pre[q], f[q])
-        f = bounce_back_cells_3d(f, solid)
-        # Guo体力
-        for q in range(19):
-            f[q] = f[q] + w[q] * 3 * c[q, 0] * G
-        f = stream3d(f)
-        f[:, :, :, 0] = f[:, :, :, -2]
-        f[:, :, :, -1] = f[:, :, :, -2]
 
-    rho, ux, _, _ = macroscopic3d(f)
-    u = ux[0, 1:-1, nx // 2].cpu().numpy()
-    y = np.arange(1, ny - 1)
-    u_exact = G / (2 * nu) * (y - 0.5) * (H + 0.5 - y)
-    max_err = np.max(np.abs(u - u_exact) / max(u_exact.max(), 1e-10)) * 100
+def test_step_b_bounce_back_order_only_affects_transient(device="auto"):
+    """反弹放在迁移之前/之后，定常 Couette 解相同（实测差可忽略）。
 
-    print(f"  ν={nu:.4f}, G={G:.6e}, H={H}")
-    print(f"  u_max_num={u.max():.6f}, u_max_exact={u_exact.max():.6f}")
-    print(f"  max_err={max_err:.2f}%")
-
-    passed = max_err < 1.0
-    print(f"  结果: {'PASS ✓' if passed else 'FAIL ✗'} (阈值<1%)")
-    return passed
-
-
-def test_step_d_friction(device="sdaa:0"):
-    """Step D: 摩擦阻力 — 验证壁面剪切应力
-
-    物理: τ_w = ν·du/dy, Cf = 2ν/((H-0.5)·U)
+    m3579 结论：文档 ``LBM_VERIFICATION_TEACHING.md`` 把"反弹时机错"记为
+    4.76% 误差，但 4.76% = 0.5/(ny-1.5)，是**壁面全路/半路约定的解析偏移**；
+    在本链的定常通道里两种次序收敛到同一个解（实测差 <1e-3 个百分点）。
     """
-    print("\n" + "=" * 60)
-    print("  Step D: 摩擦阻力 (壁面剪切应力验证)")
-    print("=" * 60)
-
-    d = torch.device(device)
-    nx, ny, nz = 80, 12, 4
-    tau = 1.0
-    nu = (tau - 0.5) / 3.0
-    u_top = 0.05
-    # 壁面间距: 底壁y=0.5到顶壁y=ny-1=11 → 距离=10.5
-    cf_exact = 2 * nu / (10.5 * u_top)
-
-    solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=d)
-    solid[:, 0, :] = True
-    sm = solid.unsqueeze(0).expand(19, nz, ny, nx)
-
-    f = equilibrium3d(
-        torch.ones(nz, ny, nx, device=d),
-        torch.zeros(nz, ny, nx, device=d),
-        torch.zeros(nz, ny, nx, device=d),
-        torch.zeros(nz, ny, nx, device=d),
+    before = chain.run_couette(device).rel_err_pct
+    after = chain.bounce_back_after_stream_err(device)
+    print(f"\n  bounce-back order: before-stream={before:.4f}% after-stream={after:.4f}%")
+    assert after < THRESHOLD_PCT
+    assert abs(after - before) < 0.05, (
+        f"反弹次序在定常 Couette 里产生了 {abs(after - before):.3f} 个百分点差异，"
+        "与 m3579 的定常态不变性结论不符"
     )
 
-    for step in range(3000):
-        f_pre = f.clone()
-        f = collide_bgk3d(f, tau=tau)
-        for q in range(19):
-            f[q] = torch.where(sm[q], f_pre[q], f[q])
-        f = bounce_back_cells_3d(f, solid)
-        rho1 = torch.ones(nz, ny, nx, device=d)
-        feq_top = equilibrium3d(
-            rho1, torch.full_like(rho1, u_top), torch.zeros_like(rho1), torch.zeros_like(rho1)
-        )
-        f[:, :, -1, :] = feq_top[:, :, -1, :]
-        f = stream3d(f)
-        f[:, :, :, 0] = f[:, :, :, -2]
-        f[:, :, :, -1] = f[:, :, :, -2]
 
-    rho, ux, _, _ = macroscopic3d(f)
-    u_wall = ux[0, 1, nx // 2].item()
-    du_dy = u_wall / 0.5  # 半路反弹: 壁面在0.5
-    tau_w = nu * du_dy
-    cf_num = 2 * tau_w / u_top**2
-    err = abs(cf_num - cf_exact) / cf_exact * 100
-
-    print(f"  ν={nu:.4f}, U={u_top}, 壁面间距=10.5")
-    print(f"  u_wall={u_wall:.6f}, du/dy={du_dy:.6f}")
-    print(f"  τ_w={tau_w:.6f}")
-    print(f"  Cf_num={cf_num:.4f}, Cf_exact={cf_exact:.4f}")
-    print(f"  误差={err:.2f}%")
-
-    passed = err < 1.0
-    print(f"  结果: {'PASS ✓' if passed else 'FAIL ✗'} (阈值<1%)")
-    return passed
+def test_step_b_wall_convention_offset_is_the_documented_four_point_seven_six():
+    """钉住 4.76% 的真实出处：0.5/(ny-1.5) @ ny=12 = 4.762%。"""
+    val = chain.wall_convention_offset_pct(12)
+    print(f"\n  wall-convention offset = {val:.4f}%")
+    assert abs(val - 4.7619) < 1e-3, f"解析偏移应为 4.7619%，实际 {val:.4f}%"
 
 
-def main():
-    print("\n" + "╔" + "═" * 58 + "╗")
-    print("║" + " LBM 100% 解析解验证体系 ".center(58) + "║")
-    print("║" + " 每个案例都有精确解, 误差<1%才算通过 ".center(58) + "║")
-    print("╚" + "═" * 58 + "╝")
+# ---------------------------------------------------------------------------
+# Step C: Poiseuille 流 → 体力项 + 速度剖面
+# ---------------------------------------------------------------------------
+def test_step_c_poiseuille(device="auto"):
+    """抛物线剖面 max|u-u_exact|/u_max < 1%。"""
+    m = chain.run_poiseuille(device)
+    print(f"\n  Step C: max_err={m.rel_err_pct:.4f}% "
+          f"(u_num={m.settings['u_max_numeric']:.6f}, u_exact={m.settings['u_max_exact']:.6f})")
+    assert m.rel_err_pct < THRESHOLD_PCT, (
+        f"Step C Poiseuille 剖面误差 {m.rel_err_pct:.4f}% ≥ {THRESHOLD_PCT}%"
+    )
 
-    device = "sdaa:0" if torch.sdaa.is_available() else "cpu"
 
-    results = []
-    results.append(("Step A: 剪切波衰减", test_step_a_shear_wave(device)))
-    results.append(("Step B: Couette流", test_step_b_couette(device)))
-    results.append(("Step C: Poiseuille流", test_step_c_poiseuille(device)))
-    results.append(("Step D: 摩擦阻力", test_step_d_friction(device)))
+# ---------------------------------------------------------------------------
+# Step D: 壁面摩擦 → 壁面剪切应力
+# ---------------------------------------------------------------------------
+def test_step_d_friction(device="auto"):
+    """Cf = 2τ_w/U² vs 解析 2ν/(H·U)，相对误差 < 1%。"""
+    m = chain.run_wall_friction(device)
+    print(f"\n  Step D: Cf_num={m.measured:.8f} Cf_exact={m.expected:.8f} "
+          f"err={m.rel_err_pct:.4f}%")
+    assert m.rel_err_pct < THRESHOLD_PCT, (
+        f"Step D 摩擦系数误差 {m.rel_err_pct:.4f}% ≥ {THRESHOLD_PCT}% "
+        f"(Cf_num={m.measured:.8f}, Cf_exact={m.expected:.8f})"
+    )
 
-    print("\n" + "=" * 60)
-    print("  验证汇总")
-    print("=" * 60)
+
+def main() -> int:
+    print("\n" + "=" * 64)
+    print(" LBM 解析验证链 Step A–D（绑定判据，阈值 <1%）".center(62))
+    print("=" * 64)
+    rows = chain.run_chain("auto")
     n_pass = 0
-    for name, passed in results:
-        status = "PASS ✓" if passed else "FAIL ✗"
-        print(f"  {name}: {status}")
-        if passed:
-            n_pass += 1
-
-    print(f"\n  通过: {n_pass}/{len(results)}")
-    if n_pass == len(results):
-        print("  ★ LBM求解器基础物理100%正确!")
-    else:
-        print("  ✗ 有验证未通过,请检查代码")
-
-    return n_pass == len(results)
+    for m in rows:
+        ok = m.passed
+        n_pass += int(ok)
+        print(f"  {m.key:<16} err={m.rel_err_pct:>8.4f}%  {'PASS' if ok else 'FAIL'}")
+    neg = chain.negative_control_tau_perturbation("auto")
+    print(f"  负控(τ+{neg['deviation_pct']:.2f}%) → {'FAIL(正确)' if neg['judged_fail'] else 'PASS(判据失效)'}")
+    print(f"  通过 {n_pass}/{len(rows)}")
+    return 0 if n_pass == len(rows) else 1
 
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    sys.exit(main())

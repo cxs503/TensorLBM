@@ -23,6 +23,24 @@
     → Step E: 压力积分 (圆柱网格收敛)
 ```
 
+## 实跑复核表（m3579，CPU，生成块）
+
+> 以下表格由 `tests/validation/lbm_analytic_chain.py` 生成并注入，**数字禁止手改**；
+> `tests/test_lbm_verification_registry.py::test_doc_table_is_generated_from_code`
+> 会逐字比对，改代码不更新此表即变红。
+
+<!-- BEGIN GENERATED: lbm_chain_table -->
+| Step | 验证量 | 实测 | 解析值 | 误差 | 判定 |
+|---|---|---|---|---|---|
+| A 剪切波 | ν (kinematic viscosity) | 0.16666307 | 0.16666667 | 0.002% | PASS |
+| B Couette | max abs(u-u_exact)/U (wall-normal profile) | 0.00132560 | 0.00000000 | 0.001% | PASS |
+| C Poiseuille | max abs(u-u_exact)/u_max (parabolic profile) | 0.33778922 | 0.00000000 | 0.338% | PASS |
+| D 壁面摩擦 | Cf (skin-friction coefficient) | 0.63489396 | 0.63492063 | 0.004% | PASS |
+
+负控（τ 扰动 3.95% 粘度偏差）：FAIL → 判据有牙齿
+反弹次序：流前 0.001% / 流后 0.001%（定常 Couette 下互差可忽略；4.76% 系解析壁面约定偏移 4.76%）
+<!-- END GENERATED: lbm_chain_table -->
+
 ---
 
 ## Step A: 剪切波衰减 — 验证粘度ν
@@ -109,7 +127,7 @@ u(y) = U·(y - y_wall) / (H_total - y_wall)
 ### 为什么选这个案例
 1. **最简单的有壁面流动**: 如果反弹位置错, 速度剖面就错
 2. **精确解**: 线性剖面, 无近似
-3. **验证反弹位置**: 半路(0.5) vs 全路(1.0) → 4.76%误差差异
+3. **验证反弹位置**: 半路(0.5) vs 全路(1.0) → 4.76%误差差异（m3579 复核：见下方 Bug 6 注，该值系解析壁面约定偏移）
 
 ### 参数选择理由
 - ny=12 → H=10 (流体格点数), 稳态时间t=H²/ν=600步
@@ -119,7 +137,7 @@ u(y) = U·(y - y_wall) / (H_total - y_wall)
 
 ### 关键: NoDynamics + 半路BB
 ```
-错误顺序: 碰撞→流→BC→BB → 全路反弹(壁面在格点上, 4.76%误差)
+错误顺序: 碰撞→流→BC→BB → 全路反弹(壁面在格点上, 4.76%误差；m3579 复核：该值为解析偏移，实测次序不变性见 Bug 6 注)
 正确顺序: 碰撞→NoDynamics→BB→流→BC → 半路反弹(壁面在0.5, 0.00%误差)
 ```
 
@@ -277,7 +295,15 @@ D=48     1.42      9.5%    256K
 D=96     1.39      7.2%    1M
 D=200    1.29      0.8%    4.4M  ★
 ```
-参考值: Cd=1.30
+> **m3579 复核结论：WITHHELD（证据不足，禁止当作已验证）**
+> 全仓检索不到任何可执行的圆柱 Re=200 Cd 收敛脚本或测试 —— 上表五个数字
+> 没有任何可复算证据。此外基准归属存疑：Schäfer–Turek(1996) DFG 二维基准是
+> **Re=100**、Cd≈3.22–3.24；Re=200 二维圆柱的常用文献值 Cd≈1.34。原文把
+> "Cd=1.30"归给 Schäfer–Turek 并据此算 0.8%，Re 与基准归属都需重新核实。
+> 结清条件见 `docs/lbm_verification_registry.json` 的 `withheld_claims`：
+> 先补算例脚本 + D=24/48 单调收敛，再谈 D=96/200（≈4.4M 格点）的成本。
+>
+> 原声称（保留以便追溯）：参考值: Cd=1.30
 
 ### 验证了什么
 - 压力积分法 (从ρ场直接积分)
@@ -286,6 +312,45 @@ D=200    1.29      0.8%    4.4M  ★
 - 圆柱几何 (x-y平面圆)
 
 ---
+
+## m3579 验证欠账结清：从"打印式验证"到"绑定判据 + 文档漂移闸门"
+
+### 欠账是什么（改之前的三个缺陷）
+1. **判据不绑定**：`tests/test_lbm_verification.py` 四个用例只 `print` 误差后
+   `return passed`，pytest 从不校验返回值（`PytestReturnNotNoneWarning`），
+   误差 459% 也会"通过"。
+2. **整体被摘出闸门**：四个用例都在 `tests/ci_quarantine.txt` 里（pre-CI 遗留），
+   CI 永远看不到它们。
+3. **设备硬编码 `sdaa:0`**：CPU-only 环境直接 collect 失败，这正是它们当初被
+   quarantine 的原因；而本链网格都在万级格点，实测 CPU 反而快 4 倍
+   （80×12×4 通道 100 步：cpu 0.54 s vs sdaa:0 2.12 s）。
+4. **文档数字无锚**：教学模块写的 0.00% / 0.34% / 4.76% / Step E 收敛表，
+   没有任何机制与实跑结果绑定，可无限期漂移。
+
+### 改法
+| 件 | 作用 |
+|---|---|
+| `tests/validation/lbm_analytic_chain.py` | Step A–D 的**单一真源**：返回 `Measurement(measured, expected, rel_err_pct, settings)`；`--emit` 生成注册表，`--markdown` 生成上表 |
+| `tests/test_lbm_verification.py` | 四步改为**绑定 assert**（阈值 <1%），设备默认 CPU（`TENSORLBM_VERIFY_DEVICE` 可切），并加两条负控 |
+| `tests/test_lbm_verification_registry.py` | 文档漂移闸门：注册表 vs 重算（物理量 0.5% 相对 / 误差口径 0.1 个百分点）、文档表格逐字比对、WITHHELD 必须写原因 |
+| `docs/lbm_verification_registry.json` | 机器可读的数字注册表（含 `withheld_claims`） |
+| `tests/ci_quarantine.txt` | 删除这四个用例（现已绑定并通过） |
+
+### 复核结论（数字见上方生成表）
+- Step A ν 误差 **0.002%**、Step C 剖面 **0.338%**、Step D Cf **0.004%**、
+  Step B 剖面 **0.001%** —— 与文档声称（0.00% / 0.34% / 0.00% / 0.00%）一致，
+  **原数字经复算是真的**，此前缺的只是"能不能自动发现它变假"。
+- 负控（τ=1.02，粘度偏 3.95%）被判 **FAIL** —— 1% 阈值确实挡得住 4% 级误差，
+  判据有牙齿。
+- **两处文档声称降级为 WITHHELD**：Step E 圆柱 Cd 网格收敛（仓内零可执行证据 +
+  基准归属存疑）、Bug 6 的 4.76%（定常流下不复现，系解析壁面约定偏移）。
+
+### 复跑
+```bash
+python tests/validation/lbm_analytic_chain.py --emit docs/lbm_verification_registry.json \
+    --markdown /tmp/chain_table.md     # 重新生成注册表与表格
+python -m pytest tests/test_lbm_verification.py tests/test_lbm_verification_registry.py -q
+```
 
 ## 6个Bug修复记录
 
@@ -318,6 +383,14 @@ D=200    1.29      0.8%    4.4M  ★
 - **问题**: BB在流之后(far_field_bc内) → 全路反弹
 - **影响**: 壁面在格点上(全路)而非0.5(半路)
 - **修复**: BB在碰撞阶段(流之前) → 半路反弹
+
+> **m3579 复核：该条的"4.76% 误差"不复现，已降级为 WITHHELD。**
+> 在定常 Couette 通道里把反弹放到迁移之前/之后，两条路收敛到**同一个定常解**
+> （实测流前 0.001% vs 流后 0.001%，互差 <1e-3 个百分点）—— 定常流里次序只画
+> 瞬态。4.76% 精确等于 0.5/(ny-1.5)=0.5/10.5，是"壁面当格点(全路) vs 半格(半路)"
+> 的**解析剖面偏移**，不是该错法的实测误差。可执行反证见
+> `tests/test_lbm_verification.py::test_step_b_bounce_back_order_only_affects_transient`
+> 与 `::test_step_b_wall_convention_offset_is_the_documented_four_point_seven_six`。
 
 ---
 
