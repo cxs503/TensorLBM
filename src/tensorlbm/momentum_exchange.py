@@ -23,6 +23,17 @@ Implements five force-measurement strategies for stationary walls:
    equilibrium background of the Ladd sum does NOT cancel and produces a
    spurious force; subtracting the closed-form f^eq background fixes it.
 
+2c. **Planar-wall caveat** (measured, mission m3623) — on a plane no-slip
+   wall the tangential force from the standard sum (the engine default) is a
+   *viscosity-dependent systematic bias*: 5.30x / 2.08x / 1.44x / 0.95x the
+   exact momentum balance ``rho*g*V/2`` at nu = 1/30 / 0.1 / 1/6 / 1/3, and
+   it does not converge away with refinement (1.99x at H = 14 to 2.13x at
+   H = 62).  ``wet_node`` stays within 1.03 % (residual ~0.313/H, first
+   order), ``pair`` within 0.08 %.  ``background_subtracted`` is identical
+   to the standard sum tangentially on planar walls because what it removes
+   is purely wall-normal.  Prefer ``wet_node``/``pair`` for drag on planar
+   no-slip walls.  Evidence: ``docs/mem_planar_wall_attribution.md``.
+
 3. **BFL MEM** (Yu 2003 / Bouzidi-Firdaouss-Lallemand 2001) — momentum
    exchange weighted by the fractional wall distance *q* for interpolated
    bounce-back boundaries.
@@ -97,8 +108,22 @@ def momentum_exchange_standard(
     wall per link.
 
     This is the **sum form** of Ladd's MEM, which includes the
-    equilibrium background.  For flat walls the equilibrium contributions
-    cancel across opposite-direction pairs, giving exact results.
+    equilibrium background.
+
+    Planar-wall behaviour (measured, mission m3623): the flat-wall
+    cancellation claimed above does *not* work the way that sentence implies
+    -- on a plane wall every crossing link has ``c_qy`` of the same sign, so
+    there are no opposite link pairs at all.  The cancellation is only in
+    the *tangential* components (via the +-``c_qx`` pairs of the crossing
+    set), and what survives is a viscosity-dependent bias: this estimator
+    returned 5.30x / 2.08x / 1.44x / 0.95x the exact momentum balance
+    ``rho*g*V/2`` for a forced plane channel at nu = 1/30, 0.1, 1/6, 1/3,
+    and refining the grid changes nothing (1.99x at H=14 -> 2.13x at H=62).
+    Use :func:`momentum_exchange_wet_node` (1.03 % at H=30, residual
+    ~0.31/H) or :func:`momentum_exchange_pair` (0.08 %) for drag on planar
+    no-slip walls.  Mechanism, per-link decomposition and referee:
+    ``docs/mem_planar_wall_attribution.md``,
+    ``tests/test_mem_planar_wall_attribution.py``.
 
     Args:
         f:     Distribution tensor ``(19, nz, ny, nx)`` — post-streaming.
@@ -388,10 +413,21 @@ def momentum_exchange_background_subtracted(
     """Ladd-sum MEM with the uniform free-stream equilibrium background removed.
 
     The standard Ladd sum form ``F = Σ_q (f_q + f_opp) · c_q`` contains the
-    equilibrium background of the free stream.  On a flat wall the background
-    cancels across opposite link pairs, but on a curved staircase surface the
-    discrete surface is not closed (``Σ n̂ dA ≠ 0``), so the background does
-    NOT cancel and produces a spurious force (G15: +268% on sphere Re=100).
+    equilibrium background of the free stream.  On a curved staircase
+    surface the discrete surface is not closed (``Σ n̂ dA ≠ 0``), so the
+    background does NOT cancel and produces a spurious force (G15: +268% on
+    sphere Re=100); removing it is a *wall-normal* correction.
+
+    Flat-wall caveat (measured, mission m3623): on a plane wall this
+    estimator returns the *identical* tangential force as
+    :func:`momentum_exchange_standard`, and that is an algebraic identity,
+    not a coincidence -- the subtracted background has zero streamwise
+    projection for **any** field and **any** ``u0`` (the face directions
+    carry ``c_qx = 0`` and the two ``(+-1,-1,0)`` edge directions have equal
+    weight and cancel), while its wall-normal projection is large.  So it
+    can never remove a tangential bias: on the forced plane channel it
+    measured 2.08x the exact momentum balance at nu = 0.1, identical to the
+    standard sum.  See ``docs/mem_planar_wall_attribution.md`` §3.4.
 
     For a uniform flow ``f = f^eq(ρ₀, U₀)`` the per-link background is exact:
 
