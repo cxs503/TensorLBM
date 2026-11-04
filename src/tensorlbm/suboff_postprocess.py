@@ -514,6 +514,19 @@ def skin_friction_hull_3d(
 # ---------------------------------------------------------------------------
 
 
+def _wall_units(tau_w_lu: float | None, nu_lu: float) -> dict[str, float]:
+    """First-cell wall units, defined whenever a wall shear stress is supplied.
+
+    ``y+ = u_tau * Δy / ν`` with the lattice spacing Δy = 1 lu and ρ = 1 does
+    not depend on the boundary-layer integrals, so it must also be reported on
+    the early-return paths where δ (and hence δ*, θ, H) cannot be integrated.
+    """
+    if tau_w_lu is None or tau_w_lu <= 0.0:
+        return {}
+    u_tau = math.sqrt(abs(tau_w_lu))  # friction velocity (ρ = 1)
+    return {"y_plus": u_tau / max(nu_lu, 1e-15), "u_tau": u_tau}
+
+
 def boundary_layer_at_station(
     ux: torch.Tensor,
     mask: torch.Tensor,
@@ -557,6 +570,8 @@ def boundary_layer_at_station(
     mask_col = mask[nz_half, :, xi]  # (ny,)
 
     fluid_col = ~mask_col
+    wall_units = _wall_units(tau_w_lu, nu_lu)
+
     fluid_indices = fluid_col.nonzero(as_tuple=False).squeeze(1)
     if fluid_indices.numel() < 2:
         return {
@@ -565,6 +580,7 @@ def boundary_layer_at_station(
             "theta": 0.0,
             "H": float("nan"),
             "x_over_L": x_over_L,
+            **wall_units,
         }
 
     # Find wall position (topmost solid cell below the first fluid cell)
@@ -592,6 +608,7 @@ def boundary_layer_at_station(
             "theta": 0.0,
             "H": float("nan"),
             "x_over_L": x_over_L,
+            **wall_units,
         }
 
     # Integral parameters using trapezoidal rule (Δy = 1 lu)
@@ -610,12 +627,7 @@ def boundary_layer_at_station(
         "x_over_L": x_over_L,
     }
 
-    if tau_w_lu is not None and tau_w_lu > 0.0:
-        u_tau = math.sqrt(abs(tau_w_lu) / max(1.0, 1.0))  # friction velocity (ρ=1)
-        y_plus = u_tau / max(nu_lu, 1e-15)  # first cell y+ = u_τ Δy / ν, Δy=1
-        result["y_plus"] = y_plus
-        result["u_tau"] = u_tau
-
+    result.update(wall_units)
     return result
 
 

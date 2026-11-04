@@ -18,7 +18,6 @@ from __future__ import annotations
 import gc
 import json
 import math
-import os
 import sys
 import time
 from pathlib import Path
@@ -42,8 +41,8 @@ from run import (
     U_PHYS,
     SuboffAppendageEngine,
     blasius_cf,
-    wetted_reference,
 )
+
 from tensorlbm.general_sim import (
     CollisionModel,
     ForceMethod,
@@ -56,7 +55,6 @@ from tensorlbm.general_sim import (
     SolverConfig,
     WallTreatment,
 )
-from compile_route import compile_mode_from_args
 
 # ---- Config ----
 DEVICE = "sdaa:0"
@@ -81,11 +79,11 @@ OUT_JSON = ARTIFACTS_DIR / "sdaa_suboff_sail_resistance_m289.json"
 
 
 def _gib(bytes_val: int) -> float:
-    return bytes_val / (1024.0 ** 3)
+    return bytes_val / (1024.0**3)
 
 
 def _mib(bytes_val: int) -> float:
-    return bytes_val / (1024.0 ** 2)
+    return bytes_val / (1024.0**2)
 
 
 def _sdaa_mem_info() -> dict:
@@ -176,11 +174,12 @@ def _compute_cd(engine, L: int) -> dict:
     R_lb = SUBOFF_RADIUS_M / dx
 
     from tensorlbm.suboff_cad import SuboffConfig, suboff_statistics
+
     st = suboff_statistics("with_sail", float(L), R_lb, SuboffConfig())
     a_app_lb2 = float(st.get("appendage_own_wetted_area_lu2") or 0.0)
     S_total_lb2 = math.pi * (2.0 * R_lb) * float(L) + a_app_lb2
-    dpS_wet = 0.5 * u_lb ** 2 * S_total_lb2
-    dpS_front = 0.5 * u_lb ** 2 * math.pi * R_lb ** 2
+    dpS_wet = 0.5 * u_lb**2 * S_total_lb2
+    dpS_front = 0.5 * u_lb**2 * math.pi * R_lb**2
     rescale = dpS_front / dpS_wet
 
     log = engine.forces_log
@@ -203,7 +202,7 @@ def _compute_cd(engine, L: int) -> dict:
     conv = {}
     for frac in (0.25, 0.5, 0.75, 1.0):
         k = int(len(log) * frac)
-        seg = log[max(0, k - n_win):k]
+        seg = log[max(0, k - n_win) : k]
         if seg:
             conv[f"{int(frac * 100)}%"] = round(
                 sum(e["cd_total"] for e in seg) / len(seg) * rescale, 6
@@ -257,31 +256,35 @@ def run_single_L(L: int) -> dict:
         mem_after_setup = _sdaa_mem_info()
         _reset_peak()  # reset peak to measure collide step only
 
-        result.update({
-            "status": "setup_ok",
-            "setup_time_s": round(t_setup, 2),
-            "domain_lu": setup_info.get("domain_lu"),
-            "total_cells": setup_info.get("total_cells"),
-            "obstacle_cells": setup_info.get("obstacle_cells"),
-            "near_wall_cells": setup_info.get("near_wall_cells"),
-            "Re": setup_info.get("Re"),
-            "tau": setup_info.get("tau"),
-            "u_lb": setup_info.get("u_lb"),
-            "nu_lb": setup_info.get("nu_lb"),
-            "device": setup_info.get("device"),
-            "auto_wall_treatment": setup_info.get("auto_wall_treatment"),
-            "appendage_stats": engine._appendage_stats,
-            "appendage_near_cells": engine._appendage_near_cells,
-            "mem_after_setup": mem_after_setup,
-            "f_tensor_bytes": engine.f.numel() * engine.f.element_size(),
-            "f_tensor_mib": round(_mib(engine.f.numel() * engine.f.element_size()), 2),
-        })
+        result.update(
+            {
+                "status": "setup_ok",
+                "setup_time_s": round(t_setup, 2),
+                "domain_lu": setup_info.get("domain_lu"),
+                "total_cells": setup_info.get("total_cells"),
+                "obstacle_cells": setup_info.get("obstacle_cells"),
+                "near_wall_cells": setup_info.get("near_wall_cells"),
+                "Re": setup_info.get("Re"),
+                "tau": setup_info.get("tau"),
+                "u_lb": setup_info.get("u_lb"),
+                "nu_lb": setup_info.get("nu_lb"),
+                "device": setup_info.get("device"),
+                "auto_wall_treatment": setup_info.get("auto_wall_treatment"),
+                "appendage_stats": engine._appendage_stats,
+                "appendage_near_cells": engine._appendage_near_cells,
+                "mem_after_setup": mem_after_setup,
+                "f_tensor_bytes": engine.f.numel() * engine.f.element_size(),
+                "f_tensor_mib": round(_mib(engine.f.numel() * engine.f.element_size()), 2),
+            }
+        )
 
-        print(f"[L={L}] setup OK: domain={setup_info.get('domain_lu')} "
-              f"cells={setup_info.get('total_cells')} "
-              f"f_tensor={result['f_tensor_mib']:.1f} MiB "
-              f"peak_mem={mem_after_setup.get('peak_allocated_gib', '?')} GiB",
-              flush=True)
+        print(
+            f"[L={L}] setup OK: domain={setup_info.get('domain_lu')} "
+            f"cells={setup_info.get('total_cells')} "
+            f"f_tensor={result['f_tensor_mib']:.1f} MiB "
+            f"peak_mem={mem_after_setup.get('peak_allocated_gib', '?')} GiB",
+            flush=True,
+        )
 
     except torch.sdaa.OutOfMemoryError as e:
         result["status"] = "OOM_AT_SETUP"
@@ -304,14 +307,14 @@ def run_single_L(L: int) -> dict:
     oom_at_step = None
 
     try:
-        from run import run_engine_routed
         # Use eager mode (compile_mode=None -> eager) to avoid compile trace memory
         t_run_start = time.time()
 
         # Run step-by-step to catch OOM precisely
-        from tensorlbm.lbm_step_correct import lbm_step_correct
-        from tensorlbm.boundaries3d import far_field_bc_3d
         import functools
+
+        from tensorlbm.boundaries3d import far_field_bc_3d
+        from tensorlbm.lbm_step_correct import lbm_step_correct
 
         collide_fn, collide_kwargs = engine._get_collide_fn()
         far_field_fn = functools.partial(far_field_bc_3d, bc_config=engine._build_bc_config())
@@ -322,6 +325,7 @@ def run_single_L(L: int) -> dict:
         dpS = engine._compute_dpS()
 
         from tensorlbm.solver3d import correct_mass3d
+
         target_mass = engine._initial_mass
 
         force_interval = engine.config.solver.force_sample_interval
@@ -344,10 +348,12 @@ def run_single_L(L: int) -> dict:
 
             if step <= 3 or step % 500 == 0:
                 mem = _sdaa_mem_info()
-                print(f"[L={L}] step {step}/{n_steps} dt={dt*1000:.1f}ms "
-                      f"peak={mem.get('peak_allocated_gib', '?')} GiB "
-                      f"alloc={mem.get('allocated_mib', '?')} MiB",
-                      flush=True)
+                print(
+                    f"[L={L}] step {step}/{n_steps} dt={dt * 1000:.1f}ms "
+                    f"peak={mem.get('peak_allocated_gib', '?')} GiB "
+                    f"alloc={mem.get('allocated_mib', '?')} MiB",
+                    flush=True,
+                )
 
             # Check finiteness every 100 steps
             if step % 100 == 0 and not torch.isfinite(engine.f).all():
@@ -358,33 +364,45 @@ def run_single_L(L: int) -> dict:
         t_run = time.time() - t_run_start
         mem_after_run = _sdaa_mem_info()
 
-        result.update({
-            "status": "COMPLETED" if result.get("status") != "DIVERGED" else "DIVERGED",
-            "run_time_s": round(t_run, 2),
-            "ms_per_step": round(sum(step_times) / len(step_times) * 1000, 2) if step_times else None,
-            "ms_per_step_last100": round(sum(step_times[-100:]) / min(100, len(step_times)) * 1000, 2) if step_times else None,
-            "steps_completed": engine.step_count,
-            "mem_peak_run_gib": mem_after_run.get("peak_allocated_gib"),
-            "mem_after_run": mem_after_run,
-            "finite": bool(torch.isfinite(engine.f).all().item()),
-        })
+        result.update(
+            {
+                "status": "COMPLETED" if result.get("status") != "DIVERGED" else "DIVERGED",
+                "run_time_s": round(t_run, 2),
+                "ms_per_step": round(sum(step_times) / len(step_times) * 1000, 2)
+                if step_times
+                else None,
+                "ms_per_step_last100": round(
+                    sum(step_times[-100:]) / min(100, len(step_times)) * 1000, 2
+                )
+                if step_times
+                else None,
+                "steps_completed": engine.step_count,
+                "mem_peak_run_gib": mem_after_run.get("peak_allocated_gib"),
+                "mem_after_run": mem_after_run,
+                "finite": bool(torch.isfinite(engine.f).all().item()),
+            }
+        )
 
         # Compute Cd if we have force samples
         if engine.forces_log:
             cd_info = _compute_cd(engine, L)
             result["cd_results"] = cd_info
-            print(f"[L={L}] Cd_total={cd_info.get('Cd_total', '?')} "
-                  f"err={cd_info.get('err_pct_vs_blasius', '?')}% "
-                  f"gate={'PASS' if cd_info.get('gate_pass') else 'FAIL'}",
-                  flush=True)
+            print(
+                f"[L={L}] Cd_total={cd_info.get('Cd_total', '?')} "
+                f"err={cd_info.get('err_pct_vs_blasius', '?')}% "
+                f"gate={'PASS' if cd_info.get('gate_pass') else 'FAIL'}",
+                flush=True,
+            )
 
-        print(f"[L={L}] COMPLETED: {engine.step_count} steps in {t_run:.1f}s "
-              f"({result['ms_per_step']:.1f} ms/step) "
-              f"peak={mem_after_run.get('peak_allocated_gib', '?')} GiB",
-              flush=True)
+        print(
+            f"[L={L}] COMPLETED: {engine.step_count} steps in {t_run:.1f}s "
+            f"({result['ms_per_step']:.1f} ms/step) "
+            f"peak={mem_after_run.get('peak_allocated_gib', '?')} GiB",
+            flush=True,
+        )
 
     except torch.sdaa.OutOfMemoryError as e:
-        oom_at_step = engine.step_count if hasattr(engine, 'step_count') else 0
+        oom_at_step = engine.step_count if hasattr(engine, "step_count") else 0
         result["status"] = "OOM_AT_STEP"
         result["oom_at_step"] = oom_at_step
         result["oom_error"] = str(e)[:500]
@@ -397,7 +415,7 @@ def run_single_L(L: int) -> dict:
         result["status"] = "ERROR_AT_RUN"
         result["error"] = f"{type(e).__name__}: {e}"[:500]
         result["mem_at_error"] = _sdaa_mem_info()
-        result["steps_completed"] = engine.step_count if hasattr(engine, 'step_count') else 0
+        result["steps_completed"] = engine.step_count if hasattr(engine, "step_count") else 0
         print(f"[L={L}] ERROR at run: {e}", flush=True)
     finally:
         # Cleanup
@@ -451,9 +469,9 @@ def main():
     print(f"[checkpoint] Initial results saved to {OUT_JSON}", flush=True)
 
     for L in L_LADDER:
-        print(f"\n{'='*50}", flush=True)
+        print(f"\n{'=' * 50}", flush=True)
         print(f"Processing L={L}", flush=True)
-        print(f"{'='*50}", flush=True)
+        print(f"{'=' * 50}", flush=True)
 
         tier_result = run_single_L(L)
         results["tiers"][str(L)] = tier_result
@@ -509,15 +527,16 @@ def main():
                 cd = results["tiers"][str(L_str)].get("cd_results", {})
                 errs.append(cd.get("err_pct_vs_blasius"))
             results["summary"]["err_sequence"] = errs
-            results["summary"]["monotonic"] = all(
-                abs(errs[i]) >= abs(errs[i + 1]) for i in range(len(errs) - 1)
-            ) if len(errs) >= 2 else None
+            results["summary"]["monotonic"] = (
+                all(abs(errs[i]) >= abs(errs[i + 1]) for i in range(len(errs) - 1))
+                if len(errs) >= 2
+                else None
+            )
 
     # Verdict
     max_completed = max(completed) if completed else 0
     if max_completed >= 96 and any(
-        results["tiers"].get(str(L), {}).get("cd_results", {}).get("gate_pass")
-        for L in completed
+        results["tiers"].get(str(L), {}).get("cd_results", {}).get("gate_pass") for L in completed
     ):
         verdict = "PASS"
     elif max_completed >= 48:
@@ -529,7 +548,7 @@ def main():
     with open(OUT_JSON, "w") as f:
         json.dump(results, f, indent=2)
 
-    print(f"\n{'='*70}", flush=True)
+    print(f"\n{'=' * 70}", flush=True)
     print(f"VERDICT: {verdict}", flush=True)
     print(f"Completed tiers: {sorted(completed)}", flush=True)
     print(f"OOM tiers: {sorted(oom)}", flush=True)
@@ -537,12 +556,14 @@ def main():
     if completed:
         for L_str in sorted(completed):
             cd = results["tiers"][str(L_str)].get("cd_results", {})
-            print(f"  L={L_str}: Cd={cd.get('Cd_total', '?')} "
-                  f"err={cd.get('err_pct_vs_blasius', '?')}% "
-                  f"peak={results['tiers'][str(L_str)].get('mem_peak_run_gib', '?')} GiB",
-                  flush=True)
+            print(
+                f"  L={L_str}: Cd={cd.get('Cd_total', '?')} "
+                f"err={cd.get('err_pct_vs_blasius', '?')}% "
+                f"peak={results['tiers'][str(L_str)].get('mem_peak_run_gib', '?')} GiB",
+                flush=True,
+            )
     print(f"Results saved to {OUT_JSON}", flush=True)
-    print(f"{'='*70}", flush=True)
+    print(f"{'=' * 70}", flush=True)
 
 
 if __name__ == "__main__":

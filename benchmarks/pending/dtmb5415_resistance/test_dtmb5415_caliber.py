@@ -41,10 +41,10 @@ STL_CLOSED = _HERE / "geometry" / "dtmb5415_underwater_closed.stl"
 
 # Geometry numbers measured by ``python _close_waterline.py`` / engine setup
 # (kept literal so the tests do not need a GPU or a 3 s voxelisation).
-L32_OPEN = {"n_solid_cells": 3439, "stair_wall_faces": 2349}   # open STL, L=32
-L32_CLOSED = {"n_solid_cells": 79, "stair_wall_faces": 222}    # capped STL, L=32
-L48_CLOSED = {"n_solid_cells": 292, "stair_wall_faces": 580}   # capped STL, L=48
-S_WET_LB_32 = 153.4   # 3021.7 m2 / (142/32)^2
+L32_OPEN = {"n_solid_cells": 3439, "stair_wall_faces": 2349}  # open STL, L=32
+L32_CLOSED = {"n_solid_cells": 79, "stair_wall_faces": 222}  # capped STL, L=32
+L48_CLOSED = {"n_solid_cells": 292, "stair_wall_faces": 580}  # capped STL, L=48
+S_WET_LB_32 = 153.4  # 3021.7 m2 / (142/32)^2
 S_WET_LB_48 = 345.3
 
 
@@ -72,9 +72,7 @@ def test_wetted_area_is_geometry_independent():
         assert closed["cap_source"] == "sidecar"
         # the cap is ~2955 m2: forgetting it would halve every Cd
         assert closed["cap_area_m2"] > 0.5 * closed["wetted_area_m2"]
-        assert closed["wetted_area_m2"] == pytest.approx(
-            open_bd["wetted_area_m2"], rel=2e-3
-        )
+        assert closed["wetted_area_m2"] == pytest.approx(open_bd["wetted_area_m2"], rel=2e-3)
 
 
 def test_cap_exclusion_uses_sidecar_not_heuristics():
@@ -152,8 +150,12 @@ def test_capped_stl_body_is_accepted_at_l48():
 def _criteria(cd_f, cd_tot=None, drift=0.0, geom_verdict="VALID"):
     re = 1000.0
     cf_blasius = 1.328 / math.sqrt(re)
-    geom = {"verdict": geom_verdict, "T_over_dx": 2.08, "cb_error_pct": -10.4,
-            "stair_over_smooth_wetted_area": 1.68}
+    geom = {
+        "verdict": geom_verdict,
+        "T_over_dx": 2.08,
+        "cb_error_pct": -10.4,
+        "stair_over_smooth_wetted_area": 1.68,
+    }
     return run.resistance_criteria(
         re=re,
         cd_p=(cd_tot or cd_f) - cd_f,
