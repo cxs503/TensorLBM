@@ -31,6 +31,9 @@ from typing import Optional
 
 import torch
 
+_trapezoid = getattr(torch, "trapezoid", torch.trapz)
+_DOF_COUNT = 6
+
 
 @dataclass
 class RAOData:
@@ -42,6 +45,8 @@ class RAOData:
         rao_phase: Phase angle of RAO [rad], shape (N_freq, 6).
         rao_complex: Complex RAO, shape (N_freq, 6).
         dof_labels: Labels for the 6 DOFs.
+        inactive_dofs: DOFs excluded from the solve because they carry no
+            inertia / damping / restoring term (unmodelled directions).
     """
 
     omega: torch.Tensor
@@ -51,6 +56,7 @@ class RAOData:
     dof_labels: list = field(
         default_factory=lambda: ["Surge", "Sway", "Heave", "Roll", "Pitch", "Yaw"]
     )
+    inactive_dofs: tuple = field(default_factory=tuple)
 
 
 def compute_rao_from_hydrodynamics(
@@ -80,16 +86,46 @@ def compute_rao_from_hydrodynamics(
         RAOData with amplitude and phase.
     """
     N_freq = omega.shape[0]
-    rao_complex = torch.zeros(N_freq, 6, dtype=torch.complex64)
+    # float64 throughout: the response is a ratio of the excitation to a
+    # difference of large terms, so single precision loses ~1e-3 relative
+    # accuracy near the cancellation dip above resonance.
+    mass_total = mass_matrix.to(torch.float64)
+    stiff = stiffness.to(torch.float64)
+    rao_complex = torch.zeros(N_freq, _DOF_COUNT, dtype=torch.complex128)
+    inactive: set[int] = set()
 
     for i in range(N_freq):
-        w = omega[i].item()
+        w = float(omega[i])
         # Dynamic stiffness matrix: Z(ω) = -(M + A(ω))ω² + jωB(ω) + C
-        Z = -(mass_matrix + added_mass[i]) * w**2 + 1j * w * damping[i] + stiffness
-        Z_inv = torch.linalg.inv(Z.to(torch.complex64))
-        # RAO = Z⁻¹ · F_exc
-        F_exc = excitation_amplitude[i].to(torch.complex64)
-        rao_complex[i] = Z_inv @ F_exc
+        Z = (
+            -(mass_total + added_mass[i].to(torch.float64)) * w**2
+            + 1j * w * damping[i].to(torch.float64)
+            + stiff
+        )
+        F_exc = excitation_amplitude[i].to(torch.complex128)
+        # A DOF with no inertia, damping and restoring entry has an identically
+        # vanishing row/column in Z, so the full 6x6 system is singular and
+        # torch.linalg.inv used to raise _LinAlgError for every partial-DOF
+        # model (e.g. pure heave).  Solve the active block only and leave the
+        # unmodelled directions at zero response.
+        row_mag = Z.abs().max(dim=1).values
+        scale = float(row_mag.max())
+        if scale > 0.0:
+            active = row_mag > 1e-12 * scale
+            index = torch.nonzero(active, as_tuple=False).squeeze(-1)
+            inactive.update(
+                torch.nonzero(~active, as_tuple=False).squeeze(-1).tolist()
+            )
+        else:  # Z == 0 (ω = 0 with no restoring force): response undefined
+            index = torch.zeros(0, dtype=torch.long)
+        if index.numel() == 0:
+            continue
+        # RAO_active = Z_active⁻¹ · F_exc
+        Z_sub = Z[index][:, index]
+        try:
+            rao_complex[i, index] = torch.linalg.solve(Z_sub, F_exc[index])
+        except Exception:  # pragma: no cover - singular sub-system at ω = 0
+            rao_complex[i, index] = torch.linalg.lstsq(Z_sub, F_exc[index]).solution
 
     rao_amplitude = torch.abs(rao_complex)
     rao_phase = torch.angle(rao_complex)
@@ -99,6 +135,7 @@ def compute_rao_from_hydrodynamics(
         rao_amplitude=rao_amplitude,
         rao_phase=rao_phase,
         rao_complex=rao_complex,
+        inactive_dofs=tuple(sorted(inactive)),
     )
 
 
@@ -129,7 +166,6 @@ def compute_rao_from_timeseries(
     """
     N = t.shape[0]
     dt = t[1] - t[0] if len(t) > 1 else torch.tensor(1.0)
-    1.0 / dt  # sampling frequency
 
     # Apply window
     if window == "hann":
@@ -163,6 +199,16 @@ def compute_rao_from_timeseries(
     rao_amplitude = torch.abs(rao_complex)
     rao_phase = torch.angle(rao_complex)
 
+    # Bins where the excitation carries no energy hold only round-off noise, so
+    # the ratio is meaningless (it used to blow up to O(1/clamp) and dominate
+    # any downstream argmax).  Report zero response there instead.
+    peak_energy = float(S_eta_eta.max())
+    valid = (
+        S_eta_eta > 1e-8 * peak_energy if peak_energy > 0.0 else torch.zeros_like(S_eta_eta, dtype=torch.bool)
+    )
+    rao_amplitude = torch.where(valid, rao_amplitude, torch.zeros_like(rao_amplitude))
+    rao_phase = torch.where(valid, rao_phase, torch.zeros_like(rao_phase))
+
     return omega, rao_amplitude, rao_phase
 
 
@@ -185,7 +231,8 @@ def spectral_response_analysis(
 
     Returns:
         Dictionary with:
-        - 'omega': frequency array
+        - 'omega': frequency array, sorted ascending (input order restored
+          nowhere: the returned grid is the sorted one actually integrated)
         - 'response_spectrum': S_r(ω)
         - 'm0': zeroth spectral moment
         - 'm2': second spectral moment
@@ -193,14 +240,22 @@ def spectral_response_analysis(
         - 'mean_period': 2π√(m0/m2) (mean zero-crossing period)
         - 'max_response_estimate': 1.86 × significant amplitude (for 3h storm)
     """
+    # The moments are trapezoidal integrals that must run from low to high
+    # frequency: an unsorted ω used to give a negative m0 and hence a NaN
+    # significant amplitude.
+    if omega.numel() > 1 and not bool(torch.all(omega[1:] > omega[:-1])):
+        order = torch.argsort(omega)
+        omega = omega[order]
+        wave_spectrum = wave_spectrum[order]
+        rao_amplitude = rao_amplitude[order]
+
     # Response spectrum
     S_response = rao_amplitude**2 * wave_spectrum
 
     # Spectral moments
-    omega[1] - omega[0] if len(omega) > 1 else torch.tensor(0.1)
-    m0 = torch.trapz(S_response, omega)  # zeroth moment
-    m2 = torch.trapz(S_response * omega**2, omega)  # second moment
-    m4 = torch.trapz(S_response * omega**4, omega)  # fourth moment
+    m0 = _trapezoid(S_response, omega)  # zeroth moment
+    m2 = _trapezoid(S_response * omega**2, omega)  # second moment
+    m4 = _trapezoid(S_response * omega**4, omega)  # fourth moment
 
     # Statistical metrics
     significant_amplitude = 2.0 * torch.sqrt(m0)
@@ -307,15 +362,36 @@ def compute_natural_frequencies(
         stiffness: Hydrostatic stiffness C, shape (6, 6).
 
     Returns:
-        Natural frequencies ω_n [rad/s], shape (6,).
+        Natural frequencies ω_n [rad/s], shape (6,).  DOFs with no inertia
+        (unmodelled directions, singular mass matrix) come back as NaN instead
+        of raising a ``_LinAlgError``.
     """
-    M_total = mass_matrix + added_mass_zero
-    M_inv = torch.linalg.inv(M_total)
-    # Generalized eigenvalue problem
-    K_eff = M_inv @ stiffness
-    eigenvalues = torch.linalg.eigvals(K_eff)
-    # Natural frequencies are sqrt of positive real eigenvalues
-    omega_n = torch.sqrt(torch.clamp(eigenvalues.real, min=0.0))
+    M_total = (mass_matrix + added_mass_zero).to(torch.float64)
+    C = stiffness.to(torch.float64)
+    n_dof = M_total.shape[0]
+    row_mag = M_total.abs().max(dim=1).values
+    scale = float(row_mag.max())
+    if scale > 0.0:
+        active = row_mag > 1e-12 * scale
+    else:
+        active = torch.zeros(n_dof, dtype=torch.bool)
+    index = torch.nonzero(active, as_tuple=False).squeeze(-1)
+    omega_n = torch.full((n_dof,), float("nan"), dtype=torch.float64)
+    if index.numel():
+        M_sub = M_total[index][:, index]
+        C_sub = C[index][:, index]
+        # ω² = eig(M⁻¹C), solved rather than formed by an explicit inverse.
+        # For a decoupled body this keeps ω_n[i] on DOF i; for a coupled body the
+        # order follows the eigenvalue routine (same contract as before).
+        try:
+            eigenvalues = torch.linalg.eigvals(
+                torch.linalg.solve(M_sub, C_sub)
+            ).real
+        except Exception:  # pragma: no cover - singular active block
+            eigenvalues = torch.linalg.eigvals(torch.linalg.pinv(M_sub) @ C_sub).real
+        omega_n[index] = torch.sqrt(torch.clamp(eigenvalues, min=0.0))
+    if mass_matrix.is_floating_point():
+        return omega_n.to(mass_matrix.dtype)
     return omega_n
 
 

@@ -296,3 +296,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Marine engineering extensions including Wigley hull geometry, obstacle diagnostics, and wave boundary conditions.
 - Smagorinsky LES turbulence models and shared simulation utilities.
 - Unit and smoke tests covering core solvers, runners, and marine features.
+
+## 2026-11-04 — RAO / SRA 解析基准复核 + 4 处缺陷修复（rao_analysis）
+
+- 新增 `tests/test_rao_analytic_verification.py`（13 项）：垂荡 RAO 对闭式阻尼振子、
+  共振幅值/相位、静态与高频极限、固有频率（解耦闭式 + 耦合 det(C−ω²M) 残差与 2×2 广义特征根）、
+  Bretschneider 谱矩 Γ 闭式、SRA 统计量、时域互谱传递函数、实验比对度量逐项对表。
+- 修复 `compute_rao_from_hydrodynamics`：未建模自由度（只填部分 DOF 的 6×6 模型）导致
+  `Z` 奇异、`torch.linalg.inv` 抛 `_LinAlgError`；改为按行量级判别并只解活动子块，
+  新增 `RAOData.inactive_dofs`；求解链由 complex64 提升 float64（峰后消去区误差 1.5e-7 → 1e-16）。
+- 修复 `compute_natural_frequencies`：质量阵奇异时同样崩溃；未建模自由度返回 NaN。
+- 修复 `spectral_response_analysis`：降序 ω 积分给出 m0<0、显著幅值 NaN、周期 inf；现统一升序。
+- 修复 `compute_rao_from_timeseries`：零能量 bin 只含舍入噪声，互谱比可爆到 O(1e2) 并抢占 argmax；
+  现按 1e-8·max(S_ηη) 阈值置零。
+- 证据：`artifacts/rao_analytic_verification/verification.json`（误差表 + 图），
+  复核报告 `docs/rao_analytic_verification_2026-11-04.md`。
