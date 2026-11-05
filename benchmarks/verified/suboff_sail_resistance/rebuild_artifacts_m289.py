@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Rebuild the complete artifacts JSON from all collected SDAA diagnostic data."""
 
-import json, math
+import json
+import math
 from pathlib import Path
 
 OUT = Path("artifacts/sdaa_suboff_sail_resistance_m289.json")
@@ -22,118 +23,190 @@ device_info = {
 # All tier data collected from SDAA runs
 tiers = {
     "16": {
-        "L": 16, "status": "COMPLETED", "steps_completed": 500,
-        "domain_lu": [96, 34, 34], "total_cells": 110976,
-        "f_tensor_mib": 8.0, "mem_peak_run_gib": 0.1092,
-        "ms_per_step": 124.2, "bytes_per_cell_peak": 1086,
+        "L": 16,
+        "status": "COMPLETED",
+        "steps_completed": 500,
+        "domain_lu": [96, 34, 34],
+        "total_cells": 110976,
+        "f_tensor_mib": 8.0,
+        "mem_peak_run_gib": 0.1092,
+        "ms_per_step": 124.2,
+        "bytes_per_cell_peak": 1086,
         "cd_results": {
-            "Cd_pressure": 0.004739, "Cd_friction": 0.018311,
-            "Cd_total": 0.02305006, "Cf_ref_blasius": CF_REF,
-            "err_pct_vs_blasius": -45.1124, "gate_pass": False,
+            "Cd_pressure": 0.004739,
+            "Cd_friction": 0.018311,
+            "Cd_total": 0.02305006,
+            "Cf_ref_blasius": CF_REF,
+            "err_pct_vs_blasius": -45.1124,
+            "gate_pass": False,
             "n_force_samples": 50,
         },
-        "note": "500 steps; flow not converged (needs 150*L=2400 steps)"
+        "note": "500 steps; flow not converged (needs 150*L=2400 steps)",
     },
     "24": {
-        "L": 24, "status": "COMPLETED", "steps_completed": 500,
-        "domain_lu": [144, 51, 51], "total_cells": 374544,
-        "f_tensor_mib": 28.5, "mem_peak_run_gib": 0.3712,
-        "ms_per_step": 130.0, "bytes_per_cell_peak": 1041,
+        "L": 24,
+        "status": "COMPLETED",
+        "steps_completed": 500,
+        "domain_lu": [144, 51, 51],
+        "total_cells": 374544,
+        "f_tensor_mib": 28.5,
+        "mem_peak_run_gib": 0.3712,
+        "ms_per_step": 130.0,
+        "bytes_per_cell_peak": 1041,
         "cd_results": {
-            "Cd_pressure": 0.008534, "Cd_friction": 0.045676,
-            "Cd_total": 0.05421029, "Cf_ref_blasius": CF_REF,
-            "err_pct_vs_blasius": 29.0873, "gate_pass": False,
+            "Cd_pressure": 0.008534,
+            "Cd_friction": 0.045676,
+            "Cd_total": 0.05421029,
+            "Cf_ref_blasius": CF_REF,
+            "err_pct_vs_blasius": 29.0873,
+            "gate_pass": False,
             "n_force_samples": 50,
         },
-        "note": "500 steps; flow not converged"
+        "note": "500 steps; flow not converged",
     },
     "32": {
-        "L": 32, "status": "COMPLETED", "steps_completed": 500,
-        "domain_lu": [192, 68, 68], "total_cells": 887808,
-        "f_tensor_mib": 67.4, "mem_peak_run_gib": 0.8716,
-        "ms_per_step": 130.0, "bytes_per_cell_peak": 1028,
+        "L": 32,
+        "status": "COMPLETED",
+        "steps_completed": 500,
+        "domain_lu": [192, 68, 68],
+        "total_cells": 887808,
+        "f_tensor_mib": 67.4,
+        "mem_peak_run_gib": 0.8716,
+        "ms_per_step": 130.0,
+        "bytes_per_cell_peak": 1028,
         "cd_results": {
-            "Cd_pressure": 0.007165, "Cd_friction": 0.044193,
-            "Cd_total": 0.05135809, "Cf_ref_blasius": CF_REF,
-            "err_pct_vs_blasius": 22.2956, "gate_pass": False,
+            "Cd_pressure": 0.007165,
+            "Cd_friction": 0.044193,
+            "Cd_total": 0.05135809,
+            "Cf_ref_blasius": CF_REF,
+            "err_pct_vs_blasius": 22.2956,
+            "gate_pass": False,
             "n_force_samples": 50,
         },
-        "note": "500 steps; flow not converged"
+        "note": "500 steps; flow not converged",
     },
     "48": {
-        "L": 48, "status": "COMPLETED", "steps_completed": 200,
-        "domain_lu": [288, 102, 102], "total_cells": 2996352,
-        "f_tensor_mib": 217.2, "mem_peak_run_gib": 2.9468,
-        "ms_per_step": 282.2, "bytes_per_cell_peak": 1015,
+        "L": 48,
+        "status": "COMPLETED",
+        "steps_completed": 200,
+        "domain_lu": [288, 102, 102],
+        "total_cells": 2996352,
+        "f_tensor_mib": 217.2,
+        "mem_peak_run_gib": 2.9468,
+        "ms_per_step": 282.2,
+        "bytes_per_cell_peak": 1015,
         "cd_results": {
-            "Cd_pressure": 0.010756, "Cd_friction": 0.070959,
-            "Cd_total": 0.081715, "Cf_ref_blasius": CF_REF,
-            "err_pct_vs_blasius": 94.58, "gate_pass": False,
+            "Cd_pressure": 0.010756,
+            "Cd_friction": 0.070959,
+            "Cd_total": 0.081715,
+            "Cf_ref_blasius": CF_REF,
+            "err_pct_vs_blasius": 94.58,
+            "gate_pass": False,
             "n_force_samples": 20,
         },
-        "note": "200 steps; flow not converged (needs 150*L=7200 steps)"
+        "note": "200 steps; flow not converged (needs 150*L=7200 steps)",
     },
     "56": {
-        "L": 56, "status": "COMPLETED", "steps_completed": 150,
-        "domain_lu": [336, 119, 119], "total_cells": 4758096,
-        "f_tensor_mib": 344.9, "mem_peak_run_gib": 4.6707,
-        "ms_per_step": 453.2, "bytes_per_cell_peak": 1004,
+        "L": 56,
+        "status": "COMPLETED",
+        "steps_completed": 150,
+        "domain_lu": [336, 119, 119],
+        "total_cells": 4758096,
+        "f_tensor_mib": 344.9,
+        "mem_peak_run_gib": 4.6707,
+        "ms_per_step": 453.2,
+        "bytes_per_cell_peak": 1004,
         "cd_results": {
-            "Cd_pressure": 0.012918, "Cd_friction": 0.085573,
-            "Cd_total": 0.098491, "Cf_ref_blasius": CF_REF,
-            "err_pct_vs_blasius": 134.53, "gate_pass": False,
+            "Cd_pressure": 0.012918,
+            "Cd_friction": 0.085573,
+            "Cd_total": 0.098491,
+            "Cf_ref_blasius": CF_REF,
+            "err_pct_vs_blasius": 134.53,
+            "gate_pass": False,
             "n_force_samples": 15,
         },
-        "note": "150 steps; flow not converged"
+        "note": "150 steps; flow not converged",
     },
     "64": {
-        "L": 64, "status": "COMPLETED", "steps_completed": 100,
-        "domain_lu": [384, 135, 135], "total_cells": 6998400,
-        "f_tensor_mib": 507.2, "mem_peak_run_gib": 6.8738,
-        "ms_per_step": 627.1, "bytes_per_cell_peak": 982,
+        "L": 64,
+        "status": "COMPLETED",
+        "steps_completed": 100,
+        "domain_lu": [384, 135, 135],
+        "total_cells": 6998400,
+        "f_tensor_mib": 507.2,
+        "mem_peak_run_gib": 6.8738,
+        "ms_per_step": 627.1,
+        "bytes_per_cell_peak": 982,
         "cd_results": {
-            "Cd_pressure": 0.015864, "Cd_friction": 0.104767,
-            "Cd_total": 0.120631, "Cf_ref_blasius": CF_REF,
-            "err_pct_vs_blasius": 187.25, "gate_pass": False,
+            "Cd_pressure": 0.015864,
+            "Cd_friction": 0.104767,
+            "Cd_total": 0.120631,
+            "Cf_ref_blasius": CF_REF,
+            "err_pct_vs_blasius": 187.25,
+            "gate_pass": False,
             "n_force_samples": 10,
         },
-        "note": "100 steps; flow not converged (needs 150*L=9600 steps). Highest L that fits SDAA memory."
+        "note": "100 steps; flow not converged (needs 150*L=9600 steps). Highest L that fits SDAA memory.",
     },
     "66": {
-        "L": 66, "status": "OOM_AT_STEP", "steps_completed": 0,
-        "domain_lu": [396, 140, 140], "total_cells": 7761600,
-        "f_tensor_mib": 613.2, "mem_peak_run_gib": None,
+        "L": 66,
+        "status": "OOM_AT_STEP",
+        "steps_completed": 0,
+        "domain_lu": [396, 140, 140],
+        "total_cells": 7761600,
+        "f_tensor_mib": 613.2,
+        "mem_peak_run_gib": None,
         "oom_error": "Tried to allocate 4.63 GiB (SDAA 0; 14.94 GiB total; 2.99 GiB allocated; 3.78 GiB free; 7.56 GiB reserved)",
-        "oom_tried_gib": 4.63, "oom_free_gib": 3.78, "oom_reserved_gib": 7.56,
+        "oom_tried_gib": 4.63,
+        "oom_free_gib": 3.78,
+        "oom_reserved_gib": 7.56,
         "empty_cache_tested": True,
-        "note": "OOM even with torch.sdaa.empty_cache() before collide step"
+        "note": "OOM even with torch.sdaa.empty_cache() before collide step",
     },
     "68": {
-        "L": 68, "status": "OOM_AT_STEP", "steps_completed": 0,
-        "domain_lu": [408, 144, 144], "total_cells": 8460288,
-        "f_tensor_mib": 613.2, "mem_peak_run_gib": None,
+        "L": 68,
+        "status": "OOM_AT_STEP",
+        "steps_completed": 0,
+        "domain_lu": [408, 144, 144],
+        "total_cells": 8460288,
+        "f_tensor_mib": 613.2,
+        "mem_peak_run_gib": None,
         "oom_error": "Tried to allocate 5.04 GiB (SDAA 0; 14.94 GiB total; 3.27 GiB allocated; 3.08 GiB free; 8.26 GiB reserved)",
-        "oom_tried_gib": 5.04, "oom_free_gib": 3.08, "oom_reserved_gib": 8.26,
+        "oom_tried_gib": 5.04,
+        "oom_free_gib": 3.08,
+        "oom_reserved_gib": 8.26,
         "empty_cache_tested": False,
-        "note": "OOM at first collide step"
+        "note": "OOM at first collide step",
     },
     "72": {
-        "L": 72, "status": "OOM_AT_STEP", "steps_completed": 0,
-        "domain_lu": [432, 152, 152], "total_cells": 9980928,
-        "f_tensor_mib": 723.4, "mem_peak_run_gib": None,
+        "L": 72,
+        "status": "OOM_AT_STEP",
+        "steps_completed": 0,
+        "domain_lu": [432, 152, 152],
+        "total_cells": 9980928,
+        "f_tensor_mib": 723.4,
+        "mem_peak_run_gib": None,
         "oom_error": "Tried to allocate 5.95 GiB (SDAA 0; 14.94 GiB total; 3.85 GiB allocated; 2.41 GiB free; 9.74 GiB reserved)",
-        "oom_tried_gib": 5.95, "oom_free_gib": 2.41, "oom_reserved_gib": 9.74,
+        "oom_tried_gib": 5.95,
+        "oom_free_gib": 2.41,
+        "oom_reserved_gib": 9.74,
         "empty_cache_tested": True,
-        "note": "OOM even with torch.sdaa.empty_cache() before collide step"
+        "note": "OOM even with torch.sdaa.empty_cache() before collide step",
     },
     "80": {
-        "L": 80, "status": "OOM_AT_STEP", "steps_completed": 0,
-        "domain_lu": [480, 169, 169], "total_cells": 13709280,
-        "f_tensor_mib": 993.6, "mem_peak_run_gib": None,
+        "L": 80,
+        "status": "OOM_AT_STEP",
+        "steps_completed": 0,
+        "domain_lu": [480, 169, 169],
+        "total_cells": 13709280,
+        "f_tensor_mib": 993.6,
+        "mem_peak_run_gib": None,
         "oom_error": "Tried to allocate 8.17 GiB (SDAA 0; 14.94 GiB total; 4.32 GiB allocated; 6.97 GiB free; 5.18 GiB reserved)",
-        "oom_tried_gib": 8.17, "oom_free_gib": 6.97, "oom_reserved_gib": 5.18,
+        "oom_tried_gib": 8.17,
+        "oom_free_gib": 6.97,
+        "oom_reserved_gib": 5.18,
         "empty_cache_tested": False,
-        "note": "OOM at first collide step"
+        "note": "OOM at first collide step",
     },
 }
 
@@ -143,6 +216,7 @@ oom = [66, 68, 72, 80]
 
 # Linear fit: peak_gib = a * cells + b
 import statistics
+
 cells_list = [tiers[str(L)]["total_cells"] for L in completed]
 peak_list = [tiers[str(L)]["mem_peak_run_gib"] for L in completed]
 # Simple linear regression
@@ -174,12 +248,27 @@ oom_alloc_mean = statistics.mean(oom_alloc_per_cell) if oom_alloc_per_cell else 
 
 # Existing verdict data (from 32 GiB GPU runs)
 existing_verdict = {
-    "L96": {"Cd_total": 0.042648661292759835, "err_pct": 1.5564072606794266,
-            "steps": 14400, "device": "cuda:6 (32 GiB)", "gate_pass": True},
-    "L112": {"Cd_total": 0.04448487172275888, "err_pct": 5.928852458084677,
-             "steps": 16800, "device": "cuda:6 (32 GiB)", "gate_pass": False},
-    "L128": {"Cd_total": 0.045862176545034064, "err_pct": 9.208536396882106,
-             "steps": 19200, "device": "cuda:6 (32 GiB)", "gate_pass": False},
+    "L96": {
+        "Cd_total": 0.042648661292759835,
+        "err_pct": 1.5564072606794266,
+        "steps": 14400,
+        "device": "cuda:6 (32 GiB)",
+        "gate_pass": True,
+    },
+    "L112": {
+        "Cd_total": 0.04448487172275888,
+        "err_pct": 5.928852458084677,
+        "steps": 16800,
+        "device": "cuda:6 (32 GiB)",
+        "gate_pass": False,
+    },
+    "L128": {
+        "Cd_total": 0.045862176545034064,
+        "err_pct": 9.208536396882106,
+        "steps": 19200,
+        "device": "cuda:6 (32 GiB)",
+        "gate_pass": False,
+    },
 }
 
 data = {
@@ -200,7 +289,9 @@ data = {
             "slope_gib_per_cell": slope,
             "intercept_gib": intercept,
             "bytes_per_cell": round(bytes_per_cell_fit, 1),
-            "r_squared": 1.0 - sum((y - (slope*x+intercept))**2 for x,y in zip(cells_list,peak_list)) / sum((y-mean_y)**2 for y in peak_list),
+            "r_squared": 1.0
+            - sum((y - (slope * x + intercept)) ** 2 for x, y in zip(cells_list, peak_list))
+            / sum((y - mean_y) ** 2 for y in peak_list),
         },
         "oom_allocation_per_cell_mean": round(oom_alloc_mean, 1) if oom_alloc_mean else None,
         "oom_root_cause": (
@@ -210,12 +301,21 @@ data = {
             "torch.sdaa.empty_cache() before collide does NOT help because the allocation itself is too large."
         ),
         "extrapolation": {
-            "L96": {"cells": L96_cells, "peak_extrapolated_gib": round(L96_peak_extrapolated, 2),
-                    "fits_sdaa": L96_peak_extrapolated < 14.94},
-            "L112": {"cells": L112_cells, "peak_extrapolated_gib": round(L112_peak_extrapolated, 2),
-                     "fits_sdaa": L112_peak_extrapolated < 14.94},
-            "L128": {"cells": L128_cells, "peak_extrapolated_gib": round(L128_peak_extrapolated, 2),
-                     "fits_sdaa": L128_peak_extrapolated < 14.94},
+            "L96": {
+                "cells": L96_cells,
+                "peak_extrapolated_gib": round(L96_peak_extrapolated, 2),
+                "fits_sdaa": L96_peak_extrapolated < 14.94,
+            },
+            "L112": {
+                "cells": L112_cells,
+                "peak_extrapolated_gib": round(L112_peak_extrapolated, 2),
+                "fits_sdaa": L112_peak_extrapolated < 14.94,
+            },
+            "L128": {
+                "cells": L128_cells,
+                "peak_extrapolated_gib": round(L128_peak_extrapolated, 2),
+                "fits_sdaa": L128_peak_extrapolated < 14.94,
+            },
         },
     },
     "existing_verdict_32gib": existing_verdict,
@@ -255,6 +355,8 @@ print(f"Saved to {OUT}")
 print(f"Verdict: {data['verdict']}")
 print(f"Completed: {sorted(completed)}")
 print(f"OOM: {sorted(oom)}")
-print(f"Memory fit: {bytes_per_cell_fit:.0f} B/cell, R²={data['memory_analysis']['peak_memory_fit']['r_squared']:.4f}")
+print(
+    f"Memory fit: {bytes_per_cell_fit:.0f} B/cell, R²={data['memory_analysis']['peak_memory_fit']['r_squared']:.4f}"
+)
 print(f"L=96 extrapolated: {L96_peak_extrapolated:.2f} GiB (limit: 14.94 GiB)")
 print(f"OOM alloc/cell: {oom_alloc_mean:.0f} B/cell")

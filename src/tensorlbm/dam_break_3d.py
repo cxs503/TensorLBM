@@ -605,9 +605,7 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             rho0=config.rho_heavy,
         )
         # Gas cells carry no populations in the free-surface model.
-        f_water = torch.where(
-            (flags == GAS).unsqueeze(0), torch.zeros_like(f_water), f_water
-        )
+        f_water = torch.where((flags == GAS).unsqueeze(0), torch.zeros_like(f_water), f_water)
     if config.hydrostatic_init and config.model in ("cg", "sc"):
         f_water = init_hydrostatic_pressure_3d(
             f_water,
@@ -830,9 +828,7 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             # The bookkeeping residual is an arithmetic identity: judge it
             # relative to the initial tracked mass (float32 rounding sits at
             # ~1e-7 relative).
-            relative_unexplained = (
-                abs(float(quality["unexplained_residual"])) / fs_initial_mass
-            )
+            relative_unexplained = abs(float(quality["unexplained_residual"])) / fs_initial_mass
             quality["relative_unexplained_residual"] = relative_unexplained
             if relative_unexplained > config.free_surface_unexplained_tolerance:
                 violations.append("unexplained tracked-mass residual exceeds tolerance")

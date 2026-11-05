@@ -35,9 +35,7 @@ import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
-
 from run import (  # noqa: E402
-    BEAM,
     DRAFT,
     LPP,
     U_PHYS,
@@ -67,9 +65,7 @@ def main() -> None:
     L = args.resol
     config = GeneralSimConfig(
         name=f"snapshot_L{L}",
-        geometry=GeometryConfig(
-            source=GeometrySource.STL_FILE, stl_path=args.stl, stl_units="m"
-        ),
+        geometry=GeometryConfig(source=GeometrySource.STL_FILE, stl_path=args.stl, stl_units="m"),
         physics=PhysicsConfig(
             density=1000.0,
             viscosity=U_PHYS * LPP / 1000.0,
@@ -113,8 +109,15 @@ def main() -> None:
 
     fig, axes = plt.subplots(2, 1, figsize=(11, 6.2), sharex=True)
     ax = axes[0]
-    ax.imshow(solid_sl.T, origin="lower", aspect="auto", cmap="Greys", vmin=0, vmax=1,
-              extent=[0, solid_sl.shape[0] * dx, 0, solid_sl.shape[1] * dx])
+    ax.imshow(
+        solid_sl.T,
+        origin="lower",
+        aspect="auto",
+        cmap="Greys",
+        vmin=0,
+        vmax=1,
+        extent=[0, solid_sl.shape[0] * dx, 0, solid_sl.shape[1] * dx],
+    )
     ax.set_ylabel("z [m]")
     ax.set_title(
         f"solid mask, mid-plane y=0  ({Path(args.stl).name}, L={L}, "
@@ -123,10 +126,20 @@ def main() -> None:
     )
     ax.axhline(DRAFT, color="tab:blue", lw=0.8, ls="--")
     ax = axes[1]
-    im = ax.imshow(speed_sl.T, origin="lower", aspect="auto", cmap="viridis",
-                   extent=[0, speed_sl.shape[0] * dx, 0, speed_sl.shape[1] * dx])
-    ax.contour(solid_sl.T, levels=[0.5], colors="w", linewidths=0.6,
-               extent=[0, solid_sl.shape[0] * dx, 0, solid_sl.shape[1] * dx])
+    im = ax.imshow(
+        speed_sl.T,
+        origin="lower",
+        aspect="auto",
+        cmap="viridis",
+        extent=[0, speed_sl.shape[0] * dx, 0, speed_sl.shape[1] * dx],
+    )
+    ax.contour(
+        solid_sl.T,
+        levels=[0.5],
+        colors="w",
+        linewidths=0.6,
+        extent=[0, solid_sl.shape[0] * dx, 0, solid_sl.shape[1] * dx],
+    )
     ax.axhline(DRAFT, color="tab:blue", lw=0.8, ls="--")
     ax.set_xlabel("x [m] (flow direction)")
     ax.set_ylabel("z [m]")

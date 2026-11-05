@@ -110,9 +110,9 @@ def test_wedge_force_slope_is_the_anchor(deadrise_deg: float) -> None:
     f = wagner_wedge_added_mass_force(20.0, params)
     assert f / 20.0 == pytest.approx(slope, rel=1e-12)
     t1, t2 = 100.0, 300.0
-    numeric = (wagner_wedge_added_mass_force(t2, params) - wagner_wedge_added_mass_force(t1, params)) / (
-        t2 - t1
-    )
+    numeric = (
+        wagner_wedge_added_mass_force(t2, params) - wagner_wedge_added_mass_force(t1, params)
+    ) / (t2 - t1)
     assert numeric == pytest.approx(slope, rel=1e-10)
 
 
