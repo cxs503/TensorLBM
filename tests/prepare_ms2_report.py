@@ -167,7 +167,7 @@ report = {
     "mission_id": 364,
     "tags": ["dam-break", "3d", "gpu-cpu", "free-surface", "mass-conservation", "honest-fail"],
     "markdown": markdown,
-    "figures": [figure_data]
+    "figures": [figure_data],
 }
 
 # Save report

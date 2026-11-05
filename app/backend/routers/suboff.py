@@ -36,6 +36,7 @@ PowerFlow and XFlow:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -93,7 +94,7 @@ def _solid_mask_from_field(ux):
 class SuboffSolveParams(BaseModel):
     """Parameters for a dedicated SUBOFF solver job."""
 
-    hull_type: str = Field(
+    hull_type: Literal["bare_hull", "with_sail", "full"] = Field(
         "bare_hull",
         description="Hull variant: 'bare_hull' (AFF-1), 'with_sail' (AFF-3), 'full' (AFF-8)",
     )

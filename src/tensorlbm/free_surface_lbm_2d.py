@@ -222,9 +222,7 @@ def _init_new_2d(f, flags, mask, rho_init, ux=None, uy=None):
     if rho_init is None:
         # Neighbour-averaged *active* density (waLBerla EquilibriumRefilling).
         rho = f.sum(0)
-        rho_nb = (
-            torch.stack([_roll_from_pull(rho, q) for q in _MOVING_Q]) * nb
-        ).sum(dim=0) / cnt
+        rho_nb = (torch.stack([_roll_from_pull(rho, q) for q in _MOVING_Q]) * nb).sum(dim=0) / cnt
         rho_field = torch.where(nb.sum(dim=0) > 0, rho_nb, torch.zeros_like(rho_nb))
     elif isinstance(rho_init, torch.Tensor):
         rho_field = rho_init.to(f.dtype)
@@ -295,7 +293,6 @@ def _address_interface_layer(
     demote = (flags == LIQUID) & _liq_adj_new_gas & ~solid_mask
     flags = torch.where(demote, torch.full_like(flags, INTERFACE), flags)
     return flags, mass, f, rho_fill
-
 
 
 def koerner_step_2d(
@@ -402,7 +399,6 @@ def koerner_step_2d(
     # ---- 3. Anti-bounce-back (ABB) gas-pressure reconstruction -------------
     iface = flags == INTERFACE
     gas_mask = flags == GAS
-    liq_mask = flags == LIQUID
     nb_flags = torch.stack([flags] + list(_neighbor_masks(flags)))  # (9, ny, nx)
     abb_moving = iface.unsqueeze(0) & (nb_flags[1:] == GAS)
     need_abb = torch.cat([torch.zeros_like(abb_moving[:1]), abb_moving], dim=0)
@@ -537,15 +533,20 @@ def koerner_step_2d(
 
     # ---- 7. Conversion-driven envelope + demotion --------------------------
     flags, mass, f, rho_fill = _address_interface_layer(
-        flags, mass, f, solid_mask, rho_liquid, ux, uy, recv_new=recv_new, to_gas=to_gas, rho=rho_new
+        flags,
+        mass,
+        f,
+        solid_mask,
+        rho_liquid,
+        ux,
+        uy,
+        recv_new=recv_new,
+        to_gas=to_gas,
+        rho=rho_new,
     )
-    fill_t = torch.where(
-        flags == INTERFACE, mass / rho_fill.clamp(min=1e-6), fill_t
-    )
+    fill_t = torch.where(flags == INTERFACE, mass / rho_fill.clamp(min=1e-6), fill_t)
     fill_t = torch.where(flags == LIQUID, torch.ones_like(fill_t), fill_t)
-    fill_t = torch.where(
-        (flags == GAS) | solid_mask, torch.zeros_like(fill_t), fill_t
-    )
+    fill_t = torch.where((flags == GAS) | solid_mask, torch.zeros_like(fill_t), fill_t)
 
     if ledger is not None:
         ledger["mass_start"] = mass_start

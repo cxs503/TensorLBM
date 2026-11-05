@@ -100,13 +100,17 @@ def probe(stl: Path, l_cells: int) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=str(_HERE.parents[2] / "runs" / "sdaa_dtmb5415_m452"
-                                        / "geometry_probe.json"))
+    ap.add_argument(
+        "--out",
+        default=str(_HERE.parents[2] / "runs" / "sdaa_dtmb5415_m452" / "geometry_probe.json"),
+    )
     ap.add_argument("--resolutions", type=int, nargs="*", default=[24, 32, 48, 64])
     args = ap.parse_args()
 
-    stls = [_HERE / "geometry" / "dtmb5415_underwater.stl",
-            _HERE / "geometry" / "dtmb5415_underwater_closed.stl"]
+    stls = [
+        _HERE / "geometry" / "dtmb5415_underwater.stl",
+        _HERE / "geometry" / "dtmb5415_underwater_closed.stl",
+    ]
     rows = []
     for stl in stls:
         if not stl.exists():

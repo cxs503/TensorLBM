@@ -36,6 +36,21 @@ C19_SHIFTS = [(int(C19[q, 0]), int(C19[q, 1]), int(C19[q, 2])) for q in range(19
 OPP_LIST = [int(x) for x in OPP19.tolist()]
 
 
+def _plain(value):
+    """Flatten torch values to Python scalars/lists.
+
+    ``pytest.approx`` rejects nested tensor structures ("does not support
+    nested data structures") and iterating a 0-d tensor raises TypeError, so
+    every tensor handed to it must be converted first.  This only adapts the
+    assertion side; the reported numbers are unchanged.
+    """
+    if torch.is_tensor(value):
+        return value.item() if value.dim() == 0 else value.tolist()
+    if isinstance(value, (tuple, list)):
+        return [_plain(item) for item in value]
+    return value
+
+
 def test_bfl_analytical_profile_matches_real_suboff_geometry() -> None:
     """BFL intersections and the CAD mask must describe the same hull."""
     xi = torch.linspace(-0.05, 1.05, 4097, dtype=torch.float64)
@@ -302,17 +317,17 @@ def test_bfl_link_force_decomposition_closes_flat_wall_impulse() -> None:
     assert decomposition.undecomposed_links == 0
     assert decomposition.coverage_fraction == pytest.approx(1.0)
     assert decomposition.unresolved_force == pytest.approx((0.0, 0.0, 0.0))
-    assert decomposition.stationary_interpolation_force == pytest.approx(force)
+    assert decomposition.stationary_interpolation_force == pytest.approx(_plain(force))
     assert decomposition.moving_wall_population_correction_force == pytest.approx(
         (0.0, 0.0, 0.0),
     )
     assert decomposition.frame_correction_force == pytest.approx(
         (0.0, 0.0, 0.0),
     )
-    assert decomposition.total_force == pytest.approx(force, abs=1e-14)
+    assert decomposition.total_force == pytest.approx(_plain(force), abs=1e-14)
     assert decomposition.normal_force[0] == pytest.approx(0.0, abs=1e-14)
-    assert decomposition.tangential_force[0] == pytest.approx(force[0], abs=1e-14)
-    assert decomposition.normal_force[1] == pytest.approx(force[1], abs=1e-14)
+    assert decomposition.tangential_force[0] == pytest.approx(_plain(force[0]), abs=1e-14)
+    assert decomposition.normal_force[1] == pytest.approx(_plain(force[1]), abs=1e-14)
     assert decomposition.tangential_force[1] == pytest.approx(0.0, abs=1e-14)
     assert decomposition.maximum_closure_error == pytest.approx(0.0, abs=1e-14)
     assert decomposition.maximum_relative_closure_error == pytest.approx(0.0)
@@ -354,7 +369,7 @@ def test_bfl_link_force_decomposition_requires_normals_and_force() -> None:
     assert decomposition.active_links == 1
     assert decomposition.decomposed_links == 0
     assert decomposition.coverage_fraction == pytest.approx(0.0)
-    assert decomposition.unresolved_force == pytest.approx(force)
+    assert decomposition.unresolved_force == pytest.approx(_plain(force))
     assert decomposition.maximum_closure_error == pytest.approx(0.0)
     assert decomposition.maximum_relative_closure_error == pytest.approx(0.0)
 
@@ -443,8 +458,8 @@ def test_moving_bfl_laboratory_force_closes_nonequilibrium_control_volume() -> N
         solid=solid,
     ).force_on_body
 
-    assert cv_force[0].item() == pytest.approx(laboratory_force[0], abs=1e-11)
-    assert wall_frame_force[0] != pytest.approx(laboratory_force[0], abs=1e-7)
+    assert cv_force[0].item() == pytest.approx(_plain(laboratory_force[0]), abs=1e-11)
+    assert wall_frame_force[0] != pytest.approx(_plain(laboratory_force[0]), abs=1e-7)
 
 
 def test_wall_model_startup_ramps_relative_normal_velocity_not_bfl_population() -> None:
@@ -648,7 +663,7 @@ def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> N
         stress_exchange_distance=2.0,
         return_wall_diagnostics=True,
     )
-    assert exchange_friction != pytest.approx(local_friction, rel=1e-5)
+    assert exchange_friction != pytest.approx(_plain(local_friction), rel=1e-5)
     population_change = (exchange_out - f).sum(dim=(1, 2, 3))
     momentum_change = (population_change[:, None] * C19.to(f)).sum(dim=0)
     assert momentum_change[0].item() == pytest.approx(
@@ -669,11 +684,11 @@ def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> N
     assert diagnostics.pressure_gradient_parameter_mean == pytest.approx(0.0)
     assert diagnostics.pressure_gradient_parameter_p95 == pytest.approx(0.0)
     assert diagnostics.pressure_gradient_parameter_max == pytest.approx(0.0)
-    assert diagnostics.shear_force[0] == pytest.approx(exchange_friction)
+    assert _plain(diagnostics.shear_force[0]) == pytest.approx(_plain(exchange_friction))
     assert diagnostics.wall_shear_axial_profile is not None
     assert sum(
         item["signed_shear_x_sum_lu"] for item in diagnostics.wall_shear_axial_profile
-    ) == pytest.approx(exchange_friction)
+    ) == pytest.approx(_plain(exchange_friction))
     assert diagnostics.link_force_decomposition is None
 
 
@@ -724,10 +739,10 @@ def test_wall_diagnostics_include_actual_bfl_link_force_decomposition() -> None:
     total = decomposition["total_force"]
     normal = decomposition["normal_force"]
     tangential = decomposition["tangential_force"]
-    assert total[0] == pytest.approx(pressure, abs=1e-12)
+    assert _plain(total[0]) == pytest.approx(_plain(pressure), abs=1e-12)
     for component in range(3):
-        assert total[component] == pytest.approx(
-            normal[component] + tangential[component],
+        assert _plain(total[component]) == pytest.approx(
+            _plain(normal[component]) + _plain(tangential[component]),
             abs=1e-12,
         )
         assert total[component] == pytest.approx(

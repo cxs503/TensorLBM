@@ -8,10 +8,23 @@ Covers:
 """
 from __future__ import annotations
 
-import math
 import importlib.util
+import math
+from pathlib import Path
 
 import pytest
+
+
+_LEGACY_I18N_DIR = Path(__file__).resolve().parent.parent / "frontend" / "static" / "i18n"
+
+SUBOFF_I18N_SKIP = pytest.mark.skipif(
+    not _LEGACY_I18N_DIR.is_dir(),
+    reason=(
+        "the EN/ZH dictionaries under app/frontend/static/i18n were deleted in "
+        "66efae5e with the native-JS frontend; the Vue 3 locales in "
+        "frontend-vue/src/i18n are TypeScript modules and not asserted here"
+    ),
+)
 
 # Skip all torch-dependent tests when torch or numpy are not installed
 _torch_available = importlib.util.find_spec("torch") is not None
@@ -618,6 +631,7 @@ class TestSuboffPostprocessEndpoints:
 # ---------------------------------------------------------------------------
 
 
+@SUBOFF_I18N_SKIP
 class TestSuboffI18nKeys:
     """Verify SubOff physics i18n keys exist in both EN and ZH."""
 

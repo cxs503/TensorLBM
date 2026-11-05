@@ -96,8 +96,9 @@ def ordered_loops(edges: np.ndarray) -> list[list[int]]:
     return loops
 
 
-def orient_caps(verts_cap: np.ndarray, faces_cap: np.ndarray,
-                body_verts: np.ndarray, cap_faces: np.ndarray) -> np.ndarray:
+def orient_caps(
+    verts_cap: np.ndarray, faces_cap: np.ndarray, body_verts: np.ndarray, cap_faces: np.ndarray
+) -> np.ndarray:
     """Orient cap triangles so their normal points +z (out of the body)."""
     allv = np.vstack([body_verts, verts_cap])
     a = allv[cap_faces[:, 0]]
@@ -135,14 +136,15 @@ def voxel_report(verts: np.ndarray, faces: np.ndarray, l_cells: int) -> dict:
     nx = int(np.ceil((x1 - x0) / dx))
     ny = int(np.ceil(2 * yh / dx))
     nz = int(np.ceil((DRAFT - z0) / dx))
-    solid = voxelize_stl(verts, faces, (nx, ny, nz),
-                         origin=(x0, -yh, z0), spacing=(dx, dx, dx))
+    solid = voxelize_stl(verts, faces, (nx, ny, nz), origin=(x0, -yh, z0), spacing=(dx, dx, dx))
     s = solid.cpu().numpy().astype(np.int8)
     n_solid = int(s.sum())
     vol = n_solid * dx**3
-    walls = (np.abs(np.diff(s, axis=2)).sum()
-             + np.abs(np.diff(s, axis=1)).sum()
-             + np.abs(np.diff(s, axis=0)).sum())
+    walls = (
+        np.abs(np.diff(s, axis=2)).sum()
+        + np.abs(np.diff(s, axis=1)).sum()
+        + np.abs(np.diff(s, axis=0)).sum()
+    )
     s_smooth_lb = wetted_area_m2(verts, faces) / dx**2
     return {
         "L_cells": l_cells,
@@ -163,10 +165,10 @@ def voxel_report(verts: np.ndarray, faces: np.ndarray, l_cells: int) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--in", dest="src",
-                    default=str(_HERE / "geometry" / "dtmb5415_underwater.stl"))
-    ap.add_argument("--out", dest="dst",
-                    default=str(_HERE / "geometry" / "dtmb5415_underwater_closed.stl"))
+    ap.add_argument("--in", dest="src", default=str(_HERE / "geometry" / "dtmb5415_underwater.stl"))
+    ap.add_argument(
+        "--out", dest="dst", default=str(_HERE / "geometry" / "dtmb5415_underwater_closed.stl")
+    )
     ap.add_argument("--verify-L", type=int, nargs="*", default=[24, 32, 48])
     args = ap.parse_args()
 
@@ -180,7 +182,9 @@ def main() -> None:
     wv, wf = _welded(verts, faces)
     be = boundary_edges(wf)
     loops = ordered_loops(be)
-    print(f"welded: {len(wv)} verts, {len(wf)} tris, boundary edges={len(be)}, loops={[len(l) for l in loops]}")
+    print(
+        f"welded: {len(wv)} verts, {len(wf)} tris, boundary edges={len(be)}, loops={[len(l) for l in loops]}"
+    )
     if not loops:
         print("nothing to cap (already closed?)")
     # cap each loop with a fan about its centroid (one new vertex per loop, so
@@ -207,30 +211,47 @@ def main() -> None:
     # Sidecar so that consumers (run.py) can subtract the cap exactly: the cap
     # triangles are the last ``len(cap_faces)`` faces of the written file.
     sidecar = Path(str(args.dst) + ".capinfo.json")
-    sidecar.write_text(json.dumps({
-        "source_stl": str(args.src),
-        "closed": is_closed(all_f),
-        "waterline_z_m": DRAFT,
-        "n_body_triangles": int(len(wf)),
-        "cap_triangle_count": int(len(cap_faces)),
-        "cap_vertex_count": int(len(extra)),
-        "cap_area_m2": float(wetted_area_m2(all_v, all_f[-len(cap_faces):]))
-        if len(cap_faces) else 0.0,
-        "wetted_area_m2": wetted_area_m2(wv, wf),
-    }, indent=2))
+    sidecar.write_text(
+        json.dumps(
+            {
+                "source_stl": str(args.src),
+                "closed": is_closed(all_f),
+                "waterline_z_m": DRAFT,
+                "n_body_triangles": int(len(wf)),
+                "cap_triangle_count": int(len(cap_faces)),
+                "cap_vertex_count": int(len(extra)),
+                "cap_area_m2": float(wetted_area_m2(all_v, all_f[-len(cap_faces) :]))
+                if len(cap_faces)
+                else 0.0,
+                "wetted_area_m2": wetted_area_m2(wv, wf),
+            },
+            indent=2,
+        )
+    )
     print(f"wrote {sidecar}")
-    print(f"wetted area (smooth) = {wetted_area_m2(all_v, all_f):.1f} m^2 "
-          f"(reference ~2972-3022 m^2)")
+    print(
+        f"wetted area (smooth) = {wetted_area_m2(all_v, all_f):.1f} m^2 (reference ~2972-3022 m^2)"
+    )
 
     rows = [voxel_report(all_v, all_f, L) for L in args.verify_L]
     for r in rows:
-        print(f"  L={r['L_cells']:3d} T/dx={r['draft_over_dx']:5.2f} solid={r['solid_cells']:6d} "
-              f"Cb={r['cb_voxel']:.3f} ({r['cb_error_pct']:+.1f}%) "
-              f"A_stair/A_smooth={r['stair_over_smooth']:.2f}")
+        print(
+            f"  L={r['L_cells']:3d} T/dx={r['draft_over_dx']:5.2f} solid={r['solid_cells']:6d} "
+            f"Cb={r['cb_voxel']:.3f} ({r['cb_error_pct']:+.1f}%) "
+            f"A_stair/A_smooth={r['stair_over_smooth']:.2f}"
+        )
     out = Path(args.dst).with_suffix(".verify.json")
-    out.write_text(json.dumps({"file": str(args.dst), "rows": rows,
-                              "closed": is_closed(all_f),
-                              "wetted_area_m2": wetted_area_m2(all_v, all_f)}, indent=2))
+    out.write_text(
+        json.dumps(
+            {
+                "file": str(args.dst),
+                "rows": rows,
+                "closed": is_closed(all_f),
+                "wetted_area_m2": wetted_area_m2(all_v, all_f),
+            },
+            indent=2,
+        )
+    )
     print(f"verify -> {out}")
 
 

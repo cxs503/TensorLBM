@@ -73,14 +73,12 @@ References
 
 from __future__ import annotations
 
-import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 import torch
 import torch.distributed as dist
-
 
 __all__ = [
     "DomainDecomposer",
@@ -121,8 +119,7 @@ class DomainDecomposer:
     def __post_init__(self) -> None:
         if self.nz_global % self.n_devices != 0:
             raise ValueError(
-                f"nz_global={self.nz_global} must be divisible by "
-                f"n_devices={self.n_devices}"
+                f"nz_global={self.nz_global} must be divisible by n_devices={self.n_devices}"
             )
         self.nz_local = self.nz_global // self.n_devices
 
@@ -214,25 +211,25 @@ class HaloExchange:
         """
         # D3Q19 lattice velocities (cx, cy, cz)
         D3Q19_C = [
-            (0, 0, 0),    # 0
-            (1, 0, 0),    # 1
-            (-1, 0, 0),   # 2
-            (0, 1, 0),    # 3
-            (0, -1, 0),   # 4
-            (0, 0, 1),    # 5
-            (0, 0, -1),   # 6
-            (1, 1, 0),    # 7
+            (0, 0, 0),  # 0
+            (1, 0, 0),  # 1
+            (-1, 0, 0),  # 2
+            (0, 1, 0),  # 3
+            (0, -1, 0),  # 4
+            (0, 0, 1),  # 5
+            (0, 0, -1),  # 6
+            (1, 1, 0),  # 7
             (-1, -1, 0),  # 8
-            (1, -1, 0),   # 9
-            (-1, 1, 0),   # 10
-            (1, 0, 1),    # 11
+            (1, -1, 0),  # 9
+            (-1, 1, 0),  # 10
+            (1, 0, 1),  # 11
             (-1, 0, -1),  # 12
-            (1, 0, -1),   # 13
-            (-1, 0, 1),   # 14
-            (0, 1, 1),    # 15
+            (1, 0, -1),  # 13
+            (-1, 0, 1),  # 14
+            (0, 1, 1),  # 15
             (0, -1, -1),  # 16
-            (0, 1, -1),   # 17
-            (0, -1, 1),   # 18
+            (0, 1, -1),  # 17
+            (0, -1, 1),  # 18
         ]
         return tuple(q for q, (cx, cy, cz) in enumerate(D3Q19_C) if cz == cz_sign)
 
@@ -419,7 +416,7 @@ class SimulatedMultiDevice:
         for rank in range(self.n_ranks):
             z_start, z_end = self.decomposer.get_slab_bounds(rank)
             # Copy owned planes into the slab (local z in [1, nz_local+1))
-            self.slabs[rank][:, 1:self.decomposer.nz_local + 1] = f_global[:, z_start:z_end]
+            self.slabs[rank][:, 1 : self.decomposer.nz_local + 1] = f_global[:, z_start:z_end]
             # Initialize ghost planes with periodic wrap
             left, right = self.decomposer.get_neighbor_ranks(rank)
             z_start_left, z_end_left = self.decomposer.get_slab_bounds(left)
@@ -440,7 +437,7 @@ class SimulatedMultiDevice:
         )
         for rank in range(self.n_ranks):
             z_start, z_end = self.decomposer.get_slab_bounds(rank)
-            f_global[:, z_start:z_end] = self.slabs[rank][:, 1:self.decomposer.nz_local + 1]
+            f_global[:, z_start:z_end] = self.slabs[rank][:, 1 : self.decomposer.nz_local + 1]
         return f_global
 
     def step(
@@ -477,6 +474,7 @@ class SimulatedMultiDevice:
 @dataclass
 class DeviceEvidence:
     """Evidence for a single device/rank."""
+
     rank: int
     device: str
     nz_local: int
@@ -553,16 +551,18 @@ def collect_device_evidence(
         t1 = time.perf_counter()
         halo_time_ms = (t1 - t0) / n_steps * 1000
 
-        evidence_list.append(DeviceEvidence(
-            rank=rank,
-            device=str(device),
-            nz_local=decomposer.nz_local,
-            ny=decomposer.ny,
-            nx=decomposer.nx,
-            memory_bytes=memory_bytes,
-            compute_time_ms=compute_time_ms,
-            halo_time_ms=halo_time_ms,
-            total_time_ms=compute_time_ms + halo_time_ms,
-        ))
+        evidence_list.append(
+            DeviceEvidence(
+                rank=rank,
+                device=str(device),
+                nz_local=decomposer.nz_local,
+                ny=decomposer.ny,
+                nx=decomposer.nx,
+                memory_bytes=memory_bytes,
+                compute_time_ms=compute_time_ms,
+                halo_time_ms=halo_time_ms,
+                total_time_ms=compute_time_ms + halo_time_ms,
+            )
+        )
 
     return evidence_list

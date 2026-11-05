@@ -373,9 +373,7 @@ def _pull_source_in_2d(mask: torch.Tensor) -> torch.Tensor:
     c = C2.to(mask.device)
     out = [mask]
     for q in range(1, 9):
-        out.append(
-            torch.roll(mask, shifts=(int(c[q, 1]), int(c[q, 0])), dims=(0, 1))
-        )
+        out.append(torch.roll(mask, shifts=(int(c[q, 1]), int(c[q, 0])), dims=(0, 1)))
     return torch.stack(out)
 
 
@@ -384,9 +382,7 @@ def _link_into_2d(mask: torch.Tensor) -> torch.Tensor:
     c = C2.to(mask.device)
     out = [mask]
     for q in range(1, 9):
-        out.append(
-            torch.roll(mask, shifts=(-int(c[q, 1]), -int(c[q, 0])), dims=(0, 1))
-        )
+        out.append(torch.roll(mask, shifts=(-int(c[q, 1]), -int(c[q, 0])), dims=(0, 1)))
     return torch.stack(out)
 
 
@@ -477,7 +473,6 @@ def _refill_cleared_2d(f, cleared, fluid):
     rho_safe = rho.clamp(min=1e-12)
     ux = (f * c[:, 0].view(9, 1, 1)).sum(dim=0) / rho_safe
     uy = (f * c[:, 1].view(9, 1, 1)).sum(dim=0) / rho_safe
-    stacks = [(fluid, rho, ux, uy)]
     nb_f, nb_r, nb_x, nb_y = [], [], [], []
     for q in range(1, 9):
         shift = (int(c[q, 1]), int(c[q, 0]))
@@ -673,12 +668,8 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
                 f2 = _refill_cleared_2d(f2, cleared, ~(wall | sphere_new))
                 if config.model == "cg":
                     # CG convention: no populations inside the obstacle.
-                    f1 = torch.where(
-                        fresh.unsqueeze(0), torch.zeros_like(f1), f1
-                    )
-                    f2 = torch.where(
-                        fresh.unsqueeze(0), torch.zeros_like(f2), f2
-                    )
+                    f1 = torch.where(fresh.unsqueeze(0), torch.zeros_like(f1), f1)
+                    f2 = torch.where(fresh.unsqueeze(0), torch.zeros_like(f2), f2)
                 sphere = sphere_new
                 solid = wall | sphere
             uw_y = -v_eff
@@ -713,9 +704,7 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
                 f2 = _moving_wall_bb_2d(f2, f2_pre, sphere, solid, 0.0, uw_y)
 
             if step % config.output_interval == 0 or step == config.n_steps:
-                fx_s, fy_s = _momentum_exchange_moving_2d(
-                    f1_pre, f2_pre, sphere, ~solid, 0.0, uw_y
-                )
+                fx_s, fy_s = _momentum_exchange_moving_2d(f1_pre, f2_pre, sphere, ~solid, 0.0, uw_y)
 
             f1 = bounce_back_cells(f1, solid)
             f2 = bounce_back_cells(f2, solid)
@@ -768,9 +757,7 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
             cz_prev = cz_float
             cz_float = max(cz_float - v_entry, config.radius + 1.5)
             v_eff = cz_prev - cz_float
-            sphere_new = _sphere_mask_3d(
-                nz, ny, nx, cx, cy, cz_float, config.radius, device
-            )
+            sphere_new = _sphere_mask_3d(nz, ny, nx, cx, cy, cz_float, config.radius, device)
             if v_eff > 0.0:
                 cleared = sphere & ~sphere_new & ~wall
                 f1 = _refill_cleared_3d(f1, cleared, ~(wall | sphere_new))
