@@ -397,14 +397,14 @@ def resistance_criteria(
         why = (
             "friction coefficient agrees with the Blasius laminar line to "
             "%+.2f %% (< %.1f %%); the Fr-similar experimental C_T frame is "
-            "declared NOT COMPARABLE instead of failed"
-            % (in_frame["err_pct"], CRITERION_BAND_PCT)
+            "declared NOT COMPARABLE instead of failed" % (in_frame["err_pct"], CRITERION_BAND_PCT)
         )
     else:
         verdict = "HONEST_FAIL"
-        why = (
-            "in-frame friction error %+.2f %% exceeds the %.1f %% band at "
-            "T/dx = %.2f" % (in_frame["err_pct"], CRITERION_BAND_PCT, geometry["T_over_dx"])
+        why = "in-frame friction error %+.2f %% exceeds the %.1f %% band at T/dx = %.2f" % (
+            in_frame["err_pct"],
+            CRITERION_BAND_PCT,
+            geometry["T_over_dx"],
         )
 
     return {

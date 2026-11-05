@@ -525,7 +525,7 @@ class TestLiveMetricsAPI:
         assert "diagnostics" in data
         assert "status" in data
 
-    def test_live_metrics_with_diagnostics(self, client, job_manager) -> None:
+    def test_live_metrics_with_diagnostics(self, client, job_manager, waiter) -> None:
         """A job that pushes diagnostics should expose them via the endpoint."""
         jm = job_manager
 
@@ -535,12 +535,12 @@ class TestLiveMetricsAPI:
             return {}
 
         job_id = jm.submit("diag-job", "test", {}, _job_with_diags)
-        import time
-        for _ in range(30):
-            time.sleep(0.05)
-            j = jm.get_job(job_id)
-            if j and j.status.value in ("completed", "failed"):
-                break
+        # The job manager shares one process-wide thread pool, so a job started
+        # here can queue behind campaigns launched by earlier tests.  Wait on
+        # the module's own terminal-state helper (conftest ``waiter``, up to
+        # 120 s) instead of a fixed 1.5 s poll: the short poll made this test
+        # fail only in full-suite order, with an empty diagnostics list.
+        waiter(job_id)
 
         r = client.get(f"/api/jobs/{job_id}/live-metrics")
         assert r.status_code == 200

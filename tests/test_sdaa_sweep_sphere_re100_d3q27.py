@@ -64,10 +64,8 @@ def test_gate_table_matches_tiers_and_overall(payload: dict) -> None:
         if tier.get("status") != "RAN":
             continue
         d = tier["meta"]["D"]
-        assert rows[f"G1.accuracy.D{d}"]["verdict"] == (
-            "PASS" if tier["err_ok"] else "FAIL")
-        assert rows[f"G3.D{d}.drift"]["verdict"] == (
-            "PASS" if tier["g3"]["drift_ok"] else "FAIL")
+        assert rows[f"G1.accuracy.D{d}"]["verdict"] == ("PASS" if tier["err_ok"] else "FAIL")
+        assert rows[f"G3.D{d}.drift"]["verdict"] == ("PASS" if tier["g3"]["drift_ok"] else "FAIL")
     applicable = [r for r in payload["gate_table"] if r["verdict"] != "NOT_APPLICABLE"]
     expected = "PASS" if all(r["verdict"] == "PASS" for r in applicable) else "FAIL"
     assert payload["overall_verdict"] == expected
@@ -77,8 +75,7 @@ def test_monotone_row_uses_two_tiers(payload: dict) -> None:
     ran = [t for t in payload["tiers"] if t.get("status") == "RAN"]
     row = next(r for r in payload["gate_table"] if r["gate"] == "G2.monotone")
     if len(ran) == 2:
-        assert row["verdict"] == (
-            "PASS" if ran[1]["err_pct"] < ran[0]["err_pct"] else "FAIL")
+        assert row["verdict"] == ("PASS" if ran[1]["err_pct"] < ran[0]["err_pct"] else "FAIL")
     else:
         assert row["verdict"] == "NOT_APPLICABLE"
 

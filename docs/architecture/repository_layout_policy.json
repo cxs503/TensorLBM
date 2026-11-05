@@ -2,6 +2,7 @@
   "schema_version": 1,
   "baseline_revision": "ad3d19ae6e5f55f02ac691f6719d4a5ae68f4cdc",
   "root_files": [
+    "AGENTS.md",
     ".dockerignore",
     ".editorconfig",
     ".gitignore",
