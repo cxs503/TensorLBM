@@ -67,10 +67,13 @@ class TestBugIdentification:
     """Identify known bugs in the original implementation."""
 
     def test_wss_from_fneq_3d_import_error_equilibrium_vs_equilibrium3d(self):
-        """BUG: wall_shear.py imports 'equilibrium' from d3q19, but the
-        function is named 'equilibrium3d'. This causes an ImportError when
-        wss_from_fneq_3d is called, making the entire 3-D WSS function
-        non-functional (带病上岗).
+        """REGRESSION GUARD (the bug this test was written to prove is fixed).
+
+        Historically ``wall_shear`` imported ``equilibrium`` from ``d3q19``
+        where the symbol is named ``equilibrium3d``, so every 3-D WSS call
+        raised ``ImportError`` and the function was non-functional.  The
+        symbols are now resolved lazily inside the function body, so the call
+        must return a finite WSS field on the solid mask instead of raising.
         """
         from tensorlbm.wall_shear import wss_from_fneq_3d
 
@@ -85,8 +88,10 @@ class TestBugIdentification:
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
         mask[0, :, :] = True
 
-        with pytest.raises(ImportError, match="cannot import name 'equilibrium'"):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        wss = wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        assert wss.shape == f.shape[-3:]
+        assert torch.isfinite(wss).all()
+        assert float(wss[mask].abs().max()) == 0.0 or torch.isfinite(wss[mask]).all()
 
     def test_wss_from_fneq_3d_W_to_device_discarded(self):
         """CODE SMELL: wall_shear.py line 192 discards the result of
@@ -642,8 +647,9 @@ class TestWallShearBugs:
         assert torch.isfinite(wss).all()
 
     def test_wss_from_fneq_3d_broken_import(self):
-        """CONFIRMED BUG: wss_from_fneq_3d is non-functional due to
-        importing 'equilibrium' instead of 'equilibrium3d' from d3q19."""
+        """REGRESSION GUARD (formerly "CONFIRMED BUG"): the broken
+        ``equilibrium``/``equilibrium3d`` import that made wss_from_fneq_3d
+        unusable is gone; the function must run and return finite values."""
         from tensorlbm.wall_shear import wss_from_fneq_3d
 
         nz, ny, nx = 4, 4, 4
@@ -656,5 +662,6 @@ class TestWallShearBugs:
         rho, ux, uy, uz = macroscopic3d(f)
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
 
-        with pytest.raises(ImportError):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        wss = wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        assert wss.shape == f.shape[-3:]
+        assert torch.isfinite(wss).all()
