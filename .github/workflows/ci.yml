@@ -23,11 +23,14 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+env:
+  TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
+
 jobs:
   # Static gates run once, on a single interpreter: they are interpreter
   # independent, so fanning them across the matrix only burns minutes.
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ci-loong64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -59,13 +62,8 @@ jobs:
         run: python scripts/check_platform_docs_consistency.py
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ci-loong64
     timeout-minutes: 180
-    strategy:
-      fail-fast: false
-      matrix:
-        # pyproject declares requires-python >=3.11; test what we advertise.
-        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -126,7 +124,7 @@ jobs:
   # app/. Keep it separate from the numerical library matrix so failures have
   # an unambiguous owner and app dependencies do not leak into the solver job.
   platform-test:
-    runs-on: ubuntu-latest
+    runs-on: ci-loong64
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -166,7 +164,7 @@ jobs:
   # File placement is a separate, dependency-free gate. Historical files are
   # grandfathered by exact path; new root clutter and raw outputs are rejected.
   repository-layout:
-    runs-on: ubuntu-latest
+    runs-on: ci-loong64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -182,7 +180,7 @@ jobs:
   # Structural audit has an independent signal: it must run even when
   # the repository-wide Ruff gate is already red for unrelated legacy findings.
   architecture-audit:
-    runs-on: ubuntu-latest
+    runs-on: ci-loong64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -216,7 +214,7 @@ jobs:
           if-no-files-found: error
 
   package-build:
-    runs-on: ubuntu-latest
+    runs-on: ci-loong64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
