@@ -26,7 +26,9 @@ from .d3q19 import equilibrium as eq3d  # ← 'equilibrium' 不存在于 d3q19
 ```
 
 **影响**: `wss_from_fneq_3d` 函数完全不可用，调用时抛出 `ImportError`。  
-**验证**: `test_wss_from_fneq_3d_import_error_equilibrium_vs_equilibrium3d` ✓  
+**验证**: `test_wss_from_fneq_3d_uses_equilibrium3d_not_equilibrium` ✓  
+**状态**: 该缺陷已修复（import 改为 `equilibrium3d`）；原断言 `pytest.raises(ImportError)`
+的 bug-alive 测试在修复后必然变红，已改写为 bug-fixed 回归守卫（2026-11-06, m4667）。  
 **注意**: 2D 版本 `wss_from_fneq_2d` 不受影响（d2q9 确实导出 `equilibrium`）。
 
 ### 1.2 wall_shear.py — **CODE SMELL: _W3D.to(device) 结果被丢弃**

@@ -1,0 +1,67 @@
+{
+  "mission": 4667,
+  "pr": 669,
+  "branch": "agent/m4641",
+  "head_pr": "b9da075a",
+  "ci_run_push": 42143763252,
+  "ci_job": 127650153616,
+  "ci_job_name": "test (3.12)",
+  "ci_failed_step": "Run tests with coverage",
+  "ci_summary": {
+    "failed": 3,
+    "passed": 6487,
+    "skipped": 177,
+    "deselected": 14,
+    "xfailed": 116,
+    "xpassed": 6,
+    "duration_s": 1465.96
+  },
+  "failures": [
+    {
+      "id": "tests/test_control_volume_force.py::test_curved_moving_slip_impulse_is_invariant_across_nested_control_volumes",
+      "ci_error": "TypeError: iteration over a 0-d tensor",
+      "local_repro": "FAILED",
+      "after_fix": "PASSED",
+      "root_cause": "pytest>=8.4 _warn_on_inexact_decimal_tolerance iterates pytest.approx(expected); expected was a 0-d torch tensor"
+    },
+    {
+      "id": "tests/test_regress_wall_multi_gpu.py::TestBugIdentification::test_wss_from_fneq_3d_import_error_equilibrium_vs_equilibrium3d",
+      "ci_error": "Failed: DID NOT RAISE ImportError",
+      "local_repro": "FAILED",
+      "after_fix": "PASSED",
+      "root_cause": "stale bug-alive regression test: source now imports equilibrium3d (defect repaired), test still asserted ImportError"
+    },
+    {
+      "id": "tests/test_regress_wall_multi_gpu.py::TestWallShearBugs::test_wss_from_fneq_3d_broken_import",
+      "ci_error": "Failed: DID NOT RAISE ImportError",
+      "local_repro": "FAILED",
+      "after_fix": "PASSED",
+      "root_cause": "same stale bug-alive test, second copy"
+    }
+  ],
+  "local_verification": {
+    "targeted_3_files": {
+      "passed": 26,
+      "xfailed": 13,
+      "cmd": "pytest -q tests/test_control_volume_force.py tests/test_regress_wall_multi_gpu.py tests/test_suboff_postprocess_runtime.py"
+    },
+    "wall_control_volume_slice": {
+      "passed": 71,
+      "skipped": 1,
+      "deselected": 6777,
+      "cmd": "pytest -q -k 'control_volume or wall_shear or wss' tests/"
+    },
+    "ruff_check": "All checks passed! (src tests examples benchmarks)",
+    "ruff_format_check": "1454 files already formatted",
+    "docs_consistency": "[docs-consistency] OK",
+    "repository_layout": "Repository layout OK (5139 candidate paths)"
+  },
+  "pre_existing_evidence": {
+    "pr_files_untouched_by_fix": [
+      "tests/test_control_volume_force.py",
+      "tests/test_regress_wall_multi_gpu.py"
+    ],
+    "note": "both test files (and src/tensorlbm/boundary/wall_shear.py) are outside the PR diff 866438ac..b9da075a, so the 3 failures pre-dated this PR branch"
+  },
+  "blocked": "remote green not observable: GH Actions runner queue stalled (all jobs of b9da075a and 20+ other runs left 'queued' since 2026-11-06T01:04Z)"
+}
