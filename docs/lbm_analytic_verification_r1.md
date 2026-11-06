@@ -201,4 +201,6 @@ python scripts/verify_lbm_analytic_convergence.py         # 退出码 0 = 全部
 | `artifacts/lbm_analytic_verification/convergence.png` | 上图（3 联图） |
 | `artifacts/lbm_analytic_verification/tables.md` | §3 的 markdown 表（本文直接内联该文件） |
 
+> **入库状态（2026-11-06 修复）**：上表三件产物在 main 上曾经只有命令、没有文件 —— `convergence.png` 从未提交，所以新克隆里 §6 的图是死链，而没有任何测试看着证据侧。本提交把三件产物按上面第二条命令**原样重算并入库**（runtime 170.1 s / float32 断言态 / cpu），并新增 `tests/test_lbm_verification_evidence.py` 把这条链钉住：文档图片链接必须解析到**已入库**文件、账本阈值必须等于 `REL_TOL`(=1 %)、两个负控必须仍被阈值检出。
+
 脚本在本机（loongarch64、CPU 单线程）整跑 **176 s**。
