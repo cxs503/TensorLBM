@@ -23,7 +23,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.d3q19 import C, equilibrium3d, macroscopic3d
 from tensorlbm.multi_gpu import (
     DomainDecomposition,
     MultiDeviceSolver3D,
@@ -66,11 +66,14 @@ def domain_params():
 class TestBugIdentification:
     """Identify known bugs in the original implementation."""
 
-    def test_wss_from_fneq_3d_import_error_equilibrium_vs_equilibrium3d(self):
-        """BUG: wall_shear.py imports 'equilibrium' from d3q19, but the
-        function is named 'equilibrium3d'. This causes an ImportError when
-        wss_from_fneq_3d is called, making the entire 3-D WSS function
-        non-functional (带病上岗).
+    def test_wss_from_fneq_3d_import_resolves_equilibrium3d(self):
+        """REGRESSION GUARD: wall_shear.py used to import ``equilibrium`` from
+        d3q19 while the function is named ``equilibrium3d``, so every call to
+        wss_from_fneq_3d raised ImportError (3-D WSS 带病上岗).
+
+        The import now resolves, so the call must return a finite field whose
+        solid cells are masked out; the uniformly sheared state below carries a
+        non-zero ``sigma_xy``, so a zero field would mean the f_neq path died.
         """
         from tensorlbm.wall_shear import wss_from_fneq_3d
 
@@ -81,12 +84,19 @@ class TestBugIdentification:
             torch.zeros(nz, ny, nx),
             torch.zeros(nz, ny, nx),
         )
+        # Deterministic non-equilibrium xy-shear: sigma_xy = sum(f_neq c_x c_y).
+        cx_cy = (C[:, 0] * C[:, 1]).view(-1, 1, 1, 1).to(f.dtype)
+        f = f + 1e-4 * cx_cy * torch.ones_like(f)
         rho, ux, uy, uz = macroscopic3d(f)
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
         mask[0, :, :] = True
 
-        with pytest.raises(ImportError, match="cannot import name 'equilibrium'"):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        wss = wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+
+        assert wss.shape == (nz, ny, nx)
+        assert torch.isfinite(wss).all()
+        assert torch.all(wss[mask] == 0)
+        assert wss[~mask].max() > 0
 
     def test_wss_from_fneq_3d_W_to_device_discarded(self):
         """CODE SMELL: wall_shear.py line 192 discards the result of
@@ -641,9 +651,13 @@ class TestWallShearBugs:
         assert wss.shape == (ny, nx)
         assert torch.isfinite(wss).all()
 
-    def test_wss_from_fneq_3d_broken_import(self):
-        """CONFIRMED BUG: wss_from_fneq_3d is non-functional due to
-        importing 'equilibrium' instead of 'equilibrium3d' from d3q19."""
+    def test_wss_from_fneq_3d_is_callable(self):
+        """REGRESSION GUARD: wss_from_fneq_3d is functional again.
+
+        It used to import ``equilibrium`` (instead of ``equilibrium3d``) from
+        d3q19 and raise ImportError on every call.  With the import fixed the
+        un-masked helper must return a finite (nz, ny, nx) field.
+        """
         from tensorlbm.wall_shear import wss_from_fneq_3d
 
         nz, ny, nx = 4, 4, 4
@@ -656,5 +670,9 @@ class TestWallShearBugs:
         rho, ux, uy, uz = macroscopic3d(f)
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
 
-        with pytest.raises(ImportError):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        wss = wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+
+        assert wss.shape == (nz, ny, nx)
+        assert torch.isfinite(wss).all()
+        # An equilibrium state has zero f_neq, hence zero shear stress.
+        assert torch.all(wss == 0)
