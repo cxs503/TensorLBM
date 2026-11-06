@@ -1,0 +1,5 @@
+Python 3.11.6 (main, May  9 2024, 00:00:00) [GCC 12.3.0 20230508 (Anolis OS 12.3.0-2)]
+Linux 6.6.52-1.7.lns23.loongarch64
+torch 2.7.1 numpy 2.4.6
+ruff 0.15.0
+h5py 3.15.1 pyyaml 6.0.3

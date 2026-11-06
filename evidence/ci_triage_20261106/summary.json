@@ -1,0 +1,569 @@
+{
+  "collected_at": "2026-11-06T02:56:27Z",
+  "failures_reported_by_any_job": [],
+  "job_conclusions": [
+    "cancelled"
+  ],
+  "max_job_lifetime_seconds": 2.0,
+  "recent_run_conclusions": {
+    "completed/cancelled": 9,
+    "pending/None": 1,
+    "queued/None": 30
+  },
+  "recent_runs": [
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:55:12Z",
+      "event": "push",
+      "head_sha": "8803b533fe8c8fecf814b3c986f874a296346ef3",
+      "id": 42153328203,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:55:12Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:55:12Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:47:55Z",
+      "event": "push",
+      "head_sha": "150873c6e4f669fb781f8c53d03c9c90ac34427b",
+      "id": 42152590605,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:47:55Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:47:55Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:47:15Z",
+      "event": "push",
+      "head_sha": "659021931dac4ee7f55899bc6ca64389a254a215",
+      "id": 42152520790,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:47:15Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:47:15Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:47:04Z",
+      "event": "pull_request",
+      "head_sha": "cd2971ccc01d439dda57a996f737eca042274032",
+      "id": 42152502829,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:47:04Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:47:04Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:46:42Z",
+      "event": "push",
+      "head_sha": "cd2971ccc01d439dda57a996f737eca042274032",
+      "id": 42152463982,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:46:42Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:46:42Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:43:20Z",
+      "event": "push",
+      "head_sha": "05d728b680ed78a9f1a8bde0be8f240ac00e4e78",
+      "id": 42152112375,
+      "lifetime_seconds": 2.0,
+      "run_started_at": "2026-11-06T02:43:20Z",
+      "status": "pending",
+      "updated_at": "2026-11-06T02:43:22Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:41:20Z",
+      "event": "pull_request",
+      "head_sha": "49ec62ca9ab9ebd7229c4b12d46fc05222974482",
+      "id": 42151907883,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:41:20Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:41:20Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:41:14Z",
+      "event": "pull_request",
+      "head_sha": "5d3e16fab4e30970b62fa0f9df61a998924ef441",
+      "id": 42151896625,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:41:14Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:41:14Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:41:11Z",
+      "event": "pull_request",
+      "head_sha": "42c4dc19560d69be712c3cd18216cb25fcec0d9d",
+      "id": 42151891231,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:41:11Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:41:11Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:41:07Z",
+      "event": "pull_request",
+      "head_sha": "c5e535aedd263e2ac8d335e9bfb920d7e70f862c",
+      "id": 42151885451,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:41:07Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:41:07Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:40:49Z",
+      "event": "push",
+      "head_sha": "49ec62ca9ab9ebd7229c4b12d46fc05222974482",
+      "id": 42151852970,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:40:49Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:40:49Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:40:11Z",
+      "event": "push",
+      "head_sha": "5d3e16fab4e30970b62fa0f9df61a998924ef441",
+      "id": 42151785944,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:40:11Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:40:11Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:39:48Z",
+      "event": "push",
+      "head_sha": "42c4dc19560d69be712c3cd18216cb25fcec0d9d",
+      "id": 42151741561,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:39:48Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:39:48Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:39:39Z",
+      "event": "push",
+      "head_sha": "c5e535aedd263e2ac8d335e9bfb920d7e70f862c",
+      "id": 42151726812,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:39:39Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:39:39Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:34:56Z",
+      "event": "pull_request",
+      "head_sha": "b01636d30631318a913ede2f4fcfe9da3f6b53f6",
+      "id": 42151232940,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:34:56Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:34:56Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:34:53Z",
+      "event": "pull_request",
+      "head_sha": "69b86ad82a993e3292f2555c68829ab4cc1ee570",
+      "id": 42151226142,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:34:53Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:34:53Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:34:49Z",
+      "event": "pull_request",
+      "head_sha": "107b6db8353dea1ad22c23e37055c527e4a1cd0d",
+      "id": 42151220297,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:34:49Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:34:49Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:34:47Z",
+      "event": "pull_request",
+      "head_sha": "1c970be306cce9068654432f243c211d8e9539ed",
+      "id": 42151215259,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:34:47Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:34:47Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:34:43Z",
+      "event": "pull_request",
+      "head_sha": "5876d10da1ccc9d250d7f1de6ece744bb69e55dd",
+      "id": 42151208823,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:34:43Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:34:43Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:34:40Z",
+      "event": "pull_request",
+      "head_sha": "003d3319e74d976eaa7fe26a97bfd80c359a42c8",
+      "id": 42151202629,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:34:40Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:34:40Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:34:13Z",
+      "event": "push",
+      "head_sha": "b01636d30631318a913ede2f4fcfe9da3f6b53f6",
+      "id": 42151156316,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:34:13Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:34:13Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:33:53Z",
+      "event": "push",
+      "head_sha": "69b86ad82a993e3292f2555c68829ab4cc1ee570",
+      "id": 42151120619,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:33:53Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:33:53Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:33:46Z",
+      "event": "push",
+      "head_sha": "107b6db8353dea1ad22c23e37055c527e4a1cd0d",
+      "id": 42151108087,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:33:46Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:33:46Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:32:42Z",
+      "event": "pull_request",
+      "head_sha": "f5916918d74df80f5c46cd140f11f4583b566daf",
+      "id": 42150990930,
+      "lifetime_seconds": 1.0,
+      "run_started_at": "2026-11-06T02:32:42Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:32:43Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:32:40Z",
+      "event": "push",
+      "head_sha": "f5916918d74df80f5c46cd140f11f4583b566daf",
+      "id": 42150988045,
+      "lifetime_seconds": 2.0,
+      "run_started_at": "2026-11-06T02:32:40Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:32:42Z"
+    },
+    {
+      "conclusion": "cancelled",
+      "created_at": "2026-11-06T02:32:38Z",
+      "event": "push",
+      "head_sha": "8728742c535e40f4930c8014dc5c0fd1d085f1be",
+      "id": 42150984302,
+      "lifetime_seconds": 4.0,
+      "run_started_at": "2026-11-06T02:32:38Z",
+      "status": "completed",
+      "updated_at": "2026-11-06T02:32:42Z"
+    },
+    {
+      "conclusion": "cancelled",
+      "created_at": "2026-11-06T02:29:55Z",
+      "event": "pull_request",
+      "head_sha": "a40bf4caf784223d4717b9f0181a7bf17d924273",
+      "id": 42150689624,
+      "lifetime_seconds": 168.0,
+      "run_started_at": "2026-11-06T02:29:55Z",
+      "status": "completed",
+      "updated_at": "2026-11-06T02:32:43Z"
+    },
+    {
+      "conclusion": "cancelled",
+      "created_at": "2026-11-06T02:29:52Z",
+      "event": "push",
+      "head_sha": "a40bf4caf784223d4717b9f0181a7bf17d924273",
+      "id": 42150684601,
+      "lifetime_seconds": 168.0,
+      "run_started_at": "2026-11-06T02:29:52Z",
+      "status": "completed",
+      "updated_at": "2026-11-06T02:32:40Z"
+    },
+    {
+      "conclusion": "cancelled",
+      "created_at": "2026-11-06T02:29:48Z",
+      "event": "push",
+      "head_sha": "3c830acec7723e241d010c90993202e35e3864c4",
+      "id": 42150678279,
+      "lifetime_seconds": 6.0,
+      "run_started_at": "2026-11-06T02:29:48Z",
+      "status": "completed",
+      "updated_at": "2026-11-06T02:29:54Z"
+    },
+    {
+      "conclusion": "cancelled",
+      "created_at": "2026-11-06T02:29:45Z",
+      "event": "push",
+      "head_sha": "1ef76442af63bf68bd00b449a72ef1440823fc06",
+      "id": 42150673200,
+      "lifetime_seconds": 5.0,
+      "run_started_at": "2026-11-06T02:29:45Z",
+      "status": "completed",
+      "updated_at": "2026-11-06T02:29:50Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:28:34Z",
+      "event": "push",
+      "head_sha": "1c970be306cce9068654432f243c211d8e9539ed",
+      "id": 42150552010,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:28:34Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:28:34Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:28:24Z",
+      "event": "push",
+      "head_sha": "5876d10da1ccc9d250d7f1de6ece744bb69e55dd",
+      "id": 42150534239,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:28:24Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:28:24Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:28:06Z",
+      "event": "push",
+      "head_sha": "003d3319e74d976eaa7fe26a97bfd80c359a42c8",
+      "id": 42150501476,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:28:06Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:28:06Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:23:48Z",
+      "event": "pull_request",
+      "head_sha": "606bf58a10e46f2396846e7d3d7652cd0cbee01a",
+      "id": 42150047447,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:23:48Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:23:48Z"
+    },
+    {
+      "conclusion": "cancelled",
+      "created_at": "2026-11-06T02:23:45Z",
+      "event": "push",
+      "head_sha": "606bf58a10e46f2396846e7d3d7652cd0cbee01a",
+      "id": 42150041982,
+      "lifetime_seconds": 362.0,
+      "run_started_at": "2026-11-06T02:23:45Z",
+      "status": "completed",
+      "updated_at": "2026-11-06T02:29:47Z"
+    },
+    {
+      "conclusion": "cancelled",
+      "created_at": "2026-11-06T02:23:44Z",
+      "event": "push",
+      "head_sha": "1ef76442af63bf68bd00b449a72ef1440823fc06",
+      "id": 42150039251,
+      "lifetime_seconds": 3.0,
+      "run_started_at": "2026-11-06T02:23:44Z",
+      "status": "completed",
+      "updated_at": "2026-11-06T02:23:47Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:23:41Z",
+      "event": "pull_request",
+      "head_sha": "eb17f210906d581dcaf7505fab9248c30d0ce020",
+      "id": 42150035269,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:23:41Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:23:41Z"
+    },
+    {
+      "conclusion": "cancelled",
+      "created_at": "2026-11-06T02:23:38Z",
+      "event": "push",
+      "head_sha": "eb17f210906d581dcaf7505fab9248c30d0ce020",
+      "id": 42150029379,
+      "lifetime_seconds": 15.0,
+      "run_started_at": "2026-11-06T02:23:38Z",
+      "status": "completed",
+      "updated_at": "2026-11-06T02:23:53Z"
+    },
+    {
+      "conclusion": "cancelled",
+      "created_at": "2026-11-06T02:23:36Z",
+      "event": "push",
+      "head_sha": "1ef76442af63bf68bd00b449a72ef1440823fc06",
+      "id": 42150026233,
+      "lifetime_seconds": 4.0,
+      "run_started_at": "2026-11-06T02:23:36Z",
+      "status": "completed",
+      "updated_at": "2026-11-06T02:23:40Z"
+    },
+    {
+      "conclusion": null,
+      "created_at": "2026-11-06T02:21:55Z",
+      "event": "workflow_dispatch",
+      "head_sha": "47c6c2fc222a44dc0b4c8d2176972342feaabac8",
+      "id": 42149843638,
+      "lifetime_seconds": 0.0,
+      "run_started_at": "2026-11-06T02:21:55Z",
+      "status": "queued",
+      "updated_at": "2026-11-06T02:21:55Z"
+    }
+  ],
+  "repository": "cxs503/TensorLBM",
+  "triage_jobs": [
+    {
+      "completed_at": "2026-11-06T02:29:49Z",
+      "conclusion": "cancelled",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "lifetime_seconds": 2.0,
+      "name": "package-build",
+      "runner_name": "",
+      "started_at": "2026-11-06T02:29:47Z",
+      "status": "completed",
+      "steps_conclusions": [],
+      "steps_recorded": 0
+    },
+    {
+      "completed_at": "2026-11-06T02:29:49Z",
+      "conclusion": "cancelled",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "lifetime_seconds": 2.0,
+      "name": "architecture-audit",
+      "runner_name": "",
+      "started_at": "2026-11-06T02:29:47Z",
+      "status": "completed",
+      "steps_conclusions": [],
+      "steps_recorded": 0
+    },
+    {
+      "completed_at": "2026-11-06T02:29:49Z",
+      "conclusion": "cancelled",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "lifetime_seconds": 2.0,
+      "name": "lint",
+      "runner_name": "",
+      "started_at": "2026-11-06T02:29:47Z",
+      "status": "completed",
+      "steps_conclusions": [],
+      "steps_recorded": 0
+    },
+    {
+      "completed_at": "2026-11-06T02:29:49Z",
+      "conclusion": "cancelled",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "lifetime_seconds": 2.0,
+      "name": "platform-test",
+      "runner_name": "",
+      "started_at": "2026-11-06T02:29:47Z",
+      "status": "completed",
+      "steps_conclusions": [],
+      "steps_recorded": 0
+    },
+    {
+      "completed_at": "2026-11-06T02:29:49Z",
+      "conclusion": "cancelled",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "lifetime_seconds": 2.0,
+      "name": "test (3.12)",
+      "runner_name": "",
+      "started_at": "2026-11-06T02:29:47Z",
+      "status": "completed",
+      "steps_conclusions": [],
+      "steps_recorded": 0
+    },
+    {
+      "completed_at": "2026-11-06T02:29:49Z",
+      "conclusion": "cancelled",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "lifetime_seconds": 2.0,
+      "name": "test (3.11)",
+      "runner_name": "",
+      "started_at": "2026-11-06T02:29:47Z",
+      "status": "completed",
+      "steps_conclusions": [],
+      "steps_recorded": 0
+    },
+    {
+      "completed_at": "2026-11-06T02:29:49Z",
+      "conclusion": "cancelled",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "lifetime_seconds": 2.0,
+      "name": "repository-layout",
+      "runner_name": "",
+      "started_at": "2026-11-06T02:29:47Z",
+      "status": "completed",
+      "steps_conclusions": [],
+      "steps_recorded": 0
+    }
+  ],
+  "triage_run": {
+    "conclusion": "cancelled",
+    "created_at": "2026-11-06T02:29:45Z",
+    "event": "push",
+    "head_sha": "1ef76442af63bf68bd00b449a72ef1440823fc06",
+    "id": 42150673200,
+    "lifetime_seconds": 5.0,
+    "run_started_at": "2026-11-06T02:29:45Z",
+    "status": "completed",
+    "updated_at": "2026-11-06T02:29:50Z"
+  },
+  "triage_sha": "1ef76442af63bf68bd00b449a72ef1440823fc06",
+  "workflow": "ci.yml"
+}
