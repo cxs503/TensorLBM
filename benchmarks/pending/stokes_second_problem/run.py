@@ -242,7 +242,10 @@ def period_convergence(r: dict, U0: float, tol_pct: float = 0.5) -> dict:
                 "max_cycle_profile_diff_over_U0_pct": float(diff),
             }
         )
-    return {"rows": rows, "worst_pct": worst, "steady": worst <= tol_pct}
+    # bool() cast: ``worst`` is a numpy.float64, so the comparison yields
+    # numpy.bool_, which json.dumps refuses -> the scan verdict could never
+    # be serialized (defect found 2026-11-03, no result.json ever existed).
+    return {"rows": rows, "worst_pct": float(worst), "steady": bool(worst <= tol_pct)}
 
 
 def compare_grids(r_lo: dict, r_hi: dict, U0: float, tol_pct: float = 3.0) -> dict:
@@ -266,22 +269,50 @@ def compare_grids(r_lo: dict, r_hi: dict, U0: float, tol_pct: float = 3.0) -> di
         shi = m_hi[(round(phi, 6), k_hi)]
         err_lo.append(slo["max_rel_err_pct"])
         err_hi.append(shi["max_rel_err_pct"])
-        y_lo = np.array(slo["y_profile"])
-        u_lo = np.array(slo["u_profile"])
-        y_hi = np.array(shi["y_profile"])
-        u_hi = np.array(shi["u_profile"])
+        # y_profile is stored wall-first, i.e. DESCENDING (y = H+0.5-i).  np.interp
+        # needs an ascending abscissa; without the argsort the coarse profile was
+        # interpolated against a reversed axis and the reported cross-grid profile
+        # difference was garbage (97.7% of U0 at phi=0/pi -- impossible when both
+        # grids match the analytic solution to 0.2%).  Defect fixed 2026-11-03.
+        y_lo_raw = np.array(slo["y_profile"])
+        u_lo_raw = np.array(slo["u_profile"])
+        y_hi_raw = np.array(shi["y_profile"])
+        u_hi_raw = np.array(shi["u_profile"])
+        o_lo = np.argsort(y_lo_raw)
+        o_hi = np.argsort(y_hi_raw)
+        y_lo, u_lo = y_lo_raw[o_lo], u_lo_raw[o_lo]
+        y_hi, u_hi = y_hi_raw[o_hi], u_hi_raw[o_hi]
         # common range (from wall out to H_lo−0.5), interpolate coarse onto fine
         mask = y_hi <= y_lo[-1]
         u_lo_i = np.interp(y_hi[mask], y_lo, u_lo)
         diff = np.abs(u_lo_i - u_hi[mask]) / U0 * 100.0
+        # Self-similar (wall-unit) comparison: each grid uses delta = H/4 in
+        # CELLS, so the two grids solve DIFFERENT physical problems and a same-y
+        # profile difference is not a discretisation error (it is O(delta) by
+        # design).  The physically meaningful cross-grid comparison is the
+        # Stokes-layer similarity variable eta = y/delta, where the analytic
+        # solution U0*exp(-eta)*cos(phi-eta) is grid independent.
+        eta_lo, eta_hi = y_lo / (r_lo["delta_lb"]), y_hi / (r_hi["delta_lb"])
+        eta_max = min(float(eta_lo.max()), float(eta_hi.max()))
+        eta_common = np.linspace(0.0, eta_max, 401)
+        u_lo_eta = np.interp(eta_common, eta_lo, u_lo)
+        u_hi_eta = np.interp(eta_common, eta_hi, u_hi)
+        sim_diff = np.abs(u_lo_eta - u_hi_eta) / U0 * 100.0
         rows.append(
             {
                 "phase": phi,
                 "max_profile_diff_over_U0_pct": float(np.max(diff)),
                 "mean_profile_diff_over_U0_pct": float(np.mean(diff)),
+                "max_profile_diff_over_U0_pct__NOTE": (
+                    "same-y comparison is NOT a discretisation error: delta = H/4 in "
+                    "cells differs per grid, use the eta=y/delta similarity block"
+                ),
+                "similarity_collapse_max_diff_over_U0_pct": float(np.max(sim_diff)),
+                "similarity_collapse_mean_diff_over_U0_pct": float(np.mean(sim_diff)),
+                "eta_max_compared": eta_max,
             }
         )
-    converged = all(eh <= max(el, tol_pct) for el, eh in zip(err_lo, err_hi))
+    converged = bool(all(eh <= max(el, tol_pct) for el, eh in zip(err_lo, err_hi)))
     return {
         "rows": rows,
         "converged": converged,
@@ -428,12 +459,15 @@ def main() -> None:
             f"grid_converged={conv['converged']}  steady="
             + "/".join(str(pc["steady"]) for pc in pcs)
         )
-        for pc in pcs:
-            print(f"  H={pc['H']}: worst cycle-profile diff = {pc['worst_pct']:.4f}% U0")
+        for r_case, pc in zip(cases, pcs):
+            # period_convergence() carries no "H" key (defect fixed 2026-11-03:
+            # the printout used to raise KeyError after result.json was written)
+            print(f"  H={r_case['H']}: worst cycle-profile diff = {pc['worst_pct']:.4f}% U0")
         for row in conv["rows"]:
             print(
-                f"  phi={row['phase']:.4f}  profile_diff_H40vsH80 = "
-                f"{row['max_profile_diff_over_U0_pct']:.3f}% U0"
+                f"  phi={row['phase']:.4f}  similarity_collapse_max_diff(eta=y/delta) = "
+                f"{row['similarity_collapse_max_diff_over_U0_pct']:.3f}% U0"
+                f"   [same-y (non-comparable) = {row['max_profile_diff_over_U0_pct']:.3f}% U0]"
             )
 
 
