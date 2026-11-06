@@ -98,6 +98,29 @@ class TestBugIdentification:
         assert torch.all(wss[mask] == 0)
         assert wss[~mask].max() > 0
 
+        # Analytic magnitude of the tangential stress (m4648).  Feed the helper a
+        # state whose moments are known exactly, so f_neq = a*c_x*c_y is the only
+        # non-equilibrium content:
+        #   sigma_xy = -(1 - 1/(2 tau)) * a * sum_i (c_x c_y)^2,
+        #   sigma_xz = sigma_yz = 0  =>  wss == |sigma_xy| on every fluid cell.
+        # sum_i (c_x c_y)^2 is summed from d3q19.C, never hand-copied.
+        rho_an = torch.ones(nz, ny, nx)
+        zero_an = torch.zeros(nz, ny, nx)
+        ux_an = torch.full((nz, ny, nx), 0.1)
+        a = 1.0e-4
+        tau = 0.8
+        f_an = equilibrium3d(rho_an, ux_an, zero_an, zero_an) + a * cx_cy * torch.ones_like(f)
+        wss_an = wss_from_fneq_3d(
+            f_an, rho_an, ux_an, zero_an, zero_an, tau=tau, mask=torch.zeros_like(mask)
+        )
+        s_xy_sq = float((C[:, 0] * C[:, 1]).pow(2).sum())
+        expected = abs(-(1.0 - 0.5 / tau) * a * s_xy_sq)
+        # rel=1e-4 is the float32 budget here (a=1e-4 is ~1e-6 off its decimal
+        # value in float32); it still rejects any prefactor/geometry slip by a
+        # huge margin (e.g. forgetting the 1/(2 tau) term is a 62.5% error).
+        assert float(wss_an.max()) == pytest.approx(expected, rel=1e-4)
+        assert float(wss_an.min()) == pytest.approx(expected, rel=1e-4)
+
     def test_wss_from_fneq_3d_W_to_device_discarded(self):
         """CODE SMELL: wall_shear.py line 192 discards the result of
         _W3D.to(device). The weights tensor is never actually moved to the
@@ -676,3 +699,20 @@ class TestWallShearBugs:
         assert torch.isfinite(wss).all()
         # An equilibrium state has zero f_neq, hence zero shear stress.
         assert torch.all(wss == 0)
+
+        # ... and the magnitude is the analytic |sigma_xy| of a hand-built shear
+        # f_neq = a*c_x*c_y: sigma_xy = -(1 - 1/(2 tau)) * a * sum_i (c_x c_y)^2,
+        # so the zero above must not be a "returns zeros for everything" artefact.
+        a = 1.0e-3
+        tau = 0.8
+        cx_cy = (C[:, 0] * C[:, 1]).view(-1, 1, 1, 1).to(f.dtype)
+        f_pert = f + a * cx_cy * torch.ones_like(f)
+        ones = torch.ones(nz, ny, nx)
+        zero = torch.zeros(nz, ny, nx)
+        wss_pert = wss_from_fneq_3d(
+            f_pert, ones, zero, zero, zero, tau=tau, mask=torch.zeros_like(mask)
+        )
+        s_xy_sq = float((C[:, 0] * C[:, 1]).pow(2).sum())
+        expected = abs(-(1.0 - 0.5 / tau) * a * s_xy_sq)
+        assert float(wss_pert.max()) == pytest.approx(expected, rel=1e-5)
+        assert float(wss_pert.min()) == pytest.approx(expected, rel=1e-5)
