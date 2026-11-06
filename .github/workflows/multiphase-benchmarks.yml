@@ -17,16 +17,14 @@ on:
 permissions:
   contents: read
 
+env:
+  TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
+
 jobs:
   focused-multiphase:
-    runs-on: ubuntu-latest
+    runs-on: ci-loong64
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: pyproject.toml
       - name: Install package and test tools
         run: |
           python -m pip install --upgrade pip
