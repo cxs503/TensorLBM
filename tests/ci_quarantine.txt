@@ -88,19 +88,26 @@ tests/test_suboff_static_amr_production.py::test_static_amr_checkpoint_resumes_c
 tests/test_suboff_static_amr_production.py::test_underresolved_aff8_records_component_and_area_evidence
 tests/test_suboff_static_amr_production.py::test_legacy_none_surface_observer_checkpoint_can_resume
 tests/test_suboff_static_amr_production.py::test_checkpoint_without_wall_source_version_is_rejected
-tests/test_suboff_wallfn_fullgrid_runner.py::TestConfigValidation::test_default_device_is_sdaa0
-tests/test_suboff_wallfn_fullgrid_runner.py::TestDragComputation::test_compute_drags_returns_floats
-tests/test_suboff_wallfn_fullgrid_runner.py::TestDragComputation::test_compute_drags_d3q27
-tests/test_utils.py::TestConfigureCpuThreads::test_non_cpu_device_is_noop
-tests/test_wall_model_guo_force.py::test_precomputed_wall_traction_is_not_divided_by_wall_distance_again
 tests/test_wall_refinement_combination_gate.py::test_unavailable_collision_contract_cannot_be_promoted_by_baseline_shape
 
-# --- batch 3: tests/test_lbm_step.py — NOT collectable on stock main (unguarded torch.sdaa crashes collection on CPU-only torch).
-# After fixing collection (getattr guard), 6 of 30 fail on CPU: wall_function allclose atol=1e-6 too tight for CPU float32 vs reference (D3Q19/D3Q27), and TestPerformance::test_mlups_* are GPU throughput benchmarks (meaningless on CI CPU). Revisit: run on GPU dev server or split env markers. ---
-tests/test_lbm_step.py::TestWallFunctionEquivalence::test_wall_function_allclose[D3Q19-19]
-tests/test_lbm_step.py::TestWallFunctionEquivalence::test_wall_function_allclose[D3Q27-27]
-tests/test_lbm_step.py::TestFullStepEquivalence::test_full_step_bgk_wall_function[D3Q19-19]
-tests/test_lbm_step.py::TestFullStepEquivalence::test_full_step_bgk_wall_function[D3Q27-27]
+# --- batch 3 (partially burned down 2026-11-03): tests/test_lbm_step.py.
+# The four wall-function equivalence entries of this batch are FIXED and removed. The
+# root cause was not the 1e-6 allclose atol: `wall_function` in
+# src/tensorlbm/boundary/wall_function_common.py divided the already-integrated wall
+# traction by `y_val` a second time (coef = -(tau_w / y_val)), a 2x error at the default
+# y_val=0.5, while LBMStepExecutor (src/tensorlbm/lbm_step.py) used the correct A/V=1
+# lattice scaling; the two paths therefore disagreed by exactly 2x. Restored the A/V=1
+# scaling (commit 68d23320 semantics, lost when the module moved to boundary/).
+# Evidence: docs/evidence/ci-quarantine-burndown-r1.json.
+# Kept: the two throughput benchmarks. They XPASS numerically on CPU float32 (their only
+# assertion is executor-vs-manual equivalence) but cost real wall-clock on a shared CPU
+# runner: measured 2026-11-03 on a loaded 128-core host, 32^3 D3Q27 wall-function
+# executor step = 399 ms/step vs manual 281 ms/step, test body = 3 warmup + 50 measured
+# steps over both code paths -> D3Q19 = 60 s (`--durations`), D3Q27 ~2x, i.e. ~150 s for
+# the parametrized test. Their stated purpose is MLUPS throughput, meaningless on a
+# shared CPU runner. Follow-up: move them behind a perf-lane/GPU marker. ---
+tests/test_lbm_step.py::TestPerformance::test_mlups_wall_function[D3Q19-19]
+tests/test_lbm_step.py::TestPerformance::test_mlups_wall_function[D3Q27-27]
 tests/test_lbm_step.py::TestPerformance::test_mlups_wall_function[D3Q19-19]
 tests/test_lbm_step.py::TestPerformance::test_mlups_wall_function[D3Q27-27]
 
