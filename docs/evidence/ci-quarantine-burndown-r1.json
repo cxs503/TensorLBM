@@ -1,0 +1,138 @@
+{
+  "schema": "tensorlbm-ci-quarantine-burndown-v1",
+  "date": "2026-11-03",
+  "branch": "agent/m4732",
+  "task": "Burn down tests/ci_quarantine.txt: restore >=2 quarantined tests to the main CI lane by fixing root causes (no test deletion, no tolerance loosening).",
+  "summary": {
+    "quarantined_entries_before": 120,
+    "quarantined_entries_after": 113,
+    "restored_to_main_lane": 9,
+    "tests_deleted": 0,
+    "assertions_weakened": 0,
+    "source_bugs_fixed": 3
+  },
+  "root_causes": [
+    {
+      "id": "RC-1",
+      "label": "wall_traction_double_y_val_scaling",
+      "file": "src/tensorlbm/boundary/wall_function_common.py",
+      "chain": [
+        "68d23320",
+        "c37242c3"
+      ],
+      "detail": "Commit 68d23320 replaced coef = -(tau_w / y_val) by the unit-control-volume form coef = -tau_w (A/V = 1) in src/tensorlbm/wall_function_common.py and in LBMStepExecutor. When the module moved to src/tensorlbm/boundary/wall_function_common.py the moved copy still carried the old /y_val scaling, so `wall_function` reintroduced a 2x error at the default y_val=0.5 while lbm_step.py kept the fixed form. The two solver paths therefore disagreed by exactly 2x.",
+      "fix": "coef = -tau_w * near (A/V = 1); y_val documented as entering the wall-law solve only, not the traction scaling.",
+      "tests_unblocked": [
+        "tests/test_wall_model_guo_force.py::test_precomputed_wall_traction_is_not_divided_by_wall_distance_again",
+        "tests/test_lbm_step.py::TestWallFunctionEquivalence::test_wall_function_allclose[D3Q19-19]",
+        "tests/test_lbm_step.py::TestWallFunctionEquivalence::test_wall_function_allclose[D3Q27-27]",
+        "tests/test_lbm_step.py::TestFullStepEquivalence::test_full_step_bgk_wall_function[D3Q19-19]",
+        "tests/test_lbm_step.py::TestFullStepEquivalence::test_full_step_bgk_wall_function[D3Q27-27]"
+      ],
+      "note": "The quarantine note blamed the 1e-6 allclose atol on CPU float32; the actual mismatch was a deterministic 2x, not float32 noise."
+    },
+    {
+      "id": "RC-2",
+      "label": "drag_computation_api_drift",
+      "file": "tests/test_suboff_wallfn_fullgrid_runner.py",
+      "chain": [
+        "c37242c3"
+      ],
+      "detail": "`_compute_drags` gained a `mesh: SurfaceMesh` argument (pressure drag now uses the mesh surface normals/area elements) while the two drag tests kept the 4-argument call, so they died with TypeError before exercising any numerics.",
+      "fix": "Tests build the generic gradient normal mesh (SurfaceMesh.from_gradient(solid, near)) and call the current signature; the assertions were tightened from 'finite float' to the exact moment contract: friction drag == sum(u_tau^2 * near) (rel 1e-6) and zero pressure drag for uniform density.",
+      "tests_unblocked": [
+        "tests/test_suboff_wallfn_fullgrid_runner.py::TestDragComputation::test_compute_drags_returns_floats",
+        "tests/test_suboff_wallfn_fullgrid_runner.py::TestDragComputation::test_compute_drags_d3q27"
+      ]
+    },
+    {
+      "id": "RC-3",
+      "label": "suboff_fullgrid_default_device_and_artifact_label_drift",
+      "file": "src/tensorlbm/suboff_wallfn_fullgrid_runner.py",
+      "chain": [
+        "e4373ea7",
+        "757e4c53"
+      ],
+      "detail": "The runner was authored with device default 'sdaa:0' (documented in the module and class docstrings, asserted by the test); commit 757e4c53 silently switched the field to 'cuda:0' without touching either docstring, leaving the contract inconsistent. The artifact writer also emitted the raw config string ('sdaa:0') as artifact['device'] while every other SUBOFF runner emits the backend label ('sdaa'), which had two additional (un-quarantined) SDAA smoke tests red on stock main.",
+      "fix": "Default restored to the documented 'sdaa:0'; artifact['device'] = torch.device(config.device).type (backend label, matching the sibling runners).",
+      "tests_unblocked": [
+        "tests/test_suboff_wallfn_fullgrid_runner.py::TestConfigValidation::test_default_device_is_sdaa0",
+        "tests/test_suboff_wallfn_fullgrid_runner.py::TestSdaaSmokeTest::test_sdaa_bgk_d3q19 (was failing un-quarantined)",
+        "tests/test_suboff_wallfn_fullgrid_runner.py::TestSdaaSmokeTest::test_sdaa_cumulant_d3q27 (was failing un-quarantined)"
+      ]
+    },
+    {
+      "id": "RC-4",
+      "label": "configure_cpu_threads_non_cpu_noop",
+      "file": "src/tensorlbm/utils.py",
+      "detail": "No code change needed: configure_cpu_threads already early-outs for non-CPU devices on the current main. The entry was a stale leftover and now passes unchanged.",
+      "fix": "Entry removed from the quarantine list after verifying it passes (no code change).",
+      "tests_unblocked": [
+        "tests/test_utils.py::TestConfigureCpuThreads::test_non_cpu_device_is_noop"
+      ]
+    }
+  ],
+  "verification": {
+    "environment": "TORCH_DEVICE_BACKEND_AUTOLOAD=0, CPU-only stock torch, python3.11, 128-core host",
+    "commands": [
+      {
+        "cmd": "pytest -q tests/test_wall_model_guo_force.py tests/test_utils.py tests/test_suboff_wallfn_fullgrid_runner.py",
+        "result": "111 passed"
+      },
+      {
+        "cmd": "pytest -q tests/test_lbm_step.py::TestWallFunctionEquivalence tests/test_lbm_step.py::TestFullStepEquivalence",
+        "result": "10 passed"
+      },
+      {
+        "cmd": "pytest -q tests/test_wall_function_common.py tests/test_wall_function_contract.py tests/test_wall_function_admission_integration.py tests/test_wall_model_force_closure.py tests/test_wall_chain.py",
+        "result": "46 passed"
+      },
+      {
+        "cmd": "ruff check src/tensorlbm/boundary/wall_function_common.py src/tensorlbm/suboff_wallfn_fullgrid_runner.py tests/test_suboff_wallfn_fullgrid_runner.py tests/test_wall_model_guo_force.py",
+        "result": "All checks passed"
+      }
+    ],
+    "negative_controls": [
+      {
+        "name": "re-inject the 1/y_val traction scaling",
+        "injection": "src/tensorlbm/boundary/wall_function_common.py: coef = -tau_w * near -> coef = -(tau_w / y_val) * near",
+        "observed_red": [
+          "tests/test_wall_model_guo_force.py::test_precomputed_wall_traction_is_not_divided_by_wall_distance_again -> assert -0.001999999999999988 == -0.001 +- 2.0e-15 (comparison failed)",
+          "tests/test_lbm_step.py::TestWallFunctionEquivalence::test_wall_function_allclose[D3Q19-19] -> AssertionError: wall_function mismatch (D3Q19), allclose(...atol=1e-06) False"
+        ],
+        "restored": true
+      },
+      {
+        "name": "inject a 2x scale into the friction-drag integral",
+        "injection": "src/tensorlbm/suboff_wallfn_fullgrid_runner.py: drag_fric sum multiplied by 2.0",
+        "observed_red": [
+          "tests/test_suboff_wallfn_fullgrid_runner.py::TestDragComputation::test_compute_drags_returns_floats -> assert 0.30719998478889465 == 0.15359999239444733 +- 1.5e-07",
+          "tests/test_suboff_wallfn_fullgrid_runner.py::TestDragComputation::test_compute_drags_d3q27 -> same 2x mismatch"
+        ],
+        "restored": true
+      }
+    ]
+  },
+  "kept_quarantined_with_quantified_evidence": [
+    {
+      "nodeids": [
+        "tests/test_lbm_step.py::TestPerformance::test_mlups_wall_function[D3Q19-19]",
+        "tests/test_lbm_step.py::TestPerformance::test_mlups_wall_function[D3Q27-27]"
+      ],
+      "class": "throughput_benchmark / wall_clock",
+      "measured": {
+        "probe": "32^3 D3Q27, CPU float32, 128-core host under load (12 concurrent pytest workers)",
+        "executor_wall_fn_step_ms": 399.0,
+        "manual_step_ms": 281.0,
+        "d3q19_parametrization_pytest_durations_s": 59.94,
+        "d3q27_parametrization_estimate_s": 130,
+        "parametrized_test_estimate_s": 150
+      },
+      "current_status": "XPASS (numerically green after RC-1) but excluded from the CI lane on wall-clock cost and because MLUPS throughput on a shared CPU runner carries no information; follow-up is a dedicated perf-lane/GPU marker."
+    }
+  ],
+  "findings_not_fixed": [
+    "tests/test_amr_wall_function_combination.py::TestAmrWallFunctionCombination::test_halo_exchange_preserves_wall_correction[D3Q19/D3Q27] still fail on stock main with an amr_common.py:261 shape mismatch (mask [8,6,8] vs fine tensor [19,8,12,16]); they remain quarantined. The test refines a 4x6x8 patch by ratio 2 but passes a box that is 2x too small in fine units - needs the AMR owner.",
+    "tests/test_lbm_step.py cannot be run as a single file inside a 120 s budget on a loaded host because TestPerformance also contains 64^3 MLUPS benchmarks; file-level runs of the module were therefore split by class."
+  ]
+}
