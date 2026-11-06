@@ -16,7 +16,18 @@ from pathlib import Path, PurePosixPath
 POLICY_PATH = "docs/architecture/repository_layout_policy.json"
 MAX_FILE_BYTES = 5 * 1024 * 1024
 GENERATED_ROOTS = {"runs", "runs_prop", "outputs"}
-GENERATED_PARTS = {"__pycache__", "node_modules", ".venv", ".pytest_cache", ".ruff_cache"}
+GENERATED_PARTS = {
+    "__pycache__",
+    "node_modules",
+    ".venv",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".mypy_cache",
+}
+# ``pip install -e .`` / ``python -m build`` write packaging metadata next to
+# the sources (``src/tensorlbm.egg-info``, ``*.dist-info``).  Only the
+# directory *suffix* is matched, so the names stay free-form.
+GENERATED_DIR_SUFFIXES = (".egg-info", ".dist-info")
 MODEL_SUFFIXES = {".pt", ".pth", ".ckpt", ".onnx", ".safetensors"}
 PATH_LISTS = ("root_files", "legacy_root_files", "legacy_generated_files", "legacy_model_files")
 
@@ -74,6 +85,7 @@ def is_generated(name: str) -> bool:
     return (
         parts[0] in GENERATED_ROOTS
         or bool(set(parts[:-1]) & GENERATED_PARTS)
+        or any(part.endswith(GENERATED_DIR_SUFFIXES) for part in parts[:-1])
         or parts[:2] == ("artifacts", "runs")
         or parts[:2] == ("frontend-vue", "dist")
         or parts[0] in {"build", "dist"}

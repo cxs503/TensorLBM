@@ -73,6 +73,9 @@ class RepositoryLayoutTests(unittest.TestCase):
             "pkg/__pycache__/a.pyc",
             ".venv/bin/python",
             "frontend-vue/node_modules/a.js",
+            ".mypy_cache/3.12/tensorlbm.json",
+            "src/tensorlbm.egg-info/PKG-INFO",
+            "build/lib/thing.egg-info/SOURCES.txt",
         ]:
             with self.subTest(name=name):
                 self.assertTrue(LAYOUT.is_generated(name))
@@ -82,9 +85,29 @@ class RepositoryLayoutTests(unittest.TestCase):
             "runs_extra/source.py",
             "tests/fixtures/result.json",
             "benchmarks/verified/case/report.json",
+            "docs/egg-info-notes.md",
+            "tools/egg_info_helper.py",
         ]:
             with self.subTest(name=name):
                 self.assertFalse(LAYOUT.is_generated(name))
+
+    def test_committed_packaging_metadata_is_generated(self):
+        """Editable installs drop build metadata next to the sources.
+
+        ``pip install -e .`` in the CI jobs writes ``src/tensorlbm.egg-info/``;
+        committing it (``git add -f``, as it is gitignored) used to sail through
+        this gate because only *directory names* were matched.
+        """
+        names = ["src/tensorlbm.egg-info/PKG-INFO", "src/tensorlbm.egg-info/SOURCES.txt"]
+        for name in names:
+            self.write(name, "Metadata-Version: 2.1\n")
+        for name in names:
+            with self.subTest(name=name):
+                self.assertIn("generated-file:", self.check([name])[0])
+        config = policy()
+        config["legacy_generated_files"] = [names[0]]
+        self.assertEqual(self.check([names[0]], config), [])
+        self.assertIn("generated-file:", self.check([names[1]], config)[0])
 
     def test_model_exceptions_are_exact(self):
         for name in ["models/old.pt", "models/new.pt", "tests/fixtures/weights.ONNX"]:

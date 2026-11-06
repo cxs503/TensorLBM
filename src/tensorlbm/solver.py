@@ -434,7 +434,13 @@ def correct_mass(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     current = f.sum()
     if current.abs() < 1e-30:
         return f
-    return f * (target_mass / current)
+    # The annotation (not a ``cast``) keeps this honest across torch stub
+    # versions: ``f * scalar`` is ``Any`` without stubs and ``Tensor`` with
+    # them, so an explicit target type is the only form that satisfies the
+    # strict mypy core gate either way, and it never trips
+    # ``warn_redundant_casts``.
+    scaled: torch.Tensor = f * (target_mass / current)
+    return scaled
 
 
 def collide_trt(
