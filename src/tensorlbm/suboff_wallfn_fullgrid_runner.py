@@ -668,7 +668,10 @@ def run_suboff_wallfn_fullgrid(
         "dynamic_pressure": dynamic_pressure,
         "reference_Ct": config.reference_Ct,
         "reference_source": config.reference_source,
-        "device": "cuda" if "cuda" in config.device else config.device,
+        # Record the device *family* (cuda/sdaa/cpu), not the ordinal: the
+        # artifact is compared across runners and "cuda:1" == "cuda" for the
+        # purposes of provenance.
+        "device": torch.device(config.device).type,
         "force_time_series": force_series,
         "ct_time_series": ct_series,
     }

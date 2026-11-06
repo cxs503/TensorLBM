@@ -645,25 +645,47 @@ class MultiGPUSolver3D:
 # ---------------------------------------------------------------------------
 
 
+def _accelerator_family() -> tuple[str, int]:
+    """Accelerator family and card count visible to torch, best first.
+
+    CUDA is preferred; when it is unavailable but a torch SDAA backend is
+    present the SDAA cards are used instead.  ``("cpu", 1)`` means "no
+    accelerator", i.e. the caller gets a single CPU domain.
+    """
+    if torch.cuda.is_available() and torch.cuda.device_count() > 0:
+        return ("cuda", torch.cuda.device_count())
+    sdaa = getattr(torch, "sdaa", None)
+    if sdaa is not None:
+        try:
+            count = int(sdaa.device_count())
+        except Exception:  # pragma: no cover - backend without device_count
+            count = 0
+        if count > 0:
+            return ("sdaa", count)
+    return ("cpu", 1)
+
+
 def auto_decompose(
     f_global: torch.Tensor,
     n_gpus: int | None = None,
 ) -> DomainDecomposition:
-    """Build a :class:`DomainDecomposition` using all available CUDA devices.
+    """Build a :class:`DomainDecomposition` on the available accelerators.
 
     Args:
         f_global: Global distribution tensor.  Shape determines nx_global.
-        n_gpus:   Override GPU count (default: all available GPUs, or 1 CPU).
+        n_gpus:   Override card count (default: every available card of the
+                  detected family — CUDA first, then SDAA — or 1 CPU).
 
     Returns:
         Configured :class:`DomainDecomposition`.
     """
+    family, available = _accelerator_family()
     if n_gpus is None:
-        n_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+        n_gpus = 0 if family == "cpu" else available
     if n_gpus == 0:
         devices = ["cpu"]
     else:
-        devices = [f"cuda:{i}" for i in range(n_gpus)]
+        devices = [f"{family}:{i}" for i in range(n_gpus)]
 
     nx = f_global.shape[-1]
     return DomainDecomposition(devices=devices, nx_global=nx)
