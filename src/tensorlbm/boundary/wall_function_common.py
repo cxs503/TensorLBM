@@ -343,9 +343,14 @@ def wall_function(
     decoupling the wall shear stress from the bulk relaxation time.  The
     body force decelerates the tangential velocity component:
 
-        F = -(τ_w / dy) · û
+        F = -τ_w · (A/V) · û
 
-    where ``τ_w = u_tau²`` and ``û`` is the unit tangential velocity vector.
+    where ``τ_w = u_tau²``, ``û`` is the unit tangential velocity vector, and
+    a unit lattice boundary control volume has ``A/V = 1``.  The wall distance
+    already enters the wall-law solve (``compute_u_tau`` / ``compute_y_plus``)
+    and must not divide the pre-integrated traction a second time; otherwise
+    the injected wall impulse would scale as ``1/y_val`` and the correction
+    would depend on the wall distance twice.
 
     Because ``u_tau`` and ``y_plus`` are pre-computed by the caller, this
     function can be combined with any turbulence model (RANS, LES, etc.)
@@ -363,7 +368,9 @@ def wall_function(
         y_plus: Dimensionless wall distance field ``(nz, ny, nx)``.
         lattice: Lattice name (``"D3Q19"`` or ``"D3Q27"``).
         nu:     Kinematic viscosity (lattice units).
-        y_val:  Distance from the near-wall cell centre to the wall.
+        y_val:  Distance from the near-wall cell centre to the wall.  Kept
+                for API compatibility and used by the wall-law solve
+                upstream; it does not scale the traction here.
         rho:    Optional pre-computed density field ``(nz, ny, nx)``.
         ux:     Optional pre-computed x-velocity field ``(nz, ny, nx)``.
         uy:     Optional pre-computed y-velocity field ``(nz, ny, nx)``.
@@ -389,9 +396,14 @@ def wall_function(
     # Wall shear stress from pre-computed u_tau
     tau_w = u_tau * u_tau
 
-    # Body force on near-wall cells: F = -(τ_w / dy) · û
+    # Body force on unit near-wall control volumes: F = -τ_w (A/V) · û with
+    # A/V = 1 in lattice units.  ``y_val`` is *not* applied here: it has
+    # already entered the wall-law solve, and dividing the pre-integrated
+    # traction by it again rescales the impulse by 1/y_val (regression
+    # covered by tests/test_wall_model_guo_force.py::
+    # test_precomputed_wall_traction_is_not_divided_by_wall_distance_again).
     inv_umag = 1.0 / u_mag
-    coef = -(tau_w / y_val) * near.to(f.dtype)
+    coef = -tau_w * near.to(f.dtype)
     fx = coef * (ux * inv_umag)
     fy = coef * (uy * inv_umag)
     fz = coef * (uz * inv_umag)

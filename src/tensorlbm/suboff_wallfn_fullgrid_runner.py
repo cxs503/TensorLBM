@@ -154,7 +154,7 @@ class SuboffWallFnFullGridConfig:
     n_steps: int = 1000
     u_in: float = 0.06
     hull_length: float = 240.0
-    device: str = "cuda:0"
+    device: str = "sdaa:0"
     # Wall-function parameters
     y_val: float = 0.5
     wall_law: str = "log"
@@ -668,7 +668,9 @@ def run_suboff_wallfn_fullgrid(
         "dynamic_pressure": dynamic_pressure,
         "reference_Ct": config.reference_Ct,
         "reference_source": config.reference_source,
-        "device": "cuda" if "cuda" in config.device else config.device,
+        # Backend label only (e.g. "sdaa"/"cuda"/"cpu"), matching the
+        # other SUBOFF runners, so an index suffix cannot leak into the artifact.
+        "device": torch.device(config.device).type,
         "force_time_series": force_series,
         "ct_time_series": ct_series,
     }
