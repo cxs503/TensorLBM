@@ -67,10 +67,16 @@ class TestBugIdentification:
     """Identify known bugs in the original implementation."""
 
     def test_wss_from_fneq_3d_import_error_equilibrium_vs_equilibrium3d(self):
-        """BUG: wall_shear.py imports 'equilibrium' from d3q19, but the
-        function is named 'equilibrium3d'. This causes an ImportError when
-        wss_from_fneq_3d is called, making the entire 3-D WSS function
-        non-functional (带病上岗).
+        """HISTORICAL GUARD, now inverted: wall_shear.py used to import
+        'equilibrium' from d3q19 although the function is named
+        'equilibrium3d', so wss_from_fneq_3d raised ImportError and the whole
+        3-D WSS kernel was non-functional (带病上岗).
+
+        The import is resolved lazily now (``importlib.import_module``), so the
+        guard asserts the *fixed* contract: the kernel must run and stay finite.
+        Asserting the bug instead (``pytest.raises(ImportError)``) turned the
+        suite red the day the bug was fixed -- which is what happened on main
+        between 2026-10-01 and 2026-11-05.
         """
         from tensorlbm.wall_shear import wss_from_fneq_3d
 
@@ -85,8 +91,9 @@ class TestBugIdentification:
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
         mask[0, :, :] = True
 
-        with pytest.raises(ImportError, match="cannot import name 'equilibrium'"):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        wss = wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        assert wss.shape == (nz, ny, nx)
+        assert torch.isfinite(wss).all(), "3-D WSS kernel produced non-finite values"
 
     def test_wss_from_fneq_3d_W_to_device_discarded(self):
         """CODE SMELL: wall_shear.py line 192 discards the result of
@@ -642,8 +649,11 @@ class TestWallShearBugs:
         assert torch.isfinite(wss).all()
 
     def test_wss_from_fneq_3d_broken_import(self):
-        """CONFIRMED BUG: wss_from_fneq_3d is non-functional due to
-        importing 'equilibrium' instead of 'equilibrium3d' from d3q19."""
+        """HISTORICAL GUARD, now inverted: wss_from_fneq_3d used to be
+        non-functional because it imported 'equilibrium' instead of
+        'equilibrium3d' from d3q19. The import resolves lazily now, so the
+        guard asserts the fixed contract (finite WSS at the wall layer) instead
+        of asserting that the ImportError still happens."""
         from tensorlbm.wall_shear import wss_from_fneq_3d
 
         nz, ny, nx = 4, 4, 4
@@ -655,6 +665,7 @@ class TestWallShearBugs:
         )
         rho, ux, uy, uz = macroscopic3d(f)
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
+        mask[0, :, :] = True
 
-        with pytest.raises(ImportError):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        wss = wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        assert torch.isfinite(wss[mask]).all(), "no finite WSS on the wall layer"

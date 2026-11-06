@@ -1,0 +1,178 @@
+{
+ "schema": "tensorlbm-cylinder-drag-benchmark-v1",
+ "generated_by": "tests/validation/cylinder_drag_benchmark.py (runs) + aggregate step",
+ "host_note": "128-core host under load15~420-460; single-thread torch (TENSORLBM_THREADS=1)",
+ "anchors": {
+  "unconfined_re100_cd": {
+   "value": 1.32,
+   "range": [
+    1.32,
+    1.35
+   ],
+   "source": "Dennis & Chang 1970 JFM 42:471 (=1.32); 1.33-1.35 in later 2D studies",
+   "comparable": true
+  },
+  "unconfined_re100_st": {
+   "value": 0.164,
+   "range": [
+    0.164,
+    0.166
+   ],
+   "source": "Williamson 1989 / Norberg 1994, unconfined 2D cylinder",
+   "comparable": true
+  },
+  "dfg2d2_cd": {
+   "value": 3.23,
+   "range": [
+    3.22,
+    3.24
+   ],
+   "source": "Schafer & Turek, DFG 2D-2 (Re=100, D/H=0.2439, parabolic inlet)",
+   "comparable": true,
+   "note": "confined case: only comparable with the dfg2d2 configuration"
+  },
+  "dfg2d2_st": {
+   "value": 0.3,
+   "range": [
+    0.295,
+    0.305
+   ],
+   "source": "Schafer & Turek, DFG 2D-2",
+   "comparable": true
+  }
+ },
+ "runs": [
+  {
+   "config": {
+    "name": "dfg2d2_simple",
+    "re": 100.0,
+    "diameter": 10,
+    "height_cells": 41,
+    "upstream_d": 2.0,
+    "downstream_d": 20.0,
+    "u_in": 0.1,
+    "min_warmup_steps": 8000,
+    "stats_steps": 6000,
+    "max_steps": 30000,
+    "boundary": "simple",
+    "mass_correction": true,
+    "device": "cpu",
+    "dtype": "float32"
+   },
+   "derived": {
+    "nx": 220,
+    "ny": 41,
+    "cells": 9020,
+    "nu": 0.01,
+    "tau": 0.53,
+    "mach": 0.17320508075688776,
+    "blockage": 0.24390243902439024,
+    "cd_mean": 3.043834708233674,
+    "cd_half_drift_pct": 0.5967918057552791,
+    "cd_amp": 0.06264075636863708,
+    "cl_amp": 1.008307561278343,
+    "strouhal": 0.2623169171113136,
+    "period_steps": 381.2182649187098,
+    "samples": 6000,
+    "wall_seconds": 77.89702677726746,
+    "warmup_flow_throughs": 3.6363636363636362,
+    "stop_reason": "stationary",
+    "boundary": "simple",
+    "mass_correction": true,
+    "stationarity_drift_pct": 0.5967918057552791,
+    "nonfinite": false,
+    "status": "stationary"
+   }
+  },
+  {
+   "config": {
+    "name": "dfg2d2_zouhe",
+    "re": 100.0,
+    "diameter": 10,
+    "height_cells": 41,
+    "upstream_d": 2.0,
+    "downstream_d": 20.0,
+    "u_in": 0.06,
+    "min_warmup_steps": 8000,
+    "stats_steps": 6000,
+    "max_steps": 30000,
+    "boundary": "zou_he",
+    "mass_correction": true,
+    "device": "cpu",
+    "dtype": "float32"
+   },
+   "derived": {
+    "nx": 220,
+    "ny": 41,
+    "cells": 9020,
+    "nu": 0.006,
+    "tau": 0.518,
+    "mach": 0.10392304845413264,
+    "blockage": 0.24390243902439024,
+    "cd_mean": NaN,
+    "cd_half_drift_pct": NaN,
+    "cd_amp": NaN,
+    "cl_amp": NaN,
+    "strouhal": NaN,
+    "period_steps": NaN,
+    "samples": 22000,
+    "wall_seconds": 160.9305648803711,
+    "warmup_flow_throughs": 2.1818181818181817,
+    "stop_reason": "max_steps",
+    "boundary": "zou_he",
+    "mass_correction": true,
+    "stationarity_drift_pct": NaN,
+    "nonfinite": true,
+    "status": "diverged"
+   }
+  }
+ ],
+ "comparisons": [
+  {
+   "quantity": "Cd (dfg2d2_simple, drift 0.60%)",
+   "measured": 3.043834708233674,
+   "reference": 3.23,
+   "reference_range": [
+    3.22,
+    3.24
+   ],
+   "rel_err_pct": -5.763631324034864,
+   "source": "Schafer & Turek, DFG 2D-2 (Re=100, D/H=0.2439, parabolic inlet)"
+  },
+  {
+   "quantity": "St (dfg2d2_simple)",
+   "measured": 0.2623169171113136,
+   "reference": 0.3,
+   "reference_range": [
+    0.295,
+    0.305
+   ],
+   "rel_err_pct": -12.561027629562128,
+   "source": "Schafer & Turek, DFG 2D-2"
+  }
+ ],
+ "verdict": {
+  "cylinder_cd_validation": "WITHHELD",
+  "reason": "no boundary-condition set in the repo produces a stationary drag history for channel flow past a cylinder; two executed sets show drift (simple) and NaN (zou_he). No number from a drifting window is quoted as validated.",
+  "what_would_close_it": [
+   "far-field/characteristic (NSCBC) outlet or periodic-free-stream formulation",
+   "parabolic inlet profile for the DFG-confined geometry",
+   "Ma <= 0.05 for the Zou/He pressure outlet"
+  ]
+ },
+ "drift_observations": [
+  {
+   "run": "dfg2d2_simple (no mass correction)",
+   "evidence": "/tmp/cyl_driftrun.log",
+   "observation": "Cd 2.86 (t=2500) -> 3.37 (t=10000) -> 3.99 (t=28000), monotone +39%",
+   "conclusion": "unbounded density pumping: plug inlet + zero-gradient outlet, no pressure anchor"
+  },
+  {
+   "run": "free_B0.125 (with correct_mass)",
+   "evidence": "/tmp/cyl_v3.log",
+   "observation": "Cd 1.84 (t=1.0e4) -> 2.11 (t=2.4e4), monotone +14.6%",
+   "conclusion": "mass pinning does not remove the momentum imbalance of the BC set"
+  }
+ ],
+ "comparisons_all_withheld": true
+}

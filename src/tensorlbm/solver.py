@@ -434,7 +434,12 @@ def correct_mass(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     current = f.sum()
     if current.abs() < 1e-30:
         return f
-    return f * (target_mass / current)
+    # ``float / Tensor`` is typed ``Any`` by some torch stub versions (the
+    # reflected ``__rtruediv__`` overload does not resolve), so bind the factor
+    # to an annotated local: the annotation pins the type for the mypy core gate
+    # on every supported torch, and the arithmetic stays identical.
+    scale: torch.Tensor = target_mass / current
+    return f * scale
 
 
 def collide_trt(
