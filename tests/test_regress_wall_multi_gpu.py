@@ -85,8 +85,10 @@ class TestBugIdentification:
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
         mask[0, :, :] = True
 
-        with pytest.raises(ImportError, match="cannot import name 'equilibrium'"):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        # The import bug above is FIXED (wall_shear imports equilibrium3d), so the
+        # control is inverted: the call must succeed and return a finite field.
+        wss = wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        assert torch.isfinite(torch.as_tensor(wss, dtype=torch.float64)).all()
 
     def test_wss_from_fneq_3d_W_to_device_discarded(self):
         """CODE SMELL: wall_shear.py line 192 discards the result of
@@ -656,5 +658,7 @@ class TestWallShearBugs:
         rho, ux, uy, uz = macroscopic3d(f)
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
 
-        with pytest.raises(ImportError):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        # Fixed: the historical ImportError no longer occurs (regression guard on
+        # the fix, in place of the original bug-reproduction assertion).
+        wss = wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        assert torch.isfinite(torch.as_tensor(wss, dtype=torch.float64)).all()

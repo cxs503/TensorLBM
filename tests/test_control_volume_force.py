@@ -217,4 +217,6 @@ def test_curved_moving_slip_impulse_is_invariant_across_nested_control_volumes()
     tight_force = observe_control_volume_force(old, new, old, tight, solid=solid).force_on_body
     wide_force = observe_control_volume_force(old, new, old, wide, solid=solid).force_on_body
     assert torch.allclose(tight_force, wide_force, atol=1e-11, rtol=0.0)
-    assert tight_force[0].item() == pytest.approx(bfl_force[0], abs=1e-8)
+    # float(...) on the expected value: pytest.approx iterates `expected`,
+    # and a 0-d torch tensor is not iterable (TypeError on pytest >= 8.4).
+    assert tight_force[0].item() == pytest.approx(float(bfl_force[0]), abs=1e-8)

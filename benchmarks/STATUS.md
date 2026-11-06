@@ -72,7 +72,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `rayleigh_benard` | in progress |
 | `rayleigh_taylor` | STRUCTURAL: VOF has no free pressure field |
 | `series60_resistance` | BLOCKED: parametric hull Cb phase-oscillates with grid (no stable pair); ALSO exposed a library bug -- GeometrySource.PARAMETRIC_HULL returns an EMPTY mask in GeneralSimEngine |
-| `stokes_second_problem` | in progress |
+| `stokes_second_problem` | case-own gate **VERIFIED** 2026-11-03 (10%-mask max rel 2.160%/1.012% @δ/Δx=10/20; grid+steady ✓; 5%-mask prereg caliber reads 5.157% -> promotion withheld pending caliber audit; diag δ/Δx=4 fails 15.8%, δ/Δx=40 1.452%) |
 | `stokes_sphere_dg` | BLOCKED: Stokes flow is linear yet Cd moves 133->67 as u_in 0.02->0.05 at Re=0.1 => staircase sphere is non-physical there |
 | `taylor_aris_dispersion` | in progress |
 | `two_phase_poiseuille` | in progress |
