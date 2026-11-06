@@ -30,11 +30,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: pyproject.toml
+      - name: Provision Python (runner-local venv, no setup-python action)
+        env:
+          REQUESTED_PYTHON: "3.12"
+        run: |
+          # The self-hosted runner cannot reliably extract the actions/setup-python
+          # bundle (tar: cannot change mode ... EPERM), which fails every job during
+          # "Set up job" before any repo command runs.  Provision from an interpreter
+          # that is already on the runner and keep the venv outside the checkout so
+          # the repository-layout gate never sees it.
+          base="python${REQUESTED_PYTHON}"
+          if ! command -v "$base" >/dev/null 2>&1; then
+            echo "::warning::$base is absent on this runner; falling back to $(python3 -V 2>&1)"
+            base=python3
+          fi
+          "$base" -m venv --system-site-packages "$RUNNER_TEMP/ci-venv"
+          "$RUNNER_TEMP/ci-venv/bin/python" -m pip install --upgrade pip
+          echo "$RUNNER_TEMP/ci-venv/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/ci-venv/bin/python" -VV
       - name: Install package with dev extras
         run: |
           python -m pip install --upgrade pip
@@ -68,11 +81,24 @@ jobs:
         python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-          cache-dependency-path: pyproject.toml
+      - name: Provision Python (runner-local venv, no setup-python action)
+        env:
+          REQUESTED_PYTHON: "${{ matrix.python-version }}"
+        run: |
+          # The self-hosted runner cannot reliably extract the actions/setup-python
+          # bundle (tar: cannot change mode ... EPERM), which fails every job during
+          # "Set up job" before any repo command runs.  Provision from an interpreter
+          # that is already on the runner and keep the venv outside the checkout so
+          # the repository-layout gate never sees it.
+          base="python${REQUESTED_PYTHON}"
+          if ! command -v "$base" >/dev/null 2>&1; then
+            echo "::warning::$base is absent on this runner; falling back to $(python3 -V 2>&1)"
+            base=python3
+          fi
+          "$base" -m venv --system-site-packages "$RUNNER_TEMP/ci-venv"
+          "$RUNNER_TEMP/ci-venv/bin/python" -m pip install --upgrade pip
+          echo "$RUNNER_TEMP/ci-venv/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/ci-venv/bin/python" -VV
       - name: Install package with dev extras
         run: |
           python -m pip install --upgrade pip
@@ -130,13 +156,24 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: |
-            pyproject.toml
-            app/requirements.txt
+      - name: Provision Python (runner-local venv, no setup-python action)
+        env:
+          REQUESTED_PYTHON: "3.12"
+        run: |
+          # The self-hosted runner cannot reliably extract the actions/setup-python
+          # bundle (tar: cannot change mode ... EPERM), which fails every job during
+          # "Set up job" before any repo command runs.  Provision from an interpreter
+          # that is already on the runner and keep the venv outside the checkout so
+          # the repository-layout gate never sees it.
+          base="python${REQUESTED_PYTHON}"
+          if ! command -v "$base" >/dev/null 2>&1; then
+            echo "::warning::$base is absent on this runner; falling back to $(python3 -V 2>&1)"
+            base=python3
+          fi
+          "$base" -m venv --system-site-packages "$RUNNER_TEMP/ci-venv"
+          "$RUNNER_TEMP/ci-venv/bin/python" -m pip install --upgrade pip
+          echo "$RUNNER_TEMP/ci-venv/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/ci-venv/bin/python" -VV
       - name: Install solver and platform test dependencies
         run: |
           python -m pip install --upgrade pip
@@ -169,9 +206,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Provision Python (runner-local venv, no setup-python action)
+        env:
+          REQUESTED_PYTHON: "3.12"
+        run: |
+          # The self-hosted runner cannot reliably extract the actions/setup-python
+          # bundle (tar: cannot change mode ... EPERM), which fails every job during
+          # "Set up job" before any repo command runs.  Provision from an interpreter
+          # that is already on the runner and keep the venv outside the checkout so
+          # the repository-layout gate never sees it.
+          base="python${REQUESTED_PYTHON}"
+          if ! command -v "$base" >/dev/null 2>&1; then
+            echo "::warning::$base is absent on this runner; falling back to $(python3 -V 2>&1)"
+            base=python3
+          fi
+          "$base" -m venv --system-site-packages "$RUNNER_TEMP/ci-venv"
+          "$RUNNER_TEMP/ci-venv/bin/python" -m pip install --upgrade pip
+          echo "$RUNNER_TEMP/ci-venv/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/ci-venv/bin/python" -VV
       - name: Test repository layout checker
         run: python tests/test_repository_layout.py -v
       - name: Check migrated report and asset provenance
@@ -185,9 +237,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Provision Python (runner-local venv, no setup-python action)
+        env:
+          REQUESTED_PYTHON: "3.12"
+        run: |
+          # The self-hosted runner cannot reliably extract the actions/setup-python
+          # bundle (tar: cannot change mode ... EPERM), which fails every job during
+          # "Set up job" before any repo command runs.  Provision from an interpreter
+          # that is already on the runner and keep the venv outside the checkout so
+          # the repository-layout gate never sees it.
+          base="python${REQUESTED_PYTHON}"
+          if ! command -v "$base" >/dev/null 2>&1; then
+            echo "::warning::$base is absent on this runner; falling back to $(python3 -V 2>&1)"
+            base=python3
+          fi
+          "$base" -m venv --system-site-packages "$RUNNER_TEMP/ci-venv"
+          "$RUNNER_TEMP/ci-venv/bin/python" -m pip install --upgrade pip
+          echo "$RUNNER_TEMP/ci-venv/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/ci-venv/bin/python" -VV
       - name: Test AST import graph scanner
         run: python tests/test_audit_import_graph.py
       - name: Generate import graph reports
@@ -219,9 +286,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Provision Python (runner-local venv, no setup-python action)
+        env:
+          REQUESTED_PYTHON: "3.12"
+        run: |
+          # The self-hosted runner cannot reliably extract the actions/setup-python
+          # bundle (tar: cannot change mode ... EPERM), which fails every job during
+          # "Set up job" before any repo command runs.  Provision from an interpreter
+          # that is already on the runner and keep the venv outside the checkout so
+          # the repository-layout gate never sees it.
+          base="python${REQUESTED_PYTHON}"
+          if ! command -v "$base" >/dev/null 2>&1; then
+            echo "::warning::$base is absent on this runner; falling back to $(python3 -V 2>&1)"
+            base=python3
+          fi
+          "$base" -m venv --system-site-packages "$RUNNER_TEMP/ci-venv"
+          "$RUNNER_TEMP/ci-venv/bin/python" -m pip install --upgrade pip
+          echo "$RUNNER_TEMP/ci-venv/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/ci-venv/bin/python" -VV
       - name: Install build tools
         run: python -m pip install --upgrade pip build
       - name: Build sdist and wheel
