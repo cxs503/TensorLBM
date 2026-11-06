@@ -10,6 +10,7 @@ A navigable index of the documentation in this directory, grouped by topic.
 |---|---|
 | [software_manual.md](software_manual.md) | Complete API reference, ship & ocean engineering benchmarks, quantitative comparisons |
 | [LBM_VERIFICATION_TEACHING.md](LBM_VERIFICATION_TEACHING.md) | Introductory LBM verification exercises and teaching notes |
+| [lbm_analytic_verification_r1.md](lbm_analytic_verification_r1.md) | Analytic (closed-form) verification suite A–D: shear wave / Couette / Poiseuille / wall friction, recovered from the CI quarantine list, with per-case error ledger |
 | [d3q19-d3q27-mrt-consistency-audit.md](d3q19-d3q27-mrt-consistency-audit.md) | Consistency audit between D3Q19 and D3Q27 MRT implementations |
 | [d3q27_composition_evidence_r1.md](d3q27_composition_evidence_r1.md) | Composition evidence for D3Q27 |
 | [d3q27_full_composition_evidence_r1.md](d3q27_full_composition_evidence_r1.md) | Full composition evidence for D3Q27 |
