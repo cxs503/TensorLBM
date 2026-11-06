@@ -298,3 +298,18 @@ mission did not re-run them serially on a clean `main` to prove it (the serial
 re-run exceeded the 120 s shell budget on a host at load ~400), so the claim is
 limited to "outside this PR's dependency surface", which was checked by import
 graph, not by a clean-main A/B run — an open item for whoever owns those files.
+Negative controls (pytest plugins patching the module inside the test process,
+run out-of-tree):
+| mutation | result |
+| A: drop weight renormalization | 12/14 fail |
+| B: equilibrium missing the `−1.5 u²` term | 12/14 fail |
+| C: wall model is a no-op | 14/14 fail |
+So the gate is load-bearing, not decorative.
+## 8. Re-land provenance (m4806, 2026-11-06) and reproduction
+The original delivery lived on mission **m4641**; its PR **#669 was closed by the
+owner on 2026-11-05**. A first re-land attempt (m4703, cut from `05d728b6`) was
+itself never merged, so this branch re-lands the same content from the current
+`main` (`4c605a9f`, i.e. after PR #699). Nothing in the physics changed between
+the two attempts; only the provenance text below is updated. Two pieces of the
+original commit were deliberately **dropped**, and this section is the record:
+**Reproduction on the landed tree** (2026-11-06, this branch):
