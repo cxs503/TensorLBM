@@ -137,15 +137,36 @@ def _sample_sparse_trilinear(
     return result
 
 
+def _normalized_weights(w: torch.Tensor) -> torch.Tensor:
+    """Renormalize lattice weights so that their sum is one to double precision.
+
+    The shared lattice constants are stored as float32, so their cast sum is
+    1 + 1.49e-8 (D3Q19) or 1 + 7.45e-9 (D3Q27).  The exchange-wall assimilation
+    advertises a mass-conservative (zero zeroth moment) population source; that
+    identity is exactly ``rho * (sum(w) - 1)`` per boundary node per step, so the
+    float32 bias is a *systematic* spurious mass source rather than a rounding
+    artefact.  Renormalizing removes it without touching the shared constants.
+    """
+    return w / w.sum()
+
+
 def _lattice(q: int, device: torch.device, dtype: torch.dtype):
     if q == 19:
         from .d3q19 import C, W, macroscopic3d
 
-        return C.to(device=device, dtype=dtype), W.to(device=device, dtype=dtype), macroscopic3d
+        return (
+            C.to(device=device, dtype=dtype),
+            _normalized_weights(W.to(device=device, dtype=dtype)),
+            macroscopic3d,
+        )
     if q == 27:
         from .d3q27 import C, W, macroscopic27
 
-        return C.to(device=device, dtype=dtype), W.to(device=device, dtype=dtype), macroscopic27
+        return (
+            C.to(device=device, dtype=dtype),
+            _normalized_weights(W.to(device=device, dtype=dtype)),
+            macroscopic27,
+        )
     raise ValueError("only D3Q19 and D3Q27 are supported")
 
 

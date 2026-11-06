@@ -26,8 +26,16 @@ from .d3q19 import equilibrium as eq3d  # ← 'equilibrium' 不存在于 d3q19
 ```
 
 **影响**: `wss_from_fneq_3d` 函数完全不可用，调用时抛出 `ImportError`。  
-**验证**: `test_wss_from_fneq_3d_import_error_equilibrium_vs_equilibrium3d` ✓  
+**验证**: `test_wss_from_fneq_3d_import_resolves_equilibrium3d` ✓（旧用例名
+`test_wss_from_fneq_3d_import_error_equilibrium_vs_equilibrium3d`，
+`test_wss_from_fneq_3d_broken_import`）  
 **注意**: 2D 版本 `wss_from_fneq_2d` 不受影响（d2q9 确实导出 `equilibrium`）。
+
+> **修复状态（m4669, 2026-11-06）**: 现网代码 `tensorlbm/boundary/wall_shear.py`
+> 已从 `d3q19` 导入 `equilibrium3d`，本缺陷不再复现。原先两个用例把「缺陷仍然
+> 存在」写成了断言（`pytest.raises(ImportError)`），因此在缺陷修复后必然红；
+> 已改写为正控回归守护：调用必须返回有限的 `(nz, ny, nx)` 场，且固体格点被 mask
+> 清零、受剪流场 `wss > 0`。
 
 ### 1.2 wall_shear.py — **CODE SMELL: _W3D.to(device) 结果被丢弃**
 
