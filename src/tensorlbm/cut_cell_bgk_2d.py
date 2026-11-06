@@ -286,7 +286,7 @@ class CutCellBGK2D:
         field = torch.zeros(9, self.geometry.ny, self.geometry.nx, dtype=D)
         mask = self.group_map >= 0
         density = self.group_Q / self.group_volume_m3[:, None]
-        field[:, mask] = (density[self.group_map[mask]] * self.volume_m3[mask, None]).T
+        field[:, mask] = (density[self.group_map[mask]] * self.volume_m3[mask][:, None]).T
         return field
 
     def _validate_state(self, Q):

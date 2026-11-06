@@ -157,3 +157,24 @@ def test_physical_relaxation_distinct_from_roll_tau():
     q[:, 0] += q.sum(1) * 0.02
     q[:, 1:5] -= q.sum(1)[:, None] * 0.005
     assert not torch.equal(a.collision(q, 0.01), b.collision(q, 0.01))
+
+
+def test_cell_field_reconstruction_is_shape_consistent_and_conservative():
+    """``Q`` must rebuild the (9, ny, nx) cell field from the group state.
+
+    Regression guard: the previous reconstruction indexed the 2-D volume field
+    with a 2-D mask plus ``None`` (``volume[mask, None]``), which recent torch
+    versions reject as an advanced-index shape mismatch, so every cut-cell test
+    died in ``__init__``.  The reconstruction must also be conservative: the
+    direction-wise mass and the per-cell density of a control volume have to
+    match the group state exactly.
+    """
+    s = nonuniform()
+    field = s.Q
+    assert field.shape == (9, s.geometry.ny, s.geometry.nx)
+    assert torch.equal(field[:, s.group_map < 0], torch.zeros(9, int((s.group_map < 0).sum())))
+    assert torch.allclose(field.sum(dim=(1, 2)), s.group_Q.sum(0), rtol=0.0, atol=1e-12)
+    mask = s.group_map >= 0
+    cell_density = field.sum(0)[mask] / s.volume_m3[mask]
+    group_density = s.group_Q.sum(1) / s.group_volume_m3
+    assert torch.allclose(cell_density, group_density[s.group_map[mask]], rtol=1e-12, atol=0.0)
