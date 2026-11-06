@@ -21,6 +21,7 @@ import torch
 
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.d3q27 import equilibrium27
+from tensorlbm.drag_pressure import SurfaceMesh
 from tensorlbm.suboff_wallfn_fullgrid_runner import (
     COLLISION_FAMILIES,
     COMBINATIONS,
@@ -31,6 +32,7 @@ from tensorlbm.suboff_wallfn_fullgrid_runner import (
     run_suboff_wallfn_fullgrid,
     write_artifact,
 )
+from tensorlbm.wall_function_common import _near_wall_mask
 
 # --------------------------------------------------------------------------- #
 # Small-grid config factory
@@ -234,11 +236,26 @@ class TestDragComputation:
         u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
         u_tau = compute_u_tau(u_mag, nu=0.01, y_val=0.5, wall_law="log")
 
-        drag_fric, drag_pres = _compute_drags(f, solid, u_tau, "D3Q19")
+        # ``_compute_drags`` takes the surface mesh (normals + area elements)
+        # that the runner builds; a voxel-gradient mesh is the generic source.
+        near = _near_wall_mask(solid)
+        mesh = SurfaceMesh.from_gradient(solid, near)
+
+        drag_fric, drag_pres = _compute_drags(f, solid, u_tau, "D3Q19", mesh)
         assert isinstance(drag_fric, float)
         assert isinstance(drag_pres, float)
         assert math.isfinite(drag_fric)
         assert math.isfinite(drag_pres)
+
+        # Contract: friction drag integrates tau_w = u_tau^2 over the
+        # near-wall fluid cells, projected on the streamwise direction.
+        # Here ux > 0 on every near-wall cell, so the projection is +1 and
+        # the integral must equal sum(u_tau^2 * near) exactly.
+        expected_fric = float((u_tau * u_tau * near.to(f.dtype)).sum())
+        assert drag_fric == pytest.approx(expected_fric, rel=1e-6, abs=1e-9)
+        # Uniform density (rho = 1) means zero gauge pressure, hence no
+        # pressure drag: this pins the pressure branch to its physics.
+        assert drag_pres == pytest.approx(0.0, abs=1e-9)
 
     def test_compute_drags_d3q27(self) -> None:
         """Drag computation should work for D3Q27."""
@@ -259,11 +276,26 @@ class TestDragComputation:
         u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
         u_tau = compute_u_tau(u_mag, nu=0.01, y_val=0.5, wall_law="log")
 
-        drag_fric, drag_pres = _compute_drags(f, solid, u_tau, "D3Q27")
+        # ``_compute_drags`` takes the surface mesh (normals + area elements)
+        # that the runner builds; a voxel-gradient mesh is the generic source.
+        near = _near_wall_mask(solid)
+        mesh = SurfaceMesh.from_gradient(solid, near)
+
+        drag_fric, drag_pres = _compute_drags(f, solid, u_tau, "D3Q27", mesh)
         assert isinstance(drag_fric, float)
         assert isinstance(drag_pres, float)
         assert math.isfinite(drag_fric)
         assert math.isfinite(drag_pres)
+
+        # Contract: friction drag integrates tau_w = u_tau^2 over the
+        # near-wall fluid cells, projected on the streamwise direction.
+        # Here ux > 0 on every near-wall cell, so the projection is +1 and
+        # the integral must equal sum(u_tau^2 * near) exactly.
+        expected_fric = float((u_tau * u_tau * near.to(f.dtype)).sum())
+        assert drag_fric == pytest.approx(expected_fric, rel=1e-6, abs=1e-9)
+        # Uniform density (rho = 1) means zero gauge pressure, hence no
+        # pressure drag: this pins the pressure branch to its physics.
+        assert drag_pres == pytest.approx(0.0, abs=1e-9)
 
 
 # --------------------------------------------------------------------------- #
