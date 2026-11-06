@@ -67,26 +67,35 @@ class TestBugIdentification:
     """Identify known bugs in the original implementation."""
 
     def test_wss_from_fneq_3d_import_error_equilibrium_vs_equilibrium3d(self):
-        """BUG: wall_shear.py imports 'equilibrium' from d3q19, but the
-        function is named 'equilibrium3d'. This causes an ImportError when
-        wss_from_fneq_3d is called, making the entire 3-D WSS function
-        non-functional (带病上岗).
-        """
+        """Regression (m3697 CI heal): the historical ``equilibrium`` vs
+        ``equilibrium3d`` ImportError must not come back, and the D3Q19
+        stress-tensor path must reproduce the analytic f_neq contribution."""
+
+        from tensorlbm.d3q19 import C as C3D
+        from tensorlbm.d3q19 import equilibrium3d as _eq3d
         from tensorlbm.wall_shear import wss_from_fneq_3d
 
-        nz, ny, nx = 4, 4, 4
-        f = equilibrium3d(
-            torch.ones(nz, ny, nx),
-            torch.full((nz, ny, nx), 0.1),
-            torch.zeros(nz, ny, nx),
-            torch.zeros(nz, ny, nx),
-        )
-        rho, ux, uy, uz = macroscopic3d(f)
-        mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
-        mask[0, :, :] = True
+        # The symbol really resolves (this is the crash that used to happen).
+        assert callable(_eq3d)
 
-        with pytest.raises(ImportError, match="cannot import name 'equilibrium'"):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        nz, ny, nx = 4, 4, 4
+        rho = torch.ones(nz, ny, nx)
+        ux = torch.full((nz, ny, nx), 0.05)
+        zero = torch.zeros(nz, ny, nx)
+        f = equilibrium3d(rho, ux, zero, zero)
+        c = C3D.float()
+        a = 2.0e-4
+        tau = 0.9
+        f = f + (a * c[:, 0] * c[:, 1]).view(-1, 1, 1, 1) * torch.ones_like(f)
+        mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
+
+        wss = wss_from_fneq_3d(f, rho, ux, zero, zero, tau=tau, mask=mask)
+        # sigma_xy = -(1 - 1/(2 tau)) * sum f_neq c_x c_y, with the background
+        # equilibrium carrying no c_x c_y moment for uniform (ux, 0, 0) flow.
+        s_xy_sq = float((c[:, 0] * c[:, 1]).pow(2).sum())
+        expected = abs(-(1.0 - 0.5 / tau) * a * s_xy_sq)
+        assert float(wss.max()) == pytest.approx(expected, rel=1e-5)
+        assert float(wss.min()) == pytest.approx(expected, rel=1e-5)
 
     def test_wss_from_fneq_3d_W_to_device_discarded(self):
         """CODE SMELL: wall_shear.py line 192 discards the result of
@@ -641,20 +650,38 @@ class TestWallShearBugs:
         assert wss.shape == (ny, nx)
         assert torch.isfinite(wss).all()
 
-    def test_wss_from_fneq_3d_broken_import(self):
-        """CONFIRMED BUG: wss_from_fneq_3d is non-functional due to
-        importing 'equilibrium' instead of 'equilibrium3d' from d3q19."""
+    def test_wss_from_fneq_3d_runs_and_is_zero_for_equilibrium(self):
+        """Regression (m3697 CI heal): the historical ``equilibrium`` vs
+        ``equilibrium3d`` ImportError must not come back, and the D3Q19
+        stress-tensor path must reproduce the analytic f_neq contribution."""
+
+        from tensorlbm.d3q19 import C as C3D
         from tensorlbm.wall_shear import wss_from_fneq_3d
 
         nz, ny, nx = 4, 4, 4
-        f = equilibrium3d(
-            torch.ones(nz, ny, nx),
-            torch.full((nz, ny, nx), 0.1),
-            torch.zeros(nz, ny, nx),
-            torch.zeros(nz, ny, nx),
-        )
-        rho, ux, uy, uz = macroscopic3d(f)
+        rho = torch.ones(nz, ny, nx)
+        zero = torch.zeros(nz, ny, nx)
+        f_eq = equilibrium3d(rho, zero, zero, zero)
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
+        mask[0] = True  # one solid layer, purely to exercise the mask
 
-        with pytest.raises(ImportError):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        wss = wss_from_fneq_3d(f_eq, rho, zero, zero, zero, tau=0.8, mask=mask)
+        assert wss.shape == (nz, ny, nx)
+        assert torch.isfinite(wss).all()
+        # f == f_eq  ->  f_neq = 0  ->  no wall shear anywhere
+        assert torch.count_nonzero(wss) == 0
+
+        # And the magnitude is the |sigma_xy| of a hand-built shear f_neq:
+        # f_neq = a * c_x c_y  =>  sum_i f_neq c_x c_y = a * sum_i (c_x c_y)^2
+        a = 1.0e-3
+        tau = 0.8
+        c = C3D.float()
+        pert = (a * c[:, 0] * c[:, 1]).view(-1, 1, 1, 1) * torch.ones_like(f_eq)
+        s_xy_sq = float((c[:, 0] * c[:, 1]).pow(2).sum())
+        expected = abs(-(1.0 - 0.5 / tau) * a * s_xy_sq)
+        got = float(
+            wss_from_fneq_3d(
+                f_eq + pert, rho, zero, zero, zero, tau=tau, mask=torch.zeros_like(mask)
+            ).max()
+        )
+        assert got == pytest.approx(expected, rel=1e-6)
