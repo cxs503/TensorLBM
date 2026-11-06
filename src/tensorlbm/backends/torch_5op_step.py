@@ -7,8 +7,8 @@ CUDA) and is the default ``"torch_5op"`` step implementation.
 
 This module is *behaviour-equivalent* to the original inline chain; it
 exists only so that the SUBOFF runner can dispatch the per-step work
-through ``tensorlbm.backends.get_step_impl()`` rather than reaching
-into the kernel functions directly.
+through the ``tensorlbm.backends`` layer (``torch_5op_step.step_torch_5op``)
+rather than reaching into the kernel functions directly.
 """
 
 from __future__ import annotations
