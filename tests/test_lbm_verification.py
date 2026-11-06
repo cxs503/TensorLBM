@@ -93,18 +93,28 @@ def _friction_coefficient(nu: float, gap: float, u_top: float) -> float:
 # ---------------------------------------------------------------------------
 # Step A：剪切波衰减 → 粘度
 # ---------------------------------------------------------------------------
-def shear_wave_case(device: torch.device | None = None) -> dict:
-    """测量剪切波衰减给出的有效粘度，并与 ν=(τ-½)/3 比对。"""
+def shear_wave_case(
+    device: torch.device | None = None,
+    *,
+    nx: int = 64,
+    steps: int = 100,
+    tau: float = 1.0,
+) -> dict:
+    """测量剪切波衰减给出的有效粘度，并与 ν=(τ-½)/3 比对。
+
+    默认参数即 ``test_step_a_shear_wave`` 断言的算例；``nx`` / ``steps`` / ``tau``
+    只是为 ``scripts/verify_lbm_analytic_convergence.py`` 的网格收敛与 τ 负控留的
+    入口，走的是同一段代码，published 数字因此不会与断言漂移。
+    """
     d = device if device is not None else _device()
-    nx, ny, nz = 64, 4, 4
-    tau = 1.0
+    ny, nz = 4, 4
     nu_expected = (tau - 0.5) / 3.0
     k = 2 * math.pi / nx
     a0 = 0.01
-    steps = 100
 
     uy = torch.zeros(nz, ny, nx, device=d)
-    xs = torch.arange(nx, device=d, dtype=torch.float32)
+    # 跟随 torch 默认 dtype：默认 float32（CI 断言用），脚本做阶数测量时切 float64
+    xs = torch.arange(nx, device=d, dtype=torch.get_default_dtype())
     uy[:, :] = (a0 * torch.cos(k * xs)).expand(nz, ny, nx)
     zero = torch.zeros(nz, ny, nx, device=d)
     f = equilibrium3d(torch.ones(nz, ny, nx, device=d), zero, uy, zero)
@@ -146,14 +156,18 @@ def test_step_a_shear_wave() -> None:
 # ---------------------------------------------------------------------------
 # Step B：Couette 流 → 半路反弹无滑移
 # ---------------------------------------------------------------------------
-def couette_case(device: torch.device | None = None) -> dict:
+def couette_case(
+    device: torch.device | None = None,
+    *,
+    ny: int = 12,
+    steps: int = 1000,
+    bounce_back: bool = True,
+) -> dict:
+    """Couette 剖面算例。``bounce_back=False`` 只用于负控（关掉壁面反弹）。"""
     d = device if device is not None else _device()
-    nx, ny, nz = 80, 12, 4
+    nx, nz = 80, 4
     tau = 1.0
     u_top = 0.05
-    # 收敛性实测（2026-11-03，CPU 单线程，ny=12）：500 步 0.036%、800 步 0.0013%、
-    # 1000/1200 步同为 0.0013% ⇒ 800 步已到稳态离散残差，取 1000 步留安全裕度。
-    steps = 1000
 
     solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=d)
     solid[:, 0, :] = True
@@ -165,7 +179,10 @@ def couette_case(device: torch.device | None = None) -> dict:
     for _ in range(steps):
         f_pre = f.clone()
         f = collide_bgk3d(f, tau=tau)
-        f = _no_dynamics_and_bounce(f, f_pre, solid)
+        if bounce_back:
+            f = _no_dynamics_and_bounce(f, f_pre, solid)
+        else:  # 负控：NoDynamics 保留碰撞前分布，但不做壁面反弹
+            f = torch.where(solid.unsqueeze(0).expand_as(f), f_pre, f)
         f[:, :, -1, :] = feq_top[:, :, -1, :]
         f = stream3d(f)
         # 进出口周期性（x 方向复制倒数第二列）
@@ -182,6 +199,7 @@ def couette_case(device: torch.device | None = None) -> dict:
         "case": "B_couette",
         "tau": tau,
         "steps": steps,
+        "bounce_back": bounce_back,
         "u_top": u_top,
         "u_num": u.tolist(),
         "u_exact": u_exact.tolist(),
@@ -201,9 +219,14 @@ def test_step_b_couette() -> None:
 # ---------------------------------------------------------------------------
 # Step C：Poiseuille 流 → 体力 + 剖面
 # ---------------------------------------------------------------------------
-def poiseuille_case(device: torch.device | None = None) -> dict:
+def poiseuille_case(
+    device: torch.device | None = None,
+    *,
+    ny: int = 12,
+    steps: int = 1000,
+) -> dict:
     d = device if device is not None else _device()
-    nx, ny, nz = 80, 12, 4
+    nx, nz = 80, 4
     tau = 1.0
     nu = (tau - 0.5) / 3.0
     height = ny - 2
@@ -211,7 +234,6 @@ def poiseuille_case(device: torch.device | None = None) -> dict:
     g_force = 2 * nu * u_max / height**2
     # 收敛性实测：1000/1500/2000/3000 步的相对误差同为 0.3378% ⇒ 该残差是
     # 半路反弹 + Guo 离散在 ny=12 下的稳态离散误差（不随步数下降），取 1000 步。
-    steps = 1000
 
     solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=d)
     solid[:, 0, :] = True
@@ -266,16 +288,20 @@ def test_step_c_poiseuille() -> None:
 # ---------------------------------------------------------------------------
 # Step D：壁面摩擦 → 剪应力提取
 # ---------------------------------------------------------------------------
-def friction_case(device: torch.device | None = None) -> dict:
+def friction_case(
+    device: torch.device | None = None,
+    *,
+    ny: int = 12,
+    steps: int = 1000,
+) -> dict:
     d = device if device is not None else _device()
-    nx, ny, nz = 80, 12, 4
+    nx, nz = 80, 4
     tau = 1.0
     nu = (tau - 0.5) / 3.0
     u_top = 0.05
-    gap = 10.5  # 底壁 y=½ 到顶壁 y=ny-1+½
+    gap = ny - 1.5  # 底壁 y=½ 到顶壁 y=ny-1+½（半路反弹）
     cf_exact = _friction_coefficient(nu, gap, u_top)
     # 收敛性实测：500 步 0.11%、800 步 0.0041%、1000 步 0.0040% ⇒ 取 1000 步。
-    steps = 1000
 
     solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=d)
     solid[:, 0, :] = True
