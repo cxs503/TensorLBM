@@ -67,10 +67,11 @@ class TestBugIdentification:
     """Identify known bugs in the original implementation."""
 
     def test_wss_from_fneq_3d_import_error_equilibrium_vs_equilibrium3d(self):
-        """BUG: wall_shear.py imports 'equilibrium' from d3q19, but the
-        function is named 'equilibrium3d'. This causes an ImportError when
-        wss_from_fneq_3d is called, making the entire 3-D WSS function
-        non-functional (带病上岗).
+        """REGRESSION GUARD: wall_shear.py used to import 'equilibrium' from
+        d3q19 (the function is 'equilibrium3d'), so every call raised
+        ImportError and the whole 3-D WSS function was non-functional
+        (带病上岗).  The import is fixed; the bug must not come back, so the
+        call has to succeed and return a finite field.
         """
         from tensorlbm.wall_shear import wss_from_fneq_3d
 
@@ -85,8 +86,11 @@ class TestBugIdentification:
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
         mask[0, :, :] = True
 
-        with pytest.raises(ImportError, match="cannot import name 'equilibrium'"):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        wss = wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        assert wss.shape == (nz, ny, nx)
+        assert torch.isfinite(wss).all()
+        # Uniform equilibrium flow has no non-equilibrium stress at the wall.
+        assert float(wss.abs().max()) < 1e-12
 
     def test_wss_from_fneq_3d_W_to_device_discarded(self):
         """CODE SMELL: wall_shear.py line 192 discards the result of
@@ -642,8 +646,8 @@ class TestWallShearBugs:
         assert torch.isfinite(wss).all()
 
     def test_wss_from_fneq_3d_broken_import(self):
-        """CONFIRMED BUG: wss_from_fneq_3d is non-functional due to
-        importing 'equilibrium' instead of 'equilibrium3d' from d3q19."""
+        """REGRESSION GUARD: wss_from_fneq_3d must import 'equilibrium3d'
+        (not the non-existent 'equilibrium') from d3q19 and must run."""
         from tensorlbm.wall_shear import wss_from_fneq_3d
 
         nz, ny, nx = 4, 4, 4
@@ -656,5 +660,6 @@ class TestWallShearBugs:
         rho, ux, uy, uz = macroscopic3d(f)
         mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
 
-        with pytest.raises(ImportError):
-            wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        wss = wss_from_fneq_3d(f, rho, ux, uy, uz, tau=0.8, mask=mask)
+        assert wss.shape == (nz, ny, nx)
+        assert torch.isfinite(wss).all()
