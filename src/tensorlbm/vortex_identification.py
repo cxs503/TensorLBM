@@ -49,26 +49,41 @@ __all__ = [
 def _velocity_gradients_2d(
     ux: torch.Tensor,
     uy: torch.Tensor,
+    dx: float = 1.0,
+    dy: float = 1.0,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Return 2-D velocity gradient components (central differences on unit grid).
+    """Return 2-D velocity gradient components (central differences).
+
+    Args:
+        ux, uy: Velocity components, shape ``(ny, nx)``.
+        dx: Grid spacing along the last (x) axis in physical units.
+        dy: Grid spacing along the first (y) axis in physical units.
 
     Returns:
         ``(dux_dx, dux_dy, duy_dx, duy_dy)``
+
+    Notes:
+        The one-cell boundary ring keeps zero gradients (no one-sided stencil).
     """
     dux_dx = torch.zeros_like(ux)
     dux_dy = torch.zeros_like(ux)
     duy_dx = torch.zeros_like(uy)
     duy_dy = torch.zeros_like(uy)
 
-    dux_dx[:, 1:-1] = (ux[:, 2:] - ux[:, :-2]) / 2.0
-    dux_dy[1:-1, :] = (ux[2:, :] - ux[:-2, :]) / 2.0
-    duy_dx[:, 1:-1] = (uy[:, 2:] - uy[:, :-2]) / 2.0
-    duy_dy[1:-1, :] = (uy[2:, :] - uy[:-2, :]) / 2.0
+    dux_dx[:, 1:-1] = (ux[:, 2:] - ux[:, :-2]) / (2.0 * dx)
+    dux_dy[1:-1, :] = (ux[2:, :] - ux[:-2, :]) / (2.0 * dy)
+    duy_dx[:, 1:-1] = (uy[:, 2:] - uy[:, :-2]) / (2.0 * dx)
+    duy_dy[1:-1, :] = (uy[2:, :] - uy[:-2, :]) / (2.0 * dy)
 
     return dux_dx, dux_dy, duy_dx, duy_dy
 
 
-def q_criterion_2d(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
+def q_criterion_2d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    dx: float = 1.0,
+    dy: float = 1.0,
+) -> torch.Tensor:
     """Compute the Q-criterion field for a 2-D velocity field.
 
     Q = 0.5 * (‖Ω‖² − ‖S‖²)
@@ -82,11 +97,15 @@ def q_criterion_2d(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     Args:
         ux: x-velocity, shape ``(ny, nx)``.
         uy: y-velocity, shape ``(ny, nx)``.
+        dx: Grid spacing along x (physical units).  ``Q`` has dimensions
+            1/time**2, so a unit-grid assumption biases the magnitude by
+            ``1/dx**2``; always pass the physical spacing for real fields.
+        dy: Grid spacing along y (physical units).
 
     Returns:
         Q-criterion field, shape ``(ny, nx)``.
     """
-    dux_dx, dux_dy, duy_dx, duy_dy = _velocity_gradients_2d(ux, uy)
+    dux_dx, dux_dy, duy_dx, duy_dy = _velocity_gradients_2d(ux, uy, dx=dx, dy=dy)
 
     # Strain-rate tensor
     s_xx = dux_dx
@@ -102,7 +121,12 @@ def q_criterion_2d(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     return 0.5 * (norm_O2 - norm_S2)
 
 
-def lambda2_criterion_2d(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
+def lambda2_criterion_2d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    dx: float = 1.0,
+    dy: float = 1.0,
+) -> torch.Tensor:
     """Compute the λ₂-criterion for a 2-D velocity field.
 
     The λ₂ criterion uses the second eigenvalue of (S² + Ω²).  For 2-D,
@@ -113,11 +137,13 @@ def lambda2_criterion_2d(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     Args:
         ux: x-velocity, shape ``(ny, nx)``.
         uy: y-velocity, shape ``(ny, nx)``.
+        dx: Grid spacing along x (physical units).
+        dy: Grid spacing along y (physical units).
 
     Returns:
         λ₂ field (second/larger eigenvalue), shape ``(ny, nx)``.
     """
-    dux_dx, dux_dy, duy_dx, duy_dy = _velocity_gradients_2d(ux, uy)
+    dux_dx, dux_dy, duy_dx, duy_dy = _velocity_gradients_2d(ux, uy, dx=dx, dy=dy)
 
     s_xx = dux_dx
     s_yy = duy_dy
@@ -142,7 +168,11 @@ def lambda2_criterion_2d(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
 
 
 def omega_criterion_2d(
-    ux: torch.Tensor, uy: torch.Tensor, eps_factor: float = 1e-5
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    eps_factor: float = 1e-5,
+    dx: float = 1.0,
+    dy: float = 1.0,
 ) -> torch.Tensor:
     """Compute the Ω-vortex criterion for a 2-D velocity field.
 
@@ -155,11 +185,13 @@ def omega_criterion_2d(
         ux:         x-velocity, shape ``(ny, nx)``.
         uy:         y-velocity, shape ``(ny, nx)``.
         eps_factor: Fraction of max(‖S‖² + ‖Ω‖²) used as ε (default 1e-5).
+        dx: Grid spacing along x (physical units).
+        dy: Grid spacing along y (physical units).
 
     Returns:
         Ω-criterion field in [0, 1], shape ``(ny, nx)``.
     """
-    dux_dx, dux_dy, duy_dx, duy_dy = _velocity_gradients_2d(ux, uy)
+    dux_dx, dux_dy, duy_dx, duy_dy = _velocity_gradients_2d(ux, uy, dx=dx, dy=dy)
 
     s_xx = dux_dx
     s_yy = duy_dy
@@ -182,16 +214,27 @@ def _velocity_gradients_3d(
     ux: torch.Tensor,
     uy: torch.Tensor,
     uz: torch.Tensor,
+    dx: float = 1.0,
+    dy: float = 1.0,
+    dz: float = 1.0,
 ) -> dict[str, torch.Tensor]:
-    """Return 3-D velocity gradient tensor components (9 entries)."""
+    """Return 3-D velocity gradient tensor components (9 entries).
+
+    Args:
+        ux, uy, uz: Velocity components, shape ``(nz, ny, nx)``.
+        dx, dy, dz: Physical grid spacing along the last, middle and first axes.
+
+    Notes:
+        The one-cell boundary shell keeps zero gradients (no one-sided stencil).
+    """
     grads: dict[str, torch.Tensor] = {}
     for name, u in [("ux", ux), ("uy", uy), ("uz", uz)]:
         g_dx = torch.zeros_like(u)
         g_dy = torch.zeros_like(u)
         g_dz = torch.zeros_like(u)
-        g_dx[:, :, 1:-1] = (u[:, :, 2:] - u[:, :, :-2]) / 2.0
-        g_dy[:, 1:-1, :] = (u[:, 2:, :] - u[:, :-2, :]) / 2.0
-        g_dz[1:-1, :, :] = (u[2:, :, :] - u[:-2, :, :]) / 2.0
+        g_dx[:, :, 1:-1] = (u[:, :, 2:] - u[:, :, :-2]) / (2.0 * dx)
+        g_dy[:, 1:-1, :] = (u[:, 2:, :] - u[:, :-2, :]) / (2.0 * dy)
+        g_dz[1:-1, :, :] = (u[2:, :, :] - u[:-2, :, :]) / (2.0 * dz)
         grads[f"d{name}_dx"] = g_dx
         grads[f"d{name}_dy"] = g_dy
         grads[f"d{name}_dz"] = g_dz
@@ -202,6 +245,9 @@ def q_criterion_3d(
     ux: torch.Tensor,
     uy: torch.Tensor,
     uz: torch.Tensor,
+    dx: float = 1.0,
+    dy: float = 1.0,
+    dz: float = 1.0,
 ) -> torch.Tensor:
     """Q-criterion for a 3-D velocity field.
 
@@ -209,11 +255,12 @@ def q_criterion_3d(
 
     Args:
         ux, uy, uz: Velocity components, shape ``(nz, ny, nx)``.
+        dx, dy, dz: Physical grid spacing along the last, middle and first axes.
 
     Returns:
         Q-criterion field, shape ``(nz, ny, nx)``.
     """
-    g = _velocity_gradients_3d(ux, uy, uz)
+    g = _velocity_gradients_3d(ux, uy, uz, dx=dx, dy=dy, dz=dz)
 
     # Strain-rate (symmetric part)
     s_xx = g["dux_dx"]
@@ -238,6 +285,9 @@ def lambda2_criterion_3d(
     ux: torch.Tensor,
     uy: torch.Tensor,
     uz: torch.Tensor,
+    dx: float = 1.0,
+    dy: float = 1.0,
+    dz: float = 1.0,
 ) -> torch.Tensor:
     """λ₂-criterion for a 3-D velocity field.
 
@@ -246,11 +296,12 @@ def lambda2_criterion_3d(
 
     Args:
         ux, uy, uz: Velocity components, shape ``(nz, ny, nx)``.
+        dx, dy, dz: Physical grid spacing along the last, middle and first axes.
 
     Returns:
         λ₂ field (second eigenvalue), shape ``(nz, ny, nx)``.
     """
-    g = _velocity_gradients_3d(ux, uy, uz)
+    g = _velocity_gradients_3d(ux, uy, uz, dx=dx, dy=dy, dz=dz)
     nz, ny, nx = ux.shape
     device = ux.device
 
@@ -301,17 +352,21 @@ def omega_criterion_3d(
     uy: torch.Tensor,
     uz: torch.Tensor,
     eps_factor: float = 1e-5,
+    dx: float = 1.0,
+    dy: float = 1.0,
+    dz: float = 1.0,
 ) -> torch.Tensor:
     """Ω-vortex criterion for a 3-D velocity field.
 
     Args:
         ux, uy, uz: Velocity components, shape ``(nz, ny, nx)``.
         eps_factor: Stabiliser fraction.
+        dx, dy, dz: Physical grid spacing along the last, middle and first axes.
 
     Returns:
         Ω field in [0, 1], shape ``(nz, ny, nx)``.
     """
-    g = _velocity_gradients_3d(ux, uy, uz)
+    g = _velocity_gradients_3d(ux, uy, uz, dx=dx, dy=dy, dz=dz)
 
     s_xx = g["dux_dx"]
     s_yy = g["duy_dy"]
@@ -339,6 +394,8 @@ def vortex_fields_2d(
     ux: torch.Tensor,
     uy: torch.Tensor,
     mask: torch.Tensor | None = None,
+    dx: float = 1.0,
+    dy: float = 1.0,
 ) -> dict[str, list]:
     """Compute all three 2-D vortex criterion fields.
 
@@ -346,13 +403,14 @@ def vortex_fields_2d(
         ux:   x-velocity, shape ``(ny, nx)``.
         uy:   y-velocity, shape ``(ny, nx)``.
         mask: Optional solid mask; zeroes out solid cells.
+        dx, dy: Physical grid spacing (see :func:`q_criterion_2d`).
 
     Returns:
         Dictionary with keys ``q``, ``lambda2``, ``omega`` as nested float lists.
     """
-    q = q_criterion_2d(ux, uy)
-    l2 = lambda2_criterion_2d(ux, uy)
-    om = omega_criterion_2d(ux, uy)
+    q = q_criterion_2d(ux, uy, dx=dx, dy=dy)
+    l2 = lambda2_criterion_2d(ux, uy, dx=dx, dy=dy)
+    om = omega_criterion_2d(ux, uy, dx=dx, dy=dy)
 
     if mask is not None:
         fluid = (~mask).float()
@@ -373,6 +431,9 @@ def vortex_fields_3d(
     uz: torch.Tensor,
     mask: torch.Tensor | None = None,
     criteria: list[str] | None = None,
+    dx: float = 1.0,
+    dy: float = 1.0,
+    dz: float = 1.0,
 ) -> dict[str, list]:
     """Compute vortex criterion fields for a 3-D velocity field.
 
@@ -381,6 +442,7 @@ def vortex_fields_3d(
         mask:       Optional solid mask.
         criteria:   Subset of ``['q', 'lambda2', 'omega']`` to compute
                     (default: all three).
+        dx, dy, dz: Physical grid spacing (see :func:`q_criterion_3d`).
 
     Returns:
         Dictionary with requested criterion fields as nested float lists.
@@ -392,19 +454,19 @@ def vortex_fields_3d(
     fluid = None if mask is None else (~mask).float()
 
     if "q" in criteria:
-        q = q_criterion_3d(ux, uy, uz)
+        q = q_criterion_3d(ux, uy, uz, dx=dx, dy=dy, dz=dz)
         if fluid is not None:
             q = q * fluid
         result["q"] = q.cpu().tolist()
 
     if "lambda2" in criteria:
-        l2 = lambda2_criterion_3d(ux, uy, uz)
+        l2 = lambda2_criterion_3d(ux, uy, uz, dx=dx, dy=dy, dz=dz)
         if fluid is not None:
             l2 = l2 * fluid
         result["lambda2"] = l2.cpu().tolist()
 
     if "omega" in criteria:
-        om = omega_criterion_3d(ux, uy, uz)
+        om = omega_criterion_3d(ux, uy, uz, dx=dx, dy=dy, dz=dz)
         if fluid is not None:
             om = om * fluid
         result["omega"] = om.cpu().tolist()
