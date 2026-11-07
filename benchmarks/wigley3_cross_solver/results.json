@@ -1,0 +1,169 @@
+{
+  "hull": {
+    "L_m": 3.048,
+    "B_m": 0.406,
+    "T_m": 0.152,
+    "Cb": 0.555
+  },
+  "froude_numbers": [
+    0.25,
+    0.3,
+    0.35
+  ],
+  "resolutions": [
+    32,
+    64,
+    128
+  ],
+  "solver_results": {
+    "0.25": {
+      "TensorLBM": {
+        "solver": "TensorLBM",
+        "method": "D3Q27+LES (single-phase, friction-only)",
+        "fn": 0.25,
+        "speed_ms": 1.3670424280175066,
+        "reynolds": 3658248.74503719,
+        "wetted_area_m2": 2.0546254895833336,
+        "cf_ittc57": 0.003601706472538224,
+        "c_f": 0.015972850886850545,
+        "c_w": 0.0,
+        "c_r": 0.0,
+        "c_t": 0.015972850886850545,
+        "resolution": 64,
+        "les_smag": 0.1
+      },
+      "TensorFVM": {
+        "solver": "TensorFVM",
+        "method": "Holtrop empirical (RANS k-\u03c9 SST proxy)",
+        "fn": 0.25,
+        "speed_ms": 1.3670424280175066,
+        "reynolds": 3658248.74503719,
+        "wetted_area_m2": 1.6122032895239977,
+        "cf_ittc57": 0.003601706472538224,
+        "c_f": 0.013925361623531385,
+        "c_w": 0.004804249760118328,
+        "c_r": 0.003202833173412219,
+        "c_t": 0.021932444557061934
+      },
+      "TensorBEM": {
+        "solver": "TensorBEM",
+        "method": "Rankine source (Michell thin-ship)",
+        "fn": 0.25,
+        "speed_ms": 1.3670424280175066,
+        "reynolds": 3658248.74503719,
+        "c_f": 0.0,
+        "c_w": 0.00021836601342771386,
+        "c_r": 0.0,
+        "c_t": 0.00021836601342771386
+      }
+    },
+    "0.3": {
+      "TensorLBM": {
+        "solver": "TensorLBM",
+        "method": "D3Q27+LES (single-phase, friction-only)",
+        "fn": 0.3,
+        "speed_ms": 1.640450913621008,
+        "reynolds": 4389898.494044629,
+        "wetted_area_m2": 2.0546254895833336,
+        "cf_ittc57": 0.003479893521281926,
+        "c_f": 0.015432634708397543,
+        "c_w": 0.0,
+        "c_r": 0.0,
+        "c_t": 0.015432634708397543,
+        "resolution": 64,
+        "les_smag": 0.1
+      },
+      "TensorFVM": {
+        "solver": "TensorFVM",
+        "method": "Holtrop empirical (RANS k-\u03c9 SST proxy)",
+        "fn": 0.3,
+        "speed_ms": 1.640450913621008,
+        "reynolds": 4389898.494044629,
+        "wetted_area_m2": 1.6122032895239977,
+        "cf_ittc57": 0.003479893521281926,
+        "c_f": 0.01350147011416798,
+        "c_w": 0.004779520420415464,
+        "c_r": 0.0031863469469436433,
+        "c_t": 0.02146733748152709
+      },
+      "TensorBEM": {
+        "solver": "TensorBEM",
+        "method": "Rankine source (Michell thin-ship)",
+        "fn": 0.3,
+        "speed_ms": 1.640450913621008,
+        "reynolds": 4389898.494044629,
+        "c_f": 0.0,
+        "c_w": 0.0003444594950788845,
+        "c_r": 0.0,
+        "c_t": 0.0003444594950788845
+      }
+    },
+    "0.35": {
+      "TensorLBM": {
+        "solver": "TensorLBM",
+        "method": "D3Q27+LES (single-phase, friction-only)",
+        "fn": 0.35,
+        "speed_ms": 1.9138593992245092,
+        "reynolds": 5121548.243052066,
+        "wetted_area_m2": 2.0546254895833336,
+        "cf_ittc57": 0.003381659455905257,
+        "c_f": 0.014996986192830172,
+        "c_w": 0.0,
+        "c_r": 0.0,
+        "c_t": 0.014996986192830172,
+        "resolution": 64,
+        "les_smag": 0.1
+      },
+      "TensorFVM": {
+        "solver": "TensorFVM",
+        "method": "Holtrop empirical (RANS k-\u03c9 SST proxy)",
+        "fn": 0.35,
+        "speed_ms": 1.9138593992245092,
+        "reynolds": 5121548.243052066,
+        "wetted_area_m2": 1.6122032895239977,
+        "cf_ittc57": 0.003381659455905257,
+        "c_f": 0.013159629728445718,
+        "c_w": 0.004776945591425796,
+        "c_r": 0.003184630394283864,
+        "c_t": 0.021121205714155378
+      },
+      "TensorBEM": {
+        "solver": "TensorBEM",
+        "method": "Rankine source (Michell thin-ship)",
+        "fn": 0.35,
+        "speed_ms": 1.9138593992245092,
+        "reynolds": 5121548.243052066,
+        "c_f": 0.0,
+        "c_w": 0.0005064133368834567,
+        "c_r": 0.0,
+        "c_t": 0.0005064133368834567
+      }
+    }
+  },
+  "uncertainty": {
+    "0.25": {
+      "mean_c_t": 0.012707887152446732,
+      "std_c_t": 0.009160432773255787,
+      "u_m": 0.7208462479533484,
+      "u_m_pct": 72.08462479533483
+    },
+    "0.3": {
+      "mean_c_t": 0.01241481056166784,
+      "std_c_t": 0.008883484321782499,
+      "u_m": 0.7155553665241805,
+      "u_m_pct": 71.55553665241806
+    },
+    "0.35": {
+      "mean_c_t": 0.012208201747956336,
+      "std_c_t": 0.00864389592716482,
+      "u_m": 0.7080400623795241,
+      "u_m_pct": 70.80400623795241
+    }
+  },
+  "gci": {
+    "order_p": 0.1,
+    "gci_fine_pct": 64.38472412993178,
+    "gci_medium_pct": 123.73410371284415,
+    "extrapolated_c_t": 0.024279218542172527
+  }
+}
