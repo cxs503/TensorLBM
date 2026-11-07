@@ -629,8 +629,9 @@ def sc_single_component_force(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute the SC self-interaction + gravity force for a single component.
 
-    The self-interaction (G < 0, attractive) generates liquid–gas coexistence
-    via a density-dependent pseudopotential.
+    The self-interaction (G > 0, attractive in this library's backward-gather
+    convention — see the CONVENTION NOTE above) generates liquid–gas
+    coexistence via a density-dependent pseudopotential.
 
     Two interaction-force discretisations are available (``scheme``):
 
@@ -649,7 +650,8 @@ def sc_single_component_force(
 
     Args:
         rho:         Density field, shape ``(ny, nx)``.
-        G:           SC self-coupling constant (< 0 for attraction / phase separation).
+        G:           SC self-coupling constant (> 0 for attraction / phase
+                     separation, library convention).
         psi_fn:      Pseudopotential function ψ(ρ).  Defaults to :func:`psi_exp`.
         gx:          x body-force acceleration.
         gy:          y body-force acceleration.
@@ -698,7 +700,7 @@ def sc_single_component_force(
 
 def collide_sc_single_component(
     f: torch.Tensor,
-    G: float = -4.0,
+    G: float = 5.0,
     tau: float = 1.0,
     psi_fn: Callable[[torch.Tensor], torch.Tensor] = psi_exp,
     gx: float = 0.0,
@@ -710,8 +712,13 @@ def collide_sc_single_component(
 ) -> torch.Tensor:
     """Shan-Chen single-component multiphase (SCMP) BGK collision for D2Q9.
 
-    Use G < 0 to generate attractive self-interaction and spontaneous
-    liquid–gas phase separation.
+    Use G > 0 (this library's backward-gather convention, see the
+    CONVENTION NOTE above) to generate attractive self-interaction and
+    spontaneous liquid–gas phase separation.  For the classic psi_exp the
+    critical coupling is exactly G_c = +4.0 (classic −4.0): at G_c the EOS
+    spinodal degenerates to the single point ρ = ln 2 and no phase
+    separation is possible; the default +5.0 sits inside the coexistence
+    window (discrete density ratio ≈ 12, see ``tools/g4_ledger_audit.py``).
 
     Two forcing schemes are available (selected by ``forcing``):
 
@@ -752,9 +759,10 @@ def collide_sc_single_component(
 
     Args:
         f:           Distribution tensor, shape ``(9, ny, nx)``.
-        G:           SC self-coupling constant (< 0 for phase separation with
-                     the classic psi_exp; +1.0 with the corrected-sign
-                     :func:`make_psi_eos` psi, see the convention note).
+        G:           SC self-coupling constant (> 0 for phase separation with
+                     the classic psi_exp, library convention; +1.0 with the
+                     corrected-sign :func:`make_psi_eos` psi, see the
+                     convention note).
         tau:         Relaxation time.
         psi_fn:      Pseudopotential callable.
         gx:          x body-force acceleration.

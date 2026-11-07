@@ -548,7 +548,7 @@ def _bgk_collision_guo_27(
 
 def collide_sc_single_component_27(
     f: torch.Tensor,
-    G: float = -4.0,
+    G: float = 5.0,
     tau: float = 1.0,
     psi_fn: Callable[[torch.Tensor], torch.Tensor] = psi_exp,
     gx: float = 0.0,
@@ -562,7 +562,8 @@ def collide_sc_single_component_27(
 
     Args:
         f:           Distribution tensor, shape ``(27, nz, ny, nx)``.
-        G:           SC self-coupling constant (< 0 → attractive → phase sep.).
+        G:           SC self-coupling constant (> 0 → attractive → phase sep.,
+                     library convention; classic −4.0 is exactly critical).
         tau:         Relaxation time.
         psi_fn:      Pseudopotential callable.
         gx:          x body-force acceleration.
