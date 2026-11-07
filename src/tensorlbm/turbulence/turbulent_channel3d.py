@@ -124,12 +124,14 @@ class TurbulentChannel3DConfig:
     smagorinsky_cs: float = 0.0  # 0.0 = no model (pure molecular)
     body_force: float | None = None
     wall_scheme: str = "interpolated"  # "interpolated" (Bouzidi) | "halfway"
-    # Guo-force weighting in the TRT step.  "guo_sp" uses (1 - s+/2) for both the
-    # symmetric and the antisymmetric part (momentum exact to O(dt^2), the value
-    # the laminar twin validates); "trt_split" additionally damps the
-    # antisymmetric part by (1 - s-/2), which breaks the discrete momentum
-    # balance and is kept only as an audited negative variant.
-    force_scheme: str = "guo_sp"
+    # Guo-force weighting in the TRT step.  "trt_split" weights the symmetric
+    # and the antisymmetric force sector by (1 - s+/2) and (1 - s-/2); only this
+    # split reproduces the exact momentum source (measured dU/dt / a = 1.0000
+    # for tau+ in [0.505, 1.1]).  "guo_sp" reuses (1 - s+/2) for both sectors and
+    # therefore injects only ~(2.11 - 1.045 s+) a: 2.4 % of the drive at the
+    # campaign tau+ = 0.505.  It survives only as an audited negative variant
+    # (tests/test_turbulent_channel3d.py::test_guo_sp_force_split_underdrives).
+    force_scheme: str = "trt_split"
     label: str = "channel3d"
     output: Path | None = None
 
@@ -185,6 +187,11 @@ class TurbulentChannel3DConfig:
             raise ValueError("tau+ too close to 1/2: nu is not resolved")
         if self.wall_scheme not in ("interpolated", "halfway"):
             raise ValueError("wall_scheme must be 'interpolated' or 'halfway'")
+        if self.force_scheme not in ("trt_split", "guo_sp"):
+            raise ValueError(
+                "force_scheme must be 'trt_split' (exact momentum source) or "
+                "'guo_sp' (audited negative variant)"
+            )
 
 # ---------------------------------------------------------------------------
 # solver
@@ -730,32 +737,47 @@ def run_turbulent_channel3d(config: TurbulentChannel3DConfig) -> dict:
     return result
 
 
-def run_laminar_poiseuille(config: TurbulentChannel3DConfig, steps: int | None = None) -> dict:
+def run_laminar_poiseuille(
+    config: TurbulentChannel3DConfig,
+    steps: int | None = None,
+    u_max_target: float | None = 0.05,
+    nu_target: float = 0.05,
+) -> dict:
     """Laminar twin case: exact Poiseuille steady state, no perturbation.
 
     Two purposes: (i) measure the *realised* wall origin of the bounce-back
     scheme by fitting the analytic parabola with a free offset, and (ii) serve
     as the negative control ("no model" -> laminar solution recovered).
+
+    The wall origin is a *geometric* property of the boundary scheme, so the twin
+    does not have to -- and must not -- run at the campaign Reynolds number: with
+    the campaign's own ``u_tau``/``re_tau`` the laminar peak velocity is
+    ``u_max = u_tau re_tau / 2`` (0.9 at Re_tau = 180, i.e. Ma = 1.56), which
+    diverges to NaN (see
+    ``tests/test_turbulent_channel3d.py::test_legacy_twin_parameterisation_is_hypersonic``).
+    ``u_max_target`` therefore re-derives a subsonic twin,
+    ``re_tau_twin = sqrt(2 u_max h / nu_target)`` and
+    ``u_tau_twin = 2 u_max / re_tau_twin``, while ``ny``, ``wall_origin``, ``q``
+    and ``wall_scheme`` of the campaign are kept bit-identical.  Pass
+    ``u_max_target=None`` to use ``config`` verbatim (legacy behaviour; only
+    stable for ``u_tau re_tau / 2 <~ 0.1``).
     """
     cfg = config
-    ny, nx, nz = cfg.ny, cfg.nx, cfg.nz
-    h = cfg.half_height
-    y = torch.arange(ny, dtype=torch.float64) - cfg.wall_origin
-    y = torch.minimum(y, cfg.height - y)
-    u = poiseuille_exact(y.clamp(min=0.0), cfg.height, cfg.acceleration, cfg.nu)
-    u[0] = 0.0
-    u[-1] = 0.0
-    nsteps = cfg.steps if steps is None else steps
-    sim = TurbulentChannel3D(
-        TurbulentChannel3DConfig(
-            nx=nx,
-            nz=nz,
-            ny=ny,
-            re_tau=cfg.re_tau,
-            u_tau=cfg.u_tau,
+    if u_max_target is None:
+        twin = cfg
+    else:
+        h_twin = cfg.half_height
+        re_tau_twin = math.sqrt(2.0 * u_max_target * h_twin / nu_target)
+        u_tau_twin = 2.0 * u_max_target / re_tau_twin
+        twin = TurbulentChannel3DConfig(
+            nx=cfg.nx,
+            nz=cfg.nz,
+            ny=cfg.ny,
+            re_tau=re_tau_twin,
+            u_tau=u_tau_twin,
             wall_origin=cfg.wall_origin,
             wall_scheme=cfg.wall_scheme,
-            steps=nsteps,
+            steps=cfg.steps,
             warmup_steps=0,
             sample_interval=1,
             perturbation_amplitude=0.0,
@@ -764,6 +786,34 @@ def run_laminar_poiseuille(config: TurbulentChannel3DConfig, steps: int | None =
             force_scheme=cfg.force_scheme,
             smagorinsky_cs=0.0,
             label=cfg.label + "_laminar",
+            output=None,
+        )
+    ny, nx, nz = twin.ny, twin.nx, twin.nz
+    h = twin.half_height
+    y = torch.arange(ny, dtype=torch.float64) - twin.wall_origin
+    y = torch.minimum(y, twin.height - y)
+    u = poiseuille_exact(y.clamp(min=0.0), twin.height, twin.acceleration, twin.nu)
+    u[0] = 0.0
+    u[-1] = 0.0
+    nsteps = twin.steps if steps is None else steps
+    sim = TurbulentChannel3D(
+        TurbulentChannel3DConfig(
+            nx=nx,
+            nz=nz,
+            ny=ny,
+            re_tau=twin.re_tau,
+            u_tau=twin.u_tau,
+            wall_origin=twin.wall_origin,
+            wall_scheme=twin.wall_scheme,
+            steps=nsteps,
+            warmup_steps=0,
+            sample_interval=1,
+            perturbation_amplitude=0.0,
+            dtype=twin.dtype,
+            device=twin.device,
+            force_scheme=twin.force_scheme,
+            smagorinsky_cs=0.0,
+            label=twin.label,
             output=None,
         )
     )
@@ -788,34 +838,36 @@ def run_laminar_poiseuille(config: TurbulentChannel3DConfig, steps: int | None =
             sim._wall_flux_accum = 0.0
     u_mean = (samp / max(count, 1))[1:-1]
     yf = y[1:-1]
-    analytic = poiseuille_exact(yf, cfg.height, cfg.acceleration, cfg.nu)
+    analytic = poiseuille_exact(yf, twin.height, twin.acceleration, twin.nu)
     best = (float("inf"), 0.0)
     for delta in torch.linspace(-0.45, 0.45, 361, dtype=torch.float64):
         yy = (yf + delta).clamp(min=0.0)
-        yy = torch.minimum(yy, cfg.height - yy)
-        cand = poiseuille_exact(yy, cfg.height, cfg.acceleration, cfg.nu)
+        yy = torch.minimum(yy, twin.height - yy)
+        cand = poiseuille_exact(yy, twin.height, twin.acceleration, twin.nu)
         err = float(((cand - u_mean) ** 2).sum())
         if err < best[0]:
             best = (err, float(delta))
     rel_l2 = float(torch.sqrt(((u_mean - analytic) ** 2).mean()) / analytic.abs().max())
-    tau_w = cfg.acceleration * h
+    tau_w = twin.acceleration * h
     n_flux_steps = max(count, 1) * 25
     tau_w_exchange = -flux / (2.0 * float(nx * nz) * n_flux_steps)
     return {
-        "label": cfg.label + "_laminar",
+        "label": twin.label,
         "config": {
             "nx": nx,
             "ny": ny,
             "nz": nz,
-            "height": cfg.height,
-            "u_tau": cfg.u_tau,
-            "re_tau": cfg.re_tau,
-            "nu": cfg.nu,
-            "tau_plus": cfg.tau_plus,
-            "acceleration": cfg.acceleration,
-            "imposed_wall_origin": cfg.wall_origin,
-            "wall_scheme": cfg.wall_scheme,
+            "height": twin.height,
+            "u_tau": twin.u_tau,
+            "re_tau": twin.re_tau,
+            "nu": twin.nu,
+            "tau_plus": twin.tau_plus,
+            "acceleration": twin.acceleration,
+            "imposed_wall_origin": twin.wall_origin,
+            "wall_scheme": twin.wall_scheme,
+            "force_scheme": twin.force_scheme,
             "steps": nsteps,
+            "u_max_target": u_max_target,
         },
         "y": yf.tolist(),
         "u_mean": u_mean.tolist(),
@@ -823,7 +875,7 @@ def run_laminar_poiseuille(config: TurbulentChannel3DConfig, steps: int | None =
         "u_max_mean": float(u_mean.max()),
         "u_max_analytic": float(analytic.max()),
         "relative_l2_error": rel_l2,
-        "wall_origin_measured": cfg.wall_origin + best[1],
+        "wall_origin_measured": twin.wall_origin + best[1],
         "wall_origin_shift": best[1],
         "wall_origin_fit_residual": math.sqrt(best[0] / max(len(yf), 1)),
         "u_tau_body_force": math.sqrt(tau_w),
