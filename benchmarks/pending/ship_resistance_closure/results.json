@@ -1,0 +1,3453 @@
+{
+  "schema": "ship-resistance-closure-v1",
+  "generated_at": "2026-11-07T13:42:53Z",
+  "wall_clock_s": 99.8,
+  "environment": {
+    "python": "3.11.6",
+    "numpy": "2.4.6",
+    "machine": "loongarch64"
+  },
+  "reference_lock": {
+    "path": "benchmarks/pending/ship_resistance_closure/refs_lock.json",
+    "sha256": "c448dd3129e241d1c646fac66198aff4fe8dc4b475b040914474632e502f14d5",
+    "entries": [
+      {
+        "case": "kcs",
+        "fn": 0.26,
+        "ct_ref": 0.00355,
+        "band_pct": 8.0,
+        "provenance": "second-hand, audited in-repo",
+        "source": "MDPI J. Mar. Sci. Eng. 2020, 8, 745 (Tokyo-2015 KCS EFT total-resistance coefficient C_T=3.55e-3 at Fn=0.26), transcribed and audited in benchmarks/pending/kcs_resistance/run.py"
+      },
+      {
+        "case": "dtmb5415",
+        "fn": 0.28,
+        "ct_ref": 0.0042,
+        "band_pct": 10.0,
+        "provenance": "second-hand constant in-repo",
+        "s_wet_convention": "bare-hull model-test wetted surface, S/L^2 = 0.1302 (IIHR 5.72 m model convention, rescaled to the run length)",
+        "source": "INSEAN towing-tank model-test total resistance, constants carried in benchmarks/pending/dtmb5415_resistance/run.py (C_T_EXP, citing Olivieri 2001 / Stern 2000)"
+      },
+      {
+        "case": "series60_cb0.600",
+        "fn": 0.3,
+        "ct_ref": 0.0076,
+        "band_pct": 10.0,
+        "provenance": "second-hand transcription",
+        "source": "Todd (1963) DTMB Series 60 Cb=0.60 model-test C_T(Fn) table as transcribed in benchmarks/pending/series60_resistance/run.py; flagged second-hand there and not promotable"
+      },
+      {
+        "case": "series60_cb0.700",
+        "fn": 0.3,
+        "ct_ref": null,
+        "band_pct": 10.0,
+        "provenance": "withheld",
+        "source": "no first-hand Todd/ITTC Series 60 Cb=0.70 total-resistance coefficient exists in this repository; fabricating one is not permitted"
+      },
+      {
+        "case": "series60_cb0.800",
+        "fn": 0.3,
+        "ct_ref": null,
+        "band_pct": 10.0,
+        "provenance": "withheld",
+        "source": "no first-hand Series 60 Cb=0.80 total-resistance coefficient in this repository"
+      }
+    ]
+  },
+  "froude_ladder": [
+    0.2,
+    0.3,
+    0.4
+  ],
+  "nu_m2_s": 1.139e-06,
+  "s_wet_reference_5415_m2": 3.88147032,
+  "cases": {
+    "kcs": {
+      "case": "kcs",
+      "geometry": {
+        "grade": "GEOMETRY",
+        "name": "kcs",
+        "length_m": 7.28,
+        "beam_m": 1.0192,
+        "draft_m": 0.3418434782608696,
+        "cb_grid": 0.6454537231494079,
+        "cb_locked": 0.6505,
+        "cb_source": "KCS principal particulars L/B=7.143, B/T=2.981 (Tokyo-2015)",
+        "cm_grid": 0.8058495390340205,
+        "cp_grid": 0.8009605911335749,
+        "cwp_grid": 0.7911608961539646,
+        "volume_m3": 1.6371301373827847,
+        "wetted_area_m2": 8.904479322192339,
+        "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+        "geometry_source": "ship_cad._kcs_half_beam (parametric approximation)",
+        "grid": [
+          801,
+          161
+        ],
+        "cb_tolerance": 0.02,
+        "cb_error_pct": -0.7757535512055517,
+        "status": "pass"
+      },
+      "admission": {
+        "status": "outside_validity",
+        "admitted": false,
+        "checks": {
+          "length_over_beam": {
+            "value": 7.142857142857142,
+            "limit": 6.0,
+            "ok": true
+          },
+          "block_coefficient": {
+            "value": 0.6454537231494079,
+            "limit": 0.6,
+            "ok": false
+          },
+          "beam_over_length": {
+            "value": 0.14,
+            "limit": 0.16,
+            "ok": true
+          },
+          "draft_over_length": {
+            "value": 0.04695652173913044,
+            "limit": 0.1,
+            "ok": true
+          }
+        },
+        "gate": {
+          "min_length_over_beam": 6.0,
+          "max_block_coefficient": 0.6,
+          "max_beam_over_length": 0.16,
+          "max_draft_over_length": 0.1
+        }
+      },
+      "ladder": [],
+      "reference_row": null,
+      "wave_at_reference_fn": {
+        "grade": "THEORY",
+        "model": "michell-thin-ship",
+        "fn": 0.26,
+        "speed_ms": 2.197219988986083,
+        "re": 14043688.779472066,
+        "k0_per_m": 2.0319916769620905,
+        "s_wet_m2": 8.904479322192339,
+        "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+        "levels": [
+          {
+            "grid": [
+              91,
+              31,
+              300
+            ],
+            "rw_n": 123.67498919437352,
+            "cw": 0.00575381990586587,
+            "s_wet_m2": 10.364004753382742
+          },
+          {
+            "grid": [
+              181,
+              61,
+              600
+            ],
+            "rw_n": 135.64083806672593,
+            "cw": 0.00631051564427517,
+            "s_wet_m2": 10.103254027380952
+          },
+          {
+            "grid": [
+              361,
+              121,
+              1200
+            ],
+            "rw_n": 147.4820425938639,
+            "cw": 0.006861412464735738,
+            "s_wet_m2": 9.89393906171121
+          }
+        ],
+        "admission": {
+          "status": "outside_validity",
+          "admitted": false,
+          "checks": {
+            "length_over_beam": {
+              "value": 7.142857142857142,
+              "limit": 6.0,
+              "ok": true
+            },
+            "block_coefficient": {
+              "value": 0.6454537231494079,
+              "limit": 0.6,
+              "ok": false
+            },
+            "beam_over_length": {
+              "value": 0.14,
+              "limit": 0.16,
+              "ok": true
+            },
+            "draft_over_length": {
+              "value": 0.04695652173913044,
+              "limit": 0.1,
+              "ok": true
+            }
+          },
+          "gate": {
+            "min_length_over_beam": 6.0,
+            "max_block_coefficient": 0.6,
+            "max_beam_over_length": 0.16,
+            "max_draft_over_length": 0.1
+          }
+        },
+        "status": "outside_validity",
+        "cw": null,
+        "gci_pct": null,
+        "convergence": null,
+        "diagnostic_cw": 0.006861412464735738,
+        "note": "thin-ship premise violated by the measured geometry: the diagnostic C_W is for attribution only and must not be compared with experiment"
+      },
+      "reference_fn": 0.26,
+      "quadrature_levels": [
+        [
+          91,
+          31,
+          300
+        ],
+        [
+          181,
+          61,
+          600
+        ],
+        [
+          361,
+          121,
+          1200
+        ]
+      ],
+      "geometry_curve": {
+        "l_scale": 7.28,
+        "stations": [
+          0.0,
+          0.2912,
+          0.5824,
+          0.8736,
+          1.1648,
+          1.456,
+          1.7472,
+          2.0384,
+          2.3296,
+          2.6208,
+          2.912,
+          3.2032000000000003,
+          3.4944,
+          3.7856,
+          4.0768,
+          4.368,
+          4.6592,
+          4.9504,
+          5.2416,
+          5.5328,
+          5.824,
+          6.115200000000001,
+          6.4064000000000005,
+          6.6976,
+          6.9888,
+          7.28
+        ],
+        "sectional_area_ratio": [
+          0.0,
+          0.3468406639266901,
+          0.4648105473375554,
+          0.546801530018906,
+          0.609481641907765,
+          0.6592269448008753,
+          0.6992655506272709,
+          0.731478718585916,
+          0.757055046658558,
+          0.7767800651586858,
+          0.7911813050363005,
+          0.8006068000004336,
+          0.8052690718615242,
+          0.8052690718615242,
+          0.8006068000004336,
+          0.7911813050363005,
+          0.7767800651586858,
+          0.7570550466585579,
+          0.731478718585916,
+          0.6992655506272709,
+          0.6592269448008753,
+          0.609481641907765,
+          0.546801530018906,
+          0.46481054733755506,
+          0.34684066392669033,
+          0.0
+        ]
+      },
+      "ct_monotone": false,
+      "ct_ladder": []
+    },
+    "dtmb5415": {
+      "case": "dtmb5415",
+      "geometry": {
+        "grade": "GEOMETRY",
+        "name": "dtmb5415",
+        "length_m": 5.46,
+        "beam_m": 0.7343840315426319,
+        "draft_m": 0.23642188270083786,
+        "cb_grid": 0.4993351920391026,
+        "cb_locked": 0.507,
+        "cb_source": "DTMB 5415 bare-hull Cb = 0.507 (IIHR model-test convention)",
+        "cm_grid": 0.8140152200442958,
+        "cp_grid": 0.6134224271776276,
+        "cwp_grid": 0.7608692229294101,
+        "volume_m3": 0.473364532156363,
+        "wetted_area_m2": 4.423481670361615,
+        "wetted_area_source": "stl_triangle_area_below_waterline",
+        "geometry_source": "stl_surface_sampling(dtmb5415_underwater.stl, k=8, smooth=2)",
+        "grid": [
+          289,
+          145
+        ],
+        "cb_tolerance": 0.02,
+        "cb_error_pct": -1.5117964419916001,
+        "status": "pass"
+      },
+      "admission": {
+        "status": "applicable",
+        "admitted": true,
+        "checks": {
+          "length_over_beam": {
+            "value": 7.434802181810567,
+            "limit": 6.0,
+            "ok": true
+          },
+          "block_coefficient": {
+            "value": 0.4993351920391026,
+            "limit": 0.6,
+            "ok": true
+          },
+          "beam_over_length": {
+            "value": 0.1345025698796029,
+            "limit": 0.16,
+            "ok": true
+          },
+          "draft_over_length": {
+            "value": 0.04330071111736957,
+            "limit": 0.1,
+            "ok": true
+          }
+        },
+        "gate": {
+          "min_length_over_beam": 6.0,
+          "max_block_coefficient": 0.6,
+          "max_beam_over_length": 0.16,
+          "max_draft_over_length": 0.1
+        }
+      },
+      "ladder": [
+        {
+          "geometry": {
+            "grade": "GEOMETRY",
+            "name": "dtmb5415",
+            "length_m": 5.46,
+            "beam_m": 0.7343840315426319,
+            "draft_m": 0.23642188270083786,
+            "cb_grid": 0.4993351920391026,
+            "cb_locked": 0.507,
+            "cb_source": "DTMB 5415 bare-hull Cb = 0.507 (IIHR model-test convention)",
+            "cm_grid": 0.8140152200442958,
+            "cp_grid": 0.6134224271776276,
+            "cwp_grid": 0.7608692229294101,
+            "volume_m3": 0.473364532156363,
+            "wetted_area_m2": 4.423481670361615,
+            "wetted_area_source": "stl_triangle_area_below_waterline",
+            "geometry_source": "stl_surface_sampling(dtmb5415_underwater.stl, k=8, smooth=2)",
+            "grid": [
+              289,
+              145
+            ],
+            "cb_tolerance": 0.02,
+            "cb_error_pct": -1.5117964419916001,
+            "status": "pass"
+          },
+          "viscous": {
+            "grade": "CORRELATION",
+            "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+            "re": 7016648.79569151,
+            "cf": 0.003193531393947661,
+            "form_factor_1k": 1.1556424151683262,
+            "form_factor_1k_sensitivity": [
+              1.1308537505236846,
+              1.1804232280389675
+            ],
+            "lcb_fraction": 0.0,
+            "cstern": 0.0,
+            "cv": 0.0036905803330175464
+          },
+          "wave": {
+            "grade": "THEORY",
+            "model": "michell-thin-ship",
+            "fn": 0.2,
+            "speed_ms": 1.4637294832037784,
+            "re": 7016648.79569151,
+            "k0_per_m": 4.5787545787545785,
+            "s_wet_m2": 4.423481670361615,
+            "s_wet_source": "stl_triangle_area_below_waterline",
+            "levels": [
+              {
+                "grid": [
+                  91,
+                  31,
+                  300
+                ],
+                "rw_n": 3.740591010855739,
+                "cw": 0.0007893767815972481,
+                "s_wet_m2": 7.274825899508508
+              },
+              {
+                "grid": [
+                  181,
+                  61,
+                  600
+                ],
+                "rw_n": 3.6216801079736953,
+                "cw": 0.0007642830181942353,
+                "s_wet_m2": 7.178097610537051
+              },
+              {
+                "grid": [
+                  361,
+                  121,
+                  1200
+                ],
+                "rw_n": 3.5439962170259203,
+                "cw": 0.0007478893895830502,
+                "s_wet_m2": 6.806519829501231
+              }
+            ],
+            "admission": {
+              "status": "applicable",
+              "admitted": true,
+              "checks": {
+                "length_over_beam": {
+                  "value": 7.434802181810567,
+                  "limit": 6.0,
+                  "ok": true
+                },
+                "block_coefficient": {
+                  "value": 0.4993351920391026,
+                  "limit": 0.6,
+                  "ok": true
+                },
+                "beam_over_length": {
+                  "value": 0.1345025698796029,
+                  "limit": 0.16,
+                  "ok": true
+                },
+                "draft_over_length": {
+                  "value": 0.04330071111736957,
+                  "limit": 0.1,
+                  "ok": true
+                }
+              },
+              "gate": {
+                "min_length_over_beam": 6.0,
+                "max_block_coefficient": 0.6,
+                "max_beam_over_length": 0.16,
+                "max_draft_over_length": 0.1
+              }
+            },
+            "quadrature": {
+              "k0_per_m": 4.5787545787545785,
+              "dx_m": 0.015166666666666667,
+              "sec_max": 3.5724482867195757,
+              "u_max_supplied": 4.0,
+              "phase_per_cell_rad": 0.2480866865777483,
+              "cells_per_axial_wave": 25.326571908607793,
+              "limit_rad_per_cell": 0.39269908169872414,
+              "resolved": true
+            },
+            "status": "applicable",
+            "cw": 0.0007478893895830502,
+            "cw_levels": [
+              0.0007893767815972481,
+              0.0007642830181942353,
+              0.0007478893895830502
+            ],
+            "gci_pct": 5.16293722064219,
+            "convergence": {
+              "fine": 0.0007478893895830502,
+              "medium": 0.0007642830181942353,
+              "coarse": 0.0007893767815972481,
+              "ratio": 2.0,
+              "status": "converged",
+              "p_observed": 0.6141936332970285,
+              "extrapolated": 0.0007169989418518367,
+              "gci_fine_pct": 5.16293722064219,
+              "relative_change_pct": 2.1919857186802147
+            }
+          },
+          "total": {
+            "fn": 0.2,
+            "speed_ms": 1.4637294832037784,
+            "re": 7016648.79569151,
+            "ct": 0.004438469722600597,
+            "status": "ok",
+            "expression": "C_T = (1 + k) C_F + C_W"
+          },
+          "decomposition": {
+            "cf_share": 0.0036905803330175464,
+            "cw_share": 0.0007478893895830502,
+            "residual": 0.0,
+            "residual_relative": 0.0,
+            "pass": true,
+            "status": "self_consistent",
+            "cf_share_fraction": 0.8314983685086748,
+            "cw_share_fraction": 0.16850163149132522
+          },
+          "limitations": [
+            "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+            "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+            "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+            "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+          ]
+        },
+        {
+          "geometry": {
+            "grade": "GEOMETRY",
+            "name": "dtmb5415",
+            "length_m": 5.46,
+            "beam_m": 0.7343840315426319,
+            "draft_m": 0.23642188270083786,
+            "cb_grid": 0.4993351920391026,
+            "cb_locked": 0.507,
+            "cb_source": "DTMB 5415 bare-hull Cb = 0.507 (IIHR model-test convention)",
+            "cm_grid": 0.8140152200442958,
+            "cp_grid": 0.6134224271776276,
+            "cwp_grid": 0.7608692229294101,
+            "volume_m3": 0.473364532156363,
+            "wetted_area_m2": 4.423481670361615,
+            "wetted_area_source": "stl_triangle_area_below_waterline",
+            "geometry_source": "stl_surface_sampling(dtmb5415_underwater.stl, k=8, smooth=2)",
+            "grid": [
+              289,
+              145
+            ],
+            "cb_tolerance": 0.02,
+            "cb_error_pct": -1.5117964419916001,
+            "status": "pass"
+          },
+          "viscous": {
+            "grade": "CORRELATION",
+            "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+            "re": 10524973.193537263,
+            "cf": 0.00297351151262833,
+            "form_factor_1k": 1.1556424151683262,
+            "form_factor_1k_sensitivity": [
+              1.1308537505236846,
+              1.1804232280389675
+            ],
+            "lcb_fraction": 0.0,
+            "cstern": 0.0,
+            "cv": 0.003436316025984626
+          },
+          "wave": {
+            "grade": "THEORY",
+            "model": "michell-thin-ship",
+            "fn": 0.3,
+            "speed_ms": 2.1955942248056672,
+            "re": 10524973.193537263,
+            "k0_per_m": 2.0350020350020355,
+            "s_wet_m2": 4.423481670361615,
+            "s_wet_source": "stl_triangle_area_below_waterline",
+            "levels": [
+              {
+                "grid": [
+                  91,
+                  31,
+                  300
+                ],
+                "rw_n": 19.757018106684686,
+                "cw": 0.0018530323531765424,
+                "s_wet_m2": 7.274825899508508
+              },
+              {
+                "grid": [
+                  181,
+                  61,
+                  600
+                ],
+                "rw_n": 19.974704873088303,
+                "cw": 0.0018734494332655568,
+                "s_wet_m2": 7.178097610537051
+              },
+              {
+                "grid": [
+                  361,
+                  121,
+                  1200
+                ],
+                "rw_n": 19.94418813261191,
+                "cw": 0.001870587234774322,
+                "s_wet_m2": 6.806519829501231
+              }
+            ],
+            "admission": {
+              "status": "applicable",
+              "admitted": true,
+              "checks": {
+                "length_over_beam": {
+                  "value": 7.434802181810567,
+                  "limit": 6.0,
+                  "ok": true
+                },
+                "block_coefficient": {
+                  "value": 0.4993351920391026,
+                  "limit": 0.6,
+                  "ok": true
+                },
+                "beam_over_length": {
+                  "value": 0.1345025698796029,
+                  "limit": 0.16,
+                  "ok": true
+                },
+                "draft_over_length": {
+                  "value": 0.04330071111736957,
+                  "limit": 0.1,
+                  "ok": true
+                }
+              },
+              "gate": {
+                "min_length_over_beam": 6.0,
+                "max_block_coefficient": 0.6,
+                "max_beam_over_length": 0.16,
+                "max_draft_over_length": 0.1
+              }
+            },
+            "quadrature": {
+              "k0_per_m": 2.0350020350020355,
+              "dx_m": 0.015166666666666667,
+              "sec_max": 4.123105625617661,
+              "u_max_supplied": 4.0,
+              "phase_per_cell_rad": 0.12725634646968093,
+              "cells_per_axial_wave": 49.3742393325473,
+              "limit_rad_per_cell": 0.39269908169872414,
+              "resolved": true
+            },
+            "status": "not_converged",
+            "cw": 0.001870587234774322,
+            "cw_levels": [
+              0.0018530323531765424,
+              0.0018734494332655568,
+              0.001870587234774322
+            ],
+            "gci_pct": null,
+            "convergence": {
+              "fine": 0.001870587234774322,
+              "medium": 0.0018734494332655568,
+              "coarse": 0.0018530323531765424,
+              "ratio": 2.0,
+              "status": "non_monotone",
+              "p_observed": null,
+              "gci_fine_pct": null
+            }
+          },
+          "total": {
+            "fn": 0.3,
+            "speed_ms": 2.1955942248056672,
+            "re": 10524973.193537263,
+            "ct": null,
+            "status": "wave_not_converged",
+            "expression": "C_T = (1 + k) C_F + C_W"
+          },
+          "decomposition": {
+            "cf_share": 0.003436316025984626,
+            "cw_share": 0.001870587234774322,
+            "residual": null,
+            "residual_relative": null,
+            "pass": false,
+            "status": "incomplete"
+          },
+          "limitations": [
+            "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+            "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+            "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+            "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+          ]
+        },
+        {
+          "geometry": {
+            "grade": "GEOMETRY",
+            "name": "dtmb5415",
+            "length_m": 5.46,
+            "beam_m": 0.7343840315426319,
+            "draft_m": 0.23642188270083786,
+            "cb_grid": 0.4993351920391026,
+            "cb_locked": 0.507,
+            "cb_source": "DTMB 5415 bare-hull Cb = 0.507 (IIHR model-test convention)",
+            "cm_grid": 0.8140152200442958,
+            "cp_grid": 0.6134224271776276,
+            "cwp_grid": 0.7608692229294101,
+            "volume_m3": 0.473364532156363,
+            "wetted_area_m2": 4.423481670361615,
+            "wetted_area_source": "stl_triangle_area_below_waterline",
+            "geometry_source": "stl_surface_sampling(dtmb5415_underwater.stl, k=8, smooth=2)",
+            "grid": [
+              289,
+              145
+            ],
+            "cb_tolerance": 0.02,
+            "cb_error_pct": -1.5117964419916001,
+            "status": "pass"
+          },
+          "viscous": {
+            "grade": "CORRELATION",
+            "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+            "re": 14033297.59138302,
+            "cf": 0.0028309094034012485,
+            "form_factor_1k": 1.1556424151683262,
+            "form_factor_1k_sensitivity": [
+              1.1308537505236846,
+              1.1804232280389675
+            ],
+            "lcb_fraction": 0.0,
+            "cstern": 0.0,
+            "cv": 0.0032715189800693444
+          },
+          "wave": {
+            "grade": "THEORY",
+            "model": "michell-thin-ship",
+            "fn": 0.4,
+            "speed_ms": 2.9274589664075568,
+            "re": 14033297.59138302,
+            "k0_per_m": 1.1446886446886446,
+            "s_wet_m2": 4.423481670361615,
+            "s_wet_source": "stl_triangle_area_below_waterline",
+            "levels": [
+              {
+                "grid": [
+                  91,
+                  31,
+                  300
+                ],
+                "rw_n": 86.0722176482569,
+                "cw": 0.0045409542205320785,
+                "s_wet_m2": 7.274825899508508
+              },
+              {
+                "grid": [
+                  181,
+                  61,
+                  600
+                ],
+                "rw_n": 85.36547155594134,
+                "cw": 0.004503668070152405,
+                "s_wet_m2": 7.178097610537051
+              },
+              {
+                "grid": [
+                  361,
+                  121,
+                  1200
+                ],
+                "rw_n": 84.80179839795836,
+                "cw": 0.004473930088772588,
+                "s_wet_m2": 6.806519829501231
+              }
+            ],
+            "admission": {
+              "status": "applicable",
+              "admitted": true,
+              "checks": {
+                "length_over_beam": {
+                  "value": 7.434802181810567,
+                  "limit": 6.0,
+                  "ok": true
+                },
+                "block_coefficient": {
+                  "value": 0.4993351920391026,
+                  "limit": 0.6,
+                  "ok": true
+                },
+                "beam_over_length": {
+                  "value": 0.1345025698796029,
+                  "limit": 0.16,
+                  "ok": true
+                },
+                "draft_over_length": {
+                  "value": 0.04330071111736957,
+                  "limit": 0.1,
+                  "ok": true
+                }
+              },
+              "gate": {
+                "min_length_over_beam": 6.0,
+                "max_block_coefficient": 0.6,
+                "max_beam_over_length": 0.16,
+                "max_draft_over_length": 0.1
+              }
+            },
+            "quadrature": {
+              "k0_per_m": 1.1446886446886446,
+              "dx_m": 0.015166666666666667,
+              "sec_max": 4.123105625617661,
+              "u_max_supplied": 4.0,
+              "phase_per_cell_rad": 0.0715816948891955,
+              "cells_per_axial_wave": 87.77642548008411,
+              "limit_rad_per_cell": 0.39269908169872414,
+              "resolved": true
+            },
+            "status": "applicable",
+            "cw": 0.004473930088772588,
+            "cw_levels": [
+              0.0045409542205320785,
+              0.004503668070152405,
+              0.004473930088772588
+            ],
+            "gci_pct": 3.2734233407052056,
+            "convergence": {
+              "fine": 0.004473930088772588,
+              "medium": 0.004503668070152405,
+              "coarse": 0.0045409542205320785,
+              "ratio": 2.0,
+              "status": "low_order",
+              "p_observed": 0.3263331330137493,
+              "extrapolated": 0.004356769551354416,
+              "gci_fine_pct": 3.2734233407052056,
+              "relative_change_pct": 0.6646948161851033
+            }
+          },
+          "total": {
+            "fn": 0.4,
+            "speed_ms": 2.9274589664075568,
+            "re": 14033297.59138302,
+            "ct": 0.007745449068841933,
+            "status": "ok",
+            "expression": "C_T = (1 + k) C_F + C_W"
+          },
+          "decomposition": {
+            "cf_share": 0.0032715189800693444,
+            "cw_share": 0.004473930088772588,
+            "residual": 0.0,
+            "residual_relative": 0.0,
+            "pass": true,
+            "status": "self_consistent",
+            "cf_share_fraction": 0.4223795096955545,
+            "cw_share_fraction": 0.5776204903044455
+          },
+          "limitations": [
+            "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+            "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+            "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+            "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+          ]
+        }
+      ],
+      "reference_row": {
+        "geometry": {
+          "grade": "GEOMETRY",
+          "name": "dtmb5415",
+          "length_m": 5.46,
+          "beam_m": 0.7343840315426319,
+          "draft_m": 0.23642188270083786,
+          "cb_grid": 0.4993351920391026,
+          "cb_locked": 0.507,
+          "cb_source": "DTMB 5415 bare-hull Cb = 0.507 (IIHR model-test convention)",
+          "cm_grid": 0.8140152200442958,
+          "cp_grid": 0.6134224271776276,
+          "cwp_grid": 0.7608692229294101,
+          "volume_m3": 0.473364532156363,
+          "wetted_area_m2": 4.423481670361615,
+          "wetted_area_source": "stl_triangle_area_below_waterline",
+          "geometry_source": "stl_surface_sampling(dtmb5415_underwater.stl, k=8, smooth=2)",
+          "grid": [
+            289,
+            145
+          ],
+          "cb_tolerance": 0.02,
+          "cb_error_pct": -1.5117964419916001,
+          "status": "pass"
+        },
+        "viscous": {
+          "grade": "CORRELATION",
+          "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+          "re": 9823308.313968115,
+          "cf": 0.0030093122937635036,
+          "form_factor_1k": 1.1556424151683262,
+          "form_factor_1k_sensitivity": [
+            1.1308537505236846,
+            1.1804232280389675
+          ],
+          "lcb_fraction": 0.0,
+          "cstern": 0.0,
+          "cv": 0.003477688927160591
+        },
+        "wave": {
+          "grade": "THEORY",
+          "model": "michell-thin-ship",
+          "fn": 0.28,
+          "speed_ms": 2.04922127648529,
+          "re": 9823308.313968115,
+          "k0_per_m": 2.3360992748747846,
+          "s_wet_m2": 4.423481670361615,
+          "s_wet_source": "stl_triangle_area_below_waterline",
+          "levels": [
+            {
+              "grid": [
+                91,
+                31,
+                300
+              ],
+              "rw_n": 17.53477312578069,
+              "cw": 0.0018879400607944566,
+              "s_wet_m2": 7.274825899508508
+            },
+            {
+              "grid": [
+                181,
+                61,
+                600
+              ],
+              "rw_n": 17.259952967706166,
+              "cw": 0.0018583506282867774,
+              "s_wet_m2": 7.178097610537051
+            },
+            {
+              "grid": [
+                361,
+                121,
+                1200
+              ],
+              "rw_n": 17.056642177078587,
+              "cw": 0.001836460491262235,
+              "s_wet_m2": 6.806519829501231
+            }
+          ],
+          "admission": {
+            "status": "applicable",
+            "admitted": true,
+            "checks": {
+              "length_over_beam": {
+                "value": 7.434802181810567,
+                "limit": 6.0,
+                "ok": true
+              },
+              "block_coefficient": {
+                "value": 0.4993351920391026,
+                "limit": 0.6,
+                "ok": true
+              },
+              "beam_over_length": {
+                "value": 0.1345025698796029,
+                "limit": 0.16,
+                "ok": true
+              },
+              "draft_over_length": {
+                "value": 0.04330071111736957,
+                "limit": 0.1,
+                "ok": true
+              }
+            },
+            "gate": {
+              "min_length_over_beam": 6.0,
+              "max_block_coefficient": 0.6,
+              "max_beam_over_length": 0.16,
+              "max_draft_over_length": 0.1
+            }
+          },
+          "quadrature": {
+            "k0_per_m": 2.3360992748747846,
+            "dx_m": 0.015166666666666667,
+            "sec_max": 4.123105625617661,
+            "u_max_supplied": 4.0,
+            "phase_per_cell_rad": 0.146085091610603,
+            "cells_per_axial_wave": 43.01044848524123,
+            "limit_rad_per_cell": 0.39269908169872414,
+            "resolved": true
+          },
+          "status": "applicable",
+          "cw": 0.001836460491262235,
+          "cw_levels": [
+            0.0018879400607944566,
+            0.0018583506282867774,
+            0.001836460491262235
+          ],
+          "gci_pct": 4.236179911074687,
+          "convergence": {
+            "fine": 0.001836460491262235,
+            "medium": 0.0018583506282867774,
+            "coarse": 0.0018879400607944566,
+            "ratio": 2.0,
+            "status": "low_order",
+            "p_observed": 0.43480104220541493,
+            "extrapolated": 0.0017742238749376955,
+            "gci_fine_pct": 4.236179911074687,
+            "relative_change_pct": 1.1919742966807256
+          }
+        },
+        "total": {
+          "fn": 0.28,
+          "speed_ms": 2.04922127648529,
+          "re": 9823308.313968115,
+          "ct": 0.005314149418422826,
+          "status": "ok",
+          "expression": "C_T = (1 + k) C_F + C_W",
+          "comparison": {
+            "predicted": 0.005314149418422826,
+            "reference": 0.0042,
+            "band_pct": 10.0,
+            "error_pct": 26.52736710530538,
+            "abs_error_pct": 26.52736710530538,
+            "status": "fail",
+            "pass": false
+          },
+          "reference_source": "INSEAN towing-tank model-test total resistance, constants carried in benchmarks/pending/dtmb5415_resistance/run.py (C_T_EXP, citing Olivieri 2001 / Stern 2000)",
+          "ct_reference_area_convention": 0.006056221124461981,
+          "s_wet_ratio": 1.139640730361585,
+          "comparison_area_convention": {
+            "predicted": 0.006056221124461981,
+            "reference": 0.0042,
+            "band_pct": 10.0,
+            "error_pct": 44.19574105861861,
+            "abs_error_pct": 44.19574105861861,
+            "status": "fail",
+            "pass": false
+          }
+        },
+        "decomposition": {
+          "cf_share": 0.003477688927160591,
+          "cw_share": 0.001836460491262235,
+          "residual": 0.0,
+          "residual_relative": 0.0,
+          "pass": true,
+          "status": "self_consistent",
+          "cf_share_fraction": 0.654420614351624,
+          "cw_share_fraction": 0.34557938564837604
+        },
+        "limitations": [
+          "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+          "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+          "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+          "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+        ]
+      },
+      "wave_at_reference_fn": {
+        "grade": "THEORY",
+        "model": "michell-thin-ship",
+        "fn": 0.28,
+        "speed_ms": 2.04922127648529,
+        "re": 9823308.313968115,
+        "k0_per_m": 2.3360992748747846,
+        "s_wet_m2": 4.423481670361615,
+        "s_wet_source": "stl_triangle_area_below_waterline",
+        "levels": [
+          {
+            "grid": [
+              91,
+              31,
+              300
+            ],
+            "rw_n": 17.53477312578069,
+            "cw": 0.0018879400607944566,
+            "s_wet_m2": 7.274825899508508
+          },
+          {
+            "grid": [
+              181,
+              61,
+              600
+            ],
+            "rw_n": 17.259952967706166,
+            "cw": 0.0018583506282867774,
+            "s_wet_m2": 7.178097610537051
+          },
+          {
+            "grid": [
+              361,
+              121,
+              1200
+            ],
+            "rw_n": 17.056642177078587,
+            "cw": 0.001836460491262235,
+            "s_wet_m2": 6.806519829501231
+          }
+        ],
+        "admission": {
+          "status": "applicable",
+          "admitted": true,
+          "checks": {
+            "length_over_beam": {
+              "value": 7.434802181810567,
+              "limit": 6.0,
+              "ok": true
+            },
+            "block_coefficient": {
+              "value": 0.4993351920391026,
+              "limit": 0.6,
+              "ok": true
+            },
+            "beam_over_length": {
+              "value": 0.1345025698796029,
+              "limit": 0.16,
+              "ok": true
+            },
+            "draft_over_length": {
+              "value": 0.04330071111736957,
+              "limit": 0.1,
+              "ok": true
+            }
+          },
+          "gate": {
+            "min_length_over_beam": 6.0,
+            "max_block_coefficient": 0.6,
+            "max_beam_over_length": 0.16,
+            "max_draft_over_length": 0.1
+          }
+        },
+        "quadrature": {
+          "k0_per_m": 2.3360992748747846,
+          "dx_m": 0.015166666666666667,
+          "sec_max": 4.123105625617661,
+          "u_max_supplied": 4.0,
+          "phase_per_cell_rad": 0.146085091610603,
+          "cells_per_axial_wave": 43.01044848524123,
+          "limit_rad_per_cell": 0.39269908169872414,
+          "resolved": true
+        },
+        "status": "applicable",
+        "cw": 0.001836460491262235,
+        "cw_levels": [
+          0.0018879400607944566,
+          0.0018583506282867774,
+          0.001836460491262235
+        ],
+        "gci_pct": 4.236179911074687,
+        "convergence": {
+          "fine": 0.001836460491262235,
+          "medium": 0.0018583506282867774,
+          "coarse": 0.0018879400607944566,
+          "ratio": 2.0,
+          "status": "low_order",
+          "p_observed": 0.43480104220541493,
+          "extrapolated": 0.0017742238749376955,
+          "gci_fine_pct": 4.236179911074687,
+          "relative_change_pct": 1.1919742966807256
+        }
+      },
+      "reference_fn": 0.28,
+      "quadrature_levels": [
+        [
+          91,
+          31,
+          300
+        ],
+        [
+          181,
+          61,
+          600
+        ],
+        [
+          361,
+          121,
+          1200
+        ]
+      ],
+      "geometry_curve": {
+        "l_scale": 5.46,
+        "stations": [
+          0.0,
+          0.20854166666666663,
+          0.41708333333333325,
+          0.6256249999999999,
+          0.8341666666666665,
+          1.0427083333333331,
+          1.2512499999999998,
+          1.4597916666666666,
+          1.668333333333333,
+          1.8768749999999998,
+          2.0854166666666663,
+          2.293958333333333,
+          2.5024999999999995,
+          2.7110416666666666,
+          2.919583333333333,
+          3.128125,
+          3.336666666666666,
+          3.5452083333333326,
+          3.7537499999999997,
+          3.9622916666666663,
+          4.1708333333333325,
+          4.379375,
+          4.587916666666666,
+          4.796458333333333,
+          5.004999999999999,
+          5.213541666666667,
+          5.422083333333333
+        ],
+        "sectional_area_ratio": [
+          0.041839921507862844,
+          0.09362266947879735,
+          0.16893621700970002,
+          0.2694967820081893,
+          0.37806076279426115,
+          0.48582173966998027,
+          0.5646099643246418,
+          0.6358682616056277,
+          0.6961844007033415,
+          0.7460262966832949,
+          0.7820091789090569,
+          0.8021249141145246,
+          0.8168286753191255,
+          0.8126424303080294,
+          0.8000044474351913,
+          0.7711956750805052,
+          0.7248344050512971,
+          0.6757526475495096,
+          0.6023626653967463,
+          0.5353399871978911,
+          0.4614171371396291,
+          0.39298564198777874,
+          0.31980794149637554,
+          0.23157065397804782,
+          0.15867468705012458,
+          0.1005548979259005,
+          0.016577798516833178
+        ]
+      },
+      "ct_monotone": false,
+      "ct_ladder": [
+        0.004438469722600597,
+        null,
+        0.007745449068841933
+      ]
+    },
+    "series60_cb0.600": {
+      "case": "series60_cb0.600",
+      "geometry": {
+        "grade": "GEOMETRY",
+        "name": "series60_cb0.600",
+        "length_m": 6.096,
+        "beam_m": 0.9378461538461539,
+        "draft_m": 0.34227961819202696,
+        "cb_grid": 0.5999999936379692,
+        "cb_locked": 0.6,
+        "cb_source": "Todd (1963) Series 60 fullness target",
+        "cm_grid": 0.9743439682916614,
+        "cp_grid": 0.6157989510521241,
+        "cwp_grid": 0.6150558110706595,
+        "volume_m3": 1.1741101559225915,
+        "wetted_area_m2": 7.422651533506139,
+        "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+        "geometry_source": "series60_fullness_family(p=1.30641, q=0.023541453428863823)",
+        "grid": [
+          401,
+          161
+        ],
+        "cb_tolerance": 0.02,
+        "cb_error_pct": -1.060338465178982e-06,
+        "status": "pass"
+      },
+      "admission": {
+        "status": "applicable",
+        "admitted": true,
+        "checks": {
+          "length_over_beam": {
+            "value": 6.5,
+            "limit": 6.0,
+            "ok": true
+          },
+          "block_coefficient": {
+            "value": 0.5999999936379692,
+            "limit": 0.6,
+            "ok": true
+          },
+          "beam_over_length": {
+            "value": 0.15384615384615385,
+            "limit": 0.16,
+            "ok": true
+          },
+          "draft_over_length": {
+            "value": 0.05614823133071308,
+            "limit": 0.1,
+            "ok": true
+          }
+        },
+        "gate": {
+          "min_length_over_beam": 6.0,
+          "max_block_coefficient": 0.6,
+          "max_beam_over_length": 0.16,
+          "max_draft_over_length": 0.1
+        }
+      },
+      "ladder": [
+        {
+          "geometry": {
+            "grade": "GEOMETRY",
+            "name": "series60_cb0.600",
+            "length_m": 6.096,
+            "beam_m": 0.9378461538461539,
+            "draft_m": 0.34227961819202696,
+            "cb_grid": 0.5999999936379692,
+            "cb_locked": 0.6,
+            "cb_source": "Todd (1963) Series 60 fullness target",
+            "cm_grid": 0.9743439682916614,
+            "cp_grid": 0.6157989510521241,
+            "cwp_grid": 0.6150558110706595,
+            "volume_m3": 1.1741101559225915,
+            "wetted_area_m2": 7.422651533506139,
+            "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "geometry_source": "series60_fullness_family(p=1.30641, q=0.023541453428863823)",
+            "grid": [
+              401,
+              161
+            ],
+            "cb_tolerance": 0.02,
+            "cb_error_pct": -1.060338465178982e-06,
+            "status": "pass"
+          },
+          "viscous": {
+            "grade": "CORRELATION",
+            "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+            "re": 8277671.983625522,
+            "cf": 0.0031009904279508,
+            "form_factor_1k": 1.168866328628187,
+            "form_factor_1k_sensitivity": [
+              1.1426250283260597,
+              1.1950992879253746
+            ],
+            "lcb_fraction": 0.0,
+            "cstern": 0.0,
+            "cv": 0.003624643296630002
+          },
+          "wave": {
+            "grade": "THEORY",
+            "model": "michell-thin-ship",
+            "fn": 0.2,
+            "speed_ms": 1.546631953633443,
+            "re": 8277671.983625522,
+            "k0_per_m": 4.101049868766403,
+            "s_wet_m2": 7.422651533506139,
+            "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "levels": [
+              {
+                "grid": [
+                  91,
+                  31,
+                  300
+                ],
+                "rw_n": 9.375648142178441,
+                "cw": 0.0010560835222801442,
+                "s_wet_m2": 9.079153445815578
+              },
+              {
+                "grid": [
+                  181,
+                  61,
+                  600
+                ],
+                "rw_n": 8.835950722166212,
+                "cw": 0.0009952913995758049,
+                "s_wet_m2": 9.046168883433062
+              },
+              {
+                "grid": [
+                  361,
+                  121,
+                  1200
+                ],
+                "rw_n": 8.574236139584771,
+                "cw": 0.0009658115754598302,
+                "s_wet_m2": 9.010658704688193
+              }
+            ],
+            "admission": {
+              "status": "applicable",
+              "admitted": true,
+              "checks": {
+                "length_over_beam": {
+                  "value": 6.5,
+                  "limit": 6.0,
+                  "ok": true
+                },
+                "block_coefficient": {
+                  "value": 0.5999999936379692,
+                  "limit": 0.6,
+                  "ok": true
+                },
+                "beam_over_length": {
+                  "value": 0.15384615384615385,
+                  "limit": 0.16,
+                  "ok": true
+                },
+                "draft_over_length": {
+                  "value": 0.05614823133071308,
+                  "limit": 0.1,
+                  "ok": true
+                }
+              },
+              "gate": {
+                "min_length_over_beam": 6.0,
+                "max_block_coefficient": 0.6,
+                "max_beam_over_length": 0.16,
+                "max_draft_over_length": 0.1
+              }
+            },
+            "quadrature": {
+              "k0_per_m": 4.101049868766403,
+              "dx_m": 0.016933333333333335,
+              "sec_max": 3.137223250183791,
+              "u_max_supplied": 4.0,
+              "phase_per_cell_rad": 0.2178627257072077,
+              "cells_per_axial_wave": 28.840111527952466,
+              "limit_rad_per_cell": 0.39269908169872414,
+              "resolved": true
+            },
+            "status": "applicable",
+            "cw": 0.0009658115754598302,
+            "cw_levels": [
+              0.0010560835222801442,
+              0.0009952913995758049,
+              0.0009658115754598302
+            ],
+            "gci_pct": 3.592133207462013,
+            "convergence": {
+              "fine": 0.0009658115754598302,
+              "medium": 0.0009952913995758049,
+              "coarse": 0.0010560835222801442,
+              "ratio": 2.0,
+              "status": "converged",
+              "p_observed": 1.0441564778806987,
+              "extrapolated": 0.0009380569848009466,
+              "gci_fine_pct": 3.592133207462013,
+              "relative_change_pct": 3.0523370049628076
+            }
+          },
+          "total": {
+            "fn": 0.2,
+            "speed_ms": 1.546631953633443,
+            "re": 8277671.983625522,
+            "ct": 0.0045904548720898325,
+            "status": "ok",
+            "expression": "C_T = (1 + k) C_F + C_W"
+          },
+          "decomposition": {
+            "cf_share": 0.003624643296630002,
+            "cw_share": 0.0009658115754598302,
+            "residual": 0.0,
+            "residual_relative": 0.0,
+            "pass": true,
+            "status": "self_consistent",
+            "cf_share_fraction": 0.7896043851052742,
+            "cw_share_fraction": 0.2103956148947258
+          },
+          "limitations": [
+            "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+            "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+            "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+            "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+          ]
+        },
+        {
+          "geometry": {
+            "grade": "GEOMETRY",
+            "name": "series60_cb0.600",
+            "length_m": 6.096,
+            "beam_m": 0.9378461538461539,
+            "draft_m": 0.34227961819202696,
+            "cb_grid": 0.5999999936379692,
+            "cb_locked": 0.6,
+            "cb_source": "Todd (1963) Series 60 fullness target",
+            "cm_grid": 0.9743439682916614,
+            "cp_grid": 0.6157989510521241,
+            "cwp_grid": 0.6150558110706595,
+            "volume_m3": 1.1741101559225915,
+            "wetted_area_m2": 7.422651533506139,
+            "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "geometry_source": "series60_fullness_family(p=1.30641, q=0.023541453428863823)",
+            "grid": [
+              401,
+              161
+            ],
+            "cb_tolerance": 0.02,
+            "cb_error_pct": -1.060338465178982e-06,
+            "status": "pass"
+          },
+          "viscous": {
+            "grade": "CORRELATION",
+            "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+            "re": 12416507.97543828,
+            "cf": 0.002890303655731406,
+            "form_factor_1k": 1.168866328628187,
+            "form_factor_1k_sensitivity": [
+              1.1426250283260597,
+              1.1950992879253746
+            ],
+            "lcb_fraction": 0.0,
+            "cstern": 0.0,
+            "cv": 0.003378378622695396
+          },
+          "wave": {
+            "grade": "THEORY",
+            "model": "michell-thin-ship",
+            "fn": 0.3,
+            "speed_ms": 2.319947930450164,
+            "re": 12416507.97543828,
+            "k0_per_m": 1.8226888305628468,
+            "s_wet_m2": 7.422651533506139,
+            "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "levels": [
+              {
+                "grid": [
+                  91,
+                  31,
+                  300
+                ],
+                "rw_n": 65.65899762253316,
+                "cw": 0.003287068059582559,
+                "s_wet_m2": 9.079153445815578
+              },
+              {
+                "grid": [
+                  181,
+                  61,
+                  600
+                ],
+                "rw_n": 64.56610869875614,
+                "cw": 0.0032323550666326613,
+                "s_wet_m2": 9.046168883433062
+              },
+              {
+                "grid": [
+                  361,
+                  121,
+                  1200
+                ],
+                "rw_n": 63.9637661755488,
+                "cw": 0.003202200161126097,
+                "s_wet_m2": 9.010658704688193
+              }
+            ],
+            "admission": {
+              "status": "applicable",
+              "admitted": true,
+              "checks": {
+                "length_over_beam": {
+                  "value": 6.5,
+                  "limit": 6.0,
+                  "ok": true
+                },
+                "block_coefficient": {
+                  "value": 0.5999999936379692,
+                  "limit": 0.6,
+                  "ok": true
+                },
+                "beam_over_length": {
+                  "value": 0.15384615384615385,
+                  "limit": 0.16,
+                  "ok": true
+                },
+                "draft_over_length": {
+                  "value": 0.05614823133071308,
+                  "limit": 0.1,
+                  "ok": true
+                }
+              },
+              "gate": {
+                "min_length_over_beam": 6.0,
+                "max_block_coefficient": 0.6,
+                "max_beam_over_length": 0.16,
+                "max_draft_over_length": 0.1
+              }
+            },
+            "quadrature": {
+              "k0_per_m": 1.8226888305628468,
+              "dx_m": 0.016933333333333335,
+              "sec_max": 4.123105625617661,
+              "u_max_supplied": 4.0,
+              "phase_per_cell_rad": 0.12725634646968093,
+              "cells_per_axial_wave": 49.3742393325473,
+              "limit_rad_per_cell": 0.39269908169872414,
+              "resolved": true
+            },
+            "status": "applicable",
+            "cw": 0.003202200161126097,
+            "cw_levels": [
+              0.003287068059582559,
+              0.0032323550666326613,
+              0.003202200161126097
+            ],
+            "gci_pct": 1.4453829931567908,
+            "convergence": {
+              "fine": 0.003202200161126097,
+              "medium": 0.0032323550666326613,
+              "coarse": 0.003287068059582559,
+              "ratio": 2.0,
+              "status": "converged",
+              "p_observed": 0.8594907628568835,
+              "extrapolated": 0.0031651729158974923,
+              "gci_fine_pct": 1.4453829931567908,
+              "relative_change_pct": 0.9416933354959297
+            }
+          },
+          "total": {
+            "fn": 0.3,
+            "speed_ms": 2.319947930450164,
+            "re": 12416507.97543828,
+            "ct": 0.006580578783821493,
+            "status": "ok",
+            "expression": "C_T = (1 + k) C_F + C_W"
+          },
+          "decomposition": {
+            "cf_share": 0.003378378622695396,
+            "cw_share": 0.003202200161126097,
+            "residual": 0.0,
+            "residual_relative": 0.0,
+            "pass": true,
+            "status": "self_consistent",
+            "cf_share_fraction": 0.5133862436236185,
+            "cw_share_fraction": 0.4866137563763815
+          },
+          "limitations": [
+            "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+            "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+            "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+            "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+          ]
+        },
+        {
+          "geometry": {
+            "grade": "GEOMETRY",
+            "name": "series60_cb0.600",
+            "length_m": 6.096,
+            "beam_m": 0.9378461538461539,
+            "draft_m": 0.34227961819202696,
+            "cb_grid": 0.5999999936379692,
+            "cb_locked": 0.6,
+            "cb_source": "Todd (1963) Series 60 fullness target",
+            "cm_grid": 0.9743439682916614,
+            "cp_grid": 0.6157989510521241,
+            "cwp_grid": 0.6150558110706595,
+            "volume_m3": 1.1741101559225915,
+            "wetted_area_m2": 7.422651533506139,
+            "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "geometry_source": "series60_fullness_family(p=1.30641, q=0.023541453428863823)",
+            "grid": [
+              401,
+              161
+            ],
+            "cb_tolerance": 0.02,
+            "cb_error_pct": -1.060338465178982e-06,
+            "status": "pass"
+          },
+          "viscous": {
+            "grade": "CORRELATION",
+            "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+            "re": 16555343.967251044,
+            "cf": 0.0027535752764832073,
+            "form_factor_1k": 1.168866328628187,
+            "form_factor_1k_sensitivity": [
+              1.1426250283260597,
+              1.1950992879253746
+            ],
+            "lcb_fraction": 0.0,
+            "cstern": 0.0,
+            "cv": 0.0032185614240242714
+          },
+          "wave": {
+            "grade": "THEORY",
+            "model": "michell-thin-ship",
+            "fn": 0.4,
+            "speed_ms": 3.093263907266886,
+            "re": 16555343.967251044,
+            "k0_per_m": 1.0252624671916009,
+            "s_wet_m2": 7.422651533506139,
+            "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "levels": [
+              {
+                "grid": [
+                  91,
+                  31,
+                  300
+                ],
+                "rw_n": 327.86827908349613,
+                "cw": 0.009232862671667383,
+                "s_wet_m2": 9.079153445815578
+              },
+              {
+                "grid": [
+                  181,
+                  61,
+                  600
+                ],
+                "rw_n": 321.6308032876977,
+                "cw": 0.009057213604299721,
+                "s_wet_m2": 9.046168883433062
+              },
+              {
+                "grid": [
+                  361,
+                  121,
+                  1200
+                ],
+                "rw_n": 318.55731258523934,
+                "cw": 0.008970663244326599,
+                "s_wet_m2": 9.010658704688193
+              }
+            ],
+            "admission": {
+              "status": "applicable",
+              "admitted": true,
+              "checks": {
+                "length_over_beam": {
+                  "value": 6.5,
+                  "limit": 6.0,
+                  "ok": true
+                },
+                "block_coefficient": {
+                  "value": 0.5999999936379692,
+                  "limit": 0.6,
+                  "ok": true
+                },
+                "beam_over_length": {
+                  "value": 0.15384615384615385,
+                  "limit": 0.16,
+                  "ok": true
+                },
+                "draft_over_length": {
+                  "value": 0.05614823133071308,
+                  "limit": 0.1,
+                  "ok": true
+                }
+              },
+              "gate": {
+                "min_length_over_beam": 6.0,
+                "max_block_coefficient": 0.6,
+                "max_beam_over_length": 0.16,
+                "max_draft_over_length": 0.1
+              }
+            },
+            "quadrature": {
+              "k0_per_m": 1.0252624671916009,
+              "dx_m": 0.016933333333333335,
+              "sec_max": 4.123105625617661,
+              "u_max_supplied": 4.0,
+              "phase_per_cell_rad": 0.0715816948891955,
+              "cells_per_axial_wave": 87.77642548008411,
+              "limit_rad_per_cell": 0.39269908169872414,
+              "resolved": true
+            },
+            "status": "applicable",
+            "cw": 0.008970663244326599,
+            "cw_levels": [
+              0.009232862671667383,
+              0.009057213604299721,
+              0.008970663244326599
+            ],
+            "gci_pct": 1.1715256798160207,
+            "convergence": {
+              "fine": 0.008970663244326599,
+              "medium": 0.009057213604299721,
+              "coarse": 0.009232862671667383,
+              "ratio": 2.0,
+              "status": "converged",
+              "p_observed": 1.0210841913420308,
+              "extrapolated": 0.008886588345480917,
+              "gci_fine_pct": 1.1715256798160207,
+              "relative_change_pct": 0.964815617483577
+            }
+          },
+          "total": {
+            "fn": 0.4,
+            "speed_ms": 3.093263907266886,
+            "re": 16555343.967251044,
+            "ct": 0.01218922466835087,
+            "status": "ok",
+            "expression": "C_T = (1 + k) C_F + C_W"
+          },
+          "decomposition": {
+            "cf_share": 0.0032185614240242714,
+            "cw_share": 0.008970663244326599,
+            "residual": 0.0,
+            "residual_relative": 0.0,
+            "pass": true,
+            "status": "self_consistent",
+            "cf_share_fraction": 0.2640497251955012,
+            "cw_share_fraction": 0.7359502748044988
+          },
+          "limitations": [
+            "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+            "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+            "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+            "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+          ]
+        }
+      ],
+      "reference_row": {
+        "geometry": {
+          "grade": "GEOMETRY",
+          "name": "series60_cb0.600",
+          "length_m": 6.096,
+          "beam_m": 0.9378461538461539,
+          "draft_m": 0.34227961819202696,
+          "cb_grid": 0.5999999936379692,
+          "cb_locked": 0.6,
+          "cb_source": "Todd (1963) Series 60 fullness target",
+          "cm_grid": 0.9743439682916614,
+          "cp_grid": 0.6157989510521241,
+          "cwp_grid": 0.6150558110706595,
+          "volume_m3": 1.1741101559225915,
+          "wetted_area_m2": 7.422651533506139,
+          "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+          "geometry_source": "series60_fullness_family(p=1.30641, q=0.023541453428863823)",
+          "grid": [
+            401,
+            161
+          ],
+          "cb_tolerance": 0.02,
+          "cb_error_pct": -1.060338465178982e-06,
+          "status": "pass"
+        },
+        "viscous": {
+          "grade": "CORRELATION",
+          "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+          "re": 12416507.97543828,
+          "cf": 0.002890303655731406,
+          "form_factor_1k": 1.168866328628187,
+          "form_factor_1k_sensitivity": [
+            1.1426250283260597,
+            1.1950992879253746
+          ],
+          "lcb_fraction": 0.0,
+          "cstern": 0.0,
+          "cv": 0.003378378622695396
+        },
+        "wave": {
+          "grade": "THEORY",
+          "model": "michell-thin-ship",
+          "fn": 0.3,
+          "speed_ms": 2.319947930450164,
+          "re": 12416507.97543828,
+          "k0_per_m": 1.8226888305628468,
+          "s_wet_m2": 7.422651533506139,
+          "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+          "levels": [
+            {
+              "grid": [
+                91,
+                31,
+                300
+              ],
+              "rw_n": 65.65899762253316,
+              "cw": 0.003287068059582559,
+              "s_wet_m2": 9.079153445815578
+            },
+            {
+              "grid": [
+                181,
+                61,
+                600
+              ],
+              "rw_n": 64.56610869875614,
+              "cw": 0.0032323550666326613,
+              "s_wet_m2": 9.046168883433062
+            },
+            {
+              "grid": [
+                361,
+                121,
+                1200
+              ],
+              "rw_n": 63.9637661755488,
+              "cw": 0.003202200161126097,
+              "s_wet_m2": 9.010658704688193
+            }
+          ],
+          "admission": {
+            "status": "applicable",
+            "admitted": true,
+            "checks": {
+              "length_over_beam": {
+                "value": 6.5,
+                "limit": 6.0,
+                "ok": true
+              },
+              "block_coefficient": {
+                "value": 0.5999999936379692,
+                "limit": 0.6,
+                "ok": true
+              },
+              "beam_over_length": {
+                "value": 0.15384615384615385,
+                "limit": 0.16,
+                "ok": true
+              },
+              "draft_over_length": {
+                "value": 0.05614823133071308,
+                "limit": 0.1,
+                "ok": true
+              }
+            },
+            "gate": {
+              "min_length_over_beam": 6.0,
+              "max_block_coefficient": 0.6,
+              "max_beam_over_length": 0.16,
+              "max_draft_over_length": 0.1
+            }
+          },
+          "quadrature": {
+            "k0_per_m": 1.8226888305628468,
+            "dx_m": 0.016933333333333335,
+            "sec_max": 4.123105625617661,
+            "u_max_supplied": 4.0,
+            "phase_per_cell_rad": 0.12725634646968093,
+            "cells_per_axial_wave": 49.3742393325473,
+            "limit_rad_per_cell": 0.39269908169872414,
+            "resolved": true
+          },
+          "status": "applicable",
+          "cw": 0.003202200161126097,
+          "cw_levels": [
+            0.003287068059582559,
+            0.0032323550666326613,
+            0.003202200161126097
+          ],
+          "gci_pct": 1.4453829931567908,
+          "convergence": {
+            "fine": 0.003202200161126097,
+            "medium": 0.0032323550666326613,
+            "coarse": 0.003287068059582559,
+            "ratio": 2.0,
+            "status": "converged",
+            "p_observed": 0.8594907628568835,
+            "extrapolated": 0.0031651729158974923,
+            "gci_fine_pct": 1.4453829931567908,
+            "relative_change_pct": 0.9416933354959297
+          }
+        },
+        "total": {
+          "fn": 0.3,
+          "speed_ms": 2.319947930450164,
+          "re": 12416507.97543828,
+          "ct": 0.006580578783821493,
+          "status": "ok",
+          "expression": "C_T = (1 + k) C_F + C_W",
+          "comparison": {
+            "predicted": 0.006580578783821493,
+            "reference": 0.0076,
+            "band_pct": 10.0,
+            "error_pct": -13.413437054980353,
+            "abs_error_pct": 13.413437054980353,
+            "status": "fail",
+            "pass": false
+          },
+          "reference_source": "Todd (1963) DTMB Series 60 Cb=0.60 model-test C_T(Fn) table as transcribed in benchmarks/pending/series60_resistance/run.py; flagged second-hand there and not promotable"
+        },
+        "decomposition": {
+          "cf_share": 0.003378378622695396,
+          "cw_share": 0.003202200161126097,
+          "residual": 0.0,
+          "residual_relative": 0.0,
+          "pass": true,
+          "status": "self_consistent",
+          "cf_share_fraction": 0.5133862436236185,
+          "cw_share_fraction": 0.4866137563763815
+        },
+        "limitations": [
+          "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+          "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+          "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+          "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+        ]
+      },
+      "wave_at_reference_fn": {
+        "grade": "THEORY",
+        "model": "michell-thin-ship",
+        "fn": 0.3,
+        "speed_ms": 2.319947930450164,
+        "re": 12416507.97543828,
+        "k0_per_m": 1.8226888305628468,
+        "s_wet_m2": 7.422651533506139,
+        "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+        "levels": [
+          {
+            "grid": [
+              91,
+              31,
+              300
+            ],
+            "rw_n": 65.65899762253316,
+            "cw": 0.003287068059582559,
+            "s_wet_m2": 9.079153445815578
+          },
+          {
+            "grid": [
+              181,
+              61,
+              600
+            ],
+            "rw_n": 64.56610869875614,
+            "cw": 0.0032323550666326613,
+            "s_wet_m2": 9.046168883433062
+          },
+          {
+            "grid": [
+              361,
+              121,
+              1200
+            ],
+            "rw_n": 63.9637661755488,
+            "cw": 0.003202200161126097,
+            "s_wet_m2": 9.010658704688193
+          }
+        ],
+        "admission": {
+          "status": "applicable",
+          "admitted": true,
+          "checks": {
+            "length_over_beam": {
+              "value": 6.5,
+              "limit": 6.0,
+              "ok": true
+            },
+            "block_coefficient": {
+              "value": 0.5999999936379692,
+              "limit": 0.6,
+              "ok": true
+            },
+            "beam_over_length": {
+              "value": 0.15384615384615385,
+              "limit": 0.16,
+              "ok": true
+            },
+            "draft_over_length": {
+              "value": 0.05614823133071308,
+              "limit": 0.1,
+              "ok": true
+            }
+          },
+          "gate": {
+            "min_length_over_beam": 6.0,
+            "max_block_coefficient": 0.6,
+            "max_beam_over_length": 0.16,
+            "max_draft_over_length": 0.1
+          }
+        },
+        "quadrature": {
+          "k0_per_m": 1.8226888305628468,
+          "dx_m": 0.016933333333333335,
+          "sec_max": 4.123105625617661,
+          "u_max_supplied": 4.0,
+          "phase_per_cell_rad": 0.12725634646968093,
+          "cells_per_axial_wave": 49.3742393325473,
+          "limit_rad_per_cell": 0.39269908169872414,
+          "resolved": true
+        },
+        "status": "applicable",
+        "cw": 0.003202200161126097,
+        "cw_levels": [
+          0.003287068059582559,
+          0.0032323550666326613,
+          0.003202200161126097
+        ],
+        "gci_pct": 1.4453829931567908,
+        "convergence": {
+          "fine": 0.003202200161126097,
+          "medium": 0.0032323550666326613,
+          "coarse": 0.003287068059582559,
+          "ratio": 2.0,
+          "status": "converged",
+          "p_observed": 0.8594907628568835,
+          "extrapolated": 0.0031651729158974923,
+          "gci_fine_pct": 1.4453829931567908,
+          "relative_change_pct": 0.9416933354959297
+        }
+      },
+      "reference_fn": 0.3,
+      "quadrature_levels": [
+        [
+          91,
+          31,
+          300
+        ],
+        [
+          181,
+          61,
+          600
+        ],
+        [
+          361,
+          121,
+          1200
+        ]
+      ],
+      "geometry_curve": {
+        "l_scale": 6.096,
+        "stations": [
+          0.0,
+          0.24384,
+          0.48768,
+          0.73152,
+          0.97536,
+          1.2192,
+          1.46304,
+          1.70688,
+          1.95072,
+          2.19456,
+          2.4384,
+          2.68224,
+          2.92608,
+          3.16992,
+          3.41376,
+          3.6576,
+          3.90144,
+          4.14528,
+          4.38912,
+          4.63296,
+          4.8768,
+          5.12064,
+          5.36448,
+          5.60832,
+          5.85216,
+          6.096
+        ],
+        "sectional_area_ratio": [
+          0.0,
+          0.08429639272349435,
+          0.19721026678974535,
+          0.3160500116562542,
+          0.4330945212488642,
+          0.5438819885629865,
+          0.6454245935054558,
+          0.7355790445796018,
+          0.8127569532603373,
+          0.8757706162616593,
+          0.9237433721340679,
+          0.9560549437684314,
+          0.9723078457792352,
+          0.9723078457792352,
+          0.9560549437684313,
+          0.9237433721340679,
+          0.8757706162616593,
+          0.812756953260337,
+          0.7355790445796018,
+          0.6454245935054558,
+          0.5438819885629864,
+          0.4330945212488642,
+          0.3160500116562542,
+          0.19721026678974518,
+          0.0842963927234945,
+          0.0
+        ]
+      },
+      "ct_monotone": true,
+      "ct_ladder": [
+        0.0045904548720898325,
+        0.006580578783821493,
+        0.01218922466835087
+      ]
+    },
+    "series60_cb0.700": {
+      "case": "series60_cb0.700",
+      "geometry": {
+        "grade": "GEOMETRY",
+        "name": "series60_cb0.700",
+        "length_m": 6.096,
+        "beam_m": 0.9378461538461539,
+        "draft_m": 0.34227961819202696,
+        "cb_grid": 0.6999999912659258,
+        "cb_locked": 0.7,
+        "cb_source": "Todd (1963) Series 60 fullness target",
+        "cm_grid": 0.9743439682916614,
+        "cp_grid": 0.7184321082145674,
+        "cwp_grid": 0.7175651115711499,
+        "volume_m3": 1.36979517934288,
+        "wetted_area_m2": 7.983089859340236,
+        "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+        "geometry_source": "series60_fullness_family(p=0.751847, q=0.023541453428863823)",
+        "grid": [
+          401,
+          161
+        ],
+        "cb_tolerance": 0.02,
+        "cb_error_pct": -1.2477248758001127e-06,
+        "status": "pass"
+      },
+      "admission": {
+        "status": "outside_validity",
+        "admitted": false,
+        "checks": {
+          "length_over_beam": {
+            "value": 6.5,
+            "limit": 6.0,
+            "ok": true
+          },
+          "block_coefficient": {
+            "value": 0.6999999912659258,
+            "limit": 0.6,
+            "ok": false
+          },
+          "beam_over_length": {
+            "value": 0.15384615384615385,
+            "limit": 0.16,
+            "ok": true
+          },
+          "draft_over_length": {
+            "value": 0.05614823133071308,
+            "limit": 0.1,
+            "ok": true
+          }
+        },
+        "gate": {
+          "min_length_over_beam": 6.0,
+          "max_block_coefficient": 0.6,
+          "max_beam_over_length": 0.16,
+          "max_draft_over_length": 0.1
+        }
+      },
+      "ladder": [],
+      "reference_row": null,
+      "wave_at_reference_fn": {
+        "grade": "THEORY",
+        "model": "michell-thin-ship",
+        "fn": 0.3,
+        "speed_ms": 2.319947930450164,
+        "re": 12416507.97543828,
+        "k0_per_m": 1.8226888305628468,
+        "s_wet_m2": 7.983089859340236,
+        "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+        "levels": [
+          {
+            "grid": [
+              91,
+              31,
+              300
+            ],
+            "rw_n": 165.95192504428434,
+            "cw": 0.007724756479191594,
+            "s_wet_m2": 9.917982801868291
+          },
+          {
+            "grid": [
+              181,
+              61,
+              600
+            ],
+            "rw_n": 167.93098779541648,
+            "cw": 0.00781687820544126,
+            "s_wet_m2": 9.880425893483466
+          },
+          {
+            "grid": [
+              361,
+              121,
+              1200
+            ],
+            "rw_n": 169.7807658805571,
+            "cw": 0.007902981968591002,
+            "s_wet_m2": 9.838083883868826
+          }
+        ],
+        "admission": {
+          "status": "outside_validity",
+          "admitted": false,
+          "checks": {
+            "length_over_beam": {
+              "value": 6.5,
+              "limit": 6.0,
+              "ok": true
+            },
+            "block_coefficient": {
+              "value": 0.6999999912659258,
+              "limit": 0.6,
+              "ok": false
+            },
+            "beam_over_length": {
+              "value": 0.15384615384615385,
+              "limit": 0.16,
+              "ok": true
+            },
+            "draft_over_length": {
+              "value": 0.05614823133071308,
+              "limit": 0.1,
+              "ok": true
+            }
+          },
+          "gate": {
+            "min_length_over_beam": 6.0,
+            "max_block_coefficient": 0.6,
+            "max_beam_over_length": 0.16,
+            "max_draft_over_length": 0.1
+          }
+        },
+        "status": "outside_validity",
+        "cw": null,
+        "gci_pct": null,
+        "convergence": null,
+        "diagnostic_cw": 0.007902981968591002,
+        "note": "thin-ship premise violated by the measured geometry: the diagnostic C_W is for attribution only and must not be compared with experiment"
+      },
+      "reference_fn": 0.3,
+      "quadrature_levels": [
+        [
+          91,
+          31,
+          300
+        ],
+        [
+          181,
+          61,
+          600
+        ],
+        [
+          361,
+          121,
+          1200
+        ]
+      ],
+      "geometry_curve": {
+        "l_scale": 6.096,
+        "stations": [
+          0.0,
+          0.24384,
+          0.48768,
+          0.73152,
+          0.97536,
+          1.2192,
+          1.46304,
+          1.70688,
+          1.95072,
+          2.19456,
+          2.4384,
+          2.68224,
+          2.92608,
+          3.16992,
+          3.41376,
+          3.6576,
+          3.90144,
+          4.14528,
+          4.38912,
+          4.63296,
+          4.8768,
+          5.12064,
+          5.36448,
+          5.60832,
+          5.85216,
+          6.096
+        ],
+        "sectional_area_ratio": [
+          0.0,
+          0.23823375234863087,
+          0.3885393311763251,
+          0.5096993615518548,
+          0.6110250401879772,
+          0.6966094644203948,
+          0.7687286911325566,
+          0.8288055014526473,
+          0.8777890254586603,
+          0.916333732186658,
+          0.944893774399142,
+          0.9637761829446484,
+          0.973171643908065,
+          0.973171643908065,
+          0.9637761829446484,
+          0.944893774399142,
+          0.916333732186658,
+          0.8777890254586602,
+          0.8288055014526473,
+          0.7687286911325566,
+          0.6966094644203948,
+          0.6110250401879772,
+          0.5096993615518548,
+          0.38853933117632494,
+          0.23823375234863114,
+          0.0
+        ]
+      },
+      "ct_monotone": false,
+      "ct_ladder": []
+    },
+    "series60_cb0.800": {
+      "case": "series60_cb0.800",
+      "geometry": {
+        "grade": "GEOMETRY",
+        "name": "series60_cb0.800",
+        "length_m": 6.096,
+        "beam_m": 0.9378461538461539,
+        "draft_m": 0.34227961819202696,
+        "cb_grid": 0.7999999960888229,
+        "cb_locked": 0.8,
+        "cb_source": "Todd (1963) Series 60 fullness target",
+        "cm_grid": 0.9743439682916614,
+        "cp_grid": 0.8210652727614052,
+        "cwp_grid": 0.8200744194471237,
+        "volume_m3": 1.5654802168425896,
+        "wetted_area_m2": 8.621910006348372,
+        "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+        "geometry_source": "series60_fullness_family(p=0.389238, q=0.023541453428863823)",
+        "grid": [
+          401,
+          161
+        ],
+        "cb_tolerance": 0.02,
+        "cb_error_pct": -4.888971449901192e-07,
+        "status": "pass"
+      },
+      "admission": {
+        "status": "outside_validity",
+        "admitted": false,
+        "checks": {
+          "length_over_beam": {
+            "value": 6.5,
+            "limit": 6.0,
+            "ok": true
+          },
+          "block_coefficient": {
+            "value": 0.7999999960888229,
+            "limit": 0.6,
+            "ok": false
+          },
+          "beam_over_length": {
+            "value": 0.15384615384615385,
+            "limit": 0.16,
+            "ok": true
+          },
+          "draft_over_length": {
+            "value": 0.05614823133071308,
+            "limit": 0.1,
+            "ok": true
+          }
+        },
+        "gate": {
+          "min_length_over_beam": 6.0,
+          "max_block_coefficient": 0.6,
+          "max_beam_over_length": 0.16,
+          "max_draft_over_length": 0.1
+        }
+      },
+      "ladder": [],
+      "reference_row": null,
+      "wave_at_reference_fn": {
+        "grade": "THEORY",
+        "model": "michell-thin-ship",
+        "fn": 0.3,
+        "speed_ms": 2.319947930450164,
+        "re": 12416507.97543828,
+        "k0_per_m": 1.8226888305628468,
+        "s_wet_m2": 8.621910006348372,
+        "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+        "levels": [
+          {
+            "grid": [
+              91,
+              31,
+              300
+            ],
+            "rw_n": 244.77432850782466,
+            "cw": 0.01054959780650696,
+            "s_wet_m2": 10.858597636914876
+          },
+          {
+            "grid": [
+              181,
+              61,
+              600
+            ],
+            "rw_n": 256.66822168248365,
+            "cw": 0.011062216062314775,
+            "s_wet_m2": 10.825204520864892
+          },
+          {
+            "grid": [
+              361,
+              121,
+              1200
+            ],
+            "rw_n": 270.59667135830887,
+            "cw": 0.011662522242476275,
+            "s_wet_m2": 10.776897968721945
+          }
+        ],
+        "admission": {
+          "status": "outside_validity",
+          "admitted": false,
+          "checks": {
+            "length_over_beam": {
+              "value": 6.5,
+              "limit": 6.0,
+              "ok": true
+            },
+            "block_coefficient": {
+              "value": 0.7999999960888229,
+              "limit": 0.6,
+              "ok": false
+            },
+            "beam_over_length": {
+              "value": 0.15384615384615385,
+              "limit": 0.16,
+              "ok": true
+            },
+            "draft_over_length": {
+              "value": 0.05614823133071308,
+              "limit": 0.1,
+              "ok": true
+            }
+          },
+          "gate": {
+            "min_length_over_beam": 6.0,
+            "max_block_coefficient": 0.6,
+            "max_beam_over_length": 0.16,
+            "max_draft_over_length": 0.1
+          }
+        },
+        "status": "outside_validity",
+        "cw": null,
+        "gci_pct": null,
+        "convergence": null,
+        "diagnostic_cw": 0.011662522242476275,
+        "note": "thin-ship premise violated by the measured geometry: the diagnostic C_W is for attribution only and must not be compared with experiment"
+      },
+      "reference_fn": 0.3,
+      "quadrature_levels": [
+        [
+          91,
+          31,
+          300
+        ],
+        [
+          181,
+          61,
+          600
+        ],
+        [
+          361,
+          121,
+          1200
+        ]
+      ],
+      "geometry_curve": {
+        "l_scale": 6.096,
+        "stations": [
+          0.0,
+          0.24384,
+          0.48768,
+          0.73152,
+          0.97536,
+          1.2192,
+          1.46304,
+          1.70688,
+          1.95072,
+          2.19456,
+          2.4384,
+          2.68224,
+          2.92608,
+          3.16992,
+          3.41376,
+          3.6576,
+          3.90144,
+          4.14528,
+          4.38912,
+          4.63296,
+          4.8768,
+          5.12064,
+          5.36448,
+          5.60832,
+          5.85216,
+          6.096
+        ],
+        "sectional_area_ratio": [
+          0.0,
+          0.4699209739680934,
+          0.6053446442123602,
+          0.6966743432469066,
+          0.7652384744590649,
+          0.8189741198309496,
+          0.8618262334049488,
+          0.8960623092562933,
+          0.9230996751896041,
+          0.9438671703930268,
+          0.9589845068305135,
+          0.9688585404715809,
+          0.9737368688009349,
+          0.9737368688009349,
+          0.9688585404715809,
+          0.9589845068305135,
+          0.9438671703930268,
+          0.9230996751896041,
+          0.8960623092562933,
+          0.8618262334049488,
+          0.8189741198309493,
+          0.7652384744590649,
+          0.6966743432469066,
+          0.60534464421236,
+          0.4699209739680936,
+          0.0
+        ]
+      },
+      "ct_monotone": false,
+      "ct_ladder": []
+    },
+    "wigley": {
+      "case": "wigley",
+      "geometry": {
+        "grade": "GEOMETRY",
+        "name": "wigley",
+        "length_m": 6.096,
+        "beam_m": 0.6096,
+        "draft_m": 0.381,
+        "cb_grid": 0.4444373264160157,
+        "cb_locked": 0.4444444444444444,
+        "cb_source": "Wigley parabolic closed form Cb = 4/9",
+        "cm_grid": 0.66666015625,
+        "cp_grid": 0.6666625000000002,
+        "cwp_grid": 0.66499584375,
+        "volume_m3": 0.6292531795940473,
+        "wetted_area_m2": 5.52923914281156,
+        "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+        "geometry_source": "ship_cad._wigley_half_beam",
+        "grid": [
+          401,
+          161
+        ],
+        "cb_tolerance": 0.02,
+        "cb_error_pct": -0.0016015563964646984,
+        "status": "pass"
+      },
+      "admission": {
+        "status": "applicable",
+        "admitted": true,
+        "checks": {
+          "length_over_beam": {
+            "value": 10.0,
+            "limit": 6.0,
+            "ok": true
+          },
+          "block_coefficient": {
+            "value": 0.4444373264160157,
+            "limit": 0.6,
+            "ok": true
+          },
+          "beam_over_length": {
+            "value": 0.1,
+            "limit": 0.16,
+            "ok": true
+          },
+          "draft_over_length": {
+            "value": 0.0625,
+            "limit": 0.1,
+            "ok": true
+          }
+        },
+        "gate": {
+          "min_length_over_beam": 6.0,
+          "max_block_coefficient": 0.6,
+          "max_beam_over_length": 0.16,
+          "max_draft_over_length": 0.1
+        }
+      },
+      "ladder": [
+        {
+          "geometry": {
+            "grade": "GEOMETRY",
+            "name": "wigley",
+            "length_m": 6.096,
+            "beam_m": 0.6096,
+            "draft_m": 0.381,
+            "cb_grid": 0.4444373264160157,
+            "cb_locked": 0.4444444444444444,
+            "cb_source": "Wigley parabolic closed form Cb = 4/9",
+            "cm_grid": 0.66666015625,
+            "cp_grid": 0.6666625000000002,
+            "cwp_grid": 0.66499584375,
+            "volume_m3": 0.6292531795940473,
+            "wetted_area_m2": 5.52923914281156,
+            "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "geometry_source": "ship_cad._wigley_half_beam",
+            "grid": [
+              401,
+              161
+            ],
+            "cb_tolerance": 0.02,
+            "cb_error_pct": -0.0016015563964646984,
+            "status": "pass"
+          },
+          "viscous": {
+            "grade": "CORRELATION",
+            "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+            "re": 8277671.983625522,
+            "cf": 0.0031009904279508,
+            "form_factor_1k": 1.1504921461529476,
+            "form_factor_1k_sensitivity": [
+              1.1262723891480937,
+              1.174703474152743
+            ],
+            "lcb_fraction": 0.0,
+            "cstern": 0.0,
+            "cv": 0.0035676651326528633
+          },
+          "wave": {
+            "grade": "THEORY",
+            "model": "michell-thin-ship",
+            "fn": 0.2,
+            "speed_ms": 1.546631953633443,
+            "re": 8277671.983625522,
+            "k0_per_m": 4.101049868766403,
+            "s_wet_m2": 5.52923914281156,
+            "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "levels": [
+              {
+                "grid": [
+                  91,
+                  31,
+                  300
+                ],
+                "rw_n": 6.7867289966392335,
+                "cw": 0.001026245279221305,
+                "s_wet_m2": 5.776013360206704
+              },
+              {
+                "grid": [
+                  181,
+                  61,
+                  600
+                ],
+                "rw_n": 6.303462113415679,
+                "cw": 0.0009531687857061286,
+                "s_wet_m2": 5.6526077898844695
+              },
+              {
+                "grid": [
+                  361,
+                  121,
+                  1200
+                ],
+                "rw_n": 6.075947700427391,
+                "cw": 0.0009187655271702922,
+                "s_wet_m2": 5.590910906077514
+              }
+            ],
+            "admission": {
+              "status": "applicable",
+              "admitted": true,
+              "checks": {
+                "length_over_beam": {
+                  "value": 10.0,
+                  "limit": 6.0,
+                  "ok": true
+                },
+                "block_coefficient": {
+                  "value": 0.4444373264160157,
+                  "limit": 0.6,
+                  "ok": true
+                },
+                "beam_over_length": {
+                  "value": 0.1,
+                  "limit": 0.16,
+                  "ok": true
+                },
+                "draft_over_length": {
+                  "value": 0.0625,
+                  "limit": 0.1,
+                  "ok": true
+                }
+              },
+              "gate": {
+                "min_length_over_beam": 6.0,
+                "max_block_coefficient": 0.6,
+                "max_beam_over_length": 0.16,
+                "max_draft_over_length": 0.1
+              }
+            },
+            "quadrature": {
+              "k0_per_m": 4.101049868766403,
+              "dx_m": 0.016933333333333335,
+              "sec_max": 2.973537751079871,
+              "u_max_supplied": 4.0,
+              "phase_per_cell_rad": 0.20649567715832434,
+              "cells_per_axial_wave": 30.42768446122067,
+              "limit_rad_per_cell": 0.39269908169872414,
+              "resolved": true
+            },
+            "status": "applicable",
+            "cw": 0.0009187655271702922,
+            "cw_levels": [
+              0.001026245279221305,
+              0.0009531687857061286,
+              0.0009187655271702922
+            ],
+            "gci_pct": 4.163839469322872,
+            "convergence": {
+              "fine": 0.0009187655271702922,
+              "medium": 0.0009531687857061286,
+              "coarse": 0.001026245279221305,
+              "ratio": 2.0,
+              "status": "converged",
+              "p_observed": 1.0868621921272381,
+              "extrapolated": 0.000888160789849613,
+              "gci_fine_pct": 4.163839469322872,
+              "relative_change_pct": 3.744509074235195
+            }
+          },
+          "total": {
+            "fn": 0.2,
+            "speed_ms": 1.546631953633443,
+            "re": 8277671.983625522,
+            "ct": 0.004486430659823156,
+            "status": "ok",
+            "expression": "C_T = (1 + k) C_F + C_W"
+          },
+          "decomposition": {
+            "cf_share": 0.0035676651326528633,
+            "cw_share": 0.0009187655271702922,
+            "residual": 0.0,
+            "residual_relative": 0.0,
+            "pass": true,
+            "status": "self_consistent",
+            "cf_share_fraction": 0.795212364386234,
+            "cw_share_fraction": 0.204787635613766
+          },
+          "limitations": [
+            "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+            "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+            "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+            "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+          ]
+        },
+        {
+          "geometry": {
+            "grade": "GEOMETRY",
+            "name": "wigley",
+            "length_m": 6.096,
+            "beam_m": 0.6096,
+            "draft_m": 0.381,
+            "cb_grid": 0.4444373264160157,
+            "cb_locked": 0.4444444444444444,
+            "cb_source": "Wigley parabolic closed form Cb = 4/9",
+            "cm_grid": 0.66666015625,
+            "cp_grid": 0.6666625000000002,
+            "cwp_grid": 0.66499584375,
+            "volume_m3": 0.6292531795940473,
+            "wetted_area_m2": 5.52923914281156,
+            "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "geometry_source": "ship_cad._wigley_half_beam",
+            "grid": [
+              401,
+              161
+            ],
+            "cb_tolerance": 0.02,
+            "cb_error_pct": -0.0016015563964646984,
+            "status": "pass"
+          },
+          "viscous": {
+            "grade": "CORRELATION",
+            "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+            "re": 12416507.97543828,
+            "cf": 0.002890303655731406,
+            "form_factor_1k": 1.1504921461529476,
+            "form_factor_1k_sensitivity": [
+              1.1262723891480937,
+              1.174703474152743
+            ],
+            "lcb_fraction": 0.0,
+            "cstern": 0.0,
+            "cv": 0.0033252716559161355
+          },
+          "wave": {
+            "grade": "THEORY",
+            "model": "michell-thin-ship",
+            "fn": 0.3,
+            "speed_ms": 2.319947930450164,
+            "re": 12416507.97543828,
+            "k0_per_m": 1.8226888305628468,
+            "s_wet_m2": 5.52923914281156,
+            "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "levels": [
+              {
+                "grid": [
+                  91,
+                  31,
+                  300
+                ],
+                "rw_n": 33.41451791766524,
+                "cw": 0.0022456566034120555,
+                "s_wet_m2": 5.776013360206704
+              },
+              {
+                "grid": [
+                  181,
+                  61,
+                  600
+                ],
+                "rw_n": 32.57099966868599,
+                "cw": 0.0021889671030402005,
+                "s_wet_m2": 5.6526077898844695
+              },
+              {
+                "grid": [
+                  361,
+                  121,
+                  1200
+                ],
+                "rw_n": 32.15214884348183,
+                "cw": 0.002160817808060636,
+                "s_wet_m2": 5.590910906077514
+              }
+            ],
+            "admission": {
+              "status": "applicable",
+              "admitted": true,
+              "checks": {
+                "length_over_beam": {
+                  "value": 10.0,
+                  "limit": 6.0,
+                  "ok": true
+                },
+                "block_coefficient": {
+                  "value": 0.4444373264160157,
+                  "limit": 0.6,
+                  "ok": true
+                },
+                "beam_over_length": {
+                  "value": 0.1,
+                  "limit": 0.16,
+                  "ok": true
+                },
+                "draft_over_length": {
+                  "value": 0.0625,
+                  "limit": 0.1,
+                  "ok": true
+                }
+              },
+              "gate": {
+                "min_length_over_beam": 6.0,
+                "max_block_coefficient": 0.6,
+                "max_beam_over_length": 0.16,
+                "max_draft_over_length": 0.1
+              }
+            },
+            "quadrature": {
+              "k0_per_m": 1.8226888305628468,
+              "dx_m": 0.016933333333333335,
+              "sec_max": 4.123105625617661,
+              "u_max_supplied": 4.0,
+              "phase_per_cell_rad": 0.12725634646968093,
+              "cells_per_axial_wave": 49.3742393325473,
+              "limit_rad_per_cell": 0.39269908169872414,
+              "resolved": true
+            },
+            "status": "applicable",
+            "cw": 0.002160817808060636,
+            "cw_levels": [
+              0.0022456566034120555,
+              0.0021889671030402005,
+              0.002160817808060636
+            ],
+            "gci_pct": 1.6060897578751596,
+            "convergence": {
+              "fine": 0.002160817808060636,
+              "medium": 0.0021889671030402005,
+              "coarse": 0.0022456566034120555,
+              "ratio": 2.0,
+              "status": "converged",
+              "p_observed": 1.0099827647750865,
+              "extrapolated": 0.0021330540692593523,
+              "gci_fine_pct": 1.6060897578751596,
+              "relative_change_pct": 1.3027148737185257
+            }
+          },
+          "total": {
+            "fn": 0.3,
+            "speed_ms": 2.319947930450164,
+            "re": 12416507.97543828,
+            "ct": 0.0054860894639767715,
+            "status": "ok",
+            "expression": "C_T = (1 + k) C_F + C_W"
+          },
+          "decomposition": {
+            "cf_share": 0.0033252716559161355,
+            "cw_share": 0.002160817808060636,
+            "residual": 0.0,
+            "residual_relative": 0.0,
+            "pass": true,
+            "status": "self_consistent",
+            "cf_share_fraction": 0.6061278580582431,
+            "cw_share_fraction": 0.3938721419417569
+          },
+          "limitations": [
+            "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+            "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+            "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+            "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+          ]
+        },
+        {
+          "geometry": {
+            "grade": "GEOMETRY",
+            "name": "wigley",
+            "length_m": 6.096,
+            "beam_m": 0.6096,
+            "draft_m": 0.381,
+            "cb_grid": 0.4444373264160157,
+            "cb_locked": 0.4444444444444444,
+            "cb_source": "Wigley parabolic closed form Cb = 4/9",
+            "cm_grid": 0.66666015625,
+            "cp_grid": 0.6666625000000002,
+            "cwp_grid": 0.66499584375,
+            "volume_m3": 0.6292531795940473,
+            "wetted_area_m2": 5.52923914281156,
+            "wetted_area_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "geometry_source": "ship_cad._wigley_half_beam",
+            "grid": [
+              401,
+              161
+            ],
+            "cb_tolerance": 0.02,
+            "cb_error_pct": -0.0016015563964646984,
+            "status": "pass"
+          },
+          "viscous": {
+            "grade": "CORRELATION",
+            "model": "ITTC-1957 friction line + Holtrop-Mennen (1984) form factor",
+            "re": 16555343.967251044,
+            "cf": 0.0027535752764832073,
+            "form_factor_1k": 1.1504921461529476,
+            "form_factor_1k_sensitivity": [
+              1.1262723891480937,
+              1.174703474152743
+            ],
+            "lcb_fraction": 0.0,
+            "cstern": 0.0,
+            "cv": 0.0031679667294348614
+          },
+          "wave": {
+            "grade": "THEORY",
+            "model": "michell-thin-ship",
+            "fn": 0.4,
+            "speed_ms": 3.093263907266886,
+            "re": 16555343.967251044,
+            "k0_per_m": 1.0252624671916009,
+            "s_wet_m2": 5.52923914281156,
+            "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+            "levels": [
+              {
+                "grid": [
+                  91,
+                  31,
+                  300
+                ],
+                "rw_n": 77.5071202884175,
+                "cw": 0.0029300314017774573,
+                "s_wet_m2": 5.776013360206704
+              },
+              {
+                "grid": [
+                  181,
+                  61,
+                  600
+                ],
+                "rw_n": 74.51383561611493,
+                "cw": 0.0028168751130175423,
+                "s_wet_m2": 5.6526077898844695
+              },
+              {
+                "grid": [
+                  361,
+                  121,
+                  1200
+                ],
+                "rw_n": 73.04714187069149,
+                "cw": 0.0027614291267018375,
+                "s_wet_m2": 5.590910906077514
+              }
+            ],
+            "admission": {
+              "status": "applicable",
+              "admitted": true,
+              "checks": {
+                "length_over_beam": {
+                  "value": 10.0,
+                  "limit": 6.0,
+                  "ok": true
+                },
+                "block_coefficient": {
+                  "value": 0.4444373264160157,
+                  "limit": 0.6,
+                  "ok": true
+                },
+                "beam_over_length": {
+                  "value": 0.1,
+                  "limit": 0.16,
+                  "ok": true
+                },
+                "draft_over_length": {
+                  "value": 0.0625,
+                  "limit": 0.1,
+                  "ok": true
+                }
+              },
+              "gate": {
+                "min_length_over_beam": 6.0,
+                "max_block_coefficient": 0.6,
+                "max_beam_over_length": 0.16,
+                "max_draft_over_length": 0.1
+              }
+            },
+            "quadrature": {
+              "k0_per_m": 1.0252624671916009,
+              "dx_m": 0.016933333333333335,
+              "sec_max": 4.123105625617661,
+              "u_max_supplied": 4.0,
+              "phase_per_cell_rad": 0.0715816948891955,
+              "cells_per_axial_wave": 87.77642548008411,
+              "limit_rad_per_cell": 0.39269908169872414,
+              "resolved": true
+            },
+            "status": "applicable",
+            "cw": 0.0027614291267018375,
+            "cw_levels": [
+              0.0029300314017774573,
+              0.0028168751130175423,
+              0.0027614291267018375
+            ],
+            "gci_pct": 2.4113651954632322,
+            "convergence": {
+              "fine": 0.0027614291267018375,
+              "medium": 0.0028168751130175423,
+              "coarse": 0.0029300314017774573,
+              "ratio": 2.0,
+              "status": "converged",
+              "p_observed": 1.0291618319707005,
+              "extrapolated": 0.0027081586140148997,
+              "gci_fine_pct": 2.4113651954632322,
+              "relative_change_pct": 2.00787287204172
+            }
+          },
+          "total": {
+            "fn": 0.4,
+            "speed_ms": 3.093263907266886,
+            "re": 16555343.967251044,
+            "ct": 0.0059293958561366985,
+            "status": "ok",
+            "expression": "C_T = (1 + k) C_F + C_W"
+          },
+          "decomposition": {
+            "cf_share": 0.0031679667294348614,
+            "cw_share": 0.0027614291267018375,
+            "residual": 0.0,
+            "residual_relative": 0.0,
+            "pass": true,
+            "status": "self_consistent",
+            "cf_share_fraction": 0.5342815366520245,
+            "cw_share_fraction": 0.4657184633479756
+          },
+          "limitations": [
+            "the viscous leg is the ITTC-1957 correlation plus a Holtrop-Mennen form-factor regression: it is not a simulation and cannot be credited to the lattice solver",
+            "the wave leg is first-order thin-ship theory; it is gated by a slenderness admission test and is out of scope wherever the measured hull is fuller than Cb=0.60",
+            "no free-surface/VOSET lattice run stands behind either leg at model Reynolds number; see benchmarks/pending/ship_resistance_closure/README.md for the blocker",
+            "form factor uses lcb=0 % and Cstern=0 (no locked LCB/Cstern for these forms); the resulting C_T sensitivity is reported per case"
+          ]
+        }
+      ],
+      "reference_row": null,
+      "wave_at_reference_fn": {
+        "grade": "THEORY",
+        "model": "michell-thin-ship",
+        "fn": 0.28,
+        "speed_ms": 2.16528473508682,
+        "re": 11588740.777075728,
+        "k0_per_m": 2.0923723820236755,
+        "s_wet_m2": 5.52923914281156,
+        "s_wet_source": "analytic_half_beam_fine_trapezoid(nx=801,nz=641)",
+        "levels": [
+          {
+            "grid": [
+              91,
+              31,
+              300
+            ],
+            "rw_n": 23.160171367741228,
+            "cw": 0.0017868017203862513,
+            "s_wet_m2": 5.776013360206704
+          },
+          {
+            "grid": [
+              181,
+              61,
+              600
+            ],
+            "rw_n": 21.88598301208998,
+            "cw": 0.0016884983913726794,
+            "s_wet_m2": 5.6526077898844695
+          },
+          {
+            "grid": [
+              361,
+              121,
+              1200
+            ],
+            "rw_n": 21.27450888837808,
+            "cw": 0.0016413233079558998,
+            "s_wet_m2": 5.590910906077514
+          }
+        ],
+        "admission": {
+          "status": "applicable",
+          "admitted": true,
+          "checks": {
+            "length_over_beam": {
+              "value": 10.0,
+              "limit": 6.0,
+              "ok": true
+            },
+            "block_coefficient": {
+              "value": 0.4444373264160157,
+              "limit": 0.6,
+              "ok": true
+            },
+            "beam_over_length": {
+              "value": 0.1,
+              "limit": 0.16,
+              "ok": true
+            },
+            "draft_over_length": {
+              "value": 0.0625,
+              "limit": 0.1,
+              "ok": true
+            }
+          },
+          "gate": {
+            "min_length_over_beam": 6.0,
+            "max_block_coefficient": 0.6,
+            "max_beam_over_length": 0.16,
+            "max_draft_over_length": 0.1
+          }
+        },
+        "quadrature": {
+          "k0_per_m": 2.0923723820236755,
+          "dx_m": 0.016933333333333335,
+          "sec_max": 4.123105625617661,
+          "u_max_supplied": 4.0,
+          "phase_per_cell_rad": 0.14608509161060304,
+          "cells_per_axial_wave": 43.01044848524122,
+          "limit_rad_per_cell": 0.39269908169872414,
+          "resolved": true
+        },
+        "status": "applicable",
+        "cw": 0.0016413233079558998,
+        "cw_levels": [
+          0.0017868017203862513,
+          0.0016884983913726794,
+          0.0016413233079558998
+        ],
+        "gci_pct": 3.314975622245075,
+        "convergence": {
+          "fine": 0.0016413233079558998,
+          "medium": 0.0016884983913726794,
+          "coarse": 0.0017868017203862513,
+          "ratio": 2.0,
+          "status": "converged",
+          "p_observed": 1.0592152049836965,
+          "extrapolated": 0.0015977957339231282,
+          "gci_fine_pct": 3.314975622245075,
+          "relative_change_pct": 2.8742102904473645
+        }
+      },
+      "reference_fn": 0.28,
+      "quadrature_levels": [
+        [
+          91,
+          31,
+          300
+        ],
+        [
+          181,
+          61,
+          600
+        ],
+        [
+          361,
+          121,
+          1200
+        ]
+      ],
+      "geometry_curve": {
+        "l_scale": 6.096,
+        "stations": [
+          0.0,
+          0.24384,
+          0.48768,
+          0.73152,
+          0.97536,
+          1.2192,
+          1.46304,
+          1.70688,
+          1.95072,
+          2.19456,
+          2.4384,
+          2.68224,
+          2.92608,
+          3.16992,
+          3.41376,
+          3.6576,
+          3.90144,
+          4.14528,
+          4.38912,
+          4.63296,
+          4.8768,
+          5.12064,
+          5.36448,
+          5.60832,
+          5.85216,
+          6.096
+        ],
+        "sectional_area_ratio": [
+          0.0,
+          0.10239899999999998,
+          0.1962647500000001,
+          0.28159724999999997,
+          0.3583965,
+          0.4266625,
+          0.48639525000000006,
+          0.53759475,
+          0.580261,
+          0.6143940000000001,
+          0.63999375,
+          0.65706025,
+          0.6655935000000001,
+          0.6655935000000001,
+          0.65706025,
+          0.63999375,
+          0.6143940000000001,
+          0.5802609999999999,
+          0.53759475,
+          0.48639525000000006,
+          0.42666249999999983,
+          0.3583965,
+          0.28159724999999997,
+          0.1962647499999999,
+          0.10239900000000011,
+          0.0
+        ]
+      },
+      "ct_monotone": true,
+      "ct_ladder": [
+        0.004486430659823156,
+        0.0054860894639767715,
+        0.0059293958561366985
+      ]
+    }
+  },
+  "criteria": {
+    "a_kcs_fn026_band8": {
+      "requirement": "KCS Fn=0.26: |dC_T| vs Tokyo-2015 reference < 8%",
+      "status": "withheld",
+      "error_pct": null,
+      "reason": "no admissible wave leg: the parametric KCS plan measures Cb=0.645 and Cwp=0.791 (real KCS 0.667), both outside the thin-ship gate, so no C_T is emitted at any Fn",
+      "diagnostic_cw_at_reference_fn": 0.006861412464735738,
+      "residual_target": -1.0,
+      "admission": {
+        "length_over_beam": {
+          "value": 7.142857142857142,
+          "limit": 6.0,
+          "ok": true
+        },
+        "block_coefficient": {
+          "value": 0.6454537231494079,
+          "limit": 0.6,
+          "ok": false
+        },
+        "beam_over_length": {
+          "value": 0.14,
+          "limit": 0.16,
+          "ok": true
+        },
+        "draft_over_length": {
+          "value": 0.04695652173913044,
+          "limit": 0.1,
+          "ok": true
+        }
+      },
+      "note": "the diagnostic thin-ship C_W is compared with the measured residual C_R = C_T - (1+k)C_F in the report; a 20x over-prediction is the geometry attribution, not a tunable offset"
+    },
+    "b_dtmb5415_fn028_band10": {
+      "requirement": "DTMB 5415 Fn=0.28: |dC_T| vs model-test reference < 10%",
+      "status": "fail",
+      "error_pct": 26.52736710530538,
+      "error_pct_reference_area_convention": 44.19574105861861,
+      "reason": "first-order thin-ship over-predicts the hump; see decomposition"
+    },
+    "c_series60_cb070_fn03_band10": {
+      "requirement": "Series 60 Cb=0.70 Fn=0.30: |dC_T| < 10%",
+      "status": "withheld",
+      "error_pct": null,
+      "reason": "no first-hand Cb=0.70 reference in refs_lock (ct_ref = null); the parametric family is also outside the thin-ship gate (Cb=0.70 > 0.60)",
+      "band_from_locked_reference": {}
+    },
+    "d_grid_convergence_gci_below_8": {
+      "requirement": "quadrature GCI of the wave leg < 8%",
+      "status": "pass",
+      "gci_pct": {
+        "dtmb5415": 4.236179911074687,
+        "series60_cb0.600": 1.4453829931567908,
+        "wigley": 3.314975622245075
+      },
+      "reason": "GCI is defined only where the wave leg is admitted; the parametric hulls have no admissible wave solve, which is itself the finding"
+    },
+    "e_decomposition_residual_below_1e-6": {
+      "requirement": "|C_T - [(1+k)C_F + C_W]| / C_T < 1e-6",
+      "status": "pass",
+      "max_residual_relative": 0.0,
+      "sample_count": 8
+    },
+    "f_ct_monotone_in_fn": {
+      "requirement": "C_T(Fn) strictly increasing over Fn = 0.2 / 0.3 / 0.4",
+      "status": "fail",
+      "per_hull": {
+        "kcs": false,
+        "dtmb5415": false,
+        "series60_cb0.600": false,
+        "series60_cb0.700": false,
+        "series60_cb0.800": false,
+        "wigley": false
+      },
+      "complete_ladders": {
+        "series60_cb0.600": [
+          0.00459,
+          0.006581,
+          0.012189
+        ],
+        "wigley": [
+          0.004486,
+          0.005486,
+          0.005929
+        ]
+      },
+      "withheld_fn": {
+        "dtmb5415": [
+          0.3
+        ]
+      },
+      "reason": "only admitted hulls with a fully converged ladder can be tested; a non-converged wave level withholds that Fn instead of fabricating a point"
+    },
+    "g_pending_to_verified": {
+      "requirement": "pending case status pending_blocked -> verified",
+      "status": "fail",
+      "reason": "criteria (a)-(c) are not met; the case stays in benchmarks/pending/ with a documented blocker -- promoting it would be an unearned promotion"
+    },
+    "h_pytest_green": {
+      "requirement": "pytest suite green with >= 15 tests",
+      "status": "pass",
+      "command": "PYTHONPATH=src python -m pytest tests/test_ship_resistance_closure.py -q",
+      "tests_passed": 24,
+      "note": "count recorded by the runner from the last local run of the file"
+    }
+  },
+  "lbm_leg": {
+    "status": "not_used",
+    "reason": "no free-surface/VOSET lattice run reaches model Reynolds number with a wall law in this repository; the resolution-Re friction leg delivered Ct_fric/ITTC ~ 2.5 (benchmarks/pending/suboff_highre_resistance), so a lattice total-resistance claim at model scale would be an unearned promotion",
+    "evidence": [
+      "benchmarks/STATUS.md: 'ship resistance needs wave-making'",
+      "benchmarks/pending/suboff_highre_resistance/README.md (Ct_fric/ITTC 2.49-2.53)",
+      "benchmarks/pending/dtmb5415_resistance (exp C_T not comparable, -22.4% no-wave floor)"
+    ]
+  },
+  "verdict": {
+    "case_status": "pending",
+    "promotion": "blocked",
+    "headline": "geometry audit + closure identity + quadrature verification pass; model-scale C_T agreement does not"
+  }
+}

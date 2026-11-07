@@ -29,6 +29,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [bstep_3d](bstep_3d/) | ⚠️ | 唯一完整档 Re=100 +13.18%；re200/re400 两档记录损坏；无预注册阶梯 | 按冻结协议重制或新工况预注册 | ~10–20× 存量 |
 | [cylinder_re40_st](cylinder_re40_st/) | ✅→📦 | W11-A2 晋级：上游域扩至 40D，四档全过 ≤3% 门（Re=20: 2.149→1.997%；Re=40: 2.236→1.956% 均严格单调） | 归档完成 → verified/cylinder_re40_st | 0 |
 | [naca_0012](naca_0012/) | ❌ | Cl 对锁定参考 0.132 全档 +85~99% 且不单调；参考图文自不一致（0.132 vs 0.26，预注册已判受限） | 参考重锁二选一或另寻 OA 一手源 | 秒级/档 |
+| [ship_resistance_closure](ship_resistance_closure/) | ⛔ | 模型尺度 C_T 闭合：几何门/分解恒等式/波阻 GCI 全过，实验对比不过——KCS 水线面系数 0.791 vs 0.667 使 thin-ship 出 20x 诊断值；5415 Fn=0.28 +26.5%；S60 Cb=0.6 −13.4%；LBM 腿在可达网格只交付分辨率 Re 摩擦 | 需首手型值 + Rankine/ITTC-1978 波阻 + 壁链交付模型 Re 摩擦 | CPU 分钟级/次 |
 | [sphere_re100](sphere_re100/) | ⏸️ | 同问题已由 sphere_re100_mem BFL 路线闭环（阶梯几何偏差根因已定源） | 归档完成 → verified/sphere_re100_mem | 0 |
 | [sphere_re100_mem](sphere_re100_mem/) | ⏸️ | 已归档晋级（T1 +2.7708% / T2 +2.5401%，四门全过） | 归档完成 → verified/sphere_re100_mem | 0 |
 | [sphere_re200](sphere_re200/) | ⚠️ | 旧口径 Ladd Cd +268.5%（历史失效同族；未按修复后估计器重跑） | 按冻结协议重制（BFL+wet-node+域形条款） | ≈10–20 GPU·h |
