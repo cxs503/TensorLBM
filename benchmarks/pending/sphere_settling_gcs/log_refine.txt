@@ -1,0 +1,16 @@
+[R4_L32_Re0.05] L=32^3 nu=1 tau=3.5 U_target=0.00625 g=1.4495e-05 n_solid=257 r_vol=3.9441 F_stokes=0.471239
+[R4_L32_Re0.05] step=1000 U=0.005104 Fx_cs=0.347341 osc_rms=7.9536% (41s)
+[R4_L32_Re0.05] step=2000 U=0.005728 Fx_cs=0.428209 osc_rms=0.7926% (82s)
+[R4_L32_Re0.05] step=3000 U=0.005805 Fx_cs=0.438199 osc_rms=0.0977% (145s)
+[R4_L32_Re0.05] FINAL U=0.005797 (U/U_stokes=1.0782) F=0.447855 F/F_stokes(U)=1.0247 (145s)
+[R6_L48_Re0.05] L=48^3 nu=1 tau=3.5 U_target=0.00416667 g=4.2970e-06 n_solid=925 r_vol=6.0444 F_stokes=0.471239
+[R6_L48_Re0.05] step=1000 U=0.002130 Fx_cs=0.261808 osc_rms=11.7231% (146s)
+[R6_L48_Re0.05] step=2000 U=0.002793 Fx_cs=0.387703 osc_rms=2.4474% (286s)
+[R6_L48_Re0.05] step=3000 U=0.002999 Fx_cs=0.426646 osc_rms=0.6928% (425s)
+[R6_L48_Re0.05] FINAL U=0.002967 (U/U_stokes=1.4042) F=0.433153 F/F_stokes(U)=1.2907 (425s)
+[R8_L64_Re0.05] L=64^3 nu=1 tau=3.5 U_target=0.003125 g=1.8122e-06 n_solid=2109 r_vol=7.9554 F_stokes=0.471239
+[R8_L64_Re0.05] step=1000 U=0.001091 Fx_cs=0.188309 osc_rms=13.8091% (266s)
+[R8_L64_Re0.05] step=2000 U=0.001633 Fx_cs=0.318302 osc_rms=4.0665% (533s)
+[R8_L64_Re0.05] step=3000 U=0.001903 Fx_cs=0.383011 osc_rms=1.6822% (787s)
+[R8_L64_Re0.05] FINAL U=0.001853 (U/U_stokes=1.6861) F=0.387639 F/F_stokes(U)=1.3870 (787s)
+wrote out_refine.json (1357s)
