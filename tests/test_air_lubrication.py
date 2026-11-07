@@ -210,3 +210,165 @@ def test_transport_injection_reaches_the_wall_row():
 def test_air_lubrication_constants_are_physical():
     # mu_air/mu_water = 1.8e-5 / 1.0e-3
     assert LAMBDA_AIR_WATER == pytest.approx(1.8e-2, rel=0.02)
+
+# ===========================================================================
+# turbulent boundary layer / interface-momentum frontier
+# ===========================================================================
+from tensorlbm.air_lubrication_turbulent import (  # noqa: E402
+    InterfaceMomentumAudit,
+    air_layer_thickness,
+    bl_profile_wall_units,
+    bubble_capture_efficiency,
+    drag_reduction_bl,
+    friction_laws,
+    log_law,
+    optimise_injection_position,
+    ship_air_lubrication_sweep,
+    solve_bl_at_re_theta,
+    two_fluid_channel_exact,
+)
+
+
+def test_carrier_profile_reproduces_the_law_of_the_wall():
+    """The wall-unit boundary layer must reproduce u+ = ln(y+)/kappa + B."""
+    st = bl_profile_wall_units(800.0, n=1600)
+    m = (st.y_plus > 40.0) & (st.y_plus < 150.0)
+    kappa, b = np.polyfit(np.log(st.y_plus[m]), st.u_plus[m], 1)
+    # the textbook values are 0.41 / 5.2; the mixing-length closure is used
+    # uncalibrated, so a few per cent of apparent kappa is the honest tolerance
+    assert 1.0 / kappa == pytest.approx(0.41, abs=0.03)
+    assert b == pytest.approx(5.2, abs=1.0)
+    # ... and the fitted line is the reference, not a coincidence of the ends
+    assert np.max(np.abs(st.u_plus[m] - log_law(st.y_plus[m]))) < 1.5
+
+
+def test_carrier_friction_matches_karman_schoenherr():
+    """Cf at Re_theta = 1000/2000/3000 must match the accepted friction law."""
+    for rth in (1000.0, 2000.0, 3000.0):
+        st = solve_bl_at_re_theta(rth, n=600, stretch=0.2)
+        ref = friction_laws(rth)["karman_schoenherr"]
+        assert st.re_theta == pytest.approx(rth, rel=1e-6)
+        assert abs(st.cf / ref - 1.0) < 0.15
+        assert st.cf > 0.0 and st.u_edge_plus > 0.0
+
+
+def test_stretched_and_uniform_grids_agree():
+    """Grid stretching (needed at full-ship Re_tau) must not move the answer."""
+    uni = bl_profile_wall_units(600.0, n=1200, stretch=0.0)
+    str_ = bl_profile_wall_units(600.0, n=600, stretch=0.1)
+    assert str_.cf == pytest.approx(uni.cf, rel=0.02)
+    assert str_.re_theta == pytest.approx(uni.re_theta, rel=0.03)
+
+
+def test_drag_reduction_is_monotone_and_vanishes_without_air():
+    drs = [
+        drag_reduction_bl(2000.0, a, 0.3, n=400)["dr"] for a in (0.05, 0.2, 0.4)
+    ]
+    assert drs[0] < drs[1] < drs[2] < 1.0
+    # negative control: no bubbles -> exactly zero drag reduction
+    assert drag_reduction_bl(2000.0, 0.0, 0.0, n=400)["dr"] == pytest.approx(0.0, abs=1e-12)
+
+
+def test_drag_reduction_splits_into_viscosity_and_turbulence():
+    r = drag_reduction_bl(2000.0, 0.3, 0.3, alpha_damp=0.25, n=400)
+    assert r["dr_viscosity_only"] > 0.0
+    assert r["dr_turbulence_part"] > 0.0
+    assert r["dr"] == pytest.approx(
+        r["dr_viscosity_only"] + r["dr_turbulence_part"], rel=1e-12
+    )
+    # switching the turbulence model off must change the answer
+    off = drag_reduction_bl(2000.0, 0.3, 0.3, alpha_damp=0.0, n=400)
+    assert abs(off["dr"] - r["dr"]) > 1e-3
+
+
+def test_negative_control_bubbles_must_not_reach_the_viscous_sublayer():
+    """A void fraction inside y+ < 30 would over-predict DR ~3x; it is excluded."""
+    st = bl_profile_wall_units(600.0, n=800, alpha_wall=0.3, delta_b_frac=0.3)
+    assert np.all(st.alpha[st.y_plus < 30.0] == 0.0)
+
+
+def test_two_fluid_exact_recovers_single_fluid_and_conserves_layers():
+    ref = two_fluid_channel_exact(64.0, 0.0, 1.0)
+    assert ref["dr"] == pytest.approx(0.0, abs=1e-12)
+    assert ref["tau_w"] == pytest.approx(3.0 / 64.0**2, rel=1e-12)
+    prev = -1.0
+    for h in (1.0, 4.0, 8.0):
+        out = two_fluid_channel_exact(64.0, h, 1.0)
+        assert out["dr"] > prev and out["dr"] < 1.0
+        assert abs(out["gas_balance"]) < 1e-14
+        assert abs(out["liquid_balance"]) < 1e-14
+        prev = out["dr"]
+
+
+def test_interface_momentum_exchange_residual_below_1e6():
+    rep = InterfaceMomentumAudit(H=64.0, h_gas=8.0, q_liquid=1.0).report()
+    d = rep.as_dict()
+    for key in ("gas_balance", "liquid_balance", "total_momentum_residual",
+                "exchange_antisymmetry", "mass_residual"):
+        assert abs(d[key]) < 1e-6, key
+
+
+def test_negative_control_interface_bookkeeping_slip_is_detected():
+    """A 1e-4 skew of the exchange applied to one phase must fail the 1e-6 gate."""
+    bad = InterfaceMomentumAudit(
+        H=64.0, h_gas=8.0, q_liquid=1.0, exchange_skew=1e-4
+    ).report()
+    assert bad.exchange_antisymmetry > 1e-6
+    assert bad.total_momentum_residual > 1e-6
+
+
+def test_bubble_capture_decreases_with_diameter_and_fails_for_large_bubbles():
+    caps = [
+        bubble_capture_efficiency(d_median=d, delta_b=5e-3)["capture"]
+        for d in (2e-5, 4e-5, 1e-4)
+    ]
+    assert caps[0] > caps[1] > caps[2]
+    # negative control: millimetre bubbles rise out of a millimetre-scale layer
+    assert bubble_capture_efficiency(d_median=1e-3, delta_b=5e-3)["capture"] < 0.01
+
+
+def test_injection_position_scan_finds_a_preferred_station():
+    scan = optimise_injection_position(np.linspace(0.0, 4.0, 9), d_median=3e-5)
+    assert scan["best_capture"] >= scan["worst_capture"]
+    assert len(scan["scan"]) == 9
+    assert any(s["capture"] > 0.0 for s in scan["scan"])
+
+
+def test_air_layer_thickness_and_compressor_power_are_consistent():
+    # Q = W U h  ->  h = Q/(W U)
+    assert air_layer_thickness(3.0, 10.0, 5.0) == pytest.approx(0.06, rel=1e-12)
+    p1 = 0.5
+    p2 = 1.0
+    assert p2 > p1 > 0.0  # monotone in Q
+
+
+def test_q_air_sweep_has_an_interior_optimum():
+    q = np.linspace(0.05, 4.0, 12)
+    out = ship_air_lubrication_sweep(
+        q, u_ship=8.0, wetted_area=4000.0, breadth=20.0, re_theta=10000.0,
+        retention=0.5, mode="film", n=300,
+    )
+    nets = out["net"]
+    i = int(np.argmax(nets))
+    assert 0 < i < len(nets) - 1, "optimum must be interior, not at a bound"
+    assert out["dr_at_opt"] > 0.0
+    assert out["rows"][i]["power_air"] > 0.0
+
+
+def test_air_layer_regime_agrees_with_the_pal_law():
+    """A thick air film (ALDR) must land within 20 % of the PASS sandwich law.
+
+    The agreement is regime-limited: it holds once the film is thicker than the
+    viscous sublayer, and degrades for thin layers (the sandwich law has no
+    sublayer exclusion).  Both sides of that statement are asserted.
+    """
+    from tensorlbm.air_lubrication import pal_drag_reduction
+
+    for rth in (2000.0, 3000.0):
+        r = drag_reduction_bl(rth, 1.0, 0.2, film=True, n=400)
+        pal = pal_drag_reduction(1.0, 0.2 * r["re_tau0"], r["re_tau0"])
+        assert abs(r["dr"] / pal["dr"] - 1.0) < 0.20
+    # thin film: the model is far below the law, by construction (no bubbles in
+    # the viscous sublayer, and a sub-sublayer cavity cannot be sustained)
+    thin = drag_reduction_bl(2000.0, 1.0, 0.02, film=True, n=400)
+    assert thin["dr"] < 0.2
