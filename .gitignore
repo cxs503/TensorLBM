@@ -107,3 +107,7 @@ agent_memory_context_update.md
 # run artifacts (logs/fields, keep on disk only)
 runs/
 runs_prop/
+
+# P16-N7 wind-load campaign: restart states / field dumps and logs are large
+runs/p16n7/*.npz
+runs/p16n7/logs/
