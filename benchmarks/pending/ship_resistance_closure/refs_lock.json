@@ -1,0 +1,48 @@
+{
+  "schema": "ship-resistance-reference-lock-v1",
+  "locked_at": "2026-11-07",
+  "policy": "references locked before any run; every entry must be first-hand or explicitly flagged second-hand; a null coefficient means WITHHELD and no comparison may be emitted",
+  "cases": [
+    {
+      "case": "kcs",
+      "fn": 0.26,
+      "ct_ref": 0.00355,
+      "band_pct": 8.0,
+      "provenance": "second-hand, audited in-repo",
+      "source": "MDPI J. Mar. Sci. Eng. 2020, 8, 745 (Tokyo-2015 KCS EFT total-resistance coefficient C_T=3.55e-3 at Fn=0.26), transcribed and audited in benchmarks/pending/kcs_resistance/run.py"
+    },
+    {
+      "case": "dtmb5415",
+      "fn": 0.28,
+      "ct_ref": 0.0042,
+      "band_pct": 10.0,
+      "provenance": "second-hand constant in-repo",
+      "s_wet_convention": "bare-hull model-test wetted surface, S/L^2 = 0.1302 (IIHR 5.72 m model convention, rescaled to the run length)",
+      "source": "INSEAN towing-tank model-test total resistance, constants carried in benchmarks/pending/dtmb5415_resistance/run.py (C_T_EXP, citing Olivieri 2001 / Stern 2000)"
+    },
+    {
+      "case": "series60_cb0.600",
+      "fn": 0.30,
+      "ct_ref": 0.0076,
+      "band_pct": 10.0,
+      "provenance": "second-hand transcription",
+      "source": "Todd (1963) DTMB Series 60 Cb=0.60 model-test C_T(Fn) table as transcribed in benchmarks/pending/series60_resistance/run.py; flagged second-hand there and not promotable"
+    },
+    {
+      "case": "series60_cb0.700",
+      "fn": 0.30,
+      "ct_ref": null,
+      "band_pct": 10.0,
+      "provenance": "withheld",
+      "source": "no first-hand Todd/ITTC Series 60 Cb=0.70 total-resistance coefficient exists in this repository; fabricating one is not permitted"
+    },
+    {
+      "case": "series60_cb0.800",
+      "fn": 0.30,
+      "ct_ref": null,
+      "band_pct": 10.0,
+      "provenance": "withheld",
+      "source": "no first-hand Series 60 Cb=0.80 total-resistance coefficient in this repository"
+    }
+  ]
+}
