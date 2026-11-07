@@ -1,0 +1,763 @@
+{
+  "mission": "IN25-T6",
+  "purpose": "external mature-technology literature anchors for the ship-performance scoring gate; every row carries an offline-readable provenance record",
+  "generated_by": "tensorlbm.external_survey.report.anchor_table_payload",
+  "measures": {
+    "large_grid": "大网格先例（规模/网格收敛研究）",
+    "parallel_lbm": "并行 LBM 成熟实践（扩展性/域分解）",
+    "amr": "局部加密（块结构 AMR/渐变网格）",
+    "les": "湍流 LES-LBM（模型常数与 MRT 稳定性）",
+    "wall_model": "壁面模型（近壁处理适用域与误差阶）"
+  },
+  "n_anchors": 16,
+  "per_measure": {
+    "large_grid": 4,
+    "parallel_lbm": 3,
+    "amr": 3,
+    "les": 2,
+    "wall_model": 4
+  },
+  "n_numeric": 3,
+  "validation_violations": [],
+  "rows": [
+    {
+      "id": "2503.19674",
+      "measure": "large_grid",
+      "measure_label": "大网格先例（规模/网格收敛研究）",
+      "claim": "对全附体 SUBOFF（Re=1.2e7）做三阶格式 WMLES+FW-H 需要 1.03e8 量级网格；附体（围壳/舵）使远场 SPL 比裸体高约 20 dB，峰值 85.10 dB —— 即附体流是高网格量、高噪声敏感度的主矛盾，粗网格裸体结论不能外推到 AFF-8。",
+      "claim_kind": "numeric",
+      "evidence": "open_access_abstract",
+      "quantities": [
+        {
+          "name": "grid_cells",
+          "value": 103000000.0,
+          "unit": "cells",
+          "read_from": "open_access_abstract"
+        },
+        {
+          "name": "reynolds",
+          "value": 12000000.0,
+          "unit": "dimensionless",
+          "read_from": "open_access_abstract"
+        },
+        {
+          "name": "scheme_order",
+          "value": 3.0,
+          "unit": "order",
+          "read_from": "open_access_abstract"
+        },
+        {
+          "name": "spl_excess_appended_vs_bare",
+          "value": 20.0,
+          "unit": "dB",
+          "read_from": "open_access_abstract"
+        },
+        {
+          "name": "spl_peak",
+          "value": 85.1,
+          "unit": "dB",
+          "read_from": "open_access_abstract"
+        }
+      ],
+      "conditions": "Re=1.2e7（基于艇长）；WMLES + Ffowcs Williams-Hawkings；均匀 Cartesian 网格；压力/噪声量，非阻力验收；648 水听器 @500D",
+      "status": "pending_redteam",
+      "cross_refs": [
+        "2407.10475"
+      ],
+      "caveat": "摘要未给阻力误差与网格收敛阶，故只能作规模/噪声先例，不能作阻力判据。",
+      "citation": {
+        "title": "Effects of appendages on the turbulence and flow noise of a submarine model using high-order scheme",
+        "authors": [
+          "Peng Jiang",
+          "Shijun Liao",
+          "Ling Liu",
+          "Bin Xie"
+        ],
+        "year": 2025,
+        "venue": "arXiv preprint",
+        "volume": null,
+        "page": null,
+        "id_kind": "arxiv",
+        "doi_or_arxiv": "2503.19674",
+        "endpoint": "https://export.arxiv.org/api/query",
+        "retrieved_at": "2026-11-07T08:12:47Z"
+      }
+    },
+    {
+      "id": "2407.10475",
+      "measure": "large_grid",
+      "measure_label": "大网格先例（规模/网格收敛研究）",
+      "claim": "裸艇体 SUBOFF Re=1.2e7 的 WMLES（高阶格式）给出与时均实验更吻合的压力系数与速度脉动，优于既有文献 WMLES —— 说明 Re≈1e7 的 SUBOFF 已有独立的高保真数值参照族，但摘要未给网格量与阻力误差。",
+      "claim_kind": "numeric",
+      "evidence": "open_access_abstract",
+      "quantities": [
+        {
+          "name": "reynolds",
+          "value": 12000000.0,
+          "unit": "dimensionless",
+          "read_from": "open_access_abstract"
+        }
+      ],
+      "conditions": "裸体（AFF-1）Re=1.2e7；壁面模化 LES；验证量=Cp、速度脉动谱，非总阻力；圆柱 Re=1e4 作为前置验证",
+      "status": "pending_redteam",
+      "cross_refs": [
+        "2503.19674"
+      ],
+      "caveat": "阻力/网格收敛数字 absent（正文不可离线核验），不得据摘要声称阻力精度。",
+      "citation": {
+        "title": "Large-eddy simulation of hydrodynamic noise from turbulent flows past an axisymmetric hull using high-order schemes",
+        "authors": [
+          "Peng Jiang",
+          "Shijun Liao",
+          "Bin Xie"
+        ],
+        "year": 2024,
+        "venue": "arXiv preprint",
+        "volume": null,
+        "page": null,
+        "id_kind": "arxiv",
+        "doi_or_arxiv": "2407.10475",
+        "endpoint": "https://export.arxiv.org/api/query",
+        "retrieved_at": "2026-11-07T08:12:47Z"
+      }
+    },
+    {
+      "id": "10.1016/j.compfluid.2018.01.013",
+      "measure": "large_grid",
+      "measure_label": "大网格先例（规模/网格收敛研究）",
+      "claim": "附体潜艇外流（拖曳与自航两种构型）的 LES 已是成熟做法，自航构型必须处理螺旋桨-艇体干涉 —— 即外流验证不能只看拖曳工况。",
+      "claim_kind": "qualitative",
+      "evidence": "registry_metadata",
+      "quantities": [],
+      "conditions": "模型尺度 Re；贴体有限体积 LES；notional submarine（SUBOFF 族）",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "Crossref 记录不含摘要，结论仅由题录与既有领域共识支持，属 qualitative。",
+      "citation": {
+        "title": "Large-Eddy Simulations of a notional submarine in towed and self-propelled configurations",
+        "authors": [
+          "Posa, Antonio",
+          "Balaras, Elias"
+        ],
+        "year": 2018,
+        "venue": "Computers &amp; Fluids",
+        "volume": "165",
+        "page": "116-126",
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1016/j.compfluid.2018.01.013",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.1080/17445302.2026.2731435",
+      "measure": "large_grid",
+      "measure_label": "大网格先例（规模/网格收敛研究）",
+      "claim": "SUBOFF 在偏航（yaw）工况下的 LES 已发表：操纵/斜航姿态是当前外流研究前沿，阻力验收应含 0° 以外工况。",
+      "claim_kind": "qualitative",
+      "evidence": "registry_metadata",
+      "quantities": [],
+      "conditions": "SUBOFF；多偏航角；LES；阻力/流场",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "摘要 absent；不能引用其具体数值。",
+      "citation": {
+        "title": "Large eddy simulation of the flow around SUBOFF submarine under different yaw conditions",
+        "authors": [
+          "Chen, Mo",
+          "Zhang, Nan",
+          "Sun, Hailang",
+          "Yu, Changdong",
+          "Li, Ziyan",
+          "Si, Chaoshan",
+          "Zhang, Xuan"
+        ],
+        "year": 2026,
+        "venue": "Ships and Offshore Structures",
+        "volume": null,
+        "page": "1-29",
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1080/17445302.2026.2731435",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.1016/j.camwa.2020.01.007",
+      "measure": "parallel_lbm",
+      "measure_label": "并行 LBM 成熟实践（扩展性/域分解）",
+      "claim": "waLBerla 的参考架构=块结构（block-structured）网格 + MPI 域分解 + CUDA 加速的多物理场框架；LBM 大规模并行的事实标准是把块结构分解、边界/幽灵层与内核生成分层实现，而不是单一全局网格。",
+      "claim_kind": "qualitative",
+      "evidence": "registry_metadata",
+      "quantities": [],
+      "conditions": "分布式内存 + GPU；块结构网格；多物理场耦合",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "摘要 absent：具体弱扩展效率数字列为 ABSENT（见 ABSENT_ITEMS A1）。",
+      "citation": {
+        "title": "waLBerla: A block-structured high-performance framework for multiphysics simulations",
+        "authors": [
+          "Bauer, Martin",
+          "Eibl, Sebastian",
+          "Godenschwager, Christian",
+          "Kohl, Nils",
+          "Kuron, Michael",
+          "Rettinger, Christoph",
+          "Schornbaum, Florian",
+          "Schwarzmeier, Christoph",
+          "Thönnes, Dominik",
+          "Köstler, Harald",
+          "Rüde, Ulrich"
+        ],
+        "year": 2021,
+        "venue": "Computers &amp; Mathematics with Applications",
+        "volume": "81",
+        "page": "478-501",
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1016/j.camwa.2020.01.007",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.1016/j.camwa.2020.03.022",
+      "measure": "parallel_lbm",
+      "measure_label": "并行 LBM 成熟实践（扩展性/域分解）",
+      "claim": "Palabos 提供成熟的并行 LBM 实现与数据处理器（data-processor）抽象，可作为接口设计与回归对象。",
+      "claim_kind": "qualitative",
+      "evidence": "registry_metadata",
+      "quantities": [],
+      "conditions": "MPI 并行；D2Q9/D3Q19 族；多物理扩展",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "",
+      "citation": {
+        "title": "Palabos: Parallel Lattice Boltzmann Solver",
+        "authors": [
+          "Latt, Jonas",
+          "Malaspinas, Orestis",
+          "Kontaxakis, Dimitrios",
+          "Parmigiani, Andrea",
+          "Lagrava, Daniel",
+          "Brogi, Federico",
+          "Belgacem, Mohamed Ben",
+          "Thorimbert, Yann",
+          "Leclaire, Sébastien",
+          "Li, Sha",
+          "Marson, Francesco",
+          "Lemus, Jonathan",
+          "Kotsalos, Christos",
+          "Conradin, Raphaël",
+          "Coreixas, Christophe",
+          "Petkantchin, Rémy",
+          "Raynaud, Franck",
+          "Beny, Joël",
+          "Chopard, Bastien"
+        ],
+        "year": 2021,
+        "venue": "Computers &amp; Mathematics with Applications",
+        "volume": "81",
+        "page": "334-350",
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1016/j.camwa.2020.03.022",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.1145/2503210.2503273",
+      "measure": "parallel_lbm",
+      "measure_label": "并行 LBM 成熟实践（扩展性/域分解）",
+      "claim": "混合并行（MPI+GPU）LBM 已在复杂几何上做到 1e12 网格胞规模，说明‘万亿胞’量级并行是已被验证的工程上限参考。",
+      "claim_kind": "numeric",
+      "evidence": "record_title",
+      "quantities": [
+        {
+          "name": "grid_cells",
+          "value": 1000000000000.0,
+          "unit": "cells",
+          "read_from": "record_title"
+        }
+      ],
+      "conditions": "复杂几何；混合 MPI+CUDA；静态块结构分解",
+      "status": "pending_redteam",
+      "cross_refs": [
+        "10.1016/j.camwa.2020.01.007",
+        "10.1016/j.camwa.2020.03.022"
+      ],
+      "caveat": "数值来自题录标题（a trillion cells），未含效率指标。",
+      "citation": {
+        "title": "A framework for hybrid parallel flow simulations with a trillion cells in complex geometries",
+        "authors": [
+          "Godenschwager, Christian",
+          "Schornbaum, Florian",
+          "Bauer, Martin",
+          "Köstler, Harald",
+          "Rüde, Ulrich"
+        ],
+        "year": 2013,
+        "venue": "Proceedings of the International Conference on High Performance Computing, Networking, Storage and Analysis",
+        "volume": null,
+        "page": "1-12",
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1145/2503210.2503273",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.1006/jcph.1998.6089",
+      "measure": "amr",
+      "measure_label": "局部加密（块结构 AMR/渐变网格）",
+      "claim": "LBM 局部加密的首个成熟方案（Filippova-Hänel）：粗/细网格界面通过分布函数插值+ 时间步比 2 的亚循环耦合，界面处必须保持动量和粘性一致。",
+      "claim_kind": "qualitative",
+      "evidence": "registry_metadata",
+      "quantities": [],
+      "conditions": "块结构嵌套网格；细化比 2；界面插值/时间外推",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "摘要 absent；机制描述为领域共识，误差阶未核验（ABSENT A2 相关）。",
+      "citation": {
+        "title": "Grid Refinement for Lattice-BGK Models",
+        "authors": [
+          "Filippova, Olga",
+          "Hänel, Dieter"
+        ],
+        "year": 1998,
+        "venue": "Journal of Computational Physics",
+        "volume": "147",
+        "page": "219-228",
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1006/jcph.1998.6089",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.1016/j.jcp.2012.03.015",
+      "measure": "amr",
+      "measure_label": "局部加密（块结构 AMR/渐变网格）",
+      "claim": "多域（multi-domain）LBM 加密的后续成熟做法：界面用体积/守恒形式处理并在两侧保持一致（Lagrava 等），是把 1998 类插值方案推进到工程可用的关键一步。",
+      "claim_kind": "qualitative",
+      "evidence": "registry_metadata",
+      "quantities": [],
+      "conditions": "双侧域分解；细化比 2；界面守恒条件",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "",
+      "citation": {
+        "title": "Advances in multi-domain lattice Boltzmann grid refinement",
+        "authors": [
+          "Lagrava, D.",
+          "Malaspinas, O.",
+          "Latt, J.",
+          "Chopard, B."
+        ],
+        "year": 2012,
+        "venue": "Journal of Computational Physics",
+        "volume": "231",
+        "page": "4808-4822",
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1016/j.jcp.2012.03.015",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.1103/physreve.94.053311",
+      "measure": "amr",
+      "measure_label": "局部加密（块结构 AMR/渐变网格）",
+      "claim": "熵 LBM（ELBM/KBC 族）的多域加密方案已建立，可在跨音速/不可压多算例上复现 DNS/实验趋势。",
+      "claim_kind": "qualitative",
+      "evidence": "open_access_abstract",
+      "quantities": [],
+      "conditions": "熵格子（ELBM）；多域加密；算例=湍流槽道/绕球/Rayleigh-Bénard/跨音速翼型",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "",
+      "citation": {
+        "title": "Grid refinement for entropic lattice Boltzmann models",
+        "authors": [
+          "Dorschner, B.",
+          "Frapolli, N.",
+          "Chikatamarla, S. S.",
+          "Karlin, I. V."
+        ],
+        "year": 2016,
+        "venue": "Physical Review E",
+        "volume": "94",
+        "page": null,
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1103/physreve.94.053311",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.1090/fic/006/12",
+      "measure": "les",
+      "measure_label": "湍流 LES-LBM（模型常数与 MRT 稳定性）",
+      "claim": "LBM 的亚格子模型源头文献（Hou 等）：在 LBM 中引入 Smagorinsky 型涡粘，是对高 Re 流动做 LES-LBM 的标准起点；涡粘进入碰撞频率 τ 的方式决定了稳定域。",
+      "claim_kind": "qualitative",
+      "evidence": "registry_metadata",
+      "quantities": [],
+      "conditions": "Smagorinsky 涡粘；BGK/LBGK；高 Re",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "Cs 推荐区间与误差量化在本次离线核验中 absent（ABSENT A2）。",
+      "citation": {
+        "title": "A lattice Boltzmann subgrid model for high Reynolds number flows",
+        "authors": [
+          "Hou, Shuling",
+          "Sterling, James",
+          "Chen, Shiyi",
+          "Doolen, Gary"
+        ],
+        "year": 1995,
+        "venue": "Pattern Formation and Lattice gas Automata",
+        "volume": null,
+        "page": "151-166",
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1090/fic/006/12",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.1103/physreve.61.6546",
+      "measure": "les",
+      "measure_label": "湍流 LES-LBM（模型常数与 MRT 稳定性）",
+      "claim": "MRT 碰撞算子的理论分析（Lallemand-Luo）：给出色散/耗散/各向同性与伽利略不变性的系统判据——高 Re 稳定性应通过调节松弛率谱（而不只是 τ）获得。",
+      "claim_kind": "qualitative",
+      "evidence": "registry_metadata",
+      "quantities": [],
+      "conditions": "MRT/D3Q19 族；线性稳定性分析；任意松弛率谱",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "",
+      "citation": {
+        "title": "Theory of the lattice Boltzmann method: Dispersion, dissipation, isotropy, Galilean invariance, and stability",
+        "authors": [
+          "Lallemand, Pierre",
+          "Luo, Li-Shi"
+        ],
+        "year": 2000,
+        "venue": "Physical Review E",
+        "volume": "61",
+        "page": "6546-6562",
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1103/physreve.61.6546",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.2514/3.61193",
+      "measure": "wall_model",
+      "measure_label": "壁面模型（近壁处理适用域与误差阶）",
+      "claim": "Musker 显式光滑壁速度剖面：单一显式表达式覆盖粘性底层、过渡层与对数区，无需分区拼接——是壁面函数‘全域一致’分支的代表。",
+      "claim_kind": "qualitative",
+      "evidence": "registry_metadata",
+      "quantities": [],
+      "conditions": "零压力梯度光滑壁湍流边界层；y+ 从壁面到对数区",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "",
+      "citation": {
+        "title": "Explicit Expression for the Smooth Wall Velocity Distribution in a Turbulent Boundary Layer",
+        "authors": [
+          "Musker, A. J."
+        ],
+        "year": 1979,
+        "venue": "AIAA Journal",
+        "volume": "17",
+        "page": "655-657",
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.2514/3.61193",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "10.1063/5.0283930",
+      "measure": "wall_model",
+      "measure_label": "壁面模型（近壁处理适用域与误差阶）",
+      "claim": "壁面函数耦合的 LBM：slip-velocity bounce-back 在精度与网格收敛一致性上表现稳定，而三阶正则化边界高度依赖壁法向速度梯度重构（即使平壁也敏感）；正则化混合方案需要标定 —— 即优先选 slip-velocity 而非高阶重构。",
+      "claim_kind": "qualitative",
+      "evidence": "open_access_abstract",
+      "quantities": [],
+      "conditions": "LBM + Spalart-Allmaras + 模型一致壁面函数；算例=充分发展槽道、零压梯度平板",
+      "status": "pending_redteam",
+      "cross_refs": [
+        "2601.18443",
+        "2611.07137"
+      ],
+      "caveat": "",
+      "citation": {
+        "title": "Wall boundary conditions for lattice Boltzmann simulations of turbulent flows with wall functions",
+        "authors": [
+          "Ponsin, Jorge",
+          "Lozano, Carlos"
+        ],
+        "year": 2025,
+        "venue": "Physics of Fluids",
+        "volume": "37",
+        "page": null,
+        "id_kind": "doi",
+        "doi_or_arxiv": "10.1063/5.0283930",
+        "endpoint": "https://api.crossref.org/works/{doi}",
+        "retrieved_at": "2026-11-07T08:11:33Z"
+      }
+    },
+    {
+      "id": "2601.18443",
+      "measure": "wall_model",
+      "measure_label": "壁面模型（近壁处理适用域与误差阶）",
+      "claim": "自适应 Cartesian 网格上的 LBM-RANS：slip-velocity bounce-back + 解析壁面函数 + 负 SA 模型，可在 NACA0012 与 MD-30P30N 上给出干净的摩阻分布；但**未在 SUBOFF 上验证**。",
+      "claim_kind": "qualitative",
+      "evidence": "open_access_abstract",
+      "quantities": [],
+      "conditions": "自适应 Cartesian；LBM-RANS；NACA0012/MD-30P30N；翼型类，无 SUBOFF",
+      "status": "pending_redteam",
+      "cross_refs": [],
+      "caveat": "适用范围外推到艇体（强流向压力梯度+长细比）需自行验证。",
+      "citation": {
+        "title": "Enhanced Wall Boundary Modeling for Turbulent Flows Using the Lattice Boltzmann Method with Adaptive Cartesian Grids",
+        "authors": [
+          "Jorge Ponsin",
+          "Carlos Lozano"
+        ],
+        "year": 2026,
+        "venue": "arXiv preprint",
+        "volume": null,
+        "page": null,
+        "id_kind": "arxiv",
+        "doi_or_arxiv": "2601.18443",
+        "endpoint": "https://export.arxiv.org/api/query",
+        "retrieved_at": "2026-11-07T08:12:47Z"
+      }
+    },
+    {
+      "id": "2611.07137",
+      "measure": "wall_model",
+      "measure_label": "壁面模型（近壁处理适用域与误差阶）",
+      "claim": "力评估的离散陷阱：当壁面不落在格点连线中点时，经典动量交换法（CME）产生显著力误差；插值补充 bounce-back（ISBB）破坏局部质量守恒，导致非物理压力抬升 —— 二者都会污染阻力验收。需 modified MEM + 质量守恒修正的 ISBB。",
+      "claim_kind": "qualitative",
+      "evidence": "open_access_abstract",
+      "quantities": [],
+      "conditions": "阶梯化 Cartesian 边界；曲壁/斜壁；动量交换测力；ISBB",
+      "status": "pending_redteam",
+      "cross_refs": [
+        "10.1063/5.0283930"
+      ],
+      "caveat": "",
+      "citation": {
+        "title": "Improving the accuracy of the momentum-exchange method in lattice Boltzmann methods",
+        "authors": [
+          "Abbas Fakhari"
+        ],
+        "year": 2026,
+        "venue": "arXiv preprint",
+        "volume": null,
+        "page": null,
+        "id_kind": "arxiv",
+        "doi_or_arxiv": "2611.07137",
+        "endpoint": "https://export.arxiv.org/api/query",
+        "retrieved_at": "2026-11-07T08:12:47Z"
+      }
+    }
+  ],
+  "scorer_candidates": [
+    {
+      "id": "SUBOFF-AFF1-CT-LADDER",
+      "quantity": "CT (wetted-area normalised total resistance)",
+      "geometry": "DARPA SUBOFF bare hull (AFF-1), L=4.356 m, L/D=8.57",
+      "points": [
+        {
+          "re": 11647265.09120281,
+          "speed_kn": 5.92,
+          "ct": 0.0031452114820133188,
+          "u_mps": 3.04550848
+        },
+        {
+          "re": 19674434.275680423,
+          "speed_kn": 10.0,
+          "ct": 0.003054611426919758,
+          "u_mps": 5.14444
+        },
+        {
+          "re": 23294530.18240562,
+          "speed_kn": 11.84,
+          "ct": 0.002994968256184879,
+          "u_mps": 6.09101696
+        },
+        {
+          "re": 27386812.511747144,
+          "speed_kn": 13.92,
+          "ct": 0.0029387396822953002,
+          "u_mps": 7.16106048
+        },
+        {
+          "re": 31479094.841088675,
+          "speed_kn": 16.0,
+          "ct": 0.0028421199747593806,
+          "u_mps": 8.231104
+        },
+        {
+          "re": 35394307.26194908,
+          "speed_kn": 17.99,
+          "ct": 0.002716140833804289,
+          "u_mps": 9.25484756
+        }
+      ],
+      "primary_point": {
+        "re": 11647265.09120281,
+        "ct": 0.0031452114820133188
+      },
+      "uncertainty": {
+        "s_wet": "5.998 m2 (documented in-repo; primary report unavailable offline)",
+        "absolute_pct_estimate": 3.0
+      },
+      "cross_checks": {
+        "vs_published_ct_0.0031": 1.4584349036554478,
+        "vs_ittc57_x_form_factor_max_err_pct": 5.095893943115128
+      },
+      "conditions": "Re 1.16e7-3.54e7 (based on L, nu=1.139e-6 m2/s); smooth model, no free surface, no propeller; CT normalised on wetted area, rho=999 kg/m3",
+      "sources": [
+        "Liu & Huang (1998) CRDKNSWC/HD-1298-11, Table 14 (archived as tensorlbm.suboff_reference_data.SUBOFF_TOW_TANK_RESISTANCE_TABLE14)",
+        "Roddy (1990) DTRC/SHD-1298-07 (published CT comparison)",
+        "ITTC-1957 correlation line (friction cross-check)"
+      ],
+      "verdict": "admit_to_scorer"
+    },
+    {
+      "id": "SUBOFF-AFF8-CT-LADDER",
+      "quantity": "CT (wetted-area normalised total resistance)",
+      "geometry": "DARPA SUBOFF full appendages (AFF-8)",
+      "points": [
+        {
+          "re": 11666939.52547849,
+          "speed_kn": 5.93,
+          "ct": 0.0035638349266417053,
+          "u_mps": 3.05065292
+        },
+        {
+          "re": 19674434.275680423,
+          "speed_kn": 10.0,
+          "ct": 0.003476672031554906,
+          "u_mps": 5.14444
+        },
+        {
+          "re": 23314204.616681296,
+          "speed_kn": 11.85,
+          "ct": 0.0033953727875852,
+          "u_mps": 6.0961614
+        },
+        {
+          "re": 27386812.511747144,
+          "speed_kn": 13.92,
+          "ct": 0.0033293060269804524,
+          "u_mps": 7.16106048
+        },
+        {
+          "re": 31479094.841088675,
+          "speed_kn": 16.0,
+          "ct": 0.0032329650399138023,
+          "u_mps": 8.231104
+        },
+        {
+          "re": 35000818.57643546,
+          "speed_kn": 17.79,
+          "ct": 0.003178304396943092,
+          "u_mps": 9.15195876
+        }
+      ],
+      "primary_point": {
+        "re": 11666939.52547849,
+        "ct": 0.0035638349266417053,
+        "interval_ct": [
+          0.00346561900346654,
+          0.003667780112002088
+        ]
+      },
+      "uncertainty": {
+        "s_wet": "bracketed (6.0, 6.35) m2 (exact AFF-8 wetted area absent offline) -> CT interval reported instead of a point value",
+        "absolute_pct_estimate": 5.0
+      },
+      "cross_checks": {
+        "vs_published_ct_0.0040": -10.904126833957369,
+        "vs_published_ct_0.0040_bracket": [
+          -8.305497199947803,
+          -13.3595249133365
+        ],
+        "vs_ittc57_x_form_factor_max_err_pct": 5.760572285880575,
+        "appendage_force_ratio": 1.1704805491990846
+      },
+      "conditions": "Re 1.16e7-3.55e7; no free surface; CT on wetted area with S_wet in bracket; the widely quoted 0.004 is NOT usable (see anchor_consistency)",
+      "sources": [
+        "Liu & Huang (1998) Table 14 (archived)",
+        "Groves, Huang & Chang (1989) DTRC/SHD-1298-01 (geometry, cited not read)"
+      ],
+      "verdict": "admit_to_scorer_with_interval"
+    }
+  ],
+  "consistency_audit": [
+    {
+      "label": "SUBOFF AFF-1 CT",
+      "claimed": 0.0031,
+      "claimed_re": 12000000.0,
+      "reproduced": 0.0031452114820133188,
+      "reproduced_re": 11647265.09120281,
+      "dev_pct": 1.4584349036554478,
+      "dev_pct_bracket": null,
+      "verdict": "cross_consistent",
+      "note": "Roddy (1990)/SIMMAN-2008 usage value; reproduced from Liu & Huang Table 14 forces with S_wet=5.998 m2, rho=999 kg/m3"
+    },
+    {
+      "label": "SUBOFF AFF-8 CT",
+      "claimed": 0.004,
+      "claimed_re": 12000000.0,
+      "reproduced": 0.0035638349266417053,
+      "reproduced_re": 11666939.52547849,
+      "dev_pct": -10.904126833957369,
+      "dev_pct_bracket": [
+        -8.305497199947803,
+        -13.3595249133365
+      ],
+      "verdict": "withheld",
+      "note": "0.004 cannot be reproduced from the primary forces: it would require an AFF-8 wetted area of 5.50 m2, i.e. smaller than the AFF-1 area (5.998 m2) — unphysical. Treat as convention-unspecified (honest FAIL) and use the Table 14 CT instead."
+    }
+  ],
+  "absent": [
+    {
+      "item": "waLBerla / Palabos 在 1e4–1e5 核上的弱/强扩展效率具体百分比",
+      "measure": "parallel_lbm",
+      "reason": "Crossref 记录不含摘要，正文不可离线核验；本次未做全文获取",
+      "consequence": "并行实践只引用架构级结论（块结构+幽灵层），不得引用任何效率数字"
+    },
+    {
+      "item": "LES-LBM 的 Smagorinsky 常数推荐区间及其在壁面约束高 Re 流动上的误差量化",
+      "measure": "les",
+      "reason": "本次探针未检索到开放获取的定量结论（摘要级）",
+      "consequence": "Cs 只能沿用本仓既有取值（0.05/0.1 族）并标注为本仓默认，不作为文献锚"
+    },
+    {
+      "item": "OpenFOAM 对 SUBOFF 的网格收敛阶与 GCI 数值",
+      "measure": "large_grid",
+      "reason": "本次 arXiv/Crossref 探针未命中带数值的开放摘要",
+      "consequence": "‘成熟代码网格收敛数字’只能用本仓归档基准反算的 p≈2 与文献实践描述对照，并如实标注"
+    },
+    {
+      "item": "SUBOFF AFF-8 总阻力系数 0.004 的原始面积/密度约定",
+      "measure": "large_grid",
+      "reason": "一手实验报告（Liu & Huang 1998 Table 14、Groves 1989）在仓内以转录入库，原文不可离线核验",
+      "consequence": "0.004 判为 cross-inconsistent（见 suboff_anchor），不进打分器；改用 Table 14 量纲值自算 CT"
+    },
+    {
+      "item": "本仓在 Re=2000 上的全新三网格收敛序列（Richardson/GCI 实测）",
+      "measure": "large_grid",
+      "reason": "本机会话无 GPU、单次 shell 时限内无法完成时间收敛的三网格序列；集群节点 torch 缺 libflexiblas 不可用（实测 122 ms/step @L=20, 32 线程）",
+      "consequence": "本单不给新收敛阶；网格收敛结论只引用归档 verified 基准的反算结果（标注为审计）"
+    }
+  ]
+}
