@@ -17,6 +17,7 @@ acceptance criteria of a verification run are reproducible instead of eyeballed:
 
 from __future__ import annotations
 
+import math
 import numpy as np
 
 from .flux import GAMMA, primitive
@@ -30,6 +31,7 @@ __all__ = [
     "front_profile",
     "mach_stem_height",
     "standoff_distance",
+    "shock_detachment_angle",
     "gci",
     "relative_error",
 ]
@@ -244,4 +246,62 @@ def gci(f_coarse: float, f_fine: float, ratio: float = 2.0, order: float = 2.0) 
         "richardson_estimate": float(f_fine + (f_fine - f_coarse) / (rp - 1.0)),
         "order_assumed": float(order),
         "refinement_ratio": float(ratio),
+    }
+def shock_detachment_angle(
+    rho: np.ndarray,
+    xc: np.ndarray,
+    yc: np.ndarray,
+    corner_x: float,
+    corner_y: float,
+    threshold: float,
+    box: float = 0.3,
+    x_w: float = 0.15,
+    y_h: float = 0.15,
+    gap: int = 1,
+) -> dict:
+    """Bow-shock detachment angle at a step corner (gradient-based).
+
+    The bow shock stands ahead of a vertical face; the compressed gas lies
+    between the shock and the face.  The shock is a surface of (near) constant
+    density, so its local normal is along the density gradient.  In a box just
+    ahead of and below the corner -- ``x in (corner_x - box, corner_x - box +
+    x_w)`` and ``y in (corner_y - y_h, corner_y - gap*dy)`` -- the gradient
+    ``grad rho`` is computed with central differences and averaged with a
+    ``|grad rho|^2`` weight so the steep shock front dominates the smooth
+    upstream/downstream regions.  The tangent angle with the incoming flow
+    (x-axis) is ``atan2(|n_x|, |n_y|)`` in degrees -- 90 deg for a vertical,
+    i.e. exactly normal, shock.  Returns the angle, the normal, the cell count
+    and the mean |grad rho| so the rule is auditable.
+    """
+    x = np.asarray(xc, dtype=float)
+    y = np.asarray(yc, dtype=float)
+    r = np.asarray(rho, dtype=float)
+    dx = float(x[1] - x[0])
+    dy = float(y[1] - y[0])
+    ix = np.flatnonzero((x >= corner_x - box) & (x <= corner_x - box + x_w))
+    iy = np.flatnonzero((y >= corner_y - y_h) & (y <= corner_y - gap * dy))
+    if ix.size < 3 or iy.size < 3:
+        return {"angle_deg": float("nan"), "normal": [float("nan"), float("nan")],
+                "n_cells": 0}
+    sub = r[iy[:, None], ix[None, :]]
+    drho_dx = (sub[1:-1, 2:] - sub[1:-1, :-2]) / (2.0 * dx)
+    drho_dy = (sub[2:, 1:-1] - sub[:-2, 1:-1]) / (2.0 * dy)
+    mag = np.hypot(drho_dx, drho_dy)
+    w = mag ** 2
+    tot = float(w.sum())
+    if tot <= 0.0:
+        return {"angle_deg": float("nan"), "normal": [float("nan"), float("nan")],
+                "n_cells": 0}
+    nx_ = float((drho_dx * w).sum() / tot)
+    ny_ = float((drho_dy * w).sum() / tot)
+    nrm = math.hypot(nx_, ny_)
+    if nrm <= 0.0:
+        return {"angle_deg": float("nan"), "normal": [float("nan"), float("nan")],
+                "n_cells": 0}
+    nx_, ny_ = nx_ / nrm, ny_ / nrm
+    return {
+        "angle_deg": float(np.degrees(np.arctan2(abs(nx_), abs(ny_)))),
+        "normal": [float(nx_), float(ny_)],
+        "n_cells": int(ix.size * iy.size),
+        "mean_grad": float(mag.mean()),
     }
