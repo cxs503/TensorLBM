@@ -514,7 +514,8 @@ class SpinodaleConfig:
     """Configuration for the spinodal decomposition (SCMP) benchmark.
 
     The Shan-Chen single-component model with a self-attractive pseudopotential
-    (G < 0) is initialised from a uniform density field with small random
+    (G > 0, library convention) is initialised from a uniform density field
+    with small random
     noise.  Under the attractive SC interaction the field spontaneously
     separates into a *liquid* phase (high density) and a *gas* phase (low
     density).
@@ -526,7 +527,8 @@ class SpinodaleConfig:
     Attributes
     ----------
     nx, ny:          Domain size (periodic, no walls).
-    G:               SC self-coupling constant (< 0 for phase separation).
+    G:               SC self-coupling constant (> 0 for phase separation,
+                    library convention; classic −4.0 is exactly critical).
     tau:             Relaxation time (ν = cs²(τ − ½)).
     rho0:            Mean initial density.
     noise_amp:       Amplitude of the initial uniform-random density noise.
@@ -541,7 +543,7 @@ class SpinodaleConfig:
 
     nx: int = 64
     ny: int = 64
-    G: float = -4.0
+    G: float = 5.0
     tau: float = 1.0
     rho0: float = 0.7
     noise_amp: float = 0.05
@@ -1133,7 +1135,7 @@ class Spinodal3DConfig:
     nx: int = 40
     ny: int = 40
     nz: int = 40
-    G: float = -4.0
+    G: float = 5.0
     tau: float = 1.0
     rho0: float = 0.7
     noise_amp: float = 0.05
