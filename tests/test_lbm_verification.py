@@ -374,6 +374,72 @@ def test_step_c_poiseuille_float32_error_is_not_rounding_bound() -> None:
     )
 
 
+def poiseuille_slip_metrics(ny: int, steps: int) -> dict:
+    """把 Step C 剖面误差分解为「均匀滑移偏移」与「形状误差」两支。
+
+    Step C 的 ~0.34%（ny=12）残差**不是剖面形状算错**：数值剖面是「精确抛物线 +
+    一个与 y 无关的均匀速度偏移」（半路反弹壁面上的有限滑移），形状偏差只有 1e-5
+    量级。只盯 ``max|u-u_ex|`` 会把滑移当成形状误差，从而看不出加密网格是否真在
+    收敛（步数扫描本身也无法区分二者）。
+    """
+    r = poiseuille_case(ny=ny, steps=steps)
+    u = np.asarray(r["u_num"], dtype=float)
+    e = np.asarray(r["u_exact"], dtype=float)
+    u_max = float(np.max(np.abs(e)))
+    offset = float(np.mean(u - e))
+    return {
+        "ny": ny,
+        "h": ny - 2,
+        "steps": steps,
+        "rel_err": float(np.max(np.abs(u - e)) / u_max),
+        "rel_err_shape": float(np.max(np.abs((u - offset) - e)) / u_max),
+        "offset": offset,
+        "u_max_exact": u_max,
+    }
+
+
+def test_step_c_poiseuille_residual_is_second_order_slip() -> None:
+    """验证欠账：Step C 的残差必须随网格加密**二阶收敛**，且主体是均匀滑移。
+
+    此前只有「步数扫描」证明该残差不随步数下降（1000–3000 步同为 0.3378%），据此
+    断言它是离散误差；但「不随步数下降」同样可能意味着代码有 bug（稳态解本身错）。
+    密网格裁决才是唯一证据：若残差是二阶收敛的滑移，加密 h=6→h=10 的总量误差应降
+    ~2.8 倍（实测 0.9534%→0.3378%），且去掉均匀偏移后的形状误差已到 1e-5 量级。
+
+    判据（全部机器裁）：形状误差 < 总量误差的 10%、观测阶 p∈[1.5, 2.6]、
+    |offset|·h² 在 ±20% 内为常数（滑移律 offset≈G/4）、ny=12 时判据余量 ≥2 倍。
+    """
+    coarse = poiseuille_slip_metrics(8, 500)   # h=6，步数按 h² 缩放（500∝6²）
+    fine = poiseuille_slip_metrics(12, 1000)   # h=10
+
+    # 1) 残差主体是均匀偏移，不是形状误差
+    for r in (coarse, fine):
+        assert r["rel_err_shape"] < 0.1 * r["rel_err"], (
+            f"ny={r['ny']}：形状误差 {r['rel_err_shape']:.3%} 已达总量误差 "
+            f"{r['rel_err']:.3%} 的 10%，残差不再能用「均匀滑移」解释"
+
+        )
+
+    # 2) 总量误差二阶收敛
+    p = math.log(coarse["rel_err"] / fine["rel_err"]) / math.log(fine["h"] / coarse["h"])
+    assert 1.5 <= p <= 2.6, (
+        f"观测收敛阶 p={p:.2f} 落在 [1.5, 2.6] 之外：Step C 残差不是二阶离散误差"
+        f"（ny=8:{coarse['rel_err']:.4%} ny=12:{fine['rel_err']:.4%}）"
+    )
+
+    # 3) 滑移服从 offset·h²≈const（⇒ offset≈G/4，G=2νu_max/h²）
+    ratio = (abs(coarse["offset"]) * coarse["h"] ** 2) / (abs(fine["offset"]) * fine["h"] ** 2)
+    assert 0.8 <= ratio <= 1.2, (
+        f"|offset|·h² 在 h=6 与 h=10 之比为 {ratio:.3f}，偏离 1 超过 ±20%："
+        f"滑移标度律 offset≈G/4 不成立"
+    )
+
+    # 4) 判据余量：ny=12 的默认网格上 1% 判据至少还有 2 倍余量
+    assert fine["rel_err"] < 0.5 * REL_TOL, (
+        f"ny=12 误差 {fine['rel_err']:.3%} 已吃掉 1% 判据的一半以上"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Step D：壁面摩擦 → 剪应力提取
 # ---------------------------------------------------------------------------
