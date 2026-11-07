@@ -1621,7 +1621,17 @@ async def start_passive_scalar_transport(params: PassiveScalarTransportParams) -
 class CavitationFlowParams(BaseModel):
     nx: int = Field(default=256, ge=64, le=1024)
     ny: int = Field(default=128, ge=32, le=512)
-    G: float = Field(default=-5.5, ge=-8.0, le=-3.0, description="Shan-Chen coupling constant")
+    G: float = Field(
+        default=1.0,
+        ge=0.7,
+        le=1.2,
+        description=(
+            "Shan-Chen coupling, library sign convention (G > 0 attractive; the classic "
+            "attractive value G_c<0 corresponds to G=-G_c). Validated coexistence + stable "
+            "relaxation window for the cavitation pseudopotential is 0.7-1.2; the historical "
+            "default G=-5.5 had no Maxwell coexistence and diverged (ledger G3)."
+        ),
+    )
     rho_init: float = Field(default=1.5, gt=0.0)
     throat_x: float = Field(default=0.35, ge=0.1, le=0.9)
     throat_height: float = Field(default=0.3, gt=0.05, le=0.9)
