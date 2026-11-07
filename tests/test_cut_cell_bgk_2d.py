@@ -157,3 +157,28 @@ def test_physical_relaxation_distinct_from_roll_tau():
     q[:, 0] += q.sum(1) * 0.02
     q[:, 1:5] -= q.sum(1)[:, None] * 0.005
     assert not torch.equal(a.collision(q, 0.01), b.collision(q, 0.01))
+
+
+def test_q_property_expands_group_volume_onto_cut_cell_field():
+    """Regression guard: ``Q`` used to index the (ny, nx) cell volume with
+    ``self.volume_m3[mask, None]``.
+
+    A 2-D boolean mask followed by ``None`` binds the new axis *between* the
+    two masked dimensions, so torch saw a [ny, nx] mask against a
+    [ny, 1, nx] tensor and raised ``IndexError``; every consumer of ``Q``
+    (and therefore ten tests that build/step the model) could not run.  The
+    fix indexes the fluid cells first and adds the population axis afterwards.
+    """
+    s = nonuniform()
+    mask = s.group_map >= 0
+    Q = s.Q
+    assert Q.shape == (9, s.geometry.ny, s.geometry.nx)
+    assert torch.isfinite(Q).all()
+    # Wall/void cells carry no population.
+    assert torch.count_nonzero(Q[:, ~mask]) == 0
+    # Per-cell mass is the group density times that cell's own cut volume.
+    density = (s.group_Q.sum(1) / s.group_volume_m3)[s.group_map[mask]]
+    expected = density * s.volume_m3[mask]
+    assert (Q.sum(0)[mask] - expected).abs().max() < 1e-9
+    # The expansion is mass conserving, and merged groups repeat their density.
+    assert abs(float(Q.sum() - s.group_Q.sum())) < 1e-9
