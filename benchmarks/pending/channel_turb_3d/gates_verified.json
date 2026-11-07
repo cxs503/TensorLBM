@@ -1,198 +1,202 @@
 {
- "case": "channel_turb_3d",
- "verdict": "terminal",
- "checked_at": "2026-10-23T08:12:52Z",
- "gates": [
-  {
-   "gate": "library_entry",
-   "declared_pass": true,
-   "recomputed_pass": true,
-   "evidence": [
+  "case": "channel_turb_3d",
+  "node": "P20-N01",
+  "verdict": "honest_fail",
+  "case_status": "terminal",
+  "supersedes": "gates_verified.json (verdict terminal, Re_tau=180 ladder rejection)",
+  "checked_at": "2026-11-07T08:46:06+00:00",
+  "gates": [
     {
-     "v": "from tensorlbm.wall_resolved_channel3d",
-     "f": "benchmarks/pending/channel_turb_3d/runs_3d/run_probe.py",
-     "k": "grep:from tensorlbm",
-     "found": "from tensorlbm.wall_resolved_channel3d",
-     "ok": true,
-     "note": "grep ok"
+      "gate": "C1_u_plus_l2_vs_MKM180_below_10pct",
+      "declared_pass": null,
+      "recomputed_pass": false,
+      "evidence": [
+        {
+          "v": 0.15186226351525453,
+          "f": "runs_3d/L3_result.json",
+          "k": "profiles.measured.u_plus_l2_relative",
+          "ok": false,
+          "note": "best level L3, y+ range [1.9052352564595518, 173.51557262217884]"
+        },
+        {
+          "v": 0.14941476279005061,
+          "f": "runs_3d/L3_result.json",
+          "k": "profiles.assumed_0p5.u_plus_l2_relative",
+          "ok": true,
+          "note": "same profile with the previously assumed y_w = 0.5"
+        }
+      ],
+      "problems": [
+        "best relative L2 error 15.19% exceeds 10% (under-converged statistics and a domain shorter than the MKM box)"
+      ]
+    },
+    {
+      "gate": "C2_reynolds_stress_profile",
+      "declared_pass": null,
+      "recomputed_pass": null,
+      "evidence": [
+        {
+          "v": -0.7156615360294016,
+          "f": "runs_3d/L3_result.json",
+          "k": "reynolds_stress_plus.uv_peak_value",
+          "ok": true,
+          "note": "negative <u'v'>+ peak: correct sign/trend"
+        },
+        {
+          "v": 39.44499655521064,
+          "f": "runs_3d/L3_result.json",
+          "k": "reynolds_stress_plus.uv_peak_y_plus",
+          "ok": true,
+          "note": "peak location in wall units"
+        }
+      ],
+      "problems": [
+        "reference stress profile absent from the in-repo MKM csv (columns are y, y_plus, u_plus only) - peak-location error cannot be machine-checked, gate withheld"
+      ]
+    },
+    {
+      "gate": "C3_wall_origin_measured_not_assumed",
+      "declared_pass": null,
+      "recomputed_pass": true,
+      "evidence": [
+        {
+          "v": 0.6447327757606024,
+          "f": "runs_3d/laminar_wall_origin_calibration.json",
+          "k": "runs[].measured.wall_origin_estimators.wall_stress_local",
+          "ok": true,
+          "note": "measured y_w at tau=0.50155 (exact_table_entry)"
+        },
+        {
+          "v": 0.1447327757606024,
+          "f": "runs_3d/laminar_wall_origin_calibration.json",
+          "k": "assumed_vs_measured.delta_cells",
+          "ok": true,
+          "note": "deviation from the assumed 0.5 exceeds the 0.1-cell trigger"
+        },
+        {
+          "v": 1.3798907370931184,
+          "f": "runs_3d/L3_result.json",
+          "k": "profiles.measured.wall_origin",
+          "ok": true,
+          "note": "wall-unit shift of the abscissa produced by the correction; every analysed profile uses the measured origin"
+        }
+      ],
+      "problems": []
+    },
+    {
+      "gate": "C4_three_way_u_tau_within_3pct",
+      "declared_pass": null,
+      "recomputed_pass": false,
+      "evidence": [
+        {
+          "v": 17.061900843277403,
+          "f": "runs_3d/L3_result.json",
+          "k": "three_way.max_pairwise_deviation_pct",
+          "ok": false,
+          "note": "best level; routes = momentum balance, momentum exchange, log-law fit at the measured wall origin"
+        },
+        {
+          "v": 42.61497314571306,
+          "f": "runs_3d",
+          "k": "three_way.max_pairwise_deviation_pct",
+          "ok": false,
+          "note": "worst level: wall-shear under-prediction drives the spread"
+        }
+      ],
+      "problems": [
+        "best three-way spread 17.06% exceeds 3%; the wall-shear route (momentum exchange) lags the momentum balance because the statistics are not converged"
+      ]
+    },
+    {
+      "gate": "C5_grid_convergence_u_plus_deviation_below_2",
+      "declared_pass": null,
+      "recomputed_pass": false,
+      "evidence": [
+        {
+          "v": 11.998195785232548,
+          "f": "runs_3d",
+          "k": "grid_convergence.L1_vs_L2.max_abs_u_plus_deviation",
+          "ok": false,
+          "note": "refinement ratio [2.0, 1.5, 2.0]"
+        },
+        {
+          "v": 13.344710134964208,
+          "f": "runs_3d",
+          "k": "grid_convergence.L1_vs_L3.max_abs_u_plus_deviation",
+          "ok": false,
+          "note": "refinement ratio [4.0, 2.0, 4.0]"
+        },
+        {
+          "v": 11.499379506940688,
+          "f": "runs_3d",
+          "k": "grid_convergence.L2_vs_L3.max_abs_u_plus_deviation",
+          "ok": false,
+          "note": "refinement ratio [2.0, 1.3333333333333333, 2.0]"
+        }
+      ],
+      "problems": [
+        "no grid pair agrees within 2 u+ units; the statistics are not converged and the refinement is not a clean factor of two in y"
+      ]
+    },
+    {
+      "gate": "C6_negative_control_no_SGS_at_Re_tau_395",
+      "declared_pass": null,
+      "recomputed_pass": null,
+      "evidence": [
+        {
+          "v": "cumulant + smagorinsky_cs",
+          "f": "src/tensorlbm/boundary/wall_resolved_channel3d.py",
+          "k": "WallResolvedChannel3DConfig.smagorinsky_cs",
+          "ok": true,
+          "note": "SGS switch now exists (C_s plumbed into the cumulant kernel, molecular-only by default; tests/test_wall_resolved_channel3d_sgs.py pins the validation and a live SGS-on run)"
+        },
+        {
+          "v": null,
+          "f": "dns_ref",
+          "k": "mkm395",
+          "ok": false,
+          "note": "no Re_tau=395 reference profile in the repository, and a 395 case of this size costs days of CPU (see the measured throughput in the report), so the control was not executed"
+        }
+      ],
+      "problems": [
+        "not executed: the SGS switch is now available, but the Re_tau=395 on/off pair needs a multi-day campaign and has no in-repo reference profile to score against"
+      ]
+    },
+    {
+      "gate": "C7_pytest_and_gates_artifact",
+      "declared_pass": null,
+      "recomputed_pass": true,
+      "evidence": [
+        {
+          "v": "tests/test_wall_origin.py",
+          "f": "tests/test_wall_origin.py",
+          "k": "pytest",
+          "ok": true,
+          "note": "analytic recovery + three-way closure tests"
+        },
+        {
+          "v": "gates_verified.json",
+          "f": "benchmarks/pending/channel_turb_3d/gates_verified.json",
+          "k": "gates",
+          "ok": true,
+          "note": "this artefact"
+        }
+      ],
+      "problems": []
     }
-   ],
-   "problems": []
+  ],
+  "failing_gates": [
+    "C1_u_plus_l2_vs_MKM180_below_10pct",
+    "C4_three_way_u_tau_within_3pct",
+    "C5_grid_convergence_u_plus_deviation_below_2"
+  ],
+  "withheld_gates": [
+    "C2_reynolds_stress_profile",
+    "C6_negative_control_no_SGS_at_Re_tau_395"
+  ],
+  "numbers_artifact": {
+    "path": "benchmarks/pending/channel_turb_3d/mkm_gates_numbers.json",
+    "sha256": "66be93c3b97588f78a00117aaa39304af34cd73479290121f4704d60acfa7a89"
   },
-  {
-   "gate": "direct_observable",
-   "declared_pass": false,
-   "recomputed_pass": true,
-   "evidence": [
-    {
-     "v": 20.43434670057914,
-     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
-     "k": "grid_levels[0].rms_y30_100_pct",
-     "found": 20.43434670057914,
-     "ok": true,
-     "note": "20.43434670057914 vs 20.43434670057914"
-    },
-    {
-     "v": 11.665111463802477,
-     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
-     "k": "grid_levels[1].rms_y30_100_pct",
-     "found": 11.665111463802477,
-     "ok": true,
-     "note": "11.665111463802477 vs 11.665111463802477"
-    },
-    {
-     "v": 5.330965065942242,
-     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
-     "k": "grid_levels[2].rms_y30_100_pct",
-     "found": 5.330965065942242,
-     "ok": true,
-     "note": "5.330965065942242 vs 5.330965065942242"
-    }
-   ],
-   "problems": []
-  },
-  {
-   "gate": "monotone_convergence",
-   "declared_pass": true,
-   "recomputed_pass": true,
-   "evidence": [
-    {
-     "v": 20.43434670057914,
-     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
-     "k": "grid_levels[0].rms_y30_100_pct",
-     "found": 20.43434670057914,
-     "ok": true,
-     "note": "20.43434670057914 vs 20.43434670057914"
-    },
-    {
-     "v": 11.665111463802477,
-     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
-     "k": "grid_levels[1].rms_y30_100_pct",
-     "found": 11.665111463802477,
-     "ok": true,
-     "note": "11.665111463802477 vs 11.665111463802477"
-    },
-    {
-     "v": 5.330965065942242,
-     "f": "benchmarks/pending/channel_turb_3d/validation_report.json",
-     "k": "grid_levels[2].rms_y30_100_pct",
-     "found": 5.330965065942242,
-     "ok": true,
-     "note": "5.330965065942242 vs 5.330965065942242"
-    }
-   ],
-   "problems": []
-  },
-  {
-   "gate": "reference_locked",
-   "declared_pass": true,
-   "recomputed_pass": true,
-   "evidence": [
-    {
-     "v": "4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb",
-     "f": "benchmarks/pending/channel_turb_3d/runs_3d/prereg.json",
-     "k": "sha256",
-     "found": "4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb",
-     "ok": true,
-     "note": "'4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb' vs '4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb'"
-    }
-   ],
-   "problems": []
-  },
-  {
-   "gate": "case_readme",
-   "declared_pass": true,
-   "recomputed_pass": true,
-   "evidence": [
-    {
-     "v": true,
-     "f": "README.md",
-     "k": "check:size>=1200B",
-     "found": "5495B",
-     "ok": true,
-     "note": "5495B"
-    },
-    {
-     "v": true,
-     "f": "README.md",
-     "k": "check:sections>=2",
-     "found": "15 个小节",
-     "ok": true,
-     "note": "15 个小节"
-    },
-    {
-     "v": true,
-     "f": "README.md",
-     "k": "check:PROVENANCE",
-     "found": "ok",
-     "ok": true,
-     "note": "ok"
-    },
-    {
-     "v": true,
-     "f": "README.md",
-     "k": "check:run_command",
-     "found": "ok",
-     "ok": true,
-     "note": "ok"
-    },
-    {
-     "v": true,
-     "f": "README.md",
-     "k": "check:reference_anchor",
-     "found": "ok",
-     "ok": true,
-     "note": "ok"
-    }
-   ],
-   "problems": []
-  },
-  {
-   "gate": "figures",
-   "declared_pass": true,
-   "recomputed_pass": true,
-   "evidence": [
-    {
-     "v": true,
-     "f": "figures.json",
-     "k": "check:fig[0]",
-     "found": "figures/fig_uplus_profile.png curve 95758B div=256",
-     "ok": true,
-     "note": "figures/fig_uplus_profile.png curve 95758B div=256"
-    },
-    {
-     "v": true,
-     "f": "figures.json",
-     "k": "check:fig[1]",
-     "found": "figures/fig_convergence.png curve 91123B div=256",
-     "ok": true,
-     "note": "figures/fig_convergence.png curve 91123B div=256"
-    },
-    {
-     "v": true,
-     "f": "figures.json",
-     "k": "check:fig[2]",
-     "found": "figures/fig_rms_convergence.png curve 60532B div=256",
-     "ok": true,
-     "note": "figures/fig_rms_convergence.png curve 60532B div=256"
-    },
-    {
-     "v": true,
-     "f": "figures.json",
-     "k": "check:field_waiver",
-     "found": "云图豁免: No spatial field quantities (e.g. vorticity, pressure) are s",
-     "ok": true,
-     "note": "云图豁免: No spatial field quantities (e.g. vorticity, pressure) are s"
-    }
-   ],
-   "problems": []
-  }
- ],
- "all_pass": false,
- "problems": [
-  "case 不符: gates.json 声明 'channel_turb_3d' vs 请求 'channel_turb'"
- ],
- "rc": 1,
- "profile": "paper",
- "gates_path": "/nfs/wangxi/tensor_eco/agent_work/m186/TensorLBM/benchmarks/pending/channel_turb_3d/gates.json"
+  "library_module": "tensorlbm.validation.wall_origin"
 }
