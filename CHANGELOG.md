@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`tensorlbm.fsi_added_mass`** — added-mass instability calibration for
+  partitioned FSI: closed-form interface factor `rho_dd = |1 - omega c_a
+  rho_f/rho_s|` (stability limit `rho_s/rho_f = omega c_a/2`), Aitken and
+  IQN-ILS (bounded 5-pair history) interface accelerators, a 1D piston anchor,
+  a 2D D2Q9 heaving-body sub-iteration/divergence adapter over the
+  momentum-exchange moving boundary, free-decay added-mass/damping
+  identification, and an incompressible potential-flow added-mass reference on
+  the same staircase mask. Calibration (P49-N02): 1D anchor 0 %, 2D LBM 0.82 %
+  vs the analytic factor, stability boundary 0.2 %, negative control
+  (`rho_s/rho_f = 0.1`, explicit) diverges with growth rate 2.15, Aitken/IQN
+  cut 40 non-converged iterations to 3; the coupled free-decay channel is
+  reported as an honest FAIL (compressible regime). Doc:
+  `docs/FSI_ADDED_MASS_INSTABILITY.md`, artifacts:
+  `artifacts/fsi_added_mass/`, tests: `tests/test_fsi_added_mass.py` (20).
 - **`tensorlbm.cac_moving_body`** — prescribed-motion rigid bodies inside a CAC
   two-phase simulation: moving-wall bounce-back (Ladd 1994), momentum-exchange
   force, wedge/disc geometry, fresh-node refill. `cac_lbm.CACSim` gained
