@@ -1,0 +1,92 @@
+++ dirname ./run_all.sh
++ cd .
++ OUT=out
++ mkdir -p out
++ for g in 9 13 19 28 40
++ for c in hex_vf0.70 hex_vf0.75
++ python3 -u run.py case --case hex_vf0.70 --grid 9 --closure on --out-dir out
+[case] hex_vf0.70   g=  9 closure=on  dmin/dx=  1.09 phi_act=0.64583 k=0.022288 k_ref=0.025653 err=  13.115% ncorr=    3 steps=3400 wall=3.5s
++ for c in hex_vf0.70 hex_vf0.75
++ python3 -u run.py case --case hex_vf0.75 --grid 9 --closure on --out-dir out
+[case] hex_vf0.75   g=  9 closure=on  dmin/dx=  0.82 phi_act=0.72917 k=0.0054488 k_ref=0.012123 err=  55.055% ncorr=    3 steps=4200 wall=3.8s
++ for g in 9 13 19 28 40
++ for c in hex_vf0.70 hex_vf0.75
++ python3 -u run.py case --case hex_vf0.70 --grid 13 --closure on --out-dir out
+[case] hex_vf0.70   g= 13 closure=on  dmin/dx=  1.58 phi_act=0.71237 k=0.026433 k_ref=0.053522 err=  50.612% ncorr=    0 steps=3300 wall=4.1s
++ for c in hex_vf0.70 hex_vf0.75
++ python3 -u run.py case --case hex_vf0.75 --grid 13 --closure on --out-dir out
+[case] hex_vf0.75   g= 13 closure=on  dmin/dx=  1.18 phi_act=0.73913 k=0.010427 k_ref=0.025294 err=  58.779% ncorr=    2 steps=4600 wall=4.4s
++ for g in 9 13 19 28 40
++ for c in hex_vf0.70 hex_vf0.75
++ python3 -u run.py case --case hex_vf0.70 --grid 19 --closure on --out-dir out
+[case] hex_vf0.70   g= 19 closure=on  dmin/dx=  2.31 phi_act=0.69697 k=0.094061 k_ref=0.11433 err=  17.727% ncorr=    0 steps=4400 wall=7.6s
++ for c in hex_vf0.70 hex_vf0.75
++ python3 -u run.py case --case hex_vf0.75 --grid 19 --closure on --out-dir out
+[case] hex_vf0.75   g= 19 closure=on  dmin/dx=  1.72 phi_act=0.76715 k=0.022317 k_ref=0.054031 err=  58.696% ncorr=    0 steps=3300 wall=4.9s
++ for g in 9 13 19 28 40
++ for c in hex_vf0.70 hex_vf0.75
++ python3 -u run.py case --case hex_vf0.70 --grid 28 --closure on --out-dir out
+[case] hex_vf0.70   g= 28 closure=on  dmin/dx=  3.40 phi_act=0.71577 k=0.16015 k_ref=0.24829 err=  35.498% ncorr=    0 steps=3400 wall=9.9s
++ for c in hex_vf0.70 hex_vf0.75
++ python3 -u run.py case --case hex_vf0.75 --grid 28 --closure on --out-dir out
+[case] hex_vf0.75   g= 28 closure=on  dmin/dx=  2.54 phi_act=0.75744 k=0.064445 k_ref=0.11734 err=  45.079% ncorr=    0 steps=3900 wall=9.7s
++ for g in 9 13 19 28 40
++ for c in hex_vf0.70 hex_vf0.75
++ python3 -u run.py case --case hex_vf0.70 --grid 40 --closure on --out-dir out
+[case] hex_vf0.70   g= 40 closure=on  dmin/dx=  4.86 phi_act=0.70471 k=0.4113 k_ref=0.50672 err=  18.831% ncorr=    0 steps=3500 wall=15.2s
++ for c in hex_vf0.70 hex_vf0.75
++ python3 -u run.py case --case hex_vf0.75 --grid 40 --closure on --out-dir out
+[case] hex_vf0.75   g= 40 closure=on  dmin/dx=  3.62 phi_act=0.75399 k=0.19722 k_ref=0.23947 err=  17.643% ncorr=    0 steps=3800 wall=15.0s
++ for g in 16 24 36 54
++ python3 -u run.py case --case sq_vf0.40 --grid 16 --closure on --out-dir out
+[case] sq_vf0.40    g= 16 closure=on  dmin/dx=  4.58 phi_act=0.39453 k=1.2643 k_ref=1.1749 err=   7.611% ncorr=    0 steps=3400 wall=3.7s
++ for g in 16 24 36 54
++ python3 -u run.py case --case sq_vf0.40 --grid 24 --closure on --out-dir out
+[case] sq_vf0.40    g= 24 closure=on  dmin/dx=  6.87 phi_act=0.40451 k=2.4256 k_ref=2.6435 err=   8.244% ncorr=    0 steps=3700 wall=4.5s
++ for g in 16 24 36 54
++ python3 -u run.py case --case sq_vf0.40 --grid 36 --closure on --out-dir out
+[case] sq_vf0.40    g= 36 closure=on  dmin/dx= 10.31 phi_act=0.39892 k=6.143 k_ref=5.948 err=   3.279% ncorr=    0 steps=4400 wall=10.4s
++ for g in 16 24 36 54
++ python3 -u run.py case --case sq_vf0.40 --grid 54 --closure on --out-dir out
+[case] sq_vf0.40    g= 54 closure=on  dmin/dx= 15.46 phi_act=0.40364 k=12.619 k_ref=13.383 err=   5.708% ncorr=    0 steps=5800 wall=26.1s
++ for c in hex_vf0.70 hex_vf0.75
++ for g in 9 19 40
++ python3 -u run.py case --case hex_vf0.70 --grid 9 --closure off --out-dir out
+[case] hex_vf0.70   g=  9 closure=off dmin/dx=  1.09 phi_act=0.64583 k=0.022288 k_ref=0.025653 err=  13.116% ncorr=    0 steps=3400 wall=2.5s
++ for g in 9 19 40
++ python3 -u run.py case --case hex_vf0.70 --grid 19 --closure off --out-dir out
+[case] hex_vf0.70   g= 19 closure=off dmin/dx=  2.31 phi_act=0.69697 k=0.094061 k_ref=0.11433 err=  17.727% ncorr=    0 steps=4400 wall=6.6s
++ for g in 9 19 40
++ python3 -u run.py case --case hex_vf0.70 --grid 40 --closure off --out-dir out
+[case] hex_vf0.70   g= 40 closure=off dmin/dx=  4.86 phi_act=0.70471 k=0.4113 k_ref=0.50672 err=  18.831% ncorr=    0 steps=3500 wall=14.3s
++ for c in hex_vf0.70 hex_vf0.75
++ for g in 9 19 40
++ python3 -u run.py case --case hex_vf0.75 --grid 9 --closure off --out-dir out
+[case] hex_vf0.75   g=  9 closure=off dmin/dx=  0.82 phi_act=0.72917 k=0.0054488 k_ref=0.012123 err=  55.055% ncorr=    0 steps=4200 wall=3.3s
++ for g in 9 19 40
++ python3 -u run.py case --case hex_vf0.75 --grid 19 --closure off --out-dir out
+[case] hex_vf0.75   g= 19 closure=off dmin/dx=  1.72 phi_act=0.76715 k=0.022317 k_ref=0.054031 err=  58.696% ncorr=    0 steps=3300 wall=4.7s
++ for g in 9 19 40
++ python3 -u run.py case --case hex_vf0.75 --grid 40 --closure off --out-dir out
+[case] hex_vf0.75   g= 40 closure=off dmin/dx=  3.62 phi_act=0.75399 k=0.19722 k_ref=0.23947 err=  17.643% ncorr=    0 steps=3800 wall=15.9s
++ for g in 16 36 54
++ python3 -u run.py case --case sq_vf0.40 --grid 16 --closure off --out-dir out
+[case] sq_vf0.40    g= 16 closure=off dmin/dx=  4.58 phi_act=0.39453 k=1.2643 k_ref=1.1749 err=   7.611% ncorr=    0 steps=3400 wall=3.3s
++ for g in 16 36 54
++ python3 -u run.py case --case sq_vf0.40 --grid 36 --closure off --out-dir out
+[case] sq_vf0.40    g= 36 closure=off dmin/dx= 10.31 phi_act=0.39892 k=6.143 k_ref=5.948 err=   3.279% ncorr=    0 steps=4400 wall=11.3s
++ for g in 16 36 54
++ python3 -u run.py case --case sq_vf0.40 --grid 54 --closure off --out-dir out
+[case] sq_vf0.40    g= 54 closure=off dmin/dx= 15.46 phi_act=0.40364 k=12.619 k_ref=13.383 err=   5.708% ncorr=    0 steps=5800 wall=26.2s
++ for c in sq_vf0.05 sq_vf0.10
++ python3 -u run.py case --case sq_vf0.05 --grid 24 --closure on --out-dir out
+[case] sq_vf0.05    g= 24 closure=on  dmin/dx= 17.94 phi_act=0.05035 k=36 k_ref=37.018 err=   2.749% ncorr=    0 steps=6400 wall=8.4s
++ python3 -u run.py case --case sq_vf0.05 --grid 24 --closure off --out-dir out
+[case] sq_vf0.05    g= 24 closure=off dmin/dx= 17.94 phi_act=0.05035 k=36 k_ref=37.018 err=   2.749% ncorr=    0 steps=6400 wall=10.1s
++ for c in sq_vf0.05 sq_vf0.10
++ python3 -u run.py case --case sq_vf0.10 --grid 24 --closure on --out-dir out
+[case] sq_vf0.10    g= 24 closure=on  dmin/dx= 15.44 phi_act=0.10590 k=21.942 k_ref=23.198 err=   5.415% ncorr=    0 steps=5400 wall=8.0s
++ python3 -u run.py case --case sq_vf0.10 --grid 24 --closure off --out-dir out
+[case] sq_vf0.10    g= 24 closure=off dmin/dx= 15.44 phi_act=0.10590 k=21.942 k_ref=23.198 err=   5.415% ncorr=    0 steps=5400 wall=7.6s
++ echo DONE_ALL
+DONE_ALL
