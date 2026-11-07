@@ -1,0 +1,366 @@
+{
+ "campaign_node": "P19-N04",
+ "all_pass": false,
+ "n_gates": 12,
+ "n_pass": 11,
+ "gates": [
+  {
+   "id": "NS-M2",
+   "case": "normal_shock",
+   "criterion": "max relative error of rho2/rho1, p2/p1, T2/T1 vs Rankine-Hugoniot at the production grid (1600 cells)",
+   "reference": "exact R-H relations, gamma=1.4; the shock Mach number is a solver output (driver state inverted from the shock-tube relations)",
+   "measured": 0.0013606961489455295,
+   "threshold": 0.01,
+   "unit": "relative",
+   "reference_grid": 1600,
+   "worst_case": {
+    "Mach": 2.0,
+    "grid": 1600,
+    "ratios": {
+     "shock_speed": 2.366432863505023,
+     "fit_r2": 0.9999999999998257,
+     "rho": 2.6640733352647925,
+     "p": 4.493876867329745,
+     "T": 1.686839134395464,
+     "u": 1.4775183211464626,
+     "rho_ratio": 2.6640733352647925,
+     "p_ratio": 4.493876867329745,
+     "T_ratio": 1.686839134395464
+    }
+   },
+   "coarse_grid_errors": [
+    {
+     "grid": 400,
+     "max_ratio_error": 0.0013439900042462069
+    },
+    {
+     "grid": 800,
+     "max_ratio_error": 0.0013606816188702136
+    },
+    {
+     "grid": 1600,
+     "max_ratio_error": 0.0013606961489455295
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "NS-M3",
+   "case": "normal_shock",
+   "criterion": "max relative error of rho2/rho1, p2/p1, T2/T1 vs Rankine-Hugoniot at the production grid (1600 cells)",
+   "reference": "exact R-H relations, gamma=1.4; the shock Mach number is a solver output (driver state inverted from the shock-tube relations)",
+   "measured": 0.0012578800623779967,
+   "threshold": 0.01,
+   "unit": "relative",
+   "reference_grid": 1600,
+   "worst_case": {
+    "Mach": 3.0,
+    "grid": 1600,
+    "ratios": {
+     "shock_speed": 3.549648710101085,
+     "fit_r2": 0.9999999999967707,
+     "rho": 3.8536756270508166,
+     "p": 10.320335239355428,
+     "T": 2.678042759921393,
+     "u": 2.62761070431347,
+     "rho_ratio": 3.8536756270508166,
+     "p_ratio": 10.320335239355428,
+     "T_ratio": 2.678042759921393
+    }
+   },
+   "coarse_grid_errors": [
+    {
+     "grid": 400,
+     "max_ratio_error": 0.0012622260737340375
+    },
+    {
+     "grid": 800,
+     "max_ratio_error": 0.0012620670119165567
+    },
+    {
+     "grid": 1600,
+     "max_ratio_error": 0.0012578800623779967
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "NS-M5",
+   "case": "normal_shock",
+   "criterion": "max relative error of rho2/rho1, p2/p1, T2/T1 vs Rankine-Hugoniot at the production grid (1600 cells)",
+   "reference": "exact R-H relations, gamma=1.4; the shock Mach number is a solver output (driver state inverted from the shock-tube relations)",
+   "measured": 0.0013579709531409757,
+   "threshold": 0.01,
+   "unit": "relative",
+   "reference_grid": 1600,
+   "worst_case": {
+    "Mach": 5.0,
+    "grid": 1600,
+    "ratios": {
+     "shock_speed": 5.916145317900149,
+     "fit_r2": 0.9999999999961955,
+     "rho": 4.995123925132952,
+     "p": 28.96061884235891,
+     "T": 5.7977605498212625,
+     "u": 4.730096549464755,
+     "rho_ratio": 4.995123925132952,
+     "p_ratio": 28.96061884235891,
+     "T_ratio": 5.7977605498212625
+    }
+   },
+   "coarse_grid_errors": [
+    {
+     "grid": 400,
+     "max_ratio_error": 0.009826639992951589
+    },
+    {
+     "grid": 800,
+     "max_ratio_error": 0.0013467491894788536
+    },
+    {
+     "grid": 1600,
+     "max_ratio_error": 0.0013579709531409757
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "NS-M8",
+   "case": "normal_shock",
+   "criterion": "max relative error of rho2/rho1, p2/p1, T2/T1 vs Rankine-Hugoniot at the production grid (1600 cells)",
+   "reference": "exact R-H relations, gamma=1.4; the shock Mach number is a solver output (driver state inverted from the shock-tube relations)",
+   "measured": 0.0021257291669241154,
+   "threshold": 0.01,
+   "unit": "relative",
+   "reference_grid": 1600,
+   "worst_case": {
+    "Mach": 8.0,
+    "grid": 1600,
+    "ratios": {
+     "shock_speed": 9.466608468922107,
+     "fit_r2": 0.9999999992896776,
+     "rho": 5.556398065620591,
+     "p": 74.34163317706415,
+     "T": 13.379364507783265,
+     "u": 7.75831474218641,
+     "rho_ratio": 5.556398065620591,
+     "p_ratio": 74.34163317706415,
+     "T_ratio": 13.379364507783265
+    }
+   },
+   "coarse_grid_errors": [
+    {
+     "grid": 400,
+     "max_ratio_error": 0.005791949459126151
+    },
+    {
+     "grid": 800,
+     "max_ratio_error": 0.0020166231720370647
+    },
+    {
+     "grid": 1600,
+     "max_ratio_error": 0.0021257291669241154
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "NS-M10",
+   "case": "normal_shock",
+   "criterion": "max relative error of rho2/rho1, p2/p1, T2/T1 vs Rankine-Hugoniot at the production grid (1600 cells)",
+   "reference": "exact R-H relations, gamma=1.4; the shock Mach number is a solver output (driver state inverted from the shock-tube relations)",
+   "measured": 0.0015706106758306042,
+   "threshold": 0.01,
+   "unit": "relative",
+   "reference_grid": 1600,
+   "worst_case": {
+    "Mach": 10.0,
+    "grid": 1600,
+    "ratios": {
+     "shock_speed": 11.836621277726804,
+     "fit_r2": 0.9999999931717143,
+     "rho": 5.706092487948204,
+     "p": 116.31702385626575,
+     "T": 20.384589157175373,
+     "u": 9.75596226059363,
+     "rho_ratio": 5.706092487948204,
+     "p_ratio": 116.31702385626575,
+     "T_ratio": 20.384589157175373
+    }
+   },
+   "coarse_grid_errors": [
+    {
+     "grid": 400,
+     "max_ratio_error": 0.011218732456063049
+    },
+    {
+     "grid": 800,
+     "max_ratio_error": 0.004035632564011359
+    },
+    {
+     "grid": 1600,
+     "max_ratio_error": 0.0015706106758306042
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "DMR-01",
+   "case": "double_mach_reflection",
+   "criterion": "incident-shock inclination above the triple point",
+   "reference": "exact 60 deg to the wall (prescribed Mach-10 front, 30 deg to the wall normal)",
+   "measured": 0.2943093311223137,
+   "threshold": 1.0,
+   "unit": "deg",
+   "pass": true
+  },
+  {
+   "id": "DMR-02",
+   "case": "double_mach_reflection",
+   "criterion": "Mach stem height (triple-point height above the wall)",
+   "reference": "Richardson extrapolation of the three grids",
+   "measured": 0.004143714718860808,
+   "threshold": 0.05,
+   "unit": "relative",
+   "values": {
+    "values": [
+     0.3798768791607424,
+     0.39343650964121174,
+     0.3974165923034705
+    ],
+    "ratio": 1.5,
+    "order": 3.0231810787987206,
+    "order_note": "observed",
+    "extrapolated": 0.39907022547061216
+   },
+   "pass": true
+  },
+  {
+   "id": "DMR-03",
+   "case": "double_mach_reflection",
+   "criterion": "slip-line angle: density-jump ray scan vs tangential-velocity (vortex-sheet) ray scan; validity: |drho|/rho > 10% and density-dominated (|drho|/rho > 2|dp|/p)",
+   "reference": "independent momentum-based detector on the finest grid (density/entropy detector is the other)",
+   "measured": 1.75,
+   "threshold": 3.0,
+   "unit": "deg",
+   "detail": {
+    "ray_angle_from_x_deg": 210.25,
+    "velocity_sheet_angle_deg": 212.0,
+    "entropy_ridge_angle_deg": null,
+    "angle_from_wall_deg": 30.25,
+    "density_jump": 0.17224902098734446,
+    "pressure_jump": 0.022099542249400483
+   },
+   "pass": true
+  },
+  {
+   "id": "DMR-04",
+   "case": "double_mach_reflection",
+   "criterion": "primary vortex core position (pressure minimum)",
+   "reference": "Richardson extrapolation of the three grids, error normalised by H",
+   "measured": 0.007923699163568457,
+   "threshold": 0.05,
+   "unit": "H",
+   "values": {
+    "x": {
+     "values": [
+      2.5960420978004897,
+      2.6042018662706616,
+      2.608764424357434
+     ],
+     "ratio": 1.5,
+     "order": 1.433741974389659,
+     "order_note": "observed",
+     "extrapolated": 2.6145513909444418
+    },
+    "y": {
+     "values": [
+      0.08681233438792901,
+      0.08221119162416046,
+      0.07895124619518623
+     ],
+     "ratio": 1.5,
+     "order": 0.8498739768168274,
+     "order_note": "observed",
+     "extrapolated": 0.07102754703161777
+    }
+   },
+   "pass": true
+  },
+  {
+   "id": "FFS-01",
+   "case": "forward_facing_step",
+   "criterion": "detached bow-shock angle at the foot (y in [0.22, 0.50])",
+   "reference": "Richardson extrapolation of the three grids (no closed-form inviscid solution)",
+   "measured": 0.5658980359210943,
+   "threshold": 2.0,
+   "unit": "deg",
+   "values": {
+    "values": [
+     70.44437120598396,
+     69.81380612868152,
+     70.52117867358288
+    ],
+    "ratio": 1.5,
+    "order": 2.0,
+    "order_note": "order not observable (non-monotone or too small); p=2 used",
+    "extrapolated": 71.08707670950398
+   },
+   "grid_spread_deg": 0.7073725449013608,
+   "order_note": "order not observable (non-monotone or too small); p=2 used",
+   "pass": true
+  },
+  {
+   "id": "FFS-02",
+   "case": "forward_facing_step",
+   "criterion": "recompression (reflected) shock angle",
+   "reference": "Richardson extrapolation of the three grids (no closed-form inviscid solution)",
+   "measured": 1.4579703048905017,
+   "threshold": 1.0,
+   "unit": "deg",
+   "values": {
+    "values": [
+     50.693462814065086,
+     56.15116904329817,
+     58.33570289156724
+    ],
+    "ratio": 1.5,
+    "order": 2.258211901859085,
+    "order_note": "observed",
+    "extrapolated": 59.79367319645774
+   },
+   "grid_spread_deg": 2.1845338482690693,
+   "order_note": "observed",
+   "alternative_definitions": {
+    "local_tangent_y041_deg": [
+     48.51459157050546,
+     46.05994875091745,
+     41.67891880770235
+    ],
+    "note": "the internal recompression shock is curved; a linear ridge fit over the isolated window and the local tangent at y=0.41 are both reported so the resolution dependence of this quantity is visible"
+   },
+   "pass": false
+  },
+  {
+   "id": "FFS-03",
+   "case": "forward_facing_step",
+   "criterion": "bow-shock stand-off distance ahead of the step face at y = 0.25",
+   "reference": "Richardson extrapolation of the three grids",
+   "measured": 0.003361536622690404,
+   "threshold": 0.05,
+   "unit": "relative",
+   "values": {
+    "values": [
+     0.250848678104336,
+     0.25786083854852343,
+     0.25895260690742095
+    ],
+    "ratio": 1.5,
+    "order": 2.0,
+    "order_note": "observed order 2.00 outside [0.3,4]; p=2 used",
+    "extrapolated": 0.25982602159453894
+   },
+   "pass": true
+  }
+ ]
+}
