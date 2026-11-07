@@ -86,8 +86,10 @@ SANGANI_F = {
     0.75: 1.263e5,
 }
 
-CUTOFF = 1.5  # closure taper: strict no-op at delta_true >= 1.5 dx
-EXPONENT = 3.0  # slot conductance ~ delta^3 / nu
+D0 = 4.0  # closure taper: full weight for delta_true <= 4 dx
+D1 = 10.0  # closure taper: strict no-op for delta_true >= 10 dx
+EXPONENT = 2.5  # Sangani & Acrivos near-contact conductance ~ delta^-5/2
+PLATEAU_THRESHOLD = 1.5  # diagnostic: resolution-controlled below this delta_min/dx
 
 GRIDS = {
     "hex_vf0.70": {"arrangement": "hex", "phi": 0.70, "grid": [9, 13, 19, 28, 40]},
@@ -262,7 +264,7 @@ def run_case(
         geo["nx"], geo["ny"], geo["centres"], geo["radius"], solid=solid
     )
     if closure:
-        close = closure_nu_field(NU, gap, solid.shape, dx=1.0, cutoff=CUTOFF, exponent=EXPONENT)
+        close = closure_nu_field(NU, gap, solid.shape, dx=1.0, d0=D0, d1=D1, exponent=EXPONENT)
     else:
         close = {
             "nu_field": np.full(solid.shape, NU),
@@ -352,7 +354,8 @@ def run_case(
         },
         "closure": {
             "enabled": bool(closure),
-            "cutoff_dx": CUTOFF,
+            "taper_d0_dx": D0,
+            "taper_d1_dx": D1,
             "exponent": EXPONENT,
             "n_valid_throats": close["n_valid"],
             "n_corrected": close["n_corrected"],
@@ -498,7 +501,8 @@ def cmd_report(args: argparse.Namespace) -> None:
             "sample_every": SAMPLE_EVERY,
             "steady_tol": DRIFT_TOL,
             "meas_window_steps": MEAS_SAMPLES * SAMPLE_EVERY,
-            "cutoff_dx": CUTOFF,
+            "taper_d0_dx": D0,
+            "taper_d1_dx": D1,
             "exponent": EXPONENT,
             "grids": GRIDS,
             "judged_grid_index": list(JUDGED_GRID_INDEX),
@@ -572,10 +576,10 @@ def cmd_report(args: argparse.Namespace) -> None:
     result["diagnostics"]["master_curve_err_vs_delta_min_over_dx"] = master
 
     # ---- diagnostics: plateau above delta_min/dx = 1.5 ---------------------
-    plateau = {"threshold_dx": CUTOFF, "per_case": {}, "proved": False, "statement": ""}
+    plateau = {"threshold_dx": PLATEAU_THRESHOLD, "per_case": {}, "proved": False, "statement": ""}
     for case in GRIDS:
         pts = sorted(curves[case]["on"], key=lambda e: e["delta_min_over_dx"])
-        above = [p for p in pts if p["delta_min_over_dx"] >= CUTOFF]
+        above = [p for p in pts if p["delta_min_over_dx"] >= PLATEAU_THRESHOLD]
         if len(above) >= 2:
             errs = [p["err_B_pct"] for p in above]
             diffs = [errs[i + 1] - errs[i] for i in range(len(errs) - 1)]
