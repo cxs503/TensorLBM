@@ -36,6 +36,35 @@ def _w_on(device: torch.device) -> torch.Tensor:
     return W.to(device)
 
 
+# Exact double-precision D2Q9 weights, same order as ``W``.
+W_EXACT: tuple[float, ...] = (
+    4.0 / 9.0,
+    1.0 / 9.0,
+    1.0 / 9.0,
+    1.0 / 9.0,
+    1.0 / 9.0,
+    1.0 / 36.0,
+    1.0 / 36.0,
+    1.0 / 36.0,
+    1.0 / 36.0,
+)
+
+
+@functools.cache
+def _w_for(dtype: torch.dtype, device: torch.device) -> torch.Tensor:
+    """D2Q9 weights built from exact double literals for ``dtype``.
+
+    ``W`` is stored as ``float32``; ``W.to(torch.float64)`` therefore keeps the
+    ``float32`` rounding (its sum is ``1 + 7.45e-9``, not ``1``).  Used through
+    :func:`equilibrium` that rounding biases the mass of every collision step by
+    ``+7.45e-9 / tau`` and accumulates into a linear density ramp, which is
+    fatal for long low-Mach steady-state measurements (measured 4.8e-10 per
+    step at ``tau = 15.5``, i.e. 5e-5 after 1e5 steps).  For ``float32`` the
+    returned table is bit-identical to ``W``.
+    """
+    return torch.tensor(W_EXACT, dtype=dtype, device=device)
+
+
 def equilibrium(
     rho: torch.Tensor,
     ux: torch.Tensor,
@@ -51,7 +80,7 @@ def equilibrium(
     if device is None:
         device = rho.device
     c = _c_on(device)
-    w = _w_on(device).view(9, 1, 1)
+    w = _w_for(rho.dtype, device).view(9, 1, 1)
 
     u_sq = ux * ux + uy * uy
     cu = c[:, 0].view(9, 1, 1) * ux + c[:, 1].view(9, 1, 1) * uy
