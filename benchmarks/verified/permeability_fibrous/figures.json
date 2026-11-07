@@ -1,0 +1,17 @@
+[
+  {
+    "name": "fig_master_curve.png",
+    "path": "figures/fig_master_curve.png",
+    "caption": "Error versus the grid-independent gap ratio delta_min/dx for all cases, with (solid) and without (dashed) the sub-lattice lubrication closure. Below delta_min/dx ~ 1.5 the error is resolution-controlled; above it the closure has no effect and the residual is a plateau."
+  },
+  {
+    "name": "fig_ladders.png",
+    "path": "figures/fig_ladders.png",
+    "caption": "Grid ladders with (circles) and without (squares) the closure; green error bars are the Roache GCI bands of the closure-on triplets."
+  },
+  {
+    "name": "fig_dilute_control.png",
+    "path": "figures/fig_dilute_control.png",
+    "caption": "Dilute negative control: the closure must be inert (<1%) at phi = 0.05 and 0.10."
+  }
+]
