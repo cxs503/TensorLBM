@@ -32,6 +32,18 @@ class WallResolvedChannel3DConfig:
     report_interval: int = 500
     checkpoint_interval: int = 5000
     collision_model: str = "natural_kbc"
+    # Effective no-slip plane in lattice coordinates, measured from the centre
+    # of the innermost solid node row.  Half-way bounce-back is nominally 0.5,
+    # but the realised value depends on the collision operator, the relaxation
+    # time and the collision/streaming ordering; it is *measured* by
+    # ``tensorlbm.validation.wall_origin`` (laminar twin case) and consumed here
+    # for the wall-unit mapping and the Spalding initial profile.  It never
+    # enters the dynamics, so setting it cannot change the solution - it only
+    # removes the systematic ``(y_w - 0.5) u_tau / nu`` offset of y+.
+    wall_origin: float = 0.5
+    # Accumulate the bounce-back momentum-exchange wall force, i.e. an
+    # independent (body-force free) wall-shear route for the u_tau closure.
+    momentum_exchange_diagnostic: bool = True
     # Sub-grid (Smagorinsky) strength.  0.0 keeps the molecular-only behaviour
     # bit-for-bit; a positive value activates the local-equilibrium Smagorinsky
     # eddy viscosity inside the cumulant kernel (C_s), which is what an
@@ -78,6 +90,8 @@ class WallResolvedChannel3DConfig:
             raise ValueError("channel dimensions are too small")
         if self.re_tau <= 0.0 or self.u_tau <= 0.0:
             raise ValueError("re_tau and u_tau must be positive")
+        if not 0.0 < float(self.wall_origin) < 1.0:
+            raise ValueError("wall_origin must lie in (0,1)")
         if not 0 <= self.warmup_steps < self.steps:
             raise ValueError("require 0 <= warmup_steps < steps")
         for name in (
@@ -237,11 +251,13 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
     z = torch.arange(config.nz, device=device, dtype=torch.float32)[:, None, None]
     y = torch.arange(config.ny, device=device, dtype=torch.float32)[None, :, None]
     x = torch.arange(config.nx, device=device, dtype=torch.float32)[None, None, :]
-    distance = torch.minimum(y - 0.5, config.height + 0.5 - y).clamp_min(0.0)
+    wall_origin = float(config.wall_origin)
+    top_wall = (config.ny - 1) - wall_origin
+    distance = torch.minimum(y - wall_origin, top_wall - y).clamp_min(0.0)
     y_plus = distance * config.u_tau / config.nu
     base = spalding_u_plus_from_y_plus(y_plus) * config.u_tau
     phase_x = 2.0 * math.pi * x / config.nx
-    wall_coordinate = (y - 0.5).clamp(0.0, float(config.height))
+    wall_coordinate = (y - wall_origin).clamp(0.0, float(config.height))
     phase_y = math.pi * wall_coordinate / config.height
     phase_z = 2.0 * math.pi * z / config.nz
     ux = base.expand(config.nz, config.ny, config.nx).clone()
@@ -346,6 +362,100 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
         ),
     }
     return solid, ux, uy, uz, initialization_diagnostics
+
+
+def _block_means(values: list[float], n_blocks: int) -> list[float]:
+    if not values:
+        return []
+    n_blocks = max(1, min(int(n_blocks), len(values)))
+    size = len(values) / n_blocks
+    out: list[float] = []
+    for index in range(n_blocks):
+        start = int(round(index * size))
+        stop = int(round((index + 1) * size))
+        chunk = values[start:stop]
+        out.append(sum(chunk) / len(chunk) if chunk else 0.0)
+    return out
+
+
+def _range_fraction(values: list[float]) -> float:
+    """Relative range of the last block-mean window (0 when undefined)."""
+    if len(values) < 2:
+        return 0.0
+    mean = sum(values) / len(values)
+    if mean == 0.0:
+        return 0.0
+    return (max(values) - min(values)) / abs(mean)
+
+
+def _wall_unit_closure(
+    config: WallResolvedChannel3DConfig,
+    mean_ux_profile: torch.Tensor,
+    *,
+    wall_shear: float | None,
+) -> dict | None:
+    """Wall-unit profile and three-way u_tau closure for the averaged profile.
+
+    Uses :mod:`tensorlbm.validation.wall_origin` so that the wall origin is
+    *measured from the profile* instead of assumed, and so that the friction
+    velocity is closed through three independent routes.
+    """
+    try:
+        from tensorlbm.validation.wall_origin import u_tau_three_way
+    except Exception:  # pragma: no cover - optional analysis dependency
+        return None
+    profile = mean_ux_profile.detach().to("cpu", torch.float64).numpy()
+    rows = list(range(1, config.ny - 1))
+    velocity = [float(profile[row]) for row in rows]
+    if not velocity or max(velocity) <= 0.0:
+        return None
+    if config.re_tau < 60.0:
+        # No log layer at this Reynolds number: the three-route closure is not
+        # defined, and the wall-unit mapping degenerates to u_tau = u_tau_nom.
+        return None
+    window_hi = float(min(120.0, 0.7 * config.re_tau))
+    try:
+        closure = _three_way(config, rows, velocity, wall_shear, window_hi)
+    except (ValueError, FloatingPointError):
+        # A profile that is not yet developed (short probe run) or has no log
+        # layer leaves the closure undefined; report nothing rather than a
+        # number produced by an invalid fit.
+        return None
+    if closure is None:
+        return None
+    u_tau = float(closure["mean_u_tau"])
+    measured_origin = float(closure["wall_origin"]["measured"])
+    y_plus = [float((row - measured_origin) * u_tau / config.nu) for row in rows]
+    closure["profile"] = {
+        "y": [float(row) for row in rows],
+        "y_plus": y_plus,
+        "u_plus": [value / u_tau for value in velocity],
+        "wall_origin_assumed": float(config.wall_origin),
+        "wall_origin_measured": measured_origin,
+    }
+    return closure
+
+
+def _three_way(
+    config: WallResolvedChannel3DConfig,
+    rows: list[int],
+    velocity: list[float],
+    wall_shear: float | None,
+    window_hi: float,
+):
+    from tensorlbm.validation.wall_origin import u_tau_three_way
+
+    return u_tau_three_way(
+        y=rows,
+        u=velocity,
+        nu=config.nu,
+        body_force=config.body_force_acceleration,
+        half_height=0.5 * config.height,
+        rho=1.0,
+        wall_shear=wall_shear,
+        y_plus_window=(30.0, window_hi),
+        tolerance_pct=2.0,
+    )
 
 
 def _fluid_momentum_x(populations: torch.Tensor, fluid: torch.Tensor) -> float:
@@ -471,6 +581,17 @@ def run_wall_resolved_channel3d(
     initial_mass = float(f[:, fluid].sum().item())
     fluid_cells = int(fluid.sum().item())
     wall_area = 2 * config.nx * config.nz
+    wall_exchange_sum = 0.0
+    wall_exchange_samples = 0
+    wall_exchange_history: list[float] = []
+    wall_rows = None
+    direction_x_view = None
+    if config.momentum_exchange_diagnostic:
+        rows = torch.nonzero(solid.any(dim=2).any(dim=0), as_tuple=False).flatten()
+        wall_rows = rows.to(device=f.device, dtype=torch.long)
+        direction_x_view = C.to(device=f.device, dtype=f.dtype)[:, 0].view(
+            C.shape[0], 1, 1, 1
+        )
     collision = NaturalKBCCollisionExecutor(
         compile_enabled=config.compile_natural_kbc,
     )
@@ -502,6 +623,19 @@ def run_wall_resolved_channel3d(
         )
         streamed = stream3d(post)
         f = bounce_back_cells_3d(streamed, solid, f_pre=post)
+        if wall_rows is not None:
+            # NoDynamics restore replaces the populations trapped in the wall
+            # rows by their mirror images; the x-momentum removed from those
+            # rows is exactly the momentum the wall hands back to the fluid,
+            # F_wall->fluid,x = -d/dt sum_i (f_i^after - f_i^streamed) c_ix
+            # (the classic 2 f_i c_ix momentum-exchange rule, accumulated per
+            # step so the acoustic part averages out).
+            delta_rows = f.index_select(2, wall_rows) - streamed.index_select(2, wall_rows)
+            exchange_force = -float((delta_rows * direction_x_view).sum().item())
+            if step > config.warmup_steps:
+                wall_exchange_sum += exchange_force
+                wall_exchange_samples += 1
+                wall_exchange_history.append(exchange_force)
 
         if step > config.warmup_steps and step % config.sample_interval == 0:
             _, sample_ux, sample_uy, sample_uz = macroscopic3d_low_memory(f)
@@ -635,6 +769,15 @@ def run_wall_resolved_channel3d(
     stationarity_range_fraction = (
         max(stationarity_u_tau_values) - min(stationarity_u_tau_values)
     ) / max(abs(stationarity_u_tau), 1.0e-30)
+    wall_units = _wall_unit_closure(
+        config,
+        mean_velocity_profiles[0],
+        wall_shear=(
+            (wall_exchange_sum / wall_exchange_samples) / wall_area
+            if wall_exchange_samples
+            else None
+        ),
+    )
     recent_crossflow_ratio = sum(
         float(item["crossflow_rms_over_u_tau"]) for item in stationarity_reports
     ) / len(stationarity_reports)
@@ -681,6 +824,27 @@ def run_wall_resolved_channel3d(
             "recent_friction_velocity_error_pct": mean_error_pct,
             "recent_crossflow_rms_over_u_tau": recent_crossflow_ratio,
         },
+        "wall_exchange": {
+            "samples": wall_exchange_samples,
+            "mean_wall_force": (
+                wall_exchange_sum / wall_exchange_samples if wall_exchange_samples else 0.0
+            ),
+            "mean_wall_shear": (
+                (wall_exchange_sum / wall_exchange_samples) / wall_area
+                if wall_exchange_samples
+                else 0.0
+            ),
+            "mean_friction_velocity": (
+                math.sqrt(
+                    max((wall_exchange_sum / wall_exchange_samples) / wall_area, 0.0)
+                )
+                if wall_exchange_samples
+                else 0.0
+            ),
+            "block_means": _block_means(wall_exchange_history, 8),
+            "block_range_fraction": _range_fraction(wall_exchange_history),
+        },
+        "wall_units": wall_units,
         "reports": reports,
         "collision_execution": collision.diagnostics(),
         "acceptance": {
@@ -703,6 +867,13 @@ def run_wall_resolved_channel3d(
             ),
         },
     }
+    if wall_units is not None:
+        result["acceptance"]["momentum_exchange_wall_shear_within_2pct"] = (
+            abs(wall_units["u_tau"]["wall_shear"] - config.u_tau) / config.u_tau <= 0.02
+        )
+        result["acceptance"]["three_way_friction_velocity_within_tolerance"] = bool(
+            wall_units["consistent"]
+        )
     result["physical_validation"] = all(result["acceptance"].values())
     config.output.parent.mkdir(parents=True, exist_ok=True)
     config.output.write_text(
