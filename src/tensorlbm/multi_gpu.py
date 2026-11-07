@@ -645,25 +645,87 @@ class MultiGPUSolver3D:
 # ---------------------------------------------------------------------------
 
 
+#: Device families this module can place slabs on (CUDA first, then SDAA).
+DEVICE_FAMILIES: tuple[str, ...] = ("cuda", "sdaa", "cpu")
+
+
+def _family_count(family: str) -> int:
+    """Number of visible cards of *family* (``0`` for ``cpu``)."""
+    if family == "cuda":
+        return int(torch.cuda.device_count()) if torch.cuda.is_available() else 0
+    if family == "sdaa":
+        sdaa = getattr(torch, "sdaa", None)
+        if sdaa is None:
+            return 0
+        try:
+            return int(sdaa.device_count())
+        except Exception:  # pragma: no cover - backend without device_count
+            return 0
+    return 0
+
+
+def _accelerator_family() -> tuple[str, int]:
+    """Accelerator family and card count visible to torch, best first.
+
+    CUDA is preferred; when it is unavailable but a torch SDAA backend is
+    present the SDAA cards are used instead.  ``("cpu", 1)`` means "no
+    accelerator", i.e. the caller gets a single CPU domain.
+    """
+    if torch.cuda.is_available() and torch.cuda.device_count() > 0:
+        return ("cuda", torch.cuda.device_count())
+    count = _family_count("sdaa")
+    if count > 0:
+        return ("sdaa", count)
+    return ("cpu", 1)
+
+
 def auto_decompose(
     f_global: torch.Tensor,
     n_gpus: int | None = None,
+    *,
+    device_type: str | None = None,
+    n_devices: int | None = None,
 ) -> DomainDecomposition:
-    """Build a :class:`DomainDecomposition` using all available CUDA devices.
+    """Build a :class:`DomainDecomposition` on the available accelerators.
 
     Args:
         f_global: Global distribution tensor.  Shape determines nx_global.
-        n_gpus:   Override GPU count (default: all available GPUs, or 1 CPU).
+        n_gpus:   Legacy override for the card count (family auto-detected).
+        device_type: Explicit device family (``"cuda"``, ``"sdaa"`` or
+                  ``"cpu"``).  When given it is honoured as-is, so a node
+                  without that backend still gets a *description* (useful for
+                  dry-run planning); the default is auto-detection.
+        n_devices: Override the card count for the chosen family (``0`` or
+                  ``"cpu"`` means a single CPU domain).
 
     Returns:
         Configured :class:`DomainDecomposition`.
     """
-    if n_gpus is None:
-        n_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
-    if n_gpus == 0:
+    family, available = _accelerator_family()
+    if device_type is not None:
+        family = str(device_type).strip().lower()
+        if family not in DEVICE_FAMILIES:
+            raise ValueError(f"device_type must be one of {DEVICE_FAMILIES}; got {device_type!r}")
+        available = _family_count(family)
+
+    count = n_devices if n_devices is not None else n_gpus
+    if count is None:
+        if family == "cpu":
+            count = 0
+        elif available > 0:
+            count = available
+        elif device_type is not None:
+            raise RuntimeError(f"no {family} device is visible to torch")
+        else:  # pragma: no cover - defensive, detection already returns cpu
+            count = 0
+    count = int(count)
+    if count < 0:
+        raise ValueError(f"device count must be >= 0; got {count}")
+
+    if family == "cpu" or count == 0:
         devices = ["cpu"]
     else:
-        devices = [f"cuda:{i}" for i in range(n_gpus)]
+        devices = [f"{family}:{i}" for i in range(count)]
 
     nx = f_global.shape[-1]
     return DomainDecomposition(devices=devices, nx_global=nx)
