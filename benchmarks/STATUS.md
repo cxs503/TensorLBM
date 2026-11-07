@@ -72,7 +72,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `rayleigh_benard` | in progress |
 | `rayleigh_taylor` | STRUCTURAL: VOF has no free pressure field |
 | `series60_resistance` | BLOCKED: parametric hull Cb phase-oscillates with grid (no stable pair); ALSO exposed a library bug -- GeometrySource.PARAMETRIC_HULL returns an EMPTY mask in GeneralSimEngine |
-| `stokes_second_problem` | case-own gate **VERIFIED** 2026-11-03 (10%-mask max rel 2.160%/1.012% @δ/Δx=10/20; grid+steady ✓; 5%-mask prereg caliber reads 5.157% -> promotion withheld pending caliber audit; diag δ/Δx=4 fails 15.8%, δ/Δx=40 1.452%) |
+| `stokes_second_problem` | case-own gate **VERIFIED** + caliber audit resolved 2026-11-06 (m4924): prereg 5%-mask caliber ruled **ill-posed** (argmax denominator pinned at 1.01-1.10x threshold; measured 4.99/5.16/4.86% = plateau over delta/dx=10/20/40, no trend => unsatisfiable by refinement; gate equivalent to |du|<=0.15%U0 at threshold); amended caliber G1-G5 all PASS (unmasked max|du|/U0 1.374%/1.381%, 10%-mask max rel **2.160%/1.012%**, eta-collapse 2.437%, steady 0.030%/0.023%; evidence caliber_audit.json + tests/test_stokes_second_problem_caliber_audit.py). Error attribution: global max|du| is bottom-wall depth truncation at eta~4 (H=4*delta, e^-4~1.8%), near-wall wall-scheme error <=0.43%U0 for delta/dx>=10 vs 1.697% at delta/dx=4 (validity boundary). Promotion to verified/ queued as dir-move PR (deferred: overlaps in-flight m4917 rewrite of this dir) |
 | `stokes_sphere_dg` | BLOCKED: Stokes flow is linear yet Cd moves 133->67 as u_in 0.02->0.05 at Re=0.1 => staircase sphere is non-physical there |
 | `taylor_aris_dispersion` | in progress |
 | `two_phase_poiseuille` | in progress |

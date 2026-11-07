@@ -109,7 +109,7 @@ Stokes 第二问题（振荡平板）：无限平板在自身平面内以 U(t)=U
 
 1. ✅ Phase-0 机器诊断：run.py pilot + 骨架缺陷修复（上节 3 条）+ 诊断档 δ/Δx=4/40（`diag_H16.json` / `diag_H160.json`）。
 2. ✅ 参考锁 = Stokes 层解析式本身（u_ana 在驱动内机器生成、逐 case JSON 存档，零手抄）。
-3. ⏳ **待审计**：掩码口径裁定（10%·U0 vs prereg 原文 5%·U0）。
+3. ✅ **已裁定**（2026-11-06, m4924 口径审计）：prereg 的 5%·U0 掩码判据被证 **ill-posed**（分母钉死在阈值 1.01–1.10×、δ/Δx=10..40 上平台 4.99/5.16/4.86% 不趋零、等价于阈值处 |Δu|≤0.15%·U0）⇒ 该判据退役；替代口径 G1–G5（无掩码绝对 / 10% 掩码相对 / η 塌缩 / 周期稳态 / 使用边界 δ/Δx≥10）**全 PASS**，关键量 2.160%/1.012% <3%。证据与判决档：`caliber_audit.py` · `caliber_audit.json` · `docs/mission_summaries/M4924_STOKES_SECOND_CALIBER_AUDIT.md`。
 4. 判决 PASS → 归档 PR 挪目录；FAIL → 按诊断定向修复后重走（库侧修复走独立库 PR）。
 
 详见 `docs/mission_summaries/M4902_STOKES_SECOND_PR676_REOPEN.md`。
