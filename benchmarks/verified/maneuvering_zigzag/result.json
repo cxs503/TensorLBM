@@ -1,0 +1,547 @@
+{
+  "benchmark": "maneuvering_zigzag",
+  "convergence": {
+    "10/10": {
+      "analytic_first_overshoot_deg": 2.109196987333479,
+      "rk4": {
+        "abs_err_deg": [
+          2.7312098360710024e-08,
+          1.6601022778672814e-09,
+          1.0232437119839233e-10,
+          6.346034808757395e-12
+        ],
+        "dt": [
+          0.5,
+          0.25,
+          0.125,
+          0.0625
+        ],
+        "first_overshoot_deg": [
+          2.1091969600213805,
+          2.1091969856733765,
+          2.1091969872311545,
+          2.109196987327133
+        ],
+        "observed_order": 4.023424173376317,
+        "rel_err": [
+          1.2949050527157703e-08,
+          7.870778726865342e-10,
+          4.851342563681281e-11,
+          3.0087444875313785e-12
+        ]
+      },
+      "semi_implicit_euler": {
+        "abs_err_deg": [
+          0.1912668128354147,
+          0.09574961211979893,
+          0.047951250867012796,
+          0.023995852695127162
+        ],
+        "dt": [
+          1.0,
+          0.5,
+          0.25,
+          0.125
+        ],
+        "first_overshoot_deg": [
+          1.9179301744980641,
+          2.01344737521368,
+          2.061245736466466,
+          2.0852011346383517
+        ],
+        "observed_order": 0.9981886946066718,
+        "rel_err": [
+          0.09068228998241692,
+          0.045396239751342035,
+          0.022734363435458184,
+          0.011376771747367023
+        ]
+      }
+    },
+    "20/20": {
+      "analytic_first_overshoot_deg": 4.218393974666958,
+      "rk4": {
+        "abs_err_deg": [
+          5.462419672142005e-08,
+          3.3202045557345627e-09,
+          2.0464874239678466e-10,
+          1.269206961751479e-11
+        ],
+        "dt": [
+          0.5,
+          0.25,
+          0.125,
+          0.0625
+        ],
+        "first_overshoot_deg": [
+          4.218393920042761,
+          4.218393971346753,
+          4.218393974462309,
+          4.218393974654266
+        ],
+        "observed_order": 4.023424173376315,
+        "rel_err": [
+          1.2949050527157703e-08,
+          7.870778726865342e-10,
+          4.851342563681281e-11,
+          3.0087444875313785e-12
+        ]
+      },
+      "semi_implicit_euler": {
+        "abs_err_deg": [
+          0.3825336256708294,
+          0.19149922423959786,
+          0.09590250173402559,
+          0.047991705390254324
+        ],
+        "dt": [
+          1.0,
+          0.5,
+          0.25,
+          0.125
+        ],
+        "first_overshoot_deg": [
+          3.8358603489961283,
+          4.02689475042736,
+          4.122491472932932,
+          4.170402269276703
+        ],
+        "observed_order": 0.9981886946066715,
+        "rel_err": [
+          0.09068228998241692,
+          0.045396239751342035,
+          0.022734363435458184,
+          0.011376771747367023
+        ]
+      }
+    }
+  },
+  "crossflow": {
+    "N_vv": 101171200.0,
+    "Y_vv": 2163200.0,
+    "analytic_route_refuses": true,
+    "dt": [
+      0.4,
+      0.2,
+      0.1,
+      0.05
+    ],
+    "first_overshoot_deg": [
+      3.9585658588189148,
+      3.958565879810049,
+      3.9585658810944366,
+      3.958565881173822
+    ],
+    "linear_ratio": 2.0,
+    "overshoot_10_10_deg": [
+      2.0589830799089626,
+      2.8952744908394834
+    ],
+    "overshoot_20_20_deg": [
+      3.9585658810944366,
+      5.645465395537187
+    ],
+    "ratio_20_20_over_10_10_first": 1.9225830069810306,
+    "richardson_observed_order": 4.068751188680867
+  },
+  "imo": {
+    "degradation_note": "N_r_scaled family is a sensitivity scan, not a set of physical ships: members with N_r_scale <= 0.5 give R/L < 1 and are used only to show the criterion discriminates",
+    "family": [
+      {
+        "N_r_scale": 1.0,
+        "R_over_L": 2.006438747223527,
+        "directionally_stable": true,
+        "first_overshoot_deg": 4.218393974666958,
+        "imo_fail_margin_deg": 20.78160602533304,
+        "imo_pass": true,
+        "second_overshoot_deg": 5.806247549990795
+      },
+      {
+        "N_r_scale": 0.8,
+        "R_over_L": 1.2832881320098666,
+        "directionally_stable": true,
+        "first_overshoot_deg": 6.576148205070702,
+        "imo_fail_margin_deg": 18.4238517949293,
+        "imo_pass": true,
+        "second_overshoot_deg": 10.639045476833923
+      },
+      {
+        "N_r_scale": 0.7,
+        "R_over_L": 0.9217128244030357,
+        "directionally_stable": true,
+        "first_overshoot_deg": 8.418106535208207,
+        "imo_fail_margin_deg": 16.581893464791793,
+        "imo_pass": true,
+        "second_overshoot_deg": 15.194158443748016
+      },
+      {
+        "N_r_scale": 0.5,
+        "R_over_L": 0.19856220918937606,
+        "directionally_stable": true,
+        "first_overshoot_deg": 14.886337470080345,
+        "imo_fail_margin_deg": 2.2303091300716176,
+        "imo_pass": true,
+        "second_overshoot_deg": 37.76969086992838
+      },
+      {
+        "N_r_scale": 0.4,
+        "R_over_L": -0.16301309841745415,
+        "directionally_stable": false,
+        "first_overshoot_deg": 21.111920086819573,
+        "imo_fail_margin_deg": -34.586868945838546,
+        "imo_pass": false,
+        "second_overshoot_deg": 74.58686894583855
+      },
+      {
+        "N_r_scale": 0.3,
+        "R_over_L": -0.5245884060242842,
+        "directionally_stable": false,
+        "first_overshoot_deg": 32.778662671553946,
+        "imo_fail_margin_deg": -267.2523076840952,
+        "imo_pass": false,
+        "second_overshoot_deg": 307.2523076840952
+      }
+    ],
+    "limits_10_10": {
+      "first": 20.0
+    },
+    "limits_20_20": {
+      "first": 25.0,
+      "second": 40.0
+    },
+    "nominal_pass": true,
+    "some_member_fails": true
+  },
+  "imo_source": "IMO Res. MSC.137(76) annex 2.3 (zig-zag overshoot angles)",
+  "invariance": {
+    "max_rel_err": 0.0,
+    "mirror_overshoot_rel_err": 0.0,
+    "note": "linear model: psi(t) = delta * g(t), so 20/20 is the same solution as 10/10",
+    "rows": [
+      {
+        "10/10": 2.109196987333479,
+        "20/20": 4.218393974666958,
+        "expected_20/20 = 2x 10/10": 4.218393974666958,
+        "quantity": "overshoot_1_deg",
+        "rel_err": 0.0
+      },
+      {
+        "10/10": 2.9031237749953975,
+        "20/20": 5.806247549990795,
+        "expected_20/20 = 2x 10/10": 5.806247549990795,
+        "quantity": "overshoot_2_deg",
+        "rel_err": 0.0
+      }
+    ],
+    "switch_time_rel_err": 0.0
+  },
+  "reference_dt": 0.05,
+  "routes": {
+    "10/10": {
+      "analytic": {
+        "delta_deg": 10.0,
+        "dt": NaN,
+        "event_count": 4,
+        "events": [
+          {
+            "heading_deg": 10.000000000000002,
+            "kind": "helm_reversal",
+            "rudder_deg": -10.0,
+            "t": 56.22378947781333,
+            "yaw_rate": 0.0047727074377181735
+          },
+          {
+            "heading_deg": 12.109196987333478,
+            "kind": "heading_peak",
+            "rudder_deg": -10.0,
+            "t": 74.73821415853376,
+            "yaw_rate": 0.0
+          },
+          {
+            "heading_deg": -9.999999999999996,
+            "kind": "helm_reversal",
+            "rudder_deg": 10.0,
+            "t": 174.53125056054762,
+            "yaw_rate": -0.005636054366437678
+          },
+          {
+            "heading_deg": -12.903123774995397,
+            "kind": "heading_peak",
+            "rudder_deg": 10.0,
+            "t": 196.42995861557694,
+            "yaw_rate": 0.0
+          }
+        ],
+        "first_overshoot_deg": 2.109196987333479,
+        "heading_deg": 10.0,
+        "max_heading_deg": 12.903123774995397,
+        "peak_times": [
+          74.73821415853376,
+          196.42995861557694
+        ],
+        "reversal_times": [
+          56.22378947781333,
+          174.53125056054762
+        ],
+        "route": "analytic",
+        "second_overshoot_deg": 2.9031237749953975,
+        "terminated": "ok"
+      },
+      "max_rel_err": 1.233395745833367e-12,
+      "rows": [
+        {
+          "analytic": 2.109196987333479,
+          "quantity": "overshoot_1_deg",
+          "rel_err": 1.233395745833367e-12,
+          "sim": 2.1091969873308773
+        },
+        {
+          "analytic": 2.9031237749953975,
+          "quantity": "overshoot_2_deg",
+          "rel_err": 6.715358291069989e-13,
+          "sim": 2.903123774993448
+        },
+        {
+          "analytic": 56.22378947781333,
+          "quantity": "reversal_time_1_s",
+          "rel_err": 2.641291758401707e-14,
+          "sim": 56.22378947781184
+        },
+        {
+          "analytic": 74.73821415853376,
+          "quantity": "peak_time_1_s",
+          "rel_err": 4.631852991938177e-13,
+          "sim": 74.73821415856838
+        },
+        {
+          "analytic": 174.53125056054762,
+          "quantity": "reversal_time_2_s",
+          "rel_err": 2.5403970102218888e-14,
+          "sim": 174.53125056055205
+        },
+        {
+          "analytic": 196.42995861557694,
+          "quantity": "peak_time_2_s",
+          "rel_err": 1.9243945174582812e-13,
+          "sim": 196.42995861561474
+        }
+      ],
+      "sim": {
+        "delta_deg": 10.0,
+        "dt": 0.05,
+        "event_count": 4,
+        "events": [
+          {
+            "heading_deg": 10.0,
+            "kind": "helm_reversal",
+            "rudder_deg": -10.0,
+            "t": 56.22378947781184,
+            "yaw_rate": 0.004772707437718082
+          },
+          {
+            "heading_deg": 12.109196987330877,
+            "kind": "heading_peak",
+            "rudder_deg": -10.0,
+            "t": 74.73821415856838,
+            "yaw_rate": 0.0
+          },
+          {
+            "heading_deg": -10.0,
+            "kind": "helm_reversal",
+            "rudder_deg": 10.0,
+            "t": 174.53125056055205,
+            "yaw_rate": -0.005636054366437651
+          },
+          {
+            "heading_deg": -12.903123774993448,
+            "kind": "heading_peak",
+            "rudder_deg": 10.0,
+            "t": 196.42995861561474,
+            "yaw_rate": 0.0
+          }
+        ],
+        "first_overshoot_deg": 2.1091969873308773,
+        "heading_deg": 10.0,
+        "max_heading_deg": 12.903113196550231,
+        "peak_times": [
+          74.73821415856838,
+          196.42995861561474
+        ],
+        "reversal_times": [
+          56.22378947781184,
+          174.53125056055205
+        ],
+        "route": "rk4",
+        "second_overshoot_deg": 2.903123774993448,
+        "terminated": "ok"
+      }
+    },
+    "20/20": {
+      "analytic": {
+        "delta_deg": 20.0,
+        "dt": NaN,
+        "event_count": 4,
+        "events": [
+          {
+            "heading_deg": 20.000000000000004,
+            "kind": "helm_reversal",
+            "rudder_deg": -20.0,
+            "t": 56.22378947781333,
+            "yaw_rate": 0.009545414875436347
+          },
+          {
+            "heading_deg": 24.218393974666956,
+            "kind": "heading_peak",
+            "rudder_deg": -20.0,
+            "t": 74.73821415853376,
+            "yaw_rate": 0.0
+          },
+          {
+            "heading_deg": -19.999999999999993,
+            "kind": "helm_reversal",
+            "rudder_deg": 20.0,
+            "t": 174.53125056054762,
+            "yaw_rate": -0.011272108732875355
+          },
+          {
+            "heading_deg": -25.806247549990793,
+            "kind": "heading_peak",
+            "rudder_deg": 20.0,
+            "t": 196.42995861557694,
+            "yaw_rate": 0.0
+          }
+        ],
+        "first_overshoot_deg": 4.218393974666958,
+        "heading_deg": 20.0,
+        "max_heading_deg": 25.806247549990793,
+        "peak_times": [
+          74.73821415853376,
+          196.42995861557694
+        ],
+        "reversal_times": [
+          56.22378947781333,
+          174.53125056054762
+        ],
+        "route": "analytic",
+        "second_overshoot_deg": 5.806247549990795,
+        "terminated": "ok"
+      },
+      "max_rel_err": 1.233395745833367e-12,
+      "rows": [
+        {
+          "analytic": 4.218393974666958,
+          "quantity": "overshoot_1_deg",
+          "rel_err": 1.233395745833367e-12,
+          "sim": 4.218393974661755
+        },
+        {
+          "analytic": 5.806247549990795,
+          "quantity": "overshoot_2_deg",
+          "rel_err": 6.715358291069989e-13,
+          "sim": 5.806247549986896
+        },
+        {
+          "analytic": 56.22378947781333,
+          "quantity": "reversal_time_1_s",
+          "rel_err": 2.641291758401707e-14,
+          "sim": 56.22378947781184
+        },
+        {
+          "analytic": 74.73821415853376,
+          "quantity": "peak_time_1_s",
+          "rel_err": 4.631852991938177e-13,
+          "sim": 74.73821415856838
+        },
+        {
+          "analytic": 174.53125056054762,
+          "quantity": "reversal_time_2_s",
+          "rel_err": 2.5403970102218888e-14,
+          "sim": 174.53125056055205
+        },
+        {
+          "analytic": 196.42995861557694,
+          "quantity": "peak_time_2_s",
+          "rel_err": 1.9243945174582812e-13,
+          "sim": 196.42995861561474
+        }
+      ],
+      "sim": {
+        "delta_deg": 20.0,
+        "dt": 0.05,
+        "event_count": 4,
+        "events": [
+          {
+            "heading_deg": 20.0,
+            "kind": "helm_reversal",
+            "rudder_deg": -20.0,
+            "t": 56.22378947781184,
+            "yaw_rate": 0.009545414875436165
+          },
+          {
+            "heading_deg": 24.218393974661755,
+            "kind": "heading_peak",
+            "rudder_deg": -20.0,
+            "t": 74.73821415856838,
+            "yaw_rate": 0.0
+          },
+          {
+            "heading_deg": -20.0,
+            "kind": "helm_reversal",
+            "rudder_deg": 20.0,
+            "t": 174.53125056055205,
+            "yaw_rate": -0.011272108732875302
+          },
+          {
+            "heading_deg": -25.806247549986896,
+            "kind": "heading_peak",
+            "rudder_deg": 20.0,
+            "t": 196.42995861561474,
+            "yaw_rate": 0.0
+          }
+        ],
+        "first_overshoot_deg": 4.218393974661755,
+        "heading_deg": 20.0,
+        "max_heading_deg": 25.806226393100463,
+        "peak_times": [
+          74.73821415856838,
+          196.42995861561474
+        ],
+        "reversal_times": [
+          56.22378947781184,
+          174.53125056055205
+        ],
+        "route": "rk4",
+        "second_overshoot_deg": 5.806247549986896,
+        "terminated": "ok"
+      }
+    }
+  },
+  "ship": {
+    "B_m": 58.0,
+    "Cb": 0.81,
+    "L_m": 320.0,
+    "L_over_V_s": 40.150564617314934,
+    "T_m": 20.8,
+    "U_mps": 7.97,
+    "name": "KVLCC2-class tanker (representative linear derivatives)"
+  },
+  "verdict": {
+    "crossflow_breaks_invariance": true,
+    "euler_first_order_pass": true,
+    "euler_observed_order": [
+      0.9981886946066718,
+      0.9981886946066715
+    ],
+    "imo_gate_discriminates": true,
+    "invariance_max_rel_err": 0.0,
+    "invariance_pass": true,
+    "pass": true,
+    "rk4_finest_rel_err": [
+      3.0087444875313785e-12,
+      3.0087444875313785e-12
+    ],
+    "rk4_pass": true,
+    "route_max_rel_err": 1.233395745833367e-12,
+    "route_pass": true
+  }
+}

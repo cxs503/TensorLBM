@@ -20,6 +20,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `kovasznay_2d` | analytic / standard case |
 | `laplace_droplet` | analytic / standard case |
 | `maneuvering_steady_turn` | steady turning response: R +0.009%, beta -0.011%, span <0.001% (given-derivative closure) |
+| `maneuvering_zigzag` | closed-loop zig-zag (overshoot): two routes agree to 1.2e-12, Euler p=0.998 / RK4 p=4.02, IMO MSC.137(76) gate discriminates |
 | `permeability` | analytic / standard case |
 | `poiseuille_2d` | analytic / standard case |
 | `poiseuille_3d_duct` | analytic / standard case |

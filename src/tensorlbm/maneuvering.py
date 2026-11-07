@@ -41,7 +41,7 @@ References
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import torch
 
@@ -51,6 +51,14 @@ __all__ = [
     "simulate_turn",
     "analytic_transient",
     "NOMINAL_TANKER_PRIME",
+    "prime_to_dimensional",
+    "ZigZagResult",
+    "simulate_zigzag",
+    "analytic_zigzag",
+    "imo_msc137_zigzag_limits",
+    "check_imo_msc137_zigzag",
+    "IMO_MSC137_ZIGZAG_LIMITS",
+    "IMO_MSC137_SOURCE",
 ]
 
 
@@ -422,3 +430,488 @@ def analytic_transient(model: ManeuveringModel, delta: float, t) -> tuple:
     for lam, phi, cc in zip(evals, evecs.T, coeff):
         q = q + np.outer(np.exp(lam * tt) * cc, phi)
     return q[:, 0], q[:, 1]
+
+
+# --------------------------------------------------------------------------- #
+# zig-zag (overshoot) manoeuvre: closed-loop helm + IMO MSC.137(76) gate
+# --------------------------------------------------------------------------- #
+# The steady turn above is an *open-loop* manoeuvre (rudder held fixed).  The
+# zig-zag manoeuvre is the standard closed-loop course-keeping test: the helm is
+# ordered to ``+delta`` until the heading deviation reaches ``+psi_zz``, then
+# reversed to ``-delta``, etc., and the quality index is the **overshoot angle**
+# -- how far the heading travels past the reversal heading before the yaw rate
+# changes sign.  Two independent routes are provided:
+#
+#   * :func:`simulate_zigzag` -- event-driven time integration of the same ODE
+#     used by :func:`simulate_turn`, with the helm reversals located *inside* the
+#     step by bisection (no switch-time quantisation to ``dt``);
+#   * :func:`analytic_zigzag` -- the exact piecewise-modal solution: within each
+#     rudder segment the ODE is linear time-invariant, so ``q(t)`` and the
+#     heading ``psi(t)`` are closed-form sums of two exponentials, and the
+#     switch/peak times are roots of those closed forms.
+#
+# Route (1) is numerical, route (2) is analytic; agreement between them is the
+# verification criterion used by ``benchmarks/verified/maneuvering_zigzag``.
+
+#: IMO Resolution MSC.137(76) annex 2.3 zig-zag overshoot-angle limits [deg].
+#: ``L/V`` is the ship-length / approach-speed ratio in seconds.
+IMO_MSC137_ZIGZAG_LIMITS = {
+    "10/10": {"first_lt10s": 10.0, "first_ge10s": 20.0},
+    "20/20": {"first": 25.0, "second": 40.0},
+}
+IMO_MSC137_SOURCE = "IMO Res. MSC.137(76) annex 2.3 (zig-zag overshoot angles)"
+
+
+@dataclass
+class ZigZagResult:
+    """Outcome of a zig-zag manoeuvre (closed-loop helm)."""
+
+    delta_deg: float
+    heading_deg: float
+    route: str
+    dt: float = float("nan")
+    events: list = field(default_factory=list)
+    overshoots_deg: list = field(default_factory=list)
+    reversal_times: list = field(default_factory=list)
+    peak_times: list = field(default_factory=list)
+    max_heading_deg: float = 0.0
+    terminated: str = "ok"
+    history: dict = field(default_factory=dict)
+
+    @property
+    def first_overshoot_deg(self) -> float:
+        return self.overshoots_deg[0] if self.overshoots_deg else float("nan")
+
+    @property
+    def second_overshoot_deg(self) -> float:
+        return self.overshoots_deg[1] if len(self.overshoots_deg) > 1 else float("nan")
+
+    def as_dict(self) -> dict:
+        return {
+            "delta_deg": self.delta_deg,
+            "heading_deg": self.heading_deg,
+            "route": self.route,
+            "dt": self.dt,
+            "first_overshoot_deg": self.first_overshoot_deg,
+            "second_overshoot_deg": self.second_overshoot_deg,
+            "reversal_times": self.reversal_times,
+            "peak_times": self.peak_times,
+            "max_heading_deg": self.max_heading_deg,
+            "event_count": len(self.events),
+            "events": self.events,
+            "terminated": self.terminated,
+        }
+
+
+def _step_sway_yaw(
+    model: ManeuveringModel,
+    q: torch.Tensor,
+    psi: float,
+    dt: float,
+    delta: float,
+    integrator: str,
+) -> tuple[torch.Tensor, float]:
+    """Advance ``(q=[v, r], psi)`` by ``dt`` with a constant rudder ``delta`` [rad].
+
+    Heading is integrated with the matching quadrature on the yaw rate
+    (consistent Euler for the Euler path, full RK4 stage quadrature with ``psi``
+    carried as a third state for the RK4 path), so ``psi`` -- the quantity the helm logic acts on -- carries the same
+    order of accuracy as ``q`` and does not silently dominate the error.
+    """
+    if integrator == "semi_implicit_euler":
+        qd = _rhs(model, q, delta)
+        q_new = q + qd * dt
+        psi_new = psi + dt * float(q_new[1])  # mirrors simulate_turn
+    elif integrator == "rk4":
+        k1 = _rhs(model, q, delta)
+        k2 = _rhs(model, q + 0.5 * dt * k1, delta)
+        k3 = _rhs(model, q + 0.5 * dt * k2, delta)
+        k4 = _rhs(model, q + dt * k3, delta)
+        q_new = q + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        # psi integrated as a third RK4 state (dpsi/dt = r): stage yaw rates
+        r1 = float(q[1])
+        r2 = float((q + 0.5 * dt * k1)[1])
+        r3 = float((q + 0.5 * dt * k2)[1])
+        r4 = float((q + dt * k3)[1])  # stage value at t+dt, not the averaged new state
+        psi_new = psi + (dt / 6.0) * (r1 + 2.0 * r2 + 2.0 * r3 + r4)
+    else:
+        raise ValueError(f"unknown integrator {integrator!r}")
+    return q_new, psi_new
+
+
+def _bisect_event(
+    model: ManeuveringModel,
+    q0: torch.Tensor,
+    psi0: float,
+    dt: float,
+    delta: float,
+    integrator: str,
+    kind: str,
+    target: float = 0.0,
+    value0: float = 0.0,
+    tol_frac: float = 1e-13,
+) -> tuple[torch.Tensor, float, float]:
+    """Locate the first event inside one step and return ``(q, psi, fraction)``.
+
+    ``kind="heading"`` finds ``psi(f*dt) == target`` (helm reversal);
+    ``kind="peak"`` finds the yaw-rate sign change, i.e. ``r(f*dt) == 0``
+    (heading extremum).  ``value0`` is the pre-step value of the monitored
+    quantity, so the bisection starts from a bracketing interval.
+    """
+    lo, hi = 0.0, 1.0
+    q_lo, psi_lo = q0, psi0
+    q_hi, psi_hi = _step_sway_yaw(model, q0, psi0, dt, delta, integrator)
+    for _ in range(200):
+        if hi - lo < tol_frac:
+            break
+        mid = 0.5 * (lo + hi)
+        q_m, psi_m = _step_sway_yaw(model, q0, psi0, mid * dt, delta, integrator)
+        val_m = (psi_m - target) if kind == "heading" else float(q_m[1])
+        val_lo = (psi_lo - target) if kind == "heading" else float(q_lo[1])
+        if (val_m == 0.0) or (val_lo * val_m <= 0.0):
+            hi, q_hi, psi_hi = mid, q_m, psi_m
+        else:
+            lo, q_lo, psi_lo = mid, q_m, psi_m
+    del value0  # only used to document the bracket sign at the call site
+    mid = 0.5 * (lo + hi)
+    q_e, psi_e = _step_sway_yaw(model, q0, psi0, mid * dt, delta, integrator)
+    return q_e, psi_e, mid
+
+
+def simulate_zigzag(
+    model: ManeuveringModel,
+    delta_deg: float,
+    heading_deg: float | None = None,
+    dt: float = 0.05,
+    integrator: str = "rk4",
+    n_overshoots: int = 2,
+    max_time: float = 900.0,
+    record_every: int = 1,
+) -> ZigZagResult:
+    """Closed-loop zig-zag manoeuvre (``delta``/``heading``) from rest.
+
+    The helm is ordered to ``+delta``; every time the heading deviation reaches
+    ``+heading`` it is reversed to ``-delta``, then to ``+delta`` at
+    ``-heading``, and so on.  After each reversal the heading keeps travelling
+    until the yaw rate changes sign; the excess over the reversal heading is the
+    **overshoot angle**.  Helm reversals and heading extrema are located by
+    bisection inside a step, so their times are ``dt``-accurate only to the
+    integrator's truncation error (not to the step granularity).
+
+    ``heading_deg`` defaults to ``delta_deg`` (the classical ``10/10`` and
+    ``20/20`` tests).
+    """
+    hdg = float(abs(delta_deg) if heading_deg is None else heading_deg)
+    if hdg <= 0.0:
+        raise ValueError("heading_deg must be positive")
+    h_target = math.radians(hdg)
+    d = math.radians(float(delta_deg))
+
+    q = torch.zeros(2, dtype=torch.float64)
+    psi = 0.0
+    t = 0.0
+    rudder = d
+    target = h_target if d > 0 else -h_target
+    peak_pending = False
+    res = ZigZagResult(
+        delta_deg=float(delta_deg),
+        heading_deg=hdg,
+        route=integrator,
+        dt=dt,
+    )
+    hist = {"t": [], "psi_deg": [], "r": [], "rudder_deg": []}
+    step = 0
+    while t < max_time and len(res.overshoots_deg) < n_overshoots:
+        q0, psi0 = q, psi
+        q_new, psi_new = _step_sway_yaw(model, q0, psi0, dt, rudder, integrator)
+
+        # ---- 1. heading extremum (yaw-rate sign change) ------------------ #
+        if peak_pending and float(q0[1]) * float(q_new[1]) < 0.0:
+            q_e, psi_e, frac = _bisect_event(
+                model, q0, psi0, dt, rudder, integrator, "peak", value0=float(q0[1])
+            )
+            res.overshoots_deg.append(math.degrees(abs(psi_e)) - hdg)
+            res.peak_times.append(t + frac * dt)
+            res.events.append(
+                {
+                    "t": t + frac * dt,
+                    "kind": "heading_peak",
+                    "heading_deg": math.degrees(psi_e),
+                    "rudder_deg": math.degrees(rudder),
+                    "yaw_rate": 0.0,
+                }
+            )
+            q, psi, t = q_e, psi_e, t + frac * dt
+            peak_pending = False
+            continue
+
+        # ---- 2. helm reversal (heading reaches the ordered deviation) ----- #
+        if (psi0 - target) * (psi_new - target) <= 0.0:
+            q_e, psi_e, frac = _bisect_event(
+                model, q0, psi0, dt, rudder, integrator, "heading", target=target
+            )
+            res.reversal_times.append(t + frac * dt)
+            res.events.append(
+                {
+                    "t": t + frac * dt,
+                    "kind": "helm_reversal",
+                    "heading_deg": math.degrees(psi_e),
+                    "rudder_deg": math.degrees(-rudder),
+                    "yaw_rate": float(q_e[1]),
+                }
+            )
+            q, psi, t = q_e, psi_e, t + frac * dt
+            rudder = -rudder
+            target = -target
+            peak_pending = True
+            continue
+
+        q, psi, t = q_new, psi_new, t + dt
+        if step % record_every == 0:
+            hist["t"].append(t)
+            hist["psi_deg"].append(math.degrees(psi))
+            hist["r"].append(float(q[1]))
+            hist["rudder_deg"].append(math.degrees(rudder))
+        step += 1
+        res.max_heading_deg = max(res.max_heading_deg, abs(math.degrees(psi)))
+
+    res.history = hist
+    if len(res.overshoots_deg) < n_overshoots:
+        res.terminated = "max_time_reached"
+    return res
+
+
+def _sway_yaw_modes(model: ManeuveringModel):
+    """Return ``(evals, evecs, evecs_inv, L, Minv)`` for the linear sway-yaw ODE."""
+    import numpy as np
+
+    M = model.mass_matrix().numpy()
+    A = model.damping_matrix().numpy()
+    L = np.linalg.solve(M, A)
+    evals, evecs = np.linalg.eig(L)
+    evecs_inv = np.linalg.inv(evecs)
+    return evals, evecs, evecs_inv, L, np.linalg.inv(M)
+
+
+def _segment_solution(model, modes, delta: float, q0, psi0: float, tau):
+    """Closed-form ``(q(tau), psi(tau))`` inside one constant-rudder segment."""
+    import numpy as np
+
+    evals, evecs, evecs_inv = modes[0], modes[1], modes[2]
+    b = model.input_vector(delta).numpy()
+    q_ss = np.linalg.solve(model.damping_matrix().numpy(), -b)
+    c = evecs_inv @ (np.asarray(q0, dtype=float) - q_ss)
+    tau = np.atleast_1d(np.asarray(tau, dtype=float))
+    E = np.exp(np.outer(tau, evals))
+    q = q_ss[None, :] + (E * c[None, :]) @ evecs.T
+    r_ss = q_ss[1]
+    grow = np.where(np.abs(evals) > 1e-14, (E - 1.0) / np.where(evals == 0, 1, evals), tau[:, None])
+    psi = psi0 + r_ss * tau + ((grow * c[None, :]) @ evecs[1, :])
+    return q.real, psi.real
+
+
+def _first_root(f, t_hi: float, n_scan: int = 4000) -> float | None:
+    """First root of a scalar function on ``[0, t_hi]`` by scan + bisection."""
+    import numpy as np
+
+    ts = np.linspace(0.0, t_hi, n_scan)
+    vals = f(ts)
+    for i in range(len(ts) - 1):
+        if vals[i] == 0.0:
+            return float(ts[i])
+        if vals[i] * vals[i + 1] < 0.0:
+            lo, hi = float(ts[i]), float(ts[i + 1])
+            flo = float(vals[i])
+            for _ in range(200):
+                mid = 0.5 * (lo + hi)
+                fm = float(f(np.array([mid]))[0])
+                if flo * fm <= 0.0:
+                    hi = mid
+                else:
+                    lo, flo = mid, fm
+                if hi - lo < 1e-14:
+                    break
+            return 0.5 * (lo + hi)
+    return None
+
+
+def analytic_zigzag(
+    model: ManeuveringModel,
+    delta_deg: float,
+    heading_deg: float | None = None,
+    n_overshoots: int = 2,
+    max_segment_time: float = 600.0,
+) -> ZigZagResult:
+    """Exact piecewise-modal zig-zag solution (the verification reference).
+
+    Each rudder segment is an LTI system, so ``q(tau)`` and ``psi(tau)`` are
+    closed-form; the helm reversals are roots of ``psi(tau) = +-heading`` and the
+    heading extrema are roots of ``r(tau) = 0``.  The root times are therefore
+    exact to the bisection tolerance -- there is no time-discretisation error at
+    all, which makes this route the reference for :func:`simulate_zigzag`.
+    """
+    import numpy as np
+
+    if model.has_nonlinear():
+        raise ValueError(
+            "analytic_zigzag is the exact reference for the *linear* sway-yaw model; "
+            "this model carries cross-flow terms (Y_vv/N_vv), use simulate_zigzag"
+        )
+    hdg = float(abs(delta_deg) if heading_deg is None else heading_deg)
+    if hdg <= 0.0:
+        raise ValueError("heading_deg must be positive")
+    h_target = math.radians(hdg)
+    d = math.radians(float(delta_deg))
+    modes = _sway_yaw_modes(model)
+
+    q = np.zeros(2)
+    psi = 0.0
+    t = 0.0
+    rudder = d
+    target = h_target if d > 0 else -h_target
+    res = ZigZagResult(delta_deg=float(delta_deg), heading_deg=hdg, route="analytic")
+    hist = {"t": [], "psi_deg": [], "r": [], "rudder_deg": []}
+    peak_pending = False
+
+    for _ in range(4 * n_overshoots + 2):
+        if len(res.overshoots_deg) >= n_overshoots:
+            break
+        if peak_pending:
+            # yaw-rate zero inside this segment -> heading extremum
+            tau = _first_root(
+                lambda tau_: _segment_solution(model, modes, rudder, q, psi, tau_)[0][:, 1],
+                max_segment_time,
+            )
+            if tau is None:
+                res.terminated = "no_peak_found"
+                break
+            q_p, psi_p = _segment_solution(model, modes, rudder, q, psi, tau)
+            psi_end = float(psi_p[0])
+            res.overshoots_deg.append(math.degrees(abs(psi_end) - h_target))
+            res.peak_times.append(t + tau)
+            res.events.append(
+                {
+                    "t": t + tau,
+                    "kind": "heading_peak",
+                    "heading_deg": math.degrees(psi_end),
+                    "rudder_deg": math.degrees(rudder),
+                    "yaw_rate": 0.0,
+                }
+            )
+            # continue the same segment past the peak to record history
+            taus = np.linspace(0.0, min(tau, max_segment_time), 200)
+            qs, psis = _segment_solution(model, modes, rudder, q, psi, taus)
+            hist["t"].extend((t + taus).tolist())
+            hist["psi_deg"].extend(np.degrees(psis).tolist())
+            hist["r"].extend(qs[:, 1].tolist())
+            hist["rudder_deg"].extend([math.degrees(rudder)] * len(taus))
+            res.max_heading_deg = max(res.max_heading_deg, abs(math.degrees(psi_end)))
+            q, psi = q_p[0], psi_end
+            t = t + tau
+            peak_pending = False
+            continue
+
+        tau = _first_root(
+            lambda tau_: _segment_solution(model, modes, rudder, q, psi, tau_)[1] - target,
+            max_segment_time,
+        )
+        if tau is None:
+            res.terminated = "no_reversal_found"
+            break
+        taus = np.linspace(0.0, tau, 200)
+        qs, psis = _segment_solution(model, modes, rudder, q, psi, taus)
+        hist["t"].extend((t + taus).tolist())
+        hist["psi_deg"].extend(np.degrees(psis).tolist())
+        hist["r"].extend(qs[:, 1].tolist())
+        hist["rudder_deg"].extend([math.degrees(rudder)] * len(taus))
+        q, psi = qs[-1], float(psis[-1])
+        t = t + tau
+        res.reversal_times.append(t)
+        res.max_heading_deg = max(res.max_heading_deg, abs(math.degrees(psi)))
+        res.events.append(
+            {
+                "t": t,
+                "kind": "helm_reversal",
+                "heading_deg": math.degrees(psi),
+                "rudder_deg": math.degrees(-rudder),
+                "yaw_rate": float(q[1]),
+            }
+        )
+        rudder = -rudder
+        target = -target
+        peak_pending = True
+
+    res.history = hist
+    return res
+
+
+def imo_msc137_zigzag_limits(
+    delta_deg: float, heading_deg: float | None = None, L_over_V: float | None = None
+) -> dict:
+    """IMO MSC.137(76) overshoot-angle limits for a ``delta``/``heading`` test [deg].
+
+    ``10/10``: first overshoot ``<= 10 deg`` when ``L/V < 10 s``, ``<= 20 deg``
+    otherwise.  ``20/20``: first ``<= 25 deg``, second ``<= 40 deg``.
+    Returns ``{"applicable": False, "reason": ...}`` for combinations the
+    resolution does not cover (e.g. ``20/10``) -- no limit is invented.
+    """
+    hdg = float(abs(delta_deg) if heading_deg is None else heading_deg)
+    key = f"{delta_deg:g}/{hdg:g}"
+    if key == "10/10":
+        if L_over_V is None:
+            return {
+                "applicable": False,
+                "reason": "10/10 limit depends on L/V; pass L_over_V",
+                "source": IMO_MSC137_SOURCE,
+            }
+        lim = (
+            IMO_MSC137_ZIGZAG_LIMITS["10/10"]["first_lt10s"]
+            if L_over_V < 10.0
+            else IMO_MSC137_ZIGZAG_LIMITS["10/10"]["first_ge10s"]
+        )
+        return {
+            "applicable": True,
+            "key": key,
+            "limits_deg": {"first": lim},
+            "L_over_V_s": L_over_V,
+            "source": IMO_MSC137_SOURCE,
+        }
+    if key == "20/20":
+        return {
+            "applicable": True,
+            "key": key,
+            "limits_deg": dict(IMO_MSC137_ZIGZAG_LIMITS["20/20"]),
+            "L_over_V_s": L_over_V,
+            "source": IMO_MSC137_SOURCE,
+        }
+    return {
+        "applicable": False,
+        "reason": f"IMO MSC.137(76) does not define criteria for the {key} zig-zag",
+        "source": IMO_MSC137_SOURCE,
+    }
+
+
+def check_imo_msc137_zigzag(result: ZigZagResult, L: float, U: float) -> dict:
+    """Apply the IMO MSC.137(76) overshoot limits to one zig-zag result."""
+    L_over_V = L / U
+    spec = imo_msc137_zigzag_limits(result.delta_deg, result.heading_deg, L_over_V)
+    if not spec.get("applicable"):
+        return {**spec, "checks": [], "pass": None}
+    limits = spec["limits_deg"]
+    checks = []
+    meas = {
+        "first": result.first_overshoot_deg,
+        "second": result.second_overshoot_deg,
+    }
+    for name, lim in limits.items():
+        got = meas.get(name, float("nan"))
+        checks.append(
+            {
+                "quantity": f"{name}_overshoot_deg",
+                "measured": got,
+                "limit": lim,
+                "margin_deg": lim - got if got == got else float("nan"),
+                "pass": bool(got == got and got <= lim),
+            }
+        )
+    return {**spec, "checks": checks, "pass": all(c["pass"] for c in checks)}
