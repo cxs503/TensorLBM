@@ -46,6 +46,7 @@ import torch
 __all__ = [
     "CavitationConfig",
     "psi_cavitation",
+    "schnerr_sauer_bubble_radius",
     "schnerr_sauer_source",
     "apply_cavitation_force",
     "run_cavitation_flow",
@@ -67,6 +68,12 @@ _RHO_V = 0.038
 COEXISTENCE_G = 1.0
 COEXISTENCE_RHO_L = 5.0404
 COEXISTENCE_RHO_V = 0.3508
+
+# Nucleation site density in lattice units (bubbles per lattice cell volume).
+# 1e-4 = one nucleus per 10^4 cells; the previous code multiplied the SI value
+# by 1e-30 and then clamped R_b to 0.5 lu, which made R_b independent of the
+# void fraction (see docs/cavitation_schnerr_sauer_reference_20261108.md).
+N_NUC_LATTICE_DEFAULT = 1.0e-4
 
 
 # ---------------------------------------------------------------------------
@@ -98,58 +105,111 @@ def psi_cavitation(
     return psi0 * torch.exp(-rho_ref / rho.clamp(min=1e-4))
 
 
+def schnerr_sauer_bubble_radius(
+    alpha_v: torch.Tensor,
+    n_nuc: float,
+) -> torch.Tensor:
+    """Schnerr–Sauer bubble radius from vapour volume fraction.
+
+    ``R_b = (alpha_v / (1 - alpha_v) * 3 / (4 pi n_nuc))^(1/3)`` in lattice
+    units, i.e. the mean radius of a monodisperse bubble population of
+    density ``n_nuc`` (bubbles per lattice cell volume) carrying vapour
+    fraction ``alpha_v``.  See :func:`schnerr_sauer_source` for the units of
+    ``n_nuc``.
+    """
+    alpha_l = (1.0 - alpha_v).clamp(min=1e-12)
+    ratio = (alpha_v.clamp(min=0.0) / alpha_l) * (3.0 / (4.0 * math.pi * n_nuc))
+    return ratio.clamp(min=1e-30) ** (1.0 / 3.0)
+
+
 def schnerr_sauer_source(
     rho: torch.Tensor,
     p: torch.Tensor,
     p_sat: float,
     rho_l: float = _RHO_L,
     rho_v: float = _RHO_V,
-    n_nuc: float = 1.6e13,
+    n_nuc: float = N_NUC_LATTICE_DEFAULT,
     c_vap: float = 1.0,
     c_cond: float = 0.2,
+    *,
+    n_nuc_si: float | None = None,
+    lattice_length_m: float | None = None,
 ) -> torch.Tensor:
-    """Compute Schnerr–Sauer mass-transfer source term.
+    """Compute the Schnerr–Sauer mass-transfer source term.
 
-    Returns the net mass-transfer rate ṁ (> 0 = evaporation, < 0 =
-    condensation) at each cell, to be added as a density source in the
-    BGK collision operator.
+    Implements the transfer rate of Schnerr & Sauer (2001) in the form used by
+    the interPhaseChange family of solvers::
+
+        m_dot = C * (3 rho_l rho_v / rho) * alpha_l alpha_v / R_b
+                     * sqrt(2 |p - p_sat| / (3 rho_l))
+
+    with ``C = c_vap`` for evaporation (``p < p_sat``), ``C = c_cond`` for
+    condensation (``p > p_sat``) and ``m_dot == 0`` exactly at saturation.
+    The ``sqrt(2 |dp| / (3 rho_l))`` group is the Rayleigh–Plesset wall speed
+    ``dR/dt`` driven by ``|dp|`` (verify with
+    ``tests/test_cavitation_schnerr_sauer_reference.py``, which integrates the
+    Rayleigh–Plesset equation and reproduces this prefactor).
+
+    Returns the net mass-transfer rate ``m_dot`` (> 0 = evaporation) at each
+    cell, to be added as a density source in the BGK collision operator.
 
     Args:
-        rho:    Density field, shape ``(ny, nx)``.
-        p:      Pressure field (ρ c_s² in LBM), shape ``(ny, nx)``.
+        rho:    Density field, shape ``(...)``.
+        p:      Pressure field (``rho c_s^2`` in LBM), shape ``(...)``.
         p_sat:  Saturation pressure in lattice units.
         rho_l:  Liquid reference density.
         rho_v:  Vapour reference density.
-        n_nuc:  Nucleation site density (sites / m³ → rescaled for l.u.).
+        n_nuc:  Nucleation site density in **lattice units** (bubbles per
+            lattice cell volume).  The library works in lattice units, so the
+            SI value must be converted: pass ``n_nuc_si`` (sites / m^3) plus
+            ``lattice_length_m`` (metres per lattice spacing) and the
+            conversion ``n_nuc = n_nuc_si * lattice_length_m**3`` is applied.
+            Default ``1e-4`` = one nucleus per 10^4 lattice cells, which gives
+            ``R_b`` of a few lattice units at moderate void fraction.
         c_vap:  Evaporation coefficient (default 1.0).
         c_cond: Condensation coefficient (default 0.2, more conservative).
+        n_nuc_si: Nucleation site density in SI units (sites / m^3); requires
+            ``lattice_length_m``.
+        lattice_length_m: Metres per lattice spacing, used with ``n_nuc_si``.
 
     Returns:
-        Mass-transfer rate ṁ, shape ``(ny, nx)``.
+        Mass-transfer rate ``m_dot``, shape ``(...)``.
     """
-    # Vapour volume fraction α_v estimated from local density
-    alpha_v = torch.clamp((rho_l - rho) / (rho_l - rho_v + 1e-12), 0.0, 1.0)
+    if n_nuc_si is not None:
+        if lattice_length_m is None:
+            msg = "n_nuc_si requires lattice_length_m to convert to lattice units"
+            raise ValueError(msg)
+        n_nuc = float(n_nuc_si) * float(lattice_length_m) ** 3
+    if not n_nuc > 0.0:
+        msg = f"n_nuc must be > 0 (lattice units, bubbles per cell), got {n_nuc}"
+        raise ValueError(msg)
+
+    if not rho_l > rho_v:
+        msg = f"rho_l must exceed rho_v (got rho_l={rho_l}, rho_v={rho_v})"
+        raise ValueError(msg)
+    # Vapour volume fraction from the mixture density (homogeneous equilibrium:
+    # rho = alpha_l rho_l + alpha_v rho_v).  No epsilon in the denominator: at
+    # rho = rho_v this must give alpha_v == 1 exactly, otherwise a spurious
+    # single-phase leak survives (see the endpoint test).
+    alpha_v = ((rho_l - rho) / (rho_l - rho_v)).clamp(0.0, 1.0)
     alpha_l = 1.0 - alpha_v
 
-    # Bubble radius from vapour fraction
-    n_nuc_lu = max(n_nuc * 1e-30, 1e-20)  # rescale to lattice units (very small)
-    r_b = (alpha_v / (alpha_l.clamp(min=1e-6)) * (3.0 / (4.0 * math.pi * n_nuc_lu + 1e-40))) ** (
-        1.0 / 3.0
-    )
-    r_b = r_b.clamp(min=1e-6, max=0.5)
+    r_b = schnerr_sauer_bubble_radius(alpha_v, n_nuc)
 
-    # Driving pressure p − p_sat
+    # Driving pressure p - p_sat (both evaporation and condensation branches).
     dp = p - p_sat
-    dp_mag = dp.abs().clamp(min=1e-12)
+    dp_mag = dp.abs()
+    driving = torch.sqrt(2.0 / 3.0 * dp_mag / rho_l)
 
-    # Mass-transfer term (Rayleigh–Plesset simplified)
-    rho_l_val = rho_l.item() if hasattr(rho_l, "item") else float(rho_l)
-    inner = 2.0 / 3.0 * dp_mag / rho_l_val
-    base_rate = rho_l * rho_v / rho.clamp(min=1e-4) * 3.0 / r_b.clamp(min=1e-6) * torch.sqrt(inner)
+    # Both phases must be present for transfer to happen: the alpha_l * alpha_v
+    # factor makes the rate vanish identically in the single-phase limits.
+    prefactor = (rho_l * rho_v / rho.clamp(min=1e-12)) * alpha_l * alpha_v * (3.0 / r_b)
 
-    # Sign: evaporation (p < p_sat) or condensation (p > p_sat)
-    m_dot = torch.where(dp < 0, c_vap * alpha_l * base_rate, -c_cond * alpha_v * base_rate)
-    return m_dot
+    coefficient = torch.where(dp < 0, torch.full_like(dp, float(c_vap)), torch.full_like(dp, -float(c_cond)))
+    m_dot = coefficient * prefactor * driving
+    # Exactly zero at saturation (m_dot(p = p_sat) == 0 is a physical
+    # requirement: no transfer without a pressure difference).
+    return torch.where(dp.abs() > 0.0, m_dot, torch.zeros_like(m_dot))
 
 
 def apply_cavitation_force(
