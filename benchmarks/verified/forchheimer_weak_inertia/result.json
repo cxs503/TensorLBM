@@ -1,0 +1,2540 @@
+{
+  "benchmark": "forchheimer_weak_inertia",
+  "module": "tensorlbm.porous_weak_inertia",
+  "reynolds_definition": "Re = U_s D / nu, U_s superficial velocity, D = 2R nominal cylinder diameter",
+  "drag_definition": "K = nu u_fluid / a; f = L^2/((1-phi) f) with L the cell length per disc",
+  "drag_definition_full": "f = cell_length^2 / ((1 - phi_actual) * nu * u_fluid / a)",
+  "protocol": {
+    "protocol_steps": 120000,
+    "long_steps": 240000,
+    "calibration_steps": 6000,
+    "nu_sweep": 0.2,
+    "common_mode": "same nu and same step count inside a group; only the body force changes",
+    "forcing": "first-order splitting, unit prefactor, fluid nodes only (tensorlbm first-order kick)",
+    "trt_magic": 0.1875,
+    "lamb_const": 2.002225876778303
+  },
+  "verdicts": {
+    "gate1_weak_inertia_law": "FAIL",
+    "gate2_predictive_reference": "WITHHELD",
+    "gate3_mach_extrapolation": "PASS",
+    "gate4_porosity_surface": "PASS",
+    "gate5_stokes_limit": "PASS",
+    "gate6_dilute_log_law": "FAIL"
+  },
+  "overall": "FAIL",
+  "gates": {
+    "gate1_weak_inertia_law": {
+      "gate": "gate1_weak_inertia_law",
+      "statement": "R - 1 = c1 Re + c2 Re^2 with c1 = 0: for a centro-symmetric array the first inertial correction is quadratic (weak-inertia theorem, Mei & Auriault 1991)",
+      "threshold": {
+        "c1_share_max": 0.03,
+        "c1_sigma_max": 3.0
+      },
+      "n_points": 4,
+      "re_range": [
+        0.998418731098353,
+        7.989690191154706
+      ],
+      "c1": -0.000334291819011994,
+      "se_c1": 8.996909742738943e-05,
+      "c2": 0.000800618773275831,
+      "se_c2": 9.541707374873833e-06,
+      "c1_share": 0.052260076314127255,
+      "c1_sigma_significance": 3.7156293501975823,
+      "quadratic_excess_at_re_max": 0.05110761896498383,
+      "c0": 0.9995782756455126,
+      "fit_rms": 4.6875955962483247e-05,
+      "fit_max_abs_resid": 7.454797619610432e-05,
+      "design_condition": 123.12057275720262,
+      "verdict": "FAIL"
+    },
+    "gate2_predictive_reference": {
+      "gate": "gate_predictive",
+      "verdict": "WITHHELD",
+      "reason": "insufficient campaign data: need len(x) == len(y) > degree"
+    },
+    "gate3_mach_extrapolation": {
+      "gate": "gate3_mach_extrapolation",
+      "statement": "R(Re, Ma) is quadratic in Ma: the Ma -> 0 extrapolation of the four-point sweep leaves a residual <= 1 % (fit residual <= 1e-6 absolute)",
+      "threshold": {
+        "relative_correction_max": 0.01,
+        "max_abs_resid_max": 1e-06
+      },
+      "re": 0.2,
+      "ma_points": [
+        0.010008237861050828,
+        0.030003029236187275,
+        0.049978672394964334
+      ],
+      "ratio_points": [
+        1.0,
+        1.0043757618847944,
+        0.9971880951380827
+      ],
+      "ratio_points_raw": [
+        0.22483130632390771,
+        0.6257622127916559,
+        1.0
+      ],
+      "R_at_ma0": 0.9934625195484742,
+      "tau_detrend_applied": true,
+      "R_at_ma0_raw": 0.014254033266001612,
+      "R_at_ma_max": 0.9971880951380827,
+      "ma_max": 0.049978672394964334,
+      "relative_correction": 0.006580500343885433,
+      "max_abs_resid_raw": 4.718447854656915e-16,
+      "compressibility_effect_removed": 0.0037500917410570986,
+      "beta_rel_ma2": 1.5013172032769333,
+      "coeffs": [
+        0.9934625195484742,
+        0.7981028678075952,
+        -14.477366539322727
+      ],
+      "fit_rms": 2.220446049250313e-16,
+      "fit_max_abs_resid": 2.220446049250313e-16,
+      "degree": 2,
+      "verdict": "PASS"
+    },
+    "gate4_porosity_surface": {
+      "gate": "gate4_porosity_surface",
+      "statement": "R(Re, phi) produced for square phi = 0.40 (primary) and hex phi = 0.55 / 0.60 (auxiliary); the Stokes drag increases monotonically with phi",
+      "threshold": {
+        "min_groups": 3
+      },
+      "surface": {
+        "hex55": {
+          "kind": "hex",
+          "phi_actual": 0.5489457831325302,
+          "points": [
+            {
+              "re": 0.001994126124961733,
+              "ratio": 1.0,
+              "f_drag": 522.9041727401953
+            },
+            {
+              "re": 0.049853153509888226,
+              "ratio": 1.0000010145299392,
+              "f_drag": 522.9047032421339
+            },
+            {
+              "re": 0.1994126372515004,
+              "ratio": 1.0000162556763603,
+              "f_drag": 522.9126729011948
+            },
+            {
+              "re": 0.9970662392131416,
+              "ratio": 1.0004056770502137,
+              "f_drag": 523.116302962537
+            }
+          ]
+        },
+        "hex60": {
+          "kind": "hex",
+          "phi_actual": 0.6016566265060241,
+          "points": [
+            {
+              "re": 0.0019934522737866333,
+              "ratio": 1.0,
+              "f_drag": 845.1683755714864
+            },
+            {
+              "re": 0.0498363071222478,
+              "ratio": 1.000000973691693,
+              "f_drag": 845.1691985049127
+            },
+            {
+              "re": 0.19934524518792512,
+              "ratio": 1.0000156017712212,
+              "f_drag": 845.1815616951254
+            },
+            {
+              "re": 0.996728414179135,
+              "ratio": 1.0003896396152168,
+              "f_drag": 845.4976866521373
+            }
+          ]
+        },
+        "sq040_stokes": {
+          "kind": "square",
+          "phi_actual": 0.400625,
+          "points": [
+            {
+              "re": 0.001996832865989107,
+              "ratio": 1.0,
+              "f_drag": 202.23189267872016
+            },
+            {
+              "re": 0.019968328672800385,
+              "ratio": 1.0000002867899374,
+              "f_drag": 202.23195067679202
+            },
+            {
+              "re": 0.049920821853465594,
+              "ratio": 1.0000018076432977,
+              "f_drag": 202.23225824184553
+            },
+            {
+              "re": 0.19968329986074293,
+              "ratio": 1.000028966374931,
+              "f_drag": 202.23775060354652
+            }
+          ]
+        }
+      },
+      "stokes_f_by_group": {
+        "hex55": 522.9041727401953,
+        "hex60": 845.1683755714864,
+        "sq040_stokes": 202.23189267872016
+      },
+      "stokes_monotone_in_phi": true,
+      "verdict": "PASS"
+    },
+    "gate5_stokes_limit": {
+      "gate": "gate5_stokes_limit",
+      "statement": "Re -> 0 drag ratio returns to the Stokes value within 0.5 %",
+      "threshold": {
+        "abs_R_minus_1_max": 0.005
+      },
+      "anchor": "sq040_stokes_re0.002",
+      "anchor_re": 0.001996832865989107,
+      "points": [
+        {
+          "re": 0.001996832865989107,
+          "ratio": 1.0,
+          "R_minus_1": 0.0
+        },
+        {
+          "re": 0.019968328672800385,
+          "ratio": 1.0000002867899374,
+          "R_minus_1": 2.867899373537597e-07
+        },
+        {
+          "re": 0.049920821853465594,
+          "ratio": 1.0000018076432977,
+          "R_minus_1": 1.8076432977132129e-06
+        },
+        {
+          "re": 0.19968329986074293,
+          "ratio": 1.000028966374931,
+          "R_minus_1": 2.896637493110532e-05
+        }
+      ],
+      "worst_point": "sq040_stokes_re0.2",
+      "worst_R_minus_1": 2.896637493110532e-05,
+      "verdict": "PASS"
+    },
+    "gate6_dilute_log_law": {
+      "gate": "gate6_dilute_log_law",
+      "statement": "4 pi / f = ln(1/sqrt(phi)) + C + A phi: the coefficient of the logarithm is analytically one (2D Stokeslet), verified with the log coefficient fixed and (C, A) free, to 2 %",
+      "threshold": {
+        "max_rel_resid": 0.02
+      },
+      "phis": [
+        0.0193,
+        0.041261654433644115,
+        0.0772
+      ],
+      "f_drag": [
+        NaN,
+        12.645530278109819,
+        16.655238025428346
+      ],
+      "intercept": NaN,
+      "slope_phi": NaN,
+      "max_rel_resid": NaN,
+      "fit_rms": NaN,
+      "free_slope": NaN,
+      "free_intercept": NaN,
+      "free_slope_note": "the free-slope fit is 0.87-0.95 on a finite-phi window, which is the O(phi) shift that the constrained fit absorbs in A; a slope of one is only reached as phi -> 0",
+      "verdict": "FAIL"
+    }
+  },
+  "half_force_offset_c": 0.0,
+  "groups": {
+    "dilute_020": {
+      "anchor": "dilute_020",
+      "nu": 30.0,
+      "steps": 20000,
+      "phi_actual": 0.0193,
+      "kind": "square",
+      "diameter": 15.957691216057308,
+      "cell_length": 100.0,
+      "rows": [
+        {
+          "id": "dilute_020",
+          "re_ach": NaN,
+          "ma": NaN,
+          "nu": 30.0,
+          "u_phys": NaN,
+          "ratio": NaN,
+          "f_drag": NaN,
+          "drift_tail_decile": NaN
+        }
+      ]
+    },
+    "dilute_040": {
+      "anchor": "dilute_040",
+      "nu": 30.0,
+      "steps": 20000,
+      "phi_actual": 0.041261654433644115,
+      "kind": "square",
+      "diameter": 16.022984172756278,
+      "cell_length": 71.0,
+      "rows": [
+        {
+          "id": "dilute_040",
+          "re_ach": 0.0019987228852398594,
+          "ma": 0.0067606891167475165,
+          "nu": 30.0,
+          "u_phys": 0.0039032856814615524,
+          "ratio": 1.0,
+          "f_drag": 12.64553027810982,
+          "drift_tail_decile": 5.234006743774399e-05
+        }
+      ]
+    },
+    "dilute_080": {
+      "anchor": "dilute_080",
+      "nu": 30.0,
+      "steps": 20000,
+      "phi_actual": 0.0772,
+      "kind": "square",
+      "diameter": 15.957691216057308,
+      "cell_length": 50.0,
+      "rows": [
+        {
+          "id": "dilute_080",
+          "re_ach": 0.0019984832733499166,
+          "ma": 0.007051877456809393,
+          "nu": 30.0,
+          "u_phys": 0.004071403347981157,
+          "ratio": 1.0,
+          "f_drag": 16.655238025428346,
+          "drift_tail_decile": 5.794914460494747e-05
+        }
+      ]
+    },
+    "hex55": {
+      "anchor": "hex55_re0.002",
+      "nu": 0.2,
+      "steps": 80000,
+      "phi_actual": 0.5489457831325302,
+      "kind": "hex",
+      "diameter": 37.34917998044729,
+      "cell_length": 44.63182720884279,
+      "rows": [
+        {
+          "id": "hex55_re0.002",
+          "re_ach": 0.001994126124961733,
+          "ma": 4.1004680070471816e-05,
+          "nu": 0.2,
+          "u_phys": 2.3674063076721388e-05,
+          "ratio": 1.0,
+          "f_drag": 522.9041727401953,
+          "drift_tail_decile": 0.0001002071304339214
+        },
+        {
+          "id": "hex55_re0.05",
+          "re_ach": 0.049853153509888226,
+          "ma": 0.0010251170096958202,
+          "nu": 0.2,
+          "u_phys": 0.0005918515814987461,
+          "ratio": 1.0000010145299392,
+          "f_drag": 522.9047032421339,
+          "drift_tail_decile": 0.0001002067105018447
+        },
+        {
+          "id": "hex55_re0.2",
+          "re_ach": 0.1994126372515004,
+          "ma": 0.004100468516084326,
+          "nu": 0.2,
+          "u_phys": 0.002367406601564871,
+          "ratio": 1.0000162556763603,
+          "f_drag": 522.9126729011948,
+          "drift_tail_decile": 0.0001002004075429389
+        },
+        {
+          "id": "hex55_re1",
+          "re_ach": 0.9970662392131416,
+          "ma": 0.020502405357528702,
+          "nu": 0.2,
+          "u_phys": 0.011837069252204024,
+          "ratio": 1.0004056770502137,
+          "f_drag": 523.116302962537,
+          "drift_tail_decile": 0.00010004033316370818
+        }
+      ]
+    },
+    "hex60": {
+      "anchor": "hex60_re0.002",
+      "nu": 0.2,
+      "steps": 80000,
+      "phi_actual": 0.6016566265060241,
+      "kind": "hex",
+      "diameter": 39.00994621718244,
+      "cell_length": 44.63182720884279,
+      "rows": [
+        {
+          "id": "hex60_re0.002",
+          "re_ach": 0.0019934522737866333,
+          "ma": 4.443892216985478e-05,
+          "nu": 0.2,
+          "u_phys": 2.5656823677262487e-05,
+          "ratio": 1.0,
+          "f_drag": 845.1683755714864,
+          "drift_tail_decile": 0.0001157859741817277
+        },
+        {
+          "id": "hex60_re0.05",
+          "re_ach": 0.0498363071222478,
+          "ma": 0.0011109730604343497,
+          "nu": 0.2,
+          "u_phys": 0.0006414205955041943,
+          "ratio": 1.000000973691693,
+          "f_drag": 845.1691985049127,
+          "drift_tail_decile": 0.00011578561389143819
+        },
+        {
+          "id": "hex60_re0.2",
+          "re_ach": 0.19934524518792512,
+          "ma": 0.00444389261399744,
+          "nu": 0.2,
+          "u_phys": 0.0025656825969412123,
+          "ratio": 1.0000156017712212,
+          "f_drag": 845.1815616951254,
+          "drift_tail_decile": 0.00011578019714408721
+        },
+        {
+          "id": "hex60_re1",
+          "re_ach": 0.996728414179135,
+          "ma": 0.02221951185119281,
+          "nu": 0.2,
+          "u_phys": 0.012828441148548251,
+          "ratio": 1.0003896396152168,
+          "f_drag": 845.4976866521373,
+          "drift_tail_decile": 0.00011564198775740511
+        }
+      ]
+    },
+    "sq040_grid56": {
+      "anchor": "sq040_grid56_re0.002",
+      "nu": 0.2,
+      "steps": 120000,
+      "phi_actual": 0.39700255102040816,
+      "kind": "square",
+      "diameter": 39.96438020182207,
+      "cell_length": 56.0,
+      "rows": [
+        {
+          "id": "sq040_grid56_re0.002",
+          "re_ach": 0.0019992658235303967,
+          "ma": 2.8739063250529245e-05,
+          "nu": 0.2,
+          "u_phys": 1.6592505903950744e-05,
+          "ratio": 1.0,
+          "f_drag": 191.10401554409546,
+          "drift_tail_decile": 1.1200574959104515e-05
+        },
+        {
+          "id": "sq040_grid56_re1",
+          "re_ach": 0.9996334714933717,
+          "ma": 0.014369539671249897,
+          "nu": 0.2,
+          "u_phys": 0.008296257597327135,
+          "ratio": 1.0005839674682633,
+          "f_drag": 191.21561407222768,
+          "drift_tail_decile": 1.1210111206923381e-05
+        },
+        {
+          "id": "sq040_grid56_re8",
+          "re_ach": 7.997613933437411,
+          "ma": 0.11496416833680605,
+          "nu": 0.2,
+          "u_phys": 0.06637459353641643,
+          "ratio": 1.0355022769718534,
+          "f_drag": 197.8886432343753,
+          "drift_tail_decile": 1.1580434965619953e-05
+        }
+      ]
+    },
+    "sq040_inertia": {
+      "anchor": "sq040_inertia_re1",
+      "nu": 0.2,
+      "steps": 120000,
+      "phi_actual": 0.400625,
+      "kind": "square",
+      "diameter": 28.545985858444336,
+      "cell_length": 40.0,
+      "rows": [
+        {
+          "id": "sq040_inertia_re1",
+          "re_ach": 0.998418731098353,
+          "ma": 0.020214344941413376,
+          "nu": 0.2,
+          "u_phys": 0.011670757493416964,
+          "ratio": 1.0,
+          "f_drag": 202.3784388378134,
+          "drift_tail_decile": 3.8755668936901156e-05
+        },
+        {
+          "id": "sq040_inertia_re2",
+          "re_ach": 1.996866802367583,
+          "ma": 0.04042928391448529,
+          "nu": 0.2,
+          "u_phys": 0.023341857951171892,
+          "ratio": 1.0021777363513606,
+          "f_drag": 202.81916572080215,
+          "drift_tail_decile": 3.86407763024048e-05
+        },
+        {
+          "id": "sq040_inertia_re4",
+          "re_ach": 3.9937922127784296,
+          "ma": 0.08085975442850639,
+          "nu": 0.2,
+          "u_phys": 0.046684400985905206,
+          "ratio": 1.0109760869809654,
+          "f_drag": 204.5997621855693,
+          "drift_tail_decile": 3.8118977397319794e-05
+        },
+        {
+          "id": "sq040_inertia_re8",
+          "re_ach": 7.989690191154706,
+          "ma": 0.1617621429451311,
+          "nu": 0.2,
+          "u_phys": 0.09339341677406218,
+          "ratio": 1.0480203270453476,
+          "f_drag": 212.09671765773206,
+          "drift_tail_decile": 3.517476571264489e-05
+        }
+      ]
+    },
+    "sq040_inertia_long": {
+      "anchor": "sq040_long_re1",
+      "nu": 0.2,
+      "steps": 240000,
+      "phi_actual": 0.400625,
+      "kind": "square",
+      "diameter": 28.545985858444336,
+      "cell_length": 40.0,
+      "rows": [
+        {
+          "id": "sq040_long_re1",
+          "re_ach": 0.9981682024827513,
+          "ma": 0.0202092726489015,
+          "nu": 0.2,
+          "u_phys": 0.011667829003969824,
+          "ratio": 1.0,
+          "f_drag": 202.42923347341045,
+          "drift_tail_decile": 3.676483612809986e-05
+        },
+        {
+          "id": "sq040_long_re8",
+          "re_ach": 7.987875182653011,
+          "ma": 0.16172539562981936,
+          "nu": 0.2,
+          "u_phys": 0.09337220070167494,
+          "ratio": 1.0479954240146279,
+          "f_drag": 212.1449103669229,
+          "drift_tail_decile": 3.347154469488222e-05
+        }
+      ]
+    },
+    "sq040_ma": {
+      "anchor": "sq040_ma0.05",
+      "nu": 2.4721548929484136,
+      "steps": 60000,
+      "phi_actual": 0.400625,
+      "kind": "square",
+      "diameter": 28.545985858444336,
+      "cell_length": 40.0,
+      "rows": [
+        {
+          "id": "sq040_ma0.05",
+          "re_ach": 0.19970644511154498,
+          "ma": 0.049978672394964334,
+          "nu": 2.4721548929484136,
+          "u_phys": 0.02885519996097278,
+          "ratio": 1.0,
+          "f_drag": 167.09373590162,
+          "drift_tail_decile": 4.435209444851112e-05
+        },
+        {
+          "id": "sq040_ma0.03",
+          "re_ach": 0.19981184053821946,
+          "ma": 0.030003029236187275,
+          "nu": 1.4832929357690476,
+          "u_phys": 0.017322257006016938,
+          "ratio": 0.6257622127916559,
+          "f_drag": 174.26824320237048,
+          "drift_tail_decile": 2.8286858310334827e-05
+        },
+        {
+          "id": "sq040_ma0.01",
+          "re_ach": 0.19995625226557803,
+          "ma": 0.010008237861050828,
+          "nu": 0.49443097858968266,
+          "u_phys": 0.005778258823191501,
+          "ratio": 0.22483130632390771,
+          "f_drag": 187.83951460651636,
+          "drift_tail_decile": 4.209658255625964e-06
+        }
+      ]
+    },
+    "sq040_stokes": {
+      "anchor": "sq040_stokes_re0.002",
+      "nu": 0.2,
+      "steps": 120000,
+      "phi_actual": 0.400625,
+      "kind": "square",
+      "diameter": 28.545985858444336,
+      "cell_length": 40.0,
+      "rows": [
+        {
+          "id": "sq040_stokes_re0.002",
+          "re_ach": 0.001996832865989107,
+          "ma": 4.042859682635362e-05,
+          "nu": 0.2,
+          "u_phys": 2.3341461260654115e-05,
+          "ratio": 1.0,
+          "f_drag": 202.23189267872016,
+          "drift_tail_decile": 3.879253244986443e-05
+        },
+        {
+          "id": "sq040_stokes_re0.02",
+          "re_ach": 0.019968328672800385,
+          "ma": 0.00040428596852490274,
+          "nu": 0.2,
+          "u_phys": 0.0002334146127574412,
+          "ratio": 1.0000002867899374,
+          "f_drag": 202.23195067679202,
+          "drift_tail_decile": 3.8792521919853924e-05
+        },
+        {
+          "id": "sq040_stokes_re0.05",
+          "re_ach": 0.049920821853465594,
+          "ma": 0.0010107149247837917,
+          "nu": 0.2,
+          "u_phys": 0.0005835365338978946,
+          "ratio": 1.0000018076432977,
+          "f_drag": 202.23225824184553,
+          "drift_tail_decile": 3.879244528080172e-05
+        },
+        {
+          "id": "sq040_stokes_re0.2",
+          "re_ach": 0.19968329986074293,
+          "ma": 0.00404285995113919,
+          "nu": 0.2,
+          "u_phys": 0.002334146281086169,
+          "ratio": 1.000028966374931,
+          "f_drag": 202.23775060354652,
+          "drift_tail_decile": 3.87910756386876e-05
+        }
+      ]
+    },
+    "sq040_tau": {
+      "anchor": "sq040_tau0.2",
+      "nu": 0.2,
+      "steps": 60000,
+      "phi_actual": 0.400625,
+      "kind": "square",
+      "diameter": 28.545985858444336,
+      "cell_length": 40.0,
+      "rows": [
+        {
+          "id": "sq040_tau0.2",
+          "re_ach": 0.19973697395834386,
+          "ma": 0.004043946656235488,
+          "nu": 0.2,
+          "u_phys": 0.0023347736905660467,
+          "ratio": 1.0,
+          "f_drag": 202.18340448750513,
+          "drift_tail_decile": 4.388018411112657e-05
+        },
+        {
+          "id": "sq040_tau2",
+          "re_ach": 0.19976599531918365,
+          "ma": 0.04044534233151277,
+          "nu": 2.0,
+          "u_phys": 0.023351129282565466,
+          "ratio": 8.425666322982035,
+          "f_drag": 170.35299022562273,
+          "drift_tail_decile": 3.521130330894185e-05
+        },
+        {
+          "id": "sq040_tau1",
+          "re_ach": 0.19986778980096934,
+          "ma": 0.020232976004316876,
+          "nu": 1.0,
+          "u_phys": 0.011681514142599589,
+          "ratio": 4.425479539987184,
+          "f_drag": 178.95170397688145,
+          "drift_tail_decile": 1.935293673103424e-05
+        },
+        {
+          "id": "sq040_tau0.5",
+          "re_ach": 0.19995580913528022,
+          "ma": 0.010120943179955726,
+          "nu": 0.5,
+          "u_phys": 0.005843329269400346,
+          "ratio": 2.3207145342838196,
+          "f_drag": 187.68398615405508,
+          "drift_tail_decile": 4.270613355919484e-06
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "dilute_020",
+      "group": "dilute_020",
+      "role": "dilute",
+      "geometry": {
+        "kind": "square",
+        "n": 100,
+        "nx": 100,
+        "ny": 100,
+        "phi_target": 0.02,
+        "phi_actual": 0.0193,
+        "radius": 7.978845608028654,
+        "diameter": 15.957691216057308,
+        "cell_length": 100.0,
+        "n_solid": 193,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 30.0,
+      "tau": 90.5,
+      "a": NaN,
+      "steps": 20000,
+      "re_target": 0.02,
+      "re_ach": NaN,
+      "u_superficial": NaN,
+      "u_fluid": NaN,
+      "u_max": NaN,
+      "ma": NaN,
+      "ma_target": NaN,
+      "rho_mean": NaN,
+      "drift_tail_decile": NaN,
+      "f_drag": NaN,
+      "wall_s": 395.4893771894276,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 2,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:04:20Z"
+      }
+    },
+    {
+      "id": "dilute_040",
+      "group": "dilute_040",
+      "role": "dilute",
+      "geometry": {
+        "kind": "square",
+        "n": 71,
+        "nx": 71,
+        "ny": 71,
+        "phi_target": 0.04,
+        "phi_actual": 0.041261654433644115,
+        "radius": 8.011492086378139,
+        "diameter": 16.022984172756278,
+        "cell_length": 71.0,
+        "n_solid": 208,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 30.0,
+      "tau": 90.5,
+      "a": 0.00028162554113745264,
+      "steps": 20000,
+      "re_target": 0.002,
+      "re_ach": 0.0019987228852398594,
+      "u_superficial": 0.0037422296565172946,
+      "u_fluid": 0.0039032856814615524,
+      "u_max": 0.006241226909190477,
+      "ma": 0.0067606891167475165,
+      "ma_target": 0.0067606891167475165,
+      "rho_mean": 0.9999999999999873,
+      "drift_tail_decile": 5.234006743774399e-05,
+      "f_drag": 12.645530278109819,
+      "wall_s": 184.02904792129993,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:14:04Z"
+      }
+    },
+    {
+      "id": "dilute_080",
+      "group": "dilute_080",
+      "role": "dilute",
+      "geometry": {
+        "kind": "square",
+        "n": 50,
+        "nx": 50,
+        "ny": 50,
+        "phi_target": 0.08,
+        "phi_actual": 0.0772,
+        "radius": 7.978845608028654,
+        "diameter": 15.957691216057308,
+        "cell_length": 50.0,
+        "n_solid": 193,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 30.0,
+      "tau": 90.5,
+      "a": 0.0007509029405604324,
+      "steps": 20000,
+      "re_target": 0.002,
+      "re_ach": 0.0019984832733499166,
+      "u_superficial": 0.003757091009517012,
+      "u_fluid": 0.004071403347981157,
+      "u_max": 0.006825472728459271,
+      "ma": 0.007051877456809393,
+      "ma_target": 0.007051877456809393,
+      "rho_mean": 0.9999999999999877,
+      "drift_tail_decile": 5.794914460494747e-05,
+      "f_drag": 16.655238025428346,
+      "wall_s": 92.84801027923822,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:11:48Z"
+      }
+    },
+    {
+      "id": "hex55_re0.002",
+      "group": "hex55",
+      "role": "phi",
+      "geometry": {
+        "kind": "hex",
+        "n": 48,
+        "nx": 48,
+        "ny": 83,
+        "phi_target": 0.55,
+        "phi_actual": 0.5489457831325302,
+        "radius": 18.674589990223645,
+        "diameter": 37.34917998044729,
+        "cell_length": 44.63182720884279,
+        "n_solid": 2187,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 5.606144876759137e-07,
+      "steps": 80000,
+      "re_target": 0.002,
+      "re_ach": 0.001994126124961733,
+      "u_superficial": 1.0678285981141649e-05,
+      "u_fluid": 2.3674063076721388e-05,
+      "u_max": 5.9237180367296804e-05,
+      "ma": 4.1004680070471816e-05,
+      "ma_target": 4.1004680070471816e-05,
+      "rho_mean": 0.9999999999959562,
+      "drift_tail_decile": 0.0001002071304339214,
+      "f_drag": 522.9041727401953,
+      "wall_s": 581.5159814804792,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 2,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:13:02Z"
+      }
+    },
+    {
+      "id": "hex55_re0.05",
+      "group": "hex55",
+      "role": "phi",
+      "geometry": {
+        "kind": "hex",
+        "n": 48,
+        "nx": 48,
+        "ny": 83,
+        "phi_target": 0.55,
+        "phi_actual": 0.5489457831325302,
+        "radius": 18.674589990223645,
+        "diameter": 37.34917998044729,
+        "cell_length": 44.63182720884279,
+        "n_solid": 2187,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 1.4015376519376201e-05,
+      "steps": 80000,
+      "re_target": 0.05,
+      "re_ach": 0.049853153509888226,
+      "u_superficial": 0.0002669571515946905,
+      "u_fluid": 0.0005918515814987461,
+      "u_max": 0.0014809897337961346,
+      "ma": 0.0010251170096958202,
+      "ma_target": 0.0010251170096958202,
+      "rho_mean": 0.9999999999959698,
+      "drift_tail_decile": 0.0001002067105018447,
+      "f_drag": 522.9047032421339,
+      "wall_s": 574.8293015491217,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 2,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:12:50Z"
+      }
+    },
+    {
+      "id": "hex55_re0.2",
+      "group": "hex55",
+      "role": "phi",
+      "geometry": {
+        "kind": "hex",
+        "n": 48,
+        "nx": 48,
+        "ny": 83,
+        "phi_target": 0.55,
+        "phi_actual": 0.5489457831325302,
+        "radius": 18.674589990223645,
+        "diameter": 37.34917998044729,
+        "cell_length": 44.63182720884279,
+        "n_solid": 2187,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 5.6062367044009186e-05,
+      "steps": 80000,
+      "re_target": 0.2,
+      "re_ach": 0.1994126372515004,
+      "u_superficial": 0.0010678287306757211,
+      "u_fluid": 0.002367406601564871,
+      "u_max": 0.005924731774004731,
+      "ma": 0.004100468516084326,
+      "ma_target": 0.004100468516084326,
+      "rho_mean": 0.9999999999959652,
+      "drift_tail_decile": 0.0001002004075429389,
+      "f_drag": 522.9126729011948,
+      "wall_s": 588.8600928690284,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 2,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:13:03Z"
+      }
+    },
+    {
+      "id": "hex55_re1",
+      "group": "hex55",
+      "role": "phi",
+      "geometry": {
+        "kind": "hex",
+        "n": 48,
+        "nx": 48,
+        "ny": 83,
+        "phi_target": 0.55,
+        "phi_actual": 0.5489457831325302,
+        "radius": 18.674589990223645,
+        "diameter": 37.34917998044729,
+        "cell_length": 44.63182720884279,
+        "n_solid": 2187,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 0.00028042185150009455,
+      "steps": 80000,
+      "re_target": 1.0,
+      "re_ach": 0.9970662392131416,
+      "u_superficial": 0.0053391600015588936,
+      "u_fluid": 0.011837069252204024,
+      "u_max": 0.029646822797095584,
+      "ma": 0.020502405357528702,
+      "ma_target": 0.020502405357528702,
+      "rho_mean": 0.999999999995963,
+      "drift_tail_decile": 0.00010004033316370818,
+      "f_drag": 523.1163029625369,
+      "wall_s": 573.1953925397247,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 2,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:12:52Z"
+      }
+    },
+    {
+      "id": "hex60_re0.002",
+      "group": "hex60",
+      "role": "phi",
+      "geometry": {
+        "kind": "hex",
+        "n": 48,
+        "nx": 48,
+        "ny": 83,
+        "phi_target": 0.6,
+        "phi_actual": 0.6016566265060241,
+        "radius": 19.50497310859122,
+        "diameter": 39.00994621718244,
+        "cell_length": 44.63182720884279,
+        "n_solid": 2397,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 8.672501556313687e-07,
+      "steps": 80000,
+      "re_target": 0.002,
+      "re_ach": 0.0019934522737866333,
+      "u_superficial": 1.0220225696740855e-05,
+      "u_fluid": 2.5656823677262487e-05,
+      "u_max": 6.772363789128348e-05,
+      "ma": 4.443892216985478e-05,
+      "ma_target": 4.443892216985478e-05,
+      "rho_mean": 0.9999999999959591,
+      "drift_tail_decile": 0.0001157859741817277,
+      "f_drag": 845.1683755714864,
+      "wall_s": 580.5107503104955,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 2,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:12:45Z"
+      }
+    },
+    {
+      "id": "hex60_re0.05",
+      "group": "hex60",
+      "role": "phi",
+      "geometry": {
+        "kind": "hex",
+        "n": 48,
+        "nx": 48,
+        "ny": 83,
+        "phi_target": 0.6,
+        "phi_actual": 0.6016566265060241,
+        "radius": 19.50497310859122,
+        "diameter": 39.00994621718244,
+        "cell_length": 44.63182720884279,
+        "n_solid": 2397,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 2.1681275122403003e-05,
+      "steps": 80000,
+      "re_target": 0.05,
+      "re_ach": 0.0498363071222478,
+      "u_superficial": 0.0002555056438416557,
+      "u_fluid": 0.0006414205955041943,
+      "u_max": 0.001693107053494874,
+      "ma": 0.0011109730604343497,
+      "ma_target": 0.0011109730604343497,
+      "rho_mean": 0.999999999995971,
+      "drift_tail_decile": 0.00011578561389143819,
+      "f_drag": 845.1691985049131,
+      "wall_s": 582.8752541802824,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 2,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:13:02Z"
+      }
+    },
+    {
+      "id": "hex60_re0.2",
+      "group": "hex60",
+      "role": "phi",
+      "geometry": {
+        "kind": "hex",
+        "n": 48,
+        "nx": 48,
+        "ny": 83,
+        "phi_target": 0.6,
+        "phi_actual": 0.6016566265060241,
+        "radius": 19.50497310859122,
+        "diameter": 39.00994621718244,
+        "cell_length": 44.63182720884279,
+        "n_solid": 2397,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 8.672637637501786e-05,
+      "steps": 80000,
+      "re_target": 0.2,
+      "re_ach": 0.19934524518792512,
+      "u_superficial": 0.0010220226609803473,
+      "u_fluid": 0.0025656825969412123,
+      "u_max": 0.006772677812987149,
+      "ma": 0.00444389261399744,
+      "ma_target": 0.00444389261399744,
+      "rho_mean": 0.9999999999959611,
+      "drift_tail_decile": 0.00011578019714408721,
+      "f_drag": 845.1815616951255,
+      "wall_s": 572.9045738112181,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 2,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:12:37Z"
+      }
+    },
+    {
+      "id": "hex60_re1",
+      "group": "hex60",
+      "role": "phi",
+      "geometry": {
+        "kind": "hex",
+        "n": 48,
+        "nx": 48,
+        "ny": 83,
+        "phi_target": 0.6,
+        "phi_actual": 0.6016566265060241,
+        "radius": 19.50497310859122,
+        "diameter": 39.00994621718244,
+        "cell_length": 44.63182720884279,
+        "n_solid": 2397,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 0.00043379502644194147,
+      "steps": 80000,
+      "re_target": 1.0,
+      "re_ach": 0.996728414179135,
+      "u_superficial": 0.005110124523781645,
+      "u_fluid": 0.012828441148548251,
+      "u_max": 0.03387615940079352,
+      "ma": 0.02221951185119281,
+      "ma_target": 0.02221951185119281,
+      "rho_mean": 0.9999999999959635,
+      "drift_tail_decile": 0.00011564198775740511,
+      "f_drag": 845.4976866521373,
+      "wall_s": 582.7951625697315,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 2,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:12:55Z"
+      }
+    },
+    {
+      "id": "sq040_grid56_re0.002",
+      "group": "sq040_grid56",
+      "role": "grid",
+      "geometry": {
+        "kind": "square",
+        "n": 56,
+        "nx": 56,
+        "ny": 56,
+        "phi_target": 0.4,
+        "phi_actual": 0.39700255102040816,
+        "radius": 19.982190100911033,
+        "diameter": 39.96438020182207,
+        "cell_length": 56.0,
+        "n_solid": 1245,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 1.219414093247713e-07,
+      "steps": 120000,
+      "re_target": 0.002,
+      "re_ach": 0.0019992658235303967,
+      "u_superficial": 1.0005238732261114e-05,
+      "u_fluid": 1.6592505903950744e-05,
+      "u_max": 4.640265249329697e-05,
+      "ma": 2.8739063250529245e-05,
+      "ma_target": 2.8739063250529245e-05,
+      "rho_mean": 0.9999999999939804,
+      "drift_tail_decile": 1.1200574959104515e-05,
+      "f_drag": 191.10401554409546,
+      "wall_s": 698.068480219692,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:14:25Z"
+      }
+    },
+    {
+      "id": "sq040_grid56_re1",
+      "group": "sq040_grid56",
+      "role": "grid",
+      "geometry": {
+        "kind": "square",
+        "n": 56,
+        "nx": 56,
+        "ny": 56,
+        "phi_target": 0.4,
+        "phi_actual": 0.39700255102040816,
+        "radius": 19.982190100911033,
+        "diameter": 39.96438020182207,
+        "cell_length": 56.0,
+        "n_solid": 1245,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 6.100634372991533e-05,
+      "steps": 120000,
+      "re_target": 1.0,
+      "re_ach": 0.9996334714933717,
+      "u_superficial": 0.00500262216726582,
+      "u_fluid": 0.008296257597327135,
+      "u_max": 0.02320412857026584,
+      "ma": 0.014369539671249897,
+      "ma_target": 0.014369539671249897,
+      "rho_mean": 0.999999999993941,
+      "drift_tail_decile": 1.1210111206923381e-05,
+      "f_drag": 191.21561407222768,
+      "wall_s": 777.7813011799008,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:05:10Z"
+      }
+    },
+    {
+      "id": "sq040_grid56_re8",
+      "group": "sq040_grid56",
+      "role": "grid",
+      "geometry": {
+        "kind": "square",
+        "n": 56,
+        "nx": 56,
+        "ny": 56,
+        "phi_target": 0.4,
+        "phi_actual": 0.39700255102040816,
+        "radius": 19.982190100911033,
+        "diameter": 39.96438020182207,
+        "cell_length": 56.0,
+        "n_solid": 1245,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 0.0005051172055985853,
+      "steps": 120000,
+      "re_target": 8.0,
+      "re_ach": 7.997613933437411,
+      "u_superficial": 0.04002371057951642,
+      "u_fluid": 0.06637459353641643,
+      "u_max": 0.18740047324457604,
+      "ma": 0.11496416833680605,
+      "ma_target": 0.11496416833680605,
+      "rho_mean": 0.9999999999939536,
+      "drift_tail_decile": 1.1580434965619953e-05,
+      "f_drag": 197.8886432343753,
+      "wall_s": 763.6028602812439,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:05:32Z"
+      }
+    },
+    {
+      "id": "sq040_inertia_re1",
+      "group": "sq040_inertia",
+      "role": "inertia",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 0.00017695870192405998,
+      "steps": 120000,
+      "re_target": 1.0,
+      "re_ach": 0.998418731098353,
+      "u_superficial": 0.006995160272616793,
+      "u_fluid": 0.011670757493416964,
+      "u_max": 0.03445440346347313,
+      "ma": 0.020214344941413376,
+      "ma_target": 0.020214344941413376,
+      "rho_mean": 0.9999999999939407,
+      "drift_tail_decile": 3.8755668936901156e-05,
+      "f_drag": 202.3784388378134,
+      "wall_s": 443.77546202018857,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T15:59:07Z"
+      }
+    },
+    {
+      "id": "sq040_inertia_re2",
+      "group": "sq040_inertia",
+      "role": "inertia",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 0.0003546933541900718,
+      "steps": 120000,
+      "re_target": 2.0,
+      "re_ach": 1.996866802367583,
+      "u_superficial": 0.013990526109483653,
+      "u_fluid": 0.023341857951171892,
+      "u_max": 0.06895616955344634,
+      "ma": 0.04042928391448529,
+      "ma_target": 0.04042928391448529,
+      "rho_mean": 0.9999999999939422,
+      "drift_tail_decile": 3.86407763024048e-05,
+      "f_drag": 202.81916572080212,
+      "wall_s": 433.51316166110337,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T15:58:54Z"
+      }
+    },
+    {
+      "id": "sq040_inertia_re4",
+      "group": "sq040_inertia",
+      "role": "inertia",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 0.0007156250803572493,
+      "steps": 120000,
+      "re_target": 4.0,
+      "re_ach": 3.9937922127784296,
+      "u_superficial": 0.027981462840926934,
+      "u_fluid": 0.046684400985905206,
+      "u_max": 0.13875232693043107,
+      "ma": 0.08085975442850639,
+      "ma_target": 0.08085975442850639,
+      "rho_mean": 0.9999999999939742,
+      "drift_tail_decile": 3.8118977397319794e-05,
+      "f_drag": 204.5997621855693,
+      "wall_s": 447.23608008027077,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T15:59:32Z"
+      }
+    },
+    {
+      "id": "sq040_inertia_re8",
+      "group": "sq040_inertia",
+      "role": "inertia",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 0.0014840852519942016,
+      "steps": 120000,
+      "re_target": 8.0,
+      "re_ach": 7.989690191154706,
+      "u_superficial": 0.05597767917895352,
+      "u_fluid": 0.09339341677406218,
+      "u_max": 0.28381716801039547,
+      "ma": 0.1617621429451311,
+      "ma_target": 0.1617621429451311,
+      "rho_mean": 0.9999999999939989,
+      "drift_tail_decile": 3.517476571264489e-05,
+      "f_drag": 212.09671765773206,
+      "wall_s": 451.1066295597702,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T15:59:35Z"
+      }
+    },
+    {
+      "id": "sq040_long_re1",
+      "group": "sq040_inertia_long",
+      "role": "uncertainty",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 0.00017695870192405998,
+      "steps": 240000,
+      "re_target": 1.0,
+      "re_ach": 0.9981682024827513,
+      "u_superficial": 0.0069934050092544135,
+      "u_fluid": 0.011667829003969824,
+      "u_max": 0.03444528739155176,
+      "ma": 0.0202092726489015,
+      "ma_target": 0.0202092726489015,
+      "rho_mean": 0.9999999999878838,
+      "drift_tail_decile": 3.676483612809986e-05,
+      "f_drag": 202.42923347341048,
+      "wall_s": 887.8404803201556,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:06:31Z"
+      }
+    },
+    {
+      "id": "sq040_long_re8",
+      "group": "sq040_inertia_long",
+      "role": "uncertainty",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 0.0014840852519942016,
+      "steps": 240000,
+      "re_target": 8.0,
+      "re_ach": 7.987875182653011,
+      "u_superficial": 0.05596496279556642,
+      "u_fluid": 0.09337220070167494,
+      "u_max": 0.2837453464693142,
+      "ma": 0.16172539562981936,
+      "ma_target": 0.16172539562981936,
+      "rho_mean": 0.9999999999880401,
+      "drift_tail_decile": 3.347154469488222e-05,
+      "f_drag": 212.1449103669229,
+      "wall_s": 899.4225135594606,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:07:04Z"
+      }
+    },
+    {
+      "id": "sq040_ma0.01",
+      "group": "sq040_ma",
+      "role": "mach",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.49443097858968266,
+      "tau": 1.983292935769048,
+      "a": 0.0002010334213810358,
+      "steps": 60000,
+      "re_target": 0.2,
+      "re_ach": 0.19995625226557803,
+      "u_superficial": 0.003463343882150406,
+      "u_fluid": 0.005778258823191501,
+      "u_max": 0.016387856272202014,
+      "ma": 0.010008237861050828,
+      "ma_target": 0.01,
+      "rho_mean": 0.9999999999983189,
+      "drift_tail_decile": 4.209658255625964e-06,
+      "f_drag": 187.83951460651636,
+      "wall_s": 217.59340094029903,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T15:55:20Z"
+      }
+    },
+    {
+      "id": "sq040_ma0.03",
+      "group": "sq040_ma",
+      "role": "mach",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 1.4832929357690476,
+      "tau": 4.949878807307143,
+      "a": 0.0016773677978895167,
+      "steps": 60000,
+      "re_target": 0.2,
+      "re_ach": 0.19981184053821946,
+      "u_superficial": 0.010382527792981402,
+      "u_fluid": 0.017322257006016938,
+      "u_max": 0.04707289867717191,
+      "ma": 0.030003029236187275,
+      "ma_target": 0.03,
+      "rho_mean": 0.999999999999327,
+      "drift_tail_decile": 2.8286858310334827e-05,
+      "f_drag": 174.26824320237054,
+      "wall_s": 225.14074048027396,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:06:01Z"
+      }
+    },
+    {
+      "id": "sq040_ma0.05",
+      "group": "sq040_ma",
+      "role": "mach",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 2.4721548929484136,
+      "tau": 7.916464678845241,
+      "a": 0.004465175953312873,
+      "steps": 60000,
+      "re_target": 0.2,
+      "re_ach": 0.19970644511154498,
+      "u_superficial": 0.01729508547660806,
+      "u_fluid": 0.02885519996097278,
+      "u_max": 0.07697458378154898,
+      "ma": 0.049978672394964334,
+      "ma_target": 0.05,
+      "rho_mean": 0.999999999999583,
+      "drift_tail_decile": 4.435209444851112e-05,
+      "f_drag": 167.09373590162,
+      "wall_s": 220.25121112912893,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T15:55:44Z"
+      }
+    },
+    {
+      "id": "sq040_stokes_re0.002",
+      "group": "sq040_stokes",
+      "role": "stokes",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 3.536603113433839e-07,
+      "steps": 120000,
+      "re_target": 0.002,
+      "re_ach": 0.001996832865989107,
+      "u_superficial": 1.399028834310456e-05,
+      "u_fluid": 2.3341461260654115e-05,
+      "u_max": 6.889311712700767e-05,
+      "ma": 4.042859682635362e-05,
+      "ma_target": 4.042859682635362e-05,
+      "rho_mean": 0.9999999999939354,
+      "drift_tail_decile": 3.879253244986443e-05,
+      "f_drag": 202.23189267872016,
+      "wall_s": 451.93223660066724,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T15:59:14Z"
+      }
+    },
+    {
+      "id": "sq040_stokes_re0.02",
+      "group": "sq040_stokes",
+      "role": "stokes",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 3.5366041299824017e-06,
+      "steps": 120000,
+      "re_target": 0.02,
+      "re_ach": 0.019968328672800385,
+      "u_superficial": 0.00013990288352149134,
+      "u_fluid": 0.0002334146127574412,
+      "u_max": 0.0006889312333025462,
+      "ma": 0.00040428596852490274,
+      "ma_target": 0.00040428596852490274,
+      "rho_mean": 0.9999999999939265,
+      "drift_tail_decile": 3.8792521919853924e-05,
+      "f_drag": 202.23195067679202,
+      "wall_s": 444.3186781499535,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T15:59:05Z"
+      }
+    },
+    {
+      "id": "sq040_stokes_re0.05",
+      "group": "sq040_stokes",
+      "role": "stokes",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 8.841523801961099e-06,
+      "steps": 120000,
+      "re_target": 0.05,
+      "re_ach": 0.049920821853465594,
+      "u_superficial": 0.00034975721000505053,
+      "u_fluid": 0.0005835365338978946,
+      "u_max": 0.0017223289056685516,
+      "ma": 0.0010107149247837917,
+      "ma_target": 0.0010107149247837917,
+      "rho_mean": 0.9999999999939191,
+      "drift_tail_decile": 3.879244528080172e-05,
+      "f_drag": 202.23225824184556,
+      "wall_s": 436.8130069486797,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T15:58:58Z"
+      }
+    },
+    {
+      "id": "sq040_stokes_re0.2",
+      "group": "sq040_stokes",
+      "role": "stokes",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 3.536705790893545e-05,
+      "steps": 120000,
+      "re_target": 0.2,
+      "re_ach": 0.19968329986074293,
+      "u_superficial": 0.0013990289272260226,
+      "u_fluid": 0.002334146281086169,
+      "u_max": 0.006889374370120221,
+      "ma": 0.00404285995113919,
+      "ma_target": 0.00404285995113919,
+      "rho_mean": 0.9999999999939249,
+      "drift_tail_decile": 3.87910756386876e-05,
+      "f_drag": 202.23775060354652,
+      "wall_s": 454.56340133957565,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T15:59:17Z"
+      }
+    },
+    {
+      "id": "sq040_tau0.2",
+      "group": "sq040_tau",
+      "role": "tau",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.2,
+      "tau": 1.1,
+      "a": 3.536705790893545e-05,
+      "steps": 60000,
+      "re_target": 0.2,
+      "re_ach": 0.19973697395834386,
+      "u_superficial": 0.0013994049807830242,
+      "u_fluid": 0.0023347736905660467,
+      "u_max": 0.006891369230974677,
+      "ma": 0.004043946656235488,
+      "ma_target": 0.004043946656235488,
+      "rho_mean": 0.9999999999969716,
+      "drift_tail_decile": 4.388018411112657e-05,
+      "f_drag": 202.18340448750516,
+      "wall_s": 234.21522923000157,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:06:15Z"
+      }
+    },
+    {
+      "id": "sq040_tau0.5",
+      "group": "sq040_tau",
+      "role": "tau",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 0.5,
+      "tau": 2.0,
+      "a": 0.00020541692522936696,
+      "steps": 60000,
+      "re_target": 0.2,
+      "re_ach": 0.19995580913528022,
+      "u_superficial": 0.0035023454808468324,
+      "u_fluid": 0.005843329269400346,
+      "u_max": 0.01656453542839157,
+      "ma": 0.010120943179955726,
+      "ma_target": 0.010120943179955726,
+      "rho_mean": 0.9999999999983327,
+      "drift_tail_decile": 4.270613355919484e-06,
+      "f_drag": 187.68398615405508,
+      "wall_s": 229.79245528951287,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:06:08Z"
+      }
+    },
+    {
+      "id": "sq040_tau1",
+      "group": "sq040_tau",
+      "role": "tau",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 1.0,
+      "tau": 3.5,
+      "a": 0.0007830934998255695,
+      "steps": 60000,
+      "re_target": 0.2,
+      "re_ach": 0.19986778980096934,
+      "u_superficial": 0.007001607539220629,
+      "u_fluid": 0.011681514142599589,
+      "u_max": 0.03219540488561542,
+      "ma": 0.020232976004316876,
+      "ma_target": 0.020232976004316876,
+      "rho_mean": 0.9999999999990475,
+      "drift_tail_decile": 1.935293673103424e-05,
+      "f_drag": 178.95170397688145,
+      "wall_s": 224.3119564484805,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:06:00Z"
+      }
+    },
+    {
+      "id": "sq040_tau2",
+      "group": "sq040_tau",
+      "role": "tau",
+      "geometry": {
+        "kind": "square",
+        "n": 40,
+        "nx": 40,
+        "ny": 40,
+        "phi_target": 0.4,
+        "phi_actual": 0.400625,
+        "radius": 14.272992929222168,
+        "diameter": 28.545985858444336,
+        "cell_length": 40.0,
+        "n_solid": 641,
+        "mask_rule": "periodic folded distance <= radius, float64, disc centres per cell"
+      },
+      "nu": 2.0,
+      "tau": 6.5,
+      "a": 0.0029803432623394474,
+      "steps": 60000,
+      "re_target": 0.2,
+      "re_ach": 0.19976599531918365,
+      "u_superficial": 0.013996083113737677,
+      "u_fluid": 0.023351129282565466,
+      "u_max": 0.06277841024829219,
+      "ma": 0.04044534233151277,
+      "ma_target": 0.04044534233151277,
+      "rho_mean": 0.9999999999994903,
+      "drift_tail_decile": 3.521130330894185e-05,
+      "f_drag": 170.35299022562273,
+      "wall_s": 232.54637089930475,
+      "retries": 0,
+      "monitor": "fixed_protocol",
+      "snapshot_stride": 1,
+      "provenance": {
+        "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+        "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+        "torch_version": "2.7.1",
+        "device": "cpu",
+        "dtype": "float64",
+        "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+        "python": "3.11.6",
+        "cpus": 128,
+        "utc": "2026-11-07T16:06:14Z"
+      }
+    }
+  ],
+  "checks": {
+    "tau_independence": {
+      "available": true,
+      "nu_ladder": [
+        0.2,
+        0.5,
+        1.0,
+        2.0
+      ],
+      "f_measured": [
+        202.18340448750516,
+        187.68398615405508,
+        178.95170397688145,
+        170.35299022562273
+      ],
+      "re": [
+        0.19973697395834386,
+        0.19995580913528022,
+        0.19986778980096934,
+        0.19976599531918365
+      ],
+      "A": 0.005593790014144012,
+      "B": 0.00039938580531058193,
+      "f_true": 178.76967091569037,
+      "log_slope_ratio_B_over_A": 0.07139806898377071,
+      "max_rel_resid_log": 0.0020923405723551123,
+      "rms_rel_resid_log": 0.001269093391251701,
+      "max_rel_resid_linear_in_nu": 0.02946871196965564,
+      "max_rel_resid_quadratic_in_nu": 0.050640448481182106,
+      "model": "1/f_meas(nu) = A + B ln(nu); f_true = 1/A",
+      "note": "Fixed-Re viscosity ladder: the physical drag must be nu independent, so this is a purely numerical systematic of the staircase bounce-back wall position under the first-order split forcing. It cancels inside a fixed-nu group and is de-trended (not fitted away) for the Mach sweep, which is the only group that must vary nu."
+    },
+    "common_mode_cancellation": {
+      "dilute_020": {
+        "max_abs_drift_tail_decile": NaN,
+        "n": 1
+      },
+      "dilute_040": {
+        "max_abs_drift_tail_decile": 5.234006743774399e-05,
+        "n": 1
+      },
+      "dilute_080": {
+        "max_abs_drift_tail_decile": 5.794914460494747e-05,
+        "n": 1
+      },
+      "hex55": {
+        "max_abs_drift_tail_decile": 0.0001002071304339214,
+        "n": 4
+      },
+      "hex60": {
+        "max_abs_drift_tail_decile": 0.0001157859741817277,
+        "n": 4
+      },
+      "sq040_grid56": {
+        "max_abs_drift_tail_decile": 1.1580434965619953e-05,
+        "n": 3
+      },
+      "sq040_inertia": {
+        "max_abs_drift_tail_decile": 3.8755668936901156e-05,
+        "n": 4
+      },
+      "sq040_inertia_long": {
+        "max_abs_drift_tail_decile": 3.676483612809986e-05,
+        "n": 2
+      },
+      "sq040_ma": {
+        "max_abs_drift_tail_decile": 4.435209444851112e-05,
+        "n": 3
+      },
+      "sq040_stokes": {
+        "max_abs_drift_tail_decile": 3.879253244986443e-05,
+        "n": 4
+      },
+      "sq040_tau": {
+        "max_abs_drift_tail_decile": 4.388018411112657e-05,
+        "n": 4
+      }
+    },
+    "grid_consistency": {
+      "stokes_drag": {
+        "n40": 202.23189267872016,
+        "n56": 191.10401554409546,
+        "rel_diff": -0.05502533248948635
+      },
+      "ratios": [
+        {
+          "re": 0.002,
+          "n40": 1.0,
+          "n56": 1.0,
+          "abs_diff": 0.0
+        }
+      ]
+    },
+    "uncertainty_bracket": {
+      "note": "The common-protocol design assumes the residual transient is common-mode and cancels in the ratio. Doubling the protocol length measures the size of the violation; it bounds the systematic error of the expansion coefficients.",
+      "points": [
+        {
+          "re": 0.9981682024827513,
+          "a_over_u_short": 1.0,
+          "a_over_u_long": 1.0,
+          "rel_shift": 0.0,
+          "drift_short": 3.8755668936901156e-05,
+          "drift_long": 3.676483612809986e-05
+        }
+      ],
+      "max_rel_shift": 0.0
+    },
+    "secondary_literature": {
+      "note": "digitised literature table (Sangani & Acrivos 1982; the square-array column), quoted for orientation only. It is NOT a gate: the square entries are Stokes-limit values, so a finite-Re case sits above them by design (+c2 Re^2), and the point of this benchmark is a self-produced reference. The residual few-per-cent offset at the Stokes branch is the staircase-wall discretisation error of a d ~ 29-cell disc, decreasing with resolution (see checks.grid_consistency).",
+      "n_points": 29,
+      "max_abs_rel_err_stokes_branch": 0.1699062689700507,
+      "points": [
+        {
+          "id": "dilute_080",
+          "kind": "square",
+          "re": 0.0019984832733499166,
+          "phi_actual": 0.0772,
+          "f_drag": 16.655238025428346,
+          "f_sangani_interp": 20.064285999080067,
+          "rel_err": -0.1699062689700507
+        },
+        {
+          "id": "hex55_re0.002",
+          "kind": "hex",
+          "re": 0.001994126124961733,
+          "phi_actual": 0.5489457831325302,
+          "f_drag": 522.9041727401953,
+          "f_sangani_interp": 956.8096842041698,
+          "rel_err": -0.4534919729882093
+        },
+        {
+          "id": "hex55_re0.05",
+          "kind": "hex",
+          "re": 0.049853153509888226,
+          "phi_actual": 0.5489457831325302,
+          "f_drag": 522.9047032421339,
+          "f_sangani_interp": 956.8096842041698,
+          "rel_err": -0.4534914185394539
+        },
+        {
+          "id": "hex55_re0.2",
+          "kind": "hex",
+          "re": 0.1994126372515004,
+          "phi_actual": 0.5489457831325302,
+          "f_drag": 522.9126729011948,
+          "f_sangani_interp": 956.8096842041698,
+          "rel_err": -0.45348308913059393
+        },
+        {
+          "id": "hex55_re1",
+          "kind": "hex",
+          "re": 0.9970662392131416,
+          "phi_actual": 0.5489457831325302,
+          "f_drag": 523.1163029625369,
+          "f_sangani_interp": 956.8096842041698,
+          "rel_err": -0.4532702672238932
+        },
+        {
+          "id": "hex60_re0.002",
+          "kind": "hex",
+          "re": 0.0019934522737866333,
+          "phi_actual": 0.6016566265060241,
+          "f_drag": 845.1683755714864,
+          "f_sangani_interp": 1823.513113720536,
+          "rel_err": -0.5365164257869914
+        },
+        {
+          "id": "hex60_re0.05",
+          "kind": "hex",
+          "re": 0.0498363071222478,
+          "phi_actual": 0.6016566265060241,
+          "f_drag": 845.1691985049131,
+          "f_sangani_interp": 1823.513113720536,
+          "rel_err": -0.5365159744968853
+        },
+        {
+          "id": "hex60_re0.2",
+          "kind": "hex",
+          "re": 0.19934524518792512,
+          "phi_actual": 0.6016566265060241,
+          "f_drag": 845.1815616951255,
+          "f_sangani_interp": 1823.513113720536,
+          "rel_err": -0.5365091946223017
+        },
+        {
+          "id": "hex60_re1",
+          "kind": "hex",
+          "re": 0.996728414179135,
+          "phi_actual": 0.6016566265060241,
+          "f_drag": 845.4976866521373,
+          "f_sangani_interp": 1823.513113720536,
+          "rel_err": -0.5363358342254758
+        },
+        {
+          "id": "sq040_grid56_re0.002",
+          "kind": "square",
+          "re": 0.0019992658235303967,
+          "phi_actual": 0.39700255102040816,
+          "f_drag": 191.10401554409546,
+          "f_sangani_interp": 213.04480713279753,
+          "rel_err": -0.10298674670359688
+        },
+        {
+          "id": "sq040_grid56_re1",
+          "kind": "square",
+          "re": 0.9996334714933717,
+          "phi_actual": 0.39700255102040816,
+          "f_drag": 191.21561407222768,
+          "f_sangani_interp": 213.04480713279753,
+          "rel_err": -0.10246292014507083
+        },
+        {
+          "id": "sq040_grid56_re8",
+          "kind": "square",
+          "re": 7.997613933437411,
+          "phi_actual": 0.39700255102040816,
+          "f_drag": 197.8886432343753,
+          "f_sangani_interp": 213.04480713279753,
+          "rel_err": -0.07114073373764472
+        },
+        {
+          "id": "sq040_inertia_re1",
+          "kind": "square",
+          "re": 0.998418731098353,
+          "phi_actual": 0.400625,
+          "f_drag": 202.3784388378134,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.0763633164533281
+        },
+        {
+          "id": "sq040_inertia_re2",
+          "kind": "square",
+          "re": 1.996866802367583,
+          "phi_actual": 0.400625,
+          "f_drag": 202.81916572080212,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.07435187927211837
+        },
+        {
+          "id": "sq040_inertia_re4",
+          "kind": "square",
+          "re": 3.9937922127784296,
+          "phi_actual": 0.400625,
+          "f_drag": 204.5997621855693,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.06622539987590914
+        },
+        {
+          "id": "sq040_inertia_re8",
+          "kind": "square",
+          "re": 7.989690191154706,
+          "phi_actual": 0.400625,
+          "f_drag": 212.09671765773206,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.03200998083833679
+        },
+        {
+          "id": "sq040_long_re1",
+          "kind": "square",
+          "re": 0.9981682024827513,
+          "phi_actual": 0.400625,
+          "f_drag": 202.42923347341048,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.07613149438258646
+        },
+        {
+          "id": "sq040_long_re8",
+          "kind": "square",
+          "re": 7.987875182653011,
+          "phi_actual": 0.400625,
+          "f_drag": 212.1449103669229,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.031790033721718215
+        },
+        {
+          "id": "sq040_ma0.01",
+          "kind": "square",
+          "re": 0.19995625226557803,
+          "phi_actual": 0.400625,
+          "f_drag": 187.83951460651636,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.1427176367872908
+        },
+        {
+          "id": "sq040_ma0.03",
+          "kind": "square",
+          "re": 0.19981184053821946,
+          "phi_actual": 0.400625,
+          "f_drag": 174.26824320237054,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.20465567812815985
+        },
+        {
+          "id": "sq040_ma0.05",
+          "kind": "square",
+          "re": 0.19970644511154498,
+          "phi_actual": 0.400625,
+          "f_drag": 167.09373590162,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.23739947320534804
+        },
+        {
+          "id": "sq040_stokes_re0.002",
+          "kind": "square",
+          "re": 0.001996832865989107,
+          "phi_actual": 0.400625,
+          "f_drag": 202.23189267872016,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.07703213971903114
+        },
+        {
+          "id": "sq040_stokes_re0.02",
+          "kind": "square",
+          "re": 0.019968328672800385,
+          "phi_actual": 0.400625,
+          "f_drag": 202.23195067679202,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.07703187502113615
+        },
+        {
+          "id": "sq040_stokes_re0.05",
+          "kind": "square",
+          "re": 0.049920821853465594,
+          "phi_actual": 0.400625,
+          "f_drag": 202.23225824184556,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.07703047132236443
+        },
+        {
+          "id": "sq040_stokes_re0.2",
+          "kind": "square",
+          "re": 0.19968329986074293,
+          "phi_actual": 0.400625,
+          "f_drag": 202.23775060354652,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.07700540468594089
+        },
+        {
+          "id": "sq040_tau0.2",
+          "kind": "square",
+          "re": 0.19973697395834386,
+          "phi_actual": 0.400625,
+          "f_drag": 202.18340448750516,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.07725343538858065
+        },
+        {
+          "id": "sq040_tau0.5",
+          "kind": "square",
+          "re": 0.19995580913528022,
+          "phi_actual": 0.400625,
+          "f_drag": 187.68398615405508,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.14342745441832613
+        },
+        {
+          "id": "sq040_tau1",
+          "kind": "square",
+          "re": 0.19986778980096934,
+          "phi_actual": 0.400625,
+          "f_drag": 178.95170397688145,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.18328079154374016
+        },
+        {
+          "id": "sq040_tau2",
+          "kind": "square",
+          "re": 0.19976599531918365,
+          "phi_actual": 0.400625,
+          "f_drag": 170.35299022562273,
+          "f_sangani_interp": 219.11043859875787,
+          "rel_err": -0.22252453459061963
+        }
+      ]
+    }
+  },
+  "provenance": {
+    "tensorlbm_file": "/root/tp-agent/work/m5664/src/tensorlbm/__init__.py",
+    "git_commit": "b51f104b26248bf3e1e5a882f4815b6cd460d694",
+    "torch_version": "2.7.1",
+    "device": "cpu",
+    "dtype": "float64",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "python": "3.11.6",
+    "cpus": 128,
+    "utc": "2026-11-07T16:14:35Z"
+  },
+  "figures": [
+    {
+      "name": "fig1_weak_inertia_law.png",
+      "caption": "Measured inertial drag excess R-1 of the square phi=0.40 array (left, log-log) against the fitted quadratic law, and the residual of that law on the inertial branch (right)."
+    },
+    {
+      "name": "fig2_mach_extrapolation.png",
+      "caption": "Drag ratio at fixed Re = 0.2 versus Ma^2 with the Ma -> 0 extrapolation."
+    },
+    {
+      "name": "fig3_porosity_surface.png",
+      "caption": "Measured R(Re, phi) for the square phi=0.40 and hex phi=0.55/0.60 arrays."
+    },
+    {
+      "name": "fig4_dilute_log_law.png",
+      "caption": "Dilute-lattice test of 4 pi / f against ln(1/sqrt(phi)); the analytic slope is one."
+    },
+    {
+      "name": "fig5_field_square040.png",
+      "caption": "Streamwise velocity of the unit cell (square phi=0.40, Re=7.99, stride-decimated); the wake asymmetry downstream of the disc is the weak-inertia signal."
+    }
+  ]
+}
