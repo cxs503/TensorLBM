@@ -1,0 +1,131 @@
+{
+  "benchmark": "rayleigh_taylor_growth_rate",
+  "cases": [
+    {
+      "diffusivity": 0.0010000000000000009,
+      "fit_a_over_lam": [
+        0.01073691844658339,
+        0.04772238202160993
+      ],
+      "fit_points": 39,
+      "fit_r2": 0.9991669694716809,
+      "interface_width": 1.5,
+      "k": 0.19634954084936207,
+      "lam": 32,
+      "nu": 0.003333333333333336,
+      "nx": 32,
+      "ny": 96,
+      "phase_mass_drift_pct": 0.0001430511474609375,
+      "ratio_sim_over_analytic": 0.9160267111853089,
+      "ratio_sim_over_viscous": 0.9206396931273112,
+      "rel_error_pct": -8.397328881469113,
+      "rel_error_vs_viscous_pct": -7.936030687268881,
+      "sigma_analytic": 0.025583167698662212,
+      "sigma_sim": 0.023434864968707773,
+      "sigma_sim_colmoment": 0.024419185673602038,
+      "sigma_viscous_theory": 0.02545497999233786,
+      "steps_run": 112,
+      "tau": 0.51,
+      "tau_phi": 0.503
+    },
+    {
+      "diffusivity": 0.0010000000000000009,
+      "fit_a_over_lam": [
+        0.010292149098993356,
+        0.04901590449093395
+      ],
+      "fit_points": 55,
+      "fit_r2": 0.9994130605719075,
+      "interface_width": 1.5,
+      "k": 0.09817477042468103,
+      "lam": 64,
+      "nu": 0.003333333333333336,
+      "nx": 64,
+      "ny": 192,
+      "phase_mass_drift_pct": 0.0007867827179097731,
+      "ratio_sim_over_analytic": 0.8984974958263772,
+      "ratio_sim_over_viscous": 0.9000946305945563,
+      "rel_error_pct": -10.150250417362283,
+      "rel_error_vs_viscous_pct": -9.99053694054437,
+      "sigma_analytic": 0.01809003136395669,
+      "sigma_sim": 0.01625384787993571,
+      "sigma_sim_colmoment": 0.018223102986084615,
+      "sigma_viscous_theory": 0.018057932274520128,
+      "steps_run": 156,
+      "tau": 0.51,
+      "tau_phi": 0.503
+    },
+    {
+      "diffusivity": 0.0010000000000000009,
+      "fit_a_over_lam": [
+        0.010282679537208718,
+        0.036249231397233975
+      ],
+      "fit_points": 66,
+      "fit_r2": 0.9991497299376253,
+      "interface_width": 1.5,
+      "k": 0.04908738521234052,
+      "lam": 128,
+      "nu": 0.003333333333333336,
+      "nx": 128,
+      "ny": 384,
+      "phase_mass_drift_pct": 0.0015258905478710005,
+      "ratio_sim_over_analytic": 0.8108514190317196,
+      "ratio_sim_over_viscous": 0.8113607168647111,
+      "rel_error_pct": -18.914858096828034,
+      "rel_error_vs_viscous_pct": -18.863928313528888,
+      "sigma_analytic": 0.012791583849331106,
+      "sigma_sim": 0.010372073915893353,
+      "sigma_sim_colmoment": 0.012875583626885564,
+      "sigma_viscous_theory": 0.012783554466345732,
+      "steps_run": 132,
+      "tau": 0.51,
+      "tau_phi": 0.503
+    }
+  ],
+  "gates": {
+    "growth_rate_rel_error_le_pct": 3.0,
+    "observed_order_ge": 1.5
+  },
+  "grid_convergence": {
+    "abs_error": {
+      "128": 0.18914858096828036,
+      "32": 0.08397328881469113,
+      "64": 0.10150250417362283
+    },
+    "gci": {
+      "gci_128": NaN,
+      "gci_64": NaN
+    },
+    "normalised_ratio": {
+      "128": 0.8108514190317196,
+      "32": 0.9160267111853089,
+      "64": 0.8984974958263772
+    },
+    "observed_order_mean": NaN,
+    "observed_orders": {
+      "32->64": NaN,
+      "64->128": NaN
+    },
+    "refinement_ratio": 2.0,
+    "richardson_ratio_inf": NaN
+  },
+  "physics": {
+    "atwood": 0.3333333333333333,
+    "density_ratio": 2.0,
+    "gravity": 0.01,
+    "initial_amplitude_over_lambda": 0.01,
+    "model": "Boussinesq two-layer D2Q9, transported phase field, no surface tension"
+  },
+  "title": "Rayleigh-Taylor linear growth rate vs sigma = sqrt(A g k)",
+  "verdict": {
+    "all_lambdas_within_gate": false,
+    "observed_order_ge_gate": false,
+    "per_lambda_error_gate": {
+      "128": false,
+      "32": false,
+      "64": false
+    },
+    "status": "FAIL"
+  }
+}
