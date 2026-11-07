@@ -241,17 +241,29 @@ def _init_fe(
     return f, g
 
 
+def find_front_x(field: torch.Tensor, threshold: float) -> float:
+    """Rightmost column index whose column-averaged value exceeds *threshold*.
+
+    Shared front tracker of the dam-break benchmarks: ``field`` is a 2-D
+    ``(ny, nx)`` indicator (heavy-phase fraction for the vertical-plane
+    multiphase dam break, water depth for the depth-averaged Ritter dam break).
+    Interior rows are averaged only, to remove wall artefacts; a single-row
+    field is used as is.
+    """
+    arr = field if field.dim() == 2 else field.view(1, -1)
+    rows = arr[1:-1, :] if arr.shape[0] > 2 else arr
+    cols = (rows.mean(dim=0) > threshold).nonzero(as_tuple=True)[0]
+    if cols.numel() == 0:
+        return 0.0
+    return float(cols.max().item())
+
+
 def _find_front_x(
     rho_heavy: torch.Tensor, rho_light: torch.Tensor, wall: torch.Tensor, threshold: float = 0.45
 ) -> float:
     """Return the x-position of the rightmost column where heavy phase dominates."""
     phi = rho_heavy / (rho_heavy + rho_light + 1e-12)
-    # Average over interior y rows only
-    phi_mean = phi[1:-1, :].mean(dim=0)  # (nx,)
-    heavy_cols = (phi_mean > threshold).nonzero(as_tuple=True)[0]
-    if heavy_cols.numel() == 0:
-        return 0.0
-    return float(heavy_cols.max().item())
+    return find_front_x(phi, threshold)
 
 
 def _save_snapshot(
@@ -437,4 +449,4 @@ def run_dam_break(config: DamBreakConfig) -> Path:
     return run_dir
 
 
-__all__ = ["DamBreakConfig", "run_dam_break"]
+__all__ = ["DamBreakConfig", "find_front_x", "run_dam_break"]
