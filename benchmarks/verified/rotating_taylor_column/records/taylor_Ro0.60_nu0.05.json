@@ -1,0 +1,155 @@
+{
+  "case": "taylor_column",
+  "label": "rotating",
+  "config": {
+    "shape": [
+      30,
+      24,
+      24
+    ],
+    "radius": 5.0,
+    "z_body": [
+      8,
+      18
+    ],
+    "nu_lattice": 0.05,
+    "tau": 0.65,
+    "U_inf": 0.004,
+    "Mach": 0.006928203230275509,
+    "rotate": true,
+    "Omega_lattice": 0.0006666666666666666,
+    "f_lattice": 0.0013333333333333333,
+    "body_force": [
+      0.0,
+      5.333333333333334e-06,
+      0.0
+    ],
+    "Ro": 0.6000000000000001,
+    "Re": 0.39999999999999997,
+    "Ekman_number": 0.08333333333333334,
+    "delta_E_cells": 8.660254037844387,
+    "Ekman_pumping_estimate": 0.2886751345948129,
+    "caps": "free-slip floor and lid",
+    "tol": 5e-05,
+    "column_tol": 0.05
+  },
+  "convergence": {
+    "steps": 7068,
+    "residual": 0.004438847303390503,
+    "period_steps": 9425,
+    "converged": false,
+    "wall_seconds": 181.64896202087402,
+    "history": [
+      {
+        "steps": 1178,
+        "compare_to": 0,
+        "max_du": 0.003988589625805616
+      },
+      {
+        "steps": 2356,
+        "compare_to": 0,
+        "max_du": 0.0052174595184624195
+      },
+      {
+        "steps": 3534,
+        "compare_to": 0,
+        "max_du": 0.004708738066256046
+      },
+      {
+        "steps": 4712,
+        "compare_to": 0,
+        "max_du": 0.0042845457792282104
+      },
+      {
+        "steps": 5890,
+        "compare_to": 0,
+        "max_du": 0.0043567875400185585
+      },
+      {
+        "steps": 7068,
+        "compare_to": 0,
+        "max_du": 0.004438847303390503
+      }
+    ]
+  },
+  "column": {
+    "w_max_rel": 0.06603417568840086,
+    "w_mean_rel": 0.01552100366097875,
+    "u_mean_rel": 0.8002535323612392,
+    "length_available": 10,
+    "length_measured": 3,
+    "length_rel_err": 0.7,
+    "z_profile": [
+      {
+        "z": 19,
+        "w_max_rel": 0.004728578460344579,
+        "u_mean_rel": 0.12891431106254458
+      },
+      {
+        "z": 20,
+        "w_max_rel": 0.03383303919690661,
+        "u_mean_rel": 0.37633662577718496
+      },
+      {
+        "z": 21,
+        "w_max_rel": 0.05844082261319272,
+        "u_mean_rel": 0.5828444845974445
+      },
+      {
+        "z": 22,
+        "w_max_rel": 0.06603417568840086,
+        "u_mean_rel": 0.7447944954037666
+      },
+      {
+        "z": 23,
+        "w_max_rel": 0.06449744978453964,
+        "u_mean_rel": 0.8690421818755567
+      },
+      {
+        "z": 24,
+        "w_max_rel": 0.05665093340212479,
+        "u_mean_rel": 0.962552847340703
+      },
+      {
+        "z": 25,
+        "w_max_rel": 0.045197004510555416,
+        "u_mean_rel": 1.0310235666111112
+      },
+      {
+        "z": 26,
+        "w_max_rel": 0.031943211070029065,
+        "u_mean_rel": 1.0788929648697376
+      },
+      {
+        "z": 27,
+        "w_max_rel": 0.018053884559776634,
+        "u_mean_rel": 1.1074903886765242
+      },
+      {
+        "z": 28,
+        "w_max_rel": 0.004481113592191832,
+        "u_mean_rel": 1.1206427589058876
+      }
+    ]
+  },
+  "checks": {
+    "stagnation_pass_5pct": false,
+    "extent_pass_10pct": false,
+    "rho_range": [
+      0.9998984932899475,
+      1.000499963760376
+    ],
+    "w_max_rel_free": 0.7934346213005483,
+    "w_max_rel_full_footprint": 0.13876205775886774,
+    "column_mask": "inner disk r <= 0.7 a"
+  },
+  "provenance": {
+    "git_sha": "8465d77bb3e51f6c006e5df63a68b3ae83f9ef81",
+    "torch": "2.7.1",
+    "python": "3.11.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "timestamp": "2026-11-07T09:33:50"
+  },
+  "verdict": false,
+  "figure": "scratch/tc_ro120.png"
+}
