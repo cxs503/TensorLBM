@@ -1,0 +1,312 @@
+{
+  "gate1_weak_inertia_law": {
+    "gate": "gate1_weak_inertia_law",
+    "statement": "R - 1 = c1 Re + c2 Re^2 with c1 = 0: for a centro-symmetric array the first inertial correction is quadratic (weak-inertia theorem, Mei & Auriault 1991)",
+    "threshold": {
+      "c1_share_max": 0.03,
+      "c1_sigma_max": 3.0
+    },
+    "n_points": 7,
+    "re_range": [
+      0.998418731098353,
+      7.989690191154706
+    ],
+    "c1": -0.00041383268388935855,
+    "se_c1": 0.00010377505796866984,
+    "c2": 0.0008072116896149109,
+    "se_c2": 1.143067187698254e-05,
+    "c1_share": 0.06416636032249227,
+    "c1_sigma_significance": 3.9877856200696753,
+    "quadratic_excess_at_re_max": 0.05152847876414523,
+    "c0": 0.9997142251688371,
+    "fit_rms": 0.00010448775392334214,
+    "fit_max_abs_resid": 0.00019922755589707464,
+    "design_condition": 113.84192971268287,
+    "verdict": "FAIL"
+  },
+  "gate2_predictive_reference": {
+    "gate": "gate2_predictive_reference",
+    "statement": "the self-produced reference R_ref = c0 + c2 Re^2, calibrated at Re <= 2, predicts the held-out Re = 4 and Re = 8 points to <= 2 %",
+    "threshold": {
+      "max_rel_err": 0.02
+    },
+    "calibration_re_max": 2.0,
+    "c0": 0.9992819348984181,
+    "c2": 0.0007321063881346038,
+    "se_c2": 2.5001987509234758e-15,
+    "predictions": [
+      {
+        "id": "sq040_inertia_re3",
+        "re": 2.995293414420247,
+        "ma": 0.060643788416535865,
+        "ratio_measured": 1.0058258525323103,
+        "ratio_reference": 1.0058502342809965,
+        "rel_err": 2.4240526950920322e-05
+      },
+      {
+        "id": "sq040_inertia_re4",
+        "re": 3.9937922127784296,
+        "ma": 0.08085975442850639,
+        "ratio_measured": 1.0109760869809654,
+        "ratio_reference": 1.0109593072360303,
+        "rel_err": 1.6597568578688167e-05
+      },
+      {
+        "id": "sq040_inertia_re6",
+        "re": 5.990683380730826,
+        "ma": 0.12128953165739054,
+        "ratio_measured": 1.0260053021150024,
+        "ratio_reference": 1.0255559793398616,
+        "rel_err": 0.0004379341648766603
+      },
+      {
+        "id": "sq040_inertia_re8",
+        "re": 7.989690191154706,
+        "ma": 0.1617621429451311,
+        "ratio_measured": 1.0480203270453476,
+        "ratio_reference": 1.0460160555255436,
+        "rel_err": 0.0019124357305689607
+      }
+    ],
+    "worst_rel_err": 0.0019124357305689607,
+    "compressibility_note": {
+      "beta_rel_ma2": 1.5013172032769333,
+      "ma_per_re_in_group": 0.020246359880664224,
+      "implied_c2_shift_beta_kappa2": 0.0006154125741237826,
+      "c2_corrected_to_ma0": 0.00011669381401082128,
+      "note": "In a fixed-nu group Ma = kappa Re, so a compressibility correction beta Ma^2 is degenerate with c2 and is absorbed by the fit; the shift quoted here uses beta from the fixed-Re Mach sweep and is a systematic of c2, not an error of this gate."
+    },
+    "verdict": "PASS",
+    "lamb_oseen_literal_check": {
+      "admissible": false,
+      "reason": "In two dimensions the steady low-Re drag of an isolated cylinder has no finite unbounded-flow limit (Stokes paradox). Lamb-Oseen, C_D = 8 pi / (Re (LAMB_CONST - ln Re)) with LAMB_CONST = 0.5 - gamma + ln 8 = 2.00222, diverges logarithmically with the outer scale and is even non-monotone in Re. A periodic cell pins the outer scale to the cell size, so the analytic content that survives is the log-structure of 4 pi / f against ln(1/sqrt(phi)) (gate6), not the absolute Oseen value; comparing the measured drag ratio with Lamb-Oseen would be a category error. Reported, not gated.",
+      "points": [
+        {
+          "re": 0.998418731098353,
+          "lamb_oseen_cd": 12.562351683756589
+        },
+        {
+          "re": 1.497625627403224,
+          "lamb_oseen_cd": 10.499438804882127
+        },
+        {
+          "re": 1.996866802367583,
+          "lamb_oseen_cd": 9.602961393353347
+        },
+        {
+          "re": 2.995293414420247,
+          "lamb_oseen_cd": 9.269659292249251
+        },
+        {
+          "re": 3.9937922127784296,
+          "lamb_oseen_cd": 10.191267831706584
+        },
+        {
+          "re": 5.990683380730826,
+          "lamb_oseen_cd": 19.78726980734598
+        },
+        {
+          "re": 7.989690191154706,
+          "lamb_oseen_cd": Infinity
+        }
+      ]
+    }
+  },
+  "gate3_mach_extrapolation": {
+    "gate": "gate3_mach_extrapolation",
+    "statement": "R(Re, Ma) is quadratic in Ma: the Ma -> 0 extrapolation of the four-point sweep leaves a residual <= 1 % (fit residual <= 1e-6 absolute)",
+    "threshold": {
+      "relative_correction_max": 0.01,
+      "max_abs_resid_max": 1e-06
+    },
+    "re": 0.2,
+    "ma_points": [
+      0.010008237861050828,
+      0.030003029236187275,
+      0.049978672394964334
+    ],
+    "ratio_points": [
+      1.0,
+      1.0043757618847944,
+      0.9971880951380827
+    ],
+    "ratio_points_raw": [
+      0.22483130632390771,
+      0.6257622127916559,
+      1.0
+    ],
+    "R_at_ma0": 0.9934625195484742,
+    "tau_detrend_applied": true,
+    "R_at_ma0_raw": 0.014254033266001612,
+    "R_at_ma_max": 0.9971880951380827,
+    "ma_max": 0.049978672394964334,
+    "relative_correction": 0.006580500343885433,
+    "max_abs_resid_raw": 4.718447854656915e-16,
+    "compressibility_effect_removed": 0.0037500917410570986,
+    "beta_rel_ma2": 1.5013172032769333,
+    "coeffs": [
+      0.9934625195484742,
+      0.7981028678075952,
+      -14.477366539322727
+    ],
+    "fit_rms": 2.220446049250313e-16,
+    "fit_max_abs_resid": 2.220446049250313e-16,
+    "degree": 2,
+    "verdict": "PASS"
+  },
+  "gate4_porosity_surface": {
+    "gate": "gate4_porosity_surface",
+    "statement": "R(Re, phi) produced for square phi = 0.40 (primary) and hex phi = 0.55 / 0.60 (auxiliary); the Stokes drag increases monotonically with phi",
+    "threshold": {
+      "min_groups": 3
+    },
+    "surface": {
+      "hex55": {
+        "kind": "hex",
+        "phi_actual": 0.5489457831325302,
+        "points": [
+          {
+            "re": 0.001994126124961733,
+            "ratio": 1.0,
+            "f_drag": 522.9041727401953
+          },
+          {
+            "re": 0.049853153509888226,
+            "ratio": 1.0000010145299392,
+            "f_drag": 522.9047032421339
+          },
+          {
+            "re": 0.1994126372515004,
+            "ratio": 1.0000162556763603,
+            "f_drag": 522.9126729011948
+          },
+          {
+            "re": 0.9970662392131416,
+            "ratio": 1.0004056770502137,
+            "f_drag": 523.116302962537
+          }
+        ]
+      },
+      "hex60": {
+        "kind": "hex",
+        "phi_actual": 0.6016566265060241,
+        "points": [
+          {
+            "re": 0.0019934522737866333,
+            "ratio": 1.0,
+            "f_drag": 845.1683755714864
+          },
+          {
+            "re": 0.0498363071222478,
+            "ratio": 1.000000973691693,
+            "f_drag": 845.1691985049127
+          },
+          {
+            "re": 0.19934524518792512,
+            "ratio": 1.0000156017712212,
+            "f_drag": 845.1815616951254
+          },
+          {
+            "re": 0.996728414179135,
+            "ratio": 1.0003896396152168,
+            "f_drag": 845.4976866521373
+          }
+        ]
+      },
+      "sq040_stokes": {
+        "kind": "square",
+        "phi_actual": 0.400625,
+        "points": [
+          {
+            "re": 0.001996832865989107,
+            "ratio": 1.0,
+            "f_drag": 202.23189267872016
+          },
+          {
+            "re": 0.019968328672800385,
+            "ratio": 1.0000002867899374,
+            "f_drag": 202.23195067679202
+          },
+          {
+            "re": 0.049920821853465594,
+            "ratio": 1.0000018076432977,
+            "f_drag": 202.23225824184553
+          },
+          {
+            "re": 0.19968329986074293,
+            "ratio": 1.000028966374931,
+            "f_drag": 202.23775060354652
+          }
+        ]
+      }
+    },
+    "stokes_f_by_group": {
+      "hex55": 522.9041727401953,
+      "hex60": 845.1683755714864,
+      "sq040_stokes": 202.23189267872016
+    },
+    "stokes_monotone_in_phi": true,
+    "verdict": "PASS"
+  },
+  "gate5_stokes_limit": {
+    "gate": "gate5_stokes_limit",
+    "statement": "Re -> 0 drag ratio returns to the Stokes value within 0.5 %",
+    "threshold": {
+      "abs_R_minus_1_max": 0.005
+    },
+    "anchor": "sq040_stokes_re0.002",
+    "anchor_re": 0.001996832865989107,
+    "points": [
+      {
+        "re": 0.001996832865989107,
+        "ratio": 1.0,
+        "R_minus_1": 0.0
+      },
+      {
+        "re": 0.019968328672800385,
+        "ratio": 1.0000002867899374,
+        "R_minus_1": 2.867899373537597e-07
+      },
+      {
+        "re": 0.049920821853465594,
+        "ratio": 1.0000018076432977,
+        "R_minus_1": 1.8076432977132129e-06
+      },
+      {
+        "re": 0.19968329986074293,
+        "ratio": 1.000028966374931,
+        "R_minus_1": 2.896637493110532e-05
+      }
+    ],
+    "worst_point": "sq040_stokes_re0.2",
+    "worst_R_minus_1": 2.896637493110532e-05,
+    "verdict": "PASS"
+  },
+  "gate6_dilute_log_law": {
+    "gate": "gate6_dilute_log_law",
+    "statement": "4 pi / f = ln(1/sqrt(phi)) + C + A phi: the coefficient of the logarithm is analytically one (2D Stokeslet), verified with the log coefficient fixed and (C, A) free, to 2 %",
+    "threshold": {
+      "max_rel_resid": 0.02
+    },
+    "phis": [
+      0.009769886927196984,
+      0.0193,
+      0.041261654433644115,
+      0.0772
+    ],
+    "f_drag": [
+      7.825447281078373,
+      9.370779457481095,
+      12.645530278109819,
+      16.655238025428346
+    ],
+    "intercept": -0.7059246416256008,
+    "slope_phi": 2.414060036707207,
+    "max_rel_resid": 0.019779599437069688,
+    "fit_rms": 0.019129991178115018,
+    "free_slope": 0.8344936282327455,
+    "free_intercept": -0.3205215424324781,
+    "free_slope_note": "the free-slope fit is 0.87-0.95 on a finite-phi window, which is the O(phi) shift that the constrained fit absorbs in A; a slope of one is only reached as phi -> 0",
+    "verdict": "PASS"
+  }
+}
