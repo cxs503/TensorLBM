@@ -1,0 +1,8 @@
+[R6_L48_Re0.05] L=48^3 nu=1 tau=3.5 U_target=0.00416667 g=4.2970e-06 n_solid=925 r_vol=6.0444 F_stokes=0.471239
+[R6_L48_Re0.05] step=1000 U=0.002130 Fx_cs=0.261808 osc_rms=11.7231% (130s)
+[R6_L48_Re0.05] step=2000 U=0.002793 Fx_cs=0.387703 osc_rms=2.4474% (255s)
+[R6_L48_Re0.05] step=3000 U=0.002999 Fx_cs=0.426646 osc_rms=0.6928% (375s)
+[R6_L48_Re0.05] step=4000 U=0.003063 Fx_cs=0.438850 osc_rms=0.2134% (518s)
+[R6_L48_Re0.05] FINAL U=0.003053 (U/U_stokes=1.3646) F=0.445369 F/F_stokes(U)=1.2896 (518s)
+anchor: {"F_total": 0.4453688987287905, "rho_g_Vfluid": 0.4712388980384689, "rel_err_pct": -5.489784357225657, "box_cv_fx": 0.3724092264659703}
+wrote out_anchor.json (518s)

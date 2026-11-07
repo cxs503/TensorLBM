@@ -602,6 +602,11 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "far_field_bc_3d": ("boundary.boundaries3d", "far_field_bc_3d"),
     "flow_step_image_path": ("utils", "flow_step_image_path"),
     "fluid_momentum": ("control_volume_force", "fluid_momentum"),
+    "control_surface_force": ("force_control_surface", "control_surface_force"),
+    "ControlSurfaceForceTracker": ("force_control_surface", "ControlSurfaceForceTracker"),
+    "momentum_flux_tensor": ("force_control_surface", "momentum_flux_tensor"),
+    "sphere_quadrature": ("force_control_surface", "sphere_quadrature"),
+    "trilinear_sample": ("force_control_surface", "trilinear_sample"),
     "force_coefficients": ("surface_integrals", "force_coefficients"),
     "force_minus_phi_grad_mu": ("phasefield", "force_minus_phi_grad_mu"),
     "force_mu_grad_phi": ("phasefield", "force_mu_grad_phi"),
@@ -1472,6 +1477,13 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         fluid_momentum,
         observe_control_volume_force,
         streaming_momentum_import,
+    )
+    from .force_control_surface import (
+        ControlSurfaceForceTracker,
+        control_surface_force,
+        momentum_flux_tensor,
+        sphere_quadrature,
+        trilinear_sample,
     )
     from .cross_module_composition_matrix import (
         CompositionDecision,
