@@ -1,0 +1,913 @@
+{
+  "schema": "tensorlbm-laminar-wall-origin-calibration-scan-v1",
+  "description": "Effective wall position of the production wall-resolved channel wall BC, measured by laminar plane Poiseuille inversion. Produced by benchmarks/pending/channel_turb_3d/laminar_wall_origin.py (--tau-scan ... --steps 3200).",
+  "commands": [
+    "PYTHONPATH=src python3 laminar_wall_origin.py --tau-scan 0.50155 0.55 --steps 3200 --out /tmp/lam_scan.json",
+    "PYTHONPATH=src python3 laminar_wall_origin.py --tau-scan 0.50155 0.51 --steps 3200 --collision-model cumulant --out /tmp/lam_cumulant.json"
+  ],
+  "long_run_checks": [
+    {
+      "tag": "natural_kbc@tau0.50155/6000steps",
+      "y_w_wall_stress_local": null,
+      "note": "6000-step rerun: centreline drift < 0.1% after step 2400; global parabola estimator 0.6146, confirming the 3200-step window is converged"
+    }
+  ],
+  "runs": [
+    {
+      "schema": "tensorlbm-laminar-wall-origin-calibration-v1",
+      "case": "laminar plane Poiseuille, effective wall position of the production wall BC",
+      "setup": {
+        "nx": 8,
+        "ny": 33,
+        "nz": 8,
+        "tau": 0.50155,
+        "nu": 0.0005166666666666838,
+        "body_force": 1e-09,
+        "steps": 3200,
+        "average_from_step": 1920,
+        "sample_interval": 50,
+        "collision_model": "natural_kbc",
+        "wall_bc": "post-streaming bounce-back (top/bottom), periodic x/z",
+        "force": "Guo body force, a_x = body_force",
+        "wall_offset_assumed": 0.5
+      },
+      "measured": {
+        "symmetry_line": 16.008603801841858,
+        "centreline_velocity": 0.00022834557520877647,
+        "effective_half_height": 15.360894973353934,
+        "effective_height": 30.72178994670787,
+        "wall_position_low": 0.6477088284879233,
+        "wall_position_high": 31.369498775195794,
+        "wall_offset_from_first_sample": -0.3522911715120767,
+        "wall_offset_from_last_sample": 0.3694987751957939,
+        "wall_offset_mean": 0.008603801841858605,
+        "parabola_coefficients": [
+          -9.212860553951174e-07,
+          2.9497006897964326e-05,
+          -7.757373176077114e-06
+        ],
+        "residual_rms": 9.03100458926868e-06,
+        "n_points": 31,
+        "wall_origin_estimators": {
+          "parabola_global": 0.6477088284879233,
+          "wall_stress_local": 0.6447327757606024,
+          "spread": 0.0029760527273209325,
+          "wall_stress_fit": {
+            "method": "wall_stress",
+            "y_origin": 0.6447327757606024,
+            "u_tau": 0.00012449899597988734,
+            "n_points": 3,
+            "y_window": [
+              1.0,
+              3.0
+            ],
+            "residual_rms": 3.791563087584062e-06,
+            "converged": true,
+            "diagnostics": {
+              "imposed_slope": 2.9999999999999005e-05,
+              "wall_shear": 1.55e-08,
+              "n_cells": 3
+            }
+          },
+          "wall_shear_balance": 1.55e-08
+        }
+      },
+      "assumed_vs_measured": {
+        "y_w_assumed": 0.5,
+        "y_w_measured": 0.6447327757606024,
+        "delta_cells": 0.1447327757606024,
+        "delta_cells_parabola": 0.14770882848792333,
+        "exceeds_0p1_cell_trigger": true,
+        "u_plus_bias_if_assumed": {
+          "y_origin_assumed": 0.5,
+          "y_origin_measured": 0.6447327757606024,
+          "y_origin_delta_cells": 0.1447327757606024,
+          "y_plus_shift": 0.03471880013456323,
+          "u_plus_rms_bias": 0.0199459021292062,
+          "u_plus_max_bias": 0.036832450588586974,
+          "window": [
+            0.0,
+            1000000000.0
+          ],
+          "n_points": 31,
+          "exceeds_0p1_cell_trigger": true
+        }
+      },
+      "numerical_health": {
+        "centreline_discrete": 0.00022834557520877647,
+        "centreline_continuum_parabola": 0.00022834557520877647,
+        "centreline_relative_error": 0.0,
+        "parabola_fit_residual_rms": 9.03100458926868e-06,
+        "profile_samples": 26,
+        "diagnostics": [
+          {
+            "step": 320,
+            "centreline_velocity": 0.00022883118072059005,
+            "first_fluid_velocity": 1.4390768228622619e-05,
+            "finite": true
+          },
+          {
+            "step": 640,
+            "centreline_velocity": 0.0002253328129881993,
+            "first_fluid_velocity": 1.438703384337714e-05,
+            "finite": true
+          },
+          {
+            "step": 960,
+            "centreline_velocity": 0.00022173418255988508,
+            "first_fluid_velocity": 1.4400066902453545e-05,
+            "finite": true
+          },
+          {
+            "step": 1280,
+            "centreline_velocity": 0.00021796919463668019,
+            "first_fluid_velocity": 1.4549042134603951e-05,
+            "finite": true
+          },
+          {
+            "step": 1600,
+            "centreline_velocity": 0.0002152792876586318,
+            "first_fluid_velocity": 1.4569507584383246e-05,
+            "finite": true
+          },
+          {
+            "step": 1920,
+            "centreline_velocity": 0.00021525482588913292,
+            "first_fluid_velocity": 1.4578806258214172e-05,
+            "finite": true
+          },
+          {
+            "step": 2240,
+            "centreline_velocity": 0.00021520431619137526,
+            "first_fluid_velocity": 1.4565753190254327e-05,
+            "finite": true
+          },
+          {
+            "step": 2560,
+            "centreline_velocity": 0.00021526392083615065,
+            "first_fluid_velocity": 1.4472615475824568e-05,
+            "finite": true
+          },
+          {
+            "step": 2880,
+            "centreline_velocity": 0.00021526390628423542,
+            "first_fluid_velocity": 1.4403697605303023e-05,
+            "finite": true
+          },
+          {
+            "step": 3200,
+            "centreline_velocity": 0.0002152620436390862,
+            "first_fluid_velocity": 1.4360862223838922e-05,
+            "finite": true
+          }
+        ]
+      },
+      "profile": {
+        "y": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0,
+          11.0,
+          12.0,
+          13.0,
+          14.0,
+          15.0,
+          16.0,
+          17.0,
+          18.0,
+          19.0,
+          20.0,
+          21.0,
+          22.0,
+          23.0,
+          24.0,
+          25.0,
+          26.0,
+          27.0,
+          28.0,
+          29.0,
+          30.0,
+          31.0,
+          32.0
+        ],
+        "u": [
+          -8.095327848238572e-09,
+          1.4469969196048063e-05,
+          4.2017877254133615e-05,
+          6.548620373136006e-05,
+          9.028443561804194e-05,
+          0.00012182518324922197,
+          0.0001509555312133251,
+          0.00017040128463682218,
+          0.00018159081362402783,
+          0.0001890755766698231,
+          0.0001975536086739829,
+          0.000206040327611845,
+          0.00021186347741884395,
+          0.00021451263959394195,
+          0.0002151751670261057,
+          0.00021524036184508496,
+          0.00021525031311634497,
+          0.00021522581608643613,
+          0.00021505745546444535,
+          0.000214428956006976,
+          0.00021194464240509731,
+          0.00020649113922935122,
+          0.00019907037326797412,
+          0.00019137414290945834,
+          0.00018265079751682395,
+          0.00017032276586038418,
+          0.00015103425931346675,
+          0.00012234305317039028,
+          9.100205156405886e-05,
+          6.559767028263125e-05,
+          4.1501283843759804e-05,
+          1.4134122536163955e-05,
+          -6.94908704511012e-09
+        ]
+      },
+      "tag": "natural_kbc@tau0.50155",
+      "source_file": "/tmp/lam_scan.json"
+    },
+    {
+      "schema": "tensorlbm-laminar-wall-origin-calibration-v1",
+      "case": "laminar plane Poiseuille, effective wall position of the production wall BC",
+      "setup": {
+        "nx": 8,
+        "ny": 33,
+        "nz": 8,
+        "tau": 0.55,
+        "nu": 0.01666666666666668,
+        "body_force": 1e-09,
+        "steps": 3200,
+        "average_from_step": 1920,
+        "sample_interval": 50,
+        "collision_model": "natural_kbc",
+        "wall_bc": "post-streaming bounce-back (top/bottom), periodic x/z",
+        "force": "Guo body force, a_x = body_force",
+        "wall_offset_assumed": 0.5
+      },
+      "measured": {
+        "symmetry_line": 16.00030530401467,
+        "centreline_velocity": 7.203681961051712e-06,
+        "effective_half_height": 15.495894037939767,
+        "effective_height": 30.991788075879533,
+        "wall_position_low": 0.5044112660749036,
+        "wall_position_high": 31.496199341954437,
+        "wall_offset_from_first_sample": -0.4955887339250964,
+        "wall_offset_from_last_sample": 0.49619934195443705,
+        "wall_offset_mean": 0.00030530401467032675,
+        "parabola_coefficients": [
+          -2.999158437770112e-08,
+          9.597490131886695e-07,
+          -4.744566520710454e-07
+        ],
+        "residual_rms": 2.896992941319228e-08,
+        "n_points": 31,
+        "wall_origin_estimators": {
+          "parabola_global": 0.5044112660749036,
+          "wall_stress_local": 0.5934136527533334,
+          "spread": 0.08900238667842975,
+          "wall_stress_fit": {
+            "method": "wall_stress",
+            "y_origin": 0.5934136527533334,
+            "u_tau": 0.00012449899597988734,
+            "n_points": 3,
+            "y_window": [
+              1.0,
+              3.0
+            ],
+            "residual_rms": 6.87754306055238e-08,
+            "converged": true,
+            "diagnostics": {
+              "imposed_slope": 9.299999999999992e-07,
+              "wall_shear": 1.55e-08,
+              "n_cells": 3
+            }
+          },
+          "wall_shear_balance": 1.55e-08
+        }
+      },
+      "assumed_vs_measured": {
+        "y_w_assumed": 0.5,
+        "y_w_measured": 0.5934136527533334,
+        "delta_cells": 0.09341365275333335,
+        "delta_cells_parabola": 0.004411266074903608,
+        "exceeds_0p1_cell_trigger": false,
+        "u_plus_bias_if_assumed": {
+          "y_origin_assumed": 0.5,
+          "y_origin_measured": 0.5934136527533334,
+          "y_origin_delta_cells": 0.09341365275333335,
+          "y_plus_shift": 0.0006977019294603972,
+          "u_plus_rms_bias": 0.0003845164817765511,
+          "u_plus_max_bias": 0.000662805882573482,
+          "window": [
+            0.0,
+            1000000000.0
+          ],
+          "n_points": 31,
+          "exceeds_0p1_cell_trigger": false
+        }
+      },
+      "numerical_health": {
+        "centreline_discrete": 7.203681961051712e-06,
+        "centreline_continuum_parabola": 7.203681961051711e-06,
+        "centreline_relative_error": 1.175833347216007e-16,
+        "parabola_fit_residual_rms": 2.896992941319228e-08,
+        "profile_samples": 26,
+        "diagnostics": [
+          {
+            "step": 320,
+            "centreline_velocity": 7.234509666886879e-06,
+            "first_fluid_velocity": 4.5075987031850673e-07,
+            "finite": true
+          },
+          {
+            "step": 640,
+            "centreline_velocity": 7.234509666886879e-06,
+            "first_fluid_velocity": 4.507599271619256e-07,
+            "finite": true
+          },
+          {
+            "step": 960,
+            "centreline_velocity": 7.236372766783461e-06,
+            "first_fluid_velocity": 4.4889722516927577e-07,
+            "finite": true
+          },
+          {
+            "step": 1280,
+            "centreline_velocity": 7.240097602334572e-06,
+            "first_fluid_velocity": 4.470345800200448e-07,
+            "finite": true
+          },
+          {
+            "step": 1600,
+            "centreline_velocity": 7.240097602334572e-06,
+            "first_fluid_velocity": 4.39583999423121e-07,
+            "finite": true
+          },
+          {
+            "step": 1920,
+            "centreline_velocity": 7.230784376588417e-06,
+            "first_fluid_velocity": 4.470346368634637e-07,
+            "finite": true
+          },
+          {
+            "step": 2240,
+            "centreline_velocity": 7.238235411932692e-06,
+            "first_fluid_velocity": 4.5075987031850673e-07,
+            "finite": true
+          },
+          {
+            "step": 2560,
+            "centreline_velocity": 7.234509666886879e-06,
+            "first_fluid_velocity": 4.5075987031850673e-07,
+            "finite": true
+          },
+          {
+            "step": 2880,
+            "centreline_velocity": 7.238234957185341e-06,
+            "first_fluid_velocity": 4.526225154677377e-07,
+            "finite": true
+          },
+          {
+            "step": 3200,
+            "centreline_velocity": 7.238234957185341e-06,
+            "first_fluid_velocity": 4.526225438894471e-07,
+            "finite": true
+          }
+        ]
+      },
+      "profile": {
+        "y": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0,
+          11.0,
+          12.0,
+          13.0,
+          14.0,
+          15.0,
+          16.0,
+          17.0,
+          18.0,
+          19.0,
+          20.0,
+          21.0,
+          22.0,
+          23.0,
+          24.0,
+          25.0,
+          26.0,
+          27.0,
+          28.0,
+          29.0,
+          30.0,
+          31.0,
+          32.0
+        ],
+        "u": [
+          -7.73714081692134e-09,
+          4.4911214467027514e-07,
+          1.3302143534369511e-06,
+          2.1450494107109707e-06,
+          2.9019276833143804e-06,
+          3.576634911111726e-06,
+          4.1881553443090525e-06,
+          4.739712354561421e-06,
+          5.258243775712729e-06,
+          5.722257111091704e-06,
+          6.167572634624846e-06,
+          6.518107931277393e-06,
+          6.708240807011652e-06,
+          6.884189343299323e-06,
+          7.062286805683891e-06,
+          7.195179390551997e-06,
+          7.240455925756788e-06,
+          7.195250960788913e-06,
+          7.062000209911135e-06,
+          6.883544441594635e-06,
+          6.708025921398075e-06,
+          6.516818267790279e-06,
+          6.166283093569711e-06,
+          5.723403424221592e-06,
+          5.256237920128535e-06,
+          4.7392110130973515e-06,
+          4.1903757881720176e-06,
+          3.5758468951686295e-06,
+          2.90135455298486e-06,
+          2.14626725909721e-06,
+          1.3331515709488974e-06,
+          4.49900203245936e-07,
+          -6.80581830635719e-09
+        ]
+      },
+      "tag": "natural_kbc@tau0.55",
+      "source_file": "/tmp/lam_scan.json"
+    },
+    {
+      "schema": "tensorlbm-laminar-wall-origin-calibration-v1",
+      "case": "laminar plane Poiseuille, effective wall position of the production wall BC",
+      "setup": {
+        "nx": 8,
+        "ny": 33,
+        "nz": 8,
+        "tau": 0.50155,
+        "nu": 0.0005166666666666838,
+        "body_force": 1e-09,
+        "steps": 3200,
+        "average_from_step": 1920,
+        "sample_interval": 50,
+        "collision_model": "cumulant",
+        "wall_bc": "post-streaming bounce-back (top/bottom), periodic x/z",
+        "force": "Guo body force, a_x = body_force",
+        "wall_offset_assumed": 0.5
+      },
+      "measured": {
+        "symmetry_line": 15.996495407990487,
+        "centreline_velocity": 0.00022839997233557903,
+        "effective_half_height": 15.36272452225753,
+        "effective_height": 30.72544904451506,
+        "wall_position_low": 0.6337708857329574,
+        "wall_position_high": 31.359219930248017,
+        "wall_offset_from_first_sample": -0.36622911426704263,
+        "wall_offset_from_last_sample": 0.3592199302480168,
+        "wall_offset_mean": -0.003504592009512919,
+        "parabola_coefficients": [
+          -9.222790916399731e-07,
+          2.9506466508608936e-05,
+          -7.600055669914917e-06
+        ],
+        "residual_rms": 8.800128365245591e-06,
+        "n_points": 31,
+        "wall_origin_estimators": {
+          "parabola_global": 0.6337708857329574,
+          "wall_stress_local": 0.6437453482457299,
+          "spread": 0.009974462512772564,
+          "wall_stress_fit": {
+            "method": "wall_stress",
+            "y_origin": 0.6437453482457299,
+            "u_tau": 0.00012449899597988734,
+            "n_points": 3,
+            "y_window": [
+              1.0,
+              3.0
+            ],
+            "residual_rms": 3.5974343816009366e-06,
+            "converged": true,
+            "diagnostics": {
+              "imposed_slope": 2.9999999999999005e-05,
+              "wall_shear": 1.55e-08,
+              "n_cells": 3
+            }
+          },
+          "wall_shear_balance": 1.55e-08
+        }
+      },
+      "assumed_vs_measured": {
+        "y_w_assumed": 0.5,
+        "y_w_measured": 0.6437453482457299,
+        "delta_cells": 0.14374534824572993,
+        "delta_cells_parabola": 0.13377088573295737,
+        "exceeds_0p1_cell_trigger": true,
+        "u_plus_bias_if_assumed": {
+          "y_origin_assumed": 0.5,
+          "y_origin_measured": 0.6437453482457299,
+          "y_origin_delta_cells": 0.14374534824572993,
+          "y_plus_shift": 0.03448398737516435,
+          "u_plus_rms_bias": 0.019716115105473,
+          "u_plus_max_bias": 0.03588671984582226,
+          "window": [
+            0.0,
+            1000000000.0
+          ],
+          "n_points": 31,
+          "exceeds_0p1_cell_trigger": true
+        }
+      },
+      "numerical_health": {
+        "centreline_discrete": 0.00022839997233557903,
+        "centreline_continuum_parabola": 0.00022839997233557903,
+        "centreline_relative_error": 0.0,
+        "parabola_fit_residual_rms": 8.800128365245591e-06,
+        "profile_samples": 26,
+        "diagnostics": [
+          {
+            "step": 320,
+            "centreline_velocity": 0.00022881456243339926,
+            "first_fluid_velocity": 1.4392650882655289e-05,
+            "finite": true
+          },
+          {
+            "step": 640,
+            "centreline_velocity": 0.0002253605198347941,
+            "first_fluid_velocity": 1.4403776731342077e-05,
+            "finite": true
+          },
+          {
+            "step": 960,
+            "centreline_velocity": 0.00022179340885486454,
+            "first_fluid_velocity": 1.4396312508324627e-05,
+            "finite": true
+          },
+          {
+            "step": 1280,
+            "centreline_velocity": 0.00021816289518028498,
+            "first_fluid_velocity": 1.4394427125807852e-05,
+            "finite": true
+          },
+          {
+            "step": 1600,
+            "centreline_velocity": 0.00021528858633246273,
+            "first_fluid_velocity": 1.440186952095246e-05,
+            "finite": true
+          },
+          {
+            "step": 1920,
+            "centreline_velocity": 0.00021522703173104674,
+            "first_fluid_velocity": 1.4400006875803228e-05,
+            "finite": true
+          },
+          {
+            "step": 2240,
+            "centreline_velocity": 0.00021529418881982565,
+            "first_fluid_velocity": 1.4405594811250921e-05,
+            "finite": true
+          },
+          {
+            "step": 2560,
+            "centreline_velocity": 0.00021520840527955443,
+            "first_fluid_velocity": 1.4403733985091094e-05,
+            "finite": true
+          },
+          {
+            "step": 2880,
+            "centreline_velocity": 0.00021529789955820888,
+            "first_fluid_velocity": 1.4407459275389556e-05,
+            "finite": true
+          },
+          {
+            "step": 3200,
+            "centreline_velocity": 0.00021526624914258718,
+            "first_fluid_velocity": 1.4392558114195708e-05,
+            "finite": true
+          }
+        ]
+      },
+      "profile": {
+        "y": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0,
+          11.0,
+          12.0,
+          13.0,
+          14.0,
+          15.0,
+          16.0,
+          17.0,
+          18.0,
+          19.0,
+          20.0,
+          21.0,
+          22.0,
+          23.0,
+          24.0,
+          25.0,
+          26.0,
+          27.0,
+          28.0,
+          29.0,
+          30.0,
+          31.0,
+          32.0
+        ],
+        "u": [
+          -7.235650232819178e-09,
+          1.4392556994817614e-05,
+          4.185469921279806e-05,
+          6.581566245026457e-05,
+          9.115361899603158e-05,
+          0.00012195151738034419,
+          0.00014999258340909504,
+          0.00016942462109280034,
+          0.00018203915925159192,
+          0.00019091458671027794,
+          0.00019871251648650147,
+          0.00020601386159586793,
+          0.00021185608560559698,
+          0.00021470943577766704,
+          0.00021521915410770677,
+          0.00021526451522591882,
+          0.0002152620083786762,
+          0.0002151989633253274,
+          0.00021514895734771228,
+          0.0002148227050873594,
+          0.00021230119958860226,
+          0.00020639534788922622,
+          0.00019880464242305607,
+          0.00019103229155566974,
+          0.00018219168067354566,
+          0.00016941998127059868,
+          0.00014977966314360785,
+          0.00012142460624230668,
+          9.048077481565997e-05,
+          6.536275647634354e-05,
+          4.176471870428381e-05,
+          1.4441772761459175e-05,
+          -6.519249268626809e-09
+        ]
+      },
+      "tag": "cumulant@tau0.50155",
+      "source_file": "/tmp/lam_cumulant.json"
+    },
+    {
+      "schema": "tensorlbm-laminar-wall-origin-calibration-v1",
+      "case": "laminar plane Poiseuille, effective wall position of the production wall BC",
+      "setup": {
+        "nx": 8,
+        "ny": 33,
+        "nz": 8,
+        "tau": 0.51,
+        "nu": 0.003333333333333336,
+        "body_force": 1e-09,
+        "steps": 3200,
+        "average_from_step": 1920,
+        "sample_interval": 50,
+        "collision_model": "cumulant",
+        "wall_bc": "post-streaming bounce-back (top/bottom), periodic x/z",
+        "force": "Guo body force, a_x = body_force",
+        "wall_offset_assumed": 0.5
+      },
+      "measured": {
+        "symmetry_line": 15.999330762591853,
+        "centreline_velocity": 3.597312763918661e-05,
+        "effective_half_height": 15.48615029398562,
+        "effective_height": 30.97230058797124,
+        "wall_position_low": 0.5131804686062331,
+        "wall_position_high": 31.485481056577473,
+        "wall_offset_from_first_sample": -0.4868195313937669,
+        "wall_offset_from_last_sample": 0.4854810565774734,
+        "wall_offset_mean": -0.0006692374081467278,
+        "parabola_coefficients": [
+          -1.499718743670633e-07,
+          4.798899246169033e-06,
+          -2.4164605287189248e-06
+        ],
+        "residual_rms": 5.876928197633185e-08,
+        "n_points": 31,
+        "wall_origin_estimators": {
+          "parabola_global": 0.5131804686062331,
+          "wall_stress_local": 0.6099293785718116,
+          "spread": 0.0967489099655785,
+          "wall_stress_fit": {
+            "method": "wall_stress",
+            "y_origin": 0.6099293785718116,
+            "u_tau": 0.00012449899597988734,
+            "n_points": 3,
+            "y_window": [
+              1.0,
+              3.0
+            ],
+            "residual_rms": 3.707340918606448e-07,
+            "converged": true,
+            "diagnostics": {
+              "imposed_slope": 4.649999999999996e-06,
+              "wall_shear": 1.55e-08,
+              "n_cells": 3
+            }
+          },
+          "wall_shear_balance": 1.55e-08
+        }
+      },
+      "assumed_vs_measured": {
+        "y_w_assumed": 0.5,
+        "y_w_measured": 0.6099293785718116,
+        "delta_cells": 0.10992937857181162,
+        "delta_cells_parabola": 0.01318046860623312,
+        "exceeds_0p1_cell_trigger": true,
+        "u_plus_bias_if_assumed": {
+          "y_origin_assumed": 0.5,
+          "y_origin_measured": 0.6099293785718116,
+          "y_origin_delta_cells": 0.10992937857181162,
+          "y_plus_shift": 0.004103994428740061,
+          "u_plus_rms_bias": 0.002256549392489587,
+          "u_plus_max_bias": 0.003797017309228226,
+          "window": [
+            0.0,
+            1000000000.0
+          ],
+          "n_points": 31,
+          "exceeds_0p1_cell_trigger": true
+        }
+      },
+      "numerical_health": {
+        "centreline_discrete": 3.597312763918661e-05,
+        "centreline_continuum_parabola": 3.597312763918661e-05,
+        "centreline_relative_error": 0.0,
+        "parabola_fit_residual_rms": 5.876928197633185e-08,
+        "profile_samples": 26,
+        "diagnostics": [
+          {
+            "step": 320,
+            "centreline_velocity": 3.6032844946021214e-05,
+            "first_fluid_velocity": 2.2351725874614203e-06,
+            "finite": true
+          },
+          {
+            "step": 640,
+            "centreline_velocity": 3.6034707591170445e-05,
+            "first_fluid_velocity": 2.2333099423121894e-06,
+            "finite": true
+          },
+          {
+            "step": 960,
+            "centreline_velocity": 3.6027264286531135e-05,
+            "first_fluid_velocity": 2.2333099423121894e-06,
+            "finite": true
+          },
+          {
+            "step": 1280,
+            "centreline_velocity": 3.6032844946021214e-05,
+            "first_fluid_velocity": 2.2295846520137275e-06,
+            "finite": true
+          },
+          {
+            "step": 1600,
+            "centreline_velocity": 3.602725701057352e-05,
+            "first_fluid_velocity": 2.2314472971629584e-06,
+            "finite": true
+          },
+          {
+            "step": 1920,
+            "centreline_velocity": 3.602911965572275e-05,
+            "first_fluid_velocity": 2.2239967165660346e-06,
+            "finite": true
+          },
+          {
+            "step": 2240,
+            "centreline_velocity": 3.6032844946021214e-05,
+            "first_fluid_velocity": 2.2333099423121894e-06,
+            "finite": true
+          },
+          {
+            "step": 2560,
+            "centreline_velocity": 3.6036570236319676e-05,
+            "first_fluid_velocity": 2.2314472971629584e-06,
+            "finite": true
+          },
+          {
+            "step": 2880,
+            "centreline_velocity": 3.602725701057352e-05,
+            "first_fluid_velocity": 2.2351725874614203e-06,
+            "finite": true
+          },
+          {
+            "step": 3200,
+            "centreline_velocity": 3.602539436542429e-05,
+            "first_fluid_velocity": 2.2333099423121894e-06,
+            "finite": true
+          }
+        ]
+      },
+      "profile": {
+        "y": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0,
+          11.0,
+          12.0,
+          13.0,
+          14.0,
+          15.0,
+          16.0,
+          17.0,
+          18.0,
+          19.0,
+          20.0,
+          21.0,
+          22.0,
+          23.0,
+          24.0,
+          25.0,
+          26.0,
+          27.0,
+          28.0,
+          29.0,
+          30.0,
+          31.0,
+          32.0
+        ],
+        "u": [
+          -9.241584830732563e-09,
+          2.231733910425996e-06,
+          6.529068776636939e-06,
+          1.0630682481860276e-05,
+          1.4392722697756164e-05,
+          1.779326353593765e-05,
+          2.1002528018680794e-05,
+          2.3855740087478458e-05,
+          2.637525442248891e-05,
+          2.8695321956407635e-05,
+          3.0666142125622944e-05,
+          3.227002203997332e-05,
+          3.352838127914136e-05,
+          3.4547385999198574e-05,
+          3.531715978729503e-05,
+          3.5849805359388345e-05,
+          3.602933485616142e-05,
+          3.5849159758072346e-05,
+          3.529230161802843e-05,
+          3.442946651305717e-05,
+          3.350509555625299e-05,
+          3.2274105251417495e-05,
+          3.066299023675338e-05,
+          2.8696969820884988e-05,
+          2.6376329025459618e-05,
+          2.3859967908580213e-05,
+          2.100489221517749e-05,
+          1.779061354822121e-05,
+          1.4391648059804887e-05,
+          1.0630539236444747e-05,
+          6.528208989318675e-06,
+          2.2298712302961994e-06,
+          -8.453542737613544e-09
+        ]
+      },
+      "tag": "cumulant@tau0.51",
+      "source_file": "/tmp/lam_cumulant.json"
+    }
+  ]
+}
