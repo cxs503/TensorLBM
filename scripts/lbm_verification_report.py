@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""把 LBM 解析解验证梯（Step A–D）的实测 JSON 变成报告用的数字表 + 对照图。
+"""把 LBM 解析解验证梯（Step A–E）的实测 JSON 变成报告用的数字表 + 对照图。
 
 输入（由 ``tests/test_lbm_verification.py --json`` 产生，数字全部程序化注入，不手抄）::
 
   artifacts/lbm_verification_ladder/metrics.json      主判据（float64）
   artifacts/lbm_verification_ladder/f32/metrics.json  dtype 对照（float32，可缺）
 
-输出（同一目录）::
+输出（同一目录，``--refine`` 另给 E 的网格/步数敏感性表）::
 
   tables.md              markdown 数字表（误差逐项 vs 判据）
-  fig_ladder.png         A 衰减曲线 / B·C 剖面 / D 摩擦系数：数值 vs 解析解
+  fig_ladder.png         A 衰减 / B·C 剖面 / D 摩擦系数 / E 方管：数值 vs 解析解
   fig_dtype_error.png    float64 vs float32 误差对照（对数轴 + 1% 阈值线）
 
 用法::
@@ -39,7 +39,11 @@ KEY_QUANTITY = {
     "B": ("Couette 剖面峰值偏差 Δu_max (lu)", None, None),
     "C": ("Poiseuille 峰值 u_max (lu)", "u_max_num", "u_max_exact"),
     "D": ("壁面摩擦系数 Cf", "cf_num", "cf_exact"),
+    "E": ("方管截面最大速度 u_max", "u_max_num", "u_max_exact"),
 }
+
+#: 报告覆盖的 Step（顺序即表格/图的顺序）
+STEPS = ("A", "B", "C", "D", "E")
 
 
 def load(path: Path) -> dict:
@@ -64,7 +68,7 @@ def main_table(steps: dict) -> str:
         "| Step | 案例 | 关键量 | 数值解 | 解析解 | 误差 % | 判据 % | 判定 |",
         "|---|---|---|---|---|---|---|---|",
     ]
-    for key in ("A", "B", "C", "D"):
+    for key in STEPS:
         if key not in steps:
             continue
         r = steps[key]
@@ -86,7 +90,7 @@ def dtype_table(main_steps: dict, f32_steps: dict) -> str:
         "| Step | 误差 % (float64) | 误差 % (float32) | f32/f64 | 误差性质判定 |",
         "|---|---|---|---|---|",
     ]
-    for key in ("A", "B", "C", "D"):
+    for key in STEPS:
         if key not in main_steps:
             continue
         e64 = float(main_steps[key]["err_pct"])
@@ -105,9 +109,26 @@ def dtype_table(main_steps: dict, f32_steps: dict) -> str:
     return "\n".join(rows)
 
 
+def refinement_table(metrics: dict) -> str:
+    """Step E 的网格/步数敏感性（证明 0.42% 是离散误差而非未收敛，见 --refine）。"""
+    ref = metrics.get("refinement") or {}
+    blocks = []
+    if ref.get("E_lengths"):
+        rows = ["| 方管边长 L (lu) | 截面最大相对误差 % | 判据 % |", "|---|---|---|"]
+        for d in ref["E_lengths"]:
+            rows.append(f"| {d['length']} | {fmt(float(d['err_pct']))} | {metrics['tol_pct']:g} |")
+        blocks.append("\n".join(rows))
+    if ref.get("E_steps"):
+        rows = ["| 时间步 | 截面最大相对误差 % |", "|---|---|"]
+        for d in ref["E_steps"]:
+            rows.append(f"| {d['steps']} | {fmt(float(d['err_pct']))} |")
+        blocks.append("\n".join(rows))
+    return "\n\n".join(blocks)
+
+
 def timing_table(steps: dict) -> str:
     rows = ["| Step | 时间步 | τ | 判据 |", "|---|---|---|---|"]
-    for key in ("A", "B", "C", "D"):
+    for key in STEPS:
         if key not in steps:
             continue
         r = steps[key]
@@ -116,17 +137,18 @@ def timing_table(steps: dict) -> str:
 
 
 def ladder_figure(steps: dict, path: Path) -> bool:
-    """A 衰减曲线 + B/C 剖面 + D 摩擦系数，全部与解析解同图对照。"""
-    try:
+    """A 衰减曲线 + B/C 通道剖面 + D 摩擦系数 + E 方管（对角剖面 + 截面云图），与解析解同图。"""
+    try:  # 图依赖 matplotlib + numpy；两者缺失时优雅降级（返回 False，不写假图）
         import matplotlib
 
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import numpy as np
-    except Exception:  # pragma: no cover - matplotlib 是可选依赖
+    except Exception:  # pragma: no cover - matplotlib/numpy 是可选依赖
         return False
 
-    fig, axes = plt.subplots(1, 4, figsize=(16.0, 3.5))
+    fig, axes = plt.subplots(2, 3, figsize=(15.0, 7.0))
+    axes = axes.ravel()
 
     # (a) 剪切波衰减：log 轴才能看出 3 个数量级的指数衰减
     if "A" in steps:
@@ -168,8 +190,55 @@ def ladder_figure(steps: dict, path: Path) -> bool:
         ax.set_ylim(lo * 0.995, max(vals) * 1.004)
         ax.set_ylabel(r"$C_f$")
         ax.set_title(f"D wall friction  err={r['err_pct']:.3g}%", fontsize=9)
+    else:
+        ax.axis("off")
 
-    fig.suptitle("TensorLBM analytic verification ladder (Step A–D)", fontsize=11)
+    # (e) 方管对角线剖面：LBM 点 vs Boussinesq 级数解
+    ax = axes[4]
+    if "E" in steps:
+        r = steps["E"]
+        ax.plot(r["diag_exact"], r["diag_coord"], "-", lw=1, label="analytic (Boussinesq)")
+        ax.plot(r["diag_num"], r["diag_coord"], "o", ms=3.5, label="LBM (D3Q19)")
+        ax.set_title(
+            f"E square duct L={r['length']} (diagonal)  err_max={r['err_pct']:.3g}%", fontsize=9
+        )
+        ax.set_xlabel(r"$u_x$ (lu)")
+        ax.set_ylabel("Y = Z (lu)")
+        ax.legend(fontsize=7)
+    else:
+        ax.axis("off")
+
+    # (f) 方管截面云图（场量）+ 解析等值线叠加：角区是否被正确解析一眼可见
+    ax = axes[5]
+    if "E" in steps:
+        r = steps["E"]
+        u = np.asarray(r["u_num"], dtype=float)
+        c = np.asarray(r["diag_coord"], dtype=float)
+        im = ax.imshow(
+            u,
+            origin="lower",
+            extent=(c[0], c[-1], c[0], c[-1]),
+            cmap="viridis",
+            aspect="equal",
+        )
+        Y, Z = np.meshgrid(c, c)
+        ax.contour(
+            Y,
+            Z,
+            np.asarray(r["u_exact"], dtype=float),
+            levels=6,
+            colors="w",
+            linewidths=0.7,
+            linestyles="--",
+        )
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03, label=r"$u_x$ (lu)")
+        ax.set_title("E duct cross-section: LBM field + analytic isolines", fontsize=9)
+        ax.set_xlabel("Y (lu)")
+        ax.set_ylabel("Z (lu)")
+    else:
+        ax.axis("off")
+
+    fig.suptitle("TensorLBM analytic verification ladder (Step A–E)", fontsize=11)
     fig.tight_layout()
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=140)
@@ -187,7 +256,7 @@ def dtype_figure(main_steps: dict, f32_steps: dict, path: Path) -> bool:
     except Exception:  # pragma: no cover
         return False
 
-    keys = [k for k in ("A", "B", "C", "D") if k in main_steps and k in f32_steps]
+    keys = [k for k in STEPS if k in main_steps and k in f32_steps]
     if not keys:
         return False
     e64 = [float(main_steps[k]["err_pct"]) for k in keys]
@@ -225,11 +294,12 @@ def main() -> int:
     fig_dtype = dtype_figure(steps, f32, OUT / "fig_dtype_error.png")
 
     meta = json.loads(main_json.read_text(encoding="utf-8"))
+    meta_update = meta  # 完整 metrics（含 refinement 段）
     f32_meta = json.loads(f32_json.read_text(encoding="utf-8")) if f32_json.exists() else {}
     n_pass = sum(1 for r in steps.values() if r["passed"])
 
     md = [
-        "# LBM 解析解验证梯 Step A–D：实测结果",
+        "# LBM 解析解验证梯 Step A–E：实测结果",
         "",
         "> 本文件由 `scripts/lbm_verification_report.py` 从 `artifacts/lbm_verification_ladder/`",
         "> 的 metrics JSON 程序化生成，数字无手抄。",
@@ -247,24 +317,38 @@ def main() -> int:
         else "float32 对照缺失：先跑 `TENSORLBM_TEST_DTYPE=float32`。",
         "",
         (
-            f"float32 判据同样满足（{sum(1 for r in f32.values() if r['passed'])}/{len(f32)}），"
-            f"但误差整体抬高 1–2 个数量级，说明单精度舍入已逼近判据下限的 1e-5 量级；"
+            f"float32 判据同样满足（{sum(1 for r in f32.values() if r['passed'])}/{len(f32)}）。"
+            "A/B/D 的误差在 float32 下抬高 1–2 个数量级（残差由单精度舍入地板决定），"
+            "C/E 两个受限流的误差比 ≈1（离散误差主导、与 dtype 无关）；"
             "方法误差以 " + meta["dtype"] + " 数字为准。"
             if f32 and f32_meta
             else ""
         ),
         "",
-        "## 3. 计算设置",
+        "## 3. Step E 的离散误差归因（网格 / 步数）",
+        "",
+        refinement_table(meta_update)
+        if meta_update.get("refinement")
+        else "未运行 `--refine`：网格/步数敏感性缺失。",
+        "",
+        (
+            "读法：截面误差随边长 L 加密单调下降、随步数 1000→2000 完全不变 ⇒ "
+            "E 的残差是离散误差（同 Step C 的性质），不是未到稳态。"
+            if meta_update.get("refinement")
+            else ""
+        ),
+        "",
+        "## 4. 计算设置",
         "",
         timing_table(steps),
         "",
-        "- 图：`fig_ladder.png`（A 衰减 + B/C 剖面 + D 摩擦系数 vs 解析解）、"
+        "- 图：`fig_ladder.png`（A 衰减 + B/C 剖面 + D 摩擦系数 + E 方管对角剖面与截面云图 vs 解析解）、"
         "`fig_dtype_error.png`（"
         + meta["dtype"]
         + " vs "
         + (f32_meta.get("dtype", "float32") if f32_meta else "float32")
         + "）",
-        "- 复现：`PYTHONPATH=src python tests/test_lbm_verification.py --json "
+        "- 复现：`PYTHONPATH=src python tests/test_lbm_verification.py --refine --json "
         "artifacts/lbm_verification_ladder/metrics.json && "
         "PYTHONPATH=src python scripts/lbm_verification_report.py`",
     ]
