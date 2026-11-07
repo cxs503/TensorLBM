@@ -209,8 +209,9 @@ class TestPassiveScalarTransport:
 
 class TestCavitationFlow:
     def test_submit(self, client):
+        # G is in the library's sign convention (G > 0 attractive); see ledger G3
         body = {
-            "nx": 64, "ny": 32, "G": -5.5, "re": 200.0,
+            "nx": 64, "ny": 32, "G": 1.0, "re": 200.0,
             "n_steps": 100, "output_interval": 50,
         }
         r = client.post("/api/solve/cavitation-flow", json=body)
@@ -218,9 +219,13 @@ class TestCavitationFlow:
         assert "job_id" in r.json()
 
     def test_G_range_enforced(self, client):
-        body = {"nx": 64, "ny": 32, "G": -1.0, "n_steps": 10}  # G above -3.0 limit
-        r = client.post("/api/solve/cavitation-flow", json=body)
-        assert r.status_code == 422
+        # classic-sign values (G<0, repulsive in this library) are rejected now
+        for bad_G in (-5.5, 0.0, 2.5):
+            r = client.post(
+                "/api/solve/cavitation-flow",
+                json={"nx": 64, "ny": 32, "G": bad_G, "n_steps": 10},
+            )
+            assert r.status_code == 422, bad_G
 
 
 # ===========================================================================

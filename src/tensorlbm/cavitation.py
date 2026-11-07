@@ -51,9 +51,22 @@ __all__ = [
     "run_cavitation_flow",
 ]
 
-# Physical reference values (lattice units)
-_RHO_L = 2.65  # liquid reference density (SC at G≈−5.5)
-_RHO_V = 0.038  # vapour reference density (SC at G≈−5.5)
+# Pseudopotential calibration densities (lattice units).  These are the density
+# *scales* entering psi_cavitation's rho_ref; they are NOT a Shan-Chen
+# coexistence state — the SC equation of state at the coupling they used to be
+# annotated with (classic G = -5.5) has no Maxwell coexistence at all and the
+# SCMP relaxation diverges.  See benchmarks/gaps.md entry G3 and
+# docs/g_ledger_g3_cavitation_coexistence.md.
+_RHO_L = 2.65
+_RHO_V = 0.038
+
+# Validated attractive coupling and its Maxwell coexistence pair for
+# psi_cavitation (library convention: G > 0 is attractive; classic G = -1.0).
+# Recomputed by tools/g3_ledger_audit.py; locked by
+# tests/test_sc_eos_coexistence.py::test_module_defaults_are_a_coexistence_state.
+COEXISTENCE_G = 1.0
+COEXISTENCE_RHO_L = 5.0404
+COEXISTENCE_RHO_V = 0.3508
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +158,7 @@ def apply_cavitation_force(
     ux: torch.Tensor,
     uy: torch.Tensor,
     tau: float,
-    G: float = -5.5,
+    G: float = COEXISTENCE_G,
     p_sat: float | None = None,
     rho_l: float = _RHO_L,
     rho_v: float = _RHO_V,
@@ -160,22 +173,35 @@ def apply_cavitation_force(
         rho:   Density, shape ``(ny, nx)``.
         ux, uy: Velocity, shape ``(ny, nx)``.
         tau:   BGK relaxation time.
-        G:     Shan–Chen coupling constant (negative for phase separation).
+        G:     Shan–Chen coupling constant in this library's sign convention
+               (``G > 0`` attractive); see the module constants
+               ``COEXISTENCE_G`` and the notes on ledger entry G3.
         p_sat: Saturation pressure; defaults to critical SC pressure.
         rho_l, rho_v: Phase densities.
 
     Returns:
         Modified DF with cavitation force applied, shape ``(9, ny, nx)``.
     """
-    from .d2q9 import C as _C  # noqa: PLC0415,F401
     from .multiphase import sc_single_component_force  # noqa: PLC0415
+
+    if not G > 0.0:
+        msg = (
+            "G must be > 0 for Shan-Chen attraction in this library's sign convention "
+            f"(got G={G}); the classic attractive value G_c<0 corresponds to G=-G_c>0. "
+            "A non-positive G gives a repulsive interaction: no phase separation, and "
+            "the classical G_c=-5.5 (=> G=+5.5 here) has no Maxwell coexistence at all — "
+            "see docs/g_ledger_g3_cavitation_coexistence.md"
+        )
+        raise ValueError(msg)
 
     # Default saturation pressure ≈ spinodal region midpoint
     if p_sat is None:
         p_sat = (rho_l + rho_v) / 2.0 / 3.0  # c_s² = 1/3
 
-    psi = psi_cavitation(rho, rho_l, rho_v)
-    F_sc = sc_single_component_force(psi, G)  # returns (Fx, Fy)
+    # The interaction force takes the *density* and applies psi_fn to it; passing
+    # the pseudopotential here (as this function used to) applies psi twice.
+    psi_fn = lambda r: psi_cavitation(r, rho_l, rho_v)  # noqa: E731
+    F_sc = sc_single_component_force(rho, G, psi_fn=psi_fn)  # returns (Fx, Fy)
 
     # Pressure (EOS: p = rho c_s²)
     p = rho / 3.0
@@ -210,8 +236,9 @@ class CavitationConfig:
 
     nx: int = 256
     ny: int = 128
-    # Shan–Chen coupling
-    G: float = -5.5  # SC interaction strength (induces phase separation)
+    # Shan–Chen coupling (library convention: G > 0 is attractive; classic G = -1.0).
+    # Validated coexistence + stable relaxation window for psi_cavitation: G ≈ 0.8-1.5.
+    G: float = COEXISTENCE_G
     # Initial conditions
     rho_init: float = 1.5  # mean initial density (between rho_l and rho_v)
     # Nozzle / constriction geometry: narrow throat at x=x_throat with width h_throat
@@ -276,9 +303,10 @@ def run_cavitation_flow(
         cfg = CavitationConfig(**{k: v for k, v in kwargs.items() if k in valid})
 
     device = resolve_device(cfg.device)
-    run_dir = prepare_run_dir(cfg.output_root, cfg.run_name or "cavitation_flow", cfg.overwrite)
-    configure_logging(run_dir)
-    save_config_json(asdict(cfg), run_dir / "config.json")
+    run_name = cfg.run_name or f"cavitation_G{cfg.G:.2f}_re{cfg.re:.0f}_nx{cfg.nx}"
+    run_dir = prepare_run_dir(cfg.output_root, "cavitation_flow", run_name, cfg.overwrite)
+    configure_logging()
+    save_config_json(cfg, run_dir / "config.json")
 
     _logger.info(
         "Cavitation flow: nx=%d ny=%d G=%.2f Re=%.1f device=%s",
