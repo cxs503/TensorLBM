@@ -75,6 +75,7 @@ def build_tank(
     source_radius: float = 3.5,
     sink_width: float = 3.0,
     q_total: float = 6.0,
+    slip_caps: bool = False,
 ) -> dict:
     """Voxel tank + volumetric source/sink masks.
 
@@ -104,11 +105,20 @@ def build_tank(
     snk = torch.zeros(shape, dtype=torch.float32)
     src[source] = q_total / float(source.sum())
     snk[sink] = -q_total / float(sink.sum())
+    # stress-free end caps (optional): removes the cap Ekman layers entirely so
+    # that the Proudman-Taylor interior fills the tank.  The rotating Ekman
+    # anchor (rotating_ekman) is the benchmark for the cap-layer physics itself;
+    # here the object under test is the *interior* columnarity.
+    slip = torch.zeros(shape, dtype=torch.bool)
+    if slip_caps:
+        slip[:cap_thickness] = solid[:cap_thickness]
+        slip[nz - cap_thickness :] = solid[nz - cap_thickness :]
     return {
         "solid": solid,
         "source": source,
         "sink": sink,
         "mass_source": src + snk,
+        "slip": slip,
         "r": r,
         "centre": (cx, cy),
         "radius": radius,
@@ -147,8 +157,9 @@ def run_case(
     threads: int = 8,
     tol: float = 2e-5,
     max_steps: int = 200_000,
-    cap_exclude: int = 4,
+    cap_exclude: int | None = None,
     min_periods: float = 6.0,
+    slip_caps: bool = False,
     figure: Path | None = None,
 ) -> dict:
     """Run the rotating-tank source-sink case and return the result record."""
@@ -161,6 +172,7 @@ def run_case(
         source_radius=source_radius,
         sink_width=sink_width,
         q_total=q_total,
+        slip_caps=slip_caps,
     )
     solid = tank["solid"]
     sim = RotatingFrameLBM(
@@ -168,6 +180,7 @@ def run_case(
         tau=tau,
         omega=(0.0, 0.0, omega_z),
         solid=solid,
+        slip_solid=tank["slip"],
         mass_source=tank["mass_source"],
         dtype=torch.float32,
     )
@@ -196,6 +209,19 @@ def run_case(
     v_th = -ux * ry + uy * rx
 
     fluid = ~solid
+    delta_e = math.sqrt(nu / omega_z)
+    # The Taylor-Proudman *interior* is the region outside the cap Ekman
+    # layers.  The exact Ekman spiral has amplitude envelope e^{-zeta} with
+    # zeta = z/delta_E, so it returns to the geostrophic value within 0.2 % at
+    # zeta = 2 pi; the measured radial-velocity excess/dip of the cap layer
+    # (see the axial z-profiles in the records) is indeed confined to
+    # |z - z_cap| <~ 2 pi delta_E.  The slab edge is therefore placed at
+    # 2 pi delta_E (half a cell more, the bounce-back wall sits half a cell
+    # inside the first fluid node), never less than 4 cells.  Slabs that still
+    # contained the cap layer are what made the first attempt report 12 %
+    # "non-columnar" flow at delta_E = 3.2 cells.
+    if cap_exclude is None:
+        cap_exclude = max(4, int(math.ceil(2.0 * math.pi * delta_e + 0.5)))
     z_lo = cap_exclude
     z_hi = nz - 1 - cap_exclude
     interior = fluid.clone()
@@ -243,15 +269,27 @@ def run_case(
         cnt_z = sel.sum(dim=(1, 2)).clamp(min=1)
         prof_z = (v_r * sel).sum(dim=(1, 2)) / cnt_z  # (nz,)
         rows = sel.any(dim=(1, 2)) & (torch.arange(nz) >= z_lo) & (torch.arange(nz) <= z_hi)
+        rows_full = sel.any(dim=(1, 2)) & (torch.arange(nz) >= 2) & (torch.arange(nz) <= nz - 3)
         pz = prof_z[rows]
         mean = float(pz.mean())
         dev = float((pz - mean).abs().max())
+        pf = prof_z[rows_full]
+        mean_f = float(pf.mean())
+        dev_f = float((pf - mean_f).abs().max())
+        knee = int(torch.argmax((pz - mean).abs())) if pz.numel() else -1
+        z_rows = torch.arange(nz)[rows]
         axial.append(
             {
                 "r_mid": 0.5 * (shell_edges[i] + shell_edges[i + 1]),
                 "mean_vr": mean,
                 "max_rel_dev": dev / abs(mean) if abs(mean) > 1e-12 else float("nan"),
+                "z_of_max_dev": int(z_rows[knee]) if knee >= 0 else -1,
+                "max_rel_dev_full_slab": (
+                    dev_f / abs(mean_f) if abs(mean_f) > 1e-12 else float("nan")
+                ),
                 "n_z": int(rows.sum()),
+                "z_profile": [float(v) for v in pz],
+                "z_index": [int(v) for v in z_rows],
             }
         )
     axial_ok = [a for a in axial if abs(a["mean_vr"]) > 1e-6 and not math.isnan(a["max_rel_dev"])]
@@ -283,6 +321,7 @@ def run_case(
             "inertial_period_steps": period,
             "tol": tol,
             "cap_exclude": cap_exclude,
+            "caps": "free-slip" if slip_caps else "no-slip",
         },
         "convergence": {
             "steps": conv["steps"],
@@ -305,6 +344,16 @@ def run_case(
             "exponent_pass_005": bool(n_err <= 0.05),
             "axial_uniformity_max": unif_max,
             "axial_pass_5pct": bool(unif_max <= 0.05),
+            "axial_uniformity_max_full_slab": max(
+                (
+                    a["max_rel_dev_full_slab"]
+                    for a in axial
+                    if not math.isnan(a["max_rel_dev_full_slab"])
+                ),
+                default=float("nan"),
+            ),
+            "delta_E_cells": delta_e,
+            "cap_exclude_cells": int(cap_exclude),
             "max_relative_swirl": swirl,
             "mass_in": mass_in,
             "mass_out": mass_out,
@@ -399,6 +448,8 @@ def main(argv: list[str] | None = None) -> int:
         sp.add_argument("--Q", type=float, nargs="+", default=[6.0])
         sp.add_argument("--tol", type=float, default=2e-6)
         sp.add_argument("--min-periods", type=float, default=6.0)
+        sp.add_argument("--cap-exclude", type=int, default=None)
+        sp.add_argument("--slip-caps", action="store_true")
         sp.add_argument("--max-steps", type=int, default=200_000)
         sp.add_argument("--threads", type=int, default=8)
     args = ap.parse_args(argv)
@@ -412,6 +463,8 @@ def main(argv: list[str] | None = None) -> int:
         max_steps=args.max_steps,
         threads=args.threads,
         min_periods=args.min_periods,
+        cap_exclude=args.cap_exclude,
+        slip_caps=args.slip_caps,
     )
     if args.mode == "single":
         out = Path(args.out)

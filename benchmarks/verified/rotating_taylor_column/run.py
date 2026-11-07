@@ -174,6 +174,15 @@ def run_case(
 
     rho, ux, uy, uz = sim.fields()
     fluid = ~solid
+    ekman = math.sqrt(nu / max(omega_z, 1e-30)) if rotate else float("inf")
+    # The Ekman layer on the obstacle's top face is *inside* the column
+    # footprint and carries an unavoidable vertical flux O(sqrt(E_L)) U_inf
+    # (Ekman suction).  Diagnostics are therefore also reported for the
+    # interior column, i.e. the sub-region that starts one obstacle Ekman
+    # thickness above the top face.  The primary acceptance number is the
+    # *full* column (conservative); the interior value isolates physics from
+    # boundary-layer resolution.
+    n_ekman_excl = max(1, int(math.ceil(ekman))) if rotate else 1
     speed = torch.sqrt(ux * ux + uy * uy)
     abs_w = uz.abs()
 
@@ -200,6 +209,27 @@ def run_case(
     w_foot_full = float(abs_w[footprint & fluid].max()) / U_inf
     w_mean_rel = float(w_col.mean()) / U_inf
     u_col_rel = float(speed[column].mean()) / U_inf
+    # interior column: exclude the obstacle top-face Ekman layer
+    inner = column.clone()
+    inner[: z_top + 1 + n_ekman_excl] = False
+    if int(inner.sum()) > 0:
+        w_max_rel_inner = float(abs_w[inner].max()) / U_inf
+        u_col_rel_inner = float(speed[inner].mean()) / U_inf
+    else:
+        w_max_rel_inner = float("nan")
+        u_col_rel_inner = float("nan")
+    # Proudman-Taylor columnarity: the horizontal (geostrophic) velocity must be
+    # z-independent in the interior.  Measured as the largest departure of the
+    # local horizontal speed from its own vertical mean, inside the column.
+    if int(inner.sum()) > 0:
+        sp = torch.where(inner, speed, torch.zeros_like(speed))
+        cnt = inner.sum(dim=(1, 2)).clamp(min=1).to(speed.dtype)
+        prof = sp.sum(dim=(1, 2)) / cnt
+        sel_rows = inner.any(dim=(1, 2))
+        dev = (prof.unsqueeze(1).unsqueeze(2) - sp)[inner].abs().max()
+        columnarity_dev = float(dev) / U_inf
+    else:
+        columnarity_dev = float("nan")
     # free-stream sanity check: mean speed outside the column footprint
     interior = fluid.clone()
     interior[:1] = False
@@ -226,7 +256,6 @@ def run_case(
     length_measured = (penetrated_at - z_top) if penetrated_at is not None else length_available
     length_err = abs(length_measured - length_available) / length_available
 
-    ekman = math.sqrt(nu / max(omega_z, 1e-30)) if rotate else float("inf")
     E = nu / (omega_z * nz * nz) if rotate else float("inf")
     rossby = U_inf / (f_lat * radius) if rotate else float("inf")
     re = U_inf * radius / nu
@@ -269,6 +298,10 @@ def run_case(
             "w_max_rel": w_max_rel,
             "w_mean_rel": w_mean_rel,
             "u_mean_rel": u_col_rel,
+            "w_max_rel_interior": w_max_rel_inner,
+            "u_mean_rel_interior": u_col_rel_inner,
+            "columnarity_dev": columnarity_dev,
+            "n_ekman_excl": int(n_ekman_excl),
             "length_available": length_available,
             "length_measured": length_measured,
             "length_rel_err": length_err,
@@ -278,7 +311,8 @@ def run_case(
             "stagnation_pass_5pct": bool(ok_stag),
             "extent_pass_10pct": bool(ok_len),
             "rho_range": [float(rho[fluid].min()), float(rho[fluid].max())],
-            "w_max_rel_free": free_speed,
+            "free_stream_speed_rel": free_speed,
+            "w_max_rel_free_deprecated": free_speed,
             "w_max_rel_full_footprint": w_foot_full,
             "column_mask": "inner disk r <= 0.7 a",
         },
