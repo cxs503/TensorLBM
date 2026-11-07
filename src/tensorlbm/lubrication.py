@@ -168,8 +168,9 @@ def equivalent_slot_viscosity(
     delta_true: float,
     delta_mask: float,
     dx: float = 1.0,
-    cutoff: float = 1.5,
-    exponent: float = 3.0,
+    d0: float = 4.0,
+    d1: float = 10.0,
+    exponent: float = 2.5,
     min_factor: float = 0.05,
     max_factor: float = 1.0e3,
 ) -> tuple[float, float, bool]:
@@ -178,17 +179,21 @@ def equivalent_slot_viscosity(
     Returns ``(nu_eff, weight, clipped)`` with
 
         ``nu_eff = nu * (delta_mask / delta_true) ** (exponent * weight)``
-        ``weight = max(0, 1 - delta_true / (cutoff * dx))``
 
-    ``weight`` is exactly 0 (``nu_eff == nu``) for resolved throats
-    ``delta_true >= cutoff*dx`` and ramps linearly to 1 as ``delta_true -> 0``,
-    so the closure is a strict no-op away from sub-lattice gaps.
+    where the taper weight is 1 for ``delta_true <= d0*dx`` (fully sub-lattice
+    throat), 0 for ``delta_true >= d1*dx`` (resolved throat, strict no-op), and
+    linear in between.  The exponent defaults to 5/2, the power of the
+    Sangani & Acrivos (1982) near-contact two-cylinder conductance
+    ``G(delta) = (3 pi/8) sqrt(R) / delta^(5/2)``.
     """
     if nu <= 0.0:
         raise ValueError("nu must be positive")
     if delta_true <= 0.0 or delta_mask <= 0.0:
         raise ValueError("gaps must be positive")
-    weight = max(0.0, 1.0 - delta_true / (cutoff * dx))
+    if d1 <= d0:
+        raise ValueError("require d1 > d0")
+    t = (delta_true - d0 * dx) / ((d1 - d0) * dx)
+    weight = max(0.0, min(1.0, 1.0 - t))
     if weight == 0.0:
         return nu, 0.0, False
     factor = (delta_mask / delta_true) ** (exponent * weight)
@@ -389,8 +394,9 @@ def closure_nu_field(
     gap: dict,
     shape: tuple[int, int],
     dx: float = 1.0,
-    cutoff: float = 1.5,
-    exponent: float = 3.0,
+    d0: float = 4.0,
+    d1: float = 10.0,
+    exponent: float = 2.5,
 ) -> dict:
     """Build the per-node effective-viscosity field implied by a gap field.
 
@@ -410,10 +416,10 @@ def closure_nu_field(
         dm = d_mask[k]
         if not np.isfinite(dt) or not np.isfinite(dm):
             continue
-        if dt >= cutoff * dx:
+        if dt >= d1 * dx:
             continue
         nu_eff, _w, _c = equivalent_slot_viscosity(
-            nu, dt, dm, dx=dx, cutoff=cutoff, exponent=exponent
+            nu, dt, dm, dx=dx, d0=d0, d1=d1, exponent=exponent
         )
         nu_field[fy[k], fx[k]] = nu_eff
         corrected[fy[k], fx[k]] = True
