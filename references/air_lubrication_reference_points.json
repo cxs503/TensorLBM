@@ -1,0 +1,34 @@
+{
+  "schema": "air-lubrication-reference-points/v1",
+  "note": "Flat-plate air-lubrication drag-reduction reference points used for the external benchmark gate (e) of campaign IN30-N03. Each entry records the provenance string, the dimensionless gas flow rate C_q = Q_g/(U L) and the reported drag reduction. 'confidence': 'recalled' marks values entered from literature memory without a retrievable machine-readable source in this sandbox; they are anchored here by sha256 so that any later correction is detectable, but they must be re-verified against the original papers before the gate is claimed as passed.",
+  "points": [
+    {
+      "id": "kodama2000_towing_tank",
+      "provenance": "Kodama et al. (2000), microbubble injection on a flat plate in a towing tank / water tunnel; DR reported in the 20-30% band for C_q of order 0.02-0.05.",
+      "cq": 0.03,
+      "drag_reduction": 0.25,
+      "dr_band": [0.20, 0.30],
+      "confidence": "recalled",
+      "conversion": "plate-length averaged DR at the stated C_q"
+    },
+    {
+      "id": "sanders2006_air_layer",
+      "provenance": "Sanders et al. (2006), air-layer drag reduction on a flat plate with a partial cavity; DR of order 0.8 once a stable air layer is established (C_q of order 0.1).",
+      "cq": 0.10,
+      "drag_reduction": 0.80,
+      "dr_band": [0.70, 0.85],
+      "confidence": "recalled",
+      "conversion": "fully developed air layer, plate-length averaged DR"
+    },
+    {
+      "id": "elbing2008_bubbly",
+      "provenance": "Elbing et al. (2008), injected bubbly flow on a flat plate; DR saturating near 0.2-0.3 for C_q of order 0.1 at high Reynolds number.",
+      "cq": 0.10,
+      "drag_reduction": 0.25,
+      "dr_band": [0.15, 0.35],
+      "confidence": "recalled",
+      "conversion": "plate-length averaged DR at the stated C_q"
+    }
+  ],
+  "geometric_caveat": "The reference experiments have gas-layer thickness / boundary-layer thickness of order 1e-3 to 1e-2; the present 2-D channel resolves the gas layer with 6-8 lattice nodes over a 40-node gap (h_g/H ~ 0.15-0.2). The comparison is therefore made on the integral (DR versus C_q) plane only, and is expected to bracket rather than to reproduce the experiments point by point."
+}
