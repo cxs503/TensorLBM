@@ -32,6 +32,11 @@ class WallResolvedChannel3DConfig:
     report_interval: int = 500
     checkpoint_interval: int = 5000
     collision_model: str = "natural_kbc"
+    # Sub-grid (Smagorinsky) strength.  0.0 keeps the molecular-only behaviour
+    # bit-for-bit; a positive value activates the local-equilibrium Smagorinsky
+    # eddy viscosity inside the cumulant kernel (C_s), which is what an
+    # SGS-on/off pair (negative control at fixed grid) needs.
+    smagorinsky_cs: float = 0.0
     collision_chunk_cells: int = 262144
     compile_natural_kbc: bool = True
     initialization_mode: str = "spectral_solenoidal"
@@ -86,6 +91,13 @@ class WallResolvedChannel3DConfig:
                 raise ValueError(f"{name} must be a positive integer")
         if self.collision_model not in {"natural_kbc", "cumulant"}:
             raise ValueError("collision_model must be natural_kbc or cumulant")
+        if not 0.0 <= float(self.smagorinsky_cs) < 1.0:
+            raise ValueError("smagorinsky_cs must lie in [0,1)")
+        if self.smagorinsky_cs > 0.0 and self.collision_model != "cumulant":
+            raise ValueError(
+                "smagorinsky_cs > 0 requires collision_model='cumulant' "
+                "(the natural-KBC kernel carries no sub-grid closure)"
+            )
         if self.compile_natural_kbc and self.collision_model != "natural_kbc":
             raise ValueError("compiled collision requires natural_kbc")
         if self.initialization_mode not in {"coherent", "spectral_solenoidal"}:
@@ -472,7 +484,9 @@ def run_wall_resolved_channel3d(
                 chunk_cells=config.collision_chunk_cells,
             )
         else:
-            collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
+            collided = collide_cumulant_d3q19(
+                f, config.tau, C_s=float(config.smagorinsky_cs)
+            )
         post = torch.where(solid_q, old, collided)
         rho, ux, uy, uz = macroscopic3d_low_memory(post)
         force_x = rho * config.body_force_acceleration * fluid
@@ -638,6 +652,7 @@ def run_wall_resolved_channel3d(
             "nu": config.nu,
             "tau": config.tau,
             "body_force_acceleration": config.body_force_acceleration,
+            "smagorinsky_cs": float(config.smagorinsky_cs),
             "target_wall_shear": config.u_tau**2,
             "dx_plus": config.re_tau / (0.5 * config.height),
             "dz_plus": config.re_tau / (0.5 * config.height),
