@@ -1,0 +1,175 @@
+{
+  "campaign": "IN41-N07",
+  "title": "TensorLBM FWH Acoustic Far-Field Validation",
+  "date": "2026-11-07",
+  "curle_dipole": {
+    "description": "Oscillating cylinder acoustic radiation vs Curle analytical solution",
+    "config": {
+      "cylinder_radius_m": 0.01,
+      "velocity_amplitude_m_s": 0.1,
+      "fluid_density_kg_m3": 1.225,
+      "sound_speed_m_s": 343.0,
+      "observer_distance_m": 1.5,
+      "n_source_points": 128
+    },
+    "cases": [
+      {
+        "freq_hz": 250.0,
+        "observers": [
+          {
+            "label": "\u03b8=0\u00b0",
+            "amplitude_sim": 0.014952997231481937,
+            "amplitude_ana": 0.01468691131114488,
+            "error_pct": 1.8117214348202904,
+            "pass": true,
+            "ka": 0.04579581127681914,
+            "r_over_lambda": 1.0932944606413992
+          },
+          {
+            "label": "\u03b8=45\u00b0",
+            "amplitude_sim": 0.010572374545472442,
+            "amplitude_ana": 0.010385214582795952,
+            "error_pct": 1.8021771354299916,
+            "pass": true,
+            "ka": 0.04579581127681914,
+            "r_over_lambda": 1.0932944606413992
+          },
+          {
+            "label": "\u03b8=60\u00b0",
+            "amplitude_sim": 0.0074750850173899794,
+            "amplitude_ana": 0.007343455655572441,
+            "error_pct": 1.7924716644493333,
+            "pass": true,
+            "ka": 0.04579581127681914,
+            "r_over_lambda": 1.0932944606413992
+          }
+        ]
+      },
+      {
+        "freq_hz": 500.0,
+        "observers": [
+          {
+            "label": "\u03b8=0\u00b0",
+            "amplitude_sim": 0.05919739312978014,
+            "amplitude_ana": 0.05874764524457952,
+            "error_pct": 0.7655589995619756,
+            "pass": true,
+            "ka": 0.09159162255363829,
+            "r_over_lambda": 2.1865889212827985
+          },
+          {
+            "label": "\u03b8=45\u00b0",
+            "amplitude_sim": 0.04185648312121377,
+            "amplitude_ana": 0.04154085833118381,
+            "error_pct": 0.7597936169581406,
+            "pass": true,
+            "ka": 0.09159162255363829,
+            "r_over_lambda": 2.1865889212827985
+          },
+          {
+            "label": "\u03b8=60\u00b0",
+            "amplitude_sim": 0.029595019275212995,
+            "amplitude_ana": 0.029373822622289766,
+            "error_pct": 0.7530400648480066,
+            "pass": true,
+            "ka": 0.09159162255363829,
+            "r_over_lambda": 2.1865889212827985
+          }
+        ]
+      },
+      {
+        "freq_hz": 1000.0,
+        "observers": [
+          {
+            "label": "\u03b8=0\u00b0",
+            "amplitude_sim": 0.2338979179189373,
+            "amplitude_ana": 0.23499058097831807,
+            "error_pct": 0.46498164089461475,
+            "pass": true,
+            "ka": 0.18318324510727657,
+            "r_over_lambda": 4.373177842565597
+          },
+          {
+            "label": "\u03b8=45\u00b0",
+            "amplitude_sim": 0.16540534985160868,
+            "amplitude_ana": 0.16616343332473524,
+            "error_pct": 0.4562276175679559,
+            "pass": true,
+            "ka": 0.18318324510727657,
+            "r_over_lambda": 4.373177842565597
+          },
+          {
+            "label": "\u03b8=60\u00b0",
+            "amplitude_sim": 0.11696383392744672,
+            "amplitude_ana": 0.11749529048915906,
+            "error_pct": 0.45232158625232627,
+            "pass": true,
+            "ka": 0.18318324510727657,
+            "r_over_lambda": 4.373177842565597
+          }
+        ]
+      }
+    ],
+    "pass_3pct": true,
+    "n_observers": 3,
+    "n_frequencies": 3
+  },
+  "doppler": {
+    "description": "Moving monopole Doppler frequency shift validation",
+    "config": {
+      "source_frequency_hz": 1000.0,
+      "source_velocity_m_s": 102.89999999999999,
+      "mach_number": 0.3,
+      "sound_speed_m_s": 343.0
+    },
+    "observers": [
+      {
+        "label": "\u03b8=0\u00b0",
+        "theta_deg": 0.0
+      },
+      {
+        "label": "\u03b8=180\u00b0",
+        "theta_deg": 180.0
+      }
+    ],
+    "f_sim": [
+      1430.3702392578125,
+      770.5867309570312
+    ],
+    "f_ana": [
+      1428.5714285714287,
+      769.2307692307692
+    ],
+    "error_pct": [
+      0.12591674804686817,
+      0.17627502441407047
+    ],
+    "pass_1pct": true
+  },
+  "airfoil_noise": {
+    "description": "NACA0012 trailing-edge noise OASPL vs BPM reference",
+    "config": {
+      "chord_m": 0.2286,
+      "free_stream_velocity_m_s": 55.0,
+      "reynolds_number": 838200.0,
+      "mach_number": 0.16034985422740525,
+      "observer_distance_m": 1.2
+    },
+    "oaspl_sim_db": 96.27429139459164,
+    "oaspl_ref_db": 97.0,
+    "error_db": 0.7257086054083572,
+    "pass_5db": true
+  },
+  "summary": {
+    "curle_pass_3pct": true,
+    "doppler_pass_1pct": true,
+    "airfoil_pass_5db": true,
+    "all_pass": true
+  },
+  "figures": [
+    "figures/curle_dipole_comparison.png",
+    "figures/curle_dipole_directivity.png",
+    "figures/doppler_frequency_shift.png",
+    "figures/airfoil_noise_timeseries_spectrum.png"
+  ]
+}
