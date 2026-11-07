@@ -16,13 +16,23 @@
 并把逐分量 Python 循环改成整张量布尔掩码/广播（数学逐点等价，不改变任何数值定义）。
 
 命令行形态保留：`python tests/test_lbm_verification.py` 打印全部测量值并汇总。
+
+r2（2026-11-07）：把这条梯子从"能红能绿"升级为"能出证据"——
+同一段代码既做断言（pytest 门），也能把实测数字写成 JSON（`--json`），
+再由 `scripts/lbm_verification_report.py` 程序化生成数字表与对照图，
+避免报告里的数字靠手抄漂移。dtype 由 `TENSORLBM_TEST_DTYPE` 解析
+（缺省 float64：验证的是数值方法本身，不是 float32 舍入地板），
+并新增 Step C 的 float32 对照用例，把 dtype 敏感度变成被判据约束的事实。
 """
 
 from __future__ import annotations
 
+import argparse
+import json
 import math
 import os
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -44,13 +54,54 @@ pytestmark = [pytest.mark.physics]
 REL_TOL = 0.01  # 1%
 
 
+TOL_PCT = 1.0  # 统一判据的另一写法（百分比）：报告里逐项列"误差% vs 判据%"
+
+
 def _device() -> torch.device:
     """验证用设备：默认 CPU，可用 TENSORLBM_TEST_DEVICE=cuda:0 / sdaa:0 覆盖。
 
     解析解验证与设备无关，默认 CPU 是为了让 CPU-only runner 也能裁决，
-    不再因为 `sdaa:0` 这种硬件钉扎而跳过。
+    不再因为 `sdaa:0` 这种硬件钉扎而跳过。显式请求的加速器不可用时 *skip*
+    而不是伪绿：环境缺硬件不等于验证通过，但也不该把整套输入判成 FAIL。
     """
-    return torch.device(os.environ.get("TENSORLBM_TEST_DEVICE", "cpu"))
+    name = os.environ.get("TENSORLBM_TEST_DEVICE", "cpu")
+    if name.startswith("sdaa"):
+        sdaa = getattr(torch, "sdaa", None)
+        if sdaa is None or not sdaa.is_available():
+            pytest.skip(f"TENSORLBM_TEST_DEVICE={name!r} 但 torch.sdaa 不可用")
+    elif name.startswith("cuda") and not torch.cuda.is_available():
+        pytest.skip(f"TENSORLBM_TEST_DEVICE={name!r} 但 CUDA 不可用")
+    return torch.device(name)
+
+
+def resolve_dtype(explicit: torch.dtype | None = None) -> torch.dtype:
+    """dtype 解析：explicit > ``TENSORLBM_TEST_DTYPE`` > float64。
+
+    缺省 float64 是刻意的：这条梯子裁决的是数值方法（碰撞核/边界/强迫）是否正确，
+    float32 的单精度舍入地板会把方法误差淹没（见 docs/lbm_verification_ladder_r2.md
+    的 dtype 对照表）。需要 float32 视点时用环境变量切换，同一份断言仍然生效。
+    """
+    if explicit is not None:
+        return explicit
+    name = os.environ.get("TENSORLBM_TEST_DTYPE", "float64").lower()
+    if name not in {"float32", "float64"}:
+        raise ValueError(f"TENSORLBM_TEST_DTYPE 只接受 float32/float64，收到 {name!r}")
+    return getattr(torch, name)
+
+
+@pytest.fixture(autouse=True)
+def _verification_dtype():
+    """把 torch 默认 dtype 钉到 :func:`resolve_dtype` 的解析结果（用后恢复）。
+
+    四个案例的张量都由默认 dtype 构造，因此这一个钩子就能让整条梯子换精度，
+    不必在每个 case 里传 dtype 参数（也保证断言与报告数字走的是同一个精度）。
+    """
+    old = torch.get_default_dtype()
+    torch.set_default_dtype(resolve_dtype())
+    try:
+        yield
+    finally:
+        torch.set_default_dtype(old)
 
 
 @pytest.fixture(autouse=True)
@@ -122,12 +173,14 @@ def shear_wave_case(
     _, _, uy0, _ = macroscopic3d(f)
     a_init = float(uy0[0, 0, 0])
 
+    history = [a_init]
     for _ in range(steps):
         f = collide_bgk3d(f, tau=tau)
         f = stream3d(f)
+        _, _, uy_t, _ = macroscopic3d(f)
+        history.append(float(uy_t[0, 0, 0]))
 
-    _, _, uy_f, _ = macroscopic3d(f)
-    a_final = float(uy_f[0, 0, 0])
+    a_final = history[-1]
     nu_measured = -math.log(abs(a_final / a_init)) / (k**2 * steps)
     err = abs(nu_measured - nu_expected) / nu_expected
 
@@ -135,6 +188,8 @@ def shear_wave_case(
         "case": "A_shear_wave",
         "tau": tau,
         "steps": steps,
+        "nx": nx,
+        "history": history,
         "nu_expected": nu_expected,
         "nu_measured": nu_measured,
         "amplitude_init": a_init,
@@ -203,6 +258,7 @@ def couette_case(
         "u_top": u_top,
         "u_num": u.tolist(),
         "u_exact": u_exact.tolist(),
+        "y": y.tolist(),
         "rel_err": rel_err,
     }
 
@@ -238,8 +294,10 @@ def poiseuille_case(
     solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=d)
     solid[:, 0, :] = True
     solid[:, -1, :] = True
-    c = C.to(d).float()
-    w = W.to(d).float()
+    # 离散速度/权重跟当前默认 dtype 走：写死 .float() 会让 float64 场量里混进
+    # float32 的体力增量（类型提升后仍能跑，但把 float32 舍入引进 float64 判据）
+    c = C.to(d).to(torch.get_default_dtype())
+    w = W.to(d).to(torch.get_default_dtype())
     # Guo 体力的动量项：w_q·3·c_qx·G（逐格点常数，可广播到整张量）
     accel = (w * 3.0 * c[:, 0]).view(19, 1, 1, 1) * g_force
 
@@ -272,6 +330,7 @@ def poiseuille_case(
         "u_max_exact": float(u_exact.max()),
         "u_num": u.tolist(),
         "u_exact": u_exact.tolist(),
+        "y": y.tolist(),
         "rel_err": rel_err,
     }
 
@@ -282,6 +341,30 @@ def test_step_c_poiseuille() -> None:
     assert r["rel_err"] < REL_TOL, (
         f"Step C 剖面相对误差 {r['rel_err']:.3%} ≥ {REL_TOL:.0%}："
         f"u_max_num={r['u_max_num']:.6f} u_max_exact={r['u_max_exact']:.6f}"
+    )
+
+
+@pytest.mark.physics
+def test_step_c_poiseuille_float32_error_is_not_rounding_bound() -> None:
+    """dtype 敏感度：Step C 的 float32 误差必须仍 < 1%，且与 float64 同量级。
+
+    Step C 的残差（~0.34%）来自半路反弹 + Guo 离散的可压缩性离散误差，属物理/离散
+    误差而非舍入误差。因此 float32 与 float64 必须给出同量级误差；若 float32 明显
+    更差，说明场量尺度已贴到单精度舍入地板，该 dtype 下"误差 < 1%"的判据不再有
+    鉴别力（这条用例就是那个前提的守卫）。
+    """
+    old = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float32)
+    try:
+        r32 = poiseuille_case()
+    finally:
+        torch.set_default_dtype(old)
+    r64 = poiseuille_case()
+    assert r32["rel_err"] < REL_TOL, f"float32 下 Step C 误差 {r32['rel_err']:.3%} ≥ {REL_TOL:.0%}"
+    ratio = r32["rel_err"] / max(r64["rel_err"], 1e-12)
+    assert 0.3 <= ratio <= 3.0, (
+        f"float32/float64 误差比 {ratio:.3g} 超出 [0.3, 3]：float32 误差已由舍入主导"
+        f"（f32={r32['rel_err']:.4%} f64={r64['rel_err']:.4%}）"
     )
 
 
@@ -403,34 +486,73 @@ def test_no_dynamics_restore_must_use_pre_collision_snapshot() -> None:
     )
 
 
-CASES = (shear_wave_case, couette_case, poiseuille_case, friction_case)
+CASES = (
+    ("A", shear_wave_case),
+    ("B", couette_case),
+    ("C", poiseuille_case),
+    ("D", friction_case),
+)
+
+#: 每个 Step 的"关键量 vs 基准"字段名（报告表格的取数口径，写死在这里便于审阅）
+KEY_QUANTITY = {
+    "A": ("运动粘度 ν", "nu_measured", "nu_expected"),
+    "B": ("Couette 剖面 max|Δu|/u_top", None, None),
+    "C": ("Poiseuille 峰值 u_max", "u_max_num", "u_max_exact"),
+    "D": ("壁面摩擦系数 Cf", "cf_num", "cf_exact"),
+}
 
 
-def main() -> int:
+def collect_metrics(device: torch.device | None = None) -> dict:
+    """跑完四个案例，返回可序列化的指标（数值全部程序化注入报告，不手抄）。"""
+    d = device if device is not None else _device()
+    steps: dict[str, dict] = {}
+    for step, case in CASES:
+        r = case(d)
+        r["step"] = step
+        r["err_pct"] = 100.0 * float(r["rel_err"])
+        r["tolerance_pct"] = TOL_PCT
+        r["passed"] = bool(r["rel_err"] < REL_TOL)
+        steps[step] = r
+    return {
+        "device": str(d),
+        "dtype": str(torch.get_default_dtype()).replace("torch.", ""),
+        "tol_pct": TOL_PCT,
+        "n_pass": sum(1 for r in steps.values() if r["passed"]),
+        "n_total": len(steps),
+        "steps": steps,
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(
+        description="TensorLBM 解析解验证梯 Step A-D（打印表格，可选写 metrics JSON）"
+    )
+    ap.add_argument("--json", type=Path, default=None, help="指标 JSON 输出路径")
+    args = ap.parse_args(argv)
+
     torch.set_num_threads(1)
+    torch.set_default_dtype(resolve_dtype())
+    metrics = collect_metrics(torch.device("cpu"))
+
     print("\n" + "=" * 66)
-    print("  LBM 解析解验证：4 案例，判据 = 相对误差 < 1%")
+    print(f"  LBM 解析解验证：4 案例，判据 = 相对误差 < {TOL_PCT:g}%，dtype={metrics['dtype']}")
     print("=" * 66)
-    results = []
-    for case in CASES:
-        r = case(torch.device("cpu"))
-        ok = r["rel_err"] < REL_TOL
-        results.append((r["case"], ok, r["rel_err"]))
-        print(f"  {r['case']:<14} rel_err={r['rel_err']:.4%}  {'PASS' if ok else 'FAIL'}")
-        for key in (
-            "nu_expected",
-            "nu_measured",
-            "u_max_num",
-            "u_max_exact",
-            "cf_num",
-            "cf_exact",
-            "u_wall",
-        ):
-            if key in r:
-                print(f"      {key} = {r[key]:.8g}")
-    n_pass = sum(1 for _, ok, _ in results if ok)
-    print(f"\n  通过 {n_pass}/{len(results)}")
-    return 0 if n_pass == len(results) else 1
+    for step, r in metrics["steps"].items():
+        flag = "PASS" if r["passed"] else "FAIL"
+        print(f"  {r['case']:<14} rel_err={r['rel_err']:.4%}  {flag}")
+        label, num_key, exact_key = KEY_QUANTITY[step]
+        if num_key:
+            print(f"      {label}: num={r[num_key]:.8g} exact={r[exact_key]:.8g}")
+    print(f"\n  通过 {metrics['n_pass']}/{metrics['n_total']}")
+
+    if args.json is not None:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(
+            json.dumps(metrics, indent=1, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        print(f"  metrics -> {args.json}")
+
+    return 0 if metrics["n_pass"] == metrics["n_total"] else 1
 
 
 if __name__ == "__main__":  # pragma: no cover
