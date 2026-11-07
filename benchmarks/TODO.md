@@ -223,3 +223,8 @@ benchmarks/TODO.md            # 本清单 + 状态跟踪
   - **禁止**：脚本内手写 collide/stream/平衡态（需复用库函数，grep 校验零手写）
 - 网格收敛性作为加分项（有收敛趋势才可信，用户核心要求）
 - 保存时附带：运行命令、配置（含 extrap='none'）、参考值来源、误差、时间戳
+
+### 组 9：屈服应力 / Herschel-Bulkley（P55-N09）
+| # | 案例 | 物理 | 参考值 | 当前精度 | 状态 |
+|---|------|------|--------|---------|------|
+| RY1 | rheology_yield | H-B 管道塞流核 + 平板 Couette 屈服面 + slush ΔP-Q | 解析 H-B 闭式解（pipe/slit Q、Couette-Poiseuille y_yield） | Bingham 管道流量 **+0.47/+2.74/−0.42 %**（全案例集 R=20）；塞流核探针 −13…−23 %；n=0.6 流量 +30…+77 %；平板屈服面 −56 % | ⚠️ **部分验证 / honest FAIL**：`benchmarks/verified/rheology_yield/`（`all_gates_passed=false`）。待办：插值 bounce-back、塞流核长时收敛（>3e4 步）、n<1 分辨率研究、slush 体力量级重标定 |

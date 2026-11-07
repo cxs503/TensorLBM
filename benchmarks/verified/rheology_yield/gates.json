@@ -1,0 +1,112 @@
+{
+  "case": "rheology_yield",
+  "all_passed": false,
+  "gates": [
+    {
+      "id": "G1_pipe_plug_radius",
+      "description": "pipe plug radius: threshold probe on the LBM profile vs the same probe on the analytic H-B profile",
+      "values": [
+        0.2770838386631542,
+        0.32082221905164987
+      ],
+      "worst": 0.32082221905164987,
+      "threshold": 0.03,
+      "passed": false
+    },
+    {
+      "id": "G1b_pipe_plug_radius_vs_regularised_reference",
+      "description": "plug radius vs the exact 1-D solution of the regularised model (isolates discretisation from regularisation bias)",
+      "values": [
+        0.2653659063917295,
+        0.3143545397941182
+      ],
+      "worst": 0.3143545397941182,
+      "threshold": 0.03,
+      "passed": false
+    },
+    {
+      "id": "G2_couette_yield_surface",
+      "description": "plate Couette yield surface y_yield/h*tau_w/tau_y: probe on the LBM profile vs the same probe on the analytic profile",
+      "values": [
+        0.5682321392495622
+      ],
+      "worst": 0.5682321392495622,
+      "threshold": 0.03,
+      "passed": false
+    },
+    {
+      "id": "G2b_couette_yield_surface_vs_regularised_reference",
+      "description": "plate yield surface vs the 1-D regularised reference solution",
+      "values": [
+        0.5653905192156279
+      ],
+      "worst": 0.5653905192156279,
+      "threshold": 0.03,
+      "passed": false
+    },
+    {
+      "id": "G3_pressure_drop_flow_rate",
+      "description": "DeltaP-Q\u4e92\u8bc1: LBM flow rate vs analytic H-B Poiseuille law (all body forces, both rheologies)",
+      "values": [
+        0.01347290706369142,
+        0.8921250232595248
+      ],
+      "worst": 0.8921250232595248,
+      "threshold": 0.03,
+      "passed": false
+    },
+    {
+      "id": "G3b_slush_pipeline_curve",
+      "description": "slush (phi=0.25) pipeline DeltaP-Q points vs analytic H-B law",
+      "values": [
+        NaN
+      ],
+      "worst": NaN,
+      "threshold": 0.03,
+      "passed": false
+    },
+    {
+      "id": "G4_profile_shape",
+      "description": "max |u_lbm-u_analytic|/u_analytic over the yielded annulus (pipe)",
+      "values": [
+        0.10730289836049514,
+        1.0418783009870913
+      ],
+      "worst": 1.0418783009870913,
+      "threshold": 0.03,
+      "passed": false
+    },
+    {
+      "id": "N1_no_yield_no_plug",
+      "description": "negative control: tau_y=0 pipe has no plug core (plug probe returns None or <= 0.1R) and matches the Newtonian Hagen-Poiseuille profile",
+      "values": [
+        null
+      ],
+      "worst": null,
+      "threshold": 0.1,
+      "passed": true
+    },
+    {
+      "id": "N2_pure_shear_no_interior_yield_surface",
+      "description": "negative control: pure plane Couette (uniform stress) has no interior yield surface and an (almost) linear profile",
+      "values": [
+        null,
+        0.6096147665033831
+      ],
+      "worst": 0.09363024220801888,
+      "threshold": 0.03,
+      "passed": false
+    },
+    {
+      "id": "N3_below_yield_no_flow",
+      "description": "negative control: body force whose wall stress stays below tau_y produces (essentially) no flow",
+      "values": [
+        0.04206652032173843
+      ],
+      "worst": 0.04206652032173843,
+      "threshold": 0.01,
+      "passed": false
+    }
+  ],
+  "thresholds": "relative errors, <= 3% unless stated otherwise"
+}
