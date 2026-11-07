@@ -13,9 +13,13 @@ tests/test_dam_break_3d.py::test_fs_runner_does_not_rebuild_mass_from_fill_betwe
 # --- batch 2 (2026-08-19): 102 verified identical failures on stock main @ 2a6da29 (ci-cpu venv run pytest_mainref2.log) ---
 tests/test_multi_device_sdaa_common.py::TestDomainDecompositionDeviceAgnostic::test_from_devices_sdaa
 tests/test_multi_device_sdaa_common.py::TestDomainDecompositionDeviceAgnostic::test_from_devices_cpu
-tests/test_multi_device_sdaa_common.py::TestAutoDecomposeSdaa::test_explicit_sdaa_type
-tests/test_multi_device_sdaa_common.py::TestAutoDecomposeSdaa::test_explicit_cpu_type
-tests/test_multi_device_sdaa_common.py::TestAutoDecomposeSdaa::test_n_devices_override
+
+# 2026-11-06 (main-red clearance, docs/ci/main_red_clearance_20261106.md): the three
+# TestAutoDecomposeSdaa entries of this batch are FIXED and removed from the list.
+# auto_decompose now probes CUDA -> SDAA -> CPU and honours an explicit
+# device_type/n_devices, so an SDAA-only runner no longer degrades to a single
+# ['cpu'] domain. Still open in this batch: DomainDecomposition.from_devices()
+# hard-codes "cuda:{i}", so the from_devices_sdaa/from_devices_cpu entries stay.
 tests/test_multi_device_sdaa_common.py::TestMultiDeviceSolver3DEquivalence::test_multi_card_matches_monolithic_periodic_stream[2]
 tests/test_multi_device_sdaa_common.py::TestMultiDeviceSolver3DEquivalence::test_multi_card_matches_monolithic_periodic_stream[3]
 tests/test_multi_device_sdaa_common.py::TestMultiDeviceSolver3DEquivalence::test_multi_card_matches_monolithic_periodic_stream[4]
