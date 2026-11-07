@@ -582,6 +582,30 @@ def total_liquid_inventory(f, fill, flags, rho_liquid=1.0):
     )
 
 
+def mass_ledger(steps: int, device=None, rho_liquid: float = 1.0):
+    """Per-step free-surface mass ledger (fill-classification, no host sync).
+
+    Returns a :class:`tensorlbm.free_surface_mass_ledger.MassLedger` sized for
+    ``steps`` records.  The caller drives it once per timestep::
+
+        ledger = mass_ledger(n_steps, device=f.device)
+        for _ in range(n_steps):
+            f, fill, flags, mass, _ = free_surface_step(...)
+            ledger.record(f, fill, flags, mass, rho_liquid=rho_liquid)
+
+    ``record`` classifies every cell by ``fill`` into ``{fill <= 0}``,
+    ``{0 < fill < 1}`` and ``{fill >= 1}``, sums the class fills (plus counts
+    and two-sided excursions) and the conserved liquid inventory
+    ``sum_L rho + sum_I fill*rho_liquid``, and writes the row into a
+    pre-allocated device buffer.  There is no host synchronisation per step;
+    the single transfer happens in :meth:`MassLedger.summary`.  The keystone
+    thresholds (J1 ulp criterion, J4 absolute drift) are evaluated there.
+    """
+    from .free_surface_mass_ledger import MassLedger
+
+    return MassLedger(steps=steps, device=device, rho_liquid=rho_liquid)
+
+
 # ===========================================================================
 # Helper: init new cells with neighbor-averaged velocity
 # ===========================================================================
