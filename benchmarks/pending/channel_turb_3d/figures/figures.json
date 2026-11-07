@@ -1,0 +1,29 @@
+{
+  "figures": [
+    {
+      "path": "figures/profiles_uplus_vs_mkm.png",
+      "caption": "u+ vs y+ against MKM-1999 DNS for the three grid levels, with the measured wall origin, and a near-wall zoom comparing the previously assumed y_w=0.5 with the measured value.",
+      "sha256_size": 192412
+    },
+    {
+      "path": "figures/wall_origin_calibration.png",
+      "caption": "Effective wall origin of the production bounce-back wall measured by laminar Poiseuille inversion, versus relaxation time and collision model, against the assumed 0.5 and the previously reported 0.1.",
+      "sha256_size": 59200
+    },
+    {
+      "path": "figures/u_tau_three_way.png",
+      "caption": "Three-way friction velocity (momentum balance / momentum exchange / log-law fit at the measured origin) per grid level.",
+      "sha256_size": 50861
+    },
+    {
+      "path": "figures/reynolds_stress_profiles.png",
+      "caption": "Reynolds shear stress <u'v'>+ and normal stresses in wall units for the three grid levels.",
+      "sha256_size": 177163
+    },
+    {
+      "path": "figures/error_trends.png",
+      "caption": "Profile error versus resolution and closure error versus statistical convergence, with the C1 (10%) and C4 (3%) gates.",
+      "sha256_size": 105937
+    }
+  ]
+}
