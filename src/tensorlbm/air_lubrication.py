@@ -635,6 +635,7 @@ class VoidFractionTransport2D:
         nx: int = 192,
         ny: int = 96,
         dx: float = 1.0,
+        dy: Optional[float] = None,
         u_profile: Optional[Sequence[float]] = None,
         rise_velocity: float = 0.0,
         disp_y: Optional[Sequence[float]] = None,
@@ -646,6 +647,10 @@ class VoidFractionTransport2D:
     ) -> None:
         self.nx, self.ny = int(nx), int(ny)
         self.dx = float(dx)
+        # wall-normal spacing; ``None`` keeps the historical square-cell behaviour
+        self.dy = float(dx if dy is None else dy)
+        if self.dy <= 0.0:
+            raise ValueError("dy must be positive")
         self.dt = float(dt)
         self.alpha = np.zeros((self.ny, self.nx), dtype=np.float64)
         self.solid = (
@@ -734,7 +739,7 @@ class VoidFractionTransport2D:
         adv_y = np.where(vy_f > 0.0, aB, aT) * vy_f
         dy_f = np.zeros((ny + 1, nx))
         dy_f[1:ny] = 0.5 * (self.disp_y[:-1] + self.disp_y[1:])
-        diff_y = dy_f * (aB - aT) / dx  # Fick: flux in +y = -D d(alpha)/dy
+        diff_y = dy_f * (aB - aT) / self.dy  # Fick: flux in +y = -D d(alpha)/dy
         Fy_ext = adv_y + diff_y
         Fy_ext = np.clip(
             Fy_ext,
@@ -746,12 +751,12 @@ class VoidFractionTransport2D:
         # bottom boundary: the injection strip, capacity-limited to alpha <= 1
         bottom = np.zeros(nx)
         if self.injection is not None and np.any(self.injection):
-            room = np.maximum((self.alpha_max - a[0, :]) * dx / dt, 0.0)
+            room = np.maximum((self.alpha_max - a[0, :]) * self.dy / dt, 0.0)
             bottom = np.clip(self.injection, 0.0, None)
             bottom = np.minimum(bottom, room)
         Fy_ext[0, :] = bottom
 
-        div = (Fx_ext[:, 1:] - Fx_ext[:, :-1]) / dx + (Fy_ext[1:, :] - Fy_ext[:-1, :]) / dx
+        div = (Fx_ext[:, 1:] - Fx_ext[:, :-1]) / dx + (Fy_ext[1:, :] - Fy_ext[:-1, :]) / self.dy
         a_new = np.where(fluid, a - dt * div, 0.0)
         # the scheme is positivity preserving by the maximum principle; this only
         # removes round-off and is counted in the audit
@@ -759,12 +764,12 @@ class VoidFractionTransport2D:
         self.negativity += float(-neg.sum())
         a_new = np.minimum(np.maximum(a_new, 0.0), self.alpha_max)
 
-        self.injected_total += float(np.sum(bottom)) * dt
-        self.outflow_total += float(np.sum(ux[:, nx - 1] * a[:, nx - 1])) * dt
+        self.injected_total += float(np.sum(bottom)) * dx * dt
+        self.outflow_total += float(np.sum(ux[:, nx - 1] * a[:, nx - 1])) * self.dy * dt
         self.alpha = a_new
 
     def mass(self) -> float:
-        return float(np.sum(self.alpha) * self.dx * self.dx)
+        return float(np.sum(self.alpha) * self.dx * self.dy)
 
     def budget_residual(self) -> float:
         """Relative ``|dM/dt - (injected - outflowed)|``; machine precision by construction."""
