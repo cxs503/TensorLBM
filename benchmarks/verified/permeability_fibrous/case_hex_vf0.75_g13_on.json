@@ -1,0 +1,67 @@
+{
+  "kind": "case",
+  "schema": "p55n02/permeability_fibrous/v1",
+  "created_utc": "2026-11-07T12:02:36Z",
+  "smoke": false,
+  "case": "hex_vf0.75",
+  "grid": 13,
+  "closure_enabled": true,
+  "geometry": {
+    "arrangement": "hex",
+    "nx": 13,
+    "ny": 23,
+    "cell": 13.0,
+    "radius": 5.911046332702534,
+    "phi_nominal": 0.75,
+    "phi_actual": 0.7391304347826086,
+    "N_solid": 221,
+    "N_fluid": 78,
+    "delta_min_analytic_dx": 1.177907334594933,
+    "delta_min_field_dx": 1.2202769561664013
+  },
+  "run": {
+    "tau_base": 1.0,
+    "nu_base": 0.16666666666666666,
+    "a_body": 7.8698224852071e-06,
+    "steps_run": 4600,
+    "steady_step": 2600,
+    "steady_detected": true,
+    "sample_every": 100,
+    "meas_window_steps": 2000,
+    "wall_seconds": 4.380534887313843,
+    "device": "cpu",
+    "dtype": "float64"
+  },
+  "closure": {
+    "enabled": true,
+    "cutoff_dx": 1.5,
+    "exponent": 3.0,
+    "n_valid_throats": 78,
+    "n_corrected": 2,
+    "nu_factor_min": 0.8946047107678212,
+    "nu_factor_max": 0.8946047107678212
+  },
+  "measurement": {
+    "u_fluid_mean": 1.8872798668853914e-06,
+    "u_fluid_first": 1.8882280800098298e-06,
+    "u_fluid_rel_change": 0.0005021708629783239,
+    "u_fluid_win_std": 1.120745154069079e-13,
+    "mass": 92.00315832667602
+  },
+  "derived": {
+    "k_sim": 0.010426619728788207,
+    "k_ref": 0.02529429734470371,
+    "reference": "gebart1992_hex",
+    "reference_meta": {
+      "formula": "C1 R^2 (sqrt(phi_max/phi)-1)^2.5",
+      "C1": 0.23102127443960777,
+      "phi_max": 0.9068996821171089,
+      "phi": 0.75,
+      "radius": 5.911046332702534
+    },
+    "err_rel": 0.587787729910141,
+    "err_pct": 58.77877299101411,
+    "signed_err_pct": -58.77877299101411,
+    "delta_min_over_dx": 1.177907334594933
+  }
+}
