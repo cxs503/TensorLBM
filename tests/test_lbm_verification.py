@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""D3Q19 BGK 核心的四步解析解验证（pytest 形态，设备无关）。
+"""D3Q19 BGK 核心的五步解析解验证（pytest 形态，设备无关）。
 
-四个案例都有可写出的精确解，通过判据一律为相对误差 < 1%：
+五个案例都有可写出的精确解，通过判据一律为相对误差 < 1%：
 
   Step A 剪切波衰减   u_y(x,t)=A·cos(kx)·exp(-νk²t)          → 校验 ν=(τ-½)/3
   Step B Couette 流   u_x(y)=U·(y-½)/(H-½)（半路反弹无滑移）  → 校验壁面动量交换
   Step C Poiseuille 流 u(y)=G/(2ν)·(y-½)(H+½-y)               → 校验体力注入与剖面
   Step D 壁面摩擦     Cf=2ν/(L·U)（Couette 型摩擦系数）        → 校验壁面剪应力提取
+  Step E 方管 Poiseuille 三维两向受限的 Boussinesq 级数解      → 校验 3D 角区（y、z 同时受限）
+
+r3（2026-11-07）：加 Step E。A–D 全是"单方向受限 + 另一方向周期"的通道流，
+即二维几何；D3Q19 在三维里最容易露馅的恰恰是方管角区（两条壁的反弹算子叠加、
+剪应力由两向共同贡献），此前完全没有解析解覆盖。Step E 同时给出文献积分量
+f·Re=56.91（⇔ R=28.455）的独立对表。
 
 历史背景（2026-11-03 复核）：本模块原先以「脚本 + 硬件钉扎默认参数」的形态存在，
 `def test_step_x(device="sdaa:0")` 使 CPU-only runner 在构造 torch.device 时直接报错，
@@ -439,6 +445,269 @@ def test_step_d_friction() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Step E：3D 方管 Poiseuille → D3Q19 的二维受限（含角区）解析解
+# ---------------------------------------------------------------------------
+# A–D 四个案例都是"单方向受限"的通道流：y 向一层壁 + x 向周期。它们证明了 D3Q19 的
+# 碰撞核/半路反弹/Guo 强迫在**二维几何**下正确，却完全没碰到"两个方向同时受限"
+# 的情形——方管的角区才是 D3Q19 在 3D 里最容易露馅的地方（角点上两条壁的反弹算子
+# 叠加、角区剪应力由两个方向共同贡献）。Step E 用 Boussinesq 级数精确解补这一级。
+def _duct_coords(length: int) -> np.ndarray:
+    """方管截面流体格点的相对坐标（单位 lu，管心为 0）。
+
+    半路反弹把壁面放在 $j=\\pm(L+1)/2$，流体格点为 $j=1..L$，故
+    $Y,Z\\in\\{\\pm\\frac12,\\pm\\frac32,\\dots,\\pm(a-\\frac12)\\}$，$a=L/2$。
+    """
+    return np.arange(1, length + 1, dtype=float) - 0.5 * (length + 1)
+
+
+def duct_series(
+    Y: np.ndarray,
+    Z: np.ndarray,
+    length: int,
+    body_force: float,
+    nu: float,
+    *,
+    n_terms: int = 401,
+    order: int = 0,
+) -> np.ndarray:
+    r"""方管 Poiseuille 的 Boussinesq 级数解（``order=2`` 时返回其解析 Laplacian）。
+
+    截面 $[-a,a]^2$（边长 $L=2a$）、四壁无滑移、沿管轴均匀体力 $g$ 下，充分发展流满足
+
+    .. math:: \nabla^2 u = -g/\nu,\qquad u=0\ \text{on walls}
+
+    的级数解
+
+    .. math::
+
+        u(Y,Z)=\frac{16\,(g/\nu)\,a^2}{\pi^3}\sum_{n\ \text{odd}}
+        \frac{(-1)^{(n-1)/2}}{n^3}
+        \left[1-\frac{\cosh(n\pi Z/2a)}{\cosh(n\pi/2)}\right]\cos\frac{n\pi Y}{2a}
+
+    ``order=2`` 利用 $\partial^2_Y+\partial^2_Z$ 作用后方括号项恰好相消（等于 1），
+    逐项求导得 $-\sum_n (-1)^{(n-1)/2}k_n^2\cos(k_nY)/n^3\cdot 16(g/\nu)a^2/\pi^3$，
+    即**不依赖差分格式**的独立自检量（见 ``test_step_e_duct_series_satisfies_poisson``）。
+
+    ``cosh`` 比值一律用指数形式计算，避免 $n$ 大时 ``cosh`` 溢出：
+    $\cosh(kZ)/\cosh(ka)=e^{-k(a-|Z|)}(1+e^{-2k|Z|})/(1+e^{-2ka})$。
+    """
+    a = 0.5 * length
+    Y = np.asarray(Y, dtype=float)
+    Z = np.asarray(Z, dtype=float)
+    out = np.zeros(np.broadcast(Y, Z).shape)
+    for n in range(1, n_terms + 1, 2):
+        k = n * math.pi / (2.0 * a)
+        sign = (-1) ** ((n - 1) // 2) / n**3
+        cos_kY = np.cos(k * Y)
+        if order == 2:
+            out += sign * (-k * k) * cos_kY
+        else:
+            d = a - np.abs(Z)
+            ratio = np.exp(-k * d) * (1.0 + np.exp(-2.0 * k * np.abs(Z))) / (
+                1.0 + np.exp(-2.0 * k * a)
+            )
+            out += sign * (1.0 - ratio) * cos_kY
+    return out * (16.0 * (body_force / nu) * a * a / math.pi**3)
+
+
+def duct_profile_exact(
+    length: int,
+    body_force: float,
+    nu: float,
+    *,
+    n_terms: int = 401,
+) -> tuple[np.ndarray, np.ndarray]:
+    """返回 ``(u_exact[iz, iy], coord)``：与 :func:`duct_poiseuille_case` 的格点一一对应。"""
+    coord = _duct_coords(length)
+    Z, Y = np.meshgrid(coord, coord, indexing="ij")
+    return duct_series(Y, Z, length, body_force, nu, n_terms=n_terms), coord
+
+
+#: 方管（正方形截面）无量纲阻力的文献值：$f\cdot Re_{D_h}=56.91$（Darcy 摩擦因子、
+#: 按水力直径 $D_h=L$ 归一），等价于 $R\equiv gL^2/(\nu\bar u)=28.455$。
+#: 来源：Shah & London, *Laminar Flow Forced Convection in Ducts* (1978) 方管条目；
+#: 本文件的 28.455 由 $56.91/2$ 得到（$f=2R/Re$ 的定义下）。
+SQUARE_DUCT_RESISTANCE = 28.455
+
+
+def duct_poiseuille_case(
+    device: torch.device | None = None,
+    *,
+    length: int = 10,
+    nx: int = 4,
+    steps: int = 2000,
+    tau: float = 1.0,
+    u_nominal: float = 0.05,
+) -> dict:
+    """方管 Poiseuille 算例（y、z 两向同时受限，x 向周期）。
+
+    ``u_nominal`` 只用于定标体力 $g=8\\nu u_{nominal}/L^2$（该式对平面通道精确：
+    它给出 $u_{center}=gL^2/8\\nu$；方管实测中心速度约为其 0.589 倍）。取 0.05 是为
+    让方管实际 Mach 数与 Step C 同量级（~0.05），便于横向比较两者的离散误差。
+
+    默认 $L=10$、2000 步；``scripts`` 侧要网格/步数敏感性时改这两个参数即可，
+    走的是同一段代码（published 数字因此不会与断言漂移）。
+    """
+    d = device if device is not None else _device()
+    ny = nz = length + 2
+    nu = (tau - 0.5) / 3.0
+    body_force = 8.0 * nu * u_nominal / length**2
+
+    c = C.to(d).to(torch.get_default_dtype())
+    w = W.to(d).to(torch.get_default_dtype())
+    accel = (w * 3.0 * c[:, 0]).view(19, 1, 1, 1) * body_force
+
+    solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=d)
+    solid[0, :, :] = True   # z 向底壁
+    solid[-1, :, :] = True  # z 向顶壁
+    solid[:, 0, :] = True   # y 向侧壁
+    solid[:, -1, :] = True  # y 向侧壁
+
+    dflt = torch.get_default_dtype()
+    zero = torch.zeros(nz, ny, nx, device=d, dtype=dflt)
+    f = equilibrium3d(torch.ones(nz, ny, nx, device=d, dtype=dflt), zero, zero, zero)
+
+    for _ in range(steps):
+        f_pre = f.clone()
+        f = collide_bgk3d(f, tau=tau)
+        f = _no_dynamics_and_bounce(f, f_pre, solid)
+        f = f + accel
+        f = stream3d(f)
+        f[:, :, :, 0] = f[:, :, :, -2]   # 进出口周期性
+        f[:, :, :, -1] = f[:, :, :, -2]
+
+    _, ux, _, _ = macroscopic3d(f)
+    u = ux.numpy()[1:-1, 1:-1, nx // 2]  # (iz, iy)
+    u_exact, coord = duct_profile_exact(length, body_force, nu)
+
+    u_max_exact = float(u_exact.max())
+    rel_err = float(np.max(np.abs(u - u_exact)) / u_max_exact)
+    # 无量纲阻力 R = gL²/(ν·ū)：与截面剖面的节点值不同泛函（积分量），
+    # 可与文献 f·Re=56.91（⇔R=28.455）独立对表。
+    u_mean_num = float(u.mean())
+    u_mean_exact = float(u_exact.mean())
+    resistance_num = body_force * length**2 / (nu * u_mean_num)
+    resistance_exact = body_force * length**2 / (nu * u_mean_exact)
+
+    return {
+        "case": "E_duct_poiseuille",
+        "length": length,
+        "nx": nx,
+        "steps": steps,
+        "tau": tau,
+        "nu": nu,
+        "body_force": body_force,
+        "u_max_num": float(u.max()),
+        "u_max_exact": u_max_exact,
+        "u_mean_num": u_mean_num,
+        "u_mean_exact": u_mean_exact,
+        "resistance_num": resistance_num,
+        # 自洽基准：级数解在**同一批格点上**取算术平均（与 LBM 的取平均方式一致），
+        # 这样比较量是求解器误差，不含"节点平均 vs 连续积分"的求积偏差。
+        "resistance_exact_nodal": resistance_exact,
+        "resistance_literature": SQUARE_DUCT_RESISTANCE,
+        "resistance_err_nodal": abs(resistance_num - resistance_exact) / resistance_exact,
+        # 对文献值 28.455 的偏差：其中 ~1.2% 来自节点平均代替截面积分（口径差，加密网格
+        # 会自行收敛：L=10 → 1.40%，L=14 → 0.73%），剩余才是求解器误差。故对文献只设 3% 门。
+        "resistance_err_literature": abs(resistance_num - SQUARE_DUCT_RESISTANCE)
+        / SQUARE_DUCT_RESISTANCE,
+        "u_num": u.tolist(),
+        "u_exact": u_exact.tolist(),
+        "u_err": np.abs(u - u_exact).tolist(),
+        "diag_coord": coord.tolist(),
+        "diag_num": np.diagonal(u).tolist(),
+        "diag_exact": np.diagonal(u_exact).tolist(),
+        "rel_err": rel_err,
+        "err_center": float(
+            abs(u[length // 2 - 1, length // 2 - 1] - u_exact[length // 2 - 1, length // 2 - 1])
+            / u_max_exact
+        ),
+        "err_l2": float(np.linalg.norm(u - u_exact) / np.linalg.norm(u_exact)),
+    }
+
+
+def test_step_e_duct_series_satisfies_poisson() -> None:
+    """先验证"基准本身"：级数解的 Laplacian（解析求导）必须等于 −g/ν，且壁面为零。
+
+    这是 PLAYBOOK 的"先给工具造解析基准"：若级数写错（系数/符号/坐标原点错位），
+    后面 0.4% 的 LBM 误差就没有意义。判据用 $\\max|\\nabla^2u+g/\\nu|/(g/\\nu)$，
+    网格取 Step E 的流体格点 $|Y|,|Z|\\le a-\\frac12$（壁面 $\\pm a$ 处级数本身为零，不在其中）。
+    """
+    length, nu = 10, (1.0 - 0.5) / 3.0
+    body_force = 8.0 * nu * 0.05 / length**2
+    coord = _duct_coords(length)
+    Z, Y = np.meshgrid(coord, coord, indexing="ij")
+
+    # 1) 壁面无滑移：级数在 |Y|=a 或 |Z|=a 处必须为 0（相对尺度 1e-12）
+    a = 0.5 * length
+    wall = np.linspace(-a, a, 7)
+    for Yw, Zw in ((np.full_like(wall, a), wall), (wall, np.full_like(wall, a))):
+        val = np.abs(duct_series(Yw, Zw, length, body_force, nu, n_terms=401)).max()
+        assert val < 1e-12 * abs(duct_series(np.zeros((1, 1)), np.zeros((1, 1)),
+                                             length, body_force, nu, n_terms=401))[0, 0], (
+            f"级数解在壁面不为零（max|u_wall|={val:.3e}），基准本身有误"
+        )
+
+    # 2) 对称性 u(Y,Z)=u(-Y,Z)=u(Y,-Z)
+    u = duct_series(Y, Z, length, body_force, nu, n_terms=401)
+    assert np.allclose(u, duct_series(-Y, Z, length, body_force, nu, n_terms=401), atol=1e-18)
+    assert np.allclose(u, duct_series(Y, -Z, length, body_force, nu, n_terms=401), atol=1e-18)
+
+    # 3) Poisson：解析 Laplacian 与 −g/ν 的最大相对偏差随项数单调下降（⇒ 残差是截断）
+    resid = {}
+    for n_terms in (201, 801):
+        lap = duct_series(Y, Z, length, body_force, nu, n_terms=n_terms, order=2)
+        resid[n_terms] = float(np.abs(lap + body_force / nu).max() / (body_force / nu))
+    assert resid[801] < 1e-2, (
+        f"级数解 Laplacian 残差 {resid[801]:.3e} ≥ 1e-2：基准解不满足 Poisson 方程"
+    )
+    assert resid[201] > resid[801], (
+        f"残差随项数未下降（201 项 {resid[201]:.3e} vs 801 项 {resid[801]:.3e}）："
+        "残差不是级数截断，基准形式可能有误"
+    )
+
+
+def test_step_e_duct_poiseuille() -> None:
+    """3D 方管（两向受限）Poiseuille 剖面 vs Boussinesq 级数解，相对误差 < 1%。
+
+    判据取**截面逐格点最大偏差 / u_max**（比中心点更严）：实测 0.416%，中心点误差
+    0.223%。另用积分量（截面质量通量）交叉验证：$R=gL^2/(\\nu\\bar u)$ 与级数解在同一
+    批格点上取平均的偏差须 <1%（实测 0.233%，该口径把求积偏差消掉，只留求解器误差）；
+    与文献 $f\\cdot Re=56.91$（⇔28.455）的偏差另有约 1.2% 是节点平均的求积偏差
+    （L=14 降到 0.73%），故对文献只设 3% 门——不拿口径差冒充求解器误差。
+    """
+    r = duct_poiseuille_case()
+    assert r["rel_err"] < REL_TOL, (
+        f"Step E 方管剖面最大偏差 {r['rel_err']:.3%} ≥ {REL_TOL:.0%}："
+        f"u_max_num={r['u_max_num']:.6f} u_max_exact={r['u_max_exact']:.6f}"
+    )
+    assert r["resistance_err_nodal"] < REL_TOL, (
+        f"Step E 质量通量口径 R_num={r['resistance_num']:.4f} vs 级数解同批格点平均 "
+        f"{r['resistance_exact_nodal']:.4f}，相对偏差 {r['resistance_err_nodal']:.3%} ≥ {REL_TOL:.0%}"
+    )
+    assert r["resistance_err_literature"] < 0.03, (
+        f"Step E 无量纲阻力 R_num={r['resistance_num']:.4f} vs 文献 f·Re=56.91（⇔R=28.455）"
+        f"偏差 {r['resistance_err_literature']:.3%} ≥ 3%：超出节点求积偏差可解释范围"
+    )
+
+
+@pytest.mark.physics
+def test_step_e_duct_error_is_discretization_limited() -> None:
+    """Step E 的 0.42% 是离散误差，不是"步数不够"：网格加密则降、加步数则不动。
+
+    实测（2000 步）：L=6 → 0.827%，L=8 → 0.585%，L=10 → 0.416%，L=14 → 0.235%；
+    L=10 在 1000/2000/3000 步下误差恒为 0.4160%。本用例断言 L=10 比 L=6 至少好 1.5×
+    —— 若哪天这条失败，先查网格没查步数，别用放宽 1% 阈值掩盖。
+    """
+    e6 = duct_poiseuille_case(length=6)["rel_err"]
+    e10 = duct_poiseuille_case(length=10)["rel_err"]
+    assert e10 < REL_TOL and e6 < REL_TOL, f"L=6 {e6:.3%} / L=10 {e10:.3%} 均须 < {REL_TOL:.0%}"
+    assert e6 / e10 > 1.5, (
+        f"加密 L=6→10 误差只降 {e6 / e10:.2f}×（{e6:.3%} → {e10:.3%}）："
+        "残差可能不是离散误差（或基准/几何映射错位）"
+    )
+
+# ---------------------------------------------------------------------------
 # 负控（判据的鉴别力）：NoDynamics 回填必须用碰撞前快照
 # ---------------------------------------------------------------------------
 @pytest.mark.regression
@@ -491,6 +760,7 @@ CASES = (
     ("B", couette_case),
     ("C", poiseuille_case),
     ("D", friction_case),
+    ("E", duct_poiseuille_case),
 )
 
 #: 每个 Step 的"关键量 vs 基准"字段名（报告表格的取数口径，写死在这里便于审阅）
@@ -499,11 +769,17 @@ KEY_QUANTITY = {
     "B": ("Couette 剖面 max|Δu|/u_top", None, None),
     "C": ("Poiseuille 峰值 u_max", "u_max_num", "u_max_exact"),
     "D": ("壁面摩擦系数 Cf", "cf_num", "cf_exact"),
+    "E": ("方管截面最大速度 u_max", "u_max_num", "u_max_exact"),
 }
 
 
-def collect_metrics(device: torch.device | None = None) -> dict:
-    """跑完四个案例，返回可序列化的指标（数值全部程序化注入报告，不手抄）。"""
+def collect_metrics(device: torch.device | None = None, *, refine: bool = False) -> dict:
+    """跑完全部案例，返回可序列化的指标（数值全部程序化注入报告，不手抄）。
+
+    ``refine=True`` 额外跑 Step E 的网格/步数敏感性（★只给报告 CLI 用：
+    pytest 的鉴别力由 ``test_step_e_duct_error_is_discretization_limited`` 独立裁决，
+    不在这条路径上重复付算力）。
+    """
     d = device if device is not None else _device()
     steps: dict[str, dict] = {}
     for step, case in CASES:
@@ -513,7 +789,23 @@ def collect_metrics(device: torch.device | None = None) -> dict:
         r["tolerance_pct"] = TOL_PCT
         r["passed"] = bool(r["rel_err"] < REL_TOL)
         steps[step] = r
-    return {
+    refinement = None
+    if refine:
+        refinement = {
+            "E_lengths": [
+                {"length": L, "err_pct": 100.0 * float(duct_poiseuille_case(d, length=L)["rel_err"])}
+                for L in (6, 10, 14)
+            ],
+            "E_steps": [
+                {
+                    "steps": n,
+                    "err_pct": 100.0
+                    * float(duct_poiseuille_case(d, steps=n)["rel_err"]),
+                }
+                for n in (1000, 2000)
+            ],
+        }
+    out = {
         "device": str(d),
         "dtype": str(torch.get_default_dtype()).replace("torch.", ""),
         "tol_pct": TOL_PCT,
@@ -521,21 +813,29 @@ def collect_metrics(device: torch.device | None = None) -> dict:
         "n_total": len(steps),
         "steps": steps,
     }
+    if refinement is not None:
+        out["refinement"] = refinement
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="TensorLBM 解析解验证梯 Step A-D（打印表格，可选写 metrics JSON）"
+        description="TensorLBM 解析解验证梯 Step A-E（打印表格，可选写 metrics JSON）"
     )
     ap.add_argument("--json", type=Path, default=None, help="指标 JSON 输出路径")
+    ap.add_argument(
+        "--refine",
+        action="store_true",
+        help="额外跑 Step E 的网格/步数敏感性（多约 25 s，报告数字用）",
+    )
     args = ap.parse_args(argv)
 
     torch.set_num_threads(1)
     torch.set_default_dtype(resolve_dtype())
-    metrics = collect_metrics(torch.device("cpu"))
+    metrics = collect_metrics(torch.device("cpu"), refine=args.refine)
 
     print("\n" + "=" * 66)
-    print(f"  LBM 解析解验证：4 案例，判据 = 相对误差 < {TOL_PCT:g}%，dtype={metrics['dtype']}")
+    print(f"  LBM 解析解验证：5 案例，判据 = 相对误差 < {TOL_PCT:g}%，dtype={metrics['dtype']}")
     print("=" * 66)
     for step, r in metrics["steps"].items():
         flag = "PASS" if r["passed"] else "FAIL"
