@@ -410,8 +410,10 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "guo_forcing_delta": ("rotating_frame", "guo_forcing_delta"),
     "lattice_scaling": ("rotating_frame", "lattice_scaling"),
     "radial_average": ("rotating_frame", "radial_average"),
+    "specular_reflection": ("boundary.boundaries", "specular_reflection"),
     "spiral_phase_depth": ("rotating_frame", "spiral_phase_depth"),
     "bounce_back_cells": ("boundary.boundaries", "bounce_back_cells"),
+    "bounce_back_moving_wall": ("boundary.boundaries", "bounce_back_moving_wall"),
     "bounce_back_cells_27": ("boundary.boundaries_d3q27", "bounce_back_cells_27"),
     "bounce_back_cells_3d": ("boundary.boundaries3d", "bounce_back_cells_3d"),
     "boundary_capability_matrix": (
