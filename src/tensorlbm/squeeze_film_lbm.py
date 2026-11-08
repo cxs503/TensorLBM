@@ -39,6 +39,16 @@ with ``f^*`` the post-collision populations.  Both are reported; in exact
 arithmetic ``F_top = -F_bottom`` up to the (negligible) wall-normal momentum flux
 through the pressure-release faces.
 
+``force_top`` / ``force_bottom`` are **absolute** loads: they contain the static
+term ``sum_x rho0 cs^2 = nx rho0/3`` (what a source-free run returns).  The
+quantities comparable with the Reynolds / Stefan anchor are the gauge loads
+``force_gauge_top = force_top - nx rho0 cs^2`` and
+``force_gauge_bottom = force_bottom + nx rho0 cs^2``; both are returned
+explicitly, together with ``baseline_static_force``.  ``force_pressure_integral``
+is sampled on the *source-free* wall row (``y = 0``): the source row ``y = ny-1``
+carries a pressure artefact of the injection/corner treatment (kept as
+``force_pressure_integral_top_row`` for auditing).
+
 Momentum ledger
 ---------------
 The streaming step is a permutation of the populations and therefore conserves
@@ -284,13 +294,37 @@ def simulate_squeeze(
 
     # wall-normal (normal-stress corrected) load: p - 2 mu dv/dy at the top wall
     dvdy_top = (-3.0 * uy[:, -1] + 4.0 * uy[:, -2] - uy[:, -3]) / 2.0
-    force_top_pressure = float(np.sum(p[:, -1]))
     force_top_viscous = float(np.sum(-2.0 * rho0 * nu * dvdy_top))
+    # The top row is the *source* row: the injected populations carry no momentum
+    # and the wall-adjacent corner cells are overwritten by the bounce-back after
+    # the pressure condition is applied, so ``p`` there is a boundary artefact
+    # (its edge values even change sign).  The wall load has to be read off the
+    # source-free wall row of the opposite wall.
+    force_pressure_integral = float(np.sum(p[:, 0]))
+    force_pressure_integral_top_row = float(np.sum(p[:, -1]))
+
+    # The momentum-exchange load is an *absolute* load: it contains the static
+    # term sum_x rho0 cs^2 = nx rho0 / 3, which is exactly the value the
+    # source-free negative control returns.  Only the gauge part is comparable
+    # with the Reynolds / Stefan anchor, so it is exposed here instead of leaving
+    # every caller to rediscover the offset.
+    baseline_static_force = float(nx * CS2 * rho0)
+    if not (math.isfinite(force_top) and math.isfinite(force_bot)):
+        raise RuntimeError(
+            "squeeze-film LBM diverged (non-finite momentum-exchange load) for "
+            f"half_width={half_width}, gap={gap}, nu={nu}, V={V}; the "
+            "fixed-density pressure faces are unstable once the film is wide "
+            "enough (see docs/squeeze_film_lbm_verification_20261108.md)"
+        )
 
     return {
         "force_top": force_top,
         "force_bottom": force_bot,
-        "force_pressure_integral": force_top_pressure,
+        "baseline_static_force": baseline_static_force,
+        "force_gauge_top": float(force_top - baseline_static_force),
+        "force_gauge_bottom": float(force_bot + baseline_static_force),
+        "force_pressure_integral": force_pressure_integral,
+        "force_pressure_integral_top_row": force_pressure_integral_top_row,
         "force_normal_viscous": force_top_viscous,
         "force_net_balance": float(force_top + force_bot),
         "ledger": ledger,
