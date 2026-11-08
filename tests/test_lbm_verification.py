@@ -23,6 +23,14 @@ f·Re=56.91（⇔ R=28.455）的独立对表。
 
 命令行形态保留：`python tests/test_lbm_verification.py` 打印全部测量值并汇总。
 
+Step F（2026-11-08）：同一条梯子从"BGK 专用"扩成"算子不变量"——A/B/C/E 四个算例
+都对碰撞算子参数化，MRT / TRT / 正则化 BGK 必须给出同一组解析解（同样 1% 门）。
+意义：`docs/d3q19-d3q27-mrt-consistency-audit.md` 明确只证明"Mrt 与 BGK 互相一致"、
+"不外推到物理解精度"；Step F 把这句话补上——高级碰撞算子现在有解析解锚，
+不再只有算子间自洽。TRT（Λ=3/16）在 Step C 上把半路反弹的壁面位置误差压到
+0 量级、在 Step E 角区把误差降到 BGK 的 0.57 倍，这是"残差归属=壁面位置误差"
+的独立证据（BGK 的 0.34% 不是强迫项或可压缩性引入的）。
+
 r2（2026-11-07）：把这条梯子从"能红能绿"升级为"能出证据"——
 同一段代码既做断言（pytest 门），也能把实测数字写成 JSON（`--json`），
 再由 `scripts/lbm_verification_report.py` 程序化生成数字表与对照图，
@@ -47,12 +55,24 @@ import torch
 try:  # 直接以脚本运行时也能找到 src/
     from tensorlbm.boundaries3d import bounce_back_cells_3d
     from tensorlbm.d3q19 import C, W, equilibrium3d, macroscopic3d
-    from tensorlbm.solver3d import collide_bgk3d, stream3d
+    from tensorlbm.solver3d import (
+        collide_bgk3d,
+        collide_mrt3d,
+        collide_rlbm3d,
+        collide_trt3d,
+        stream3d,
+    )
 except ImportError:  # pragma: no cover - 脚本运行路径
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir, "src"))
     from tensorlbm.boundaries3d import bounce_back_cells_3d
     from tensorlbm.d3q19 import C, W, equilibrium3d, macroscopic3d
-    from tensorlbm.solver3d import collide_bgk3d, stream3d
+    from tensorlbm.solver3d import (
+        collide_bgk3d,
+        collide_mrt3d,
+        collide_rlbm3d,
+        collide_trt3d,
+        stream3d,
+    )
 
 pytestmark = [pytest.mark.physics]
 
@@ -61,6 +81,32 @@ REL_TOL = 0.01  # 1%
 
 
 TOL_PCT = 1.0  # 统一判据的另一写法（百分比）：报告里逐项列"误差% vs 判据%"
+
+# ---------------------------------------------------------------------------
+# 碰撞算子注册表：解析解梯子不绑定 BGK（见 Step F）
+# ---------------------------------------------------------------------------
+COLLISIONS = ("bgk", "mrt", "trt", "rlbm")
+
+
+def collide(f: torch.Tensor, tau: float, collision: str = "bgk") -> torch.Tensor:
+    """按名字调用同一条量纲约定下的碰撞算子（ν 一律 = (τ-½)/3）。
+
+    * ``bgk``  —— 单弛豫 BGK（原梯子的默认路径，数值不变）
+    * ``mrt``  —— D3Q19 多弛豫，剪切矩弛豫率 = 1/τ ⇒ 剪切粘度与 BGK 一致，
+                  非流体力学矩用库默认率（s_e=1.19, s_eps=1.4, s_q=1.2）
+    * ``trt``  —— 双弛豫，对称部分 τ₊=τ，反称部分由魔术参数 Λ=3/16 定
+                  （Ginzburg 2008：Λ=3/16 消除半路反弹的壁面位置误差）
+    * ``rlbm`` —— 正则化 BGK（二阶 Hermite 投影掉鬼模）
+    """
+    if collision == "bgk":
+        return collide_bgk3d(f, tau=tau)
+    if collision == "mrt":
+        return collide_mrt3d(f, tau=tau)
+    if collision == "trt":
+        return collide_trt3d(f, tau_plus=tau)
+    if collision == "rlbm":
+        return collide_rlbm3d(f, tau=tau)
+    raise ValueError(f"未知碰撞算子 {collision!r}，可选 {COLLISIONS}")
 
 
 def _device() -> torch.device:
@@ -156,6 +202,7 @@ def shear_wave_case(
     nx: int = 64,
     steps: int = 100,
     tau: float = 1.0,
+    collision: str = "bgk",
 ) -> dict:
     """测量剪切波衰减给出的有效粘度，并与 ν=(τ-½)/3 比对。
 
@@ -181,7 +228,7 @@ def shear_wave_case(
 
     history = [a_init]
     for _ in range(steps):
-        f = collide_bgk3d(f, tau=tau)
+        f = collide(f, tau, collision)
         f = stream3d(f)
         _, _, uy_t, _ = macroscopic3d(f)
         history.append(float(uy_t[0, 0, 0]))
@@ -192,6 +239,7 @@ def shear_wave_case(
 
     return {
         "case": "A_shear_wave",
+        "collision": collision,
         "tau": tau,
         "steps": steps,
         "nx": nx,
@@ -223,6 +271,7 @@ def couette_case(
     ny: int = 12,
     steps: int = 1000,
     bounce_back: bool = True,
+    collision: str = "bgk",
 ) -> dict:
     """Couette 剖面算例。``bounce_back=False`` 只用于负控（关掉壁面反弹）。"""
     d = device if device is not None else _device()
@@ -239,7 +288,7 @@ def couette_case(
 
     for _ in range(steps):
         f_pre = f.clone()
-        f = collide_bgk3d(f, tau=tau)
+        f = collide(f, tau, collision)
         if bounce_back:
             f = _no_dynamics_and_bounce(f, f_pre, solid)
         else:  # 负控：NoDynamics 保留碰撞前分布，但不做壁面反弹
@@ -258,6 +307,7 @@ def couette_case(
 
     return {
         "case": "B_couette",
+        "collision": collision,
         "tau": tau,
         "steps": steps,
         "bounce_back": bounce_back,
@@ -286,6 +336,7 @@ def poiseuille_case(
     *,
     ny: int = 12,
     steps: int = 1000,
+    collision: str = "bgk",
 ) -> dict:
     d = device if device is not None else _device()
     nx, nz = 80, 4
@@ -312,7 +363,7 @@ def poiseuille_case(
 
     for _ in range(steps):
         f_pre = f.clone()
-        f = collide_bgk3d(f, tau=tau)
+        f = collide(f, tau, collision)
         f = _no_dynamics_and_bounce(f, f_pre, solid)
         f = f + accel
         f = stream3d(f)
@@ -327,6 +378,7 @@ def poiseuille_case(
 
     return {
         "case": "C_poiseuille",
+        "collision": collision,
         "tau": tau,
         "steps": steps,
         "nu": nu,
@@ -604,6 +656,7 @@ def duct_poiseuille_case(
     steps: int = 2000,
     tau: float = 1.0,
     u_nominal: float = 0.05,
+    collision: str = "bgk",
 ) -> dict:
     """方管 Poiseuille 算例（y、z 两向同时受限，x 向周期）。
 
@@ -635,7 +688,7 @@ def duct_poiseuille_case(
 
     for _ in range(steps):
         f_pre = f.clone()
-        f = collide_bgk3d(f, tau=tau)
+        f = collide(f, tau, collision)
         f = _no_dynamics_and_bounce(f, f_pre, solid)
         f = f + accel
         f = stream3d(f)
@@ -657,6 +710,7 @@ def duct_poiseuille_case(
 
     return {
         "case": "E_duct_poiseuille",
+        "collision": collision,
         "length": length,
         "nx": nx,
         "steps": steps,
@@ -772,6 +826,100 @@ def test_step_e_duct_error_is_discretization_limited() -> None:
         f"加密 L=6→10 误差只降 {e6 / e10:.2f}×（{e6:.3%} → {e10:.3%}）："
         "残差可能不是离散误差（或基准/几何映射错位）"
     )
+
+# ---------------------------------------------------------------------------
+# Step F：算子不变量——A/B/C/E 在 MRT / TRT / RLBM 下同样满足解析解判据
+# ---------------------------------------------------------------------------
+OPERATOR_STEPS = ("A_shear_wave", "B_couette", "C_poiseuille", "E_duct_poiseuille")
+
+
+def _run_operator_step(collision: str, step: str) -> dict:
+    """按 (算子, 算例) 跑一次，返回该算例的 metrics dict（与默认 BGK 路径同一段代码）。"""
+    if step == "A_shear_wave":
+        return shear_wave_case(collision=collision)
+    if step == "B_couette":
+        return couette_case(collision=collision)
+    if step == "C_poiseuille":
+        return poiseuille_case(collision=collision)
+    if step == "E_duct_poiseuille":
+        return duct_poiseuille_case(collision=collision)
+    raise ValueError(f"未知算例 {step!r}")
+
+
+@pytest.mark.parametrize("collision", [c for c in COLLISIONS if c != "bgk"])
+@pytest.mark.parametrize("step", OPERATOR_STEPS)
+def test_step_f_operator_reproduces_analytic_anchors(collision: str, step: str) -> None:
+    """MRT / TRT / 正则化 BGK 必须复现同一组解析解（相对误差 < 1%）。
+
+    MRT 的剪切矩弛豫率是 1/τ（与 BGK 同粘度），TRT 的对称部分 τ₊=τ，
+    正则化 BGK 只投影非平衡高阶矩——三者在**流体力学层面**都应与 BGK 等价，
+    因此 Step A（ν）、B（Couette 剖面）、C（Poiseuille 剖面）、E（方管级数解）
+    的解析解判据一条都不能豁免。任何算子跑不过即说明该算子的尺度/粘度约定
+    或它与半路反弹/强迫项的耦合有问题，而不是"高级算子精度本来就不同"。
+    """
+    r = _run_operator_step(collision, step)
+    assert r["collision"] == collision
+    assert r["rel_err"] < REL_TOL, (
+        f"算子 {collision} 在 {step} 上相对误差 {r['rel_err']:.4%} ≥ {REL_TOL:.0%}"
+    )
+
+
+def test_step_f_trt_magic_parameter_removes_halfway_bounceback_slip() -> None:
+    """鉴别力守卫：TRT(Λ=3/16) 消掉 Step C 的壁面位置误差，BGK 必须**没能**消掉。
+
+    若把断言只写成「TRT 误差 < 1%」，它对"TRT 其实退化成 BGK"这种缺陷毫无鉴别力
+    （BGK 本身就是 0.34% < 1%）。因此这里做**双向判据**：
+    负控 BGK 的残差必须仍 > 1e-3，TRT 必须 < 1e-3 且小于 BGK 的 1%。
+    这也把 Step C 残差的归属钉死为半路反弹的壁面位置误差（Ginzburg 2008 的
+    Λ=3/16 正是为此设计），而不是强迫项/可压缩性误差。
+    """
+    bgk = poiseuille_case(collision="bgk")
+    trt = poiseuille_case(collision="trt")
+    assert bgk["rel_err"] > 1e-3, (
+        f"负控失效：BGK 的 Step C 残差 {bgk['rel_err']:.3%} 已 ≤ 0.1%，"
+        "壁面位置误差的判据不再有鉴别力，需重新标定本用例"
+    )
+    assert trt["rel_err"] < 1e-3, (
+        f"TRT(Λ=3/16) 未消除半路反弹的壁面位置误差：{trt['rel_err']:.3%} ≥ 0.1%"
+    )
+    assert trt["rel_err"] < 0.01 * bgk["rel_err"], (
+        f"TRT 残差 {trt['rel_err']:.3%} 未降到 BGK {bgk['rel_err']:.3%} 的 1% 以下"
+    )
+
+
+def test_step_f_trt_shear_wave_error_is_second_order_in_k() -> None:
+    """TRT 在剪切波上有一个 O(k²) 的有效粘度偏差（BGK 没有）——把它钉住。
+
+    实测（100 步、τ=1、float64）：nx=32 → 0.1601%，64 → 0.0399%，128 → 0.0100%，
+    k 减半误差降 4.0×（二阶），而 BGK 在 nx=64 上是 1.6e-7（舍入量级）。
+    归因：这是 TRT 反称通道 τ₋=½+Λ/(τ₊−½) 在有限 k 下与剪切模的耦合（截断项），
+    不是粘度尺度错——因此它是**分辨率偏差**，做 TRT 的粘度标定时要随 k 一起外推。
+    若哪天这条失败（比值离开 [2.5,6]），先查 TRT 的 τ₋ 定义，别改判据阈值。
+    """
+    e64 = shear_wave_case(collision="trt", nx=64)["rel_err"]
+    e128 = shear_wave_case(collision="trt", nx=128)["rel_err"]
+    bgk64 = shear_wave_case(collision="bgk", nx=64)["rel_err"]
+    assert e64 < REL_TOL and e128 < REL_TOL, f"TRT 剪切波误差 {e64:.3%} / {e128:.3%} 须 < 1%"
+    ratio = e64 / e128
+    assert 2.5 < ratio < 6.0, (
+        f"TRT 剪切波误差 nx=64→128 只降 {ratio:.2f}×（{e64:.3%} → {e128:.3%}），不是二阶 k 收敛"
+    )
+    assert bgk64 < 1e-5, f"对照失效：BGK 在 nx=64 上误差 {bgk64:.2e} 已不小，无法归因到 TRT 的 τ₋ 通道"
+
+
+def test_step_f_trt_reduces_duct_corner_error() -> None:
+    """3D 角区同样受壁面位置误差支配：TRT 的方管误差必须显著低于 BGK。
+
+    实测（L=10、2000 步）BGK 0.416% → TRT 0.238%（比 0.57）。判据取"比 < 0.75"
+    留出余量；若 TRT 在三维角区反而不优于 BGK，说明双壁叠加处的处理有问题。
+    """
+    bgk = duct_poiseuille_case(collision="bgk")
+    trt = duct_poiseuille_case(collision="trt")
+    ratio = trt["rel_err"] / bgk["rel_err"]
+    assert ratio < 0.75, (
+        f"TRT 方管角区误差 {trt['rel_err']:.3%} 相对 BGK {bgk['rel_err']:.3%} 的比 {ratio:.2f} ≥ 0.75"
+    )
+
 
 # ---------------------------------------------------------------------------
 # 负控（判据的鉴别力）：NoDynamics 回填必须用碰撞前快照
