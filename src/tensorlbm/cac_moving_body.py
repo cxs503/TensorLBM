@@ -299,7 +299,7 @@ def moving_wall_bounce_full(
         return dist
     opp = _opposite(dist.device)
     refl = dist[opp]
-    surface = body.unsqueeze(0) & links_from(fluid)  # q with x_b - c_q in fluid
+    surface = body.unsqueeze(0) & links_into(fluid)  # q with x_b + c_q in fluid (returning link)
     if move and (u_wall[0] != 0.0 or u_wall[1] != 0.0 or u_wall[2] != 0.0):
         c = C3.to(dist.device).to(dist.dtype)
         w = W3.to(dist.device).to(dist.dtype).view(19, 1, 1, 1)

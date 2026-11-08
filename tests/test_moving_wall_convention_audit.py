@@ -204,21 +204,14 @@ def test_all_2d_implementations_are_galilean_transparent():
 # disjoint, so the wall is only half-corrected: 33.3% of ``rho U`` in the
 # Galilean test (a static wall would be ~0).  Reported, not silently accepted:
 # see docs/moving_wall_convention_audit_20261108.md §5.
-XFULL = pytest.mark.xfail(
-    strict=True,
-    reason="moving_wall_bounce_full applies the Ladd term on links_from(fluid) "
-           "(incoming) instead of the returning links; 33.3% Galilean deviation",
-)
-
-
-@XFULL
 def test_cac_moving_wall_bounce_full_is_galilean_transparent():
+    """F1 (audit 2026-11-08) fixed: the Ladd term now lands on the returning
+    links (``x_b + c_q`` in fluid), so the operator is Galilean-transparent."""
     assert _dev3d(_cac_full, 1.0) < TOL
 
 
 def test_all_3d_implementations_are_galilean_transparent():
-    bad = {name: _dev3d(fn, 1.0) for name, fn in UNITS_3D.items()
-           if name != "cac_moving_body.moving_wall_bounce_full"}
+    bad = {name: _dev3d(fn, 1.0) for name, fn in UNITS_3D.items()}
     assert all(v < TOL for v in bad.values()), {k: f"{v:.3e}" for k, v in bad.items()}
 
 
@@ -230,8 +223,7 @@ def test_density_factor_is_honoured_at_rho_not_one():
     """
     bad = {name: _dev2d(fn, 1.2) for name, fn in UNITS_2D.items()}
     assert all(v < TOL for v in bad.values()), {k: f"{v:.3e}" for k, v in bad.items()}
-    bad3 = {name: _dev3d(fn, 1.2) for name, fn in UNITS_3D.items()
-            if name != "cac_moving_body.moving_wall_bounce_full"}
+    bad3 = {name: _dev3d(fn, 1.2) for name, fn in UNITS_3D.items()}
     assert all(v < TOL for v in bad3.values()), {k: f"{v:.3e}" for k, v in bad3.items()}
 
 
