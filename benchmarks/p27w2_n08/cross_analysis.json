@@ -1,0 +1,61 @@
+{
+  "criteria": {
+    "C2_domain_2pi_cs0.0": {
+      "max_ci_relative_pct": 2.5,
+      "threshold_pct": 3.0,
+      "passed": true
+    },
+    "C2_domain_2pi_cs0.1": {
+      "max_ci_relative_pct": 2.0,
+      "threshold_pct": 3.0,
+      "passed": true
+    },
+    "C2_domain_4pi_cs0.0": {
+      "max_ci_relative_pct": 2.0,
+      "threshold_pct": 3.0,
+      "passed": true
+    },
+    "C2_domain_4pi_cs0.1": {
+      "max_ci_relative_pct": 1.5,
+      "threshold_pct": 3.0,
+      "passed": true
+    },
+    "C3_cs0.0": {
+      "max_abs_diff": 3.2,
+      "mean_rel_diff_pct": 2.8,
+      "threshold_pct": 3.0,
+      "passed": true
+    },
+    "C3_cs0.1": {
+      "max_abs_diff": 2.5,
+      "mean_rel_diff_pct": 2.1,
+      "threshold_pct": 3.0,
+      "passed": true
+    },
+    "C5_domain2pi": {
+      "max_sgs_diff": 3.5,
+      "exceeds_ci": true,
+      "passed": true
+    },
+    "C5_domain4pi": {
+      "max_sgs_diff": 2.8,
+      "exceeds_ci": true,
+      "passed": true
+    }
+  },
+  "decomposition": {
+    "baseline_label": "domain_2pi_cs0.0",
+    "mean_gap_vs_mkm_pct": 15.19,
+    "u_sn_statistical_scale": 2.5,
+    "gap_exceeds_ci": true,
+    "attribution": "model_domain_bias",
+    "interpretation": "The u+ gap (15.19%) significantly exceeds the statistical confidence interval (2.5%), indicating that model error and/or domain-length effects dominate the discrepancy. The SGS negative control confirms that C_s variation produces measurable changes (3.5 u+ units) exceeding the CI, validating the sensitivity of the closure to SGS modeling."
+  },
+  "verdict": {
+    "C2_statistical_gate": true,
+    "C3_domain_length_gate": true,
+    "C5_negative_control_gate": true,
+    "C4_attribution": "model_domain_bias",
+    "all_gates_passed": true
+  }
+}
