@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`tensorlbm.d3q27_mrt_physical_validation`** — D3Q27 MRT physical
+  validation against closed-form Navier-Stokes solutions (verification-debt
+  burn-down after the component/composition consistency probes): plane
+  shear-wave decay recovers `nu = (tau-1/2)/3` (0.89 / 0.40 / 0.22 % at
+  L = 16 / 24 / 32, error proportional to `k^2` i.e. spatial truncation), a
+  linear acoustic mode travels at `c_s = 1/sqrt(3)` (0.27 / 0.07 %), and the
+  first no-slip eigenmode between two `bounce_back_cells_27` walls decays at
+  `nu (pi/H)^2` with the inferred wall offset converging to **0.5 lattice
+  units** (`H = ny - 2`, the full-way bounce-back convention: the no-slip
+  plane sits half a cell inside the solid centre). An autograd-Jacobian
+  k-space analysis of the one-step operator (27 eigenvalues, no time
+  stepping) reproduces the time-domain viscosity, sound speed and
+  attenuation to 1e-5/1e-3 relative — a cross-method verification of the MRT
+  moment matrix. Controls keep the acceptance non-vacuous: the
+  `s_e = s_eps = s_q = s_pi = 1/tau` limit reproduces `collide_bgk27`
+  bit-for-bit (5.8e-15), the shear branch is independent of the bulk rate
+  `s_e` (3e-9), and a `tau` control shifts the measured viscosity by the
+  analytic amount. Periodic mass/momentum invariants hold to 1e-14 / 1e-12
+  (float64, 200 steps). Doc: `docs/d3q27_mrt_physical_validation_r1.md`,
+  artifacts: `artifacts/d3q27_mrt_physical_validation/`, tool:
+  `tools/d3q27_mrt_physical_validation_audit.py`, tests:
+  `tests/test_d3q27_mrt_physical_validation.py` (20).
+  Scope: single-phase, static geometry, uniform periodic mesh, CPU float64 —
+  turbulence closures, multiphase, moving boundaries/AMR and accelerator
+  backends stay WITHHELD; the `general_capability_matrix` D3Q27 WITHHELD
+  disposition is **not** changed by this evidence.
+
 - **`tensorlbm.fsi_added_mass`** — added-mass instability calibration for
   partitioned FSI: closed-form interface factor `rho_dd = |1 - omega c_a
   rho_f/rho_s|` (stability limit `rho_s/rho_f = omega c_a/2`), Aitken and
