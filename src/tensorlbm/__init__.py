@@ -612,6 +612,12 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "extract_velocity_profile": ("postprocess", "extract_velocity_profile"),
     "extract_wake_profile": ("postprocess", "extract_wake_profile"),
     "faltinsen_natural_frequency": ("sloshing_tank", "faltinsen_natural_frequency"),
+    "faltinsen_elevation": ("sloshing_tank", "faltinsen_elevation"),
+    "faltinsen_wall_pressure": ("sloshing_tank", "faltinsen_wall_pressure"),
+    "faltinsen_second_harmonic_amplitude": ("sloshing_tank", "faltinsen_second_harmonic_amplitude"),
+    "faltinsen_elevation": ("sloshing_tank", "faltinsen_elevation"),
+    "faltinsen_wall_pressure": ("sloshing_tank", "faltinsen_wall_pressure"),
+    "faltinsen_second_harmonic_amplitude": ("sloshing_tank", "faltinsen_second_harmonic_amplitude"),
     "far_field_bc_27": ("boundary.boundaries_d3q27", "far_field_bc_27"),
     "far_field_bc_3d": ("boundary.boundaries3d", "far_field_bc_3d"),
     "flow_step_image_path": ("utils", "flow_step_image_path"),
@@ -1945,7 +1951,10 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
     from .simulation import LBMSimulation
     from .sloshing_tank import (
         SloshingTankConfig,
+        faltinsen_elevation,
         faltinsen_natural_frequency,
+        faltinsen_second_harmonic_amplitude,
+        faltinsen_wall_pressure,
         make_sloshing_wall_mask,
         run_sloshing_tank,
     )
@@ -2321,6 +2330,9 @@ __all__ = [
     "run_sloshing_tank",
     "make_sloshing_wall_mask",
     "faltinsen_natural_frequency",
+    "faltinsen_elevation",
+    "faltinsen_wall_pressure",
+    "faltinsen_second_harmonic_amplitude",
     "TurbulentChannelConfig",
     "run_turbulent_channel",
     "log_law_velocity",
