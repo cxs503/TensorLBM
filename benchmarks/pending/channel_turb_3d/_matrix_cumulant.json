@@ -1,0 +1,6 @@
+[
+ {"name":"cum_ret60_cs0","cs":0.0,"model":"cumulant","perturbation":1.0,"noise":0.5,"modes":32,"re_tau":60.0,"steps":1500,"warmup":300,"batch_count":8},
+ {"name":"cum_ret60_cs01","cs":0.10,"model":"cumulant","perturbation":1.0,"noise":0.5,"modes":32,"re_tau":60.0,"steps":1500,"warmup":300,"batch_count":8},
+ {"name":"cum_ret100_cs0","cs":0.0,"model":"cumulant","perturbation":1.0,"noise":0.5,"modes":32,"re_tau":100.0,"steps":1500,"warmup":300,"batch_count":8},
+ {"name":"cum_ret180_laminarstart","cs":0.0,"model":"cumulant","perturbation":0.0,"noise":0.0,"modes":1,"re_tau":180.0,"steps":1500,"warmup":300,"batch_count":8}
+]

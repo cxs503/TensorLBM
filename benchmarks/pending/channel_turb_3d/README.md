@@ -109,3 +109,19 @@ CUDA_VISIBLE_DEVICES=5 /nfs/wangxi/venvs/tensorlbm/bin/python run_probe.py --lev
  {"v": -7.64, "f": "benchmarks/pending/channel_turb_3d/validation_report.json", "k": "grid_levels[2].u_tau_err_pct"},
  {"v": "4228e65a3c90b2704a06ec69668ef4115e838434ab564d863cc6f521ddbd8ccb", "f": "benchmarks/pending/channel_turb_3d/runs_3d/prereg.json", "k": "sha256"}]
 -->
+
+## P40-N09：u+ 误差的统计-模型分解（后续节点）
+
+P20-N01 的终裁数字（对 MKM 相对 L2 = 15.19%）混了两类误差：有限统计窗的
+**统计误差**与离散/闭合/计算域的**系统偏差**。P40-N09 把它拆开并给出机时投放依据：
+
+| 文件 | 作用 |
+|---|---|
+| `../../src/tensorlbm/validation/statistical_error.py` | 估计器库（T_int / batch-means CI / 归因裁决 / 预算外推） |
+| `run_p40n09.py` | 各臂跑动（D4_cs0 / D2_cs0 / SGS_cs0 / SGS_cs01 / LAM_yw） |
+| `probe_stability_p40n09.py` | 稳定性与成本探针（决定可用工况，先跑） |
+| `analyze_p40n09.py` | 六判据裁决 → `gates_p40n09.json` / `p40n09_numbers.json` / 图 |
+| `build_p40n09_report.py` | 论文级报告（零手抄：每个数字带出处字段） |
+| `p40n09_prereg.json` | 阈值登记（跑动前写入，未按结果调整） |
+
+报告：`docs/reports/P40-N09-statistical-vs-model-decomposition.md`。
