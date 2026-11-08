@@ -1,0 +1,31 @@
+{
+  "node": "P40-N09",
+  "campaign": "statistical-vs-model decomposition of the channel u+ error",
+  "declared_before_analysis": true,
+  "note": "Thresholds are transcribed from the node goal; they are NOT tuned to the data. The runs were launched with these arms before this file was written (the analysis had not been executed). Any threshold change must be recorded as an amendment with a reason.",
+  "target_number_under_decomposition": {
+    "value": 0.1519,
+    "quantity": "relative L2 of the folded u+ profile vs MKM-1999 Re_tau=180",
+    "provenance": "P20-N01, runs_3d/L3_result.json profiles.measured.u_plus_l2_relative (level L3, 256x64x128)"
+  },
+  "arms": {
+    "D4_cs0": {"box_x_over_delta": 12.566, "model": "natural_kbc", "smagorinsky_cs": 0.0, "re_tau": 180.0},
+    "D2_cs0": {"box_x_over_delta": 6.283, "model": "natural_kbc", "smagorinsky_cs": 0.0, "re_tau": 180.0},
+    "SGS_cs0": {"role": "SGS-off arm", "model": "cumulant", "smagorinsky_cs": 0.0},
+    "SGS_cs01": {"role": "SGS-on arm", "model": "cumulant", "smagorinsky_cs": 0.1},
+    "LAM_yw": {"role": "laminar twin at the production viscosity, measures y_w"}
+  },
+  "gates": [
+    {"id": "G_A_steady_state_half_window", "criterion": "max |u+_first_half - u+_second_half| <= 1 u+ unit", "source": "node goal (a)"},
+    {"id": "G_B_statistical_ci_3pct", "criterion": "95 % batch-means CI half-width of u+ <= 3 % (max over the comparison window y+ in [10,170])", "source": "node goal (b)"},
+    {"id": "G_C_domain_length_3pct", "criterion": "relative L2 difference between Lx=2 pi delta and Lx=4 pi delta u+ profiles (same grid) <= 3 %", "source": "node goal (c)"},
+    {"id": "G_D_attribution_verdict", "criterion": "binary verdict from U_SN: residual_beyond_ci = error - U_SN compared to the 3 % scale; model/domain dominated if exceeded, statistics dominated otherwise", "source": "node goal (d)"},
+    {"id": "G_E_negative_control_sgs", "criterion": "max |u+_{Cs=0.1} - u+_{Cs=0}| > combined 95 % CI of the pair", "source": "node goal (e)"},
+    {"id": "G_F_budget_extrapolation", "criterion": "err(T_obs) curve with >= 2 windows, fitted exponent, and the MKM-box machine-time forecast", "source": "node goal (f)"}
+  ],
+  "fail_closed_rules": [
+    "missing arm -> withheld, never passed",
+    "averaging window < 3 eddy turnovers (delta/u_tau) -> G_B withheld (degradation rule of the node)",
+    "no stable cumulant operating point -> G_E withheld"
+  ]
+}

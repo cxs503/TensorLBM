@@ -8,6 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`tensorlbm.validation.statistical_error`** — the statistical-vs-model
+  decomposition toolkit for time-averaged profiles: autocorrelation integral
+  time with Sokal windowing (`integral_time`, AR(1) pinned to 10 %),
+  Student-t batch-means confidence intervals (`batch_means_summary`, coverage
+  checked at the nominal 95 %), the steady-state half-window gate
+  (`half_window_max_diff`), propagation of the batch scatter onto the reported
+  error metric itself (`metric_from_batches` -> `U_SN`), the binary attribution
+  verdict (`decompose_error`: statistics vs model/domain), the two designed
+  contrasts (`domain_length_check`, `negative_control_check`), the fail-closed
+  three-turnover eligibility guard and an error-vs-`T_obs` budget extrapolation
+  that refuses to promise machine time when the fitted exponent shows a
+  systematic floor.  NumPy only; no SciPy dependency (Student-t quantile from
+  the exact incomplete-beta CDF).
+- **`WallResolvedChannel3DConfig.profile_batch_count` /
+  `wall_exchange_series_stride`** — observation-only recorders on the
+  wall-resolved channel kernel: consecutive batch means of the plane-averaged
+  moment profiles and a thinned wall-shear time series.  Both default to 0,
+  which keeps the legacy path bit-for-bit (`tests/test_wall_resolved_channel3d_batch_stats.py`
+  asserts identical profiles with the recorders on and off) and the batch
+  record is persisted/resumed through the checkpoint.
+- **P40-N09 campaign** (`benchmarks/pending/channel_turb_3d/`) — the
+  15.19 % u+ error of P20-N01 is decomposed into a statistical part (`U_SN`) and
+  a systematic part: dual box length (`Lx = 2 pi delta` vs `4 pi delta`) on one
+  grid, an SGS negative control pair, a stability/cost probe that shows the
+  cumulant kernel diverging at the Re_tau = 180 near-wall stiffness, and a
+  pre-registered six-gate analysis (`analyze_p40n09.py`) plus a report builder
+  with zero hand-copied numbers (`build_p40n09_report.py`).
+
 - **`tensorlbm.d3q27_mrt_physical_validation`** — D3Q27 MRT physical
   validation against closed-form Navier-Stokes solutions (verification-debt
   burn-down after the component/composition consistency probes): plane
