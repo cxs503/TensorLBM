@@ -272,3 +272,73 @@ def test_reichardt_law_is_consistent_with_the_log_law():
 def test_invalid_configuration_is_rejected(kwargs):
     with pytest.raises(ValueError):
         TurbulentChannel3DConfig(**kwargs).validate()
+
+# ---------------------------------------------------------------------------
+# anchor E: Ladd momentum-exchange wall stress x = a*h (bookkeeping fix)
+# ---------------------------------------------------------------------------
+def _load_exact_parabola(sim: TurbulentChannel3D, cfg: TurbulentChannel3DConfig) -> None:
+    """Initialise the channel on the closed-form Poiseuille profile.
+
+    Starting on the (discrete) steady state makes the per-step wall momentum
+    flux a constant, so any window/bookkeeping error in the accumulator shows up
+    directly as a bias in ``tau_w`` instead of being hidden by a transient.
+    """
+    ny, nz, nx = cfg.ny, cfg.nz, cfg.nx
+    y = torch.arange(ny, dtype=torch.float64) - cfg.wall_origin
+    y = torch.minimum(y, cfg.height - y)
+    u = poiseuille_exact(y.clamp(min=0.0), cfg.height, cfg.acceleration, cfg.nu)
+    u[0] = 0.0
+    u[-1] = 0.0
+    rho = torch.ones(nz, ny, nx, dtype=sim.dtype)
+    ux = u.to(sim.dtype).view(1, ny, 1).expand(nz, ny, nx).contiguous()
+    zeros = torch.zeros_like(rho)
+    sim.f = sim._equilibrium(
+        rho.reshape(1, sim.N), torch.stack((ux, zeros, zeros)).reshape(3, sim.N)
+    ).reshape(19, nz, ny, nx)
+
+
+def _laminar_cfg(nu: float = 0.05, **kwargs) -> TurbulentChannel3DConfig:
+    return TurbulentChannel3DConfig(
+        nx=NX, nz=NZ, ny=NY, u_tau=U_TAU, re_tau=U_TAU * HALF_HEIGHT / nu,
+        wall_scheme="halfway", perturbation_amplitude=0.0, output=None, **kwargs
+    )
+
+
+@pytest.mark.parametrize("steps", [500, 510])
+def test_laminar_twin_wall_exchange_stress_matches_body_force(steps: int):
+    """tau_w from the Ladd momentum exchange must equal ``a*h`` in the twin.
+
+    Regression for the bookkeeping defect: the accumulator was never cleared
+    when the averaging window opened, so spin-up flux (``nsteps//2`` steps) was
+    divided by the window length (``nsteps//2`` steps) -> tau_w x 2, i.e.
+    ``u_tau`` x sqrt(2) = +41.4 %.  ``steps=510`` additionally exercises the
+    partial last block (window 255..500 = 245 steps booked, 10 flushes).
+    """
+    twin = run_laminar_poiseuille(
+        _laminar_cfg(steps=steps), steps=steps, u_max_target=0.05, nu_target=0.05
+    )
+    ratio = twin["u_tau_wall_exchange"] / twin["u_tau_body_force"]
+    assert abs(ratio - 1.0) < 0.02, (
+        f"steps={steps}: u_tau(wall_exchange)/u_tau(body_force) = {ratio:.4f} "
+        "(before the fix this was sqrt(2) = 1.414)"
+    )
+
+
+def test_production_run_does_not_book_spinup_wall_flux():
+    """``run()`` must divide the flux by the window it actually accumulated over.
+
+    Warmup steps contribute momentum-exchange flux that belongs to no averaging
+    step; a book kept from step 1 inflates ``wall_exchange_tau_w`` by
+    ``(warmup + window)/window`` (here 300/200 = 1.5x) even when the flow is
+    already steady.
+    """
+    cfg = _laminar_cfg(steps=300, warmup_steps=100, sample_interval=10,
+                       label="wall_exchange_bookkeeping")
+    sim = TurbulentChannel3D(cfg)
+    _load_exact_parabola(sim, cfg)
+    fr = sim.run()["friction_velocity"]
+    ratio = fr["wall_exchange_tau_w"] / fr["body_force_tau_w"]
+    assert abs(ratio - 1.0) < 0.03, (
+        f"wall_exchange_tau_w/body_force_tau_w = {ratio:.4f} "
+        "(spin-up flux is being divided by the averaging window)"
+    )

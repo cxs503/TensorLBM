@@ -541,6 +541,13 @@ class TurbulentChannel3D:
         reports = []
         for step in range(1, cfg.steps + 1):
             self._step_once()
+            if step <= cfg.warmup_steps:
+                # The averaging window opens after warmup.  The momentum-exchange
+                # flux of a warmup step must not reach the sampled average: it is
+                # divided by ``sample_interval`` steps, so a book kept from step 1
+                # inflates tau_w by (warmup + interval) / interval (e.g. x51 at
+                # warmup=5000, interval=100).
+                self._wall_flux_accum = 0.0
             if step % cfg.report_interval == 0 or step == 1:
                 h = self.health()
                 reports.append(h)
@@ -826,9 +833,19 @@ def run_laminar_poiseuille(
     samp = torch.zeros(ny, dtype=torch.float64)
     count = 0
     flux = 0.0
+    flux_steps = 0
+    last_flux_step = nsteps // 2
     t0 = time.time()
     for step in range(1, nsteps + 1):
         sim._step_once()
+        if step == nsteps // 2:
+            # Same bookkeeping rule as ``TurbulentChannel3D.run``: the flux
+            # accumulated during spin-up must not be divided by the (shorter)
+            # averaging window.  Keeping it inflated tau_w by nsteps//(window),
+            # i.e. exactly x2 for the standard half/whole twin split (u_tau x
+            # sqrt(2) = 42 %), which is the artefact reported in
+            # docs/turbulent_channel3d_verification_r1.md section 5.1.
+            sim._wall_flux_accum = 0.0
         if step > nsteps // 2 and step % 25 == 0:
             m = torch.mm(sim.A, sim.f.view(19, sim.N))
             ux_t = (m[1] / m[0]).view(nz, ny, nx)
@@ -836,6 +853,8 @@ def run_laminar_poiseuille(
             count += 1
             flux += sim._wall_flux_accum
             sim._wall_flux_accum = 0.0
+            flux_steps += step - last_flux_step
+            last_flux_step = step
     u_mean = (samp / max(count, 1))[1:-1]
     yf = y[1:-1]
     analytic = poiseuille_exact(yf, twin.height, twin.acceleration, twin.nu)
@@ -849,7 +868,10 @@ def run_laminar_poiseuille(
             best = (err, float(delta))
     rel_l2 = float(torch.sqrt(((u_mean - analytic) ** 2).mean()) / analytic.abs().max())
     tau_w = twin.acceleration * h
-    n_flux_steps = max(count, 1) * 25
+    # Numerator and denominator must cover the *same* steps: use the measured
+    # window length instead of assuming count*25 (they differ whenever the
+    # last block is partial).
+    n_flux_steps = max(flux_steps, 1)
     tau_w_exchange = -flux / (2.0 * float(nx * nz) * n_flux_steps)
     return {
         "label": twin.label,
