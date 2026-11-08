@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 
-from tensorlbm.d2q9 import OPPOSITE, C, equilibrium, macroscopic
+from tensorlbm.d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
 
 
 def cylinder_mask(
@@ -469,3 +469,105 @@ def nscbc_outlet_2d(
     # Update only the outlet column
     f_new[:, :, -1] = f_eq_out[:, :, 0]
     return f_new
+
+
+# ---------------------------------------------------------------------------
+# Unified moving-wall / free-slip entry points (closes G18, see
+# benchmarks/gaps.md and the 2026-11-08 convention audit, report 7618).
+# ---------------------------------------------------------------------------
+
+_SPECULAR_Y = torch.tensor([0, 1, 4, 3, 2, 8, 7, 6, 5], dtype=torch.int64)
+_SPECULAR_X = torch.tensor([0, 3, 2, 1, 4, 7, 5, 8, 6], dtype=torch.int64)
+
+
+def bounce_back_moving_wall(
+    f: torch.Tensor,
+    mask: torch.Tensor,
+    u_wall: float | tuple[float, float] | torch.Tensor,
+    rho: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Ladd (1994) second-order moving-wall bounce-back, D2Q9, solid-side.
+
+    On every cell flagged by *mask* (post-streaming state):
+
+    .. math::
+        f_q \\leftarrow f_{\\bar q} + 6\\, w_q\\, \\rho\\, (c_q \\cdot u_w)
+
+    with ``rho = f.sum(0)`` (local density) unless *rho* is supplied.  The map
+    is a **fixed point of a uniform Galilean state** ``f^eq(rho, u_w)`` — a
+    flow translating with the wall is left unchanged to machine precision —
+    and it reduces to :func:`bounce_back_cells` when ``u_wall == 0``.
+
+    This is the single library entry point for the moving-wall bounce-back
+    family.  It reproduces the two adjudicated-correct shipped copies
+    (``herschel_bulkley_lbm.moving_wall_bounce_back_2d`` and
+    ``rotating_cylinder.moving_wall_bounce_back``) bit-for-bit; the other
+    family members differ by contract (fluid-side injection / surface links
+    only) and are pinned by ``tests/test_moving_wall_convention_audit.py``.
+
+    Args:
+        f:      Distribution tensor ``(9, ny, nx)``.
+        mask:   Boolean wall mask ``(ny, nx)``.
+        u_wall: Wall velocity — a scalar (x-velocity, ``uy=0``), a pair
+                ``(ux, uy)``, or a tensor of shape ``(2, ny, nx)``.
+        rho:    Density field ``(ny, nx)``; computed from ``f`` if ``None``.
+
+    Returns:
+        Updated distribution tensor.
+    """
+    if f.shape[0] != 9:
+        msg = f"f must have 9 directions, got {f.shape[0]}"
+        raise ValueError(msg)
+    if mask.shape != f.shape[1:]:
+        msg = f"mask {tuple(mask.shape)} != field {tuple(f.shape[1:])}"
+        raise ValueError(msg)
+    device = f.device
+    if rho is None:
+        rho = f.sum(dim=0)
+    if isinstance(u_wall, torch.Tensor):
+        if u_wall.shape != (2, *f.shape[1:]):
+            msg = f"u_wall tensor must be (2, ny, nx), got {tuple(u_wall.shape)}"
+            raise ValueError(msg)
+        ux, uy = u_wall[0].to(f.dtype), u_wall[1].to(f.dtype)
+    elif isinstance(u_wall, (tuple, list)):
+        ux = torch.full_like(rho, float(u_wall[0]), dtype=f.dtype)
+        uy = torch.full_like(rho, float(u_wall[1]), dtype=f.dtype)
+    else:
+        ux = torch.full_like(rho, float(u_wall), dtype=f.dtype)
+        uy = torch.zeros_like(rho)
+    c = C.to(device=device, dtype=f.dtype)
+    w = W.to(device=device, dtype=f.dtype)
+    cu = c[:, 0].view(9, 1, 1) * ux.unsqueeze(0) + c[:, 1].view(9, 1, 1) * uy.unsqueeze(0)
+    f_bb = f[OPPOSITE.to(device)] + 6.0 * w.view(9, 1, 1) * rho.unsqueeze(0) * cu
+    return torch.where(mask.unsqueeze(0), f_bb, f)
+
+
+def specular_reflection(
+    f: torch.Tensor,
+    mask: torch.Tensor,
+    axis: str = "y",
+) -> torch.Tensor:
+    """Specular (free-slip, tangential) reflection on selected cells, D2Q9.
+
+    Tangential populations pass through; populations carrying a velocity
+    component along the wall normal are mirrored.  ``axis="y"`` is a
+    horizontal wall (normal in y, map ``[0, 1, 4, 3, 2, 8, 7, 6, 5]``);
+    ``axis="x"`` a vertical wall (map ``[0, 3, 2, 1, 4, 7, 5, 8, 6]``).
+
+    Closed-form properties (both pinned in tests): a uniform state with
+    velocity purely tangential to the wall is a fixed point, and a purely
+    normal velocity is exactly reversed at the wall cell.  Mass is conserved
+    (the remap is a permutation); tangential momentum is conserved, normal
+    momentum is reversed.
+    """
+    if f.shape[0] != 9:
+        msg = f"f must have 9 directions, got {f.shape[0]}"
+        raise ValueError(msg)
+    if mask.shape != f.shape[1:]:
+        msg = f"mask {tuple(mask.shape)} != field {tuple(f.shape[1:])}"
+        raise ValueError(msg)
+    if axis not in ("x", "y"):
+        msg = f"axis must be 'x' or 'y', got {axis!r}"
+        raise ValueError(msg)
+    spec = (_SPECULAR_X if axis == "x" else _SPECULAR_Y).to(f.device)
+    return torch.where(mask.unsqueeze(0), f[spec], f)
