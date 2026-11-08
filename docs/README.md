@@ -54,6 +54,7 @@ A navigable index of the documentation in this directory, grouped by topic.
 | [irregular_wave_6dof_validation.md](irregular_wave_6dof_validation.md) | Irregular wave + 6-DOF validation |
 | [benchmarks/ai_fno2d/](benchmarks/ai_fno2d/) | FNO2d surrogate benchmark artifacts (loss curve, speed comparison) |
 | [acoustic_attenuation_nu_k_squared.md](acoustic_attenuation_nu_k_squared.md) | Physics note: plane-wave attenuation delta = nu*k^2 (not nu*k^2/2, not 2*nu*k^2) with the discrete correction chain, calibrated by the verified acoustics benchmark |
+| [uplus_error_decomposition_r1.md](uplus_error_decomposition_r1.md) | **u+ error decomposition** (statistical batch-means/Sokal-T_int ledger vs domain-length arbitration vs SGS negative control) and a **Taylor-Green block-AMR conservation suite** (mass 1e-15, interface flux 1e-16, momentum 1e-16 in float64, reflux-off negative control); generated from `artifacts/uplus_error_decomposition/u+_error_decomposition.json` by `benchmarks/turbulence_error_decomposition/make_report.py` |
 
 ### SUBOFF Submarine Benchmarks
 
