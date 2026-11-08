@@ -1,0 +1,7 @@
+[
+ {"name":"c32_cs0","cs":0.0,"model":"cumulant","perturbation":1.0,"noise":0.5,"modes":32,"ny":32,"steps":1200,"warmup":200},
+ {"name":"c32_cs01","cs":0.10,"model":"cumulant","perturbation":1.0,"noise":0.5,"modes":32,"ny":32,"steps":1200,"warmup":200},
+ {"name":"c24_soft_cs01","cs":0.10,"model":"cumulant","perturbation":0.1,"noise":0.0,"modes":8,"ny":24,"steps":1200,"warmup":200},
+ {"name":"kbc24_long","cs":0.0,"model":"natural_kbc","perturbation":1.0,"noise":0.5,"modes":32,"ny":24,"steps":3000,"warmup":600},
+ {"name":"kbc32_long","cs":0.0,"model":"natural_kbc","perturbation":1.0,"noise":0.5,"modes":32,"ny":32,"steps":3000,"warmup":600}
+]
