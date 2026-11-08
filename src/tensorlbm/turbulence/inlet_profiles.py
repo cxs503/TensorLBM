@@ -221,6 +221,7 @@ def womersley_profile(
     wo: float,
     phase: float = 0.0,
     n_harmonics: int = 4,
+    exact: bool = False,
 ) -> torch.Tensor:
     """Womersley oscillatory profile for pulsatile pressure-driven pipe flow.
 
@@ -231,16 +232,40 @@ def womersley_profile(
     This function returns the **instantaneous** radial velocity profile at a
     given *phase* angle (in radians) as a superposition of *n_harmonics* modes.
 
+    .. warning::
+       This is an **approximate** model (phenomenological Stokes layer with
+       ``δ = 1/Wo``), not the exact Womersley solution: the true oscillatory
+       profile is the Bessel-function solution ``J₀`` and carries a phase lag
+       that this model does not represent.  Measured against the exact solution
+       the peak-relative deviation is **2 %–35 %** over ``Wo ∈ [1, 10]``
+       (worst cases: Wo=1, φ=0 → 34.6 %; Wo=5, φ=π/2 → 32.2 %; Wo=2, φ=0 →
+       28.2 %; three of the eight (Wo, φ) points checked exceed the 15 %
+       engineering tolerance).  For quantitative pulsatile-flow work pass
+       ``exact=True`` or call :func:`womersley_profile_exact` directly.
+
     Args:
         n:           Number of grid cells across the diameter.
         u_mean:      Time-averaged mean velocity (Hagen–Poiseuille component).
         wo:          Womersley number.
         phase:       Phase angle ωt in radians.
         n_harmonics: Number of harmonics (1 = fundamental only).
+        exact:       Use the exact Bessel-function Womersley solution
+                     (:func:`womersley_profile_exact`) instead of the
+                     boundary-layer approximation.  Default ``False`` keeps the
+                     historical (approximate) output bit-for-bit.
 
     Returns:
         Instantaneous velocity profile tensor of shape ``(n,)``.
     """
+    if exact:
+        from tensorlbm.turbulence.womersley_exact import (  # noqa: PLC0415
+            womersley_profile_exact,
+        )
+
+        return womersley_profile_exact(
+            n, u_mean, wo, phase=phase, n_harmonics=n_harmonics,
+        )
+
     # Normalised radial coordinate r ∈ [0, 1]  (0 = centre, 1 = wall)
     y = torch.linspace(0.5, n - 0.5, n)
     r = (2.0 * y / n - 1.0).abs()  # 0 at centre, 1 at wall
@@ -392,7 +417,24 @@ __all__ = [
     "parabolic_profile",
     "blasius_profile",
     "womersley_profile",
+    "womersley_profile_exact",
     "synthetic_turbulence_2d",
     "apply_inlet_profile_2d",
     "apply_inlet_profile_3d",
 ]
+
+
+def womersley_profile_exact(*args, **kwargs) -> torch.Tensor:
+    """Exact Bessel-function Womersley profile (see
+    :mod:`tensorlbm.turbulence.womersley_exact`).
+
+    Convenience re-export so that callers which already do
+    ``from tensorlbm.inlet_profiles import ...`` (e.g. the platform's
+    ``/inlet_profile_preview`` endpoint) can reach the exact solution without a
+    second import path.
+    """
+    from tensorlbm.turbulence.womersley_exact import (  # noqa: PLC0415
+        womersley_profile_exact as _exact,
+    )
+
+    return _exact(*args, **kwargs)
