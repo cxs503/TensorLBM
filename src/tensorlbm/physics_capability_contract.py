@@ -7,14 +7,27 @@ combination as physics-validated without evidence.
 
 Audit scope (source files read, not docstring assertions):
     - ``tensorlbm/thermal_common.py``       – DDF thermal step (D3Q7 + D3Q19/D3Q27)
-    - ``tensorlbm/porous_media_common.py``  – partial bounce-back porous media
-    - ``tensorlbm/non_newtonian_common.py`` – power-law / Carreau / Bingham tau_eff
+    - ``tensorlbm/non_newtonian.py``        – 2-D power-law ν(γ̇) / BGK collision
+    - ``tensorlbm/herschel_bulkley_lbm.py`` – 3-D D3Q19 variable-viscosity BGK
+                                              (Papanastasiou-regularised H-B)
     - ``tensorlbm/passive_scalar_common.py``– D3Q7 passive scalar transport
     - callers: ``thermal.py``, ``thermal3d.py``, ``conjugate_ht.py``,
-      ``passive_scalar.py``, ``non_newtonian.py``, ``porous_media.py``,
-      ``porous_media3d.py``
-    - tests: ``test_thermal_common.py``, ``test_porous_media_common.py``,
-      ``test_non_newtonian_common.py``, ``test_passive_scalar_common.py``
+      ``passive_scalar.py``, ``non_newtonian.py``
+    - tests: ``test_thermal_common.py``, ``test_non_newtonian.py``,
+      ``test_herschel_bulkley.py``, ``test_passive_scalar_common.py``
+
+Repair (2026-11-08, mission 6598): this docstring used to name
+``porous_media_common.py`` and ``non_newtonian_common.py``, and the registry
+pointed at ``porous_media_step`` / ``non_newtonian_tau_eff`` in those modules
+plus ``test_porous_media_common.py`` / ``test_non_newtonian_common.py``.  **None
+of those four files ever existed in this repository's history** (``git log
+--all -- src/tensorlbm/porous_media_common.py`` is empty), so 9 of the 45 cells
+asserted an implementation and a test suite that could not be resolved — the
+capability contract was inflating the library.  The gate
+(:mod:`tensorlbm.capability_contract_drift`) could not see it because a
+list-returning matrix was invisible to its traversal.  The cells now point at
+the mechanisms that do exist, and the ones with no mechanism are downgraded to
+``NO_IMPLEMENTATION``; see the per-cell notes.
 """
 
 from __future__ import annotations
@@ -210,93 +223,129 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
     },
     # -----------------------------------------------------------------------
-    # Porous media — partial bounce-back (Dardis & McCloskey)
+    # Porous media — NO partial-bounce-back flow step (see note)
     # -----------------------------------------------------------------------
+    # ``porous_media.py`` / ``porous_media3d.py`` implement medium *generation*
+    # (random cylinders/spheres, tube arrays) and pore-scale *workflows*
+    # (Laplace pressure, capillary invasion, two-phase Poiseuille, drainage)
+    # that build on the Shan-Chen multiphase solver; ``porous_weak_inertia.py``
+    # implements a Forchheimer-prefix drag closure.  None of them is a generic
+    # porosity-weighted (partial bounce-back) flow step, which is the mechanism
+    # these four cells used to claim.
     "porous_media": {
         "D3Q19": {
             "BGK": (
-                IMPLEMENTED,
-                VERIFICATION_CONTRACT_TESTED,
-                "tensorlbm.porous_media_common.porous_media_step",
-                "test_porous_media_common.py: shape, mass conservation, "
-                "porosity=1 no-op, porosity=0 full bounce-back",
-                "Partial bounce-back porous media: f* = ε·f + (1−ε)·f_opp. "
-                "Collision-agnostic; call after any collision.",
+                NO_IMPLEMENTATION,
+                VERIFICATION_NO_IMPLEMENTATION,
+                None,
+                None,
+                "No partial bounce-back / porosity-weighted step exists. "
+                "Medium generation and pore-scale drainage workflows do exist "
+                "(tensorlbm.porous_media, tensorlbm.porous_media3d) but they "
+                "are not a reusable porous-flow kernel. Use Shan-Chen with a "
+                "solid mask, or implement f* = ε·f + (1−ε)·f_opp.",
             ),
             "MRT": (
-                IMPLEMENTED,
-                VERIFICATION_CONTRACT_TESTED,
-                "tensorlbm.porous_media_common.porous_media_step",
-                "test_porous_media_common.py: shape, mass conservation",
-                "Partial bounce-back is collision-agnostic; works with MRT.",
+                NO_IMPLEMENTATION,
+                VERIFICATION_NO_IMPLEMENTATION,
+                None,
+                None,
+                "No partial bounce-back / porosity-weighted step exists "
+                "(collision-agnostic or otherwise).",
             ),
         },
         "D3Q27": {
             "BGK": (
-                IMPLEMENTED,
-                VERIFICATION_CONTRACT_TESTED,
-                "tensorlbm.porous_media_common.porous_media_step",
-                "test_porous_media_common.py: shape, mass conservation, "
-                "porosity=1 no-op, porosity=0 full bounce-back",
-                "Partial bounce-back porous media for D3Q27.",
+                NO_IMPLEMENTATION,
+                VERIFICATION_NO_IMPLEMENTATION,
+                None,
+                None,
+                "No partial bounce-back / porosity-weighted step exists for "
+                "D3Q27; medium generation is 2-D (porous_media) or 3-D "
+                "D3Q19 (porous_media3d) only.",
             ),
             "MRT": (
-                IMPLEMENTED,
-                VERIFICATION_CONTRACT_TESTED,
-                "tensorlbm.porous_media_common.porous_media_step",
-                "test_porous_media_common.py: shape, mass conservation",
-                "Partial bounce-back is collision-agnostic; works with MRT.",
+                NO_IMPLEMENTATION,
+                VERIFICATION_NO_IMPLEMENTATION,
+                None,
+                None,
+                "No partial bounce-back / porosity-weighted step exists for "
+                "D3Q27.",
             ),
         },
     },
     # -----------------------------------------------------------------------
-    # Non-Newtonian — power-law / Carreau / Bingham tau_eff
+    # Non-Newtonian — power-law (2-D) and regularised Herschel-Bulkley (3-D)
     # -----------------------------------------------------------------------
+    # Two real mechanisms exist, and they are *not* interchangeable across the
+    # lattice dimension:
+    #   * 2-D: ``non_newtonian.apparent_viscosity_power_law`` (ν = K γ̇^{n-1})
+    #     + ``collide_power_law_bgk``, tested by ``test_non_newtonian.py``;
+    #   * 3-D D3Q19: ``herschel_bulkley_lbm.collide_hb_bgk_forced_3d`` with
+    #     ``shear_rate_3d`` / ``hb_relaxation_time`` (Papanastasiou-regularised
+    #     H-B, BGK only), tested by ``test_herschel_bulkley.py``.
+    # Both are BGK; no variable-viscosity MRT kernel and no D3Q27 kernel exist.
     "non_newtonian": {
         "D2Q9": {
             "BGK": (
                 IMPLEMENTED,
                 VERIFICATION_CONTRACT_TESTED,
-                "tensorlbm.non_newtonian_common.non_newtonian_tau_eff",
-                "test_non_newtonian_common.py: tau_eff per-cell, >0.5, "
-                "power-law, Carreau, Bingham, zero-shear baseline",
-                "Non-Newtonian tau_eff via _nu_t_to_tau_eff (same as RANS/LES). "
-                "2-D strain rate from velocity gradients.",
+                "tensorlbm.non_newtonian.apparent_viscosity_power_law "
+                "/ tensorlbm.non_newtonian.collide_power_law_bgk",
+                "test_non_newtonian.py: shear-rate magnitude of a linear shear "
+                "field, power-law ν shear-thinning, ν_min/ν_max clamping, "
+                "invalid-parameter rejection, collision identity at equilibrium",
+                "2-D power-law (Ostwald-de Waele) ν = K·γ̇^(n−1) with optional "
+                "clamping, used as the per-cell relaxation time in a "
+                "variable-viscosity BGK collision. No Carreau or Bingham branch "
+                "in this module (yield stress lives in "
+                "tensorlbm.herschel_bulkley_lbm, D3Q19 only).",
             ),
         },
         "D3Q19": {
             "BGK": (
                 IMPLEMENTED,
                 VERIFICATION_CONTRACT_TESTED,
-                "tensorlbm.non_newtonian_common.non_newtonian_tau_eff",
-                "test_non_newtonian_common.py: tau_eff per-cell, >0.5, "
-                "power-law, Carreau, Bingham, zero-shear baseline",
-                "Non-Newtonian tau_eff via _nu_t_to_tau_eff (same as RANS/LES). "
-                "3-D strain rate from velocity gradients.",
+                "tensorlbm.herschel_bulkley_lbm.collide_hb_bgk_forced_3d "
+                "/ tensorlbm.herschel_bulkley_lbm.shear_rate_3d",
+                "test_herschel_bulkley.py: shear_rate_3d exact on a linear "
+                "field, regularised reference profile, plug probe, D3Q19 pipe "
+                "smoke, sub-yield channel does not flow, channel matches "
+                "Newtonian Poiseuille",
+                "3-D D3Q19 variable-viscosity BGK with "
+                "Papanastasiou-regularised Herschel-Bulkley viscosity, Guo "
+                "forcing with a per-cell relaxation time, half-way bounce-back "
+                "walls; end-to-end runners run_hb_pipe / run_hb_channel.",
             ),
             "MRT": (
-                IMPLEMENTED,
-                VERIFICATION_CONTRACT_TESTED,
-                "tensorlbm.non_newtonian_common.non_newtonian_tau_eff",
-                "test_non_newtonian_common.py: tau_eff per-cell, >0.5",
-                "tau_eff is collision-agnostic; caller uses it in MRT stress modes.",
+                NO_IMPLEMENTATION,
+                VERIFICATION_NO_IMPLEMENTATION,
+                None,
+                None,
+                "Every non-Newtonian kernel in this package is BGK "
+                "(non_newtonian.collide_power_law_bgk, "
+                "herschel_bulkley_lbm.collide_hb_bgk_forced_{2,3}d). There is no "
+                "variable-viscosity MRT collision, so 'tau_eff is "
+                "collision-agnostic, caller uses it in MRT stress modes' was not "
+                "backed by any code.",
             ),
         },
         "D3Q27": {
             "BGK": (
-                IMPLEMENTED,
-                VERIFICATION_CONTRACT_TESTED,
-                "tensorlbm.non_newtonian_common.non_newtonian_tau_eff",
-                "test_non_newtonian_common.py: tau_eff per-cell, >0.5, "
-                "power-law, Carreau, Bingham, zero-shear baseline",
-                "Non-Newtonian tau_eff for D3Q27 via _nu_t_to_tau_eff.",
+                NO_IMPLEMENTATION,
+                VERIFICATION_NO_IMPLEMENTATION,
+                None,
+                None,
+                "The only 3-D non-Newtonian kernel is D3Q19 "
+                "(herschel_bulkley_lbm, opposite-direction table built for 19 "
+                "velocities); the 2-D power-law path is D2Q9-only.",
             ),
             "MRT": (
-                IMPLEMENTED,
-                VERIFICATION_CONTRACT_TESTED,
-                "tensorlbm.non_newtonian_common.non_newtonian_tau_eff",
-                "test_non_newtonian_common.py: tau_eff per-cell, >0.5",
-                "tau_eff is collision-agnostic; caller uses it in MRT stress modes.",
+                NO_IMPLEMENTATION,
+                VERIFICATION_NO_IMPLEMENTATION,
+                None,
+                None,
+                "No D3Q27 non-Newtonian kernel and no MRT non-Newtonian kernel.",
             ),
         },
     },

@@ -67,10 +67,7 @@ class TestRequireCapability:
             ("thermal", "D3Q19", "BGK"),
             ("thermal", "D3Q27", "BGK"),
             ("conjugate_ht", "D3Q19", "N/A"),
-            ("porous_media", "D3Q19", "BGK"),
-            ("porous_media", "D3Q27", "BGK"),
             ("non_newtonian", "D3Q19", "BGK"),
-            ("non_newtonian", "D3Q27", "BGK"),
             ("passive_scalar", "D3Q19", "BGK"),
             ("passive_scalar", "D3Q27", "BGK"),
         ],
@@ -79,6 +76,31 @@ class TestRequireCapability:
         cap = require_physics_capability(family, lattice, collision)
         assert cap.implementation_status == IMPLEMENTED
         assert cap.entrypoint is not None
+
+    @pytest.mark.parametrize(
+        ("family", "lattice", "collision"),
+        [
+            # 2026-11-08 (mission 6598): these four cells used to be declared
+            # IMPLEMENTED/CONTRACT_TESTED against
+            # ``tensorlbm.porous_media_common.porous_media_step`` and
+            # ``tensorlbm.non_newtonian_common.non_newtonian_tau_eff`` — modules
+            # and functions that never existed.  The contract now withholds.
+            ("porous_media", "D3Q19", "BGK"),
+            ("porous_media", "D3Q19", "MRT"),
+            ("porous_media", "D3Q27", "BGK"),
+            ("porous_media", "D3Q27", "MRT"),
+            ("non_newtonian", "D3Q19", "MRT"),
+            ("non_newtonian", "D3Q27", "BGK"),
+            ("non_newtonian", "D3Q27", "MRT"),
+        ],
+    )
+    def test_require_unimplemented_combinations_withhold(
+        self, family, lattice, collision
+    ) -> None:
+        cap = require_physics_capability(family, lattice, collision)
+        assert cap.implementation_status == NO_IMPLEMENTATION
+        assert cap.entrypoint is None
+        assert cap.status.startswith("WITHHELD")
 
     def test_require_unknown_family_raises(self) -> None:
         with pytest.raises(PhysicsWithheldError, match="family"):
@@ -91,3 +113,34 @@ class TestRequireCapability:
     def test_require_unsupported_collision_raises(self) -> None:
         with pytest.raises(PhysicsWithheldError, match="collision"):
             require_physics_capability("thermal", "D3Q19", "TRT")
+
+
+class TestEvidencePointersAreReal:
+    """The contract's strings must resolve to code and tests that exist.
+
+    This is what the 2026-11-08 drift audit found broken: 9 of 45 cells named a
+    module, a function and a test file that were never in the repository.
+    """
+
+    def test_implemented_entrypoints_and_evidence_resolve(self) -> None:
+        from tensorlbm.capability_contract_drift import (
+            _DOTTED_RE,
+            resolve_dotted,
+            resolve_test_evidence,
+            tests_root,
+        )
+
+        root = tests_root()
+        assert root is not None
+        for cap in physics_capability_matrix():
+            if cap.implementation_status != IMPLEMENTED:
+                continue
+            dotted = _DOTTED_RE.findall(cap.entrypoint or "")
+            assert dotted, f"{cap.family}/{cap.lattice}/{cap.collision}: no entrypoint"
+            for path in dotted:
+                resolve_dotted(path)  # raises EntrypointNotFound if it rotted
+            refs, missing = resolve_test_evidence(cap.test_evidence, root)
+            assert refs and not missing, (
+                f"{cap.family}/{cap.lattice}/{cap.collision}: "
+                f"unresolved evidence {missing}"
+            )
