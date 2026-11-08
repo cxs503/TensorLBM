@@ -42,7 +42,7 @@
 | `wall_bounce_back` | D3Q19 | `PHYSICS_VALIDATED` | `test_sphere_cd.py`：Cd 验证（err < 120–150%），容差极宽，仅 BGK | 同上 |
 | `wall_bounce_back` | D3Q27 | `MECHANICS_TESTED` | `test_d3q27.py`：shape；`test_d3q27_moving_wall_momentum_exchange.py`：ME 力单元测试；无物理验证 | 同上 |
 | `wall_free_slip` | D2Q9 | `NO_IMPLEMENTATION` | — | `WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE` |
-| `wall_free_slip` | D3Q19 | `IMPLEMENTATION_ONLY` | 无测试；docstring 引用 waLBerla FreeSlip 模式 | `WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE` |
+| `wall_free_slip` | D3Q19 | `PHYSICS_VALIDATED` | `test_free_slip_d3q19_analytic.py`（21 用例）：镜面映射逐方向校验、质量/切向动量精确守恒、均匀流精确不动点、剪切驻波 ν 恢复 0.056%/0.093%、两枚负控；表观壁面内移 δ≈0.33 lu 与 O(k) 偏置已固化入判据（`docs/free_slip_d3q19_analytic_verification_20261108.md`） | `WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE` |
 | `wall_free_slip` | D3Q27 | `NO_IMPLEMENTATION` | — | `WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE` |
 | `farfield` | D2Q9 | `IMPLEMENTATION_ONLY` | 无测试；docstring 声称 ~9% Cd 误差，但不是测试，**不采信为验证证据** | `WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE` |
 | `farfield` | D3Q19 | `IMPLEMENTATION_ONLY` | 同上（docstring 声称 channel ~65% → far-field ~9%） | 同上 |

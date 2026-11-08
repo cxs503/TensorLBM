@@ -205,10 +205,20 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "No free-slip implementation for D2Q9",
     ),
     ("wall_free_slip", "D3Q19"): (
-        "IMPLEMENTATION_ONLY",
+        "PHYSICS_VALIDATED",
         "tensorlbm.boundaries3d.free_slip_cells_3d / free_slip_y_walls_3d / "
         "free_slip_x_walls_3d / free_slip_z_walls_3d",
-        "No tests; docstring references waLBerla FreeSlip pattern",
+        "test_free_slip_d3q19_analytic.py (21 cases): mirror table == analytic "
+        "specular map for all 19 directions on x/y/z faces; exact mass and "
+        "tangential-momentum invariants (<=5.2e-16); uniform flow exact fixed "
+        "point (5.7e-15 over 2000 steps); shear standing wave recovers "
+        "nu=(tau-1/2)/3 to 0.056% (H=32) / 0.093% (H=64) once the measured "
+        "apparent wall plane (delta=0.331/0.349 lu inside the node centre) is "
+        "used; negative controls: no-slip walls destroy 81% of streamwise "
+        "momentum and bias the apparent nu by 252%. BGK/single-phase/"
+        "D3Q19/float64 only; the naive node-centre wall assumption carries a "
+        "first-order O(k) bias (4.30% -> 2.12% on doubling H). Docs: "
+        "docs/free_slip_d3q19_analytic_verification_20261108.md",
     ),
     ("wall_free_slip", "D3Q27"): (
         "NO_IMPLEMENTATION",
