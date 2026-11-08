@@ -48,19 +48,35 @@ def _moving_wall_bounce_back(
     f: torch.Tensor,
     wall: torch.Tensor,
     u_wall: tuple[float, float] | None = None,
+    *,
+    moving_mask: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Half-way bounce-back with optional moving wall correction."""
+    """Half-way bounce-back with optional moving wall correction.
+
+    Ladd's correction is ``6 w_i rho (c_i . u_w)`` with ``c_s^2 = 1/3``; the
+    local density ``rho`` is required (it was missing until 2026-11-08, which is
+    invisible at ``rho = 1`` but 33% of the correction at ``rho = 1.2``).
+
+    ``moving_mask`` selects the cells that actually move.  It defaults to the
+    last row for backward compatibility with :func:`run_bingham_couette` (top
+    wall driving), but the correction must follow the caller's mask: hard-coding
+    row ``-1`` silently turned every other geometry into a static wall.
+    Pinned by ``tests/test_moving_wall_convention_audit.py``.
+    """
     opp = OPPOSITE.to(f.device)
     reflected = f[opp]
 
     if u_wall is not None and (u_wall[0] != 0.0 or u_wall[1] != 0.0):
         c = C.to(device=f.device, dtype=f.dtype)
         w = W.to(device=f.device, dtype=f.dtype)
-        cu = c[:, 0] * float(u_wall[0]) + c[:, 1] * float(u_wall[1])
-        correction = (6.0 * w * cu).view(9, 1, 1)
-        top = torch.zeros_like(wall)
-        top[-1, :] = True
-        reflected = reflected + correction * top.unsqueeze(0).to(f.dtype)
+        rho = f.sum(dim=0)
+        cu = c[:, 0].view(9, 1, 1) * float(u_wall[0]) + c[:, 1].view(9, 1, 1) * float(u_wall[1])
+        correction = (6.0 * w.view(9, 1, 1) * rho.unsqueeze(0) * cu)
+        if moving_mask is None:
+            moving_mask = torch.zeros_like(wall)
+            moving_mask[-1, :] = True
+        moving_mask = moving_mask & wall
+        reflected = reflected + correction * moving_mask.unsqueeze(0).to(f.dtype)
 
     return torch.where(wall.unsqueeze(0), reflected, f)
 
