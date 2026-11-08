@@ -57,6 +57,17 @@ import torch
 from .d3q19 import OPPOSITE, C, W
 
 
+def _c_for(nq: int, device) -> "torch.Tensor":
+    """Lattice velocity tensor for *nq* directions on *device* (19 or 27)."""
+    if nq == 19:
+        return C.to(device).float()
+    if nq == 27:
+        from .d3q27 import C as C27
+
+        return C27.to(device).float()
+    raise ValueError(f"momentum exchange supports 19 or 27 directions, got {nq}")
+
+
 # ---------------------------------------------------------------------------
 # Helper: build the fluid→solid crossing mask for a given direction
 # ---------------------------------------------------------------------------
@@ -209,6 +220,10 @@ def momentum_exchange_wet_node(
                staircase corner links; ``"near"`` — face-adjacent band only
                (the subset :func:`momentum_exchange_standard` uses).
 
+    Lattice: the direction count is taken from ``f.shape[0]`` — 19 (D3Q19)
+    or 27 (D3Q27).  The estimator is otherwise identical, so a D3Q19 vs
+    D3Q27 comparison of the *same* physical case is apples-to-apples.
+
     Returns:
         ``(fx, fy, fz)`` — force on the wall (drag-positive).
     """
@@ -218,12 +233,13 @@ def momentum_exchange_wet_node(
         raise ValueError("near mask is required when links='near'")
 
     device = f.device
-    c = C.to(device).float()
+    nq = int(f.shape[0])
+    c = _c_for(nq, device)
 
     fx = 0.0
     fy = 0.0
     fz = 0.0
-    for i in range(1, 19):
+    for i in range(1, nq):
         ci = c[i]
         di = int(ci[0].item())
         dj = int(ci[1].item())

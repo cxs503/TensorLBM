@@ -56,13 +56,22 @@
 
 ## P2 级（缺能力/硬编码）
 
-### G7. GeneralSimEngine D3Q27 死枚举（general_sim.py）
-- `LatticeModel.D3Q27` 枚举存在但 setup 无条件用 d3q19：equilibrium3d（L470）、collide_bgk3d/mrt3d（L1044）、macroscopic3d（L1173）
-- 需：D3Q27 分支（equilibrium27/stream27/boundaries_d3q27/力）
+### G7. GeneralSimEngine D3Q27 死枚举（general_sim.py）——**CLOSED (P38-N04)**
+- 原状：`LatticeModel.D3Q27` 枚举存在但 setup 无条件用 d3q19（equilibrium3d / collide_bgk3d,mrt3d / macroscopic3d）
+- 现状：`lattice=D3Q27` 全程路由到 D3Q27 内核——equilibrium27 / collide_mrt27(BGK,TRT 亦可) / stream27 /
+  boundary.boundaries_d3q27（bounce_back_cells_27 + far_field_bc_27）/ correct_mass27 / macroscopic27；
+  力用 wet-node MEM（方向数由 f.shape[0] 自动识别 19/27，同一估计器 → 两格点可直接对比）
+- 实现：`lbm_step_correct` 新增 `stream_fn` 注入点（步序不变，逐步序与手写内核序列位相等，有单测）；
+  无 D3Q27 内核的组合（wall_function / Smagorinsky / 2D 挤出周期远场）显式 NotImplementedError，不静默降级
+- 验证：`docs/D3Q27_ACTIVATION.md` + `artifacts/d3q27_validation/`（球绕流 Re=100/200 两格点对标、
+  各向同性矩代数、精确剪切波耗散各向异性、Taylor–Green L2 收敛阶）；API `POST /api/v1/calculations/lbm/d3q27_validation`
 
-### G8. 3D 主循环 D3Q19 硬编码
-- `solver3d.stream3d` q=19 硬编码；`momentum_exchange_standard` range(1,19)；far_field_bc_3d D3Q19
-- D3Q27 路径需走 d3q27.stream27 + boundaries_d3q27.far_field_bc_27 + compute_obstacle_forces_27
+### G8. 3D 主循环 D3Q19 硬编码——**CLOSED (P38-N04)**
+- 原状：`solver3d.stream3d` q=19、`momentum_exchange_standard` range(1,19)、far_field_bc_3d D3Q19
+- 现状：D3Q27 路径走 d3q27.stream27 + boundaries_d3q27.far_field_bc_27/bounce_back_cells_27；
+  `momentum_exchange_wet_node` 的链接循环改为 range(1, nq)，nq 取自 f.shape[0]（19 或 27）
+- 遗留（未做，明确登记）：D3Q27 的 `momentum_exchange_standard/galilean/pair` 等其它 MEM 变体未泛化
+  （G12 已证 standard/pair 在曲面台阶面上有虚假自由来流本底，故未纳入验收路径）
 
 ### G9. 多相模型无大密度比自由表面
 - CG 色梯度对密度比>1 溃坝不适用（平界面压力失衡）；FE 双阱弱；SCMP 需 EOS 调参——三个模型均无稳定大密度比自由表面，溃坝 benchmark（B20）被阻塞
