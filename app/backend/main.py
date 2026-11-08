@@ -43,6 +43,7 @@ for _name, _mod in [
     ("drag_echo", "drag_echo"),
     ("generic_sim", "generic_sim"),
     ("jobs", "jobs"),
+    ("lbm_d3q27", "lbm_d3q27"),
     ("marine", "marine"),
     ("notifications", "notifications"),
     ("orchestration", "orchestration"),
@@ -82,6 +83,7 @@ drag_echo = _router_imports.get("drag_echo")
 drag_surrogate = _router_imports.get("drag_surrogate")
 generic_sim = _router_imports.get("generic_sim")
 jobs = _router_imports.get("jobs")
+lbm_d3q27 = _router_imports.get("lbm_d3q27")
 marine = _router_imports.get("marine")
 notifications = _router_imports.get("notifications")
 orchestration = _router_imports.get("orchestration")
@@ -202,6 +204,7 @@ _router_registry = [
     (notifications, "/api/notifications", "Notifications"),
     (xflow_streaming, "/api/stream", "XFlow Streaming"),
     (xflow_projects, "/api/xflow-projects", "XFlow Projects"),
+    (lbm_d3q27, "/api/v1/calculations/lbm", "LBM D3Q27 Validation"),
     (marine, "/api/marine", "Marine Engineering"),
 ]
 for _mod, _prefix, _tag in _router_registry:
