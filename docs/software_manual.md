@@ -312,11 +312,11 @@ Where L is tank length, h is liquid depth, and g is gravitational acceleration (
 ```python
 from tensorlbm import LBMUnitConverter
 
-# 示例：L=10 m, u_ref=0.5 m/s, nu_phys=1e-6 m²/s
-conv = LBMUnitConverter(L_ref=10.0, U_ref=0.5, nu_phys=1e-6,
-                        N_cells=200, u_lbm=0.05)
+# 示例：L=10 m, u_phys=0.5 m/s, nu_phys=1e-6 m²/s → Re = U·L/ν = 5e6
+conv = LBMUnitConverter(re=5e6, l_phys=10.0, u_phys=0.5, nu_phys=1e-6,
+                        nx=200, u_lb=0.05)
 print(f"dx = {conv.dx:.4f} m, dt = {conv.dt:.6f} s")
-print(f"Physical Re = {conv.Re_phys:.1f}")
+print(f"Physical Re = {conv.re:.1f}")
 ```
 
 #### 数值结果 / Numerical Results
@@ -687,7 +687,7 @@ f = collide_bgk(f, tau=0.6)
 f = collide_mrt(f, tau=0.6)
 
 # TRT（双松弛时间，Ginzburg magic Λ=3/16）
-f = collide_trt(f, tau=0.6)
+f = collide_trt(f, tau_plus=0.6)
 
 # RLBM（正则化 BGK，滤除非流体学模式）
 f = collide_rlbm(f, tau=0.6)
@@ -733,6 +733,7 @@ f = zou_he_outlet_pressure(f, rho_out=1.0)
 ### 7.4 船舶与海洋工程模块 / Marine Modules
 
 ```python
+import torch
 from tensorlbm import (
     ShipHullFlowConfig, run_ship_hull_flow,
     SloshingTankConfig, run_sloshing_tank,
@@ -751,7 +752,8 @@ omega_n = faltinsen_natural_frequency(L=200, h=80, g=2e-5, mode=1)
 # 创建 Wigley 船体掩模
 obstacle = wigley_hull_mask(nx=160, ny=60, nz=40,
     cx=56.0, cy=30.0, cz_keel=4.0,
-    length=80.0, beam=8.0, draft=12.0)
+    length=80.0, beam=8.0, draft=12.0,
+    device=torch.device("cpu"))
 ```
 
 ### 7.5 多相流 / Multiphase Flow
@@ -767,8 +769,8 @@ f_r, f_b = color_gradient_step(
     solid_mask=wall,
 )
 
-# 自由能相场模型
-f, g = free_energy_step(f, g, tau_f=0.7, tau_g=0.7, kappa=0.04, a=1.0)
+# 自由能相场模型（参数名为大写 A / B）
+f, g = free_energy_step(f, g, tau_f=0.7, tau_g=0.7, kappa=0.04, A=1.0)
 ```
 
 ### 7.6 后处理 / Postprocessing
@@ -794,21 +796,25 @@ Q = compute_q_criterion(ux, uy, uz)  # 3D
 # λ₂ 准则（旋涡识别）
 lam2 = compute_lambda2_criterion(ux, uy, uz)
 
-# 提取中线速度剖面
-y, u_profile = extract_velocity_profile(ux, x_idx=nx // 2)
+# 提取中线速度剖面（需同时传入 ux、uy，位置参数为 index）
+y, u_profile = extract_velocity_profile(ux, uy, index=nx // 2)
 
-# 压力系数
-cp = compute_pressure_coefficient(rho, rho_ref=1.0, u_ref=0.08)
+# 压力系数（来流速度参数名为 u_in）
+cp = compute_pressure_coefficient(rho, u_in=0.08, rho_ref=1.0)
 
 # 流线追踪（2D）
 from tensorlbm import seed_points_uniform_2d, streamlines_to_dict
-seeds = seed_points_uniform_2d(nx, ny, n=50)
+seeds = seed_points_uniform_2d(nx, ny, n_x=8, n_y=8)
 lines = trace_streamlines_2d(ux, uy, seeds, max_steps=500)
 data = streamlines_to_dict(lines)
 
-# 表面力与力系数
-fx, fy = surface_force_2d(f, obstacle_mask)
-cd, cl = force_coefficients(fx, fy, rho_ref=1.0, u_ref=0.08, area=2*radius)
+# 表面力与力系数：两个函数均返回 dict，不是元组
+forces = surface_force_2d(f, obstacle_mask)
+coeffs = force_coefficients(
+    forces["fx"], forces["fy"], 0.0,
+    rho_ref=1.0, u_ref=0.08, area_ref=2 * radius,
+)
+cd, cl = coeffs["cd"], coeffs["cl"]
 ```
 
 ### 7.7 单位换算 / Unit Conversion
@@ -816,14 +822,14 @@ cd, cl = force_coefficients(fx, fy, rho_ref=1.0, u_ref=0.08, area=2*radius)
 ```python
 from tensorlbm import LBMUnitConverter
 
-# 船舶算例：U=1 m/s, L=100 m（实船），Re=5e6
+# 船舶算例：U=1 m/s, L=5 m, nu=1e-6 m²/s → Re = U·L/ν = 5e6
 conv = LBMUnitConverter(
-    L_ref=100.0, U_ref=1.0, nu_phys=1e-6,
-    N_cells=200, u_lbm=0.05,
+    re=5e6, l_phys=5.0, u_phys=1.0, nu_phys=1e-6,
+    nx=200, u_lb=0.05,
 )
 print(f"dx = {conv.dx:.3f} m")
 print(f"dt = {conv.dt:.5e} s")
-print(f"nu_lbm = {conv.nu_lbm:.5e}")
+print(f"nu_lb = {conv.nu_lb:.5e}")
 print(f"tau = {conv.tau:.4f}")
 ```
 
@@ -836,7 +842,9 @@ from tensorlbm import (
 )
 from tensorlbm import macroscopic
 
-schedule = AdaptationSchedule(adapt_every=500, max_levels=3)
+schedule = AdaptationSchedule(interval=500, max_levels=3)
+# 以下为工作流示意：f_coarse、collide_fn / stream_fn / boundary_fn、n_steps
+# 需按具体算例先初始化。
 solver = AdaptiveSolver2D(f_coarse, schedule=schedule)
 
 for step in range(n_steps):
@@ -871,52 +879,72 @@ from tensorlbm import (
     FlowFieldTransformer, FlowTransformerArch,
 )
 
-# 端到端 DNS → 数据库 → 训练 → AI-LBM 管道
-result = run_ai_dns_pipeline(nx=128, ny=64, n_steps=5000)
+# 端到端 DNS → 数据库 → 训练 → AI-LBM 管道（work_dir 必填；长时任务）
+result = run_ai_dns_pipeline(work_dir="outputs/ai_dns", nx=128, ny=64, data_steps=200)
 
-# 将训练好的模型嵌入 LBM 碰撞
-nu_t = predict_nu_t_2d(model, f, tau_base=0.6)
-f = collide_ai_les_bgk(f, tau_base=0.6, nu_t=nu_t)
+# 将训练好的模型嵌入 LBM 碰撞（示意：model / f / ux / uy 需先定义）
+# predict_nu_t_2d 接收速度场；collide_ai_les_bgk 直接接收模型，而非 nu_t 场。
+nu_t = predict_nu_t_2d(model, ux, uy)
+f = collide_ai_les_bgk(f, tau=0.6, model=model)
 ```
 
 ### 7.11 共轭传热 / Conjugate Heat Transfer
 
 ```python
-from tensorlbm import CHTConfig, run_conjugate_ht_2d
+from tensorlbm import CHTConfig, CHTState, run_conjugate_ht_2d
 
 cfg = CHTConfig(
-    nx=128, ny=64,
-    tau_fluid=0.7, alpha_solid=0.1,
-    n_steps=10000,
+    tau_f=0.7, alpha_s=0.1,
+    n_steps=1000,
 )
-result = run_conjugate_ht_2d(cfg)
+# run_conjugate_ht_2d 需要初始状态与配置两个参数；state 由
+# CHTState(f, g, T_s, mask_solid) 构造，需按算例先初始化。
+result = run_conjugate_ht_2d(state, cfg)
 ```
 
 ### 7.12 气动声学 / Aeroacoustics (FWH)
 
 ```python
+import torch
 from tensorlbm import (
-    FWHSurface, compute_fwh_far_field,
+    FWHSurface, AcousticObserver, compute_fwh_far_field,
     compute_spl_spectrum, oaspl,
 )
 
-# 定义 FWH 积分面并计算远场声压
-surface = FWHSurface(observer_distance=10.0, n_points=128)
-result = compute_fwh_far_field(surface, p_history, u_history, dt=1.0)
-spl = compute_spl_spectrum(result.p_far, dt=1.0)
-oa = oaspl(spl.frequencies, spl.levels)
-print(f"OASPL = {oa:.1f} dB")
+# 定义 FWH 积分面：由离散源点（位置、法向、面积、压力时间序列）构成，
+# 2-D 算例中 z 分量取 0。
+n_src, n_t = 128, 64
+positions = torch.zeros(n_src, 3)
+positions[:, 0] = torch.linspace(0.0, 1.0, n_src)
+normals = torch.zeros(n_src, 3)
+normals[:, 1] = 1.0
+areas = torch.full((n_src,), 1.0 / n_src)
+pressure = torch.zeros(n_src, n_t)  # (N, T)
+surface = FWHSurface(positions=positions, normals=normals,
+                     areas=areas, pressure=pressure, dt=1.0)
+
+# 远场声压：observers 为观察点列表，返回 (p_prime, time_list)
+observers = [AcousticObserver(x=10.0, y=0.0)]
+p_far, times = compute_fwh_far_field(surface, observers)
+freqs, levels = compute_spl_spectrum(p_far, dt=1.0)
+oa_list = oaspl(p_far, dt=1.0)  # 每个观察点一个值
+print(f"OASPL = {oa_list[0]:.1f} dB")
 ```
 
 ### 7.13 多 GPU 域分解 / Multi-GPU Domain Decomposition
 
 ```python
-from tensorlbm import MultiGPUSolver2D, auto_decompose
+import torch
+from tensorlbm import equilibrium, MultiGPUSolver2D, auto_decompose
 
-devices = ["cuda:0", "cuda:1", "cuda:2", "cuda:3"]
-decomp = auto_decompose(nx=1024, ny=512, n_devices=len(devices))
-solver = MultiGPUSolver2D(f_global, decomp, devices=devices)
+# auto_decompose 从全局分布张量推断网格；省略 n_gpus 时使用全部可用 CUDA 设备
+f_global = equilibrium(
+    torch.ones(512, 1024), torch.zeros(512, 1024), torch.zeros(512, 1024)
+)
+decomp = auto_decompose(f_global, n_gpus=4)
+solver = MultiGPUSolver2D(f_global, decomp)  # 设备列表由 decomp 持有
 
+# 以下为工作流示意：collide_fn / stream_fn / boundary_fn、n_steps 需先初始化
 for step in range(n_steps):
     solver.step(collide_fn, stream_fn, boundary_fn)
 ```

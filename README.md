@@ -31,7 +31,7 @@ from tensorlbm import equilibrium, macroscopic, collide_bgk, stream
 ny, nx = 64, 128
 f = equilibrium(torch.ones(ny, nx), torch.zeros(ny, nx), torch.zeros(ny, nx))
 for _ in range(200):
-    f = collide_bgk(f.unsqueeze(0).expand(9,-1,-1), tau=0.6)
+    f = collide_bgk(f, tau=0.6)
     f = stream(f)
 ```
 
