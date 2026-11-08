@@ -10,7 +10,7 @@ Audit scope (source files read, not docstring assertions):
     - ``tensorlbm/sliding_mesh.py``           – 2-D sliding-mesh (D2Q9)
     - ``tensorlbm/sliding_mesh_common.py``    – 3-D common module (D3Q19/D3Q27)
     - callers: ``rotating_cylinder.py``, ``propeller_ibm.py``
-    - tests: ``test_sliding_mesh_common.py``
+    - tests: ``test_sliding_mesh_regression.py``
 """
 
 from __future__ import annotations
@@ -123,17 +123,21 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "tensorlbm.sliding_mesh_common.sliding_mesh_step(lattice='D3Q19') / "
         "apply_sliding_mesh_bc_3d / rotate_velocity_field_3d / "
         "interpolate_interface_3d",
-        "test_sliding_mesh_common.py: shape, finite, mass conservation, "
-        "interface locality, rotation axis parametrisation; "
-        "no physical validation of torque/efficiency",
+        "test_sliding_mesh_regression.py: shape, finiteness, mass-explosion "
+        "guard (Σf < 1e6 over the multi-step stability sweep), 2-D/3-D "
+        "formula parity, single-layer interface interpolation, rotation about "
+        "x/y/z; no mass-conservation equality and no physical validation of "
+        "torque/efficiency",
     ),
     ("sliding_mesh_3d", "D3Q27"): (
         "MECHANICS_TESTED",
         "tensorlbm.sliding_mesh_common.sliding_mesh_step(lattice='D3Q27') / "
         "apply_sliding_mesh_bc_3d(lattice='D3Q27')",
-        "test_sliding_mesh_common.py: shape, finite, mass conservation, "
-        "interface locality, rotation axis parametrisation; "
-        "no physical validation of torque/efficiency",
+        "test_sliding_mesh_regression.py: shape, finiteness, mass-explosion "
+        "guard (Σf < 1e6 over the multi-step stability sweep), 2-D/3-D "
+        "formula parity, single-layer interface interpolation, rotation about "
+        "x/y/z; no mass-conservation equality and no physical validation of "
+        "torque/efficiency",
     ),
 }
 
