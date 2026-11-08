@@ -296,6 +296,50 @@ class GeneralSimEngine:
     RE_WALL_FN_THRESHOLD = 10000  # Re ≥ 10000 → wall function
     AUTO_DOMAIN_FACTOR = 3  # domain = geometry bbox × 3
 
+    @property
+    def q(self) -> int:
+        """Direction count of the configured lattice (19 or 27)."""
+        return 27 if self.config.solver.lattice == LatticeModel.D3Q27 else 19
+
+    @property
+    def is_d3q27(self) -> bool:
+        """True when the D3Q27 lattice path is active."""
+        return self.config.solver.lattice == LatticeModel.D3Q27
+
+    def _check_d3q27_supported(self) -> None:
+        """Reject D3Q27 combinations the activated path does not cover.
+
+        The D3Q27 path routes through ``d3q27.equilibrium27/stream27/
+        collide_*27``, ``boundary.boundaries_d3q27`` and the lattice-generic
+        wet-node momentum exchange.  Two engine features have no D3Q27
+        kernel yet and are rejected loudly rather than silently degrading
+        to a D3Q19 kernel (which would be numerically wrong):
+
+        * the wall-function wall treatment (D3Q19-only kernel),
+        * Smagorinsky collisions (no ``collide_smagorinsky_*27``).
+
+        The 2-D-extruded (periodic lateral faces) D3Q27 layout is rejected in
+        :meth:`run`, where the far-field/periodic face layout is resolved.
+        """
+        if not self.is_d3q27:
+            return
+        sol = self.config.solver
+        wt = sol.wall_treatment
+        if wt == WallTreatment.WALL_FUNCTION:
+            raise NotImplementedError(
+                "wall_treatment=wall_function has no D3Q27 kernel; use AUTO/BOUNCE_BACK"
+            )
+        if sol.collision in (
+            CollisionModel.SMAGORINSKY_BGK,
+            CollisionModel.SMAGORINSKY_MRT,
+        ):
+            raise NotImplementedError(
+                f"collision={sol.collision.value} has no D3Q27 kernel; "
+                "use BGK/MRT/TRT with lattice=D3Q27"
+            )
+        # The 2-D-extruded (periodic lateral faces) layout is rejected in
+        # run(), where the boundary-condition layout is known.
+
     def __init__(self, config: GeneralSimConfig) -> None:
         self.config = config
         self.uc: LBMUnitConverter | None = None
@@ -388,6 +432,10 @@ class GeneralSimEngine:
         # 1. Reynolds number + auto parameter selection
         Re = cfg.reynolds_number
 
+        # Lattice guard: reject D3Q27 combinations without a D3Q27 kernel
+        # (loud failure instead of a silent, numerically wrong fallback).
+        self._check_d3q27_supported()
+
         # Auto collision
         if sol.collision == CollisionModel.AUTO:
             self._auto_collision = self._auto_select_collision(Re)
@@ -471,7 +519,7 @@ class GeneralSimEngine:
         else:
             self.mesh = None
 
-        # 7. Initialise distribution function (D3Q19 equilibrium)
+        # 7. Initialise distribution function (lattice-dependent equilibrium)
         u_in_lb = self.uc.u_lb
         rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
         ux0 = torch.full((nz, ny, nx), u_in_lb, dtype=torch.float32, device=device)
@@ -479,9 +527,14 @@ class GeneralSimEngine:
             ux0[self.solid] = 0.0
         uy0 = torch.zeros_like(ux0)
         uz0 = torch.zeros_like(ux0)
-        from .d3q19 import equilibrium3d_low_memory
+        if self.is_d3q27:
+            from .d3q27 import equilibrium27
 
-        self.f = equilibrium3d_low_memory(rho0, ux0, uy0, uz0, device=device)
+            self.f = equilibrium27(rho0, ux0, uy0, uz0, device=device)
+        else:
+            from .d3q19 import equilibrium3d_low_memory
+
+            self.f = equilibrium3d_low_memory(rho0, ux0, uy0, uz0, device=device)
         self._initial_mass = float(rho0.sum().item())
 
         return {
@@ -502,6 +555,8 @@ class GeneralSimEngine:
             if self._auto_wall_treatment
             else None,
             "auto_warmup": self._auto_warmup,
+            "lattice": sol.lattice.value,
+            "q": self.q,
             "modules_used": [
                 "stl_geometry.read_stl",
                 "stl_geometry.voxelize_stl",
@@ -545,21 +600,35 @@ class GeneralSimEngine:
         # Select collision operator
         collide_fn, collide_kwargs = self._get_collide_fn()
 
-        # Build far-field BC function (common module: boundaries3d.far_field_bc_3d)
+        # Build far-field BC function
+        #   D3Q19: boundaries3d.far_field_bc_3d (bc_config-driven)
+        #   D3Q27: boundary.boundaries_d3q27.far_field_bc_27 (all lateral faces
+        #          free-stream, zero-gradient outlet — the 3-D external-flow case)
         bc_config = self._build_bc_config()
-        far_field_fn = functools.partial(far_field_bc_3d, bc_config=bc_config)
+        if self.is_d3q27:
+            from .boundary.boundaries_d3q27 import far_field_bc_27
+
+            if bc_config.get("periodic_faces"):
+                raise NotImplementedError(
+                    "lattice=D3Q27 supports only the 3-D external-flow far-field "
+                    f"layout, got periodic_faces={bc_config['periodic_faces']}"
+                )
+            far_field_fn = far_field_bc_27
+        else:
+            far_field_fn = functools.partial(far_field_bc_3d, bc_config=bc_config)
 
         # Mass correction
         correct_mass_fn = None
         target_mass = None
         if sol.mass_correction:
             try:
-                from .solver3d import correct_mass3d
-
-                correct_mass_fn = correct_mass3d
+                if self.is_d3q27:
+                    from .d3q27 import correct_mass27 as correct_mass_fn
+                else:
+                    from .solver3d import correct_mass3d as correct_mass_fn
                 target_mass = self._initial_mass
             except ImportError:
-                pass
+                correct_mass_fn = None
 
         # Wall treatment selection
         use_wall_function = (
@@ -570,6 +639,21 @@ class GeneralSimEngine:
 
         # dpS: dynamic pressure × reference area
         dpS = self._compute_dpS()
+
+        # Lattice-specific kernels injected into the shared, verified stepper
+        # (lbm_step_correct): D3Q27 swaps only the streaming operator and the
+        # bounce-back kernel; the operation order (collide → NoDynamics →
+        # half-way BB → stream → far-field BC) is identical for both lattices.
+        step_kwargs: dict[str, Any] = {}
+        if self.is_d3q27:
+            from .boundary.boundaries_d3q27 import bounce_back_cells_27
+            from .d3q27 import stream27
+
+            step_kwargs["stream_fn"] = stream27
+            step_kwargs["bounce_back_fn"] = (
+                lambda f, solid, f_pre=None: bounce_back_cells_27(f, solid)
+            )
+            step_kwargs["lattice"] = "D3Q27"
 
         # Divergence-guard cadence (see SolverConfig.divergence_check_interval).
         import os as _os
@@ -602,6 +686,7 @@ class GeneralSimEngine:
                     target_mass=target_mass,
                     step=step,
                     mass_interval=sol.mass_correction_interval,
+                    **step_kwargs,
                     **collide_kwargs,
                 )
             else:
@@ -619,6 +704,7 @@ class GeneralSimEngine:
                     target_mass=target_mass,
                     step=step,
                     mass_interval=sol.mass_correction_interval,
+                    **step_kwargs,
                     **collide_kwargs,
                 )
 
@@ -1103,11 +1189,40 @@ class GeneralSimEngine:
         collision = self._auto_collision or sol.collision
         cs = sol.smagorinsky_cs
 
+        if self.is_d3q27:
+            # D3Q27 kernels (src/tensorlbm/d3q27.py).  All three expose the
+            # ``collide_fn(f, tau=...)`` contract the shared stepper expects.
+            from .d3q27 import collide_bgk27, collide_mrt27, collide_trt27
+
+            if collision == CollisionModel.BGK:
+                return collide_bgk27, {}
+            if collision == CollisionModel.TRT:
+                # collide_trt27 names its relaxation argument ``tau_plus``; the
+                # shared stepper calls ``collide_fn(f, tau=...)``.
+                def _trt27(f, tau: float, **kw):
+                    return collide_trt27(f, tau, **kw)
+
+                return _trt27, {}
+            if collision in (CollisionModel.SMAGORINSKY_BGK, CollisionModel.SMAGORINSKY_MRT):
+                raise NotImplementedError(
+                    f"collision={collision.value} has no D3Q27 kernel"
+                )
+            return collide_mrt27, {}
+
         from .solver3d import collide_bgk3d, collide_mrt3d_fused, collide_mrt3d_low_memory
         from .turbulence import collide_smagorinsky_mrt3d
 
         if collision == CollisionModel.BGK:
             return collide_bgk3d, {}
+        elif collision == CollisionModel.TRT:
+            # Previously TRT fell through to MRT silently (a latent defect);
+            # route the real two-relaxation-time kernel instead.
+            from .solver3d import collide_trt3d as _collide_trt3d
+
+            def _trt19(f, tau: float, **kw):
+                return _collide_trt3d(f, tau, **kw)
+
+            return _trt19, {}
         elif collision == CollisionModel.MRT:
             # Single-gemm fused MRT (R = M^-1 diag(s) M precomputed) is an
             # opt-in ~2x speedup on SDAA.  It is NOT bit-exact vs the standard
@@ -1364,10 +1479,13 @@ class GeneralSimEngine:
         self.forces_log.append(entry)
 
     def _save_snapshot(self):
-        """Save macroscopic fields snapshot."""
-        from .d3q19 import macroscopic3d
+        """Save macroscopic fields snapshot (lattice-aware)."""
+        if self.is_d3q27:
+            from .d3q27 import macroscopic27 as _macro
+        else:
+            from .d3q19 import macroscopic3d as _macro
 
-        rho, ux, uy, uz = macroscopic3d(self.f)
+        rho, ux, uy, uz = _macro(self.f)
         self.snapshots.append(
             {
                 "rho": rho.clone(),

@@ -69,6 +69,15 @@ from .d3q19 import OPPOSITE as _OPPOSITE_3D
 _FUSE_NODYN_BB_ENV = "TL_FUSE_NODYN_BB"
 
 
+def _resolve_stream_fn(stream_fn=None):
+    """Return the streaming operator to use (D3Q19 default, injected otherwise)."""
+    if stream_fn is not None:
+        return stream_fn
+    from .solver3d import stream3d
+
+    return stream3d
+
+
 def _fuse_nodyn_bb_enabled() -> bool:
     return os.environ.get(_FUSE_NODYN_BB_ENV, "1").strip().lower() not in (
         "0",
@@ -99,6 +108,12 @@ def lbm_step_correct(
     bfl_q: torch.Tensor | None = None,
     bfl_wall_correction: torch.Tensor | None = None,
     lattice: str = "D3Q19",  # type: ignore[assignment]
+    # --- Lattice-dependent streaming operator ---
+    # ``None`` → :func:`tensorlbm.solver3d.stream3d` (D3Q19, historical path).
+    # D3Q27 callers inject :func:`tensorlbm.d3q27.stream27`; the rest of the
+    # step order (NoDynamics → half-way BB → stream → far-field BC) is
+    # unchanged, so both lattices share one verified stepper.
+    stream_fn=None,
     # --- Thermal coupling ---
     thermal_step_fn=None,
     thermal_g: torch.Tensor | None = None,
@@ -226,6 +241,7 @@ def lbm_step_correct(
     fuse_nodyn_bb = (
         wall_treatment == "bb"
         and bounce_back_fn is None
+        and stream_fn is None  # fused path uses the D3Q19 OPPOSITE map
         and solid is not None
         and _fuse_nodyn_bb_enabled()
     )
@@ -271,9 +287,7 @@ def lbm_step_correct(
         # Skip bounce-back before streaming
 
         # 4. Streaming
-        from .solver3d import stream3d
-
-        f = stream3d(f)
+        f = _resolve_stream_fn(stream_fn)(f)
 
         # 5. Wall function (replaces BB, applied after streaming)
         from .wall_function_common import apply_wall_function
@@ -306,9 +320,7 @@ def lbm_step_correct(
         f_pre_stream = f.clone()
 
         # 5. Streaming
-        from .solver3d import stream3d
-
-        f = stream3d(f)
+        f = _resolve_stream_fn(stream_fn)(f)
 
         # 6. Far-field BC
         f = far_field_bc_fn(f, u_in)
@@ -337,9 +349,7 @@ def lbm_step_correct(
             f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
 
         # 5. Streaming
-        from .solver3d import stream3d
-
-        f = stream3d(f)
+        f = _resolve_stream_fn(stream_fn)(f)
 
         # 6. Far-field BC (without obstacle_mask → don't touch solid)
         f = far_field_bc_fn(f, u_in)
