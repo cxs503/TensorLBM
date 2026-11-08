@@ -27,7 +27,14 @@ def set_rans_wall_bc_k_epsilon(
     OpenFOAM-equivalent wall functions:
       k_wall      = u_tau² / √C_μ
       ε_wall      = u_tau³ / (κ · y)
-      ω_wall      = u_tau / (√C_μ · κ · y)   (for k-ω SST)
+
+    Note (2026-11-08, m6600): a k-ω SST ω_wall value is NOT set by this
+    function (no ``omega`` argument).  The previously documented formula
+    ``u_tau/(√C_μ·κ·y)`` was removed: it is inconsistent with the k-ω model
+    (it yields ν_t = C_μ·k/ω = C_μ·κ·u_tau·y, i.e. C_μ× the log-law value
+    κ·u_tau·y).  The model-consistent value is ω = √C_μ·κ·u_tau/y
+    (equivalently C_μ·k/ν_t with ν_t = κ·u_tau·y); see
+    docs/rans_wall_bc_reference_verification_20261108.md §5.
 
     Applied ONLY to near-wall fluid cells (first off-wall cell).
 
