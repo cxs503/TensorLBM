@@ -71,7 +71,7 @@ AI turbulence closures and flow-model pipelines are useful foundations for AI-as
 - A curated stable API in `tensorlbm.api`, with legacy lazy root exports in `tensorlbm`
 - **D2Q9**, **D3Q19**, and **D3Q27** lattice primitives (`equilibrium`, `macroscopic`, lattice constants)
 - **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D
-- **Adaptive Mesh Refinement (AMR)**: dynamic patch management for D2Q9 and D3Q19, up to 5 refinement levels with Filippova–Hänel interface exchange, and multiple refinement indicators (non-equilibrium, vorticity, gradient, boundary-layer)
+- **Adaptive Mesh Refinement (AMR)**: dynamic patch management for D2Q9 and D3Q19, up to 5 refinement levels with Filippova–Hänel interface exchange, and multiple refinement indicators (non-equilibrium, vorticity, gradient, boundary-layer).  Conservative **reflux correction** for structured 2:1 AMR is production (`stable`) for the audited scope — 1-D scalar ladder with machine-precision mass conservation and a D2Q9 cavity interface-flux ledger; see `docs/amr-reflux-maturation.md`
 - **DG-LBM hybrid solver**: nodal Discontinuous-Galerkin LBM with P1-Lobatto DG advection, SSP-RK3 time stepping, DG↔LBM P0 interface coupling, and support for 2D cylinder / 3D sphere / SUBOFF hull flows
 - **LES turbulence models**: Smagorinsky, Dynamic Smagorinsky (Germano identity), WALE, Vreman — for D2Q9, D3Q19, and D3Q27
 - **RANS turbulence models**: k-ε (`KESolver`) and k-ω SST (`KOmegaSSTSolver`)
