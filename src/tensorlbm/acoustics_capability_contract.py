@@ -7,8 +7,9 @@ successful shape / finiteness / causality contract tests do not establish FWH
 acoustic accuracy, spectral correctness, or experimental validation.
 
 Audit scope (source files read, not docstring assertions):
-    - ``tensorlbm/acoustics.py`` – FWH far-field, SPL spectrum, surface-pressure
-      extraction, OASPL, and the ``compute_fwh_result`` convenience wrapper.
+    - ``tensorlbm/acoustics.py`` – FWH far-field (loading + thickness terms),
+      SPL spectrum, surface-pressure extraction, OASPL, and the
+      ``compute_fwh_result`` convenience wrapper.
     - No ``acoustic_beamforming.py`` exists in the repository.
     - tests: ``test_acoustics.py`` (shape, finite, causality, mean-removal,
       zero-pressure floor, known-tone OASPL, n_fft padding).
@@ -60,6 +61,21 @@ VERIFICATION_CONTRACT_TESTED = "CONTRACT_TESTED"
 
 These verify operator well-formedness, NOT acoustic physics accuracy, spectral
 accuracy, or experimental validation.
+"""
+
+VERIFICATION_ANALYTIC_VERIFIED = "ANALYTIC_VERIFIED"
+"""Reproduces a closed-form analytic solution of the acoustic analogy.
+
+The strongest evidence currently held for any acoustics entry.  For the FWH
+far field this means: loading (dipole) and thickness (monopole) terms
+reproduce the classical compact-source solutions, and the thickness term
+matches the exact pulsating-sphere solution to 1.1% at ka = 0.183, 0.08% at
+ka = 0.05 (see ``docs/fwh_thickness_monopole_verification.md`` and
+``tools/verify_fwh_thickness_monopole.py``).
+
+This is still NOT physics validation: no experiment, no coupled
+flow-solver / measurement comparison, and no claim is made outside the
+compact-source regime (ka <~ 0.24 for 3% accuracy against the exact sphere).
 """
 
 VERIFICATION_NO_IMPLEMENTATION = "NO_IMPLEMENTATION"
@@ -165,16 +181,21 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
     "fwh_far_field": {
         "N/A": (
             IMPLEMENTED,
-            VERIFICATION_CONTRACT_TESTED,
+            VERIFICATION_ANALYTIC_VERIFIED,
             "tensorlbm.acoustics.compute_fwh_far_field",
             "test_acoustics.py: shape, finite, zero-pressure→zero-output, "
             "causality (no signal before propagation delay), multi-observer, "
-            "invalid-shape raises",
+            "invalid-shape raises; test_fwh_thickness_monopole.py: pulsating "
+            "sphere vs exact solution (relRMS 1.1% at ka=0.183) and vs compact "
+            "monopole (0.3% amplitude at ka=0.10), isotropy, 1/r decay, rho0 "
+            "scaling, rigid-body zero, loading-only regression",
             None,
-            "FWH compact-source far-field approximation (1/r + 1/r² terms). "
-            "Post-processing: operates on saved pressure history, not in timestep "
-            "hot path. Composable with any collision/turbulence/boundary as a "
-            "post-processing step.",
+            "Farassat-1A stationary-surface (M=0) loading (dipole, 1/r + 1/r²) "
+            "and thickness (monopole, 1/r) terms. thickness term requires "
+            "surface.normal_velocity; it is zero for a rigid body. "
+            "Post-processing: operates on saved pressure / surface-velocity "
+            "history, not in timestep hot path. Composable with any "
+            "collision/turbulence/boundary as a post-processing step.",
         ),
         "D2Q9": (
             NO_IMPLEMENTATION,
