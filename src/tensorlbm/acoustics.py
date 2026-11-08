@@ -105,6 +105,14 @@ class FWHSurface:
             T is the number of time steps.
         dt: Physical time step (seconds).
         c0: Speed of sound (m/s; default 343 for air at 20 °C).
+        rho0: Ambient density (kg/m³; default 1.225 for air at 20 °C).  Only
+            used by the thickness (monopole) term.
+        normal_velocity: Outward-normal surface velocity time-series,
+            shape ``(N, T)`` with the same ``T`` as ``pressure``, in m/s.
+            ``None`` (default) disables the thickness term, which reproduces
+            the historical loading-only behaviour bit-for-bit.  For a rigid
+            body use zeros; for a breathing / pulsating surface use the
+            outward normal velocity (positive = surface moving outward).
     """
 
     positions: torch.Tensor
@@ -113,6 +121,8 @@ class FWHSurface:
     pressure: torch.Tensor
     dt: float
     c0: float = 343.0
+    rho0: float = 1.225
+    normal_velocity: torch.Tensor | None = None
 
 
 @dataclass
@@ -165,16 +175,33 @@ def compute_fwh_far_field(
 ) -> tuple[torch.Tensor, list[float]]:
     """Compute far-field acoustic pressure time series for each observer.
 
-    Uses the compact-source, far-field FWH approximation:
+    Implements the Farassat-1A Ffowcs Williams–Hawkings surface terms for a
+    **stationary** control surface (surface Mach number ``M = 0``), which is
+    the case for a porous surface fixed in the lattice frame.
+
+    Loading (dipole) term, compact-source far-field approximation:
 
     .. math::
 
-        p'(x, t) = \\frac{1}{4π c_0}
+        p'_L(x, t) = \\frac{1}{4π c_0}
             \\sum_{n} \\frac{\\dot{p}'_n(τ_n)}{r_n} (\\hat{r}_n · \\hat{n}_n) A_n
 
     where the sum is over surface source points *n*, τ_n = t − r_n/c_0 is
     the retarded time, r_n = |x − y_n| the emission distance, and Ȧ denotes
     the time derivative.
+
+    Thickness (monopole) term (Farassat 1A, ``M = 0`` branch):
+
+    .. math::
+
+        p'_T(x, t) = \\frac{ρ_0}{4π} \\frac{d}{dt}
+            \\sum_{n} \\frac{v_{n}(τ_n) A_n}{r_n}
+
+    with ``v_n = v · n̂`` the outward normal surface velocity.  It is enabled by
+    supplying ``surface.normal_velocity``; in the compact limit it reduces to
+    the classical monopole ``ρ_0/(4π r) dQ/dt`` with volume flux
+    ``Q = ∮ v_n dS``.  For a rigid, non-deforming body ``v_n ≡ 0`` and the term
+    vanishes, so loading-only callers are unaffected.
 
     For the near-field (r ≪ acoustic wavelength) monopole term the 1/r² term
     is included:
@@ -202,6 +229,12 @@ def compute_fwh_far_field(
     if surface.areas.shape != (n_src,):
         raise ValueError("areas must have shape (N,)")
     _, T = surface.pressure.shape
+    vn = surface.normal_velocity
+    if vn is not None:
+        if vn.shape != (n_src, T):
+            raise ValueError("normal_velocity must have shape (N, T) matching pressure")
+        if surface.rho0 <= 0.0:
+            raise ValueError("rho0 must be positive when the thickness term is used")
     if T < 2:
         raise ValueError("at least two pressure samples are required")
     dt = surface.dt
@@ -257,6 +290,27 @@ def compute_fwh_far_field(
             p_obs[t_idx] = far_field.sum() / (_TWO_PI * 2.0 * c0) + near_field.sum() / (
                 _TWO_PI * 2.0
             )
+
+        if vn is not None:
+            # Thickness (monopole) term, Farassat 1A with M = 0:
+            #   p'_T = rho0/(4 pi) d/dt [ sum_n v_n(tau_n) A_n / r_n ]
+            # The retarded integrand is assembled first and differentiated in
+            # observer time afterwards (the derivative acts on the integral,
+            # not on the surface velocity), which is the exact stationary form.
+            t_axis = torch.arange(T, device=p.device)
+            tau_idx = t_axis.unsqueeze(1) - delay_samples.unsqueeze(0)  # (T, N)
+            arrived = tau_idx >= 0
+            tau_clamped = tau_idx.clamp(0, T - 1)
+            cols = torch.arange(n_src, device=p.device).unsqueeze(0).expand(T, n_src)
+            vn_tau = vn.t()[tau_clamped, cols]  # (T, N)
+            weight = (area / r_dist).to(vn_tau.dtype).unsqueeze(0)  # (1, N)
+            integrand = (vn_tau * arrived.to(vn_tau.dtype) * weight).sum(dim=1)  # (T,)
+
+            d_integrand_dt = torch.zeros_like(integrand)
+            d_integrand_dt[1:-1] = (integrand[2:] - integrand[:-2]) / (2.0 * dt)
+            d_integrand_dt[0] = (integrand[1] - integrand[0]) / dt
+            d_integrand_dt[-1] = (integrand[-1] - integrand[-2]) / dt
+            p_obs = p_obs + surface.rho0 / (_TWO_PI * 2.0) * d_integrand_dt
 
         p_prime_all[obs_idx] = p_obs
 
