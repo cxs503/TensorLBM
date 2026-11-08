@@ -1,0 +1,19 @@
+{
+  "provenance": "stdout of cluster job c1794119802_133 (n315, 64 threads), transcribed verbatim; the job directory was not archived, so this is a transcript rather than a fetched artifact",
+  "grid": {"nx": 138, "ny": 24, "nz": 46, "cells": 152352, "box": "4 pi delta x 4/3 pi delta", "u_tau": 0.01, "re_tau": 180.0, "tau": 0.5018333333333334, "nu": 0.0006111111111111111},
+  "steps": 800,
+  "variants": [
+    {"variant": "p_noise10", "cs": 0.0, "model": "cumulant", "perturbation": 1.0, "noise": 0.5, "modes": 32, "ok": false, "elapsed_s": 16.39, "error": "FloatingPointError: channel population health failed"},
+    {"variant": "p_soft", "cs": 0.0, "model": "cumulant", "perturbation": 0.3, "noise": 0.1, "modes": 16, "ok": false, "elapsed_s": 20.64, "error": "FloatingPointError: channel population health failed"},
+    {"variant": "p_kbc", "cs": 0.0, "model": "natural_kbc", "perturbation": 1.0, "noise": 0.5, "modes": 32, "ok": true, "elapsed_s": 69.04, "cell_updates_per_s": 1765483.0, "minimum_population": 0.013358, "maximum_speed": 0.2141, "crossflow_rms_over_u_tau": 0.6266, "measured_u_tau": 0.008121, "friction_velocity_error_pct": -12.0},
+    {"variant": "p_cs01", "cs": 0.1, "model": "cumulant", "perturbation": 1.0, "noise": 0.5, "modes": 32, "ok": false, "elapsed_s": 33.08, "error": "FloatingPointError: channel population health failed"}
+  ],
+  "probe2_transcript": {
+    "note": "second probe matrix (cumulant at Re_tau = 60/100/180), stdout of job c1794122373_969",
+    "variants": [
+      {"variant": "cum_ret60_cs0", "re_tau": 60.0, "tau": 0.5055, "steps": 1500, "ok": false, "error": "FloatingPointError: channel population health failed"},
+      {"variant": "cum_ret30_cs0", "re_tau": 30.0, "tau": 0.511, "steps": 1500, "note": "aborted by heap corruption ('free(): corrupted unsorted chunks') after step 1260, i.e. numerically healthy up to that point; re-run through run_p40n09.py (SGS_cs0, 1500 steps) completed cleanly"},
+      {"variant": "cum_ret180_laminarstart", "re_tau": 180.0, "ok": false, "note": "laminar start at Re_tau=180 is not a valid cumulant test: a laminar channel at this forcing needs u_max = Re_tau u_tau / 4 = 0.45 (Ma ~ 0.78), so the divergence is a Mach-number artefact, not a cumulant defect"}
+    ]
+  }
+}

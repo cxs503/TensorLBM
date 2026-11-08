@@ -1,0 +1,12 @@
+{
+  "node": "P40-N09",
+  "amendment": 1,
+  "written": "2026-11-08T16:05+08:00",
+  "applies_to": "G_E_negative_control_sgs",
+  "before_any_SGS_arm_was_analysed": true,
+  "original": "C_s = 0 / 0.1 u+ profiles must differ by more than the pair's combined 95 % CI, at the campaign grid (ny=24, Re_tau=180)",
+  "change": "the SGS pair is executed at Re_tau = 30 on the same grid, same u_tau, same box; the gate criterion itself is unchanged",
+  "reason": "smagorinsky_cs > 0 requires collision_model='cumulant' (kernel validation), and the cumulant kernel diverges at the Re_tau=180 near-wall stiffness. probe_stability_p40n09.py measured: tau=0.50183 (ny=24) FAIL, tau=0.5025 (ny=32) FAIL, tau=0.50183 with a gentle 0.3/0.1 perturbation FAIL, C_s=0.1 at tau=0.50183 FAIL, and tau=0.5055 (Re_tau=60) FAIL -- all with 'FloatingPointError: channel population health failed'; natural-KBC at the same operating points stays healthy for 3000 steps (min population 1.3e-2). Re_tau=30 (tau=0.511) is the only cumulant-stable point found in the probed range (20-180) and runs 1500 steps healthy; the pair separates there.",
+  "consequence_documented_honestly": "the gate then certifies that C_s is *wired into the collision* (a wiring/negative-control test), NOT that the closure improves Re_tau=180 physics; the report states this and additionally records 'production-point SGS control: NOT AVAILABLE' as an open item",
+  "note": "the cumulant instability at Re_tau=180 is itself a finding for the repository (the only kernel carrying the SGS closure is unusable at DNS-level wall resolution)"
+}
