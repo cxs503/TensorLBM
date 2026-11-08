@@ -23,6 +23,18 @@ This module is the mechanical gate that closes that hole.  It walks the public
 capability matrices, resolves every claimed entrypoint and every claimed test
 file, and reports:
 
+Scope (2026-11-08 extension): eight contracts are audited, in two tiers.
+
+* *evidence tier* — records carry an ``entrypoint`` **and** an evidence field
+  and a verification level (``ibm``, ``sliding_mesh``, ``fsi``, ``sixdof``,
+  ``acoustics``, ``physics``): entrypoint resolution, fail-closed status,
+  level vocabulary and cited-test resolution are all enforced;
+* *entrypoint tier* — records carry an ``entrypoint`` but no evidence field at
+  all (``amr``, ``advanced_collision``): only entrypoint resolution is
+  enforced, because such a contract makes no evidence claim to audit.  Silently
+  demanding evidence of it, or silently skipping it, would both be wrong.
+
+
 ``error`` (drift — the contract claims something the repository cannot back)
     * ``NOT_FAIL_CLOSED`` — status is not a ``WITHHELD_*`` code;
     * ``ENTRYPOINT_UNRESOLVED`` / ``ENTRYPOINT_NOT_CALLABLE`` — the dotted path
@@ -48,6 +60,18 @@ file, and reports:
       never appears in the cited evidence file (the evidence may not exercise
       the dimension the contract certifies).
 
+The ``evidence tier`` also accepts ``ANALYTIC_VERIFIED`` — "the mechanism
+reproduces a closed-form solution" is strictly stronger than "a mechanics test
+exists" — but only because it still has to name a resolvable test file, so the
+level cannot be asserted without machine-checkable backing.
+
+Per-contract policy (``CONTRACT_POLICIES``) records the one convention that is
+*not* universal: ``fail_closed``.  ``advanced_collision`` is an availability
+matrix whose statuses are ``AVAILABLE``/``WITHHELD_*``; forcing it into the
+``WITHHELD_*`` invariant would be a false positive, so its policy declares
+``fail_closed=False`` and the report lists that exemption explicitly instead of
+hiding it.
+
 Deliberately *not* checked: whether the mechanisms are physically accurate.
 Operator-algebra contract tests cannot certify physics; the contracts already
 withhold on that axis and this auditor keeps them there — it only enforces that
@@ -67,11 +91,14 @@ import os
 import re
 import sys
 from dataclasses import dataclass, field
+from types import ModuleType
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
 __all__ = [
+    "CONTRACT_POLICIES",
     "CONTRACTS",
+    "ContractPolicy",
     "Claim",
     "DriftReport",
     "EntrypointNotFound",
@@ -95,10 +122,59 @@ CONTRACTS: dict[str, tuple[str, str]] = {
     ),
     "fsi": ("tensorlbm.fsi_capability_contract", "fsi_capability_matrix"),
     "sixdof": ("tensorlbm.sixdof_capability_contract", "sixdof_capability_matrix"),
+    "acoustics": (
+        "tensorlbm.acoustics_capability_contract",
+        "acoustics_capability_matrix",
+    ),
+    "physics": (
+        "tensorlbm.physics_capability_contract",
+        "physics_capability_matrix",
+    ),
+    "amr": (
+        "tensorlbm.amr_capability_contract",
+        "local_refinement_capability_matrix",
+    ),
+    "advanced_collision": (
+        "tensorlbm.advanced_collision_contract",
+        "collision_capability_matrix",
+    ),
 }
 
-#: Verification levels that assert "tests exist and pass".
-TESTED_LEVELS = frozenset({"CONTRACT_TESTED", "MECHANICS_TESTED"})
+
+@dataclass(frozen=True)
+class ContractPolicy:
+    """Conventions a contract may opt out of, stated out loud.
+
+    ``fail_closed``
+        ``True`` (default): every record's ``status`` must be a ``WITHHELD_*``
+        code, i.e. the contract may never assert a capability as available.
+        ``False``: the contract is an availability matrix (it legitimately
+        reports ``AVAILABLE``) and only its entrypoints are enforced.
+    ``reason``
+        Free text copied into the report so that an exemption is always
+        accompanied by its justification rather than silently assumed.
+    """
+
+    fail_closed: bool = True
+    reason: str = ""
+
+
+#: ``contract name -> policy``; a contract absent from this table gets the
+#: strict default (fail-closed, evidence tier).
+CONTRACT_POLICIES: dict[str, ContractPolicy] = {
+    "advanced_collision": ContractPolicy(
+        fail_closed=False,
+        reason=(
+            "availability matrix (status AVAILABLE/WITHHELD_*) that makes no "
+            "verification-level or test-evidence claim; only entrypoint "
+            "resolution is enforced"
+        ),
+    ),
+}
+
+#: Verification levels that assert "tests exist and pass" (or better: an
+#: analytic solution is reproduced, which is *also* backed by a test file).
+TESTED_LEVELS = frozenset({"CONTRACT_TESTED", "MECHANICS_TESTED", "ANALYTIC_VERIFIED"})
 #: Verification levels that assert "nothing is implemented".
 UNIMPLEMENTED_LEVELS = frozenset({"NO_IMPLEMENTATION"})
 #: Verification level that asserts "implemented, deliberately untested".
@@ -126,10 +202,22 @@ class Claim:
     test_evidence: str | None
     verification_level: str | None
     status: str | None
+    evidence_field: bool = True
+    """Whether the record's schema has an evidence field at all.
+
+    ``False`` marks the *entrypoint tier*: the contract never claims test
+    evidence, so ``EVIDENCE_*`` must not fire for it.  ``True`` with an empty
+    string is a different thing — a schema that has the field and left it
+    blank — and that is still an error for a tested level.
+    """
 
     @property
     def label(self) -> str:
         return f"{self.contract}[{'/'.join(self.path)}]"
+
+    @property
+    def tier(self) -> str:
+        return "evidence" if self.evidence_field else "entrypoint"
 
 
 @dataclass(frozen=True)
@@ -177,10 +265,15 @@ class DriftReport:
     def ok(self) -> bool:
         return not self.errors
 
+    #: ``contract -> policy`` for the contracts audited in this report, so that
+    #: an exemption from the fail-closed invariant is never implicit.
+    policies: dict[str, dict[str, Any]] = field(default_factory=dict)
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "ok": self.ok,
             "tests_root": self.tests_root,
+            "policies": self.policies,
             "claims": len(self.claims),
             "contracts": sorted({c.contract for c in self.claims}),
             "errors": [i.as_dict() for i in self.errors],
@@ -217,7 +310,17 @@ def _iter_capabilities(node: Any, path: tuple[str, ...] = ()) -> Iterator[tuple[
         for key, value in node.items():
             yield from _iter_capabilities(value, path + (str(key),))
         return
-    if hasattr(node, "entrypoint") and any(hasattr(node, n) for n in _EVIDENCE_ATTRS):
+    # Some matrices are flat *sequences* of capability records rather than
+    # nested mappings (``physics_capability_matrix`` returns a ``list``).
+    # Before 2026-11-08 this branch did not exist and every record of such a
+    # contract was invisible: ``CONTRACT_EMPTY`` caught the vacuity, but the
+    # contract still went unaudited.  Only list/tuple are traversed — sets would
+    # make the report ordering non-deterministic.
+    if isinstance(node, (list, tuple)):
+        for index, value in enumerate(node):
+            yield from _iter_capabilities(value, path + (str(index),))
+        return
+    if hasattr(node, "entrypoint"):
         yield path, node
 
 
@@ -238,6 +341,9 @@ def collect_claims(
                     test_evidence=_first_attr(capability, _EVIDENCE_ATTRS),
                     verification_level=_first_attr(capability, _LEVEL_ATTRS),
                     status=getattr(capability, "status", None),
+                    evidence_field=any(
+                        hasattr(capability, n) for n in _EVIDENCE_ATTRS
+                    ),
                 )
             )
     return claims
@@ -338,15 +444,25 @@ def _count_tests(path: Path) -> int:
 
 
 def audit_claims(
-    claims: Sequence[Claim], root: Path | None = None
+    claims: Sequence[Claim],
+    root: Path | None = None,
+    policies: Mapping[str, ContractPolicy] | None = None,
 ) -> DriftReport:
-    """Check every claim against the repository it describes."""
+    """Check every claim against the repository it describes.
+
+    ``policies`` defaults to :data:`CONTRACT_POLICIES`; a contract without an
+    entry gets the strict default (fail-closed, evidence-tier expectations).
+    """
     resolved_root = root if root is not None else tests_root()
     report = DriftReport(
         claims=list(claims),
         tests_root=str(resolved_root) if resolved_root is not None else None,
     )
     issues: list[Issue] = []
+    policy_table = policies if policies is not None else CONTRACT_POLICIES
+
+    def policy_for(claim: Claim) -> ContractPolicy:
+        return policy_table.get(claim.contract, ContractPolicy())
 
     def error(code: str, claim: Claim, detail: str) -> None:
         issues.append(Issue("error", code, claim.contract, claim.path, detail))
@@ -360,10 +476,11 @@ def audit_claims(
         known_level = level in (
             TESTED_LEVELS | UNIMPLEMENTED_LEVELS | IMPLEMENTED_LEVELS
         )
+        entrypoint_tier = not claim.evidence_field
 
-        if not known_level:
+        if not known_level and not (entrypoint_tier and not level):
             error("UNKNOWN_VERIFICATION_LEVEL", claim, f"level {level!r} is not audited")
-        if not status.startswith(FAIL_CLOSED_PREFIX):
+        if policy_for(claim).fail_closed and not status.startswith(FAIL_CLOSED_PREFIX):
             error("NOT_FAIL_CLOSED", claim, f"status {status!r} is not a WITHHELD_* code")
 
         # --- entrypoint -------------------------------------------------- #
@@ -382,6 +499,15 @@ def audit_claims(
                 claim,
                 f"{level} entry names no tensorlbm.* dotted path ({entry_text!r})",
             )
+        elif entrypoint_tier and entry_text and not dotted:
+            # The entrypoint tier has no level to key off, but a non-empty
+            # entrypoint string that names no ``tensorlbm.*`` path is still a
+            # pointer nobody can follow.
+            error(
+                "ENTRYPOINT_UNPARSEABLE",
+                claim,
+                f"entrypoint names no tensorlbm.* dotted path ({entry_text!r})",
+            )
 
         context_modules: list[str] = []
         for dotted_path in dotted:
@@ -390,7 +516,10 @@ def audit_claims(
             except EntrypointNotFound as exc:
                 error("ENTRYPOINT_UNRESOLVED", claim, str(exc))
                 continue
-            if not callable(target):
+            # A *module* is a legitimate entrypoint: several contracts point at
+            # the module that hosts the mechanism (``tensorlbm.amr_common``)
+            # rather than at one callable inside it.
+            if not callable(target) and not isinstance(target, ModuleType):
                 error(
                     "ENTRYPOINT_NOT_CALLABLE",
                     claim,
@@ -414,6 +543,11 @@ def audit_claims(
                     )
 
         # --- test evidence ----------------------------------------------- #
+        if entrypoint_tier:
+            # The contract's schema has no evidence field: there is nothing to
+            # resolve and nothing to demand.  Auditing only the entrypoint and
+            # saying so beats inventing an evidence requirement.
+            continue
         evidence = claim.test_evidence or ""
         refs, missing = resolve_test_evidence(evidence, resolved_root)
         if level in TESTED_LEVELS:
@@ -482,6 +616,7 @@ def audit_claims(
 
 def audit_contracts(
     contracts: Mapping[str, tuple[str, str]] | None = None,
+    policies: Mapping[str, ContractPolicy] | None = None,
 ) -> DriftReport:
     """Collect every contract claim and audit it in one pass.
 
@@ -493,8 +628,14 @@ def audit_contracts(
     ``verification_evidence``, so the duck-typing above had to be widened).
     """
     contracts = contracts or CONTRACTS
+    policies = policies if policies is not None else CONTRACT_POLICIES
     claims = collect_claims(contracts)
-    report = audit_claims(claims)
+    report = audit_claims(claims, policies=policies)
+    report.policies = {
+        name: {"fail_closed": policy.fail_closed, "reason": policy.reason}
+        for name, policy in policies.items()
+        if name in {claim.contract for claim in claims}
+    }
     seen = {claim.contract for claim in claims}
     for name in contracts:
         if name not in seen:
