@@ -49,6 +49,16 @@ class WallResolvedChannel3DConfig:
     # eddy viscosity inside the cumulant kernel (C_s), which is what an
     # SGS-on/off pair (negative control at fixed grid) needs.
     smagorinsky_cs: float = 0.0
+    # Sequential batch-mean recorder for the statistical-error estimator
+    # (``tensorlbm.validation.statistical_error``).  0 keeps the legacy single
+    # accumulator bit-for-bit; a positive value splits the averaging window into
+    # that many consecutive batches and stores their moment-profile means, which
+    # is what a batch-means confidence interval needs (a single global mean
+    # carries no variance information).
+    profile_batch_count: int = 0
+    # Stride (in steps) of the recorded wall-shear time series used for the
+    # autocorrelation integral time ``T_int``.  0 = do not record (legacy).
+    wall_exchange_series_stride: int = 0
     collision_chunk_cells: int = 262144
     compile_natural_kbc: bool = True
     initialization_mode: str = "spectral_solenoidal"
@@ -107,6 +117,10 @@ class WallResolvedChannel3DConfig:
             raise ValueError("collision_model must be natural_kbc or cumulant")
         if not 0.0 <= float(self.smagorinsky_cs) < 1.0:
             raise ValueError("smagorinsky_cs must lie in [0,1)")
+        for name in ("profile_batch_count", "wall_exchange_series_stride"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or value < 0:
+                raise ValueError(f"{name} must be a non-negative integer")
         if self.smagorinsky_cs > 0.0 and self.collision_model != "cumulant":
             raise ValueError(
                 "smagorinsky_cs > 0 requires collision_model='cumulant' "
@@ -471,10 +485,13 @@ def _save_checkpoint(
     populations: torch.Tensor,
     moment_profile_sum: torch.Tensor,
     profile_samples: int,
-    statistics_reset_step: int,
+    batch_moment_sums: torch.Tensor | None = None,
+    batch_profile_counts: list[int] | None = None,
+    statistics_reset_step: int = 0,
     reports: list[dict[str, float | int | bool]],
     block_start_step: int,
     block_start_momentum_x: float,
+    wall_shear_series: list[float] | None = None,
 ) -> None:
     config.checkpoint.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
@@ -491,6 +508,9 @@ def _save_checkpoint(
             "populations": populations.detach().to(device="cpu"),
             "moment_profile_sum": moment_profile_sum.detach().to(device="cpu"),
             "profile_samples": profile_samples,
+            "wall_shear_series": list(wall_shear_series or []),
+            "profile_batch_moment_sums": batch_moment_sums,
+            "profile_batch_counts": list(batch_profile_counts),
             "statistics_reset_step": statistics_reset_step,
             "reports": reports,
             "block_start_step": block_start_step,
@@ -520,7 +540,19 @@ def run_wall_resolved_channel3d(
     )
     profile_samples = 0
     statistics_reset_step = 0
+    # ``(batch, component, row)`` moment sums; only allocated on request so the
+    # legacy path stays bit-for-bit unchanged.
+    batch_moment_sums: torch.Tensor | None = None
+    batch_profile_counts: list[int] = []
+    if config.profile_batch_count > 0:
+        batch_moment_sums = torch.zeros(
+            (config.profile_batch_count, 7, config.ny),
+            device=device,
+            dtype=torch.float64,
+        )
+        batch_profile_counts = [0] * config.profile_batch_count
     reports: list[dict[str, float | int | bool]] = []
+    restored_shear_series: list[float] = []
     start_step = 0
     if config.resume and config.checkpoint.exists():
         state = torch.load(config.checkpoint, map_location="cpu", weights_only=True)
@@ -534,6 +566,9 @@ def run_wall_resolved_channel3d(
         stored.setdefault("minimum_statistics_eddy_turnovers", 2.0)
         stored.setdefault("stationarity_window_eddy_turnovers", 1.0)
         stored.setdefault("seed", 20260802)
+        stored.setdefault("smagorinsky_cs", 0.0)
+        stored.setdefault("profile_batch_count", 0)
+        stored.setdefault("wall_exchange_series_stride", 0)
         stored.setdefault("reset_statistics_on_resume", False)
         expected = {
             **asdict(config),
@@ -565,7 +600,19 @@ def run_wall_resolved_channel3d(
             moment_profile_sum.zero_()
             profile_samples = 0
             statistics_reset_step = int(state["step"])
+        if batch_moment_sums is not None:
+            stored_batches = state.get("profile_batch_moment_sums")
+            stored_counts = state.get("profile_batch_counts")
+            if stored_batches is not None and stored_counts is not None:
+                if tuple(stored_batches.shape) != tuple(batch_moment_sums.shape):
+                    raise ValueError("channel checkpoint batch record shape mismatch")
+                batch_moment_sums += stored_batches.to(device=device)
+                batch_profile_counts = [int(item) for item in stored_counts]
+            if config.reset_statistics_on_resume:
+                batch_moment_sums.zero_()
+                batch_profile_counts = [0] * config.profile_batch_count
         reports = list(state["reports"])
+        restored_shear_series = [float(v) for v in state.get("wall_shear_series", [])]
         start_step = int(state["step"])
         block_start_step = int(state["block_start_step"])
         block_start_momentum = float(state["block_start_momentum_x"])
@@ -584,6 +631,9 @@ def run_wall_resolved_channel3d(
     wall_exchange_sum = 0.0
     wall_exchange_samples = 0
     wall_exchange_history: list[float] = []
+    # A resumed arm keeps the pre-crash part of the wall-shear series, otherwise
+    # the integral time would silently be estimated from the last segment only.
+    wall_shear_series: list[float] = list(restored_shear_series)
     wall_rows = None
     direction_x_view = None
     if config.momentum_exchange_diagnostic:
@@ -636,10 +686,13 @@ def run_wall_resolved_channel3d(
                 wall_exchange_sum += exchange_force
                 wall_exchange_samples += 1
                 wall_exchange_history.append(exchange_force)
+                stride = int(config.wall_exchange_series_stride)
+                if stride > 0 and step % stride == 0:
+                    wall_shear_series.append(exchange_force / wall_area)
 
         if step > config.warmup_steps and step % config.sample_interval == 0:
             _, sample_ux, sample_uy, sample_uz = macroscopic3d_low_memory(f)
-            moment_profile_sum += torch.stack(
+            sample_moments = torch.stack(
                 (
                     sample_ux.mean(dim=(0, 2)),
                     sample_uy.mean(dim=(0, 2)),
@@ -650,7 +703,18 @@ def run_wall_resolved_channel3d(
                     (sample_ux * sample_uy).mean(dim=(0, 2)),
                 )
             ).to(dtype=torch.float64)
+            moment_profile_sum += sample_moments
             profile_samples += 1
+            if batch_moment_sums is not None:
+                span = max(config.steps - config.warmup_steps, 1)
+                index = int(
+                    (step - config.warmup_steps - 1)
+                    * config.profile_batch_count
+                    / span
+                )
+                index = min(max(index, 0), config.profile_batch_count - 1)
+                batch_moment_sums[index] += sample_moments
+                batch_profile_counts[index] += 1
         if step % config.report_interval == 0 or step == config.steps:
             rho_now, ux_now, uy_now, uz_now = macroscopic3d_low_memory(f)
             speed = torch.sqrt(ux_now.square() + uy_now.square() + uz_now.square())
@@ -717,10 +781,13 @@ def run_wall_resolved_channel3d(
                 populations=f,
                 moment_profile_sum=moment_profile_sum,
                 profile_samples=profile_samples,
+                batch_moment_sums=batch_moment_sums,
+                batch_profile_counts=batch_profile_counts,
                 statistics_reset_step=statistics_reset_step,
                 reports=reports,
                 block_start_step=block_start_step,
                 block_start_momentum_x=block_start_momentum,
+                wall_shear_series=wall_shear_series,
             )
 
     if not profile_samples:
@@ -809,6 +876,19 @@ def run_wall_resolved_channel3d(
             "mean_velocity_profile": mean_velocity_profiles[0].tolist(),
             "mean_velocity_profiles_xyz": mean_velocity_profiles.tolist(),
             "reynolds_stress_profiles_uu_vv_ww_uv": (reynolds_stress_profiles.tolist()),
+            "profile_batch_count": int(config.profile_batch_count),
+            "profile_batch_counts": list(batch_profile_counts),
+            "profile_batch_moment_means": (
+                [
+                    (
+                        batch_moment_sums[index]
+                        / max(batch_profile_counts[index], 1)
+                    ).tolist()
+                    for index in range(config.profile_batch_count)
+                ]
+                if batch_moment_sums is not None
+                else []
+            ),
             "statistics_steps": statistics_steps,
             "eddy_turnover_steps": eddy_turnover_steps,
             "statistics_eddy_turnovers": statistics_eddy_turnovers,
@@ -843,6 +923,8 @@ def run_wall_resolved_channel3d(
             ),
             "block_means": _block_means(wall_exchange_history, 8),
             "block_range_fraction": _range_fraction(wall_exchange_history),
+            "shear_series_stride": int(config.wall_exchange_series_stride),
+            "shear_series": [float(value) for value in wall_shear_series],
         },
         "wall_units": wall_units,
         "reports": reports,
