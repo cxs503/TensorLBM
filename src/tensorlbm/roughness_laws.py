@@ -45,6 +45,7 @@ __all__ = [
     "B_SMOOTH",
     "SMOOTH_REGIME_KS_PLUS",
     "FULLY_ROUGH_KS_PLUS",
+    "NIKURADSE_CLIP_KS_PLUS",
     "regime",
     "cebeci_delta_u_plus",
     "nikuradse_delta_u_plus",
@@ -69,6 +70,13 @@ FULLY_ROUGH_KS_PLUS: float = 90.0
 CEBECI_A: float = 0.3
 #: Fully rough intercept: ``dU+ = (1/kappa) ln(ks+) + NIKURADSE_C``.
 NIKURADSE_C: float = -3.5
+#: ``ks+`` at which the fully rough asymptote crosses zero,
+#: ``exp(-NIKURADSE_C * KAPPA) = 4.199645``.  Below it
+#: :func:`nikuradse_delta_u_plus` returns an exact ``0``; note this is *above*
+#: :data:`SMOOTH_REGIME_KS_PLUS` (2.25), so the band
+#: ``2.25 <= ks+ < 4.199645`` carries a zero shift although
+#: :func:`regime` already calls it transitional.
+NIKURADSE_CLIP_KS_PLUS: float = float(math.exp(-NIKURADSE_C * KAPPA))
 
 
 def regime(ks_plus: float) -> str:
@@ -101,7 +109,10 @@ def nikuradse_delta_u_plus(ks_plus: Sequence[float] | np.ndarray | float) -> np.
     Defined for ``ks+ > 0``; for ``ks+ <= 0`` the function returns 0 (a smooth
     wall has no roughness shift).  Values below zero are clipped at zero,
     because a negative shift is unphysical (it would mean roughness *reduces*
-    drag): inside the hydraulically smooth regime the shift is ``0``.
+    drag).  The clipped asymptote is therefore exactly ``0`` for
+    ``ks+ <= NIKURADSE_CLIP_KS_PLUS = 4.199645`` -- *wider* than the
+    hydraulically smooth regime (``ks+ < 2.25``) by pure algebra, so the
+    transitional band ``2.25 <= ks+ < 4.1996`` also reports a zero shift.
     """
     ks = np.asarray(ks_plus, dtype=float)
     if np.any(ks < 0.0):
@@ -186,9 +197,10 @@ def ittc57_cf(reynolds: float) -> float:
 def ittc78_allowance(ks_over_l: float | Sequence[float] | np.ndarray) -> np.ndarray:
     """ITTC-1978 roughness allowance ``dCf = [105 (ks/L)^(1/3) - 0.64] x 1e-3``.
 
-    Negative values (which the raw polynomial returns for ``ks/L < 5.3e-7``)
-    are clipped at zero: the allowance is defined as an increment and cannot be
-    a drag reduction.
+    Negative values are clipped at zero: the allowance is defined as an
+    increment and cannot be a drag reduction.  The raw polynomial changes sign
+    exactly at ``ks/L = (0.64/105)**3 = 2.264498e-7`` (solved in closed form,
+    not fitted), so the clipping only acts below that value.
     """
     x = np.asarray(ks_over_l, dtype=float)
     if np.any(x < 0.0):
