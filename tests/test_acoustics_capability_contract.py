@@ -13,6 +13,7 @@ import pytest
 
 from tensorlbm.acoustics_capability_contract import (
     NO_IMPLEMENTATION,
+    VERIFICATION_ANALYTIC_VERIFIED,
     VERIFICATION_CONTRACT_TESTED,
     WITHHELD_NO_PHYSICS_VALIDATION,
     WITHHELD_UNKNOWN_FUNCTION,
@@ -50,13 +51,15 @@ def test_matrix_covers_all_audited_functions_and_lattices() -> None:
 
 
 class TestFWHFarFieldCapability:
-    def test_na_implemented_and_contract_tested(self) -> None:
+    def test_na_implemented_and_analytic_verified(self) -> None:
         cap = acoustics_capability_matrix()["fwh_far_field"]["N/A"]
         assert cap.implementation_status == "IMPLEMENTED"
-        assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
+        # strongest evidence held: reproduces closed-form acoustic-analogy solutions
+        assert cap.verification_level == VERIFICATION_ANALYTIC_VERIFIED
         assert cap.entrypoint == "tensorlbm.acoustics.compute_fwh_far_field"
         assert cap.test_evidence is not None
         assert "test_acoustics.py" in cap.test_evidence
+        assert "test_fwh_thickness_monopole.py" in cap.test_evidence
 
     def test_lattice_specific_not_implemented(self) -> None:
         """FWH far-field is lattice-agnostic; lattice-specific entries are N/A."""
@@ -149,10 +152,10 @@ def test_all_capabilities_fail_closed() -> None:
             assert cap.status.startswith("WITHHELD_"), (func, lattice)
 
 
-def test_contract_tested_does_not_imply_physics_validation() -> None:
-    """Contract tests verify shape/finiteness/causality, not acoustic accuracy."""
+def test_analytic_verification_does_not_imply_physics_validation() -> None:
+    """Analytic agreement verifies the operator, not experiment / coupled flow."""
     cap = acoustics_capability_matrix()["fwh_far_field"]["N/A"]
-    assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
+    assert cap.verification_level == VERIFICATION_ANALYTIC_VERIFIED
     assert cap.status == WITHHELD_NO_PHYSICS_VALIDATION
     assert not cap.available
 
