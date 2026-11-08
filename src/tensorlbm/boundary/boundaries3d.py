@@ -160,6 +160,21 @@ def free_slip_cells_3d(
     References
     ----------
     waLBerla ``src/lbm/boundary/FreeSlip.h`` (specular reflection pattern).
+
+    Notes
+    -----
+    Verified against analytic solutions in
+    ``docs/free_slip_d3q19_analytic_verification_20261108.md``
+    (tests: ``tests/test_free_slip_d3q19_analytic.py``): the mirror tables equal
+    the analytic specular map on every direction, mass and tangential momentum
+    are conserved exactly (permutation), uniform flow is an exact fixed point,
+    and a shear standing wave decays with ``nu = (tau - 1/2)/3`` to 0.06% once
+    the **apparent free-slip plane** is taken into account.  That plane sits
+    ``delta ~= 0.33`` lattice units *inside* the wall-node centre, so treating
+    the wall as the node centre biases the shear-mode decay rate by ``~4*delta/H``
+    (4.3% at H=32, 2.1% at H=64): free-slip walls damp shear modes slightly
+    *faster* than physical.  Use a well resolved gap for shear-decay-sensitive
+    cases (tank damping), or compensate with that offset.
     """
     _mirrors = {0: _D3Q19_MIRROR_X, 1: _D3Q19_MIRROR_Y, 2: _D3Q19_MIRROR_Z}
     mirror = _mirrors[axis].to(f.device)  # (19,)

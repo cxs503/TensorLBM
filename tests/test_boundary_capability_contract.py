@@ -117,10 +117,17 @@ def test_wall_bounce_back_d3q27_is_mechanics_tested_only() -> None:
 
 
 def test_wall_free_slip_only_d3q19_implementation_exists() -> None:
+    """D3Q19 free-slip was IMPLEMENTATION_ONLY until 2026-11-08, when the
+    analytic verification ladder (specular map / invariants / plug flow /
+    shear-wave viscosity recovery + two negative controls) retired the debt.
+    D2Q9 and D3Q27 still have no implementation at all."""
     matrix = boundary_capability_matrix()
     assert matrix["wall_free_slip"]["D2Q9"].implementation_status == "NO_IMPLEMENTATION"
-    assert matrix["wall_free_slip"]["D3Q19"].implementation_status == "IMPLEMENTATION_ONLY"
+    assert matrix["wall_free_slip"]["D3Q19"].implementation_status == "PHYSICS_VALIDATED"
     assert matrix["wall_free_slip"]["D3Q27"].implementation_status == "NO_IMPLEMENTATION"
+    evidence = matrix["wall_free_slip"]["D3Q19"].verification_evidence.lower()
+    assert "test_free_slip_d3q19_analytic.py" in evidence
+    assert "0.056%" in evidence
 
 
 def test_farfield_is_implementation_only_and_docstring_not_trusted() -> None:
