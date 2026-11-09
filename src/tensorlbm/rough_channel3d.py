@@ -229,10 +229,9 @@ def _lbm_step(
     cu = cx * ux + cy * uy + cz * uz
     ug = ux * gx
     # Guo (2002): F_i = w_i rho [3 (c_i - u).g + 9 (c_i.u)(c_i.g)]
-    force = w * (rho_safe * (3.0 * (cx * gx - ug) + 9.0 * cu * ug))
+    force = w * (rho_safe * (3.0 * (cx * gx - ug) + 9.0 * cu * (cx * gx)))
     # Smagorinsky SGS: local effective relaxation time from the non-equilibrium
-    # stress, tau_eff^2 - tau tau_eff - 1.5 (Cs D)^2 Q = 0 with
-    # Q = 3 sqrt(2 Pi:Pi)/rho.  Identical to the C back-end.
+    # stress.  Identical to the C back-end.
     s_plus = 1.0 / tau
     s_minus_eff = s_minus
     if smag2 > 0.0:
@@ -244,8 +243,10 @@ def _lbm_step(
         pxz = (cx * cz * fneq).sum(0)
         pyz = (cy * cz * fneq).sum(0)
         pipi = pxx * pxx + pyy * pyy + pzz * pzz + 2.0 * (pxy * pxy + pxz * pxz + pyz * pyz)
-        qv = 3.0 * torch.sqrt(2.0 * pipi) / rho_safe
-        tau_eff = 0.5 * (tau + torch.sqrt((tau * tau + 6.0 * smag2 * qv).clamp_min(0.0)))
+        # Hou et al. (1996) Smagorinsky closure, identical to the C back-end:
+        # tau_eff = 1/2 [tau_0 + sqrt(tau_0^2 + 54 Cs^2 sqrt(Pi:Pi)/(rho tau_0))]
+        s2 = torch.sqrt(pipi.clamp_min(0.0))
+        tau_eff = 0.5 * (tau + torch.sqrt((tau * tau + 54.0 * smag2 * s2 / (rho_safe * tau)).clamp_min(0.0)))
         s_plus = 1.0 / tau_eff
         s_minus_eff = 1.0 / (TRT_LAMBDA / (tau_eff - 0.5) + 0.5)
     # TRT: symmetric / antisymmetric parts relax at s+ and s-.
@@ -255,7 +256,12 @@ def _lbm_step(
         f
         - 0.5 * (s_plus + s_minus_eff) * (f - feq)
         - 0.5 * (s_plus - s_minus_eff) * (f_opp - feq_opp)
-        + force * (1.0 - 0.5 * s_plus)
+        # (1 - s_minus/2): the equilibrium is subtracted in both TRT modes, so
+        # the antisymmetric mode already carries -s_minus F/2 of non-equilibrium
+        # momentum; weighting the force with s_plus leaves the channel driven by
+        # F [1 + (s_minus - s_plus)/2] instead of F (a factor ~2 at s- ~ 0.5 and
+        # ~0.03 at tau -> 0.5).  Matches the C back-end.
+        + force * (1.0 - 0.5 * s_minus_eff)
     )
     fluid_f = 1.0 - solid_f
     f = f * fluid_f  # no populations are stored in solid nodes
