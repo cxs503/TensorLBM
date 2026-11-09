@@ -332,6 +332,37 @@ def psi_peng_robinson(rho: torch.Tensor) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 
 
+def _apply_wall_psi(
+    psi: torch.Tensor, solid_mask: torch.Tensor, wall_psi: object
+) -> torch.Tensor:
+    """Fill the pseudopotential inside solid cells (scalar *or* per-cell field)."""
+    fill = _wall_fill(wall_psi, psi)
+    if isinstance(fill, torch.Tensor) and fill.ndim > 0:
+        return torch.where(solid_mask, fill, psi)
+    return psi.masked_fill(solid_mask, fill)
+
+
+def _wall_fill(wall_psi: object, ref: torch.Tensor) -> torch.Tensor | float:
+    """Scalar/tensor value used to fill the pseudopotential inside solid cells.
+
+    ``wall_psi`` may be ``None`` (historical dry wall, fill 0), a Python float,
+    a 0-dim tensor or a **per-cell field** of shape ``ref.shape``.  The per-cell
+    form is what heterogeneous wetting (a wettability gradient, or a hysteretic
+    wall whose local wetting depends on the local contact-line direction) needs;
+    it is broadcast by :meth:`torch.Tensor.masked_fill` and hence costs the same
+    as the scalar path.
+    """
+    if wall_psi is None:
+        return 0.0
+    if isinstance(wall_psi, torch.Tensor):
+        if wall_psi.ndim > 0 and wall_psi.shape != ref.shape:
+            raise ValueError(
+                f"wall_psi tensor shape {tuple(wall_psi.shape)} != field shape {tuple(ref.shape)}"
+            )
+        return wall_psi.to(device=ref.device, dtype=ref.dtype)
+    return float(wall_psi)
+
+
 def _sc_neighbor_weighted_sum(
     psi: torch.Tensor,
     solid_mask: torch.Tensor | None = None,
@@ -370,7 +401,7 @@ def _sc_neighbor_weighted_sum(
         weighted-sum *before* multiplication by −G ψ(x).
     """
     if solid_mask is not None:
-        psi = psi.masked_fill(solid_mask, 0.0 if wall_psi is None else float(wall_psi))
+        psi = _apply_wall_psi(psi, solid_mask, wall_psi)
     if square:
         psi = psi * psi
 
@@ -449,7 +480,7 @@ def _psi_sq_central_gradient(
         of the (masked) ψ² field, periodic wrap.
     """
     if solid_mask is not None:
-        psi = psi.masked_fill(solid_mask, 0.0 if wall_psi is None else float(wall_psi))
+        psi = _apply_wall_psi(psi, solid_mask, wall_psi)
     psi2 = psi * psi
     dpx = 0.5 * (torch.roll(psi2, -1, dims=-1) - torch.roll(psi2, 1, dims=-1))
     dpy = 0.5 * (torch.roll(psi2, -1, dims=-2) - torch.roll(psi2, 1, dims=-2))
