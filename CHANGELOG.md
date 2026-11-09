@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`tensorlbm.passive_scalar_verification`** — one verification surface for the
+  passive-scalar (advection–diffusion) kernels with four machine-checkable
+  anchors: Taylor–Aris dispersion `D_eff/D = 1 + Pe^2/210` (plane slit) and
+  `1 + Pe^2/48` (circular pipe) over `Pe in [0.1, 100]` checked by the closed
+  forms, a discrete Aris auxiliary solve on the lattice node set and a
+  time-marched D2Q9 scalar LBM (max |error| 0.67 %, gate 3 %); the erf diffusion
+  front `0.5 erfc(x/sqrt(4Dt))` converging at L2 order 1.99 (gate 1.9) under
+  `dt ~ dx^2` refinement; Schmidt-number independence of `D_eff/D` over
+  `Sc in [0.7, 10]` (spread 1.6 %, gate 2 %); discrete mass conservation at
+  `2.7e-12` (gate 1e-8).  The driver
+  `benchmarks/pending/passive_scalar_verification/run.py` writes
+  `artifacts/passive_scalar_verification.json` plus three figures.
+  The discrete Aris reference deliberately uses an LAPACK-free tridiagonal
+  (Thomas) solve: `numpy.linalg.solve` returns a residual-`1e2` solution for
+  these pinned systems on the loong64 cluster node, so the library path is kept
+  only as a `trustworthy`-flagged cross-check.
 - **`tensorlbm.validation.statistical_error`** — the statistical-vs-model
   decomposition toolkit for time-averaged profiles: autocorrelation integral
   time with Sokal windowing (`integral_time`, AR(1) pinned to 10 %),
