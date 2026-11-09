@@ -203,11 +203,21 @@ def _minmod(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Profiles and body-fitted mesh
 # ---------------------------------------------------------------------------
-def naca0012_half_thickness(x: np.ndarray, t: float = 0.12) -> np.ndarray:
-    """NACA 4-digit half-thickness distribution (closed trailing edge)."""
+def naca0012_half_thickness(x: np.ndarray, t: float = 0.12,
+                            closed_te: bool = True) -> np.ndarray:
+    """NACA 4-digit half-thickness distribution.
+
+    ``closed_te=True`` uses the ``-0.1036 x^4`` coefficient (zero thickness at
+    ``x=1``); ``closed_te=False`` uses ``-0.1015 x^4``, i.e. the 0.21 % c thick
+    open trailing edge of Abbott & von Doenhoff (1959) and of the AGARD
+    transonic test cases.  The open TE is required for a body-fitted O-grid: a
+    zero-thickness TE makes the first TE cell a sliver of area ~1e-10 c^2 that
+    destabilises the explicit update.
+    """
     x = np.clip(np.asarray(x, dtype=float), 0.0, 1.0)
+    c4 = 0.1036 if closed_te else 0.1015
     return 5.0 * t * (0.2969 * np.sqrt(x) - 0.1260 * x - 0.3516 * x**2
-                      + 0.2843 * x**3 - 0.1036 * x**4)
+                      + 0.2843 * x**3 - c4 * x**4)
 
 
 def biconvex_half_thickness(x: np.ndarray, tau: float = 0.05) -> np.ndarray:
@@ -237,7 +247,17 @@ def contour_loop(half_thickness: Callable[[np.ndarray], np.ndarray],
 
 
 def radial_levels(nj: int, r0: float, r_out: float, stretch: float = 2.2) -> np.ndarray:
-    """Radial node distribution clustered at the wall."""
+    """Radial node distribution clustered at the wall.
+
+    .. warning::
+       The first level is ``r0``, i.e. the *inner boundary of the O-grid is an
+       offset curve* ``r0`` away from the body, not the body surface.  For a
+       NACA0012 leading edge (nose radius ``1.58e-2 c``) any ``r0`` comparable
+       to the nose radius makes that offset curve fold onto itself, which
+       corrupts the wall pressure and creates spurious entropy drag.
+       Use :func:`radial_levels_from_surface` (body surface = grid line 0) for
+       production runs; this helper is kept for backward compatibility only.
+    """
     eta = np.linspace(0.0, 1.0, nj)
     if stretch <= 0.0:
         f = eta
@@ -245,6 +265,76 @@ def radial_levels(nj: int, r0: float, r_out: float, stretch: float = 2.2) -> np.
         f = 0.5 * (1.0 + np.tanh(stretch * (2.0 * eta - 1.0)) / math.tanh(stretch))
         f = f / f[-1]
     return r0 + (r_out - r0) * f
+
+
+def radial_levels_from_surface(nj: int, r_out: float,
+                               first_cell: float = 0.002,
+                               growth: Optional[float] = None) -> np.ndarray:
+    """Radial levels that **start on the body surface** (``r = 0``).
+
+    ``nj`` nodes, geometric growth from a first cell height ``first_cell``
+    (in chords) up to the far field ``r_out``: the growth ratio is *solved* so
+    that the ladder spans ``r_out`` exactly, which keeps ``first_cell`` intact
+    for every ``nj``.  Using this distribution the
+    first grid line *is* the airfoil surface, so the wall pressure/force
+    integration is evaluated on the true geometry.
+    """
+    n = int(nj) - 1
+    if n < 1:
+        raise ValueError("nj must be >= 2")
+    first_cell = float(first_cell)
+    r_out = float(r_out)
+    if first_cell * n >= r_out or first_cell <= 0.0:
+        raise ValueError("first_cell incompatible with nj / r_out")
+    if n == 1:
+        return np.array([0.0, r_out])
+    # growth ratio solved so that the geometric ladder spans exactly r_out;
+    # never rescale (rescaling a fixed ratio crushes the wall cells to nothing
+    # as soon as nj grows -- that used to make the wall cell height collapse
+    # from 2e-3 c to 3e-5 c between nj=64 and nj=96 and blew the solver up).
+    lo, hi = 1.0 + 1e-12, 4.0
+    for _ in range(200):
+        q = 0.5 * (lo + hi)
+        if first_cell * (q ** n - 1.0) / (q - 1.0) < r_out:
+            lo = q
+        else:
+            hi = q
+    q = 0.5 * (lo + hi)
+    if growth is not None:
+        q = min(q, max(float(growth), 1.0 + 1e-12))
+    dr = first_cell * q ** np.arange(n)
+    if dr.sum() > r_out:            # ratio capped by ``growth``: rescale the tail
+        dr = dr / dr.sum() * r_out
+    return np.concatenate([[0.0], np.cumsum(dr)])
+
+
+def mesh_quality(mesh) -> dict:
+    """Signed-area / fold diagnostics of a structured O-grid.
+
+    ``build_annulus_mesh`` stores ``|area|``; a self-intersecting (folded) quad
+    still has a small positive ``area`` but its four corner cross products do
+    not share a sign.  Folded cells break the face-normal bookkeeping of the
+    finite-volume update, so refinement studies must check this first.
+    """
+    X, Y = mesh.X, mesh.Y
+    ip = np.roll(np.arange(mesh.nc), -1)
+    p0x, p0y = X[:, :-1], Y[:, :-1]
+    p1x, p1y = X[ip, :-1], Y[ip, :-1]
+    p2x, p2y = X[ip, 1:], Y[ip, 1:]
+    p3x, p3y = X[:, 1:], Y[:, 1:]
+    c0 = (p1x - p0x) * (p2y - p0y) - (p1y - p0y) * (p2x - p0x)
+    c1 = (p2x - p1x) * (p3y - p1y) - (p2y - p1y) * (p3x - p1x)
+    c2 = (p3x - p2x) * (p0y - p2y) - (p3y - p2y) * (p0x - p2x)
+    c3 = (p0x - p3x) * (p1y - p3y) - (p0y - p3y) * (p1x - p3x)
+    cr = np.stack([c0, c1, c2, c3])
+    signed = 0.5 * (c0 + c2)
+    folded = ~((cr > 0).all(axis=0) | (cr < 0).all(axis=0))
+    return {"n_cells": int(mesh.nc * (mesh.nj - 1)),
+            "n_folded": int(folded.sum()),
+            "folded_cells": np.argwhere(folded).tolist()[:10],
+            "min_abs_area": float(np.abs(signed).min()),
+            "min_signed_area": float(signed.min()),
+            "max_area": float(np.abs(signed).max())}
 
 
 @dataclass
@@ -274,13 +364,26 @@ class AnnulusMesh:
 
 def build_annulus_mesh(x_loop, y_loop, r_levels, centroid=(0.4, 0.0),
                        blend: bool = True) -> AnnulusMesh:
-    """Radially extrude a closed contour into a body-fitted O-grid."""
+    """Radially extrude a closed contour into a body-fitted O-grid.
+
+    ``r_levels`` is either a 1-D ladder of ``nj`` offsets shared by every
+    contour point, or a ``(nc, nj)`` array of per-point offsets (per-point
+    ladders let the near-wall spacing follow the local surface spacing).  If
+    ``r_levels[..., 0] == 0`` the first grid
+    line coincides with the body surface, so ``wall_x/wall_y`` are the true
+    surface points (this is what force integration and wall ``Cp`` need).
+    """
     x_loop = np.asarray(x_loop, dtype=float)
     y_loop = np.asarray(y_loop, dtype=float)
     nc = x_loop.size
     r_levels = np.asarray(r_levels, dtype=float)
-    nj = r_levels.size
+    if r_levels.ndim == 1:
+        r_levels = np.broadcast_to(r_levels[None, :], (nc, r_levels.size)).copy()
+    if r_levels.shape[0] != nc:
+        raise ValueError("r_levels must have one row per contour point")
+    nj = r_levels.shape[1]
 
+    # contour tangent -> outward normal
     tx = np.roll(x_loop, -1) - np.roll(x_loop, 1)
     ty = np.roll(y_loop, -1) - np.roll(y_loop, 1)
     nx, ny = ty, -tx
@@ -292,8 +395,8 @@ def build_annulus_mesh(x_loop, y_loop, r_levels, centroid=(0.4, 0.0),
     nx /= nn
     ny /= nn
 
-    X = x_loop[:, None] + r_levels[None, :] * nx[:, None]
-    Y = y_loop[:, None] + r_levels[None, :] * ny[:, None]
+    X = x_loop[:, None] + r_levels * nx[:, None]
+    Y = y_loop[:, None] + r_levels * ny[:, None]
     if blend:
         # Blend the radial extrusion towards a polar ring around the body
         # centroid: the extrusion alone self-intersects where the surface is
@@ -301,7 +404,7 @@ def build_annulus_mesh(x_loop, y_loop, r_levels, centroid=(0.4, 0.0),
         f = np.linspace(0.0, 1.0, nj)
         w = 0.5 * (1.0 - np.cos(np.pi * f))
         th = np.arctan2(y_loop - centroid[1], x_loop - centroid[0])
-        R_out = float(r_levels[-1])
+        R_out = r_levels[:, -1][:, None]
         Xp = centroid[0] + R_out * np.cos(th)[:, None]
         Yp = centroid[1] + R_out * np.sin(th)[:, None]
         # keep the inner rings close to the extrusion, the outer ring circular
