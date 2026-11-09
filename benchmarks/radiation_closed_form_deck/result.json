@@ -1,0 +1,783 @@
+{
+  "mission": "P92W3-N02",
+  "node": "TensorLBM thermal radiation verification surface",
+  "criteria": {
+    "a_view_factor_closed_form": {
+      "tolerance": 0.01,
+      "pass": true,
+      "worst": 0.0027948471511196477,
+      "note": "6 families, each vs an independent reference (quadrature or ray tracing)"
+    },
+    "b_enclosure_energy_conservation": {
+      "tolerance": 1e-06,
+      "pass": true,
+      "worst": 4.544211264721767e-14
+    },
+    "c_deck_load_vs_analytic": {
+      "tolerance": 0.05,
+      "pass": true,
+      "worst": 9.68466780085629e-05
+    }
+  },
+  "all_pass": true,
+  "detail": {
+    "a": {
+      "tolerance": 0.01,
+      "rows": [
+        {
+          "family": "parallel_rect",
+          "params": {
+            "X": 0.5,
+            "Y": 0.5
+          },
+          "F_closed_form": 0.0685895888185526,
+          "F_reference": 0.06858958881855239,
+          "reference_method": "4-D Gauss-Legendre (n=200), double-area integral",
+          "rel_error": 3.0349623128358957e-15
+        },
+        {
+          "family": "parallel_rect",
+          "params": {
+            "X": 1.0,
+            "Y": 1.0
+          },
+          "F_closed_form": 0.19982489569838746,
+          "F_reference": 0.19982489569838668,
+          "reference_method": "4-D Gauss-Legendre (n=200), double-area integral",
+          "rel_error": 3.889185651875128e-15
+        },
+        {
+          "family": "parallel_rect",
+          "params": {
+            "X": 1.0,
+            "Y": 2.0
+          },
+          "F_closed_form": 0.2858753848507147,
+          "F_reference": 0.2858753848507127,
+          "reference_method": "4-D Gauss-Legendre (n=200), double-area integral",
+          "rel_error": 6.990463503420798e-15
+        },
+        {
+          "family": "parallel_rect",
+          "params": {
+            "X": 2.0,
+            "Y": 3.0
+          },
+          "F_closed_form": 0.4755764365329532,
+          "F_reference": 0.4755764365329463,
+          "reference_method": "4-D Gauss-Legendre (n=200), double-area integral",
+          "rel_error": 1.4473767461771864e-14
+        },
+        {
+          "family": "parallel_rect",
+          "params": {
+            "X": 5.0,
+            "Y": 5.0
+          },
+          "F_closed_form": 0.6902446940737963,
+          "F_reference": 0.6902446940737739,
+          "reference_method": "4-D Gauss-Legendre (n=200), double-area integral",
+          "rel_error": 3.249065916764758e-14
+        },
+        {
+          "family": "perp_rect",
+          "params": {
+            "H": 1.0,
+            "W": 1.0
+          },
+          "F_closed_form": 0.20004377607540316,
+          "F_reference": 0.200018,
+          "reference_stderr": 0.0002828522579687141,
+          "reference_method": "Monte-Carlo ray tracing (2e6 rays)",
+          "rel_error": 0.00012886877882571104
+        },
+        {
+          "family": "perp_rect",
+          "params": {
+            "H": 2.0,
+            "W": 1.0
+          },
+          "F_closed_form": 0.11642630139768095,
+          "F_reference": 0.1163355,
+          "reference_stderr": 0.00022671739174548341,
+          "reference_method": "Monte-Carlo ray tracing (2e6 rays)",
+          "rel_error": 0.0007805132369823406
+        },
+        {
+          "family": "perp_rect",
+          "params": {
+            "H": 1.0,
+            "W": 0.2
+          },
+          "F_closed_form": 0.07743882648155091,
+          "F_reference": 0.077223,
+          "reference_stderr": 0.00018875858691858234,
+          "reference_method": "Monte-Carlo ray tracing (2e6 rays)",
+          "rel_error": 0.0027948471511196477
+        },
+        {
+          "family": "coax_disks",
+          "params": {
+            "R1": 1.0,
+            "R2": 1.0,
+            "S": 1.0
+          },
+          "F_closed_form": 0.3819660112501051,
+          "F_reference": 0.38196601125010043,
+          "reference_method": "polar 4-D Gauss-Legendre (2.56e6 nodes)",
+          "rel_error": 1.2207726776957911e-14
+        },
+        {
+          "family": "coax_disks",
+          "params": {
+            "R1": 1.0,
+            "R2": 1.0,
+            "S": 0.5
+          },
+          "F_closed_form": 0.6096117967977924,
+          "F_reference": 0.6096118082471182,
+          "reference_method": "polar 4-D Gauss-Legendre (2.56e6 nodes)",
+          "rel_error": 1.8781338658247842e-08
+        },
+        {
+          "family": "coax_disks",
+          "params": {
+            "R1": 0.5,
+            "R2": 1.0,
+            "S": 1.0
+          },
+          "F_closed_form": 0.46887112585072543,
+          "F_reference": 0.46887112585072493,
+          "reference_method": "polar 4-D Gauss-Legendre (2.56e6 nodes)",
+          "rel_error": 1.0655387664890647e-15
+        },
+        {
+          "family": "coax_disks",
+          "params": {
+            "R1": 2.0,
+            "R2": 1.0,
+            "S": 3.0
+          },
+          "F_closed_form": 0.07294901687515765,
+          "F_reference": 0.0729490168751577,
+          "reference_method": "polar 4-D Gauss-Legendre (2.56e6 nodes)",
+          "rel_error": 7.609581816058961e-16
+        },
+        {
+          "family": "conc_spheres",
+          "params": {
+            "r1": 0.5,
+            "r2": 1.0
+          },
+          "F_closed_form": 0.25,
+          "F_reference": 0.25008933333333333,
+          "reference_method": "Monte-Carlo ray tracing (1.5e6 rays)",
+          "rel_error": 0.00035720569183277236
+        },
+        {
+          "family": "conc_spheres",
+          "params": {
+            "r1": 1.0,
+            "r2": 4.0
+          },
+          "F_closed_form": 0.0625,
+          "F_reference": 0.062624,
+          "reference_method": "Monte-Carlo ray tracing (1.5e6 rays)",
+          "rel_error": 0.001980071538068458
+        },
+        {
+          "family": "diff_disk",
+          "params": {
+            "R": 1.0,
+            "H": 1.0
+          },
+          "F_closed_form": 0.5,
+          "F_reference": 0.5000000000000067,
+          "reference_method": "polar Gauss-Legendre (n=400)",
+          "rel_error": 1.3322676295501702e-14
+        },
+        {
+          "family": "diff_disk",
+          "params": {
+            "R": 1.0,
+            "H": 0.25
+          },
+          "F_closed_form": 0.9411764705882353,
+          "F_reference": 0.9411764705882582,
+          "reference_method": "polar Gauss-Legendre (n=400)",
+          "rel_error": 2.4300006451482524e-14
+        },
+        {
+          "family": "diff_disk",
+          "params": {
+            "R": 2.0,
+            "H": 5.0
+          },
+          "F_closed_form": 0.13793103448275862,
+          "F_reference": 0.13793103448275915,
+          "reference_method": "polar Gauss-Legendre (n=400)",
+          "rel_error": 3.823330541052869e-15
+        },
+        {
+          "family": "diff_disk",
+          "params": {
+            "R": 0.1,
+            "H": 1.0
+          },
+          "F_closed_form": 0.009900990099009903,
+          "F_reference": 0.009900990099009906,
+          "reference_method": "polar Gauss-Legendre (n=400)",
+          "rel_error": 3.5041414214731484e-16
+        },
+        {
+          "family": "sky_dome",
+          "params": {
+            "beta_deg": 0.0
+          },
+          "F_closed_form": 1.0,
+          "F_reference": 0.9999999999999927,
+          "reference_method": "hemisphere projection quadrature (120x240)",
+          "rel_error": 7.327471962526087e-15
+        },
+        {
+          "family": "sky_dome",
+          "params": {
+            "beta_deg": 15.0
+          },
+          "F_closed_form": 0.9829629131445341,
+          "F_reference": 0.9829629934034262,
+          "reference_method": "hemisphere projection quadrature (120x240)",
+          "rel_error": 8.164996304688759e-08
+        },
+        {
+          "family": "sky_dome",
+          "params": {
+            "beta_deg": 30.0
+          },
+          "F_closed_form": 0.9330127018922194,
+          "F_reference": 0.9330134400448351,
+          "reference_method": "hemisphere projection quadrature (120x240)",
+          "rel_error": 7.911489631516061e-07
+        },
+        {
+          "family": "sky_dome",
+          "params": {
+            "beta_deg": 60.0
+          },
+          "F_closed_form": 0.75,
+          "F_reference": 0.7500008944451851,
+          "reference_method": "hemisphere projection quadrature (120x240)",
+          "rel_error": 1.1925921579089632e-06
+        },
+        {
+          "family": "sky_dome",
+          "params": {
+            "beta_deg": 90.0
+          },
+          "F_closed_form": 0.5,
+          "F_reference": 0.5000241656327817,
+          "reference_method": "hemisphere projection quadrature (120x240)",
+          "rel_error": 4.8328929765133796e-05
+        },
+        {
+          "family": "sky_dome",
+          "params": {
+            "beta_deg": 135.0
+          },
+          "F_closed_form": 0.14644660940672627,
+          "F_reference": 0.14644625713659126,
+          "reference_method": "hemisphere projection quadrature (120x240)",
+          "rel_error": 2.4054567313260284e-06
+        },
+        {
+          "family": "sky_dome",
+          "params": {
+            "beta_deg": 180.0
+          },
+          "F_closed_form": 0.0,
+          "F_reference": 0.0,
+          "reference_method": "hemisphere projection quadrature (120x240)",
+          "rel_error": 0.0
+        }
+      ],
+      "family_summary": {
+        "parallel_rect": {
+          "n_points": 5,
+          "max_rel_error": 3.249065916764758e-14,
+          "pass": true
+        },
+        "perp_rect": {
+          "n_points": 3,
+          "max_rel_error": 0.0027948471511196477,
+          "pass": true
+        },
+        "coax_disks": {
+          "n_points": 4,
+          "max_rel_error": 1.8781338658247842e-08,
+          "pass": true
+        },
+        "conc_spheres": {
+          "n_points": 2,
+          "max_rel_error": 0.001980071538068458,
+          "pass": true
+        },
+        "diff_disk": {
+          "n_points": 4,
+          "max_rel_error": 2.4300006451482524e-14,
+          "pass": true
+        },
+        "sky_dome": {
+          "n_points": 7,
+          "max_rel_error": 4.8328929765133796e-05,
+          "pass": true
+        }
+      },
+      "catalogue_values": [
+        {
+          "class": "parallel_rect",
+          "args": [
+            1.0,
+            1.0
+          ],
+          "F_closed_form": 0.19982489569838746,
+          "F_ref": 0.19982,
+          "rel_error": 2.450054242550161e-05,
+          "source": "Howell/Siegel/Menguc 2010 Table 5.1 (X=Y=1)"
+        },
+        {
+          "class": "perp_rect",
+          "args": [
+            1.0,
+            1.0
+          ],
+          "F_closed_form": 0.20004377607540316,
+          "F_ref": 0.20004,
+          "rel_error": 1.8876601695495017e-05,
+          "source": "Howell 2010 Table 5.1 (H=W=1, common edge)"
+        },
+        {
+          "class": "coax_disks",
+          "args": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "F_closed_form": 0.3819660112501051,
+          "F_ref": 0.3819660112501051,
+          "rel_error": 0.0,
+          "source": "Howell 2010 Table 5.1 (R1=R2=S): (3-sqrt5)/2"
+        },
+        {
+          "class": "conc_spheres",
+          "args": [
+            2.0,
+            4.0
+          ],
+          "F_closed_form": 0.25,
+          "F_ref": 0.25,
+          "rel_error": 0.0,
+          "source": "Howell 2010 Table 5.1 concentric spheres: F_(outer->inner) = (r1/r2)^2 = 1/4"
+        },
+        {
+          "class": "diff_disk",
+          "args": [
+            1.0,
+            1.0
+          ],
+          "F_closed_form": 0.5,
+          "F_ref": 0.5,
+          "rel_error": 0.0,
+          "source": "R^2/(R^2+H^2), R=H=1 (exact)"
+        },
+        {
+          "class": "sky_dome",
+          "args": [
+            0.0
+          ],
+          "F_closed_form": 1.0,
+          "F_ref": 1.0,
+          "rel_error": 0.0,
+          "source": "horizontal up-facing plane sees the full sky hemisphere"
+        },
+        {
+          "class": "sky_dome",
+          "args": [
+            60.0
+          ],
+          "F_closed_form": 0.75,
+          "F_ref": 0.75,
+          "rel_error": 0.0,
+          "source": "(1+cos60)/2 = 3/4 (exact)"
+        }
+      ],
+      "catalogue_max_rel_error": 2.450054242550161e-05,
+      "pass": true
+    },
+    "b": {
+      "tolerance": 1e-06,
+      "cases": [
+        {
+          "case": "parallel_plates_2_surface",
+          "energy_residual": 0.0,
+          "linear_residual": 4.350968903707578e-17,
+          "closure_residual": 8.701937807415156e-17,
+          "summation_residual": 0.0,
+          "reciprocity_residual": 0.0,
+          "anchor": "series resistance",
+          "anchor_rel_error": 1.4229675738320496e-16
+        },
+        {
+          "case": "concentric_spheres_2_surface",
+          "energy_residual": 1.6939555814604793e-16,
+          "linear_residual": 0.0,
+          "closure_residual": 1.9337639572033677e-17,
+          "summation_residual": 0.0,
+          "reciprocity_residual": 0.0,
+          "anchor": "series resistance with closed-form (r1/r2)^2",
+          "anchor_rel_error": 1.7739061367412228e-16
+        },
+        {
+          "case": "cube_6_surface_sweep_9_configs",
+          "energy_residual": 4.00818286546296e-15,
+          "linear_residual": 4.00818286546296e-15,
+          "closure_residual": 4.00818286546296e-15,
+          "summation_residual": 1.1102230246251565e-16,
+          "reciprocity_residual": 0.0,
+          "anchor": "closed-form F_adj (perp rect) + summation-consistent F_opp = 1 - 4 F_adj",
+          "anchor_rel_error": 0.0,
+          "net_flux_by_face_W_m2": [
+            900.6778359655303,
+            900.67783596553,
+            -450.33891798276534,
+            -450.3389179827652,
+            -450.3389179827652,
+            -450.3389179827651
+          ]
+        },
+        {
+          "case": "three_surface_with_reradiating",
+          "energy_residual": 8.817963644847358e-17,
+          "linear_residual": 8.701937807415156e-17,
+          "closure_residual": 8.701937807415156e-17,
+          "summation_residual": 0.0,
+          "reciprocity_residual": 0.0,
+          "anchor": "radiation network with reradiating surface",
+          "anchor_rel_error": 3.5271854579389434e-16,
+          "reradiating_net_flux_W_m2": 1.8189894035458565e-12
+        },
+        {
+          "case": "deck_sky_open_enclosure",
+          "energy_residual": 4.544211264721767e-14,
+          "linear_residual": 0.0,
+          "closure_residual": 1.0622482675067326e-16,
+          "summation_residual": 0.0,
+          "reciprocity_residual": 0.0,
+          "anchor": "open enclosure with sky patch (reciprocity-consistent view factors)",
+          "anchor_rel_error": 0.0
+        }
+      ],
+      "worst_residual": 4.544211264721767e-14,
+      "pass": true
+    },
+    "c": {
+      "tolerance": 0.05,
+      "design_temperature_K": 305.0,
+      "q_floor_W_m2": 100.0,
+      "rows": [
+        {
+          "scenario": "night_still_air_black_sky",
+          "method": "closed form T=(T_eff^4+aG/(e s))^1/4 vs Brent chain; load at 305 K",
+          "T_deck_reference": 282.617581927778,
+          "T_deck_model": 282.617581927778,
+          "T_rel_error": 0.0,
+          "q_load_design_model_W_m2": -116.05002579096447,
+          "q_load_design_reference_W_m2": -116.05002579096448,
+          "q_rel_error": 1.2245455887101098e-16,
+          "q_solar_W_m2": 0.0,
+          "q_longwave_W_m2": 2.2737367544323206e-13,
+          "q_conv_W_m2": 0.0,
+          "rel_error": 1.2245455887101098e-16
+        },
+        {
+          "scenario": "day_solar_plus_convection",
+          "method": "Brent chain vs independent 300-step bisection; load at 305 K",
+          "T_deck_reference": 325.15083030004735,
+          "T_deck_model": 325.1508303000473,
+          "T_rel_error": 1.748216936993617e-16,
+          "q_load_design_model_W_m2": 370.6036600956255,
+          "q_load_design_reference_W_m2": 370.60366009562557,
+          "q_rel_error": 1.5338061919340166e-16,
+          "q_solar_W_m2": 487.6921938165305,
+          "q_longwave_W_m2": -221.88223021596292,
+          "q_conv_W_m2": -265.80996360056747,
+          "rel_error": 1.748216936993617e-16
+        },
+        {
+          "scenario": "tilt_0deg",
+          "method": "Brent chain vs independent bisection; load at 305 K",
+          "T_deck_reference": 322.11920371560484,
+          "T_deck_model": 322.11920371561445,
+          "T_rel_error": 2.9822927899567426e-14,
+          "q_load_design_model_W_m2": 364.6036600956255,
+          "q_load_design_reference_W_m2": 364.60366009562557,
+          "q_rel_error": 1.5590468522970818e-16,
+          "q_solar_W_m2": 487.6921938165305,
+          "q_longwave_W_m2": -200.90413808252384,
+          "q_conv_W_m2": -286.7880557342167,
+          "rel_error": 2.9822927899567426e-14
+        },
+        {
+          "scenario": "tilt_20deg",
+          "method": "Brent chain vs independent bisection; load at 305 K",
+          "T_deck_reference": 317.1464730475519,
+          "T_deck_model": 317.1464732650221,
+          "T_rel_error": 6.857089897481529e-10,
+          "q_load_design_model_W_m2": 256.8622369736725,
+          "q_load_design_reference_W_m2": 256.86223484146757,
+          "q_rel_error": 8.300967021968157e-09,
+          "q_solar_W_m2": 379.1190662008965,
+          "q_longwave_W_m2": -166.92196722568104,
+          "q_conv_W_m2": -212.19709897533164,
+          "rel_error": 8.300967021968157e-09
+        },
+        {
+          "scenario": "tilt_45deg",
+          "method": "Brent chain vs independent bisection; load at 305 K",
+          "T_deck_reference": 308.3651445060128,
+          "T_deck_model": 308.3651476755896,
+          "T_rel_error": 1.0278647940504759e-08,
+          "q_load_design_model_W_m2": 70.29241175289329,
+          "q_load_design_reference_W_m2": 70.2923611736015,
+          "q_rel_error": 5.057929178065023e-07,
+          "q_solar_W_m2": 189.34158851240213,
+          "q_longwave_W_m2": -108.86437337859422,
+          "q_conv_W_m2": -80.47721513384374,
+          "rel_error": 5.057929178065023e-07
+        },
+        {
+          "scenario": "tilt_70deg",
+          "method": "Brent chain vs independent bisection; load at 305 K",
+          "T_deck_reference": 302.22418456356945,
+          "T_deck_model": 302.2241939243254,
+          "T_rel_error": 3.0972888396694507e-08,
+          "q_load_design_model_W_m2": -57.49580218082757,
+          "q_load_design_reference_W_m2": -57.49605970755077,
+          "q_rel_error": 2.5752672320322744e-06,
+          "q_solar_W_m2": 56.51823786296525,
+          "q_longwave_W_m2": -68.15532899809904,
+          "q_conv_W_m2": 11.637091135119135,
+          "rel_error": 2.5752672320322744e-06
+        },
+        {
+          "scenario": "tilt_90deg",
+          "method": "Brent chain vs independent bisection; load at 305 K",
+          "T_deck_reference": 302.06274208308,
+          "T_deck_model": 302.06276353897135,
+          "T_rel_error": 7.10312406639455e-08,
+          "q_load_design_model_W_m2": -60.826113528870444,
+          "q_load_design_reference_W_m2": -60.8267132740479,
+          "q_rel_error": 5.997451774533147e-06,
+          "q_solar_W_m2": 48.47076581449591,
+          "q_longwave_W_m2": -62.52931272993976,
+          "q_conv_W_m2": 14.058546915429702,
+          "rel_error": 5.997451774533147e-06
+        },
+        {
+          "scenario": "gray_sky_eps_0.85",
+          "method": "full chain with gray sky enclosure vs analytic black surroundings",
+          "T_deck_reference": 325.15083030004735,
+          "T_deck_model": 325.15268316625253,
+          "T_rel_error": 5.698482158184037e-06,
+          "q_load_design_model_W_m2": 370.6184423973216,
+          "q_load_design_reference_W_m2": 370.60366009562557,
+          "q_rel_error": 3.9887090408664055e-05,
+          "q_solar_W_m2": 487.6921938165305,
+          "q_longwave_W_m2": -221.85999582149975,
+          "q_conv_W_m2": -265.83219799503036,
+          "rel_error": 3.9887090408664055e-05
+        },
+        {
+          "scenario": "gray_sky_eps_0.7",
+          "method": "full chain with gray sky enclosure vs analytic black surroundings",
+          "T_deck_reference": 325.15083030004735,
+          "T_deck_model": 325.15532945363526,
+          "T_rel_error": 1.3837127783936667e-05,
+          "q_load_design_model_W_m2": 370.63955182896365,
+          "q_load_design_reference_W_m2": 370.60366009562557,
+          "q_rel_error": 9.68466780085629e-05,
+          "q_solar_W_m2": 487.6921938165305,
+          "q_longwave_W_m2": -221.82824037290783,
+          "q_conv_W_m2": -265.86395344362313,
+          "rel_error": 9.68466780085629e-05
+        },
+        {
+          "scenario": "longwave_analytic_vs_monte_carlo",
+          "method": "closed-form hemisphere integral vs cosine-weighted ray tracing (2e6 rays)",
+          "T_rel_error": 0.0,
+          "q_rel_error": 1.001739182859805e-15,
+          "rel_error": 1.001739182859805e-15,
+          "detail": [
+            {
+              "T_deck": 290.0,
+              "q_longwave_analytic_W_m2": -12.412909556261196,
+              "q_longwave_monte_carlo_W_m2": -12.412909556261184,
+              "F_sky_mc": 1.0,
+              "rel_error": 1.001739182859805e-15
+            },
+            {
+              "T_deck": 310.0,
+              "q_longwave_analytic_W_m2": -122.76746834907159,
+              "q_longwave_monte_carlo_W_m2": -122.76746834907158,
+              "F_sky_mc": 1.0,
+              "rel_error": 1.1575423771707572e-16
+            },
+            {
+              "T_deck": 330.0,
+              "q_longwave_analytic_W_m2": -256.6790306281756,
+              "q_longwave_monte_carlo_W_m2": -256.67903062817555,
+              "F_sky_mc": 1.0,
+              "rel_error": 2.2145719781508447e-16
+            }
+          ]
+        }
+      ],
+      "tilt_sweep": [
+        {
+          "tilt_deg": 0.0,
+          "T_deck_model": 322.11920371561445,
+          "T_deck_reference": 322.11920371560484,
+          "q_load_model_W_m2": 364.6036600956255,
+          "q_load_reference_W_m2": 364.60366009562557,
+          "rel_error": 2.9822927899567426e-14
+        },
+        {
+          "tilt_deg": 20.0,
+          "T_deck_model": 317.1464732650221,
+          "T_deck_reference": 317.1464730475519,
+          "q_load_model_W_m2": 256.8622369736725,
+          "q_load_reference_W_m2": 256.86223484146757,
+          "rel_error": 8.300967021968157e-09
+        },
+        {
+          "tilt_deg": 45.0,
+          "T_deck_model": 308.3651476755896,
+          "T_deck_reference": 308.3651445060128,
+          "q_load_model_W_m2": 70.29241175289329,
+          "q_load_reference_W_m2": 70.2923611736015,
+          "rel_error": 5.057929178065023e-07
+        },
+        {
+          "tilt_deg": 70.0,
+          "T_deck_model": 302.2241939243254,
+          "T_deck_reference": 302.22418456356945,
+          "q_load_model_W_m2": -57.49580218082757,
+          "q_load_reference_W_m2": -57.49605970755077,
+          "rel_error": 2.5752672320322744e-06
+        },
+        {
+          "tilt_deg": 90.0,
+          "T_deck_model": 302.06276353897135,
+          "T_deck_reference": 302.06274208308,
+          "q_load_model_W_m2": -60.826113528870444,
+          "q_load_reference_W_m2": -60.8267132740479,
+          "rel_error": 5.997451774533147e-06
+        }
+      ],
+      "gray_sky": [
+        {
+          "sky_emissivity": 0.85,
+          "T_deck_full_chain": 325.15268316625253,
+          "T_deck_analytic": 325.15083030004735,
+          "q_load_full_chain_W_m2": 370.6184423973216,
+          "q_load_analytic_W_m2": 370.60366009562557,
+          "rel_error": 3.9887090408664055e-05
+        },
+        {
+          "sky_emissivity": 0.7,
+          "T_deck_full_chain": 325.15532945363526,
+          "T_deck_analytic": 325.15083030004735,
+          "q_load_full_chain_W_m2": 370.63955182896365,
+          "q_load_analytic_W_m2": 370.60366009562557,
+          "rel_error": 9.68466780085629e-05
+        }
+      ],
+      "worst_rel_error": 9.68466780085629e-05,
+      "gray_correction_rel_error": 9.68466780085629e-05,
+      "pass": true
+    },
+    "field": {
+      "F_sky_min": 0.0,
+      "F_sky_max": 0.994140625,
+      "F_sky_mean": 0.7622718811035156,
+      "shaded_area_fraction": 1.0,
+      "T_wall_K": 305.0,
+      "q_field_min_W_m2": -117.08853372090495,
+      "q_field_max_W_m2": 394.9771749377288,
+      "area_mean_q_W_m2": 297.8047726911053,
+      "cabin": [
+        3.0,
+        7.0,
+        1.0,
+        4.0,
+        3.0
+      ],
+      "T_deck_reference_K": 325.1508303000473
+    },
+    "environment": {
+      "T_sky_night_K": 282.6175819277781,
+      "T_sky_day_K": 287.47393883507493,
+      "T_air_night_K": 300.0,
+      "T_dewpoint_night_K": 285.0,
+      "T_air_day_K": 303.0,
+      "T_dewpoint_day_K": 288.0,
+      "T_sea_K": 293.0,
+      "G_beam_W_m2": 800.0,
+      "G_diffuse_W_m2": 120.0,
+      "sun_elevation_deg": 60.0
+    },
+    "diurnal": {
+      "T_design_K": 305.0,
+      "T_deck_max": 329.8725102883699,
+      "T_deck_min": 295.12473018965915,
+      "q_load_max": 461.10007525378063,
+      "q_load_min": -172.97186156919696
+    },
+    "injection": {
+      "q_mean_W_m2": 297.8047726911053,
+      "dt_s": 0.5,
+      "audit": {
+        "n_cells": 1536,
+        "dT": 0.001781129023272161,
+        "injected_energy_J": 14294.629089395312,
+        "expected_energy_J": 14294.629089173055,
+        "relative_error": 1.5548277388980867e-11,
+        "total_area_m2": 96.0
+      },
+      "T_wall_K": 305.0,
+      "total_area_m2": 96.0,
+      "dT_per_step_K": 0.001781129023272161
+    }
+  },
+  "figures": [
+    {
+      "name": "fig1_viewfactor_family",
+      "caption": "六类角系数闭式解（蓝点线）与独立基准（红叉：4D 高斯求积或蒙特卡洛光线追踪）逐点对比；各子图标注该族最大相对误差，全部 <1%",
+      "path": "figures/P92W3_N02_fig1_viewfactor_family.png"
+    },
+    {
+      "name": "fig2_radiosity_audit",
+      "caption": "灰体封闭腔辐射度审计：(左) 各案例能量/线性/闭合残差与 1e-6 判据线；(右) 六面立方体腔净辐射通量（热面放热、冷面吸热，总和为零）",
+      "path": "figures/P92W3_N02_fig2_radiosity_audit.png"
+    },
+    {
+      "name": "fig3_deck_load",
+      "caption": "船舶甲板热载荷：(左) 天空发射率 1.0/0.85/0.7 下全链（辐射度）与解析解冷却负荷；(中) 倾角扫描甲板平衡温度（模型 vs 基准重合）；(右) 24h 昼夜循环甲板温度与冷却负荷",
+      "path": "figures/P92W3_N02_fig3_deck_load.png"
+    },
+    {
+      "name": "fig4_deck_field",
+      "caption": "甲板边界条件场（可直接作为 LBM 壁面 Neumann 条件）：(左) 超结构遮挡下天空角系数分布；(右) 稳态壁面热流 q''(x,y)，注意阴影带与边缘效应",
+      "path": "figures/P92W3_N02_fig4_deck_field.png"
+    }
+  ]
+}
