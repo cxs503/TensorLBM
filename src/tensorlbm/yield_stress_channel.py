@@ -1,6 +1,20 @@
 """Channel drivers for yield-stress fluid LBM validation.
 
 Optimised for speed: convergence check every 100 iterations, relaxed tolerances.
+
+Bounce-back convention (2026-11-09 fix)
+---------------------------------------
+The no-slip walls must be handled with the **NoDynamics + pre-stream**
+half-way bounce-back used by the verified analytic ladder
+(``tests/test_lbm_verification.py``): restore the *pre-collision* populations
+in the solid cells, reflect them (``f_i -> f_opp_i`` of the *post-collision*
+values) and only then stream.  Reflecting the *post-stream* populations
+instead lets a spurious slip survive at the wall: measured 19.6 % amplitude
+excess / 26.4 % L2 error against the Newtonian Poiseuille solution at the
+module defaults (``H=8, mu_0=0.02``), and 29.2 % at ``tau=1`` — i.e. the
+error is not a tau (wall-position) effect.  The legacy order is kept behind
+``bounce_scheme="post_stream"`` so the regression test can pin the defect.
+See ``docs/yield_stress_bounce_back_convention_20261109.md``.
 """
 
 from __future__ import annotations
@@ -81,6 +95,36 @@ def _moving_wall_bounce_back(
     return torch.where(wall.unsqueeze(0), reflected, f)
 
 
+_BOUNCE_SCHEMES = ("halfway", "post_stream")
+
+
+def _check_bounce_scheme(name: str) -> str:
+    if name not in _BOUNCE_SCHEMES:
+        raise ValueError(
+            f"bounce_scheme must be one of {_BOUNCE_SCHEMES}, got {name!r}"
+        )
+    return name
+
+
+def _solid_restore_and_bounce(
+    f: torch.Tensor,
+    f_pre: torch.Tensor,
+    wall: torch.Tensor,
+    u_wall: tuple[float, float] | None = None,
+    *,
+    moving_mask: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """NoDynamics（固体格点保留**碰撞前**分布）+ 半路反弹（**碰撞后**值）。
+
+    ``f_pre`` 必须是碰撞之前的分布快照（碰撞函数是纯函数、返回新张量，因此直接
+    传旧张量引用即可）。顺序必须是「回填 → 反弹 → 再 ``stream``」：若先 ``stream``
+    再反弹（旧实现的顺序），壁面格点里是**流入**分布与周期回卷的混合，反弹后仍留
+    一个非零滑移速度，实测 Poiseuille 剖面振幅偏高 19.6%（L2 26.4%）。
+    """
+    f = torch.where(wall.unsqueeze(0), f_pre, f)
+    return _moving_wall_bounce_back(f, wall, u_wall, moving_mask=moving_mask)
+
+
 def run_bingham_couette(
     H: int,
     u_wall: float,
@@ -96,6 +140,7 @@ def run_bingham_couette(
     tau_min: float = 0.501,
     dtype: torch.dtype = torch.float64,
     device: torch.device | None = None,
+    bounce_scheme: str = "halfway",
 ) -> dict:
     """Run Bingham Couette flow simulation."""
     if device is None:
@@ -112,13 +157,19 @@ def run_bingham_couette(
     prev_u_sum = 0.0
     iteration = max_iter
 
+    _check_bounce_scheme(bounce_scheme)
     for iteration in range(1, max_iter + 1):
+        f_pre = f
         f = collide_bingham_bgk(
             f, tau_y, mu_0, m,
             nu_min=nu_min, nu_max=nu_max, tau_min=tau_min,
         )
-        f = stream(f)
-        f = _moving_wall_bounce_back(f, wall, u_wall=(u_wall, 0.0))
+        if bounce_scheme == "halfway":
+            f = _solid_restore_and_bounce(f, f_pre, wall, u_wall=(u_wall, 0.0))
+            f = stream(f)
+        else:  # 旧顺序（缺陷留证，见模块 docstring）
+            f = stream(f)
+            f = _moving_wall_bounce_back(f, wall, u_wall=(u_wall, 0.0))
 
         # Check convergence every 100 iterations
         if iteration % 100 == 0:
@@ -163,6 +214,7 @@ def run_bingham_poiseuille(
     tau_min: float = 0.501,
     dtype: torch.dtype = torch.float64,
     device: torch.device | None = None,
+    bounce_scheme: str = "halfway",
 ) -> dict:
     """Run Bingham Poiseuille flow simulation (body-force driven)."""
     if device is None:
@@ -179,13 +231,19 @@ def run_bingham_poiseuille(
     prev_u_sum = 0.0
     iteration = max_iter
 
+    _check_bounce_scheme(bounce_scheme)
     for iteration in range(1, max_iter + 1):
+        f_pre = f
         f = collide_bingham_bgk_forced(
             f, tau_y, mu_0, m, ax,
             nu_min=nu_min, nu_max=nu_max, tau_min=tau_min,
         )
-        f = stream(f)
-        f = _moving_wall_bounce_back(f, wall)
+        if bounce_scheme == "halfway":
+            f = _solid_restore_and_bounce(f, f_pre, wall)
+            f = stream(f)
+        else:  # 旧顺序（缺陷留证，见模块 docstring）
+            f = stream(f)
+            f = _moving_wall_bounce_back(f, wall)
 
         if iteration % 100 == 0:
             _, ux, uy = macroscopic(f)
@@ -249,6 +307,7 @@ def run_hb_poiseuille(
     tau_min: float = 0.501,
     dtype: torch.dtype = torch.float64,
     device: torch.device | None = None,
+    bounce_scheme: str = "halfway",
 ) -> dict:
     """Run Herschel-Bulkley Poiseuille flow simulation."""
     if device is None:
@@ -265,13 +324,19 @@ def run_hb_poiseuille(
     prev_u_sum = 0.0
     iteration = max_iter
 
+    _check_bounce_scheme(bounce_scheme)
     for iteration in range(1, max_iter + 1):
+        f_pre = f
         f = collide_hb_bgk_forced(
             f, tau_y, K, n, m, ax,
             nu_min=nu_min, nu_max=nu_max, tau_min=tau_min,
         )
-        f = stream(f)
-        f = _moving_wall_bounce_back(f, wall)
+        if bounce_scheme == "halfway":
+            f = _solid_restore_and_bounce(f, f_pre, wall)
+            f = stream(f)
+        else:  # 旧顺序（缺陷留证，见模块 docstring）
+            f = stream(f)
+            f = _moving_wall_bounce_back(f, wall)
 
         if iteration % 100 == 0:
             _, ux, uy = macroscopic(f)
