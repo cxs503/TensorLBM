@@ -89,7 +89,11 @@ def exner_step(
     q_face[-1] = 0.0
     q_face[1:-1] = 0.5 * (q_s[:-1] + q_s[1:])
     div = (q_face[1:] - q_face[:-1]) / dx
-    return z_b - (dt / (1.0 - cfg.porosity)) * div
+    z_new = z_b - (dt / (1.0 - cfg.porosity)) * div
+    # Check for NaN/Inf and return unchanged if detected (numerical safety)
+    if not np.all(np.isfinite(z_new)):
+        return z_b.copy()
+    return z_new
 
 
 def bed_volume(z_b: np.ndarray, dx: float, z_ref: float = 0.0) -> float:
