@@ -66,6 +66,38 @@ def native_available() -> bool:
     return shutil.which("gcc") is not None or shutil.which("cc") is not None
 
 
+#: Compiler flags of the native back-end.  ``-march=native`` is deliberately
+#: *not* the default: on hosts whose GCC auto-vectorises the D3Q19 collision /
+#: streaming loops differently from the reference build it produces a solver
+#: that diverges after a few hundred steps for parameters that are stable with
+#: a plain -O2 build (observed on the 2026-11 amd64 control host: every
+#: Re_tau >= 180 case returned NaN with -march=native, all cases ran to
+#: convergence with -O2).  Portability beats the last few percent of speed;
+#: set ``TENSORLBM_NATIVE_CFLAGS`` to opt in to anything else.
+_DEFAULT_CFLAGS: tuple[str, ...] = ("-O3", "-funroll-loops", "-fopenmp")
+
+
+def _compile_flags() -> list[str]:
+    env = os.environ.get("TENSORLBM_NATIVE_CFLAGS")
+    if env is not None and env.strip():
+        return env.split()
+    return list(_DEFAULT_CFLAGS)
+
+
+def _flags_tag() -> str:
+    """Short hash of the flags *and the C source*, so that a cached binary can
+    never outlive an edit of ``native/rough_channel3d.c`` (a stale cache hid the
+    TRT forcing fix for one full validation run on 2026-11-09)."""
+    import hashlib
+
+    h = hashlib.sha1(" ".join(_compile_flags()).encode())
+    try:
+        h.update(_SRC.read_bytes())
+    except OSError:  # pragma: no cover - missing source raises later anyway
+        pass
+    return h.hexdigest()[:8]
+
+
 def native_binary(rebuild: bool = False) -> Path:
     """Compile ``native/rough_channel3d.c`` (cached) and return the executable."""
     if not _SRC.is_file():
@@ -73,13 +105,13 @@ def native_binary(rebuild: bool = False) -> Path:
     compiler = shutil.which("gcc") or shutil.which("cc")
     if compiler is None:
         raise NativeBackendUnavailable("no C compiler (gcc/cc) on PATH")
-    out = _cache_dir() / "rough_channel3d"
+    out = _cache_dir() / f"rough_channel3d_{_flags_tag()}"
     if out.is_file() and not rebuild:
         return out
     # Compile to a private name and rename: several sweep workers may start at
     # once on the same node and must not race on the shared binary.
     tmp = out.with_name(f"{out.name}.{os.getpid()}.tmp")
-    cmd = [compiler, "-O3", "-march=native", "-funroll-loops", "-fopenmp", "-o", str(tmp), str(_SRC), "-lm"]
+    cmd = [compiler, *_compile_flags(), "-o", str(tmp), str(_SRC), "-lm"]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     if proc.returncode != 0:
         tmp.unlink(missing_ok=True)

@@ -200,15 +200,21 @@ int main(int argc, char **argv) {
                             pxz += CX[d] * CZ[d] * fneq;
                             pyz += CY[d] * CZ[d] * fneq;
                         }
-                        /* Smagorinsky: tau_eff^2 - tau_mol tau_eff - 1.5 (Cs D)^2 Q = 0,
-                           Q = 3 sqrt(2 : PiPi) / rho  */
+                        /* Smagorinsky (Hou et al. 1996, D = 1 lattice unit):
+                             tau_eff = 1/2 [ tau_0 + sqrt( tau_0^2 + 54 Cs^2 sqrt(Pi:Pi) /(rho tau_0) ) ]
+                           obtained from tau_t = 1/2 (sqrt(tau_0^2 + 18 sqrt2 Cs^2 |S|) - tau_0)
+                           with |S| = 3 sqrt(2 Pi:Pi)/(2 rho tau_0).  The previous
+                           coefficient (6 Cs^2 * 3 sqrt(2 Pi:Pi)/rho) was 4x too small and
+                           made the SGS viscosity negligible, which destabilises the
+                           tau -> 0.5 cases that the sweep needs. */
                         double s_plus = s_plus_mol;
                         double s_minus = 1.0 / (TRT_LAMBDA / (tau_mol - 0.5) + 0.5);
                         if (smag2 > 0.0) {
                             const double pipi = pxx * pxx + pyy * pyy + pzz * pzz +
                                                 2.0 * (pxy * pxy + pxz * pxz + pyz * pyz);
-                            const double Qv = 3.0 * sqrt(2.0 * pipi) / rho;
-                            const double disc = tau_mol * tau_mol + 6.0 * smag2 * Qv;
+                            const double S2 = sqrt(pipi > 0.0 ? pipi : 0.0);
+                            const double disc = tau_mol * tau_mol +
+                                                54.0 * smag2 * S2 / (rho * tau_mol);
                             const double tau_eff = 0.5 * (tau_mol + sqrt(disc > 0.0 ? disc : 0.0));
                             s_plus = 1.0 / tau_eff;
                             s_minus = 1.0 / (TRT_LAMBDA / (tau_eff - 0.5) + 0.5);
@@ -219,8 +225,19 @@ int main(int argc, char **argv) {
                             const double force = WT[d] * rho * (3.0 * (CX[d] * g - ug) + 9.0 * cu * (CX[d] * g));
                             const double fv = f[(size_t)d * N + idx];
                             const double fov = f[(size_t)OPP[d] * N + idx];
+                            /* The collision above subtracts the equilibrium in BOTH
+                               TRT modes, so the antisymmetric (s_minus) mode already
+                               carries -s_minus F/2 of non-equilibrium momentum.  The
+                               force term must therefore be weighted (1 - s_minus/2),
+                               not (1 - s_plus/2): only then does the momentum supplied
+                               per step equal F exactly.  With (1 - s_plus/2) the steady
+                               channel is driven by F [1 + (s_minus - s_plus)/2], i.e.
+                               ~F/2 for s_minus ~ 0.5 and ~0.03F at tau -> 0.5, which
+                               silently halves (or worse) u_bulk and inflates Cf.  The
+                               laminar Poiseuille check in tests/test_ice_roughness_cw.py
+                               fails by a factor ~2 without this fix. */
                             fstar[d] = fv - 0.5 * (s_plus + s_minus) * (fv - feq[d]) -
-                                       0.5 * (s_plus - s_minus) * (fov - feq[OPP[d]]) + force * (1.0 - 0.5 * s_plus);
+                                       0.5 * (s_plus - s_minus) * (fov - feq[OPP[d]]) + force * (1.0 - 0.5 * s_minus);
                             fs[(size_t)d * N + idx] = fstar[d];
                         }
                         if (sampling) {
