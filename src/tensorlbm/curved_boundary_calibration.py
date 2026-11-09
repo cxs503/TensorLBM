@@ -100,6 +100,11 @@ _N_DIR = len(_C_RAW)
 
 GEOMETRY_KINDS = ("sphere", "cylinder", "annulus", "plane")
 
+#: Wall-frame -> lab-frame shift of the solid-side closure population (see
+#: ``Solver.apply_cut_links``).  Kept as a module flag so the A/B evidence of
+#: artifacts/annulus_couette_verification_20261109 can be reproduced in one process.
+MOVING_WALL_CLOSURE_SHIFT = True
+
 
 # ---------------------------------------------------------------------------
 # geometry: solid mask + flattened cut-link table with analytic fractions
@@ -604,6 +609,15 @@ class Solver:
         uwz = geo.uw[:, 2] * wall_scale
         cuw = c[:, 0] * uwx + c[:, 1] * uwy + c[:, 2] * uwz
         wall_corr = -2.0 * w_l * rho_l * cuw / CS2
+        if MOVING_WALL_CLOSURE_SHIFT:
+            # The solid-side closure is built in the *wall frame* (stationary wall),
+            # so its equilibrium part is feq(rho, 0); restoring it to the lab frame
+            # needs the same shift that the fluid-side populations carry, i.e.
+            # 3 w rho (c_i . u_w).  Without it the q >= 1/2 stencils inject
+            # 6 w rho (c_i . u_w) [1 + xi(1+xi)/4] instead of 6 w rho (c_i . u_w):
+            # a +50% momentum over-injection at xi = 1 (q = 1) that is invisible on
+            # a stationary wall (u_w = 0 leaves this term exactly zero).
+            v_p1 = v_p1 + 3.0 * w_l * rho_l * cuw
         if fmt == "halfway":
             val = v0 + wall_corr
         elif fmt == "bouzidi_linear":
