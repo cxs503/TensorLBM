@@ -1,0 +1,121 @@
+{
+  "schema": "suboff-anchor-transcriptions/v1",
+  "task_key": "paper-exp-lbm-suboff-tau-1",
+  "mission_id": 7477,
+  "title": "SUBOFF 外部锚逐字转录证据包（evidence_pack 外部节）",
+  "discipline": [
+    "每个外部量必须以 verbatim_quote 出现；quote 必须是 archived_at 文件中的连续子串（build_anchor.py 机器校验，缺一即构建失败）。",
+    "anchor.json 中的全部数字由 build_anchor.py 从 quote 的正则解析得到，禁止二次手抄。",
+    "grade 标注证据等级：PRIMARY_TABLE_SECOND_HAND=原报告表格的仓内二手逐字；SECONDARY=开放获取论文对同一试验的逐字转录；B_GRADE_UNVERIFIED=仓内文档明确标注 [B] 且注明『精确值需核对原文』；CONVENTION=定义/口径（非测量值）。",
+    "未经逐字抄录入本文件的数值，其复算结果不得用于达标声明。"
+  ],
+  "offline_disclosure": "本工作树无外网（2026-11-08 实测 apps.dtic.mil / 通用域名均超时），DTRC/NSWCCD 原始报告（CRDKNSWC/HD-1298-11 = ADA359226；DTRC/SHD-1298-07）全文不在仓内。因此所有外部锚均为仓内已归档文本的逐字转录，非原报告直接阅读。该事实在 anchor.json 与 README 中同样披露。",
+  "sources": [
+    {
+      "source_id": "DTRC-ADA359226-T14",
+      "kind": "primary_measurement_table",
+      "grade": "PRIMARY_TABLE_SECOND_HAND",
+      "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+      "locator": "Table 14, p.23",
+      "archived_at": "src/tensorlbm/suboff_reference_data.py",
+      "what_it_is": "DTRC/NSWCCD 拖曳水池 SUBOFF 总阻力实测（量纲力 RT[N] @ 速度[kn]），configuration 1 = AFF-1 裸艇体，configuration 8 = AFF-8 全附体。",
+      "disclosure": "本仓常量表逐字携带 Table 14 p.23 引注；原报告 PDF 不在仓内、离线不可达，故为二手逐字转录。",
+      "groups": [
+        {"group_id": "A1", "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40)", "regex": "\"bare_hull\", 1, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-1", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "A2", "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 10.00, 242.2)", "regex": "\"bare_hull\", 1, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-1", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "A3", "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 11.84, 332.9)", "regex": "\"bare_hull\", 1, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-1", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "A4", "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 13.92, 451.5)", "regex": "\"bare_hull\", 1, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-1", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "A5", "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 16.00, 576.9)", "regex": "\"bare_hull\", 1, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-1", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "A6", "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 17.99, 697.0)", "regex": "\"bare_hull\", 1, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-1", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "F1", "quote": "SuboffTowTankResistancePoint(\"full\", 8, 5.93, 102.3)", "regex": "\"full\", 8, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-8", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "F2", "quote": "SuboffTowTankResistancePoint(\"full\", 8, 10.00, 283.8)", "regex": "\"full\", 8, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-8", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "F3", "quote": "SuboffTowTankResistancePoint(\"full\", 8, 11.85, 389.2)", "regex": "\"full\", 8, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-8", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "F4", "quote": "SuboffTowTankResistancePoint(\"full\", 8, 13.92, 526.6)", "regex": "\"full\", 8, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-8", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "F5", "quote": "SuboffTowTankResistancePoint(\"full\", 8, 16.00, 675.6)", "regex": "\"full\", 8, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-8", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "F6", "quote": "SuboffTowTankResistancePoint(\"full\", 8, 17.79, 821.1)", "regex": "\"full\", 8, (?P<speed>[0-9.]+), (?P<rt>[0-9.]+)\\)", "config": "AFF-8", "fields": {"speed": {"unit": "kn", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "CITE", "quote": "CRDKNSWC/HD-1298-11, ADA359226, Table 14, p.23", "regex": "Table 14, p\\.(?P<page>[0-9]+)", "fields": {"page": {"unit": "page", "quantity": "locator"}}}
+      ]
+    },
+    {
+      "source_id": "CFD-LETTERS-2024-T1-T3",
+      "kind": "open_access_secondary_transcription",
+      "grade": "SECONDARY",
+      "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+      "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+      "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+      "what_it_is": "开放获取论文对同一 DTRC/NSWCCD 拖曳水池试验的逐字转录：模型主尺度 + AFF-8 EFD 总阻力（SI 单位 m/s, N）。",
+      "disclosure": "该文自引 Liu & Huang 1998 (ADA359226) 作为 EFD 出处；作为独立文档，其表格数字与上条 Table 14 可互检（本工件 same_camp_consistency 节）。",
+      "groups": [
+        {"group_id": "L", "quote": "| Length overall Lmax [m] | 4.356 |", "regex": "Length overall Lmax \\[m\\] \\| (?P<value>[0-9.]+) \\|", "fields": {"value": {"unit": "m", "quantity": "length_overall"}}},
+        {"group_id": "D", "quote": "| Maximum hull diameter Dmax [m] | 0.508 |", "regex": "Maximum hull diameter Dmax \\[m\\] \\| (?P<value>[0-9.]+) \\|", "fields": {"value": {"unit": "m", "quantity": "diameter_max"}}},
+        {"group_id": "VOL", "quote": "| Displacement volume [m3] | 0.708 |", "regex": "Displacement volume \\[m3\\] \\| (?P<value>[0-9.]+) \\|", "fields": {"value": {"unit": "m3", "quantity": "displacement_volume"}}},
+        {"group_id": "S", "quote": "| Wetted surface area WSA [m2] | 5.998 |", "regex": "Wetted surface area WSA \\[m2\\] \\| (?P<value>[0-9.]+) \\|", "fields": {"value": {"unit": "m2", "quantity": "wetted_surface"}}},
+        {"group_id": "B1", "quote": "| 3.050 | 102.30 |", "regex": "\\| (?P<speed>[0-9.]+) \\| (?P<rt>[0-9.]+) \\|", "config": "AFF-8", "fields": {"speed": {"unit": "m/s", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "B2", "quote": "| 5.144 | 283.80 |", "regex": "\\| (?P<speed>[0-9.]+) \\| (?P<rt>[0-9.]+) \\|", "config": "AFF-8", "fields": {"speed": {"unit": "m/s", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "B3", "quote": "| 6.100 | 389.20 |", "regex": "\\| (?P<speed>[0-9.]+) \\| (?P<rt>[0-9.]+) \\|", "config": "AFF-8", "fields": {"speed": {"unit": "m/s", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "B4", "quote": "| 7.160 | 526.60 |", "regex": "\\| (?P<speed>[0-9.]+) \\| (?P<rt>[0-9.]+) \\|", "config": "AFF-8", "fields": {"speed": {"unit": "m/s", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}},
+        {"group_id": "B5", "quote": "| 8.230 | 675.60 |", "regex": "\\| (?P<speed>[0-9.]+) \\| (?P<rt>[0-9.]+) \\|", "config": "AFF-8", "fields": {"speed": {"unit": "m/s", "quantity": "speed"}, "rt": {"unit": "N", "quantity": "resistance"}}}
+      ]
+    },
+    {
+      "source_id": "SUBOFF-REFDATA-BRACKET",
+      "kind": "reference_bracket_with_reynolds",
+      "grade": "B_GRADE_UNVERIFIED",
+      "citation": "Roddy, R.F. (1990). Investigation of the Stability and Control Characteristics of Several Configurations of the DARPA SUBOFF Model (DTRC Model 5470). DTRC/SHD-1298-07.  — 数值以其仓内转录件为准（该转录件自带 [B] 级标注与『精确值需核对原文』的告警）。",
+      "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3（含 [B] 级标注）/ 引用栏 #8",
+      "archived_at": "docs/sphere_suboff_highre_reference_data_zh.md",
+      "what_it_is": "文献常用 SUBOFF 阻力系数锚的 Re 与 CT 区间（AFF-1 与 AFF-8），仓内文档明确标注 [B] 级、需核对原文。",
+      "disclosure": "这是本仓唯一给出『Re + CT 同时出现』的转录；等级 [B]，两位有效数字，不构成点值原始锚。",
+      "groups": [
+        {"group_id": "R-AFF1", "quote": "| AFF-1 裸艇体 | 1.2×10⁷ | ≈0.0030–0.0032（常用 0.0031） | Roddy (1990) DTRC/SHD-1298-07 水筒实验；SIMMAN 2008 基准 [B] | [B] 精确值需核对原文 |", "regex": "\\| AFF-1 裸艇体 \\| (?P<mant>[0-9.]+)×10(?P<sup>[⁰¹²³⁴⁵⁶⁷⁸⁹]+) \\| ≈(?P<lo>0\\.[0-9]+)–(?P<hi>0\\.[0-9]+)（常用 (?P<usage>0\\.[0-9]+)）", "fields": {"mant": {"unit": "-", "quantity": "reynolds_mantissa"}, "sup": {"unit": "-", "quantity": "reynolds_exponent_superscript"}, "lo": {"unit": "-", "quantity": "ct_bracket_lo"}, "hi": {"unit": "-", "quantity": "ct_bracket_hi"}, "usage": {"unit": "-", "quantity": "ct_usage_value"}}},
+        {"group_id": "R-AFF8", "quote": "| AFF-8 全附体 | 1.2×10⁷ | ≈0.0038–0.0042（常用 ~0.004） | 同上 [B] | [B] |", "regex": "\\| AFF-8 全附体 \\| (?P<mant>[0-9.]+)×10(?P<sup>[⁰¹²³⁴⁵⁶⁷⁸⁹]+) \\| ≈(?P<lo>0\\.[0-9]+)–(?P<hi>0\\.[0-9]+)", "fields": {"mant": {"unit": "-", "quantity": "reynolds_mantissa"}, "sup": {"unit": "-", "quantity": "reynolds_exponent_superscript"}, "lo": {"unit": "-", "quantity": "ct_bracket_lo"}, "hi": {"unit": "-", "quantity": "ct_bracket_hi"}}},
+        {"group_id": "S-AFF8", "quote": "S(AFF-8) ≈ 6.35 m²（精确值以 Groves et al. 1989 几何报告为准）。", "regex": "S\\(AFF-8\\) ≈ (?P<value>[0-9.]+) m²", "fields": {"value": {"unit": "m2", "quantity": "wetted_surface_aff8_bracket"}}},
+        {"group_id": "SELFCHECK", "quote": "自洽性检查 [B]：Cf_ITTC(1.2×10⁷)=0.00291，裸艇体 CT≈0.0031 ⇒ 形状因子 (1+k)≈1.06，", "regex": "Cf_ITTC\\(1\\.2×10⁷\\)=(?P<cf>[0-9.]+)，裸艇体 CT≈(?P<ct>[0-9.]+) ⇒ 形状因子 \\(1\\+k\\)≈(?P<k>[0-9.]+)", "fields": {"cf": {"unit": "-", "quantity": "cf_ittc_stated"}, "ct": {"unit": "-", "quantity": "ct_stated"}, "k": {"unit": "-", "quantity": "one_plus_k_stated"}}}
+      ]
+    },
+    {
+      "source_id": "REF-LOCK-CONVENTIONS",
+      "kind": "convention",
+      "grade": "CONVENTION",
+      "citation": "仓内 SDK 冻结参考锁 suboff_highre_20261010（refs_lock.md，冻结日期 2026-10-10）所声明的无量纲化口径。",
+      "locator": "refs_lock.md 『派生锁定量表』约定段",
+      "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+      "what_it_is": "CT 定义式、参考湿面积 S、淡水密度 ρ 及其容差带、运动黏度 ν 假设、kn→m/s 换算常数。",
+      "disclosure": "这些是口径声明（非测量值），来源为本仓冻结参考锁；ν=1.139e-6 m²/s 为『淡水 15 °C 声明假设』，原试验水温未见原始记录。",
+      "groups": [
+        {"group_id": "CTDEF", "quote": "CT = RT / (0.5 · ρ · V² · S)", "regex": "CT = RT / \\(0\\.5 · ρ · V² · S\\)", "fields": {}},
+        {"group_id": "RHO", "quote": "ρ=1000 kg/m³（淡水，密度带 997–1000 →", "regex": "ρ=(?P<rho>[0-9]+) kg/m³（淡水，密度带 (?P<lo>[0-9]+)–(?P<hi>[0-9]+)", "fields": {"rho": {"unit": "kg/m3", "quantity": "density"}, "lo": {"unit": "kg/m3", "quantity": "density_band_lo"}, "hi": {"unit": "kg/m3", "quantity": "density_band_hi"}}},
+        {"group_id": "SWET", "quote": "S = 5.998 m²（S1 Table 1）", "regex": "S = (?P<value>[0-9.]+) m²", "fields": {"value": {"unit": "m2", "quantity": "wetted_surface_assumed"}}},
+        {"group_id": "NU", "quote": "- Re = Lmax · V / ν，ν=1.139e-6 m²/s（淡水 15 °C 声明假设）", "regex": "ν=(?P<value>[0-9.e\\-]+) m²/s", "fields": {"value": {"unit": "m2/s", "quantity": "kinematic_viscosity"}}},
+        {"group_id": "KNOT", "quote": "1 kn = 0.514444 m/s", "regex": "1 kn = (?P<value>[0-9.]+) m/s", "fields": {"value": {"unit": "m/s", "quantity": "knot_to_mps"}}},
+        {"group_id": "SCAD", "quote": "0.31576·L² ⇒ 物理等效 5.9933 m²，与 5.998 差 **0.08%**", "regex": "物理等效 (?P<cad>[0-9.]+) m²，与 [0-9.]+ 差 \\*\\*(?P<diff>[0-9.]+)%\\*\\*", "fields": {"cad": {"unit": "m2", "quantity": "wetted_surface_cad_basis"}, "diff": {"unit": "%", "quantity": "wetted_surface_cad_diff_pct"}}}
+      ]
+    },
+    {
+      "source_id": "ITTC-CF-FORMULA",
+      "kind": "formula",
+      "grade": "CONVENTION",
+      "citation": "ITTC 摩擦线 C_F = 0.075/(log10 Rn − 2)²（ITTC-1957 模型-实船相关线；ITTC-1978 性能预报方法采用同一摩擦线）。公式文本取自仓内两处独立转录。",
+      "locator": "src/tensorlbm/suboff_reference_data.py: compute_ittc1957_cf docstring；docs/sphere_suboff_highre_reference_data_zh.md 表 3 ITTC 行",
+      "archived_at": "src/tensorlbm/suboff_reference_data.py",
+      "what_it_is": "C_F 解析式与其系数（0.075、2），用于判据 3 的复算与解析式残差比较。",
+      "disclosure": "ITTC 原始程序文本（7.5-02-03-01.4）不在离线可达范围；『1957 线与 ITTC-78 摩擦线同式』的等效性为 [B] 级声明，本工件以仓内公式文本为准并披露。",
+      "groups": [
+        {"group_id": "CF", "quote": "``Cf = 0.075 / (log10(Re) - 2)^2``", "regex": "Cf = (?P<coef>[0-9.]+) / \\(log10\\(Re\\) - (?P<shift>[0-9.]+)\\)\\^2", "fields": {"coef": {"unit": "-", "quantity": "cf_coefficient"}, "shift": {"unit": "-", "quantity": "cf_log10_shift"}}}
+      ]
+    },
+    {
+      "source_id": "ITTC-CF-CROSSCHECK",
+      "kind": "formula",
+      "grade": "A_WITHIN_REPO_DOC",
+      "citation": "同一 ITTC 摩擦线的第二处独立转录（含已知值 Cf(1.2e7)=0.00291），用于交叉核对公式实现。",
+      "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3, ITTC-1957 行",
+      "archived_at": "docs/sphere_suboff_highre_reference_data_zh.md",
+      "what_it_is": "已知解核对点：Cf(Re=1.2e7) 与公式 Cf=0.075/(lgRe−2)²。",
+      "disclosure": "该行给出两位有效数字的 Cf 值，仅作量级/舍入带核对，不作精度声明。",
+      "groups": [
+        {"group_id": "KNOWN", "quote": "| ITTC-1957 Cf（仅摩擦，供对照） | 1.2×10⁷ | 0.00291 ±5% | ITTC 1957 模型-实船相关线 [A]（公式 Cf=0.075/(lgRe−2)²） | [A] |", "regex": "\\| ITTC-1957 Cf（仅摩擦，供对照） \\| (?P<mant>[0-9.]+)×10(?P<sup>[⁰¹²³⁴⁵⁶⁷⁸⁹]+) \\| (?P<cf>[0-9.]+) ±[0-9]+%", "fields": {"mant": {"unit": "-", "quantity": "reynolds_mantissa"}, "sup": {"unit": "-", "quantity": "reynolds_exponent_superscript"}, "cf": {"unit": "-", "quantity": "cf_known_value"}}}
+      ]
+    }
+  ]
+}
