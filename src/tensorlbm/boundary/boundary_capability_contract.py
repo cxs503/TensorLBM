@@ -254,7 +254,20 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "c*H = -0.0650, R^2 = 1-1.1e-16; sigma=1 recorded as plug flow with "
         "secular momentum growth (b -> infinity). BGK/single-phase/float64, "
         "stationary tangential wall only. Docs: "
-        "docs/P106W1_N04_SLIP_WALL_3D.md",
+        "docs/P106W1_N04_SLIP_WALL_3D.md. "
+        "P106W2-N02 adds an operator-level Maxwell audit "
+        "(slip_wall_calibration.wall_velocity_from_rule): the wall speed read "
+        "off the mixed rule's tangential momentum bookkeeping, u_w = 3*dM_x/rho "
+        "(validated against an imposed moving-wall Couette to 1e-12), times the "
+        "wall-normal gradient extrapolated from the first three interior rows "
+        "(matches gH/nu to 1e-7) reproduces b = 0.3 sigma/(1-sigma) with zero "
+        "offset, while the profile-fit route carries the constant defect "
+        "c = -0.065/H; b is forcing/wall/geometry independent to 3e-13; and a "
+        "mixed wall is lattice-scaled (b_phys = b_lu dx), so a per-mesh sigma "
+        "retuning holds a prescribed physical slip length to 1.6e-6 "
+        "(vs 1.2e-2 for the idealised law). Tests: "
+        "tests/test_slip_wall_calibration.py. Docs: "
+        "docs/P106W2_N02_SLIP_WALL_CALIBRATION.md",
     ),
     ("wall_partial_slip", "D3Q27"): (
         "NO_IMPLEMENTATION",
