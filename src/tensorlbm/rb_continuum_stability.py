@@ -222,22 +222,46 @@ def critical_at(
     Ra_lo: float = 500.0,
     Ra_hi: float = 6000.0,
     tol: float = 1e-7,
+    method: str = "dense",
 ) -> float:
-    """Bisect ``sigma(Ra) = 0`` at fixed wavenumber."""
+    """Bisect ``sigma(Ra) = 0`` at fixed wavenumber.
+
+    ``method`` selects the stability indicator:
+
+    * ``"dense"`` (default) — largest real part of the full QZ spectrum
+      (:func:`full_spectrum`).  The roll branch is separated from the rest of
+      the spectrum by a wide margin (measured ``sigma_lead = +6.78`` versus
+      ``sigma_second = -51.9`` at ``Ra = 2500``), so the max-real-part is a
+      reliable indicator at every wavenumber.  This is the path validated
+      against Chandrasekhar (1961) in the P97-N05 campaign (Richardson
+      extrapolation reproduces ``Ra_c = 1707.76`` to a few ``1e-4``).
+    * ``"arpack"`` — the legacy shift-invert path (``k = 4`` eigenvalues
+      closest to ``sigma = 0``).  **Known defect** (P97-N05 report §5.1.6):
+      on this pencil it returns spurious near-zero eigenvalues instead of the
+      leading mode, so the bisection mis-brackets (``Ra_lo already unstable``
+      / ``Ra_hi still stable``) at several wavenumbers inside the
+      marginal-curve search range — reproduced at ``a = 3.1 / 3.5 / 3.7``,
+      ``M = 100``.  Kept for API compatibility only; do not use.
+    """
+    if method not in ("dense", "arpack"):
+        raise ValueError(f"unknown method {method!r} (use 'dense' or 'arpack')")
     lo, hi = float(Ra_lo), float(Ra_hi)
 
-    def sigma_near0(Ra: float) -> float:
-        vals = spectra(M, a, Ra, Pr, sigma=0.0, k=4)
+    def sigma_lead(Ra: float) -> float:
+        if method == "arpack":
+            vals = spectra(M, a, Ra, Pr, sigma=0.0, k=4)
+            return float(np.max(vals.real))
+        vals = full_spectrum(M, a, Ra, Pr)
         return float(np.max(vals.real))
 
-    s_lo, s_hi = sigma_near0(lo), sigma_near0(hi)
+    s_lo, s_hi = sigma_lead(lo), sigma_lead(hi)
     if s_lo >= 0.0:
         raise ValueError(f"Ra_lo={lo} already unstable (sigma={s_lo:+.3e})")
     if s_hi <= 0.0:
         raise ValueError(f"Ra_hi={hi} still stable (sigma={s_hi:+.3e})")
     for _ in range(80):
         mid = 0.5 * (lo + hi)
-        if sigma_near0(mid) < 0.0:
+        if sigma_lead(mid) < 0.0:
             lo = mid
         else:
             hi = mid
