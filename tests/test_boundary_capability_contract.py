@@ -24,6 +24,7 @@ _AUDITED_BOUNDARIES = (
     "zou_he_outlet",
     "wall_bounce_back",
     "wall_free_slip",
+    "wall_partial_slip",
     "farfield",
     "sponge",
     "nscbc",
@@ -57,11 +58,11 @@ def test_matrix_covers_all_boundary_kinds_and_lattices() -> None:
             )
 
 
-def test_matrix_has_27_entries() -> None:
-    """9 boundary kinds × 3 lattices = 27 audited cells."""
+def test_matrix_has_30_entries() -> None:
+    """10 boundary kinds × 3 lattices = 30 audited cells."""
     matrix = boundary_capability_matrix()
     count = sum(len(matrix[kind]) for kind in matrix)
-    assert count == 27
+    assert count == 30
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +115,19 @@ def test_wall_bounce_back_d3q27_is_mechanics_tested_only() -> None:
     """D3Q27 bounce-back has shape/ME-force unit tests but no Cd validation."""
     cap = boundary_capability_matrix()["wall_bounce_back"]["D3Q27"]
     assert cap.implementation_status == "MECHANICS_TESTED"
+
+
+def test_wall_partial_slip_statuses() -> None:
+    """The mixed slip wall: D2Q9 reduction tested, D3Q19 validated, D3Q27 absent."""
+    matrix = boundary_capability_matrix()
+    assert matrix["wall_partial_slip"]["D2Q9"].implementation_status == "MECHANICS_TESTED"
+    assert matrix["wall_partial_slip"]["D3Q19"].implementation_status == "PHYSICS_VALIDATED"
+    assert matrix["wall_partial_slip"]["D3Q27"].implementation_status == "NO_IMPLEMENTATION"
+    ev = matrix["wall_partial_slip"]["D3Q19"].verification_evidence
+    assert "partial_slip_wall3d" in matrix["wall_partial_slip"]["D3Q19"].entrypoint
+    assert "P106W1_N04" in ev
+    # still fail-closed: no composition contract, so not claimable as available
+    assert matrix["wall_partial_slip"]["D3Q19"].available is False
 
 
 def test_wall_free_slip_only_d3q19_implementation_exists() -> None:
