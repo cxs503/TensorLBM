@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`tensorlbm.sloshing_resonance`** — LNG cargo-tank sloshing verification
+  surface (campaign node P87W2-N01): a 1.0 m x 0.5 m two-dimensional tank at
+  ``h/H = 0.2 .. 0.9`` released from the pure standing waves
+  ``eta(x,0) = A cos(k_n x)`` (``n = 1, 2``, ``A = 0.01 m``) on the audited
+  Körner free-surface LBM, with an SI-anchored Froude/Mach-consistent lattice
+  scaling (``u_lat = u_char dt/dx``), sub-cell surface elevation from the mass
+  ledger, wall dynamic-pressure gauges and damping-aware identification
+  (``f_d``, ``zeta``, ``f_n = sqrt(lambda^2 + omega_d^2)/2 pi``).  Measured on
+  the shipped artefacts: first-mode frequency vs Abramson (1966) worst
+  ``2.70 %`` (gate 3 %), second mode ``4.26 %`` (gate 5 %), ``f_1`` spread over
+  ``dx = H/40, H/80, H/160`` ``0.8 %`` (gate 2 %), liquid-inventory drift on the
+  verification sweep ``0.49 %`` (gate 0.5 %), ``g -> 0`` control oscillation
+  ``0.032`` with zero sign changes; the exact hydrostatic anchor
+  ``p_dyn(t=0) = rho g A`` holds to ``0.12 %`` and the weakly nonlinear
+  (``A/h = 5 %``) first-harmonic wall pressure matches the linear Faltinsen
+  profile to ``2.9 %``.  Sloshing-impact pressure against *experiment* is
+  reported WITHHELD (no digitised data in the repository; not fabricated).
+  Honest failures are recorded in the report: the phase criterion at the
+  under-resolved ``h/H = 0.2`` grid (4.8 deg vs the 2 deg gate, 1.4 deg for
+  ``h/H >= 0.4``) and the ledger drift of the near-breaking resonant sway case
+  (1.57 %).
 - **`tensorlbm.passive_scalar_verification`** — one verification surface for the
   passive-scalar (advection–diffusion) kernels with four machine-checkable
   anchors: Taylor–Aris dispersion `D_eff/D = 1 + Pe^2/210` (plane slit) and
