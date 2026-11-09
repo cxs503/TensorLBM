@@ -21,6 +21,7 @@ BoundaryKind = Literal[
     "zou_he_outlet",
     "wall_bounce_back",
     "wall_free_slip",
+    "wall_partial_slip",
     "farfield",
     "sponge",
     "nscbc",
@@ -50,6 +51,7 @@ _AUDITED_BOUNDARIES: tuple[BoundaryKind, ...] = (
     "zou_he_outlet",
     "wall_bounce_back",
     "wall_free_slip",
+    "wall_partial_slip",
     "farfield",
     "sponge",
     "nscbc",
@@ -224,6 +226,40 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "NO_IMPLEMENTATION",
         None,
         "No free-slip implementation for D3Q27",
+    ),
+    # ---- wall_partial_slip (mixed bounce-back / specular) -------------------
+    ("wall_partial_slip", "D2Q9"): (
+        "MECHANICS_TESTED",
+        "tensorlbm.boundary.partial_slip_wall.mixed_wall_row / channel_poiseuille",
+        "1D-in-y D2Q9 column reduction (x-uniform flows only). "
+        "test_partial_slip_wall.py (20 cases): mixed-operator limits sigma=0 -> "
+        "bounce-back and sigma=1 -> specular, convexity, exactly-quadratic steady "
+        "profile, b(sigma) law R^2 = 1-3.3e-13, plane closed-loop inversion "
+        "1.2e-6, pipe 3.37%. The reduction itself is proven exact against the full "
+        "D3Q19 field (5.6e-14) in "
+        "test_partial_slip_wall3d.py::test_reduction_matches_1d_column. NOT a "
+        "general 2D wall implementation.",
+    ),
+    ("wall_partial_slip", "D3Q19"): (
+        "PHYSICS_VALIDATED",
+        "tensorlbm.boundary.partial_slip_wall3d.mixed_wall_row_3d / "
+        "channel_poiseuille_3d",
+        "test_partial_slip_wall3d.py (18 cases) + artifacts/P106W1-N04: mixed "
+        "bounce-back/specular applied link-by-link on the full D3Q19 lattice. "
+        "sigma=0 reproduces the analytic no-slip parabola to 0.231% / 0.024% "
+        "(ny=17/49, criterion 0.5%), |b|/H <= 1.2e-3; closed-loop slip-length "
+        "inversion error 0.001% (plane) and 0.288% (pipe, sigma taken from the "
+        "plane law); b(sigma) = a sigma/(1-sigma) + c with a = 0.299999965 "
+        "(spread 1.7e-7 over ny in {17,25,33,49} and over 1D vs 3D), "
+        "c*H = -0.0650, R^2 = 1-1.1e-16; sigma=1 recorded as plug flow with "
+        "secular momentum growth (b -> infinity). BGK/single-phase/float64, "
+        "stationary tangential wall only. Docs: "
+        "docs/P106W1_N04_SLIP_WALL_3D.md",
+    ),
+    ("wall_partial_slip", "D3Q27"): (
+        "NO_IMPLEMENTATION",
+        None,
+        "No mixed bounce-back/specular wall for D3Q27",
     ),
     # ---- farfield ----------------------------------------------------------
     ("farfield", "D2Q9"): (
