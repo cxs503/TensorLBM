@@ -1,4 +1,4 @@
-"""Sediment transport & bed-scour verification surface (mission m7329).
+"""Sediment transport & bed-scour verification surface (mission m7329/m8506).
 
 This package closes the zero-verification gap for sediment dynamics on
 TensorLBM.  It provides four machine-judgeable anchors:
@@ -26,21 +26,29 @@ by the ship platform UKC / siltation endpoint.
 
 from .exner import ExnerConfig, exner_step, mpm_flux
 from .rouse import KAPPA, rouse_exponent, rouse_profile, solve_rouse_profile
+from .scour import ScourConfig, estimate_scour_depth, run_single_pile_scour
 from .shields import (
     critical_shields,
     dimensionless_grain_size,
     dimensionless_settling_velocity,
 )
+from .verification import D_STAR_POINTS, SedimentScenario, build_results
 
 __all__ = [
-    "KAPPA",
+    "D_STAR_POINTS",
     "ExnerConfig",
+    "KAPPA",
+    "ScourConfig",
+    "SedimentScenario",
+    "build_results",
     "critical_shields",
     "dimensionless_grain_size",
     "dimensionless_settling_velocity",
+    "estimate_scour_depth",
     "exner_step",
     "mpm_flux",
     "rouse_exponent",
     "rouse_profile",
+    "run_single_pile_scour",
     "solve_rouse_profile",
 ]
