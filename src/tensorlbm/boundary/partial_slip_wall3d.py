@@ -56,14 +56,29 @@ from tensorlbm.boundary import partial_slip_wall as ps
 from tensorlbm.d3q19 import C as _C_TORCH
 from tensorlbm.d3q19 import OPPOSITE as _OPP_TORCH
 from tensorlbm.d3q19 import W_EXACT64 as _W_TORCH
+from tensorlbm.d3q27 import C as _C27_TORCH
+from tensorlbm.d3q27 import OPPOSITE as _OPP27_TORCH
+from tensorlbm.d3q27 import W_EXACT64 as _W27_TORCH
 
 __all__ = [
     "C19",
     "W19",
     "OPP19",
     "MIRROR_Y",
+    "C27",
+    "W27",
+    "OPP27",
+    "MIRROR_Y_27",
     "mirror_table_y",
+    "mirror_table",
+    "Lattice",
+    "LATTICE_19",
+    "LATTICE_27",
+    "LATTICES",
+    "mixed_wall_row_lattice",
     "mixed_wall_row_3d",
+    "channel_poiseuille_lattice",
+    "channel_poiseuille_3d",
     "Channel3DResult",
     "channel_poiseuille_3d",
     "bulk_mean_slip_length",
@@ -74,40 +89,99 @@ __all__ = [
 ]
 
 # ---------------------------------------------------------------------------
-# Lattice tables -- taken from the repository's canonical D3Q19 module so the
-# mirror table cannot drift away from the lattice constants.
+# Lattice tables -- taken from the repository's canonical lattice modules
+# (``d3q19`` / ``d3q27``) so neither the mirror table nor the weights can drift
+# away from the velocity sets they are supposed to describe.
 # ---------------------------------------------------------------------------
 C19 = np.asarray(_C_TORCH.cpu().numpy(), dtype=np.int64)
 W19 = np.asarray(_W_TORCH.cpu().numpy(), dtype=np.float64)
 OPP19 = np.asarray(_OPP_TORCH.cpu().numpy(), dtype=np.int64)
-_Q = int(C19.shape[0])
+C27 = np.asarray(_C27_TORCH.cpu().numpy(), dtype=np.int64)
+W27 = np.asarray(_W27_TORCH.cpu().numpy(), dtype=np.float64)
+OPP27 = np.asarray(_OPP27_TORCH.cpu().numpy(), dtype=np.int64)
 
 
-def mirror_table_y() -> np.ndarray:
+def mirror_table(C: np.ndarray) -> np.ndarray:
     """Direction with ``c_y`` flipped and ``c_x, c_z`` kept (wall normal ``e_y``).
 
     Derived from the lattice constants instead of being hand-transcribed, so a
     change of velocity set cannot silently break the specular half of the wall.
     """
-    lookup = {tuple(int(v) for v in C19[q]): q for q in range(_Q)}
-    return np.array([lookup[(int(c[0]), -int(c[1]), int(c[2]))] for c in C19], dtype=np.int64)
+    C = np.asarray(C, dtype=np.int64)
+    lookup = {tuple(int(v) for v in C[q]): q for q in range(C.shape[0])}
+    return np.array(
+        [lookup[(int(c[0]), -int(c[1]), int(c[2]))] for c in C], dtype=np.int64
+    )
+
+
+def mirror_table_y() -> np.ndarray:
+    """D3Q19 specialisation of :func:`mirror_table` (kept for compatibility)."""
+    return mirror_table(C19)
 
 
 MIRROR_Y = mirror_table_y()
+MIRROR_Y_27 = mirror_table(C27)
 
-_CX = C19[:, 0].reshape(_Q, 1, 1, 1)
-_CY = C19[:, 1].reshape(_Q, 1, 1, 1)
-_CZ = C19[:, 2].reshape(_Q, 1, 1, 1)
-_W = W19.reshape(_Q, 1, 1, 1)
-_INWARD_LOW = (C19[:, 1] > 0).reshape(_Q, 1, 1)     # stream wall -> fluid at j=1
-_INWARD_HIGH = (C19[:, 1] < 0).reshape(_Q, 1, 1)    # stream wall -> fluid at j=ny-2
+
+class Lattice:
+    """A velocity set plus the broadcast-shaped tables the wall and solver need.
+
+    Everything that used to be a module-level constant of the D3Q19
+    implementation (reshaped lattice vectors, weights, the specular mirror
+    table and the two wall-inward direction masks) lives here, so the same
+    kernels run on any velocity set without a second copy of the numerics.
+    """
+
+    __slots__ = (
+        "name", "C", "W", "OPP", "MIRROR", "Q",
+        "cx", "cy", "cz", "w", "inward_low", "inward_high",
+    )
+
+    def __init__(self, name: str, C: np.ndarray, W: np.ndarray, OPP: np.ndarray):
+        self.name = str(name)
+        self.C = np.asarray(C, dtype=np.int64)
+        self.W = np.asarray(W, dtype=np.float64)
+        self.OPP = np.asarray(OPP, dtype=np.int64)
+        self.MIRROR = mirror_table(self.C)
+        self.Q = int(self.C.shape[0])
+        q = self.Q
+        self.cx = self.C[:, 0].reshape(q, 1, 1, 1)
+        self.cy = self.C[:, 1].reshape(q, 1, 1, 1)
+        self.cz = self.C[:, 2].reshape(q, 1, 1, 1)
+        self.w = self.W.reshape(q, 1, 1, 1)
+        # stream wall -> fluid at j=1 (low wall) / j=ny-2 (high wall)
+        self.inward_low = (self.C[:, 1] > 0).reshape(q, 1, 1)
+        self.inward_high = (self.C[:, 1] < 0).reshape(q, 1, 1)
+
+    def __repr__(self) -> str:                      # pragma: no cover - cosmetic
+        return f"Lattice({self.name!r}, Q={self.Q})"
+
+
+LATTICE_19 = Lattice("D3Q19", C19, W19, OPP19)
+LATTICE_27 = Lattice("D3Q27", C27, W27, OPP27)
+LATTICES = {"D3Q19": LATTICE_19, "D3Q27": LATTICE_27}
+
+# Backwards-compatible aliases for the D3Q19-shaped constants.
+_Q = LATTICE_19.Q
+_CX = LATTICE_19.cx
+_CY = LATTICE_19.cy
+_CZ = LATTICE_19.cz
+_W = LATTICE_19.w
+_INWARD_LOW = LATTICE_19.inward_low
+_INWARD_HIGH = LATTICE_19.inward_high
 
 
 # ---------------------------------------------------------------------------
 # Mixed wall row
 # ---------------------------------------------------------------------------
-def mixed_wall_row_3d(f_post_adjacent: np.ndarray, sigma: float, top: bool):
+def mixed_wall_row_lattice(
+    lattice: Lattice, f_post_adjacent: np.ndarray, sigma: float, top: bool
+):
     """Mixed bounce-back / specular populations for one y-wall plane.
+
+    ``lattice`` selects the velocity set (``LATTICE_19`` / ``LATTICE_27``); the
+    operator is identical in both, it is the mirror/opposite tables that carry
+    the velocity set.  See :func:`mixed_wall_row_3d` for the D3Q19 signature.
 
     ``f_post_adjacent`` has shape ``(19, nx, nz)`` and holds the *post-collision*
     populations of the fluid plane next to the wall.  For every direction that
@@ -122,40 +196,64 @@ def mixed_wall_row_3d(f_post_adjacent: np.ndarray, sigma: float, top: bool):
     """
     if not 0.0 <= sigma <= 1.0:
         raise ValueError(f"sigma must be in [0, 1], got {sigma}")
-    mix = (1.0 - sigma) * f_post_adjacent[OPP19] + sigma * f_post_adjacent[MIRROR_Y]
-    inward = _INWARD_HIGH if top else _INWARD_LOW
+    if f_post_adjacent.shape[0] != lattice.Q:
+        raise ValueError(
+            f"{lattice.name} expects {lattice.Q} populations per cell, "
+            f"got {f_post_adjacent.shape[0]}"
+        )
+    mix = (1.0 - sigma) * f_post_adjacent[lattice.OPP] + sigma * f_post_adjacent[lattice.MIRROR]
+    inward = lattice.inward_high if top else lattice.inward_low
     return np.where(inward, mix, f_post_adjacent)
+
+
+def mixed_wall_row_3d(f_post_adjacent: np.ndarray, sigma: float, top: bool):
+    """D3Q19 mixed bounce-back / specular wall row (compatibility entry point)."""
+    return mixed_wall_row_lattice(LATTICE_19, f_post_adjacent, sigma, top)
 
 
 # ---------------------------------------------------------------------------
 # D3Q19 kernels
 # ---------------------------------------------------------------------------
-def _equilibrium(rho, ux, uy, uz):
-    cu = 3.0 * (_CX * ux + _CY * uy + _CZ * uz)
+def _equilibrium_lattice(lattice: Lattice, rho, ux, uy, uz):
+    cu = 3.0 * (lattice.cx * ux + lattice.cy * uy + lattice.cz * uz)
     usq = ux * ux + uy * uy + uz * uz
-    return _W * rho * (1.0 + cu + 0.5 * cu * cu - 1.5 * usq)
+    return lattice.w * rho * (1.0 + cu + 0.5 * cu * cu - 1.5 * usq)
 
 
-def _macroscopic(f, fx=0.0, fy=0.0, fz=0.0):
+def _macroscopic_lattice(lattice: Lattice, f, fx=0.0, fy=0.0, fz=0.0):
     rho = f.sum(0)
     safe = np.where(rho == 0.0, 1.0, rho)       # wall rows carry no mass
-    ux = ((_CX * f).sum(0) + 0.5 * fx) / safe
-    uy = ((_CY * f).sum(0) + 0.5 * fy) / safe
-    uz = ((_CZ * f).sum(0) + 0.5 * fz) / safe
+    ux = ((lattice.cx * f).sum(0) + 0.5 * fx) / safe
+    uy = ((lattice.cy * f).sum(0) + 0.5 * fy) / safe
+    uz = ((lattice.cz * f).sum(0) + 0.5 * fz) / safe
     return rho, ux, uy, uz
 
 
-def _collide_bgk_guo(f, tau, fx=0.0, fy=0.0, fz=0.0):
+def _collide_bgk_guo_lattice(lattice: Lattice, f, tau, fx=0.0, fy=0.0, fz=0.0):
     """BGK collision with Guo forcing (second-order in the force)."""
-    rho, ux, uy, uz = _macroscopic(f, fx, fy, fz)
-    feq = _equilibrium(rho, ux, uy, uz)
+    rho, ux, uy, uz = _macroscopic_lattice(lattice, f, fx, fy, fz)
+    feq = _equilibrium_lattice(lattice, rho, ux, uy, uz)
     f_post = f - (f - feq) / tau
-    cu = _CX * ux + _CY * uy + _CZ * uz
+    cu = lattice.cx * ux + lattice.cy * uy + lattice.cz * uz
     src = (
-        3.0 * ((_CX - ux) * fx + (_CY - uy) * fy + (_CZ - uz) * fz)
-        + 9.0 * cu * (_CX * fx + _CY * fy + _CZ * fz)
+        3.0 * ((lattice.cx - ux) * fx + (lattice.cy - uy) * fy + (lattice.cz - uz) * fz)
+        + 9.0 * cu * (lattice.cx * fx + lattice.cy * fy + lattice.cz * fz)
     )
-    return f_post + (1.0 - 0.5 / tau) * _W * src
+    return f_post + (1.0 - 0.5 / tau) * lattice.w * src
+
+
+# Backwards-compatible D3Q19 kernels: ``slip_wall_calibration`` drives the
+# solver primitives directly, so the pre-refactor signatures stay available.
+def _equilibrium(rho, ux, uy, uz):
+    return _equilibrium_lattice(LATTICE_19, rho, ux, uy, uz)
+
+
+def _macroscopic(f, fx=0.0, fy=0.0, fz=0.0):
+    return _macroscopic_lattice(LATTICE_19, f, fx, fy, fz)
+
+
+def _collide_bgk_guo(f, tau, fx=0.0, fy=0.0, fz=0.0):
+    return _collide_bgk_guo_lattice(LATTICE_19, f, tau, fx, fy, fz)
 
 
 # ---------------------------------------------------------------------------
@@ -180,14 +278,16 @@ class Channel3DResult:
     residual: float
     momentum_growth: float | None = None
     geometry: str = "plane3d"
+    lattice: str = "D3Q19"
 
     @property
     def u_max(self) -> float:
         return float(self.u_profile.max())
 
 
-def channel_poiseuille_3d(
+def channel_poiseuille_lattice(
     sigma: float,
+    lattice: Lattice = LATTICE_19,
     ny: int = 33,
     nx: int = 3,
     nz: int = 3,
@@ -196,6 +296,7 @@ def channel_poiseuille_3d(
     steps: int = 60000,
     tol: float = 1e-10,
     track_momentum: bool = False,
+    init_wave: float = 0.0,
 ) -> Channel3DResult:
     """Steady plane Poiseuille flow between two mixed-slip y-walls in D3Q19.
 
@@ -218,7 +319,25 @@ def channel_poiseuille_3d(
     if nx < 1 or nz < 1:
         raise ValueError("nx, nz must be >= 1")
     zero = np.zeros((nx, ny, nz))
-    f = _equilibrium(np.ones_like(zero), zero, zero, zero)
+    ux0 = zero
+    if init_wave:
+        # Non-uniform start: a single x/z wave of relative amplitude
+        # ``init_wave`` added to the streamwise velocity.  It cannot survive a
+        # steady state that is x/z-uniform, so the run doubles as a collapse
+        # test: uniformity must be *reached*, not merely preserved from a
+        # symmetric initial condition.
+        if not 0.0 <= init_wave < 1.0:
+            raise ValueError(f"init_wave must be in [0, 1), got {init_wave}")
+        nu = (tau - 0.5) / 3.0
+        if nu <= 0.0:
+            raise ValueError("tau must be > 0.5")
+        amp = float(init_wave) * g * ((ny - 2) / 2.0) ** 2 / (3.0 * nu)
+        ix = np.arange(nx).reshape(nx, 1, 1)
+        iz = np.arange(nz).reshape(1, 1, nz)
+        ux0 = amp * np.sin(2.0 * np.pi * ix / nx) * np.cos(2.0 * np.pi * iz / nz) * np.ones(
+            (1, ny, 1)
+        )
+    f = _equilibrium_lattice(lattice, np.ones_like(zero), ux0, zero, zero)
     u_prev = np.zeros((ny - 2, nx, nz))
     residual = float("inf")
     converged = False
@@ -227,14 +346,16 @@ def channel_poiseuille_3d(
     u = u_prev
     for step in range(1, steps + 1):
         fx = g * f.sum(0)
-        f_post = _collide_bgk_guo(f, tau, fx=fx)
-        f_post[:, :, 0, :] = mixed_wall_row_3d(f_post[:, :, 1, :], sigma, top=False)
-        f_post[:, :, ny - 1, :] = mixed_wall_row_3d(
-            f_post[:, :, ny - 2, :], sigma, top=True
+        f_post = _collide_bgk_guo_lattice(lattice, f, tau, fx=fx)
+        f_post[:, :, 0, :] = mixed_wall_row_lattice(
+            lattice, f_post[:, :, 1, :], sigma, top=False
+        )
+        f_post[:, :, ny - 1, :] = mixed_wall_row_lattice(
+            lattice, f_post[:, :, ny - 2, :], sigma, top=True
         )
         new_f = np.zeros_like(f)
-        for q in range(_Q):
-            cx, cyq, cz = (int(v) for v in C19[q])
+        for q in range(lattice.Q):
+            cx, cyq, cz = (int(v) for v in lattice.C[q])
             src = f_post[q]
             if cx:
                 src = np.roll(src, cx, axis=0)          # -> src[x] = full[x - cx]
@@ -242,7 +363,7 @@ def channel_poiseuille_3d(
                 src = np.roll(src, cz, axis=2)
             new_f[q][:, 1:ny - 1, :] = src[:, 1 - cyq:ny - 1 - cyq, :]
         f = new_f
-        _rho, ux, _uy, _uz = _macroscopic(f, g * f.sum(0))
+        _rho, ux, _uy, _uz = _macroscopic_lattice(lattice, f, g * f.sum(0))
         u = ux[:, 1:ny - 1, :].transpose(1, 0, 2)       # (ny-2, nx, nz)
         residual = float(np.max(np.abs(u - u_prev)) / max(np.max(np.abs(u)), 1e-300))
         u_prev = u.copy()
@@ -261,8 +382,13 @@ def channel_poiseuille_3d(
         sigma=sigma, nx=nx, ny=ny, nz=nz, tau=tau, g=g,
         u_profile=plane_mean, u_slice=u[:, :, 0], plane_spread=spread,
         length=(ny - 2) / 2.0, steps=step, converged=converged,
-        residual=residual, momentum_growth=mom_growth,
+        residual=residual, momentum_growth=mom_growth, lattice=lattice.name,
     )
+
+
+def channel_poiseuille_3d(sigma: float, **kwargs) -> Channel3DResult:
+    """D3Q19 entry point (compatibility wrapper around the generic solver)."""
+    return channel_poiseuille_lattice(sigma, LATTICE_19, **kwargs)
 
 
 def collapse_error(result_3d: Channel3DResult, result_1d=None) -> dict:
