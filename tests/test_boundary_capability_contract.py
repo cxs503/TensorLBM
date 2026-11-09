@@ -118,16 +118,21 @@ def test_wall_bounce_back_d3q27_is_mechanics_tested_only() -> None:
 
 
 def test_wall_partial_slip_statuses() -> None:
-    """The mixed slip wall: D2Q9 reduction tested, D3Q19 validated, D3Q27 absent."""
+    """The mixed slip wall: D2Q9 reduction tested, D3Q19 and D3Q27 validated."""
     matrix = boundary_capability_matrix()
     assert matrix["wall_partial_slip"]["D2Q9"].implementation_status == "MECHANICS_TESTED"
     assert matrix["wall_partial_slip"]["D3Q19"].implementation_status == "PHYSICS_VALIDATED"
-    assert matrix["wall_partial_slip"]["D3Q27"].implementation_status == "NO_IMPLEMENTATION"
+    assert matrix["wall_partial_slip"]["D3Q27"].implementation_status == "PHYSICS_VALIDATED"
     ev = matrix["wall_partial_slip"]["D3Q19"].verification_evidence
     assert "partial_slip_wall3d" in matrix["wall_partial_slip"]["D3Q19"].entrypoint
     assert "P106W1_N04" in ev
+    cap27 = matrix["wall_partial_slip"]["D3Q27"]
+    assert "partial_slip_wall3d" in cap27.entrypoint
+    assert "mixed_wall_row_lattice" in cap27.entrypoint
+    assert "test_partial_slip_wall3dq27.py" in cap27.verification_evidence
     # still fail-closed: no composition contract, so not claimable as available
     assert matrix["wall_partial_slip"]["D3Q19"].available is False
+    assert cap27.available is False
 
 
 def test_wall_free_slip_only_d3q19_implementation_exists() -> None:
