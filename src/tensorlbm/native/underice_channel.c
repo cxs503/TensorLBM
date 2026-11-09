@@ -164,6 +164,7 @@ int main(int argc, char **argv) {
 
     const double s_plus = 1.0 / tau;
     double sum_me = 0.0, sum_form = 0.0, sum_skin = 0.0, sum_skin_y = 0.0;
+    double sum_flux = 0.0; long n_wall = 0;
     double sum_ux = 0.0, sum_ux2 = 0.0, sum_rho = 0.0;
     double mom_first = 0.0, mom_last = 0.0;
     double sux_first = 0.0, sux_last = 0.0;
@@ -235,12 +236,14 @@ int main(int argc, char **argv) {
 
         if (t >= warmup && ((t - warmup) % sample_interval) == 0) {
             double me = 0.0, form = 0.0, skin = 0.0, skin_y = 0.0;
+            double flux = 0.0; long nwall = 0;
             double mom_now = 0.0;
             double sux = 0.0, sux2 = 0.0, srho = 0.0;
             float mx = 0.0f;
             #pragma omp parallel
             {
                 double lme = 0.0, lform = 0.0, lskin = 0.0, lskin_y = 0.0, lmom = 0.0;
+                double lflux = 0.0; long lnwall = 0;
                 double lsux = 0.0, lsux2 = 0.0, lsrho = 0.0;
                 float lmax = 0.0f;
                 double lprof[512];
@@ -251,12 +254,29 @@ int main(int argc, char **argv) {
                         for (long x = 0; x < nx; x++) {
                             long n = (z * ny + y) * nx + x;
                             if (solid[n]) continue;
-                            for (int i = 1; i < Q; i++)
-                                if (CX[i] != 0 && links[(long)i * N + n])
-                                    /* wall momentum gain per link: c_i (f*_i - f*_opp) */
+                            /* wall force from the wall-crossing links: a
+                               halfway bounce-back link delivers 2 c_ix f*_i,
+                               but only the nonequilibrium part f*_i - feq_i
+                               carries stress (the equilibrium part is the
+                               convective momentum replaced by the incoming
+                               stream).  Using f*_i - f*_opp instead measures
+                               ~U_wall/3 and over-predicts the force ~30x. */
+                            {
+                                double rr = (double)rho[n];
+                                double uu = rr > 1e-12 ? (double)ux[n] : 0.0;
+                                double vv = rr > 1e-12 ? (double)uy[n] : 0.0;
+                                double ww = rr > 1e-12 ? (double)uz[n] : 0.0;
+                                double usq = uu * uu + vv * vv + ww * ww;
+                                for (int i = 1; i < Q; i++) {
+                                    if (CX[i] == 0) continue;
+                                    if (!links[(long)i * N + n]) continue;
+                                    double cu = CX[i] * uu + CY[i] * vv + CZ[i] * ww;
+                                    double feqi = WT[i] * rr *
+                                        (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq);
                                     lme += (double)CX[i] *
-                                           ((double)fstar[(long)i * N + n] -
-                                            (double)fstar[(long)OPP[i] * N + n]);
+                                           ((double)fstar[(long)i * N + n] - feqi);
+                                }
+                            }
                             /* x-normal faces: p = rho/3, +/- depending on side */
                             {
                                 long xp = (((x + 1) % nx) * 1) + (y * nx) + (z * ny * nx);
@@ -280,6 +300,32 @@ int main(int argc, char **argv) {
                                     lskin_y += nu * 0.5 * ((double)ux[yp] - (double)ux[ym]);
                                 }
                             }
+                            /* wall stress from the x-z momentum flux at the
+                               wall-adjacent row: tau_xz = -sum_i c_x c_z f_i^neq
+                               (the equilibrium part sum c_x c_z feq = rho u_x u_z
+                               and is subtracted).  One entry per wall-adjacent
+                               node, i.e. per unit of wall-plan area. */
+                            {
+                                int zwall = 0;
+                                if (z + 1 < nz && solid[n + (long)nx * ny]) zwall = 1;
+                                if (z - 1 >= 0 && solid[n - (long)nx * ny]) zwall = 1;
+                                if (zwall) {
+                                    double rr = (double)rho[n];
+                                    double uu = rr > 1e-12 ? (double)ux[n] : 0.0;
+                                    double vv = rr > 1e-12 ? (double)uy[n] : 0.0;
+                                    double ww = rr > 1e-12 ? (double)uz[n] : 0.0;
+                                    double usq = uu * uu + vv * vv + ww * ww;
+                                    for (int i = 1; i < Q; i++) {
+                                        if (CX[i] == 0 || CZ[i] == 0) continue;
+                                        double cu = CX[i] * uu + CY[i] * vv + CZ[i] * ww;
+                                        double feqi = WT[i] * rr *
+                                            (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq);
+                                        lflux += (double)CX[i] * (double)CZ[i] *
+                                                 ((double)fstar[(long)i * N + n] - feqi);
+                                    }
+                                    lnwall += 1;
+                                }
+                            }
                             {
                                 double m = 0.0;
                                 for (int i = 0; i < Q; i++) m += CX[i] * (double)f[(long)i * N + n];
@@ -294,16 +340,23 @@ int main(int argc, char **argv) {
                 #pragma omp critical
                 {
                     me += lme; form += lform; skin += lskin; skin_y += lskin_y;
+                    flux += lflux; nwall += lnwall;
                     sux += lsux; sux2 += lsux2; srho += lsrho;
                     mom_now += lmom;
                     if (lmax > mx) mx = lmax;
                     for (int k = 0; k < nz && k < 512; k++) prof[k] += lprof[k];
                 }
             }
-            if (n_samples == 0) { mom_first = mom_now; sux_first = sum_ux + sux; }
-            sux_last = sum_ux + sux;
+            if (n_samples == 0) { mom_first = mom_now; sux_first = sux; }
+            sux_last = sux;
             mom_last = mom_now;
-            sum_me += me; sum_form += form; sum_skin += skin; sum_skin_y += skin_y;
+            /* f* - feq = (1 - s+)(f - feq) here (s- = s+ = 1/tau), so undo the
+               relaxation attenuation; the 2 c_ix factor is the bounce-back
+               momentum delivery. */
+            sum_me += 2.0 * me / (1.0 - s_minus);
+            sum_form += form; sum_skin += skin; sum_skin_y += skin_y;
+            sum_flux += 2.0 * flux / (1.0 - s_minus);
+            n_wall += nwall;
             sum_ux += sux; sum_ux2 += sux2; sum_rho += srho;
             if (mx > max_ux) max_ux = mx;
             n_samples++;
@@ -324,6 +377,7 @@ int main(int argc, char **argv) {
     fprintf(fo, "\"n_fluid\": %ld, \"n_samples\": %d,\n", n_fluid, n_samples);
     fprintf(fo, "\"sum_me\": %s, \"sum_form\": %s, \"sum_skin\": %s,",
             jnum_s(sum_me), jnum_s(sum_form), jnum_s(sum_skin));
+    fprintf(fo, " \"sum_flux\": %s, \"n_wall\": %d,\n", jnum_s(sum_flux), n_wall);
     fprintf(fo, " \"sum_skin_y\": %s,\n", jnum_s(sum_skin_y));
     fprintf(fo, "\"sum_ux\": %s, \"sum_ux2\": %s, \"sum_rho\": %s, \"max_ux\": %s,\n",
             jnum_s(sum_ux), jnum_s(sum_ux2), jnum_s(sum_rho), jnum_s((double)max_ux));
