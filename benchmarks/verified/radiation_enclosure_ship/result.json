@@ -1,0 +1,71 @@
+{
+  "benchmark": "radiation_enclosure_ship",
+  "geometry": {
+    "deck_area_m2": 24.0,
+    "bulkhead_area_m2": 12.0,
+    "overhead_area_m2": 18.0
+  },
+  "view_factors": [
+    [
+      0.0,
+      0.3540837270879808,
+      0.5901395451466348
+    ],
+    [
+      0.7081674541759616,
+      0.0,
+      0.23605581805865397
+    ],
+    [
+      0.7868527268621797,
+      0.157370545372436,
+      0.0
+    ]
+  ],
+  "view_factor_checks": {
+    "summation_residual": 0.05577672776538445,
+    "reciprocity_residual": 1.7763568394002505e-15
+  },
+  "solar_irradiance_W_m2": 800.0,
+  "results": {
+    "net_flux_W_m2": [
+      -1.7455630887894245,
+      -15.275134261834069,
+      -421.8814093370122
+    ],
+    "solar_flux_W_m2": [
+      0.0,
+      0.0,
+      226.27416997969522
+    ],
+    "sky_flux_W_m2": [
+      0.0,
+      0.0,
+      287.49507704225044
+    ],
+    "radiosity_W_m2": [
+      459.49427939330985,
+      433.25612006663516,
+      521.6239163039636
+    ],
+    "irradiation_W_m2": [
+      461.2398424820993,
+      448.53125432846923,
+      943.5053256409758
+    ],
+    "band_radiance_8_12_W_m2_sr": [
+      38.500423933347854,
+      35.43054686839107,
+      37.25362329317275
+    ],
+    "surface_temperatures_K": [
+      300.0,
+      295.0,
+      298.0
+    ],
+    "total_emitted_power_W": 24225.592513539188,
+    "total_absorbed_power_W": 7819.060493339174,
+    "energy_conservation_residual": 1.0,
+    "solver_method": "gauss_seidel"
+  }
+}
