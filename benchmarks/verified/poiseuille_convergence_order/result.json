@@ -1,0 +1,85 @@
+{
+  "case": "poiseuille_convergence_order",
+  "lattice": "D2Q9",
+  "collision": "bgk",
+  "forcing": "guo",
+  "driving": "body_force",
+  "boundary": "half_way_bounce_back",
+  "wall_position_correction": "effective_y_w_0.5_delta",
+  "tau": 0.8,
+  "u_max_target": 0.04,
+  "H_list": [10, 20],
+  "steps": 5000,
+  "wall_models": {
+    "halfway": {
+      "per_grid": [
+        {
+          "H": 10,
+          "H_eff": 10.0,
+          "ny": 12,
+          "nx": 40,
+          "tau": 0.8,
+          "nu": 0.1,
+          "accel": 0.0032,
+          "u_max_target": 0.04,
+          "wall_model": "halfway",
+          "steps": 5000,
+          "elapsed_s": 10.5,
+          "l2_err": 0.000208603,
+          "l2_rel": 0.005215084,
+          "linf_err": 0.000208853,
+          "linf_rel": 0.005221329,
+          "finite": true
+        },
+        {
+          "H": 20,
+          "H_eff": 20.0,
+          "ny": 22,
+          "nx": 80,
+          "tau": 0.8,
+          "nu": 0.1,
+          "accel": 0.0008,
+          "u_max_target": 0.04,
+          "wall_model": "halfway",
+          "steps": 5000,
+          "elapsed_s": 22.3,
+          "l2_err": 0.000055229,
+          "l2_rel": 0.001380718,
+          "linf_err": 0.000056858,
+          "linf_rel": 0.001421449,
+          "finite": true
+        }
+      ],
+      "convergence": {
+        "errors_l2_rel": [0.005215084, 0.001380718],
+        "errors_linf_rel": [0.005221329, 0.001421449],
+        "grid_ratios": [2.0],
+        "observed_orders_l2": [1.917],
+        "observed_orders_linf": [1.877]
+      }
+    }
+  },
+  "verdict": "PASS",
+  "acceptance_criteria": {
+    "order_l2_in_range": {
+      "target": [1.9, 2.1],
+      "measured": 1.917,
+      "pass": true
+    },
+    "order_deviation_from_2": {
+      "target_max": 0.1,
+      "measured": 0.083,
+      "pass": true
+    },
+    "error_decreases": {
+      "target": true,
+      "measured": true,
+      "pass": true
+    },
+    "simulation_stable": {
+      "target": true,
+      "measured": true,
+      "pass": true
+    }
+  }
+}
