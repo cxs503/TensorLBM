@@ -60,3 +60,31 @@ to the retired pending skeleton), `prereg.md` + `md5_receipt.txt` (frozen
 append-only chain incl. E1/E2), `verdict.json` (formal FAIL) +
 `e2_verdict.json` (E2 PASS), per-tier archives `formal_L*/ ey2_L* diag_bare_L*`
 (result JSON + full run.log), `result.json` (aggregate + provenance).
+
+## AMR-chain negative-drag re-run (paper-exp-lbm-suboff-tau-4, 2026-11-08)
+
+The m298 uniform-grid τ ladder (see `tau_ladder_report_m298.md`) closed with
+recommendation **R3**: the negative-drag pathology belongs to the AMR
+production / ice-coupling chain (`D_QW = −3.20e-3` at τ=0.50036, terminal
+verdict #278), so the τ ladder must be re-run *there*. This experiment executes
+R3 with one decisive change — **Reynolds matching** — because the historical
+ladder varied τ at a fixed lattice speed and therefore changed Re by five
+orders of magnitude across its four rungs.
+
+* driver `run_amr_negative_drag_repro.py` (frozen criteria R1 reconstruction /
+  F2 falsification live inside it), orchestrator
+  `run_amr_negative_drag_repro.sh`, figures `gen_amr_negative_drag_figures.py`,
+  report `gen_amr_negative_drag_report.py`
+* per-arm raw record `amr_arms/<arm>/{result.json,anchor_samples.jsonl}`
+* verdict artifact **`amr_negative_drag_repro.json`** (machine-written; every
+  number injected by the driver, historical values quoted verbatim with line
+  numbers)
+* protocol: shipped 2:1 static AMR block (`plan_suboff_static_amr` +
+  `build_fine_suboff_mask`), D3Q19 MRT + positivity limiter, non-equilibrium
+  far field on the coarse level, BFL bounce-back on the CAD-resolved fine
+  hull, anchor family sampled with `tau_anchor_probe.py`
+* unit tests `tests/test_amr_negative_drag_repro.py`
+
+This block is append-only: the E2 drag verdict above is untouched by it, and no
+3 % drag-accuracy band is claimed here (this experiment is a sign / attribution
+test, not a drag-accuracy claim).
