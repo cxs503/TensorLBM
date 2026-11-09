@@ -22,8 +22,19 @@ Modules
     Free-drift momentum balance (wind stress + water drag + Coriolis) that
     turns a ``C_w`` into a Nansen drift angle, i.e. the back-fill that makes
     the closure testable against observations.
+``three_zone``
+    Three-lens cross-adjudication of the closure (mission P103W2C-N01): the
+    hydraulically-smooth power law, the Colebrook-White implicit relation and
+    the Nikuradse fully-rough log law are each required to reproduce the LBM
+    data in their own zone, with ``kappa = 0.41`` used only as a check
+    quantity; also holds the GCI arithmetic.
+``propagation``
+    The drift-model back-fill (C_w table, Nansen angle and wind factor versus
+    ice-underside roughness) and its explicit verdict against the observational
+    bands, including honest-FAIL reporting.
 """
 
-from . import freedrift, geometry, regime_law, sweep
+from . import freedrift, geometry, propagation, regime_law, sweep, three_zone
 
-__all__ = ["freedrift", "geometry", "regime_law", "sweep"]
+__all__ = ["freedrift", "geometry", "propagation", "regime_law", "sweep",
+           "three_zone"]

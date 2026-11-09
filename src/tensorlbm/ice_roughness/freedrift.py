@@ -19,8 +19,11 @@ deflection angle to the right of the wind (Northern Hemisphere)
 
     tan(alpha) = B = rho_i h_i f / (rho_w C_w U).                              (3)
 
-``alpha`` therefore *decreases* with increasing ``C_w``: a rougher ice
-underside drifts faster and straighter.  Solving (3) together with the
+``alpha`` therefore *decreases* with increasing ``C_w`` and so does the drift
+speed (``U^2 = T cos(alpha)/(rho_w C_w)``): a rougher ice underside drifts
+**slower and straighter**, because it is coupled more tightly to the water
+column.  (Both limits are checked by the tests in
+``tests/test_ice_roughness_three_zone.py``.)  Solving (3) together with the
 roughness closure of :mod:`tensorlbm.ice_roughness.regime_law` (which makes
 ``C_w`` a function of the same relative velocity ``U``, implicitly through
 ``k_s^+``) is a scalar fixed-point problem, solved by

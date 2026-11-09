@@ -353,6 +353,16 @@ def _cf_nikuradse_prediction(re_tau: float, ks_plus: float) -> float:
     return 2.0 / u_b_plus_rough**2
 
 
+def _num(value: Any) -> float:
+    """``float(value)`` that maps ``None`` (JSON null for an undefined ratio) to NaN."""
+    if value is None:
+        return float("nan")
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float("nan")
+
+
 def _group_key(lam: Any) -> str:
     try:
         v = float(lam)
@@ -410,8 +420,8 @@ def aggregate(run_dir: str | Path, *, criteria: Mapping[str, Any] | None = None)
             "case_id": cid,
             "group": _group_key(case.get("lambda_over_ks")),
             "morphology": case.get("morphology", "ribs"),
-            "lambda_over_ks": float(case.get("lambda_over_ks", float("nan"))),
-            "ks_plus_target": float(case.get("ks_plus_target", float("nan"))),
+            "lambda_over_ks": _num(case.get("lambda_over_ks")),
+            "ks_plus_target": _num(case.get("ks_plus_target")),
             "ks_plus": ks_plus,
             "ks_nodes": float(rec.get("ks_nodes", float("nan"))),
             "re_tau": float(rec["re_tau"]),
