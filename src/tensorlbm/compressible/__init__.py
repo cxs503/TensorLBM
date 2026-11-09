@@ -129,9 +129,33 @@ from .kinetic_flux import (  # noqa: E402,F401
     experimental_anchor_status,
     kfvs_flux,
     moving_shock_ratios,
+    mesh_quality,
     naca0012_half_thickness,
     normal_shock_ratios,
     radial_levels,
+    radial_levels_from_surface,
+)
+
+# --- transonic / sonic-boom verification (IN421-W2-N03) ----------------------
+from . import transonic_aero  # noqa: E402,F401
+from .transonic_aero import (  # noqa: E402,F401
+    ackeret_pressure_ratio,
+    critical_mach_from_cp_min,
+    diamond_loop,
+    gci_roache,
+    isentropic_deviation,
+    lift_slope,
+    oblique_shock_angle,
+    oblique_shock_pressure_ratio,
+    prandtl_glauert_lift_slope,
+    run_naca_case,
+    run_wedge_case,
+    shock_from_surface_mach,
+    surface_mach_from_cp,
+    thickness_corrected_lift_slope,
+    validate_geometry,
+    wedge_expansion_reference,
+    wedge_reference_table,
 )
 
 # --- NACA0012 LBM solver (P153W2-N04) ---------------------------------------
