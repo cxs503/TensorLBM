@@ -1,0 +1,107 @@
+{
+  "config": {
+    "D": 0.1,
+    "lattice": "D2Q5",
+    "dtype": "float64",
+    "ny": 16,
+    "nx": 128,
+    "n_steps": 6000,
+    "measure_every": 10,
+    "D_keys": [
+      "ny",
+      "nx",
+      "D",
+      "pe",
+      "amplitude",
+      "n_steps",
+      "measure_every",
+      "fit_start_fraction",
+      "dtype"
+    ]
+  },
+  "sweep": [
+    {
+      "pe": 0.001,
+      "u_amp": 6.25e-06,
+      "k": 0.04908738521234052,
+      "d_eff_numeric": 0.10001285778328187,
+      "d_eff_theory": 0.1000000012665148,
+      "rel_error": 0.00012856516604231594,
+      "rate_fit": 0.0002409881204451667,
+      "transverse_rate": 0.015421256876702122,
+      "axial_rate_theory": 0.00024095714175022848,
+      "ny": 16,
+      "nx": 128,
+      "n_steps": 6000,
+      "fit_start_time": 2995.0
+    },
+    {
+      "pe": 2.0,
+      "u_amp": 0.0125,
+      "k": 0.04908738521234052,
+      "d_eff_numeric": 0.1050235295435389,
+      "d_eff_theory": 0.1050660591821169,
+      "rel_error": -0.0004047895096577214,
+      "rate_fit": 0.00025306169174825434,
+      "transverse_rate": 0.015421256876702122,
+      "axial_rate_theory": 0.00025316416994847066,
+      "ny": 16,
+      "nx": 128,
+      "n_steps": 6000,
+      "fit_start_time": 2995.0
+    },
+    {
+      "pe": 5.0,
+      "u_amp": 0.03125,
+      "k": 0.04908738521234052,
+      "d_eff_numeric": 0.13144409868640541,
+      "d_eff_theory": 0.13166286988823056,
+      "rel_error": -0.001661601346004904,
+      "rate_fit": 0.00031672393918275656,
+      "transverse_rate": 0.015421256876702122,
+      "axial_rate_theory": 0.00031725108401097065,
+      "ny": 16,
+      "nx": 128,
+      "n_steps": 6000,
+      "fit_start_time": 2995.0
+    },
+    {
+      "pe": 8.0,
+      "u_amp": 0.05,
+      "k": 0.04908738521234052,
+      "d_eff_numeric": 0.18103352468759468,
+      "d_eff_theory": 0.18105694691387025,
+      "rel_error": -0.00012936386410355993,
+      "rate_fit": 0.00043621320117221763,
+      "transverse_rate": 0.015421256876702122,
+      "axial_rate_theory": 0.0004362696386984707,
+      "ny": 16,
+      "nx": 128,
+      "n_steps": 6000,
+      "fit_start_time": 2995.0
+    },
+    {
+      "pe": 12.0,
+      "u_amp": 0.07500000000000001,
+      "k": 0.04908738521234052,
+      "d_eff_numeric": 0.2849975748426941,
+      "d_eff_theory": 0.2823781305562081,
+      "rel_error": 0.009276370947447043,
+      "rate_fit": 0.0006867220017009882,
+      "transverse_rate": 0.015421256876702122,
+      "axial_rate_theory": 0.0006804102636984708,
+      "ny": 16,
+      "nx": 128,
+      "n_steps": 6000,
+      "fit_start_time": 2995.0
+    }
+  ],
+  "uniform_control": {
+    "pe": 8.0,
+    "d_eff_numeric": 0.09926266232369878,
+    "rel_error": -0.007373376763012307
+  },
+  "analytic": {
+    "periodic_shear": 0.18105694691387025
+  }
+}
