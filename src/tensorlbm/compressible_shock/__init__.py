@@ -36,7 +36,7 @@ Scope and limits (read before trusting a number)
   lineage is the Boltzmann-level flux evaluation, documented per function.
 """
 
-from . import analysis, cases, family, flux, rankine_hugoniot, solver  # noqa: F401
+from . import analysis, cases, family, flux, rankine_hugoniot, solver, standoff  # noqa: F401
 from .rankine_hugoniot import (  # noqa: F401
     GAMMA,
     moving_shock,
@@ -59,4 +59,5 @@ __all__ = [
     "cases",
     "analysis",
     "family",
+    "standoff",
 ]
