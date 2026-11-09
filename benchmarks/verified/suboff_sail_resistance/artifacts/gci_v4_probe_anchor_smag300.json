@@ -1,0 +1,45 @@
+{
+ "artifact_kind": "gci_v4_stability_probe",
+ "purpose": "locate the tau->1/2 executability frontier of the frozen ladder protocol; no Ct from this file is used in any accuracy verdict",
+ "protocol_reference": "gci_v4_prereg.md",
+ "anchor": {
+  "Re": 11647265.09120281,
+  "V_ms": 3.04550848,
+  "nu": 1.139e-06
+ },
+ "resolution": 48,
+ "steps": 300,
+ "rows": [
+  {
+   "L": 48,
+   "Re_target": 11647400.0,
+   "closure": "smagorinsky",
+   "tau": 0.5000006181637103,
+   "tau_minus_half": 6.181637103308546e-07,
+   "nu_lb": 2.0605457011865315e-07,
+   "u_lb": 0.05,
+   "domain_lu": [
+    288,
+    102,
+    102
+   ],
+   "cells": 2996352,
+   "steps_requested": 300,
+   "steps_executed": 300,
+   "diverged": false,
+   "elapsed_s": 1251.8350381851196,
+   "ms_per_step": 4172.783460617065,
+   "setup_s": 2.0447323322296143,
+   "ct_samples": 60,
+   "ct_last": 0.007772642387418481,
+   "ct_mean": 0.012962909969886685,
+   "device": "cpu",
+   "torch": "2.7.1",
+   "torch_threads": 8
+  }
+ ],
+ "provenance": {
+  "script": "benchmarks/verified/suboff_sail_resistance/gci_v4_probe.py",
+  "invocation": "python3 gci_v4_probe.py --resolution 48 --steps 300 --re 11647400.0 --closures smagorinsky --device cpu --threads 8"
+ }
+}
