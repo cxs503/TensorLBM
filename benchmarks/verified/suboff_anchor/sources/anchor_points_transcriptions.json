@@ -1,0 +1,464 @@
+{
+ "schema": "suboff-anchor-points-transcriptions/v1",
+ "task_key": "paper-exp-lbm-suboff-tau-A",
+ "mission_id": 8530,
+ "captured_utc": "2026-11-09",
+ "discipline": [
+  "每条 quote 必须是对应 file 第 line 行的逐字子串（build_anchor_points.py 机器校验，任一失配即构建失败）。",
+  "anchor_points.json 中的全部数字由 quote 的正则解析得到，禁止二次手抄；脚本内有 AST 自检禁止派生量以浮点字面量出现。",
+  "grade：PRIMARY_TABLE_SECOND_HAND=原报告表格的仓内二手逐字；SECONDARY=开放获取论文对同一试验的逐字转录；DERIVED_IN_REPO=仓内程序化换算表（非原始测量，口径见 quote 本身）；B_GRADE_UNVERIFIED=仓内文档明确标注 [B] 且注明需核对原文；CONVENTION=定义/口径/公式（非测量值）。",
+  "外部锚的真实性边界：离线环境无外网，ADA359226 原 PDF 与 CFD Letters PDF 均不在本工作树内；所有 quote 均为仓内已归档文本的逐字转录，不是原报告直接阅读。"
+ ],
+ "quotes": [
+  {
+   "id": "T14_B1",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 94,
+   "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40),",
+   "regex": "bare_hull\", 1, 5\\.92, 87\\.40\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — bare hull (AFF-1) row 1",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_B2",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 95,
+   "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 10.00, 242.2),",
+   "regex": "bare_hull\", 1, 10\\.00, 242\\.2\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — bare hull row 2",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_B3",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 96,
+   "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 11.84, 332.9),",
+   "regex": "bare_hull\", 1, 11\\.84, 332\\.9\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — bare hull row 3",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_B4",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 97,
+   "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 13.92, 451.5),",
+   "regex": "bare_hull\", 1, 13\\.92, 451\\.5\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — bare hull row 4",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_B5",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 98,
+   "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 16.00, 576.9),",
+   "regex": "bare_hull\", 1, 16\\.00, 576\\.9\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — bare hull row 5",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_B6",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 99,
+   "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 17.99, 697.0),",
+   "regex": "bare_hull\", 1, 17\\.99, 697\\.0\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — bare hull row 6",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_CITE",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 77,
+   "text": "        \"Program Data, CRDKNSWC/HD-1298-11, ADA359226, Table 14, p.23\"",
+   "regex": "CRDKNSWC/HD-1298-11, ADA359226, Table 14, p\\.23",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — table/page citation carried by the frozen registry",
+   "kind": "citation"
+  },
+  {
+   "id": "T14_DUP_AFF1",
+   "file": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+   "line": 23,
+   "text": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+   "regex": "AFF-1 裸艇 \\| 5\\.92 / 10\\.00 / 11\\.84 / 13\\.92 / 16\\.00 / 17\\.99 \\| 87\\.40 / 242\\.2 / 332\\.9 / 451\\.5 / 576\\.9 / 697\\.0",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — second in-repo transcription (double entry)",
+   "kind": "measurement_row_set"
+  },
+  {
+   "id": "T14_DUP_AFF8",
+   "file": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+   "line": 24,
+   "text": "| AFF-8 全附体 | 5.93 / 10.00 / 11.85 / 13.92 / 16.00 / 17.79 | 102.3 / 283.8 / 389.2 / 526.6 / 675.6 / 821.1 |",
+   "regex": "AFF-8 全附体 \\| 5\\.93 / 10\\.00 / 11\\.85 / 13\\.92 / 16\\.00 / 17\\.79 \\| 102\\.3 / 283\\.8 / 389\\.2 / 526\\.6 / 675\\.6 / 821\\.1",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — AFF-8 second in-repo transcription",
+   "kind": "measurement_row_set"
+  },
+  {
+   "id": "T14_FULL_R1",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 100,
+   "text": "    SuboffTowTankResistancePoint(\"full\", 8, 5.93, 102.3),",
+   "regex": "full\", 8, 5\\.93, 102\\.3\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — full appendage (AFF-8) row 1",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_FULL_R2",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 101,
+   "text": "    SuboffTowTankResistancePoint(\"full\", 8, 10.00, 283.8),",
+   "regex": "full\", 8, 10\\.00, 283\\.8\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — AFF-8 row 2",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_FULL_R3",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 102,
+   "text": "    SuboffTowTankResistancePoint(\"full\", 8, 11.85, 389.2),",
+   "regex": "full\", 8, 11\\.85, 389\\.2\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — AFF-8 row 3",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_FULL_R4",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 103,
+   "text": "    SuboffTowTankResistancePoint(\"full\", 8, 13.92, 526.6),",
+   "regex": "full\", 8, 13\\.92, 526\\.6\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — AFF-8 row 4",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_FULL_R5",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 104,
+   "text": "    SuboffTowTankResistancePoint(\"full\", 8, 16.00, 675.6),",
+   "regex": "full\", 8, 16\\.00, 675\\.6\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — AFF-8 row 5",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T14_FULL_R6",
+   "file": "src/tensorlbm/suboff_reference_data.py",
+   "line": 105,
+   "text": "    SuboffTowTankResistancePoint(\"full\", 8, 17.79, 821.1),",
+   "regex": "full\", 8, 17\\.79, 821\\.1\\)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "DTRC Table 14, p.23 — AFF-8 row 6",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "IN25_R1",
+   "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+   "line": 95,
+   "text": "| 5.92 | 3.046 | 1.165e+07 | 87.4 | 0.00315 | 102.3 | 0.00356 | 1.1705 |",
+   "regex": "^\\| 5\\.92 \\| 3\\.046 \\| 1\\.165e\\+07 \\| 87\\.4 \\| 0\\.00315 \\| 102\\.3 \\| 0\\.00356 \\| 1\\.1705 \\|$",
+   "grade": "DERIVED_IN_REPO",
+   "locator": "IN25-T6 表 2 (docs/survey/IN25_T6_external_mature_tech_survey.md) row 1 — 4-significant-digit Re ladder",
+   "kind": "reynolds_row"
+  },
+  {
+   "id": "IN25_R2",
+   "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+   "line": 96,
+   "text": "| 10.00 | 5.144 | 1.967e+07 | 242.2 | 0.00305 | 283.8 | 0.00348 | 1.1718 |",
+   "regex": "^\\| 10\\.00 \\| 5\\.144 \\| 1\\.967e\\+07 \\| 242\\.2 \\| 0\\.00305 \\| 283\\.8 \\| 0\\.00348 \\| 1\\.1718 \\|$",
+   "grade": "DERIVED_IN_REPO",
+   "locator": "IN25-T6 表 2 row 2 — Re ladder",
+   "kind": "reynolds_row"
+  },
+  {
+   "id": "IN25_R3",
+   "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+   "line": 97,
+   "text": "| 11.84 | 6.091 | 2.329e+07 | 332.9 | 0.00299 | 389.2 | 0.00340 | 1.1691 |",
+   "regex": "^\\| 11\\.84 \\| 6\\.091 \\| 2\\.329e\\+07 \\| 332\\.9 \\| 0\\.00299 \\| 389\\.2 \\| 0\\.00340 \\| 1\\.1691 \\|$",
+   "grade": "DERIVED_IN_REPO",
+   "locator": "IN25-T6 表 2 row 3 — Re ladder",
+   "kind": "reynolds_row"
+  },
+  {
+   "id": "IN25_R4",
+   "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+   "line": 98,
+   "text": "| 13.92 | 7.161 | 2.739e+07 | 451.5 | 0.00294 | 526.6 | 0.00333 | 1.1663 |",
+   "regex": "^\\| 13\\.92 \\| 7\\.161 \\| 2\\.739e\\+07 \\| 451\\.5 \\| 0\\.00294 \\| 526\\.6 \\| 0\\.00333 \\| 1\\.1663 \\|$",
+   "grade": "DERIVED_IN_REPO",
+   "locator": "IN25-T6 表 2 row 4 — Re ladder",
+   "kind": "reynolds_row"
+  },
+  {
+   "id": "IN25_R5",
+   "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+   "line": 99,
+   "text": "| 16.00 | 8.231 | 3.148e+07 | 576.9 | 0.00284 | 675.6 | 0.00323 | 1.1711 |",
+   "regex": "^\\| 16\\.00 \\| 8\\.231 \\| 3\\.148e\\+07 \\| 576\\.9 \\| 0\\.00284 \\| 675\\.6 \\| 0\\.00323 \\| 1\\.1711 \\|$",
+   "grade": "DERIVED_IN_REPO",
+   "locator": "IN25-T6 表 2 row 5 — Re ladder",
+   "kind": "reynolds_row"
+  },
+  {
+   "id": "IN25_R6",
+   "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+   "line": 100,
+   "text": "| 17.99 | 9.255 | 3.539e+07 | 697.0 | 0.00272 | 821.1 | 0.00318 | 1.1780 |",
+   "regex": "^\\| 17\\.99 \\| 9\\.255 \\| 3\\.539e\\+07 \\| 697\\.0 \\| 0\\.00272 \\| 821\\.1 \\| 0\\.00318 \\| 1\\.1780 \\|$",
+   "grade": "DERIVED_IN_REPO",
+   "locator": "IN25-T6 表 2 row 6 — Re ladder",
+   "kind": "reynolds_row"
+  },
+  {
+   "id": "IN25_HEAD",
+   "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+   "line": 91,
+   "text": "### 表 2 · SUBOFF EFD 阻力阶梯（由 Table 14 量纲力值换算，ρ=999.0, ν=1.139e-06）",
+   "regex": "表 2 · SUBOFF EFD 阻力阶梯（由 Table 14 量纲力值换算，ρ=999\\.0, ν=1\\.139e-06）",
+   "grade": "CONVENTION",
+   "locator": "IN25-T6 表 2 header — declares the rho/nu used for the ladder",
+   "kind": "convention"
+  },
+  {
+   "id": "GEO_L",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 24,
+   "text": "| Length overall Lmax [m] | 4.356 |",
+   "regex": "\\| Length overall Lmax \\[m\\] \\| 4\\.356 \\|",
+   "grade": "SECONDARY",
+   "locator": "CFD Letters 2024 Table 1 (principal particulars) via refs_lock.md",
+   "kind": "geometry"
+  },
+  {
+   "id": "GEO_S",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 28,
+   "text": "| Wetted surface area WSA [m2] | 5.998 |",
+   "regex": "\\| Wetted surface area WSA \\[m2\\] \\| 5\\.998 \\|",
+   "grade": "SECONDARY",
+   "locator": "CFD Letters 2024 Table 1 via refs_lock.md — wetted surface convention",
+   "kind": "geometry"
+  },
+  {
+   "id": "CTDEF",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 73,
+   "text": "- CT = RT / (0.5 · ρ · V² · S)，ρ=1000 kg/m³（淡水，密度带 997–1000 →",
+   "regex": "- CT = RT / \\(0\\.5 · ρ · V² · S\\)，ρ=1000 kg/m³（淡水，密度带 997–1000 →",
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md conventions — C_T definition and rho",
+   "kind": "convention"
+  },
+  {
+   "id": "REDEF",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 78,
+   "text": "- Re = Lmax · V / ν，ν=1.139e-6 m²/s（淡水 15 °C 声明假设）。ν 假设对 CT",
+   "regex": "- Re = Lmax · V / ν，ν=1\\.139e-6 m²/s（淡水 15 °C 声明假设）。ν 假设对 CT",
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md conventions — Re definition and nu",
+   "kind": "convention"
+  },
+  {
+   "id": "SUBMERGED",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 10,
+   "text": "L_max = 4.356 m，拖曳水池深潜阻力。对应本仓 `SuboffHullType.FULL`。",
+   "regex": "L_max = 4\\.356 m，拖曳水池深潜阻力。对应本仓 `SuboffHullType.FULL`。",
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md — test condition: deeply submerged tow-tank (no free-surface wave making)",
+   "kind": "condition"
+  },
+  {
+   "id": "T3_F1",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 35,
+   "text": "| 3.050 | 102.30 |",
+   "regex": "^\\| 3\\.050 \\| 102\\.30 \\|$",
+   "grade": "SECONDARY",
+   "locator": "CFD Letters 2024 Table 3 (EFD column) row 1 via refs_lock.md",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T3_F2",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 36,
+   "text": "| 5.144 | 283.80 |",
+   "regex": "^\\| 5\\.144 \\| 283\\.80 \\|$",
+   "grade": "SECONDARY",
+   "locator": "CFD Letters 2024 Table 3 EFD row 2",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T3_F3",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 37,
+   "text": "| 6.100 | 389.20 |",
+   "regex": "^\\| 6\\.100 \\| 389\\.20 \\|$",
+   "grade": "SECONDARY",
+   "locator": "CFD Letters 2024 Table 3 EFD row 3",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T3_F4",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 38,
+   "text": "| 7.160 | 526.60 |",
+   "regex": "^\\| 7\\.160 \\| 526\\.60 \\|$",
+   "grade": "SECONDARY",
+   "locator": "CFD Letters 2024 Table 3 EFD row 4",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "T3_F5",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 39,
+   "text": "| 8.230 | 675.60 |",
+   "regex": "^\\| 8\\.230 \\| 675\\.60 \\|$",
+   "grade": "SECONDARY",
+   "locator": "CFD Letters 2024 Table 3 EFD row 5",
+   "kind": "measurement_row"
+  },
+  {
+   "id": "CF_ITTC78",
+   "file": "src/tensorlbm/external_survey/suboff_anchor.py",
+   "line": 87,
+   "text": "    \"\"\"ITTC-1957 model-ship correlation line ``0.075/(log10 Re - 2)^2``.\"\"\"",
+   "regex": "ITTC-1957 model-ship correlation line ``0\\.075/\\(log10 Re - 2\\)\\^2``",
+   "grade": "CONVENTION",
+   "locator": "src/tensorlbm/external_survey/suboff_anchor.py::ittc57_cf docstring — friction line used as C_F",
+   "kind": "formula"
+  },
+  {
+   "id": "CF_SCHOENHERR",
+   "file": "src/tensorlbm/external_survey/suboff_anchor.py",
+   "line": 94,
+   "text": "    \"\"\"Schoenherr (1932) flat-plate friction line ``0.455/(log10 Re)^2.58``.\"\"\"",
+   "regex": "Schoenherr \\(1932\\) flat-plate friction line ``0\\.455/\\(log10 Re\\)\\^2\\.58``",
+   "grade": "CONVENTION",
+   "locator": "src/tensorlbm/external_survey/suboff_anchor.py::schoenherr_cf docstring — independent friction line (line-to-line spread term)",
+   "kind": "formula"
+  },
+  {
+   "id": "YPLUS_BAND",
+   "file": "benchmarks/pending/suboff_highre_resistance/prereg.md",
+   "line": 44,
+   "text": "  形状份额；y+ 带内性（[30,5000]）；positivity limiter 上限分数；观察者差。",
+   "regex": "y\\+ 带内性（\\[30,5000\\]）",
+   "grade": "CONVENTION",
+   "locator": "benchmarks/pending/suboff_highre_resistance/prereg.md — declared y+ acceptance band",
+   "kind": "convention"
+  },
+  {
+   "id": "BLLAW_DELTA",
+   "file": "benchmarks/verified/suboff_sail_resistance/gci_v4.py",
+   "line": 239,
+   "text": "        delta_over_L = 0.37 * Re ** -0.2  # turbulent boundary-layer thickness scale",
+   "regex": "delta_over_L = 0\\.37 \\* Re \\*\\* -0\\.2",
+   "grade": "CONVENTION",
+   "locator": "gci_v4.py — in-repo boundary-layer thickness law delta/L = 0.37 Re^-0.2",
+   "kind": "formula"
+  },
+  {
+   "id": "CELLSLAW",
+   "file": "benchmarks/verified/suboff_sail_resistance/gci_v4.py",
+   "line": 250,
+   "text": "                \"cells\": 26.66 * L**3,",
+   "regex": "\"cells\": 26\\.66 \\* L\\*\\*3,",
+   "grade": "CONVENTION",
+   "locator": "gci_v4.py — in-repo frozen domain cell count cells = 26.66*L^3",
+   "kind": "formula"
+  },
+  {
+   "id": "STEPSLAW",
+   "file": "benchmarks/verified/suboff_sail_resistance/gci_v4.py",
+   "line": 294,
+   "text": "                \"steps_frozen_protocol\": 150 * L,",
+   "regex": "\"steps_frozen_protocol\": 150 \\* L,",
+   "grade": "CONVENTION",
+   "locator": "gci_v4.py — frozen protocol steps = 150*L",
+   "kind": "formula"
+  },
+  {
+   "id": "NU_T_ANCHORS",
+   "file": "benchmarks/verified/suboff_anchor/build_anchor.py",
+   "line": 317,
+   "text": "    nu_15, nu_20 = 1.139e-6, 1.004e-6",
+   "regex": "nu_15, nu_20 = 1\\.139e-6, 1\\.004e-6",
+   "grade": "CONVENTION",
+   "locator": "build_anchor.py — the two in-repo water-viscosity anchors used for the linear nu(T) inversion",
+   "kind": "convention"
+  },
+  {
+   "id": "RETIRED_ANCHOR",
+   "file": "docs/sphere_suboff_highre_reference_data_zh.md",
+   "line": 85,
+   "text": "| AFF-1 裸艇体 | 1.2×10⁷ | ≈0.0030–0.0032（常用 0.0031） | Roddy (1990) DTRC/SHD-1298-07 水筒实验；SIMMAN 2008 基准 [B] | [B] 精确值需核对原文 |",
+   "regex": "AFF-1 裸艇体 \\| 1\\.2×10⁷ \\| ≈0\\.0030–0\\.0032（常用 0\\.0031）",
+   "grade": "B_GRADE_UNVERIFIED",
+   "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3 row 1 — the retired two-significant-digit Re anchor (mission #8800 C2 source)",
+   "kind": "retired_anchor"
+  },
+  {
+   "id": "SCAD",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 76,
+   "text": "  0.31576·L² ⇒ 物理等效 5.9933 m²，与 5.998 差 **0.08%**（即实验口径的",
+   "regex": "0\\.31576·L² ⇒ 物理等效 5\\.9933 m²，与 5\\.998 差 \\*\\*0\\.08%\\*\\*",
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md — analytic surface-of-revolution area 0.31576·L² vs experimental WSA",
+   "kind": "convention"
+  },
+  {
+   "id": "NU_SENS",
+   "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "line": 79,
+   "text": "  的影响经拟合斜率 m=−0.0935 传递：ν ±4% → CT ±0.4%。",
+   "regex": "的影响经拟合斜率 m=−0\\.0935 传递：ν ±4% → CT ±0\\.4%。",
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md — measured C_T power-law slope m used to propagate the nu assumption",
+   "kind": "convention"
+  },
+  {
+   "id": "YPLUS_CALIB",
+   "file": "docs/IN12_S6_WALL_LADDER.md",
+   "line": 11,
+   "text": "**关键结论**：壁面函数的*闭合*误差可分三层量化——(a) 反演代码路径自洽 8.074e-11%；(b) 不同壁面律之间（Spalding vs Reichardt）在 y+∈[30,150] 相差 9.65%（最大在 y+≈30 的缓冲层）；(c) 对真实 DNS 剖面（Re_tau=180），Spalding 在 y+≈30 处 Cf 偏差 13.7%、Reichardt 3.5%；而在 Re_tau=1000 的 Coles 参考下 Spalding 在 y+∈[45,160] 内 ≤ 5.37%。**因此标定带 [30,150] 在 Re_tau≳590 有效，在 Re_tau=180 的薄对数层内单律误差升到 5–14%**：低 Re_tau 是最难标定的工况，这一点必须在验收口径里显式说明。",
+   "regex": "标定带 \\[30,150\\] 在 Re_tau≳590 有效",
+   "grade": "CONVENTION",
+   "locator": "IN12_S6_WALL_LADDER.md §关键结论 — calibrated wall-function band y+ in [30,150] (valid for Re_tau >~ 590)",
+   "kind": "convention"
+  },
+  {
+   "id": "YPLUS_STARVED",
+   "file": "docs/IN12_S6_WALL_LADDER.md",
+   "line": 13,
+   "text": "**honest FAIL（不得粉饰）**：(1) 三维槽道最细网格 U+ RMS 5.33% 未达 3% 门，按幂律外推 8 倍网格为 2.50%（预测可达标，但实跑网格未达标，3% 门在实测网格上不可证明）；(2) SUBOFF 正式档最差锚 C_T 误差 2962.7%，y+ 均值 [1878, 4660] 远超标定带，属分辨率饥饿；(3) 平板 2D LBM 离散层最佳 27.34%，沿用前案终裁的 FAIL 结论。",
+   "regex": "y\\+ 均值 \\[1878, 4660\\] 远超标定带，属分辨率饥饿",
+   "grade": "MEASURED_IN_REPO",
+   "locator": "IN12_S6_WALL_LADDER.md §honest FAIL — measured evidence: anchor-Re run outside the band gave 2962.7% C_T error",
+   "kind": "measured_outcome"
+  },
+  {
+   "id": "N_CELLS_EXTERNAL",
+   "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+   "line": 42,
+   "text": "| 大网格先例 | Re≈10⁷ 的附体潜艇外流需要多少网格？ | 1.03×10⁸ 胞（附体 SUBOFF，WMLES） |",
+   "regex": "1\\.03×10⁸ 胞",
+   "grade": "SECONDARY",
+   "locator": "IN25-T6 §1.3 表（五措施与本研究的分工）— external WMLES practice cell count for appended SUBOFF",
+   "kind": "external_practice"
+  }
+ ]
+}
