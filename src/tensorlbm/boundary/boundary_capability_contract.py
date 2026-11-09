@@ -270,9 +270,24 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "docs/P106W2_N02_SLIP_WALL_CALIBRATION.md",
     ),
     ("wall_partial_slip", "D3Q27"): (
-        "NO_IMPLEMENTATION",
-        None,
-        "No mixed bounce-back/specular wall for D3Q27",
+        "PHYSICS_VALIDATED",
+        "tensorlbm.boundary.partial_slip_wall3d.mixed_wall_row_lattice / "
+        "channel_poiseuille_lattice (LATTICE_27)",
+        "test_partial_slip_wall3dq27.py (14 cases) + artifacts/P106W1-N04/"
+        "d3q27_slip_wall.json: the D3Q19 mixed wall lifted to the 27-velocity "
+        "set by making the tables (weights/opposites/specular mirror) an "
+        "argument instead of a module constant. sigma=0 reproduces the "
+        "analytic no-slip parabola to 0.2311% (criterion 0.5%), |b|/H = "
+        "1.156e-3; the full D3Q27 field matches the 1D-column reduction to "
+        "5.8e-14 and the D3Q19 field to 4.1e-14; plane periodicity is "
+        "*reached* from a 5% x/z wave start (profile dev 3.0e-14, plane "
+        "spread 3.7e-14); b(sigma) = a sigma/(1-sigma) + c with a = "
+        "0.29999999 and c*H = -0.0650003, identical to D3Q19 to 1.6e-13 / "
+        "9.6e-13 (the law is an operator property, not a lattice one); "
+        "curvature-free estimators agree with the quadratic fit to 4.5e-7 lu "
+        "on the same fields. BGK/single-phase/float64, stationary tangential "
+        "wall only, D3Q27 corners streamed link-by-link. Docs: "
+        "docs/P106W1_N04_SLIP_WALL_3D_D3Q27.md",
     ),
     # ---- farfield ----------------------------------------------------------
     ("farfield", "D2Q9"): (
