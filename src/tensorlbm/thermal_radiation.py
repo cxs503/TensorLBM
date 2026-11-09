@@ -260,41 +260,73 @@ def compute_sky_radiation_flux(
     surface_normals: torch.Tensor,
     sky_settings: SkyRadiationSettings,
     emissivity: float | torch.Tensor = 0.9,
+    surface_temperature: float | torch.Tensor | None = None,
+    view_factor_model: str = "projected_normal",
 ) -> torch.Tensor:
-    """Compute net sky long-wave radiation flux on each surface.
+    """Long-wave sky radiation flux on each surface.
 
-    Net flux = ε * σ * (T_sky⁴ - T_surface⁴) * view_factor_to_sky
+    Two view-factor models are available for the sky configuration factor
+    :math:`F_{i\to sky}`:
 
-    For surfaces facing upward (normal has positive y-component), the
-    view factor to sky is approximated as the projected solid angle.
+    ``"projected_normal"`` (default, legacy)
+        :math:`F = \max(0, n_y)` — the cosine of the surface tilt.  Exact for a
+        surface whose normal coincides with the zenith, but it *under*-estimates
+        tilted surfaces: at 45 deg it returns 0.707 where the closed form is
+        :math:`(1+\cos\beta)/2 = 0.854` (-17 %).  Kept as the default so that
+        previously published results are unchanged.
+    ``"closed_form"``
+        :math:`F = (1 + n_y)/2`, the exact configuration factor of a uniform
+        isothermal sky hemisphere to a plane with unit normal ``n``
+        (see :func:`tensorlbm.radiative_view_factors.vf_sky_dome_to_tilted_plane`);
+        satisfies :math:`F_{sky} + F_{ground} = 1`.
 
     Parameters
     ----------
     surface_normals : torch.Tensor
-        (N, 3) outward unit normals.
+        (N, 3) outward unit normals in the (x, y, z) lattice frame where the
+        y-component is the vertical one.
     sky_settings : SkyRadiationSettings
-        Sky radiation parameters.
+        Sky radiation parameters (Berdahl-Martin effective sky temperature).
     emissivity : float or torch.Tensor
         Surface emissivity.
+    surface_temperature : float or torch.Tensor, optional
+        If given, the **net** flux
+        :math:`\varepsilon\sigma(F T_{sky}^4 - T_{surface}^4)` is returned
+        (positive = heating the surface).  If ``None`` only the absorbed sky
+        irradiance :math:`\varepsilon\sigma F T_{sky}^4` is returned, which is
+        what the legacy call sites expect.
+    view_factor_model : {"projected_normal", "closed_form"}
 
     Returns
     -------
     torch.Tensor
-        (N,) net sky radiation flux [W/m²] per surface (positive = heating).
+        (N,) flux [W/m²] per surface.
     """
     T_sky = sky_settings.effective_sky_temperature()
 
-    # View factor to sky ≈ max(0, n_y) for upward-facing surfaces
-    # (hemispherical projection approximation)
-    sky_view = torch.clamp(surface_normals[:, 1], min=0.0)
+    if view_factor_model == "closed_form":
+        # exact configuration factor of the sky hemisphere: (1 + cos(tilt))/2
+        sky_view = 0.5 * (1.0 + torch.clamp(surface_normals[:, 1], min=-1.0, max=1.0))
+    elif view_factor_model == "projected_normal":
+        sky_view = torch.clamp(surface_normals[:, 1], min=0.0)
+    else:
+        raise ValueError(
+            f"view_factor_model must be 'projected_normal' or 'closed_form', got {view_factor_model!r}"
+        )
 
     if isinstance(emissivity, torch.Tensor):
         eps = emissivity.to(surface_normals.dtype)
     else:
         eps = torch.tensor(emissivity, dtype=surface_normals.dtype)
 
-    # Net long-wave exchange with sky
     q_sky = eps * STEFAN_BOLTZMANN * (T_sky**4) * sky_view
+
+    if surface_temperature is not None:
+        if isinstance(surface_temperature, torch.Tensor):
+            T_s = surface_temperature.to(surface_normals.dtype)
+        else:
+            T_s = torch.tensor(surface_temperature, dtype=surface_normals.dtype)
+        q_sky = q_sky - eps * STEFAN_BOLTZMANN * T_s**4
 
     return q_sky
 

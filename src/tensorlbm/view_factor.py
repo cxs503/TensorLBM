@@ -5,6 +5,15 @@ geometries used in radiation enclosure analysis. All view factors satisfy:
 - Reciprocity: A_i * F_ij = A_j * F_ji
 - Summation rule: Σ_j F_ij = 1 (for closed enclosures)
 
+.. note::
+   Exact **closed-form** view factors (parallel rectangles, perpendicular
+   rectangles with a common edge, coaxial disks, concentric spheres,
+   differential element to disk, sky dome to tilted plane) live in
+   :mod:`tensorlbm.radiative_view_factors`, together with independent
+   verification instruments (multi-dimensional Gauss-Legendre quadrature and
+   Monte-Carlo ray tracing).  The routines here are quadrature-based and are
+   kept for backward compatibility of existing call sites.
+
 Geometries implemented:
 - Parallel equal rectangles (aligned, directly opposed) - numerical integration
 - Perpendicular rectangles with common edge - numerical integration
