@@ -127,6 +127,10 @@ from tensorlbm.mhd import (
     hartmann_profile, hartmann_mean_factor, ha_from_params,
     run_hartmann_ladder, evaluate_ladder_criteria, gci,
     MHDThrusterConfig, run_thruster_ledger, propeller_ideal_efficiency,
+    thruster_ideal_check, ideal_lorentz_thrust,     # ideal sigma|E|B V reference (node gate f)
+    ShercliffCase, run_shercliff_channel,           # insulating-wall (zero net current) branch
+    shercliff_mean_velocity, shercliff_profile, shercliff_grad_for_mean,
+    evaluate_shercliff_criteria,                    # node gate d
 )
 ```
 
