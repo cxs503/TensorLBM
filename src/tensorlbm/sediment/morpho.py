@@ -20,6 +20,7 @@ C1) is not circular.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -40,10 +41,10 @@ class MorphoConfig:
     h_ref: float = 1.0  # reference water depth (m)
     n_waves: int = 2  # number of perturbation wavelengths in the domain
     domain_len: float = 20.0  # domain length (m)
-    n_cells: int = 400
+    n_cells: int = 200  # reduced for speed
     amp_frac: float = 0.02  # perturbation amplitude as a fraction of d
     obs_time: float = 3600.0  # observation window (s)
-    n_steps: int = 2000  # Exner steps in the window
+    n_steps: int = 500  # reduced for speed
     detect_frac: float = 0.01  # detection level as a fraction of d
 
 
@@ -81,6 +82,8 @@ def run_morpho(
 
     for _ in range(mc.n_steps):
         h = h_ref - z_b
+        # Prevent division by zero or negative depth
+        h = np.maximum(h, 0.1 * h_ref)
         theta = theta_base * (h_ref / h) ** 3
         q = mpm_flux(theta, cfg)
         z_b = exner_step(z_b, q, dx, dt, cfg)
@@ -88,19 +91,26 @@ def run_morpho(
 
 
 def measure_theta_cr(
+    u_star: float,
     mc: MorphoConfig,
     theta_cr: float,
     lo: float | None = None,
     hi: float | None = None,
-    iters: int = 16,
+    iters: int = 12,  # reduced for speed
 ) -> float:
     """Bisect on the base Shields number for the incipient-motion threshold.
 
     The threshold is the ``theta_base`` at which the bed change over the
     observation window equals the detection level (``detect_frac * d``).
     ``theta_cr`` is the MPM incipient-motion threshold (model parameter).
+    ``u_star`` is the wall-shear velocity (m/s) used to compute the Shields
+    number scaling.
     """
     target = mc.detect_frac * mc.d
+    # Compute the base Shields number from u_star
+    denom = (mc.s - 1.0) * mc.g * mc.d
+    theta_base_ref = u_star ** 2 / denom
+
     if lo is None:
         lo = 0.5 * theta_cr
     if hi is None:
