@@ -57,6 +57,7 @@ for _name, _mod in [
     ("templates", "templates"),
     ("xflow_projects", "xflow_projects"),
     ("xflow_streaming", "xflow_streaming"),
+    ("wetting_dynamics", "wetting_dynamics"),
 ]:
     try:
         _router_imports[_name] = importlib.import_module(f".routers.{_mod}", package=__package__)
@@ -97,6 +98,7 @@ suboff = _router_imports.get("suboff")
 templates = _router_imports.get("templates")
 xflow_projects = _router_imports.get("xflow_projects")
 xflow_streaming = _router_imports.get("xflow_streaming")
+wetting_dynamics = _router_imports.get("wetting_dynamics")
 try:
     from .services.xflow_streaming import hub as streaming_hub  # noqa: E402
 except ImportError:
@@ -205,6 +207,7 @@ _router_registry = [
     (xflow_streaming, "/api/stream", "XFlow Streaming"),
     (xflow_projects, "/api/xflow-projects", "XFlow Projects"),
     (lbm_d3q27, "/api/v1/calculations/lbm", "LBM D3Q27 Validation"),
+    (wetting_dynamics, "/api/v1/calculations", "Wetting Dynamics"),
     (marine, "/api/marine", "Marine Engineering"),
 ]
 for _mod, _prefix, _tag in _router_registry:
