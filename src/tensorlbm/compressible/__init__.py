@@ -116,3 +116,20 @@ __all__ = [
     "CompressibleDDFSolver",
     "run_flat_plate_shock",
 ]
+
+# --- shock-capturing kinetic-flux solver (P153W1-N05) -----------------------
+from .kinetic_flux import (  # noqa: E402,F401
+    AnnulusMesh,
+    KineticFluxSolver,
+    NormalShock1D,
+    ShockTube1D,
+    SolverConfig,
+    build_annulus_mesh,
+    contour_loop,
+    experimental_anchor_status,
+    kfvs_flux,
+    moving_shock_ratios,
+    naca0012_half_thickness,
+    normal_shock_ratios,
+    radial_levels,
+)
