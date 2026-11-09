@@ -425,6 +425,7 @@ class WindLoadSolver:
         tau_max: float = 1.9,
         u_clip: float = 0.25,
         normalise_outflow: bool = True,
+        wall_law: str = "log",
         ref_areas: tuple[float, float] | None = None,
         ref_breadth_height: tuple[float, float] | None = None,
         device: str | torch.device = "cpu",
@@ -443,6 +444,13 @@ class WindLoadSolver:
         self.cs_smag = float(cs_smag)
         self.use_wall_model = bool(wall_model)
         self.wall_feedback = bool(wall_feedback)
+        # Wall law used by the wall-adjacent shear model.  "log" is the legacy
+        # fixed-intercept Kader law; "spalding"/"reichardt" route through
+        # :mod:`tensorlbm.turbulence.wall_model_usability`, whose inversion is
+        # machine-precision and whose constants are audited against MKM1999.
+        if wall_law not in ("log", "spalding", "reichardt"):
+            raise ValueError("wall_law must be 'log', 'spalding' or 'reichardt'")
+        self.wall_law = str(wall_law)
         self.tau_min, self.tau_max = float(tau_min), float(tau_max)
         self.u_clip = float(u_clip)
         self.normalise_outflow = bool(normalise_outflow)
@@ -562,6 +570,32 @@ class WindLoadSolver:
         del P, Sxx, Syy, Szz, Sxy, Sxz, Syz
         return ((self.cs_smag ** 2) * Smag).clamp(min=0.0, max=0.5)
 
+    def _composite_friction_velocity(self, ux, uy, uz, nu_flat, y):
+        """Vectorised ``u_tau`` for a composite wall law (one call per normal).
+
+        The composite laws are inverted with the machine-precision solver of
+        :mod:`tensorlbm.turbulence.wall_model_usability`; the inversion is done
+        for all wall cells of a normal group at once so the per-step cost stays
+        close to the legacy scalar Newton loop.
+        """
+        from .turbulence.wall_model_usability import (
+            REICHARDT,
+            SPALDING,
+            solve_friction_velocity as solve_composite_friction_velocity,
+        )
+
+        law = SPALDING if self.wall_law == "spalding" else REICHARDT
+        groups = []
+        for idx, n in zip(self.wall_idx, self.wall_n):
+            un = n[0] * ux[idx] + n[1] * uy[idx] + n[2] * uz[idx]
+            tx = ux[idx] - un * n[0]
+            ty = uy[idx] - un * n[1]
+            tz = uz[idx] - un * n[2]
+            ut = torch.sqrt(tx * tx + ty * ty + tz * tz + 1e-30)
+            solution = solve_composite_friction_velocity(ut, y, nu_flat[idx], law=law)
+            groups.append(solution.u_tau.to(dtype=self.dtype))
+        return groups
+
     def wall_model(self, u: torch.Tensor, rho: torch.Tensor,
                    nu: torch.Tensor) -> tuple[np.ndarray, np.ndarray]:
         """Log-law wall shear on wall-adjacent cells (lattice units).
@@ -583,14 +617,20 @@ class WindLoadSolver:
         nn = nu.reshape(-1)
         fx_buf, fy_buf, fz_buf = self._wall_force[0].reshape(-1), \
             self._wall_force[1].reshape(-1), self._wall_force[2].reshape(-1)
-        for idx, n in zip(self.wall_idx, self.wall_n):
+        composite_u_tau = None
+        if self.wall_law != "log":
+            composite_u_tau = self._composite_friction_velocity(ux, uy, uz, nn, y)
+        for group, (idx, n) in enumerate(zip(self.wall_idx, self.wall_n)):
             un = n[0] * ux[idx] + n[1] * uy[idx] + n[2] * uz[idx]
             tx = ux[idx] - un * n[0]
             ty = uy[idx] - un * n[1]
             tz = uz[idx] - un * n[2]
             ut = torch.sqrt(tx * tx + ty * ty + tz * tz + 1e-30)
             nu_l = nn[idx]
-            u_tau = solve_friction_velocity(ut, y, nu_l)
+            if composite_u_tau is None:
+                u_tau = solve_friction_velocity(ut, y, nu_l)
+            else:
+                u_tau = composite_u_tau[group]
             scale = rr[idx] * u_tau * u_tau / ut        # |tau_w| / |u_t|
             wfx, wfy, wfz = -scale * tx, -scale * ty, -scale * tz
             F -= np.array([wfx.sum().item(), wfy.sum().item(), wfz.sum().item()])
