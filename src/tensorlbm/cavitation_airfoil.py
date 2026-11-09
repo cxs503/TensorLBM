@@ -414,6 +414,12 @@ class CavitationFlowConfig:
     viscosity_floor: float = 1.0e-4
     dilatation_damping: float = 0.05
     volume_flux_cap: float = 0.02
+    pressure_anchor: bool = False
+    """Anchor the pressure level on the inlet plane before the mass-transfer
+    closure (``p_inf = 0`` upstream).  The projection is pure-Neumann, so
+    without the anchor the ``p < p_v`` switch uses an arbitrary constant; see
+    :mod:`tensorlbm.cavitation_numerics`.  Off by default so that the historical
+    P41-N02 configuration stays reproducible bit-for-bit."""
     seed: int = 0
 
     def __post_init__(self) -> None:
@@ -442,6 +448,16 @@ class CavitationFlowConfig:
     @property
     def nu(self) -> float:
         return 1.0 / self.re
+
+
+def _inlet_pressure_anchor(p: torch.Tensor, columns: int = 3) -> float:
+    """``c0`` such that ``p + c0`` has zero mean on the inlet plane.
+
+    Local copy of :func:`tensorlbm.cavitation_numerics.pressure_anchor` so that
+    this module keeps its single-file dependency graph (the numerics module
+    imports *this* one).
+    """
+    return -float(p[:, :columns].mean())
 
 
 def _pad_edge(a: torch.Tensor, lo: int, hi: int, dim: int) -> torch.Tensor:
@@ -546,6 +562,7 @@ class MixtureCavitationSolver:
         self.time_history: list[float] = []
         self.div_residual_max = 0.0
         self.global_balance_max = 0.0
+        self.p_offset = 0.0
 
     # -- kinematics -------------------------------------------------------
     def _inlet(self) -> None:
@@ -664,10 +681,16 @@ class MixtureCavitationSolver:
         v_star = (self.v + dt * rv) / self.damp_v
         self._inlet()
 
+        # pressure level: the projection is Neumann-only, so the physical
+        # constant has to come from the inflow condition (p_inf = 0 upstream).
+        p_used = self.p
+        if c.pressure_anchor:
+            self.p_offset = _inlet_pressure_anchor(self.p)
+            p_used = self.p + self.p_offset
         # Schnerr-Sauer vapour source (explicit, bounded by |d alpha| <= 0.5)
         s_alpha = schnerr_sauer_rate(
             self.alpha,
-            self.p,
+            p_used,
             c.p_v,
             rho_l=1.0,
             rho_v_ratio=c.rho_v_ratio,
