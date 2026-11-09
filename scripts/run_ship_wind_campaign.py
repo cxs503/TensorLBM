@@ -51,6 +51,7 @@ def build(args) -> tuple[WindLoadSolver, dict, dict]:
                                 wall_model=args.wall_model,
                                 wall_feedback=args.wall_feedback,
                                 normalise_outflow=args.normalise_outflow,
+                                wall_law=args.wall_law,
                                 u_clip=args.u_clip)
         meta = {"case": "cube", "re_side": args.re,
                 "cells_per_side": args.cells,
@@ -75,7 +76,7 @@ def build(args) -> tuple[WindLoadSolver, dict, dict]:
         ref_breadth_height=(g0.breadth, g0.height),
         cs_smag=args.cs, wall_model=args.wall_model,
         wall_feedback=args.wall_feedback, normalise_outflow=args.normalise_outflow,
-        u_clip=args.u_clip)
+        wall_law=args.wall_law, u_clip=args.u_clip)
     meta = {
         "case": "ship", "ship": ship.key,
         "re_H": units.re_phys(g0.height),
@@ -108,6 +109,9 @@ def main() -> int:
                     help="velocity clip used to keep the LBM stable")
     ap.add_argument("--wall-model", action="store_true", default=True)
     ap.add_argument("--no-wall-model", dest="wall_model", action="store_false")
+    ap.add_argument("--wall-law", choices=["log", "spalding", "reichardt"],
+                    default="log",
+                    help="wall-adjacent shear law (log = legacy Kader law)")
     ap.add_argument("--wall-feedback", action="store_true", default=True)
     ap.add_argument("--no-wall-feedback", dest="wall_feedback",
                     action="store_false")
