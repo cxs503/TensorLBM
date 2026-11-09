@@ -57,14 +57,18 @@ def dean_cf(re_bulk: float) -> float:
     return 0.073 * re_bulk ** -0.25
 
 
-def run(case: str, *, steps: int, averaging_start: int, out_dir: Path, nx: int, nz: int, ny: int, cs: float = 0.1) -> dict:
+def run(case: str, *, steps: int, averaging_start: int, out_dir: Path, nx: int, nz: int,
+        ny: int, cs: float = 0.1, re_tau: float = 590.0, coupling: str = "assimilate",
+        wall_origin_offset: float = 1.0, u_tau: float = 0.02) -> dict:
     extra = CASES[case]
     config = ChannelWMLESConfig(
         nx=nx,
         nz=nz,
         ny=ny,
-        re_tau=590.0,
-        u_tau=0.02,
+        re_tau=re_tau,
+        u_tau=u_tau,
+        wall_coupling=coupling,
+        wall_origin_offset=wall_origin_offset,
         steps=steps,
         averaging_start=averaging_start,
         stat_interval=10,
@@ -218,6 +222,10 @@ def main() -> None:
     parser.add_argument("--nz", type=int, default=48)
     parser.add_argument("--ny", type=int, default=49)
     parser.add_argument("--cs", type=float, default=0.1)
+    parser.add_argument("--re-tau", type=float, default=590.0)
+    parser.add_argument("--u-tau", type=float, default=0.02)
+    parser.add_argument("--coupling", default="assimilate", choices=("assimilate", "stress", "none"))
+    parser.add_argument("--wall-origin-offset", type=float, default=1.0)
     parser.add_argument("--out", default="artifacts/wall_model_les")
     args = parser.parse_args()
     result = run(
@@ -229,6 +237,10 @@ def main() -> None:
         nz=args.nz,
         ny=args.ny,
         cs=args.cs,
+        re_tau=args.re_tau,
+        coupling=args.coupling,
+        wall_origin_offset=args.wall_origin_offset,
+        u_tau=args.u_tau,
     )
     print(json.dumps({k: result[k] for k in ("wall_units", "log_layer_error_vs_spalding",
                                              "reynolds_stress", "skin_friction", "verdicts")},
