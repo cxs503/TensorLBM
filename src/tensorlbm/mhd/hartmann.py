@@ -210,6 +210,31 @@ def ha_from_params(
     return float(b0) * float(half_width) * math.sqrt(float(sigma) / (rho0 * float(nu)))
 
 
+def shercliff_grad_factor(ha: float) -> float:
+    """Return ``Ha^2 (1 - m(Ha)) / m(Ha)`` with ``m = 1 - tanh(Ha)/Ha``.
+
+    Dimensionless factor linking the applied body force to the insulating-wall
+    (Shercliff) mean velocity: ``u_mean = G H^2 / (mu * factor)``.  The
+    ``Ha -> 0`` limit is ``3`` (plane Poiseuille, ``u_mean = G H^2/(3 mu)``); the
+    large-``Ha`` limit is ``Ha`` (magnetic braking of the core,
+    ``u_mean ~ G H^2/(mu Ha)``), i.e. one power of ``Ha`` less damping than the
+    conducting-wall Hartmann law ``Ha^-2``.  A short series keeps the ``Ha -> 0``
+    branch free of ``0/0``.
+    """
+    ha = float(ha)
+    if ha < 0.0:
+        raise ValueError(f"Hartmann number must be >= 0, got {ha}")
+    if ha == 0.0:
+        return 3.0
+    if ha < 0.05:
+        h2 = ha * ha
+        num = h2 * (1.0 - h2 / 3.0 + 2.0 * h2 * h2 / 15.0)
+        den = h2 * (1.0 / 3.0 - 2.0 * h2 / 15.0 + 17.0 * h2 * h2 / 315.0)
+        return num / den
+    m = hartmann_mean_factor(ha)
+    return ha * ha * (1.0 - m) / m
+
+
 # ---------------------------------------------------------------------------
 # Solver
 # ---------------------------------------------------------------------------
@@ -249,6 +274,7 @@ class HartmannConfig:
     b0: float = 1.0
     load_grad: float = 0.0
     drive: float | None = None
+    wall_mode: str = "conducting"
     steps: int = 60000
     check_every: int = 500
     tol: float = 1e-11
@@ -266,6 +292,10 @@ class HartmannConfig:
             raise ValueError(f"nu must be > 0, got {self.nu}")
         if self.u_mean <= 0.0:
             raise ValueError(f"u_mean must be > 0, got {self.u_mean}")
+        if self.wall_mode not in ("conducting", "insulating"):
+            raise ValueError(
+                f"wall_mode must be 'conducting' or 'insulating', got {self.wall_mode!r}"
+            )
         if self.u_mean > 0.1:
             raise ValueError(
                 f"u_mean={self.u_mean} exceeds the low-Mach verification window (<= 0.1)"
@@ -304,9 +334,34 @@ class HartmannConfig:
         """
         if self.drive is not None and self.drive > 0.0:
             return float(self.drive)
+        if self.insulating:
+            # Shercliff closure: the driving gradient is fixed by u_mean and Ha.
+            return self.shercliff_grad
         if self.ha == 0.0:
             return 3.0 * self.mu * self.u_mean / (self.half_width**2)
         return 0.0
+
+    @property
+    def insulating(self) -> bool:
+        """True for the Shercliff (insulating-wall, zero net current) closure."""
+        return self.wall_mode == "insulating"
+
+    @property
+    def shercliff_grad(self) -> float:
+        """Driving force density that yields ``u_mean`` for insulating walls.
+
+        The Shercliff (insulating) balance ``u_mean = G H^2 m /(mu Ha^2 (1-m))``
+        inverted for the applied body force ``G``:
+
+            G = mu u_mean Ha^2 (1 - m(Ha)) / (m(Ha) H^2),
+
+        with ``m(Ha) = 1 - tanh(Ha)/Ha``.  ``Ha -> 0`` gives ``G = 3 mu u_mean/H^2``
+        (plane Poiseuille), so the same target mean velocity is imposed on every
+        grid, which is what keeps the refinement study consistent.
+        """
+        h = self.half_width
+        factor = shercliff_grad_factor(self.ha)  # Ha^2 (1-m)/m  (-> 3 as Ha -> 0)
+        return self.mu * self.u_mean * factor / (h * h)
 
     @property
     def sigma_b0(self) -> float:
@@ -333,7 +388,13 @@ class HartmannConfig:
 
     @property
     def loading(self) -> float:
-        """Applied electric loading ``K = -E_z/B0`` that yields ``u_mean``."""
+        """Applied electric loading ``K = -E_z/B0`` that yields ``u_mean``.
+
+        Only meaningful for ``wall_mode = "conducting"`` (electrode walls fix
+        ``E_z``).  For the insulating (Shercliff) closure the field is not an
+        input: ``E_z = -B0 <u_x>`` is imposed step by step inside the collision
+        (zero net axial current), so this value is *not* what the solver applies.
+        """
         if self.magnetic_force_coefficient <= 0.0:
             return 0.0
         return self.u0_amplitude + (self.load_grad - self.body_force) / (
@@ -497,6 +558,7 @@ def run_hartmann_channel(config: HartmannConfig) -> HartmannResult:
     loading = config.loading
     load_grad = config.load_grad
     drive = config.body_force
+    insulating = config.insulating
 
     rho = torch.ones((ny, nx), dtype=torch_dtype, device=device)
     ux = torch.zeros((ny, nx), dtype=torch_dtype, device=device)
@@ -517,7 +579,7 @@ def run_hartmann_channel(config: HartmannConfig) -> HartmannResult:
     step = 0
     for step in range(1, config.steps + 1):
         f_post, ux, uy, rho = _collide(
-            f, config, cx, cy, wv, tau, force_coeff, loading, load_grad, drive
+            f, config, cx, cy, wv, tau, force_coeff, loading, load_grad, drive, insulating
         )
         f = _stream(f_post, c)
         # half-way bounce-back walls at y = +-H (row 0 and row ny-1)
@@ -535,7 +597,9 @@ def run_hartmann_channel(config: HartmannConfig) -> HartmannResult:
                     break
             u_prev = u_now
 
-    f_post, ux, uy, rho = _collide(f, config, cx, cy, wv, tau, force_coeff, loading, load_grad, drive)
+    f_post, ux, uy, rho = _collide(
+        f, config, cx, cy, wv, tau, force_coeff, loading, load_grad, drive, insulating
+    )
     u_row = ux.mean(dim=1).cpu().numpy()
     y_hat = config.y_hat()
     u_mean = float(ux.mean())
@@ -558,7 +622,8 @@ def run_hartmann_channel(config: HartmannConfig) -> HartmannResult:
         eval_local_core = np.where(core_half, np.abs(err) / np.maximum(np.abs(u_an), 1e-300), 0.0)
 
     # Momentum bookkeeping (per unit span, per lattice time^2 normalisation dropped)
-    lorentz = float(force_coeff * (loading - ux).mean()) * ny * nx
+    loading_eff = float(ux.mean()) if insulating else loading
+    lorentz = float(force_coeff * (loading_eff - ux).mean()) * ny * nx
     drive_force = float(drive) * ny * nx
     wall_flux = _wall_momentum_flux(f_post, config)
     denom = max(abs(lorentz) + abs(drive_force), 1e-30)
@@ -594,6 +659,8 @@ def run_hartmann_channel(config: HartmannConfig) -> HartmannResult:
             "device": "cpu",
             "dtype": config.dtype,
             "scheme": "BGK + Guo forcing (2nd order), half-way bounce-back walls",
+            "wall_mode": config.wall_mode,
+            "loading_K_effective": loading_eff,
             "tau": tau,
             "sigma_b0_sq_times_H2_over_mu": (
                 config.magnetic_force_coefficient * config.half_width**2 / config.mu
@@ -635,6 +702,7 @@ def _collide(
     loading: float,
     load_grad: float,
     drive: float,
+    insulating: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """BGK collision with the Guo-forced Lorentz body force. Returns (f_post, ux, uy, rho)."""
     rho = f.sum(dim=0)
@@ -646,7 +714,13 @@ def _collide(
     force_const = torch.as_tensor(drive - load_grad, dtype=f.dtype, device=f.device)
     if force_coeff > 0.0:
         a = force_coeff / (2.0 * rho)
-        fx = (force_coeff * (loading - ux_star) + force_const) / (1.0 + a)
+        # Insulating (Shercliff) closure: K = -E_z/B0 is fixed by zero net axial
+        # current, <j_z> = sigma B0 (K - <u_x>) = 0.  The implicit half-step
+        # correction is proportional to (K - u_x^*), so its mean vanishes and
+        # K = <u_x^*> is self-consistent: the Lorentz force can redistribute
+        # momentum across the channel but never add it (lorentz mean = 0).
+        target = ux_star.mean() if insulating else loading
+        fx = (force_coeff * (target - ux_star) + force_const) / (1.0 + a)
     else:
         fx = force_const.expand_as(ux_star).clone()
     ux = ux_star + 0.5 * fx / rho_safe
