@@ -1,0 +1,285 @@
+{
+  "node": "P155W1-N01",
+  "repo": "TensorLBM",
+  "module": "tensorlbm.phase_change.stefan_verification",
+  "all_pass": true,
+  "criteria": {
+    "C1_planar_front_error": {
+      "value": 0.0050352510793353344,
+      "threshold": 0.02,
+      "metric": "conservative phase-integral front vs Neumann, nx=400 (s=100 cells)",
+      "pass": true
+    },
+    "C1b_planar_front_error_local": {
+      "value": 0.010070721178233823,
+      "threshold": 0.02,
+      "metric": "f_l=0.5 crossing front vs Neumann (independent of energy bookkeeping)",
+      "pass": true
+    },
+    "C1c_planar_profile_error": {
+      "value": 0.0001038070992889707,
+      "threshold": 0.02,
+      "metric": "L2 temperature profile error (interface band excluded)",
+      "pass": true
+    },
+    "C2_cyl_front_vs_reference": {
+      "value": 0.014455740649894392,
+      "threshold": 0.03,
+      "metric": "2-D front radius vs independent sharp-interface reference",
+      "pass": true
+    },
+    "C2b_cyl_front_shape": {
+      "value": 0.00850343072066044,
+      "threshold": 0.03,
+      "metric": "max |r(theta)-mean(r)|/mean(r) (exact front is a circle)",
+      "pass": true
+    },
+    "C3_melting_energy_closure": {
+      "value": 0.006057800376106583,
+      "threshold": 0.01,
+      "metric": "wall heat input (2nd-order flux) vs stored enthalpy change",
+      "pass": true
+    },
+    "C3b_wall_input_vs_exact": {
+      "value": 1.068815638296534e-05,
+      "threshold": 0.01,
+      "metric": "cumulative wall heat input vs analytic Neumann value",
+      "pass": true
+    },
+    "C3c_latent_vs_input_minus_sensible": {
+      "value": 0.007511013940926453,
+      "threshold": 0.01,
+      "metric": "latent absorbed vs (input - stored sensible)",
+      "pass": true
+    },
+    "C4_grid_convergence": {
+      "observed_orders": {
+        "front_rel_error": 1.0019247055562206,
+        "front_local_rel_error": 1.0013579204088066,
+        "profile_l2_rel": 1.220456746224182,
+        "profile_linf_rel": 1.024165783294705
+      },
+      "front_errors": [
+        0.020194816474542777,
+        0.010087461644423356,
+        0.0050352510793353344
+      ],
+      "threshold": "monotone decrease in error; front (phase-integral) order in [0.7, 1.6] (theoretical first order for a diffuse-interface enthalpy method); temperature-profile order >= 1.0",
+      "pass": true
+    },
+    "C5_exact_solution_selfcheck": {
+      "value": 9.537879592217714e-07,
+      "threshold": 0.0001,
+      "metric": "max PDE residual / interface energy balance residual of the references",
+      "pass": true
+    },
+    "C5b_pure_diffusion": {
+      "value": 3.024031241438685e-05,
+      "threshold": 0.01,
+      "metric": "LBE thermal operator vs analytic erfc diffusion",
+      "pass": true
+    },
+    "C5c_conservation": {
+      "value": 3.853546065776977e-15,
+      "threshold": 1e-12,
+      "metric": "total enthalpy drift in a closed periodic 2-D domain",
+      "pass": true
+    },
+    "all_pass": true
+  },
+  "planar_freezing": {
+    "grid": {
+      "nx": 400,
+      "ny": 1,
+      "dx": 1.0,
+      "dt": 1.0
+    },
+    "parameters": {
+      "stefan_number": 0.5,
+      "alpha": 0.16666666666666666,
+      "tau": 1.0,
+      "cp": 1.0,
+      "latent": 1.0,
+      "t_freeze": 0.0,
+      "boundary_temperature": -0.5,
+      "lambda": 0.46478592064624447,
+      "steps": 69436,
+      "time_end": 69436.10181543871,
+      "front_fraction": 0.25
+    },
+    "final": {
+      "front_exact": 99.99992668404953,
+      "front_integral": 99.49640194528021,
+      "front_rel_error": 0.0050352510793353344,
+      "front_local": 98.99285530457064,
+      "front_local_rel_error": 0.010070721178233823,
+      "profile_error": {
+        "l2_rel": 0.0001038070992889707,
+        "linf_rel": 0.000648473752828227,
+        "n_nodes_used": 392,
+        "n_nodes_excluded": 8
+      }
+    }
+  },
+  "planar_melting": {
+    "grid": {
+      "nx": 400,
+      "ny": 1,
+      "dx": 1.0,
+      "dt": 1.0
+    },
+    "final": {
+      "front_exact": 99.99992668404953,
+      "front_integral": 99.49640194527434,
+      "front_rel_error": 0.005035251079394025,
+      "front_local": 98.99285530455907,
+      "front_local_rel_error": 0.0100707211783495,
+      "profile_error": {
+        "l2_rel": 0.00010380709927752034,
+        "linf_rel": 0.0006484737527826939,
+        "n_nodes_used": 392,
+        "n_nodes_excluded": 8
+      }
+    },
+    "energy": {
+      "wall_heat_input_1st_order": 123.36472245457163,
+      "wall_heat_input_2nd_order": 124.11204131655377,
+      "wall_heat_input_exact": 124.11336785963867,
+      "wall_input_1st_vs_exact_rel_error": 0.006031948193636077,
+      "wall_input_2nd_vs_exact_rel_error": 1.068815638296534e-05,
+      "enthalpy_change": 123.3647224544708,
+      "sensible_change": 23.868320509196447,
+      "latent_change": 99.49640194527434,
+      "closure_1st_order": 8.174154089820102e-13,
+      "closure_2nd_order": 0.006057800376106583,
+      "latent_vs_input_minus_sensible": 0.007511013940926453,
+      "latent_share_of_input": 0.8016659857483446
+    }
+  },
+  "cylindrical_wall_solidification": {
+    "grid": {
+      "n": 83,
+      "dx": 1.0,
+      "dt": 1.0,
+      "wall_radius": 40.0,
+      "initial_shell": 4.0
+    },
+    "parameters": {
+      "stefan_number": 0.5,
+      "alpha": 0.16666666666666666,
+      "tau": 1.0,
+      "t_wall": -0.5,
+      "steps": 2814,
+      "r_f0": 36.0,
+      "r_meas0": 35.900372270467734
+    },
+    "final": {
+      "time": 2814.0,
+      "r_area": 17.33052155277407,
+      "r_mean_polar": 17.36388361747603,
+      "r_reference": 17.08356595396814,
+      "r_quasi_steady": 14.400599030130468,
+      "r_rel_error_vs_reference": 0.014455740649894392,
+      "r_rel_error_polar_vs_reference": 0.016408615406362445,
+      "r_rel_error_vs_quasi_steady": 0.20345837812116735,
+      "shape_max_dev_rel": 0.00850343072066044,
+      "shape_rms_dev_rel": 0.004289362434041356
+    },
+    "reference": {
+      "method": "sharp-interface front tracking (Landau transform, radial)",
+      "n_nodes": 400,
+      "n_nodes_coarse": 200,
+      "self_convergence_rel": 0.00013602266503129842
+    }
+  },
+  "grid_convergence": {
+    "case": "planar_freezing_grid_convergence",
+    "mode": "freezing",
+    "stefan_number": 0.5,
+    "runs": [
+      {
+        "n_front": 25,
+        "nx": 100,
+        "steps": 4340,
+        "front_rel_error": 0.020194816474542777,
+        "front_local_rel_error": 0.04035878775370365,
+        "profile_l2_rel": 0.0005636574267602446,
+        "profile_linf_rel": 0.0026822647684794365
+      },
+      {
+        "n_front": 50,
+        "nx": 200,
+        "steps": 17359,
+        "front_rel_error": 0.010087461644423356,
+        "front_local_rel_error": 0.02017411464076162,
+        "profile_l2_rel": 0.0002334158939536976,
+        "profile_linf_rel": 0.0013109275948102184
+      },
+      {
+        "n_front": 100,
+        "nx": 400,
+        "steps": 69436,
+        "front_rel_error": 0.0050352510793353344,
+        "front_local_rel_error": 0.010070721178233823,
+        "profile_l2_rel": 0.0001038070992889707,
+        "profile_linf_rel": 0.000648473752828227
+      }
+    ],
+    "observed_order": {
+      "front_rel_error": 1.0019247055562206,
+      "front_local_rel_error": 1.0013579204088066,
+      "profile_l2_rel": 1.220456746224182,
+      "profile_linf_rel": 1.024165783294705
+    },
+    "note": "observed order from a least-squares fit of log(error) vs log(1/n_front); the enthalpy (diffuse-interface) front measure is expected to converge first order, the interior temperature profile second order"
+  },
+  "exact_solution_audit": {
+    "alpha": 0.16666666666666666,
+    "stefan_number": 0.5,
+    "cylindrical": {
+      "lambda": 0.7810619641455291,
+      "pde_residual_rel": 3.3458650628738484e-08,
+      "interface_balance_rel": 9.537879592217714e-07,
+      "T_at_front_rel": 0.0,
+      "T_far_rel_error": 8.137934770502397e-14
+    },
+    "planar": {
+      "solid": {
+        "lambda": 0.46478592064624447,
+        "pde_residual_rel": 6.824824964439264e-10,
+        "interface_balance_rel": 1.2008812942630303e-07,
+        "T_at_wall_rel": 0.0,
+        "T_at_front_rel": 0.0
+      },
+      "liquid": {
+        "lambda": 0.46478592064624447,
+        "pde_residual_rel": 6.824825600493245e-10,
+        "interface_balance_rel": 1.2103996732032464e-07,
+        "T_at_wall_rel": 0.0,
+        "T_at_front_rel": 0.0
+      }
+    },
+    "pure_diffusion": {
+      "steps": 4000,
+      "linf_rel": 3.024031241438685e-05,
+      "l2_rel": 1.0289991311934523e-05,
+      "alpha": 0.16666666666666666
+    },
+    "closed_domain_conservation": {
+      "steps": 500,
+      "H0": 2006.1275596847381,
+      "rel_drift": 3.853546065776977e-15
+    }
+  },
+  "wall_clock_s": 63.418161392211914,
+  "artifacts": {
+    "results_json": "artifacts/stefan_phase_change/results.json",
+    "figures": {
+      "fig1_planar_front": "artifacts/stefan_phase_change/figures/fig1_planar_front.png",
+      "fig2_planar_profiles": "artifacts/stefan_phase_change/figures/fig2_planar_profiles.png",
+      "fig3_convergence": "artifacts/stefan_phase_change/figures/fig3_convergence.png",
+      "fig4_cylindrical": "artifacts/stefan_phase_change/figures/fig4_cylindrical.png",
+      "fig5_energy_closure": "artifacts/stefan_phase_change/figures/fig5_energy_closure.png"
+    }
+  }
+}
