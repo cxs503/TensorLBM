@@ -8,10 +8,12 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
+import numpy as np
 import torch
 
+from .cw_coupling import IceWaterDragState, MomentumExchange
 from .particle import IceParticle, ParticleSystem
 from .contact import (
     ContactModel,
@@ -52,6 +54,18 @@ class DEMConfig:
     drag_model: str = "schiller_naumann"
     fluid_density: float = 1000.0
     fluid_viscosity: float = 1e-3
+    cw_callback: Optional[Callable[[IceWaterDragState], Any]] = None
+    """Pluggable ice/water drag closure for ``drag_model="cw_callback"``.
+
+    Callable taking an :class:`~tensorlbm.dem.cw_coupling.IceWaterDragState`
+    and returning either a :class:`~tensorlbm.dem.cw_coupling.CwResult` or a
+    bare ``C_w`` float; see :mod:`tensorlbm.dem.cw_coupling` (mission
+    P103W2C-N01 criterion C6).  The force is then
+    ``F = 0.5 rho_w C_w A |u_rel| u_rel``, i.e. the same form as the other
+    models, so a run can be switched between them without touching the solver.
+    """
+    ks_m: float = 0.0
+    lambda_over_ks: float = 5.0
     
     def __post_init__(self):
         if isinstance(self.gravity, (list, tuple)):
@@ -84,6 +98,12 @@ class DEMSolver:
         
         # History tracking
         self.history: List[dict] = []
+
+        # C_w callback bookkeeping (mission P103W2C-N01, criterion C6): the drag
+        # state of every call is kept so the water-side reaction can be
+        # recomputed independently, and the impulse ledger is optional.
+        self.drag_events: List[dict] = []
+        self.exchange: Optional[MomentumExchange] = None
     
     def initialize(self, particles: List[IceParticle]):
         """Initialize the particle system.
@@ -152,6 +172,32 @@ class DEMSolver:
             / self.config.fluid_viscosity
         )
         
+        # Pluggable closure (C6): C_w from the callback, same force form.
+        if self.config.drag_model == "cw_callback":
+            if self.config.cw_callback is None:
+                raise ValueError('drag_model="cw_callback" requires config.cw_callback')
+            state = IceWaterDragState(
+                relative_speed=float(v_rel_mag),
+                area=float(particle.cross_section_area),
+                particle_index=int(getattr(particle, "index", len(self.drag_events))),
+                time=float(self.time),
+                ks_m=float(self.config.ks_m),
+                lambda_over_ks=float(self.config.lambda_over_ks),
+            )
+            result = self.config.cw_callback(state)
+            c_w = float(getattr(result, "c_w", result))
+            if not (c_w > 0.0):
+                raise ValueError(f"callback returned a non-positive C_w: {c_w}")
+            f_drag = 0.5 * c_w * self.config.fluid_density * particle.cross_section_area * v_rel_mag * v_rel
+            self.drag_events.append({
+                "particle_index": state.particle_index, "c_w": c_w,
+                "area": float(particle.cross_section_area),
+                "relative_velocity": [float(v) for v in v_rel],
+                "relative_speed": float(v_rel_mag),
+                "force": [float(v) for v in f_drag],
+            })
+            return f_drag
+
         # Drag coefficient
         if self.config.drag_model == "stokes":
             # Stokes drag: C_D = 24/Re
@@ -295,8 +341,16 @@ class DEMSolver:
             if fluid_velocities.ndim == 1:
                 fluid_velocities = fluid_velocities.unsqueeze(0).expand(n_particles, 3)
             
+            n_events_before = len(self.drag_events)
             for i, particle in enumerate(self.system):
                 drag_forces[i] = self.compute_drag_force(particle, fluid_velocities[i])
+            if self.exchange is not None:
+                for ev in self.drag_events[n_events_before:]:
+                    self.exchange.record(
+                        np.asarray(ev["force"], dtype=np.float64), dt,
+                        c_w=ev["c_w"], area=ev["area"],
+                        relative_velocity=ev["relative_velocity"],
+                    )
         
         # External forces (from fluid coupling)
         external_forces = (
