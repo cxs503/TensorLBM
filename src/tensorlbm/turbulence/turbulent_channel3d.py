@@ -418,20 +418,34 @@ class TurbulentChannel3D:
         amb = ab if cfg.force_scheme == "guo_sp" else 1.0 - 0.5 * sm
 
         fpost.copy_(f2)
-        fpost.add_(fneq, alpha=-0.5 * (sp + sm))
-        fpost.add_(fopp, alpha=0.5 * (sm - sp))   # -0.5(sp - sm)
+        # When Smagorinsky is on, sp/sm are per-cell tensors (1,N); use element-wise ops
+        if cfg.smagorinsky_cs > 0.0:
+            fpost.addcmul_(fneq, sp + sm, value=-0.5)
+            fpost.addcmul_(fopp, sm - sp, value=0.5)
+        else:
+            fpost.add_(fneq, alpha=-0.5 * (sp + sm))
+            fpost.add_(fopp, alpha=0.5 * (sm - sp))
 
         # ---- Guo forcing, closed form over (i, opposite-i) pairs ----
         #   w fx [ 3 cx (1 - sm/2) + 9 cu cx (1 - sp/2) - 3 ux (1 - sp/2) ]
         #   sum_i (i, opposite-i):  w fx [ 3 amb c_ix + 9 amb cu c_ix - 3 ab ux ]
         fx = self.accel * rho
-        coef9 = (9.0 * amb) * fx
-        cu.add_(1.0 / 3.0)
-        cu.mul_(self.dcol)
-        cu.mul_(coef9.view(1, self.N))
-        torch.mul(u[0], 3.0 * ab, out=self.b_tn).mul_(fx)
-        cu.sub_(self.wcol * self.b_tn)
-        fpost.add_(cu)
+        if cfg.smagorinsky_cs > 0.0:
+            # Per-cell forcing: amb and ab are (1,N) tensors
+            cu.add_(1.0 / 3.0)
+            cu.mul_(self.dcol)
+            # 9 * amb * fx * cu - 3 * ab * fx * ux * w
+            term1 = (9.0 * amb * fx).view(1, self.N) * cu
+            term2 = (3.0 * ab * fx).view(1, self.N) * (self.wcol * u[0].view(1, self.N))
+            fpost.add_(term1 - term2)
+        else:
+            coef9 = (9.0 * amb) * fx
+            cu.add_(1.0 / 3.0)
+            cu.mul_(self.dcol)
+            cu.mul_(coef9.view(1, self.N))
+            torch.mul(u[0], 3.0 * ab, out=self.b_tn).mul_(fx)
+            cu.sub_(self.wcol * self.b_tn)
+            fpost.add_(cu)
 
         # ---- streaming ----
         # streaming: the collision output lives in a scratch buffer, so the new
