@@ -7,6 +7,14 @@ Modules
     (planar / 2-D cylindrical / 3-D spherical) plus the "heat-flux estimate"
     formula quoted in the campaign brief.
 
+``stefan_exact`` / ``stefan_verification``
+    Exact similarity solutions (planar Neumann freezing/melting branches,
+    cylindrical circular front) and the enthalpy thermal-LBE Stefan
+    verification surface (1-D front vs Neumann, 2-D circular-front
+    solidification vs an independent sharp-interface reference, melting energy
+    audit, grid-convergence order).  See
+    ``docs/P155W1_N01_STEFAN_PHASE_CHANGE.md``.
+
 ``lee_model``
     Lee-type phase-change mass/energy source terms together with a D2Q9
     thermal lattice Bhatnagar-Gross-Krook (LBE) solver and an enthalpy
@@ -26,6 +34,16 @@ from .lee_model import (  # noqa: F401
     ThermalLBE2D,
     run_bubble_growth,
 )
+from .stefan_exact import (  # noqa: F401
+    CylindricalSimilarity,
+    NeumannSimilarity,
+)
+from .stefan_verification import (  # noqa: F401
+    EnthalpyThermalLBM,
+    run_cylindrical_wall_solidification,
+    run_grid_convergence,
+    run_planar_stefan,
+)
 from .stefan_anchors import (  # noqa: F401
     exact_stefan_coefficient,
     heat_flux_estimate_coefficient,
@@ -33,6 +51,12 @@ from .stefan_anchors import (  # noqa: F401
 )
 
 __all__ = [
+    "CylindricalSimilarity",
+    "EnthalpyThermalLBM",
+    "NeumannSimilarity",
+    "run_cylindrical_wall_solidification",
+    "run_grid_convergence",
+    "run_planar_stefan",
     "BubbleGrowthResult",
     "LeePhaseChangeModel",
     "PhaseChangeParameters",

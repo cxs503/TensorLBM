@@ -1,0 +1,32 @@
+{
+  "node": "P155W1-N01",
+  "repo": "TensorLBM",
+  "campaign_theme": "相变传热 / Stefan 问题 / 凝固熔化前沿追踪",
+  "module": [
+    "tensorlbm.phase_change.stefan_exact",
+    "tensorlbm.phase_change.stefan_verification"
+  ],
+  "builds_on": [
+    "tensorlbm.phase_change.lee_model (thermal LBE + enthalpy formulation, bubble growth)",
+    "tensorlbm.phase_change.stefan_anchors (similarity anchors, planar/cylindrical/spherical)",
+    "tensorlbm.passive_scalar / tensorlbm.thermal (zero-velocity thermal LBE convention)"
+  ],
+  "supersedes_claims": [
+    "docs/stefan_problem/README.md (2026 legacy: analytical solution only, LBM implementation 'requires further development')"
+  ],
+  "new_verified_capability": "enthalpy thermal LBM Stefan verification chain: 1-D Neumann freezing/melting, 2-D circular-front solidification, melting energy audit, grid-convergence order",
+  "reference_solutions": [
+    "Neumann one-phase planar similarity solution (solid-side erf and liquid-side erfc branches)",
+    "sharp-interface radial front-tracking solver (independent method) for the cylindrical case"
+  ],
+  "explicitly_not_used": [
+    "cylindrical undercooled-melt similarity solution (metastable liquid not representable by an equilibrium enthalpy model)",
+    "Planck quasi-steady closed form as a <=3% reference (deviates up to 20% at Ste=0.5)"
+  ],
+  "artifacts": {
+    "results": "artifacts/stefan_phase_change/results.json",
+    "figures": "artifacts/stefan_phase_change/figures/",
+    "report": "docs/P155W1_N01_STEFAN_PHASE_CHANGE.md",
+    "tests": "tests/test_stefan_phase_change_verification.py"
+  }
+}

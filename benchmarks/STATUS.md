@@ -37,6 +37,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `suboff_re1000` | SUBOFF hull drag Re=1000: Cd -1.15% end-to-end (mix50 friction, 3.4h) |
 | `suboff_sail_resistance` | SUBOFF+sail AFF-3 Re=1000: Cd +0.95% finest tier, |err| monotone 8.15->2.92->0.95% (std friction per frozen erratum E2; formal mix50 FAIL co-archived) |
 | `taylor_couette` | analytic / standard case |
+| `stefan_phase_change` | analytic (Neumann 1-D sealing/melting) + independent sharp-interface reference (2-D cylinder): front 0.50%/1.01% (1-D two measures), cylinder radius 1.45%, front shape 0.85%, melting energy closure 0.61%, front order p=1.00. See `docs/P155W1_N01_STEFAN_PHASE_CHANGE.md` |
 | `taylor_green_2d` | analytic / standard case |
 | `taylor_green_3d` | analytic / standard case |
 | `thermal_cavity` | analytic / standard case |
