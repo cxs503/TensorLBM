@@ -419,6 +419,10 @@ def laws_from_campaign(summary: Mapping[str, Any]) -> dict[float, ThreeZoneLaw]:
     """Build the law table consumed by :func:`cw_ice_water` from a campaign result."""
     laws: dict[float, ThreeZoneLaw] = {}
     for group in summary.get("groups", []):
+        if group.get("lambda_over_ks") is None:
+            # the Nikuradse sand control group has no pitch; it is a check
+            # quantity (criterion C2), not a C_w table entry.
+            continue
         law = ThreeZoneLaw(
             lambda_over_ks=float(group["lambda_over_ks"]),
             k0=float(group["fit"]["k0"]),
