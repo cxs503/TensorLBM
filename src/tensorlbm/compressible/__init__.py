@@ -133,3 +133,9 @@ from .kinetic_flux import (  # noqa: E402,F401
     normal_shock_ratios,
     radial_levels,
 )
+
+# --- NACA0012 LBM solver (P153W2-N04) ---------------------------------------
+from .naca0012_lbm import (  # noqa: E402,F401
+    NACA0012LBMConfig,
+    NACA0012LBMSolver,
+)
