@@ -42,6 +42,7 @@ from pathlib import Path
 import torch
 
 __all__ = [
+    "bounce_back_scalar",
     "PassiveScalarConfig",
     "equilibrium_scalar",
     "collide_scalar_bgk",
@@ -81,6 +82,31 @@ def _normalized_weights_fp32(values: Sequence[float]) -> torch.Tensor:
 
 _W5 = _normalized_weights_fp32([2.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0])
 _CS2_D2Q5 = 1.0 / 3.0
+
+#: Opposite-direction permutation for D2Q5 (0=rest, 1=+x, 2=+y, 3=-x, 4=-y).
+_OPP5 = torch.tensor([0, 3, 4, 1, 2], dtype=torch.long)
+
+
+def bounce_back_scalar(g: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    """Bounce-back (zero-flux) for a **D2Q5 scalar** distribution on solid cells.
+
+    ``tensorlbm.boundary.boundaries.bounce_back_cells`` is defined for the
+    D2Q9 *momentum* lattice (its opposite table has 9 entries) and therefore
+    raises ``IndexError`` when handed a 5-population scalar field; the scalar
+    analogue must reverse the D2Q5 directions itself.
+
+    Args:
+        g:    Scalar DF, shape ``(5, ny, nx)``.
+        mask: Boolean solid mask, shape ``(ny, nx)``.
+
+    Returns:
+        Distribution with the populations of masked cells reversed.
+    """
+    if g.shape[0] != 5:
+        msg = f"bounce_back_scalar expects a D2Q5 distribution (5, ny, nx), got {tuple(g.shape)}"
+        raise ValueError(msg)
+    opp = _OPP5.to(g.device)
+    return torch.where(mask.unsqueeze(0), g[opp], g)
 
 
 # ---------------------------------------------------------------------------
@@ -286,9 +312,11 @@ def run_passive_scalar_transport(
         cfg = PassiveScalarConfig(**{k: v for k, v in kwargs.items() if k in valid})
 
     device = resolve_device(cfg.device)
-    run_dir = prepare_run_dir(cfg.output_root, cfg.run_name or "passive_scalar", cfg.overwrite)
-    configure_logging(run_dir)
-    save_config_json(asdict(cfg), run_dir / "config.json")
+    run_dir = prepare_run_dir(
+        cfg.output_root, "passive_scalar", cfg.run_name or "passive_scalar", cfg.overwrite
+    )
+    configure_logging()
+    save_config_json(cfg, run_dir / "config.json")
 
     _logger.info(
         "Passive scalar: nx=%d ny=%d Re=%.1f D=%.4f device=%s",
@@ -351,8 +379,8 @@ def run_passive_scalar_transport(
         g = collide_scalar_bgk(g, c, ux, uy, cfg.tau_d)
         # Dirichlet BC at source
         g = apply_scalar_dirichlet_bc(g, 1.0, source_mask, ux, uy)
-        # Zero flux at solid (bounce-back)
-        g = bounce_back_cells(g, solid)
+        # Zero flux at solid (D2Q5 bounce-back; NOT the D2Q9 momentum helper)
+        g = bounce_back_scalar(g, solid)
         # Inlet: zero scalar
         g[:, :, 0] = equilibrium_scalar(torch.zeros(ny, device=device), ux[:, 0], uy[:, 0])
         g = stream_scalar(g)
