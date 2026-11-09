@@ -1,0 +1,552 @@
+{
+ "schema": "suboff-gci-v4/1",
+ "task_key": "paper-exp-lbm-suboff-tau-2",
+ "topic": "lbm-suboff-tau",
+ "artifact_path": "benchmarks/verified/suboff_sail_resistance/gci_v4.json",
+ "generated_utc": "2026-11-08T16:19:29Z",
+ "criteria_predeclared": [
+  {
+   "id": "C1",
+   "text": "最细档 |C_T − 锚| ≤3%",
+   "judge_on": "finest tier of the anchor-Re ladder"
+  },
+  {
+   "id": "C2",
+   "text": "三档 C_T 单调收敛（符号一致）",
+   "judge_on": "three-tier ladder at the anchor Re"
+  },
+  {
+   "id": "C3",
+   "text": "实测收敛阶与 GCI ≤5%",
+   "judge_on": "observed order p (positive) and GCI_fine <= 5%"
+  },
+  {
+   "id": "C4",
+   "text": "Re 相对锚偏差 ≤2%（否则该档数据不得用于 3% 判决）",
+   "judge_on": "per tier, Re from the executed lattice pair (u_lb, nu_lb)"
+  }
+ ],
+ "anchor": {
+  "case": "DARPA SUBOFF AFF-1 bare hull, tow-tank resistance",
+  "source": "H.-L. Liu and T. T. Huang, Summary of DARPA Suboff Experimental Program Data, CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23, DOI 10.21236/ADA359226",
+  "verbatim_row": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+  "verbatim_provenance": "docs/suboff_experimental_resistance_validation_2026-08-01.md section '原始实验数据' (repo transcription of Table 14, p.23) and the frozen dimensional registry src/tensorlbm/suboff_reference_data.py::SUBOFF_TOW_TANK_RESISTANCE_TABLE14 (bare_hull, config 1)",
+  "V_knots": 5.92,
+  "V_ms": 3.04550848,
+  "RT_N": 87.4,
+  "rho": 1000.0,
+  "nu": 1.139e-06,
+  "L_max_m": 4.356,
+  "S_wetted_m2": 5.998,
+  "CT": 0.0031420662705313055,
+  "Re": 11647265.09120281,
+  "formula": "CT = RT / (0.5*rho*V^2*S); Re = V*L_max/nu",
+  "traceability_note": "External anchor quantities are the Table 14 row (verbatim in-repo transcription with report page 23 and DOI) and the DTRC wetted area 5.998 m2 (Table 1 of the locked reference set, refs_lock.json::S1_Table1_verbatim). The primary PDF could not be re-opened in this offline environment; provenance is the frozen in-repo transcription, whose area value is independently reproduced by the analytic surface-of-revolution quadrature suboff_analytic_wetted_area (0.31576 L^2) to 0.08%."
+ },
+ "ladder_protocol": {
+  "tiers_L_cells_per_hull_length": [
+   96,
+   112,
+   128
+  ],
+  "domain_padding": [
+   1.0,
+   4.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ],
+  "lattice": "D3Q19",
+  "collision": "mrt",
+  "subgrid_model": "none",
+  "friction_estimator": "standard",
+  "steps": "150*L",
+  "force_window": "last 1000 samples (last 10000 steps)",
+  "reference_area": "bare-hull analytic surface-of-revolution area 0.31576*L_lb^2 (matches the DTRC WSA 5.998 m2 to 0.08%); the legacy pi*D*L cylinder proxy used by the Re=1000 ladder is 15.9% larger and would bias C_T low by that amount",
+  "Re_matching": "nu_lb = u_lb*L/Re_anchor with u_lb = 0.05 (Re exact by construction)"
+ },
+ "tiers_executability": [
+  {
+   "L": 96,
+   "cells": 23736384,
+   "steps_frozen_protocol": 14400,
+   "nu_lb": 4.1211391364531105e-07,
+   "tau_minus_half": 1.2363417409359332e-06,
+   "Re_from_lattice_pair": 11647265.09120281,
+   "projected_wall_hours_per_tier": 82.1768,
+   "executed": 0,
+   "status": "not executable inside the available compute envelope"
+  },
+  {
+   "L": 112,
+   "cells": 37745568,
+   "steps_frozen_protocol": 16800,
+   "nu_lb": 4.807995659195295e-07,
+   "tau_minus_half": 1.4423986977585885e-06,
+   "Re_from_lattice_pair": 11647265.091202812,
+   "projected_wall_hours_per_tier": 152.45701807372177,
+   "executed": 0,
+   "status": "not executable inside the available compute envelope"
+  },
+  {
+   "L": 128,
+   "cells": 56524608,
+   "steps_frozen_protocol": 19200,
+   "nu_lb": 5.49485218193748e-07,
+   "tau_minus_half": 1.648455654581244e-06,
+   "Re_from_lattice_pair": 11647265.091202809,
+   "projected_wall_hours_per_tier": 260.92215824698485,
+   "executed": 0,
+   "status": "not executable inside the available compute envelope"
+  }
+ ],
+ "cost_model": {
+  "measured_ms_per_step_L48": [
+   {
+    "closure": "mrt",
+    "Re": 1000.0,
+    "ms_per_step": 3945.6467628479004,
+    "cells": 2996352
+   },
+   {
+    "closure": "mrt",
+    "Re": 100000.0,
+    "ms_per_step": 4980.96604347229,
+    "cells": 2996352
+   },
+   {
+    "closure": "mrt",
+    "Re": 1000000.0,
+    "ms_per_step": 4573.117697238922,
+    "cells": 2996352
+   },
+   {
+    "closure": "mrt",
+    "Re": 11647400.0,
+    "ms_per_step": 3615.368604660034,
+    "cells": 2996352
+   },
+   {
+    "closure": "smagorinsky",
+    "Re": 1000.0,
+    "ms_per_step": 3167.091727256775,
+    "cells": 2996352
+   },
+   {
+    "closure": "smagorinsky",
+    "Re": 100000.0,
+    "ms_per_step": 4634.3390464782715,
+    "cells": 2996352
+   },
+   {
+    "closure": "smagorinsky",
+    "Re": 1000000.0,
+    "ms_per_step": 4891.993963718414,
+    "cells": 2996352
+   },
+   {
+    "closure": "smagorinsky",
+    "Re": 11647400.0,
+    "ms_per_step": 4889.501655101776,
+    "cells": 2996352
+   }
+  ],
+  "measured_ms_per_step_L96_full_domain": {
+   "source": "gci_v4_run.py smoke attempt at L=96 (23,736,384 cells), 3 executed steps",
+   "ms_per_step": 20544.2,
+   "note": "torch CPU eager path, 64 threads, shared host under heavy external load"
+  }
+ },
+ "arm_probe_Re_sweep_L48": {
+  "file": "artifacts/gci_v4_probe.json",
+  "sha256": "cc2767b4455a4009df7b2a5ae17cfda246db47c2ea497e3c79b59a8420890542",
+  "resolution": 48,
+  "steps": 20,
+  "rows": [
+   {
+    "closure": "mrt",
+    "Re": 1000.0,
+    "tau_minus_half": 0.007199999999999984,
+    "steps_executed": 20,
+    "diverged": false,
+    "ct_last_transient": 0.10197139060408998,
+    "ct_err_vs_anchor_pct": 3145.3609129907754,
+    "ms_per_step": 3945.6467628479004
+   },
+   {
+    "closure": "mrt",
+    "Re": 100000.0,
+    "tau_minus_half": 7.199999999996098e-05,
+    "steps_executed": 20,
+    "diverged": false,
+    "ct_last_transient": 0.0015257103779660434,
+    "ct_err_vs_anchor_pct": -51.44245071228066,
+    "ms_per_step": 4980.96604347229
+   },
+   {
+    "closure": "mrt",
+    "Re": 1000000.0,
+    "tau_minus_half": 7.199999999984996e-06,
+    "steps_executed": 20,
+    "diverged": false,
+    "ct_last_transient": 0.0005347758468485357,
+    "ct_err_vs_anchor_pct": -82.98012197056212,
+    "ms_per_step": 4573.117697238922
+   },
+   {
+    "closure": "mrt",
+    "Re": 11647400.0,
+    "tau_minus_half": 6.181637103308546e-07,
+    "steps_executed": 20,
+    "diverged": false,
+    "ct_last_transient": 0.0004345518022572198,
+    "ct_err_vs_anchor_pct": -86.16987151630829,
+    "ms_per_step": 3615.368604660034
+   },
+   {
+    "closure": "smagorinsky",
+    "Re": 1000.0,
+    "tau_minus_half": 0.007199999999999984,
+    "steps_executed": 20,
+    "diverged": false,
+    "ct_last_transient": 0.1018661439978209,
+    "ct_err_vs_anchor_pct": 3142.0113144397783,
+    "ms_per_step": 3167.091727256775
+   },
+   {
+    "closure": "smagorinsky",
+    "Re": 100000.0,
+    "tau_minus_half": 7.199999999996098e-05,
+    "steps_executed": 20,
+    "diverged": false,
+    "ct_last_transient": 0.0017651081441606097,
+    "ct_err_vs_anchor_pct": -43.82333177644468,
+    "ms_per_step": 4634.3390464782715
+   },
+   {
+    "closure": "smagorinsky",
+    "Re": 1000000.0,
+    "tau_minus_half": 7.199999999984996e-06,
+    "steps_executed": 20,
+    "diverged": false,
+    "ct_last_transient": 0.0007857174518879846,
+    "ct_err_vs_anchor_pct": -74.99360661940703,
+    "ms_per_step": 4891.993963718414
+   },
+   {
+    "closure": "smagorinsky",
+    "Re": 11647400.0,
+    "tau_minus_half": 6.181637103308546e-07,
+    "steps_executed": 20,
+    "diverged": false,
+    "ct_last_transient": 0.0006867403753395129,
+    "ct_err_vs_anchor_pct": -78.14366992255103,
+    "ms_per_step": 4889.501655101776
+   }
+  ],
+  "caliber_note": "20-step transient read, NOT a converged window: reported only to locate the Re-dependence of the under-resolved drag, and never used as the C1 verdict",
+  "anchor_Re_rows": [
+   {
+    "closure": "mrt",
+    "Re": 11647400.0,
+    "tau_minus_half": 6.181637103308546e-07,
+    "steps_executed": 20,
+    "diverged": false,
+    "ct_last_transient": 0.0004345518022572198,
+    "ct_err_vs_anchor_pct": -86.16987151630829,
+    "ms_per_step": 3615.368604660034
+   },
+   {
+    "closure": "smagorinsky",
+    "Re": 11647400.0,
+    "tau_minus_half": 6.181637103308546e-07,
+    "steps_executed": 20,
+    "diverged": false,
+    "ct_last_transient": 0.0006867403753395129,
+    "ct_err_vs_anchor_pct": -78.14366992255103,
+    "ms_per_step": 4889.501655101776
+   }
+  ],
+  "anchor_Re_probe_note": "probe ran at Re=1.16474e7 vs the anchor-definition Re=11647265.1 (rel. diff 0.0012%) - identical for all practical purposes"
+ },
+ "arm_probe_anchor_L48_mrt": {
+  "file": "benchmarks/verified/suboff_sail_resistance/artifacts/gci_v4_probe_anchor_mrt300.json",
+  "sha256": "f2083375a1215c0a457645e0882c7e73f839959ecca499f757560da3b668910c",
+  "resolution": 48,
+  "steps_requested": 300,
+  "steps_executed": 300,
+  "closure": "mrt",
+  "tau_minus_half": 6.181637103308546e-07,
+  "diverged": false,
+  "ct_last": 0.0077858827887509665,
+  "ct_mean_over_run": 0.012893445861751155,
+  "ct_err_vs_anchor_pct": 147.79498961472947,
+  "ct_series_present": false,
+  "ms_per_step": 3196.817718346914
+ },
+ "arm_probe_anchor_L48_smagorinsky": {
+  "file": "benchmarks/verified/suboff_sail_resistance/artifacts/gci_v4_probe_anchor_smag300.json",
+  "sha256": "44ae6f6df17a9e893db48fab92ccd796c0fc2d97a9c735835c0a575c6e7a4fef",
+  "resolution": 48,
+  "steps_requested": 300,
+  "steps_executed": 300,
+  "closure": "smagorinsky",
+  "tau_minus_half": 6.181637103308546e-07,
+  "diverged": false,
+  "ct_last": 0.007772642387418481,
+  "ct_mean_over_run": 0.012962909969886685,
+  "ct_err_vs_anchor_pct": 147.37359807831714,
+  "ct_series_present": false,
+  "ms_per_step": 4172.783460617065
+ },
+ "arm_archived_resolved_Re_ladders": {
+  "AFF3_sail_Re1000_standard": {
+   "source": "result.json::e2_standard_verdict_PASS (frozen erratum E2 arm)",
+   "hull_type": "with_sail (AFF-3)",
+   "Re": 1000.0,
+   "anchor_for_this_arm": "Blasius laminar flat plate Cf = 1.328/sqrt(Re1000)",
+   "ct": {
+    "96": 0.0385703619256417,
+    "112": 0.04076867077371583,
+    "128": 0.04239577341027158
+   },
+   "err_pct": {
+    "96": -8.154974501456492,
+    "112": -2.9202885372883514,
+    "128": 0.9542222446252913
+   },
+   "presence": "archived+judged (this case directory)",
+   "grid_convergence": {
+    "f1": 0.0385703619256417,
+    "f2": 0.04076867077371583,
+    "f3": 0.04239577341027158,
+    "r21": 1.1666666666666667,
+    "r32": 1.1428571428571428,
+    "eps21": 0.002198308848074128,
+    "eps32": 0.0016271026365557509,
+    "R": 0.740161073354732,
+    "sign_consistent": true,
+    "R_limit_p0": 0.8662394014360377,
+    "p_observed": -1.0914768608320329,
+    "asymptotic": false,
+    "note": "observed p <= 0: successive differences shrink slower than any positive power law -> the three grids are NOT in the asymptotic range; GCI is undefined",
+    "gci_fine_pct": null,
+    "richardson_fine": null,
+    "gci_fine_pct_assumed_order": {
+     "1.0": 42.74607635868496,
+     "2.0": 19.72895831939305
+    }
+   }
+  },
+  "AFF1_bare_Re1000_mix50": {
+   "source": "diag_bare_L{96,112,128}/result_L{L}.json (same directory, same ladder)",
+   "hull_type": "bare_hull (AFF-1)",
+   "Re": 1000.0,
+   "anchor_for_this_arm": "Blasius laminar flat plate Cf = 1.328/sqrt(Re1000)",
+   "ct": {
+    "96": 0.04211021752105977,
+    "112": 0.044002354142391696,
+    "128": 0.045305691721726174
+   },
+   "err_pct": {
+    "96": 0.2742470871072101,
+    "112": 4.779865586824398,
+    "128": 7.8834162726582475
+   },
+   "steps": {
+    "96": 14400,
+    "112": 16800,
+    "128": 19200
+   },
+   "cells": {
+    "96": 23736384,
+    "112": 37745568,
+    "128": 56402688
+   },
+   "presence": "archived diagnostic (instrument since replaced by erratum E2)",
+   "grid_convergence": {
+    "f1": 0.04211021752105977,
+    "f2": 0.044002354142391696,
+    "f3": 0.045305691721726174,
+    "r21": 1.1666666666666667,
+    "r32": 1.1428571428571428,
+    "eps21": 0.001892136621331926,
+    "eps32": 0.0013033375793344779,
+    "R": 0.6888179028092715,
+    "sign_consistent": true,
+    "R_limit_p0": 0.8662394014360377,
+    "p_observed": -1.5889824032321838,
+    "asymptotic": false,
+    "note": "observed p <= 0: successive differences shrink slower than any positive power law -> the three grids are NOT in the asymptotic range; GCI is undefined",
+    "gci_fine_pct": null,
+    "richardson_fine": null,
+    "gci_fine_pct_assumed_order": {
+     "1.0": 33.699718252208875,
+     "2.0": 15.553716116404093
+    }
+   }
+  }
+ },
+ "resolution_requirement": {
+  "method": "Cf from ITTC-1957 at the anchor Re -> u_tau/U = sqrt(Cf/2); y+ of the first cell centre = 0.5*u_tau_lb/nu_lb with nu_lb = u_lb*L/Re; delta/L = 0.37*Re^-0.2; cells = 26.66*L^3 (frozen domain padding 1/4/1/1/1/1 at 2.108L lateral extent)",
+  "tiers": [
+   {
+    "L": 96,
+    "nu_lb": 4.1211391364531105e-07,
+    "tau_minus_half": 1.2363417409359332e-06,
+    "Cf_ittc1957": 0.00292208264136114,
+    "u_tau_over_U": 0.03822357022415057,
+    "y_plus_first_cell": 2318.750287150459,
+    "delta_over_L": 0.014287522655107158,
+    "delta_in_cells": 1.3716021748902871,
+    "cells": 23587061.76
+   },
+   {
+    "L": 112,
+    "nu_lb": 4.807995659195295e-07,
+    "tau_minus_half": 1.4423986977585885e-06,
+    "Cf_ittc1957": 0.00292208264136114,
+    "u_tau_over_U": 0.03822357022415057,
+    "y_plus_first_cell": 1987.500246128965,
+    "delta_over_L": 0.014287522655107158,
+    "delta_in_cells": 1.6002025373720017,
+    "cells": 37455380.48
+   },
+   {
+    "L": 128,
+    "nu_lb": 5.49485218193748e-07,
+    "tau_minus_half": 1.648455654581244e-06,
+    "Cf_ittc1957": 0.00292208264136114,
+    "u_tau_over_U": 0.03822357022415057,
+    "y_plus_first_cell": 1739.062715362844,
+    "delta_over_L": 0.014287522655107158,
+    "delta_in_cells": 1.8288028998537162,
+    "cells": 55910072.32
+   }
+  ],
+  "requirements": {
+   "wall_model_upper_yplus_500": {
+    "y_plus_target": 500.0,
+    "L_cells_needed": 445.20005513288817,
+    "cells_needed": 2352479098.239321,
+    "bytes_per_cell_field_19x4B": 76,
+    "GiB_for_distributions": 166.50968367810214,
+    "ratio_vs_finest_tier_cells": 42.07612332845792
+   },
+   "wall_function_lower_yplus_30": {
+    "y_plus_target": 30.0,
+    "L_cells_needed": 7420.000918881469,
+    "cells_needed": 10891106936293.152,
+    "bytes_per_cell_field_19x4B": 76,
+    "GiB_for_distributions": 770878.1651763987,
+    "ratio_vs_finest_tier_cells": 194796.86726137923
+   },
+   "wall_resolved_yplus_1": {
+    "y_plus_target": 1.0,
+    "L_cells_needed": 222600.02756644407,
+    "cells_needed": 2.940598872799151e+17,
+    "bytes_per_cell_field_19x4B": 76,
+    "GiB_for_distributions": 20813710459.76276,
+    "ratio_vs_finest_tier_cells": 5259515416.057238
+   }
+  },
+  "conclusion": "the anchor Re puts the first cell at y+ ~ 1.7e3-2.3e3 at the frozen ladder, i.e. the whole viscous layer is sub-grid; a wall-resolved lattice would need L ~ 2e5 cells per hull length (10^16 cells) and even a wall-model band (y+~500) needs L~450 / ~2e9 cells, 4.7x per dimension beyond the finest tier"
+ },
+ "criteria_verdict": [
+  {
+   "id": "C1",
+   "text": "最细档 |C_T − 锚| ≤3%",
+   "verdict": "FAIL",
+   "measured": {
+    "finest_tier_executed": false,
+    "reason": "no tier of the anchor-Re ladder produced a converged window: the frozen protocol is not executable in this environment (61-144 h per tier, measured), and the anchor-Re probes at L=48 are non-stationary - C_T = 4.3e-4 (-86%) at 20 steps vs 7.8e-3 (+148%) at 300 steps versus the anchor 3.14e-3, with the 300-step value still 40% below its own run mean (0.0129), i.e. window drift far outside the 2.5% steadiness gate of this case. Both readings are recorded; neither is a converged C_T, so no value enters the 3% test",
+    "non_stationary_probe": {
+     "L": 48,
+     "ct_20_steps_mrt": 0.0004345518022572198,
+     "ct_300_steps_mrt": 0.0077858827887509665,
+     "ct_300_steps_smagorinsky": 0.007772642387418481,
+     "run_mean_300_steps_mrt": 0.012893445861751155,
+     "closure_difference_pct": 0.17
+    },
+    "probe_short_anchor_Re_error_pct": -86.16987151630829
+   }
+  },
+  {
+   "id": "C2",
+   "text": "三档 C_T 单调收敛（符号一致）",
+   "verdict": "NOT_ASSESSABLE",
+   "measured": {
+    "tiers_executed": 0,
+    "reason": "no three-tier anchor-Re ladder exists, so monotone convergence cannot be judged"
+   }
+  },
+  {
+   "id": "C3",
+   "text": "实测收敛阶与 GCI ≤5%",
+   "verdict": "FAIL",
+   "measured": {
+    "anchor_Re_ladder": "not assessable (no ladder)",
+    "substitute_resolved_Re_ladder": {
+     "arm": "AFF3_sail_Re1000_standard",
+     "p_observed": -1.0914768608320329,
+     "asymptotic": false,
+     "gci_fine_pct": null,
+     "note": "observed p <= 0: successive differences shrink slower than any positive power law -> the three grids are NOT in the asymptotic range; GCI is undefined"
+    },
+    "reason": "the archived three-tier ladders are pre-asymptotic (observed p <= 0), so the Roache GCI is undefined there as well; the <=5% GCI criterion is not met anywhere"
+   }
+  },
+  {
+   "id": "C4",
+   "text": "Re 相对锚偏差 ≤2%（否则该档数据不得用于 3% 判决）",
+   "verdict": "PASS",
+   "measured": {
+    "Re_anchor": 11647265.09120281,
+    "per_tier_re_from_lattice_pair": {
+     "96": 11647265.09120281,
+     "112": 11647265.091202812,
+     "128": 11647265.091202809
+    },
+    "max_rel_dev_pct": 1.5992124628792166e-14,
+    "note": "Re matching is exact by construction (nu_lb = u_lb*L/Re_anchor) and was verified from the reported lattice pair on the executed L=96 setup; the tiers are therefore admissible for a 3% judgement - there is simply no converged tier to judge"
+   }
+  }
+ ],
+ "verdict": {
+  "overall": "HONEST_FAIL",
+  "C1_3pct_band": "FAIL",
+  "C2_monotone": "NOT_ASSESSABLE",
+  "C3_order_and_gci": "FAIL",
+  "C4_re_match": "PASS",
+  "headline": "The DTRC anchor Reynolds number is not reachable by the frozen D3Q19/MRT instrument at L=96/112/128: matching Re pins tau-0.5 at 1.2e-6..1.6e-6, which puts the first cell at y+ ~ 1.7e3-2.3e3, i.e. the whole viscous layer is sub-grid (delta ~ 1.4-1.8 cells). The frozen ladder could not be executed (measured 15-20 s/step at L=96 => 61-144 h per tier). The anchor-Re probes that WERE run never settle: at L=48 the C_T read is 4.3e-4 (-86%) after 20 steps and 7.8e-3 (+148%) after 300 steps against the anchor 3.14e-3, i.e. no stationary C_T exists, so no tier is admissible for the 3% judgement; the archived three-tier ladders are pre-asymptotic (observed p = -1.09 / -1.59), so the Roache GCI is undefined as well. Failure mode = resolution-dominated (the two closures agree to 0.2% at the anchor Re), not tau- or collision-model-dominated.",
+  "what_would_be_needed": "a wall-modelled lattice at L ~ 450 cells per hull (y+ ~ 500, ~2.4e9 cells, ~170 GiB of distributions) - 4.7x the finest tier per dimension and far beyond the available hardware; wall-resolved would need L ~ 2e5."
+ },
+ "provenance": {
+  "scripts": {
+   "gci_v4.py": "fbc61a63189ce6f0aef17e359de0633b22c67f7c2622e2f6cb67c757ca1a366d",
+   "gci_v4_run.py": "d00e0f6c281aca7ff53f3883779a204518de4b57b5691da15339848f023e7d66",
+   "gci_v4_probe.py": "a06a5c1796fe208359c5f44f28540f8a480b9d60e93f76edbb6074d5594fad25"
+  },
+  "inputs": {
+   "result.json": "8a8cf4b96934d57d72d37a442fc4771d62e3bb550ffb1cea07e44939a6f155ef",
+   "diag_bare_L96/result_L96.json": "0c446a7b88fece52b804b4b4935d6c7a00b8085692a4082f046473a14a314995",
+   "diag_bare_L112/result_L112.json": "f970de1af2861aef83486121ca12a76004a05a1833b5cc40d36bc6bf485343b1",
+   "diag_bare_L128/result_L128.json": "2d72ccb53779e4d1b6cfa60e31197084187fa4e6f9a37076c57d77acbc08d1db",
+   "src/tensorlbm/suboff_reference_data.py": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+   "docs/suboff_experimental_resistance_validation_2026-08-01.md": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3"
+  },
+  "environment": {
+   "host": "36cb7828dbd5",
+   "python": "3.11.6",
+   "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+   "accelerator": "none available (CPU-only torch build in this environment)"
+  },
+  "commands": [
+   "python3 gci_v4_probe.py --resolution 48 --steps 20 --re 1000 100000 1000000 11647400 --closures mrt smagorinsky --device cpu --threads 8",
+   "python3 gci_v4_probe.py --resolution 48 --steps 300 --re 11647400 --closures mrt ...",
+   "python3 gci_v4_probe.py --resolution 48 --steps 300 --re 11647400 --closures smagorinsky ...",
+   "python3 gci_v4_run.py --resolution 96 --steps N --device cpu --threads 96  (aborted: see tiers_executability)"
+  ]
+ }
+}
