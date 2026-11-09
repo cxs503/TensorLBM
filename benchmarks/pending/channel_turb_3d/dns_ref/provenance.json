@@ -1,0 +1,34 @@
+{
+  "mkm180": {
+    "source_url": "https://turbulence.oden.utexas.edu/data/MKM/chan180/profiles/chan180.means",
+    "retrieved_utc": "2026-11-08",
+    "sha256": "f54c86e30a869798f140aa004c1e167cd13a6280e988d2794d72ca2be8b5fc82",
+    "bytes": 7044,
+    "columns": [
+      "y/h",
+      "y+",
+      "Umean+",
+      "dUmean+/dy+*Re_tau",
+      "Wmean",
+      "dWmean/dy",
+      "Pmean"
+    ],
+    "note": "verbatim copy of the Moser/Kim/Mansour 1999 DNS mean-profile table"
+  },
+  "mkm590": {
+    "source_url": "https://turbulence.oden.utexas.edu/data/MKM/chan590/profiles/chan590.means",
+    "retrieved_utc": "2026-11-08",
+    "sha256": "878bc951794516b6136912f8f098cd6f2f96c4bbe7f21a8cea657ffb270d419d",
+    "bytes": 12932,
+    "columns": [
+      "y/h",
+      "y+",
+      "Umean+",
+      "dUmean+/dy+*Re_tau",
+      "Wmean",
+      "dWmean/dy",
+      "Pmean"
+    ],
+    "note": "verbatim copy of the Moser/Kim/Mansour 1999 DNS mean-profile table"
+  }
+}
