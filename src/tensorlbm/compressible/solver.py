@@ -49,46 +49,79 @@ def normal_shock_relations(M1: float, gamma: float = 1.4) -> NormalShockResult:
     return NormalShockResult(M2=M2, rho_ratio=rho_ratio, p_ratio=p_ratio, T_ratio=T_ratio, p0_ratio=p0_ratio)
 
 
+def oblique_shock_theta(beta: float, M1: float, gamma: float = 1.4) -> float:
+    """Deflection angle ``theta`` (rad) produced by a shock at angle ``beta``.
+
+    ``tan(theta) = 2 cot(beta) (M1^2 sin^2(beta) - 1)
+    / (M1^2 (gamma + cos 2 beta) + 2)``  (Anderson, *Modern Compressible Flow*).
+    """
+    s2 = math.sin(beta) ** 2
+    m1n2 = M1 * M1 * s2
+    den = M1 * M1 * (gamma + math.cos(2.0 * beta)) + 2.0
+    if den <= 0.0:
+        return 0.0
+    return math.atan(2.0 * (math.cos(beta) / math.sin(beta)) * (m1n2 - 1.0) / den)
+
+
+def oblique_shock_angle(M1: float, theta_rad: float,
+                        gamma: float = 1.4) -> tuple:
+    """Weak oblique-shock angle ``beta`` for deflection ``theta`` (radians).
+
+    Root-finds ``theta(beta) = theta`` on the *increasing* branch of the
+    ``theta-beta-M`` relation, so the weak (attached) solution is returned.
+    Returns ``(beta, theta_max)``; raises ``ValueError`` when ``theta`` exceeds
+    the detachment angle ``theta_max``.
+
+    Implementation note (defect fixed, node p127w2-N04): the previous version
+    ran a Newton iteration with the *sign of the derivative reversed*
+    (``df = -(...)``), which pushed ``beta`` away from the root and returned an
+    angle on the strong branch -- at ``M1 = 2`` it gave ``beta = 44.26 deg`` for
+    ``theta = 10 deg`` (exact 39.3 deg) and a ``Cp`` twice the linear-theory
+    limit at small deflection.  Bisection on the monotone branch is used here
+    because it cannot leave the bracket and needs no derivative sign.
+    """
+    if M1 <= 1.0:
+        raise ValueError(f"M1 must be > 1, got {M1}")
+    mu = math.asin(1.0 / M1)
+    lo = mu + 1e-9
+    hi = 0.5 * math.pi - 1e-9
+    # locate the maximum of theta(beta) (detachment angle)
+    grid = np.linspace(lo, hi, 2001)
+    th = np.array([oblique_shock_theta(b, M1, gamma) for b in grid])
+    i_max = int(np.argmax(th))
+    theta_max = float(th[i_max])
+    if theta_rad < 0.0:
+        raise ValueError(f"theta must be >= 0, got {theta_rad}")
+    if theta_rad >= theta_max:
+        raise ValueError(
+            f"theta={math.degrees(theta_rad):.3f} deg exceeds the detachment "
+            f"angle {math.degrees(theta_max):.3f} deg at M1={M1}")
+    a = lo
+    b = float(grid[i_max])
+    for _ in range(200):
+        mid = 0.5 * (a + b)
+        if oblique_shock_theta(mid, M1, gamma) < theta_rad:
+            a = mid
+        else:
+            b = mid
+        if b - a < 1e-14:
+            break
+    return 0.5 * (a + b), theta_max
+
+
 def oblique_shock_relations(M1: float, theta: float, gamma: float = 1.4):
     """Compute oblique shock relations (weak shock solution)."""
     if M1 <= 1.0:
         raise ValueError(f"M1 must be > 1, got {M1}")
     theta_rad = theta if abs(theta) < 0.1 else math.radians(theta) if theta > 1 else theta
-    beta = math.asin(1.0 / M1) + 0.1
-    for _ in range(100):
-        sin_b = math.sin(beta)
-        cos_b = math.cos(beta)
-        M1n_sq = M1 * M1 * sin_b * sin_b
-        num = M1n_sq - 1.0
-        den = M1 * M1 * (gamma + math.cos(2 * beta)) + 2.0
-        if den <= 0:
-            beta += 0.01
-            continue
-        tan_theta_calc = 2.0 * cos_b * num / den
-        f = math.tan(theta_rad) - tan_theta_calc
-        if abs(f) < 1e-12:
-            break
-        db = 1e-8
-        sin_bd = math.sin(beta + db)
-        cos_bd = math.cos(beta + db)
-        cos_2bd = math.cos(2 * (beta + db))
-        M1n_sq_d = M1 * M1 * sin_bd * sin_bd
-        num_d = M1n_sq_d - 1.0
-        den_d = M1 * M1 * (gamma + cos_2bd) + 2.0
-        tan_theta_d = 2.0 * cos_bd * num_d / den_d if den_d > 0 else tan_theta_calc
-        df = -(tan_theta_d - tan_theta_calc) / db
-        if abs(df) < 1e-15:
-            beta += 0.01
-            continue
-        beta -= f / df
-        beta = max(math.asin(1.0 / M1) + 0.001, min(math.pi / 2 - 0.001, beta))
-
+    beta, theta_max = oblique_shock_angle(M1, theta_rad, gamma)
     M1n = M1 * math.sin(beta)
     ns = normal_shock_relations(M1n, gamma)
     M2n = ns.M2
     M2 = M2n / math.sin(beta - theta_rad)
     return type('ObliqueShockResult', (), {
-        'beta': beta, 'theta': theta_rad, 'M1n': M1n, 'M2n': M2n, 'M2': M2,
+        'beta': beta, 'theta': theta_rad, 'theta_max': theta_max,
+        'M1n': M1n, 'M2n': M2n, 'M2': M2,
         'rho_ratio': ns.rho_ratio, 'p_ratio': ns.p_ratio, 'T_ratio': ns.T_ratio, 'p0_ratio': ns.p0_ratio
     })()
 
