@@ -510,3 +510,65 @@ class TestRheologyUnit:
         gamma = torch.tensor([0.01, 0.1, 1.0, 10.0])
         mu = papanastasiou_viscosity(gamma, tau_y=0.0, mu_0=0.02, m=100.0)
         assert (mu - 0.02).abs().max() < 1e-12
+
+
+# ---------------------------------------------------------------------------
+# (f) Wall bounce-back order: NoDynamics(pre-collision) -> reflect -> stream
+# ---------------------------------------------------------------------------
+
+class TestBounceBackOrder:
+    """壁面处理顺序的回归闸门（2026-11-09 修复）。
+
+    旧实现是 ``stream`` 之后再反弹：壁面格点里是**流入**分布与周期回卷的混合，
+    反弹后仍留下一个非零滑移，Poiseuille 振幅偏高约 20%。正确顺序是先回填碰撞前
+    分布（NoDynamics）、再对碰撞后分布反弹、最后 stream（与
+    ``tests/test_lbm_verification.py`` 的解析解阶梯同约定）。
+    """
+
+    H = 8
+    AX = 1e-5
+    MU = 0.02
+    M = 100.0
+
+    def _run(self, scheme, **kw):
+        return run_bingham_poiseuille(
+            self.H, self.AX, 0.0, self.MU, self.M,
+            max_iter=kw.get("max_iter", 8000), tol=kw.get("tol", 1e-8),
+            dtype=torch.float64, bounce_scheme=scheme,
+        )
+
+    def test_halfway_scheme_satisfies_newtonian_limit(self):
+        r = self._run("halfway")
+        assert r["l2_error"] < 0.05, f"halfway L2 {r['l2_error']:.4f} >= 5%"
+
+    def test_post_stream_scheme_violates_no_slip(self):
+        """负控：旧顺序必须**失败** 5% 判据，否则本闸门没有鉴别力。"""
+        r = self._run("post_stream")
+        assert r["l2_error"] > 0.10, (
+            f"post_stream L2 {r['l2_error']:.4f} 未超 10%——负控失效，"
+            "说明扫描参数已不能暴露该缺陷"
+        )
+
+    def test_wall_row_velocity_is_no_slip(self):
+        """第一层流体格点速度必须是「半格外推到零」的值，不是滑移值。"""
+        r_h = self._run("halfway", max_iter=8000)
+        r_l = self._run("post_stream", max_iter=2000, tol=1e-6)
+        slip_h = abs(float(r_h["u_sim"][0]) - float(r_h["analytic_u"][0]))
+        slip_l = abs(float(r_l["u_sim"][0]) - float(r_l["analytic_u"][0]))
+        assert slip_h < slip_l / 3.0, (
+            f"halfway wall slip {slip_h:.3e} 未显著小于 post_stream {slip_l:.3e}"
+        )
+
+    def test_couette_moving_wall_still_no_slip(self):
+        """Couette 走同一修复路径：线性剖面 L2 误差 < 5%。"""
+        r = run_bingham_couette(
+            self.H, 0.01, 0.0, self.MU, self.M,
+            max_iter=8000, tol=1e-8, dtype=torch.float64,
+            bounce_scheme="halfway",
+        )
+        assert r["l2_error"] < 0.05, f"Couette L2 {r['l2_error']:.4f} >= 5%"
+
+    def test_unknown_bounce_scheme_raises(self):
+        import pytest as _pytest
+        with _pytest.raises(ValueError):
+            self._run("nope", max_iter=200, tol=1e-3)
