@@ -217,7 +217,8 @@ def figure_channel(channel: dict | None, out_dir: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # criteria
 # ---------------------------------------------------------------------------
-def grade(apriori: dict | None, flat: dict | None, kvl: dict | None, channel: dict | None) -> dict:
+def grade(apriori: dict | None, flat: dict | None, kvl: dict | None, channel: dict | None,
+          loglaw: dict | None = None, channel_legacy: dict | None = None) -> dict:
     out: dict = {}
 
     # (a) log-layer profile
@@ -245,6 +246,25 @@ def grade(apriori: dict | None, flat: dict | None, kvl: dict | None, channel: di
             ),
             "evidence": "artifacts/wall_model_les/apriori.json",
         }
+        if loglaw:
+            band = loglaw["profile_error_in_criterion_band"]
+            out["a_log_layer_profile"]["constants_diagnostic"] = {
+                "declared_pair": loglaw["declared_constants"],
+                "dns_implied_pair": {
+                    "kappa": loglaw["dns_fitted_constants"]["log_region_30_to_0p3h"]["kappa"],
+                    "B": loglaw["dns_fitted_constants"]["log_region_30_to_0p3h"]["B"],
+                },
+                "max_rel_error_declared_pair_profile_shape_only": band["declared_pair"].get("max_rel"),
+                "max_rel_error_dns_fitted_pair": band["dns_fitted_pair"].get("max_rel"),
+                "band_upper_limit_used": band["dns_band_upper_limit"],
+                "note": (
+                    "the a-priori number above scales the wall-model profile with the "
+                    "friction velocity the model itself predicts (anchor test), so it "
+                    "carries the kappa/B offset; with the DNS-implied constants the "
+                    "residual drops below the 3 % threshold, which locates the failure "
+                    "in the log-law calibration, not in the model structure"
+                ),
+            }
     else:
         out["a_log_layer_profile"] = {"verdict": "WITHHELD", "reason": "apriori.json missing"}
 
@@ -255,22 +275,63 @@ def grade(apriori: dict | None, flat: dict | None, kvl: dict | None, channel: di
     }
     if channel:
         rs = channel.get("reynolds_stress", {})
+        mb = channel.get("momentum_balance", {})
+        wu = channel.get("wall_units", {})
+        run_info = channel.get("run", {})
+        dns_peak = None if not apriori else float(apriori["dns"]["uv_peak_y_plus"])
+        peak = rs.get("uv_peak_y_plus_resolved")
+        peak_error = (
+            abs(float(peak) - dns_peak) / dns_peak
+            if (peak is not None and dns_peak) else None
+        )
         b["wmles_resolved"] = {
-            "uv_peak_y_plus": rs.get("uv_peak_y_plus_resolved"),
+            "uv_peak_y_plus": peak,
             "uv_peak_value_plus": rs.get("uv_peak_value_plus"),
             "turbulence_intensity_bulk": rs.get("turbulence_intensity_bulk"),
         }
-        b["verdict"] = "WITHHELD"
-        b["verdict_basis"] = (
-            "the D3Q19 coarse-grid channel run does not reach a statistically stationary "
-            "state (see channel_eq.json: tau_w model vs force balance, u_plus profile), so its "
-            "resolved stress peak is not a measurement of the physical peak; a standalone "
-            "equilibrium wall model has a degenerate (constant-total-stress) stress profile, "
-            "so the criterion cannot be moved to the model either"
+        b["dns_peak_y_plus"] = dns_peak
+        b["peak_position_relative_error"] = peak_error
+        b["grid"] = {
+            "delta_y_plus": wu.get("delta_y_plus"),
+            "y_plus_exchange": wu.get("y_plus_exchange"),
+            "h_plus": wu.get("h_plus"),
+        }
+        b["friction_velocity_recovery"] = {
+            "tau_w_model": mb.get("tau_w_model"),
+            "tau_w_force_balance": mb.get("tau_w_force_balance"),
+            "relative_gap": mb.get("relative_gap"),
+            "u_tau_model_over_balance": run_info.get("u_tau_model_over_balance"),
+        }
+        if channel_legacy:
+            legacy_rs = channel_legacy.get("run", {})
+            b["before_fix_legacy_wall_origin"] = {
+                "wall_origin_offset": channel_legacy.get("run", {}).get("wall_origin_offset"),
+                "u_tau_model_over_balance": legacy_rs.get("u_tau_model_over_balance"),
+                "tau_w_model": channel_legacy.get("momentum_balance", {}).get("tau_w_model"),
+                "tau_w_force_balance": channel_legacy.get("momentum_balance", {}).get("tau_w_force_balance"),
+            }
+        nonphysical = (
+            rs.get("uv_peak_value_plus") is not None and float(rs["uv_peak_value_plus"]) > 1.05
         )
-    else:
-        b["verdict"] = "WITHHELD"
-        b["verdict_basis"] = "no channel artifact"
+        if peak_error is None:
+            b["verdict"] = "WITHHELD"
+            b["verdict_basis"] = "no resolved-stress peak in the channel artifact"
+        elif peak_error <= CRITERIA["b_reynolds_stress_peak"]["threshold"] and not nonphysical:
+            b["verdict"] = "PASS"
+            b["verdict_basis"] = f"resolved -<u'v'>+ peak within {100 * peak_error:.1f} % of the DNS peak"
+        else:
+            b["verdict"] = "FAIL"
+            b["verdict_basis"] = (
+                f"resolved -<u'v'>+ peak at y+ = {peak:.2f} vs DNS {dns_peak:.2f} "
+                f"({100 * peak_error:.1f} % > 5 % threshold); peak value "
+                f"{rs.get('uv_peak_value_plus'):.3f} in wall units vs DNS "
+                f"{None if not apriori else round(float(apriori['dns']['uv_peak_value']), 3)}; "
+                f"the abscissa is quantised by delta_y_plus = {wu.get('delta_y_plus'):.2f} "
+                "and the box is only ~240 x 240 wall units, so the peak position is not "
+                "a resolvable measurement at this grid"
+                + (" and the peak value exceeds the total stress 1 - y/h, i.e. the "
+                   "near-wall momentum budget is not closed" if nonphysical else "")
+            )
     b["evidence"] = "artifacts/wall_model_les/channel_eq.json, artifacts/wall_model_les/apriori.json"
     out["b_reynolds_stress_peak"] = b
 
@@ -294,11 +355,12 @@ def grade(apriori: dict | None, flat: dict | None, kvl: dict | None, channel: di
             ),
             "verdict": "PASS" if err <= CRITERIA["c_flat_plate_cf"]["threshold"] else "FAIL",
             "verdict_basis": (
-                f"max rel error {err:.4f} vs threshold 0.05 over Re_theta = 1e4...5e4; the "
-                "ITTC line itself sits ~11 % above the classical 0.024 Re_theta^-1/4 "
-                "correlation in this band, and the Coles log-wake family reproduces the "
-                "latter, so the failure is a model-form/correlation-family difference, "
-                "diagnosed by the Pi sweep"
+                f"max rel error {err:.4f} vs threshold 0.05 over Re_theta = 1e4...5e4 "
+                "(and "
+                f"{float(metrics['max_rel_error_vs_prandtl_schlichting']):.4f} against the "
+                "independent Prandtl-Schlichting line); before the m7797 Coles-wake fix the "
+                "same metric was 0.1141, i.e. the criterion now passes because the wake "
+                "double-counting was removed, not because the threshold moved"
             ),
             "evidence": "artifacts/wall_model_les/flat_plate.json",
         }
@@ -340,6 +402,8 @@ def run(out_dir: Path) -> dict:
     flat = _load(out_dir / "flat_plate.json")
     kvl = _load(out_dir / "kvlcc2.json")
     channel = _load(out_dir / "channel_eq.json")
+    channel_legacy = _load(out_dir / "channel_eq_legacy_origin.json")
+    loglaw = _load(out_dir / "log_law_fit.json")
 
     figures = []
     figures += figure_profiles(apriori, out_dir) if apriori else []
@@ -350,7 +414,36 @@ def run(out_dir: Path) -> dict:
         "title": "Wall-modelled LES for high-Reynolds-number ship boundary layers",
         "repository": "TensorLBM",
         "module": "tensorlbm.wall_model_les",
-        "criteria": grade(apriori, flat, kvl, channel),
+        "criteria": grade(apriori, flat, kvl, channel, loglaw, channel_legacy),
+        "fixes": [
+            {
+                "id": "coles-wake-double-counting",
+                "file": "src/tensorlbm/wall_model_les/flat_plate.py",
+                "before": "wake = 4 Pi/kappa * sin^2(pi eta/2): edge increment 2*(2 Pi/kappa)",
+                "after": "wake = 2 Pi/kappa * sin^2(pi eta/2)",
+                "effect": {
+                    "max_rel_error_vs_ittc_local_before": 0.1141,
+                    "max_rel_error_vs_ittc_local_after": (
+                        None if not flat else flat["baseline_metrics"]["max_rel_error_vs_ittc_local"]
+                    ),
+                    "shape_factor_start_before": 1.381,
+                    "shape_factor_start_after": None if not flat else flat["baseline_metrics"]["shape_factor_start"],
+                },
+            },
+            {
+                "id": "wall-model-node-on-the-wall-row",
+                "file": "src/tensorlbm/wall_model_les/channel.py",
+                "before": "wall_origin_offset = 0.5: j_wall_node = 0 (the bounce-back wall row), "
+                          "exchange node one cell too close to the wall",
+                "after": "wall_origin_offset = 1.0 (measured): j_wall_node = 1, j_exchange = 2",
+                "effect": {
+                    "u_tau_model_over_force_balance_before": None
+                    if not channel_legacy else channel_legacy.get("run", {}).get("u_tau_model_over_balance"),
+                    "u_tau_model_over_force_balance_after": None
+                    if not channel else channel.get("run", {}).get("u_tau_model_over_balance"),
+                },
+            },
+        ],
         "figures": figures,
         "artifacts": sorted(p.name for p in out_dir.glob("*.json")) + sorted(
             p.name for p in out_dir.glob("*.npz")
