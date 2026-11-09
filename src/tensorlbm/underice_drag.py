@@ -247,6 +247,105 @@ def triangular_keel_mask(spec: KeelArraySpec) -> np.ndarray:
     return mask
 
 
+def wall_link_normals(solid: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Wall normals of the wall-crossing links of a halfway-bounce-back wall.
+
+    For a wall link ``i`` at fluid node ``X`` (solid at ``X - c_i``) the
+    momentum exchanged with the wall is the vector ``2 c_i f*_opp(i)(X)``.  Its
+    projection on the local wall normal is a *pressure* (form) force, the
+    tangential remainder a *friction* (skin) force.  The normal is built from
+    the wetted axis faces of the link,
+
+    ``n = normalise(sum_a sign(c_ia) e_a [solid at X - c_ia e_a])``,
+
+    i.e. an axis-aligned unit vector on a flat wall and a ``45 deg`` normal on a
+    staircase corner (where a diagonal link grazes two faces).  This is a
+    *unique* convention -- no tie-break order -- and it keeps the split exact:
+    ``normal + tangential == total`` for every link, whatever ``n`` is.
+    The two axis-aligned alternatives (assign the whole corner link to the x
+    or to the z face) bracket the result; :func:`wall_link_face_masks` builds
+    them so the ambiguity can be quantified instead of assumed away.
+
+    Returns ``(links, nvec)`` with ``links`` from
+    :func:`tensorlbm.rough_channel3d.build_link_masks` and ``nvec`` of shape
+    ``(19, 3, nz, ny, nx)`` holding ``n_x, n_y, n_z`` (lattice components).
+    """
+    s = np.asarray(solid, dtype=bool)
+    if s.ndim != 3:
+        raise ValueError("solid mask must be 3-D (nz, ny, nx)")
+    links = build_link_masks(solid)
+    nvec = np.zeros((19, 3) + s.shape, dtype=np.float32)
+    for i in range(1, 19):
+        c_arr = [int(C[i, 2]), int(C[i, 1]), int(C[i, 0])]  # array order (z, y, x)
+        if c_arr == [0, 0, 0]:
+            continue
+        link_i = links[i] > 0.5
+        if not link_i.any():
+            continue
+        n_arr = np.zeros((3,) + s.shape, dtype=np.float32)
+        for a in range(3):
+            if c_arr[a] == 0:
+                continue
+            shift = [0, 0, 0]
+            shift[a] = c_arr[a]
+            wetted = np.roll(s, tuple(shift), axis=(0, 1, 2)) & link_i
+            n_arr[a] = float(np.sign(c_arr[a])) * wetted.astype(np.float32)
+        bare = link_i & (np.abs(n_arr).sum(axis=0) == 0.0)
+        if bare.any():  # diagonal contact with no axis face: use the link itself
+            for a in range(3):
+                if c_arr[a] != 0:
+                    n_arr[a] = np.where(bare, float(np.sign(c_arr[a])), n_arr[a])
+        norm = np.sqrt((n_arr**2).sum(axis=0)) + 1e-30
+        n_arr = n_arr / norm[None, :, :, :]
+        for k, a in enumerate((2, 1, 0)):  # lattice order x, y, z
+            nvec[i, k] = n_arr[a]
+    return links, nvec
+
+
+def wall_link_face_masks(solid: np.ndarray,
+                         priority: tuple[str, str, str] = ("z", "y", "x")
+                         ) -> tuple[np.ndarray, np.ndarray]:
+    """Axis-aligned (tie-break) alternative to :func:`wall_link_normals`.
+
+    ``xface[i](X) = 1`` iff direction ``i`` crosses a wall at ``X`` and the
+    whole link exchange is assigned to an x-normal face.  A diagonal link at a
+    staircase corner is wetted on two faces; the axes are then tried in
+    ``priority`` order.  Used only to quantify the split ambiguity -- the
+    production split uses the ``45 deg`` corner normal of
+    :func:`wall_link_normals`, and the *total* force is identical either way.
+    """
+    s = np.asarray(solid, dtype=bool)
+    if s.ndim != 3:
+        raise ValueError("solid mask must be 3-D (nz, ny, nx)")
+    # solid is stored as (nz, ny, nx), so the *array* axis of x is 2
+    axes = {"x": 2, "y": 1, "z": 0}
+    links = build_link_masks(solid)
+    xface = np.zeros((19,) + s.shape, dtype=np.float32)
+    for i in range(1, 19):
+        c_arr = [int(C[i, 2]), int(C[i, 1]), int(C[i, 0])]
+        if c_arr == [0, 0, 0]:
+            continue
+        link_i = links[i] > 0.5
+        if not link_i.any():
+            continue
+        assigned = np.full(s.shape, -1, dtype=np.int8)
+        for name in priority:
+            a = axes[name]
+            if c_arr[a] == 0:
+                continue
+            shift = [0, 0, 0]
+            shift[a] = c_arr[a]
+            nb_solid = np.roll(s, tuple(shift), axis=(0, 1, 2))
+            assigned = np.where((assigned < 0) & nb_solid, np.int8(a), assigned)
+        for name in priority:  # fallback: the link must have *some* face
+            a = axes[name]
+            if c_arr[a] == 0:
+                continue
+            assigned = np.where(assigned < 0, np.int8(a), assigned)
+        xface[i] = np.where(link_i & (assigned == axes["x"]), 1.0, 0.0).astype(np.float32)
+    return links, xface
+
+
 def mirrored_solid(mask: np.ndarray, *, mirror: bool = True) -> np.ndarray:
     """Fold roughness voxels into the two channel walls (optionally mirrored)."""
     solid = np.zeros_like(mask, dtype=bool)
@@ -552,10 +651,14 @@ def run_underice_channel(
     smag2 = float(cfg.smagorinsky_cs) ** 2
 
     solid_t = torch.from_numpy(solid.astype(np.float32))
-    links_np = build_link_masks(solid)
+    links_np, nvec_np = wall_link_normals(solid)
     links = torch.from_numpy(links_np.astype(np.float32))
+    normals = {i: (torch.from_numpy(nvec_np[i, 0].copy()),
+                   torch.from_numpy(nvec_np[i, 1].copy()),
+                   torch.from_numpy(nvec_np[i, 2].copy())) for i in range(19)}
     fluid = torch.from_numpy((~solid).astype(np.float32))
     wm = {k: torch.from_numpy(v) for k, v in _wall_masks(solid).items()}
+    link_is_wall = [bool(float(links_np[i].sum()) > 0.0) for i in range(19)]
     cx_t = ten["cx"][:, 0, 0, 0]
     gx = torch.tensor(float(g), dtype=torch.float32)
 
@@ -572,176 +675,103 @@ def run_underice_channel(
     rho0 = torch.ones((cfg.nz, cfg.ny, cfg.nx), dtype=torch.float32)
     f = _equilibrium(rho0, ux0, uy0, uz0, ten) * fluid[None]
 
-    acc = {kk: 0.0 for kk in ("me_x", "form_x", "skin_x", "proj_form_x", "form_x_abs",
-                              "skin_yface_x", "u_bulk", "rho", "ux2", "mass_in")}
+    acc = {kk: 0.0 for kk in ("me_x", "form_x", "skin_x", "form_face", "skin_grad",
+                              "skin_yface", "u_bulk", "ux2", "rho")}
+    acc["max_ux"] = 0.0
+    acc["mom_first"] = acc["mom_last"] = None
+    acc["sux_first"] = acc["sux_last"] = 0.0
     prof = np.zeros(cfg.nz)
     k_count = fluid.sum(dim=(1, 2)).numpy()
     n_samples = 0
     max_ux = 0.0
-    # local normal for the projection cross-check: smoothed solid indicator
     import time
 
     t0 = time.time()
     for t in range(1, int(cfg.steps)):
         f, ux_m, fstar = _step(f, solid_t, links, gx, tau, s_minus, smag2, ten, shifts)
         if t >= cfg.warmup and (t - cfg.warmup) % cfg.sample_interval == 0:
-            # (1) wall force from the wall-crossing links.  A halfway
-            # bounce-back link delivers 2 c_ix f*_i of x-momentum to the wall,
-            # but only the *nonequilibrium* part of that population is stress:
-            # the equilibrium part is the convective momentum that the incoming
-            # stream puts back in the same step.  Keeping the equilibrium part
-            # (the pre-2026 form, f*_i - f*_opp) measures ~U_wall/3 instead of
-            # tau_w and over-predicts the wall force by a factor ~30 (measured
-            # 0.0130 vs rho g h_eff = 4.0e-4 at Re_tau=180).
-            rho_s = f.sum(0)
-            rho_s = torch.where(rho_s > 1e-12, rho_s, torch.ones_like(rho_s))
-            ux_s = (f * ten["cx"]).sum(0) / rho_s
-            uy_s = (f * ten["cy"]).sum(0) / rho_s
-            uz_s = (f * ten["cz"]).sum(0) / rho_s
-            feq_s = _equilibrium(rho_s, ux_s, uy_s, uz_s, ten)
-            force_x = torch.zeros_like(ux_m)
+            # (1) wall force: exact link-wise momentum exchange.  ``links[i](X)=1``
+            # means the solid sits at ``X - c_i``, so the incoming population of
+            # the fluid node ``X`` in direction ``i`` is the reflected one,
+            # ``f*_opp(i)(X)`` (halfway bounce-back).  The fluid therefore gives
+            # up ``2 c_i f*_opp(i)`` of x-momentum per wall link: that is the
+            # exact wall force, with no equilibrium split, no relaxation-rate
+            # calibration and no wall-position assumption.  Projected on the
+            # local face normal it splits into pressure (x-normal face) and
+            # friction (everything else); see ``wall_link_face_masks``.
+            # The equilibrium-part form ``f*_i - f*_opp`` (pre-2026) and the
+            # nonequilibrium form ``(f*_i - feq_i)/(1 - s+)`` (2026-11) are both
+            # wrong: the first measures ~U_wall/3 (30x too large), the second is
+            # a stress estimate that over-predicts by ~1e2.
+            me_x = form_x = 0.0
             for i in range(1, 19):
-                cix = float(C[i, 0])
+                cix, ciy, ciz = float(C[i, 0]), float(C[i, 1]), float(C[i, 2])
                 if cix == 0.0:
                     continue
-                force_x = force_x + (fstar[i] - feq_s[i]) * links[i] * cix
-            # f* - feq = (1 - s+) (f - feq) in this TRT setting (s- = s+), so the
-            # measured nonequilibrium part is attenuated by (1 - s+); undo it.
-            acc["me_x"] += 2.0 * float(force_x.sum()) / (1.0 - s_minus)
-            # (2) pressure on x-normal faces (form drag)
+                w_i = 2.0 * fstar[ten["opp"][i]] * links[i]    # exchange weight
+                me_x += float((w_i * cix).sum())
+                if link_is_wall[i]:
+                    n_x, n_y, n_z = normals[i]
+                    c_dot_n = cix * n_x + ciy * n_y + ciz * n_z
+                    form_x += float((w_i * c_dot_n * n_x).sum())
+            skin_x = me_x - form_x       # tangential = total - normal (exact)
+            acc["me_x"] -= me_x          # drag magnitude (flow direction +x)
+            acc["form_x"] -= form_x
+            acc["skin_x"] -= skin_x
+            # (2) legacy pressure integral on x-normal faces: kept as a
+            # documented diagnostic, *not* used for the split (it needs the
+            # +-1e-4 cancellation of p = rho/3 between the two faces of a ridge,
+            # which a first-order face sample does not deliver).
             p = (f.sum(0) / 3.0) * fluid  # p = rho / 3
-            acc["form_x"] += float((p * wm["xn_pos"]).sum() - (p * wm["xn_neg"]).sum())
-            acc["form_x_abs"] += float((p * wm["xn_pos"]).sum() + (p * wm["xn_neg"]).sum())
-            # (3) viscous shear on horizontal faces (skin drag)
+            acc["form_face"] += float((p * wm["xn_pos"]).sum() - (p * wm["xn_neg"]).sum())
+            # (3) legacy viscous shear on horizontal faces, also diagnostic only
             shear = 2.0 * nu * ux_m * (wm["zn_pos"] + wm["zn_neg"])
-            acc["skin_x"] += float(shear.sum())
+            acc["skin_grad"] += float(shear.sum())
             # y-normal flanks: mean tau_xy (expected ~0 by homogeneity)
             du_dy = 0.5 * (torch.roll(ux_m, -1, 1) - torch.roll(ux_m, 1, 1))
-            acc["skin_yface_x"] += float((nu * du_dy * (wm["yn_pos"] + wm["yn_neg"])).sum())
-            # projection split (normal vs tangential per link, using the local
-            # staircase normal from the solid mask)
-            proj = _projection_form(force_x, solid_t, ten, shifts, fluid)
-            acc["proj_form_x"] += proj
+            acc["skin_yface"] += float((nu * du_dy * (wm["yn_pos"] + wm["yn_neg"])).sum())
+            # The pre-2026 "tau_xz = -sum_i c_x c_z (f_i - feq_i)" diagnostic is
+            # gone: the non-equilibrium second moment is the *mode amplitude*,
+            # not the stress (it differs from rho nu du/dz by O(1/nu)), and no
+            # criterion ever consumed it.  The wall-normal velocity-gradient
+            # route above is the surviving, calibrated shear diagnostic.
             uxf = ux_m * fluid
             acc["u_bulk"] += float(uxf.sum())
             acc["ux2"] += float((uxf * ux_m).sum())
             acc["rho"] += float((f.sum(0) * fluid).sum())
-            acc["mass_in"] += float(fluid.sum())
+            acc["max_ux"] = max(acc["max_ux"], float(ux_m.abs().max()))
+            mom = float((f * ten["cx"]).sum())
+            sux = float(uxf.sum())
+            if acc["mom_first"] is None:
+                acc["mom_first"] = mom
+                acc["sux_first"] = sux
+            acc["mom_last"] = mom
+            acc["sux_last"] = sux
             prof += uxf.sum(dim=(1, 2)).double().numpy()
             n_samples += 1
-            max_ux = max(max_ux, float(ux_m.abs().max()))
     wall = time.time() - t0
     if n_samples <= 0:
         raise RuntimeError("no samples collected; increase steps")
 
-    area = float(cfg.nx * cfg.ny)
-    scale = 1.0 / (n_samples * n_fluid)
-    u_bulk = acc["u_bulk"] * scale
-    rho_mean = acc["rho"] * scale
-    u_rms = math.sqrt(max(acc["ux2"] * scale - u_bulk**2, 0.0))
-    u_tau_meas = math.sqrt(g * h_eff * rho_mean)
-    u_plus_bulk = u_bulk / u_tau_meas
-    cf = 2.0 / u_plus_bulk**2
-
-    # time-averaged forces (per unit wall-plan area -> "tau" in rho u^2 units)
-    me_tau = acc["me_x"] / (n_samples * area)
-    form_tau = acc["form_x"] / (n_samples * area)
-    skin_tau = acc["skin_x"] / (n_samples * area)
-    tau_balance = rho_mean * g * h_eff
-    proj_tau = acc["proj_form_x"] / (n_samples * area)
-
-    c_total = cd_from_cf(cf)
-    c_skin = skin_tau / (rho_mean * u_bulk**2)
-    c_form = form_tau / (rho_mean * u_bulk**2)
-    c_me = me_tau / (rho_mean * u_bulk**2)
-    c_balance = tau_balance / (rho_mean * u_bulk**2)
-
-    prof_mean = np.zeros(cfg.nz)
-    valid = k_count > 0
-    prof_mean[valid] = prof[valid] / (n_samples * k_count[valid]) / u_tau_meas
-    k_idx = np.arange(cfg.nz)
-    y = np.maximum(k_idx - 0.5, 0.5)
-    y_plus = y * u_tau_meas / nu
-    lo, hi = max(30.0, 0.0), 0.35 * cfg.re_tau
-    window = (y_plus >= lo) & (y_plus <= hi) & valid
-    fit = None
-    if window.sum() >= 3:
-        fit = fit_log_law(y_plus[window], prof_mean[window], kappa=KAPPA)
-
-    geom = keel_geometry_stats(spec, mask if mask is not None else np.zeros_like(solid), solid)
-    rec = {
-        "grid": {"nx": cfg.nx, "ny": cfg.ny, "nz": cfg.nz},
-        "config": {kk: _plain(v) for kk, v in asdict(cfg).items()},
-        "geometry": geom,
+    # The torch back-end hands the *raw diagnostic sums* to the same accounting
+    # function as the C back-end, so the two back-ends cannot drift apart in
+    # how the drag is defined (they did before 2026-11: torch derived cd_skin
+    # from the shear integral while native used cd_total - cd_form).
+    raw = {
         "n_fluid": n_fluid,
-        "h_eff": h_eff,
-        "nu": nu,
-        "tau": tau,
-        "s_minus": s_minus,
-        "u_tau_target": cfg.u_tau,
-        "u_tau_meas": u_tau_meas,
-        "re_tau": cfg.re_tau,
-        "re_h": u_plus_bulk * cfg.re_tau,
-        "u_bulk": u_bulk,
-        "u_rms": u_rms,
-        "u_plus_bulk": u_plus_bulk,
-        "cf": cf,
-        "cd_total": c_total,
-        "cd_skin": c_skin,
-        "cd_form": c_form,
-        "cd_me": c_me,
-        "cd_balance": c_balance,
-        "tau_total": tau_balance,
-        "tau_me": me_tau,
-        "tau_skin": skin_tau,
-        "tau_form": form_tau,
-        "tau_projection_form": proj_tau,
-        "tau_me": -me_tau / 2.0,
-        "tau_skin": skin_tau,
-        "closure_residual": (skin_tau + form_tau - tau_balance) / tau_balance,
-        "closure_residual_balance": (skin_tau + form_tau - tau_balance) / tau_balance,
-        "momentum_balance_residual": (-me_tau / 2.0 - tau_balance) / tau_balance,
-        "cf_log_law": cf_log_law(cfg.re_tau),
-        "dean_cf": dean_cf(u_plus_bulk * cfg.re_tau) if u_plus_bulk > 0 else float("nan"),
-        "log_fit": fit,
-        "profile": {
-            "k": k_idx.tolist(),
-            "y_plus": y_plus.tolist(),
-            "u_plus": prof_mean.tolist(),
-            "n_fluid_per_layer": k_count.tolist(),
-        },
         "n_samples": n_samples,
+        "sum_me": acc["me_x"], "sum_form": acc["form_x"], "sum_skin": acc["skin_x"],
+        "sum_form_face": acc["form_face"], "sum_skin_grad": acc["skin_grad"],
+        "sum_skin_y": acc["skin_yface"],
+        "sum_ux": acc["u_bulk"], "sum_ux2": acc["ux2"], "sum_rho": acc["rho"],
+        "max_ux": acc["max_ux"],
+        "mom_first": acc["mom_first"], "mom_last": acc["mom_last"],
+        "sux_first": acc["sux_first"], "sux_last": acc["sux_last"],
+        "k_count": k_count.tolist(), "prof_sum": prof.tolist(),
         "wall_seconds": float(wall),
-        "max_mach": max_ux * math.sqrt(1.0 / 3.0),
-        "backend": "torch-trt-guo-bb",
-        "note": cfg.note,
     }
-    return rec
-
-
-def _projection_form(force_x: Any, solid_t: Any, ten: dict[str, Any],
-                     shifts: tuple[tuple[int, int, int], ...], fluid: Any) -> float:
-    """Cross-check split: project the total exchange onto the local wall normal.
-
-    Only the x-projection of the *pressure-like* part is returned; the normal is
-    the normalised multi-axis indicator of the solid neighbours, which equals a
-    coordinate axis for flat faces and a mixed direction at staircase corners.
-    """
-    nx_n = torch.zeros_like(force_x)
-    nz_n = torch.zeros_like(force_x)
-    for i in range(1, 19):
-        cx, cy, cz = shifts[i]
-        if cx == 0 and cz == 0:
-            continue
-        nb = torch.roll(torch.roll(torch.roll(solid_t, -cz, 0), -cy, 1), -cx, 2)
-        nb = nb * torch.roll(torch.roll(torch.roll(fluid, -cz, 0), -cy, 1), -cx, 2)
-        nx_n = nx_n + nb * float(cx)
-        nz_n = nz_n + nb * float(cz)
-    norm = torch.sqrt(nx_n**2 + nz_n**2) + 1e-12
-    nx_u = nx_n / norm
-    # force_x already holds c_ix (f*_i + f*_opp); approximate the pressure part
-    # of the exchange by its normal projection times the normal x-component
-    return float((force_x * nx_u * nx_u).sum())
+    return _assemble_from_sums(cfg, solid, mask, spec, raw, h_eff, nu, tau, s_minus, g,
+                               "torch-trt-guo-bb")
 
 
 def _plain(value: Any) -> Any:
@@ -775,10 +805,17 @@ def cd_closure_terms(rec_total: dict[str, Any], rec_smooth: dict[str, Any]) -> d
 
     ``Cf_0`` is the skin reference: the *smoothed* geometry (a flat ice
     underside at the same nominal clearance) computed with the same solver, so
-    the comparison isolates the keel contribution from any solver bias.
+    the comparison isolates the keel contribution from any solver bias.  The
+    form-drag share of the *excess* drag is the quantity a drifting-ice model
+    needs; it is reported only when the excess is resolved (a few percent).
     """
     cf0 = float(rec_smooth["cf"])
     cf = float(rec_total["cf"])
+    cd_total = float(rec_total["cd_total"])
+    cd_form = float(rec_total["cd_form"])
+    cd_skin = float(rec_total["cd_skin"])
+    cd_smooth = float(rec_smooth["cd_total"])
+    excess = cd_total - cd_smooth
     return {
         "cf_total": cf,
         "cf_smooth": cf0,
@@ -788,43 +825,18 @@ def cd_closure_terms(rec_total: dict[str, Any], rec_smooth: dict[str, Any]) -> d
         "cd_total": cd_total,
         "cd_skin": cd_skin,
         "cd_form": cd_form,
-        "cd_skin_gradient": cd_skin_grad,
-        "cd_skin_yface": skin_y_tau / q,
-        "cd_me_diagnostic": me_tau / q,
-        "cd_balance": tau_balance / q,
-        "tau_total": tau_balance,
-        "tau_form": form_tau,
-        "tau_skin_gradient": skin_grad_tau,
-        "tau_skin_yface": skin_y_tau,
-        "tau_me": me_tau,
-        "tau_flux": flux_tau,
-        "tau_skin": skin_grad_tau,
-        "tau_me_diagnostic": me_tau,
-        "cd_me": me_tau / q,
-        "cd_skin_measured": skin_grad_tau / q,
-        "closure_residual": (form_tau + skin_grad_tau - tau_balance) / tau_balance,
-        "closure_residual_me": (form_tau + skin_grad_tau - me_tau) / me_tau,
-        "f_wall_budget": f_wall_budget,
-        "dP_dt": dP_dt,
-        "injected_force": input_force,
-        "momentum_balance_residual": (f_wall_budget - tau_balance) / tau_balance,
-        "stationarity_drift": drift,
-        "closure_residual_gradient": (form_tau + skin_grad_tau - tau_balance) / tau_balance,
-        "cf_log_law": cf_log_law(cfg.re_tau),
-        "dean_cf": dean_cf(u_plus_bulk * cfg.re_tau) if u_plus_bulk > 0 else float("nan"),
-        "log_fit": fit,
-        "profile": {
-            "k": k_idx.tolist(),
-            "y_plus": y_plus.tolist(),
-            "u_plus": prof_mean.tolist(),
-            "n_fluid_per_layer": k_count.tolist(),
-        },
-        "n_samples": n_samples,
-        "wall_seconds": float(raw.get("wall_seconds", 0.0)),
-        "max_mach": float(raw.get("max_ux", 0.0)) * math.sqrt(1.0 / 3.0),
-        "backend": backend,
-        "note": cfg.note,
+        "cd_smooth": cd_smooth,
+        "cd_excess": excess,
+        "cd_form_over_excess": (cd_form / excess if abs(excess) > 1e-12 else float("nan")),
+        "tau_total": float(rec_total["tau_total"]),
+        "tau_form": float(rec_total["tau_form"]),
+        "tau_skin": float(rec_total["tau_skin"]),
+        "tau_me": float(rec_total["tau_me"]),
+        "closure_residual": float(rec_total.get("closure_residual", float("nan"))),
+        "momentum_balance_residual": float(rec_total.get("momentum_balance_residual", float("nan"))),
+        "stationarity_drift": float(rec_total.get("stationarity_drift", float("nan"))),
     }
+
 
 # ---------------------------------------------------------------------------
 # Native (C/OpenMP) back-end: same scheme, ~100x faster, raw sums only
@@ -996,24 +1008,32 @@ def _assemble_from_sums(cfg: UnderIceChannelConfig, solid: np.ndarray, mask: np.
     # running accumulator, which pinned the metric at ~1 for any run)
     drift = (float("nan") if sux_first in (None, 0.0) else
              abs(float(sux_last) - float(sux_first)) / max(abs(float(sux_first)), 1e-30))
-    form_tau = raw["sum_form"] / (n_samples * area)
-    skin_grad_tau = raw["sum_skin"] / (n_samples * area)
-    skin_y_tau = raw["sum_skin_y"] / (n_samples * area)
-    # sum_me already carries the 2 c_ix and the 1/(1-s+) factors and is summed
-    # over both walls, hence the /2 to obtain the per-wall (per unit plan area)
-    # stress; the global sign is fixed so that drag is positive.
-    me_tau = -raw["sum_me"] / (n_samples * area) / 2.0
-    n_wall = float(raw.get("n_wall", 0) or 0)
-    flux_tau = (-raw["sum_flux"] / n_wall if n_wall > 0 else float("nan"))
+    # All four routes below are *force per wall area* (both walls share the
+    # injected momentum, so every sum over both walls is divided by 2 A).
+    #
+    # (i) total: exact link-wise momentum exchange, ``2 c_ix f*_opp`` per wall
+    #     link.  This is the drag the walls actually exert on the fluid; the
+    #     independent check is the momentum budget below.
+    # (ii) pressure/form: the part of (i) on x-normal faces (normal projection).
+    # (iii) friction/skin: the tangential remainder, ``skin = total - form``.
+    #     By construction (ii)+(iii) == (i) to machine precision, so the *split
+    #     closure* is an implementation identity; the physics tests of the split
+    #     are a smooth wall giving form == 0 exactly and the scaling of the form
+    #     part with the frontal area.
+    # (iv) the legacy pressure-integral and viscous-shear routes are kept as
+    #     diagnostics; they are the ones that carried the pre-2026 biases.
+    per_wall = 1.0 / (n_samples * 2.0 * area)
+    me_tau = raw["sum_me"] * per_wall
+    form_tau = raw["sum_form"] * per_wall
+    skin_tau = raw["sum_skin"] * per_wall
+    form_face_tau = float(raw.get("sum_form_face", float("nan"))) * per_wall
+    skin_grad_tau = float(raw.get("sum_skin_grad", float("nan"))) * per_wall
+    skin_y_tau = float(raw.get("sum_skin_y", float("nan"))) * per_wall
     q = rho_mean * u_bulk**2
 
-    # primary split: form drag is measured directly (wall-pressure integral on
-    # the x-normal faces); the friction part is the remainder of the exact
-    # momentum balance.  The viscous-shear surface integral is carried alongside
-    # as an *independent* cross-check of the split.
     cd_total = cd_from_cf(cf)
     cd_form = form_tau / q
-    cd_skin = cd_total - cd_form
+    cd_skin = skin_tau / q
     cd_skin_grad = skin_grad_tau / q
 
     k_count = np.asarray(raw["k_count"], dtype=float)
@@ -1048,28 +1068,28 @@ def _assemble_from_sums(cfg: UnderIceChannelConfig, solid: np.ndarray, mask: np.
         "cd_total": cd_total,
         "cd_skin": cd_skin,
         "cd_form": cd_form,
-        "cd_skin_gradient": cd_skin_grad,
+        "cd_skin_gradient_legacy": cd_skin_grad,
         "cd_skin_yface": skin_y_tau / q,
         "cd_me_diagnostic": me_tau / q,
         "cd_balance": tau_balance / q,
         "tau_total": tau_balance,
         "tau_form": form_tau,
-        "tau_skin_gradient": skin_grad_tau,
-        "tau_skin_yface": skin_y_tau,
+        "tau_skin": skin_tau,
         "tau_me": me_tau,
-        "tau_flux": flux_tau,
-        "tau_skin": skin_grad_tau,
-        "tau_me_diagnostic": me_tau,
+        "tau_form_face_legacy": form_face_tau,
+        "tau_skin_gradient_legacy": skin_grad_tau,
+        "tau_skin_yface": skin_y_tau,
         "cd_me": me_tau / q,
-        "cd_skin_measured": skin_grad_tau / q,
-        "closure_residual": (form_tau + skin_grad_tau - tau_balance) / tau_balance,
-        "closure_residual_me": (form_tau + skin_grad_tau - me_tau) / me_tau,
+        "cd_form_face_legacy": form_face_tau / q,
+        "cd_skin_measured_legacy": skin_grad_tau / q,
+        "closure_residual": (form_tau + skin_tau - me_tau) / me_tau,
         "f_wall_budget": f_wall_budget,
         "dP_dt": dP_dt,
         "injected_force": input_force,
-        "momentum_balance_residual": (f_wall_budget - tau_balance) / tau_balance,
+        "momentum_balance_residual": (me_tau - f_wall_budget) / f_wall_budget,
+        "tau_budget": f_wall_budget,
         "stationarity_drift": drift,
-        "closure_residual_gradient": (form_tau + skin_grad_tau - tau_balance) / tau_balance,
+        "closure_residual_legacy": (form_face_tau + skin_grad_tau - tau_balance) / tau_balance,
         "cf_log_law": cf_log_law(cfg.re_tau),
         "dean_cf": dean_cf(u_plus_bulk * cfg.re_tau) if u_plus_bulk > 0 else float("nan"),
         "log_fit": fit,
