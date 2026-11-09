@@ -341,7 +341,15 @@ class UnderIceChannelConfig:
     ny: int = 48
     nz: int = 98
     re_tau: float = 200.0
-    u_tau: float = 0.02
+    #: Friction velocity in *lattice* units.  It fixes the Mach number of the
+    #: bulk flow (``u_tau`` is not a free knob: the log law gives
+    #: ``U_bulk ~ u_tau (ln(Re_tau)/kappa + B) ~ 18 u_tau``).  The original
+    #: default 0.02 put the bulk at ``Mach ~ 0.2`` *and*, worse, below the
+    #: laminar solution ``U_b ~ g h^2/(3 nu)`` of the same forcing: such a state
+    #: is not turbulent, keeps spinning up and diverges (measured: ``U+`` = 6.5
+    #: vs 17.9, NaN after 12000 steps).  ``0.002`` keeps the bulk at
+    #: ``Mach ~ 0.02``, the standard incompressible LBM operating point.
+    u_tau: float = 0.002
     steps: int = 12000
     warmup: int = 4000
     sample_interval: int = 10
@@ -350,6 +358,15 @@ class UnderIceChannelConfig:
     smagorinsky_cs: float = 0.0
     init_scale: float = 0.5
     noise_amplitude: float = 0.03
+    #: ``"log"`` seeds half of the log-law profile; ``"parabolic"`` seeds the
+    #: *exact* laminar Poiseuille solution of the same forcing
+    #: ``u(z) = 1.5 U_b (1 - eta^2)``, ``U_b = g h^2 / (3 nu)``.  The parabolic
+    #: seed is the only one that reaches a stationary state in an affordable
+    #: number of steps: the viscous spin-up time of this channel in lattice
+    #: units is ``h^2/nu = Re_tau h / u_tau`` (2.9e6 steps for h=32,
+    #: Re_tau=180, u_tau=2e-3), so seeding below the attractor leaves every
+    #: statistic drifting for the whole run.
+    init_profile: str = "log"
     note: str = ""
 
     def with_grid(self, nx: int, ny: int, nz: int, **kw: Any) -> "UnderIceChannelConfig":
@@ -543,13 +560,7 @@ def run_underice_channel(
     gx = torch.tensor(float(g), dtype=torch.float32)
 
     # initial condition: log-law profile scaled down + filtered noise
-    k = np.arange(cfg.nz, dtype=float)
-    y_plus = np.maximum((k - 0.5) * cfg.u_tau / nu, 0.5)
-    u_prof = float(cfg.init_scale) * np.minimum(
-        cfg.u_tau * (np.log(y_plus) / KAPPA + B_SMOOTH), 0.25
-    )
-    u_prof[k < 1.0] = 0.0
-    u_prof[k > cfg.nz - 2] = 0.0
+    u_prof = initial_velocity(cfg, cfg.nz, nu, h_eff)
     ux0 = torch.from_numpy(np.repeat(u_prof[:, None, None], cfg.ny, 1).repeat(cfg.nx, 2).astype(np.float32))
     rng = np.random.default_rng(int(cfg.seed))
     amp = float(cfg.noise_amplitude) * cfg.u_tau * (B_SMOOTH + math.log(cfg.re_tau) / KAPPA)
@@ -574,19 +585,29 @@ def run_underice_channel(
     for t in range(1, int(cfg.steps)):
         f, ux_m, fstar = _step(f, solid_t, links, gx, tau, s_minus, smag2, ten, shifts)
         if t >= cfg.warmup and (t - cfg.warmup) % cfg.sample_interval == 0:
-            # (1) momentum exchange on every wall-crossing link
+            # (1) wall force from the wall-crossing links.  A halfway
+            # bounce-back link delivers 2 c_ix f*_i of x-momentum to the wall,
+            # but only the *nonequilibrium* part of that population is stress:
+            # the equilibrium part is the convective momentum that the incoming
+            # stream puts back in the same step.  Keeping the equilibrium part
+            # (the pre-2026 form, f*_i - f*_opp) measures ~U_wall/3 instead of
+            # tau_w and over-predicts the wall force by a factor ~30 (measured
+            # 0.0130 vs rho g h_eff = 4.0e-4 at Re_tau=180).
+            rho_s = f.sum(0)
+            rho_s = torch.where(rho_s > 1e-12, rho_s, torch.ones_like(rho_s))
+            ux_s = (f * ten["cx"]).sum(0) / rho_s
+            uy_s = (f * ten["cy"]).sum(0) / rho_s
+            uz_s = (f * ten["cz"]).sum(0) / rho_s
+            feq_s = _equilibrium(rho_s, ux_s, uy_s, uz_s, ten)
             force_x = torch.zeros_like(ux_m)
-            force_norm_proj = torch.zeros_like(ux_m)
             for i in range(1, 19):
-                if float(C[i, 0]) == 0.0:
+                cix = float(C[i, 0])
+                if cix == 0.0:
                     continue
-                # wall momentum gain per link: c_i (f*_i - f*_opp); the two terms
-                # are the incoming and the reflected population, and only their
-                # difference is the force (the sum is the symmetric/pressure part
-                # that cancels pairwise on a flat wall).
-                contrib = (fstar[i] - fstar[int(OPPOSITE[i])]) * links[i] * float(C[i, 0])
-                force_x = force_x + contrib
-            acc["me_x"] += float(force_x.sum())
+                force_x = force_x + (fstar[i] - feq_s[i]) * links[i] * cix
+            # f* - feq = (1 - s+) (f - feq) in this TRT setting (s- = s+), so the
+            # measured nonequilibrium part is attenuated by (1 - s+); undo it.
+            acc["me_x"] += 2.0 * float(force_x.sum()) / (1.0 - s_minus)
             # (2) pressure on x-normal faces (form drag)
             p = (f.sum(0) / 3.0) * fluid  # p = rho / 3
             acc["form_x"] += float((p * wm["xn_pos"]).sum() - (p * wm["xn_neg"]).sum())
@@ -675,9 +696,11 @@ def run_underice_channel(
         "tau_skin": skin_tau,
         "tau_form": form_tau,
         "tau_projection_form": proj_tau,
-        "closure_residual": (skin_tau + form_tau - me_tau) / me_tau,
+        "tau_me": -me_tau / 2.0,
+        "tau_skin": skin_tau,
+        "closure_residual": (skin_tau + form_tau - tau_balance) / tau_balance,
         "closure_residual_balance": (skin_tau + form_tau - tau_balance) / tau_balance,
-        "momentum_balance_residual": (me_tau - tau_balance) / tau_balance,
+        "momentum_balance_residual": (-me_tau / 2.0 - tau_balance) / tau_balance,
         "cf_log_law": cf_log_law(cfg.re_tau),
         "dean_cf": dean_cf(u_plus_bulk * cfg.re_tau) if u_plus_bulk > 0 else float("nan"),
         "log_fit": fit,
@@ -773,7 +796,14 @@ def cd_closure_terms(rec_total: dict[str, Any], rec_smooth: dict[str, Any]) -> d
         "tau_form": form_tau,
         "tau_skin_gradient": skin_grad_tau,
         "tau_skin_yface": skin_y_tau,
+        "tau_me": me_tau,
+        "tau_flux": flux_tau,
+        "tau_skin": skin_grad_tau,
         "tau_me_diagnostic": me_tau,
+        "cd_me": me_tau / q,
+        "cd_skin_measured": skin_grad_tau / q,
+        "closure_residual": (form_tau + skin_grad_tau - tau_balance) / tau_balance,
+        "closure_residual_me": (form_tau + skin_grad_tau - me_tau) / me_tau,
         "f_wall_budget": f_wall_budget,
         "dP_dt": dP_dt,
         "injected_force": input_force,
@@ -837,6 +867,21 @@ def build_native(rebuild: bool = False) -> str:
     return str(out)
 
 
+def initial_velocity(cfg: "UnderIceChannelConfig", nz: int, nu: float,
+                     h_eff: float) -> np.ndarray:
+    """Initial streamwise profile, ``cfg.init_profile`` in {"log","parabolic"}."""
+    if cfg.init_profile == "parabolic":
+        u_b = cfg.u_tau**2 / h_eff * h_eff**2 / (3.0 * nu)
+        eta = (np.arange(nz, dtype=float) - 0.5 * (nz - 1)) / max(h_eff, 1.0)
+        prof = 1.5 * u_b * np.clip(1.0 - eta**2, 0.0, None) * float(cfg.init_scale) / 0.5
+        prof[0] = 0.0
+        prof[-1] = 0.0
+        return prof
+    if cfg.init_profile != "log":
+        raise ValueError(f"unknown init_profile {cfg.init_profile!r}")
+    return _level_velocity(cfg, nz, nu)
+
+
 def _level_velocity(cfg: "UnderIceChannelConfig", nz: int, nu: float) -> np.ndarray:
     k = np.arange(nz, dtype=float)
     y_plus = np.maximum((k - 0.5) * cfg.u_tau / nu, 0.5)
@@ -875,7 +920,7 @@ def run_underice_channel_native(
     s_minus = _s_minus(tau)
     g = cfg.u_tau**2 / h_eff
 
-    u_prof = _level_velocity(cfg, cfg.nz, nu)
+    u_prof = initial_velocity(cfg, cfg.nz, nu, h_eff)
     rng = np.random.default_rng(int(cfg.seed))
     amp = float(cfg.noise_amplitude) * cfg.u_tau * (B_SMOOTH + math.log(cfg.re_tau) / KAPPA)
     noise = rng.standard_normal((2, cfg.nz, cfg.ny, cfg.nx))
@@ -933,20 +978,33 @@ def _assemble_from_sums(cfg: UnderIceChannelConfig, solid: np.ndarray, mask: np.
     # stationarity the two agree and their difference is the momentum-balance
     # residual (criterion d).
     tau_balance = rho_mean * g * h_eff
+    # total x-momentum injected per step (both walls share it) and the rate of
+    # change of the resolved momentum; both are *totals*, so they must be
+    # divided by the two wall areas before being compared with tau_balance
+    # (the pre-2026 form compared a total force with a per-area stress, which
+    # is why its "residual" was O(1e2)).
     input_force = g * n_fluid * rho_mean
     dt_samples = float(cfg.sample_interval * max(n_samples - 1, 1))
     dP_dt = (float(raw.get("mom_last", 0.0)) - float(raw.get("mom_first", 0.0))) / dt_samples
-    f_wall_budget = input_force - dP_dt
+    f_wall_budget = (input_force - dP_dt) / (2.0 * area)
     # stationarity of the averaging window: drift of the bulk velocity between
     # the first and the last sample, relative to the mean bulk velocity
     sux_first = raw.get("sux_first")
     sux_last = raw.get("sux_last")
-    drift = (float("nan") if sux_first is None else
-             abs(float(sux_last) - float(sux_first)) / max(abs(raw["sum_ux"]), 1e-30))
+    # relative drift of the bulk velocity between the first and the last sample
+    # (both are per-sample fluid sums now; the pre-2026 form divided by the
+    # running accumulator, which pinned the metric at ~1 for any run)
+    drift = (float("nan") if sux_first in (None, 0.0) else
+             abs(float(sux_last) - float(sux_first)) / max(abs(float(sux_first)), 1e-30))
     form_tau = raw["sum_form"] / (n_samples * area)
     skin_grad_tau = raw["sum_skin"] / (n_samples * area)
     skin_y_tau = raw["sum_skin_y"] / (n_samples * area)
-    me_tau = raw["sum_me"] / (n_samples * area)  # diagnostic only (see note)
+    # sum_me already carries the 2 c_ix and the 1/(1-s+) factors and is summed
+    # over both walls, hence the /2 to obtain the per-wall (per unit plan area)
+    # stress; the global sign is fixed so that drag is positive.
+    me_tau = -raw["sum_me"] / (n_samples * area) / 2.0
+    n_wall = float(raw.get("n_wall", 0) or 0)
+    flux_tau = (-raw["sum_flux"] / n_wall if n_wall > 0 else float("nan"))
     q = rho_mean * u_bulk**2
 
     # primary split: form drag is measured directly (wall-pressure integral on
@@ -998,7 +1056,14 @@ def _assemble_from_sums(cfg: UnderIceChannelConfig, solid: np.ndarray, mask: np.
         "tau_form": form_tau,
         "tau_skin_gradient": skin_grad_tau,
         "tau_skin_yface": skin_y_tau,
+        "tau_me": me_tau,
+        "tau_flux": flux_tau,
+        "tau_skin": skin_grad_tau,
         "tau_me_diagnostic": me_tau,
+        "cd_me": me_tau / q,
+        "cd_skin_measured": skin_grad_tau / q,
+        "closure_residual": (form_tau + skin_grad_tau - tau_balance) / tau_balance,
+        "closure_residual_me": (form_tau + skin_grad_tau - me_tau) / me_tau,
         "f_wall_budget": f_wall_budget,
         "dP_dt": dP_dt,
         "injected_force": input_force,
