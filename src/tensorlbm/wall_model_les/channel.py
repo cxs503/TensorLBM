@@ -79,6 +79,8 @@ class ChannelWMLESConfig:
     stat_interval: int = 10
     wall_model: str = "equilibrium"
     wall_law: str = "spalding"
+    wall_coupling: str = "assimilate"
+    wall_origin_offset: float = 1.0
     exchange_averaging: str = "plane"
     perturbation_amplitude: float = 0.05
     seed: int = 0
@@ -89,11 +91,17 @@ class ChannelWMLESConfig:
     run_name: str = "channel_wmles"
 
     def __post_init__(self) -> None:
+        if not (0.5 <= self.wall_origin_offset <= 1.5):
+            msg = "wall_origin_offset must lie in [0.5, 1.5] lattice units"
+            raise ValueError(msg)
         if self.ny < 7:
             msg = "ny must be >= 7 (wall nodes plus an exchange location)"
             raise ValueError(msg)
         if self.wall_model not in {"equilibrium", "nonequilibrium"}:
             msg = f"unsupported wall_model {self.wall_model!r}"
+            raise ValueError(msg)
+        if self.wall_coupling not in {"assimilate", "stress", "none"}:
+            msg = f"unsupported wall_coupling {self.wall_coupling!r}"
             raise ValueError(msg)
         if self.exchange_averaging not in {"plane", "local"}:
             msg = f"unsupported exchange_averaging {self.exchange_averaging!r}"
@@ -130,16 +138,31 @@ class ChannelWMLESConfig:
         return self.u_tau / self.nu
 
     @property
-    def j_exchange(self) -> int:
-        return 1
+    def j_wall_node(self) -> int:
+        """First row that carries a *physical* velocity (a fluid node).
+
+        With ``wall_origin_offset = 1.0`` the reflect plane of the
+        post-streaming bounce-back sits one cell inside row 0 (between rows 0
+        and 1), so row 0 *is* the wall row and row 1 is the first fluid node at
+        ``y = 0.5``.  The historical default (``0.5``) treated row 0 as a fluid
+        node half a cell from the wall, which made the wall model sample the
+        velocity one cell too far out and collapse ``u_tau`` to 0.60 of the
+        force-balance value (see ``docs/wall_model_les_m7797_report.md``).
+        """
+        return int(math.ceil(self.wall_origin_offset - 0.5))
 
     @property
-    def j_wall_node(self) -> int:
-        return 0
+    def j_exchange(self) -> int:
+        return self.j_wall_node + 1
 
     def y_of_node(self, j: int) -> float:
-        """Distance of fluid row ``j`` from the lower wall."""
-        return j + 0.5
+        """Distance of row ``j`` from the lower wall (measured wall origin)."""
+        return j + 0.5 - self.wall_origin_offset
+
+    @property
+    def H_effective(self) -> float:
+        """Channel height between the two measured wall origins."""
+        return self.H - 2.0 * self.wall_origin_offset
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +170,7 @@ class ChannelWMLESConfig:
 # ---------------------------------------------------------------------------
 def laminar_poiseuille_profile(config: ChannelWMLESConfig) -> torch.Tensor:
     """Parabolic mean profile ``u(y) = a/(2 nu) y (H - y)`` on the fluid rows."""
-    y = torch.arange(config.ny, dtype=torch.float64) + 0.5
+    y = torch.arange(config.ny, dtype=torch.float64) + 0.5 - config.wall_origin_offset
     return config.accel / (2.0 * config.nu) * y * (config.H - y)
 
 
@@ -162,7 +185,7 @@ def initial_mean_profile(config: ChannelWMLESConfig) -> torch.Tensor:
     turbulent-looking profile with ``U_max ~ 20 u_tau``; it is mirrored about
     the centreline because both walls are modelled.
     """
-    y = torch.arange(config.ny, dtype=torch.float64) + 0.5
+    y = torch.arange(config.ny, dtype=torch.float64) + 0.5 - config.wall_origin_offset
     y_plus = (y * config.u_tau / config.nu).clamp_min(1.0e-6)
     kappa = 0.41
     u_plus = torch.log1p(kappa * y_plus) / kappa + 7.8 * (
@@ -190,7 +213,7 @@ def solenoidal_perturbation(
     ax = torch.zeros(shape, dtype=torch.float64)
     ay = torch.zeros(shape, dtype=torch.float64)
     az = torch.zeros(shape, dtype=torch.float64)
-    y = torch.arange(config.ny, dtype=torch.float64) + 0.5
+    y = torch.arange(config.ny, dtype=torch.float64) + 0.5 - config.wall_origin_offset
     win = torch.sin(math.pi * y / config.H).view(1, -1, 1)
     zz = torch.arange(config.nz, dtype=torch.float64).view(-1, 1, 1) * (2 * math.pi / config.nz)
     xx = torch.arange(config.nx, dtype=torch.float64).view(1, 1, -1) * (2 * math.pi / config.nx)
@@ -358,6 +381,72 @@ def _assimilate(
     f[:, :, sl, :] += feq_new - feq_old
 
 
+
+def _stress_coupling(
+    f: torch.Tensor,
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    j: int,
+    u_tau: torch.Tensor,
+    nu: float,
+    *,
+    y_wall_node: float = 0.5,
+    cell_height: float = 1.0,
+) -> dict:
+    """Impose the modelled wall shear stress as a momentum flux at row ``j``.
+
+    Why this exists
+    ---------------
+    A halfway bounce-back wall is no-slip at ``y = 0``, so the numerical wall
+    flux is ``tau_num = rho nu |u_j| / y_wall_node``.  Overwriting the
+    wall-adjacent velocity with the wall-model value (the *assimilation*
+    coupling) therefore acts as an *additional* momentum sink, and the stress
+    that actually drags the flow is the assimilation flux rather than the
+    modelled one: in the ``Re_tau = 180`` probe the wall model reported
+    ``tau_w = 1.56e-4`` while the force balance demanded ``4.0e-4``
+    (``u_tau_model / u_tau_balance = 0.62``), and the mismatch fed back into
+    the exchange-node velocity.
+
+    Instead, the *difference* between the modelled stress and the numerical
+    one is injected as a per-step velocity increment
+
+        ``du = (tau_num - rho u_tau^2) / (rho * cell_height)``
+
+    (``dt = 1`` in lattice units).  The steady state of this feedback loop is
+    ``tau_num = rho u_tau^2``, i.e. the modelled stress *is* the wall stress,
+    and the channel force balance ``tau_w = a h`` then pins ``u_tau`` instead
+    of leaving it floating.  The increment is applied as a *relative* scaling
+    of the instantaneous row velocity by the plane-averaged magnitude, so the
+    spanwise structure of ``u`` is preserved and the update stays regular when
+    the local velocity passes through zero.
+    """
+    sl = slice(j, j + 1) if j >= 0 else slice(j, None)
+    u_row = ux[:, sl, :]
+    w_row = uz[:, sl, :]
+    mag = torch.sqrt(u_row * u_row + w_row * w_row)
+    mag_mean = float(mag.mean())
+    tau_num = nu * mag_mean / y_wall_node
+    tau_w = float(torch.as_tensor(u_tau, dtype=torch.float64).mean()) ** 2
+    # The no-slip wall removes ``tau_num`` of streamwise momentum per step; the
+    # model says it must remove ``tau_w``.  The difference is handed back to (or
+    # taken from) the wall-adjacent row, so the net wall flux equals ``tau_w``.
+    du = (tau_num - tau_w) / cell_height
+    if mag_mean > 1.0e-12:
+        scale = 1.0 + du / mag_mean
+    else:
+        scale = 1.0
+    # never overshoot through zero: cap the relative change per step
+    scale = min(max(scale, 0.0), 1.5)
+    rho_row = rho[:, sl, :]
+    uy_row = uy[:, sl, :]
+    feq_old = equilibrium3d(rho_row, u_row, uy_row, w_row)
+    feq_new = equilibrium3d(rho_row, u_row * scale, uy_row, w_row * scale)
+    f[:, :, sl, :] += feq_new - feq_old
+    return {"tau_w_model": tau_w, "tau_num": tau_num, "du": du}
+
+
 # ---------------------------------------------------------------------------
 # driver
 # ---------------------------------------------------------------------------
@@ -453,8 +542,14 @@ def run_channel_wmles(config: ChannelWMLESConfig, *, output_dir: str | Path | No
             wall="upper",
             source=source,
         )
-        _assimilate(f_new, rho2, ux2, uy2, uz2, 0, ux_lo, uz_lo)
-        _assimilate(f_new, rho2, ux2, uy2, uz2, -1, ux_hi, uz_hi)
+        if config.wall_coupling == "none":
+            pass  # pure halfway bounce-back: the no-wall-model control case
+        elif config.wall_coupling == "stress":
+            _stress_coupling(f_new, rho2, ux2, uy2, uz2, 0, ut_lo, nu)
+            _stress_coupling(f_new, rho2, ux2, uy2, uz2, -1, ut_hi, nu)
+        else:
+            _assimilate(f_new, rho2, ux2, uy2, uz2, 0, ux_lo, uz_lo)
+            _assimilate(f_new, rho2, ux2, uy2, uz2, -1, ux_hi, uz_hi)
         f = f_new
 
         if step >= config.averaging_start and (step - config.averaging_start) % config.stat_interval == 0:
@@ -503,13 +598,22 @@ def run_channel_wmles(config: ChannelWMLESConfig, *, output_dir: str | Path | No
             "H": config.H,
             "h": config.h,
             "delta_y_plus": config.delta_y_plus,
-            "y_plus_first_node": config.y_of_node(0) * config.u_tau / nu,
+            "wall_origin_offset": config.wall_origin_offset,
+            "H_effective": config.H_effective,
+            "y_plus_first_node": config.y_of_node(config.j_wall_node) * config.u_tau / nu,
             "y_plus_exchange": config.y_of_node(config.j_exchange) * config.u_tau / nu,
+            "j_wall_node": config.j_wall_node,
+            "j_exchange": config.j_exchange,
+            "tau_w_balance_effective": config.accel * config.H_effective / 2.0,
             "u_tau_model_mean": float(torch.tensor(u_tau_lower).mean()) if u_tau_lower else float("nan"),
             "u_tau_model_upper_mean": float(torch.tensor(u_tau_upper).mean()) if u_tau_upper else float("nan"),
             "tau_w_model": float(torch.tensor(u_tau_lower).mean() ** 2) if u_tau_lower else float("nan"),
             "tau_w_model_upper": float(torch.tensor(u_tau_upper).mean() ** 2) if u_tau_upper else float("nan"),
             "tau_w_balance": config.accel * config.h,
+            "wall_coupling": config.wall_coupling,
+            "u_tau_model_over_balance": (
+                float(torch.tensor(u_tau_lower).mean()) / config.u_tau if u_tau_lower else float("nan")
+            ),
             "n_samples": n_samples,
             "elapsed_s": round(elapsed, 2),
             "history": history,
@@ -574,7 +678,7 @@ def _finalise(acc: dict, n_samples: int, config: ChannelWMLESConfig) -> dict:
     mean = {k: (v / n) for k, v in acc.items()}
     u_tau = config.u_tau
     nu = config.nu
-    y = torch.arange(config.ny, dtype=torch.float64) + 0.5
+    y = torch.arange(config.ny, dtype=torch.float64) + 0.5 - config.wall_origin_offset
     profiles = {
         "delta_y_plus": config.delta_y_plus,
         "y": y,
