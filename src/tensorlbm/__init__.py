@@ -51,6 +51,17 @@ from ._version import __version__
 # otherwise.
 # ---------------------------------------------------------------------------
 _LAZY_ATTRS: dict[str, tuple[str, str]] = {
+    "DispersionConfig": ("taylor_aris", "DispersionConfig"),
+    "aris_dispersion_coefficient": ("taylor_aris", "aris_dispersion_coefficient"),
+    "poiseuille_channel_velocity": ("taylor_aris", "poiseuille_channel_velocity"),
+    "poiseuille_pipe_velocity": ("taylor_aris", "poiseuille_pipe_velocity"),
+    "scalar_collide": ("taylor_aris", "scalar_collide"),
+    "scalar_equilibrium": ("taylor_aris", "scalar_equilibrium"),
+    "scalar_stream": ("taylor_aris", "scalar_stream"),
+    "taylor_aris_channel": ("taylor_aris", "taylor_aris_channel"),
+    "taylor_aris_pipe": ("taylor_aris", "taylor_aris_pipe"),
+    "simulate_channel_dispersion": ("taylor_aris", "simulate_channel_dispersion"),
+    "lbm_poiseuille_profile": ("taylor_aris", "lbm_poiseuille_profile"),
     "AIPipelineResult": ("ai", "AIPipelineResult"),
     "AMRAdvanceResult": ("static_block_amr", "AMRAdvanceResult"),
     "AMRInterfaceValidationConfig": ("amr_interface_validation", "AMRInterfaceValidationConfig"),
@@ -1345,9 +1356,11 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         apply_simple_channel_boundaries,
         apply_zou_he_channel_boundaries,
         bounce_back_cells,
+        bounce_back_moving_wall,
         compute_obstacle_forces,
         cylinder_mask,
         make_channel_wall_mask,
+        specular_reflection,
         zou_he_inlet_velocity,
         zou_he_outlet_pressure,
     )
@@ -2058,6 +2071,33 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         surface_moment_2d,
         surface_moment_3d,
     )
+    from .rotating_frame import (
+        RotatingFrameLBM,
+        axial_uniformity,
+        centrifugal_accel,
+        coriolis_accel,
+        ekman_delta,
+        ekman_profile,
+        fit_ekman_thickness,
+        fit_power_law,
+        guo_forcing_delta,
+        lattice_scaling,
+        radial_average,
+        spiral_phase_depth,
+    )
+    from .taylor_aris import (
+        DispersionConfig,
+        aris_dispersion_coefficient,
+        poiseuille_channel_velocity,
+        poiseuille_pipe_velocity,
+        scalar_collide,
+        scalar_equilibrium,
+        scalar_stream,
+        taylor_aris_channel,
+        taylor_aris_pipe,
+        simulate_channel_dispersion,
+        lbm_poiseuille_profile,
+    )
     from .thermal import (
         C_D2Q5,
         W_D2Q5,
@@ -2190,6 +2230,17 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
 
 __all__ = [
     "__version__",
+    "DispersionConfig",
+    "aris_dispersion_coefficient",
+    "poiseuille_channel_velocity",
+    "poiseuille_pipe_velocity",
+    "scalar_collide",
+    "scalar_equilibrium",
+    "scalar_stream",
+    "taylor_aris_channel",
+    "taylor_aris_pipe",
+    "simulate_channel_dispersion",
+    "lbm_poiseuille_profile",
     "AdaptationSchedule",
     "AMRPatch2D",
     "AMRPatch3D",
