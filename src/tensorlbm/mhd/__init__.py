@@ -7,7 +7,10 @@ Module map
 ``ladder``    Hartmann-number ladder, grid-convergence (GCI) study, machine
               acceptance criteria and artefact writing.
 ``thruster``  channel (pump-jet) MHD thruster thrust/efficiency ledger, energy
-              guard and same-size propeller comparison.
+              guard, same-size propeller comparison and the ideal ``sigma|E|B V``
+              thrust reference (``thruster_ideal_check``).
+``shercliff`` insulating-wall (zero net current) branch: closed form, dynamic
+              ``K = <u_x>`` closure, energy split and its own acceptance criteria.
 
 The module owns solver-local MHD verification only (see ``docs/PROJECT_CHARTER.md``);
 campaign orchestration lives in TensorPhysics.
@@ -34,15 +37,39 @@ from .ladder import (
     gci,
     run_hartmann_ladder,
 )
+from .shercliff import (
+    ShercliffCase,
+    evaluate_shercliff_criteria,
+    shercliff_current_density,
+    shercliff_grad_for_mean,
+    shercliff_mean_velocity,
+    shercliff_normalised_profile,
+    shercliff_profile,
+    shercliff_wall_shear_coefficient,
+    run_shercliff_channel,
+)
 from .thruster import (
     MHDThrusterConfig,
     ThrusterLedger,
+    ideal_lorentz_thrust,
     propeller_ideal_efficiency,
     run_thruster_ledger,
+    thruster_ideal_check,
 )
 
 __all__ = [
     "HartmannConfig",
+    "ShercliffCase",
+    "evaluate_shercliff_criteria",
+    "ideal_lorentz_thrust",
+    "run_shercliff_channel",
+    "shercliff_current_density",
+    "shercliff_grad_for_mean",
+    "shercliff_mean_velocity",
+    "shercliff_normalised_profile",
+    "shercliff_profile",
+    "shercliff_wall_shear_coefficient",
+    "thruster_ideal_check",
     "HartmannResult",
     "LadderResult",
     "MHDThrusterConfig",
