@@ -1,0 +1,1927 @@
+{
+  "schema": "suboff-anchor-points/v1",
+  "case": "DARPA SUBOFF Model 4740 — AFF-1 裸艇 C_T(U) 锚点表（逐字落盘 + ITTC-78 复算 + 可执行设计）",
+  "task_key": "paper-exp-lbm-suboff-tau-A",
+  "mission_id": 8530,
+  "generated_by": "benchmarks/verified/suboff_anchor/build_anchor_points.py",
+  "generated_for": "research_plan 第 A 项（锚逐字核销补全）—— 承 #8800 C1 PARTIAL_FAIL / #8854 锚 Re 阶梯不可执行",
+  "overall_verdict": "PASS",
+  "criteria_summary": {
+    "C1": "PASS",
+    "C2": "PASS",
+    "C3a": "PASS",
+    "C3b": "PASS",
+    "C4": "PASS",
+    "C5": "PASS"
+  },
+  "criteria_predeclared": {
+    "thresholds": {
+      "c1_min_points": 5,
+      "c1_min_quote_hit_rate_pct": 100.0,
+      "c2_re_rel_dev_max_pct": 0.1,
+      "c3_cf_residual_max_abs": 1e-12,
+      "c3_one_plus_k_consistency_max_pct": 1.0,
+      "c4_evidence_budget_hours": 72.0,
+      "band_pct": 3.0
+    },
+    "yplus_band_declared_operating": [
+      30.0,
+      5000.0
+    ],
+    "yplus_band_calibrated": [
+      30.0,
+      150.0
+    ],
+    "delta_cells_min": 20.0,
+    "note": "判据与门槛在动手前固定于脚本常量；本文件所有 measured 值由脚本注入，禁改判据。"
+  },
+  "criteria": [
+    {
+      "id": "C1",
+      "requirement": "锚点值 ≥5 个 (Re, C_T)，逐点附引句+表号/页码或仓内数据文件路径+行号，引句机检命中率 100%",
+      "measured": {
+        "n_points": 6,
+        "min_required": 5,
+        "n_points_with_locator_and_line": 6,
+        "quote_hit_rate_pct": 100.0,
+        "quote_rule": "quote == 该 file 第 line 行原文（逐字相等）+ 正则可解析"
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "C2",
+      "requirement": "Re = U·L/ν 与所抄 Re 相对偏差 ≤0.1%",
+      "measured": {
+        "max_abs_re_rel_dev_pct": 0.0233892,
+        "threshold_pct": 0.1,
+        "n_points": 6
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "C3a",
+      "requirement": "ITTC-78 C_F 复算与解析式残差 <1e-12",
+      "measured": {
+        "max_abs_residual": "1.300e-18",
+        "threshold": 1e-12
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "C3b",
+      "requirement": "(1+k) 两锚互算一致性 ≤1%",
+      "measured": {
+        "max_abs_rel_diff_pct": 0.1705,
+        "threshold_pct": 1.0
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "C4",
+      "requirement": "给出「锚 Re 可达性」二值结论 + 若不可达的相似性换算误差预算（公式+数值）",
+      "measured": {
+        "binary_verdict": "NOT REACHABLE at credible resolution",
+        "budget_hours": 72.0,
+        "similarity_E_total_pct": [
+          41.33,
+          10.87
+        ]
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "C5",
+      "requirement": "零手抄结构自检（AST：脚本内无等于派生量的浮点字面量）",
+      "measured": {
+        "n_float_literals": 81,
+        "n_derived_checked": 30,
+        "violations": [],
+        "pass": true,
+        "rule": "脚本内无浮点字面量落在任一派生量 ±0.1% 相对带内"
+      },
+      "verdict": "PASS"
+    }
+  ],
+  "conventions": {
+    "CT_definition": "C_T = R_T / (0.5 · rho · U^2 · S)（引句 CTDEF）",
+    "reynolds_definition": "Re = U · L / nu，L = L_max（引句 REDEF）",
+    "rho_kg_m3": 1000.0,
+    "rho_band_kg_m3": [
+      997.0,
+      1000.0
+    ],
+    "nu_m2_s": 1.139e-06,
+    "nu_basis": "淡水（拖曳水池），仓内冻结参考锁的 15 °C 声明假设；ν(15 °C)/ν(20 °C) 两点见引句 NU_T_ANCHORS",
+    "L_m": 4.356,
+    "S_wet_m2": 5.998,
+    "S_wet_basis": "实验口径湿表面积（CFD Letters 2024 Table 1 WSA，引句 GEO_S）；与解析回转面 0.31576·L²=5.9915 m² 差 0.11%",
+    "knot_to_mps": 0.5144444444444445,
+    "knot_to_mps_note": "按定义 1852/3600 m/s（精确），与仓内 0.514444 差 ~1e-6 相对，不影响判据",
+    "test_conditions": [
+      "模型尺度（L_max=4.356 m）拖曳水池总阻力，深潜（无自由面兴波，引句 SUBMERGED）",
+      "水温/水质：原报告记录不在离线可达范围 ⇒ ν 为声明假设（15 °C，影响经 C_F 斜率传递）",
+      "试验不确定度声明：离线不可达 ⇒ WITHHELD，未计入任何误差预算"
+    ],
+    "ittc78_cf": {
+      "coefficient": 0.075,
+      "log10_shift": 2.0,
+      "exponent": 2.0,
+      "source": "src/tensorlbm/external_survey/suboff_anchor.py::ittc57_cf docstring — friction line used as C_F"
+    },
+    "schoenherr_cf": {
+      "coefficient": 0.455,
+      "exponent": 2.58,
+      "source": "src/tensorlbm/external_survey/suboff_anchor.py::schoenherr_cf docstring — independent friction line (line-to-line spread term)"
+    }
+  },
+  "anchor_points": [
+    {
+      "point_id": "AFF1_5.92kn",
+      "U_kn": 5.92,
+      "U_mps": 3.045511111,
+      "R_T_N": 87.4,
+      "Re_transcribed": 11650000.0,
+      "Re_transcribed_grade": "DERIVED_IN_REPO",
+      "Re_transcribed_source": {
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 95,
+        "text": "| 5.92 | 3.046 | 1.165e+07 | 87.4 | 0.00315 | 102.3 | 0.00356 | 1.1705 |"
+      },
+      "Re_computed": 11647275.15,
+      "re_rel_dev_pct": -0.0233892,
+      "CT": 0.003142060841,
+      "CT_in_re_ladder": 0.00315,
+      "CT_vs_re_ladder_pct": -0.252,
+      "CF_ittc78": 0.002922082209,
+      "one_plus_k": 1.075281466,
+      "CF_recompute_residual_abs": {
+        "direct_log10": "0.00e+00",
+        "via_natural_log": "1.30e-18",
+        "decimal_60digit": "4.34e-19"
+      },
+      "quotes": [
+        {
+          "id": "T14_B1",
+          "file": "src/tensorlbm/suboff_reference_data.py",
+          "line": 94,
+          "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40),",
+          "locator": "DTRC Table 14, p.23 — bare hull (AFF-1) row 1",
+          "grade": "PRIMARY_TABLE_SECOND_HAND"
+        },
+        {
+          "id": "IN25_R1",
+          "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+          "line": 95,
+          "text": "| 5.92 | 3.046 | 1.165e+07 | 87.4 | 0.00315 | 102.3 | 0.00356 | 1.1705 |",
+          "locator": "IN25-T6 表 2 (docs/survey/IN25_T6_external_mature_tech_survey.md) row 1 — 4-significant-digit Re ladder",
+          "grade": "DERIVED_IN_REPO"
+        }
+      ]
+    },
+    {
+      "point_id": "AFF1_10kn",
+      "U_kn": 10.0,
+      "U_mps": 5.144444444,
+      "R_T_N": 242.2,
+      "Re_transcribed": 19670000.0,
+      "Re_transcribed_grade": "DERIVED_IN_REPO",
+      "Re_transcribed_source": {
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 96,
+        "text": "| 10.00 | 5.144 | 1.967e+07 | 242.2 | 0.00305 | 283.8 | 0.00348 | 1.1718 |"
+      },
+      "Re_computed": 19674451.27,
+      "re_rel_dev_pct": 0.0226298,
+      "CT": 0.003051551543,
+      "CT_in_re_ladder": 0.00305,
+      "CT_vs_re_ladder_pct": 0.05087,
+      "CF_ittc78": 0.002676143302,
+      "one_plus_k": 1.140279573,
+      "CF_recompute_residual_abs": {
+        "direct_log10": "0.00e+00",
+        "via_natural_log": "1.30e-18",
+        "decimal_60digit": "4.34e-19"
+      },
+      "quotes": [
+        {
+          "id": "T14_B2",
+          "file": "src/tensorlbm/suboff_reference_data.py",
+          "line": 95,
+          "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 10.00, 242.2),",
+          "locator": "DTRC Table 14, p.23 — bare hull row 2",
+          "grade": "PRIMARY_TABLE_SECOND_HAND"
+        },
+        {
+          "id": "IN25_R2",
+          "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+          "line": 96,
+          "text": "| 10.00 | 5.144 | 1.967e+07 | 242.2 | 0.00305 | 283.8 | 0.00348 | 1.1718 |",
+          "locator": "IN25-T6 表 2 row 2 — Re ladder",
+          "grade": "DERIVED_IN_REPO"
+        }
+      ]
+    },
+    {
+      "point_id": "AFF1_11.84kn",
+      "U_kn": 11.84,
+      "U_mps": 6.091022222,
+      "R_T_N": 332.9,
+      "Re_transcribed": 23290000.0,
+      "Re_transcribed_grade": "DERIVED_IN_REPO",
+      "Re_transcribed_source": {
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 97,
+        "text": "| 11.84 | 6.091 | 2.329e+07 | 332.9 | 0.00299 | 389.2 | 0.00340 | 1.1691 |"
+      },
+      "Re_computed": 23294550.31,
+      "re_rel_dev_pct": 0.0195376,
+      "CT": 0.002991968118,
+      "CT_in_re_ladder": 0.00299,
+      "CT_vs_re_ladder_pct": 0.06582,
+      "CF_ittc78": 0.00260349599,
+      "one_plus_k": 1.149211725,
+      "CF_recompute_residual_abs": {
+        "direct_log10": "0.00e+00",
+        "via_natural_log": "4.34e-19",
+        "decimal_60digit": "4.34e-19"
+      },
+      "quotes": [
+        {
+          "id": "T14_B3",
+          "file": "src/tensorlbm/suboff_reference_data.py",
+          "line": 96,
+          "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 11.84, 332.9),",
+          "locator": "DTRC Table 14, p.23 — bare hull row 3",
+          "grade": "PRIMARY_TABLE_SECOND_HAND"
+        },
+        {
+          "id": "IN25_R3",
+          "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+          "line": 97,
+          "text": "| 11.84 | 6.091 | 2.329e+07 | 332.9 | 0.00299 | 389.2 | 0.00340 | 1.1691 |",
+          "locator": "IN25-T6 表 2 row 3 — Re ladder",
+          "grade": "DERIVED_IN_REPO"
+        }
+      ]
+    },
+    {
+      "point_id": "AFF1_13.92kn",
+      "U_kn": 13.92,
+      "U_mps": 7.161066667,
+      "R_T_N": 451.5,
+      "Re_transcribed": 27390000.0,
+      "Re_transcribed_grade": "DERIVED_IN_REPO",
+      "Re_transcribed_source": {
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 98,
+        "text": "| 13.92 | 7.161 | 2.739e+07 | 451.5 | 0.00294 | 526.6 | 0.00333 | 1.1663 |"
+      },
+      "Re_computed": 27386836.17,
+      "re_rel_dev_pct": -0.011551,
+      "CT": 0.00293579587,
+      "CT_in_re_ladder": 0.00294,
+      "CT_vs_re_ladder_pct": -0.143,
+      "CF_ittc78": 0.002536623644,
+      "one_plus_k": 1.157363599,
+      "CF_recompute_residual_abs": {
+        "direct_log10": "0.00e+00",
+        "via_natural_log": "8.67e-19",
+        "decimal_60digit": "0.00e+00"
+      },
+      "quotes": [
+        {
+          "id": "T14_B4",
+          "file": "src/tensorlbm/suboff_reference_data.py",
+          "line": 97,
+          "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 13.92, 451.5),",
+          "locator": "DTRC Table 14, p.23 — bare hull row 4",
+          "grade": "PRIMARY_TABLE_SECOND_HAND"
+        },
+        {
+          "id": "IN25_R4",
+          "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+          "line": 98,
+          "text": "| 13.92 | 7.161 | 2.739e+07 | 451.5 | 0.00294 | 526.6 | 0.00333 | 1.1663 |",
+          "locator": "IN25-T6 表 2 row 4 — Re ladder",
+          "grade": "DERIVED_IN_REPO"
+        }
+      ]
+    },
+    {
+      "point_id": "AFF1_16kn",
+      "U_kn": 16.0,
+      "U_mps": 8.231111111,
+      "R_T_N": 576.9,
+      "Re_transcribed": 31480000.0,
+      "Re_transcribed_grade": "DERIVED_IN_REPO",
+      "Re_transcribed_source": {
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 99,
+        "text": "| 16.00 | 8.231 | 3.148e+07 | 576.9 | 0.00284 | 675.6 | 0.00323 | 1.1711 |"
+      },
+      "Re_computed": 31479122.04,
+      "re_rel_dev_pct": -0.00278896,
+      "CT": 0.002839272949,
+      "CT_in_re_ladder": 0.00284,
+      "CT_vs_re_ladder_pct": -0.0256,
+      "CF_ittc78": 0.002481122575,
+      "one_plus_k": 1.144350133,
+      "CF_recompute_residual_abs": {
+        "direct_log10": "0.00e+00",
+        "via_natural_log": "8.67e-19",
+        "decimal_60digit": "4.34e-19"
+      },
+      "quotes": [
+        {
+          "id": "T14_B5",
+          "file": "src/tensorlbm/suboff_reference_data.py",
+          "line": 98,
+          "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 16.00, 576.9),",
+          "locator": "DTRC Table 14, p.23 — bare hull row 5",
+          "grade": "PRIMARY_TABLE_SECOND_HAND"
+        },
+        {
+          "id": "IN25_R5",
+          "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+          "line": 99,
+          "text": "| 16.00 | 8.231 | 3.148e+07 | 576.9 | 0.00284 | 675.6 | 0.00323 | 1.1711 |",
+          "locator": "IN25-T6 表 2 row 5 — Re ladder",
+          "grade": "DERIVED_IN_REPO"
+        }
+      ]
+    },
+    {
+      "point_id": "AFF1_17.99kn",
+      "U_kn": 17.99,
+      "U_mps": 9.254855556,
+      "R_T_N": 697.0,
+      "Re_transcribed": 35390000.0,
+      "Re_transcribed_grade": "DERIVED_IN_REPO",
+      "Re_transcribed_source": {
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 100,
+        "text": "| 17.99 | 9.255 | 3.539e+07 | 697.0 | 0.00272 | 821.1 | 0.00318 | 1.1780 |"
+      },
+      "Re_computed": 35394337.84,
+      "re_rel_dev_pct": 0.0122572,
+      "CT": 0.002713420005,
+      "CT_in_re_ladder": 0.00272,
+      "CT_vs_re_ladder_pct": -0.2419,
+      "CF_ittc78": 0.002435803092,
+      "one_plus_k": 1.113973463,
+      "CF_recompute_residual_abs": {
+        "direct_log10": "0.00e+00",
+        "via_natural_log": "1.30e-18",
+        "decimal_60digit": "0.00e+00"
+      },
+      "quotes": [
+        {
+          "id": "T14_B6",
+          "file": "src/tensorlbm/suboff_reference_data.py",
+          "line": 99,
+          "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 17.99, 697.0),",
+          "locator": "DTRC Table 14, p.23 — bare hull row 6",
+          "grade": "PRIMARY_TABLE_SECOND_HAND"
+        },
+        {
+          "id": "IN25_R6",
+          "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+          "line": 100,
+          "text": "| 17.99 | 9.255 | 3.539e+07 | 697.0 | 0.00272 | 821.1 | 0.00318 | 1.1780 |",
+          "locator": "IN25-T6 表 2 row 6 — Re ladder",
+          "grade": "DERIVED_IN_REPO"
+        }
+      ]
+    }
+  ],
+  "anchor_points_completeness": {
+    "n_points": 6,
+    "min_required": 5,
+    "n_points_with_locator_and_line": 6,
+    "quote_hit_rate_pct": 100.0,
+    "quote_rule": "quote == 该 file 第 line 行原文（逐字相等）+ 正则可解析"
+  },
+  "reynolds_consistency": {
+    "max_abs_re_rel_dev_pct": 0.0233892,
+    "threshold_pct": 0.1,
+    "per_point_pct": {
+      "AFF1_5.92kn": -0.0233892,
+      "AFF1_10kn": 0.0226298,
+      "AFF1_11.84kn": 0.0195376,
+      "AFF1_13.92kn": -0.011551,
+      "AFF1_16kn": -0.00278896,
+      "AFF1_17.99kn": 0.0122572
+    },
+    "what_it_validates": "对 4 位有效数字的仓内 Re 阶梯（IN25-T6 表 2，与锚同 L/ν 口径）逐点复算：验证单位换算 / 特征长度 / 转录无漂移。它不验证物理 ν —— ν 假设的影响经 C_F 斜率另计入 conventions_uncertainty；且该阶梯本身的 Re 是仓内派生量（grade=DERIVED_IN_REPO），故本判据是『一致 / 无漂移』检查，不是独立物理验证。",
+    "retired_two_sig_fig_anchor": {
+      "Re_transcribed": 12000000.0,
+      "source": {
+        "file": "docs/sphere_suboff_highre_reference_data_zh.md",
+        "line": 85,
+        "text": "| AFF-1 裸艇体 | 1.2×10⁷ | ≈0.0030–0.0032（常用 0.0031） | Roddy (1990) DTRC/SHD-1298-07 水筒实验；SIMMAN 2008 基准 [B] | [B] 精确值需核对原文 |",
+        "grade": "B_GRADE_UNVERIFIED",
+        "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3 row 1 — the retired two-significant-digit Re anchor (mission #8800 C2 source)"
+      },
+      "re_computed": 11647275.15,
+      "rel_dev_pct": -2.939,
+      "verdict": "RETIRED —— 两位有效数字与 4 位阶梯相差 2.94%，不能满足 0.1% 级判据；这正是任务书所述 #8800 C2 PARTIAL_FAIL 的来源。",
+      "reconciliation": {
+        "nu_implied_m2_s": 1.105520533e-06,
+        "T_implied_C": 16.24,
+        "T_of_declared_nu_C": 15.0,
+        "note": "用仓内两个 ν 锚点 ν(15 °C)=1.139e-06 / ν(20 °C)=1.004e-06 线性内插反解水温：所抄 1.2e7 对应约 16.2 °C、声明的 ν 对应约 15.0 °C，两者仅差约 1.2 °C。即 2.94% 的差异完全可由拖曳水池水温解释 ⇒ 『两位有效数字锚』无法区分『水温不同』与『转录错』，故弃用它、改用 4 位有效数字阶梯，而不是放宽判据。"
+      }
+    }
+  },
+  "ladder_one_plus_k_spread": {
+    "one_plus_k_by_point": {
+      "AFF1_5.92kn": 1.075281466,
+      "AFF1_10kn": 1.140279573,
+      "AFF1_11.84kn": 1.149211725,
+      "AFF1_13.92kn": 1.157363599,
+      "AFF1_16kn": 1.144350133,
+      "AFF1_17.99kn": 1.113973463
+    },
+    "min": 1.075281466,
+    "max": 1.157363599,
+    "spread_pct_of_mean": 7.263,
+    "note": "逐点 (1+k)=C_T/C_F 沿 Re 并非常数；这是相似性换算误差预算 E_k 的经验来源。"
+  },
+  "ittc78_cf_recompute": {
+    "formula": "C_F = 0.075 / (log10(Re) - 2.0)^2.0",
+    "formula_source": "src/tensorlbm/external_survey/suboff_anchor.py::ittc57_cf docstring — friction line used as C_F",
+    "routes": [
+      "direct_log10",
+      "via_natural_log",
+      "decimal_60digit"
+    ],
+    "per_point": [
+      {
+        "point_id": "AFF1_5.92kn",
+        "Re": 11647275.15,
+        "abs_residual": {
+          "direct_log10": "0.00e+00",
+          "via_natural_log": "1.30e-18",
+          "decimal_60digit": "4.34e-19"
+        }
+      },
+      {
+        "point_id": "AFF1_10kn",
+        "Re": 19674451.27,
+        "abs_residual": {
+          "direct_log10": "0.00e+00",
+          "via_natural_log": "1.30e-18",
+          "decimal_60digit": "4.34e-19"
+        }
+      },
+      {
+        "point_id": "AFF1_11.84kn",
+        "Re": 23294550.31,
+        "abs_residual": {
+          "direct_log10": "0.00e+00",
+          "via_natural_log": "4.34e-19",
+          "decimal_60digit": "4.34e-19"
+        }
+      },
+      {
+        "point_id": "AFF1_13.92kn",
+        "Re": 27386836.17,
+        "abs_residual": {
+          "direct_log10": "0.00e+00",
+          "via_natural_log": "8.67e-19",
+          "decimal_60digit": "0.00e+00"
+        }
+      },
+      {
+        "point_id": "AFF1_16kn",
+        "Re": 31479122.04,
+        "abs_residual": {
+          "direct_log10": "0.00e+00",
+          "via_natural_log": "8.67e-19",
+          "decimal_60digit": "4.34e-19"
+        }
+      },
+      {
+        "point_id": "AFF1_17.99kn",
+        "Re": 35394337.84,
+        "abs_residual": {
+          "direct_log10": "0.00e+00",
+          "via_natural_log": "1.30e-18",
+          "decimal_60digit": "0.00e+00"
+        }
+      }
+    ],
+    "max_abs_residual": "1.300e-18",
+    "threshold_abs_residual": 1e-12,
+    "note": "ITTC-78 性能预报法所用的摩擦线即上式（模型-实船相关线 ITTC-1957）；模型尺度光滑艇体不加 ΔC_F 粗糙度补偿，也不加实船相关津贴 C_A。"
+  },
+  "one_plus_k_consistency": {
+    "cross_anchor": {
+      "definition": "(1+k)_A 由 DTRC Table 14 p.23 config 8 量纲力计算；(1+k)_B 由 CFD Letters 2024 Table 3 EFD 列计算（同一水池试验的两次独立转录）；同一 ν、同一湿面积口径 S=5.998 m²。",
+      "pairing_tolerance_pct": 0.5,
+      "pairs": [
+        {
+          "U_kn": 5.93,
+          "U_a_mps": 3.050655556,
+          "U_b_mps": 3.05,
+          "speed_match_rel_pct": 0.02149,
+          "RT_a_N": 102.3,
+          "RT_b_N": 102.3,
+          "one_plus_k_A_T14": 0.1122599021,
+          "one_plus_k_B_CFDletters": 0.1123219977,
+          "rel_diff_pct": 0.05531,
+          "quotes": [
+            {
+              "id": "T14_FULL_R1",
+              "file": "src/tensorlbm/suboff_reference_data.py",
+              "line": 100
+            },
+            {
+              "id": "T3_F1",
+              "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "U_kn": 10.0,
+          "U_a_mps": 5.144444444,
+          "U_b_mps": 5.144,
+          "speed_match_rel_pct": 0.008639,
+          "RT_a_N": 283.8,
+          "RT_b_N": 283.8,
+          "one_plus_k_A_T14": 0.07917269324,
+          "one_plus_k_B_CFDletters": 0.07919098633,
+          "rel_diff_pct": 0.02311,
+          "quotes": [
+            {
+              "id": "T14_FULL_R2",
+              "file": "src/tensorlbm/suboff_reference_data.py",
+              "line": 101
+            },
+            {
+              "id": "T3_F2",
+              "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+              "line": 36
+            }
+          ]
+        },
+        {
+          "U_kn": 11.85,
+          "U_a_mps": 6.096166667,
+          "U_b_mps": 6.1,
+          "speed_match_rel_pct": 0.06288,
+          "RT_a_N": 389.2,
+          "RT_b_N": 389.2,
+          "one_plus_k_A_T14": 0.06872794604,
+          "one_plus_k_B_CFDletters": 0.06861074912,
+          "rel_diff_pct": -0.1705,
+          "quotes": [
+            {
+              "id": "T14_FULL_R3",
+              "file": "src/tensorlbm/suboff_reference_data.py",
+              "line": 102
+            },
+            {
+              "id": "T3_F3",
+              "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "U_kn": 13.92,
+          "U_a_mps": 7.161066667,
+          "U_b_mps": 7.16,
+          "speed_match_rel_pct": 0.0149,
+          "RT_a_N": 526.6,
+          "RT_b_N": 526.6,
+          "one_plus_k_A_T14": 0.0598570858,
+          "one_plus_k_B_CFDletters": 0.05988168778,
+          "rel_diff_pct": 0.0411,
+          "quotes": [
+            {
+              "id": "T14_FULL_R4",
+              "file": "src/tensorlbm/suboff_reference_data.py",
+              "line": 103
+            },
+            {
+              "id": "T3_F4",
+              "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+              "line": 38
+            }
+          ]
+        },
+        {
+          "U_kn": 16.0,
+          "U_a_mps": 8.231111111,
+          "U_b_mps": 8.23,
+          "speed_match_rel_pct": 0.0135,
+          "RT_a_N": 675.6,
+          "RT_b_N": 675.6,
+          "one_plus_k_A_T14": 0.05214676384,
+          "one_plus_k_B_CFDletters": 0.05216648485,
+          "rel_diff_pct": 0.03782,
+          "quotes": [
+            {
+              "id": "T14_FULL_R5",
+              "file": "src/tensorlbm/suboff_reference_data.py",
+              "line": 104
+            },
+            {
+              "id": "T3_F5",
+              "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+              "line": 39
+            }
+          ]
+        }
+      ],
+      "unpaired": [
+        {
+          "U_kn": 17.79,
+          "U_a_mps": 9.151966667,
+          "nearest_U_b_mps": 8.23,
+          "nearest_speed_match_rel_pct": 10.07
+        }
+      ],
+      "max_abs_rel_diff_pct": 0.1705,
+      "note_paired": "CFD Letters Table 3 EFD 止于 8.230 m/s（≈16 kn），故 Table 14 的 17.79 kn 行无对偶转录，按预声明容差 0.5% 判为 unpaired（不计入一致性）。"
+    },
+    "bare_hull_double_entry": {
+      "speeds_match": true,
+      "forces_match": true,
+      "n_compared": 6,
+      "max_rel_diff_pct": 0.0,
+      "sources": [
+        "DTRC Table 14, p.23 — second in-repo transcription (double entry)",
+        "src/tensorlbm/suboff_reference_data.py::SUBOFF_TOW_TANK_RESISTANCE_TABLE14"
+      ],
+      "note": "同一 Table 14 的仓内第二处转录 vs 冻结常量表：逐点逐字相等 ⇒ 无转录漂移。"
+    },
+    "threshold_pct": 1.0,
+    "note": "互算一致性度量『两次转录是否同源 + 口径是否一致』；它并不证明形式因子沿 Re 为常数 —— 后者由 C4 的相似性误差预算单独量化（ladder_one_plus_k_spread / E_k）。"
+  },
+  "reachability": {
+    "predeclared_decision_rule": "『可达』= 分辨率同时满足：(i) 首层格心 y+∈[30,150]（壁面律标定带，引句 YPLUS_CALIB） 且 (ii) δ/h≥20（边界层≥20 格）：在此『可信分辨率』下，单锚在 72 h（两级 128 核集群预算）内跑完。只算『算得动』不算可达。",
+    "two_bands_disclosed": {
+      "calibrated_band_used_as_gate": [
+        30.0,
+        150.0
+      ],
+      "calibrated_band_source": "IN12_S6_WALL_LADDER.md §关键结论 — calibrated wall-function band y+ in [30,150] (valid for Re_tau >~ 590)",
+      "declared_operating_band_NOT_used_as_gate": [
+        30.0,
+        5000.0
+      ],
+      "declared_operating_band_source": "benchmarks/pending/suboff_highre_resistance/prereg.md — declared y+ acceptance band",
+      "why": "预注册的操作带 [30,5000] 只是『壁模型仍能闭合』的外沿，不是精度带；在锚 Re 下取 y+≤5000 只需 N≈45 格/艇长，此时 δ/h≈0.64 格（连一层边界层都装不下）—— 用它当可信判据会把『算得动』误当『可信』。"
+    },
+    "cost_model": {
+      "cells": "26.66 * N^3   （N = 每艇长格数；引句 CELLSLAW，冻结域 padding 1/4/1/1/1/1）",
+      "steps": "150.0 * N      （引句 STEPSLAW，冻结统计窗协议）",
+      "yplus_first_cell": "0.5 * u_tau_lb / nu_lb = 0.5 * (u_tau/U) * Re / N",
+      "delta_over_L": "0.37 * Re^(-0.2)   （引句 BLLAW_DELTA）",
+      "u_tau_over_U": "sqrt(C_F/2)，C_F 取 ITTC-78 复算值",
+      "u_lb": "0.05（gci_v4.json::ladder_protocol.Re_matching，晶格来流速度）",
+      "throughput": {
+        "measured_raw_kernel_2node_MLUPS": 17.5,
+        "measured_production_2node_MLUPS": 2.311,
+        "raw_kernel": {
+          "file": "benchmarks/verified/suboff_anchor/sources/cluster_mlups_measurement.json",
+          "job_id": "c1794214063_38",
+          "node": "n315",
+          "command": "PYTHONPATH=src python benchmarks/bench_mlups.py --device cpu --steps 20 --warmup 5 --collisions bgk,mrt",
+          "selection": "D3Q19 + MRT at the largest measured 3D configuration that is not truncated in z (64x64x64) — matches the production lattice/collision pair of the anchor-Re protocol (gci_v4.json::ladder_protocol)",
+          "two_node_scaling": "x2 for n315 + n330 (128 cores each)"
+        },
+        "production": {
+          "file": "benchmarks/verified/suboff_sail_resistance/gci_v4.json",
+          "key": "cost_model.measured_ms_per_step_L96_full_domain",
+          "cells": 23736384.0,
+          "ms_per_step": 20544.2,
+          "derived_MLUPS_per_node": 1.155,
+          "note": "整解器路径（含壁模型/观测器/sponge）在 99 控制面单节点实测"
+        }
+      }
+    },
+    "per_anchor": {
+      "AFF1_5.92kn": {
+        "Re": 11647275.15,
+        "CF_ittc78": 0.002922082209,
+        "u_tau_over_U": 0.03822356739,
+        "delta_over_L": 0.0142875,
+        "delta_m": 0.0622364,
+        "N_for_calibrated_yplus_upper": 1484.0,
+        "N_for_declared_operating_yplus_upper": 44.52,
+        "N_for_wall_resolved_yplus1": 222600.0,
+        "N_for_20_cells_across_delta": 1399.82,
+        "controlling_constraint": "calibrated y+ band",
+        "requirement_credible_wmles": {
+          "N_cells_per_hull_length": 1484.0,
+          "h_m": 0.00293531,
+          "h_over_L_denominator": 1480.0,
+          "cells": 87129100000.0,
+          "steps": 222600.0,
+          "lattice_updates": 1.9394947e+16,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 307900.0,
+            "measured_production_2node": 2331000.0
+          },
+          "yplus_first_cell": 150.0,
+          "cells_across_delta": 21.2,
+          "tau_minus_half": 1.91e-05,
+          "inside_calibrated_yplus_band": true,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": true
+        },
+        "requirement_declared_operating_band_only": {
+          "N_cells_per_hull_length": 44.52,
+          "h_m": 0.0978436,
+          "h_over_L_denominator": 44.5,
+          "cells": 2352480.0,
+          "steps": 6678.01,
+          "lattice_updates": 15709907000.0,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 0.2494,
+            "measured_production_2node": 1.888
+          },
+          "yplus_first_cell": 5000.0,
+          "cells_across_delta": 0.6361,
+          "tau_minus_half": 5.73e-07,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": false
+        },
+        "requirement_wall_resolved": {
+          "N_cells_per_hull_length": 222600.0,
+          "h_m": 1.95687e-05,
+          "h_over_L_denominator": 223000.0,
+          "cells": 2.94061e+17,
+          "steps": 33390000.0,
+          "lattice_updates": 9.8186919e+24,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 155900000000000.0,
+            "measured_production_2node": 1180000000000000.0
+          },
+          "yplus_first_cell": 1.0,
+          "cells_across_delta": 3180.0,
+          "tau_minus_half": 0.00287,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": false,
+          "resolves_boundary_layer_20_cells": true
+        }
+      },
+      "AFF1_10kn": {
+        "Re": 19674451.27,
+        "CF_ittc78": 0.002676143303,
+        "u_tau_over_U": 0.03657966172,
+        "delta_over_L": 0.0128653,
+        "delta_m": 0.0560414,
+        "N_for_calibrated_yplus_upper": 2398.95,
+        "N_for_declared_operating_yplus_upper": 71.9685,
+        "N_for_wall_resolved_yplus1": 359842.0,
+        "N_for_20_cells_across_delta": 1554.56,
+        "controlling_constraint": "calibrated y+ band",
+        "requirement_credible_wmles": {
+          "N_cells_per_hull_length": 2398.95,
+          "h_m": 0.00181579,
+          "h_over_L_denominator": 2400.0,
+          "cells": 368064000000.0,
+          "steps": 359842.0,
+          "lattice_updates": 1.3244502e+17,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 2102000.0,
+            "measured_production_2node": 15920000.0
+          },
+          "yplus_first_cell": 150.0,
+          "cells_across_delta": 30.86,
+          "tau_minus_half": 1.83e-05,
+          "inside_calibrated_yplus_band": true,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": true
+        },
+        "requirement_declared_operating_band_only": {
+          "N_cells_per_hull_length": 71.9685,
+          "h_m": 0.0605265,
+          "h_over_L_denominator": 72.0,
+          "cells": 9937730.0,
+          "steps": 10795.3,
+          "lattice_updates": 107280470000.0,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 1.703,
+            "measured_production_2node": 12.9
+          },
+          "yplus_first_cell": 5000.0,
+          "cells_across_delta": 0.9259,
+          "tau_minus_half": 5.49e-07,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": false
+        },
+        "requirement_wall_resolved": {
+          "N_cells_per_hull_length": 359842.0,
+          "h_m": 1.21053e-05,
+          "h_over_L_denominator": 360000.0,
+          "cells": 1.24222e+18,
+          "steps": 53976400.0,
+          "lattice_updates": 6.7050292e+25,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 1064000000000000.0,
+            "measured_production_2node": 8060000000000000.0
+          },
+          "yplus_first_cell": 1.0,
+          "cells_across_delta": 4629.0,
+          "tau_minus_half": 0.00274,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": false,
+          "resolves_boundary_layer_20_cells": true
+        }
+      },
+      "AFF1_11.84kn": {
+        "Re": 23294550.31,
+        "CF_ittc78": 0.00260349599,
+        "u_tau_over_U": 0.03607974494,
+        "delta_over_L": 0.012438,
+        "delta_m": 0.05418,
+        "N_for_calibrated_yplus_upper": 2801.54,
+        "N_for_declared_operating_yplus_upper": 84.0461,
+        "N_for_wall_resolved_yplus1": 420231.0,
+        "N_for_20_cells_across_delta": 1607.97,
+        "controlling_constraint": "calibrated y+ band",
+        "requirement_credible_wmles": {
+          "N_cells_per_hull_length": 2801.54,
+          "h_m": 0.00155486,
+          "h_over_L_denominator": 2800.0,
+          "cells": 586205000000.0,
+          "steps": 420231.0,
+          "lattice_updates": 2.4634148e+17,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 3910000.0,
+            "measured_production_2node": 29610000.0
+          },
+          "yplus_first_cell": 150.0,
+          "cells_across_delta": 34.85,
+          "tau_minus_half": 1.8e-05,
+          "inside_calibrated_yplus_band": true,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": true
+        },
+        "requirement_declared_operating_band_only": {
+          "N_cells_per_hull_length": 84.0461,
+          "h_m": 0.0518287,
+          "h_over_L_denominator": 84.0,
+          "cells": 15827500.0,
+          "steps": 12606.9,
+          "lattice_updates": 199536600000.0,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 3.167,
+            "measured_production_2node": 23.99
+          },
+          "yplus_first_cell": 5000.0,
+          "cells_across_delta": 1.045,
+          "tau_minus_half": 5.41e-07,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": false
+        },
+        "requirement_wall_resolved": {
+          "N_cells_per_hull_length": 420231.0,
+          "h_m": 1.03657e-05,
+          "h_over_L_denominator": 420000.0,
+          "cells": 1.97844e+18,
+          "steps": 63034600.0,
+          "lattice_updates": 1.2471037e+26,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 1980000000000000.0,
+            "measured_production_2node": 1.499e+16
+          },
+          "yplus_first_cell": 1.0,
+          "cells_across_delta": 5227.0,
+          "tau_minus_half": 0.00271,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": false,
+          "resolves_boundary_layer_20_cells": true
+        }
+      },
+      "AFF1_13.92kn": {
+        "Re": 27386836.17,
+        "CF_ittc78": 0.002536623644,
+        "u_tau_over_U": 0.03561336577,
+        "delta_over_L": 0.0120419,
+        "delta_m": 0.0524543,
+        "N_for_calibrated_yplus_upper": 3251.12,
+        "N_for_declared_operating_yplus_upper": 97.5337,
+        "N_for_wall_resolved_yplus1": 487669.0,
+        "N_for_20_cells_across_delta": 1660.87,
+        "controlling_constraint": "calibrated y+ band",
+        "requirement_credible_wmles": {
+          "N_cells_per_hull_length": 3251.12,
+          "h_m": 0.00133984,
+          "h_over_L_denominator": 3250.0,
+          "cells": 916138000000.0,
+          "steps": 487669.0,
+          "lattice_updates": 4.4677197e+17,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 7092000.0,
+            "measured_production_2node": 53710000.0
+          },
+          "yplus_first_cell": 150.0,
+          "cells_across_delta": 39.15,
+          "tau_minus_half": 1.78e-05,
+          "inside_calibrated_yplus_band": true,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": true
+        },
+        "requirement_declared_operating_band_only": {
+          "N_cells_per_hull_length": 97.5337,
+          "h_m": 0.0446615,
+          "h_over_L_denominator": 97.5,
+          "cells": 24735700.0,
+          "steps": 14630.1,
+          "lattice_updates": 361885300000.0,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 5.744,
+            "measured_production_2node": 43.5
+          },
+          "yplus_first_cell": 5000.0,
+          "cells_across_delta": 1.174,
+          "tau_minus_half": 5.34e-07,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": false
+        },
+        "requirement_wall_resolved": {
+          "N_cells_per_hull_length": 487669.0,
+          "h_m": 8.93229e-06,
+          "h_over_L_denominator": 488000.0,
+          "cells": 3.09197e+18,
+          "steps": 73150300.0,
+          "lattice_updates": 2.2617831e+26,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 3590000000000000.0,
+            "measured_production_2node": 2.719e+16
+          },
+          "yplus_first_cell": 1.0,
+          "cells_across_delta": 5872.0,
+          "tau_minus_half": 0.00267,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": false,
+          "resolves_boundary_layer_20_cells": true
+        }
+      },
+      "AFF1_16kn": {
+        "Re": 31479122.04,
+        "CF_ittc78": 0.002481122575,
+        "u_tau_over_U": 0.03522160257,
+        "delta_over_L": 0.0117111,
+        "delta_m": 0.0510135,
+        "N_for_calibrated_yplus_upper": 3695.82,
+        "N_for_declared_operating_yplus_upper": 110.875,
+        "N_for_wall_resolved_yplus1": 554373.0,
+        "N_for_20_cells_across_delta": 1707.78,
+        "controlling_constraint": "calibrated y+ band",
+        "requirement_credible_wmles": {
+          "N_cells_per_hull_length": 3695.82,
+          "h_m": 0.00117863,
+          "h_over_L_denominator": 3700.0,
+          "cells": 1345830000000.0,
+          "steps": 554373.0,
+          "lattice_updates": 7.4609354e+17,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 11840000.0,
+            "measured_production_2node": 89690000.0
+          },
+          "yplus_first_cell": 150.0,
+          "cells_across_delta": 43.28,
+          "tau_minus_half": 1.76e-05,
+          "inside_calibrated_yplus_band": true,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": true
+        },
+        "requirement_declared_operating_band_only": {
+          "N_cells_per_hull_length": 110.875,
+          "h_m": 0.0392877,
+          "h_over_L_denominator": 111.0,
+          "cells": 36337500.0,
+          "steps": 16631.2,
+          "lattice_updates": 604335770000.0,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 9.593,
+            "measured_production_2node": 72.65
+          },
+          "yplus_first_cell": 5000.0,
+          "cells_across_delta": 1.298,
+          "tau_minus_half": 5.28e-07,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": false
+        },
+        "requirement_wall_resolved": {
+          "N_cells_per_hull_length": 554373.0,
+          "h_m": 7.85753e-06,
+          "h_over_L_denominator": 554000.0,
+          "cells": 4.54219e+18,
+          "steps": 83155900.0,
+          "lattice_updates": 3.7770985e+26,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 5995000000000000.0,
+            "measured_production_2node": 4.54e+16
+          },
+          "yplus_first_cell": 1.0,
+          "cells_across_delta": 6492.0,
+          "tau_minus_half": 0.00264,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": false,
+          "resolves_boundary_layer_20_cells": true
+        }
+      },
+      "AFF1_17.99kn": {
+        "Re": 35394337.84,
+        "CF_ittc78": 0.002435803092,
+        "u_tau_over_U": 0.03489844618,
+        "delta_over_L": 0.0114397,
+        "delta_m": 0.0498314,
+        "N_for_calibrated_yplus_upper": 4117.36,
+        "N_for_declared_operating_yplus_upper": 123.521,
+        "N_for_wall_resolved_yplus1": 617604.0,
+        "N_for_20_cells_across_delta": 1748.3,
+        "controlling_constraint": "calibrated y+ band",
+        "requirement_credible_wmles": {
+          "N_cells_per_hull_length": 4117.36,
+          "h_m": 0.00105796,
+          "h_over_L_denominator": 4120.0,
+          "cells": 1860870000000.0,
+          "steps": 617604.0,
+          "lattice_updates": 1.1492802e+18,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 18240000.0,
+            "measured_production_2node": 138200000.0
+          },
+          "yplus_first_cell": 150.0,
+          "cells_across_delta": 47.1,
+          "tau_minus_half": 1.74e-05,
+          "inside_calibrated_yplus_band": true,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": true
+        },
+        "requirement_declared_operating_band_only": {
+          "N_cells_per_hull_length": 123.521,
+          "h_m": 0.0352653,
+          "h_over_L_denominator": 124.0,
+          "cells": 50243500.0,
+          "steps": 18528.1,
+          "lattice_updates": 930916940000.0,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 14.78,
+            "measured_production_2node": 111.9
+          },
+          "yplus_first_cell": 5000.0,
+          "cells_across_delta": 1.413,
+          "tau_minus_half": 5.23e-07,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": true,
+          "resolves_boundary_layer_20_cells": false
+        },
+        "requirement_wall_resolved": {
+          "N_cells_per_hull_length": 617604.0,
+          "h_m": 7.05307e-06,
+          "h_over_L_denominator": 618000.0,
+          "cells": 6.28044e+18,
+          "steps": 92640600.0,
+          "lattice_updates": 5.8182309e+26,
+          "wall_hours": {
+            "measured_raw_kernel_2node": 9235000000000000.0,
+            "measured_production_2node": 6.994e+16
+          },
+          "yplus_first_cell": 1.0,
+          "cells_across_delta": 7065.0,
+          "tau_minus_half": 0.00262,
+          "inside_calibrated_yplus_band": false,
+          "inside_declared_operating_band": false,
+          "resolves_boundary_layer_20_cells": true
+        }
+      }
+    },
+    "finest_executable_grid_within_budget": {
+      "measured_raw_kernel_2node": {
+        "N_cells_per_hull_length": 183.519,
+        "h_m": 0.023736,
+        "h_over_L_denominator": 184.0,
+        "cells": 164779000.0,
+        "steps": 27527.8,
+        "lattice_updates": 4536000000000.0,
+        "wall_hours": 72.0,
+        "yplus_first_cell": 1212.96,
+        "cells_across_delta": 2.622,
+        "tau_minus_half": 2.36e-06,
+        "inside_calibrated_yplus_band": false,
+        "inside_declared_operating_band": true,
+        "resolves_boundary_layer_20_cells": false,
+        "verdict": "executable in budget but NOT credible (outside calibrated y+ band and delta/h<20)"
+      },
+      "measured_production_2node": {
+        "N_cells_per_hull_length": 110.627,
+        "h_m": 0.0393757,
+        "h_over_L_denominator": 111.0,
+        "cells": 36094400.0,
+        "steps": 16594.0,
+        "lattice_updates": 598949650000.0,
+        "wall_hours": 72.0,
+        "yplus_first_cell": 2012.18,
+        "cells_across_delta": 1.581,
+        "tau_minus_half": 1.42e-06,
+        "inside_calibrated_yplus_band": false,
+        "inside_declared_operating_band": true,
+        "resolves_boundary_layer_20_cells": false,
+        "verdict": "executable in budget but NOT credible (outside calibrated y+ band and delta/h<20)"
+      }
+    },
+    "binary_conclusion": {
+      "anchor_Re_lowest": 11647275.15,
+      "credible_wmles_N": 1484.0,
+      "credible_wmles_cells": 87129100000.0,
+      "credible_wmles_hours_optimistic_rate": 307900.0,
+      "credible_wmles_hours_production_rate": 2331000.0,
+      "budget_hours": 72.0,
+      "REACHABLE_AT_CREDIBLE_RESOLUTION": false,
+      "verdict": "NOT REACHABLE at credible resolution",
+      "statement": "锚 Re=1.1647e+07 的可信分辨率（y+≤150 且 δ/h≥20）需 N≈1484 格/艇长（h≈2.94 mm）、8.713e+10 胞：实测原始核 8.75 MLUPS/节点（2 节点 17.5 MLUPS）需 3.079e+05 h；生产求解器实测 1.155 MLUPS/节点（2 节点 2.31 MLUPS）需 2.331e+06 h —— 分别是 72 h 预算的 4276× 与 32375×。⇒ 锚 Re 在可信分辨率下不可达。（对照：若只按预注册操作带 y+≤5000 取网格，N≈45、δ/h≈0.64 格，能算但毫无分辨率意义——见 two_bands_disclosed。）",
+      "measured_evidence_that_coarse_anchor_Re_runs_are_meaningless": {
+        "file": "docs/IN12_S6_WALL_LADDER.md",
+        "line": 13,
+        "text": "**honest FAIL（不得粉饰）**：(1) 三维槽道最细网格 U+ RMS 5.33% 未达 3% 门，按幂律外推 8 倍网格为 2.50%（预测可达标，但实跑网格未达标，3% 门在实测网格上不可证明）；(2) SUBOFF 正式档最差锚 C_T 误差 2962.7%，y+ 均值 [1878, 4660] 远超标定带，属分辨率饥饿；(3) 平板 2D LBM 离散层最佳 27.34%，沿用前案终裁的 FAIL 结论。",
+        "reading": "仓内实测：锚 Re 档在 y+ 均值 1878–4660（远超标定带）给出最差 C_T 误差 2962.7% —— 即『算得动』的欠解析档不能用于任何精度声明。"
+      }
+    },
+    "path_b_external_wmles_practice": {
+      "N_cells_per_hull_length": 156.913,
+      "h_m": 0.0277606,
+      "h_over_L_denominator": 157.0,
+      "cells": 103000000.0,
+      "steps": 23537.0,
+      "lattice_updates": 2424306400000.0,
+      "wall_hours": {
+        "measured_raw_kernel_2node": 38.48,
+        "measured_production_2node": 291.4
+      },
+      "yplus_first_cell": 1418.62,
+      "cells_across_delta": 2.242,
+      "tau_minus_half": 2.02e-06,
+      "inside_calibrated_yplus_band": false,
+      "inside_declared_operating_band": true,
+      "resolves_boundary_layer_20_cells": false,
+      "source": {
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 42,
+        "text": "| 大网格先例 | Re≈10⁷ 的附体潜艇外流需要多少网格？ | 1.03×10⁸ 胞（附体 SUBOFF，WMLES） |",
+        "grade": "SECONDARY"
+      },
+      "cells_external_practice": 103000000.0,
+      "yplus_band_vs_calibrated": "outside",
+      "executable_at_raw_kernel_rate": true,
+      "verdict": "可达（仅算力层面）：原始核率下 38 h ≤ 72 h；但 y+≈1419 在仓内标定带 [30,150] 之外，需一个在 y+ 30–500 已被独立验证的壁模型才能支撑 3% 判定 —— 这是『壁模型验证』缺口，不是纯算力缺口。生产求解器率下 291 h。",
+      "wall_model_gap": "仓内唯一实测：y+ 均值 1878–4660 的锚 Re 档最差 C_T 误差 2962.7%（引句 YPLUS_STARVED）⇒ 现有壁模型未在高 y+ 带验证，Path B 暂不可用。"
+    },
+    "redesigned_ladder": {
+      "as_issued": "6 个 Re 锚（1.165e+07 … 3.539e+07）× 3 档网格（N=96/112/128）—— #8854 实测 61–144 h/档",
+      "finest_executable_design": "预算内最细档（实测原始核率，N≈184，h≈23.7 mm，L/h≈184，y+≈1213，δ/h≈2.6，τ−0.5≈2.4e-06）：72 h。该档在预算内但不可信（y+ 超出标定带、δ/h<20）—— 只能用于『库路径连通性/稳定性』验证，不能进精度判定。",
+      "executable_plan_next": [
+        "①把『6 锚 × 3 档』砍成『1 锚（Re=1.1647e+07）+ 1 档』；按仓内标定带立档需 N≈1484，在当前实测率下不可达（需 4276× 提速），故立档路径只能是 Path B（外部实践 1e8 胞级 WMLES）＋ 先补齐高 y+ 带的壁模型验证；",
+        "②短期只用『锚 Re 附近 ≤2× 的 Re 敏感性』（同网格抬/降 Re）报告 Re 斜率，不声称绝对阻力精度；",
+        "③任何跨 Re 的换算必须附 similarity_error_budget（E 已 >3%，见下节），不得裸对比；",
+        "④高 Re 端（3.539e+07）在同网格下 δ/h=1.5 格，物理上不可解析，必须从阶梯中移除；",
+        "⑤航速阶梯本身可保留为『判据锚』（本文件 anchor_points，C1–C3 已验证），被砍掉的是『逐锚可信模拟』—— 锚可用不等于算得动，这一点必须在报告里分开写。"
+      ],
+      "throughput_gap_x": 32380.0
+    }
+  },
+  "similarity_error_budget": {
+    "formula": "单一形状因子 + 摩擦线外推：C_T(Re) = (1+k)·C_F(Re) ⇒ 由模拟点 Re_s 换算到锚 Re_a 的修正量 ΔC_T = (1+k)·[C_F(Re_a) − C_F(Re_s)]；相对误差预算 E = sqrt(E_line² + E_k²)（仅可量化项）。E_line = |(1+k)[(C_F^Sch(Re_a) − C_F^Sch(Re_s)) − (C_F^ITTC(Re_a) − C_F^ITTC(Re_s))]| / C_T(Re_a)；E_k = max_{i≠j} |(1+k)_i/(1+k)_j − 1|（锚阶梯上的单常数形式因子预测残差，经验上界）。",
+    "froude_note": "SUBOFF 为深潜体（引句 SUBMERGED：拖曳水池深潜阻力，无自由面兴波）⇒ Froude 相似性不是约束；最低锚 Fr=U/sqrt(gL)=0.466 仅作记录，Re 是唯一相似参数。",
+    "term_E_line_source": "两条独立摩擦线：ITTC-78 `0.075/(log10Re−2.0)^2.0`（引句 CF_ITTC78）与 Schoenherr `0.455/(log10Re)^2.58`（引句 CF_SCHOENHERR）",
+    "term_E_k_source": "锚阶梯 6 点逐点 (1+k)（ladder_one_plus_k_spread）",
+    "term_unquantified": [
+      "试验重复性（拖曳水池典型 ±2–5%）：原报告不确定度声明离线不可达 ⇒ WITHHELD，未计入",
+      "低 Re 模拟侧的转捩/分离形态与锚 Re 不同（形状阻力机理差）：无可引用量化 ⇒ WITHHELD"
+    ],
+    "evaluations": [
+      {
+        "Re_sim": 100000.0,
+        "Re_anchor": 11647275.15,
+        "CF_ittc78_sim": 0.008333333333,
+        "CF_ittc78_anchor": 0.002922082209,
+        "similarity_correction_pct_of_CT": -185.2,
+        "E_friction_line_pct": 40.62,
+        "E_form_factor_single_constant_pct": 7.634,
+        "E_total_quantified_pct": 41.33,
+        "supports_band_pct": false
+      },
+      {
+        "Re_sim": 1000000.0,
+        "Re_anchor": 11647275.15,
+        "CF_ittc78_sim": 0.0046875,
+        "CF_ittc78_anchor": 0.002922082209,
+        "similarity_correction_pct_of_CT": -60.42,
+        "E_friction_line_pct": 7.744,
+        "E_form_factor_single_constant_pct": 7.634,
+        "E_total_quantified_pct": 10.87,
+        "supports_band_pct": false
+      }
+    ],
+    "conclusion": "最有利的模拟点 Re_s=1e+06 仍有 10.87% 的量化误差（= 3.62× 目标带），Re_s=1e+05 达 41.33%（= 13.78×） ⇒ 相似性换算不能支撑「<3%」判定；<3% 的对比必须在锚 Re 的 ≤2× 邻域直接模拟。"
+  },
+  "conventions_uncertainty": {
+    "terms_pct": {
+      "rho_band_997_1000": 0.15,
+      "speed_last_digit_rounding": 0.1689,
+      "force_last_digit_rounding": 0.005721,
+      "wetted_surface_convention": 0.109,
+      "nu_assumption_15_20C_via_m": 1.108
+    },
+    "rss_total_pct": 1.136,
+    "band_pct": 3.0,
+    "conclusion": "锚侧口径链 RSS=1.136% ≪ 3% 目标带 ⇒ 3% 带在锚侧可分辨；试验重复性未量化（WITHHELD），任何 <3% 声明必须写成『在声明口径下』。",
+    "nu_sensitivity_quote": {
+      "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+      "line": 79,
+      "text": "  的影响经拟合斜率 m=−0.0935 传递：ν ±4% → CT ±0.4%。"
+    }
+  },
+  "no_hand_copy": {
+    "n_float_literals": 81,
+    "n_derived_checked": 30,
+    "violations": [],
+    "pass": true,
+    "rule": "脚本内无浮点字面量落在任一派生量 ±0.1% 相对带内"
+  },
+  "external_quotes": {
+    "n_quotes": 45,
+    "hit_rate_pct": 100.0,
+    "rule": "quote == 该 file 第 line 行原文（逐字相等）+ 正则可解析",
+    "offline_disclosure": null,
+    "quotes": {
+      "T14_B1": {
+        "id": "T14_B1",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 94,
+        "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — bare hull (AFF-1) row 1",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_B2": {
+        "id": "T14_B2",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 95,
+        "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 10.00, 242.2),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — bare hull row 2",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_B3": {
+        "id": "T14_B3",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 96,
+        "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 11.84, 332.9),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — bare hull row 3",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_B4": {
+        "id": "T14_B4",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 97,
+        "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 13.92, 451.5),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — bare hull row 4",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_B5": {
+        "id": "T14_B5",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 98,
+        "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 16.00, 576.9),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — bare hull row 5",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_B6": {
+        "id": "T14_B6",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 99,
+        "text": "    SuboffTowTankResistancePoint(\"bare_hull\", 1, 17.99, 697.0),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — bare hull row 6",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_CITE": {
+        "id": "T14_CITE",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 77,
+        "text": "        \"Program Data, CRDKNSWC/HD-1298-11, ADA359226, Table 14, p.23\"",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — table/page citation carried by the frozen registry",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_DUP_AFF1": {
+        "id": "T14_DUP_AFF1",
+        "file": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+        "line": 23,
+        "text": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — second in-repo transcription (double entry)",
+        "source_file_sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_DUP_AFF8": {
+        "id": "T14_DUP_AFF8",
+        "file": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+        "line": 24,
+        "text": "| AFF-8 全附体 | 5.93 / 10.00 / 11.85 / 13.92 / 16.00 / 17.79 | 102.3 / 283.8 / 389.2 / 526.6 / 675.6 / 821.1 |",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — AFF-8 second in-repo transcription",
+        "source_file_sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_FULL_R1": {
+        "id": "T14_FULL_R1",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 100,
+        "text": "    SuboffTowTankResistancePoint(\"full\", 8, 5.93, 102.3),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — full appendage (AFF-8) row 1",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_FULL_R2": {
+        "id": "T14_FULL_R2",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 101,
+        "text": "    SuboffTowTankResistancePoint(\"full\", 8, 10.00, 283.8),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — AFF-8 row 2",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_FULL_R3": {
+        "id": "T14_FULL_R3",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 102,
+        "text": "    SuboffTowTankResistancePoint(\"full\", 8, 11.85, 389.2),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — AFF-8 row 3",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_FULL_R4": {
+        "id": "T14_FULL_R4",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 103,
+        "text": "    SuboffTowTankResistancePoint(\"full\", 8, 13.92, 526.6),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — AFF-8 row 4",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_FULL_R5": {
+        "id": "T14_FULL_R5",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 104,
+        "text": "    SuboffTowTankResistancePoint(\"full\", 8, 16.00, 675.6),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — AFF-8 row 5",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T14_FULL_R6": {
+        "id": "T14_FULL_R6",
+        "file": "src/tensorlbm/suboff_reference_data.py",
+        "line": 105,
+        "text": "    SuboffTowTankResistancePoint(\"full\", 8, 17.79, 821.1),",
+        "grade": "PRIMARY_TABLE_SECOND_HAND",
+        "locator": "DTRC Table 14, p.23 — AFF-8 row 6",
+        "source_file_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "IN25_R1": {
+        "id": "IN25_R1",
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 95,
+        "text": "| 5.92 | 3.046 | 1.165e+07 | 87.4 | 0.00315 | 102.3 | 0.00356 | 1.1705 |",
+        "grade": "DERIVED_IN_REPO",
+        "locator": "IN25-T6 表 2 (docs/survey/IN25_T6_external_mature_tech_survey.md) row 1 — 4-significant-digit Re ladder",
+        "source_file_sha256": "6cf49960577ee1d3dbf88879abfca42443ddb7260c985d274efb33fbcc37bfc2",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "IN25_R2": {
+        "id": "IN25_R2",
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 96,
+        "text": "| 10.00 | 5.144 | 1.967e+07 | 242.2 | 0.00305 | 283.8 | 0.00348 | 1.1718 |",
+        "grade": "DERIVED_IN_REPO",
+        "locator": "IN25-T6 表 2 row 2 — Re ladder",
+        "source_file_sha256": "6cf49960577ee1d3dbf88879abfca42443ddb7260c985d274efb33fbcc37bfc2",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "IN25_R3": {
+        "id": "IN25_R3",
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 97,
+        "text": "| 11.84 | 6.091 | 2.329e+07 | 332.9 | 0.00299 | 389.2 | 0.00340 | 1.1691 |",
+        "grade": "DERIVED_IN_REPO",
+        "locator": "IN25-T6 表 2 row 3 — Re ladder",
+        "source_file_sha256": "6cf49960577ee1d3dbf88879abfca42443ddb7260c985d274efb33fbcc37bfc2",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "IN25_R4": {
+        "id": "IN25_R4",
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 98,
+        "text": "| 13.92 | 7.161 | 2.739e+07 | 451.5 | 0.00294 | 526.6 | 0.00333 | 1.1663 |",
+        "grade": "DERIVED_IN_REPO",
+        "locator": "IN25-T6 表 2 row 4 — Re ladder",
+        "source_file_sha256": "6cf49960577ee1d3dbf88879abfca42443ddb7260c985d274efb33fbcc37bfc2",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "IN25_R5": {
+        "id": "IN25_R5",
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 99,
+        "text": "| 16.00 | 8.231 | 3.148e+07 | 576.9 | 0.00284 | 675.6 | 0.00323 | 1.1711 |",
+        "grade": "DERIVED_IN_REPO",
+        "locator": "IN25-T6 表 2 row 5 — Re ladder",
+        "source_file_sha256": "6cf49960577ee1d3dbf88879abfca42443ddb7260c985d274efb33fbcc37bfc2",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "IN25_R6": {
+        "id": "IN25_R6",
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 100,
+        "text": "| 17.99 | 9.255 | 3.539e+07 | 697.0 | 0.00272 | 821.1 | 0.00318 | 1.1780 |",
+        "grade": "DERIVED_IN_REPO",
+        "locator": "IN25-T6 表 2 row 6 — Re ladder",
+        "source_file_sha256": "6cf49960577ee1d3dbf88879abfca42443ddb7260c985d274efb33fbcc37bfc2",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "IN25_HEAD": {
+        "id": "IN25_HEAD",
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 91,
+        "text": "### 表 2 · SUBOFF EFD 阻力阶梯（由 Table 14 量纲力值换算，ρ=999.0, ν=1.139e-06）",
+        "grade": "CONVENTION",
+        "locator": "IN25-T6 表 2 header — declares the rho/nu used for the ladder",
+        "source_file_sha256": "6cf49960577ee1d3dbf88879abfca42443ddb7260c985d274efb33fbcc37bfc2",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "GEO_L": {
+        "id": "GEO_L",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 24,
+        "text": "| Length overall Lmax [m] | 4.356 |",
+        "grade": "SECONDARY",
+        "locator": "CFD Letters 2024 Table 1 (principal particulars) via refs_lock.md",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "GEO_S": {
+        "id": "GEO_S",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 28,
+        "text": "| Wetted surface area WSA [m2] | 5.998 |",
+        "grade": "SECONDARY",
+        "locator": "CFD Letters 2024 Table 1 via refs_lock.md — wetted surface convention",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "CTDEF": {
+        "id": "CTDEF",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 73,
+        "text": "- CT = RT / (0.5 · ρ · V² · S)，ρ=1000 kg/m³（淡水，密度带 997–1000 →",
+        "grade": "CONVENTION",
+        "locator": "refs_lock.md conventions — C_T definition and rho",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "REDEF": {
+        "id": "REDEF",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 78,
+        "text": "- Re = Lmax · V / ν，ν=1.139e-6 m²/s（淡水 15 °C 声明假设）。ν 假设对 CT",
+        "grade": "CONVENTION",
+        "locator": "refs_lock.md conventions — Re definition and nu",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "SUBMERGED": {
+        "id": "SUBMERGED",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 10,
+        "text": "L_max = 4.356 m，拖曳水池深潜阻力。对应本仓 `SuboffHullType.FULL`。",
+        "grade": "CONVENTION",
+        "locator": "refs_lock.md — test condition: deeply submerged tow-tank (no free-surface wave making)",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T3_F1": {
+        "id": "T3_F1",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 35,
+        "text": "| 3.050 | 102.30 |",
+        "grade": "SECONDARY",
+        "locator": "CFD Letters 2024 Table 3 (EFD column) row 1 via refs_lock.md",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T3_F2": {
+        "id": "T3_F2",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 36,
+        "text": "| 5.144 | 283.80 |",
+        "grade": "SECONDARY",
+        "locator": "CFD Letters 2024 Table 3 EFD row 2",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T3_F3": {
+        "id": "T3_F3",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 37,
+        "text": "| 6.100 | 389.20 |",
+        "grade": "SECONDARY",
+        "locator": "CFD Letters 2024 Table 3 EFD row 3",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T3_F4": {
+        "id": "T3_F4",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 38,
+        "text": "| 7.160 | 526.60 |",
+        "grade": "SECONDARY",
+        "locator": "CFD Letters 2024 Table 3 EFD row 4",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "T3_F5": {
+        "id": "T3_F5",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 39,
+        "text": "| 8.230 | 675.60 |",
+        "grade": "SECONDARY",
+        "locator": "CFD Letters 2024 Table 3 EFD row 5",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "CF_ITTC78": {
+        "id": "CF_ITTC78",
+        "file": "src/tensorlbm/external_survey/suboff_anchor.py",
+        "line": 87,
+        "text": "    \"\"\"ITTC-1957 model-ship correlation line ``0.075/(log10 Re - 2)^2``.\"\"\"",
+        "grade": "CONVENTION",
+        "locator": "src/tensorlbm/external_survey/suboff_anchor.py::ittc57_cf docstring — friction line used as C_F",
+        "source_file_sha256": "4cdb1b86fb48d7257087539b93b5af536ac2d4737f28067863bbaeac9137ad4f",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "CF_SCHOENHERR": {
+        "id": "CF_SCHOENHERR",
+        "file": "src/tensorlbm/external_survey/suboff_anchor.py",
+        "line": 94,
+        "text": "    \"\"\"Schoenherr (1932) flat-plate friction line ``0.455/(log10 Re)^2.58``.\"\"\"",
+        "grade": "CONVENTION",
+        "locator": "src/tensorlbm/external_survey/suboff_anchor.py::schoenherr_cf docstring — independent friction line (line-to-line spread term)",
+        "source_file_sha256": "4cdb1b86fb48d7257087539b93b5af536ac2d4737f28067863bbaeac9137ad4f",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "YPLUS_BAND": {
+        "id": "YPLUS_BAND",
+        "file": "benchmarks/pending/suboff_highre_resistance/prereg.md",
+        "line": 44,
+        "text": "  形状份额；y+ 带内性（[30,5000]）；positivity limiter 上限分数；观察者差。",
+        "grade": "CONVENTION",
+        "locator": "benchmarks/pending/suboff_highre_resistance/prereg.md — declared y+ acceptance band",
+        "source_file_sha256": "d8c2b975587e5714297b692d88adf1f933990652d78338ac9daa2dc81641f21c",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "BLLAW_DELTA": {
+        "id": "BLLAW_DELTA",
+        "file": "benchmarks/verified/suboff_sail_resistance/gci_v4.py",
+        "line": 239,
+        "text": "        delta_over_L = 0.37 * Re ** -0.2  # turbulent boundary-layer thickness scale",
+        "grade": "CONVENTION",
+        "locator": "gci_v4.py — in-repo boundary-layer thickness law delta/L = 0.37 Re^-0.2",
+        "source_file_sha256": "fbc61a63189ce6f0aef17e359de0633b22c67f7c2622e2f6cb67c757ca1a366d",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "CELLSLAW": {
+        "id": "CELLSLAW",
+        "file": "benchmarks/verified/suboff_sail_resistance/gci_v4.py",
+        "line": 250,
+        "text": "                \"cells\": 26.66 * L**3,",
+        "grade": "CONVENTION",
+        "locator": "gci_v4.py — in-repo frozen domain cell count cells = 26.66*L^3",
+        "source_file_sha256": "fbc61a63189ce6f0aef17e359de0633b22c67f7c2622e2f6cb67c757ca1a366d",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "STEPSLAW": {
+        "id": "STEPSLAW",
+        "file": "benchmarks/verified/suboff_sail_resistance/gci_v4.py",
+        "line": 294,
+        "text": "                \"steps_frozen_protocol\": 150 * L,",
+        "grade": "CONVENTION",
+        "locator": "gci_v4.py — frozen protocol steps = 150*L",
+        "source_file_sha256": "fbc61a63189ce6f0aef17e359de0633b22c67f7c2622e2f6cb67c757ca1a366d",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "NU_T_ANCHORS": {
+        "id": "NU_T_ANCHORS",
+        "file": "benchmarks/verified/suboff_anchor/build_anchor.py",
+        "line": 317,
+        "text": "    nu_15, nu_20 = 1.139e-6, 1.004e-6",
+        "grade": "CONVENTION",
+        "locator": "build_anchor.py — the two in-repo water-viscosity anchors used for the linear nu(T) inversion",
+        "source_file_sha256": "86454a92b96d444529e2ed745aec1f4e1626b45b4a433f0256c4904a839f2fad",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "RETIRED_ANCHOR": {
+        "id": "RETIRED_ANCHOR",
+        "file": "docs/sphere_suboff_highre_reference_data_zh.md",
+        "line": 85,
+        "text": "| AFF-1 裸艇体 | 1.2×10⁷ | ≈0.0030–0.0032（常用 0.0031） | Roddy (1990) DTRC/SHD-1298-07 水筒实验；SIMMAN 2008 基准 [B] | [B] 精确值需核对原文 |",
+        "grade": "B_GRADE_UNVERIFIED",
+        "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3 row 1 — the retired two-significant-digit Re anchor (mission #8800 C2 source)",
+        "source_file_sha256": "2a20e026b9dbbef74b96cdc24c0bb72766552013d0ccd77930807d585b07172b",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "SCAD": {
+        "id": "SCAD",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 76,
+        "text": "  0.31576·L² ⇒ 物理等效 5.9933 m²，与 5.998 差 **0.08%**（即实验口径的",
+        "grade": "CONVENTION",
+        "locator": "refs_lock.md — analytic surface-of-revolution area 0.31576·L² vs experimental WSA",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "NU_SENS": {
+        "id": "NU_SENS",
+        "file": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+        "line": 79,
+        "text": "  的影响经拟合斜率 m=−0.0935 传递：ν ±4% → CT ±0.4%。",
+        "grade": "CONVENTION",
+        "locator": "refs_lock.md — measured C_T power-law slope m used to propagate the nu assumption",
+        "source_file_sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "YPLUS_CALIB": {
+        "id": "YPLUS_CALIB",
+        "file": "docs/IN12_S6_WALL_LADDER.md",
+        "line": 11,
+        "text": "**关键结论**：壁面函数的*闭合*误差可分三层量化——(a) 反演代码路径自洽 8.074e-11%；(b) 不同壁面律之间（Spalding vs Reichardt）在 y+∈[30,150] 相差 9.65%（最大在 y+≈30 的缓冲层）；(c) 对真实 DNS 剖面（Re_tau=180），Spalding 在 y+≈30 处 Cf 偏差 13.7%、Reichardt 3.5%；而在 Re_tau=1000 的 Coles 参考下 Spalding 在 y+∈[45,160] 内 ≤ 5.37%。**因此标定带 [30,150] 在 Re_tau≳590 有效，在 Re_tau=180 的薄对数层内单律误差升到 5–14%**：低 Re_tau 是最难标定的工况，这一点必须在验收口径里显式说明。",
+        "grade": "CONVENTION",
+        "locator": "IN12_S6_WALL_LADDER.md §关键结论 — calibrated wall-function band y+ in [30,150] (valid for Re_tau >~ 590)",
+        "source_file_sha256": "c28392a9d3a9624fb2256f2a7ab9c898162ffd0eeb4ef42713bbb87b2a68c693",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "YPLUS_STARVED": {
+        "id": "YPLUS_STARVED",
+        "file": "docs/IN12_S6_WALL_LADDER.md",
+        "line": 13,
+        "text": "**honest FAIL（不得粉饰）**：(1) 三维槽道最细网格 U+ RMS 5.33% 未达 3% 门，按幂律外推 8 倍网格为 2.50%（预测可达标，但实跑网格未达标，3% 门在实测网格上不可证明）；(2) SUBOFF 正式档最差锚 C_T 误差 2962.7%，y+ 均值 [1878, 4660] 远超标定带，属分辨率饥饿；(3) 平板 2D LBM 离散层最佳 27.34%，沿用前案终裁的 FAIL 结论。",
+        "grade": "MEASURED_IN_REPO",
+        "locator": "IN12_S6_WALL_LADDER.md §honest FAIL — measured evidence: anchor-Re run outside the band gave 2962.7% C_T error",
+        "source_file_sha256": "c28392a9d3a9624fb2256f2a7ab9c898162ffd0eeb4ef42713bbb87b2a68c693",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      },
+      "N_CELLS_EXTERNAL": {
+        "id": "N_CELLS_EXTERNAL",
+        "file": "docs/survey/IN25_T6_external_mature_tech_survey.md",
+        "line": 42,
+        "text": "| 大网格先例 | Re≈10⁷ 的附体潜艇外流需要多少网格？ | 1.03×10⁸ 胞（附体 SUBOFF，WMLES） |",
+        "grade": "SECONDARY",
+        "locator": "IN25-T6 §1.3 表（五措施与本研究的分工）— external WMLES practice cell count for appended SUBOFF",
+        "source_file_sha256": "6cf49960577ee1d3dbf88879abfca42443ddb7260c985d274efb33fbcc37bfc2",
+        "machine_check": {
+          "line_exact": true,
+          "substring_in_file": true,
+          "regex_hit": true
+        }
+      }
+    }
+  },
+  "provenance": {
+    "repo": "TensorLBM",
+    "script": "benchmarks/verified/suboff_anchor/build_anchor_points.py",
+    "transcriptions": "benchmarks/verified/suboff_anchor/sources/anchor_points_transcriptions.json",
+    "transcriptions_sha256": "21d1b9edff882aa4ca03f73ed0033bbc381bae52a28adec7d28466479e14c032",
+    "cluster_measurement": "benchmarks/verified/suboff_anchor/sources/cluster_mlups_measurement.json",
+    "cluster_measurement_sha256": "3f84606f4f0b00a171c7f487ef870c04163b9a2bd0be89fcbde69fc4ee4f5877",
+    "figure": "benchmarks/verified/suboff_anchor/figures/anchor_points_overview.png",
+    "test": "tests/test_suboff_anchor_points.py",
+    "regenerate": "python3 benchmarks/verified/suboff_anchor/build_anchor_points.py",
+    "environment": {
+      "python": "3.11.6",
+      "numpy_free": true
+    },
+    "upstream_artifacts_reused": [
+      "src/tensorlbm/suboff_reference_data.py::SUBOFF_TOW_TANK_RESISTANCE_TABLE14（Table 14 常量）",
+      "docs/survey/IN25_T6_external_mature_tech_survey.md 表 2（4 位有效数字 Re 阶梯）",
+      "benchmarks/pending/suboff_highre_resistance/refs_lock.md（几何/口径/CFD Letters Table 3）",
+      "benchmarks/verified/suboff_sail_resistance/gci_v4.json（成本模型、冻结协议、整解器吞吐）",
+      "sources/cluster_mlups_measurement.json（本单新测：loong64 集群原始核吞吐）"
+    ]
+  },
+  "downstream_contract": {
+    "use_this_as": "LBM 阻力对比的唯一外部锚：anchor_points[].CT / Re / CF_ittc78 / one_plus_k（6 点 AFF-1 阶梯）",
+    "error_definition": "err% = (C_T,sim − C_T,anchor)/C_T,anchor × 100，参考面积 S=5.998 m² 与 ν=1.139e-6 m²/s 必须与 conventions 一致",
+    "do_not_use": [
+      "Re=1.2e7 两位有效数字锚（见 c2.retired_two_sig_fig_anchor，已 RETIRED）",
+      "任何未经 external_quotes 逐字转录的 C_T / Re",
+      "跨湿面积口径混用（AFF-8 用 6.35 m² 时须换算）"
+    ],
+    "claim_guard": "在锚 Re 直接模拟前，任何『<3%』声明要么标『欠解析网格（y+≈1212.96）』，要么必须附 similarity_error_budget；相似性换算路径的量化误差已 > 3%（见 similarity_error_budget.conclusion）。"
+  }
+}
