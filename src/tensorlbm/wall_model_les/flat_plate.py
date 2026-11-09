@@ -5,7 +5,7 @@ law-of-the-wall (Spalding composite with ``kappa = 0.41``, ``B = 5.2``) supplies
 the skin friction, and the outer layer is represented by Coles' law of the wake
 
     u+(eta) = u+_law-of-the-wall(eta*delta+) + (2 Pi / kappa) W(eta),
-    W(eta)  = 2 sin^2(pi eta / 2),      eta = y/delta,
+    W(eta)  = sin^2(pi eta / 2),        eta = y/delta,
 
 with ``Pi = 0.45`` for a zero-pressure-gradient boundary layer.  The momentum
 integral
@@ -64,7 +64,7 @@ itcc_1957_mean = ittc_1957_mean  # alias kept for readability of older scripts
 def ittc_1957_local(reynolds) -> np.ndarray:
     """Local skin friction implied by the ITTC-1957 *mean* line.
 
-    ``C_F(Re) = (1/Re) int_0^Re c_f dRe'``  =>  ``c_f = 2 C_F + Re dC_F/dRe``
+    ``C_F(Re) = (1/Re) int_0^Re c_f dRe'``  =>  ``c_f = C_F + Re dC_F/dRe``
     for a plate of length ``L`` (``Re`` proportional to ``L``).  The derivative
     is taken by central differences on the analytic line, so this is a closed
     form, not a fitted correlation.
@@ -124,13 +124,18 @@ def coles_profile(
     profile family by ``delta+`` (instead of by ``c_f``) makes the mapping
     ``delta+ -> Re_theta`` a single forward evaluation with no nested inversion:
 
-        ``u+(delta+) = Spalding(delta+) + 4 Pi/kappa``,  ``c_f = 2/Ue+^2``,
+        ``u+(delta+) = Spalding(delta+) + 2 Pi/kappa``,  ``c_f = 2/Ue+^2``,
         ``Re_theta = Ue+ * theta+``.
     """
     y_plus = np.linspace(0.0, delta_plus, n_points)
     eta = y_plus / delta_plus
     u_plus = _spalding_u_plus_vec(np.clip(y_plus, 1.0e-12, None), kappa, b)
-    wake = (2.0 * pi_wake / kappa) * 2.0 * np.sin(0.5 * math.pi * eta) ** 2
+    # Coles (1956) log-wake law: u+ = u+_law + (2 Pi/kappa) W(eta) with
+    # W(eta) = sin^2(pi eta/2)  =>  W(1) = 1 and the edge wake increment is
+    # exactly 2 Pi/kappa (= 2.20 for Pi = 0.45, kappa = 0.41).  An earlier
+    # version multiplied the same W by 4 Pi/kappa (W(1) = 2), doubling the
+    # wake and the boundary-layer edge velocity.
+    wake = (2.0 * pi_wake / kappa) * np.sin(0.5 * math.pi * eta) ** 2
     u_plus = u_plus + wake
     ue_plus = float(u_plus[-1])
     c_f = 2.0 / ue_plus**2
