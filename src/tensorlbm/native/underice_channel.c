@@ -164,6 +164,7 @@ int main(int argc, char **argv) {
 
     const double s_plus = 1.0 / tau;
     double sum_me = 0.0, sum_form = 0.0, sum_skin = 0.0, sum_skin_y = 0.0;
+    double sum_form_face = 0.0, sum_skin_grad = 0.0;
     double sum_flux = 0.0; long n_wall = 0;
     double sum_ux = 0.0, sum_ux2 = 0.0, sum_rho = 0.0;
     double mom_first = 0.0, mom_last = 0.0;
@@ -236,6 +237,7 @@ int main(int argc, char **argv) {
 
         if (t >= warmup && ((t - warmup) % sample_interval) == 0) {
             double me = 0.0, form = 0.0, skin = 0.0, skin_y = 0.0;
+            double form_face = 0.0, skin_grad = 0.0;
             double flux = 0.0; long nwall = 0;
             double mom_now = 0.0;
             double sux = 0.0, sux2 = 0.0, srho = 0.0;
@@ -243,6 +245,7 @@ int main(int argc, char **argv) {
             #pragma omp parallel
             {
                 double lme = 0.0, lform = 0.0, lskin = 0.0, lskin_y = 0.0, lmom = 0.0;
+                double lform_face = 0.0, lskin_grad = 0.0;
                 double lflux = 0.0; long lnwall = 0;
                 double lsux = 0.0, lsux2 = 0.0, lsrho = 0.0;
                 float lmax = 0.0f;
@@ -254,43 +257,65 @@ int main(int argc, char **argv) {
                         for (long x = 0; x < nx; x++) {
                             long n = (z * ny + y) * nx + x;
                             if (solid[n]) continue;
-                            /* wall force from the wall-crossing links: a
-                               halfway bounce-back link delivers 2 c_ix f*_i,
-                               but only the nonequilibrium part f*_i - feq_i
-                               carries stress (the equilibrium part is the
-                               convective momentum replaced by the incoming
-                               stream).  Using f*_i - f*_opp instead measures
-                               ~U_wall/3 and over-predicts the force ~30x. */
-                            {
-                                double rr = (double)rho[n];
-                                double uu = rr > 1e-12 ? (double)ux[n] : 0.0;
-                                double vv = rr > 1e-12 ? (double)uy[n] : 0.0;
-                                double ww = rr > 1e-12 ? (double)uz[n] : 0.0;
-                                double usq = uu * uu + vv * vv + ww * ww;
-                                for (int i = 1; i < Q; i++) {
-                                    if (CX[i] == 0) continue;
-                                    if (!links[(long)i * N + n]) continue;
-                                    double cu = CX[i] * uu + CY[i] * vv + CZ[i] * ww;
-                                    double feqi = WT[i] * rr *
-                                        (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq);
-                                    lme += (double)CX[i] *
-                                           ((double)fstar[(long)i * N + n] - feqi);
+                            /* (1) wall force: exact link-wise momentum
+                               exchange.  links[i](n)=1 means the solid sits at
+                               X - c_i, so the incoming population of this fluid
+                               node in direction i is the reflected one,
+                               f*_opp(i).  The fluid gives up 2 c_i f*_opp(i) of
+                               x-momentum per wall link -- the exact wall force,
+                               with no equilibrium split and no relaxation
+                               calibration.  The 2026-11 form
+                               2 c_x (f*_i - feq_i)/(1 - s+) is a stress estimate
+                               and over-predicts by ~1e2; the pre-2026 form
+                               c_x (f*_i - f*_opp) measures ~U_wall/3.
+                               Projected on the local staircase normal
+                               (normalised wetted-axis sum, 45 deg on a corner)
+                               it splits into pressure (form) and friction. */
+                            for (int i = 1; i < Q; i++) {
+                                if (CX[i] == 0) continue;
+                                if (!links[(long)i * N + n]) continue;
+                                double iwx = 0.0, iwy = 0.0, iwz = 0.0;
+                                if (CX[i] != 0) {
+                                    int xs = ((x - CX[i]) % nx + nx) % nx;
+                                    if (solid[(long)z * ny * nx + (long)y * nx + xs])
+                                        iwx = CX[i] > 0 ? 1.0 : -1.0;
                                 }
+                                if (CY[i] != 0) {
+                                    int ys = ((y - CY[i]) % ny + ny) % ny;
+                                    if (solid[(long)z * ny * nx + (long)ys * nx + x])
+                                        iwy = CY[i] > 0 ? 1.0 : -1.0;
+                                }
+                                if (CZ[i] != 0) {
+                                    int zs = z - CZ[i];
+                                    if (zs >= 0 && zs < nz &&
+                                        solid[(long)zs * ny * nx + (long)y * nx + x])
+                                        iwz = CZ[i] > 0 ? 1.0 : -1.0;
+                                }
+                                if (iwx == 0.0 && iwy == 0.0 && iwz == 0.0) {
+                                    iwx = (double)CX[i]; iwy = (double)CY[i]; iwz = (double)CZ[i];
+                                }
+                                double inorm = sqrt(iwx * iwx + iwy * iwy + iwz * iwz);
+                                iwx /= inorm; iwy /= inorm; iwz /= inorm;
+                                double cdn = CX[i] * iwx + CY[i] * iwy + CZ[i] * iwz;
+                                double wi = 2.0 * (double)fstar[(long)OPP[i] * N + n] *
+                                            (double)links[(long)i * N + n];
+                                lme += wi * (double)CX[i];
+                                lform += wi * cdn * iwx;
                             }
-                            /* x-normal faces: p = rho/3, +/- depending on side */
+                            /* legacy: x-normal faces, p = rho/3 (diagnostic only) */
                             {
                                 long xp = (((x + 1) % nx) * 1) + (y * nx) + (z * ny * nx);
                                 long xm = ((((x - 1) + nx) % nx) + y * nx + z * ny * nx);
                                 double p = (double)rho[n] / 3.0;
-                                if (solid[xp]) lform += p;
-                                if (solid[xm]) lform -= p;
+                                if (solid[xp]) lform_face += p;
+                                if (solid[xm]) lform_face -= p;
                             }
                             /* horizontal faces: 2 nu u_x (one-sided, halfway wall) */
                             {
                                 int touch = 0;
                                 if (z + 1 < nz && solid[n + (long)nx * ny]) touch = 1;
                                 if (z - 1 >= 0 && solid[n - (long)nx * ny]) touch = 1;
-                                if (touch) lskin += 2.0 * nu * (double)ux[n];
+                                if (touch) lskin_grad += 2.0 * nu * (double)ux[n];
                                 int touchy = 0;
                                 if (solid[(z * ny + ((y + 1) % ny)) * nx + x]) touchy = 1;
                                 if (solid[(z * ny + (((y - 1) + ny) % ny)) * nx + x]) touchy = 1;
@@ -339,7 +364,8 @@ int main(int argc, char **argv) {
                         }
                 #pragma omp critical
                 {
-                    me += lme; form += lform; skin += lskin; skin_y += lskin_y;
+                    me += lme; form += lform; skin_y += lskin_y;
+                    form_face += lform_face; skin_grad += lskin_grad;
                     flux += lflux; nwall += lnwall;
                     sux += lsux; sux2 += lsux2; srho += lsrho;
                     mom_now += lmom;
@@ -353,8 +379,17 @@ int main(int argc, char **argv) {
             /* f* - feq = (1 - s+)(f - feq) here (s- = s+ = 1/tau), so undo the
                relaxation attenuation; the 2 c_ix factor is the bounce-back
                momentum delivery. */
-            sum_me += 2.0 * me / (1.0 - s_minus);
-            sum_form += form; sum_skin += skin; sum_skin_y += skin_y;
+            /* (1) exact exchange, (2) its pressure part, (3) friction =
+               total - pressure (exact by construction per link) */
+            /* sign: the exchange 2 c_ix f*_opp is negative along the flow, so
+               the drag magnitude is its negative (same convention as the
+               torch back-end, which reports positive drag). */
+            sum_me += -me;
+            sum_form += -form;
+            sum_skin += -(me - form);
+            sum_skin_y += skin_y;
+            sum_form_face += form_face;
+            sum_skin_grad += skin_grad;
             sum_flux += 2.0 * flux / (1.0 - s_minus);
             n_wall += nwall;
             sum_ux += sux; sum_ux2 += sux2; sum_rho += srho;
@@ -378,6 +413,8 @@ int main(int argc, char **argv) {
     fprintf(fo, "\"sum_me\": %s, \"sum_form\": %s, \"sum_skin\": %s,",
             jnum_s(sum_me), jnum_s(sum_form), jnum_s(sum_skin));
     fprintf(fo, " \"sum_flux\": %s, \"n_wall\": %d,\n", jnum_s(sum_flux), n_wall);
+    fprintf(fo, " \"sum_form_face\": %s, \"sum_skin_grad\": %s,\n",
+            jnum_s(sum_form_face), jnum_s(sum_skin_grad));
     fprintf(fo, " \"sum_skin_y\": %s,\n", jnum_s(sum_skin_y));
     fprintf(fo, "\"sum_ux\": %s, \"sum_ux2\": %s, \"sum_rho\": %s, \"max_ux\": %s,\n",
             jnum_s(sum_ux), jnum_s(sum_ux2), jnum_s(sum_rho), jnum_s((double)max_ux));
