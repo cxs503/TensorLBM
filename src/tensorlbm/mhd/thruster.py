@@ -464,3 +464,73 @@ def run_thruster_ledger(
         lattice=lattice,
         notes=notes,
     )
+
+
+# ---------------------------------------------------------------------------
+# Ideal (lossless) Lorentz thrust and the node acceptance check
+# ---------------------------------------------------------------------------
+def ideal_lorentz_thrust(config: MHDThrusterConfig) -> dict[str, float]:
+    """Ideal (``j x B`` on the whole channel volume) thrust of the design point.
+
+    ``j0 = sigma E_z = sigma K B0`` is the current density of a *static* fluid
+    (no back-emf), so the ideal force on the channel volume ``V = A L`` is
+
+        F_ideal = j0 B0 V = sigma B0^2 K V = sigma |E| B0 V.
+
+    The developed-flow Lorentz force is smaller by the back-emf term
+    ``sigma B0^2 u_mean V`` and by the wall drag, i.e.
+
+        T_lorentz = F_ideal - sigma B0^2 u_mean V - D_wall,
+
+    which is exactly the split reported in the ledger.  The ratio
+    ``sigma B0^2 u_mean V / F_ideal = u_mean/K`` is the electrical loading ratio:
+    it is small for a highly loaded (and therefore very lossy) design, which is
+    why ``F_ideal`` is a meaningful 5 % reference for the thruster thrust.
+    """
+    area = config.area_m2
+    volume = area * config.length_m
+    loading = config.loading
+    e_field = loading * config.b0_t  # |E_z| = K B0
+    f_ideal = config.sigma_s_per_m * e_field * config.b0_t * volume
+    back_emf = config.magnetic_force_coefficient * config.duct_speed_m_s * volume
+    return {
+        "E_field_V_per_m": e_field,
+        "loading_K": loading,
+        "volume_m3": volume,
+        "F_ideal_N": f_ideal,
+        "back_emf_force_N": back_emf,
+        "loading_ratio_u_over_K": config.duct_speed_m_s / loading,
+    }
+
+
+def thruster_ideal_check(
+    ledger: ThrusterLedger,
+    threshold: float = 5.0e-2,
+) -> dict[str, Any]:
+    """Compare the ledger thrust with the ideal ``F = sigma |E| B V`` (node gate 5 %)."""
+    ideal = ideal_lorentz_thrust(ledger.config)
+    f_ideal = ideal["F_ideal_N"]
+    thrust = ledger.thrust_lorentz_n
+    rel = abs(thrust - f_ideal) / f_ideal
+    return {
+        "criterion": "c8_thrust_vs_ideal",
+        "F_ideal_N": f_ideal,
+        "thrust_lorentz_N": thrust,
+        "thrust_momentum_N": ledger.thrust_momentum_n,
+        "back_emf_force_N": ideal["back_emf_force_N"],
+        "wall_drag_N": ledger.wall_drag_n,
+        "relative_error": rel,
+        "threshold": threshold,
+        "passed": bool(rel <= threshold),
+        "reconstruction_residual": abs(
+            f_ideal - ideal["back_emf_force_N"] - ledger.wall_drag_n - thrust
+        )
+        / f_ideal,
+        "note": (
+            "F_ideal = sigma |E| B V (static-fluid current); the developed-flow thrust "
+            "loses the back-emf sigma B0^2 u_mean V and the wall drag, both small here "
+            "because u_mean/K = %.3e"
+            % ideal["loading_ratio_u_over_K"]
+        ),
+        "ideal": ideal,
+    }
