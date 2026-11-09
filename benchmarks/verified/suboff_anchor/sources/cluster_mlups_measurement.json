@@ -1,0 +1,42 @@
+{
+  "schema": "suboff-anchor-cluster-throughput/v1",
+  "purpose": "measured lattice-update throughput used by the anchor-Re reachability design (task ③); raw measurement, not derived",
+  "measured_utc": "2026-11-09",
+  "cluster_job_id": "c1794214063_38",
+  "node": "n315",
+  "node_hardware": {
+    "arch": "loong64",
+    "cores": 128,
+    "torch_version": "2.13.0",
+    "torch_threads": 64,
+    "load_at_measurement": 39.72
+  },
+  "command": "PYTHONPATH=src python benchmarks/bench_mlups.py --device cpu --steps 20 --warmup 5 --collisions bgk,mrt",
+  "note": "raw kernel throughput only (collide+stream on resident arrays, no wall model, no force observers, no sponge, no I/O) — an UPPER BOUND for whole-solver throughput",
+  "mlups": [
+    {"lattice": "D2Q9", "config": "256x256", "collision": "bgk", "mlups": 11.17},
+    {"lattice": "D2Q9", "config": "512x512", "collision": "bgk", "mlups": 23.71},
+    {"lattice": "D2Q9", "config": "1024x1024", "collision": "bgk", "mlups": 6.92},
+    {"lattice": "D3Q19", "config": "32x32x32", "collision": "bgk", "mlups": 3.39},
+    {"lattice": "D3Q19", "config": "64x64x64", "collision": "bgk", "mlups": 7.98},
+    {"lattice": "D3Q19", "config": "128x64x64", "collision": "bgk", "mlups": 3.07},
+    {"lattice": "D2Q9", "config": "256x256", "collision": "mrt", "mlups": 12.76},
+    {"lattice": "D2Q9", "config": "512x512", "collision": "mrt", "mlups": 23.85},
+    {"lattice": "D2Q9", "config": "1024x1024", "collision": "mrt", "mlups": 6.14},
+    {"lattice": "D3Q19", "config": "32x32x32", "collision": "mrt", "mlups": 3.37},
+    {"lattice": "D3Q19", "config": "64x64x64", "collision": "mrt", "mlups": 8.75},
+    {"lattice": "D3Q19", "config": "128x64x64", "collision": "mrt", "mlups": 2.32},
+    {"lattice": "D3Q27", "config": "32x32x32", "collision": "bgk", "mlups": 3.06},
+    {"lattice": "D3Q27", "config": "64x64x64", "collision": "bgk", "mlups": 5.65}
+  ],
+  "headline_d3q19_mrt_64cube_mlups": 8.75,
+  "selection_rule": "D3Q19 + MRT at the largest measured 3D configuration that is not truncated in z (64x64x64) — matches the production lattice/collision pair of the anchor-Re protocol (gci_v4.json::ladder_protocol)",
+  "caveat": "measured with the shared node under external load (load 39.72) and torch default threading (64 of 128 cores); a dedicated run may be faster, so hours computed from this number are conservative in the optimistic direction",
+  "production_path_cross_check": {
+    "source": "benchmarks/verified/suboff_sail_resistance/gci_v4.json::cost_model.measured_ms_per_step_L96_full_domain",
+    "cells": 23736384,
+    "ms_per_step": 20544.2,
+    "mlups": 1.155,
+    "host": "99 control plane, torch CPU eager, 64 threads, shared host"
+  }
+}
