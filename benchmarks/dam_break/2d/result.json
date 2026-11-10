@@ -1,0 +1,377 @@
+{
+  "benchmark": "dam_break_2d",
+  "checkpoints_t_star": [
+    0.4,
+    0.6,
+    0.8
+  ],
+  "figures": [
+    "benchmarks/dam_break/2d/figures/2d_profiles_swe.png",
+    "benchmarks/dam_break/2d/figures/2d_convergence_swe.png",
+    "benchmarks/dam_break/2d/figures/2d_profiles_fslbm.png",
+    "benchmarks/dam_break/2d/figures/2d_convergence_fslbm.png"
+  ],
+  "gates": {
+    "convergence_order_min": 1.5,
+    "front_rel_error_max": 0.05,
+    "mass_drift_max": 0.001,
+    "profile_rel_error_max": 0.05
+  },
+  "nondimensionalisation": "lattice units; h0 = water depth, a = h0 (square column), c0 = sqrt(g h0) = 0.08 for the LBM route (g = c0^2/h0), t* = t sqrt(g/h0)",
+  "routes": {
+    "fslbm_planar_slab": {
+      "convergence": {
+        "errors": [
+          0.25887481732775386,
+          0.27607643139868,
+          0.2900210653108379
+        ],
+        "grids": [
+          16,
+          24,
+          32
+        ],
+        "order_mean": -0.16497533907249154,
+        "orders": [
+          -0.15866504262577036,
+          -0.17128563551921272
+        ],
+        "refinement_ratios": [
+          1.5,
+          1.3333333333333333
+        ],
+        "spacings": [
+          0.0625,
+          0.041666666666666664,
+          0.03125
+        ]
+      },
+      "route": "fslbm_planar_slab",
+      "runs": [
+        {
+          "c0": 0.08,
+          "front": {
+            "rel_error": 0.74609375,
+            "x_front": 22.5,
+            "x_front_analytic": 41.6
+          },
+          "g": 0.0004,
+          "grid": {
+            "nx": 64,
+            "ny": 32,
+            "nz": 4
+          },
+          "h0": 16,
+          "inventory_drift_max_abs": 0.005925970735272167,
+          "mass_drift": {
+            "max_abs": 0.057561374240451386,
+            "n_samples": 161
+          },
+          "n_steps": 160,
+          "nan_step": null,
+          "nu": 0.008533333333333334,
+          "profile": {
+            "n_cells": 39,
+            "rel_l1": 0.25887481732775386,
+            "rel_l2": 0.23253043271275115
+          },
+          "profile_checkpoints": {
+            "0.4": {
+              "n_cells": 19,
+              "rel_l1": 0.3992582033570832,
+              "rel_l2": 0.3615832666081077
+            },
+            "0.6": {
+              "n_cells": 29,
+              "rel_l1": 0.2861800499483666,
+              "rel_l2": 0.2628171229639174
+            },
+            "0.8": {
+              "n_cells": 39,
+              "rel_l1": 0.25887481732775386,
+              "rel_l2": 0.23253043271275115
+            }
+          },
+          "reynolds": 150.0,
+          "spanwise_spread": 0.020005945999309736,
+          "t_star_end": 0.8,
+          "tau": 0.5256
+        },
+        {
+          "c0": 0.08,
+          "front": {
+            "rel_error": 0.7265625,
+            "x_front": 34.5,
+            "x_front_analytic": 62.4
+          },
+          "g": 0.0002666666666666667,
+          "grid": {
+            "nx": 96,
+            "ny": 48,
+            "nz": 4
+          },
+          "h0": 24,
+          "inventory_drift_max_abs": 0.0022233408794622724,
+          "mass_drift": {
+            "max_abs": 0.03667970596053875,
+            "n_samples": 241
+          },
+          "n_steps": 240,
+          "nan_step": null,
+          "nu": 0.012799999999999999,
+          "profile": {
+            "n_cells": 57,
+            "rel_l1": 0.27607643139868,
+            "rel_l2": 0.25248211777551094
+          },
+          "profile_checkpoints": {
+            "0.4": {
+              "n_cells": 29,
+              "rel_l1": 0.3992273158264975,
+              "rel_l2": 0.37403936279447864
+            },
+            "0.6": {
+              "n_cells": 43,
+              "rel_l1": 0.34295526168194623,
+              "rel_l2": 0.31711480177732065
+            },
+            "0.8": {
+              "n_cells": 57,
+              "rel_l1": 0.27607643139868,
+              "rel_l2": 0.25248211777551094
+            }
+          },
+          "reynolds": 150.0,
+          "spanwise_spread": 0.012824785370264755,
+          "t_star_end": 0.8,
+          "tau": 0.5384
+        },
+        {
+          "c0": 0.08,
+          "front": {
+            "rel_error": 0.716796875,
+            "x_front": 46.5,
+            "x_front_analytic": 83.2
+          },
+          "g": 0.0002,
+          "grid": {
+            "nx": 128,
+            "ny": 64,
+            "nz": 4
+          },
+          "h0": 32,
+          "inventory_drift_max_abs": 0.0006880268529265594,
+          "mass_drift": {
+            "max_abs": 0.026335876020258844,
+            "n_samples": 321
+          },
+          "n_steps": 320,
+          "nan_step": null,
+          "nu": 0.017066666666666667,
+          "profile": {
+            "n_cells": 77,
+            "rel_l1": 0.2900210653108379,
+            "rel_l2": 0.2644742089021935
+          },
+          "profile_checkpoints": {
+            "0.4": {
+              "n_cells": 39,
+              "rel_l1": 0.4279451412187296,
+              "rel_l2": 0.4028056251799331
+            },
+            "0.6": {
+              "n_cells": 57,
+              "rel_l1": 0.358797742594162,
+              "rel_l2": 0.3340972852688219
+            },
+            "0.8": {
+              "n_cells": 77,
+              "rel_l1": 0.2900210653108379,
+              "rel_l2": 0.2644742089021935
+            }
+          },
+          "reynolds": 150.0,
+          "spanwise_spread": 0.010977434427927812,
+          "t_star_end": 0.8,
+          "tau": 0.5512
+        }
+      ],
+      "solver": "tensorlbm.free_surface_lbm (K\u00f6rner D3Q19, free-slip slab)"
+    },
+    "swe2d": {
+      "convergence": {
+        "errors": [
+          0.011666866151130034,
+          0.006070284493658592,
+          0.0031156023311971624
+        ],
+        "grids": [
+          200,
+          400,
+          800
+        ],
+        "order_mean": 0.9524170407644545,
+        "orders": [
+          0.9425810518849731,
+          0.9622530296439361
+        ],
+        "refinement_ratios": [
+          2.0,
+          2.0
+        ],
+        "spacings": [
+          0.02,
+          0.01,
+          0.005
+        ]
+      },
+      "route": "swe2d",
+      "runs": [
+        {
+          "cfl": 0.4,
+          "front": {
+            "rel_error": 0.14375,
+            "x_front": 2.37,
+            "x_front_analytic": 2.6
+          },
+          "grid": {
+            "dx": 0.02,
+            "nx": 200,
+            "ny": 8
+          },
+          "mass_drift": {
+            "final": -1.0699600008767796e-06,
+            "max_abs": 1.0699600008767796e-06,
+            "n_samples": 172
+          },
+          "n_steps": 171,
+          "order_scheme": 2,
+          "profile": {
+            "n_cells": 120,
+            "rel_l1": 0.011666866151130034,
+            "rel_l2": 0.011638621702106935
+          },
+          "runtime_s": 0.59,
+          "solver_mass_drift": 1.0699600008767796e-06
+        },
+        {
+          "cfl": 0.4,
+          "front": {
+            "rel_error": 0.12812500000000004,
+            "x_front": 2.395,
+            "x_front_analytic": 2.6
+          },
+          "grid": {
+            "dx": 0.01,
+            "nx": 400,
+            "ny": 8
+          },
+          "mass_drift": {
+            "final": -1.097910233005539e-06,
+            "max_abs": 1.097910233005539e-06,
+            "n_samples": 358
+          },
+          "n_steps": 357,
+          "order_scheme": 2,
+          "profile": {
+            "n_cells": 240,
+            "rel_l1": 0.006070284493658592,
+            "rel_l2": 0.006398198576027983
+          },
+          "runtime_s": 1.87,
+          "solver_mass_drift": 1.097910233005539e-06
+        },
+        {
+          "cfl": 0.4,
+          "front": {
+            "rel_error": 0.10156250000000006,
+            "x_front": 2.4375,
+            "x_front_analytic": 2.6
+          },
+          "grid": {
+            "dx": 0.005,
+            "nx": 800,
+            "ny": 8
+          },
+          "mass_drift": {
+            "final": -1.126452163491276e-06,
+            "max_abs": 1.126452163491276e-06,
+            "n_samples": 738
+          },
+          "n_steps": 737,
+          "order_scheme": 2,
+          "profile": {
+            "n_cells": 480,
+            "rel_l1": 0.0031156023311971624,
+            "rel_l2": 0.0034590031595196856
+          },
+          "runtime_s": 5.58,
+          "solver_mass_drift": 1.126452163491276e-06
+        }
+      ],
+      "solver": "tensorlbm.shallow_water2d (MUSCL-Hancock + hydrostatic reconstruction)"
+    }
+  },
+  "t_star_end": 0.8,
+  "title": "2-D dam break: Ritter analytic anchor, mass audit, grid order",
+  "verdict": {
+    "fslbm_planar_slab": {
+      "P1_profile": {
+        "limit": 0.05,
+        "metric": "relative L1 depth-profile deviation from Ritter on the wet region",
+        "pass": false,
+        "value": 0.2900210653108379
+      },
+      "P2_front": {
+        "limit": 0.05,
+        "metric": "front position error relative to the Ritter front advance",
+        "pass": false,
+        "value": 0.716796875
+      },
+      "P3_mass": {
+        "limit": 0.001,
+        "metric": "max relative mass drift over the whole run",
+        "pass": false,
+        "value": 0.026335876020258844
+      },
+      "P4_order": {
+        "limit": 1.5,
+        "metric": "observed order p on the P1 metric over three grids",
+        "pass": false,
+        "value": -0.16497533907249154
+      },
+      "all_pass": false,
+      "finest": "32",
+      "grid_label": 32
+    },
+    "swe2d": {
+      "P1_profile": {
+        "limit": 0.05,
+        "metric": "relative L1 depth-profile deviation from Ritter on the wet region",
+        "pass": true,
+        "value": 0.0031156023311971624
+      },
+      "P2_front": {
+        "limit": 0.05,
+        "metric": "front position error relative to the Ritter front advance",
+        "pass": false,
+        "value": 0.10156250000000006
+      },
+      "P3_mass": {
+        "limit": 0.001,
+        "metric": "max relative mass drift over the whole run",
+        "pass": true,
+        "value": 1.126452163491276e-06
+      },
+      "P4_order": {
+        "limit": 1.5,
+        "metric": "observed order p on the P1 metric over three grids",
+        "pass": false,
+        "value": 0.9524170407644545
+      },
+      "all_pass": false,
+      "finest": "800",
+      "grid_label": 800
+    }
+  }
+}
