@@ -1,0 +1,57 @@
+{
+  "criterion": "total mass variation <= 0.1 %",
+  "runs": [
+    {
+      "run": "static_f0.50",
+      "mass_drift": 9.833869839396723e-05,
+      "mass_drift_max": 9.833869839396723e-05
+    },
+    {
+      "run": "static_f0.60",
+      "mass_drift": 9.983245077463508e-05,
+      "mass_drift_max": 9.983245077463508e-05
+    },
+    {
+      "run": "static_f0.70",
+      "mass_drift": 0.00010412698886905518,
+      "mass_drift_max": 0.00010412698886905518
+    },
+    {
+      "run": "static_f0.80",
+      "mass_drift": 0.00011383637934339624,
+      "mass_drift_max": 0.00011383637934339624
+    },
+    {
+      "run": "drive_gx4.0e-05",
+      "mass_drift": 0.00021068132535669563,
+      "mass_drift_max": 0.00021074356503922344
+    },
+    {
+      "run": "drive_gx8.0e-05",
+      "mass_drift": 0.00021248627615000262,
+      "mass_drift_max": 0.00021261075551505827
+    },
+    {
+      "run": "drive_gx1.6e-04",
+      "mass_drift": 0.0002142289872607818,
+      "mass_drift_max": 0.0002142912269433096
+    },
+    {
+      "run": "drive_gx3.0e-04",
+      "mass_drift": 0.00021622065710167227,
+      "mass_drift_max": 0.00021634513646672792
+    },
+    {
+      "run": "conv_48x96",
+      "mass_drift": 0.0001964367440876231,
+      "mass_drift_max": 0.0001964367440876231
+    },
+    {
+      "run": "conv_80x160",
+      "mass_drift": 0.00022463287661884533,
+      "mass_drift_max": 0.00022471650762279874
+    }
+  ],
+  "max_drift": 0.00022463287661884533,
+  "max_drift_running": 0.00022471650762279874
+}
