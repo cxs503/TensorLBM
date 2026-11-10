@@ -415,3 +415,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Marine engineering extensions including Wigley hull geometry, obstacle diagnostics, and wave boundary conditions.
 - Smagorinsky LES turbulence models and shared simulation utilities.
 - Unit and smoke tests covering core solvers, runners, and marine features.
+- **`tensorlbm.suspension_viscosity`** — effective-viscosity closure for
+  crushed-ice / ice-crystal suspensions (campaign node P46W3-N03): Einstein
+  (dilute), Batchelor (semi-dilute) and Krieger-Dougherty (concentrated)
+  closed forms, their analytic inverses and derivatives, the calibration
+  chain that extracts ``[eta]`` and ``phi_max`` from measured
+  ``(phi, eta_r)`` pairs (weighted regression, single-parameter
+  golden-section fit, divergence-exponent test), the audited conversion from
+  lattice-mask volume fraction to drag-equivalent hydrodynamic volume fraction,
+  and ``evaluate_acceptance()``, which turns the campaign criteria into a
+  machine verdict.  Calibrated and judged on the shipped LBM shear-cell and
+  drag artefacts in ``benchmarks/suspension/`` (see
+  ``docs/reports/P46W3-N03_suspension_viscosity.md``); tests in
+  ``tests/test_suspension_viscosity.py``.
