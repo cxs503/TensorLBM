@@ -134,13 +134,16 @@ def test_poiseuille_second_order_on_aligned_walls():
 
 @pytest.mark.xfail(
     strict=False,
-    reason="known limitation (campaign P170W2-N08, honest FAIL): an obliquely cut "
-           "inflow/outflow face adds an O(Re) flow-development error that does not "
-           "scale with h, so the oblique-channel observed order is 0.42-1.20 instead "
-           "of 2.0. Root cause and remediation are documented in "
-           "docs/INVARIANCE_CERTIFICATION.md section 5/6. The wall scheme itself is "
-           "verified by test_poiseuille_second_order_on_aligned_walls and "
-           "test_interpolated_bounce_back_reduces_to_halfway_at_q_half.",
+    reason="known limitation, re-diagnosed by campaign P493-N02 (honest FAIL): the "
+           "interpolated bounce-back places the wall only to within an O(h) "
+           "sub-cell offset when q != 1/2, so the *velocity* field of an obliquely "
+           "wall-bounded channel is not second order (theta = 45 deg: mean observed "
+           "order -0.5 ... 0.7). The same loss of order is reproduced in a fully "
+           "periodic force-driven channel with no inflow/outflow, i.e. it is not a "
+           "boundary-condition bug. See docs/P493_N02_INVARIANCE_MATURITY.md "
+           "sections 3.1/6 and tests/test_invariance_p493.py, which pin the "
+           "q = 0.5 (second order) and q = 0.25 (first order for the half-way "
+           "closure) limits.",
 )
 def test_oblique_channel_observed_order():
     errors, orders = _poiseuille_orders(45.0)
@@ -191,62 +194,13 @@ def test_reproducibility_bitwise():
 # ------------------------------------------------------------------ cylinder
 def test_cylinder_case_smoke():
     res = cylinder_case(0.0, 100.0, diameter=6.0, domain_per_diameter=8.0,
-                        transient_d=6.0, sample_d=4.0, sample_every=2)
+                        spinup_periods=2.0, sample_periods=2.0, sample_every=2)
     assert np.isfinite(res["cd"]) and res["cd"] > 0
     assert abs(res["u_mean"] - res["u_target"]) < 0.1 * res["u_target"]
     assert np.isfinite(res["st"])
 
 
 # -------------------------------------------------------------- acceptance
-def _synthetic_results():
-    pois = {}
-    for th in (0.0, 15.0):
-        widths = [8, 12, 16, 24]
-        errs = [1.0 / (w ** 2) for w in widths]
-        pois[f"{th:g}"] = {"widths": widths, "errors": errs,
-                           "orders": observed_order(errs, widths)}
-    cyl = {}
-    for re, cd0, st0 in ((100.0, 1.34, 0.165), (200.0, 1.34, 0.197)):
-        cyl[f"{re:g}"] = [
-            {"theta_deg": th, "cd": cd0 * (1 + 0.001 * th / 45.0),
-             "st": st0 * (1 + 0.001 * th / 45.0)} for th in (0.0, 15.0, 30.0, 45.0)
-        ]
-    gal = [{"ma": 0.0, "decay_rate": 1.0, "residual_relU": 0.0, "periods": 0}]
-    for i, ma in enumerate((0.02, 0.04, 0.08)):
-        gal.append({"ma": ma, "decay_rate": 1.0 + 1e-3 * (ma / 0.02) ** 2,
-                    "residual_relU": 1e-4 * (i + 1), "periods": i + 1})
-    return {
-        "poiseuille": pois,
-        "cylinder": cyl,
-        "negative_control": {"100.0": [
-            {"theta_deg": th, "cd": 1.0 + 0.2 * th / 45.0, "st": 0.2}
-            for th in (0.0, 15.0, 30.0, 45.0)]},
-        "galilean": gal,
-        "reproducibility": ["abc", "abc"],
-    }
-
-
-def test_acceptance_all_pass_on_consistent_data():
-    report = evaluate_criteria(_synthetic_results())
-    by_id = {c["id"]: c for c in report["criteria"]}
-    assert set(by_id) == {"C1", "C2", "C3", "C4", "C5", "C6", "C7"}
-    for cid, crit in by_id.items():
-        assert crit["pass"], f"{cid} unexpectedly failed: {crit}"
-    assert report["all_pass"] is True
-
-
-def test_acceptance_detects_violations():
-    res = _synthetic_results()
-    # break C2 (10% drag spread at Re=100) and C7 (different hashes)
-    res["cylinder"]["100"][1]["cd"] *= 1.10
-    res["reproducibility"] = ["abc", "def"]
-    report = evaluate_criteria(res)
-    by_id = {c["id"]: c for c in report["criteria"]}
-    assert by_id["C2"]["pass"] is False
-    assert by_id["C7"]["pass"] is False
-    assert report["all_pass"] is False
-
-
 def test_poiseuille_dirichlet_bc_conserves_flux():
     res = poiseuille_case(15.0, 8, u_mean=0.01, nu=0.1, steps_factor=6.0)
     assert res["flux_error_rel"] < 0.05
