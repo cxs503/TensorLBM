@@ -14,6 +14,7 @@ from numbers import Real
 from typing import Literal, Sequence
 
 _WITHHELD = "WITHHELD_NO_PHYSICAL_ACCURACY_EVIDENCE"
+_OUTSIDE_ENVELOPE = "WITHHELD_OUTSIDE_STABILITY_ENVELOPE"
 _RECOMMENDED = "RECOMMENDED_FROM_PHYSICAL_ACCURACY_EVIDENCE"
 _SHA256_LENGTH = 64
 
@@ -120,6 +121,7 @@ class AccuracyRecommendation:
     status: Literal[
         "RECOMMENDED_FROM_PHYSICAL_ACCURACY_EVIDENCE",
         "WITHHELD_NO_PHYSICAL_ACCURACY_EVIDENCE",
+        "WITHHELD_OUTSIDE_STABILITY_ENVELOPE",
     ]
     recommended_candidate_id: str | None
     missing_requirements: tuple[str, ...]
@@ -242,6 +244,50 @@ def recommend_by_physical_accuracy(
     return AccuracyRecommendation(_RECOMMENDED, best.candidate_id, (), (), candidate_ids)
 
 
+def recommend_with_stability_envelope(
+    evidence_data: Sequence[PhysicalAccuracyEvidence] | object,
+    envelope: dict,
+    tau: float,
+    ma: float,
+    *,
+    tier: str = "bgk",
+) -> AccuracyRecommendation:
+    """Recommend only when the operating point is inside the stability envelope.
+
+    The physical-accuracy ranking is unchanged: this is a *gate* in front of it.
+    An operating point ``(tau, Ma)`` that the linear-stability envelope
+    (:mod:`tensorlbm.stability.envelope`) marks as outside - or merely adjacent
+    to an unstable cell - is fail-closed, because a numerically unstable run has
+    no physical accuracy to rank, however small its declared error bound is.
+
+    Parameters
+    ----------
+    evidence_data:
+        The physical-accuracy evidence passed through to
+        :func:`recommend_by_physical_accuracy` when the gate admits the point.
+    envelope:
+        A ``tensorlbm.stability.envelope/v1`` mapping (see
+        :func:`tensorlbm.stability.envelope.build_envelope`).
+    tau, ma:
+        The operating point of the run that produced/uses the evidence.
+    tier:
+        Collision-operator tier the evidence belongs to (``bgk``/``mrt_a``/
+        ``mrt_b``, optionally with an explicit ``:variant`` suffix).
+    """
+    from .stability.envelope import point_in_envelope
+
+    gate = point_in_envelope(envelope, float(tau), float(ma), tier=tier)
+    if not gate.get("inside"):
+        return AccuracyRecommendation(
+            _OUTSIDE_ENVELOPE,  # type: ignore[arg-type]
+            None,
+            ("operating point inside the declared stability envelope",),
+            (str(gate.get("reason", "OUTSIDE_STABILITY_ENVELOPE")),),
+            (),
+        )
+    return recommend_by_physical_accuracy(evidence_data)
+
+
 __all__ = [
     "AccuracyRecommendation",
     "ConvergenceEvidence",
@@ -249,4 +295,5 @@ __all__ = [
     "KPIDefinition",
     "PhysicalAccuracyEvidence",
     "recommend_by_physical_accuracy",
+    "recommend_with_stability_envelope",
 ]
