@@ -70,3 +70,42 @@ quantisation of the peak abscissa plus an unclosed near-wall momentum budget),
 platform's ITTC-78 chain, with `C_R` borrowed).  The `Re_tau = 590` tier of the
 channel solver still diverges to NaN at `nu = 8.1e-4`; that boundary is recorded,
 not hidden.
+
+## Mission m8872 additions (closure tier + reference integrity + offline chain)
+
+| script | what it runs | artifact |
+|---|---|---|
+| `high_re.py` | the wall-model closure solved over the whole channel at `Re_tau = 180 ... 1e4`: `u+`, `-<u'v'>+`, production, log-layer fit vs the closure's own `(kappa, B)`, DNS validation, reference-integrity gate | `high_re.json`, `fig_high_re_*.png`, `fig_reference_gate.png` |
+| `stability_map.py` | maps the `(Re_tau, Cs)` range in which the D3Q19 wall-modelled channel converges (`--summarise` merges the cases) | `stability_*.json`, `stability_map.json` |
+| `m8872_report.py` | renders `docs/wall_model_les_m8872_report.md` from the artifacts and optionally publishes it (`--publish`) | report |
+
+Three defects were found and fixed in this pass:
+
+1. `budget.load_dns_channel_profile` hard-coded `Re_tau = 180`; the shipped tables
+   stop at the last cell centre (`y+ = 178.12`), so the value cannot be inferred
+   from the table end. The loader now takes the case identification from
+   `DNS_REFERENCES` and reports the table end separately.
+2. `apriori.py` reported the *boundary* maximum of a profile truncated at the
+   last DNS sample (`1.009` at `y+ = 178.1`) as the modelled Reynolds-stress
+   peak. The closure is now solved over the whole channel half-height, where the
+   peak is an interior maximum (`y+ = 29.28`, 8.4 % from the DNS `y+ = 31.98`).
+3. `apriori.py` reported `max(-uv_plus)` as the DNS peak value, i.e. the negative
+   of the tabulated correlation; fixed to `max(uv_plus)` (0.724).
+
+Honest verdicts of the m8872 pass: (a) FAIL (3.93 % best predictive limb vs the
+3 % threshold; the 1.72 % of the m7797 record was the *anchored shape* limb and
+is not a profile prediction), (b) FAIL (8.43 %, and the modelled peak abscissa
+drifts with `Re_tau` under an eddy-viscosity closure while the DNS one does not),
+(c) PASS (3.63 %), (d) `WITHHELD` versus a measurement -- no KVLCC2 towing-tank
+`C_T` exists in this environment and the ship API was unreachable -- while the
+offline friction limb passes at 4.44 % against the ITTC-1957 line.
+
+The wall-modelled channel itself does **not** reach the criterion band: it
+diverges for `Re_tau >= 590` at `Cs = 0.05 / 0.1` (see `stability_map.json`), so
+the resolved `y+ = 30...300` measurement is `WITHHELD` and the closure tier
+carries criterion (a).
+
+Reference integrity: `benchmarks/in99_n03_channel_turb/dns_ref/mkm395.csv` is
+**rejected** by `reference_gate` (non-monotone `u+`, centreline `u+ = 15.96` vs a
+log-law estimate of 19.78, stored correlation reaching 6.0). It is not a
+`Re_tau = 395` channel profile and must not be used as a reference.
