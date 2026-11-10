@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`tensorlbm.sloshing_forced`** — forced-sway LNG-tank sloshing verification
+  surface (campaign node P88W1-N01).  A partially filled rectangular tank
+  (L x B x H = 1.0 x 0.5 x 0.4 m, 50 % fill, h = 0.2 m) driven by harmonic sway
+  `X(t) = X0 sin(omega t)` over `f/f1 = 0.6 ... 1.75`, on top of the audited
+  Körner free-surface solver (`free_surface_lbm_2d` / `sloshing_resonance`,
+  both untouched).  The package adds (i) the **linear forced-sway transfer
+  function** derived by projecting the dynamic free-surface condition on the
+  Neumann modes — horizontal translation excites odd modes only, which the
+  campaign also *measures* — including its exact static limit (rigid-body tilt
+  recovered to 2 %), (ii) a finite-time ODE reference that carries the start-up
+  transient of a short forced run, (iii) harmonic (first-harmonic) wall-pressure
+  and wall run-up metrics against the closed-form anchors (linear Faltinsen wall
+  pressure, Wagner `0.5 rho V^2`, bore reflection, hydrostatic run-up) with an
+  out-of-band noise-floor / SNR diagnostic, and (iv) a case-sharded campaign
+  driver with re-analysis from the saved time series.  Campaign results
+  (15 cases, `artifacts/p88w1`): f1 vs Abramson **-0.75 %** (free decay) and
+  **+0.32 %** (forced-sweep maximum), f2 **-3.81 %**, wall pressure vs the linear
+  anchor **+15.3 % at H/32** but **+4.8 % at H/64**, pressure grid convergence
+  **17.2 % (honest FAIL, gate 3 %)** while the free-surface amplitude converges
+  to 0.3 %, mode-2 content **7.8 %** of the resonant mode-1 amplitude, liquid
+  ledger within **0.96 %**.  21 pytest cases (`tests/test_sloshing_forced_p88w1.py`).
+  Experimental (ITTC) sloshing data = WITHHELD: no digitised model-test series
+  exists in the repository and none was fabricated.  Report:
+  `docs/P88W1_N01_sloshing_forced.md`.
 - **`tensorlbm.phase_change.stefan_two_phase` / `stefan_sweep`** — two-phase
   (superheated-melt) planar Stefan similarity solution and the Stefan-number
   sweep that verifies the enthalpy thermal LBM against it (campaign node
