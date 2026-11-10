@@ -89,7 +89,7 @@ report the raw log-log slope, because a non-zero ``err_0`` biases it.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence
 
 import numpy as np
 
@@ -651,16 +651,41 @@ def run_cylinder(setup: CylinderSetup) -> dict[str, Any]:
         if steps >= transient and len(cl_hist) >= 200:
             cl = np.asarray(cl_hist)
             period = _shedding_period_from_zeros(cl, setup.sample_interval * dt)
-            if period > 0 and (steps - transient) > setup.min_periods * period:
+            # Guard against stopping on the *pre-shedding* transient: while the
+            # wake is still symmetric the lift history is numerical noise at
+            # 1e-6..1e-3 and the zero-crossing estimator returns a spurious,
+            # very short period, so `min_periods * period` is satisfied after a
+            # few hundred steps and the run stops with St ~ 4.6 (measured).  A
+            # saturated Re=100 shedding signal has |C_L| amplitude ~0.3-0.7, so
+            # the 0.1 floor (measured: breaking at 1e-2 stops the run while the
+            # wake is still growing exponentially and yields St = 0.35 instead of
+            # 0.165) cannot delay a genuine detection by more than a fraction of
+            # one period.
+            cl_amplitude = 0.5 * float(np.max(cl) - np.min(cl))
+            if (
+                period > 0
+                and cl_amplitude > 0.1
+                and (steps - transient) > setup.min_periods * period
+            ):
                 break
     rho, ux, uy = macroscopic(f)
     cl = np.asarray(cl_hist)
     cd = np.asarray(cd_hist)
     t = np.asarray(t_hist)
     dt_s = setup.sample_interval * dt
-    f_fft, _ = _dominant_frequency(cl, dt_s) if cl.size > 8 else (0.0, 0.0)
+    # The period used for the reported St is re-estimated on the *second half* of
+    # the record: the first half still contains the growth phase, whose
+    # zero-crossings are shorter than the saturated period.
+    half = cl.size // 2
+    cl_late = cl[half:] if cl.size > 16 else cl
+    period_late = (
+        _shedding_period_from_zeros(cl_late, dt_s) if cl_late.size > 8 else 0.0
+    )
+    if period_late <= 0:
+        period_late = period
+    f_fft, _ = _dominant_frequency(cl_late, dt_s) if cl_late.size > 8 else (0.0, 0.0)
     period_fft = 1.0 / f_fft if f_fft > 0 else 0.0
-    st_zero = (d / u_in) / period if period > 0 else float("nan")
+    st_zero = (d / u_in) / period_late if period_late > 0 else float("nan")
     st_fft = f_fft * d / u_in if f_fft > 0 else float("nan")
     field_snapshot = {
         "rho": rho.tolist(),
@@ -685,13 +710,18 @@ def run_cylinder(setup: CylinderSetup) -> dict[str, Any]:
                           and (steps - transient) > setup.min_periods * period),
         "st": st_zero,
         "st_fft": st_fft,
-        "strouhal_period_steps": period,
+        "strouhal_period_steps": period_late,
+        "strouhal_period_steps_full_record": period,
         "strouhal_period_fft": period_fft,
         "cd_mean": float(np.mean(cd)) if cd.size else float("nan"),
         "cd_rms": float(np.std(cd)) if cd.size else float("nan"),
         "cl_mean": float(np.mean(cl)) if cl.size else float("nan"),
         "cl_rms": float(np.std(cl)) if cl.size else float("nan"),
         "cl_amplitude": float(0.5 * (np.max(cl) - np.min(cl))) if cl.size else float("nan"),
+        # a Re=100 cylinder saturates at |C_L| amplitude ~0.3-0.7; anything much
+        # below that means the shedding has not developed and the reported St is
+        # a property of the growth phase, not of the vortex street
+        "saturated": bool(cl.size > 8 and 0.5 * float(np.max(cl) - np.min(cl)) >= 0.15),
         # ``drho_over_rho0`` is the max over the *whole* history, so it is
         # dominated by the start-up (plug-flow) transient; ``drho_final`` is the
         # steady-state value used by the density-order criterion.
@@ -803,8 +833,14 @@ def run_poiseuille_mach_sweep(
     nx: int = 32,
     collision: str = "trt",
     max_steps: int = 60000,
+    runner: Callable[[PoiseuilleSetup], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Ma-sweep of the plane-Poiseuille error and density fluctuation amplitude."""
+    """Ma-sweep of the plane-Poiseuille error and density fluctuation amplitude.
+
+    ``runner`` lets a campaign driver substitute a parallel/out-of-process
+    evaluation of :func:`run_poiseuille` (same signature, same record).
+    """
+    run_one = runner or run_poiseuille
     runs = []
     for ma in machs:
         ma = float(ma)
@@ -816,7 +852,7 @@ def run_poiseuille_mach_sweep(
         setup = PoiseuilleSetup(
             mach=ma, re=re_i, ny=ny, nx=nx, collision=collision, max_steps=max_steps
         )
-        runs.append(run_poiseuille(setup))
+        runs.append(run_one(setup))
     errs = [r["err_inf"] for r in runs]
     drhos = [r["drho_over_rho0"] for r in runs]
     mas = [r["mach_measured"] for r in runs]
@@ -871,6 +907,8 @@ def run_cylinder_mach_sweep(
     transient_tu: float = 12.0,
     max_tu: float = 90.0,
     min_periods: int = 5,
+    bc: str = "zouhe",
+    runner: Callable[[CylinderSetup], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Re=100 cylinder ``St(Ma)``, ``C_D(Ma)``, ``C_L(Ma)`` sweep.
 
@@ -878,6 +916,7 @@ def run_cylinder_mach_sweep(
     the best available surrogate for ``Ma -> 0`` (documented as a limitation:
     a Richardson-type extrapolation in ``Ma`` is reported in addition).
     """
+    run_one = runner or run_cylinder
     runs = []
     for ma in machs:
         setup = CylinderSetup(
@@ -887,11 +926,12 @@ def run_cylinder_mach_sweep(
             ny=ny,
             diameter=diameter,
             collision=collision,
+            bc=bc,
             transient_tu=transient_tu,
             max_tu=max_tu,
             min_periods=min_periods,
         )
-        runs.append(run_cylinder(setup))
+        runs.append(run_one(setup))
     mas = np.array([r["mach_measured"] for r in runs])
     st = np.array([r["st"] for r in runs])
     cd = np.array([r["cd_mean"] for r in runs])
@@ -912,6 +952,7 @@ def run_cylinder_mach_sweep(
         "re": re,
         "grid": {"nx": nx, "ny": ny, "diameter": diameter},
         "collision": collision,
+        "bc": bc,
         "runs": runs,
         "machs": mas.tolist(),
         "st": st.tolist(),
@@ -1159,6 +1200,8 @@ def run_channel_pressure_driven(setup: PressureChannelSetup) -> dict[str, Any]:
         "drho_over_rho0": float(np.max(np.abs(rho - 1.0))),
         "drho_analytic": float(3.0 * setup.accel * (nx - 1)),
         "drho_osc_stationary": osc,
+        "rho_x": rho[1:-1, :].mean(axis=0).tolist(),
+        "p_lbm_x": (CS2 * rho[1:-1, :].mean(axis=0)).tolist(),
         "drho_peak": float(max(rho_max_series)) if rho_max_series else float("nan"),
         "u_max_series": umax_series,
         "y": y.tolist(),
@@ -1178,14 +1221,16 @@ def run_channel_pressure_driven_mach_sweep(
     hold_viscosity: bool = False,
     nu_target: float = 0.05,
     steps: int = 0,
+    runner: Callable[[PressureChannelSetup], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Ma-sweep of the pressure-driven channel profile / density error."""
+    run_one = runner or run_channel_pressure_driven
     runs = []
     for ma in machs:
         ma = float(ma)
         re_i = (ma * CS * float(ny - 1) / nu_target) if hold_viscosity else re
         setup = PressureChannelSetup(mach=ma, re=re_i, ny=ny, nx=nx, steps=steps)
-        runs.append(run_channel_pressure_driven(setup))
+        runs.append(run_one(setup))
     mas = [r["mach_measured"] for r in runs]
     errs = [r["err_inf"] for r in runs]
     drhos = [r["drho_over_rho0"] for r in runs]
@@ -1499,6 +1544,7 @@ def _acoustic_criterion(acoustic: dict[str, Any] | None) -> dict[str, Any]:
         "standard": acoustic.get("standard"),
         "filtered": acoustic.get("filtered"),
         "suppression_factor": acoustic.get("suppression_factor"),
+        "suppression_factor_whole_record": acoustic.get("suppression_factor_whole_record"),
         "pass_acoustic_band": acoustic.get("pass_acoustic_band"),
         "pass_literal_total_drho": acoustic.get("pass_literal_total_drho"),
         "profile_change_rel": acoustic.get("profile_change_rel"),
