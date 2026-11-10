@@ -1,0 +1,208 @@
+{
+  "benchmark": "dam_break_3d",
+  "checkpoints_t_star": [
+    0.4,
+    0.8
+  ],
+  "convergence": {
+    "errors": [
+      0.2530280155508239,
+      0.2608996282687734,
+      0.2622212751184671
+    ],
+    "grids": [
+      12,
+      16,
+      20
+    ],
+    "order_mean": -0.06456767643621422,
+    "orders": [
+      -0.10649099917003735,
+      -0.022644353702391092
+    ],
+    "refinement_ratios": [
+      1.3333333333333333,
+      1.25
+    ],
+    "spacings": [
+      0.08333333333333333,
+      0.0625,
+      0.05
+    ]
+  },
+  "figures": [
+    "benchmarks/dam_break/3d/figures/3d_profiles.png",
+    "benchmarks/dam_break/3d/figures/3d_surface.png",
+    "benchmarks/dam_break/3d/figures/3d_surface_early.png",
+    "benchmarks/dam_break/3d/figures/3d_convergence.png"
+  ],
+  "gates": {
+    "convergence_order_min": 1.5,
+    "front_rel_error_max": 0.05,
+    "mass_drift_max": 0.001,
+    "profile_rel_error_max": 0.05
+  },
+  "geometry": "column a x a x h0 (a = h0) in a 4h0 x 2h0 x h0 box, no-slip walls",
+  "nondimensionalisation": "lattice units; c0 = sqrt(g h0) = 0.08, t* = t sqrt(g/h0); the Ritter profile is a reference, not a certified anchor",
+  "runs": [
+    {
+      "c0": 0.08,
+      "front": {
+        "rel_error": 0.765625,
+        "x_front": 16.5,
+        "x_front_analytic": 31.2
+      },
+      "g": 0.0005333333333333334,
+      "grid": {
+        "nx": 48,
+        "ny": 24,
+        "nz": 12
+      },
+      "h0": 12,
+      "inventory_drift_max_abs": 0.01031990069597727,
+      "mass_drift": {
+        "final": 0.0009193105145919422,
+        "max_abs": 0.07833626907390669,
+        "n_samples": 121
+      },
+      "n_steps": 120,
+      "nan_step": null,
+      "nu": 0.006666666666666672,
+      "profile": {
+        "n_cells": 29,
+        "rel_l1": 0.2530280155508239,
+        "rel_l2": 0.23968031826240216
+      },
+      "profile_checkpoints": {
+        "0.4": {
+          "n_cells": 15,
+          "rel_l1": 0.32709867063880455,
+          "rel_l2": 0.29438517497675154
+        },
+        "0.8": {
+          "n_cells": 29,
+          "rel_l1": 0.2530280155508239,
+          "rel_l2": 0.23968031826240216
+        }
+      },
+      "reynolds": 143.9999999999999,
+      "tau": 0.52
+    },
+    {
+      "c0": 0.08,
+      "front": {
+        "rel_error": 0.70703125,
+        "x_front": 23.5,
+        "x_front_analytic": 41.6
+      },
+      "g": 0.0004,
+      "grid": {
+        "nx": 64,
+        "ny": 32,
+        "nz": 16
+      },
+      "h0": 16,
+      "inventory_drift_max_abs": 0.0076859532548046025,
+      "mass_drift": {
+        "final": -0.003731418185763889,
+        "max_abs": 0.058582017686631946,
+        "n_samples": 161
+      },
+      "n_steps": 160,
+      "nan_step": null,
+      "nu": 0.006666666666666672,
+      "profile": {
+        "n_cells": 39,
+        "rel_l1": 0.2608996282687734,
+        "rel_l2": 0.23716592281858506
+      },
+      "profile_checkpoints": {
+        "0.4": {
+          "n_cells": 19,
+          "rel_l1": 0.38035273007198994,
+          "rel_l2": 0.34657347454399845
+        },
+        "0.8": {
+          "n_cells": 39,
+          "rel_l1": 0.2608996282687734,
+          "rel_l2": 0.23716592281858506
+        }
+      },
+      "reynolds": 191.99999999999983,
+      "tau": 0.52
+    },
+    {
+      "c0": 0.08,
+      "front": {
+        "rel_error": 0.734375,
+        "x_front": 28.5,
+        "x_front_analytic": 52.0
+      },
+      "g": 0.00032,
+      "grid": {
+        "nx": 80,
+        "ny": 40,
+        "nz": 20
+      },
+      "h0": 20,
+      "inventory_drift_max_abs": 0.005185925246580324,
+      "mass_drift": {
+        "final": -0.004483666248268698,
+        "max_abs": 0.04676895775623269,
+        "n_samples": 201
+      },
+      "n_steps": 200,
+      "nan_step": null,
+      "nu": 0.006666666666666672,
+      "profile": {
+        "n_cells": 48,
+        "rel_l1": 0.2622212751184671,
+        "rel_l2": 0.2457613310448039
+      },
+      "profile_checkpoints": {
+        "0.4": {
+          "n_cells": 24,
+          "rel_l1": 0.3935028520916215,
+          "rel_l2": 0.3640604306103272
+        },
+        "0.8": {
+          "n_cells": 48,
+          "rel_l1": 0.2622212751184671,
+          "rel_l2": 0.2457613310448039
+        }
+      },
+      "reynolds": 239.9999999999998,
+      "tau": 0.52
+    }
+  ],
+  "t_star_end": 0.8,
+  "title": "3-D square-column dam break (K\u00f6rner free-surface LBM): mass audit, Ritter reference profile, grid order",
+  "verdict": {
+    "P1_profile": {
+      "limit": 0.05,
+      "metric": "relative L1 depth-profile deviation from Ritter (reference, not anchor)",
+      "pass": false,
+      "value": 0.2622212751184671
+    },
+    "P2_front": {
+      "limit": 0.05,
+      "metric": "front position error relative to the Ritter front advance",
+      "pass": false,
+      "value": 0.734375
+    },
+    "P3_mass": {
+      "limit": 0.001,
+      "metric": "max relative mass drift over the whole run",
+      "pass": false,
+      "value": 0.04676895775623269
+    },
+    "P4_order": {
+      "limit": 1.5,
+      "metric": "observed order p on the P1 metric over three grids",
+      "pass": false,
+      "value": -0.06456767643621422
+    },
+    "all_pass": false,
+    "grid_label": 20
+  }
+}
