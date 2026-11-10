@@ -31,6 +31,8 @@ from .rheology import (
     apparent_viscosity_carreau_yasuda,
     apparent_viscosity_power_law,
     poiseuille_power_law_profile,
+    poiseuille_carreau_yasuda_profile,
+    solve_body_force_for_target_umax_cy,
 )
 
 
@@ -57,6 +59,13 @@ class PipeConfig:
     lbm_steps_per_picard: int = 200
     tau_min: float = 0.501
     tau_max: float = 2.0
+    # Steady-state controls (verification protocol)
+    flow_tol: float = 1e-7          # max|du|/u_ref per Picard block
+    wall_offset: float = 0.0        # effective wall location, calibrated on the
+                                    # Newtonian case (see docs/non_newtonian_benchmarks_n07.md)
+    u_init_amplitude: float = 0.0   # 0 = start from rest
+    u_init_shape: str = "parabolic"  # "parabolic" | "flat"
+    shear_rate_floor: float = 1e-8   # regularisation of the power law at gdot->0
     device: str = "cpu"
 
 
@@ -113,11 +122,15 @@ class PipeNonNewtonian:
             G = K * (U_target * (n+1)/n / H**((n+1)/n))**n
             self._body_force = G
         else:
-            # Carreau-Yasuda: use nu_0 for initial estimate
-            nu_ref = cfg.nu_0
-            G = 8.0 * nu_ref * U_target / (4.0 * H * H)  # Newtonian estimate
-            self._body_force = G
-            self._consistency_K = nu_ref
+            # Carreau-Yasuda: pick G so that the *exact* (quadrature) solution
+            # has centreline velocity u_max_target.  This makes the driving
+            # force and the reference profile mutually consistent by
+            # construction (rho = 1, so G is a kinematic body force).
+            self._consistency_K = cfg.nu_0
+            self._body_force = solve_body_force_for_target_umax_cy(
+                H, U_target, cfg.nu_0, cfg.nu_inf, cfg.lambda_cy,
+                n, cfg.yasuda_a,
+            )
 
     def _initialize(self):
         """Initialize distribution functions."""
@@ -142,6 +155,20 @@ class PipeNonNewtonian:
         self.ux = ux
         self.uy = uy
         self.shear_rate = torch.zeros((ny, nx), dtype=self.dtype, device=self.device)
+
+        # Optional generic initial guess (accelerates the diffusive approach to
+        # steady state; the converged solution is independent of it -- the
+        # verification protocol re-runs from a *different* initial state).
+        amp = float(self.cfg.u_init_amplitude)
+        if amp > 0.0:
+            y = torch.linspace(-self.H, self.H, ny, dtype=self.dtype, device=self.device)
+            if self.cfg.u_init_shape == "flat":
+                prof = torch.full_like(y, amp)
+            else:
+                prof = amp * torch.clamp(1.0 - (y / self.H) ** 2, min=0.0)
+            ux = prof.unsqueeze(1).repeat(1, nx)
+            self.f = self._equilibrium(torch.ones_like(ux), ux, torch.zeros_like(ux))
+            self.ux = ux
 
     def _equilibrium(self, rho, ux, uy):
         cx = self._c[:, 0].reshape(9, 1, 1)
@@ -173,38 +200,41 @@ class PipeNonNewtonian:
         return out
 
     def _collide_with_force(self, f, tau, body_force):
-        """BGK collision with body force (Guo et al. 2002 forcing scheme)."""
-        rho, ux, uy = self._macroscopic(f)
-        feq = self._equilibrium(rho, ux, uy)
-        omega = (1.0 / tau).unsqueeze(0)
+        """BGK collision with Guo et al. (2002) body forcing.
 
-        # Guo forcing term
+        Discrete forcing scheme::
+
+            f_i(x+c_i) = f_i - (f_i - feq_i(rho,u*))/tau + (1 - 1/(2 tau)) S_i
+            S_i = w_i [ 3 (c_i - u*) . F + 9 (c_i . u*) (c_i . F) ]
+            u*  = u + F/(2 rho)
+
+        The previously used "velocity-shift" shortcut (feq(rho, u+F/(2rho))
+        with plain BGK, no source term) is *not* momentum consistent: it gains
+        only F/2 per step and settles on a steady state whose amplitude is
+        ~15% below the analytic Poiseuille value (measured H=32, tau=0.596).
+        Guo's scheme reproduces it to 0.13% (see docs/non_newtonian_benchmarks_n07.md).
+        """
+        rho, ux, uy = self._macroscopic(f)
+        rho_safe = torch.clamp(rho, min=1e-12)
         Fx = body_force
         Fy = 0.0
-        # Velocity correction
-        ux_corr = ux + 0.5 * Fx / rho
-        uy_corr = uy + 0.5 * Fy / rho
 
-        # Force term in the equilibrium
-        cu = self._c[:, 0].reshape(9, 1, 1) * Fx + self._c[:, 1].reshape(9, 1, 1) * Fy
-        u_corr_sq = ux_corr * ux_corr + uy_corr * uy_corr
-        cu_corr = self._c[:, 0].reshape(9, 1, 1) * ux_corr + self._c[:, 1].reshape(9, 1, 1) * uy_corr
-        feq_corr = self._w * rho.unsqueeze(0) * (
-            1.0 + 3.0 * cu_corr + 4.5 * cu_corr * cu_corr - 1.5 * u_corr_sq.unsqueeze(0)
-        )
+        # Force-corrected velocity entering the equilibrium and the source term
+        ux_s = ux + 0.5 * Fx / rho_safe
+        uy_s = uy + 0.5 * Fy / rho_safe
 
-        # Source term S_i = w_i * (3(c_i - u) + 9(c_i·u)c_i) · F
-        cu_F = self._c[:, 0].reshape(9, 1, 1) * Fx + self._c[:, 1].reshape(9, 1, 1) * Fy
-        cu_u = self._c[:, 0].reshape(9, 1, 1) * ux + self._c[:, 1].reshape(9, 1, 1) * uy
-        S = self._w * rho.unsqueeze(0) * (
-            3.0 * (cu_F - cu_u * (ux * Fx + uy * Fy).unsqueeze(0))
-            + 9.0 * cu_u * cu_F
-        )
-        # Simplified Guo forcing: S_i = (1 - 0.5/τ) w_i ρ [3(c_i-u)·F/ρ + 9(c_i·u)(c_i·F)/ρ]
-        # For simplicity, use the velocity-shift approach
-        f_eq_forced = self._equilibrium(rho, ux_corr, uy_corr)
+        feq = self._equilibrium(rho, ux_s, uy_s)
 
-        return f - omega * (f - f_eq_forced)
+        cx = self._c[:, 0].reshape(9, 1, 1).to(self.dtype)
+        cy = self._c[:, 1].reshape(9, 1, 1).to(self.dtype)
+        cu_F = cx * Fx + cy * Fy
+        cu_u = cx * ux_s + cy * uy_s
+        uF = ux_s * Fx + uy_s * Fy
+        S = self._w * (3.0 * (cu_F - uF) + 9.0 * cu_u * cu_F)
+
+        tau_s = tau.unsqueeze(0) if tau.dim() == 2 else tau
+        f = f - (f - feq) / tau_s + (1.0 - 0.5 / tau_s) * S
+        return f
 
     def _compute_viscosity(self, shear_rate):
         cfg = self.cfg
@@ -213,7 +243,7 @@ class PipeNonNewtonian:
                 shear_rate,
                 consistency_index=self._consistency_K,
                 flow_index=cfg.n_power,
-                shear_rate_floor=1e-12,
+                shear_rate_floor=cfg.shear_rate_floor,
             )
         else:
             return apparent_viscosity_carreau_yasuda(
@@ -223,20 +253,57 @@ class PipeNonNewtonian:
                 relaxation_time=cfg.lambda_cy,
                 flow_index=cfg.n_power,
                 yasuda_exponent=cfg.yasuda_a,
-                shear_rate_floor=1e-12,
+                shear_rate_floor=cfg.shear_rate_floor,
             )
 
-    def _apply_boundary_conditions(self, f_pre, f_post):
-        """Bounce-back on walls, periodic in x."""
-        f_new = f_post.clone()
+    def _apply_boundary_conditions(self, f_post_stream):
+        """Half-way bounce-back on the walls, periodic in x.
 
-        # Bounce-back on top and bottom walls
-        for i in range(9):
-            opp = int(self._opp[i].item())
-            f_new[i][self.wall_mask] = f_pre[opp][self.wall_mask]
+        The incoming populations at a wall node are reflected back using the
+        *post-streaming* field:  f_i(x_w) <- f_{opp(i)}(x_w).  After streaming,
+        f_{opp(i)}(x_w) holds the post-collision value of the first fluid node,
+        so this is the standard half-way bounce-back and places the no-slip
+        surface half a lattice unit inside the wall node (|y| = H - 1/2).
 
-        # Periodic in x (already handled by torch.roll)
-        return f_new
+        (The pre-collision field must NOT be used here: reflecting the wall
+        node's own previous state over-shoots the wall by a full lattice unit
+        and biases the Poiseuille amplitude by ~10%.)
+        """
+        f_new = f_post_stream.clone()
+        src = f_new[:, self.wall_mask].clone()
+        nh = self.nx
+
+        # bottom wall (row 0): fluid is above
+        for i in (2, 5, 6):
+            j = int(self._opp[i].item())
+            val = src[j, :nh]
+            f_new[i, 0, :] = val
+            f_new[j, 0, :] = val          # symmetric mirror => u_wall == 0 exactly
+        # top wall (row ny-1): fluid is below
+        for i in (4, 7, 8):
+            j = int(self._opp[i].item())
+            val = src[j, nh:2 * nh]
+            f_new[i, self.ny - 1, :] = val
+            f_new[j, self.ny - 1, :] = val
+        return self._zero_wall_velocity(f_new)
+
+    def _zero_wall_velocity(self, f: torch.Tensor) -> torch.Tensor:
+        """Enforce u = 0 exactly on wall nodes by symmetrising opposite pairs.
+
+        Half-way bounce-back already cancels the wall-normal momentum; the
+        tangential pair still carries a spurious O(1e-4 u_max) slip because it
+        streams inside the wall row.  Averaging each opposite pair removes it
+        without changing the momentum flux into the fluid.
+        """
+        wm = self.wall_mask
+        for i in range(1, 9):
+            j = int(self._opp[i].item())
+            if i < j:
+                mean = 0.5 * (f[i][wm] + f[j][wm])
+                f[i][wm] = mean
+                f[j][wm] = mean
+        return f
+
 
     def _update_tau_field(self):
         """Update τ field from current velocity."""
@@ -266,25 +333,41 @@ class PipeNonNewtonian:
         picard_history = []
         total_steps = 0
 
+        u_ref = max(float(self.cfg.u_max_target), 1e-12)
+        prev_ux = self.ux.clone()
+        flow_history: list[float] = []
+        rel_change = float("inf")
+        flow_res = float("inf")
+        picard_iter = -1
+
         for picard_iter in range(cfg.picard_max_iter):
-            for step in range(cfg.lbm_steps_per_picard):
-                f_pre = self.f.clone()
+            for _step in range(cfg.lbm_steps_per_picard):
                 f_post = self._collide_with_force(self.f, self.tau_field, self._body_force)
                 f_new = self._stream(f_post)
-                self.f = self._apply_boundary_conditions(f_pre, f_new)
+                self.f = self._apply_boundary_conditions(f_new)
                 total_steps += 1
 
             self.rho, self.ux, self.uy = self._macroscopic(self.f)
+            # Two independent residuals:
+            #   flow_res   : max|u_new - u_old| / u_ref over the Picard block
+            #                (has the *flow* reached steady state?)
+            #   rel_change : max|tau_new - tau_old| / tau_old
+            #                (has the *rheology* converged, i.e. Picard?)
+            flow_res = float((self.ux - prev_ux).abs().max().item() / u_ref)
+            prev_ux = self.ux.clone()
             rel_change = self._update_tau_field()
             picard_history.append(rel_change)
+            flow_history.append(flow_res)
 
-            if rel_change < cfg.picard_tol:
+            if rel_change < cfg.picard_tol and flow_res < cfg.flow_tol:
                 return {
                     "converged": True,
                     "picard_iterations": picard_iter + 1,
                     "total_lbm_steps": total_steps,
                     "final_residual": rel_change,
+                    "flow_residual": flow_res,
                     "picard_history": picard_history,
+                    "flow_history": flow_history,
                 }
 
             if total_steps >= cfg.max_steps:
@@ -294,8 +377,10 @@ class PipeNonNewtonian:
             "converged": False,
             "picard_iterations": picard_iter + 1,
             "total_lbm_steps": total_steps,
-            "final_residual": rel_change if picard_history else float('inf'),
+            "final_residual": rel_change,
+            "flow_residual": flow_res,
             "picard_history": picard_history,
+            "flow_history": flow_history,
         }
 
     def get_velocity_profile(self):
@@ -306,21 +391,34 @@ class PipeNonNewtonian:
         return y_coords, u_profile
 
     def analytical_profile(self, y: np.ndarray) -> np.ndarray:
-        """Compute analytical power-law Poiseuille profile."""
+        """Analytical power-law Poiseuille profile on the lattice nodes.
+
+        The no-slip surface of the half-way bounce-back lies half a lattice
+        unit inside the wall nodes, so the physical channel is
+        |y'| <= H_eff = H - wall_offset with y' = y * H_eff / H.
+        Comparing against H instead of H_eff would introduce a systematic
+        O(1/H) amplitude bias (~3% at H=32).
+        """
         cfg = self.cfg
         n = cfg.n_power
         H = self.H
         G = self._body_force
+        d = float(cfg.wall_offset)
+        H_eff = max(H - d, 1e-9)
+        y = np.asarray(y, dtype=float) * (H_eff / H)
 
         if cfg.rheology == "power_law":
             K = self._consistency_K
             y_tensor = torch.tensor(y, dtype=self.dtype)
-            u_anal = poiseuille_power_law_profile(y_tensor, H, G, K, n)
+            u_anal = poiseuille_power_law_profile(y_tensor, H_eff, G, K, n)
             return u_anal.numpy()
         else:
-            # Newtonian limit
-            nu = cfg.nu_0
-            return G / (2.0 * nu) * (H**2 - y**2)
+            # Exact Carreau-Yasuda channel solution by stress inversion +
+            # quadrature (semi-analytical; quadrature error < 1e-10).
+            return poiseuille_carreau_yasuda_profile(
+                torch.tensor(y, dtype=self.dtype), H_eff, G,
+                cfg.nu_0, cfg.nu_inf, cfg.lambda_cy, n, cfg.yasuda_a,
+            ).numpy()
 
 
 def run_pipe_benchmark(n_values=(0.5, 1.0, 1.5), ny=65, nx=129,
