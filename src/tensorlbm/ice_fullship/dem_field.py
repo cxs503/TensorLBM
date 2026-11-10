@@ -433,21 +433,22 @@ class DEMField:
             self.vy[over] *= sc
             self.vz[over] *= sc
 
-        # ---- energy bookkeeping (all rates in W) --------------------------
+        # ---- energy bookkeeping (accumulate energy in J, divide by time later) ----
         e = self.energy
+        dt = cfg.dt
         if self._hull_impulse is not None:
             idx, F, fn, ft, vt, tmag, nvec = self._hull_impulse
-            e["P_hull_dot_v"] += float(np.sum(F * np.stack([self.vx[idx], self.vy[idx], self.vz[idx]])))
-            e["P_hull_slip"] += float(np.sum(F[0] * (self.U - self.vx[idx])))
-            e["P_hull_perp"] += float(np.sum(F[1] * self.vy[idx] + F[2] * self.vz[idx]))
+            e["P_hull_dot_v"] += float(np.sum(F * np.stack([self.vx[idx], self.vy[idx], self.vz[idx]]))) * dt
+            e["P_hull_slip"] += float(np.sum(F[0] * (self.U - self.vx[idx]))) * dt
+            e["P_hull_perp"] += float(np.sum(F[1] * self.vy[idx] + F[2] * self.vz[idx])) * dt
             self.decomp_hist.append({
                 "Fn_x": float(np.sum(fn * nvec[0])),
                 "Ft_x": float(np.sum(-ft * vt[0] / np.where(tmag < 1e-9, 1e-9, tmag))),
                 "n_contact": int(idx.size),
                 "fn_total": float(np.sum(fn)),
             })
-        e["P_water"] += float(np.sum(fwx * self.vx + fwy * self.vy + fwz * self.vz))
-        e["D_contacts"] += diss_ii
+        e["P_water"] += float(np.sum(fwx * self.vx + fwy * self.vy + fwz * self.vz)) * dt
+        e["D_contacts"] += diss_ii * dt
         self._t_accum += cfg.dt
 
         # ---- lateral walls (confining channel) ---------------------------
