@@ -80,7 +80,10 @@ class ChannelWMLESConfig:
     wall_model: str = "equilibrium"
     wall_law: str = "spalding"
     wall_coupling: str = "assimilate"
+    wall_relaxation: float = 1.0
     wall_origin_offset: float = 1.0
+    exchange_offset: int = 1
+    diagnostics: bool = False
     exchange_averaging: str = "plane"
     perturbation_amplitude: float = 0.05
     seed: int = 0
@@ -100,8 +103,14 @@ class ChannelWMLESConfig:
         if self.wall_model not in {"equilibrium", "nonequilibrium"}:
             msg = f"unsupported wall_model {self.wall_model!r}"
             raise ValueError(msg)
+        if not (0.0 < self.wall_relaxation <= 1.0):
+            msg = "wall_relaxation must lie in (0, 1] (1 = no under-relaxation)"
+            raise ValueError(msg)
         if self.wall_coupling not in {"assimilate", "stress", "none"}:
             msg = f"unsupported wall_coupling {self.wall_coupling!r}"
+            raise ValueError(msg)
+        if self.exchange_offset < 1:
+            msg = "exchange_offset must be >= 1 (row counted from the wall node)"
             raise ValueError(msg)
         if self.exchange_averaging not in {"plane", "local"}:
             msg = f"unsupported exchange_averaging {self.exchange_averaging!r}"
@@ -153,7 +162,15 @@ class ChannelWMLESConfig:
 
     @property
     def j_exchange(self) -> int:
-        return self.j_wall_node + 1
+        """Row where the wall model samples the resolved velocity.
+
+        ``exchange_offset = 1`` (default) samples the first resolved node above
+        the wall node; larger values push the sampling point outwards, which is
+        only meaningful when ``ny`` leaves room for it.  It exists because the
+        exchange location is one of the knobs that control the coupling
+        stability of a WMLES (see ``benchmarks/wall_model_les/re590_stability.py``).
+        """
+        return self.j_wall_node + self.exchange_offset
 
     def y_of_node(self, j: int) -> float:
         """Distance of row ``j`` from the lower wall (measured wall origin)."""
@@ -345,6 +362,15 @@ def _wall_model_velocity(
     return (node * ux_ex.reshape(-1) / safe).reshape(ux_ex.shape), (
         node * uz_ex.reshape(-1) / safe
     ).reshape(uz_ex.shape), res.u_tau, res
+
+
+def _blend_target(wx, wz, target_ux, target_uz, beta: float):
+    """Under-relax a wall-model target towards the current wall-node velocity."""
+    if not torch.is_tensor(target_ux):
+        target_ux = torch.as_tensor(target_ux, dtype=wx.dtype, device=wx.device).expand_as(wx)
+    if not torch.is_tensor(target_uz):
+        target_uz = torch.as_tensor(target_uz, dtype=wz.dtype, device=wz.device).expand_as(wz)
+    return (1.0 - beta) * wx + beta * target_ux, (1.0 - beta) * wz + beta * target_uz
 
 
 def _assimilate(
@@ -548,6 +574,17 @@ def run_channel_wmles(config: ChannelWMLESConfig, *, output_dir: str | Path | No
             _stress_coupling(f_new, rho2, ux2, uy2, uz2, 0, ut_lo, nu)
             _stress_coupling(f_new, rho2, ux2, uy2, uz2, -1, ut_hi, nu)
         else:
+            # Optional under-relaxation of the wall-model target: the modelled
+            # velocity is blended with the current wall-node velocity instead of
+            # being imposed in one step.  A stiff exchange-point/wall-model loop
+            # at high Re_tau overshoots and reverses the mean flow (see
+            # benchmarks/wall_model_les/re590_stability.py); blending sets the
+            # loop gain below the oscillation threshold without changing the
+            # fixed point of the coupled system.
+            beta = config.wall_relaxation
+            if beta < 1.0:
+                ux_lo, uz_lo = _blend_target(ux2[:, 0, :], uz2[:, 0, :], ux_lo, uz_lo, beta)
+                ux_hi, uz_hi = _blend_target(ux2[:, -1, :], uz2[:, -1, :], ux_hi, uz_hi, beta)
             _assimilate(f_new, rho2, ux2, uy2, uz2, 0, ux_lo, uz_lo)
             _assimilate(f_new, rho2, ux2, uy2, uz2, -1, ux_hi, uz_hi)
         f = f_new
@@ -575,6 +612,8 @@ def run_channel_wmles(config: ChannelWMLESConfig, *, output_dir: str | Path | No
                 "u_tau_upper": float(ut_hi),
                 "elapsed_s": round(time.time() - t0, 2),
             }
+            if config.diagnostics:
+                entry.update(stability_diagnostics(f, nu=nu, cs=config.smagorinsky_cs))
             history.append(entry)
             print(
                 f"[{config.run_name}] step={step + 1} U_b={ub:.5f} "
@@ -634,6 +673,42 @@ def run_channel_wmles(config: ChannelWMLESConfig, *, output_dir: str | Path | No
             )
         )
     return stats
+
+
+def stability_diagnostics(
+    f: torch.Tensor, *, nu: float, cs: float
+) -> dict:
+    """Cell-level stability margins of a WMLES state (used by log entries).
+
+    The cumulant collision is driven by ``tau - 1/2 = 3 (nu + nu_t)``; a
+    vanishing margin is the classical blow-up route of a high-``Re`` lattice
+    run.  ``nu_t`` is the Smagorinsky viscosity with ``Delta = 1`` and the same
+    strain invariant as the accumulator (:func:`_strain_sq`), so the numbers
+    reported here are the numbers the solver actually sees.
+
+    Returns
+    -------
+    dict with ``max_speed`` (lattice Mach proxy), ``rho_min``/``rho_max``,
+    ``nu_sgs_min``/``mean``/``max``, ``tau_minus_half_min`` (smallest total
+    relaxation margin in the box) and ``sgs_ratio_mean = nu_t.mean()/nu``.
+    """
+    rho, ux, uy, uz = macroscopic3d(f)
+    grads = _velocity_gradients(ux, uy, uz)
+    s_sq = _strain_sq(grads)
+    nu_sgs = cs * cs * torch.sqrt(2.0 * s_sq.clamp_min(0.0))
+    speed = torch.sqrt(ux * ux + uy * uy + uz * uz)
+    nu_tot = nu + nu_sgs
+    return {
+        "max_speed": float(speed.max()),
+        "rho_min": float(rho.min()),
+        "rho_max": float(rho.max()),
+        "nu_sgs_min": float(nu_sgs.min()),
+        "nu_sgs_mean": float(nu_sgs.mean()),
+        "nu_sgs_max": float(nu_sgs.max()),
+        "tau_minus_half_min": 3.0 * float(nu_tot.min()),
+        "tau_minus_half_mean": 3.0 * float(nu_tot.mean()),
+        "sgs_ratio_mean": float(nu_sgs.mean()) / nu if nu > 0.0 else float("nan"),
+    }
 
 
 def _accumulate(acc: dict, *, f: torch.Tensor, nu: float, cs: float, config: ChannelWMLESConfig) -> None:
@@ -706,4 +781,10 @@ def _finalise(acc: dict, n_samples: int, config: ChannelWMLESConfig) -> dict:
     profiles["re_bulk"] = u_bulk * config.H / nu
     profiles["c_f"] = 2.0 * tau_w / u_bulk**2 if u_bulk > 0 else float("nan")
     profiles["tau_w_from_bulk"] = tau_w
+    # Scalars needed to re-derive wall units downstream (peak diagnostics):
+    # the profile arrays are raw lattice units, so the normalisers travel with
+    # them instead of being re-guessed from the run configuration.
+    profiles["nu"] = float(nu)
+    profiles["u_tau"] = float(u_tau)
+    profiles["re_tau_nominal"] = float(config.re_tau)
     return {"profiles": profiles}
