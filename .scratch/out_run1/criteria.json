@@ -1,0 +1,106 @@
+{
+  "F1_young_angle_within_3deg": {
+    "pass": false,
+    "max_error_deg": NaN,
+    "per_wall": [
+      {
+        "wall_fraction": 0.5,
+        "gamma_sl": -0.18564681627073418,
+        "gamma_sg": -0.06035842336696606,
+        "delta_gamma": 0.12528839290376811,
+        "delta_gamma_pressure_tensor": 0.026597940389696647,
+        "cos_young": 2.2312415992830563,
+        "theta_young_deg": NaN,
+        "theta_measured_deg": 67.27264751823469,
+        "theta_measured_unc_deg": 1.5561304828281528,
+        "error_deg": NaN,
+        "mass_drift": 9.833869839396723e-05,
+        "footprint": 128,
+        "height": 64,
+        "spans_domain": true,
+        "angle_valid": false
+      },
+      {
+        "wall_fraction": 0.6,
+        "gamma_sl": -0.23737587353367773,
+        "gamma_sg": -0.07872232622247198,
+        "delta_gamma": 0.15865354731120573,
+        "delta_gamma_pressure_tensor": 0.026381361279750458,
+        "cos_young": 2.825436470451671,
+        "theta_young_deg": NaN,
+        "theta_measured_deg": 89.21615407332843,
+        "theta_measured_unc_deg": 1.193996272466615,
+        "error_deg": NaN,
+        "mass_drift": 9.983245077463508e-05,
+        "footprint": 128,
+        "height": 64,
+        "spans_domain": true,
+        "angle_valid": false
+      },
+      {
+        "wall_fraction": 0.7,
+        "gamma_sl": -0.2920886577356726,
+        "gamma_sg": -0.10019490026010013,
+        "delta_gamma": 0.19189375747557247,
+        "delta_gamma_pressure_tensor": 0.028207433858551935,
+        "cos_young": 3.4174062289321148,
+        "theta_young_deg": NaN,
+        "theta_measured_deg": 109.73816499046366,
+        "theta_measured_unc_deg": 0.947257298843923,
+        "error_deg": NaN,
+        "mass_drift": 0.00010412698886905518,
+        "footprint": 128,
+        "height": 64,
+        "spans_domain": true,
+        "angle_valid": false
+      },
+      {
+        "wall_fraction": 0.8,
+        "gamma_sl": -0.3491916652178409,
+        "gamma_sg": -0.1252348144096774,
+        "delta_gamma": 0.2239568508081635,
+        "delta_gamma_pressure_tensor": 0.03292008596507792,
+        "cos_young": 3.9884128959289638,
+        "theta_young_deg": NaN,
+        "theta_measured_deg": 129.8937816193375,
+        "theta_measured_unc_deg": 0.8375317107192589,
+        "error_deg": NaN,
+        "mass_drift": 0.00011383637934339624,
+        "footprint": 128,
+        "height": 64,
+        "spans_domain": true,
+        "angle_valid": false
+      }
+    ]
+  },
+  "F2_cox_voinov_r2_ge_0.95": {
+    "pass": false,
+    "r2": NaN,
+    "slope": NaN,
+    "intercept": NaN,
+    "n_points": 4,
+    "decades": 1.1209263320745853,
+    "micro_length_lattice": NaN
+  },
+  "F3_contact_line_velocity_order_ge_0.5": {
+    "pass": false,
+    "order": -1.0803065864004546,
+    "velocities": {
+      "48x96": 5.4752877208615615e-06,
+      "64x128": 3.536605827240995e-05,
+      "80x160": -5.419766671562927e-06
+    }
+  },
+  "F4_mass_conservation_le_0.1pct": {
+    "pass": true,
+    "max_drift": 0.00022463287661884533
+  },
+  "F6_artifacts": {
+    "pass": true,
+    "files": [
+      "contact_angle_relaxation.png",
+      "cox_voinov_fit.png",
+      "mass_conservation.json"
+    ]
+  }
+}
