@@ -1,4 +1,8 @@
 # Non-Newtonian Carreau-Yasuda / Power-Law LBM: Implementation & Validation Report
+> **Superseded (2026-11-10, P304W2-N07).** The pipe/channel errors reported below (30–90%) were caused by a non-momentum-consistent body-force scheme and a
+> pre-collision bounce-back; see `docs/non_newtonian_benchmarks_n07.md` for the corrected solvers, the exact Carreau-Yasuda reference and the re-measured numbers.
+
+
 
 **Mission**: P304W2-N03 | **Date**: 2026-11-10 | **Repository**: TensorLBM
 
