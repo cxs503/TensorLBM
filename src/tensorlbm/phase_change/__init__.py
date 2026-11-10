@@ -15,6 +15,13 @@ Modules
     audit, grid-convergence order).  See
     ``docs/P155W1_N01_STEFAN_PHASE_CHANGE.md``.
 
+``stefan_two_phase`` / ``stefan_sweep``
+    Two-phase (superheated-melt) planar Stefan similarity solution -- a coupled
+    dual-``lambda`` coefficient, ``T_i > T_freeze`` ahead of the front -- plus the
+    Stefan-number sweep driver that verifies the enthalpy LBM against it
+    (front / profile / energy / liquid-fraction / grid-order acceptance).
+    See ``docs/P272W2_N05_STEFAN_TWO_PHASE_SWEEP.md``.
+
 ``lee_model``
     Lee-type phase-change mass/energy source terms together with a D2Q9
     thermal lattice Bhatnagar-Gross-Krook (LBE) solver and an enthalpy
@@ -34,20 +41,30 @@ from .lee_model import (  # noqa: F401
     ThermalLBE2D,
     run_bubble_growth,
 )
+from .stefan_anchors import (  # noqa: F401
+    exact_stefan_coefficient,
+    heat_flux_estimate_coefficient,
+    similarity_temperature_profile,
+)
 from .stefan_exact import (  # noqa: F401
     CylindricalSimilarity,
     NeumannSimilarity,
+)
+from .stefan_sweep import (  # noqa: F401
+    run_two_phase_grid_convergence,
+    run_two_phase_stefan,
+    run_two_phase_sweep,
+)
+from .stefan_two_phase import (  # noqa: F401
+    TwoPhaseSimilarity,
+    two_phase_lambda,
+    two_phase_residual,
 )
 from .stefan_verification import (  # noqa: F401
     EnthalpyThermalLBM,
     run_cylindrical_wall_solidification,
     run_grid_convergence,
     run_planar_stefan,
-)
-from .stefan_anchors import (  # noqa: F401
-    exact_stefan_coefficient,
-    heat_flux_estimate_coefficient,
-    similarity_temperature_profile,
 )
 
 __all__ = [
@@ -65,4 +82,10 @@ __all__ = [
     "exact_stefan_coefficient",
     "heat_flux_estimate_coefficient",
     "similarity_temperature_profile",
+    "TwoPhaseSimilarity",
+    "two_phase_lambda",
+    "two_phase_residual",
+    "run_two_phase_stefan",
+    "run_two_phase_sweep",
+    "run_two_phase_grid_convergence",
 ]
