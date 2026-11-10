@@ -1,0 +1,21 @@
+{
+ "case": "R180_dy5",
+ "source_log": "artifacts/p223w3_n02_channel_dns/logs/case_R180_dy5.log",
+ "geometry": {
+  "nx": 72,
+  "ny": 74,
+  "nz": 36,
+  "cells": 191808,
+  "re_tau": 180.0,
+  "u_tau": 0.0125,
+  "half_height": 36.0,
+  "dy_plus": 5.0,
+  "steps": 28800,
+  "warmup": 8640,
+  "smagorinsky_cs": 0.1,
+  "regularized": 0,
+  "tau0": 0.5075
+ },
+ "error": "les_chan diverged: 3545856 of 3644352 populations non-finite (grid 72x74x36 tau0=0.507500 regularized=0)",
+ "non_finite_fraction": 0.972972972972973
+}
