@@ -1,0 +1,112 @@
+{
+  "mission": "m8802",
+  "title": "MCMP Two-Phase Poiseuille Flow Rate Error Fix - Honest-FAIL",
+  "date": "2026-11-10",
+  "physical_anchor": "GAP-LBM-MCMP-POISEUILLE",
+  "projectile": "A-arm m8280 (QR judged 20.2%/16.8% FAIL)",
+  
+  "objective": "Fix SC MCMP two-phase Poiseuille flow rate error >20% using TensorKnowledge-guided viscous velocity coupling",
+  
+  "method": {
+    "knowledge_retrieval": "Searched TensorKnowledge knowledge/oss-lbm/claims/ for MCMP velocity coupling conventions",
+    "retrieved_claims": [
+      "tkc:oss-lbm:lbmpy-mcmp-barycentric (barycentric velocity)",
+      "tkc:oss-lbm:sailfish-shan-chen-binary (viscosity-weighted velocity)",
+      "tkc:oss-lbm:kruger-guo-force-term (Guo force term)"
+    ],
+    "hypothesis": "Viscosity-weighted velocity coupling (u_eq='viscous') will enforce velocity continuity at interface and reduce flow rate error from 20-33% to <10%",
+    "implementation": "Added u_eq='viscous' mode to collide_sc_two_component in src/tensorlbm/multiphase.py (+32 lines)"
+  },
+  
+  "results": {
+    "baseline_self_mode": {
+      "H64_max_rel_err_pct": 26.8,
+      "H128_max_rel_err_pct": 33.2,
+      "verdict": "FAIL"
+    },
+    "viscous_mode_parameter_sweep": [
+      {
+        "config": "nominal",
+        "tau": [1.0, 0.75],
+        "G_12": -2.5,
+        "ny": 33,
+        "result": "DIVERGED",
+        "diverge_step": 17
+      },
+      {
+        "config": "weak_G",
+        "tau": [1.0, 0.75],
+        "G_12": -1.0,
+        "ny": 33,
+        "steps": 3000,
+        "result": "stable",
+        "u_max_ratio": 0.8835,
+        "max_rel_err_pct": 33.7,
+        "comparison_self": {"u_max_ratio": 0.9485, "max_rel_err_pct": 30.7}
+      },
+      {
+        "config": "equal_tau",
+        "tau": [1.0, 1.0],
+        "G_12": -2.5,
+        "ny": 33,
+        "steps": 3000,
+        "result": "stable",
+        "u_max_ratio": 1.2702,
+        "max_rel_err_pct": 27.0,
+        "comparison_self": {"u_max_ratio": 0.9314, "max_rel_err_pct": 14.4}
+      },
+      {
+        "config": "close_tau",
+        "tau": [1.0, 0.9],
+        "G_12": -2.5,
+        "ny": 33,
+        "result": "DIVERGED",
+        "diverge_step": 43
+      }
+    ],
+    "cg_method_reference": {
+      "eq_ny64_relL2": 0.0021,
+      "g10_ny64_relL2": 0.011,
+      "verdict": "PASS"
+    }
+  },
+  
+  "conclusion": {
+    "verdict": "Honest-FAIL",
+    "hypothesis_falsified": true,
+    "root_cause": "SC MCMP 'self' mode 20-33% flow rate error is inherent model defect: velocity discontinuity at interface (u1 ≠ u2) creates effective slip boundary, reducing flow resistance and over-predicting flow rate",
+    "fix_failure_mechanism": "Viscous coupling forces u1=u2=u_visc, but SC interaction force (maintaining interface) tries to create velocity difference. Conflict causes numerical oscillation → density overflow → divergence. When τ1≠τ2, weighted relaxation terms sum ≠ 0 (net momentum source), same instability as 'mixture' mode",
+    "recommendation": "Use Color-Gradient method (single velocity field + recoloring) which achieves 0.2% error (validated)"
+  },
+  
+  "deliverables": {
+    "source_code": "src/tensorlbm/multiphase.py (+32 lines: viscous mode + stability caveat)",
+    "documentation": [
+      "docs/tk-e2e/step1_knowledge_retrieval.md",
+      "docs/tk-e2e/step2_fix_plan.md",
+      "docs/tk-e2e/step4_verification_report.md"
+    ],
+    "knowledge_claims": [
+      "docs/tk-e2e/claims/tkc-tensorlbm-mcmp-viscous-velocity-coupling.json",
+      "docs/tk-e2e/claims/tkc-tensorlbm-mcmp-poiseuille-viscous-numeric-result.json",
+      "docs/tk-e2e/claims/tkc-tensorlbm-mcmp-self-mode-error-attribution.json"
+    ],
+    "figures": [
+      "docs/tk-e2e/fig_velocity_profile_comparison.png",
+      "docs/tk-e2e/fig_method_comparison.png"
+    ],
+    "benchmark": "benchmarks/pending/two_phase_poiseuille_viscous/run.py",
+    "report_api_id": 10385
+  },
+  
+  "tests_run": [
+    "python3 -c 'from tensorlbm.multiphase import collide_sc_two_component' — PASS",
+    "3-mode collision test (self/mixture/viscous on ny=33 step=1) — all finite PASS",
+    "5-config parameter sweep (tau=(1,1)/(1,0.75)/(1,0.9), G=-2.5/-1.0/-0.5, 3000 steps each) — viscous diverges for G=-2.5 unequal tau, stable but worse for G=-1.0",
+    "Baseline self-mode ny=33 5000 steps — finite, ratio=1.155",
+    "Report API submission: curl POST to :8010/tensor/reports — returned id=10385",
+    "Cluster job cj105 submitted then killed after divergence confirmed locally"
+  ],
+  
+  "knowledge_value": "Negative result is still knowledge: excluded viscous coupling for strong SC phase separation, provided clear exclusion chain for future research"
+}
