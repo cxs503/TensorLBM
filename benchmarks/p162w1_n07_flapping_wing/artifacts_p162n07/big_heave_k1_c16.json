@@ -1,0 +1,88 @@
+{
+ "label": "big_heave_k1_c16",
+ "config": {
+  "chord": 16,
+  "re": 500.0,
+  "U": 0.15,
+  "h0_over_c": 0.15,
+  "alpha0_deg": 0.0,
+  "k": 1.0,
+  "phi_deg": 0.0,
+  "pitch_axis_a": -0.5,
+  "n_cycles": 6,
+  "warmup_cycles": 2,
+  "domain_x_over_c": 10.0,
+  "domain_y_over_c": 6.0,
+  "marker_spacing": 0.5,
+  "foil_thickness_over_c": 0.04,
+  "sponge_cells": 0,
+  "n_forcing_passes": 2,
+  "n_samples_per_cycle": 64,
+  "csv_path": null,
+  "locked": false,
+  "ibm": true,
+  "phase_offset_deg": 0.0,
+  "max_force": 0.5
+ },
+ "dims": [
+  160,
+  96
+ ],
+ "tau": 0.5144,
+ "nu": 0.0048,
+ "period": 335.1032163829113,
+ "kinematics": {
+  "k": 1.0,
+  "omega": 0.01875,
+  "period": 335.1032163829113,
+  "frequency": 0.0029841551829730374,
+  "strouhal": 0.0954929658551372,
+  "h0_over_c": 0.15,
+  "alpha0_deg": 0.0,
+  "phi_deg": 0.0,
+  "pitch_axis_a": -0.5,
+  "amplitude_ratio_h0_over_b": 0.3
+ },
+ "measured": {
+  "n_samples": 2010,
+  "n_cycles": 5.995167762592832,
+  "Fx_mean": -0.04215048011677476,
+  "Fy_mean": -0.0002951508611945735,
+  "W_mean": 0.004097863422101965,
+  "C_T": -0.234169333982082,
+  "C_L": -0.0016397270066365194,
+  "C_P": 0.1517727193371098,
+  "eta": -10.285965093281227,
+  "ke_start": 175.4649116307084,
+  "ke_end": 175.7743725076055
+ },
+ "theory": {
+  "C_T": 0.08511836528656236,
+  "C_S": 0.08511836528656236,
+  "C_T_tilt": -0.0,
+  "C_P": 0.15252161652613397,
+  "C_P_loss": 0.06740325123957161,
+  "eta": 0.5580741092655392,
+  "F": 0.539434871077794,
+  "G": -0.10027290286410774,
+  "absC": 0.5486753458863547
+ },
+ "energy_budget": {
+  "W_body": 8.236705478424948,
+  "dKE": 0.30946087689710566,
+  "phi_visc": 7.5071807617561594,
+  "flux_out": 211.3569813093393,
+  "residual": -210.93691746956762,
+  "relative_residual": 25.60937962661058,
+  "n_steps": 2009
+ },
+ "energy_budget_per_step": {
+  "W_body": 0.004099903174925311,
+  "dKE": 0.00015403727073026664,
+  "phi_visc": 0.003736774893855729,
+  "flux_out": 0.10520506784934758,
+  "relative_residual": 25.609379626610576
+ },
+ "csv": "/root/tp-agent/work/m9076/benchmarks/p162w1_n07_flapping_wing/runs/big_heave_k1_c16.csv",
+ "csv_sha256": "4de3f194625f437060e7ea7d594bacaf1690c5dcde9ed571d1385b869fcae8b3"
+}

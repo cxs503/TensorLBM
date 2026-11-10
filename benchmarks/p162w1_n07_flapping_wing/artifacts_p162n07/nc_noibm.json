@@ -1,0 +1,94 @@
+{
+ "label": "nc_noibm",
+ "config": {
+  "chord": 16,
+  "re": 500.0,
+  "U": 0.15,
+  "h0_over_c": 0.05,
+  "alpha0_deg": 2.0,
+  "k": 2.0,
+  "phi_deg": 90.0,
+  "pitch_axis_a": -0.5,
+  "n_cycles": 2,
+  "warmup_cycles": 1,
+  "domain_x_over_c": 10.0,
+  "domain_y_over_c": 6.0,
+  "marker_spacing": 0.5,
+  "foil_thickness_over_c": 0.04,
+  "sponge_cells": 0,
+  "n_forcing_passes": 2,
+  "n_samples_per_cycle": 64,
+  "csv_path": null,
+  "locked": false,
+  "ibm": false,
+  "phase_offset_deg": 0.0,
+  "max_force": 0.5
+ },
+ "dims": [
+  160,
+  96
+ ],
+ "tau": 0.5144,
+ "nu": 0.0048,
+ "period": 167.55160819145564,
+ "kinematics": {
+  "k": 2.0,
+  "omega": 0.0375,
+  "period": 167.55160819145564,
+  "frequency": 0.005968310365946075,
+  "strouhal": 0.06366197723675814,
+  "h0_over_c": 0.05,
+  "alpha0_deg": 2.0,
+  "phi_deg": 90.0,
+  "pitch_axis_a": -0.5,
+  "amplitude_ratio_h0_over_b": 0.1
+ },
+ "measured": {
+  "n_samples": 337,
+  "n_cycles": 2.0053522829578814,
+  "Fx_mean": 0.0,
+  "Fy_mean": 0.0,
+  "W_mean": 0.0,
+  "C_T": 0.0,
+  "C_L": 0.0,
+  "C_P": 0.0,
+  "eta": NaN,
+  "ke_start": 172.79999999999097,
+  "ke_end": 172.7999999999982
+ },
+ "theory": {
+  "C_T": 0.040443183129628156,
+  "C_S": 0.050270840572540124,
+  "C_T_tilt": -0.009827657442911966,
+  "C_P": 0.08589665440782088,
+  "C_P_loss": 0.04545347127819272,
+  "eta": 0.47083537081213506,
+  "F": 0.5129548124291315,
+  "G": -0.057691283421679916,
+  "absC": 0.516188845072272
+ },
+ "energy_budget": {
+  "W_body": 0.0,
+  "dKE": 7.219114195322618e-12,
+  "phi_visc": 1.5736085889599168e-26,
+  "flux_out": 36.39599999997964,
+  "residual": -36.395999999986856,
+  "relative_residual": 36.395999999986856,
+  "n_steps": 336
+ },
+ "energy_budget_per_step": {
+  "W_body": 0.0,
+  "dKE": 2.1485458914650648e-14,
+  "phi_visc": 4.683358895714038e-29,
+  "flux_out": 0.10832142857136796,
+  "relative_residual": 1.0832142857138945e+29
+ },
+ "csv": "/root/tp-agent/work/m9076/benchmarks/p162w1_n07_flapping_wing/runs/nc_noibm.csv",
+ "csv_sha256": "b37c141ba0d25923aaa0459f53ade85bff0c28918fb72e1611fba84bb25dd7ef",
+ "momentum_balance": {
+  "momentum_in": 34.159999999999464,
+  "momentum_out": 34.159999999999364,
+  "force_on_fluid_x": -9.947598300641403e-14,
+  "drag_on_body_x": 9.947598300641403e-14
+ }
+}
