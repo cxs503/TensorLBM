@@ -1,0 +1,97 @@
+{
+  "node": "P88W1-N01",
+  "title": "LNG tank sloshing verification: forced-sway resonance and wall impact pressure",
+  "generated_at": "2026-11-10T19:55:05Z",
+  "criteria": {
+    "a_f1_decay": {
+      "label": "a: f1 vs Abramson dispersion (free decay, natural frequency)",
+      "value_pct": -0.7464136351008621,
+      "threshold": 5.0,
+      "pass": true,
+      "source": "decay_m1"
+    },
+    "a2_f1_sweep": {
+      "label": "a2: f1 from forced-sweep response maximum",
+      "value_pct": 0.32120367552310736,
+      "threshold": 5.0,
+      "pass": true,
+      "source": "sweep"
+    },
+    "b_f2_decay": {
+      "label": "b0: f2 vs Abramson dispersion (mode-2 free decay)",
+      "value_pct": -3.81027574412649,
+      "threshold": 5.0,
+      "pass": true,
+      "source": "decay_m2"
+    },
+    "b_pressure_linear": {
+      "label": "b: wall dynamic pressure vs linear wall-pressure anchor (resonant linear branch)",
+      "value_pct": 15.335642452193055,
+      "threshold": 10.0,
+      "pass": false,
+      "source": "sweep_r1.00"
+    },
+    "b_pressure_linear_refined": {
+      "label": "b_refined: wall dynamic pressure vs linear anchor on the 2x refined grid",
+      "value_pct": 4.7841661175693435,
+      "threshold": 10.0,
+      "pass": true,
+      "source": "gci_ref_r1.00"
+    },
+    "b_pressure_impact": {
+      "label": "b_impact: impact-branch wall pressure amplitude vs hydrostatic run-up anchor rho g eta_wall",
+      "value_pct": -10.054152209914502,
+      "threshold": 10.0,
+      "pass": false,
+      "source": "impact_x012_r1.00"
+    },
+    "d_grid_convergence": {
+      "label": "d: grid convergence of the wall-pressure amplitude (2x refinement)",
+      "value_pct": 17.166383247913274,
+      "threshold": 3.0,
+      "pass": false,
+      "source": "gci_ref_r1.00 vs sweep_r1.00"
+    },
+    "parity": {
+      "label": "parity: even modes not excited by horizontal translation (max abs(a2) / max abs(a1) over the sweep)",
+      "value_pct": 0.0778634981699175,
+      "threshold": 0.1,
+      "pass": true,
+      "source": "all sweep cases"
+    },
+    "mass_conservation": {
+      "label": "mass conservation (max relative inventory drift over the valid cases)",
+      "value_pct": 0.9571941022877513,
+      "threshold": 1.0,
+      "pass": true,
+      "source": null
+    }
+  },
+  "artifacts": {
+    "campaign_json": "artifacts/p88w1/campaign.json",
+    "cases": [
+      "artifacts/p88w1/decay_m1.npz",
+      "artifacts/p88w1/decay_m1_noslip.npz",
+      "artifacts/p88w1/decay_m1_ul005.npz",
+      "artifacts/p88w1/decay_m2.npz",
+      "artifacts/p88w1/gci_ref_r1.00.npz",
+      "artifacts/p88w1/impact_x012_r1.00.npz",
+      "artifacts/p88w1/sweep_r0.60.npz",
+      "artifacts/p88w1/sweep_r0.70.npz",
+      "artifacts/p88w1/sweep_r0.80.npz",
+      "artifacts/p88w1/sweep_r0.90.npz",
+      "artifacts/p88w1/sweep_r1.00.npz",
+      "artifacts/p88w1/sweep_r1.10.npz",
+      "artifacts/p88w1/sweep_r1.20.npz",
+      "artifacts/p88w1/sweep_r1.40.npz",
+      "artifacts/p88w1/sweep_r1.75.npz"
+    ],
+    "figures": [
+      "artifacts/p88w1/figures/fig1_resonance_curve.png",
+      "artifacts/p88w1/figures/fig2_free_decay_sensitivity.png",
+      "artifacts/p88w1/figures/fig3_pressure_and_waveform.png",
+      "artifacts/p88w1/figures/fig4_grid_convergence.png"
+    ],
+    "report_md": "docs/P88W1_N01_sloshing_forced.md"
+  }
+}
