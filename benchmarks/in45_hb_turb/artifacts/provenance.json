@@ -1,0 +1,51 @@
+{
+  "schema": "in45-hb-turb-provenance-v1",
+  "artifacts": {
+    "REPORT.md": {
+      "sha256": "addab70fdfe3ddb3b199a6d3e4dd132b98dd61eb6905bd6bc420e145b2694275",
+      "size_bytes": 15380
+    },
+    "artifacts/analytical_framework.json": {
+      "sha256": "8bb137d2154126934d022449527104cd66fad9937114f5af69d1afd15abd8bf6",
+      "size_bytes": 107946
+    },
+    "figures/fig1_velocity_profiles.png": {
+      "sha256": "d9b00afa3a637212e8a6856e918a32489969c0671d44a6efbbe75a3d751b3cea",
+      "size_bytes": 139983
+    },
+    "figures/fig2_friction_factor_collapse.png": {
+      "sha256": "53f274ca526d74578f5e0e6186fd2b2e76f6c247b7e36769efd8bf2ffcdb66e2",
+      "size_bytes": 137404
+    },
+    "figures/fig3_yield_number_space.png": {
+      "sha256": "fa2b161450d8fe6c110e4ecdf4f3e41cbd071ff5fbc12c3e03d18fe29d20d818",
+      "size_bytes": 142863
+    },
+    "figures/fig4_metzner_reed_validation.png": {
+      "sha256": "547c6523d3045dd719df25681aa564684b098a22880a41fac3360cc3e968ebd7",
+      "size_bytes": 94722
+    },
+    "generate_figures.py": {
+      "sha256": "66a094df68c59e448265bb3c7c1cbb54d24bb9f6cb465c5696ac35f19a08f4b4",
+      "size_bytes": 10416
+    },
+    "run_analytical_framework.py": {
+      "sha256": "924743e78e1933d9a628d0b8628fa70f232578c9a2717b77a4526e8eece0ccb5",
+      "size_bytes": 11210
+    },
+    "run_laminar_calibration.py": {
+      "sha256": "5f1a9b3709c4f2448f564d0f41774ba567c76e6a045d9def3bcad6a3de9e2461",
+      "size_bytes": 9992
+    },
+    "run_single_case.py": {
+      "sha256": "7f00b54408e8f7d391bafcc789b46d98733ddc75bfa2f6afc3513905a08d026b",
+      "size_bytes": 2519
+    },
+    "run_turbulence_campaign.py": {
+      "sha256": "a18c0518042d22dd9057b29ca31aed0261961557f2dcba0db447710aca7d671e",
+      "size_bytes": 2686
+    }
+  },
+  "total_files": 11,
+  "total_size_bytes": 675121
+}
