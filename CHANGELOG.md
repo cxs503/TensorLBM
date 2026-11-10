@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`tensorlbm.boundary.partial_slip_second_order`** — second-order reconstruction
+  of the combined bounce-back / specular slip wall (campaign node p247w1-N10,
+  source m7963-c1).  The O(1/H) amplitude bias of the mixed wall is traced to a
+  spurious wall-slip velocity inherited from the Guo forcing term reflected by
+  the bounce-back channel, with the closed form ``u_wall = g[6 nu - 1/(8 nu)]``
+  (``kappa(tau) = s - 3/(4s)``, ``s = 2 tau - 1``; matches a tau/g scan to
+  ``2e-7`` relative and reproduces the ``c ~ -0.139/H`` reported by m7963-c1 at
+  ``tau ~ 1.13``).  The boundary-node correction
+  ``df_q = -6(1-sigma) w_q rho (c_q . delta_vec)`` (tangential only, so mass and
+  normal momentum are conserved) removes the bias: ``b(sigma)`` recovers
+  ``3 nu sigma/(1-sigma)`` to ``1e-6`` relative (baseline ``11.4 %`` at
+  ``sigma = 0.05``) on H = 32/64/128, and Poiseuille / Couette / oblique-force
+  faces all pass (``tests/test_partial_slip_second_order.py``, 40 cases).
 - **`tensorlbm.sloshing_resonance`** — LNG cargo-tank sloshing verification
   surface (campaign node P87W2-N01): a 1.0 m x 0.5 m two-dimensional tank at
   ``h/H = 0.2 .. 0.9`` released from the pure standing waves
