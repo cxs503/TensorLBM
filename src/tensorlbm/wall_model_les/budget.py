@@ -41,6 +41,23 @@ __all__ = [
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_DNS_CSV = REPO_ROOT / "benchmarks" / "pending" / "channel_turb_3d" / "dns_ref" / "mkm180.csv"
 
+#: Second DNS tier shipped with the repository (MKM 1999, ``Re_tau = 395``).
+#: Two Reynolds numbers turn the wall model's Reynolds-number behaviour from an
+#: assumption into a measurement: the DNS abscissa of the ``-<u'v'>+`` peak is
+#: ``Re``-invariant, so a closure that drifts with ``Re`` can be caught.
+DNS_REFERENCES = {
+    "mkm180": {
+        "path": DEFAULT_DNS_CSV,
+        "re_tau": 180.0,
+        "citation": "Moser, Kim & Mansour 1999, Phys. Fluids 11, 943 (Re_tau=180)",
+    },
+    "mkm395": {
+        "path": REPO_ROOT / "benchmarks" / "in99_n03_channel_turb" / "dns_ref" / "mkm395.csv",
+        "re_tau": 395.0,
+        "citation": "Moser, Kim & Mansour 1999, Phys. Fluids 11, 943 (Re_tau=395)",
+    },
+}
+
 
 @dataclass(frozen=True)
 class DnsChannelProfile:
@@ -73,15 +90,34 @@ class DnsChannelProfile:
         }
 
 
-def load_dns_channel_profile(path: str | Path | None = None) -> DnsChannelProfile:
-    """Load the MKM-180 channel DNS table and derive ``<u'v'>+`` from the balance."""
+def load_dns_channel_profile(
+    path: str | Path | None = None, *, re_tau: float | None = None
+) -> DnsChannelProfile:
+    """Load a channel DNS table and derive ``<u'v'>+`` from the balance.
+
+    ``re_tau`` is *read from the table* (``y+`` at the centreline, where
+    ``y/h = 1``) unless it is given explicitly.  The previous implementation
+    hard-coded ``180``, so loading the ``Re_tau = 395`` tier silently
+    mis-scaled every derived quantity -- a defect this signature removes.
+    """
     csv_path = Path(path) if path is not None else DEFAULT_DNS_CSV
     data = np.genfromtxt(csv_path, delimiter=",", names=True)
     y_plus = np.asarray(data["y_plus"], dtype=float)
     u_plus = np.asarray(data["u_plus"], dtype=float)
     order = np.argsort(y_plus)
     y_plus, u_plus = y_plus[order], u_plus[order]
-    re_tau = 180.0  # MKM 1999 case identification; h+ = Re_tau
+    if re_tau is None:
+        registered = [
+            entry["re_tau"]
+            for entry in DNS_REFERENCES.values()
+            if Path(entry["path"]).resolve() == csv_path.resolve()
+        ]
+        # The shipped tables stop at the last cell centre (y+ = 178.12 for the
+        # Re_tau = 180 case), so the table itself under-reports h+ by ~1 %.  A
+        # registered tier carries the case identification; an unknown table is
+        # read as ending at the centreline.
+        re_tau = float(registered[0]) if registered else float(y_plus[-1])
+    re_tau = float(re_tau)
     # Convention: uv_plus stores -<u'v'>+ (positive in the log layer), which is
     # what the stress balance 1 - y+/h+ - dU+/dy+ gives directly.
     uv_plus = reynolds_stress_from_balance(y_plus, u_plus, re_tau=re_tau)

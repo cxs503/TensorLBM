@@ -135,10 +135,18 @@ def run(out_dir: Path) -> dict:
     )
     # anchor the modelled profile on the DNS value at the exchange height
     shift = u_anchor - float(np.interp(y_anchor, y_plus_model, u_plus_model))
-    profiles["nonequilibrium_s0"] = log_region_error(
+    profiles["nonequilibrium_s0_shape_only"] = log_region_error(
         dns.y_plus, np.interp(dns.y_plus, y_plus_model, u_plus_model + shift), dns.u_plus, band=BAND
     )
-    profiles["nonequilibrium_s0"]["anchor_shift_plus"] = shift
+    profiles["nonequilibrium_s0_shape_only"]["anchor_shift_plus"] = shift
+    # The predictive limb of the same model: no anchor shift, i.e. the profile
+    # that the wall model would supply with its own friction velocity.  The
+    # anchored number above is a *shape* diagnostic (the intercept error is
+    # removed by construction) and must not be read as a profile prediction --
+    # that is exactly the reading error corrected in mission m8872.
+    profiles["nonequilibrium_s0_predictive"] = log_region_error(
+        dns.y_plus, np.interp(dns.y_plus, y_plus_model, u_plus_model), dns.u_plus, band=BAND
+    )
     result["log_layer_profiles"] = profiles
 
     # ------------------------------------------------------------------
@@ -154,14 +162,32 @@ def run(out_dir: Path) -> dict:
     mask = y_plus_model >= 1.0
     uv_peak_model = peak_location(y_plus_model[mask], uv_model_plus[mask])
     uv_peak_dns = dns.uv_peak_y_plus
+    # The profile above was integrated only up to the last DNS sample, so its
+    # maximum sits on the truncation boundary and is NOT a peak (the previous
+    # version reported that boundary value, 1.009 at y+ = 178.1, as the
+    # modelled peak).  The closure is therefore re-solved across the whole
+    # channel half-height, where the stress peak is an interior maximum.
+    from tensorlbm.wall_model_les.closure_channel import solve_channel_closure
+
+    closure = solve_channel_closure(dns.re_tau, closure="mixing_length")
     result["stress_peak"] = {
         "dns_y_plus": uv_peak_dns,
-        "dns_value": float(np.max(-dns.uv_plus)),
-        "wall_model_y_plus": uv_peak_model,
-        "relative_error": relative_error(uv_peak_model, uv_peak_dns),
-        "wall_model_value": float(np.max(uv_model_plus[mask])),
+        "dns_value": float(np.max(dns.uv_plus)),
+        "wall_model_y_plus": closure.uv_peak_y_plus,
+        "relative_error": relative_error(closure.uv_peak_y_plus, uv_peak_dns),
+        "wall_model_value": float(np.max(closure.uv_plus[closure.y_plus >= 1.0])),
         "production_dns_y_plus": dns.production_peak_y_plus,
+        "production_model_y_plus": closure.production_peak_y_plus,
+        "production_peak_relative_error": relative_error(
+            closure.production_peak_y_plus, dns.production_peak_y_plus
+        ),
         "profile_sampled_at_dy_plus": float(y_plus_model[1] - y_plus_model[0]),
+        "legacy_truncated_profile_peak": {
+            "y_plus": uv_peak_model,
+            "value": float(np.max(uv_model_plus[mask])),
+            "note": "boundary maximum of a profile truncated at the last DNS sample; superseded",
+        },
+        "solver": "closure_channel.solve_channel_closure (mixing_length, full channel)",
     }
 
     # ------------------------------------------------------------------
