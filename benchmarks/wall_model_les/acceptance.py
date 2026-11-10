@@ -228,21 +228,39 @@ def grade(apriori: dict | None, flat: dict | None, kvl: dict | None, channel: di
         # against Spalding is zero by construction -- report it, but do not
         # pretend that it validates anything.
         literal = {"max_rel_error_vs_spalding_formula": 0.0, "note": "tautological"}
-        dns_check = {
-            "equilibrium_spalding": profiles["equilibrium"]["max_rel"],
-            "log_law_only": profiles["log_law_only"]["max_rel"],
-            "nonequilibrium_ode": profiles["nonequilibrium_s0"]["max_rel"],
+        # Two limbs, deliberately kept apart:
+        #   predictive  -- the profile the wall model supplies with the friction
+        #                  velocity *it* predicts (this is what a WMLES gets);
+        #   shape-only  -- the same profile shifted onto the DNS anchor at
+        #                  y+ = 30.  The shift removes the intercept error by
+        #                  construction, so it is a shape diagnostic and NOT a
+        #                  profile prediction.  Mission m7797 graded criterion (a)
+        #                  on the shifted number; m8872 corrects that reading.
+        predictive = {
+            "equilibrium_spalding": float(profiles["equilibrium"]["max_rel"]),
+            "log_law_only": float(profiles["log_law_only"]["max_rel"]),
+            "nonequilibrium_ode": float(profiles["nonequilibrium_s0_predictive"]["max_rel"]),
         }
-        dns_check = {k: float(v) for k, v in dns_check.items()}
-        best = min(dns_check.values())
+        shape_only = {
+            "nonequilibrium_ode_anchored_at_y_plus_30": float(
+                profiles["nonequilibrium_s0_shape_only"]["max_rel"]
+            ),
+            "anchor_shift_plus": float(
+                profiles["nonequilibrium_s0_shape_only"].get("anchor_shift_plus", float("nan"))
+            ),
+        }
+        best = min(predictive.values())
         out["a_log_layer_profile"] = {
             "threshold": CRITERIA["a_log_layer_profile"]["threshold"],
             "literal_limb": literal,
-            "dns_reference_limb": dns_check,
+            "dns_reference_limb_predictive": predictive,
+            "dns_reference_limb_shape_only": shape_only,
             "verdict": "PASS" if best <= CRITERIA["a_log_layer_profile"]["threshold"] else "FAIL",
             "verdict_basis": (
-                "strongest available reference (channel DNS MKM-180, y+ = 30-300): "
-                f"best model = {best:.4f} vs threshold 0.03"
+                "predictive limb vs the vetted channel DNS (MKM-180, y+ = 30...178, the "
+                f"whole criterion band the table covers): best model = {best:.4f} vs "
+                "threshold 0.03. The 0.0172 of the m7797 record was the anchored "
+                "shape-only limb and is not a profile prediction"
             ),
             "evidence": "artifacts/wall_model_les/apriori.json",
         }
@@ -332,6 +350,33 @@ def grade(apriori: dict | None, flat: dict | None, kvl: dict | None, channel: di
                 + (" and the peak value exceeds the total stress 1 - y/h, i.e. the "
                    "near-wall momentum budget is not closed" if nonphysical else "")
             )
+    if "verdict" not in b:
+        # No resolved-stress artifact: fall back to the closure tier, which is a
+        # measurement of the closure rather than of the LES, and say so.
+        peak = (apriori or {}).get("stress_peak") or {}
+        rel = peak.get("relative_error")
+        b["closure_tier"] = {
+            "uv_peak_model_y_plus": peak.get("wall_model_y_plus"),
+            "uv_peak_dns_y_plus": peak.get("dns_y_plus"),
+            "uv_peak_rel_error": rel,
+            "production_peak_rel_error": peak.get("production_peak_relative_error"),
+            "solver": peak.get("solver"),
+        }
+        b["verdict"] = (
+            "FAIL"
+            if rel is not None and float(rel) > CRITERIA["b_reynolds_stress_peak"]["threshold"]
+            else "WITHHELD"
+        )
+        b["verdict_basis"] = (
+            "no resolved-stress artifact for this pass (see stability_map.json): the "
+            "graded number is the closure tier, modelled -<u'v'>+ peak vs the DNS peak, "
+            + (
+                "rel error {:.4f} > 0.05; the abscissa drifts with Re_tau under an "
+                "eddy-viscosity closure while the DNS peak does not".format(float(rel))
+                if rel is not None
+                else "not measured"
+            )
+        )
     b["evidence"] = "artifacts/wall_model_les/channel_eq.json, artifacts/wall_model_les/apriori.json"
     out["b_reynolds_stress_peak"] = b
 
@@ -397,6 +442,80 @@ def grade(apriori: dict | None, flat: dict | None, kvl: dict | None, channel: di
     return out
 
 
+def _merge_extra(criteria: dict, *, high_re, kvl, stability) -> None:
+    """Attach the closure tier, the reference gate and the offline chain."""
+
+    if high_re:
+        val = high_re.get("dns_validation") or {}
+        if val and "a_log_layer_profile" in criteria:
+            best = min(val.items(), key=lambda kv: kv[1]["log_layer_error_absolute"]["max_rel"])
+            criteria["a_log_layer_profile"]["closure_tier"] = {
+                "source": "artifacts/wall_model_les/high_re.json",
+                "band": best[1]["band"],
+                "max_rel_error_by_closure": {
+                    k: v["log_layer_error_absolute"]["max_rel"] for k, v in val.items()
+                },
+                "log_layer_verification": high_re.get("log_layer_verification"),
+                "note": (
+                    "the closure tier solves the modelled channel at Re_tau up to 1e4, "
+                    "where y+ = 30...300 is a genuine log layer; it verifies that the "
+                    "closure reproduces its own (kappa, B) asymptote and shows that the "
+                    "DNS-anchored error is a law-of-the-wall calibration issue"
+                ),
+            }
+        if val and "b_reynolds_stress_peak" in criteria:
+            criteria["b_reynolds_stress_peak"].setdefault("closure_tier", {}).update({
+                "source": "artifacts/wall_model_les/high_re.json",
+                "uv_peak_rel_error": {k: v["uv_peak_rel_error"] for k, v in val.items()},
+                "production_peak_rel_error": {
+                    k: v["production_peak_rel_error"] for k, v in val.items()
+                },
+                "reynolds_drift": high_re.get("stress_peak_invariance"),
+                "structural_note": (
+                    "any eddy-viscosity closure has -<u'v'>+ = nu_t+ dU+/dy+ with both "
+                    "factors >= 0, so the modelled stress rises with the mixing length "
+                    "and the interior peak is a by-product of l+ ~ kappa y+: its abscissa "
+                    "moves with Re_tau even though the DNS peak does not. Reproducing the "
+                    "buffer-layer stress peak therefore needs resolved turbulence or a "
+                    "Reynolds-stress transport closure, not a wall function"
+                ),
+            })
+    if high_re and high_re.get("reference_tables"):
+        rejected = high_re.get("reference_tables_rejected") or []
+        gate = {k: v["gate"] for k, v in high_re["reference_tables"].items()}
+        for name in gate:
+            criteria.setdefault("reference_integrity", {})[name] = gate[name]["verdict"]
+        if rejected:
+            criteria["reference_integrity"]["note"] = (
+                "the shipped Re_tau = 395 table is REJECTED by the integrity gate "
+                f"({rejected}); its centreline u+ is 15.96 against a log-law estimate of "
+                "19.78 and the stored uv_plus column reaches 6.0, so it is not used as a "
+                "reference anywhere in this record"
+            )
+    if stability and "a_log_layer_profile" in criteria:
+        criteria["a_log_layer_profile"]["resolved_tier"] = {
+            "source": "artifacts/wall_model_les/stability_map.json",
+            "highest_converged_re_tau": stability.get("highest_converged_re_tau"),
+            "band_reachable": stability.get("band_reachable"),
+            "criterion_band_note": stability.get("criterion_band_note"),
+            "verdict": "WITHHELD" if not stability.get("band_reachable") else "MEASURED",
+        }
+    if kvl and kvl.get("criterion_d"):
+        crit = criteria.setdefault("d_kvlcc2_ct", {})
+        crit["offline_friction_limb"] = kvl["criterion_d"]
+        crit["verdict"] = "WITHHELD"
+        crit["verdict_basis"] = (
+            "the literal limb (C_T vs a measured KVLCC2 resistance) has no reference in "
+            "this environment and stays WITHHELD; the friction limb is decidable offline "
+            "and compares two independent friction chains at Re = 1.3e7: C_T = (1+k) C_F "
+            "with C_F from the wall-law boundary-layer model vs the ITTC-1957 line, "
+            f"relative difference {kvl['criterion_d']['ct_rel_error']:.4f} "
+            f"({'within' if kvl['criterion_d']['verdict'] == 'PASS' else 'outside'} the "
+            "0.07 threshold). The ITTC-1957 line is an empirical standard, not a "
+            "measurement."
+        )
+
+
 def run(out_dir: Path) -> dict:
     apriori = _load(out_dir / "apriori.json")
     flat = _load(out_dir / "flat_plate.json")
@@ -404,17 +523,21 @@ def run(out_dir: Path) -> dict:
     channel = _load(out_dir / "channel_eq.json")
     channel_legacy = _load(out_dir / "channel_eq_legacy_origin.json")
     loglaw = _load(out_dir / "log_law_fit.json")
+    high_re = _load(out_dir / "high_re.json")
+    stability = _load(out_dir / "stability_map.json")
 
     figures = []
     figures += figure_profiles(apriori, out_dir) if apriori else []
     figures += figure_flat_plate(flat, out_dir) if flat else []
     figures += figure_channel(channel, out_dir)
 
+    criteria = grade(apriori, flat, kvl, channel, loglaw, channel_legacy)
+    _merge_extra(criteria, high_re=high_re, kvl=kvl, stability=stability)
     record = {
         "title": "Wall-modelled LES for high-Reynolds-number ship boundary layers",
         "repository": "TensorLBM",
         "module": "tensorlbm.wall_model_les",
-        "criteria": grade(apriori, flat, kvl, channel, loglaw, channel_legacy),
+        "criteria": criteria,
         "fixes": [
             {
                 "id": "coles-wake-double-counting",
@@ -464,7 +587,9 @@ def main() -> None:
     args = parser.parse_args()
     record = run(Path(args.out))
     for name, value in record["criteria"].items():
-        print(f"{name:28s} {value.get('verdict'):9s} {value.get('verdict_basis', value.get('reason',''))[:110]}")
+        verdict = str(value.get("verdict") or "INFO")
+        basis = str(value.get("verdict_basis") or value.get("reason") or value.get("note") or "")
+        print(f"{name:28s} {verdict:9s} {basis[:110]}")
     print(json.dumps(record["summary"], indent=1))
 
 
