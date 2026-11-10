@@ -1,0 +1,30 @@
+{
+  "benchmark": "naca0012_subsonic_airfoil",
+  "solver": "D2Q9 BGK + bounce-back + channel BC",
+  "geometry": {
+    "type": "NACA0012",
+    "chord_lu": 16,
+    "thickness_ratio": 0.12
+  },
+  "flow_conditions": {
+    "Re": 200.0,
+    "u_in_lu": 0.05,
+    "Ma_approx": 0.08660254037844385
+  },
+  "references": {
+    "thin_airfoil_cl_slope_per_rad": 6.283185307179586,
+    "low_re_cd_ref": {
+      "Re": 1000.0,
+      "alpha=0": {
+        "cl": 0.0,
+        "cd": 0.12
+      },
+      "cd_cluster": [
+        0.1164,
+        0.1236
+      ],
+      "source": "Kurtulus 2015 text ~0.12; Di Ilio 2020 HLBM/XFOIL 0.119"
+    },
+    "abbott_von_denhoff_note": "High-Re (Re~3-6e6), NOT directly comparable to LBM at Re=200"
+  }
+}
