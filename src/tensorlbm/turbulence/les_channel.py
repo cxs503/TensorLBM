@@ -67,6 +67,17 @@ class LesChannelConfig:
     perturb_modes: int = 6
     seed: int = 20261108
     threads: int = 64
+    #: dump raw velocity planes every ``spec_every`` sampled steps (0 = off) at
+    #: the wall-normal rows ``spec_rows``; feeds
+    #: :mod:`tensorlbm.turbulence.channel_spectra`.
+    spec_every: int = 0
+    spec_rows: tuple[int, ...] = ()
+    #: ``1`` = regularised (Hermite-projected) collision, ``0`` = plain TRT.
+    #: A wall-resolved (``cs = 0``) run needs the TRT arm: the projection is
+    #: slowly unstable at ``tau0 - 0.5 ~ 1e-3`` (measured on Re_tau = 180,
+    #: u_tau = 0.0125: ``regularized=1`` reaches umax ~ 1e6 in 600 steps,
+    #: ``regularized=0`` holds umax ~ 0.25).
+    regularized: int = 1
 
     @property
     def half_height(self) -> float:
@@ -91,6 +102,15 @@ class LesChannelConfig:
     def validate(self) -> None:
         if self.ny < 10 or self.nx < 8 or self.nz < 8:
             raise ValueError("grid too small for a wall-bounded channel")
+        if self.regularized not in (0, 1):
+            raise ValueError("regularized must be 0 or 1")
+        if self.spec_every < 0:
+            raise ValueError("spec_every must be >= 0")
+        if self.spec_every > 0 and not self.spec_rows:
+            raise ValueError("spec_every > 0 needs at least one spec_rows entry")
+        for row in self.spec_rows:
+            if not 1 <= row <= self.ny - 2:
+                raise ValueError(f"spec_rows entry {row} is outside the fluid rows")
         if self.tau0 <= 0.5005:
             raise ValueError("derived relaxation time is too close to 0.5")
         if self.u_tau * 20.0 > 0.25:
@@ -105,7 +125,15 @@ class LesChannelConfig:
             "--lambda", repr(float(self.lambda_)), "--perturb", repr(float(self.perturb)),
             "--modes", str(self.perturb_modes), "--seed", str(self.seed),
             "--threads", str(self.threads), "--out", out_prefix,
-        ]
+            "--reg", str(self.regularized),
+        ] + (
+            [
+                "--spec-every", str(self.spec_every),
+                "--spec-rows", ",".join(str(r) for r in self.spec_rows),
+            ]
+            if self.spec_every > 0
+            else []
+        )
 
 
 def _sha256(path: Path) -> str:
@@ -128,11 +156,17 @@ def build_kernel(build_dir: str | Path | None = None, force: bool = False) -> Pa
     binary = root / f"les_chan_{tag}"
     if binary.exists() and not force:
         return binary
-    cmd = [compiler, "-O3", "-fopenmp", "-march=native", "-o", str(binary),
+    # Compile to a private temporary name and publish with an atomic rename:
+    # two concurrent callers (e.g. a case ladder) must never exec a binary that
+    # a sibling process is still writing (that raises ETXTBSY).
+    staging = root / f".les_chan_{tag}.{os.getpid()}.tmp"
+    cmd = [compiler, "-O3", "-fopenmp", "-march=native", "-o", str(staging),
            str(KERNEL_SOURCE), "-lm"]
     done = subprocess.run(cmd, capture_output=True, text=True)
     if done.returncode != 0:
+        staging.unlink(missing_ok=True)
         raise RuntimeError(f"kernel build failed: {done.stderr[-2000:]}")
+    os.replace(staging, binary)
     return binary
 
 
