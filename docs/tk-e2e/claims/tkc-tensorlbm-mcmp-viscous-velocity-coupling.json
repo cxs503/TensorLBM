@@ -1,0 +1,64 @@
+{
+  "id": "tkc:tensorlbm:mcmp-viscous-velocity-coupling",
+  "statement": "TensorLBM collide_sc_two_component 新增 u_eq='viscous' 模式（黏性加权速度耦合），但在强 SC 耦合 (G_12=-2.5) + 不等 τ (1.0, 0.75) 时发散。仅在弱耦合 (|G_12|<1.0) 且 τ₁≈τ₂ 时稳定，且误差不改善。结论：黏性加权耦合不适合强分相 MCMP 场景。",
+  "claim_type": "prescriptive",
+  "scope": {
+    "domain": "lattice Boltzmann multiphase/multicomponent methods",
+    "conditions": [
+      "格子=D2Q9",
+      "模型=MCMP Shan-Chen 两组分",
+      "速度耦合=黏性加权",
+      "强分相 G_12 <= -1.0",
+      "不等弛豫时间 τ₁ ≠ τ₂"
+    ]
+  },
+  "modality": "implemented_and_tested",
+  "epistemic_status": "falsified",
+  "evidence_refs": [
+    "tke:tensorlbm:m8802-viscous-mode-divergence",
+    "tke:tensorlbm:m8802-parameter-sweep"
+  ],
+  "implementation": {
+    "file": "src/tensorlbm/multiphase.py",
+    "function": "collide_sc_two_component",
+    "lines": "637-651",
+    "parameter": "u_eq='viscous'"
+  },
+  "test_results": {
+    "nominal_params": {
+      "tau": [1.0, 0.75],
+      "G_12": -2.5,
+      "result": "DIVERGED at step 17",
+      "ny": 33
+    },
+    "weak_G": {
+      "tau": [1.0, 0.75],
+      "G_12": -1.0,
+      "result": "stable but error 33.7% (worse than self 30.7%)",
+      "ny": 33
+    },
+    "equal_tau": {
+      "tau": [1.0, 1.0],
+      "G_12": -2.5,
+      "result": "stable but error 27.0% (worse than self 14.4%)",
+      "ny": 33
+    }
+  },
+  "mechanism": "黏性加权强制 u₁=u₂=u_visc，但 SC 互作用力在界面处试图产生速度差（分相），两者冲突导致数值振荡→密度越界→发散。当 τ₁≠τ₂ 时，加权弛豫项之和 ≠ 0（净动量源），与 mixture 模式同源不稳定。",
+  "falsification": "预测：黏性加权耦合可将两相 Poiseuille 流量误差从 26.8% 降至 <10%。结果：目标参数窗口下发散，弱耦合时误差更大。预测被证伪。",
+  "references": [
+    "Martys et al. (1996) J. Comput. Phys. 126:276",
+    "sailfish 实现 (tkc:oss-lbm:sailfish-shan-chen-binary)"
+  ],
+  "created_at": "2026-11-10T03:30:00Z",
+  "updated_at": "2026-11-10T04:00:00Z",
+  "created_by": "agent/m8802 (TensorPlatform citizen, MCMP two-phase Poiseuille fix)",
+  "version": "1.1.0",
+  "status": "draft",
+  "notes": [
+    "映射 feature_ledger: GAP-LBM-MCMP-POISEUILLE（黏性速度耦合修复——证伪）",
+    "映射 mission: m8802 旗舰闭环试验",
+    "负结果：黏性加权耦合不适合强 SC 分相场景",
+    "对照: 'self' 模式 H64=26.8%, CG 方法=0.2%"
+  ]
+}

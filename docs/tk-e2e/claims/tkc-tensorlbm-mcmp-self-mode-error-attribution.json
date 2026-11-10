@@ -1,0 +1,71 @@
+{
+  "id": "tkc:tensorlbm:mcmp-self-mode-error-attribution",
+  "statement": "SC MCMP 'self' 速度耦合模式在两相 Poiseuille 流中产生 20-33% 流量误差的根因是：界面处两相速度不连续（u₁ ≠ u₂），等效于界面滑移边界，导致流动阻力降低、流量高估。误差随网格加密不收敛（H64: 26.8% → H128: 33.2%），确认为系统性偏差而非离散误差。",
+  "claim_type": "diagnostic",
+  "scope": {
+    "domain": "lattice Boltzmann multiphase error analysis",
+    "conditions": [
+      "模型=MCMP Shan-Chen 两组分",
+      "速度耦合=self（各组分使用自身速度）",
+      "不等弛豫时间 τ₁ ≠ τ₂",
+      "界面处两相共存"
+    ]
+  },
+  "modality": "diagnosed",
+  "epistemic_status": "established",
+  "evidence_refs": [
+    "tke:tensorlbm:m8280-qr-fail-report",
+    "tke:tensorlbm:m8802-baseline-self-mode-results",
+    "tke:tensorlbm:m8802-grid-convergence-study"
+  ],
+  "error_chain": [
+    "1. 'self' 模式：feq1 使用 u1，feq2 使用 u2",
+    "2. 界面处 ρ₁ ≈ ρ₂ ≈ 0.5，两相共存",
+    "3. 不等 τ → 两相速度不同 (u₁ ≠ u₂)",
+    "4. 无速度耦合机制 → 界面速度不连续",
+    "5. 等效于界面滑移边界条件",
+    "6. 流动阻力降低 → 流量高估 20-33%",
+    "7. 误差随网格加密增大（系统性偏差）"
+  ],
+  "excluded_mechanisms": [
+    {
+      "candidate": "力项离散误差",
+      "reason": "标准 SC 力项 O(h²)，不会导致 20%+ 误差"
+    },
+    {
+      "candidate": "界面厚度效应",
+      "reason": "tanh-3 界面足够薄（~6 格），不影响宏观流量"
+    },
+    {
+      "candidate": "壁面边界误差",
+      "reason": "bounce-back 标准实现，单相 Poiseuille 验证通过（<1% 误差）"
+    },
+    {
+      "candidate": "弛豫时间组合不稳定",
+      "reason": "τ=(1.0, 0.75) 在稳定窗口内，数值不发散"
+    }
+  ],
+  "resolution": "采用黏性加权速度耦合 (u_eq='viscous')，强制界面速度连续",
+  "baseline_results": {
+    "self_mode": {
+      "H64_max_rel_err_pct": 26.8,
+      "H128_max_rel_err_pct": 33.2,
+      "grid_convergence": false,
+      "verdict": "FAIL"
+    },
+    "mixture_mode": {
+      "finite": false,
+      "verdict": "DIVERGED"
+    }
+  },
+  "created_at": "2026-11-10T03:30:00Z",
+  "created_by": "agent/m8802 (TensorPlatform citizen, MCMP two-phase Poiseuille fix)",
+  "version": "1.0.0",
+  "status": "draft",
+  "notes": [
+    "映射 feature_ledger: GAP-LBM-MCMP-POISEUILLE（误差归因）",
+    "映射 mission: m8802 旗舰闭环试验",
+    "映射 mission: m8280 QR 独立复验",
+    "对照: Color-Gradient 方法 0.2% 误差（单一速度场，无此问题）"
+  ]
+}

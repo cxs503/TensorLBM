@@ -1,0 +1,93 @@
+{
+  "id": "tkc:tensorlbm:mcmp-poiseuille-viscous-numeric-result",
+  "statement": "MCMP 两相 Poiseuille 基准采用黏性速度耦合 (u_eq='viscous') 在目标参数窗口 (τ=(1.0,0.75), G_12=-2.5) 下发散（step 17），无法获得有效数值结果。弱耦合 (G_12=-1.0) 时稳定但误差 33.7%（比 'self' 模式 30.7% 更大）。",
+  "claim_type": "quantitative",
+  "scope": {
+    "domain": "lattice Boltzmann multiphase validation",
+    "conditions": [
+      "几何=平面通道 ny=33 (快速测试)",
+      "物理=两层 Poiseuille 流",
+      "速度耦合=viscous",
+      "参数扫描: τ=(1.0,0.75)/(1.0,1.0)/(1.0,0.9), G_12=-2.5/-1.0/-0.5"
+    ]
+  },
+  "modality": "computed",
+  "epistemic_status": "falsified",
+  "evidence_refs": [
+    "tke:tensorlbm:m8802-parameter-sweep-log"
+  ],
+  "numerical_results": {
+    "nominal": {
+      "tau": [1.0, 0.75],
+      "G_12": -2.5,
+      "ny": 33,
+      "result": "DIVERGED",
+      "diverge_step": 17,
+      "max_rel_err_pct": null,
+      "finite": false
+    },
+    "weak_G": {
+      "tau": [1.0, 0.75],
+      "G_12": -1.0,
+      "ny": 33,
+      "steps": 3000,
+      "result": "stable",
+      "u_max_ratio": 0.8835,
+      "max_rel_err_pct": 33.7,
+      "finite": true,
+      "comparison_self": {
+        "u_max_ratio": 0.9485,
+        "max_rel_err_pct": 30.7
+      }
+    },
+    "equal_tau": {
+      "tau": [1.0, 1.0],
+      "G_12": -2.5,
+      "ny": 33,
+      "steps": 3000,
+      "result": "stable",
+      "u_max_ratio": 1.2702,
+      "max_rel_err_pct": 27.0,
+      "finite": true,
+      "comparison_self": {
+        "u_max_ratio": 0.9314,
+        "max_rel_err_pct": 14.4
+      }
+    },
+    "close_tau": {
+      "tau": [1.0, 0.9],
+      "G_12": -2.5,
+      "ny": 33,
+      "result": "DIVERGED",
+      "diverge_steps": 43,
+      "finite": false
+    }
+  },
+  "baseline_results": {
+    "self_mode_full": {
+      "H64_max_rel_err_pct": 26.8,
+      "H128_max_rel_err_pct": 33.2,
+      "source": "benchmarks/pending/two_phase_poiseuille/result.json"
+    },
+    "cg_method": {
+      "eq_ny64_relL2": 0.0021,
+      "g10_ny64_relL2": 0.011,
+      "source": "benchmarks/verified/poiseuille_two_phase_cg/result.json"
+    }
+  },
+  "implementation": {
+    "file": "benchmarks/pending/two_phase_poiseuille_viscous/run.py",
+    "test_script": "parameter sweep in docs/tk-e2e/step4_verification_report.md"
+  },
+  "created_at": "2026-11-10T03:30:00Z",
+  "updated_at": "2026-11-10T04:00:00Z",
+  "created_by": "agent/m8802 (TensorPlatform citizen, MCMP two-phase Poiseuille fix)",
+  "version": "1.1.0",
+  "status": "draft",
+  "notes": [
+    "映射 feature_ledger: GAP-LBM-MCMP-POISEUILLE（数值结果——负结果）",
+    "映射 mission: m8802 旗舰闭环试验",
+    "结论：黏性加权耦合在目标参数窗口不可行",
+    "推荐：使用 Color-Gradient 方法（0.2% 误差已验证）"
+  ]
+}
