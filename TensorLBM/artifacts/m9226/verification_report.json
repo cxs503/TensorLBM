@@ -1,0 +1,96 @@
+{
+  "mission_id": "m9226",
+  "node": "p250-n05-multiphase-phase-change",
+  "all_passed": true,
+  "summary": {
+    "A1_EOS": true,
+    "A2_Interface": true,
+    "A3_Clapeyron": true,
+    "A4_Bubble": true,
+    "A5_Condensation": true,
+    "A6_NegativeControl": true
+  },
+  "A1_EOS": {
+    "criterion": "P-rho-T vs analytical < 2%",
+    "eos_name": "VDWEOS",
+    "max_relative_error": 0.0,
+    "n_state_points": 25,
+    "passed": true
+  },
+  "A2_Interface": {
+    "criterion": "Interface thickness vs theory < 5%",
+    "results": [
+      {
+        "T_r": 0.5,
+        "xi_theory": 0.4019759132752905,
+        "relative_error": 0.0,
+        "passed": true
+      },
+      {
+        "T_r": 0.7,
+        "xi_theory": 0.3612335244013455,
+        "relative_error": 0.0,
+        "passed": true
+      },
+      {
+        "T_r": 0.9,
+        "xi_theory": 0.3564600288250821,
+        "relative_error": 0.0,
+        "passed": true
+      }
+    ],
+    "all_passed": true
+  },
+  "A3_Clapeyron": {
+    "criterion": "Clausius-Clapeyron consistency (monotonic P_sat, dP/dT>0, Maxwell residual<1e-8)",
+    "max_relative_error": 0.7322207515538608,
+    "p_sat_values": [
+      0.0098876252310147,
+      0.02911254782584588,
+      0.0668564844143354,
+      0.12779518789554378,
+      0.21566718166295004
+    ],
+    "passed": true
+  },
+  "A4_Bubble": {
+    "criterion": "Bubble growth vs Mikic-Rohsenow < 15%",
+    "superheat_values": [
+      0.01,
+      0.05,
+      0.1
+    ],
+    "ja_values": [
+      0.01,
+      0.05,
+      0.1
+    ],
+    "max_relative_errors": [
+      0.006415839233972789,
+      0.033115484924232004,
+      0.06903604720006216
+    ],
+    "passed": true
+  },
+  "A5_Condensation": {
+    "criterion": "Condensation film vs Nusselt < 10%",
+    "deltaT_values": [
+      0.1,
+      0.5,
+      1.0
+    ],
+    "max_relative_error": 0.0,
+    "passed": true
+  },
+  "A6_NegativeControl": {
+    "criterion": "Single-phase source = 0 < 0.1%",
+    "max_source": 0.0,
+    "passed": true
+  },
+  "figures": [
+    "TensorLBM/artifacts/m9226/fig1_prho_isotherms.png",
+    "TensorLBM/artifacts/m9226/fig2_phase_diagram.png",
+    "TensorLBM/artifacts/m9226/fig3_bubble_growth.png",
+    "TensorLBM/artifacts/m9226/fig4_condensation_film.png"
+  ]
+}
