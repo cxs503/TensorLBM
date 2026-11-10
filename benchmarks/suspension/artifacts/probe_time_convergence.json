@@ -1,0 +1,78 @@
+{
+ "design": {
+  "cell": {
+   "nx": 48,
+   "ny": 48,
+   "nz": 57,
+   "nu": 0.1,
+   "u_wall": 0.02
+  },
+  "steps": {
+   "n_steps": 4200,
+   "sample_every": 25,
+   "wall_margin": 7
+  },
+  "radii": [
+   4.0
+  ],
+  "dilute_phi": [
+   0.01
+  ],
+  "dense_phi": [
+   0.15
+  ],
+  "dense_radius": 5.0,
+  "seeds": [
+   1,
+   2
+  ],
+  "smoke": false,
+  "jobs": 1,
+  "threads": 8
+ },
+ "elapsed_s": 1244.4381413459778,
+ "cases": [
+  {
+   "tau_near": 7.464568538818552e-05,
+   "tau_wall_mem": 7.30681691377882e-08,
+   "f_particle_per_area": 4.227036870794282e-07,
+   "tau_corrected": 7.42229817011061e-05,
+   "n_samples": 84,
+   "n_steps": 4200,
+   "n_warmup": 2100,
+   "n_particles": 5,
+   "phi_lattice": 0.010256761695906433,
+   "gamma_dot_nominal": 0.0007272727272727273,
+   "nu": 0.1,
+   "u_wall": 0.02,
+   "nz": 57,
+   "nx": 48,
+   "ny": 48,
+   "band": [
+    1,
+    6
+   ],
+   "node_overlaps": 0,
+   "mode": "shear",
+   "drag_force_mem": 9.38460940406436e-05,
+   "drag_force_mem_std": 4.201714016033057e-05,
+   "gamma_dot_measured": 0.0007219044470314267,
+   "profile_r2": 0.9999482984424646,
+   "eta_eff": 0.10281552081625416,
+   "eta_eff_near": 0.10340106047987258,
+   "eta_eff_mem": 0.00010121584572342623,
+   "phi_target": 0.01,
+   "seed": 1,
+   "radius": 4.0,
+   "shape": "sphere",
+   "polydisperse": 0.0,
+   "re_p": 0.46545454545454545,
+   "wall_margin": 7,
+   "z_spread": [
+    11.937009850264324,
+    43.25408120266629
+   ],
+   "tag": "dilute_r4_phi0.01_s1"
+  }
+ ]
+}
