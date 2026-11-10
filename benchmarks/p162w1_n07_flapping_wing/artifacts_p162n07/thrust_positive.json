@@ -1,0 +1,90 @@
+{
+ "label": "thrust_positive",
+ "config": {
+  "chord": 32,
+  "re": 500.0,
+  "U": 0.15,
+  "h0_over_c": 0.25,
+  "alpha0_deg": 0.0,
+  "k": 2.0,
+  "phi_deg": 0.0,
+  "pitch_axis_a": -0.5,
+  "n_cycles": 6,
+  "warmup_cycles": 2,
+  "domain_x_over_c": 10.0,
+  "domain_y_over_c": 6.0,
+  "marker_spacing": 0.5,
+  "foil_thickness_over_c": 0.04,
+  "sponge_cells": 0,
+  "n_forcing_passes": 2,
+  "n_samples_per_cycle": 64,
+  "csv_path": null,
+  "locked": false,
+  "ibm": true,
+  "phase_offset_deg": 0.0,
+  "max_force": 0.5,
+  "periodic_x": false
+ },
+ "dims": [
+  320,
+  192
+ ],
+ "tau": 0.5288,
+ "nu": 0.0096,
+ "period": 335.1032163829113,
+ "kinematics": {
+  "k": 2.0,
+  "omega": 0.01875,
+  "period": 335.1032163829113,
+  "frequency": 0.0029841551829730374,
+  "strouhal": 0.3183098861837907,
+  "h0_over_c": 0.25,
+  "alpha0_deg": 0.0,
+  "phi_deg": 0.0,
+  "pitch_axis_a": -0.5,
+  "amplitude_ratio_h0_over_b": 0.5
+ },
+ "measured": {
+  "n_samples": 2010,
+  "n_cycles": 5.995167762592832,
+  "Fx_mean": NaN,
+  "Fy_mean": NaN,
+  "W_mean": NaN,
+  "C_T": NaN,
+  "C_L": NaN,
+  "C_P": NaN,
+  "eta": NaN,
+  "ke_start": -3.7052142258472205e+200,
+  "ke_end": NaN
+ },
+ "theory": {
+  "C_T": 0.8370802646801819,
+  "C_S": 0.8370802646801819,
+  "C_T_tilt": -0.0,
+  "C_P": 1.6114950703508901,
+  "C_P_loss": 0.7744148056707082,
+  "eta": 0.5194432673616025,
+  "F": 0.5129548124291315,
+  "G": -0.057691283421679916,
+  "absC": 0.516188845072272
+ },
+ "energy_budget": {
+  "W_body": NaN,
+  "dKE": NaN,
+  "phi_visc": NaN,
+  "phi_neq": NaN,
+  "flux_out": NaN,
+  "residual": NaN,
+  "relative_residual": NaN,
+  "n_steps": 2009
+ },
+ "energy_budget_per_step": {
+  "W_body": NaN,
+  "dKE": NaN,
+  "phi_visc": NaN,
+  "flux_out": NaN,
+  "relative_residual": NaN
+ },
+ "csv": "/root/tp-agent/work/m9076/benchmarks/p162w1_n07_flapping_wing/runs/thrust_positive.csv",
+ "csv_sha256": "385e9727f55ab92b4a14d3bf52bd2b745ba51e579c56c76aa01fefa1518b73a5"
+}

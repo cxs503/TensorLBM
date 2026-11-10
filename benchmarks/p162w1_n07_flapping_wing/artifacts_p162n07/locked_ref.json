@@ -1,0 +1,86 @@
+{
+ "label": "locked_ref",
+ "config": {
+  "chord": 32,
+  "re": 500.0,
+  "U": 0.15,
+  "h0_over_c": 0.02,
+  "alpha0_deg": 2.0,
+  "k": 1.0,
+  "phi_deg": 90.0,
+  "pitch_axis_a": -0.5,
+  "n_cycles": 2,
+  "warmup_cycles": 1,
+  "domain_x_over_c": 10.0,
+  "domain_y_over_c": 6.0,
+  "marker_spacing": 0.5,
+  "foil_thickness_over_c": 0.04,
+  "sponge_cells": 0,
+  "n_forcing_passes": 2,
+  "n_samples_per_cycle": 64,
+  "csv_path": null,
+  "locked": true,
+  "ibm": true,
+  "phase_offset_deg": 0.0,
+  "max_force": 0.5,
+  "periodic_x": false
+ },
+ "dims": [
+  320,
+  192
+ ],
+ "tau": 0.5288,
+ "nu": 0.0096,
+ "period": 670.2064327658226,
+ "kinematics": {
+  "k": 1.0,
+  "omega": 0.009375,
+  "period": 670.2064327658226,
+  "frequency": 0.0014920775914865187,
+  "strouhal": 0.0,
+  "h0_over_c": 0.0,
+  "alpha0_deg": 0.0,
+  "phi_deg": 90.0,
+  "pitch_axis_a": -0.5,
+  "amplitude_ratio_h0_over_b": 0.0
+ },
+ "measured": {
+  "n_samples": 1340,
+  "n_cycles": 1.9978918950004485,
+  "Fx_mean": -0.06368371163224394,
+  "Fy_mean": -6.257577296875231e-05,
+  "W_mean": 0.0,
+  "C_T": -0.1768991989784554,
+  "C_L": -0.00017382159157986753,
+  "C_P": 0.0,
+  "eta": NaN,
+  "ke_start": 691.5419118099815,
+  "ke_end": 692.8794906517596
+ },
+ "theory": {},
+ "energy_budget": {
+  "W_body": 0.0,
+  "dKE": 1.3375788417781678,
+  "phi_visc": 8.4758970992354,
+  "phi_neq": 170.3951079494677,
+  "flux_out": 280.92575880483594,
+  "residual": -290.7392347458495,
+  "relative_residual": 290.7392347458495,
+  "n_steps": 1339
+ },
+ "energy_budget_per_step": {
+  "W_body": 0.0,
+  "dKE": 0.0009989386421046808,
+  "phi_visc": 0.006330020238413294,
+  "flux_out": 0.2098026578079432,
+  "relative_residual": 2.1713161668846113e+29
+ },
+ "csv": "/root/tp-agent/work/m9076/benchmarks/p162w1_n07_flapping_wing/runs/locked_ref.csv",
+ "csv_sha256": "23c347bf4dfea692fc8d81f4cd7820c58a52dff8215feabdcdd467d7c0f1ab88",
+ "momentum_balance": {
+  "momentum_in": 68.36341799442258,
+  "momentum_out": 68.29611940206586,
+  "force_on_fluid_x": -0.06729859235672109,
+  "drag_on_body_x": 0.06729859235672109
+ }
+}

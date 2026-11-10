@@ -1,0 +1,90 @@
+{
+ "label": "energy_periodic",
+ "config": {
+  "chord": 24,
+  "re": 150.0,
+  "U": 0.05,
+  "h0_over_c": 0.15,
+  "alpha0_deg": 0.0,
+  "k": 2.0,
+  "phi_deg": 0.0,
+  "pitch_axis_a": -0.5,
+  "n_cycles": 4,
+  "warmup_cycles": 1,
+  "domain_x_over_c": 10.0,
+  "domain_y_over_c": 6.0,
+  "marker_spacing": 0.5,
+  "foil_thickness_over_c": 0.04,
+  "sponge_cells": 0,
+  "n_forcing_passes": 2,
+  "n_samples_per_cycle": 64,
+  "csv_path": null,
+  "locked": false,
+  "ibm": true,
+  "phase_offset_deg": 0.0,
+  "max_force": 0.5,
+  "periodic_x": true
+ },
+ "dims": [
+  240,
+  144
+ ],
+ "tau": 0.524,
+ "nu": 0.008000000000000002,
+ "period": 753.9822368615504,
+ "kinematics": {
+  "k": 2.0,
+  "omega": 0.008333333333333333,
+  "period": 753.9822368615504,
+  "frequency": 0.001326291192432461,
+  "strouhal": 0.1909859317102744,
+  "h0_over_c": 0.15,
+  "alpha0_deg": 0.0,
+  "phi_deg": 0.0,
+  "pitch_axis_a": -0.5,
+  "amplitude_ratio_h0_over_b": 0.3
+ },
+ "measured": {
+  "n_samples": 3017,
+  "n_cycles": 4.000094236376302,
+  "Fx_mean": -0.01080872393397082,
+  "Fy_mean": 0.00032804255281052784,
+  "W_mean": 0.0009927872816817259,
+  "C_T": -0.3602907977990273,
+  "C_L": 0.010934751760350926,
+  "C_P": 0.661858187787817,
+  "eta": -10.887250605851285,
+  "ke_start": 43.187981397279074,
+  "ke_end": 41.961557783793836
+ },
+ "theory": {
+  "C_T": 0.3013488952848653,
+  "C_S": 0.3013488952848653,
+  "C_T_tilt": -0.0,
+  "C_P": 0.58013822532632,
+  "C_P_loss": 0.2787893300414547,
+  "eta": 0.5194432673616026,
+  "F": 0.5129548124291315,
+  "G": -0.057691283421679916,
+  "absC": 0.516188845072272
+ },
+ "energy_budget": {
+  "W_body": 2.9952392288337673,
+  "dKE": -1.2264236134852382,
+  "phi_visc": 2.914214335405756,
+  "phi_neq": 68.82411348548663,
+  "flux_out": 0.0,
+  "residual": 1.30744850691325,
+  "relative_residual": 0.43650887526013105,
+  "n_steps": 3016
+ },
+ "energy_budget_per_step": {
+  "W_body": 0.0009931164551836098,
+  "dKE": -0.00040663912913966785,
+  "phi_visc": 0.000966251437468752,
+  "flux_out": 0.0,
+  "relative_residual": 0.4365088752601308
+ },
+ "csv": "/root/tp-agent/work/m9076/benchmarks/p162w1_n07_flapping_wing/runs/energy_periodic.csv",
+ "csv_sha256": "0c36500c68b1e8ecdf39400e15a4fad507040317d02f5eaea6779f8ab584b733"
+}
