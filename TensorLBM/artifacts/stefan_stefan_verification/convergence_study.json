@@ -1,0 +1,60 @@
+{
+  "node": "p262w1-N01",
+  "mission_id": "m9873",
+  "module": "tensorlbm.phase_change.stefan_verification",
+  "description": "1-D Stefan solidification grid convergence study",
+  "parameters": {
+    "stefan_number": 0.5,
+    "alpha": 0.25,
+    "tau": 1.0,
+    "cp": 1.0,
+    "latent": 1.0,
+    "t_freeze": 0.0,
+    "front_fraction": 0.25,
+    "lattice": "D2Q5"
+  },
+  "grid_levels": [
+    {
+      "n_front_cells": 25,
+      "nx_total": 100,
+      "dx_effective": "L/25",
+      "steps": 4340,
+      "front_rel_error_pct": 2.0195,
+      "front_local_rel_error_pct": 4.0359,
+      "profile_l2_rel_pct": 0.0564,
+      "profile_linf_rel_pct": 0.2682
+    },
+    {
+      "n_front_cells": 50,
+      "nx_total": 200,
+      "dx_effective": "L/50",
+      "steps": 17359,
+      "front_rel_error_pct": 1.0087,
+      "front_local_rel_error_pct": 2.0174,
+      "profile_l2_rel_pct": 0.0233,
+      "profile_linf_rel_pct": 0.1311
+    },
+    {
+      "n_front_cells": 100,
+      "nx_total": 400,
+      "dx_effective": "L/100",
+      "steps": 69436,
+      "front_rel_error_pct": 0.5035,
+      "front_local_rel_error_pct": 1.0071,
+      "profile_l2_rel_pct": 0.0104,
+      "profile_linf_rel_pct": 0.0648
+    }
+  ],
+  "observed_orders": {
+    "front_rel_error": 1.0019,
+    "front_local_rel_error": 1.0014,
+    "profile_l2_rel": 1.2205
+  },
+  "criteria_check": {
+    "F4_convergence_order_front": {
+      "value": 1.0019,
+      "threshold": 1.0,
+      "pass": true
+    }
+  }
+}
