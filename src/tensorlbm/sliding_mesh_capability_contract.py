@@ -122,12 +122,19 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "MECHANICS_TESTED",
         "tensorlbm.sliding_mesh_common.sliding_mesh_step(lattice='D3Q19') / "
         "apply_sliding_mesh_bc_3d / rotate_velocity_field_3d / "
-        "interpolate_interface_3d",
+        "interpolate_interface_3d; coupled two-zone solver "
+        "tensorlbm.sliding_mesh_propulsion.SlidingMeshPropeller",
         "test_sliding_mesh_regression.py: shape, finiteness, mass-explosion "
         "guard (Σf < 1e6 over the multi-step stability sweep), 2-D/3-D "
         "formula parity, single-layer interface interpolation, rotation about "
-        "x/y/z; no mass-conservation equality and no physical validation of "
-        "torque/efficiency",
+        "x/y/z. test_sliding_mesh_propulsion.py adds coupled-solver anchors: "
+        "uniform-stream transparency, zero-net-mass interface budget "
+        "(400-step drift 1.7e-4), co-rotating frame balance "
+        "(|u_rel|/(ΩR) = 3.6e-4), Taylor-Couette across the shell "
+        "(interface band 7.7% mean / 16.8% max), monotone rotor loads. "
+        "Torque/efficiency are NOT validated against EFD: the lattice "
+        "Reynolds number is 2-3 orders below model scale and the open-water / "
+        "self-propulsion campaign has no dispatched verdict yet",
     ),
     ("sliding_mesh_3d", "D3Q27"): (
         "MECHANICS_TESTED",
